@@ -1,7 +1,7 @@
 #pike __REAL_VERSION__
 
 /*
- * $Id: Tree.pmod,v 1.32 2003/05/14 16:32:40 grubba Exp $
+ * $Id: Tree.pmod,v 1.33 2003/06/17 12:37:08 grubba Exp $
  *
  */
 
@@ -516,8 +516,9 @@ class Node {
 
   //  Member variables for this node type
   static int            mNodeType;
+  static string		mShortNamespace;	// Namespace prefix
+  static string		mNamespace;	// Resolved namespace
   static string         mTagName;
-  static string		mFullName;	// Fully qualified tag name
 //   private int            mTagCode;
   static mapping        mAttributes;
   static array(Node) mAttrNodes;   //  created on demand
@@ -526,14 +527,15 @@ class Node {
 
   static Node low_clone()
   {
-    return Node(get_node_type(), get_tag_name(),
+    return Node(get_node_type(), get_full_name(),
 		get_attributes(), get_text());
   }
 
   //! Clones the node, optionally connected to parts of the tree.
   //! If direction is -1 the cloned nodes parent will be set, if
   //! direction is 1 the clone nodes childen will be set.
-  Node clone(void|int(-1..1) direction) {
+  Node clone(void|int(-1..1) direction)
+  {
     Node n = low_clone();
 
     if(direction!=1) {
@@ -592,13 +594,17 @@ class Node {
     return (mTagName);
   }
 
-  //! Return fully qualified name of the element node if available,
-  //! otherwise the ordinary tag name.
+  //! Return fully qualified name of the element node.
   string get_full_name()
   {
-    return mFullName;
+    return mNamespace + mTagName;
   }
   
+  string get_short_name()
+  {
+    return mShortNamespace + mTagName;
+  }
+
   //! Returns the name of the attribute node.
   string get_attr_name()
   {
@@ -607,12 +613,14 @@ class Node {
   }
   
   //!
-  static void create(int type, string name, mapping attr, string text,
-		     string|void full_name)
+  static void create(int type, string name, mapping attr, string text)
   {
+    if (name) {
+      sscanf(reverse(name), "%[^/:]", mTagName);
+      mTagName=reverse(mTagName);
+      mNamespace=name[..sizeof(name)-(1+sizeof(mTagName))];
+    }
     mNodeType = type;
-    mTagName = name;
-    mFullName = full_name || name;
 //     mTagCode = kTagMapping[name] || kUnsupportedTagMapping[name];
     mAttributes = attr;
     mText = text;
@@ -718,7 +726,9 @@ class Node {
 
   static void low_render_xml(String.Buffer data, Node n,
 			     function(string:string) textq,
-			     function(string:string) attrq) {
+			     function(string:string) attrq,
+			     void|mapping(string:string) namespace_lookup)
+  {
     string tagname;
     switch(n->get_node_type()) {
     case XML_TEXT:
@@ -726,8 +736,9 @@ class Node {
       break;
 
     case XML_ELEMENT:
-      if (!sizeof(tagname = n->get_tag_name()))
+      if (!sizeof(tagname = n->get_short_name(namespace_lookup)))
 	break;
+      
       data->add("<", tagname);
       if (mapping attr = n->get_attributes()) {
 	foreach(indices(attr), string a)
@@ -759,7 +770,7 @@ class Node {
       break;
 
     case XML_PI:
-      data->add("<?", n->get_tag_name());
+      data->add("<?", n->get_short_name());
       string text = n->get_text();
       if (sizeof(text))
 	data->add(" ", text);
@@ -802,13 +813,63 @@ class Node {
     return "utf-8";
   }
 
+  void set_short_namespaces(void|mapping(string:string) forward_lookup,
+			    void|mapping(string:string) backward_lookup)
+  {
+    if (!mTagName) return;
+    if (!forward_lookup) {
+      forward_lookup = ([]);
+      backward_lookup = ([]);
+    } else {
+      // Make sure changes aren't propagated backwards...
+      forward_lookup += ([]);
+      backward_lookup += ([]);
+    }
+    // First check if any namespaces are defined by this tag.
+    mapping attrs = get_attributes() || ([]);
+    foreach(indices(attrs), string attr_name) {
+      if (has_prefix(attr_name, "xmlns")) {
+	string short_prefix = "";
+	if (has_prefix(attr_name, "xmlns:")) {
+	  short_prefix = attr_name[6..] + ":";
+	}
+	if (backward_lookup[short_prefix]) {
+	  m_delete(forward_lookup, backward_lookup[short_prefix]);
+	}
+	backward_lookup[short_prefix] = attrs[attr_name];
+	forward_lookup[attrs[attr_name]] = short_prefix;
+      }
+    }
+    // Then set the short namespace for this tag.
+    mShortNamespace = "";
+    if (sizeof(mNamespace)) {
+      if (!(mShortNamespace = forward_lookup[mNamespace])) {
+	// We need to allocate a short namespace symbol.
+	// FIXME: This is O(n²).
+	int i;
+	while(backward_lookup[mShortNamespace = ("NS"+i+":")]) {
+	  i++;
+	}
+	backward_lookup[mShortNamespace] = mNamespace;
+	forward_lookup[mNamespace] = mShortNamespace;
+	attrs["xmlns:NS"+i] = mNamespace;
+      }
+    }
+    // And then do it for all the children.
+    get_children()->set_short_namespaces(forward_lookup, backward_lookup);
+  }
+
   //! Creates an XML representation of the node sub tree. If the
   //! flag @[preserve_roxen_entities] is set, entities on the form
   //! @tt{&foo.bar;@} will not be escaped.
+  //!
+  //! @param namespace_lookup
+  //!   Mapping from namespace prefix to namespace symbol prefix.
   string render_xml(void|int(0..1) preserve_roxen_entities)
   {
     String.Buffer data = String.Buffer();
     string encoding = get_encoding();
+    set_short_namespaces();
     if(preserve_roxen_entities)
       low_render_xml(data, this_object(), roxen_text_quote,
 		     roxen_attribute_quote);
@@ -828,6 +889,7 @@ class Node {
 	f->write(encoder->drain());
       }
     } (f, Locale.Charset.encoder(get_encoding()));
+    set_short_namespaces();
     if(preserve_roxen_entities)
       low_render_xml(data, this_object(), roxen_text_quote,
 		     roxen_attribute_quote);
@@ -887,7 +949,7 @@ class Node {
 
   string _sprintf(int t) {
     return t=='O' && sprintf("%O(#%d:%d,%s)", this_program, mDocOrder,
-			     get_node_type(), get_full_name());
+			     get_node_type(), get_full_name()||"NULL");
   }
 };
 
@@ -948,7 +1010,7 @@ class PINode
   inherit Node;
   static Node low_clone()
   {
-    return PINode(get_tag_name(), get_attributes(), get_text());
+    return PINode(get_full_name(), get_attributes(), get_text());
   }
   static void create(string name, mapping(string:string) attrs,
 		     string contents)
@@ -962,12 +1024,11 @@ class ElementNode
   inherit Node;
   static Node low_clone()
   {
-    return ElementNode(get_tag_name(), get_attributes(), get_full_name());
+    return ElementNode(get_full_name(), get_attributes());
   }
-  static void create(string name, mapping(string:string) attrs,
-		     string full_name)
+  static void create(string name, mapping(string:string) attrs)
   {
-    ::create(XML_ELEMENT, name, attrs, "", full_name);
+    ::create(XML_ELEMENT, name, attrs, "");
   }
 }
 
@@ -976,7 +1037,7 @@ class AttributeNode
   inherit Node;
   static Node low_clone()
   {
-    return AttributeNode(get_tag_name(), get_text());
+    return AttributeNode(get_full_name(), get_text());
   }
   static void create(string name, string value)
   {
@@ -989,8 +1050,7 @@ private Node|int(0..0)
 		     mapping attr, string|array contents,
 		     mixed location, mixed ...extra)
 {
-  Node   node;
-  string full_name = name;
+  Node node;
 
   switch (type) {
   case "":
@@ -1024,11 +1084,11 @@ private Node|int(0..0)
       if (extra[0]->xmlns) {
 	XMLNSParser xmlns = extra[0]->xmlns;
 	xmlns->Enter(attr);
-	full_name = xmlns->Decode(full_name);
+	name = xmlns->Decode(name);
 	xmlns->Leave();
       }
     }
-    return ElementNode(name, attr, full_name);
+    return ElementNode(name, attr);
 
   case ">":
     //  Create tree node for this container
@@ -1042,11 +1102,11 @@ private Node|int(0..0)
       //  Parse namespace information of available.
       if (extra[0]->xmlns) {
 	XMLNSParser xmlns = extra[0]->xmlns;
-	full_name = xmlns->Decode(full_name);
+	name = xmlns->Decode(name);
 	xmlns->Leave();
       }
     }
-    node = ElementNode(name, attr, full_name);
+    node = ElementNode(name, attr);
 	
     //  Add children to our tree node. We need to merge consecutive text
     //  children since two text elements can't be neighbors according to
