@@ -7,11 +7,8 @@ AC_SUBST(RANLIB)
 
 AC_CHECK_HEADERS(readline.h history.h readline/readline.h history/history.h readline/history.h)
 
-if test $ac_cv_header_readline_h = yes -o \
-        $ac_cv_header_readline_readline_h = yes ; then
-  if test $ac_cv_header_history_h = yes -o \ 
-          $ac_cv_header_history_history_h = yes -o \
-          $ac_cv_header_readline_history_h = yes ; then
+if test $ac_cv_header_readline_h = yes -o $ac_cv_header_readline_readline_h = yes ; then
+  if test $ac_cv_header_history_h = yes -o $ac_cv_header_history_history_h = yes -o $ac_cv_header_readline_history_h = yes ; then
     AC_CHECK_LIB(termcap, tputs)
     AC_CHECK_LIB(readline, readline)
   fi
