@@ -1,9 +1,9 @@
-/* $Id: image.c,v 1.152 1999/07/16 11:44:16 mirar Exp $ */
+/* $Id: image.c,v 1.153 1999/07/21 02:58:38 hubbe Exp $ */
 
 /*
 **! module Image
 **! note
-**!	$Id: image.c,v 1.152 1999/07/16 11:44:16 mirar Exp $
+**!	$Id: image.c,v 1.153 1999/07/21 02:58:38 hubbe Exp $
 **! class Image
 **!
 **!	The main object of the <ref>Image</ref> module, this object
@@ -97,7 +97,7 @@
 
 #include "stralloc.h"
 #include "global.h"
-RCSID("$Id: image.c,v 1.152 1999/07/16 11:44:16 mirar Exp $");
+RCSID("$Id: image.c,v 1.153 1999/07/21 02:58:38 hubbe Exp $");
 #include "pike_macros.h"
 #include "object.h"
 #include "constants.h"
@@ -507,9 +507,8 @@ THREADS_DISALLOW();
 **!	  "cmyk" : make a rgb image from cmyk (cyan, magenta, yellow, black)
 **!
 **!	generate modes; all extra arguments is given to the
-**!	generation function. These has the same name as the 
-**!	method:
-**!	  "<ref>test<ref>," 
+**!	generation function. These has the same name as the method:
+**!	  "<ref>test</ref>," 
 **!	  "<ref>gradients</ref>"
 **!	  "<ref>noise</ref>"
 **!	  "<ref>turbulence</ref>"
