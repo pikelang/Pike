@@ -1,5 +1,5 @@
 /*
- * $Id: ppc32.c,v 1.3 2001/07/30 22:29:19 marcus Exp $
+ * $Id: ppc32.c,v 1.4 2001/08/01 15:16:46 marcus Exp $
  *
  * Machine code generator for 32 bit PowerPC
  *
@@ -8,25 +8,12 @@
 
 #include "operators.h"
 
-#if 0
-#define ADD_CALL(X) do {						\
-    INT32 delta_;							\
-    struct program *p_ = Pike_compiler->new_program;			\
-    INT32 off_ = p_->num_program;					\
-									\
-    /* call X	*/							\
-    delta_ = ((PIKE_OPCODE_T *)(X)) - (p_->program + off_);		\
-    p_->program[off_] = 0x48000001 | ((delta_<<2) & 0x03fffffc);	\
-    add_to_relocations(off_);						\
-  } while(0)
-#else
-
 #ifdef _AIX
 #define ADD_CALL(X) do {						\
     INT32 delta_;							\
     void *toc_, *func_=(X);						\
 									\
-    __asm__("\tmr %0,2" : "=r" (toc_));				\
+    __asm__("\tmr %0,2" : "=r" (toc_));					\
     delta_ = ((char *)func_) - ((char *)toc_);				\
     if(delta_ < -32768 || delta_ > 32767)				\
       fatal("Function pointer %p out of range for TOC @ %p!\n",		\
@@ -48,7 +35,6 @@
     /* bla func	*/							\
     add_to_program(0x48000003|(func_&0x03fffffc));			\
   } while(0)
-#endif
 #endif
 
 void ins_f_byte(unsigned int b)
@@ -120,16 +106,17 @@ void ins_f_byte_with_2_args(unsigned int a,
 
 void ppc32_flush_instruction_cache(void *addr, size_t len)
 {
-  INT32 a = (INT32)addr;
+  INT32 a;
+
 #ifdef _AIX
   __asm__(".machine \"ppc\"");
 #endif
   len >>= 2;
-  while(len>0) {
-    __asm__("dcbst 0,%0" : : "r" (a));
+  for(a = (INT32)addr; len>0; --len) {
     __asm__("icbi 0,%0" : : "r" (a));
+    __asm__("dcbst 0,%0" : : "r" (a));
     a += 4;
-    --len;
   }
   __asm__("sync");
+  __asm__("isync");
 }
