@@ -42,9 +42,9 @@
  expression6          ::=   string | int | float | catch | gauge | typeof | sscanf | lambda | class | constant_identifier | call |
                             index | mapping | multiset | array | parenthesis | arrow 
  int                  ::=   "-"? ( number | "'" character "'" )
- number               ::=   "-"? ( "0"+ | ["1" - "9"] digit* | hex_number | bin_number | oct_number )
- hex_number           ::=   "0" ( "x" | "X" ) ( digits | ["a" - "f"] | ["A" - "F"] )*
- bin_number           ::=   "0" ( "b" | "B" ) ( "1" | "0" )*
+ number               ::=   "-"? ( ["1" - "9"] digit* | hex_number | bin_number | oct_number )
+ hex_number           ::=   "0" ( "x" | "X" ) ( digits | ["a" - "f"] | ["A" - "F"] )+
+ bin_number           ::=   "0" ( "b" | "B" ) ( "1" | "0" )+
  oct_number           ::=   "0" ["0" - "7"]*
  float                ::=   "-"? digit+ "." digit+ ( ( "e" | "E" ) "-"? digit+ )?
  catch                ::=   "catch" ( "(" expression ")" | block )
