@@ -1,7 +1,7 @@
 // This file is part of Roxen Search
 // Copyright © 2001 Roxen IS. All rights reserved.
 //
-// $Id: Base.pike,v 1.7 2001/06/22 01:28:35 nilsson Exp $
+// $Id: Base.pike,v 1.8 2001/06/28 12:16:43 js Exp $
 
 //! The MIME content types this class can filter.
 constant contenttypes = ({ });
@@ -37,3 +37,8 @@ class Output
 
 Output filter(Standards.URI uri, string|Stdio.File data,
 	      string content_type, mixed ... more);
+
+string tmp_filename()
+{
+  return sprintf("../var/tmp/search.tmp.%d.%d",random(0x7fffffff),getpid());
+}
