@@ -4,7 +4,9 @@
 //
 // #pike __REAL_VERSION__
 //
-// $Id: Pike.pmod,v 1.20 2002/06/07 14:17:38 nilsson Exp $
+// $Id: Pike.pmod,v 1.21 2002/06/28 17:30:19 nilsson Exp $
+
+//! This module parses and tokanizes Pike source code.
 
 inherit "C.pmod";
 
@@ -29,9 +31,15 @@ static mapping(string : int) backquoteops =
    "->=":3, "->":2, "-":1,
    "[]=":3, "[]":2 ]);
 
+//! Splits the @[data] string into an array of tokens. An additional
+//! element with a newline will be added to the resulting array of
+//! tokens. If the optional argument @[state] is provided the split
+//! function is able to pause and resume splitting inside #"" and
+//! /**/ tokens. The @[state] argument should be an initially empty
+//! mapping, in which split will store its state between successive
+//! calls.
 array(string) split(string data, void|mapping state)
 {
-  int start;
   int line=1;
   array(string) ret=({});
   int pos;
