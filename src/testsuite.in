@@ -1,4 +1,4 @@
-test_true([["$Id: testsuite.in,v 1.296 2000/05/25 17:20:58 grubba Exp $"]]);
+test_true([["$Id: testsuite.in,v 1.297 2000/06/06 22:51:55 hubbe Exp $"]]);
 
 cond([[all_constants()->_verify_internals]],
 [[
@@ -2963,6 +2963,24 @@ test_any([[
 (X)
 return FOOa(2);
 ]],2)
+
+test_any([[
+#define FOOa(X) \
+(X)
+return FOOa(3);
+]],3)
+
+test_any([[
+#define FOOa(X) "bar\
+gazonk"
+return FOOa(3);
+]],"bargazonk")
+
+test_any([[
+#define FOOa(X) "bar\
+gazonk"
+return FOOa(3);
+]],"bargazonk")
 
 
 // /* */

@@ -5,7 +5,7 @@
 \*/
 
 /*
- * $Id: cpp.c,v 1.63 2000/05/11 14:09:45 grubba Exp $
+ * $Id: cpp.c,v 1.64 2000/06/06 22:51:55 hubbe Exp $
  */
 #include "global.h"
 #include "stralloc.h"
@@ -340,6 +340,11 @@ while(1)					\
       pos++;					\
       continue;					\
     }						\
+    if(data[pos+1]=='\r' && data[pos+2]=='\n')	\
+    {						\
+      pos+=2;					\
+      continue;					\
+    }						\
     READCHAR(tmp);				\
     string_builder_putchar(&nf, tmp);		\
     continue;					\
@@ -378,6 +383,13 @@ while(1)						\
     if(data[pos]=='\n')					\
     {							\
       pos++;						\
+      trailing_newlines++;				\
+      this->current_line++;				\
+      continue;						\
+    }							\
+    if(data[pos]=='\r' && data[pos+1]=='\n')		\
+    {							\
+      pos+=2;						\
       trailing_newlines++;				\
       this->current_line++;				\
       continue;						\
