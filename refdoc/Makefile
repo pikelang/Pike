@@ -1,7 +1,7 @@
 #
 # Main Makefile for extracting AutoDoc mk II to XML
 #
-# $Id: Makefile,v 1.16 2001/07/21 00:57:26 nilsson Exp $
+# $Id: Makefile,v 1.17 2001/07/26 17:44:58 nilsson Exp $
 #
 # Henrik Grubbström 2001-02-02
 #
@@ -21,8 +21,8 @@ html: split _html
 
 _html: html_manual manual/Makefile
 	@cp manual/images/* html_manual/images/
-#	@$(PIKE) presentation/make_html.pike --img=images/ \
-#	  manual.xml > html_manual/manual.html
+	@$(PIKE) presentation/make_html.pike --img=images/ \
+	  manual.xml > html_manual/manual.html
 	@(cd manual && $(MAKE) PIKE="$(PIKE)" html)
 
 split: join manual
@@ -45,7 +45,7 @@ extract: build/src/Makefile build/lib/Makefile
 	@(cd build/lib && $(MAKE) PIKE="$(PIKE)" extract)
 
 manual.xml: $(XMLFILES) ../bin/join-autodoc.pike
-	@$(PIKE) ../bin/join-autodoc.pike manual.xml $(XMLFILES)
+	@$(PIKE) ../bin/join-autodoc.pike --post-process manual.xml $(XMLFILES)
 
 build/src/Makefile: Makefile.in build/src
 	@sed -e "s#@SRCDIR@#../../../src#" -e "s#@ROOT@#../..#" \
