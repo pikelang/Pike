@@ -1,4 +1,4 @@
-test_true([["$Id: testsuite.in,v 1.202 1999/10/21 21:34:37 hubbe Exp $"]])
+test_true([["$Id: testsuite.in,v 1.203 1999/10/23 00:29:08 noring Exp $"]])
 
 cond([[all_constants()->_verify_internals]],
 [[
@@ -1297,6 +1297,130 @@ ifefun(gc,
              gc();
           ]])
              
+]])
+
+cond([[ sizeof( cpp("__AUTO_BIGNUM__")/"__AUTO_BIGNUM__" ) == 1 ]],
+[[
+  // Test the lexer.
+  test_eq("2147483648", [[ (string)0x80000000 ]])
+  test_eq("2147483649", [[ (string)0x80000001 ]])
+  test_eq("-2147483648", [[ (string)-0x80000000 ]])
+  test_eq("-2147483649", [[ (string)-0x80000001 ]])
+  test_eq("2147483648", [[ (string)-(-0x80000000) ]])
+  test_eq("2147483649", [[ (string)-(-0x80000001) ]])
+  test_eq("123456789123456789", [[ (string)123456789123456789 ]])
+  test_eq("-123456789123456789", [[ (string)-123456789123456789 ]])
+  test_eq("335812727629498640265", [[ (string)0x123456789123456789 ]])
+  test_eq("-335812727629498640265", [[ (string)-0x123456789123456789 ]])
+  test_eq("718046312823", [[ (string)012345671234567 ]])
+  test_eq("-718046312823", [[ (string)-012345671234567 ]])
+    
+  // These numbers should be ordinary integers.
+  test_false([[ objectp(-0x80000000) ]])
+  test_false([[ objectp(-0x7fffffff) ]])
+  test_false([[ objectp( 0x7fffffff) ]])
+    
+  // Test incrementations (FIXME: More cases?).
+  test_eq("2147483648",
+   [[ (string)(class { int f(int x) { x++; return x; } })()->f(0x7fffffff) ]])
+  test_eq("2147483648",
+   [[ (string)(class { int f(int x) { ++x; return x; } })()->f(0x7fffffff) ]])
+  test_eq("2147483648",
+   [[ (string)(class { int x=0x7fffffff;int f() { ++x;return x; } })()->f() ]])
+  test_eq("2147483648",
+   [[ (string)(class { int x=0x7fffffff;int f() { x++;return x; } })()->f() ]])
+  test_eq("2147483648",
+   [[ (string)(class { int f() { int x=0x7fffffff;++x;return x; } })()->f() ]])
+  test_eq("2147483648",
+   [[ (string)(class { int f() { int x=0x7fffffff;x++;return x; } })()->f() ]])
+  
+  // Test decrementations (FIXME: More cases?).
+  test_eq("-2147483649",
+   [[ (string)(class { int f(int x) { x--; return x; } })()->f(-0x80000000) ]])
+  test_eq("-2147483649",
+   [[ (string)(class { int f(int x) { --x; return x; } })()->f(-0x80000000) ]])
+  test_eq("-2147483649",
+   [[ (string)(class { int x=-0x80000000;int f() { --x;return x; } })()->f()]])
+  test_eq("-2147483649",
+   [[ (string)(class { int x=-0x80000000;int f() { x--;return x; } })()->f()]])
+  test_eq("-2147483649",
+   [[ (string)(class { int f() { int x=-0x80000000;--x;return x; } })()->f()]])
+  test_eq("-2147483649",
+   [[ (string)(class { int f() { int x=-0x80000000;x--;return x; } })()->f()]])
+]])
+
+cond([[ sizeof( cpp("__AUTO_BIGNUM__")/"__AUTO_BIGNUM__" ) == 1 ]],
+[[
+  // Left shift.
+  test_eq("1073741824", [[ (string)(1<<30) ]])
+  test_eq("2147483648", [[ (string)(1<<31) ]])
+  test_eq("4294967296", [[ (string)(1<<32) ]])
+  test_eq("8589934592", [[ (string)(1<<33) ]])
+  test_eq("1267650600228229401496703205376", [[ (string)(1<<100) ]])
+  
+  // Right shift.
+  test_eq("53265209898187398182",
+		[[ (string)((int)"54543574935743895738479">>10) ]])
+  test_false([[ objectp((int)"54543574935743895738479">>60) ]])
+  test_eq(0, [[ 25>>30 ]])
+  test_eq(0, [[ 25>>31 ]])
+  test_eq(0, [[ 25>>32 ]])
+  test_eq(0, [[ 25>>33 ]])
+
+  // abs.
+  test_eq("2147483648", [[ (string)abs(-0x80000000) ]])
+  test_eq("2147483648", [[ (string)abs(0x80000000) ]])
+  test_eq("2147483649", [[ (string)abs(0x80000001) ]])
+  test_eq("2147483649", [[ (string)abs(-0x80000001) ]])
+
+  // Add.
+  test_eq("2147483648", [[ (string)(0x7fffffff + 1) ]])
+  test_eq("2147483649", [[ (string)(0x7fffffff + 2) ]])
+  test_eq("2684354560", [[ (string)(0x50000000 + 0x50000000) ]])
+  test_eq("-2684354560", [[ (string)((-0x50000000) + (-0x50000000)) ]])
+
+  // Sub.
+  test_eq("-2147483648", [[ (string)(-0x7fffffff - 1) ]])
+  test_eq("-2147483649", [[ (string)(-0x80000000 - 1) ]])
+
+  // Multiplication.
+  test_eq("6442450941", [[ (string)(0x7fffffff * 3) ]])
+  test_eq("-6442450941", [[ (string)(0x7fffffff * -3) ]])
+
+  // Division.
+  test_eq("1073741824", [[ (string)((int)"2147483648" / 2) ]])
+  test_false([[ objectp((int)"2147483648" / 2) ]])
+
+  // sscanf.
+  test_eq("12345678901234567890",
+	   [[ (string)array_sscanf("12345678901234567890", "%d")[0] ]])
+  test_eq("1375488932614371410344080",
+	   [[ (string)array_sscanf("123456789F01234567890", "%x")[0] ]])
+  test_eq("1375488932614371410344080",
+	   [[ (string)array_sscanf("0x123456789F01234567890", "%x")[0] ]])
+  test_eq("1375488932614371410344080",
+	   [[ (string)array_sscanf("0x123456789F01234567890", "%i")[0] ]])
+  test_eq("45954944846776",
+	   [[ (string)array_sscanf("1234567012345670", "%o")[0] ]])
+  test_eq("45954944846776",
+	   [[ (string)array_sscanf("01234567012345670", "%o")[0] ]])
+  test_eq("45954944846776",
+	   [[ (string)array_sscanf("01234567012345670", "%i")[0] ]])
+  
+  test_eq("-12345678901234567890",
+	   [[ (string)array_sscanf("-12345678901234567890", "%d")[0] ]])
+  test_eq("-1375488932614371410344080",
+	   [[ (string)array_sscanf("-123456789F01234567890", "%x")[0] ]])
+  test_eq("-1375488932614371410344080",
+	   [[ (string)array_sscanf("-0x123456789F01234567890","%x")[0] ]])
+  test_eq("-1375488932614371410344080",
+	   [[ (string)array_sscanf("-0x123456789F01234567890","%i")[0] ]])
+  test_eq("-45954944846776",
+	   [[ (string)array_sscanf("-1234567012345670", "%o")[0] ]])
+  test_eq("-45954944846776",
+	   [[ (string)array_sscanf("-01234567012345670", "%o")[0] ]])
+  test_eq("-45954944846776",
+	   [[ (string)array_sscanf("-01234567012345670", "%i")[0] ]])
 ]])
 
 cond([[all_constants()->_verify_internals]],
