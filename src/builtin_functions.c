@@ -4,7 +4,7 @@
 ||| See the files COPYING and DISCLAIMER for more information.
 \*/
 #include "global.h"
-RCSID("$Id: builtin_functions.c,v 1.44 1997/09/10 03:14:31 hubbe Exp $");
+RCSID("$Id: builtin_functions.c,v 1.45 1997/09/11 02:13:10 hubbe Exp $");
 #include "interpret.h"
 #include "svalue.h"
 #include "pike_macros.h"
@@ -1510,6 +1510,9 @@ void f_glob(INT32 args)
     matches=0;
     for(i=0;i<a->size;i++)
     {
+      if(ITEM(a)[i].type != T_STRING)
+	error("Bad argument 2 to glob()\n");
+
       if(does_match(ITEM(a)[i].u.string->str,
 		    ITEM(a)[i].u.string->len,
 		    glob->str,
