@@ -100,7 +100,7 @@ object|mapping der_decode(object data, mapping types)
 	(i, der_decode(struct,
 		       res->element_types(i, types)));
     
-    return res->decode_constructed_end(i);
+    return res->end_decode_constructed(i);
   }
   else
   {
