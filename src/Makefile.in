@@ -1,5 +1,5 @@
 #
-# $Id: Makefile.in,v 1.375 2003/12/14 20:37:06 nilsson Exp $
+# $Id: Makefile.in,v 1.376 2004/01/10 18:10:30 grubba Exp $
 #
 
 # This line is needed on some machines.
@@ -262,6 +262,16 @@ pike: $(OBJ) master-stamp pike.syms modules/linker_options post_modules/linker_o
 # global structs. That should probably be fixed in them so that dumped
 # modules aren't link order dependent.
 	if [ -f dumpversion ]; then $(MAKE) $(MAKE_FLAGS) delete_dumped_modules; else :; fi
+
+# gcov
+gcov: 
+	@for f in `cd "$(SRCDIR)" && find . -type f -name '*.c' -print`; do \
+	  for gf in `gcov $$f | sed -e 's/Creating \(.*\)\.gcov.*/\1.gcov/p' -ed`; do \
+	    echo "Generating $$f-$$gf."; \
+	    test -f "$$f-$$gf" && rm -f "$$f-$$gf"; \
+	    mv "$$gf" "$$f-$$gf"; \
+	  done; \
+	done
 
 # purify
 pure: $(OBJ) master-stamp module_objects
