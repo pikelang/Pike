@@ -1,5 +1,5 @@
 /*
- * $Id: preprocessor.h,v 1.49 2002/05/22 16:15:40 grubba Exp $
+ * $Id: preprocessor.h,v 1.50 2002/07/15 19:00:30 grubba Exp $
  *
  * Preprocessor template.
  * Based on cpp.c 1.45
@@ -942,8 +942,10 @@ static ptrdiff_t lower_cpp(struct cpp *this,
 	    
 	    if(!GOBBLE('('))
 	    {
-	      string_builder_shared_strcat(&this->buf,s);
-	      if(s) free_string(s);
+	      if (s) {
+	        string_builder_shared_strcat(&this->buf,s);
+		free_string(s);
+	      }
 	      break;
 	    }
 	    
