@@ -44,20 +44,26 @@ class MD5_Algorithm
 
 MD5_Algorithm MD5 = MD5_Algorithm();
 
-string crypt_md5(string password, void|string salt) {
+//! @decl string crypt_md5(string password, void|int salt)
+//! @decl int(0..1) crypt_md5(string password, string hash)
+//! Hashes a @[password] together with a @[salt] with the
+//! crypt_md5 algorithm and returns the result. If such an
+//! result is provided as @[hash], the password will instead
+//! be hashed and compared with the @[hash], returning either
+//! @expr{1@} or @expr{0@}.
+string|int(0..1) crypt_md5(string password, void|string salt) {
   if(salt) {
     if(has_prefix(salt, "$1$")) {
       // Verify:
       string hash, full=salt;
       if( sscanf(full, "$1$%s$%s", salt, hash)!=2 )
 	error("Error in hash.\n");
-      if( Nettle.crypt_md5(password, salt)==hash )
-	return full;
+      return Nettle.crypt_md5(password, salt)==hash;
     }
     sscanf(salt, "%s$", salt);
   }
   else
-    salt = MIME.encode_base64(random_string(8));
+    salt = MIME.encode_base64(.Random.random_string(8));
   return "$1$"+salt+"$"+Nettle.crypt_md5(password, salt);
 }
 
@@ -189,38 +195,6 @@ class DES3_Algorithm
   // NOTE: Depends on the order of INIT invocations.
   inherit DES3_Info;
   inherit Cipher;
-
-  //! Creates a valid DES3-key out of its in parameter.
-  //! Two 7 or 8 bytes long strings or one 14 or 16 bytes will
-  //! result in an ABA key. Thre 7 or 8 bytes long strings or one
-  //! 21 or 24 bytes will result in an ABC key.
-  string fix_key(string key, string|void key2, string|void key3) {
-    if(key && key2 && key3)
-      return DES->fix_parity(key)+DES->fix_parity(key2)+DES->fix_parity(key3);
-    if(key && key2)
-      return DES->fix_parity(key)+DES->fix_parity(key2)+DES->fix_parity(key);
-    if(key) {
-      switch(sizeof(key)) {
-      case 14:
-	return DES->fix_parity(key[..6])+
-	  DES->fix_parity(key[7..])+
-	  DES->fix_parity(key[..6]);
-      case 16:
-	return DES->fix_parity(key[..7])+
-	  DES->fix_parity(key[8..])+
-	  DES->fix_parity(key[..7]);
-      case 21:
-	return DES->fix_parity(key[..6])+
-	  DES->fix_parity(key[7..13])+
-	  DES->fix_parity(key[14..]);
-      case 24:
-	return DES->fix_parity(key[..7])+
-	  DES->fix_parity(key[8..15])+
-	  DES->fix_parity(key[16..]);
-      }
-    }
-    error("Invalid in parameters.\n");
-  }
 
   DES3_State `()() { return DES3_State(); }
 }
