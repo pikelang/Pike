@@ -416,7 +416,7 @@ class fetch
 	return 0;
 
       string wanted = lower_case(atom->atom);
-      mapping res = ([ "wanted" : wanted });
+      mapping res = ([ "wanted" : wanted ]);
 
       /* Should requesting any part of the body realy vount as reading it? */
       if ( (< "body", "rfc822", "rfc822.text" >) [wanted])
