@@ -1,7 +1,7 @@
 /*
 **! module Image
 **! note
-**!	$Id: colors.c,v 1.51 2001/07/12 13:52:47 grubba Exp $
+**!	$Id: colors.c,v 1.52 2001/07/17 03:44:13 nilsson Exp $
 **! submodule Color
 **!
 **!	This module keeps names and easy handling 
@@ -63,8 +63,32 @@
 **!	and saturation and value is given in percent. <i>This is not
 **!	the same as returned or given to the <ref>hsv</ref>() methods!</i>
 **!
+**! see also: Image.Color.Color->name, Image.Color.Color->rgb, colors
 **!
-**! <add_appendix name="colors" title="Image.Color colors"><execute>
+**! added:
+**!	pike 0.7
+**!	
+**! note: 
+**!	<tt>Image.Color["something"]</tt> will never(!) generate an error, 
+**!	but a zero_type 0, if the color is unknown. This is enough
+**!	to give the error "not present in module", if used 
+**!	as <tt>Image.Color.something</tt>, though.
+**!
+**!     If you are using colors from for instance a webpage, you might
+**!	want to create the color from <ref>Image.Color.guess</ref>(),
+**!     since that method is more tolerant for mistakes and errors.
+**!
+**!     <tt>Image.Color</tt>() is case- and space-sensitive.
+**!	Use <ref>Image.Color.guess</ref>() to catch all variants.
+**!
+**!	and subtract with a space (lower_case(x)-" ") to make
+**!	sure you get all variants.
+**!	
+**! see also: Image.Color.Color, Image.Color.guess, Image, Image.Colortable
+**!
+**!
+**! appendix Image.Color colors
+**! <execute>
 **! 
 **! import Image;
 **! 
@@ -144,30 +168,6 @@
 **! }
 **! 
 **! </execute>
-**! </add_appendix>
-**!
-**! see also: Image.Color.Color->name, Image.Color.Color->rgb, colors
-**!
-**! added:
-**!	pike 0.7
-**!	
-**! note: 
-**!	<tt>Image.Color["something"]</tt> will never(!) generate an error, 
-**!	but a zero_type 0, if the color is unknown. This is enough
-**!	to give the error "not present in module", if used 
-**!	as <tt>Image.Color.something</tt>, though.
-**!
-**!     If you are using colors from for instance a webpage, you might
-**!	want to create the color from <ref>Image.Color.guess</ref>(),
-**!     since that method is more tolerant for mistakes and errors.
-**!
-**!     <tt>Image.Color</tt>() is case- and space-sensitive.
-**!	Use <ref>Image.Color.guess</ref>() to catch all variants.
-**!
-**!	and subtract with a space (lower_case(x)-" ") to make
-**!	sure you get all variants.
-**!	
-**! see also: Image.Color.Color, Image.Color.guess, Image, Image.Colortable
 **!
 **! class Color
 **!	This is the color object. It has six readable variables,
@@ -179,7 +179,7 @@
 
 #include "global.h"
 
-RCSID("$Id: colors.c,v 1.51 2001/07/12 13:52:47 grubba Exp $");
+RCSID("$Id: colors.c,v 1.52 2001/07/17 03:44:13 nilsson Exp $");
 
 #include "image_machine.h"
 

@@ -1,14 +1,15 @@
 /*
 **! module Image
 **! note
-**!	$Id: layers.c,v 1.70 2001/07/16 23:49:00 nilsson Exp $
+**!	$Id: layers.c,v 1.71 2001/07/17 03:44:13 nilsson Exp $
 **! class Layer
 **! see also: layers
 **!
 
 **!
 **!
-**! <add_appendix name="layers" title="Image.Layer modes">
+**! appendix Image.Layer modes
+**!
 **! <dl compact>
 **! <dt><i>The variables in the expression:</i></dt>
 **! <dt>L</dt><dd><i>The active layer</i></dd>
@@ -209,14 +210,13 @@
 **! }
 **!
 **! </execute>
-**! </add_appendix>
 */
 
 #include "global.h"
 
 #include <math.h> /* floor */
 
-RCSID("$Id: layers.c,v 1.70 2001/07/16 23:49:00 nilsson Exp $");
+RCSID("$Id: layers.c,v 1.71 2001/07/17 03:44:13 nilsson Exp $");
 
 #include "image_machine.h"
 
