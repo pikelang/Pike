@@ -5,7 +5,7 @@
 \*/
 
 #include "global.h"
-RCSID("$Id: file.c,v 1.109 1998/07/10 18:58:55 grubba Exp $");
+RCSID("$Id: file.c,v 1.110 1998/07/12 21:18:35 grubba Exp $");
 #include "fdlib.h"
 #include "interpret.h"
 #include "svalue.h"
@@ -687,6 +687,7 @@ static void file_peek(INT32 args)
     ERRNO=errno;
     ret=-1;
   }else{
+    /* FIXME: What about POLLHUP and POLLERR? */
     ret = (ret > 0) && (fds.revents & POLLIN);
   }
 #else
