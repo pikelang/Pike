@@ -291,7 +291,7 @@ class PikeType
       {
 	case "void": return "void";
 	case "int": return "INT_TYPE";
-	case "float": return "FLOAT_NUMBER";
+	case "float": return "FLOAT_TYPE";
 	case "string": return "struct pike_string *";
 	  
 	case "array":
@@ -355,7 +355,7 @@ class PikeType
 			   t,
 			   args[-1]->output_c_type());
 	  }else{
-	    return sprintf("tFunc(%s,%s,%s)",
+	    return sprintf("tFuncV(%s,%s,%s)",
 			   t,
 			   args[-2]->output_c_type(),
 			   args[-1]->output_c_type());
@@ -511,7 +511,7 @@ class PikeType
 	  break;
 
 	case "string":
-	  tok=PC.tokenize(convert_comments(PC.split(tok)),"piketype");
+	  tok=convert_comments(PC.tokenize(PC.split(tok),"piketype"));
 	  tok=PC.group(PC.hide_whitespaces(tok));
 	  
 	case "array":
@@ -913,7 +913,6 @@ class ParseBlock
       }
 
 
-#if 1
       array thestruct=({});
       x=ret/({"PIKEVAR"});
       ret=x[0];
@@ -943,6 +942,7 @@ class ParseBlock
 			  type->type_number()),
 		    }));
 	ret+=DEFINE(define);
+	ret+=({ PC.Token("/*VAR*/") });
 	ret+=rest;
       }
 
@@ -953,18 +953,20 @@ class ParseBlock
 	array var=x[f];
 	int pos=search(var,PC.Token(";",0),);
 	int npos=pos-1;
-	while(arrayp(var[pos])) pos--;
+	while(arrayp(var[npos])) npos--;
 	mixed name=(string)var[npos];
 
 	string define=mkname("var",name,base,"defined");
     
 	thestruct+=IFDEF(define,var[..pos-1]+({";"}));
 	ret+=DEFINE(define);
+	ret+=({ PC.Token("/*VAR*/") });
 	ret+=var[pos+1..];
       }
 
 
       
+      ret=(ret/({"MARK"}))*({PC.Token("PIKE_INTERNAL"),PC.Token("mark")});
       ret=(ret/({"INIT"}))*({PC.Token("PIKE_INTERNAL"),PC.Token("init")});
       ret=(ret/({"EXIT"}))*({PC.Token("PIKE_INTERNAL"),PC.Token("exit")});
 
@@ -994,12 +996,12 @@ class ParseBlock
 
       
 
-      x=ret/({"PIKEFUN"});
-      ret=x[0];
-//  werror("%O\n",x);
 
       if(sizeof(thestruct))
       {
+	/* We insert the struct definition after the last
+	 * variable definition
+	 */
 	string structname = base+"_struct";
 	string this=sprintf("((struct %s *)(Pike_interpreter.frame_pointer->current_storage))",structname);
 
@@ -1007,8 +1009,8 @@ class ParseBlock
 	 * Add runtime debug to these defines...
 	 * Add defines for parents when possible
 	 */
-	ret+=
-	  DEFINE("THIS",this)+   // FIXME: we should 'pop' this define later
+	declarations=
+	  	  DEFINE("THIS",this)+   // FIXME: we should 'pop' this define later
 	  DEFINE("THIS_"+upper_case(base),this)+
 	  DEFINE("OBJ2_"+upper_case(base)+"(o)",
 		 sprintf("((struct %s *)(o->storage+%s_storage_offset))",
@@ -1016,20 +1018,25 @@ class ParseBlock
 	  DEFINE("GET_"+upper_case(base)+"_STORAGE",
 		 sprintf("((struct %s *)(o->storage+%s_storage_offset)",
 			 structname, base))+
-	  ({
-	    sprintf("static int %s_storage_offset;\n",base),
-	      sprintf("struct %s {\n",structname),
-	      })+thestruct+({
-		"};\n",
-		  });
+	    ({
+	      sprintf("static int %s_storage_offset;\n",base),
+		sprintf("struct %s {\n",structname),
+		})+thestruct+({
+		  "};\n",
+		    })
+	  +declarations;
       }
-      ret+=declarations;
-      declarations=({});
 
-#else
+      if(sizeof(declarations))
+      {
+	x=ret/({"/*VAR*/"});
+	
+	ret=x[..sizeof(x)-2]*({})+declarations+x[-1];
+	declarations=({});
+      }
+
       x=ret/({"PIKEFUN"});
       ret=x[0];
-#endif
 
       for(int f=1;f<sizeof(x);f++)
       {
@@ -1081,6 +1088,15 @@ class ParseBlock
 	    });
 
 	// werror("%O %O\n",proto,args);
+	int last_argument_repeats;
+	if(sizeof(args_tmp) && 
+	   !arrayp(args_tmp[-1][-2]) &&
+	   "..." == (string)args_tmp[-1][-2])
+	{
+	  last_argument_repeats++;
+	  args_tmp[-1]=args_tmp[-1][..sizeof(args_tmp[-1])-3]+({
+	    args_tmp[-1][-1]});
+	}
 	array(Argument) args=map(args_tmp,Argument);
 	// werror("%O %O\n",proto,args);
 //	werror("parsed args: %O\n", args);
@@ -1089,17 +1105,32 @@ class ParseBlock
 	PikeType type;
 
 	if(attributes->type)
+	{
 	  type=PikeType(attributes->type);
-	else
-	  type = PikeType(PC.Token("function"),
-			  args->type() + ({ PikeType("void"), rettype }) );
+	}else{
+	  if(last_argument_repeats)
+	  {
+	    type = PikeType(PC.Token("function"),
+			    args[..sizeof(args)-2]->type() +
+			    ({ args[-1]->type(), rettype }) );
+	  }else{
+	    type = PikeType(PC.Token("function"),
+			    args->type() + ({ PikeType("void"), rettype }) );
+	  }
+	}
 
 //	werror("NAME: %O\n",name);
 //	werror("type: %O\n", type);
 //	werror("C type: %O\n", type->output_c_type());
 
 	int min_args=sizeof(args);
-	int max_args=sizeof(args); /* FIXME: check for ... */
+	int max_args=sizeof(args);
+
+	if(last_argument_repeats)
+	{
+	  min_args--;
+	  max_args=0x7fffffff;
+	}
 
 	while(min_args>0 && args[min_args-1]->may_be_void())
 	  min_args--;
@@ -1304,17 +1335,17 @@ class ParseBlock
     }
 }
 
-array(string) convert_comments(array(string) tokens)
+array(PC.Token) convert_comments(array(PC.Token) tokens)
 {
   // Filter AutoDoc mk II, and convert other C++ comments to C-style.
   return map(filter(tokens,
-		    lambda(string token) {
-		      return !(has_prefix(token, "//!") ||
-			       has_prefix(token, "/*!"));
+		    lambda(PC.Token token) {
+		      return !(has_prefix((string)token, "//!") ||
+			       has_prefix((string)token, "/*!"));
 		    }),
-	     lambda(string token) {
-	       if (has_prefix(token, "//")) {
-		 return ("/*" + token[2..] + " */");
+	     lambda(PC.Token token) {
+	       if (has_prefix((string)token, "//")) {
+		 return PC.Token("/*" + ((string)token)[2..] + " */");
 	       } else {
 		 return token;
 	       }
@@ -1328,10 +1359,12 @@ int main(int argc, array(string) argv)
   file=argv[1];
   x=Stdio.read_file(file);
   x=PC.split(x);
-  x = convert_comments(x);
   x=PC.tokenize(x,file);
+  x = convert_comments(x);
   x=PC.hide_whitespaces(x);
   x=PC.group(x);
+
+//  werror("%O\n",x);
 
   ParseBlock tmp=ParseBlock(x,"");
   x=tmp->code;
@@ -1354,6 +1387,6 @@ int main(int argc, array(string) argv)
       "}\n",
     });
   }
-//  write(PC.reconstitute_with_line_numbers(x));
-  write(PC.simple_reconstitute(x));
+  write(PC.reconstitute_with_line_numbers(x));
+//  write(PC.simple_reconstitute(x));
 }
