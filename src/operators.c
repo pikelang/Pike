@@ -6,7 +6,7 @@
 /**/
 #include "global.h"
 #include <math.h>
-RCSID("$Id: operators.c,v 1.122 2002/06/17 16:44:40 grubba Exp $");
+RCSID("$Id: operators.c,v 1.123 2003/05/15 15:08:38 mast Exp $");
 #include "interpret.h"
 #include "svalue.h"
 #include "multiset.h"
@@ -2632,10 +2632,10 @@ static void f_string_assignment_assign_index(INT32 args)
   get_all_args("string[]=",args,"%i%i",&i,&j);
   if((u=get_pointer_if_this_type(THIS->lval, T_STRING)))
   {
-    free_string(THIS->s);
     if(i<0) i+=u->string->len;
     if(i<0 || i>=u->string->len)
       Pike_error("String index out of range %ld\n",(long)i);
+    free_string(THIS->s);
     u->string=modify_shared_string(u->string,i,j);
     copy_shared_string(THIS->s, u->string);
   }else{
