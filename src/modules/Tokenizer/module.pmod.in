@@ -1,5 +1,5 @@
 //
-// $Id: module.pmod.in,v 1.14 2003/05/31 17:10:49 grubba Exp $
+// $Id: module.pmod.in,v 1.15 2003/06/01 15:33:43 grubba Exp $
 //
 // Interface to pike code tokenizer.
 //
@@ -580,6 +580,16 @@ class PikeCompiler
     }
   }
 
+  class FunCallExpression(Expression func, ArgList|void args)
+  {
+    inherit Expression;
+
+    static string _sprintf()
+    {
+      return sprintf("(%s)->`()(%s)", func, args||"");
+    }
+  }
+
   class PrefixExpression(Token operator, Expression operand)
   {
     inherit Expression;
@@ -625,20 +635,41 @@ class PikeCompiler
     }
   }
 
-  Expression predef_call(string fun, Expression arguments)
+  class ArgList(Expression arg, ArgList|void next)
+  {
+    static string _sprintf()
+    {
+      if (next) {
+	return sprintf("%s, %s", arg, next);
+      } else {
+	return sprintf("%s", arg);
+      }
+    }
+  }
+
+  Expression predef_call(string fun, ArgList arguments)
   {
     return
-      BinaryExpression(Token("(", "(", "(", 0),
-		       BinaryExpression(Token("::","::","::",0),
-					LiteralExpression(IdentifierToken("predef",
-									  "predef",
-									  "predef",
-									  0)),
-					LiteralExpression(IdentifierToken("identifier",
-									  fun,
-									  fun,
-									  0))),
-		       arguments);
+      FunCallExpression(BinaryExpression(Token("::","::","::",0),
+					 LiteralExpression(IdentifierToken("predef",
+									   "predef",
+									   "predef",
+									   0)),
+					 LiteralExpression(IdentifierToken("identifier",
+									   fun,
+									   fun,
+									   0))),
+			arguments);
+  }
+
+  // Simpler interface...
+  Expression predef_call_exprs(string fun, Expression ... args)
+  {
+    ArgList arg_list;
+    foreach(reverse(args), Expression expr) {
+      arg_list = ArgList(expr, arg_list);
+    }
+    return predef_call(fun, arg_list);
   }
 
 #define UNARY_SUFFIX(NAME, BASE, SYMS)					\
@@ -695,6 +726,20 @@ class PikeCompiler
       }									\
       return expr;							\
     }
+#define LEFT_ASSOC_FUNCALL(NAME, BASE, SYMS)				\
+    Expression parse_ ## NAME ## _expression(Iterator tokens_left)	\
+    {									\
+      Expression expr = parse_ ## BASE ## _expression(tokens_left);	\
+      Token token;							\
+      while (tokens_left &&						\
+	     SYMS[(token = tokens_left->value())->symbol]) {		\
+	tokens_left->`+=(1);						\
+	expr =								\
+	  predef_call_exprs("`"+token->symbol, expr,			\
+			    parse_ ## BASE ## _expression(tokens_left));\
+      }									\
+      return expr;							\
+    }
 #define OPTIONAL_ARGS(NAME, BASE, SYMS)					\
     Expression parse_ ## NAME ## _expression(Iterator tokens_left)	\
     {									\
@@ -717,41 +762,44 @@ class PikeCompiler
 			 parse_ ## BASE ## _expression(tokens_left));	\
     }
 
-  Expression parse_argument_list(array(Token) tokens)
+  ArgList parse_argument_list(array(Token) tokens)
   {
     Iterator tokens_left = get_iterator(tokens);
-    Expression expr;
-    Token token;
+    ArgList arg_list;
+    ArgList current_arg;
 
     while(tokens_left) {
-      Expression expr2 = parse_pair_expression(tokens_left);
+      ArgList next_arg = ArgList(parse_pair_expression(tokens_left));
+      if (arg_list) {
+	current_arg->next = next_arg;
+      } else {
+	arg_list = next_arg;
+      }
+      current_arg = next_arg;
+	
       if (tokens_left) {
-	token = tokens_left->value();
+	Token token = tokens_left->value();
 	if (token->symbol != ",") {
 	  SYNTAX_ERROR("Expected , in argument list.");
-	  return expr;
+	  return arg_list;
 	}
 	tokens_left->`+=(1);
       }
-      if (expr) {
-	expr = BinaryExpression(token, expr, expr2);
-      } else {
-	expr = expr2;
-      }
     }
-    return expr;
+    return arg_list;
   }
 
-  Expression parse_mapping_list(array(Token) tokens)
+  ArgList parse_mapping_list(array(Token) tokens)
   {
-    Expression res = parse_argument_list(tokens);
+    ArgList raw_args = parse_argument_list(tokens);
 
-    Expression expr = res;
-    while (expr) {
-      // FIXME: Verify that all arguments are pairs.
+    ArgList args = raw_args;
+    while (args) {
+      // FIXME: Verify that all arguments are pairs,
+      //        and convert to a normal argument list.
       break;
     }
-    return expr;
+    return args;
   }
 
   Expression parse_multiset_expression(array(Token) tokens)
@@ -881,15 +929,24 @@ class PikeCompiler
     int potential_cast =
       tokens_left && tokens_left->value()->group_start &&
       (<"(", "[">)[tokens_left->value()->group_start->symbol];
+    int is_fun_call;
     Expression expr = parse_basic_expression(tokens_left);
     Token token;
     while (tokens_left && 
 	   (((token = tokens_left->value())->symbol == "->") ||
 	    (token->group_start &&
 	     (<"(", "[">)[token->group_start->symbol]))) {
+      is_fun_call = 0;
       if (token->group_start) {
-	expr = BinaryExpression(token->group_start, expr,
-				parse_argument_list(token->contents));
+	if (token->group_start->symbol == "(") {
+	  expr = FunCallExpression(expr, parse_argument_list(token->contents));
+	  is_fun_call = 1;
+	} else {
+	  expr =
+	    predef_call("`[]",
+			ArgList(expr,
+				ArgList(parse_expression(get_iterator(token->contents)))));
+	}
 	tokens_left->`+=(1);
       } else {
 	tokens_left->`+=(1);
@@ -899,28 +956,39 @@ class PikeCompiler
 	  SYNTAX_ERROR("Bad -> operand.");
 	} else {
 	  tokens_left->`+=(1);
-	  expr = BinaryExpression(token, expr,
-				  LiteralExpression(token));
+	  expr = predef_call("`->()",
+			     ArgList(expr,
+				     ArgList(LiteralExpression(token))));
 	}
       }
     }
     if (tokens_left) {
       werror("Left overs:%O\n", tokens_left);
       if ((token = tokens_left->value())->group_start) {
-	if (token->group_start->symbol == "{") {
+	if (is_fun_call && (token->group_start->symbol == "{")) {
 	  // Implicit lambda.
 	  Lambda implicit_lambda = Lambda("lambda", "lambda", "lambda",
 					  token->group_start->pos);
 	  implicit_lambda->parse_lambda_body(tokens_left);
-	  expr = BinaryExpression(token->group_start, expr, implicit_lambda);
+	  if (expr->args) {
+	    ArgList last_arg = expr->args;
+	    while (last_arg->next) last_arg = last_arg->next;
+	    last_arg->next =
+	      ArgList(LiteralExpression(implicit_lambda));
+	  } else {
+	    expr->args = 
+	      ArgList(LiteralExpression(implicit_lambda));
+	  }
 	  // FIXME: Ought to register the new lambda somewhere...
 	}
       } else if (potential_cast &&
 		 (<"identifier", "int_constant", "float_constant",
 		   "string_constant">)[token->token]) {
 	// Probable cast.
-	expr = BinaryExpression(Token("cast","cast","cast", token->pos),
-				expr, parse_basic_expression(tokens_left));
+	expr =
+	  predef_call("cast",
+		      ArgList(expr,
+			      ArgList(parse_basic_expression(tokens_left))));
       }
     }
     return expr;
@@ -928,14 +996,14 @@ class PikeCompiler
 
   UNARY_SUFFIX(postfix, funcall, (<"++", "--">));
   UNARY_PREFIX(prefix, postfix, (<"!", "~", "-", "++", "--">));
-  LEFT_ASSOC(product, prefix, (<"*", "%", "/">));
-  LEFT_ASSOC(sum, product, (<"+", "-">));
-  LEFT_ASSOC(shift, sum, (<"<<", ">>">));
-  LEFT_ASSOC(rel, shift, (<">", ">=", "<", "<=">));
-  LEFT_ASSOC(eq, rel, (<"==", "!=">));
-  LEFT_ASSOC(and, eq, (<"&">));
-  LEFT_ASSOC(xor, and, (<"^">));
-  LEFT_ASSOC(or, xor, (<"|">));
+  LEFT_ASSOC_FUNCALL(product, prefix, (<"*", "%", "/">));
+  LEFT_ASSOC_FUNCALL(sum, product, (<"+", "-">));
+  LEFT_ASSOC_FUNCALL(shift, sum, (<"<<", ">>">));
+  LEFT_ASSOC_FUNCALL(rel, shift, (<">", ">=", "<", "<=">));
+  LEFT_ASSOC_FUNCALL(eq, rel, (<"==", "!=">));
+  LEFT_ASSOC_FUNCALL(and, eq, (<"&">));
+  LEFT_ASSOC_FUNCALL(xor, and, (<"^">));
+  LEFT_ASSOC_FUNCALL(or, xor, (<"|">));
   LEFT_ASSOC(land, or, (<"&&">));
   LEFT_ASSOC(lor, land, (<"||">));
 
@@ -1087,6 +1155,10 @@ class PikeCompiler
   class Definition
   {
     // FIXME!
+    static string _sprintf()
+    {
+      return "Definition";
+    }
   }
 
   class ConstantDefinition(Modifiers modifiers, Token name, Expression value)
@@ -1106,6 +1178,10 @@ class PikeCompiler
   {
     inherit Definition;
     // FIXME!
+    static string _sprintf()
+    {
+      return sprintf("%s:%s:%s", modifiers, name, definition);
+    }
   }
 
   class Statement
@@ -1454,6 +1530,15 @@ class PikeCompiler
       tokens_left->`+=(1);
       current_class->add_constant(current_modifiers, name,
 				  LiteralExpression(this));
+    }
+
+    static string _sprintf()
+    {
+      array(string) s = map(indices(identifiers),
+			    lambda(string id) {
+			      return sprintf("  %s:%s", id, identifiers[id]);
+			    });
+      return "class {\n"+(s*"\n")+"\n}";
     }
   }
 
