@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: pgresult.c,v 1.27 2003/12/20 15:55:07 grubba Exp $
+|| $Id: pgresult.c,v 1.28 2003/12/20 18:33:55 grubba Exp $
 */
 
 /*
@@ -84,7 +84,7 @@
 #include <catalog/pg_type.h>
 #endif
 
-RCSID("$Id: pgresult.c,v 1.27 2003/12/20 15:55:07 grubba Exp $");
+RCSID("$Id: pgresult.c,v 1.28 2003/12/20 18:33:55 grubba Exp $");
 
 #ifdef _REENTRANT
 # ifdef PQ_THREADSAFE
@@ -357,7 +357,7 @@ badresult:
 		   *        and BYTEAOID are usually not available
 		   *        to Postgres frontends.
 		   */
-#ifdef CUT_TRAILING_SPACES
+#if defined(CUT_TRAILING_SPACES) && defined(BPCHAROID)
 		case BPCHAROID:
 		  for(;k>0 && value[k]==' ';k--);
 		  break;
