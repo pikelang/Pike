@@ -4,7 +4,7 @@
 ||| See the files COPYING and DISCLAIMER for more information.
 \*/
 #include "global.h"
-RCSID("$Id: builtin_functions.c,v 1.25 1997/01/30 03:51:31 hubbe Exp $");
+RCSID("$Id: builtin_functions.c,v 1.26 1997/01/31 23:54:34 hubbe Exp $");
 #include "interpret.h"
 #include "svalue.h"
 #include "macros.h"
@@ -32,6 +32,7 @@ RCSID("$Id: builtin_functions.c,v 1.25 1997/01/30 03:51:31 hubbe Exp $");
 #include "encode.h"
 #include <math.h>
 #include <ctype.h>
+#include "module_support.h"
 
 #ifdef HAVE_CRYPT_H
 #include <crypt.h>
@@ -63,18 +64,10 @@ void f_aggregate(INT32 args)
 void f_trace(INT32 args)
 {
   extern int t_flag;
-  int old_t_flag;
-
-  if(args < 1)
-    error("Too few arguments to trace()\n");
-  
-  if(sp[-args].type != T_INT)
-    error("Bad argument 1 to trace()\n");
-
-  old_t_flag=t_flag;
-  t_flag=sp[-args].u.integer;
-  sp[-args].u.integer=old_t_flag;
-  pop_n_elems(args-1);
+  int old_t_flag=t_flag;
+  get_all_args("trace",args,"%i",&t_flag);
+  pop_n_elems(args);
+  push_int(old_t_flag);
 }
 
 void f_hash(INT32 args)
@@ -1373,7 +1366,7 @@ static void f_mktime (INT32 args)
     args=8;
   }
 
-  get_all_args("mktime","%i%i%i%i%i%i%i",
+  get_all_args("mktime",args, "%i%i%i%i%i%i%i",
 	       &sec, &min, &hour, &mday, &mon, &year, &isdst, &tz);
 
   
