@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: dlopen.c,v 1.69 2003/03/29 01:07:27 marcus Exp $
+|| $Id: dlopen.c,v 1.70 2003/04/16 18:03:11 kiwi Exp $
 */
 
 #include <global.h>
@@ -16,7 +16,10 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <errno.h>
+#if !defined(__FreeBSD__) || !defined(__OpenBSD__)
+/* FreeBSD and OpenBSD has <malloc.h>, but it just contains a warning... */
 #include <malloc.h>
+#endif /* !__FreeBSD__ || !__OpenBSD__ */
 #include <windows.h>
 #include <memory.h>
 #include <sys/stat.h>
@@ -199,7 +202,7 @@ size_t STRNLEN(char *s, size_t maxlen)
 
 #else /* PIKE_CONCAT */
 
-RCSID("$Id: dlopen.c,v 1.69 2003/03/29 01:07:27 marcus Exp $");
+RCSID("$Id: dlopen.c,v 1.70 2003/04/16 18:03:11 kiwi Exp $");
 
 #endif
 
