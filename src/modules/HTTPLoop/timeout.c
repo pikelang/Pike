@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: timeout.c,v 1.14 2003/04/23 15:31:19 marcus Exp $
+|| $Id: timeout.c,v 1.15 2003/06/30 17:02:49 mast Exp $
 */
 
 #include "config.h"
@@ -130,10 +130,6 @@ void debug_print_timeout_queue( struct timeout *target )
     FATAL( "Timeout found more than once in chain\n");
 }
 #endif /* PIKE_DEBUG */
-
-#ifndef OFFSETOF
-#define OFFSETOF(str_type, field) ((long)& (((struct str_type *)0)->field))
-#endif
 
 void aap_remove_timeout_thr(int *to)
 {

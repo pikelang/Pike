@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: accept_and_parse.c,v 1.32 2003/04/23 15:31:19 marcus Exp $
+|| $Id: accept_and_parse.c,v 1.33 2003/06/30 17:02:49 mast Exp $
 */
 
 /* Hohum. Here we go. This is try number four for a more optimized
@@ -672,12 +672,6 @@ void f_aap_add_filesystem( INT32 args )
                   "%s%s%a", &basedir, &mountpoint, &noparse );
 }
 
-
-
-
-#ifndef OFFSETOF
-#define OFFSETOF(str_type, field) ((long)& (((struct str_type *)0)->field))
-#endif
 
 PIKE_MODULE_INIT
 {
