@@ -4,7 +4,7 @@ togif
 
 Pontus Hagland, law@infovav.se
 
-$Id: togif.c,v 1.12 1997/05/28 19:41:33 mirar Exp $ 
+$Id: togif.c,v 1.13 1997/05/28 21:00:48 mirar Exp $ 
 
 */
 
@@ -21,6 +21,7 @@ $Id: togif.c,v 1.12 1997/05/28 19:41:33 mirar Exp $
 #include "stralloc.h"
 #include "global.h"
 #include "threads.h"
+#include "types.h"
 #include "pike_macros.h"
 #include "object.h"
 #include "constants.h"
@@ -184,6 +185,138 @@ void image_floyd_steinberg(rgb_group *rgb,int xsize,
    }
 }
 		     
+
+struct pike_string *
+   image_encode_gif(struct image *img,struct colortable *ct,
+		    rgb_group *transparent,int fs,int closest)
+{
+   dynamic_buffer buf;
+   long i;
+   rgb_group *rgb;
+   struct lzw lzw;
+   int colors,bpp;
+
+CHRONO("image_encode_gif begin");
+   
+   buf.s.str=NULL;
+   initialize_buf(&buf);
+
+   colors=4; bpp=2;
+   while (colors<ct->numcol) { colors<<=1; bpp++; }
+
+   low_my_binary_strcat(transparent?"GIF89a":"GIF87a",6,&buf);
+   buf_word((unsigned short)img->xsize,&buf);
+   buf_word((unsigned short)img->ysize,&buf);
+   low_my_putchar( (char)(0xf0|(bpp-1)), &buf);
+   /* | global colormap | 3 bits color res | sort | 3 bits bpp */
+   /* color res is'nt cared of */
+
+   low_my_putchar( 0, &buf ); /* background color */
+   low_my_putchar( 0, &buf ); /* just zero */
+
+   for (i=0; i<ct->numcol; i++)
+   {
+      low_my_putchar(ct->clut[i].r,&buf);
+      low_my_putchar(ct->clut[i].g,&buf);
+      low_my_putchar(ct->clut[i].b,&buf);
+   }
+
+   for (; i<colors; i++)
+   {
+      low_my_putchar(0,&buf);
+      low_my_putchar(0,&buf);
+      low_my_putchar(0,&buf);
+   }
+
+   if (transparent)
+   {
+      i=colortable_rgb(ct,*transparent);
+
+      low_my_putchar( '!', &buf );  /* extras */
+      low_my_putchar( 0xf9, &buf ); /* transparency */
+      low_my_putchar( 4, &buf );
+      low_my_putchar( 1, &buf );
+      low_my_putchar( 0, &buf );
+      low_my_putchar( 0, &buf );
+      low_my_putchar( i, &buf );
+      low_my_putchar( 0, &buf );
+   }
+
+
+   low_my_putchar( ',', &buf ); /* image separator */
+
+   buf_word(0,&buf); /* leftofs */
+   buf_word(0,&buf); /* topofs */
+   buf_word(img->xsize,&buf); /* width */
+   buf_word(img->ysize,&buf); /* height */
+
+   low_my_putchar(0x00, &buf); 
+      /* not interlaced (interlaced == 0x40) */
+      /* no local colormap ( == 0x80) */
+
+   low_my_putchar( bpp, &buf ); /* bits per pixel , or min 2 */
+   
+   i=img->xsize*img->ysize;
+   rgb=img->img;
+
+CHRONO("image_encode_gif header done");
+
+THREADS_ALLOW();
+   lzw_init(&lzw,bpp);
+   if (!fs)
+      while (i--) lzw_add(&lzw,colortable_rgb(ct,*(rgb++)));
+   else
+   {
+      rgbl_group *errb;
+      rgb_group corgb;
+      int w,*cres,j;
+      errb=(rgbl_group*)xalloc(sizeof(rgbl_group)*img->xsize);
+      cres=(int*)xalloc(sizeof(int)*img->xsize);
+      for (i=0; i<img->xsize; i++)
+	errb[i].r=(rand()%(FS_SCALE*2+1))-FS_SCALE,
+	errb[i].g=(rand()%(FS_SCALE*2+1))-FS_SCALE,
+	errb[i].b=(rand()%(FS_SCALE*2+1))-FS_SCALE;
+
+      w=0;
+      i=img->ysize;
+      while (i--)
+      {
+	 image_floyd_steinberg(rgb,img->xsize,errb,w=!w,cres,ct,closest);
+	 for (j=0; j<img->xsize; j++)
+	    lzw_add(&lzw,cres[j]);
+	 rgb+=img->xsize;
+      }
+
+      free(errb);
+      free(cres);
+   }
+
+   lzw_write_last(&lzw);
+
+CHRONO("lzw done");
+
+   for (i=0; i<(int)lzw.outpos; i+=254)
+   {
+      int wr;
+      if (i+254>(int)lzw.outpos) wr=lzw.outpos-i;
+      else wr=254;
+      low_my_putchar( (unsigned char)wr, &buf ); /* bytes in chunk */
+      low_my_binary_strcat( (char *) lzw.out+i, wr, &buf );
+   }
+   low_my_putchar( 0, &buf ); /* terminate stream */
+
+CHRONO("image_encode_gif wrote ok");
+
+   lzw_quit(&lzw);
+
+   low_my_putchar( ';', &buf ); /* end gif file */
+
+CHRONO("image_encode_gif done");
+THREADS_DISALLOW();
+
+   return low_free_buf(&buf);
+}
+
 #define STD_ARENA_SIZE 16384
 
 int image_decode_gif(struct image *dest,struct image *dest_alpha,
@@ -341,9 +474,7 @@ void image_fromgif(INT32 args)
    if (THIS->img) free(THIS->img);
    THIS->img=NULL;
 
-   image_decode_gif(THIS,NULL,
-		    (unsigned char*)sp[-args].u.string->str,
-		    sp[-args].u.string->len);
+   image_decode_gif(THIS,NULL,sp[-args].u.string->str,sp[-args].u.string->len);
 
    pop_n_elems(args);
    THISOBJ->refs++;
@@ -398,64 +529,58 @@ static INLINE void getrgb(struct image *img,
 **! see also: togif_begin, togif_add, togif_end, toppm, fromgif
 */
 
-
-static void img_encode_gif(rgb_group *transparent,int fs,INT32 args)
-{
-  struct colortable *ct;
-  image_gif_begin(0);
-  ct=img_gif_add(args,fs,1);
-  if (transparent)
-  {
-     struct svalue sv;
-     push_int(colortable_rgb(ct,*transparent));
-     image_gif_transparency(1);
-     sv=sp[-1]; sp[-1]=sp[-2]; sp[-2]=sv;
-  }
-  colortable_free(ct);
-  image_gif_end(0);
-
-  /* on stack is now: 
-     - gif beginning
-     - eventual transparency chunk
-     - image with local palette
-     - gif end chunk */
-  
-  f_sum(4);
-}
-
 void image_togif(INT32 args)
 {
    rgb_group *transparent=NULL;
+   struct colortable *ct=NULL;
 
-   if (args>3)
+   if (args>0 && sp[-args].type==T_ARRAY)
+      ct=colortable_from_array(sp[-args].u.array,"image->togif()\n");
+   else if (args>0 && args!=3 && sp[-args].type==T_INT)
+      ct=colortable_quant(THIS,min(256,max(2,sp[-args].u.integer)));
+
+   if (args>=3+!!ct)
    {
-      getrgb(THIS,1,args,"image->togif() (transparency)");
+      getrgb(THIS,!!ct,args,"image->togif() (transparency)");
       transparent=&(THIS->rgb);
    }
-   if (args) pop_n_elems(args-1);
 
+   pop_n_elems(args);
    if (!THIS->img) { error("no image\n");  return; }
 
    if (!ct) ct=colortable_quant(THIS,256);
-   img_encode_gif(transparent, 0,!!args);
+   push_string( image_encode_gif( THIS,ct, transparent, 0, 0) );
+   colortable_free(ct);
 }
 
 
 void image_togif_fs(INT32 args)
 {
    rgb_group *transparent=NULL;
+   struct colortable *ct=NULL;
+   int closest=0;
 
-   if (args>3)
+   if (args>0 && sp[-args].type==T_ARRAY)
    {
-      getrgb(THIS,1,args,"image->togif() (transparency)");
+      ct=colortable_from_array(sp[-args].u.array,"image->togif_fs()\n");
+      closest=1;
+   }
+   else if (args>0 && args!=3 && sp[-args].type==T_INT)
+      ct=colortable_quant(THIS,min(256,max(2,sp[-args].u.integer)));
+
+   if (args>=3+!!ct)
+   {
+      getrgb(THIS,!!ct,args,"image->togif() (transparency)");
       transparent=&(THIS->rgb);
    }
-   if (args) pop_n_elems(args-1);
 
+   pop_n_elems(args);
    if (!THIS->img) { error("no image\n");  return; }
 
-   if (!ct) ct=colortable_quant(THIS,256);
-   img_encode_gif(transparent, 0);
+   if (!ct)
+      ct=colortable_quant(THIS,256);
+   push_string( image_encode_gif( THIS,ct, transparent, 1, closest) );
+   colortable_free(ct);
 }
 
 /*
@@ -572,38 +697,7 @@ void image_gif_netscape_loop(INT32 args)
    push_string(make_shared_binary_string(buf,19));
 }
 
-/*
-**! method string gif_transparency(int color)
-**!	
-**! returns a gif chunk that transparent a color in the next image chunk
-**!
-**! arg int color
-**!	index of color in the palette 
-**! note
-**!	Yes - i know this function is too hard to use. :/
-**!	The palette _is_ unknown mostly...
-**! see also: gif_add, gif_begin, gif_end
-*/
-
-void image_gif_transparency(INT32 args)
-{
-   unsigned short i=0;
-   char buf[30];
-   if (args)
-      if (sp[-args].type!=T_INT) 
-	 error("Illegal argument to image->gif_transparency()\n");
-      else
-	 loops=sp[-args].u.integer;
-   else
-      error("Too few arguments to image->gif_transparency()\n");
-   pop_n_elems(args);
-
-   sprintf(buf,"%c%c%c%c%c%c%c%c",33,0xf9,4,1,0,0,i,0);
-
-   push_string(make_shared_binary_string(buf,19));
-}
-
-static struct colortable *img_gif_add(INT32 args,int fs,int lm)
+static void img_gif_add(INT32 args,int fs,int lm)
 {
    INT32 x=0,y=0,i;
    struct lzw lzw;
@@ -745,14 +839,13 @@ CHRONO("end pack");
 
    lzw_quit(&lzw);
 
+   colortable_free(ct);
    THREADS_DISALLOW();
 
 CHRONO("done");
 
    pop_n_elems(args);
    push_string(low_free_buf(&buf));
-
-   return ct;
 }
 
 /*
@@ -827,21 +920,21 @@ CHRONO("done");
 
 void image_gif_add(INT32 args)
 {
-   colortable_free(img_gif_add(args,0,1));
+   img_gif_add(args,0,1);
 }
 
 void image_gif_add_fs(INT32 args)
 {
-   colortable_free(img_gif_add(args,1,1));
+   img_gif_add(args,1,1);
 }
 
 void image_gif_add_nomap(INT32 args)
 {
-   colortable_free(img_gif_add(args,0,0));
+   img_gif_add(args,0,0);
 }
 
 void image_gif_add_fs_nomap(INT32 args)
 {
-   colortable_free(img_gif_add(args,1,0));
+   img_gif_add(args,1,0);
 }
 
