@@ -410,10 +410,10 @@ static void f_ualarm(INT32 args)
   long seconds;
 
   if(args < 1)
-    error("Too few arguments to signame()\n");
+    error("Too few arguments to ualarm()\n");
 
   if(sp[-args].type != T_INT)
-    error("Bad argument 1 to signame()\n");
+    error("Bad argument 1 to ualarm()\n");
 
   seconds=sp[-args].u.integer;
 
