@@ -2,7 +2,7 @@
 // This file is part of Pike. For copyright information see COPYRIGHT.
 // Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 // for more information.
-// $Id: peep.in,v 1.65 2002/12/31 15:04:20 grubba Exp $
+// $Id: peep.in,v 1.66 2003/01/01 13:22:52 grubba Exp $
 
 NOP :
 POP_N_ELEMS (0) : 
@@ -232,8 +232,8 @@ ADD_INT ADD_INT: ADD_INT ($1a+$2a)
 ADD_NEG_INT ADD_NEG_INT: ADD_NEG_INT ($1a+$2a)
 ADD_NEG_INT ADD_INT [$1a <= $2a]: ADD_INT ($2a-$1a)
 ADD_NEG_INT ADD_INT [$1a > $2a]: ADD_NEG_INT ($1a-$2a)
-ADD_INT ADD_NEG_INT [$2a <= $1a]: ADD_INT ($2a-$1a)
-ADD_INT ADD_NEG_INT [$2a > $1a]: ADD_NEG_INT ($1a-$2a)
+ADD_INT ADD_NEG_INT [$2a <= $1a]: ADD_INT ($1a-$2a)
+ADD_INT ADD_NEG_INT [$2a > $1a]: ADD_NEG_INT ($2a-$1a)
 
 ASSIGN POP_VALUE: ASSIGN_AND_POP
 LTOSVAL2 ADD ASSIGN_AND_POP : ADD_TO_AND_POP
