@@ -1,5 +1,5 @@
 /*
- * $Id: interpret_functions.h,v 1.84 2001/07/27 15:02:04 grubba Exp $
+ * $Id: interpret_functions.h,v 1.85 2001/07/28 00:33:50 hubbe Exp $
  *
  * Opcode definitions for the interpreter.
  */
@@ -1884,7 +1884,7 @@ OPCODE1_JUMP(F_COND_RECUR, "recur if not overloaded", {
 		      Pike_fp->current_object,
 		      (void *)(arg1+Pike_fp->context.identifier_level)))
     {
-      Pike_fp->next->pc=PROG_COUNTER;
+      Pike_fp->next->pc=addr;
       Pike_fp->flags |= PIKE_FRAME_RETURN_INTERNAL;
       addr = Pike_fp->pc;
     }
