@@ -5,9 +5,16 @@ AC_PROG_CC
 undefine([ac_cv_prog_CC])
 ])
 
+pushdef([AC_CONFIG_HEADER],
+[
+  CONFIG_HEADERS="$1"
+  popdef([AC_CONFIG_HEADER])
+  AC_CONFIG_HEADER($1)
+])
+
 define([AC_LOW_MODULE_INIT],
 [
-# $Id: aclocal.m4,v 1.3 1999/04/23 22:11:30 grubba Exp $
+# $Id: aclocal.m4,v 1.4 1999/04/24 11:40:29 grubba Exp $
 
 MY_AC_PROG_CC
 
