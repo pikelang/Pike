@@ -1,4 +1,4 @@
-// $Id: testsuite.in,v 1.13 1998/04/26 11:46:26 hubbe Exp $
+// $Id: testsuite.in,v 1.14 1998/07/19 21:57:47 nisse Exp $
 
 // mpz
 cond( [[ master()->resolv("Gmp")->mpz ]],
@@ -112,5 +112,10 @@ cond( [[ master()->resolv("Gmp")->mpz ]],
   test_any([[object o=Gmp.mpz(2); o--; return o;]],1)
   test_any([[object o=Gmp.mpz(2); return --o;]],1)
   test_any([[object o=Gmp.mpz(2); return o--;]],2)
+  test_eq(Gmp.mpz(0)->popcount(), 0)
+  test_eq(Gmp.mpz(17)->popcount(), 2)
+  test_eq(Gmp.mpz(4711)->popcount(), 7)
+  test_eq(Gmp.mpz(17)->pow(17)->popcount(), 31)
+  test_true(catch(Gmp.mpz(-1)->popcount()))
 ]]);
 

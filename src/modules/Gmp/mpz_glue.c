@@ -4,7 +4,7 @@
 ||| See the files COPYING and DISCLAIMER for more information.
 \*/
 #include "global.h"
-RCSID("$Id: mpz_glue.c,v 1.35 1998/07/11 16:08:05 grubba Exp $");
+RCSID("$Id: mpz_glue.c,v 1.36 1998/07/19 21:57:45 nisse Exp $");
 #include "gmp_machine.h"
 
 #if defined(HAVE_GMP2_GMP_H) && defined(HAVE_LIBGMP2)
@@ -217,8 +217,12 @@ static struct pike_string *low_get_digits(MP_INT *mpz, int base)
       {
 	mp_limb_t x=*(src++);
 	for (i=0; i<sizeof(mp_limb_t); i++)
+	{
 	  *(--dst)=x&0xff,x>>=8;
-	len-=sizeof(mp_limb_t);
+	  if (!--len)
+	    break;
+	  
+	}
       }
     }
     s = end_shared_string(s);
@@ -845,6 +849,26 @@ static void mpzmod_not(INT32 args)
   push_int(!mpz_sgn(THIS));
 }
 
+static void mpzmod_popcount(INT32 args)
+{
+  pop_n_elems(args);
+  switch (mpz_sgn(THIS))
+  {
+  case 0:
+    push_int(0);
+    break;
+  case -1:
+    /* How would one define popcount for negative numbers? */
+    error("Gmp.mpz->popcount: Undefined for negative numbers.\n");
+    /* Not reached */
+  case 1:
+    push_int(mpn_popcount(THIS->_mp_d, THIS->_mp_size));
+    break;
+  default:
+    fatal("Gmp.mpz->popcount: Unexpected sign!\n");
+  }
+}
+
 static void gmp_pow(INT32 args)
 {
   struct object *res;
@@ -966,6 +990,9 @@ void pike_module_init(void)
   add_function("powm",mpzmod_powm,
   "function(" MPZ_ARG_TYPE "," MPZ_ARG_TYPE ":object)", 0);
   add_function("pow", mpzmod_pow, "function(int:object)", 0);
+
+  add_function("popcount", mpzmod_popcount, "function(void:int)", 0);
+  
 #if 0
   /* These are not implemented yet */
   add_function("squarep", mpzmod_squarep, "function(:int)", 0);
