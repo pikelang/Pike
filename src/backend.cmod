@@ -5,7 +5,7 @@
 */
 
 /*
- * $Id: backend.cmod,v 1.165 2005/01/27 15:50:55 mast Exp $
+ * $Id: backend.cmod,v 1.166 2005/01/27 16:50:08 mast Exp $
  *
  * Backend object.
  */
@@ -1314,6 +1314,12 @@ PIKECLASS Backend
 	 check_destructed(Pike_sp - args);
 	 if(Pike_sp[-args].type!=T_INT)
 	 {
+	   IF_PD(
+	     fprintf(stderr, "[%d]BACKEND[%d]: backend_do_call_outs: "
+		     "calling call out ", THR_NO, me->id);
+	     print_svalue (stderr, Pike_sp - args);
+	     fputc ('\n', stderr);
+	   );
 	   call_count++;
 	   f_call_function(args);
 	   if (Pike_sp[-1].type == T_INT && Pike_sp[-1].u.integer == -1) {
@@ -1325,6 +1331,8 @@ PIKECLASS Backend
 	   else
 	     pop_stack();
 	 }else{
+	   IF_PD(fprintf(stderr, "[%d]BACKEND[%d]: backend_do_call_outs: "
+			 "ignoring destructed call out\n", THR_NO, me->id));
 	   pop_n_elems(args);
 	 }
 	 backend_verify_call_outs(me);
@@ -2353,8 +2361,7 @@ PIKECLASS Backend
 	SET_ONERROR (uwp, low_backend_cleanup, me);
 
 	if (timeout->tv_sec < 0) {
-	  next_timeout.tv_sec = 100000000;
-	  next_timeout.tv_usec = 999999;
+	  next_timeout.tv_sec = -1;
 	}
 	else {
 	  next_timeout.tv_sec = timeout->tv_sec;
@@ -2364,7 +2371,8 @@ PIKECLASS Backend
 
 	/* Call outs */
 	if(me->num_pending_calls)
-	  if(my_timercmp(& CALL(0)->tv, < , &next_timeout))
+	  if(next_timeout.tv_sec < 0 ||
+	     my_timercmp(& CALL(0)->tv, < , &next_timeout))
 	    next_timeout = CALL(0)->tv;
 
 #ifdef PIKE_DEBUG
@@ -2372,7 +2380,9 @@ PIKECLASS Backend
 #endif
 	call_callback(& me->backend_callbacks, NULL);
 #ifdef PIKE_DEBUG
-	if (my_timercmp (&max_timeout, <, &next_timeout))
+	if (max_timeout.tv_sec >= 0 &&
+	    (next_timeout.tv_sec < 0 ||
+	     my_timercmp (&max_timeout, <, &next_timeout)))
 	  Pike_fatal ("Timeout raised from %lu.%lu to %lu.%lu by a backend callback.\n",
 		      (unsigned long)max_timeout.tv_sec,
 		      (unsigned long)max_timeout.tv_usec,
@@ -2380,7 +2390,12 @@ PIKECLASS Backend
 		      (unsigned long)next_timeout.tv_usec);
 #endif
 
-	if(my_timercmp(&next_timeout, > , &current_time))
+	if (next_timeout.tv_sec < 0) {
+	  /* Wait "forever". */
+	  next_timeout.tv_sec = 100000000;
+	  next_timeout.tv_usec = 0;
+	}
+	else if(my_timercmp(&next_timeout, > , &current_time))
 	{
 	  my_subtract_timeval(&next_timeout, &current_time);
 	}else{
