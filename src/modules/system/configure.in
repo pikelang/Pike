@@ -1,4 +1,4 @@
-# $Id: configure.in,v 1.68 2005/01/24 11:39:40 grubba Exp $
+# $Id: configure.in,v 1.69 2005/01/24 12:45:12 grubba Exp $
 AC_INIT(system.c)
 AC_CONFIG_HEADER(system_machine.h)
 
@@ -74,7 +74,7 @@ if test "uname" = "aix"; then
   libc_ver="`lslpp -ql bos.rte.libc 2>/dev/null| awk '{ print $2 }'`"
 fi
 
-case "$aix_libc_ver"; in
+case "$libc_ver" in
   5.1.0.*)
     # Pike's use of getaddrinfo SIGSEGVs for some users on some releases of
     # AIX 5L 5.1.
@@ -87,7 +87,7 @@ case "$aix_libc_ver"; in
     # IY29763  2 submodule getaddrinfo gets wrong sin6_len
     # IY44782  2 malloc struct sockaddr_in6 in getaddrinfo() needs to be bzero
     # IY51966  2 THIRD PARTY IMAPD CORE DUMP WHEN CALLING GETADDRINFO
-    if test "`echo $aix_libc_ver | awk -F. '{ print $4 }'`" -ge 59; then
+    if test "`echo $libc_ver | awk -F. '{ print $4 }'`" -ge 59; then
       AC_HAVE_FUNCS(getaddrinfo)
     fi
   ;;
