@@ -748,6 +748,7 @@ static void html_add_quote_tag(INT32 args)
   struct pike_string *prefix;
   struct svalue *val;
   struct svalue cb;
+  ONERROR uwp;
 
   check_all_args("add_quote_tag",args,BIT_STRING,
 		 BIT_INT|BIT_STRING|BIT_ARRAY|BIT_FUNCTION|BIT_OBJECT|BIT_PROGRAM,
@@ -787,6 +788,7 @@ static void html_add_quote_tag(INT32 args)
     prefix = string_slice (name, 0, 2);
   else
     copy_shared_string (prefix, name);
+  SET_ONERROR (uwp, do_free_string, prefix);
 
   val = low_mapping_string_lookup (THIS->mapqtag, prefix);
   if (val) {
@@ -796,7 +798,6 @@ static void html_add_quote_tag(INT32 args)
     if (val->type != T_ARRAY) fatal ("Expected array as value in mapqtag.\n");
 #endif
     arr = val->u.array;
-    free_string (prefix);
 
     for (i = 0; i < arr->size; i += 3) {
       struct pike_string *curname;
@@ -843,7 +844,7 @@ static void html_add_quote_tag(INT32 args)
 	  arr = val->u.array = resize_array (arr, arr->size+3);
 	  MEMCPY (arr->item+i+3, arr->item+i,
 		  (arr->size-i-3) * sizeof(struct svalue));
-	  MEMCPY (arr->item+i, sp-=3, 3*sizeof(struct svalue));
+	  MEMCPY (arr->item+i, sp-=3, 3 * sizeof(struct svalue));
 	  goto done;
 	}
 	else free_string (cmp);
@@ -857,7 +858,7 @@ static void html_add_quote_tag(INT32 args)
 	val->u.array = arr;
       }
       arr = val->u.array = resize_array (arr, arr->size+3);
-      MEMCPY (arr->item+arr->size-3, sp-=3, 3*sizeof(struct svalue));
+      MEMCPY (arr->item+arr->size-3, sp-=3, 3 * sizeof(struct svalue));
     }
 
   done:	;
@@ -866,10 +867,11 @@ static void html_add_quote_tag(INT32 args)
   else if (!remove) {
     f_aggregate (3);
     mapping_string_insert (THIS->mapqtag, prefix, sp-1);
-    free_string (prefix);
     pop_stack();
   }
-  else free_string (prefix);
+
+  free_string (prefix);
+  UNSET_ONERROR (uwp);
 
   ref_push_object(THISOBJ);
 }
@@ -3772,13 +3774,15 @@ static void html_clone(INT32 args)
 
 static void html_set_extra(INT32 args)
 {
-   if (THIS->extra_args) free_array(THIS->extra_args);
+   if (THIS->extra_args) {
+     free_array(THIS->extra_args);
+     THIS->extra_args=NULL;
+   }
    if (args) {
      f_aggregate(args);
      THIS->extra_args=sp[-1].u.array;
      sp--;
    }
-   else THIS->extra_args=NULL;
    dmalloc_touch_svalue(sp);
    ref_push_object(THISOBJ);
 }
