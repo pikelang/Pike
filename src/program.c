@@ -5,7 +5,7 @@
 \*/
 /**/
 #include "global.h"
-RCSID("$Id: program.c,v 1.172 1999/11/11 15:23:08 grubba Exp $");
+RCSID("$Id: program.c,v 1.173 1999/11/18 02:46:04 mast Exp $");
 #include "program.h"
 #include "object.h"
 #include "dynamic_buffer.h"
@@ -40,6 +40,7 @@ RCSID("$Id: program.c,v 1.172 1999/11/11 15:23:08 grubba Exp $");
 
 
 /* #define COMPILER_DEBUG */
+/* #define PROGRAM_BUILD_DEBUG */
 
 #ifdef COMPILER_DEBUG
 #define CDFPRINTF(X)	fprintf X
@@ -632,6 +633,19 @@ void low_start_new_program(struct program *p,
 
   new_program=p;
 
+#ifdef PROGRAM_BUILD_DEBUG
+  if (name) {
+    fprintf (stderr, "%.*sstarting program %d (pass=%d): ",
+	     compilation_depth, "                ", new_program->id, compiler_pass);
+    push_string (name);
+    print_svalue (stderr, --sp);
+    putc ('\n', stderr);
+  }
+  else
+    fprintf (stderr, "%.*sstarting program %d (pass=%d)\n",
+	     compilation_depth, "                ", new_program->id, compiler_pass);
+#endif
+
   if(new_program->program)
   {
 #define FOO(NUMTYPE,TYPE,NAME) \
@@ -1100,6 +1114,12 @@ struct program *end_first_pass(int finish)
     }
 
   }
+
+#ifdef PROGRAM_BUILD_DEBUG
+  fprintf (stderr, "%.*sfinishing program %d (pass=%d)\n",
+	   compilation_depth, "                ", new_program->id, compiler_pass);
+#endif
+
   toss_compilation_resources();
 
 #ifdef SHARED_NODES
@@ -1720,6 +1740,12 @@ int map_variable(char *name,
 {
   int ret;
   struct pike_string *n,*t;
+
+#ifdef PROGRAM_BUILD_DEBUG
+  fprintf (stderr, "%.*sdefining variable (pass=%d): %s %s\n",
+	   compilation_depth, "                ", compiler_pass, type, name);
+#endif
+
   n=make_shared_string(name);
   t=parse_type(type);
   ret=low_define_variable(n,t,flags,offset,run_time_type);
@@ -1740,6 +1766,18 @@ int define_variable(struct pike_string *name,
     fatal("define_variable on nonshared string.\n");
 #endif
 
+#ifdef PROGRAM_BUILD_DEBUG
+  {
+    struct pike_string *d = describe_type (type);
+    fprintf (stderr, "%.*sdefining variable (pass=%d): %s ",
+	     compilation_depth, "                ", compiler_pass, d->str);
+    free_string (d);
+    push_string (name);
+    print_svalue (stderr, --sp);
+    putc ('\n', stderr);
+  }
+#endif
+
   if(type == void_type_string)
     yyerror("Variables can't be of type void");
   
@@ -1749,8 +1787,13 @@ int define_variable(struct pike_string *name,
   {
     if(n==-1)
       yyerror("Pass2: Variable disappeared!");
-    else
+    else {
+      struct identifier *id;
+      id=ID_FROM_INT(new_program,n);
+      free_string(id->type);
+      copy_shared_string(id->type, type);
       return n;
+    }
   }
 
 #ifdef PIKE_DEBUG
@@ -1829,7 +1872,6 @@ int simple_add_variable(char *name,
   return ret;
 }
 
-/* FIXME: add_constant with c==0 means declaration */
 int add_constant(struct pike_string *name,
 		 struct svalue *c,
 		 INT32 flags)
@@ -1837,6 +1879,25 @@ int add_constant(struct pike_string *name,
   int n;
   struct identifier dummy;
   struct reference ref;
+
+#ifdef PROGRAM_BUILD_DEBUG
+  {
+    if (c) {
+      struct pike_string *t = get_type_of_svalue (c);
+      struct pike_string *d = describe_type (t);
+      fprintf (stderr, "%.*sdefining constant (pass=%d): %s ",
+	       compilation_depth, "                ", compiler_pass, d->str);
+      free_string (t);
+      free_string (d);
+    }
+    else
+      fprintf (stderr, "%.*sdeclaring constant (pass=%d): ",
+	       compilation_depth, "                ", compiler_pass);
+    push_string (name);
+    print_svalue (stderr, --sp);
+    putc ('\n', stderr);
+  }
+#endif
 
 #ifdef PIKE_DEBUG
   if(name!=debug_findstring(name))
@@ -1852,7 +1913,6 @@ int add_constant(struct pike_string *name,
     {
       yyerror("Pass2: Constant disappeared!");
     }else{
-#if 1
       struct identifier *id;
       id=ID_FROM_INT(new_program,n);
       if(id->func.offset>=0)
@@ -1864,7 +1924,15 @@ int add_constant(struct pike_string *name,
 	free_string(id->type);
 	id->type=s;
       }
+      else {
+#ifdef PIKE_DEBUG
+	if (!c) fatal("Can't declare constant during second compiler pass\n");
 #endif
+	free_string(id->type);
+	id->type = get_type_of_svalue(c);
+	id->run_time_type = c->type;
+	id->func.offset = store_constant(c, 0, 0);
+      }
       return n;
     }
   }
@@ -1878,12 +1946,19 @@ int add_constant(struct pike_string *name,
 #endif
 
   copy_shared_string(dummy.name, name);
-  dummy.type = get_type_of_svalue(c);
-  
   dummy.identifier_flags = IDENTIFIER_CONSTANT;
-  dummy.run_time_type=c->type;
-  
-  dummy.func.offset=store_constant(c, 0, 0);
+
+  if (c) {
+    dummy.type = get_type_of_svalue(c);
+    dummy.run_time_type=c->type;
+    dummy.func.offset=store_constant(c, 0, 0);
+  }
+  else {
+    reference_shared_string(mixed_type_string);
+    dummy.type = mixed_type_string;
+    dummy.run_time_type=T_MIXED;
+    dummy.func.offset=-1;
+  }
 
   ref.id_flags=flags;
   ref.identifier_offset=new_program->num_identifiers;
@@ -2063,6 +2138,18 @@ INT32 define_function(struct pike_string *name,
   struct reference ref;
   INT32 i;
 
+#ifdef PROGRAM_BUILD_DEBUG
+  {
+    struct pike_string *d = describe_type (type);
+    fprintf (stderr, "%.*sdefining function (pass=%d): %s ",
+	     compilation_depth, "                ", compiler_pass, d->str);
+    free_string (d);
+    push_string (name);
+    print_svalue (stderr, --sp);
+    putc ('\n', stderr);
+  }
+#endif
+
 #ifdef PROFILING
   fun.self_time=0;
   fun.num_calls=0;
@@ -2105,6 +2192,9 @@ INT32 define_function(struct pike_string *name,
 	funp->func.offset = -1;
       
       funp->identifier_flags=function_flags;
+
+      free_string(funp->type);
+      copy_shared_string(funp->type, type);
     }else{
 
       if((ref.id_flags & ID_NOMASK)

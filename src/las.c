@@ -5,7 +5,7 @@
 \*/
 /**/
 #include "global.h"
-RCSID("$Id: las.c,v 1.110 1999/11/17 18:03:58 grubba Exp $");
+RCSID("$Id: las.c,v 1.111 1999/11/18 02:46:03 mast Exp $");
 
 #include "language.h"
 #include "interpret.h"
@@ -1003,7 +1003,8 @@ void resolv_class(node *n)
       break;
       
     default:
-      yyerror("Illegal program identifier");
+      if (compiler_pass!=1)
+	yyerror("Illegal program identifier");
       pop_stack();
       push_int(0);
       
@@ -1026,7 +1027,8 @@ void resolv_program(node *n)
 	break;
       
     default:
-      yyerror("Illegal program identifier");
+      if (compiler_pass!=1)
+	yyerror("Illegal program identifier");
       pop_stack();
       push_int(0);
       
