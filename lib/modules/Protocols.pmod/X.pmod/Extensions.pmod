@@ -1,9 +1,9 @@
 /* Shaped windows.
  *
- * $Id: Extensions.pmod,v 1.6 1998/04/06 15:47:52 nisse Exp $
+ * $Id: Extensions.pmod,v 1.7 1998/04/19 00:31:00 grubba Exp $
 
 /*
- *    px, a Pike interface to the X Window System
+ *    Protocols.X, a Pike interface to the X Window System
  *
  *    Copyright (C) 1998, Niels Möller, Per Hedbor, Marcus Comstedt,
  *    Pontus Hagland, David Hedbor.

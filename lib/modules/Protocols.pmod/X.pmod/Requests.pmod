@@ -1,10 +1,10 @@
 /* Requests.pike
  *
- * $Id: Requests.pmod,v 1.24 1998/04/06 15:47:58 nisse Exp $
+ * $Id: Requests.pmod,v 1.25 1998/04/19 00:31:01 grubba Exp $
  */
 
 /*
- *    px, a Pike interface to the X Window System
+ *    Protocols.X, a Pike interface to the X Window System
  *
  *    Copyright (C) 1998, Niels Möller, Per Hedbor, Marcus Comstedt,
  *    Pontus Hagland, David Hedbor.

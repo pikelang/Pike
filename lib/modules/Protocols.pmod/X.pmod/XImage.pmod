@@ -1,10 +1,10 @@
 /* XImage.pmod
  *
- * $Id: XImage.pmod,v 1.9 1998/04/18 01:06:55 cardeci Exp $
+ * $Id: XImage.pmod,v 1.10 1998/04/19 00:31:04 grubba Exp $
  */
 
 /*
- *    px, a Pike interface to the X Window System
+ *    Protocols.X, a Pike interface to the X Window System
  *
  *    Copyright (C) 1998, Niels Möller, Per Hedbor, Marcus Comstedt,
  *    Pontus Hagland, David Hedbor.

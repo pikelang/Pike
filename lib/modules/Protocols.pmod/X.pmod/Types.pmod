@@ -1,10 +1,10 @@
 /* Types.pmod
  *
- * $Id: Types.pmod,v 1.30 1998/04/18 01:08:13 cardeci Exp $
+ * $Id: Types.pmod,v 1.31 1998/04/19 00:31:02 grubba Exp $
  */
 
 /*
- *    px, a Pike interface to the X Window System
+ *    Protocols.X, a Pike interface to the X Window System
  *
  *    Copyright (C) 1998, Niels Möller, Per Hedbor, Marcus Comstedt,
  *    Pontus Hagland, David Hedbor.

@@ -1,12 +1,12 @@
 /* _Xlib.pmod
  *
- * $Id: _Xlib.pmod,v 1.12 1998/04/06 15:48:10 nisse Exp $
+ * $Id: _Xlib.pmod,v 1.13 1998/04/19 00:31:09 grubba Exp $
  *
  * Kluge, should be in Xlib.pmod
  */
 
 /*
- *    px, a Pike interface to the X Window System
+ *    Protocols.X, a Pike interface to the X Window System
  *
  *    Copyright (C) 1998, Niels Möller, Per Hedbor, Marcus Comstedt,
  *    Pontus Hagland, David Hedbor.

@@ -1,13 +1,13 @@
 /* XTools.pmod
  *
- * $Id: XTools.pmod,v 1.3 1998/04/06 15:48:04 nisse Exp $
+ * $Id: XTools.pmod,v 1.4 1998/04/19 00:31:05 grubba Exp $
  *
  * Various tools that are higher level than raw X, but are lower level
  * than widgets.
  */
 
 /*
- *    px, a Pike interface to the X Window System
+ *    Protocols.X, a Pike interface to the X Window System
  *
  *    Copyright (C) 1998, Niels Möller, Per Hedbor, Marcus Comstedt,
  *    Pontus Hagland, David Hedbor.

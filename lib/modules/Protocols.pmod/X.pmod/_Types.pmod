@@ -2,11 +2,11 @@
  *
  * Kludge for pike-0.5
  *
- * $Id: _Types.pmod,v 1.2 1998/04/06 15:48:08 nisse Exp $
+ * $Id: _Types.pmod,v 1.3 1998/04/19 00:31:08 grubba Exp $
  */
 
 /*
- *    px, a Pike interface to the X Window System
+ *    Protocols.X, a Pike interface to the X Window System
  *
  *    Copyright (C) 1998, Niels Möller, Per Hedbor, Marcus Comstedt,
  *    Pontus Hagland, David Hedbor.

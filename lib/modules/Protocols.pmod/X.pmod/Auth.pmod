@@ -1,10 +1,10 @@
 /* Auth.pmod
  *
- * $Id: Auth.pmod,v 1.2 1998/04/06 15:47:50 nisse Exp $
+ * $Id: Auth.pmod,v 1.3 1998/04/19 00:30:59 grubba Exp $
  */
 
 /*
- *    px, a Pike interface to the X Window System
+ *    Protocols.X, a Pike interface to the X Window System
  *
  *    Copyright (C) 1998, Niels Möller, Per Hedbor, Marcus Comstedt,
  *    Pontus Hagland, David Hedbor.
