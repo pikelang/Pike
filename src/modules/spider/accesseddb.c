@@ -24,7 +24,6 @@
 #include <sys/time.h>
 #endif
 
-
 #ifdef HAVE_SYS_CONF_H
 #include <sys/conf.h>
 #endif
@@ -56,7 +55,7 @@
 #include <sys/stat.h>
 #include <fcntl.h>
 
-
+#include "accesseddb.h"
 
 #define COOKIE 0x11223344
 /* Must be (2**n)-1 */
@@ -502,7 +501,7 @@ static void free_file_head(struct object *o)
       free_entry(THIS->cache_table[i]);
 }
 
-void init_accessdb_program()
+void init_accessdb_program(void)
 {
    start_new_program();
    add_storage(sizeof(struct file_head));

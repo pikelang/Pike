@@ -74,6 +74,7 @@
 
 #include <errno.h>
 
+#include "accesseddb.h"
 
 #define MAX_PARSE_RECURSE 102
 

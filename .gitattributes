@@ -99,6 +99,7 @@ testfont binary
 /src/modules/_Crypto/rc4.c foreign_ident
 /src/modules/call_out/call_out.c foreign_ident
 /src/modules/files/file.c foreign_ident
+/src/modules/spider/accesseddb.h foreign_ident
 /src/modules/spider/dumudp.c foreign_ident
 /src/modules/sprintf/sprintf.c foreign_ident
 /src/modules/system/acconfig.h foreign_ident
