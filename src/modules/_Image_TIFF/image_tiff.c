@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: image_tiff.c,v 1.36 2003/07/25 16:32:17 grubba Exp $
+|| $Id: image_tiff.c,v 1.37 2003/07/27 13:30:09 grubba Exp $
 */
 
 #include "global.h"
@@ -15,7 +15,7 @@
 */
 
 #ifdef HAVE_LIBTIFF
-RCSID("$Id: image_tiff.c,v 1.36 2003/07/25 16:32:17 grubba Exp $");
+RCSID("$Id: image_tiff.c,v 1.37 2003/07/27 13:30:09 grubba Exp $");
 
 #include "global.h"
 #include "machine.h"
@@ -58,9 +58,9 @@ extern struct program *image_colortable_program;
 struct buffer 
 {
   char *str;
-  ptrdiff_t len;
+  ptrdiff_t len;	/* Buffer length. */
   ptrdiff_t offset;
-  ptrdiff_t real_len;
+  ptrdiff_t real_len;	/* File length. */
   int extendable;
 } *buffer_handle; 
 
@@ -118,14 +118,16 @@ static tsize_t read_buffer( thandle_t bh, tdata_t d, tsize_t len )
   char *data = (char *)d;
   tsize_t avail;
 
-  TRACE("read_buffer(%p,%p,%d)\n", buffer_handle,data,len);
-  avail = buffer_handle->len-buffer_handle->offset;
+  TRACE("read_buffer(%p,%p,%d)\n",
+	buffer_handle, data, len);
+  avail = buffer_handle->real_len-buffer_handle->offset;
+  TRACE("\toffset:%d real_len:%d avail:%d\n",
+	buffer_handle->offset, buffer_handle->real_len, avail);
   if(!avail) return -1;
-  MEMCPY( data, buffer_handle->str+buffer_handle->offset, MINIMUM(avail,len) );
-  buffer_handle->offset += MINIMUM(avail,len);
-  if(buffer_handle->offset > buffer_handle->real_len)
-    buffer_handle->real_len = buffer_handle->offset;
-  return MINIMUM(avail,len);
+  len = MINIMUM(avail, len);
+  MEMCPY(data, buffer_handle->str+buffer_handle->offset, len);
+  buffer_handle->offset += len;
+  return len;
 }
 
 /* Complies with the TIFFReadWriteProc API */
@@ -270,6 +272,11 @@ void low_image_tiff_encode( struct buffer *buf,
   int spp = 3;
   char *buffer;
   int n;
+  ONERROR tmp;
+  TIFF *tif;
+  rgb_group *is, *as = NULL;
+  int x, y;
+  char *b;
 
   i = ((struct image *)get_storage(img->img,image_program));
 
@@ -292,113 +299,114 @@ void low_image_tiff_encode( struct buffer *buf,
   /* Workaround for the patently stupid way the crippling of
    * the LZW has been done.
    */
-  for (n = 0; n < NELEM(default_tiff_compressions); n++) {
-    ONERROR tmp;
-    TIFF *tif;
-    rgb_group *is, *as = NULL;
-    int x, y;
-    char *b;
+  n = 0;
 
-    tif = TIFFClientOpen( "memoryfile", "w", buf,
-			  read_buffer, write_buffer,
-			  seek_buffer, close_buffer,
-			  size_buffer, map_buffer,
-			  unmap_buffer );
-    if(!tif) {
-      free(buffer);
-      Pike_error("\"open\" of TIF file failed: %s\n", last_tiff_error);
-    }
-
-    SET_ONERROR(tmp, TIFFClose, tif);
-  
-    TIFFSetField(tif, TIFFTAG_IMAGEWIDTH, (uint32)i->xsize);
-    TIFFSetField(tif, TIFFTAG_IMAGELENGTH, (uint32)i->ysize);
-    TIFFSetField(tif, TIFFTAG_BITSPERSAMPLE, (uint16)8);
-    TIFFSetField(tif, TIFFTAG_ORIENTATION, (uint16)ORIENTATION_TOPLEFT);
-    if(img->alpha)
-    {
-      uint16 val[1];
-      val[0] = EXTRASAMPLE_ASSOCALPHA;
-      TIFFSetField (tif, TIFFTAG_EXTRASAMPLES, (uint16)1, val);
-      as = a->img;
-    }
-    TIFFSetField(tif, TIFFTAG_PHOTOMETRIC, (uint16)PHOTOMETRIC_RGB);
-    TIFFSetField(tif, TIFFTAG_FILLORDER, (uint16)FILLORDER_MSB2LSB);
-    if(opts->name)
-      TIFFSetField(tif, TIFFTAG_DOCUMENTNAME, (char *)opts->name);
-    TIFFSetField(tif, TIFFTAG_SAMPLESPERPIXEL, (uint16)spp);
-    TIFFSetField(tif, TIFFTAG_ROWSPERSTRIP,
-		 (uint32)MAXIMUM(8192/i->xsize/spp,1));
-    TIFFSetField(tif, TIFFTAG_PLANARCONFIG, (uint16)PLANARCONFIG_CONTIG);
-    TIFFSetField(tif, TIFFTAG_RESOLUTIONUNIT, (uint16)RESUNIT_INCH);
-    TIFFSetField(tif, TIFFTAG_XRESOLUTION, (float)opts->xdpy);
-    TIFFSetField(tif, TIFFTAG_YRESOLUTION, (float)opts->ydpy);
-    if(opts->comment)
-      TIFFSetField(tif, TIFFTAG_IMAGEDESCRIPTION, (char *)opts->comment);
-
-    /* Not a defined value.
-     * i.e. the caller hasn't specified what compression to use.
-     *
-     * And we haven't checked what the library supports yet.
-     */
-    if (!opts->compression &&
-	!(opts->compression = default_tiff_compression)) {
-      TIFFSetField(tif, TIFFTAG_COMPRESSION, default_tiff_compressions[n]);
-#ifdef COMPRESSION_LZW
-      if(default_tiff_compressions[n] == COMPRESSION_LZW)
-	TIFFSetField (tif, TIFFTAG_PREDICTOR, (uint16)2);
-#endif
-    } else {
-      TIFFSetField(tif, TIFFTAG_COMPRESSION, opts->compression);
-#ifdef COMPRESSION_LZW
-      if(opts->compression == COMPRESSION_LZW)
-	TIFFSetField (tif, TIFFTAG_PREDICTOR, (uint16)2);
-#endif
-    }
-      
-    b = buffer;
-    is = i->img;
-
-    for (y = 0; y < i->ysize; y++)
-    {
-      char *b = buffer;
-      for(x=0; x<i->xsize; x++)
-      {
-	*(b++)=is->r;
-	*(b++)=is->g;
-	*(b++)=(is++)->b;
-	if(as)
-	{
-	  *(b++)=(as->r + as->g*2 + as->b)/4;
-	  as++;
-	}
-      }
-      if(TIFFWriteScanline(tif, buffer, y, 0) < 0)
-      {
-	TIFFFlushData (tif);
-	if (!y && (!opts->compression) &&
-	    (n != NELEM(default_tiff_compressions))) {
-	  /* Probably a crippled libtiff.
-	   *
-	   * Try again with the next codec.
-	   */
-	  CALL_AND_UNSET_ONERROR(tmp);
-
-	  seek_buffer(buf, 0, SEEK_SET);
-	  continue;
-	}
-	free(buffer);
-	Pike_error("TIFFWriteScanline returned error on line %d: %s(0x%04x)\n",
-		   y, last_tiff_error,
-		   opts->compression?default_tiff_compressions[n]:
-		   opts->compression);
-      }
-    }
-
-    TIFFFlushData (tif);
-    CALL_AND_UNSET_ONERROR(tmp);
-    break;
+ retry:
+  tif = TIFFClientOpen( "memoryfile", "w", buf,
+			read_buffer, write_buffer,
+			seek_buffer, close_buffer,
+			size_buffer, map_buffer,
+			unmap_buffer );
+  if(!tif) {
+    free(buffer);
+    Pike_error("\"open\" of TIF file failed: %s\n", last_tiff_error);
   }
+
+  SET_ONERROR(tmp, TIFFClose, tif);
+  
+  TIFFSetField(tif, TIFFTAG_IMAGEWIDTH, (uint32)i->xsize);
+  TIFFSetField(tif, TIFFTAG_IMAGELENGTH, (uint32)i->ysize);
+  TIFFSetField(tif, TIFFTAG_BITSPERSAMPLE, (uint16)8);
+  TIFFSetField(tif, TIFFTAG_ORIENTATION, (uint16)ORIENTATION_TOPLEFT);
+  if(img->alpha)
+  {
+    uint16 val[1];
+    val[0] = EXTRASAMPLE_ASSOCALPHA;
+    TIFFSetField (tif, TIFFTAG_EXTRASAMPLES, (uint16)1, val);
+    as = a->img;
+  }
+  TIFFSetField(tif, TIFFTAG_PHOTOMETRIC, (uint16)PHOTOMETRIC_RGB);
+  TIFFSetField(tif, TIFFTAG_FILLORDER, (uint16)FILLORDER_MSB2LSB);
+  if(opts->name)
+    TIFFSetField(tif, TIFFTAG_DOCUMENTNAME, (char *)opts->name);
+  TIFFSetField(tif, TIFFTAG_SAMPLESPERPIXEL, (uint16)spp);
+  TIFFSetField(tif, TIFFTAG_ROWSPERSTRIP,
+	       (uint32)MAXIMUM(8192/i->xsize/spp,1));
+  TIFFSetField(tif, TIFFTAG_PLANARCONFIG, (uint16)PLANARCONFIG_CONTIG);
+  TIFFSetField(tif, TIFFTAG_RESOLUTIONUNIT, (uint16)RESUNIT_INCH);
+  TIFFSetField(tif, TIFFTAG_XRESOLUTION, (float)opts->xdpy);
+  TIFFSetField(tif, TIFFTAG_YRESOLUTION, (float)opts->ydpy);
+  if(opts->comment)
+    TIFFSetField(tif, TIFFTAG_IMAGEDESCRIPTION, (char *)opts->comment);
+
+  /* Not a defined value.
+   * i.e. the caller hasn't specified what compression to use.
+   *
+   * And we haven't checked what the library supports yet.
+   */
+  if (!opts->compression &&
+      !(opts->compression = default_tiff_compression)) {
+    TIFFSetField(tif, TIFFTAG_COMPRESSION, default_tiff_compressions[n]);
+#ifdef COMPRESSION_LZW
+    if(default_tiff_compressions[n] == COMPRESSION_LZW)
+      TIFFSetField (tif, TIFFTAG_PREDICTOR, (uint16)2);
+#endif
+  } else {
+    TIFFSetField(tif, TIFFTAG_COMPRESSION, opts->compression);
+#ifdef COMPRESSION_LZW
+    if(opts->compression == COMPRESSION_LZW)
+      TIFFSetField (tif, TIFFTAG_PREDICTOR, (uint16)2);
+#endif
+  }
+      
+  b = buffer;
+  is = i->img;
+
+  for (y = 0; y < i->ysize; y++)
+  {
+    char *b = buffer;
+    for(x=0; x<i->xsize; x++)
+    {
+      *(b++)=is->r;
+      *(b++)=is->g;
+      *(b++)=(is++)->b;
+      if(as)
+      {
+	*(b++)=(as->r + as->g*2 + as->b)/4;
+	as++;
+      }
+    }
+    if(TIFFWriteScanline(tif, buffer, y, 0) < 0)
+    {
+      TRACE("TIFFWriteScanLine(%p, %p, %d, 0) failed:\n",
+	    tif, buffer, y);
+      TRACE("\terror:\"%s\", n:%d, nelem:%d\n",
+	    last_tiff_error, n, NELEM(default_tiff_compressions));
+
+      if (!y && (!opts->compression) &&
+	  (n != (NELEM(default_tiff_compressions)-1))) {
+	/* Probably a crippled libtiff.
+	 *
+	 * Try again with the next codec.
+	 */
+	CALL_AND_UNSET_ONERROR(tmp);
+
+	seek_buffer(buf, 0, SEEK_SET);
+	buf->real_len = 0;	/* Truncate file. */
+	n++;
+	goto retry;
+      }
+      free(buffer);
+      Pike_error("TIFFWriteScanline returned error on line %d: %s(0x%04x)\n",
+		 y, last_tiff_error,
+		 opts->compression?default_tiff_compressions[n]:
+		 opts->compression);
+    }
+  }
+
+  TIFFFlushData (tif);
+  CALL_AND_UNSET_ONERROR(tmp);
+
   free(buffer);
   if (!opts->compression) {
     default_tiff_compression = default_tiff_compressions[n];
@@ -863,8 +871,8 @@ static void image_tiff_encode( INT32 args )
     parameter_object( sp-args+1, opt_alpha, &a.alpha );
   }
 
-  b.str = xalloc( INITIAL_WRITE_BUFFER_SIZE );
-  b.len = b.real_len = 0;
+  b.str = xalloc( b.len = INITIAL_WRITE_BUFFER_SIZE );
+  b.real_len = 0;
   b.offset = 0;
   b.extendable = 1;
   SET_ONERROR( onerr, free, b.str );
