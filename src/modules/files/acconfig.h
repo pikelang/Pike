@@ -1,5 +1,5 @@
 /*
- * $Id: acconfig.h,v 1.8 1998/05/17 21:07:33 grubba Exp $
+ * $Id: acconfig.h,v 1.9 1998/08/06 22:48:16 grubba Exp $
  */
 
 #ifndef FILE_MACHINE_H
@@ -52,6 +52,9 @@
 
 /* Number of args to mkdir() */
 #define MKDIR_ARGS 2
+
+/* Type of the last argument to accept() et al */
+#define PIKE_ACCEPT_TYPE	int
 
 #endif
 
