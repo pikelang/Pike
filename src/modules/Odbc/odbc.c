@@ -1,5 +1,5 @@
 /*
- * $Id: odbc.c,v 1.7 1998/04/20 18:53:42 grubba Exp $
+ * $Id: odbc.c,v 1.8 1998/05/29 19:04:45 grubba Exp $
  *
  * Pike interface to ODBC compliant databases.
  *
@@ -15,7 +15,7 @@
 #endif /* HAVE_CONFIG_H */
 
 #include "global.h"
-RCSID("$Id: odbc.c,v 1.7 1998/04/20 18:53:42 grubba Exp $");
+RCSID("$Id: odbc.c,v 1.8 1998/05/29 19:04:45 grubba Exp $");
 
 #include "interpret.h"
 #include "object.h"
@@ -233,8 +233,14 @@ static void f_select_db(INT32 args)
   /**********************************************/
 }
 
+void free_hstmt(HSTMT hstmt)
+{
+  SQLFreeStmt(hstmt, SQL_DROP);		/* Ignore return value. */
+}
+
 static void f_big_query(INT32 args)
 {
+  ONERROR ebuf;
   HSTMT hstmt = SQL_NULL_HSTMT;
   struct pike_string *q = NULL;
 
@@ -243,6 +249,9 @@ static void f_big_query(INT32 args)
   odbc_check_error("odbc->big_query", "Statement allocation failed",
 		   SQLAllocStmt(PIKE_ODBC->hdbc, &hstmt), NULL);
   PIKE_ODBC->hstmt = hstmt;
+
+  SET_ONERROR(ebuf, free_hstmt, hstmt);
+
   odbc_check_error("odbc->big_query", "Query failed",
 		   SQLExecDirect(hstmt, (unsigned char *)q->str,
 				 q->len), NULL);
@@ -259,10 +268,23 @@ static void f_big_query(INT32 args)
     ref_push_object(fp->current_object);
 
     push_object(clone_object(odbc_result_program, 1));
+
+    /* hstmt is now handled by the result program. */
+    UNSET_ONERROR(ebuf);
   } else {
     odbc_check_error("odbc->big_query", "Couldn't commit query",
 		     SQLTransact(PIKE_ODBC->henv, PIKE_ODBC->hdbc,
 				 SQL_COMMIT), NULL);
+
+    UNSET_ONERROR(ebuf);
+
+    /* hstmt is still handled by us. */
+    if (hstmt != SQL_NULL_HSTMT) {
+      PIKE_ODBC->hstmt = SQL_NULL_HSTMT;
+      odbc_check_error("odbc->big_query", "Freeing of HSTMT failed",
+		       SQLFreeStmt(hstmt, SQL_DROP), NULL);
+    }
+
     push_int(0);
   }
 }
