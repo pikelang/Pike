@@ -1,19 +1,24 @@
 // -*- Pike -*-
 
-// $Id: monger.pike,v 1.2 2004/04/20 22:14:26 nilsson Exp $
+// $Id: monger.pike,v 1.3 2004/04/21 20:33:23 bill Exp $
 
 #pike __REAL_VERSION__
 
-constant version = ("$Revision: 1.2 $"/" ")[1];
+constant version = ("$Revision: 1.3 $"/" ")[1];
 constant description = "Monger: the Pike module manger.";
 
 string repository = "http://modules.gotpike.org:8000/xmlrpc/index.pike";
+string builddir = getenv("HOME") + "/.monger";
 
 int use_force=0;
+int use_local=0;
 string my_command;
 string argument;
 string my_version;
 string run_pike;
+string original_dir;
+
+mapping created = (["files" : ({}), "dirs": ({})]);
 
 int main(int argc, array(string) argv)
 {
@@ -35,6 +40,9 @@ int main(int argc, array(string) argv)
     ({"download",Getopt.NO_ARG,({"--download"}) }),
     ({"query",Getopt.NO_ARG,({"--query"}) }),
     ({"repository",Getopt.HAS_ARG,({"--repository"}) }),
+    ({"builddir",Getopt.HAS_ARG,({"--builddir"}) }),
+    ({"install",Getopt.NO_ARG,({"--install"}) }),
+    ({"local",Getopt.NO_ARG,({"--local"}) }),
     ({"version",Getopt.HAS_ARG,({"--version"}) }),
     ({"force",Getopt.NO_ARG,({"--force"}) }),
     ({"help",Getopt.NO_ARG,({"--help"}) }),
@@ -54,39 +62,66 @@ int main(int argc, array(string) argv)
       case "repository":
         repository = opt[1];
         break;
+      case "builddir":
+        Stdio.Stat fs = file_stat(opt[1]);
+        if(fs && fs->isdir)
+          builddir = opt[1];
+        else
+          exit(1, "Build directory " + opt[1] + " does not exist.\n");
+        break;
       case "version":
         my_version = opt[1];
         break;
       case "force":
         use_force = 1;
         break;
+      case "local":
+        use_local = 1;
+        break;
     }
   }
 
+  // create the build directory if it doesn't exist.
+  Stdio.Stat fs = file_stat(builddir);
+  if(!fs)
+    mkdir(builddir);
+  else if (!fs->isdir)
+    exit(1, "Build directory " + builddir + " is not a directory.\n");
+  
   foreach(opts,array opt)
   {
     switch(opt[0])
     {
+      case "help":
+        return do_help();
+        break;
       case "list":
+        my_command=opt[0];
         if(argument && strlen(argument))
           do_list(argument);
         else
           do_list();
         break;
       case "download":
+        my_command=opt[0];
         if(argument)
           do_download(argument, my_version||UNDEFINED);
         else
           exit(1, "download error: module name must be specified\n");
         break;
+      case "install":
+        my_command=opt[0];
+        if(argument)
+          do_install(argument, my_version||UNDEFINED);
+        else
+          exit(1, "install error: module name must be specified\n");
+        break;
       case "query":
+        my_command=opt[0];
         if(argument)
           do_query(argument, my_version||UNDEFINED);
         else
           exit(1, "query error: module name must be specified\n");
-        break;
-      case "help":
-        return do_help();
         break;
     }
   }
@@ -105,10 +140,15 @@ Usage: pike -x monger [options] modulename
                        limited to those whose name contains the last 
                        argument in the argument list (modulename)
 --query              retrieves information about module modulename
+--download           download the module modulename
+--install            install the module modulename
 --repository=url     sets the repository source to url
+--builddir=path      sets the build directory to path, default is 
+                       the $HOME/.monger
 --force              force the performance of an action that might 
                        otherwise generate a warning
---download           download the module modulename
+--local              perform installation in a user's local rather than 
+                       system directory
 --version=ver        work with the specified version of the module
 ");
   return 0;
@@ -120,48 +160,10 @@ void do_query(string name, string|void version)
   mixed e; // for catching errors
   int module_id;
 
-  string pike_version = 
-    sprintf("%d.%d.%d", (int)__REAL_MAJOR__, 
-      (int)__REAL_MINOR__, (int)__REAL_BUILD__);
+  mapping vi = get_module_action_data(name, version);
 
-  object x = xmlrpc_handler(repository);
-
-  module_id=x->get_module_id(name);
-
-  mapping m = x->get_module_info((int)module_id);
-  string v;
-
-  write("%s: %s\n", m->name, m->description);
-
-  string qv;
-
-  catch(v = x->get_recommended_module_version((int)module_id, pike_version));
-
-  if(my_version && use_force)
-  {
-    write("Forcing query of version %s.\n", my_version);
-    qv=my_version;
-  }
-  else if(my_version && my_version!=v)
-  {
-    write("Requested version %s is not the recommended version.\n"
-          "use --force to force a query of this version.\n", my_version);
-    exit(1);
-  }
-  else if(my_version)
-  {
-    write("Selecting requested and recommended version %s for query.\n", v);
-    qv=my_version;
-  }
-  else if(v)
-  {
-    qv=v;
-  }
-  else
-    exit(1, "No version of this module is recommended for this Pike.\n");
-
-  mapping vi = x->get_module_version_info((int)module_id, qv);
-
+  write("%s: %s\n", vi->name, vi->description);
+  write("Author/Owner: %s\n", vi->owner);
   write("Version: %s\t", vi->version);
   write("License: %s\n", vi->license);
   write("Changes: %s\n\n", vi->changes);
@@ -170,10 +172,10 @@ void do_query(string name, string|void version)
     write("This module is available for automated installation.\n");
 }
 
-void do_download(string name, string|void version)
+mapping get_module_action_data(string name, string|void version)
 {
-  mixed e; // for catching errors
   int module_id;
+  string dv;
 
   string pike_version = 
     sprintf("%d.%d.%d", (int)__REAL_MAJOR__, 
@@ -183,40 +185,54 @@ void do_download(string name, string|void version)
 
   module_id=x->get_module_id(name);
 
-  string v,dv;
+  string v;
+
+  mapping info = x->get_module_info((int)module_id);
 
   catch(v = x->get_recommended_module_version((int)module_id, pike_version));
 
-  if(my_version && use_force)
+  if(version && use_force)
   {
-    write("Forcing download of version %s.\n", my_version);
     dv=my_version;
   }
-  else if(my_version && my_version!=v)
+  else if(version && version!=v)
   {
     write("Requested version %s is not the recommended version.\n"
-          "use --force to force download of this version.\n", my_version);
+          "use --force to force %s of this version.\n", 
+          version, my_command);
     exit(1);
   }
-  else if(my_version)
+  else if(version)
   {
-    write("Selecting requested and recommended version %s for download.\n", v);
-    dv=my_version;
+    write("Selecting requested and recommended version %s for %s.\n", 
+          v, my_command);
+    dv=version;
   }
   else if(v)
   {
-    write("Selecting recommended version %s for download.\n", v);
+    write("Selecting recommended version %s for %s.\n", v, my_command);
     dv=v;
   }
   else
-    exit(1, "download error: no recommended version to download.\n"
-	 "use --force --version=ver to force download of a particular version.\n");
+    exit(1, "download error: no recommended version to %s.\n"
+	 "use --force --version=ver to force %s of a particular version.\n",
+         my_command, my_command);
 
   mapping vi = x->get_module_version_info((int)module_id, dv);
 
+  return vi + info;
+}
+
+void do_download(string name, string|void version)
+{
+  mixed e; // for catching errors
+  int module_id;
+
+  mapping vi = get_module_action_data(name, version);
+
   if(vi->download)
   {
-    write("beginning download of version %s...\n", dv);
+    write("beginning download of version %s...\n", vi->version);
     array rq = Protocols.HTTP.get_url_nice(vi->download);
     if(!rq) 
       exit(1, "download error: unable to access download url\n");
@@ -228,6 +244,83 @@ void do_download(string name, string|void version)
   }
   else 
     exit(1, "download error: no download available for this module version.\n");
+}
+
+void do_install(string name, string|void version)
+{
+  mixed e; // for catching errors
+  int module_id;
+  int res;
+
+  mapping vi = get_module_action_data(name, version);
+
+  if(vi->download)
+  {
+    original_dir = getcwd();
+    cd(builddir);
+
+    write("beginning download of version %s...\n", vi->version);
+    array rq = Protocols.HTTP.get_url_nice(vi->download);
+    if(!rq) 
+      exit(1, "download error: unable to access download url\n");
+    else
+    {
+      Stdio.write_file(vi->filename, rq[1]);
+      write("wrote module to file %s (%d bytes)\n", vi->filename, sizeof(rq[1]));
+    }
+  }
+  else 
+    exit(1, "install error: no download available for this module version.\n");
+
+  // now we should uncompress the file.
+  string fn;
+
+  if((vi->filename)[sizeof(vi->filename)-3..] == ".gz")
+  {
+    fn = (vi->filename)[0.. sizeof(vi->filename)-4];
+    write("uncompressing...%s\n", vi->filename);
+    if(!Process.search_path("gzip"))
+      exit(1, "install error: no gzip found in PATH.\n");
+    else
+      res = Process.system("gzip -d " + vi->filename);
+
+    if(res)
+      exit(1, "install error: uncompress failed.\n");
+
+  }
+  else fn = vi->filename;
+
+  created->file += ({ fn });
+
+  werror("working with tar file " + fn + "\n");
+
+  if(!Process.search_path("tar"))
+    exit(1, "install error: no tar found in PATH.\n");
+  else
+    res = Process.system("tar xvf " + fn);
+
+  if(res)
+    exit(1, "install error: untar failed.\n");
+  else
+    created->dirs += ({fn[0..sizeof(fn)-5]});  
+
+  // now we should clean up our mess.
+  foreach(created->file, string file)
+  {
+    write("cleaning up %s\n", file);
+    rm(file);
+  }
+
+  object module_builder = Tools.Standalone.module();
+
+  module_builder->main(2, ({run_pike, "install", "--source=" + 
+    builddir + "/" +  fn[0..sizeof(fn)-5]}));
+
+  foreach(created->dirs, string dir)
+  {
+    write("removing directory %s\n", dir);
+    Stdio.recursive_rm(dir);
+  }
 }
 
 void do_list(string|void name)
