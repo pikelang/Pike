@@ -201,7 +201,7 @@ void emit_program_block(mapping block, string cl)
      case "union":
        emit_function_def("`|",cfun,block[f],1);
        break;
-     case "intersection":
+     case "intersect":
        emit_function_def("`&",cfun,block[f],1);
        break;
      case "subtract":
@@ -222,7 +222,7 @@ void emit_program_block(mapping block, string cl)
      case "gt":
        emit_function_def("`>",cfun,block[f],1);
        break;
-     case "add":
+     case "_add":
        emit_function_def("`+",cfun,block[f],1);
        break;
      case "_index":
