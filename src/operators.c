@@ -6,7 +6,7 @@
 /**/
 #include "global.h"
 #include <math.h>
-RCSID("$Id: operators.c,v 1.82 1999/12/27 18:28:21 grubba Exp $");
+RCSID("$Id: operators.c,v 1.83 1999/12/27 18:30:54 grubba Exp $");
 #include "interpret.h"
 #include "svalue.h"
 #include "multiset.h"
@@ -2465,8 +2465,8 @@ void init_operators(void)
 			tOr(tInt,tFloat),tInt01),
 		 tFuncV(tSetvar(0,tOr4(tString,tMapping,tMultiset,tArray))
 			tVar(0), tVar(0),tInt01),
-		 tFuncV(tOr3(tObject,tProgram,tFunction) tMix,tMix,tInt01),
-		 tFuncV(tMix tOr3(tObject,tProgram,tFunction),tMix,tInt01),
+		 tFuncV(tOr3(tObj,tProgram,tFunction) tMix,tMix,tInt01),
+		 tFuncV(tMix tOr3(tObj,tProgram,tFunction),tMix,tInt01),
 		 tFuncV(tType tType,tOr3(tProgram,tFunction,tType),tInt01)),
 	    OPT_TRY_OPTIMIZE,optimize_eq,generate_comparison);
   /* function(mixed...:int) */
@@ -2475,8 +2475,8 @@ void init_operators(void)
 			tOr(tInt,tFloat),tInt01),
 		 tFuncV(tSetvar(0,tOr4(tString,tMapping,tMultiset,tArray))
 			tVar(0), tVar(0),tInt01),
-		 tFuncV(tOr3(tObject,tProgram,tFunction) tMix,tMix,tInt01),
-		 tFuncV(tMix tOr3(tObject,tProgram,tFunction),tMix,tInt01),
+		 tFuncV(tOr3(tObj,tProgram,tFunction) tMix,tMix,tInt01),
+		 tFuncV(tMix tOr3(tObj,tProgram,tFunction),tMix,tInt01),
 		 tFuncV(tType tType,tOr3(tProgram,tFunction,tType),tInt01)),
 	    OPT_TRY_OPTIMIZE,0,generate_comparison);
   /* function(mixed:int) */
