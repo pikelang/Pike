@@ -23,7 +23,7 @@ object decode( string data, mapping|void options )
   fd4 = fd3->pipe();
 
   if(data[0..3] != "%!PS")
-    error("This is not a postscrip file!\n");
+    error("This is not a postscript file!\n");
 
   if(sscanf(data, "%*s\n%%%%BoundingBox: %s\n", bbox) == 2)
   {
