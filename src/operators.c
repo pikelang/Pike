@@ -6,7 +6,7 @@
 /**/
 #include "global.h"
 #include <math.h>
-RCSID("$Id: operators.c,v 1.118 2001/02/04 02:08:25 hubbe Exp $");
+RCSID("$Id: operators.c,v 1.119 2001/02/05 19:30:48 grubba Exp $");
 #include "interpret.h"
 #include "svalue.h"
 #include "multiset.h"
@@ -2879,7 +2879,9 @@ multiset & mapping -> mapping
 		 tFunc(tOr(tType,tProgram),tType)),
 	    OPT_TRY_OPTIMIZE,0,generate_compl);
   /* function(string|multiset|array|mapping|object:int) */
-  ADD_EFUN2("sizeof", f_sizeof,tFunc(tOr5(tStr,tMultiset,tArray,tMapping,tObj),tInt),0,0,generate_sizeof);
+  ADD_EFUN2("sizeof", f_sizeof,
+	    tFunc(tOr5(tStr,tMultiset,tArray,tMapping,tObj),tInt),
+	    OPT_TRY_OPTIMIZE, 0,generate_sizeof);
 
   /* function(mixed,mixed ...:mixed) */
   ADD_EFUN2("`()",f_call_function,tFuncV(tMix,tMix,tMix),OPT_SIDE_EFFECT | OPT_EXTERNAL_DEPEND,0,generate_call_function);
