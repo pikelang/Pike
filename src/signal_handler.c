@@ -22,7 +22,7 @@
 #include "builtin_functions.h"
 #include <signal.h>
 
-RCSID("$Id: signal_handler.c,v 1.45 1998/04/09 10:44:57 grubba Exp $");
+RCSID("$Id: signal_handler.c,v 1.46 1998/04/12 21:25:04 grubba Exp $");
 
 #ifdef HAVE_PASSWD_H
 # include <passwd.h>
@@ -624,6 +624,7 @@ struct perishables
   struct pike_string *stdin_s;
   struct pike_string *stdout_s;
   struct pike_string *stderr_s;
+  struct pike_string *keep_signals_s;
 #ifdef HAVE_SETGROUPS
   gid_t *wanted_gids;
   struct array *wanted_gids_array;
@@ -641,6 +642,7 @@ static void free_perishables(struct perishables *storage)
   if(storage->stdin_s) free_string(storage->stdin_s);
   if(storage->stdout_s) free_string(storage->stdout_s);
   if(storage->stderr_s) free_string(storage->stderr_s);
+  if(storage->keep_signals_s) free_string(storage->keep_signals_s);
 
 #ifdef HAVE_SETGROUPS
   if(storage->wanted_gids) free((char *)storage->wanted_gids);
@@ -672,6 +674,7 @@ static void free_perishables(struct perishables *storage)
  *   nice		int
  *   noinitgroups	int
  *   setgroups		array(int)
+ *   keep_signals	int
  *
  * FIXME:
  *   Support for setresgid().
@@ -831,6 +834,7 @@ void f_create_process(INT32 args)
     int wanted_uid;
     int wanted_gid;
     int gid_request=0;
+    int keep_signals = 0;
     pid_t pid;
 
     storage.env=0;
@@ -840,6 +844,7 @@ void f_create_process(INT32 args)
     MAKE_CONSTANT_SHARED_STRING(storage.stdin_s, "stdin");
     MAKE_CONSTANT_SHARED_STRING(storage.stdout_s, "stdout");
     MAKE_CONSTANT_SHARED_STRING(storage.stderr_s, "stderr");
+    MAKE_CONSTANT_SHARED_STRING(storage.keep_signals_s, "keep_signals");
 
 #ifdef HAVE_SETGROUPS
     storage.wanted_gids=0;
@@ -993,6 +998,9 @@ void f_create_process(INT32 args)
       if((tmp=simple_mapping_string_lookup(optional, "noinitgroups")))
 	if(!IS_ZERO(tmp))
 	  do_initgroups=0;
+
+      if((tmp=simple_mapping_string_lookup(optional, "keep_signals")))
+	keep_signals = !IS_ZERO(tmp);
     }
 
 #ifdef HAVE_SETGROUPS
@@ -1052,13 +1060,11 @@ void f_create_process(INT32 args)
     
     storage.argv=(char **)xalloc((1+cmd->size) * sizeof(char *));
 
-    THREADS_ALLOW_UID();
 #if defined(HAVE_FORK1) && defined(_REENTRANT)
     pid=fork1();
 #else
     pid=fork();
 #endif
-    THREADS_DISALLOW_UID();
     if(pid==-1) error("Failed to start process.\n");
     if(pid)
     {
@@ -1108,6 +1114,10 @@ void f_create_process(INT32 args)
       setresuid(0,0,-1);
 #endif /* HAVE_SETRESUID */
 #endif /* HAVE_SETEUID */
+
+      if (!keep_signals) {
+	/* Restore the signals to the defaults. */
+      }
 
       if(optional)
       {
