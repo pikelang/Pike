@@ -1,5 +1,5 @@
 #
-# $Id: configure.in,v 1.45 2004/05/02 01:22:52 nilsson Exp $
+# $Id: configure.in,v 1.46 2004/07/15 08:39:09 grubba Exp $
 #
 # Configure script for the mysql-module
 #
@@ -126,6 +126,7 @@ AC_MSG_RESULT(no)
   AC_CHECK_MYSQL_OPTIONS(MYSQL_SET_CHARSET_DIR)
   AC_CHECK_MYSQL_OPTIONS(MYSQL_SET_CHARSET_NAME)
   AC_CHECK_MYSQL_OPTIONS(MYSQL_OPT_LOCAL_INFILE)
+  AC_CHECK_MYSQL_OPTIONS(SHUTDOWN_DEFAULT)
 
 
   # Mysql libs

@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: acconfig.h,v 1.13 2003/03/28 21:33:37 marcus Exp $
+|| $Id: acconfig.h,v 1.14 2004/07/15 08:39:09 grubba Exp $
 */
 
 /*
@@ -67,5 +67,8 @@
 
 /* Define if your mysql.h defines MYSQL_OPT_LOCAL_INFILE */
 #undef HAVE_MYSQL_OPT_LOCAL_INFILE
+
+/* Define if your mysql.h defines SHUTDOWN_DEFAULT */
+#undef HAVE_SHUTDOWN_DEFAULT
 
 #endif /* PIKE_MYSQL_CONFIG_H */
