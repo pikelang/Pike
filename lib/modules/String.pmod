@@ -2,35 +2,77 @@
 
 #define BEGIN 32
 
+//! @decl string count(string haystack, string needle)
+//!
+//! This function counts the number of times the @[needle]
+//! can be found in @[haystack]. 
+//!
+//! @note
+//! Intersections between needles are not counted, ie
+//! @tt{count("....","..")@} is @tt{2@}.
+//!
 constant count=__builtin.string_count;
+
+//! @decl int width(string s)
+//!
+//! Returns the width in bits (8, 16 or 32) of the widest character
+//! in @[s].
+//!
 constant width=__builtin.string_width;
 
 /*
  * Implode an array of strings to an english 'list'
  * ie. ({"foo","bar","gazonk"}) becomes "foo, bar and gazonk"
  */
-string implode_nicely(array(string|int|float) foo, string|void and)
+
+//! This function implodes a list of words to a readable string.
+//! If the separator is omitted, the default is <tt>"and"</tt>.
+//! If the words are numbers they are converted to strings first.
+//!
+//! @seealso
+//! @[`*()]
+//!
+string implode_nicely(array(string|int|float) foo, string|void separator)
 {
-  if(!and) and="and";
+  if(!separator) separator="and";
   foo=(array(string))foo;
   switch(sizeof(foo))
   {
   case 0: return "";
   case 1: return ([array(string)]foo)[0];
-  default: return foo[0..sizeof(foo)-2]*", "+" "+and+" "+foo[-1];
+  default: return foo[0..sizeof(foo)-2]*", "+" "+separator+" "+foo[-1];
   }
 }
 
-string capitalize(string s)
+//! Convert the first character in @[str] to upper case, and return the
+//! new string.
+//!
+//! @seealso
+//! @[lower_case()], @[upper_case()]
+//!
+string capitalize(string str)
 {
-  return upper_case(s[0..0])+s[1..sizeof(s)];
+  return upper_case(str[0..0])+str[1..sizeof(str)];
 }
 
-string sillycaps(string s)
+//! Convert the first character in each word (separated by spaces) in
+//! @[str] to upper case, and return the new string.
+//!
+string sillycaps(string str)
 {
-  return Array.map(s/" ",capitalize)*" ";
+  return Array.map(str/" ",capitalize)*" ";
 }
 
+//! This function multiplies @[s] by @[num]. The return value is the same
+//! as appending @[s] to an empty string @[num] times.
+//!
+//! @note
+//! This function is obsolete, since this functionality has been incorporated
+//! into @[`*()].
+//!
+//! @seealso
+//! @[`*()]
+//!
 string strmult(string str, int num)
 {
 #if 1
@@ -60,6 +102,9 @@ string strmult(string str, int num)
  * This function is a slightly optimised version based on the code
  * above (which is far more suitable for an implementation in C).
  */
+
+//! Find the longest common prefix from an array of strings.
+//!
 string common_prefix(array(string) strs)
 {
   if(!sizeof(strs))
@@ -158,6 +203,13 @@ static int low_fuzzymatch(string str1, string str2)
   return fuzz;
 }
 
+//! This function compares two strings using a fuzzy matching
+//! routine. The higher the resulting value, the better the strings match.
+//!
+//! @seealso
+//! @[Array.diff()], @[Array.diff_compare_table()]
+//! @[Array.diff_longest_sequence()]
+//!
 int fuzzymatch(string a, string b)
 {
   int fuzz;
@@ -174,26 +226,31 @@ int fuzzymatch(string a, string b)
   return fuzz;
 }
 
-string trim_whites( string what )
+//! Trim leading and trailing spaces and tabs from the string @[s].
+//!
+string trim_whites(string s)
 {
-  if (stringp (what)) {
-    sscanf(what, "%*[ \t]%s", what);
-    string rev = reverse(what);
+  if (stringp(s)) {
+    sscanf(s, "%*[ \t]%s", s);
+    string rev = reverse(s);
     sscanf(rev, "%*[ \t]%s", rev);
-    return what[..strlen(rev) - 1];
+    return s[..strlen(rev) - 1];
   }
 
-  return what;
+  return s;
 }
 
-string trim_all_whites( string what )
+//! Trim leading and trailing white spaces characters (@tt{" \t\r\n"@}) from
+//! the string @[s].
+//!
+string trim_all_whites(string s)
 {
-  if (stringp (what)) {
-    sscanf(what, "%*[ \t\r\n]%s", what);
-    string rev = reverse(what);
+  if (stringp(s)) {
+    sscanf(s, "%*[ \t\r\n]%s", s);
+    string rev = reverse(s);
     sscanf(rev, "%*[ \t\r\n]%s", rev);
-    return what[..strlen(rev) - 1];
+    return s[..strlen(rev) - 1];
   }
 
-  return what;
+  return s;
 }
