@@ -5,7 +5,7 @@
 \*/
 
 /*
- * $Id: stralloc.h,v 1.44 2000/08/03 17:53:39 grubba Exp $
+ * $Id: stralloc.h,v 1.45 2000/08/04 14:50:00 grubba Exp $
  */
 #ifndef STRALLOC_H
 #define STRALLOC_H
@@ -215,8 +215,8 @@ PMOD_EXPORT int string_search(struct pike_string *haystack,
 		  struct pike_string *needle,
 		  int start);
 PMOD_EXPORT struct pike_string *string_slice(struct pike_string *s,
-				 INT32 start,
-				 INT32 len);
+					     ptrdiff_t start,
+					     ptrdiff_t len);
 PMOD_EXPORT struct pike_string *string_replace(struct pike_string *str,
 				   struct pike_string *del,
 				   struct pike_string *to);
