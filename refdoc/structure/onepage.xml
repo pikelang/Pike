@@ -2,10 +2,10 @@
 <!-- put everything together, as well as information about how to -->
 <!-- split it up into smaller files. -->
 
-<!-- $Id: onepage.xml,v 1.1 2001/10/17 04:26:48 nilsson Exp $ -->
+<!-- $Id: onepage.xml,v 1.2 2001/11/26 22:26:46 nilsson Exp $ -->
 
 <manual>
-  <dir name="html_manual">
+  <dir name="onepage">
   <file name="manual.html">
     <chapter-ref file="not_extracted/control_structures.xml"/>
     <chapter-ref file="not_extracted/data_types.xml"/>

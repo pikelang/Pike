@@ -1,14 +1,16 @@
 #
 # Main Makefile for extracting AutoDoc mk II to XML
 #
-# $Id: Makefile,v 1.36 2001/11/23 20:00:16 nilsson Exp $
+# $Id: Makefile,v 1.37 2001/11/26 22:26:46 nilsson Exp $
 #
 # Henrik Grubbström 2001-02-02
 #
 
 PIKE=pike
 
-all: modref traditional
+all: modref traditional one_page
+
+# These are the actual build targets for making manuals...
 
 modref: build/modref.xml
 	rm -rf modref || /bin/true
@@ -22,13 +24,15 @@ modref: build/modref.xml
           pike_line_left.gif pike_line_middle.gif pike_line_right.gif ; do \
 	  cp src_images/$$file modref/images/ ; done
 
-html: html_manual manual.xml
-	cp build/images/* html_manual/images/
-	@$(PIKE) presentation/make_html.pike --img=images/ manual.xml
+one_page: onepage build/onepage.xml
+	cp build/images/* onepage/
+	@$(PIKE) presentation/make_html.pike --img= build/onepage.xml
 
 traditional: traditional_manual build/traditional.xml
 	cp build/images/* traditional_manual/images/
 	@$(PIKE) presentation/make_html.pike --img=images/ build/traditional.xml
+
+# Sub targets used by the above targets.
 
 build/autodoc.xml: recursive_join
 	@$(MAKE) PIKE="$(PIKE)" XMLFILES="`echo build/*/*.xml`" \
@@ -46,14 +50,17 @@ images: build/src/post_modules/GTK/refdoc/images
 	@cp ../src/post_modules/GTK/refdoc/images/*.png \
 	  build/src/post_modules/GTK/refdoc/images
 
-manual.xml: build/autodoc.xml structure/onepage.xml bin/assembler.pike
-	@$(PIKE) bin/assembler.pike structure/onepage.xml build/autodoc.xml > manual.xml
+build/onepage.xml: build/autodoc.xml structure/onepage.xml bin/assembler.pike
+	@$(PIKE) bin/assembler.pike structure/onepage.xml build/autodoc.xml \
+	  > build/onepage.xml
 
 build/traditional.xml: build/autodoc.xml structure/traditional.xml bin/assembler.pike
-	@$(PIKE) bin/assembler.pike structure/traditional.xml build/autodoc.xml > build/traditional.xml
+	@$(PIKE) bin/assembler.pike structure/traditional.xml build/autodoc.xml \
+	  > build/traditional.xml
 
 build/modref.xml: build/autodoc.xml structure/modref.xml bin/assembler.pike
-	@$(PIKE) bin/assembler.pike structure/modref.xml build/autodoc.xml > build/modref.xml
+	@$(PIKE) bin/assembler.pike structure/modref.xml build/autodoc.xml \
+	  > build/modref.xml
 
 autodoc.xml: $(XMLFILES) bin/join.pike
 	@$(PIKE) bin/join.pike --post-process build/autodoc.xml $(XMLFILES)
@@ -84,12 +91,8 @@ build/images: build
 build:
 	@test -d build || mkdir build
 
-manual:
-	@test -d manual || mkdir manual
-
-html_manual:
-	@test -d html_manual || mkdir html_manual
-	@test -d html_manual/images || mkdir html_manual/images
+onepage:
+	@test -d onepage || mkdir onepage
 
 traditional_manual:
 	@test -d traditional_manual || mkdir traditional_manual
@@ -105,6 +108,8 @@ build/src/post_modules/GTK/refdoc/images: build/src
 	@test -d build/src/post_modules/GTK/refdoc/images || \
 	  mkdir build/src/post_modules/GTK/refdoc/images
 
+# Development targets
+
 touch-mirardoc:
 	@touch `grep -r \\*\\*\! ../src/modules/* | cut -d: -f1 | \
 	  uniq`
@@ -118,7 +123,6 @@ clean:
 
 spotless: clean
 	@rm -f manual.xml || /bin/true
-	@rm -rf manual || /bin/true
-	@rm -rf html_manual || /bin/true
+	@rm -rf onepage || /bin/true
 	@rm -rf modref || /bin/true
 	@rm -rf traditional_manual || /bin/true
