@@ -5,7 +5,7 @@
 \*/
 
 /*
- * $Id: stuff.c,v 1.16 2002/01/16 02:54:20 nilsson Exp $
+ * $Id: stuff.c,v 1.17 2002/04/30 01:06:08 mast Exp $
  */
 #include "global.h"
 #include "stuff.h"
@@ -153,7 +153,7 @@ PMOD_EXPORT unsigned INT32 my_sqrt(unsigned INT32 n)
  */
 unsigned long find_good_hash_size(unsigned long num)
 {
-  static unsigned long primes[864] =
+  static const unsigned long primes[] =
   {
     37UL,         37UL,         37UL,         37UL,         
     37UL,         37UL,         41UL,         41UL,         
@@ -370,16 +370,16 @@ unsigned long find_good_hash_size(unsigned long num)
     3288334369UL, 3355443229UL, 3422552069UL, 3489660929UL, 
     3556769813UL, 3623878669UL, 3690987527UL, 3758096383UL, 
     3825205247UL, 3892314113UL, 3959422979UL, 4026531853UL, 
-    4093640729UL, 4160749601UL, 4227858463UL, 4294967311UL
+    4093640729UL, 4160749601UL, 4227858463UL
   };
   int shift=16;
   unsigned long cmp=0x1fffff;
   unsigned long x=num;
-  int y=0;
+  unsigned int y=0;
 
   if(x<32)
   {
-    static unsigned long lowprimes[32]={
+    static const unsigned long lowprimes[32]={
       1,1,2,3,
       5,5,7,7,
       11,11,11,11,
@@ -408,7 +408,8 @@ unsigned long find_good_hash_size(unsigned long num)
    * seriously doubt anybody will use hashtables larger than
    * 1<<32 entries... /Hubbe
    */
-  if(x>63) return num|7;
+  y = (y<<5)|(x&31);
+  if(y >= NELEM(primes)) return num|7;
 
-  return primes[(y<<5)|(x&31)];
+  return primes[y];
 }
