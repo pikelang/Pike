@@ -4,7 +4,7 @@
 ||| See the files COPYING and DISCLAIMER for more information.
 \*/
 #include "global.h"
-RCSID("$Id: builtin_functions.c,v 1.69 1998/02/12 01:25:25 mirar Exp $");
+RCSID("$Id: builtin_functions.c,v 1.70 1998/02/12 14:11:59 grubba Exp $");
 #include "interpret.h"
 #include "svalue.h"
 #include "pike_macros.h"
@@ -1571,6 +1571,108 @@ void f_glob(INT32 args)
   }
 }
 
+/* longest_ordered_sequence */
+
+static int find_gt(struct array *a, int i, int *stack, int top)
+{
+  struct svalue *x = a->item + i;
+  int l,h;
+
+  if (!top || !is_lt(x, a->item + stack[top - 1])) return top;
+
+  l = 0;
+  h = top;
+
+  while (l < h) {
+    int middle = (l + h)/2;
+    if (!is_gt(a->item + stack[middle], x)) {
+      l = middle+1;
+    } else {
+      h = middle;
+    }
+  }
+  return l;
+}
+
+static struct array *longest_ordered_sequence(struct array *a)
+{
+  int *stack;
+  int *links;
+  int i,j,top=0,l=0,ltop=-1;
+  struct array *res;
+  ONERROR tmp;
+  ONERROR tmp2;
+
+  stack = malloc(sizeof(int)*a->size);
+  links = malloc(sizeof(int)*a->size);
+
+  if (!stack || !links)
+  {
+    if (stack) free(stack);
+    if (links) free(links);
+    return 0;
+  }
+
+  /* is_gt(), is_lt() and low_allocate_array() can generate errors. */
+
+  SET_ONERROR(tmp, free, stack);
+  SET_ONERROR(tmp2, free, links);
+
+  for (i=0; i<a->size; i++) {
+    int pos;
+
+    pos = find_gt(a, i, stack, top);
+
+    if (pos == top) {
+      top++;
+      ltop = i;
+    }
+    if (pos != 0)
+      links[i] = stack[pos-1];
+    else
+      links[i] = -1;
+    stack[pos] = i;
+
+    fprintf(stderr, "%d: link:%d ltop:%d pos:%d top:%d\n",
+	    i, links[i], ltop, pos, top);
+  }
+
+  /* FIXME(?) memory unfreed upon error here */
+  res = low_allocate_array(top, 0); 
+  while (ltop != -1)
+  {
+    res->item[--top].u.integer = ltop;
+    ltop = links[ltop];
+  }
+
+  UNSET_ONERROR(tmp2);
+  UNSET_ONERROR(tmp);
+
+  free(stack);
+  free(links);
+  return res;
+}
+
+static void f_longest_ordered_sequence(INT32 args)
+{
+  struct array *a = NULL;
+
+  get_all_args("Array.longest_ordered_sequence", args, "%a", &a);
+
+  /* THREADS_ALLOW(); */
+
+  a = longest_ordered_sequence(a);
+
+  /* THREADS_DISALLOW(); */
+
+  if (!a) {
+    error("Array.longest_ordered_sequence():Out of memory");
+  }
+
+  pop_n_elems(args);
+  push_array(a);
+}
+
 /**** diff ************************************************************/
 
 static struct array* diff_compare_table(struct array *a,struct array *b)
@@ -2193,6 +2295,7 @@ void init_builtin_efuns(void)
   add_function("diff",f_diff,"function(array,array:array(array))",OPT_TRY_OPTIMIZE);
   add_function("diff_longest_sequence",f_diff_longest_sequence,"function(array,array:array(int))",OPT_TRY_OPTIMIZE);
   add_function("diff_compare_table",f_diff_compare_table,"function(array,array:array(array))",OPT_TRY_OPTIMIZE);
+  add_function("longest_ordered_sequence",f_longest_ordered_sequence,"function(array:array(int))",0);
   add_function("sort",f_sort,"function(array(mixed),array(mixed)...:array(mixed))",OPT_SIDE_EFFECT);
 }
 
