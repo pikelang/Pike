@@ -1,0 +1,68 @@
+NAME
+	/precompiled/FILE - buffered IO
+
+DESCRIPTION
+	/precompiled/FILE implements buffered IO and some nice functions
+	not available in /precompiled/file such as gets(). Almost all the
+	functions of /precompiled/file are present. The extra functions
+	are listed below:
+
+SEE ALSO
+	/precompiled/file
+
+============================================================================
+NAME
+	gets - get one line
+
+SYNTAX
+	#include <stdio.h>
+
+	string FILE->gets();
+
+DESCRIPTION
+	This function returns one line from the FILE, it returns zero if
+	no more lines are available.
+
+============================================================================
+NAME
+	printf - formatted print
+
+SYNTAX
+	#include <stdio.h>
+
+	string FILE->printf(string format, mixed ... data);
+
+DESCRIPTION
+	This function does aproximately the same as:
+	FILE->write(sprintf(format,@data))
+
+SEE ALSO
+	sprintf
+============================================================================
+NAME
+	ungets - put a character back in the buffer
+
+SYNTAX
+	#include <stdio.h>
+
+	string FILE->ungets(string s);
+
+DESCRIPTION
+	This function puts a string back in the input buffer. The string
+	can then be read with read or gets.
+
+============================================================================
+NAME
+	getchar - get one character from the input stream
+
+SYNTAX
+	#include <stdio.h>
+
+	int FILE->getchar();
+
+DESCRIPTION
+	This function returns one character from the input stream. Note
+	that the return value is the ascii value of the character, not
+	a string containing one character.
+	
+============================================================================
