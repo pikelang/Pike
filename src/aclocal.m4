@@ -63,11 +63,11 @@ ifelse([$3], , , [  rm -rf conftest*
 ])dnl
 fi
 rm -rf conftest*])
-])
+
 
 define([AC_LOW_MODULE_INIT],
 [
-# $Id: aclocal.m4,v 1.11 1999/05/30 20:44:25 grubba Exp $
+# $Id: aclocal.m4,v 1.12 1999/05/30 20:52:29 grubba Exp $
 
 MY_AC_PROG_CC
 

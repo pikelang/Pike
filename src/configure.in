@@ -1,4 +1,4 @@
-AC_REVISION("$Id: configure.in,v 1.295 1999/05/30 20:45:02 grubba Exp $")
+AC_REVISION("$Id: configure.in,v 1.296 1999/05/30 20:53:56 grubba Exp $")
 AC_INIT(interpret.c)
 AC_CONFIG_HEADER(machine.h)
 
@@ -291,7 +291,7 @@ EOF
     fi
     rm -rf conftest.*
   ])
-  AC_MSG_RESULT(pike_cv_gcc_uaword)
+  AC_MSG_RESULT($pike_cv_gcc_uaword)
 
   # Check if as generates R_SPARC_UA32 relocations from .uaword.
   if test "$pike_cv_gcc_uaword" = "yes"; then
