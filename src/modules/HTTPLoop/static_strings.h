@@ -1,9 +1,9 @@
-/*\
-||| This file is part of Pike. For copyright information see COPYRIGHT.
-||| Pike is distributed under GPL, LGPL and MPL. See the file COPYING
-||| for more information.
-||| $Id: static_strings.h,v 1.2 2002/10/08 20:22:29 nilsson Exp $
-\*/
+/*
+|| This file is part of Pike. For copyright information see COPYRIGHT.
+|| Pike is distributed under GPL, LGPL and MPL. See the file COPYING
+|| for more information.
+|| $Id: static_strings.h,v 1.3 2002/10/11 01:39:41 nilsson Exp $
+*/
 
 /* methods */
 
@@ -46,4 +46,3 @@ STRING(s_cookies,"cookies");
 STRING(s_rawauth,"rawauth");
 STRING(s_realauth,"realauth");
 STRING(s_supports, "supports");
-

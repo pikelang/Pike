@@ -1,9 +1,9 @@
-/*\
-||| This file is part of Pike. For copyright information see COPYRIGHT.
-||| Pike is distributed under GPL, LGPL and MPL. See the file COPYING
-||| for more information.
-||| $Id: version.h,v 1.325 2002/10/08 20:22:27 nilsson Exp $
-\*/
+/*
+|| This file is part of Pike. For copyright information see COPYRIGHT.
+|| Pike is distributed under GPL, LGPL and MPL. See the file COPYING
+|| for more information.
+|| $Id: version.h,v 1.326 2002/10/11 01:39:39 nilsson Exp $
+*/
 
 #define PIKE_MAJOR_VERSION 7
 #define PIKE_MINOR_VERSION 3

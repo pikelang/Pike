@@ -1,9 +1,9 @@
-/*\
-||| This file is part of Pike. For copyright information see COPYRIGHT.
-||| Pike is distributed under GPL, LGPL and MPL. See the file COPYING
-||| for more information.
-||| $Id: jvm.c,v 1.43 2002/10/08 20:22:33 nilsson Exp $
-\*/
+/*
+|| This file is part of Pike. For copyright information see COPYRIGHT.
+|| Pike is distributed under GPL, LGPL and MPL. See the file COPYING
+|| for more information.
+|| $Id: jvm.c,v 1.44 2002/10/11 01:39:45 nilsson Exp $
+*/
 
 /*
  * Pike interface to Java Virtual Machine
@@ -22,7 +22,7 @@
 #endif /* HAVE_CONFIG_H */
 
 #include "global.h"
-RCSID("$Id: jvm.c,v 1.43 2002/10/08 20:22:33 nilsson Exp $");
+RCSID("$Id: jvm.c,v 1.44 2002/10/11 01:39:45 nilsson Exp $");
 #include "program.h"
 #include "interpret.h"
 #include "stralloc.h"
@@ -3513,5 +3513,3 @@ void pike_module_exit(void)
 #endif /* __NT __ */
 #endif /* HAVE_JAVA */
 }
-
-

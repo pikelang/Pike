@@ -1,9 +1,10 @@
-/*\
-||| This file is part of Pike. For copyright information see COPYRIGHT.
-||| Pike is distributed under GPL, LGPL and MPL. See the file COPYING
-||| for more information.
-||| $Id: fsort.c,v 1.20 2002/10/08 20:22:20 nilsson Exp $
-\*/
+/*
+|| This file is part of Pike. For copyright information see COPYRIGHT.
+|| Pike is distributed under GPL, LGPL and MPL. See the file COPYING
+|| for more information.
+|| $Id: fsort.c,v 1.21 2002/10/11 01:39:31 nilsson Exp $
+*/
+
 /* fsort- a smarter quicksort /Hubbe */
 /* Optimized for minimum amount of compares */
 
@@ -12,7 +13,7 @@
 #include "fsort.h"
 #include "main.h"
 
-RCSID("$Id: fsort.c,v 1.20 2002/10/08 20:22:20 nilsson Exp $");
+RCSID("$Id: fsort.c,v 1.21 2002/10/11 01:39:31 nilsson Exp $");
 
 #define CMP(X,Y) ( (*cmpfun)((void *)(X),(void *)(Y)) )
 #define EXTRA_ARGS ,fsortfun cmpfun
@@ -124,5 +125,3 @@ void fsort(void *base,
   }
 
 }
-
-

@@ -1,10 +1,11 @@
-/*\
-||| This file is part of Pike. For copyright information see COPYRIGHT.
-||| Pike is distributed under GPL, LGPL and MPL. See the file COPYING
-||| for more information.
-||| $Id: file_functions.h,v 1.22 2002/10/08 20:22:41 nilsson Exp $
-\*/
-  FILE_FUNC("open",file_open,"function(string,string,void|int:int)")
+/*
+|| This file is part of Pike. For copyright information see COPYRIGHT.
+|| Pike is distributed under GPL, LGPL and MPL. See the file COPYING
+|| for more information.
+|| $Id: file_functions.h,v 1.23 2002/10/11 01:39:54 nilsson Exp $
+*/
+
+FILE_FUNC("open",file_open,"function(string,string,void|int:int)")
   FILE_FUNC("close",file_close,"function(string|void:int)")
   FILE_FUNC("read",file_read,"function(int|void,int|void:string)")
 #ifndef __NT__

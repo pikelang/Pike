@@ -1,9 +1,9 @@
-/*\
-||| This file is part of Pike. For copyright information see COPYRIGHT.
-||| Pike is distributed under GPL, LGPL and MPL. See the file COPYING
-||| for more information.
-||| $Id: idea.c,v 1.7 2002/10/08 20:22:39 nilsson Exp $
-\*/
+/*
+|| This file is part of Pike. For copyright information see COPYRIGHT.
+|| Pike is distributed under GPL, LGPL and MPL. See the file COPYING
+|| for more information.
+|| $Id: idea.c,v 1.8 2002/10/11 01:39:52 nilsson Exp $
+*/
 
 /* The basic IDEA transformation
  *
@@ -267,5 +267,3 @@ idea_crypt(const unsigned INT16 *key,
 } /* idea_crypt */
 
 /*-------------------------------------------------------------*/
-
-

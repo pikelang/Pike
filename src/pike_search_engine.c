@@ -1,9 +1,9 @@
-/*\
-||| This file is part of Pike. For copyright information see COPYRIGHT.
-||| Pike is distributed under GPL, LGPL and MPL. See the file COPYING
-||| for more information.
-||| $Id: pike_search_engine.c,v 1.9 2002/10/08 20:22:25 nilsson Exp $
-\*/
+/*
+|| This file is part of Pike. For copyright information see COPYRIGHT.
+|| Pike is distributed under GPL, LGPL and MPL. See the file COPYING
+|| for more information.
+|| $Id: pike_search_engine.c,v 1.10 2002/10/11 01:39:35 nilsson Exp $
+*/
 
 /*
  * Written by Fredrik Hubinette (hubbe@lysator.liu.se)
@@ -336,4 +336,3 @@ SearchMojt NameN(compile_memsearcher)(NCHAR *needle,
     return s->mojt;
   }
 }
-

@@ -1,9 +1,9 @@
-/*\
-||| This file is part of Pike. For copyright information see COPYRIGHT.
-||| Pike is distributed under GPL, LGPL and MPL. See the file COPYING
-||| for more information.
-||| $Id: next_prime.c,v 1.11 2002/10/08 20:22:29 nilsson Exp $
-\*/
+/*
+|| This file is part of Pike. For copyright information see COPYRIGHT.
+|| Pike is distributed under GPL, LGPL and MPL. See the file COPYING
+|| for more information.
+|| $Id: next_prime.c,v 1.12 2002/10/11 01:39:40 nilsson Exp $
+*/
 
 /*
  * Prime number test using trial division for small primes and then
@@ -15,7 +15,7 @@
 
 #include "global.h"
 
-RCSID("$Id: next_prime.c,v 1.11 2002/10/08 20:22:29 nilsson Exp $");
+RCSID("$Id: next_prime.c,v 1.12 2002/10/11 01:39:40 nilsson Exp $");
 
 #include "gmp_machine.h"
 

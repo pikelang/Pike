@@ -1,9 +1,9 @@
-/*\
-||| This file is part of Pike. For copyright information see COPYRIGHT.
-||| Pike is distributed under GPL, LGPL and MPL. See the file COPYING
-||| for more information.
-||| $Id: phase.h,v 1.4 2002/10/08 20:22:31 nilsson Exp $
-\*/
+/*
+|| This file is part of Pike. For copyright information see COPYRIGHT.
+|| Pike is distributed under GPL, LGPL and MPL. See the file COPYING
+|| for more information.
+|| $Id: phase.h,v 1.5 2002/10/11 01:39:43 nilsson Exp $
+*/
 
 /* This file is incuded in search.c with the following defines set:
 NEIG                is 1, zx, zx+1 or zx-1
@@ -94,4 +94,3 @@ THREADS_DISALLOW();
   o->refs++;
   push_object(o);
 }
-

@@ -1,9 +1,9 @@
-/*\
-||| This file is part of Pike. For copyright information see COPYRIGHT.
-||| Pike is distributed under GPL, LGPL and MPL. See the file COPYING
-||| for more information.
-||| $Id: rbtree_low.h,v 1.4 2002/10/08 20:22:26 nilsson Exp $
-\*/
+/*
+|| This file is part of Pike. For copyright information see COPYRIGHT.
+|| Pike is distributed under GPL, LGPL and MPL. See the file COPYING
+|| for more information.
+|| $Id: rbtree_low.h,v 1.5 2002/10/11 01:39:37 nilsson Exp $
+*/
 
 /* The lower level api for using rbtree. This is in a separate file
  * since it's quite macro heavy.

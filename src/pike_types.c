@@ -1,13 +1,12 @@
-/*\
-||| This file is part of Pike. For copyright information see COPYRIGHT.
-||| Pike is distributed under GPL, LGPL and MPL. See the file COPYING
-||| for more information.
-||| $Id: pike_types.c,v 1.197 2002/10/08 23:31:25 nilsson Exp $
-\*/
-/**/
+/*
+|| This file is part of Pike. For copyright information see COPYRIGHT.
+|| Pike is distributed under GPL, LGPL and MPL. See the file COPYING
+|| for more information.
+|| $Id: pike_types.c,v 1.198 2002/10/11 01:39:35 nilsson Exp $
+*/
 
 #include "global.h"
-RCSID("$Id: pike_types.c,v 1.197 2002/10/08 23:31:25 nilsson Exp $");
+RCSID("$Id: pike_types.c,v 1.198 2002/10/11 01:39:35 nilsson Exp $");
 #include <ctype.h>
 #include "svalue.h"
 #include "pike_types.h"

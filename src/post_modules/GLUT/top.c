@@ -1,15 +1,15 @@
-/*\
-||| This file is part of Pike. For copyright information see COPYRIGHT.
-||| Pike is distributed under GPL, LGPL and MPL. See the file COPYING
-||| for more information.
-||| $Id: top.c,v 1.6 2002/10/08 20:22:44 nilsson Exp $
-\*/
+/*
+|| This file is part of Pike. For copyright information see COPYRIGHT.
+|| Pike is distributed under GPL, LGPL and MPL. See the file COPYING
+|| for more information.
+|| $Id: top.c,v 1.7 2002/10/11 01:39:59 nilsson Exp $
+*/
 
 #include "global.h"
 
 #include "config.h"
 
-RCSID("$Id: top.c,v 1.6 2002/10/08 20:22:44 nilsson Exp $");
+RCSID("$Id: top.c,v 1.7 2002/10/11 01:39:59 nilsson Exp $");
 #include "stralloc.h"
 #include "pike_macros.h"
 #include "object.h"

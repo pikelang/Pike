@@ -1,9 +1,9 @@
-/*\
-||| This file is part of Pike. For copyright information see COPYRIGHT.
-||| Pike is distributed under GPL, LGPL and MPL. See the file COPYING
-||| for more information.
-||| $Id: sendfile.c,v 1.58 2002/10/08 20:22:41 nilsson Exp $
-\*/
+/*
+|| This file is part of Pike. For copyright information see COPYRIGHT.
+|| Pike is distributed under GPL, LGPL and MPL. See the file COPYING
+|| for more information.
+|| $Id: sendfile.c,v 1.59 2002/10/11 01:39:54 nilsson Exp $
+*/
 
 /*
  * Sends headers + from_fd[off..off+len-1] + trailers to to_fd asyncronously.

@@ -1,10 +1,9 @@
-/*\
-||| This file is part of Pike. For copyright information see COPYRIGHT.
-||| Pike is distributed under GPL, LGPL and MPL. See the file COPYING
-||| for more information.
-||| $Id: hashtable.c,v 1.13 2002/10/08 23:31:23 nilsson Exp $
-\*/
-/**/
+/*
+|| This file is part of Pike. For copyright information see COPYRIGHT.
+|| Pike is distributed under GPL, LGPL and MPL. See the file COPYING
+|| for more information.
+|| $Id: hashtable.c,v 1.14 2002/10/11 01:39:31 nilsson Exp $
+*/
 
 #include "global.h"
 #include "hashtable.h"
@@ -12,7 +11,7 @@
 #include "stuff.h"
 #include "pike_error.h"
 
-RCSID("$Id: hashtable.c,v 1.13 2002/10/08 23:31:23 nilsson Exp $");
+RCSID("$Id: hashtable.c,v 1.14 2002/10/11 01:39:31 nilsson Exp $");
 
 static size_t gobble(struct pike_string *s)
 {

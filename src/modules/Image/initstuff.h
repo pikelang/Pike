@@ -1,9 +1,9 @@
-/*\
-||| This file is part of Pike. For copyright information see COPYRIGHT.
-||| Pike is distributed under GPL, LGPL and MPL. See the file COPYING
-||| for more information.
-||| $Id: initstuff.h,v 1.15 2002/10/08 20:22:31 nilsson Exp $
-\*/
+/*
+|| This file is part of Pike. For copyright information see COPYRIGHT.
+|| Pike is distributed under GPL, LGPL and MPL. See the file COPYING
+|| for more information.
+|| $Id: initstuff.h,v 1.16 2002/10/11 01:39:42 nilsson Exp $
+*/
 
 #ifndef IMAGE_INITER
 #define IMAGE_CLASS(a,b,c,what) extern struct program *what;
@@ -60,5 +60,3 @@ IMAGE_FUNCTION("lay",image_lay,
 	       tOr(tFunc(tArr(tOr(tObj,tLayerMap)),tObj),
 		   tFunc(tArr(tOr(tObj,tLayerMap))
 			 tInt tInt tInt tInt,tObj)),0)
-
-

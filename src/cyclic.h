@@ -1,9 +1,9 @@
-/*\
-||| This file is part of Pike. For copyright information see COPYRIGHT.
-||| Pike is distributed under GPL, LGPL and MPL. See the file COPYING
-||| for more information.
-||| $Id: cyclic.h,v 1.6 2002/10/08 20:22:19 nilsson Exp $
-\*/
+/*
+|| This file is part of Pike. For copyright information see COPYRIGHT.
+|| Pike is distributed under GPL, LGPL and MPL. See the file COPYING
+|| for more information.
+|| $Id: cyclic.h,v 1.7 2002/10/11 01:39:30 nilsson Exp $
+*/
 
 #ifndef CYCLIC_H
 #define CYCLIC_H
@@ -44,4 +44,3 @@ void *begin_cyclic(CYCLIC *c,
 /* Prototypes end here */
 
 #endif /* CYCLIC_H */
-

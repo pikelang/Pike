@@ -1,15 +1,15 @@
-/*\
-||| This file is part of Pike. For copyright information see COPYRIGHT.
-||| Pike is distributed under GPL, LGPL and MPL. See the file COPYING
-||| for more information.
-||| $Id: ssleay.c,v 1.18 2002/10/08 20:22:36 nilsson Exp $
-\*/
+/*
+|| This file is part of Pike. For copyright information see COPYRIGHT.
+|| Pike is distributed under GPL, LGPL and MPL. See the file COPYING
+|| for more information.
+|| $Id: ssleay.c,v 1.19 2002/10/11 01:39:49 nilsson Exp $
+*/
 
 #include "global.h"
 
 #include "config.h"
 
-RCSID("$Id: ssleay.c,v 1.18 2002/10/08 20:22:36 nilsson Exp $");
+RCSID("$Id: ssleay.c,v 1.19 2002/10/11 01:39:49 nilsson Exp $");
 #include "interpret.h"
 #include "svalue.h"
 #include "stralloc.h"
@@ -336,5 +336,3 @@ void pike_module_init(void)
   add_program_constant("connection",ssleay_connection_program, 0);
 #endif /* HAVE_SSLEAY */
 }
-
-

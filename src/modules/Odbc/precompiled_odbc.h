@@ -1,9 +1,9 @@
-/*\
-||| This file is part of Pike. For copyright information see COPYRIGHT.
-||| Pike is distributed under GPL, LGPL and MPL. See the file COPYING
-||| for more information.
-||| $Id: precompiled_odbc.h,v 1.17 2002/10/08 20:22:34 nilsson Exp $
-\*/
+/*
+|| This file is part of Pike. For copyright information see COPYRIGHT.
+|| Pike is distributed under GPL, LGPL and MPL. See the file COPYING
+|| for more information.
+|| $Id: precompiled_odbc.h,v 1.18 2002/10/11 01:39:47 nilsson Exp $
+*/
 
 /*
  * Pike interface to ODBC compliant databases.

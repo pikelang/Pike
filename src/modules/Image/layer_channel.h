@@ -1,9 +1,10 @@
-/*\
-||| This file is part of Pike. For copyright information see COPYRIGHT.
-||| Pike is distributed under GPL, LGPL and MPL. See the file COPYING
-||| for more information.
-||| $Id: layer_channel.h,v 1.7 2002/10/08 20:22:31 nilsson Exp $
-\*/
+/*
+|| This file is part of Pike. For copyright information see COPYRIGHT.
+|| Pike is distributed under GPL, LGPL and MPL. See the file COPYING
+|| for more information.
+|| $Id: layer_channel.h,v 1.8 2002/10/11 01:39:42 nilsson Exp $
+*/
+
 /* template for operator layer row function */
 
 static void LM_FUNC(rgb_group *s,rgb_group *l,rgb_group *d,

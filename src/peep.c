@@ -1,9 +1,9 @@
-/*\
-||| This file is part of Pike. For copyright information see COPYRIGHT.
-||| Pike is distributed under GPL, LGPL and MPL. See the file COPYING
-||| for more information.
-||| $Id: peep.c,v 1.76 2002/10/08 20:22:24 nilsson Exp $
-\*/
+/*
+|| This file is part of Pike. For copyright information see COPYRIGHT.
+|| Pike is distributed under GPL, LGPL and MPL. See the file COPYING
+|| for more information.
+|| $Id: peep.c,v 1.77 2002/10/11 01:39:34 nilsson Exp $
+*/
 
 #include "global.h"
 #include "language.h"
@@ -26,7 +26,7 @@
 #include "interpret.h"
 #include "pikecode.h"
 
-RCSID("$Id: peep.c,v 1.76 2002/10/08 20:22:24 nilsson Exp $");
+RCSID("$Id: peep.c,v 1.77 2002/10/11 01:39:34 nilsson Exp $");
 
 static void asm_opt(void);
 
@@ -771,4 +771,3 @@ static void asm_opt(void)
   }
 #endif
 }
-

@@ -1,14 +1,14 @@
-/*\
-||| This file is part of Pike. For copyright information see COPYRIGHT.
-||| Pike is distributed under GPL, LGPL and MPL. See the file COPYING
-||| for more information.
-||| $Id: iff.c,v 1.11 2002/10/08 20:22:32 nilsson Exp $
-\*/
+/*
+|| This file is part of Pike. For copyright information see COPYRIGHT.
+|| Pike is distributed under GPL, LGPL and MPL. See the file COPYING
+|| for more information.
+|| $Id: iff.c,v 1.12 2002/10/11 01:39:44 nilsson Exp $
+*/
 
 #include "global.h"
 
 #include "stralloc.h"
-RCSID("$Id: iff.c,v 1.11 2002/10/08 20:22:32 nilsson Exp $");
+RCSID("$Id: iff.c,v 1.12 2002/10/11 01:39:44 nilsson Exp $");
 #include "pike_macros.h"
 #include "object.h"
 #include "constants.h"

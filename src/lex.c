@@ -1,13 +1,12 @@
-/*\
-||| This file is part of Pike. For copyright information see COPYRIGHT.
-||| Pike is distributed under GPL, LGPL and MPL. See the file COPYING
-||| for more information.
-||| $Id: lex.c,v 1.107 2002/10/08 23:31:24 nilsson Exp $
-\*/
-/**/
+/*
+|| This file is part of Pike. For copyright information see COPYRIGHT.
+|| Pike is distributed under GPL, LGPL and MPL. See the file COPYING
+|| for more information.
+|| $Id: lex.c,v 1.108 2002/10/11 01:39:33 nilsson Exp $
+*/
 
 #include "global.h"
-RCSID("$Id: lex.c,v 1.107 2002/10/08 23:31:24 nilsson Exp $");
+RCSID("$Id: lex.c,v 1.108 2002/10/11 01:39:33 nilsson Exp $");
 #include "language.h"
 #include "array.h"
 #include "lex.h"
@@ -447,6 +446,3 @@ int yylex(YYSTYPE *yylval)
 #endif /* LEXDEBUG > 8 */
   return(lex.current_lexer(yylval));
 }
-
-
-

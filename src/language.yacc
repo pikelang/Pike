@@ -1,11 +1,9 @@
-/* -*- C -*- */
-/*\
-||| This file is part of Pike. For copyright information see COPYRIGHT.
-||| Pike is distributed under GPL, LGPL and MPL. See the file COPYING
-||| for more information.
-||| $Id: language.yacc,v 1.299 2002/10/08 23:31:24 nilsson Exp $
-\*/
-/**/
+/* -*- c -*-
+|| This file is part of Pike. For copyright information see COPYRIGHT.
+|| Pike is distributed under GPL, LGPL and MPL. See the file COPYING
+|| for more information.
+|| $Id: language.yacc,v 1.300 2002/10/11 01:39:32 nilsson Exp $
+*/
 
 %pure_parser
 
@@ -115,7 +113,7 @@
 /* This is the grammar definition of Pike. */
 
 #include "global.h"
-RCSID("$Id: language.yacc,v 1.299 2002/10/08 23:31:24 nilsson Exp $");
+RCSID("$Id: language.yacc,v 1.300 2002/10/11 01:39:32 nilsson Exp $");
 #ifdef HAVE_MEMORY_H
 #include <memory.h>
 #endif

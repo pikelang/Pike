@@ -1,13 +1,12 @@
-/*\
-||| This file is part of Pike. For copyright information see COPYRIGHT.
-||| Pike is distributed under GPL, LGPL and MPL. See the file COPYING
-||| for more information.
-||| $Id: builtin_functions.c,v 1.444 2002/10/08 23:31:23 nilsson Exp $
-\*/
-/**/
+/*
+|| This file is part of Pike. For copyright information see COPYRIGHT.
+|| Pike is distributed under GPL, LGPL and MPL. See the file COPYING
+|| for more information.
+|| $Id: builtin_functions.c,v 1.445 2002/10/11 01:39:29 nilsson Exp $
+*/
 
 #include "global.h"
-RCSID("$Id: builtin_functions.c,v 1.444 2002/10/08 23:31:23 nilsson Exp $");
+RCSID("$Id: builtin_functions.c,v 1.445 2002/10/11 01:39:29 nilsson Exp $");
 #include "interpret.h"
 #include "svalue.h"
 #include "pike_macros.h"
@@ -8114,4 +8113,3 @@ void init_builtin_efuns(void)
 #endif
 #endif
 }
-

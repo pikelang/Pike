@@ -1,9 +1,9 @@
-/*\
-||| This file is part of Pike. For copyright information see COPYRIGHT.
-||| Pike is distributed under GPL, LGPL and MPL. See the file COPYING
-||| for more information.
-||| $Id: errors.c,v 1.3 2002/10/09 13:28:39 nilsson Exp $
-\*/
+/*
+|| This file is part of Pike. For copyright information see COPYRIGHT.
+|| Pike is distributed under GPL, LGPL and MPL. See the file COPYING
+|| for more information.
+|| $Id: errors.c,v 1.4 2002/10/11 01:39:46 nilsson Exp $
+*/
 
 /*
 ** libMird by Mirar <mirar@mirar.org>
@@ -26,7 +26,7 @@
 #include "dmalloc.h"
 
 static const char RCSID[]=
-   "$Id: errors.c,v 1.3 2002/10/09 13:28:39 nilsson Exp $";
+   "$Id: errors.c,v 1.4 2002/10/11 01:39:46 nilsson Exp $";
 
 static struct mird_error failed_to_allocate_error =
 { MIRDE_RESOURCE_ERR,NULL,sizeof(struct mird_error),0,0 };
@@ -329,5 +329,3 @@ void mird_perror(char *s,MIRD_RES error)
    mird_describe_error(error,&err);
    fprintf(stderr,"%s: %s\n",s,err);
 }
-
-

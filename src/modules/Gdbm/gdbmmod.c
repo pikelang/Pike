@@ -1,11 +1,12 @@
-/*\
-||| This file is part of Pike. For copyright information see COPYRIGHT.
-||| Pike is distributed under GPL, LGPL and MPL. See the file COPYING
-||| for more information.
-||| $Id: gdbmmod.c,v 1.20 2002/10/08 20:22:29 nilsson Exp $
-\*/
+/*
+|| This file is part of Pike. For copyright information see COPYRIGHT.
+|| Pike is distributed under GPL, LGPL and MPL. See the file COPYING
+|| for more information.
+|| $Id: gdbmmod.c,v 1.21 2002/10/11 01:39:40 nilsson Exp $
+*/
+
 #include "global.h"
-RCSID("$Id: gdbmmod.c,v 1.20 2002/10/08 20:22:29 nilsson Exp $");
+RCSID("$Id: gdbmmod.c,v 1.21 2002/10/11 01:39:40 nilsson Exp $");
 #include "gdbm_machine.h"
 #include "threads.h"
 

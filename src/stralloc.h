@@ -1,9 +1,9 @@
-/*\
-||| This file is part of Pike. For copyright information see COPYRIGHT.
-||| Pike is distributed under GPL, LGPL and MPL. See the file COPYING
-||| for more information.
-||| $Id: stralloc.h,v 1.69 2002/10/08 20:22:27 nilsson Exp $
-\*/
+/*
+|| This file is part of Pike. For copyright information see COPYRIGHT.
+|| Pike is distributed under GPL, LGPL and MPL. See the file COPYING
+|| for more information.
+|| $Id: stralloc.h,v 1.70 2002/10/11 01:39:38 nilsson Exp $
+*/
 
 #ifndef STRALLOC_H
 #define STRALLOC_H

@@ -1,9 +1,9 @@
-/*\
-||| This file is part of Pike. For copyright information see COPYRIGHT.
-||| Pike is distributed under GPL, LGPL and MPL. See the file COPYING
-||| for more information.
-||| $Id: constants.h,v 1.3 2002/10/08 20:22:44 nilsson Exp $
-\*/
+/*
+|| This file is part of Pike. For copyright information see COPYRIGHT.
+|| Pike is distributed under GPL, LGPL and MPL. See the file COPYING
+|| for more information.
+|| $Id: constants.h,v 1.4 2002/10/11 01:39:59 nilsson Exp $
+*/
 
 void init_sdl_constants() {
   /* Video related flags */

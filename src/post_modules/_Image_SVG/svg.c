@@ -1,9 +1,9 @@
-/*\
-||| This file is part of Pike. For copyright information see COPYRIGHT.
-||| Pike is distributed under GPL, LGPL and MPL. See the file COPYING
-||| for more information.
-||| $Id: svg.c,v 1.6 2002/10/08 20:22:45 nilsson Exp $
-\*/
+/*
+|| This file is part of Pike. For copyright information see COPYRIGHT.
+|| Pike is distributed under GPL, LGPL and MPL. See the file COPYING
+|| for more information.
+|| $Id: svg.c,v 1.7 2002/10/11 01:40:00 nilsson Exp $
+*/
 
 #include "config.h"
 
@@ -11,7 +11,7 @@
 #include "global.h"
 
 #include "stralloc.h"
-RCSID("$Id: svg.c,v 1.6 2002/10/08 20:22:45 nilsson Exp $");
+RCSID("$Id: svg.c,v 1.7 2002/10/11 01:40:00 nilsson Exp $");
 #include "pike_macros.h"
 #include "object.h"
 #include "constants.h"

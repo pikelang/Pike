@@ -1,14 +1,13 @@
-/*\
-||| This file is part of Pike. For copyright information see COPYRIGHT.
-||| Pike is distributed under GPL, LGPL and MPL. See the file COPYING
-||| for more information.
-||| $Id: file.c,v 1.245 2002/10/08 23:31:26 nilsson Exp $
-\*/
-/**/
+/*
+|| This file is part of Pike. For copyright information see COPYRIGHT.
+|| Pike is distributed under GPL, LGPL and MPL. See the file COPYING
+|| for more information.
+|| $Id: file.c,v 1.246 2002/10/11 01:39:54 nilsson Exp $
+*/
 
 #define NO_PIKE_SHORTHAND
 #include "global.h"
-RCSID("$Id: file.c,v 1.245 2002/10/08 23:31:26 nilsson Exp $");
+RCSID("$Id: file.c,v 1.246 2002/10/11 01:39:54 nilsson Exp $");
 #include "fdlib.h"
 #include "interpret.h"
 #include "svalue.h"

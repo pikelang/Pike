@@ -1,13 +1,13 @@
-/*\
-||| This file is part of Pike. For copyright information see COPYRIGHT.
-||| Pike is distributed under GPL, LGPL and MPL. See the file COPYING
-||| for more information.
-||| $Id: clf.c,v 1.9 2002/10/08 20:22:28 nilsson Exp $
-\*/
+/*
+|| This file is part of Pike. For copyright information see COPYRIGHT.
+|| Pike is distributed under GPL, LGPL and MPL. See the file COPYING
+|| for more information.
+|| $Id: clf.c,v 1.10 2002/10/11 01:39:39 nilsson Exp $
+*/
 
 /* MUST BE FIRST */
 #include "global.h"
-RCSID("$Id: clf.c,v 1.9 2002/10/08 20:22:28 nilsson Exp $");
+RCSID("$Id: clf.c,v 1.10 2002/10/11 01:39:39 nilsson Exp $");
 #include "fdlib.h"
 #include "stralloc.h"
 #include "pike_macros.h"

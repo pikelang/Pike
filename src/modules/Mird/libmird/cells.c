@@ -1,9 +1,9 @@
-/*\
-||| This file is part of Pike. For copyright information see COPYRIGHT.
-||| Pike is distributed under GPL, LGPL and MPL. See the file COPYING
-||| for more information.
-||| $Id: cells.c,v 1.3 2002/10/09 13:28:39 nilsson Exp $
-\*/
+/*
+|| This file is part of Pike. For copyright information see COPYRIGHT.
+|| Pike is distributed under GPL, LGPL and MPL. See the file COPYING
+|| for more information.
+|| $Id: cells.c,v 1.4 2002/10/11 01:39:46 nilsson Exp $
+*/
 
 /*
 ** libMird by Mirar <mirar@mirar.org>
@@ -19,7 +19,7 @@
 #include <stdlib.h>
 
 static const char RCSID[]=
-   "$Id: cells.c,v 1.3 2002/10/09 13:28:39 nilsson Exp $";
+   "$Id: cells.c,v 1.4 2002/10/11 01:39:46 nilsson Exp $";
 
 #define BIG_THRESHOLD(DB) ((DB)->block_size-(4<<(DB)->frag_bits)-64)
 #define DATA_IN_BIG(DB) ((DB)->block_size-(5+2)*4)
@@ -282,4 +282,3 @@ MIRD_RES mird_cell_get(struct mird *db,
 
    return MIRD_OK;
 }
-

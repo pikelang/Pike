@@ -1,9 +1,9 @@
-/*\
-||| This file is part of Pike. For copyright information see COPYRIGHT.
-||| Pike is distributed under GPL, LGPL and MPL. See the file COPYING
-||| for more information.
-||| $Id: signal_handler.h,v 1.14 2002/10/08 20:22:27 nilsson Exp $
-\*/
+/*
+|| This file is part of Pike. For copyright information see COPYRIGHT.
+|| Pike is distributed under GPL, LGPL and MPL. See the file COPYING
+|| for more information.
+|| $Id: signal_handler.h,v 1.15 2002/10/11 01:39:37 nilsson Exp $
+*/
 
 #ifndef SIGNAL_H
 #define SIGNAL_H

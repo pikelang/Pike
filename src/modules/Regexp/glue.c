@@ -1,10 +1,9 @@
-/*\
-||| This file is part of Pike. For copyright information see COPYRIGHT.
-||| Pike is distributed under GPL, LGPL and MPL. See the file COPYING
-||| for more information.
-||| $Id: glue.c,v 1.30 2002/10/08 23:31:26 nilsson Exp $
-\*/
-/**/
+/*
+|| This file is part of Pike. For copyright information see COPYRIGHT.
+|| Pike is distributed under GPL, LGPL and MPL. See the file COPYING
+|| for more information.
+|| $Id: glue.c,v 1.31 2002/10/11 01:39:48 nilsson Exp $
+*/
 
 #include "global.h"
 
@@ -22,7 +21,7 @@
 #include "module_support.h"
 #include "builtin_functions.h"
 
-RCSID("$Id: glue.c,v 1.30 2002/10/08 23:31:26 nilsson Exp $");
+RCSID("$Id: glue.c,v 1.31 2002/10/11 01:39:48 nilsson Exp $");
 
 #ifdef USE_SYSTEM_REGEXP
 #include <regexp.h>

@@ -1,9 +1,9 @@
-/*\
-||| This file is part of Pike. For copyright information see COPYRIGHT.
-||| Pike is distributed under GPL, LGPL and MPL. See the file COPYING
-||| for more information.
-||| $Id: mapping.h,v 1.43 2002/10/08 20:22:23 nilsson Exp $
-\*/
+/*
+|| This file is part of Pike. For copyright information see COPYRIGHT.
+|| Pike is distributed under GPL, LGPL and MPL. See the file COPYING
+|| for more information.
+|| $Id: mapping.h,v 1.44 2002/10/11 01:39:33 nilsson Exp $
+*/
 
 #ifndef MAPPING_H
 #define MAPPING_H

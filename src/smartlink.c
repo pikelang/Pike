@@ -1,9 +1,9 @@
-/*\
-||| This file is part of Pike. For copyright information see COPYRIGHT.
-||| Pike is distributed under GPL, LGPL and MPL. See the file COPYING
-||| for more information.
-||| $Id: smartlink.c,v 1.13 2002/10/08 20:22:27 nilsson Exp $
-\*/
+/*
+|| This file is part of Pike. For copyright information see COPYRIGHT.
+|| Pike is distributed under GPL, LGPL and MPL. See the file COPYING
+|| for more information.
+|| $Id: smartlink.c,v 1.14 2002/10/11 01:39:38 nilsson Exp $
+*/
 
 /*
  * smartlink - A smarter linker.
@@ -92,7 +92,7 @@ int main(int argc, char **argv)
 
   if (!strcmp(argv[1], "-v")) {
     fprintf(stdout,
-	    "$Id: smartlink.c,v 1.13 2002/10/08 20:22:27 nilsson Exp $\n"
+	    "$Id: smartlink.c,v 1.14 2002/10/11 01:39:38 nilsson Exp $\n"
 	    "Usage:\n"
 	    "\t%s binary [args]\n",
 	    argv[0]);

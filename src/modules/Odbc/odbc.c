@@ -1,9 +1,9 @@
-/*\
-||| This file is part of Pike. For copyright information see COPYRIGHT.
-||| Pike is distributed under GPL, LGPL and MPL. See the file COPYING
-||| for more information.
-||| $Id: odbc.c,v 1.31 2002/10/08 20:22:34 nilsson Exp $
-\*/
+/*
+|| This file is part of Pike. For copyright information see COPYRIGHT.
+|| Pike is distributed under GPL, LGPL and MPL. See the file COPYING
+|| for more information.
+|| $Id: odbc.c,v 1.32 2002/10/11 01:39:47 nilsson Exp $
+*/
 
 /*
  * Pike interface to ODBC compliant databases.
@@ -21,7 +21,7 @@
 #include "config.h"
 #endif /* HAVE_CONFIG_H */
 
-RCSID("$Id: odbc.c,v 1.31 2002/10/08 20:22:34 nilsson Exp $");
+RCSID("$Id: odbc.c,v 1.32 2002/10/11 01:39:47 nilsson Exp $");
 
 #include "interpret.h"
 #include "object.h"
@@ -525,4 +525,3 @@ void pike_module_exit(void)
   }
 #endif /* HAVE_ODBC */
 }
- 

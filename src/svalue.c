@@ -1,10 +1,9 @@
-/*\
-||| This file is part of Pike. For copyright information see COPYRIGHT.
-||| Pike is distributed under GPL, LGPL and MPL. See the file COPYING
-||| for more information.
-||| $Id: svalue.c,v 1.146 2002/10/08 23:31:25 nilsson Exp $
-\*/
-/**/
+/*
+|| This file is part of Pike. For copyright information see COPYRIGHT.
+|| Pike is distributed under GPL, LGPL and MPL. See the file COPYING
+|| for more information.
+|| $Id: svalue.c,v 1.147 2002/10/11 01:39:38 nilsson Exp $
+*/
 
 #include "global.h"
 #include "main.h"
@@ -67,7 +66,7 @@ static int pike_isnan(double x)
 #endif /* HAVE__ISNAN */
 #endif /* HAVE_ISNAN */
 
-RCSID("$Id: svalue.c,v 1.146 2002/10/08 23:31:25 nilsson Exp $");
+RCSID("$Id: svalue.c,v 1.147 2002/10/11 01:39:38 nilsson Exp $");
 
 struct svalue dest_ob_zero = {
   T_INT, 0,

@@ -1,9 +1,9 @@
-/*\
-||| This file is part of Pike. For copyright information see COPYRIGHT.
-||| Pike is distributed under GPL, LGPL and MPL. See the file COPYING
-||| for more information.
-||| $Id: oracle.c,v 1.72 2002/10/08 20:22:35 nilsson Exp $
-\*/
+/*
+|| This file is part of Pike. For copyright information see COPYRIGHT.
+|| Pike is distributed under GPL, LGPL and MPL. See the file COPYING
+|| for more information.
+|| $Id: oracle.c,v 1.73 2002/10/11 01:39:47 nilsson Exp $
+*/
 
 /*
  * Pike interface to Oracle databases.
@@ -58,7 +58,7 @@
 
 #include <math.h>
 
-RCSID("$Id: oracle.c,v 1.72 2002/10/08 20:22:35 nilsson Exp $");
+RCSID("$Id: oracle.c,v 1.73 2002/10/11 01:39:47 nilsson Exp $");
 
 
 /* User-changable defines: */
@@ -2370,4 +2370,3 @@ void pike_module_init(void)  {}
 void pike_module_exit(void)  {}
 
 #endif
-

@@ -1,10 +1,9 @@
-/*\
-||| This file is part of Pike. For copyright information see COPYRIGHT.
-||| Pike is distributed under GPL, LGPL and MPL. See the file COPYING
-||| for more information.
-||| $Id: port.c,v 1.55 2002/10/08 23:31:25 nilsson Exp $
-\*/
-/**/
+/*
+|| This file is part of Pike. For copyright information see COPYRIGHT.
+|| Pike is distributed under GPL, LGPL and MPL. See the file COPYING
+|| for more information.
+|| $Id: port.c,v 1.56 2002/10/11 01:39:36 nilsson Exp $
+*/
 
 #define PORT_DO_WARN
 
@@ -24,7 +23,7 @@
 #include <float.h>
 #include <string.h>
 
-RCSID("$Id: port.c,v 1.55 2002/10/08 23:31:25 nilsson Exp $");
+RCSID("$Id: port.c,v 1.56 2002/10/11 01:39:36 nilsson Exp $");
 
 #ifdef sun
 time_t time PROT((time_t *));

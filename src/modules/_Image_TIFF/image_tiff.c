@@ -1,9 +1,10 @@
-/*\
-||| This file is part of Pike. For copyright information see COPYRIGHT.
-||| Pike is distributed under GPL, LGPL and MPL. See the file COPYING
-||| for more information.
-||| $Id: image_tiff.c,v 1.29 2002/10/08 20:22:40 nilsson Exp $
-\*/
+/*
+|| This file is part of Pike. For copyright information see COPYRIGHT.
+|| Pike is distributed under GPL, LGPL and MPL. See the file COPYING
+|| for more information.
+|| $Id: image_tiff.c,v 1.30 2002/10/11 01:39:53 nilsson Exp $
+*/
+
 #include "global.h"
 #include "config.h"
 /*
@@ -13,7 +14,7 @@
 */
 
 #ifdef HAVE_LIBTIFF
-RCSID("$Id: image_tiff.c,v 1.29 2002/10/08 20:22:40 nilsson Exp $");
+RCSID("$Id: image_tiff.c,v 1.30 2002/10/11 01:39:53 nilsson Exp $");
 
 #include "global.h"
 #include "machine.h"

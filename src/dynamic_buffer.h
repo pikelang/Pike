@@ -1,9 +1,9 @@
-/*\
-||| This file is part of Pike. For copyright information see COPYRIGHT.
-||| Pike is distributed under GPL, LGPL and MPL. See the file COPYING
-||| for more information.
-||| $Id: dynamic_buffer.h,v 1.15 2002/10/08 20:22:20 nilsson Exp $
-\*/
+/*
+|| This file is part of Pike. For copyright information see COPYRIGHT.
+|| Pike is distributed under GPL, LGPL and MPL. See the file COPYING
+|| for more information.
+|| $Id: dynamic_buffer.h,v 1.16 2002/10/11 01:39:30 nilsson Exp $
+*/
 
 #ifndef DYNAMIC_BUFFER_H
 #define DYNAMIC_BUFFER_H

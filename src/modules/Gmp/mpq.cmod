@@ -1,13 +1,12 @@
-/*\ -*- c -*-
-||| This file is part of Pike. For copyright information see COPYRIGHT.
-||| Pike is distributed under GPL, LGPL and MPL. See the file COPYING
-||| for more information.
-||| $Id: mpq.cmod,v 1.12 2002/10/09 22:23:39 nilsson Exp $
-\*/
-/**/
+/* -*- c -*-
+|| This file is part of Pike. For copyright information see COPYRIGHT.
+|| Pike is distributed under GPL, LGPL and MPL. See the file COPYING
+|| for more information.
+|| $Id: mpq.cmod,v 1.13 2002/10/11 01:39:40 nilsson Exp $
+*/
 
 #include "global.h"
-RCSID("$Id: mpq.cmod,v 1.12 2002/10/09 22:23:39 nilsson Exp $");
+RCSID("$Id: mpq.cmod,v 1.13 2002/10/11 01:39:40 nilsson Exp $");
 #include "gmp_machine.h"
 
 #if defined(HAVE_GMP2_GMP_H) && defined(HAVE_LIBGMP2)

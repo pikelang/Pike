@@ -1,11 +1,12 @@
-/*\
-||| This file is part of Pike. For copyright information see COPYRIGHT.
-||| Pike is distributed under GPL, LGPL and MPL. See the file COPYING
-||| for more information.
-||| $Id: psd.c,v 1.33 2002/10/08 20:22:32 nilsson Exp $
-\*/
+/*
+|| This file is part of Pike. For copyright information see COPYRIGHT.
+|| Pike is distributed under GPL, LGPL and MPL. See the file COPYING
+|| for more information.
+|| $Id: psd.c,v 1.34 2002/10/11 01:39:44 nilsson Exp $
+*/
+
 #include "global.h"
-RCSID("$Id: psd.c,v 1.33 2002/10/08 20:22:32 nilsson Exp $");
+RCSID("$Id: psd.c,v 1.34 2002/10/11 01:39:44 nilsson Exp $");
 
 #include "image_machine.h"
 
@@ -780,4 +781,3 @@ void exit_image_psd()
 #include "psd_constant_strings.h"
 #undef STRING
 }
-

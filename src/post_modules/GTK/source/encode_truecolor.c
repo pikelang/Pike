@@ -1,9 +1,9 @@
-/*\
-||| This file is part of Pike. For copyright information see COPYRIGHT.
-||| Pike is distributed under GPL, LGPL and MPL. See the file COPYING
-||| for more information.
-||| $Id: encode_truecolor.c,v 1.7 2002/10/08 20:22:44 nilsson Exp $
-\*/
+/*
+|| This file is part of Pike. For copyright information see COPYRIGHT.
+|| Pike is distributed under GPL, LGPL and MPL. See the file COPYING
+|| for more information.
+|| $Id: encode_truecolor.c,v 1.8 2002/10/11 01:39:59 nilsson Exp $
+*/
 
 static unsigned char swap_bits[256] = 
 { 0,128,64,192,32,160,96,224,16,144,80,208,48,176,112,

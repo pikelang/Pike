@@ -1,9 +1,9 @@
-/*\
-||| This file is part of Pike. For copyright information see COPYRIGHT.
-||| Pike is distributed under GPL, LGPL and MPL. See the file COPYING
-||| for more information.
-||| $Id: system.h,v 1.7 2002/10/08 20:22:43 nilsson Exp $
-\*/
+/*
+|| This file is part of Pike. For copyright information see COPYRIGHT.
+|| Pike is distributed under GPL, LGPL and MPL. See the file COPYING
+|| for more information.
+|| $Id: system.h,v 1.8 2002/10/11 01:39:57 nilsson Exp $
+*/
 
 /*
  * Prototypes for the Pike system-module
@@ -64,4 +64,3 @@ struct memory_storage
 #define MEM_FREE_SHMDEL 0x40
    unsigned long flags;
 };
-

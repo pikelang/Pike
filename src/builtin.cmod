@@ -1,10 +1,9 @@
-/*\ -*- c -*-
-||| This file is part of Pike. For copyright information see COPYRIGHT.
-||| Pike is distributed under GPL, LGPL and MPL. See the file COPYING
-||| for more information.
-||| $Id: builtin.cmod,v 1.93 2002/10/09 22:23:38 nilsson Exp $
-\*/
-/**/
+/* -*- c -*-
+|| This file is part of Pike. For copyright information see COPYRIGHT.
+|| Pike is distributed under GPL, LGPL and MPL. See the file COPYING
+|| for more information.
+|| $Id: builtin.cmod,v 1.94 2002/10/11 01:39:29 nilsson Exp $
+*/
 
 #include "global.h"
 #include "interpret.h"

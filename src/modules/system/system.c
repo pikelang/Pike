@@ -1,9 +1,9 @@
-/*\
-||| This file is part of Pike. For copyright information see COPYRIGHT.
-||| Pike is distributed under GPL, LGPL and MPL. See the file COPYING
-||| for more information.
-||| $Id: system.c,v 1.127 2002/10/08 20:22:43 nilsson Exp $
-\*/
+/*
+|| This file is part of Pike. For copyright information see COPYRIGHT.
+|| Pike is distributed under GPL, LGPL and MPL. See the file COPYING
+|| for more information.
+|| $Id: system.c,v 1.128 2002/10/11 01:39:56 nilsson Exp $
+*/
 
 /*
  * System-call module for Pike
@@ -20,7 +20,7 @@
 #include "system_machine.h"
 #include "system.h"
 
-RCSID("$Id: system.c,v 1.127 2002/10/08 20:22:43 nilsson Exp $");
+RCSID("$Id: system.c,v 1.128 2002/10/11 01:39:56 nilsson Exp $");
 #ifdef HAVE_WINSOCK_H
 #include <winsock.h>
 #endif

@@ -1,16 +1,16 @@
-/*\
-||| This file is part of Pike. For copyright information see COPYRIGHT.
-||| Pike is distributed under GPL, LGPL and MPL. See the file COPYING
-||| for more information.
-||| $Id: udp.c,v 1.38 2002/10/08 20:22:41 nilsson Exp $
-\*/
+/*
+|| This file is part of Pike. For copyright information see COPYRIGHT.
+|| Pike is distributed under GPL, LGPL and MPL. See the file COPYING
+|| for more information.
+|| $Id: udp.c,v 1.39 2002/10/11 01:39:55 nilsson Exp $
+*/
 
 #define NO_PIKE_SHORTHAND
 #include "global.h"
 
 #include "file_machine.h"
 
-RCSID("$Id: udp.c,v 1.38 2002/10/08 20:22:41 nilsson Exp $");
+RCSID("$Id: udp.c,v 1.39 2002/10/11 01:39:55 nilsson Exp $");
 #include "fdlib.h"
 #include "interpret.h"
 #include "svalue.h"

@@ -1,9 +1,10 @@
-/*\
-||| This file is part of Pike. For copyright information see COPYRIGHT.
-||| Pike is distributed under GPL, LGPL and MPL. See the file COPYING
-||| for more information.
-||| $Id: discdate.c,v 1.12 2002/10/08 20:22:41 nilsson Exp $
-\*/
+/*
+|| This file is part of Pike. For copyright information see COPYRIGHT.
+|| Pike is distributed under GPL, LGPL and MPL. See the file COPYING
+|| for more information.
+|| $Id: discdate.c,v 1.13 2002/10/11 01:39:55 nilsson Exp $
+*/
+
 /* DiscDate.C .. converts boring normal dates to fun Discordian Date -><-
    written  the 65th day of The Aftermath in the Year of Our Lady of 
    Discord 3157 by Druel the Chaotic aka Jeremy Johnson aka
@@ -32,7 +33,7 @@
 /* This must be included last! */
 #include "module_magic.h"
 
-RCSID("$Id: discdate.c,v 1.12 2002/10/08 20:22:41 nilsson Exp $");
+RCSID("$Id: discdate.c,v 1.13 2002/10/11 01:39:55 nilsson Exp $");
 
 struct disc_time
 {

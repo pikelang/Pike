@@ -1,9 +1,9 @@
-/*\
-||| This file is part of Pike. For copyright information see COPYRIGHT.
-||| Pike is distributed under GPL, LGPL and MPL. See the file COPYING
-||| for more information.
-||| $Id: freelist.c,v 1.3 2002/10/09 13:28:39 nilsson Exp $
-\*/
+/*
+|| This file is part of Pike. For copyright information see COPYRIGHT.
+|| Pike is distributed under GPL, LGPL and MPL. See the file COPYING
+|| for more information.
+|| $Id: freelist.c,v 1.4 2002/10/11 01:39:46 nilsson Exp $
+*/
 
 /*
 ** libMird by Mirar <mirar@mirar.org>
@@ -26,7 +26,7 @@
 #include <stdio.h>
 
 static const char RCSID[]=
-   "$Id: freelist.c,v 1.3 2002/10/09 13:28:39 nilsson Exp $";
+   "$Id: freelist.c,v 1.4 2002/10/11 01:39:46 nilsson Exp $";
 
 
 #define BLOCKS_IN_FREE_LIST(DB) (LONGS_IN_BLOCK(DB)-6)
@@ -263,4 +263,3 @@ MIRD_RES mird_freelist_sync(struct mird *db)
 
    return MIRD_OK;
 }
-

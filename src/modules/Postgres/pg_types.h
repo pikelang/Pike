@@ -1,9 +1,9 @@
-/*\
-||| This file is part of Pike. For copyright information see COPYRIGHT.
-||| Pike is distributed under GPL, LGPL and MPL. See the file COPYING
-||| for more information.
-||| $Id: pg_types.h,v 1.5 2002/10/08 20:22:36 nilsson Exp $
-\*/
+/*
+|| This file is part of Pike. For copyright information see COPYRIGHT.
+|| Pike is distributed under GPL, LGPL and MPL. See the file COPYING
+|| for more information.
+|| $Id: pg_types.h,v 1.6 2002/10/11 01:39:48 nilsson Exp $
+*/
 
 #ifndef _PG_TYPES_H_
 #define _PG_TYPES_H_

@@ -1,10 +1,9 @@
-/*\
-||| This file is part of Pike. For copyright information see COPYRIGHT.
-||| Pike is distributed under GPL, LGPL and MPL. See the file COPYING
-||| for more information.
-||| $Id: opcodes.c,v 1.124 2002/10/08 23:31:24 nilsson Exp $
-\*/
-/**/
+/*
+|| This file is part of Pike. For copyright information see COPYRIGHT.
+|| Pike is distributed under GPL, LGPL and MPL. See the file COPYING
+|| for more information.
+|| $Id: opcodes.c,v 1.125 2002/10/11 01:39:34 nilsson Exp $
+*/
 
 #include "global.h"
 #include <errno.h>
@@ -31,7 +30,7 @@
 
 #define sp Pike_sp
 
-RCSID("$Id: opcodes.c,v 1.124 2002/10/08 23:31:24 nilsson Exp $");
+RCSID("$Id: opcodes.c,v 1.125 2002/10/11 01:39:34 nilsson Exp $");
 
 void index_no_free(struct svalue *to,struct svalue *what,struct svalue *ind)
 {

@@ -1,10 +1,9 @@
-/*\
-||| This file is part of Pike. For copyright information see COPYRIGHT.
-||| Pike is distributed under GPL, LGPL and MPL. See the file COPYING
-||| for more information.
-||| $Id: dynamic_buffer.c,v 1.20 2002/10/10 10:53:46 grubba Exp $
-\*/
-/**/
+/*
+|| This file is part of Pike. For copyright information see COPYRIGHT.
+|| Pike is distributed under GPL, LGPL and MPL. See the file COPYING
+|| for more information.
+|| $Id: dynamic_buffer.c,v 1.21 2002/10/11 01:39:30 nilsson Exp $
+*/
 
 #include "global.h"
 #include "dynamic_buffer.h"
@@ -12,7 +11,7 @@
 #include "pike_error.h"
 #include "pike_memory.h"
 
-RCSID("$Id: dynamic_buffer.c,v 1.20 2002/10/10 10:53:46 grubba Exp $");
+RCSID("$Id: dynamic_buffer.c,v 1.21 2002/10/11 01:39:30 nilsson Exp $");
 
 static dynamic_buffer buff;
 
@@ -141,4 +140,3 @@ PMOD_EXPORT char *debug_return_buf(void)
   return buff.s.str;
 }
 /* int my_get_buf_size() {  return buff->s.len; } */
-

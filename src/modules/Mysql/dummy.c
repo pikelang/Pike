@@ -1,9 +1,9 @@
-/*\
-||| This file is part of Pike. For copyright information see COPYRIGHT.
-||| Pike is distributed under GPL, LGPL and MPL. See the file COPYING
-||| for more information.
-||| $Id: dummy.c,v 1.6 2002/10/08 20:22:34 nilsson Exp $
-\*/
+/*
+|| This file is part of Pike. For copyright information see COPYRIGHT.
+|| Pike is distributed under GPL, LGPL and MPL. See the file COPYING
+|| for more information.
+|| $Id: dummy.c,v 1.7 2002/10/11 01:39:47 nilsson Exp $
+*/
 
 /*
  * Glue needed on Solaris if libgcc.a isn't compiled with -fpic.

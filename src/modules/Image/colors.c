@@ -1,9 +1,9 @@
-/*\
-||| This file is part of Pike. For copyright information see COPYRIGHT.
-||| Pike is distributed under GPL, LGPL and MPL. See the file COPYING
-||| for more information.
-||| $Id: colors.c,v 1.62 2002/10/08 20:22:30 nilsson Exp $
-\*/
+/*
+|| This file is part of Pike. For copyright information see COPYRIGHT.
+|| Pike is distributed under GPL, LGPL and MPL. See the file COPYING
+|| for more information.
+|| $Id: colors.c,v 1.63 2002/10/11 01:39:41 nilsson Exp $
+*/
 
 /*
 **! module Image
@@ -192,7 +192,7 @@
 
 #include "global.h"
 
-RCSID("$Id: colors.c,v 1.62 2002/10/08 20:22:30 nilsson Exp $");
+RCSID("$Id: colors.c,v 1.63 2002/10/11 01:39:41 nilsson Exp $");
 
 #include "image_machine.h"
 

@@ -1,9 +1,9 @@
-/*\
-||| This file is part of Pike. For copyright information see COPYRIGHT.
-||| Pike is distributed under GPL, LGPL and MPL. See the file COPYING
-||| for more information.
-||| $Id: cast_sboxes.h,v 1.3 2002/10/08 20:22:39 nilsson Exp $
-\*/
+/*
+|| This file is part of Pike. For copyright information see COPYRIGHT.
+|| Pike is distributed under GPL, LGPL and MPL. See the file COPYING
+|| for more information.
+|| $Id: cast_sboxes.h,v 1.4 2002/10/11 01:39:52 nilsson Exp $
+*/
 
 /*
  *	CAST-128 in C
@@ -547,4 +547,3 @@ static const u32 cast_sbox8[256] = {
   0x04F19130, 0xBA6E4EC0, 0x99265164, 0x1EE7230D,
   0x50B2AD80, 0xEAEE6801, 0x8DB2A283, 0xEA8BF59E
 };
-

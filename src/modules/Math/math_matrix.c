@@ -1,9 +1,9 @@
-/*\
-||| This file is part of Pike. For copyright information see COPYRIGHT.
-||| Pike is distributed under GPL, LGPL and MPL. See the file COPYING
-||| for more information.
-||| $Id: math_matrix.c,v 1.34 2002/10/08 20:22:33 nilsson Exp $
-\*/
+/*
+|| This file is part of Pike. For copyright information see COPYRIGHT.
+|| Pike is distributed under GPL, LGPL and MPL. See the file COPYING
+|| for more information.
+|| $Id: math_matrix.c,v 1.35 2002/10/11 01:39:45 nilsson Exp $
+*/
 
 #include "global.h"
 #include "config.h"
@@ -262,4 +262,3 @@ extern struct program *math_lmatrix_program;
 **! method Matrix convolve(object with)
 **!	Convolve called matrix with the argument.
 */
-

@@ -1,16 +1,15 @@
-/*\ -*- c -*-
-||| This file is part of Pike. For copyright information see COPYRIGHT.
-||| Pike is distributed under GPL, LGPL and MPL. See the file COPYING
-||| for more information.
-||| $Id: auto.c.in,v 1.22 2002/10/09 22:23:39 nilsson Exp $
-\*/
-/**/
+/* -*- c -*-
+|| This file is part of Pike. For copyright information see COPYRIGHT.
+|| Pike is distributed under GPL, LGPL and MPL. See the file COPYING
+|| for more information.
+|| $Id: auto.c.in,v 1.23 2002/10/11 01:39:58 nilsson Exp $
+*/
 
 #include "global.h"
 
 #include "config.h"
 
-RCSID("$Id: auto.c.in,v 1.22 2002/10/09 22:23:39 nilsson Exp $");
+RCSID("$Id: auto.c.in,v 1.23 2002/10/11 01:39:58 nilsson Exp $");
 #include "stralloc.h"
 #include "pike_macros.h"
 #include "object.h"
@@ -407,4 +406,3 @@ static void post_init()
 }
 
 @@
-

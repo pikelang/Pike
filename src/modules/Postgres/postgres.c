@@ -1,9 +1,9 @@
-/*\
-||| This file is part of Pike. For copyright information see COPYRIGHT.
-||| Pike is distributed under GPL, LGPL and MPL. See the file COPYING
-||| for more information.
-||| $Id: postgres.c,v 1.27 2002/10/08 20:22:36 nilsson Exp $
-\*/
+/*
+|| This file is part of Pike. For copyright information see COPYRIGHT.
+|| Pike is distributed under GPL, LGPL and MPL. See the file COPYING
+|| for more information.
+|| $Id: postgres.c,v 1.28 2002/10/11 01:39:48 nilsson Exp $
+*/
 
 /*
  * Postgres95 and PostgreSQL support for Pike 0.5 and up.
@@ -77,7 +77,7 @@ static void pgdebug (char * a, ...) {}
 
 struct program * postgres_program;
 
-RCSID("$Id: postgres.c,v 1.27 2002/10/08 20:22:36 nilsson Exp $");
+RCSID("$Id: postgres.c,v 1.28 2002/10/11 01:39:48 nilsson Exp $");
 
 static void set_error (char * newerror)
 {
@@ -745,4 +745,3 @@ void pike_module_exit(void)
 void pike_module_init(void) {}
 void pike_module_exit(void) {}
 #endif /* HAVE_POSTGRES */
-

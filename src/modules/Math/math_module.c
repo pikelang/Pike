@@ -1,9 +1,9 @@
-/*\
-||| This file is part of Pike. For copyright information see COPYRIGHT.
-||| Pike is distributed under GPL, LGPL and MPL. See the file COPYING
-||| for more information.
-||| $Id: math_module.c,v 1.10 2002/10/08 20:22:33 nilsson Exp $
-\*/
+/*
+|| This file is part of Pike. For copyright information see COPYRIGHT.
+|| Pike is distributed under GPL, LGPL and MPL. See the file COPYING
+|| for more information.
+|| $Id: math_module.c,v 1.11 2002/10/11 01:39:45 nilsson Exp $
+*/
 
 #include "global.h"
 #include "config.h"
@@ -81,4 +81,3 @@ void pike_module_init(void)
    add_float_constant("inf", MAKE_INF(1), 0);
    add_float_constant("nan", MAKE_NAN(), 0);
 }
-

@@ -1,14 +1,14 @@
-/*\
-||| This file is part of Pike. For copyright information see COPYRIGHT.
-||| Pike is distributed under GPL, LGPL and MPL. See the file COPYING
-||| for more information.
-||| $Id: image_ttf.c,v 1.45 2002/10/08 20:22:40 nilsson Exp $
-\*/
+/*
+|| This file is part of Pike. For copyright information see COPYRIGHT.
+|| Pike is distributed under GPL, LGPL and MPL. See the file COPYING
+|| for more information.
+|| $Id: image_ttf.c,v 1.46 2002/10/11 01:39:54 nilsson Exp $
+*/
 
 #include "config.h"
 
 #include "global.h"
-RCSID("$Id: image_ttf.c,v 1.45 2002/10/08 20:22:40 nilsson Exp $");
+RCSID("$Id: image_ttf.c,v 1.46 2002/10/11 01:39:54 nilsson Exp $");
 
 #ifdef HAVE_LIBTTF
 #if defined(HAVE_FREETYPE_FREETYPE_H) && defined(HAVE_FREETYPE_FTXKERN_H)

@@ -1,9 +1,9 @@
-/*\
-||| This file is part of Pike. For copyright information see COPYRIGHT.
-||| Pike is distributed under GPL, LGPL and MPL. See the file COPYING
-||| for more information.
-||| $Id: global.h,v 1.75 2002/10/08 20:22:20 nilsson Exp $
-\*/
+/*
+|| This file is part of Pike. For copyright information see COPYRIGHT.
+|| Pike is distributed under GPL, LGPL and MPL. See the file COPYING
+|| for more information.
+|| $Id: global.h,v 1.76 2002/10/11 01:39:31 nilsson Exp $
+*/
 
 #ifndef GLOBAL_H
 #define GLOBAL_H

@@ -1,9 +1,9 @@
-/*\
-||| This file is part of Pike. For copyright information see COPYRIGHT.
-||| Pike is distributed under GPL, LGPL and MPL. See the file COPYING
-||| for more information.
-||| $Id: my_gmp.h,v 1.12 2002/10/08 20:22:29 nilsson Exp $
-\*/
+/*
+|| This file is part of Pike. For copyright information see COPYRIGHT.
+|| Pike is distributed under GPL, LGPL and MPL. See the file COPYING
+|| for more information.
+|| $Id: my_gmp.h,v 1.13 2002/10/11 01:39:40 nilsson Exp $
+*/
 
 /*
  * These functions or something similar will hopefully be included

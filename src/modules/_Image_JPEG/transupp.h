@@ -1,9 +1,10 @@
-/*\
-||| This file is part of Pike. For copyright information see COPYRIGHT.
-||| Pike is distributed under GPL, LGPL and MPL. See the file COPYING
-||| for more information.
-||| $Id: transupp.h,v 1.5 2002/10/09 10:00:03 norrby Exp $
-\*/
+/*
+|| This file is part of Pike. For copyright information see COPYRIGHT.
+|| Pike is distributed under GPL, LGPL and MPL. See the file COPYING
+|| for more information.
+|| $Id: transupp.h,v 1.6 2002/10/11 01:39:53 nilsson Exp $
+*/
+
 /*
  * transupp.h
  *

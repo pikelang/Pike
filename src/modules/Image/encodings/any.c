@@ -1,9 +1,9 @@
-/*\
-||| This file is part of Pike. For copyright information see COPYRIGHT.
-||| Pike is distributed under GPL, LGPL and MPL. See the file COPYING
-||| for more information.
-||| $Id: any.c,v 1.24 2002/10/08 20:22:31 nilsson Exp $
-\*/
+/*
+|| This file is part of Pike. For copyright information see COPYRIGHT.
+|| Pike is distributed under GPL, LGPL and MPL. See the file COPYING
+|| for more information.
+|| $Id: any.c,v 1.25 2002/10/11 01:39:43 nilsson Exp $
+*/
 
 /*
 **! module Image
@@ -26,7 +26,7 @@
 #include <ctype.h>
 
 #include "stralloc.h"
-RCSID("$Id: any.c,v 1.24 2002/10/08 20:22:31 nilsson Exp $");
+RCSID("$Id: any.c,v 1.25 2002/10/11 01:39:43 nilsson Exp $");
 #include "pike_macros.h"
 #include "operators.h"
 #include "builtin_functions.h"

@@ -1,9 +1,9 @@
-/*\
-||| This file is part of Pike. For copyright information see COPYRIGHT.
-||| Pike is distributed under GPL, LGPL and MPL. See the file COPYING
-||| for more information.
-||| $Id: fd_control.h,v 1.9 2002/10/08 20:22:20 nilsson Exp $
-\*/
+/*
+|| This file is part of Pike. For copyright information see COPYRIGHT.
+|| Pike is distributed under GPL, LGPL and MPL. See the file COPYING
+|| for more information.
+|| $Id: fd_control.h,v 1.10 2002/10/11 01:39:31 nilsson Exp $
+*/
 
 #ifndef FD_CONTROL_H
 #define FD_CONTROL_H

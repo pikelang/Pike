@@ -1,9 +1,10 @@
-/*\
-||| This file is part of Pike. For copyright information see COPYRIGHT.
-||| Pike is distributed under GPL, LGPL and MPL. See the file COPYING
-||| for more information.
-||| $Id: desKerb.c,v 1.4 2002/10/08 20:22:39 nilsson Exp $
-\*/
+/*
+|| This file is part of Pike. For copyright information see COPYRIGHT.
+|| Pike is distributed under GPL, LGPL and MPL. See the file COPYING
+|| for more information.
+|| $Id: desKerb.c,v 1.5 2002/10/11 01:39:52 nilsson Exp $
+*/
+
 /*
  *	des - fast & portable DES encryption & decryption.
  *	Copyright (C) 1992  Dana L. How
@@ -13,7 +14,7 @@
 #include "des.h"
 
 #include "RCSID.h"
-RCSID2(desKerb_cRcs, "$Id: desKerb.c,v 1.4 2002/10/08 20:22:39 nilsson Exp $");
+RCSID2(desKerb_cRcs, "$Id: desKerb.c,v 1.5 2002/10/11 01:39:52 nilsson Exp $");
 
 /* permit the default style of des functions to be changed */
 

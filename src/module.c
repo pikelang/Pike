@@ -1,10 +1,9 @@
-/*\
-||| This file is part of Pike. For copyright information see COPYRIGHT.
-||| Pike is distributed under GPL, LGPL and MPL. See the file COPYING
-||| for more information.
-||| $Id: module.c,v 1.19 2002/10/08 23:31:24 nilsson Exp $
-\*/
-/**/
+/*
+|| This file is part of Pike. For copyright information see COPYRIGHT.
+|| Pike is distributed under GPL, LGPL and MPL. See the file COPYING
+|| for more information.
+|| $Id: module.c,v 1.20 2002/10/11 01:39:33 nilsson Exp $
+*/
 
 #include "global.h"
 #include "module.h"
@@ -26,7 +25,7 @@
 #include "post_modules/modlist_headers.h"
 #endif
 
-RCSID("$Id: module.c,v 1.19 2002/10/08 23:31:24 nilsson Exp $");
+RCSID("$Id: module.c,v 1.20 2002/10/11 01:39:33 nilsson Exp $");
 
 typedef void (*modfun)(void);
 

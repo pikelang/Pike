@@ -1,10 +1,9 @@
-/*\
-||| This file is part of Pike. For copyright information see COPYRIGHT.
-||| Pike is distributed under GPL, LGPL and MPL. See the file COPYING
-||| for more information.
-||| $Id: gc.c,v 1.187 2002/10/08 23:31:23 nilsson Exp $
-\*/
-/**/
+/*
+|| This file is part of Pike. For copyright information see COPYRIGHT.
+|| Pike is distributed under GPL, LGPL and MPL. See the file COPYING
+|| for more information.
+|| $Id: gc.c,v 1.188 2002/10/11 01:39:31 nilsson Exp $
+*/
 
 #include "global.h"
 
@@ -32,7 +31,7 @@ struct callback *gc_evaluator_callback=0;
 
 #include "block_alloc.h"
 
-RCSID("$Id: gc.c,v 1.187 2002/10/08 23:31:23 nilsson Exp $");
+RCSID("$Id: gc.c,v 1.188 2002/10/11 01:39:31 nilsson Exp $");
 
 /* Run garbage collect approximately every time
  * 20 percent of all arrays, objects and programs is

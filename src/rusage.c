@@ -1,10 +1,9 @@
-/*\
-||| This file is part of Pike. For copyright information see COPYRIGHT.
-||| Pike is distributed under GPL, LGPL and MPL. See the file COPYING
-||| for more information.
-||| $Id: rusage.c,v 1.22 2002/10/08 23:31:25 nilsson Exp $
-\*/
-/**/
+/*
+|| This file is part of Pike. For copyright information see COPYRIGHT.
+|| Pike is distributed under GPL, LGPL and MPL. See the file COPYING
+|| for more information.
+|| $Id: rusage.c,v 1.23 2002/10/11 01:39:37 nilsson Exp $
+*/
 
 #include "global.h"
 #ifdef HAVE_SYS_TYPES_H
@@ -19,7 +18,7 @@
 #include <errno.h>
 #include "rusage.h"
 
-RCSID("$Id: rusage.c,v 1.22 2002/10/08 23:31:25 nilsson Exp $");
+RCSID("$Id: rusage.c,v 1.23 2002/10/11 01:39:37 nilsson Exp $");
 
 #ifdef HAVE_SYS_TIMES_H
 #include <sys/times.h>

@@ -1,9 +1,9 @@
-/*\
-||| This file is part of Pike. For copyright information see COPYRIGHT.
-||| Pike is distributed under GPL, LGPL and MPL. See the file COPYING
-||| for more information.
-||| $Id: pike_memory.h,v 1.33 2002/10/08 20:22:25 nilsson Exp $
-\*/
+/*
+|| This file is part of Pike. For copyright information see COPYRIGHT.
+|| Pike is distributed under GPL, LGPL and MPL. See the file COPYING
+|| for more information.
+|| $Id: pike_memory.h,v 1.34 2002/10/11 01:39:35 nilsson Exp $
+*/
 
 #ifndef MEMORY_H
 #define MEMORY_H
