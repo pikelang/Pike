@@ -1,4 +1,4 @@
-AC_REVISION("$Id: configure.in,v 1.695 2003/02/20 17:02:56 grubba Exp $")
+AC_REVISION("$Id: configure.in,v 1.696 2003/02/21 17:18:02 grubba Exp $")
 AC_INIT(interpret.c)
 AC_CONFIG_HEADER(machine.h)
 
@@ -843,8 +843,10 @@ fi #if test "x$enable_binary" != "xno"
 # Restore the -O2 that the default AC_PROG_CC adds.
 
 AC_SYS_COMPILER_FLAG(+O3,plus_O3,OPTIMIZE, [
-  AC_SYS_COMPILER_FLAG(-O2,O2,OPTIMIZE, [
-    AC_SYS_COMPILER_FLAG(-O,O,OPTIMIZE)
+  AC_SYS_COMPILER_FLAG(-O3,O3,OPTIMIZE, [
+    AC_SYS_COMPILER_FLAG(-O2,O2,OPTIMIZE, [
+      AC_SYS_COMPILER_FLAG(-O,O,OPTIMIZE)
+    ])
   ])
 ])
 
@@ -3506,7 +3508,7 @@ int main()
     if (next_vt < vt) return 2; /* Shouldn't go backward. */
     vt = next_vt;
   } while (now != (time_t) -1 && now <= start + 1);
-  if (now == (time_t) -1) return 3; /* Normal time doesn't work. */
+  if (now == (time_t) -1) return 3; /* Normal time does not work. */
   if (vt <= 0) return 4; /* Should have accounted for some cpu time. */
   return 0;
 }
