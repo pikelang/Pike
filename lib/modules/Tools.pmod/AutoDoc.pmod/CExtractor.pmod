@@ -130,7 +130,8 @@ static private class Extractor {
           extractorErrorAt(p->sourcePos,
                            "doc not allowed on reentrance into '%s %s'",
                            c->objtype, c->name);
-        c->documentation = doc;
+	if (!alreadyChild)
+	  c->documentation = doc;
         c->appears = meta->appears;
         c->belongs = meta->belongs;
         tokens = tokens[1..];
