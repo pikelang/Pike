@@ -2350,7 +2350,7 @@ TimeRange parse(string fmt,string arg)
    string nfmt;
 
    nfmt=replace(fmt," %","%*[ \t]%"); // whitespace -> whitespace
-#define ALNU "%[^ -,./:-?[-`{-¿]"
+#define ALNU "%[^- -,./:-?[-`{-¿]"
 #define AMPM "%[ampAMP]"
 #define NUME "%[0-9]"
    nfmt=replace(nfmt,
@@ -2582,8 +2582,8 @@ array dwim_day_strings=
   "%y-%M-%D",
   "-%y%*[ /]%D%*[ /]%M",
   "-%y%*[ /]%M%*[ /]%D",
-  "%y%*[ /]%D%*[ /]%M",
   "%y%*[ /]%M%*[ /]%D",
+  "%y%*[ /]%D%*[ /]%M",
   "%D%*[- /]%M",
   "%M%*[- /]%D",
   "%e%*[- /wv]%W%*[ -/]%y",
@@ -2629,27 +2629,41 @@ TimeofDay dwim_time(string what)
    string a,h,m,s;
    TimeofDay t;
 
-   foreach ( ({ " %z","%z",""}),
-	     string zone )
-   foreach ( ({ "%t",
-		"T%t",
-		"%h:%*[ :]%m%*[ :]%s %p",
-		"%h:%*[ :]%m%*[ :]%s",
-		"%h:%*[ :]%m %p",
-		"%h:%*[ :]%m",
-		"%h%*[ ]%p",
-		"%[a-zA-Z.] %h:%*[ :]%m%*[ :]%s %p",
-		"%[a-zA-Z.] %h:%*[ :]%m%*[ :]%s",
-		"%[a-zA-Z.] %h:%*[ :]%m %p",
-		"%[a-zA-Z.] %h:%*[ :]%m", 
-		"%[a-zA-Z.] %h%*[ ]%p", }),
-	     string todformat )
-      foreach ( dwim_day_strings +
-		({""}),
-		string dayformat )
+   foreach ( dwim_day_strings +
+	     ({""}),
+	     string dayformat )
+      foreach ( ({ "%t %z",
+		   "T%t %z",
+		   "T%t",
+		   "%h:%*[ :]%m%*[ :]%s %p %z",
+		   "%h:%*[ :]%m%*[ :]%s %p",
+		   "%h:%*[ :]%m%*[ :]%s %z",
+		   "%h:%*[ :]%m%*[ :]%s%z",
+		   "%h:%*[ :]%m%*[ :]%s",
+		   "%h:%*[ :]%m %p %z",
+		   "%h:%*[ :]%m %p",
+		   "%h:%*[ :]%m %z",
+		   "%h:%*[ :]%m%z",
+		   "%h:%*[ :]%m",
+		   "%h%*[ ]%p",
+		   "%[a-zA-Z.] %h:%*[ :]%m%*[ :]%s %p %z",
+		   "%[a-zA-Z.] %h:%*[ :]%m%*[ :]%s %p",
+		   "%[a-zA-Z.] %h:%*[ :]%m%*[ :]%s %z",
+		   "%[a-zA-Z.] %h:%*[ :]%m%*[ :]%s%z",
+		   "%[a-zA-Z.] %h:%*[ :]%m%*[ :]%s",
+		   "%[a-zA-Z.] %h:%*[ :]%m %p %z",
+		   "%[a-zA-Z.] %h:%*[ :]%m %p",
+		   "%[a-zA-Z.] %h:%*[ :]%m %z",
+		   "%[a-zA-Z.] %h:%*[ :]%m%z",
+		   "%[a-zA-Z.] %h:%*[ :]%m",
+ 		   "%[a-zA-Z.] %h%*[ ]%p", }),
+		string todformat )
       {
-	 if ( (t=parse(dayformat+"%*[ ,]"+todformat+zone,what)) ) return t;
-	 if ( (t=parse(todformat+zone+"%*[ ,]"+dayformat,what)) ) return t;
+//  	 werror("try: %O\n     %O\n",
+//  		dayformat+"%*[ ,]"+todformat,
+//  		todformat+"%*[ ,]"+dayformat);
+	 if ( (t=parse(dayformat+"%*[ ,]"+todformat,what)) ) return t;
+	 if ( (t=parse(todformat+"%*[ ,]"+dayformat,what)) ) return t;
       }
 
    error("Failed to dwim time from %O\n",what);
