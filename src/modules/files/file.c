@@ -6,7 +6,7 @@
 /**/
 #define NO_PIKE_SHORTHAND
 #include "global.h"
-RCSID("$Id: file.c,v 1.217 2003/09/30 20:43:18 mast Exp $");
+RCSID("$Id: file.c,v 1.218 2004/11/15 22:53:29 mast Exp $");
 #include "fdlib.h"
 #include "interpret.h"
 #include "svalue.h"
@@ -2313,7 +2313,7 @@ static void file_connect(INT32 args)
   INT_TYPE dest_port = 0;
   INT_TYPE src_port = 0;
 
-  int tmp;
+  int tmp, was_closed = FD < 0;
 
   if (args < 4) {
     get_all_args("file->connect", args, "%S%i", &dest_addr, &dest_port);
@@ -2322,7 +2322,7 @@ static void file_connect(INT32 args)
 		 &dest_addr, &dest_port, &src_addr, &src_port);
   }
 
-  if(FD < 0)
+  if(was_closed)
   {
     if (args < 4) {
       file_open_socket(0);
@@ -2358,6 +2358,11 @@ static void file_connect(INT32 args)
   {
     /* something went wrong */
     ERRNO=errno;
+    if (was_closed) {
+      while (fd_close (FD) && errno == EINTR) {}
+      change_fd_for_box (&THIS->box, -1);
+      errno = ERRNO;
+    }
     pop_n_elems(args);
     push_int(0);
   }else{
