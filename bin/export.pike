@@ -1,8 +1,7 @@
 #!/usr/local/bin/pike
 
-/* $Id: export.pike,v 1.33 2000/12/29 00:11:36 hubbe Exp $ */
+/* $Id: export.pike,v 1.34 2001/01/08 16:07:10 distmaker Exp $ */
 
-#include <simulate.h>
 import Stdio;
 
 multiset except_modules  =(<>);
@@ -150,7 +149,7 @@ int main(int argc, string *argv)
   if(!srcdir)
   {
     tmp=reverse(argv[0]/"/");
-    except_modules=mklist(argv[1..]);
+    except_modules=mkmultiset(argv[1..]);
     e=search(tmp,"pike");
     if(e==-1)
     {
@@ -198,10 +197,10 @@ int main(int argc, string *argv)
     symlink("pike",vpath);
 //    system("ln -s pike "+vpath);
 
-  files=sum(({ vpath+"/README", vpath+"/ANNOUNCE" }),
-	    get_files(vpath+"/src"),
-	    get_files(vpath+"/lib"),
-	    get_files(vpath+"/bin"));
+  files=`+(({ vpath+"/README", vpath+"/ANNOUNCE" }),
+	   get_files(vpath+"/src"),
+	   get_files(vpath+"/lib"),
+	   get_files(vpath+"/bin"));
 
   werror("Creating "+vpath+"-indigo.tar.gz:\n");
   object o=Stdio.File();
