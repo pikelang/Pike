@@ -795,16 +795,23 @@ static void html_add_quote_tag(INT32 args)
       curname = dmalloc_touch (struct pike_string *, arr->item[i].u.string);
 
       if (curname == name) {
-	if (remove) {
-	  if (arr->refs > 1) {
-	    arr = copy_array (arr);
-	    free_array (val->u.array);
-	    val->u.array = arr;
+	if (remove)
+	  if (arr->size == 3) {
+	    struct svalue tmp;
+	    tmp.type = T_STRING;
+	    tmp.u.string = prefix;
+	    map_delete (THIS->mapqtag, &tmp);
 	  }
-	  free_svalues (arr->item+i, 3, BIT_MIXED);
-	  MEMCPY (arr->item+i, arr->item+i+3, (arr->size-i-3) * sizeof(struct svalue));
-	  arr->size -= 3;
-	}
+	  else {
+	    if (arr->refs > 1) {
+	      arr = copy_array (arr);
+	      free_array (val->u.array);
+	      val->u.array = arr;
+	    }
+	    free_svalues (arr->item+i, 3, BIT_MIXED);
+	    MEMCPY (arr->item+i, arr->item+i+3, (arr->size-i-3) * sizeof(struct svalue));
+	    arr->size -= 3;
+	  }
 	else {
 	  assign_svalue (arr->item+i+1, sp-2);
 	  assign_svalue (arr->item+i+2, sp-1);
@@ -2896,7 +2903,7 @@ static void try_feed(int finished)
 	    return;
 
 	 case STATE_REPARSE: /* user requested another go at the current data */
-	    if (THIS->ignore_unknown && st == THIS->stack) ignore_tag_cb = 1;
+	    if (st == THIS->stack) ignore_tag_cb = 1;
 	    /* FALL THROUGH */
 
 	 case STATE_REREAD: /* reread stack head */
@@ -3629,6 +3636,30 @@ void html__inspect(INT32 args)
    push_svalue(&(THIS->callback__data));
    n++;
 
+   push_text("case_insensitive_tag");
+   push_int(THIS->case_insensitive_tag);
+   n++;
+
+   push_text("lazy_end_arg_quote");
+   push_int(THIS->lazy_end_arg_quote);
+   n++;
+
+   push_text("lazy_entity_end");
+   push_int(THIS->lazy_entity_end);
+   n++;
+
+   push_text("match_tag");
+   push_int(THIS->match_tag);
+   n++;
+
+   push_text("mixed_mode");
+   push_int(THIS->mixed_mode);
+   n++;
+
+   push_text("ignore_unknown");
+   push_int(THIS->ignore_unknown);
+   n++;
+
    f_aggregate_mapping(n*2);
 }
 
@@ -3771,7 +3802,9 @@ static void html_set_extra(INT32 args)
 **!
 **!	<li><b>case_insensitive_tag</b>: All tags and containers are
 **!	matched case insensitively. Tags added with
-**!	<ref>add_quote_tag</ref>() are not affected, though.
+**!	<ref>add_quote_tag</ref>() are not affected, though. Switching
+**!	to case sensitive mode and back won't preserve the case of
+**!	registered tags and containers.
 **!
 **!	<li><b>lazy_entity_end</b>: Normally, the entity end character
 **!	(i.e. ';') is required to end an entity. When this flag is
@@ -3803,10 +3836,32 @@ static void html_case_insensitive_tag(INT32 args)
 {
    int o=THIS->case_insensitive_tag;
    check_all_args("case_insensitive_tag",args,BIT_VOID|BIT_INT,0);
-   if (args) THIS->case_insensitive_tag=sp[-args].u.integer;
-   /* FIXME: Should probably lowercase all tags and containers when
-    * switching to case insensitive mode. */
+   if (args) THIS->case_insensitive_tag=!!sp[-args].u.integer;
    pop_n_elems(args);
+
+   if (args && THIS->case_insensitive_tag && !o) {
+     INT32 e;
+     struct keypair *k;
+
+     MAPPING_LOOP(THIS->maptag) {
+       push_svalue(&k->ind);
+       f_lower_case(1);
+       push_svalue(&k->val);
+     }
+     f_aggregate_mapping(THIS->maptag->size * 2);
+     free_mapping(THIS->maptag);
+     THIS->maptag=(--sp)->u.mapping;
+
+     MAPPING_LOOP(THIS->mapcont) {
+       push_svalue(&k->ind);
+       f_lower_case(1);
+       push_svalue(&k->val);
+     }
+     f_aggregate_mapping(THIS->mapcont->size * 2);
+     free_mapping(THIS->mapcont);
+     THIS->mapcont=(--sp)->u.mapping;
+   }
+
    push_int(o);
 }
 
@@ -3814,7 +3869,7 @@ static void html_lazy_entity_end(INT32 args)
 {
    int o=THIS->lazy_entity_end;
    check_all_args("lazy_entity_end",args,BIT_VOID|BIT_INT,0);
-   if (args) THIS->lazy_entity_end=sp[-args].u.integer;
+   if (args) THIS->lazy_entity_end=!!sp[-args].u.integer;
    pop_n_elems(args);
    push_int(o);
 }
@@ -3832,7 +3887,7 @@ static void html_mixed_mode(INT32 args)
 {
    int o=THIS->mixed_mode;
    check_all_args("mixed_mode",args,BIT_VOID|BIT_INT,0);
-   if (args) THIS->mixed_mode=sp[-args].u.integer;
+   if (args) THIS->mixed_mode=!!sp[-args].u.integer;
    pop_n_elems(args);
    push_int(o);
 }
@@ -3841,7 +3896,7 @@ static void html_ignore_unknown(INT32 args)
 {
    int o=THIS->ignore_unknown;
    check_all_args("ignore_unknown",args,BIT_VOID|BIT_INT,0);
-   if (args) THIS->ignore_unknown=sp[-args].u.integer;
+   if (args) THIS->ignore_unknown=!!sp[-args].u.integer;
    pop_n_elems(args);
    push_int(o);
 }
@@ -3851,7 +3906,7 @@ static void html_debug_mode(INT32 args)
 {
    int o=THIS->debug_mode;
    check_all_args("debug_mode",args,BIT_VOID|BIT_INT,0);
-   if (args) THIS->debug_mode=sp[-args].u.integer;
+   if (args) THIS->debug_mode=!!sp[-args].u.integer;
    pop_n_elems(args);
    push_int(o);
 }
