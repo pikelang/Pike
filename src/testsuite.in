@@ -1,4 +1,4 @@
-test_true([["$Id: testsuite.in,v 1.494 2002/04/12 16:34:11 nilsson Exp $"]]);
+test_true([["$Id: testsuite.in,v 1.495 2002/04/12 22:53:50 mast Exp $"]]);
 
 cond([[all_constants()->_verify_internals]],
 [[
@@ -949,6 +949,48 @@ dnl
 test_true(this_program)
 test_any([[int this_program; return this_program;]], 0)
 test_any([[class A { int a() { return this_program == A; }}; return A()->a();]], 1)
+test_program([[
+  class A (int v)
+  {
+    this_program clone() {return this_program (v);}
+  }
+  int a() {return A (4)->clone()->v == 4;}
+]])
+test_program([[
+  int i = 17, j = 18;
+  class A (int v)
+  {
+    this_program clone() {return this_program (i);}
+  }
+  int a() {return A (4)->clone()->v == 17;}
+]])
+test_program([[
+  class A (int v)
+  {
+    this_program clone() {return this_program (j);}
+  }
+  int i = 17, j = 18;
+  int a() {return A (4)->clone()->v == 18;}
+]])
+test_program([[
+  int i = 17, v;
+  this_program clone() {return this_program (i);}
+  void create (int v_) {v = v_;}
+  int a() {return clone()->v == 17;}
+]])
+test_program([[
+  this_program clone() {return this_program (i);}
+  int i = 17, v;
+  void create (int v_) {v = v_;}
+  int a() {return clone()->v == 17;}
+]])
+test_program([[
+  class A {this_program clone() {return this_program();}}
+  class B {inherit A;}
+  // It would perhaps be nice if this_program possessed the magic
+  // to refer to B in the inherit from A, but that would be magic indeed.
+  int a() {return object_program (B()->clone()) == A;}
+]])
 
 dnl test_compile_error(0())
 test_compile_error(1())
