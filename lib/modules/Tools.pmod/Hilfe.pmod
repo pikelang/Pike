@@ -4,7 +4,7 @@
 // Incremental Pike Evaluator
 //
 
-constant cvs_version = ("$Id: Hilfe.pmod,v 1.79 2002/06/07 17:44:38 nilsson Exp $");
+constant cvs_version = ("$Id: Hilfe.pmod,v 1.80 2002/06/11 21:55:09 nilsson Exp $");
 constant hilfe_todo = #"List of known Hilfe bugs/room for improvements:
 
 - Hilfe can not handle sscanf statements like
@@ -384,7 +384,7 @@ class CommandDump {
 		   lambda(string in) {
 		     return sprintf("%03d: %s", ++i, in);
 		   })*"\n";
-    write(w+"\n");
+    write(replace(w, "%", "%%")+"\n");
   }
 
   private string print_mapping(array(string) ind, array val) {
@@ -469,28 +469,23 @@ private class CommandNew {
     line = sizeof(words)>1 && words[1];
     switch(line) {
     case "variables":
-      e->variables = ([]);
       e->types = ([]);
-      return;
     case "constants":
-      e->constants = ([]);
-      return;
     case "functions":
-      e->functions = ([]);
-      return;
     case "programs":
-      e->programs = ([]);
+      e[line] = ([]);
       return;
+
     case "imports":
-      e->imports = ({});
-      return;
     case "inherits":
-      e->inherits = ({});
+      e[line] = ({});
       return;
+
     case "history":
       e->history->flush();
       return;
     }
+
     if(line) {
       e->safe_write("Unknown specifier %O.\n", line);
       return;
@@ -503,35 +498,29 @@ private class CommandStartStop {
   inherit Command;
   SubSystems subsystems;
 
-  void create(){
+  void create() {
     subsystems=SubSystems();
   }
 
   string help(string what) {
     switch(what){
-    case "start": return "Start a subsystem.";
-    case "stop":  return "Stop a subsystem.";
+    case "start":
+      return "Start a subsystem.";
+    case "stop":
+      return "Stop a subsystem.";
     }
   }
 
   string doc(string what, string with) {
-    if(what=="start") return subsystems->doc(1);
-    if(what=="stop") return subsystems->doc(0);
-    return "Buhu";
-    switch(what){
-    }
+    if(what=="start")
+      return subsystems->doc(1);
+    if(what=="stop")
+      return subsystems->doc(0);
   }
 
   void exec(Evaluator e, string line, array(string) words, array(string) tokens) {
     if(sizeof(words)>=2) {
-      switch(words[0]) {
-      case "start":
-	subsystems->start(e, words[1], words[1..]);
-	break;
-      case "stop":
-	subsystems->stop(e, words[1], words[1..]);
-	break;
-      }
+      subsystems[words[0]](e, words[1], words[1..]);
       return;
     }
     e->safe_write("No subsystem selected. Available subsystems:\n");
@@ -547,7 +536,6 @@ private class CommandStartStop {
 #if constant(thread_create)
 private class SubSysBackend {
   int(0..1) is_running;
-  int(0..1) once;
 
   constant startdoc = "backend [once]\n\tStarts the backend thread. If \"once\" is "
   "specified execution\n\twill end at first exception. Can be restarted "
@@ -560,17 +548,17 @@ private class SubSysBackend {
   }
 
   void start(Evaluator e, array(string) words){
-    if(sizeof(words)>=2 && words[1]=="once")
-      add_constant("backend_thread", thread_create(backend_loop, e->safe_write, 1));
-    else
-      add_constant("backend_thread", thread_create(backend_loop, e->safe_write, 0));
+    int(0..1) once = (sizeof(words)>=2 && words[1]=="once");
+    add_constant("backend_thread", thread_create(backend_loop, e->safe_write, once));
   }
 
   void stop(Evaluator e, array(string) words){
-    call_out(throw,0,0);
+    call_out(throw, 0, 0);
   }
 
-  int(0..1) runningp(){ return is_running; }
+  int(0..1) runningp() {
+    return is_running;
+  }
 
   private void backend_loop(function(string:int) write_err, int(0..1) once){
     is_running=1;
@@ -1166,7 +1154,7 @@ class Evaluator {
     print_version();
     commands->set = CommandSet();
     commands->exit = CommandExit();
-    commands->quit = CommandExit();
+    commands->quit = commands->exit;
     commands->help = CommandHelp();
     commands->dump = CommandDump();
     commands->new = CommandNew();
