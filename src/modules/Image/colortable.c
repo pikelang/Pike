@@ -1,11 +1,11 @@
 #include "global.h"
 
-/* $Id: colortable.c,v 1.88 2000/08/10 16:59:02 grubba Exp $ */
+/* $Id: colortable.c,v 1.89 2000/08/10 17:05:40 grubba Exp $ */
 
 /*
 **! module Image
 **! note
-**!	$Id: colortable.c,v 1.88 2000/08/10 16:59:02 grubba Exp $
+**!	$Id: colortable.c,v 1.89 2000/08/10 17:05:40 grubba Exp $
 **! class Colortable
 **!
 **!	This object keeps colortable information,
@@ -20,7 +20,7 @@
 #undef COLORTABLE_DEBUG
 #undef COLORTABLE_REDUCE_DEBUG
 
-RCSID("$Id: colortable.c,v 1.88 2000/08/10 16:59:02 grubba Exp $");
+RCSID("$Id: colortable.c,v 1.89 2000/08/10 17:05:40 grubba Exp $");
 
 #include <math.h> /* fabs() */
 
@@ -3567,7 +3567,7 @@ void image_colortable_map(INT32 args)
 	    
 	    while (n--)
 	    {
-	       if (*s<nct->u.flat.numentries)
+	       if (*s < nct->u.flat.numentries)
 		  *(d++)=nct->u.flat.entries[*s].color;
 	       else 
 		  d++; /* it's black already, and this is illegal */
@@ -3577,11 +3577,11 @@ void image_colortable_map(INT32 args)
 	 }
 	 case 2:
 	 {
-	    p_wchar2 *s=(p_wchar2*)ps->str;
+	    p_wchar2 *s = (p_wchar2*)ps->str;
 	    
 	    while (n--)
 	    {
-	       if (*s<(p_wchar2)nct->u.flat.numentries)
+	       if (*s < nct->u.flat.numentries)
 		  *(d++)=nct->u.flat.entries[*s].color;
 	       else 
 		  d++; /* it's black already, and this is illegal */
