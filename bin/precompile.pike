@@ -367,9 +367,10 @@ class PikeType
       case "type":
       case "program":
       case "mixed":
+      case "void":
 	return ret;
 
-	default:  return "object";
+	default: return "object";
       }
     }
 
@@ -432,6 +433,7 @@ class PikeType
       case "mapping":
       case "multiset":
       case "type":
+      case "void":
 	return ({ ret });
 
 	default:  return ({ "object" });
@@ -474,12 +476,14 @@ class PikeType
 
   string c_storage_type(int|void is_struct_entry)
     {
-      string btype = may_be_void() ? "mixed" : basetype();
+      string btype = /*may_be_void() ? "mixed" : */basetype();
       switch (btype)
       {
 	case "void": return "void";
-	case "int": return "INT_TYPE";
-	case "float": return "FLOAT_TYPE";
+	case "int":
+	  return may_be_void()?"struct svalue *":"INT_TYPE";
+	case "float":
+	  return may_be_void()?"struct svalue *":"FLOAT_TYPE";
 	case "string": return "struct pike_string *";
 	  
 	case "array":
@@ -717,6 +721,7 @@ class PikeType
 
 	  array(array(PC.Token|array(PC.Token|array))) tmp;
 	  tmp=tok/({"|"});
+
 	  if(sizeof(tmp) >1)
 	  {
 	    t=PC.Token("|");
@@ -1491,7 +1496,7 @@ class ParseBlock
 			  (string)name, base, base, name,
 			  type->output_c_type(), type->type_number(),
 			  attributes->flags || "0"),
-		    }));
+		}));
 	ret+=DEFINE(define);
 	ret+=({ PC.Token("DECLARE_STORAGE") });
 	ret+=rest;
@@ -2106,9 +2111,8 @@ class ParseBlock
 	    }));
 	} else {
 	  addfuncs+=IFDEF(define, ({
-	    PC.Token(sprintf("  %s =\n"
-			     "    ADD_FUNCTION2(%O, %s, %s, %s, %s);\n",
-			     func_num,
+	    PC.Token(sprintf("  %s =\n", func_num)),
+	    PC.Token(sprintf("    ADD_FUNCTION2(%O, %s, %s, %s, %s);\n",
 			     attributes->name || name,
 			     funcname,
 			     type->output_c_type(),
