@@ -1,5 +1,5 @@
 /*
- * $Id: passwords.c,v 1.20 1998/07/20 12:57:12 grubba Exp $
+ * $Id: passwords.c,v 1.21 1998/07/21 00:27:54 hubbe Exp $
  *
  * Password handling for Pike.
  *
@@ -22,7 +22,7 @@
 #include "system_machine.h"
 #include "system.h"
 
-RCSID("$Id: passwords.c,v 1.20 1998/07/20 12:57:12 grubba Exp $");
+RCSID("$Id: passwords.c,v 1.21 1998/07/21 00:27:54 hubbe Exp $");
 
 #include "module_support.h"
 #include "interpret.h"
@@ -107,6 +107,8 @@ struct group *getgrnam(char *name)
  */
 
 #if defined(HAVE_GETPWNAM) || defined(HAVE_GETPWUID) || defined(HAVE_GETPWENT)
+
+#define SAFE_PUSH_TEXT(X) do { char *text_ = (X); if(text_) push_text(text_); else push_constant_text(""); }while(0);
 void push_pwent(struct passwd *ent)
 {
   if(!ent)
@@ -114,8 +116,8 @@ void push_pwent(struct passwd *ent)
     push_int(0);
     return;
   }
-  push_text(ent->pw_name);
- 
+  SAFE_PUSH_TEXT(ent->pw_name);
+
 #ifdef HAVE_GETSPNAM
   if(!strcmp(ent->pw_passwd, "x"))
   {
@@ -129,16 +131,18 @@ void push_pwent(struct passwd *ent)
       push_text("x");
   } else 
 #endif /* Shadow password support */
-    push_text(ent->pw_passwd);
+  SAFE_PUSH_TEXT(ent->pw_passwd);
+
   push_int(ent->pw_uid);
   push_int(ent->pw_gid);
+
 #ifdef HAVE_PW_GECOS
-  push_text(ent->pw_gecos);
+  SAFE_PUSH_TEXT(ent->pw_gecos);
 #else /* !HAVE_PW_GECOS */
   push_text("Mister Anonymous");
 #endif /* HAVE_PW_GECOS */
-  push_text(ent->pw_dir);
-  push_text(ent->pw_shell);
+  SAFE_PUSH_TEXT(ent->pw_dir);
+  SAFE_PUSH_TEXT(ent->pw_shell);
   f_aggregate(7);
 }
 #endif
@@ -151,8 +155,8 @@ void push_grent(struct group *ent)
     push_int(0);
     return;
   }
-  push_text(ent->gr_name);
-  push_text(ent->gr_passwd);
+  SAFE_PUSH_TEXT(ent->gr_name);
+  SAFE_PUSH_TEXT(ent->gr_passwd);
   push_int(ent->gr_gid);
   {
     char **cp = ent->gr_mem;
