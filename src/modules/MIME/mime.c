@@ -1,5 +1,5 @@
 /*
- * $Id: mime.c,v 1.19 1999/03/09 23:42:59 marcus Exp $
+ * $Id: mime.c,v 1.20 1999/08/07 21:23:11 marcus Exp $
  *
  * RFC1521 functionality for Pike
  *
@@ -10,7 +10,7 @@
 
 #include "config.h"
 
-RCSID("$Id: mime.c,v 1.19 1999/03/09 23:42:59 marcus Exp $");
+RCSID("$Id: mime.c,v 1.20 1999/08/07 21:23:11 marcus Exp $");
 #include "stralloc.h"
 #include "pike_macros.h"
 #include "object.h"
@@ -95,7 +95,7 @@ void pike_module_init( void )
   rfc822ctype[']'] = CT_RBRACK;
   rfc822ctype['"'] = CT_QUOTE;
   rfc822ctype['='] = CT_EQUAL;
-  for(i=0; i<10; i++)
+  for(i=0; i<9; i++)
     rfc822ctype[(int)"<>@,;:\\/?"[i]] = CT_SPECIAL;
 
   /* Add global functions */
