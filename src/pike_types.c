@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: pike_types.c,v 1.241 2005/02/02 10:15:58 grubba Exp $
+|| $Id: pike_types.c,v 1.242 2005/02/04 10:47:53 grubba Exp $
 */
 
 #include "global.h"
@@ -350,6 +350,24 @@ static inline struct pike_type *debug_mk_type(unsigned INT32 type,
   /* End PIKE_DEBUG code */
 
   for(t = pike_type_hash[index]; t; t = t->next) {
+#ifdef PIKE_EXTRA_DEBUG
+    if ((type == T_FUNCTION) && (car->type == T_STRING)) {
+      /* Attempt to detect why we get a core-dump on OSF/1
+       * when loading Unicode.so from test_resolv
+       *	/grubba 2005-02-04
+       */
+      fprintf(stderr, "  %s:%d:PIKE_EXTRA_DEBUG:\n"
+	      "  t: %p\n",
+	      __FILE__, __LINE__,
+	      t);
+      fprintf(stderr, "  t->type:%d (%s)\n"
+	      "t->car: %p (%p)\n"
+	      "t->cdr: %p (%p)\n",
+	      t->type, get_name_of_type(t->type),
+	      t->car, car,
+	      t->cdr, cdr);
+    }
+#endif /* PIKE_EXTRA_DEBUG */
     if ((t->hash == hash) && (t->type == type) &&
 	(t->car == car) && (t->cdr == cdr)) {
       /* Free car & cdr as appropriate. */
