@@ -7,6 +7,6 @@ SYNTAX
 DESCRIPTION
 	Return a mapping containing all efuns, indexed on the names of the
 	efuns, and with the value of the efun as argument.
-	
+
 SEE ALSO
 	add_efun

@@ -1,5 +1,6 @@
 NAME
 	capitalize - capitalize a string
+
 SYNTAX
 	string capitalize(string str)
 

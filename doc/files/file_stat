@@ -15,9 +15,9 @@ DESCRIPTION
 	   mode, /* file mode, protection bits etc. etc. */
 	   size, /* file size for regular files,
 	          * -2 for dirs,
-                  * -3 for links,
-                  * -4 for otherwise
-                  */
+	          * -3 for links,
+	          * -4 for otherwise
+	          */
 	   atime, /* last access time */
 	   mtime, /* last modify time */
 	   ctime, /* last status time change */
