@@ -2,11 +2,11 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: builtin_functions.c,v 1.517 2003/11/07 21:28:07 mast Exp $
+|| $Id: builtin_functions.c,v 1.518 2003/11/09 23:59:14 mast Exp $
 */
 
 #include "global.h"
-RCSID("$Id: builtin_functions.c,v 1.517 2003/11/07 21:28:07 mast Exp $");
+RCSID("$Id: builtin_functions.c,v 1.518 2003/11/09 23:59:14 mast Exp $");
 #include "interpret.h"
 #include "svalue.h"
 #include "pike_macros.h"
@@ -116,15 +116,16 @@ PMOD_EXPORT void debug_f_aggregate(INT32 args)
 /*! @decl int hash_7_4(string s)
  *! @decl int hash_7_4(string s, int max)
  *!
- *!   This function will return an @expr{int@} derived from the string @[s].
- *!   The same string will always hash to the same value.
- *!   If @[max] is given, the result will be >= 0 and < @[max], otherwise
- *!   the result will be >= 0 and <= 0x7fffffff.
+ *!   Return an integer derived from the string @[s]. The same string
+ *!   will always hash to the same value, also between processes.
+ *!
+ *!   If @[max] is given, the result will be >= 0 and < @[max],
+ *!   otherwise the result will be >= 0 and <= 0x7fffffff.
  *!
  *! @note
  *!   This function is provided for backward compatibility reasons.
  *!
- *!   This function is byte-order dependant.
+ *!   This function is byte-order dependant for wide strings.
  *!
  *! @seealso
  *!   @[hash()], @[hash_7_0()]
@@ -160,10 +161,11 @@ static void f_hash_7_4(INT32 args)
 /*! @decl int hash_7_0(string s)
  *! @decl int hash_7_0(string s, int max)
  *!
- *!   This function will return an @expr{int@} derived from the string @[s].
- *!   The same string will always hash to the same value.
- *!   If @[max] is given, the result will be >= 0 and < @[max], otherwise
- *!   the result will be >= 0 and <= 0x7fffffff.
+ *!   Return an integer derived from the string @[s]. The same string
+ *!   always hashes to the same value, also between processes.
+ *!
+ *!   If @[max] is given, the result will be >= 0 and < @[max],
+ *!   otherwise the result will be >= 0 and <= 0x7fffffff.
  *!
  *! @note
  *!   This function is provided for backward compatibility reasons.
@@ -207,20 +209,24 @@ static void f_hash_7_0( INT32 args )
 /*! @decl int hash(string s)
  *! @decl int hash(string s, int max)
  *!
- *!   This function will return an @expr{int@} derived from the string @[s].
- *!   The same string will always hash to the same value.
- *!   If @[max] is given, the result will be >= 0 and < @[max], otherwise
- *!   the result will be >= 0 and <= 0x7fffffff.
+ *!   Return an integer derived from the string @[s]. The same string
+ *!   always hashes to the same value, also between processes,
+ *!   architectures, and Pike versions (see compatibility notes below,
+ *!   though).
+ *!
+ *!   If @[max] is given, the result will be >= 0 and < @[max],
+ *!   otherwise the result will be >= 0 and <= 0x7fffffff.
  *!
  *! @note
  *!   The hash algorithm was changed in Pike 7.5. If you want a hash
  *!   that is compatible with Pike 7.4 and earlier, use @[hash_7_4()].
+ *!   The difference only affects wide strings.
  *!
  *!   The hash algorithm was also changed in Pike 7.1. If you want a hash
  *!   that is compatible with Pike 7.0 and earlier, use @[hash_7_0()].
  *!
  *! @seealso
- *!   @[hash_7_0()], @[hash_7_4()]
+ *!   @[hash_7_0()], @[hash_7_4()], @[hash_value]
  */
 PMOD_EXPORT void f_hash(INT32 args)
 {
@@ -264,6 +270,36 @@ PMOD_EXPORT void f_hash(INT32 args)
   }
   pop_n_elems(args);
   push_int64(i);
+}
+
+/*! @decl int hash_value (mixed value)
+ *!
+ *! Return a hash value for the argument. It's an integer in the
+ *! native integer range.
+ *!
+ *! The hash will be the same for the same value in the running
+ *! process only (the memory address is typically used as the basis
+ *! for the hash value).
+ *!
+ *! If the value is an object with an @[lfun::__hash], that function
+ *! is called and its result is returned.
+ *!
+ *! @note
+ *! This is the hashing method used by mappings.
+ *!
+ *! @seealso
+ *! @[hash]
+ */
+void f_hash_value(INT32 args)
+{
+  unsigned INT32 h;
+
+  if(!args)
+    SIMPLE_TOO_FEW_ARGS_ERROR("hash_value",1);
+
+  h = hash_svalue (Pike_sp - args);
+  pop_n_elems (args);
+  push_int (h);
 }
 
 /*! @decl mixed copy_value(mixed value)
@@ -8014,6 +8050,8 @@ void init_builtin_efuns(void)
 
   ADD_EFUN("hash_7_4",f_hash_7_4,
            tFunc(tStr tOr(tInt,tVoid),tInt),OPT_TRY_OPTIMIZE);
+
+  ADD_EFUN("hash_value",f_hash_value,tFunc(tMix,tInt),OPT_TRY_OPTIMIZE);
 
 /* function(string|array:int*)|function(mapping(1=mixed:mixed)|multiset(1=mixed):array(1))|function(object|program:string*) */
   ADD_EFUN2("indices",f_indices,
