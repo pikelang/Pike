@@ -1,4 +1,4 @@
-/* $Id: master.pike.in,v 1.13 1998/04/18 12:04:17 mirar Exp $
+/* $Id: master.pike.in,v 1.14 1998/04/18 12:50:19 mirar Exp $
  *
  * Master-file for Pike.
  *
@@ -526,9 +526,9 @@ void _main(string *orig_argv, string *env)
   add_include_path(pike_library_path+"/include");
   add_module_path(pike_library_path+"/modules");
 
+#endif
   add_program_path(getcwd());
   add_module_path(getcwd());
-#endif
 
   _master_file_name=combine_path(getcwd(), _master_file_name);
 
