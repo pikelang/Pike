@@ -659,6 +659,10 @@ void f_timezone(INT32 args)
 #define LOG_AUTHPRIV 0
 #endif
 
+#ifndef LOG_CRON
+#define LOG_CRON 0
+#endif
+
 void f_openlog(INT32 args)
 {
   int option=0, facility=0, i;
