@@ -5,13 +5,12 @@ config.h.in
 config.log
 config.status
 configure
+dependencies
 desQuickCore.c
 desQuickFips.c
 desSmallCore.c
 desSmallFips.c
 desdata
-desdata_yes
-desdata_no
 keymap.h
 make_variables
 parity.h
