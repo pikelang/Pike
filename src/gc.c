@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: gc.c,v 1.194 2003/07/16 14:10:12 mast Exp $
+|| $Id: gc.c,v 1.195 2003/07/16 14:43:25 mast Exp $
 */
 
 #include "global.h"
@@ -31,7 +31,7 @@ struct callback *gc_evaluator_callback=0;
 
 #include "block_alloc.h"
 
-RCSID("$Id: gc.c,v 1.194 2003/07/16 14:10:12 mast Exp $");
+RCSID("$Id: gc.c,v 1.195 2003/07/16 14:43:25 mast Exp $");
 
 /* Run garbage collect approximately every time
  * 20 percent of all arrays, objects and programs is
@@ -127,9 +127,10 @@ struct gc_frame
 #define GC_WEAK_REF		0x02
 #define GC_STRONG_REF		0x04
 #define GC_OFF_STACK		0x08
+#define GC_ON_KILL_LIST		0x10
 #ifdef PIKE_DEBUG
-#define GC_LINK_FREED		0x10
-#define GC_FOLLOWED_NONSTRONG	0x20
+#define GC_LINK_FREED		0x20
+#define GC_FOLLOWED_NONSTRONG	0x40
 #endif
 
 #undef BLOCK_ALLOC_NEXT
@@ -174,9 +175,9 @@ size_t gc_ext_weak_refs;
  * gc_rec_last points at the last frame in the list and new frames are
  * linked in after it. A cycle is always treated as one atomic unit,
  * e.g. it's either popped whole or not at all. That means that
- * rec_list may contain frames that are no longer on the stack.
+ * rec_list might contain frames that are no longer on the stack.
  *
- * A range of frames which always ends at the end of the list, may be
+ * A range of frames which always ends at the end of the list may be
  * rotated a number of slots to break a cyclic reference at a chosen
  * point. The stack of link frames are rotated simultaneously.
  *
@@ -1841,9 +1842,13 @@ static int gc_cycle_indent = 0;
 
 static void rotate_rec_list (struct gc_frame *beg, struct gc_frame *pos)
 /* Rotates the marker list and the cycle stack so the bit from pos
- * down to the end gets before the bit from beg down to pos. */
+ * down to the end gets before the bit from beg down to pos. The beg
+ * pos might be moved further down the stack to avoid mixing cycles or
+ * breaking strong link sequences. */
 {
   struct gc_frame *l;
+
+  CYCLE_DEBUG_MSG(find_marker(beg->data), "> rotate_rec_list, asked to begin at");
 
 #ifdef PIKE_DEBUG
   if (Pike_in_gc != GC_PASS_CYCLE)
@@ -1865,13 +1870,13 @@ static void rotate_rec_list (struct gc_frame *beg, struct gc_frame *pos)
   }
 #endif
 
+#if 0
   if (CYCLE(beg)) {
     for (l = beg; CYCLE(PREV(l)) == CYCLE(beg); l = PREV(l))
       CHECK_POP_FRAME(l);
-    CHECK_POP_FRAME(l);
     if (CYCLE(l) == CYCLE(pos)) {
       /* Breaking something previously marked as a cycle. Clear it
-       * since we're no longer sure it's an ambigious cycle. */
+       * since we're no longer sure it's an unambiguous cycle. */
       unsigned cycle = CYCLE(l);
       for (; l && CYCLE(l) == cycle; l = NEXT(l)) {
 	CHECK_POP_FRAME(l);
@@ -1884,6 +1889,11 @@ static void rotate_rec_list (struct gc_frame *beg, struct gc_frame *pos)
     }
     else beg = l;		/* Keep the cycle continuous. */
   }
+#endif
+
+  /* Always keep chains of strong refs continuous, or else we risk
+   * breaking the order in a later rotation. */
+  for (; beg->frameflags & GC_STRONG_REF; beg = PREV(beg)) {}
 
   CYCLE_DEBUG_MSG(find_marker(beg->data), "> rotate_rec_list, begin at");
 
@@ -1958,7 +1968,9 @@ int gc_cycle_push(void *x, struct marker *m, int weak)
   if (m->flags & GC_XREFERENCED)
     gc_fatal(x, 1, "Doing cycle check in externally referenced thing "
 	     "missed in mark pass.\n");
-  if (gc_debug) {
+  if (weak && gc_rec_last == &rec_list)
+    gc_fatal(x, 1, "weak is %d when on top of stack.\n", weak);
+  if (gc_debug > 1) {
     struct array *a;
     struct object *o;
     struct program *p;
@@ -2033,7 +2045,7 @@ int gc_cycle_push(void *x, struct marker *m, int weak)
   if (weak >= 0) gc_rec_last->frameflags |= GC_FOLLOWED_NONSTRONG;
 #endif
 
-  if (m->frame && !(m->frame->frameflags & GC_OFF_STACK)) {
+  if (m->frame && !(m->frame->frameflags & GC_ON_KILL_LIST)) {
     /* A cyclic reference is found. */
 #ifdef PIKE_DEBUG
     if (gc_rec_last == &rec_list)
@@ -2047,6 +2059,8 @@ int gc_cycle_push(void *x, struct marker *m, int weak)
       if (!weak) {
 	struct gc_frame *q;
 	CYCLE_DEBUG_MSG(m, "gc_cycle_push, search normal");
+	/* Find the last weakly linked thing and the one before the
+	 * first strongly linked thing. */
 	for (q = m->frame, p = NEXT(q);; q = p, p = NEXT(p)) {
 	  CHECK_POP_FRAME(p);
 	  if (p->frameflags & (GC_WEAK_REF|GC_STRONG_REF)) {
@@ -2059,6 +2073,8 @@ int gc_cycle_push(void *x, struct marker *m, int weak)
 
       else if (weak < 0) {
 	CYCLE_DEBUG_MSG(m, "gc_cycle_push, search strong");
+	/* Find the last weakly linked thing and the last one which
+	 * isn't strongly linked. */
 	for (p = NEXT(m->frame);; p = NEXT(p)) {
 	  CHECK_POP_FRAME(p);
 	  if (p->frameflags & GC_WEAK_REF) weak_ref = p;
@@ -2082,6 +2098,7 @@ int gc_cycle_push(void *x, struct marker *m, int weak)
       else {
 	struct gc_frame *q;
 	CYCLE_DEBUG_MSG(m, "gc_cycle_push, search weak");
+	/* Find the thing before the first strongly linked one. */
 	for (q = m->frame, p = NEXT(q);; q = p, p = NEXT(p)) {
 	  CHECK_POP_FRAME(p);
 	  if (!(p->frameflags & GC_WEAK_REF) && !nonstrong_ref)
@@ -2103,15 +2120,11 @@ int gc_cycle_push(void *x, struct marker *m, int weak)
       else if (weak < 0) {
 	/* The backward link is strong. Must break the cycle at the
 	 * last nonstrong link. */
-	if (m->frame->frameflags & GC_STRONG_REF)
-	  nonstrong_ref->frameflags =
-	    (nonstrong_ref->frameflags & ~GC_WEAK_REF) | GC_STRONG_REF;
-	else
-	  m->frame->frameflags =
-	    (m->frame->frameflags & ~GC_WEAK_REF) | GC_STRONG_REF;
 	CYCLE_DEBUG_MSG(find_marker(nonstrong_ref->data),
 			"gc_cycle_push, nonstrong break");
 	rotate_rec_list(m->frame, nonstrong_ref);
+	NEXT(nonstrong_ref)->frameflags =
+	  (NEXT(nonstrong_ref)->frameflags & ~GC_WEAK_REF) | GC_STRONG_REF;
       }
 
       else if (nonstrong_ref) {
@@ -2285,6 +2298,7 @@ static void gc_cycle_pop(void *a)
       if (!(pm->flags & GC_GOT_DEAD_REF))
 	gc_add_extra_ref(p->data);
       base = p;
+      p->frameflags |= GC_ON_KILL_LIST;
       DO_IF_DEBUG(PREV(p) = (struct gc_frame *)(ptrdiff_t) -1);
       CYCLE_DEBUG_MSG(pm, "gc_cycle_pop, put on kill list");
     }
@@ -2752,9 +2766,11 @@ int do_gc(void)
     struct gc_frame *next = NEXT(kill_list);
     struct object *o = (struct object *) kill_list->data;
 #ifdef PIKE_DEBUG
+    if (!(kill_list->frameflags & GC_ON_KILL_LIST))
+      gc_fatal(o, 0, "Kill list element hasn't got the proper flag.\n");
     if ((get_marker(kill_list->data)->flags & (GC_LIVE|GC_LIVE_OBJ)) !=
 	(GC_LIVE|GC_LIVE_OBJ))
-      gc_fatal(o, 0, "Invalid thing in kill list.\n");
+      gc_fatal(o, 0, "Invalid object on kill list.\n");
     if (o->prog && (o->prog->flags & PROGRAM_USES_PARENT) &&
 	PARENT_INFO(o)->parent &&
 	!PARENT_INFO(o)->parent->prog &&
