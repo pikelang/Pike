@@ -2,12 +2,12 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: clf.c,v 1.13 2003/09/06 23:37:00 nilsson Exp $
+|| $Id: clf.c,v 1.14 2003/11/20 16:04:38 nilsson Exp $
 */
 
 /* MUST BE FIRST */
 #include "global.h"
-RCSID("$Id: clf.c,v 1.13 2003/09/06 23:37:00 nilsson Exp $");
+RCSID("$Id: clf.c,v 1.14 2003/11/20 16:04:38 nilsson Exp $");
 #include "fdlib.h"
 #include "stralloc.h"
 #include "pike_macros.h"
@@ -29,7 +29,7 @@ RCSID("$Id: clf.c,v 1.13 2003/09/06 23:37:00 nilsson Exp $");
 
 /** Forward declarations of functions implementing Pike functions **/
 
-static void f_read_clf( INT32 args );
+static void f_read( INT32 args );
 
 
 /** Global tables **/
@@ -79,7 +79,7 @@ PIKE_MODULE_INIT
   char_class['-'] = CLS_HYPHEN;
   char_class['+'] = CLS_PLUS;
 
-  add_function_constant( "read", f_read_clf,
+  add_function_constant( "read", f_read,
 			 "function(function(array(string|int),int|void:void),"
 			 "string|object,int|void:int)", 0 );
 }
@@ -150,7 +150,7 @@ PIKE_MODULE_EXIT
  *! The position in the file where the parser should begin.
  */
 
-static void f_read_clf( INT32 args )
+static void f_read( INT32 args )
 {
   char *read_buf;
   struct svalue *logfun, *file;
