@@ -1,6 +1,6 @@
 #pike __REAL_VERSION__
 
-// $Id: Query.pike,v 1.72 2004/09/05 15:21:33 nilsson Exp $
+// $Id: Query.pike,v 1.73 2004/09/06 02:25:18 nilsson Exp $
 
 //! Open and execute an HTTP query.
 //!
@@ -577,12 +577,28 @@ this_program sync_request(string server, int port, string query,
   if(!data)
     data = "";
 
-  if(!http_headers)
-    http_headers = "";
-  else if(mappingp( http_headers ))
-  {
-    http_headers = mkmapping(map(indices( http_headers ), lower_case),
-			     values( http_headers ));
+  if(!stringp( http_headers )) {
+
+    if(mappingp( http_headers ))
+      http_headers = mkmapping(map(indices( http_headers ), lower_case),
+			       values( http_headers ));
+    else
+      http_headers = ([]);
+
+    if(String.width(data)>8) {
+      if(!http_headers["content-type"])
+	error("Wide string as data and no content-type header set.\n");
+      array split;
+      split = http_headers["content-type"]/"charset=";
+      if(sizeof(split)==1)
+	http_headers["content-type"] += "; charset=utf-8";
+      else {
+	string tail = split[1];
+	sscanf(tail, "%s ", tail);
+	http_headers["content-type"] = split[0] + "utf-8" + tail;
+      }
+      data = string_to_utf8(data);
+    }
 
     if(data != "")
       http_headers->content_length = sizeof( data );
