@@ -1,4 +1,4 @@
-/* $Id: sslfile.pike,v 1.6 1997/08/03 22:48:42 grubba Exp $
+/* $Id: sslfile.pike,v 1.7 1997/11/19 22:36:40 grubba Exp $
  *
  */
 
@@ -150,7 +150,9 @@ private void ssl_read_callback(mixed id, string s)
       if (data < 0)
       {
 	/* Fatal error, remove from session cache */
-	die(-1);
+	if (this_object()) {
+	  die(-1);
+	}
 	return;
       }
   }

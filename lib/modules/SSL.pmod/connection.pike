@@ -1,4 +1,4 @@
-/* $Id: connection.pike,v 1.6 1997/08/01 07:34:17 nisse Exp $
+/* $Id: connection.pike,v 1.7 1997/11/19 22:36:40 grubba Exp $
  *
  * SSL packet layer
  */
@@ -219,7 +219,7 @@ string|int got_data(string s)
       send_packet(packet);
       if (alert_callback)
 	alert_callback(packet, current_read_state->seq_num, alert_context);
-      if (packet->level == ALERT_fatal)
+      if ((!packet) || (!this_object()) || (packet->level == ALERT_fatal))
 	return -1;
     }
     else
