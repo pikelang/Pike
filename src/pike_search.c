@@ -29,6 +29,16 @@ void *nil_search(void *no_data,
   return haystack;
 }
 
+/* Needed on architectures where struct returns have
+ * incompatible calling conventions (sparc v8).
+ */
+PCHARP nil_searchN(void *no_data,
+		   PCHARP haystack,
+		   ptrdiff_t haystacklen)
+{
+  return haystack;
+}
+
 void nil_search_free(void *data) {}
 #define memchr_memcmp2_free nil_search_free
 #define memchr_memcmp3_free nil_search_free
@@ -42,7 +52,7 @@ struct SearchMojtVtable nil_search_vtable = {
   (SearchMojtFunc0) nil_search,
   (SearchMojtFunc1) nil_search,
   (SearchMojtFunc2) nil_search,
-  (SearchMojtFuncN) nil_search,
+  (SearchMojtFuncN) nil_searchN,
   nil_search_free
 };
 
