@@ -204,7 +204,7 @@ void fix_comp_stack(int sp)
 %type <number> assign F_NUMBER F_LOCAL arguments arguments2
 %type <number> optional_stars modifier_list
 %type <string> F_IDENTIFIER F_STRING string_constant low_string
-%type <string> type_or_error optional_identifier cast simple_type
+%type <string> optional_identifier cast simple_type
 %type <string> optional_rename_inherit
 
 %type <number> F_ARRAY_ID F_BREAK F_CASE F_CATCH F_CONTINUE F_DEFAULT F_DO
@@ -265,7 +265,8 @@ type_or_error: simple_type
              | /* empty */
              {
 	       yyerror("Missing type.");
-	       copy_shared_string($$, mixed_type_string);
+	       copy_shared_string(local_variables->current_type,
+				  mixed_type_string);
 	     }
   
 
