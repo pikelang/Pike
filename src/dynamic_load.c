@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: dynamic_load.c,v 1.75 2004/03/21 16:42:01 grubba Exp $
+|| $Id: dynamic_load.c,v 1.76 2004/03/21 17:19:40 grubba Exp $
 */
 
 #ifdef TESTING
@@ -24,7 +24,7 @@
 #  include "language.h"
 #  include "lex.h"
 
-RCSID("$Id: dynamic_load.c,v 1.75 2004/03/21 16:42:01 grubba Exp $");
+RCSID("$Id: dynamic_load.c,v 1.76 2004/03/21 17:19:40 grubba Exp $");
 
 #else /* TESTING */
 
@@ -248,6 +248,7 @@ static void *dlopen(const char *module_name, int how)
   NSObjectFileImageReturnCode code = 0;
   NSObjectFileImage image = NULL;
 
+  /* FIXME: Should be fixed to detect if the module already is loaded. */
   if ((code = NSCreateObjectFileImageFromFile(module_name, &image)) !=
       NSObjectFileImageSuccess) {
     fprintf(stderr, "NSCreateObjectFileImageFromFile(\"%s\") failed with %d\n",
@@ -255,6 +256,10 @@ static void *dlopen(const char *module_name, int how)
     return NULL;
   }
   /* FIXME: image should be freed somewhere! */
+
+  fprintf(stderr, "dlopen(\"%s\") ==> image:%p\n",
+	  module_name, image);
+
   return NSLinkModule(image, module_name,
 		      how | NSLINKMODULE_OPTION_RETURN_ON_ERROR |
 		      NSLINKMODULE_OPTION_PRIVATE);
