@@ -1,4 +1,4 @@
-/* $Id: math_matrix.c,v 1.10 1999/10/26 16:12:00 mirar Exp $ */
+/* $Id: math_matrix.c,v 1.11 1999/10/29 19:16:04 mirar Exp $ */
 
 #include "global.h"
 #include "config.h"
@@ -54,6 +54,10 @@ static struct pike_string *s_array;
 static struct pike_string *s__clr;
 static struct pike_string *s_identity;
 static struct pike_string *s_rotate;
+
+/* ---------------------------------------------------------------- */
+
+static void matrix_mult(INT32 args);
 
 /* ---------------------------------------------------------------- */
 
