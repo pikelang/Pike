@@ -2,12 +2,12 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: file.c,v 1.249 2002/11/09 21:34:26 per Exp $
+|| $Id: file.c,v 1.250 2002/11/23 15:47:58 mast Exp $
 */
 
 #define NO_PIKE_SHORTHAND
 #include "global.h"
-RCSID("$Id: file.c,v 1.249 2002/11/09 21:34:26 per Exp $");
+RCSID("$Id: file.c,v 1.250 2002/11/23 15:47:58 mast Exp $");
 #include "fdlib.h"
 #include "interpret.h"
 #include "svalue.h"
@@ -142,6 +142,19 @@ struct program *file_ref_program;
 /*! @class Fd
  *!
  *! Low level I/O operations. Use @[File] instead.
+ */
+
+/*! @endclass
+ */
+
+/* The class below is not accurate, but it's the lowest exposed API
+ * interface, which make the functions appear where users actually
+ * look for them. One could perhaps put them in Fd_ref and fix the doc
+ * generator to show inherited functions in a better way, but if they
+ * only are documented in Fd then the doc has to be duplicated in at
+ * least Fd_ref. /mast */
+
+/*! @class File
  */
 
 static void file_read_callback(int fd, void *data);

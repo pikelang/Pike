@@ -1,4 +1,4 @@
-// $Id: module.pmod,v 1.157 2002/10/12 02:58:50 nilsson Exp $
+// $Id: module.pmod,v 1.158 2002/11/23 15:47:58 mast Exp $
 #pike __REAL_VERSION__
 
 inherit files;
@@ -121,8 +121,7 @@ class BlockFile
 
 //! This is the basic I/O object, it provides socket communication as well
 //! as file access. It does not buffer reads and writes or provide line-by-line
-//! reading, that is done with @[Stdio.FILE] object. All functions available
-//! in @[Fd] are available here as well.
+//! reading, that is done with @[Stdio.FILE] object.
 class File
 {
   optional inherit Fd_ref;

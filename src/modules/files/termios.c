@@ -2,11 +2,11 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: termios.c,v 1.18 2002/10/11 01:39:55 nilsson Exp $
+|| $Id: termios.c,v 1.19 2002/11/23 15:47:58 mast Exp $
 */
 
 #include "global.h"
-RCSID("$Id: termios.c,v 1.18 2002/10/11 01:39:55 nilsson Exp $");
+RCSID("$Id: termios.c,v 1.19 2002/11/23 15:47:58 mast Exp $");
 #include "file_machine.h"
 
 #if defined(HAVE_TERMIOS_H)
@@ -40,7 +40,11 @@ RCSID("$Id: termios.c,v 1.18 2002/10/11 01:39:55 nilsson Exp $");
 /*! @module Stdio
  */
 
-/*! @class Fd
+/* The class below is not accurate, but it's the lowest exposed API
+ * interface, which make the functions appear where users actually
+ * look for them. /mast */
+
+/*! @class File
  */
 
 /*! @decl mapping tcgetattr()
