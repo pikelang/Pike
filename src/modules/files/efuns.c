@@ -340,9 +340,10 @@ void f_get_dir(INT32 args)
     
     if (!(tmp = alloca(sizeof(struct dirent) + 
 #ifdef HAVE_SOLARIS_READDIR_R
-		       pathconf(path, _PC_NAME_MAX)
+		       ((pathconf(path, _PC_NAME_MAX) < 1024)?1024:
+			pathconf(path, _PC_NAME_MAX))
 #else
-		       NAME_MAX
+		       NAME_MAX + 1024
 #endif /* HAVE_SOLARIS_READDIR_R */
 		       + 1))) {
       closedir(dir);
