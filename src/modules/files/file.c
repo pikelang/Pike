@@ -5,7 +5,7 @@
 \*/
 /**/
 #include "global.h"
-RCSID("$Id: file.c,v 1.174 2000/09/18 15:06:24 per Exp $");
+RCSID("$Id: file.c,v 1.175 2001/01/27 08:04:59 hubbe Exp $");
 #include "fdlib.h"
 #include "interpret.h"
 #include "svalue.h"
@@ -2468,6 +2468,7 @@ static struct program * file_lock_key_program;
 struct file_lock_key_storage
 {
   struct my_file *f;
+  struct object *file;
 #ifdef _REENTRANT
   struct object *owner;
 #endif
@@ -2484,7 +2485,9 @@ static void low_file_lock(INT32 args, int flags)
   if(FD==-1)
     error("File->lock(): File is not open.\n");
 
-  if(!args || IS_ZERO(sp-args))
+  destruct_objects_to_destruct();
+
+  if(!args || IS_ZERO(Pike_sp-args))
   {
     if(THIS->key
 #ifdef _REENTRANT
@@ -2492,7 +2495,18 @@ static void low_file_lock(INT32 args, int flags)
 #endif
       )
     {
-      error("Recursive file locks!\n");
+      if (flags & fd_LOCK_NB) {
+#ifdef EWOULDBLOCK
+	ERRNO = EWOULDBLOCK;
+#else /* !EWOULDBLOCK */
+	ERRNO = EAGAIN;
+#endif /* EWOULDBLOCK */
+	pop_n_elems(args);
+	push_int(0);
+	return;
+      } else {
+	error("Recursive file locks!\n");
+      }
     }
   }
 
@@ -2515,6 +2529,7 @@ static void low_file_lock(INT32 args, int flags)
   }else{
     THIS->key=o;
     OB2KEY(o)->f=THIS;
+    add_ref(OB2KEY(o)->file = Pike_fp->current_object);
     pop_n_elems(args);
     push_object(o);
   }
@@ -2594,6 +2609,9 @@ static void init_file_locking(void)
 	       off + OFFSETOF(file_lock_key_storage, owner),
 	       T_OBJECT);
 #endif
+  map_variable("_file","object",0,
+	       off + OFFSETOF(file_lock_key_storage, file),
+	       PIKE_T_OBJECT);
   set_init_callback(init_file_lock_key);
   set_exit_callback(exit_file_lock_key);
   file_lock_key_program=end_program();
