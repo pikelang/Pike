@@ -2,11 +2,11 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: interpret.c,v 1.327 2003/08/10 10:54:42 grubba Exp $
+|| $Id: interpret.c,v 1.328 2003/08/10 12:16:29 grubba Exp $
 */
 
 #include "global.h"
-RCSID("$Id: interpret.c,v 1.327 2003/08/10 10:54:42 grubba Exp $");
+RCSID("$Id: interpret.c,v 1.328 2003/08/10 12:16:29 grubba Exp $");
 #include "interpret.h"
 #include "object.h"
 #include "program.h"
@@ -1203,6 +1203,16 @@ static int eval_instruction_low(PIKE_OPCODE_T *pc)
 #else
 #error Machine code not supported with this compiler.
 #endif
+
+    /* Paranoia.
+     *
+     * This can happen on systems with delay slots if the labels aren't
+     * used explicitly.
+     */
+    if (do_inter_return_label == do_escape_catch_label) {
+      Pike_fatal("Inter return and escape catch labels are equal: %p\n",
+		 do_inter_return_label);
+    }
 
     /* Trick optimizer */
     if(!dummy_label)
