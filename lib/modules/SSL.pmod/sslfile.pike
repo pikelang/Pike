@@ -1,6 +1,6 @@
 #pike __REAL_VERSION__
 
-/* $Id: sslfile.pike,v 1.60 2003/10/24 19:51:57 mast Exp $
+/* $Id: sslfile.pike,v 1.61 2003/10/29 14:38:23 mast Exp $
  */
 
 //! Interface similar to @[Stdio.File].
@@ -123,9 +123,9 @@ static int got_extra_read_call_out;
 #define CALLBACK_MODE							\
   (read_callback || write_callback || close_callback || accept_callback)
 
-#define SSL_INTERNAL_TALK						\
-  (!conn->handshake_finished ||						\
-   (conn->closing == 3 ? !sizeof (write_buffer) : conn->closing))
+#define SSL_HANDSHAKING (!conn->handshake_finished)
+#define SSL_CLOSING (conn->closing == 3 ? !sizeof (write_buffer) : conn->closing)
+#define SSL_INTERNAL_TALK (SSL_HANDSHAKING || SSL_CLOSING)
 
 #ifdef DEBUG
 
@@ -291,7 +291,8 @@ static THREAD_T op_thread;
 	  break;							\
 	}								\
 									\
-	SSL3_DEBUG_MSG ("Reentering blocking backend\n");		\
+	SSL3_DEBUG_MSG ("Reentering %s backend\n",			\
+			NONBLOCKING_MODE ? "nonblocking" : "blocking");	\
       }									\
 									\
       stream->set_backend (real_backend);				\
@@ -563,6 +564,10 @@ int write (string|array(string) data, mixed... args)
 //! keeps the internal buffering to a minimum, however.
 //!
 //! @note
+//! This function returns zero if attempts are made to write data
+//! during the handshake phase.
+//!
+//! @note
 //! I/O errors from both reading and writing might occur in blocking
 //! mode.
 {
@@ -580,6 +585,12 @@ int write (string|array(string) data, mixed... args)
 		      strerror (local_errno));
       RETURN (-1);
     );
+
+    if (SSL_HANDSHAKING) {
+      SSL3_DEBUG_MSG ("SSL.sslfile->write: "
+		      "Still in handshake - cannot accept application data\n");
+      RETURN (0);
+    }
 
     // Take care of any old data first.
     if (!direct_write()) RETURN (-1);
@@ -1091,8 +1102,10 @@ static int direct_write()
 static int call_read_callback()
 {
   SSL3_DEBUG_MSG ("call_read_callback(): "
-		  "nonblocking mode=%d, callback mode=%d\n",
-		  nonblocking_mode, !!(CALLBACK_MODE));
+		  "nonblocking mode=%d, callback mode=%d%s%s\n",
+		  nonblocking_mode, !!(CALLBACK_MODE),
+		  conn && SSL_HANDSHAKING ? ", handshaking" : "",
+		  conn && SSL_CLOSING ? ", closing" : "");
 
   ENTER (1, 1) {
     got_extra_read_call_out = 0;
@@ -1114,9 +1127,11 @@ static int call_read_callback()
 static int ssl_read_callback (int called_from_real_backend, string input)
 {
   SSL3_DEBUG_MSG ("ssl_read_callback (%O, string[%d]): "
-		  "nonblocking mode=%d, callback mode=%d\n",
+		  "nonblocking mode=%d, callback mode=%d%s%s\n",
 		  called_from_real_backend, sizeof (input),
-		  nonblocking_mode, !!(CALLBACK_MODE));
+		  nonblocking_mode, !!(CALLBACK_MODE),
+		  conn && SSL_HANDSHAKING ? ", handshaking" : "",
+		  conn && SSL_CLOSING ? ", closing" : "");
 
   ENTER (1, called_from_real_backend) {
 #ifdef DEBUG
@@ -1223,9 +1238,11 @@ static int ssl_read_callback (int called_from_real_backend, string input)
 static int ssl_write_callback (int called_from_real_backend)
 {
   SSL3_DEBUG_MSG ("ssl_write_callback (%O): "
-		  "nonblocking mode=%d, callback mode=%d\n",
+		  "nonblocking mode=%d, callback mode=%d%s%s\n",
 		  called_from_real_backend,
-		  nonblocking_mode, !!(CALLBACK_MODE));
+		  nonblocking_mode, !!(CALLBACK_MODE),
+		  conn && SSL_HANDSHAKING ? ", handshaking" : "",
+		  conn && SSL_CLOSING ? ", closing" : "");
 
   int ret = 0;
 
@@ -1317,7 +1334,7 @@ static int ssl_write_callback (int called_from_real_backend)
       }
     } while (sizeof (write_buffer));
 
-    if (called_from_real_backend && write_callback)
+    if (called_from_real_backend && write_callback && !SSL_INTERNAL_TALK)
     {
       SSL3_DEBUG_MSG ("ssl_write_callback: Calling write callback %O\n",
 		      write_callback);
@@ -1332,9 +1349,11 @@ static int ssl_write_callback (int called_from_real_backend)
 static int ssl_close_callback (int called_from_real_backend)
 {
   SSL3_DEBUG_MSG ("ssl_close_callback (%O): "
-		  "nonblocking mode=%d, callback mode=%d\n",
+		  "nonblocking mode=%d, callback mode=%d%s%s\n",
 		  called_from_real_backend,
-		  nonblocking_mode, !!(CALLBACK_MODE));
+		  nonblocking_mode, !!(CALLBACK_MODE),
+		  conn && SSL_HANDSHAKING ? ", handshaking" : "",
+		  conn && SSL_CLOSING ? ", closing" : "");
 
   ENTER (1, called_from_real_backend) {
 #ifdef DEBUG
