@@ -4,8 +4,12 @@ object get_widget_from( string what )
 {
   array err;
   mixed res;
-  err = catch {
-    res= compile_string( "object foo(){ return "+what+"; }")()->foo();
+  err = catch
+  {
+    if( search(what, "return") == -1 )
+      res= compile_string( "object foo(){ return "+what+"; }")()->foo();
+    else
+      res= compile_string( "object foo(){ "+what+" }")()->foo();
   };
   if(!res)
     werror("Error while compiling or running "+what+"\n: %s\n", err?err[0]:"No return value");
@@ -118,8 +122,7 @@ void grab(object w)
 
 void got_event( mixed a, mixed b, object e )
 {
-  if(e->type == "expose" )
-    call_out(grab, 0.01, w );
+  call_out(grab, 0.3, w );
 }
 
 void show_recursively(object w)
@@ -157,7 +160,7 @@ int main(int argc, array (string) argv)
     ex = w = get_widget_from( argv[1] );
     w->set_border_width( 20 );
   }
-  w->signal_connect( "event", got_event, w );
+  w->signal_connect( "map_event", got_event, w );
   w->signal_connect( "destroy", _exit, 1 );
   show_recursively( w );
   return -1;

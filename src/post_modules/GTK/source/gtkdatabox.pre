@@ -1,0 +1,128 @@
+require gtkdatabox;
+class databox;
+inherit vbox;
+#include <gtkdatabox.h>
+ADD_INCLUDE(#include <gtkdatabox.h>);
+// GtkDatabox is designed to display large amounts of numerical data
+// fast and easy. Thousands of data points (X and Y coordinate) may be
+// displayed without any problems, zooming and scrolling as well as
+// optional rulers are already included.
+// <p>
+// The widget may be used as display for oscilloscopes or other
+// applications that need to display fast changes in their data.
+// IMG:   GTK.Databox x=GTK.Databox(); x->data_add_x_y(3, ({ 1.0, 0.5, 0.0 }), ({1.0, -1.0, 0.0}),GDK.Color(Image.Color.red), GTK.DataboxLines,2); x->rescale(); x->set_usize(300,300); return x;
+
+constant int GTK_DATABOX_NOT_DISPLAYED;
+constant int GTK_DATABOX_POINTS;
+constant int GTK_DATABOX_LINES;
+constant int GTK_DATABOX_BARS;
+
+signal zoomed;
+signal marked;
+signal selection_started;
+signal selection_changed;
+signal selection_stopped;
+signal selection_canceled;
+
+void create();
+// Create a new databox widget
+void show_rulers();
+void hide_rulers();
+
+void show_cross();
+void hide_cross();
+
+void show_scrollbars();
+void hide_scrollbars();
+
+void enable_zoom();
+void disable_zoom();
+
+%{
+static GtkDataboxCoord get_coord(int offset,int args)
+{
+  GtkDataboxCoord c;
+  if( args < offset+2)
+    error("too few arguments\n");
+  if( sp[-args+offset].type != T_INT )
+    error("Bad argument %d\n", offset );
+  else
+    c.x = sp[-args+offset].u.integer;
+  if( sp[-args+offset+1].type != T_INT )
+    error("Bad argument %d\n", offset );
+  else
+    c.y = sp[-args+offset+1].u.integer;
+  return c;
+}
+
+static GtkDataboxValue get_value(int offset,int args)
+{
+  GtkDataboxValue c;
+  if( args < offset+2)
+    error("too few arguments\n");
+  if( sp[-args+offset].type != T_FLOAT )
+    error("Bad argument %d\n", offset );
+  else
+    c.x = sp[-args+offset].u.float_number;
+  if( sp[-args+offset+1].type != T_FLOAT )
+    error("Bad argument %d\n", offset );
+  else
+    c.y = sp[-args+offset+1].u.float_number;
+  return c;
+}
+
+static void push_value( GtkDataboxValue v )
+{
+  push_text( "x" ); push_float( v.x );
+  push_text( "y" ); push_float( v.y );
+  f_aggregate_mapping( 4 );
+}
+%}
+
+FUNCTION(data_get_value, "function(int,int:mapping)");
+NAME_ARGS(x,y);
+{
+  GtkDataboxValue v;
+  gtk_databox_data_get_value(GTK_DATABOX(THIS->obj), get_coord(0,args), &v );
+  push_value( v );
+}
+
+FUNCTION(data_get_visible_extrema, "function(void:array(mapping))");
+{
+  GtkDataboxValue v1,v2;
+  gtk_databox_data_get_visible_extrema(GTK_DATABOX(THIS->obj), &v1, &v2 );
+  push_value( v1 );
+  push_value( v2 );
+  f_aggregate(2);
+}
+
+FUNCTION(data_get_extrema, "function(void:array(mapping))");
+{
+  GtkDataboxValue v1,v2;
+  gtk_databox_data_get_extrema(GTK_DATABOX(THIS->obj), &v1, &v2 );
+  push_value( v1 );
+  push_value( v2 );
+  f_aggregate(2);
+}
+
+void rescale();
+FUNCTION(rescale_with_values, "function(float,float,float,float:object)");
+NAME_ARGS(minx,miny,maxx,maxy);
+{
+  gtk_databox_rescale_with_values(GTK_DATABOX(THIS->obj),
+                                  get_value( 0, args ),
+                                  get_value( 2, args ));
+  RETURN_THIS();
+}
+
+int set_color(int index, *GDK.Color color );
+int set_data_type( int index, int type, int dot_size );
+// Type is one of CONST(GTK_DATABOX_)
+int data_add_x_y( int nelems, !floatarray x, !floatarray y, *GDK.Color color, int type, int dot_size );
+// Type is one of CONST(GTK_DATABOX_)
+int data_add_x( int nelems, !floatarray x, int shared_Y_index, *GDK.Color color, int type, int dot_size );
+// Type is one of CONST(GTK_DATABOX_)
+int data_add_y( int nelems, !floatarray y, int shared_X_index, *GDK.Color color, int type, int dot_size );
+// Type is one of CONST(GTK_DATABOX_)
+int data_destroy( int index );
+int data_destroy_all( );

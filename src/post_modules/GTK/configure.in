@@ -324,7 +324,6 @@ fi
 AC_CHECK_HEADERS( X11/xpm.h )
 AC_CHECK_LIB(Xpm, XpmReadFileToXpmImage)
 
-
 AC_PATH_PROG(GTKEXTRA_CONFIG,gtkextra-config,no)
 
 AC_SUBST(pgtk_has_gtkextra)
@@ -345,6 +344,34 @@ AC_CHECK_HEADERS(gtkextra/gtkextra.h)
   pgtk_has_gtkextra=gtkextra
 fi
 
+
+
+AC_CHECK_LIB(gtkdatabox, main,,,`gtk-config --libs`)
+AC_CHECK_HEADERS(gtkdatabox.h)
+
+AC_SUBST(pgtk_have_gtkdatabox)
+AC_SUBST(DATABOX_LIBS)
+DATABOX_LIBS=""
+AC_MSG_CHECKING([gtkdatabox support]);
+if test x$ac_cv_lib_gtkdatabox_main = xyes ; then
+  if test x$ac_cv_header_gtkdatabox_h = xyes; then
+    AC_MSG_RESULT(yes)
+    DATABOX_LIBS=-lgtkdatabox
+    pgtk_has_gtkdatabox=gtkdatabox
+  else
+    AC_MSG_RESULT(no)
+    pgtk_has_gtkdatabox=nogtkdatabox
+    echo "*******************************************"
+    echo " Warning: Partial gtkdatabox installation  "
+    echo " Library found, but no header files.       "
+    echo " Databox support will be disabled.         "
+    echo " The widget is available from              "
+    echo " http://www.eudoxos.net/gtk/gtkdatabox/    "
+    echo "*******************************************"
+  fi
+else
+  pgtk_has_gtkdatabox=nogtkdatabox
+fi
 
 
 AC_MSG_CHECKING([OpenGL])

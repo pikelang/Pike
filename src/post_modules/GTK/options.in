@@ -5,3 +5,4 @@
 @pgtk_has_gnome@
 @pgtk_has_docklets@
 @pgtk_has_gtkextra@
+@pgtk_has_gtkdatabox@

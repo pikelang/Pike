@@ -1185,6 +1185,8 @@ void do_default_sprintf( int args, int offset, int len )
            if( null )
              post += "  arg"+na+"[_i] = NULL;\n";
 	   break;
+	 case "!floatarray":
+           free_res=1; // Somewhat misleading reuse of variable...
 	 case "floatarray":
            if(!i_added++)
              args += "  int _i;\n";
@@ -1193,9 +1195,10 @@ void do_default_sprintf( int args, int offset, int len )
 	   format_string += "%a";
 	   args += "  struct array *_arg"+na+";\n";
 	   args += "  gfloat *arg"+na+";\n";
-	   fin += " free(arg"+na+");\n";
+           if(!free_res)
+             fin += " g_free(arg"+na+");\n";
 	   sargs += (",&_arg"+na);
-	   post += ("  arg"+na+"=malloc(sizeof(gfloat)* (_arg"+na+"->size));\n"
+	   post += ("  arg"+na+"=g_malloc(sizeof(gfloat)* (_arg"+na+"->size));\n"
 		    "  for(_i=0; _i<_arg"+na+"->size; _i++)\n"
 		    "  {\n"
 		    "    if(_arg"+na+"->item[_i].type != T_FLOAT)\n"
@@ -1206,6 +1209,8 @@ void do_default_sprintf( int args, int offset, int len )
 		    "    arg"+na+"[_i] = _arg"+na+"->item[_i].u.float_number;\n"
 		    "  }\n");
 	   break;
+	 case "!doublearray":
+           free_res=1; // Somewhat misleading reuse of variable...
 	 case "doublearray":
            if(!i_added++)
              args += "  int _i;\n";
@@ -1214,9 +1219,10 @@ void do_default_sprintf( int args, int offset, int len )
 	   format_string += "%a";
 	   args += "  struct array *_arg"+na+";\n";
 	   args += "  gdouble *arg"+na+";\n";
-	   fin += " free(arg"+na+");\n";
+           if(!free_res)
+             fin += " g_free(arg"+na+");\n";
 	   sargs += (",&_arg"+na);
-	   post += ("  arg"+na+"=malloc(sizeof(gfloat)* (_arg"+na+"->size));\n"
+	   post += ("  arg"+na+"=g_malloc(sizeof(gfloat)* (_arg"+na+"->size));\n"
 		    "  for(_i=0; _i<_arg"+na+"->size; _i++)\n"
 		    "  {\n"
 		    "    if(_arg"+na+"->item[_i].type != T_FLOAT)\n"
@@ -1227,6 +1233,8 @@ void do_default_sprintf( int args, int offset, int len )
 		    "    arg"+na+"[_i] = (gdouble)_arg"+na+"->item[_i].u.float_number;\n"
 		    "  }\n");
 	   break;
+	 case "!intarray":
+           free_res=1; // Somewhat misleading reuse of variable...
 	 case "intarray":
            if(!i_added++) args += "  int _i;\n";
 	   fundef += ",array(int)";
@@ -1234,9 +1242,10 @@ void do_default_sprintf( int args, int offset, int len )
 	   format_string += "%a";
 	   args += "  struct array *_arg"+na+";\n";
 	   args += "  gint *arg"+na+";\n";
-	   fin += " free(arg"+na+");\n";
+           if(!free_res)
+             fin += " g_free(arg"+na+");\n";
 	   sargs += (",&_arg"+na);
-	   post += ("  arg"+na+"=malloc(sizeof(gint)* (1+_arg"+na+"->size));\n"
+	   post += ("  arg"+na+"=g_malloc(sizeof(gint)* (1+_arg"+na+"->size));\n"
 		    "  for(_i=0; _i<_arg"+na+"->size; _i++)\n"
 		    "  {\n"
 		    "    if(_arg"+na+"->item[_i].type != T_INT)\n"
