@@ -23,7 +23,7 @@
 #include "file_machine.h"
 #include "file.h"
 
-RCSID("$Id: efuns.c,v 1.66 1999/03/05 03:33:12 mast Exp $");
+RCSID("$Id: efuns.c,v 1.67 1999/03/12 20:30:11 mast Exp $");
 
 #ifdef HAVE_SYS_TYPES_H
 #include <sys/types.h>
@@ -432,7 +432,7 @@ void f_mkdir(INT32 args)
   if(sp[-args].type != T_STRING)
     error("Bad argument 1 to mkdir().\n");
 
-  mode = 0777;			/* umask is &'ed with this anyway. */
+  mode = 0777;			/* &'ed with ~umask anyway. */
 
   if(args > 1)
   {
@@ -454,38 +454,44 @@ void f_mkdir(INT32 args)
 #define LSTAT stat
 #endif
 
-  /* Most OS's should have MKDIR_ARGS == 2 nowadays fortunately. */
-  i = mkdir(s) != -1;
-  if (i) {
-    /* Attempt to set the mode.
-     *
-     * This code needs to be as paranoid as possible.
-     */
-    struct stat statbuf1;
-    struct stat statbuf2;
+  {
+    /* Most OS's should have MKDIR_ARGS == 2 nowadays fortunately. */
     int mask = umask(0);
+    THREADS_ALLOW_UID();
+    i = mkdir(s) != -1;
     umask(mask);
-    i = LSTAT(s, &statbuf1) != -1;
     if (i) {
-      i = ((statbuf1.st_mode & S_IFMT) == S_IFDIR);
-    }
-    if (i) {
-      mode = ((mode & 0777) | (statbuf1.st_mode & ~0777)) & ~mask;
-      i = chmod(s, mode) != -1;
-    }
-    if (i) {
-      i = LSTAT(s, &statbuf2) != -1;
-    }
-    if (i) {
-      i = (statbuf2.st_mode == mode) && (statbuf1.st_ino == statbuf2.st_ino);
+      /* Attempt to set the mode.
+       *
+       * This code needs to be as paranoid as possible.
+       */
+      struct stat statbuf1;
+      struct stat statbuf2;
+      i = LSTAT(s, &statbuf1) != -1;
+      if (i) {
+	i = ((statbuf1.st_mode & S_IFMT) == S_IFDIR);
+      }
+      if (i) {
+	mode = ((mode & 0777) | (statbuf1.st_mode & ~0777)) & ~mask;
+	do {
+	  i = chmod(s, mode) != -1;
+	} while (!i && (errno == EINTR));
+      }
+      if (i) {
+	i = LSTAT(s, &statbuf2) != -1;
+      }
+      if (i) {
+	i = (statbuf2.st_mode == mode) && (statbuf1.st_ino == statbuf2.st_ino);
+	if (!i) {
+	  errno = EPERM;
+	}
+      }
       if (!i) {
-	errno = EPERM;
+	rmdir(s);
       }
     }
-    if (!i) {
-      rmdir(s);
-    }
-  }  
+    THREADS_DISALLOW_UID();
+  }
 #endif
   pop_n_elems(args);
   push_int(i);
