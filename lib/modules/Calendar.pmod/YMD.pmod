@@ -2523,7 +2523,8 @@ TimeofDay dwim_time(string what)
 	     string zone )
    foreach ( ({ "%t",
 		"%h:%*[ :]%m%*[ :]:%s",
-		"%h:%*[ :]%m" }),
+		"%h:%*[ :]%m",
+		"T%t"}),
 	     string todformat )
       foreach ( ({ "%y-%M-%D (%*s) -W%W-%e (%e)",
 		   "%D%*[ /]%M%*[- /,]%y",
@@ -2538,7 +2539,8 @@ TimeofDay dwim_time(string what)
 		   "%D%*[- /]%M",
 		   "%M%*[- /]%D",
 		   "%e%*[- /wv]%W%*[ -/]%y",
-		   "%e%*[- /wv]%W" }),
+		   "%e%*[- /wv]%W",
+		   ""}),
 		string dayformat )
       {
 	 if ( (t=parse(dayformat+" "+todformat+zone,what)) ) return t;

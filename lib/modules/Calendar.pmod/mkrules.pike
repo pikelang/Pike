@@ -10,7 +10,7 @@
 // and zic(8) is the usual compiler.
 
 // pike mkrules.pike ../data/{africa,antarctica,asia,australasia,backward,etcetera,europe,northamerica,pacificnew,southamerica,systemv}
-// $Id: mkrules.pike,v 1.1 2000/07/12 19:36:16 mirar Exp $
+// $Id: mkrules.pike,v 1.2 2000/07/30 09:10:10 mirar Exp $
 
 
 object cal=Calendar.ISO->set_timezone("UTC");
