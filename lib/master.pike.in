@@ -6,7 +6,7 @@
 // Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 // for more information.
 //
-// $Id: master.pike.in,v 1.304 2003/09/19 13:28:26 grubba Exp $
+// $Id: master.pike.in,v 1.305 2003/09/20 20:49:48 nilsson Exp $
 
 #pike __REAL_VERSION__
 
@@ -2014,6 +2014,7 @@ class CompatResolver
 
 inherit CompatResolver;
 
+//!
 class Pike06Resolver
 {
   inherit CompatResolver;
