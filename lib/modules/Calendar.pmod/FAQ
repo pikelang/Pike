@@ -24,6 +24,45 @@ A:  Calendar.dwim_day, or Calendar.dwim_time, should solve
 
 -------------------------------------------------------------------------  
 
+Q:  The dwim_* functions are too slow. 
+
+A:  They are not written to be fast, but to do good guessing.
+
+    If you know the format, you should use the Calendar.parse
+    function:
+
+      > Calendar.parse("%Y-%M-%D %h:%m","2040-11-08 2:46");
+      Result: Minute(Thu 8 Nov 2040 2:46 CET)
+      > Calendar.parse("%Y w%W %e %h:%m %p %z","1913 w4 monday 2:14 pm CET");
+      Result: Minute(Mon 20 Jan 1913 14:14 CET)
+      
+    These are the format characters:
+     %Y absolute year 
+     %y dwim year (70-99 is 1970-1999, 0-69 is 2000-2069)
+     %M month (number, name or short name) (needs %y)
+     %W week (needs %y)
+     %D date (needs %y, %m)
+     %d short date (20000304, 000304)
+     %a day (needs %y)
+     %e weekday (needs %y, %w)
+     %h hour (needs %d, %D or %W)
+     %m minute (needs %h)
+     %s second (needs %m)
+     %f fraction of a second (needs %s)
+     %t short time (205314, 2053)
+     %z zone
+     %p "am" or "pm"
+     %n empty string (to be put at the end of formats)
+
+    and you can also use "%*[....]" to skip some characters,
+    as in sscanf().
+
+    If this is too slow, there is currently no solution in Pike
+    to do this faster, except possibly sscanf and manual calculations/
+    time object creation.
+
+-------------------------------------------------------------------------  
+
 Q:  How do I get from unix time (time(2)) to a unit and back?
 
 A:  Calendar.Unit("unix",time())
