@@ -139,7 +139,7 @@ install:
 	@for d in "$(prefix)" "$(exec_prefix)" "$(prefix)/lib" "$(lib_prefix)" "$(prefix)/include" "$(prefix)/include/pike"; do if [ \! -d "$$d/." ]; then echo "$$d"; mkdir "$$d"; chmod 755 "$$d"; else : ; fi; done
 	@for d in `cd "$(TMP_LIBDIR)"; find . -type d -print`; do if [ \! -d "$(lib_prefix)/$$d/." ]; then echo "$(lib_prefix)/$$d"; mkdir "$(lib_prefix)/$$d"; chmod 755 "$(lib_prefix)/$$d/."; else : ; fi; done
 	@if [ -f "$(exec_prefix)/pike" ]; then \
-	  echo Renaming old "$(exec_prefix)/pike" to "$(exec_prefix)/old"; \
+	  echo Renaming old "$(exec_prefix)/pike" to "$(exec_prefix)/pike.old"; \
 	  mv -f "$(exec_prefix)/pike" "$(exec_prefix)/pike.old"; \
 	fi
 	@echo "$(exec_prefix)/pike"; $(INSTALL) ./pike $(exec_prefix)
