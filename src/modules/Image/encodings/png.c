@@ -1,5 +1,5 @@
 #include "global.h"
-RCSID("$Id: png.c,v 1.4 1998/04/02 01:07:03 mirar Exp $");
+RCSID("$Id: png.c,v 1.5 1998/04/03 00:18:31 mirar Exp $");
 
 #include "config.h"
 
@@ -1097,7 +1097,7 @@ void exit_image_png(void)
    free_string(param_type);
 }
 
-void init_image_png(void)
+struct object *init_image_png(void)
 {
    start_new_program();
 
@@ -1164,12 +1164,6 @@ void init_image_png(void)
    param_alpha=make_shared_string("alpha");
    param_bpp=make_shared_string("bpp");
    param_type=make_shared_string("type");
-
-   push_object(clone_object(end_program(),0));
-   {
-     struct pike_string *s=make_shared_string("PNG");
-     add_constant(s,sp-1,0);
-     free_string(s);
-   }
-   pop_stack();
+   
+   return clone_object(end_program(),0);
 }

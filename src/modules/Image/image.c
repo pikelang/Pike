@@ -1,9 +1,9 @@
-/* $Id: image.c,v 1.94 1998/04/01 05:37:21 mirar Exp $ */
+/* $Id: image.c,v 1.95 1998/04/03 00:18:29 mirar Exp $ */
 
 /*
 **! module Image
 **! note
-**!	$Id: image.c,v 1.94 1998/04/01 05:37:21 mirar Exp $
+**!	$Id: image.c,v 1.95 1998/04/03 00:18:29 mirar Exp $
 **! class image
 **!
 **!	The main object of the <ref>Image</ref> module, this object
@@ -82,7 +82,7 @@
 
 #include "stralloc.h"
 #include "global.h"
-RCSID("$Id: image.c,v 1.94 1998/04/01 05:37:21 mirar Exp $");
+RCSID("$Id: image.c,v 1.95 1998/04/03 00:18:29 mirar Exp $");
 #include "pike_macros.h"
 #include "object.h"
 #include "constants.h"
@@ -3124,21 +3124,29 @@ extern void init_font_programs(void);
 extern void exit_font(void);
 extern void init_colortable_programs(void);
 extern void exit_colortable(void);
+
+/* encoders */
+
 extern void init_image_gif(void);
 extern void exit_image_gif(void);
 extern void init_image_pnm(void);
 extern void exit_image_pnm(void);
 extern void init_image_xwd(void);
 extern void exit_image_xwd(void);
-extern void init_image_png(void);
-extern void exit_image_png(void);
 extern void init_image_x(void);
 extern void exit_image_x(void);
+
+/* dynamic encoders (dependent on other modules, loaded dynamically) */
+
+extern struct object* init_image_png(void);
+extern void exit_image_png(void);
 
 static struct pike_string 
    *magic_JPEG, 
    *magic_XFace, 
    *magic_PNG;
+
+static struct object *png_object=NULL;
 
 static void image_index_magic(INT32 args)
 {
@@ -3161,6 +3169,15 @@ static void image_index_magic(INT32 args)
       push_string(make_shared_string("_Image_XFace"));
       push_int(0);
       SAFE_APPLY_MASTER("resolv",2);
+      return;
+   }
+   else if (sp[-1].u.string==magic_PNG)
+   {
+      pop_stack();
+      if (!png_object)
+	 png_object=init_image_png();
+      png_object->refs++;
+      push_object(png_object);
       return;
    }
    push_object(THISOBJ); THISOBJ->refs++;
@@ -3404,7 +3421,6 @@ void pike_module_init(void)
    init_image_gif();
    init_image_pnm();
    init_image_xwd();
-   init_image_png();
    init_image_x();
 }
 
@@ -3421,7 +3437,12 @@ void pike_module_exit(void)
   exit_image_gif();
   exit_image_pnm();
   exit_image_xwd();
-  exit_image_png();
+  if (png_object) 
+  {
+     free_object(png_object);
+     png_object=NULL;
+     exit_image_png();
+  }
   exit_image_x();
 
   free_string(magic_PNG);

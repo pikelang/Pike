@@ -1,5 +1,5 @@
 /*
- * $Id: image_jpeg.c,v 1.13 1998/03/28 13:45:55 grubba Exp $
+ * $Id: image_jpeg.c,v 1.14 1998/04/03 00:18:33 mirar Exp $
  */
 
 #include "config.h"
@@ -22,7 +22,7 @@
 #undef HAVE_STDLIB_H
 #endif
 #include "global.h"
-RCSID("$Id: image_jpeg.c,v 1.13 1998/03/28 13:45:55 grubba Exp $");
+RCSID("$Id: image_jpeg.c,v 1.14 1998/04/03 00:18:33 mirar Exp $");
 
 #include "pike_macros.h"
 #include "object.h"
@@ -40,7 +40,12 @@ RCSID("$Id: image_jpeg.c,v 1.13 1998/03/28 13:45:55 grubba Exp $");
 
 #include "../Image/image.h"
 
+#ifdef DYNAMIC_MODULE
 static struct program *image_program=NULL;
+#else
+extern struct program *image_program=NULL; 
+/* Image module is probably linked static too. */
+#endif
 
 #endif /* HAVE_JPEGLIB_H */
 
@@ -594,6 +599,7 @@ void pike_module_exit(void)
 void pike_module_init(void)
 {
 #ifdef HAVE_JPEGLIB_H
+#ifdef DYNAMIC_MODULE
    push_string(make_shared_string("Image"));
    push_int(0);
    SAFE_APPLY_MASTER("resolv",2);
@@ -604,6 +610,7 @@ void pike_module_init(void)
       image_program=program_from_svalue(sp-1);
    }
    pop_n_elems(1);
+#endif /* DYNAMIC_MODULE */
 
    if (image_program)
    {

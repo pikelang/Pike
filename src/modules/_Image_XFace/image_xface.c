@@ -1,5 +1,5 @@
 #include "global.h"
-RCSID("$Id: image_xface.c,v 1.1 1998/02/13 18:57:23 marcus Exp $");
+RCSID("$Id: image_xface.c,v 1.2 1998/04/03 00:18:34 mirar Exp $");
 
 #include "config.h"
 
@@ -29,7 +29,12 @@ RCSID("$Id: image_xface.c,v 1.1 1998/02/13 18:57:23 marcus Exp $");
 
 #include "../Image/image.h"
 
+#ifdef DYNAMIC_MODULE
 static struct program *image_program=NULL;
+#else
+extern struct program *image_program=NULL; 
+/* Image module is probably linked static too. */
+#endif
 
 #endif /* HAVE_GMP_H */
 
@@ -285,6 +290,7 @@ void pike_module_exit(void)
 void pike_module_init(void)
 {
 #ifdef HAVE_GMP_H
+#ifdef DYNAMIC_MODULE
    push_string(make_shared_string("Image"));
    push_int(0);
    SAFE_APPLY_MASTER("resolv",2);
@@ -295,6 +301,7 @@ void pike_module_init(void)
       image_program=program_from_svalue(sp-1);
    }
    pop_n_elems(1);
+#endif /* DYNAMIC_MODULE */
 
    if (image_program)
    {
