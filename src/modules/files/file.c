@@ -2,12 +2,12 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: file.c,v 1.282 2003/07/03 16:07:08 grubba Exp $
+|| $Id: file.c,v 1.283 2003/07/04 19:30:29 grubba Exp $
 */
 
 #define NO_PIKE_SHORTHAND
 #include "global.h"
-RCSID("$Id: file.c,v 1.282 2003/07/03 16:07:08 grubba Exp $");
+RCSID("$Id: file.c,v 1.283 2003/07/04 19:30:29 grubba Exp $");
 #include "fdlib.h"
 #include "pike_netlib.h"
 #include "interpret.h"
@@ -1507,8 +1507,15 @@ static void file_grantpt( INT32 args )
 
   apply_svalue(Pike_sp-3, 2);
   apply(Pike_sp[-1].u.object, "wait", 0);
-  if(!UNSAFE_IS_ZERO(Pike_sp-1))
-    Pike_error(USE_PT_CHMOD " returned error %d.\n", Pike_sp[-1].u.integer);
+  if(!UNSAFE_IS_ZERO(Pike_sp-1)) {
+    Pike_error(
+#ifdef USE_PY_CHMOD
+	       USE_PT_CHMOD
+#else /* USE_CHGPT */
+	       USE_CHGPT
+#endif /* USE_PT_CHMOD */
+	       " returned error %d.\n", Pike_sp[-1].u.integer);
+  }
   pop_n_elems(3);
 #else /* HAVE_GRANTPT */
   if( grantpt( FD ) )
