@@ -110,3 +110,45 @@ string find_lib_location()
 {
   return __FILE__;
 }
+
+string find_next_in_path(string argv0,string cmd)
+{
+  argv0=combine_path(getcwd(),argv0);
+  if(file_stat(argv0))
+  {
+    foreach((getenv("PATH")||"")/":",string x)
+      {
+	string fname=combine_path(getcwd(),x,cmd);
+	if(array s=file_stat(fname))
+	{
+	  if(argv0)
+	  {
+	    if(argv0==s)
+	      argv0=0;
+	  }else{
+	    return fname;
+	  }
+	}
+      }
+  }else{
+    foreach((getenv("PATH")||"")/":",string x)
+      {
+	string fname=combine_path(getcwd(),x,cmd);
+	if(array s=file_stat(fname))
+	{
+	  if(Stdio.File(fname,"r")->read(2)=="#!")
+	    continue;
+	  return fname;
+	}
+      }
+  }
+
+  foreach((getenv("PATH")||"")/":",string x)
+    {
+      string fname=combine_path(getcwd(),x,cmd);
+      if(array s=file_stat(fname))
+	return fname;
+    }
+
+  return "/bin/"+cmd;
+}

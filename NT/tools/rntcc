@@ -1,6 +1,15 @@
 #!/usr/local/bin/pike
 
+// RNTCC, a front-end to WatCOM C/C++ with options similar to GCC
+// Written by Fredrik Hubinette.
+
 inherit "lib.pike";
+
+// Verbose is default for now, this can be turned off one this
+// frontend has been refined to where it does not require more
+// debugging.
+
+int verbose=1;
 
 int compile(string *sources,
 	     string dest,
@@ -8,6 +17,7 @@ int compile(string *sources,
 	     string *cflags)
 {
   int ret;
+  mixed cmd;
   if(!dest)
   {
     string tmp=reverse(sources[0]);
@@ -20,11 +30,15 @@ int compile(string *sources,
   sources=Array.map(sources,fixpath);
   if(lower_case(sources[0][strlen(sources[0])-3..])==".s")
   {
-    ret=do_cmd(({ "wasm", "-fe"+errorfile, "-fo"+dest,})+ sources );
+    cmd=({ "wasm", "-fe"+errorfile, "-fo"+dest,})+ sources;
   }else{
-    ret=do_cmd(({ "wcc386" }) + cflags + ({"-fr"+errorfile, "-fo"+dest}) + sources );
+    cmd=({ "wcc386" }) + cflags + ({"-fr"+errorfile, "-fo"+dest}) + sources;
   }
-  return ret;
+
+  if(verbose)
+    return do_cmd(cmd);
+  else
+    return silent_do_cmd(cmd);
 }
 
 string check_errorfile(string errorfile)
@@ -60,26 +74,31 @@ int main(int argc, string *argv)
   string output;
   int share=0;
 
-  mixed *opts=Getopt.find_all_options(argv, ({
+  mixed *opts=Getopt.find_all_options(argv, aggregate(
     ({"oper_pre",Getopt.NO_ARG, ({"-E"}) }),
-      ({"oper_comp",Getopt.NO_ARG, ({"-c"}) }),
-	({"debug",Getopt.MAY_HAVE_ARG, ({"-g"}) }),
-	  ({"optimize",Getopt.MAY_HAVE_ARG, ({"-O"}) }),
-	    ({"include",Getopt.HAS_ARG, ({"-I"}) }),
-	      ({"link",Getopt.HAS_ARG, ({"-l"}) }),
-		({"share",Getopt.MAY_HAVE_ARG, ({"-s"}) }),
-		  ({"ignore",Getopt.MAY_HAVE_ARG, ({"-t"}) }),
-		    ({"ignore",Getopt.HAS_ARG, ({"-R","-L"}) }),
-		      ({"warn",Getopt.MAY_HAVE_ARG, ({"-W"}) }),
-			({"define",Getopt.HAS_ARG, ({"-D"}) }),
-			  ({"undefine",Getopt.HAS_ARG, ({"-U"})}),
-			    ({"output",Getopt.HAS_ARG, ({"-o"}) }),
-			    ({"export",Getopt.HAS_ARG, ({"--export"}) })
-			      }));
+    ({"oper_comp",Getopt.NO_ARG, ({"-c"}) }),	
+    ({"verbose",Getopt.NO_ARG, ({"-v"}) }),	
+    ({"debug",Getopt.MAY_HAVE_ARG, ({"-g"}) }),
+    ({"optimize",Getopt.MAY_HAVE_ARG, ({"-O"}) }),
+    ({"include",Getopt.HAS_ARG, ({"-I"}) }),
+    ({"link",Getopt.HAS_ARG, ({"-l"}) }),
+    ({"share",Getopt.MAY_HAVE_ARG, ({"-s"}) }),
+    ({"ignore",Getopt.MAY_HAVE_ARG, ({"-t"}) }),
+    ({"ignore",Getopt.HAS_ARG, ({"-R","-L"}) }),
+    ({"warn",Getopt.MAY_HAVE_ARG, ({"-W"}) }),
+    ({"define",Getopt.HAS_ARG, ({"-D"}) }),
+    ({"undefine",Getopt.HAS_ARG, ({"-U"})}),
+    ({"output",Getopt.HAS_ARG, ({"-o"}) }),
+    ({"export",Getopt.HAS_ARG, ({"--export"}) })
+    ));
   foreach(opts, mixed *option)
     {
       switch(option[0])
       {
+	case "verbose":
+	  verbose=1;
+	  break;
+
 	case "export":
 	  ldopts+=({"export",option[1]+"_"});
 	  break;
@@ -110,6 +129,8 @@ int main(int argc, string *argv)
 	  break;
 	  
 	case "include":
+	  // Avoid searching 'local' include dirs.
+	  // This is not a very pretty solution.
 	  if(sscanf(option[1],"/usr/include/%*s") ||
 	     sscanf(option[1],"/usr/local/%*s"))
 	    break;
@@ -118,13 +139,33 @@ int main(int argc, string *argv)
 	  break;
 	  
 	case "link":
+	  // -lm and -lc are automatically handled by wlink
 	  if(option[1]=="m" || option[1]=="c") break;
-	  
-	  libraries+=({"LIBRARY",option[1]});
+
+	  // We optimiza a little, no need to bring in the same
+	  // library many times in a row.
+	  if(!sizeof(libraries) || libraries[-1]!=option[1])
+	    libraries+=({option[1]});
 	  break;
 	  
 	  case "warn":
-	  if(option[1] && sscanf(option[1],"l,%*s")) break;
+	  if(option[1])
+	  {
+	    // This allows us to pass options to the linker
+	    if(sscanf(option[1],"l,%s",string tmp))
+	    {
+	      // This was done for my convenience, it can be taken
+	      // out once smartlink has been fixed to not use absoute
+	      // paths for the 'uname' binary.
+	      if(sscanf(tmp,"-rpath%*s")) break;
+
+	      ldopts+=({tmp});
+	      break;
+	    }
+	  }
+
+	  // More options should be recognized, options which are not
+	  // recognized should generate warning/error messages.
 	  switch(option[1])
 	  {
 	    case "all": cflags+=({"-wx"}); break;
@@ -140,6 +181,7 @@ int main(int argc, string *argv)
       }
     }
 
+  // Scan through the remaining arguments
   argv=Getopt.get_args(argv);
   foreach(argv[1..], string tmp)
   {
@@ -150,10 +192,15 @@ int main(int argc, string *argv)
       exit(1);
     }
     sscanf(reverse(tmp),"%s.",ext);
+
+    // Recognize which files need to be compiled
     switch(ext)
     {
+      case "bil":
       case "o":
+      case "jbo":
       case "a":
+      case "lld":
 	objects+=({tmp});
 	break;
 	
@@ -167,6 +214,7 @@ int main(int argc, string *argv)
   string errorfile="TMP"+getpid()+".err";
   rm(errorfile);
 
+  // Flags required to make the compiler behave well
   cflags+=({"-bm","-zq","-hc","-sg"});
 
   switch(operation)
@@ -204,17 +252,20 @@ int main(int argc, string *argv)
       target=output;
       if(!share) target+=".exe";
 
-      Stdio.write_file(ldfile,
-		 "NAME "+target+" " +ldopts*" "+" "+
-		    "FIL "+Array.map(objects,fixpath)*","+" "+
-		    libraries*" "+" ");
+      string linkopts=("NAME "+target+" " +
+		       ldopts*" "+" "+
+		       "FILE "+Array.map(objects,fixpath)*","+" "+
+		       sprintf("%{LIBRARY %s %}",libraries));
+      Stdio.write_file(ldfile,linkopts);
+      if(verbose)
+	werror("DOING wlink "+linkopts+"\n");
 
 #if 0
       Process.system("cat "+ldfile);
       write("\n");
 #endif
 
-      do_cmd( ({"wlink","@"+ldfile }), lambda(string data)
+      silent_do_cmd( ({"wlink","@"+ldfile }), lambda(string data)
       {
 	if(search(data," W1008:")!=-1)
 	  exit(1);
