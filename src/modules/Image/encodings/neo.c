@@ -2,14 +2,14 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: neo.c,v 1.4 2003/10/24 23:33:08 nilsson Exp $
+|| $Id: neo.c,v 1.5 2003/10/24 23:36:12 nilsson Exp $
 */
 
 #include "global.h"
 #include "image_machine.h"
 
 #include "stralloc.h"
-RCSID("$Id: neo.c,v 1.4 2003/10/24 23:33:08 nilsson Exp $");
+RCSID("$Id: neo.c,v 1.5 2003/10/24 23:36:12 nilsson Exp $");
 #include "atari.h"
 
 /* MUST BE INCLUDED LAST */
@@ -48,7 +48,7 @@ void image_neo_f__decode(INT32 args)
   struct object *img;
 
   struct pike_string *s, *fn;
-  const unsigned char *q;
+  unsigned char *q;
 
   get_all_args( "decode", args, "%S", &s );
   if(s->len!=32128)
@@ -61,7 +61,7 @@ void image_neo_f__decode(INT32 args)
     Pike_error("This is not a NEO file (invalid resolution).\n");
 
   /* Checks done... */
-  stack_pop_n_elems_keep_top(args);
+  pop_n_elems(args);
 
   if(res==0)
     pal = decode_atari_palette(q+4, 16);

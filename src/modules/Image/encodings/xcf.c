@@ -2,11 +2,11 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: xcf.c,v 1.45 2003/10/24 23:33:08 nilsson Exp $
+|| $Id: xcf.c,v 1.46 2003/10/24 23:34:42 nilsson Exp $
 */
 
 #include "global.h"
-RCSID("$Id: xcf.c,v 1.45 2003/10/24 23:33:08 nilsson Exp $");
+RCSID("$Id: xcf.c,v 1.46 2003/10/24 23:34:42 nilsson Exp $");
 
 #include "image_machine.h"
 
@@ -336,7 +336,6 @@ static struct buffer read_string( struct buffer *data )
 {
   struct buffer res = *data;
   res.len = xcf_read_int( data );
-  fprintf(stderr, "string len %d\n", res.len);
   res.base_offset = (data->base_offset+(data->base_len-data->len));
   res.str = (unsigned char *)read_data( data, res.len );
   if(res.len > 0)  res.len--;  /* len includes ending \0 */
@@ -648,7 +647,6 @@ static struct layer read_layer( struct buffer *buff, struct buffer *initial )
   int h_offset;
   ONERROR err;
 
-  fprintf(stderr, "in read layer\n");
   MEMSET(&res, 0, sizeof(res));
   SET_ONERROR( err, free_layer, &res );
   res.width = read_uint( buff );
@@ -656,7 +654,7 @@ static struct layer read_layer( struct buffer *buff, struct buffer *initial )
   res.type = xcf_read_int( buff );
   res.name = read_string( buff );
 
-  fprintf(stderr, "lay prop\n");
+
   do
   {
     tmp = read_property( buff );
@@ -671,7 +669,7 @@ static struct layer read_layer( struct buffer *buff, struct buffer *initial )
 
   h_offset = xcf_read_int( buff );
   lm_offset = xcf_read_int( buff );
-  fprintf(stderr, "lay lm\n");
+
   if(lm_offset)
   {
     struct buffer loffset = *initial;
@@ -681,7 +679,7 @@ static struct layer read_layer( struct buffer *buff, struct buffer *initial )
     MEMSET(m, 0, sizeof( struct layer_mask ));
     *m = read_layer_mask( &loffset, initial );
   }
-  fprintf(stderr, "lay h\n");
+
   if(h_offset)
   {
     struct buffer loffset = *initial;
@@ -736,13 +734,12 @@ static struct gimp_image read_image( struct buffer * data )
       res.first_property = s;
     }
   } while( tmp.type );
-  fprintf(stderr, "read layer\n");
+
   while( (offset = read_uint( data )) )
   {
     struct buffer layer_data = initial;
     struct layer tmp;
     read_data( &layer_data, offset );
-    fprintf(stderr, "call read layer\n");
     tmp = read_layer( &layer_data, &initial );
     if( tmp.width && tmp.height )
     {
