@@ -1,4 +1,4 @@
-# $Id: configure.in,v 1.4 1999/08/07 20:52:24 marcus Exp $
+# $Id: configure.in,v 1.5 1999/08/17 20:59:13 marcus Exp $
 AC_INIT(top.c)
 AC_CONFIG_HEADER(config.h)
 
@@ -17,16 +17,72 @@ AC_PATH_XTRA()
 AC_ARG_WITH(lib-GL,     [  --with-lib-GL           use '-lGL'])
 AC_ARG_WITH(lib-MesaGL, [  --with-lib-MesaGL       use '-lMesaGL'])
 
+AC_CHECK_HEADERS(windef.h wingdi.h GL/gl.h GL/glx.h)
+
 AC_CHECK_LIB(GL, glOrtho, AC_DEFINE_UNQUOTED(HAVE_LIBGL),,[$X_LIBS $X_PRE_LIBS -lXext -lX11 $X_EXTRA_LIBS])
 AC_CHECK_LIB(MesaGL, glOrtho, AC_DEFINE_UNQUOTED(HAVE_LIBMESAGL),,[$X_LIBS $X_PRE_LIBS -lXext -lX11 $X_EXTRA_LIBS])
+oldLIBS="$LIBS"
+AC_MSG_CHECKING(for glOrtho in -lOpenGL)
+AC_CACHE_VAL(pike_cv_lib_OpenGL, [
+  LIBS="$oldLIBS -lOpenGL"
+  AC_TRY_LINK([
+#ifdef HAVE_WINDEF_H
+#include <windef.h>
+#endif /* HAVE_WINDEF_H */
+#ifdef HAVE_WINGDI_H
+#include <wingdi.h>
+#endif /* HAVE_WINGDI_H */
+#ifdef HAVE_GL_GL_H
+#include <GL/gl.h>
+#endif /* HAVE_GL_GL_H */
+], [ glOrtho(0.0,0.0,0.0,0.0,0.0,0.0); ], [ pike_cv_lib_OpenGL=yes ], [ pike_cv_lib_OpenGL=no ])
+])
+if test x"$pike_cv_lib_OpenGL" = xyes; then
+  AC_MSG_RESULT(yes)
+  AC_DEFINE_UNQUOTED(HAVE_LIBOPENGL)
+else
+  AC_MSG_RESULT(no)
+fi
+AC_MSG_CHECKING(for glOrtho in -lOpenGL32)
+AC_CACHE_VAL(pike_cv_lib_OpenGL32, [
+  LIBS="$oldLIBS -lOpenGL32"
+  AC_TRY_LINK([
+#ifdef HAVE_WINDEF_H
+#include <windef.h>
+#endif /* HAVE_WINDEF_H */
+#ifdef HAVE_WINGDI_H
+#include <wingdi.h>
+#endif /* HAVE_WINGDI_H */
+#ifdef HAVE_GL_GL_H
+#include <GL/gl.h>
+#endif /* HAVE_GL_GL_H */
+], [ glOrtho(0.0,0.0,0.0,0.0,0.0,0.0); ], [ pike_cv_lib_OpenGL32=yes ], [ pike_cv_lib_OpenGL32=no ])
+])
+if test x"$pike_cv_lib_OpenGL32" = xyes; then
+  AC_MSG_RESULT(yes)
+  AC_DEFINE_UNQUOTED(HAVE_LIBOPENGL32)
+else
+  AC_MSG_RESULT(no)
+fi
+LIBS="$oldLIBS"
 
 if test x"$with_lib_GL" = "xyes" -a x"$ac_cv_lib_GL_glOrtho" = xyes; then
   LIBS="-lGL $LIBS"
+  AC_DEFINE(HAVE_GL)
+elif test x"$with_lib_GL" = "xyes" -a x"$pike_cv_lib_OpenGL" = xyes; then
+  LIBS="-lOpenGL $LIBS"
+  AC_DEFINE(HAVE_GL)
+elif test x"$with_lib_GL" = "xyes" -a x"$pike_cv_lib_OpenGL32" = xyes; then
+  LIBS="-lOpenGL32 $LIBS"
   AC_DEFINE(HAVE_GL)
 elif test x"$with_lib_MesaGL" = "xyes" -a x"$ac_cv_lib_MesaGL_glOrtho" = xyes; then
   LIBS="-lMesaGL $LIBS"
 elif test x"$ac_cv_lib_GL_glOrtho" = xyes; then
   LIBS="-lGL $LIBS"
+elif test x"$pike_cv_lib_OpenGL" = xyes; then
+  LIBS="-lOpenGL $LIBS"
+elif test x"$pike_cv_lib_OpenGL32" = xyes; then
+  LIBS="-lOpenGL32 $LIBS"
 elif test x"$ac_cv_lib_MesaGL_glOrtho" = xyes; then
   LIBS="-lMesaGL $LIBS"
 else

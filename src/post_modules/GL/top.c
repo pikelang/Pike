@@ -1,5 +1,5 @@
 /*
- * $Id: top.c,v 1.10 1999/08/07 21:29:10 marcus Exp $
+ * $Id: top.c,v 1.11 1999/08/17 20:59:14 marcus Exp $
  *
  */
 
@@ -7,15 +7,25 @@
 
 #ifdef HAVE_GL
 
+#ifdef HAVE_WINDEF_H
+#include <windef.h>
+#endif /* HAVE_WINDEF_H */
+#ifdef HAVE_WINGDI_H
+#include <wingdi.h>
+#endif /* HAVE_WINGDI_H */
+#ifdef HAVE_GL_GL_H
 #include <GL/gl.h>
+#endif /* HAVE_GL_GL_H */
+#ifdef HAVE_GL_GLX_H
 #include <GL/glx.h>
+#endif /* HAVE_GL_GLX_H */
 
 #endif /* HAVE_GL */
 
 
 #include "global.h"
 
-RCSID("$Id: top.c,v 1.10 1999/08/07 21:29:10 marcus Exp $");
+RCSID("$Id: top.c,v 1.11 1999/08/17 20:59:14 marcus Exp $");
 #include "stralloc.h"
 #include "pike_macros.h"
 #include "object.h"
