@@ -16,7 +16,7 @@
 
 // Author:  Johan Schön.
 // Copyright (c) Roxen Internet Software 2001
-// $Id: Crawler.pmod,v 1.6 2001/07/12 16:40:17 js Exp $
+// $Id: Crawler.pmod,v 1.7 2001/08/13 11:47:13 anders Exp $
 
 #define CRAWLER_DEBUG
 #ifdef CRAWLER_DEBUG
@@ -559,11 +559,15 @@ class RobotExcluder
   string host;
   Standards.URI base_uri;
   function done_cb;
-  
-  void create(Standards.URI _base_uri,
-	      function _done_cb)
+  array(mixed) args;
+  string user_agent;
+
+  void create(Standards.URI _base_uri, function _done_cb,
+	      void|mixed _user_agent, void|mixed ... _args)
   {
     base_uri=_base_uri; done_cb=_done_cb;
+    user_agent = _user_agent || "PikeCrawler";
+    args = _args;
     set_callbacks(request_ok, request_fail);
     async_request(base_uri->host, base_uri->port,
 		  "GET /robots.txt HTTP/1.0",
@@ -581,7 +585,7 @@ class RobotExcluder
   void request_ok(object httpquery, int gotdata)
   {
     if(!gotdata)
-      async_fetch(request_ok, 1);
+      async_fetch(request_ok, httpquery, 1);
     else
     {
       if(httpquery->status!=200)
@@ -590,7 +594,7 @@ class RobotExcluder
  	reject_globs=parse_robot_txt(httpquery->data(), base_uri);
       got_reply=1;
       
-      done_cb(this_object());
+      done_cb(this_object(), @args);
     }
   }
   
@@ -617,11 +621,15 @@ class RobotExcluder
 	switch(lower_case(field))
 	{
           case "user-agent":
-	    rejected=glob(value, "PikeCrawler");
+	    rejected=glob("*"+lower_case(value)+"*", lower_case(user_agent));
 	    break;
           case "disallow":
-	    if(rejected)
-	      collect_rejected+=({ (string)Standards.URI(value, uri) });
+	    if(rejected) {
+	      if (!sizeof(value))
+		collect_rejected = ({});
+	      else
+		collect_rejected+=({ (string)Standards.URI(value+"*", uri) });
+	    }
 	    break;
 	}
       }
@@ -639,7 +647,8 @@ class Crawler
   array(mixed) args;
 
   mapping _hostname_cache=([]);
-  
+  mapping _robot_excluders=([]);
+
   class HTTPFetcher
   {
     inherit Protocols.HTTP.Query;
@@ -690,7 +699,7 @@ class Crawler
       ]);
       if(extra_headers)
 	headers |= extra_headers;
-      
+
       hostname_cache=_hostname_cache;
       set_callbacks(request_ok, request_fail);
 
@@ -704,38 +713,82 @@ class Crawler
   {
     map(links,queue->put);
   }
-  
-  void get_next_uri()
+
+  void got_robot_excluder(RobotExcluder excl, Standards.URI _real_uri)
   {
-    object|int uri=queue->get();
-
-    if(uri==-1)
-    {
-      call_out(get_next_uri,0.1);
-      return;
-    }
-
-    if(!uri)
-    {
-      done_cb();
-      return;
-    }
-
-    queue->stats->start_fetch(uri->host);
-
+    get_next_uri(excl->base_uri, _real_uri);
+  }
+  
+  void get_next_uri(void|Standards.URI _uri, void|Standards.URI _real_uri)
+  {
+    object|int uri;
     mapping headers;
-    Standards.URI real_uri = uri;
-    if( prepare_cb )
-      [uri, headers] = prepare_cb( uri );
+    Standards.URI real_uri;
+
+    if (_uri) {
+      uri = _uri;
+      real_uri = _real_uri;
+    }
+    else
+    {
+      uri=queue->get();
+
+      if(uri==-1)
+      {
+	call_out(get_next_uri,0.1);
+	return;
+      }
+
+      if(!uri)
+      {
+	done_cb();
+	return;
+      }
+
+      queue->stats->start_fetch(uri->host);
+
+      real_uri = uri;
+      if( prepare_cb )
+	[uri, headers] = prepare_cb( uri );
+    }
 
     if(objectp(uri))
     {
+
+      string site = uri->host+":"+uri->port;
+      if(!_robot_excluders[site])
+      {
+	_robot_excluders[site] = RobotExcluder(uri, got_robot_excluder,
+					       headers["user-agent"],
+					       real_uri);
+	return;
+      }
+
+      if (!_robot_excluders[site]->check((string)uri))
+      {
+	queue->stats->close_callback(real_uri);
+	error_cb(real_uri, 1000, headers, @args); // robots.txt said no!
+	queue->done(real_uri);
+	call_out(get_next_uri,0);
+	return;
+      }
+
       switch(uri->scheme)
       {
         case "http":
         case "https":
 	  HTTPFetcher(uri, real_uri, headers);
+	  break;
+        default:
+	  queue->stats->close_callback(real_uri);
+	  error_cb(real_uri, 1001, headers, @args); // Unknown scheme
+	  queue->done(real_uri);
       }
+    }
+    else
+    {
+      queue->stats->close_callback(real_uri);
+      queue->done(real_uri);
     }
   
     call_out(get_next_uri,0);
