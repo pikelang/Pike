@@ -166,3 +166,9 @@ array uniq(array a)
   return indices(mkmapping(a,a));
 }
 
+array columns(array x, array ind)
+{
+  array ret=allocate(sizeof(ind));
+  for(int e=0;e<sizeof(ind);e++) ret[e]=column(x,ind[e]);
+  return ret;
+}
