@@ -18,7 +18,7 @@
 #include <float.h>
 #include <string.h>
 
-RCSID("$Id: port.c,v 1.36 2000/12/23 07:36:25 hubbe Exp $");
+RCSID("$Id: port.c,v 1.37 2001/02/02 15:52:41 per Exp $");
 
 #ifdef sun
 time_t time PROT((time_t *));
@@ -216,7 +216,7 @@ void *MEMSET(void *s,int c,size_t n)
 }
 #endif
 
-#if defined(TRY_USE_MMX) || !defined(HAVE_MEMCPY) && !defined(HAVE_BCOPY)
+#if (0 && defined(TRY_USE_MMX)) || !defined(HAVE_MEMCPY) && !defined(HAVE_BCOPY)
 #ifdef TRY_USE_MMX
 #include <mmx.h>
 #endif

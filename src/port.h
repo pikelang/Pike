@@ -5,7 +5,7 @@
 \*/
 
 /*
- * $Id: port.h,v 1.34 2000/12/23 07:34:05 hubbe Exp $
+ * $Id: port.h,v 1.35 2001/02/02 15:52:41 per Exp $
  */
 #ifndef PORT_H
 #define PORT_H
@@ -93,7 +93,7 @@ void *MEMSET (void *s,int c,size_t n);
 #  define MEMSET memset
 #endif
 
-#ifdef TRY_USE_MMX
+#if 0 && defined(TRY_USE_MMX)
 PMOD_EXPORT void MEMCPY(void *b,const void *a,size_t s);
 # define __builtin_memcpy MEMCPY
 #else
