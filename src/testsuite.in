@@ -1,4 +1,4 @@
-test_true([["$Id: testsuite.in,v 1.481 2002/01/18 05:17:17 nilsson Exp $"]]);
+test_true([["$Id: testsuite.in,v 1.482 2002/01/31 16:55:27 grubba Exp $"]]);
 
 cond([[all_constants()->_verify_internals]],
 [[
@@ -7415,6 +7415,15 @@ test_equal(Array.diff3(({"a","c","b","a"}),({"a","c"}),({"b","a","c"})),
 	   ({({({   }),({"a","c"}),({"b","a"})}),
 	     ({({   }),({"a","c"}),({       })}),
 	     ({({"b"}),({"a","c"}),({       })})}))
+
+// - Array.dwim_sort_func
+test_eq(Array.dwim_sort_func("1","a"), -1)
+test_eq(Array.dwim_sort_func("1","1a"), -1)
+test_eq(Array.dwim_sort_func("1","0a"), 1)
+test_eq(Array.dwim_sort_func("1","1"), 0)
+test_eq(Array.dwim_sort_func("1","01"), 0)
+test_eq(Array.dwim_sort_func("1","2"), -1)
+test_eq(Array.dwim_sort_func("10","2a"), 1)
 
 // - equal
 // equal is already tested by this script
