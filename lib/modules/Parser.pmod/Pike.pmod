@@ -4,7 +4,7 @@
 //
 // #pike __REAL_VERSION__
 //
-// $Id: Pike.pmod,v 1.27 2002/12/30 14:40:16 nilsson Exp $
+// $Id: Pike.pmod,v 1.28 2003/01/18 02:13:19 nilsson Exp $
 
 //! This module parses and tokanizes Pike source code.
 
@@ -91,8 +91,6 @@ array(string) split(string data, void|mapping state)
   while(1)
   {
     int start=pos;
-
-    //    werror("::::%c\n",data[pos]);
 
     switch(data[pos])
     {
