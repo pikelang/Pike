@@ -40,7 +40,7 @@
 #include "threads.h"
 #include "operators.h"
 
-RCSID("$Id: spider.c,v 1.49 1997/12/11 14:30:03 per Exp $");
+RCSID("$Id: spider.c,v 1.50 1998/03/02 00:29:02 grubba Exp $");
 
 #ifdef HAVE_PWD_H
 #include <pwd.h>
@@ -407,7 +407,10 @@ void f_parse_html_lines(INT32 args)
 
   free_mapping(cont);
   free_mapping(single);
-  f_add(strings);
+  if (strings > 1)
+    f_add(strings);
+  else
+    push_text("");
 }
 
 char start_quote_character = '\000';
@@ -666,10 +669,11 @@ void do_html_parse(struct pike_string *ss,
 	}
 
 	apply_svalue(&sval1,2+(extra_args?extra_args->size:0));
+	free_svalue(&sval1);
+	free_svalue(&sval2);
+
 	if (sp[-1].type==T_STRING)
 	{
-	  free_svalue(&sval1);
-	  free_svalue(&sval2);
 	  copy_shared_string(ss2,sp[-1].u.string);
 	  pop_stack();
 	  if (last!=i-1)
@@ -681,8 +685,6 @@ void do_html_parse(struct pike_string *ss,
 	  do_html_parse(ss2,cont,single,strings,recurse_left-1,extra_args);
 	  continue;
 	} else if (sp[-1].type==T_ARRAY) {
-	  free_svalue(&sval2);
-	  free_svalue(&sval1);
 	  push_text("");
 	  f_multiply(2);
 	  copy_shared_string(ss2,sp[-1].u.string);
@@ -697,11 +699,10 @@ void do_html_parse(struct pike_string *ss,
 	  
 	  push_string(ss2);
 	  (*strings)++;
-
-	  free_svalue(&sval1);
 	  continue;
 	}
 	pop_stack();
+	continue;
       }
 
       /* Is it a container then? */
@@ -734,11 +735,11 @@ void do_html_parse(struct pike_string *ss,
 	}
 
 	apply_svalue(&sval1,3+(extra_args?extra_args->size:0));
+	free_svalue(&sval1);
+	free_svalue(&sval2);
 
 	if (sp[-1].type==T_STRING)
 	{
-	  free_svalue(&sval1);
-	  free_svalue(&sval2);
 	  copy_shared_string(ss2,sp[-1].u.string);
 	  pop_stack();
 
@@ -754,8 +755,6 @@ void do_html_parse(struct pike_string *ss,
 	  continue;
 
 	} else if (sp[-1].type==T_ARRAY) {
-	  free_svalue(&sval1);
-	  free_svalue(&sval2);
 	  push_text("");
 	  f_multiply(2);
 	  copy_shared_string(ss2,sp[-1].u.string);
@@ -772,6 +771,7 @@ void do_html_parse(struct pike_string *ss,
 	  continue;
 	}
 	pop_stack();
+	continue;
       }
       free_svalue(&sval1);
       free_svalue(&sval2);
@@ -798,6 +798,49 @@ void do_html_parse(struct pike_string *ss,
   }
 }
 
+#define PARSE_RECURSE(END) do {                                 \
+  copy_shared_string(ss2,sp[-1].u.string);                      \
+  pop_stack();                                                  \
+  if (last!=i-1)                                                \
+  {                                                             \
+    push_string(make_shared_binary_string(s+last,i-last-1));    \
+    (*strings)++;                                               \
+  }                                                             \
+  for (;i<END; i++) if (s[i]==10) line++;                       \
+  i=last=j=END;                                                 \
+  do_html_parse_lines(ss2,cont,single,strings,                  \
+                      recurse_left-1,extra_args,line);          \
+} while(0)
+
+
+#define PARSE_RETURN(END) do{                                   \
+  push_text("");                                                \
+  f_multiply(2);                                                \
+  (*strings)++;                                                 \
+  if (last!=i-1)                                                \
+  {                                                             \
+    copy_shared_string(ss2,sp[-1].u.string);                    \
+    pop_stack();                                                \
+    push_string(make_shared_binary_string(s+last,i-last-1));    \
+    (*strings)++;                                               \
+    push_string(ss2);                                           \
+  }                                                             \
+  for (;i<END; i++) if (s[i]==10) line++;                       \
+  i=last=END;                                                   \
+} while(0)
+
+#define HANDLE_RETURN_VALUE(END) do {           \
+  free_svalue(&sval1);                          \
+  if (sp[-1].type==T_STRING)                    \
+  {                                             \
+    PARSE_RECURSE(END);                         \
+    continue;                                   \
+  } else if (sp[-1].type==T_ARRAY) {            \
+    PARSE_RETURN(END);                          \
+    continue;                                   \
+  }                                             \
+  pop_stack();                                  \
+} while(0)
 
 void do_html_parse_lines(struct pike_string *ss,
 			 struct mapping *cont,struct mapping *single,
@@ -830,11 +873,9 @@ void do_html_parse_lines(struct pike_string *ss,
   {
     if (s[i]==10) 
     {
-       line++;
-       i++;
-    }
-    else if (s[i]=='<')
-    {
+      line++;
+      i++;
+    } else if (s[i]=='<') {
       /* skip all spaces */
       i++;
       for (j=i; j<len && s[j]!='>' && !isspace(s[j]); j++);
@@ -854,10 +895,11 @@ void do_html_parse_lines(struct pike_string *ss,
       if (sval1.type==T_STRING)
       {
 	/* A simple string ... */
-	assign_svalue_no_free(sp++,&sval1);
-	free_svalue(&sval1);
+	*(sp++) = sval1;
+#ifdef DEBUG
+	sval1.type=99;
+#endif /* DEBUG */
 	(*strings)++;
-	free_svalue(&sval2);
 	find_endtag(sval2.u.string ,s+j, len-j, &l); /* bug /law 960805 */
 	j+=l;
 	i=last=j;
@@ -865,7 +907,10 @@ void do_html_parse_lines(struct pike_string *ss,
       }
       else if (sval1.type!=T_INT)
       {
-	assign_svalue_no_free(sp++,&sval2);
+	*(sp++) = sval2;
+#ifdef DEBUG
+	sval2.type = 99;
+#endif /* DEBUG */
 	k=push_parsed_tag(s+j,len-j); 
 	push_int(line);
 	if (extra_args)
@@ -875,53 +920,18 @@ void do_html_parse_lines(struct pike_string *ss,
 	}
 
 	apply_svalue(&sval1,3+(extra_args?extra_args->size:0));
-	if (sp[-1].type==T_STRING)
-	{
-	  free_svalue(&sval1);
-	  free_svalue(&sval2);
-	  copy_shared_string(ss2,sp[-1].u.string);
-	  pop_stack();
-	  if (last!=i-1)
-	  { 
-	    push_string(make_shared_binary_string(s+last,i-last-1)); 
-	    (*strings)++; 
-	  }
-	  last=j+k;
-	  do_html_parse_lines(ss2,cont,single,strings,
-			      recurse_left-1,extra_args,line);
-	  for (; i<last; i++) if (s[i]==10) line++;
-	  continue;
-	} else if (sp[-1].type==T_ARRAY) {
-	  free_svalue(&sval2);
-	  free_svalue(&sval1);
-	  push_text("");
-	  f_multiply(2);
-	  copy_shared_string(ss2,sp[-1].u.string);
-	  pop_stack();
-
-	  if (last != i-1)
-	  { 
-	    push_string(make_shared_binary_string(s+last,i-last-1)); 
-	    (*strings)++; 
-	  }
-	  i=last=j+k;
-	  
-	  push_string(ss2);
-	  (*strings)++;
-
-	  free_svalue(&sval1);
-	  continue;
-	}
-	pop_stack();
+	HANDLE_RETURN_VALUE(j+k);
+	continue;
       }
 
       /* Is it a container then? */
-      free_svalue(&sval1);
       mapping_index_no_free(&sval1,cont,&sval2);
       if (sval1.type==T_STRING)
       {
-	assign_svalue_no_free(sp++,&sval1);
-	free_svalue(&sval1);
+	*(sp++) = sval1;
+#ifdef DEBUG
+	sval1.type = 99;
+#endif /* DEBUG */
 	(*strings)++;
 	find_endtag(sval2.u.string,s+j,len-j,&l);
 	free_svalue(&sval2);
@@ -934,7 +944,10 @@ void do_html_parse_lines(struct pike_string *ss,
       }
       else if (sval1.type != T_INT)
       {
-	assign_svalue_no_free(sp++,&sval2);
+	*(sp++) = sval2;
+#ifdef DEBUG
+	sval2.type = 99;
+#endif /* DEBUG */
 	m=push_parsed_tag(s+j,len-j) + j;
 	k=find_endtag(sval2.u.string,s+m,len-m,&l);
 	push_string(make_shared_binary_string(s+m,k));
@@ -950,49 +963,9 @@ void do_html_parse_lines(struct pike_string *ss,
 
 	apply_svalue(&sval1,4+(extra_args?extra_args->size:0));
 
-	if (sp[-1].type==T_STRING)
-	{
-	  free_svalue(&sval1);
-	  free_svalue(&sval2);
-	  copy_shared_string(ss2,sp[-1].u.string);
-	  pop_stack();
-
-	  /* i == first '<' ? */
-	  /* last == end of last tag */
-	  if (last!=i-1)
-	  { 
-	    push_string(make_shared_binary_string(s+last,i-last-1)); 
-	    (*strings)++; 
-	  }
-	  for (;i<m; i++) if (s[i]==10) line++;
-	  i=last=j=m;
-	  do_html_parse_lines(ss2,cont,single,strings,
-			      recurse_left-1,extra_args,line);
-	  continue;
-
-	} else if (sp[-1].type==T_ARRAY) {
-	  free_svalue(&sval1);
-	  free_svalue(&sval2);
-	  push_text("");
-	  f_multiply(2);
-	  copy_shared_string(ss2,sp[-1].u.string);
-	  pop_stack();
-
-	  if (last!=i-1)
-	  { 
-	    push_string(make_shared_binary_string(s+last,i-last-1)); 
-	    (*strings)++; 
-	  }
-	  for (;i<j+k; i++) if (s[i]==10) line++;
-	  i=last=j+k;
-	  push_string(ss2);
-	  (*strings)++;
-	  continue;
-	}
-	pop_stack();
+	HANDLE_RETURN_VALUE(m);
+	continue;
       }
-      free_svalue(&sval1);
-      free_svalue(&sval2);
       i=j;
     }
     else
