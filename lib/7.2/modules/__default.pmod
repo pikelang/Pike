@@ -1,5 +1,5 @@
-// Compatibility module
-// $Id: __default.pmod,v 1.13 2002/12/21 17:29:11 grubba Exp $
+// Compatibility namespace
+// $Id: __default.pmod,v 1.14 2002/12/21 17:50:44 grubba Exp $
 
 #pike 7.3
 
