@@ -1,4 +1,4 @@
-AC_REVISION("$Id: configure.in,v 1.195 1998/06/02 17:16:59 grubba Exp $")
+AC_REVISION("$Id: configure.in,v 1.196 1998/06/02 19:51:43 grubba Exp $")
 AC_INIT(interpret.c)
 AC_CONFIG_HEADER(machine.h)
 
@@ -290,6 +290,7 @@ if test $cflags_is_set = no; then
 
   # OSF/1
   AC_SYS_OS_COMPILER_FLAG(OSF1,-fast,fast,OPTIMIZE)
+  AC_SYS_OS_COMPILER_FLAG(OSF1,-ieee,ieee,CFLAGS)
   AC_SYS_OS_COMPILER_FLAG(OSF1,-readonly_strings,readonly_strings,OPTIMIZE)
   AC_SYS_OS_COMPILER_FLAG(OSF1,-assume trusted_short_alignment,
     assume_trusted_short_alignment,OPTIMIZE)
