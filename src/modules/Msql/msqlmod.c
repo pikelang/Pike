@@ -2,7 +2,7 @@
  * This code is (C) Francesco Chemolli, 1997.
  * You may use, modify and redistribute it freely under the terms
  * of the GNU General Public License, version 2.
- * $Id: msqlmod.c,v 1.10 1999/02/10 21:49:01 hubbe Exp $
+ * $Id: msqlmod.c,v 1.11 2000/04/13 18:37:16 grubba Exp $
  *
  * This version is intended for Pike/0.5 and later.
  * It won't compile under older versions of the Pike interpreter.
@@ -35,7 +35,7 @@
 #include "operators.h"
 #include "multiset.h"
 
-RCSID("$Id: msqlmod.c,v 1.10 1999/02/10 21:49:01 hubbe Exp $");
+RCSID("$Id: msqlmod.c,v 1.11 2000/04/13 18:37:16 grubba Exp $");
 #include "version.h"
 
 #ifdef _REENTRANT
@@ -198,12 +198,12 @@ static void msql_mod_create (INT32 args)
 			BIT_STRING|BIT_VOID,BIT_STRING|BIT_VOID,BIT_STRING|BIT_VOID,
 			BIT_STRING|BIT_VOID,0);
 
-  if (args)
-    if (sp[-args].u.string->len)
-      arg1=sp[-args].u.string;
-  if (args >1)
-    if (sp[1-args].u.string->len)
-      arg2=sp[1-args].u.string;
+	if (args)
+	  if (sp[-args].u.string->len)
+	    arg1=sp[-args].u.string;
+	if (args >1)
+	  if (sp[1-args].u.string->len)
+	    arg2=sp[1-args].u.string;
 
 	/*Okay. We had one or two arguments, and we must connect to a server
 	and if needed select a database.
@@ -216,18 +216,21 @@ static void msql_mod_create (INT32 args)
 		THIS->db_selected=0;
 	}
 
-	THREADS_ALLOW();
 	/* msql won' support specifying a port number to connect to. 
 	 * As far as I know, ':' is not a legal character in an hostname,
 	 * so we'll silently ignore it.
 	 */
-
 	if (arg1) {
 		colon=strchr(arg1->str,':');
-		if (colon)
-			*colon='\0';
+		if (colon) {
+		  arg1 = make_shared_binary_string(arg1->str,
+						   colon - arg1->str);
+		  free_string(sp[-args].u.string);
+		  sp[-args].u.string = arg1;
+		}
 	}
 
+	THREADS_ALLOW();
 	MSQL_LOCK();
 	/* Warning! If there were no args, we're deferencing a NULL pointer!*/
 	if (!arg1 || !strcmp (arg1->str,"localhost"))
@@ -245,9 +248,8 @@ static void msql_mod_create (INT32 args)
 	}
 	THIS->socket=sock;
 	THIS->connected=1;
-	if (!arg2)
-		return;
-	do_select_db(arg2->str);
+	if (arg2)
+	  do_select_db(arg2->str);
 	pop_n_elems(args);
 }
 
