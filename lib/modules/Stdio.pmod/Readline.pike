@@ -1,9 +1,36 @@
-// $Id: Readline.pike,v 1.4 1999/03/17 23:46:20 marcus Exp $
+// $Id: Readline.pike,v 1.5 1999/03/23 15:25:23 marcus Exp $
 
 class OutputController
 {
   static private object outfd, term;
   static private int xpos = 0, columns = 0;
+  static private mapping oldattrs = 0;
+
+  void disable()
+  {
+    catch{
+      if(oldattrs)
+	outfd->tcsetattr((["OPOST":0,"ONLCR":0,"OCRNL":0,
+			   "OLCUC":0,"OFILL":0,"OFDEL":0,
+			   "ONLRET":0,"ONOCR":0])&oldattrs);
+      else
+	outfd->tcsetattr((["OPOST":1]));
+    };
+  }
+
+  void enable()
+  {
+    if(term->put("cr") && term->put("do"))
+      catch { outfd->tcsetattr((["OPOST":0])); };
+    else
+      catch { outfd->tcsetattr((["OPOST":1,"ONLCR":1,"OCRNL":0,"OLCUC":0,
+				 "OFILL":1,"OFDEL":0,"ONLRET":0,"ONOCR":0]));};
+  }
+
+  void destroy()
+  {
+    disable();
+  }
 
   void check_columns()
   {
@@ -55,10 +82,10 @@ class OutputController
       n -= l;
       xpos = 0;
       if(!term->tgetflag("am"))
-	outfd->write((term->put("cr")||"\r")+(term->put("do")||"\n"));
+	outfd->write((term->put("cr")||"")+(term->put("do")||"\n"));
     }
     if(xpos==0 && term->tgetflag("am"))
-      outfd->write(" "+(term->put("le")||"\b"));
+      outfd->write(" "+(term->put("le")||""));
     if(n>0) {
       outfd->write(s);
       xpos += n;
@@ -89,7 +116,7 @@ class OutputController
     if(n<=0)
       return;
     if(xpos+n<columns) {
-      outfd->write(term->put("RI", n) || (term->put("ri")||" ")*n);
+      outfd->write(term->put("RI", n) || (term->put("ri")||"")*n);
       xpos += n;
     } else {
       int l = (xpos+n)/columns;
@@ -107,7 +134,7 @@ class OutputController
     if(n<=0)
       return;
     if(xpos-n>=0) {
-      outfd->write(term->put("LE", n) || (term->put("le")||"\b")*n);
+      outfd->write(term->put("LE", n) || (term->put("le")||"")*n);
       xpos -= n;
     } else {
       int l = 1+(n-xpos-1)/columns;
@@ -149,13 +176,18 @@ class OutputController
 
   void newline()
   {
-    outfd->write((term->put("cr")||"\r")+(term->put("do")||"\n"));
+    string cr = term->put("cr"), down = term->put("do");
+    if(cr && down)
+      outfd->write(cr+down);
+    else
+      // In this case we have ONLCR (hopefully)
+      outfd->write("\n");
     xpos = 0;
   }
 
   void bol()
   {
-    outfd->write(term->put("cr")||"\r");
+    outfd->write(term->put("cr")||"");
     xpos = 0;
   }
 
@@ -168,10 +200,10 @@ class OutputController
       return;
     }
     if(!partial) {
-      outfd->write(term->put("ho")||term->put("cm", 0, 0)||"\f");
+      outfd->write(term->put("ho")||term->put("cm", 0, 0)||"");
       xpos = 0;
     }
-    outfd->write(term->put("cd")||(partial?"":"\f"));
+    outfd->write(term->put("cd")||"");
   }
 
   void beep()
@@ -183,6 +215,7 @@ class OutputController
   {
     outfd = _outfd || Stdio.File("stdout");
     term = objectp(_term)? _term : .Terminfo.getTerm(_term);
+    catch { oldattrs = outfd->tcgetattr(); };
     check_columns();
   }
 
@@ -201,7 +234,8 @@ class InputController
   void destroy()
   {
     catch{ infd->set_blocking(); };
-    catch{ if(oldattrs) infd->tcsetattr(oldattrs); };
+    catch{ if(oldattrs) infd->tcsetattr((["ECHO":0,"ICANON":0,"VEOF":0,
+					  "VEOL":0,"VLNEXT":0])&oldattrs); };
     catch{ infd->tcsetattr((["ECHO":1,"ICANON":1])); };
   }
 
@@ -894,10 +928,13 @@ static private void read_newline(string s)
 
 void set_nonblocking(function f)
 {
-  if (newline_func = f)
+  if (newline_func = f) {
+    output_controller->enable();
     input_controller->enable();
-  else
+  } else {
     input_controller->disable();
+    output_controller->disable();
+  }
 }
 
 void set_blocking()
@@ -914,6 +951,7 @@ string read()
   initline();
   newline_func = read_newline;
   readtext = "";
+  output_controller->enable();
   input_controller->run_blocking();
   set_nonblocking(oldnl);
   return readtext;
