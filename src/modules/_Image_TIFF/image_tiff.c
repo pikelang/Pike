@@ -13,7 +13,7 @@
 
 
 #ifdef HAVE_LIBTIFF
-RCSID("$Id: image_tiff.c,v 1.10 1999/07/25 22:22:51 grubba Exp $");
+RCSID("$Id: image_tiff.c,v 1.11 1999/08/17 02:46:38 hubbe Exp $");
 
 #include "global.h"
 #include "machine.h"
@@ -759,6 +759,7 @@ static void image_tiff_encode( INT32 args )
   low_image_tiff_encode( &b, &a, &c );
   UNSET_ONERROR( onerr );
   push_string( make_shared_binary_string( b.str, b.real_len ) );
+  free( (char *) b.str );
 }
 
 
