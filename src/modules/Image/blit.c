@@ -1,10 +1,10 @@
-/* $Id: blit.c,v 1.11 1997/09/01 01:35:32 per Exp $ */
+/* $Id: blit.c,v 1.12 1997/09/05 22:18:42 per Exp $ */
 #include "global.h"
 
 /*
 **! module Image
 **! note
-**!	$Id: blit.c,v 1.11 1997/09/01 01:35:32 per Exp $<br>
+**!	$Id: blit.c,v 1.12 1997/09/05 22:18:42 per Exp $<br>
 **! class image
 */
 
@@ -136,6 +136,8 @@ void img_box_nocheck(INT32 x1,INT32 y1,INT32 x2,INT32 y2)
 void img_blit(rgb_group *dest,rgb_group *src,INT32 width,
 	      INT32 lines,INT32 moddest,INT32 modsrc)
 {
+  if(width <= 0 || lines <= 0)
+    return;
 CHRONO("image_blit begin");
 
    THREADS_ALLOW();
