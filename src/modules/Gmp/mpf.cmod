@@ -2,11 +2,11 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: mpf.cmod,v 1.25 2003/04/07 17:26:37 nilsson Exp $
+|| $Id: mpf.cmod,v 1.26 2003/09/01 00:28:59 nilsson Exp $
 */
 
 #include "global.h"
-RCSID("$Id: mpf.cmod,v 1.25 2003/04/07 17:26:37 nilsson Exp $");
+RCSID("$Id: mpf.cmod,v 1.26 2003/09/01 00:28:59 nilsson Exp $");
 #include "gmp_machine.h"
 
 #if defined(HAVE_GMP2_GMP_H) && defined(HAVE_LIBGMP2)
@@ -253,6 +253,7 @@ PIKECLASS mpf
 	  in+=expptr;
 	  *(out++)='.';
 	  MEMCPY(out,in,len-expptr);
+	  out += len-expptr;
 	}
       }
       *out=0;
@@ -278,7 +279,7 @@ PIKECLASS mpf
       }
       return def;
     }
-		    
+
   /*! @decl static string _sprintf(int c, mapping flags)
    */
   PIKEFUN string _sprintf(int c, mapping flags)
@@ -294,7 +295,7 @@ PIKECLASS mpf
       flag_left=lookup("Gmp.mpf->_sprintf",flags,"flag_left",0);
       */
       pop_n_elems(args);
-      
+
       switch(c)
       {
 	default:
@@ -529,7 +530,7 @@ PIKECLASS mpf
       RETURN res;
     }
 
-  /*! @decl Gmp.mpf `+=(int|float|object ... a)
+  /*! @decl static Gmp.mpf `+=(int|float|object ... a)
    */
   PIKEFUN object `+=(int|float|object ... a)
     flags ID_STATIC;
@@ -559,7 +560,14 @@ PIKECLASS mpf
       mpf_set_prec(THISMPF, prec);
       REF_RETURN fp->current_object;
     }
-  
+
+  /*! @decl int(0..) get_precision()
+   *! Returns the current precision, in bits.
+   */
+  PIKEFUN int get_precision() {
+    RETURN mpf_get_prec(THISMPF);
+  }
+
   static void mult_args(MP_FLT *res,
 			INT32 args)
     {
@@ -573,6 +581,8 @@ PIKECLASS mpf
       }
     }
 
+  /*! @decl static Gmp.mpf `*(int|float|object ... a)
+   */
   PIKEFUN object `*(int|float|object ... a)
     flags ID_STATIC;
     {
@@ -584,6 +594,8 @@ PIKECLASS mpf
       RETURN res;
     }
 
+  /*! @decl static Gmp.mpf ``*(int|float|object ... a)
+   */
   PIKEFUN object ``*(int|float|object ... a)
     flags ID_STATIC;
     {
@@ -596,6 +608,8 @@ PIKECLASS mpf
       RETURN res;
     }
 
+  /*! @decl static Gmp.mpf `*=(int|float|object ... a)
+   */
   PIKEFUN object `*=(int|float|object ... a)
     flags ID_STATIC;
   {
@@ -622,6 +636,8 @@ PIKECLASS mpf
       }
     }
 
+  /*! @decl static Gmp.mpf `-(int|float|object ... a)
+   */
   PIKEFUN object `-(int|float|object ... a)
     flags ID_STATIC;
     {
@@ -640,6 +656,8 @@ PIKECLASS mpf
       RETURN res;
     }
 
+  /*! @decl static Gmp.mpf ``-(int|float|object sv)
+   */
   PIKEFUN object ``-(int|float|object sv)
     flags ID_STATIC;
     {
@@ -651,6 +669,8 @@ PIKECLASS mpf
       RETURN res;
     }
 
+  /*! @decl static Gmp.mpf `/(int|float|object ... a)
+   */
   PIKEFUN object `/(int|float|object ... a)
     flags ID_STATIC;
     {
@@ -691,6 +711,8 @@ PIKECLASS mpf
     }
 
   /* Working here */
+  /*! @decl static Gmp.mpf ``/(int|float|object sv)
+   */
   PIKEFUN object ``/(int|float|object sv)
     flags ID_STATIC;
     {
@@ -715,6 +737,8 @@ PIKECLASS mpf
 
   
   /* defined as -1-x */
+  /*! @decl static Gmp.mpf `~()
+   */
   PIKEFUN object `~()
     flags ID_STATIC;
     {
@@ -731,32 +755,42 @@ PIKECLASS mpf
        mpf_cmp(THISMPF, get_mpf(q, 1, 0)) OP 0 :	\
        mpf_cmp_ui(THISMPF, q->u.integer) OP 0)
 	
-  PIKEFUN int `>(mixed q)
+  /*! @decl static int(0..1) `>(mixed q)
+   */
+  PIKEFUN int(0..1) `>(mixed q)
     flags ID_STATIC;
     {
       RETURN CMPOP(>);
     }
 
-  PIKEFUN int `<(mixed q)
+  /*! @decl static int(0..1) `<(mixed q)
+   */
+  PIKEFUN int(0..1) `<(mixed q)
     flags ID_STATIC;
     {
       RETURN CMPOP(<);
     }
-  
-  PIKEFUN int `>=(mixed q)
+
+  /*! @decl static int(0..1) `>=(mixed q)
+   */
+  PIKEFUN int(0..1) `>=(mixed q)
     flags ID_STATIC;
   {
     RETURN CMPOP(>=);
   }
   
-  PIKEFUN int `<=(mixed q)
+  /*! @decl static int(0..1) `<=(mixed q)
+   */
+  PIKEFUN int(0..1) `<=(mixed q)
     flags ID_STATIC;
   {
     RETURN CMPOP(<=);
   }
 
 
-  PIKEFUN int `==(mixed q)
+  /*! @decl static int(0..1) `==(mixed q)
+   */
+  PIKEFUN int(0..1) `==(mixed q)
     flags ID_STATIC;
   {
     MP_FLT *arg;
@@ -767,6 +801,8 @@ PIKECLASS mpf
     RETURN (arg && !mpf_cmp(THISMPF, arg));
   }
 
+  /*! @decl static int(0..1) `!=(mixed q)
+   */
   PIKEFUN int `!=(mixed q)
     flags ID_STATIC;
   {
@@ -777,11 +813,15 @@ PIKECLASS mpf
     RETURN (!arg || mpf_cmp(THISMPF, arg));
   }
 
+  /*! @decl int sgn()
+   */
   PIKEFUN int sgn()
     {
       RETURN mpf_sgn(THISMPF);
     }
 
+  /*! @decl static int(0..1) `!()
+   */
   PIKEFUN int `!()
     flags ID_STATIC;
     {
