@@ -5,7 +5,7 @@
 \*/
 /**/
 #include "global.h"
-RCSID("$Id: pike_types.c,v 1.111 1999/12/22 00:21:04 grubba Exp $");
+RCSID("$Id: pike_types.c,v 1.112 1999/12/23 21:22:37 grubba Exp $");
 #include <ctype.h>
 #include "svalue.h"
 #include "pike_types.h"
@@ -135,7 +135,7 @@ void init_types(void)
   zero_type_string=CONSTTYPE(tZero);
   any_type_string=CONSTTYPE(tOr(tVoid,tMix));
   weak_type_string=CONSTTYPE(tOr4(tArray,tMultiset,tMapping,
-				  tFuncV(tNone,tZero,tMix)));
+				  tFuncV(tNone,tZero,tOr(tMix,tVoid))));
 }
 
 static int type_length(char *t)
