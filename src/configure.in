@@ -1,4 +1,4 @@
-AC_REVISION("$Id: configure.in,v 1.522 2001/05/31 22:51:21 hubbe Exp $")
+AC_REVISION("$Id: configure.in,v 1.523 2001/06/08 00:37:27 hubbe Exp $")
 AC_INIT(interpret.c)
 AC_CONFIG_HEADER(machine.h)
 
@@ -1009,7 +1009,7 @@ fi
 
 
 WARN=""
-OPTIMIZE=""
+OPTIMIZE="${OPTFLAGS-}"
 
 if test "$cflags_is_set" = "no"; then
   if test "x$with_cdebug" = "xno" ; then
