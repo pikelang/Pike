@@ -96,4 +96,11 @@ dnl /precompiled/streamed_parser
 dnl XML
 test_do([[Parser.XML.Simple()->parse("<!DOCTYPE root [\n<!NOTATION JPGformat>\n]>\n", lambda(mixed ...args){} )]])
 test_do([[Parser.XML.Simple()->parse_dtd("%hej;\n", lambda(mixed ...  args){}, 1, 2, 3)]])
+test_any([[
+  int ret;
+  Parser.XML.Simple()->parse("<a></a><foo/>",
+    lambda(string type, mixed ... args) { if(type=="error") ret=1; });
+  return ret;
+]],[[1]])
+
 
