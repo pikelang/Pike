@@ -16,7 +16,7 @@ tut.html: .DUMMY $(SRCFILES)
 	./wmmltohtml2 <tutorial.wmml sitebuilder tut
 
 manpages: .DUMMY $(SRCFILES)
-	./wmmltohtml2 <tutorial.wmml man man3P
+	./wmmltohtml2 <tutorial.wmml manpages man/man
 
 Image.wmml : 
 	(cd ../src/modules/Image; make wmml)
