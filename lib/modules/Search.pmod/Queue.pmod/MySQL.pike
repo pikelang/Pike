@@ -119,7 +119,7 @@ void set_md5( Standards.URI uri, string md5 )
 void set_recurse( Standards.URI uri, int recurse )
 {
   if( extra_data[(string)uri] )
-    extra_data[(string)uri]->recurse = recurse;
+    extra_data[(string)uri]->recurse = (string)recurse;
   db->query( "update "+table+
 	     " set recurse=%d WHERE uri_md5=%s", recurse, to_md5((string)uri));
 }
