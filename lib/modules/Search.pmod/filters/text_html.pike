@@ -5,6 +5,20 @@
 
 constant contenttypes = ({ "text/html" });
 
+constant whtspaces = ({ "\n", "\r", "\t" });
+constant interpunc = ({ ".", ",", ";", ":", "-", "_", "!", "\"", "?",
+			"\\", "(", ")", "{", "}", "[", "]" });
+
+inline string normalize(string text) {
+  return replace(text,
+		 Roxen.replace_entities+whtspaces+interpunc,
+		 Roxen.replace_values+({" "})*sizeof(whtspaces+interpunc));
+}
+
+inline string remove_slash(string bar) {
+  return replace(bar, "/", " ");
+}
+
 class Filter {
   array(string) content=({});
   array(int) context=({});
@@ -15,7 +29,7 @@ class Filter {
   void set_content(string c) {
 
     // Lazy preprocess...
-    c=parse_html(c, ([]), (["script":""]) );
+    c=parse_html(normalize(c), ([]), (["script":""]) );
 
     int counter=0;
     int p_con=T_NONE;
@@ -25,14 +39,14 @@ class Filter {
     while (counter<sizeof(c)) {
       next=search(c, "<", counter);
       if(next==-1) {
-	content+=({ c[counter+1..] });
+	content+=({ remove_slash(c[counter+1..]) });
 	context+=({ p_con });
 	offset+=({ counter });
 	break;
       }
 
       if(counter!=next) {
-	content+=({ c[counter+1..next-1] });
+	content+=({ remove_slash(c[counter+1..next-1]) });
 	context+=({ p_con });
 	offset+=({ counter });
       }
@@ -97,7 +111,7 @@ class Filter {
 	   sscanf(img, "%*salt=%s ", alt)==2 )
 
 	  {
-	    content+=({ alt });
+	    content+=({ remove_slash(alt) });
 	    context+=({ T_ALT });
 	    offset+=({ next }); // Not true
 	  }
@@ -114,13 +128,13 @@ class Filter {
 	   sscanf(meta, "%*scontent=%s ", cont)!=2)
 	  continue;
 	if(name=="description") {
-	  content+=({ cont });
+	  content+=({ remove_slash(cont) });
 	  context+=({ T_DESC });
 	  offset+=({ next }); // Not true
 	  continue;
 	}
 	if(name=="keywords") {
-	  content+=({ cont });
+	  content+=({ remove_slash(cont) });
 	  context+=({ T_KEYWORDS });
 	  offset+=({ next }); // Not true
 	  continue;
@@ -131,7 +145,7 @@ class Filter {
   }
 
   void add_content(string c, int t) {
-    content+=({ c });
+    content+=({ (c) });
     context+=({ t });
     offset+=({ T_NONE });
   }
@@ -141,8 +155,19 @@ class Filter {
   }
 
   array get_anchors() { return 0; }
-  string get_title() { return ""; }
-  string get_keywords() { return ""; }
-  string get_description() { return ""; }
-
+  string get_title() { 
+    int pos=search(context, T_TITLE);
+    if (pos==-1) return "";
+    return content[pos];
+  }
+  string get_keywords() {
+    int pos=search(context, T_KEYWORDS);
+    if (pos==-1) return "";
+    return content[pos];
+  }
+  string get_description() {
+    int pos=search(context, T_DESC);
+    if (pos==-1) return "";
+    return "";
+  }
 }
