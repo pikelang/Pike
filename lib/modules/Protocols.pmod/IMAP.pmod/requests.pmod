@@ -1,6 +1,6 @@
 /* IMAP.requests
  *
- * $Id: requests.pmod,v 1.75 1999/03/28 23:09:52 grubba Exp $
+ * $Id: requests.pmod,v 1.76 1999/03/28 23:15:57 grubba Exp $
  */
 
 import .types;
@@ -291,7 +291,7 @@ class lsub
 class status
 {
   inherit request;
-  constant arg_info ({ ({ "string" }), ({ "list" }) });
+  constant arg_info = ({ ({ "string" }), ({ "list" }) });
 
   mapping easy_process(string mailbox, array(string) list)
   {
