@@ -704,6 +704,8 @@ class TimeofDay
 //! method string format_tod();
 //! method string format_xtod();
 //! method string format_mod();
+//! method string format_nice();
+//! method string format_nicez();
 //!	Format the object into nice strings;
 //!	<pre>
 //!	iso_ymd        "2000-06-02 (Jun) -W22-5 (Fri)" [2]
@@ -720,7 +722,7 @@ class TimeofDay
 //!	iso_time       "2000-06-02 (Jun) -W22-5 (Fri) 20:53:14 UTC+1" [2]
 //!	ext_time       "Friday, 2 June 2000, 20:53:14" [2]
 //!	ctime          "Fri Jun  4 20:53:14 2000\n" [2] [3]
-//!	http           "Fri, 02 Jun 2000 20:53:14 GMT" [4]
+//!	http           "Fri, 02 Jun 2000 19:53:14 GMT" [4]
 //!     time           "2000-06-02 20:53:14" 
 //!	time_short     "20000602 20:53:14"
 //!	time_xshort    "000602 20:53:14"
@@ -732,14 +734,20 @@ class TimeofDay
 //!     tod_short      "205314"
 //!     xtod           "20:53:14.000000"
 //!     mod            "20:53"
+//!     nice           "2 Jun 20:53", "2 Jun 2000 20:53:14" [2][5]
+//!     nicez          "2 Jun 20:53 CET" [2][5]
+//!     smtp           "Fri, 2 Jun 2000 20:53:14 +0100" [6]
 //!	</pre>
 //!	<tt>[1]</tt> note conflict (think 1 February 2003)
 //!	<br><tt>[2]</tt> language dependent
 //!	<br><tt>[3]</tt> as from the libc function ctime()
 //!	<br><tt>[4]</tt> as specified by the HTTP standard;
-//!	this is always in GMT, ie, UTC. The timezone calculations
-//!	needed will be executed implicitly. It is not language
-//!	dependent.
+//!		this is always in GMT, ie, UTC. The timezone calculations
+//!		needed will be executed implicitly. It is not language
+//!		dependent.
+//!	<br><tt>[5]</tt> adaptive to type and with special cases
+//!	 	for yesterday, tomorrow and other years
+//!	<br><tt>[6]</tt> as seen in Date: headers in mails
 
    string format_ext_ymd();
    string format_iso_ymd();
@@ -752,6 +760,8 @@ class TimeofDay
    string format_week_short();
    string format_month();
    string format_month_short();
+
+   string format_nice();
 
    string format_iso_time()
    {
@@ -853,6 +863,25 @@ class TimeofDay
 		     0);
    }
 
+   string format_nice();
+   string format_nicez()
+   {
+      return format_nice()+" "+tzname();
+   }
+
+   string format_smtp()
+   {
+      if (ls==CALUNKNOWN) make_local();
+      int u=utc_offset();
+      return sprintf("%s, %s %s %s %d:%02d:%02d %+03d%02d",
+		     base->week_day_name(),
+		     base->month_day_name(),
+		     base->month_shortname(),
+		     base->year_name(),
+		     ls/3600, (ls/60)%60, ls%60,
+		     -u/3600,max(u,-u)/60%60);
+   }
+
    string format_elapsed()
    {
       string res="";
@@ -868,7 +897,6 @@ class TimeofDay
 		     (left->len/60)%60,
 		     left->len%60);
    }
-
 
 // --------
 
@@ -1197,6 +1225,13 @@ class cHour
       if (ls==CALUNKNOWN) make_local();
       return sprintf("%d:00 %s",ls/3600,tzname());
    }
+
+   string format_nice()
+   {
+      if (ls==CALUNKNOWN) make_local();
+      if (!base) make_base();
+      return base->format_nice()+" "+sprintf("%d:00",ls/3600);
+   }
 }
 
 //------------------------------------------------------------------------
@@ -1265,6 +1300,13 @@ class cMinute
       if (ls==CALUNKNOWN) make_local();
       return sprintf("%d:%02d %s",ls/3600,(ls/60)%60,tzname());
    }
+
+   string format_nice()
+   {
+      if (ls==CALUNKNOWN) make_local();
+      if (!base) make_base();
+      return base->format_nice()+" "+sprintf("%d:%02d",ls/3600,(ls/60)%60);
+   }
 }
 
 //------------------------------------------------------------------------
@@ -1331,6 +1373,14 @@ class cSecond
    {
       if (ls==CALUNKNOWN) make_local();
       return sprintf("%d:%02d:%02d %s",ls/3600,ls/60%60,ls%60,tzname());
+   }
+
+   string format_nice()
+   {
+      if (ls==CALUNKNOWN) make_local();
+      if (!base) make_base();
+      return base->format_nice()+" "+
+	 sprintf("%d:%02d:%02d",ls/3600,ls/60%60,ls%60);
    }
 
 // backwards compatible with calendar I
@@ -1551,6 +1601,15 @@ class cFraction
       if (ls==CALUNKNOWN) make_local();
       return sprintf("%d:%02d:%02d.%06d %s",
 		     ls/3600,ls/60%60,ls%60,ns/1000,tzname());
+   }
+
+   string format_nice()
+   {
+      if (ls==CALUNKNOWN) make_local();
+      if (!base) make_base();
+      return base->format_nice()+" "+
+	 sprintf("%d:%02d:%02d.%06d",
+		 ls/3600,ls/60%60,ls%60,ns/1000);
    }
 
    TimeofDay autopromote()

@@ -546,6 +546,22 @@ class YMD
       return "00:00:00.000000";
    }
 
+   string format_nice();
+   string format_nicez()
+   {
+      return format_nice()+" "+tzname();
+   }
+
+   string format_smtp()
+   {
+      if (m==CALUNKNOWN) make_month();
+      int u=utc_offset();
+      return sprintf("%s, %s %s %s 00:00:00 %+03d%02d",
+		     week_day_name(),
+		     month_day_name(),month_shortname(),year_name(),
+		     -u/3600,max(u,-u)/60%60);
+   }
+
    string format_elapsed()
    {
       return sprintf("%dd",number_of_days());
@@ -1125,6 +1141,11 @@ class cYear
       return year_name();
    }
 
+   string format_nice()
+   {
+      return year_name();
+   }
+
 // --- Year _move
 
    TimeRange _move(int m,YMD step)
@@ -1386,11 +1407,14 @@ class cMonth
 
    string nice_print()
    {
-      return 
-	 sprintf("%s %s",
-		 month_name(),
-		 year_name());
+      return sprintf("%s %s", month_name(), year_name());
    }
+
+   string format_nice()
+   {
+      return sprintf("%s %s", month_name(), year_name());
+   }
+
 
    string nice_print_period()
    {
@@ -1666,6 +1690,14 @@ class cWeek
    }
 
    string nice_print()
+   {
+      return 
+	 sprintf("%s %s",
+		 week_name(),
+		 year_name());
+   }
+
+   string format_nice()
    {
       return 
 	 sprintf("%s %s",
@@ -2013,6 +2045,20 @@ class cDay
 		 week_day_shortname(),
 		 month_day_name(),month_shortname(),
 		 year_name());
+   }
+
+   string format_nice()
+   {
+      if (m==CALUNKNOWN) make_month();
+      if (calendar()->Year()!=year())
+	 return 
+	    sprintf("%s %s %s",
+		    month_day_name(),month_shortname(),
+		    year_name());
+      else
+	 return 
+	    sprintf("%s %s",
+		    month_day_name(),month_shortname());
    }
 
    string nice_print_period()
