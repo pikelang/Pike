@@ -7,7 +7,7 @@ function resolve_reference;
 string image_path = "images/";
 
 mapping lay = ([
- "docgroup" : "\n\n<hr clear='all' />\n<dl>",
+ "docgroup" : "\n\n<hr clear='all' size='1' noshadow='noshadow' />\n<dl>",
  "_docgroup" : "</dl>\n",
  "dochead" : "<dt>",
  "_dochead" : "</dt>\n",
