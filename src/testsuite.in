@@ -1,4 +1,4 @@
-test_true([["$Id: testsuite.in,v 1.460 2001/10/06 09:14:33 mirar Exp $"]]);
+test_true([["$Id: testsuite.in,v 1.461 2001/10/06 09:23:17 mirar Exp $"]]);
 
 cond([[all_constants()->_verify_internals]],
 [[
@@ -1047,13 +1047,13 @@ string efoo(string e)
 
 test_any([[
 // infokom:350113
- rm("testsuite_test.pmod");
- mkdir("testsuite_test.pmod");
- Stdio.write_file("testsuite_test.pmod/module.pmod",
+ rm("testsuite_test_dir.pmod");
+ mkdir("testsuite_test_dir.pmod");
+ Stdio.write_file("testsuite_test_dir.pmod/module.pmod",
 	#"
     .A a() {return 0;}
 	");
- Stdio.write_file("testsuite_test.pmod/A.pike",
+ Stdio.write_file("testsuite_test_dir.pmod/A.pike",
 	#"
     void create (.X x) {.y();}
 	");
@@ -1062,14 +1062,17 @@ test_any([[
  class handler
  { void compile_error(string file, int line, string err) { } };
 
+	werror("foo\n");
  catch {
-   compile_string(".testsuite_test.a","test",handler());
+   compile_string("import \".\"; "
+	"int foo() { testsuite_test_dir.a(); }",
+	"test",handler());
  };
 
- rm("testsuite_test.pmod/module.pmod");
- rm("testsuite_test.pmod/A.pike");
- rm("testsuite_test.pmod");
-
+// rm("testsuite_test_dir.pmod/module.pmod");
+// rm("testsuite_test_dir.pmod/A.pike");
+// rm("testsuite_test_dir.pmod");
+//
  return 0;
 ]],0);
 
