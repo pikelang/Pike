@@ -6,6 +6,7 @@ AC_MODULE_INIT()
 OLD_LIBS=$LIBS
 OLD_LDFLAGS=$LDFLAGS
 OLD_CPPFLAGS=$CPPFLAGS
+OLD_LIBPATH=$LIBPATH
 JAVA_LIBS=""
 JAVA_LIBPATH=""
 JAVA_AVAILABLE=0
@@ -41,7 +42,15 @@ if test "x$with_java" = xyes; then
     else
       uname=/usr/bin/uname
     fi
-    if pike_cv_java_arch="`$uname -p || uname -p`"; then :; else pike_cv_java_arch=no; fi
+    if test aix = "$pike_cv_java_sysos" && aix_cputype=`/usr/sbin/lsattr -El proc0 | awk '$1=="type" { print $2; ok=1; exit } END { exit !ok }'`; then
+      case "$aix_cputype" in
+	PowerPC*) pike_cv_java_arch=powerpc;;
+	POWER*) pike_cv_java_arch=rs6000;;
+	*) pike_cv_java_arch="`echo $aix_cputype | tr 'ABCDEFGHIJKLMNOPQRSTUVWXYZ' 'abcdefghijklmnopqrstuvwxyz'`";;
+      esac
+    else
+      if pike_cv_java_arch="`$uname -p || uname -p`"; then :; else pike_cv_java_arch=no; fi
+    fi
 
     dnl Linux kluge
 
@@ -79,6 +88,7 @@ if test "x$with_java" = xyes; then
           if ls "$tmp_java_home/lib/$pike_cv_java_arch/$pike_cv_java_threads_type"/libjvm* >/dev/null 2>&1 || \
 	    ls "$tmp_java_home/lib/$pike_cv_java_arch"/libjvm* >/dev/null 2>&1 || \
 	    ls "$tmp_java_home/lib/$pike_cv_java_arch"/classic/libjvm* >/dev/null 2>&1 || \
+	    ls "$tmp_java_home/bin"/classic/libjvm* >/dev/null 2>&1 || \
 	    ls "$tmp_java_home/Libraries"/libjvm* >/dev/null 2>&1; then
 	      pike_cv_java_java_home="$tmp_java_home"
 	  else
@@ -105,11 +115,11 @@ if test "x$with_java" = xyes; then
     fi
     for i in "$pike_cv_java_arch/$pike_cv_java_threads_type" \
              "$pike_cv_java_arch/classic" "$pike_cv_java_arch" \
-	     "$pike_cv_java_arch/server" "."; do
-      if test -d "$tmp_java_lib_dir/$i/." && ls "$tmp_java_lib_dir/$i/"lib* >/dev/null 2>&1; then
+	     "$pike_cv_java_arch/server" "." "../bin" "../bin/classic"; do
+      if test -d "$tmp_java_lib_dir/$i/." && ls $tmp_java_lib_dir/$i/lib* >/dev/null 2>&1; then
         pike_cv_java_lib_dir="$pike_cv_java_lib_dir$tmp_java_lib_dir/$i "
       else
-        :
+	:
       fi
     done
     if test -z "$pike_cv_java_lib_dir" ; then pike_cv_java_lib_dir=no; else
@@ -124,28 +134,23 @@ if test "x$with_java" = xyes; then
       LDFLAGS="-L$i -R$i ${LDFLAGS}"
       LINKER_OPTIONS="-L$i -R$i ${LINKER_OPTIONS}"
       JAVA_LIBPATH="${JAVA_LIBPATH}${JAVA_LIBPATH:+:}$i"
+      LIBPATH="${LIBPATH}${LIBPATH:+:}$i"
     done
+    export LIBPATH
   fi
 
   AC_MSG_CHECKING(for the Java include directory)
   AC_CACHE_VAL(pike_cv_java_include_dir, [
     pike_cv_java_include_dir=no
     for tmp_java_incdir in /usr/java* /usr/local/java* /usr/local/jdk* /usr/local/jre* "$pike_cv_java_java_home"/../.. "$pike_cv_java_java_home"/.. "$pike_cv_java_java_home" "$pike_java_user_include_directory"; do
-      if test -d $tmp_java_incdir/. -a -d $tmp_java_incdir/include/$pike_cv_java_sysos/.; then
-        if ls "$tmp_java_incdir/include/jni.h" >/dev/null 2>&1 ; then
-	  pike_cv_java_include_dir="$tmp_java_incdir/include"
+      if test -d $tmp_java_incdir/. && ls "$tmp_java_incdir/include/jni.h" >/dev/null 2>&1 ; then
+	 pike_cv_java_include_dir="$tmp_java_incdir/include"
+      else
+        if test -d $tmp_java_incdir/. -a -d $tmp_java_incdir/Headers/. &&\
+        	  ls "$tmp_java_incdir/Headers/jni.h" >/dev/null 2>&1 ; then
+	  pike_cv_java_include_dir="$tmp_java_incdir/Headers"
 	else
 	  :
-	fi
-      else
-        if test -d $tmp_java_incdir/. -a -d $tmp_java_incdir/Headers/.; then
-          if ls "$tmp_java_incdir/Headers/jni.h" >/dev/null 2>&1 ; then
-	    pike_cv_java_include_dir="$tmp_java_incdir/Headers"
-	  else
-	    :
-	  fi
-        else
-          :
 	fi
       fi
     done
@@ -153,8 +158,20 @@ if test "x$with_java" = xyes; then
   AC_MSG_RESULT($pike_cv_java_include_dir)
 
   if test "x$pike_cv_java_include_dir" = xno; then :; else
-    echo Adding $pike_cv_java_include_dir and $pike_cv_java_include_dir/$pike_cv_java_sysos to the include search path.
-    CPPFLAGS="-I$pike_cv_java_include_dir -I$pike_cv_java_include_dir/$pike_cv_java_sysos ${CPPFLAGS}"
+    echo "Adding $pike_cv_java_include_dir to the include search path."
+    CPPFLAGS="-I$pike_cv_java_include_dir ${CPPFLAGS}"
+    if test -d "$pike_cv_java_include_dir/$pike_cv_java_sysos/."; then
+      echo "Adding $pike_cv_java_include_dir/$pike_cv_java_sysos to the include search path."
+      CPPFLAGS="-I$pike_cv_java_include_dir/$pike_cv_java_sysos ${CPPFLAGS}"
+    else
+      :
+    fi
+    if test -d "$pike_cv_java_include_dir/$pike_cv_java_arch/."; then
+      echo "Adding $pike_cv_java_include_dir/$pike_cv_java_arch to the include search path."
+      CPPFLAGS="-I$pike_cv_java_include_dir/$pike_cv_java_arch ${CPPFLAGS}"
+    else
+      :
+    fi
   fi
 
   AC_MSG_CHECKING([for JavaVM (MacOS X)])
@@ -170,6 +187,11 @@ if test "x$with_java" = xyes; then
   ])
   AC_MSG_RESULT($pike_cv_java_javavm)
 
+  if test osf1 = "$pike_cv_java_sysos"; then
+    CPPFLAGS="-D_REENTRANT $CPPFLAGS"
+  else
+    :
+  fi
   AC_CHECK_HEADERS(jni.h winbase.h setjmp.h)
 
   pike_cv_java=no
@@ -396,6 +418,8 @@ static HINSTANCE jvmdll = NULL;
 else
   :
 fi
+
+LIBPATH="$OLD_LIBPATH"
 
 AC_SUBST(LINKER_OPTIONS)
 AC_SUBST(JAVA_LIBS)
