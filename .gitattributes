@@ -208,6 +208,7 @@ testfont binary
 /lib/modules/Tools.pmod/Legal.pmod/License.pmod/MPL.pmod foreign_ident
 /lib/modules/Tools.pmod/Legal.pmod/License.pmod/module.pmod foreign_ident
 /lib/modules/Tools.pmod/Standalone.pmod/extract_autodoc.pike foreign_ident
+/lib/modules/Tools.pmod/Standalone.pmod/join_autodoc.pike foreign_ident
 /lib/modules/Tools.pmod/Standalone.pmod/module.pike foreign_ident
 /lib/modules/Tools.pmod/Standalone.pmod/rsif.pike foreign_ident
 /lib/modules/Tools.pmod/X509.pmod foreign_ident
