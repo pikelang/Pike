@@ -1,5 +1,5 @@
 /*
- * $Id: interpret_functions.h,v 1.5 2000/04/18 19:28:09 grubba Exp $
+ * $Id: interpret_functions.h,v 1.6 2000/04/18 20:18:38 grubba Exp $
  *
  * Opcode definitions for the interpreter.
  */
@@ -102,7 +102,7 @@ OPCODE1(F_GLOBAL,"global")
 BREAK;
 
 
-OPCODE2(F_EXTERNAL,"external")
+OPCODE2ACK(F_EXTERNAL,"external")
 {
   struct inherit *inherit;
   struct program *p;
