@@ -1,5 +1,5 @@
 /*
- * $Id: system.c,v 1.118 2002/01/01 22:01:31 nilsson Exp $
+ * $Id: system.c,v 1.119 2002/01/16 01:46:49 nilsson Exp $
  *
  * System-call module for Pike
  *
@@ -15,7 +15,7 @@
 #include "system_machine.h"
 #include "system.h"
 
-RCSID("$Id: system.c,v 1.118 2002/01/01 22:01:31 nilsson Exp $");
+RCSID("$Id: system.c,v 1.119 2002/01/16 01:46:49 nilsson Exp $");
 #ifdef HAVE_WINSOCK_H
 #include <winsock.h>
 #endif
@@ -224,7 +224,7 @@ static void report_error(const char *function_name)
  * efuns
  */
 
-/*! @module system
+/*! @module System
  *!
  *! This module embodies common operating system calls, making them
  *! available to the Pike programmer.

@@ -1,5 +1,5 @@
 /*
- * $Id: nt.c,v 1.47 2001/10/05 13:17:11 tomas Exp $
+ * $Id: nt.c,v 1.48 2002/01/16 01:46:48 nilsson Exp $
  *
  * NT system calls for Pike
  *
@@ -39,7 +39,7 @@
 #include "operators.h"
 #include "stuff.h"
 
-/*! @module system
+/*! @module System
  */
 
 static void throw_nt_error(char *funcname, int err)

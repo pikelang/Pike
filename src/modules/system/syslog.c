@@ -1,5 +1,5 @@
 /*
- * $Id: syslog.c,v 1.14 2002/01/01 22:01:31 nilsson Exp $
+ * $Id: syslog.c,v 1.15 2002/01/16 01:46:48 nilsson Exp $
  *
  * Access to syslog from Pike.
  *
@@ -17,7 +17,7 @@
 
 #ifdef HAVE_SYSLOG
 
-RCSID("$Id: syslog.c,v 1.14 2002/01/01 22:01:31 nilsson Exp $");
+RCSID("$Id: syslog.c,v 1.15 2002/01/16 01:46:48 nilsson Exp $");
 
 #include "interpret.h"
 #include "svalue.h"
@@ -102,7 +102,7 @@ RCSID("$Id: syslog.c,v 1.14 2002/01/01 22:01:31 nilsson Exp $");
 #define LOG_PERROR 0
 #endif
 
-/*! @module system
+/*! @module System
  */
 
 /*! @decl void openlog(string ident, int options, facility)

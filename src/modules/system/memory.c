@@ -1,8 +1,8 @@
 /*
- * $Id: memory.c,v 1.13 2002/01/11 23:06:42 per-bash Exp $
+ * $Id: memory.c,v 1.14 2002/01/16 01:46:48 nilsson Exp $
  */
 
-/*! @module system
+/*! @module System
  */
 
 /*! @class Memory
@@ -16,7 +16,7 @@
  *!	Don't blame Pike if you shoot your foot off.
  */
 #include "global.h"
-RCSID("$Id: memory.c,v 1.13 2002/01/11 23:06:42 per-bash Exp $");
+RCSID("$Id: memory.c,v 1.14 2002/01/16 01:46:48 nilsson Exp $");
 
 #include "system_machine.h"
 
