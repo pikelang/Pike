@@ -17,6 +17,7 @@ David Kågedal, kg@infovav.se
 #include "types.h"
 #include "error.h"
 #include "global.h"
+#include "array.h"
 
 #include "image.h"
 
@@ -426,9 +427,8 @@ struct colortable *colortable_quant(struct image *img,int numcol)
 
   ct = malloc(sizeof(struct colortable)+sizeof(rgb_group)*numcol);
   if (!ct) error("Out of memory.\n");
-  ct->numcol=numcol;
-
   MEMSET(ct,0,sizeof(struct colortable)+sizeof(rgb_group)*numcol);
+  ct->numcol=numcol;
 
 #ifdef QUANT_DEBUG
   fprintf(stderr,"Moving colors into hashtable\n");
@@ -508,6 +508,65 @@ struct colortable *colortable_quant(struct image *img,int numcol)
   CHRONO("really done");
   return ct;
 }
+
+
+struct colortable *colortable_from_array(struct array *arr,char *from)
+{
+  rgb_hashtbl *tbl;
+  INT32 i,j;
+  coltab *ct;
+  rgb_group black,white;
+  rgb_group *p;
+  INT32 entries=0;
+  struct svalue s,s2;
+
+#ifdef QUANT_DEBUG
+  fprintf(stderr,"ctfa called\n");
+#endif
+  CHRONO("ctfa");
+
+  white.r=white.g=white.b=255;
+  black.r=black.g=black.b=0;
+
+  tbl=img_rehash(NULL,arr->size);
+  
+  s2.type=s.type=T_INT;
+  for (i=0; i<arr->size; i++)
+  {
+     array_index(&s,arr,i);
+     if (s.type!=T_ARRAY || s.u.array->size<3)
+     {
+	free(tbl);
+	error("Illegal type in colorlist, element %d, %s\n",i,from);
+     }
+     array_index(&s2,s.u.array,0);
+     if (s2.type!=T_INT) tbl->tbl[i].rgb.r=0; else tbl->tbl[i].rgb.r=s2.u.integer;
+     array_index(&s2,s.u.array,1);
+     if (s2.type!=T_INT) tbl->tbl[i].rgb.g=0; else tbl->tbl[i].rgb.g=s2.u.integer;
+     array_index(&s2,s.u.array,2);
+     if (s2.type!=T_INT) tbl->tbl[i].rgb.b=0; else tbl->tbl[i].rgb.b=s2.u.integer;
+  }
+  free_svalue(&s);
+  free_svalue(&s2);
+
+  ct = malloc(sizeof(struct colortable)+sizeof(rgb_group)*arr->size);
+  if (!ct) { free(tbl); error("Out of memory.\n"); }
+  MEMSET(ct,0,sizeof(struct colortable)+sizeof(rgb_group)*arr->size);
+  ct->numcol=arr->size;
+
+  CHRONO("sort");
+  sort_tbl(tbl, 0, arr->size, 0, 0, arr->size, -1, ct, black, white);
+
+#ifdef QUANT_DEBUG
+  fprintf(stderr,"img_quant done, %d colors selected\n", arr->size);
+#endif
+  CHRONO("done");
+
+  free(tbl);
+  CHRONO("really done");
+  return ct;
+}
+
 
 #define sq(x) ((x)*(x))
 #define DISTANCE(A,B) \

@@ -29,7 +29,6 @@ static void buf_word( unsigned short w, dynamic_buffer *buf )
    low_my_putchar( (w>>8)&0xff, buf );
 }
 
-#define FS_SCALE 1024
 #define WEIGHT_NEXT(X) (((X)*8)/20)
 #define WEIGHT_DOWNNEXT(X) (((X)*3)/20)
 #define WEIGHT_DOWN(X) (((X)*3)/20)
@@ -104,10 +103,10 @@ static int floyd_steinberg_add(rgbl_group *errl,
    return c;
 }
 
-static void floyd_steinberg(rgb_group *rgb,int xsize,
-			    rgbl_group *errl,
-			    int way,int *res,
-			    struct colortable *ct)
+void image_floyd_steinberg(rgb_group *rgb,int xsize,
+			   rgbl_group *errl,
+			   int way,int *res,
+			   struct colortable *ct)
 {
    rgbl_group err;
    int x;
@@ -205,12 +204,11 @@ struct pike_string *
       while (i--) lzw_add(&lzw,colortable_rgb(ct,*(rgb++)));
    else
    {
-      rgbl_group err,*errb;
+      rgbl_group *errb;
       rgb_group corgb;
       int w,*cres,j;
       errb=(rgbl_group*)xalloc(sizeof(rgbl_group)*img->xsize);
       cres=(int*)xalloc(sizeof(int)*img->xsize);
-      err.r=err.g=err.b=0;
       for (i=0; i<img->xsize; i++)
 	errb[i].r=(rand()%(FS_SCALE*2+1))-FS_SCALE,
 	errb[i].g=(rand()%(FS_SCALE*2+1))-FS_SCALE,
@@ -220,7 +218,7 @@ struct pike_string *
       i=img->ysize;
       while (i--)
       {
-	 floyd_steinberg(rgb,img->xsize,errb,w=!w,cres,ct);
+	 image_floyd_steinberg(rgb,img->xsize,errb,w=!w,cres,ct);
 	 for (j=0; j<img->xsize; j++)
 	    lzw_add(&lzw,cres[j]);
 	 rgb+=img->xsize;

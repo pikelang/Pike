@@ -7,6 +7,8 @@
 
 #define COLOURTYPE unsigned char
 
+#define FS_SCALE 1024
+
 typedef struct 
 {
    COLOURTYPE r,g,b;
@@ -48,6 +50,7 @@ struct colortable
 struct colortable *colortable_quant(struct image *img,int numcol);
 int colortable_rgb(struct colortable *ct,rgb_group rgb);
 void colortable_free(struct colortable *ct);
+struct colortable *colortable_from_array(struct array *arr,char *from);
 
 /* encoding of a gif - from togif */
 
@@ -55,4 +58,8 @@ struct pike_string *
    image_encode_gif(struct image *img,struct colortable *ct,
 		    rgb_group *transparent,
 		    int floyd_steinberg);
+void image_floyd_steinberg(rgb_group *rgb,int xsize,
+			   rgbl_group *errl,
+			   int way,int *res,
+			   struct colortable *ct);
 

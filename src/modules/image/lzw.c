@@ -20,7 +20,7 @@ static void lzw_output(struct lzw *lzw,lzwcode_t codeno);
 
 void lzw_init(struct lzw *lzw,int bits)
 {
-   int i;
+   unsigned long i;
 #ifdef GIF_LZW
    lzw->codes=(1L<<bits)+2;
 #else
@@ -186,7 +186,7 @@ void lzw_add(struct lzw *lzw,int c)
    l->c=c;
 
    lzw->codes++;
-   if (lzw->codes>(1L<<lzw->codebits)) lzw->codebits++;
+   if (lzw->codes>(unsigned long)(1L<<lzw->codebits)) lzw->codebits++;
 
    lzw->current=lzw->code+c;
 }

@@ -1743,7 +1743,7 @@ void image_modify_by_intensity(INT32 args)
    push_object(o);
 }
 
-static void image_quant(INT32 args)
+static void image_map_closest(INT32 args)
 {
    struct colortable *ct;
    long i;
@@ -1751,17 +1751,12 @@ static void image_quant(INT32 args)
    int colors;
 
    if (!THIS->img) error("no image\n");
-   if (args>=1)
-      if (sp[-args].type==T_INT) 
-	 colors=sp[-args].u.integer;
-      else
-	 error("Illegal argument to image->quant()\n");
-   else
-      colors=256;
+   if (args<1
+       || sp[-args].type!=T_ARRAY)
+      error("illegal argument to image->map_closest()\n");
       
+   ct=colortable_from_array(sp[-args].u.array,"image->map_closest()\n");
    pop_n_elems(args);
-
-   ct=colortable_quant(THIS,colors);
 
    i=THIS->xsize*THIS->ysize;
    rgb=THIS->img;
@@ -1772,9 +1767,75 @@ static void image_quant(INT32 args)
    }
 
    colortable_free(ct);
+   THISOBJ->refs++;
+   push_object(THISOBJ);
+}
 
+static void image_map_fs(INT32 args)
+{
+   struct colortable *ct;
+   INT32 i,j;
+   rgb_group *rgb;
+   int *res,w;
+   rgbl_group *errb;
+   
+   if (!THIS->img) error("no image\n");
+   if (args<1
+       || sp[-args].type!=T_ARRAY)
+      error("illegal argument to image->map_fs()\n");
+
+   res=(int*)xalloc(sizeof(int)*THIS->xsize);
+   errb=(rgbl_group*)xalloc(sizeof(rgbl_group)*THIS->xsize);
+      
+   ct=colortable_from_array(sp[-args].u.array,"image->map_closest()\n");
    pop_n_elems(args);
-   push_int(0);
+
+   for (i=0; i<THIS->xsize; i++)
+      errb[i].r=(rand()%(FS_SCALE*2+1))-FS_SCALE,
+      errb[i].g=(rand()%(FS_SCALE*2+1))-FS_SCALE,
+      errb[i].b=(rand()%(FS_SCALE*2+1))-FS_SCALE;
+
+   i=THIS->ysize;
+   rgb=THIS->img;
+   w=0;
+   while (i--)
+   {
+      image_floyd_steinberg(rgb,THIS->xsize,errb,w=!w,res,ct);
+      for (j=0; j<THIS->xsize; j++)
+	 *(rgb++)=ct->clut[res[j]];
+   }
+
+   free(errb);
+   free(res);
+   colortable_free(ct);
+   THISOBJ->refs++;
+   push_object(THISOBJ);
+}
+
+void image_select_colors(INT32 args)
+{
+   rgb_group *transparent=NULL;
+   struct colortable *ct;
+   int colors,i;
+
+   if (args<1
+      || sp[-args].type!=T_INT)
+      error("Illegal argument to image->select_colors()\n");
+
+   colors=sp[-args].u.integer;
+   pop_n_elems(args);
+   if (!THIS->img) { error("no image\n");  return; }
+
+   ct=colortable_quant(THIS,colors);
+   for (i=0; i<colors; i++)
+   {
+      push_int(ct->clut[i].r);
+      push_int(ct->clut[i].g);
+      push_int(ct->clut[i].b);
+      f_aggregate(3);
+   }
+   f_aggregate(colors);
+   colortable_free(ct);
 }
 
 static void image_ccw(INT32 args)
@@ -2003,8 +2064,12 @@ void init_image_programs()
    add_function("ysize",image_ysize,
 		"function(:int)",0);
 
-   add_function("quant",image_quant,
+   add_function("map_closest",image_map_closest,
                 "function(:object)",0);
+   add_function("map_fs",image_map_fs,
+                "function(:object)",0);
+   add_function("select_colors",image_select_colors,
+                "function(int:array(array(int)))",0);
 		
    set_init_callback(init_image_struct);
    set_exit_callback(exit_image_struct);
