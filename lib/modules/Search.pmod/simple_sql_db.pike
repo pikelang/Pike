@@ -51,6 +51,7 @@ mapping(string:int) page_stat(string uri)
   return (mapping(string:int))res[0];
 }
 
+// Takes about 50 us
 int hash_word(string word) {
   string hashed=Crypto.md5()->update(word[..254])->digest();
   return hashed[0]*16777216 +  // 2^24
@@ -58,6 +59,8 @@ int hash_word(string word) {
     hashed[2]*256 +  // 2^8
     hashed[3];
 }
+
+int wc=0;
 
 // Insert or update a page in the database.
 // title and description is already in words.
@@ -78,7 +81,7 @@ void insert_page(string uri, string title, string description, int last_changed,
 	      "(uri, title, description, last_changed, size, mime_type)"
 	      " VALUES ('%s', '%s', '%s', %s, %s, %s)",
 	      uri, title, description, last_changed, size, mime_type);
-    werror("uri: %O\n",uri);
+    werror("[%s] ",uri);
     doc_id = db->master_sql->insert_id();
     new=1;
   }
@@ -97,23 +100,26 @@ void insert_page(string uri, string title, string description, int last_changed,
 
   mapping word_ids=([]);
   int word_pos;
+  string s="INSERT INTO occurance (word_id, document_id, word_position, "
+           "ranking) VALUES ";
   foreach(words, mapping word)
   {
     int word_id;
     string the_word=word->word;
     if(!(word_id=word_ids[the_word])) {
       word_id=hash_word(the_word);
-      word_ids[the_word]=word_id;
-      array res = db->query("SELECT word FROM word WHERE id="+word_id);
-      if(!sizeof(res))
-	db->query("INSERT INTO word (id,word) VALUES (%s,'%s')",
-		  word_id, the_word);
+      //       word_ids[the_word]=word_id;
+      //       array res = db->query("SELECT word FROM word WHERE id="+word_id);
+      //       if(!sizeof(res))
+      // 	db->query("INSERT INTO word (id,word) VALUES (%s,'%s')",
+      // 		  word_id, the_word);
     }
-    db->query("INSERT INTO occurance (word_id, document_id, word_position, "
-	      "ranking) VALUES (%s, %s, %s, %s)", word_id, doc_id,
-	      word_pos++, word->rank);
+    s+=sprintf("(%d,%d,%d,%d),",
+	       word_id, doc_id, word_pos++, word->rank);
+    wc++;
   }
-
+  if(sizeof(words))
+    db->query(s[..sizeof(s)-2]);
 }
 
 void remove_page(string uri)
