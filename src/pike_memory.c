@@ -10,7 +10,7 @@
 #include "pike_macros.h"
 #include "gc.h"
 
-RCSID("$Id: pike_memory.c,v 1.75 2000/08/10 18:02:55 grubba Exp $");
+RCSID("$Id: pike_memory.c,v 1.76 2000/08/10 18:57:08 nilsson Exp $");
 
 /* strdup() is used by several modules, so let's provide it */
 #ifndef HAVE_STRDUP
@@ -213,7 +213,7 @@ size_t hashmem(const unsigned char *a, size_t len, size_t mlen)
 	mlen /= 2*sizeof(size_t);
 #endif /* sizeof(char *) == 8 */
 #endif /* sizeof(char *) == 4 */
-	--mlen >= 0;)
+	mlen--;)
     {
       ret^=(ret<<7)+*(b++);
       ret^=(ret>>6)+*(b++);
