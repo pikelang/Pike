@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: cpp.c,v 1.122 2003/09/30 15:25:16 grubba Exp $
+|| $Id: cpp.c,v 1.123 2003/09/30 15:41:57 grubba Exp $
 */
 
 #include "global.h"
@@ -472,11 +472,12 @@ static void simple_add_define(struct cpp *this,
       break;								\
     case '"': break;							\
     case '\\':								\
-      if(data[++pos]=='\n') this->current_line++;			\
+      if(data[pos]=='\n') this->current_line++;				\
       else if ((data[pos] == '\r') && (data[pos+1] == '\n')) {		\
 	this->current_line++;						\
 	pos++;								\
       }									\
+      pos++;								\
     default: continue;							\
     }									\
    break;								\
@@ -497,11 +498,12 @@ static void simple_add_define(struct cpp *this,
       continue;								\
     case '"': break;							\
     case '\\':								\
-      if(data[++pos]=='\n') this->current_line++;			\
+      if(data[pos]=='\n') this->current_line++;				\
       else if ((data[pos] == '\r') && (data[pos+1] == '\n')) {		\
 	this->current_line++;						\
 	pos++;								\
       }									\
+      pos++;								\
     default: continue;							\
     }									\
    break;								\
@@ -531,11 +533,12 @@ static void simple_add_define(struct cpp *this,
       break;							\
     case '\'': break;						\
     case '\\':							\
-      if(data[++pos]=='\n') this->current_line++;		\
+      if(data[pos]=='\n') this->current_line++;			\
       else if ((data[pos] == '\r') && (data[pos+1] == '\n')) {	\
 	this->current_line++;					\
 	pos++;							\
       }								\
+      pos++;							\
     default: continue;						\
     }								\
     break;							\
