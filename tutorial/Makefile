@@ -6,7 +6,8 @@ all:
 	  $(MAKE) low_all; \
 	fi
 
-low_all: tutorial.html tutorial_onepage.html
+low_all: tutorial.html tutorial_onepage.html tutorial_split.html \
+	 tutorial.ps.gz tutorial.xml palmdoc tutorial.pdf manpages
 
 MADEFILES=Image.wmml Math.wmml Mysql.wmml Parser.wmml Calendar.wmml \
 	  Protocols.wmml Gettext.wmml
