@@ -1,4 +1,4 @@
-/* $Id: mkxml.pike,v 1.7 2001/05/06 15:20:38 grubba Exp $ */
+/* $Id: mkxml.pike,v 1.8 2001/05/06 15:21:59 grubba Exp $ */
 
 import Stdio;
 import Array;
@@ -818,6 +818,7 @@ void make_doc_files()
 
 void process_line(string s, string currentfile, int line)
 {
+  int i;
   s=getridoftabs(s);
 
   if ((i=search(s,"**!"))!=-1 || (i=search(s,"//!"))!=-1)
