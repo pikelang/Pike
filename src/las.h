@@ -5,7 +5,7 @@
 \*/
 
 /*
- * $Id: las.h,v 1.29 1999/11/20 15:29:30 grubba Exp $
+ * $Id: las.h,v 1.30 1999/11/23 03:24:47 grubba Exp $
  */
 #ifndef LAS_H
 #define LAS_H
@@ -105,6 +105,7 @@ node *debug_mkexternalnode(int level,
 			   int i,
 			   struct identifier *id);
 node *debug_mkcastnode(struct pike_string *type,node *n);
+node *debug_mksoftcastnode(struct pike_string *type,node *n);
 void resolv_constant(node *n);
 void resolv_class(node *n);
 void resolv_class(node *n);
@@ -151,6 +152,7 @@ void resolv_program(node *n);
 #define mktrampolinenode(i) dmalloc_touch(node *, debug_mktrampolinenode(i))
 #define mkexternalnode(level, i, id) dmalloc_touch(node *, debug_mkexternalnode(level, i, id))
 #define mkcastnode(type, n) dmalloc_touch(node *, debug_mkcastnode(type, dmalloc_touch(node *, n)))
+#define mksoftcastnode(type, n) dmalloc_touch(node *, debug_mksoftcastnode(type, dmalloc_touch(node *, n)))
 #define mkconstantsvaluenode(s) dmalloc_touch(node *, debug_mkconstantsvaluenode(dmalloc_touch(struct svalue *, s)))
 #define mkliteralsvaluenode(s) dmalloc_touch(node *, debug_mkliteralsvaluenode(dmalloc_touch(struct svalue *, s)))
 #define mksvaluenode(s)     dmalloc_touch(node *, debug_mksvaluenode(dmalloc_touch(struct svalue *, s)))
