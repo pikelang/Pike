@@ -4,7 +4,7 @@
 ||| See the files COPYING and DISCLAIMER for more information.
 \*/
 #include "global.h"
-RCSID("$Id: builtin_functions.c,v 1.95 1998/04/14 15:48:09 hedda Exp $");
+RCSID("$Id: builtin_functions.c,v 1.96 1998/04/14 22:09:05 hubbe Exp $");
 #include "interpret.h"
 #include "svalue.h"
 #include "pike_macros.h"
@@ -2530,76 +2530,34 @@ void f_object_variablep(INT32 args)
 void f_splice(INT32 args)
 {
   struct array *out;
-  INT32 sizein=0,sizeout=0;
-  INT32 i=-args;
-  INT32 j=0;
-  INT32 k=0;
+  INT32 size=0x7fffffff;
+  INT32 i,j,k;
+
 #ifdef DEBUG
   if(args < 0) fatal("Negative args to f_splice()\n");
 #endif
-  
-  if (args==2)
-  {
-    struct array *in1;
-    struct array *in2;
-    INT32 i=0;
-    if (sp[-args].type!=T_ARRAY) 
-      error("Illegal argument 1 to splice.\n");
-    else
-      in1=sp[-args].u.array;
-    if (sp[1-args].type!=T_ARRAY) 
-      error("Illegal argument 2 to splice.\n");
-    else
-      in2=sp[1-args].u.array;
-    sizein=MINIMUM(in1->size, in2->size);
-    out=allocate_array(sizein*2);
-    for(;i<sizein;i++)
-    {
-      assign_svalue_no_free(out->item+(k++),
-			    in1->item+i);
-      assign_svalue_no_free(out->item+(k++),
-			    in2->item+i);      
-    }
-    pop_n_elems(2);
-    out->type_field=in1->type_field|in2->type_field;
-    push_array(out);
-    return;
-  }
 
-  if (i<0)
-  {
-    if (sp[i].type!=T_ARRAY) 
-      error("Illegal argument 1 to splice.\n");
-    else
-      sizein=sp[i].u.array->size;
-  }
-  for(++i; i<0; i++)
-    if (sp[i].type!=T_ARRAY) 
+  for(i=0;i<args;i++)
+    if (sp[i-args].type!=T_ARRAY) 
       error("Illegal argument to splice.\n");
     else
-      if (sp[i].u.array->size<sizein)
-	sizein=sp[i].u.array->size;
+      if (sp[i-args].u.array->size < size)
+	size=sp[i-args].u.array->size;
 
-  sizeout=sizein*args;
-  out=allocate_array(sizeout);
+  out=allocate_array(args * size);
   if (!args)
   {
     push_array(out);
     return;
   }
 
-  out->type_field=sp[-args].u.array->type_field;
-  for(i=-args+1; i<0; i++)
-    out->type_field|=sp[i].u.array->type_field;
+  out->type_field=0;
+  for(i=-args; i<0; i++) out->type_field|=sp[i].u.array->type_field;
 
-  for(; j<sizein; j++)
-  {
+  for(k=j=0; j<size; j++)
     for(i=-args; i<0; i++)
-    {
-      assign_svalue_no_free(out->item+(k++),
-			    sp[i].u.array->item+j);
-    }
-  }
+      assign_svalue_no_free(out->item+(k++), sp[i].u.array->item+j);
+
   pop_n_elems(args);
   push_array(out);
   return;
@@ -2607,8 +2565,7 @@ void f_splice(INT32 args)
 
 void f_everynth(INT32 args)
 {
-  INT32 n=2;
-  INT32 k=0;
+  INT32 k,n=2;
   INT32 start=0;
   struct array *a;
   struct array *ina;
@@ -2616,38 +2573,26 @@ void f_everynth(INT32 args)
 #ifdef DEBUG
   if(args < 0) fatal("Negative args to f_everynth()\n");
 #endif
-  if (!args)
-    error("To few arguments to everynth.\n");
-  if (sp[-args].type!=T_ARRAY) 
-    error("Illegal argument 1 to everynth.\n");
-  else
-    ina=sp[-args].u.array;
-  if (args>1)
+
+  check_all_args("everynth",args, BIT_ARRAY, BIT_INT | BIT_VOID, BIT_INT | BIT_VOID , 0);
+
+  switch(args)
   {
-    if (sp[1-args].type!=T_INT) 
-      error("Illegal argument 2 to everynth.\n");
-    else
+    default:
+    case 3:
+     start=sp[2-args].u.integer;
+     if(start<2) error("Third argument to everynth is negative.\n");
+    case 2:
       n=sp[1-args].u.integer;
-    if (n<1)
-      n=1;
-    if (args>2)
-    {
-      if (sp[2-args].type!=T_INT) 
-	error("Illegal argument 3 to everynth.\n");
-      else
-      {
-	start=sp[2-args].u.integer;
-	if (start<0)
-	  start=0;
-      }
-    }
+      if(n<1) error("Second argument to everynth is negative.\n");
+    case 1:
+      ina=sp[-args].u.array;
   }
+
   a=allocate_array(((size=ina->size)-start+n-1)/n);
-  for(; start<size; start+=n)
-    {
-      assign_svalue_no_free(a->item+(k++),
-			    ina->item+start);
-    }
+  for(k=0; start<size; start+=n)
+    assign_svalue_no_free(a->item+(k++), ina->item+start);
+
   pop_n_elems(args);
   a->type_field=ina->type_field;
   push_array(a);
@@ -2663,8 +2608,7 @@ void f_transpose(INT32 args)
   struct array *ininner;
   INT32 sizeininner=0,sizein=0;
   INT32 inner=0;
-  INT32 j=0;
-  INT32 i=0;
+  INT32 j,i;
   TYPE_FIELD type=0;
 #ifdef DEBUG
   if(args < 0) fatal("Negative args to f_transpose()\n");
@@ -2679,58 +2623,53 @@ void f_transpose(INT32 args)
   in=sp[-args].u.array;
   sizein=in->size;
 
-  if (sizein==0)
+  if(!sizein)
   {
     pop_n_elems(args);
     out=allocate_array(0);
-    out->type_field=in->type_field;
     push_array(out);
     return; 
   }
 
-  if (in->item->type!=T_ARRAY) 
-    error("The array given as argument 1 to transpose must contain arrays.\n");
-  else
-    sizeininner=in->item->u.array->size;
+  if(!(in->type_field & ~BIT_ARRAY))
+  {
+    array_fix_type_field(in);
+    if(in->type_field & ~BIT_ARRAY)
+      error("The array given as argument 1 to transpose must contain arrays only.\n");
+  }
+
+  sizeininner=in->item->u.array->size;
 
   for(i=1 ; i<sizein; i++)
-    if ((in->item+i)->type!=T_ARRAY) 
-      error("The array given as argument 1 to transpose must contain arrays.\n");
-    else
-      if (sizeininner!=(in->item+i)->u.array->size)
-	 error("The array given as argument 1 to transpose must contain arrays of the same size.\n");
-	
+    if (sizeininner!=(in->item+i)->u.array->size)
+      error("The array given as argument 1 to transpose must contain arrays of the same size.\n");
 
   out=allocate_array(sizeininner);
-  out->type_field=in->type_field;
 
   for(i=0; i<sizein; i++)
     type|=in->item->u.array->type_field;
   
-  for(; j<sizeininner; j++)
+  for(j=0; j<sizeininner; j++)
   {
     struct svalue * ett;
     struct svalue * tva;
+
     outinner=allocate_array(sizein);
-    outinner->type_field=type;
-    outinner->refs++;  /*FIXME Should this be here?*/
     ett=outinner->item;
     tva=in->item;
     for(i=0; i<sizein; i++)
-    {
-      assign_svalue_no_free(ett+i,
-			    (tva+i)->u.array->item+j);
-    }
+      assign_svalue_no_free(ett+i, tva[i].u.array->item+j);
+
+    outinner->type_field=type;
     out->item[j].u.array=outinner;
     out->item[j].type=T_ARRAY;
   }
 
+  out->type_field=BIT_ARRAY;
   pop_n_elems(args);
   push_array(out);
   return;
 }
-
-
 
 void init_builtin_efuns(void)
 {
@@ -2767,7 +2706,7 @@ void init_builtin_efuns(void)
   add_efun("ctime",f_ctime,"function(int:string)",OPT_TRY_OPTIMIZE);
   add_efun("destruct",f_destruct,"function(object|void:void)",OPT_SIDE_EFFECT);
   add_efun("equal",f_equal,"function(mixed,mixed:int)",OPT_TRY_OPTIMIZE);
-  add_function("everynth",f_everynth,"function(array(0=mixed),int|void,int|void:array(0=mixed))", 0);
+  add_function("everynth",f_everynth,"function(array(0=mixed),int|void,int|void:array(0))", 0);
   add_efun("exit",f_exit,"function(int:void)",OPT_SIDE_EFFECT);
   add_efun("_exit",f__exit,"function(int:void)",OPT_SIDE_EFFECT);
   add_efun("floatp",  f_floatp,  "function(mixed:int)",OPT_TRY_OPTIMIZE);
@@ -2799,13 +2738,13 @@ void init_builtin_efuns(void)
   add_efun("search",f_search,"function(string,string,void|int:int)|function(array,mixed,void|int:int)|function(mapping,mixed:mixed)",0);
   add_efun("sleep", f_sleep, "function(float|int:void)",OPT_SIDE_EFFECT);
   add_efun("sort",f_sort,"function(array(0=mixed),array(mixed)...:array(0))",OPT_SIDE_EFFECT);
-  add_function("splice",f_splice,"function(array(0=mixed)...:array(0=mixed))", 0);
+  add_function("splice",f_splice,"function(array(0=mixed)...:array(0))", 0);
   add_efun("stringp", f_stringp, "function(mixed:int)",0);
   add_efun("this_object", f_this_object, "function(:object)",OPT_EXTERNAL_DEPEND);
   add_efun("throw",f_throw,"function(mixed:void)",OPT_SIDE_EFFECT);
   add_efun("time",f_time,"function(void|int:int)",OPT_EXTERNAL_DEPEND);
   add_efun("trace",f_trace,"function(int:int)",OPT_SIDE_EFFECT);
-  add_function("transpose",f_transpose,"function(array(0=mixed):array(0=mixed))", 0);
+  add_function("transpose",f_transpose,"function(array(0=mixed):array(0))", 0);
   add_efun("upper_case",f_upper_case,"function(string:string)",0);
   add_efun("values",f_values,"function(string|multiset:int*)|function(array(0=mixed)|mapping(mixed:0=mixed)|object:array(0))",0);
   add_efun("zero_type",f_zero_type,"function(mixed:int)",0);
