@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: interpret.h,v 1.139 2003/04/27 12:54:37 mast Exp $
+|| $Id: interpret.h,v 1.140 2003/04/27 15:30:06 mast Exp $
 */
 
 #ifndef INTERPRET_H
@@ -207,12 +207,12 @@ PMOD_EXPORT extern const char msg_pop_neg[];
  * return value.
  */
 #define stack_unlink(X) do {						\
-    ptrdiff_t x_ = (X);							\
-    if (x_) {								\
+    ptrdiff_t x2_ = (X);						\
+    if (x2_) {								\
       struct svalue *_sp_ = --Pike_sp;					\
-      free_svalue(_sp_-x_);						\
-      _sp_[-x_] = _sp_[0];						\
-      pop_n_elems(x_-1);						\
+      free_svalue (_sp_ - x2_);						\
+      move_svalue (_sp_ - x2_, _sp_);					\
+      pop_n_elems (x2_ - 1);						\
     }									\
   }while(0)
 
@@ -221,7 +221,7 @@ PMOD_EXPORT extern const char msg_pop_neg[];
 #define stack_pop_keep_top() do {					\
     struct svalue *_sp_ = --Pike_sp;					\
     free_svalue (_sp_ - 1);						\
-    _sp_[-1] = _sp_[0];							\
+    move_svalue (_sp_ - 1, _sp_);					\
     debug_check_stack();						\
   } while (0)
 
