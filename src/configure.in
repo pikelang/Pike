@@ -1,4 +1,4 @@
-AC_REVISION("$Id: configure.in,v 1.285 1999/05/15 15:57:35 grubba Exp $")
+AC_REVISION("$Id: configure.in,v 1.286 1999/05/15 16:02:47 grubba Exp $")
 AC_INIT(interpret.c)
 AC_CONFIG_HEADER(machine.h)
 
@@ -446,7 +446,7 @@ if test $cflags_is_set = no; then
   AC_MSG_CHECKING(for machine dependant library directory)
   AC_CACHE_VAL(pike_cv_tcc_lib_path,
   [
-    pike_cv_tcc_lib_path="`${REALCC-cc} -dry conftest.c -i 2>&1 | sed -e '/tdfc/s/bin\/tdfc.*/lib\/sys/'| head -1`"
+    pike_cv_tcc_lib_path="`${CC-cc} -dry conftest.c -i 2>&1 | sed -e '/tdfc/s/bin\/tdfc.*/lib\/sys/p' -ed| head -1`"
     if test -d "$pike_cv_tcc_lib_path/." ; then :; else
       # Failed.
       pike_cv_tcc_lib_path="no"
