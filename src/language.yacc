@@ -110,7 +110,7 @@
 /* This is the grammar definition of Pike. */
 
 #include "global.h"
-RCSID("$Id: language.yacc,v 1.230 2001/02/26 22:44:08 grubba Exp $");
+RCSID("$Id: language.yacc,v 1.231 2001/03/03 17:51:24 grubba Exp $");
 #ifdef HAVE_MEMORY_H
 #include <memory.h>
 #endif
@@ -629,8 +629,13 @@ def: modifiers type_or_error optional_stars TOK_IDENTIFIER push_compiler_frame0
     for(; e>=0; e--)
     {
       push_finished_type(Pike_compiler->compiler_frame->variable[e].type);
+#ifdef USE_PIKE_TYPE
+      push_type(T_FUNCTION);
+#endif /* USE_PIKE_TYPE */
     }
+#ifndef USE_PIKE_TYPE
     push_type(T_FUNCTION);
+#endif /* USE_PIKE_TYPE */
 
     {
       struct pike_type *s=compiler_pop_type();
@@ -1335,7 +1340,7 @@ opt_function_type: '('
 #ifdef USE_PIKE_TYPE
     push_reverse_type(T_MANY);
     Pike_compiler->pike_type_mark_stackp--;
-    while (*Pike_compiler->pike_type_mark_stackp <
+    while (*Pike_compiler->pike_type_mark_stackp+1 <
 	   Pike_compiler->type_stackp) {
       push_reverse_type(T_FUNCTION);
     }
@@ -1767,10 +1772,15 @@ lambda: TOK_LAMBDA push_compiler_frame1
     }
     Pike_compiler->varargs=0;
     push_type(T_MANY);
-    for(; e>=0; e--)
+    for(; e>=0; e--) {
       push_finished_type(Pike_compiler->compiler_frame->variable[e].type);
-    
+#ifdef USE_PIKE_TYPE
+      push_type(T_FUNCTION);
+#endif /* USE_PIKE_TYPE */
+    }
+#ifndef USE_PIKE_TYPE
     push_type(T_FUNCTION);
+#endif /* !USE_PIKE_TYPE */
     
     type=compiler_pop_type();
 
@@ -1835,10 +1845,15 @@ local_function: TOK_IDENTIFIER push_compiler_frame1 func_args
       push_type(T_VOID);
     }
     push_type(T_MANY);
-    for(; e>=0; e--)
+    for(; e>=0; e--) {
       push_finished_type(Pike_compiler->compiler_frame->variable[e].type);
-    
+#ifdef USE_PIKE_TYPE
     push_type(T_FUNCTION);
+#endif /* USE_PIKE_TYPE */
+    }
+#ifndef USE_PIKE_TYPE
+    push_type(T_FUNCTION);
+#endif /* !USE_PIKE_TYPE */
     
     type=compiler_pop_type();
     /***/
@@ -1956,10 +1971,15 @@ local_function2: optional_stars TOK_IDENTIFIER push_compiler_frame1 func_args
       push_type(T_VOID);
     }
     push_type(T_MANY);
-    for(; e>=0; e--)
+    for(; e>=0; e--) {
       push_finished_type(Pike_compiler->compiler_frame->variable[e].type);
-    
+#ifdef USE_PIKE_TYPE
+      push_type(T_FUNCTION);
+#endif /* USE_PIKE_TYPE */
+    }
+#ifndef USE_PIKE_TYPE
     push_type(T_FUNCTION);
+#endif /* !USE_PIKE_TYPE */
     
     type=compiler_pop_type();
     /***/
@@ -2110,8 +2130,13 @@ optional_create_arguments: /* empty */ { $$ = 0; }
     for(e = $3-1; e>=0; e--)
     {
       push_finished_type(Pike_compiler->compiler_frame->variable[e].type);
+#ifdef USE_PIKE_TYPE
+      push_type(T_FUNCTION);
+#endif /* USE_PIKE_TYPE */
     }
+#ifndef USE_PIKE_TYPE
     push_type(T_FUNCTION);
+#endif /* !USE_PIKE_TYPE */
 
     type = compiler_pop_type();
 
@@ -2735,7 +2760,9 @@ optional_block: /* EMPTY */ { $$=0; }
       push_finished_type(Pike_compiler->compiler_frame->variable[e].type);
 */
     
+#ifndef USE_PIKE_TYPE
     push_type(T_FUNCTION);
+#endif /* !USE_PIKE_TYPE */
     type=compiler_pop_type();
 
     sprintf(buf,"__lambda_%ld_%ld",

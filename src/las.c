@@ -5,7 +5,7 @@
 \*/
 /**/
 #include "global.h"
-RCSID("$Id: las.c,v 1.242 2001/03/03 00:22:44 grubba Exp $");
+RCSID("$Id: las.c,v 1.243 2001/03/03 17:51:50 grubba Exp $");
 
 #include "language.h"
 #include "interpret.h"
@@ -2921,6 +2921,9 @@ static void low_build_function_type(node *n)
     }else{
       push_type(T_MIXED);
     }
+#ifdef USE_PIKE_TYPE
+    push_type(T_FUNCTION);
+#endif /* USE_PIKE_TYPE */
   }
 }
 
@@ -3061,7 +3064,9 @@ void fix_type_field(node *n)
       push_type(T_MANY);
       function_type_max=0;
       low_build_function_type(CDR(n));
+#ifndef USE_PIKE_TYPE
       push_type(T_FUNCTION);
+#endif /* !USE_PIKE_TYPE */
       s = pop_type();
       f = CAR(n)->type?CAR(n)->type:mixed_type_string;
       n->type = check_call(s, f,
@@ -3285,6 +3290,9 @@ void fix_type_field(node *n)
       push_type(T_VOID);
       push_type(T_MANY);
       push_finished_type(CDR(n)->type);
+#ifdef USE_PIKE_TYPE
+      push_type(T_FUNCTION);
+#endif /* USE_PIKE_TYPE */
       push_finished_type(CAR(n)->type);
       push_type(T_FUNCTION);
 
