@@ -1,5 +1,5 @@
 //
-// $Id: peep.in,v 1.38 2000/06/25 04:03:43 hubbe Exp $
+// $Id: peep.in,v 1.39 2000/08/22 12:16:33 grubba Exp $
 //
 
 NOP :
@@ -33,6 +33,8 @@ COMPL COMPL :
 NEGATE CONST_1 ADD_INTS : COMPL
 NEGATE CONST1 SUBTRACT : COMPL
 CONST0 ASSIGN_LOCAL_AND_POP : CLEAR_LOCAL($2a)
+
+LOCAL_2_LOCAL [$1a == $1b] :
 
 // Remove clearing of locals from the beginning of functions
 START_FUNCTION LABEL(0) CLEAR_LOCAL : LABEL(0)
