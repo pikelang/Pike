@@ -1,6 +1,6 @@
 /* Xlib.pmod
  *
- * $Id: Xlib.pmod,v 1.37 1999/04/24 00:15:39 mirar Exp $
+ * $Id: Xlib.pmod,v 1.38 1999/04/24 00:17:20 mirar Exp $
  */
 
 /*
@@ -769,22 +769,22 @@ class Display
     
     /* Asynchronous connection */
     if (async)
-      {
-	if (!is_local)
+    {
+       if (!is_local)
 	  open_socket();
-	set_nonblocking(0, 0, close_callback);
-      }
+       set_nonblocking(0, 0, close_callback);
+    }
     if(!is_local)
-      {
-	int port =  XPORT + (int)fields[1];
- 	werror(sprintf("Xlib: Connecting to %s:%d\n", host, port));
-	if (!connect(host, port))
-	{
-   	  werror(sprintf("Xlib: Connecting to %s:%d failed\n", host, port));
+    {
+       int port =  XPORT + (int)fields[1];
+//  	werror(sprintf("Xlib: Connecting to %s:%d\n", host, port));
+       if (!connect(host, port))
+       {
+//    	  werror(sprintf("Xlib: Connecting to %s:%d failed\n", host, port));
 	  return 0;
- 	}
- 	werror(sprintf("Xlib: Connected to %s:%d\n", host, port));
-      }
+       }
+//  	werror(sprintf("Xlib: Connected to %s:%d\n", host, port));
+    }
 
     set_buffer( 65536 );
 
