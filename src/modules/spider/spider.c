@@ -43,7 +43,7 @@
 #include "threads.h"
 #include "operators.h"
 
-RCSID("$Id: spider.c,v 1.88 1999/12/14 23:54:00 mast Exp $");
+RCSID("$Id: spider.c,v 1.89 2000/02/16 04:00:18 per Exp $");
 
 #ifdef HAVE_PWD_H
 #include <pwd.h>
@@ -131,8 +131,8 @@ void f_http_decode_string(INT32 args)
    newstr=begin_shared_string((foo-bar)-proc*2);
    foo=newstr->str;
    for (proc=0; bar<end; foo++)
-      if (*bar=='%') 
-      { 
+      if (*bar=='%')
+      {
         if (bar<end-2)
           *foo=(((bar[1]<'A')?(bar[1]&15):((bar[1]+9)&15))<<4)|
             ((bar[2]<'A')?(bar[2]&15):((bar[2]+9)&15));
@@ -142,7 +142,7 @@ void f_http_decode_string(INT32 args)
       }
       else { *foo=*(bar++); }
    pop_n_elems(args);
-   push_string(end_shared_string(newstr)); 
+   push_string(end_shared_string(newstr));
 }
 
 void f_parse_accessed_database(INT32 args)
@@ -204,7 +204,7 @@ void f_parse_html(INT32 args)
   struct mapping *cont,*single;
   int strings;
   struct array *extra_args;
-   
+
   if (args<3||
       sp[-args].type!=T_STRING||
       sp[1-args].type!=T_MAPPING||
@@ -254,7 +254,7 @@ void f_parse_html_lines(INT32 args)
   struct mapping *cont,*single;
   int strings;
   struct array *extra_args;
-   
+
   if (args<3||
       sp[-args].type!=T_STRING||
       sp[1-args].type!=T_MAPPING||
@@ -273,7 +273,7 @@ void f_parse_html_lines(INT32 args)
 
   add_ref(single=sp[1-args].u.mapping);
   add_ref(cont=sp[2-args].u.mapping);
- 
+
   if (args>3)
   {
     f_aggregate(args-3);
@@ -325,7 +325,7 @@ void f_set_start_quote(INT32 args)
 
 #define SKIP_SPACE()  while (i<len && ISSPACE(((unsigned char *)s)[i])) i++
 #define STARTQUOTE(C) do{PUSH();j=i+1;inquote = 1;endquote=(C);}while(0)
-#define ENDQUOTE() do{PUSH();j++;inquote=0;endquote=0;}while(0)       
+#define ENDQUOTE() do{PUSH();j++;inquote=0;endquote=0;}while(0)
 
 int extract_word(char *s, int i, int len, int is_SSI_tag)
 {
@@ -338,7 +338,7 @@ int extract_word(char *s, int i, int len, int is_SSI_tag)
   j=i;
 
   /* Should we really allow "foo"bar'gazonk' ? */
-  
+
   for(;i<len; i++)
   {
     switch(s[i])
@@ -379,7 +379,7 @@ int extract_word(char *s, int i, int len, int is_SSI_tag)
 	if(s[i] == endquote) {
 	  if(!--inquote)
 	    ENDQUOTE();
-	  else if(s[i] == start_quote_character) 
+	  else if(s[i] == start_quote_character)
 	    inquote++;
 	}
       }
@@ -481,13 +481,13 @@ int find_endtag(struct pike_string *tag, char *s, int len, int *aftertag)
     }
   }
 
-  if(i >= len) 
+  if(i >= len)
   {
     *aftertag=len;
     j=i;              /* no end */
   } else {
     for (; i<len && s[i] != '>'; i++);
-    *aftertag = i + (i<len?1:0); 
+    *aftertag = i + (i<len?1:0);
   }
   return j;
 }
@@ -549,9 +549,9 @@ void do_html_parse(struct pike_string *ss,
 	int quote = 0;
 	/* A simple string ... */
 	if (last < i-1)
-	{ 
-	  push_string(make_shared_binary_string(s+last, i-last-1)); 
-	  (*strings)++; 
+	{
+	  push_string(make_shared_binary_string(s+last, i-last-1));
+	  (*strings)++;
 	}
 
 	assign_svalue_no_free(sp++,&sval1);
@@ -581,7 +581,7 @@ void do_html_parse(struct pike_string *ss,
       {
 	/* Hopefully something callable ... */
 	assign_svalue_no_free(sp++,&sval2);
-	k = push_parsed_tag(s+j,len-j); 
+	k = push_parsed_tag(s+j,len-j);
 	if (extra_args)
 	{
 	  add_ref(extra_args);
@@ -597,9 +597,9 @@ void do_html_parse(struct pike_string *ss,
 	  copy_shared_string(ss2,sp[-1].u.string);
 	  pop_stack();
 	  if (last!=i-1)
-	  { 
-	    push_string(make_shared_binary_string(s+last,i-last-1)); 
-	    (*strings)++; 
+	  {
+	    push_string(make_shared_binary_string(s+last,i-last-1));
+	    (*strings)++;
 	  }
 	  i=last=j+k;
 	  do_html_parse(ss2,cont,single,strings,recurse_left-1,extra_args);
@@ -611,12 +611,12 @@ void do_html_parse(struct pike_string *ss,
 	  pop_stack();
 
 	  if (last != i-1)
-	  { 
-	    push_string(make_shared_binary_string(s+last,i-last-1)); 
-	    (*strings)++; 
+	  {
+	    push_string(make_shared_binary_string(s+last,i-last-1));
+	    (*strings)++;
 	  }
 	  i=last=j+k;
-	  
+
 	  push_string(ss2);
 	  (*strings)++;
 	  continue;
@@ -631,9 +631,9 @@ void do_html_parse(struct pike_string *ss,
       if (sval1.type==T_STRING)
       {
 	if (last < i-1)
-	{ 
-	  push_string(make_shared_binary_string(s+last, i-last-1)); 
-	  (*strings)++; 
+	{
+	  push_string(make_shared_binary_string(s+last, i-last-1));
+	  (*strings)++;
 	}
 
 	assign_svalue_no_free(sp++,&sval1);
@@ -673,14 +673,14 @@ void do_html_parse(struct pike_string *ss,
 	  /* i == '<' + 1 */
 	  /* last == end of previous tags '>' + 1 */
 	  if (last < i-1)
-	  { 
-	    push_string(make_shared_binary_string(s+last, i-last-1)); 
-	    (*strings)++; 
+	  {
+	    push_string(make_shared_binary_string(s+last, i-last-1));
+	    (*strings)++;
 	  }
 	  i=last=j=m;
 	  do_html_parse(ss2,cont,single,strings,recurse_left-1,extra_args);
 	  continue;
- 
+
 	} else if (sp[-1].type==T_ARRAY) {
 	  push_text("");
 	  f_multiply(2);
@@ -688,9 +688,9 @@ void do_html_parse(struct pike_string *ss,
 	  pop_stack();
 
 	  if (last < i-1)
-	  { 
-	    push_string(make_shared_binary_string(s+last, i-last-1)); 
-	    (*strings)++; 
+	  {
+	    push_string(make_shared_binary_string(s+last, i-last-1));
+	    (*strings)++;
 	  }
 	  i=last=j=m;
 	  push_string(ss2);
@@ -715,7 +715,7 @@ void do_html_parse(struct pike_string *ss,
   }
   else if (last<len)
   {
-    push_string(make_shared_binary_string(s+last,len-last));  
+    push_string(make_shared_binary_string(s+last,len-last));
     free_string(ss);
     (*strings)++;
   }
@@ -826,15 +826,15 @@ void do_html_parse_lines(struct pike_string *ss,
       mapping_index_no_free(&sval1,single,&sval2);
 /*       if(sval1.type == T_INT) */
 /* 	mapping_index_no_free(&sval1,single,&empty_string); */
-	
+
       if (sval1.type==T_STRING)
       {
 	int quote = 0;
 	/* A simple string ... */
 	if (last < i-1)
-	{ 
-	  push_string(make_shared_binary_string(s+last, i-last-1)); 
-	  (*strings)++; 
+	{
+	  push_string(make_shared_binary_string(s+last, i-last-1));
+	  (*strings)++;
 	}
 
 	*(sp++)=sval1;
@@ -889,9 +889,9 @@ void do_html_parse_lines(struct pike_string *ss,
       if (sval1.type==T_STRING)
       {
 	if (last < i-1)
-	{ 
-	  push_string(make_shared_binary_string(s+last, i-last-1)); 
-	  (*strings)++; 
+	{
+	  push_string(make_shared_binary_string(s+last, i-last-1));
+	  (*strings)++;
 	}
 
 	*(sp++)=sval1;
@@ -972,7 +972,7 @@ void f_get_all_active_fd(INT32 args)
 {
   int i,fds,q;
   struct stat foo;
-  
+
   pop_n_elems(args);
   for (i=fds=0; i<MAX_OPEN_FILEDESCRIPTORS; i++)
   {
@@ -1020,7 +1020,7 @@ void f_mark_fd(INT32 args)
   int fd;
   struct pike_string *s;
   if (args<1
-      || sp[-args].type!=T_INT 
+      || sp[-args].type!=T_INT
       || (args>2 && sp[-args+1].type!=T_STRING))
     error("Illegal argument(s) to mark_fd(int,void|string)\n");
   fd=sp[-args].u.integer;
@@ -1033,7 +1033,7 @@ void f_mark_fd(INT32 args)
     char buf[20];
     struct stat fs;
 
-    
+
     pop_stack();
     if(!fstat(fd,&fs))
     {
@@ -1054,7 +1054,7 @@ void f_mark_fd(INT32 args)
       return;
     }
   }
-  
+
   add_ref(s=sp[-args+1].u.string);
   if(fd_marks[fd])
     free_string(fd_marks[fd]);
@@ -1083,17 +1083,26 @@ static void program_name(struct program *p)
   f_add( 3 );
 }
 
+void f__low_program_name( INT32 args )
+{
+  struct program *p;
+  get_all_args( "_low_program_name", args, "%p", &p );
+  program_name( p );
+  stack_swap();
+  pop_stack();
+}
+
 void f__dump_obj_table(INT32 args)
 {
   struct object *o;
   int n=0;
   pop_n_elems(args);
   o=first_object;
-  while(o) 
-  { 
+  while(o)
+  {
     if(o->prog)
       program_name(o->prog);
-    else 
+    else
       push_string(make_shared_binary_string("No program (Destructed?)",24));
     push_int(o->refs);
     f_aggregate(2);
@@ -1171,7 +1180,7 @@ void do_shuffle(void *_a)
       if(nsent < 0) {
 	if(errno != EINTR)
 	  goto end;
-	else 
+	else
 	  continue;
       }
       written += nsent;
@@ -1181,7 +1190,7 @@ void do_shuffle(void *_a)
     }
   }
 
-  /* We are done. It is up to the backend callback to call the 
+  /* We are done. It is up to the backend callback to call the
    * finish function
    */
  end:
@@ -1233,16 +1242,16 @@ void f_shuffle(INT32 args)
   a->sent = 0;
 
   num_shuffles++;
-  apply(a->to, "query_fd", 0); 
+  apply(a->to, "query_fd", 0);
   apply(a->from, "query_fd", 0);
   get_all_args("shuffle", 2, "%d%d", &a->to_fd, &a->from_fd);
 
   add_ref(a->from);
-  add_ref(a->to); 
-  
+  add_ref(a->to);
+
   assign_svalue_no_free(&a->cb, q);
   assign_svalue_no_free(&a->args, w);
-  
+
   th_farm(do_shuffle, (void *)a);
 
   if(!my_callback)
@@ -1253,7 +1262,7 @@ void f_shuffle(INT32 args)
 #endif
 
 
-void pike_module_init(void) 
+void pike_module_init(void)
 {
   ref_push_string(make_shared_string(""));
   empty_string = sp[-1];
@@ -1264,12 +1273,13 @@ void pike_module_init(void)
   /* function(object,object,function,mixed,int:void) */
   ADD_FUNCTION("shuffle", f_shuffle,tFunc(tObj tObj tFunction tMix tInt,tVoid), 0);
 #endif
+  ADD_EFUN("_low_program_name", f__low_program_name,tFunc(tProgram,tStr),0);
 
 /* function(string:string) */
   ADD_EFUN("http_decode_string",f_http_decode_string,tFunc(tStr,tStr),
 	   OPT_TRY_OPTIMIZE);
 
-  
+
 /* function(int:int) */
   ADD_EFUN("set_start_quote",f_set_start_quote,tFunc(tInt,tInt),OPT_EXTERNAL_DEPEND);
 
@@ -1279,12 +1289,12 @@ void pike_module_init(void)
 /* function(string:array) */
   ADD_EFUN("parse_accessed_database", f_parse_accessed_database,tFunc(tStr,tArray), OPT_TRY_OPTIMIZE);
 
-  
+
 /* function(:array(array)) */
-  ADD_EFUN("_dump_obj_table", f__dump_obj_table,tFunc(tNone,tArr(tArray)), 
+  ADD_EFUN("_dump_obj_table", f__dump_obj_table,tFunc(tNone,tArr(tArray)),
 	   OPT_EXTERNAL_DEPEND);
 
-  
+
   ADD_EFUN("parse_html",f_parse_html,
 	   tFuncV(tStr
 		  tMap(tStr,tOr(tStr,
@@ -1302,7 +1312,7 @@ void pike_module_init(void)
 		  tStr),
 	   0);
 
-  
+
   ADD_EFUN("parse_html_lines",f_parse_html_lines,
 	   tFuncV(tStr
 		  tMap(tStr,tOr(tStr,
@@ -1324,30 +1334,30 @@ void pike_module_init(void)
 
 /* function(int:array) */
   ADD_EFUN("discdate", f_discdate,tFunc(tInt,tArray), 0);
-  
+
 /* function(int,void|int:int) */
   ADD_EFUN("stardate", f_stardate,tFunc(tInt tOr(tVoid,tInt),tInt), 0);
 
 /* function(:int) */
   ADD_EFUN("timezone", f_timezone,tFunc(tNone,tInt), 0);
-  
+
 /* function(:array(int)) */
   ADD_EFUN("get_all_active_fd", f_get_all_active_fd,tFunc(tNone,tArr(tInt)),
 	   OPT_EXTERNAL_DEPEND);
-  
+
 /* function(int:int) */
   ADD_EFUN("nice", f_nice,tFunc(tInt,tInt),
 	   OPT_EXTERNAL_DEPEND|OPT_SIDE_EFFECT);
 
 /* function(int:string) */
   ADD_EFUN("fd_info", f_fd_info,tFunc(tInt,tStr), OPT_EXTERNAL_DEPEND);
-  
+
 /* function(int,void|mixed:mixed) */
   ADD_EFUN("mark_fd", f_mark_fd,tFunc(tInt tOr(tVoid,tMix),tMix),
 	   OPT_EXTERNAL_DEPEND|OPT_SIDE_EFFECT);
 
   /* timezone() needs */
-  { 
+  {
     time_t foo = (time_t)0;
     struct tm *g;
 
@@ -1368,7 +1378,7 @@ void pike_module_init(void)
   ADD_FUNCTION( "finish", streamed_parser_finish,tFunc(tVoid,tStr), 0 );
   set_init_callback( streamed_parser_init );
   set_exit_callback( streamed_parser_destruct );
-   
+
   streamed_parser = end_program();
   add_program_constant("streamed_parser", streamed_parser,0);
 #endif /* ENABLE_STREAMED_PARSER */
@@ -1402,4 +1412,3 @@ void pike_module_exit(void)
 
   exit_xml();
 }
-
