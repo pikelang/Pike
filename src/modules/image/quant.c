@@ -1,4 +1,4 @@
-/* $Id: quant.c,v 1.17 1996/12/05 23:50:54 law Exp $ */
+/* $Id: quant.c,v 1.18 1996/12/08 23:59:59 law Exp $ */
 
 /*
 
@@ -477,12 +477,12 @@ static struct colortable *colortable_allocate(int numcol)
 {
    struct colortable *ct;
    ct = malloc(sizeof(struct colortable)+
-	       (sizeof(rgb_group)+2*sizeof(unsigned long))*numcol);
+	       sizeof(rgb_group)*numcol);
    if (!ct) error("Out of memory.\n");
    MEMSET(ct,0,sizeof(struct colortable)+
-	  (2*sizeof(unsigned long)+sizeof(rgb_group))*numcol);
+	       sizeof(rgb_group)*numcol);
    ct->numcol=numcol;
-   ct->rgb_node=(unsigned long*)(ct->clut+numcol);
+   ct->rgb_node=malloc(sizeof(unsigned long)*numcol*2);
    return ct;
 }
 
@@ -825,5 +825,6 @@ fprintf(stderr," -> %lu: %d,%d,%d\n",best,
 void colortable_free(struct colortable *ct)
 {
    int r,g,b;
+   free((char *)ct->rgb_node);
    free((char *)ct);
 }
