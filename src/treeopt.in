@@ -1,6 +1,6 @@
 // -*- c -*-
 //
-// $Id: treeopt.in,v 1.20 1999/11/14 18:45:19 grubba Exp $
+// $Id: treeopt.in,v 1.21 1999/11/14 22:48:19 grubba Exp $
 //
 // The tree optimizer
 //
@@ -53,12 +53,12 @@ F_CAST[$$->type == void_type_string]
 	       0), *):
 	$0;
 
-0 = F_CAST(F_COMMA_EXPR(F_CAST[$$->type == $0->type](1, *), 2), *):
-{
-  struct pike_string *type = $0->type;
-  $$ = mkcastnode(type, mknode(F_COMMA_EXPR, $1, $2));
-}
-;
+// 0 = F_CAST(F_COMMA_EXPR(F_CAST[$$->type == $0->type](1, *), 2), *):
+// {
+//   struct pike_string *type = $0->type;
+//   $$ = mkcastnode(type, mknode(F_COMMA_EXPR, $1, $2));
+// }
+// ;
 
 0 = F_CAST('?'(1, ':'(F_CAST[$$->type == $0->type](2, *), 3)), *):
 {
@@ -132,7 +132,14 @@ F_COMMA_EXPR(0, 1 = F_CAST(2, *)):
 }
 ;
 
-// Is really the OPT_CASE needded for the following three?
+// F_COMMA_EXPR(0 = F_CAST(1, *), F_CAST[$$->type == $0->type](2, *)):
+// {
+//   struct pike_string *type = $0->type;
+//   $$ = mkcastnode(type, mknode(F_COMMA_EXPR, $1, $2));
+// }
+// ;
+
+// Is really the OPT_CASE needed for the following three?
 F_COMMA_EXPR(0 = F_RETURN, +[!($$->tree_info & OPT_CASE)]):
   $0;
 
@@ -158,7 +165,7 @@ F_ARG_LIST(-, 0):
 F_ARG_LIST(0, -):
   $0;
 
-// Is really the OPT_CASE needded for the following three?
+// Is really the OPT_CASE needed for the following three?
 F_ARG_LIST(0 = F_RETURN, +[!($$->tree_info & OPT_CASE)]):
   $0;
 
@@ -184,7 +191,7 @@ F_LVALUE_LIST(-, 0):
 F_LVALUE_LIST(0, -):
   $0;
 
-// Is really the OPT_CASE needded for the following three?
+// Is really the OPT_CASE needed for the following three?
 F_LVALUE_LIST(0 = F_RETURN, +[!($$->tree_info & OPT_CASE)]):
   $0;
 
