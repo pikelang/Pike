@@ -5,7 +5,7 @@
 \*/
 /**/
 #include "global.h"
-RCSID("$Id: interpret.c,v 1.143 2000/04/19 13:59:01 mast Exp $");
+RCSID("$Id: interpret.c,v 1.144 2000/04/19 16:03:30 mast Exp $");
 #include "interpret.h"
 #include "object.h"
 #include "program.h"
@@ -669,7 +669,7 @@ void mega_apply2(enum apply_type type, INT32 args, void *arg1, void *arg2)
     {
       THREAD_T self = th_self();
 
-      TRYLOCK_INTERPRETER_LOCK();
+      CHECK_INTERPRETER_LOCK();
 
       if( thread_id && !th_equal( OBJ2THREAD(thread_id)->id, self) )
 	fatal("Current thread is wrong.\n");

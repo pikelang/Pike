@@ -32,10 +32,7 @@ static int eval_instruction(unsigned char *pc)
     if(d_flag)
     {
 #ifdef _REENTRANT
-#ifndef __NT__
-      if(!mt_trylock(& interpreter_lock))
-	fatal("Interpreter running unlocked!\n");
-#endif
+      CHECK_INTERPRETER_LOCK();
       if(d_flag>1 && thread_for_id(th_self()) != thread_id)
         fatal("thread_for_id() (or thread_id) failed in interpreter.h! %p != %p\n",thread_for_id(th_self()),thread_id);
 #endif

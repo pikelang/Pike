@@ -1,5 +1,5 @@
 /*
- * $Id: jvm.c,v 1.14 2000/04/04 14:11:59 marcus Exp $
+ * $Id: jvm.c,v 1.15 2000/04/19 16:03:34 mast Exp $
  *
  * Pike interface to Java Virtual Machine
  *
@@ -16,7 +16,7 @@
 #endif /* HAVE_CONFIG_H */
 
 #include "global.h"
-RCSID("$Id: jvm.c,v 1.14 2000/04/04 14:11:59 marcus Exp $");
+RCSID("$Id: jvm.c,v 1.15 2000/04/19 16:03:34 mast Exp $");
 #include "program.h"
 #include "interpret.h"
 #include "stralloc.h"
@@ -1660,18 +1660,18 @@ static void native_dispatch(struct native_method_context *ctx,
       do_native_dispatch(ctx, env, cls, args, rc);
     } else {
       /* Nope, let's get it... */
-      mt_lock(&interpreter_lock);
+      mt_lock_interpreter();
       SWAP_IN_THREAD(state);
 
       do_native_dispatch(ctx, env, cls, args, rc);
 
       /* Restore */
       SWAP_OUT_THREAD(state);
-      mt_unlock(&interpreter_lock);
+      mt_unlock_interpreter();
     }
   } else {
     /* Not a pike thread.  Create a temporary thread_id... */
-    mt_lock(&interpreter_lock);
+    mt_lock_interpreter();
     init_interpreter();
     stack_top=((char *)&state)+ (thread_stack_size-16384) * STACK_DIRECTION;
     recoveries = NULL;
@@ -1690,7 +1690,7 @@ static void native_dispatch(struct native_method_context *ctx,
     thread_id=NULL;
     cleanup_interpret();
     num_threads--;
-    mt_unlock(&interpreter_lock);
+    mt_unlock_interpreter();
   }
 }
 

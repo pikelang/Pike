@@ -462,7 +462,7 @@ static void low_accept_loop(struct args *arg)
 	struct cache *c, *p = NULL;
 	struct log *l, *n = NULL;
 	/* oups. */
-	mt_lock( &interpreter_lock );
+	mt_lock_interpreter();
 	for(i=0; i<CACHE_HTABLE_SIZE; i++)
 	{
 	  e = arg->cache->htable[i];
@@ -504,7 +504,7 @@ static void low_accept_loop(struct args *arg)
 	  else     aap_first_log = l->next;
 	  aap_free(l);
 	}
-	mt_unlock( &interpreter_lock );
+	mt_unlock_interpreter();
 	aap_free(arg2);
 	aap_free(arg);
 	return; /* No more accept here.. */

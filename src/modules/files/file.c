@@ -5,7 +5,7 @@
 \*/
 /**/
 #include "global.h"
-RCSID("$Id: file.c,v 1.173 2000/04/14 17:30:31 grubba Exp $");
+RCSID("$Id: file.c,v 1.174 2000/04/19 16:14:37 mast Exp $");
 #include "fdlib.h"
 #include "interpret.h"
 #include "svalue.h"
@@ -1362,7 +1362,7 @@ static void file_open(INT32 args)
        /* This is a temporary kluge */
        if(d_flag)
        {
-	 fprintf(stderr,"Possible gc() failiure detected in open()\n");
+	 fprintf(stderr,"Possible gc() failure detected in open()\n");
 	 describe(fp->current_object);
        }
 #endif
@@ -2389,9 +2389,9 @@ static TH_RETURN_TYPE proxy_thread(void * data)
 
   fd_close(p->to);
   fd_close(p->from);
-  mt_lock(&interpreter_lock);
+  mt_lock_interpreter();
   num_threads--;
-  mt_unlock(&interpreter_lock);
+  mt_unlock_interpreter();
   free((char *)p);
   th_exit(0);
   return 0;
@@ -2658,6 +2658,7 @@ static int PIKE_CONCAT(Y,_function_number);
 #define FILE_FUNC(X,Y,Z)					\
 void PIKE_CONCAT(Y,_ref) (INT32 args) {				\
   struct object *o=REF;						\
+  debug_malloc_touch(o);					\
   if(!o || !o->prog) { 						\
    /* This is a temporary kluge */                              \
    DO_IF_DMALLOC(						\

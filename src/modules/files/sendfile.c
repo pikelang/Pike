@@ -1,5 +1,5 @@
 /*
- * $Id: sendfile.c,v 1.37 2000/03/21 22:34:13 grubba Exp $
+ * $Id: sendfile.c,v 1.38 2000/04/19 16:03:35 mast Exp $
  *
  * Sends headers + from_fd[off..off+len-1] + trailers to to_fd asyncronously.
  *
@@ -565,7 +565,7 @@ static void worker(void *this_)
 
   low_do_sendfile(this);
 
-  mt_lock(&interpreter_lock);
+  mt_lock_interpreter();
 
   /*
    * Unlock the fd's
@@ -606,7 +606,7 @@ static void worker(void *this_)
   /* We're gone... */
   num_threads--;
     
-  mt_unlock(&interpreter_lock);
+  mt_unlock_interpreter();
 
   /* Die */
   return;

@@ -83,7 +83,7 @@ static int ensure_interpreter_lock( )
   {
     if( thi->swapped ) /* We are swapped out.. */
     {
-      mt_lock( &interpreter_lock );
+      mt_lock_interpreter();
       return 1;
     }
     return 0; /* we are swapped in */
@@ -93,7 +93,7 @@ static int ensure_interpreter_lock( )
   if( num_threads == 1 )
     free=num_threads++;
   wake_up_backend();
-  mt_lock( &interpreter_lock );
+  mt_lock_interpreter();
   if( free ) 
     num_threads--;
   return 1;
@@ -122,7 +122,7 @@ void aap_enqueue_string_to_free( struct pike_string *s )
     int free_interpreter_lock = ensure_interpreter_lock();
     really_free_from_queue();
     if( free_interpreter_lock )
-      mt_unlock( &interpreter_lock );
+      mt_unlock_interpreter();
   }
   free_queue[ numtofree++ ] = s;
   mt_unlock( &tofree_mutex );

@@ -1,5 +1,5 @@
 #include "global.h"
-RCSID("$Id: threads.c,v 1.121 2000/04/19 13:57:36 mast Exp $");
+RCSID("$Id: threads.c,v 1.122 2000/04/19 16:03:31 mast Exp $");
 
 int num_threads = 1;
 int threads_disabled = 0;
@@ -201,6 +201,10 @@ static struct callback *threads_evaluator_callback=0;
 int thread_id_result_variable;
 
 int th_running = 0;
+#ifdef PIKE_DEBUG
+int debug_interpreter_is_locked = 0;
+THREAD_T debug_locking_thread;
+#endif
 MUTEX_T interpreter_lock, thread_table_lock, interleave_lock;
 struct program *mutex_key = 0;
 struct program *thread_id_prog = 0;
@@ -292,7 +296,7 @@ void init_threads_disable(struct object *o)
 		      (stderr,
 		       "_disable_threads(): Waiting for %d threads to finish\n",
 		       live_threads));
-      co_wait(&live_threads_change, &interpreter_lock);
+      co_wait_interpreter(&live_threads_change);
     }
     SWAP_IN_CURRENT_THREAD();
   }
@@ -559,7 +563,7 @@ TH_RETURN_TYPE new_thread_func(void * data)
   THREADS_FPRINTF(0, (stderr,"THREADS_DISALLOW() Thread %08x created...\n",
 		      (unsigned int)arg.id));
   
-  if((tmp=mt_lock( & interpreter_lock)))
+  if((tmp=mt_lock_interpreter()))
     fatal("Failed to lock interpreter, return value=%d, errno=%d\n",tmp,
 #ifdef __NT__
 	  GetLastError()
@@ -654,7 +658,7 @@ TH_RETURN_TYPE new_thread_func(void * data)
     remove_callback(threads_evaluator_callback);
     threads_evaluator_callback=0;
   }
-  mt_unlock(& interpreter_lock);
+  mt_unlock_interpreter();
   th_exit(0);
   /* NOT_REACHED, but removes a warning */
   return(NULL);
@@ -803,7 +807,7 @@ void f_mutex_lock(INT32 args)
     do
     {
       THREADS_FPRINTF(1, (stderr,"WAITING TO LOCK m:%08x\n",(unsigned int)m));
-      co_wait(& m->condition, & interpreter_lock);
+      co_wait_interpreter(& m->condition);
     }while(m->key);
     SWAP_IN_CURRENT_THREAD();
   }
@@ -969,11 +973,11 @@ void f_cond_wait(INT32 args)
     
       /* Wait and allow mutex operations */
       SWAP_OUT_CURRENT_THREAD();
-      co_wait(c, &interpreter_lock);
+      co_wait_interpreter(c);
     
       /* Lock mutex */
       while(mut->key)
-	co_wait(& mut->condition, &interpreter_lock);
+	co_wait_interpreter(& mut->condition);
       mut->key=key;
       OB2KEY(key)->mut=mut;
       
@@ -984,7 +988,7 @@ void f_cond_wait(INT32 args)
   }
 
   SWAP_OUT_CURRENT_THREAD();
-  co_wait(c, &interpreter_lock);
+  co_wait_interpreter(c);
   SWAP_IN_CURRENT_THREAD();
 
   pop_n_elems(args);
@@ -1040,7 +1044,7 @@ static void f_thread_id_result(INT32 args)
   SWAP_OUT_CURRENT_THREAD();
 
   while(th->status != THREAD_EXITED)
-    co_wait(&th->status_change, &interpreter_lock);
+    co_wait_interpreter(&th->status_change);
 
   SWAP_IN_CURRENT_THREAD();
 
@@ -1166,7 +1170,7 @@ void low_th_init(void)
 #endif /* POSIX_THREADS */
 
   mt_init( & interpreter_lock);
-  mt_lock( & interpreter_lock);
+  mt_lock_interpreter();
   mt_init( & thread_table_lock);
   mt_init( & interleave_lock);
   co_init( & live_threads_change);

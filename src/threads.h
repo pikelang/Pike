@@ -1,5 +1,5 @@
 /*
- * $Id: threads.h,v 1.85 2000/04/19 13:57:35 mast Exp $
+ * $Id: threads.h,v 1.86 2000/04/19 16:03:31 mast Exp $
  */
 #ifndef THREADS_H
 #define THREADS_H
@@ -260,6 +260,42 @@ extern int th_running;
 
 extern PIKE_MUTEX_T interpreter_lock;
 
+#if defined(PIKE_DEBUG) && !defined(__NT__)
+
+/* This is a debug wrapper to enable checks that the interpreter lock
+ * is hold by the current thread. */
+
+extern THREAD_T debug_locking_thread;
+#define SET_LOCKING_THREAD (debug_locking_thread = th_self(), 0)
+
+#define mt_lock_interpreter() (mt_lock(&interpreter_lock) || SET_LOCKING_THREAD)
+#define mt_trylock_interpreter() (mt_trylock(&interpreter_lock) || SET_LOCKING_THREAD)
+#define mt_unlock_interpreter() (mt_unlock(&interpreter_lock))
+#define co_wait_interpreter(COND) \
+  do {co_wait((COND), &interpreter_lock); SET_LOCKING_THREAD;} while (0)
+
+#define CHECK_INTERPRETER_LOCK() do {					\
+  if (th_running) {							\
+    THREAD_T self;							\
+    if (!mt_trylock(&interpreter_lock))					\
+      fatal("Interpreter is not locked.\n");				\
+    self = th_self();							\
+    if (!th_equal(debug_locking_thread, self))				\
+      fatal("Interpreter is not locked by this thread.\n");		\
+  }									\
+} while (0)
+
+#else
+
+#define mt_lock_interpreter() (mt_lock(&interpreter_lock))
+#define mt_trylock_interpreter() (mt_trylock(&interpreter_lock))
+#define mt_unlock_interpreter() (mt_unlock(&interpreter_lock))
+#define co_wait_interpreter(COND) do {co_wait((COND), &interpreter_lock);} while (0)
+
+#define CHECK_INTERPRETER_LOCK() do {} while (0)
+
+#endif
+
 extern COND_T live_threads_change;		/* Used by _disable_threads */
 extern COND_T threads_disabled_change;		/* Used by _disable_threads */
 
@@ -478,21 +514,21 @@ struct thread_state {
        THREADS_FPRINTF(1, (stderr, "THREADS_ALLOW() %s:%d t:%08x(#%d)\n", \
 			   __FILE__, __LINE__, \
 			   (unsigned int)_tmp->thread_id, live_threads)); \
-       mt_unlock(& interpreter_lock); \
+       mt_unlock_interpreter(); \
      } else {} \
      HIDE_GLOBAL_VARIABLES()
 
 #define THREADS_DISALLOW() \
      REVEAL_GLOBAL_VARIABLES(); \
      if(_tmp->swapped) { \
-       mt_lock(& interpreter_lock); \
+       mt_lock_interpreter(); \
        THREADS_FPRINTF(1, (stderr, "THREADS_DISALLOW() %s:%d t:%08x(#%d)\n", \
 			   __FILE__, __LINE__, \
                            (unsigned int)_tmp->thread_id, live_threads)); \
        while (threads_disabled) { \
          THREADS_FPRINTF(1, (stderr, \
                              "THREADS_DISALLOW(): Threads disabled\n")); \
-         co_wait(&threads_disabled_change, &interpreter_lock); \
+         co_wait_interpreter(&threads_disabled_change); \
        } \
        SWAP_IN_THREAD(_tmp);\
      } \
@@ -514,14 +550,14 @@ struct thread_state {
        THREADS_FPRINTF(1, (stderr, "THREADS_ALLOW_UID() %s:%d t:%08x(#%d)\n", \
 			   __FILE__, __LINE__, \
 			   (unsigned int)_tmp_uid->thread_id, live_threads)); \
-       mt_unlock(& interpreter_lock); \
+       mt_unlock_interpreter(); \
      } else {} \
      HIDE_GLOBAL_VARIABLES()
 
 #define THREADS_DISALLOW_UID() \
      REVEAL_GLOBAL_VARIABLES(); \
      if(_tmp_uid->swapped) { \
-       mt_lock(& interpreter_lock); \
+       mt_lock_interpreter(); \
        live_threads--; \
        THREADS_FPRINTF(1, (stderr, \
                            "THREADS_DISALLOW_UID() %s:%d t:%08x(#%d)\n", \
@@ -530,7 +566,7 @@ struct thread_state {
        co_broadcast(&live_threads_change); \
        while (threads_disabled) { \
          THREADS_FPRINTF(1, (stderr, "THREADS_DISALLOW_UID(): Wait...\n")); \
-         co_wait(&threads_disabled_change, &interpreter_lock); \
+         co_wait_interpreter(&threads_disabled_change); \
        } \
        SWAP_IN_THREAD(_tmp_uid);\
      } \
@@ -542,36 +578,13 @@ struct thread_state {
   THREADS_DISALLOW()
 
 #ifdef PIKE_DEBUG
-
 #define ASSERT_THREAD_SWAPPED_IN() do {				\
     struct thread_state *_tmp=thread_state_for_id(th_self());	\
     if(_tmp->swapped) fatal("Thread is not swapped in!\n");	\
   }while(0)
 
-#ifdef __NT__
-#define TRYLOCK_INTERPRETER_LOCK() do {} while (0)
 #else
-#define TRYLOCK_INTERPRETER_LOCK() do {					\
-  if (th_running && !mt_trylock(&interpreter_lock))			\
-    fatal("Haven't got interpreter lock.\n");				\
-} while (0)
-#endif
-
-#define CHECK_INTERPRETER_LOCK() do {					\
-  if (th_running) {							\
-    THREAD_T self;							\
-    TRYLOCK_INTERPRETER_LOCK();						\
-    self = th_self();							\
-    if( thread_id && !th_equal( OBJ2THREAD(thread_id)->id, self) )	\
-      fatal("Current thread is wrong.\n");				\
-  }									\
-} while (0)
-
-#else
-
 #define ASSERT_THREAD_SWAPPED_IN()
-#define CHECK_INTERPRETER_LOCK() do {} while (0)
-
 #endif
 
 /* Prototypes begin here */
@@ -662,9 +675,6 @@ void th_farm(void (*fun)(void *), void *here);
 #define low_init_threads_disable()
 #define init_threads_disable(X)
 #define exit_threads_disable(X)
-
-#define TRYLOCK_INTERPRETER_LOCK() do {} while (0)
-#define CHECK_INTERPRETER_LOCK() do {} while (0)
 
 #endif /* PIKE_THREADS */
 

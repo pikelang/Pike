@@ -25,7 +25,7 @@
 #include "main.h"
 #include <signal.h>
 
-RCSID("$Id: signal_handler.c,v 1.168 2000/03/24 01:24:52 hubbe Exp $");
+RCSID("$Id: signal_handler.c,v 1.169 2000/04/19 16:03:31 mast Exp $");
 
 #ifdef HAVE_PASSWD_H
 # include <passwd.h>
@@ -1066,7 +1066,7 @@ static TH_RETURN_TYPE wait_thread(void *data)
       fprintf(stderr, "wait thread: locking interpreter, pid=%d\n",pid);
 #endif
 
-      mt_lock(&interpreter_lock);
+      mt_lock_interpreter();
 
 #ifdef PROC_DEBUG
       fprintf(stderr, "wait thread: reporting the event!\n");
@@ -1075,7 +1075,7 @@ static TH_RETURN_TYPE wait_thread(void *data)
       report_child(pid, status);
       co_broadcast(& process_status_change);
 
-      mt_unlock(&interpreter_lock);
+      mt_unlock_interpreter();
       continue;
     }
 
@@ -1134,7 +1134,7 @@ static void f_pid_status_wait(INT32 args)
   while(THIS->state == PROCESS_RUNNING)
   {
     SWAP_OUT_CURRENT_THREAD();
-    co_wait( & process_status_change, &interpreter_lock);
+    co_wait_interpreter( & process_status_change);
     SWAP_IN_CURRENT_THREAD();
   }
 

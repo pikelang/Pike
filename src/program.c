@@ -5,7 +5,7 @@
 \*/
 /**/
 #include "global.h"
-RCSID("$Id: program.c,v 1.228 2000/04/16 16:00:35 mast Exp $");
+RCSID("$Id: program.c,v 1.229 2000/04/19 16:03:30 mast Exp $");
 #include "program.h"
 #include "object.h"
 #include "dynamic_buffer.h"
@@ -3734,11 +3734,7 @@ char *get_storage(struct object *o, struct program *p)
   int offset;
 
 #ifdef _REENTRANT
-#ifndef __NT__
-  if(d_flag)
-    if(!mt_trylock(& interpreter_lock))
-      fatal("get_storage running unlocked!\n");
-#endif
+  if(d_flag) CHECK_INTERPRETER_LOCK();
 #endif
 
   offset= low_get_storage(o->prog, p);
