@@ -1,6 +1,6 @@
 #!/usr/local/bin/pike
 
-/* $Id: test_pike.pike,v 1.15 1999/01/21 09:11:42 hubbe Exp $ */
+/* $Id: test_pike.pike,v 1.16 1999/02/20 20:22:30 grubba Exp $ */
 
 #include <simulate.h>
 
@@ -227,7 +227,16 @@ int main(int argc, string *argv)
 	    switch(type)
 	    {
 	      case "FALSE":
-		a=!a;
+		if(a)
+		{
+		  werror(fname + " failed.\n");
+		  werror(test+"\n");
+		  werror(sprintf("o->a(): %O\n",a));
+		  errors++;
+		}else{
+		  successes++;
+		}
+		break;
 		
 	      case "TRUE":
 		if(!a)
