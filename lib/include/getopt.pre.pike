@@ -17,7 +17,7 @@ string|int find_option(array argv,
   mixed value;
   int i,hasarg;
 
-  hasarg=query_num_arg() == 5;
+  hasarg=query_num_arg() > 4;
   if(!arrayp(longform)) longform=({longform});
   if(!arrayp(shortform)) shortform=({shortform});
   if(!arrayp(envvars)) envvars=({envvars});
@@ -50,7 +50,7 @@ string|int find_option(array argv,
 		  exit(1);
 		}
 		value=argv[i+1];
-		argv[i+1]=1;
+		argv[i+1]=0;
 	      }
 	      return value;
 	    } else {
@@ -94,9 +94,6 @@ string|int find_option(array argv,
 	    }
 	  }
 	}
-      } else {
-	if(getenv("POSIX_ME_HARDER"))
-	  break;
       }
     }
   }
@@ -109,8 +106,124 @@ string|int find_option(array argv,
   return def;
 }
 
+/*
+ * ({ "name", ({aliases}), env_var, default })
+ */
+mixed *find_all_options(string *argv, mixed *options, void|int posix_me_harder)
+{
+  mapping quick=([]);
+  foreach(options, mixed opt)
+    {
+      foreach(stringp(opt[1])?({opt[1]}):opt[1], mixed optname)
+	{
+	  if(optname[0..1]=="--")
+	  {
+	    quick[optname]=opt;
+	  }else{
+	    foreach(optname[1..]/"",string optletter)
+	      {
+		quick["-"+optletter]=opt;
+	      }
+	  }
+	}
+    }
 
-string *get_args(string *argv)
+  mixed *ret=({});
+  for(int e=1;e<sizeof(argv);e++)
+  {
+    if(!argv[e]) continue;
+
+    if(strlen(argv[e]) && argv[e][0]=='-')
+    {
+      if(strlen(argv[e])>1 && argv[e][1]=='-')
+      {
+	string opt=argv[e];
+	if(opt=="--") break;
+
+	string arg;
+	sscanf(opt,"%s=%s",opt, arg);
+	if(mixed *option=quick[opt])
+	{
+	  argv[e]=0;
+	  if(!arg && sizeof(option)>3)
+	  {
+	    if(e==sizeof(argv)-1)
+	    {
+	      werror("No argument to option "+opt+".\n");
+	      exit(1);
+	    }
+	    arg=argv[e+1];
+	    argv[e+1]=0;
+	  }
+	  ret+=({ ({ option[0], arg || 1 }) });
+	}
+      }else{
+	string *foo=argv[e]/"";
+	for(int j=1;j<strlen(foo);j++)
+	{
+	  string opt="-"+foo[j];
+	  if(mixed *option=quick[opt])
+	  {
+	    foo[j]=0;
+	    string arg=argv[e][j+1..];
+	    if(sizeof(option)>3)
+	    {
+	      if(arg=="")
+	      {
+		if(e==sizeof(argv)-1)
+		{
+		  werror("No argument to option "+opt+".\n");
+		  exit(1);
+		}
+		arg=argv[e+1];
+		argv[e+1]=0;
+	      }else{
+		foo=foo[..j];
+	      }
+	    }
+	    ret+=({ ({ option[0], arg || 1 }) });
+	  }
+	}
+	argv[e]=foo*"";
+	if(argv[e]=="-") argv[e]=0;
+      }
+    }else{
+      if(posix_me_harder || getenv("POSIX_ME_HARDER"))
+	break;
+    }
+  }
+
+  multiset done=mkmultiset(column(ret, 0));
+  foreach(options, string *option)
+    {
+      if(done[ret]) continue;
+      if(sizeof(option) > 2)
+      {
+	mixed foo=option[2];
+	if(!foo) continue;
+	if(stringp(foo)) foo=({foo});
+	foreach(foo, foo)
+	  {
+	    if(foo=getenv(foo))
+	    {
+	      ret+=({ ({name, foo}) });
+	      done[name]=1;
+	      break;
+	    }
+	  }
+
+	if(!done && sizeof(option)>3 && option[3])
+	{
+	  ret+=({ ({name, option[3]}) });
+	  done[name]=1;
+	}
+      }
+    }
+  return ret;
+}
+
+
+string *get_args(string *argv, void|int posix_me_harder)
 {
   int i;
   for(i=1;i<sizeof(argv);i++)
@@ -134,10 +247,13 @@ string *get_args(string *argv)
 	  werror("Unknown options "+argv[i]+".\n");
 	exit(1);
       }
+    }else{
+      if(posix_me_harder || getenv("POSIX_ME_HARDER"))
+	break;
     }
   }
 
-  argv-=({0});
+  argv-=({0,1});
 
   return argv;
 }
