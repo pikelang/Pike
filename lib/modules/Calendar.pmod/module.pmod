@@ -5,7 +5,7 @@ static private int booted=0;
 static private object defcal;
 static private object iso_utc;
 static private object default_rules;
-constant magic= // magic + indices(Calendar.ISO) without YMD
+static constant magic= // magic + indices(Calendar.ISO) without YMD
 (<
    "ISO_UTC","II", "default_rules",
    "_sprintf", "set_timezone", "language", "Day", "Year", "Week",
@@ -21,7 +21,7 @@ constant magic= // magic + indices(Calendar.ISO) without YMD
 #include "localization.h"
 
 #if 1
-mixed `[](string what)
+static mixed `[](string what)
 {
    if (!booted)
    {
@@ -29,7 +29,6 @@ mixed `[](string what)
       stage++;
 // bootstrap in the right order
       master()->resolv("Calendar")["Timezone"];
-      master()->resolv("Calendar")["Language"];
       master()->resolv("Calendar")["TimeRanges"];
       master()->resolv("Calendar")["Calendar"];
       master()->resolv("Calendar")["Time"];
@@ -78,5 +77,5 @@ mixed `[](string what)
    }
    return defcal[what];
 }
-mixed `-> = `[];
+static mixed `-> = `[];
 #endif
