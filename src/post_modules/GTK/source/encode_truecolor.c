@@ -208,7 +208,17 @@ static void encode_truecolor_generic(int rbits, int rshift, int gbits,
 
    if(!alignbits) alignbits=1;
 
-#define OPTIMIZE(rb,rs,gb,gs,bb,bs,al,fun) if(rbits==rb&&rshift==rs&&gbits==gb&&gshift==gs&&bbits==bb&&bshift==bs&&alignbits==al) {DEBUG_PF(("Optimized case %s%s\n",#fun,swap_bytes?"_swapped":"")); return (swap_bytes?fun##_swapped(s,(void *)dest,img->xsize*img->ysize,img->xsize):fun(s,(void *)dest,img->xsize*img->ysize,img->xsize));}
+#define OPTIMIZE(rb,rs,gb,gs,bb,bs,al,fun) do { \
+      if(rbits==rb && rshift==rs && gbits==gb && gshift==gs && \
+    	 bbits==bb && bshift==bs && alignbits==al) { \
+    	DEBUG_PF(("Optimized case %s%s\n", #fun, swap_bytes?"_swapped":"")); \
+    	if (swap_bytes) \
+    	  fun##_swapped(s, (void *)dest, img->xsize*img->ysize, img->xsize); \
+    	else \
+    	  fun(s,(void *)dest,img->xsize*img->ysize,img->xsize); \
+        return; \
+      } \
+    } while(0)
 
    switch(bpp)
    {
