@@ -1,5 +1,5 @@
 #include "global.h"
-RCSID("$Id: polyfill.c,v 1.19 1998/01/16 22:09:13 grubba Exp $");
+RCSID("$Id: polyfill.c,v 1.20 1998/04/08 15:41:21 mirar Exp $");
 
 /* Prototypes are needed for these */
 extern double floor(double);
@@ -32,7 +32,7 @@ extern double floor(double);
 /*
 **! module Image
 **! note
-**!	$Id: polyfill.c,v 1.19 1998/01/16 22:09:13 grubba Exp $
+**!	$Id: polyfill.c,v 1.20 1998/04/08 15:41:21 mirar Exp $
 **! class image
 */
 
@@ -285,12 +285,18 @@ static void polyfill_row_fill(float *buf,
    int i;
    int xmin_i = (int)floor(xmin);
    int xmax_i = (int)floor(xmax);
+   if (xmax_i<0) return;
    if (xmin_i == xmax_i)
       buf[xmin_i] += xmax-xmin;
-   else
+   else if (xmin_i>=0)
    {
       buf[xmin_i] += 1-(xmin-((float)xmin_i));
       for (i=xmin_i+1; i<xmax_i; i++) buf[i]=1.0;
+      buf[xmax_i] += xmax-((float)xmax_i);
+   }
+   else
+   {
+      for (i=0; i<xmax_i; i++) buf[i]=1.0;
       buf[xmax_i] += xmax-((float)xmax_i);
    }
 }
@@ -660,10 +666,8 @@ static void polyfill_some(struct image *img,
    rgb_group *dest=img->img,rgb=img->rgb;
    float *buf=(float *)alloca(sizeof(float)*(img->xsize+1));
 
-
    if (!buf) error("out of stack, typ\n");
    for (i=0; i<img->xsize+1; i++) buf[i]=0.0;
-
 
 #ifdef POLYDEBUG
    next=top;
