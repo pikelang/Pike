@@ -1,5 +1,5 @@
 /* -*- c -*-
- * $Id: builtin.cmod,v 1.54 2001/07/02 10:43:39 grubba Exp $
+ * $Id: builtin.cmod,v 1.55 2001/07/02 11:21:09 grubba Exp $
  */
 
 #include "global.h"
@@ -54,8 +54,13 @@ PIKEFUN string basetype(mixed x)
 	stack_swap();
 	pop_stack();
 	return;
+      } else if (IS_ZERO(Pike_sp-1)) {
+	pop_stack();
+	push_constant_text("object");
+	return;
+      } else {
+	Pike_error("Non-string returned from _sprintf()\n");
       }
-      Pike_error("Non-string returned from _sprintf()\n");
     }
   }
   pop_stack();
