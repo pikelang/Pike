@@ -857,7 +857,8 @@ SGML convert(SGML data)
 			   "Appendix ",
 			   data->params->number,
 			   ", ",
-			   data->params->title||error("Appendix without title"),
+			   data->params->title||
+			   lambda(){error("Appendix without title");}(),
 			})),
 	       "\n"
 	    })+
