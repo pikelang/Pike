@@ -5,7 +5,7 @@
 \*/
 /**/
 #include "global.h"
-RCSID("$Id: builtin_functions.c,v 1.267 2001/12/03 15:46:53 grubba Exp $");
+RCSID("$Id: builtin_functions.c,v 1.268 2002/03/21 13:41:52 grubba Exp $");
 #include "interpret.h"
 #include "svalue.h"
 #include "pike_macros.h"
@@ -2961,7 +2961,7 @@ void f_mktime (INT32 args)
   struct tm date;
   struct svalue s;
   struct svalue * r;
-  int retval;
+  int retval, raw;
   if (args<1)
     SIMPLE_TOO_FEW_ARGS_ERROR("mktime", 1);
 
@@ -3004,29 +3004,35 @@ void f_mktime (INT32 args)
     date.tm_isdst = -1;
   }
 
-#if STRUCT_TM_HAS_GMTOFF
+#ifdef STRUCT_TM_HAS_GMTOFF
+  /* BSD-style */
+  date.tm_gmtoff = 0;
+#else
+#ifdef STRUCT_TM_HAS___TM_GMTOFF
+  /* Linux-style */
+  date.__tm_gmtoff = 0;
+#endif /* STRUCT_TM_HAS___TM_GMTOFF */
+#endif /* STRUCT_TM_HAS_GMTOFF */
+
+  raw = retval = mktime(&date);
+  
   if((args > 7) && (sp[7-args].subtype == NUMBER_NUMBER))
   {
-    date.tm_gmtoff=-sp[7-args].u.integer;
-  }else{
-    time_t tmp = 0;
-    date.tm_gmtoff=localtime(&tmp)->tm_gmtoff;
-  }
-  retval=mktime(&date);
+    /* Adjust for the timezone. */
+#ifdef STRUCT_TM_HAS_GMTOFF
+    retval += sp[7-args].u.integer + date.tm_gmtoff;
+#else
+#ifdef STRUCT_TM_HAS___TM_GMTOFF
+    retval += sp[7-args].u.integer + date.__tm_gmtoff;
 #else
 #ifdef HAVE_EXTERNAL_TIMEZONE
-  if((args > 7) && (sp[7-args].subtype == NUMBER_NUMBER))
-  {
-    retval=mktime(&date) + sp[7-args].u.integer - timezone;
-  }else{
-    retval=mktime(&date);
+    retval += sp[7-args].u.integer - timezone;
+#endif /* HAVE_EXTERNAL_TIMEZONE */
+#endif /* STRUCT_TM_HAS___TM_GMTOFF */
+#endif /* STRUCT_TM_HAS_GMTOFF */
   }
-#else
-  retval=mktime(&date);
-#endif
-#endif
 
-  if (retval == -1)
+  if (raw == -1)
     PIKE_ERROR("mktime", "Cannot convert.\n", sp, args);
   pop_n_elems(args);
   push_int(retval);
