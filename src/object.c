@@ -5,7 +5,7 @@
 \*/
 /**/
 #include "global.h"
-RCSID("$Id: object.c,v 1.107 2000/04/14 18:48:42 grubba Exp $");
+RCSID("$Id: object.c,v 1.108 2000/04/14 19:35:29 grubba Exp $");
 #include "object.h"
 #include "dynamic_buffer.h"
 #include "interpret.h"
@@ -133,7 +133,7 @@ struct object *low_clone(struct program *p)
 #define LOW_PUSH_FRAME(O)	do{		\
   struct pike_frame *pike_frame=alloc_pike_frame();		\
   pike_frame->next=fp;				\
-  pike_frame->current_object=o;			\
+  pike_frame->current_object=O;			\
   pike_frame->locals=0;				\
   pike_frame->num_locals=0;				\
   pike_frame->fun=-1;				\
