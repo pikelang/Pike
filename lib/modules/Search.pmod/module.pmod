@@ -1,7 +1,7 @@
-// Roxen Whitefish main pike module
+// This file is part of Roxen Search
+// Copyright © 2000,2001 Roxen IS. All rights reserved.
 //
-// Copyright © 2000,2001 Roxen IS.
-
+// $Id: module.pmod,v 1.15 2001/06/22 01:28:35 nilsson Exp $
 
 private mapping filters;
 

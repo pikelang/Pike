@@ -1,3 +1,8 @@
+// This file is part of Roxen Search
+// Copyright © 2001 Roxen IS. All rights reserved.
+//
+// $Id: RankingProfile.pike,v 1.13 2001/06/22 01:28:35 nilsson Exp $
+
 array(int) field_ranking;
 array(int) proximity_ranking;
 int cutoff;

@@ -1,7 +1,7 @@
-// SQL blob based database
-// Copyright © 2000,2001 Roxen IS.
+// This file is part of Roxen Search
+// Copyright © 2000,2001 Roxen IS. All rights reserved.
 //
-// $Id: MySQL.pike,v 1.33 2001/06/14 13:32:30 js Exp $
+// $Id: MySQL.pike,v 1.34 2001/06/22 01:28:35 nilsson Exp $
 
 inherit .Base;
 

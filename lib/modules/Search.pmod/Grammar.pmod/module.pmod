@@ -1,3 +1,7 @@
+// This file is part of Roxen Search
+// Copyright © 2001 Roxen IS. All rights reserved.
+//
+// $Id: module.pmod,v 1.9 2001/06/22 01:28:36 nilsson Exp $
 
 class ParseNode {
   string op = "<node>";

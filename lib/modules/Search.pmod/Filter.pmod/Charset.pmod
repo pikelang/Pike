@@ -1,3 +1,8 @@
+// This file is part of Roxen Search
+// Copyright © 2001 Roxen IS. All rights reserved.
+//
+// $Id: Charset.pmod,v 1.4 2001/06/22 01:28:35 nilsson Exp $
+
 constant contenttypes = ({});
 
 string decode_charset( string data, string charset )

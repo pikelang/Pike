@@ -1,3 +1,7 @@
+// This file is part of Roxen Search
+// Copyright © 2001 Roxen IS. All rights reserved.
+//
+// $Id: DefaultParser.pike,v 1.7 2001/06/22 01:28:35 nilsson Exp $
 
 static inherit Search.Grammar.AbstractParser;
 static inherit Search.Grammar.Lexer;

@@ -1,3 +1,8 @@
+// This file is part of Roxen Search
+// Copyright © 2001 Roxen IS. All rights reserved.
+//
+// $Id: Base.pike,v 1.7 2001/06/22 01:28:35 nilsson Exp $
+
 //! The MIME content types this class can filter.
 constant contenttypes = ({ });
 

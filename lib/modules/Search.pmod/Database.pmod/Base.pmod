@@ -1,3 +1,8 @@
+// This file is part of Roxen Search
+// Copyright © 2001 Roxen IS. All rights reserved.
+//
+// $Id: Base.pmod,v 1.6 2001/06/22 01:28:35 nilsson Exp $
+
 int get_uri_id(string uri);
 int get_document_id(string uri, void|string language_code);
 int get_field_id(string field, void|int do_not_create);

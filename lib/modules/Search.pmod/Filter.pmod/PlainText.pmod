@@ -1,5 +1,9 @@
+// This file is part of Roxen Search
+// Copyright © 2000,2001 Roxen IS. All rights reserved.
+//
+// $Id: PlainText.pmod,v 1.5 2001/06/22 01:28:35 nilsson Exp $
+
 // Filter for text/plain
-// Copyright © 2000, Roxen IS.
 
 inherit Search.Filter.Base;
 

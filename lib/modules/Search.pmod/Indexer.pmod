@@ -1,3 +1,8 @@
+// This file is part of Roxen Search
+// Copyright © 2001 Roxen IS. All rights reserved.
+//
+// $Id: Indexer.pmod,v 1.12 2001/06/22 01:28:35 nilsson Exp $
+
 void index_document(Search.Database.Base db,
 		    string|Standards.URI uri,
 		    void|string language,
