@@ -1,3 +1,4 @@
+/* -*- C -*- */
 DISABLED {
 class GTK.List;
 //! This class is not yet finished enough to be usable.
@@ -46,7 +47,7 @@ NAME_ARGS(items,position);
   INT_TYPE p;
   GList *items = NULL;
   int i;
-  get_all_args("insert_items", args, "%a%d", &a, &p);
+  get_all_args("insert_items", args, "%a%i", &a, &p);
   
   for(i=0; i<a->size; i++)
     if(a->item[i].type == PIKE_T_OBJECT &&

@@ -1,3 +1,4 @@
+/* -*- C -*- */
 class GDK.GC;
 //! A GC, or Graphics Context, is used for most low-level drawing operation.
 //! <p>
@@ -96,7 +97,7 @@ void set_clip_origin(int x, int y)
 //! Set the clip mask origin to the specified point.
 {
   INT_TYPE x, y;
-  get_all_args("set_clip_origin", args, "%d%d", &x, &y);
+  get_all_args("set_clip_origin", args, "%i%i", &x, &y);
   gdk_gc_set_clip_origin((GdkGC*)THIS->obj, x, y );
   RETURN_THIS();
 }
@@ -120,7 +121,7 @@ void set_function(int fun)
 //! GDK.Invert and GDK.Copy.
 {
   INT_TYPE a;
-  get_all_args("set_function", args, "%d", &a);
+  get_all_args("set_function", args, "%i", &a);
   gdk_gc_set_function( (GdkGC*)THIS->obj, a);
   RETURN_THIS();
 }
@@ -130,7 +131,7 @@ void set_subwindow(int draw_on_subwindows)
 //! as the window in which the drawing is done.
 {
   INT_TYPE a;
-  get_all_args("set_subwindow", args, "%d", &a);
+  get_all_args("set_subwindow", args, "%i", &a);
   gdk_gc_set_subwindow( (GdkGC*)THIS->obj, a );
   RETURN_THIS();
 }

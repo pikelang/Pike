@@ -1,3 +1,4 @@
+/* -*- C -*- */
 class GTK.Clist;
 inherit GTK.Container;
 
@@ -142,7 +143,7 @@ void get_text(int row, int col)
 {
   INT_TYPE x, y;
   gchar *p = NULL;
-  get_all_args( "get_*", args, "%d%d", &x, &y );
+  get_all_args( "get_*", args, "%i%i", &x, &y );
 
   my_pop_n_elems( args );
   gtk_clist_get_text( GTK_CLIST( THIS->obj ), x, y, &p );
@@ -160,9 +161,9 @@ void set_pixmap(int row, int col, GDK.Pixmap image, GDK.Bitmap mask )
   GdkPixmap *img;
   GdkBitmap *mask = NULL;
   if(args == 3)
-    get_all_args("set_pixmap", args, "%d%d%o", &y,&x,&a );
+    get_all_args("set_pixmap", args, "%i%i%o", &y,&x,&a );
   else
-    get_all_args("set_pixmap", args, "%d%d%o%o", &y,&x,&a,&b );
+    get_all_args("set_pixmap", args, "%i%i%o%o", &y,&x,&a,&b );
 
   img = get_gdkobject( a, pixmap );
   if(b) mask = get_gdkobject( b, bitmap );
@@ -178,7 +179,7 @@ void get_pixmap(int row, int column)
   INT_TYPE x, y;
   GdkPixmap *p = NULL;
   GdkBitmap *b = NULL;
-  get_all_args( "get_*", args, "%d%d", &x, &y );
+  get_all_args( "get_*", args, "%i%i", &x, &y );
 
   my_pop_n_elems( args );
   gtk_clist_get_pixmap( GTK_CLIST( THIS->obj ), x, y, &p, &b );
@@ -212,9 +213,9 @@ void set_pixtext(int row, int column, string text,
   GdkPixmap *img;
   GdkBitmap *mask = NULL;
   if(args == 5)
-    get_all_args("set_pixmap", args, "%d%d%s%d%o", &y,&x, &t, &s, &a );
+    get_all_args("set_pixmap", args, "%i%i%s%i%o", &y,&x, &t, &s, &a );
   else
-    get_all_args("set_pixmap", args, "%d%d%s%d%o%o", &y,&x, &t, &s,&a,&b );
+    get_all_args("set_pixmap", args, "%i%i%s%i%o%o", &y,&x, &t, &s,&a,&b );
 
   img = get_gdkobject( a, pixmap );
   if(b) mask = get_gdkobject( b, bitmap );
@@ -233,7 +234,7 @@ mapping get_pixtext(int row, int col)
   gchar *t = NULL;
   GdkPixmap *p = NULL;
   GdkBitmap *b = NULL;
-  get_all_args( "get_*", args, "%d%d", &x, &y );
+  get_all_args( "get_*", args, "%i%i", &x, &y );
 
   gtk_clist_get_pixtext( GTK_CLIST( THIS->obj ), x, y, &t, &s, &p, &b );
   my_pop_n_elems( args );
@@ -272,7 +273,7 @@ void set_foreground(int row, GDK.Color color)
   struct object *a;
   INT_TYPE row;
   GdkColor *c;
-  get_all_args( "set_foreground", args, "%d%o", &row, &a );
+  get_all_args( "set_foreground", args, "%i%o", &row, &a );
   c = get_gdkobject( a, color );
   gtk_clist_set_foreground( GTK_CLIST( THIS->obj ), row, c );
 
@@ -285,7 +286,7 @@ void set_background(int row, GDK.Color color)
   struct object *a;
   INT_TYPE row;
   GdkColor *c;
-  get_all_args( "set_background", args, "%d%o", &row, &a );
+  get_all_args( "set_background", args, "%i%o", &row, &a );
   c = get_gdkobject( a, color );
   gtk_clist_set_background( GTK_CLIST( THIS->obj ), row, c );
 
@@ -348,7 +349,7 @@ void set_row_data(int row, object data)
 {
   INT_TYPE row;
   struct object *obj;
-  get_all_args( "set_row_data", args, "%d%o", &row, &obj );
+  get_all_args( "set_row_data", args, "%i%o", &row, &obj );
  add_ref(obj);
   gtk_clist_set_row_data_full( GTK_CLIST( THIS->obj ), row, obj,
                                (void *)pgtk_free_object );
@@ -360,7 +361,7 @@ object get_row_data(int row)
 {
   INT_TYPE row;
   struct object *o;
-  get_all_args( "get_row_data", args, "%d", &row );
+  get_all_args( "get_row_data", args, "%i", &row );
 
   o = gtk_clist_get_row_data( GTK_CLIST( THIS->obj ), row );
   my_pop_n_elems( args );
@@ -402,7 +403,7 @@ mapping get_selection_info(int x, int y)
 {
   INT_TYPE x, y;
   gint r=-1, c=-1;
-  get_all_args( "get_selection_info", args, "%d%d", &x, &y );
+  get_all_args( "get_selection_info", args, "%i%i", &x, &y );
   gtk_clist_get_selection_info( GTK_CLIST( THIS->obj ), x, y, &r, &c );
 
   my_pop_n_elems( args );
@@ -429,7 +430,7 @@ GDK.Color get_foreground( int row )
   GtkCList *clist = GTK_CLIST( THIS->obj );
   GtkStyle *style;
   INT_TYPE row;
-  get_all_args("get_foreground", args, "%d", &row );
+  get_all_args("get_foreground", args, "%i", &row );
   my_pop_n_elems(args);
   if (row < 0 || row >= clist->rows)
     Pike_error("Invalid row.\n");
@@ -457,7 +458,7 @@ GDK.Color get_background( int row )
   GtkCList *clist = GTK_CLIST( THIS->obj );
   GtkStyle *style;
   INT_TYPE row;
-  get_all_args("get_background", args, "%d", &row );
+  get_all_args("get_background", args, "%i", &row );
   my_pop_n_elems(args);
   if (row < 0 || row >= clist->rows)
     Pike_error("Invalid row.\n");

@@ -1,3 +1,4 @@
+/* -*- C -*- */
 %{
 #ifndef __NT__
 #include <gdk/gdkprivate.h>
@@ -282,7 +283,7 @@ int main_iteration_do(int block)
 //! event before returning.
 {
   INT_TYPE n;
-  get_all_args( "gtk_main_iteration_do", args, "%d", &n );
+  get_all_args( "gtk_main_iteration_do", args, "%i", &n );
   push_int( g_main_iteration( n ) );
 }
 
@@ -382,8 +383,8 @@ void move_cursor( int dx, int dy )
 //! Note that this is a low-level X11 function, and thus only works
 //! when GDK uses X11.
 {
-  int x, y;
-  get_all_args( "move_cursor", args, "%d%d", &x, &y );
+  INT_TYPE x, y;
+  get_all_args( "move_cursor", args, "%i%i", &x, &y );
   
   XWarpPointer( GDK_DISPLAY(), None, None, 0, 0, 0, 0, x, y );
 }
@@ -395,10 +396,10 @@ void move_cursor_abs( GDK.Window w, int dx, int dy )
 //! Note that this is a low-level X11 function, and thus only works
 //! when GDK uses X11.
 {
-  int x, y;
+  INT_TYPE x, y;
   struct object *o;
   GdkWindowPrivate *priv;
-  get_all_args( "move_cursor_abs", args, "%o%d%d", &o, &x, &y );
+  get_all_args( "move_cursor_abs", args, "%o%i%i", &o, &x, &y );
   priv = (GdkWindowPrivate *)get_gdkobject( o, window );
   if( !priv )
     Pike_error("No window specified!\n");

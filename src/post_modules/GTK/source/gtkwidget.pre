@@ -1,3 +1,4 @@
+/* -*- C -*- */
 class GTK.Widget;
 inherit GTK.Object;
 %{
@@ -169,7 +170,7 @@ void copy_area(GDK.GC gc, int xdest, int ydest, GTK.Widget source,
   struct object *gc, *source;
   GdkWindow *win;
   INT_TYPE xd, yd, xs, ys, w, h;
-  get_all_args("copy_area",args, "%o%d%d%o%d%d%d%d",
+  get_all_args("copy_area",args, "%o%i%i%o%i%i%i%i",
 	       &gc, &xd, &yd, &source, &xs, &ys, &w, &h);
 
   if(get_gdkobject( source, drawable ))
@@ -307,7 +308,7 @@ void shape_combine_mask( GDK.Bitmap shape, int xoffset, int yoffset )
 {
   struct object *m;
   INT_TYPE x, y;
-  get_all_args("shape_combine", args, "%o%d%d", &m, &x, &y);
+  get_all_args("shape_combine", args, "%o%i%i", &m, &x, &y);
   gtk_widget_shape_combine_mask( GTK_WIDGET( THIS->obj ),
 				 get_gdkobject(m,bitmap), x, y);
   RETURN_THIS();
@@ -542,7 +543,7 @@ void set_bitmap_cursor( GDK.Bitmap source, GDK.Bitmap mask,
 {
   struct object *s, *m, *fg, *bg;
   INT_TYPE xh, yh;
-  get_all_args("set_bitmap_cursor", args, "%o%o%o%o%d%d",
+  get_all_args("set_bitmap_cursor", args, "%o%o%o%o%i%i",
 	       &s,&m,&fg,&bg,&xh,&yh);
   gdk_window_set_cursor( TWIN,
 		 gdk_cursor_new_from_pixmap( get_gdkobject( s, pixmap ),
@@ -778,7 +779,7 @@ void drag_dest_set(int flags, array(array) targets, int actions )
   INT_TYPE i, f, j;
   struct array *a;
   GtkTargetEntry *entries = NULL;
-  get_all_args( "drag_dest_set", args, "%d%a%d", &i, &a, &f );
+  get_all_args( "drag_dest_set", args, "%i%a%i", &i, &a, &f );
   if(a->size)
     entries = g_malloc(sizeof(GtkTargetEntry)*a->size);
 
@@ -817,7 +818,7 @@ void drag_source_set(int flags, array(array) targets, int actions)
   INT_TYPE i, f, j;
   struct array *a;
   GtkTargetEntry *entries = NULL;
-  get_all_args( "drag_source_set", args, "%d%a%d", &i, &a, &f );
+  get_all_args( "drag_source_set", args, "%i%a%i", &i, &a, &f );
 
   if(a->size)
     entries = g_malloc(sizeof(GtkTargetEntry)*a->size);
@@ -885,7 +886,7 @@ void drag_get_data(GDK.DragContext ctx, int time)
   INT_TYPE t;
   struct object *_ctx;
   GdkDragContext *ctx;
-  get_all_args( "drag_get_data", args, "%o%d", &_ctx, &t );
+  get_all_args( "drag_get_data", args, "%o%i", &_ctx, &t );
   ctx = (GdkDragContext *)get_gdkobject( _ctx, drag_context );
   if(ctx && ctx->targets)
     gtk_drag_get_data( GTK_WIDGET( THIS->obj ), ctx,

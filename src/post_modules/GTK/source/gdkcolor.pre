@@ -1,3 +1,4 @@
+/* -*- C -*- */
 class GDK.Color;
 //! The GDK.Color object is used to represent a color.
 //! When you call GDK.Color(r,g,b) the color will be allocated
@@ -23,7 +24,7 @@ void create(object|int color_or_r,int|void g,int|void b)
   }
   else
   {
-    get_all_args("GdkColor", args, "%d%d%d", &r, &g, &b);
+    get_all_args("GdkColor", args, "%i%i%i", &r, &g, &b);
     r*=257;
     g*=257;
     b*=257;

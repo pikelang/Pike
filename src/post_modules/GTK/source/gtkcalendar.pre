@@ -1,3 +1,4 @@
+/* -*- C -*- */
 class GTK.Calendar;
 inherit GTK.Widget;
 //! A calendar widget.
@@ -112,7 +113,7 @@ void set_marked_date_color(int index, GDK.Color color)
 {
   INT_TYPE n;
   struct object *o;
-  get_all_args( "set_marked_date_color", args, "%d%o", &n, &o );
+  get_all_args( "set_marked_date_color", args, "%i%o", &n, &o );
   if(!get_gdkobject(o, color))
     Pike_error("Argument 2 is not a GDK.Color object\n");
   n--;

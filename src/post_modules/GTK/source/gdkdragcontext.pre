@@ -1,3 +1,4 @@
+/* -*- C -*- */
 class GDK.DragContext;
 //! The drag context contains all information about the drag'n'drop
 //! connected to the signal to which it is an argument.
@@ -18,7 +19,7 @@ void drag_finish(int success,int del,int time)
 //! time is the current time.
 {
   INT_TYPE a, b, t;
-  get_all_args("drag_finish", args, "%d%d%d", &a, &b, &t );
+  get_all_args("drag_finish", args, "%i%i%i", &a, &b, &t );
   gtk_drag_finish(((GdkDragContext *)THIS->obj), a, b, t);
   RETURN_THIS();
 }
@@ -27,7 +28,7 @@ void drag_status(int action, int time)
 //! Setting action to -1 means use the suggested action
 {
   INT_TYPE o, t;
-  get_all_args( "status", args, "%d%d", &o, &t );
+  get_all_args( "status", args, "%i%i", &o, &t );
   if( o == -1 )
     o = ((GdkDragContext *)THIS->obj)->suggested_action;
   gdk_drag_status( ((GdkDragContext *)THIS->obj), o, t );
@@ -37,7 +38,7 @@ void drag_status(int action, int time)
 void drag_drop(int time)
 {
   INT_TYPE t;
-  get_all_args( "drop", args, "%d", &t );
+  get_all_args( "drop", args, "%i", &t );
   gdk_drag_drop( ((GdkDragContext *)THIS->obj), t);
   RETURN_THIS();
 }
@@ -47,7 +48,7 @@ void drag_abort(int time)
 //! Abort the drag
 {
   INT_TYPE t;
-  get_all_args( "abort", args, "%d", &t );
+  get_all_args( "abort", args, "%i", &t );
   gdk_drag_abort( ((GdkDragContext *)THIS->obj), t);
   RETURN_THIS();
 }
@@ -55,7 +56,7 @@ void drag_abort(int time)
 void drop_reply(int ok, int time)
 {
   INT_TYPE t, o;
-  get_all_args( "reply", args, "%d%d", &o, &t );
+  get_all_args( "reply", args, "%i%i", &o, &t );
   gdk_drop_reply( ((GdkDragContext *)THIS->obj), o, t);
   RETURN_THIS();
 }
@@ -66,7 +67,7 @@ void drag_set_icon_widget(GTK.Widget widget,int hot_x,int hot_y)
 {
   struct object *_o;
   INT_TYPE x, y;
-  get_all_args( "drag_set_icon_window", args, "%o%d%d",
+  get_all_args( "drag_set_icon_window", args, "%o%i%i",
                 &_o, &x, &y);
   gtk_drag_set_icon_widget(((GdkDragContext *)THIS->obj),
                            GTK_WIDGET(get_pgtkobject(_o,pgtk_widget_program)),

@@ -1,3 +1,4 @@
+/* -*- C -*- */
 class GTK.Menu;
 inherit GTK.MenuShell;
 //! A GTK.Menu is a W(MenuShell) that implements a drop down menu
@@ -31,7 +32,7 @@ void popup(int|void button_pressed_to_show_menu)
 {
   INT_TYPE button = 3;
   if( args )
-    get_all_args( "popup", args, "%d", &button );
+    get_all_args( "popup", args, "%i", &button );
   gtk_menu_popup( GTK_MENU(THIS->obj), NULL,NULL,NULL,NULL,
                   button, pgtk_last_event_time() );
   RETURN_THIS();

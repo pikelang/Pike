@@ -1,3 +1,4 @@
+/* -*- C -*- */
 DISABLED {
 
 require gnome;
@@ -16,7 +17,7 @@ NAME_ARGS(anti_alias);
   pgtk_verify_gnome_setup();
   pgtk_verify_not_inited();
   if( args )
-    get_all_args( "create", args, "%d", &anti );
+    get_all_args( "create", args, "%i", &anti );
   pop_n_elems( args );
   if( anti )
     THIS->obj = GTK_OBJECT(gnome_canvas_new_aa());

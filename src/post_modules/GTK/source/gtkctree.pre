@@ -1,3 +1,4 @@
+/* -*- C -*- */
 class GTK.Ctree;
 inherit GTK.Clist;
 //! The GtkCTree widget is used for showing a hierarchical tree to the
@@ -238,7 +239,7 @@ string node_get_text(GTK.CTreeNode node, int column)
   struct object *x;
   INT_TYPE y;
   gchar *p = NULL;
-  get_all_args( "get_*", args, "%o%d", &x, &y );
+  get_all_args( "get_*", args, "%o%i", &x, &y );
 
   my_pop_n_elems( args );
   if(y==0)
@@ -263,7 +264,7 @@ mapping node_get_pixmap( GTK.CtreeNode node, int column )
   INT_TYPE y;
   GdkPixmap *p = NULL;
   GdkBitmap *b = NULL;
-  get_all_args( "get_*", args, "%o%d", &x, &y );
+  get_all_args( "get_*", args, "%o%i", &x, &y );
 
   my_pop_n_elems( args );
   gtk_ctree_node_get_pixmap( GTK_CTREE( THIS->obj ),
@@ -300,7 +301,7 @@ mapping node_get_pixtext(GTK.CTreeNode n, int columne )
   GdkPixmap *p = NULL;
   GdkBitmap *b = NULL;
   guint8 s = 0;
-  get_all_args( "get_*", args, "%o%d", &x, &y );
+  get_all_args( "get_*", args, "%o%i", &x, &y );
 
   gtk_ctree_node_get_pixtext( GTK_CTREE( THIS->obj ),
                               get_pgdkobject(x,pgtk_ctree_node_program),

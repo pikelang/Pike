@@ -1,3 +1,4 @@
+/* -*- C -*- */
 class GDK.Bitmap;
 inherit GDK.Drawable;
 //! A bitmap is a black and white pixmap. Most commonly used as masks
@@ -14,12 +15,12 @@ void create(int|Image.Image xsize_or_image, int|void ysize, string|void bitmap)
   pgtk_verify_not_inited();
   if(args == 3)
   {
-    get_all_args("create", args, "%d%d%s", &x, &y, &d );
+    get_all_args("create", args, "%i%i%s", &x, &y, &d );
   } else if(args==1) {
     struct object *o;
     get_all_args("create", args, "%o", &o );
-    apply(o, "xsize", 0);  get_all_args("internal", 1, "%d", &x ); pop_stack();
-    apply(o, "ysize", 0);  get_all_args("internal", 1, "%d", &y ); pop_stack();
+    apply(o, "xsize", 0);  get_all_args("internal", 1, "%i", &x ); pop_stack();
+    apply(o, "ysize", 0);  get_all_args("internal", 1, "%i", &y ); pop_stack();
 
     /* Now we have the image size.. Lets create the bitmap... */
     apply(o, "tobitmap", 0);

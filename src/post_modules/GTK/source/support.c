@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: support.c,v 1.37 2003/09/10 15:21:58 mast Exp $
+|| $Id: support.c,v 1.38 2003/10/13 17:24:07 grubba Exp $
 */
 
 #include <version.h>
@@ -100,7 +100,7 @@ GdkImage *gdkimage_from_pikeimage( struct object *img, int fast, GdkImage *i )
   /* 1a: create the actual image... */
   TIMER_INIT("Getting extents");
   apply(img, "xsize", 0); apply(img, "ysize", 0);
-  get_all_args("internal", 2, "%d%d", &x, &y);
+  get_all_args("internal", 2, "%i%i", &x, &y);
   pop_n_elems( 2 );
 
 

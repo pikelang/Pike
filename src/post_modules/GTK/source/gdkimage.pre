@@ -1,3 +1,4 @@
+/* -*- C -*- */
 class GDK.Image;
 //! A gdk (low level) image.
 //! Mainly used for W(Image) objects.
@@ -87,7 +88,7 @@ void grab(GTK.Widget widget, int xoffset, int yoffset, int width, int height )
   struct object *o;
   INT_TYPE x, y, w, h;
 
-  get_all_args("grab", args, "%o%d%d%d%d", &o, &x, &y, &w, &h);
+  get_all_args("grab", args, "%o%i%i%i%i", &o, &x, &y, &w, &h);
 
   if(!((win=get_gdkobject( o, drawable )))
      && get_pgtkobject( o, pgtk_widget_program))
@@ -118,7 +119,7 @@ void set(Image.Image|int image_or_xsize,int|void ysize)
 						 (void *)THIS->obj );
   } else {
     INT_TYPE x, y;
-    get_all_args("gdkImage", args, "%d%d", &x, &y);
+    get_all_args("gdkImage", args, "%i%i", &x, &y);
     if(THIS->obj)
       gdk_image_destroy( (void *)THIS->obj );
     THIS->obj = (void *)gdk_image_new(THIS->extra_int,
@@ -136,7 +137,7 @@ int get_pixel(int x, int y)
 //! rgb triple. See get_pnm.
 {
   INT_TYPE x, y;
-  get_all_args("get_pixel", args, "%d%d", &x, &y);
+  get_all_args("get_pixel", args, "%i%i", &x, &y);
   if(!THIS->obj) Pike_error("No image.\n");
   my_pop_n_elems(args);
   push_int( gdk_image_get_pixel( (void *)THIS->obj, x, y ) );
@@ -148,7 +149,7 @@ void set_pixel( int x, int y, int pixel )
 //! See get_pixel and set.
 {
   INT_TYPE x, y, to;
-  get_all_args("set_pixel", args, "%d%d%d", &x, &y, &to);
+  get_all_args("set_pixel", args, "%i%i%i", &x, &y, &to);
   if(!THIS->obj) Pike_error("No image.\n");
   gdk_image_put_pixel( (void *)THIS->obj, x, y, to );
   RETURN_THIS();

@@ -1,3 +1,4 @@
+/* -*- C -*- */
 class GTK.Curve;
 inherit GTK.DrawingArea;
 //! IMG: GTK.Curve()
@@ -7,9 +8,9 @@ void set_gamma( float gamma );
 void set_range( float min_x, float max_x, float min_y, float max_y );
 array(float) get_vector(int num_points)
 {
-  int num_points, q=0;
+  INT_TYPE num_points, q=0;
   gfloat *vector;
-  get_all_args("get_vector", args, "%d", &num_points);
+  get_all_args("get_vector", args, "%i", &num_points);
   my_pop_n_elems(args);
   vector = g_malloc(sizeof(gfloat) * (int)num_points);
   gtk_curve_get_vector( GTK_CURVE(THIS->obj), (int)num_points, vector );

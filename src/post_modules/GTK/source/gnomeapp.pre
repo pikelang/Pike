@@ -1,3 +1,4 @@
+/* -*- C -*- */
 require gnome;
 class Gnome.App;
 inherit GTK.Window;
@@ -253,7 +254,7 @@ Gnome.AppProgressKey progress_timeout(string prompt,
   INT_TYPE interval;
   GnomeAppProgressKey k;
   struct object *res;
-  get_all_args( "progress_timeout", args, "%s%d%*%*",
+  get_all_args( "progress_timeout", args, "%s%i%*%*",
                 &message, &interval, &d->cb, &d->args );
   k = gnome_app_progress_timeout(GNOME_APP(THIS->obj), message, interval,
                                  (void *)progressfunc,

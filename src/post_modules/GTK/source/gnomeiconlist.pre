@@ -1,3 +1,4 @@
+/* -*- C -*- */
 require gnome;
 class Gnome.IconList;
 inherit GTK.Widget;
@@ -31,7 +32,7 @@ void create(int icon_widt,int flags)
 //! changed.</p>
 {
   INT_TYPE a, b;
-  get_all_args( "create", args, "%d%d", &a, &b );
+  get_all_args( "create", args, "%i%i", &a, &b );
   pgtk_verify_gnome_setup();
   pgtk_verify_not_inited();
   pop_n_elems( args );
@@ -127,7 +128,7 @@ void set_icon_data(int icon, object data )
 {
   INT_TYPE row;
   struct object *obj;
-  get_all_args( "set_icon_data", args, "%d%o", &row, &obj );
+  get_all_args( "set_icon_data", args, "%i%o", &row, &obj );
   add_ref(obj);
   gnome_icon_list_set_icon_data_full( GNOME_ICON_LIST( THIS->obj ),
                                       row, obj, (void *)freeit );
@@ -139,7 +140,7 @@ object get_icon_data(int icon)
 {
   INT_TYPE row;
   struct object *o;
-  get_all_args( "get_row_data", args, "%d", &row );
+  get_all_args( "get_row_data", args, "%i", &row );
 
   o = gnome_icon_list_get_icon_data( GNOME_ICON_LIST( THIS->obj ), row );
   my_pop_n_elems( args );

@@ -1,3 +1,4 @@
+/* -*- C -*- */
 class GDK.Region;
 %{
 static void return_gdkregion( int n, void *r )
@@ -50,7 +51,7 @@ int point_in(int x, int y)
 //! Returns true if the given point resides in the given region
 {
   INT_TYPE x, y;
-  get_all_args( "point_in", args, "%d%d", &x, &y );
+  get_all_args( "point_in", args, "%i%i", &x, &y );
   my_pop_n_elems(args);
   push_int( gdk_region_point_in( (GdkRegion *)THIS->obj, x, y ) );
 }
@@ -75,7 +76,7 @@ void offset(int dx, int dy)
 //! Offset(move) the region by dx,dy pixels.
 {
   INT_TYPE dx, dy;
-  get_all_args( "offset", args, "%d%d", &dx, &dy );
+  get_all_args( "offset", args, "%i%i", &dx, &dy );
   gdk_region_offset( (GdkRegion *)THIS->obj, dx, dy );
   RETURN_THIS();
 }
@@ -87,7 +88,7 @@ void shrink(int dx, int dy)
 //! region, and negative values expand the region.
 {
   INT_TYPE dx, dy;
-  get_all_args( "shrink", args, "%d%d", &dx, &dy );
+  get_all_args( "shrink", args, "%i%i", &dx, &dy );
   gdk_region_shrink( (GdkRegion *)THIS->obj, dx, dy );
   RETURN_THIS();
 }

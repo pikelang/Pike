@@ -1,3 +1,4 @@
+/* -*- C -*- */
 class GTK.AccelGroup;
 inherit GTK.Data;
 //! An AccelGroup stores keybindings.
@@ -26,7 +27,7 @@ void add_accel(GTK.Widget widget, string signal,
   char *sig;
   INT_TYPE mods;
   INT_TYPE flags;
-  get_all_args("add_accel", args, "%o%s%d%d", &o, &sig, &k, &mods, &flags );
+  get_all_args("add_accel", args, "%o%s%i%i", &o, &sig, &k, &mods, &flags );
   gtk_accel_group_add((void *)THIS->obj, k, mods, flags,
                       get_gtkobject( o ), sig );
   RETURN_THIS();
@@ -36,7 +37,7 @@ void remove(GTK.Widget widget, int key, int modifiers )
 {
   struct object *o;
   INT_TYPE k, mods;
-  get_all_args("remove", args, "%o%d%d", &o, &k, &mods );
+  get_all_args("remove", args, "%o%i%i", &o, &k, &mods );
   gtk_accel_group_remove((void *)THIS->obj, k,mods, get_gtkobject( o ));
   RETURN_THIS();
 }

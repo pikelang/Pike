@@ -1,3 +1,4 @@
+/* -*- C -*- */
 class GTK.Object;
 //! The basic GTK class.
 //! All other GTK classes inherit this class.
@@ -33,7 +34,7 @@ void signal_disconnect(mixed signal_id)
 //! the return value of signal_connect(). See signal connect for more info.
 {
   INT_TYPE i;
-  get_all_args("signal_disconnect", args, "%d", &i);
+  get_all_args("signal_disconnect", args, "%i", &i);
   gtk_signal_disconnect( GTK_OBJECT( THIS->obj ), i );
 }
 
@@ -43,7 +44,7 @@ void signal_block(mixed signal_id)
 //! See signal connect for more info.
 {
   INT_TYPE i;
-  get_all_args("signal_block", args, "%d", &i);
+  get_all_args("signal_block", args, "%i", &i);
   gtk_signal_handler_block( GTK_OBJECT( THIS->obj ), i );
 }
 
@@ -52,7 +53,7 @@ void signal_unblock(mixed signal_id)
 //! signal_connect for more info.
 {
   INT_TYPE i;
-  get_all_args("signal_unblock", args, "%d", &i);
+  get_all_args("signal_unblock", args, "%i", &i);
   gtk_signal_handler_unblock( GTK_OBJECT( THIS->obj ), i );
 }
 
