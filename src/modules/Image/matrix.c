@@ -1,9 +1,9 @@
-/* $Id: matrix.c,v 1.28 2000/08/11 18:44:04 grubba Exp $ */
+/* $Id: matrix.c,v 1.29 2000/08/23 18:56:38 grubba Exp $ */
 
 /*
 **! module Image
 **! note
-**!	$Id: matrix.c,v 1.28 2000/08/11 18:44:04 grubba Exp $
+**!	$Id: matrix.c,v 1.29 2000/08/23 18:56:38 grubba Exp $
 **! class Image
 */
 
@@ -98,19 +98,18 @@ static INLINE int getrgb(struct image *img,
    img->rgb.r=(unsigned char)sp[-args+args_start].u.integer;
    img->rgb.g=(unsigned char)sp[1-args+args_start].u.integer;
    img->rgb.b=(unsigned char)sp[2-args+args_start].u.integer;
-   if (args-args_start>=4) 
-      if (sp[3-args+args_start].type!=T_INT)
+
+   if (args-args_start>=4) {
+      if (sp[3-args+args_start].type!=T_INT) {
          error("Illegal alpha argument to %s\n",name);
-      else
-      {
-         img->alpha=sp[3-args+args_start].u.integer;
-	 return 4;
       }
-   else
-   {
-      img->alpha=0;
-      return 3;
+
+      img->alpha=sp[3-args+args_start].u.integer;
+      return 4;
    }
+
+   img->alpha=0;
+   return 3;
 }
 
 
@@ -1099,7 +1098,7 @@ void image_rotate_expand(INT32 args)
 
 void img_translate(INT32 args,int expand)
 {
-   double xt,yt;
+   double xt = 0.0, yt = 0.0;
    int y,x;
    struct object *o;
    struct image *img;

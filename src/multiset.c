@@ -3,6 +3,7 @@
 ||| Pike is distributed as GPL (General Public License)
 ||| See the files COPYING and DISCLAIMER for more information.
 \*/
+/**/
 #include "global.h"
 #include "array.h"
 #include "multiset.h"
@@ -16,7 +17,7 @@
 #include "gc.h"
 #include "security.h"
 
-RCSID("$Id: multiset.c,v 1.26 2000/07/28 17:16:55 hubbe Exp $");
+RCSID("$Id: multiset.c,v 1.27 2000/08/23 18:53:47 grubba Exp $");
 
 struct multiset *first_multiset;
 
@@ -227,11 +228,13 @@ void describe_multiset(struct multiset *l,struct processing *p,int indent)
       return;
     }
   }
-  
-  sprintf(buf, l->ind->size == 1 ? "(< /* %ld element */\n" :
-	                           "(< /* %ld elements */\n",
-	  (long)l->ind->size);
-  my_strcat(buf);
+
+  if (l->ind->size == 1) {
+    my_strcat("(< /* 1 element */\n");
+  } else {
+    sprintf(buf, "(< /* %ld elements */\n", (long)l->ind->size);
+    my_strcat(buf);
+  }
   describe_array_low(l->ind,&doing,indent);
   my_putchar('\n');
   for(e=2; e<indent; e++) my_putchar(' ');

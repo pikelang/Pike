@@ -1,10 +1,10 @@
-/* $Id: colortable_lookup.h,v 1.12 2000/08/11 19:11:42 grubba Exp $ */
+/* $Id: colortable_lookup.h,v 1.13 2000/08/23 18:59:28 grubba Exp $ */
 /* included w/ defines in colortable.c */
 
 /*
 **! module Image
 **! note
-**!	$Id: colortable_lookup.h,v 1.12 2000/08/11 19:11:42 grubba Exp $
+**!	$Id: colortable_lookup.h,v 1.13 2000/08/23 18:59:28 grubba Exp $
 **! class colortable
 */
 
@@ -545,6 +545,8 @@ void (*NCTLU_SELECT_FUNCTION(struct neo_colortable *nct))
 	 fatal("lookup select (%s:%d) couldn't find the lookup mode\n",
 	       __FILE__,__LINE__);
    }
+   /* NOT_REACHED */
+   return 0;
 }
 
 int NCTLU_EXECUTE_FUNCTION(struct neo_colortable *nct,
