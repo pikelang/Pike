@@ -5,7 +5,7 @@
 \*/
 /**/
 #include "global.h"
-RCSID("$Id: docode.c,v 1.62 2000/01/04 00:39:04 grubba Exp $");
+RCSID("$Id: docode.c,v 1.63 2000/01/04 01:29:11 grubba Exp $");
 #include "las.h"
 #include "program.h"
 #include "language.h"
@@ -963,43 +963,48 @@ static int do_docode2(node *n,int flags)
 	for(tmp1=current_switch_values_on_stack; tmp1 > 1; tmp1--)
 	  if(is_equal(sp-tmp1, sp-1))
 	    yyerror("Duplicate case.");
+      } else {
+	push_int(0);
+	current_switch_values_on_stack++;
+      }
+      current_switch_jumptable[current_switch_case++]=ins_label(-1);
 
-	current_switch_jumptable[current_switch_case++]=ins_label(-1);
+      if(CDR(n))
+      {
+	current_switch_jumptable[current_switch_case]=
+	  current_switch_jumptable[current_switch_case-1];
+	current_switch_case++;
 
-	if(CDR(n))
+	if(CAR(n))
 	{
+	  if(!is_const(CDR(n)))
+	    yyerror("Case label isn't constant.");
+	  
 	  current_switch_jumptable[current_switch_case]=
 	    current_switch_jumptable[current_switch_case-1];
 	  current_switch_case++;
 
-	  if(CAR(n))
-	  {
-	    if(!is_const(CDR(n)))
-	      yyerror("Case label isn't constant.");
-	  
-	    current_switch_jumptable[current_switch_case]=
-	      current_switch_jumptable[current_switch_case-1];
-	    current_switch_case++;
-
-	    if (!num_parse_error) {
-	      tmp1=eval_low(CDR(n));
-	      if(tmp1<1)
-	      {
-		yyerror("Error in second half of case label.");
-		push_int(0);
-		tmp1=1;
-	      }
-	      pop_n_elems(tmp1-1);
-	      current_switch_values_on_stack++;
-	      for(tmp1=current_switch_values_on_stack; tmp1 > 1; tmp1--)
-		if(is_equal(sp-tmp1, sp-1))
-		  yyerror("Duplicate case.");
+	  if (!num_parse_error) {
+	    tmp1=eval_low(CDR(n));
+	    if(tmp1<1)
+	    {
+	      yyerror("Error in second half of case label.");
+	      push_int(0);
+	      tmp1=1;
 	    }
-	    current_switch_jumptable[current_switch_case++]=-1;
+	    pop_n_elems(tmp1-1);
+	    current_switch_values_on_stack++;
+	    for(tmp1=current_switch_values_on_stack; tmp1 > 1; tmp1--)
+	      if(is_equal(sp-tmp1, sp-1))
+		yyerror("Duplicate case.");
+	  } else {
+	    push_int(0);
+	    current_switch_values_on_stack++;
 	  }
-	}else{
 	  current_switch_jumptable[current_switch_case++]=-1;
 	}
+      }else{
+	current_switch_jumptable[current_switch_case++]=-1;
       }
     }
     return 0;
