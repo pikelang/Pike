@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: cpp.c,v 1.152 2004/11/14 13:00:04 nilsson Exp $
+|| $Id: cpp.c,v 1.153 2004/11/14 18:15:46 mast Exp $
 */
 
 #include "global.h"
@@ -795,9 +795,23 @@ static void simple_add_define(struct cpp *this,
 		  fprintf(stderr,"\n");					\
 		  fflush(stderr)
 
-#define FIND_EOL() do {				\
-    while(pos < len && data[pos]!='\n') pos++;	\
-  } while(0)
+#define FIND_EOL() do {						\
+    while(pos < len && data[pos]!='\n') pos++;			\
+    if (data[pos] == '\\') {					\
+      if (data[pos+1] == '\n') {				\
+	pos+=2;							\
+      } else if ((data[pos+1] == '\r') &&			\
+		 (data[pos+2] == '\n')) {			\
+	pos+=3;							\
+      } else {							\
+	break;							\
+      }								\
+    } else {							\
+      break;							\
+    }								\
+    PUTNL();							\
+    this->current_line++;					\
+  } while (1)
 
 /* Skips horizontal whitespace and newlines. */
 #define SKIPWHITE() do {					\
