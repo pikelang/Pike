@@ -31,12 +31,6 @@
 #include "module_support.h"
 #include "operators.h"
 
-/* Postgres includes */
-/* A hack, because PIKE_DEBUG is defined both in pike's machine.h and in postgres */
-#ifdef PIKE_DEBUG
-#undef PIKE_DEBUG
-#endif 
-
 #include <postgres.h>
 #include <libpq-fe.h>
 
@@ -62,7 +56,7 @@ static void pgdebug (char * a, ...) {}
 
 struct program * postgres_program;
 
-RCSID("$Id: postgres.c,v 1.12 1999/02/10 22:03:21 hubbe Exp $");
+RCSID("$Id: postgres.c,v 1.13 1999/04/30 07:22:53 hubbe Exp $");
 
 #define THIS ((struct pgres_object_data *) fp->current_storage)
 
@@ -474,7 +468,6 @@ void pike_module_init (void)
 
 	postgres_program = end_program();
 	add_program_constant("postgres",postgres_program,0);
-	add_ref(postgres_program);
 
 	add_string_constant("version",PGSQL_VERSION,0);
 
@@ -485,4 +478,19 @@ void pike_module_init (void)
 void pike_module_init(void) {}
 #endif /* HAVE_POSTGRES */
 
-void pike_module_exit(void) {}
+void pike_module_exit(void)
+{
+  extern struct program * pgresult_program;
+
+  if(postgres_program)
+  {
+    free_program(postgres_program);
+    postgres_program=0;
+  }
+
+  if(pgresult_program)
+  {
+    free_program(pgresult_program);
+    pgresult_program=0;
+  }
+}
