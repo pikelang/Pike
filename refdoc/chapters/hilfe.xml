@@ -256,14 +256,14 @@ expression was evaluated in. Useful when debugging Hilfe (i.e.
 investigating why valid Pike expressions doesn't compile).</p>
 <example>
 > int i=5;
-> i=i+5;
+> i+=5;
 (1) Result: 10
 > dump wrapper
 Last compiled wrapper:
 001: #pragma unpragma_strict_types
 002: mapping(string:mixed) ___hilfe = ___Hilfe->variables;
 003: # 1
-004: mixed ___HilfeWrapper() { return (([mapping(string:int)]___hilfe)->i)=(([mapping(string:int)]___hilfe)->i)+5; ; }
+004: mixed ___HilfeWrapper() { return (([mapping(string:int)]___hilfe)->i)+=5; ; }
 005:
 </example>
 </subsection>
@@ -309,7 +309,7 @@ evaluation times.</c></r>
 Pike string. The sprintf will be given the arguments shown in
 the table below.</c></r>
 </matrix>
-<p></p>
+
 <matrix>
 <r><c>0</c><c>The result as a string.</c></r>
 <r><c>1</c><c>The result number in the history.</c></r>
