@@ -1,6 +1,6 @@
 
 /*
- * $Id: tga.c,v 1.21 2000/08/11 18:29:53 grubba Exp $
+ * $Id: tga.c,v 1.22 2000/08/13 14:43:15 grubba Exp $
  *
  *  Targa codec for pike. Based on the tga plugin for gimp.
  *
@@ -81,7 +81,7 @@
 #include "module_magic.h"
 
 
-RCSID("$Id: tga.c,v 1.21 2000/08/11 18:29:53 grubba Exp $");
+RCSID("$Id: tga.c,v 1.22 2000/08/13 14:43:15 grubba Exp $");
 
 #ifndef MIN
 # define MIN(X,Y) ((X)<(Y)?(X):(Y))
@@ -255,8 +255,8 @@ static int std_fputc( int c, struct buffer *fp )
 
 /* Decode a bufferful of file. */
 
-static size_t rle_fread (guchar *buf, size_t datasize, size_t nelems,
-			 struct buffer *fp)
+static ptrdiff_t rle_fread (guchar *buf, size_t datasize, size_t nelems,
+			    struct buffer *fp)
 {
   /* If we want to call this function more than once per image, change the
      variables below to be static..  */
