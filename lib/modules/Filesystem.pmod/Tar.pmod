@@ -1,5 +1,5 @@
 /*
- * $Id: Tar.pmod,v 1.19 2003/01/20 17:44:00 nilsson Exp $
+ * $Id: Tar.pmod,v 1.20 2003/09/08 18:09:48 nilsson Exp $
  */
 
 #pike __REAL_VERSION__
@@ -146,7 +146,8 @@ class _Tar  // filesystem
 	  }
 	} else if (arch_name == "././@LongLink") {
 	  // GNU tar
-	  // FIXME: Data contains full filename of next record.
+	  // Data contains full filename of next record.
+	  pseudo = 2;
 	}
       }
       else
@@ -210,6 +211,7 @@ class _Tar  // filesystem
 
     this_program::fd = fd;
     int pos = 0; // fd is at position 0 here
+    string next_name;
     for(;;)
     {
       Record r;
@@ -221,8 +223,15 @@ class _Tar  // filesystem
       r = Record(s, pos+512);
       r->filesystem = parent;
 
-      if(r->arch_name!="")  // valid file?
+      if(r->arch_name!="" && !r->pseudo) {  // valid file?
+	if(next_name) {
+	  r->fullpath = next_name;
+	  r->name = (next_name/"/")[-1];
+	}
 	entries += ({ r });
+      }
+      if(r->pseudo==2)
+	next_name = combine_path("/", r->open("r")->read(r->size-1));
 
       pos += 512 + r->size;
       if(pos%512)
