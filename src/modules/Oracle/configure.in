@@ -1,5 +1,5 @@
 #
-# $Id: configure.in,v 1.33 2002/01/27 00:54:00 mast Exp $
+# $Id: configure.in,v 1.34 2002/08/13 12:09:54 grubba Exp $
 #
 # Configure script for the oracle module
 #
@@ -88,7 +88,8 @@ if test x$with_oracle = xyes; then
   else
     if test x"$pike_cv_oracle_oracle_home" != xno && \
   	test -f "$pike_cv_oracle_oracle_home/lib/libcommon.a" -o \
-  	      -f "$pike_cv_oracle_oracle_home/lib/libcommon8.a"; then
+  	     -f "$pike_cv_oracle_oracle_home/lib/libcommon8.a" -o \
+  	     -f "$pike_cv_oracle_oracle_home/lib/libcommon9.a"; then
 
       echo "$pike_cv_oracle_oracle_home/lib" > conftest
 
@@ -96,7 +97,10 @@ if test x$with_oracle = xyes; then
       if test x"$pike_cv_oracle_oratab_file" = xno; then :; else
 
         sed -e '/^#/d' < $pike_cv_oracle_oratab_file | while IFS=":" read sid dir bootstart; do
-          if test -d "$dir/." && test -f "$dir/lib/libcommon.a" -o -f "$dir/lib/libcommon8.a"; then
+          if test -d "$dir/." && \
+	     test -f "$dir/lib/libcommon.a" -o \
+		  -f "$dir/lib/libcommon8.a" -o \
+		  -f "$dir/lib/libcommon9.a"; then
   	    if test x"$pike_cv_oracle_oracle_home" = xno; then
   	      AC_DEFINE_UNQUOTED(ORACLE_HOME, "${dir}")
   	    else
@@ -210,7 +214,8 @@ if test x$with_oracle = xyes; then
     if test "x$pike_cv_sys_os" = "xWindows_NT"; then
       ORACLE_LIBS="-loci"
     else
-      if test -f "$oracle_lib_dir/libcommon8.a"; then
+      if test -f "$oracle_lib_dir/libcommon8.a" -o \
+              -f "$oracle_lib_dir/libcommon9.a"; then
         ORACLE_LIBS="-lclntsh"
       else
         if test -f "$oracle_lib_dir/libcore4.a"; then
