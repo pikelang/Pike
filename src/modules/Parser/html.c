@@ -122,7 +122,8 @@ struct subparse_save
   struct object *thisobj;
   struct feed_stack *st;
   struct piece *feed;
-  int prev_free_feed, c;
+  int prev_free_feed;
+  ptrdiff_t c;
   struct location pos;
   struct out_piece *cond_out, *cond_out_end;
   enum contexts out_ctx;
@@ -2973,7 +2974,7 @@ static newstate do_try_feed(struct parser_html_storage *this,
       if (ch==this->tag_start)	/* tag */
       {
 	 struct piece *tagend = NULL;
-	 int ctagend;
+	 ptrdiff_t ctagend;
 
 	 DEBUG((stderr,"%*d do_try_feed scan tag %p:%d\n",
 		this->stack_count,this->stack_count,
@@ -4182,7 +4183,7 @@ static void html_tag_name(INT32 args)
 	 }
        }
        else {
-	 int end=THIS->cend;
+	 ptrdiff_t end = THIS->cend;
 	 if (index_shared_string(THIS->end->s,end-1) == THIS->entity_end) end--;
 	 push_feed_range(THIS->start,THIS->cstart+1,THIS->end,end);
        }
@@ -4190,7 +4191,7 @@ static void html_tag_name(INT32 args)
      case TYPE_QTAG: {
        struct svalue *v;
        struct piece *beg;
-       int cbeg;
+       ptrdiff_t cbeg;
        if (THIS->flags & FLAG_WS_BEFORE_TAG_NAME)
 	 scan_forward (THIS->start, THIS->cstart+1, &beg, &cbeg, THIS->ws, -THIS->n_ws);
        else
@@ -4415,7 +4416,7 @@ void html__inspect(INT32 args)
       o++;
 
       push_text("position");
-      push_int(st->c);
+      push_int(DO_NOT_WARN(st->c));
       o++;
       
       push_text("byteno");

@@ -26,7 +26,7 @@
 
 #include <fcntl.h>
 
-RCSID("$Id: pipe.c,v 1.39 2000/08/09 21:01:23 grubba Exp $");
+RCSID("$Id: pipe.c,v 1.40 2000/08/10 07:40:12 grubba Exp $");
 
 #include "threads.h"
 #include "stralloc.h"
@@ -622,8 +622,8 @@ static INLINE void output_try_write_some(struct object *obj)
 {
   struct output *out;
   struct pike_string *s;
-  unsigned long len;
-  INT32 ret;
+  size_t len;
+  INT_TYPE ret;
   
   out=(struct output*)(obj->storage);
 

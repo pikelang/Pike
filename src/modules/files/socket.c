@@ -21,7 +21,7 @@
 #include "file_machine.h"
 #include "file.h"
 
-RCSID("$Id: socket.c,v 1.50 2000/07/29 19:22:18 hubbe Exp $");
+RCSID("$Id: socket.c,v 1.51 2000/08/10 07:57:55 grubba Exp $");
 
 #ifdef HAVE_SYS_TYPE_H
 #include <sys/types.h>
@@ -387,7 +387,7 @@ void port_exit_program(void)
 
 void port_setup_program(void)
 {
-  INT32 offset;
+  ptrdiff_t offset;
   start_new_program();
   offset=ADD_STORAGE(struct port);
   map_variable("_accept_callback","mixed",0,offset+OFFSETOF(port,accept_callback),PIKE_T_MIXED);

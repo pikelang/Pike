@@ -1,12 +1,12 @@
 /*
- * $Id: image_ttf.c,v 1.31 2000/07/28 07:15:35 hubbe Exp $
+ * $Id: image_ttf.c,v 1.32 2000/08/10 07:52:35 grubba Exp $
  */
 
 #include "config.h"
 
 
 #include "global.h"
-RCSID("$Id: image_ttf.c,v 1.31 2000/07/28 07:15:35 hubbe Exp $");
+RCSID("$Id: image_ttf.c,v 1.32 2000/08/10 07:52:35 grubba Exp $");
 
 #ifdef HAVE_LIBTTF
 #if defined(HAVE_FREETYPE_FREETYPE_H) && defined(HAVE_FREETYPE_FTXKERN_H)
@@ -580,7 +580,7 @@ static void image_ttf_face_names(INT32 args)
 
       if (ihas==30) /* unicode, M$ but wierd enough correct byteorder */
       {
-	 int n=b->item[4].u.string->len/2;
+	 ptrdiff_t n = b->item[4].u.string->len/2;
 	 struct pike_string *ps=begin_wide_shared_string(n,1);
 	 p_wchar1 *d=STR1(ps);
 	 p_wchar0 *s=STR0(b->item[4].u.string);
@@ -653,14 +653,17 @@ static void ttf_instance_setc(struct image_ttf_face_struct *face_s,
       my_tt_error(where,"TT_Set_Instance_CharSize: ",res);
 
    face_i->baseline=
-      (int)(((float)(towhat/64.0+towhat/640.0)*prop.horizontal->Ascender)/
-	    (prop.horizontal->Ascender-prop.horizontal->Descender));
+      DOUBLE_TO_INT(((double)(towhat/64.0+towhat/640.0)*
+		     prop.horizontal->Ascender)/
+		    (prop.horizontal->Ascender - prop.horizontal->Descender));
 
    face_i->height= (towhat/64 + towhat/640);
 
-   face_i->trans=
-      (32+(int)(64*((towhat/64.0+towhat/640.0)*prop.horizontal->Ascender)/
-		(prop.horizontal->Ascender-prop.horizontal->Descender)))&~63;
+   face_i->trans = ~63 &
+      (32 +
+       DOUBLE_TO_INT(64*((towhat/64.0+towhat/640.0)*
+			 prop.horizontal->Ascender)/
+		     (prop.horizontal->Ascender-prop.horizontal->Descender)));
 }
 
 static void image_ttf_faceinstance_create(INT32 args)
@@ -696,9 +699,9 @@ static void image_ttf_faceinstance_set_height(INT32 args)
       error("Image.TTF.FaceInstance->set_height(): missing arguments\n");
 
    if (sp[-args].type==T_INT)
-      h=sp[-args].u.integer*64;
+      h = sp[-args].u.integer*64;
    else if (sp[-args].type==T_FLOAT)
-      h=(int)(sp[-args].u.float_number*64);
+      h = DOUBLE_TO_INT(sp[-args].u.float_number*64);
    else
       error("Image.TTF.FaceInstance->set_height(): illegal argument 1\n");
    if (h<1) h=1;
@@ -798,7 +801,7 @@ static void ttf_please_translate_8bit(TT_Face face,
    TT_CharMap charMap;
 
    ttf_get_nice_charmap(face,&charMap,where);
-   (*dlen)=s->len;
+   (*dlen) = DO_NOT_WARN(s->len);
    ttf_translate_8bit(charMap,(unsigned char*)(s->str),dest,*dlen,base);
 }
 
@@ -811,7 +814,7 @@ static void ttf_please_translate_16bit(TT_Face face,
    TT_CharMap charMap;
 
    ttf_get_nice_charmap(face,&charMap,where);
-   (*dlen)=s->len;
+   (*dlen) = DO_NOT_WARN(s->len);
    ttf_translate_16bit(charMap,(unsigned short*)(s->str),dest,*dlen,base);
 }
 
@@ -1022,11 +1025,15 @@ static void image_ttf_faceinstance_write(INT32 args)
       {
        case 0:
 	 ttf_translate_8bit(charMap,(unsigned char*)sp[a-args].u.string->str,
-			    sstr+a,slen[a]=sp[a-args].u.string->len,base);
+			    sstr+a,
+			    DO_NOT_WARN(slen[a]=sp[a-args].u.string->len),
+			    base);
 	 break;
        case 1:
 	 ttf_translate_16bit(charMap,(unsigned short*)sp[a-args].u.string->str,
-			     sstr+a,slen[a]=sp[a-args].u.string->len,base);
+			     sstr+a,
+			     DO_NOT_WARN(slen[a]=sp[a-args].u.string->len),
+			     base);
 	 break;
        case 2:
          free( sstr );
@@ -1068,7 +1075,7 @@ static void image_ttf_faceinstance_write(INT32 args)
 	 if(has_kerning && i<slen[a]-1)
 	 {
 	   int kern = find_kerning( kerning, ind, sstr[a][i+1] );
-	   pos += (int)(kern * (scalefactor/65535.0));
+	   pos += DOUBLE_TO_INT(kern * (scalefactor/65535.0));
 	 }
 	 if ((res=TT_Done_Glyph(glyph)))
 	    { errs="TT_Done_Glyph: "; break; }
@@ -1181,7 +1188,7 @@ static void image_ttf_faceinstance_write(INT32 args)
 	    if(has_kerning && i<slen[a]-1)
 	    {
 	      int kern = find_kerning( kerning, sstr[a][i], sstr[a][i+1] );
-	      pos += (int)(kern * (scalefactor/65535.0));
+	      pos += DOUBLE_TO_INT(kern * (scalefactor/65535.0));
 /* 	      fprintf(stderr, "Adjusted is %d\n", */
 /* 		      (int)(kern * (scalefactor/65535.0))); */
 	    }
