@@ -5,7 +5,7 @@
 \*/
 
 /*
- * $Id: array.h,v 1.15 1999/01/21 09:14:57 hubbe Exp $
+ * $Id: array.h,v 1.16 1999/03/06 05:55:39 hubbe Exp $
  */
 #ifndef ARRAY_H
 #define ARRAY_H
@@ -114,6 +114,7 @@ struct array *array_zip(struct array *a, struct array *b,INT32 *zipper);
 struct array *add_arrays(struct svalue *argp, INT32 args);
 int array_equal_p(struct array *a, struct array *b, struct processing *p);
 struct array *merge_array_with_order(struct array *a, struct array *b,INT32 op);
+struct array *merge_array_without_order2(struct array *a, struct array *b,INT32 op);
 struct array *merge_array_without_order(struct array *a,
 					struct array *b,
 					INT32 op);
