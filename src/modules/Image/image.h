@@ -1,7 +1,7 @@
 /*
 **! module Image
 **! note
-**!	$Id: image.h,v 1.20 1998/04/15 17:36:18 mirar Exp $
+**!	$Id: image.h,v 1.21 1998/04/16 04:32:36 mirar Exp $
 */
 
 #ifdef PIKE_IMAGE_IMAGE_H
@@ -48,7 +48,7 @@ typedef struct
 struct image
 {
    rgb_group *img;
-   INT32 xsize,ysize;
+   INT_TYPE xsize,ysize;
    rgb_group rgb;
    unsigned char alpha;
 };
