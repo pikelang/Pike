@@ -1,5 +1,5 @@
 //
-// $Id: connection.pike,v 1.36 2004/06/05 17:21:15 nilsson Exp $
+// $Id: connection.pike,v 1.37 2004/07/05 17:01:53 grubba Exp $
 
 #pike __REAL_VERSION__
 //#pragma strict_types
@@ -44,6 +44,13 @@ void create(int is_server, void|SSL.context ctx)
   current_write_state = SSL.state(this);
   handshake::create(is_server, ctx);
 }
+
+#if 0
+static void destroy()
+{
+  werror("Connection destructed:\n%s\n", describe_backtrace(backtrace()));
+}
+#endif /* 0 */
 
 //! Called with alert object, sequence number of bad packet,
 //! and raw data as arguments, if a bad packet is received.
