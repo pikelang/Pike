@@ -1,4 +1,4 @@
-/* $Id: master.pike.in,v 1.37 1999/02/04 23:44:20 mast Exp $
+/* $Id: master.pike.in,v 1.38 1999/04/09 04:53:34 hubbe Exp $
  * 
  * Master-file for Pike.
  *
@@ -694,7 +694,18 @@ void _main(string *orig_argv, string *env)
 
   _pike_file_name = orig_argv[0];
 
-  foreach(env,a) if(sscanf(a,"%s=%s",a,b)) environment[a]=b;
+  foreach(env,a)
+    {
+      if(sscanf(a,"%s=%s",a,b))
+      {
+	if(a=="") // Special hack for NT
+	{
+	  sscanf(b,"%s=%s",a,b);
+	  a="="+a;
+	}
+	environment[a]=b;
+      }
+    }
 
 #if defined(__NT__) && !defined(NOT_INSTALLED)
   function rget=lambda(string ent) {
