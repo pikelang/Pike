@@ -8464,113 +8464,89 @@ This chapter is a reference for all the builtin functions in Pike.
 They are listed in alphabetical order.
 
 <HR NEWPAGE>
-<anchor name=_memory_usage>
-<dl>
-<dt><encaps>NAME</encaps><dd>
-<tt>_memory_usage</tt> - check memory usage
-<p>
-<dt><encaps>SYNTAX</encaps><dd>
-<tt>mapping(string:int) <I>_memory_usage</I>();<br>
-</tt>
-<p>
-<dt><encaps>DESCRIPTION</encaps><dd>
+
+<function name=_memory_usage title="check memory usage">
+<man_syntax>
+mapping(string:int) <I>_memory_usage</I>();
+</man_syntax>
+<man_description>
 This function is mostly intended for debugging. It delivers a mapping
 with information about how many arrays/mappings/strings etc. there
 are currently allocated and how much memory they use. Try evaluating
 the function in hilfe to see precisely what it returns.
-<p>
-<dt><encaps>SEE ALSO</encaps><dd>
-<link to=_verify_internals>_verify_internals</link>
-<p>
-</dl>
-</anchor>
+</man_description>
+<man_see>
+_verify_internals
+</man_see>
+</function>
 
 <HR NEWPAGE>
-<anchor name=_next>
-<dl>
-<dt><encaps>NAME</encaps><dd>
-<tt>_next</tt> - find the next object/array/whatever
-<p>
-<dt><encaps>SYNTAX</encaps><dd>
-<tt>mixed _next(mixed <I>p</I>);<br>
-</tt>
-<p>
-<dt><encaps>DESCRIPTION</encaps><dd>
+
+<function name=_next title="find the next object/array/whatever">
+<man_syntax>
+mixed _next(mixed <I>p</I>);
+</man_syntax>
+<man_description>
 All objects, arrays, mappings, multisets, programs and strings are stored in linked lists
 inside Pike. This function returns the next object/array/mapping/string/etc
 in the linked list. It is mainly meant for debugging Pike but
 can also be used to control memory usage.
-<p>
-<dt><encaps>SEE ALSO</encaps><dd>
-<link to=next_object>next_object</link> and <link to=_prev>_prev</link>
-<p>
-</dl>
-</anchor>
+</man_description>
+<man_see>
+next_object, _prev
+</man_see>
+</function>
 
 <HR NEWPAGE>
-<anchor name=_prev>
-<dl>
-<dt><encaps>NAME</encaps><dd>
-<tt>_prev</tt> - find the previous object/array/whatever
-<p>
-<dt><encaps>SYNTAX</encaps><dd>
-<tt>mixed _next(mixed <I>p</I>);<br>
-</tt>
-<p>
-<dt><encaps>DESCRIPTION</encaps><dd>
+
+<function name=_prev title="find the previous object/array/whatever">
+<man_syntax>
+mixed _next(mixed <I>p</I>);
+</man_syntax>
+<man_description>
 This function returns the 'previous' object/array/mapping/etc
 in the linked list. It is mainly meant for debugging Pike but
 can also be used to control memory usage. Note that this function
 does not work on strings.
-<p>
-<dt><encaps>SEE ALSO</encaps><dd>
-<link to=_next>_next</link>
-<p>
-</dl>
-</anchor>
+</man_description>
+<man_see>
+_next
+</man_see>
+</function>
 
 <HR NEWPAGE>
-<anchor name=_refs>
-<dl>
-<dt><encaps>NAME</encaps><dd>
-<tt>_refs</tt> - find out how many references a pointer type value has
-<p>
-<dt><encaps>SYNTAX</encaps><dd>
-<tt>int _refs(string|array|mapping|multiset|function|object|program <I>o</I>);<br>
-</tt>
-<p>
-<dt><encaps>DESCRIPTION</encaps><dd>
+
+<function name=_refs title="find out how many references a pointer type value has">
+<man_syntax>
+int _refs(string|array|mapping|multiset|function|object|program <I>o</I>);
+</man_syntax>
+<man_description>
 This function checks how many references the value <i>o</i> has.
 Note that the number of references will always be at least one since
 the value is located on the stack when this function is executed.
 _refs() is mainly meant for debugging Pike but
 can also be used to control memory usage.
-<p>
-<dt><encaps>SEE ALSO</encaps><dd>
-<link to=_next>_next</link> and <link to=_prev>_prev</link>
-<p>
-</dl>
-</anchor>
+</man_description>
+<man_see>
+_next, _prev
+</man_see>
+</function>
 
 <HR NEWPAGE>
-<anchor name=_verify_internals>
-<dl>
-<dt><encaps>NAME</encaps><dd>
-<tt>_verify_internals</tt> - check Pike internals
-<p>
-<dt><encaps>SYNTAX</encaps><dd>
-<tt>void _verify_internals();<br>
-</tt>
-<p>
-<dt><encaps>DESCRIPTION</encaps><dd>
+
+<function name=_verify_internals title="check Pike internals">
+<man_syntax>
+void _verify_internals();
+</man_syntax>
+<man_description>
 This function goes through most of the internal Pike structures and
 generates a fatal error if one of them is found to be out of order.
 It is only used for debugging.
-<p>
-</dl>
-</anchor>
+</man_description>
+</function>
 
 <HR NEWPAGE>
+
 <anchor name=acos>
 <dl>
 <dt><encaps>NAME</encaps><dd>
@@ -9465,7 +9441,7 @@ object instead.
 </anchor>
 
 <HR NEWPAGE>
-<method name=exece>
+<function name=exece>
 <man_syntax>
 int exece(string <I>file</I>, array(string) <I>args</I>);<br>
 or<br>
@@ -9490,7 +9466,7 @@ exece("/bin/sh", ({"-c", "echo $HOME"}), (["HOME":"/not/home"]));<br>
 </tt>
 </man_example>
 <man_see>fork, Stdio.File-&gt;pipe</man_see>
-</method>
+</function>
 
 <HR NEWPAGE>
 <function name=exit fullpath title="exit Pike interpreter">
@@ -10935,16 +10911,11 @@ Arrays will be sorted first on the first element of each array.
 </anchor>
 
 <HR NEWPAGE>
-<anchor name=sprintf>
-<dl>
-<dt><encaps>NAME</encaps><dd>
-<tt>sprintf</tt> - print the result from sprintf
-<p>
-<dt><encaps>SYNTAX</encaps><dd>
-<tt>string sprintf(string <I>format</I>,mixed <I>arg</I>,....);<br>
-</tt>
-<p>
-<dt><encaps>DESCRIPTION</encaps><dd>
+<function name=sprintf title="print the result from sprintf">
+<man_syntax>
+string sprintf(string <I>format</I>,mixed <I>arg</I>,....);
+</man_syntax>
+<man_description>
 The format string is a string containing a description of how to
 output the data in the rest of the arguments. This string should
 generally speaking have one %&lt;modifiers&gt;&lt;operator&gt; (examples:
@@ -10993,10 +10964,9 @@ generally speaking have one %&lt;modifiers&gt;&lt;operator&gt; (examples:
 <tr valign=top><td> %t </td><td> type of argument </td></tr>
 <tr valign=top><td> %&lt;modifiers&gt;{format%} </td><td> do a format for every index in an array. </td></tr>
 </table>
-
-<p>
-<dt><encaps>EXAMPLES</encaps><dd>
-<tt>Pike v0.1 Running Hilfe v1.2 (Incremental Pike Front end)<br>
+</man_description>
+<man_example>
+Pike v0.1 Running Hilfe v1.2 (Incremental Pike Front end)<br>
 &gt; int screen_width=70;<br>
 Result: 70<br>
 &gt; mixed sample;<br>
@@ -11114,13 +11084,11 @@ Result: 0<br>
 </dl>Result: 0<br>
 &gt; quit<br>
 Exiting.<br>
-</tt>
-<p>
-<dt><encaps>SEE ALSO</encaps><dd>
-<link to=sscanf>sscanf</link>
-<p>
-</dl>
-</anchor>
+</man_example>
+<man_see>
+sscanf
+</man_see>
+</function>
 
 <HR NEWPAGE>
 <anchor name=sqrt>
