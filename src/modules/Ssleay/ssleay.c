@@ -8,7 +8,7 @@
 
 #include "config.h"
 
-RCSID("$Id: ssleay.c,v 1.11 1999/02/10 22:03:31 hubbe Exp $");
+RCSID("$Id: ssleay.c,v 1.12 2000/07/28 20:35:47 hubbe Exp $");
 #include "interpret.h"
 #include "svalue.h"
 #include "stralloc.h"
@@ -22,6 +22,10 @@ RCSID("$Id: ssleay.c,v 1.11 1999/02/10 22:03:31 hubbe Exp $");
 #ifdef HAVE_SYS_TYPE_H
 #include <sys/types.h>
 #endif
+
+/* must be included last */
+#include "module_magic.h"
+
 
 #ifdef HAVE_SSLEAY
 
