@@ -9,7 +9,7 @@
 #include "error.h"
 #include "fdlib.h"
 
-RCSID("$Id: fd_control.c,v 1.23 1999/05/26 07:08:10 hubbe Exp $");
+RCSID("$Id: fd_control.c,v 1.24 1999/05/28 16:43:01 mirar Exp $");
 
 #else /* TESTING */
 #ifndef _LARGEFILE_SOURCE
@@ -37,7 +37,7 @@ RCSID("$Id: fd_control.c,v 1.23 1999/05/26 07:08:10 hubbe Exp $");
 #endif
 
 #ifdef HAVE_SYS_ERRNO_H
-#include <sys/socket.h>
+#include <sys/errno.h>
 #endif
 
 #ifdef HAVE_WINSOCK_H
