@@ -85,11 +85,16 @@ constant DAV_STORAGE_FULL	= 507; // RFC 2518 10.6: Insufficient Storage
 		 void|mapping(string:string|array(string)) request_headers,
 		 void|Protocols.HTTP.Query con, void|string data)
 {
-  if(!con)
-    con = .Query();
-
   if(stringp(url))
     url=Standards.URI(url);
+
+  if( (< "httpu", "httpmu" >)[url->scheme] ) {
+    do_udp_method(method, url, query_variables, request_headers, data);
+    return 0;
+  }
+
+  if(!con)
+    con = .Query();
 
 #if constant(SSL.sslfile) 	
   if(url->scheme!="http" && url->scheme!="https")
@@ -139,6 +144,36 @@ constant DAV_STORAGE_FULL	= 507; // RFC 2518 10.6: Insufficient Storage
     return 0;
   }
   return con;
+}
+
+static void do_udp_method(string method, Standards.URI url,
+			  void|mapping(string:int|string) query_variables,
+			  void|mapping(string:string|array(string))
+			    request_headers, void|Stdio.UDP udp,
+			  void|string data)
+{
+  if(!request_headers)
+    request_headers = ([]);
+
+  string path = url->path;
+  if(path=="") {
+    if(url->method=="httpmu")
+      path = "*";
+    else
+      path = "/";
+  }
+  string msg = method + " " + path + " HTTP/1.1\r\n";
+  if(!udp) {
+    udp = Stdio.UDP();
+    int port = 10000 + random(1000);
+    while( catch( udp->bind(port++) ) );
+    if(url->method=="httpmu") {
+      udp->enable_multicast("130.236.182.86");
+      udp->add_membership(url->host, 0, 0);
+    }
+    udp->set_multicast_ttl(4);
+  }
+  udp->send(url->host, url->port, msg);
 }
 
 //! Sends a HTTP GET request to the server in the URL and returns the
@@ -289,6 +324,20 @@ string http_encode_query(mapping(string:int|string) variables)
 		    })*"&";
 }
 
+// RFC 1738, 2.2. URL Character Encoding Issues
+static constant url_non_corresponding = enumerate(0x20) + ({ 0x1f }) +
+  enumerate(128,1,0x80);
+static constant url_unsafe = ({ '<', '>', '"', '#', '%', '{', '}',
+				'|', '\\', '^', '~', '[', ']', '`' });
+static constant url_reserved = ({ ';', '/', '?', ':', '@', '=', '&' });
+
+// Encode these chars
+static constant url_chars = url_non_corresponding + url_unsafe +
+  url_reserved + ({ '+' });
+static constant url_from = sprintf("%c", url_chars[*]);
+static constant url_to   = sprintf("%%%02x", url_chars[*]);
+
+
 //!	This protects all odd - see @[http_encode_query()] - 
 //!	characters for transfer in HTTP.
 //!
@@ -300,32 +349,7 @@ string http_encode_query(mapping(string:int|string) variables)
 //!     The HTTP encoded string
 string http_encode_string(string in)
 {
-   return replace(
-      in,
-      ({ "\000", "\001", "\002", "\003", "\004", "\005", "\006", "\007",
-	 "\010", "\011", "\012", "\013", "\014", "\015", "\016", "\017",
-	 "\020", "\021", "\022", "\023", "\024", "\025", "\026", "\027",
-	 "\030", "\031", "\032", "\033", "\034", "\035", "\036", "\037",
-	 "\177",
-	 "\200", "\201", "\202", "\203", "\204", "\205", "\206", "\207",
-	 "\210", "\211", "\212", "\213", "\214", "\215", "\216", "\217",
-	 "\220", "\221", "\222", "\223", "\224", "\225", "\226", "\227",
-	 "\230", "\231", "\232", "\233", "\234", "\235", "\236", "\237",
-	 " ", "%", "'", "\"", "+", "&", "=", "/",
-	 "#", ";", "\\", "<", ">", "\t", "\n", "\r", "@" }),
-      ({
-	 "%00", "%01", "%02", "%03", "%04", "%05", "%06", "%07",
-	 "%08", "%09", "%0a", "%0b", "%0c", "%0d", "%0e", "%0f",
-	 "%10", "%11", "%12", "%13", "%14", "%15", "%16", "%17",
-	 "%18", "%19", "%1a", "%1b", "%1c", "%1d", "%1e", "%1f",
-	 "%7f",
-	 "%80", "%81", "%82", "%83", "%84", "%85", "%86", "%87",
-	 "%88", "%89", "%8a", "%8b", "%8c", "%8d", "%8e", "%8f",
-	 "%90", "%91", "%92", "%93", "%94", "%95", "%96", "%97",
-	 "%98", "%99", "%9a", "%9b", "%9c", "%9d", "%9e", "%9f",
-	 "%20", "%25", "%27", "%22", "%2b", "%26", "%3d", "%2f",
-	 "%23", "%3b", "%5c", "%3c", "%3e", "%09", "%0a", "%0d",
-         "%40" }));
+  return replace(in, url_from, url_to);
 }
 
 //!    Encode the specified string in as to the HTTP cookie standard.
@@ -359,7 +383,6 @@ string http_encode_cookie(string f)
 	 "%98", "%99", "%9a", "%9b", "%9c", "%9d", "%9e", "%9f",
 	 "%20", "%25", "%27", "%22", "%2c", "%3b", "%3d", "%3a" }));
 }
-
 
 // --- Compatibility code
 
