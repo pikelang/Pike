@@ -4,7 +4,7 @@
 ||| See the files COPYING and DISCLAIMER for more information.
 \*/
 #include "global.h"
-RCSID("$Id: mpz_glue.c,v 1.88 2001/02/20 13:02:12 grubba Exp $");
+RCSID("$Id: mpz_glue.c,v 1.89 2001/03/04 15:27:54 mirar Exp $");
 #include "gmp_machine.h"
 
 #if defined(HAVE_GMP2_GMP_H) && defined(HAVE_LIBGMP2)
@@ -152,7 +152,38 @@ static void get_new_mpz(MP_INT *tmp, struct svalue *s)
   switch(s->type)
   {
   case T_INT:
+#if BIG_PIKE_INT
+/*  INT_TYPE is bigger then long int  */
+  {
+     INT_TYPE x=s->u.integer;
+#define SHIFT  24
+#define FILTER ((1<<SHIFT)-1)
+     int neg=0;
+     int pos=SHIFT;
+     if (x<0) neg=1,x=-x;
+     mpz_set_ui(tmp,(unsigned long int)(x&FILTER));
+     while ( (x>>=SHIFT) )
+     {
+        mpz_t t2,t1;
+        mpz_init_set_ui(t2,(unsigned long int)(x&FILTER)); 
+        mpz_init(t1);
+        mpz_mul_2exp(t1,t2,pos);
+        mpz_add(t2,tmp,t1);
+        mpz_set(tmp,t2);
+        mpz_clear(t1);
+        mpz_clear(t2);
+     }
+     if (neg)
+     {
+        mpz_t t1;
+        mpz_init_set(t1,tmp);
+        mpz_neg(tmp,t1);
+        mpz_clear(t1);
+     }
+  }
+#else
     mpz_set_si(tmp, (signed long int) s->u.integer);
+#endif
     break;
     
   case T_FLOAT:

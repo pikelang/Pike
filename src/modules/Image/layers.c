@@ -1,7 +1,7 @@
 /*
 **! module Image
 **! note
-**!	$Id: layers.c,v 1.61 2001/01/19 22:18:42 grubba Exp $
+**!	$Id: layers.c,v 1.62 2001/03/04 15:27:55 mirar Exp $
 **! class Layer
 **! see also: layers
 **!
@@ -215,7 +215,7 @@
 
 #include <math.h> /* floor */
 
-RCSID("$Id: layers.c,v 1.61 2001/01/19 22:18:42 grubba Exp $");
+RCSID("$Id: layers.c,v 1.62 2001/03/04 15:27:55 mirar Exp $");
 
 #include "image_machine.h"
 
@@ -268,10 +268,10 @@ typedef void lm_row_func(rgb_group *s,
 
 struct layer
 {
-   INT_TYPE xsize;            /* underlaying image size */
-   INT_TYPE ysize;
+   INT32 xsize;            /* underlaying image size */
+   INT32 ysize;
 
-   INT_TYPE xoffs,yoffs;      /* clip offset */
+   INT32 xoffs,yoffs;      /* clip offset */
 
    struct object *image; /* image object */
    struct object *alpha; /* alpha object or null */
@@ -287,11 +287,11 @@ struct layer
    rgb_group sfill[SNUMPIXS];       /* pre-calculated rows */
    rgb_group sfill_alpha[SNUMPIXS];
 
-   INT_TYPE tiled;            /* true if tiled */
+   int tiled;            /* true if tiled */
 
    lm_row_func *row_func;/* layer mode */
-   INT_TYPE optimize_alpha;
-   INT_TYPE really_optimize_alpha;
+   int optimize_alpha;
+   int really_optimize_alpha;
 
    struct mapping     *misc; /* Misc associated data. Added by per,
                                 rather useful for some things... */
@@ -2771,7 +2771,7 @@ static void image_layer_crop(INT32 args)
       if (img->xsize!=xz || img->ysize!=yz)
 	 Pike_error("Image returned from image->copy had "
 	       "unexpected size (%d,%d, expected %d,%d)\n",
-	       img->xsize,img->ysize,xz,yz);
+		img->xsize,img->ysize,(INT32)xz,(INT32)yz);
 
       free_object(l->image);
       l->image=Pike_sp[-1].u.object;
@@ -2799,7 +2799,7 @@ static void image_layer_crop(INT32 args)
       if (img->xsize!=xz || img->ysize!=yz)
 	 Pike_error("Image returned from alpha->copy had "
 	       "unexpected size (%d,%d, expected %d,%d)\n",
-	       img->xsize,img->ysize,xz,yz);
+	       img->xsize,img->ysize,(INT32)xz,(INT32)yz);
       free_object(l->alpha);
       l->alpha=Pike_sp[-1].u.object;
       Pike_sp--;
@@ -2841,7 +2841,7 @@ static void image_layer_crop(INT32 args)
 
 static void image_layer_find_autocrop(INT32 args)
 {
-   INT_TYPE x1=0,y1=0,x2=THIS->xsize-1,y2=THIS->ysize-1;
+   INT32 x1=0,y1=0,x2=THIS->xsize-1,y2=THIS->ysize-1;
    INT_TYPE l=1,r=1,t=1,b=1;
 
    if (args>3)
@@ -2857,9 +2857,9 @@ static void image_layer_find_autocrop(INT32 args)
 	      THIS->fill_alpha.g!=0 ||  /* non-transparent fill */
 	      THIS->fill_alpha.b!=0))   /* check image too      */
 	 {
-	    int ix1,iy1,ix2,iy2;
+	    INT32 ix1,iy1,ix2,iy2;
 	    img_find_autocrop(THIS->img, &ix1,&iy1,&ix2,&iy2,
-			      0,l,r,t,b,1,THIS->fill);
+			      0,(int)l,(int)r,(int)t,(int)b,1,THIS->fill);
 	    if (ix1<x1) x1=ix1;
 	    if (ix2>x2) x2=ix2;
 	    if (iy1<y1) y1=iy1;
@@ -2872,7 +2872,7 @@ static void image_layer_find_autocrop(INT32 args)
 		THIS->fill_alpha.b==255))   /* we may be able to crop */
       {
 	 img_find_autocrop(THIS->img, &x1,&y1,&x2,&y2,
-			   0,l,r,t,b,1,THIS->fill);
+			   0,(int)l,(int)r,(int)t,(int)b,1,THIS->fill);
       }
    }
    push_int(x1+THIS->xoffs);

@@ -1,9 +1,69 @@
-# $Id: configure.in,v 1.6 1999/04/24 13:49:50 grubba Exp $
+# $Id: configure.in,v 1.7 2001/03/04 15:27:55 mirar Exp $
 AC_INIT(sprintf.c)
 
 AC_CONFIG_HEADER(config.h)
 
 AC_MODULE_INIT()
+
+AC_MSG_CHECKING(how to printf INT_TYPE)
+
+AC_CACHE_VAL(pikze_cv_printf_int_type,
+	    [AC_TRY_RUN([#include <stdio.h>
+                         #include "global.h"
+			 int main() {
+			 char buf[32];
+	                 if (sizeof(INT_TYPE)>4)
+                         {
+			   sprintf(buf,"%lld,%d",((INT_TYPE)4711)<<32,17);
+			   return !!strcmp("20233590931456,17",buf); 
+                         }
+                         else
+                         {
+  			   sprintf(buf,"%lld,%d",(INT_TYPE)4711,17);
+  			   return !!strcmp("4711,17",buf);
+			 }
+                         }], 
+			[pike_cv_printf_int_type="ll"],
+	    [AC_TRY_RUN([#include <stdio.h>
+                         #include "global.h"
+			 int main() {
+			 char buf[32];
+	                 if (sizeof(INT_TYPE)>4)
+                         {
+			   sprintf(buf,"%d,%d",((INT_TYPE)4711)<<32,17);
+			   return !!strcmp("20233590931456,17",buf); 
+                         }
+                         else
+                         {
+  			   sprintf(buf,"%d,%d",(INT_TYPE)4711,17);
+  			   return !!strcmp("4711,17",buf);
+			 }
+                         }], 
+			[pike_cv_printf_int_type=""],
+	    [AC_TRY_RUN([#include <stdio.h>
+                         #include "global.h"
+			 int main() {
+			 char buf[32];
+	                 if (sizeof(INT_TYPE)>4)
+                         {
+			   sprintf(buf,"%ld,%d",((INT_TYPE)4711)<<32,17);
+			   return !!strcmp("20233590931456,17",buf); 
+                         }
+                         else
+                         {
+  			   sprintf(buf,"%ld,%d",(INT_TYPE)4711,17);
+  			   return !!strcmp("4711,17",buf);
+			 }
+                         }], 
+			[pike_cv_printf_int_type="l"],
+			[AC_MSG_CHECKING([(none found?)])
+			 pike_cv_printf_int_type=""],
+			[?])],
+			[?])],
+			[?])
+])
+AC_MSG_RESULT([%${pike_cv_printf_int_type}d, %${pike_cv_printf_int_type}x])
+AC_DEFINE_UNQUOTED(PRINTINT,"$pike_cv_printf_int_type")
 
 AC_OUTPUT(Makefile,echo FOO >stamp-h )
 

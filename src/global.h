@@ -5,7 +5,7 @@
 \*/
 
 /*
- * $Id: global.h,v 1.57 2001/02/19 23:49:59 grubba Exp $
+ * $Id: global.h,v 1.58 2001/03/04 15:27:53 mirar Exp $
  */
 #ifndef GLOBAL_H
 #define GLOBAL_H
@@ -235,6 +235,18 @@ void *alloca();
 #endif /* long double */
 #endif /* double */
 
+#ifdef WITH_LONG_INT
+#define INT_TYPE long
+#else
+#ifdef WITH_LONG_LONG_INT
+#define INT_TYPE long long
+#else
+#ifdef WITH_SHORT_INT
+#define INT_TYPE short
+#else
+#ifdef WITH_INT_INT
+#define INT_TYPE int
+#else
 #if (SIZEOF_CHAR_P > 4) && 0
 /* This isn't a good idea on architectures where
  * sizeof(long int) < sizeof(LONGEST).
@@ -245,6 +257,10 @@ void *alloca();
 #else /* !(sizeof(char *) > 4) */
 #define INT_TYPE INT32
 #endif /* sizeof(char *) > 4 */
+#endif /* WITH_INT_INT */
+#endif /* WITH_SHORT_INT */
+#endif /* WITH_LONG_LONG_INT */
+#endif /* WITH_LONG_INT */
 
 #define B1_T char
 

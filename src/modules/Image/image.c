@@ -1,9 +1,9 @@
-/* $Id: image.c,v 1.185 2001/01/03 18:08:07 mirar Exp $ */
+/* $Id: image.c,v 1.186 2001/03/04 15:27:54 mirar Exp $ */
 
 /*
 **! module Image
 **! note
-**!	$Id: image.c,v 1.185 2001/01/03 18:08:07 mirar Exp $
+**!	$Id: image.c,v 1.186 2001/03/04 15:27:54 mirar Exp $
 **! class Image
 **!
 **!	The main object of the <ref>Image</ref> module, this object
@@ -98,7 +98,7 @@
 
 #include "stralloc.h"
 #include "global.h"
-RCSID("$Id: image.c,v 1.185 2001/01/03 18:08:07 mirar Exp $");
+RCSID("$Id: image.c,v 1.186 2001/03/04 15:27:54 mirar Exp $");
 #include "pike_macros.h"
 #include "object.h"
 #include "constants.h"
@@ -1203,7 +1203,7 @@ static INLINE int try_autocrop_horisontal(struct image *this,
 }
 
 void img_find_autocrop(struct image *this,
-		       int *px1,int *py1,int *px2,int *py2,
+		       INT32 *px1,INT32 *py1,INT32 *px2,INT32 *py2,
 		       int border,
 		       int left,int right,
 		       int top,int bottom,

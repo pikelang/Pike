@@ -1,7 +1,7 @@
 /*
 **! module Image
 **! note
-**!	$Id: image.h,v 1.46 2000/12/05 21:08:25 per Exp $
+**!	$Id: image.h,v 1.47 2001/03/04 15:27:55 mirar Exp $
 */
 
 #ifdef PIKE_IMAGE_IMAGE_H
@@ -102,7 +102,7 @@ typedef struct
 struct image
 {
    rgb_group *img;
-   INT_TYPE xsize,ysize;
+   INT32 xsize,ysize;
    rgb_group rgb;
    unsigned char alpha;
 };
@@ -247,7 +247,7 @@ void image_make_ascii(INT32 args);
 /* image.c */
 
 void img_find_autocrop(struct image *this,
-		       int *px1,int *py1,int *px2,int *py2,
+		       INT32 *px1,INT32 *py1,INT32 *px2,INT32 *py2,
 		       int border,
 		       int left,int right,
 		       int top,int bottom,

@@ -1,5 +1,5 @@
 /*
- * $Id: udp.c,v 1.19 2000/12/05 21:08:37 per Exp $
+ * $Id: udp.c,v 1.20 2001/03/04 15:27:55 mirar Exp $
  */
 
 #define NO_PIKE_SHORTHAND
@@ -7,7 +7,7 @@
 
 #include "file_machine.h"
 
-RCSID("$Id: udp.c,v 1.19 2000/12/05 21:08:37 per Exp $");
+RCSID("$Id: udp.c,v 1.20 2001/03/04 15:27:55 mirar Exp $");
 #include "fdlib.h"
 #include "interpret.h"
 #include "svalue.h"
@@ -201,7 +201,8 @@ static void udp_bind(INT32 args)
   {
     fd_close(fd);
     THIS->my_errno=errno;
-    Pike_error("UDP.bind: failed to bind to port %d\n",Pike_sp[-args].u.integer);
+    Pike_error("UDP.bind: failed to bind to port %d\n",
+	       (u_short)Pike_sp[-args].u.integer);
     return;
   }
 

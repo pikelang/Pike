@@ -1,5 +1,5 @@
 /*
- * $Id: acconfig.h,v 1.79 2001/02/21 00:54:26 grubba Exp $
+ * $Id: acconfig.h,v 1.80 2001/03/04 15:27:53 mirar Exp $
  */
 #ifndef MACHINE_H
 #define MACHINE_H
@@ -111,6 +111,12 @@
 
 /* define if you want to use long double precision floats */
 #undef WITH_LONG_DOUBLE_PRECISION_SVALUE
+
+/* force this type upon ints */
+#undef WITH_LONG_INT
+#undef WITH_LONG_LONG_INT
+#undef WITH_SHORT_INT
+#undef WITH_INT_INT
 
 /* If using the C implementation of alloca, define if you know the
  * direction of stack growth for your system; otherwise it will be
