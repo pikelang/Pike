@@ -1,4 +1,4 @@
-dnl $Id: testsuite.in,v 1.2 2003/02/07 12:16:59 jhs Exp $
+dnl $Id: testsuite.in,v 1.3 2003/04/15 14:45:32 nisse Exp $
 
 test_any([[
 #pike 7.4
@@ -9,3 +9,13 @@ test_any([[
 #pike 7.4
 return SSL.cipher && 1;
 ]], 1)
+
+dnl   test_do([[
+dnl     object p = Process.Process(RUNPIKE + " \"]]SRCDIR[[/https.pike\"");
+dnl     sleep(5); /* Wait a little for the server to startup */
+dnl     Protocols.HTTP.Query q = Protocols.HTTP.get_url("https://localhost:25678");
+dnl     if (q->status != 200 || search("html", q->data()) < 0)
+dnl       error("Failed\n");
+dnl     /* How to kill the process if running on windows? */
+dnl     p->kill(15);
+dnl   ]])
