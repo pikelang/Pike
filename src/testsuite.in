@@ -1,4 +1,4 @@
-test_true([["$Id: testsuite.in,v 1.695 2004/01/15 17:48:59 nilsson Exp $"]]);
+test_true([["$Id: testsuite.in,v 1.696 2004/02/03 20:54:07 marcus Exp $"]]);
 
 // This triggered a bug only if run sufficiently early.
 test_compile_any([[#pike 7.2]])
@@ -8923,6 +8923,12 @@ cond([[all_constants()->mktime]],
   "min":51,
   "timezone":0,
 ]) ) ]])
+
+  test_any([[foreach(({1075550400,94691300,220921700,347152100,473382500,
+		       599612900,725843300,852073700,978304100,1104534500,
+		       1230764900,1356995300,1483225700,1609456100,1735686500,
+		       1861916900,1988147300,2114377700
+		      }),int t) if(mktime(gmtime(t))!=t) return -1; return 0;]], 0)
 
 ]])
 
