@@ -21,10 +21,16 @@
 #include "threads.h"
 #include "gc.h"
 
-RCSID("$Id: error.c,v 1.68 2001/01/12 02:15:56 mast Exp $");
+RCSID("$Id: error.c,v 1.69 2001/02/06 19:31:39 grubba Exp $");
 
 #undef ATTRIBUTE
 #define ATTRIBUTE(X)
+
+/*
+ * Attempt to inhibit throwing of errors if possible.
+ * Used by exit_on_error() to avoid infinite sprintf() loops.
+ */
+int Pike_inhibit_errors = 0;
 
 /*
  * Backtrace handling.
@@ -430,6 +436,11 @@ PMOD_EXPORT void exit_on_error(void *msg)
   SET_ONERROR(tmp,fatal_on_error,"Fatal in exit_on_error!");
   d_flag=0;
 
+  /* Tell sprintf(), describe_svalue() et al not to throw errors
+   * if possible.
+   */
+  Pike_inhibit_errors = 1;
+
   fprintf(stderr,"%s\n",(char *)msg);
 #ifdef PIKE_DEBUG
   dump_backlog();
@@ -525,10 +536,20 @@ PMOD_EXPORT DECLSPEC(noreturn) void debug_fatal(const char *fmt, ...) ATTRIBUTE(
 
 #if 1
 
+/*! @class Error
+ */
+
 #define ERR_DECLARE
 #include "errors.h"
 
-
+/*! @decl array cast(string type)
+ *!
+ *! Cast operator.
+ *!
+ *! @note
+ *!   The only supported type to cast to is @tt{"array"@}, which
+ *!   generates and old-style error.
+ */
 void f_error_cast(INT32 args)
 {
   char *s;
@@ -544,6 +565,25 @@ void f_error_cast(INT32 args)
   }
 }
 
+/*! @decl array|string `[](int(0..1) index)
+ *!
+ *! Index operator.
+ *!
+ *! Simulates an array
+ *! @array
+ *!   @elem string msg
+ *!     Error message.
+ *!   @elem array backtrace
+ *!     Backtrace as returned by @[backtrace()] from where
+ *!     the error occurred.
+ *! @endarray
+ *!
+ *! @note
+ *!   The error message is always terminated with a newline.
+ *!
+ *! @seealso
+ *!   @[backtrace()]
+ */
 void f_error_index(INT32 args)
 {
   INT_TYPE ind;
@@ -566,7 +606,13 @@ void f_error_index(INT32 args)
   }
 }
 
-
+/*! @decl string describe()
+ *!
+ *! Make a readable error-message.
+ *!
+ *! @note
+ *!   Uses @[describe_backtrace()] to generate the message.
+ */
 void f_error_describe(INT32 args)
 {
   pop_n_elems(args);
@@ -574,11 +620,21 @@ void f_error_describe(INT32 args)
   APPLY_MASTER("describe_backtrace",1);
 }
 
+/*! @decl array backtrace()
+ *!
+ *! Get the backtrace from where the error occurred.
+ *!
+ *! @seealso
+ *!   @[predef::backtrace()]
+ */
 void f_error_backtrace(INT32 args)
 {
   pop_n_elems(args);
   ref_push_array(GENERIC_ERROR_THIS->backtrace);
 }
+
+/*! @endclass
+ */
 
 #ifdef ERROR_DEBUG
 #define DWERROR(X)	fprintf X

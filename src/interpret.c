@@ -5,7 +5,7 @@
 \*/
 /**/
 #include "global.h"
-RCSID("$Id: interpret.c,v 1.184 2001/01/31 21:51:58 mast Exp $");
+RCSID("$Id: interpret.c,v 1.185 2001/02/06 19:41:51 grubba Exp $");
 #include "interpret.h"
 #include "object.h"
 #include "program.h"
@@ -1465,6 +1465,10 @@ static int o_catch(unsigned char *pc)
   }
 }
 
+/*! @decl mixed call_function(function fun, mixed ... args)
+ *!
+ *! Call a function.
+ */
 PMOD_EXPORT void f_call_function(INT32 args)
 {
   mega_apply(APPLY_STACK,args,0,0);

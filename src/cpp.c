@@ -5,7 +5,7 @@
 \*/
 
 /*
- * $Id: cpp.c,v 1.81 2001/01/17 14:22:42 grubba Exp $
+ * $Id: cpp.c,v 1.82 2001/02/06 19:11:48 grubba Exp $
  */
 #include "global.h"
 #include "stralloc.h"
@@ -1238,9 +1238,18 @@ static int do_safe_index_call(struct pike_string *s)
 }
 
 
-/* string cpp(string data, string|void current_file,
- *            int|string|void charset, object|void handler,
- *            void|int compat_major, void|int compat_minor);
+/*! @decl string cpp(string data, string|void current_file, @
+ *!                  int|string|void charset, object|void handler, @
+ *!                  void|int compat_major, void|int compat_minor)
+ *!
+ *! Run a string through the preprocessor.
+ *!
+ *! Preprocesses the string @[data] with Pike's builtin ANSI-C look-alike
+ *! preprocessor. If the @[current_file] argument has not been specified,
+ *! it will default to @tt{"-"@}. @[charset] defaults to @tt{"ISO-10646"@}.
+ *!
+ *! @seealso
+ *!   @[compile()]
  */
 void f_cpp(INT32 args)
 {

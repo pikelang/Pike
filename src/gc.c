@@ -30,7 +30,7 @@ struct callback *gc_evaluator_callback=0;
 
 #include "block_alloc.h"
 
-RCSID("$Id: gc.c,v 1.144 2000/12/14 07:24:37 mast Exp $");
+RCSID("$Id: gc.c,v 1.145 2001/02/06 19:39:40 grubba Exp $");
 
 /* Run garbage collect approximately every time
  * 20 percent of all arrays, objects and programs is
@@ -2347,7 +2347,32 @@ int do_gc(void)
   return objs;
 }
 
-
+/*! @decl mapping(string:int|float) _gc_status()
+ *!
+ *! Get statistics from the garbage collector.
+ *!
+ *! @returns
+ *!   A mapping with the following content will be returned:
+ *!   @mapping
+ *!     @member int "num_objects"
+ *!       Number of objects.
+ *!     @member int "num_allocs"
+ *!       Number of memory allocations.
+ *!     @member int "alloc_threshold"
+ *!       Threshold where the garbage-collector starts.
+ *!     @member int "objects_alloced"
+ *!       Number of allocated objects.
+ *!     @member int "objects_freed"
+ *!       Number of freed objects.
+ *!     @member int "last_gc"
+ *!       Time when the garbage-collector last ran.
+ *!     @member float "projected_garbage"
+ *!       Heuristic for the amount of garbage in the system.
+ *!   @endmapping
+ *!
+ *! @seealso
+ *!   @[gc()]
+ */
 void f__gc_status(INT32 args)
 {
   pop_n_elems(args);

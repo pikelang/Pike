@@ -8,7 +8,7 @@
 #  include "pike_macros.h"
 #  include "main.h"
 
-RCSID("$Id: dynamic_load.c,v 1.50 2000/12/23 07:33:49 hubbe Exp $");
+RCSID("$Id: dynamic_load.c,v 1.51 2001/02/06 19:20:06 grubba Exp $");
 
 #endif /* !TESTING */
 
@@ -265,6 +265,23 @@ static modfun CAST_TO_FUN(void *ptr)
 #define CAST_TO_FUN(X)	((modfun)X)
 #endif /* NO_CAST_TO_FUN */
 
+/*! @decl int load_module(string module_name)
+ *!
+ *! Load a binary module.
+ *!
+ *! This function loads a module written in C or some other language
+ *! into Pike. The module is initialized and any programs or constants
+ *! defined will immediately be available.
+ *!
+ *! When a module is loaded the function @tt{pike_module_init()@} will
+ *! be called to initialize it. When Pike exits @tt{pike_module_exit()@}
+ *! will be called. These two functions @b{must@} be available in the module.
+ *!
+ *! @note
+ *!   The current working directory is normally not searched for
+ *!   dynamic modules. Please use @tt{"./name.so"@} instead of just
+ *!   @tt{"name.so"@} to load modules from the current directory.
+ */
 void f_load_module(INT32 args)
 {
   void *module;
