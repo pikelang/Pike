@@ -1,4 +1,4 @@
-AC_REVISION("$Id: configure.in,v 1.720 2003/05/07 10:47:08 grubba Exp $")
+AC_REVISION("$Id: configure.in,v 1.721 2003/05/09 12:22:14 grubba Exp $")
 AC_INIT(interpret.c)
 AC_CONFIG_HEADER(machine.h)
 
@@ -5918,6 +5918,13 @@ AC_CACHE_VAL(pike_cv_thread_local_cpu_time, [
 #include <stdio.h>
 
 #ifdef PIKE_THREADS
+
+#ifndef TOSTR
+#define TOSTR(X)	#X
+#endif
+#ifndef DEFINETOSTR
+#define DEFINETOSTR(X)	TOSTR(X)
+#endif
 
 #define CONFIGURE_TEST
 
