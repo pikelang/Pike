@@ -1,5 +1,5 @@
 /*
- * $Id: syslog.c,v 1.13 2001/11/18 00:26:30 nilsson Exp $
+ * $Id: syslog.c,v 1.14 2002/01/01 22:01:31 nilsson Exp $
  *
  * Access to syslog from Pike.
  *
@@ -17,7 +17,7 @@
 
 #ifdef HAVE_SYSLOG
 
-RCSID("$Id: syslog.c,v 1.13 2001/11/18 00:26:30 nilsson Exp $");
+RCSID("$Id: syslog.c,v 1.14 2002/01/01 22:01:31 nilsson Exp $");
 
 #include "interpret.h"
 #include "svalue.h"
@@ -173,7 +173,7 @@ RCSID("$Id: syslog.c,v 1.13 2001/11/18 00:26:30 nilsson Exp $");
  *! LOG_NOWAIT should probably always be specified.
  *!
  *! @seealso
- *!   @[syslog], @[closelog], @[setlogmask]
+ *!   @[syslog], @[closelog]
  */
 void f_openlog(INT32 args)
 {

@@ -1,5 +1,5 @@
 /*
- * $Id: system.c,v 1.117 2001/11/17 23:36:01 nilsson Exp $
+ * $Id: system.c,v 1.118 2002/01/01 22:01:31 nilsson Exp $
  *
  * System-call module for Pike
  *
@@ -15,7 +15,7 @@
 #include "system_machine.h"
 #include "system.h"
 
-RCSID("$Id: system.c,v 1.117 2001/11/17 23:36:01 nilsson Exp $");
+RCSID("$Id: system.c,v 1.118 2002/01/01 22:01:31 nilsson Exp $");
 #ifdef HAVE_WINSOCK_H
 #include <winsock.h>
 #endif
@@ -608,7 +608,7 @@ void f_cleargroups(INT32 args)
   }
 }
 
-/*! @decl void setgroup(array(int) gids)
+/*! @decl void setgroups(array(int) gids)
  *!
  *! Set the supplemental group access list for this process.
  *!
