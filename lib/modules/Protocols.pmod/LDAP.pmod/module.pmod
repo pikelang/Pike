@@ -1,4 +1,4 @@
-// $Id: module.pmod,v 1.16 2005/04/06 14:58:05 mast Exp $
+// $Id: module.pmod,v 1.17 2005/04/06 15:31:56 mast Exp $
 
 #include "ldap_globals.h"
 
@@ -1060,7 +1060,9 @@ string get_constant_name (mixed val)
     array(string) names = indices (this_program);
     array(mixed) vals = values (this_program);
     for (int i = 0; i < sizeof (names);)
-      if (intp (vals[i])) {
+      if (intp (vals[i]) ||
+	  // Match all known secondary aliases here.
+	  names[i] == "SYNTAX_CASE_EXACT_STR") {
 	names = names[..i-1] + names[i+1..];
 	vals = vals[..i-1] + vals[i+1..];
       }
@@ -1124,6 +1126,11 @@ static void create()
   };
   foreach (incomplete, mapping(string:mixed) descr)
     complete (descr);
+
+#ifdef DEBUG
+  // To discover duplicate constant names.
+  get_constant_name (0);
+#endif
 }
 
 static constant supported_extensions = (<"bindname">);
