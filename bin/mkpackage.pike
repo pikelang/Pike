@@ -49,7 +49,7 @@ class Package
      ({ "-v", "--version" }):
      "echo 'Package version unknown.'\n"
      "exit",
-     ({ "-a", "--add-component" }):
+     ({ "-a", "--add" }):
      "shift\n"
      "(cd `dirname \"$1\"` &&\n"
      " tar rf \"$TARFILE\" `basename \"$1\"`)\n"
