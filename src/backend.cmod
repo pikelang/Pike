@@ -2,11 +2,11 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: backend.cmod,v 1.119 2004/04/04 19:58:34 mast Exp $
+|| $Id: backend.cmod,v 1.120 2004/04/05 01:32:27 mast Exp $
 */
 
 #include "global.h"
-RCSID("$Id: backend.cmod,v 1.119 2004/04/04 19:58:34 mast Exp $");
+RCSID("$Id: backend.cmod,v 1.120 2004/04/05 01:32:27 mast Exp $");
 #include "fdlib.h"
 #include "backend.h"
 #include <errno.h>
@@ -471,7 +471,7 @@ struct selectors
 
 static void MY_FD_SET(struct selectors *me,
 		      int fd,
-		      short add)
+		      int add)
 {
   int i;
   IF_PD(fprintf(stderr, "BACKEND: MY_FD_SET(%d, 0x%04x)\n", fd, add));
@@ -504,8 +504,8 @@ static void MY_FD_SET(struct selectors *me,
 }
 
 static void MY_FD_CLR(struct selectors *me,
-			int fd,
-			short sub)
+		      int fd,
+		      int sub)
 {
   int i;
   IF_PD(fprintf(stderr, "BACKEND: POLL_FD_CLR(%d, 0x%04x)\n", fd, sub));
@@ -1705,7 +1705,7 @@ PIKECLASS Backend
 	 while (++pos < me->inactive_boxes_size)
 	   me->inactive_boxes[pos - 1] =
 	     (struct fd_callback_box *) (me->inactive_boxes + pos);
-	 me->inactive_boxes[pos] = NULL;
+	 me->inactive_boxes[pos - 1] = NULL;
        }
 
        pos = me->free_inactive_box - me->inactive_boxes;
@@ -1724,8 +1724,10 @@ PIKECLASS Backend
 
      /* FIXME: Shrink arrays? */
 
-     if (fd >= 0)
+     if (fd >= 0) {
+       low_set_backend_for_fd (fd, NULL);
        me->fd_boxes[fd - me->fd_boxes_start] = NULL;
+     }
      else {
        fd = ~fd;
        me->inactive_boxes[fd] = (struct fd_callback_box *) me->free_inactive_box;
@@ -1752,18 +1754,28 @@ PIKECLASS Backend
   {
     /* Accept an unhooked box; can happen when we're called from an
      * object exit hook due to being freed by free_object below. */
-    if (!box->backend) return;
+    if (!box->backend) {
+      IF_PD(fprintf(stderr, "BACKEND[unhooked box]: unhook_fd_callback_box: "
+		    "fd %d, object %p\n", box->fd, box->ref_obj));
+      return;
+    }
+
     check_box (box, INT_MAX);
     IF_PD(fprintf(stderr, "BACKEND[%d]: unhook_fd_callback_box: fd %d, object %p\n",
 		  box->backend->id, box->fd, box->ref_obj));
+
     if (box->fd >= 0) update_fd_set (box->backend, box->fd, box->events, 0);
     remove_fd_box (box);
     box->backend = NULL;
-    if (box->ref_obj && box->events)
-      /* No use zeroing box->ref_obj if it's freed here; we assume
-       * it's inside its own storage, so it's valid for as long as it
-       * can be read. */
-      free_object (box->ref_obj);
+
+    if (box->ref_obj && box->events) {
+      /* Use gc safe method to allow calls from within the gc. */
+      /* box->ref_obj is only converted from a counted to
+       * non-counted ref, so it shouldn't be clobbered by the free. */
+      union anything u;
+      u.object = box->ref_obj;
+      gc_free_short_svalue (&u, T_OBJECT);
+    }
   }
 
   PMOD_EXPORT void set_fd_callback_events (struct fd_callback_box *box, int events)
@@ -1773,14 +1785,23 @@ PIKECLASS Backend
     IF_PD(fprintf(stderr, "BACKEND[%d]: set_fd_callback_events: "
 		  "fd %d, events from 0x%x to 0x%x, object %p\n",
 		  box->backend->id, box->fd, old_events, events, box->ref_obj));
+
     if (box->fd >= 0) update_fd_set (box->backend, box->fd, old_events, events);
     box->events = events;
+
     if (box->ref_obj) {
       if (!old_events) {
 	if (events) add_ref (box->ref_obj);
       }
       else
-	if (!events) free_object (box->ref_obj);
+	if (!events) {
+	  /* Use gc safe method to allow calls from within the gc. */
+	  /* box->ref_obj is only converted from a counted to
+	   * non-counted ref, so it shouldn't be clobbered by the free. */
+	  union anything u;
+	  u.object = box->ref_obj;
+	  gc_free_short_svalue (&u, T_OBJECT);
+	}
     }
   }
 
@@ -1809,19 +1830,30 @@ PIKECLASS Backend
   PMOD_EXPORT void change_fd_for_box (struct fd_callback_box *box, int new_fd)
   {
     int old_fd = box->fd;
-    check_box (box, INT_MAX);
 
-    if (old_fd >= 0 ? old_fd != new_fd : new_fd >= 0) {
-      if (old_fd >= 0) update_fd_set (box->backend, old_fd, box->events, 0);
-      remove_fd_box (box);
+    if (!box->backend) {
+      /* Convenience so that the caller doesn't have to check if the
+       * box is hooked in. */
+      IF_PD(fprintf(stderr, "BACKEND[unhooked box]: change_fd_for_box: "
+		    "fd from %d to %d\n", old_fd, new_fd));
       box->fd = new_fd;
-      add_fd_box (box);
-      new_fd = box->fd;
-      if (new_fd >= 0) update_fd_set (box->backend, new_fd, 0, box->events);
     }
 
-    IF_PD(fprintf(stderr, "BACKEND[%d]: change_fd_for_box: "
-		  "fd from %d to %d\n", box->backend->id, old_fd, new_fd));
+    else {
+      check_box (box, INT_MAX);
+
+      if (old_fd >= 0 ? old_fd != new_fd : new_fd >= 0) {
+	if (old_fd >= 0) update_fd_set (box->backend, old_fd, box->events, 0);
+	remove_fd_box (box);
+	box->fd = new_fd;
+	add_fd_box (box);
+	new_fd = box->fd;
+	if (new_fd >= 0) update_fd_set (box->backend, new_fd, 0, box->events);
+      }
+
+      IF_PD(fprintf(stderr, "BACKEND[%d]: change_fd_for_box: "
+		    "fd from %d to %d\n", box->backend->id, old_fd, new_fd));
+    }
   }
 
   /*
@@ -2849,14 +2881,16 @@ PIKECLASS Backend
     }
 
     FOR_EACH_ACTIVE_FD_BOX (me, box, {
-	if (box->ref_obj)
+	check_box (box, INT_MAX);
+	if (box->ref_obj && box->events)
 	  debug_gc_check (box->ref_obj, " as container object "
-			  "for active callback in backend object");
+			  "for an active callback in backend object");
       });
     FOR_EACH_INACTIVE_FD_BOX (me, box, {
-	if (box->ref_obj)
+	check_box (box, INT_MAX);
+	if (box->ref_obj && box->events)
 	  debug_gc_check (box->ref_obj, " as container object "
-			  "for inactive callback in backend object");
+			  "for an inactive callback in backend object");
       });
   }
 
@@ -3379,7 +3413,7 @@ PMOD_EXPORT void debug_check_fd_not_in_use (int fd)
 {
   if (fd < 0) Pike_fatal ("Invalid fd: %d\n", fd);
   if (fd < fd_map_size && fd_map[fd])
-    Pike_fatal ("fd already in use by backend %d.\n", fd_map[fd]->id);
+    Pike_fatal ("fd %d already in use by backend %d.\n", fd, fd_map[fd]->id);
 }
 
 #endif /* PIKE_DEBUG */
