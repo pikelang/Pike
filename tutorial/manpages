@@ -3,6 +3,7 @@ inherit Stdio.File : out;
 
 string globalbase;
 object windex;
+object whatis;
 
 // Conversion table:
 //
@@ -26,7 +27,7 @@ void mkdirhier(string what)
 string make_manpage(string base, SGML data, string ind, string fbase)
 {
    string res="";
-   int stripws=1;
+   int stripws=0;
 
    if (stringp(data))
    {
@@ -106,63 +107,66 @@ void make_page(string base, TAG tag, string ind, string fbase)
 
    mixed err = catch {
 
-   string *outfiles,*names,*s_outfiles;
-   string obase=base;
-   string q;
+     string *outfiles,*names,*s_outfiles;
+     string obase=base;
+     string q;
 
-   outfiles=Array.map(names=tag->params->name/",",
-			  lambda(string s,string t,string u,string base)
-			  {
-			     s=replace(s,"->",".");
-			     sscanf(s,t+".%s",s);
-			     return u+"/"+s+"."+base;
-			  },fbase,globalbase+base,base);
+     outfiles=Array.map(names=tag->params->name/",",
+			lambda(string s,string t,string u,string base)
+			{
+			  s=replace(s,"->",".");
+			  sscanf(s,t+".%s",s);
+			  return u+"/"+s+"."+base;
+			},fbase,globalbase+base,base);
 
-   sscanf(outfiles[0],"%*s/man%*s/%s",q);
-   if (q) {
-     array(string) a = q/".";
-     if (sizeof(a) > 1) {
-       q = a[..sizeof(a)-2]*".";
+     sscanf(outfiles[0],"%*s/man%*s/%s",q);
+     if (q) {
+       array(string) a = q/".";
+       if (sizeof(a) > 1) {
+	 q = a[..sizeof(a)-2]*".";
+       }
      }
-   }
    
 //   werror("files: "+outfiles*", "+"\n");
 
-   if (tag->params->mansuffix)
-   {
-      base+=tag->params->mansuffix;
-      fbase=(tag->params->name/",")[0];
-      mkdirhier(globalbase+base);
-   }
+     if (tag->params->mansuffix)
+     {
+       base+=tag->params->mansuffix;
+       fbase=(tag->params->name/",")[0];
+       mkdirhier(globalbase+base);
+     }
 
-   string page=make_manpage(base,tag->data,ind+" ",fbase);
+     string page=make_manpage(base,tag->data,ind+" ",fbase);
 
 //   werror("creating "+outfiles[0]+"...\n"); 
 
-   object f=Stdio.File(outfiles[0],"wtc");
-   string t=ctime(time());
-   f->write(strip_eightbit(".\\\" t\n"
-			   ".\\\" automatic generated from wmml\n"
-			   ".TH "+names*","+" "+obase+" \""+
-			   t[8..9]+t[3..7]+t[20..23]+"\" Pike \"Pike Manual\"\n"
-			   +page+"\n"));
-   f->close();
+     object f=Stdio.File(outfiles[0],"wtc");
+     string t=ctime(time());
+     f->write(strip_eightbit(".\\\" t\n"
+			     ".\\\" automatically generated from wmml\n"
+			     ".TH "+names*","+" "+upper_case(obase)+" \""+
+			     t[8..9]+t[3..7]+t[20..23]+"\" Pike \"Pike Manual\"\n"
+			     +page+"\n"));
+     f->close();
 
-   foreach (outfiles[1..],string s)
-   {
-      string name;
-      sscanf(outfiles[0],"man/%s",name);
-//      werror("creating "+s+" -> "+name+"...\n"); 
-      object f=Stdio.File(s ,"wtc");
-      f->write(".so "+name+"\n");
-      f->close();
-   }
+     foreach (outfiles[1..], string s)
+     {
+       string name;
+       sscanf(outfiles[0], "man/%s", name);
+//     werror("creating "+s+" -> "+name+"...\n"); 
+       object f=Stdio.File(s, "wtc");
+       f->write(".so "+name+"\n");
+       f->close();
+     }
 
-   foreach (({q})+names,string s)
-      windex->write(sprintf("%-15s %-15s - %s\n",
-			    s,q+" ("+obase+")",
-			    tag->params->title || (names*", ")));
-
+     foreach (({q})+names, string s) {
+       windex->write(sprintf("%-15s %-15s - %s\n",
+			     s,q+" ("+obase+")",
+			     tag->params->title || (names*", ")));
+       whatis->write(sprintf("%-23s - %s\n", s,
+			     tag->params->title || (names*", ")));
+     }
+   
    };
    if (err)
 	 werror("Error while making manpage for "+tag->name+" ("+base+"):\n"
@@ -184,6 +188,8 @@ void output(string base, WMML data)
 {
    globalbase="man/man";
    mkdirhier("man/man3p");
-   windex=Stdio.File("man/windex","wtc");
-   make_pages("3p",data->data,"","");
+   windex=Stdio.File("man/windex", "wtc");
+   whatis=Stdio.File("man/whatis", "wtc");
+   make_pages("3p", data->data, "", "");
+   werror("\n");
 }
