@@ -137,10 +137,6 @@ class rfc934 {
 			 "  boundary='%s'\n", boundary));
 #endif
 
-#if 0
-	  encapsulated 
-	    += ({ encapsulated_message()->init(boundary, current) });
-#endif
 	  boundary = "-" + parts[i];
 	  break;
 	}

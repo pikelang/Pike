@@ -3,6 +3,7 @@
  * Object identifiers */
 
 /* Attributes (from http://leangen.uninett.no:29659/~hta/ietf/oid/2.5.4.html):
+   (by 1999-01-25, a better URL is http://www.alvestrand.no/objectid/top.html)
 
    2.5.4.0 - id-at-objectClass 
       2.5.4.1 - id-at-aliasedEntryName 
