@@ -1,7 +1,7 @@
 /* cipher.cmod -*- c -*- */
 
 #include "global.h"
-RCSID("$Id: cipher.cmod,v 1.15 2003/08/26 11:14:07 nilsson Exp $");
+RCSID("$Id: cipher.cmod,v 1.16 2003/10/05 00:54:05 nilsson Exp $");
 #include "interpret.h"
 #include "svalue.h"
 
@@ -18,6 +18,7 @@ RCSID("$Id: cipher.cmod,v 1.15 2003/08/26 11:14:07 nilsson Exp $");
 #include <nettle/aes.h>
 #include <nettle/arcfour.h>
 #include <nettle/blowfish.h>
+#include <nettle/des.h>
 #include <nettle/cast128.h>
 #include <nettle/serpent.h>
 #include <nettle/twofish.h>
@@ -464,6 +465,95 @@ PIKECLASS CAST128_State
     }
 }
 /*! @endclass CAST128_State */
+
+static int
+DES_check_key(ptrdiff_t len, const char *key)
+{
+  return len==8;
+}
+
+static void
+glue_des_set_key(struct des_ctx *ctx, unsigned length, const uint8_t *key)
+{
+  des_set_key(ctx, key);
+}
+
+const struct nettle_cipher nettle_des = {
+  "DES",
+  sizeof(struct des_ctx),
+  8,
+  56/8,
+  (nettle_set_key_func) glue_des_set_key,
+  (nettle_set_key_func) glue_des_set_key,
+  (nettle_crypt_func) des_encrypt,
+  (nettle_crypt_func) des_decrypt,
+};
+
+/*! @class DES_Info
+ *!
+ *! Internal mixin class, intended to be multiply inherited
+ *! together with CipherInfo. */
+
+PIKECLASS DES_Info
+{
+  INIT
+    {
+      struct CipherInfo_struct *CipherInfo = GET_INFO(Pike_fp->current_object);
+
+      if (CipherInfo && !CipherInfo->meta)
+      {
+	CipherInfo->meta = &nettle_des;
+	CipherInfo->check_key = &DES_check_key;
+      }
+    }
+
+  PIKEFUN string fix_parity(string key)
+  {
+    uint8_t buf[8];
+    if(key->len < 7)
+      Pike_error("Key must be at least 7 characters.\n");
+
+    if(key->len == 7) {
+      buf[0] = key->str[0]&254;
+      buf[1] = (key->str[0]&1)<<7 | (key->str[1]>>1 & 126);
+      buf[2] = (key->str[1]&3)<<6 | (key->str[2]>>2 & 62);
+      buf[3] = (key->str[2]&7)<<5 | (key->str[3]>>3 & 30);
+      buf[4] = (key->str[3]&15)<<4 | (key->str[4]>>4 & 14);
+      buf[5] = (key->str[4]&31)<<3 | (key->str[5]>>5 & 6);
+      buf[6] = (key->str[5]&63)<<2 | (key->str[6]>>6 & 2);
+      buf[7] = (key->str[6]&127)<<1;
+    }
+    else
+      memcpy(buf, key->str, 8);
+
+    des_fix_parity(8, buf, (const uint8_t *)buf);
+    RETURN make_shared_binary_string((const char *)buf, 8);
+  }
+}
+
+/*! @endclass DES_Info */
+
+/*! @class DES_State
+ *!
+ *! State for DES encyption
+ */
+PIKECLASS DES_State
+{
+  INHERIT DES_Info;
+  INHERIT CipherState;
+  CVAR struct des_ctx des;
+
+  INIT
+    {
+      struct CipherState_struct *state
+	= (struct CipherState_struct *) get_storage(Pike_fp->current_object,
+						    CipherState_program);
+
+      assert(state);
+      state->ctx = &THIS->des;
+    }
+}
+/*! @endclass DES_State */
 
 static int
 serpent_check_key(ptrdiff_t len, const char *key)
