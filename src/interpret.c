@@ -4,7 +4,7 @@
 ||| See the files COPYING and DISCLAIMER for more information.
 \*/
 #include "global.h"
-RCSID("$Id: interpret.c,v 1.37 1997/03/17 03:04:38 hubbe Exp $");
+RCSID("$Id: interpret.c,v 1.38 1997/03/20 16:04:15 grubba Exp $");
 #include "interpret.h"
 #include "object.h"
 #include "program.h"
@@ -1585,8 +1585,22 @@ void strict_apply_svalue(struct svalue *s, INT32 args)
     break;
   }
 
+  case T_INT:
+    if (!s->u.integer) {
+      error("Attempt to call the NULL-value\n");
+    } else {
+      error("Attempt to call the value %d\n", s->u.integer);
+    }
+  case T_STRING:
+    if (s->u.string->len > 20) {
+      error("Attempt to call the string \"%20s\"...\n", s->u.string->str);
+    } else {
+      error("Attempt to call the string \"%s\"\n", s->u.string->str);
+    }
+  case T_MAPPING:
+    error("Attempt to call a mapping\n");
   default:
-    error("Call to non-function value.\n");
+    error("Call to non-function value type:%d.\n", s->type);
   }
 
 #ifdef DEBUG
