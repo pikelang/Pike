@@ -22,10 +22,10 @@ Parser.wmml :
 	$(pike) ../bin/mkwmml.pike ../src/modules/Parser/*.c >Parser.wmml
 
 ProtocolsHTTP.wmml :
-	$(pike) ../bin/mkwmml.pike ../lib/modules/Protocols.pmod/HTTP.pmod/*.p*[^~] >ProtocolsHTTP.wmml
+	$(pike) ../bin/mkwmml.pike `/bin/ls -1 ../lib/modules/Protocols.pmod/HTTP.pmod/*.p* | egrep -v '~$'` >ProtocolsHTTP.wmml
 
 Calendar.wmml :
-	$(pike) ../bin/mkwmml.pike ../lib/modules/Calendar.pmod/*.p*[^~] >Calendar.wmml
+	$(pike) ../bin/mkwmml.pike `/bin/ls -1 ../lib/modules/Calendar.pmod/*.p* | egrep -v '~$'` >Calendar.wmml
 
 
 # ----------------------------------------------------------------------
