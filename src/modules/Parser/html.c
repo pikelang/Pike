@@ -25,7 +25,7 @@
 extern struct program *parser_html_program;
 
 /* #define SCAN_DEBUG */
-#define DEBUG
+/* #define DEBUG */
 
 #ifdef DEBUG
 #undef DEBUG
@@ -4097,6 +4097,10 @@ static void tag_args(struct parser_html_storage *this,struct piece *feed,ptrdiff
    int flags = this->flags;
    ptrdiff_t c1=0,c2=0,c3;
    int n=0;
+#ifdef DEBUG
+   struct piece *prev_s = NULL;
+   ptrdiff_t prev_c = 0;
+#endif
 
    /* NOTE: This somewhat duplicates the CTX_TAG clause in
     * do_try_feed(). */
@@ -4119,6 +4123,16 @@ static void tag_args(struct parser_html_storage *this,struct piece *feed,ptrdiff
    {
       /* skip whitespace */
       scan_forward(s2,c2,&s1,&c1,this->ws,-this->n_ws);
+
+new_arg:
+#ifdef DEBUG
+      if (prev_s && cmp_feed_pos (prev_s, prev_c, s1, c1) >= 0)
+	fatal ("Not going forward in tag args loop (from %p:%d to %p:%d).\n",
+	       prev_s, prev_c, s1, c1);
+      prev_s = s1, prev_c = c1;
+#endif
+
+      DEBUG_MARK_SPOT("html_tag_args arg start",s1,c1);
 
       /* end of tag? */
       if (c1==s1->s->len) { /* end<tm> */
@@ -4147,15 +4161,14 @@ static void tag_args(struct parser_html_storage *this,struct piece *feed,ptrdiff
 	break;
       }
 
-new_arg:
-
-      DEBUG_MARK_SPOT("html_tag_args arg start",s1,c1);
-
       /* scan this argument name and push*/
       scan_forward_arg(this,s1,c1,&s2,&c2,SCAN_ARG_PUSH,1,NULL);
       if (flags & FLAG_CASE_INSENSITIVE_TAG)
 	f_lower_case(1);
       n++;
+
+      if (!(n & 127))
+	custom_check_stack(256, "Out of stack after parsing %d tag arguments.\n", n);
 
       do {
 	/* scan for '=', '>' or next argument */
@@ -4171,13 +4184,15 @@ new_arg:
 	ch=index_shared_string(s3->s,c3);
 
 	if (ch==this->tag_fin && s2==s3 && c2==c3) {
+	  struct piece *s4;
+	  ptrdiff_t c4;
 	  /* a '/' that might have been part of the argument name */
-	  FORWARD_CHAR (s3, c3, s1, c1);
-	  ch = index_shared_string (s1->s,c1);
-	  if (ch == this->tag_end) break;
-	  DEBUG_MARK_SPOT("html_tag_args arg name continues",s1,c1);
+	  FORWARD_CHAR (s3, c3, s4, c4);
+	  ch = index_shared_string (s4->s,c4);
+	  if (ch == this->tag_end && to_tag_end) break;
+	  DEBUG_MARK_SPOT("html_tag_args arg name continues",s4,c4);
 	  push_string (make_shared_binary_string2 (&this->tag_fin, 1));
-	  scan_forward_arg (this,s1,c1,&s2,&c2,SCAN_ARG_PUSH,1,NULL);
+	  scan_forward_arg (this,s4,c4,&s2,&c2,SCAN_ARG_PUSH,1,NULL);
 	  if (flags & FLAG_CASE_INSENSITIVE_TAG)
 	    f_lower_case(1);
 	  f_add (3);
