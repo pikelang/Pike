@@ -2,11 +2,11 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: backend.cmod,v 1.132 2004/04/07 19:38:15 grubba Exp $
+|| $Id: backend.cmod,v 1.133 2004/04/08 11:53:22 grubba Exp $
 */
 
 #include "global.h"
-RCSID("$Id: backend.cmod,v 1.132 2004/04/07 19:38:15 grubba Exp $");
+RCSID("$Id: backend.cmod,v 1.133 2004/04/08 11:53:22 grubba Exp $");
 #include "fdlib.h"
 #include "backend.h"
 #include <errno.h>
@@ -1592,8 +1592,9 @@ PIKECLASS Backend
 #ifdef PIKE_DEBUG
   static void check_box (struct fd_callback_box *box, int fd)
   {
-    struct Backend_struct *me = box->backend;
-    if (!me)
+    struct Backend_struct *me;
+    if (!box) return;
+    if (!(me = box->backend))
       Pike_fatal ("fd_callback_box not hooked to any backend.\n");
     if (fd == INT_MAX)
       fd = box->fd;
@@ -2414,27 +2415,32 @@ PIKECLASS Backend
 	    int old_events;
 	    errno = err;
 	    box = SAFE_GET_ACTIVE_BOX (me, i);
-	    check_box (box, i);
-	    /* We don't want to keep this fd anymore. */
-	    old_events = box->events;
-	    set_fd_callback_events (box, box->events & ~PIKE_BIT_FD_ERROR);
-	    if (WANT_EVENT (box, ERROR)) {
-	      IF_PD(fprintf(stderr, "BACKEND[%d]: error event %d on fd %d sent to %p\n",
-			    me->id, err, i, box->ref_obj));
-	      if (box->callback (box, PIKE_FD_ERROR) == -1)
-		goto backend_round_done;
-	    }
-	    /* The following is temporary compat stuff. */
-	    else if (old_events & PIKE_BIT_FD_READ) {
-	      IF_PD(fprintf(stderr, "BACKEND[%d]: read_callback(%d, %p) for error %d\n",
-			    me->id, i, box->ref_obj, err));
-	      if (box->callback (box, PIKE_FD_READ) == -1)
-		goto backend_round_done;
-	    } else if (old_events & PIKE_BIT_FD_WRITE) {
-	      IF_PD(fprintf(stderr, "BACKEND[%d]: write_callback(%d, %p) for error %d\n",
-			    me->id, i, box->ref_obj, err));
-	      if (box->callback (box, PIKE_FD_WRITE) == -1)
-		goto backend_round_done;
+	    if (box) {
+	      check_box (box, i);
+	      /* We don't want to keep this fd anymore. */
+	      old_events = box->events;
+	      set_fd_callback_events (box, box->events & ~PIKE_BIT_FD_ERROR);
+	      if (WANT_EVENT (box, ERROR)) {
+		IF_PD(fprintf(stderr,
+			      "BACKEND[%d]: error event %d on fd %d sent to %p\n",
+			      me->id, err, i, box->ref_obj));
+		if (box->callback (box, PIKE_FD_ERROR) == -1)
+		  goto backend_round_done;
+	      }
+	      /* The following is temporary compat stuff. */
+	      else if (old_events & PIKE_BIT_FD_READ) {
+		IF_PD(fprintf(stderr,
+			      "BACKEND[%d]: read_callback(%d, %p) for error %d\n",
+			      me->id, i, box->ref_obj, err));
+		if (box->callback (box, PIKE_FD_READ) == -1)
+		  goto backend_round_done;
+	      } else if (old_events & PIKE_BIT_FD_WRITE) {
+		IF_PD(fprintf(stderr,
+			      "BACKEND[%d]: write_callback(%d, %p) for error %d\n",
+			      me->id, i, box->ref_obj, err));
+		if (box->callback (box, PIKE_FD_WRITE) == -1)
+		  goto backend_round_done;
+	      }
 	    }
 	  }
 	}
@@ -2580,27 +2586,32 @@ PIKECLASS Backend
 	      IF_PD(fprintf(stderr, "BACKEND[%d]: POLLHUP on %d\n", me->id, fd));
 	    }
 	    box = SAFE_GET_ACTIVE_BOX (me, fd);
-	    check_box (box, fd);
-	    /* We don't want to keep this fd anymore. */
-	    old_events = box->events;
-	    set_fd_callback_events (box, box->events & ~PIKE_BIT_FD_ERROR);
-	    if (WANT_EVENT (box, ERROR)) {
-	      IF_PD(fprintf(stderr, "BACKEND[%d]: error event on fd %d sent to %p\n",
-			    me->id, i, box->ref_obj));
-	      if (box->callback (box, PIKE_FD_ERROR) == -1)
-		goto backend_round_done;
-	    }
-	    /* The following is temporary compat stuff. */
-	    else if (old_events & PIKE_BIT_FD_READ) {
-	      IF_PD(fprintf(stderr, "BACKEND[%d]: read_callback(%d, %p) for error %d\n",
-			    me->id, fd, box->ref_obj, errno));
-	      if (box->callback (box, PIKE_FD_READ) == -1)
-		goto backend_round_done;
-	    } else if (old_events & PIKE_BIT_FD_WRITE) {
-	      IF_PD(fprintf(stderr, "BACKEND[%d]: write_callback(%d, %p) for error %d\n",
-			    me->id, fd, box->ref_obj, errno));
-	      if (box->callback (box, PIKE_FD_WRITE) == -1)
-		goto backend_round_done;
+	    if (box) {
+	      check_box (box, fd);
+	      /* We don't want to keep this fd anymore. */
+	      old_events = box->events;
+	      set_fd_callback_events (box, box->events & ~PIKE_BIT_FD_ERROR);
+	      if (WANT_EVENT (box, ERROR)) {
+		IF_PD(fprintf(stderr,
+			      "BACKEND[%d]: error event on fd %d sent to %p\n",
+			      me->id, i, box->ref_obj));
+		if (box->callback (box, PIKE_FD_ERROR) == -1)
+		  goto backend_round_done;
+	      }
+	      /* The following is temporary compat stuff. */
+	      else if (old_events & PIKE_BIT_FD_READ) {
+		IF_PD(fprintf(stderr,
+			      "BACKEND[%d]: read_callback(%d, %p) for error %d\n",
+			      me->id, fd, box->ref_obj, errno));
+		if (box->callback (box, PIKE_FD_READ) == -1)
+		  goto backend_round_done;
+	      } else if (old_events & PIKE_BIT_FD_WRITE) {
+		IF_PD(fprintf(stderr,
+			      "BACKEND[%d]: write_callback(%d, %p) for error %d\n",
+			      me->id, fd, box->ref_obj, errno));
+		if (box->callback (box, PIKE_FD_WRITE) == -1)
+		  goto backend_round_done;
+	      }
 	    }
 #ifdef PIKE_DEBUG
 	    handled = 1;
