@@ -1,4 +1,4 @@
-test_true([["$Id: testsuite.in,v 1.83 1998/03/26 01:08:22 hubbe Exp $"]])
+test_true([["$Id: testsuite.in,v 1.84 1998/04/07 03:51:41 hubbe Exp $"]])
 test_eq(1e1,10.0)
 test_eq(1E1,10.0)
 test_eq(1e+1,10.0)
@@ -1912,6 +1912,7 @@ test_program(inherit test2; inherit test; mixed a() { setw(20); setb(22); return
 test_eval_error(clone(class c{int i;void foo(){ destruct(this_object());i=0;}})->foo())
 
 // Pike modules
+
 // LR
 test_true(LR.parser)
 test_true(LR.Grammar_parser)
@@ -1921,3 +1922,10 @@ test_program([[ object(LR.parser) p=LR.Grammar_parser.make_parser("foo : bar;foo
 test_true(ADT.Table.table)
 test_true(ADT.Table.ASCII)
 test_true(ADT.Table.table( ({ ({ "a", "b", 42 }), ({ "c", "b", 41 }), ({ "a", "a", 76 }) }), ({ "X", "Y", "z" }))->select("x", 2)->sum("Z")->distinct(0)->rsort("X")->rename(0, "fOo")->sort("foO")->cast("array"), ({ ({ "a", 118 }), ({ "c", 41 }) }))
+
+// - Process
+test_true(Process)
+test_true(Process.popen)
+test_true(Process.spawn)
+test_true(Process.system)
+test_true(Process.create_process)
