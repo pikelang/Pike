@@ -1,5 +1,5 @@
 #include "global.h"
-RCSID("$Id: polyfill.c,v 1.28 1999/05/30 20:12:01 mirar Exp $");
+RCSID("$Id: polyfill.c,v 1.29 1999/06/08 17:31:22 grubba Exp $");
 
 /* Prototypes are needed for these */
 extern double floor(double);
@@ -32,7 +32,7 @@ extern double floor(double);
 /*
 **! module Image
 **! note
-**!	$Id: polyfill.c,v 1.28 1999/05/30 20:12:01 mirar Exp $
+**!	$Id: polyfill.c,v 1.29 1999/06/08 17:31:22 grubba Exp $
 **! class Image
 */
 
@@ -349,26 +349,34 @@ static INLINE void polyfill_slant_add(float *buf,
    int i;
    int xmin_i = (int)floor(xmin);
    int xmax_i = (int)floor(xmax);
+
    if (xmax_i<0) return;
-   if (xmin_i == xmax_i)
-      buf[xmin_i] += (xmax-xmin)*(y1+dy*(xmax-xmin)/2)*lot;
+   if (xmin_i == xmax_i) {
+      float dx = xmax - xmin;
+      buf[xmin_i] += lot*(y1+dy*dx/2)*dx;
+   }
    else if (xmin_i>=0)
    {
-      buf[xmin_i] += 
-	 lot*(y1+dy*(1-(xmin-((float)xmin_i)))/2)*(1-(xmin-((float)xmin_i)));
-      y1+=dy*(1-(xmin-((float)xmin_i)));
-      for (i=xmin_i+1; i<xmax_i; i++) 
-	 buf[i]+=lot*(y1+dy/2),y1+=dy;
-      buf[xmax_i] += 
-	 lot*(y1+dy*(xmax-((float)xmax_i))/2)*(xmax-((float)xmax_i));
+      float dx = (1.0 - (xmin-((float)xmin_i)));
+      buf[xmin_i] += lot*(y1+dy*dx/2.0)*dx;
+      y1 += dy*dx;
+      for (i=xmin_i+1; i<xmax_i; i++) {
+	 buf[i] += lot*(y1+dy/2.0);
+	 y1 += dy;
+      }
+      dx = (xmax-((float)xmax_i));
+      buf[xmax_i] += lot*(y1+dy*dx/2.0)*dx;
    }
    else
    {
-      y1+=dy*(0.0-xmin);
-      for (i=0; i<xmax_i; i++) 
-	 buf[i]+=lot*(y1+dy/2),y1+=dy;
-      buf[xmax_i] += 
-	 lot*(y1+dy*(xmax-((float)xmax_i))/2)*(xmax-((float)xmax_i));
+      float dx;
+      y1 -= dy*xmin;	/* Adjust y1 for the first -xmin steps. */
+      for (i=0; i<xmax_i; i++) {
+	 buf[i] += lot*(y1+dy/2.0);
+	 y1 += dy;
+      }
+      dx = (xmax-((float)xmax_i));
+      buf[xmax_i] += lot*(y1+dy*dx/2)*dx;
    }
 }
 
