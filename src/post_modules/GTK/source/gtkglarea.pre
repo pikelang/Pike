@@ -31,6 +31,7 @@ void create( array(int) gloptions )
     }
     arg_list[ i ] = (gint)PGTK_GETINT(&_arg_list->item[i]);
   }
+  arg_list[i] = 0;
   THIS->obj =  (void *)  gtk_gl_area_new( arg_list );
   if( !THIS->obj )
   {
