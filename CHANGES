@@ -437,6 +437,21 @@ o Parser.XML.NSTree
     This is an extended version of Parser.XML.Tree that can handle
     namespaces according to the W3C namespace specification.
 
+o Pike.Backend and Pike.DefaultBackend
+    It is now possible to start several backends, and to start the
+    default backend without having to return negative from main().
+
+    Example:
+      while(things_to_do) {
+	mixed err;
+	if (err = catch{
+	  while(things_to_do) {
+	    Pike.DefaultBackend(3600.0);
+	  } }) {
+	  master()->handle_error(err);
+	}
+      }
+
 o Protocols.XMLRPC
     Implements most features of the XML-RPC standard.
 
@@ -705,6 +720,28 @@ o Identifier lookup
       |
       +-A---foo
 
+o Individual parent object pointers are now only kept when needed
+    In Pike 7.0 and 7.2 all objects kept a pointer to the surrounding
+    object. This led to an excess of circular datastructures, which
+    ment that the garbage collector had to kick in more often. In Pike
+    7.4 parent object pointers are only kept if the object actually
+    refers to identifiers in the parent. This change however affects
+    the behaviour of object_program() and function_object().
+
+o __pragma_save_parent__
+    To change the default parent object pointer behaviour to the
+    Pike 7.0/7.2 default it is possible to
+    add_constant("__pragma_save_parent__", 1).
+
+o #pragma save_parent
+    To get the Pike 7.0/7.2 parent object pointer behaviour for a
+    single compilation unit use the #pragma save_parent.
+
+o #pragma dont_save_parent
+    To restore the default Pike 7.4 parent object pointer behaviour from
+    #pragma save_parent or __pragma_save_parent__ for a single compilation
+    unit use the #pragma dont_save_parent.
+
 o Thread.Condition()->wait()
     This function takes a mutex lock to unlock while it waits on the
     condition. That argument was previously optional, but not any
@@ -839,9 +876,6 @@ Uncategorized misc changes:
 o it is possible to change predefines without forking a new pike
   add_predefine()/remove_predefine()
 
-o #pragma save_parent
-o #pragma dont_save_parent (overrides constant __pragma_save_parent__)
-
 o dont_dump_module *FIXME: grubba*
 
 System.usleep()/nanosleep()
@@ -852,7 +886,6 @@ master.pike
 
 Multiset
 
-Pike.Backend
 Pike.Security
 Pike.BacktraceFrame
 Pike.WEAK_INDICES, WEAK_VALUES, WEAK
