@@ -5,7 +5,7 @@
 \*/
 /**/
 #include "global.h"
-RCSID("$Id: program.c,v 1.153 1999/09/22 19:05:53 grubba Exp $");
+RCSID("$Id: program.c,v 1.154 1999/09/28 21:57:47 hubbe Exp $");
 #include "program.h"
 #include "object.h"
 #include "dynamic_buffer.h"
@@ -882,7 +882,11 @@ void check_program(struct program *p)
     if(p->inherits[e].storage_offset < 0)
       fatal("Inherit->storage_offset is wrong.\n");
 
-#if 0 /* nonworking test */
+    if(p->inherits[e].prog &&
+       p->inherits[e].storage_offset + STORAGE_NEEDED(p->inherits[e].prog) >
+       p->storage_needed)
+      fatal("Not enough room allocated by inherit!\n");
+
     if(e)
     {
       if(p->inherits[e-1].storage_offset > 
@@ -891,11 +895,19 @@ void check_program(struct program *p)
 
       if(p->inherits[e-1].prog &&
 	 p->inherits[e-1].inherit_level >= p->inherits[e].inherit_level && 
-	 p->inherits[e-1].storage_offset + 
-	 p->inherits[e-1].prog->storage_needed > p->inherits[e].storage_offset)
-	fatal("Overlapping inherits!\n");
+	 ( p->inherits[e-1].storage_offset +
+	   STORAGE_NEEDED(p->inherits[e-1].prog)) >
+	 p->inherits[e].storage_offset)
+	fatal("Overlapping inherits! (3)\n");
+    } else {
+      struct inherit *last_inh = p->inherits + p->num_inherits - 1;
+
+      if(last_inh->prog &&
+	 (last_inh->storage_offset +
+	  STORAGE_NEEDED(last_inh->prog) >
+	  p->storage_needed))
+	fatal("Overflowing inherits! (2)\n");
     }
-#endif
   }
 
   if(p->flags & PROGRAM_FINISHED)
@@ -1341,10 +1353,13 @@ void low_inherit(struct program *p,
 
   /* alignment magic */
   storage_offset=p->inherits[0].storage_offset % p->alignment_needed;
-  storage_offset=low_add_storage(p->storage_needed-
-				 p->inherits[0].storage_offset,
+  storage_offset=low_add_storage(STORAGE_NEEDED(p),
 				 p->alignment_needed,
 				 storage_offset);
+
+
+  /* Without this, the inherit becomes skewed */
+  storage_offset-=p->inherits[0].storage_offset; 
 
   for(e=0; e<(int)p->num_inherits; e++)
   {
