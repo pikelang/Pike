@@ -22,6 +22,9 @@ PREPROCESSOR DIRECTIVES
 	  #pragma
 	  #undef
 
+KEYWORDS
+	lpc
+
 ============================================================================
 DIRECTIVE
 	#!

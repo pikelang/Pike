@@ -10,4 +10,4 @@ DESCRIPTION
 	Returns 1 if a is zero, 0 otherwise.
 
 KEYWORDS
-	operator
+	operators

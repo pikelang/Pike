@@ -9,7 +9,7 @@ DESCRIPTION
 	are == and !=.
 
 KEYWORDS
-	type
+	types
 
 SEE ALSO
 	object, function, builtin/compile_file, builtin/compile_string,

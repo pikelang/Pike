@@ -2,7 +2,7 @@ NAME
 	sizeof - return the size of an array, string, list or mapping
 
 SYNTAX
-	int sizeof(string|list|mapping|array a);
+	int sizeof(string|list|mapping|array|object a);
 
 DESCRIPTION
 	This function returns the number of indexes available in the argument

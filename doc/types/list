@@ -32,7 +32,7 @@ DESCRIPTION
 		present.
 
 KEYWORDS
-	type
+	types
 
 SEE ALSO
 	mapping, array, builtin/indices, builtin/sizeof

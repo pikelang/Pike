@@ -13,7 +13,7 @@ DESCRIPTION
 	two arrays LOOK alike, it must be the same array.)
 
 KEYWORDS
-	operator
+	operators
 
 SEE ALSO
 	`==, `<, `>, `<=, `>=, efuns/equal

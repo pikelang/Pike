@@ -19,7 +19,7 @@ DESCRIPTION
 	o != o2	return 0 if o and o2 are the same object
 
 KEYWORDS
-	type
+	types
 
 SEE ALSO
 	program, function, builtin/clone, builtin/destruct

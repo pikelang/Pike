@@ -1,0 +1,33 @@
+NAME
+	sscanf - scan a string using a format string
+
+SYNTAX
+	int sscanf(string str, string fmt, mixed var1, mixed var2 ...);
+
+DESCRIPTION
+	Parse a string str using the format fmt. fmt can contain strings
+	separated by "%d,%s,%c and %f. Every % corresponds to one of var1,
+	var2...
+
+	%d	gives an integer
+	%o	gives an octal integer
+	%x	gives a hexadecimal integer
+	%D	gives an integer that is either octal (leading zero),
+		hexadecimal (leading 0x) or decimal.
+	%f	gives a float
+	%c	matches one char and returns it as an integer
+	%s	gives a string
+	%[set]	matches a string containing a given set of characters.
+		(thos given inside the brackets) %[^set] means any character
+		ecept those inside brackets. %[0-9H] means any number or 'H'.
+
+	If a * is put between the percent and the operator, the operator
+	will not only match it's argument, not assign any variables.
+
+	Number of matched arguments is returned.
+
+KEYWORDS
+	string
+
+SEE ALSO
+	explode, sprintf
