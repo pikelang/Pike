@@ -1,6 +1,8 @@
 #pike __REAL_VERSION__
 import ".";
 
+#if constant(@module@.Mird)
+
 class Mird
 {
    constant Glue=@module@;
@@ -483,3 +485,5 @@ class Mird
 }
 
 program _module_value=Mird;
+
+#endif
