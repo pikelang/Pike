@@ -1,5 +1,5 @@
 /* -*- c -*-
- * $Id: builtin.cmod,v 1.34 2001/06/18 18:04:34 grubba Exp $
+ * $Id: builtin.cmod,v 1.35 2001/06/19 13:12:03 grubba Exp $
  */
 
 #include "global.h"
@@ -643,28 +643,41 @@ PIKEFUN mapping random(mapping m)
 
 PIKECLASS backtrace_frame
 {
-  CVAR struct pike_frame *frame;
+  CVAR struct svalue fun;
+  CVAR struct program *prog;
+  CVAR unsigned char *pc;
   CVAR INT_TYPE lineno;
+  CVAR struct array *args;
   CVAR struct pike_string *filename;
 
   INIT
   {
-    THIS->frame = NULL;
-    THIS->filename = NULL;
+    THIS->fun.type = T_INT;
+    THIS->prog = NULL;
+    THIS->pc = 0;
     THIS->lineno = 0;
+    THIS->args = NULL;
+    THIS->filename = NULL;
   }
 
   EXIT
   {
-    if (THIS->frame) {
-      free_pike_frame(THIS->frame);
+    if (THIS->prog) {
+      free_program(THIS->prog);
+      THIS->prog = NULL;
+    }
+    if (THIS->args) {
+      free_array(THIS->args);
+      THIS->args = NULL;
     }
     if (THIS->filename) {
       free_string(THIS->filename);
+      THIS->filename = NULL;
     }
-    THIS->frame = NULL;
-    THIS->filename = NULL;
+    THIS->pc = 0;
     THIS->lineno = 0;
+    free_svalue(&THIS->fun);
+    THIS->fun.type = T_INT;
   }
 
   PIKEFUN int(0..1) _is_type(string t)
@@ -676,21 +689,13 @@ PIKECLASS backtrace_frame
 
   PIKEFUN string _sprintf(int c, mapping|void opts)
   {
-    struct pike_frame *f = THIS->frame;
-    INT_TYPE numargs = 0;
-
     pop_n_elems(args);
 
-    if (!f) {
-      push_text("backtrace_frame( empty )");
-      return;
-    }
     push_text("backtrace_frame(");
-    if (f->pc) {
+    if (THIS->pc) {
       if (!THIS->filename) {
 	THIS->filename =
-	  make_shared_string(get_line(f->pc, f->context.prog,
-				      &THIS->lineno));
+	  make_shared_string(get_line(THIS->pc, THIS->prog, &THIS->lineno));
       }
       ref_push_string(THIS->filename);
       push_text(":");
@@ -700,25 +705,26 @@ PIKECLASS backtrace_frame
     } else {
       push_text("Unknown file, ");
     }
-    if (f->current_object->prog) {
-      ref_push_object(f->current_object);
-      Pike_sp[-1].subtype = f->fun;
-      Pike_sp[-1].type = PIKE_T_FUNCTION;
-      f_function_name(1);
-      push_text("(), ");
-      f_add(2);
+    if (THIS->fun.type == PIKE_T_FUNCTION) {
+      if (THIS->fun.u.object->prog) {
+	push_svalue(&THIS->fun);
+	f_function_name(1);
+	push_text("(), ");
+	f_add(2);
+      } else {
+	free_svalue(&THIS->fun);
+	THIS->fun.type = PIKE_T_INT;
+	THIS->fun.u.integer = 0;
+	THIS->fun.subtype = NUMBER_DESTRUCTED;
+	push_text("destructed_function(), ");	
+      }
     } else {
       push_text("destructed_function(), ");
     }
 
-    if (f->locals) {
-      numargs =
-	DO_NOT_WARN((INT_TYPE) MINIMUM(f->num_args, Pike_sp - f->locals));
-      if (numargs < 0) numargs = 0;
-    }
-    if (numargs) {
+    if (THIS->args) {
       push_text("Args: ");
-      push_int(numargs);
+      push_int(THIS->args->size);
       f_add(2);
     } else {
       push_text("No args");
@@ -729,53 +735,32 @@ PIKECLASS backtrace_frame
 
   PIKEFUN int _sizeof()
   {
-    struct pike_frame *f = THIS->frame;
-    INT_TYPE numargs = 0;
-
-    if (!f) {
-      push_int(0);
-      return;
+    if (THIS->args) {
+      push_int(THIS->args->size + 3);
+    } else {
+      push_int(3);
     }
-    if (f->locals) {
-      numargs =
-	DO_NOT_WARN((INT_TYPE) MINIMUM(f->num_args, Pike_sp - f->locals));
-      if (numargs < 0) numargs = 0;
-    }
-    push_int(numargs + 3);
   }
 
   PIKEFUN mixed `[](int index, int|void end_or_none)
   {
-    struct pike_frame *f = THIS->frame;
     INT_TYPE end = index;
     INT32 numargs = 0;
     INT32 i;
 
-    if (f) {
-      if (f->locals) {
-	numargs =
-	  DO_NOT_WARN((INT32) MINIMUM(f->num_args, Pike_sp - f->locals));
-	if (numargs < 0) numargs = 0;
-      }
+    if (THIS->args) {
+      numargs = THIS->args->size;
     }
 
     numargs += 3;
 
     if (!end_or_none) {
-      if (!f) {
-	index_error("pike_frame->`[]", Pike_sp-args, args, NULL, Pike_sp-args,
-		    "Indexing the empty array with %"PRINTPIKEINT"d.\n", index);
-      }
       if (index < 0) {
 	index_error("pike_frame->`[]", Pike_sp-args, args, NULL, Pike_sp-args,
 		    "Indexing with negative index (%"PRINTPIKEINT"d)\n", index);
       } else if (index >= numargs) {
 	index_error("pike_frame->`[]", Pike_sp-args, args, NULL, Pike_sp-args,
 		    "Indexing with too large index (%"PRINTPIKEINT"d)\n", index);
-      }
-      if (!(f->current_object && f->context.prog)) {
-	index_error("pike_frame->`[]", Pike_sp-args, args, NULL, Pike_sp-args,
-		    "Indexing the NULL value with %"PRINTPIKEINT"d.\n", index);
       }
     } else {
       if (end_or_none->type != PIKE_T_INT) {
@@ -787,7 +772,7 @@ PIKECLASS backtrace_frame
     pop_n_elems(args);
 
     if (end_or_none) {
-      if ((!f) || (end < 0) || (end < index) || (index >= numargs)) {
+      if ((end < 0) || (end < index) || (index >= numargs)) {
 	f_aggregate(0);
 	return;
       }
@@ -800,10 +785,10 @@ PIKECLASS backtrace_frame
     for (i = index; i <= end; i++) {
       switch(i) {
       case 0:	/* Filename */
-	if (f->pc) {
+	if (THIS->pc) {
 	  if (!THIS->filename) {
 	    THIS->filename =
-	      make_shared_string(get_line(f->pc, f->context.prog,
+	      make_shared_string(get_line(THIS->pc, THIS->prog,
 					  &THIS->lineno));
 	  }
 	  ref_push_string(THIS->filename);
@@ -812,10 +797,10 @@ PIKECLASS backtrace_frame
 	}
 	break;
       case 1:	/* Linenumber */
-	if (f->pc) {
+	if (THIS->pc) {
 	  if (!THIS->filename) {
 	    THIS->filename =
-	      make_shared_string(get_line(f->pc, f->context.prog,
+	      make_shared_string(get_line(THIS->pc, THIS->prog,
 					  &THIS->lineno));
 	  }
 	  push_int(THIS->lineno);
@@ -824,19 +809,12 @@ PIKECLASS backtrace_frame
 	}
         break;
       case 2:	/* Function */
-        if (f->current_object->prog) {
-	  ref_push_object(f->current_object);
-	  Pike_sp[-1].subtype = f->fun;
-	  Pike_sp[-1].type = PIKE_T_FUNCTION;
-	} else {
-	  push_int(0);
-	  Pike_sp[-1].subtype = NUMBER_DESTRUCTED;
-	}
+        push_svalue(&THIS->fun);
         break;
       default:	/* Arguments */
         {
-	  if ((i > 2) && (i < numargs)) {
-	    push_svalue(f->locals + i - 3);
+	  if ((i > 2) && (THIS->args) && (i-3 < THIS->args->size)) {
+	    push_svalue(THIS->args->item + (i - 3));
 	    break;
 	  }
 	  bad_arg_error("backtrace_frame->`[]", Pike_sp-args, args, 1,
@@ -869,8 +847,40 @@ PIKEFUN array(object) new_backtrace()
 
   for (f = Pike_fp->next; f; f = f->next) {
     struct object *o = low_clone(backtrace_frame_program);
+    struct backtrace_frame_struct *bf;
+
     call_c_initializers(o);
-    add_ref(OBJ2_BACKTRACE_FRAME(o)->frame = f);
+
+    bf = OBJ2_BACKTRACE_FRAME(o);
+
+    if ((bf->prog = f->context.prog)) {
+      add_ref(bf->prog);
+      bf->pc = f->pc;
+    }
+
+    if ((bf->fun.u.object = f->current_object) &&
+	(bf->fun.u.object->prog)) {
+      add_ref(bf->fun.u.object);
+      bf->fun.subtype = f->fun;
+      bf->fun.type = PIKE_T_FUNCTION;
+    } else {
+      bf->fun.u.integer = 0;
+      bf->fun.subtype = NUMBER_DESTRUCTED;
+      bf->fun.type = PIKE_T_INT;
+    }
+
+    if (f->locals) {
+      INT32 numargs = DO_NOT_WARN((INT32) MINIMUM(f->num_args,
+						  Pike_sp - f->locals));
+
+      numargs = MAXIMUM(numargs, 0);
+
+      if (numargs) {
+	bf->args = allocate_array_no_init(numargs, 0);
+	assign_svalues_no_free(bf->args->item, f->locals, numargs, BIT_MIXED);
+      }
+    }
+
     push_object(o);
     size++;
   }
