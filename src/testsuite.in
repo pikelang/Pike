@@ -1,4 +1,4 @@
-test_true([["$Id: testsuite.in,v 1.597 2003/02/11 15:22:29 mirar Exp $"]]);
+test_true([["$Id: testsuite.in,v 1.598 2003/02/12 22:57:54 mast Exp $"]]);
 
 // This triggered a bug only if run sufficiently early.
 test_compile_any([[#pike 7.2]])
@@ -3949,8 +3949,7 @@ test_any([[{
 }]], 0)
 
 // gc
-ifefun(gc,
-[[
+
   test_true(intp(gc()));
   test_any([[ array a=({0}); a[0]=a; gc(); a=0; return gc() > 0; ]],1);
   test_any([[object o=class c {object o;}(); o->o=o; gc(); o=0; return gc() > 0; ]],1);
@@ -4042,10 +4041,7 @@ ifefun(gc,
     gc();
     return sizeof(q);
   ]],2)
-]])
 
-ifefun(gc,
-[[
   test_eq([[
     int dummy;
     gc();
@@ -4114,12 +4110,6 @@ ifefun(gc,
     gc(); o = 0; return gc() > 0;
   }]], 1)
 
-
-]])
-
-ifefun(gc,
-[[
-
   test_any_equal([[{
     class Live {object o; void destroy() {}};
     array a = set_weak_flag(({Live()}), 1);
@@ -4185,12 +4175,8 @@ ifefun(gc,
     return all_constants()->blatinka;
   }]], ({0}));
 
-]])
 test_do(add_constant("kablutt");)
 test_do(add_constant("blatinka");)
-
-ifefun(gc,
-[[
 
   test_any([[{
     class Dead {object o;};
@@ -4244,11 +4230,6 @@ ifefun(gc,
     gc();
     return !sizeof (x);
   }]], 1);
-
-]])
-
-ifefun(gc,
-[[
 
   test_any([[{
     class Foo {
@@ -4371,10 +4352,6 @@ ifefun(gc,
     o = 0;
     gc();
   }]]);
-]])
-
-ifefun(gc,
-[[
 
   test_do([[{
     mapping a = ([1:({17}),2:3,4:5,6:7,8:9]), b = a + ([]);
@@ -4428,11 +4405,6 @@ ifefun(gc,
     return gc() >= 2 && !sizeof (a);
   }]], 1);
 
-]])
-
-ifefun(gc,
-[[
-
   test_any([[{
     object o = class{}();
     mapping a = set_weak_flag ((["foo": o]), 1);
@@ -4471,11 +4443,6 @@ ifefun(gc,
     mapping a = set_weak_flag (([class{}(): class{}()]), 1);
     return gc() >= 2 && !sizeof (a);
   }]], 1);
-
-]])
-
-ifefun(gc,
-[[
 
   test_any([[{
     object o = class{}();
@@ -4585,17 +4552,8 @@ ifefun(gc,
     f = 0;
     gc();
   }]]);
-]])
-
-ifefun(gc,
-[[
 
   test_tests([[inherit "]]SRCDIR[[/test_gc.pike";]])
-
-]])
-
-ifefun(gc,
-[[
 
   test_any([[mapping q=([ "t":class {} ()]); gc(); if(!objectp(q->t)) return -1; set_weak_flag(q,1); gc(); if(objectp(q->t)) return -2; return 0;]],0);
 
@@ -4715,11 +4673,6 @@ ifefun(gc,
     return sizeof (m);
   ]], 1)
 
-]])
-
-ifefun(gc,
-[[
-
   test_do([[
     mapping m = set_weak_flag (([]), Pike.WEAK_INDICES);
     object o = class {object o;}();
@@ -4815,7 +4768,6 @@ ifefun(gc,
       }
     }()->test();
   ]], 1)
-]])
 
 cond([[ sizeof( cpp("__AUTO_BIGNUM__")/"__AUTO_BIGNUM__" ) == 1 ]],
 [[
@@ -7562,8 +7514,6 @@ test_eq(function_name(function_object),0)
 
 // - functionp
 // Tested in foop
-
-// - gc
 
 // - get_all_groups
 // - get_all_users
