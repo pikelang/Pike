@@ -17,7 +17,7 @@
 
 #define BEGIN_HASH_SIZE 997
 #define MAX_AVG_LINK_LENGTH 3
-#define HASH_PREFIX 20
+#define HASH_PREFIX 64
 
 unsigned INT32 htable_size=0;
 static unsigned int hashprimes_entry=0;

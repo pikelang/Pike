@@ -1,5 +1,5 @@
 #include "global.h"
-RCSID("$Id: threads.c,v 1.58 1998/03/01 03:33:50 hubbe Exp $");
+RCSID("$Id: threads.c,v 1.59 1998/03/10 03:14:55 per Exp $");
 
 int num_threads = 1;
 int threads_disabled = 0;
@@ -152,6 +152,13 @@ struct thread_starter
   struct array *args;
 };
 
+int threads_denied;
+
+void f_thread_disallow(INT32 args)
+{
+  threads_denied = sp[-1].u.integer;
+  pop_n_elems(args);
+}
 
 /* Thread hashtable */
 
@@ -272,11 +279,14 @@ static void check_threads(struct callback *cb, void *arg, void * arg2)
   static int div_;
   if(div_++ & 255) return;
 
-  THREADS_ALLOW();
+  if(!threads_denied)
+  {
+    THREADS_ALLOW();
 
-  /* Allow other threads to run */
+    /* Allow other threads to run */
 
-  THREADS_DISALLOW();
+    THREADS_DISALLOW();
+  }
 }
 
 void *new_thread_func(void * data)
@@ -378,10 +388,6 @@ void f_thread_create(INT32 args)
       threads_evaluator_callback=add_to_callback(&evaluator_callbacks,
 						 check_threads, 0,0);
     }
-#ifdef UNIX_THREADS
-    if((num_lwps==1) || num_threads/3 > num_lwps)
-      th_setconcurrency(++num_lwps);
-#endif
     push_object(arg->id);
     arg->id->refs++;
     THREADS_FPRINTF((stderr,"THREAD_CREATE -> t:%08x\n",(unsigned int)arg->id));
@@ -735,6 +741,9 @@ void th_init(void)
   pthread_attr_setdetachstate(&small_pattr, PTHREAD_CREATE_DETACHED);
 
 #endif
+  
+  add_efun("thread_disallow", f_thread_disallow, "function(int:void)",
+	   OPT_SIDE_EFFECT);
 
   add_efun("thread_create",f_thread_create,"function(mixed ...:object)",
            OPT_SIDE_EFFECT);
@@ -822,4 +831,84 @@ void th_cleanup(void)
   }
 }
 
+/* Thread farm code by Per
+ * 
+ */
+static struct farmer {
+  struct farmer *neighbour;
+  void *field;
+  void (*harvest)(void *);
+  THREAD_T me;
+  COND_T harvest_moon;
+} *farmers;
+
+static MUTEX_T rosie;
+
+static void *farm(void *_a)
+{
+  struct farmer *me = (struct farmer *)_a;
+  do
+  {
+/*     if(farmers == me) fatal("Ouch!\n"); */
+/*     fprintf(stderr, "farm_begin %p\n",me ); */
+    me->harvest( me->field );
+/*     fprintf(stderr, "farm_end %p\n", me); */
+
+    me->harvest = 0;
+    mt_lock( &rosie );
+    me->neighbour = farmers;
+    farmers = me;
+/*     fprintf(stderr, "farm_wait %p\n", me); */
+    while(!me->harvest) co_wait( &me->harvest_moon, &rosie );
+    mt_unlock( &rosie );
+/*     fprintf(stderr, "farm_endwait %p\n", me); */
+  } while(1);
+}
+
+int th_num_idle_farmers()
+{
+  int q = 0;
+  struct farmer *f = farmers;
+  while(f) { f = f->neighbour; q++; }
+  return q;
+}
+
+static int _num_farmers;
+int th_num_farmers()
+{
+  return _num_farmers;
+}
+
+static struct farmer *new_farmer(void (*fun)(void *), void *args)
+{
+  struct farmer *me = malloc(sizeof(struct farmer));
+  _num_farmers++;
+  me->neighbour = 0;
+  me->field = args;
+  me->harvest = fun;
+  co_init( &me->harvest_moon );
+#ifdef UNIX_THREADS
+  thr_create(NULL,8192,farm,(void *)me,THR_DAEMON|THR_DETACHED|THR_BOUND,0);
+#else
+  th_create_small(&me->me, farm, me);
+#endif
+}
+
+void th_farm(void (*fun)(void *), void *here)
+{
+  if(!fun) fatal("The farmers don't known how to handle empty fields\n");
+  mt_lock( &rosie );
+  if(farmers)
+  {
+    struct farmer *f = farmers;
+    farmers = f->neighbour;
+    mt_unlock( &rosie );
+    f->field = here;
+    f->harvest = fun;
+    co_signal( &f->harvest_moon );
+    return;
+  }
+  mt_unlock( &rosie );
+  new_farmer( fun, here );
+}
 #endif

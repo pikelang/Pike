@@ -1,4 +1,4 @@
-AC_REVISION("$Id: configure.in,v 1.165 1998/03/06 17:34:39 grubba Exp $")
+AC_REVISION("$Id: configure.in,v 1.166 1998/03/10 03:14:52 per Exp $")
 AC_INIT(interpret.c)
 AC_CONFIG_HEADER(machine.h)
 
@@ -940,6 +940,7 @@ AC_FUNC_MMAP
 
 AC_CHECK_FUNCS( \
  _crypt \
+ poll \
  bcopy \
  bzero \
  clock \
