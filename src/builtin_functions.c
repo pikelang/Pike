@@ -2,11 +2,11 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: builtin_functions.c,v 1.509 2003/09/06 23:08:59 nilsson Exp $
+|| $Id: builtin_functions.c,v 1.510 2003/09/08 19:51:33 mast Exp $
 */
 
 #include "global.h"
-RCSID("$Id: builtin_functions.c,v 1.509 2003/09/06 23:08:59 nilsson Exp $");
+RCSID("$Id: builtin_functions.c,v 1.510 2003/09/08 19:51:33 mast Exp $");
 #include "interpret.h"
 #include "svalue.h"
 #include "pike_macros.h"
@@ -4041,7 +4041,10 @@ PMOD_EXPORT void f__verify_internals(INT32 args)
   INT32 tmp=d_flag;
   ASSERT_SECURITY_ROOT("_verify_internals");
 
-  d_flag=0x7fffffff;
+  /* Keep below calls to low_thorough_check_short_svalue, or else we
+   * get O(n!) or so, where n is the number of allocated things. */
+  d_flag = 49;
+
 #ifdef PIKE_DEBUG
   do_debug();			/* Calls do_gc() since d_flag > 3. */
 #else
@@ -6691,9 +6694,9 @@ PMOD_EXPORT void f__list_open_fds(INT32 args)
 #endif
 
 #ifdef PIKE_DEBUG
-/*! @decl mapping(string:int) locate_references(string|array|mapping| @
- *!                                             multiset|function|object| @
- *!                                             program|type o)
+/*! @decl void locate_references(string|array|mapping| @
+ *!                              multiset|function|object| @
+ *!                              program|type o)
  *! @belongs Debug
  *!
  *!   This function is mostly intended for debugging. It will search through
