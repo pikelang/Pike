@@ -10,7 +10,7 @@
 #include "pike_macros.h"
 #include "gc.h"
 
-RCSID("$Id: pike_memory.c,v 1.59 2000/03/24 01:24:51 hubbe Exp $");
+RCSID("$Id: pike_memory.c,v 1.60 2000/03/24 16:25:46 grubba Exp $");
 
 /* strdup() is used by several modules, so let's provide it */
 #ifndef HAVE_STRDUP
@@ -1291,7 +1291,7 @@ void debug_free(void *p, LOCATION location, int mustfind)
 
   mh=my_find_memhdr(p,0);
 
-  if(verbose_debug_malloc || (mh->flags & MEM_WARN_ON_FREE))
+  if(verbose_debug_malloc || (mh && (mh->flags & MEM_WARN_ON_FREE)))
     fprintf(stderr, "free(%p) (%s)\n", p, LOCATION_NAME(location));
 
   if(!mh && mustfind && p)
