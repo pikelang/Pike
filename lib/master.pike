@@ -2,6 +2,19 @@ string describe_backtrace(mixed *trace);
 
 string pike_library_path;
 
+mapping (string:string) environment=([]);
+
+varargs mixed getenv(string s)
+{
+  if(!s) return environment;
+  return environment[s];
+}
+
+void putenv(string var, string val)
+{
+  environment[var]=val;
+}
+
 mapping (string:program) programs=([]);
 
 /* This function is called whenever a module has built a clonable program
@@ -23,20 +36,50 @@ void add_precompiled_program(string name, program p)
  */
 program cast_to_program(string pname)
 {
-  program ret;
-  if(pname[0]!='/')
-    pname=combine_path(getcwd(),pname);
-
   if(pname[sizeof(pname)-3..sizeof(pname)]==".pike")
     pname=pname[0..sizeof(pname)-4];
 
-  if(ret=programs[pname]) return ret;
+  function findprog=lambda(string pname)
+  {
+    program ret;
+
+    if(ret=programs[pname]) return ret;
   
-  if(file_stat(pname))
-    ret=compile_file(pname);
-  else
-    ret=compile_file(pname+".pike");
-  return programs[pname]=ret;
+    if(file_stat(pname))
+    {
+      ret=compile_file(pname);
+    }
+    else if(file_stat(pname+".pike"))
+    {
+      ret=compile_file(pname+".pike");
+    }
+#if efun(ldopen)
+    else if(file_stat(pname+".so"))
+    {
+      ldopen(pname);
+      ret=programs[pname];
+    }
+#endif
+    if(ret) programs[pname]=ret;
+    return ret;
+  };
+
+  if(pname[0]=='/')
+  {
+    return findprog(pname);
+  }else{
+    if(search(pname,"/")==-1)
+    {
+      string path;
+      if(string path=getenv("PIKE_INCLUDE_PATH"))
+      {
+	foreach(path/":", path)
+	  if(program ret=findprog(combine_path(path,pname)))
+	     return ret;
+      }
+    }
+    return findprog(combine_path(getcwd(),pname));
+  }
 }
 
 /* This function is called when an error occurs that is not caught
@@ -115,18 +158,6 @@ object cast_to_object(string oname)
   return objects[oname]=cast_to_program(oname)();
 }
 
-mapping (string:string) environment=([]);
-
-varargs mixed getenv(string s)
-{
-  if(!s) return environment;
-  return environment[s];
-}
-
-void putenv(string var, string val)
-{
-  environment[var]=val;
-}
 
 /* This function is called when all the driver is done with all setup
  * of modules, efuns, tables etc. etc. and is ready to start executing
