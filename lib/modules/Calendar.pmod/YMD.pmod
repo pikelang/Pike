@@ -1192,6 +1192,15 @@ class cYear
 	 return week;
       }
 
+      if (what->is_year)
+	 return Year("ymd_yn",rules,y,what->number_of_years());
+
+      if (what->is_month)
+	 return month(what->month_name());
+
+      if (what->is_timeofday)
+	 return place(what->day(),force)->place(what,force);
+
       error("place: Incompatible type %O\n",what);
    }
 
@@ -1502,6 +1511,16 @@ class cMonth
       if (what->is_day)
 	 return place_day(what->month_day(),what->n,force);
 
+      if (what->is_month)
+	 return Month("ymd_ym",rules,y,m,what->number_of_months())
+	    ->autopromote();
+
+      if (what->is_week)
+	 return place(what->day(),force)->week();
+
+      if (what->is_timeofday)
+	 return place(what->day(),force)->place(what,force);
+      
       error("place: Incompatible type %O\n",what);
    }
 
@@ -1800,7 +1819,12 @@ class cWeek
 
       if (what->is_year) 
 	 return year()->place(what,force); // just fallback
+      if (what->is_month) 
+	 return month()->place(what,force); // just fallback
       
+      if (what->is_week)
+	 return Week("ymd_yw",rules,y,w,what->number_of_weeks());
+
       if (what->is_day)
 	 return place_day(what->week_day(),what->n,force);
 
@@ -2105,7 +2129,7 @@ class cDay
       error("_move: Incompatible type %O\n",step);
    }
 
-   TimeRange place(TimeRange what)
+   TimeRange place(TimeRange what,int|void force)
    {
       if (what->is_timeofday)
       {
@@ -2124,6 +2148,17 @@ class cDay
 	    ->autopromote();
       }
 
+      if (what->is_year) 
+	 return year()->place(what,force); // just fallback
+      if (what->is_month) 
+	 return month()->place(what,force); // just fallback
+      if (what->is_week) 
+	 return week()->place(what,force); // just fallback
+
+      if (what->is_day) 
+	 return Day("ymd_jd",rules,jd,what->number_of_days())
+	    ->autopromote();
+	 
       error("place: Incompatible type %O\n",what);
    }
 

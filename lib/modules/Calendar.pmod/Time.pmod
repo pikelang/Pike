@@ -292,7 +292,7 @@ class TimeofDay
 
    TimeRange _move(int n,int m);
 
-   TimeRange _add(int n,TimeRange step)
+   TimeRange _add(float|int n,TimeRange step)
    {
       if (step->is_timeofday_f)
 	 return Fraction("timeofday_f",rules,ux,0,len,0)
@@ -939,6 +939,19 @@ class TimeofDay
 	 :sprintf("UTC-%d:%02d:%02d",u/3600,(u/60)%60,u%60);
    }
 
+
+   
+// -----------------------------------------------------------------
+
+   TimeRange place(TimeRange what,void|int force)
+   {
+      if (!base) make_base();
+      if (what->is_ymd)
+	 return base->place(what,force);
+
+      error("place: Incompatible type %O\n",what);
+   }
+
 // --------
 
 //  #define TIME_OPERATOR_DEBUG
@@ -1239,6 +1252,29 @@ class cHour
       if (!base) make_base();
       return base->format_nice()+" "+sprintf("%d:00",ls/3600);
    }
+
+// -----------------------------------------------------------------
+
+   TimeRange place(TimeRange what,void|int force)
+   {
+      if (what->is_hour)
+	 return Hour("timeofday",rules,ux,what->len);
+      if (what->is_minute)
+	 return minute()+(what->hour()->distance(what))->number_of_minutes();
+      if (what->is_fraction)
+      {
+	 TimeRange t=what->hour()->distance(what);
+	 int s=t->len_s;
+	 int ns=t->len_ns;
+	 return 
+	    Fraction("timeofday_f",rules,ux,0,what->len_s,what->len_s)
+	    ->_move(1,s,ns);
+      }
+      if (what->is_second)
+	 return second()+(what->hour()->distance(what))->number_of_seconds();
+
+      ::place(what,force);
+   }
 }
 
 //------------------------------------------------------------------------
@@ -1321,6 +1357,27 @@ class cMinute
       if (!base) make_base();
       return base->format_nice()+" "+sprintf("%d:%02d",ls/3600,(ls/60)%60);
    }
+
+   TimeRange place(TimeRange what,void|int force)
+   {
+      if (what->is_hour)
+	 return hour()->place(what);
+      if (what->is_minute)
+	 return Minute("timeofday",rules,ux,what->len);
+      if (what->is_fraction)
+      {
+	 TimeRange t=what->minute()->distance(what);
+	 int s=t->len_s;
+	 int ns=t->len_ns;
+	 return 
+	    Fraction("timeofday_f",rules,ux,0,what->len_s,what->len_s)
+	    ->_move(1,s,ns);
+      }
+      if (what->is_second)
+	 return second()+(what->minute()->distance(what))->number_of_seconds();
+
+      ::place(what,force);
+   }
 }
 
 //------------------------------------------------------------------------
@@ -1402,6 +1459,28 @@ class cSecond
    { return this_object()->format_ymd()+" T"+format_tod(); }
    string iso_short_name() 
    { return this_object()->format_ymd_short()+" T"+(format_tod()-":"); }
+
+
+   TimeRange place(TimeRange what,void|int force)
+   {
+      if (what->is_hour)
+	 return hour()->place(what);
+      if (what->is_minute)
+	 return minute()->place(what);
+      if (what->is_fraction)
+      {
+	 TimeRange t=what->second()->distance(what);
+	 int s=t->len_s;
+	 int ns=t->len_ns;
+	 return 
+	    Fraction("timeofday_f",rules,ux,0,what->len_s,what->len_s)
+	    ->_move(1,s,ns);
+      }
+      if (what->is_second)
+	 return second()+(what->second()->distance(what))->number_of_seconds();
+
+      ::place(what,force);
+   }
 }
 
 //------------------------------------------------------------------------
