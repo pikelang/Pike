@@ -1,9 +1,9 @@
-/* $Id: pnm.c,v 1.12 1998/01/25 08:27:15 hubbe Exp $ */
+/* $Id: pnm.c,v 1.13 1998/02/27 23:36:50 mirar Exp $ */
 
 /*
 **! module Image
 **! note
-**!	$Id: pnm.c,v 1.12 1998/01/25 08:27:15 hubbe Exp $
+**!	$Id: pnm.c,v 1.13 1998/02/27 23:36:50 mirar Exp $
 **! submodule PNM
 **!
 **!	This submodule keeps the PNM encode/decode capabilities
@@ -49,7 +49,7 @@
 
 #include "stralloc.h"
 #include "global.h"
-RCSID("$Id: pnm.c,v 1.12 1998/01/25 08:27:15 hubbe Exp $");
+RCSID("$Id: pnm.c,v 1.13 1998/02/27 23:36:50 mirar Exp $");
 #include "pike_macros.h"
 #include "object.h"
 #include "constants.h"
@@ -409,6 +409,7 @@ void img_pnm_encode_P4(INT32 args) /* binary PBM */
 
    y=img->ysize;
    s=img->img;
+
    c=(unsigned char*)((b=begin_shared_string(((img->xsize+7)>>3)*
 					     img->ysize))->str);
    if (img->xsize)
@@ -423,7 +424,7 @@ void img_pnm_encode_P4(INT32 args) /* binary PBM */
 	 if (!(bit>>=1)) { *(++c)=0; bit=128; }
 	 s++;
       }
-      if (y && bit>1) *(++c)=0; 
+      if (bit!=128) ++c;
    }
    b=end_shared_string(b);
 
@@ -518,9 +519,9 @@ void img_pnm_encode_ascii(INT32 args)
    if (args<1 ||
        sp[-args].type!=T_OBJECT ||
        !(img=(struct image*)get_storage(sp[-args].u.object,image_program)))
-      error("Image.PNM.encode_binary(): Illegal arguments\n");
+      error("Image.PNM.encode_ascii(): Illegal arguments\n");
    if (!img->img)
-      error("Image.PNM.encode_binary(): Given image is empty\n");
+      error("Image.PNM.encode_ascii(): Given image is empty\n");
 
    func=img_pnm_encode_P1; /* PBM */
    n=img->xsize*img->ysize;
