@@ -276,7 +276,7 @@ char *low_get_f_name(int n,struct program *p)
     if(p &&
        (int)p->num_constants > (int)(n-F_MAX_OPCODE) &&
        p->constants[n-F_MAX_OPCODE].type==T_FUNCTION &&
-       p->constants[n-F_MAX_OPCODE].subtype == -1 &&
+       (p->constants[n-F_MAX_OPCODE].subtype == -1) &&
        p->constants[n-F_MAX_OPCODE].u.efun)
     {
       return p->constants[n-F_MAX_OPCODE].u.efun->name->str;
