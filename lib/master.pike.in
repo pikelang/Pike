@@ -1,6 +1,6 @@
 /* -*- Pike -*-
  *	
- * $Id: master.pike.in,v 1.127 2000/08/29 14:46:36 mast Exp $
+ * $Id: master.pike.in,v 1.128 2000/08/29 21:54:01 mast Exp $
  * 
  * Master-file for Pike.
  *
@@ -1420,8 +1420,56 @@ class Describer
 	foreach (indices (stuff), mixed elem)
 	  identify_parts (elem), identify_parts (stuff[elem]);
     }
-    else if (objectp (stuff))
+    else if (objectp (stuff) || functionp (stuff) || programp (stuff))
       ident[stuff]++;
+  }
+
+  string describe_string (string m, int maxlen)
+  {
+    canclip++;
+    if(sizeof(m) < maxlen)
+    {
+      string t = sprintf("%O", m);
+      if (sizeof(t) < (maxlen + 2)) {
+	return t;
+      }
+      t = 0;
+    }
+    clipped++;
+    if(maxlen>10)
+    {
+      return sprintf("%O+[%d]",m[..maxlen-5],sizeof(m)-(maxlen-5));
+    }else{
+      return "string["+sizeof(m)+"]";
+    }
+  }
+
+  string describe_array (array m, int maxlen)
+  {
+    if(!sizeof(m)) return "({})";
+    else {
+      if(maxlen<5)
+      {
+	clipped++;
+	return "array["+sizeof(m)+"]";
+      }
+      else {
+	canclip++;
+	return "({" + describe_comma_list(m,maxlen-2) +"})";
+      }
+    }
+  }
+
+  string describe_mapping (mapping m, int maxlen)
+  {
+    if(!sizeof(m)) return "([])";
+    else return "mapping["+sizeof(m)+"]";
+  }
+
+  string describe_multiset (multiset m, int maxlen)
+  {
+    if(!sizeof(m)) return "(<>)";
+    else return "multiset["+sizeof(m)+"]";
   }
 
   string describe (mixed m, int maxlen)
@@ -1438,76 +1486,32 @@ class Describer
       case "int":
       case "float":
 	return (string)m;
-      
       case "string":
-	canclip++;
-	if(sizeof(m) < maxlen)
-	{
-	  string t = sprintf("%O", m);
-	  if (sizeof(t) < (maxlen + 2)) {
-	    return t;
-	  }
-	  t = 0;
-	}
-	clipped++;
-	if(maxlen>10)
-	{
-	  return sprintf("%O+[%d]",m[..maxlen-5],sizeof(m)-(maxlen-5));
-	}else{
-	  return "string["+sizeof(m)+"]";
-	}
-      
+	return describe_string (m, maxlen);
       case "array":
-	if(!sizeof(m)) res = "({})";
-	else {
-	  if(maxlen<5)
-	  {
-	    clipped++;
-	    res = "array["+sizeof(m)+"]";
-	  }
-	  else {
-	    canclip++;
-	    res = "({" + describe_comma_list(m,maxlen-2) +"})";
-	  }
-	}
+	res = describe_array (m, maxlen);
 	break;
-      
       case "mapping":
-	if(!sizeof(m)) res = "([])";
-	else res = "mapping["+sizeof(m)+"]";
+	res = describe_mapping (m, maxlen);
 	break;
-      
       case "multiset":
-	if(!sizeof(m)) res = "(<>)";
-	else res = "multiset["+sizeof(m)+"]";
+	res = describe_multiset (m, maxlen);
 	break;
-      
       case "function":
-	if(string tmp=describe_program(m)) return tmp;
-	if(object o=function_object(m)) {
-	  string s = describe_object(o);
-	  if (s && s != "object") return s+"->"+function_name(m);
-	  else return function_name(m);
-	}
-	else {
-	  string tmp;
-	  if (catch (tmp = function_name(m)))
-	    // The function object has probably been destructed.
-	    return "function";
-	  return tmp || "function";
-	}
-
+	if (string tmp=describe_function(m)) res = tmp;
+	else res = typ;
+	break;
       case "program":
-	if(string tmp=describe_program(m)) return tmp;
-	return typ;
-
+	if(string tmp=describe_program(m)) res = tmp;
+	else res = typ;
+	break;
       default:
 	if (objectp(m))
 	  if(string tmp=describe_object(m)) {
 	    res = tmp;
 	    break;
 	  }
-	return typ;
+	res = typ;
     }
 
     if (stringp (ident[m]))
@@ -1644,6 +1648,30 @@ string describe_program(program p)
   return 0;
 }
 
+string describe_function (function f)
+{
+  if (!f) return 0;
+
+  string name;
+
+  if(string s=search(programs,f))
+  {
+    if(sscanf(reverse(s),"%s.%s",string ext,string rest) && ext=="domp")
+      name = EXPLODE_PATH(reverse(rest))[-1];
+    else
+      name = trim_file_name(s);
+  }
+  else
+    if (catch (name = function_name (f))) name = "function";
+
+  if(object o=function_object(f)) {
+    string s;
+    if (!catch (s = sprintf("%O",o)) && s != "object")
+      return s+"->"+name;
+  }
+  return name;
+}
+
 /* It is possible that this should be a real efun,
  * it is currently used by handle_error to convert a backtrace to a
  * readable message.
@@ -1728,13 +1756,7 @@ string describe_backtrace(mixed trace, void|int linewidth)
 	  if(sizeof(tmp)>=3)
 	  {
 	    if(functionp(tmp[2])) {
-	      data = "";
-	      if (object o = function_object(tmp[2])) {
-		string s;
-		if (!catch (s = sprintf("%O",o)) && s != "object")
-		  data = s + "->";
-	      }
-	      data += function_name(tmp[2]);
+	      data = describe_function (tmp[2]);
 	    }
 	    else if (stringp(tmp[2])) {
 	      data= tmp[2];
