@@ -1,5 +1,5 @@
 /*
- * $Id: acconfig.h,v 1.10 2001/02/04 21:52:28 mirar Exp $
+ * $Id: acconfig.h,v 1.11 2001/05/24 20:58:55 mirar Exp $
  *
  * System dependant definitions for the system module for Pike
  *
@@ -50,5 +50,8 @@
 
 /* Define if ITIMER_REAL, ITIMER_VIRTUAL and ITIMER_PROF is in tInt02 */
 #undef ITIMER_TYPE_IS_02
+
+/* Define if you have the RDTSC instruction */
+#undef HAVE_RDTSC
 
 #endif /* SYSTEM_MACHINE_H */
