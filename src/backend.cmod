@@ -2,11 +2,11 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: backend.cmod,v 1.82 2004/02/06 15:21:43 grubba Exp $
+|| $Id: backend.cmod,v 1.83 2004/02/06 20:04:18 grubba Exp $
 */
 
 #include "global.h"
-RCSID("$Id: backend.cmod,v 1.82 2004/02/06 15:21:43 grubba Exp $");
+RCSID("$Id: backend.cmod,v 1.83 2004/02/06 20:04:18 grubba Exp $");
 #include "fdlib.h"
 #include "backend.h"
 #include <errno.h>
@@ -251,20 +251,31 @@ int POLL_DEVICE_SET_EVENTS(int pfd, int fd, INT32 events)
 
     /* The /dev/epoll interface exposes kernel implementation details...
      */
+    IF_PD(fprintf(stderr, "epoll_ctl(%d, %d, EPOLL_CTL_MOD, { 0x%08x, %d })\n",
+		  pfd, fd, events, fd));
     while (((e = epoll_ctl(pfd, fd, EPOLL_CTL_MOD, &ev)) < 0)  &&
 	   (errno == EINTR))
       ;
     if ((e < 0) && (errno == ENOENT)) {
+      IF_PD(fprintf(stderr,
+		    "epoll_ctl(%d, %d, EPOLL_CTL_ADD, { 0x%08x, %d })\n",
+		    pfd, fd, events, fd));
       while (((e = epoll_ctl(pfd, fd, EPOLL_CTL_ADD, &ev)) < 0)  &&
 	     (errno == EINTR))
 	;
     }
   } else {
+    IF_PD(fprintf(stderr, "epoll_ctl(%d, %d, EPOLL_CTL_DEL, NULL)\n",
+		  pfd, fd));
     while (((e = epoll_ctl(pfd, fd, EPOLL_CTL_DEL, NULL)) < 0) &&
 	   (errno == EINTR))
       ;
     if ((e < 0) && (errno == ENOENT)) return 0;
   }
+  IF_PD(if (e < 0) {
+    fprintf(stderr, "epoll_ctl() failed with errno: %d\n", errno);
+  });
+    
   return e;
 }
 	
@@ -1391,7 +1402,7 @@ PIKECLASS Backend
       events |= MY_POLLWREXCEPT;
     }
 #ifdef POLL_DEBUG
-    fprintf(stderr, "UPDATE_BLACK_BOX(%d, %d) ==> events: %d\n",
+    fprintf(stderr, "UPDATE_BLACK_BOX(%d, %d) ==> events: 0x%08x\n",
 	    me->set, fd, events);
 #endif /* POLL_DEBUG */
     POLL_DEVICE_SET_EVENTS(me->set, fd, events);
