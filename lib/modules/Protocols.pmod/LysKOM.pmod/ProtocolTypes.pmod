@@ -1017,9 +1017,9 @@ class ConfListArchaic
       return
          ({
             @A((array(string))conf_nos),           // ARRAY Conf-No
-            A(`+(@Array.map(conf_types,            // ARRAY Conf-Type
-                            lambda(multiset(string) z) 
-                               { return B(@rows(z,conftypenames)); }))),
+            A(Array.map(conf_types,                // ARRAY Conf-Type
+			lambda(multiset(string) z) 
+			{ return B(@rows(z,conftypenames)); }))),
          });
    }
 }
