@@ -1344,7 +1344,7 @@ class ParseBlock
 
       x=ret/({"PIKE_INTERNAL"});
       ret=x[0];
-      
+
       string ev_handler_define=make_unique_name(base,"event","handler","defined");
       string opt_callback_define=make_unique_name(base,"optimize","callback","defined");
       int opt_callback;
@@ -1481,8 +1481,8 @@ class ParseBlock
 	// Not all versions of Pike allow Token objects
 	// to be indexed.
 	catch {
-	  foreach(proto, string t)
-	    if(has_prefix(t, "/*!"))
+	  foreach(Array.flatten(proto), string t)
+	    if(has_prefix((string)t, "/*!"))
 	      body = ({t})+body;
 	};
 
@@ -1551,7 +1551,7 @@ class ParseBlock
 	// werror("%O %O\n",proto,args);
 	// werror("parsed args: %O\n", args);
 
-	if((<"`<", "`>">)[name])
+	if((<"`<", "`>", "`==", "_equal">)[name])
 	{
 	  if(sizeof(args) != 1)
 	  {
