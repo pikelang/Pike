@@ -26,7 +26,7 @@
  *  Separate RWX, RW and R memory sections.
  */
 
-/* #define DLDEBUG 1 */
+#define DLDEBUG 1
 #define DL_VERBOSE 1
 
 
@@ -75,7 +75,7 @@ size_t STRNLEN(char *s, size_t maxlen)
 
 #else /* PIKE_CONCAT */
 
-RCSID("$Id: dlopen.c,v 1.3 2000/12/27 07:55:09 hubbe Exp $");
+RCSID("$Id: dlopen.c,v 1.4 2000/12/27 07:59:22 hubbe Exp $");
 
 #endif
 
