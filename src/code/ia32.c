@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: ia32.c,v 1.23 2002/10/11 01:39:39 nilsson Exp $
+|| $Id: ia32.c,v 1.24 2003/03/20 16:29:08 mast Exp $
 */
 
 /*
@@ -97,48 +97,76 @@ void ia32_flush_code_generator(void)
   ia32_prev_stored_pc = -1;
 }
 
-void ia32_update_absolute_pc(INT32 pc_offset)
+void ia32_update_pc(void)
 {
-  /* Assumes eax contains Pike_interpreter.frame_pointer */
-#if 1
-  /* Store the negated pointer to make the relocation displacements
-   * work in the right direction. */
-  ia32_reg_edx = REG_IS_UNKNOWN;
-  add_to_program(0xba);		/* mov $xxxxxxxx, %edx */
-  ins_pointer(0);
-  add_to_relocations(PIKE_PC - 4);
-  upd_pointer(PIKE_PC - 4, - (INT32) (pc_offset + Pike_compiler->new_program->program));
-  add_to_program(0xf7);		/* neg %edx */
-  add_to_program(0xda);
-  add_to_program(0x89);		/* mov %edx, yy(%eax) */
-  if (OFFSETOF(pike_frame, pc)) {
-    add_to_program(0x50);
-    add_to_program(OFFSETOF(pike_frame, pc));
-  }
-  else
-    add_to_program(0x10);
-#else
-  INT32 displacement;
-  add_to_program(0xe8);		/* call near, relative to next instruction */
-  add_to_program(0);
-  add_to_program(0);
-  add_to_program(0);
-  add_to_program(0);
-  displacement = PIKE_PC - pc_offset;
-  ia32_reg_edx = REG_IS_UNKNOWN;
-  add_to_program(0x8f);		/* pop %edx */
-  add_to_program(0xc2);
-  add_to_program(0x83);		/* sub $nn, %edx */
-  add_to_program(0xea);
-  add_to_program(displacement);
-  add_to_program(0x89);		/* mov %edx, yy(%eax) */
-  if (OFFSETOF(pike_frame, pc)) {
-    add_to_program(0x50);
-    add_to_program(OFFSETOF(pike_frame, pc));
-  }
-  else
-    add_to_program(0x10);
+  INT32 tmp = PIKE_PC, disp;
+
+  if (ia32_prev_stored_pc < 0) {
+    if(ia32_reg_eax != REG_IS_FP) {
+      MOV2EAX(Pike_interpreter.frame_pointer);
+      ia32_reg_eax=REG_IS_FP;
+    }
+
+#ifdef PIKE_DEBUG
+    if (a_flag >= 60)
+      fprintf (stderr, "pc %d  update pc absolute\n", tmp);
 #endif
+
+    /* Store the negated pointer to make the relocation displacements
+     * work in the right direction. */
+    ia32_reg_edx = REG_IS_UNKNOWN;
+    add_to_program(0xba);		/* mov $xxxxxxxx, %edx */
+    ins_pointer(0);
+    add_to_relocations(PIKE_PC - 4);
+    upd_pointer(PIKE_PC - 4, - (INT32) (tmp + Pike_compiler->new_program->program));
+    add_to_program(0xf7);		/* neg %edx */
+    add_to_program(0xda);
+    add_to_program(0x89);		/* mov %edx, yy(%eax) */
+    if (OFFSETOF(pike_frame, pc)) {
+      add_to_program(0x50);
+      add_to_program(OFFSETOF(pike_frame, pc));
+    }
+    else
+      add_to_program(0x10);
+  }
+
+  else if ((disp = tmp - ia32_prev_stored_pc)) {
+    if(ia32_reg_eax != REG_IS_FP) {
+      MOV2EAX(Pike_interpreter.frame_pointer);
+      ia32_reg_eax=REG_IS_FP;
+    }
+
+#ifdef PIKE_DEBUG
+    if (a_flag >= 60)
+      fprintf (stderr, "pc %d  update pc relative: %d\n", tmp, disp);
+#endif
+
+    if (-128 <= disp && disp <= 127)
+      /* Add sign-extended imm8 to r/m32. */
+      add_to_program(0x83); /* addl $nn, yy(%eax) */
+    else
+      /* Add imm32 to r/m32. */
+      add_to_program(0x81); /* addl $nn, yy(%eax) */
+    if (OFFSETOF(pike_frame, pc)) {
+      add_to_program(0x40);
+      add_to_program(OFFSETOF(pike_frame, pc));
+    }
+    else
+      add_to_program(0x0);
+    if (-128 <= disp && disp <= 127)
+      add_to_program(disp);
+    else
+      PUSH_INT(disp);
+  }
+
+  else {
+#ifdef PIKE_DEBUG
+    if (a_flag >= 60)
+      fprintf (stderr, "pc %d  update pc - already up-to-date\n", tmp);
+#endif
+  }
+
+  ia32_prev_stored_pc = tmp;
 }
 
 static void ia32_push_constant(struct svalue *tmp)
