@@ -5,7 +5,7 @@
 \*/
 /**/
 #include "global.h"
-RCSID("$Id: mpz_glue.c,v 1.100 2002/02/06 12:29:20 grubba Exp $");
+RCSID("$Id: mpz_glue.c,v 1.101 2002/03/08 09:51:05 grubba Exp $");
 #include "gmp_machine.h"
 
 #if defined(HAVE_GMP2_GMP_H) && defined(HAVE_LIBGMP2)
@@ -469,7 +469,7 @@ static void mpzmod__sprintf(INT32 args)
 {
   INT_TYPE precision, width, width_undecided, base = 0, mask_shift = 0;
   struct pike_string *s = 0;
-  INT_TYPE flag_left;
+  INT_TYPE flag_left, method;
 
   debug_malloc_touch(Pike_fp->current_object);
   
@@ -503,7 +503,7 @@ static void mpzmod__sprintf(INT32 args)
 
   debug_malloc_touch(Pike_fp->current_object);
 
-  switch(sp[-args].u.integer)
+  switch(method = sp[-args].u.integer)
   {
 #ifdef AUTO_BIGNUM
     case 't':
@@ -627,9 +627,12 @@ static void mpzmod__sprintf(INT32 args)
 
   pop_n_elems(args);
 
-  if(s)
+  if(s) {
     push_string(s);
-  else {
+    if (method == 'X') {
+      f_upper_case(1);
+    }
+  } else {
     push_int(0);   /* Push false? */
     sp[-1].subtype = 1;
   }
