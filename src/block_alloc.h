@@ -1,4 +1,4 @@
-/* $Id: block_alloc.h,v 1.7 1999/04/02 02:09:03 hubbe Exp $ */
+/* $Id: block_alloc.h,v 1.8 1999/04/02 19:38:35 hubbe Exp $ */
 #undef PRE_INIT_BLOCK
 #undef INIT_BLOCK
 #undef EXIT_BLOCK
@@ -129,12 +129,14 @@ inline struct DATA *PIKE_CONCAT(make_,DATA)(void *ptr, int hval)	\
 	malloc(PIKE_CONCAT(DATA,_hash_table_size)*			\
 	       sizeof(struct DATA *))))					\
     {									\
+      MEMSET(PIKE_CONCAT(DATA,_hash_table),0,				\
+	 sizeof(struct DATA *)*PIKE_CONCAT(DATA,_hash_table_size));	\
       while(e-- >=0)							\
       {									\
 	while((p=PIKE_CONCAT(DATA,_hash_table_old)[e]))		        \
 	{								\
 	  PIKE_CONCAT(DATA,_hash_table_old)[e]=p->next;                 \
-	  hval=(long)(p-> data);						\
+	  hval=(long)(p-> data);					\
 	  hval%=PIKE_CONCAT(DATA,_hash_table_size);			\
 	  p->next=PIKE_CONCAT(DATA,_hash_table)[hval];			\
 	  PIKE_CONCAT(DATA,_hash_table)[hval]=p;			\
