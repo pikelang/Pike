@@ -1,5 +1,5 @@
 /*
- * $Id: odbc.c,v 1.8 1998/05/29 19:04:45 grubba Exp $
+ * $Id: odbc.c,v 1.9 1998/05/31 15:40:31 grubba Exp $
  *
  * Pike interface to ODBC compliant databases.
  *
@@ -15,7 +15,7 @@
 #endif /* HAVE_CONFIG_H */
 
 #include "global.h"
-RCSID("$Id: odbc.c,v 1.8 1998/05/29 19:04:45 grubba Exp $");
+RCSID("$Id: odbc.c,v 1.9 1998/05/31 15:40:31 grubba Exp $");
 
 #include "interpret.h"
 #include "object.h"
@@ -38,6 +38,8 @@ RCSID("$Id: odbc.c,v 1.8 1998/05/29 19:04:45 grubba Exp $");
 
 struct program *odbc_program = NULL;
 
+HENV odbc_henv = SQL_NULL_HENV;
+
 /*
  * Functions
  */
@@ -54,7 +56,7 @@ static INLINE void odbc_check_error(const char *fun, const char *msg,
 				    RETCODE code, void (*clean)(void))
 {
   if ((code != SQL_SUCCESS) && (code != SQL_SUCCESS_WITH_INFO)) {
-    odbc_error(fun, msg, PIKE_ODBC, PIKE_ODBC->hstmt, code, clean);
+    odbc_error(fun, msg, PIKE_ODBC, SQL_NULL_HSTMT, code, clean);
   }
 }
 
@@ -68,7 +70,7 @@ void odbc_error(const char *fun, const char *msg,
   SWORD errmsg_len = 0;
   SDWORD native_error;
 
-  _code = SQLError(odbc->henv, odbc->hdbc, hstmt, errcode, &native_error,
+  _code = SQLError(odbc_henv, odbc->hdbc, hstmt, errcode, &native_error,
 		   errmsg, SQL_MAX_MESSAGE_LENGTH-1, &errmsg_len);
   errmsg[errmsg_len] = '\0';
 
@@ -85,19 +87,29 @@ void odbc_error(const char *fun, const char *msg,
   switch(_code) {
   case SQL_SUCCESS:
   case SQL_SUCCESS_WITH_INFO:
-    error("%s():%s: %d:%s:%s\n", fun, msg, code, errcode, errmsg);
+    error("%s(): %s:\n"
+	  "%d:%s:%s\n",
+	  fun, msg, code, errcode, errmsg);
     break;
   case SQL_ERROR:
-    error("%s():%s: SQLError failed (%d:SQL_ERROR)\n", fun, msg, code);
+    error("%s(): %s:\n"
+	  "SQLError failed (%d:SQL_ERROR)\n",
+	  fun, msg, code);
     break;
   case SQL_NO_DATA_FOUND:
-    error("%s():%s: SQLError failed (%d:SQL_NO_DATA_FOUND)\n", fun, msg, code);
+    error("%s(): %s:\n"
+	  "SQLError failed (%d:SQL_NO_DATA_FOUND)\n",
+	  fun, msg, code);
     break;
   case SQL_INVALID_HANDLE:
-    error("%s():%s: SQLError failed (%d:SQL_INVALID_HANDLE)\n", fun, msg, code);
+    error("%s(): %s:\n"
+	  "SQLError failed (%d:SQL_INVALID_HANDLE)\n",
+	  fun, msg, code);
     break;
   default:
-    error("%s():%s: SQLError failed (%d:%d)\n", fun, msg, code, _code);
+    error("%s(): %s:\n"
+	  "SQLError failed (%d:%d)\n",
+	  fun, msg, code, _code);
     break;
   }
 }
@@ -114,24 +126,6 @@ static void clean_last_error(void)
   }
 }
 
-static void clean_henv(void)
-{
-  HENV henv = PIKE_ODBC->henv;
-  PIKE_ODBC->henv = SQL_NULL_HENV;
-  odbc_check_error("odbc_error", "Freeing HENV",
-		   SQLFreeEnv(henv), clean_last_error);
-}
-
-static void clean_hdbc(void)
-{
-  HDBC hdbc = PIKE_ODBC->hdbc;
-  PIKE_ODBC->hdbc = SQL_NULL_HDBC;
-  odbc_check_error("odbc_error", "Disconnecting HDBC",
-		   SQLDisconnect(hdbc), clean_henv);
-  odbc_check_error("odbc_error", "Freeing HDBC",
-		   SQLFreeConnect(hdbc), clean_henv);
-}
-
 /*
  * Glue functions
  */
@@ -140,34 +134,31 @@ static void init_odbc_struct(struct object *o)
 {
   RETCODE code;
 
-  PIKE_ODBC->henv = SQL_NULL_HENV;
   PIKE_ODBC->hdbc = SQL_NULL_HDBC;
-  PIKE_ODBC->hstmt = SQL_NULL_HSTMT;
-  PIKE_ODBC->last_error = NULL;
   PIKE_ODBC->affected_rows = 0;
+  PIKE_ODBC->flags = 0;
+  PIKE_ODBC->last_error = NULL;
 
   odbc_check_error("init_odbc_struct", "ODBC initialization failed",
-		   SQLAllocEnv(&(PIKE_ODBC->henv)), 0);
-
-  odbc_check_error("init_odbc_struct", "ODBC initialization failed",
-		   SQLAllocConnect(PIKE_ODBC->henv, &(PIKE_ODBC->hdbc)),
-		   clean_henv);
+		   SQLAllocConnect(odbc_henv, &(PIKE_ODBC->hdbc)), NULL);
 }
 
 static void exit_odbc_struct(struct object *o)
 {
-  RETCODE code;
-  HENV henv = PIKE_ODBC->henv;
   HDBC hdbc = PIKE_ODBC->hdbc;
 
-  PIKE_ODBC->hdbc = SQL_NULL_HDBC;
-  odbc_check_error("exit_odbc_struct", "ODBC disconnect failed",
-		   SQLDisconnect(hdbc), clean_henv);
-  odbc_check_error("exit_odbc_struct", "Freeing ODBC connection failed",
-		   SQLFreeConnect(hdbc), clean_henv);
-  PIKE_ODBC->henv = SQL_NULL_HENV;
-  odbc_check_error("exit_odbc_struct", "Freeing ODBC environment failed",
-		   SQLFreeEnv(henv), clean_last_error);
+  if (hdbc != SQL_NULL_HDBC) {
+    if (PIKE_ODBC->flags & PIKE_ODBC_CONNECTED) {
+      PIKE_ODBC->flags &= ~PIKE_ODBC_CONNECTED;
+      odbc_check_error("odbc_error", "Disconnecting HDBC",
+		       SQLDisconnect(hdbc), (void (*)(void))exit_odbc_struct);
+      /* NOTE: Potential recursion above! */
+    }
+    PIKE_ODBC->hdbc = SQL_NULL_HDBC;
+    odbc_check_error("odbc_error", "Freeing HDBC",
+		     SQLFreeConnect(hdbc), clean_last_error);
+  }
+  clean_last_error();
 }
 
 /*
@@ -209,11 +200,18 @@ static void f_create(INT32 args)
   if (!server) {
     server = make_shared_string("");
   }
+  if (PIKE_ODBC->flags & PIKE_ODBC_CONNECTED) {
+    PIKE_ODBC->flags &= ~PIKE_ODBC_CONNECTED;
+    /* Disconnect old hdbc */
+    odbc_check_error("odbc->create", "Disconnecting HDBC",
+		     SQLDisconnect(PIKE_ODBC->hdbc), NULL);
+  }
   odbc_check_error("odbc->create", "Connect failed",
 		   SQLConnect(PIKE_ODBC->hdbc, (unsigned char *)server->str,
 			      server->len, (unsigned char *)user->str,
 			      user->len, (unsigned char *)pwd->str,
 			      pwd->len), NULL);
+  PIKE_ODBC->flags |= PIKE_ODBC_CONNECTED;
   pop_n_elems(args);
 }
 
@@ -223,19 +221,15 @@ static void f_affected_rows(INT32 args)
   push_int(PIKE_ODBC->affected_rows);
 }
 
-static void f_insert_id(INT32 args)
-{
-  /**********************************************/
-}
-
 static void f_select_db(INT32 args)
 {
   /**********************************************/
 }
 
-void free_hstmt(HSTMT hstmt)
+/* Needed since free_string() can be a macro */
+static void odbc_free_string(struct pike_string *s)
 {
-  SQLFreeStmt(hstmt, SQL_DROP);		/* Ignore return value. */
+  free_string(s);
 }
 
 static void f_big_query(INT32 args)
@@ -243,50 +237,54 @@ static void f_big_query(INT32 args)
   ONERROR ebuf;
   HSTMT hstmt = SQL_NULL_HSTMT;
   struct pike_string *q = NULL;
+#ifdef DEBUG
+  struct svalue *save_sp = sp + 1 - args;
+#endif /* DEBUG */
 
   get_all_args("odbc->big_query", args, "%S", &q);
 
-  odbc_check_error("odbc->big_query", "Statement allocation failed",
-		   SQLAllocStmt(PIKE_ODBC->hdbc, &hstmt), NULL);
-  PIKE_ODBC->hstmt = hstmt;
+  add_ref(q);
+  SET_ONERROR(ebuf, odbc_free_string, q);
 
-  SET_ONERROR(ebuf, free_hstmt, hstmt);
-
-  odbc_check_error("odbc->big_query", "Query failed",
-		   SQLExecDirect(hstmt, (unsigned char *)q->str,
-				 q->len), NULL);
   pop_n_elems(args);
 
-  odbc_check_error("odbc->big_query", "Couldn't get the number of fields",
-		   SQLNumResultCols(hstmt, &(PIKE_ODBC->num_fields)), NULL);
+  clean_last_error();
 
-  odbc_check_error("odbc->big_query", "Couldn't get the number of rows",
-		   SQLRowCount(hstmt, &(PIKE_ODBC->affected_rows)), NULL);
+  /* Allocate the statement (result) object */
+  ref_push_object(fp->current_object);
+  push_object(clone_object(odbc_result_program, 1));
 
-  if (PIKE_ODBC->num_fields) {
-    /* PIKE_ODBC->hstmt=hstmt; */
-    ref_push_object(fp->current_object);
+  UNSET_ONERROR(ebuf);
 
-    push_object(clone_object(odbc_result_program, 1));
+  /* Potential return value is now in place */
 
-    /* hstmt is now handled by the result program. */
-    UNSET_ONERROR(ebuf);
-  } else {
+  PIKE_ODBC->affected_rows = 0;
+
+  /* Do the actual query */
+  push_string(q);
+  apply(sp[-2].u.object, "execute", 1);
+  
+  if (sp[-1].type != T_INT) {
+    error("odbc->big_query(): Unexpected return value from "
+	  "odbc_result->execute().\n");
+  }
+
+  if (!sp[-1].u.integer) {
+    pop_n_elems(2);	/* Zap the result object too */
+
     odbc_check_error("odbc->big_query", "Couldn't commit query",
-		     SQLTransact(PIKE_ODBC->henv, PIKE_ODBC->hdbc,
-				 SQL_COMMIT), NULL);
-
-    UNSET_ONERROR(ebuf);
-
-    /* hstmt is still handled by us. */
-    if (hstmt != SQL_NULL_HSTMT) {
-      PIKE_ODBC->hstmt = SQL_NULL_HSTMT;
-      odbc_check_error("odbc->big_query", "Freeing of HSTMT failed",
-		       SQLFreeStmt(hstmt, SQL_DROP), NULL);
-    }
+		     SQLTransact(odbc_henv, PIKE_ODBC->hdbc, SQL_COMMIT),
+		     NULL);
 
     push_int(0);
+  } else {
+    pop_stack();	/* Keep the result object */
   }
+#ifdef DEBUG
+  if (sp != save_sp) {
+    fatal("Stack error in odbc->big_query().\n");
+  }
+#endif /* DEBUG */
 }
 
 static void f_create_db(INT32 args)
@@ -319,20 +317,28 @@ static void f_reload(INT32 args)
 void pike_module_init(void)
 {
 #ifdef HAVE_ODBC
+  RETCODE err = SQLAllocEnv(&odbc_henv);
+
+  if (err != SQL_SUCCESS) {
+    error("odbc_module_init(): SQLAllocEnv() failed with code %08x\n", err);
+  }
+
   start_new_program();
   add_storage(sizeof(struct precompiled_odbc));
 
   add_function("error", f_error, "function(void:int|string)", ID_PUBLIC);
   add_function("create", f_create, "function(string|void, string|void, string|void, string|void:void)", ID_PUBLIC);
-  add_function("affected_rows", f_affected_rows, "function(void:int)", ID_PUBLIC);
-  add_function("insert_id", f_insert_id, "function(void:int)", ID_PUBLIC);
+
   add_function("select_db", f_select_db, "function(string:void)", ID_PUBLIC);
   add_function("big_query", f_big_query, "function(string:int|object)", ID_PUBLIC);
+  add_function("affected_rows", f_affected_rows, "function(void:int)", ID_PUBLIC);
+  /* NOOP's: */
   add_function("create_db", f_create_db, "function(string:void)", ID_PUBLIC);
   add_function("drop_db", f_drop_db, "function(string:void)", ID_PUBLIC);
   add_function("shutdown", f_shutdown, "function(void:void)", ID_PUBLIC);
   add_function("reload", f_reload, "function(void:void)", ID_PUBLIC);
 #if 0
+  add_function("insert_id", f_insert_id, "function(void:int)", ID_PUBLIC);
   add_function("statistics", f_statistics, "function(void:string)", ID_PUBLIC);
   add_function("server_info", f_server_info, "function(void:string)", ID_PUBLIC);
   add_function("host_info", f_host_info, "function(void:string)", ID_PUBLIC);
@@ -364,6 +370,15 @@ void pike_module_exit(void)
   if (odbc_program) {
     free_program(odbc_program);
     odbc_program = NULL;
+  }
+
+  if (odbc_henv != SQL_NULL_HENV) {
+    RETCODE err = SQLFreeEnv(odbc_henv);
+    odbc_henv = SQL_NULL_HENV;
+
+    if ((err != SQL_SUCCESS) && (err != SQL_SUCCESS_WITH_INFO)) {
+      error("odbc_module_exit(): SQLFreeEnv() failed with code %08x\n", err);
+    }
   }
 #endif /* HAVE_ODBC */
 }
