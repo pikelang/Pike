@@ -581,20 +581,24 @@ array uniq2(array a)
    return res;
 }
 
-//! make an array of the argument, if it isn't already;
-//! a zero_type argument makes the empty array:
-//!
-// mark this with the right stuff, someone: /Mirar
-//! zero_type(x): arrayify(x) => ({})
-//! arrayp(x)     arrayify(x) => x
-//! else          arrayify(x) => ({x})
-//!
-//! This is useful when something is either an array or
-//! a basic datatype, for instance in headers from the MIME
-//! module or Protocols.HTTP.Server.
-array arrayify(void|array|mixed z)
+//! Make an array of the argument, if it isn't already. A zero_type
+//! argument gives the empty array. This is useful when something is
+//! either an array or a basic datatype, for instance in headers from
+//! the MIME module or Protocols.HTTP.Server.
+//! @param x
+//!   Result depends of the argument type:
+//!   @dl
+//!     @item arrayp(x)
+//!       arrayify(x) => x
+//!     @item zero_type(x)
+//!       arrayify(x) => ({})
+//!     @item otherwise
+//!       arrayify(x) => ({ x })
+//!   @enddl
+//! @endexample
+array arrayify(void|array|mixed x)
 {
-   if (zero_type(z)) return ({});
-   if (arrayp(z)) return z;
-   return ({z});
+   if(zero_type(x)) return ({});
+   if(arrayp(x)) return x;
+   return ({ x });
 }
