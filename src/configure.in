@@ -1,4 +1,4 @@
-AC_REVISION("$Id: configure.in,v 1.700 2003/02/24 13:36:44 grubba Exp $")
+AC_REVISION("$Id: configure.in,v 1.701 2003/02/24 15:32:49 grubba Exp $")
 AC_INIT(interpret.c)
 AC_CONFIG_HEADER(machine.h)
 
@@ -3183,6 +3183,7 @@ int main(int argc, char **argv)
   ], [ pike_cv_realloc_null_works=yes
   ], [ pike_cv_realloc_null_works=no
   ], [ pike_cv_realloc_null_works=no
+  ])
 ])
 if test "x$pike_cv_realloc_null_works" = "xyes"; then
   AC_MSG_RESULT(yes)
