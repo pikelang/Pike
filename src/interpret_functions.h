@@ -1,5 +1,5 @@
 /*
- * $Id: interpret_functions.h,v 1.12 2000/04/20 11:49:50 grubba Exp $
+ * $Id: interpret_functions.h,v 1.13 2000/04/20 14:03:39 grubba Exp $
  *
  * Opcode definitions for the interpreter.
  */
@@ -77,7 +77,6 @@ OPCODE1(F_LFUN, "local function")
   print_return_value();
 BREAK;
 
-
 OPCODE1(F_TRAMPOLINE, "trampoline")
 {
   struct object *o=low_clone(pike_trampoline_program);
@@ -100,7 +99,6 @@ OPCODE1(F_GLOBAL,"global")
   Pike_sp++;
   print_return_value();
 BREAK;
-
 
 OPCODE2(F_EXTERNAL,"external")
 {
@@ -242,12 +240,16 @@ OPCODE2(F_EXTERNAL_LVALUE,"& external")
 
 BREAK;
 
+OPCODE1(F_MARK_AND_LOCAL, "mark & local")
+  *(Pike_mark_sp++) = Pike_sp;
+  assign_svalue_no_free(Pike_sp++, Pike_fp->locals + arg1);
+  print_return_value();
+BREAK;
 
-      CASE(F_MARK_AND_LOCAL); *(Pike_mark_sp++)=Pike_sp;
-      CASE(F_LOCAL);
-      assign_svalue_no_free(Pike_sp++,Pike_fp->locals+GET_ARG());
-      print_return_value();
-      break;
+OPCODE1(F_LOCAL, "local")
+  assign_svalue_no_free(Pike_sp++, Pike_fp->locals + arg1);
+  print_return_value();
+BREAK;
 
 OPCODE2(F_2_LOCALS, "2 locals")
   assign_svalue_no_free(Pike_sp++, Pike_fp->locals + arg1);
@@ -313,7 +315,6 @@ OPCODE2(F_LEXICAL_LOCAL,"lexical local")
   break;
 }
 BREAK;
-
 
 OPCODE2(F_LEXICAL_LOCAL_LVALUE,"&lexical local")
 {
@@ -491,7 +492,6 @@ OPCODE0(F_LTOSVAL2, "ltosval2")
   }
 BREAK;
 
-
 OPCODE0(F_ADD_TO_AND_POP, "+= and pop")
   Pike_sp[0]=Pike_sp[-1];
   Pike_sp[-1].type=PIKE_T_INT;
@@ -543,7 +543,6 @@ OPCODE1(F_GLOBAL_LVALUE, "& global")
 }
 BREAK;
 
-      
 OPCODE0(F_INC, "++x")
 {
   union anything *u=get_pointer_if_this_type(Pike_sp-2, PIKE_T_INT);
@@ -656,7 +655,6 @@ OPCODE0(F_POST_INC, "x++")
 }
 BREAK;
 
-
 OPCODE0(F_POST_DEC, "x--")
 {
   union anything *u=get_pointer_if_this_type(Pike_sp-2, PIKE_T_INT);
@@ -710,13 +708,11 @@ OPCODE0(F_ASSIGN_AND_POP, "assign and pop")
   pop_n_elems(3);
 BREAK;
 
-
-      CASE(F_ASSIGN_LOCAL_AND_POP);
-      instr=GET_ARG();
-      free_svalue(Pike_fp->locals+instr);
-      Pike_fp->locals[instr]=Pike_sp[-1];
-      Pike_sp--;
-      break;
+OPCODE1(F_ASSIGN_LOCAL_AND_POP, "assign local and pop")
+  free_svalue(Pike_fp->locals + arg1);
+  Pike_fp->locals[arg1] = Pike_sp[-1];
+  Pike_sp--;
+BREAK;
 
 OPCODE1(F_ASSIGN_GLOBAL, "assign global")
 {
@@ -1117,17 +1113,47 @@ BREAK;
       COMPARISMENT(F_LT, is_lt(Pike_sp-2,Pike_sp-1));
       COMPARISMENT(F_LE,!is_gt(Pike_sp-2,Pike_sp-1));
 
-      CASE(F_ADD);      f_add(2);     break;
-      CASE(F_SUBTRACT); o_subtract(); break;
-      CASE(F_AND);      o_and();      break;
-      CASE(F_OR);       o_or();       break;
-      CASE(F_XOR);      o_xor();      break;
-      CASE(F_MULTIPLY); o_multiply(); break;
-      CASE(F_DIVIDE);   o_divide();   break;
-      CASE(F_MOD);      o_mod();      break;
+OPCODE0(F_ADD, "+")
+  f_add(2);
+BREAK;
 
-      CASE(F_ADD_INT); push_int(GET_ARG()); f_add(2); break;
-      CASE(F_ADD_NEG_INT); push_int(-GET_ARG()); f_add(2); break;
+OPCODE0(F_SUBTRACT, "-")
+  o_subtract();
+BREAK;
+
+OPCODE0(F_AND, "&")
+  o_and();
+BREAK;
+
+OPCODE0(F_OR, "|")
+  o_or();
+BREAK;
+
+OPCODE0(F_XOR, "^")
+  o_xor();
+BREAK;
+
+OPCODE0(F_MULTIPLY, "*")
+  o_multiply();
+BREAK;
+
+OPCODE0(F_DIVIDE, "/")
+  o_divide();
+BREAK;
+
+OPCODE0(F_MOD, "%")
+  o_mod();
+BREAK;
+
+OPCODE1(F_ADD_INT, "add integer")
+  push_int(arg1);
+  f_add(2);
+BREAK;
+
+OPCODE1(F_ADD_NEG_INT, "add -integer")
+  push_int(-arg1);
+  f_add(2);
+BREAK;
 
 OPCODE0(F_PUSH_ARRAY, "@")
   switch(Pike_sp[-1].type)

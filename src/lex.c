@@ -5,7 +5,7 @@
 \*/
 /**/
 #include "global.h"
-RCSID("$Id: lex.c,v 1.74 2000/04/20 02:41:45 hubbe Exp $");
+RCSID("$Id: lex.c,v 1.75 2000/04/20 14:03:52 grubba Exp $");
 #include "language.h"
 #include "array.h"
 #include "lex.h"
@@ -85,17 +85,12 @@ struct keyword instr_names[]=
 {
 #include "interpret_protos.h"
 { "!=",			F_NE,0 },	
-{ "%",			F_MOD,0 },	
 { "%=",			F_MOD_EQ,0 },	
-{ "&",			F_AND,0 },
 { "&=",			F_AND_EQ,0 },	
-{ "*",			F_MULTIPLY,0 },	
+{ "|=",			F_OR_EQ,0 },	
 { "*=",			F_MULT_EQ,0 },	
-{ "+",			F_ADD,0 },	
 { "+=",			F_ADD_EQ,0 },	
-{ "-",			F_SUBTRACT,0 },	
 { "-=",			F_SUB_EQ,0 },	
-{ "/",			F_DIVIDE,0 },	
 { "/=",			F_DIV_EQ,0 },	
 { "<",			F_LT,0 },	
 { "<<=",		F_LSH_EQ,0 },	
@@ -104,7 +99,6 @@ struct keyword instr_names[]=
 { ">",			F_GT,0 },	
 { ">=",			F_GE,0 },	
 { ">>=",		F_RSH_EQ,0 },	
-{ "^",			F_XOR,0 },
 { "^=",			F_XOR_EQ,0 },	
 { "arg+=1024",		F_PREFIX_1024,0 },
 { "arg+=256",		F_PREFIX_256,0 },
@@ -122,7 +116,6 @@ struct keyword instr_names[]=
 { "arg+=512",		F_PREFIX2_512,0 },
 { "arg+=768",		F_PREFIX2_768,0 },
 
-{ "assign local and pop",	F_ASSIGN_LOCAL_AND_POP, I_HASARG },
 { "break",		F_BREAK,0 },	
 { "case",		F_CASE,0 },	
 { "continue",		F_CONTINUE,0 },	
@@ -161,8 +154,6 @@ struct keyword instr_names[]=
 
 { "local function call",F_CALL_LFUN, I_HASARG },
 { "local function call and pop",F_CALL_LFUN_AND_POP, I_HASARG },
-{ "local",		F_LOCAL, I_HASARG },	
-{ "mark & local",	F_MARK_AND_LOCAL, I_HASARG },	
 { "lvalue_list",	F_LVALUE_LIST,0 },	
 { "mark",               F_MARK,0 },
 { "mark mark",          F_MARK2,0 },
@@ -172,8 +163,6 @@ struct keyword instr_names[]=
 { "return local",	F_RETURN_LOCAL, I_HASARG },
 { "return if true",	F_RETURN_IF_TRUE, 0 },
 { "while",		F_WHILE,0 },	
-{ "|",			F_OR,0 },
-{ "|=",			F_OR_EQ,0 },	
 { "label",		F_LABEL,I_HASARG },
 { "align",		F_ALIGN, I_HASARG },
 { "call",		F_APPLY, I_HASARG },
@@ -185,8 +174,6 @@ struct keyword instr_names[]=
 { "-int index",         F_NEG_INT_INDEX, I_HASARG },
 { "apply and pop",      F_APPLY_AND_POP, I_HASARG },
 { "nop",                F_NOP,0 },
-{ "add integer",        F_ADD_INT, I_HASARG },
-{ "add -integer",       F_ADD_NEG_INT, I_HASARG },
 { "mark & call",        F_MARK_APPLY, I_HASARG },
 { "mark, call & pop",   F_MARK_APPLY_POP, I_HASARG },
 { "apply and return",   F_APPLY_AND_RETURN, I_HASARG },
