@@ -18,7 +18,7 @@
  *: A credential object in essence holds three values:
  *: <ul>
  *: <li><code language=pike>user</code> -- The owner.
- *: <li><code language=pike>allow_bits</code> -- Global access permissions.
+ *: <li><code language=pike>allow_bits</code> -- Run-time access permissions.
  *: <li><code language=pike>data_bits</code> -- Data access permissions.
  *: </ul>
  *: <p>
@@ -29,7 +29,8 @@
  *: <li><code language=pike>BIT_CALL</code> -- Allow calling of functions.
  *: <li><code language=pike>BIT_SECURITY</code> -- Allow usage of security
  *: related functions.
- *: <li><code language=pike>BIT_NOT_SETUID</code> -- ??
+ *: <li><code language=pike>BIT_NOT_SETUID</code> -- Don't change active
+ *: credentials on function call.
  *: <li><code language=pike>BIT_CONDITIONAL_IO</code> -- ??
  *: <li><code language=pike>BIT_DESTRUCT</code> -- Allow use of
  *: <code language=pike>destruct()</code>.
@@ -85,12 +86,6 @@ static void f_call_with_creds(INT32 args)
       /* We might want allocate a bit for this so that we can
        * disallow this.
        * /hubbe
-       *
-       * YES, since if call_with_creds() is called from an object
-       * with NULL creds, you get back all permissions!
-       * Hmm, maybe it should only be allowed if current_object->prot
-       * is not NULL?
-       * /grubba 1999-07-07
        */
       o=fp->current_object->prot;
       break;
@@ -112,7 +107,16 @@ static void f_call_with_creds(INT32 args)
     error("call_with_creds: Not a valid creds object.\n");
   SET_CURRENT_CREDS(o);
 
+  /* FIXME: Does this work?
+   * Won't mega_apply2() force current_creds to o->prot anyway?
+   * /grubba 1999-07-09
+   */
   f_call_function(args-1);
+
+  /* FIXME: Shouldn't the original creds be restored here?
+   * /grubba 1999-07-09
+   */
+
   free_svalue(sp-2);
   sp[-2]=sp[-1];
   sp--;
@@ -124,7 +128,8 @@ static void f_call_with_creds(INT32 args)
  *: object(Creds) get_current_creds();
  *: </man_syntax>
  *: <man_description>
- *: Returns the credentials for the current thread.
+ *: Returns the credentials that are currently active.
+ *: Returns 0 if no credentials are active.
  *: </man_description>
  *: </function>
  *: </pikedoc>
