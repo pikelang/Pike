@@ -1,7 +1,7 @@
 #!/usr/local/bin/pike 
 // By Martin Nilsson and Andreas Lange
 //
-// $Id: extract.pike,v 1.12 2002/01/16 03:12:32 nilsson Exp $
+// $Id: extract.pike,v 1.13 2002/01/17 01:54:59 nilsson Exp $
 //
 
 
@@ -25,7 +25,13 @@ int high_int_id = 0;
 
 int make_id() {
   // Returns the next unused unique id
-  while ( has_value(id_xml_order, ++high_int_id) );
+  //  while ( has_value(id_xml_order, ++high_int_id) );
+  if(high_int_id)
+    return ++high_int_id;
+  high_int_id = max( @map(id_xml_order,
+			  lambda(string|int in) {
+			    return intp(in)?in:0;
+			  }) ) + 1;
   return high_int_id;
 }
 
@@ -1040,7 +1046,7 @@ int main(int argc, array(string) argv) {
 
   if( (!(xml_name && args->sync && args->xmlpath && args->baselang)) && 
       (!sizeof(files) || args->help) ) {
-    sscanf("$Revision: 1.12 $", "$"+"Revision: %s $", string v);
+    sscanf("$Revision: 1.13 $", "$"+"Revision: %s $", string v);
     werror("\n  Locale Extractor Utility "+v+"\n\n");
     werror("  Syntax: extract.pike [arguments] infile(s)\n\n");
     werror("  Arguments: --project=name  default: first found in infile\n");
