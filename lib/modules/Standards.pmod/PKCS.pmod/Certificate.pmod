@@ -1,4 +1,4 @@
-// $Id: Certificate.pmod,v 1.18 2004/04/14 20:19:26 nilsson Exp $
+// $Id: Certificate.pmod,v 1.19 2004/06/23 14:32:25 grubba Exp $
 
 //! Handle PKCS-6 and PKCS-10 certificates and certificate requests.
 
@@ -136,8 +136,8 @@ class AttributeValueAssertion
 	      string type,
 	      object value)
     {
-      if (!types[type])
-	error( "Unknown attribute type '%s'\n", type );
+      if (!objectp(types[type]))
+	error("Unknown attribute type '%s':%O\n", type, types[type]);
       ::create( ({ types[type], value }) );
     }
 }
