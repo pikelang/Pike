@@ -161,6 +161,14 @@ void applet_widget_gtk_main()
 }
 endrequire;
 
+void set_new_signal_convention( int n )
+{
+  extern int pgtk_new_signal_call_convention;
+  if( !args || !PGTK_ISINT( Pike_sp-args ) )
+    Pike_error("Illegal argument to set_new_signal_convention\n" );
+  pgtk_new_signal_call_convention = (int)PGTK_GETINT( Pike_sp-args );
+  pop_n_elems( args );
+}
 
 void setup_gtk(array(string)|void argv, int|void do_not_parse_rc)
 //! Initialize GTK, and all that comes with it.

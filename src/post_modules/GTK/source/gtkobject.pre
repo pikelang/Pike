@@ -71,7 +71,6 @@ mixed signal_connect(string signal,function callback,mixed|void callback_arg )
   int id;
   struct signal_data *b;
   struct svalue *tmp1, *tmp2;
-  guint signal_id;
   b = (void *)xalloc(sizeof(struct signal_data));
   memset( b, 0, sizeof( struct signal_data ) );
   if(args == 2)
@@ -84,8 +83,8 @@ mixed signal_connect(string signal,function callback,mixed|void callback_arg )
   assign_svalue_no_free( &b->cb, tmp1 );
   assign_svalue_no_free( &b->args, tmp2 );
   
-  signal_id = gtk_signal_lookup (a, GTK_OBJECT_TYPE (THIS->obj));
-  if(!signal_id)
+  b->signal_id = gtk_signal_lookup (a, GTK_OBJECT_TYPE (THIS->obj));
+  if(!b->signal_id)
   {
     xfree(b);
     Pike_error("Signal \"%s\" not defined in the `%s' class ancestry\n",
@@ -132,7 +131,7 @@ mixed signal_connect_new(string signal,
   int id;
   struct signal_data *b;
   struct svalue *tmp1, *tmp2;
-  guint signal_id;
+
   b = (void *)xalloc(sizeof(struct signal_data));
   b->new_interface = 1;
   if(args == 2)
@@ -145,8 +144,8 @@ mixed signal_connect_new(string signal,
   assign_svalue_no_free( &b->cb, tmp1 );
   assign_svalue_no_free( &b->args, tmp2 );
   
-  signal_id = gtk_signal_lookup (a, GTK_OBJECT_TYPE (THIS->obj));
-  if(!signal_id)
+  b->signal_id = gtk_signal_lookup (a, GTK_OBJECT_TYPE (THIS->obj));
+  if(!b->signal_id)
   {
     xfree(b);
     Pike_error("Signal \"%s\" not defined in the `%s' class ancestry\n",

@@ -575,7 +575,7 @@ static int pgtk_push_string_param( GtkArg *a )
 {
   gchar *t = GTK_VALUE_STRING( *a );
   if( t )
-    push_text( t );
+    PGTK_PUSH_GCHAR( t );
   else
     push_text( "" );
   return PUSHED_VALUE;
@@ -610,6 +610,23 @@ static void build_push_callbacks( )
 {
 #define CB(X,Y)  insert_push_callback( X, Y );
   CB( gtk_widget_get_type(),     pgtk_push_object_param );
+  CB( GTK_TYPE_OBJECT,           pgtk_push_object_param );
+
+
+  CB( GTK_TYPE_SELECTION_DATA,   pgtk_push_selection_data_param );
+  CB( GTK_TYPE_ACCEL_GROUP,      pgtk_push_accel_group_param );
+  CB( GTK_TYPE_CTREE_NODE,       pgtk_push_ctree_node_param );
+  CB( GTK_TYPE_GDK_DRAG_CONTEXT, pgtk_push_gdk_drag_context_param );
+  CB( GTK_TYPE_GDK_EVENT,        pgtk_push_gdk_event_param );
+
+  CB( GTK_TYPE_ACCEL_FLAGS,      pgtk_push_int_param );
+  CB( GTK_TYPE_GDK_MODIFIER_TYPE,pgtk_push_int_param );
+
+  CB( GTK_TYPE_FLOAT,            pgtk_push_float_param );
+  CB( GTK_TYPE_DOUBLE,           pgtk_push_float_param );
+
+  CB( GTK_TYPE_STRING,           pgtk_push_string_param );
+
   CB( GTK_TYPE_INT,              pgtk_push_int_param );
   CB( GTK_TYPE_ENUM,             pgtk_push_int_param );
   CB( GTK_TYPE_FLAGS,            pgtk_push_int_param );
@@ -618,103 +635,155 @@ static void build_push_callbacks( )
   CB( GTK_TYPE_LONG,             pgtk_push_int_param );
   CB( GTK_TYPE_ULONG,            pgtk_push_int_param );
   CB( GTK_TYPE_CHAR,             pgtk_push_int_param );
-  CB( GTK_TYPE_ACCEL_FLAGS,      pgtk_push_int_param );
-  CB( GTK_TYPE_GDK_MODIFIER_TYPE,pgtk_push_int_param );
-  CB( GTK_TYPE_FLOAT,            pgtk_push_float_param );
-  CB( GTK_TYPE_DOUBLE,           pgtk_push_float_param );
-  CB( GTK_TYPE_STRING,           pgtk_push_string_param );
-  CB( GTK_TYPE_OBJECT,           pgtk_push_object_param );
-  CB( GTK_TYPE_SELECTION_DATA,   pgtk_push_selection_data_param );
-  CB( GTK_TYPE_ACCEL_GROUP,      pgtk_push_accel_group_param );
-  CB( GTK_TYPE_CTREE_NODE,       pgtk_push_ctree_node_param );
-  CB( GTK_TYPE_GDK_DRAG_CONTEXT, pgtk_push_gdk_drag_context_param );
-  CB( GTK_TYPE_GDK_EVENT,        pgtk_push_gdk_event_param );
 
+  CB( GTK_TYPE_NONE,    NULL ); 
   CB( GTK_TYPE_POINTER,  NULL );
-  CB( GTK_TYPE_NONE,    NULL );
-  CB( GTK_TYPE_SIGNAL,   NULL );
-  CB( GTK_TYPE_INVALID,  NULL ); /* This might not be exactly what we want */
+
+/*
+   CB( GTK_TYPE_SIGNAL,   NULL );
+   CB( GTK_TYPE_INVALID,  NULL );
+ *   This might not be exactly what we want */
+  
 }
+int pgtk_new_signal_call_convention;
 
-static int push_param_r( GtkArg *param, GtkType t )
+static void push_param_r( GtkArg *param, GtkType t )
 {
-  GtkType fundamental_type = GTK_FUNDAMENTAL_TYPE( t );
-
+  int i;
   struct push_callback *cb = push_cbtable[ t%63 ];
+
   while( cb && (cb->id != t) )
     cb = cb->next;
-  if(!cb)
-  {
-    cb = push_cbtable[ fundamental_type % 63 ];
-    while( cb && (cb->id != fundamental_type) )
-      cb = cb->next;
-  }
+
+  if(!cb) /* find parent type */
+    for( i = 0; i<last_used_callback; i++ )
+      if( gtk_type_is_a( t, push_callbacks[i].id ) )
+        cb = push_callbacks + i;
+
   if( cb )
   {
-    if( cb->callback )
-      if( cb->callback( param )== NEED_RETURN)
-        return 1;
+    if( cb->callback ) cb->callback( param );
+    return;
   }
   else
   {
-    if( gtk_type_parent( t ) != t )
-      return push_param_r( param, gtk_type_parent( t ) );
-    else
+    char *s = gtk_type_name( t );
+    char *a = "";
+    if(!s)
     {
-      char *s = gtk_type_name( t );
-      char *a = "";
-      if(!s)
-      {
-        a = "Unknown child of ";
-        s = gtk_type_name( gtk_type_parent( t ) );
-        if(!s)
-          s = gtk_type_name( fundamental_type );
-        if(!s)
-          s = "unknown type";
-      }
-      fprintf( stderr, "** Warning: No push callback for type %d/%d (%s%s)\n",
-               t, fundamental_type,a, s);
+      a = "Unknown child of ";
+      s = gtk_type_name( gtk_type_parent( t ) );
+      if(!s) s = "unknown type";
     }
+    fprintf( stderr, "** Warning: No push callback for type %d/%d (%s%s)\n",
+             t, 0,a, s);
   }
-  return 0;
+  return;
 }
 
-static int push_param( GtkArg *param )
-{
-  return push_param_r( param, param->type );
-}
 
+/* This function makes a few assumptions about how signal handlers are
+ * called in GTK. I could not find any good documentation about that,
+ * and the source is somewhat obscure (for good reasons, it's a highly
+ * non-trivial thing to do)
+ *
+ * But, the thing that this code asumes that I am most unsure about is that
+ * params[nparams] should be set to the return value. It does seem to work,
+ * though.
+ */
 int pgtk_signal_func_wrapper(GtkObject *obj,struct signal_data *d,
                              int nparams, GtkArg *params)
 {
-  int i, j=0, res, return_value = 0;
+  int i, res, return_value = 0;
   struct svalue *osp = Pike_sp;
+  GtkSignalQuery *opts = gtk_signal_query( d->signal_id );
 
-  if( !last_used_callback ) build_push_callbacks();
-  if( !d->new_interface )
+  if( !opts )
+  {
+    fprintf( stderr, "** Warning: Got signal callback for "
+             "non-existing signal!\n" );
+    return 0;
+  }
+
+
+  if( !last_used_callback )
+    build_push_callbacks();
+
+  if( !(d->new_interface || pgtk_new_signal_call_convention) )
   {
     push_svalue(&d->args);
     push_gtkobject( obj );
   }
-  for(i=0; !return_value && (i<nparams); i++)
-    return_value = push_param( params+i );
-  if( d->new_interface )
+
+  for( i = 0; i<nparams; i++ )
   {
-    push_svalue(&d->args);
+    if( params[i].type != opts->params[i] )
+      fprintf( stderr, "** Warning: Parameter type mismatch %d: %u / %u\n",
+               "Expect things to break in spectacular ways\n\n"
+               "The most likely reason is that GTK has been compiled with\n"
+               "a different C-compiler. Especially with gcc that's a very\n"
+               "bad idea, since the varargs implementation recides in libgcc\n"
+               "which has a tendency to change in incompatible ways now and "
+               "then\nPlease recompile gtk+, or change to the C-compiler\n"
+               "that was used when GTK+ was compiled.\n",
+               i,  params[i].type, opts->params[i] );
+
+    push_param_r( params+i,opts->params[i] );
+  }
+  
+  if( d->new_interface || pgtk_new_signal_call_convention)
+  {
     push_gtkobject( obj );
+    push_svalue(&d->args);
   }
   apply_svalue(&d->cb, Pike_sp-osp);
-  res = Pike_sp[-1].u.integer;
-  pop_stack();
 
-  if( return_value )
-    if( params[1].type == GTK_TYPE_POINTER)
-    {
-      gint *return_val;
-      return_val = GTK_RETLOC_BOOL( params[ 1 ] );
-      if(return_val)
-        *return_val = res;
-    }
+  switch( return_value )
+  {
+   case 0:
+   case GTK_TYPE_NONE:
+     break;
+   case GTK_TYPE_CHAR:
+     *GTK_RETLOC_CHAR(params[nparams]) = PGTK_GETINT( Pike_sp-1 );
+     break;     
+   case GTK_TYPE_UCHAR:
+     *GTK_RETLOC_UCHAR(params[nparams]) = PGTK_GETINT( Pike_sp-1 );
+     break;     
+   case GTK_TYPE_BOOL:
+     *GTK_RETLOC_BOOL(params[nparams]) = PGTK_GETINT( Pike_sp-1 );
+     break;     
+   case GTK_TYPE_INT:
+   case GTK_TYPE_ENUM:
+     *GTK_RETLOC_INT(params[nparams]) = PGTK_GETINT( Pike_sp-1 );
+     break;     
+   case GTK_TYPE_UINT:
+   case GTK_TYPE_FLAGS:
+     *GTK_RETLOC_UINT(params[nparams]) = PGTK_GETINT( Pike_sp-1 );
+     break;     
+   case GTK_TYPE_LONG:
+     *GTK_RETLOC_LONG(params[nparams]) = PGTK_GETINT( Pike_sp-1 );
+     break;     
+   case GTK_TYPE_ULONG:
+     *GTK_RETLOC_ULONG(params[nparams]) = PGTK_GETINT( Pike_sp-1 );
+     break;
+   case GTK_TYPE_FLOAT:
+     *GTK_RETLOC_FLOAT(params[nparams]) = PGTK_GETFLT( Pike_sp-1 );
+     break;
+   case GTK_TYPE_DOUBLE:
+     *GTK_RETLOC_DOUBLE(params[nparams]) = PGTK_GETFLT( Pike_sp-1 );
+     break;
+   case GTK_TYPE_STRING:
+     *GTK_RETLOC_STRING(params[nparams]) = g_strdup(PGTK_GETSTR(Pike_sp-1 ));
+   default:
+     {
+       char *rn = gtk_type_name( return_value );
+       if( !rn ) rn = "unknown type";
+       fprintf( stderr, "** Warning: Cannot handle return type %d(%s)\n",
+                return_value, rn );
+     }
+  }
+  pop_stack();
+  g_free( opts );
   return res;
 }
 

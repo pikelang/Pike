@@ -59,6 +59,7 @@ struct signal_data
   struct svalue cb;
   struct svalue args;
   int new_interface;
+  int signal_id;
 };
 
 struct my_pixel
