@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: efuns.c,v 1.135 2003/12/15 18:58:12 mast Exp $
+|| $Id: efuns.c,v 1.136 2003/12/17 21:19:04 marcus Exp $
 */
 
 #include "global.h"
@@ -26,7 +26,7 @@
 #include "file_machine.h"
 #include "file.h"
 
-RCSID("$Id: efuns.c,v 1.135 2003/12/15 18:58:12 mast Exp $");
+RCSID("$Id: efuns.c,v 1.136 2003/12/17 21:19:04 marcus Exp $");
 
 #ifdef HAVE_SYS_TYPES_H
 #include <sys/types.h>
@@ -1087,6 +1087,7 @@ void f_getcwd(INT32 args)
   free(e);
 }
 
+#ifdef HAVE_EXECVE
 /*! @decl int exece(string file, array(string) args)
  *! @decl int exece(string file, array(string) args, @
  *!                 mapping(string:string) env)
@@ -1105,6 +1106,8 @@ void f_getcwd(INT32 args)
  *!   The Pike driver _dies_ when this function is called. You must either
  *!   use @[fork()] or @[Process.create_process()] if you wish to execute a
  *!   program and still run the Pike runtime.
+ *!
+ *!   This function is not available on all platforms.
  *!
  *! @seealso
  *!   @[Process.create_process()], @[fork()], @[Stdio.File->pipe()]
@@ -1221,6 +1224,7 @@ void f_exece(INT32 args)
   pop_n_elems(sp-save_sp);
   push_int(0);
 }
+#endif
 
 /*! @decl int mv(string from, string to)
  *!
@@ -1562,9 +1566,11 @@ void init_files_efuns(void)
   
 /* function(:string) */
   ADD_EFUN("getcwd",f_getcwd,tFunc(tNone,tStr),OPT_EXTERNAL_DEPEND);
-  
+
+#ifdef HAVE_EXECVE
 /* function(string,mixed*,void|mapping(string:string):int) */
   ADD_EFUN("exece",f_exece,tFunc(tStr tArr(tMix) tOr(tVoid,tMap(tStr,tStr)),tInt),OPT_SIDE_EFFECT); 
+#endif
 
 /* function(int:string) */
   ADD_EFUN("strerror",f_strerror,tFunc(tInt,tStr),0);
