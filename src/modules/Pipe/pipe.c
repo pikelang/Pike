@@ -26,7 +26,7 @@
 #include <fcntl.h>
 
 #include "global.h"
-RCSID("$Id: pipe.c,v 1.23 1998/05/17 18:53:03 grubba Exp $");
+RCSID("$Id: pipe.c,v 1.24 1998/06/07 21:19:22 grubba Exp $");
 
 #include "threads.h"
 #include "stralloc.h"
@@ -713,7 +713,7 @@ static void pipe_input(INT32 args)
 #ifdef HAVE_SETEUID
 	   seteuid(0);
 #else /* ! HAVE_SETEUID */
-#ifdef HAVE_SETREUID
+#ifdef HAVE_SETRESUID
 	   setresuid(-1, 0, -1);
 #endif /* HAVE_SETRESUID */
 #endif /* HAVE_SETEUID */
@@ -725,7 +725,7 @@ static void pipe_input(INT32 args)
 #ifdef HAVE_SETEUID
 	   seteuid(ou);
 #else /* ! HAVE_SETEUID */
-#ifdef HAVE_SETREUID
+#ifdef HAVE_SETRESUID
 	   setresuid(-1, ou, -1);
 #endif /* HAVE_SETRESUID */
 #endif /* HAVE_SETEUID */
