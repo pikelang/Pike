@@ -213,7 +213,7 @@ static void f_buf_get( INT32 args )
       struct pike_string *s = (struct pike_string *)str->data;
       s->len = len>>str->shift;
       s->size_shift = str->shift;
-      push_string( end_shared_string( s ) );
+      push_string( low_end_shared_string( s ) );
     }
   }
   str->data = 0;
