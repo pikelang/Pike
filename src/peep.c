@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: peep.c,v 1.99 2004/05/29 18:21:05 grubba Exp $
+|| $Id: peep.c,v 1.100 2004/08/24 16:56:32 grubba Exp $
 */
 
 #include "global.h"
@@ -25,7 +25,7 @@
 #include "interpret.h"
 #include "pikecode.h"
 
-RCSID("$Id: peep.c,v 1.99 2004/05/29 18:21:05 grubba Exp $");
+RCSID("$Id: peep.c,v 1.100 2004/08/24 16:56:32 grubba Exp $");
 
 static void asm_opt(void);
 
@@ -146,6 +146,8 @@ void update_arg(int instr,INT32 arg)
 
 /**** Bytecode Generator *****/
 
+static int reoptimize;
+
 INT32 assemble(int store_linenumbers)
 {
   INT32 entry_point;
@@ -153,7 +155,6 @@ INT32 assemble(int store_linenumbers)
   INT32 *labels, *jumps, *uses;
   ptrdiff_t e, length;
   p_instr *c;
-  int reoptimize=!(debug_options & NO_PEEP_OPTIMIZING);
 #ifdef PIKE_PORTABLE_BYTECODE
   struct pike_string *tripples = NULL;
 #endif /* PIKE_PORTABLE_BYTECODE */
@@ -162,6 +163,8 @@ INT32 assemble(int store_linenumbers)
   int synch_depth = 0;
   size_t fun_start = Pike_compiler->new_program->num_program;
 #endif
+
+  reoptimize=!(debug_options & NO_PEEP_OPTIMIZING);
 
   c=(p_instr *)instrbuf.s.str;
   length=instrbuf.s.len / sizeof(p_instr);
@@ -376,9 +379,10 @@ INT32 assemble(int store_linenumbers)
 	reoptimize++;
       }
     }
-    if(!reoptimize) break;
     
     asm_opt();
+
+    if(!reoptimize) break;
 #if 1
 #ifdef PIKE_DEBUG
     if (a_flag > 3)
@@ -957,6 +961,8 @@ static void do_optimization(int topop, ...)
   va_end(arglist);
 
   DO_OPTIMIZATION_POSTQUEL(q);
+
+  reoptimize++;
 }
 
 #include "peep_engine.c"
