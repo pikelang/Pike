@@ -1,11 +1,11 @@
 #include <config.h>
 
-/* $Id: colortable.c,v 1.22 1997/11/07 06:06:05 mirar Exp $ */
+/* $Id: colortable.c,v 1.23 1997/11/07 16:37:48 mirar Exp $ */
 
 /*
 **! module Image
 **! note
-**!	$Id: colortable.c,v 1.22 1997/11/07 06:06:05 mirar Exp $
+**!	$Id: colortable.c,v 1.23 1997/11/07 16:37:48 mirar Exp $
 **! class colortable
 **!
 **!	This object keeps colortable information,
@@ -21,7 +21,7 @@
 #undef COLORTABLE_REDUCE_DEBUG
 
 #include "global.h"
-RCSID("$Id: colortable.c,v 1.22 1997/11/07 06:06:05 mirar Exp $");
+RCSID("$Id: colortable.c,v 1.23 1997/11/07 16:37:48 mirar Exp $");
 
 #include <sys/types.h>
 #include <sys/stat.h>
@@ -2028,6 +2028,10 @@ static void image_colortable_add(INT32 args)
 	       {
 		  THIS->u.flat=_img_get_flat_from_image(img,numcolors);
 		  THIS->type=NCT_FLAT;
+		  THIS->u.flat=
+		     _img_reduce_number_of_colors(THIS->u.flat,
+						  numcolors,
+						  THIS->spacefactor);
 	       }
 	    }
 	    else 
@@ -2124,7 +2128,7 @@ void image_colortable_reduce(INT32 args)
 
 void image_colortable_operator_plus(INT32 args)
 {
-   struct object *o;
+   struct object *o,*tmpo=NULL;
    struct neo_colortable *dest,*src;
 
    int i;
@@ -2135,22 +2139,29 @@ void image_colortable_operator_plus(INT32 args)
    dest=(struct neo_colortable*)get_storage(o,image_colortable_program);
 
    for (i=0; i<args; i++)
-      if (sp[i-args].type==T_OBJECT)
+   {
+      if (sp[i-args].type==T_OBJECT &&
+	  (src=(struct neo_colortable*)
+	   get_storage(sp[i-args].u.object,image_colortable_program)))
       {
+	 tmpo=NULL;
+      }
+      else if (sp[i-args].type==T_ARRAY ||
+	       sp[i-args].type==T_OBJECT)
+      {
+	 struct svalue *sv=sp+i-args;
+	 push_svalue(sv);
+	 tmpo=clone_object(image_colortable_program,1);
 	 src=(struct neo_colortable*)
-	    get_storage(sp[i-args].u.object,image_colortable_program);
-	 if (!src) 
-	 { 
-	    free_object(o); 
-	    error("Illegal argument %d to Image.colortable->`+",i+2); 
-	 }
-	 _img_add_colortable(dest,src);
+	   get_storage(tmpo,image_colortable_program);
+	 if (!src) abort();
       }
-      else 
-      { 
-	 free_object(o); 
-	 error("Illegal argument %d to Image.colortable->`+",i+2); 
-      }
+      else error("Image-colortable->`+: Illegal argument %d\n",i+2);
+    
+      _img_add_colortable(dest,src);
+      
+      if (tmpo) free_object(tmpo);
+   }
    pop_n_elems(args);
    push_object(o);
 }

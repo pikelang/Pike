@@ -2,7 +2,7 @@
 
 togif 
 
-$Id: togif.c,v 1.23 1997/11/07 07:20:48 mirar Exp $ 
+$Id: togif.c,v 1.24 1997/11/07 16:37:51 mirar Exp $ 
 
 old GIF API compat stuff
 
@@ -11,7 +11,7 @@ old GIF API compat stuff
 /*
 **! module Image
 **! note
-**!	$Id: togif.c,v 1.23 1997/11/07 07:20:48 mirar Exp $
+**!	$Id: togif.c,v 1.24 1997/11/07 16:37:51 mirar Exp $
 **! class image
 */
 
@@ -181,7 +181,7 @@ static void img_gif_add(INT32 args,int fs,int lm,
    {
       THISOBJ->refs++;
       push_object(THISOBJ);
-      push_int(256);
+      push_int(255);
       ncto=clone_object(image_colortable_program,2);
    }
 
@@ -259,36 +259,47 @@ void image_gif_add_fs_nomap(INT32 args)
 **! see also: gif_begin, gif_add, gif_end, toppm, fromgif
 */
 
+extern void _image_gif_encode(INT32 args,int fs);
 
 static void img_encode_gif(rgb_group *transparent,int fs,INT32 args)
 {
-  struct svalue sv;
-
-  /* on stack is now:
-     - eventual colortable instruction (number or array) */
-
-  /* (swap in) arguments to gif_add, x and y position */
-  push_int(0); if (args) { sv=sp[-1]; sp[-1]=sp[-2]; sp[-2]=sv; }
-  push_int(0); if (args) { sv=sp[-1]; sp[-1]=sp[-2]; sp[-2]=sv; }
-
-  img_gif_add(args+2,fs,1,transparent);
-  image_gif_begin(0);
-
-  /* on stack is now:
-     - gif image chunk with local palette 
-     - gif beginning */
-
-  /* swap them... */
-  sv=sp[-1]; sp[-1]=sp[-2]; sp[-2]=sv;
-
-  image_gif_end(0);
-
-  /* on stack is now: 
-     - gif beginning
-     - image with local palette and eventual gce block
-     - gif end chunk */
-  
-  f_add(3);
+   struct object *co=NULL;
+   if (args)
+   {
+      if (sp[-args].type==T_OBJECT)
+      {
+	 (co=sp[-args].u.object)->refs++;
+	 pop_n_elems(args);
+      }
+      else if (sp[-args].type==T_ARRAY)
+	 co=clone_object(image_colortable_program,args);
+      else if (sp[-args].type==T_INT)
+      {
+	 unsigned long numcolors=sp[-args].u.integer;
+	 pop_n_elems(args);
+	 push_object(THISOBJ); THISOBJ->refs++;
+	 push_int(numcolors);
+	 co=clone_object(image_colortable_program,2);
+      }
+      else
+	 error("Illegal argument to img->togif()\n");
+   }
+   else
+   {
+      push_object(THISOBJ); THISOBJ->refs++;
+      push_int(256);
+      co=clone_object(image_colortable_program,2);
+   }
+   push_object(THISOBJ); THISOBJ->refs++;
+   push_object(co);
+   if (transparent)
+   {
+      push_int(transparent->r);
+      push_int(transparent->g);
+      push_int(transparent->b);
+      _image_gif_encode(5,fs);
+   }
+   else _image_gif_encode(2,fs);
 }
 
 static INLINE void getrgb(struct image *img,
