@@ -129,22 +129,26 @@ test_any([[
   p->lazy_entity_end (1);
   p->add_tag (
     "t", lambda (object p, mapping a) {
-	   return ({"T(", p->current(), "|", p->tag_name(), ")"});
+	   return ({"T(", p->current(), "|", p->tag_name(), "|",
+		    (string) p->tag_content(), ")"});
 	 });
   p->add_container (
     "c", lambda (object p, mapping a, string c) {
-	   return ({"C(", p->current(), "|", p->tag_name(), ")"});
+	   return ({"C(", p->current(), "|", p->tag_name(), "|",
+		    (string) p->tag_content(), ")"});
 	 });
   p->add_entity (
     "e", lambda (object p) {
-	   return ({"E(", p->current(), "|", p->tag_name(), ")"});
+	   return ({"E(", p->current(), "|", p->tag_name(), "|",
+		    (string) p->tag_content(), ")"});
 	 });
   p->add_quote_tag (
     "q", lambda (object p, string c) {
-	   return ({"Q(", p->current(), "|", p->tag_name(), ")"});
+	   return ({"Q(", p->current(), "|", p->tag_name(), "|",
+		    (string) p->tag_content(), ")"});
 	 }, "p");
   return p->finish ("<t a=&e; <t>> <q <\"' &e; p> &e<c x=y -- >x</c> &e; ")->read();
-]], "T(<t a=&e; <t>>|t) Q(<q <\"' &e; p>|q) E(&e|e)C(<c x=y -- >x</c>|c) E(&e;|e) ");
+]], "T(<t a=&e; <t>>|t|0) Q(<q <\"' &e; p>|q| <\"' &e; ) E(&e|e|0)C(<c x=y -- >x</c>|c|x) E(&e;|e|0) ");
 
 // Argument quoting
 test_any([[
