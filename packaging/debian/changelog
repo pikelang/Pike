@@ -1,3 +1,10 @@
+pike7.6 (7.6.11-4) unstable; urgency=medium
+
+  * Force the recompile on the architectures where there was old gdk-
+    imlib1
+
+ -- Marek Habersack <grendel@debian.org>  Mon,  2 Aug 2004 02:17:56 +0200
+
 pike7.6 (7.6.11-3) unstable; urgency=medium
 
   * Gotten rid of gdk-imlib1-dev build dependency
