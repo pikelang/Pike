@@ -1,6 +1,6 @@
 #!/usr/local/bin/pike
 
-/* $Id: socktest.pike,v 1.23 2003/10/04 18:59:31 grubba Exp $ */
+/* $Id: socktest.pike,v 1.24 2003/10/06 15:05:49 grubba Exp $ */
 
 
 import Stdio;
@@ -362,11 +362,21 @@ void finish()
 	keeper=socks;
 	break;
 
-      case 5..26:
+      case 5..13:
 	tests=(_tests-2)*2;
 	werror("Testing "+(tests*2)+" sockets. ");
 	for(int e=0;e<tests;e++) stdtest();
 	stdtest();
+	break;
+
+      case 14..26:
+#if 0
+	/* These tests require mare than 64 open fds. */
+	tests=(_tests-2)*2;
+	werror("Testing "+(tests*2)+" sockets. ");
+	for(int e=0;e<tests;e++) stdtest();
+	stdtest();
+#endif /* 0 */
 	break;
 
       case 27..48:
