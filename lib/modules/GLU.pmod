@@ -1,9 +1,9 @@
 /*
- * $Id: GLU.pmod,v 1.5 1999/10/25 19:10:26 mirar Exp $
+ * $Id: GLU.pmod,v 1.6 1999/11/09 00:02:09 grubba Exp $
  *
  * GL Utilities module.
  */
-#if constant(GL)
+#if constant(GL.glGet)
 import GL;
 import Math;
 
