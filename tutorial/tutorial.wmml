@@ -1338,6 +1338,7 @@ string:
 	"\0"          // A null character
 	"\""          // A double quote character
 	"\\"          // A singe backslash
+	"\x4e"        // N (4e is the hexadecimal ASCII value for N)
 	"hello world\116\t\n\r\b\0\"\\" // All of the above
 </pre>
 As you can see, any sequence of characters within double quotes is a string.
@@ -1346,7 +1347,8 @@ impossible to type. As you can see, <tt>\t</tt> is the sequence to produce
 a tab character, <tt>\\</tt> is used when you want one backslash and
 <tt>\"</tt> is used when you want a double quote to be a part of the string
 instead of ending it. Also, <tt>\<i>XXX</i></tt> where <i>XXX</i> is an
-octal number from 000 to 377 lets you write any character you want in the
+octal number from 000 to 377 or <tt>\<i>XX</i></tt> where <i>XX</i> is 00 to
+FF lets you write any character you want in the
 string, even null characters. If you write two constant strings after each
 other, they will be concatenated into one string.
 <p>
@@ -1375,7 +1377,10 @@ All the comparison operators plus the operators listed here can be used on strin
 <dt> Division
 <dd> Division will let you divide a string at every occurrence of a word or
      character. For instance if you do <tt>"foobargazonk" / "o"</tt> the
-     result would be <tt>({"f","","bargaz","nk"})</tt>.
+     result would be <tt>({"f","","bargaz","nk"})</tt>. It is also possible
+     to divide the string into strings of length N by dividing the string
+     by N. If N is converted to a float before dividing, the reminder of
+     the division will be included in the result.
 <dt> Multiplication
 <dd> The inverse of the division operator can be accomplished by multiplying
      an array with a string. So if you evaluate
@@ -1498,6 +1503,14 @@ use the operators <tt>&gt;</tt>, <tt>&gt;=</tt>, <tt>&lt;</tt> or <tt>&lt;=</tt>
      elements present in <i>a</i> or <i>b</i> but the element must NOT
      be present in both. Example: <tt>({1,3,5,6}) ^ ({4,5,6,7})</tt> will
      return <tt>({1,3,4,7})</tt>.
+
+<dt> Division (<tt><i>a</i> / <i>b</i></tt>)
+<dd> This will split the array <i>a</i> into an array of arrays. If <i>b</i> is
+     another array, <i>a</i> will be split at each occurance of that array.
+     If <i>b</i> is an integer or float, <i>a</i> will be split between
+     every <i>b</i>th element. Examples: <tt>({1,2,3,4,5})/({2,3})</tt> will
+     return <tt>({ ({1}), ({4,5}) })</tt> and <tt>({1,2,3,4})/2</tt> will
+     return <tt>({ ({1,2}), ({3,4}) })</tt>.
 
 <dt><tt>array aggregate(mixed ... <i>elems</i>)</tt>
 <dd> This function does the same as the <tt>({ })</tt> operator; it creates an
@@ -1743,14 +1756,14 @@ in much the same way. It can also be used to create <b>structs</b>
 	  array(string) songs;
 	}
 
-	array(object(record)) records = ({});
+	array(record) records = ({});
 
 	void add_empty_record()
 	{
 	  records+=({ record() });
 	}
 
-	void show_record(object(record) rec)
+	void show_record(record rec)
 	{
 	  write("Record name: "+rec-&gt;title+"\n");
 	  write("Artist: "+rec-&gt;artist+"\n");
@@ -1843,7 +1856,7 @@ better to write it like this:
 	  }
 	}
 
-	array(object(record)) records = ({});
+	array(record) records = ({});
 
 	void add_empty_record()
 	{
@@ -2027,7 +2040,10 @@ than that, let's look at a few examples:
 	 // x is a mapping from int to string
 	mapping(string:int) x;
 
-	// x is a clone of Stdio.File
+	// x implements Stdio.File
+	Stdio.File x;
+
+	// x implements Stdio.File
 	object(Stdio.File) x;
 
 	// x is a function that takes two integer
@@ -2057,10 +2073,16 @@ Here is a list of what is possible:
 <dt> <tt>multiset ( <i>type</i> )</tt>
 <dd> This means a multiset containing values of the type <i>type</i>.
 <dt> <tt>object ( <i>program</i> )</tt>
-<dd> This means an object cloned from the specified program. The
-     <i>program</i> can be a class, a constant, or a string. If the program
-     is a string it will be casted to a program first. See the documentation
-     for <tt>inherit</tt> for more information about this casting.
+<dd> This means an object which 'implements'  the specified program. The
+     <i>program</i> can be a class, a constant, or a string.
+     If the program is a string it will be casted to a program first.
+     See the documentation for <tt>inherit</tt> for more information
+     about this casting. The compiler will assume that any function
+     or variable accessed in this object has the same type information
+     as that function or variable has in <i>program</i>.
+<dt> <tt><i>program</i></tt>
+<dd> This too means 'an object which implements <i>program</i>'.
+     <i>program</i> can be a class or a constant.
 <dt> <tt>function( <i>argument types</i> : <i>return type</i> )</tt>
 <dd> This is a function taking the specified arguments and returning
      <i>return type</i>. The <i>argument types</i> is a comma separated
@@ -2215,7 +2237,20 @@ the complete list of combinations of types you can use with these operators:
 </tr>
 
 <tr>
-<td><tt><i>array(string)</i>&nbsp;*&nbsp;<i>string</i></tt></td><td>string</td><td>All the strings in the array are concatenated with the string on the right in between each string. Example: <tt>({"foo,"bar})*"-"</tt> will return <tt>"foo-bar".</tt></td>
+<td><tt><i>array(string)</i>&nbsp;*&nbsp;<i>string</i></tt></td><td>string</td><td>All the strings in the array are concatenated with the string on the right in between each string. Example: <tt>({"foo","bar"})*"-"</tt> will return <tt>"foo-bar".</tt></td>
+</tr>
+
+
+<tr>
+<td><tt><i>array(array)</i>&nbsp;*&nbsp;<i>array</i></tt></td><td>array</td><td>All the arrays in the left array are concatenated with the array on the right in between each array. Example: <tt>({ ({"foo"}) ,({"bar"})})*({"-"})</tt> will return <tt>({ "foo","-","bar" })</tt>.</td>
+</tr>
+
+<tr>
+<td><tt><i>string</i>&nbsp;*&nbsp;<i>int</i></tt></td><td>string</td><td>This operation will concatenate the string N times. Example: <tt>"foo"*3</tt> will return <tt>"foofoofoo"</tt>.</td>
+</tr>
+
+<tr>
+<td><tt><i>array</i>&nbsp;*&nbsp;<i>int</i></tt></td><td>string</td><td>This operation will concatenate the array N times. Example: <tt>({"foo"})*3</tt> will return <tt>({"foo","foo","foo"})</tt>.</td>
 </tr>
 
 <tr>
@@ -2234,6 +2269,26 @@ the complete list of combinations of types you can use with these operators:
 </tr>
 
 <tr>
+<td><tt><i>string</i>&nbsp;/&nbsp;<i>int</i></tt></td><td>array(string)</td><td>This will split the string into pieces. The size of the pieces is given by the integer. Only complete pieces will be included in the result, the 'reminder' is discarded. Example:
+<tt>"foo-bar"/2</tt> will return <tt>({"fo","o-","ba"})</tt></td>
+</tr>
+
+<tr>
+<td><tt><i>string</i>&nbsp;/&nbsp;<i>float</i></tt></td><td>array(string)</td><td>This is similar to dividing a string with an integer, but it allows fraction-sized segments and the reminder will always be included. Example:
+<tt>"foo-bar"/2.5</tt> will return <tt>({"fo","o-b","ar"})</tt></td>
+</tr>
+
+<tr>
+<td><tt><i>array</i>&nbsp;/&nbsp;<i>int</i></tt></td><td>array(array)</td><td>This is similar to dividing a string with an integer, but splits an array. Example:
+<tt>({1,2,3,4,5,6,7})/2</tt> will return <tt>({({1,2}),({3,4}),({5,6})})</tt></td>
+</tr>
+
+<tr>
+<td><tt><i>array</i>&nbsp;/&nbsp;<i>float</i></tt></td><td>array(array)</td><td>You should be able to predict what this does by now. :) Example:
+<tt>({1,2,3,4,5,6,7,8})/2.5</tt> will return <tt>({({1,2}),({3,4,5}),({6,7}),({8})})</tt></td>
+</tr>
+
+<tr>
 <td><tt><i>int</i>&nbsp;%&nbsp;<i>int</i></tt></td><td>int</td><td>The rest of a division. If <tt>a</tt> and <tt>b</tt> are integers, <tt>a%b</tt> is the same as <tt>a-(a/b)*b</tt></td>
 </tr>
 
@@ -2244,7 +2299,15 @@ the complete list of combinations of types you can use with these operators:
 <i>float</i>&nbsp;%&nbsp;<i>int</i></tt></td><td>float</td><td>The rest of a division. If <tt>a</tt> and <tt>b</tt> are floats, <tt>a%b</tt> is the same as <tt>a-floor(a/b)*b</tt></td>
 </tr>
 
+<tr>
+<td><tt>
+<i>string</i>&nbsp;%&nbsp;<i>int</i></td><td>string</td><td>The rest of a string division. Example: <tt>"foo-bar"%2</tt> will return <tt>"r"</tt></td>
+</tr>
 
+<tr>
+<td><tt>
+<i>array</i>&nbsp;%&nbsp;<i>int</i></td><td>string</td><td>The rest of an array division. Example: <tt>({1,2,3,4,5,6,7})%2</tt> will return <tt>({7})</tt></td>
+</tr>
 
 </table>
 </center>
@@ -2681,7 +2744,7 @@ oriented programming.
 As mentioned before, Pike uses a different terminology than C++ does.
 This has historic reasons, but might be changed in the future. In
 the meantime, you might benefit from this mini-dictionary which translates
-C++-ish between Pike-ish:
+Pike-ish terms to C++-ish terms:
 <dl>
 <dt> a <i>class</i> <dd> a class
 <dt> a <i>clone</i> <dd> an instance of a class
@@ -2729,7 +2792,7 @@ In my experience, the advantages of object oriented programming are:
     many clones of that program. 
 
 <dt>Using the same interface to different objects
-<dd>I can write a function that takes a stream as an argument and writes
+<dd>I can write a function that take a stream as an argument and writes
     data to this stream. Later I might wish to write this data to a window
     instead. I can then create an object that has the same methods as a stream
     (specifically the <tt>write</tt> method) and send that to the function
@@ -2773,19 +2836,9 @@ It can be used outside all functions, but it can also be used as an expression
 in which case the defined class will be returned. In this case you may also
 leave out the <i>class_name</i> and leave the class unnamed. The
 <i>class definition</i> is simply the functions and programs you want to add
-to the class. It is important to know that although the class is defined in
-the same file as other classes and functions it can not immediately access
-data in its surroundings. Only constants defined before the class in the
-same file can be used. Example:
-<example language=pike>
-	constant x = 17;
-	class foobar {
-	   int test() { return x; }
-	};
-</example>
-This works because <tt>x</tt> is a <b>constant</b>. If x had been a variable
-or function it would not have worked. In future versions of Pike it may be
-possible to do this with variables as well. To make it easier to program,
+to the class.
+<p>
+To make it easier to program,
 defining a class is also to define a
 constant with that name. Essentially, these two lines of code do the same
 thing:
@@ -2932,9 +2985,13 @@ These modifiers are available:
 <dd>Static hides this identifier from the index and arrow operators, which
     makes it impossible for other objects to call this function unless a
     function pointer to it is returned from inside this program.
-<dt><tt>nomask</tt>
+<dt><tt>final</tt>
 <dd>This prevents other objects from re-defining this identifier in
     programs that inherit this program.
+<dt><tt>local</tt>
+<dd>This makes the identifier 'local' meaning that even if 
+    it is overloaded in an inheriting program, this program will still
+    use this identifer.
 <dt><tt>private</tt>
 <dd>This prevents inheriting programs from accessing this identifier.
     Note that inheriting program can still re-define the identifier.
@@ -2972,26 +3029,26 @@ Other operators will simply fail if called with objects. Refer to
 without operator overloading.
 <center>
 <table border=1>
-<tr><th>Operation</th><th>Will call</th></tr>
-<tr><td>a+b</td><td>a-&gt;`+(b)</td></tr>
-<tr><td>a+b+c+d</td><td>a-&gt;`+(b,c,d)</td></tr>
-<tr><td>a-b</td><td>a-&gt;`-(b)</td></tr>
-<tr><td>a&amp;b</td><td>a-&gt;`&amp;(b)</td></tr>
-<tr><td>a|b</td><td>a-&gt;`|(b)</td></tr>
-<tr><td>a^b</td><td>a-&gt;`^(b)</td></tr>
-<tr><td>a&gt;&gt;b</td><td>a-&gt;`&gt;&gt;(b)</td></tr>
-<tr><td>a&lt;&lt;b</td><td>a-&gt;`&lt;&lt;(b)</td></tr>
-<tr><td>a*b</td><td>a-&gt;`*(b)</td></tr>
-<tr><td>a*b*c*d</td><td>a-&gt;`*(b,c,d)</td></tr>
-<tr><td>a/b</td><td>a-&gt;`/(b)</td></tr>
-<tr><td>a%b</td><td>a-&gt;`%(b)</td></tr>
+<tr><th>Operation</th><th>Will call</th><th>Or</th></tr>
+<tr><td>a+b</td><td>a-&gt;`+(b)</td><td>b-&gt;``+(a)</td></tr>
+<tr><td>a+b+c+d</td><td>a-&gt;`+(b,c,d)</td><td>(b-&gt;(a))+c+d</td></tr>
+<tr><td>a-b</td><td>a-&gt;`-(b)</td><td>b-&gt;``-(a)</td></tr>
+<tr><td>a&amp;b</td><td>a-&gt;`&amp;(b)</td><td>b-&gt;``&amp;(a)</td></tr>
+<tr><td>a|b</td><td>a-&gt;`|(b)</td><td>b-&gt;``|(a)</td></tr>
+<tr><td>a^b</td><td>a-&gt;`^(b)</td><td>b-&gt;``^(a)</td></tr>
+<tr><td>a&gt;&gt;b</td><td>a-&gt;`&gt;&gt;(b)</td><td>b-&gt;``&gt;&gt;(a)</td></tr>
+<tr><td>a&lt;&lt;b</td><td>a-&gt;`&lt;&lt;(b)</td><td>b-&gt;``&lt;&lt;(a)</td></tr>
+<tr><td>a*b</td><td>a-&gt;`*(b)</td><td>b-&gt;``*(a)</td></tr>
+<tr><td>a*b*c*d</td><td>a-&gt;`*(b,c,d)</td><td>b-&gt;`*(a)*c*d</td></tr>
+<tr><td>a/b</td><td>a-&gt;`/(b)</td><td>b-&gt;``/(a)</td></tr>
+<tr><td>a%b</td><td>a-&gt;`%(b)</td><td>b-&gt;``%(a)</td></tr>
 <tr><td>~a</td><td>a-&gt;`~()</td></tr>
-<tr><td>a==b</td><td>a-&gt;`==(b) or b-&gt;`==(a)</td></tr>
-<tr><td>a!=b</td><td>!( a-&gt;`==(b) ) or !( b-&gt;`==(a) )</td></tr>
-<tr><td>a&lt;b</td><td>a-&gt;`&lt;(b)</td></tr>
-<tr><td>a&gt;b</td><td>a-&gt;`&gt;(b)</td></tr>
-<tr><td>a&lt;=b</td><td>!( b-&gt;`&gt;(a) )</td></tr>
-<tr><td>a&gt;=b</td><td>!( b-&gt;`&lt;(a) )</td></tr>
+<tr><td>a==b</td><td>a-&gt;`==(b)</td><td>b-&gt;`==(a)</td></tr>
+<tr><td>a!=b</td><td>!( a-&gt;`==(b) )</td><td>!( b-&gt;`==(a) )</td></tr>
+<tr><td>a&lt;b</td><td>a-&gt;`&lt;(b)</td><td>b-&gt;`&gt;(a)</td></tr>
+<tr><td>a&gt;b</td><td>a-&gt;`&gt;(b)</td><td>b-&gt;`&lt;(a)</td></tr>
+<tr><td>a&lt;=b</td><td>!( b-&gt;`&gt;(a) )</td><td>!( a-&gt;`&lt;(b) )</td></tr>
+<tr><td>a&gt;=b</td><td>!( b-&gt;`&lt;(a) )</td><td>!( a-&gt;`&gt;(b) )</td></tr>
 <tr><td>(int)a</td><td>a-&gt;cast("int")</td></tr>
 <tr><td>!a</td><td>a-&gt;`!()</td></tr>
 <tr><td>if(a) { ... } </td><td>!( a-&gt;`!() )</td></tr>
@@ -3206,6 +3263,10 @@ here is a list of the basic Pike modules:
 <dd>This module contains file I/O routines.
 <dt>Array
 <dd>This module contains functions that operate on arrays.
+<dt>Calendar
+<dd>Support for different calendar and date formats.
+<dt>Crypto *
+<dd>Cryptography routines.
 <dt>Gdbm *
 <dd>This module contains support for Gdbm databases.
 <dt>Getopt
@@ -3226,6 +3287,8 @@ here is a list of the basic Pike modules:
 <dd>Sql database support for the mySQL database server.
 <dt>Process
 <dd>Functions to start and control other processes.
+<dt>Protocols
+<dd>Support for NNTP, SMNT, DNS, TELNET and other protocols.
 <dt>Regexp
 <dd>Regexp matching routines.
 <dt>Simulate
@@ -3233,11 +3296,15 @@ here is a list of the basic Pike modules:
 <dt>String
 <dd>Routines that operate on strings.
 <dt>Sql *
+<dt>Standards
+<dd>Support for ASN1, PKCS and other standards.
 <dd>Generic SQL database support.
 <dt>System
 <dd>Support for system specific functions.
 <dt>Thread *
 <dd>Thread support functions.
+<dt>Tools
+<dd>Complete programs available to use from within scripts.
 <dt>Yp *
 <dd>Network Information System support.
 </dl>
@@ -3265,7 +3332,7 @@ to know how modules are located and loaded.
 <p>
 When you use <tt>Stdio</tt> Pike will look for that module:
 <ol>
-<li> In the same directory as the source.
+<li> In imported directories.
 <li> In directories added with add_module_path()
 <li> In directories specified with -M on the command line.
 <li> In directories in the environment variable PIKE_MODULE_PATH
@@ -11900,7 +11967,7 @@ Pike should compile and install nicely on almost any UNIX platform. It has
 been tested on the following:
 <ul>
 <li> Solaris 2.4, 2.5, 2.5.1, 2.6
-<li> Linux Red Hat 3, Red Hat 4, Slackware 3.0, Slackware 96
+<li> Linux Red Hat, Slackware, Debian etc.
 <li> Digital Unix (OSF/1)
 <li> HP-UX 10
 <li> AIX 4
@@ -11913,20 +11980,20 @@ been tested on the following:
 
 After obtaining the Pike source you need to unpack it. To unpack Pike you
 need gzip, which is available from any GNU mirror site. You also need tar,
-which is a part of UNIX. If you got Pike-v0.5.tar.gz, simply unpack it by
+which is a part of UNIX. If you got Pike-v0.6.53.tar.gz, simply unpack it by
 typing:
 <pre>
-	$ gunzip -d Pike-v0.5.tar.gz
-	$ tar xvf Pike-v0.5.tar
+	$ gunzip -d Pike-v0.6.53.tar.gz
+	$ tar xvf Pike-v0.5.53.tar
 </pre>
 
-Now you have a directory called Pike-v0.5. Please read the README file
+Now you have a directory called Pike-v0.6.53. Please read the README file
 in the new directory since newer versions can contain information not
 available at the time this book was written.
 <p>
 Now, to compile Pike, the following three commands should be enough.
 <pre>
-	$ cd Pike-v0.5/src
+	$ cd Pike-v0.6.53/src
 	$ ./configure --prefix=/dir/to/install/pike
 	$ make
 </pre>
