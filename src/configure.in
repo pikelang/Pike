@@ -1,4 +1,4 @@
-AC_REVISION("$Id: configure.in,v 1.620 2002/09/07 12:08:19 grubba Exp $")
+AC_REVISION("$Id: configure.in,v 1.621 2002/09/07 14:37:34 grubba Exp $")
 AC_INIT(interpret.c)
 AC_CONFIG_HEADER(machine.h)
 
@@ -180,6 +180,11 @@ AC_DEFUN(AC_SYS_COMPILER_FLAG,
       # cc/AIX says the following regarding +O3:
       #
       # cc: 1501-228 input file +O3 not found
+      pike_cv_option_$2=no
+    elif grep -i 'ignored' <conftezt.out.2 >/dev/null; then
+      # gcc/AIX says the following regarding -fpic:
+      #
+      # cc1: warning: -fpic ignored (all code is position independent)
       pike_cv_option_$2=no
     else :; fi
     rm conftezt.out.2
