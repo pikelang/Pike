@@ -1,7 +1,5 @@
 #pike __REAL_VERSION__
 
-#define error(X) throw( ({ (X), backtrace()[0..sizeof(backtrace())-2] }) )
-
 import Stdio;
 
 #if !constant(strerror)
@@ -272,9 +270,8 @@ class Spawn
 	 {
 	    if(cwd && !cd(cwd))
 	    {
-	       throw(({"pike: cannot change cwd to "+cwd+
-		       ": "+strerror(errno())+"\n",
-		       backtrace()}));
+	       error( "pike: cannot change cwd to "+cwd+
+		      ": "+strerror(errno())+"\n" );
 	    }
 
 	    if (sizeof(fdp)>0 && fdp[0]) fdp[0]->dup2(Stdio.File("stdin"));
@@ -293,9 +290,8 @@ class Spawn
 	    else 
 	       exece(cmd,args||({}));
 
-	    throw(({"pike: failed to exece "+cmd+
-		    ": "+strerror(errno())+"\n",
-		    backtrace()}));
+	    error( "pike: failed to exece "+cmd+
+		   ": "+strerror(errno())+"\n" );
 	 };
 
 	 pied->write(encode_value(err));
