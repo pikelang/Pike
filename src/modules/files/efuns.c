@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: efuns.c,v 1.129 2003/05/05 12:34:25 mast Exp $
+|| $Id: efuns.c,v 1.130 2003/07/03 14:09:03 grubba Exp $
 */
 
 #include "global.h"
@@ -26,7 +26,7 @@
 #include "file_machine.h"
 #include "file.h"
 
-RCSID("$Id: efuns.c,v 1.129 2003/05/05 12:34:25 mast Exp $");
+RCSID("$Id: efuns.c,v 1.130 2003/07/03 14:09:03 grubba Exp $");
 
 #ifdef HAVE_SYS_TYPES_H
 #include <sys/types.h>
@@ -983,6 +983,7 @@ void f_get_dir(INT32 args)
   {
     for(d=readdir(dir); d; d=readdir(dir))
     {
+      /* Filter "." and ".." from the list. */
       if(d->d_name[0]=='.')
       {
 	if(NAMLEN(d)==1) continue;
