@@ -1,5 +1,5 @@
 #include "global.h"
-RCSID("$Id: pcx.c,v 1.11 2000/08/03 21:25:32 grubba Exp $");
+RCSID("$Id: pcx.c,v 1.12 2000/09/08 20:10:26 grubba Exp $");
 
 #include "image_machine.h"
 
@@ -243,6 +243,7 @@ static struct object *low_pcx_decode( struct pike_string *data )
   struct pcx_header pcx_header;
   struct ONERROR onerr;
   struct object *io;
+  ptrdiff_t width, height;
   b.str = data->str;
   b.len = data->len;
 
@@ -258,11 +259,27 @@ static struct object *low_pcx_decode( struct pike_string *data )
   SWAP_S(pcx_header.color);
 #endif
 
-  if(pcx_header.manufacturer != 10)
+  if((pcx_header.manufacturer != 10) || (pcx_header.reserved) ||
+     (pcx_header.rle_encoded & ~1))
     error("This is not a known type of PCX\n");
 
-  push_int( pcx_header.x2 - pcx_header.x1 + 1 );
-  push_int( pcx_header.y2 - pcx_header.y1 + 1 );
+  if ((pcx_header.bpp != 8) &&
+      (pcx_header.bpp != 1)) {
+    error("Unsupported bits per plane: %d\n", pcx_header.bpp);
+  }
+
+  if ((pcx_header.planes < 1) || (pcx_header.planes > 4)) {
+    error("Unsupported number of planes: %d\n", pcx_header.planes);
+  }
+
+  width = pcx_header.x2 - pcx_header.x1 + 1;
+  height = pcx_header.y2 - pcx_header.y1 + 1;
+  if ((width <= 0) || (height <= 0)) {
+    error("Unsupported PCX image.\n");
+  }
+
+  push_int64(width);
+  push_int64(height);
 
   io = clone_object( image_program, 2 );
   dest = ((struct image *)get_storage( io, image_program ))->img;
