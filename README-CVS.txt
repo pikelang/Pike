@@ -1,4 +1,4 @@
-$Id: README-CVS.txt,v 1.18 2002/04/11 15:57:19 mast Exp $
+$Id: README-CVS.txt,v 1.19 2002/07/24 14:09:47 mast Exp $
 
 
 HOW TO BUILD PIKE FROM CVS
@@ -20,13 +20,13 @@ There are a few simple steps to get pike from cvs:
 
 2. Login to the cvs-server:
 
-	 cvs -d :pserver:anon@cvs.roxen.com:/cvs login
+         cvs -d :pserver:anon@cvs.roxen.com:/cvs login
 
    Just hit enter on the password prompt.
 
 3. Check out the source:
 
-	 cvs -z3 -d :pserver:anon@cvs.roxen.com:/cvs co Pike/7.3
+         cvs -z3 -d :pserver:anon@cvs.roxen.com:/cvs co Pike/7.3
 
    substitute 7.3 for whatever version you want to get.
 
@@ -43,23 +43,54 @@ files.
 
 Other interesting make targets are:
 
-install		    compile and install in default location
-install_interactive interactive install
-tinstall	    test install, i.e. install in build directory
-verify		    run the testsuite
-run_hilfe	    run hilfe without installing pike
-documentation       build the reference documentation from the
-		    source.  See the refdoc subdirectory.
-source		    prepare the source tree for compiliation without
-		    the need for a Pike.
-snapshot	    create a snapshot export tarball.
-export		    create a source dist and bump up the build number
-		    (if you have cvs write access).  Please DO NOT
-		    check in the generated files.
-clean               removes all the built binary files
-cvsclean	    removes all files that are generated automatically,
-		    i.e. brings the tree back to the state as if it
-		    were checked out from the CVS
+install             Compile and install in default location.
+install_interactive Interactive install.
+tinstall            Test install, i.e. install in build directory.
+verify              Do a test install and run the testsuite with the
+                    installed pike.
+just_verify         Run the testsuite directly with the pike binary in
+                    the build tree.
+run_hilfe           Run hilfe without installing pike.
+pike                Build only the pike core, do not recurse into the
+                    module directories.
+documentation       Build the reference documentation from the
+                    source.  See the refdoc subdirectory.
+depend              Build the files that tracks dependencies between
+                    the source files.  This is necessary to ensure
+                    correct rebuilding if some of the source files
+                    change, but not if you only intend to use the
+                    build tree once.  It's not run by default.  See
+                    also the note below about this target.
+source              Prepare the source tree for compiliation without
+                    the need for a preexisting installed pike.
+force_autoconfig    Forces a build of the configure scripts.  This is
+                    useful e.g. if a new module directory is added in
+                    the CVS.
+force_configure     Forces configure to be run (recursively).  If
+                    you've installed a new library and want pike to
+                    detect it, then the simplest way is to remove
+                    config.cache in the build directory (or perhaps
+                    just delete the relevant variables in it) and then
+                    use this target.
+dump_modules        Dumps the Pike modules directly in the build tree.
+                    That makes pike load faster if it's run directly
+                    from there, e.g. through the bin/pike script (see
+                    below).  These dumped modules are not used for
+                    anything else.  After this has been run once, any
+                    changed Pike modules will be redumped
+                    automatically by the main build targets.
+undump_modules      Removes any modules dumped by dump_modules, and
+                    removes the redump step described above.
+force_dump_modules  Forces all Pike modules to be redumped, not just
+                    those whose source files have changed.
+snapshot            Create a snapshot export tarball.
+export              Create a source dist and bump up the build number
+                    (if you have cvs write access).  Please do not
+                    check in the generated files.
+clean               Removes all the built binary files.
+cvsclean            Removes all files that are generated automatically,
+                    i.e. brings the tree back to the state as if it
+                    was checked out from the CVS.
 
 If you want to pass arguments to the configure script (see below), the
 simplest way is to use the CONFIGUREARGS variable, like this:
@@ -80,6 +111,16 @@ you want to use Pike this way (which is mainly useful if you update
 from CVS often), you should consider doing 'make dump_modules' to make
 it start faster.
 
+Note about the depend target: Dependencies are typically between *.c
+files and the *.h files they include.  Since many *.c files are
+generated from other input, the depend target often trigs other
+targets to generate them.  Some of those targets use the pike binary
+in the build tree, so if you do make depend before pike is first built
+in a new build tree, you're likely to end up building everything.
+That can seem like a bit of catch 22, but since the dependency files
+are only needed to correctly rebuild in an old tree, it's perfectly ok
+to wait with make depend until you have built Pike once.
+
 
 CONFIGURE OPTIONS AND BUILD VARIABLES
 
@@ -90,18 +131,18 @@ Some options for the configure script are:
 --without-gdbm            compile without gdbm support
 --without-bignums         disable support for large integers
 --without-gmp             compile without gmp support (implies
-			  --without-bignums)
+                          --without-bignums)
 --with-rtldebug           compile with runtime debug checks
 --without-cdebug          compile without debug symbols (-g)
 --with-debug              same as --with-rtldebug --with-cdebug
 --without-debug           same as --without-rtldebug --without-cdebug
 --without-copt            compile without -O2
 --without-threads         compile without threads support (see
-			  also the section 'If It Doesn't Work' below)
+                          also the section 'If It Doesn't Work' below)
 --without-zlib            compile without gzip compression libary
                           support
 --without-dynamic-modules compile statically, no dynamic loading
-			  used (makes the binary larger)
+                          used (makes the binary larger)
 --without-mysql           compile without mysql support
 --with-profiling          enables profiling pike code but slows
                           down interpreter a little
@@ -116,7 +157,7 @@ CFLAGS     Put extra flags for your C compiler here.
 CPPFLAGS   Put extra flags for your C preprocessor here
            (such as -I/usr/gnu/include)
 LDFLAGS    Put extra flags to your linker here, such as
-	   -L/usr/gnu/lib and -R/usr/gnu/lib
+           -L/usr/gnu/lib and -R/usr/gnu/lib
 
 
 MANUAL BUILDING
