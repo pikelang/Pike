@@ -6,7 +6,7 @@
 #define READ_BUFFER 8192
 
 #include "global.h"
-RCSID("$Id: file.c,v 1.62 1998/03/03 11:24:46 hubbe Exp $");
+RCSID("$Id: file.c,v 1.63 1998/05/29 02:13:03 hubbe Exp $");
 #include "interpret.h"
 #include "svalue.h"
 #include "stralloc.h"
@@ -988,7 +988,7 @@ int my_socketpair(int family, int type, int protocol, int sv[2])
   static int fd=-1;
   static struct sockaddr_in my_addr;
   struct sockaddr_in addr,addr2;
-  int len;
+  int len,retries=0;
 
   MEMSET((char *)&addr,0,sizeof(struct sockaddr_in));
 
@@ -1001,67 +1001,78 @@ int my_socketpair(int family, int type, int protocol, int sv[2])
 
   if(fd==-1)
   {
-    if((fd=socket(AF_INET, SOCK_STREAM, 0)) < 0) return -1;
+    if((fd=fd_socket(AF_INET, SOCK_STREAM, 0)) < 0) return -1;
     
     /* I wonder what is most common a loopback on ip# 127.0.0.1 or
      * a loopback with the name "localhost"?
      * Let's hope those few people who don't have socketpair have
      * a loopback on 127.0.0.1
      */
+    MEMSET((char *)&my_addr,0,sizeof(struct sockaddr_in));
+    my_addr.sin_family=AF_INET;
     my_addr.sin_addr.s_addr=htonl(INADDR_ANY);
     my_addr.sin_port=htons(0);
-    
+
+
     /* Bind our sockets on any port */
-    if(bind(fd, (struct sockaddr *)&addr, sizeof(addr)) < 0)
+    if(fd_bind(fd, (struct sockaddr *)&my_addr, sizeof(addr)) < 0)
     {
-      close(fd);
+      fd_close(fd);
       fd=-1;
       return -1;
     }
 
     /* Check what ports we got.. */
     len=sizeof(my_addr);
-    if(getsockname(fd,(struct sockaddr *)&my_addr,&len) < 0)
+    if(fd_getsockname(fd,(struct sockaddr *)&my_addr,&len) < 0)
     {
-      close(fd);
+      fd_close(fd);
       fd=-1;
       return -1;
     }
 
     /* Listen to connections on our new socket */
-    if(listen(fd, 5) < 0)
+    if(fd_listen(fd, 5) < 0)
     {
-      close(fd);
+      fd_close(fd);
       fd=-1;
       return -1;
     }
+
+    set_nonblocking(fd,1);
+
+    my_addr.sin_addr.s_addr=inet_addr("127.0.0.1");
   }
   
-  if((sv[1]=socket(AF_INET, SOCK_STREAM, 0)) <0) return -1;
 
-  addr.sin_addr.s_addr=inet_addr("127.0.0.1");
+  if((sv[1]=fd_socket(AF_INET, SOCK_STREAM, 0)) <0) return -1;
 
 /*  set_nonblocking(sv[1],1); */
-  
-  if(connect(sv[1], (struct sockaddr *)&my_addr, sizeof(my_addr)) < 0)
-  {
-    int tmp2;
-    for(tmp2=0;tmp2<20;tmp2++)
-    {
-      int tmp;
-      len=sizeof(addr);
-      tmp=accept(fd,(struct sockaddr *)&addr,&len);
 
-      if(tmp!=-1) close(tmp);
-      if(connect(sv[1], (struct sockaddr *)&my_addr, sizeof(my_addr))>=0)
-	break;
+retry_connect:
+  retries++;
+  if(fd_connect(sv[1], (struct sockaddr *)&my_addr, sizeof(addr)) < 0)
+  {
+    fprintf(stderr,"errno=%d (%d)\n",errno,EWOULDBLOCK);
+    if(errno != EWOULDBLOCK)
+    {
+      int tmp2;
+      for(tmp2=0;tmp2<20;tmp2++)
+      {
+	int tmp;
+	len=sizeof(addr);
+	tmp=fd_accept(fd,(struct sockaddr *)&addr,&len);
+	
+	if(tmp!=-1)
+	  fd_close(tmp);
+	else
+	  break;
+      }
+      if(retries > 20) return -1;
+      goto retry_connect;
     }
-    if(tmp2>=20)
-      return -1;
   }
 
-  len=sizeof(addr);
-  if(getsockname(sv[1],(struct sockaddr *)&addr2,&len) < 0) return -1;
 
   /* Accept connection
    * Make sure this connection was our OWN connection,
@@ -1073,21 +1084,27 @@ int my_socketpair(int family, int type, int protocol, int sv[2])
   do
   {
     len=sizeof(addr);
-    sv[0]=accept(fd,(struct sockaddr *)&addr,&len);
+  retry_accept:
+    sv[0]=fd_accept(fd,(struct sockaddr *)&addr,&len);
+
+    set_nonblocking(sv[0],0);
 
     if(sv[0] < 0) {
-      close(sv[1]);
+      if(errno==EINTR) goto retry_accept;
+      fd_close(sv[1]);
       return -1;
     }
 
     /* We do not trust accept */
     len=sizeof(addr);
-    if(getpeername(sv[0], (struct sockaddr *)&addr,&len)) return -1;
+    if(fd_getpeername(sv[0], (struct sockaddr *)&addr,&len)) return -1;
+    len=sizeof(addr);
+    if(fd_getsockname(sv[1],(struct sockaddr *)&addr2,&len) < 0) return -1;
   }while(len < (int)sizeof(addr) ||
 	 addr2.sin_addr.s_addr != addr.sin_addr.s_addr ||
 	 addr2.sin_port != addr.sin_port);
 
-/*   set_nonblocking(sv[1],0); */
+/*  set_nonblocking(sv[1],0); */
 
   return 0;
 }
