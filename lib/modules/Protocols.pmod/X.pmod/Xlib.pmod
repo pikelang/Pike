@@ -44,11 +44,69 @@ class rec_buffer
   }
 }
 
+class async_request
+{
+  object req;
+  function callback;
+
+  void create(object r, function f)
+  {
+    req = r;
+    callback = f;
+  }
+
+  void handle_reply(int success, string reply)
+  {
+    callback(success, (success ? req->handle_reply : req->handle_error)(reply));
+  }
+}
+
+class id_manager
+{
+  int next_id;
+  int increment;
+  mapping resources;
+  
+  void create(int base, int mask)
+  {
+    next_id = base;
+    increment = 1;
+    while(!(increment & mask))
+      increment >>=1;
+    resources = ([]);
+  }
+
+  int alloc_id()
+  {
+    int id = next_id;
+    next_id += increment;
+    return id;
+  }
+
+  mixed lookup_id(int i)
+  {
+    return resources[i];
+  }
+
+  void remember_id(int id, mixed resource)
+  {
+    resources[id] = resource;
+  }
+
+  void forget_id(int id)
+  {
+    m_delete(resources, id);
+    /* Could make id available for reallocation */
+  }
+}
+
 class Display
 {
   import _Xlib;
   
   inherit Stdio.File;
+  inherit id_manager;
+  
   program Struct = my_struct.struct;
   
   constant STATE_WAIT_CONNECT = 0;
@@ -69,12 +127,14 @@ class Display
   string buffer;
   object received;
   int state;
+  int sequence_number;
   
   function io_error_handler;
   function error_handler;
   function close_handler;
   function connect_handler;
   function event_handler;
+  function misc_event_handler;
   function reply_handler;
   
   /* Information about the X server */
@@ -89,6 +149,11 @@ class Display
   int imageByteOrder, bitmapBitOrder;
   int bitmapScanlineUnit, bitmapScanlinePad;
   int minKeyCode, maxKeyCode;
+
+  mapping pending_requests; /* Pending requests */
+  object pending_actions;   /* Actions awaiting handling */
+
+  void create() { } /* Delay initialization of id_manager */
   
   void write_callback()
   {
@@ -109,205 +174,355 @@ class Display
 
   void send(string data)
   {
+    werror(sprintf("Xlib.Display->send: '%s'\n", data));
     buffer += data;
     if (strlen(buffer))
       set_write_callback(write_callback);
   }
 
+  int flush()
+  { /* FIXME: Not thread-safe */
+    set_blocking();
+    int result = 0;
+    mixed e = catch {
+      do {
+	int written = write(buffer);
+	if (written < 0)
+	  break;
+	buffer = buffer[written..];
+      
+	if (strlen(buffer)) 
+	  break;
+	set_write_callback(0);
+	result = 1;
+      } while(0);
+    };
+    set_nonblocking();
+    if (e)
+      throw(e);
+    // werror(sprintf("flush: result = %d\n", result));
+    return result;
+  }
+  
   void default_error_handler(object me, mapping e)
   {
     error(sprintf("Xlib: Unhandled error %O\n", e));
   }
 
-  string previous;  /* Partially read reply or event */
-
-  array got_data(string data)
+  void default_event_handler(object me, mapping event)
   {
-    received->add_data(data);
+    int wid;
+    object w;
+
+    if (event->wid && (w = lookup_id(event->wid))
+	&& (w->event_callbacks[event->type]))
+      w->event_callbacks[event->type](event);
+    else
+      if (misc_event_handler)
+	misc_event_handler(event);
+      else
+	werror(sprintf("Ignored event %s\n", event->type));
+  }
+  
+  mapping reply;  /* Partially read reply or event */
+
+  array process()
+  {
     string msg;
     while (msg = received->get_msg())
       switch(state)
 	{
-	case STATE_WAIT_CONNECT: {
-	  int success;
-	  int len_reason;
-	  int length;
+	case STATE_WAIT_CONNECT:
+	  {
+	    int success;
+	    int len_reason;
+	    int length;
 	  
-	  sscanf(msg, "%c%c%2c%2c%2c",
-		 success, len_reason,
-		 majorVersion, minorVersion, length);
-	  if (success)
-	    {
-	      received->expect(length*4);
-	      state = STATE_WAIT_CONNECT_DATA;
-	    } else {
-	      received->expect(len_reason);
-	      state = STATE_WAIT_CONNECT_FAILURE;
-	    }
-	  break;
-	}
+	    sscanf(msg, "%c%c%2c%2c%2c",
+		   success, len_reason,
+		   majorVersion, minorVersion, length);
+	    if (success)
+	      {
+		received->expect(length*4);
+		state = STATE_WAIT_CONNECT_DATA;
+	      } else {
+		received->expect(len_reason);
+		state = STATE_WAIT_CONNECT_FAILURE;
+	      }
+	    break;
+	  }
 	case STATE_WAIT_CONNECT_FAILURE:
 	  return ({ ACTION_CONNECT_FAILED, msg });
 	  close();
 	  state = STATE_CLOSED;
 	  break;
-	case STATE_WAIT_CONNECT_DATA: {
-	  int nbytesVendor, numRoots, numFormats;
-	  object struct  = Struct(msg);
+	case STATE_WAIT_CONNECT_DATA:
+	  {
+	    int nbytesVendor, numRoots, numFormats;
+	    object struct  = Struct(msg);
 
-	  release = struct->get_uint(4);
-	  ridBase = struct->get_uint(4);
-	  ridMask = struct->get_uint(4);
-	  motionBufferSize = struct->get_uint(4);
-	  nbytesVendor = struct->get_uint(2);
-	  maxRequestSize = struct->get_uint(2);
-	  numRoots = struct->get_uint(1);
-	  numFormats = struct->get_uint(1);
-	  imageByteOrder = struct->get_uint(1);
-	  bitmapBitOrder = struct->get_uint(1);
-	  bitmapScanlineUnit = struct->get_uint(1);
-	  bitmapScanlinePad = struct->get_uint(1);
-	  minKeyCode = struct->get_uint(1);
-	  maxKeyCode = struct->get_uint(1);
-	  /* pad2 */ struct->get_fix_string(4);
+	    release = struct->get_uint(4);
+	    ridBase = struct->get_uint(4);
+	    ridMask = struct->get_uint(4);
+	    id_manager::create(ridBase, ridMask);
+	    
+	    motionBufferSize = struct->get_uint(4);
+	    nbytesVendor = struct->get_uint(2);
+	    maxRequestSize = struct->get_uint(2);
+	    numRoots = struct->get_uint(1);
+	    numFormats = struct->get_uint(1);
+	    imageByteOrder = struct->get_uint(1);
+	    bitmapBitOrder = struct->get_uint(1);
+	    bitmapScanlineUnit = struct->get_uint(1);
+	    bitmapScanlinePad = struct->get_uint(1);
+	    minKeyCode = struct->get_uint(1);
+	    maxKeyCode = struct->get_uint(1);
+	    /* pad2 */ struct->get_fix_string(4);
 	  
-	  vendor = struct->get_fix_string(nbytesVendor);
-	  /* pad */ struct->get_fix_string( (- nbytesVendor) % 4);
+	    vendor = struct->get_fix_string(nbytesVendor);
+	    /* pad */ struct->get_fix_string( (- nbytesVendor) % 4);
 
-	  int i;
-	  formats = allocate(numFormats);
-	  for(i=0; i<numFormats; i++)
-	    {
-	      mapping m = ([]);
-	      m->depth = struct->get_uint(1);
-	      m->bitsPerPixel = struct->get_uint(1);
-	      m->scanLinePad = struct->get_uint(1);
-	      /* pad */ struct->get_fix_string(5);
-	      formats[i] = m;
-	    }
+	    int i;
+	    formats = allocate(numFormats);
+	    for(i=0; i<numFormats; i++)
+	      {
+		mapping m = ([]);
+		m->depth = struct->get_uint(1);
+		m->bitsPerPixel = struct->get_uint(1);
+		m->scanLinePad = struct->get_uint(1);
+		/* pad */ struct->get_fix_string(5);
+		formats[i] = m;
+	      }
 
-	  roots = allocate(numRoots);
-	  for(i=0; i<numRoots; i++)
-	    {
-	      mapping m = ([]);
-	      m->windowId = struct->get_uint(4);
-	      m->defaultColorMap = struct->get_uint(4);
-	      m->whitePixel = struct->get_uint(4);
-	      m->blackPixel = struct->get_uint(4);
-	      m->currentInputMask = struct->get_uint(4);
-	      m->pixWidth = struct->get_uint(2);
-	      m->pixHeight = struct->get_uint(2);
-	      m->mmWidth = struct->get_uint(2);
-	      m->mmHeight = struct->get_uint(2);
-	      m->minInstalledMaps = struct->get_uint(2);
-	      m->maxInstalledMaps = struct->get_uint(2);
-	      m->rootVisualID = struct->get_uint(4);
-	      m->backingStore = struct->get_uint(1);
-	      m->saveUnders = struct->get_uint(1);
-	      m->rootDepth = struct->get_uint(1);
-	      int nDepths = struct->get_uint(1);
+	    roots = allocate(numRoots);
+	    for(i=0; i<numRoots; i++)
+	      {
+		int wid = struct->get_uint(4);
+		object r = Types.RootWindow(this_object(), wid);
+		int cm = struct->get_uint(4);
+		r->defaultColorMap = Types.Colormap(this_object(), cm);
+		r->whitePixel = struct->get_uint(4);
+		r->blackPixel = struct->get_uint(4);
+		r->currentInputMask = struct->get_uint(4);
+		r->pixWidth = struct->get_uint(2);
+		r->pixHeight = struct->get_uint(2);
+		r->mmWidth = struct->get_uint(2);
+		r->mmHeight = struct->get_uint(2);
+		r->minInstalledMaps = struct->get_uint(2);
+		r->maxInstalledMaps = struct->get_uint(2);
+		int rootVisualID = struct->get_uint(4);
+		r->backingStore = struct->get_uint(1);
+		r->saveUnders = struct->get_uint(1);
+		r->rootDepth = struct->get_uint(1);
+		int nDepths = struct->get_uint(1);
 	      
-	      m->depths = allocate(nDepths);
-	      for (int j=0; j<nDepths; j++)
-		{
-		  mapping d = ([]);
-		  d->depth = struct->get_uint(1);
-		  /* pad */ struct->get_fix_string(1);
-		  int nVisuals = struct->get_uint(2);
-		  /* pad */ struct->get_fix_string(4);
+		r->depths = ([ ]);
+		for (int j=0; j<nDepths; j++)
+		  {
+		    mapping d = ([]);
+		    int depth = struct->get_uint(1);
+		    /* pad */ struct->get_fix_string(1);
+		    int nVisuals = struct->get_uint(2);
+		    /* pad */ struct->get_fix_string(4);
 		  
-		  d->visuals = allocate(nVisuals);
-		  for(int k=0; k<nVisuals; k++)
-		    {
-		      mapping v = ([]);
-		      v->visualID = struct->get_uint(4);
-		      v->c_class = struct->get_uint(1);
-		      v->bitsPerRGB = struct->get_uint(1);
-		      v->colorMapEntries = struct->get_uint(2);
-		      v->redMask = struct->get_uint(4);
-		      v->greenMask = struct->get_uint(4);
-		      v->blueMask = struct->get_uint(4);
-		      /* pad */ struct->get_fix_string(4);
-		      d->visuals[k] = v;
-		    }
-		  m->depths[j] = d;
-		}
-	      roots[i] = m;
-	    }
-	  state = STATE_WAIT_HEADER;
-	  received->expect(32);
-	  return ({ ACTION_CONNECT });
-	}
+		    array visuals = allocate(nVisuals);
+		    for(int k=0; k<nVisuals; k++)
+		      {
+			int visualID = struct->get_uint(4);
+			object v = Types.Visual(this_object(), visualID);
+			v->c_class = struct->get_uint(1);
+			v->bitsPerRGB = struct->get_uint(1);
+			v->colorMapEntries = struct->get_uint(2);
+			v->redMask = struct->get_uint(4);
+			v->greenMask = struct->get_uint(4);
+			v->blueMask = struct->get_uint(4);
+			/* pad */ struct->get_fix_string(4);
+			visuals[k] = v;
+		      }
+		    r->depths[depth] = visuals;
+		  }
+		r->visual = lookup_id(rootVisualID);
+		roots[i] = r;
+	      }
+	    if (screen_number >= numRoots)
+	      werror("Xlib.Display->process: screen_number too large.\n");
+	    state = STATE_WAIT_HEADER;
+	    received->expect(32);
+	    return ({ ACTION_CONNECT });
+	  }
 	case STATE_WAIT_HEADER:
-	  received->expect(32); /* Correct for most of the cases */
-	  switch(msg[0])
-	    {
-	    case 0: { /* X_Error */
-	      mapping m = ([]);
-	      sscanf(msg, "%*c%c%2c%4c%2c%c",
-		     m->errorCode, m->sequence_number, m->resourceID,
-		     m->minorCode, m->majorCode);
-	      return ({ ACTION_ERROR, m });
-	    }
-	    case 1: { /* X_Reply */
-	      int length;
-	      sscanf(msg[2..3], "%2c", length);
-	      if (!length)
-		return ({ ACTION_REPLY, msg });
+	  {
+	    received->expect(32); /* Correct for most of the cases */
+	    string type = _Xlib.event_types[msg[0]];
+	    switch(type)
+	      {
+	      case "Error":
+		{
+		  mapping m = ([]);
+		  sscanf(msg, "%*c%c%2c%4c%2c%c",
+			 m->errorCode, m->sequenceNumber, m->resourceID,
+			 m->minorCode, m->majorCode);
+		  return ({ ACTION_ERROR, m });
+		}
+	      case "Reply":
+		{
+		  reply = ([]);
+		  int length;
+	      
+		  sscanf(msg, "%*c%c%2c%4c%s",
+			 reply->data1, reply->sequenceNumber, length,
+			 reply->rest);
+		  if (!length)
+		    return ({ ACTION_REPLY, reply });
 
-	      state = STATE_WAIT_REPLY;
-	      received->expect(length*4);
-	      previous = msg;
+		  state = STATE_WAIT_REPLY;
+		  received->expect(length*4);
 	      
-	      break;
-	    }
-	    case 11:  /* KeymapNotify */
-	      return ({ ACTION_EVENT,
-			  ([ "type" : "KeymapNotify",
-			   "map" : msg[1..] ]) });
+		  break;
+		}
+#if 0 
+	      case "KeyPress":
+	      case "KeyRelease":
+	      case "ButtonPress":
+	      case "ButtonRelease":
+	      case "MotionNotify":
+		...
+	      case "EnterNotify":
+	      case "LeaveNotify":
+		...
+	      case "FocusIn":
+	      case "FocusOut":
+		...
+#endif
+	      case "KeymapNotify":
+		return ({ ACTION_EVENT,
+			    ([ "type" : "KeymapNotify",
+			     "map" : msg[1..] ]) });
+#if 0		
+	      case "Expose":
+		...
+	      case "GraphicsExpose":
+		...
+	      case "NoExpose":
+		...
+	      case "VisibilityNotify":
+		...
+	      case "CreateNotify":
+		...
+	      case "DestroyNotify":
+		...
+	      case "UnmapNotify":
+		...
+	      case "MapNotify":
+		...
+	      case "MapRequest":
+		...
+	      case "ReparentNotify":
+		...
+	      case "ConfigureNotify":
+		...
+	      case "ConfigureRequest":
+		...
+	      case "GravityNotify":
+		...
+	      case "ResizeRequest":
+		...
+	      case "CirculateNotify":
+		...
+	      case "CirculateRequest":
+		...
+	      case "PropertyNotify":
+		...
+	      case "SelectionClear":
+		...
+	      case "SelectionRequest":
+		...
+	      case "SelectionNotify":
+		...
+	      case "ColormapNotify":
+		...
+	      case "ClientMessage":
+		...
+	      case "MappingNotify":
+#endif		
+	      default:  /* Any other event */
+		return ({ ACTION_EVENT,
+			    ([ "type" : "Unimplemented",
+			     "name" : type,
+			     "raw" : msg ]) });
 	      
-	    default:  /* Any other event */
-	      return ({ ACTION_EVENT,
-			  ([ "type" : "Unimplemented",
-			   "raw" : msg ]) });
-	      
-	    }
-	  break;
+	      }
+	    break;
+	  }
 	case STATE_WAIT_REPLY:
+	  reply->rest += msg;
 	  state = STATE_WAIT_HEADER;
 	  received->expect(32);
-	  return ({ ACTION_REPLY, previous + msg });
+	  return ({ ACTION_REPLY, reply });
 	}
     return 0;
+  }
+
+  void handle_action(array a)
+  {
+    // werror(sprintf("Xlib.Display->handle_action: %O\n", a));
+    switch(a[0])
+      {
+      case ACTION_CONNECT:
+	connect_handler(this_object(), 1);
+	break;
+      case ACTION_CONNECT_FAILED:
+	connect_handler(this_object(), 0, a[1]);
+	break;
+      case ACTION_EVENT:
+	(event_handler || default_event_handler)(this_object(), a[1]);
+	break;
+      case ACTION_REPLY:
+	{
+	  mixed handler = pending_requests[a[1]->sequenceNumber];
+	  if (handler)
+	    {
+	      m_delete(pending_requests, a[1]->sequenceNumber);
+	      handler->handle_reply(1, a[1]);
+	    }
+	  else
+	    reply_handler(this_object(), a[1]);
+	  break;
+	}
+      case ACTION_ERROR:
+	{
+	  mixed handler = pending_requests[a[1]->sequenceNumber];
+	  if (handler)
+	    {
+	      m_delete(pending_requests, a[1]->sequenceNumber);
+	      handler->handle_reply(0, a[1]);
+	    }
+	  else
+	    (error_handler || default_error_handler)(this_object(), a[1]);
+	  break;
+	}
+      default:
+	error("Xlib.Display->handle_action: internal error\n");
+	break;
+      }
   }
   
   void read_callback(mixed id, string data)
   {
-    array a = got_data(data);
-    if (a)
-      switch(a[0])
-	{
-	case ACTION_CONNECT:
-	  connect_handler(this_object(), 1);
-	  break;
-	case ACTION_CONNECT_FAILED:
-	  connect_handler(this_object(), 0, a[1]);
-	  break;
-	case ACTION_EVENT:
-	  event_handler(this_object(), a[1]);
-	  break;
-	case ACTION_REPLY:
-	  reply_handler(this_object(), a[1]);
-	  break;
-	case ACTION_ERROR:
-	  (error_handler || default_error_handler)(this_object(), a[1]);
-	  break;
-	default:
-	  error("Xlib.Display->read_callback: internal error\n");
-	  break;
-	}
+    received->add_data(data);
+    array a;
+    while(a = process())
+      handle_action(a);
   }
 
+  void process_pending_actions()
+  {
+    array a;
+    while(a = pending_actions->get())
+      handle_action(a);
+    set_read_callback(read_callback);
+  }
+	  
   void close_callback(mixed id)
   {
     if (state == STATE_WAIT_CONNECT)
@@ -335,9 +550,10 @@ class Display
     string host = strlen(fields[0]) ? fields[0] : "localhost";
 
     if (async)
-      /* Asynchronous connection */
-      set_nonblocking(0, 0, close_callback);
-    
+      { /* Asynchronous connection */
+	open_socket();
+	set_nonblocking(0, 0, close_callback);
+      }
     if (!connect(host, XPORT + (int) fields[1]))
       return 0;
 
@@ -345,37 +561,106 @@ class Display
     
     buffer = "";
     received = rec_buffer();
+    pending_requests = ([]);
+    pending_actions = ADT.queue();
+    sequence_number = 1;
     
     /* Always uses network byteorder (big endian) 
      * No authentication */
     string msg = sprintf("B\0%2c%2c%2c%2c\0\0", 11, 0, 0, 0);
     state = STATE_WAIT_CONNECT;
     received->expect(8);
+    send(msg);
     if (async)
       {
-	send(msg);
-	set_nonblocking(read_callback, 0, close_callback);
+	set_read_callback(read_callback);
 	return 1;
       }
-    if (strlen(msg) != write(msg))
+    if (!flush())
       return 0;
     while(1) {
       string data = read(received->needs());
       if (!data)
 	return 0;
-      array a = got_data(data);
-      if (!a)
-	continue;
-      switch(a[0])
-	{
-	case ACTION_CONNECT:
-	  set_nonblocking(read_callback, 0, close_callback);
-	  return 1;
-	case ACTION_CONNECT_FAILED:
-	  return 0;
-	default:
-	  error("Xlib.Display->open: Internal error!\n");
-	}
+      received->add_data(data);
+      array a = process();
+      if (a)
+	switch(a[0])
+	  {
+	  case ACTION_CONNECT:
+	    set_nonblocking(read_callback, 0, close_callback);
+	    return 1;
+	  case ACTION_CONNECT_FAILED:
+	    return 0;
+	  default:
+	    error("Xlib.Display->open: Internal error!\n");
+	  }
     }
+  }
+
+  int send_request(object req, mixed|void handler)
+  {
+    send(req->to_string());
+    return sequence_number++;
+  }
+
+  mixed blocking_request(object req)
+  {
+    mixed result = 0;
+    int done = 0;
+
+    int n = send_request(req);
+    flush();
+    set_blocking();
+
+    mixed e = catch {
+      while(!done)
+	{
+	  string data = read(0x7fffffff, 1);
+	  if (!data)
+	    break;
+	  received->add_data(data);
+	  array a;
+	  while (!done && (a = process()))
+	    {
+	      if ((a[0] == ACTION_REPLY)
+		  && (a[1]->sequenceNumber == n))
+		{
+		  result = req->handle_reply(a[1]);
+		  done = 1;
+		  break;
+		}
+	      else if ((a[0] == ACTION_ERROR)
+		       && (a[1]->sequenceNumber == n))
+		{
+		  result = req->handle_error(a[1]);
+		  done = 1;
+		  break;
+		}
+	      /* Enqueue all other actions */
+	      pending_actions->put(a);
+	    }
+	}
+    };
+    set_nonblocking();
+    if (e)
+      throw(e);
+    if (pending_actions->size())
+      {
+	set_read_callback(0);
+	call_out(process_pending_actions, 0);
+      }
+    return result;
+  }
+  
+  void send_async_request(object req, function callback)
+  {
+    int n = send_request(req);
+    pending_requests[n] == async_request(req, callback);
+  }
+
+  object DefaultRootWindow()
+  {
+    return roots[screen_number];
   }
 }
