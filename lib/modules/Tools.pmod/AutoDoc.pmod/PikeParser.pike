@@ -718,21 +718,23 @@ void setTokens(array(string) t, array(int) p) {
 // create(string, filename, firstline)
 // create(array(Token))
 static void create(string|void s,
-                   string|SourcePosition|void filename,
+                   string|SourcePosition|void _filename,
                    int|void line)
 {
   if (s) {
-    if (objectp(filename)) {
-      line = filename->firstline;
-      filename = filename->filename;
+    if (objectp(_filename)) {
+      line = _filename->firstline;
+      filename = _filename->filename;
     }
     if (!line)
       error("PikeParser::create() called without line arg.\n");
 
     [tokens, positions] = tokenize(s, filename, line);
   }
-  else
+  else {
     tokens = ({});
+    filename = _filename;
+  }
 #if TOKEN_DEBUG
   werror("PikeParser::create(), tokens = \n%O\n", tokens);
 #endif

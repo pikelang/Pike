@@ -22,7 +22,7 @@ static private class Extractor {
   static private .PikeParser parser;
 
   static void create(string s, string filename) {
-    parser = .PikeParser();
+    parser = .PikeParser(0, filename);
 
     array(string) tokens;
     array(int) positions;
