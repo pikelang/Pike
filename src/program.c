@@ -5,7 +5,7 @@
 \*/
 /**/
 #include "global.h"
-RCSID("$Id: program.c,v 1.415 2002/04/25 10:47:40 grubba Exp $");
+RCSID("$Id: program.c,v 1.416 2002/04/26 16:51:03 grubba Exp $");
 #include "program.h"
 #include "object.h"
 #include "dynamic_buffer.h"
@@ -1283,7 +1283,12 @@ void fixate_program(void)
 	if(fun->name==funb->name)
 	{
 	  found_better=t;
-	  if(funa_is_prototype && funb->func.offset != -1)
+
+	  /* FIXME: Is this stuff needed?
+	   *        It looks like it already is done by define_function().
+	   */
+	  if(funa_is_prototype && (funb->func.offset != -1) &&
+	     !(funp->id_flags & ID_INLINE))
 	  {
 	    funp->inherit_offset = funpb->inherit_offset;
 	    funp->identifier_offset = funpb->identifier_offset;
@@ -3729,6 +3734,10 @@ INT32 define_function(struct pike_string *name,
 
   i=isidentifier(name);
 
+#ifdef PROGRAM_BUILD_DEBUG
+  fprintf(stderr, "%.*sexisted as identifier #%d\n", compilation_depth, "", i);
+#endif
+
   if(i >= 0)
   {
     /* already defined */
@@ -3736,7 +3745,7 @@ INT32 define_function(struct pike_string *name,
     funp=ID_FROM_INT(Pike_compiler->new_program, i);
     ref=Pike_compiler->new_program->identifier_references[i];
 
-    if(ref.inherit_offset == 0) /* not inherited */
+    if(!(ref.id_flags & ID_INHERITED)) /* not inherited */
     {
 
       if( !( IDENTIFIER_IS_FUNCTION(funp->identifier_flags) &&
@@ -3757,7 +3766,7 @@ INT32 define_function(struct pike_string *name,
 
     /* We modify the old definition if it is in this program */
 
-    if(ref.inherit_offset==0)
+    if(!(ref.id_flags & ID_INHERITED))
     {
       if(func)
 	funp->func = *func;
@@ -3773,6 +3782,9 @@ INT32 define_function(struct pike_string *name,
       free_type(funp->type);
       copy_pike_type(funp->type, type);
     }else{
+#ifdef PROGRAM_BUILD_DEBUG
+      fprintf(stderr, "%.*sidentifier was inherited\n", compilation_depth, "");
+#endif
 
       if((ref.id_flags & ID_NOMASK)
 #if 0
@@ -3786,10 +3798,19 @@ INT32 define_function(struct pike_string *name,
 
       if(ref.id_flags & ID_INLINE)
       {
+#ifdef PROGRAM_BUILD_DEBUG
+	fprintf(stderr, "%.*sidentifier is local\n", compilation_depth, "");
+#endif
+
 	goto make_a_new_def;
       }
 
-      /* Otherwise we make a new definition */
+      /* Otherwise we alter the existing definition */
+#ifdef PROGRAM_BUILD_DEBUG
+      fprintf(stderr, "%.*saltering the existing definition\n",
+	      compilation_depth, "");
+#endif
+
       copy_shared_string(fun.name, name);
       copy_pike_type(fun.type, type);
 
@@ -3829,14 +3850,20 @@ INT32 define_function(struct pike_string *name,
 	if(Pike_compiler->new_program->identifier_references[z].id_flags & ID_HIDDEN)
 	  continue;
 
-	/* Do not zapp inline ('local') identifiers */
-	if(Pike_compiler->new_program->identifier_references[z].inherit_offset &&
-	   (Pike_compiler->new_program->identifier_references[z].id_flags & ID_INLINE))
+	/* Do not zapp inherited inline ('local') identifiers */
+	if((Pike_compiler->new_program->identifier_references[z].id_flags &
+	    (ID_INLINE|ID_INHERITED)) == (ID_INLINE|ID_INHERITED))
           continue;
 
 	/* Do not zapp functions with the wrong name... */
 	if(ID_FROM_INT(Pike_compiler->new_program, z)->name != name)
 	  continue;
+
+#ifdef PROGRAM_BUILD_DEBUG
+	fprintf(stderr, "%.*soverloaded reference %d (id_flags:0x%04x)\n",
+		compilation_depth, "", z,
+		Pike_compiler->new_program->identifier_references[z].id_flags);
+#endif
 
 	Pike_compiler->new_program->identifier_references[z]=ref;
       }
@@ -3852,6 +3879,9 @@ INT32 define_function(struct pike_string *name,
   }
 make_a_new_def:
 
+#ifdef PROGRAM_BUILD_DEBUG
+  fprintf(stderr, "%.*smaking a new definition\n", compilation_depth, "");
+#endif
 
 #ifdef PIKE_DEBUG
   if(Pike_compiler->compiler_pass==2)
