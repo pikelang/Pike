@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: pike_threadlib.h,v 1.49 2003/11/09 01:09:22 mast Exp $
+|| $Id: pike_threadlib.h,v 1.50 2003/11/25 17:56:07 jonasw Exp $
 */
 
 #ifndef PIKE_THREADLIB_H
@@ -178,6 +178,11 @@ void th_atfork_child(void);
 #define th_setconcurrency(X) 
 #ifdef HAVE_PTHREAD_YIELD
 #define low_th_yield()	pthread_yield()
+#else
+#ifdef HAVE_PTHREAD_YIELD_NP
+/* Some pthread libs define yield as non-portable function. */
+#define low_th_yield()	pthread_yield_np()
+#endif /* HAVE_PTHREAD_YIELD_NP */
 #endif /* HAVE_PTHREAD_YIELD */
 extern pthread_attr_t pattr;
 extern pthread_attr_t small_pattr;
@@ -452,7 +457,7 @@ extern int num_pike_threads;
     mt_unlock( & thread_table_lock );					\
   } while (0)
 
-#if !defined(HAVE_GETHRTIME) && defined(HAVE_CLOCK)
+#if !defined(HAVE_GETHRTIME) && !defined(HAVE_MACH_TASK_INFO_H) && defined(HAVE_CLOCK) && !defined(HAVE_NO_YIELD)
 #ifdef HAVE_TIME_H
 #include <time.h>
 #endif
