@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: signal_handler.c,v 1.278 2003/10/13 17:45:57 grubba Exp $
+|| $Id: signal_handler.c,v 1.279 2003/11/21 14:02:33 grubba Exp $
 */
 
 #include "global.h"
@@ -26,7 +26,7 @@
 #include "main.h"
 #include <signal.h>
 
-RCSID("$Id: signal_handler.c,v 1.278 2003/10/13 17:45:57 grubba Exp $");
+RCSID("$Id: signal_handler.c,v 1.279 2003/11/21 14:02:33 grubba Exp $");
 
 #ifdef HAVE_PASSWD_H
 # include <passwd.h>
@@ -1222,6 +1222,7 @@ static void report_child(int pid,
 static COND_T process_status_change;
 static COND_T start_wait_thread;
 static MUTEX_T wait_thread_mutex;
+static int wait_thread_running = 0;
 
 static void do_da_lock(void)
 {
@@ -1530,16 +1531,16 @@ static void f_pid_status_wait(INT32 args)
 		  fprintf(stderr, "[%d] wait(%d): Sleeping...\n", getpid(), pid);
 #endif /* PROC_DEBUG */
 #ifdef HAVE_POLL
-#ifdef NEED_SIGNAL_SAFE_FIFO
 		  {
 		    struct pollfd pfd[1];
+#ifdef NEED_SIGNAL_SAFE_FIFO
 		    pfd[0].fd = wait_fd[0];
 		    pfd[0].events = POLLIN;
 		    poll (pfd, 1, 10000);
-		  }
 #else
-		  poll(NULL, 0, 100);
+		    poll(pfd, 0, 100);
 #endif
+		  }
 #else /* !HAVE_POLL */
 		  /* FIXME: If this actually gets used then we really
 		   * ought to do better here. :P */
@@ -3285,10 +3286,22 @@ void f_create_process(INT32 args)
     fprintf(stderr,"[%d] control_pipe: %d, %d\n",
 	    getpid(), control_pipe[0], control_pipe[1]);
 #endif
+#ifdef USE_WAIT_THREAD
+    if (!wait_thread_running) {
+      THREAD_T foo;
+      if (th_create_small(&foo, wait_thread, 0)) {
+	Pike_error("Failed to create wait thread!\n"
+		   "errno: %d\n", errno);
+      }
+      wait_thread_running = 1;
+    }
+    num_threads++;    /* We use the interpreter lock */
+#endif
 #if 0 /* Changed to 0 by hubbe 990306 - why do we need it? */
     init_threads_disable(NULL);
     storage.disabled = 1;
 #endif
+
 
     th_atfork_prepare();
     {
@@ -4531,21 +4544,19 @@ void init_signals(void)
   my_signal(SIGCHLD, receive_sigchild);
 #endif
 
+#ifdef USE_PID_MAPPING
+  pid_mapping=allocate_mapping(2);
+
+#ifndef USE_WAIT_THREAD
+  mapping_set_flags(pid_mapping, MAPPING_FLAG_WEAK);
+#endif
+#endif
+
 #ifdef USE_WAIT_THREAD
-  {
-    THREAD_T foo;
-    co_init(& process_status_change);
-    co_init(& start_wait_thread);
-    mt_init(& wait_thread_mutex);
-
-    if (th_create_small(&foo,wait_thread,0)) {
-      Pike_fatal("wait thread: Failed to create thread!\n"
-		 "errno: %d\n", errno);
-    }
-    num_threads++;    /* We use the interpreter lock */
-
-    my_signal(SIGCHLD, SIG_DFL);
-  }
+  co_init(& process_status_change);
+  co_init(& start_wait_thread);
+  mt_init(& wait_thread_mutex);
+  my_signal(SIGCHLD, SIG_DFL);
 #endif
 
 #ifdef SIGPIPE
@@ -4577,14 +4588,6 @@ void init_signals(void)
 					      0,0);
     dmalloc_accept_leak(signal_evaluator_callback);
   }
-#endif
-
-#ifdef USE_PID_MAPPING
-  pid_mapping=allocate_mapping(2);
-
-#ifndef USE_WAIT_THREAD
-  mapping_set_flags(pid_mapping, MAPPING_FLAG_WEAK);
-#endif
 #endif
 
   start_new_program();
