@@ -16,7 +16,8 @@ class Fifo {
       mixed tmp;
       object key=lock::lock();
       while(!num) r_cond::wait(key);
-      tmp=buffer[ptr++];
+      tmp=buffer[ptr];
+      buffer[ptr++] = 0;	// Throw away any references.
       ptr%=sizeof(buffer);
       num--;
       w_cond::signal();
@@ -51,7 +52,8 @@ class Queue {
       mixed tmp;
       object key=lock::lock();
       while(!size()) r_cond::wait(key);
-      tmp=buffer[r_ptr++];
+      tmp=buffer[r_ptr];
+      buffer[r_ptr++] = 0;	// Throw away any references.
       key=0;
       return tmp;
     }
