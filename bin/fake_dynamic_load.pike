@@ -7,6 +7,7 @@ import ".";
 #define PC .C
 #endif
 
+#if 0
 string strip(string s)
 {
   array(string) tmp=s/".";
@@ -26,9 +27,64 @@ string strip(string s)
   s=basename(lower_case(s));
   return s;
 }
+#endif
+
+string fixdir(string d)
+{
+  return combine_path(getcwd(),d);
+}
+
+string my_dirname(string s)
+{
+  s=replace(s,"\\\\","/");
+  return dirname(lower_case(s));
+}
 
 string low_strip_other_files(string data, string s)
 {
+#if 0
+  return data;
+#endif
+#if 1
+  /* Filter out data from system include files, this should
+   * speed up operation significantly
+   */
+  if(!data)
+  {
+    werror("File %s missing?\n",s);
+    return 0;
+  }
+
+  data-="\r";
+  array tmp=data/"\n#";
+  string ret=tmp[0];
+  string current_dir=getcwd();
+  string source_dir=fixdir(getenv("SRCDIR"));
+  string target_dir=my_dirname(s);
+  int on=1;
+
+  foreach(tmp[1..], string x)
+    {
+      string file;
+      if(sscanf(x,"line %*d \"%s\"", file) ||
+	 sscanf(data," %*d \"%s\"", file))
+
+	if(file)
+	{
+	  string dir=my_dirname(file);
+	  on= dir==current_dir || dir==source_dir || dir==target_dir;
+	}
+
+      if(on) ret+="#"+x;
+    }
+  return ret;
+#endif
+#if 0
+  array x=data/"PMOD_EXPORT";
+  x[0]="";
+  return x*"PMOD_EXPORT";
+#endif
+#if 0
   if(!data)
   {
     werror("File %s missing?\n",s);
@@ -53,6 +109,7 @@ string low_strip_other_files(string data, string s)
       if(cf == s) ret+="#"+x;
     }
   return ret;
+#endif
 }
 
 string my_read_file(string s)
@@ -275,11 +332,11 @@ void low_process_file(mixed data, string file)
     data=low_strip_other_files(data,file);
     if(!data || !sizeof(data)) return;
     data=PC.split(data);
-    data=PC.tokenize(data);
+    data=PC.tokenize(data,file);
     if(!data || !sizeof(data)) return;
     data=PC.hide_whitespaces(data);
     data=PC.strip_line_statements(data);
-    array data=PC.group(data);
+    data=PC.group(data);
     if(sizeof(data) && strlen( (string) (data[0]) ))
     {
       switch(((string)data[0])[0] )
