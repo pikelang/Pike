@@ -1,7 +1,7 @@
 /*
 **! module Image
 **! note
-**!	$Id: image.h,v 1.32 1999/05/23 17:46:43 mirar Exp $
+**!	$Id: image.h,v 1.33 1999/06/21 18:03:50 mirar Exp $
 */
 
 #ifdef PIKE_IMAGE_IMAGE_H
@@ -219,3 +219,12 @@ void image_apply_max(INT32 args);
 
 void image_make_ascii(INT32 args);
 
+/* image.c */
+
+void img_find_autocrop(struct image *this,
+		       int *px1,int *py1,int *px2,int *py2,
+		       int border,
+		       int left,int right,
+		       int top,int bottom,
+		       int rgb_set,
+		       rgb_group rgb);
