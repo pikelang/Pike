@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: dlopen.c,v 1.43 2002/10/25 18:51:31 marcus Exp $
+|| $Id: dlopen.c,v 1.44 2002/10/25 19:36:52 marcus Exp $
 */
 
 #include <global.h>
@@ -189,7 +189,7 @@ size_t STRNLEN(char *s, size_t maxlen)
 
 #else /* PIKE_CONCAT */
 
-RCSID("$Id: dlopen.c,v 1.43 2002/10/25 18:51:31 marcus Exp $");
+RCSID("$Id: dlopen.c,v 1.44 2002/10/25 19:36:52 marcus Exp $");
 
 #endif
 
@@ -1831,14 +1831,40 @@ static void *read_pdb_blocks(unsigned char *buf, size_t len,
   return ret;
 }
 
+static void *read_pdb_file(unsigned char *buf, size_t *plen,
+			   INT32 *toc, int n)
+{
+  INT32 *fsz = toc+1;
+  INT32 *blocklist = fsz+*toc;
+  size_t len = *plen;
+  if(n<0 || n>=*toc) return NULL;
+  for(i=0; i<n; i++) {
+    int f_blocks = (*fsz+++header->blocksize-1)/header->blocksize;
+    blocklist += f_blocks;
+  }
+  if(4+4*((blocklist-toc)+(*fsz+header->blocksize-1)/header->blocksize) >
+     header->toc_size) 
+    return NULL;
+#ifdef DLDEBUG
+  fprintf(stderr, "Reading PDB file %d at block %d len %d\n",
+	  n, *blocklist, *fsz);
+#endif
+  return read_pdb_blocks(buf, len, blocklist, *plen = *fsz, header->blocksize);
+}
+
 static unsigned char *find_pdb_symtab(unsigned char *buf, size_t *plen)
 {
   struct {
     INT32 blocksize, freelist, total_alloc, toc_size, unknown, toc_loc;
   } *header;
-  size_t len = *plen;
-  int toc_blocks, idlen=0;
-  INT32 *toc, *fsz, *blocklist;
+  struct {
+    INT32 signature, version, unknown, hash1_file, hash2_file;
+    INT32 gsym_file, module_size, offset_size, hash_size;
+    INT32 srcmodule_size, pdbimport_size;      
+  } *st;
+  size_t stlen, len = *plen;
+  int toc_blocks, gsym_file, idlen=0;
+  INT32 *toc;
   unsigned char *ret;
   while(idlen<256 && idlen<len && buf[idlen]!=0x1a) idlen++;
   if(idlen>=256 || idlen>=len) return NULL;
@@ -1858,22 +1884,19 @@ static unsigned char *find_pdb_symtab(unsigned char *buf, size_t *plen)
 			header->toc_size, header->blocksize);
   if(!toc) return NULL;
   if(*toc < 4 || header->toc_size < 4+4**toc) { free(toc); return NULL; }
-  fsz = toc+1;
-  blocklist = fsz+*toc;
-  for(i=0; i<3; i++) {
-    int f_blocks = (*fsz+++header->blocksize-1)/header->blocksize;
-    blocklist += f_blocks;
+
+  stlen = len;
+  if(!(st = read_pdb_file(buf, &stlen, toc, 3))) { free(toc); return NULL; }
+  if(stlen < sizeof(*st) || st->signature != -1) {
+    free(st); free(toc); return NULL;
   }
-  if(4+4*((blocklist-toc)+(*fsz+header->blocksize-1)/header->blocksize) >
-     header->toc_size) {
-    free(toc);
-    return NULL;
-  }
+  gsym_file = st->gsym_file;
+  free(st);
+  
 #ifdef DLDEBUG
-  fprintf(stderr, "Found PDB file 3 (global symtab) at block %d len %d\n",
-	  *blocklist, *fsz);
+  fprintf(stderr, "Located PDB global symtab as file %d\n", gsym_file);
 #endif
-  ret = read_pdb_blocks(buf, len, blocklist, *plen = *fsz, header->blocksize);
+  ret = read_pdb_file(buf, plen, toc, gsym_file);
   free(toc);
   return ret;
 }
