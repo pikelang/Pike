@@ -85,7 +85,7 @@ static void APPEND_PATH(struct string_builder *s,
   if(s->s->len && !IS_SEP(LAST_PUSHED()))
     PUSH('/');
 
-  while(s->s->len==2)
+  if(s->s->len==2)
   {
     PCHARP to=MKPCHARP_STR(s->s);
     if(INDEX_PCHARP(to, 0) == '.')
@@ -163,7 +163,7 @@ static void APPEND_PATH(struct string_builder *s,
     if(from>=len) break;
     PUSH(INDEX_PCHARP(path, from++));
   }
-  if(s->s->len && 
+  if((s->s->len > 1) && 
      !IS_SEP(INDEX_PCHARP(path, from-1)) &&
      IS_SEP(LAST_PUSHED()))
     s->s->len--;
