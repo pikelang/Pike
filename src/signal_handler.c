@@ -22,7 +22,7 @@
 #include "builtin_functions.h"
 #include <signal.h>
 
-RCSID("$Id: signal_handler.c,v 1.61 1998/05/09 15:00:35 grubba Exp $");
+RCSID("$Id: signal_handler.c,v 1.62 1998/05/17 20:40:59 grubba Exp $");
 
 #ifdef HAVE_PASSWD_H
 # include <passwd.h>
@@ -370,7 +370,12 @@ static RETSIGTYPE receive_signal(int signum)
   if(signum==SIGCHLD)
   {
     pid_t pid;
+#ifdef HAVE_UNION_WAIT
+    /* OLD BSD's used this. */
+    union wait status;
+#else /* !HAVE_UNION_WAIT */
     int status;
+#endif /* HAVE_UNION_WAIT */
   try_reap_again:
     /* We carefully reap what we saw */
 #ifdef HAVE_WAITPID
