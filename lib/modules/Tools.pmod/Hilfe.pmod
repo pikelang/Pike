@@ -2,7 +2,7 @@
 
 // Incremental Pike Evaluator
 //
-// $Id: Hilfe.pmod,v 1.46 2002/03/20 20:57:18 nilsson Exp $
+// $Id: Hilfe.pmod,v 1.47 2002/03/21 00:29:21 nilsson Exp $
 
 constant hilfe_todo = #"List of known Hilfe bugs/room for improvements:
 
@@ -470,6 +470,10 @@ private class Expression {
     return tokens[positions[f]..positions[t]]*"";
   }
 
+  string `[]= (int f, string v) {
+    return tokens[positions[f]] = v;
+  }
+
   // See if there is any forbidden modifiers used in the expression,
   // e.g. "private int x;" is not valid inside Hilfe.
   string check_modifiers() {
@@ -488,7 +492,8 @@ private class Expression {
   }
 
   // Returns the first complex entity in the expression,
-  // e.g. "Stdio.File" is returned from ({ "Stdio", ".", "File", " ", "f", ";" }).
+  // e.g. ({ "Stdio", ".", "File" }) is returned from
+  // ({ "Stdio", ".", "File", " ", "f", ";" }).
   array(string) first_complex() {
     int p = search(tokens, " ");
     if(p==-1) p = sizeof(tokens)-1;
@@ -765,7 +770,7 @@ class Evaluator {
   void print_version()
   {
     write(version()+
-	  " running Hilfe v3.1 (Incremental Pike Frontend)\n");
+	  " running Hilfe v3.2 (Incremental Pike Frontend)\n");
   }
 
   //! Cleras the current state, history and removes all locally
@@ -870,7 +875,7 @@ class Evaluator {
   private void add_hilfe_constant(string code, string var) {
     if(object o = hilfe_compile("constant " + code +
 				";\nmixed ___HilfeWrapper() { return " +
-				var + "; }\n", var)) {
+				var + "; }", var)) {
       hilfe_error( catch( constants[var] = o->___HilfeWrapper() ) );
     }
   }
@@ -885,7 +890,7 @@ class Evaluator {
 
     object o = hilfe_compile(type + " " + code +
 			     ";\nmixed ___HilfeWrapper() { return " +
-			     var + "; }\n", var);
+			     var + "; }", var);
 
     if(	o && hilfe_error( catch( variables[var] =
 				 o->___HilfeWrapper() ) ) ) {
@@ -906,7 +911,7 @@ class Evaluator {
 
     object o = hilfe_compile(type + " " + code +
 			     ";\nmixed ___HilfeWrapper() { return " +
-			     var + "; }\n", var);
+			     var + "; }", var);
 
     if(	o && hilfe_error( catch( vtype[var] = o->___HilfeWrapper() ) ) )
       return;
@@ -920,12 +925,87 @@ class Evaluator {
 				   "&", "|", "^", "<<", ">>",
 				   "%", "~", "==", "<", ">" >);
 
+
+  // Rewrites "dangerous" tokens (int/string/float-variables) to
+  // operate directly in the variable mapping. It rewrites all other
+  // variables as well, but we didn't have to. Note that this
+  // throws the object orientation out the door, since we apply
+  // knowledge of the internals of the wrapper here.
+  private int relocate( Expression expr, int p, multiset(string) symbols ) {
+    multiset next_symbols = (<>);
+    int plevel;
+    for( ; p<sizeof(expr); p++) {
+
+      // Ignore whspc tokens
+      if(expr[p][0]==' ')
+	continue;
+
+      if(expr[p]=="(") {
+	plevel++;
+	continue;
+      }
+      if(expr[p]==")") {
+	plevel--;
+	continue;
+      }
+
+      // Rewrite variable
+      // FIXME: Possibly soft cast value to declare variable type.
+      if(symbols[expr[p]]) {
+	expr[p] = "(___hilfe->"+expr[p]+")";
+	continue;
+      }
+
+      // Skip tokens preceded by . or ->
+      if( (< ".", "->" >)[expr[p]] ) {
+	p++;
+	continue;
+      }
+
+      // Clobber variables
+      // FIXME: Doesn't handle variable clobber typed as program name.
+      if( (< "int", "float", "string", "mapping", "array", "multiset",
+	     "program", "object" >)[expr[p]] ) {
+	p++;
+	// Skip type declaration
+	while(expr[p]=="." || expr[p]=="|" || expr[p]=="(") {
+	  if(expr[p]=="." || expr[p]=="|")
+	    p += 2;
+	  else
+	    do {
+	      if(expr[p]=="(") plevel++;
+	      else if(expr[p]==")") plevel--;
+	      p++;
+	    } while(plevel);
+	}
+
+	if(plevel)
+	  next_symbols[expr[p]] = 1;
+	else
+	  symbols[expr[p]] = 0;
+
+	// FIXME: commaseperated list of variables.
+      }
+
+      // Handle scopes
+      if(expr[p]=="}")
+	return p;
+      if(expr[p]=="{") {
+	p = relocate(expr, p+1, symbols-next_symbols);
+	next_symbols = (<>);
+      }
+    }
+  }
+
   //! Parses a Pike expression. Returns 0 if everything went well,
   //! or a string with an error message otherwise.
   int(0..0)|string parse_expression(Expression expr)
   {
     // Check for modifiers
     expr->check_modifiers();
+
+    // Rewrite variables for the Hilfe wrapper
+    relocate(expr, 0, (multiset)(indices(variables)) );
 
     // Identify the type of statement so that we can intercept
     // variable declarations and store them locally.
@@ -969,7 +1049,7 @@ class Evaluator {
 	  int plevel;
 	  while((expr[pos]!="," && expr[pos]!=";") || plevel) {
 	    if(expr[pos]=="(") plevel++;
-	    if(expr[pos]==")") plevel--;
+	    else if(expr[pos]==")") plevel--;
 	    pos++;
 	    if(pos==sizeof(expr))
 	      return "Hilfe Error: Bug in constant handling. Please report this!\n";
@@ -1013,8 +1093,8 @@ class Evaluator {
 	    do {
 	      type += expr[pos];
 	      if(expr[pos]==",") type += " ";
-	      if(expr[pos]=="(") plevel++;
-	      if(expr[pos]==")") plevel--;
+	      else if(expr[pos]=="(") plevel++;
+	      else if(expr[pos]==")") plevel--;
 	      pos++;
 	    } while(plevel);
 	  }
@@ -1036,7 +1116,7 @@ class Evaluator {
 	  int plevel;
 	  while((expr[pos]!="," && expr[pos]!=";") || plevel) {
 	    if(expr[pos]=="(" || expr[pos]=="{") plevel++;
-	    if(expr[pos]==")" || expr[pos]=="}") plevel--;
+	    else if(expr[pos]==")" || expr[pos]=="}") plevel--;
 	    pos++;
 	    if(pos==sizeof(expr))
 	      return "Hilfe Error: Bug in variable handling. Please report this!\n";
@@ -1189,25 +1269,12 @@ class Evaluator {
 
        map(imports, lambda(string f) { return "import "+f+";\n"; }) * "" +
 
-       map(indices(variables),
-	   lambda(string f) {
-	     return sprintf("%s %s=___hilfe.%s;\n", types[f], f, f);
-	   }) * "" +
-
-       "\nmapping query_variables() { return ([\n"+
-       map(indices(variables),
-	   lambda(string f) {
-	     return sprintf("    \"%s\":%s,\n",f,f);
-	   }) * "" +
-       "  ]);\n}\n" +
-
-       "# 1\n" + f + "\n");
+       "mapping(string:mixed) ___hilfe = ___Hilfe->variables;\n# 1\n" + f + "\n");
 
     HilfeCompileHandler handler = HilfeCompileHandler (sizeof (backtrace()));
 
     handler->hilfe_symbols = symbols;
     handler->hilfe_symbols->___Hilfe = this_object();
-    handler->hilfe_symbols->___hilfe = variables;
     handler->hilfe_symbols->write = write;
 
     last_compiled_expr = prog;
@@ -1290,8 +1357,6 @@ class Evaluator {
 	else
 	  write("Ok.\n");
 
-	// Import variable changes from object.
-	variables=o->query_variables();
       }
     }
   }
