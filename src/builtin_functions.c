@@ -4,7 +4,7 @@
 ||| See the files COPYING and DISCLAIMER for more information.
 \*/
 #include "global.h"
-RCSID("$Id: builtin_functions.c,v 1.118 1998/07/22 10:22:22 hedda Exp $");
+RCSID("$Id: builtin_functions.c,v 1.119 1998/07/26 10:28:41 hubbe Exp $");
 #include "interpret.h"
 #include "svalue.h"
 #include "pike_macros.h"
@@ -1480,18 +1480,9 @@ void f__compiler_trace(INT32 args)
 #endif /* YYDEBUG */
 #endif
 
-#ifdef HAVE_LOCALTIME
-void f_localtime(INT32 args)
+#if defined(HAVE_LOCALTIME) || defined(HAVE_GMTIME)
+static void encode_struct_tm(struct tm *tm)
 {
-  struct tm *tm;
-  time_t t;
-  if (args<1 || sp[-1].type!=T_INT)
-    PIKE_ERROR("localtime", "Bad argument to localtime", sp, args);
-
-  t=sp[-1].u.integer;
-  tm=localtime(&t);
-  pop_n_elems(args);
-
   push_string(make_shared_string("sec"));
   push_int(tm->tm_sec);
   push_string(make_shared_string("min"));
@@ -1512,6 +1503,40 @@ void f_localtime(INT32 args)
   push_int(tm->tm_yday);
   push_string(make_shared_string("isdst"));
   push_int(tm->tm_isdst);
+}
+#endif
+
+#ifdef HAVE_GMTIME
+void f_gmtime(INT32 args)
+{
+  struct tm *tm;
+  time_t t;
+  if (args<1 || sp[-1].type!=T_INT)
+    PIKE_ERROR("localtime", "Bad argument to localtime", sp, args);
+
+  t=sp[-1].u.integer;
+  tm=gmtime(&t);
+  pop_n_elems(args);
+  encode_struct_tm(tm);
+
+  push_string(make_shared_string("timezone"));
+  push_int(0);
+  f_aggregate_mapping(20);
+}
+#endif
+
+#ifdef HAVE_LOCALTIME
+void f_localtime(INT32 args)
+{
+  struct tm *tm;
+  time_t t;
+  if (args<1 || sp[-1].type!=T_INT)
+    PIKE_ERROR("localtime", "Bad argument to localtime", sp, args);
+
+  t=sp[-1].u.integer;
+  tm=localtime(&t);
+  pop_n_elems(args);
+  encode_struct_tm(tm);
 
 #ifdef HAVE_EXTERNAL_TIMEZONE
   push_string(make_shared_string("timezone"));
@@ -3038,6 +3063,9 @@ void init_builtin_efuns(void)
 
 #ifdef HAVE_LOCALTIME
   add_efun("localtime",f_localtime,"function(int:mapping(string:int))",OPT_EXTERNAL_DEPEND);
+#endif
+#ifdef HAVE_LOCALTIME
+  add_efun("gmtime",f_gmtime,"function(int:mapping(string:int))",OPT_EXTERNAL_DEPEND);
 #endif
 
 #ifdef HAVE_MKTIME
