@@ -198,6 +198,18 @@ struct parser_html_storage
    int num_look_for_end[MAX_ARGQ];
 };
 
+/* default characters */
+#define DEF_WS		' ', '\n', '\r', '\t', '\v'
+#define DEF_TAG_START	'<'
+#define DEF_TAG_END	'>'
+#define DEF_ENT_START	'&'
+#define DEF_ENT_END	';'
+#define DEF_ARGQ_STARTS	'\"', '\''
+#define DEF_ARGQ_STOPS	'\"', '\''
+#define DEF_EQ		'='
+#define DEF_LAZY_EENDS	DEF_WS, DEF_TAG_START, DEF_TAG_END, \
+			DEF_ENT_START, DEF_ENT_END, DEF_ARGQ_STARTS, DEF_EQ
+
 /* P_WAIT was already used by MSVC++ :(  /Hubbe */
 typedef enum { STATE_DONE=0, STATE_WAIT, STATE_REREAD, STATE_REPARSE } newstate;
 
@@ -389,8 +401,10 @@ found_start:
 
 static void init_html_struct(struct object *o)
 {
-   static p_wchar2 whitespace[]={' ','\n','\r','\t','\v'};
-   static p_wchar2 def_lazy_eends[]={';','&','<','>','\"','\'','\n','\r'};
+   static p_wchar2 whitespace[]={DEF_WS};
+   static p_wchar2 argq_starts[]={DEF_ARGQ_STARTS};
+   static p_wchar2 argq_stops[]={DEF_ARGQ_STOPS};
+   static p_wchar2 lazy_eends[]={DEF_LAZY_EENDS};
 
 #ifdef DEBUG
    THIS->flags=0;
@@ -401,15 +415,13 @@ static void init_html_struct(struct object *o)
    THIS->start=NULL;
 
    /* default set */
-   THIS->tag_start='<';
-   THIS->tag_end='>';
-   THIS->entity_start='&';
-   THIS->entity_end=';';
-   THIS->nargq=2;
-   THIS->argq_start[0]='\"';
-   THIS->argq_stop[0]='\"';
-   THIS->argq_start[1]='\'';
-   THIS->argq_stop[1]='\'';
+   THIS->tag_start=DEF_TAG_START;
+   THIS->tag_end=DEF_TAG_END;
+   THIS->entity_start=DEF_ENT_START;
+   THIS->entity_end=DEF_ENT_END;
+   THIS->nargq=sizeof(argq_starts)/sizeof(argq_starts[0]);
+   MEMCPY(THIS->argq_start,argq_starts,sizeof(argq_starts));
+   MEMCPY(THIS->argq_stop,argq_stops,sizeof(argq_stops));
    THIS->arg_eq='=';
    
    /* allocated stuff */
@@ -445,9 +457,9 @@ static void init_html_struct(struct object *o)
    THIS->max_stack_depth=MAX_FEED_STACK_DEPTH;
 
    /* this may now throw */
-   THIS->lazy_entity_ends=(p_wchar2*)xalloc(sizeof(def_lazy_eends));
-   MEMCPY(THIS->lazy_entity_ends,def_lazy_eends,sizeof(def_lazy_eends));
-   THIS->n_lazy_entity_ends=NELEM(def_lazy_eends);
+   THIS->lazy_entity_ends=(p_wchar2*)xalloc(sizeof(lazy_eends));
+   MEMCPY(THIS->lazy_entity_ends,lazy_eends,sizeof(lazy_eends));
+   THIS->n_lazy_entity_ends=NELEM(lazy_eends);
 
    THIS->ws=(p_wchar2*)xalloc(sizeof(whitespace));
    MEMCPY(THIS->ws,whitespace,sizeof(whitespace));
@@ -3789,9 +3801,9 @@ static void html_set_extra(INT32 args)
 **!
 **!	<li><b>lazy_entity_end</b>: Normally, the parser search
 **!	indefinitely for the entity end character (i.e. ';'). When
-**!	this flag is set, the characters '&', '<', '>', '"', ''',
-**!	newline and linefeed breaks the search for the entity end, and
-**!	the entity text is then treated as data.
+**!	this flag is set, the characters '&', '<', '>', '"', ''', and
+**!	any whitespace breaks the search for the entity end, and the
+**!	entity text is then treated as data.
 **!
 **!	<li><b>match_tag</b>: Unquoted nested tag starters and enders
 **!	will be balanced when parsing tags. This is the default.
