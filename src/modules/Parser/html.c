@@ -701,9 +701,9 @@ static void unwind_subparse_state (struct subparse_save *save)
 /****** setup callbacks *****************************/
 
 /*
-**! method object _set_tag_callback(function to_call)
-**! method object _set_entity_callback(function to_call)
-**! method object _set_data_callback(function to_call)
+**! method Parser.HTML _set_tag_callback(function to_call)
+**! method Parser.HTML _set_entity_callback(function to_call)
+**! method Parser.HTML _set_data_callback(function to_call)
 **!	These functions set up the parser object to
 **!	call the given callbacks upon tags, entities
 **!	and/or data.
@@ -718,6 +718,8 @@ static void unwind_subparse_state (struct subparse_save *save)
 **!	<p>Note that no parsing of the contents has been done.
 **!	Both endtags and normal tags are called, there is
 **!	no container parsing.
+**!
+**! returns the called object
 **!
 */
 
@@ -749,13 +751,13 @@ static void html__set_entity_callback(INT32 args)
 }
 
 /*
-**! method object add_tag(string name,mixed to_do)
-**! method object add_container(string name,mixed to_do)
-**! method object add_entity(string entity,mixed to_do)
-**! method object add_quote_tag(string name,mixed to_do,string end)
-**! method object add_tags(mapping(string:mixed))
-**! method object add_containers(mapping(string:mixed))
-**! method object add_entities(mapping(string:mixed))
+**! method Parser.HTML add_tag(string name,mixed to_do)
+**! method Parser.HTML add_container(string name,mixed to_do)
+**! method Parser.HTML add_entity(string entity,mixed to_do)
+**! method Parser.HTML add_quote_tag(string name,mixed to_do,string end)
+**! method Parser.HTML add_tags(mapping(string:mixed))
+**! method Parser.HTML add_containers(mapping(string:mixed))
+**! method Parser.HTML add_entities(mapping(string:mixed))
 **!	Registers the actions to take when parsing various things.
 **!	Tags, containers, entities are as usual. add_quote_tag() adds
 **!	a special kind of tag that reads any data until the next
@@ -766,10 +768,10 @@ static void html__set_entity_callback(INT32 args)
 **!
 **!	<p><li><b>a function</b> to be called. The function is on the form
 **!	<pre>
-**!     mixed tag_callback(object parser,mapping args,mixed ...extra)
-**!	mixed container_callback(object parser,mapping args,string content,mixed ...extra)
-**!	mixed entity_callback(object parser,mixed ...extra)
-**!	mixed quote_tag_callback(object parser,string content,mixed ...extra)
+**!     mixed tag_callback(Parser.HTML parser,mapping args,mixed ...extra)
+**!	mixed container_callback(Parser.HTML parser,mapping args,string content,mixed ...extra)
+**!	mixed entity_callback(Parser.HTML parser,mixed ...extra)
+**!	mixed quote_tag_callback(Parser.HTML parser,string content,mixed ...extra)
 **!	</pre>
 **!	depending on what realm the function is called by.
 **!
@@ -811,6 +813,8 @@ static void html__set_entity_callback(INT32 args)
 **!	callback.
 **!
 **!	</ul>
+**!
+**! returns the called object
 **!
 **! see also: tags, containers, entities
 **!	
@@ -1118,12 +1122,14 @@ static void html_add_entities(INT32 args)
 }
 
 /*
-**! method mapping clear_tags()
-**! method mapping clear_containers()
-**! method mapping clear_entities()
-**! method mapping clear_quote_tags()
+**! method Parser.HTML clear_tags()
+**! method Parser.HTML clear_containers()
+**! method Parser.HTML clear_entities()
+**! method Parser.HTML clear_quote_tags()
 **!	Removes all registered definitions in the different
 **!	categories.
+**!
+**! returns the called object
 **!
 **! see also: add_tag, add_tags, add_container, add_containers, add_entity, add_entities
 */
@@ -3749,9 +3755,9 @@ static void low_feed(struct pike_string *ps)
 }
 
 /*
-**! method object feed()
-**! method object feed(string s)
-**! method object feed(string s,int do_parse)
+**! method Parser.HTML feed()
+**! method Parser.HTML feed(string s)
+**! method Parser.HTML feed(string s,int do_parse)
 **!	Feed new data to the <ref>Parser.HTML</ref>
 **!	object. This will start a scan and may result in
 **!	callbacks. Note that it's possible that all 
@@ -3795,9 +3801,11 @@ static void html_feed(INT32 args)
 }
 
 /*
-**! method object feed_insert(string s)
+**! method Parser.HTML feed_insert(string s)
 **!	This pushes a string on the parser stack.
 **!	(I'll write more about this mechanism later.)
+**!
+**! returns the called object
 **! note: don't use
 */
 
@@ -3826,8 +3834,8 @@ static void html_feed_insert(INT32 args)
 }
 
 /*
-**! method object finish()
-**! method object finish(string s)
+**! method Parser.HTML finish()
+**! method Parser.HTML finish(string s)
 **!	Finish a parser pass. A string may be sent here, similar to
 **!	feed().
 **!
@@ -3937,7 +3945,7 @@ static void html_read(INT32 args)
 }
 
 /*
-**! method object write_out(mixed...)
+**! method Parser.HTML write_out(mixed...)
 **!	Send data to the output stream (i.e. it won't be parsed).
 **!
 **!	<p>Any data is allowed when the parser is running in
@@ -4026,7 +4034,7 @@ static void html_current(INT32 args)
 /*
 **! method array tag()
 **! method string tag_name()
-**! method string tag_args()
+**! method mapping(string:mixed) tag_args()
 **! method string tag_content()
 **! method array tag(mixed default_value)
 **! method string tag_args(mixed default_value)
@@ -4422,8 +4430,8 @@ static void html_context(INT32 args)
 /*
 **! method string parse_tag_name(string tag)
 **!	Parses the tag name from a tag string without the surrounding
-**!	brackets, i.e. a string on the form <tt>tagname some="tag"
-**!	args</tt>.
+**!	brackets, i.e. a string on the form "<tt>tagname some="tag"
+**!	args</tt>".
 **! returns the tag name or an empty string if none
 */
 
@@ -4439,10 +4447,11 @@ static void html_parse_tag_name(INT32 args)
 
 /*
 **! method mapping parse_tag_args(string tag)
-**!	Parses the tag arguments from a tag string without the
-**!	surrounding brackets, i.e. a string on the form <tt>tagname
-**!	some="tag" args</tt>.
+**!	Parses the tag arguments from a tag string without the name
+**!	and surrounding brackets, i.e. a string on the form
+**!	"<tt>some="tag" args</tt>".
 **! returns a mapping containing the tag arguments
+**! see also: tag_args
 */
 
 static void html_parse_tag_args(INT32 args)
@@ -4601,7 +4610,7 @@ void html_create(INT32 args)
 }
 
 /*
-**! method object clone(mixed ...)
+**! method Parser.HTML clone(mixed ...)
 **!	Clones the <ref>Parser.HTML</ref> object.
 **!	A new object of the same class is created,
 **!	filled with the parse setup from the 
@@ -4701,7 +4710,7 @@ static void html_clone(INT32 args)
 /****** setup ***************************************/
 
 /*
-**! method object set_extra(mixed ...args)
+**! method Parser.HTML set_extra(mixed ...args)
 **!	Sets the extra arguments passed to all tag, container and
 **!	entity callbacks.
 **!
@@ -5246,7 +5255,7 @@ class Parse_HTML
 
    string read(void|int chars); // read out-feed
 
-   object clone(); // new object, fresh stream
+   Parser.HTML clone(); // new object, fresh stream
 
    // argument quote ( < ... foo="bar" foo='bar' ...> )
    void set_quote(string start,string end);
