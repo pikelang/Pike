@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: lex.h,v 1.28 2003/08/06 18:05:27 mast Exp $
+|| $Id: lex.h,v 1.29 2003/08/13 15:58:03 grubba Exp $
 */
 
 #ifndef LEX_H
@@ -41,7 +41,15 @@ struct keyword
 #define I_BRANCH	128	/* Opcode either jumps to the address
 				 * given by I_POINTER/I_HASPOINTER or
 				 * continues. */
+/* The following are useful for the code generator.
+ * Note that they apply to the change of state as seen
+ * by the immediately following instruction.
+ */
+#define I_UPDATE_SP	256	/* Opcode modifies Pike_sp */
+#define I_UPDATE_FP	512	/* Opcode modifies Pike_fp */
+#define I_UPDATE_M_SP	1024	/* Opcode modifies Pike_mark_sp */
 
+/* Convenience variants */
 #define I_TWO_ARGS	(I_HASARG | I_HASARG2)
 #define I_DATA		(I_HASARG | I__DATA)
 #define I_ISPOINTER	(I_HASARG | I_POINTER)	/* Only F_POINTER */
