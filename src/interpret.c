@@ -790,7 +790,7 @@ static void eval_instruction(unsigned char *pc)
       if(instr >= fp->context.prog->num_constants)
       {
 	instr += F_MAX_OPCODE;
-	fatal("Strange instruction %ld\n",instr);
+	fatal("Strange instruction %ld\n",(long)instr);
       }
 #endif      
       strict_apply_svalue(fp->context.prog->constants + instr, sp - *--mark_sp );

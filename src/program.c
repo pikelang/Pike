@@ -965,7 +965,7 @@ char *get_line(unsigned char *pc,struct program *prog,INT32 *linep)
 
 #ifdef DEBUG
   if (offset > (INT32)prog->program_size || offset<0)
-    fatal("Illegal offset %ld in program.\n", offset);
+    fatal("Illegal offset %ld in program.\n", (long)offset);
 #endif
 
   cnt=prog->linenumbers;

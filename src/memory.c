@@ -88,7 +88,9 @@ void reorder(char *memory, INT32 nitems, INT32 size,INT32 *order)
   {
     for(d=0;d<nitems;d++) if(order[d]==e) break;
     if(d==nitems)
-      fatal("Missing number %ld in reorder() (nitems = %ld)\n",e,nitems);
+      fatal("Missing number %ld in reorder() (nitems = %ld)\n",
+	    (long)e,
+	    (long)nitems);
   }
 #endif
 
