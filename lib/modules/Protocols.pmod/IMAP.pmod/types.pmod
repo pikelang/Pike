@@ -74,7 +74,7 @@ class imap_atom_options
 
   string format()
     {
-      return name + "[" + Array.map(options, imap_format)*" " + "]"
+      return upper_case(name + "[" + Array.map(options, imap_format)*" " + "]")
 	// NOTE: Only the start index is sent
 	+ (range ? sprintf("<%d>", range[0]) : "");
     }
