@@ -5,7 +5,7 @@
 \*/
 /**/
 #include "global.h"
-RCSID("$Id: las.c,v 1.136 1999/12/09 23:24:10 grubba Exp $");
+RCSID("$Id: las.c,v 1.137 1999/12/13 23:41:07 grubba Exp $");
 
 #include "language.h"
 #include "interpret.h"
@@ -107,16 +107,20 @@ void check_tree(node *n, int depth)
 
   if(car_is_node(n))
   {
+#ifndef SHARED_NODES
     if(CAR(n)->parent != n)
       fatal("Parent is wrong.\n");
+#endif /* !SHARED_NODES */
 
     check_tree(CAR(n),depth);
   }
 
   if(cdr_is_node(n))
   {
+#ifndef SHARED_NODES
     if(CDR(n)->parent != n)
       fatal("Parent is wrong.\n");
+#endif /* !SHARED_NODES */
 
     check_tree(CDR(n),depth);
   }
@@ -200,10 +204,15 @@ struct pike_string *find_return_type(node *n)
 
   if(a)
   {
-    if(b && a!=b) return mixed_type_string;
+    if(b && a!=b) return or_pike_types(a, b);
+    add_ref(a);
     return a;
   }
-  return b;
+  if (b) {
+    add_ref(b);
+    return b;
+  }
+  return 0;
 }
 
 
