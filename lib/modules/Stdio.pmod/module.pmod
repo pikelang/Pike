@@ -1,4 +1,4 @@
-// $Id: module.pmod,v 1.48 1999/04/20 16:00:53 grubba Exp $
+// $Id: module.pmod,v 1.49 1999/04/30 07:01:19 hubbe Exp $
 
 import String;
 
@@ -349,6 +349,20 @@ class File
     SET(write_oob_callback,0);
 #endif
     ::set_blocking();
+  }
+
+  void destroy()
+  {
+    if(_fd)
+    { 
+#define FREE_CB(X) if(___##X && query_##X == __stdio_##X) ::set_##X(0)
+      FREE_CB(read_callback);
+      FREE_CB(write_callback);
+#if constant(files.__HAVE_OOB__)
+      FREE_CB(read_oob_callback);
+      FREE_CB(write_oob_callback);
+#endif
+    }
   }
 };
 
