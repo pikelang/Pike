@@ -2,11 +2,11 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: builtin_functions.c,v 1.542 2004/05/09 19:45:16 nilsson Exp $
+|| $Id: builtin_functions.c,v 1.543 2004/05/16 09:57:52 nilsson Exp $
 */
 
 #include "global.h"
-RCSID("$Id: builtin_functions.c,v 1.542 2004/05/09 19:45:16 nilsson Exp $");
+RCSID("$Id: builtin_functions.c,v 1.543 2004/05/16 09:57:52 nilsson Exp $");
 #include "interpret.h"
 #include "svalue.h"
 #include "pike_macros.h"
@@ -632,7 +632,7 @@ PMOD_EXPORT void f_random_string(INT32 args)
 {
   struct pike_string *ret;
   INT_TYPE len, e;
-  get_all_args("random_string",args,"%i",&len);
+  get_all_args("random_string",args,"%+",&len);
   ret = begin_shared_string(len);
   for(e=0;e<len;e++) ret->str[e] = DO_NOT_WARN((char)my_rand());
   pop_n_elems(args);
