@@ -1,5 +1,5 @@
 #
-# $Id: Makefile.in,v 1.293 2002/03/14 00:43:08 mast Exp $
+# $Id: Makefile.in,v 1.294 2002/04/07 12:31:03 nilsson Exp $
 #
 
 # This line is needed on some machines.
@@ -186,7 +186,7 @@ POBJ = las.o builtin_functions.o peep.o module.o
 
 # Since post_modules might be static, we must remake pike after them
 # to make sure they are linked in.
-all: module_objects hilfe
+all: module_objects tools
 	$(MAKE) $(MAKE_FLAGS) $(MAKE_PARALLEL) post_modules
 	$(MAKE) $(MAKE_FLAGS) $(MAKE_PARALLEL) pike
 	@if [ "`find . -name '*.fail' -print`" = "" ]; then :; else \
@@ -289,16 +289,17 @@ pixie: pike
 	mv pike.pixie.threads pixie
 	@echo Make sure you have '.' in your LD_LIBRARY_PATH.
 
+tools: hilfe rsif
+
 hilfe: $(TMP_BINDIR)/hilfe Makefile
-	@echo "Creating ./hilfe..."; \
-	if [ "$(exec_prefix)" != "/usr/local/bin" -a \
-	      "$(exec_prefix)" != "/usr/local/bin/" ]; then \
-	  ( sed -e 's!/usr/local/bin!$(exec_prefix)!' <$(TMP_BINDIR)/hilfe \
-	    >./hilfe && chmod 755 ./hilfe) || exit 1 ; \
-	else \
-	  $(INSTALL) $(TMP_BINDIR)/hilfe `pwd`/hilfe || exit 1; \
-	fi
-	@echo "Done."
+	@echo "Creating hilfe..."; \
+	( sed -e 's!/usr/bin/env pike!$(exec_prefix)!' <$(TMP_BINDIR)/hilfe \
+	  >./hilfe && chmod 755 ./hilfe) || exit 1 ;
+
+rsif: $(TMP_BINDIR)/rsif Makefile
+	@echo "Creating rsif..."; \
+	( sed -e 's!/usr/bin/env pike!$(exec_prefix)!' <$(TMP_BINDIR)/rsif \
+	  >./rsif && chmod 755 ./rsif) || exit 1 ;
 
 dump_modules: pike master-stamp $(SRCDIR)/dumpmodule.pike
 	if [ "x$(DUMPARGS)" = x ] ; then args="--log-file --update-only=dumpversion --report-failed" ; else args="$(DUMPARGS)" ; fi; \
@@ -375,7 +376,7 @@ force :
 	@:
 
 # install
-install: pike hilfe pike-module aclocal
+install: pike tools pike-module aclocal
 	@$(RUNPIKE) $(TMP_BINDIR)/install.pike $(INSTALLARGS) \
 	exec_prefix="$(exec_prefix)" lib_prefix="$(lib_prefix)" \
 	TMP_LIBDIR="$(TMP_LIBDIR)" LIBDIR_SRC="$(LIBDIR_SRC)" \
@@ -383,7 +384,7 @@ install: pike hilfe pike-module aclocal
 	man_prefix="$(man_prefix)" pike_name=$(pike_name) \
 	fakeroot="$(buildroot)" PIKE_MODULE_RELOC="$(PIKE_MODULE_RELOC)"
 
-install_interactive: pike hilfe pike-module aclocal
+install_interactive: pike tools pike-module aclocal
 	@$(RUNPIKE) $(TMP_BINDIR)/install.pike --interactive \
 	exec_prefix="$(exec_prefix)"  prefix=$(prefix) \
 	TMP_LIBDIR="$(TMP_LIBDIR)" LIBDIR_SRC="$(LIBDIR_SRC)" \
@@ -401,7 +402,7 @@ clean: tidy
 	-( cd post_modules; $(MAKE) $(MAKE_FLAGS) clean )
 	-rm -rf test-install test-pike
 	-rm -f TAGS tags yacc.acts yacc.debug yacc.tmp *.debug.log a.out
-	-rm -f hilfe master.pike compiler-warnings
+	-rm -f hilfe rsif master.pike compiler-warnings
 	-rm -f tpike stamp-tpike-predep import-stamp modules-stamp master-stamp
 	-rm -rf lib/modules/*
 #	-rm -f lib/master.pike
