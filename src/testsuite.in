@@ -1,4 +1,4 @@
-test_true([["$Id: testsuite.in,v 1.239 1999/11/25 00:56:27 hubbe Exp $"]]);
+test_true([["$Id: testsuite.in,v 1.240 1999/11/27 13:59:17 mast Exp $"]]);
 
 cond([[all_constants()->_verify_internals]],
 [[
@@ -247,6 +247,10 @@ test_compile_error_low([[
  mixed foo(mixed bar) { return 1/foo; }
 ]])
 
+test_compile_error_low([[
+  class A {int wrong = "bogus"; void create() {}}
+  class B {inherit A;}
+]])
 
 
 test_compile([[float x=(gauge { return; },1.0);]])
