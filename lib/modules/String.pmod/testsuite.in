@@ -1,12 +1,15 @@
-dnl $Id: testsuite.in,v 1.9 2003/09/05 09:43:11 nilsson Exp $
+dnl $Id: testsuite.in,v 1.10 2003/12/08 15:52:57 nilsson Exp $
 
 test_eq([[ String.Buffer()->add("xxx") ]], 3)
 test_any([[
   String.Buffer s=String.Buffer();
   s->add("xxx");
   s->add("a", "b");
+  s->putchar(65);
+  s->add("B");
+  s->putchar(67);
   return (string)s;
-]], "xxxab")
+]], "xxxabABC")
 test_any([[
   String.Buffer s=String.Buffer(2);
   s->add("a");
