@@ -4,7 +4,7 @@
 ||| See the files COPYING and DISCLAIMER for more information.
 \*/
 #include "global.h"
-RCSID("$Id: builtin_functions.c,v 1.77 1998/03/02 16:06:58 hubbe Exp $");
+RCSID("$Id: builtin_functions.c,v 1.78 1998/03/06 16:28:47 grubba Exp $");
 #include "interpret.h"
 #include "svalue.h"
 #include "pike_macros.h"
@@ -2109,7 +2109,8 @@ void f_diff_longest_sequence(INT32 args)
 
    cmptbl=diff_compare_table(sp[-args].u.array,sp[1-args].u.array);
    push_array(cmptbl);
-   seq=diff_longest_sequence(cmptbl, sp[1-args].u.array->size);
+   /* Note that the stack is one element off here. */
+   seq=diff_longest_sequence(cmptbl, sp[-args].u.array->size);
    pop_n_elems(args+1);
    push_array(seq); 
 }
