@@ -97,12 +97,12 @@ array(int(0..255)) parse_color(string name)
 //! Tries to find a name to color described by  the provided RGB
 //! values. Partially an inverse function to @[Colors.parse_color()],
 //! although it can not find all the names that @[Colors.parse_color()]
-//! can find RGB values for. Returns "-" upon failure.
+//! can find RGB values for. Returns the colors rgb hex value prepended
+//! with "#" upon failure.
 //!
 string color_name(array(int(0..255)) rgb)
 {
   if(!arrayp(rgb) || sizeof(rgb)!=3) return "-";
   string name = Image.Color(@rgb)->name();
-  if(name[0]=='#') return "-";
   return name;
 }
