@@ -2,11 +2,11 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: mpz_glue.c,v 1.135 2003/03/29 03:49:58 mast Exp $
+|| $Id: mpz_glue.c,v 1.136 2003/03/29 13:49:36 mast Exp $
 */
 
 #include "global.h"
-RCSID("$Id: mpz_glue.c,v 1.135 2003/03/29 03:49:58 mast Exp $");
+RCSID("$Id: mpz_glue.c,v 1.136 2003/03/29 13:49:36 mast Exp $");
 #include "gmp_machine.h"
 #include "module.h"
 
@@ -395,6 +395,7 @@ MP_INT *debug_get_mpz(struct svalue *s,
   }
   else {
     UNSET_ONERROR (uwp);
+    free_object (o);
     return NULL;
   }
 }
