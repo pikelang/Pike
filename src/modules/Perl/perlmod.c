@@ -186,8 +186,32 @@ static void perlmod_create(INT32 args)
 	MEMCPY(env_blockp,k->val.u.string->str,k->ind.u.string->len);
 	env_blockp+=k->val.u.string->len;
 
-	*(env_blockp++)='0';
+	*(env_blockp++)=0;
       }
+    THIS->env[d]=0;
+  } else {
+    /* Perl likes to be able to write in the environment block,
+     * give it it's own copy to protect ourselves..  /Hubbe
+     */
+    INT32 d;
+    int env_block_size=0;
+    char *env_blockp;
+
+    for(d=0;environ[d];d++)
+      env_block_size+=strlen(environ[d])+1;
+
+    THIS->env_block=xalloc(env_block_size);
+    THIS->env=(char **)xalloc(d+1);
+
+    env_blockp=THIS->env_block;
+
+    for(d=0;environ[d];d++)
+    {
+      int l=strlen(environ[d]);
+      THIS->env[d++]=env_blockp;
+      MEMCPY(env_blockp,environ[d],l+1);
+      env_blockp+=l+1;
+    }
     THIS->env[d]=0;
   }
   
