@@ -2,11 +2,11 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: object.c,v 1.216 2003/03/26 14:15:41 mast Exp $
+|| $Id: object.c,v 1.217 2003/07/16 14:12:45 mast Exp $
 */
 
 #include "global.h"
-RCSID("$Id: object.c,v 1.216 2003/03/26 14:15:41 mast Exp $");
+RCSID("$Id: object.c,v 1.217 2003/07/16 14:12:45 mast Exp $");
 #include "object.h"
 #include "dynamic_buffer.h"
 #include "interpret.h"
@@ -75,6 +75,7 @@ RCSID("$Id: object.c,v 1.216 2003/03/26 14:15:41 mast Exp $");
 
 struct object *master_object = 0;
 struct program *master_program =0;
+static int master_is_cleaned_up = 0;
 PMOD_EXPORT struct object *first_object;
 
 struct object *gc_internal_object = 0;
@@ -93,6 +94,9 @@ static struct object *gc_mark_object_pos = 0;
       size+=o->prog->storage_needed;		\
 }while(0)
 BLOCK_ALLOC_FILL_PAGES(object, 2)
+
+#undef COUNT_OTHER
+#define COUNT_OTHER()
 
 PMOD_EXPORT struct object *low_clone(struct program *p)
 {
@@ -437,7 +441,7 @@ PMOD_EXPORT struct object *get_master(void)
   if(master_object && master_object->prog)
     return master_object;
 
-  if(inside) return 0;
+  if(inside || master_is_cleaned_up) return 0;
 
   if(master_object)
   {
@@ -1347,7 +1351,8 @@ void cleanup_objects(void)
   for(o=first_object;o;o=next)
   {
     add_ref(o);
-    if(o->prog && !(o->prog->flags & PROGRAM_NO_EXPLICIT_DESTRUCT))
+    if(o != master_object &&	/* Wait with the master till last. */
+       o->prog && !(o->prog->flags & PROGRAM_NO_EXPLICIT_DESTRUCT))
     {
       debug_malloc_touch(o);
       debug_malloc_touch(o->storage);
@@ -1358,7 +1363,14 @@ void cleanup_objects(void)
     }
     SET_NEXT_AND_FREE(o,free_object);
   }
-  if (master_object) free_object(master_object);
+  destruct_objects_to_destruct();
+
+  master_is_cleaned_up = 1;
+  if (master_object) {
+    call_destroy (master_object, 1);
+    destruct (master_object);
+    free_object(master_object);
+  }
   master_object=0;
   if (master_program) free_program(master_program);
   master_program=0;
