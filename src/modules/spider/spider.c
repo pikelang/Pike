@@ -43,7 +43,7 @@
 #include "threads.h"
 #include "operators.h"
 
-RCSID("$Id: spider.c,v 1.80 1999/03/26 22:03:16 grubba Exp $");
+RCSID("$Id: spider.c,v 1.81 1999/06/03 14:01:44 grubba Exp $");
 
 #ifdef HAVE_PWD_H
 #include <pwd.h>
@@ -872,6 +872,12 @@ void do_html_parse_lines(struct pike_string *ss,
 	mapping_index_no_free(&sval1,cont,&empty_string);
       if (sval1.type==T_STRING)
       {
+	if (last < i-1)
+	{ 
+	  push_string(make_shared_binary_string(s+last, i-last-1)); 
+	  (*strings)++; 
+	}
+
 	*(sp++)=sval1;
 #ifdef PIKE_DEBUG
 	sval1.type=99;
