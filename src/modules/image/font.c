@@ -186,17 +186,17 @@ void font_load(INT32 args)
 
 	    struct file_head 
 	    {
-	       unsigned long cookie;
-	       unsigned long version;
-	       unsigned long chars;
-	       unsigned long height;
-	       unsigned long baseline;
-	       unsigned long o[1];
+	       unsigned INT32 cookie;
+	       unsigned INT32 version;
+	       unsigned INT32 chars;
+	       unsigned INT32 height;
+	       unsigned INT32 baseline;
+	       unsigned INT32 o[1];
 	    } *fh;
 	    struct char_head
 	    {
-	       unsigned long width;
-	       unsigned long spacing;
+	       unsigned INT32 width;
+	       unsigned INT32 spacing;
 	       unsigned char data[1];
 	    } *ch;
 
