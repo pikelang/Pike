@@ -1,5 +1,5 @@
 #
-# $Id: configure.in,v 1.24 2001/02/07 01:51:27 grubba Exp $
+# $Id: configure.in,v 1.25 2001/02/07 12:24:24 grubba Exp $
 #
 # Configure script for the mysql-module
 #
@@ -287,6 +287,10 @@ fi
       AC_CACHE_VAL(pike_cv_mysql_fetch_lengths_ret_type, [
         for ret_type in "unsigned long long" "unsigned long" "unsigned int" "long long" "long" "int"; do
 	  AC_TRY_COMPILE([
+#ifdef HAVE_WINSOCK_H
+#include <winsock.h>
+#endif
+
 #ifdef HAVE_MYSQL_H
 #include <mysql.h>
 #else
