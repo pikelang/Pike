@@ -348,6 +348,8 @@ void f_aggregate_mapping(INT32 args)
     ITEM(val)[e]=*(s++);
   }
   sp-=args;
+  ind->type_field=BIT_MIXED;
+  val->type_field=BIT_MIXED;
   m=allocate_mapping(ind,val);
   order_mapping(m);
   sp->u.mapping=m;

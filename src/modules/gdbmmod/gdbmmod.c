@@ -205,7 +205,7 @@ static void gdbmmod_store(INT32 args)
     error("GDBM database not open.\n");
 
   STRING_TO_DATUM(key, sp[-args].u.string);
-  STRING_TO_DATUM(data, sp[-args].u.string);
+  STRING_TO_DATUM(data, sp[1-args].u.string);
 
   ret=gdbm_store(THIS->dbf, key, data, GDBM_REPLACE);
   if(ret == -1)
