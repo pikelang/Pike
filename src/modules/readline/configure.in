@@ -1,4 +1,4 @@
-# $Id: configure.in,v 1.2 1998/03/28 13:55:46 grubba Exp $
+# $Id: configure.in,v 1.3 1998/08/02 19:20:22 grubba Exp $
 AC_INIT(readlinemod.c)
 AC_CONFIG_HEADER(readline_machine.h)
 AC_ARG_WITH(readline,[  --with(out)-readline   support command line editing],[],[with_readline=yes])
@@ -23,14 +23,6 @@ if test x$with_readline = xyes ; then
     if test -d $pike_cv_gnu_dir/include/. ; then
       echo Adding $pike_cv_gnu_dir/include to the include path
       CPPFLAGS="$CPPFLAGS -I$pike_cv_gnu_dir/include"
-    else
-      :
-    fi
-    if test -d $pike_cv_gnu_dir/lib/. ; then
-      echo Adding $pike_cv_gnu_dir/lib to the runtime link path
-      echo $pike_cv_gnu_dir/lib >lib_dirs
-    elif test -f lib_dirs ; then
-      rm lib_dirs
     else
       :
     fi
