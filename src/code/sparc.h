@@ -1,5 +1,5 @@
 /*
- * $Id: sparc.h,v 1.11 2002/04/08 00:58:47 mast Exp $
+ * $Id: sparc.h,v 1.12 2002/04/22 21:59:27 marcus Exp $
  */
 
 #define PIKE_OPCODE_ALIGN	4
@@ -61,15 +61,14 @@
 
 #define ENTRY_PROLOGUE_SIZE	1
 
-/* FIXME: This should set Pike_fp->pc to the absolute pc. */
 #define UPDATE_PC() do {						\
-    INT32 tmp = PIKE_PC;						\
+    /* call .+8 */							\
+    add_to_program(0x40000002);						\
     SET_REG(SPARC_REG_O3, ((INT32)(&Pike_interpreter.frame_pointer)));	\
     /* lduw [ %o3 ], %o3 */						\
     add_to_program(0xc0000000|(SPARC_REG_O3<<25)|(SPARC_REG_O3<<14));	\
-    SET_REG(SPARC_REG_O4, tmp);						\
-    /* stw %o4, [ %o3 + pike_frame ] */					\
-    add_to_program(0xc0202000|(SPARC_REG_O4<<25)|(SPARC_REG_O3<<14)|	\
+    /* stw %o7, [ %o3 + pc ] */						\
+    add_to_program(0xc0202000|(SPARC_REG_O7<<25)|(SPARC_REG_O3<<14)|	\
 		   OFFSETOF(pike_frame, pc));				\
   } while(0)
 
