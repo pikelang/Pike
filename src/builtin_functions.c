@@ -5,7 +5,7 @@
 \*/
 /**/
 #include "global.h"
-RCSID("$Id: builtin_functions.c,v 1.258 2000/04/15 09:34:14 hubbe Exp $");
+RCSID("$Id: builtin_functions.c,v 1.259 2000/04/15 18:18:24 grubba Exp $");
 #include "interpret.h"
 #include "svalue.h"
 #include "pike_macros.h"
@@ -2797,6 +2797,17 @@ void f__optimizer_debug(INT32 args)
   pop_n_elems(args);
   push_int(l_flag);
   l_flag = l;
+}
+
+void f__describe(INT32 args)
+{
+  struct svalue *s;
+
+  CHECK_SECURITY_OR_ERROR(SECURITY_BIT_SECURITY,
+			  ("_optimizer_debug: permission denied.\n"));
+  get_all_args("_describe", args, "%O", &s);
+  debug_describe_svalue(debug_malloc_pass(s));
+  pop_n_elems(args);
 }
 
 #ifdef YYDEBUG
@@ -6108,6 +6119,10 @@ void init_builtin_efuns(void)
 /* function(int:int) */
   ADD_EFUN("_optimizer_debug",f__optimizer_debug,
 	   tFunc(tInt,tInt),OPT_SIDE_EFFECT|OPT_EXTERNAL_DEPEND);
+
+/* function(mixed:void) */
+  ADD_EFUN("_describe", f__describe, tFunc(tMix,tVoid),
+	   OPT_SIDE_EFFECT|OPT_EXTERNAL_DEPEND);
 #ifdef YYDEBUG
   
 /* function(int:int) */
