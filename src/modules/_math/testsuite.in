@@ -1,5 +1,5 @@
 START_MARKER
-dnl $Id: testsuite.in,v 1.12 2004/05/02 18:42:26 nilsson Exp $
+dnl $Id: testsuite.in,v 1.13 2005/01/16 17:08:42 nilsson Exp $
 
 define(exarg,[[test_any([[
   function x=$1;
@@ -17,44 +17,58 @@ define(test_approx_eq,[[test_any([[
   return (x==y) || (x > y-fuzz && x < y+fuzz);
 ]], 1)]])
 
+define(test_nan,[[test_true(Float.isnan($1))]])
+
 
 dnl - tan
 test_true(floatp(tan(0.5)))
 test_true(`<=(-0.0000001, 0.5-tan(atan(0.5)), 0.0000001))
 test_true(`<=(-0.0000001, 0.5-atan(tan(0.5)), 0.0000001))
 exarg(tan)
+test_eval_error( return tan(Math.inf) )
+test_nan(tan(Math.nan))
 
 dnl - asin
 test_true(floatp(asin(0.7)))
 test_true(`<=(-0.0000001, asin(0.0), 0.0000001))
 exarg(asin)
+test_nan(asin(Math.inf))
+test_nan(asin(Math.nan))
 
 dnl - atan
 test_true(floatp(atan(0.7)))
 test_true(3.1415 < 4.0*atan(1.0))
 test_true(3.1416 > 4.0*atan(1.0))
 exarg(atan)
+test_nan(atan(Math.nan))
 
 dnl - atan2
 test_eq(atan(7.0/10.0), atan2(7.0, 10.0))
 exarg2(atan2)
+
 
 dnl - sin
 test_true(floatp(sin(1.2)))
 test_true(sin(atan(1.0))>0.707)
 test_true(sin(atan(1.0))<0.708)
 exarg(sin)
+test_nan(sin(Math.inf))
+test_nan(sin(Math.nan))
 
 dnl - acos
 test_true(acos(0.7) > 0.795)
 test_true(acos(0.7) < 0.796)
 exarg(acos)
+test_nan(acos(Math.inf))
+test_nan(acos(Math.nan))
 
 dnl - cos
 test_true(floatp(cos(1.2)))
 test_true(cos(atan(1.0))>0.707)
 test_true(cos(atan(1.0))<0.708)
 exarg(cos)
+test_nan(cos(Math.inf))
+test_nan(cos(Math.nan))
 
 dnl - hyperbolic functions
 
@@ -79,6 +93,13 @@ test_hyper(1.4,1.904301501,2.150898465,0.885351648,1.137982046,0.867014726,)
 test_hyper(13.7,445455.583,445455.583,1.0,3.311872344,3.309208361,)
 test_hyper(42.0,869637470800000000.0,869637470800000000.0,1.0,4.430958492,,)
 
+test_eq(sinh(Math.inf),Math.inf)
+test_eq(sinh(-Math.inf),-Math.inf)
+test_eq(cosh(Math.inf),Math.inf)
+test_eq(cosh(-Math.inf),Math.inf)
+dnl test_eq(tanh(Math.inf),1)
+dnl test_eq(tanh(-Math.inf),-1)
+
 
 dnl - sqrt
 test_eq(4,sqrt(16))
@@ -100,24 +121,32 @@ test_any([[
   return sqrt(A());
 ]], 17)
 exarg(sqrt)
+test_eq(sqrt(Math.inf),Math.inf)
+test_eval_error(return sqrt(-Math.inf))
 
 dnl - floor
 test_eq(17.0,floor(17.0))
 test_eq(17.0,floor(17.1))
 test_eq(17.0,floor(17.7))
 exarg(floor)
+test_eq(floor(Math.inf),Math.inf)
+test_eq(floor(-Math.inf),-Math.inf)
 
 dnl - ceil
 test_eq(17.0,ceil(17.0))
 test_eq(18.0,ceil(17.1))
 test_eq(18.0,ceil(17.7))
 exqrg(ceil)
+test_eq(ceil(Math.inf),Math.inf)
+test_eq(ceil(-Math.inf),-Math.inf)
 
 dnl - round
 test_eq(round(17.0),17.0)
 test_eq(round(17.4),17.0)
 test_eq(round(17.5),18.0)
 exarg(round)
+test_eq(round(Math.inf),Math.inf)
+test_eq(round(-Math.inf),-Math.inf)
 
 dnl - exp
 dnl - log
@@ -127,6 +156,10 @@ test_true(2.70001>log(exp(2.7)))
 test_true(2.69999<log(exp(2.7)))
 exarg(log)
 exarg(exp)
+test_eq(exp(Math.inf),Math.inf)
+test_eq(exp(-Math.inf),0.0)
+test_eq(log(Math.inf),Math.inf)
+test_eval_error(return log(-Math.inf))
 
 dnl - pow
 test_eq(pow(10.0,10.0),10000000000.0)
@@ -156,6 +189,10 @@ test_true(intp(pow(2,2)))
 test_eq(pow(Gmp.mpz(2),2),4)
 test_eq(pow(Gmp.mpz(2),Gmp.mpz(2)),4)
 exarg2(pow)
+test_eq(pow(Math.inf,2),Math.inf)
+test_eq(pow(2,Math.inf),Math.inf)
+test_eq(pow(-Math.inf,2),Math.inf)
+test_eq(pow(2,-Math.inf),0.0)
 
 dnl - max
 test_eq(max(5),5)
@@ -164,6 +201,7 @@ test_eq(max(5.0,6.0,5.9),6.0)
 test_eq(max("foo","bar","gazonk"),"gazonk")
 test_eq(max(1,2.0,3),3)
 test_eq(max(),0)
+test_eq(max(Math.inf,0.0,-Math.inf),Math.inf)
 
 dnl - min
 test_eq(min(5),5)
@@ -172,6 +210,7 @@ test_eq(min(5.0,6.0,5.9),5.0)
 test_eq(min("foo","bar","gazonk"),"bar")
 test_eq(min(1,2.0,3),1)
 test_eq(min(),0)
+test_eq(min(Math.inf,0.0,-Math.inf),-Math.inf)
 
 dnl - abs
 test_eq(abs(5),5)
@@ -187,6 +226,8 @@ test_any([[
   return abs(a);
 ]],7)
 dnl exarg(abs)
+test_eq(abs(Math.inf),Math.inf)
+test_eq(abs(-Math.inf),Math.inf)
 
 dnl - sgn
 test_eq(sgn(1),1)
@@ -202,4 +243,6 @@ test_eq(sgn("bar","foo"),-1)
 test_eq(sgn("foo","foo"),0)
 test_eq(sgn("gazonk","foo"),1)
 exarg(sgn)
+test_eq(sgn(Math.inf),1)
+test_eq(sgn(-Math.inf),-1)
 END_MARKER
