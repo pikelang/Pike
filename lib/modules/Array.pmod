@@ -668,7 +668,7 @@ out:if(sizeof(yb) > sizeof(b))
 array(array(array)) greedy_diff(array from, array to)
 {
   array(array) d1, d2;
-  [d1, d2] = Array.diff(from, to);
+  [d1, d2] = diff(from, to);
   [d2, d1] = low_greedy_diff(d2, d1);
   return low_greedy_diff(d1, d2);
 }
