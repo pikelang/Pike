@@ -4,7 +4,7 @@
 ||| See the files COPYING and DISCLAIMER for more information.
 \*/
 #include "global.h"
-RCSID("$Id: las.c,v 1.41 1998/03/03 22:30:21 hubbe Exp $");
+RCSID("$Id: las.c,v 1.42 1998/03/04 15:13:02 grubba Exp $");
 
 #include "language.h"
 #include "interpret.h"
@@ -473,7 +473,7 @@ node *mkcastnode(struct pike_string *type,node *n)
 void resolv_constant(node *n)
 {
   struct identifier *i;
-  check_node(n);
+
   if(!n)
   {
     push_int(0);
