@@ -1,5 +1,5 @@
 '
-' $Id: installer.vbs,v 1.1 2004/12/01 16:34:27 grubba Exp $
+' $Id: installer.vbs,v 1.2 2004/12/01 21:07:21 grubba Exp $
 '
 ' Companion file to bin/install.pike for custom actions.
 '
@@ -15,9 +15,9 @@ Function FinalizePike()
 
   Set WshShell = CreateObject("WScript.Shell")
   WshShell.Run """" & targetdir & "bin\pike""" &_
-    " ""-m" & targetdir & "lib\master.pike" &_
-    " """ & targetdir & "bin\install.pike &_
-    "--finalize BASEDIR=""" & targetdir & """" &_
+    " ""-m" & targetdir & "lib\master.pike""" &_
+    " """ & targetdir & "bin\install.pike""" &_
+    " --finalize BASEDIR=""" & targetdir & """" &_
     " ""TMP_BUILDDIR=" & targetdir & "bin""", 0, True
 
   FinalizePike = 1
