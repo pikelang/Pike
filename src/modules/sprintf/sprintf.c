@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: sprintf.c,v 1.101 2003/01/26 22:20:02 mirar Exp $
+|| $Id: sprintf.c,v 1.102 2003/03/02 15:11:04 mast Exp $
 */
 
 /* TODO: use ONERROR to cleanup fsp */
@@ -286,7 +286,7 @@
  *!   @[lfun::_sprintf()]
  */
 #include "global.h"
-RCSID("$Id: sprintf.c,v 1.101 2003/01/26 22:20:02 mirar Exp $");
+RCSID("$Id: sprintf.c,v 1.102 2003/03/02 15:11:04 mast Exp $");
 #include "pike_error.h"
 #include "array.h"
 #include "svalue.h"
@@ -1032,13 +1032,13 @@ static void low_pike_sprintf(struct format_stack *fs,
   {
     int num_snurkel;
 
+    if(fs->fsp-fs->format_info_stack==FORMAT_INFO_STACK_SIZE - 1)
+      sprintf_error(fs, "Sprintf stack overflow.\n");
     fs->fsp++;
 #ifdef PIKE_DEBUG
     if(fs->fsp < fs->format_info_stack)
       Pike_fatal("sprintf: fs->fsp out of bounds.\n");
 #endif
-    if(fs->fsp-fs->format_info_stack==FORMAT_INFO_STACK_SIZE)
-      sprintf_error(fs, "Sprintf stack overflow.\n");
     fs->fsp->pad_string=MKPCHARP(" ",0);
     fs->fsp->pad_length=1;
     fs->fsp->fi_free_string=0;
@@ -1526,6 +1526,26 @@ static void low_pike_sprintf(struct format_stack *fs,
 	fs->fsp->fi_free_string=s.str;
 	break;
       }
+
+#if 0
+      /* This can be useful when doing low level debugging. */
+      case 'p':
+      {
+	dynbuf_string s;
+	char buf[50];
+	struct svalue *t;
+	DO_OP();
+	GET_SVALUE(t);
+	init_buf();
+	sprintf (buf, "%p", t->u.refs);
+	my_strcat (buf);
+	s=complex_free_buf();
+	fs->fsp->b=MKPCHARP(s.str,0);
+	fs->fsp->len=s.len;
+	fs->fsp->fi_free_string=s.str;
+	break;
+      }
+#endif
 
       case 's':
       {
