@@ -1,4 +1,4 @@
-test_true([["$Id: testsuite.in,v 1.66 1998/01/17 01:06:48 hubbe Exp $"]])
+test_true([["$Id: testsuite.in,v 1.67 1998/01/20 02:30:39 hubbe Exp $"]])
 test_eq(1e1,10.0)
 test_eq(1E1,10.0)
 test_eq(1e+1,10.0)
@@ -10,6 +10,8 @@ test_eq([[cpp("#define FOO(X,Y) (X) (Y)\nFOO( (A),(B) )")]],"# 1 \"-\"\n\n( (A) 
 test_eq([[cpp("#define F 'F'\nF")]],"# 1 \"-\"\n\n'F'")
 test_eq([[cpp("#define MAX(X,Y) ((X)>(Y)?(X):(Y))\n#define MAX3(X,Y,Z) MAX(MAX(X,Y),Z)\nMAX3(1,2,3)")]],"# 1 \"-\"\n\n\n(( (( 1 )>( 2 )?( 1 ):( 2 )) )>( 3 )?( (( 1 )>( 2 )?( 1 ):( 2 )) ):( 3 ))")
 
+test_program([[class foo { program x() { return class {}; }}; class bar { inherit foo; program x() { return class {}; }} int a() { return foo()->x != bar()->x(); }]])
+
 test_any([[object o=class foo{int c;class bar{void create(){c++;};}}(); o->bar(); return o->c;]],1)
 test_do([[add_constant("GURKA2",class foo { int c; class bar{void create() {c+=17;}}}()); ]])
 test_any([[class x { inherit GURKA2.bar; }(); return GURKA2->c;]],17)
@@ -20,7 +22,7 @@ test_any([[class x { inherit GURKA2.bar; }(); return GURKA2->c;]],17)
 test_any([[class x { inherit GURKA2.bar; }(); return GURKA2->c;]],34)
 test_do([[add_constant("GURKA2");]]);
 
-test_eq(class c { static int foo=17; }()->foo,0)
+test_eq(class { static int foo=17; }()->foo,0)
 test_eval_error(class c { static int foo=17; }()->foo=18;)
 test_equal( [[ ({ (["foo":"bar"]), (<"foo">), ([]) })->foo ]], [[ ({"bar",1,0}) ]])
 test_any([[mixed a=({([]),0}); a[1]=a; return a->foo[0];]],0)

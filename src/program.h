@@ -218,6 +218,7 @@ extern struct object fake_object;
 extern struct program *new_program;
 extern struct program *first_program;
 extern int compiler_pass;
+extern int local_class_counter;
 
 #define FOO(NUMTYPE,TYPE,NAME) void PIKE_CONCAT(add_to_,NAME(TYPE ARG));
 #include "program_areas.h"

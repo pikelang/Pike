@@ -86,6 +86,7 @@
   ZMEMBER(dynamic_buffer,used_modules)
   IMEMBER(int,comp_stackp)
   IMEMBER(int,compiler_pass)
+  ZMEMBER(int,local_class_counter)
   SEND
 
 #undef PCODE
