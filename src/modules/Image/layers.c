@@ -1,14 +1,14 @@
 /*
 **! module Image
 **! note
-**!	$Id: layers.c,v 1.5 1999/04/19 18:45:09 mirar Exp $
+**!	$Id: layers.c,v 1.6 1999/04/21 23:42:01 mirar Exp $
 **! class Layer
 */
 
 #include "global.h"
 #include <config.h>
 
-RCSID("$Id: layers.c,v 1.5 1999/04/19 18:45:09 mirar Exp $");
+RCSID("$Id: layers.c,v 1.6 1999/04/21 23:42:01 mirar Exp $");
 
 #include "config.h"
 
@@ -84,60 +84,33 @@ struct layer
 #define THIS ((struct layer *)(fp->current_storage))
 #define THISOBJ (fp->current_object)
 
-static void lm_normal(rgb_group *s,rgb_group *l,rgb_group *d,
-		      rgb_group *sa,rgb_group *la,rgb_group *da,
-		      int len,float alpha);
-static void lm_dissolve(rgb_group *s,rgb_group *l,rgb_group *d,
-			rgb_group *sa,rgb_group *la,rgb_group *da,
-			int len,float alpha);
-static void lm_behind(rgb_group *s,rgb_group *l,rgb_group *d,
-		      rgb_group *sa,rgb_group *la,rgb_group *da,
-		      int len,float alpha);
-static void lm_multiply(rgb_group *s,rgb_group *l,rgb_group *d,
-			rgb_group *sa,rgb_group *la,rgb_group *da,
-			int len,float alpha);
-static void lm_screen(rgb_group *s,rgb_group *l,rgb_group *d,
-		      rgb_group *sa,rgb_group *la,rgb_group *da,
-		      int len,float alpha);
-static void lm_overlay(rgb_group *s,rgb_group *l,rgb_group *d,
-		       rgb_group *sa,rgb_group *la,rgb_group *da,
-		       int len,float alpha);
-static void lm_difference(rgb_group *s,rgb_group *l,rgb_group *d,
-			  rgb_group *sa,rgb_group *la,rgb_group *da,
-			  int len,float alpha);
-static void lm_add(rgb_group *s,rgb_group *l,rgb_group *d,
-		   rgb_group *sa,rgb_group *la,rgb_group *da,
-		   int len,float alpha);
-static void lm_subtract(rgb_group *s,rgb_group *l,rgb_group *d,
-			rgb_group *sa,rgb_group *la,rgb_group *da,
-			int len,float alpha);
-static void lm_darken(rgb_group *s,rgb_group *l,rgb_group *d,
-		      rgb_group *sa,rgb_group *la,rgb_group *da,
-		      int len,float alpha);
-static void lm_lighten(rgb_group *s,rgb_group *l,rgb_group *d,
-		       rgb_group *sa,rgb_group *la,rgb_group *da,
-		       int len,float alpha);
-static void lm_hue(rgb_group *s,rgb_group *l,rgb_group *d,
-		   rgb_group *sa,rgb_group *la,rgb_group *da,
-		   int len,float alpha);
-static void lm_saturation(rgb_group *s,rgb_group *l,rgb_group *d,
-			  rgb_group *sa,rgb_group *la,rgb_group *da,
-			  int len,float alpha);
-static void lm_color(rgb_group *s,rgb_group *l,rgb_group *d,
-		     rgb_group *sa,rgb_group *la,rgb_group *da,
-		     int len,float alpha);
-static void lm_value(rgb_group *s,rgb_group *l,rgb_group *d,
-		     rgb_group *sa,rgb_group *la,rgb_group *da,
-		     int len,float alpha);
-static void lm_divide(rgb_group *s,rgb_group *l,rgb_group *d,
-		      rgb_group *sa,rgb_group *la,rgb_group *da,
-		      int len,float alpha);
-static void lm_erase(rgb_group *s,rgb_group *l,rgb_group *d,
-		     rgb_group *sa,rgb_group *la,rgb_group *da,
-		     int len,float alpha);
-static void lm_replace(rgb_group *s,rgb_group *l,rgb_group *d,
-		       rgb_group *sa,rgb_group *la,rgb_group *da,
-		       int len,float alpha);
+#define LMFUNC(X) \
+   static void X(rgb_group *s,rgb_group *l,rgb_group *d, \
+                 rgb_group *sa,rgb_group *la,rgb_group *da, \
+	         int len,float alpha)
+
+LMFUNC(lm_normal);
+LMFUNC(lm_add);
+LMFUNC(lm_subtract);
+LMFUNC(lm_multiply);
+LMFUNC(lm_divide);
+LMFUNC(lm_modulo);
+LMFUNC(lm_invsubtract);
+LMFUNC(lm_invdivide);
+LMFUNC(lm_invmodulo);
+LMFUNC(lm_dissolve);
+LMFUNC(lm_behind);
+LMFUNC(lm_screen);
+LMFUNC(lm_overlay);
+LMFUNC(lm_difference);
+LMFUNC(lm_darken);
+LMFUNC(lm_lighten);
+LMFUNC(lm_hue);
+LMFUNC(lm_saturation);
+LMFUNC(lm_color);
+LMFUNC(lm_value);
+LMFUNC(lm_erase);
+LMFUNC(lm_replace);
 
 struct layer_mode_desc
 {
@@ -150,9 +123,15 @@ struct layer_mode_desc
    {"normal",        lm_normal,        1, NULL            },
    {"add",           lm_add,           1, NULL            }, 
    {"subtract",      lm_subtract,      1, NULL            }, 
+   {"multiply",      lm_multiply,      1, NULL            }, 
+   {"divide",        lm_divide,        1, NULL            }, 
+   {"modulo",        lm_modulo,        1, NULL            }, 
+   {"invsubtract",   lm_invsubtract,   1, NULL            }, 
+   {"invdivide",     lm_invdivide,     1, NULL            }, 
+   {"invmodulo",     lm_invmodulo,     1, NULL            }, 
+
    {"dissolve",      lm_dissolve,      1, NULL            }, 
 /* {"behind",        lm_behind,        1, NULL            }, */
-/* {"multiply",      lm_multiply,      1, NULL            }, */
 /* {"screen",        lm_screen,        1, NULL            }, */
 /* {"overlay",       lm_overlay,       1, NULL            }, */
 /* {"difference",    lm_difference,    1, NULL            }, */
@@ -162,7 +141,6 @@ struct layer_mode_desc
 /* {"saturation",    lm_saturation,    1, NULL            }, */
 /* {"color",         lm_color,         1, NULL            }, */
 /* {"value",         lm_value,         1, NULL            }, */
-/* {"divide",        lm_divide,        1, NULL            }, */
 /* {"erase",         lm_erase,         1, NULL            }, */
 /* {"replace",       lm_replace,       1, NULL            }, */
 } ;
@@ -189,7 +167,19 @@ multiply        Pd=Ps*Pl
 		Ad=(Al+(1-Al)*As)
 
 divide          Pd=Ps/Pl
-		Ad=As
+		Ad=(Al+(1-Al)*As)
+
+invmodulo       Pd=Ps%Pl (measured in color values)
+		Ad=(Al+(1-Al)*As)
+
+invsubtract     Pd=Pl*Al-Ps
+		Ad=(Al+(1-Al)*As)
+
+invdivide       Pd=Pl/Ps
+		Ad=(Al+(1-Al)*As)
+
+invmodulo       Pd=Pl%Ps (measured in color values)
+		Ad=(Al+(1-Al)*As)
 
 dissolve        i=round(random(Al)) typ
                 Pd=Al*i+As*(1-i)
@@ -873,8 +863,10 @@ static void image_layer_cast(INT32 args)
 #define COMBINE_METHOD_INT
 #define CCUT_METHOD_INT
 
-#ifdef CCUT_METHOD_FLOAT
 #define qMAX (1.0/COLORMAX)
+#define C2F(Z) (qMAX*(Z))
+
+#ifdef CCUT_METHOD_FLOAT
 #define CCUT(Z) ((COLORTYPE)(qMAX*Z))
 #else /* CCUT_METHOD_INT */
 #define CCUT(Z) ((COLORTYPE)((Z)/COLORMAX))
@@ -899,8 +891,6 @@ static void image_layer_cast(INT32 args)
 #else 
 #ifdef COMBINE_METHOD_FLOAT
 
-#define C2F(Z) (qMAX*(Z))
-
 #define COMBINE_ALPHA(S,L,aS,aL) \
     ( (COLORTYPE)( ( (S)*(1.0-C2F(aL))*C2F(aS) + (L)*C2F(aL) ) / \
 	       ( (C2F(aL)+(1-C2F(aL))*C2F(aS))) ) )
@@ -922,6 +912,8 @@ static void image_layer_cast(INT32 args)
 #define COMBINE(P,A) CCUT(((int)(P))*(A))
 #define COMBINE_A(P,A) ((COLORTYPE)((P)*(A)))
 #define COMBINE_V(P,V,A) CCUT((V)*(P)*(A))
+
+#define CRAISE(Z) ((COLORTYPE)(COLORMAX*(Z)))
 
 /*** layer mode definitions ***************************/
 
@@ -1032,144 +1024,71 @@ static void lm_normal(rgb_group *s,rgb_group *l,rgb_group *d,
    }
 }
 
+/* operators from template */
 
-static void lm_add(rgb_group *s,rgb_group *l,rgb_group *d,
-		   rgb_group *sa,rgb_group *la,rgb_group *da,
-		   int len,float alpha)
-{
-   if (alpha==0.0)
-   {
-      MEMCPY(s,d,sizeof(rgb_group)*len);
-      MEMCPY(sa,da,sizeof(rgb_group)*len);
-      return; 
-   }
-   else if (alpha==1.0)
-   {
-      if (!la)  /* no layer alpha => full opaque */
-	 while (len--)
-	 {
-	    d->r=MINIMUM(COLORMAX,COMBINE(s->r,sa->r)+(int)l->r);
-	    d->g=MINIMUM(COLORMAX,COMBINE(s->r,sa->g)+(int)l->g);
-	    d->b=MINIMUM(COLORMAX,COMBINE(s->r,sa->b)+(int)l->b);
-	    *da=white;
-	    l++; s++; sa++; da++; d++;
-	 }
-      else
-	 while (len--)
-	 {
-	    d->r=MINIMUM(COLORMAX,COMBINE(s->r,sa->r)+
-			 (int)COMBINE(l->r,la->r));
-	    d->g=MINIMUM(COLORMAX,COMBINE(s->g,sa->g)+
-			 (int)COMBINE(l->g,la->g));
-	    d->b=MINIMUM(COLORMAX,COMBINE(s->b,sa->b)+
-			 (int)COMBINE(l->b,la->b));
-	    da->r=COMBINE_ALPHA_SUM(la->r,sa->r);
-	    da->g=COMBINE_ALPHA_SUM(la->g,sa->g);
-	    da->b=COMBINE_ALPHA_SUM(la->b,sa->b);
-	    l++; s++; la++; sa++; da++; d++;
-	 }
-   }
-   else
-   {
-      if (!la)  /* no layer alpha => full opaque */
-	 while (len--)
-	 {
-	    d->r=MINIMUM(COLORMAX,COMBINE(s->r,sa->r)+
-			 (int)COMBINE_A(l->r,alpha));
-	    d->g=MINIMUM(COLORMAX,COMBINE(s->g,sa->g)+
-			 (int)COMBINE_A(l->g,alpha));
-	    d->b=MINIMUM(COLORMAX,COMBINE(s->b,sa->b)+
-			 (int)COMBINE_A(l->b,alpha));
-	    da->r=COMBINE_ALPHA_SUM_V(COLORMAX,sa->r,alpha);
-	    da->g=COMBINE_ALPHA_SUM_V(COLORMAX,sa->g,alpha);
-	    da->b=COMBINE_ALPHA_SUM_V(COLORMAX,sa->b,alpha);
-	    l++; s++; sa++; da++; d++;
-	 }
-      else
-	 while (len--)
-	 {
-	    d->r=MINIMUM(COLORMAX,
-			 COMBINE(s->r,sa->r)+(int)COMBINE_V(l->r,la->r,alpha));
-	    d->g=MINIMUM(COLORMAX,
-			 COMBINE(s->g,sa->g)+(int)COMBINE_V(l->g,la->g,alpha));
-	    d->b=MINIMUM(COLORMAX,
-			 COMBINE(s->b,sa->b)+(int)COMBINE_V(l->b,la->b,alpha));
-	    da->r=COMBINE_ALPHA_SUM_V(la->r,sa->r,alpha);
-	    da->g=COMBINE_ALPHA_SUM_V(la->g,sa->g,alpha);
-	    da->b=COMBINE_ALPHA_SUM_V(la->b,sa->b,alpha);
-	    l++; s++; la++; sa++; da++; d++;
-	 }
-   }
-}
+#define LM_FUNC lm_add
+#define L_TRUNC(X) MINIMUM(255,(X))
+#define L_OPER(A,B) ((A)+(int)(B))
+#include "layer_oper.h"
+#undef LM_FUNC
+#undef L_TRUNC
+#undef L_OPER
 
-static void lm_subtract(rgb_group *s,rgb_group *l,rgb_group *d,
-			rgb_group *sa,rgb_group *la,rgb_group *da,
-			int len,float alpha)
-{
-   if (alpha==0.0)
-   {
-      MEMCPY(s,d,sizeof(rgb_group)*len);
-      MEMCPY(sa,da,sizeof(rgb_group)*len);
-      return; 
-   }
-   else if (alpha==1.0)
-   {
-      if (!la)  /* no layer alpha => full opaque */
-	 while (len--)
-	 {
-	    d->r=MAXIMUM(0,COMBINE(s->r,sa->r)-(int)l->r);
-	    d->g=MAXIMUM(0,COMBINE(s->r,sa->g)-(int)l->g);
-	    d->b=MAXIMUM(0,COMBINE(s->r,sa->b)-(int)l->b);
-	    *da=white;
-	    l++; s++; sa++; da++; d++;
-	 }
-      else
-	 while (len--)
-	 {
-	    d->r=MAXIMUM(0,COMBINE(s->r,sa->r)-
-			 (int)COMBINE(l->r,la->r));
-	    d->g=MAXIMUM(0,COMBINE(s->g,sa->g)-
-			 (int)COMBINE(l->g,la->g));
-	    d->b=MAXIMUM(0,COMBINE(s->b,sa->b)-
-			 (int)COMBINE(l->b,la->b));
-	    da->r=COMBINE_ALPHA_SUM(la->r,sa->r);
-	    da->g=COMBINE_ALPHA_SUM(la->g,sa->g);
-	    da->b=COMBINE_ALPHA_SUM(la->b,sa->b);
-	    l++; s++; la++; sa++; da++; d++;
-	 }
-   }
-   else
-   {
-      if (!la)  /* no layer alpha => full opaque */
-	 while (len--)
-	 {
-	    d->r=MAXIMUM(0,COMBINE(s->r,sa->r)-
-			 (int)COMBINE_A(l->r,alpha));
-	    d->g=MAXIMUM(0,COMBINE(s->g,sa->g)-
-			 (int)COMBINE_A(l->g,alpha));
-	    d->b=MAXIMUM(0,COMBINE(s->b,sa->b)-
-			 (int)COMBINE_A(l->b,alpha));
-	    da->r=COMBINE_ALPHA_SUM_V(COLORMAX,sa->r,alpha);
-	    da->g=COMBINE_ALPHA_SUM_V(COLORMAX,sa->g,alpha);
-	    da->b=COMBINE_ALPHA_SUM_V(COLORMAX,sa->b,alpha);
-	    l++; s++; sa++; da++; d++;
-	 }
-      else
-	 while (len--)
-	 {
-	    d->r=MAXIMUM(0,COMBINE(s->r,sa->r)-
-			 (int)COMBINE_V(l->r,la->r,alpha));
-	    d->g=MAXIMUM(0,COMBINE(s->g,sa->g)-
-			 (int)COMBINE_V(l->g,la->g,alpha));
-	    d->b=MAXIMUM(0,COMBINE(s->b,sa->b)-
-			 (int)COMBINE_V(l->b,la->b,alpha));
-	    da->r=COMBINE_ALPHA_SUM_V(la->r,sa->r,alpha);
-	    da->g=COMBINE_ALPHA_SUM_V(la->g,sa->g,alpha);
-	    da->b=COMBINE_ALPHA_SUM_V(la->b,sa->b,alpha);
-	    l++; s++; la++; sa++; da++; d++;
-	 }
-   }
-}
+#define LM_FUNC lm_subtract
+#define L_TRUNC(X) MAXIMUM(0,(X))
+#define L_OPER(A,B) ((A)-(int)(B))
+#include "layer_oper.h"
+#undef LM_FUNC
+#undef L_TRUNC
+#undef L_OPER
+
+#define LM_FUNC lm_invsubtract
+#define L_TRUNC(X) MAXIMUM(0,(X))
+#define L_OPER(A,B) ((B)-(int)(A))
+#include "layer_oper.h"
+#undef LM_FUNC
+#undef L_TRUNC
+#undef L_OPER
+
+#define LM_FUNC lm_multiply
+#define L_TRUNC(X) (X)
+#define L_OPER(A,B) CCUT((A)*(int)(B))
+#include "layer_oper.h"
+#undef LM_FUNC
+#undef L_TRUNC
+#undef L_OPER
+
+#define LM_FUNC lm_divide
+#define L_TRUNC(X) MINIMUM(255,(X))
+#define L_OPER(A,B) ((A)/C2F(1+(int)(B)))
+#include "layer_oper.h"
+#undef LM_FUNC
+#undef L_TRUNC
+#undef L_OPER
+
+#define LM_FUNC lm_modulo
+#define L_TRUNC(X) ((COLORTYPE)(X))
+#define L_OPER(A,B) ((A)%((B)?(B):1))
+#include "layer_oper.h"
+#undef LM_FUNC
+#undef L_TRUNC
+#undef L_OPER
+
+#define LM_FUNC lm_invdivide
+#define L_TRUNC(X) MINIMUM(255,(X))
+#define L_OPER(A,B) ((B)/C2F(1+(int)(A)))
+#include "layer_oper.h"
+#undef LM_FUNC
+#undef L_TRUNC
+#undef L_OPER
+
+#define LM_FUNC lm_invmodulo
+#define L_TRUNC(X) ((COLORTYPE)(X))
+#define L_OPER(A,B) ((B)%(A))
+#include "layer_oper.h"
+#undef LM_FUNC
+#undef L_TRUNC
+#undef L_OPER
 
 static void lm_dissolve(rgb_group *s,rgb_group *l,rgb_group *d,
 			rgb_group *sa,rgb_group *la,rgb_group *da,
