@@ -1,5 +1,5 @@
 //
-// $Id: peep.in,v 1.47 2001/01/31 22:05:42 mast Exp $
+// $Id: peep.in,v 1.48 2001/02/01 04:06:12 mast Exp $
 //
 
 NOP :
@@ -82,17 +82,18 @@ POP_N_ELEMS RETURN_0: RETURN_0
 POP_VALUE RETURN_1: RETURN_1
 POP_N_ELEMS RETURN_1: RETURN_1
 
-// F_POP_SYNCH_MARK is output only with -d3 and higher. We keep them
-// solely for balancing the asm debug output.
-NOTREACHED ? [$2o != F_LABEL && $2o != F_POP_SYNCH_MARK] : NOTREACHED
-BRANCH ? [$2o != F_LABEL && $2o != F_POP_SYNCH_MARK] : BRANCH($1a)
-RETURN ? [$2o != F_LABEL && $2o != F_POP_SYNCH_MARK] : RETURN
-RETURN_0 ? [$2o != F_LABEL && $2o != F_POP_SYNCH_MARK] : RETURN_0
-RETURN_1 ? [$2o != F_LABEL && $2o != F_POP_SYNCH_MARK] : RETURN_1
-RETURN_LOCAL ? [$2o != F_LABEL && $2o != F_POP_SYNCH_MARK] : RETURN_LOCAL($1a)
-APPLY_AND_RETURN ? [$2o != F_LABEL && $2o != F_POP_SYNCH_MARK] : APPLY_AND_RETURN($1a)
-CALL_FUNCTION_AND_RETURN ? [$2o != F_LABEL && $2o != F_POP_SYNCH_MARK] : CALL_FUNCTION_AND_RETURN($1a)
-CALL_LFUN_AND_RETURN ? [$2o != F_LABEL && $2o != F_POP_SYNCH_MARK] : CALL_LFUN_AND_RETURN($1a)
+// F_SYNCH_MARK and F_POP_SYNCH_MARK is output only with -d3 and
+// higher. We keep them solely for balancing the asm debug output.
+#define DeadCodeEndCond(op) \
+  [op != F_LABEL && op != F_SYNCH_MARK && op != F_POP_SYNCH_MARK]
+BRANCH ? DeadCodeEndCond($2o) : BRANCH($1a)
+RETURN ? DeadCodeEndCond($2o) : RETURN
+RETURN_0 ? DeadCodeEndCond($2o) : RETURN_0
+RETURN_1 ? DeadCodeEndCond($2o) : RETURN_1
+RETURN_LOCAL ? DeadCodeEndCond($2o) : RETURN_LOCAL($1a)
+APPLY_AND_RETURN ? DeadCodeEndCond($2o) : APPLY_AND_RETURN($1a)
+CALL_FUNCTION_AND_RETURN ? DeadCodeEndCond($2o) : CALL_FUNCTION_AND_RETURN($1a)
+CALL_LFUN_AND_RETURN ? DeadCodeEndCond($2o) : CALL_LFUN_AND_RETURN($1a)
 
 LOCAL_LVALUE INC : INC_LOCAL ($1a)
 LOCAL_LVALUE POST_INC : POST_INC_LOCAL ($1a)
