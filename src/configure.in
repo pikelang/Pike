@@ -182,7 +182,7 @@ if test "${ac_cv_lib_m}" = "no" -a "${lpc_cv_sys_os}" = "Linux"; then
 fi
 AC_CHECK_LIB(socket, socket)
 AC_CHECK_LIB(crypt, crypt)
-if test "$ac_cv_lib_socket" = yes -o "$ac_cv_lib_ucb"; then
+if test "$ac_cv_lib_socket" = yes -o "${ac_cv_lib_ucb}" = yes; then
  AC_CHECK_LIB(nsl, main)
 fi
 
