@@ -173,7 +173,7 @@ mapping _decode( string|mapping what, mapping|void opts )
         break;
 
 
-      case "mult":
+      case "mul ":
         object oi = IMG_SLICE(l,h);
         oi *= h->image;
         PASTE_ALPHA(oi,h->alpha);

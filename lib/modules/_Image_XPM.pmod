@@ -114,7 +114,7 @@ string encode( object what, mapping|void options )
   TD("Encode CT");
   if(!options->colortable)
   {
-    options->colortable = Image.colortable( what, 8089 );
+    options->colortable = Image.Colortable( what, 8089 );
     options->colortable->rigid( 25, 25, 25 );
     options->colortable->floyd_steinberg();
   }
@@ -137,7 +137,7 @@ string encode( object what, mapping|void options )
   TD("Encode alpha");
   if(options->alpha)
   {
-    object ac = Image.colortable( ({ Image.color.white, Image.color.black }) );
+    object ac = Image.Colortable( ({ Image.Color.white, Image.Color.black }) );
     array q = ac->index( options->alpha )/what->xsize();
     string alpha_color = " ";
     string minus_ett = " ";
