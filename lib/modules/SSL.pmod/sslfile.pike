@@ -1,6 +1,6 @@
 #pike __REAL_VERSION__
 
-/* $Id: sslfile.pike,v 1.74 2004/08/17 16:06:07 mast Exp $
+/* $Id: sslfile.pike,v 1.75 2004/08/17 17:17:14 mast Exp $
  */
 
 #if constant(SSL.Cipher.CipherAlgorithm)
@@ -44,14 +44,10 @@
 // #define SSL3_DEBUG_TRANSPORT
 
 #ifdef SSL3_DEBUG
+static string stream_descr;
 #define SSL3_DEBUG_MSG(X...)						\
   werror ("[thr:" + this_thread()->id_number() +			\
-	  "," + (stream ?						\
-		 (stream->query_fd ?					\
-		  "fd:" + stream->query_fd() :				\
-		  replace (sprintf ("%O", stream), "%", "%%")) :	\
-		 "disconnected") + "] " +				\
-	  X)
+	  "," + (stream ? "" : "ex ") + stream_descr + "] " + X)
 #else
 #define SSL3_DEBUG_MSG(X...) 0
 #endif
@@ -104,10 +100,10 @@ static int cb_errno;
 // visible I/O operations can report it properly.
 
 static int got_extra_read_call_out;
-// Nonzero when we have a call out to call_read_callback. See comment
-// in ssl_read_callback. This is still set if we switch to
-// non-callback mode so that the call out can be restored when
-// switching back.
+// 1 when we have a call out to call_read_callback. See comment in
+// ssl_read_callback. -1 if we've switched to non-callback mode and
+// therefore has removed the call out temporarily but need to restore
+// it when switching back. 0 otherwise.
 
 // This macro is used in all user called functions that can report I/O
 // errors, both at the beginning and after ssl_write_callback calls.
@@ -319,6 +315,12 @@ static void create (Stdio.File stream, SSL.context ctx,
 
   ENTER (0, 0) {
     global::stream = stream;
+#ifdef SSL3_DEBUG
+    if (stream->query_fd)
+      stream_descr = "fd:" + stream->query_fd();
+    else
+      stream_descr = replace (sprintf ("%O", stream), "%", "%%");
+#endif
     write_buffer = ({});
     read_buffer = String.Buffer();
     callback_id = 0;
@@ -931,13 +933,12 @@ void set_backend (Pike.Backend backend)
 
     if (stream) {
       real_backend = backend;
-      if (stream->query_backend() != local_backend) {
+      if (stream->query_backend() != local_backend)
 	stream->set_backend (backend);
 
-	if (got_extra_read_call_out) {
-	  real_backend->remove_call_out (call_read_callback);
-	  backend->call_out (call_read_callback, 0);
-	}
+      if (got_extra_read_call_out > 0) {
+	real_backend->remove_call_out (call_read_callback);
+	backend->call_out (call_read_callback, 0);
       }
     }
     else real_backend = backend;
@@ -1003,16 +1004,20 @@ static void update_internal_state()
       if (read_callback || close_callback || accept_callback || SSL_INTERNAL_TALK) {
 	stream->set_read_callback (ssl_read_callback);
 	stream->set_close_callback (ssl_close_callback);
-	if (got_extra_read_call_out)
+	if (got_extra_read_call_out < 0) {
 	  // Install it even if we're in a handshake. There might
 	  // still be old data to read if we're renegotiating.
 	  real_backend->call_out (call_read_callback, 0);
+	  got_extra_read_call_out = 1;
+	}
       }
       else {
 	stream->set_read_callback (0);
 	stream->set_close_callback (0);
-	if (got_extra_read_call_out)
+	if (got_extra_read_call_out > 0) {
 	  real_backend->remove_call_out (call_read_callback);
+	  got_extra_read_call_out = -1;
+	}
       }
 
       if (write_callback || sizeof (write_buffer))
@@ -1022,10 +1027,11 @@ static void update_internal_state()
 
 #ifdef SSL3_DEBUG_MORE
       SSL3_DEBUG_MSG ("update_internal_state: "
-		      "After handshake, callback mode [%O %O %O]\n",
+		      "After handshake, callback mode [%O %O %O %O]\n",
 		      stream->query_read_callback(),
 		      stream->query_write_callback(),
-		      stream->query_close_callback());
+		      stream->query_close_callback(),
+		      got_extra_read_call_out);
 #endif
       return;
     }
@@ -1036,11 +1042,14 @@ static void update_internal_state()
     stream->set_read_callback (0);
     stream->set_close_callback (0);
     stream->set_write_callback (0);
-    if (got_extra_read_call_out)
+    if (got_extra_read_call_out > 0) {
       real_backend->remove_call_out (call_read_callback);
+      got_extra_read_call_out = -1;
+    }
 
 #ifdef SSL3_DEBUG_MORE
-    SSL3_DEBUG_MSG ("update_internal_state: Not in callback mode [0 0 0]\n");
+    SSL3_DEBUG_MSG ("update_internal_state: Not in callback mode [0 0 0 %O]\n",
+		    got_extra_read_call_out);
 #endif
   }
 }
@@ -1188,7 +1197,7 @@ static int ssl_read_callback (int called_from_real_backend, string input)
 
 	      // Might be possible to already have the call out if
 	      // there are two handshakes after each other.
-	      if (!got_extra_read_call_out) {
+	      if (got_extra_read_call_out <= 0) {
 		real_backend->call_out (call_read_callback, 0);
 		// Don't store the call out id returned above since
 		// that'd introduce a cyclic reference.
