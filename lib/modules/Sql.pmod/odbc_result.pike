@@ -1,13 +1,13 @@
 /*
- * $Id: odbc_result.pike,v 1.5 2004/04/14 20:20:35 nilsson Exp $
+ * $Id: odbc_result.pike,v 1.6 2004/04/16 12:12:46 grubba Exp $
  *
  * Glue for the ODBC-module
  */
 
 #pike __REAL_VERSION__
 
-#if constant(Odbc)
+#if constant(Odbc.odbc_result)
 inherit Odbc.odbc_result;
-#else /* !constant(Odbc) */
+#else /* !constant(Odbc.odbc_result) */
 constant this_program_does_not_exist=1;
-#endif /* constant(Odbc) */
+#endif /* constant(Odbc.odbc_result) */

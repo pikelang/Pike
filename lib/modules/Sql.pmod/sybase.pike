@@ -2,13 +2,13 @@
  * Sybase driver for the Pike programming language.
  * By Francesco Chemolli <kinkie@roxen.com> 10/12/1999
  *
- * $Id: sybase.pike,v 1.9 2004/04/14 20:20:35 nilsson Exp $
+ * $Id: sybase.pike,v 1.10 2004/04/16 12:12:46 grubba Exp $
  *
  */
 
 #pike __REAL_VERSION__
 
-#if constant(sybase)
+#if constant(sybase.sybase)
 
 inherit sybase.sybase:mo;
 #define THROW(X) throw(({X+"\n",backtrace()}))

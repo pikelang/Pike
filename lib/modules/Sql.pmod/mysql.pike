@@ -1,5 +1,5 @@
 /*
- * $Id: mysql.pike,v 1.20 2004/04/14 20:20:34 nilsson Exp $
+ * $Id: mysql.pike,v 1.21 2004/04/16 12:12:46 grubba Exp $
  *
  * Glue for the Mysql-module
  */
@@ -9,7 +9,7 @@
 
 #pike __REAL_VERSION__
 
-#if constant(Mysql)
+#if constant(Mysql.mysql)
 
 inherit Mysql.mysql;
 

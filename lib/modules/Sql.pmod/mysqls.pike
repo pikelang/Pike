@@ -1,5 +1,5 @@
 /*
- * $Id: mysqls.pike,v 1.4 2003/04/27 12:57:55 grubba Exp $
+ * $Id: mysqls.pike,v 1.5 2004/04/16 12:12:46 grubba Exp $
  *
  * Glue for the Mysql-module using SSL
  */
@@ -19,7 +19,7 @@
 
 #pike __REAL_VERSION__
 
-#if constant(Mysql.mysql) && constant(Mysql.mysql.CLIENT_SSL)
+#if constant(Mysql.mysql.CLIENT_SSL)
 
 inherit Sql.mysql;
 

@@ -4,7 +4,7 @@
 //! Implements the glue needed to access the Msql-module from the generic
 //! SQL module.
 
-#if constant(Msql)
+#if constant(Msql.msql)
 inherit Msql.msql;
 
 array(mapping(string:mixed)) query(string q,
@@ -16,4 +16,4 @@ array(mapping(string:mixed)) query(string q,
 
 #else
 constant this_program_does_not_exist=1;
-#endif /* constant(Msql) */
+#endif /* constant(Msql.msql) */

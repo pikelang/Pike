@@ -1,7 +1,7 @@
 /*
  * This is part of the Postgres module for Pike.
  *
- * $Id: postgres.pike,v 1.23 2004/04/14 20:20:35 nilsson Exp $
+ * $Id: postgres.pike,v 1.24 2004/04/16 12:12:46 grubba Exp $
  *
  */
 
@@ -50,7 +50,7 @@
 
 #pike __REAL_VERSION__
 
-#if constant(Postgres)
+#if constant(Postgres.postgres)
 
 #define ERROR(X) throw (({X,backtrace()}))
 
@@ -381,4 +381,4 @@ int|object big_query(object|string q, mapping(string|int:mixed)|void bindings)
 
 #else
 constant this_program_does_not_exist=1;
-#endif /* constant(Postgres) */
+#endif /* constant(Postgres.postgres) */
