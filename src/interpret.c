@@ -4,7 +4,7 @@
 ||| See the files COPYING and DISCLAIMER for more information.
 \*/
 #include "global.h"
-RCSID("$Id: interpret.c,v 1.21 1997/01/27 01:15:37 hubbe Exp $");
+RCSID("$Id: interpret.c,v 1.22 1997/01/29 01:02:03 hubbe Exp $");
 #include "interpret.h"
 #include "object.h"
 #include "program.h"
@@ -44,6 +44,11 @@ RCSID("$Id: interpret.c,v 1.21 1997/01/27 01:15:37 hubbe Exp $");
 #define USE_MMAP_FOR_STACK
 #endif
 #endif
+
+/*
+ * Define the default evaluator stack size, used for just about everything.
+ */
+#define EVALUATOR_STACK_SIZE	100000
 
 #define TRACE_LEN (100 + t_flag * 10)
 

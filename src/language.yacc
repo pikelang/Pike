@@ -156,7 +156,7 @@
 /* This is the grammar definition of Pike. */
 
 #include "global.h"
-RCSID("$Id: language.yacc,v 1.19 1997/01/27 01:18:01 hubbe Exp $");
+RCSID("$Id: language.yacc,v 1.20 1997/01/29 01:05:58 hubbe Exp $");
 #ifdef HAVE_MEMORY_H
 #include <memory.h>
 #endif
@@ -176,6 +176,10 @@ RCSID("$Id: language.yacc,v 1.19 1997/01/27 01:18:01 hubbe Exp $");
 #include "docode.h"
 
 #define YYMAXDEPTH	600
+
+#ifdef DEBUG
+#define YYDEBUG 1
+#endif
 
 static void push_locals();
 static void pop_locals();

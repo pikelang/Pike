@@ -33,7 +33,19 @@ struct array;
 struct svalue;
 
 #include "machine.h"
-#include "config.h"
+
+/*
+ * Max number of local variables in a function.
+ * Currently there is no support for more than 256
+ */
+#define MAX_LOCAL	256
+
+/*
+ * define NO_GC to get rid of garbage collection
+ */
+#ifndef NO_GC
+#define GC2
+#endif
 
 /* AIX requires this to be the first thing in the file.  */
 #ifdef __GNUC__

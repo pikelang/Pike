@@ -4,7 +4,7 @@
 ||| See the files COPYING and DISCLAIMER for more information.
 \*/
 #include "global.h"
-RCSID("$Id: program.c,v 1.16 1997/01/28 03:11:50 hubbe Exp $");
+RCSID("$Id: program.c,v 1.17 1997/01/29 01:09:19 hubbe Exp $");
 #include "program.h"
 #include "object.h"
 #include "dynamic_buffer.h"
@@ -26,6 +26,12 @@ RCSID("$Id: program.c,v 1.16 1997/01/28 03:11:50 hubbe Exp $");
 
 #include <errno.h>
 #include <fcntl.h>
+
+/*
+ * Define the size of the cache that is used for method lookup.
+ */
+#define FIND_FUNCTION_HASHSIZE 4711
+
 
 #define FILE_STATE
 #define PROGRAM_STATE
