@@ -884,53 +884,73 @@ static int gobble(struct xmldata *data, char *s)
    }while(0)
 
 
-#define PARSE_REF(PARSE_RECURSIVELY) do {\
-    /* Entity reference */						    \
-    /* lookup entry in mapping and parse it recursively */		    \
-    /* Generate error if entity is not defined */			    \
-    if(THIS->entities)							    \
-    {									    \
-      struct pike_string *name=0;					    \
-      ONERROR tmp3;							    \
-      map_delete_no_free(THIS->entities, sp-1, sp);			    \
-      name=dmalloc_touch(struct pike_string *, sp[-1].u.string);	    \
-      sp[-1]=*sp;							    \
-      SET_ONERROR(tmp3, do_free_string, name);				    \
-									    \
-      if(IS_ZERO(sp-1))							    \
-      {									    \
-	XMLERROR("No such entity.");					    \
-	pop_stack();							    \
-      }else{								    \
-        if(sp[-1].type!=T_STRING)					    \
-	{								    \
-	  XMLERROR("XML->__entities value is not a string!");		    \
-	}else{								    \
-          struct pike_string *s=sp[-1].u.string;			    \
-	  struct xmldata my_tmp=*data;					    \
-	  ONERROR tmp2;							    \
-	  debug_malloc_touch(s);					    \
-	  sp--;								    \
-          IF_XMLDEBUG(fprintf(stderr,"Entity expands to: %s\n",s->str));    \
-	  SET_ONERROR(tmp2, free_xmldata, &my_tmp);			    \
-	  check_stack(10);						    \
-          my_tmp.input.to_free=s;					    \
-	  my_tmp.input.datap=MKPCHARP_STR(s);				    \
-	  my_tmp.input.len=s->len;					    \
-	  my_tmp.input.pos=0;						    \
-	  my_tmp.input.next=0;						    \
-	  PARSE_RECURSIVELY;						    \
-	  if(THIS->entities)						    \
-	    mapping_string_insert_string(THIS->entities, name, s);	    \
-	  UNSET_ONERROR(tmp2);						    \
-	  free_string(s);						    \
-        }								    \
-      }									    \
-      CALL_AND_UNSET_ONERROR(tmp3);					    \
-    }									    \
+#define PARSE_REF(ATTR,PARSE_RECURSIVELY) do {				 \
+    /* Entity reference */						 \
+    /* lookup entry in mapping and parse it recursively */		 \
+    /* Generate error if entity is not defined */			 \
+    if(THIS->entities)							 \
+    {									 \
+      struct pike_string *name=0;					 \
+      ONERROR tmp3;							 \
+      map_delete_no_free(THIS->entities, sp-1, sp);			 \
+      name=dmalloc_touch(struct pike_string *, sp[-1].u.string);	 \
+      sp[-1]=*sp;							 \
+      SET_ONERROR(tmp3, do_free_string, name);				 \
+      									 \
+      do {								 \
+									 \
+	if(IS_ZERO(sp-1))						 \
+	{								 \
+	  pop_stack();							 \
+	  push_constant_text("entity");					 \
+	  ref_push_string(name);					 \
+	  push_constant_text("in_attribute");				 \
+	  push_int(ATTR);						 \
+	  f_aggregate_mapping(2); /* attributes */			 \
+	  push_int(0); /* no data */					 \
+	  SYS();							 \
+	  if(sp[-1].type != T_STRING)					 \
+	  {								 \
+	    pop_stack();						 \
+	    XMLERROR("No such entity.");				 \
+	    break;							 \
+	  }								 \
+	}								 \
+	else								 \
+	{								 \
+	  if(sp[-1].type!=T_STRING)					 \
+	  {								 \
+	    XMLERROR("XML->__entities value is not a string!");		 \
+	  }								 \
+	}								 \
+									 \
+	{								 \
+	  struct pike_string *s=sp[-1].u.string;			 \
+	  struct xmldata my_tmp=*data;					 \
+	  ONERROR tmp2;							 \
+	  debug_malloc_touch(s);					 \
+	  sp--;								 \
+	  IF_XMLDEBUG(fprintf(stderr,"Entity expands to: %s\n",s->str)); \
+	  SET_ONERROR(tmp2, free_xmldata, &my_tmp);			 \
+	  check_stack(10);						 \
+	  my_tmp.input.to_free=s;					 \
+	  my_tmp.input.datap=MKPCHARP_STR(s);				 \
+	  my_tmp.input.len=s->len;					 \
+	  my_tmp.input.pos=0;						 \
+	  my_tmp.input.next=0;						 \
+	  PARSE_RECURSIVELY;						 \
+	  if(THIS->entities)						 \
+	    mapping_string_insert_string(THIS->entities, name, s);	 \
+	  UNSET_ONERROR(tmp2);						 \
+	  free_string(s);						 \
+	}								 \
+      }while(0);							 \
+      CALL_AND_UNSET_ONERROR(tmp3);					 \
+    }									 \
   }while(0)
 
-#define READ_REFERENCE(X,PARSE_RECURSIVELY) do {			    \
+
+#define READ_REFERENCE(ATTR,X,PARSE_RECURSIVELY) do {			    \
   READ(1); /* Assume '&' for now */					    \
   if(PEEK(0)=='#')							    \
   {									    \
@@ -954,13 +974,13 @@ static int gobble(struct xmldata *data, char *s)
       POKE(X, ';');                                                         \
       pop_stack();                                                          \
     } else                                                                  \
-      PARSE_REF(PARSE_RECURSIVELY);                                         \
+      PARSE_REF(ATTR,PARSE_RECURSIVELY);                                     \
   }									    \
   IF_XMLDEBUG(fprintf(stderr,"Read reference at %d done.\n",__LINE__));	    \
 }while(0)
 
 
-#define READ_PEREFERENCE(X,PARSE_RECURSIVELY) do {		\
+#define READ_PEREFERENCE(ATTR,X,PARSE_RECURSIVELY) do {		\
   READ(1); /* Assume '%'  */					\
   push_constant_text("%");					\
   SIMPLE_READNAME();						\
@@ -968,7 +988,7 @@ static int gobble(struct xmldata *data, char *s)
   if(PEEK(0)!=';')						\
     XMLERROR("Missing ';' after parsed entity reference.");	\
   READ(1);							\
-  PARSE_REF(PARSE_RECURSIVELY);					\
+  PARSE_REF(ATTR,PARSE_RECURSIVELY);					\
 }while(0)
 
 
@@ -1150,7 +1170,7 @@ static void read_attvalue(struct xmldata *data,
     switch(PEEK(0))
     {
       case '&':
-	READ_REFERENCE((*X), read_attvalue(&my_tmp, X, 0,1));
+	READ_REFERENCE(1,(*X), read_attvalue(&my_tmp, X, 0,1));
 	break;
 	
       case 0x0d:
@@ -1231,7 +1251,7 @@ static void read_entityvalue(struct xmldata *data,
 	
 
       case '%':
-	READ_PEREFERENCE((*X), read_entityvalue(&my_tmp, X, 0));
+	READ_PEREFERENCE(1,(*X), read_entityvalue(&my_tmp, X, 0));
 	break;
 
       case 0x0d: if(PEEK(1)==0x0a) READ(1);
@@ -1246,7 +1266,7 @@ static void read_entityvalue(struct xmldata *data,
 	
 #if 0
       case '&':
-	READ_REFERENCE((*X), read_entityvalue(&my_tmp, X, 0));
+	READ_REFERENCE(1,(*X), read_entityvalue(&my_tmp, X, 0));
 	break;
 #else
       case '&':
@@ -1572,7 +1592,7 @@ static int really_low_parse_dtd(struct xmldata *data)
 	break;
 
       case '%': /* PEReference */
-	READ_PEREFERENCE(guggel, really_low_parse_dtd(&my_tmp));
+	READ_PEREFERENCE(0,guggel, really_low_parse_dtd(&my_tmp));
 	break;
 
       case '<':
@@ -2237,7 +2257,7 @@ static struct pike_string *very_low_parse_xml(struct xmldata *data,
 	continue;
 
       case '&':
-	READ_REFERENCE(*text,very_low_parse_xml(&my_tmp, end, toplevel, text, 1));
+	READ_REFERENCE(0,*text,very_low_parse_xml(&my_tmp, end, toplevel, text, 1));
 	continue;
 
       case '<':
