@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: dlopen.c,v 1.53 2002/10/27 15:54:07 grubba Exp $
+|| $Id: dlopen.c,v 1.54 2002/10/27 17:34:51 grubba Exp $
 */
 
 #include <global.h>
@@ -199,7 +199,7 @@ size_t STRNLEN(char *s, size_t maxlen)
 
 #else /* PIKE_CONCAT */
 
-RCSID("$Id: dlopen.c,v 1.53 2002/10/27 15:54:07 grubba Exp $");
+RCSID("$Id: dlopen.c,v 1.54 2002/10/27 17:34:51 grubba Exp $");
 
 #endif
 
@@ -1587,37 +1587,7 @@ static int dl_load_coff_files(struct DLHandle *ret,
 #endif /* DL_VERBOSE */
 
 #ifdef _M_IA64
-	  /* FIXME: Probably ought to break the switch into two cases;
-	   *        data and instruction relocation. Sub-instruction
-	   *        parsing and rewriting could then be broken out from
-	   *        the individual switch cases.
-	   */
-
-	  /* IA64 bundle format:
-	   *
-	   * 128bit little-endian.
-	   *
-	   * 22222222 22222222 22222222 22222222
-	   * 22222222 21111111 11111111 11111111
-	   * 11111111 11111111 11000000 00000000
-	   * 00000000 00000000 00000000 000ttttt
-	   *
-	   * Bundles are 16 byte aligned.
-	   */
-
-	  /* Instruction relocation pointers are
-	   * stored as a pointer to the bundle in
-	   * the upper bits, and sub-instruction
-	   * number in the least significant four
-	   * bits.
-	   */
-
-	  /* We will need to support more types here */
-	  UNIMPLEMENTED_REL(COFFReloc_IA64_imm14);
-	  UNIMPLEMENTED_REL(COFFReloc_IA64_imm22);
-	  UNIMPLEMENTED_REL(COFFReloc_IA64_imm64);
-	  UNIMPLEMENTED_REL(COFFReloc_IA64_dir32);
-
+	  /* Data relocation. */
 	case COFFReloc_IA64_dir64:
 #ifdef DLDEBUG
 	  fprintf(stderr,"DL: reloc absolute: loc %p = %p\n", loc,ptr);
@@ -1625,94 +1595,50 @@ static int dl_load_coff_files(struct DLHandle *ret,
 	  ((INT64 *)loc)[0]+=(INT64)ptr;
 	  break;
 
-	case COFFReloc_IA64_pcrel21b:
-	  {
-	    /* Instruction format M22, M23, B1, B2, B3, B6
-	     *
-	     * 43333333333222222222211111111110000000000
-	     * 09876543210987654321098765432109876543210
-	     * XXXX.XXX....................XXXXXXXXXXXXX
-	     *
-	     * S += ptr - (loc & ~0x1f)
-	     */
-	    unsigned INT64 raw;
-	    unsigned INT64 S = 0;
+	  UNIMPLEMENTED_REL(COFFReloc_IA64_dir32nb);
 
-#ifdef DLDEBUG
-	    fprintf(stderr,"DL: reloc branch: loc %p = %p, %d\n",
-		    loc, ptr, flag);
-#endif
+	default:
+	  {
+	    /* Instruction relocation. */
+
+	    /* IA64 bundle format:
+	     *
+	     * 128bit little-endian.
+	     *
+	     * 22222222 22222222 22222222 22222222
+	     * 22222222 21111111 11111111 11111111
+	     * 11111111 11111111 11000000 00000000
+	     * 00000000 00000000 00000000 000ttttt
+	     *
+	     * Bundles are 16 byte aligned.
+	     */
+
+	    /* Instruction relocation pointers are
+	     * stored as a pointer to the bundle in
+	     * the upper bits, and sub-instruction
+	     * number in the least significant four
+	     * bits.
+	     */
+
+	    int flag = ((size_t)loc) & 0xf;
+	    unsigned INT64 instr = 0;
+	    unsigned INT64 S;
 	    loc = (void *)(((size_t)loc) & ~((size_t)0xf));
+
+	    /* Read sub-instruction. */
+	    /* FIXME: Probably ought to save the extra bits for the
+	     *        write-back stage.
+	     */
 	    switch (flag) {
 	    case 0:
-	      raw = ((unsigned INT64 *)loc)[0];
-	      S = (raw & 0x0003ffffc0000) +
-		(((unsigned INT64)ptr - (unsigned INT64)loc)<<(18-5));
-	      if (S & 0x0004000000000) {
-		/* Got carry, adjust sign. */
-		raw ^= 0x0000020000000000;
-	      }
-	      S &= 0x0003ffffc0000;
-	      ((unsigned INT64 *)loc)[0] = (raw & ~0x0003ffffc0000) | S;
-	      break;
-	    case 2:
-	      raw = ((unsigned INT64 *)loc)[1];
-	      S = (raw & 0x00fffff000000000) +
-		(((unsigned INT64)ptr - (unsigned INT64)loc)<<(36-5));
-	      if (S & 0x0080000000000) {
-		/* Got carry, adjust sign. */
-		raw ^= 0x0800000000000000;
-	      }
-	      S &= 0x00fffff000000000;
-	      ((unsigned INT64 *)loc)[1] = (raw & ~0x00fffff000000000) | S;
+	      instr = ((unsigned INT64 *)loc)[0] >> 5;
 	      break;
 	    case 1:
-	    default:
-	      sprintf(err, "Unsupported relocation: %d, 0x%p, %d",
-		      RELOCS(r).type, loc, flag);
-	      dlerr = err;
-#ifdef DL_VERBOSE
-	      fprintf(stderr, "DLERR: \"%s\"\n", dlerr);
-#endif /* DL_VERBOSE */
-	      return -1;
-	    }
-	  }
-	  break;
-
-	  UNIMPLEMENTED_REL(COFFReloc_IA64_pcrel21m);
-	  UNIMPLEMENTED_REL(COFFReloc_IA64_pcrel21f);
-	  UNIMPLEMENTED_REL(COFFReloc_IA64_gprel22);
-
-	case COFFReloc_IA64_ltoff22:
-	  {
-	    /* Instruction format A5
-	     *
-	     * 43333333 33322222 22222111 11111110 00000000 0
-	     * 09876543 21098765 43210987 65432109 87654321 0
-	     * XXXX.... ........ ...XX... ....XXXX XXXXXXXX X
-	     *
-	     * gp[gp_pos] = S + A;
-	     * S = gp_pos++;
-	     */
-	    unsigned INT64 raw;
-	    unsigned INT64 S;
-
-#ifdef DLDEBUG
-	    fprintf(stderr,"DL: reloc ltoff: loc %p = %p, %d\n", loc,ptr,flag);
-#endif
-	    loc = (void *)(((size_t)loc) & ~((size_t)0xf));
-	    switch(flag) {
+	      instr = ((((unsigned INT32 *)loc)[1]) >> 12) |
+		(((unsigned INT64)((unsigned INT32 *)loc)[2]) << 18);
+	      break;
 	    case 2:
-	      raw = ((unsigned INT64 *)loc)[1];
-	      S = (((raw & 0x0fffe00000000000)>>38)|
-		   ((raw & 0x000007f000000000)>>36)) +
-		(unsigned INT64)ptr;
-	      gp[gp_pos] = S;
-	      /* Note: multiplies gp_pos with 8 in the same operation. */
-	      S = (((gp_pos & 0x07fff0)<<41) | 
-		   ((gp_pos & 0x00000f)<<39));
-	      ((unsigned INT64 *)loc)[1] = (raw & 0xf000180fffffffff) | S;
-	      gp_pos++;
+	      instr = ((unsigned INT64 *)loc)[1] >> 23;
 	      break;
 	    default:
 	      sprintf(err, "Unsupported relocation: %d, 0x%p, %d",
@@ -1723,17 +1649,98 @@ static int dl_load_coff_files(struct DLHandle *ret,
 #endif /* DL_VERBOSE */
 	      return -1;
 	    }
+#ifdef DLDEBUG
+	    fprintf(stderr, "DL: instr 0x%p\n", (void *)instr);
+#endif
+	    switch (RELOCS(r).type) {
+	      /* We will need to support more types here */
+
+	      UNIMPLEMENTED_REL(COFFReloc_IA64_imm14);
+	      UNIMPLEMENTED_REL(COFFReloc_IA64_imm22);
+	      UNIMPLEMENTED_REL(COFFReloc_IA64_imm64);
+	      UNIMPLEMENTED_REL(COFFReloc_IA64_dir32);
+
+	    case COFFReloc_IA64_pcrel21b:
+	      /* Instruction format M22, M23, B1, B2, B3, B6
+	       *
+	       * 4 33333333 33222222 22221111 11111100 00000000
+	       * 0 98765432 10987654 32109876 54321098 76543210
+	       * X XXX.XXX. ........ ........ ...XXXXX XXXXXXXX
+	       *
+	       * S += ptr - loc
+	       */
+	      S = (instr & 0x1ffffe000) + ((ptr - loc)<<(13 - 4));
+	      if (S & 0x200000000) {
+		/* Got carry, adjust sign. */
+		instr ^= 0x1000000000;
+	      }
+	      instr = (instr & ~0x1ffffe000) | (S & 0x1ffffe000);
+	      break;
+
+	      UNIMPLEMENTED_REL(COFFReloc_IA64_pcrel21m);
+	      UNIMPLEMENTED_REL(COFFReloc_IA64_pcrel21f);
+	      UNIMPLEMENTED_REL(COFFReloc_IA64_gprel22);
+
+	    case COFFReloc_IA64_ltoff22:
+	      /* Instruction format A5
+	       *
+	       * 4 33333333 33222222 22221111 11111100 00000000
+	       * 0 98765432 10987654 32109876 54321098 76543210
+	       * X XXX..... ........ ..XX.... ...XXXXX XXXXXXXX
+	       *
+	       * gp[gp_pos] = S + A;
+	       * S = gp_pos++;
+	       */
+
+	      gp[gp_pos] = ((unsigned INT64) ptr) +
+		(((instr & 0xfe0000) >> 12)|((instr & 0x1fffc00000) >> 14));
+
+	      /* Note: multiplies gp_pos with 8 in the same operation. */
+	      instr = (instr & 0x1e000301fff) |
+		((gp_pos & 0x07fff0)<<18) | ((gp_pos & 0x00000f)<<16);
+	      gp_pos++;
+	      break;
+
+	      UNIMPLEMENTED_REL(COFFReloc_IA64_sect);
+	      UNIMPLEMENTED_REL(COFFReloc_IA64_secrel22);
+	      UNIMPLEMENTED_REL(COFFReloc_IA64_secrel64i);
+	      UNIMPLEMENTED_REL(COFFReloc_IA64_secrel32);
+	      UNIMPLEMENTED_REL(COFFReloc_IA64_ltoff64);
+	      UNIMPLEMENTED_REL(COFFReloc_IA64_addend);
+
+	    default:
+	      sprintf(err,"Unknown relocation type: %d",RELOCS(r).type);
+	      dlerr=err;
+#ifdef DL_VERBOSE
+	      fprintf(stderr, "DLERR: \"%s\"\n", dlerr);
+#endif /* DL_VERBOSE */
+	      return -1;
+	    }
+#ifdef DLDEBUG
+	    fprintf(stderr, "DL: relocated instr 0x%p\n", (void *)instr);
+#endif
+	    /* Store back the modified instruction. */
+	    switch(flag) {
+	    case 0:
+	      ((unsigned INT64 *)loc)[0] =
+		(((unsigned INT64 *)loc)[0] & 0xffffc0000000001f) |
+		((instr & 0x1ffffffffff)<<5);
+	      break;
+	    case 1:
+	      ((unsigned INT32 *)loc)[1] =
+		(((unsigned INT32 *)loc)[1] & 0x3fff) | (instr << 14);
+	      ((unsigned INT32 *)loc)[2] =
+		(((unsigned INT32 *)loc)[2] & 0xff800000) |
+		((instr >> 18) & 0x7fffff);
+	      break;
+	    case 2:
+	      ((unsigned INT64 *)loc)[1] =
+		(((unsigned INT64 *)loc)[1] & 0x7fffff) |
+		((instr & 0x1ffffffffff)<<23);
+	      break;
+	    }
 	  }
 	  break;
-
-	  UNIMPLEMENTED_REL(COFFReloc_IA64_sect);
-	  UNIMPLEMENTED_REL(COFFReloc_IA64_secrel22);
-	  UNIMPLEMENTED_REL(COFFReloc_IA64_secrel64i);
-	  UNIMPLEMENTED_REL(COFFReloc_IA64_secrel32);
-	  UNIMPLEMENTED_REL(COFFReloc_IA64_ltoff64);
-	  UNIMPLEMENTED_REL(COFFReloc_IA64_dir32nb);
-	  UNIMPLEMENTED_REL(COFFReloc_IA64_addend);
-
 #elif defined(_M_IX86)
 
 	    /* We may need to support more types here */
@@ -1763,7 +1770,6 @@ static int dl_load_coff_files(struct DLHandle *ret,
 	    ((INT32*)loc)[0]+=ptr - (loc+sizeof(INT32));
 	    break;
 
-#endif
 
 	default:
 	  sprintf(err,"Unknown relocation type: %d",RELOCS(r).type);
@@ -1772,6 +1778,7 @@ static int dl_load_coff_files(struct DLHandle *ret,
 	  fprintf(stderr, "DLERR: \"%s\"\n", dlerr);
 #endif /* DL_VERBOSE */
 	  return -1;
+#endif /* _M_IA64 || _M_IX86 */
 	}
       }
 
