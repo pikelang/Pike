@@ -354,6 +354,8 @@ struct inputstate
   void (*ungetstr)(char *,INT32);
 };
 
+#define MY_EOF 4711
+
 struct inputstate *istate=NULL;
 
 static void link_inputstate(struct inputstate *i)
@@ -426,12 +428,12 @@ static struct inputstate *new_inputstate()
   return i;
 }
 
-/*** EOF input ***/
-static int end_getc() { return EOF; }
-static int end_gobble(int c) { return c==EOF; }
+/*** end of file input ***/
+static int end_getc() { return MY_EOF; }
+static int end_gobble(int c) { return c==MY_EOF; }
 static void end_ungetc(int c)
 {
-  if(c==EOF) return;
+  if(c==MY_EOF) return;
   default_ungetc(c);
 }
 
@@ -633,12 +635,12 @@ static int GOBBLE(char c)
 
 #define LOOK() (istate->look())
 #define SKIPWHITE() { int c; while(isspace(c=GETC())); UNGETC(c); }
-#define SKIPTO(X) { int c; while((c=GETC())!=(X) && (c!=EOF)); }
-#define SKIPUPTO(X) { int c; while((c=GETC())!=(X) && (c!=EOF)); UNGETC(c); }
+#define SKIPTO(X) { int c; while((c=GETC())!=(X) && (c!=MY_EOF)); }
+#define SKIPUPTO(X) { int c; while((c=GETC())!=(X) && (c!=MY_EOF)); UNGETC(c); }
 #define READBUF(X) { \
   register unsigned INT32 p; \
   register int C; \
-  for(p=0;(C=GETC())!=EOF && p<sizeof(buf) && (X);p++) \
+  for(p=0;(C=GETC())!=MY_EOF && p<sizeof(buf) && (X);p++) \
   buf[p]=C; \
   if(p==sizeof(buf)) { \
     yyerror("Internal buffer overflow.\n"); p--; \
@@ -791,7 +793,7 @@ static void do_define()
   {
     c=GETC();
     if(c=='\\') if(GOBBLE('\n')) continue;
-    if( (t!=!!isidchar(c) && argc>0) || c=='\n' || c==EOF)
+    if( (t!=!!isidchar(c) && argc>0) || c=='\n' || c==MY_EOF)
     {
       s2=free_buf();
       for(e=0;e<argc;e++)
@@ -808,7 +810,7 @@ static void do_define()
 	push_string(s2);
 	if(sp[-2].type==T_STRING) f_add();
       }
-      if(c=='\n' || c==EOF)
+      if(c=='\n' || c==MY_EOF)
       {
 	push_string(make_shared_string(" "));
 	if(sp[-2].type==T_STRING) f_add();
@@ -867,7 +869,7 @@ static int expand_define(struct lpc_string *s, int save_newline)
     {
       switch(c=GETC())
       {
-      case EOF:
+      case MY_EOF:
 	yyerror("Unexpected end of file.");
 	while(sp>save_sp) pop_stack();
 	return 0;
@@ -1025,7 +1027,7 @@ static void do_skip(int to)
       }
       continue;
 
-    case EOF:
+    case MY_EOF:
       yyerror("Unexpected end of file while skipping.");
       return;
 
@@ -1310,14 +1312,14 @@ static int do_lex2(int literal, YYSTYPE *yylval)
     case '\t':
       continue;
 
-    case EOF:
+    case MY_EOF:
       return 0;
   
     case '\'':
       c=GETC();
       if(c=='\\') c=char_const();
       if(GETC()!='\'')
-	yyerror("Unterminated character constant.\n");
+	yyerror("Unterminated character constant.");
       yylval->number=c;
       return F_NUMBER;
 	
@@ -1329,8 +1331,8 @@ static int do_lex2(int literal, YYSTYPE *yylval)
 
 	switch(c)
 	{
-	case -1:
-	  yyerror("End of file in string.\n");
+	case MY_EOF:
+	  yyerror("End of file in string.");
 	  free(simple_free_buf());
 	  return 0;
 
