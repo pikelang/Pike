@@ -1,14 +1,14 @@
 #
 # Main Makefile for extracting AutoDoc mk II to XML
 #
-# $Id: Makefile,v 1.27 2001/09/17 23:22:10 nilsson Exp $
+# $Id: Makefile,v 1.28 2001/10/17 04:27:54 nilsson Exp $
 #
 # Henrik Grubbström 2001-02-02
 #
 
 PIKE=pike
 
-all: html
+all: html traditional
 
 tree-split: join _tree-split
 
@@ -24,6 +24,10 @@ _tree-split:
 html: html_manual manual.xml
 	cp manual/images/* html_manual/images/
 	@$(PIKE) presentation/make_html.pike --img=images/ manual.xml
+
+traditional: traditional_manual traditional.xml
+	cp manual/images/* traditional_manual/images/
+	@$(PIKE) presentation/make_html.pike --img=images/ traditional.xml
 
 join: recursive_join
 	@$(MAKE) PIKE="$(PIKE)" XMLFILES="`echo build/*/*.xml not_extracted/*.xml`" \
@@ -41,8 +45,11 @@ extract: build/src/Makefile build/lib/Makefile manual/images
 	@(cd build/src && $(MAKE) PIKE="$(PIKE)" extract)
 	@(cd build/lib && $(MAKE) PIKE="$(PIKE)" extract)
 
-manual.xml: join structure.xml bin/assembler.pike
-	@$(PIKE) bin/assembler.pike structure.xml autodoc.xml > manual.xml
+manual.xml: join structure/onepage.xml bin/assembler.pike
+	@$(PIKE) bin/assembler.pike structure/onepage.xml autodoc.xml > manual.xml
+
+traditional.xml: structure/traditional.xml bin/assembler.pike
+	@$(PIKE) bin/assembler.pike structure/traditional.xml autodoc.xml > traditional.xml
 
 autodoc.xml: $(XMLFILES) bin/join.pike
 	@$(PIKE) bin/join.pike --post-process autodoc.xml $(XMLFILES)
@@ -80,6 +87,10 @@ html_manual:
 	@test -d html_manual || mkdir html_manual
 	@test -d html_manual/images || mkdir html_manual/images
 
+traditional_manual:
+	@test -d traditional_manual || mkdir traditional_manual
+	@test -d traditional_manual/images || mkdir traditional_manual/images
+
 # Cleanup
 
 clean:
@@ -88,6 +99,8 @@ clean:
 spotless: clean
 	@rm -f manual.xml || /bin/true
 	@rm -f autodoc.xml || /bin/true
+	@rm -f traditional.xml || /bin/true
 	@rm -rf manual || /bin/true
 	@rm -rf html_manual || /bin/true
 	@rm -rf manual-tree-split || /bin/true
+	@rm -rf traditional_manual || /bin/true
