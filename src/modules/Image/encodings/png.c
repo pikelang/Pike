@@ -2,11 +2,11 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: png.c,v 1.59 2004/03/06 00:06:59 nilsson Exp $
+|| $Id: png.c,v 1.60 2004/04/18 18:42:12 nilsson Exp $
 */
 
 #include "global.h"
-RCSID("$Id: png.c,v 1.59 2004/03/06 00:06:59 nilsson Exp $");
+RCSID("$Id: png.c,v 1.60 2004/04/18 18:42:12 nilsson Exp $");
 
 #include "image_machine.h"
 
@@ -537,7 +537,8 @@ static int _png_write_rgb(rgb_group *w1,
    /* w1, wa1 will be freed upon error */
 
    static rgb_group white={255,255,255};
-   static rgb_group grey4[4]={{0,0,0},{85,85,85},{170,170,170},{255,255,255}};
+   static rgb_group grey4[4]={{0,0,0},{154,154,154},
+			      {212,212,212},{255,255,255}};
    static rgb_group black={0,0,0};
 
    rgb_group *d1=w1;
@@ -556,9 +557,8 @@ static int _png_write_rgb(rgb_group *w1,
 	 switch (bpp)
 	 {
 	    case 1:
-	       if (n>len*8) n=len*8;
 	       x=width;
-	       while (n)
+	       while (len--)
 	       {
 		  if (x) x--,*(d1++)=((*s)&128)?white:black;
 		  if (x) x--,*(d1++)=((*s)&64)?white:black;
@@ -568,25 +568,21 @@ static int _png_write_rgb(rgb_group *w1,
 		  if (x) x--,*(d1++)=((*s)&4)?white:black;
 		  if (x) x--,*(d1++)=((*s)&2)?white:black;
 		  if (x) x--,*(d1++)=((*s)&1)?white:black;
-		  if (n<8) break;
-		  n-=8;
-		  s++;
 		  if (!x) x=width;
+		  s++;
 	       }
 	       break;
 	    case 2:
-	       if (n>len*4) n=len*4;
 	       x=width;
-	       while (n)
+	       if(len>(n/4)) len=n/4;
+	       while (len--)
 	       {
 		  if (x) x--,*(d1++)=grey4[((*s)>>6)&3];
 		  if (x) x--,*(d1++)=grey4[((*s)>>4)&3];
 		  if (x) x--,*(d1++)=grey4[((*s)>>2)&3];
 		  if (x) x--,*(d1++)=grey4[(*s)&3];
-		  if (n<4) break;
-		  n-=4;
-		  s++;
 		  if (!x) x=width;
+		  s++;
 	       }
 	       break;
 	    case 4:
@@ -660,11 +656,13 @@ static int _png_write_rgb(rgb_group *w1,
 	       if (n>len/6) n=len/6;
 	       while (n)
 	       {
-		  d1->r=*(s++);
-		  d1->g=*(s++);
-		  d1->b=*(s++);
+		  d1->r=*s;
+		  s += 2;
+		  d1->g=*s;
+		  s += 2;
+		  d1->b=*s;
+		  s += 2;
 		  d1++;
-		  s++;
 		  n--;
 	       }
 	       break;
@@ -894,11 +892,11 @@ static int _png_write_rgb(rgb_group *w1,
 	       if (n>len/4) n=len/4;
 	       while (n)
 	       {
-		  d1->r=d1->g=d1->b=*(s++);
+		  d1->r=d1->g=d1->b=*s;
+		  s += 2;
 		  d1++;
-		  s++;
-		  da1->r=da1->g=da1->b=*(s++);
-		  s++;
+		  da1->r=da1->g=da1->b=*s;
+		  s += 2;
 		  da1++;
 		  n--;
 	       }
@@ -930,13 +928,15 @@ static int _png_write_rgb(rgb_group *w1,
 	       if (n>len/8) n=len/8;
 	       while (n)
 	       {
-		  d1->r=*(s++);
-		  d1->g=*(s++);
-		  d1->b=*(s++);
+		  d1->r=*s;
+		  s += 2;
+		  d1->g=*s;
+		  s += 2;
+		  d1->b=*s;
+		  s += 2;
 		  d1++;
-		  s++;
-		  da1->r=da1->g=da1->b=*(s++);
-		  s++;
+		  da1->r=da1->g=da1->b=*s;
+		  s += 2;
 		  da1++;
 		  n--;
 	       }
@@ -1330,39 +1330,40 @@ static void img_png_decode(INT32 args,int header_only)
 	 for (i=0; i<7; i++)
 	 {
 	    struct pike_string *ds;
+	    unsigned int x0 = adam7[i].x0;
+	    unsigned int xd = adam7[i].xd;
+	    unsigned int y0 = adam7[i].y0;
+	    unsigned int yd = adam7[i].yd;
+	    unsigned int iwidth = (ihdr.width+xd-1-x0)/xd;
+	    unsigned int iheight = (ihdr.height+yd-1-y0)/yd;
+
+	    if(!iwidth || !iheight) continue;
 
 	    ds=_png_unfilter(s0,fs->len-(s0-(unsigned char*)fs->str),
-			     (ihdr.width+adam7[i].xd-1-adam7[i].x0)/
-			     adam7[i].xd,			     
-			     (ihdr.height+adam7[i].yd-1-adam7[i].y0)/
-			     adam7[i].yd,
+			     iwidth, iheight,
 			     ihdr.filter,ihdr.type,ihdr.bpp,
 			     &s0);
 
 	    push_string(ds);
 	    if (!_png_write_rgb(w1,wa1,ihdr.type,ihdr.bpp,
 				(unsigned char*)ds->str,ds->len,
-				(ihdr.width+adam7[i].xd-1-adam7[i].x0)/
-				adam7[i].xd,
-				(ihdr.width+adam7[i].xd-1-adam7[i].x0)/
-				adam7[i].xd*
-				(ihdr.height+adam7[i].yd-1-adam7[i].y0)/
-				adam7[i].yd,
+				iwidth,
+				iwidth*iheight,
 				ct,trns))
 	    {
 	       if (wa1) free(wa1);
 	       wa1=NULL;
 	    }
 	    d1=w1;
-	    for (y=adam7[i].y0;y<ihdr.height;y+=adam7[i].yd)
-	       for (x=adam7[i].x0;x<ihdr.width;x+=adam7[i].xd)
+	    for (y=y0; y<ihdr.height; y+=yd)
+	       for (x=x0; x<ihdr.width; x+=xd)
 		  t1[x+y*ihdr.width]=*(d1++);
 
 	    if (wa1)
 	    {
 	       da1=wa1;
-	       for (y=adam7[i].y0;y<ihdr.height;y+=adam7[i].yd)
-		  for (x=adam7[i].x0;x<ihdr.width;x+=adam7[i].xd)
+	       for (y=y0; y<ihdr.height; y+=yd)
+		  for (x=x0; x<ihdr.width; x+=xd)
 		     ta1[x+y*ihdr.width]=*(da1++);
 	    }
 
@@ -1438,8 +1439,7 @@ header_stuff:
 }
 
 
-/*
- *! @decl string encode(Image.Image image)
+/*! @decl string encode(Image.Image image)
  *! @decl string encode(Image.Image image, mapping options)
  *! 	Encodes a PNG image. 
  *!
