@@ -2,12 +2,12 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: SDL.cmod,v 1.8 2002/11/25 19:57:37 neotron Exp $
+|| $Id: SDL.cmod,v 1.9 2002/11/26 16:49:36 neotron Exp $
 */
 
 #include "global.h"
 #include "stralloc.h"
-RCSID("$Id: SDL.cmod,v 1.8 2002/11/25 19:57:37 neotron Exp $");
+RCSID("$Id: SDL.cmod,v 1.9 2002/11/26 16:49:36 neotron Exp $");
 #include "pike_macros.h"
 #include "interpret.h"
 #include "program.h"
@@ -935,6 +935,7 @@ PIKECLASS Surface {
     case 3: return &fast_set_pixel3; 
     case 4: return &fast_set_pixel4; 
     }
+    return NULL;
   }
   /*! @decl int get_pixel(int x, int y)
    *! Get the value of the specified pixel. The surface needs to be
@@ -1072,8 +1073,8 @@ PIKECLASS Surface {
    *!  @[unlock()], @[set_pixel()], @[get_pixel()]
    */
   PIKEFUN int lock() {
-    CHECK_INIT();
     int locked = 1;
+    CHECK_INIT();
     if ( SDL_MUSTLOCK(THIS->_s) ) {
       locked = SDL_LockSurface(THIS->_s) != -1;
     }
