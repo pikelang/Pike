@@ -16,6 +16,7 @@
 #include "constants.h"
 #include "backend.h"
 #include "operators.h"
+#include "builtin_functions.h"
 
 #include "file_machine.h"
 #include "file.h"
@@ -95,6 +96,122 @@ void f_file_stat(INT32 args)
     push_array(encode_stat(&st));
   }
 }
+
+#if defined(HAVE_STATVFS) || defined(HAVE_STATFS) || defined(HAVE_USTAT)
+#ifdef HAVE_SYS_STATVFS_H
+#include <sys/statvfs.h>
+#endif /* HAVE_SYS_STATVFS_H */
+#ifdef HAVE_SYS_VFS_H
+#include <sys/vfs.h>
+#endif /* HAVE_SYS_VFS_H */
+#ifdef HAVE_SYS_MOUNT_H
+#include <sys/mount.h>
+#endif /* HAVE_SYS_MOUNT_H */
+#ifdef HAVE_USTAT_H
+#include <ustat.h>
+#endif /* HAVE_USTAT_H */
+void f_filesystem_stat(INT32 args)
+{
+#ifdef HAVE_STATVFS
+  struct statvfs st;
+#else
+#ifdef HAVE_STATFS
+  struct statfs st;
+#else
+#ifdef HAVE_USTAT
+  struct stat statbuf;
+  struct ustat st;
+#else
+#error No stat function for filesystems.
+#endif /* HAVE_USTAT */
+#endif /* HAVE_STATFS */
+#endif /* HAVE_STATVFS */
+  int i;
+  char *s;
+
+  if(args<1)
+    error("Too few arguments to filesystem_stat()\n");
+  if(sp[-args].type != T_STRING)
+    error("Bad argument 1 to filesystem_stat()\n");
+
+  s = sp[-args].u.string->str;
+  THREADS_ALLOW();
+#ifdef HAVE_STATVFS
+  i = statvfs(s, &st);
+#else
+#ifdef HAVE_STATFS
+  i = statfs(s, &st);
+#else
+#ifdef HAVE_USTAT
+  if (!(i = stat(s, &statbuf))) {
+    i = ustat(statbuf.st_rdev, &st);
+  }
+#else
+#error No stat function for filesystems.
+#endif /* HAVE_USTAT */
+#endif /* HAVE_STATFS */
+#endif /* HAVE_STATVFS */
+  THREADS_DISALLOW();
+  pop_n_elems(args);
+  if(i==-1)
+  {
+    push_int(0);
+  }else{
+#ifdef HAVE_STATVFS
+    push_text("blocksize");
+    push_int(st.f_frsize);
+    push_text("blocks");
+    push_int(st.f_blocks);
+    push_text("bfree");
+    push_int(st.f_bfree);
+    push_text("bavail");
+    push_int(st.f_bavail);
+    push_text("files");
+    push_int(st.f_files);
+    push_text("ffree");
+    push_int(st.f_ffree);
+    push_text("favail");
+    push_int(st.f_favail);
+    push_text("fstype");
+    push_text(st.f_basetype);
+    push_text("fsname");
+    push_text(st.f_fstr);
+    f_aggregate_mapping(9*2);
+#else
+#ifdef HAVE_STATFS
+    push_text("blocksize");
+    push_int(st.f_bsize);
+    push_text("blocks");
+    push_int(st.f_blocks);
+    push_text("bfree");
+    push_int(st.f_bfree);
+    push_text("bavail");
+    push_int(st.f_bavail);
+    push_text("files");
+    push_int(st.f_files);
+    push_text("ffree");
+    push_int(st.f_ffree);
+    push_text("favail");
+    push_int(st.f_ffree);
+    f_aggregate_mapping(7*2);
+#else
+#ifdef HAVE_USTAT
+    push_text("bfree");
+    push_int(st.f_tfree);
+    push_text("ffree");
+    push_int(st.f_tinode);
+    push_text("fsname");
+    push_text(st.f_fname);
+    f_aggregate_mapping(3*2);
+#else
+#error No stat function for filesystems.
+#endif /* HAVE_USTAT */
+#endif /* HAVE_STATFS */
+#endif /* HAVE_STATVFS */
+  }
+}
+  
+#endif /* HAVE_STATVFS || HAVE_STATFS || HAVE_USTAT */
 
 void f_werror(INT32 args)
 {
@@ -516,7 +633,11 @@ void init_files_efuns()
   set_close_on_exec(2,1);
 
   add_efun("file_stat",f_file_stat,
-	   "function(string,int|void:int *)",OPT_EXTERNAL_DEPEND);
+	   "function(string,int|void:int *)", OPT_EXTERNAL_DEPEND);
+#if defined(HAVE_STATVFS) || defined(HAVE_STATFS) || defined(HAVE_USTAT)
+  add_efun("filesystem_stat", f_filesystem_stat,
+	   "function(string:mapping(string:string|int))", OPT_EXTERNAL_DEPEND);
+#endif /* HAVE_STATVFS || HAVE_STATFS */
   add_efun("errno",f_errno,"function(:int)",OPT_EXTERNAL_DEPEND);
   add_efun("werror",f_werror,"function(string:void)",OPT_SIDE_EFFECT);
   add_efun("rm",f_rm,"function(string:int)",OPT_SIDE_EFFECT);
