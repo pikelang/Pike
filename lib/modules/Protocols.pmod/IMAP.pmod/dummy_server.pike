@@ -403,8 +403,8 @@ class backend
     {
       if (mailbox != "INBOX")
       {
-	return 0;
 	session->mailbox = 0;
+	return 0;
       }
       object m = dummy_mailbox();
       
