@@ -2,11 +2,11 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: builtin_functions.c,v 1.516 2003/11/07 18:06:30 nilsson Exp $
+|| $Id: builtin_functions.c,v 1.517 2003/11/07 21:28:07 mast Exp $
 */
 
 #include "global.h"
-RCSID("$Id: builtin_functions.c,v 1.516 2003/11/07 18:06:30 nilsson Exp $");
+RCSID("$Id: builtin_functions.c,v 1.517 2003/11/07 21:28:07 mast Exp $");
 #include "interpret.h"
 #include "svalue.h"
 #include "pike_macros.h"
@@ -45,6 +45,7 @@ RCSID("$Id: builtin_functions.c,v 1.516 2003/11/07 18:06:30 nilsson Exp $");
 #include "peep.h"
 #include "docode.h"
 #include "lex.h"
+#include "pike_float.h"
 
 #ifdef HAVE_POLL
 #ifdef HAVE_POLL_H
@@ -2893,7 +2894,9 @@ PMOD_EXPORT void f_reverse(INT32 args)
     pop_n_elems(args-1);
     break;
   }
-    
+
+  /* FIXME: Bignum support. */
+
   case T_ARRAY:
   {
     struct array *a;
@@ -4765,7 +4768,7 @@ static void f_interleave_array(INT32 args)
     /* e and k are used by MAPPING_LOOP() */
     INT32 e;
     struct keypair *k;
-    INT_TYPE low = 0x7fffffff;
+    INT_TYPE low = MAX_INT_TYPE;
 #ifdef PIKE_DEBUG
     if (ITEM(arr)[i].type != T_MAPPING) {
       Pike_error("interleave_array(): Element %d is not a mapping!\n", i);
@@ -8438,6 +8441,20 @@ void init_builtin_efuns(void)
   ADD_EFUN("_gc_status",f__gc_status,
 	   tFunc(tNone,tMap(tString,tOr(tInt,tFloat))),
 	   OPT_EXTERNAL_DEPEND);
+
+  ADD_INT_CONSTANT ("NATIVE_INT_MAX", MAX_INT_TYPE, 0);
+  ADD_INT_CONSTANT ("NATIVE_INT_MIN", MIN_INT_TYPE, 0);
+
+  /* Maybe make PIKEFLOAT_MANT_DIG, PIKEFLOAT_MIN_EXP and
+   * PIKEFLOAT_MAX_EXP available, but do we have to export FLT_RADIX
+   * too? It'd be nice to always assume it's 2 to save the pike
+   * programmer from that headache. */
+  ADD_INT_CONSTANT ("FLOAT_DIGITS_10", PIKEFLOAT_DIG, 0);
+  ADD_INT_CONSTANT ("FLOAT_MIN_10_EXP", PIKEFLOAT_MIN_10_EXP, 0);
+  ADD_INT_CONSTANT ("FLOAT_MAX_10_EXP", PIKEFLOAT_MAX_10_EXP, 0);
+  ADD_FLOAT_CONSTANT ("FLOAT_MAX", PIKEFLOAT_MAX, 0);
+  ADD_FLOAT_CONSTANT ("FLOAT_MIN", PIKEFLOAT_MIN, 0);
+  ADD_FLOAT_CONSTANT ("FLOAT_EPSILON", PIKEFLOAT_EPSILON, 0);
 
 #ifdef WITH_DOUBLE_PRECISION_SVALUE
   ADD_INT_CONSTANT("__DOUBLE_PRECISION_FLOAT__",1,0);
