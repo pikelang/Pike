@@ -1,5 +1,5 @@
 /*
- * $Id: odbc_result.c,v 1.11 1998/05/31 18:13:42 grubba Exp $
+ * $Id: odbc_result.c,v 1.12 1998/05/31 19:02:41 grubba Exp $
  *
  * Pike  interface to ODBC compliant databases
  *
@@ -17,7 +17,7 @@
 #ifdef HAVE_ODBC
 
 #include "global.h"
-RCSID("$Id: odbc_result.c,v 1.11 1998/05/31 18:13:42 grubba Exp $");
+RCSID("$Id: odbc_result.c,v 1.12 1998/05/31 19:02:41 grubba Exp $");
 
 #include "interpret.h"
 #include "object.h"
@@ -40,7 +40,7 @@ RCSID("$Id: odbc_result.c,v 1.11 1998/05/31 18:13:42 grubba Exp $");
 /* #define ODBC_DEBUG */
 
 /*
- * Contants
+ * Constants
  */
 
 /* Buffer size used when retrieving BLOBs
