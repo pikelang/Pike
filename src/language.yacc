@@ -113,7 +113,7 @@
 /* This is the grammar definition of Pike. */
 
 #include "global.h"
-RCSID("$Id: language.yacc,v 1.281 2002/05/11 01:23:43 mast Exp $");
+RCSID("$Id: language.yacc,v 1.282 2002/05/11 12:11:38 mast Exp $");
 #ifdef HAVE_MEMORY_H
 #include <memory.h>
 #endif
@@ -3413,18 +3413,18 @@ low_idents: TOK_IDENTIFIER
 	} else {
 	  $$ = mkidentifiernode(id);
 	}
-      } else if(ISCONSTSTR(Pike_compiler->last_identifier, "`->") ||
-		ISCONSTSTR(Pike_compiler->last_identifier, "`[]")) {
+      } else if(Pike_compiler->last_identifier == lfun_strings[LFUN_ARROW] ||
+		Pike_compiler->last_identifier == lfun_strings[LFUN_INDEX]) {
 	$$ = mknode(F_MAGIC_INDEX, mknewintnode($1),
 		    mknewintnode(inherit_depth+1));
-      } else if(ISCONSTSTR(Pike_compiler->last_identifier, "`->=") ||
-		ISCONSTSTR(Pike_compiler->last_identifier, "`[]=")) {
+      } else if(Pike_compiler->last_identifier == lfun_strings[LFUN_ASSIGN_ARROW] ||
+		Pike_compiler->last_identifier == lfun_strings[LFUN_ASSIGN_INDEX]) {
 	$$ = mknode(F_MAGIC_SET_INDEX, mknewintnode($1),
 		    mknewintnode(inherit_depth+1));
-      } else if(ISCONSTSTR(Pike_compiler->last_identifier, "_indices")) {
+      } else if(Pike_compiler->last_identifier == lfun_strings[LFUN__INDICES]) {
 	$$ = mknode(F_MAGIC_INDICES, mknewintnode($1),
 		    mknewintnode(inherit_depth+1));
-      } else if(ISCONSTSTR(Pike_compiler->last_identifier, "_values")) {
+      } else if(Pike_compiler->last_identifier == lfun_strings[LFUN__VALUES]) {
 	$$ = mknode(F_MAGIC_VALUES, mknewintnode($1),
 		    mknewintnode(inherit_depth+1));
       } else {
@@ -3471,21 +3471,21 @@ low_idents: TOK_IDENTIFIER
     }
     if(!$$)
     {
-	if(ISCONSTSTR($2->u.sval.u.string,"`->") ||
-	   ISCONSTSTR($2->u.sval.u.string,"`[]") )
+	if($2->u.sval.u.string == lfun_strings[LFUN_ARROW] ||
+	   $2->u.sval.u.string == lfun_strings[LFUN_INDEX] )
 	{
 	  $$=mknode(F_MAGIC_INDEX,mknewintnode(0),mknewintnode(0));
 	}
-	else if(ISCONSTSTR($2->u.sval.u.string,"`->=") ||
-		ISCONSTSTR($2->u.sval.u.string,"`[]=") )
+	else if($2->u.sval.u.string == lfun_strings[LFUN_ASSIGN_ARROW] ||
+		$2->u.sval.u.string == lfun_strings[LFUN_ASSIGN_INDEX] )
 	{
 	  $$=mknode(F_MAGIC_SET_INDEX,mknewintnode(0),mknewintnode(0));
 	}
-	else if(ISCONSTSTR($2->u.sval.u.string,"_indices"))
+	else if($2->u.sval.u.string == lfun_strings[LFUN__INDICES])
 	{
 	  $$=mknode(F_MAGIC_INDICES,mknewintnode(0),mknewintnode(0));
 	}
-	else if(ISCONSTSTR($2->u.sval.u.string,"_values"))
+	else if($2->u.sval.u.string == lfun_strings[LFUN__VALUES])
 	{
 	  $$=mknode(F_MAGIC_VALUES,mknewintnode(0),mknewintnode(0));
 	}
