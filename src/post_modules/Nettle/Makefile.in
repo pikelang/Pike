@@ -1,4 +1,4 @@
-# $Id: Makefile.in,v 1.11 2004/04/02 19:13:55 grubba Exp $
+# $Id: Makefile.in,v 1.12 2004/04/17 16:15:57 marcus Exp $
 @make_variables@
 VPATH=@srcdir@
 
@@ -6,8 +6,6 @@ OBJS = nettle.o hash.o cipher.o crypt_md5.o nt.o @IDEA_OBJ@
 
 MODULE_LDFLAGS = @LDFLAGS@ @LIBS@
 CONFIG_HEADERS=@CONFIG_HEADERS@
-
-DUMMY = examine_module
 
 @dynamic_module_makefile@
 
