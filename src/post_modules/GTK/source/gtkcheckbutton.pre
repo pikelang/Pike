@@ -15,9 +15,14 @@ void create(string|void label)
   pgtk_verify_setup();
   if(args)
   {
-    char *s;
-    get_all_args("GTK.Check_button", args, "%s", &s);
-    THIS->obj = GTK_OBJECT( gtk_check_button_new_with_label( s ) );
+    gchar *s = PGTK_GETSTR( Pike_sp-args );
+    if( s )
+    {
+      THIS->obj = GTK_OBJECT( gtk_check_button_new_with_label( s ) );
+      PGTK_FREESTR( s );
+    }
+    else
+      THIS->obj = GTK_OBJECT( gtk_check_button_new( ) );
   } else {
     THIS->obj = GTK_OBJECT( gtk_check_button_new( ) );
   }

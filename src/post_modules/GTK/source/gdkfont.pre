@@ -63,8 +63,10 @@ void create(string|void font_name)
   pgtk_verify_not_inited();
   if(args)
   {
-    get_all_args("Gdk.Font", args, "%s", &n);
+    n = PGTK_GETSTR( Pike_sp - args );
+    if( !n ) Pike_error("No font specified.\n");
     THIS->obj = (void*)gdk_font_load( n );
+    PGTK_FREESTR( n );
     if(!THIS->obj)
       Pike_error("Failed to load font.\n");
   } else {

@@ -73,9 +73,9 @@ void lower()
 void set_icon_name( string name )
 //! Set the icon name to the specified string.
 {
-  gchar *t;
-  get_all_args("set_icon_name", args, "%s", &t);
-  gdk_window_set_icon_name( GTK_WIDGET(THIS->obj)->window, t );
+  gchar *s = PGTK_GETSTR( Pike_sp-args );
+  gdk_window_set_icon_name( GTK_WIDGET(THIS->obj)->window, s );
+  PGTK_FREESTR( s );
   RETURN_THIS();
 }
 
