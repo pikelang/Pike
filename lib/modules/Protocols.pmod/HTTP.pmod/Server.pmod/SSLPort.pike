@@ -16,14 +16,26 @@ program request_program=Request;
 //!	The simplest SSL server possible. Binds a port and calls
 //!	a callback with <ref to=Request>Server.Request</ref> objects.
 
-//! method void create(function(Request:void) callback)
-//! method void create(function(Request:void) callback,int portno,void|string interface, void|string key, void|string certificate)
+//! Create a HTTPS (HTTP over SSL) server.
+//!
+//! @param _callback
+//!   the function run when a request is received. 
+//!   takes one argument of type <ref to=Request>Server.Request</ref>.
+//! @param _portno
+//!   the port number to bind to, defaults to 443
+//! @param _interface
+//!   the interface address to bind to
+//! @param key
+//!   an optional SSL secret key, provided in binary format, such as that created by <ref 
+//!   to=Standards.PKCS.RSA.private_key>Standards.PKCS.RSA.private_key()</ref>
+//! @param certificate
+//!   an optional SSL certificate, provided in binary format
 void create(function(Request:void) _callback,
 	    void|int _portno,
 	    void|string _interface, void|string key, void|string certificate)
 {
    portno=_portno;
-   if (!portno) portno=80; // default HTTP port
+   if (!portno) portno=443; // default HTTPS port
 
    callback=_callback;
    interface=_interface;
@@ -41,9 +53,7 @@ void create(function(Request:void) _callback,
 	    portno,strerror(port->errno()));
 }
 
-//! method void close()
 //!	Closes the HTTP port. 
-
 void close()
 {
    destruct(port);
@@ -113,10 +123,10 @@ void set_default_keycert()
   set_certificate(my_certificate);
 }
 
-void set_key(string key)
+void set_key(string skey)
 {
 #if 0
-    array key = SSL.asn1.ber_decode(key)->get_asn1()[1];
+    array key = SSL.asn1.ber_decode(skey)->get_asn1()[1];
     object n = key[1][1];
     object e = key[2][1];
     object d = key[3][1];
@@ -128,7 +138,7 @@ void set_key(string key)
     rsa->set_private_key(d);
 #else /* !0 */
     // FIXME: Is this correct?
-    rsa = Standards.PKCS.RSA.parse_private_key(key);
+    rsa = Standards.PKCS.RSA.parse_private_key(skey);
 #endif /* 0 */
 
   }
