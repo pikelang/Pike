@@ -1,5 +1,5 @@
 #
-# $Id: Makefile.in,v 1.76 1998/04/17 21:15:02 mirar Exp $
+# $Id: Makefile.in,v 1.77 1998/04/17 21:53:21 mirar Exp $
 #
 
 # This line is needed on some machines.
@@ -255,8 +255,10 @@ install:
 	      mv -f "$(share_prefix)/$$f" "$(share_prefix)/$$f.old"; \
 	    else : ; fi; \
 	    if [ -f "$(lib_prefix)/$$f" ]; then \
-	      mv -f "$(lib_prefix)/$$f" "$(lib_prefix)/$$f.now_in_share.old"; \
-	    else : ; fi; \
+              if test "x$(lib_prefix)" != "x$(share_prefix)"; then \
+	        mv -f "$(lib_prefix)/$$f" "$(lib_prefix)/$$f.now_in_share.old"; \
+	      else : ; fi; \
+            else : ; fi; \
 	    cp "$(LIBDIR_SRC)/$$f" "$(share_prefix)/$$f" || exit 1; \
 	    chmod a+r "$(share_prefix)/$$f"; \
 	    chmod u+w "$(share_prefix)/$$f"; \
