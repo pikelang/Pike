@@ -1,11 +1,12 @@
 /*
- * $Id: tree-split-autodoc.pike,v 1.47 2003/01/14 12:04:59 jhs Exp $
+ * $Id: tree-split-autodoc.pike,v 1.48 2003/03/25 23:20:55 nilsson Exp $
  *
  */
 
 inherit "make_html.pike";
 
 mapping (string:Node) refs   = ([ ]);
+string default_namespace;
 
 string extra_prefix = "";
 string image_prefix()
@@ -37,18 +38,23 @@ string cquote(string n)
 
 string create_reference(string from, string to, string text) {
   array a = (to/"::");
-  if (sizeof(a) != 2) {
-    // Expect namespace...
+  switch(sizeof(a)) {
+  case 2:
+    if (sizeof(a[1])) {
+      // Split trailing module path.
+      a = a[0..0] + a[1]/".";
+    } else {
+      // Get rid of trailing "".
+      a = a[0..0];
+    }
+    a[0] += "::";
+    break;
+  case 1:
+    a = a[0]/".";
+    break;
+  default:
     error("Bad reference: %O\n", to);
   }
-  if (sizeof(a[1])) {
-    // Split trailing module path.
-    a = a[0..0] + a[1]/".";
-  } else {
-    // Get rid of trailing "".
-    a = a[0..0];
-  }
-  a[0] += "::";
   return "<font face='courier'><a href='" +
     "../"*max(sizeof(from/"/") - 2, 0) + map(a, cquote)*"/" + ".html'>" +
     text +
@@ -301,6 +307,8 @@ class Node
   string my_resolve_reference(string _reference, mapping vars)
   {
     array(string) resolved = vars->resolved && vars->resolved/"\0";
+    if(default_namespace && has_prefix(_reference, default_namespace+"::"))
+      _reference = _reference[sizeof(default_namespace)+2..];
 
     if(vars->param)
       return "<font face='courier'>" + _reference + "</font>";
@@ -621,11 +629,21 @@ class TopNode {
     Parser.HTML parser = Parser.HTML();
     parser->case_insensitive_tag(1);
     parser->xml_tag_syntax(3);
-    parser->add_container("autodoc", lambda(Parser.HTML p, mapping args, string c) {
-                                      return ({ c }); });
+    parser->add_container("autodoc",
+			  lambda(Parser.HTML p, mapping args, string c) {
+			    return ({ c }); });
+
     _data = parser->finish(_data)->read();
     ::create("autodoc", "", _data);
     sort(appendix_children->name, appendix_children);
+    foreach(module_children, Node x)
+      if(x->type=="namespace" && x->name==default_namespace) {
+	module_children -= ({ x });
+	class_children += x->class_children;
+	module_children += x->module_children;
+	enum_children += x->enum_children;
+	method_children += x->method_children;
+      }
     type = "autodoc";
   }
 
@@ -641,8 +659,12 @@ class TopNode {
   int(0..0) find_prev_node() { return 0; }
   int(0..0) find_next_node() { return 0; }
   string make_class_path(void|int(0..1) header) {
-    if(header && sizeof(method_children))
-      return "Namespaces";
+    if(header && sizeof(method_children)) {
+      if(default_namespace)
+	return "namespace "+default_namespace;
+      else
+	return "Namespaces";
+    }
     return "";
   }
   string raw_class_path(void|int(0..1) header) {
@@ -656,7 +678,8 @@ class TopNode {
     string contents = "<table class='sidebar'><tr>";
     foreach(method_children/( sizeof(method_children)/4.0 ),
             array(Node) children)
-      contents += "<td nowrap='nowrap'>" + make_navbar_really_low(children, 1) + "</td>";
+      contents += "<td nowrap='nowrap'>" +
+	make_navbar_really_low(children, 1) + "</td>";
 
     contents += "</tr><tr><td colspan='4' nowrap='nowrap'>" +
       parse_children(Parser.XML.Tree.parse_input(data),
@@ -675,10 +698,11 @@ class TopNode {
 int main(int argc, array(string) argv)
 {
   PROFILE();
-  if(argc!=4) {
-    werror("Too few arguments. (in-file, template, out-dir)\n");
+  if(argc<4) {
+    werror("Too few arguments. (in-file, template, out-dir (, namespace))\n");
     return 1;
   }
+  if(argc>4) default_namespace=argv[4];
 
   werror("Reading refdoc blob %s...\n", argv[1]);
   string doc = Stdio.read_file(argv[1]);
@@ -694,9 +718,11 @@ int main(int argc, array(string) argv)
     return 1;
   }
   mapping m = localtime(time());
-  template = replace(template, ([ "$version$":version(),
-				  "$date$":sprintf("%4d-%02d-%02d", m->year+1900, m->mon+1, m->mday),
-  ]) );
+  template = replace(template,
+		     ([ "$version$":version(),
+			"$date$":sprintf("%4d-%02d-%02d",
+					 m->year+1900, m->mon+1, m->mday),
+		     ]) );
 
   werror("Splitting to destination directory %s...\n", argv[3]);
   TopNode top = TopNode(doc);
