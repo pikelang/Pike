@@ -1,6 +1,6 @@
 /* -*- Pike -*-
  *	
- * $Id: master.pike.in,v 1.156 2001/06/06 10:04:08 mirar Exp $
+ * $Id: master.pike.in,v 1.157 2001/06/18 18:05:31 grubba Exp $
  * 
  * Master-file for Pike.
  *
@@ -1191,6 +1191,12 @@ class CompatResolver
       if( no_resolv[ identifier ] )
 	return UNDEFINED;
 
+      if (current_file && !stringp(current_file)) {
+	throw(({sprintf("resolv(%O, %O, %O): current_file is not a string!\n",
+			identifier, current_file, current_handler),
+		backtrace()}));
+      }
+
       mixed ret;
       string id=identifier+":"+(current_file ? dirname(current_file) : "-");
       if( !zero_type (ret = resolv_cache[id]) )
@@ -1805,7 +1811,9 @@ class Describer
     while (sizeof (identify_stack)) {
       stuff = identify_stack[-1];
       identify_stack = identify_stack[..sizeof (identify_stack) - 2];
-      if (arrayp (stuff)) {
+      if (objectp (stuff) || functionp (stuff) || programp (stuff))
+	ident[stuff]++;
+      else if (arrayp (stuff)) {
 	if (!ident[stuff]++)
 	  identify_stack += stuff;
       }
@@ -1817,8 +1825,7 @@ class Describer
 	if (!ident[stuff]++)
 	  identify_stack += indices (stuff) + values (stuff);
       }
-      else if (objectp (stuff) || functionp (stuff) || programp (stuff))
-	ident[stuff]++;
+      
     }
   }
 
