@@ -458,7 +458,7 @@ static class package {
     object p = subpackages[n];
     if(p)
       return p;
-    if(zero_type(p)) {
+    if(zero_type(p) && !info->getpackage_method((name==""?n:name+"."+n))) {
       p = info->jvm->find_class(name==""?n:replace(name, ".", "/")+"/"+n);
       if(info->jvm->exception_check())
 	check_exception(info);
@@ -544,20 +544,7 @@ static class package {
     name = n;
     info = i;
     if(!i->getpackage_method) {
-      array(object|string) cls = find_class("java/lang/Package", i);
-      i->getpackage_method =
-	get_static_method(cls, "getPackage",
-			  "(Ljava/lang/String;)Ljava/lang/Package;", i);
-      object gap =
-	get_static_method(cls, "getPackages",
-			  "()[Ljava/lang/Package;", i);
-      i->packages =
-	Array.map(values(gap()), lambda(object o, object nm) {
-				   return (string)nm(o);
-				 },
-		  get_method(cls, "getName","()Ljava/lang/String;", i));
-
-      cls = find_class("java/lang/Object", i);
+      array(object|string) cls = find_class("java/lang/Object", i);
       i->getclass_method = get_method(cls, "getClass",
 				      "()Ljava/lang/Class;", i);
 
@@ -625,6 +612,21 @@ static class package {
       i->throwable_printstacktrace =
 	get_method(cls, "printStackTrace", "(Ljava/io/PrintWriter;)V", i);
 
+      cls = find_class("java/lang/Package", i);
+      i->getpackage_method =
+	get_static_method(cls, "getPackage",
+			  "(Ljava/lang/String;)Ljava/lang/Package;", i);
+      object gap =
+	get_static_method(cls, "getPackages",
+			  "()[Ljava/lang/Package;", i);
+      i->packages =
+	Array.map(values(gap()), lambda(object o, object nm) {
+				   return (string)nm(o);
+				 },
+		  get_method(cls, "getName","()Ljava/lang/String;", i));
+
+      if(search(i->packages, "java.lang")<0)
+	i->packages += ({ "java.lang" });
     }
     pkg = i->getpackage_method(name);
     array(string) subs = Array.map(i->packages, lambda(string p, string n){
