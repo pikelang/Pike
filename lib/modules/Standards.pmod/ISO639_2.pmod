@@ -510,6 +510,22 @@ mapping (string:string) list_languages_b() {
   return list_languages() - mkmapping( symbols, symbols );
 }
 
+//! Converts an ISO 639-2/B code to an ISO 639-2/T code.
+string convert_b_to_t(string code) {
+  string res = b_to_t[code];
+  if(res) return res;
+  if(languages[code]) return code;
+  return 0;
+}
+
+//! Converts an ISO 639-2/T code to an ISO 639-2/B code.
+string convert_t_to_b(string code) {
+  string res = search(b_to_t, code);
+  if(res) return res;
+  if(languages[code]) return code;
+  return 0;
+}
+
 //! Returns 1 if there is an overlap between ISO 639-2/T and
 //! ISO 639-2/B symbols. Only used for debugging when updating
 //! the table.
@@ -685,6 +701,12 @@ static constant conversion = ([
 //! in lower case.
 string map_639_1(string code) {
   return conversion[code];
+}
+
+//! Look up the ISO 639-1 code given an ISO 639-2/T code
+//! in lower case.
+string map_to_639_1(string code) {
+  return search(conversion, code);
 }
 
 //! Return a mapping from ISO 639-1 code to ISO 639-2/T code.
