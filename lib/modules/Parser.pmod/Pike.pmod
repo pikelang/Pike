@@ -23,13 +23,54 @@ static mapping(string : int) backquoteops =
    "->=":3, "->":2, "-":1,
    "[]=":3, "[]":2 ]);
 
-array(string) split(string data)
+array(string) split(string data, void|mapping state)
 {
   int start;
   int line=1;
   array(string) ret=({});
   int pos;
-  data += "\n\0";	/* End sentinel. */
+  data += "\n\0"; // End sentinel.
+
+  if(state && state->in_token) {
+    switch(state->remains[0..1]) {
+
+    case "/*":
+      pos = search(data, "*/");
+      if(pos==-1) {
+	state->in_token = 1;
+	state->remains += data[..sizeof(data)-2];
+	return ({});
+      }
+      ret += ({ m_delete(state, "remains") + data[..pos] });
+      pos+=2;
+      break;
+
+    case "#\"":
+      int q,s;
+      pos=-1;
+      while(1) {
+	q = search(data,"\"",pos+1);
+	s = search(data,"\\",pos+1);
+
+	if( q==-1 ||
+	    (s==sizeof(data)-2 && s<q) ) {
+	  state->in_token = 1;
+	  state->remains += data[..sizeof(data)-2];
+	  return ({});
+	}
+
+	if(s==-1 || s>q) {
+	  pos = q+1;
+	  break;
+	}
+
+	pos=s+1;
+      }
+      ret += ({ m_delete(state, "remains") + data[..pos-1] });
+      break;
+    }
+    state->in_token = 0;
+  }
 
   while(1)
   {
@@ -45,8 +86,33 @@ array(string) split(string data)
       case '#':
       {
 	pos+=1;
-	if(data[pos]=='\"')
+
+	if(data[pos]=='\"') {
+	  int q,s;
+	  while(1) {
+	    q = search(data,"\"",pos+1);
+	    s = search(data,"\\",pos+1);
+
+	    if( q==-1 ||
+		(s==sizeof(data)-2 && s<q) ) {
+	      if(state) {
+		state->in_token = 1;
+		state->remains = data[pos-1..sizeof(data)-2];
+		return ({});
+	      }
+	      error("Failed to find end of multiline string.\n");
+	    }
+
+	    if(s==-1 || s>q) {
+	      pos = q+1;
+	      break;
+	    }
+
+	    pos=s+1;
+	  }
 	  break;
+	}
+
 	pos=search(data,"\n",pos);
 	if(pos==-1)
 	  error("Failed to find end of preprocessor statement.\n");
@@ -169,8 +235,14 @@ array(string) split(string data)
 
 	  case "/*":
 	    pos=search(data,"*/",pos);
-	    if(pos==-1)
+	    if(pos==-1) {
+	      if(state) {
+		state->remains = data[start..sizeof(data)-2];
+		state->in_token = 1;
+		return ret;
+	      }
 	      error("Failed to find end of comment.\n");
+	    }
 	    pos+=2;
 	    break;
 
@@ -228,17 +300,21 @@ array(string) split(string data)
 	  {
 	    q=search(data,"\"",pos+1);
 	    s=search(data,"\\",pos+1);
-	    if(q==-1) q=strlen(data)-1;
-	    if(s==-1) s=strlen(data)-1;
 
-	    if(q<s)
-	    {
-	      pos=q+1;
+
+	    if( q==-1 ||
+		(s==sizeof(data)-2 && s<q) )
+	      error("Unterminated string.\n");
+
+	    if(s==-1 || s>q) {
+	      pos = q+1;
 	      break;
-	    }else{
-	      pos=s+1;
 	    }
+
+	    pos=s+1;
 	  }
+	  if(has_value(data[start..pos-1], "\n"))
+	    error("Newline in string.\n");
 	  break;
 	}
       }
