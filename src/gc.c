@@ -30,7 +30,7 @@ struct callback *gc_evaluator_callback=0;
 
 #include "block_alloc.h"
 
-RCSID("$Id: gc.c,v 1.124 2000/08/17 18:57:37 grubba Exp $");
+RCSID("$Id: gc.c,v 1.125 2000/08/22 17:20:38 grubba Exp $");
 
 /* Run garbage collect approximately every time
  * 20 percent of all arrays, objects and programs is
@@ -2221,4 +2221,14 @@ void f__gc_status(INT32 args)
   push_float(objects_freed * (double) num_allocs / (double) alloc_threshold);
 
   f_aggregate_mapping(14);
+}
+
+void cleanup_gc(void)
+{
+#ifdef PIKE_DEBUG
+  if (gc_evaluator_callback) {
+    remove_callback(gc_evaluator_callback);
+    gc_evaluator_callback = NULL;
+  }
+#endif /* PIKE_DEBUG */
 }
