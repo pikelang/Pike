@@ -1,6 +1,6 @@
-/* test_server.pike
+/* https.pike
  *
- * echoes packets over the SSL-packet layer
+ * dummy https server
  */
 
 #define PORT 25678
