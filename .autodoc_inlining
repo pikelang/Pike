@@ -1,0 +1,221 @@
+                      +-----------------------+
+                      | Pike autodoc inlining |
+                      +-----------------------+
+
+The autodoc extractor works either in C mode or in Pike mode. The
+reason why the two modes are not the same is that they perform two
+very different tasks.
+
+The C mode only has to find comments in the file, and ignores the
+surrounding code totally.
+
+The Pike mode, on the other hand, is supposed to be smarter and
+distill a lot of information from the Pike code that surrounds the
+comments.
+
+Both work at the file level. That makes it easy to use for example
+"make" to generate documentation for the source tree. Another benefit
+is that the generation will not have to reparse all of the tree if
+only one source file is changed.
+
+For Pike module trees, the extractor can recurse through the file tree
+on its own, but for C files, where the directory structure gives
+insufficient cues about what is what, there must be make targets set
+up manually. All generated XML files can then be merged together into
+the final Pike namespace.
+
+======================================================================
+a) C files
+----------------------------------------------------------------------
+
+In C files, the doc comments look like:
+
+  /*! yadda yadda
+   *! yadda yadda yadda
+   */
+
+Note that only lines that start with *! count, so above are only two
+doc lines. Any whitespace before the leading *! is skipped, so that
+the lines can be indented freely.
+
+In the C files, no parsing of the surrounding code is done. The
+context lies completely in the doc comments themselves, and the target
+of the doc comment is determined by special meta keywords that are not
+really part of the doc blocks, but rather modifiers that tell which
+Pike entity the doc is about.
+
+  /*! @module Foo
+   *!   ... doc for the Foo module ...
+   *!           ...                 */
+
+    /*! @decl int a()
+     *!   ... doc for the method Foo.a() ...
+     *!    ....                      */
+
+    /*! @class Bar
+     *!   ... doc for the class Foo.Bar  ...
+     *!           ...                 */
+
+      /*! @decl mapping(string:string) userprefs()
+       *!   ... doc for the method Foo.Bar->userprefs() ...
+       *!           ...                 */
+
+      /*! @decl int a
+       *! @decl int b
+       *!   ... doc for the variables Foo.Bar->a and Foo.Bar->b ...
+       *!      ...                      */
+
+    /*! @endclass */
+
+  /*! @endmodule */
+
+The @module and @class too keywords are to work like segment
+directives in assembler source files. That is, you can have "@module
+foo" in several C files, if the module source is spread over multiple
+files. However, if you write doc for the module itself in several
+places, an error will be triggered.
+
+
+======================================================================
+b) Pike files
+----------------------------------------------------------------------
+
+Doc comments look like:
+
+  //. yadda yadda yadda
+  //. yadda yadda
+
+To be considered one doc block, the comments must be separated only by
+whitespace and _one_ "\n", that is they have to be on adjacent lines
+in the code. Each doc block in the Pike code has one or more targets;
+the Pike entities (modules, classes, variables etc.) that the doc
+block is documenting. The target of a doc comment is the coherent
+block of declarations adjacent to (immediately before or after) it in
+the code, without intervening blank lines. Examples:
+
+  //. Doc for alpha
+  int alpha()
+  {
+    return 4711;
+  }
+
+  static int undocumented;
+
+  //. Error! This doc block has no destination!
+
+  int beta;
+  //. Doc for beta
+
+  //. Doc for gamma, delta, and epsilon
+  int gamma, delta;
+  float epsilon;
+
+  //. Error here!
+  int zeta;
+  //. ambiguous which doc to associate with zeta.
+
+  int eta;
+  //. Error here too! ambiguous which variable is documented.
+  int theta;
+
+  //. Doc for two methods. This is so UGLY!
+  int methodOne()
+  {
+    ...
+  }
+  int methodTwo()
+  {
+    ...
+  }
+
+  //. However, it can be useful sometimes, for short methods:
+  int very_short() { return 4711; }
+  int even_shorter() { return 0; }
+
+
+In Pike files, you can not use @class or @module to tell which module
+or class you are in. To document a class, you simply write:
+
+//. Doc for the class
+class CheeseMaker
+{
+  //. You can even document inherits!
+  inherit Earth : earth;
+
+  //. Doc for CheeseMaker->a()
+  int a()
+  {
+    ...
+  }
+
+  void create(string s) { ... }
+}
+
+The parser will automatically identify a() as a member method of the
+class CheeseMaker, and will detect that Earth is inherited by
+CheeseMaker. If a class has no documentation comment, it's internals
+will not be examined, thus it is an error if a class contains
+documentation comments but is itself undocumented:
+
+class a()
+{
+  //. @decl foo
+  //.    ... doc for foo ...
+}
+
+If a doc block is the first in a file, and it has no target, then it
+is treated as doc for the file (or rather: the module/class that the
+file compiles into) itself. In any other case it is an error to have a
+targetless doc block. A target can also be set with the @decl meta
+keyword. If a doc comment begins with some @decl keywords, these
+@decl's act just like real declarations standing next to the doc.
+Thus:
+
+  //.@decl int a(int x)
+  //.@decl int b(int x)
+  //.  Here is some doc for these functions....
+
+is autodocwise equivalent to:
+
+  //.  Here is some doc for these functions....
+  int a(int x)
+  {
+     .....
+  }
+  int b(int x)
+  {
+     .....
+  }
+
+In _one_ case it is legal to have both an adjacent declaration and
+the @decl keyword at the block beginning. That is when you document
+"polymorph" methods. Then the adjacent declaration must be a method,
+and all @decl's must be methods that have the same name as the real
+method:
+
+  //.@decl float cube(float x)
+  //.@decl int cube(int x)
+  //.  Gives x**3.
+  //.@param x
+  //.  The number to cube.
+  int|float cube(int|float x)
+  {
+     ....
+  }
+
+The real method prototype is discarded in favour to the @decl'ed
+variants, who will be shown in the documentation instead.
+
+One problem that is unsolved so far is how to handle #if .. #else ..
+#endif constructions. The approach so far has been to ignore
+preprocessor directives totally. For example, the parser does not
+handle:
+
+  #ifdef MALE
+    int bertil()
+  #else
+    int berit()
+  #endif
+  {
+    ... body ...
+  }
