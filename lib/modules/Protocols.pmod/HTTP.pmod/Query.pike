@@ -589,7 +589,7 @@ object file(void|mapping newheader,void|mapping removeheader)
    if (zero_type(headers["content-length"]))
       len=0x7fffffff;
    else 
-      strlen(headerbuf)+4+(int)h["content-length"];
+      len=strlen(headerbuf)+4+(int)h["content-length"];
    return PseudoFile(con,buf,len);
 }
 
