@@ -1,4 +1,4 @@
-test_true([["$Id: testsuite.in,v 1.685 2003/10/10 01:20:14 mast Exp $"]]);
+test_true([["$Id: testsuite.in,v 1.686 2003/10/10 15:45:23 grubba Exp $"]]);
 
 // This triggered a bug only if run sufficiently early.
 test_compile_any([[#pike 7.2]])
@@ -27,6 +27,11 @@ test_eq(0xf0000000-0xf0000000, 0);
 test_eq(0x80000001-0x80000000, 1);
 test_eq(0x80000000-0x80000001,-1);
 test_eq(-2147483648*-1, -2147483648/-1);
+test_eq(0x8000000000000000-0x8000000000000000, 0);
+test_eq(0xf000000000000000-0xf000000000000000, 0);
+test_eq(0x8000000000000001-0x8000000000000000, 1);
+test_eq(0x8000000000000000-0x8000000000000001,-1);
+test_eq(-9223372036854775808*-1, -9223372036854775808/-1);
 test_true([[1.0e-40]]);
 test_eq([[#"foo
 bar"]],[["foo\nbar"]]);
@@ -5491,6 +5496,12 @@ cond([[ sizeof( cpp("__AUTO_BIGNUM__")/"__AUTO_BIGNUM__" ) == 1 ]],
   test_eq("-2147483649", [[ (string)-0x80000001 ]])
   test_eq("2147483648", [[ (string)-(-0x80000000) ]])
   test_eq("2147483649", [[ (string)-(-0x80000001) ]])
+  test_eq("9223372036854775808", [[ (string)0x8000000000000000 ]])
+  test_eq("9223372036854775809", [[ (string)0x8000000000000001 ]])
+  test_eq("-9223372036854775808", [[ (string)-0x8000000000000000 ]])
+  test_eq("-9223372036854775808", [[ (string)-0x8000000000000001 ]])
+  test_eq("9223372036854775808", [[ (string)-(-0x8000000000000000) ]])
+  test_eq("9223372036854775809", [[ (string)-(-0x8000000000000001) ]])
   test_eq("123456789123456789", [[ (string)123456789123456789 ]])
   test_eq("-123456789123456789", [[ (string)-123456789123456789 ]])
   test_eq("335812727629498640265", [[ (string)0x123456789123456789 ]])
@@ -5500,6 +5511,7 @@ cond([[ sizeof( cpp("__AUTO_BIGNUM__")/"__AUTO_BIGNUM__" ) == 1 ]],
   test_eq("1125899906842624", [[ (string)0b100000000000000000000000000000000000000000000000000 ]])
   test_eq("-1125899906842624", [[ (string)-0b100000000000000000000000000000000000000000000000000 ]])
   test_eq(500000000 * 10, 5000000000)
+  test_eq(5000000000000000000 * 10, 50000000000000000000)
     
   // These numbers should be ordinary integers.
   test_false([[ objectp(-0x80000000) ]])
@@ -5519,6 +5531,18 @@ cond([[ sizeof( cpp("__AUTO_BIGNUM__")/"__AUTO_BIGNUM__" ) == 1 ]],
    [[ (string)(class { int f() { int x=0x7fffffff;++x;return x; } })()->f() ]])
   test_eq("2147483648",
    [[ (string)(class { int f() { int x=0x7fffffff;x++;return x; } })()->f() ]])
+  test_eq("9223372036854775808",
+   [[ (string)(class { int f(int x) { x++; return x; } })()->f(0x7fffffffffffffff) ]])
+  test_eq("9223372036854775808",
+   [[ (string)(class { int f(int x) { ++x; return x; } })()->f(0x7fffffffffffffff) ]])
+  test_eq("9223372036854775808",
+   [[ (string)(class { int x=0x7fffffffffffffff;int f() { ++x;return x; } })()->f() ]])
+  test_eq("9223372036854775808",
+   [[ (string)(class { int x=0x7fffffffffffffff;int f() { x++;return x; } })()->f() ]])
+  test_eq("9223372036854775808",
+   [[ (string)(class { int f() { int x=0x7fffffffffffffff;++x;return x; } })()->f() ]])
+  test_eq("9223372036854775808",
+   [[ (string)(class { int f() { int x=0x7fffffffffffffff;x++;return x; } })()->f() ]])
   
   // Test decrementations (FIXME: More cases?).
   test_eq("-2147483649",
@@ -5533,6 +5557,18 @@ cond([[ sizeof( cpp("__AUTO_BIGNUM__")/"__AUTO_BIGNUM__" ) == 1 ]],
    [[ (string)(class { int f() { int x=-0x80000000;--x;return x; } })()->f()]])
   test_eq("-2147483649",
    [[ (string)(class { int f() { int x=-0x80000000;x--;return x; } })()->f()]])
+  test_eq("-9223372036854775809",
+   [[ (string)(class { int f(int x) { x--; return x; } })()->f(-0x8000000000000000) ]])
+  test_eq("-9223372036854775809",
+   [[ (string)(class { int f(int x) { --x; return x; } })()->f(-0x8000000000000000) ]])
+  test_eq("-9223372036854775809",
+   [[ (string)(class { int x=-0x8000000000000000;int f() { --x;return x; } })()->f()]])
+  test_eq("-9223372036854775809",
+   [[ (string)(class { int x=-0x8000000000000000;int f() { x--;return x; } })()->f()]])
+  test_eq("-9223372036854775809",
+   [[ (string)(class { int f() { int x=-0x8000000000000000;--x;return x; } })()->f()]])
+  test_eq("-9223372036854775809",
+   [[ (string)(class { int f() { int x=-0x8000000000000000;x--;return x; } })()->f()]])
 
   test_encode(1<<99);
 ]])
@@ -5572,13 +5608,20 @@ cond([[ sizeof( cpp("__AUTO_BIGNUM__")/"__AUTO_BIGNUM__" ) == 1 ]],
   test_eq("2147483648", [[ (string)abs(0x80000000) ]])
   test_eq("2147483649", [[ (string)abs(0x80000001) ]])
   test_eq("2147483649", [[ (string)abs(-0x80000001) ]])
+  test_eq("9223372036854775808", [[ (string)abs(-0x8000000000000000) ]])
+  test_eq("9223372036854775808", [[ (string)abs(0x8000000000000000) ]])
+  test_eq("9223372036854775809", [[ (string)abs(0x8000000000000001) ]])
+  test_eq("9223372036854775809", [[ (string)abs(-0x8000000000000001) ]])
 
   // - Add.
   test_eq("2147483648", [[ (string)(0x7fffffff + 1) ]])
   test_eq("2147483649", [[ (string)(0x7fffffff + 2) ]])
+  test_eq("-2147483648", [[ (string)((-0x80000001) + 1) ]])
+  test_eq("9223372036854775808", [[ (string)(0x7fffffffffffffff + 1) ]])
+  test_eq("92233720368547758089", [[ (string)(0x7fffffffffffffff + 2) ]])
+  test_eq("-9223372036854775808", [[ (string)((-0x8000000000000001) + 1) ]])
   test_eq("2684354560", [[ (string)(0x50000000 + 0x50000000) ]])
   test_eq("-2684354560", [[ (string)((-0x50000000) + (-0x50000000)) ]])
-  test_eq("-2147483648", [[ (string)((-0x80000001) + 1) ]])
   test_false([[ objectp((-0x80000001) + 1) ]])
 
   // - Add-eq.
