@@ -7855,7 +7855,7 @@ MIME.Message-&gt;setdisp_param
 </section>
 </module>
 
-<anchor name=Simulate>
+<module name=Simulate title="Compatibility functions">
 <section title="Simulate">
 This module is used to achieve better compatibility with older versions of
 Pike. It can also be used for convenience, but I would advice against it
@@ -7870,486 +7870,339 @@ modules. In addition, these functions are available:
 
 <hr newpage>
 
-<anchor name=Simulate.member_array>
-<dl>
-<dt><encaps>NAME</encaps><dd>
-<tt>Simulate.member_array</tt> - find first occurrence of a value in an array
-<p>
-<dt><encaps>SYNTAX</encaps><dd>
-<tt>int member_array(mixed <I>item</I>, mixed *<I>arr</I>);<br>
-</tt>
-<p>
-<dt><encaps>DESCRIPTION</encaps><dd>
+<function name=Simulate.member_array title="find first occurrence of a value in an array">
+<man_syntax>
+int member_array(mixed <I>item</I>, mixed *<I>arr</I>);
+</man_syntax>
+<man_description>
 Returns the index of the first occurrence of item in array arr.
 If not found, then -1 is returned. This is the same as
 <tt>search(<i>arr</i>, <i>item</i>)</tt>.
-<p>
-</dl>
+</man_description>
+</function>
 
-</anchor>
 <hr newpage>
 
-<anchor name=Simulate.previous_object>
-<dl>
-<dt><encaps>NAME</encaps><dd>
-<tt>Simulate.previous_object</tt> - return the calling object
-<p>
-<dt><encaps>SYNTAX</encaps><dd>
-<tt>object previous_object();<br>
-</tt>
-<p>
-<dt><encaps>DESCRIPTION</encaps><dd>
+<function name=Simulate.previous_object title="return the calling object">
+<man_syntax>
+object previous_object();
+</man_syntax>
+<man_description>
 Returns an object pointer to the object that called current function,
 if any.
-<p>
-<dt><encaps>SEE ALSO</encaps><dd>
-<link to=backtrace>backtrace</link>
-<p>
-</dl>
-
-</anchor>
+</man_description>
+<man_see>
+backtrace
+</man_see>
+</function>
 
 <hr newpage>
 
-<anchor name=Simulate.this_function>
-<dl>
-<dt><encaps>NAME</encaps><dd>
-<tt>Simulate.this_function</tt> - return a function pointer to the current function
-<p>
-<dt><encaps>SYNTAX</encaps><dd>
-<tt>function this_function();<br>
-</tt>
-<p>
-<dt><encaps>DESCRIPTION</encaps><dd>
+<function name=Simulate.this_function title="return a function pointer to the current function">
+<man_syntax>
+function this_function();
+</man_syntax>
+<man_description>
 Returns a function pointer to the current function, useful for
 making recursive lambda-functions.
-<p>
-<dt><encaps>SEE ALSO</encaps><dd>
-<link to=backtrace>backtrace</link>
-<p>
-</dl>
+</man_description>
+<man_see>
+backtrace
+</man_see>
+</function>
 
-</anchor>
 <hr newpage>
 
-<anchor name=Simulate.get_function>
-<dl>
-<dt><encaps>NAME</encaps><dd>
-<tt>Simulate.get_function</tt> - fetch a function from an object
-<p>
-<dt><encaps>SYNTAX</encaps><dd>
-<tt>function get_function(object <I>o</I>, string <I>name</I>);<br>
-</tt>
-<p>
-<dt><encaps>DESCRIPTION</encaps><dd>
+<function name=Simulate.get_function title="fetch a function from an object">
+<man_syntax>
+function get_function(object <I>o</I>, string <I>name</I>);
+</man_syntax>
+<man_description>
 Defined as: return o[name];
-<p>
-</dl>
+</man_description>
+</function>
 
-</anchor>
 <hr newpage>
-<anchor name=Simulate.map_regexp>
-<dl>
-<dt><encaps>NAME</encaps><dd>
-<tt>Simulate.map_regexp</tt> - filter an array through a regexp
-<p>
-<dt><encaps>SYNTAX</encaps><dd>
-<tt>array(string) regexp(array(string) <I>arr</I>, string <I>reg</I>);<br>
-</tt>
-<p>
-<dt><encaps>DESCRIPTION</encaps><dd>
+
+<function name=Simulate.map_regexp title="filter an array through a regexp">
+<man_syntax>
+array(string) regexp(array(string) <I>arr</I>, string <I>reg</I>);
+</man_syntax>
+<man_description>
 Returns those strings in arr that matches the regexp in reg.
-<p>
-<dt><encaps>SEE ALSO</encaps><dd>
-<link to=Regexp>Regexp</link>
-<p>
-</dl>
-</anchor>
+</man_description>
+<man_see>
+Regexp
+</man_see>
+</function>
 
 <hr newpage>
 
-<anchor name=Simulate.PI>
-<dl>
-<dt><encaps>NAME</encaps><dd>
-<tt>Simulate.PI</tt> - pi
-<p>
-<dt><encaps>SYNTAX</encaps><dd>
-<tt>PI<br>
-</tt>
-<p>
-<dt><encaps>DESCRIPTION</encaps><dd>
+<constant name=Simulate.PI title="pi">
+<man_syntax>
+PI;
+</man_syntax>
+<man_description>
 This is not a function, it is a constant roughly equal to the mathematical
 constant Pi.
-<p>
-</dl>
+</man_description>
+</constant>
 
-</anchor>
 <hr newpage>
 
-<anchor name=Simulate.all_efuns>
-<dl>
-<dt><encaps>NAME</encaps><dd>
-<tt>all_efuns</tt> - return all 'efuns'
-<p>
-<dt><encaps>SYNTAX</encaps><dd>
-<tt>mapping all_efuns();<br>
-</tt>
-<p>
-<dt><encaps>DESCRIPTION</encaps><dd>
+<function name=Simulate.all_efuns title="return all 'efuns'">
+<man_syntax>
+mapping all_efuns();
+</man_syntax>
+<man_description>
 This function is the same as all_constants.
-<p>
-<dt><encaps>SEE ALSO</encaps><dd>
-<link to=all_constants>all_constants</link>
-<p>
-</dl>
-
-</anchor>
+</man_description>
+<man_see>
+all_constants
+</man_see>
+</function>
 
 <hr newpage>
 
-<anchor name=Simulate.explode>
-<dl>
-<dt><encaps>NAME</encaps><dd>
-<tt>Simulate.explode</tt> - explode a string on a delimeter
-<p>
-<dt><encaps>SYNTAX</encaps><dd>
-<tt>string explode(string <I>s</I>, string <I>delimiter</I>);<br>
-</tt>
-<p>
-<dt><encaps>DESCRIPTION</encaps><dd>
+<function name=Simulate.explode title="explode a string on a delimeter">
+<man_syntax>
+string explode(string <I>s</I>, string <I>delimiter</I>);
+</man_syntax>
+<man_description>
 This function is really the same as the division operator.
 It simly divides the string <i>s</i> into an array by splitting
 <i>s</i> at every occurance of <i>delimeter</i>.
-<p>
-<dt><encaps>SEE ALSO</encaps><dd>
-<link to=Simulate.implode>Simulate.implode</link>
-<p>
-</dl>
+</man_description>
+<man_see>
+Simulate.implode
+</man_see>
+</function>
 
-</anchor>
 <hr newpage>
 
-<anchor name=Simulate.filter_array>
-<dl>
-<dt><encaps>NAME</encaps><dd>
-<tt>Simulate.filter_array</tt> - filter an array through a function
-<p>
-<dt><encaps>SYNTAX</encaps><dd>
-<tt>
-<p>mixed *filter_array(mixed *<I>arr</I>,function <I>fun</I>,mixed ... <I>args</I>);<br>
-or<br>
+<function name=Simulate.filter_array title="filter an array through a function">
+<man_syntax>
+mixed *filter_array(mixed *<I>arr</I>,function <I>fun</I>,mixed ... <I>args</I>);<br>
 mixed *filter_array(object *<I>arr</I>,string <I>fun</I>,mixed ... <I>args</I>);<br>
-or<br>
 mixed *filter_array(function *<I>arr</I>,-<I>1</I>,mixed ... <I>args</I>);<br>
-</tt>
-<p>
-<dt><encaps>DESCRIPTION</encaps><dd>
+</man_syntax>
+<man_description>
 Filter array is the same function as Array.filter.
-<p>
-<dt><encaps>SEE ALSO</encaps><dd>
-<link to=Array.filter>Array.filter</link>
-<p>
-</dl>
+</man_description>
+<man_see>
+Array.filter
+</man_see>
+</function>
 
-</anchor>
 <hr newpage>
 
-<anchor name=Simulate.implode>
-<dl>
-<dt><encaps>NAME</encaps><dd>
-<tt>Simulate.implode</tt> - implode an array of strings
-<p>
-<dt><encaps>SYNTAX</encaps><dd>
-<tt>string implode(array(string) <I>a</I>, string <I>delimiter</I>);<br>
-</tt>
-<p>
-<dt><encaps>DESCRIPTION</encaps><dd>
+<function name=Simulate.implode title="implode an array of strings">
+<man_syntax>
+string implode(array(string) <I>a</I>, string <I>delimiter</I>);
+</man_syntax>
+<man_description>
 This function is the inverse of explode. It concatenates all the
 strings in a with a delimiter in between each.
 <p>This function is the same as multiplication.
-<p>
-<dt><encaps>EXAMPLES</encaps><dd>
-<tt>&gt; implode( ({ "foo","bar","gazonk"}), "-" );<br>
+</man_description>
+<man_example>
+&gt; implode( ({ "foo","bar","gazonk"}), "-" );<br>
 Result: foo-bar-gazonk<br>
 &gt; ({ "a","b","c" })*" and ";<br>
 Result: a and b and c<br>
 &gt; <br>
-</tt>
-<p>
-<dt><encaps>SEE ALSO</encaps><dd>
-<link to=Simulate.explode>Simulate.explode</link>
-<p>
-</dl>
+</man_example>
+<man_see>
+Simulate.explode
+</man_see>
+</function>
 
-</anchor>
 <hr newpage>
 
-
-<anchor name=Simulate.m_indices>
-<dl>
-<dt><encaps>NAME</encaps><dd>
-<tt>Simulate.m_indices</tt> - return all indices from a mapping
-<p>
-<dt><encaps>SYNTAX</encaps><dd>
-<tt>mixed *m_indices(mapping <I>m</I>);<br>
-</tt>
-<p>
-<dt><encaps>DESCRIPTION</encaps><dd>
+<function name=Simulate.m_indices title="return all indices from a mapping">
+<man_syntax>
+mixed *m_indices(mapping <I>m</I>);
+</man_syntax>
+<man_description>
 This function is equal to indices.
-<p>
-<dt><encaps>SEE ALSO</encaps><dd>
-<link to=indices>indices</link>
-<p>
-</dl>
-</anchor>
+</man_description>
+<man_see>
+indices
+</man_see>
+</function>
 
 <hr newpage>
-<anchor name=Simulate.m_sizeof>
-<dl>
-<dt><encaps>NAME</encaps><dd>
-<tt>Simulate.m_sizeof</tt> - return the size of a mapping
-<p>
-<dt><encaps>SYNTAX</encaps><dd>
-<tt>int m_sizeof(mapping <I>m</I>);<br>
-</tt>
-<p>
-<dt><encaps>DESCRIPTION</encaps><dd>
+
+<function name=Simulate.m_sizeof title="return the size of a mapping">
+<man_syntax>
+int m_sizeof(mapping <I>m</I>);
+</man_syntax>
+<man_description>
 This function is equal to sizeof.
-<p>
-<dt><encaps>SEE ALSO</encaps><dd>
-<link to=sizeof>sizeof</link>
-<p>
-</dl>
-
-</anchor>
+</man_description>
+<man_see>
+sizeof
+</man_see>
+</function>
 
 <hr newpage>
-<anchor name=Simulate.m_values>
-<dl>
-<dt><encaps>NAME</encaps><dd>
-<tt>Simulate.m_values</tt> - return all values from a mapping
-<p>
-<dt><encaps>SYNTAX</encaps><dd>
-<tt>mixed *m_values(mapping <I>m</I>);<br>
-</tt>
-<p>
-<dt><encaps>DESCRIPTION</encaps><dd>
+
+<function name=Simulate.m_values title="return all values from a mapping">
+<man_syntax>
+mixed *m_values(mapping <I>m</I>);
+</man_syntax>
+<man_description>
 This function is equal to values.
-<p>
-<dt><encaps>SEE ALSO</encaps><dd>
-<link to=values>values</link>
-<p>
-</dl>
+</man_description>
+<man_see>
+values
+</man_see>
+</function>
 
-</anchor>
 <hr newpage>
 
-<anchor name=Simulate.map_array>
-<dl>
-<dt><encaps>NAME</encaps><dd>
-<tt>Simulate.map_array</tt> - map an array over a function
-<p>
-<dt><encaps>SYNTAX</encaps><dd>
-<tt>mixed *map_array(mixed *<I>arr</I>,function <I>fun</I>,mixed ... <I>args</I>);<br>
-or<br>
+<function name=Simulate.map_array title="map an array over a function">
+<man_syntax>
+mixed *map_array(mixed *<I>arr</I>,function <I>fun</I>,mixed ... <I>args</I>);<br>
 mixed *map_array(object *<I>arr</I>,string <I>fun</I>,mixed ... <I>args</I>);<br>
-or<br>
-mixed *map_array(function *<I>arr</I>,-<I>1</I>,mixed ... <I>arg</I>);<br>
-</tt>
-<p>
-<dt><encaps>DESCRIPTION</encaps><dd>
+mixed *map_array(function *<I>arr</I>,-<I>1</I>,mixed ... <I>arg</I>);
+</man_syntax>
+<man_description>
 This function is the same as Array.map.
-<p>
-<dt><encaps>SEE ALSO</encaps><dd>
-<link to=Array.map>Array.map</link>
-<p>
-</dl>
+</man_description>
+<man_see>
+Array.map
+</man_see>
+</function>
 
-</anchor>
 <hr newpage>
 
-
-
-<anchor name=Simulate.strstr>
-<dl>
-<dt><encaps>NAME</encaps><dd>
-<tt>Simulate.strstr</tt> - find a string inside a string
-<p>
-<dt><encaps>SYNTAX</encaps><dd>
-<tt>int strstr(string <I>str1</I>,string <I>str2</I>);<br>
-</tt>
-<p>
-<dt><encaps>DESCRIPTION</encaps><dd>
+<function name=Simulate.strstr title="find a string inside a string">
+<man_syntax>
+int strstr(string <I>str1</I>,string <I>str2</I>);
+</man_syntax>
+<man_description>
 Returns the position of <i>str2</i> in <i>str1</i>, if <i>str2</i> can't be found in <i>str1</i>
 -1 is returned.
-<p>
-<dt><encaps>SEE ALSO</encaps><dd>
-<link to=sscanf>sscanf</link>, <link to=Simulate.explode>Simulate.explode</link>, <link to=search>search</link>
-<p>
-</dl>
-
-</anchor>
+</man_description>
+<man_see>
+sscanf, Simulate.explode, search
+</man_see>
+</function>
 
 <hr newpage>
-<anchor name=Simulate.sum>
-<dl>
-<dt><encaps>NAME</encaps><dd>
-<tt>Simulate.sum</tt> - add values together
-<p>
-<dt><encaps>SYNTAX</encaps><dd>
-<tt>
-<p>int sum(int ... <I>i</I>);<br>
-or<br>
+
+<function name=Simulate.sum title="add values together">
+<man_syntax>
+int sum(int ... <I>i</I>);<br>
 float sum(float ... <I>f</I>);<br>
-or<br>
 string sum(string|float|int ... <I>p</I>);<br>
-or<br>
 array sum(array ... <I>a</I>);<br>
-or<br>
 mapping sum(mapping ... <I>m</I>);<br>
-or<br>
 list sum(multiset ... <I>l</I>);<br>
-</tt>
-<p>
-<dt><encaps>DESCRIPTION</encaps><dd>
+</man_syntax>
+<man_description>
 This function does exactly the same thing as adding all the arguments
 together with +. It's just here so you can get a function pointer to
 the summation operator.
-<p>
-</dl>
-
-</anchor>
+</man_description>
+</function>
 
 <hr newpage>
-<anchor name=Simulate.add_efun>
-<dl>
-<dt><encaps>NAME</encaps><dd>
-<tt>Simulate.add_efun</tt> - add an efun or constant
-<p>
-<dt><encaps>SYNTAX</encaps><dd>
-<tt>void add_efun(string func_name, mixed function)<br>
-or<br>
-void add_efun(string func_name)<br>
-</tt>
-<p>
-<dt><encaps>DESCRIPTION</encaps><dd>
+
+<function name=Simulate.add_efun title="add an efun or constant">
+<man_syntax>
+void add_efun(string func_name, mixed function)<br>
+void add_efun(string func_name)
+</man_syntax>
+<man_description>
 This function is the same as add_constant.
-<p>
-<dt><encaps>SEE ALSO</encaps><dd>
-<link to=add_constant>Simulate.add_constant</link>
-<p>
-</dl>
-</anchor>
+</man_description>
+<man_see>
+Simulate.add_constant
+</man_see>
+</function>
 
 <hr newpage>
-<anchor name=Simulate.l_sizeof>
-<dl>
-<dt><encaps>NAME</encaps><dd>
-<tt>Simulate.l_sizeof</tt> - return the size of a multiset
-<p>
-<dt><encaps>SYNTAX</encaps><dd>
-<tt>int l_sizeof(multiset <I>m</I>);<br>
-</tt>
-<p>
-<dt><encaps>DESCRIPTION</encaps><dd>
+
+<function name=Simulate.l_sizeof title="return the size of a multiset">
+<man_syntax>
+int l_sizeof(multiset <I>m</I>);
+</man_syntax>
+<man_description>
 This function is equal to sizeof.
-<p>
-<dt><encaps>SEE ALSO</encaps><dd>
-<link to=sizeof>sizeof</link>
-<p>
-</dl>
+</man_description>
+<man_see>
+sizeof
+</man_see>
+</function>
 
-</anchor>
 <hr newpage>
-<anchor name=Simulate.listp>
-<dl>
-<dt><encaps>NAME</encaps><dd>
-<tt>Simulate.listp</tt> - is the argument a list? (multiset)
-<p>
-<dt><encaps>SYNTAX</encaps><dd>
-<tt>int listp(mixed l)<br>
-</tt>
-<p>
-<dt><encaps>DESCRIPTION</encaps><dd>
+
+<function name=Simulate.listp title="is the argument a list? (multiset)">
+<man_syntax>
+int listp(mixed <I>l</I>);
+</man_syntax>
+<man_description>
 This function is the same as multisetp.
-<p>
-<dt><encaps>SEE ALSO</encaps><dd>
-<link to=multisetp>Simulate.multisetp</link>
-<p>
-</dl>
-
-</anchor>
+</man_description>
+<man_see>
+Simulate.multisetp
+</man_see>
+</function>
 
 <hr newpage>
-<anchor name=Simulate.mklist>
-<dl>
-<dt><encaps>NAME</encaps><dd>
-<tt>Simulate.mklist</tt> - make a multiset
-<p>
-<dt><encaps>SYNTAX</encaps><dd>
-<tt>multiset mklist(mixed *a)<br>
-</tt>
-<p>
-<dt><encaps>DESCRIPTION</encaps><dd>
+
+<function name=Simulate.mklist title="make a multiset">
+<man_syntax>
+multiset mklist(mixed *<I>a</I>);
+</man_syntax>
+<man_description>
 This function creates a multiset from an array.
-<p>
-<dt><encaps>EXAMPLE</encaps><dd>
-<tt>&gt; mklist( ({1,2,3}) );<br>
+</man_description>
+<man_example>
+&gt; mklist( ({1,2,3}) );<br>
 Result: (&lt; /* 3 elements */<br>
 <dl><dt><dd>1,<br>
 2,<br>
 3<br>
 </dl>&gt;)<br>
-</tt>
-<p>
-<dt><encaps>SEE ALSO</encaps><dd>
-<link to=aggregate_multiset>aggregate_multiset</link>
-<p>
-</dl>
-
-</anchor>
+</man_example>
+<man_see>
+aggregate_multiset
+</man_see>
+</function>
 
 <hr newpage>
-<anchor name=Simulate.aggregate_list>
-<dl>
-<dt><encaps>NAME</encaps><dd>
-<tt>Simulate.aggregate_list</tt> - aggregate a multiset
-<p>
-<dt><encaps>SYNTAX</encaps><dd>
-<tt>multiset aggregate_list(mixed ... <I>args</I>);<br>
-</tt>
-<p>
-<dt><encaps>DESCRIPTION</encaps><dd>
+
+<function name=Simulate.aggregate_list title="aggregate a multiset">
+<man_syntax>
+multiset aggregate_list(mixed ... <I>args</I>);
+</man_syntax>
+<man_description>
 This function is exactly the same as aggregate_multiset.
-<p>
-<dt><encaps>SEE ALSO</encaps><dd>
-<link to=aggregate_multiset>aggregate_multiset</link>
-<p>
-</dl>
-
-</anchor>
+</man_description>
+<man_see>
+aggregate_multiset
+</man_see>
+</function>
 
 <hr newpage>
-<anchor name=Simulate.query_host_name>
-<dl>
-<dt><encaps>NAME</encaps><dd>
-<tt>Simulate.query_host_name</tt> - return the name of the host we are running on
-<p>
-<dt><encaps>SYNTAX</encaps><dd>
-<tt>string query_host_name();<br>
-</tt>
-<p>
-<dt><encaps>DESCRIPTION</encaps><dd>
+
+<function name=Simulate.query_host_name title="return the name of the host we are running on">
+<man_syntax>
+string query_host_name();
+</man_syntax>
+<man_description>
 This function returns the name of the machine the interpreter is
 running on. This is the same thing that the command 'hostname'
 prints.
-<p>
-</dl>
+</man_description>
+</function>
 
-</anchor>
 </section>
 <!-- Simulate.explode saknas -->
-</anchor>
+</module>
 
 <hr newpage>
 
