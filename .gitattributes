@@ -297,7 +297,6 @@ testfont binary
 /src/modules/Gmp/my_gmp.h foreign_ident
 /src/modules/Gmp/my_mpz_xor.c foreign_ident
 /src/modules/Gmp/next_prime.c foreign_ident
-/src/modules/Gmp/prime_table.c foreign_ident
 /src/modules/Gmp/prime_table.pike foreign_ident
 /src/modules/Gmp/testsuite.in foreign_ident
 /src/modules/Gz/Makefile.in foreign_ident
