@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: pike_threadlib.h,v 1.42 2003/04/02 00:55:09 mast Exp $
+|| $Id: pike_threadlib.h,v 1.43 2003/04/02 21:08:13 mast Exp $
 */
 
 #ifndef PIKE_THREADLIB_H
@@ -196,7 +196,6 @@ extern pthread_attr_t small_pattr;
 /* MacOS X (aka Darwin) doesn't have pthread_kill. */
 #define th_kill(ID,sig)
 #endif /* HAVE_PTHREAD_KILL */
-#define th_join(ID,res) LOW_THREAD_CHECK_NONZERO_ERROR (pthread_join((ID),(res)))
 #ifdef HAVE_PTHREAD_COND_INIT
 #define COND_T pthread_cond_t
 
@@ -243,7 +242,6 @@ extern pthread_attr_t small_pattr;
 #define th_self() thr_self()
 #define th_kill(ID,sig) thr_kill((ID),(sig))
 #define low_th_yield() thr_yield()
-#define th_join(ID,res) thr_join((ID), NULL, (res))
 
 #define COND_T cond_t
 #define co_init(X) cond_init((X),USYNC_THREAD,0)
@@ -276,7 +274,6 @@ extern pthread_attr_t small_pattr;
 #define th_exit(X)	exit(X)
 #define th_self()	getpid()
 #define low_th_yield()	sginap(0)
-#define th_join(ID,res)	/*********/
 #define th_equal(X,Y) ((X)==(Y))
 #define th_hash(X) ((unsigned INT32)(X))
 
@@ -302,7 +299,6 @@ extern pthread_attr_t small_pattr;
 #define TH_RETURN_TYPE unsigned __stdcall
 #define TH_STDCALL __stdcall
 #define th_exit(foo) _endthreadex(foo)
-#define th_join(ID,res)	/******************* FIXME! ****************/
 #define th_self() GetCurrentThreadId()
 #define th_destroy(X)
 #define low_th_yield() Sleep(0)
