@@ -232,10 +232,10 @@ class DocGroup {
     }
 
     string res = opentag("docgroup", m);
-    foreach(objects, PikeObject obj)
-      res += obj->xml() + "\n";
     if (documentation)
       res += xmltag("doc", documentation->xml) + "\n";
+    foreach(objects, PikeObject obj)
+      res += obj->xml() + "\n";
     return res + closetag("docgroup") + "\n";
   }
 }
