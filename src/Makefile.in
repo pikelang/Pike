@@ -1,5 +1,5 @@
 #
-# $Id: Makefile.in,v 1.354 2003/06/03 01:07:11 nilsson Exp $
+# $Id: Makefile.in,v 1.355 2003/08/07 02:24:52 nilsson Exp $
 #
 
 # This line is needed on some machines.
@@ -646,15 +646,6 @@ doc_build/src/post_modules/GTK/refdoc/images: doc_build/src
 pike.syms: $(SRCDIR)/interpret.c $(SRCDIR)/interpreter.h $(SRCDIR)/program.c $(SRCDIR)/builtin_functions.c
 	( cat $(SRCDIR)/*.h *.h | egrep  '^[  ]*#[     ]*define[      ][       ]*[a-zA-Z_0-9]*[       ][      ]*[0-9][xabcdefABCDEF0-9]*[  ]*' ; \
 	echo "#define" `$(CPP) $(PREFLAGS) -DSTEP_BREAK_LINE='STEP_BREAK_LINE __LINE__' $(SRCDIR)/interpreter.h | grep STEP_BREAK_LINE` ) >pike.syms
-
-pike-module: $(SRCDIR)/pike-module.in Makefile ./pike
-	$(RUNPIKE) $(SRCDIR)/pike-module.in --fixate=$(SRCDIR)/pike-module.in \
-	   --set='make=$(MAKE)' --set='make_flags=$(MAKE_FLAGS)' \
-	   --set='prefix=$(prefix)' --set='pike=$(exec_prefix)/pike' \
-	   --set='include_path=$(prefix)/include/pike' \
-	   --set='lib_prefix=$(TMP_LIBDIR)' --set='share_prefix=$(LIBDIR_SRC)' \
-           --output=pike-module
-	-@chmod +x pike-module
 
 # We touch the files that depend on language.h_src and
 # interpret_protos.h_src to ensure that the .h_src.h rule doesn't have

@@ -759,7 +759,6 @@ testfont binary
 /src/peep.c foreign_ident
 /src/peep.h foreign_ident
 /src/peep.in foreign_ident
-/src/pike-module.in foreign_ident
 /src/pike_cpulib.c foreign_ident
 /src/pike_cpulib.h foreign_ident
 /src/pike_dlfcn.h foreign_ident
