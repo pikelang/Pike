@@ -1,4 +1,4 @@
-stest_true([["$Id: testsuite.in,v 1.156 1999/03/06 03:15:04 grubba Exp $"]])
+stest_true([["$Id: testsuite.in,v 1.157 1999/03/06 03:16:15 grubba Exp $"]])
 cond([[all_constants()->_verify_internals]],
 [[
   test_do(_verify_internals())
@@ -206,7 +206,7 @@ test_any([[
 
     void create() { bar = baz + A::foo + B::foo; }
   };
-  return B()->bar;
+  return C()->bar;
 ]], 12)
 
 test_eq([[object_program(master())]],[[(program)"/master"]])
