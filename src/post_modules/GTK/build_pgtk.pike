@@ -1167,16 +1167,16 @@ int main(int argc, array argv)
 	   }
 
            int star = sscanf(t, "*%s", t);
-           int optional = sscanf(t, "?%s", t);
-           if( optional )
+           int opt = sscanf(t, "?%s", t);
+           if( opt )
              fundef += ",object|int|void";
            else
              fundef += ",object";
 	   argument_list+=", "+classname(String.capitalize(lower_case(t)));
-           if(optional) 
+           if(opt) 
              argument_list += "|void";
 
-           if(!optional)
+           if(!opt)
            {
              last_was_optional = 0;
              format_string += "%o";
@@ -1191,7 +1191,7 @@ int main(int argc, array argv)
              t = String.capitalize(lower_case(t));
              sargs += ", &"+(star?"*":"")+"_arg"+na;
              post+=(" arg"+na+" = get_gdkobject( _arg"+na+", "+t+");\n");
-             if(!optional)
+             if(!opt)
              {
                post +=("  if(!arg"+na+") error(\"Argument "+
                        na+": Wanted GDK object of type "+t+".\\n\");\n");
@@ -1203,7 +1203,7 @@ int main(int argc, array argv)
              }
            } else {
              sargs += ", &"+(star?"*":"")+"_arg"+na;
-             if(optional)
+             if(opt)
              {
                args += "  struct object *_arg"+na+" = NULL;\n";
                args += "  "+sillycaps(t)+" *arg"+na+" = NULL;\n";
@@ -1214,7 +1214,7 @@ int main(int argc, array argv)
              }
              post+=(" arg"+na+" = GTK_"+upper_case(t)+"(get_pgtkobject(_arg"+
                     na+", pgtk_"+lower_case(t)+"_program ) );\n");
-             if(optional)
+             if(opt)
                post += " else\n    arg"+na+" = NULL;\n";
              else
                post += ("  if(!arg"+na+") error(\"Argument "+
