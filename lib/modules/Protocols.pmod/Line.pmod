@@ -1,5 +1,5 @@
 /*
- * $Id: Line.pmod,v 1.17 2002/02/14 01:45:32 nilsson Exp $
+ * $Id: Line.pmod,v 1.18 2002/09/21 15:08:31 mast Exp $
  *
  * Line-buffered protocol handling.
  *
@@ -291,8 +291,8 @@ class simple
   //!
   void create(object(Stdio.File) con, int|void timeout)
   {
-    local::con = con;
-    local::timeout = timeout;
+    this_program::con = con;
+    this_program::timeout = timeout;
 
     // Start the timeout handler.
     touch_time();

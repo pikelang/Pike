@@ -1,6 +1,6 @@
 #pike __REAL_VERSION__
 
-// $Id: Query.pike,v 1.42 2002/06/04 00:24:16 mast Exp $
+// $Id: Query.pike,v 1.43 2002/09/21 15:08:30 mast Exp $
 
 //!	Open and execute an HTTP query.
 
@@ -497,7 +497,7 @@ object sync_request(string server, int port, string query,
 #endif
     kept_alive = 1;
     // Remove unread data from the connection.
-    local::data();
+    this_program::data();
   }
   else
   {

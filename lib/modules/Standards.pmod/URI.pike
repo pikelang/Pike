@@ -4,7 +4,7 @@
 //! absolute form, as defined in RFC 2396
 
 // Implemented by Johan Sundström and Johan Schön.
-// $Id: URI.pike,v 1.12 2002/03/20 16:40:03 nilsson Exp $
+// $Id: URI.pike,v 1.13 2002/09/21 15:08:30 mast Exp $
 
 #pragma strict_types
 
@@ -170,10 +170,10 @@ void reparse_uri(object(this_program)|string|void base_uri)
   if(stringp(base_uri))
   {
     DEBUG("cloning base URI %O", base_uri);
-    local::base_uri = object_program(this_object())(base_uri); // create a new URI object
+    this_program::base_uri = object_program(this_object())(base_uri); // create a new URI object
   }
   else
-    local::base_uri = [object(this_program)]base_uri;
+    this_program::base_uri = [object(this_program)]base_uri;
 
   // RFC 2396, §5.2:
   // 1) The URI reference is parsed into the potential four components and
@@ -189,14 +189,14 @@ void reparse_uri(object(this_program)|string|void base_uri)
   {
     DEBUG("Path is empty -- Inherit entire base URI "
 	  "as per RFC 2396, §5.2 step 2. Done!");
-    inherit_properties(local::base_uri);
+    inherit_properties(this_program::base_uri);
     return;
   }
 
   if(uri[0] == '#')
   {
     DEBUG("Fragment only. Using entire base URI, except fragment.");
-    inherit_properties(local::base_uri);
+    inherit_properties(this_program::base_uri);
     fragment = uri[1..];
     return;
   }
@@ -209,7 +209,7 @@ void reparse_uri(object(this_program)|string|void base_uri)
   if(sscanf(uri, "%[A-Za-z0-9+.-]:%s", scheme, uri) < 2)
   {
     scheme = 0;
-    if(!local::base_uri)
+    if(!this_program::base_uri)
 	error("Standards.URI: got a relative URI (no scheme) lacking a base_uri!\n");
   }
   DEBUG("Found scheme %O", scheme);
@@ -241,7 +241,7 @@ void reparse_uri(object(this_program)|string|void base_uri)
 	  "says we're absolute. Done!");
     return;
   }
-  scheme = local::base_uri->scheme;
+  scheme = this_program::base_uri->scheme;
   DEBUG("Inherited scheme %O from base URI", scheme);
 
   if(authority)
@@ -255,7 +255,7 @@ void reparse_uri(object(this_program)|string|void base_uri)
   //	use an authority component.
   if(!authority || !sizeof(authority))
   {
-    authority = local::base_uri->authority;
+    authority = this_program::base_uri->authority;
     DEBUG("Inherited authority %O from base URI", authority);
     parse_authority();
 
@@ -270,9 +270,9 @@ void reparse_uri(object(this_program)|string|void base_uri)
       //    describe a simple method using a separate string buffer.
 
       DEBUG("Combining base path %O with path %O => %O",
-	    local::base_uri->path, path,
-	    combine_uri_path(local::base_uri->path, path));
-      path = combine_uri_path(local::base_uri->path, path);
+	    this_program::base_uri->path, path,
+	    combine_uri_path(this_program::base_uri->path, path));
+      path = combine_uri_path(this_program::base_uri->path, path);
 
     }
   }

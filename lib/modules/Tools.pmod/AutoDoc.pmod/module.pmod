@@ -81,9 +81,9 @@ class SourcePosition {
       werror("**********************************************************\n");
       werror("**********************************************************\n");
     }
-    local::filename = filename;
-    local::firstline = firstline;
-    local::lastline = lastline;
+    this_program::filename = filename;
+    this_program::firstline = firstline;
+    this_program::lastline = lastline; 
   }
 
   SourcePosition copy() {
