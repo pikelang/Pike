@@ -80,22 +80,22 @@ PMOD_EXPORT void pike_init_memsearch(struct pike_mem_searcher *s,
 				     PCHARP needle,
 				     ptrdiff_t needlelen,
 				     ptrdiff_t max_haystacklen);
-SearchMojt compile_memsearcher(PCHARP needle,
+PMOD_EXPORT SearchMojt compile_memsearcher(PCHARP needle,
 			       ptrdiff_t needlelen,
 			       int max_haystacklen,
 			       struct pike_string *hashkey);
-SearchMojt simple_compile_memsearcher(struct pike_string *str);
+PMOD_EXPORT SearchMojt simple_compile_memsearcher(struct pike_string *str);
 PMOD_EXPORT char *my_memmem(char *needle,
 			    size_t needlelen,
 			    char *haystack,
 			    size_t haystacklen);
-void init_generic_memsearcher(struct generic_mem_searcher *s,
+PMOD_EXPORT void init_generic_memsearcher(struct generic_mem_searcher *s,
 			      void *needle,
 			      size_t needlelen,
 			      char needle_shift,
 			      size_t estimated_haystack,
 			      char haystack_shift);
-void *generic_memory_search(struct generic_mem_searcher *s,
+PMOD_EXPORT void *generic_memory_search(struct generic_mem_searcher *s,
 			    void *haystack,
 			    size_t haystacklen,
 			    char haystack_shift);

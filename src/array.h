@@ -5,7 +5,7 @@
 \*/
 
 /*
- * $Id: array.h,v 1.28 2000/08/16 15:54:28 grubba Exp $
+ * $Id: array.h,v 1.29 2000/12/13 21:19:09 hubbe Exp $
  */
 #ifndef ARRAY_H
 #define ARRAY_H
@@ -36,7 +36,7 @@ struct array
 #define ARRAY_LVALUE 4
 #define ARRAY_WEAK_SHRINK 8
 
-extern struct array empty_array;
+PMOD_EXPORT extern struct array empty_array;
 extern struct array *gc_internal_array;
 
 #if defined(DEBUG_MALLOC) && defined(PIKE_DEBUG)
@@ -90,7 +90,7 @@ typedef short_cmpfun (*cmpfun_getter)(TYPE_T);
 
 /* Prototypes begin here */
 PMOD_EXPORT struct array *low_allocate_array(ptrdiff_t size, ptrdiff_t extra_space);
-void really_free_array(struct array *v);
+PMOD_EXPORT void really_free_array(struct array *v);
 PMOD_EXPORT void do_free_array(struct array *a);
 PMOD_EXPORT void array_index_no_free(struct svalue *s,struct array *v,INT32 index);
 PMOD_EXPORT void array_index(struct svalue *s,struct array *v,INT32 index);
@@ -125,10 +125,10 @@ PMOD_EXPORT struct array *reorder_and_copy_array(struct array *v, INT32 *order);
 PMOD_EXPORT void array_fix_type_field(struct array *v);
 void array_check_type_field(struct array *v);
 PMOD_EXPORT struct array *compact_array(struct array *v);
-union anything *low_array_get_item_ptr(struct array *a,
+PMOD_EXPORT union anything *low_array_get_item_ptr(struct array *a,
 				       INT32 ind,
 				       TYPE_T t);
-union anything *array_get_item_ptr(struct array *a,
+PMOD_EXPORT union anything *array_get_item_ptr(struct array *a,
 				   struct svalue *ind,
 				   TYPE_T t);
 INT32 * merge(struct array *a,struct array *b,INT32 opcode);

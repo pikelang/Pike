@@ -5,7 +5,7 @@
 \*/
 
 /*
- * $Id: stralloc.h,v 1.57 2000/11/29 21:23:19 hubbe Exp $
+ * $Id: stralloc.h,v 1.58 2000/12/13 21:34:06 hubbe Exp $
  */
 #ifndef STRALLOC_H
 #define STRALLOC_H
@@ -36,7 +36,7 @@ struct string_builder
 };
 
 #ifdef PIKE_DEBUG
-struct pike_string *debug_findstring(const struct pike_string *foo);
+PMOD_EXPORT struct pike_string *debug_findstring(const struct pike_string *foo);
 #endif
 
 #define free_string(s) do{ struct pike_string *_=(s); debug_malloc_touch(_); if(--_->refs<=0) really_free_string(_); }while(0)

@@ -5,7 +5,7 @@
 \*/
 
 /*
- * $Id: interpret.h,v 1.70 2000/12/04 19:39:46 mast Exp $
+ * $Id: interpret.h,v 1.71 2000/12/13 21:27:56 hubbe Exp $
  */
 #ifndef INTERPRET_H
 #define INTERPRET_H
@@ -246,9 +246,9 @@ do{ \
 /* Prototypes begin here */
 void push_sp_mark(void);
 ptrdiff_t pop_sp_mark(void);
-void init_interpreter(void);
+PMOD_EXPORT void init_interpreter(void);
 void lvalue_to_svalue_no_free(struct svalue *to,struct svalue *lval);
-void assign_lvalue(struct svalue *lval,struct svalue *from);
+PMOD_EXPORT void assign_lvalue(struct svalue *lval,struct svalue *from);
 PMOD_EXPORT union anything *get_pointer_if_this_type(struct svalue *lval, TYPE_T t);
 void print_return_value(void);
 void reset_evaluator(void);
@@ -273,7 +273,7 @@ PMOD_EXPORT void apply_svalue(struct svalue *s, INT32 args);
 PMOD_EXPORT void slow_check_stack(void);
 PMOD_EXPORT void custom_check_stack(size_t amount, const char *fmt, ...)
   ATTRIBUTE((format (printf, 2, 3)));
-void cleanup_interpret(void);
+PMOD_EXPORT void cleanup_interpret(void);
 void really_clean_up_interpret(void);
 /* Prototypes end here */
 
