@@ -5,7 +5,7 @@
 \*/
 /**/
 #include "global.h"
-RCSID("$Id: las.c,v 1.109 1999/11/17 03:20:26 grubba Exp $");
+RCSID("$Id: las.c,v 1.110 1999/11/17 18:03:58 grubba Exp $");
 
 #include "language.h"
 #include "interpret.h"
@@ -2165,10 +2165,11 @@ static void zapp_try_optimize(node *n)
 }
 
 #if defined(SHARED_NODES) && !defined(IN_TPIKE)
-static void find_usage(const node *n, unsigned char *usage,
+static void find_usage(node *n, unsigned char *usage,
 		       unsigned char *switch_u,
 		       const unsigned char *cont_u,
-		       const unsigned char *break_u)
+		       const unsigned char *break_u,
+		       const unsigned char *catch_u)
 {
   if (!n)
     return;
@@ -2178,13 +2179,55 @@ static void find_usage(const node *n, unsigned char *usage,
     if ((CDR(n)->token == F_LOCAL) && (!CDR(n)->u.integer.b)) {
       usage[CDR(n)->u.integer.a] = 0;
     } else if (CDR(n)->token == F_ARRAY_LVALUE) {
-      find_usage(CDR(n), usage, switch_u, cont_u, break_u);
+      find_usage(CDR(n), usage, switch_u, cont_u, break_u, catch_u);
     }
-    find_usage(CAR(n), usage, switch_u, cont_u, break_u);
+    find_usage(CAR(n), usage, switch_u, cont_u, break_u, catch_u);
     return;
 
+  case F_SSCANF:
+    {
+      int i;
+
+      /* catch_usage is restored if sscanf throws an error. */
+      for (i=0; i < MAX_LOCAL; i++) {
+	usage[i] |= catch_u[i];
+      }
+      /* Only the first two arguments are evaluated. */
+      if (CAR(n)) {
+	find_usage(CDAR(n), usage, switch_u, cont_u, break_u, catch_u);
+      find_usage(CAAR(n), usage, switch_u, cont_u, break_u, catch_u);
+      }
+      return;
+    }
+
+  case F_CATCH:
+    {
+      unsigned char catch_usage[MAX_LOCAL];
+      int i;
+
+      MEMCPY(catch_usage, usage, MAX_LOCAL);
+      find_usage(CAR(n), usage, switch_u, cont_u, catch_usage, catch_usage);
+      for(i=0; i < MAX_LOCAL; i++) {
+	usage[i] |= catch_usage[i];
+      }
+      return;
+    }
+
+  case F_APPLY:
+    {
+      int i;
+
+      /* catch_usage is restored if the function throws an error. */
+      for (i=0; i < MAX_LOCAL; i++) {
+	usage[i] |= catch_u[i];
+      }
+      find_usage(CDR(n), usage, switch_u, cont_u, break_u, catch_u);
+      find_usage(CAR(n), usage, switch_u, cont_u, break_u, catch_u);
+      return;
+    }
+
   case F_LVALUE_LIST:
-    find_usage(CDR(n), usage, switch_u, cont_u, break_u);
+    find_usage(CDR(n), usage, switch_u, cont_u, break_u, catch_u);
     if (CAR(n)) {
       if ((CAR(n)->token == F_LOCAL) && (!CAR(n)->u.integer.b)) {
 	usage[CAR(n)->u.integer.a] = 0;
@@ -2193,7 +2236,7 @@ static void find_usage(const node *n, unsigned char *usage,
     return;
 
   case F_ARRAY_LVALUE:
-    find_usage(CAR(n), usage, switch_u, cont_u, break_u);
+    find_usage(CAR(n), usage, switch_u, cont_u, break_u, catch_u);
     return;
 
   case F_CONTINUE:
@@ -2209,8 +2252,8 @@ static void find_usage(const node *n, unsigned char *usage,
     {
       int i;
 
-      find_usage(CDR(n), usage, switch_u, cont_u, break_u);
-      find_usage(CAR(n), usage, switch_u, cont_u, break_u);
+      find_usage(CDR(n), usage, switch_u, cont_u, break_u, catch_u);
+      find_usage(CAR(n), usage, switch_u, cont_u, break_u, catch_u);
       for(i = 0; i < MAX_LOCAL; i++) {
 	switch_u[i] |= usage[i];
       }
@@ -2226,13 +2269,13 @@ static void find_usage(const node *n, unsigned char *usage,
       MEMSET(switch_usage, 0, MAX_LOCAL);
       MEMCPY(break_usage, usage, MAX_LOCAL);
 
-      find_usage(CDR(n), usage, switch_usage, cont_u, break_usage);
+      find_usage(CDR(n), usage, switch_usage, cont_u, break_usage, catch_u);
 
       for(i = 0; i < MAX_LOCAL; i++) {
 	usage[i] |= switch_usage[i];
       }
 
-      find_usage(CAR(n), usage, switch_u, cont_u, break_u);
+      find_usage(CAR(n), usage, switch_u, cont_u, break_u, catch_u);
       return;
     }
 
@@ -2251,13 +2294,13 @@ static void find_usage(const node *n, unsigned char *usage,
 
       MEMCPY(trail_usage, usage, MAX_LOCAL);
 
-      find_usage(CDR(n), usage, switch_u, cont_u, break_u);
+      find_usage(CDR(n), usage, switch_u, cont_u, break_u, catch_u);
 
       for(i=0; i < MAX_LOCAL; i++) {
 	usage[i] |= trail_usage[i];
       }
 
-      find_usage(CAR(n), usage, switch_u, cont_u, break_u);
+      find_usage(CAR(n), usage, switch_u, cont_u, break_u, catch_u);
       return;
     }
 
@@ -2270,13 +2313,13 @@ static void find_usage(const node *n, unsigned char *usage,
       MEMCPY(cadr_usage, usage, MAX_LOCAL);
       MEMCPY(cddr_usage, usage, MAX_LOCAL);
 
-      find_usage(CADR(n), cadr_usage, switch_u, cont_u, break_u);
-      find_usage(CDDR(n), cadr_usage, switch_u, cont_u, break_u);
+      find_usage(CADR(n), cadr_usage, switch_u, cont_u, break_u, catch_u);
+      find_usage(CDDR(n), cddr_usage, switch_u, cont_u, break_u, catch_u);
 
       for (i=0; i < MAX_LOCAL; i++) {
 	usage[i] = cadr_usage[i] | cddr_usage[i];
       }
-      find_usage(CAR(n), usage, switch_u, cont_u, break_u);
+      find_usage(CAR(n), usage, switch_u, cont_u, break_u, catch_u);
       return;
     }
     
@@ -2287,16 +2330,18 @@ static void find_usage(const node *n, unsigned char *usage,
 
       MEMCPY(break_usage, usage, MAX_LOCAL);
 
-      find_usage(CDR(n), usage, switch_u, cont_u, break_usage);
+      find_usage(CDR(n), usage, switch_u, cont_u, break_usage, catch_u);
 
       MEMCPY(continue_usage, usage, MAX_LOCAL);
 
-      find_usage(CAR(n), usage, switch_u, break_usage, continue_usage);
+      find_usage(CAR(n), usage, switch_u, break_usage, continue_usage,
+		 catch_u);
       return;
     }
 
   case F_FOR:
     {
+      unsigned char loop_usage[MAX_LOCAL];
       unsigned char break_usage[MAX_LOCAL];
       unsigned char continue_usage[MAX_LOCAL];
       node *car1, cadr, cddr;
@@ -2308,35 +2353,58 @@ static void find_usage(const node *n, unsigned char *usage,
        *
        * if (a) { do { c; b; } while(a); }
        */
-      find_usage(CAR(n), usage, switch_u, cont_u, break_u);
-      find_usage(CDDR(n), usage, switch_u, cont_u, break_usage);
 
-      MEMCPY(continue_usage, usage, MAX_LOCAL);
+      MEMSET(loop_usage, 0, MAX_LOCAL);
 
-      find_usage(CADR(n), usage, switch_u, continue_usage, break_usage);
+      find_usage(CAR(n), loop_usage, switch_u, cont_u, break_u, catch_u);
+      if (CDR(n)) {
+	find_usage(CDDR(n), loop_usage, switch_u, cont_u, break_usage,
+		   catch_u);
 
-      for (i = 0; i < MAX_LOCAL; i++) {
-	usage[i] |= break_usage[i];
+	MEMCPY(continue_usage, loop_usage, MAX_LOCAL);
+
+	find_usage(CADR(n), loop_usage, switch_u, continue_usage, break_usage,
+		   catch_u);
       }
 
-      find_usage(CAR(n), usage, switch_u, cont_u, break_u);
+      for (i = 0; i < MAX_LOCAL; i++) {
+	usage[i] |= loop_usage[i];
+      }
+
+      find_usage(CAR(n), usage, switch_u, cont_u, break_u, catch_u);
       return;
     }
 
   case F_FOREACH:
     {
+      unsigned char loop_usage[MAX_LOCAL];
       unsigned char break_usage[MAX_LOCAL];
       unsigned char continue_usage[MAX_LOCAL];
+      int i;
       
       MEMCPY(break_usage, usage, MAX_LOCAL);
 
-      /* Find the usage from the body */
-      find_usage(CDR(n), usage, switch_u, cont_u, break_usage);
+      /* Find the usage from the loop */
+
+      MEMSET(loop_usage, 0, MAX_LOCAL);
 
       MEMCPY(continue_usage, usage, MAX_LOCAL);
 
-      find_usage(CDR(n), usage, switch_u, continue_usage, break_usage);
-      find_usage(CAAR(n), usage, switch_u, cont_u, break_u);
+      find_usage(CDR(n), loop_usage, switch_u, continue_usage, break_usage,
+		 catch_u);
+      if (CDAR(n)->token == F_LOCAL) {
+	if (!(CDAR(n)->u.integer.b)) {
+	  loop_usage[CDAR(n)->u.integer.a] = 0;
+	}
+      } else if (CDAR(n)->token == F_LVALUE_LIST) {
+	find_usage(CDAR(n), loop_usage, switch_u, cont_u, break_u, catch_u);
+      }
+
+      for(i=0; i < MAX_LOCAL; i++) {
+	usage[i] |= loop_usage[i];
+      }
+
+      find_usage(CAAR(n), usage, switch_u, cont_u, break_u, catch_u);
       return;
     }
 
@@ -2350,10 +2418,10 @@ static void find_usage(const node *n, unsigned char *usage,
 
   default:
     if (cdr_is_node(n)) {
-      find_usage(CDR(n), usage, switch_u, cont_u, break_u);
+      find_usage(CDR(n), usage, switch_u, cont_u, break_u, catch_u);
     }
     if (car_is_node(n)) {
-      find_usage(CAR(n), usage, switch_u, cont_u, break_u);
+      find_usage(CAR(n), usage, switch_u, cont_u, break_u, catch_u);
     }
     return;
   }
@@ -2364,7 +2432,8 @@ static node *low_localopt(node *n,
 			  unsigned char *usage,
 			  unsigned char *switch_u,
 			  const unsigned char *cont_u,
-			  const unsigned char *break_u)
+			  const unsigned char *break_u,
+			  const unsigned char *catch_u)
 {
   node *car, *cdr;
 
@@ -2377,22 +2446,72 @@ static node *low_localopt(node *n,
       /* Assignment of local variable */
       if (!(usage[CDR(n)->u.integer.a] & 1)) {
 	/* Value isn't used. */
-	return low_localopt(CAR(n), usage, switch_u, cont_u, break_u);
+	return low_localopt(CAR(n), usage, switch_u, cont_u, break_u, catch_u);
       }
       usage[CDR(n)->u.integer.a] = 0;
       cdr = CDR(n);
       ADD_NODE_REF(cdr);
     } else if (CDR(n)->token == F_ARRAY_LVALUE) {
-      cdr = low_localopt(CDR(n), usage, switch_u, cont_u, break_u);
+      cdr = low_localopt(CDR(n), usage, switch_u, cont_u, break_u, catch_u);
     } else {
       cdr = CDR(n);
       ADD_NODE_REF(cdr);
     }
     return mknode(F_ASSIGN, low_localopt(CAR(n), usage, switch_u, cont_u,
-					 break_u), cdr);
+					 break_u, catch_u), cdr);
+
+  case F_SSCANF:
+    {
+      int i;
+      
+      /* catch_usage is restored if sscanf throws an error. */
+      for (i=0; i < MAX_LOCAL; i++) {
+	usage[i] |= catch_u[i];
+      }
+      /* Only the first two arguments are evaluated. */
+      if (CAR(n)) {
+	cdr = low_localopt(CDAR(n), usage, switch_u, cont_u, break_u, catch_u);
+	car = low_localopt(CAAR(n), usage, switch_u, cont_u, break_u, catch_u);
+	
+	if (CDR(n)) {
+	  ADD_NODE_REF(CDR(n));
+	}
+	return mknode(F_SSCANF, mknode(F_ARG_LIST, car, cdr), CDR(n));
+      }
+      ADD_NODE_REF(n);
+      return n;
+    }
+
+  case F_CATCH:
+    {
+      unsigned char catch_usage[MAX_LOCAL];
+      int i;
+
+      MEMCPY(catch_usage, usage, MAX_LOCAL);
+      car = low_localopt(CAR(n), usage, switch_u, cont_u, catch_usage,
+			 catch_usage);
+      for(i=0; i < MAX_LOCAL; i++) {
+	usage[i] |= catch_usage[i];
+      }
+      return mknode(F_CATCH, car, 0);
+    }
+    break;
+
+  case F_APPLY:
+    {
+      int i;
+
+      /* catch_usage is restored if the function throws an error. */
+      for (i=0; i < MAX_LOCAL; i++) {
+	usage[i] |= catch_u[i];
+      }
+      cdr = low_localopt(CDR(n), usage, switch_u, cont_u, break_u, catch_u);
+      car = low_localopt(CAR(n), usage, switch_u, cont_u, break_u, catch_u);
+      return mknode(F_APPLY, car, cdr);
+    }
 
   case F_LVALUE_LIST:
-    cdr = low_localopt(CDR(n), usage, switch_u, cont_u, break_u);
+    cdr = low_localopt(CDR(n), usage, switch_u, cont_u, break_u, catch_u);
     if (CAR(n)) {
       if ((CAR(n)->token == F_LOCAL) && (!CAR(n)->u.integer.b)) {
 	/* Array assignment of local variable. */
@@ -2408,13 +2527,13 @@ static node *low_localopt(node *n,
 
   case F_ARRAY_LVALUE:
     return mknode(F_ARRAY_LVALUE, low_localopt(CAR(n), usage, switch_u, cont_u,
-					       break_u), 0);
+					       break_u, catch_u), 0);
 
     
 
   case F_CAST:
     return mkcastnode(n->type, low_localopt(CAR(n), usage, switch_u, cont_u,
-					    break_u));
+					    break_u, catch_u));
 
   case F_CONTINUE:
     MEMCPY(usage, cont_u, MAX_LOCAL);
@@ -2431,8 +2550,8 @@ static node *low_localopt(node *n,
     {
       int i;
 
-      cdr = low_localopt(CDR(n), usage, switch_u, cont_u, break_u);
-      car = low_localopt(CAR(n), usage, switch_u, cont_u, break_u);
+      cdr = low_localopt(CDR(n), usage, switch_u, cont_u, break_u, catch_u);
+      car = low_localopt(CAR(n), usage, switch_u, cont_u, break_u, catch_u);
       for(i = 0; i < MAX_LOCAL; i++) {
 	switch_u[i] |= usage[i];
       }
@@ -2448,13 +2567,14 @@ static node *low_localopt(node *n,
       MEMSET(switch_usage, 0, MAX_LOCAL);
       MEMCPY(break_usage, usage, MAX_LOCAL);
 
-      cdr = low_localopt(CDR(n), usage, switch_usage, cont_u, break_usage);
+      cdr = low_localopt(CDR(n), usage, switch_usage, cont_u, break_usage,
+			 catch_u);
 
       for(i = 0; i < MAX_LOCAL; i++) {
 	usage[i] |= switch_usage[i];
       }
 
-      car = low_localopt(CAR(n), usage, switch_u, cont_u, break_u);
+      car = low_localopt(CAR(n), usage, switch_u, cont_u, break_u, catch_u);
       return mknode(F_SWITCH, car, cdr);
     }
 
@@ -2464,7 +2584,7 @@ static node *low_localopt(node *n,
      * they are seen in backtraces.
      */
     return mknode(F_RETURN, low_localopt(CAR(n), usage, switch_u, cont_u,
-					 break_u), 0);
+					 break_u, catch_u), 0);
 
   case F_LOR:
   case F_LAND:
@@ -2474,13 +2594,13 @@ static node *low_localopt(node *n,
 
       MEMCPY(trail_usage, usage, MAX_LOCAL);
 
-      cdr = low_localopt(CDR(n), usage, switch_u, cont_u, break_u);
+      cdr = low_localopt(CDR(n), usage, switch_u, cont_u, break_u, catch_u);
 
       for(i=0; i < MAX_LOCAL; i++) {
 	usage[i] |= trail_usage[i];
       }
 
-      car = low_localopt(CAR(n), usage, switch_u, cont_u, break_u);
+      car = low_localopt(CAR(n), usage, switch_u, cont_u, break_u, catch_u);
 
       return mknode(n->token, car, cdr);
     }
@@ -2494,14 +2614,16 @@ static node *low_localopt(node *n,
       MEMCPY(cadr_usage, usage, MAX_LOCAL);
       MEMCPY(cddr_usage, usage, MAX_LOCAL);
 
-      car = low_localopt(CADR(n), cadr_usage, switch_u, cont_u, break_u);
-      cdr = low_localopt(CDDR(n), cadr_usage, switch_u, cont_u, break_u);
+      car = low_localopt(CADR(n), cadr_usage, switch_u, cont_u, break_u,
+			 catch_u);
+      cdr = low_localopt(CDDR(n), cddr_usage, switch_u, cont_u, break_u,
+			 catch_u);
 
       for (i=0; i < MAX_LOCAL; i++) {
 	usage[i] = cadr_usage[i] | cddr_usage[i];
       }
       cdr = mknode(':', car, cdr);
-      car = low_localopt(CAR(n), usage, switch_u, cont_u, break_u);
+      car = low_localopt(CAR(n), usage, switch_u, cont_u, break_u, catch_u);
       return mknode('?', car, cdr);
     }
     
@@ -2509,68 +2631,169 @@ static node *low_localopt(node *n,
     {
       unsigned char break_usage[MAX_LOCAL];
       unsigned char continue_usage[MAX_LOCAL];
+      int i;
 
       MEMCPY(break_usage, usage, MAX_LOCAL);
 
-      /* Find the usage from the body */
-      find_usage(n, usage, switch_u, cont_u, break_usage);
-      cdr = low_localopt(CDR(n), usage, switch_u, cont_u, break_usage);
+      /* Find the usage from the loop */
+      find_usage(CDR(n), usage, switch_u, cont_u, break_u, catch_u);
 
       MEMCPY(continue_usage, usage, MAX_LOCAL);
 
-      car = low_localopt(CAR(n), usage, switch_u, continue_usage, break_usage);
+      find_usage(CAR(n), usage, switch_u, continue_usage, break_usage,
+		 catch_u);
+
+      for (i = 0; i < MAX_LOCAL; i++) {
+	usage[i] |= break_usage[i];
+      }
+
+      cdr = low_localopt(CDR(n), usage, switch_u, cont_u, break_usage,
+			 catch_u);
+
+      MEMCPY(continue_usage, usage, MAX_LOCAL);
+
+      car = low_localopt(CAR(n), usage, switch_u, continue_usage, break_usage,
+			 catch_u);
 
       return mknode(F_DO, car, cdr);
     }
 
   case F_FOR:
     {
+      unsigned char loop_usage[MAX_LOCAL];
       unsigned char break_usage[MAX_LOCAL];
       unsigned char continue_usage[MAX_LOCAL];
-      node *car1, *cadr, *cddr;
       int i;
 
       MEMCPY(break_usage, usage, MAX_LOCAL);
 
-      /* Find the usage from the body. */
-      find_usage(n, usage, switch_u, cont_u, break_usage);
-
-      /* for(;a;b) c; is handled like:
-       *
-       * if (a) { do { c; b; } while(a); }
+      /*
+       * if (a A|B) {
+       *     B
+       *   do {
+       *       B
+       *     c;
+       *   continue:
+       *       D
+       *     b;
+       *       C
+       *   } while (a A|B);
+       *     A
+       * }
+       * break:
+       *   A
        */
-      car = low_localopt(CAR(n), usage, switch_u, cont_u, break_u);
-      cddr = low_localopt(CDDR(n), usage, switch_u, cont_u, break_usage);
 
-      MEMCPY(continue_usage, usage, MAX_LOCAL);
+      /* Find the usage from the loop. */
 
-      cadr = low_localopt(CADR(n), usage, switch_u, continue_usage,
-			  break_usage);
-      cdr = mknode(':', cadr, cddr);
+      MEMSET(loop_usage, 0, MAX_LOCAL);
+
+      find_usage(CAR(n), loop_usage, switch_u, cont_u, break_u, catch_u);
+      if (CDR(n)) {
+	find_usage(CDDR(n), loop_usage, switch_u, cont_u, break_usage,
+		   catch_u);
+
+	MEMCPY(continue_usage, loop_usage, MAX_LOCAL);
+
+	find_usage(CADR(n), loop_usage, switch_u, continue_usage, break_usage,
+		   catch_u);
+      }
+
+      for (i = 0; i < MAX_LOCAL; i++) {
+	usage[i] |= loop_usage[i];
+      }
+
+      /* The last thing to be evaluated is the conditional */
+      car = low_localopt(CAR(n), usage, switch_u, cont_u, break_u, catch_u);
+
+      if (CDR(n)) {
+	node *cadr, *cddr;
+
+	/* The incrementor */
+	cddr = low_localopt(CDDR(n), usage, switch_u, cont_u, break_usage,
+			    catch_u);
+
+	MEMCPY(continue_usage, usage, MAX_LOCAL);
+
+	/* The body */
+	cadr = low_localopt(CADR(n), usage, switch_u, continue_usage,
+			    break_usage, catch_u);
+	cdr = mknode(':', cadr, cddr);
+      } else {
+	cdr = 0;
+      }
 
       for (i = 0; i < MAX_LOCAL; i++) {
 	usage[i] |= break_usage[i];
       }
 
-      /* We need to update the usage set */
-      find_usage(car, usage, switch_u, cont_u, break_u);
+      /* The conditional is also the first thing to be evaluated. */
+      find_usage(car, usage, switch_u, cont_u, break_u, catch_u);
 
       return mknode(F_FOR, car, cdr);
     }
 
   case F_FOREACH:
     {
+      unsigned char loop_usage[MAX_LOCAL];
       unsigned char break_usage[MAX_LOCAL];
       unsigned char continue_usage[MAX_LOCAL];
-      
+      int i;
+
       MEMCPY(break_usage, usage, MAX_LOCAL);
 
-      /* Find the usage from the body */
-      find_usage(CDR(n), usage, switch_u, cont_u, break_usage);
+      /*
+       *   D
+       * arr = copy_value(arr);
+       * int i = 0;
+       *   A|B
+       * while (i < sizeof(arr)) {
+       *     B
+       *   loopvar = arr[i];
+       *     C
+       *   body;
+       *   continue:
+       *     A|B
+       * }
+       * break:
+       *   A
+       */
+
+      /* Find the usage from the loop */
+      MEMSET(loop_usage, 0, MAX_LOCAL);
 
       MEMCPY(continue_usage, usage, MAX_LOCAL);
-      cdr = low_localopt(CDR(n), usage, switch_u, continue_usage, break_usage);
-      car = low_localopt(CAAR(n), usage, switch_u, cont_u, break_u);
+
+      find_usage(CDR(n), loop_usage, switch_u, continue_usage, break_usage,
+		 catch_u);
+      if (CDAR(n)->token == F_LOCAL) {
+	if (!(CDAR(n)->u.integer.b)) {
+	  loop_usage[CDAR(n)->u.integer.a] = 0;
+	}
+      } else if (CDAR(n)->token == F_LVALUE_LIST) {
+	find_usage(CDAR(n), loop_usage, switch_u, cont_u, break_u, catch_u);
+      }
+
+      for (i = 0; i < MAX_LOCAL; i++) {
+	usage[i] |= loop_usage[i];
+      }
+
+      MEMCPY(continue_usage, usage, MAX_LOCAL);
+      cdr = low_localopt(CDR(n), usage, switch_u, continue_usage, break_usage,
+			 catch_u);
+      if (CDAR(n)->token == F_LOCAL) {
+	if (!(CDAR(n)->u.integer.b)) {
+	  usage[CDAR(n)->u.integer.a] = 0;
+	}
+      } else if (CDAR(n)->token == F_LVALUE_LIST) {
+	find_usage(CDAR(n), usage, switch_u, cont_u, break_u, catch_u);
+      }
+
+      for (i = 0; i < MAX_LOCAL; i++) {
+	usage[i] |= break_usage[i];
+      }
+
+      car = low_localopt(CAAR(n), usage, switch_u, cont_u, break_u, catch_u);
       ADD_NODE_REF(CDAR(n));
       return mknode(F_FOREACH, mknode(F_VAL_LVAL, car, CDAR(n)), cdr);
     }
@@ -2586,15 +2809,15 @@ static node *low_localopt(node *n,
 
   default:
     if (cdr_is_node(n)) {
-      cdr = low_localopt(CDR(n), usage, switch_u, cont_u, break_u);
+      cdr = low_localopt(CDR(n), usage, switch_u, cont_u, break_u, catch_u);
       return mknode(n->token, low_localopt(CAR(n), usage, switch_u, cont_u,
-					   break_u),
+					   break_u, catch_u),
 		    cdr);
     }
     if (car_is_node(n)) {
       ADD_NODE_REF(CDR(n));
       return mknode(n->token, low_localopt(CAR(n), usage, switch_u, cont_u,
-					   break_u),
+					   break_u, catch_u),
 		    CDR(n));
     }
     ADD_NODE_REF(n);
@@ -2608,22 +2831,30 @@ static node *localopt(node *n)
   unsigned char b_usage[MAX_LOCAL];
   unsigned char c_usage[MAX_LOCAL];
   unsigned char s_usage[MAX_LOCAL];
+  unsigned char catch_usage[MAX_LOCAL];
   node *n2;
 
   MEMSET(usage, 0, MAX_LOCAL);
   MEMSET(b_usage, 0, MAX_LOCAL);
   MEMSET(c_usage, 0, MAX_LOCAL);
   MEMSET(s_usage, 0, MAX_LOCAL);
+  MEMSET(catch_usage, 0, MAX_LOCAL);
 
-  fprintf(stderr, "Localopt: ");
-  print_tree(n);
+  n2 = low_localopt(n, usage, s_usage, c_usage, b_usage, catch_usage);
 
-  n2 = low_localopt(n, usage, s_usage, c_usage, b_usage);
+#ifdef PIKE_DEBUG
+  if (l_flag > 0) {
+    if ((n2 != n) || (l_flag > 4)) {
+      fprintf(stderr, "\nBefore localopt: ");
+      print_tree(n);
+
+      fprintf(stderr,   "After localopt:  ");
+      print_tree(n2);
+    }
+  }
+#endif /* PIKE_DEBUG */
+
   free_node(n);
-
-  fprintf(stderr, "Done:     ");
-  print_tree(n2);
-
   return n2;
 }
 #endif /* SHARED_NODES && !IN_TPIKE */
