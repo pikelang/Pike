@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: signal_handler.c,v 1.238 2003/01/04 15:23:56 nilsson Exp $
+|| $Id: signal_handler.c,v 1.239 2003/01/11 17:54:30 per Exp $
 */
 
 #include "global.h"
@@ -26,7 +26,7 @@
 #include "main.h"
 #include <signal.h>
 
-RCSID("$Id: signal_handler.c,v 1.238 2003/01/04 15:23:56 nilsson Exp $");
+RCSID("$Id: signal_handler.c,v 1.239 2003/01/11 17:54:30 per Exp $");
 
 #ifdef HAVE_PASSWD_H
 # include <passwd.h>
@@ -1689,6 +1689,37 @@ static int set_priority( int pid, char *to )
     prilevel = -1;
   else if(!strcmp( to, "lowest" ))
     prilevel = -2;
+#ifdef __NT__
+  {
+    HANDLE process;
+    DWORD how;
+    if( pid == getpid() || !pid ) // pid == 0 == this process.
+      process = GetCurrentProcess();
+    else
+      process = OpenProcess( PROCESS_SET_INFORMATION, FALSE, pid );
+
+    if( !process )
+    {
+      // Permission denied, or no such process.
+      return 0;
+    }
+    
+    switch( prilevel )
+    {
+    case -2: case -1:  how = IDLE_PRIORITY_CLASS;     break;
+    case 0:            how = NORMAL_PRIORITY_CLASS;   break;
+    case 1: case 2:    how = HIGH_PRIORITY_CLASS;     break;
+    case 3:            how = REALTIME_PRIORITY_CLASS; break;
+    }
+    
+    if( SetPriorityClass( process, how ) )
+      how = 1;
+    else 
+      how = 0;
+    CloseHandle( process );
+    return how;
+  }
+#else
 #ifdef HAVE___PRIOCNTL
   if(!pid) pid = getpid();
   if( prilevel > 1 )
@@ -1794,6 +1825,7 @@ static int set_priority( int pid, char *to )
     errno=0;
     return !(nice( -prilevel*10 - nice(0) ) != -1) || errno!=EPERM;
   }
+#endif
 #endif
 #endif
 #endif
