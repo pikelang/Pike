@@ -1,7 +1,7 @@
 #
 # Main Makefile for extracting AutoDoc mk II to XML
 #
-# $Id: Makefile,v 1.45 2002/05/10 12:25:38 manual Exp $
+# $Id: Makefile,v 1.46 2002/06/01 00:01:22 mast Exp $
 #
 # Henrik Grubbström 2001-02-02
 #
@@ -134,6 +134,4 @@ clean:
 	@rm -rf build || /bin/true
 
 spotless: clean
-	@rm -rf onepage || /bin/true
-	@rm -rf modref || /bin/true
-	@rm -rf traditional_manual || /bin/true
+	-test -f .cvsignore && rm -rf `cat .cvsignore`
