@@ -159,15 +159,12 @@ void streamed_parser_destruct()
 
 void streamed_parser_set_data( INT32 args )
 {
-  if(args != 3) error("FOO\n"); /* Per, one other warning... */
-  DATA->end_tags = sp[-1].u.mapping;
-  sp--;
-  
-  DATA->content_tags = sp[-1].u.mapping;
-  sp--;
-  
-  DATA->start_tags = sp[-1].u.mapping;
-  sp--;
+  get_all_args("spider.streamed_parser->set_data", args, "%m%m%m",
+	       &(DATA->start_tags), &(DATA->content_tags), &(DATA->end_tags));
+  DATA->start_tags->refs++;
+  DATA->content_tags->refs++;
+  DATA->end_tags->refs++;
+  pop_n_elems(args);
 }
 
 #define SWAP \
@@ -251,30 +248,31 @@ void streamed_parser_parse( INT32 args )
   struct svalue *sp_save;
   struct svalue *sp_tag_save;
   struct svalue *data_arg;
+  struct pike_string *to_parse;
 
-  if(!args) error("FOO!\n"); /* Per ... */
-
+  get_all_args("spider.streamed_parser->parse", args, "%S", &to_parse);
+  
   state = NOTAG;
   begin = 0; 
   last = -1;
   SWAP;
-  length = sp[-1].u.string->len;
+  length = to_parse->len;
+  if (!(str = alloca( DATA->last_buffer_size + length ))) {
+    error("spider.streamed_parser->parse(): Out of memory\n");
+  }
   if (DATA->last_buffer_size > 0)
   {
-    str = alloca( DATA->last_buffer_size + length );
     MEMCPY( str, DATA->last_buffer, DATA->last_buffer_size );
-    MEMCPY( str + DATA->last_buffer_size, sp[-1].u.string->str, length );
+    MEMCPY( str + DATA->last_buffer_size, to_parse->str, length );
     length += DATA->last_buffer_size;
     free( DATA->last_buffer );
     DATA->last_buffer = 0;
     DATA->last_buffer_size = 0;
-    pop_stack();
+  } else {
+    MEMCPY(str, to_parse->str, length);
   }
-  else
-  {
-    str = sp[-1].u.string->str;
-    sp--;
-  }
+  pop_stack();
+
   data_arg = sp-1;
   sp_save = sp;
   sp_tag_save = 0;
