@@ -22,6 +22,7 @@ struct callback *add_to_callback(struct callback **ptr,
 				 callback_func free_func);
 void *remove_callback(struct callback *l);
 void free_callback(struct callback **ptr);
+void cleanup_callbacks();
 /* Prototypes end here */
 
 #endif

@@ -6,6 +6,14 @@
 #include "macros.h"
 #include "callback.h"
 
+/*
+ * This file is used to simplify the management of callbacks when certain
+ * events occur. The callbacks are managed as linked lists, allocated in
+ * chunks.
+ */
+
+/* FIXME: free all chunks of memory at exit */
+
 struct callback
 {
   struct callback *next;
@@ -14,9 +22,6 @@ struct callback
   void *arg;
 };
 
-struct callback *first_callback =0;
-struct callback *free_callbacks =0;
-
 #define CALLBACK_CHUNK 128
 
 struct callback_block {
@@ -24,6 +29,11 @@ struct callback_block {
   struct callback callbacks[CALLBACK_CHUNK];
 };
 
+static struct callback_block *callback_chunks=0;
+static struct callback *first_callback =0;
+static struct callback *free_callbacks =0;
+
+/* Return the first free callback struct, allocate more if needed */
 static struct callback *get_free_callback()
 {
   struct callback *tmp;
@@ -32,6 +42,8 @@ static struct callback *get_free_callback()
     int e;
     struct callback_block *tmp2;
     tmp2=ALLOC_STRUCT(callback_block);
+    tmp2->next=callback_chunks;
+    callback_chunks=tmp2;
 
     for(e=0;e<(int)sizeof(CALLBACK_CHUNK);e++)
     {
@@ -43,6 +55,9 @@ static struct callback *get_free_callback()
   return tmp;
 }
 
+/* Traverse a linked list of callbacks and call all the active callbacks
+ * in the list. Deactivated callbacks are freed and placed in the free list.
+ */
 void call_callback(struct callback **ptr, void *arg)
 {
   struct callback *l;
@@ -61,6 +76,7 @@ void call_callback(struct callback **ptr, void *arg)
   }
 }
 
+/* Add a callback to the linked list pointed to by ptr. */
 struct callback *add_to_callback(struct callback **ptr,
 				 callback_func call,
 				 void *arg,
@@ -77,7 +93,8 @@ struct callback *add_to_callback(struct callback **ptr,
   return l;
 }
 
-/* It is not actually freed until next time this callback is called
+/* This function deactivates a callback.
+ * It is not actually freed until next time this callback is "called"
  */
 void *remove_callback(struct callback *l)
 {
@@ -85,6 +102,7 @@ void *remove_callback(struct callback *l)
   return l->arg;
 }
 
+/* Free all the callbacks in a linked list of callbacks */
 void free_callback(struct callback **ptr)
 {
   struct callback *l;
@@ -95,5 +113,15 @@ void free_callback(struct callback **ptr)
     *ptr=l->next;
     l->next=free_callbacks;
     free_callbacks=l;
+  }
+}
+
+void cleanup_callbacks()
+{
+  while(callback_chunks)
+  {
+    struct callback_block *tmp=callback_chunks;
+    callback_chunks=tmp->next;
+    free((char *)tmp);
   }
 }
