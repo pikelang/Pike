@@ -256,6 +256,21 @@ test_any_equal([[
   return p->finish("<t a b='b>")->read();
 ]], ({"t", (["a": (<>), "b": "b>"])}));
 
+// Redefinition during parsing
+test_any([[
+  object p = Parser.HTML();
+  p->add_tag ("a", lambda (object p, mapping a)
+		     {p->add_tag ("b", "B"); return ({"A"});});
+  return p->finish("<b><a><b>")->read();
+]], "<b>AB");
+test_any([[
+  object p = Parser.HTML();
+  p->add_tag ("a", lambda (object p, mapping a)
+		     {p->add_tag ("b", 0); return ({"A"});});
+  p->add_tag ("b", "B");
+  return p->finish("<b><a><b>")->read();
+]], "BA<b>");
+
 // Misc
 test_any([[
   object p = Parser.HTML();
