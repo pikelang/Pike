@@ -165,7 +165,7 @@ void handshake(int ignore, string s)
   {
     string proto;
     if ((sscanf(read_buffer, "Pike remote client %4s\n", proto) == 1) &&
-	(proto = PROTO_VERSION))
+	(proto == PROTO_VERSION))
     {
       DEBUGMSG("handshake complete (proto="+proto+")\n");
       read_buffer = read_buffer[24..];
