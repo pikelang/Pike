@@ -1,4 +1,4 @@
-AC_REVISION("$Id: configure.in,v 1.336 1999/12/05 16:34:06 mirar Exp $")
+AC_REVISION("$Id: configure.in,v 1.337 2000/01/02 23:31:37 mast Exp $")
 AC_INIT(interpret.c)
 AC_CONFIG_HEADER(machine.h)
 
@@ -422,7 +422,7 @@ AC_ARG_WITH(double-precision,  [  --with-double-precision          use double pr
 AC_ARG_WITH(long-double-precision,  [  --with-long-double-precision          use long double precision floats ], [ AC_DEFINE(WITH_LONG_DOUBLE_PRECISION_SVALUE) ] )
 
 AC_ARG_WITH(gdbm,        [  --without-gdbm         no GNU database manager support ])
-AC_ARG_WITH(gmp,         [  --without-gmp          no Support bignums])
+AC_ARG_WITH(gmp,         [  --without-gmp          no support for Gmp bignums])
 AC_ARG_WITH(debug,       [  --without-debug        disable run debugging],[],[with_debug=])
 AC_ARG_WITH(rtldebug,    [  --without-rtldebug     disable run time self tests],[],[with_rtldebug=])
 AC_ARG_WITH(cdebug,      [  --without-cdebug       disable -g],[],[
@@ -430,7 +430,7 @@ AC_ARG_WITH(cdebug,      [  --without-cdebug       disable -g],[],[
     Solaris:no)
       # Solaris/cc has problems with combining optimizations and debuginfo.
       AC_MSG_WARN([Defaulting to --without-cdebug since the OS is Solaris,
-and gcc isn't being used.])
+and gcc is not being used.])
       with_cdebug=no
     ;;
     *)
@@ -473,7 +473,7 @@ AC_ARG_WITH(oob,	 [  --with-oob             enable out-of-band data handling],[A
 AC_ARG_WITH(thread-trace,[  --with-trace-threads   enable individual tracing of threads],[AC_DEFINE(TRACE_THREADS)],[])
 AC_ARG_WITH(compiler-trace,[  --with-compiler-trace  enable tracing of the compiler],[AC_DEFINE(YYDEBUG)],[])
 AC_ARG_WITH(security,    [  --with-security        enable internal pike security system],[AC_DEFINE(PIKE_SECURITY)],[])
-AC_ARG_WITH(bignums,     [  --with-bignums         enable internal conversion to bignums],[],[with_bignums=yes])
+AC_ARG_WITH(bignums,     [  --without-bignums      disable internal conversion to bignums],[],[with_bignums=yes])
 AC_ARG_WITH(shared-nodes,[  --with-shared-nodes    enable the SHARED_NODES mode of the optimizer (EXPERIMENTAL)],[],[])
 
 if test "x$with_bignums" = xyes; then
