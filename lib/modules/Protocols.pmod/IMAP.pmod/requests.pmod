@@ -1,6 +1,6 @@
 /* IMAP.requests
  *
- * $Id: requests.pmod,v 1.84 1999/03/30 21:46:50 grubba Exp $
+ * $Id: requests.pmod,v 1.85 1999/03/30 21:51:40 grubba Exp $
  */
 
 import .types;
@@ -186,7 +186,7 @@ class logout
     {
       send("*", "BYE");
       send(tag, "OK", "LOGOUT done");
-      server->log(session, "LOGOUT", session->user_name, 401);
+      server->log(session, "LOGOUT", session->user_name, 200);
       return ([ "action" : "close" ]);
     }
 }
