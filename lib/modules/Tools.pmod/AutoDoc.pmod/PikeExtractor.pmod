@@ -242,6 +242,12 @@ static private class Extractor {
       int docsMark = parser->getReadDocComments();
 
       string s = parser->peekToken();
+
+      if (s == ";") {      // allow a semi-colon at the top level
+        parser->eat(";");
+        continue;
+      }
+
       if (s == EOF || s == "}")         // end of class body reached
         return filedoc;
       if (isDocComment(s)) {
