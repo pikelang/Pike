@@ -1,4 +1,4 @@
-AC_REVISION("$Id: configure.in,v 1.421 2000/09/17 19:29:04 grubba Exp $")
+AC_REVISION("$Id: configure.in,v 1.422 2000/09/27 17:21:14 grubba Exp $")
 AC_INIT(interpret.c)
 AC_CONFIG_HEADER(machine.h)
 
@@ -63,44 +63,83 @@ AC_MINIX
  
 #############################################################################
 
+# option, cache_name, variable
+AC_DEFUN(AC_SYS_COMPILER_FLAG,
+[
+  AC_MSG_CHECKING($1)
+  AC_CACHE_VAL(pike_cv_option_$2,
+  [
+    OLD_CFLAGS="[$]CFLAGS"
+    CFLAGS="[$]OLD_CFLAGS $1"
+    AC_TRY_RUN([int foo; int main(){exit(0);}],
+      pike_cv_option_$2=yes,
+      pike_cv_option_$2=no, [
+      AC_TRY_LINK([], [], pike_cv_option_$2=yes, pike_cv_option_$2=no)
+    ])
+    CFLAGS="[$]OLD_CFLAGS"
+  ])
+  
+  if test x"[$]pike_cv_option_$2" = "xyes" ; then
+    $3="[$]$3 $1"
+    case "$3" in
+      OPTIMIZE)
+        CFLAGS="[$]CFLAGS $1"
+      ;;
+    esac
+    AC_MSG_RESULT(yes)
+    $5
+  else
+    AC_MSG_RESULT(no)
+    $4
+  fi
+])
+
+# arch, option, cache_name, variable
+AC_DEFUN(AC_SYS_CPU_COMPILER_FLAG,
+[
+ if test "`uname -m 2>/dev/null`" = "$1" ; then
+    AC_SYS_COMPILER_FLAG($2,$3,$4,$5,$6)
+    $7
+ fi
+])
+
+# os, option, cache_name, variable
+AC_DEFUN(AC_SYS_OS_COMPILER_FLAG,
+[
+ if test "x$pike_cv_sys_os" = "x$1" ; then
+    AC_SYS_COMPILER_FLAG($2,$3,$4,$5,$6)
+    $7
+ fi
+])
+
+define([DO_IF_OS],
+[
+ if test "x$pike_cv_sys_os" = "x$1" ; then
+$2
+fi
+])
+
+define([DO_IF_CPU],
+[
+if test "`uname -m 2>/dev/null`" = "$1" ; then
+$2
+fi
+])
+
+#############################################################################
+
 if test "x$GCC" = "xno" -a "x$TCC" = "xno"; then
   #
   # We want 64bit mode if possible.
-  # This variable is looked at by AIX 5L/cc.
-  # Unfortunately OBJECT_MODE=64 confuses gcc...
   #
 
-  if test "x$OBJECT_MODE" = "x"; then
-    AC_MSG_CHECKING([whether we can run the compiler in 64bit mode])
-    AC_CACHE_VAL(pike_cv_OBJECT_MODE_64, [
-      OBJECT_MODE=64
-      export OBJECT_MODE
-      AC_LANG_C
-      AC_TRY_COMPILER([main(){return(0);}], pike_cv_OBJECT_MODE_64,
-        pike_cv_OBJECT_MODE_64_broken)
-      AC_LANG_RESTORE
-      if test "x$pike_cv_OBJECT_MODE_64_broken" = "x$ac_cv_prog_cc_cross"; then
-        :;
-      else
-        # OBJECT_MODE 64 makes broken binaries.
-        # don't use it.
-        pike_cv_OBJECT_MODE_64=no
-      fi
-      unset OBJECT_MODE
-    ])
-    if test "x$pike_cv_OBJECT_MODE_64" = "xyes"; then
-      AC_MSG_RESULT(yes)
-      OBJECT_MODE=64
-      export OBJECT_MODE
-    else
-      AC_MSG_RESULT(no)
-    fi
-  fi
+  AC_SYS_COMPILER_FLAG(-q64, q64, CFLAGS)
 
   if test "x$ac_cv_prog_cc_cross" = "xyes"; then
     # The AIX 5L/cc beta can't generate working binaries without a
     # data-segment...
     AC_MSG_CHECKING([if we're really using a cross-compiler])
+
     AC_CACHE_VAL(pike_cv_datasegment_required, [
       ac_cv_prog_cc_cross=no;
       AC_TRY_RUN([int foo;main(){return(0);}], [
@@ -409,71 +448,6 @@ export FALLBACK_CC
 
 #############################################################################
 
-
-# option, cache_name, variable
-AC_DEFUN(AC_SYS_COMPILER_FLAG,
-[
-  AC_MSG_CHECKING($1)
-  AC_CACHE_VAL(pike_cv_option_$2,
-  [
-    OLD_CFLAGS="[$]CFLAGS"
-    CFLAGS="[$]OLD_CFLAGS $1"
-    AC_TRY_RUN([int main(){exit(0);}],
-      pike_cv_option_$2=yes,
-      pike_cv_option_$2=no, [
-      AC_TRY_LINK([], [], pike_cv_option_$2=yes, pike_cv_option_$2=no)
-    ])
-    CFLAGS="[$]OLD_CFLAGS"
-  ])
-  
-  if test x"[$]pike_cv_option_$2" = "xyes" ; then
-    $3="[$]$3 $1"
-    case "$3" in
-      OPTIMIZE)
-        CFLAGS="[$]CFLAGS $1"
-      ;;
-    esac
-    AC_MSG_RESULT(yes)
-    $5
-  else
-    AC_MSG_RESULT(no)
-    $4
-  fi
-])
-
-# arch, option, cache_name, variable
-AC_DEFUN(AC_SYS_CPU_COMPILER_FLAG,
-[
- if test "`uname -m 2>/dev/null`" = "$1" ; then
-    AC_SYS_COMPILER_FLAG($2,$3,$4,$5,$6)
-    $7
- fi
-])
-
-# os, option, cache_name, variable
-AC_DEFUN(AC_SYS_OS_COMPILER_FLAG,
-[
- if test "x$pike_cv_sys_os" = "x$1" ; then
-    AC_SYS_COMPILER_FLAG($2,$3,$4,$5,$6)
-    $7
- fi
-])
-
-define([DO_IF_OS],
-[
- if test "x$pike_cv_sys_os" = "x$1" ; then
-$2
-fi
-])
-
-define([DO_IF_CPU],
-[
-if test "`uname -m 2>/dev/null`" = "$1" ; then
-$2
-fi
-])
-
-#############################################################################
 
 if test "$GCC" = "yes"; then
   if test "$cflags_is_set" = "no"; then
@@ -2072,37 +2046,9 @@ AC_CHECK_FUNCS( \
  nanosleep \
 )
 
-AC_MSG_CHECKING(if the last argument to accept is a size_t *)
+AC_MSG_CHECKING(for the type of the last argument to accept)
 AC_CACHE_VAL(pike_cv_accept_size_t, [
-  AC_TRY_COMPILE([
-#ifndef _LARGEFILE_SOURCE
-#  define _FILE_OFFSET_BITS 64
-#  define _LARGEFILE_SOURCE
-#  define _LARGEFILE64_SOURCE 1
-#endif
-/* HPUX needs these too... */
-#ifndef __STDC_EXT__
-#  define __STDC_EXT__
-#endif /* !__STDC_EXT__ */
-
-#include <sys/types.h>
-#ifdef HAVE_UNISTD_H
-#include <unistd.h>
-#endif
-#ifdef HAVE_SYS_SOCKET_H
-#include <sys/socket.h>
-#endif
-
-/* NT */
-#ifdef HAVE_WINSOCK_H
-#include <winsock.h>
-#endif
-
-/* Here's the actual test: */
-int accept(int, struct sockaddr *, size_t *);
-  ], [
-    /* EMPTY */
-  ], pike_cv_accept_size_t=size_t, [
+  for t in socklen_t size_t int; do
     AC_TRY_COMPILE([
 #ifndef _LARGEFILE_SOURCE
 #  define _FILE_OFFSET_BITS 64
@@ -2128,13 +2074,88 @@ int accept(int, struct sockaddr *, size_t *);
 #endif
 
 /* Here's the actual test: */
-SOCKET accept(SOCKET, struct sockaddr *, size_t *);
+int accept(int, struct sockaddr *, $t *);
     ], [
       /* EMPTY */
-    ], pike_cv_accept_size_t=size_t, pike_cv_accept_size_t=int)
-  ])
+    ], [
+      pike_cv_accept_size_t=$t
+      break
+    ], [
+      AC_TRY_COMPILE([
+#ifndef _LARGEFILE_SOURCE
+#  define _FILE_OFFSET_BITS 64
+#  define _LARGEFILE_SOURCE
+#  define _LARGEFILE64_SOURCE 1
+#endif
+/* HPUX needs these too... */
+#ifndef __STDC_EXT__
+#  define __STDC_EXT__
+#endif /* !__STDC_EXT__ */
+
+#include <sys/types.h>
+#ifdef HAVE_UNISTD_H
+#include <unistd.h>
+#endif
+#ifdef HAVE_SYS_SOCKET_H
+#include <sys/socket.h>
+#endif
+
+/* NT */
+#ifdef HAVE_WINSOCK_H
+#include <winsock.h>
+#endif
+
+/* Here's the actual test: */
+SOCKET accept(SOCKET, struct sockaddr *, $t *);
+      ], [
+        /* EMPTY */
+      ], [
+	pike_cv_accept_size_t=$t
+	break
+      ], [])
+    ])
+  done
+  if test "x$pike_cv_accept_size_t" = "x"; then
+    # Check if it could be a Psocklen_t
+    # Psocklen_t is a stupid typedef of socklen_t *.
+    AC_TRY_COMPILE([
+#ifndef _LARGEFILE_SOURCE
+#  define _FILE_OFFSET_BITS 64
+#  define _LARGEFILE_SOURCE
+#  define _LARGEFILE64_SOURCE 1
+#endif
+/* HPUX needs these too... */
+#ifndef __STDC_EXT__
+#  define __STDC_EXT__
+#endif /* !__STDC_EXT__ */
+
+#include <sys/types.h>
+#ifdef HAVE_UNISTD_H
+#include <unistd.h>
+#endif
+#ifdef HAVE_SYS_SOCKET_H
+#include <sys/socket.h>
+#endif
+
+/* NT */
+#ifdef HAVE_WINSOCK_H
+#include <winsock.h>
+#endif
+
+/* Here's the actual test: */
+int accept(int, struct sockaddr *, Psocklen_t);
+    ], [
+      /* EMPTY */
+    ], [
+      pike_cv_accept_size_t=socklen_t
+    ], [
+      # FIXME: Should probably have a warning here.
+      # FIXME: Should we check if socklen_t exists, and use that?
+      pike_cv_accept_size_t=int
+    ])
+  fi
 ])
-AC_MSG_RESULT($pike_cv_accept_size_t)
+AC_MSG_RESULT($pike_cv_accept_size_t *)
 AC_DEFINE_UNQUOTED(ACCEPT_SIZE_T, $pike_cv_accept_size_t)
 
 if test x"$pike_cv_sys_os" = xWindows_NT ; then
