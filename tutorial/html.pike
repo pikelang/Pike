@@ -607,6 +607,8 @@ SGML low_split(SGML data)
 	case "chapter":
 	case "appendix":
 	  sections[t2->params->number]=({ t });
+	  if (this_object()->split_and_remove_section)
+	     this_object()->split_and_remove_section(t);
 	  continue;
 
 	case "firstpage":
