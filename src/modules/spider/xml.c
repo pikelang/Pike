@@ -2833,7 +2833,7 @@ void init_xml(void)
    */
 
 #define CALLBACKTYPE \
- "function(string,string,mapping,array|string,mapping(string:mixed):0=mixed)"
+ "function(string,string,mapping,array|string,mapping(string:mixed),mixed...:0=mixed)"
 
 #define PARSETYPE \
  "function(string," CALLBACKTYPE ",mixed...:array(0))"
