@@ -398,10 +398,11 @@ class Country
 //!	<dt>NATO  <dd>Nato field
 //!	</dl>
 //!
-//!	And that USA has three domains, Great Britain and france two:
+//!	And that USA has six domains, Great Britain and france two:
 //!	<dl compact>
 //!	<dt>COM   <dd>US Commercial
 //!	<dt>EDU   <dd>US Educational
+//!	<dt>MIL   <dd>US Military
 //!	<dt>GOV   <dd>US Government
 //!	<dt>UM	  <dd>US Minor Outlying Islands
 //!	<dt>GB    <dd>Great Britain (UK)
@@ -422,6 +423,7 @@ Country from_domain(string domain)
       (["COM":_from_domain->US,
 	"EDU":_from_domain->US,
 	"MIL":_from_domain->US,
+	"GOV":_from_domain->US,
 	"UM":_from_domain->US,
 	"UK":_from_domain->GB,
 	"FX":_from_domain->FR,
