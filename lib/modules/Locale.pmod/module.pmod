@@ -8,13 +8,12 @@
 //#define LOCALE_DEBUG_ALL
 
 // project_name:project_path
-static mapping(string:string) projects;
+static mapping(string:string) projects = ([]);
 // language:(project_name:project)
-static mapping(string:mapping(string:object)) locales;
+static mapping(string:mapping(string:object)) locales = ([]);
 
-void create() {
-  projects=([]);
-  locales=([]);
+static void create()
+{
   call_out(clean_cache, CLEAN_CYCLE);
 }
 
@@ -42,23 +41,22 @@ void register_project(string name, string path, void|string path_base)
   projects[name]=path;
 }
 
-static class LanguageListObject {
+static class LanguageListObject( array(string) languages )
+{
+  int timestamp  = time(1);
 
-  array(string) languages;  
-  int timestamp;
-
-  void create(array _languages) {
-    languages = _languages;    
-    timestamp = time(1);
-  }
-
-  string _sprintf() {
-    return sprintf("LanguageListObject(timestamp: %d, %O)", timestamp, languages);
+  static string _sprintf()
+  {
+    return sprintf("LanguageListObject(timestamp: %d, %O)",
+		   timestamp, languages);
   }
 }
 
-array(string) list_languages(string project) {
-  if(!projects[project]) return ({});
+array(string) list_languages(string project)
+//! Returns a list of all registered languages for a specific project.
+{
+  if(!projects[project])
+    return ({});
 
   if(!locales[0])
     // language==0 not allowed, so this is good for internal data
@@ -86,10 +84,13 @@ array(string) list_languages(string project) {
   if(!dirlist)
     return ({});
   array list = ({});
-  foreach(dirlist, string path) {
+  foreach(dirlist, string path)
+  {
     string lang;
-    if(!sscanf(path, s_patt, lang)) continue;
-    if(!file_stat(replace(pattern, "%L", lang))) continue;
+    if(!sscanf(path, s_patt, lang))
+      continue;
+    if(!file_stat(replace(pattern, "%L", lang)))
+      continue;
     list += ({ lang });
   }
   locales[0][project] = LanguageListObject( list );  
@@ -100,44 +101,48 @@ array(string) list_languages(string project) {
   return list;
 }
 
-class LocaleObject {
-
+class LocaleObject
+{
   // key:string
   static mapping(string|int:string) bindings;
   // key:function
   public mapping(string:function) functions;
-  int timestamp;
+  int timestamp = time(1);
   constant is_locale=1;
 
-  void create(mapping(string|int:string) _bindings,
-	      void|mapping(string:function) _functions) {
+  static void create(mapping(string|int:string) _bindings,
+		     void|mapping(string:function) _functions)
+  {
     bindings = _bindings;
     if(_functions)
       functions = _functions;
     else
       functions = ([]);
-    timestamp = time(1);
   }
 
-  string translate(string|int key) {
+  string translate(string|int key)
+  {
 #ifdef LOCALE_DEBUG_ALL
     werror("L: %O -> %O\n",key,bindings[key]);
 #endif    
     return bindings[key];
   }
 
-  function is_function(string f) {
+  function is_function(string f)
+  {
     return functionp(functions[f]) ? functions[f] : 0;
   }
 
-  mixed `() (string f, mixed ... args) {
+  mixed `() (string f, mixed ... args)
+  {
     if(functionp(functions[f]))
       return functions[f](@args);
     else
       return functions[f];
   }
 
-  int estimate_size() {
+  int estimate_size()
+  {
     int size=2*64+8; //Two mappings and a timestamp
     foreach(indices(bindings), string|int id) {
       size+=8;
@@ -150,7 +155,8 @@ class LocaleObject {
     return size;
   }
 
-  string _sprintf() {
+  static string _sprintf()
+  {
     return sprintf("LocaleObject(timestamp: %d, bindings: %d, functions: %d)",
 		   timestamp, sizeof(bindings), sizeof(functions) );
   }
@@ -393,34 +399,32 @@ mapping cache_status() {
   ]);
 }
 
-class DeferredLocale
+class DeferredLocale( static string project,
+		      static function(void:string) get_lang,
+		      static string|int key,
+		      static string fallback ) 
 {
-  static string project;
-  static string|int key;
-  static string fallback;
-  function(void:string) get_lang;
-  void create(string project_, function(void:string) get_lang_,
-	      string|int key_, string fallback_)
+  array get_identifier( )
+  //! Return the data nessesary to recreate this "string".
   {
-    project = project_;
-    get_lang = get_lang_;
-    key = key_;
-    fallback = fallback_;
+    return ({ project, get_lang, key, fallback });
   }
+
   static inline string lookup()
   {
     return translate(project, get_lang(), key, fallback);
   }
+
   string _sprintf(int c)
   {
-    switch(c) {
-    case 's':
-      return lookup();
-    case 'O':
-      return
-	sprintf("%O", lookup());
-    default:
-      error(sprintf("Illegal formatting char '%c'\n", c));
+    switch(c)
+    {
+      case 's':
+	return lookup();
+      case 'O':
+	return sprintf("%O", lookup());
+      default:
+	error(sprintf("Illegal formatting char '%c'\n", c));
     }
   }
   string `+(mixed ... args)
