@@ -265,22 +265,6 @@ static private class Extractor {
         return filedoc;
       if (isDocComment(s)) {
         doc = readAdjacentDocLines();    // read the doc comment lines
-	if (has_value(doc->text, "@skip")) {
-	  while(1) {
-	    s = parser->peekToken(WITH_NL);
-	    if (s == EOF) {
-	      extractorError("EOF in @skip segment.");
-	      break;
-	    }
-	    if (isDocComment(s)) {
-	      doc = readAdjacentDocLines();
-	      if (has_value(doc->text, "@endskip")) break;
-	    } else {
-	      parser->readToken(WITH_NL);	// Skip to the next token.
-	    }
-	  }
-	  continue;	// Restart the parsing.
-	}
         s = parser->peekToken(WITH_NL);
         if (!isDelimiter(s)) {           // and decls that may follow
           decls = parseAdjacentDecls(c);
@@ -294,7 +278,8 @@ static private class Extractor {
         s = parser->peekToken(WITH_NL);
         if (isDocComment(s))
           doc = readAdjacentDocLines();
-        else if ( !isDelimiter(s) )
+        s = parser->peekToken(WITH_NL);
+        if ( !isDelimiter(s) )
           extractorError("decl + doc + decl  is forbidden!");
       }
 
