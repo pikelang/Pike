@@ -17,6 +17,5 @@ stamp-h
 stamp-h.in
 *.feature
 adt.c
-adt.cmod.compiled
-array_adapter.c
+circular_list.c
 sequence.c
