@@ -2,12 +2,12 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: operators.c,v 1.166 2002/12/05 20:10:41 mast Exp $
+|| $Id: operators.c,v 1.167 2002/12/12 17:19:37 nilsson Exp $
 */
 
 #include "global.h"
 #include <math.h>
-RCSID("$Id: operators.c,v 1.166 2002/12/05 20:10:41 mast Exp $");
+RCSID("$Id: operators.c,v 1.167 2002/12/12 17:19:37 nilsson Exp $");
 #include "interpret.h"
 #include "svalue.h"
 #include "multiset.h"
@@ -1356,7 +1356,7 @@ PMOD_EXPORT void o_and(void)
   STRING_BITOP(&,"AND")
 
   default:
-    PIKE_ERROR("`&", "Bitwise and on illegal type.\n", sp, 2);
+    PIKE_ERROR("`&", "Bitwise AND on illegal type.\n", sp, 2);
   }
 }
 
@@ -1634,7 +1634,7 @@ PMOD_EXPORT void o_or(void)
   STRING_BITOP(|,"OR")
 
   default:
-    PIKE_ERROR("`|", "Bitwise or on illegal type.\n", sp, 2);
+    PIKE_ERROR("`|", "Bitwise OR on illegal type.\n", sp, 2);
   }
 }
 
