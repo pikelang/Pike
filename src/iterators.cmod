@@ -2,11 +2,11 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: iterators.cmod,v 1.38 2003/04/21 15:27:24 grubba Exp $
+|| $Id: iterators.cmod,v 1.39 2003/04/22 14:03:12 jhs Exp $
 */
 
 #include "global.h"
-RCSID("$Id: iterators.cmod,v 1.38 2003/04/21 15:27:24 grubba Exp $");
+RCSID("$Id: iterators.cmod,v 1.39 2003/04/22 14:03:12 jhs Exp $");
 #include "main.h"
 #include "object.h"
 #include "mapping.h"
@@ -210,7 +210,7 @@ PIKECLASS Iterator
    *! to the first item.
    *!
    *! @returns
-   *!   Returns zero it there are no items at all in
+   *!   Returns zero if there are no items at all in
    *!   the data set, one otherwise.
    *!
    *! @note
