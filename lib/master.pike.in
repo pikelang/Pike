@@ -1,6 +1,6 @@
 /* -*- Pike -*-
  *	
- * $Id: master.pike.in,v 1.155 2001/05/31 22:50:30 hubbe Exp $
+ * $Id: master.pike.in,v 1.156 2001/06/06 10:04:08 mirar Exp $
  * 
  * Master-file for Pike.
  *
@@ -1658,10 +1658,14 @@ mixed get_inhibit_compile_errors()
 }
 #endif /* constant(thread_local) */
 
+static private function(string:string) _trim_file_name_cb=0;
 string trim_file_name(string s)
 {
   if(getenv("LONG_PIKE_ERRORS")) return s;
   if(getenv("SHORT_PIKE_ERRORS")) return BASENAME(s);
+
+  if (_trim_file_name_cb) return _trim_file_name_cb(s);
+
   /* getcwd() can fail, but since this is called from handle_error(),
    * we don't want to fail, so we don't care about that.
    */
@@ -1673,6 +1677,13 @@ string trim_file_name(string s)
     if(s[..sizeof(cwd)-1]==cwd) return s[sizeof(cwd)..];
   };
   return s;
+}
+
+function(string:string) set_trim_file_name_callback(function(string:string) s)
+{
+   function(string:string) f=_trim_file_name_cb;
+   _trim_file_name_cb=s;
+   return f;
 }
 
 /*
