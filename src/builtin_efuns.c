@@ -20,24 +20,13 @@
 #include "rusage.h"
 #include "operators.h"
 #include "fsort.h"
-#include "call_out.h"
 #include "callback.h"
 #include "gc.h"
 #include "backend.h"
 #include "main.h"
-
-#if TIME_WITH_SYS_TIME
-# include <sys/time.h>
-# include <time.h>
-#else
-# if HAVE_SYS_TIME_H
-#  include <sys/time.h>
-# else
-#  if HAVE_TIME_H
-#   include <time.h>
-#  endif
-# endif
-#endif
+#include "memory.h"
+#include "time_stuff.h"
+#include <math.h>
 
 #ifdef HAVE_CRYPT_H
 #include <crypt.h>
@@ -227,10 +216,10 @@ void f_search(INT32 args)
     }
     len=sp[-args].u.string->len - start;
 
-    if(len>0 && (ptr=MEMMEM(sp[1-args].u.string->str,
-			    sp[1-args].u.string->len,
-			    sp[-args].u.string->str+start,
-			    len)))
+    if(len>0 && (ptr=my_memmem(sp[1-args].u.string->str,
+			       sp[1-args].u.string->len,
+			       sp[-args].u.string->str+start,
+			       len)))
     {
       start=ptr-sp[-args].u.string->str;
     }else{
@@ -287,12 +276,14 @@ void f_clone(INT32 args)
 
 void f_call_function(INT32 args)
 {
-  struct svalue *expected_sp=sp-args+2;
+  INT32 expected_stack=sp-args+2-evaluator_stack;
+
   strict_apply_svalue(sp-args, args - 1);
-  if(sp < expected_sp)
+  if(sp < expected_stack + evaluator_stack)
   {
 #ifdef DEBUG
-    if(sp+1 != expected_sp) fatal("Stack underflow!\n");
+    if(sp+1 != expected_stack + evaluator_stack)
+      fatal("Stack underflow!\n");
 #endif
 
     pop_stack();
@@ -541,11 +532,11 @@ void f_zero_type(INT32 args)
 
 void f_all_efuns(INT32 args)
 {
-  struct svalue *save_sp;
+  INT32 stack_size;
   pop_n_elems(args);
-  save_sp=sp;
+  stack_size=sp - evaluator_stack;
   push_all_efuns_on_stack();
-  f_aggregate_mapping(sp-save_sp);
+  f_aggregate_mapping(sp - evaluator_stack - stack_size);
 }
 
 void f_allocate(INT32 args)
@@ -659,9 +650,9 @@ void f_throw(INT32 args)
 
 static struct callback *exit_callbacks=0;
 
-struct callback *add_exit_callback(callback call,
+struct callback *add_exit_callback(callback_func call,
 				   void *arg,
-				   callback free_func)
+				   callback_func free_func)
 {
   return add_to_callback(&exit_callbacks, call, arg, free_func);
 }
@@ -696,12 +687,11 @@ void f_query_host_name(INT32 args)
 
 void f_time(INT32 args)
 {
-  extern time_t current_time;
   pop_n_elems(args);
   if(args)
-    push_int(current_time);
+    push_int(current_time.tv_sec);
   else
-    push_int(get_current_time());
+    push_int((INT32)TIME(0));
 }
 
 void f_crypt(INT32 args)
@@ -969,9 +959,9 @@ static int replace_sortfun(void *a,void *b)
   return my_quick_strcmp( ((struct tupel *)a)->ind, ((struct tupel *)b)->ind);
 }
 
-struct lpc_string * replace_many(struct lpc_string *str,
-				    struct array *from,
-				    struct array *to)
+static struct lpc_string * replace_many(struct lpc_string *str,
+					struct array *from,
+					struct array *to)
 {
   char *s;
   INT32 length,e;
@@ -1187,23 +1177,47 @@ void f_functionp(INT32 args)
 
 void f_sleep(INT32 args)
 {
-  struct timeval timeout;
+  struct timeval t1,t2,t3;
   INT32 a,b;
 
-  if(!args) error("Too few arguments to sleep.\n");
-  if(sp[-args].type!=T_INT)
+  if(!args)
+    error("Too few arguments to sleep.\n");
+
+  GETTIMEOFDAY(&t1);
+
+  switch(sp[-args].type)
+  {
+  case T_INT:
+    t2.tv_sec=sp[-args].u.integer;
+    t2.tv_usec=0;
+    break;
+
+  case T_FLOAT:
+  {
+    FLOAT_TYPE f;
+    f=sp[-args].u.float_number;
+    t2.tv_sec=floor(f);
+    t2.tv_usec=(long)(1000000.0*(f-floor(f)));
+    break;
+  }
+
+  default:
     error("Bad argument 1 to sleep.\n");
-  a=get_current_time()+sp[-args].u.integer;
+  }
+
+  my_add_timeval(&t1, &t1);
   
   pop_n_elems(args);
   while(1)
   {
-    timeout.tv_usec=0;
-    b=a-get_current_time();
-    if(b<0) break;
+    GETTIMEOFDAY(&t2);
+    if(my_timercmp(&t1, > , &t2))
+      break;
 
-    timeout.tv_sec=b;
-    select(0,0,0,0,&timeout);
+    t3=t1;
+    my_subtract_timeval(&t3, &t2);
+
+    select(0,0,0,0,&t3);
     check_signals();
   }
 }
@@ -1257,10 +1271,15 @@ void f_sort(INT32 args)
       error("Argument %ld to sort() has wrong size.\n",(long)(e+1));
   }
 
-  order=get_alpha_order(sp[-args].u.array);
-  for(e=0;e<args;e++) order_array(sp[e-args].u.array,order);
-  free((char *)order);
-  pop_n_elems(args-1);
+  if(args > 1)
+  {
+    order=get_alpha_order(sp[-args].u.array);
+    for(e=0;e<args;e++) order_array(sp[e-args].u.array,order);
+    free((char *)order);
+    pop_n_elems(args-1);
+  } else {
+    sort_array_destructively(sp[-args].u.array);
+  }
 }
 
 void f_rows(INT32 args)
@@ -1320,82 +1339,56 @@ void f__verify_internals(INT32 args)
 
 #endif
 
-void init_builtin_efuns()
+#ifdef HAVE_LOCALTIME
+void f_localtime(INT32 args)
 {
-  init_operators();
+  struct tm *tm;
+  time_t t;
+  if (args<1 || sp[-1].type!=T_INT)
+    error("Illegal argument to localtime");
 
-#ifdef DEBUG
-  add_efun("_verify_internals",f__verify_internals,"function(:void)",OPT_SIDE_EFFECT|OPT_EXTERNAL_DEPEND);
+  t=sp[-1].u.integer;
+  tm=localtime(&t);
+  pop_n_elems(args);
+
+  push_string(make_shared_string("sec"));
+  push_int(tm->tm_sec);
+  push_string(make_shared_string("min"));
+  push_int(tm->tm_min);
+  push_string(make_shared_string("hour"));
+  push_int(tm->tm_hour);
+
+  push_string(make_shared_string("mday"));
+  push_int(tm->tm_mday);
+  push_string(make_shared_string("mon"));
+  push_int(tm->tm_mon);
+  push_string(make_shared_string("year"));
+  push_int(tm->tm_year);
+
+  push_string(make_shared_string("wday"));
+  push_int(tm->tm_wday);
+  push_string(make_shared_string("yday"));
+  push_int(tm->tm_yday);
+  push_string(make_shared_string("isdst"));
+  push_int(tm->tm_isdst);
+
+#ifdef HAVE_EXTERNAL_TIMEZONE
+  push_string(make_shared_string("timezone"));
+  push_int(timezone);
+  f_aggregate_mapping(20);
+#else
+#ifdef STRUCT_TM_HAS_GMTOFF
+  push_string(make_shared_string("timezone"));
+  push_int(tm->tm_gmtoff);
+  f_aggregate_mapping(20);
+#else
+  f_aggregate_mapping(18);
 #endif
-
-  add_efun("add_efun",f_add_efun,"function(string,void|mixed:void)",OPT_SIDE_EFFECT);
-  add_efun("aggregate",f_aggregate,"function(mixed ...:mixed *)",OPT_TRY_OPTIMIZE);
-  add_efun("aggregate_list",f_aggregate_list,"function(mixed ...:list)",OPT_TRY_OPTIMIZE);
-  add_efun("aggregate_mapping",f_aggregate_mapping,"function(mixed ...:mapping)",OPT_TRY_OPTIMIZE);
-  add_efun("all_efuns",f_all_efuns,"function(:mapping(string:mixed))",OPT_EXTERNAL_DEPEND);
-  add_efun("allocate", f_allocate, "function(int, string|void:mixed *)", 0);
-  add_efun("arrayp",  f_arrayp,  "function(mixed:int)",0);
-  add_efun("backtrace",f_backtrace,"function(:array(array(function|int|string)))",OPT_EXTERNAL_DEPEND);
-  add_efun("call_function",f_call_function,"function(mixed,mixed ...:mixed)",OPT_SIDE_EFFECT | OPT_EXTERNAL_DEPEND);
-  add_efun("call_out",f_call_out,"function(function,int,mixed...:void)",OPT_SIDE_EFFECT);
-  add_efun("call_out_info",f_call_out_info,"function(:array*)",OPT_EXTERNAL_DEPEND);
-  add_efun("clone",f_clone,"function(program,mixed...:object)",OPT_EXTERNAL_DEPEND);
-  add_efun("combine_path",f_combine_path,"function(string,string:string)",0);
-  add_efun("compile_file",f_compile_file,"function(string:program)",OPT_EXTERNAL_DEPEND);
-  add_efun("compile_string",f_compile_string,"function(string,string|void:program)",OPT_EXTERNAL_DEPEND);
-  add_efun("copy_value",f_copy_value,"function(mixed:mixed)",0);
-  add_efun("crypt",f_crypt,"function(string:string)|function(string,string:int)",OPT_EXTERNAL_DEPEND);
-  add_efun("ctime",f_ctime,"function(int:string)",OPT_TRY_OPTIMIZE);
-  add_efun("destruct",f_destruct,"function(object|void:void)",OPT_SIDE_EFFECT);
-  add_efun("equal",f_equal,"function(mixed,mixed:int)",OPT_TRY_OPTIMIZE);
-  add_efun("exit",f_exit,"function(int:void)",OPT_SIDE_EFFECT);
-  add_efun("find_call_out",f_find_call_out,"function(function:int)",OPT_EXTERNAL_DEPEND);
-  add_efun("floatp",  f_floatp,  "function(mixed:int)",OPT_TRY_OPTIMIZE);
-  add_efun("function_name",f_function_name,"function(function:string)",OPT_TRY_OPTIMIZE);
-  add_efun("function_object",f_function_object,"function(function:object)",OPT_TRY_OPTIMIZE);
-  add_efun("functionp",  f_functionp,  "function(mixed:int)",OPT_TRY_OPTIMIZE);
-  add_efun("hash",f_hash,"function(string,int|void:int)",OPT_TRY_OPTIMIZE);
-  add_efun("indices",f_indices,"function(string|array:int*)|function(mapping|list:mixed*)|function(object:string*)",0);
-  add_efun("intp",   f_intp,    "function(mixed:int)",OPT_TRY_OPTIMIZE);
-  add_efun("listp",   f_listp,   "function(mixed:int)",OPT_TRY_OPTIMIZE);
-  add_efun("lower_case",f_lower_case,"function(string:string)",OPT_TRY_OPTIMIZE);
-  add_efun("mappingp",f_mappingp,"function(mixed:int)",OPT_TRY_OPTIMIZE);
-  add_efun("m_delete",f_m_delete,"function(mapping,mixed:mapping)",0);
-  add_efun("mkmapping",f_mkmapping,"function(mixed *,mixed *:mapping)",OPT_TRY_OPTIMIZE);
-  add_efun("next_object",f_next_object,"function(void|object:object)",OPT_EXTERNAL_DEPEND);
-  add_efun("object_program",f_object_program,"function(object:program)",0);
-  add_efun("objectp", f_objectp, "function(mixed:int)",0);
-  add_efun("programp",f_programp,"function(mixed:int)",0);
-  add_efun("query_host_name",f_query_host_name,"function(:string)",0);
-  add_efun("query_num_arg",f_query_num_arg,"function(:int)",OPT_EXTERNAL_DEPEND);
-  add_efun("random",f_random,"function(int:int)",OPT_EXTERNAL_DEPEND);
-  add_efun("random_seed",f_random_seed,"function(int:void)",OPT_SIDE_EFFECT);
-  add_efun("remove_call_out",f_remove_call_out,"function(function:int)",OPT_SIDE_EFFECT);
-  add_efun("replace",f_replace,"function(string,string,string:string)|function(string,string*,string*:string)|function(array,mixed,mixed:array)|function(mapping,mixed,mixed:array)",0);
-  add_efun("reverse",f_reverse,"function(int:int)|function(string:string)|function(array:array)",0);
-  add_efun("rusage", f_rusage, "function(:int *)",OPT_EXTERNAL_DEPEND);
-  add_efun("search",f_search,"function(string,string,void|int:int)|function(array,mixed,void|int:int)|function(mapping,mixed:mixed)",0);
-  add_efun("sizeof", f_sizeof, "function(string|list|array|mapping|object:int)",0);
-  add_efun("sleep", f_sleep, "function(int:void)",OPT_SIDE_EFFECT);
-  add_efun("stringp", f_stringp, "function(mixed:int)",0);
-
-  add_efun("this_object", f_this_object, "function(:object)",OPT_EXTERNAL_DEPEND);
-  add_efun("throw",f_throw,"function(mixed:void)",0);
-  add_efun("time",f_time,"function(void|int:int)",OPT_EXTERNAL_DEPEND);
-  add_efun("trace",f_trace,"function(int:int)",OPT_SIDE_EFFECT);
-  add_efun("upper_case",f_upper_case,"function(string:string)",0);
-  add_efun("values",f_values,"function(string|list:int*)|function(array|mapping|object:mixed*)",0);
-  add_efun("zero_type",f_zero_type,"function(int:int)",0);
-  add_efun("sort",f_sort,"function(array(mixed),array(mixed)...:array(mixed))",OPT_SIDE_EFFECT);
-  add_efun("column",f_column,"function(array,mixed:array)",0);
-  add_efun("rows",f_rows,"function(mixed,array:array)",0);
-#ifdef GC2
-  add_efun("gc",f_gc,"function(:int)",OPT_SIDE_EFFECT);
 #endif
 }
+#endif
 
 
-#if 0
 /* Check if the glob s[0..len[ matches the string m[0..mlen[ */
 static int does_match(char *s, int len, char *m, int mlen)
 {
@@ -1428,38 +1421,40 @@ void f_glob(INT32 args)
 {
   INT32 i,matches;
   struct array *a;
-  struct svalue *sval, *tmp;
+  struct svalue *sval, tmp;
   struct lpc_string *glob;
 
   if(args < 2)
     error("Too few arguments to glob().\n");
 
   if(args > 2) pop_n_elems(args-2);
+  args=2;
 
-  if (sp[1-args].type!=T_STRING)
+  if (sp[-args].type!=T_STRING)
     error("Bad argument 2 to glob().\n");
 
   glob=sp[-args].u.string;
 
-  switch(sp[-args].type)
+  switch(sp[1-args].type)
   {
   case T_STRING:
-    i=do_match(sp[1-args].u.string,
-	       sp[1-args].u.string->length,
-	       glob,
-	       glob->length);
+    i=does_match(sp[1-args].u.string->str,
+		 sp[1-args].u.string->len,
+		 glob->str,
+		 glob->len);
     pop_n_elems(2);
     push_int(i);
     break;
     
   case T_ARRAY:
-    a=sp[-args].u.array;
+    a=sp[1-args].u.array;
+    matches=0;
     for(i=0;i<a->size;i++)
     {
-      if(do_match(ITEM(a)[i].u.string,
-		  ITEM(a)[i].u.string->length,
-		  glob,
-		  glob->length))
+      if(does_match(ITEM(a)[i].u.string->str,
+		    ITEM(a)[i].u.string->len,
+		    glob->str,
+		    glob->len))
       {
 	ITEM(a)[i].u.string->refs++;
 	push_string(ITEM(a)[i].u.string);
@@ -1479,75 +1474,78 @@ void f_glob(INT32 args)
   }
 }
 
-
-/*
- * add_efun("glob",f_glob,"function(string,string:string)|function(string,array(string):array(string))",0);
- * add_efun("localtime",f_localtime,
- * "function(int:mapping(string:int))",OPT_EXTERNAL_DEPEND);
- */
-
-#if !HAVE_INT_TIMEZONE
-int _tz;
-#else
-extern long int timezone;
-#endif
-
-
-
-void f_localtime(INT32 args)
+void init_builtin_efuns()
 {
-  struct tm *tm;
-  time_t t;
-  if (args<1||
-      sp[-1].type!=T_INT)
-    error("Illegal argument to localtime");
-  t=sp[-1].u.integer;
-  tm=localtime(&t);
-  pop_stack();
-  push_string(make_shared_string("sec"));
-  push_int(tm->tm_sec);
-  push_string(make_shared_string("min"));
-  push_int(tm->tm_min);
-  push_string(make_shared_string("hour"));
-  push_int(tm->tm_hour);
+  init_operators();
+  
+  add_efun("add_efun",f_add_efun,"function(string,void|mixed:void)",OPT_SIDE_EFFECT);
+  add_efun("aggregate",f_aggregate,"function(mixed ...:mixed *)",OPT_TRY_OPTIMIZE);
+  add_efun("aggregate_list",f_aggregate_list,"function(mixed ...:list)",OPT_TRY_OPTIMIZE);
+  add_efun("aggregate_mapping",f_aggregate_mapping,"function(mixed ...:mapping)",OPT_TRY_OPTIMIZE);
+  add_efun("all_efuns",f_all_efuns,"function(:mapping(string:mixed))",OPT_EXTERNAL_DEPEND);
+  add_efun("allocate", f_allocate, "function(int, string|void:mixed *)", 0);
+  add_efun("arrayp",  f_arrayp,  "function(mixed:int)",0);
+  add_efun("backtrace",f_backtrace,"function(:array(array(function|int|string)))",OPT_EXTERNAL_DEPEND);
+  add_efun("call_function",f_call_function,"function(mixed,mixed ...:mixed)",OPT_SIDE_EFFECT | OPT_EXTERNAL_DEPEND);
+  add_efun("clone",f_clone,"function(program,mixed...:object)",OPT_EXTERNAL_DEPEND);
+  add_efun("column",f_column,"function(array,mixed:array)",0);
+  add_efun("combine_path",f_combine_path,"function(string,string:string)",0);
+  add_efun("compile_file",f_compile_file,"function(string:program)",OPT_EXTERNAL_DEPEND);
+  add_efun("compile_string",f_compile_string,"function(string,string|void:program)",OPT_EXTERNAL_DEPEND);
+  add_efun("copy_value",f_copy_value,"function(mixed:mixed)",0);
+  add_efun("crypt",f_crypt,"function(string:string)|function(string,string:int)",OPT_EXTERNAL_DEPEND);
+  add_efun("ctime",f_ctime,"function(int:string)",OPT_TRY_OPTIMIZE);
+  add_efun("destruct",f_destruct,"function(object|void:void)",OPT_SIDE_EFFECT);
+  add_efun("equal",f_equal,"function(mixed,mixed:int)",OPT_TRY_OPTIMIZE);
+  add_efun("exit",f_exit,"function(int:void)",OPT_SIDE_EFFECT);
+  add_efun("floatp",  f_floatp,  "function(mixed:int)",OPT_TRY_OPTIMIZE);
+  add_efun("function_name",f_function_name,"function(function:string)",OPT_TRY_OPTIMIZE);
+  add_efun("function_object",f_function_object,"function(function:object)",OPT_TRY_OPTIMIZE);
+  add_efun("functionp",  f_functionp,  "function(mixed:int)",OPT_TRY_OPTIMIZE);
+  add_efun("glob",f_glob,"function(string,string:int)|function(string,string*:array(string))",OPT_TRY_OPTIMIZE);
+  add_efun("hash",f_hash,"function(string,int|void:int)",OPT_TRY_OPTIMIZE);
+  add_efun("indices",f_indices,"function(string|array:int*)|function(mapping|list:mixed*)|function(object:string*)",0);
+  add_efun("intp",   f_intp,    "function(mixed:int)",OPT_TRY_OPTIMIZE);
+  add_efun("listp",   f_listp,   "function(mixed:int)",OPT_TRY_OPTIMIZE);
+  add_efun("lower_case",f_lower_case,"function(string:string)",OPT_TRY_OPTIMIZE);
+  add_efun("m_delete",f_m_delete,"function(mapping,mixed:mapping)",0);
+  add_efun("mappingp",f_mappingp,"function(mixed:int)",OPT_TRY_OPTIMIZE);
+  add_efun("mkmapping",f_mkmapping,"function(mixed *,mixed *:mapping)",OPT_TRY_OPTIMIZE);
+  add_efun("next_object",f_next_object,"function(void|object:object)",OPT_EXTERNAL_DEPEND);
+  add_efun("object_program",f_object_program,"function(object:program)",0);
+  add_efun("objectp", f_objectp, "function(mixed:int)",0);
+  add_efun("programp",f_programp,"function(mixed:int)",0);
+  add_efun("query_host_name",f_query_host_name,"function(:string)",0);
+  add_efun("query_num_arg",f_query_num_arg,"function(:int)",OPT_EXTERNAL_DEPEND);
+  add_efun("random",f_random,"function(int:int)",OPT_EXTERNAL_DEPEND);
+  add_efun("random_seed",f_random_seed,"function(int:void)",OPT_SIDE_EFFECT);
+  add_efun("replace",f_replace,"function(string,string,string:string)|function(string,string*,string*:string)|function(array,mixed,mixed:array)|function(mapping,mixed,mixed:array)",0);
+  add_efun("reverse",f_reverse,"function(int:int)|function(string:string)|function(array:array)",0);
+  add_efun("rows",f_rows,"function(mixed,array:array)",0);
+  add_efun("rusage", f_rusage, "function(:int *)",OPT_EXTERNAL_DEPEND);
+  add_efun("search",f_search,"function(string,string,void|int:int)|function(array,mixed,void|int:int)|function(mapping,mixed:mixed)",0);
+  add_efun("sizeof", f_sizeof, "function(string|list|array|mapping|object:int)",0);
+  add_efun("sleep", f_sleep, "function(float|int:void)",OPT_SIDE_EFFECT);
+  add_efun("sort",f_sort,"function(array(mixed),array(mixed)...:array(mixed))",OPT_SIDE_EFFECT);
+  add_efun("stringp", f_stringp, "function(mixed:int)",0);
+  add_efun("this_object", f_this_object, "function(:object)",OPT_EXTERNAL_DEPEND);
+  add_efun("throw",f_throw,"function(mixed:void)",0);
+  add_efun("time",f_time,"function(void|int:int)",OPT_EXTERNAL_DEPEND);
+  add_efun("trace",f_trace,"function(int:int)",OPT_SIDE_EFFECT);
+  add_efun("upper_case",f_upper_case,"function(string:string)",0);
+  add_efun("values",f_values,"function(string|list:int*)|function(array|mapping|object:mixed*)",0);
+  add_efun("zero_type",f_zero_type,"function(int:int)",0);
 
-  push_string(make_shared_string("mday"));
-  push_int(tm->tm_mday);
-  push_string(make_shared_string("mon"));
-  push_int(tm->tm_mon);
-  push_string(make_shared_string("year"));
-  push_int(tm->tm_year);
-
-  push_string(make_shared_string("wday"));
-  push_int(tm->tm_wday);
-  push_string(make_shared_string("yday"));
-  push_int(tm->tm_yday);
-  push_string(make_shared_string("isdst"));
-  push_int(tm->tm_isdst);
-
-  push_string(make_shared_string("timezone"));
-#if !HAVE_INT_TIMEZONE
-  push_int(_tz);
-#else
-  push_int(timezone);
+#ifdef HAVE_LOCALTIME
+  add_efun("localtime",f_localtime,"function(int:mapping(string:int))",OPT_EXTERNAL_DEPEND);
 #endif
-  f_aggregate_mapping(20);
+
+#ifdef DEBUG
+  add_efun("_verify_internals",f__verify_internals,"function(:void)",OPT_SIDE_EFFECT|OPT_EXTERNAL_DEPEND);
+#endif
+
+#ifdef GC2
+  add_efun("gc",f_gc,"function(:int)",OPT_SIDE_EFFECT);
+#endif
 }
 
-#ifdef HAVE_STRERROR
-void f_strerror(INT32 args)
-{
-  char *s;
-  if(!args) 
-    s=strerror(errno);
-  else
-    s=strerror(sp[-args].u.integer);
-  pop_n_elems(args);
-  if(s)
-    push_text(s);
-  else
-    push_int(0);
-}
-#endif
-
-#endif
