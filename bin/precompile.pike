@@ -1445,14 +1445,11 @@ class ParseBlock
 	addfuncs+=
 	  IFDEF(define,
 		({
-		  sprintf("  map_variable(%O,%O,%s,%s_storage_offset + OFFSETOF(%s_struct, %s), %s);",
-			  (string)name,
-			  type->output_pike_type(0),
-			  attributes->flags || "0",
-			  base,
-			  base,
-			  name,
-			  type->type_number()),
+		  sprintf("  PIKE_MAP_VARIABLE(%O, %s_storage_offset + OFFSETOF(%s_struct, %s),\n"
+			  "                    %s, %s, %s);",
+			  (string)name, base, base, name,
+			  type->output_c_type(), type->type_number(),
+			  attributes->flags || "0"),
 		    }));
 	ret+=DEFINE(define);
 	ret+=({ PC.Token("DECLARE_STORAGE") });
