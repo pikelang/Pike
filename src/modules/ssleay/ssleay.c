@@ -5,7 +5,7 @@
 \*/
 
 #include "global.h"
-RCSID("$Id: ssleay.c,v 1.4 1996/12/04 03:35:25 nisse Exp $");
+RCSID("$Id: ssleay.c,v 1.5 1996/12/04 04:02:14 nisse Exp $");
 #include "types.h"
 #include "interpret.h"
 #include "svalue.h"
@@ -175,7 +175,8 @@ static void ssleay_new(INT32 args)
 	error("ssleay->open: invalid mode\n");
     }
 #endif
-  pop_n_elems(args );
+  pop_n_elems(args);
+  THISOBJ->refs++;
   push_object(THISOBJ);
   push_object(clone(ssleay_connection_program, 1));
 }
