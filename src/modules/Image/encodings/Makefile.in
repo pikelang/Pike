@@ -1,9 +1,6 @@
 SRCDIR=@srcdir@
 VPATH=@srcdir@:@srcdir@/../../..:../../..
-GIF_OBJS = gif.o gif_lzw.o 
-PNM_OBJS = pnm.o 
-X_OBJS = x.o
-OBJS=gif.a pnm.a x.a
+OBJS = gif.o gif_lzw.o  pnm.o x.o xwd.o
 
 @SET_MAKE@
 
@@ -15,22 +12,12 @@ RANLIB=@RANLIB@
 PREFLAGS=-I. -I$(SRCDIR) -I$(SRCDIR)/../../.. -I$(SRCDIR)/.. -I../../.. -I.. -I. $(MODULE_CPPFLAGS) $(DEFINES) 
 CFLAGS=$(PREFLAGS) $(OTHERFLAGS) $(MODULE_CFLAGS) @CCSHARED@ 
 
-all: $(OBJS)
+all: encodings.a
 
-gif.a : $(GIF_OBJS)
-	rm -f gif.a
-	$(AR) cq gif.a $(GIF_OBJS)
-	$(RANLIB) gif.a
-
-x.a : $(X_OBJS)
-	rm -f x.a
-	$(AR) cq x.a $(X_OBJS)
-	$(RANLIB) x.a
-
-pnm.a : $(PNM_OBJS)
-	rm -f pnm.a
-	$(AR) cq pnm.a $(PNM_OBJS)
-	$(RANLIB) pnm.a
+encodings.a : $(OBJS)
+	rm -f encodings.a
+	$(AR) cq encodings.a $(OBJS)
+	$(RANLIB) encodings.a
 
 depend:
 	gcc -MM $(PREFLAGS) $(SRCDIR)/*.c | $(TMP_BINDIR)/fixdepends.sh $(SRCDIR)
