@@ -2,11 +2,11 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: builtin_functions.c,v 1.508 2003/09/05 15:50:22 grubba Exp $
+|| $Id: builtin_functions.c,v 1.509 2003/09/06 23:08:59 nilsson Exp $
 */
 
 #include "global.h"
-RCSID("$Id: builtin_functions.c,v 1.508 2003/09/05 15:50:22 grubba Exp $");
+RCSID("$Id: builtin_functions.c,v 1.509 2003/09/06 23:08:59 nilsson Exp $");
 #include "interpret.h"
 #include "svalue.h"
 #include "pike_macros.h"
@@ -1190,7 +1190,8 @@ PMOD_EXPORT void f_has_value(INT32 args)
  */
 PMOD_EXPORT void f_add_constant(INT32 args)
 {
-  CHECK_SECURITY_OR_ERROR(SECURITY_BIT_SECURITY, ("add_constant: permission denied.\n"));
+  ASSERT_SECURITY_ROOT("add_constant");
+
   if(args<1)
     SIMPLE_TOO_FEW_ARGS_ERROR("add_constant", 1);
 
@@ -2107,7 +2108,8 @@ PMOD_EXPORT void f_throw(INT32 args)
 PMOD_EXPORT void f_exit(INT32 args)
 {
   static int in_exit=0;
-  CHECK_SECURITY_OR_ERROR(SECURITY_BIT_SECURITY, ("exit: permission denied.\n"));
+  ASSERT_SECURITY_ROOT("exit");
+
   if(args < 1)
     SIMPLE_TOO_FEW_ARGS_ERROR("exit", 1);
 
@@ -2136,7 +2138,8 @@ PMOD_EXPORT void f_exit(INT32 args)
  */
 void f__exit(INT32 args)
 {
-  CHECK_SECURITY_OR_ERROR(SECURITY_BIT_SECURITY, ("_exit: permission denied.\n"));
+  ASSERT_SECURITY_ROOT("_exit");
+
   if(args < 1)
     SIMPLE_TOO_FEW_ARGS_ERROR("_exit", 1);
 
@@ -2717,7 +2720,7 @@ PMOD_EXPORT void f_next_object(INT32 args)
 {
   struct object *o;
 
-  CHECK_SECURITY_OR_ERROR(SECURITY_BIT_SECURITY, ("next_object: permission denied.\n"));
+  ASSERT_SECURITY_ROOT("next_object");
 
   if(args < 1)
   {
@@ -4036,8 +4039,8 @@ PMOD_EXPORT void f_rows(INT32 args)
 PMOD_EXPORT void f__verify_internals(INT32 args)
 {
   INT32 tmp=d_flag;
-  CHECK_SECURITY_OR_ERROR(SECURITY_BIT_SECURITY,
-			  ("_verify_internals: permission denied.\n"));
+  ASSERT_SECURITY_ROOT("_verify_internals");
+
   d_flag=0x7fffffff;
 #ifdef PIKE_DEBUG
   do_debug();			/* Calls do_gc() since d_flag > 3. */
@@ -4066,8 +4069,7 @@ PMOD_EXPORT void f__debug(INT32 args)
 {
   INT_TYPE d;
 
-  CHECK_SECURITY_OR_ERROR(SECURITY_BIT_SECURITY,
-			  ("_debug: permission denied.\n"));
+  ASSERT_SECURITY_ROOT("_debug");
 
   get_all_args("_debug", args, "%i", &d);
   pop_n_elems(args);
@@ -4091,8 +4093,7 @@ PMOD_EXPORT void f__optimizer_debug(INT32 args)
 {
   INT_TYPE l;
 
-  CHECK_SECURITY_OR_ERROR(SECURITY_BIT_SECURITY,
-			  ("_optimizer_debug: permission denied.\n"));
+  ASSERT_SECURITY_ROOT("_optimizer_debug");
 
   get_all_args("_optimizer_debug", args, "%i", &l);
   pop_n_elems(args);
@@ -4117,8 +4118,7 @@ PMOD_EXPORT void f__assembler_debug(INT32 args)
 {
   INT_TYPE l;
 
-  CHECK_SECURITY_OR_ERROR(SECURITY_BIT_SECURITY,
-			  ("_assembler_debug: permission denied.\n"));
+  ASSERT_SECURITY_ROOT("_assembler_debug");
 
   get_all_args("_assembler_debug", args, "%i", &l);
   pop_n_elems(args);
@@ -4145,8 +4145,8 @@ PMOD_EXPORT void f__compiler_trace(INT32 args)
 {
   extern int yydebug;
   INT_TYPE yyd;
-  CHECK_SECURITY_OR_ERROR(SECURITY_BIT_SECURITY,
-			  ("_compiler_trace: permission denied.\n"));
+  ASSERT_SECURITY_ROOT("_compiler_trace");
+
   get_all_args("_compiler_trace", args, "%i", &yyd);
   pop_n_elems(args);
   push_int(yydebug);
@@ -6000,7 +6000,7 @@ PMOD_EXPORT void f__next(INT32 args)
 {
   struct svalue tmp;
 
-  CHECK_SECURITY_OR_ERROR(SECURITY_BIT_SECURITY, ("_next: permission denied.\n"));
+  ASSERT_SECURITY_ROOT("_next");
 
   if(!args)
     SIMPLE_TOO_FEW_ARGS_ERROR("_next", 1);
@@ -6048,7 +6048,7 @@ PMOD_EXPORT void f__prev(INT32 args)
 {
   struct svalue tmp;
 
-  CHECK_SECURITY_OR_ERROR(SECURITY_BIT_SECURITY, ("_prev: permission denied.\n"));
+  ASSERT_SECURITY_ROOT("_prev");
 
   if(!args)
     SIMPLE_TOO_FEW_ARGS_ERROR("_prev", 1);
@@ -6164,8 +6164,7 @@ PMOD_EXPORT void f__typeof(INT32 args)
  */
 PMOD_EXPORT void f_replace_master(INT32 args)
 {
-  CHECK_SECURITY_OR_ERROR(SECURITY_BIT_SECURITY,
-			  ("replace_master: permission denied.\n"));
+  ASSERT_SECURITY_ROOT("replace_master");
 
   if(!args)
     SIMPLE_TOO_FEW_ARGS_ERROR("replace_master", 1);
@@ -6650,8 +6649,7 @@ PMOD_EXPORT void f_transpose(INT32 args)
  */
 PMOD_EXPORT void f__reset_dmalloc(INT32 args)
 {
-  CHECK_SECURITY_OR_ERROR(SECURITY_BIT_SECURITY,
-			  ("_reset_dmalloc: permission denied.\n"));
+  ASSERT_SECURITY_ROOT("_reset_dmalloc");
   pop_n_elems(args);
   reset_debug_malloc();
 }
@@ -6709,8 +6707,7 @@ PMOD_EXPORT void f__list_open_fds(INT32 args)
  */
 PMOD_EXPORT void f__locate_references(INT32 args)
 {
-  CHECK_SECURITY_OR_ERROR(SECURITY_BIT_SECURITY,
-			  ("_locate_references: permission denied.\n"));
+  ASSERT_SECURITY_ROOT("_locate_references");
   if(args)
     locate_references(Pike_sp[-args].u.refs);
   pop_n_elems(args-1);
@@ -6730,9 +6727,7 @@ PMOD_EXPORT void f__locate_references(INT32 args)
 PMOD_EXPORT void f__describe(INT32 args)
 {
   struct svalue *s;
-
-  CHECK_SECURITY_OR_ERROR(SECURITY_BIT_SECURITY,
-			  ("_describe: permission denied.\n"));
+  ASSERT_SECURITY_ROOT("_describe");
   get_all_args("_describe", args, "%*", &s);
   debug_describe_svalue(debug_malloc_pass(s));
   pop_n_elems(args-1);
@@ -6751,8 +6746,8 @@ PMOD_EXPORT void f__describe(INT32 args)
  */
 PMOD_EXPORT void f__gc_set_watch(INT32 args)
 {
-  CHECK_SECURITY_OR_ERROR(SECURITY_BIT_SECURITY,
-			  ("_gc_set_watch: permission denied.\n"));
+  ASSERT_SECURITY_ROOT("_gc_set_watch");
+
   if (args < 1)
     SIMPLE_TOO_FEW_ARGS_ERROR("_gc_set_watch", 1);
   if (Pike_sp[-args].type > MAX_REF_TYPE)
@@ -6775,8 +6770,7 @@ PMOD_EXPORT void f__gc_set_watch(INT32 args)
  */
 PMOD_EXPORT void f__dump_backlog(INT32 args)
 {
-  CHECK_SECURITY_OR_ERROR(SECURITY_BIT_SECURITY,
-			  ("_dump_backlog: permission denied.\n"));
+  ASSERT_SECURITY_ROOT("_dump_backlog");
   pop_n_elems(args);
   dump_backlog();
 }

@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: signal_handler.c,v 1.275 2003/08/20 12:07:21 grubba Exp $
+|| $Id: signal_handler.c,v 1.276 2003/09/06 23:09:24 nilsson Exp $
 */
 
 #include "global.h"
@@ -26,7 +26,7 @@
 #include "main.h"
 #include <signal.h>
 
-RCSID("$Id: signal_handler.c,v 1.275 2003/08/20 12:07:21 grubba Exp $");
+RCSID("$Id: signal_handler.c,v 1.276 2003/09/06 23:09:24 nilsson Exp $");
 
 #ifdef HAVE_PASSWD_H
 # include <passwd.h>
@@ -878,10 +878,7 @@ static void f_signal(int args)
   int signum;
   sigfunctype func;
 
-#ifdef PIKE_SECURITY
-  if(!CHECK_SECURITY(SECURITY_BIT_SECURITY))
-    Pike_error("signal: permission denied.\n");
-#endif
+  ASSERT_SECURITY_ROOT("signal");
 
 #ifdef PROC_DEBUG
   fprintf(stderr, "f_signal(%d)\n", args);
@@ -1672,10 +1669,8 @@ static void f_pid_status_set_priority(INT32 args)
 {
   char *to;
   int r;
-#ifdef PIKE_SECURITY
-  if(!CHECK_SECURITY(SECURITY_BIT_SECURITY))
-    Pike_error("pid_status_wait: permission denied.\n");
-#endif
+  ASSERT_SECURITY_ROOT("Process->set_priority");
+
   get_all_args("set_priority", args, "%s", &to);
   r = set_priority( THIS->pid, to );
   pop_n_elems(args);
@@ -1749,10 +1744,8 @@ static void exit_trace_process(struct object *o)
 static void f_trace_process_cont(INT32 args)
 {
   int cont_signal = 0;
-#ifdef PIKE_SECURITY
-  if(!CHECK_SECURITY(SECURITY_BIT_SECURITY))
-    Pike_error("pid_status_wait: permission denied.\n");
-#endif
+  ASSERT_SECURITY_ROOT("TraceProcess->cont");
+
   if(THIS->pid == -1)
     Pike_error("This process object has no process associated with it.\n");
 
@@ -1810,10 +1803,8 @@ static void f_trace_process_cont(INT32 args)
  */
 static void f_trace_process_exit(INT32 args)
 {
-#ifdef PIKE_SECURITY
-  if(!CHECK_SECURITY(SECURITY_BIT_SECURITY))
-    Pike_error("pid_status_wait: permission denied.\n");
-#endif
+  ASSERT_SECURITY_ROOT("TraceProcess->exit");
+
   if(THIS->pid == -1)
     Pike_error("This process object has no process associated with it.\n");
 
@@ -1856,10 +1847,8 @@ static void f_proc_reg_index(INT32 args)
   INT32 regno = 0;
   long val;
 
-#ifdef PIKE_SECURITY
-  if(!CHECK_SECURITY(SECURITY_BIT_SECURITY))
-    Pike_error("`[](): permission denied.\n");
-#endif
+  ASSERT_SECURITY_ROOT("Registers->`[]()");
+
   if(proc->pid == -1)
     Pike_error("This process object has no process associated with it.\n");
 
@@ -2304,10 +2293,8 @@ void f_set_priority( INT32 args )
 {
   INT_TYPE pid;
   char *plevel;
-#ifdef PIKE_SECURITY
-  if(!CHECK_SECURITY(SECURITY_BIT_SECURITY))
-    Pike_error("set_priority: permission denied.\n");
-#endif
+  ASSERT_SECURITY_ROOT("set_priority");
+
   if(args == 1)
   {
     pid = 0;
@@ -2578,10 +2565,7 @@ void f_create_process(INT32 args)
   struct svalue *tmp;
   int e;
 
-#ifdef PIKE_SECURITY
-  if(!CHECK_SECURITY(SECURITY_BIT_SECURITY))
-    Pike_error("Process.create_process: permission denied.\n");
-#endif
+  ASSERT_SECURITY_ROOT("Process->create");
 
   check_all_args("create_process",args, BIT_ARRAY, BIT_MAPPING | BIT_VOID, 0);
 
@@ -3995,10 +3979,7 @@ void Pike_f_fork(INT32 args)
   if(num_threads >1)
     Pike_error("You cannot use fork in a multithreaded application.\n");
 #endif
-#ifdef PIKE_SECURITY
-  if(!CHECK_SECURITY(SECURITY_BIT_SECURITY))
-    Pike_error("fork: permission denied.\n");
-#endif
+  ASSERT_SECURITY_ROOT("fork");
 
   th_atfork_prepare();
 /*   THREADS_ALLOW_UID(); */
@@ -4157,10 +4138,7 @@ static void f_kill(INT32 args)
   int pid = 0;
   int res, save_errno;
 
-#ifdef PIKE_SECURITY
-  if(!CHECK_SECURITY(SECURITY_BIT_SECURITY))
-    Pike_error("kill: permission denied.\n");
-#endif
+  ASSERT_SECURITY_ROOT("kill");
 
   if(args < 2)
     SIMPLE_TOO_FEW_ARGS_ERROR("kill", 2);
@@ -4215,10 +4193,7 @@ static void f_pid_status_kill(INT32 args)
   INT_TYPE signum;
   int res, save_errno;
 
-#ifdef PIKE_SECURITY
-  if(!CHECK_SECURITY(SECURITY_BIT_SECURITY))
-    Pike_error("pid->kill: permission denied.\n");
-#endif
+  ASSERT_SECURITY_ROOT("Process->kill");
 
   get_all_args("pid->kill", args, "%i", &signum);
 
@@ -4255,10 +4230,7 @@ static void f_kill(INT32 args)
   HANDLE proc = DO_NOT_WARN(INVALID_HANDLE_VALUE);
   HANDLE tofree = DO_NOT_WARN(INVALID_HANDLE_VALUE);
 
-#ifdef PIKE_SECURITY
-  if(!CHECK_SECURITY(SECURITY_BIT_SECURITY))
-    Pike_error("kill: permission denied.\n");
-#endif
+  ASSERT_SECURITY_ROOT("kill");
 
   if(args < 2)
     SIMPLE_TOO_FEW_ARGS_ERROR("kill", 2);
@@ -4327,10 +4299,7 @@ static void f_pid_status_kill(INT32 args)
 {
   INT_TYPE signum;
 
-#ifdef PIKE_SECURITY
-  if(!CHECK_SECURITY(SECURITY_BIT_SECURITY))
-    Pike_error("kill: permission denied.\n");
-#endif
+  ASSERT_SECURITY_ROOT("Process->kill");
 
   get_all_args("pid->kill", args, "%i", &signum);
 
@@ -4387,10 +4356,7 @@ static void f_alarm(INT32 args)
 {
   long seconds;
 
-#ifdef PIKE_SECURITY
-  if(!CHECK_SECURITY(SECURITY_BIT_SECURITY))
-    Pike_error("alarm: permission denied.\n");
-#endif
+  ASSERT_SECURITY_ROOT("alarm");
 
   if(args < 1)
     SIMPLE_TOO_FEW_ARGS_ERROR("alarm", 1);
@@ -4436,10 +4402,7 @@ static void f_ualarm(INT32 args)
 #endif /* !HAVE_UALARM */
   long useconds;
 
-#ifdef PIKE_SECURITY
-  if(!CHECK_SECURITY(SECURITY_BIT_SECURITY))
-    Pike_error("ualarm: permission denied.\n");
-#endif
+  ASSERT_SECURITY_ROOT("ualarm");
 
   if(args < 1)
     SIMPLE_TOO_FEW_ARGS_ERROR("ualarm", 1);
