@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: iso2022.c,v 1.35 2005/02/16 20:39:46 grubba Exp $
+|| $Id: iso2022.c,v 1.36 2005/02/17 14:43:50 grubba Exp $
 */
 
 #ifdef HAVE_CONFIG_H
@@ -800,6 +800,9 @@ static void eat_enc_string(struct pike_string *str, struct iso2022enc_stor *s,
 	  c = *(p_wchar2 *)p;
 	  p += sizeof(p_wchar2);
 	}
+	if (c < 0) {
+	  /* User reserved character. */
+	} else
 #ifdef OPTIMIZE_ISO2022
 	/* This optimization breaks on some 2022 decoders,
 	   such as the one in Netscape...  :-P */
@@ -821,10 +824,12 @@ static void eat_enc_string(struct pike_string *str, struct iso2022enc_stor *s,
 	    }
 	  }
 	  string_builder_putchar(&s->strbuild,c);
-	} else if(c<0x7f) {
+	} else if(c<0x7f)
 #else
-	if(c<0x80) {
+	if(c<0x80)
 #endif
+	{
+	  /* USASCII */
 	  if(s->g[0].mode != MODE_94 || s->g[0].index != 0x12) {
 	    string_builder_strcat(&s->strbuild, "\033(B");
 	    s->g[0].transl = map_ANSI_X3_4_1968;
@@ -837,6 +842,7 @@ static void eat_enc_string(struct pike_string *str, struct iso2022enc_stor *s,
 	  }
 	  string_builder_putchar(&s->strbuild,c);
 	} else if(c<0x100) {
+	  /* ISO-8859-1 */
 	  if(s->g[1].mode != MODE_96 || s->g[1].index != 0x11) {
 	    string_builder_strcat(&s->strbuild, "\033-A");
 	    s->g[1].transl = map_ISO_8859_1_1998;
@@ -991,7 +997,61 @@ static void eat_enc_string(struct pike_string *str, struct iso2022enc_stor *s,
 	    };
 	    mode = MODE_96;
 	    index = map2[(map1[(c-0x100)>>2]>>((c&3)<<1))&3];
-	  } else if (c >= 0x401 && c <= 0x045f) {
+	  } else if (c < 0x250) {
+	    /* Latin-extended-B */
+	    if ((c >= 0x01de && c <= 0x01ef) || (c == 0x01b7)) {
+	      /* Latin-lap
+	       *   0x01b7
+	       *   0x01de - 0x01ef
+	       */
+	      mode = MODE_96;
+	      index = 0x40;	/* latin_lap */
+	    } else {
+	      /* JIS_X0212_1990
+	       *   0x01cd - 0x01d6
+	       *   0x01d8 - 0x01dc
+	       *   0x01f5
+	       */
+	      mode = MODE_9494;
+	      index = 0x14;	/* JIS_X0212_1990 */
+	    }
+	  } else if (c < 0x2b0) {
+	    /* IPA extensions. */
+	  } else if (c < 0x300) {
+	    /* Spacing Modifier Letters */
+	    if ((c >= 0x02d8 && c <= 0x02dd) || c == 0x02c7) {
+	      /* KS_C_5601_1987
+	       *   0x02c7 0x02d8 - 0x02dd
+	       */
+	      mode = MODE_9494;
+	      index = 0x13;	/* KS_C_5601_1987 */
+	      /* Alternatives:
+	       *
+	       * ISO-8859-2 & CSN_369103
+	       *   0x02c7 0x02d8 0x02d9 0x02db 0x02dd
+	       * JIS_X0112_1990
+	       *   0x02c7 0x02d8 - 0x02db 0x02dd
+	       */
+	    } else if (c == 0x02bf) {
+	      /* Latin-lap
+	       *   0x02bf
+	       */
+	      mode = MODE_96;
+	      index = 0x28;	/* latin-lap */
+	    } else {
+	      /* GB_2312_80
+	       *   0x02c7 0x02c9
+	       */
+	      mode = MODE_9494;
+	      index = 0x11;	/* GB_2312_80 */
+	    }
+	  } else if (c < 0x370) {
+	    /* Combining Diacritical Marks */
+	  } else if (c < 0x400) {
+	    /* Greek */
+	    mode = MODE_9494;
+	    index = 0x12;	/* JIS_C6226_1983 */
+	  } else if (c < 0x500) {
 	    /* Cyrillic */
 	    if ((c >= 0x0402 && c <= 0x040f) ||
 		(c >= 0x0452 && c <= 0x045f)) {
@@ -1010,10 +1070,13 @@ static void eat_enc_string(struct pike_string *str, struct iso2022enc_stor *s,
 	      mode = MODE_9494;
 	      index = 0x12;	/* JIS_C6226_1983 */
 	    }
-	  } else if (c>=0x391 && c<=0x3c9) {
-	    /* Greek */
-	    mode = MODE_9494;
-	    index = 0x12;	/* JIS_C6226_1983 */
+	  } else if (c < 0x590) {
+	    /* Armenian */
+	    /* ISO_8859_8_1999
+	     *   0x05d0 - 0x05ea
+	     */
+	    mode = MODE_96;
+	    index = 0x18;	/* ISO_8859_8_1999 */
 	  } else if((c>=0x2010 && c<=0x22a5) ||
 		    c==0x2312 ||
 		    (c>=0x2500 && c<=0x266f)) {
