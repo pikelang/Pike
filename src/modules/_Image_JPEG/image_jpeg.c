@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: image_jpeg.c,v 1.66 2004/05/01 17:32:13 nilsson Exp $
+|| $Id: image_jpeg.c,v 1.67 2004/07/01 08:06:24 mirar Exp $
 */
 
 #include "global.h"
@@ -59,7 +59,7 @@
 #ifdef HAVE_STDLIB_H
 #undef HAVE_STDLIB_H
 #endif
-RCSID("$Id: image_jpeg.c,v 1.66 2004/05/01 17:32:13 nilsson Exp $");
+RCSID("$Id: image_jpeg.c,v 1.67 2004/07/01 08:06:24 mirar Exp $");
 
 /* jpeglib defines EXTERN for some reason.
  * This is not good, since it confuses compilation.h.
@@ -871,7 +871,7 @@ static void image_jpeg_encode(INT32 args)
 	      p==JDCT_FASTEST))
 	 cinfo.dct_method=p;
       
-      if (parameter_int(sp+1-args,param_progressive,&p))
+      if (parameter_int(sp+1-args,param_progressive,&p) && p)
 	 jpeg_simple_progression(&cinfo);
 
       parameter_qt(sp+1-args,param_quant_tables,&cinfo);
