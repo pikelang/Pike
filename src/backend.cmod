@@ -2,11 +2,11 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: backend.cmod,v 1.52 2003/10/24 13:44:50 mast Exp $
+|| $Id: backend.cmod,v 1.53 2003/10/24 14:01:10 mast Exp $
 */
 
 #include "global.h"
-RCSID("$Id: backend.cmod,v 1.52 2003/10/24 13:44:50 mast Exp $");
+RCSID("$Id: backend.cmod,v 1.53 2003/10/24 14:01:10 mast Exp $");
 #include "fdlib.h"
 #include "backend.h"
 #include <errno.h>
@@ -1959,6 +1959,8 @@ PIKECLASS Backend
   INIT
     {
       THIS->may_need_wakeup=0;
+
+      THIS-id = unused_id++;
 
       IF_PD (fprintf (stderr, "BACKEND[%d]: init\n", me->id));
 
