@@ -17,7 +17,7 @@
 #include <float.h>
 #include <string.h>
 
-RCSID("$Id: port.c,v 1.18 1998/11/22 11:03:12 hubbe Exp $");
+RCSID("$Id: port.c,v 1.19 1999/04/01 17:21:09 hubbe Exp $");
 
 #ifdef sun
 time_t time PROT((time_t *));
@@ -237,7 +237,6 @@ int MEMCMP(const void *bb,const void *aa,int s)
 #ifndef HAVE_MEMCHR
 char *MEMCHR(char *p,char c,int e)
 {
-  e++;
   while(--e >= 0) if(*(p++)==c) return p-1;
   return (char *)0;
 }
