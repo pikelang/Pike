@@ -1,5 +1,5 @@
 #! /usr/bin/env pike
-// $Id: RCS.pike,v 1.9 2002/03/12 10:18:02 jhs Exp $
+// $Id: RCS.pike,v 1.10 2002/03/12 13:48:29 jhs Exp $
 
 //! A RCS file parser that eats a RCS *,v file and presents nice pike
 //! data structures of its contents.
@@ -99,6 +99,35 @@ static array(string) parse_string(string data, string|void leader)
     sscanf(data, SWS + (leader||"") + SWS "%s", data);
   if(2 != sscanf(data, "@%s@%s", result, data))
     return ({ 0, original }); // "no leading @" or "@not terminated"
+  if(!has_prefix(data, "@"))
+    return ({ result, data });
+  data = data[1..]; result += "@";
+  int started_parsing;
+  while(sscanf(data, "%s@\n%s", segment, data))
+  {
+    started_parsing = 1;
+    result += replace(segment, "@@", "@");
+    if(has_suffix(segment, "@"))
+    {
+      int trailing = sizeof(array_sscanf(reverse(segment), "%[@]")[0]);
+      if(trailing & 1) // e g "...a line ends in a @@\nbut the string continues"
+      {
+	sscanf(data, "%[^@]%s", segment, data);
+	result += "\n" + segment;
+	continue;
+      }
+    }
+    return ({ result, data });
+  }
+  if(started_parsing)
+  {
+    if(!sscanf(data, "%s@%s", segment, data))
+      return ({ 0, original }); // "@one or more @@\n:s but not @@ terminated"
+    return ({ result + segment, data });
+  }
+  // perhaps the non-mandatory trailing newline in the file was somehow lost
+  sscanf(data, "%s@%s", segment, data);
+  result += segment;
   while(sscanf(data, "@%s@%s", segment, data))
     result += "@" + segment;
   if(has_prefix(data, "@"))
