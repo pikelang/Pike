@@ -2,11 +2,11 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: backend.cmod,v 1.90 2004/02/08 17:35:13 grubba Exp $
+|| $Id: backend.cmod,v 1.91 2004/02/09 16:37:00 grubba Exp $
 */
 
 #include "global.h"
-RCSID("$Id: backend.cmod,v 1.90 2004/02/08 17:35:13 grubba Exp $");
+RCSID("$Id: backend.cmod,v 1.91 2004/02/09 16:37:00 grubba Exp $");
 #include "fdlib.h"
 #include "backend.h"
 #include <errno.h>
@@ -407,6 +407,7 @@ static void MY_FD_CLR(int *pfd, int fd, int sub)
 {
   struct pollfd poll_state[2];
   int e;
+  size_t sz;
   IF_PD(fprintf(stderr, "BACKEND: MY_FD_CLR(%d, %d, 0x%04x)\n", *pfd, fd, sub));
 
   /* NOTE: POLLREMOVE must (unfortunately) be a separate request. */
@@ -447,23 +448,21 @@ static void MY_FD_CLR(int *pfd, int fd, int sub)
   IF_PD(fprintf(stderr, "BACKEND: Fd %d events now 0x%04x\n",
 		fd, poll_state[1].events));
 
-  if (poll_state[1].events) {
-    /* We're still interrested in the fd. */
-    while (((e = write(*pfd, poll_state, sizeof(poll_state))) < 0) &&
-	   (errno == EINTR))
-      ;
-  } else {
-    /* Remove the fd. */
-    while (((e = write(*pfd, poll_state, sizeof(poll_state[0]))) < 0) &&
-	   (errno == EINTR))
-      ;
+  sz = sizeof(poll_state);
+  if (!poll_state[1].events) {
+    /* We're not interrested in the fd anymore. */
+    sz = sizeof(poll_state[0]);
   }
+  while (((e = write(*pfd, poll_state, sz)) < 0) && (errno == EINTR))
+    ;
+
   if (e < 0) {
     Pike_fatal("Failed to set state for fd %d in /dev/poll (errno:%d).\n",
 	       fd, errno);
   }
 
-  if (e != sizeof(poll_state)) {
+  /* FIXME: Probably ought to support partial writes. */
+  if (e != sz) {
     Pike_fatal("Failed to set state for fd %d in /dev/poll short write (%d != %d).\n",
 	       fd, e, sizeof(poll_state));
   }
