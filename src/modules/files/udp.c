@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: udp.c,v 1.59 2003/11/13 15:59:09 grubba Exp $
+|| $Id: udp.c,v 1.60 2003/12/07 21:10:28 marcus Exp $
 */
 
 #define NO_PIKE_SHORTHAND
@@ -10,7 +10,7 @@
 
 #include "file_machine.h"
 
-RCSID("$Id: udp.c,v 1.59 2003/11/13 15:59:09 grubba Exp $");
+RCSID("$Id: udp.c,v 1.60 2003/12/07 21:10:28 marcus Exp $");
 #include "fdlib.h"
 #include "pike_netlib.h"
 #include "interpret.h"
@@ -270,7 +270,7 @@ static void udp_bind(INT32 args)
     fd_close(fd);
     THIS->my_errno=errno;
     Pike_error("UDP->bind: failed to bind to port %d\n",
-	       (u_short)Pike_sp[-args].u.integer);
+	       (unsigned INT16)Pike_sp[-args].u.integer);
     return;
   }
 
