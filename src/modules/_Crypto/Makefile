@@ -24,7 +24,7 @@ LD=/usr/ccs/bin/ld
 LDFLAGS= -Llib -G # -R$(SSLROOT)/lib -L$(SSLROOT)/lib
 #LOADLIBES=-lcrypto -lssl
 
-OBJS=crypto.o idea.o des.o invert.o cbc.o pipe.o sha.o # md5.o md2.o
+OBJS=crypto.o idea.o des.o invert.o rc4.o cbc.o pipe.o sha.o # md5.o md2.o
 MODS=crypto.so
 #MODS=crypto_crypto.so crypto_idea.so crypto_des.so crypto_invert.so \
 #crypto_cbc.so crypto_pipe.so crypto_sha.so # crypto_md5.so crypto_md2.so
