@@ -417,7 +417,7 @@ array convert(array x, string base)
 	/* FIXME:
 	 * Add runtime debug to this define...
 	 */
-	sprintf("#define THIS_%s ((struct %s_struct *)(Pike_fp->current_storage)\n",upper_case(base),base);
+	sprintf("#define THIS_%s ((struct %s_struct *)(Pike_interpreter.frame_pointer->current_storage)\n",upper_case(base),base);
 	sprintf("static int %s_storage_offset;\n",base),
 	sprintf("struct %s_struct {\n",base),
       })+thestruct+({
@@ -504,7 +504,7 @@ array convert(array x, string base)
 	{
 	  default:
 	    ret+=({
-	      PC.Token(sprintf("if(sp[%d].type != PIKE_T_%s)",
+	      PC.Token(sprintf("if(Pike_interpreter.stack_pointer[%d].type != PIKE_T_%s)",
 			       sp,upper_case(arg->basetype->text)),arg->line)
 	    });
 	    break;
@@ -536,13 +536,13 @@ array convert(array x, string base)
 	{
 	  case "int":
 	    ret+=({
-	      sprintf("%s=sp[%d].u.integer;\n",arg->name,sp)
+	      sprintf("%s=Pike_interpreter.stack_pointer[%d].u.integer;\n",arg->name,sp)
 	    });
 	    break;
 
 	  case "float":
 	    ret+=({
-	      sprintf("%s=sp[%d].u.float_number;\n",
+	      sprintf("%s=Pike_interpreter.stack_pointer[%d].u.float_number;\n",
 		      arg->name,
 		      sp)
 	    });
@@ -559,7 +559,7 @@ array convert(array x, string base)
 
 	  default:
 	    ret+=({
-	      PC.Token(sprintf("debug_malloc_pass(%s=sp[%d].u.%s);\n",
+	      PC.Token(sprintf("debug_malloc_pass(%s=Pike_interpreter.stack_pointer[%d].u.%s);\n",
 			       arg->name,
 			       sp,
 			       arg->basetype),arg->line)
