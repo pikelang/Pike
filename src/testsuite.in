@@ -1,4 +1,4 @@
-test_true([["$Id: testsuite.in,v 1.581 2002/12/29 22:30:53 nilsson Exp $"]]);
+test_true([["$Id: testsuite.in,v 1.582 2003/01/09 14:29:28 grubba Exp $"]]);
 
 // This triggered a bug only if run sufficiently early.
 test_compile_any([[#pike 7.2]])
@@ -3264,8 +3264,9 @@ test_do(add_constant("test");)
 test_any([[
   /* don't save parent */
   class Foo {  };
-  return  function_object(object_program(Foo())) ==
-	  object_program(this_object());
+  return  (!function_object(object_program(Foo()))) &&
+	  (function_program(object_program(Foo())) ==
+	   object_program(this_object()));
 ]], 1)
 
 test_any([[

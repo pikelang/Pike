@@ -6,7 +6,7 @@
 // Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 // for more information.
 //
-// $Id: master.pike.in,v 1.246 2003/01/07 19:41:57 nilsson Exp $
+// $Id: master.pike.in,v 1.247 2003/01/09 14:29:27 grubba Exp $
 
 #pike __REAL_VERSION__
 
@@ -2468,6 +2468,7 @@ string describe_module(object|program mod, array(object)|void ret_obj)
   // Begin by describing our parent.
   array(object) parent_obj = ({ 0 });
   string res = describe_module(function_object(parent_fun)||
+			       function_program(parent_fun)||
 			       object_program(parent_fun),
 			       parent_obj);
   // werror("So far: %O parent_obj:%O\n", res, parent_obj);
@@ -2519,7 +2520,8 @@ string describe_object(object|program o)
 
   /* Constant object? */
   catch {
-    object|program parent_obj = function_object(parent_fun);
+    object|program parent_obj =
+      (function_object(parent_fun) || function_program(parent_fun));
 
     if (objectp (parent_obj) || parent_obj) {
       /* Check if we have a constant object. */
@@ -2562,7 +2564,7 @@ string describe_program(program p)
   if(s=get_clean_program_path(p, "object_program(", ")", ""))
     return s;
 
-  if(mixed tmp=function_object(p))
+  if(mixed tmp=(function_object(p) || function_program(p)))
     if(s = function_name(p))
       {
 	return describe_module(tmp) + s;
