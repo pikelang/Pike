@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: ppc32.c,v 1.32 2003/08/07 14:45:10 marcus Exp $
+|| $Id: ppc32.c,v 1.33 2003/11/19 17:19:29 grubba Exp $
 */
 
 /*
@@ -396,11 +396,6 @@ static void maybe_update_pc(void)
 void ins_f_byte(unsigned int b)
 {
   void *addr;
-
-#ifdef PIKE_DEBUG
-  if(store_linenumbers && b<F_MAX_OPCODE)
-    ADD_COMPILED(b);
-#endif /* PIKE_DEBUG */
 
   b-=F_OFFSET;
 #ifdef PIKE_DEBUG

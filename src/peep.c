@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: peep.c,v 1.92 2003/10/17 03:49:26 nilsson Exp $
+|| $Id: peep.c,v 1.93 2003/11/19 17:19:29 grubba Exp $
 */
 
 #include "global.h"
@@ -26,7 +26,7 @@
 #include "interpret.h"
 #include "pikecode.h"
 
-RCSID("$Id: peep.c,v 1.92 2003/10/17 03:49:26 nilsson Exp $");
+RCSID("$Id: peep.c,v 1.93 2003/11/19 17:19:29 grubba Exp $");
 
 static void asm_opt(void);
 
@@ -147,13 +147,17 @@ void update_arg(int instr,INT32 arg)
 
 /**** Bytecode Generator *****/
 
-void assemble(void)
+INT32 assemble(int store_linenumbers)
 {
+  INT32 entry_point;
   INT32 max_label=-1,tmp;
   INT32 *labels, *jumps, *uses;
   ptrdiff_t e, length;
   p_instr *c;
   int reoptimize=!(debug_options & NO_PEEP_OPTIMIZING);
+#ifdef PIKE_PORTABLE_BYTECODE
+  struct pike_tripple *tripples = NULL;
+#endif /* PIKE_PORTABLE_BYTECODE */
 #ifdef PIKE_DEBUG
   INT32 max_pointer=-1;
   int synch_depth = 0;
@@ -179,6 +183,68 @@ void assemble(void)
     }
   }
 #endif
+
+#ifdef PIKE_PORTABLE_BYTECODE
+  /* No need to do this for constant evaluations. */
+  if (store_linenumbers) {
+    struct pike_tripple *current_tripple;
+    struct pike_string *previous_file = NULL;
+    int previous_line = 0;
+    ptrdiff_t num_linedirectives = 0;
+
+    /* Count the number of F_FILE/F_LINE pseudo-ops we need to add. */
+    for (e=0; e < length; e++) {
+      if (c[e].file != previous_file) {
+	previous_file = c[e].file;
+	num_linedirectives++;
+      }
+      if (c[e].line != previous_line) {
+	previous_line = c[e].line;
+	num_linedirectives++;
+      }
+    }
+
+    fprintf(stderr, "length:%d directives:%d\n", length, num_linedirectives);
+      
+    if (!(tripples = malloc(sizeof(struct pike_tripple) *
+			    (length+num_linedirectives)))) {
+      Pike_fatal("Failed to allocate %d tripples (%d + %d).\n",
+		 length+num_linedirectives, length, num_linedirectives);
+    }
+    previous_file = NULL;
+    previous_line = 0;
+    current_tripple = tripples;
+    for (e = 0; e < length; e++) {
+      if (c[e].file != previous_file) {
+	current_tripple->opcode = F_FILENAME;
+	current_tripple->arg = store_prog_string(c[e].file);
+	current_tripple->arg2 = 0;
+	current_tripple++;
+	previous_file = c[e].file;
+      }
+      if (c[e].line != previous_line) {
+	current_tripple->opcode = F_LINE;
+	current_tripple->arg = c[e].line;
+	current_tripple->arg2 = 0;
+	current_tripple++;
+	previous_line = c[e].line;
+      }
+      current_tripple->opcode = c[e].opcode;
+      current_tripple->arg = c[e].arg;
+      current_tripple->arg2 = c[e].arg2;
+      current_tripple++;
+    }
+#ifdef PIKE_DEBUG
+    if (current_tripple != tripples + length + num_linedirectives) {
+      Pike_fatal("Tripple length mismatch %d != %d (%d + %d)\n",
+		 current_tripple - tripples,
+		 length + num_linedirectives,
+		 length, num_linedirectives);
+    }
+#endif /* PIKE_DEBUG */
+  }
+  
+#endif /* PIKE_PORTABLE_BYTECODE */
 
   for(e=0;e<length;e++,c++) {
     if(c->opcode == F_LABEL) {
@@ -321,11 +387,28 @@ void assemble(void)
 #endif /* 1 */
   }
 
+  /* Time to create the actual bytecode. */
+
   c=(p_instr *)instrbuf.s.str;
   length=instrbuf.s.len / sizeof(p_instr);
 
   for(e=0;e<=max_label;e++) labels[e]=jumps[e]=-1;
   
+#ifdef ALIGN_PIKE_FUNCTION_BEGINNINGS
+  while( ( (((INT32) PIKE_PC)+2) & (ALIGN_PIKE_JUMPS-1)))
+    ins_byte(0);
+#endif
+
+#ifdef PIKE_PORTABLE_BYTECODE
+  if (store_linenumbers) {
+    ins_pointer(tripples);
+  } else {
+    ins_pointer(NULL);
+  }
+#endif /* PIKE_PORTABLE_BYTECODE */
+
+  entry_point = PIKE_PC;
+
 #ifdef PIKE_DEBUG
   synch_depth = 0;
 #endif
@@ -348,8 +431,13 @@ void assemble(void)
     }
 #endif
 
-    if(store_linenumbers)
+    if(store_linenumbers) {
       store_linenumber(c->line, c->file);
+#ifdef PIKE_DEBUG
+      if (c->opcode < F_MAX_OPCODE)
+	ADD_COMPILED(c->opcode);
+#endif /* PIKE_DEBUG */
+    }
 
     switch(c->opcode)
     {
@@ -618,6 +706,8 @@ void assemble(void)
 #endif /* PIKE_DEBUG */
 
   exit_bytecode();
+
+  return entry_point;
 }
 
 /**** Peephole optimizer ****/

@@ -2,11 +2,11 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: las.c,v 1.342 2003/11/14 00:13:36 mast Exp $
+|| $Id: las.c,v 1.343 2003/11/19 17:19:29 grubba Exp $
 */
 
 #include "global.h"
-RCSID("$Id: las.c,v 1.342 2003/11/14 00:13:36 mast Exp $");
+RCSID("$Id: las.c,v 1.343 2003/11/19 17:19:29 grubba Exp $");
 
 #include "language.h"
 #include "interpret.h"
@@ -1391,6 +1391,10 @@ node *debug_mktrampolinenode(int i, struct compiler_frame *frame)
 
 node *debug_mkexternalnode(struct program *parent_prog, int i)
 {
+#if 0
+  return mkidentifiernode(add_ext_ref(Pike_compiler, parent_prog, i));
+
+#else /* !0 */
   struct program_state *state;
   node *res = mkemptynode();
   res->token = F_EXTERNAL;
@@ -1459,6 +1463,7 @@ node *debug_mkexternalnode(struct program *parent_prog, int i)
 #endif
 
   return res;
+#endif /* 0 */
 }
 
 node *debug_mkcastnode(struct pike_type *type, node *n)
@@ -5379,6 +5384,7 @@ static void check_evaluation_time(struct callback *cb,void *tmp,void *ignored)
 ptrdiff_t eval_low(node *n,int print_error)
 {
   unsigned INT16 num_strings, num_constants;
+  unsigned INT32 num_program;
   size_t jump;
   struct svalue *save_sp = Pike_sp;
   ptrdiff_t ret;
@@ -5397,22 +5403,14 @@ ptrdiff_t eval_low(node *n,int print_error)
 
   if(Pike_compiler->num_parse_error) return -1; 
 
-  num_strings=prog->num_strings;
-  num_constants=prog->num_constants;
+  num_strings = prog->num_strings;
+  num_constants = prog->num_constants;
+  num_program = prog->num_program;
 #ifdef PIKE_USE_MACHINE_CODE
   num_relocations = prog->num_relocations;
 #endif /* PIKE_USE_MACHINE_CODE */
 
-  jump = PIKE_PC;
-
-#ifdef INS_ENTRY
-  INS_ENTRY();
-#endif /* INS_ENTRY */
-
-  store_linenumbers=0;
-  docode(dmalloc_touch(node *, n));
-  ins_f_byte(F_DUMB_RETURN);
-  store_linenumbers=1;
+  jump = docode(dmalloc_touch(node *, n));
 
   ret=-1;
   if(!Pike_compiler->num_parse_error)
@@ -5483,12 +5481,12 @@ ptrdiff_t eval_low(node *n,int print_error)
 
 #ifdef VALGRIND_DISCARD_TRANSLATIONS
   /* We won't use this machine code any more... */
-  VALGRIND_DISCARD_TRANSLATIONS(prog->program + jump,
-				(prog->num_program - jump)*sizeof(PIKE_OPCODE_T));
+  VALGRIND_DISCARD_TRANSLATIONS(prog->program + num_program,
+				(prog->num_program - num_program)*sizeof(PIKE_OPCODE_T));
 #endif /* VALGRIND_DISCARD_TRANSLATIONS */
 #endif /* PIKE_USE_MACHINE_CODE */
 
-  prog->num_program=jump;
+  prog->num_program=num_program;
 
   return ret;
 }

@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: computedgoto.c,v 1.3 2002/10/11 01:39:39 nilsson Exp $
+|| $Id: computedgoto.c,v 1.4 2003/11/19 17:19:29 grubba Exp $
 */
 
 /*
@@ -43,11 +43,6 @@ void ins_data(INT32 val)
 
 void ins_f_byte(unsigned int b)
 {
-#ifdef PIKE_DEBUG
-  if(store_linenumbers && b<F_MAX_OPCODE)
-    ADD_COMPILED(b);
-#endif /* PIKE_DEBUG */
-
   b-=F_OFFSET;
 #ifdef PIKE_DEBUG
   if(b>255)
