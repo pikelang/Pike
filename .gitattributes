@@ -54,6 +54,8 @@ testfont binary
 /lib/7.2/modules/Thread.pmod foreign_ident
 /lib/7.2/modules/__default.pmod foreign_ident
 /lib/7.2/modules/system.pmod foreign_ident
+/lib/7.4/modules/SSL.pmod/cipher.pike foreign_ident
+/lib/7.4/modules/SSL.pmod/constants.pike foreign_ident
 /lib/7.4/modules/__default.pmod foreign_ident
 /lib/master.pike.in foreign_ident
 /lib/modules/ADT.pmod/History.pike foreign_ident
