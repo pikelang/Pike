@@ -89,7 +89,7 @@ class client
     foreach(read_body_lines(),string line)
       {
 	object o=Group();
-	if(sscanf(line,"%s %d %d",o->group,o->max,o->min)==4)
+	if(sscanf(line,"%s %d %d",o->group,o->max,o->min)==3)
 	  ret+=({o});
       }
 
