@@ -1,4 +1,4 @@
-AC_REVISION("$Id: configure.in,v 1.72 1997/04/11 02:11:01 hubbe Exp $")
+AC_REVISION("$Id: configure.in,v 1.73 1997/04/11 02:20:17 hubbe Exp $")
 AC_INIT(interpret.c)
 AC_CONFIG_HEADER(machine.h)
 
@@ -556,7 +556,7 @@ int main()
       ])
       AC_MSG_RESULT($pike_cv_have_pthread_cond_init)
       if test x$pike_cv_have_pthread_cond_init = xyes ; then
-        AC_DEFINE(HAVE_PTHREAD_COND_INTI)
+        AC_DEFINE(HAVE_PTHREAD_COND_INIT)
       else
          :
       fi
