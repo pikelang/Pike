@@ -107,12 +107,11 @@ string get_text()
   struct pike_string *res;
   unsigned int i;
   my_pop_n_elems(args);
-  res = begin_shared_string( gtk_text_get_length( GTK_TEXT( THIS->obj ) ) );
+  res = begin_wide_shared_string(
+    gtk_text_get_length( GTK_TEXT( THIS->obj ) ), 2 );
   for(i=0; i<(unsigned int)res->len; i++)
-    res->str[i] = GTK_TEXT_INDEX( GTK_TEXT( THIS->obj ), i );
+    ((int *)res->str)[i] = GTK_TEXT_INDEX( GTK_TEXT( THIS->obj ), i );
   push_string( end_shared_string( res ) );
 }
 
 /* FIXME: Wide string support! */
-
-
