@@ -1,0 +1,111 @@
+// MIME
+test_true([[objectp(MIME)]])
+test_true([[programp(MIME.support)]])
+test_true([[programp(MIME.Message)]])
+
+// MIME.support
+test_eq([[MIME.decode_base64("Zm9vCg==")]],"foo\n")
+test_eq([[MIME.encode_base64("bar")]],"YmFy")
+test_eq([[MIME.encode_base64("bar ")]],"YmFyIA==")
+test_eq([[MIME.encode_base64("bar  ")]],"YmFyICA=")
+test_eq([[MIME.encode_base64("bar   ")]],"YmFyICAg")
+test_eq([[MIME.encode_base64("How much wood could a woodchuck "
+	"chuck if a woodchuck could chuck wood?")]],
+	"SG93IG11Y2ggd29vZCBjb3VsZCBhIHdvb2RjaHVjayBjaHVjayBpZiBhI"
+	"Hdvb2RjaHVjayBjb3Vs\r\nZCBjaHVjayB3b29kPw==")
+test_any([[string data=Stdio.read_file("Makefile");
+	return MIME.decode_base64(MIME.encode_base64(data))==data]],1)
+
+test_eq([[MIME.decode_qp("AbC=3a=4C=25z=\nxyz")]],"AbC:L%zxyz")
+test_eq([[MIME.encode_qp("едц≈ƒ÷=Ff")]],"=E5=E4=F6=C5=C4=D6=3DFf")
+test_eq([[MIME.encode_qp("How much wood could a woodchuck "
+	"chuck if a woodchuck could chuck wood?")]],
+	"How=20much=20wood=20could=20a=20woodchuck=20chuck=20if=20"
+	"a=20woodchuck=20=\r\ncould=20chuck=20wood?")
+test_any([[string data=Stdio.read_file("Makefile");
+	return MIME.decode_qp(MIME.encode_qp(data))==data]],1)
+
+test_eq([[MIME.decode_uue("begin 644 foo\n#8F%R\n`\nend\n")]], "bar")
+test_eq([[MIME.encode_uue("fie")]],
+		[["begin 644 attachment\r\n#9FEE\r\n`\r\nend\r\n"]])
+test_eq([[MIME.encode_uue("fie ", "fum")]],
+		[["begin 644 fum\r\n$9FEE(```\r\n`\r\nend\r\n"]])
+test_eq([[MIME.encode_uue("fie  ")]],
+		[["begin 644 attachment\r\n%9FEE(\"``\r\n`\r\nend\r\n"]])
+test_eq([[MIME.encode_uue("fie   ")]],
+		[["begin 644 attachment\r\n&9FEE(\"`@\r\n`\r\nend\r\n"]])
+test_eq([[MIME.encode_uue("fie    ")]],
+		[["begin 644 attachment\r\n'9FEE(\"`@(```\r\n`\r\nend\r\n"]])
+test_eq([[MIME.encode_uue("How much wood could a woodchuck "
+	"chuck if a woodchuck could chuck wood?", "WOOD")]],
+	[["begin 644 WOOD\r\nM2&]W(&UU8V@@=V]O9\"!C;W5L9\"!A('=O;V1C:'5C:"
+	  "R!C:'5C:R!I9B!A('=O\r\n9;V1C:'5C:R!C;W5L9\"!C:'5C:R!W;V]D/P``"
+	  "\r\n`\r\nend\r\n"]])
+test_any([[string data=Stdio.read_file("Makefile");
+	return MIME.decode_uue(MIME.encode_uue(data, "foo bar"))==data]],1)
+
+test_equal([[MIME.tokenize("foo&bar,fu.m:\"asdf(z\\\"\\\\)x\"afn(xy(z))ds")]],
+	({"foo&bar",44,"fu.m",58,"asdf(z\"\\)x","afn","ds"}))
+test_equal([[MIME.tokenize("   asdf \t[foo\"bar\"ga(zonk)]  \"ghjk\"  ")]],
+	({"asdf","[foo\"bar\"ga(zonk)]","ghjk"}))
+test_equal([[MIME.quote(({"asdf","ghij","a:b","foo",44,"bar",58,44,"едц"}))]],
+	[["asdf ghij \"a:b\" foo,bar:,\"едц\""]])
+
+test_any([[int n; string t; return 2==sscanf(MIME.generate_boundary(),
+		"'ThIs-RaNdOm-StRiNg-/=_.%d:%s", n, t) && n>=0 &&
+		n<=1000000000 && t==""]],1)
+
+test_eq([[MIME.decode("foo=21bar", 0)]], "foo=21bar")
+test_eq([[MIME.decode("foo=21bar", "Quoted-PrinTabLe")]], "foo!bar")
+test_eq([[MIME.decode("Zm9vYmFy", "BasE64")]], "foobar")
+test_eq([[MIME.decode("begin 644 foo\r\n#8F%Z\r\n`\r\nend", "X-uUe")]], "baz")
+test_eq([[MIME.decode("1=23", "7bIt")]], "1=23")
+test_eq([[MIME.decode("4=56", "8BiT")]], "4=56")
+test_eq([[MIME.decode("7=89", "biNaRy")]], "7=89")
+test_true([[catch(MIME.decode("foo", "bzot"))]])
+test_eq([[MIME.encode("foo=21bar", 0)]], "foo=21bar")
+test_eq([[MIME.encode("foo=21bar", "quOteD-priNtaBle")]], "foo=3D21bar")
+test_eq([[MIME.encode("foo=21bar", "qUotEd-pRinTablE", "gek")]], "foo=3D21bar")
+test_eq([[MIME.encode("foobar", "bASe64")]], "Zm9vYmFy")
+test_eq([[MIME.encode("hepp", "x-Uue")]],
+		[["begin 644 attachment\r\n$:&5P<```\r\n`\r\nend\r\n"]])
+test_eq([[MIME.encode("baz", "x-uuE", "foo")]],
+		[["begin 644 foo\r\n#8F%Z\r\n`\r\nend\r\n"]])
+test_eq([[MIME.encode("1=23", "7biT")]], "1=23")
+test_eq([[MIME.encode("4=56", "8Bit")]], "4=56")
+test_eq([[MIME.encode("7=89", "BinArY")]], "7=89")
+test_true([[catch(MIME.encode("foo", "bzot"))]])
+
+test_equal([[MIME.decode_word("foo")]], ({"foo",0}))
+test_equal([[MIME.decode_word("=?kOi8?Q?=2ax_y=5F?=")]], ({"*x y_","koi8"}))
+test_equal([[MIME.decode_word("=?iSo646?b?KnkgeF8=?=")]], ({"*y x_","iso646"}))
+test_true([[catch(MIME.decode_word("=?IsO10646?e?aa?="))]])
+test_eq([[MIME.encode_word(({"foo", "cp037"}), 0)]], "foo")
+test_eq([[MIME.encode_word(({"foo", 0}),"bAsE64")]], "foo")
+test_eq([[MIME.encode_word(({"*x y_","koi8"}), "QUoTeD-prIntaBle")]],
+		"=?koi8?q?*x=20y=5F?=")
+test_eq([[MIME.encode_word(({"*y x_","iso646"}), "baSE64")]],
+		"=?iso646?b?KnkgeF8=?=")
+test_eq([[MIME.encode_word(({"foo","ksc5636"}), "B")]], "=?ksc5636?b?Zm9v?=")
+test_true([[catch(MIME.encode_word(({"foo","iso8859-1"}),"x-uue"))]])
+
+test_eq([[MIME.guess_subtype("text")]], "plain")
+test_eq([[MIME.guess_subtype("message")]], "rfc822")
+test_eq([[MIME.guess_subtype("multipart")]], "mixed")
+test_eq([[MIME.guess_subtype("image")]], 0)
+
+// MIME.Message
+test_true([[objectp(MIME.Message())]])
+
+test_eq([[MIME.Message()->encode_base64("bar")]],"YmFy")
+test_equal([[MIME.Message()->decode_word("=?kOi8?Q?=2ax_y=5F?=")]],
+		({"*x y_","koi8"}))
+
+test_eq([[MIME.Message("MIME-Version: 1.0\r\n\r\nfoo\r\n")->type]], "text")
+test_eq([[MIME.Message("MIME-Version: 1.0\r\n\r\nfoo\r\n")->subtype]], "plain")
+test_eq([[MIME.Message("MIME-Version: 1.0\r\n\r\nfoo\r\n")->charset]], "us-ascii")
+test_eq([[MIME.Message("MIME-Version: 1.0\r\n\r\nfoo\r\n")->getdata()]], "foo\r\n")
+test_eq([[MIME.Message("MIME-Version: 1.0\r\n\r\nfoo\r\n")->getencoded()]], "foo\r\n")
+test_equal([[MIME.Message((string)MIME.Message("foo\r\n",
+		(["mImE-veRsion":"1.0"])))->headers]],
+	(["mime-version":"1.0","content-length":"5"]))
