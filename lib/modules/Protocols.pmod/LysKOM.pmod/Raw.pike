@@ -95,6 +95,7 @@ class Send
    }
 }
 
+
 int send(string request,
 	 function(string:void) callback)
 {
@@ -104,13 +105,18 @@ int send(string request,
    return r;
 }
 
+
+
+/* FIXME: The code below isn't really threadsafe, but depends
+   on context switching to be done when there's I/O...  */
 void flush_queue()
 {
-   while (sizeof(sendqueue) && out_req<max_out_req)
-   {
-      sendqueue[0]->write();
-      sendqueue=sendqueue[1..];
-   }
+  while (sizeof(sendqueue) && out_req<max_out_req)
+  {
+    mixed tmp=sendqueue[0];
+    sendqueue=sendqueue[1..];
+    tmp->write();
+  }
 }
 
 #if !constant(thread_create) || LYSKOM_UNTHREADED
@@ -364,8 +370,10 @@ void create(string server,void|int port,void|string whoami)
 #if constant(thread_create) && !LYSKOM_UNTHREADED
    thread_create(read_thread);
    thread_create(call_thread);
+   werror("LysKOM running threaded\n");
 #else
    con->set_nonblocking(recv,0,0);
+   werror("LysKOM running unthreaded\n");
 #endif
    return;
 }
@@ -554,7 +562,9 @@ array active_asyncs()
 
 void got_async_message(array what)
 {
+#ifdef LYSKOM_DEBUG
   werror("got_async_message: %O\n", what);
+#endif  
   catch {
    if (async_callbacks[(int)what[1]])
       async_callbacks[(int)what[1]](@.ASync["decode_"+what[1]](what[2..]));
