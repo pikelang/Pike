@@ -42,6 +42,12 @@ class Stat
       size = 0;
   }
 
+// fixme
+  void attach_statobject(object a)
+  {
+     return attach_statarray( (array) a );
+  }
+
   Stdio.File open(string mode)
   {
     return filesystem->open(fullpath, mode);

@@ -19,11 +19,11 @@ void create(void|string directory,  // default: cwd
 
   if(!fast)
   {
-    array(int) a;
+    Stdio.Stat a;
     if(!directory || directory=="" || directory[0]!='/')
       directory = combine_path(getcwd(), directory||"");
     if(!(a = file_stat("/"+root+directory)) ||
-       !((a[0]&0xF000)==0x4000))
+       !a->isdir)
       error("Not a directory\n");
   }
 
@@ -71,7 +71,7 @@ Filesystem.Base chroot(void|string directory)
 
 Filesystem.Stat stat(string file)
 {
-   array(int) a;
+   Stdio.Stat a;
    string full = combine_path(wd, file);
 
    if((a = file_stat("/"+root+full)))
@@ -80,7 +80,7 @@ Filesystem.Stat stat(string file)
      s->fullpath = full;
      s->name = file;
      s->filesystem = this_object();
-     s->attach_statarray(a);
+     s->attach_statobject(a);
      return s;
    }
    else
