@@ -1,5 +1,5 @@
 #
-# $Id: configure.in,v 1.1 1997/03/10 19:01:51 grubba Exp $
+# $Id: configure.in,v 1.2 1997/03/22 23:04:20 grubba Exp $
 #
 # Configure script for the odbc-module
 #
@@ -24,7 +24,6 @@ if test x$with_odbc = xyes; then
 
   AC_CACHE_VAL(pike_cv_odbc_lib_dir, [
     for pike_cv_odbc_lib_dir in ${INFORMIXDIR:+$INFORMIXDIR/cli/dlls} /opt/ISLIodbc/*/lib /usr/opt/ISLIodbc/*/lib /usr/local/lib /usr/local/odbc/lib /usr/local/lib/odbc /usr/odbc/lib /usr/lib/odbc /usr/lib /lib/odbc /lib no; do
-      echo $pike_cv_odbc_lib_dir
       if test -d $pike_cv_odbc_lib_dir/.; then
         if ls $pike_cv_odbc_lib_dir/*odbc* >/dev/null 2>&1 ; then
 	  break
@@ -48,7 +47,6 @@ if test x$with_odbc = xyes; then
 
   AC_CACHE_VAL(pike_cv_odbc_include_dir, [
     for pike_cv_odbc_include_dir in ${INFORMIXDIR:+$INFORMIXDIR/cli/include} /opt/ISLIodbc/*/include /usr/local/include /usr/local/odbc/include /usr/local/include/odbc /usr/odbc/include /usr/include/odbc /usr/include /include/odbc /include no; do
-      echo $pike_cv_odbc_include_dir
       if test -d $pike_cv_odbc_include_dir/.; then
         if ls $pike_cv_odbc_include_dir/qeodbc.h >/dev/null 2>&1; then
           break
