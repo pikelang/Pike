@@ -144,7 +144,7 @@ void init_pike_security(void)
   add_function("set_default_creds",set_default_creds,"function(object:void)",0);
   add_function("get_default_creds",get_default_creds,"function(:object)",0);
   add_function("init_creds",init_creds,"function(object,int,int:void)",0);
-  add_function("apply_creds",apply_creds,"function(object:void)",0);
+  /* add_function("apply_creds",apply_creds,"function(object:void)",0); */
   set_init_callback(init_creds_object);
   set_exit_callback(exit_creds_object);
   set_gc_check_callback(creds_gc_check);
