@@ -4,7 +4,7 @@
 ||| See the files COPYING and DISCLAIMER for more information.
 \*/
 #include "global.h"
-RCSID("$Id: las.c,v 1.56 1998/04/06 20:31:58 hubbe Exp $");
+RCSID("$Id: las.c,v 1.57 1998/04/09 20:38:28 hubbe Exp $");
 
 #include "language.h"
 #include "interpret.h"
@@ -607,6 +607,12 @@ void resolv_constant(node *n)
 
     case F_GLOBAL:
       yyerror("Expected constant, got global variable");
+      push_int(0);
+      return;
+
+    case F_UNDEFINED:
+      if(compiler_pass==2)
+	yyerror("Expected constant, got undefined identifier");
       push_int(0);
       return;
 
