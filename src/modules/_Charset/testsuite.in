@@ -1,4 +1,4 @@
-// $Id: testsuite.in,v 1.1 1998/10/15 19:33:42 marcus Exp $
+// $Id: testsuite.in,v 1.2 2001/09/17 00:33:14 nilsson Exp $
 
 // _Charset.decoder
 test_true([[objectp(_Charset)]])
@@ -25,3 +25,6 @@ test_eq([[_Charset.decoder("utf-7")->
 // _Charset.UTF8
 test_eq([[_Charset.decoder("utf-8")->feed("Ã¥Ã¤Ã¶")->drain()]],"åäö")
 
+// _Charset.UTF16
+test_eq([[_Charset.decoder("utf-16")->feed("\0h\0e\0j")->drain()]],"hej")
+test_eq([[_Charset.encoder("utf-16")->feed("hej")->drain()]],"\0h\0e\0j")

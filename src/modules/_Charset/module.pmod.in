@@ -24,6 +24,13 @@ class ascii {
   }
 }
 
+private class UTF16dec {
+  inherit ascii;
+  string drain() {
+    return unicode_to_string(::drain());
+  }
+}
+
 //! @belongs Locale.Charset
 //! Returns a charset decoder object.
 //! @param name
@@ -51,6 +58,7 @@ object(ascii) decoder(string name)
   program p = ([
     "utf-7": UTF7dec,
     "utf-8": UTF8dec,
+    "utf-16": UTF16dec,
     "utf-7.5": UTF7_5dec,
     "utf-7½": UTF7_5dec,
     "shift_jis": ShiftJisDec,
@@ -80,11 +88,11 @@ object(ascii) decoder(string name)
 
 class _encoder
 {
-  static private string s = "";
-  static private string|void replacement;
-  static private function(string:string)|void repcb;
-  static private string low_convert(string s, string|void r,
-				    function(string:string)|void rc)
+  static string s = "";
+  static string|void replacement;
+  static function(string:string)|void repcb;
+  static string low_convert(string s, string|void r,
+			     function(string:string)|void rc)
   {
     int i = strlen(s);
     string rr;
@@ -125,6 +133,38 @@ class _encoder
   }
 }
 
+private class UTF16enc {
+  inherit _encoder;
+  static private string low_convert(string s, string|void r,
+				    function(string:string)|void rc)
+  {
+    int i = strlen(s);
+    string rr;
+    while(--i>=0)
+      if(s[i]>0x10ffff)
+	if(rc && (rr = rc(s[i..i])))
+	  s=s[..i-1]+low_convert(rr,r)+s[i+1..];
+	else if(r)
+	  s=s[..i-1]+low_convert(r)+s[i+1..];
+	else
+	  throw(({"Character unsupported by encoding.\n", backtrace()}));
+    return s;
+  }
+  object(this_program) feed(string ss) {
+    s += ss;
+    return this_object();
+  }
+  string drain() {
+    string ss = s;
+    s = "";
+    catch {
+      return string_to_unicode(ss);
+    };
+    ss = low_convert(ss, replacement, repcb);
+    return string_to_unicode(ss);
+  }
+}
+
 //! @belongs Locale.Charset
 //! Returns a charset encoder object.
 //! @param name
@@ -153,6 +193,7 @@ object(_encoder) encoder(string name, string|void replacement,
   program p = ([
     "utf-7": UTF7enc,
     "utf-8": UTF8enc,
+    "utf-16": UTF16enc,
     "utf-7.5": UTF7_5enc,
     "utf-7½": UTF7_5enc,
     "shift_jis": ShiftJisEnc,
