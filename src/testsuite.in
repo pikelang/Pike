@@ -1,4 +1,4 @@
-test_true([["$Id: testsuite.in,v 1.592 2003/01/28 11:13:46 marcus Exp $"]]);
+test_true([["$Id: testsuite.in,v 1.593 2003/01/29 13:42:41 marcus Exp $"]]);
 
 // This triggered a bug only if run sufficiently early.
 test_compile_any([[#pike 7.2]])
@@ -4704,6 +4704,11 @@ ifefun(gc,
     gc();
     return sizeof (m);
   ]], 1)
+
+]])
+
+ifefun(gc,
+[[
 
   test_do([[
     mapping m = set_weak_flag (([]), Pike.WEAK_INDICES);
