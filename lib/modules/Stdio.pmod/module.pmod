@@ -1,4 +1,4 @@
-// $Id: module.pmod,v 1.102 2001/01/05 12:47:08 mirar Exp $
+// $Id: module.pmod,v 1.103 2001/01/06 10:31:40 mirar Exp $
 #pike __REAL_VERSION__
 
 
@@ -557,31 +557,47 @@ class File
     return 1;
   }
 
+  static private int peek_file_before_read_callback=0;
+
+  this_program set_peek_file_before_read_callback(int(0..1) to)
+  {      
+     peek_file_before_read_callback=to;
+  }
+
   // FIXME: No way to specify the maximum to read.
   static void __stdio_read_callback()
   {
 
 /*
-
-nothing to read happens if you do, in backend:
- o (open a socket)
- o set_read_callback
- o make sure something is to read on the socket
- o read it
- o finish backend (ie, callback)
-
-We still need to read 0 bytes though, to get the next callback.
-
-FIXME for NT or internally? /Mirar
-
+** 
+** nothing to read happens if you do, in backend:
+**  o (open a socket)
+**  o set_read_callback
+**  o make sure something is to read on the socket
+**  o read it
+**  o finish backend (ie, callback)
+** 
+** We still need to read 0 bytes though, to get the next callback.
+** 
+** But peek lowers performance significantly.
+** Check if we need it first, and set this flag manually.
+** 
+** FIXME for NT or internally? /Mirar
+** 
 */
 
 #if !defined(__NT__)
-    if (!::peek()) 
-    {
-       ::read(0,1);
-       return; // nothing to read
-    }
+    if (peek_file_before_read_callback)
+       if (!::peek()) 
+       {
+	  ::read(0,1);
+	  return; // nothing to read
+       }
+#endif
+
+#if defined(__STDIO_DEBUG) && !defined(__NT__)
+    if(!::peek())
+      throw( ({"Read callback with no data to read!\n",backtrace()}) );
 #endif
 
     string s=::read(8192,1);
