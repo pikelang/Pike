@@ -1,6 +1,6 @@
 #! /usr/bin/env pike
 
-/* $Id: test_pike.pike,v 1.87 2003/06/26 17:36:16 nilsson Exp $ */
+/* $Id: test_pike.pike,v 1.88 2003/08/14 15:48:49 grubba Exp $ */
 
 #if !constant(_verify_internals)
 #define _verify_internals()
@@ -26,10 +26,12 @@ mapping(string:int) cond_cache=([]);
 
 void print_code(string test)
 {
-  array lines = test/"\n";
+  array lines = Locale.Charset.encoder("iso-8859-1", 0,
+				       lambda(string s) {
+					 return sprintf("\%o", s[0]);
+				       })->feed(test)->drain()/"\n";
   foreach(lines; int r; string line) {
-    line = sprintf("%O",line);
-    werror("%3d: %s\n", r+1, line[1..sizeof(line)-2]);
+    werror("%3d: %s\n", r+1, line);
   }
   werror("\n");
   return;
