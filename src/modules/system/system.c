@@ -1,5 +1,5 @@
 /*
- * $Id: system.c,v 1.103 2001/02/02 19:01:52 grubba Exp $
+ * $Id: system.c,v 1.104 2001/02/02 21:50:03 grubba Exp $
  *
  * System-call module for Pike
  *
@@ -15,7 +15,7 @@
 #include "system_machine.h"
 #include "system.h"
 
-RCSID("$Id: system.c,v 1.103 2001/02/02 19:01:52 grubba Exp $");
+RCSID("$Id: system.c,v 1.104 2001/02/02 21:50:03 grubba Exp $");
 #ifdef HAVE_WINSOCK_H
 #include <winsock.h>
 #endif
@@ -351,7 +351,7 @@ void f_readlink(INT32 args)
 #endif /* !HAVE_RESOLVEPATH */
 
 #ifdef HAVE_RESOLVEPATH
-/*! string resolvepath(string path)
+/*! @decl string resolvepath(string path)
  *!
  *! Resolve all symbolic links of a pathname.
  *!
@@ -2175,6 +2175,8 @@ void f_system_getitimer(INT32 args)
 }
 #endif
 
+/*! @endmodule
+ */
 
 /*
  * Module linkage
@@ -2488,5 +2490,3 @@ void pike_module_exit(void)
   }
 #endif
 }
-
-/*! @endmodule */
