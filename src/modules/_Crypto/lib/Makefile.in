@@ -136,7 +136,7 @@ desQuickCore.c:
 
 ### End of rules for desCore
 
-OBJS = idea.o sha.o md5.o rc4.o $(O)
+OBJS = idea.o sha.o md5.o rc4.o cast.o $(O)
 
 algorithms.a: $(OBJS)
 	rm -f algorithms.a
