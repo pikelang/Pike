@@ -8,7 +8,7 @@
 #  include "pike_macros.h"
 #  include "main.h"
 
-RCSID("$Id: dynamic_load.c,v 1.48 2000/12/05 21:08:17 per Exp $");
+RCSID("$Id: dynamic_load.c,v 1.49 2000/12/19 00:54:35 hubbe Exp $");
 
 #endif /* !TESTING */
 
@@ -31,12 +31,16 @@ RCSID("$Id: dynamic_load.c,v 1.48 2000/12/05 21:08:17 per Exp $");
 #define HAVE_SOME_DLOPEN
 #define EMULATE_DLOPEN
 #else
+
+#if 0
 #if defined(HAVE_LOADLIBRARY) && defined(HAVE_FREELIBRARY) && \
     defined(HAVE_GETPROCADDRESS) && defined(HAVE_WINBASE_H)
 #define USE_LOADLIBRARY
 #define HAVE_SOME_DLOPEN
 #define EMULATE_DLOPEN
 #endif
+#endif /* 0 */
+
 #endif
 #endif
 #else
