@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: preprocessor.h,v 1.65 2004/06/13 18:00:15 grubba Exp $
+|| $Id: preprocessor.h,v 1.66 2004/06/23 12:30:27 grubba Exp $
 */
 
 /*
@@ -1527,19 +1527,20 @@ static ptrdiff_t lower_cpp(struct cpp *this,
       if(WGOBBLE2(if_))
       {
 	struct string_builder save, tmp;
-	INT32 nflags = CPP_EXPECT_ELSE | CPP_EXPECT_ENDIF;
+	INT32 nflags = 0;
 #ifdef PIKE_DEBUG
 	ptrdiff_t skip;
 #endif /* PIKE_DEBUG */
 	
 	if(!OUTP())
-	  nflags|=CPP_REALLY_NO_OUTPUT;
+	  nflags = CPP_REALLY_NO_OUTPUT;
 	
 	save=this->buf;
 	init_string_builder(&this->buf, SHIFT);
 #ifdef PIKE_DEBUG
 	/* DUMPPOS("#if before lower_cpp()"); */
-	skip = lower_cpp(this, data+pos, len-pos, CPP_END_AT_NEWLINE|CPP_DO_IF,
+	skip = lower_cpp(this, data+pos, len-pos,
+			 nflags | CPP_END_AT_NEWLINE | CPP_DO_IF,
 			 auto_convert, charset);
 	/* fprintf(stderr, "shift:%d, pos:%d, len:%d, skip:%d\n",
 	   SHIFT, pos, len, skip); */
@@ -1554,7 +1555,8 @@ static ptrdiff_t lower_cpp(struct cpp *this,
 	/* fprintf(stderr, "\"\n"); */
 	/* fflush(stderr); */
 #else /* !PIKE_DEBUG */
-	pos += lower_cpp(this, data+pos, len-pos, CPP_END_AT_NEWLINE|CPP_DO_IF,
+	pos += lower_cpp(this, data+pos, len-pos,
+			 nflags | CPP_END_AT_NEWLINE | CPP_DO_IF,
 			 auto_convert, charset);
 #endif /* PIKE_DEBUG */
 	tmp=this->buf;
@@ -1563,7 +1565,7 @@ static ptrdiff_t lower_cpp(struct cpp *this,
 	string_builder_putchar(&tmp, 0);
 	tmp.s->len--;
 
-	if (!(nflags & CPP_REALLY_NO_OUTPUT)) {
+	if (!nflags) {
 	  switch(tmp.s->size_shift) {
 	  case 0:
 	    calc_0(this, (p_wchar0 *)tmp.s->str, tmp.s->len, 0);
@@ -1582,7 +1584,8 @@ static ptrdiff_t lower_cpp(struct cpp *this,
 	  pop_stack();
 	}
 	free_string_builder(&tmp);
-	pos += lower_cpp(this, data+pos, len-pos, nflags,
+	pos += lower_cpp(this, data+pos, len-pos,
+			 nflags | CPP_EXPECT_ELSE | CPP_EXPECT_ENDIF,
 			 auto_convert, charset);
 	break;
       }
@@ -1680,17 +1683,17 @@ static ptrdiff_t lower_cpp(struct cpp *this,
 	
 	flags|=CPP_EXPECT_ENDIF;
 	
-	if(flags & CPP_NO_OUTPUT)
+	if((flags & (CPP_NO_OUTPUT | CPP_REALLY_NO_OUTPUT)) == CPP_NO_OUTPUT)
 	{
 	  struct string_builder save,tmp;
 	  save=this->buf;
 	  init_string_builder(&this->buf, 0);
 	  pos += lower_cpp(this, data+pos, len-pos,
-			   CPP_END_AT_NEWLINE|CPP_DO_IF,
+			   CPP_END_AT_NEWLINE | CPP_DO_IF,
 			   auto_convert, charset);
 	  tmp=this->buf;
 	  this->buf=save;
-	  
+
 	  string_builder_putchar(&tmp, 0);
 	  tmp.s->len--;
 	  
@@ -1711,9 +1714,9 @@ static ptrdiff_t lower_cpp(struct cpp *this,
 	  free_string_builder(&tmp);
 	  if(!SAFE_IS_ZERO(Pike_sp-1)) flags&=~CPP_NO_OUTPUT;
 	  pop_stack();
-	}else{
+	} else {
 	  FIND_EOL();
-	  flags|= CPP_NO_OUTPUT | CPP_REALLY_NO_OUTPUT;
+	  flags |= CPP_NO_OUTPUT | CPP_REALLY_NO_OUTPUT;
 	}
 	break;
       }
