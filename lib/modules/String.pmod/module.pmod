@@ -278,3 +278,45 @@ string int2size( int size )
   }
   return sprintf("%.1f %s", s, prefix[ size ]);
 }
+
+//! Expands tabs in a string to ordinary spaces, according to common
+//! tabulation rules.
+string expand_tabs(string s, int|void tab_width,
+		   string|void substitute_tab,
+		   string|void substitute_space,
+		   string|void substitute_newline)
+{
+  string tab = substitute_tab || " ",
+	 space = substitute_space || " ",
+	 newline = substitute_newline || "\n";
+  return map(s/"\n", line_expand_tab, tab_width||8, space, tab) * newline;
+}
+
+// the \n splitting is done in our caller for speed improvement
+static string line_expand_tab(string line, int tab_width,
+			      string space, string tab)
+{
+  string ws, chunk, result = "";
+  int col, next_tab_stop, i;
+  while(sizeof(line))
+  {
+    sscanf(line, "%[ \t\n]%[^ \t\n]%s", ws, chunk, line);
+    for(i=0; i<sizeof(ws); i++)
+      switch(ws[i])
+      {
+	case '\t':
+	  next_tab_stop = col + tab_width - (col % tab_width);
+	  result += tab * (next_tab_stop - col);
+	  col = next_tab_stop;
+	  break;
+
+	case ' ':
+	  result += space;
+	  col++;
+	  break;
+      }
+    result += chunk;
+    col += sizeof(chunk);
+  }
+  return result;
+}
