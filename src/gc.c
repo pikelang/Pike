@@ -30,7 +30,7 @@ struct callback *gc_evaluator_callback=0;
 
 #include "block_alloc.h"
 
-RCSID("$Id: gc.c,v 1.170 2001/08/20 18:08:13 mast Exp $");
+RCSID("$Id: gc.c,v 1.171 2001/08/20 18:33:51 mast Exp $");
 
 /* Run garbage collect approximately every time
  * 20 percent of all arrays, objects and programs is
@@ -711,16 +711,6 @@ int debug_low_gc_check(void *x, int data_type, void *data, char *fromwhere)
   return ret;
 }
 
-/* Avoid loss of precision warning. */
-#ifdef __ECL
-static inline unsigned long SIZE_T_TO_ULONG(size_t x)
-{
-  return DO_NOT_WARN((unsigned long)x);
-}
-#else /* !__ECL */
-#define SIZE_T_TO_ULONG(x) ((unsigned long)(x))
-#endif /* __ECL */
-
 void low_describe_something(void *a,
 			    int t,
 			    int indent,
@@ -782,7 +772,7 @@ again:
 	p=id_to_program(((struct object *)a)->program_id);
       }
       if (p) {
-	fprintf(stderr,"%*s**Attempting to describe program object was instantiated from:\n",indent,"");
+	fprintf(stderr,"%*s**Describing program of object:\n",indent,"");
 #ifdef DEBUG_MALLOC
 	if ((int) p == 0x55555555)
 	  fprintf(stderr, "%*s**Zapped program pointer.\n", indent, "");
@@ -795,7 +785,7 @@ again:
 	 (p->flags & PROGRAM_USES_PARENT) && 
 	 LOW_PARENT_INFO(((struct object *)a),p)->parent)
       {
-	fprintf(stderr,"%*s**Describing object's parent:\n",indent,"");
+	fprintf(stderr,"%*s**Describing parent of object:\n",indent,"");
 	describe_something( PARENT_INFO((struct object *)a)->parent, T_OBJECT,
 			    indent+2, depth-1,
 			    (flags | DESCRIBE_SHORT | DESCRIBE_NO_REFS )
@@ -852,8 +842,8 @@ again:
       if(flags & DESCRIBE_MEM)
       {
 #define FOO(NUMTYPE,TYPE,NAME) \
-      fprintf(stderr, "%*s* " #NAME " %p[%lu]\n", \
-              indent, "", p->NAME, SIZE_T_TO_ULONG(p->PIKE_CONCAT(num_,NAME)));
+      fprintf(stderr, "%*s* " #NAME " %p[%"PRINTSIZET"u]\n", \
+              indent, "", p->NAME, p->PIKE_CONCAT(num_,NAME));
 #include "program_areas.h"
       }
 
@@ -899,7 +889,7 @@ again:
 	      indent, "", s->len);
       if(s->len>77)
       {
-	fprintf(stderr,"%*s** \"%60s ...\"\n",indent,"",s->str);
+	fprintf(stderr,"%*s** \"%60s\"...\n",indent,"",s->str);
       }else{
 	fprintf(stderr,"%*s** \"%s\"\n",indent,"",s->str);
       }
@@ -910,9 +900,27 @@ again:
       struct pike_frame *f = (struct pike_frame *) a;
       do {
 	if (f->current_object) {
+	  struct program *p = f->current_object->prog;
+	  if (p) {
+	    struct identifier *id = ID_FROM_INT(p, f->fun);
+	    INT32 line;
+	    struct pike_string *file;
+	    if (IDENTIFIER_IS_PIKE_FUNCTION(id->identifier_flags) &&
+		id->func.offset &&
+		(file = get_line(p->program + id->func.offset, p, &line))) {
+	      fprintf(stderr, "%*s**Function %s at %s:%ld\n",
+		      indent, "", id->name->str, file->str, (long) line);
+	      free_string(file);
+	    }
+	    else
+	      fprintf(stderr, "%*s**Function %s at unknown location.\n",
+		      indent, "", id->name->str);
+	  }
 	  fprintf(stderr, "%*s**Describing the current object:\n", indent, "");
 	  describe_something(f->current_object, T_OBJECT, indent+2, depth, flags, 0);
 	}
+	else
+	  fprintf(stderr, "%*s**No current object.\n", indent, "");
 	if ((f = f->scope))
 	  fprintf(stderr, "%*s**Moving on to outer scope frame %p:\n", indent, "", f);
       } while (f);
