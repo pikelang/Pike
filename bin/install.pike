@@ -250,11 +250,41 @@ void do_export()
 
   Stdio.write_file(tmpname+".x",
 		   "#!/bin/sh\n"
-		   "echo Unpacking...\n"
-		   "tar xf \"$1\" "+tmpname+".tar.gz\n"
+#"TARFILE=\"$1\"; shift
+ARGS=\"$@\"
+
+while [ $# != 0 ]
+do
+    case \"$1\" in
+              -v|\\
+       --version) echo \""+version()+
+#" Copyright (C) 1994-1997 Fredrik Hübinette
+Pike comes with ABSOLUTELY NO WARRANTY; This is free software and you are
+welcome to redistribute it under certain conditions; Read the files
+COPYING and DISCLAIMER in the Pike distribution for more details.\";
+                  exit 0 ;;
+
+              -h|\\
+          --help) echo \"Usage: $TARFILE [options]
+	  
+Options:
+
+  --export
+  -h, --help              Display this help and exit.
+  --interactive
+  --new-style
+  --traditional
+  -v, --version           Display version information and exit.\"
+        
+                  exit 0 ;;
+    esac
+    shift
+done
+"
+		   "echo \"Loading installation script, please wait...\"\n"
+		   "tar xf \"$TARFILE\" "+tmpname+".tar.gz\n"
 		   "gzip -dc "+tmpname+".tar.gz | tar xf -\n"
 		   "rm -rf "+tmpname+".tar.gz\n"
-		   "shift\n"
 		   "( cd "+export_base_name+".dir\n"
 		   "  build/pike -DNOT_INSTALLED -mbuild/master.pike -Mbuild/lib/modules -Mlib/modules bin/install.pike --interactive \\\n"
 		   "  TMP_LIBDIR=\"build/lib\"\\\n"
@@ -263,7 +293,7 @@ void do_export()
 		   "  TMP_BINDIR=\"bin\"\\\n"
 		   "  TMP_BUILDDIR=\"build\"\\\n"
 		   "  MANDIR_SRC=\"man\"\\\n"
-		   "  \"$@\"\n"
+		   "  \"$ARGS\"\n"
 		   ")\n"
 		   "rm -rf "+export_base_name+".dir "+tmpname+".x\n"
     );
@@ -323,6 +353,29 @@ void do_export()
   exit(0);
 }
 
+class ReadInteractive
+{
+  inherit Stdio.Readline;
+
+  void trap_signal(int n)
+  {
+    destruct(this_object());
+    exit(1);
+  }
+
+  void destroy()
+  {
+    ::destroy();
+    signal(signum("SIGINT"));
+  }
+  
+  void create(mixed ... args)
+  {
+    signal(signum("SIGINT"), trap_signal);
+    ::create(@args);
+  }
+}
+
 int main(int argc, string *argv)
 {
   int traditional;
@@ -363,9 +416,10 @@ int main(int argc, string *argv)
 
     case "--interactive":
       write("\n");
-      write("   Welcome to the interactive Pike installation script.\n");
+      write("   Welcome to the interactive "+version()+
+	    " installation script.\n");
       write("\n");   
-      interactive=Stdio.Readline();
+      interactive=ReadInteractive();
       if(!vars->prefix)
 	prefix=interactive->edit(prefix,"Install prefix: ");
       if(!sizeof(prefix) || prefix[0] != '/')
