@@ -1,5 +1,5 @@
 /*
- * $Id: sendfile.c,v 1.29 1999/10/14 19:37:47 grubba Exp $
+ * $Id: sendfile.c,v 1.30 1999/10/15 03:26:14 hubbe Exp $
  *
  * Sends headers + from_fd[off..off+len-1] + trailers to to_fd asyncronously.
  *
@@ -463,6 +463,10 @@ void worker(void *this_)
 	  if (len > MMAP_SIZE) {
 	    len = MMAP_SIZE;
 	  }
+
+	  /* Hope this is a correct fix. /Hubbe */
+	  if(len == 0) goto send_trailers;
+
 	  mem = mmap(NULL, len, PROT_READ, MAP_FILE|MAP_SHARED,
 		     this->from_fd, this->offset);
 	  if (((long)mem) == ((long)MAP_FAILED)) {
@@ -493,6 +497,8 @@ void worker(void *this_)
 	  }
 	  munmap(mem, len);
 	}
+
+	/* shouldn't there be a goto here ? /Hubbe */
       }
     }
   use_read_write:
@@ -923,6 +929,12 @@ static void sf_create(INT32 args)
       sf.from->flags |= FILE_LOCK_FD;
     }
 
+    /* It is a good idea to increase num_threads before the thread
+     * is actually created, otherwise the backend (or somebody) may
+     * be hogging the interpreter lock... /Hubbe
+     */
+    num_threads++;
+
     /* The worker will have a ref. */
     th_farm(worker, THIS);
 #if 0
@@ -937,7 +949,6 @@ static void sf_create(INT32 args)
 		     "Failed to create thread.\n");
     }
 #endif /* 0 */
-    num_threads++;
   }
   return;
 }
