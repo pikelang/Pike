@@ -4,7 +4,7 @@
 //
 // #pike __REAL_VERSION__
 //
-// $Id: Pike.pmod,v 1.33 2004/03/20 06:47:28 nilsson Exp $
+// $Id: Pike.pmod,v 1.34 2004/04/25 14:38:15 nilsson Exp $
 
 //! This module parses and tokenizes Pike source code.
 
@@ -132,6 +132,12 @@ array(string) split(string data, void|mapping state)
 
 	    pos=s+1;
 	  }
+	  break;
+	}
+
+	if(data[pos..pos+5]=="string") {
+	  pos=search(data,"\"",pos);
+	  pos=search(data,"\"",pos);
 	  break;
 	}
 
