@@ -788,6 +788,14 @@ Colorize an image.
 <p>    The result is divided by 255, giving correct pixel values.
 
 <p>    If no arguments are given, the current color is used as factors.
+
+<p>     <table><tr valign=center>
+     <td><img src=lena.gif width=67 height=67></td>
+     <td><img src=illustration_8.gif width=67 height=67></td>
+     </tr><tr valign=center>
+     <td>original</td>
+     <td>->color(128,128,255);</td>
+     </tr></table>
 </blockquote>
 <h4>ARGUMENTS</h4>
 <blockquote><dl>
@@ -977,7 +985,7 @@ Makes an grey-scale image, for alpha-channel use.
 
 <p>     <table><tr valign=center>
      <td><img src=lena.gif width=67 height=67></td>
-     <td><img src=illustration_8.gif width=67 height=67></td>
+     <td><img src=illustration_10.gif width=67 height=67></td>
      </tr><tr valign=center>
      <td>original</td>
      <td>->distancesq(255,0,128);</td>
@@ -1336,6 +1344,17 @@ object <b>grey</b>(int&nbsp;r, int&nbsp;g, int&nbsp;b)</tt>
 
 <blockquote>
 Makes a grey-scale image (with weighted values).
+
+<p>
+     <table><tr valign=center>
+     <td><img src=lena.gif width=67 height=67></td>
+     <td><img src=illustration_12.gif width=67 height=67></td>
+     <td><img src=illustration_13.gif width=67 height=67></td>
+     </tr><tr valign=center>
+     <td>original</td>
+     <td>->grey();</td>
+     <td>->grey(0,0,255);</td>
+     </tr></table>
 </blockquote>
 <h4>ARGUMENTS</h4>
 <blockquote><dl>
@@ -1361,9 +1380,11 @@ the new image object
 
 <hr>
 <a name=hsv_to_rgb> </a>
+<a name=rgb_to_hsv> </a>
 <h4>SYNOPSIS</h4>
 <blockquote>
-<tt>object <b>hsv_to_rgb</b>()</tt>
+<tt>object <b>rgb_to_hsv</b>()<br>
+object <b>hsv_to_rgb</b>()</tt>
 </blockquote>
 
 <h4>DESCRIPTION</h4>
@@ -1379,12 +1400,20 @@ Converts RGB data to HSV data, or the other way around.
 
 <p>     <table><tr valign=center>
      <td><img src=lena.gif width=67 height=67></td>
-     <td><img src=illustration_10.gif width=67 height=67></td>
-     <td><img src=illustration_11.gif width=67 height=67></td>
+     <td><img src=illustration_15.gif width=67 height=67></td>
+     <td><img src=illustration_16.gif width=67 height=67></td>
      </tr><tr valign=center>
      <td>original</td>
      <td>->hsv_to_rgb();</td>
+     <td>->rgb_to_hsv();</td>
+     </tr><tr valign=center>
+     <td><img src=illustration_17.gif width=67 height=67></td>
+     <td><img src=illustration_18.gif width=67 height=67></td>
+     <td><img src=illustration_19.gif width=67 height=67></td>
+     </tr><tr valign=center>
+     <td>tuned box (below)</td>
      <td>the rainbow (below)</td>
+     <td>same, but rgb_to_hsv()</td>
      </tr></table>
 
 <p>
@@ -1434,10 +1463,12 @@ Invert an image. Each pixel value gets to be 255-x, where x
 
 <p>     <table><tr valign=center>
      <td><img src=lena.gif width=67 height=67></td>
-     <td><img src=illustration_13.gif width=67 height=67></td>
+     <td><img src=illustration_21.gif width=67 height=67></td>
+     <td><img src=illustration_22.gif width=67 height=67></td>
      </tr><tr valign=center>
      <td>original</td>
      <td>->invert();</td>
+     <td>->rgb_to_hsv()->invert()->hsv_to_rgb();</td>
      </tr></table>
 </blockquote>
 <h4>RETURNS</h4>
@@ -1502,7 +1533,7 @@ Maps all pixel colors to the colors given.
 
 <p>     <table><tr valign=center>
      <td><img src=lena.gif width=67 height=67></td>
-     <td><img src=illustration_15.gif width=67 height=67></td>
+     <td><img src=illustration_24.gif width=67 height=67></td>
      </tr><tr valign=center>
      <td>original</td>
      <td>->map_closest(({({255,0,0}),({255,255,255}),({0,0,0})}));</td>
@@ -1586,7 +1617,7 @@ Maps all pixel colors to the colors given.
 
 <p>     <table><tr valign=center>
      <td><img src=lena.gif width=67 height=67></td>
-     <td><img src=illustration_17.gif width=67 height=67></td>
+     <td><img src=illustration_26.gif width=67 height=67></td>
      </tr><tr valign=center>
      <td>original</td>
      <td>->map_fs(({({255,0,0}),({255,255,255}),({0,0,0})}));</td>
@@ -1625,7 +1656,7 @@ the new image object
 mirrors an image:
      <table><tr valign=center>
      <td><img src=lena.gif width=67 height=67></td>
-     <td><img src=illustration_19.gif width=67 height=67></td>
+     <td><img src=illustration_28.gif width=67 height=67></td>
      </tr><tr valign=center>
      <td>original</td>
      <td>->mirrorx();</td>
@@ -1652,7 +1683,7 @@ the new image object
 mirrors an image:
      <table><tr valign=center>
      <td><img src=lena.gif width=67 height=67></td>
-     <td><img src=illustration_21.gif width=67 height=67></td>
+     <td><img src=illustration_30.gif width=67 height=67></td>
      </tr><tr valign=center>
      <td>original</td>
      <td>->mirrory();</td>
@@ -1681,7 +1712,7 @@ Recolor an image from intensity values.
 
 <p>     <table><tr valign=center>
      <td><img src=lena.gif width=67 height=67></td>
-     <td><img src=illustration_23.gif width=67 height=67></td>
+     <td><img src=illustration_32.gif width=67 height=67></td>
      </tr><tr valign=center>
      <td>original</td>
      <td>->grey()->modify_by_intensity(1,0,0, 0,({255,0,0}),({0,255,0}));</td>
@@ -1977,8 +2008,8 @@ Rotates an image a certain amount of degrees (360° is
 
 <p>     <table><tr valign=center>
      <td><img src=lena.gif width=67 height=67></td>
-     <td><img src=illustration_25.gif width=87 height=88></td>
-     <td><img src=illustration_26.gif width=87 height=88></td>
+     <td><img src=illustration_34.gif width=87 height=88></td>
+     <td><img src=illustration_35.gif width=87 height=88></td>
      </tr><tr valign=center>
      <td>original</td>
      <td>->rotate(15,255,0,0);</td>
@@ -2022,7 +2053,7 @@ rotates an image counter-clockwise, 90 degrees.
 
 <p>     <table><tr valign=center>
      <td><img src=lena.gif width=67 height=67></td>
-     <td><img src=illustration_28.gif width=67 height=67></td>
+     <td><img src=illustration_37.gif width=67 height=67></td>
      </tr><tr valign=center>
      <td>original</td>
      <td>->rotate_ccw();</td>
@@ -2050,7 +2081,7 @@ rotates an image clockwise, 90 degrees.
 
 <p>     <table><tr valign=center>
      <td><img src=lena.gif width=67 height=67></td>
-     <td><img src=illustration_30.gif width=67 height=67></td>
+     <td><img src=illustration_39.gif width=67 height=67></td>
      </tr><tr valign=center>
      <td>original</td>
      <td>->rotate_cw();</td>
@@ -2140,9 +2171,9 @@ Selects the best colors to represent the image.
 <p>
      <table><tr valign=center>
      <td><img src=lena.gif width=67 height=67></td>
-     <td><img src=illustration_32.gif width=67 height=67></td>
-     <td><img src=illustration_33.gif width=67 height=67></td>
-     <td><img src=illustration_34.gif width=67 height=67></td>
+     <td><img src=illustration_41.gif width=67 height=67></td>
+     <td><img src=illustration_42.gif width=67 height=67></td>
+     <td><img src=illustration_43.gif width=67 height=67></td>
      </tr><tr valign=center>
      <td>original</td>
      <td>2</td>
@@ -2294,8 +2325,8 @@ Skews an image an amount of pixels or a factor;
 
 <p>     <table><tr valign=center>
      <td><img src=lena.gif width=67 height=67></td>
-     <td><img src=illustration_36.gif width=82 height=67></td>
-     <td><img src=illustration_37.gif width=82 height=67></td>
+     <td><img src=illustration_45.gif width=82 height=67></td>
+     <td><img src=illustration_46.gif width=82 height=67></td>
      </tr><tr valign=center>
      <td>original</td>
      <td>->skewx(15,255,0,0);</td>
@@ -2347,8 +2378,8 @@ Skews an image an amount of pixels or a factor;
 
 <p>     <table><tr valign=center>
      <td><img src=lena.gif width=67 height=67></td>
-     <td><img src=illustration_39.gif width=67 height=82></td>
-     <td><img src=illustration_40.gif width=67 height=82></td>
+     <td><img src=illustration_48.gif width=67 height=82></td>
+     <td><img src=illustration_49.gif width=67 height=82></td>
      </tr><tr valign=center>
      <td>original</td>
      <td>->skewy(15,255,0,0);</td>
@@ -2402,7 +2433,7 @@ Makes a black-white image.
 
 <p>     <table><tr valign=center>
      <td><img src=lena.gif width=67 height=67></td>
-     <td><img src=illustration_42.gif width=67 height=67></td>
+     <td><img src=illustration_51.gif width=67 height=67></td>
      </tr><tr valign=center>
      <td>original</td>
      <td>->threshold(90,100,110);</td>
@@ -2609,8 +2640,8 @@ Draws a filled rectangle with colors (and alpha values) tuned
 
 <p>     <table><tr valign=center>
      <td><img src=lena.gif width=67 height=67></td>
-     <td><img src=illustration_44.gif width=67 height=67></td>
-     <td><img src=illustration_45.gif width=67 height=67></td>
+     <td><img src=illustration_53.gif width=67 height=67></td>
+     <td><img src=illustration_54.gif width=67 height=67></td>
      </tr><tr valign=center>
      <td>original</td>
      <td>solid tuning<br>(blue,red,green,yellow)</td>
