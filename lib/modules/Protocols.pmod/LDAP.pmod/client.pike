@@ -2,7 +2,7 @@
 
 // LDAP client protocol implementation for Pike.
 //
-// $Id: client.pike,v 1.55 2004/04/14 20:21:16 nilsson Exp $
+// $Id: client.pike,v 1.56 2004/05/25 13:59:55 grubba Exp $
 //
 // Honza Petrous, hop@unibase.cz
 //
@@ -62,7 +62,8 @@
 //	RFC 1823			  (v2 API)
 //	RFC 2251,2252,2253,2254,2255,2256 (version3 spec)
 //	draft-ietf-asid-ldap-c-api-00.txt (v3 API)
-//	RFC2279	   			  (UTF-8)
+//	RFC 2279   			  (UTF-8)
+//	RFC 2696			  (paged requests)
 //
 //	Interesting, applicable
 //	RFC 2307   (LDAP as network information services; draft?)
@@ -360,7 +361,7 @@ int _prof_gtim;
   void create(string|void url, object|void context)
   {
 
-    info = ([ "code_revision" : ("$Revision: 1.55 $"/" ")[1] ]);
+    info = ([ "code_revision" : ("$Revision: 1.56 $"/" ")[1] ]);
 
     if(!url || !sizeof(url))
       url = LDAP_DEFAULT_URL;
@@ -893,10 +894,12 @@ int _prof_gtim;
     }
 }
 
-  private int|string send_search_op(string basedn, int scope, int deref,
-		     int sizelimit, int timelimit, int attrsonly,
-		     string filter, void|array(string) attrs){
-  // SEARCH
+  private object|int make_search_op(string basedn, int scope, int deref,
+				    int sizelimit, int timelimit,
+				    int attrsonly, string filter,
+				    void|array(string) attrs)
+  {
+    // SEARCH
   // limitations: !!! sizelimit and timelimit should be unsigned int !!!
 
     object msgval, ofilt;
@@ -914,7 +917,7 @@ int _prof_gtim;
     } else
       ohlp += ({Standards.ASN1.Types.asn1_sequence(({}))});
 
-    msgval = ASN1_APPLICATION_SEQUENCE(3,
+    return ASN1_APPLICATION_SEQUENCE(3,
 		({ Standards.ASN1.Types.asn1_octet_string(basedn),
 		   ASN1_ENUMERATED(scope),
 		   ASN1_ENUMERATED(deref),
@@ -923,8 +926,6 @@ int _prof_gtim;
 		   ASN1_BOOLEAN(attrsonly ? -1 : 0),
 		   @ohlp
 		})) ;
-
-    return do_op(msgval);
   }
 
 
@@ -972,46 +973,97 @@ int _prof_gtim;
     if(ldap_version == 3) {
       filter = string_to_utf8(filter);
     }
-#ifdef LDAP_PROTOCOL_PROFILE
-    _prof_gtim = gauge{ 
-#endif
-    if(intp(raw = send_search_op(ldap_basedn, ldap_scope, ldap_deref,
-			ldap_sizelimit, ldap_timelimit, attrsonly, filter,
-			attrs||lauth->attributes))) {
+
+    object|int search_request =
+      make_search_op(ldap_basedn, ldap_scope, ldap_deref,
+	ldap_sizelimit, ldap_timelimit, attrsonly, filter,
+	attrs||lauth->attributes);
+
+    if(intp(search_request)) {
       THROW(({error_string()+"\n",backtrace()}));
       return 0;
     }
+
+    object cookie = Standards.ASN1.Types.asn1_octet_string("");
+    object controls =
+#ifdef ENABLE_PAGED_SEARCH
+      Standards.ASN1.Types.asn1_sequence(({
+      // RFC 2696 2.
+      Standards.ASN1.Types.asn1_sequence(({
+						// controlType
+	Standards.ASN1.Types.asn1_octet_string("1.2.840.113556.1.4.319"),
+	ASN1_BOOLEAN(0),			// criticality (FALSE)
+	Standards.ASN1.Types.asn1_sequence(({	// controlValue
+	  0x7fffffff,				// size
+	  cookie,				// cookie
+	  })),
+	})),
+      }))
+#else /* !ENABLE_PAGED_SEARCH */
+      0
+#endif /* ENABLE_PAGED_SEARCH */
+      ;
+
+    rawarr = ({});
+    do {
 #ifdef LDAP_PROTOCOL_PROFILE
-    };
-    DWRITE_PROF("send_search_op: %O\n", _prof_gtim);
+      _prof_gtim = gauge{ 
+#endif
+	  if(intp(raw = do_op(search_request, controls))) {
+	    THROW(({error_string()+"\n",backtrace()}));
+	    return 0;
+	  }
+#ifdef LDAP_PROTOCOL_PROFILE
+	};
+      DWRITE_PROF("send_search_op: %O\n", _prof_gtim);
 #endif
 
-    rawarr = ({raw});
-#ifdef LDAP_PROTOCOL_PROFILE
-    _prof_gtim = gauge{ 
-#endif
-    while (ASN1_DECODE_RESULTAPP(raw) != 5) {
-#ifdef LDAP_PROTOCOL_PROFILEx
-    DWRITE_PROF("readmsg: %O\n", gauge { raw = readmsg(id); });
-#else
-      raw = readmsg(id);
-#endif
-      if (intp(raw)) {
-        THROW(({error_string()+"\n",backtrace()}));
-        return 0;
-      }
       rawarr += ({raw});
-    } // while
 #ifdef LDAP_PROTOCOL_PROFILE
-    };
-    DWRITE_PROF("rawarr++: %O\n", _prof_gtim);
+      _prof_gtim = gauge{ 
 #endif
-
-#ifdef LDAP_PROTOCOL_PROFILE
-    _prof_gtim = gauge{ last_rv = result(rawarr); };
-    DWRITE_PROF("result: %O\n", _prof_gtim);
+	  while (ASN1_DECODE_RESULTAPP(raw) != 5) {
+#ifdef LDAP_PROTOCOL_PROFILEx
+	    DWRITE_PROF("readmsg: %O\n", gauge { raw = readmsg(id); });
 #else
-    last_rv = result(rawarr);
+	    raw = readmsg(id);
+#endif
+	    if (intp(raw)) {
+	      THROW(({error_string()+"\n",backtrace()}));
+	      return 0;
+	    }
+	    rawarr += ({raw});
+	  } // while
+#ifdef LDAP_PROTOCOL_PROFILE
+	};
+      DWRITE_PROF("rawarr++: %O\n", _prof_gtim);
+#endif
+      // At this point @[raw] contains a SearchResultDone.
+#ifdef LDAP_DEBUG
+      werror("searchResultDone: %O\n", ASN1_DECODE_RAWDEBUG(raw));
+#endif /* LDAP_DEBUG */
+      cookie = 0;
+#ifdef ENABLE_PAGED_SEARCH
+      if ((ASN1_DECODE_RESULTCODE(raw) != 10) &&
+	  (sizeof(.ldap_privates.ldap_der_decode(X)->elements[1]->elements) > 2)) {
+	cookie = ASN1_DECODE_RESULTREFS(raw)->elements[2]->elements[1];
+	controls->elements[0]->elements[0]->elements[2]->elements[1] = cookie;
+	if (!sizeof(cookie)) {
+	  // End marker.
+	  cookie = 0;
+	} else {
+#ifdef LDAP_DEBUG
+	  werror("Got cookie: %O\n", cookie);
+#endif /* LDAP_DEBUG */
+	}
+      }
+#endif /* ENABLE_PAGED_SEARCH */
+    } while (cookie);
+#ifdef LDAP_PROTOCOL_PROFILE
+      _prof_gtim = gauge{ last_rv = result(rawarr); };
+      DWRITE_PROF("result: %O\n", _prof_gtim);
+#else
+      last_rv = result(rawarr);
 #endif
     if(objectp(last_rv))
       seterr (last_rv->error_number());
