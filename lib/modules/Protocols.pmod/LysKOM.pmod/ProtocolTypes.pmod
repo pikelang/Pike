@@ -17,6 +17,15 @@ class LysKOMTime
    int              day_of_year;                   // INT32
    int(0..1)        is_dst;                        // BOOL
 
+   string print(void|int long)
+   {
+     string res=sprintf("%d-%02d-%02d %02d:%02d",
+			1900+year,month,day,hours,minutes);
+     if(long)
+       res+=sprintf(":%02d",seconds);
+     return res;
+   }
+  
    void create(string|array ...args)
    {
       seconds=(int)args[0];                        // INT32
