@@ -14,7 +14,7 @@
 #include "stuff.h"
 #include "bignum.h"
 
-RCSID("$Id: peep.c,v 1.27 1999/10/25 10:19:35 hubbe Exp $");
+RCSID("$Id: peep.c,v 1.28 1999/11/08 20:50:51 grubba Exp $");
 
 struct p_instr_s
 {
@@ -534,8 +534,9 @@ static void asm_opt(void)
   }
 #endif
 
+#ifndef IN_TPIKE
 #include "peep_engine.c"
-
+#endif /* IN_TPIKE */
 
 #ifdef PIKE_DEBUG
   if(a_flag > 4)

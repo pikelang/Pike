@@ -5,7 +5,7 @@
 \*/
 /**/
 #include "global.h"
-RCSID("$Id: builtin_functions.c,v 1.203 1999/11/08 13:21:06 per Exp $");
+RCSID("$Id: builtin_functions.c,v 1.204 1999/11/08 20:50:48 grubba Exp $");
 #include "interpret.h"
 #include "svalue.h"
 #include "pike_macros.h"
@@ -174,7 +174,11 @@ struct case_info {
 #define CIM_CASEBITOFF	4	/* Same as above, but also offset by data */
 
 static struct case_info case_info[] = {
+#ifdef IN_TPIKE
+#include "dummy_ci.h"
+#else /* !IN_TPIKE */
 #include "case_info.h"
+#endif /* IN_TPIKE */
   { 0x10000, CIM_NONE, 0x0000, },	/* End sentinel. */
 };
 
