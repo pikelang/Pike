@@ -1,5 +1,5 @@
 /*
- * $Id: acconfig.h,v 1.20 1998/04/13 14:14:41 grubba Exp $
+ * $Id: acconfig.h,v 1.21 1998/04/30 06:32:36 hubbe Exp $
  */
 #ifndef MACHINE_H
 #define MACHINE_H
@@ -132,9 +132,6 @@
 
 /* Number of possible filedesriptors */
 #define MAX_OPEN_FILEDESCRIPTORS 1024
-
-/* Value of first constant defined by byacc/bison/yacc or whatever you use. */
-#define F_OFFSET 257
 
 /* define this if #include <time.h> provides an external int timezone */
 #undef HAVE_EXTERNAL_TIMEZONE

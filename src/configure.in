@@ -1,4 +1,4 @@
-AC_REVISION("$Id: configure.in,v 1.179 1998/04/29 00:30:49 grubba Exp $")
+AC_REVISION("$Id: configure.in,v 1.180 1998/04/30 06:32:36 hubbe Exp $")
 AC_INIT(interpret.c)
 AC_CONFIG_HEADER(machine.h)
 
@@ -648,35 +648,6 @@ const int foo(int bar) { return bar; }
     :
   fi
 fi
-
-#############################################################################
-
-AC_MSG_CHECKING(first yacc define)
-AC_CACHE_VAL(pike_cv_yacc_first,
-[
-cat >conftest.y <<\EOF
-%token GURKA
-%%
-all: GURKA
-%%
-EOF
-pike_cv_yacc_first=257;
-if $YACC -d conftest.y 1>&5 2>&5; then
-  if test -f y.tab.h; then
-    pike_cv_yacc_first=`egrep GURKA y.tab.h | sed 's/^#[^0-9]*\([0-9]*\)[^0-9]*$/\1/'`
-    echo $pike_cv_yacc_first >conftest.out
-    if egrep '^(0|1|2|3|4|5|6|7|8|9)+$' conftest.out >/dev/null 2>&1; then
-      echo >/dev/null
-    else
-      pike_cv_yacc_first=257
-    fi
-  fi
-fi
-])
-AC_MSG_RESULT($pike_cv_yacc_first)
-AC_DEFINE_UNQUOTED(F_OFFSET,$pike_cv_yacc_first)
-
-rm -rf conftest.y y.tab.c y.tab.h conftest.out
 
 #############################################################################
 
