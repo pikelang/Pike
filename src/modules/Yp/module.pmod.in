@@ -1,5 +1,5 @@
 /*
- * $Id: module.pmod.in,v 1.13 2001/01/05 21:38:10 nilsson Exp $
+ * $Id: module.pmod.in,v 1.14 2001/04/26 14:13:09 grubba Exp $
  *
  * YP (NIS) Functionality for Pike
  *
@@ -23,6 +23,7 @@ constant nicknames = ([
   "ethers":"ethers.byname"
 ]);
 
+//! Network Information Service aka YP map.
 class Map {
   object(Domain) domain;
   string ypmap;
@@ -30,7 +31,7 @@ class Map {
   //! Create a new YP-map object.
   //!
   //! @[map] is the YP-map to bind to. This may be a nickname, such as
-  //! @tt{passwd} instead of just @tt{passwd.byname}.
+  //! @tt{passwd@} instead of just @tt{passwd.byname@}.
   //!
   //! If @[domain] is not specified, the default domain will be used.
   //!
@@ -137,6 +138,6 @@ class Map {
 		 backtrace() }));
     }
   }
-};
+}
 
 #endif

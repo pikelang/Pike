@@ -1,5 +1,5 @@
 /*
- * $Id: module.pmod.in,v 1.25 2001/01/07 16:04:43 grubba Exp $
+ * $Id: module.pmod.in,v 1.26 2001/04/26 14:13:09 grubba Exp $
  *
  * RFC1521 functionality for Pike
  *
@@ -326,8 +326,8 @@ string guess_subtype( string type )
 }
 
 //! @decl array(mapping(string:string)|string) parse_headers(string message)
-//! @decl array(mapping(string:array(string))|string) parse_headers(
-//!                                                     string message,
+//! @decl array(mapping(string:array(string))|string) parse_headers( @
+//!                                                     string message, @
 //!                                                     int(1..1) use_multiple)
 //!
 //! This is a low level function that will separate the headers from the body
@@ -775,28 +775,28 @@ class Message {
 
   //! @decl void create()
   //! @decl void create(string message)
-  //! @decl void create(string message,
-  //!                   mapping(string:string|array(string)) headers
+  //! @decl void create(string message, @
+  //!                   mapping(string:string|array(string)) headers, @
   //!                   array(object)|void parts)
   //!
   //! There are several ways to call the constructor of the Message class:
   //!
-  //! @list
-  //!   @element
+  //! @dl
+  //!   @item
   //!     With zero arguments, you will get a dummy message with neither
   //!     headers nor body. Not very useful.
-  //!   @element
+  //!   @item
   //!     With one argument, the argument is taken to be a byte stream
   //!     containing a message in encoded form. The constructor will analyze
   //!     the string and extract headers and body.
-  //!   @element
+  //!   @item
   //!     With two or three arguments, the first argument is taken to be the
   //!     raw body data, and the second argument a desired set of headers.
   //!     The keys of this mapping are not case-sensitive.  If the given
   //!     headers indicate that the message should be of type multipart,
   //!     an array of Message objects constituting the subparts should be
   //!     given as a third argument.
-  //! @endlist
+  //! @enddl
   //!
   //! @seealso
   //! @[cast()]
@@ -913,7 +913,7 @@ class Message {
 //!     Returned if empty @[collection] is passed in, or one that contains
 //!     messages which are not of type @tt{message/partial@}, or parts of
 //!     different fragmented messages.
-//!   @value >0
+//!   @value 1..
 //!     If more fragments are needed to reconstruct the entire message, the
 //!     number of additional messages needed is returned.
 //!   @value -1

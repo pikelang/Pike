@@ -35,6 +35,7 @@ int|float convert_angle(int|float angle, string from, string to) {
   }
 }
 
+//! Angle
 class Angle {
 
   //! The actual keeper of the angle value.
@@ -43,9 +44,9 @@ class Angle {
   //! The type of the angle value. Is either "deg", "rad" or "gon".
   string type;
 
-  //! @decl create()
-  //! @decl create(int|float radians)
-  //! @decl create(int|float angle, string type)
+  //! @decl void create()
+  //! @decl void create(int|float radians)
+  //! @decl void create(int|float angle, string type)
   //!
   //! If an angle object is created without arguments it
   //! will have the value 0 radians.

@@ -2,10 +2,9 @@
 
 #if constant(@module@.Mird)
 
+//!	The Mird module doubles as the Mird database class.
 class Mird
 {
-//! class Mird
-//!	The Mird module doubles as the Mird database class.
 
    constant Glue=@module@;
 
@@ -22,88 +21,87 @@ class Mird
 
    function(int,int|string:string) _fetch;
       
-//! method void create(string filename,void|mapping options)
-//!	Opens the database using the given filename. Note that
-//!	the file filename+".journal" will be created too.
-//!	
-//!	Possible options:
-//!
-//!	<data_description type=mapping>
-//!
-//!	<elem type=string name=flags>database flags, see below</elem>
-//!
-//!     <elem type=int name=block_size>
-//!           database block size; must be even 2^n
-//!           database size is limited to 2^32 blocks, ie block_size*2^32 
-//!           (8192*2^(32-5) is approximately 1Tb)
-//!           (2048)
-//!     </elem>
-//!        
-//!     <elem type=int name=frag_bits>
-//!           this sets the number of frags in a fragmented block,
-//!           and address bits to locate them.
-//!           the number of frags in a fragmented block is equal
-//!           to 2^frag_bits-1, per default 2^5-1=32-1=31
-//!          
-//!           This steals bits from the 32 bit address used to point out
-//!           a chunk.
-//!           (5)
-//!     </elem>
-//!     
-//!     <elem type=int name=hashtrie_bits>
-//!           this is the number of bits in each hash-trie hash; 
-//!           4*2^n must be a lot less then block_size
-//!           (5)
-//!     </elem>
-//!     
-//!     <elem type=int name=cache_size>
-//!           this is the number of blocks cached from the database;
-//!           this is used for both read- and write cache.
-//!           Note that the memory usage is constant, 
-//!           approximately block_size*cache_size bytes.
-//!           (32)
-//!     </elem>
-//!     
-//!     <elem type=int name=cache_search_length>
-//!           this is the closed hash maximum search length to find
-//!           a block in the cache; note that this will result in 
-//!           linear time usage.
-//!           (8)
-//!     </elem>
-//!     
-//!     <elem type=int name=max_free_frag_blocks>
-//!           this is how many blocks with free space that is 
-//!           kept in a list to be used when a transaction
-//!           is running. The closest fit of usage of these blocks are
-//!           where the data will be stored.
-//!           (10)
-//!     </elem>
-//!     
-//!     <elem type=int name=file_mode>
-//!           this is the default mode the files are opened with;
-//!           although affected by UMASK
-//!           (0666)
-//!     </elem>
-//!     
-//!     <elem type=int name=journal_readback_n>
-//!           this is how many journal entries are read back
-//!           at once at transaction finish, cancel or copy time
-//!           bytes needed is approximately 24*this number
-//!           (200)
-//!     </elem>
-//!	</data_description>
-//! 
-//! 	<pre>flags is a string with any of these characters:
-//! 	"r" - readonly
-//! 	"R" - readonly in a live system (one process writes, many reads)
-//! 	"n" - don't create if it doesn't exist
-//! 	"x" - exclusive (always create)
-//! 	"s" - call fsync when finishing transactions
-//! 	"S" - call sync(2) after fsync
-//! 	"j" - complain if journal file is gone missing
-//! 	</pre>
-
-   void create(string filename,void|mapping options)
+   //!	Opens the database using the given filename. Note that
+   //!	the file @tt{@[filename]+".journal"@} will be created too.
+   //!	
+   //!	Possible options:
+   //!
+   //!	@mapping
+   //!
+   //!	  @member string "flags"
+   //!           Database flags, see below.
+   //!
+   //!    @member int "block_size"
+   //!           Database block size; must be even 2^n.
+   //!           Database size is limited to 2^32 blocks, ie block_size*2^32 
+   //!           (8192*2^(32-5) is approximately 1Tb)
+   //!           (2048)
+   //!        
+   //!    @member int "frag_bits"
+   //!           This sets the number of fragments in a fragmented block,
+   //!           and address bits to locate them.
+   //!           The number of fragments in a fragmented block is equal
+   //!           to 2^frag_bits-1, by default 2^5-1=32-1=31.
+   //!          
+   //!           This steals bits from the 32 bit address used to point out
+   //!           a chunk.
+   //!           (5)
+   //!     
+   //!    @member int "hashtrie_bits"
+   //!           This is the number of bits in each hash-trie hash; 
+   //!           4*2^n must be a lot less than block_size.
+   //!           (5)
+   //!     
+   //!    @member int "cache_size"
+   //!           This is the number of blocks cached from the database;
+   //!           this is used for both the read- and the write cache.
+   //!           Note that the memory usage is constant,
+   //!           approximately block_size*cache_size bytes.
+   //!           (32)
+   //!     
+   //!    @member int "cache_search_length"
+   //!           This is the closed hash maximum search length to find
+   //!           a block in the cache; note that this will result in 
+   //!           linear time usage.
+   //!           (8)
+   //!     
+   //!    @member int "max_free_frag_blocks"
+   //!           This is how many blocks with free space that is 
+   //!           kept in a list to be used when a transaction
+   //!           is running. The closest fit of usage of these blocks are
+   //!           where the data will be stored.
+   //!           (10)
+   //!     
+   //!    @member int "file_mode"
+   //!           This is the default mode the files are opened with;
+   //!           although affected by UMASK
+   //!           (0666)
+   //!     
+   //!    @member int "journal_readback_n"
+   //!           This is how many journal entries are read back
+   //!           at once at transaction finish, cancel or copy time.
+   //!           Bytes needed is approximately 24*this number
+   //!           (200)
+   //!	@endmapping
+   //! 
+   //! 	@tt{"flags"@} is a string with any of these characters:
+   //!  @string
+   //!    @value 'r'
+   //! 	    Readonly.
+   //!    @value 'R'
+   //! 	    Readonly in a live system (one process writes, many reads).
+   //!    @value 'n'
+   //! 	    Don't create if it doesn't exist.
+   //!    @value 'x'
+   //! 	    Exclusive (always create).
+   //!    @value 's'
+   //! 	    Call fsync(3) when finishing transactions.
+   //!    @value 'S'
+   //! 	    Call sync(2) after fsync(3).
+   //!    @value 'j'
+   //! 	    Complain if journal file is gone missing.
+   //! 	@endstring
+   void create(string filename, void|mapping options)
    {
       mird=Glue.Mird(filename,options||([]));
 
@@ -139,10 +137,8 @@ class Mird
       return this_object();
    }
 
-//! method Table table(string name)
-//!	Gives back the table object for the specified table
-//!	in the database.
-
+   //!	Gives back the table object for the specified table
+   //!	in the database.
    Table table(string name)
    {
       if (name==NEXT_TABLE) error("illegal name\n");
@@ -156,14 +152,14 @@ class Mird
    }
 
 
-//! method vTable vtable(string name)
-//! method vzTable vtable(string name)
-//! 	A vTable is just like a <ref>Table</ref>, except that the
-//!     values can be anything, not just strings. The
-//!     data is encode_value()ed before storage.
-//!
-//! 	A vzTable is just like a <ref>vTable</ref>, except that the
-//!     values is both encoded and packed, using Gz.
+   //! @decl vTable vtable(string name)
+   //! @decl vzTable vtable(string name)
+   //! 	A vTable is just like a @[Table], except that the
+   //!     values can be anything, not just strings. The
+   //!     data is @[encode_value()]'ed before storage.
+   //!
+   //! 	A vzTable is just like a @[vTable], except that the
+   //!     values are both encoded and then packed using Gz.
 
    vTable vtable(string name)
    {
@@ -189,9 +185,7 @@ class Mird
       return vzTable(this_object(),table2id[name]);
    }
 
-//! method table_name(int id)
-//! returns the name of the table with id <i>id</i>
-
+   //! Returns the name of the table with id @[id].
    string table_name(int id)
    {
       if (id2table[id]) return id2table[id];
@@ -200,13 +194,12 @@ class Mird
       return id2table[id]=d;
    }
 
-//!
-//! method Table new_stringkey_table(string name)
-//! method Table new_hashkey_table(string name)
-//!	Create a new table in the database.
-//! note: 
-//!	a transaction will be created when
-//!	calling these on the Database level.
+   //! @decl Table new_stringkey_table(string name)
+   //! @decl Table new_hashkey_table(string name)
+   //!	Create a new table in the database.
+   //! @note 
+   //!	A transaction will be created when
+   //!	calling these on the Database level.
 
    Table new_stringkey_table(string name)
    {
@@ -231,10 +224,7 @@ class Mird
       tr->close();
    }
 
-//!
-//! method Transaction transaction()
-//! 	creates a new transaction
-
+   //! 	Creates a new transaction
    Transaction transaction()
    {
       return Transaction(this_object());
@@ -245,26 +235,24 @@ class Mird
       return cTransaction(this_object());
    }
 
-//!
-//! method array(string) tables()
-//!	Gives a list of all tables in the database.
-
+   //!	Gives a list of all tables in the database.
    array(string) tables()
    {
       return indices(Table(this_object(),TABLE2ID_TABLE))-({NEXT_TABLE});
    }
 
-//! method object sync()
-//! method object sync_please()
-//!	Syncs the database (syncs against disc and 
-//!	starts to reuse any space that is freed),
-//!	sync_please() does this when the last living
-//!	transaction is finished.
-//! method object sync_loop(int seconds)
-//!	Starts a call_out loop that will call sync_please
-//!	once every given interval. 0 or fewer seconds will
-//!	shut down the loop.
-//!	Default is 1 minute (60 seconds).
+   //! @decl object sync()
+   //! @decl object sync_please()
+   //!	Syncs the database (syncs against disc and 
+   //!	starts to reuse any space that is freed),
+   //!	sync_please() does this when the last living
+   //!	transaction is finished.
+
+   //! @decl object sync_loop(int seconds)
+   //!	Starts a call_out loop that will call sync_please
+   //!	once every given interval. 0 or fewer seconds will
+   //!	shut down the loop.
+   //!	Default is 1 minute (60 seconds).
 
    Mird sync()
    {
@@ -289,9 +277,9 @@ class Mird
       return sync_please();
    }
 
-//! method void close()
-//! method void destroy()
-//!	syncs and closes the database
+   //! @decl void close()
+   //! @decl void destroy()
+   //!	Syncs and closes the database
 
    void close()
    {
@@ -301,50 +289,46 @@ class Mird
 
    function destroy=close;
 
-//!
-//! subclass Table
-//!	A Mird table has approximately the same
-//!	characteristics as a Pike mapping. You 
-//!	store key:value pairs in it, you get values from keys,
-//!	you delete keys.
-//!
-//!	For convinience, the Table object overloads `[],
-//!	`[]=, _indices and _values.
-
+   //!	A Mird table has approximately the same
+   //!	characteristics as a Pike mapping. You 
+   //!	store key:value pairs in it, you get values from keys,
+   //!	you delete keys.
+   //!
+   //!	For convinience, the Table object overloads @tt{`[]()@},
+   //!	@tt{`[]=()@}, @tt{_indices()@} and @tt{_values()@}.
    class Table 
    {
       int table_id;
       object(Mird)|object(Transaction) parent;
 
-//! method void create(object parent,int table_id)
+      //! @decl void create(object parent, int table_id)
       void create(object _parent,int _table_id)
       {
 	 parent=_parent;
 	 table_id=_table_id;
       }
 
-//! method Mird.Glue.Scanner scanner()
-//! method Mird.Glue.Scanner scanner(int key)
-//!	Creates a scanner over the called table;
-//!	if a key is given, continue at that key
-//!	(as returned from <ref to=Mird.Glue.Scanner.next_key>next_key</ref>).
-//!
-//!	A scanner can be used to loop over all elements in a table.
-
+      //! @decl Mird.Glue.Scanner scanner()
+      //! @decl Mird.Glue.Scanner scanner(int key)
+      //!	Creates a scanner over the called table;
+      //!	if @[key] is given, continue at that key
+      //!	(as returned from @[Mird.Glue.Scanner.next_key()]).
+      //!
+      //!	A scanner can be used to loop over all elements in a table.
       Mird.Glue.Scanner scanner(int ... key)
       {
 	 return parent->_scanner(table_id,@key);
       }
 
-//! method string `[](int|string key)
-//! method string `[]=(int|string key,string value)
-//! method array(int|string) _indices()
-//! method array(int|string) _values()
-//!	Get and store key:value pairs, list the table.
-//!
-//! note:
-//!	All storage in the table will create a transaction,
-//!	if we're not already in a transaction. 
+      //! @decl string `[](int|string key)
+      //! @decl string `[]=(int|string key,string value)
+      //! @decl array(int|string) _indices()
+      //! @decl array(int|string) _values()
+      //!	Get and store key:value pairs, list the table.
+      //!
+      //! @note
+      //!	All storage in the table will create a transaction,
+      //!	if we're not already in a transaction. 
 
       string `[](int|string key)
       {
@@ -376,10 +360,11 @@ class Mird
 	 return vals;
       }
 
-//! method array|mapping cast("mapping"|"array")
-//!	It is possible to cast the Table to a mapping
-//!	or array; this will read all contents of the table,
-//!	so beware if you have a big table.
+      //! @decl mapping cast("mapping")
+      //! @decl array cast("array")
+      //!	It is possible to cast the Table to a mapping
+      //!	or array; this will read all contents of the table,
+      //!	so beware if you have a big table.
 
       array|mapping cast(string to)
       {
@@ -402,13 +387,6 @@ class Mird
 	 error("illegal argument 1 to cast\n");
       }
    }
-
-//!
-//! subclass vTable
-//! inherits Table
-//!     This is just like a normal table, but all data is encode_value()ed,
-//!     and unpacked if reading, for convinience. 
-//!
 
    class v0Table
    {
@@ -470,8 +448,13 @@ class Mird
       }
    }
 
+   //! 	A @[vTable] is just like a @[Table], except that the
+   //!     values can be anything, not just strings. The
+   //!     data is @[encode_value()]'ed before storage.
+   //!
    class vTable
    {
+      //! inherits Table
       inherit v0Table;
 
       string pack(mixed v) 
@@ -485,15 +468,12 @@ class Mird
       }
    }
 
-//!
-//! subclass vzTable
-//! inherits Table
-//!     This is just like a normal table, but all data is encode_value()ed,
-//!     and gzipped, and unpacked if reading, for convinience. 
-//!
-
+   //!     This is just like a normal table, but all data is encode_value()ed,
+   //!     and gzipped, and unpacked if reading, for convinience. 
+   //!
    class vzTable
    {
+      //! inherits Table
       inherit v0Table;
 
       string pack(mixed v) 
@@ -508,18 +488,15 @@ class Mird
       }
    }
 
-//!
-//! subclass Transaction
-//!	A Transaction is the environment which in a change
-//!	to the database can be made. Simplified, the database
-//!	is not changed until the transaction is closed. More 
-//!	then one change to the database can be performed within
-//!	one transaction.
-//!
-//!	If the same entries in the database were changed during
-//!	the lifespan of the transaction, it cannot be closed but
-//!	has to be cancelled.
-
+   //!	A Transaction is the environment which in a change
+   //!	to the database can be made. Simplified, the database
+   //!	is not changed until the transaction is closed. More 
+   //!	then one change to the database can be performed within
+   //!	one transaction.
+   //!
+   //!	If the same entries in the database were changed during
+   //!	the lifespan of the transaction, it cannot be closed but
+   //!	has to be cancelled.
    class Transaction
    {
       Mird parent;
@@ -550,15 +527,14 @@ class Mird
 	 return this_object();
       }
 
-//! method Table table(string name)
-//! method vTable vtable(string name)
-//! method vzTable vztable(string name)
-//!	Creates a <ref to=Table>Table</ref>, <ref to=vTable>vTable</ref>
-//!	or <ref to=vTable>vzTable</ref>
-//!	object for that table,
-//!	which emulates a mapping and in which
-//!	you can make changes to the database or
-//!	do lookups.
+      //! @decl Table table(string name)
+      //! @decl vTable vtable(string name)
+      //! @decl vzTable vztable(string name)
+      //!	Creates a @[Table], @[vTable] or @[vzTable]
+      //!	object for the specified table,
+      //!	which emulates a mapping and in which
+      //!	you can make changes to the database or
+      //!	do lookups.
 
       Table table(string name)
       {
@@ -578,10 +554,6 @@ class Mird
 	 return Table(this_object(),id);
       }
 
-//! 	A vTable is just like a table, except that the
-//!     values can be anything, not just strings. The
-//!     data is encode_value()ed before storage.
-
       vTable vtable(string name)
       {
 	 if (name==NEXT_TABLE) error("illegal name\n");
@@ -594,13 +566,12 @@ class Mird
 	 return vTable(this_object(),table2id[name]);
       }
 
-//!
-//! method Table new_stringkey_table(string name)
-//! method Table new_hashkey_table(string name)
-//!	Creates a new table in the database.
-//!	A stringkey table is a mapping from string to string,
-//!	and a hashkey table is mapping from int to string.
-//!
+      //! @decl Table new_stringkey_table(string name)
+      //! @decl Table new_hashkey_table(string name)
+      //!	Creates a new table in the database.
+      //!	A stringkey table is a mapping from string to string,
+      //!	and a hashkey table is mapping from int to string.
+      //!
 
       Table new_stringkey_table(string name)
       {
@@ -628,9 +599,7 @@ class Mird
 	 return table(name);
       }
 
-//! method void delete_table(string name)
-//!	Removes a table and all items in it
-
+      //!	Removes a table and all items in it
       void delete_table(string name)
       {
 	 if (name==NEXT_TABLE) error("no such table (%O)\n",name);
@@ -650,22 +619,16 @@ class Mird
 	 refresh_at_close=1;
       }
 
-//!
-//! method array(string) tables()
-//! returns the names of the tables in the database.
-//!
-
+      //! Returns the names of the tables in the database.
+      //!
       array(string) tables()
       {
 	 return indices(Table(this_object(),TABLE2ID_TABLE));
       }
 
-//!
-//! method void close()
-//!	Finishes a transaction. This throws exceptions
-//!	if there were conflicts.
-//!
-
+      //!	Finishes a transaction. This throws exceptions
+      //!	if there were conflicts.
+      //!
       void close()
       {
 	 mtr->close();
@@ -673,11 +636,10 @@ class Mird
 	    parent->table2id=parent->id2table=([]);
       }
 
-//!
-//! method void cancel()
-//! method void destroy()
-//!	Cancels (rewinds) a transaction.
-//!
+      //! @decl void cancel()
+      //! @decl void destroy()
+      //!	Cancels (rewinds) a transaction.
+      //!
 
       void cancel()
       {
@@ -690,8 +652,7 @@ class Mird
       }
    }
 
-// caching transaction
-
+   //! Caching transaction
    class cTransaction
    {
       inherit Transaction;
