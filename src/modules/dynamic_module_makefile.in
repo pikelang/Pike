@@ -1,5 +1,5 @@
 #
-# $Id: dynamic_module_makefile.in,v 1.44 1998/09/20 08:30:42 hubbe Exp $
+# $Id: dynamic_module_makefile.in,v 1.45 1998/10/28 22:54:08 marcus Exp $
 #
 
 
@@ -27,7 +27,7 @@ dummy:	$(DUMMY) linker_options modlist_headers modlist_segment module.so
 	@tmp="$(INSTALL_NAME)" ; \
 	if test x$$tmp = x ; then tmp="$(MODNAME)"; else :; fi ;\
 	$(INSTALL) module.so $(TMP_LIBDIR)/modules/$$tmp.so ;\
-	if [ -f $(SRCDIR)/module.pmod.in ]; then sed -e "s/@module@/\"$$tmp\"/" <$(SRCDIR)/module.pmod.in >$(TMP_LIBDIR)/modules/$$tmp.pmod ; else :; fi
+	if [ -f $(SRCDIR)/module.pmod.in ]; then sed -e "s/@module@/\"$$tmp\"/" <$(SRCDIR)/module.pmod.in >$(TMP_LIBDIR)/modules/$$tmp.pmod ; else if [ -f ./module.pmod.in ]; then sed -e "s/@module@/\"$$tmp\"/" <./module.pmod.in >$(TMP_LIBDIR)/modules/$$tmp.pmod; else :; fi; fi
 
 linker_options: Makefile
 	echo "$(LINKER_OPTIONS)" >linker_options
