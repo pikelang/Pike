@@ -176,4 +176,11 @@ cond_resolv( Nettle.Proxy, [[
   
 ]])
 	  
-dnl test_false(Process.system(RUNPIKE+" SRCDIR/rijndaeltest.pike --quick"))
+cond_resolv( Nettle.CBC, [[
+test_tests(
+  array(int) a() {
+    string r = Process.popen(RUNPIKE+" \"SRCDIR/rijndaeltest.pike\" --quick");
+    return (array(int))(r/" ");
+  }
+)
+]])

@@ -7,6 +7,14 @@
 *.pbm binary
 *.png binary
 *.pnm binary
+/src/post_modules/Nettle/rijndael_ecb_tbl.txt eol=lf
+/src/post_modules/Nettle/rijndael_cbc_d_m.txt eol=lf
+/src/post_modules/Nettle/rijndael_cbc_e_m.txt eol=lf
+/src/post_modules/Nettle/rijndael_ecb_d_m.txt eol=lf
+/src/post_modules/Nettle/rijndael_ecb_e_m.txt eol=lf
+/src/post_modules/Nettle/rijndael_ecb_iv.txt eol=lf
+/src/post_modules/Nettle/rijndael_ecb_vk.txt eol=lf
+/src/post_modules/Nettle/rijndael_ecb_vt.txt eol=lf
 /src/modules/_Crypto/rijndael_ecb_tbl.txt eol=lf
 /src/modules/_Crypto/rijndael_cbc_d_m.txt eol=lf
 /src/modules/_Crypto/rijndael_cbc_e_m.txt eol=lf
@@ -848,6 +856,7 @@ testfont binary
 /src/post_modules/Nettle/idea.c foreign_ident
 /src/post_modules/Nettle/idea.h foreign_ident
 /src/post_modules/Nettle/nettle.cmod foreign_ident
+/src/post_modules/Nettle/rijndaeltest.pike foreign_ident
 /src/post_modules/SDL/Makefile.in foreign_ident
 /src/post_modules/SDL/SDL.cmod foreign_ident
 /src/post_modules/SDL/acconfig.h foreign_ident
