@@ -6,7 +6,7 @@
 // Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 // for more information.
 //
-// $Id: master.pike.in,v 1.237 2002/12/06 17:14:49 mirar Exp $
+// $Id: master.pike.in,v 1.238 2002/12/06 20:02:17 nilsson Exp $
 
 #pike __REAL_VERSION__
 
@@ -1633,7 +1633,6 @@ void _main(array(string) orig_argv, array(string) env)
       ({"help",           NO_ARG,  ({"-h", "--help"}), 0, 0}),
       ({"features",       NO_ARG,  ({"--features"}), 0, 0}),
       ({"info",           NO_ARG,  ({"--info"}), 0, 0}),
-      ({"shoot",          NO_ARG,  ({"--shoot"}), 0, 0}),
       ({"execute",        HAS_ARG, ({"-e", "--execute"}), 0, 0}),
       ({"debug_without",  HAS_ARG, ({"--debug-without"}), 0, 0}),
       ({"preprocess",     HAS_ARG, ({"-E", "--preprocess"}), 0, 0}),
@@ -1789,10 +1788,6 @@ void _main(array(string) orig_argv, array(string) env)
       case "info":
 	postparseaction="info";
 	break;
-
-      case "shoot":
-        resolv("Tools.Shoot.run_tests")();
-        exit(0);
 
       case "showpaths":
 	werror(format_paths());
