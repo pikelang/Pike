@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: dlopen.c,v 1.46 2002/10/26 11:45:53 grubba Exp $
+|| $Id: dlopen.c,v 1.47 2002/10/26 14:37:22 grubba Exp $
 */
 
 #include <global.h>
@@ -104,6 +104,13 @@ static char *dlerr=0;
 FILE *dl_symlog;
 #endif
 
+/* Windows/IA64 dows not prepend symbols with "_". */
+#ifdef _WIN64
+#define SYMBOL_PREFIX	""
+#else /* !_WIN64 */
+#define SYMBOL_PREFIX	"_"
+#endif /* _WIN64 */
+
 
 #if defined(EFENCE_BOTTOM) || defined(EFENCE_TOP)
 #define EFENCE
@@ -189,7 +196,7 @@ size_t STRNLEN(char *s, size_t maxlen)
 
 #else /* PIKE_CONCAT */
 
-RCSID("$Id: dlopen.c,v 1.46 2002/10/26 11:45:53 grubba Exp $");
+RCSID("$Id: dlopen.c,v 1.47 2002/10/26 14:37:22 grubba Exp $");
 
 #endif
 
@@ -1835,9 +1842,15 @@ FILE *__cdecl dlopen_fopen_wrapper(const char *fname, const char *mode)
  */
 
 struct pdb_header {
-  INT32 blocksize, freelist, total_alloc, toc_size, unknown, toc_loc;
+  INT32 blocksize;	/* Blocksize */
+  INT32 freelist;
+  INT32 total_alloc;	/* Total number of blocks in the file */
+  INT32 toc_size;	/* Size in bytes of the Table Of Contents. */
+  INT32 unknown;
+  INT32 toc_loc;	/* Block number of the TOC block table. */
 };
 
+/* Read a sequence of blocks from the PDB file buf. */
 static void *read_pdb_blocks(unsigned char *buf, size_t len,
 			     INT32 *blocklist, size_t nbytes,
 			     struct pdb_header *header)
@@ -1854,6 +1867,18 @@ static void *read_pdb_blocks(unsigned char *buf, size_t len,
   return ret;
 }
 
+/* Table Of Contents
+ *
+ * The table of contents consists of 3 sections.
+ *
+ *   INT32 number_of_files;
+ *
+ *   INT32 byte_lengths[number_of_files];
+ *
+ *   INT32 concatenated_block_tables[];
+ */
+
+/* Read file #n specified in the toc from the PDB file buf. */
 static void *read_pdb_file(unsigned char *buf, size_t *plen,
 			   INT32 *toc, int n, struct pdb_header *header)
 {
@@ -1876,14 +1901,53 @@ static void *read_pdb_file(unsigned char *buf, size_t *plen,
   return read_pdb_blocks(buf, len, blocklist, *plen = *fsz, header);
 }
 
+/* PDB file #1 contains the root header. */
+
+struct pdb_root_header {
+  INT32 version;	/* Root header version number (20000404). */
+  INT32 timestamp;	/* Creation date (seconds since 1970). */
+  INT32 unknown;
+  INT32 names;
+};
+
+/* PDB file #3 contains the symbols header. */
+
+struct pdb_symbols_header {
+  INT32 signature;	/* Marker to indicate versioned header (-1). */
+  INT32 version;	/* Symboltable version number (19990903). */
+  INT32 unknown;	/* Symbols header file number? (3). */
+  INT32 hash1_file;	/* File number */
+  INT32 hash2_file;	/* File number */
+  INT32 gsym_file;	/* File number of the global symbol table. */
+  INT32 module_size, offset_size, hash_size;
+  INT32 srcmodule_size, pdbimport_size;      
+};
+
+/* Global Symbol Table
+ *
+ * This table consists of entries with the format
+ *
+ *   INT16 len;
+ *   INT8 data[len];
+ *
+ * Each data block starts with an INT16 identifing the type.
+ *
+ * Currently only the following data blocks are understood:
+ */
+
+struct cv_global_symbol {
+  unsigned INT16 len;		/* Entry length */
+  unsigned INT16 id;		/* 0x110e */
+  unsigned INT32 type;		/* Symbol type */
+  unsigned INT32 value;		/* Symbol value */
+  unsigned INT16 secnum;	/* Section number (>= 1). */
+  char name[1];			/* Symbol name */
+};
+
 static unsigned char *find_pdb_symtab(unsigned char *buf, size_t *plen)
 {
   struct pdb_header *header;
-  struct {
-    INT32 signature, version, unknown, hash1_file, hash2_file;
-    INT32 gsym_file, module_size, offset_size, hash_size;
-    INT32 srcmodule_size, pdbimport_size;      
-  } *st;
+  struct pdb_symbols_header *st;
   size_t stlen, len = *plen;
   int toc_blocks, gsym_file, idlen=0;
   INT32 *toc;
@@ -1893,9 +1957,9 @@ static unsigned char *find_pdb_symtab(unsigned char *buf, size_t *plen)
 #ifdef DLDEBUG
   buf[idlen]='\0';
   fprintf(stderr, "Found PDB header, ident=\"%s\", sig=<%x,%x,%x,%x>\n",
-	  buf,  buf[idlen],  buf[idlen+1], buf[idlen+2],  buf[idlen+3]);
+	  buf,  buf[idlen+1],  buf[idlen+2], buf[idlen+3],  buf[idlen+4]);
 #endif
-  if(len<idlen+2 || buf[idlen]!=0x44 || buf[idlen+1]!=0x53) return NULL;
+  if(len<idlen+3 || buf[idlen+1]!=0x44 || buf[idlen+2]!=0x53) return NULL;
   idlen += 5;
   if(idlen&3) idlen+=4-(idlen&3);
   header = (void*)(buf+idlen);
@@ -2095,12 +2159,7 @@ static void init_dlopen(void)
 #endif
 	for(i=0; i<len; i+=2+*(unsigned INT16 *)&symtab[i])
 	  if(*(unsigned INT16 *)&symtab[i+2] == 0x110e) {
-	    struct {
-	      unsigned INT16 len, id;
-	      unsigned INT32 type, value;
-	      unsigned INT16 secnum;
-	      char name[1];
-	    } *sym = (void *)&symtab[i];
+	    struct cv_global_symbol *sym = (void *)&symtab[i];
 	    size_t namelen=STRNLEN(sym->name,sym->len-12);
 	  
 #ifdef DLDEBUG
@@ -2139,9 +2198,11 @@ static void init_dlopen(void)
 #endif
     append_dlllist(&global_dlhandle.dlls, ARGV[0]);
     global_dlhandle.htable=alloc_htable(997);
+
 #define EXPORT(X) \
   DO_IF_DLDEBUG( fprintf(stderr,"EXP: %s\n",#X); ) \
-  htable_put(global_dlhandle.htable,"_" #X,sizeof(#X)-sizeof("")+1, &X, 1)
+  htable_put(global_dlhandle.htable, SYMBOL_PREFIX #X, \
+	     sizeof(SYMBOL_PREFIX #X)-sizeof(""), &X, 1)
     
     
     fprintf(stderr,"Fnord, rand()=%d\n",rand());
@@ -2173,14 +2234,15 @@ static void init_dlopen(void)
   }
 #ifdef _M_IA64
   {
-    extern void *gp;
-    EXPORT(gp);
+    extern void *_gp[];
+    EXPORT(_gp);
   }
 #endif
 
 #define EXPORT_AS(X,Y) \
   DO_IF_DLDEBUG( fprintf(stderr,"EXP: %s = %s\n",#X,#Y); ) \
-  htable_put(global_dlhandle.htable,"_" #X,sizeof(#X)-sizeof("")+1, &Y, 1)
+  htable_put(global_dlhandle.htable, SYMBOL_PREFIX #X, \
+	     sizeof(SYMBOL_PREFIX #X)-sizeof(""), &Y, 1)
 
 #if 0
   /* This doesn't work, don't know why - Hubbe */
@@ -2442,7 +2504,8 @@ int main(int argc, char ** argv)
       global_dlhandle.htable=alloc_htable(997);
 #define EXPORT(X) \
   DO_IF_DLDEBUG( fprintf(stderr,"EXP: %s\n",#X); ) \
-  htable_put(global_dlhandle.htable,"_" #X,sizeof(#X)-sizeof("")+1, &X, 1)
+  htable_put(global_dlhandle.htable, SYMBOL_PREFIX #X, \
+	     sizeof(SYMBOL_PREFIX #X)-sizeof(""), &X, 1)
       
       
       fprintf(stderr,"Fnord, rand()=%d\n",rand());
