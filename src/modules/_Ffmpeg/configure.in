@@ -1,5 +1,5 @@
 #
-# $Id: configure.in,v 1.2 2002/07/24 15:09:36 mast Exp $
+# $Id: configure.in,v 1.3 2002/08/04 23:21:25 hop Exp $
 #
 AC_INIT(ffmpeg.c)
 AC_CONFIG_HEADER(config.h)
@@ -13,7 +13,8 @@ if test x$with_ffmpeg = xyes ; then
   PIKE_FEATURE_NODEP(FFmpeg)
   AC_CHECK_HEADERS(avcodec.h)
   AC_CHECK_HEADERS(libffmpeg/avcodec.h)
-  AC_CHECK_LIB( ffmpeg, avcodec_init, PIKE_FEATURE_OK(FFmpeg) )
+  AC_CHECK_LIB( ffmpeg, avcodec_init )
+  PIKE_FEATURE(FFmpeg)
 fi
 
 AC_OUTPUT(Makefile,echo FOO >stamp-h )
