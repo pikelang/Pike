@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: program.c,v 1.581 2004/12/18 18:39:56 grubba Exp $
+|| $Id: program.c,v 1.582 2004/12/19 14:47:12 grubba Exp $
 */
 
 #include "global.h"
@@ -1566,7 +1566,7 @@ struct node_s *program_magic_identifier (struct program_state *state,
 	   state_depth, inherit_num, ident->str, colon_colon_ref);
 #endif
 
-  if (inherit_num >= 0) {
+  if (!inherit_num || (!TEST_COMPAT(7,6) && (inherit_num > 0))) {
     if (ident == this_string) {
       /* Handle this. */
       return mkthisnode(state->new_program, inherit_num);
