@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: sendfile.c,v 1.62 2003/10/13 17:42:54 grubba Exp $
+|| $Id: sendfile.c,v 1.63 2003/10/15 18:13:41 grubba Exp $
 */
 
 /*
@@ -627,7 +627,10 @@ static void worker(void *this_)
       this->from->flags &= ~FILE_LOCK_FD;
     } else {
       /* Destructed. */
-      fd_close(this->from_fd);
+      if (this->from_fd >= 0) {
+	set_backend_for_fd(this->from_fd, NULL);
+	fd_close(this->from_fd);
+      }
       /* Paranoia */
       this->from->fd = -1;
     }
@@ -636,7 +639,10 @@ static void worker(void *this_)
     this->to->flags &= ~FILE_LOCK_FD;
   } else {
     /* Destructed */
-    fd_close(this->to_fd);
+    if (this->to_fd >= 0) {
+      set_backend_for_fd(this->to_fd, NULL);
+      fd_close(this->to_fd);
+    }
     /* Paranoia */
     this->to->fd = -1;
   }
