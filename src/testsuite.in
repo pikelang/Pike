@@ -1,4 +1,4 @@
-test_true([["$Id: testsuite.in,v 1.452 2001/09/23 10:19:33 mirar Exp $"]]);
+test_true([["$Id: testsuite.in,v 1.453 2001/09/23 10:34:57 mirar Exp $"]]);
 
 cond([[all_constants()->_verify_internals]],
 [[
@@ -468,6 +468,26 @@ add_constant("test_c",compile_string(
  res=compile_string("inherit test_c;\n","test_d")()->foo();
 };
 return res;
+	]],1);
+
+test_any( [[
+// bug [1858] ------------------------------------------------------------
+// http://community/crunch/show_bug.cgi?id=1858
+string s=#"
+   constant foo=({this_object()});
+   int|string test()
+   {
+      if (!foo[0]) return sprintf(\"foo is %O\\n\",foo)-\"\\n\";
+      if (foo[0]==this_object()) return 1;
+      return sprintf(\"foo is %O\\n\",foo)-\"\\n\";
+   }
+";
+class handler { void compile_error(string file, int line, string err) { }};
+catch {
+  program p=compile_string(s,"test",handler());
+  return p()->test();
+};
+return 1; // compile error is ok
 	]],1);
 
 // -----------------------------------------------------------------------
