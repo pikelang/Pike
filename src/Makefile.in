@@ -1,5 +1,5 @@
 #
-# $Id: Makefile.in,v 1.159 1999/10/21 20:36:39 grubba Exp $
+# $Id: Makefile.in,v 1.160 1999/10/27 13:51:57 grubba Exp $
 #
 
 # This line is needed on some machines.
@@ -312,7 +312,7 @@ sure: verify
 
 # verify / debug verbose
 verbose_verify: module_testsuites testsuite master.pike
-d	if test "$(TESTARGS)" = "" ; then args="-a" ; else args="$(TESTARGS)" ; fi; \
+	if test "$(TESTARGS)" = "" ; then args="-a" ; else args="$(TESTARGS)" ; fi; \
 	$(RUNPIKE) $(TMP_BINDIR)/test_pike.pike --verbose $$args
 
 # verify & debug VERBOSE
