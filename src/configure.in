@@ -1,4 +1,4 @@
-AC_REVISION("$Id: configure.in,v 1.118 1997/09/17 04:03:28 grubba Exp $")
+AC_REVISION("$Id: configure.in,v 1.119 1997/09/17 21:10:39 grubba Exp $")
 AC_INIT(interpret.c)
 AC_CONFIG_HEADER(machine.h)
 
@@ -197,6 +197,7 @@ if test $cflags_is_set = no; then
   # IRIX
   # sopt disabled since it takes too long time on interpret.c (>45min on an O²)
   # AC_SYS_OS_COMPILER_FLAG(IRIX,-sopt,sopt)
+  AC_SYS_OS_COMPILER_FLAG(IRIX,-n32,n32)
   AC_SYS_OS_COMPILER_FLAG(IRIX,-g3,g3)
   AC_SYS_OS_COMPILER_FLAG(IRIX,-fullwarn,fullwarn)
   if test x$with_debug = xyes ; then
