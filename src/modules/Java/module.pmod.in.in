@@ -88,7 +88,7 @@ jobject JFloat(float f)
 jobject JHashMap(mapping m)
 {
   object o=pkg["java/util/HashMap"]();
-  foreach(indices(m), string k)
+  foreach(m; mixed k; mixed v)
   {
     function a,b;
     if(intp(k))
@@ -104,20 +104,20 @@ jobject JHashMap(mapping m)
     else if(objectp(k))
       a=lambda(object x){return x;};
 
-    if(intp(m[k]))
+    if(intp(v))
       b=JInteger;
-    else if(floatp(m[k]))
+    else if(floatp(v))
       b=JFloat;
-    else if(stringp(m[k]))
+    else if(stringp(v))
       b=lambda(string x){return x;};
-    else if(arrayp(m[k]))
+    else if(arrayp(v))
       b=JArray;
-    else if(mappingp(m[k]))
+    else if(mappingp(v))
       b=JHashMap;
-    else if(objectp(k))
+    else if(objectp(v))
       a=lambda(object x){return x;};
 
-    o->put(a(k), b(m[k]));
+    o->put(a(k), b(v));
   }
   return o;
 }
@@ -143,19 +143,19 @@ jobject JArray(array a)
   o=pkg["java/lang/reflect/Array"]->newInstance(t, sizeof(a));
 
   // let us set the value of each element now
-  for(int i=0; i<sizeof(a); i++)
+  foreach(a; int i; mixed v)
   {
-    if(stringp(a[i]))
-      o[i]=a[i];
-    else if(intp(a[i]))
-      o[i]=JInteger(a[i]);
-    else if(floatp(a[i]))
-      o[i]=JFloat(a[i]);
-    else if(mappingp(a[i]))
-      o[i]=JHashMap(a[i]);
-    else if(arrayp(a[i]))
-      o[i]=JArray(a[i]);
-    else if(objectp(a[i]))
+    if(stringp(v))
+      o[i]=v;
+    else if(intp(v))
+      o[i]=JInteger(v);
+    else if(floatp(v))
+      o[i]=JFloat(v);
+    else if(mappingp(v))
+      o[i]=JHashMap(v);
+    else if(arrayp(v))
+      o[i]=JArray(v);
+    else if(objectp(v))
       o[i]=a[i];
   }
 
