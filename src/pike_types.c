@@ -5,7 +5,7 @@
 \*/
 /**/
 #include "global.h"
-RCSID("$Id: pike_types.c,v 1.95 1999/12/14 14:55:57 hubbe Exp $");
+RCSID("$Id: pike_types.c,v 1.96 1999/12/15 01:14:17 grubba Exp $");
 #include <ctype.h>
 #include "svalue.h"
 #include "pike_types.h"
@@ -32,7 +32,7 @@ int max_correct_args;
 
 static void internal_parse_type(char **s);
 static int type_length(char *t);
-static int low_pike_types_le(char *a, char *b);
+static int low_pike_types_le(char *a, char *b, int array_cnt);
 
 #define TWOT(X,Y) (((X) << 8)+(Y))
 #define EXTRACT_TWOT(X,Y) TWOT(EXTRACT_UCHAR(X), EXTRACT_UCHAR(Y))
@@ -57,7 +57,7 @@ static int low_pike_types_le(char *a, char *b);
  * T_OBJECT <0/1> <program_id>
  *           ^
  *           0 means 'implements'
- *           1 means 'inherits'
+ *           1 means 'is' (aka 'clone of')
  * Integers are encoded as:
  * T_INT <min> <max>
  * Everything except T_VOID matches T_ZERO.
@@ -777,7 +777,7 @@ void stupid_describe_type(char *a,INT32 len)
       case T_PROGRAM: printf("program"); break;
       case T_OBJECT:
 	printf("object(%s %ld)",
-	       EXTRACT_UCHAR(a+e+1)?"inherits":"implements",
+	       EXTRACT_UCHAR(a+e+1)?"is":"implements",
 	       (long)extract_type_int(a+e+2));
 	e+=sizeof(INT32)+1;
 	break;
@@ -866,7 +866,7 @@ char *low_describe_type(char *t)
       if(extract_type_int(t+1))
       {
 	char buffer[100];
-	sprintf(buffer,"object(%s %ld)",*t?"inherits":"implements",
+	sprintf(buffer,"object(%s %ld)",*t?"is":"implements",
 		(long)extract_type_int(t+1));
 	my_strcat(buffer);
       }else{
@@ -1354,11 +1354,11 @@ static void low_and_pike_types(char *t1, char *t2)
   {
     push_unfinished_type(t1);
   }
-  else if(low_pike_types_le(t1, t2))
+  else if(low_pike_types_le(t1, t2, 0))
   {
     push_unfinished_type(t1);
   }
-  else if(low_pike_types_le(t2, t1))
+  else if(low_pike_types_le(t2, t1, 0))
   {
     push_unfinished_type(t2);
   }
@@ -1848,7 +1848,6 @@ static char *low_match_types2(char *a,char *b, int flags)
       if(EXTRACT_UCHAR(a+1))
       {
 	/* object(1 x) =? object(1 x) */
-	/* FIXME: Ought to check if a inherits b or b inherits a. */
 	if(extract_type_int(a+2) != extract_type_int(b+2)) return 0;
       }else{
 	/* object(0 *) =? object(0 *) */
@@ -1932,13 +1931,14 @@ static char *low_match_types2(char *a,char *b, int flags)
  * with a mapping(int:int) won't change the type of the mapping after the
  * operation.
  */
-static int low_pike_types_le(char *a,char *b)
+static int low_pike_types_le(char *a, char *b, int array_cnt)
 #ifdef PIKE_TYPE_DEBUG
 {
   int e;
   char *s;
-  static int low_pike_types_le2(char *a,char *b);
+  static int low_pike_types_le2(char *a, char *b, int array_cnt);
   int res;
+  char buf[50];
 
   if (l_flag) {
     init_buf();
@@ -1955,13 +1955,23 @@ static int low_pike_types_le(char *a,char *b)
       my_strcat(", ");
       low_describe_type(b);
     }
+    if(type_length(a) + type_length(b) > 10)
+    {
+      my_strcat(",\n");
+      for(e=0;e<indent;e++) my_strcat("  ");
+      my_strcat("                ");
+    }else{
+      my_strcat(", ");
+    }
+    sprintf(buf, "%d", array_cnt);
+    my_strcat(buf);
     my_strcat(");\n");
     fprintf(stderr,"%s",(s=simple_free_buf()));
     free(s);
     indent++;
   }
 
-  res=low_pike_types_le2(a,b);
+  res=low_pike_types_le2(a, b, array_cnt);
 
   if (l_flag) {
     indent--;
@@ -1972,7 +1982,7 @@ static int low_pike_types_le(char *a,char *b)
   return res;
 }
 
-static int low_pike_types_le2(char *a,char *b)
+static int low_pike_types_le2(char *a, char *b, int array_cnt)
 #endif /* PIKE_TYPE_DEBUG */
 
 {
@@ -1985,30 +1995,33 @@ static int low_pike_types_le2(char *a,char *b)
     /* OK if either of the parts is a subset. */
     /* FIXME: What if b also contains an AND? */
     a++;
-    ret = low_pike_types_le(a,b);
+    ret = low_pike_types_le(a, b, array_cnt);
     if(ret) return ret;
     a += type_length(a);
-    return low_pike_types_le(a,b);
+    return low_pike_types_le(a, b, array_cnt);
 
   case T_OR:
     /* OK, if both of the parts are a subset */
     a++;
-    ret=low_pike_types_le(a,b);
+    ret=low_pike_types_le(a, b, array_cnt);
     if (!ret) return 0;
     a+=type_length(a);
-    return low_pike_types_le(a,b);
+    return low_pike_types_le(a, b, array_cnt);
 
   case T_NOT:
-    return !low_pike_types_le(a+1,b);
+    return !low_pike_types_le(a+1, b, array_cnt);
 
   case T_ASSIGN:
-    ret=low_pike_types_le(a+2,b);
+    ret=low_pike_types_le(a+2, b, array_cnt);
     if(ret && EXTRACT_UCHAR(b)!=T_VOID)
     {
       int m=EXTRACT_UCHAR(a+1)-'0';
       struct pike_string *tmp;
+      int i;
       type_stack_mark();
       push_unfinished_type_with_markers(b, b_markers);
+      for(i=array_cnt; i > 0; i--)
+	push_type(T_ARRAY);
       tmp=pop_unfinished_type();
       
       type_stack_mark();
@@ -2039,9 +2052,9 @@ static int low_pike_types_le2(char *a,char *b)
     {
       int m=EXTRACT_UCHAR(a)-'0';
       if(a_markers[m])
-	return low_pike_types_le(a_markers[m]->str, b);
+	return low_pike_types_le(a_markers[m]->str, b, array_cnt);
       else
-	return low_pike_types_le(mixed_type_string->str, b);
+	return low_pike_types_le(mixed_type_string->str, b, array_cnt);
     }
   }
 
@@ -2050,30 +2063,33 @@ static int low_pike_types_le2(char *a,char *b)
   case T_AND:
     /* OK, if a is a subset of both parts. */
     b++;
-    ret = low_pike_types_le(a,b);
+    ret = low_pike_types_le(a, b, array_cnt);
     if(!ret) return 0;
     b+=type_length(b);
-    return low_pike_types_le(a,b);
+    return low_pike_types_le(a, b, array_cnt);
 
   case T_OR:
     /* OK if a is a subset of either of the parts. */
     b++;
-    ret=low_pike_types_le(a,b);
+    ret=low_pike_types_le(a, b, array_cnt);
     if (ret) return ret;
     b+=type_length(b);
-    return low_pike_types_le(a,b);
+    return low_pike_types_le(a, b, array_cnt);
 
   case T_NOT:
-    return !low_pike_types_le(a,b+1);
+    return !low_pike_types_le(a, b+1, array_cnt);
 
   case T_ASSIGN:
-    ret=low_pike_types_le(a,b+2);
+    ret=low_pike_types_le(a, b+2, array_cnt);
     if(ret && EXTRACT_UCHAR(a)!=T_VOID)
     {
       int m=EXTRACT_UCHAR(b+1)-'0';
       struct pike_string *tmp;
+      int i;
       type_stack_mark();
       push_unfinished_type_with_markers(a, a_markers);
+      for(i = array_cnt; i < 0; i++)
+	push_type(T_ARRAY);
       tmp=pop_unfinished_type();
       
       type_stack_mark();
@@ -2104,36 +2120,69 @@ static int low_pike_types_le2(char *a,char *b)
     {
       int m=EXTRACT_UCHAR(b)-'0';
       if(b_markers[m])
-	return low_pike_types_le(a, b_markers[m]->str);
+	return low_pike_types_le(a, b_markers[m]->str, array_cnt);
       else
-	return low_pike_types_le(a, mixed_type_string->str);
+	return low_pike_types_le(a, mixed_type_string->str, array_cnt);
     }
+  }
 
-  case T_MIXED:
+  if ((array_cnt < 0) && (EXTRACT_UCHAR(b) == T_ARRAY)) {
+    while (EXTRACT_UCHAR(b) == T_ARRAY) {
+      b++;
+      if (!++array_cnt) break;
+    }
+    return low_pike_types_le(a, b, array_cnt);
+  } else if ((array_cnt > 0) && (EXTRACT_UCHAR(a) == T_ARRAY)) {
+    while (EXTRACT_UCHAR(a) == T_ARRAY) {
+      a++;
+      if (!--array_cnt) break;
+    }
+    return low_pike_types_le(a, b, array_cnt);
+  }
+
+  if (EXTRACT_UCHAR(b) == T_MIXED) {
     /* any_type <= 'mixed' */
-    return 1;
+    if (array_cnt <= 0) {
+      /* !array(mixed) */
+      return 1;
+    }
   }
 
   if (EXTRACT_UCHAR(a) == T_MIXED) {
-    return 0;
+    if (array_cnt >= 0) {
+      /* !array(mixed) */
+      return 0;
+    }
   }
 
   if (EXTRACT_UCHAR(a) == T_VOID) {
     /* void <= any_type */
-    return 1;
+    if (array_cnt >= 0) {
+      /* !array(void) */
+      return 1;
+    }
   }
 
   if (EXTRACT_UCHAR(b) == T_VOID) {
-    return 0;
+    if (array_cnt <= 0) {
+      /* !array(void) */
+      return 0;
+    }
   }
 
   if (EXTRACT_UCHAR(a) == T_ZERO) {
     /* void <= zero <= any_type */
-    return 1;
+    if (array_cnt >= 0) {
+      /* !array(zero) */
+      return 1;
+    }
   }
 
   if (EXTRACT_UCHAR(b) == T_ZERO) {
-    return 0;
+    if (array_cnt <= 0) {
+      /* !array(zero) */
+      return 0;
+    }
   }
 
   /* Special cases (tm) */
@@ -2148,7 +2197,7 @@ static int low_pike_types_le2(char *a,char *b)
     {
       struct pike_string *s;
       if((s=low_object_lfun_type(a, LFUN_CALL)))
-	return low_pike_types_le(s->str,b);
+	return low_pike_types_le(s->str, b, array_cnt);
       return 1;
     }
 
@@ -2156,16 +2205,32 @@ static int low_pike_types_le2(char *a,char *b)
     {
       struct pike_string *s;
       if((s=low_object_lfun_type(b, LFUN_CALL)))
-	return low_pike_types_le(a,s->str);
+	return low_pike_types_le(a, s->str, array_cnt);
       return 1;
+    }
+
+  case TWOT(T_FUNCTION, T_ARRAY):
+    {
+      while (EXTRACT_UCHAR(b) == T_ARRAY) {
+	b++;
+	array_cnt++;
+      }
+      return low_pike_types_le(a, b, array_cnt);
+    }
+
+  case TWOT(T_ARRAY, T_FUNCTION):
+    {
+      while (EXTRACT_UCHAR(a) == T_ARRAY) {
+	a++;
+	array_cnt--;
+      }
+      return low_pike_types_le(a, b, array_cnt);
     }
   }
 
   if(EXTRACT_UCHAR(a) != EXTRACT_UCHAR(b)) return 0;
 
-  switch(EXTRACT_UCHAR(a))
-  {
-  case T_FUNCTION:
+  if (EXTRACT_UCHAR(a) == T_FUNCTION) {
     /*
      * function(A...:B) <= function(C...:D)	iff C <= A && B <= D
      */
@@ -2199,14 +2264,14 @@ static int low_pike_types_le2(char *a,char *b)
 
       if (EXTRACT_UCHAR(a_tmp) != T_VOID) {
 	/* if (EXTRACT_UCHAR(b_tmp) == T_VOID) return 0; */
-	if (!low_pike_types_le(b_tmp, a_tmp)) return 0;
+	if (!low_pike_types_le(b_tmp, a_tmp, 0)) return 0;
       }
     }
     /* check the 'many' type */
     a++;
     b++;
     if (EXTRACT_UCHAR(a) != T_VOID) {
-      if (!low_pike_types_le(b, a))
+      if (!low_pike_types_le(b, a, 0))
 	return 0;
     }
 
@@ -2216,16 +2281,21 @@ static int low_pike_types_le2(char *a,char *b)
     /* check the returntype */
     if (EXTRACT_UCHAR(b) != T_VOID) {
       /* FIXME: Check if a has type void here? */
-      if(!low_pike_types_le(a,b)) return 0;
+      if(!low_pike_types_le(a, b, array_cnt)) return 0;
     }
-    break;
+    return 1;
+  }
 
+  if (array_cnt) return 0;
+
+  switch(EXTRACT_UCHAR(a))
+  {
   case T_MAPPING:
     /*
      *  mapping(A:B) <= mapping(C:D)   iff A <= C && B <= D.
      */
-    if(!low_pike_types_le(++a, ++b)) return 0;
-    return low_pike_types_le(a+type_length(a),b+type_length(b));
+    if(!low_pike_types_le(++a, ++b, 0)) return 0;
+    return low_pike_types_le(a+type_length(a), b+type_length(b), 0);
 
   case T_OBJECT:
 #if 0
@@ -2242,7 +2312,7 @@ static int low_pike_types_le2(char *a,char *b)
      * object(0|1 x) <= object(0|1 0)
      * object(0|1 0) <=! object(0|1 !0)
      * object(1 x) <= object(0|1 x)
-     * object(1 x) <= object(1 y)	iff x inherits y
+     * object(1 x) <= object(1 y)	iff x == y
      * object(0|1 x) <= object(0 y)	iff x implements y
      */
 
@@ -2258,10 +2328,7 @@ static int low_pike_types_le2(char *a,char *b)
       return 1;
 
     if (EXTRACT_UCHAR(b+1)) {
-      if (!EXTRACT_UCHAR(a+1)) {
-	/* We can't guarantee the inherit relation. */
-	return 0;
-      }
+      return 0;
     }
 
     {
@@ -2272,12 +2339,7 @@ static int low_pike_types_le2(char *a,char *b)
 	/* Shouldn't happen... */
 	return 0;
       }
-      if (EXTRACT_UCHAR(b+1)) {
-	/* FIXME: Should probably have a better test here. */
-	return low_get_storage(ap, bp) != -1;
-      } else {
-	return implements(ap, bp);
-      }
+      return implements(ap, bp);
     }
     break;
 
@@ -2296,7 +2358,7 @@ static int low_pike_types_le2(char *a,char *b)
 
   case T_MULTISET:
   case T_ARRAY:
-    if(!low_pike_types_le(++a,++b)) return 0;
+    if(!low_pike_types_le(++a, ++b, 0)) return 0;
 
   case T_FLOAT:
   case T_STRING:
@@ -2328,7 +2390,7 @@ int strict_check_call(char *fun_type, char *arg_type)
       fun_type += type_length(fun_type);
     }
   }
-  return low_pike_types_le(fun_type, arg_type);
+  return low_pike_types_le(fun_type, arg_type, 0);
 }
 
 /*
@@ -2388,7 +2450,7 @@ static int low_get_return_type(char *a,char *b)
   {
 #if 0
     if ((lex.pragmas & ID_STRICT_TYPES) &&
-	!low_pike_types_le(a, b)) {
+	!low_pike_types_le(a, b, 0)) {
       yywarning("Type mismatch");
     }
 #endif /* 0 */
@@ -2430,7 +2492,7 @@ int pike_types_le(struct pike_string *a,struct pike_string *b)
   check_type_string(a);
   check_type_string(b);
   clear_markers();
-  return low_pike_types_le(a->str, b->str);
+  return low_pike_types_le(a->str, b->str, 0);
 }
 
 
@@ -2871,16 +2933,21 @@ struct pike_string *check_call(struct pike_string *args,
   if(low_get_return_type(type->str,args->str))
   {
     if (lex.pragmas & ID_STRICT_TYPES) {
-      if (type == mixed_type_string) {
-	yywarning("Calling mixed.");
-      } else if (!strict_check_call(type->str, args->str)) {
-	struct pike_string *arg_t = describe_type(args);
+      if (!strict_check_call(type->str, args->str)) {
 	struct pike_string *type_t = describe_type(type);
-	yywarning("Arguments not strictly compatible.");
-	yywarning("Expected: %s", type_t->str);
-	yywarning("Got     : %s", arg_t->str);
+
+	if (!low_pike_types_le(type->str, tFunction, 0)) {
+	  yywarning("Calling non-function value.");
+	  yywarning("Type called: %s", type_t->str);
+	} else {
+	  struct pike_string *arg_t = describe_type(args);
+	  yywarning("Arguments not strictly compatible.");
+	  yywarning("Expected: %s", type_t->str);
+	  yywarning("Got     : %s", arg_t->str);
+	  free_string(arg_t);
+	}
+
 	free_string(type_t);
-	free_string(arg_t);
       }
     }
     return pop_unfinished_type();
