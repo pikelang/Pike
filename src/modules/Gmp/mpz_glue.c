@@ -4,7 +4,7 @@
 ||| See the files COPYING and DISCLAIMER for more information.
 \*/
 #include "global.h"
-RCSID("$Id: mpz_glue.c,v 1.46 1999/10/16 10:50:34 noring Exp $");
+RCSID("$Id: mpz_glue.c,v 1.47 1999/10/19 22:14:02 noring Exp $");
 #include "gmp_machine.h"
 
 #if defined(HAVE_GMP2_GMP_H) && defined(HAVE_LIBGMP2)
@@ -750,9 +750,9 @@ static void mpzmod_next_prime(INT32 args)
   pop_n_elems(args);
   
   o = clone_object(mpzmod_program, 0);
-  PUSH_REDUCED(o);
-  
   mpz_next_prime(OBTOMPZ(o), THIS, count, limit);
+  
+  PUSH_REDUCED(o);
 }
 
 static void mpzmod_sgn(INT32 args)
