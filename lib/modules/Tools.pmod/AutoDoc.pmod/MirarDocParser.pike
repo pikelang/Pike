@@ -1,4 +1,4 @@
-/* $Id: MirarDocParser.pike,v 1.20 2003/03/12 09:23:37 agehall Exp $ */
+/* $Id: MirarDocParser.pike,v 1.21 2003/03/31 15:10:55 nilsson Exp $ */
 
 /* MirarDoc documentation extractor.
  */
@@ -542,7 +542,7 @@ void document(string enttype,
 	 break;
       default:
 	f->write("<docgroup homogen-type="+S(enttype));
-	if(huh->decl) {
+	if(huh->decl && sizeof(names)==1) {
 	  lambda() {
 	    string m,n;
 
