@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: signal_handler.c,v 1.244 2004/09/13 11:48:58 grubba Exp $
+|| $Id: signal_handler.c,v 1.245 2004/09/17 22:27:58 marcus Exp $
 */
 
 #include "global.h"
@@ -26,7 +26,7 @@
 #include "main.h"
 #include <signal.h>
 
-RCSID("$Id: signal_handler.c,v 1.244 2004/09/13 11:48:58 grubba Exp $");
+RCSID("$Id: signal_handler.c,v 1.245 2004/09/17 22:27:58 marcus Exp $");
 
 #ifdef HAVE_PASSWD_H
 # include <passwd.h>
@@ -1644,6 +1644,7 @@ extern int pike_make_pipe(int *);
 #define PROCE_DUP		10
 #define PROCE_SETSID		11
 #define PROCE_SETCTTY		12
+#define PROCE_CLRCLOEXEC	14
 
 #define PROCERROR(err, id)	do { int _l, _i; \
     buf[0] = err; buf[1] = errno; buf[2] = id; \
@@ -3129,8 +3130,12 @@ void f_create_process(INT32 args)
 		     "File not found?\n", buf[1]);
 	  break;
 	case PROCE_CLOEXEC:
-	  Pike_error("Process.create_process(): set_close_on_exec() failed. errno:%d\n",
-		buf[1]);
+	  Pike_error("Process.create_process(): set_close_on_exec(%d, 1) failed. errno:%d\n",
+		     buf[2], buf[1]);
+	  break;
+	case PROCE_CLRCLOEXEC:
+	  Pike_error("Process.create_process(): set_close_on_exec(%d, 0) failed. errno:%d\n",
+		     buf[2], buf[1]);
 	  break;
 	case 0:
 	  /* read() probably failed. */
@@ -3166,10 +3171,6 @@ void f_create_process(INT32 args)
 
       /* Close our parent's end of the pipe. */
       while(close(control_pipe[0]) < 0 && errno==EINTR);
-
-      /* Ensure that the pipe will be closed when the child starts. */
-      if(set_close_on_exec(control_pipe[1], 1) < 0)
-          PROCERROR(PROCE_CLOEXEC, 0);
 
       /* Wait for parent to get ready... */
       while ((( e = read(control_pipe[1], buf, 1)) < 0) && (errno == EINTR))
@@ -3288,18 +3289,37 @@ void f_create_process(INT32 args)
         int fd;
 	/* Note: This is O(n²), but that ought to be ok. */
 	for (fd=0; fd<num_fds; fd++) {
-	  int fd2;
-	  int remapped = -1;
-	  if ((fds[fd] == -1) ||
-	      (fds[fd] == fd)) continue;
-	  for (fd2 = fd+1; fd2 < num_fds; fd2++) {
-	    if (fds[fd2] == fd) {
-	      /* We need to temorarily remap this fd, since it's in the way */
-	      if (remapped == -1) {
-		if ((remapped = dup(fd)) < 0)
-		  PROCERROR(PROCE_DUP, fd);
+	  if (fds[fd] == -1) continue;
+	  if (fds[fd] == fd) {
+	    /* Clear close on exec. */
+	    int code = set_close_on_exec(fd, 0);
+	    if (code < 0)
+	      PROCERROR(PROCE_CLRCLOEXEC, fd);
+	    continue;
+	  }
+	  if (fd == control_pipe[1]) {
+	    /* Our control pipe is in the way.
+	     * Move it.
+	     */
+	    int remapped;
+	    if ((remapped = dup(fd)) < 0)
+	      PROCERROR(PROCE_DUP, fd);
+	    /*fprintf(stderr, "Moved control pipe to fd %d\n", remapped);*/
+	    control_pipe[1] = remapped;
+	  } else {
+	    /* Is there any other fd in the way?
+	     */
+	    int fd2;
+	    int remapped = -1;
+	    for (fd2 = fd+1; fd2 < num_fds; fd2++) {
+	      if (fds[fd2] == fd) {
+		/* We need to temorarily remap this fd, since it's in the way */
+		if (remapped == -1) {
+		  if ((remapped = dup(fd)) < 0)
+		    PROCERROR(PROCE_DUP, fd);
+		}
+		fds[fd2] = remapped;
 	      }
-	      fds[fd2] = remapped;
 	    }
 	  }
 	  if (dup2(fds[fd], fd) < 0)
@@ -3352,6 +3372,10 @@ void f_create_process(INT32 args)
 	}
 	/* FIXME: Map the fds as not close on exec? */
       }
+
+      /* Ensure that the pipe will be closed when the child starts. */
+      if(set_close_on_exec(control_pipe[1], 1) < 0)
+          PROCERROR(PROCE_CLOEXEC, control_pipe[1]);
 
       if(priority)
         set_priority( 0, priority );
