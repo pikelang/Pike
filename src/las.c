@@ -5,7 +5,7 @@
 \*/
 /**/
 #include "global.h"
-RCSID("$Id: las.c,v 1.155 1999/12/30 21:36:02 mast Exp $");
+RCSID("$Id: las.c,v 1.156 1999/12/30 21:57:28 grubba Exp $");
 
 #include "language.h"
 #include "interpret.h"
@@ -955,32 +955,35 @@ node *debug_mksoftcastnode(struct pike_string *type,node *n)
   }
 #endif /* PIKE_DEBUG */
 
-  if (type == void_type_string) {
-    yywarning("Soft cast to void.");
-    return mknode(F_POP_VALUE, n, 0);
-  }
-
-  if(type==n->type) {
-    struct pike_string *t1 = describe_type(type);
-    yywarning("Soft cast to %s is a noop.", t1->str);
-    free_string(t1);
-    return n;
-  }
-
-  if (n->type) {
-    if (!check_soft_cast(type, n->type)) {
-      struct pike_string *t1 = describe_type(type);
-      struct pike_string *t2 = describe_type(n->type);
-      yywarning("Soft cast to %s isn't a restriction of %s.",
-		t1->str, t2->str);
-      free_string(t2);
-      free_string(t1);
+  if (compiler_pass == 2) {
+    if (type == void_type_string) {
+      yywarning("Soft cast to void.");
+      return mknode(F_POP_VALUE, n, 0);
     }
-    /* FIXME: check_soft_cast() is weaker than pike_types_le()
-     * The resulting type should probably be the and between the old
-     * and the new type.
-     */
+
+    if(type==n->type) {
+      struct pike_string *t1 = describe_type(type);
+      yywarning("Soft cast to %s is a noop.", t1->str);
+      free_string(t1);
+      return n;
+    }
+
+    if (n->type) {
+      if (!check_soft_cast(type, n->type)) {
+	struct pike_string *t1 = describe_type(type);
+	struct pike_string *t2 = describe_type(n->type);
+	yywarning("Soft cast to %s isn't a restriction of %s.",
+		  t1->str, t2->str);
+	free_string(t2);
+	free_string(t1);
+      }
+      /* FIXME: check_soft_cast() is weaker than pike_types_le()
+       * The resulting type should probably be the and between the old
+       * and the new type.
+       */
+    }
   }
+
   res = mkemptynode();
   res->token = F_SOFT_CAST;
   copy_shared_string(res->type,type);
