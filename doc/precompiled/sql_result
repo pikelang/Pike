@@ -20,14 +20,14 @@ NAME
 SYNTAX
 	#include <sql.h>
 
-	object(sql_result) Sql_result(object res);
+	object(sql_result) sql_result(object res);
 	or
-	object(sql_result) Sql_result(array(mapping(string:mixed)) res);
+	object(sql_result) sql_result(array(mapping(string:mixed)) res);
 	or
 	object(sql_result) sql->big_query(string q);
 
 DESCRIPTION
-	The first two functions generate a Sql_result object from an
+	The first two functions generate a sql_result object from an
 	existing result. The second makes it from the result of the
 	SQL-query q.
 
