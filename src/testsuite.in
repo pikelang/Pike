@@ -1,4 +1,4 @@
-test_true([["$Id: testsuite.in,v 1.241 1999/11/27 14:48:25 mast Exp $"]]);
+test_true([["$Id: testsuite.in,v 1.242 1999/12/02 19:16:50 mirar Exp $"]]);
 
 cond([[all_constants()->_verify_internals]],
 [[
@@ -188,6 +188,11 @@ class Gnu
 }
 
 ]])
+
+test_compile_any([[int log() { return 17; } class Greta { int hanna() { return log(); } }]])
+test_compile_any([[int kajsa(int a,int b) { return 17; } class Jenny { int kajsa() { return 17; } class Greta { int hanna() { return kajsa(); } } }]])
+test_any([[add_constant("kajsa",lambda(int a,int b) { return 17; }); return compile_string("int kajsa() { return 17; } class Greta { int hanna() { return kajsa(); } }")()->kajsa()]],1)
+
 test_compile([[Stdio.File foo=Stdio.File();]])
 test_compile([[  string|multiset(string) foo;
   array(string) gazonk;
