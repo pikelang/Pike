@@ -5,7 +5,7 @@
 \*/
 
 /*
- * $Id: docode.h,v 1.7 1998/05/25 10:38:45 hubbe Exp $
+ * $Id: docode.h,v 1.8 2001/02/25 18:19:03 hubbe Exp $
  */
 #ifndef DOCODE_H
 #define DOCODE_H
@@ -15,6 +15,7 @@
 #define DO_POP 4
 #define DO_INDIRECT 8
 #define DO_LVALUE_IF_POSSIBLE 16
+#define DO_NOT_COPY_TOPLEVEL 32
 
 #define WANT_LVALUE (DO_LVALUE | DO_INDIRECT)
 

@@ -4,7 +4,7 @@
 ||| See the files COPYING and DISCLAIMER for more information.
 \*/
 #include "global.h"
-RCSID("$Id: docode.c,v 1.42 1998/11/22 11:02:41 hubbe Exp $");
+RCSID("$Id: docode.c,v 1.43 2001/02/25 18:19:03 hubbe Exp $");
 #include "las.h"
 #include "program.h"
 #include "language.h"
@@ -24,6 +24,8 @@ RCSID("$Id: docode.c,v 1.42 1998/11/22 11:02:41 hubbe Exp $");
 #include "docode.h"
 #include "operators.h"
 #include "object.h"
+#include "mapping.h"
+#include "multiset.h"
 
 static int do_docode2(node *n,int flags);
 
@@ -451,7 +453,7 @@ static int do_docode2(node *n,int flags)
     fatal("Optimizer error.\n");
 
   case F_RANGE:
-    tmp1=do_docode(CAR(n),DO_NOT_COPY);
+    tmp1=do_docode(CAR(n),DO_NOT_COPY_TOPLEVEL);
     if(do_docode(CDR(n),DO_NOT_COPY)!=2)
       fatal("Compiler internal error (at %ld).\n",(long)lex.current_line);
     emit2(n->token);
@@ -1088,7 +1090,35 @@ static int do_docode2(node *n,int flags)
       
       /* copy now or later ? */
       if(!(flags & DO_NOT_COPY) && !(n->tree_info & OPT_EXTERNAL_DEPEND))
-	emit2(F_COPY_VALUE);
+      {
+ 	if(flags & DO_NOT_COPY_TOPLEVEL)
+ 	{
+ 	  switch(n->u.sval.type)
+ 	  {
+ 	    case T_ARRAY:
+ 	      array_fix_type_field(n->u.sval.u.array);
+ 	      if(n->u.sval.u.array -> type_field & BIT_COMPLEX)
+		emit2(F_COPY_VALUE);
+ 	      break;
+	      
+ 	    case T_MAPPING:
+ 	      mapping_fix_type_field(n->u.sval.u.mapping);
+ 	      if((n->u.sval.u.mapping->ind_types |
+ 		  n->u.sval.u.mapping->val_types) & BIT_COMPLEX)
+		emit2(F_COPY_VALUE);
+ 	      break;
+	      
+ 	    case T_MULTISET:
+ 	      array_fix_type_field(n->u.sval.u.multiset->ind);
+ 	      if(n->u.sval.u.multiset->ind-> type_field & BIT_COMPLEX)
+ 		emit2(F_COPY_VALUE);
+ 	      break;
+ 	  }
+ 	}else{
+ 	  emit2(F_COPY_VALUE);
+ 	}
+      }
+      
       return 1;
 
     }
