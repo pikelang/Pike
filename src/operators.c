@@ -2,12 +2,12 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: operators.c,v 1.163 2002/10/15 14:53:28 grubba Exp $
+|| $Id: operators.c,v 1.164 2002/10/15 15:29:13 grubba Exp $
 */
 
 #include "global.h"
 #include <math.h>
-RCSID("$Id: operators.c,v 1.163 2002/10/15 14:53:28 grubba Exp $");
+RCSID("$Id: operators.c,v 1.164 2002/10/15 15:29:13 grubba Exp $");
 #include "interpret.h"
 #include "svalue.h"
 #include "multiset.h"
@@ -1948,6 +1948,7 @@ PMOD_EXPORT void o_lsh(void)
   }
 #endif /* !AUTO_BIGNUM */
   if (sp[-1].u.integer < 0) {
+    int args = 2;
     SIMPLE_BAD_ARG_ERROR("`<<", 2, "int(0..)|object");    
   }
   sp--;
@@ -2004,6 +2005,7 @@ PMOD_EXPORT void o_rsh(void)
   }
   
   if (sp[-1].u.integer < 0) {
+    int args = 2;
     SIMPLE_BAD_ARG_ERROR("`>>", 2, "int(0..)|object");
   }
 
