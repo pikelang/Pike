@@ -1,4 +1,4 @@
-test_true([["$Id: testsuite.in,v 1.389 2001/02/28 04:23:08 hubbe Exp $"]]);
+test_true([["$Id: testsuite.in,v 1.390 2001/02/28 12:46:27 grubba Exp $"]]);
 
 cond([[all_constants()->_verify_internals]],
 [[
@@ -4720,7 +4720,7 @@ test_any([[
 
 test_any([[
   int ret;
-  foreach( (<1,3,7,13>) ; ; int b) ret+=a;
+  foreach( (<1,3,7,13>) ; ; int b) ret+=b;
   return ret;
 ]],4)
 
@@ -4770,8 +4770,9 @@ test_any([[
 
 test_any([[
   mapping m=([1:2,3:5,7:11,13:17]);
+  int ret;
   foreach(m  ; int a ; int b) { m_delete(m,a); ret+=a*b; }
-  return sizeof(m);
+  return ret;
 ]],315)
 
 
