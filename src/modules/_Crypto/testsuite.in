@@ -451,7 +451,17 @@ test_eq([[Crypto.crypt_md5("","$xyz")]],
 test_eq([[Crypto.crypt_md5("Hello","sl5hO7j4")]],
 	[["$1$sl5hO7j4$glLmY.ttmi1hWK8ucIrig."]])
 test_eq([[Crypto.crypt_md5("Hello","$1$sl5hO7j4$glLmY.ttmi1hWK8ucIrig.")]],
+	[[1]])
+test_eq([[Crypto.crypt_md5("Hellx","$1$sl5hO7j4$glLmY.ttmi1hWK8ucIrig.")]],
+	[[0]])
+test_eq([[
+#pike 7.4
+Crypto.crypt_md5("Hello","$1$sl5hO7j4$glLmY.ttmi1hWK8ucIrig.")]],
 	[["$1$sl5hO7j4$glLmY.ttmi1hWK8ucIrig."]])
+test_eq([[
+#pike 7.4
+Crypto.crypt_md5("Hellx","$1$sl5hO7j4$glLmY.ttmi1hWK8ucIrig.")]],
+	[["$1$sl5hO7j4$3cyvb8g68rK8.kH9Eayvk."]])
 
 // ->name
 test_eq(
