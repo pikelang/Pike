@@ -7,7 +7,7 @@
 #include "config.h"
 
 #include "global.h"
-RCSID("$Id: ssleay.c,v 1.7 1997/08/30 18:36:14 grubba Exp $");
+RCSID("$Id: ssleay.c,v 1.8 1998/04/20 18:53:51 grubba Exp $");
 #include "interpret.h"
 #include "svalue.h"
 #include "stralloc.h"
@@ -202,8 +202,7 @@ static void ssleay_new(INT32 args)
     }
 #endif
   pop_n_elems(args);
-  THISOBJ->refs++;
-  push_object(THISOBJ);
+  ref_push_object(THISOBJ);
   push_object(clone_object(ssleay_connection_program, 1));
 }
 

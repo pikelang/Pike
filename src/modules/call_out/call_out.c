@@ -4,7 +4,7 @@
 ||| See the files COPYING and DISCLAIMER for more information.
 \*/
 #include "global.h"
-RCSID("$Id: call_out.c,v 1.19 1998/02/09 08:56:08 hubbe Exp $");
+RCSID("$Id: call_out.c,v 1.20 1998/04/20 18:53:58 grubba Exp $");
 #include "array.h"
 #include "dynamic_buffer.h"
 #include "object.h"
@@ -240,8 +240,7 @@ static struct array * new_call_out(int num_arg,struct svalue *argp)
 
   if(fp && fp->current_object)
   {
-    new->caller=fp->current_object;
-    new->caller->refs++;
+    add_ref(new->caller=fp->current_object);
   }else{
     new->caller=0;
   }
@@ -488,8 +487,7 @@ struct array *get_all_call_outs(void)
     if(CALL(e).caller)
     {
       ITEM(v)[1].type=T_OBJECT;
-      ITEM(v)[1].u.object=CALL(e).caller;
-      CALL(e).caller->refs++;
+      add_ref(ITEM(v)[1].u.object=CALL(e).caller);
     }else{
       ITEM(v)[1].type=T_INT;
       ITEM(v)[1].subtype=NUMBER_NUMBER;

@@ -1,5 +1,5 @@
 /*
- * $Id: pgresult.c,v 1.5 1998/03/28 14:41:01 grubba Exp $
+ * $Id: pgresult.c,v 1.6 1998/04/20 18:53:48 grubba Exp $
  *
  * Postgres95 support for pike/0.5 and up
  *
@@ -63,7 +63,7 @@
 #include "builtin_functions.h"
 #include "module_support.h"
 
-RCSID("$Id: pgresult.c,v 1.5 1998/03/28 14:41:01 grubba Exp $");
+RCSID("$Id: pgresult.c,v 1.6 1998/04/20 18:53:48 grubba Exp $");
 
 #ifdef _REENTRANT
 MUTEX_T pike_postgres_result_mutex;
@@ -233,7 +233,7 @@ void pgresult_init (void)
 			OPT_EXTERNAL_DEPEND|OPT_RETURN);
 	pgresult_program=end_program();
 	add_program_constant("postgres_result",pgresult_program,0);
-	pgresult_program->refs++;
+	add_ref(pgresult_program);
 }
 
 #else

@@ -1,5 +1,5 @@
 #include "global.h"
-RCSID("$Id: polyfill.c,v 1.24 1998/04/19 19:14:23 mirar Exp $");
+RCSID("$Id: polyfill.c,v 1.25 1998/04/20 18:53:33 grubba Exp $");
 
 /* Prototypes are needed for these */
 extern double floor(double);
@@ -32,7 +32,7 @@ extern double floor(double);
 /*
 **! module Image
 **! note
-**!	$Id: polyfill.c,v 1.24 1998/04/19 19:14:23 mirar Exp $
+**!	$Id: polyfill.c,v 1.25 1998/04/20 18:53:33 grubba Exp $
 **! class image
 */
 
@@ -773,7 +773,6 @@ void image_polyfill(INT32 args)
    
    free(buf);
 
-   THISOBJ->refs++;
-   push_object(THISOBJ);
+   ref_push_object(THISOBJ);
 }
 

@@ -1,5 +1,5 @@
 /*
- * $Id: oracle.c,v 1.9 1998/02/02 21:39:28 marcus Exp $
+ * $Id: oracle.c,v 1.10 1998/04/20 18:53:45 grubba Exp $
  *
  * Pike interface to Oracle databases.
  *
@@ -34,7 +34,7 @@
 
 #endif
 
-RCSID("$Id: oracle.c,v 1.9 1998/02/02 21:39:28 marcus Exp $");
+RCSID("$Id: oracle.c,v 1.10 1998/04/20 18:53:45 grubba Exp $");
 
 #ifdef HAVE_ORACLE
 
@@ -113,10 +113,9 @@ static void f_result_create(INT32 args)
   r->curs = curs;
   dbcon->share_cda = NULL;
 
-  r->parent = p;
+  add_ref(r->parent = p);
   r->dbcon = dbcon;
   r->cda = &curs->cda;
-  p->refs++;
 
   r->cols = 0;
 }

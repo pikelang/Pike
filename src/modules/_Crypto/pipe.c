@@ -1,5 +1,5 @@
 /*
- * $Id: pipe.c,v 1.11 1998/01/13 23:01:11 hubbe Exp $
+ * $Id: pipe.c,v 1.12 1998/04/20 18:53:57 grubba Exp $
  *
  * PIPE crypto module for Pike.
  *
@@ -86,8 +86,7 @@ static void f_create(INT32 args)
   MEMSET(THIS->objects, 0, args * sizeof(struct object *));
   for (i=-args; i; i++) {
     if (sp[i].type == T_OBJECT) {
-      THIS->objects[args + i] = sp[i].u.object;
-      THIS->objects[args + i]->refs++;
+      add_ref(THIS->objects[args + i] = sp[i].u.object);
     } else if (sp[i].type == T_PROGRAM) {
       THIS->objects[args + i] = clone_object(sp[i].u.program, 0);
     } else if (sp[i].type == T_ARRAY) {
@@ -206,8 +205,7 @@ static void f_set_encrypt_key(INT32 args)
     int n_args;
 
     if (sp[i].type == T_STRING) {
-      sp[i].u.string->refs++;
-      push_string(sp[i].u.string);
+      ref_push_string(sp[i].u.string);
       n_args = 1;
     } else if (sp[i].type == T_ARRAY) {
       n_args = sp[i].u.array->size;
@@ -236,8 +234,7 @@ static void f_set_decrypt_key(INT32 args)
     int n_args;
 
     if (sp[i].type == T_STRING) {
-      sp[i].u.string->refs++;
-      push_string(sp[i].u.string);
+      ref_push_string(sp[i].u.string);
       n_args = 1;
     } else if (sp[i].type == T_ARRAY) {
       n_args = sp[i].u.array->size;

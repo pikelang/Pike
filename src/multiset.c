@@ -15,7 +15,7 @@
 #include "builtin_functions.h"
 #include "gc.h"
 
-RCSID("$Id: multiset.c,v 1.10 1998/03/28 15:09:34 grubba Exp $");
+RCSID("$Id: multiset.c,v 1.11 1998/04/20 18:53:19 grubba Exp $");
 
 struct multiset *first_multiset;
 
@@ -250,7 +250,7 @@ struct multiset *copy_multiset_recursively(struct multiset *l,
     if(p->pointer_a == (void *)l)
     {
       ret=(struct multiset *)p->pointer_b;
-      ret->refs++;
+      add_ref(ret);
       return ret;
     }
   }
@@ -295,7 +295,7 @@ void gc_free_all_unreferenced_multisets(void)
   {
     if(gc_do_free(l))
     {
-      l->refs++;
+      add_ref(l);
       free_svalues(ITEM(l->ind), l->ind->size, l->ind->type_field);
       l->ind->size=0;
       next=l->next;

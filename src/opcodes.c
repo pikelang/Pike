@@ -22,7 +22,7 @@
 #include "builtin_functions.h"
 #include "module_support.h"
 
-RCSID("$Id: opcodes.c,v 1.19 1998/04/16 01:14:16 hubbe Exp $");
+RCSID("$Id: opcodes.c,v 1.20 1998/04/20 18:53:21 grubba Exp $");
 
 void index_no_free(struct svalue *to,struct svalue *what,struct svalue *ind)
 {
@@ -243,7 +243,7 @@ void o_cast(struct pike_string *type, INT32 run_time_type)
 	  struct program *p=program_from_function(sp-1);
 	  if(p)
 	  {
-	    p->refs++;
+	    add_ref(p);
 	    pop_stack();
 	    push_program(p);
 	  }else{
@@ -271,7 +271,7 @@ void o_cast(struct pike_string *type, INT32 run_time_type)
 	  sp[-1].type=T_FUNCTION;
 	  sp[-1].subtype=i;
 	  sp[-1].u.object=fp->current_object;
-	  fp->current_object->refs++;
+	  add_ref(fp->current_object);
 	}else{
 	  sp[-1].type=T_INT;
 	  sp[-1].subtype=NUMBER_UNDEFINED;

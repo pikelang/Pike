@@ -1,4 +1,4 @@
-/* $Id: font.c,v 1.33 1998/03/26 03:11:19 hubbe Exp $ */
+/* $Id: font.c,v 1.34 1998/04/20 18:53:29 grubba Exp $ */
 #include "global.h"
 #include <config.h>
 
@@ -7,7 +7,7 @@
 /*
 **! module Image
 **! note
-**!	$Id: font.c,v 1.33 1998/03/26 03:11:19 hubbe Exp $
+**!	$Id: font.c,v 1.34 1998/04/20 18:53:29 grubba Exp $
 **! class font
 **!
 **! note
@@ -463,8 +463,7 @@ void font_load(INT32 args)
 
 		  fd_close(fd);
 		  pop_n_elems(args);
-		  THISOBJ->refs++;
-		  push_object(THISOBJ);   /* success */
+		  ref_push_object(THISOBJ);   /* success */
 #ifdef FONT_DEBUG
 		  fprintf(stderr,"FONT successfully loaded\n");
 #endif

@@ -62,7 +62,7 @@ static void pgdebug (char * a, ...) {}
 
 struct program * postgres_program;
 
-RCSID("$Id: postgres.c,v 1.5 1998/03/02 18:57:25 grubba Exp $");
+RCSID("$Id: postgres.c,v 1.6 1998/04/20 18:53:49 grubba Exp $");
 
 #define THIS ((struct pgres_object_data *) fp->current_storage)
 
@@ -422,7 +422,7 @@ void pike_module_init (void)
 
 	postgres_program = end_program();
 	add_program_constant("postgres",postgres_program,0);
-	postgres_program->refs++;
+	add_ref(postgres_program);
 
 	add_string_constant("version",PGSQL_VERSION,0);
 

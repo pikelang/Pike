@@ -1,9 +1,9 @@
-/* $Id: image.c,v 1.103 1998/04/20 01:42:21 mirar Exp $ */
+/* $Id: image.c,v 1.104 1998/04/20 18:53:30 grubba Exp $ */
 
 /*
 **! module Image
 **! note
-**!	$Id: image.c,v 1.103 1998/04/20 01:42:21 mirar Exp $
+**!	$Id: image.c,v 1.104 1998/04/20 18:53:30 grubba Exp $
 **! class image
 **!
 **!	The main object of the <ref>Image</ref> module, this object
@@ -97,7 +97,7 @@
 
 #include "stralloc.h"
 #include "global.h"
-RCSID("$Id: image.c,v 1.103 1998/04/20 01:42:21 mirar Exp $");
+RCSID("$Id: image.c,v 1.104 1998/04/20 18:53:30 grubba Exp $");
 #include "pike_macros.h"
 #include "object.h"
 #include "constants.h"
@@ -957,8 +957,7 @@ void image_setcolor(INT32 args)
       error("illegal arguments to Image.image->setcolor()\n");
    getrgb(THIS,0,args,"Image.image->setcolor()");
    pop_n_elems(args);
-   THISOBJ->refs++;
-   push_object(THISOBJ);
+   ref_push_object(THISOBJ);
 }
 
 /*
@@ -1000,8 +999,7 @@ void image_setpixel(INT32 args)
    if (!THIS->img) return;
    setpixel_test(x,y);
    pop_n_elems(args);
-   THISOBJ->refs++;
-   push_object(THISOBJ);
+   ref_push_object(THISOBJ);
 }
 
 /*
@@ -1084,8 +1082,7 @@ void image_line(INT32 args)
 	    sp[2-args].u.integer,
 	    sp[3-args].u.integer);
    pop_n_elems(args);
-   THISOBJ->refs++;
-   push_object(THISOBJ);
+   ref_push_object(THISOBJ);
 }
 
 /*
@@ -1132,8 +1129,7 @@ void image_box(INT32 args)
 	   sp[2-args].u.integer,
 	   sp[3-args].u.integer);
    pop_n_elems(args);
-   THISOBJ->refs++;
-   push_object(THISOBJ);
+   ref_push_object(THISOBJ);
 }
 
 /*
@@ -1191,8 +1187,7 @@ void image_circle(INT32 args)
 	       y+circle_cos_mul(i+1,ry));
    
    pop_n_elems(args);
-   THISOBJ->refs++;
-   push_object(THISOBJ);
+   ref_push_object(THISOBJ);
 }
 
 static INLINE void get_rgba_group_from_array_index(rgba_group *rgba,struct array *v,INT32 index)
@@ -1401,8 +1396,7 @@ void image_tuned_box(INT32 args)
 	       sum=topright,topright=bottomright,bottomright=sum;
 
   pop_n_elems(args);
-  THISOBJ->refs++;
-  push_object(THISOBJ);
+  ref_push_object(THISOBJ);
 
   if (x2<0||y2<0||x1>=THIS->xsize||y1>=THIS->ysize) return;
   xw=x2-x1;
@@ -3289,7 +3283,7 @@ void image_select_colors(INT32 args)
    colors=sp[-args].u.integer;
    pop_n_elems(args);
 
-   push_object(THISOBJ); THISOBJ->refs++;
+   ref_push_object(THISOBJ);
    push_int(colors);
 
    o=clone_object(image_colortable_program,2);
@@ -3348,8 +3342,7 @@ void image_write_lsb_rgb(INT32 args)
 
    pop_n_elems(args);
    
-   THISOBJ->refs++;
-   push_object(THISOBJ);
+   ref_push_object(THISOBJ);
 }
 
 void image_read_lsb_rgb(INT32 args)
@@ -3426,8 +3419,7 @@ void image_write_lsb_grey(INT32 args)
 
    pop_n_elems(args);
    
-   THISOBJ->refs++;
-   push_object(THISOBJ);
+   ref_push_object(THISOBJ);
 }
 
 void image_read_lsb_grey(INT32 args)
@@ -3521,11 +3513,10 @@ static void image_index_magic(INT32 args)
       pop_stack();
       if (!png_object)
 	 png_object=init_image_png();
-      png_object->refs++;
-      push_object(png_object);
+      ref_push_object(png_object);
       return;
    }
-   push_object(THISOBJ); THISOBJ->refs++;
+   ref_push_object(THISOBJ);
    tmp=sp[-1], sp[-1]=sp[-2], sp[-2]=tmp;
    f_arrow(2);
 }

@@ -1,9 +1,9 @@
-/* $Id: x.c,v 1.15 1998/04/18 00:08:41 mirar Exp $ */
+/* $Id: x.c,v 1.16 1998/04/20 18:53:37 grubba Exp $ */
 
 /*
 **! module Image
 **! note
-**!	$Id: x.c,v 1.15 1998/04/18 00:08:41 mirar Exp $
+**!	$Id: x.c,v 1.16 1998/04/20 18:53:37 grubba Exp $
 **! submodule X
 **!
 **!	This submodule handles encoding and decoding of
@@ -29,7 +29,7 @@
 #include <winsock.h>
 #endif
 
-RCSID("$Id: x.c,v 1.15 1998/04/18 00:08:41 mirar Exp $");
+RCSID("$Id: x.c,v 1.16 1998/04/20 18:53:37 grubba Exp $");
 #include "pike_macros.h"
 #include "object.h"
 #include "constants.h"
@@ -426,7 +426,7 @@ static void image_x_encode_truecolor_masks(INT32 args)
   image_x_examine_mask(sp+5-args,"argument 4 (blue mask)",&gbits,&gshift);
   image_x_examine_mask(sp+6-args,"argument 5 (green mask)",&bbits,&bshift);
 
-   if (ct) ct->refs++;
+   if (ct) add_ref(ct);
    pop_n_elems(args-4);
    push_int(rbits);
    push_int(rshift);
@@ -779,7 +779,7 @@ static void image_x_decode_truecolor(INT32 args)
       if (sp[i-args].type!=T_INT) 
 	 error("Image.X.decode_truecolor: illegal argument %d\n",i+1);
 
-   (ps=sp[-args].u.string)->refs++;
+   add_ref(ps=sp[-args].u.string);
    s=(unsigned char*)ps->str;
    len=ps->len;
    width=sp[1-args].u.integer;
@@ -873,7 +873,7 @@ void image_x_decode_truecolor_masks(INT32 args)
    image_x_examine_mask(sp+7-args,"argument 8 (blue mask)",&gbits,&gshift);
    image_x_examine_mask(sp+8-args,"argument 9 (green mask)",&bbits,&bshift);
 
-   if (ct) ct->refs++;
+   if (ct) add_ref(ct);
    pop_n_elems(args-6);
    push_int(rbits);
    push_int(rshift);
@@ -925,7 +925,7 @@ void image_x_decode_pseudocolor(INT32 args)
       /* fix me some other day */ 
       error("Image.X.decode_pseudocolor: argument 7, colortable, needs to be a flat colortable\n");
 
-   (ps=sp[-args].u.string)->refs++;
+   add_ref(ps=sp[-args].u.string);
    s=(unsigned char*)ps->str;
    len=ps->len;
    width=sp[1-args].u.integer;
@@ -934,7 +934,7 @@ void image_x_decode_pseudocolor(INT32 args)
    alignbits=sp[4-args].u.integer;
    swapbytes=sp[5-args].u.integer;
 
-   ncto->refs++;
+   add_ref(ncto);
 
    pop_n_elems(args);
 

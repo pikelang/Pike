@@ -1,10 +1,10 @@
-/* $Id: blit.c,v 1.27 1998/01/16 22:09:07 grubba Exp $ */
+/* $Id: blit.c,v 1.28 1998/04/20 18:53:27 grubba Exp $ */
 #include "global.h"
 
 /*
 **! module Image
 **! note
-**!	$Id: blit.c,v 1.27 1998/01/16 22:09:07 grubba Exp $
+**!	$Id: blit.c,v 1.28 1998/04/20 18:53:27 grubba Exp $
 **! class image
 */
 
@@ -296,8 +296,7 @@ void image_paste(INT32 args)
    if(x1 >= THIS->xsize || y1 >= THIS->ysize) /* Per */
    {
      pop_n_elems(args);
-     THISOBJ->refs++;
-     push_object(THISOBJ);
+     ref_push_object(THISOBJ);
      return;
    }   
    x2=x1+img->xsize-1;
@@ -306,8 +305,7 @@ void image_paste(INT32 args)
    if(x2 < 0 || y2 < 0) /* Per */
    {
      pop_n_elems(args);
-     THISOBJ->refs++;
-     push_object(THISOBJ);
+     ref_push_object(THISOBJ);
      return;
    }   
    blitwidth=MINIMUM(x2,THIS->xsize-1)-MAXIMUM(x1,0)+1;
@@ -321,8 +319,7 @@ void image_paste(INT32 args)
 	    img->xsize);
 
    pop_n_elems(args);
-   THISOBJ->refs++;
-   push_object(THISOBJ);
+   ref_push_object(THISOBJ);
 }
 
 /*
@@ -376,8 +373,7 @@ void image_paste_alpha(INT32 args)
    if(x1 >= THIS->xsize || y1 >= THIS->ysize) /* Per */
    {
      pop_n_elems(args);
-     THISOBJ->refs++;
-     push_object(THISOBJ);
+     ref_push_object(THISOBJ);
      return;
    }   
 
@@ -405,8 +401,7 @@ void image_paste_alpha(INT32 args)
      THREADS_DISALLOW();
    }
    pop_n_elems(args);
-   THISOBJ->refs++;
-   push_object(THISOBJ);
+   ref_push_object(THISOBJ);
 }
 
 /*
@@ -502,8 +497,7 @@ CHRONO("image_paste_mask begin");
 CHRONO("image_paste_mask end");
 
    pop_n_elems(args);
-   THISOBJ->refs++;
-   push_object(THISOBJ);
+   ref_push_object(THISOBJ);
 }
 
 /*
@@ -609,8 +603,7 @@ CHRONO("image_paste_alpha_color begin");
 CHRONO("image_paste_alpha_color end");
 
    pop_n_elems(args);
-   THISOBJ->refs++;
-   push_object(THISOBJ);
+   ref_push_object(THISOBJ);
 }
 
 void img_box(INT32 x1,INT32 y1,INT32 x2,INT32 y2)

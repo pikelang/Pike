@@ -1,5 +1,5 @@
 #include "global.h"
-RCSID("$Id: threads.c,v 1.68 1998/04/13 14:31:59 grubba Exp $");
+RCSID("$Id: threads.c,v 1.69 1998/04/20 18:53:24 grubba Exp $");
 
 int num_threads = 1;
 int threads_disabled = 0;
@@ -281,8 +281,7 @@ void f_all_threads(INT32 args)
       struct object *o =
 	(struct object *)(((char *)s)-((((struct object *)NULL)->storage)-
 				       ((char*)NULL)));
-      o->refs++;
-      push_object(o);
+      ref_push_object(o);
     }
   mt_unlock( & thread_table_lock );
   f_aggregate(sp-oldsp);
@@ -403,8 +402,7 @@ void f_thread_create(INT32 args)
       threads_evaluator_callback=add_to_callback(&evaluator_callbacks,
 						 check_threads, 0,0);
     }
-    push_object(arg->id);
-    arg->id->refs++;
+    ref_push_object(arg->id);
     THREADS_FPRINTF((stderr,"THREAD_CREATE -> t:%08x\n",(unsigned int)arg->id));
   } else {
     free_object(arg->id);
@@ -429,8 +427,7 @@ void f_thread_set_concurrency(INT32 args)
 void f_this_thread(INT32 args)
 {
   pop_n_elems(args);
-  push_object(thread_id);
-  thread_id->refs++;
+  ref_push_object(thread_id);
 }
 
 #define THIS_MUTEX ((struct mutex_storage *)(fp->current_storage))
@@ -563,8 +560,7 @@ void init_mutex_key_obj(struct object *o)
   THREADS_FPRINTF((stderr, "KEY k:%08x, o:%08x\n",
 		   (unsigned int)THIS_KEY, (unsigned int)thread_id));
   THIS_KEY->mut=0;
-  THIS_KEY->owner=thread_id;
-  thread_id->refs++;
+  add_ref(THIS_KEY->owner=thread_id);
   THIS_KEY->initialized=1;
 }
 

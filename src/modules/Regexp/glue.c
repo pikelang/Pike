@@ -18,7 +18,7 @@
 #include "threads.h"
 #include "module_support.h"
 
-RCSID("$Id: glue.c,v 1.10 1998/03/28 14:37:54 grubba Exp $");
+RCSID("$Id: glue.c,v 1.11 1998/04/20 18:53:50 grubba Exp $");
 
 #ifdef USE_SYSTEM_REGEXP
 #include <regexp.h>
@@ -139,7 +139,7 @@ static void regexp_split(INT32 args)
   if (match) {
     int i,j;
     
-    s->refs++;
+    add_ref(s);
     pop_n_elems(args);
 
     for (i=1; i < nmatch; i++) {
@@ -160,7 +160,7 @@ static void regexp_split(INT32 args)
   if(pike_regexec(r=THIS->regexp, s->str))
   {
     int i,j;
-    s->refs++;
+    add_ref(s);
     pop_n_elems(args);
     for(j=i=1;i<NSUBEXP;i++)
     {

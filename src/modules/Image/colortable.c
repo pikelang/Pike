@@ -1,12 +1,12 @@
 #include "global.h"
 #include <config.h>
 
-/* $Id: colortable.c,v 1.43 1998/04/20 00:10:05 mirar Exp $ */
+/* $Id: colortable.c,v 1.44 1998/04/20 18:53:28 grubba Exp $ */
 
 /*
 **! module Image
 **! note
-**!	$Id: colortable.c,v 1.43 1998/04/20 00:10:05 mirar Exp $
+**!	$Id: colortable.c,v 1.44 1998/04/20 18:53:28 grubba Exp $
 **! class colortable
 **!
 **!	This object keeps colortable information,
@@ -21,7 +21,7 @@
 #undef COLORTABLE_DEBUG
 #undef COLORTABLE_REDUCE_DEBUG
 
-RCSID("$Id: colortable.c,v 1.43 1998/04/20 00:10:05 mirar Exp $");
+RCSID("$Id: colortable.c,v 1.44 1998/04/20 18:53:28 grubba Exp $");
 
 #include <math.h> /* fabs() */
 
@@ -1987,7 +1987,7 @@ static void image_colortable_add(INT32 args)
    if (!args) 
    {
       pop_n_elems(args);
-      push_object(THISOBJ); THISOBJ->refs++;
+      ref_push_object(THISOBJ);
       return;
    }
    
@@ -2008,7 +2008,7 @@ static void image_colortable_add(INT32 args)
 #endif
 	    _img_add_colortable(THIS,ct2);
 	    pop_n_elems(args);
-	    push_object(THISOBJ); THISOBJ->refs++;
+	    ref_push_object(THISOBJ);
 	    return;
 	 }
       }
@@ -2133,7 +2133,7 @@ static void image_colortable_add(INT32 args)
    }
    else error("Illegal argument(s) to Image.colortable->add|create\n");
    pop_n_elems(args);
-   push_object(THISOBJ); THISOBJ->refs++;
+   ref_push_object(THISOBJ);
 
 #ifdef COLORTABLE_DEBUG
    fprintf(stderr,"COLORTABLE done (%lx created, %d args was left, sp-1=%lx)\n",THIS,args,sp-1);
@@ -2219,8 +2219,7 @@ void image_colortable_operator_plus(INT32 args)
 
    int i;
 
-   THISOBJ->refs++;
-   push_object(THISOBJ);
+   ref_push_object(THISOBJ);
    o=clone_object(THISOBJ->prog,1);
    dest=(struct neo_colortable*)get_storage(o,image_colortable_program);
 
@@ -2272,8 +2271,7 @@ void image_colortable_operator_minus(INT32 args)
 
    int i;
 
-   THISOBJ->refs++;
-   push_object(THISOBJ);
+   ref_push_object(THISOBJ);
    o=clone_object(THISOBJ->prog,1);
    dest=(struct neo_colortable*)get_storage(o,image_colortable_program);
 
@@ -2445,7 +2443,7 @@ void image_colortable_full(INT32 args)
       THIS->lookup_mode=NCT_FULL;
    }
    pop_n_elems(args);
-   push_object(THISOBJ); THISOBJ->refs++;
+   ref_push_object(THISOBJ);
 }
 
 /*
@@ -2556,7 +2554,7 @@ void image_colortable_cubicles(INT32 args)
    }
 
    pop_n_elems(args);
-   push_object(THISOBJ); THISOBJ->refs++;
+   ref_push_object(THISOBJ);
 }
 
 static  int _cub_find_2cub_add(int *i,int *p,
@@ -3284,7 +3282,7 @@ void image_colortable_spacefactors(INT32 args)
    THIS->spacefactor.b=sp[2-args].u.integer;
 
    pop_n_elems(args);
-   push_object(THISOBJ); THISOBJ->refs++;
+   ref_push_object(THISOBJ);
 }
 
 /*
@@ -3383,7 +3381,7 @@ void image_colortable_floyd_steinberg(INT32 args)
    THIS->dither_type=NCTD_FLOYD_STEINBERG;
 
    pop_n_elems(args);
-   push_object(THISOBJ); THISOBJ->refs++;
+   ref_push_object(THISOBJ);
 }
 
 /* called by GIF encoder */
@@ -3408,7 +3406,7 @@ void image_colortable_nodither(INT32 args)
 {
    THIS->dither_type=NCTD_NONE;
    pop_n_elems(args);
-   push_object(THISOBJ); THISOBJ->refs++;
+   ref_push_object(THISOBJ);
 }
 
 /*
@@ -3505,7 +3503,7 @@ void image_colortable_randomcube(INT32 args)
    THIS->dither_type=NCTD_RANDOMCUBE;
 
    pop_n_elems(args);
-   push_object(THISOBJ); THISOBJ->refs++;
+   ref_push_object(THISOBJ);
 }
 
 void image_colortable_randomgrey(INT32 args)
@@ -3525,7 +3523,7 @@ void image_colortable_randomgrey(INT32 args)
    THIS->dither_type=NCTD_RANDOMGREY;
 
    pop_n_elems(args);
-   push_object(THISOBJ); THISOBJ->refs++;
+   ref_push_object(THISOBJ);
 }
 
 static int* ordered_calculate_errors(int dxs,int dys)
@@ -3852,7 +3850,7 @@ void image_colortable_ordered(INT32 args)
    THIS->dither_type=NCTD_ORDERED;
 
    pop_n_elems(args);
-   push_object(THISOBJ); THISOBJ->refs++;
+   ref_push_object(THISOBJ);
 }
 
 /*

@@ -22,7 +22,7 @@
 #include <fcntl.h>
 
 #include "global.h"
-RCSID("$Id: pipe.c,v 1.20 1998/04/06 20:40:04 hubbe Exp $");
+RCSID("$Id: pipe.c,v 1.21 1998/04/20 18:53:46 grubba Exp $");
 
 #include "threads.h"
 #include "stralloc.h"
@@ -158,8 +158,7 @@ static INLINE void output_try_write_some(struct object *obj);
  */
 static void push_callback(int no)
 {
-  sp->u.object=THISOBJ;
-  THISOBJ->refs++;
+  add_ref(sp->u.object=THISOBJ);
   sp->subtype=no+fp->context.identifier_level;
   sp->type=T_FUNCTION;
   sp++;
@@ -278,7 +277,7 @@ static INLINE int append_buffer(struct pike_string *s)
      b->next=NULL;
      b->s=s;
      sbuffers += s->len;
-     s->refs++;
+     add_ref(s);
 
      if (THIS->lastbuffer)
        THIS->lastbuffer->next=b;
@@ -299,10 +298,10 @@ static void low_start(void)
   struct output *o;
 
 
-  THISOBJ->refs++;		/* dont kill yourself now */
+  add_ref(THISOBJ);		/* dont kill yourself now */
   for(obj=THIS->firstoutput;obj;obj=next)
   {
-    obj->refs++; /* Hang on PLEASE!! /hubbe */
+    add_ref(obj);		/* Hang on PLEASE!! /hubbe */
     o=(struct output *)(obj->storage);
     if (o->obj && o->mode==O_SLEEP)
     {
@@ -518,7 +517,7 @@ static INLINE struct pike_string* gimme_some_data(unsigned long pos)
 
    if (pos==this->pos)
    {
-      this->firstbuffer->s->refs++;
+      add_ref(this->firstbuffer->s);
       return this->firstbuffer->s;
    }
    return make_shared_binary_string(this->firstbuffer->s->str+
@@ -717,7 +716,7 @@ static void pipe_input(INT32 args)
    i->u.obj=obj;
    nobjects++;
    i->type=I_OBJ;
-   i->u.obj->refs++;
+   add_ref(i->u.obj);
    i->set_nonblocking_offset=find_identifier("set_nonblocking",i->u.obj->prog);
    i->set_blocking_offset=find_identifier("set_blocking",i->u.obj->prog);
 
@@ -784,8 +783,7 @@ static void pipe_write(INT32 args)
   i=new_input();
   i->type=I_STRING;
   nstrings++;
-  i->u.str=sp[-args].u.string;
-  i->u.str->refs++;
+  add_ref(i->u.str=sp[-args].u.string);
   pop_n_elems(args-1);
 }
 
@@ -853,7 +851,7 @@ static void pipe_output(INT32 args)
   } 
 
   THIS->living_outputs++;
-  THISOBJ->refs++;		/* Weird */
+  add_ref(THISOBJ);		/* Weird */
 
   /* Allocate a new struct output */
   obj=clone_object(output_program,0);
@@ -863,8 +861,7 @@ static void pipe_output(INT32 args)
   noutputs++;
   o->obj=NULL;
 
-  o->obj=sp[-args].u.object;
-  o->obj->refs++;
+  add_ref(o->obj=sp[-args].u.object);
 
   o->write_offset=find_identifier("write",o->obj->prog);
   o->set_nonblocking_offset=find_identifier("set_nonblocking",o->obj->prog);
@@ -885,8 +882,7 @@ static void pipe_output(INT32 args)
      o->pos=0; */
   o->pos=THIS->pos;
 
-  push_object(obj);
-  obj->refs++;
+  ref_push_object(obj);
   apply(o->obj,"set_id",1);
   pop_stack();
 
@@ -1079,7 +1075,7 @@ void close_and_free_everything(struct object *thisobj,struct pipe *p)
    p->done=1;
 
    if (thisobj) 
-      thisobj->refs++; /* don't kill object during this */
+      add_ref(thisobj); /* don't kill object during this */
 
    while (p->firstbuffer)
    {

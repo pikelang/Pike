@@ -25,7 +25,7 @@ struct callback *gc_evaluator_callback=0;
 #include "main.h"
 #include <math.h>
 
-RCSID("$Id: gc.c,v 1.34 1998/04/10 04:48:41 hubbe Exp $");
+RCSID("$Id: gc.c,v 1.35 1998/04/20 18:53:16 grubba Exp $");
 
 /* Run garbage collect approximate every time we have
  * 20 percent of all arrays, objects and programs is
@@ -403,7 +403,7 @@ INT32 gc_check(void *a)
     return 0;
   }
 #endif
-  return getmark(a)->refs++;
+  return add_ref(getmark(a));
 }
 
 static void init_gc(void)

@@ -1,5 +1,5 @@
 /*
- * $Id: odbc_result.c,v 1.7 1997/11/02 22:20:51 grubba Exp $
+ * $Id: odbc_result.c,v 1.8 1998/04/20 18:53:43 grubba Exp $
  *
  * Pike  interface to ODBC compliant databases
  *
@@ -17,7 +17,7 @@
 #ifdef HAVE_ODBC
 
 #include "global.h"
-RCSID("$Id: odbc_result.c,v 1.7 1997/11/02 22:20:51 grubba Exp $");
+RCSID("$Id: odbc_result.c,v 1.8 1998/04/20 18:53:43 grubba Exp $");
 
 #include "interpret.h"
 #include "object.h"
@@ -224,8 +224,7 @@ static void odbc_fix_fields(void)
   }
   f_aggregate(PIKE_ODBC_RES->num_fields);
 
-  sp[-1].u.array->refs++;
-  PIKE_ODBC_RES->fields = sp[-1].u.array;
+  add_ref(PIKE_ODBC_RES->fields = sp[-1].u.array);
   pop_stack();
 
   PIKE_ODBC_RES->field_info = (struct field_info *)
@@ -287,8 +286,7 @@ static void f_create(INT32 args)
     error("Bad argument 1 to odbc_result()\n");
   }
  
-  PIKE_ODBC_RES->obj = sp[-args].u.object;
-  PIKE_ODBC_RES->obj->refs++;
+  add_ref(PIKE_ODBC_RES->obj = sp[-args].u.object);
   PIKE_ODBC_RES->hstmt = PIKE_ODBC_RES->odbc->hstmt;
   PIKE_ODBC_RES->odbc->hstmt = SQL_NULL_HSTMT;
   
@@ -325,8 +323,7 @@ static void f_fetch_fields(INT32 args)
 {
   pop_n_elems(args);
 
-  PIKE_ODBC_RES->fields->refs++;
-  push_array(PIKE_ODBC_RES->fields);
+  ref_push_array(PIKE_ODBC_RES->fields);
 }
  
 /* int|array(string|float|int) fetch_row() */

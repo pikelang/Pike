@@ -1,5 +1,5 @@
 /*
- * $Id: crypto.c,v 1.24 1998/01/13 23:01:11 hubbe Exp $
+ * $Id: crypto.c,v 1.25 1998/04/20 18:53:55 grubba Exp $
  *
  * A pike module for getting access to some common cryptos.
  *
@@ -237,8 +237,7 @@ static void f_create(INT32 args)
     if (args != 1) {
       error("Too many arguments to crypto->create()\n");
     }
-    THIS->object = sp[-args].u.object;
-    THIS->object->refs++;
+    add_ref(THIS->object = sp[-args].u.object);
   }
   pop_stack(); /* Just one element left on the stack in both cases */
 
@@ -435,7 +434,7 @@ static void f_unpad(INT32 args)
   if (len < 0) 
     error("crypto->unpad(): String to short to unpad\n");
   
-  str->refs++;
+  add_ref(str);
   pop_stack();
   push_string(make_shared_binary_string(str->str, len));
   free_string(str);

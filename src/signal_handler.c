@@ -22,7 +22,7 @@
 #include "builtin_functions.h"
 #include <signal.h>
 
-RCSID("$Id: signal_handler.c,v 1.47 1998/04/18 06:30:21 hubbe Exp $");
+RCSID("$Id: signal_handler.c,v 1.48 1998/04/20 18:53:22 grubba Exp $");
 
 #ifdef HAVE_PASSWD_H
 # include <passwd.h>
@@ -824,7 +824,7 @@ void f_create_process(INT32 args)
       error("Failed to start process (%d).\n",GetLastError());
     }
   }
-#else /* __NT__ */
+#else /* !__NT__ */
   {
     struct svalue *stack_save=sp;
     ONERROR err;
@@ -954,7 +954,7 @@ void f_create_process(INT32 args)
 	  for(e=0;e<storage.wanted_gids_array->size;e++)
 	    if(storage.wanted_gids_array->item[e].type != T_INT)
 	      error("Invalid type for setgroups.\n");
-	  storage.wanted_gids_array->refs++;
+	  add_ref(storage.wanted_gids_array);
 	  do_initgroups=0;
 	}else{
 	  error("Invalid type for setgroups.\n");

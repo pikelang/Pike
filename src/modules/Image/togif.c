@@ -2,7 +2,7 @@
 
 togif 
 
-$Id: togif.c,v 1.30 1998/01/16 22:09:14 grubba Exp $ 
+$Id: togif.c,v 1.31 1998/04/20 18:53:34 grubba Exp $ 
 
 old GIF API compat stuff
 
@@ -11,7 +11,7 @@ old GIF API compat stuff
 /*
 **! module Image
 **! note
-**!	$Id: togif.c,v 1.30 1998/01/16 22:09:14 grubba Exp $
+**!	$Id: togif.c,v 1.31 1998/04/20 18:53:34 grubba Exp $
 **! class image
 */
 
@@ -107,8 +107,7 @@ void image_gif_begin(INT32 args)
 	 pop_n_elems(args);
 	 push_int(THIS->xsize);
 	 push_int(THIS->ysize);
-	 THISOBJ->refs++;
-	 push_object(THISOBJ);
+	 ref_push_object(THISOBJ);
 	 push_int(i);
 	 o=clone_object(image_colortable_program,2);
       }
@@ -169,8 +168,7 @@ static void img_gif_add(INT32 args,int fs,int lm,
    else if (args>3 && sp[2-args].type==T_INT)
    {
       INT32 i=sp[2-args].u.integer;
-      THISOBJ->refs++;
-      push_object(THISOBJ);
+      ref_push_object(THISOBJ);
       push_int(i);
       ncto=clone_object(image_colortable_program,2);
    }
@@ -187,8 +185,7 @@ static void img_gif_add(INT32 args,int fs,int lm,
    
    if (!ncto)
    {
-      THISOBJ->refs++;
-      push_object(THISOBJ);
+      ref_push_object(THISOBJ);
       push_int(255);
       ncto=clone_object(image_colortable_program,2);
    }
@@ -198,8 +195,7 @@ static void img_gif_add(INT32 args,int fs,int lm,
 
    pop_n_elems(args);
 
-   THISOBJ->refs++;
-   push_object(THISOBJ);
+   ref_push_object(THISOBJ);
    push_object(ncto);
    push_int(x);
    push_int(y);
@@ -277,7 +273,7 @@ static void img_encode_gif(rgb_group *transparent,int fs,INT32 args)
    {
       if (sp[-args].type==T_OBJECT)
       {
-	 (co=sp[-args].u.object)->refs++;
+	 add_ref(co=sp[-args].u.object);
 	 pop_n_elems(args);
       }
       else if (sp[-args].type==T_ARRAY)
@@ -286,7 +282,7 @@ static void img_encode_gif(rgb_group *transparent,int fs,INT32 args)
       {
 	 unsigned long numcolors=sp[-args].u.integer;
 	 pop_n_elems(args);
-	 push_object(THISOBJ); THISOBJ->refs++;
+	 ref_push_object(THISOBJ);
 	 push_int(numcolors);
 	 co=clone_object(image_colortable_program,2);
       }
@@ -295,11 +291,11 @@ static void img_encode_gif(rgb_group *transparent,int fs,INT32 args)
    }
    else
    {
-      push_object(THISOBJ); THISOBJ->refs++;
+      ref_push_object(THISOBJ);
       push_int(256);
       co=clone_object(image_colortable_program,2);
    }
-   push_object(THISOBJ); THISOBJ->refs++;
+   ref_push_object(THISOBJ);
    push_object(co);
    if (transparent)
    {

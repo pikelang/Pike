@@ -4,7 +4,7 @@
 ||| See the files COPYING and DISCLAIMER for more information.
 \*/
 #include "global.h"
-RCSID("$Id: mpz_glue.c,v 1.31 1998/04/10 22:26:04 hubbe Exp $");
+RCSID("$Id: mpz_glue.c,v 1.32 1998/04/20 18:53:25 grubba Exp $");
 #include "gmp_machine.h"
 
 #if !defined(HAVE_LIBGMP)
@@ -284,7 +284,7 @@ static void mpzmod_cast(INT32 args)
     error("Bad argument 1 to mpz->cast().\n");
 
   s = sp[-args].u.string;
-  s->refs++;
+  add_ref(s);
 
   pop_n_elems(args);
 

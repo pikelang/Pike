@@ -1,5 +1,5 @@
 #include "global.h"
-RCSID("$Id: png.c,v 1.13 1998/04/08 03:46:11 mirar Exp $");
+RCSID("$Id: png.c,v 1.14 1998/04/20 18:53:35 grubba Exp $");
 
 #include "config.h"
 
@@ -224,7 +224,7 @@ static void image_png___decode(INT32 args)
 	sp[1-args].u.integer!=0))
       nocrc=1;
    
-   (str=sp[-args].u.string)->refs++;
+   add_ref(str=sp[-args].u.string);
    data=(unsigned char*)str->str;
    len=str->len;
 
@@ -972,7 +972,7 @@ static void image_png__decode(INT32 args)
    else if (sp[-1].type!=T_ARRAY)
       error("Image.PNG._decode: Illegal argument\n");
 
-   (a=sp[-1].u.array)->refs++;
+   add_ref(a=sp[-1].u.array);
 
    pop_n_elems(1);
 
@@ -1626,14 +1626,14 @@ struct object *init_image_png(void)
      push_text("inflate");
      f_index(2);
      gz_inflate=program_from_svalue(sp-1);
-     gz_inflate->refs++;
+     add_ref(gz_inflate);
      pop_stack();
 
      stack_dup();
      push_text("deflate");
      f_index(2);
      gz_deflate=program_from_svalue(sp-1);
-     gz_deflate->refs++;
+     add_ref(gz_deflate);
      pop_stack();
 
      stack_dup();

@@ -5,7 +5,7 @@
 \*/
 
 /*
- * $Id: cpp.c,v 1.22 1998/04/01 00:47:46 hubbe Exp $
+ * $Id: cpp.c,v 1.23 1998/04/20 18:53:14 grubba Exp $
  */
 #include "global.h"
 #include "dynamic_buffer.h"
@@ -595,7 +595,7 @@ static INT32 low_cpp(struct cpp *this,
 	  dynamic_buffer tmp;
 	  struct define_argument arguments [MAX_ARGS];
 	  
-	  if(s) s->refs++;
+	  if(s) add_ref(s);
 	  
 	  if(d->args>=0)
 	  {

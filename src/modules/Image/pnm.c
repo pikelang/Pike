@@ -1,9 +1,9 @@
-/* $Id: pnm.c,v 1.9 1998/01/13 22:59:24 hubbe Exp $ */
+/* $Id: pnm.c,v 1.10 1998/04/20 18:53:32 grubba Exp $ */
 
 /*
 **! module Image
 **! note
-**!	$Id: pnm.c,v 1.9 1998/01/13 22:59:24 hubbe Exp $
+**!	$Id: pnm.c,v 1.10 1998/04/20 18:53:32 grubba Exp $
 **! class image
 */
 
@@ -58,8 +58,7 @@ void image_toppm(INT32 args)
 {
    pop_n_elems(args);
    
-   THISOBJ->refs++;
-   push_object(THISOBJ);
+   ref_push_object(THISOBJ);
 
    img_pnm_encode_binary(1);
 }
@@ -76,7 +75,6 @@ void image_frompnm(INT32 args)
    if (!THIS->img) error("out of memory\n");
    MEMCPY(THIS->img,img->img,img->xsize*img->ysize*sizeof(rgb_group));
    pop_n_elems(1);
-   THISOBJ->refs++;
-   push_object(THISOBJ);
+   ref_push_object(THISOBJ);
 }
 

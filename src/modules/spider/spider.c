@@ -43,7 +43,7 @@
 #include "threads.h"
 #include "operators.h"
 
-RCSID("$Id: spider.c,v 1.66 1998/04/12 07:07:00 per Exp $");
+RCSID("$Id: spider.c,v 1.67 1998/04/20 18:54:00 grubba Exp $");
 
 #ifdef HAVE_PWD_H
 #include <pwd.h>
@@ -159,8 +159,7 @@ void f_parse_accessed_database(INT32 args)
 
   push_string(make_shared_string("\n"));
   f_divide(2);
-  arg = sp[-1].u.array;
-  arg->refs++;
+  add_ref(arg = sp[-1].u.array);
   /* The initial string is gone, but the array is there now. */
   pop_stack();
 
@@ -335,18 +334,15 @@ void f_parse_html(INT32 args)
     return;
   }
 
-  ss->refs++;
+  add_ref(ss);
 
-  single=sp[1-args].u.mapping; 
-  cont=sp[2-args].u.mapping; 
-  cont->refs++;
-  single->refs++;
+  add_ref(single=sp[1-args].u.mapping);
+  add_ref(cont=sp[2-args].u.mapping);
 
   if (args>3)
   {
     f_aggregate(args-3);
-    extra_args=sp[-1].u.array;
-    extra_args->refs++;
+    add_ref(extra_args=sp[-1].u.array);
     pop_stack();
   }
   else extra_args=NULL;
@@ -390,16 +386,13 @@ void f_parse_html_lines(INT32 args)
 
   sp[-args].type=T_INT;
 
-  single=sp[1-args].u.mapping; 
-  cont=sp[2-args].u.mapping; 
-  cont->refs++;
-  single->refs++;
-
+  add_ref(single=sp[1-args].u.mapping);
+  add_ref(cont=sp[2-args].u.mapping);
+ 
   if (args>3)
   {
     f_aggregate(args-3);
-    extra_args=sp[-1].u.array;
-    extra_args->refs++;
+    add_ref(extra_args=sp[-1].u.array);
     pop_stack();
   }
   else extra_args=NULL;
@@ -645,8 +638,7 @@ void do_html_parse(struct pike_string *ss,
 
       push_string(make_shared_binary_string((char *)s+n, j-n));
       f_lower_case(1);
-      sval2.u.string = sp[-1].u.string;
-      sval2.u.string->refs++;
+      add_ref(sval2.u.string = sp[-1].u.string);
       sval2.type=T_STRING;
       pop_stack();
 
@@ -672,7 +664,7 @@ void do_html_parse(struct pike_string *ss,
 	k=push_parsed_tag(s+j,len-j); 
 	if (extra_args)
 	{
-	  extra_args->refs++;
+	  add_ref(extra_args);
 	  push_array_items(extra_args);
 	}
 
@@ -738,7 +730,7 @@ void do_html_parse(struct pike_string *ss,
 
 	if (extra_args)
 	{
-	  extra_args->refs++;
+	  add_ref(extra_args);
 	  push_array_items(extra_args);
 	}
 
@@ -899,8 +891,7 @@ void do_html_parse_lines(struct pike_string *ss,
 
       push_string(make_shared_binary_string((char *)s+i, j-i));
       f_lower_case(1);
-      sval2.u.string = sp[-1].u.string;
-      sval2.u.string->refs++;
+      add_ref(sval2.u.string = sp[-1].u.string);
       sval2.type=T_STRING;
       pop_stack();
 
@@ -933,7 +924,7 @@ void do_html_parse_lines(struct pike_string *ss,
 	push_int(line);
 	if (extra_args)
 	{
-	  extra_args->refs++;
+	  add_ref(extra_args);
 	  push_array_items(extra_args);
 	}
 	apply_svalue(&sval1,3+(extra_args?extra_args->size:0));
@@ -975,7 +966,7 @@ void do_html_parse_lines(struct pike_string *ss,
 	push_int(line);
 	if (extra_args)
 	{
-	  extra_args->refs++;
+	  add_ref(extra_args);
 	  push_array_items(extra_args);
 	}
 	apply_svalue(&sval1,4+(extra_args?extra_args->size:0));
@@ -1125,8 +1116,7 @@ void f_mark_fd(INT32 args)
     {
       if(fd_marks[fd])
       {
-	fd_marks[fd]->refs++;
-	push_string(fd_marks[fd]);
+	ref_push_string(fd_marks[fd]);
       } else {
 	push_text("");
       }
@@ -1142,8 +1132,7 @@ void f_mark_fd(INT32 args)
     }
   }
   
-  s=sp[-args+1].u.string;
-  s->refs++;
+  add_ref(s=sp[-args+1].u.string);
   if(fd_marks[fd])
     free_string(fd_marks[fd]);
   fd_marks[fd]=s;
@@ -1182,8 +1171,7 @@ void f_fcgi_create_listen_socket(INT32 args)
 static void program_name(struct program *p)
 {
   char *f;
-  p->refs++;
-  push_program(p);
+  ref_push_program(p);
   APPLY_MASTER("program_name", 1);
   if(sp[-1].type == T_STRING)
     return;
@@ -1285,20 +1273,22 @@ void do_shuffle(void *_a)
   {
     int nread, written=0;
     nread = fd_read(a->from_fd, a->buffer, MY_MIN(BUFFER,a->len));
-    if(nread <= 0)
+    if(nread <= 0) {
       if(errno == EINTR)
 	continue;
       else
 	break;
+    }
 
     while(nread)
     {
       int nsent = fd_write(a->to_fd, a->buffer+written, nread);
-      if(nsent < 0)
+      if(nsent < 0) {
 	if(errno != EINTR)
 	  goto end;
 	else 
 	  continue;
+      }
       written += nsent;
       a->sent += nsent;
       nread -= nsent;
@@ -1362,8 +1352,8 @@ void f_shuffle(INT32 args)
   apply(a->from, "query_fd", 0);
   get_all_args("shuffle", 2, "%d%d", &a->to_fd, &a->from_fd);
 
-  a->from->refs++; 
-  a->to->refs++; 
+  add_ref(a->from);
+  add_ref(a->to); 
   
   assign_svalue_no_free(&a->cb, q);
   assign_svalue_no_free(&a->args, w);
@@ -1380,9 +1370,8 @@ void f_shuffle(INT32 args)
 
 void pike_module_init(void) 
 {
-  push_string(make_shared_string(""));
+  ref_push_string(make_shared_string(""));
   empty_string = sp[-1];
-  empty_string.u.string->refs++;
   pop_stack();
 
 
