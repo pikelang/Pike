@@ -5,7 +5,7 @@
 \*/
 /**/
 #include "global.h"
-RCSID("$Id: pike_types.c,v 1.153 2001/02/26 20:06:41 grubba Exp $");
+RCSID("$Id: pike_types.c,v 1.154 2001/02/27 01:05:15 mast Exp $");
 #include <ctype.h>
 #include "svalue.h"
 #include "pike_types.h"
@@ -115,7 +115,7 @@ void check_type_string(struct pike_type *s)
 
   if(type_length(s->str) != s->len)
   {
-    stupid_describe_type(s->str,s->len);
+    simple_describe_type(s);
     fatal("Length of type is wrong. (should be %ld, is %ld)\n",
 	  PTRDIFF_T_TO_LONG(type_length(s->str)),
 	  PTRDIFF_T_TO_LONG(s->len));
@@ -783,60 +783,60 @@ void stupid_describe_type(char *a, ptrdiff_t len)
   ptrdiff_t e;
   for(e=0;e<len;e++)
   {
-    if(e) printf(" ");
+    if(e) fputs(" ", stderr);
     switch(EXTRACT_UCHAR(a+e))
     {
       case '0': case '1': case '2': case '3': case '4':
       case '5': case '6': case '7': case '8': case '9':
-	printf("%c",EXTRACT_UCHAR(a+e));
+	fprintf(stderr, "%c",EXTRACT_UCHAR(a+e));
 	break;
 
-      case T_SCOPE: printf("scope"); break;
-      case T_TUPLE: printf("tuple"); break;
-      case T_ASSIGN: printf("="); break;
+      case T_SCOPE: fputs("scope", stderr); break;
+      case T_TUPLE: fputs("tuple", stderr); break;
+      case T_ASSIGN: fputs("=", stderr); break;
       case T_INT:
 	{
 	  INT32 min=extract_type_int(a+e+1);
 	  INT32 max=extract_type_int(a+e+1+sizeof(INT32));
-	  printf("int");
+	  fprintf(stderr, "int");
 	  if(min!=MIN_INT32 || max!=MAX_INT32)
-	    printf("(%ld..%ld)",(long)min,(long)max);
+	    fprintf(stderr, "(%ld..%ld)",(long)min,(long)max);
 	  e+=sizeof(INT32)*2;
 	  break;
 	}
-      case T_FLOAT: printf("float"); break;
-      case T_STRING: printf("string"); break;
-      case T_TYPE: printf("type"); break;
-      case T_PROGRAM: printf("program"); break;
+      case T_FLOAT: fputs("float", stderr); break;
+      case T_STRING: fputs("string", stderr); break;
+      case T_TYPE: fputs("type", stderr); break;
+      case T_PROGRAM: fputs("program", stderr); break;
       case T_OBJECT:
-	printf("object(%s %ld)",
-	       EXTRACT_UCHAR(a+e+1)?"is":"implements",
-	       (long)extract_type_int(a+e+2));
+	fprintf(stderr, "object(%s %ld)",
+		EXTRACT_UCHAR(a+e+1)?"is":"implements",
+		(long)extract_type_int(a+e+2));
 	e+=sizeof(INT32)+1;
 	break;
-      case T_FUNCTION: printf("function"); break;
-      case T_ARRAY: printf("array"); break;
-      case T_MAPPING: printf("mapping"); break;
-      case T_MULTISET: printf("multiset"); break;
+      case T_FUNCTION: fputs("function", stderr); break;
+      case T_ARRAY: fputs("array", stderr); break;
+      case T_MAPPING: fputs("mapping", stderr); break;
+      case T_MULTISET: fputs("multiset", stderr); break;
 	
-      case PIKE_T_UNKNOWN: printf("unknown"); break;
-      case T_MANY: printf("many"); break;
-      case T_OR: printf("or"); break;
-      case T_AND: printf("and"); break;
-      case T_NOT: printf("not"); break;
-      case T_VOID: printf("void"); break;
-      case T_ZERO: printf("zero"); break;
-      case T_MIXED: printf("mixed"); break;
+      case PIKE_T_UNKNOWN: fputs("unknown", stderr); break;
+      case T_MANY: fputs("many", stderr); break;
+      case T_OR: fputs("or", stderr); break;
+      case T_AND: fputs("and", stderr); break;
+      case T_NOT: fputs("not", stderr); break;
+      case T_VOID: fputs("void", stderr); break;
+      case T_ZERO: fputs("zero", stderr); break;
+      case T_MIXED: fputs("mixed", stderr); break;
 	
-      default: printf("%d",EXTRACT_UCHAR(a+e)); break;
+      default: fprintf(stderr, "%d",EXTRACT_UCHAR(a+e)); break;
     }
   }
-  printf("\n");
 }
 
 void simple_describe_type(struct pike_type *s)
 {
   stupid_describe_type(s->str,s->len);
+  fputs("\n", stderr);
 }
 #endif
 
@@ -1901,8 +1901,9 @@ static char *low_match_types2(char *a,char *b, int flags)
     {
       fprintf(stderr,"Type match1: ");
       stupid_describe_type(a,type_length(a));
-      fprintf(stderr,"Type match2: ");
+      fprintf(stderr,"\nType match2: ");
       stupid_describe_type(b,type_length(b));
+      fputc('\n', stderr);
     }
 #endif
 
@@ -2421,8 +2422,9 @@ static int low_pike_types_le2(char *a, char *b,
     {
       fprintf(stderr,"Type match1: ");
       stupid_describe_type(a,type_length(a));
-      fprintf(stderr,"Type match2: ");
+      fprintf(stderr,"\nType match2: ");
       stupid_describe_type(b,type_length(b));
+      fputc('\n', stderr);
     }
 #endif
 
