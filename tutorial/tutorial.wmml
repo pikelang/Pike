@@ -6144,7 +6144,7 @@ string trim_whites(string s);
 <man_description>
 Trim leading and trailing spaces and tabs from the string <i>s</i>.
 </man_description>
-
+</function>
 
 
 <function name=String.trim_all_whites title="trim all white spaces from a string">
@@ -6154,7 +6154,7 @@ string trim_all_whites(string s);
 <man_description>
 Trim leading and trailing white space characters (" \t\r\n") from the string <i>s</i>.
 </man_description>
-
+</function>
 
 
 </module>
