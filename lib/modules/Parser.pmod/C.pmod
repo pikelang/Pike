@@ -271,7 +271,11 @@ array(Token) tokenize(array(string) s, void|string file)
 
 array group(array(string|Token) tokens, void|mapping groupings)
 {
+#if constant(ADT.Stack)
   ADT.Stack stack=ADT.Stack();
+#else
+  Stack.stack stack=Stack.stack();
+#endif
   array(Token) ret=({});
   mapping actions=([]);
 
