@@ -1,6 +1,0 @@
-<!--
-Protocols.X wmml chapter (included in tutorial)
--->
-
-<include file=ProtocolsHTTP.wmml>
-<include file=ProtocolsLysKOM.wmml>
