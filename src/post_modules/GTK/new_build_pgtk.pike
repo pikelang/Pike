@@ -306,6 +306,7 @@ class Function(Class parent,
 
       if( return_type->name != "void" )
       {
+	return_type->pushed = 1;
         emit("  {\n");
         emit("  "+return_type->c_declare( rv = a+1, 1 ) );
         emit("    a"+rv+" = ");
@@ -445,7 +446,8 @@ class Member( string name, Type type, int set,
         "  "+parent->c_cast( "THIS->obj" )+"->"+name[4..]+" = "+type->c_pass_to_function(0)+";\n"
         "  RETURN_THIS();\n"
         "}\n";
-    else
+    else {
+      type->pushed = 1;
       return
         "void p"+c_name()+#"( INT32 args )\n"
         "{\n"
@@ -453,6 +455,7 @@ class Member( string name, Type type, int set,
         "    Pike_error("+S("Too many arguments.\n",1,1,16)+");\n"
         +type->direct_push( parent->c_cast( "THIS->obj" ) +"->"+name )+
         "\n}\n\n";
+    }
   }
 
   static string _sprintf(int fmt)
@@ -467,6 +470,9 @@ class Type
   int star, amp, opt, copy, ref;
   array(Type) subtypes;
   Type array_type;
+
+  // Pushed variables aren't freed unless there's a "free" modifier.
+  int pushed;
   
   string name;
   string modifiers;
@@ -646,7 +652,7 @@ class Type
   
   static string declare, fetch, pass, free, _push;
   static int consumed = 1;
-  static int c_inited;
+  static int c_inited, c_declared;
   static string array_size;
   static string _dpush;
   string direct_push( string vv )
@@ -674,6 +680,7 @@ class Type
        if( !copy && !ref )
          return push( vv );
 
+       pushed = 1;
        string res ="  {\n  "+c_declare(256);
        if( copy )
          res += "    a256 = (void *)xalloc( sizeof( a256[0] ) );\n"
@@ -696,9 +703,12 @@ class Type
        return res;
     }
   }
-  
+
   string push( string vv )
   {
+    if (!pushed && c_declared)
+      error ("Pushed type not known at declaration.\n");
+
     if( _push )
       return sprintf( _push, vv );
 
@@ -939,8 +949,10 @@ class Type
   string c_declare( int a, int|void const )
   {
     if( !c_inited )c_init();
+    c_declared = 1;
     if(!declare) return 0;
-    if( const && !free )
+    if( const &&
+	(!free || (pushed && !has_value (get_modifiers(), "free"))) )
       return sprintf( replace( declare, "CONST", "const" ), a );
     return sprintf( replace( declare, "CONST", "" ), a );
            
