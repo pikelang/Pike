@@ -3,9 +3,10 @@
 ||| Pike is distributed as GPL (General Public License)
 ||| See the files COPYING and DISCLAIMER for more information.
 \*/
+/**/
 #include "global.h"
 #include <math.h>
-RCSID("$Id: operators.c,v 1.51 1999/03/12 22:22:55 per Exp $");
+RCSID("$Id: operators.c,v 1.52 1999/03/26 23:40:57 grubba Exp $");
 #include "interpret.h"
 #include "svalue.h"
 #include "multiset.h"
@@ -27,6 +28,11 @@ RCSID("$Id: operators.c,v 1.51 1999/03/12 22:22:55 per Exp $");
 #include "module_support.h"
 #include "pike_macros.h"
 
+#define OP_DIVISION_BY_ZERO_ERROR(FUNC) \
+     math_error(FUNC, sp-2, 2, 0, "Division by zero.\n")
+#define OP_MODULO_BY_ZERO_ERROR(FUNC) \
+     math_error(FUNC, sp-2, 2, 0, "Modulo by zero.\n")
+
 #define COMPARISON(ID,NAME,FUN)			\
 void ID(INT32 args)				\
 {						\
@@ -34,7 +40,7 @@ void ID(INT32 args)				\
   switch(args)					\
   {						\
     case 0: case 1:				\
-      PIKE_ERROR(NAME, "Too few arguments\n", sp, args); \
+      SIMPLE_TOO_FEW_ARGS_ERROR(NAME, 2); \
     case 2:					\
       i=FUN (sp-2,sp-1);			\
       pop_n_elems(2);				\
@@ -64,9 +70,11 @@ COMPARISON(f_ge,"`>=",!is_lt)
 
 #define CALL_OPERATOR(OP, args) \
  if(!sp[-args].u.object->prog) \
-   PIKE_ERROR(lfun_names[OP], "Called in destructed object.\n", sp, args); \
+   bad_arg_error(lfun_names[OP], sp-args, args, 1, "object", sp-args, \
+                 "Called in destructed object.\n"); \
  if(FIND_LFUN(sp[-args].u.object->prog,OP) == -1) \
-   PIKE_ERROR(lfun_names[OP], "Operator not in object.\n", sp, args); \
+   bad_arg_error(lfun_names[OP], sp-args, args, 1, "object", sp-args, \
+                 "Operator not in object.\n"); \
  apply_lfun(sp[-args].u.object, OP, args-1); \
  free_svalue(sp-2); \
  sp[-2]=sp[-1]; \
@@ -85,7 +93,7 @@ void f_add(INT32 args)
   default:
     if(!args)
     {
-      PIKE_ERROR("`+", "Too few arguments\n", sp, args);
+      SIMPLE_TOO_FEW_ARGS_ERROR("`+", 1);
     }else{
       if(types & BIT_OBJECT)
       {
@@ -139,9 +147,12 @@ void f_add(INT32 args)
     {
       case T_PROGRAM:
       case T_FUNCTION:
-	PIKE_ERROR("`+", "Bad argument 1\n", sp, args);
+	SIMPLE_BAD_ARG_ERROR("`+", 1,
+			     "string|object|int|float|array|mapping|multiset");
     }
-    PIKE_ERROR("`+", "Incompatible types\n", sp, args);
+    bad_arg_error("`+", sp-args, args, 1,
+		  "string|object|int|float|array|mapping|multiset", sp-args,
+		  "Incompatible types\n");
     return; /* compiler hint */
 
   case BIT_STRING:
@@ -298,14 +309,27 @@ void f_add(INT32 args)
 
       for(e=1;e<args;e++)
 	if(sp[e-args].type != T_ARRAY)
-	  error("`+: trying to add integers and arrays.\n");
+	  SIMPLE_BAD_ARG_ERROR("`+", e+1, "array");
       
       a=add_arrays(sp-args+1,args-1);
       pop_n_elems(args);
       push_array(a);
       return;
     }
-    error("`+: trying to add integers and arrays.\n");
+    if (sp[-args].type == T_INT) {
+      int e;
+      for(e=1;e<args;e++)
+	if (sp[e-args].type != T_INT)
+	  SIMPLE_BAD_ARG_ERROR("`+", e+1, "int");
+    } else {
+      int e;
+      for(e=0;e<args;e++)
+	if (sp[e-args].type != T_ARRAY)
+	  SIMPLE_BAD_ARG_ERROR("`+", e+1, "array");
+    }
+    /* Probably not reached, but... */
+    bad_arg_error("`+", sp-args, args, 1, "array", sp-args,
+		  "trying to add integers and arrays.\n");
   }
       
   case BIT_ARRAY:
@@ -326,14 +350,27 @@ void f_add(INT32 args)
 
       for(e=1;e<args;e++)
 	if(sp[e-args].type != T_MAPPING)
-	  error("`+: trying to add integers and mappings.\n");
+	  SIMPLE_BAD_ARG_ERROR("`+", e+1, "mapping");
 
       a=add_mappings(sp-args+1,args-1);
       pop_n_elems(args);
       push_mapping(a);
       return;
     }
-    error("`+: trying to add integers and mappings.\n");
+    if (sp[-args].type == T_INT) {
+      int e;
+      for(e=1;e<args;e++)
+	if (sp[e-args].type != T_INT)
+	  SIMPLE_BAD_ARG_ERROR("`+", e+1, "int");
+    } else {
+      int e;
+      for(e=0;e<args;e++)
+	if (sp[e-args].type != T_MAPPING)
+	  SIMPLE_BAD_ARG_ERROR("`+", e+1, "mapping");
+    }
+    /* Probably not reached, but... */
+    bad_arg_error("`+", sp-args, args, 1, "mapping", sp-args,
+		  "Trying to add integers and mappings.\n");
   }
 
   case BIT_MAPPING:
@@ -572,7 +609,8 @@ void o_subtract(void)
   {
     if(call_lfun(LFUN_SUBTRACT, LFUN_RSUBTRACT))
       return;
-    PIKE_ERROR("`-", "Subtract on different types.\n", sp, 2);
+    bad_arg_error("`-", sp-2, 2, 2, type_name[sp[-2].type],
+		  sp-1, "Subtract on different types.\n");
   }
 
   switch(sp[-2].type)
@@ -635,7 +673,11 @@ void o_subtract(void)
   }
 
   default:
-    PIKE_ERROR("`-", "Bad argument 1.\n", sp, 2);
+    {
+      int args = 2;
+      SIMPLE_BAD_ARG_ERROR("`-", 1,
+			   "int|float|string|mapping|multiset|array|object");
+    }
   }
 }
 
@@ -643,7 +685,7 @@ void f_minus(INT32 args)
 {
   switch(args)
   {
-    case 0: PIKE_ERROR("`-", "Too few arguments.\n", sp, 0);
+    case 0: SIMPLE_TOO_FEW_ARGS_ERROR("`-", 1);
     case 1: o_negate(); break;
     case 2: o_subtract(); break;
     default:
@@ -685,8 +727,10 @@ void o_and(void)
   {
     if(call_lfun(LFUN_AND, LFUN_RAND))
       return;
-
-    PIKE_ERROR("`&", "Bitwise and on different types.\n", sp, 2);
+    {
+      int args = 2;
+      SIMPLE_BAD_ARG_ERROR("`&", 2, type_name[sp[-2].type]);
+    }
   }
 
   switch(sp[-2].type)
@@ -829,7 +873,7 @@ void f_and(INT32 args)
 {
   switch(args)
   {
-  case 0: PIKE_ERROR("`&", "Too few arguments.\n", sp, 0);
+  case 0: SIMPLE_TOO_FEW_ARGS_ERROR("`&", 1);
   case 1: return;
   case 2: o_and(); return;
   default:
@@ -867,7 +911,10 @@ void o_or(void)
     if(call_lfun(LFUN_OR, LFUN_ROR))
       return;
 
-    PIKE_ERROR("`|", "Bitwise or on different types.\n", sp, 2);
+    {
+      int args = 2;
+      SIMPLE_BAD_ARG_ERROR("`|", 2, type_name[sp[-2].type]);
+    }
   }
 
   switch(sp[-2].type)
@@ -919,7 +966,7 @@ void f_or(INT32 args)
 {
   switch(args)
   {
-  case 0: PIKE_ERROR("`|", "Too few arguments.\n", sp, 0);
+  case 0: SIMPLE_TOO_FEW_ARGS_ERROR("`|", 1);
   case 1: return;
   case 2: o_or(); return;
   default:
@@ -957,7 +1004,10 @@ void o_xor(void)
   {
     if(call_lfun(LFUN_XOR, LFUN_RXOR))
       return;
-    PIKE_ERROR("`^", "Bitwise XOR on different types.\n", sp, 2);
+    {
+      int args = 2;
+      SIMPLE_BAD_ARG_ERROR("`^", 2, type_name[sp[-2].type]);
+    }
   }
 
   switch(sp[-2].type)
@@ -1009,7 +1059,7 @@ void f_xor(INT32 args)
 {
   switch(args)
   {
-  case 0: PIKE_ERROR("`^", "Too few arguments.\n", sp, 0);
+  case 0: SIMPLE_TOO_FEW_ARGS_ERROR("`^", 1);
   case 1: return;
   case 2: o_xor(); return;
   default:
@@ -1044,12 +1094,13 @@ void o_lsh(void)
 {
   if(sp[-1].type != T_INT || sp[-2].type != T_INT)
   {
+    int args = 2;
     if(call_lfun(LFUN_LSH, LFUN_RLSH))
       return;
 
     if(sp[-2].type != T_INT)
-      PIKE_ERROR("`<<", "Bad argument 1.\n", sp, 2);
-    PIKE_ERROR("`<<", "Bad argument 2.\n", sp, 2);
+      SIMPLE_BAD_ARG_ERROR("`<<", 1, "int|object");
+    SIMPLE_BAD_ARG_ERROR("`<<", 2, "int|object");
   }
   sp--;
   sp[-1].u.integer = sp[-1].u.integer << sp->u.integer;
@@ -1057,8 +1108,10 @@ void o_lsh(void)
 
 void f_lsh(INT32 args)
 {
-  if(args != 2)
-    PIKE_ERROR("`<<", "Bad number of args.\n", sp, args);
+  if(args != 2) {
+    /* FIXME: Not appropriate if too many args. */
+    SIMPLE_TOO_FEW_ARGS_ERROR("`<<", 2);
+  }
   o_lsh();
 }
 
@@ -1077,11 +1130,12 @@ void o_rsh(void)
 {
   if(sp[-2].type != T_INT || sp[-1].type != T_INT)
   {
+    int args = 2;
     if(call_lfun(LFUN_RSH, LFUN_RRSH))
       return;
     if(sp[-2].type != T_INT)
-      PIKE_ERROR("`>>", "Bad argument 1.\n", sp, 2);
-    PIKE_ERROR("`>>", "Bad argument 2.\n", sp, 2);
+      SIMPLE_BAD_ARG_ERROR("`>>", 1, "int|object");
+    SIMPLE_BAD_ARG_ERROR("`>>", 2, "int|object");
   }
   sp--;
   sp[-1].u.integer = sp[-1].u.integer >> sp->u.integer;
@@ -1089,8 +1143,10 @@ void o_rsh(void)
 
 void f_rsh(INT32 args)
 {
-  if(args != 2)
-    PIKE_ERROR("`>>", "Bad number of args.\n", sp, args);
+  if(args != 2) {
+    /* FIXME: Not appropriate if too many args. */
+    SIMPLE_TOO_FEW_ARGS_ERROR("`>>", 2);
+  }
   o_rsh();
 }
 
@@ -1109,6 +1165,7 @@ static int generate_rsh(node *n)
 #define TWO_TYPES(X,Y) (((X)<<8)|(Y))
 void o_multiply(void)
 {
+  int args = 2;
   switch(TWO_TYPES(sp[-2].type,sp[-1].type))
   {
     case TWO_TYPES(T_ARRAY, T_INT):
@@ -1117,7 +1174,7 @@ void o_multiply(void)
 	struct svalue *pos;
 	INT32 e;
 	if(sp[-1].u.integer < 0)
-	  PIKE_ERROR("`*", "Cannot multiply array by negative number.\n", sp, 2);
+	  SIMPLE_BAD_ARG_ERROR("`*", 2, "int(0..)");
 	ret=allocate_array(sp[-2].u.array->size * sp[-1].u.integer);
 	pos=ret->item;
 	for(e=0;e<sp[-1].u.integer;e++,pos+=sp[-2].u.array->size)
@@ -1136,7 +1193,7 @@ void o_multiply(void)
 	char *pos;
 	INT32 e,len;
 	if(sp[-1].u.integer < 0)
-	  PIKE_ERROR("`*", "Cannot multiply string by negative number.\n", sp, 2);
+	  SIMPLE_BAD_ARG_ERROR("`*", 2, "int(0..)");
 	ret=begin_wide_shared_string(sp[-2].u.string->len * sp[-1].u.integer,
 				     sp[-2].u.string->size_shift);
 	pos=ret->str;
@@ -1203,7 +1260,7 @@ void f_multiply(INT32 args)
 {
   switch(args)
   {
-  case 0: PIKE_ERROR("`*", "Too few arguments.\n", sp, 0);
+  case 0: SIMPLE_TOO_FEW_ARGS_ERROR("`*", 1);
   case 1: return;
   case 2: o_multiply(); return;
   default:
@@ -1250,7 +1307,7 @@ void o_divide(void)
 
 	len=sp[-1].u.integer;
 	if(!len)
-	  PIKE_ERROR("`/", "Division by zero.\n", sp, 2);
+	  OP_DIVISION_BY_ZERO_ERROR("`/");
 
 	if(len<0)
 	{
@@ -1281,7 +1338,7 @@ void o_divide(void)
 
 	len=sp[-1].u.float_number;
 	if(len==0.0)
-	  PIKE_ERROR("`/", "Division by zero.\n", sp, 2);
+	  OP_DIVISION_BY_ZERO_ERROR("`/");
 
 	if(len<0)
 	{
@@ -1336,7 +1393,7 @@ void o_divide(void)
 
 	len=sp[-1].u.integer;
 	if(!len)
-	  PIKE_ERROR("`/", "Division by zero.\n", sp, 2);
+	  OP_DIVISION_BY_ZERO_ERROR("`/");
 	
 	if(len<0)
 	{
@@ -1370,7 +1427,7 @@ void o_divide(void)
 
 	len=sp[-1].u.float_number;
 	if(len==0.0)
-	  PIKE_ERROR("`/", "Division by zero.\n", sp, 2);
+	  OP_DIVISION_BY_ZERO_ERROR("`/");
 
 	if(len<0)
 	{
@@ -1447,7 +1504,7 @@ void o_divide(void)
 
   case T_FLOAT:
     if(sp[-1].u.float_number == 0.0)
-      PIKE_ERROR("`/", "Division by zero.\n", sp, 2);
+      OP_DIVISION_BY_ZERO_ERROR("`/");
     sp--;
     sp[-1].u.float_number /= sp[0].u.float_number;
     return;
@@ -1456,7 +1513,7 @@ void o_divide(void)
   {
     INT32 tmp;
     if (sp[-1].u.integer == 0)
-      PIKE_ERROR("`/", "Division by zero\n", sp, 2);
+      OP_DIVISION_BY_ZERO_ERROR("`/");
     sp--;
 
     tmp=sp[-1].u.integer/sp[0].u.integer;
@@ -1479,7 +1536,7 @@ void f_divide(INT32 args)
   switch(args)
   {
     case 0: 
-    case 1: PIKE_ERROR("`/", "Too few arguments to `/\n", sp, args);
+    case 1: SIMPLE_TOO_FEW_ARGS_ERROR("`/", 2);
     case 2: o_divide(); break;
     default:
     {
@@ -1522,7 +1579,7 @@ void o_mod(void)
 	struct pike_string *s=sp[-2].u.string;
 	INT32 tmp,base;
 	if(!sp[-1].u.integer)
-	  PIKE_ERROR("`%", "Modulo by zero.\n", sp, 2);
+	  OP_MODULO_BY_ZERO_ERROR("`%");
 
 	tmp=sp[-1].u.integer;
 	if(tmp<0)
@@ -1545,7 +1602,7 @@ void o_mod(void)
 	struct array *a=sp[-2].u.array;
 	INT32 tmp,base;
 	if(!sp[-1].u.integer)
-	  PIKE_ERROR("`%", "Modulo by zero.\n", sp, 2);
+	  OP_MODULO_BY_ZERO_ERROR("`%");
 
 	tmp=sp[-1].u.integer;
 	if(tmp<0)
@@ -1577,7 +1634,7 @@ void o_mod(void)
   {
     FLOAT_TYPE foo;
     if(sp[-1].u.float_number == 0.0)
-      PIKE_ERROR("`%", "Modulo by zero.\n", sp, 2);
+      OP_MODULO_BY_ZERO_ERROR("`%");
     sp--;
     foo=sp[-1].u.float_number / sp[0].u.float_number;
     foo=sp[-1].u.float_number - sp[0].u.float_number * floor(foo);
@@ -1585,7 +1642,8 @@ void o_mod(void)
     return;
   }
   case T_INT:
-    if (sp[-1].u.integer == 0) PIKE_ERROR("`%", "Modulo by zero.\n", sp, 2);
+    if (sp[-1].u.integer == 0)
+      OP_MODULO_BY_ZERO_ERROR("`%");
     sp--;
     if(sp[-1].u.integer>=0)
     {
@@ -1612,8 +1670,10 @@ void o_mod(void)
 
 void f_mod(INT32 args)
 {
-  if(args != 2)
-    PIKE_ERROR("`%", "Bad number of args\n", sp, args);
+  if(args != 2) {
+    /* FIXME: Not appropriate when too many args. */
+    SIMPLE_TOO_FEW_ARGS_ERROR("`%", 2);
+  }
   o_mod();
 }
 
@@ -1657,7 +1717,10 @@ void o_not(void)
 
 void f_not(INT32 args)
 {
-  if(args != 1) PIKE_ERROR("`!", "Bad number of args.\n", sp, args);
+  if(args != 1) {
+    /* FIXME: Not appropriate with too many args. */
+    SIMPLE_TOO_FEW_ARGS_ERROR("`!", 1);
+  }
   o_not();
 }
 
@@ -1693,8 +1756,10 @@ void o_compl(void)
     struct pike_string *s;
     INT32 len, i;
 
-    if(sp[-1].u.string->size_shift)
-      error("`~ cannot handle wide strings.\n");
+    if(sp[-1].u.string->size_shift) {
+      bad_arg_error("`~", sp-1, 1, 1, "string(0)", sp-1,
+		    "Expected 8-bit string.\n");
+    }
 
     len = sp[-1].u.string->len;
     s = begin_shared_string(len);
@@ -1712,7 +1777,10 @@ void o_compl(void)
 
 void f_compl(INT32 args)
 {
-  if(args != 1) PIKE_ERROR("`~", "Bad number of args.\n", sp, args);
+  if(args != 1) {
+    /* FIXME: Not appropriate with too many args. */
+    SIMPLE_TOO_FEW_ARGS_ERROR("`~", 1);
+  }
   o_compl();
 }
 

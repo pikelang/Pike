@@ -5,7 +5,7 @@
 \*/
 
 /*
- * $Id: error.h,v 1.33 1999/03/23 16:34:00 hubbe Exp $
+ * $Id: error.h,v 1.34 1999/03/26 23:40:55 grubba Exp $
  */
 #ifndef ERROR_H
 #define ERROR_H
@@ -225,16 +225,21 @@ void cleanup_error(void);
 #define fatal \
  fprintf(stderr,"Fatal error at %s:%d\n",__FILE__,__LINE__),debug_fatal
 
-#define SIMPLE_BAD_ARG_ERROR(FUNC,ARG,EXPECT) \
+/* Some useful error macros. */
+
+#define SIMPLE_BAD_ARG_ERROR(FUNC, ARG, EXPECT) \
    bad_arg_error(FUNC, sp-args, args, ARG, EXPECT, sp+ARG-1-args,\
                  "Bad argument %d to %s(). Expected %s\n", \
                   ARG, FUNC, EXPECT)
 
-#define SIMPLE_TOO_FEW_ARGS_ERROR(FUNC,ARG) \
+#define SIMPLE_TOO_FEW_ARGS_ERROR(FUNC, ARG) \
    bad_arg_error(FUNC, sp-args, args, ARG, "void", 0,\
                  "Too few arguments to %s().\n",FUNC)
 
+#define SIMPLE_OUT_OF_MEMORY_ERROR(FUNC, AMOUNT) \
+   resource_error(FUNC, sp-args, args, "memory", AMOUNT, "Out of memory.\n")
+
+#define SIMPLE_DIVISION_BY_ZERO_ERROR(FUNC) \
+     math_error(FUNC, sp-args, args, 0, "Division by zero.\n")
+
 #endif
-
-
-

@@ -5,7 +5,7 @@
 \*/
 /**/
 #include "global.h"
-RCSID("$Id: builtin_functions.c,v 1.163 1999/03/25 16:11:18 hubbe Exp $");
+RCSID("$Id: builtin_functions.c,v 1.164 1999/03/26 23:40:53 grubba Exp $");
 #include "interpret.h"
 #include "svalue.h"
 #include "pike_macros.h"
@@ -2493,7 +2493,7 @@ static void f_interleave_array(INT32 args)
     /* max will be the padding at the end. */
     size = (nelems + max) * 8;	/* Initial size */
     if (!(tab = malloc(size + max))) {
-      error("interleave_array(): Out of memory!\n");
+      SIMPLE_OUT_OF_MEMORY_ERROR("interleave_array", size+max);
     }
     MEMSET(tab, 0, size + max);
 
@@ -2660,7 +2660,8 @@ static void f_longest_ordered_sequence(INT32 args)
   /* THREADS_DISALLOW(); */
 
   if (!a) {
-    PIKE_ERROR("Array.longest_ordered_sequence", "Out of memory", sp, args);
+    SIMPLE_OUT_OF_MEMORY_ERROR("Array.longest_ordered_sequence",
+			       (int)sizeof(int *)*a->size*2);
   }
 
   pop_n_elems(args);
@@ -2893,14 +2894,20 @@ static struct array *diff_longest_sequence(struct array *cmptbl, int blen)
 
    stack = malloc(sizeof(struct diff_magic_link*)*cmptbl->size);
 
-   if (!stack) error("diff_longest_sequence(): Out of memory\n");
+   if (!stack) {
+     int args = 0;
+     SIMPLE_OUT_OF_MEMORY_ERROR("diff_longest_sequence",
+				(int)sizeof(struct diff_magic_link*) *
+				cmptbl->size);
+   }
 
    /* NB: marks is used for optimization purposes only */
-   marks = calloc(blen,1);
+   marks = calloc(blen, 1);
 
    if (!marks) {
+     int args = 0;
      free(stack);
-     error("diff_longest_sequence(): Out of memory\n");
+     SIMPLE_OUT_OF_MEMORY_ERROR("diff_longest_sequence", blen);
    }
 
 #ifdef DIFF_DEBUG
@@ -2984,9 +2991,13 @@ static struct array *diff_longest_sequence(struct array *cmptbl, int blen)
 
 	     if (! (dml=dml_new(&pools)) )
 	     {
+	       int args = 0;
 	       dml_free_pools(pools);
 	       free(stack);
-	       error("diff_longest_sequence(): Out of memory\n");
+	       SIMPLE_OUT_OF_MEMORY_ERROR("diff_longest_sequence",
+					  sizeof(struct diff_magic_link_pool) +
+					  sizeof(struct diff_magic_link) *
+					  DMLPOOLSIZE);
 	     }
 
 	     dml->x = x;
@@ -3017,9 +3028,13 @@ static struct array *diff_longest_sequence(struct array *cmptbl, int blen)
 
 	     if (! (dml=dml_new(&pools)) )
 	     {
+	       int args = 0;
 	       dml_free_pools(pools);
 	       free(stack);
-	       error("diff_longest_sequence: Out of memory\n");
+	       SIMPLE_OUT_OF_MEMORY_ERROR("diff_longest_sequence",
+					  sizeof(struct diff_magic_link_pool) +
+					  sizeof(struct diff_magic_link) *
+					  DMLPOOLSIZE);
 	     }
 
 	     dml->x = x;
@@ -3099,7 +3114,9 @@ static struct array *diff_dyn_longest_sequence(struct array *cmptbl, int blen)
 
   table = calloc(sizeof(struct diff_magic_link_head)*2, off2);
   if (!table) {
-    error("diff_dyn_longest_sequence(): Out of memory");
+    int args = 0;
+    SIMPLE_OUT_OF_MEMORY_ERROR("diff_dyn_longest_sequence",
+			       sizeof(struct diff_magic_link_head) * 2 * off2);
   }
 
   /* FIXME: Assumes NULL is represented with all zeroes */
@@ -3160,9 +3177,13 @@ static struct array *diff_dyn_longest_sequence(struct array *cmptbl, int blen)
 	table[off1 + ib].depth = table[off2 + ib + 1].depth + 1;
 	dml = (table[off1 + ib].link = dml_new(&dml_pool));
 	if (!dml) {
+	  int args = 0;
 	  dml_free_pools(dml_pool);
 	  free(table);
-	  error("diff_dyn_longest_sequence(): Out of memory");
+	  SIMPLE_OUT_OF_MEMORY_ERROR("diff_dyn_longest_sequence",
+				     sizeof(struct diff_magic_link_pool) +
+				     sizeof(struct diff_magic_link) *
+				     DMLPOOLSIZE);
 	}
 	dml->refs = 1;
 	dml->prev = table[off2 + ib + 1].link;
@@ -3208,10 +3229,13 @@ static struct array *diff_dyn_longest_sequence(struct array *cmptbl, int blen)
 
   res = allocate_array(sz);
   if (!res) {
+    int args = 0;
     if (dml_pool) {
       dml_free_pools(dml_pool);
     }
-    error("diff_dyn_longest_sequence(): Out of memory");
+    SIMPLE_OUT_OF_MEMORY_ERROR("diff_dyn_longest_sequence",
+			       sizeof(struct array) +
+			       sz*sizeof(struct svalue));
   }
 
   i = 0;
