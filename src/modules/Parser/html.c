@@ -1,4 +1,4 @@
-/* $Id: html.c,v 1.138 2001/04/14 20:32:59 mast Exp $ */
+/* $Id: html.c,v 1.139 2001/04/14 21:16:46 grubba Exp $ */
 
 #include "global.h"
 #include "config.h"
@@ -233,15 +233,6 @@ static const p_wchar2 whitespace[] = {DEF_WS};
 #define TAG_COMMENT(this) DEF_TAG_COMMENT
 #define WS(this) (this->ws)
 #define N_WS(this) (this->n_ws)
-#define ARG_BREAK_CHARS(this) (this->cc.arg_break_chars)
-#define N_ARG_BREAK_CHARS(this) (this->cc.n_arg_break_chars)
-#define LOOK_FOR_START(this) (this->cc.look_for_start)
-#define NUM_LOOK_FOR_START(this) (this->cc.num_look_for_start)
-#define LOOK_FOR_END(this) (this->cc.look_for_end)
-#define NUM_LOOK_FOR_END(this) (this->cc.num_look_for_end)
-
-#define TAG_END_STRING(this) make_shared_binary_string2 (&TAG_END (this), 1)
-#define TAG_FIN_STRING(this) make_shared_binary_string2 (&TAG_FIN (this), 1)
 
 #else
 
@@ -265,25 +256,6 @@ static const p_wchar2 tag_start = DEF_TAG_START, tag_end = DEF_TAG_END,
 #define WS(this) whitespace
 #define N_WS(this) NELEM (whitespace)
 
-/* All combinations of the flags that affect the calculated char sets:
- *
- * o  (this->flags & (FLAG_STRICT_TAGS|FLAG_XML_TAGS)) == FLAG_STRICT_TAGS
- * o  this->flags & FLAG_LAZY_END_ARG_QUOTE
- * o  this->flags & FLAG_IGNORE_COMMENTS
- */
-static struct calc_chars char_variants[8];	/* 1<<3 */
-
-#define ARG_BREAK_CHARS(this) (this->cc->arg_break_chars)
-#define N_ARG_BREAK_CHARS(this) (this->cc->n_arg_break_chars)
-#define LOOK_FOR_START(this) (this->cc->look_for_start)
-#define NUM_LOOK_FOR_START(this) (this->cc->num_look_for_start)
-#define LOOK_FOR_END(this) (this->cc->look_for_end)
-#define NUM_LOOK_FOR_END(this) (this->cc->num_look_for_end)
-
-static struct pike_string *tag_end_string, *tag_fin_string;
-#define TAG_END_STRING(this) (add_ref (tag_end_string), tag_end_string)
-#define TAG_FIN_STRING(this) (add_ref (tag_fin_string), tag_fin_string)
-
 #endif
 
 struct calc_chars		/* Calculated char sets. */
@@ -305,6 +277,41 @@ struct calc_chars		/* Calculated char sets. */
    p_wchar2 look_for_end[MAX_ARGQ][MAX_ARGQ+4];
    size_t num_look_for_end[MAX_ARGQ];
 };
+
+#ifdef CONFIGURABLE_MARKUP
+
+#define ARG_BREAK_CHARS(this) (this->cc.arg_break_chars)
+#define N_ARG_BREAK_CHARS(this) (this->cc.n_arg_break_chars)
+#define LOOK_FOR_START(this) (this->cc.look_for_start)
+#define NUM_LOOK_FOR_START(this) (this->cc.num_look_for_start)
+#define LOOK_FOR_END(this) (this->cc.look_for_end)
+#define NUM_LOOK_FOR_END(this) (this->cc.num_look_for_end)
+
+#define TAG_END_STRING(this) make_shared_binary_string2 (&TAG_END (this), 1)
+#define TAG_FIN_STRING(this) make_shared_binary_string2 (&TAG_FIN (this), 1)
+
+#else
+
+/* All combinations of the flags that affect the calculated char sets:
+ *
+ * o  (this->flags & (FLAG_STRICT_TAGS|FLAG_XML_TAGS)) == FLAG_STRICT_TAGS
+ * o  this->flags & FLAG_LAZY_END_ARG_QUOTE
+ * o  this->flags & FLAG_IGNORE_COMMENTS
+ */
+static struct calc_chars char_variants[ 1 << 3];
+
+#define ARG_BREAK_CHARS(this) (this->cc->arg_break_chars)
+#define N_ARG_BREAK_CHARS(this) (this->cc->n_arg_break_chars)
+#define LOOK_FOR_START(this) (this->cc->look_for_start)
+#define NUM_LOOK_FOR_START(this) (this->cc->num_look_for_start)
+#define LOOK_FOR_END(this) (this->cc->look_for_end)
+#define NUM_LOOK_FOR_END(this) (this->cc->num_look_for_end)
+
+static struct pike_string *tag_end_string, *tag_fin_string;
+#define TAG_END_STRING(this) (add_ref (tag_end_string), tag_end_string)
+#define TAG_FIN_STRING(this) (add_ref (tag_fin_string), tag_fin_string)
+
+#endif
 
 struct parser_html_storage
 {
