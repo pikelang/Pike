@@ -507,6 +507,8 @@ class Type
 	name = "GTK.CTreeNode";
 
       default:
+	if( classes[ name ] )
+	  name = classes[ name ]->pike_name();
 	return name+optp;
     }
   }
@@ -1006,6 +1008,11 @@ class Class( string name, string file, int line )
     return "object(implements "+class_id()+")";
   }
   
+  string doc_name()
+  {
+    return name;
+  }
+
   string pike_name()
   {
     if( sscanf(name, "GTK.%s", string pn ) )
