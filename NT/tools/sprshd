@@ -2,6 +2,14 @@
 
 inherit Stdio.Port;
 
+void monitor(object(Stdio.File) io, object proc)
+{
+  proc->wait();
+  io->close("rw");
+  io->close();
+  destruct(io);
+}
+
 void handle_incoming_connection(object(Stdio.File) io)
 {
   object p;
@@ -60,12 +68,13 @@ void handle_incoming_connection(object(Stdio.File) io)
 				   "stdout":p2,
 				   "stderr":p2,
 				   "cwd":dir,
-				   ])); };
+				   ]));
+      };
       
-      destruct(p2);
       
       if(!err)
       {
+	thread_create(monitor,p2,p);
 	while(1)
 	{
 	  string s=pi->read(1000,1);
@@ -76,6 +85,7 @@ void handle_incoming_connection(object(Stdio.File) io)
 	io->write(sprintf("%4c",0));
 	io->write(sprintf("%4c",p->wait()));
       }else{
+	destruct(p2);
 	io->write(sprintf("%4c",0));
 	io->write(sprintf("%4c",69));
       }
