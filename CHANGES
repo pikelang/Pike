@@ -38,8 +38,11 @@ o Less magic hacks
     have been tightened up and several more files now use the pragma
     strict_types, which has resulted in some additional bugfixes.
 
-o IPv6
 o INT64
+    On 64 bit architechtures Pike will now use full 64 bits integer
+    before resorting to Gmp.mpz objects for large numbers.
+
+o IPv6
 
 
 Language additions:
@@ -49,22 +52,35 @@ Language additions:
 New modules / classes / methods added:
 --------------------------------------
 
-o trace() takes another argument to turn on tracing in all threads
+o trace() can trace all threads
     The configure option --without-thread-trace has been removed, but
     instead the trace() function has been extended to make it possible
     to set the trace level in all threads simultaneously.
 
 o Regexp.PCRE added to give libpcre support.
+    Are you a closet-perlet? For those who missed the richer flora of
+    regexp syntax that Perl supports, the Perl Compatible Regular
+    Expression module is the answer. If you compile libpcre with UTF-8
+    support you will also get transparent wide string support. Several
+    convenience functions are also added to the Regexp module to
+    enable easier access to regular expressions.
+
+o Crypto/Nettle
+    The crypto module has been almost completely rewritten and now
+    uses libnettle as backend instead of the built int crypto
+    algorithms that Pike had before. This will lead to more active
+    development and optimization. The most common hash and cipher
+    methods are already written in assembler for several platforms. As
+    an example SHA1 is 40% faster than before.
 
 o _ADT
 o ADT.Struct
-o Crypto/Nettle
 o Debug.Wrapper
 o Geography RT38
 o Int
 o Pike.Security
 o Protocols.HTTP.Session
-o Tools.Shoot/Standaone.benchmark
+o Tools.Shoot/Standalone.benchmark
 o Standalone.cgrep
 o Standalone.dump
 o Image.NEO
