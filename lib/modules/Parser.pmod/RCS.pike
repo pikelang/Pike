@@ -1,6 +1,6 @@
 #pike __REAL_VERSION__
 
-// $Id: RCS.pike,v 1.21 2002/06/11 15:18:33 jhs Exp $
+// $Id: RCS.pike,v 1.22 2002/06/11 15:25:36 jhs Exp $
 
 //! A RCS file parser that eats a RCS *,v file and presents nice pike
 //! data structures of its contents.
@@ -302,7 +302,7 @@ string parse_delta_sections(string raw)
 	R->next = ptr; // on a branch, the next pointer means the successor
 	revisions[ptr]->ancestor = R->revision;
       }
-      else // this revision is on the trunk:
+      else // current revision is on the trunk:
       {
 	R->ancestor = ptr; // on the trunk, the next pointer is the ancestor
 	revisions[ptr]->next = R->revision;
@@ -458,22 +458,22 @@ class DeltatextIterator
       else
 	callback(this_rev);
 
-    Revision this = revisions[this_rev];
-    [this->log, raw] = parse_string(raw, "log");
+    Revision current = revisions[this_rev];
+    [current->log, raw] = parse_string(raw, "log");
     // FIXME: If this stops working, introduce newphrase skipping here
-    [this->rcs_text, raw] = parse_string(raw, "text");
-    if(!this->log || !this->rcs_text)
+    [current->rcs_text, raw] = parse_string(raw, "text");
+    if(!current->log || !current->rcs_text)
     {
       werror("RCS file %sbroken (truncated?) at rev %s.\n",
 	     (rcs_file_name ? rcs_file_name + " " : ""), this_rev);
       return 0;
     }
 
-    array(string) rows = this->rcs_text / "\n";
+    array(string) rows = current->rcs_text / "\n";
     if(this_rev == head)
     {
-      this->lines = sizeof(rows) - has_suffix(this->rcs_text, "\n");
-      this->text = this->rcs_text;
+      current->lines = sizeof(rows) - has_suffix(current->rcs_text, "\n");
+      current->text = current->rcs_text;
     }
     else
     {
@@ -495,19 +495,19 @@ class DeltatextIterator
 
       if(String.count(this_rev, ".") == 1)
       {
-	DEBUG("this: %s %+d-%d l%d a%O n%O\n", this_rev, added, removed,
-	      this->lines, this->ancestor, this->next);
-	Revision next = revisions[this->next];
-	this->lines = next->lines - removed + added;
-	this->added = this->lines; // so added files show their length
+	DEBUG("current: %s %+d-%d l%d a%O n%O\n", this_rev, added, removed,
+	      current->lines, current->ancestor, current->next);
+	Revision next = revisions[current->next];
+	current->lines = next->lines - removed + added;
+	current->added = current->lines; // so added files show their length
 	next->removed = added; // remember, the math is all
 	next->added = removed; // backwards on the trunk
       }
-      else // this revision was on a branch:
+      else // current revision was on a branch:
       {
-	this->lines = revisions[this->ancestor]->lines + added - removed;
-	this->removed = removed;
-	this->added = added;
+	current->lines = revisions[current->ancestor]->lines + added - removed;
+	current->removed = removed;
+	current->added = added;
       }
     }
     return raw;
