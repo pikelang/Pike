@@ -4,12 +4,12 @@
 #define MAJOR "7"
 #define MINOR "6"
 #define BUILD "13"
-#define INST  "4"
+#define INST  "7"
 
 [Setup]
 InternalCompressLevel=ultra
 SolidCompression=true
-Compression=lzma/normal
+Compression=lzma
 SetupIconFile=pikeinstall.ico
 UninstallIconFile=icons\pike_red.ico
 #emit 'OutputBaseFilename=Pike-'+MAJOR+'.'+MINOR+'.'+BUILD+'-win32-nilsson-beta'+inst
@@ -63,17 +63,18 @@ Source: dlls\SDL.dll; DestDir: {app}; Flags: restartreplace ignoreversion shared
 
 
 [Components]
-Name: base; Description: Pike base files; Flags: fixed; Types: custom compact full; ExtraDiskSpaceRequired: 6500000
+Name: base; Description: Pike base files; Flags: fixed; Types: custom compact full; ExtraDiskSpaceRequired: 7000000
 Name: debug; Description: Debug symbols; Types: full
 Name: gtk; Description: GTK+; Types: full
 Name: sdl; Description: SDL; Types: custom full
 
 [Tasks]
 Name: associate; Description: Associate .pike and .pmod extensions with Pike; Components: base
+Name: dump; Description: Precompile the Pike modules for faster start up of Pike applications.; Components: base
 
 [Run]
 Filename: {app}\pike.exe; Parameters: "-m ""{tmp}\finalizer.pike"" ""{app}\lib\master.pike"""; Flags: runhidden
-; Filename: {tmp}\finalizer.bat; Parameters: """{app}\pike.exe"" ""{tmp}\finalizer.pike"" ""{app}\lib\master.pike"""; Flags: runhidden
+Filename: {app}\pike.exe; Parameters: -x dump --nt-install; Flags: runhidden; Tasks: dump
 
 [Registry]
 Root: HKCR; Subkey: .pike; ValueType: string; ValueData: pike_file; Tasks: associate
@@ -83,13 +84,13 @@ Root: HKCR; Subkey: .pmod; ValueType: string; ValueName: ContentType; ValueData:
 Root: HKCR; Subkey: pike_file; ValueType: string; ValueData: Pike program file; Tasks: associate
 ;Root: HKCR; Subkey: pike_file\DefaultIcon; ValueType: string; ValueData: {app}\pike.ico,0; Tasks: associate
 Root: HKCR; Subkey: pike_file\DefaultIcon; ValueType: string; ValueData: {app}\icons\pike_black.ico,0; Tasks: associate
-Root: HKCR; Subkey: pike_file\Shell\Open\Command; ValueType: string; ValueData: """{app}\pike.exe"" ""%1"""; Flags: uninsdeletevalue; Tasks: associate
+Root: HKCR; Subkey: pike_file\Shell\Open\Command; ValueType: string; ValueData: """{app}\pike.exe"" ""%1"" %2 %3 %4 %5 %6 %7 %8 %9"; Flags: uninsdeletevalue; Tasks: associate
 Root: HKCR; Subkey: pike_file\Shell\Edit\Command; ValueType: string; ValueData: """notepad.exe"" ""%1"""; Flags: createvalueifdoesntexist; Tasks: associate
 Root: HKCR; Subkey: pike_module; ValueType: string; ValueData: Pike module file; Tasks: associate
 ;Root: HKCR; Subkey: pike_module\DefaultIcon; ValueType: string; ValueData: {app}\pike.ico,0; Tasks: associate
 Root: HKCR; Subkey: pike_module\DefaultIcon; ValueType: string; ValueData: {app}\icons\pike_blue.ico,0; Tasks: associate
 Root: HKCR; Subkey: pike_module\Shell\Edit\Command; ValueType: string; ValueData: """notepad.exe"" ""%1"""; Flags: createvalueifdoesntexist; Tasks: associate
-;Root: HKLM; Subkey: SOFTWARE\Pike\7.6.13; ValueType: string; ValueName: PIKE_MASTER; ValueData: {app}\lib\master.pike
+;#emit 'Root: HKLM; Subkey: SOFTWARE\Pike\'+MAJOR+'.'+MINOR+'.'+BUILD+'; ValueType: string; ValueName: PIKE_MASTER; ValueData: {app}\lib\master.pike'
 #emit 'Root: HKLM; Subkey: SOFTWARE\Pike\'+MAJOR+'.'+MINOR+'; ValueType: string; ValueName: PIKE_MASTER; ValueData: {app}\lib\master.pike'
 
 [Icons]
@@ -97,6 +98,7 @@ Name: {group}\Pike; Filename: {app}\pike.exe; IconFilename: {app}\icons\icon_mag
 
 [UninstallDelete]
 Type: filesandordirs; Name: {app}\lib
+Type: filesandordirs; Name: {app}\dumpmodule.log
 
 [Messages]
 LicenseLabel=Please read the following unimportant information before continuing.
