@@ -81,9 +81,9 @@ void my_srand(long seed)
   for (e=0;e< (int)sizeof(long)*8 ;e++)
   {
     int d = RNDSTEP * e + 3;
-    rndbuf[d] &= mask;
+    rndbuf[d % RNDBUF] &= mask;
     mask>>=1;
-    rndbuf[d] |= (mask+1);
+    rndbuf[d % RNDBUF] |= (mask+1);
   }
 }
 
