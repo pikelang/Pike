@@ -92,7 +92,8 @@ class imap_string
 
   string format()
     {
-      if (!sizeof(array_sscanf(data, "%*[^\0-\037\177-\377]%s")[0]))
+      // Pine doesn't know about \-quoting...
+      if (!sizeof(array_sscanf(data, "%*[^\0-\037\\\"\177-\377]%s")[0]))
 	return "\"" + replace(data, ({ "\"", "\\" }), ({ "\\\"", "\\\\" }) ) + "\"";
       else
 	return sprintf("{%d}\r\n%s", strlen(data), data);
