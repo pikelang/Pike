@@ -22,7 +22,7 @@
 #include "builtin_functions.h"
 #include "module_support.h"
 
-RCSID("$Id: opcodes.c,v 1.32 1998/11/22 11:03:05 hubbe Exp $");
+RCSID("$Id: opcodes.c,v 1.33 1998/12/16 07:49:37 hubbe Exp $");
 
 void index_no_free(struct svalue *to,struct svalue *what,struct svalue *ind)
 {
@@ -498,7 +498,7 @@ static int read_set(unsigned char *match,int cnt,char *set,int match_len)
 extern double LDEXP(double x, int exp); /* defined in encode.c */
 #endif
 
-INLINE static float low_parse_IEEE_float(char *b, int sz)
+static INLINE float low_parse_IEEE_float(char *b, int sz)
 {
   unsigned INT32 f, extra_f;
   int s, e;

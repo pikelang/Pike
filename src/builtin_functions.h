@@ -5,7 +5,7 @@
 \*/
 
 /*
- * $Id: builtin_functions.h,v 1.7 1998/03/28 15:38:55 grubba Exp $
+ * $Id: builtin_functions.h,v 1.8 1998/12/16 07:49:34 hubbe Exp $
  */
 #ifndef BUILTIN_EFUNS_H
 #define BUILTIN_EFUNS_H
@@ -33,12 +33,17 @@ void f_combine_path(INT32 args);
 void f_function_object(INT32 args);
 void f_function_name(INT32 args);
 void f_zero_type(INT32 args);
+void f_string_to_unicode(INT32 args);
+void f_unicode_to_string(INT32 args);
+void f_string_to_utf8(INT32 args);
+void f_utf8_to_string(INT32 args);
 void f_all_constants(INT32 args);
 void f_allocate(INT32 args);
 void f_rusage(INT32 args);
 void f_this_object(INT32 args);
 void f_throw(INT32 args);
 void f_exit(INT32 args);
+void f__exit(INT32 args);
 void f_time(INT32 args);
 void f_crypt(INT32 args);
 void f_destruct(INT32 args);
@@ -67,8 +72,17 @@ void f_rows(INT32 args);
 void f_column(INT32 args);
 void f__verify_internals(INT32 args);
 void f__debug(INT32 args);
+void f__compiler_trace(INT32 args);
+void f_gmtime(INT32 args);
 void f_localtime(INT32 args);
 void f_glob(INT32 args);
+struct diff_magic_link;
+struct diff_magic_link_pool;
+struct diff_magic_link_head;
+void f_diff(INT32 args);
+void f_diff_compare_table(INT32 args);
+void f_diff_longest_sequence(INT32 args);
+void f_diff_dyn_longest_sequence(INT32 args);
 struct callback *add_memory_usage_callback(callback_func call,
 					  void *arg,
 					  callback_func free_func);
@@ -80,7 +94,14 @@ void f_replace_master(INT32 args);
 void f_master(INT32 args);
 void f_gethrvtime(INT32 args);
 void f_gethrtime(INT32 args);
+void f_gethrtime(INT32 args);
 void f_object_variablep(INT32 args);
+void f_splice(INT32 args);
+void f_everynth(INT32 args);
+void f_transpose(INT32 args);
+void f__reset_dmalloc(INT32 args);
+void f__locate_references(INT32 args);
+void f_map_array(INT32 args);
 void init_builtin_efuns(void);
 /* Prototypes end here */
 

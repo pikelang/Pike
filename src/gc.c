@@ -25,7 +25,7 @@ struct callback *gc_evaluator_callback=0;
 #include "main.h"
 #include <math.h>
 
-RCSID("$Id: gc.c,v 1.39 1998/11/22 11:02:48 hubbe Exp $");
+RCSID("$Id: gc.c,v 1.40 1998/12/16 07:49:35 hubbe Exp $");
 
 /* Run garbage collect approximate every time we have
  * 20 percent of all arrays, objects and programs is
@@ -388,6 +388,22 @@ void describe_something(void *a, int t, int dm)
 void describe(void *x)
 {
   describe_something(x, attempt_to_identify(x),1);
+}
+
+void debug_describe_svalue(struct svalue *s)
+{
+  fprintf(stderr,"Svalue at %p is:\n",s);
+  switch(s->type)
+  {
+    case T_INT:
+      fprintf(stderr,"    %ld\n",(long)s->u.integer);
+      break;
+
+    case T_FLOAT:
+      fprintf(stderr,"    %f\n",s->u.float_number);
+      break;
+  }
+  describe_something(s->u.refs,s->type,1);
 }
 
 #endif

@@ -4,7 +4,7 @@
 ||| See the files COPYING and DISCLAIMER for more information.
 \*/
 #include "global.h"
-RCSID("$Id: builtin_functions.c,v 1.140 1998/11/22 11:02:35 hubbe Exp $");
+RCSID("$Id: builtin_functions.c,v 1.141 1998/12/16 07:49:32 hubbe Exp $");
 #include "interpret.h"
 #include "svalue.h"
 #include "pike_macros.h"
@@ -70,7 +70,7 @@ void f_aggregate(INT32 args)
 {
   struct array *a;
 #ifdef PIKE_DEBUG
-  if(args < 0) fatal("Negative args to f_aggregate()\n");
+  if(args < 0) fatal("Negative args to f_aggregate() (%d)\n",args);
 #endif
 
   a=aggregate_array(args);
