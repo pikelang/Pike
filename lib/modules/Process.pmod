@@ -21,9 +21,7 @@ varargs int exec(string file,string ... foo)
 
 varargs int spawn(string s,object stdin,object stdout,object stderr)
 {
-  object p;
   int pid;
-  string t;
 
   pid=fork();
   
