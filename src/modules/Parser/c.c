@@ -89,7 +89,7 @@ static void do_free_arrayptr( struct array **x )
   free_array( *x );
 }			   
 
-/*! @decl array(array(string),string) tokenize(string code)
+/*! @decl array(array(string)|string) tokenize(string code)
  *!
  *!   Tokenize a string of C tokens.
  *!
