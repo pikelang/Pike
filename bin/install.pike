@@ -373,9 +373,27 @@ int main(int argc, string *argv)
 
     case "--export":
       string ver=replace(replace(version()," ","-"),"-release-",".");
-      export_base_name=sprintf("%s-%s-%s",ver,
-			       uname()->sysname,
-			       uname()->machine);
+#if constant(uname)
+      mixed u=uname();
+      if(u->sysname=="AIX")
+      {
+	export_base_name=sprintf("%s-%s-%s.%s",
+				 ver,
+				 uname()->sysname,
+				 uname()->version,
+				 uname()->release);
+      }else{
+	export_base_name=sprintf("%s-%s-%s-%s",
+				 ver,
+				 uname()->sysname,
+				 uname()->release,
+				 uname()->machine);
+      }
+      export_base_name=replace(export_base_name,"/","-");
+#else
+      export_base_name=ver;
+#endif
+
 
       mkdirhier(export_base_name+".dir");
 
