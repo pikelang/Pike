@@ -286,7 +286,7 @@ int main(int argc, string *argv)
 //    werror("Making master with libdir=%s\n",lib_prefix);
     status("Finalizing",master);
     string master_data=Stdio.read_file(master);
-    master_data=replace(master_data,"¤lib_prefix¤",lib_prefix);
+    master_data=replace(master_data,"¤lib_prefix¤",replace(lib_prefix,"\\","\\\\"));
     Stdio.write_file(combine_path(vars->TMP_LIBDIR,"master.pike"),master_data);
     status("Finalizing",master,"done");
 		    
