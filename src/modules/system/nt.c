@@ -1,5 +1,5 @@
 /*
- * $Id: nt.c,v 1.42 2001/09/18 13:13:30 grubba Exp $
+ * $Id: nt.c,v 1.43 2001/09/18 22:37:30 grubba Exp $
  *
  * NT system calls for Pike
  *
@@ -2257,7 +2257,32 @@ static int sizeof_wkstauser_info(int level)
   }
 }
 
-
+/*! @decl array(int|string) NetSessionEnum(string|int(0..0) server, @
+ *!                                        string|int(0..0) client, @
+ *!                                        string|int(0..0) user, int level)
+ *!
+ *!   Get session information.
+ *!
+ *! @param server
+ *!
+ *! @param client
+ *!
+ *! @param user
+ *!
+ *! @param level
+ *!   One of
+ *!   @int
+ *!     @value 0
+ *!     @value 1
+ *!     @value 2
+ *!     @value 10
+ *!     @value 502
+ *!   @endint
+ *!
+ *! @note
+ *!   This function is only available on some Win32 systems.
+ *!
+ */
 static void f_NetSessionEnum(INT32 args)
 {
   INT32 pos=0,e;
@@ -2337,6 +2362,21 @@ static void f_NetSessionEnum(INT32 args)
 
 /* End netsessionenum */
 
+/*! @decl array(mixed) NetWkstaUserEnum(string|int(0..0) server, int level)
+ *!
+ *! @param server
+ *!
+ *! @param level
+ *!   One of
+ *!   @int
+ *!     @value 0
+ *!     @value 1
+ *!   @endint
+ *!
+ *! @note
+ *!   This function is only available on some Win32 systems.
+ *!
+ */
 static void f_NetWkstaUserEnum(INT32 args)
 {
   INT32 pos=0,e;
@@ -2488,6 +2528,16 @@ static void f_normalize_path(INT32 args)
   push_string(finish_string_builder(&res));
 }
 
+/*! @decl int GetFileAttributes(string filename)
+ *!
+ *!   Get the file attributes for the specified file.
+ *!
+ *! @note
+ *!   This function is only available on Win32 systems.
+ *!
+ *! @seealso
+ *!   @[system.SetFileAttributes()]
+ */
 static void f_GetFileAttributes(INT32 args)
 {
   char *file;
@@ -2499,6 +2549,16 @@ static void f_GetFileAttributes(INT32 args)
   push_int(ret);
 }
 
+/*! @decl int SetFileAttributes(string filename)
+ *!
+ *!   Set the file attributes for the specified file.
+ *!
+ *! @note
+ *!   This function is only available on Win32 systems.
+ *!
+ *! @seealso
+ *!   @[system.GetFileAttributes()]
+ */
 static void f_SetFileAttributes(INT32 args)
 {
   char *file;
@@ -2512,6 +2572,12 @@ static void f_SetFileAttributes(INT32 args)
   push_int(ret);
 }
 
+/*! @decl array(mixed) LookupAccountName(string|int(0..0) sys, string account)
+ *!
+ *! @note
+ *!   This function is only available on some Win32 systems.
+ *!
+ */
 static void f_LookupAccountName(INT32 args)
 {
   LPCTSTR sys=0;
@@ -2711,6 +2777,15 @@ static PACL decode_acl(struct array *arr)
  * Note, this function does not use errno!!
  * (Time to learn how to autodoc... /Hubbe)
  */
+/*! @decl array(mixed) SetNamedSecurityInfo(string name, @
+ *!                                         mapping(string:mixed) options)
+ *!
+ *! @note
+ *!   This function is only available on some Win32 systems.
+ *!
+ *! @seealso
+ *!   @[system.GetNamedSecurityInfo()]
+ */
 static void f_SetNamedSecurityInfo(INT32 args)
 {
   struct svalue *sval;
@@ -2780,6 +2855,16 @@ static void f_SetNamedSecurityInfo(INT32 args)
   push_int(ret);
 }
 
+/*! @decl mapping(mixed:mixed) GetNamedSecurityInfo(string name, @
+ *!                                                 int|void type, @
+ *!                                                 int|void flags)
+ *!
+ *! @note
+ *!   This function is only available on some Win32 systems.
+ *!
+ *! @seealso
+ *!   @[system.SetNamedSecurityInfo()]
+ */
 static void f_GetNamedSecurityInfo(INT32 args)
 {
   PSID owner=0, group=0;
@@ -2846,7 +2931,7 @@ static void f_GetNamedSecurityInfo(INT32 args)
   if(desc) LocalFree(desc);
 }
 
-
+/* Implementation of uname() for Win32. */
 static void f_nt_uname(INT32 args)
 {
   /* More info could be added here */
