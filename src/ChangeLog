@@ -1,3 +1,8 @@
+Thu Mar 11 16:41:11 1999    <nisse@idonex.se>
+
+	* modules/Gmp/next_prime.c (mpz_next_prime): Fixed off-by-one
+	overflow. 
+
 1999-02-28  Henrik Grubbström  <grubba@idonex.se>
 
 	* preprocessor.h: The preprocessor now supports widestrings.
