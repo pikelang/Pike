@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: svalue.c,v 1.181 2003/11/10 12:49:51 mast Exp $
+|| $Id: svalue.c,v 1.182 2003/11/15 16:38:37 mast Exp $
 */
 
 #include "global.h"
@@ -30,7 +30,7 @@
 
 #define sp Pike_sp
 
-RCSID("$Id: svalue.c,v 1.181 2003/11/10 12:49:51 mast Exp $");
+RCSID("$Id: svalue.c,v 1.182 2003/11/15 16:38:37 mast Exp $");
 
 struct svalue dest_ob_zero = {
   T_INT, 0,
@@ -776,8 +776,8 @@ PMOD_EXPORT int is_eq(const struct svalue *a, const struct svalue *b)
     }
     return a->u.float_number == b->u.float_number;
 
-#ifdef PIKE_DEBUG
   default:
+#ifdef PIKE_DEBUG
     Pike_fatal("Unknown type %x\n",a->type);
 #endif
     return 0; /* make gcc happy */
