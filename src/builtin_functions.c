@@ -5,7 +5,7 @@
 \*/
 /**/
 #include "global.h"
-RCSID("$Id: builtin_functions.c,v 1.271 2000/05/04 19:10:39 grubba Exp $");
+RCSID("$Id: builtin_functions.c,v 1.272 2000/05/05 07:55:19 hubbe Exp $");
 #include "interpret.h"
 #include "svalue.h"
 #include "pike_macros.h"
@@ -2722,7 +2722,7 @@ void f_column(INT32 args)
   get_all_args("column", args, "%a%*", &tmp, &val);
 
   /* Optimization */
-  if(tmp->refs == 1 || !(tmp->type_field & BIT_COMPLEX))
+  if(tmp->refs == 1)
   {
     /* An array with one ref cannot possibly be cyclic */
     struct svalue sval;
