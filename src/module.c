@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: module.c,v 1.23 2003/04/02 19:17:50 nilsson Exp $
+|| $Id: module.c,v 1.24 2004/04/14 19:02:03 grubba Exp $
 */
 
 #include "global.h"
@@ -17,13 +17,12 @@
 #include "object.h"
 #include "mapping.h"
 #include "program_id.h"
-#include "language.h"
 #include "lex.h"
 
 #include "modules/modlist_headers.h"
 #include "post_modules/modlist_headers.h"
 
-RCSID("$Id: module.c,v 1.23 2003/04/02 19:17:50 nilsson Exp $");
+RCSID("$Id: module.c,v 1.24 2004/04/14 19:02:03 grubba Exp $");
 
 /* Define this to trace the initialization and cleanup of static modules. */
 /* #define TRACE_MODULE */
@@ -51,7 +50,7 @@ static struct static_module module_list[] = {
 
 void init_modules(void)
 {
-  struct program *p;
+  struct program *p = NULL;
   unsigned int e;
   struct lex save_lex;
 
@@ -65,18 +64,29 @@ void init_modules(void)
   for(e=0;e<NELEM(module_list);e++)
   {
     JMP_BUF recovery;
-    start_new_program();
+    if (!p) {
+      start_new_program();
+      p = Pike_compiler->new_program;
+    }
     if(SETJMP(recovery)) {
+      /* FIXME: We could loop here until we find p. */
       free_program(end_program());
+      p = NULL;
       call_handle_error();
     } else {
       TRACE((stderr, "Initializing static module #%d: \"%s\"...\n",
 	     e, module_list[e].name));
       module_list[e].init();
-      debug_end_class(module_list[e].name,strlen(module_list[e].name),0);
+      if (Pike_compiler.new_program->num_identifier_references) {
+	debug_end_class(module_list[e].name,strlen(module_list[e].name),0);
+	p = NULL;
+      } else {
+	/* No identifier references -- Disabled module. */
+      }
     }
     UNSETJMP(recovery);
   }
+  if (p) free_program(end_program());
   push_text("_static_modules");
   push_object(low_clone(p=end_program()));
   f_add_constant(2);

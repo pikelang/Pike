@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: dynamic_load.c,v 1.79 2004/03/22 17:42:07 mast Exp $
+|| $Id: dynamic_load.c,v 1.80 2004/04/14 19:05:26 grubba Exp $
 */
 
 #ifdef TESTING
@@ -21,11 +21,10 @@
 #  include "pike_macros.h"
 #  include "main.h"
 #  include "constants.h"
-#  include "language.h"
 #  include "lex.h"
 #  include "object.h"
 
-RCSID("$Id: dynamic_load.c,v 1.79 2004/03/22 17:42:07 mast Exp $");
+RCSID("$Id: dynamic_load.c,v 1.80 2004/04/14 19:05:26 grubba Exp $");
 
 #else /* TESTING */
 
@@ -587,8 +586,14 @@ void f_load_module(INT32 args)
     compilation_depth = save.compilation_depth;
     lex = save.lex;
     if (p) {
-      push_program(p);
-      add_ref(new_module->module_prog = Pike_sp[-1].u.program);
+      if (p->num_identifier_references) {
+	push_program(p);
+	add_ref(new_module->module_prog = Pike_sp[-1].u.program);
+      } else {
+	/* No identifier references -- Disabled module. */
+	free_program(p);
+	push_undefined();
+      }
     } else {
       /* Initialization failed. */
       new_module->exit();
