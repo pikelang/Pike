@@ -1,5 +1,7 @@
 AC_INIT(ssleay.c)
 
+AC_CONFIG_HEADER(config.h)
+
 sinclude(../module_configure.in)
 
 AC_ARG_WITH(ssleay,  [  --without-ssleay       no support for the secure socket protocol],[],[with_ssleay=yes])
