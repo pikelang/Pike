@@ -1,5 +1,5 @@
 #
-# $Id: Makefile.in,v 1.80 1998/04/19 00:14:54 hubbe Exp $
+# $Id: Makefile.in,v 1.81 1998/04/21 11:38:51 grubba Exp $
 #
 
 # This line is needed on some machines.
@@ -25,7 +25,8 @@ TMP_LIBDIR = $(TMP_BUILDDIR)/lib
 prefix = @prefix@
 exec_prefix = $(prefix)/bin
 lib_prefix = $(prefix)/lib/pike
-share_prefix = @datadir@/pike
+data_prefix = @datadir@
+share_prefix = $(data_prefix)/pike
 
 #
 # use bison please, yacc isn't good enough.
@@ -187,7 +188,7 @@ install: pike hilfe
 	@echo
 	@echo "Creating directories..."; \
 	for d in "$(prefix)" "$(exec_prefix)" "$(prefix)/lib" \
-	          "$(lib_prefix)" "$(share_prefix)" \
+	          "$(lib_prefix)" "$(data_prefix)" "$(share_prefix)" \
 	          "$(prefix)/include" "$(prefix)/include/pike"; do \
 	  if [ -d "$$d/." ]; then : ; else \
 	    echo "$$d"; \
