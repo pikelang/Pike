@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: xml.c,v 1.67 2003/12/23 15:19:34 grubba Exp $
+|| $Id: xml.c,v 1.68 2004/09/29 19:58:56 grubba Exp $
 */
 
 #include "global.h"
@@ -2909,17 +2909,19 @@ static void autoconvert(INT32 args)
   s=sp[-1].u.string;
   if(!s->size_shift)
   {
-    switch((STR0(s)[0]<<8) | STR0(s)[1])
-    {
-      case 0xfffe: /* UTF-16, little-endian */
+    int pos = 0;
+    if (STR0(s)[2] && STR0(s)[3]) {
+      switch((STR0(s)[0]<<8) | STR0(s)[1])
       {
-	struct pike_string *t=begin_shared_string(s->len);
-	IF_XMLDEBUG(fprintf(stderr,"UTF-16, little endian detected.\n"));
-	for(e=0;e<s->len;e+=1) t->str[e]=s->str[e^1];
-	pop_stack();
-	push_string(end_shared_string(t));
-      }
-      /* FALL_THROUGH */
+      case 0xfffe: /* UTF-16, little-endian */
+	{
+	  struct pike_string *t=begin_shared_string(s->len);
+	  IF_XMLDEBUG(fprintf(stderr,"UTF-16, little endian detected.\n"));
+	  for(e=0;e<s->len;e+=1) t->str[e]=s->str[e^1];
+	  pop_stack();
+	  push_string(end_shared_string(t));
+	}
+	/* FALL_THROUGH */
 	
       case 0xfeff: /* UTF-16, big-endian */
 	IF_XMLDEBUG(fprintf(stderr,"UTF-16, big endian detected.\n"));
@@ -2928,44 +2930,66 @@ static void autoconvert(INT32 args)
 	o_range();
 	f_unicode_to_string(1);
 	return;
+
+      case 0xefbb: /* UTF-8 */
+	if (STR0(s)[3] != 0xbf) break;
+	IF_XMLDEBUG(fprintf(stderr, "UTF-8 detected.\n"));
+	push_int(3);
+	push_int(0x7fffffff);
+	o_range();
+	f_utf8_to_string(1);
+	return;
+      }
     }
 
     switch((STR0(s)[0]<<24) | (STR0(s)[1]<<16) | (STR0(s)[2]<<8) | STR0(s)[3])
     {
+      case 0x0000feff:
+	pos = 4;
+	/* FALL_THROUGH */
       case 0x0000003c: /* UCS4 1234 byte order (big endian) */
 	IF_XMLDEBUG(fprintf(stderr,"UCS4(1234) detected.\n"));
 	init_string_builder(&b,4);
-	for(e=0;e<s->len;e+=4)
+	for(e=pos;e<s->len;e+=4)
 	  string_builder_putchar(&b,
 	    (STR0(s)[e+0]<<24) | (STR0(s)[e+1]<<16) | (STR0(s)[e+2]<<8) | STR0(s)[e+3]);
 	pop_stack();
 	push_string(finish_string_builder(&b));
 	return;
-	
+
+      case 0xfffe0000:
+	pos = 4;
+	/* FALL_THROUGH */
       case 0x3c000000: /* UCS4 4321 byte order (little endian)*/
 	IF_XMLDEBUG(fprintf(stderr,"UCS4(4321) detected.\n"));
 	init_string_builder(&b,4);
-	for(e=0;e<s->len;e+=4)
+	for(e=pos;e<s->len;e+=4)
 	  string_builder_putchar(&b,
 	    (STR0(s)[e+3]<<24) | (STR0(s)[e+2]<<16) | (STR0(s)[e+1]<<8) | STR0(s)[e+0]);
 	pop_stack();
 	push_string(finish_string_builder(&b));
 	return;
 
+      case 0x0000fffe:
+	pos = 4;
+	/* FALL_THROUGH */
       case 0x00003c00: /* UCS4 2143 byte order */
 	IF_XMLDEBUG(fprintf(stderr,"UCS4(2143) detected.\n"));
 	init_string_builder(&b,4);
-	for(e=0;e<s->len;e+=4)
+	for(e=pos;e<s->len;e+=4)
 	  string_builder_putchar(&b,
 	    (STR0(s)[e+1]<<24) | (STR0(s)[e+0]<<16) | (STR0(s)[e+3]<<8) | STR0(s)[e+2]);
 	pop_stack();
 	push_string(finish_string_builder(&b));
 	return;
 
+      case 0xfeff0000:
+	pos = 4;
+	/* FALL_THROUGH */
       case 0x003c0000: /* UCS4 3412 byte order */
 	IF_XMLDEBUG(fprintf(stderr,"UCS4(3412) detected.\n"));
 	init_string_builder(&b,4);
-	for(e=0;e<s->len;e+=4)
+	for(e=pos;e<s->len;e+=4)
 	  string_builder_putchar(&b,
 	    (STR0(s)[e+2]<<24) | (STR0(s)[e+3]<<16) | (STR0(s)[e+0]<<8) | STR0(s)[e+1]);
 	pop_stack();
@@ -2983,10 +3007,10 @@ static void autoconvert(INT32 args)
 
       case 0x3c3f786d: /* ASCII? UTF-8? ISO-8859? */
 	{
-	  int pos,encstart;
+	  int encstart;
 
 	  IF_XMLDEBUG(fprintf(stderr,"Extended ASCII detected (assuming UTF8).\n"));
-	  pos=5;
+	  pos = 5;
 	   /* <?xml. version */
 	  while(isSpace(STR0(s)[pos])) pos++;
 
