@@ -1,5 +1,5 @@
 #
-# $Id: Makefile.in,v 1.260 2001/06/19 23:59:32 hubbe Exp $
+# $Id: Makefile.in,v 1.261 2001/06/20 22:28:54 grubba Exp $
 #
 
 # This line is needed on some machines.
@@ -696,7 +696,7 @@ modules/linker_options: modules-stamp
 module.o:  modules/modlist_headers.h modules/modlist.h
 
 $(SRCDIR)/interpret_protos.h_src: $(SRCDIR)/interpret_functions.h
-	$(CPP) $(SRCDIR)/interpret_functions.h | $(SRCDIR)/strip_opcodes >$(SRCDIR)/interpret_protos.h_src || { rm $(SRCDIR)/interpret_protos.h_src; exit 1; }
+	$(CPP) $(PREFLAGS) $(SRCDIR)/interpret_functions.h | $(SRCDIR)/strip_opcodes >$(SRCDIR)/interpret_protos.h_src || { rm $(SRCDIR)/interpret_protos.h_src; exit 1; }
 
 lex.o: $(SRCDIR)/lex.c $(SRCDIR)/interpret_protos.h
 
