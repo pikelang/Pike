@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: svalue.c,v 1.158 2003/09/10 11:51:10 mast Exp $
+|| $Id: svalue.c,v 1.159 2003/09/29 19:38:28 mast Exp $
 */
 
 #include "global.h"
@@ -66,7 +66,7 @@ static int pike_isnan(double x)
 #endif /* HAVE__ISNAN */
 #endif /* HAVE_ISNAN */
 
-RCSID("$Id: svalue.c,v 1.158 2003/09/10 11:51:10 mast Exp $");
+RCSID("$Id: svalue.c,v 1.159 2003/09/29 19:38:28 mast Exp $");
 
 struct svalue dest_ob_zero = {
   T_INT, 0,
@@ -1235,12 +1235,9 @@ PMOD_EXPORT void describe_svalue(const struct svalue *s,int indent,struct proces
 
 
     case T_FUNCTION:
-      /* FIXME: What if the functionname is a wide-string?
-       * /grubba 1999-10-21
-       */
       if(s->subtype == FUNCTION_BUILTIN)
       {
-	my_binary_strcat(s->u.efun->name->str,s->u.efun->name->len);
+	dsv_add_string_to_buf(s->u.efun->name);
       }else{
 	struct object *obj = s->u.object;
 	struct program *prog = obj->prog;
@@ -1315,7 +1312,7 @@ PMOD_EXPORT void describe_svalue(const struct svalue *s,int indent,struct proces
 		  t_flag=save_t_flag;
 		
 		  dsv_add_string_to_buf( sp[-1].u.string );
-		  my_binary_strcat(name->str,name->len);
+		  dsv_add_string_to_buf(name);
 
 		  pop_stack();
 		  END_CYCLIC();
@@ -1333,6 +1330,7 @@ PMOD_EXPORT void describe_svalue(const struct svalue *s,int indent,struct proces
 	  }
 
 	  if(name) {
+	    /* FIXME: Wide strings. */
 	    my_binary_strcat(name->str,name->len);
 	    break;
 	  }
