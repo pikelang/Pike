@@ -156,7 +156,7 @@
 /* This is the grammar definition of Pike. */
 
 #include "global.h"
-RCSID("$Id: language.yacc,v 1.39 1997/04/23 04:11:26 grubba Exp $");
+RCSID("$Id: language.yacc,v 1.40 1997/04/23 04:14:30 grubba Exp $");
 #ifdef HAVE_MEMORY_H
 #include <memory.h>
 #endif
@@ -176,11 +176,6 @@ RCSID("$Id: language.yacc,v 1.39 1997/04/23 04:11:26 grubba Exp $");
 #include "docode.h"
 
 #define YYMAXDEPTH	600
-
-#ifndef DEBUG
-#define DEBUG 1
-#endif
-#define YYERROR_VERBOSE
 
 #ifdef DEBUG
 #define YYDEBUG 1
