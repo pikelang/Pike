@@ -5,7 +5,7 @@
 \*/
 
 /*
- * $Id: file.h,v 1.19 2000/08/27 18:29:27 mirar Exp $
+ * $Id: file.h,v 1.20 2003/09/03 11:38:07 mast Exp $
  */
 
 #ifndef FILE_H
@@ -69,6 +69,7 @@ struct pike_sendfile
   struct object *from_file;
   struct object *to_file;
 
+  struct callback *backend_callback;
   struct svalue callback;
   struct array *args;
 
