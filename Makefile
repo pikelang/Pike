@@ -1,5 +1,5 @@
 #
-# $Id: Makefile,v 1.27 2000/07/29 06:29:07 hubbe Exp $
+# $Id: Makefile,v 1.28 2000/08/05 13:36:23 mast Exp $
 #
 # Meta Makefile
 #
@@ -32,8 +32,10 @@ src/configure: src/configure.in
 	cd src && ./run_autoconfig . 2>&1 | grep -v warning
 	-rm -f "$(BUILDDIR)/Makefile"
 
-force_configure:
+force_autoconfig:
 	cd src && ./run_autoconfig . 2>&1 | grep -v warning
+
+force_configure:
 	-rm -f "$(BUILDDIR)/Makefile"
 	@$(MAKE) $(MAKE_FLAGS) configure
 
