@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: perlmod.c,v 1.30 2002/11/26 11:39:11 stensson Exp $
+|| $Id: perlmod.c,v 1.31 2002/11/26 14:18:34 nilsson Exp $
 */
 
 #define NO_PIKE_SHORTHAND
@@ -957,7 +957,8 @@ static void perlmod_array_size(INT32 args)
  *! @param name
  *!   Name of the array variable, as an 8-bit string.
  *!
- *! @seealso @[array_size_limit()]
+ *! @seealso
+ *!   @[array_size_limit()]
  */
 static void perlmod_get_whole_array(INT32 args)
 {
@@ -1000,7 +1001,8 @@ static void perlmod_get_whole_array(INT32 args)
  *! @param name
  *!   Name of the hash variable, as an 8-bit string.
  *!
- *! @seealso @[array_size_limit()]
+ *! @seealso
+ *!   @[array_size_limit()]
  */
 static void perlmod_get_hash_keys(INT32 args)
 {
