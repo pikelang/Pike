@@ -2,11 +2,11 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: builtin_functions.c,v 1.450 2002/11/24 14:57:05 marcus Exp $
+|| $Id: builtin_functions.c,v 1.451 2002/11/25 00:41:17 nilsson Exp $
 */
 
 #include "global.h"
-RCSID("$Id: builtin_functions.c,v 1.450 2002/11/24 14:57:05 marcus Exp $");
+RCSID("$Id: builtin_functions.c,v 1.451 2002/11/25 00:41:17 nilsson Exp $");
 #include "interpret.h"
 #include "svalue.h"
 #include "pike_macros.h"
@@ -3378,15 +3378,17 @@ PMOD_EXPORT void f_callablep(INT32 args)
 #undef HAVE_POLL
 #endif
 
-/*! @decl void sleep(int|float s)
+/*! @decl void sleep(int|float s, void|int abort_on_signal)
  *!
  *!   This function makes the program stop for @[s] seconds.
  *!
- *!   Only signal handlers can interrupt the sleep. Other callbacks are
- *!   not called during sleep.
+ *!   Only signal handlers can interrupt the sleep, and only when
+ *!   @[abort_on_signal] is set. If more than one thread is running
+ *!   the signal must be sent to the sleeping thread. Other callbacks
+ *!   are not called during sleep.
  *!
  *! @seealso
- *!   @[signal()]
+ *!   @[signal()], @[delay()]
  */
 PMOD_EXPORT void f_sleep(INT32 args)
 {
@@ -3488,7 +3490,7 @@ PMOD_EXPORT void f_sleep(INT32 args)
  *!   This function makes the program stop for @[s] seconds.
  *!
  *!   Only signal handlers can interrupt the sleep. Other callbacks are
- *!   not called during sleep. Beware that this function uses busy-waiting
+ *!   not called during delay. Beware that this function uses busy-waiting
  *!   to achieve the highest possible accuracy.
  *!   
  *! @seealso
@@ -3848,7 +3850,8 @@ PMOD_EXPORT void f_rows(INT32 args)
 
 
 #ifdef PIKE_DEBUG
-/*! @decl void _verify_internals()
+/*! @decl void verify_internals()
+ *! @belongs Debug
  *!
  *!   Perform sanity checks.
  *!
@@ -3872,7 +3875,8 @@ PMOD_EXPORT void f__verify_internals(INT32 args)
   pop_n_elems(args);
 }
 
-/*! @decl int _debug(int(0..) level)
+/*! @decl int debug(int(0..) level)
+ *! @belongs Debug
  *!
  *!   Set the run-time debug level.
  *!
@@ -3896,7 +3900,8 @@ PMOD_EXPORT void f__debug(INT32 args)
   d_flag = d;
 }
 
-/*! @decl int _optimizer_debug(int(0..) level)
+/*! @decl int optimizer_debug(int(0..) level)
+ *! @belongs Debug
  *!
  *!   Set the optimizer debug level.
  *!
@@ -3921,7 +3926,8 @@ PMOD_EXPORT void f__optimizer_debug(INT32 args)
 }
 
 
-/*! @decl int _assembler_debug(int(0..) level)
+/*! @decl int assembler_debug(int(0..) level)
+ *! @belongs Debug
  *!
  *!   Set the assembler debug level.
  *!
@@ -3948,7 +3954,8 @@ PMOD_EXPORT void f__assembler_debug(INT32 args)
 
 #ifdef YYDEBUG
 
-/*! @decl int _compiler_trace(int(0..) level)
+/*! @decl int compiler_trace(int(0..) level)
+ *! @belongs Debug
  *!
  *!   Set the compiler trace level.
  *!
@@ -5688,7 +5695,8 @@ struct callback *add_memory_usage_callback(callback_func call,
   return add_to_callback(&memory_usage_callback, call, arg, free_func);
 }
 
-/*! @decl mapping(string:int) _memory_usage()
+/*! @decl mapping(string:int) memory_usage()
+ *! @belongs Debug
  *!
  *!   Check memory usage.
  *!
@@ -6384,7 +6392,11 @@ PMOD_EXPORT void f_transpose(INT32 args)
  */
 
 #ifdef DEBUG_MALLOC
-/*! @decl void _reset_dmalloc()
+/*! @decl void reset_dmalloc()
+ *! @belongs Debug
+ *!
+ *! @note
+ *!   Only available when compiled with dmalloc.
  */
 PMOD_EXPORT void f__reset_dmalloc(INT32 args)
 {
@@ -6394,7 +6406,11 @@ PMOD_EXPORT void f__reset_dmalloc(INT32 args)
   reset_debug_malloc();
 }
 
-/*! @decl void _dmalloc_set_name(string filename, int linenumber)
+/*! @decl void dmalloc_set_name(string filename, int linenumber)
+ *! @belongs Debug
+ *!
+ *! @note
+ *!   Only available when compiled with dmalloc.
  */
 PMOD_EXPORT void f__dmalloc_set_name(INT32 args)
 {
@@ -6413,7 +6429,11 @@ PMOD_EXPORT void f__dmalloc_set_name(INT32 args)
   pop_n_elems(args);
 }
 
-/*! @decl void _list_open_fds()
+/*! @decl void list_open_fds()
+ *! @belongs Debug
+ *!
+ *! @note
+ *!   Only available when comiled with dmalloc.
  */
 PMOD_EXPORT void f__list_open_fds(INT32 args)
 {
@@ -6423,9 +6443,10 @@ PMOD_EXPORT void f__list_open_fds(INT32 args)
 #endif
 
 #ifdef PIKE_DEBUG
-/*! @decl mapping(string:int) _locate_references(string|array|mapping| @
- *!                                              multiset|function|object| @
- *!                                              program|type o)
+/*! @decl mapping(string:int) locate_references(string|array|mapping| @
+ *!                                             multiset|function|object| @
+ *!                                             program|type o)
+ *! @belongs Debug
  *!
  *!   This function is mostly intended for debugging. It will search through
  *!   all data structures in Pike looking for @[o] and print the
@@ -6445,7 +6466,8 @@ PMOD_EXPORT void f__locate_references(INT32 args)
   pop_n_elems(args-1);
 }
 
-/*! @decl mixed _describe(mixed x)
+/*! @decl mixed describe(mixed x)
+ *! @belongs Debug
  *!
  *!   Prints out a description of the thing @[x] to standard error.
  *!   The description contains various internal info associated with
@@ -6466,7 +6488,8 @@ PMOD_EXPORT void f__describe(INT32 args)
   pop_n_elems(args-1);
 }
 
-/*! @decl void _gc_set_watch(array|multiset|mapping|object|function|program|string x)
+/*! @decl void gc_set_watch(array|multiset|mapping|object|function|program|string x)
+ *! @belongs Debug
  *!
  *!   Sets a watch on the given thing, so that the gc will print a
  *!   message whenever it's encountered. Intended to be used together
@@ -6488,7 +6511,8 @@ PMOD_EXPORT void f__gc_set_watch(INT32 args)
   pop_n_elems(args);
 }
 
-/*! @decl void _dump_backlog()
+/*! @decl void dump_backlog()
+ *! @belongs Debug
  *!
  *!   Dumps the 1024 latest executed opcodes, along with the source
  *!   code lines, to standard error. The backlog is only collected on
@@ -7550,7 +7574,7 @@ void init_builtin_efuns(void)
   ADD_PROTOTYPE("compile_error", tFunc(tStr tInt tStr, tVoid), 0);
   ADD_PROTOTYPE("compile_warning", tFunc(tStr tInt tStr, tVoid), 0);
   ADD_PROTOTYPE("decode_charset", tFunc(tStr tStr, tStr), 0);
-  ADD_PROTOTYPE("describe_backtrace", tFunc(tOr(tObj, tArr(tMix)), tStr), 0);
+  ADD_PROTOTYPE("describe_backtrace", tFunc(tOr(tObj, tArr(tMix)) tOr(tVoid, tInt), tStr), 0);
   ADD_PROTOTYPE("handle_error", tFunc(tOr(tArr(tMix),tObj), tVoid), 0);
   ADD_PROTOTYPE("handle_import",
 		tFunc(tStr tOr(tStr, tVoid) tOr(tObj, tVoid), tMix), 0);
