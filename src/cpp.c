@@ -5,12 +5,12 @@
 \*/
 
 /*
- * $Id: cpp.c,v 1.33 1999/02/10 21:46:41 hubbe Exp $
+ * $Id: cpp.c,v 1.34 1999/02/20 17:42:32 grubba Exp $
  */
 #include "global.h"
 #include "dynamic_buffer.h"
-#include "lex.h"
 #include "language.h"
+#include "lex.h"
 #include "stralloc.h"
 #include "module_support.h"
 #include "interpret.h"
