@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: port.c,v 1.81 2005/01/02 00:36:41 nilsson Exp $
+|| $Id: port.c,v 1.82 2005/02/25 01:53:27 nilsson Exp $
 */
 
 /*
@@ -1136,7 +1136,7 @@ unsigned short __dtoxmode(int attr, const char *name) {
   
   unix_mode |= (dos_mode & ATTR_READONLY)?_S_IREAD : (_S_IREAD|_S_IWRITE);
 
-  if (p=strchr(name, '.')) {
+  if ((p=strchr(name, '.'))) {
     if ( !strcmp(p, ".exe") ||
 	 !strcmp(p, ".cmd") ||
 	 !strcmp(p, ".bat") ||
