@@ -4,7 +4,7 @@
 #ifndef __NT__
   FILE_FUNC("peek",file_peek,"function(void:int)")
 #endif
-  FILE_FUNC("write",file_write,"function(string,void|mixed...:int)")
+  FILE_FUNC("write",file_write,"function(string|array(string),void|mixed...:int)")
 #ifdef WITH_OOB
   FILE_FUNC("read_oob",file_read_oob,"function(int|void,int|void:int|string)")
   FILE_FUNC("write_oob",file_write_oob,"function(string,void|mixed...:int)")
