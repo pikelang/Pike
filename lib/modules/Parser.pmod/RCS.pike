@@ -1,6 +1,6 @@
 #pike __REAL_VERSION__
 
-// $Id: RCS.pike,v 1.14 2002/04/09 02:09:24 jhs Exp $
+// $Id: RCS.pike,v 1.15 2002/04/15 10:00:01 jhs Exp $
 
 //! A RCS file parser that eats a RCS *,v file and presents nice pike
 //! data structures of its contents.
@@ -41,25 +41,36 @@
 		"branches" WS "((" NUM WS ")*)" WS ";" WS \
 		"next" WS OPT(NUM) ";" WS
 
-//!
-string head;		// num
-string branch;		// num
-array(string) access;	// ids
-string comment;
+//! Version number of the head version of the file
+string head;
+
+//! The default branch (or revision), if present, @code{@0} otherwise
+string|int(0..0) branch;
+
+//! The usernames listed in the ACCESS section of the RCS file
+array(string) access;
+
+//! The RCS file comment if present, @code{@0} otherwise
+string|int(0..0) comment;
+
+//! The keyword expansion options (as named by RCS) if present,
+//! @code{@0} otherwise
 string expand;
+
+//! The RCS file description
 string description;
 
 //! Maps from username to revision for users that have acquired locks
-//! on this file.
+//! on this file
 mapping(string:string) locks;	 // id:num
 
-//! 1 if strict locking is set, 0 otherwise.
+//! 1 if strict locking is set, 0 otherwise
 int(0..1) strict_locks;
 
-//! Maps tag names (indices) to tagged revision numbers (values).
+//! Maps tag names (indices) to tagged revision numbers (values)
 mapping(string:string) tags;
 
-//! Maps branch numbers (indices) to branch names (values).
+//! Maps branch numbers (indices) to branch names (values)
 mapping(string:string) branches;
 
 string _sprintf(int type)
@@ -80,8 +91,8 @@ mapping(string:Revision) revisions;
 //! (rcsfile(5), of course, fails to state such irrelevant information).
 array(mapping) trunk = ({});
 
-Regexp admin = Regexp(ADMIN REST);
-Regexp delta = Regexp(DELTA REST);
+static Regexp admin = Regexp(ADMIN REST);
+static Regexp delta = Regexp(DELTA REST);
 
 static array(string) parse_array(string data)
 {
@@ -149,32 +160,52 @@ function symbol_is_branch = Regexp("\\.0\\.[0-9]*[02468]$")->match;
 
 string rcs_file_name;
 
-//!
-void create(string|void file_name, string|void raw)
+//! Initializes the RCS object.
+//! @param file_name
+//!   The path to the raw RCS file (includes trailing ",v"). Used
+//!   mainly for error reporting (truncated RCS file).
+//! @param file_contents
+//!   If a string is provided, that string will be parsed to
+//!   initialize the RCS object. If a zero (@code{0@}) is sent, no
+//!   initialization will be performed at all. If no value is given at
+//!   all, but @[file_name] was provided, that file will be loaded and
+//!   parsed for object initialization.
+void create(string|void file_name, string|int(0..0)|void file_contents)
 {
   if(!file_name)
   {
-    if(!raw)
+    if(!file_contents)
       return;
   }
   else
   {
     rcs_file_name = file_name;
-    if(!raw)
-      raw = Stdio.read_file(file_name);
-    if(!raw)
+    if(!zero_type(file_contents) && !file_contents)
+      return;
+    if(!file_contents)
+      file_contents = Stdio.read_file(file_name);
+    if(!file_contents)
       error("Couldn't read %s\n", file_name);
   }
-  parse(raw);
+  parse(file_contents);
 }
 
-//!
-void parse(string raw)
+//! Lower-level API function for parsing only the admin section (the
+//! initial chunk of an RCS file, see manpage rcsfile(5)) of an RCS
+//! file. After running @[parse_admin_section], the RCS object will be
+//! initialized with the values for @[head], @[branch], @[access],
+//! @[branches], @[tags], @[locks], @[strict_locks], @[comment] and
+//! @[expand].
+//! @param raw
+//!   The unprocessed RCS file.
+//! @returns
+//!   The rest of the RCS file, admin section removed.
+//! @seealso
+//!   @[parse_delta_sections], @[parse_deltatext_sections], @[parse], @[create]
+//! @fixme
+//!   Does not handle rcsfile(5) newphrase skipping.
+string parse_admin_section(string raw)
 {
-  int pos;
-  string broken_regexp_kludge = "";
-  if(-1 != (pos = search(raw, "\0")))
-    broken_regexp_kludge = raw[pos..]; // since (.*) abruptly ends at first \0
   array got = admin->split(raw);
   head = got[0];
   branch = got[3];
@@ -189,7 +220,8 @@ void parse(string raw)
       array(string) nums = revision / "."; // "a.b.c.d.0.e"
       revision = nums[..sizeof(nums)-3] * "." + "." + nums[-1]; // "a.b.c.d.e"
       branches[revision] = name;
-    } else
+    }
+    else
       tags[name] = revision;
   locks = parse_mapping(got[13]);   // mapping(id:num)
   strict_locks = has_value(got[18], "strict");
@@ -197,50 +229,84 @@ void parse(string raw)
     comment = replace(got[21], "@@", "@");
   if(got[25])
     expand = replace(got[25], "@@", "@");
-  raw = got[-1];
-
   // FIXME: If this stops working, introduce newphrase skipping here
+  return got[-1];
+}
 
-  DEBUG("\nhead: %O\nbranch: %O\naccess: %O\n"
-	"locks: %O\nstrict: %O\ncomment: %O\n"
-	"expand: %O\nrest: %O\n",
-	head, branch, access, locks,
-	strict_locks, comment, expand, raw[..50]);
+//! Lower-level API function for parsing only the delta sections (the
+//! second chunk of an RCS file, see manpage rcsfile(5)) of an RCS
+//! file. After running @[parse_delta_sections], the RCS object will
+//! be initialized with the value of @[description] and a populated
+//! @[revisions] mapping. The @[Revision] members of this mapping are
+//! however only populated with the members @[Revision->revision],
+//! @[Revision->time], @[Revision->author], @[Revision->state],
+//! @[Revision->branches] and @[Revision->rcs_next].
+//! @param raw
+//!   The unprocessed RCS file, with admin section removed. (See
+//!   @[parse_admin_section].)
+//! @returns
+//!   The rest of the RCS file, delta sections removed.
+//! @seealso
+//!   @[parse_admin_section], @[parse_deltatext_sections], @[parse], @[create]
+//! @fixme
+//!   Does not handle rcsfile(5) newphrase skipping.
+string parse_delta_sections(string raw)
+{
+  string broken_regexp_kludge = ""; // these lines are here because Regexp
+  sscanf(raw, "%[^\0]%s", raw, broken_regexp_kludge); // truncates at "\0"
 
-  mapping(string:Revision) revs = ([]);
+  array got;
+  revisions = ([]);
   while(got = delta->split(raw))
   {
     Revision R = Revision();
     R->revision = got[0];
     string date = got[1];
-    if(!(int)date)
-      date = "1900" + date[search(date, ".")..];
-    R->time = Calendar.ISO.parse("%y.%M.%D.%h.%m.%s %z",
-				 date + " UTC");
+    if(!(int)date) // RCS dates are "YY.*" for 1900<=year<2000 - compensate for
+      date = "1900" + date[search(date, ".")..]; // Calendar.parse(%y, 0)==2000
+    R->time = Calendar.ISO.parse("%y.%M.%D.%h.%m.%s %z", date + " UTC");
     R->author = got[2];
     R->state = got[5];
     if(got[8])
       R->branches = parse_array(got[8]);
     if(sizeof(got[11]))
       R->rcs_next = got[11];
-    revs[R->revision] = R;
+    revisions[R->revision] = R;
 
     DEBUG("revision: %O\n\n", R);
     raw = got[-1];
   }
-
   // FIXME: If this stops working, introduce newphrase skipping here
+  [description, raw] = parse_string(raw + broken_regexp_kludge, "desc");
+  return raw;
+}
 
-  raw += broken_regexp_kludge; broken_regexp_kludge = 0;
-  [description, raw] = parse_string(raw, "desc");
-
+//! Lower-level API function for parsing only the deltatext sections
+//! (the final and typically largest chunk of an RCS file, see manpage
+//! rcsfile(5)) of an RCS file. After a @[parse_deltatext_sections]
+//! run, the RCS object will be fully populated.
+//! @param raw
+//!   The unprocessed RCS file, with admin and delta sections removed.
+//!   (See @[parse_admin_section] and @[parse_delta_sections].)
+//! @param progress_callback
+//!   This optional callback is invoked with the revision of the
+//!   deltatext about to be parsed (useful for progress indicators).
+//! @seealso
+//!   @[parse_admin_section], @[parse_delta_sections], @[parse], @[create]
+//! @fixme
+//!   Does not handle rcsfile(5) newphrase skipping.
+void parse_deltatext_sections(string raw,
+			      void|function(string:void) progress_callback)
+{
   int is_on_trunk;
   string this_rev, lmsg, diff;
 
   while(sscanf(raw, SWS "%[0-9.]" SWS "%s", this_rev, raw) &&
 	sizeof(this_rev))
   {
-    Revision this = revs[this_rev];
+    if(progress_callback)
+      progress_callback(this_rev);
+    Revision this = revisions[this_rev];
     if(is_on_trunk = sizeof(this_rev/".") == 2)
       trunk += ({ this });
     else
@@ -253,18 +319,19 @@ void parse(string raw)
       if(is_on_trunk)
       {
 	this->ancestor = this->rcs_next; // next pointers refer backwards
-	revs[this->rcs_next]->next = this_rev;
+	revisions[this->rcs_next]->next = this_rev;
       }
       else // this revision is a branch
       {
-	revs[this->rcs_next]->ancestor = this_rev; // ditto but forwards
+	revisions[this->rcs_next]->ancestor = this_rev; // ditto but forwards
 	this->next = this->rcs_next;
       }
 
     foreach(this->branches, string branch_point)
-      revs[branch_point]->ancestor = this_rev;
+      revisions[branch_point]->ancestor = this_rev;
 
     [this->log, raw] = parse_string(raw, "log");
+    // FIXME: If this stops working, introduce newphrase skipping here
     [this->rcs_text, raw] = parse_string(raw, "text");
     if(!this->log || !this->rcs_text)
     {
@@ -301,7 +368,7 @@ void parse(string raw)
       {
 	DEBUG("this: %s %+d-%d l%d a%O n%O\n", this_rev, added, removed,
 	      this->lines, this->ancestor, this->next);
-	Revision next = revs[this->next];
+	Revision next = revisions[this->next];
 	this->lines = next->lines - removed + added;
 	this->added = this->lines; // to make added files show their length
 	next->removed = added; // remember, the math is all
@@ -309,18 +376,39 @@ void parse(string raw)
       }
       else
       {
-	this->lines = revs[this->ancestor]->lines + added - removed;
+	this->lines = revisions[this->ancestor]->lines + added - removed;
 	this->removed = removed;
 	this->added = added;
       }
     }
   }
-  revisions = revs;
+}
+
+//! Parse the RCS file @[raw] and initialize all members of this object
+//! fully initialized.
+//! @param raw
+//!   The unprocessed RCS file.
+//! @param progress_callback
+//!   Passed on to @[parse_deltatext_sections].
+//! @returns
+//!   The fully initialized object (only returned for API convenience;
+//!   the object itself is destructively modified to match the data
+//!   extracted from @[raw])
+//! @seealso
+//!   @[parse_admin_section], @[parse_delta_sections],
+//!   @[parse_deltatext_sections], @[create]
+this_program parse(string raw, void|function(string:void) progress_callback)
+{
+  parse_deltatext_sections(parse_delta_sections(parse_admin_section( raw )));
+  return this_object();
 }
 
 //! All data tied to a particular revision of the file.
 class Revision
 {
+  //! the revision number (i e @[RCS]->revisions["1.1"]->revision == "1.1")
+  string revision;
+
   //! the name of the user that committed the revision
   string author;
 
@@ -331,15 +419,12 @@ class Revision
   //! the state of the revision - typically "Exp" or "dead"
   string state;
 
-  //! the date and time when the revision was committed
+  //! the (UTC) date and time when the revision was committed
   Calendar.ISO.Second time;
 
   //! the branch name on which this revision was committed (calculated
   //! according to how cvs manages branches)
   string branch;
-
-  //! the revision number (i e revisions["1.1"]->revision == "1.1")
-  string revision;
 
   //! the revision stored next in the rcs file, or 0 if none exists
   string rcs_next;
