@@ -36,7 +36,7 @@ double frexp(double x, int *exp)
   double ret;
   *exp=(int)ceil(log(x)/log(2.0));
   ret=(x*pow(2.0,(float)-*exp));
-  return tmp;
+  return ret;
 }
 #endif
 
@@ -48,7 +48,7 @@ double FREXP(double x, int *exp)
   double ret;
   *exp=(int)ceil(log(x)/log(2.0));
   ret=(x*pow(2.0,(float)-*exp));
-  return tmp;
+  return ret;
 }
 #endif
 
