@@ -59,6 +59,8 @@ char *lfun_names[] = {
   "__hash",
   "cast",
   "`!",
+  "`[]",
+  "`[]=",
 };
 
 struct program *first_program = 0;

@@ -31,8 +31,10 @@
 #define LFUN___HASH 17
 #define LFUN_CAST 18
 #define LFUN_NOT 19
+#define LFUN_INDEX 20
+#define LFUN_ASSIGN_INDEX 21
 
-#define NUM_LFUNS 20
+#define NUM_LFUNS 22
 
 extern char *lfun_names[];
 
