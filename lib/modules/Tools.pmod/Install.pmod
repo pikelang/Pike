@@ -14,9 +14,9 @@ array(string) features()
 #endif
 
   foreach(({ "_Crypto", "CommonLog", "Dbm", "GL", "GTK", "Gdbm", "Gmp", "Gz",
-	     "_Image_JPEG", "_Image_TIFF", "_Image_TTF", "Java", "MIME",
+	     "_Image_JPEG", "_Image_TIFF", "_Image_TTF", "MIME",
 	     "Msql", "Mysql", "Odbc", "Oracle", "Perl", "Postgres", "Ssleay",
-	     "sybase", "WideValues", "X", "Yp" }),
+	     "sybase", "X", "Yp" }),
 	  string modname)
   {
     catch
