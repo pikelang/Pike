@@ -420,6 +420,11 @@ string translate(string filename, mapping translator)
     combine_path(translate(dirname(filename),translator),basename(filename));
 };
 
+void tarfilter(string filename)
+{
+  ((program)combine_path(__FILE__, "..", "tarfilter"))()->
+    main(3, ({ "tarfilter", filename, filename }));
+}
 
 void do_export()
 {
@@ -604,6 +609,9 @@ done
       tararg="rf";
     }
 
+  status("Filtering to root/root ownership", tmpname+".tar");
+  tarfilter(tmpname+".tar");
+  
   status("Creating",tmpname+".tar.gz");
 
   Process.create_process(({"gzip","-9",tmpname+".tar"}))->wait();
@@ -614,6 +622,9 @@ done
 
   Process.create_process( ({ "tar","cf", export_base_name})+ to_export)
     ->wait();
+  
+  status("Filtering to root/root ownership", export_base_name);
+  tarfilter(export_base_name);
 
   chmod(export_base_name,0755);
 
