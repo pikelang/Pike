@@ -1,4 +1,4 @@
-AC_REVISION("$Id: configure.in,v 1.400 2000/08/20 15:05:15 grubba Exp $")
+AC_REVISION("$Id: configure.in,v 1.401 2000/08/20 17:15:05 grubba Exp $")
 AC_INIT(interpret.c)
 AC_CONFIG_HEADER(machine.h)
 
@@ -2014,6 +2014,7 @@ if test $ac_cv_func_crypt$ac_cv_func__crypt = nono ; then
     AC_MSG_RESULT(Using crypt.c for BSD style crypt())
     EXTRA_OBJS="${EXTRA_OBJS} crypt.o"
     AC_DEFINE(HAVE_CRYPT)
+    AC_DEFINE(USE_CRYPT_C)
   else
     :
   fi
