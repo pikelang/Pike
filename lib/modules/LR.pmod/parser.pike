@@ -1,5 +1,5 @@
 /*
- * $Id: parser.pike,v 1.14 1998/11/15 02:27:12 grubba Exp $
+ * $Id: parser.pike,v 1.15 1998/11/17 06:55:15 grubba Exp $
  *
  * A BNF-grammar in Pike.
  * Compiles to a LALR(1) state-machine.
@@ -9,7 +9,7 @@
 
 //.
 //. File:	parser.pike
-//. RCSID:	$Id: parser.pike,v 1.14 1998/11/15 02:27:12 grubba Exp $
+//. RCSID:	$Id: parser.pike,v 1.15 1998/11/17 06:55:15 grubba Exp $
 //. Author:	Henrik Grubbström (grubba@infovav.se)
 //.
 //. Synopsis:	LALR(1) parser and compiler.
@@ -659,12 +659,10 @@ static private object(kernel) first_state()
   return(state);
 }
 
-/*
- * Contains all states used.
- *
- * In the queue-part are the states that remain to be compiled.
- */
-static private object(state_queue) s_q;
+//. + s_q
+//.   Contains all states used.
+//.   In the queue-part are the states that remain to be compiled.
+object(state_queue) s_q;
 
 static private object(Stack.stack) item_stack;
 
