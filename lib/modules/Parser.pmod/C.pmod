@@ -1,4 +1,4 @@
-mapping(string:string) global_groupings=(["}":"{",")":"(","]":"["]);
+mapping(string:string) global_groupings=(["{":"}","(":")","[":"]"]);
 
 array(string) split(string data)
 {
@@ -259,21 +259,25 @@ array(Token) tokenize(array(string) s, void|string file)
 
 array group(array(string|Token) tokens, void|mapping groupings)
 {
+  Stack.stack stack=Stack.stack();
   array(Token) ret=({});
+  mapping actions=([]);
+
   if(!groupings) groupings=global_groupings;
+
+  foreach((array)groupings,[string x, string y])
+  {
+    actions[x]=1;
+    actions[y]=2;
+  }
+
   foreach(tokens, Token token)
   {
-    ret+=({ token });
-    if(string rev=groupings [ (string)token ])
+    switch(actions[(string)token])
     {
-      for(int q=sizeof(ret)-1;q>=0;q--)
-      {
-	if(ret[q] == rev)
-	{
-	  ret=ret[..q-1]+({ ret[q..] });
-	  break;
-	}
-      }
+      case 0: ret+=({token}); break;
+      case 1: stack->push(ret); ret=({token}); break;
+      case 2: ret=stack->pop()+({ ret + ({token}) });
     }
   }
   return ret;
