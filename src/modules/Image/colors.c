@@ -1,7 +1,7 @@
 /*
 **! module Image
 **! note
-**!	$Id: colors.c,v 1.35 2000/08/10 09:51:53 per Exp $
+**!	$Id: colors.c,v 1.36 2000/08/11 08:42:19 mirar Exp $
 **! submodule Color
 **!
 **!	This module keeps names and easy handling 
@@ -68,7 +68,7 @@
 **! 
 **! import Image;
 **! 
-**! constant modifiers=({"neon","light","dark","bright","dull"});
+**! array modifiers=({"neon","light","dark","bright","dull"});
 **! 
 **! object F=Font();
 **!
@@ -179,7 +179,7 @@
 
 #include "global.h"
 
-RCSID("$Id: colors.c,v 1.35 2000/08/10 09:51:53 per Exp $");
+RCSID("$Id: colors.c,v 1.36 2000/08/11 08:42:19 mirar Exp $");
 
 #include "image_machine.h"
 

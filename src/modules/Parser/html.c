@@ -4524,8 +4524,8 @@ void html_create(INT32 args)
 **!	parse feed/output.
 **!
 **!	The arguments to clone is sent to the 
-**!	new object, simplifying work for custom classes that
-**!	inherits <ref>Parser.HTML</ref>.
+**!	new object, simplifying work for custom classes 
+**!	that inherits <ref>Parser.HTML</ref>.
 **! returns the new object.
 **!
 **! note:
