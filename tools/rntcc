@@ -270,16 +270,17 @@ int main(int argc, string *argv)
 
     case "preprocess":
     {
+	int ret;
       switch(get_ext(sources[0]))
       {
 	default:
 	case "c":
-	  int ret=silent_do_cmd( ({"wcc386","-p","-fr"+errorfile}) + cflags + Array.map(sources, fixpath));
+	  ret=silent_do_cmd( ({"wcc386","-p","-fr"+errorfile}) + cflags + Array.map(sources, fixpath));
 	  break;
 
 	case "cc":
 	case "cpp":
-	  int ret=silent_do_cmd( ({"wpp386","-p","-fr"+errorfile}) + cflags + Array.map(sources, fixpath));
+	  ret=silent_do_cmd( ({"wpp386","-p","-fr"+errorfile}) + cflags + Array.map(sources, fixpath));
 	  break;
       }
       break;
