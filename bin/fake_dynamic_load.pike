@@ -370,7 +370,6 @@ void process_file(string file)
 
 int main(int argc, string *argv)
 {
-
   int protos_only;
   int run_cpp;
   int num_threads=1;
@@ -393,6 +392,11 @@ int main(int argc, string *argv)
   }
 
   argv=Getopt.get_args(argv,1);
+
+  if (!getenv("SRCDIR")) {
+    werror("$SRCDIR has not been set!\n");
+    exit(1);
+  }
 
   if(run_cpp)
   {
