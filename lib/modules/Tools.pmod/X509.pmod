@@ -1,5 +1,5 @@
 /* 
- * $Id: X509.pmod,v 1.9 2000/05/25 20:20:31 sigge Exp $
+ * $Id: X509.pmod,v 1.10 2000/08/01 19:51:47 sigge Exp $
  *
  * Some random functions for creating RFC-2459 style X.509 certificates.
  *
@@ -9,6 +9,13 @@
 
 import Standards.ASN1.Types;
 import Standards.PKCS;
+
+// Note: Redump this module if you change X509_DEBUG
+#ifdef X509_DEBUG
+#define X509_WERR werror
+#else
+#define X509_WERR
+#endif
 
 object make_time(int t)
 {
@@ -50,7 +57,7 @@ mapping parse_time(object asn1)
     return 0;
   m->mon--;
   
-  if ( (m->mday <= 0) || (m->mday >= Calendar.ISO.Year(m->year + 1900)
+  if ( (m->mday <= 0) || (m->mday > Calendar.ISO.Year(m->year + 1900)
 			  ->month(m->mon + 1)->number_of_days()))
     return 0;
 
@@ -60,8 +67,8 @@ mapping parse_time(object asn1)
   if ( (m->min < 0) || (m->min > 59))
     return 0;
 
-  /* NOTE: Allows for lead seconds */
-  if ( (m->sec < 0) || (m->min > 60))
+  /* NOTE: Allows for leap seconds */
+  if ( (m->sec < 0) || (m->sec > 60))
     return 0;
 
   return m;
@@ -82,6 +89,9 @@ int time_compare(mapping t1, mapping t2)
 	 
 object extension_sequence = meta_explicit(2, 3);
 object version_integer = meta_explicit(2, 0);
+
+object rsa_md2_algorithm = asn1_sequence( ({ Identifiers.rsa_md2_id,
+					     asn1_null() }) );
 
 object rsa_md5_algorithm = asn1_sequence( ({ Identifiers.rsa_md5_id,
 					     asn1_null() }) );
@@ -203,7 +213,7 @@ class rsa_verifier
       rsa = RSA.parse_public_key(key);
       return rsa && this_object();
     }
-  
+
   int verify(object algorithm, string msg, string signature)
     {
       {
@@ -214,6 +224,10 @@ class rsa_verifier
 	else if (algorithm->get_der() == rsa_sha1_algorithm->get_der())
 	  return rsa_verify_digest(rsa, Identifiers.sha1_id,
 				   Crypto.sha()->update(msg)->digest(),
+				   signature);
+	else if (algorithm->get_der() == rsa_md2_algorithm->get_der())
+	  return rsa_verify_digest(rsa, Identifiers.md2_id,
+				   Crypto.md2()->update(msg)->digest(),
 				   signature);
 	else
 	  return 0;
@@ -290,7 +304,7 @@ class TBSCertificate
 	return 0;
 
       array a = asn1->elements;
-      //werror("TBSCertificate: sizeof(a) = %d\n", sizeof(a));
+      X509_WERR("TBSCertificate: sizeof(a) = %d\n", sizeof(a));
       
       if (sizeof(a) < 6)
 	return 0;
@@ -311,12 +325,12 @@ class TBSCertificate
       } else
 	version = 1;
 
-      //werror("TBSCertificate: version = %d\n", version);
+      X509_WERR("TBSCertificate: version = %d\n", version);
       if (a[0]->type_name != "INTEGER")
 	return 0;
       serial = a[0]->value;
 
-      //werror("TBSCertificate: serial = %s\n", (string) serial);
+      X509_WERR("TBSCertificate: serial = %s\n", (string) serial);
       
       if ((a[1]->type_name != "SEQUENCE")
 	  || !sizeof(a[1]->elements )
@@ -325,13 +339,13 @@ class TBSCertificate
 
       algorithm = a[1];
 
-      //werror("TBSCertificate: algorithm = %s\n", algorithm->debug_string());
+      X509_WERR("TBSCertificate: algorithm = %s\n", algorithm->debug_string());
 
       if (a[2]->type_name != "SEQUENCE")
 	return 0;
       issuer = a[2];
 
-      //werror("TBSCertificate: issuer = %s\n", issuer->debug_string());
+      X509_WERR("TBSCertificate: issuer = %s\n", issuer->debug_string());
 
       if ((a[3]->type_name != "SEQUENCE")
 	  || (sizeof(a[3]->elements) != 2))
@@ -343,27 +357,27 @@ class TBSCertificate
       if (!not_before)
 	return 0;
       
-      //werror("TBSCertificate: not_before = %O\n", not_before);
+      X509_WERR("TBSCertificate: not_before = %O\n", not_before);
 
-      not_after = parse_time(validity[0]);
+      not_after = parse_time(validity[1]);
       if (!not_after)
 	return 0;
 
-      //werror("TBSCertificate: not_after = %O\n", not_after);
+      X509_WERR("TBSCertificate: not_after = %O\n", not_after);
 
       if (a[4]->type_name != "SEQUENCE")
 	return 0;
       subject = a[4];
 
-      //werror("TBSCertificate: keyinfo = %s\n", a[5]->debug_string());
+      X509_WERR("TBSCertificate: keyinfo = %s\n", a[5]->debug_string());
       
       public_key = make_verifier(a[5]);
 
       if (!public_key)
 	return 0;
 
-      //werror("TBSCertificate: parsed public key. type = %s\n",
-      //     public_key->type);
+      X509_WERR("TBSCertificate: parsed public key. type = %s\n",
+		public_key->type);
 
       int i = 6;
       if (i == sizeof(a))
@@ -444,7 +458,7 @@ object verify_certificate(string s, mapping authorities)
   if (tbs->issuer->get_der() == tbs->subject->get_der())
   {
     /* A self signed certificate */
-    //werror("Self signed certificate\n");
+    X509_WERR("Self signed certificate\n");
     v = tbs->public_key;
   }
   else
