@@ -11,6 +11,10 @@ o New Hilfe
     extendable and configurable. Start it and type help for more info.
 
 o AutoDoc
+    The major parts of Pike now has some sort of documentation on
+    class and function level thanks to the AutoDoc system which has
+    been deployed during the last year. Manual dumps are published on
+    http://pike.ida.liu.se/docs/reference/
 
 o pike -x
     When starting pike with the -x parameter, the pike process will
@@ -39,6 +43,13 @@ o search(string, int) / has_value(string, int)
     Both of these methods now handle both looking for strings and
     integers (the unicode number for a single character).
     Examples: search("hi, ho!", '!'), has_value("Nope.", ' ')
+
+o Expanded Charset module
+    The character set module now has support for the character sets
+    Shift_JS, UTF-7.5, EUC, Big5, CP950, UTF-16, UTF-16BE, UTF-16LE.
+    It is now also easier to get the right charset codec since the
+    names are normalized internally.
+
 
 Language additions:
 -------------------
@@ -174,10 +185,39 @@ New modules / classes / methods added:
 --------------------------------------
 
 o ADT.History
-    Leaking stack.
+    ADT implementation of a "leaking stack". Hilfe example:
+      > object h=ADT.History(3);
+      > for(int i=17; i<22; i++) h->push(i);
+      Ok.
+      > h->get_first_entry_num();
+      (1) Result: 3
+      > h[3];
+      (2) Result: 19
+
 
 o ADT.Relation.Binary
-    Handles binary relations.
+    Handles binary relations. Hilfe example:
+      > object r=ADT.Relation.Binary("test");               
+      > r->add(1,2)->add(2,3)->add(3,5)->add(1,4)->add(4,5);
+      (1) Result: ADT.Relation.Binary("test")
+      > r->find_shortest_path(1,5);                         
+      (2) Result: ({ /* 3 elements */
+      		      1,
+      		      4,
+      		      5
+      		  })
+      > r->remove(1,4);                                     
+      (3) Result: ADT.Relation.Binary("test")
+      > r->add(5,1);
+      (4) Result: ADT.Relation.Binary("test")
+      > r->find_shortest_path(1,5);                         
+      (5) Result: ({ /* 4 elements */
+      		      1,
+      		      2,
+      		      3,
+      		      5
+      		  })
+
 
 o Audio.Codec and Audio.Codec
     Contains decoders and encoders for audio. Currently WAV and MP3.
@@ -185,7 +225,13 @@ o Audio.Codec and Audio.Codec
 
 o Calendar.verify
 
+o Crypto.MD4
+
+o Crypto.crypt_md5
+
 o Debug.Tracer
+
+o Debug.Subject
 
 o Locale.Language
 
@@ -226,13 +272,24 @@ o Stdio.expand_symlinks(string path)
 o Tools.PV
     Convenience tool that sets up a canvas with GTK, presents a
     picture on it and delivers a number of image inspection and
-    manipulation options.
+    manipulation options. This is a great tool for image work in
+    Hilfe.
 
-    Also accessable via "pike -x pv"
+      > object i=Image.Image(32,32)->random();
+      > Tools.PV(i);
+
+    The Pike Viewer tool is also accessable via "pike -x pv"
 
 o Image.Dims
     Can extract the dimensions of an image with a minimal amount of
-    data loading. Currently handles JPEG, GIF and PNG images.
+    data loading. Currently handles JPEG, GIF and PNG images. Hilfe
+    example:
+      > Image.Dims.get(Stdio.File("test.gif"));
+      (1) Result: ({ /* 2 elements */
+      		      1412,
+      		      1120
+      		  })
+
 
 o Image.Fonts
     High level API for font handling. Should be used instead of
@@ -240,6 +297,8 @@ o Image.Fonts
 
 o Image.DWG
     Decodes AutoCAD thumbnail images.
+
+o Image.SVG
 
 o Gmp.mpq and Gmp.mpf
     Multi precision fractions.
@@ -462,8 +521,6 @@ o separate weak flags for indices and values in mappings
 
 Math.inf
 Math.nan
-Gmp.mpf
-Gmp.mpq (Rational numbers)
 Gz._file
 Image.Image()->blur
 Image.Image()->grey_blur
@@ -474,9 +531,6 @@ Math.Matrix()->sum,max,min
 Math.Matrix.convolve
 Math.Matrix.dot_product
 Oracle: CLOB and BLOB support
-Charset: Shift_JS, UTF-7.5, EUC, Big5, CP950, UTF-16, UTF-16BE, UTF-16LE
-Crypto.MD4
-Crypto.crypt_md5
 _Ffmpeg
 Image.JPEG: transforms
 Stdio.File->sync
@@ -488,4 +542,3 @@ system.usleep/nanosleep
 system.Memory (a class to read/write from mmap'ed or allocated memory)
 SDL
 Shuffler
-Image.SVG
