@@ -122,11 +122,11 @@ string low_parse_chapter(Node n, int chapter, void|int section, void|int subsect
       if(subsection)
 	error("Section inside subsection.\n");
       section = (int)c->get_attributes()->number;
-      ret += "</dd><dt>"
+      ret += "</dd>\n<dt><a name='" + section + "'></a>\n"
 	"<table width='100%' cellpadding='3' cellspacing='0' border='0'><tr>"
 	"<td bgcolor='#EEEEEE'><font size='+3'>&nbsp; " + chapter + "." + section +
 	". " + c->get_attributes()->title + "</font></td></tr></table><br />\n"
-	"</dt><dd>";
+	"</dt>\n<dd>";
       ret += low_parse_chapter(c, chapter, section);
       section = 0;
       break;
