@@ -1,5 +1,5 @@
 /*
- * $Id: preprocessor.h,v 1.13 1999/09/17 22:46:20 hubbe Exp $
+ * $Id: preprocessor.h,v 1.14 1999/11/16 03:30:53 mast Exp $
  *
  * Preprocessor template.
  * Based on cpp.c 1.45
@@ -892,7 +892,7 @@ static INT32 lower_cpp(struct cpp *this,
 		{
 		  char buffer[1024];
 		  sprintf(buffer,
-			  "Too few arguments to macro %950s, expected %d.",
+			  "Too few arguments to macro %.950s, expected %d.",
 			  d->link.s->str, d->args);
 		  cpp_error(this, buffer);
 		  break;
