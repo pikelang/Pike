@@ -4,7 +4,7 @@
 ||| See the files COPYING and DISCLAIMER for more information.
 \*/
 #include "global.h"
-RCSID("$Id: lex.c,v 1.59 1998/12/20 09:22:53 hubbe Exp $");
+RCSID("$Id: lex.c,v 1.60 1999/01/29 12:27:45 hubbe Exp $");
 #include "language.h"
 #include "array.h"
 #include "lex.h"
@@ -612,6 +612,11 @@ static int yylex2(YYSTYPE *yylval)
       double f;
       long l;
       lex.pos--;
+      if(lex.pos[0]=='0')
+	for(l=1;lex.pos[l]<='9' && lex.pos[l]>='0';l++)
+	  if(lex.pos[l]>='8')
+	    yyerror("Illegal octal number.");
+
       f=my_strtod(lex.pos, &p1);
       l=STRTOL(lex.pos, &p2, 0);
 
