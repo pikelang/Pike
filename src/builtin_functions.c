@@ -5,7 +5,7 @@
 \*/
 /**/
 #include "global.h"
-RCSID("$Id: builtin_functions.c,v 1.303 2000/08/28 08:47:18 per Exp $");
+RCSID("$Id: builtin_functions.c,v 1.304 2000/08/28 15:03:33 grubba Exp $");
 #include "interpret.h"
 #include "svalue.h"
 #include "pike_macros.h"
@@ -1052,9 +1052,27 @@ PMOD_EXPORT void f_string_to_unicode(INT32 args)
     /* Just 8bit characters */
     len = in->len * 2;
     out = begin_shared_string(len);
-    MEMSET(out->str, 0, len);	/* Clear the upper (and lower) byte */
-    for(i = in->len; i--;) {
-      out->str[i * 2 + 1] = in->str[i];
+    if (len) {
+      MEMSET(out->str, 0, len);	/* Clear the upper (and lower) byte */
+      /* KLUDGE WARNING
+       * On Solaris 8 x86 memset(3C) sometimes doesn't clear the last bytes.
+       * Unfortunately, I haven't been able to trigg the bug in configure.
+       *	/grubba 2000-08-28
+       */
+      out->str[len-1] = 0;
+      out->str[len-2] = 0;
+#ifdef PIKE_DEBUG
+      if (d_flag) {
+	for(i = len; i--;) {
+	  if (out->str[i]) {
+	    fatal("MEMSET didn't clear byte %d of %d\n", i+1, len);
+	  }
+	}
+      }
+#endif /* PIKE_DEBUG */
+      for(i = in->len; i--;) {
+	out->str[i * 2 + 1] = in->str[i];
+      }
     }
     out = end_shared_string(out);
     break;
