@@ -451,7 +451,7 @@ mapping cache_status() {
 //! This class simulates a multi-language "string".
 //! The actual language to use is determined as late as possible.
 class DeferredLocale( static string project,
-		      static function(void:string) get_lang,
+		      static function(:string) get_lang,
 		      static string|int key,
 		      static string fallback ) 
 {
