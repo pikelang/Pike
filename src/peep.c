@@ -19,7 +19,7 @@
 #include "interpret.h"
 #include "pikecode.h"
 
-RCSID("$Id: peep.c,v 1.74 2002/09/24 09:11:17 grubba Exp $");
+RCSID("$Id: peep.c,v 1.75 2002/10/04 15:11:08 marcus Exp $");
 
 static void asm_opt(void);
 
@@ -54,7 +54,7 @@ static void dump_instr(p_instr *p)
 
 void init_bytecode(void)
 {
-  low_reinit_buf(&instrbuf);
+  initialize_buf(&instrbuf);
 }
 
 void exit_bytecode(void)
