@@ -122,6 +122,17 @@ test_any([[
 		    "\'");
   return p->finish ("<t> <!-- <t a='> -- --> <!-<t a='> -->")->read();
 ]], "x [ <t a='> -- ] {<t a=} -->");
+test_any_equal([[
+  object p = Parser.HTML();
+  array a = ({ });
+  p->_set_tag_callback (
+    lambda (object p, string str) {
+      a += ({ p->tag_name() });
+      return 0;
+    });
+  p->finish("<t>x</t>");
+  return a;
+]], ({ "t", "/t" }));
 
 // Current context functions
 test_any([[{
