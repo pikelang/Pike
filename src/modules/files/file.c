@@ -5,7 +5,7 @@
 \*/
 
 #include "global.h"
-RCSID("$Id: file.c,v 1.85 1998/04/06 16:58:19 grubba Exp $");
+RCSID("$Id: file.c,v 1.86 1998/04/09 02:53:10 hubbe Exp $");
 #include "fdlib.h"
 #include "interpret.h"
 #include "svalue.h"
@@ -2078,15 +2078,18 @@ void init_files_efuns(void);
 #define REF (*((struct object **)(fp->current_storage)))
 
 #define FILE_FUNC(X,Y,Z) \
+static int PIKE_CONCAT(Y,_function_number);
+
+#include "file_functions.h"
+
+
+#define FILE_FUNC(X,Y,Z) \
 void PIKE_CONCAT(Y,_ref) (INT32 args) {\
   struct object *o=REF; \
   if(!o) error("Stdio.File(): not open.\n"); \
-  fp->current_storage=get_storage(o, file_program); \
-  if(!fp->current_storage) error("Wrong type of object in Stdio.File->_fd\n"); \
-  free_object(fp->current_object); \
-  fp->current_object=o; \
-  o->refs++; \
-  Y(args); \
+  if(o->prog != file_program) \
+     error("Wrong type of object in Stdio.File->_fd\n"); \
+  apply_low(o, PIKE_CONCAT(Y,_function_number), args); \
 }
 
 #include "file_functions.h"
@@ -2102,7 +2105,7 @@ void pike_module_init(void)
   start_new_program();
   add_storage(sizeof(struct my_file));
 
-#define FILE_FUNC(X,Y,Z) add_function(X,Y,Z,0);
+#define FILE_FUNC(X,Y,Z) PIKE_CONCAT(Y,_function_number)=add_function(X,Y,Z,0);
 #include "file_functions.h"
   map_variable("_read_callback","mixed",0,OFFSETOF(my_file, read_callback),T_MIXED);
   map_variable("_write_callback","mixed",0,OFFSETOF(my_file, write_callback),T_MIXED);
