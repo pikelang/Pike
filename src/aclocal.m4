@@ -1,4 +1,4 @@
-dnl $Id: aclocal.m4,v 1.62 2004/10/25 09:07:28 distmaker Exp $
+dnl $Id: aclocal.m4,v 1.63 2004/10/25 12:10:41 grubba Exp $
 
 dnl Some compatibility with Autoconf 2.50+. Not complete.
 dnl newer autoconf call substr m4_substr
@@ -299,11 +299,11 @@ define(PIKE_FEATURE_OK,[
 
 define([AC_LOW_MODULE_INIT],
 [
-# $Id: aclocal.m4,v 1.62 2004/10/25 09:07:28 distmaker Exp $
+# $Id: aclocal.m4,v 1.63 2004/10/25 12:10:41 grubba Exp $
 
 MY_AC_PROG_CC
 
-AC_DEFINE(POSIX_SOURCE)
+AC_DEFINE([POSIX_SOURCE], [], [This should always be defined.])
 
 AC_SUBST(CONFIG_HEADERS)
 
