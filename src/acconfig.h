@@ -1,5 +1,5 @@
 /*
- * $Id: acconfig.h,v 1.28 1998/07/11 15:49:05 grubba Exp $
+ * $Id: acconfig.h,v 1.29 1998/07/23 00:43:51 hubbe Exp $
  */
 #ifndef MACHINE_H
 #define MACHINE_H
@@ -58,6 +58,9 @@
 
 /* Define if you have isspace */
 #undef HAVE_ISSPACE
+
+/* Define if you have fpsetmask */
+#undef HAVE_FPSETMASK
 
 /* Define if you have crypt.  */
 #undef HAVE_CRYPT
