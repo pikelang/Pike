@@ -1,9 +1,9 @@
-/* $Id: orient.c,v 1.1 1998/02/15 14:54:14 hedda Exp $ */
+/* $Id: orient.c,v 1.2 1998/02/15 15:50:10 hedda Exp $ */
 
 /*
 **! module Image
 **! note
-**!	$Id: orient.c,v 1.1 1998/02/15 14:54:14 hedda Exp $
+**!	$Id: orient.c,v 1.2 1998/02/15 15:50:10 hedda Exp $
 **! class image
 */
 
@@ -111,34 +111,23 @@ void image_orient(INT32 args)
 #define A o1img
 #define B THIS
 
+
+
+#define FOOBAR(CO,xd,yd) \
+	A->img[x+y*B->xsize].CO= \
+	   sqrt((sq((B->img[(x-xd)+(y-yd)*B->xsize].CO-B-> \
+                img[x+y*B->xsize].CO ))+ \
+		sq((B->img[x+y*B->xsize].CO- \
+		B->img[(x+xd)+(y+yd)*B->xsize].CO)) \
+		     )/2.0); 
+
   //Create image 1
   for(x=1; x<A->xsize-1; x++)
     for(y=1; y<A->ysize-1; y++)
       {
-#define CO r
-	A->img[x+y*B->xsize].CO=sqrt((sq((B->img[(x-1)+y*B->xsize].CO-B->
-					  img[x+y*B->xsize].CO ))+
-				      sq((B->img[x+y*B->xsize].CO-
-					  B->img[(x+1)+y*B->xsize].CO ))
-				      )/2.0);
-	
-#undef CO
-#define CO g
-	A->img[x+y*B->xsize].CO=sqrt((sq((B->img[(x-1)+y*B->xsize].CO-B->
-					  img[x+y*B->xsize].CO ))+
-				      sq((B->img[x+y*B->xsize].CO-
-					  B->img[(x+1)+y*B->xsize].CO ))
-				      )/2.0);
-	
-#undef CO
-#define CO b
-	A->img[x+y*B->xsize].CO=sqrt((sq((B->img[(x-1)+y*B->xsize].CO-B->
-					  img[x+y*B->xsize].CO ))+
-				      sq((B->img[x+y*B->xsize].CO-
-					  B->img[(x+1)+y*B->xsize].CO ))
-				      )/2.0);
-#undef CO
-	
+	FOOBAR(r,1,0);
+	FOOBAR(g,1,0);
+	FOOBAR(b,1,0);
       }
 
 #undef A
@@ -148,29 +137,9 @@ void image_orient(INT32 args)
   for(x=1; x<A->xsize-1; x++)
     for(y=1; y<A->ysize-1; y++)
       {
-#define CO r
-	A->img[x+y*B->xsize].CO=sqrt((sq((B->img[(x-1)+(y-1)*B->xsize].CO-B->
-					  img[x+y*B->xsize].CO ))+
-				      sq((B->img[x+y*B->xsize].CO-
-					  B->img[(x+1)+(y+1)*B->xsize].CO ))
-				      )/2.0);
-	
-#undef CO
-#define CO g
-	A->img[x+y*B->xsize].CO=sqrt((sq((B->img[(x-1)+(y-1)*B->xsize].CO-B->
-					  img[x+y*B->xsize].CO ))+
-				      sq((B->img[x+y*B->xsize].CO-
-					  B->img[(x+1)+(y+1)*B->xsize].CO ))
-				      )/2.0);
-#undef CO
-#define CO b
-	A->img[x+y*B->xsize].CO=sqrt((sq((B->img[(x-1)+(y-1)*B->xsize].CO-B->
-					  img[x+y*B->xsize].CO ))+
-				      sq((B->img[x+y*B->xsize].CO-
-					  B->img[(x+1)+(y+1)*B->xsize].CO ))
-				      )/2.0);
-#undef CO
-	
+	FOOBAR(r,1,1);
+	FOOBAR(g,1,1);
+	FOOBAR(b,1,1);
       }
 
 
@@ -181,30 +150,10 @@ void image_orient(INT32 args)
   for(x=1; x<A->xsize-1; x++)
     for(y=1; y<A->ysize-1; y++)
       {
-#define CO r
-	A->img[x+y*B->xsize].CO=sqrt((sq((B->img[x+(y-1)*B->xsize].CO-B->
-					  img[x+y*B->xsize].CO ))+
-				      sq((B->img[x+y*B->xsize].CO-
-					  B->img[x+(y+1)*B->xsize].CO ))
-				      )/2.0);
-#undef CO
-#define CO g
-	A->img[x+y*B->xsize].CO=sqrt((sq((B->img[x+(y-1)*B->xsize].CO-B->
-					  img[x+y*B->xsize].CO ))+
-				      sq((B->img[x+y*B->xsize].CO-
-					  B->img[x+(y+1)*B->xsize].CO ))
-				      )/2.0);
-#undef CO
-#define CO b
-	A->img[x+y*B->xsize].CO=sqrt((sq((B->img[x+(y-1)*B->xsize].CO-B->
-					  img[x+y*B->xsize].CO ))+
-				      sq((B->img[x+y*B->xsize].CO-
-					  B->img[x+(y+1)*B->xsize].CO ))
-				      )/2.0);
-#undef CO
-	
+	FOOBAR(r,0,1);
+	FOOBAR(g,0,1);
+	FOOBAR(b,0,1);
       }
-
 
 #undef A
 #define A o4img
@@ -213,30 +162,9 @@ void image_orient(INT32 args)
   for(x=1; x<A->xsize-1; x++)
     for(y=1; y<A->ysize-1; y++)
       {
-#define CO r
-	A->img[x+y*B->xsize].CO=sqrt((sq((B->img[(x-1)+(y+1)*B->xsize].CO-B->
-					  img[x+y*B->xsize].CO ))+
-				      sq((B->img[x+y*B->xsize].CO-
-					  B->img[(x+1)+(y-1)*B->xsize].CO ))
-				      )/2.0);
-	
-#undef CO
-#define CO g
-	A->img[x+y*B->xsize].CO=sqrt((sq((B->img[(x-1)+(y+1)*B->xsize].CO-B->
-					  img[x+y*B->xsize].CO ))+
-				      sq((B->img[x+y*B->xsize].CO-
-					  B->img[(x+1)+(y-1)*B->xsize].CO ))
-				      )/2.0);
-#undef CO
-#define CO b
-	A->img[x+y*B->xsize].CO=sqrt((sq((B->img[(x-1)+(y+1)*B->xsize].CO-B->
-					  img[x+y*B->xsize].CO ))+
-				      sq((B->img[x+y*B->xsize].CO-
-					  B->img[(x+1)+(y-1)*B->xsize].CO ))
-				      )/2.0);
-	
-#undef CO
-	
+	FOOBAR(r,-1,1);
+	FOOBAR(g,-1,1);
+	FOOBAR(b,-1,1);
       }
 
 #undef A
