@@ -21,7 +21,7 @@
 #include <ctype.h>
 #include "queue.h"
 
-RCSID("$Id: svalue.c,v 1.34 1998/05/25 21:38:35 grubba Exp $");
+RCSID("$Id: svalue.c,v 1.35 1998/06/02 16:16:10 grubba Exp $");
 
 struct svalue dest_ob_zero = { T_INT, 0 };
 
@@ -894,13 +894,13 @@ void copy_svalues_recursively_no_free(struct svalue *to,
 }
 
 #ifdef DEBUG
-void check_short_svalue(union anything *u,TYPE_T type)
+void check_short_svalue(union anything *u, TYPE_T type)
 {
   static int inside=0;
 
   check_type(type);
   check_refs2(u,type);
-  if(!u->refs) return;
+  if ((type > MAX_REF_TYPE)||(!u->refs)) return;
 
   switch(type)
   {
