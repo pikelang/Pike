@@ -178,10 +178,6 @@ static private class Extractor {
             c->AddChild([object(Class)|object(Module)]a[1]);
           break;
         case "docgroup":
-          array(PikeObject) objects = ([object(DocGroup)]a[1])->objects;
-          foreach (objects, PikeObject obj)
-            if (obj->objtype == "inherit")
-              c->AddInherit(obj);
           c->AddGroup([object(DocGroup)]a[1]);
           break;
       }
