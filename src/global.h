@@ -5,7 +5,7 @@
 \*/
 
 /*
- * $Id: global.h,v 1.45 2000/08/03 12:34:02 grubba Exp $
+ * $Id: global.h,v 1.46 2000/08/03 16:18:49 grubba Exp $
  */
 #ifndef GLOBAL_H
 #define GLOBAL_H
@@ -219,7 +219,12 @@ char *alloca ();
 #endif /* long double */
 #endif /* double */
 
-#if SIZEOF_CHAR_P > 4
+#if (SIZEOF_CHAR_P > 4) && 0
+/* This isn't a good idea on architectures where
+ * sizeof(long int) < sizeof(LONGEST).
+ * This is due to the gmp mpz api's using long int instead of
+ * mp_limb_{signed_}t.
+ */
 #define INT_TYPE LONGEST
 #else /* !(sizeof(char *) > 4) */
 #define INT_TYPE INT32
