@@ -1,0 +1,17 @@
+
+<!ELEMENT dir (file*|dir*)>
+<!ATTLIST dir
+  name   %String;   #REQUIRED
+  >
+
+<!ELEMENT file target+>
+<!ATTLIST file
+  name   CDATA      #REQUIRED
+  >
+
+<!ELEMENT target EMPTY>
+<!ATTLIST target
+  module CDATA      #REQUIRED
+  class  CDATA      #IMPLIED
+  entity CDATA      #IMPLIED
+  >
