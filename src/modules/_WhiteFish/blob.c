@@ -1,7 +1,7 @@
 #include "global.h"
 #include "stralloc.h"
 #include "global.h"
-RCSID("$Id: blob.c,v 1.24 2001/07/03 16:09:33 per Exp $");
+RCSID("$Id: blob.c,v 1.25 2001/07/04 22:24:42 per Exp $");
 #include "pike_macros.h"
 #include "interpret.h"
 #include "program.h"
@@ -42,8 +42,9 @@ int wf_blob_next( Blob *b )
       b->eof = 1;
       return -1;
     }
-    push_int( b->word );
-    apply_svalue( b->feed, 1 );
+    ref_push_string( b->word );
+    push_int( b->docid );
+    apply_svalue( b->feed, 2 );
     if( sp[-1].type != T_STRING )
     {
       b->eof = 1;
@@ -63,8 +64,9 @@ int wf_blob_next( Blob *b )
 	b->eof = 1;
 	return -1;
       }
-      push_int( b->word );
-      apply_svalue( b->feed, 1 );
+      ref_push_string( b->word );
+      push_int( b->docid );
+      apply_svalue( b->feed, 2 );
       if( sp[-1].type != T_STRING )
       {
 	b->eof = 1;
@@ -160,11 +162,13 @@ int wf_blob_docid( Blob *b )
 }
 
 
-Blob *wf_blob_new( struct svalue *feed, int word )
+Blob *wf_blob_new( struct svalue *feed, struct pike_string *word )
 {
   Blob *b = malloc( sizeof( Blob ) );
   MEMSET(b, 0, sizeof(Blob) );
   b->word = word;
+  if( word )
+    word->refs++;
   b->feed = feed;
   b->b = wf_buffer_new();
   return b;
@@ -174,6 +178,8 @@ void wf_blob_free( Blob *b )
 {
   if( b->b )
     wf_buffer_free( b->b );
+  if( b->word )
+    free_string( b->word );
   free( b );
 }
 

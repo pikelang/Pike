@@ -3,7 +3,7 @@
 #include "global.h"
 #include "stralloc.h"
 #include "global.h"
-RCSID("$Id: whitefish.c,v 1.30 2001/06/15 02:12:28 per Exp $");
+RCSID("$Id: whitefish.c,v 1.31 2001/07/04 22:24:42 per Exp $");
 #include "pike_macros.h"
 #include "interpret.h"
 #include "program.h"
@@ -377,7 +377,7 @@ end:
 				
 
 static void f_do_query_phrase( INT32 args )
-/*! @decl ResultSet do_query_phrase( array(int) words,          @
+/*! @decl ResultSet do_query_phrase( array(string) words,          @
  *!                          array(int) field_coefficients,       @
  *!                          function(int:string) blobfeeder)   
  *!       @[words]
@@ -431,7 +431,7 @@ static void f_do_query_phrase( INT32 args )
   blobs = malloc( sizeof(Blob *) * numblobs );
 
   for( i = 0; i<numblobs; i++ )
-    blobs[i] = wf_blob_new( cb, _words->item[i].u.integer );
+    blobs[i] = wf_blob_new( cb, _words->item[i].u.string );
 
   for( i = 0; i<66; i++ )
     field_coefficients[i] = (double)_field->item[i].u.integer;
@@ -442,7 +442,7 @@ static void f_do_query_phrase( INT32 args )
 }
 
 static void f_do_query_and( INT32 args )
-/*! @decl ResultSet do_query_and( array(int) words,          @
+/*! @decl ResultSet do_query_and( array(string) words,          @
  *!                          array(int) field_coefficients,       @
  *!                          array(int) proximity_coefficients,   @
  *!                          function(int:string) blobfeeder)   
@@ -518,7 +518,7 @@ static void f_do_query_and( INT32 args )
   blobs = malloc( sizeof(Blob *) * numblobs );
 
   for( i = 0; i<numblobs; i++ )
-    blobs[i] = wf_blob_new( cb, _words->item[i].u.integer );
+    blobs[i] = wf_blob_new( cb, _words->item[i].u.string );
 
   for( i = 0; i<8; i++ )
     proximity_coefficients[i] = (double)_prox->item[i].u.integer;
@@ -535,7 +535,7 @@ static void f_do_query_and( INT32 args )
 }
 
 static void f_do_query_or( INT32 args )
-/*! @decl ResultSet do_query_or( array(int) words,          @
+/*! @decl ResultSet do_query_or( array(string) words,          @
  *!                              array(int) field_coefficients,       @
  *!                              array(int) proximity_coefficients,   @
  *!                              function(int:string) blobfeeder)   
@@ -611,7 +611,7 @@ static void f_do_query_or( INT32 args )
   blobs = malloc( sizeof(Blob *) * numblobs );
 
   for( i = 0; i<numblobs; i++ )
-    blobs[i] = wf_blob_new( cb, _words->item[i].u.integer );
+    blobs[i] = wf_blob_new( cb, _words->item[i].u.string );
 
   for( i = 0; i<8; i++ )
     proximity_coefficients[i] = (double)_prox->item[i].u.integer;
@@ -620,9 +620,9 @@ static void f_do_query_or( INT32 args )
     field_coefficients[i] = (double)_field->item[i].u.integer;
 
   res = low_do_query_or(blobs,numblobs,
-			   field_coefficients,
-			   proximity_coefficients,
-			   cutoff );
+			field_coefficients,
+			proximity_coefficients,
+			cutoff );
   pop_n_elems( args );
   wf_resultset_push( res );
 }
@@ -636,18 +636,18 @@ void pike_module_init(void)
   init_linkfarm_program();
 
   add_function( "do_query_or", f_do_query_or,
-		"function(array(int),array(int),array(int),int"
-		",function(int:string):object)",
+		"function(array(string),array(int),array(int),int"
+		",function(string,int:string):object)",
 		0 );
 
   add_function( "do_query_and", f_do_query_and,
-		"function(array(int),array(int),array(int),int"
-		",function(int:string):object)",
+		"function(array(string),array(int),array(int),int"
+		",function(string,int:string):object)",
 		0 );
 
   add_function( "do_query_phrase", f_do_query_phrase,
-		"function(array(int),array(int)"
-		",function(int:string):object)",
+		"function(array(string),array(int)"
+		",function(string,int:string):object)",
 		0 );
 }
 

@@ -2,7 +2,7 @@ typedef struct _Blob
 {
   struct svalue *feed;
 
-  unsigned int word;
+  struct pike_string *word;
   unsigned int docid;
   unsigned int eof;
   
@@ -42,7 +42,7 @@ typedef struct
   } u;
 } Hit;
 
-Blob *wf_blob_new( struct svalue *feed, int word );
+Blob *wf_blob_new( struct svalue *feed, struct pike_string *word );
 /* Create a new blob object. The 'feed' function gets 'word' as it's
  * only argument, and it should return more blob-data to be processed.
  */
