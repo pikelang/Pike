@@ -19,13 +19,13 @@ static private constant rt38_delta1 = 0.000835225613;
 static private constant rt38_delta2 = 0.000000058706;
 static private constant rt38_delta3 = 0.000000000166;
 
-//! @decl array(float) rt38_to_longlat(int|float|string x_n,int|float|string y_e)
-//! @decl array(float) longlat_to_rt38(float lat, float long)
+//! @decl array(float) rt38_to_latlong(int|float|string x_n,int|float|string y_e)
+//! @decl array(float) latlong_to_rt38(float lat, float long)
 //!    convert lat/long coordinates to and from RT38, "Swedish grid".
 //!    Note that RT38 differs a few meters from the current RT90!
 //!    x is north, y is east.
 
-array(float) longlat_to_rt38(float lat, float long)
+array(float) latlong_to_rt38(float lat, float long)
 {
    float rlat=DEG2RAD(lat);
    float rlong=DEG2RAD(long);
@@ -48,7 +48,7 @@ array(float) longlat_to_rt38(float lat, float long)
    return ({x, y});
 }
 
-array(float) rt38_to_longlat(int|float|string x_n,int|float|string y_e)
+array(float) rt38_to_latlong(int|float|string x_n,int|float|string y_e)
 {
    if (stringp(x_n)) x_n=(float)((x_n+"0000000000")[..6]);
    if (stringp(y_e)) y_e=(float)((y_e+"0000000000")[..6]);
@@ -75,7 +75,7 @@ array(float) rt38_to_longlat(int|float|string x_n,int|float|string y_e)
 
 Geography.Position PositionRT38(int|float|string x,int|float|string y)
 {
-   return Geography.Position(@rt38_to_longlat(x,y));
+   return Geography.Position(@rt38_to_latlong(x,y));
 }
 
 // ----------------------------------------------------------------
