@@ -5,7 +5,7 @@
 \*/
 /**/
 #include "global.h"
-RCSID("$Id: pike_types.c,v 1.64 1999/11/20 22:15:45 grubba Exp $");
+RCSID("$Id: pike_types.c,v 1.65 1999/11/20 22:52:26 grubba Exp $");
 #include <ctype.h>
 #include "svalue.h"
 #include "pike_types.h"
@@ -919,12 +919,13 @@ TYPE_T compile_type_to_runtime_type(struct pike_string *s)
 }
 
 
-static int low_find_exact_type_match(char *needle, char *haystack)
+static int low_find_exact_type_match(char *needle, char *haystack,
+				     int separator)
 {
-  while(EXTRACT_UCHAR(haystack)==T_OR)
+  while(EXTRACT_UCHAR(haystack) == separator)
   {
     haystack++;
-    if(low_find_exact_type_match(needle, haystack))
+    if(low_find_exact_type_match(needle, haystack, separator))
       return 1;
     haystack+=type_length(haystack);
   }
@@ -939,7 +940,7 @@ static void very_low_or_pike_types(char *to_push, char *not_push)
     very_low_or_pike_types(to_push, not_push);
     to_push+=type_length(to_push);
   }
-  if(!low_find_exact_type_match(to_push, not_push))
+  if(!low_find_exact_type_match(to_push, not_push, T_OR))
   {
     push_unfinished_type(to_push);
     push_type(T_OR);
@@ -1005,7 +1006,7 @@ static void very_low_and_pike_types(char *to_push, char *not_push)
     very_low_and_pike_types(to_push, not_push);
     to_push+=type_length(to_push);
   }
-  if(!low_find_exact_type_match(to_push, not_push))
+  if(!low_find_exact_type_match(to_push, not_push, T_AND))
   {
     push_unfinished_type(to_push);
     push_type(T_AND);
