@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: dlopen.c,v 1.54 2002/10/27 17:34:51 grubba Exp $
+|| $Id: dlopen.c,v 1.55 2002/10/27 18:19:17 grubba Exp $
 */
 
 #include <global.h>
@@ -199,7 +199,7 @@ size_t STRNLEN(char *s, size_t maxlen)
 
 #else /* PIKE_CONCAT */
 
-RCSID("$Id: dlopen.c,v 1.54 2002/10/27 17:34:51 grubba Exp $");
+RCSID("$Id: dlopen.c,v 1.55 2002/10/27 18:19:17 grubba Exp $");
 
 #endif
 
@@ -1679,7 +1679,21 @@ static int dl_load_coff_files(struct DLHandle *ret,
 
 	      UNIMPLEMENTED_REL(COFFReloc_IA64_pcrel21m);
 	      UNIMPLEMENTED_REL(COFFReloc_IA64_pcrel21f);
-	      UNIMPLEMENTED_REL(COFFReloc_IA64_gprel22);
+
+	    case COFFReloc_IA64_gprel22:
+	      /* Instruction format A5
+	       *
+	       * 4 33333333 33222222 22221111 11111100 00000000
+	       * 0 98765432 10987654 32109876 54321098 76543210
+	       * X XXX..... ........ ..XX.... ...XXXXX XXXXXXXX
+	       *
+	       * S += ptr - gp;
+	       */
+	      S = (ptr - (char *)gp) +
+		(((instr & 0xfe0000) >> 12)|((instr & 0x1fffc00000) >> 14));
+	      instr = (instr & 0x1e000301fff) |
+		((S & 0x3fff80)<<15)|((S & 0x7f)<<13);
+	      break;
 
 	    case COFFReloc_IA64_ltoff22:
 	      /* Instruction format A5
@@ -1688,7 +1702,7 @@ static int dl_load_coff_files(struct DLHandle *ret,
 	       * 0 98765432 10987654 32109876 54321098 76543210
 	       * X XXX..... ........ ..XX.... ...XXXXX XXXXXXXX
 	       *
-	       * gp[gp_pos] = S + A;
+	       * gp[gp_pos] = S + ptr;
 	       * S = gp_pos++;
 	       */
 
