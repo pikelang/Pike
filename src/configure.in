@@ -1,4 +1,4 @@
-AC_REVISION("$Id: configure.in,v 1.482 2001/02/14 21:20:40 mirar Exp $")
+AC_REVISION("$Id: configure.in,v 1.483 2001/02/14 21:35:06 mirar Exp $")
 AC_INIT(interpret.c)
 AC_CONFIG_HEADER(machine.h)
 
@@ -5131,7 +5131,7 @@ FLOAT_TYPE
 INT_TYPE
 EOF
 
-$CPP -I. -I$srcdir conftest.c -o conftest.cpp
+$CPP -I. -I$srcdir conftest.c > conftest.cpp
 sed <conftest.cpp >conftypes.txt '1,/^--$/d'
 
 rm config.info 2>/dev/null
@@ -5196,19 +5196,23 @@ int main()
    struct svalue sval;
 
    fp=fopen("conftypes.txt","r");
-   if (!fp) return 1;
    out=fopen("config.info","a");
-   if (!out) return 1;
+   if (out && fp)
+   {
+      fgets(float_type,79,fp);
+      fgets(int_type,79,fp);
+      s=float_type; while (*s && *s!='\n' && *s!='\r') s++; *s=0;
+      s=int_type; while (*s && *s!='\n' && *s!='\r') s++; *s=0;
+      
+      fprintf(out,"float type............%s (%d bytes)\n",
+   	      float_type,sizeof(FLOAT_TYPE));
+      fprintf(out,"int type..............%s (%d bytes)\n",
+   	      int_type,sizeof(INT_TYPE));
    
-   fgets(float_type,79,fp);
-   fgets(int_type,79,fp);
-   s=float_type; while (*s && *s!='\n' && *s!='\r') s++; *s=0;
-   s=int_type; while (*s && *s!='\n' && *s!='\r') s++; *s=0;
-   
-   fprintf(out,"float type............%s (%d bytes)\n",
-	   float_type,sizeof(FLOAT_TYPE));
-   fprintf(out,"int type..............%s (%d bytes)\n",
-	   int_type,sizeof(INT_TYPE));
+      fclose(out);
+      fclose(fp);
+   }
+
    fprintf(out,"pointer size..........%d bytes\n",
 	   sizeof(void*));
    fprintf(out,"svalue size...........%d bytes (%d+%d+%d)\n",
@@ -5217,8 +5221,6 @@ int main()
 	   sizeof(sval.subtype),
 	   sizeof(sval.u));
 
-   fclose(out);
-   fclose(fp);
 
    return 0;
 }
