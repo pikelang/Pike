@@ -407,7 +407,7 @@ static void recurseAppears(string namespace, Node current) {
 }
 
 //! Take care of all the @@appears and @@belongs directives everywhere,
-//! and rearrange the nodes in the tree accordingly
+//! and rearranges the nodes in the tree accordingly
 //!
 //! @param root
 //!   The root (@tt{<autodoc>@}) node of the documentation tree.
