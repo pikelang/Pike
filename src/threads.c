@@ -2,12 +2,12 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: threads.c,v 1.228 2003/11/25 17:58:24 jonasw Exp $
+|| $Id: threads.c,v 1.229 2003/11/26 10:51:10 grubba Exp $
 */
 
 #ifndef CONFIGURE_TEST
 #include "global.h"
-RCSID("$Id: threads.c,v 1.228 2003/11/25 17:58:24 jonasw Exp $");
+RCSID("$Id: threads.c,v 1.229 2003/11/26 10:51:10 grubba Exp $");
 
 PMOD_EXPORT int num_threads = 1;
 PMOD_EXPORT int threads_disabled = 0;
@@ -733,7 +733,7 @@ static void check_threads(struct callback *cb, void *arg, void * arg2)
       return;
     last_ = now;
   }
-#elif HAVE_MACH_TASK_INFO_H
+#elif defined(HAVE_MACH_TASK_INFO_H) && defined(TASK_THREAD_TIMES_INFO)
   {
     static struct timeval         last_check = { 0, 0 };
     task_thread_times_info_data_t info;
