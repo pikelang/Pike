@@ -1,37 +1,47 @@
-#pike __VERSION__
+//!
+//! module Calendar
+//! submodule Julian
+//! inherits YMD
+//!
+//! 	This is the Julian calendar, conjured up by
+//!	the old Romans when their calendar were just too
+//!	wierd. It was used by the christians as so far
+//!	as the 18th century in some parts of the world.
+//!	(Especially the protestantic and orthodox parts.)
+//!
+//! note:
+//!	Don't confuse the <i>julian day</i> with the Julian
+//!	calendar. The former is just a linear numbering of days,
+//!	used in the Calendar module as a common unit for
+//!	absolute time.
 
-inherit Calendar.Gregorian;
+import ".";
+inherit Gregorian:Gregorian;
 
-class Year
-{
-  inherit Calendar.Gregorian.Year;
+string calendar_name() { return "Julian"; }
 
-  int julian_day(int d) // jd%7 gives weekday, mon=0, sun=6
-  {
-    return 1721424 + d + (36525*(y-1))/100;
-  }
-
-  int leap()
-  {
-    return !(y%4);
-  }
-
+static int year_leap_year(int y) 
+{ 
+   return !((y)%4);
 }
 
-class Day
+// [y,yjd]
+static array year_from_julian_day(int jd)
 {
-  inherit Calendar.Gregorian.Day;
+   int d=jd-1721058;
 
-  void create(int ... arg)
-  {
-    if (!sizeof(arg))
-    {
-      int jd = Calendar.Gregorian.Day()->julian_day()-1721424;
-      y = jd*100/36525+1;
-      d = jd-(y-1)*36525/100;
-    }
-    else
-      ::create(@arg);
-  }
+   int quad=d/1461;
+   int quad_year=max( (d%1461-1)/365, 0);
 
+   return 
+   ({
+      quad*4+quad_year,
+      1721058+1461*quad+365*quad_year+!!quad_year
+   });
+}
+
+static int julian_day_from_year(int y)
+{
+   y--;
+   return 1721424+y*365+y/4;
 }
