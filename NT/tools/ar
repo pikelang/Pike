@@ -109,6 +109,7 @@ case "$CC" in
   ;;
   *)
     echo Unknown C compiler: $CC
+    exit 1
   ;;
 esac
 
