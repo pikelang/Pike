@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: cpp.c,v 1.147 2004/10/31 22:35:45 mast Exp $
+|| $Id: cpp.c,v 1.148 2004/11/01 03:06:02 mast Exp $
 */
 
 #include "global.h"
@@ -910,11 +910,13 @@ while(1)					\
     if(data[pos+1]=='\n')			\
     {						\
       pos++;					\
+      this->current_line++;			\
       continue;					\
     }						\
     if(data[pos+1]=='\r' && data[pos+2]=='\n')	\
     {						\
       pos+=2;					\
+      this->current_line++;			\
       continue;					\
     }						\
     READCHAR(tmp);				\

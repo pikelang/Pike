@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: preprocessor.h,v 1.76 2004/10/31 22:35:45 mast Exp $
+|| $Id: preprocessor.h,v 1.77 2004/11/01 03:06:02 mast Exp $
 */
 
 /*
@@ -1391,12 +1391,11 @@ static ptrdiff_t lower_cpp(struct cpp *this,
     case '0': case '1': case '2': case '3': case '4':
     case '5': case '6': case '7': case '8': case '9':
     {
-      INT32 tmp;
+      INT32 new_lineno;
       PCHARP foo = MKPCHARP(data+pos, SHIFT);
-      tmp=STRTOL_PCHARP(foo, &foo, 10)-1;
+      new_lineno=STRTOL_PCHARP(foo, &foo, 10)-1;
       if(OUTP())
       {
-	this->current_line=tmp;
 	string_builder_putchar(&this->buf, '#');
 	string_builder_append(&this->buf, MKPCHARP(data+pos, SHIFT),
 			      ((WCHAR *)foo.ptr) - (data+pos));
@@ -1439,7 +1438,10 @@ static ptrdiff_t lower_cpp(struct cpp *this,
 	  free_string_builder(&nf);
 	}
       }
-      
+
+      if (OUTP())
+	this->current_line = new_lineno;
+
       FIND_EOL();
       break;
     }

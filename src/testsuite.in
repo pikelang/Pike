@@ -1,5 +1,5 @@
 START_MARKER
-test_true([["$Id: testsuite.in,v 1.743 2004/11/01 01:34:45 mast Exp $"]]);
+test_true([["$Id: testsuite.in,v 1.744 2004/11/01 03:06:03 mast Exp $"]]);
 
 // This triggered a bug only if run sufficiently early.
 test_compile_any([[#pike 7.2]])
@@ -7666,6 +7666,14 @@ test_equal([[
 ]], "abc")
 test_eq([[cpp("\\\n")]], "# 1 \"-\"\n\n")
 test_eq([[cpp("#if 1\\\n-1\nfoo\n#endif\n")]], "# 1 \"-\"\n\n\n\n\n")
+test_any([[
+  Stdio.write_file("testsuite_test.h", "");
+  return compile_string(#"
+      #include \"\\
+testsuite_test.h\"
+      int line = __LINE__;
+    ")()->line;
+]], 4)
 
 // The following three tests are in triplicate to force testing in all shifts.
 test_do([[
