@@ -164,12 +164,13 @@ class TextMapping
 
    array encode()
    {
+      error("unimplemented\n");
       return
          ({
             range_begin,                           // Local-Text-No
             range_end,                             // Local-Text-No
             later_texts_exists,                    // BOOL
-            @error("unimplemented"),               // Local-To-Global-Block
+            /*@error("unimplemented"),*/           // Local-To-Global-Block
          });
    }
 }
