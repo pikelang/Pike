@@ -618,7 +618,7 @@ class PikeType
 		  }else{
 		    repeater=PikeType("void");
 		  }
-		  args=map(argstmp[..end]*({}),PikeType)+
+		  args=map(argstmp[..end]-({({})}),PikeType)+
 		    ({repeater, PikeType(rettmp) });
 		}else{
 		  args=({PikeType("mixed"),PikeType("any")});
