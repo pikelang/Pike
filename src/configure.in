@@ -1,4 +1,4 @@
-AC_REVISION("$Id: configure.in,v 1.231 1998/08/27 00:12:29 grubba Exp $")
+AC_REVISION("$Id: configure.in,v 1.232 1998/08/31 12:44:21 grubba Exp $")
 AC_INIT(interpret.c)
 AC_CONFIG_HEADER(machine.h)
 
@@ -1018,6 +1018,30 @@ int main()
       else
         :
       fi
+
+      #
+      # FreeBSD doesn't like the &, while AIX requires it...
+      #
+
+      AC_MSG_CHECKING(if pthread_condattr_default is needs an & (AIX))
+      AC_CACHE_VAL(pike_cv_have_pthread_condattr_default_aix,[
+        AC_TRY_LINK([#include <pthread.h>
+          void foo(pthread_cond_t *bar) { pthread_cond_init(bar, &pthread_condattr_default); }
+        ],[],[
+	  pike_cv_have_pthread_condattr_default_aix=yes
+	],[
+	  pike_cv_have_pthread_condattr_default_aix=no
+	])
+      ])
+
+      AC_MSG_RESULT($pike_cv_have_pthread_condattr_default_aix)
+
+      if test x$pike_cv_have_pthread_condattr_default_aix = xyes ; then
+        AC_DEFINE(HAVE_PTHREAD_CONDATTR_DEFAULT_AIX)
+      else
+        :
+      fi
+
     else
       AC_MSG_RESULT(no)
       LIBS="$OLDLIBS"
