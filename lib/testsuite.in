@@ -29,3 +29,11 @@ dnl putenv
 dnl remove_include_path
 dnl remove_module_path
 dnl remove_program_path
+
+dnl master()->set_inhibit_compile_errors
+test_any([[
+  master()->set_inhibit_compile_errors(lambda(){});
+  mixed res = catch{compile_string("dfasfqw123");};
+  master()->set_inhibit_compile_errors(0);
+  return arrayp(res)||objectp(res);
+]], 1)
