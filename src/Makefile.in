@@ -1,5 +1,5 @@
 #
-# $Id: Makefile.in,v 1.201 2000/08/06 21:42:40 grubba Exp $
+# $Id: Makefile.in,v 1.202 2000/08/07 11:36:41 grubba Exp $
 #
 
 # This line is needed on some machines.
@@ -95,7 +95,9 @@ LD=@LD@
 LDFLAGS=@LDFLAGS@ @LINKFORSHARED@ $(EXTRALDFLAGS)
 
 RUNPIKE=$(TMP_BUILDDIR)/pike -DNOT_INSTALLED -m$(TMP_BUILDDIR)/master.pike $(PIKEOPTS)
-RUNTPIKE=$(TMP_BUILDDIR)/tpike -DNOT_INSTALLED -m$(TMP_BUILDDIR)/master.pike $(PIKEOPTS)
+USE_TPIKE=$(TMP_BUILDDIR)/tpike -DNOT_INSTALLED -m$(TMP_BUILDDIR)/master.pike $(PIKEOPTS)
+USE_PIKE=@PIKE@ $(PIKEOPTS)
+RUNTPIKE=$(@RUNTPIKE@)
 
 MAKE_FLAGS=
 
