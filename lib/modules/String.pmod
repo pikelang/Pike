@@ -68,3 +68,61 @@ class String_buffer {
       ptr=0;
     }
 };
+
+
+// Do a fuzzy matching between two different strings and return a
+// "similarity index". The higher, the closer the strings match.
+
+static int low_fuzzymatch(string str1, string str2)
+{
+  string tmp1, tmp2;
+  int offset, length;
+  int fuzz;
+  fuzz = 0;
+  while(strlen(str1) && strlen(str2))
+  {
+    /* Now we will look for the first character of tmp1 in tmp2 */
+    if((offset = search(str2, str1[0..0])) != -1)
+    {
+      tmp2 = str2[offset..100000];
+      /* Ok, so we have found one character, let's check how many more */
+      tmp1 = str1;
+      length = 1;
+      while(1)
+      {
+        //*(++tmp1)==*(++tmp2) && *tmp1
+        if(length < strlen(tmp1) && length < strlen(tmp2) &&
+           tmp1[length] == tmp2[length])
+          length++;
+        else
+          break;
+      }
+      if(length >= offset)
+      {
+        fuzz += length;
+        str1 = str1[length..1000000];
+        str2 = str2[length + offset..100000];
+        continue;
+      }
+    }
+    if(strlen(str1))
+      str1 = str1[1..1000000];
+  }
+  return fuzz;
+}
+
+int fuzzymatch(string a, string b)
+{
+  int fuzz;
+
+  if(a == b)
+  {
+    fuzz = 100;
+  } else {
+    fuzz = low_fuzzymatch(a, b);
+    fuzz += low_fuzzymatch(b, a);
+    fuzz = fuzz*100/(strlen(a)+strlen(b));
+  }
+
+  return fuzz;
+}
