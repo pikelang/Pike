@@ -3,7 +3,7 @@
 inherit "lib.pike";
 
 
-int main(int argc, string *cmd)
+int main(int argc, array cmd)
 {
   exit(silent_do_cmd(cmd[1..]));
 }
