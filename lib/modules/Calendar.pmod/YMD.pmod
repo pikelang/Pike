@@ -2678,13 +2678,14 @@ Calendar.dwim_day("next monday");
 */
 
 array dwim_day_strings=
-({"%y-%M-%D (%*s) -W%W-%e (%e)",
-  "%e%*[, ]%M%*[ ,]%D%*[ ,]%y",
+({
+  "%y-%M-%D (%*s) -W%W-%e (%e)",
   "%y-%M-%D",
   "%M/%D/%y",
   "%D%*[ /]%M%*[- /,]%y",
   "%M %D%*[- /,]%y",
   "%e%*[, ]%D%*[a-z:]%*[ /]%M%*[-/ ,]%y",
+  "%e%*[, ]%M%*[ ,]%D%*[ ,]%y",
   "-%y%*[ /]%D%*[ /]%M",
   "-%y%*[ /]%M%*[ /]%D",
   "%y%*[ /]%M%*[ /]%D",
@@ -2696,7 +2697,8 @@ array dwim_day_strings=
   "%D-%M-%y",
   "%e%*[- /wv]%W%*[ -/]%y",
   "%e%*[- /wv]%W", 
-  "%d"});
+  "%d"
+});
 
 cDay dwim_day(string day)
 {
