@@ -124,7 +124,7 @@ int main(int argc, string *argv)
 {
   if(argc<2)
   {
-    werror("Usage: sprshd <port> <host to accept connections from>\n");
+    werror("Usage: sprshd <port> <hosts to accept connections from>\n");
     exit(1);
   }
   if(!bind((int)argv[1]))
@@ -133,7 +133,22 @@ int main(int argc, string *argv)
     exit(1);
   }
 
-  string *hosts=gethostbyname(argv[2])[1];
+  string *hosts=({});
+  for(int e=2;e<sizeof(argv);e++)
+  {
+    if(sscanf(argv[e],"%*d.%*d")==2)
+    {
+      hosts+=argv[e];
+      continue;
+    }
+    mixed tmp=gethostbyname(argv[e]);
+    if(!tmp)
+    {
+      werror("Gethostbyname("+argv[e]+") failed.\n");
+      exit(1);
+    }
+    hosts+=tmp[1];
+  }
 
   write("Ready.\n");
   while(1)
