@@ -455,6 +455,8 @@ string parse_text(Node n, void|String.Buffer ret) {
     case "b":
     case "i":
     case "tt":
+    case "sub":
+    case "sup":
       ret->add("<", name, ">");
       parse_text(c, ret);
       ret->add("</", name, ">");
@@ -641,8 +643,6 @@ string parse_text(Node n, void|String.Buffer ret) {
       ret->add( sprintf("<%s%{ %s='%s'%} />", c->get_any_name(), (array)c->get_attributes()) );
       break;
     case "table":
-    case "sub":
-    case "sup":
     case "td":
     case "tr":
     case "th":
