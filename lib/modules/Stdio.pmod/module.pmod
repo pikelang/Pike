@@ -1,4 +1,4 @@
-// $Id: module.pmod,v 1.123 2001/08/24 15:06:09 grubba Exp $
+// $Id: module.pmod,v 1.124 2001/08/24 16:29:22 mast Exp $
 #pike __REAL_VERSION__
 
 
@@ -1486,13 +1486,14 @@ string read_bytes(string filename, void|int start,void|int len)
   return ret;
 }
 
-//! Append the string @[str] onto the file @[filename].
+//! Write the string @[str] onto the file @[filename]. Any existing
+//! data in the file is overwritten.
 //!
 //! @returns
 //! Returns number of bytes written.
 //!
 //! @seealso
-//! @[read_bytes()]
+//! @[append_file()], @[read_bytes()]
 //!
 int write_file(string filename, string str, int|void access)
 {
@@ -1511,6 +1512,14 @@ int write_file(string filename, string str, int|void access)
   return ret;
 }
 
+//! Append the string @[str] onto the file @[filename].
+//!
+//! @returns
+//! Returns number of bytes written.
+//!
+//! @seealso
+//! @[write_file()], @[read_bytes()]
+//!
 int append_file(string filename, string what, int|void access)
 {
   int ret;
