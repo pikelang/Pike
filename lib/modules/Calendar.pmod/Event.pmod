@@ -1266,9 +1266,9 @@ class TZShift_Event
 
    constant is_tzshift_event=1;
 
-   Ruleset.Timezone timezone;
+   Rule.Timezone timezone;
 
-   void create(void|Ruleset.Timezone _tz)
+   void create(void|Rule.Timezone _tz)
    {
       timezone=_tz;
    }
@@ -1286,7 +1286,7 @@ class TZShift_Event
 			from,-1,including);
    }
 
-   static TimeRange scan_shift(Ruleset.Timezone tz,
+   static TimeRange scan_shift(Rule.Timezone tz,
 			       TimeRange from,
 			       int direction,int including)
    {
@@ -1295,7 +1295,7 @@ class TZShift_Event
       return scan_rule(tz,from,direction,including);
    }
 
-   static TimeRange scan_history(Ruleset.Timezone tz,
+   static TimeRange scan_history(Rule.Timezone tz,
 				 TimeRange from,
 				 int direction,int(0..1) including)
    {
@@ -1323,7 +1323,7 @@ class TZShift_Event
       TimeRange atr=from;
       for (;;)
       {
-	 Ruleset.Timezone atz=tz->whatrule(ux);
+	 Rule.Timezone atz=tz->whatrule(ux);
 	 atr=scan_rule(atz,atr,direction,including);
 	 if (!atr) break;
 	 if (direction==1)
@@ -1342,7 +1342,7 @@ class TZShift_Event
 	 return atr;
    }
 
-   static TimeRange scan_rule(Ruleset.Timezone tz,
+   static TimeRange scan_rule(Rule.Timezone tz,
 			      TimeRange from,
 			      int direction,int including)
    {
