@@ -1,5 +1,5 @@
 /*
- * $Id: nt.c,v 1.7 1999/04/06 20:48:53 js Exp $
+ * $Id: nt.c,v 1.8 1999/05/11 00:09:56 marcus Exp $
  *
  * NT system calls for Pike
  *
@@ -455,6 +455,7 @@ void f_NetUserEnum(INT32 args)
   LPWSTR server=NULL;
   INT32 pos=0,e;
   struct array *a=0;
+  DWORD resume=0;
 
   fprintf(stderr,"before: sp=%p args=%d (base=%p)\n",sp,args,sp-args);
 
@@ -485,7 +486,7 @@ void f_NetUserEnum(INT32 args)
 
   while(1)
   {
-    DWORD read=0, total=0, resume=0;
+    DWORD read=0, total=0;
     NET_API_STATUS ret;
     LPBYTE buf=0,ptr;
 
@@ -541,6 +542,7 @@ void f_NetGroupEnum(INT32 args)
   LPWSTR server=NULL;
   INT32 pos=0,e;
   struct array *a=0;
+  DWORD resume=0;
 
   if(args && sp[-args].type==T_STRING)
     server=(LPWSTR)require_wstring1(sp[-args].u.string,&to_free1);
@@ -549,7 +551,7 @@ void f_NetGroupEnum(INT32 args)
 
   while(1)
   {
-    DWORD read=0, total=0, resume=0;
+    DWORD read=0, total=0;
     NET_API_STATUS ret;
     LPBYTE buf=0,ptr;
 
