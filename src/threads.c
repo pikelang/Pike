@@ -1,5 +1,5 @@
 #include "global.h"
-RCSID("$Id: threads.c,v 1.166 2001/09/24 16:45:39 grubba Exp $");
+RCSID("$Id: threads.c,v 1.167 2001/09/25 14:03:57 grubba Exp $");
 
 PMOD_EXPORT int num_threads = 1;
 PMOD_EXPORT int threads_disabled = 0;
@@ -1282,7 +1282,7 @@ void f_thread_id_status(INT32 args)
 
 /*! @decl static string _sprintf(int c)
  *!
- *! Returns a string identifing the thread.
+ *! Returns a string identifying the thread.
  */
 void f_thread_id__sprintf (INT32 args)
 {
@@ -1291,6 +1291,16 @@ void f_thread_id__sprintf (INT32 args)
   push_int64((ptrdiff_t)THIS_THREAD->id);
   push_constant_text (")");
   f_add (3);
+}
+
+/*! @decl static int id_number()
+ *!
+ *! Returns an id number identifying the thread.
+ */
+void f_thread_id_id_number(INT32 args)
+{
+  pop_n_elems(args);
+  push_int64((ptrdiff_t)THIS_THREAD->id);
 }
 
 /*! @decl mixed result()
@@ -1768,6 +1778,7 @@ void th_init(void)
   /* function(:int) */
   ADD_FUNCTION("status",f_thread_id_status,tFunc(tNone,tInt),0);
   ADD_FUNCTION("_sprintf",f_thread_id__sprintf,tFunc(tNone,tStr),0);
+  ADD_FUNCTION("id_number",f_thread_id_id_number,tFunc(tNone,tInt),0);
   set_gc_recurse_callback(thread_was_recursed);
   set_gc_check_callback(thread_was_checked);
   set_init_callback(init_thread_obj);
