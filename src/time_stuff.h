@@ -26,19 +26,18 @@
 #undef TIME_WITH_SYS_TIME
 
 #define my_timercmp(tvp, cmp, uvp) \
-  ( (tvp)->tv_sec cmp (uvp)->tv_sec || \
-    ((tvp)->tv_sec == (uvp)->tv_sec && \
-     (tvp)->tv_usec cmp (uvp)->tv_usec) )
-
+  ( (tvp)->tv_sec == (uvp)->tv_sec ? \
+    (tvp)->tv_usec cmp (uvp)->tv_usec : \
+    (tvp)->tv_sec cmp (uvp)->tv_sec )
 
 #define my_subtract_timeval(X, Y)		\
   do {						\
     struct timeval *_a=(X), *_b=(Y);		\
     _a->tv_sec -= _b->tv_sec;			\
-    _a->tv_usec -= _a->tv_usec;			\
-    if(_b->tv_usec < 0) {			\
-      _b->tv_sec--;				\
-      _b->tv_usec+=1000000;			\
+    _a->tv_usec -= _b->tv_usec;			\
+    if(_a->tv_usec < 0) {			\
+      _a->tv_sec--;				\
+      _a->tv_usec+=1000000;			\
     }						\
   } while(0)
 
@@ -46,10 +45,10 @@
   do {						\
     struct timeval *_a=(X), *_b=(Y);		\
     _a->tv_sec += _b->tv_sec;			\
-    _a->tv_usec += _a->tv_usec;			\
-    if(_b->tv_usec > 1000000) {			\
-      _b->tv_sec++;				\
-      _b->tv_usec-=1000000;			\
+    _a->tv_usec += _b->tv_usec;			\
+    if(_a->tv_usec >= 1000000) {		\
+      _a->tv_sec++;				\
+      _a->tv_usec-=1000000;			\
     }						\
   } while(0)
 
