@@ -1,8 +1,5 @@
 #pike 7.5
 
-Crypto.SHA1_Algorithm sha = Crypto.SHA1();
+inherit Nettle.SHA1_State;
 
 string name() { return "SHA"; }
-
-function update = sha->update;
-function digest = sha->digest;
