@@ -1,11 +1,11 @@
 #include <config.h>
 
-/* $Id: colortable.c,v 1.23 1997/11/07 16:37:48 mirar Exp $ */
+/* $Id: colortable.c,v 1.24 1997/11/09 18:40:50 mirar Exp $ */
 
 /*
 **! module Image
 **! note
-**!	$Id: colortable.c,v 1.23 1997/11/07 16:37:48 mirar Exp $
+**!	$Id: colortable.c,v 1.24 1997/11/09 18:40:50 mirar Exp $
 **! class colortable
 **!
 **!	This object keeps colortable information,
@@ -21,7 +21,7 @@
 #undef COLORTABLE_REDUCE_DEBUG
 
 #include "global.h"
-RCSID("$Id: colortable.c,v 1.23 1997/11/07 16:37:48 mirar Exp $");
+RCSID("$Id: colortable.c,v 1.24 1997/11/09 18:40:50 mirar Exp $");
 
 #include <sys/types.h>
 #include <sys/stat.h>
@@ -2208,23 +2208,21 @@ void image_colortable_operator_minus(INT32 args)
    push_object(o);
 }
 
-void image_colortable_cast_to_array(INT32 args)
+void image_colortable_cast_to_array(struct neo_colortable *nct)
 {
    struct nct_flat flat;
    int i;
    
-   pop_n_elems(args);
-   
-   if (THIS->type==NCT_NONE)
+   if (nct->type==NCT_NONE)
    {
       f_aggregate(0);
       return;
    }
 
-   if (THIS->type==NCT_CUBE)
-      flat=_img_nct_cube_to_flat(THIS->u.cube);
+   if (nct->type==NCT_CUBE)
+      flat=_img_nct_cube_to_flat(nct->u.cube);
    else
-      flat=THIS->u.flat;
+      flat=nct->u.flat;
 
    /* sort in number order? */
 
@@ -2237,7 +2235,7 @@ void image_colortable_cast_to_array(INT32 args)
    }
    f_aggregate(flat.numentries);
 
-   if (THIS->type==NCT_CUBE)
+   if (nct->type==NCT_CUBE)
       free(flat.entries);
 }
 
@@ -2303,9 +2301,12 @@ void image_colortable_cast(INT32 args)
        sp[-args].type!=T_STRING) 
       error("Illegal argument 1 to Image.colortable->cast\n");
 
-   /* CHECK TYPE TO CAST TO HERE! FIXME FIXME FIXME! */
+   if (sp[-args].u.string!=make_shared_string("array"))
+      error("Image.colortable->cast: can't cast to %s\n",
+	    sp[-args].u.string->str);
 
-   image_colortable_cast_to_array(args);
+   pop_n_elems(args);
+   image_colortable_cast_to_array(THIS);
 }
 
 /*
