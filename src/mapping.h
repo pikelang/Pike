@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: mapping.h,v 1.55 2004/09/26 22:06:32 mast Exp $
+|| $Id: mapping.h,v 1.56 2004/09/27 21:37:13 mast Exp $
 */
 
 #ifndef MAPPING_H
@@ -86,7 +86,7 @@ extern struct mapping *gc_internal_mapping;
 #define free_mapping(M) do{						\
     struct mapping *m_=(M);						\
     debug_malloc_touch(m_);						\
-    DO_IF_PIKE_CLEANUP (						\
+    DO_IF_DEBUG (							\
       if (gc_external_refs_zapped)					\
 	gc_check_zapped (m_, PIKE_T_MAPPING, __FILE__, __LINE__);	\
     );									\

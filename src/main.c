@@ -2,11 +2,11 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: main.c,v 1.202 2004/09/26 15:18:10 marcus Exp $
+|| $Id: main.c,v 1.203 2004/09/27 21:37:13 mast Exp $
 */
 
 #include "global.h"
-RCSID("$Id: main.c,v 1.202 2004/09/26 15:18:10 marcus Exp $");
+RCSID("$Id: main.c,v 1.203 2004/09/27 21:37:13 mast Exp $");
 #include "fdlib.h"
 #include "backend.h"
 #include "module.h"
@@ -918,27 +918,24 @@ void exit_main(void)
 #ifdef DO_PIKE_CLEANUP
   size_t count;
 
-#ifdef PIKE_DEBUG
-  if (verbose_debug_exit)
-    fprintf(stderr,"Exited normally, counting bytes.\n");
-#endif
-
-  /* Destruct all remaining objects while we have a proper execution
-   * environment. The downside is that the leak report below will
-   * always report destructed objects. We use the gc in a special mode
-   * for this to get a reasonably sane destruct order. */
-  gc_destruct_everything = 1;
-  count = do_gc (NULL, 1);
-  while (count) {
-    size_t new_count = do_gc (NULL, 1);
-    if (new_count >= count) {
-      fprintf (stderr, "Some destroy function is creating new objects "
-	       "during final cleanup - can't exit cleanly.\n");
-      break;
+  if (exit_with_cleanup) {
+    /* Destruct all remaining objects while we have a proper execution
+     * environment. The downside is that the leak report below will
+     * always report destructed objects. We use the gc in a special mode
+     * for this to get a reasonably sane destruct order. */
+    gc_destruct_everything = 1;
+    count = do_gc (NULL, 1);
+    while (count) {
+      size_t new_count = do_gc (NULL, 1);
+      if (new_count >= count) {
+	fprintf (stderr, "Some destroy function is creating new objects "
+		 "during final cleanup - can't exit cleanly.\n");
+	break;
+      }
+      count = new_count;
     }
-    count = new_count;
+    gc_destruct_everything = 0;
   }
-  gc_destruct_everything = 0;
 
   /* Unload dynamic modules before static ones. */
   exit_dynamic_load();
@@ -990,14 +987,15 @@ void low_exit_main(void)
 
   do_gc(NULL, 1);
 
-#ifdef PIKE_DEBUG
-  if(verbose_debug_exit)
+  if (exit_with_cleanup)
   {
+    int leak_found = 0;
+
 #ifdef _REENTRANT
     if(count_pike_threads()>1)
     {
       fprintf(stderr,"Byte counting aborted, because all threads have not exited properly.\n");
-      verbose_debug_exit=0;
+      exit_with_cleanup = 0;
       return;
     }
 #endif
@@ -1016,7 +1014,6 @@ void low_exit_main(void)
 #define STATIC_ARRAYS {&empty_array, &weak_empty_array, &weak_shrink_empty_array}
 
 #define REPORT_LINKED_LIST_LEAKS(TYPE, START, STATICS, T_TYPE, NAME) do { \
-      size_t num = 0;							\
       struct TYPE *x;							\
       for (x = START; x; x = x->next) {					\
 	struct marker *m = find_marker (x);				\
@@ -1034,15 +1031,17 @@ void low_exit_main(void)
 	    if (x == statics[i])					\
 	      is_static = 1;						\
 	  if (x->refs != m->refs + is_static) {				\
-	    num++;							\
-	    fprintf (stderr, NAME " got %d unaccounted references:\n",	\
+	    if (!leak_found) {						\
+	      fputs ("Leak(s) found at exit:\n", stderr);		\
+	      leak_found = 1;						\
+	    }								\
+	    fprintf (stderr, NAME " got %d unaccounted references: ",	\
 		     x->refs - (m->refs + is_static));			\
-	    describe_something (x, T_TYPE, 2, 2, 0, NULL);		\
+	    print_short_svalue (stderr, (union anything *) &x, T_TYPE);	\
+	    fputc ('\n', stderr);					\
 	  }								\
 	}								\
       }									\
-      if (num)								\
-	fprintf (stderr, NAME "s left: %"PRINTSIZET"d\n", num);		\
     } while (0)
 
     REPORT_LINKED_LIST_LEAKS (array, first_array, STATIC_ARRAYS, T_ARRAY, "Array");
@@ -1069,7 +1068,7 @@ void low_exit_main(void)
 	    if (x == statics[i])					\
 	      is_static = 1;						\
 	  while (x->refs > m->refs + is_static) {			\
-	    m->flags |= GC_CLEANUP_FREED;				\
+	    DO_IF_DEBUG (m->flags |= GC_CLEANUP_FREED);			\
 	    PIKE_CONCAT(free_, TYPE) (x);				\
 	  }								\
 	}								\
@@ -1084,9 +1083,11 @@ void low_exit_main(void)
 
 #undef ZAP_LINKED_LIST_LEAKS
 
+#ifdef PIKE_DEBUG
     /* If we stumble on the real refs whose refcounts we've zapped
      * above we should try to handle it gracefully. */
     gc_external_refs_zapped = 1;
+#endif
 
     do_gc (NULL, 1);
 
@@ -1103,7 +1104,6 @@ void low_exit_main(void)
     }
 #endif
   }
-#endif
 
   destruct_objects_to_destruct_cb();
 
