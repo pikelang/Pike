@@ -17,7 +17,7 @@
 #include <errno.h>
 #include "rusage.h"
 
-RCSID("$Id: rusage.c,v 1.19 2002/09/13 15:35:14 mast Exp $");
+RCSID("$Id: rusage.c,v 1.20 2002/09/13 19:38:39 mast Exp $");
 
 #ifdef HAVE_SYS_TIMES_H
 #include <sys/times.h>
@@ -251,11 +251,11 @@ static long convert_time(long t,long tick)
 }
 #endif
 
-pike_rusage_t *low_rusage(void)
+INT32 *low_rusage(void)
 {
   static pike_rusage_t rusage_values;
   if (pike_get_rusage (rusage_values))
-    return &rusage_values;
+    return &rusage_values[0];
   else
     return NULL;
 }
