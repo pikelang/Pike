@@ -69,21 +69,29 @@ static void do_free_arrayptr( struct array **x )
   free_array( *x );
 }			   
 
+/*! @decl array(array(string),string) tokenize(string code)
+ *!
+ *!   Tokenize a string of Pike tokens.
+ *!
+ *! @returns
+ *!   Returns an array with Pike-level tokens and the remainder (a
+ *!   partial token), if any.
+ */
 static void f_tokenize( INT32 args )
 {
   struct array *res;
-  struct pike_string *left_s = 0; /* Make gcc happy. */
+  struct pike_string *left_s = NULL; /* Make gcc happy. */
+  struct pike_string *data;
   int left;
   ONERROR tmp;
 
-  if( Pike_sp[-1].type != PIKE_T_STRING )
-    Pike_error("Expected string argument\n");
+  get_all_args("tokenize", args, "%W", &data);
 
-  if( Pike_sp[-1].u.string->len==0 )
+  if(!data->len)
   {
     pop_n_elems(args);
-    push_array(&empty_array);
-    push_string(empty_pike_string);
+    ref_push_array(&empty_array);
+    ref_push_string(empty_pike_string);
     f_aggregate(2);
     return;
   }
@@ -91,28 +99,27 @@ static void f_tokenize( INT32 args )
   res = allocate_array_no_init( 0, 128 );
   SET_ONERROR(tmp, do_free_arrayptr, &res);
   
-  switch( Pike_sp[-1].u.string->size_shift )
+  switch(data->size_shift)
   {
     case 0:
-      left=tokenize0(&res,(p_wchar0*)Pike_sp[-1].u.string->str,Pike_sp[-1].u.string->len);
-      left_s = make_shared_binary_string0( (p_wchar0*)Pike_sp[-1].u.string->str+left,
-					   Pike_sp[-1].u.string->len-left);
+      left = tokenize0(&res, STR0(data), data->len);
+      left_s = make_shared_binary_string0(STR0(data)+left, data->len-left);
       break;
     case 1:
-      left=tokenize1(&res,(p_wchar1*)Pike_sp[-1].u.string->str,Pike_sp[-1].u.string->len);
-      left_s = make_shared_binary_string1( (p_wchar1*)Pike_sp[-1].u.string->str+left,
-					   Pike_sp[-1].u.string->len-left);
+      left = tokenize1(&res, STR1(data), data->len);
+      left_s = make_shared_binary_string1(STR1(data)+left, data->len-left);
       break;
     case 2:
-      left=tokenize2(&res,(p_wchar2*)Pike_sp[-1].u.string->str,Pike_sp[-1].u.string->len);
-      left_s = make_shared_binary_string1( (p_wchar1*)Pike_sp[-1].u.string->str+left,
-					   Pike_sp[-1].u.string->len-left);
+      left = tokenize2(&res,STR2(data), data->len);
+      left_s = make_shared_binary_string1(STR2(data)+left, data->len-left);
       break;
 #ifdef PIKE_DEBUG
     default:
-      Pike_error("Unknown shift size %d.\n", Pike_sp[-1].u.string->size_shift);
+      Pike_error("Unknown shift size %d.\n", data->size_shift);
 #endif
   }
+
+  UNSET_ONERROR(tmp);
   pop_n_elems(args);
   push_array(res);
   push_string( left_s );
@@ -122,7 +129,7 @@ static void f_tokenize( INT32 args )
 
 void init_parser_pike()
 {
-  ADD_FUNCTION("tokenize",f_tokenize,tFunc(tStr,tArr(tStr)),0);
+  ADD_FUNCTION("tokenize", f_tokenize, tFunc(tStr,tArr(tStr)), 0);
 }
 
 void exit_parser_pike()
