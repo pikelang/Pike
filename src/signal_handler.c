@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: signal_handler.c,v 1.262 2003/04/07 17:28:56 nilsson Exp $
+|| $Id: signal_handler.c,v 1.263 2003/04/14 14:31:33 grubba Exp $
 */
 
 #include "global.h"
@@ -26,7 +26,7 @@
 #include "main.h"
 #include <signal.h>
 
-RCSID("$Id: signal_handler.c,v 1.262 2003/04/07 17:28:56 nilsson Exp $");
+RCSID("$Id: signal_handler.c,v 1.263 2003/04/14 14:31:33 grubba Exp $");
 
 #ifdef HAVE_PASSWD_H
 # include <passwd.h>
@@ -108,6 +108,12 @@ RCSID("$Id: signal_handler.c,v 1.262 2003/04/07 17:28:56 nilsson Exp $");
 #endif
 
 #ifdef HAVE_SYS_USER_H
+/* NOTE: On AIX 4.x with COFF32 format, this file
+ *       includes <syms.h>, which has incompatible
+ *       definitions of T_INT and T_FLOAT.
+ *	 Use PIKE_T_INT and PIKE_T_FLOAT in this file!
+ *	/grubba 2003-04-14.
+ */
 #include <sys/user.h>
 #endif
 
@@ -879,7 +885,7 @@ static void f_signal(int args)
   if(args < 1)
     SIMPLE_TOO_FEW_ARGS_ERROR("signal", 1);
 
-  if(Pike_sp[-args].type != T_INT)
+  if(Pike_sp[-args].type != PIKE_T_INT)
     SIMPLE_BAD_ARG_ERROR("signal", 1, "int");
 
   signum=Pike_sp[-args].u.integer;
@@ -993,7 +999,7 @@ static void f_signame(int args)
   if(args < 1)
     SIMPLE_TOO_FEW_ARGS_ERROR("signame", 1);
 
-  if(Pike_sp[-args].type != T_INT)
+  if(Pike_sp[-args].type != PIKE_T_INT)
     SIMPLE_BAD_ARG_ERROR("signame", 1, "int");
 
   n=signame(Pike_sp[-args].u.integer);
@@ -1127,7 +1133,7 @@ static void exit_pid_status(struct object *o)
   if(pid_mapping)
   {
     struct svalue key;
-    key.type=T_INT;
+    key.type=PIKE_T_INT;
     key.u.integer=THIS->pid;
     map_delete(pid_mapping, &key);
   }
@@ -1154,7 +1160,8 @@ static void report_child(int pid,
   if(pid_mapping)
   {
     struct svalue *s, key;
-    key.type=T_INT;
+    key.type = PIKE_T_INT;
+    key.subtype = 0;
     key.u.integer=pid;
     if((s=low_mapping_lookup(pid_mapping, &key)))
     {
@@ -1718,7 +1725,7 @@ static void f_trace_process_cont(INT32 args)
     Pike_error("Process not stopped\n");
   }
 
-  if (args && Pike_sp[-args].type == T_INT) {
+  if (args && Pike_sp[-args].type == PIKE_T_INT) {
     cont_signal = Pike_sp[-args].u.integer;
   }
 
@@ -2274,7 +2281,7 @@ static void internal_add_limit( struct perishables *storage,
   ol.rlim_cur = RLIM_SAVED_CUR;
 #endif
 
-  if(limit_value->type == T_INT)
+  if(limit_value->type == PIKE_T_INT)
   {
     l = malloc(sizeof( struct pike_limit ));
     l->rlp.rlim_max = ol.rlim_max;
@@ -2283,7 +2290,7 @@ static void internal_add_limit( struct perishables *storage,
     struct svalue *tmp3;
     l = malloc(sizeof( struct pike_limit ));
     if((tmp3=simple_mapping_string_lookup(limit_value->u.mapping, "soft"))) {
-      if(tmp3->type == T_INT)
+      if(tmp3->type == PIKE_T_INT)
         l->rlp.rlim_cur = (tmp3->u.integer >= 0) ?
 	  (unsigned INT32)tmp3->u.integer:(unsigned INT32)ol.rlim_cur;
       else
@@ -2291,7 +2298,7 @@ static void internal_add_limit( struct perishables *storage,
     } else
       l->rlp.rlim_cur = ol.rlim_cur;
     if((tmp3=simple_mapping_string_lookup(limit_value->u.mapping, "hard"))) {
-      if(tmp3->type == T_INT)
+      if(tmp3->type == PIKE_T_INT)
         l->rlp.rlim_max = (tmp3->u.integer >= 0) ?
 	  (unsigned INT32)tmp3->u.integer:(unsigned INT32)ol.rlim_max;
       else
@@ -2300,11 +2307,11 @@ static void internal_add_limit( struct perishables *storage,
       l->rlp.rlim_max = ol.rlim_max;
   } else if(limit_value->type == T_ARRAY && limit_value->u.array->size == 2) {
     l = malloc(sizeof( struct pike_limit ));
-    if(limit_value->u.array->item[0].type == T_INT)
+    if(limit_value->u.array->item[0].type == PIKE_T_INT)
       l->rlp.rlim_max = limit_value->u.array->item[0].u.integer;
     else
       l->rlp.rlim_max = ol.rlim_max;
-    if(limit_value->u.array->item[1].type == T_INT)
+    if(limit_value->u.array->item[1].type == PIKE_T_INT)
       l->rlp.rlim_cur = limit_value->u.array->item[1].u.integer;
     else
       l->rlp.rlim_max = ol.rlim_cur;
@@ -2918,7 +2925,7 @@ void f_create_process(INT32 args)
       {
 	switch(tmp->type)
 	{
-	  case T_INT:
+	  case PIKE_T_INT:
 	    wanted_gid=tmp->u.integer;
 	    gid_request=1;
 	    break;
@@ -2931,7 +2938,7 @@ void f_create_process(INT32 args)
 	    f_getgrnam(1);
 	    if(!Pike_sp[-1].type != T_ARRAY)
 	      Pike_error("No such group.\n");
-	    if(Pike_sp[-1].u.array->item[2].type != T_INT)
+	    if(Pike_sp[-1].u.array->item[2].type != PIKE_T_INT)
 	      Pike_error("Getgrnam failed!\n");
 	    wanted_gid = Pike_sp[-1].u.array->item[2].u.integer;
 	    pop_stack();
@@ -2950,7 +2957,7 @@ void f_create_process(INT32 args)
         tmp_cwd = tmp->u.string->str;
 
       if((tmp = simple_mapping_string_lookup( optional, "setsid" )) &&
-	 ((tmp->type == T_INT && tmp->u.integer) ||
+	 ((tmp->type == PIKE_T_INT && tmp->u.integer) ||
 	  (tmp->type == T_OBJECT &&
 	   (cterm = fd_from_object(tmp->u.object)) >= 0)))
         setsid_request=1;
@@ -3000,7 +3007,7 @@ void f_create_process(INT32 args)
       }
 
       if((tmp = simple_mapping_string_lookup( optional, "nice"))
-         && tmp->type == T_INT )
+         && tmp->type == PIKE_T_INT )
         nice_val = tmp->u.integer;
 
 
@@ -3057,7 +3064,7 @@ void f_create_process(INT32 args)
       {
 	switch(tmp->type)
 	{
-	  case T_INT:
+	  case PIKE_T_INT:
 	    wanted_uid=tmp->u.integer;
 #if defined(HAVE_GETPWUID) || defined(HAVE_GETPWENT)
 	    if(!gid_request)
@@ -3068,7 +3075,7 @@ void f_create_process(INT32 args)
 
 	      if(Pike_sp[-1].type==T_ARRAY)
 	      {
-		if(Pike_sp[-1].u.array->item[3].type!=T_INT)
+		if(Pike_sp[-1].u.array->item[3].type!=PIKE_T_INT)
 		  Pike_error("Getpwuid failed!\n");
 		wanted_gid = Pike_sp[-1].u.array->item[3].u.integer;
 	      }
@@ -3085,8 +3092,8 @@ void f_create_process(INT32 args)
 	    f_getpwnam(1);
 	    if(Pike_sp[-1].type != T_ARRAY)
 	      Pike_error("No such user.\n");
-	    if(Pike_sp[-1].u.array->item[2].type!=T_INT ||
-	       Pike_sp[-1].u.array->item[3].type!=T_INT)
+	    if(Pike_sp[-1].u.array->item[2].type != PIKE_T_INT ||
+	       Pike_sp[-1].u.array->item[3].type != PIKE_T_INT)
 	      Pike_error("Getpwnam failed!\n");
 	    wanted_uid=Pike_sp[-1].u.array->item[2].u.integer;
 	    if(!gid_request)
@@ -3109,7 +3116,7 @@ void f_create_process(INT32 args)
 	  storage.wanted_gids_array=tmp->u.array;
 	  add_ref(storage.wanted_gids_array);
 	  for(e=0;e<storage.wanted_gids_array->size;e++)
-	    if(storage.wanted_gids_array->item[e].type != T_INT)
+	    if(storage.wanted_gids_array->item[e].type != PIKE_T_INT)
 	      Pike_error("Invalid type for setgroups.\n");
 	  do_initgroups=0;
 	}else{
@@ -3194,7 +3201,7 @@ void f_create_process(INT32 args)
       {
 	switch(storage.wanted_gids_array->item[e].type)
 	{
-	  case T_INT:
+	  case PIKE_T_INT:
 	    storage.wanted_gids[e]=storage.wanted_gids_array->item[e].u.integer;
 	    break;
 
@@ -4103,7 +4110,7 @@ static void f_kill(INT32 args)
 
   switch(Pike_sp[-args].type)
   {
-  case T_INT:
+  case PIKE_T_INT:
     pid = Pike_sp[-args].u.integer;
     break;
 
@@ -4113,7 +4120,7 @@ static void f_kill(INT32 args)
     SIMPLE_BAD_ARG_ERROR("kill", 1, "int");
   }
     
-  if(Pike_sp[1-args].type != T_INT)
+  if(Pike_sp[1-args].type != PIKE_T_INT)
     SIMPLE_BAD_ARG_ERROR("kill", 2, "int");
 
   signum = Pike_sp[1-args].u.integer;
@@ -4201,7 +4208,7 @@ static void f_kill(INT32 args)
 
   switch(Pike_sp[-args].type)
   {
-  case T_INT:
+  case PIKE_T_INT:
     tofree=proc=OpenProcess(PROCESS_TERMINATE,
 			    0,
 			    Pike_sp[-args].u.integer);
@@ -4230,7 +4237,7 @@ static void f_kill(INT32 args)
     SIMPLE_BAD_ARG_ERROR("kill", 1, "int|object");
   }
     
-  if(Pike_sp[1-args].type != T_INT)
+  if(Pike_sp[1-args].type != PIKE_T_INT)
     SIMPLE_BAD_ARG_ERROR("kill", 2, "int");
 
   switch(Pike_sp[1-args].u.integer)
@@ -4331,7 +4338,7 @@ static void f_alarm(INT32 args)
   if(args < 1)
     SIMPLE_TOO_FEW_ARGS_ERROR("alarm", 1);
 
-  if(Pike_sp[-args].type != T_INT)
+  if(Pike_sp[-args].type != PIKE_T_INT)
     SIMPLE_BAD_ARG_ERROR("alarm", 1, "int");
 
   seconds=Pike_sp[-args].u.integer;
@@ -4380,7 +4387,7 @@ static void f_ualarm(INT32 args)
   if(args < 1)
     SIMPLE_TOO_FEW_ARGS_ERROR("ualarm", 1);
 
-  if(Pike_sp[-args].type != T_INT)
+  if(Pike_sp[-args].type != PIKE_T_INT)
     SIMPLE_BAD_ARG_ERROR("ualarm", 1, "int");
 
   useconds=Pike_sp[-args].u.integer;
@@ -4533,7 +4540,7 @@ void init_signals(void)
 
 
   for(e=0;e<MAX_SIGNALS;e++)
-    signal_callbacks[e].type=T_INT;
+    signal_callbacks[e].type = PIKE_T_INT;
 
 #if 0
   if(!signal_evaluator_callback)
@@ -4666,6 +4673,6 @@ void exit_signals(void)
   for(e=0;e<MAX_SIGNALS;e++)
   {
     free_svalue(signal_callbacks+e);
-    signal_callbacks[e].type=T_INT;
+    signal_callbacks[e].type = PIKE_T_INT;
   }
 }
