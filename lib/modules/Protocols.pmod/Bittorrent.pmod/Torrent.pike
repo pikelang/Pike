@@ -61,6 +61,8 @@
 
 import .Bencoding;
 
+constant cvsid="$Id: Torrent.pike,v 1.17 2003/12/17 18:14:17 mirar Exp $";
+
 Protocols.HTTP.Session http=Protocols.HTTP.Session();
 
 mapping(string:int|array|string|mapping) metainfo;
@@ -401,8 +403,8 @@ static inline string SHA1(string what)
 
 private static inline string generate_peer_id()
 {
-   int i=(random(2->pow(80))->next_prime()*random(2->pow(80))->next_prime());
-   string s=i->digits(256);
+   int i=(random(2->pow(64))->next_prime()*random(2->pow(64))->next_prime());
+   string s="Pike"+i->digits(256);
    while (strlen(s)<20) s="\0"+s;
    return s[..19];
 };

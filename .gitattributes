@@ -144,6 +144,7 @@ testfont binary
 /lib/modules/Parser.pmod/module.pmod foreign_ident
 /lib/modules/Pike.pmod foreign_ident
 /lib/modules/Pike.pmod/module.pmod foreign_ident
+/lib/modules/Protocols.pmod/Bittorrent.pmod/Torrent.pike foreign_ident
 /lib/modules/Protocols.pmod/DNS.pmod foreign_ident
 /lib/modules/Protocols.pmod/HTTP.pmod/Query.pike foreign_ident
 /lib/modules/Protocols.pmod/HTTP.pmod/Session.pike foreign_ident
