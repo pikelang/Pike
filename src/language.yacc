@@ -186,7 +186,7 @@
 /* This is the grammar definition of Pike. */
 
 #include "global.h"
-RCSID("$Id: language.yacc,v 1.157 1999/12/30 16:36:05 grubba Exp $");
+RCSID("$Id: language.yacc,v 1.158 1999/12/30 16:47:18 grubba Exp $");
 #ifdef HAVE_MEMORY_H
 #include <memory.h>
 #endif
@@ -1088,6 +1088,16 @@ number_or_maxint: /* Empty */
     $$ = mkintnode(MAX_INT32);
   }
   | F_NUMBER
+  | '-' F_NUMBER
+  {
+#ifdef PIKE_DEBUG
+    if (($2->token != F_CONSTANT) || ($2->u.sval.type != T_INT)) {
+      fatal("Unexpected number in negative int-range.\n");
+    }
+#endif /* PIKE_DEBUG */
+    $$ = mkintnode(-($2->u.sval.u.integer));
+    free_node($2);
+  }
   ;
 
 number_or_minint: /* Empty */
@@ -1095,6 +1105,16 @@ number_or_minint: /* Empty */
     $$ = mkintnode(MIN_INT32);
   }
   | F_NUMBER
+  | '-' F_NUMBER
+  {
+#ifdef PIKE_DEBUG
+    if (($2->token != F_CONSTANT) || ($2->u.sval.type != T_INT)) {
+      fatal("Unexpected number in negative int-range.\n");
+    }
+#endif /* PIKE_DEBUG */
+    $$ = mkintnode(-($2->u.sval.u.integer));
+    free_node($2);
+  }
   ;
 
 opt_int_range: /* Empty */
