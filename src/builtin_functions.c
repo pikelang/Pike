@@ -5,7 +5,7 @@
 \*/
 /**/
 #include "global.h"
-RCSID("$Id: builtin_functions.c,v 1.376 2001/06/08 11:06:02 grubba Exp $");
+RCSID("$Id: builtin_functions.c,v 1.377 2001/06/09 13:57:23 grubba Exp $");
 #include "interpret.h"
 #include "svalue.h"
 #include "pike_macros.h"
@@ -2167,18 +2167,27 @@ PMOD_EXPORT void f_destruct(INT32 args)
   struct object *o;
   if(args)
   {
-    if(Pike_sp[-args].type != T_OBJECT)
+    if(Pike_sp[-args].type != T_OBJECT) {
+      if ((Pike_sp[-args].type == T_INT) &&
+	  (!Pike_sp[-args].u.integer)) {
+	pop_n_elems(args);
+	return;
+      }
       SIMPLE_BAD_ARG_ERROR("destruct", 1, "object");
+    }
 
     o=Pike_sp[-args].u.object;
   }else{
-    if(!Pike_fp)
-      PIKE_ERROR("destruct", "Destruct called without argument from callback function.\n", Pike_sp, args);
-	   
+    if(!Pike_fp) {
+      PIKE_ERROR("destruct",
+		 "Destruct called without argument from callback function.\n",
+		 Pike_sp, args);
+    }
     o=Pike_fp->current_object;
   }
   if (o->prog && o->prog->flags & PROGRAM_NO_EXPLICIT_DESTRUCT)
-    PIKE_ERROR("destruct", "Object can't be destructed explicitly.\n", Pike_sp, args);
+    PIKE_ERROR("destruct", "Object can't be destructed explicitly.\n",
+	       Pike_sp, args);
 #ifdef PIKE_SECURITY
   if(!CHECK_DATA_SECURITY(o, SECURITY_BIT_DESTRUCT))
     Pike_error("Destruct permission denied.\n");
