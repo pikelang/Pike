@@ -42,7 +42,8 @@
 **!	Errno copied from the connection.
 **!
 **! variable mapping headers
-**!	Headers as a mapping.
+**!	Headers as a mapping. All header names are in lower case,
+**!	for convinience.
 **!
 **! variable string protocol
 **!	Protocol string, ie "HTTP/1.0".
@@ -373,7 +374,40 @@ object thread_request(string server,int port,string query,
 
    if (server1) server=server1; // cheaty, if host doesn't exist
 
+   // prepare the request
+
+   if (!data) data="";
+
+   if (!headers) headers="";
+   else if (mappingp(headers))
+   {
+      headers=mkmapping(Array.map(indices(headers),lower_case),
+			values(headers));
+
+      if (data!="") headers->content_length=strlen(data);
+
+      headers=headers_encode(headers);
+   }
+   
+   request=query+"\r\n"+headers+"\r\n"+data;
+
    conthread=thread_create(connect,server,port);
+
+   return this_object();
+}
+
+object sync_request(string server,int port,string query,
+		    void|mapping|string headers,void|string data)
+{
+   // start open the connection
+   
+   con=Stdio.File();
+   if (!con->open_socket())
+      error("HTTP.Query(): can't open socket; "+strerror(con->errno)+"\n");
+
+   string server1=dns_lookup(server);
+
+   if (server1) server=server1; // cheaty, if host doesn't exist
 
    // prepare the request
 
@@ -391,6 +425,8 @@ object thread_request(string server,int port,string query,
    }
    
    request=query+"\r\n"+headers+"\r\n"+data;
+
+   connect(server,port);
 
    return this_object();
 }
