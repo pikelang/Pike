@@ -2,17 +2,26 @@
 
 constant description = "Makes a high granularity Pike feature list.";
 
+void item(string name, int(0..1) check) {
+  write(" [%s] %s\n", (check?"X":" "), name);
+}
+
 void f(string sym, void|string name) {
   int x = !zero_type(all_constants()[sym]) ||
     !zero_type(master()->resolv(sym));
-  write(" [%s] %s\n", (x?"X":" "), name||sym);
+  item(name||sym, x);
+}
+
+void m(string sym) {
+  f(sym, (sym/".")[..String.count(sym,".")-1]*".");
 }
 
 #define F(X) f(#X)
+#define M(X) m(#X)
 
 #define N() write("\n");
 
-void builtin() {
+int main() {
 
   write("Compilation options\n");
   f("Debug.reset_dmalloc", "DEBUG_MALLOC");
@@ -76,6 +85,12 @@ void builtin() {
   F(uname);
   F(utime);
 
+  write("\nBz2\n");
+  M(Bz2.Deflate);
+
+  write("\nCrypto\n");
+  F(Crypto.IDEA);
+
   write("\nDebug\n");
   F(Debug.assembler_debug);
   F(Debug.compiler_trace);
@@ -90,27 +105,105 @@ void builtin() {
   F(Debug.reset_dmalloc); // DEBUG_MALLOC marker
 
   write("\nDVB\n");
-  f("DVB.dvb","DVB");
+  M(DVB.dvb);
 
   write("\nGdbm\n");
-  f("Gdbm.gdbm","Gdbm");
+  M(Gdbm.gdbm);
 
   write("\nGettext\n");
-  f("Gettext.gettext","Gettext");
+  M(Gettext.gettext);
   F(Gettext.LC_MESSAGES);
 
+  write("\nGL\n");
+  M(GL.glGet);
+
+  write("\nGLUT\n");
+  M(GLUT.glutGet);
+
   write("\nGmp\n");
-  f("Gmp.mpz","Gmp");
+  M(Gmp.mpz);
+
+  // GTK
 
   write("\nGz\n");
-  f("Gz.crc32","Gz");
+  M(Gz.crc32);
+
+  write("\nImage\n");
+  M(Image.FreeType.Face);
+  M(Image.JPEG.decode);
+  M(Image.PNG.decode);
+  M(Image.SVG.decode);
+  M(Image.TIFF.decode);
+  f("Image.TTF->`()","Image.TTF"); // FIXME: Does this work? Fix _Image.Fonts
+  M(Image.XFace.decode);
+
+  write("\nJava\n");
+  M(Java.jvm);
+
+  write("\nKerberos\n");
+  M(Kerberos.Context);
+
+  write("\nMath\n");
+  M(Math.Transforms.FFT);
+  F(Math.LMatrix);
+
+  write("\nMird\n");
+  M(Mird.Mird);
+
+  write("\nMsql\n");
+  M(Msql.version);
+#if 0 // if Msql version is >2
+  item("Msql.msql->affected_rows",1);
+  item("Msql.msql->list_index",1);
+#endif
+
+  write("\nMysql\n");
+  M(Mysql.mysql);
+  int mysql_db_fun = master()->resolv("Mysql.mysql")->MYSQL_NO_ADD_DROP_DB;
+  item("Mysql.mysql->create_db", mysql_db_fun);
+  item("Mysql.mysql->drop_db", mysql_db_fun);
+  item("SSL support", master()->resolv("Mysql.mysql")->CLIENT_SSL);
+
+  write("\nNettle\n");
+  M(Nettle.Yarrow);
+  // F(Nettle.IDEA_Info); // Expose as Crypto.IDEA
+
+  write("\nODBC\n");
+  M(Odbc.odbc);
+
+  write("\nOracle\n");
+  M(Oracle.NULL);
+
+  // PDF
+
+  // Perl
 
   write("\nPike\n");
   F(Pike.Security.get_user);
 
+  // Pipe
+
   write("\nProcess\n");
   f("kill","Process.Process->kill");
   F(Process.TraceProcess); // HAVE_PTRACE
+
+  write("\nPostgres\n");
+  M(Postgres.postgres);
+
+  write("\nRegexp\n");
+  f("_Regexp_PCRE._pcre", "Regexp.PCRE");
+  f("_Regexp_PCRE.UTF8", "PCRE wide string support");
+
+  write("\nSANE\n");
+  M(SANE.list_scanners);
+
+  write("\nSDL\n");
+  M(SDL.init);
+  F(SDL.Joystick);
+  F(SDL.Music);
+  F(SDL.open_audio);
+
+  // Ssleay
 
   write("\nStdio\n");
   F(Stdio.DN_ACCESS);
@@ -130,6 +223,9 @@ void builtin() {
   F(Stdio.SOCK.RDM);
   F(Stdio.SOCK.PACKET);
   F(Stdio.sendfile); // _REENTRANT marker
+
+  write("\nsybase\n");
+  M(sybase.sybase);
 
   write("\nSystem\n");
   F(System.dumpable);
@@ -166,11 +262,9 @@ void builtin() {
   // System.Memory.PAGE_SHIFT
   // System.Memory.PAGE_MASK
   // System.Memory.__MMAP__
-}
 
+  write("\nYp\n");
+  M(Yp.default_domain);
 
-
-int main() {
-  builtin();
   return 0;
 }
