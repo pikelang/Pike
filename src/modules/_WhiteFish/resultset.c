@@ -1,7 +1,7 @@
 #include "global.h"
 #include "stralloc.h"
 #include "global.h"
-RCSID("$Id: resultset.c,v 1.7 2001/05/22 12:23:36 per Exp $");
+RCSID("$Id: resultset.c,v 1.8 2001/05/22 12:32:02 per Exp $");
 #include "pike_macros.h"
 #include "interpret.h"
 #include "program.h"
@@ -24,6 +24,9 @@ RCSID("$Id: resultset.c,v 1.7 2001/05/22 12:23:36 per Exp $");
  *! @class ResultSet
  *!
  *! A resultset is basically an array of hits from the search.
+ *! 
+ *! Note: inheriting this class is _not_ supported (for performance
+ * reasons) 
  */
 
 /* The resultset class abstractions. */
@@ -31,9 +34,6 @@ RCSID("$Id: resultset.c,v 1.7 2001/05/22 12:23:36 per Exp $");
 struct program *resultset_program;
 struct result_set_p {  int allocated_size; ResultSet *d; };
 
-/* Note: inheriting this class is _not_ supported (for performance
- * reasons) 
-*/
 #define THIS ((struct result_set_p*)Pike_fp->current_object->storage)
 #define T(o) ((struct result_set_p*)o->storage)
 
@@ -300,12 +300,14 @@ static void f_resultset_or( INT32 args )
   int right_size, left_size;
 
   int left_doc=0, left_rank=0, right_doc=0, right_rank=0, last=-1;
+  ResultSet *set_r, *set_l = T(left)->d;
   get_all_args( "or", args, "%o", &right );
 
-  right = WF_RESULTSET( right );
+  set_r = T( WF_RESULTSET(right) )->d;
 
-  left_size = T(left)->d->num_docs;
-  right_size = T(right)->d->num_docs;
+
+  left_size = set_l->num_docs;
+  right_size = set_r->num_docs;
   
   while( left_left || right_left )
   {
@@ -319,8 +321,8 @@ static void f_resultset_or( INT32 args )
       }
       else
       {
-	left_doc = T(left)->d->hits[lp].doc_id;
-	left_rank = T(left)->d->hits[lp].ranking;
+	left_doc = set_l->hits[lp].doc_id;
+	left_rank = set_l->hits[lp].ranking;
 	left_used = 0;
       }
     }
@@ -335,8 +337,8 @@ static void f_resultset_or( INT32 args )
       }
       else
       {
-	right_doc = T(right)->d->hits[rp].doc_id;
-	right_rank = T(right)->d->hits[rp].ranking;
+	right_doc = set_r->hits[rp].doc_id;
+	right_rank = set_r->hits[rp].ranking;
 	right_used = 0;
       }
     }
@@ -392,12 +394,14 @@ static void f_resultset_sub( INT32 args )
   int right_size, left_size;
 
   int left_doc=0, left_rank=0, right_doc=0, last=-1;
-  get_all_args( "or", args, "%o", &right );
+  ResultSet *set_r, *set_l = T(left)->d;
+
+  get_all_args( "sub", args, "%o", &right );
 
   right = WF_RESULTSET( right );
-
-  left_size = T(left)->d->num_docs;
-  right_size = T(right)->d->num_docs;
+  set_r = T(right)->d;
+  left_size = set_l->num_docs;
+  right_size = set_r->num_docs;
   
   while( left_left )
   {
@@ -410,8 +414,8 @@ static void f_resultset_sub( INT32 args )
       }
       else
       {
-	left_doc = T(left)->d->hits[lp].doc_id;
-	left_rank = T(left)->d->hits[lp].ranking;
+	left_doc = set_l->hits[lp].doc_id;
+	left_rank = set_l->hits[lp].ranking;
 	left_used = 0;
       }
     }
@@ -426,7 +430,7 @@ static void f_resultset_sub( INT32 args )
       }
       else
       {
-	right_doc = T(right)->d->hits[rp].doc_id;
+	right_doc = set_r->hits[rp].doc_id;
 	right_used = 0;
       }
     }
