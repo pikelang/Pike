@@ -1,4 +1,4 @@
-AC_REVISION("$Id: configure.in,v 1.861 2004/12/16 19:34:20 grubba Exp $")
+AC_REVISION("$Id: configure.in,v 1.862 2004/12/29 09:11:45 agehall Exp $")
 AC_INIT(interpret.c)
 AC_CONFIG_HEADER(machine.h)
 
@@ -151,6 +151,15 @@ EOF
   ])
   AC_MSG_RESULT($pike_cv_make_supports_spaces_in_SHELL)
 else :; fi
+
+AC_ARG_ENABLE(pikelib, MY_DESCR([--enable-pikelib],
+   [build pike as a library]),
+	     [enable_pikelib=yes], [enable_pikelib=no])
+
+if test "x$enable_pikelib" != "xno"; then
+   PIKE_MSG_WARN([BUILDING PIKE AS A LIBRARY -- HIGHLY EXPERIMENTAL!])
+   AC_DEFINE(LIBPIKE)
+fi
 
 AC_ARG_ENABLE(make_conf, MY_DESCR([--disable-make.conf],
    [do not use settings from /etc/make.conf]),
@@ -1795,7 +1804,7 @@ if test "$cflags_is_set" = "no"; then
     ])
    ;;
    i686)
-    AC_SYS_COMPILER_FLAG(-mcpu=i686,mcpu_i686,CFLAGS,[
+    AC_SYS_COMPILER_FLAG(-mpu=i686,mcpu_i686,CFLAGS,[
         AC_SYS_COMPILER_FLAG(-mpentiumpro,pentiumpro,CFLAGS,[
 	    AC_SYS_COMPILER_FLAG(-mcpu=pentium,mcpu_pentium,CFLAGS,[
 		AC_SYS_COMPILER_FLAG(-mpentium,pentium,CFLAGS)
@@ -7550,6 +7559,7 @@ install......... $INSTALL
 shared object... .$SO
 libs............ $LIBS
 cross-compiled.. $cross_compiling
+building lib.... $enable_pikelib
 CPPFLAGS........$CPPFLAGS
 CFLAGS (opt)....$OPTIMIZE$opt_reasons
 CFLAGS (warn)...$WARN

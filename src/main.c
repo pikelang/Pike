@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: main.c,v 1.216 2004/12/11 13:29:59 grubba Exp $
+|| $Id: main.c,v 1.217 2004/12/29 09:11:44 agehall Exp $
 */
 
 #include "global.h"
@@ -84,6 +84,7 @@ int try_use_mmx;
 
 char *master_file;
 char **ARGV;
+JMP_BUF back;
 
 PMOD_EXPORT int debug_options=0;
 PMOD_EXPORT int runtime_options=0;
@@ -226,17 +227,13 @@ static struct Hook scan_amigaos_environment_hook = {
 };
 #endif /* __amigsos4__ */
 
-int dbm_main(int argc, char **argv)
-{
-  JMP_BUF back;
-  int e, num;
+
+void pike_main_setup(int argc, char **argv) {
+  int e;
   char *p;
-  struct array *a;
 #ifdef DECLARE_ENVIRON
   extern char **environ;
 #endif
-
-  TRACE((stderr, "dbm_main()\n"));
 
   init_rusage();
 
@@ -761,10 +758,12 @@ int dbm_main(int argc, char **argv)
   TRACE((stderr, "Init objects...\n"));
 
   init_object();
+}
 
-  if(SETJMP(back))
-  {
-    if(throw_severity == THROW_EXIT)
+
+int pike_handle_error_in_main() {
+  int num;
+  if(throw_severity == THROW_EXIT)
     {
       num=throw_value.u.integer;
     }else{
@@ -799,33 +798,12 @@ int dbm_main(int argc, char **argv)
 	call_handle_error();
       num=10;
     }
-  }else{
-    back.severity=THROW_EXIT;
+  return num;
+}
 
-    TRACE((stderr, "Init master cookie...\n"));
-
-    /* Avoid duplicate entries... */
-    push_constant_text(MASTER_COOKIE1);
-    push_constant_text(MASTER_COOKIE2);
-    f_add(2);
-    low_add_constant("__master_cookie", Pike_sp-1);
-    pop_stack();
-
-    TRACE((stderr, "Init modules...\n"));
-
-    init_modules();
-
-#ifdef TEST_MULTISET
-    /* A C-level testsuite for the low level stuff in multisets. */
-    test_multiset();
-#endif
-
-    TRACE((stderr, "Init master...\n"));
-
-    master();
-    call_callback(& post_master_callbacks, 0);
-    free_callback_list(& post_master_callbacks);
-
+int pike_run_master(int argc, char **argv) {
+  int num;
+  struct array *a;
     TRACE((stderr, "Call master->_main()...\n"));
 
     a=allocate_array_no_init(argc,0);
@@ -863,6 +841,51 @@ int dbm_main(int argc, char **argv)
     apply(master(),"_main",2);
     pop_stack();
     num=0;
+    return num;
+}
+
+void pike_init_master() {
+    TRACE((stderr, "Init master cookie...\n"));
+
+    /* Avoid duplicate entries... */
+    push_constant_text(MASTER_COOKIE1);
+    push_constant_text(MASTER_COOKIE2);
+    f_add(2);
+    low_add_constant("__master_cookie", Pike_sp-1);
+    pop_stack();
+
+    TRACE((stderr, "Init modules...\n"));
+
+    init_modules();
+
+#ifdef TEST_MULTISET
+    /* A C-level testsuite for the low level stuff in multisets. */
+    test_multiset();
+#endif
+
+    TRACE((stderr, "Init master...\n"));
+
+    master();
+    call_callback(& post_master_callbacks, 0);
+    free_callback_list(& post_master_callbacks);
+}
+
+int dbm_main(int argc, char **argv)
+{
+  int num;
+  struct array *a;
+
+  TRACE((stderr, "dbm_main()\n"));
+
+  pike_main_setup(argc, argv);
+
+  if(SETJMP(back))
+  {
+    num=pike_handle_error_in_main();
+  }else{
+    back.severity=THROW_EXIT;
+    pike_init_master();
+    num=pike_run_master(argc, argv);
   }
   UNSETJMP(back);
 

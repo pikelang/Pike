@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: acconfig.h,v 1.144 2004/11/09 12:27:53 grubba Exp $
+|| $Id: acconfig.h,v 1.145 2004/12/29 09:11:45 agehall Exp $
 */
 
 #ifndef MACHINE_H
@@ -22,6 +22,9 @@
 #ifndef _ALL_SOURCE
 #define _ALL_SOURCE
 #endif
+
+/* Building as a library? */
+#undef LIBPIKE
 
 /* Where's the master.pike file installed? */
 #define DEFAULT_MASTER "@prefix@/lib/pike/master.pike"
