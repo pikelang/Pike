@@ -1,5 +1,5 @@
 /*
- * $Id: extract_autodoc.pike,v 1.28 2002/12/14 04:34:15 nilsson Exp $
+ * $Id: extract_autodoc.pike,v 1.29 2002/12/19 14:47:37 grubba Exp $
  *
  * AutoDoc mk II extraction script.
  *
@@ -11,10 +11,17 @@ constant description = "Extracts autodoc from Pike or C code.";
 string imgsrc;
 string imgdir;
 
+int verbosity = 2;
+
 int main(int n, array(string) args) {
 
-  if(n!=5) {
-    write("%s <srcdir> <imgsrc> <builddir> <imgdir>\n", args[0]);
+  if ((n == 6) && (args[1] == "-q")) {
+    // quiet.
+    verbosity = 0;
+    n = 5;
+    args = args[0..0] + args[2..];
+  } else if(n!=5) {
+    write("%s [-q] <srcdir> <imgsrc> <builddir> <imgdir>\n", args[0]);
     exit(1);
   }
 
@@ -30,7 +37,8 @@ int main(int n, array(string) args) {
 
 void recurse(string srcdir, string builddir, int root_ts, array(string) root)
 {
-  werror("Extracting from %s\n", srcdir);
+  if (verbosity > 0)
+    werror("Extracting from %s\n", srcdir);
 
   Stdio.Stat st;
   if(st = file_stat(srcdir+"/.autodoc")) {
@@ -79,9 +87,10 @@ void recurse(string srcdir, string builddir, int root_ts, array(string) root)
 }
 
 string extract(string filename, string imgdest, int(0..1) rootless,
-	       string builddir, array(string) root) {
-
-  werror("Extracting file %O...\n", filename);
+	       string builddir, array(string) root)
+{
+  if (verbosity > 1)
+    werror("Extracting file %O...\n", filename);
   string file = Stdio.read_file(filename);
 
   if (!file) {
