@@ -1,3 +1,11 @@
-math.o: ./math.c ./../../interpret.h ./../../program.h \
- ./../../config.h ./../../machine.h ./../../types.h ./../../add_efun.h \
- ./../../svalue.h ./../../hashtable.h
+math.o: math.c \
+ interpret.h \
+ program.h \
+ config.h \
+ machine.h \
+ types.h \
+ add_efun.h \
+ svalue.h \
+ hashtable.h \
+ las.h \
+ dynamic_buffer.h

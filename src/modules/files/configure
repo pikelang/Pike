@@ -557,7 +557,8 @@ else
 fi
 echo "$ac_t""$CPP" 1>&6
 
-for ac_hdr in arpa/inet.h sys/socketvar.h netinet/in.h sys/stream.h sys/protosw.h
+for ac_hdr in arpa/inet.h sys/socketvar.h netinet/in.h \
+ sys/stream.h sys/protosw.h
 do
 ac_safe=`echo "$ac_hdr" | tr './\055' '___'`
 echo $ac_n "checking for $ac_hdr""... $ac_c" 1>&6
@@ -565,7 +566,7 @@ if eval "test \"`echo '$''{'ac_cv_header_$ac_safe'+set}'`\" = set"; then
   echo $ac_n "(cached) $ac_c" 1>&6
 else
   cat > conftest.$ac_ext <<EOF
-#line 569 "configure"
+#line 570 "configure"
 #include "confdefs.h"
 #include <$ac_hdr>
 EOF
@@ -602,7 +603,7 @@ if eval "test \"`echo '$''{'ac_cv_header_dirent_$ac_safe'+set}'`\" = set"; then
   echo $ac_n "(cached) $ac_c" 1>&6
 else
   cat > conftest.$ac_ext <<EOF
-#line 606 "configure"
+#line 607 "configure"
 #include "confdefs.h"
 #include <sys/types.h>
 #include <$ac_hdr>
@@ -641,7 +642,7 @@ else
   ac_save_LIBS="$LIBS"
 LIBS="-ldir  $LIBS"
 cat > conftest.$ac_ext <<EOF
-#line 645 "configure"
+#line 646 "configure"
 #include "confdefs.h"
 
 int main() { return 0; }
@@ -675,7 +676,7 @@ else
   ac_save_LIBS="$LIBS"
 LIBS="-lx  $LIBS"
 cat > conftest.$ac_ext <<EOF
-#line 679 "configure"
+#line 680 "configure"
 #include "confdefs.h"
 
 int main() { return 0; }
@@ -710,7 +711,7 @@ else
   ac_save_LIBS="$LIBS"
 LIBS="-lsocket  $LIBS"
 cat > conftest.$ac_ext <<EOF
-#line 714 "configure"
+#line 715 "configure"
 #include "confdefs.h"
 
 int main() { return 0; }
@@ -743,14 +744,14 @@ else
 fi
 
 
-for ac_func in socketpair
+for ac_func in socketpair waitpid wait4
 do
 echo $ac_n "checking for $ac_func""... $ac_c" 1>&6
 if eval "test \"`echo '$''{'ac_cv_func_$ac_func'+set}'`\" = set"; then
   echo $ac_n "(cached) $ac_c" 1>&6
 else
   cat > conftest.$ac_ext <<EOF
-#line 754 "configure"
+#line 755 "configure"
 #include "confdefs.h"
 /* System header to define __stub macros and hopefully few prototypes,
     which can conflict with char $ac_func(); below.  */
@@ -809,7 +810,7 @@ else
   ac_cv_c_cross=yes
 else
 cat > conftest.$ac_ext <<EOF
-#line 813 "configure"
+#line 814 "configure"
 #include "confdefs.h"
 main(){return(0);}
 EOF
@@ -829,7 +830,7 @@ if test "$cross_compiling" = yes; then
     { echo "configure: error: can not run test program while cross compiling" 1>&2; exit 1; }
 else
 cat > conftest.$ac_ext <<EOF
-#line 833 "configure"
+#line 834 "configure"
 #include "confdefs.h"
 
 #include <stdio.h>

@@ -14,12 +14,25 @@ clean:
 	-rm -f *.o *.a
 
 depend:
-	gcc -MM $(PREFLAGS) $(SRCDIR)/*.c  >$(SRCDIR)/dependencies
+	gcc -MM $(PREFLAGS) $(SRCDIR)/*.c | sed 's;$(SRCDIR)/;;g' | sed 's;\.\./;;g' | sed 's;\./;;g' >$(SRCDIR)/dependencies
 	cat $(SRCDIR)/Makefile.in.src $(SRCDIR)/dependencies > $(SRCDIR)/Makefile.in
 	config.status
 
-pipe.o: ./pipe.c ./config.h ./../../machine.h ./../../global.h \
- ./../../config.h ./../../debug.h ./../../port.h ./../../stralloc.h \
- ./../../macros.h ./../../object.h ./../../svalue.h ./../../add_efun.h \
- ./../../hashtable.h ./../../interpret.h ./../../program.h \
- ./../../error.h
+pipe.o: pipe.c \
+ config.h \
+ machine.h \
+ global.h \
+ config.h \
+ debug.h \
+ port.h \
+ stralloc.h \
+ macros.h \
+ object.h \
+ svalue.h \
+ add_efun.h \
+ hashtable.h \
+ las.h \
+ dynamic_buffer.h \
+ program.h \
+ interpret.h \
+ error.h
