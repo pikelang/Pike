@@ -11,7 +11,7 @@ o New Hilfe
     extendable and configurable. Start it and type help for more info.
 
 o AutoDoc
-    The major parts of Pike now has some sort of documentation on
+    The major parts of Pike now have some sort of documentation on
     class and function level thanks to the AutoDoc system which has
     been deployed during the last year. Manual dumps are published on
     http://pike.ida.liu.se/docs/reference/.
@@ -24,17 +24,17 @@ o pike -x
     you may be familiar with from Tools.PV).
 
 o pike -e scope
-    When running command line one liners with pike -e you can now
-    access the numer of arguments, the actual arguments and the
+    When running command line one-liners with pike -e you can now
+    access the number of arguments, the actual arguments and the
     environment variables through the variables argc, argv and env.
 
 o unbug
-    Embryo of a Pike debugger. Not stable nor finished.
+    Embryo of a Pike debugger. Neither stable nor finished.
 
 o Unicode 3.2.0
-    All charts have been updated to Unicode 3.2.0. This applies both to
+    All tables have been updated to Unicode 3.2.0. This applies both to
     the Unicode module as well as to Pike-global functionality such as
-    upper_case/lower_case. unicode_to_string() also has support for
+    upper_case/lower_case. unicode_to_string() now also has support for
     surrogate and byteorder mark handling.
 
 o Extended random()
@@ -44,16 +44,16 @@ o Extended random()
 o delay()/sleep()
     sleep() no longer busywaits, which it previously did for small
     values. The old behavior is available from the delay() function.
-    (This has change been made in later 7.2 releases too.)
+    (This has change been made in later Pike 7.2 releases too.)
 
 o search(string, int) / has_value(string, int)
-    Both of these methods now handle both looking for strings and
+    Both of these methods now handle looking for both strings and
     integers (the unicode number for a single character).
     Examples: search("hi, ho!", '!'), has_value("Nope.", ' ')
 
 o Expanded Charset module
     The character set module now has support for the character sets
-    Shift_JS, UTF-7.5, EUC, Big5, CP950, UTF-16, UTF-16BE, UTF-16LE.
+    Shift_JIS, UTF-7.5, EUC, Big5, CP950, UTF-16, UTF-16BE, UTF-16LE.
     It is now also easier to get the right charset codec since the
     names are normalized internally.
 
@@ -65,12 +65,13 @@ o sprintf("%O", foo) is more descriptive
 
 o basetype(foo)
     Returns a string with the basic type of foo as opposed to
-    _typeof(foo) that returns the actual type. Also available as
-    sprintf("%t", foo).
+    _typeof(foo) which returns the actual type. Also available as
+    sprintf("%t", foo). Note that it is affected by _sprintf() in
+    objects.
 
 o getenv()/putenv()
-    The environment variable functions getenv and putenv is now is now
-    both case insensitive on Microsoft Windows systems. This should
+    The environment variable functions getenv and putenv are both
+    now case-insensitive on Microsoft Windows systems. This should
     make your programs more portable.
 
 o Return value from catch blocks.
@@ -80,8 +81,8 @@ o Return value from catch blocks.
 
 o SSL
     The Pike SSL implementation now supports TLS 1.0. Also the LDAP
-    protocol and the HTTP.Query methods supports secure transport over
-    SSL/TLS.
+    protocol and the methods in HTTP.Query now support secure transport
+    over SSL/TLS.
 
 
 Language additions:
@@ -119,9 +120,9 @@ o Iterators
     current position the specified number of steps, and a `!() that
     returns zero if the end of the data set hasn't been reached yet.
 
-    Also, if the object o lacks a _get_iterator function, it's assumed
-    to be an iterator itself. This makes it possible to pass an
-    iterator explicitly to e.g. the foreach statement.
+    Also, if the object lacks a _get_iterator function, it will be
+    assumed to be an iterator itself. This makes it possible to pass
+    an iterator explicitly to e.g. the foreach statement.
 
     The built-in data types also have iterator classes with this
     interface. They are found as Array.Iterator, Mapping.Iterator, etc
@@ -177,7 +178,7 @@ o Implicit lambda
     Note that although useful, this feature has important
     disadvantages and will probably be obsoleted by a better
     alternative in the future. The problem is that the inner brace
-    block become a completely separate function instead of remaining a
+    block becomes a completely separate function instead of remaining a
     block. The difference (apart from being slower) is shown by this
     example:
 
@@ -221,7 +222,7 @@ o global.
     All top level modules (and other identifiers in that scope) can now
     be accessed with a "global." prefix. This is useful in cases where
     local identifiers overshadow the top level, for instance in the Image
-    module, where the Image.Image class would occasionally block your view.
+    module, where the Image.Image class can occasionally block your view.
 
 o this
     Added a magic identifier "this" that can be used instead of
@@ -239,8 +240,8 @@ o The program type can be specialized
 o ::_indices(), ::_values().
     There are now two "magic" functions ::_indices() and ::_values()
     that can be used by an object to list all identifiers and their
-    values in itself. They are primarily intended when the _indices()
-    and _values() lfuns have been defined, to get the default
+    values in itself. They are primarily intended for use when the
+    _indices() and _values() lfuns have been defined, to get the default
     implementations. This is to complement the "magic" ::`->() and
     ::`->=() functions that exist in earlier releases.
 
@@ -251,13 +252,13 @@ o UNDEFINED
 
 o _m_delete
     A class can now define a function mixed _m_delete(mixed index) to
-    make the objects work like mappings with m_delete(). (This feature
-    has been added to later 7.2 releases too.)
+    make the objects work like mappings with respect to m_delete().
+    (This feature has been added to later 7.2 releases too.)
 
 o Constant objects
-    An object can now be constant, allowing for better
-    performace and better dumping. For example used for Gmp.Bignum,
-    Math.Matrix and Image.Color.
+    An object can now be constant, allowing for better performance
+    and better dumping. Used for example with Gmp.Bignum, Math.Matrix
+    and Image.Color.
 
 
 New modules / classes / methods added:
@@ -309,12 +310,12 @@ o Crypto.crypt_md5
     passwords (commonly called MD5 passwords).
 
 o Debug
-    Many top level debug functions has moved into the Debug module to
-    keep amount of top level functions less intimidating for new users
-    and to make the debug functions easier to find.
+    Many top level debug functions have been moved into the Debug module
+    to keep the amount of top level functions less intimidating to new
+    users and to make the debug functions easier to find.
 
 o Debug.Tracer
-    A class that when instatiated will turn on trace, and when it's
+    A class that when instantiated will turn on trace, and when
     destroyed will turn it off again.
 
 o Debug.Subject
@@ -323,13 +324,12 @@ o Debug.Subject
     active probing). All calls to LFUNs will be printed to stderr.
 
 o DVB
-    Access to DVB (digital sat) resources. Controls tuner, MP2
-    audio and video decoders. Allows extract multiple channels
-    at once.
+    Access to DVB (digital sat) resources. Controls tuner, MP2 audio
+    and video decoders. Allows extract multiple channels at once.
     Note: Only old 0.9.4 DVB API is supported.
 
 o Gmp.mpq and Gmp.mpf
-    Support for GMP multi precision fractions and multi precision
+    Support for GMP multi-precision fractions and multi-precision
     floats. Hilfe example:
       > Gmp.mpq(5,3);          
       (1) Result: 5/3
@@ -341,15 +341,15 @@ o Gmp.mpq and Gmp.mpf
       (4) Result: 13/6
 
 o Gz.File
-    Pike can now compress and decompress the Gzip format. This is
-    still a bit experimental but the basic functions should work 
-    just fine.
+    Pike can now compress and decompress the Gzip file format.
+    This is still a bit experimental but the basic functions
+    should work just fine.
 
 o HTTP.Server
     A simple HTTP Server.
 
-o Image.filled_circle(_layer)
-    Returns an Image/Layer object with a filled circle on it.
+o Image.filled_circle() Image.filled_circle_layer()
+    Return an Image/Layer object with a filled circle.
 
 o Image.Dims
     Can extract the dimensions of an image with a minimal amount of
@@ -394,7 +394,7 @@ o Local
 
 o Locale.Language
     Support for time formatting, counting and more for various
-    languages. Currently added languages are Catalan, Croatian, Czech,
+    languages. Currently supported languages are Catalan, Croatian, Czech,
     Dutch, English, Finnish, French, German, Hungarian, Italian,
     Japanese, Maori, Norwegian, Polish, Portuguese, Russian, Serbian,
     Slovenian, Spanish and Swedish.
@@ -410,17 +410,17 @@ o Math
 
 o MIME
     Added method ext_to_media_type, which returns the MIME media type for
-    a given extension. The module know of 469 different file extensions.
-    The MIME.Message class is also extended with a "guess" mode that
-    parses input more forgivingly.
+    a given extension. The module currently knows of 469 different file
+    extensions.The MIME.Message class has also been extended with a "guess"
+    mode that parses input more forgivingly.
 
 o Oracle
     The Oracle database glue now supports CLOBs and BLOBs.
 
 o Parser
-    Added a few methods: get_xml_parser, which returns a Parser.HTML
-    set up to parse XML, parse_html_entities and
-    decode_numeric_xml_entity, which decode XML and HTML entities
+    Added a few methods: get_xml_parser(), which returns a Parser.HTML
+    set up to parse XML, parse_html_entities() and
+    decode_numeric_xml_entity(), which decode XML and HTML entities
     respectively.
 
     Examples:
@@ -438,7 +438,7 @@ o Parser.XML.NSTree
     namespaces according to the W3C namespace specification.
 
 o Protocols.XMLRPC
-     Implements most features of the XML-RPC standard.
+    Implements most features of the XML-RPC standard.
 
 o Protocols.HTTP
     All methods in Protocols.HTTP that take a header mapping can now
@@ -453,12 +453,13 @@ o Shuffler
     The shuffler module is what in aspect oriented and component based
     programming is called a connector. This connector provides an easy
     way to connect a data source to a file socket and transfer data
-    between them until the data source runs dry, when the connection
-    is closed. The transfer can be throttled according to arbitrarily
-    complex rules. All this with a minimum of attention. Currently the
-    shuffler can use ordinary 8-bit wide strings, System.Memory
-    objects, normal files, network sockets, named pipes, stdin and
-    pike objects adhering to the Stdio.File API as connector sources.
+    between them until the data source runs dry, at which point the
+    connection will be closed. The transfer can be throttled according
+    to arbitrarily complex rules. All this with a minimum of attention.
+    Currently the shuffler can use ordinary 8-bit wide strings,
+    System.Memory objects, normal files, network sockets, named pipes,
+    stdin and pike objects adhering to the Stdio.File API as connector
+    sources.
 
 o Standards.CIFF
     Experimental module to read Canon Camera Image File Format data.
@@ -475,13 +476,13 @@ o Standards.FIPS10_4
     country division codes.
 
 o Standards.ID3
-    ID3 tags decoder/encoder. Supports versions: 1.0, 1.1,
-    2.2-2.4. Frequently used in MP3 files for encapsulating metadata.
+    ID3 tag decoder/encoder. Supports versions: 1.0, 1.1, 2.2-2.4.
+    Frequently used in MP3 files for encapsulating metadata.
 
 o Standards.ISO639_2
-    This module has been updated with the map_to_639_1 method to
+    This module has been updated with the map_to_639_1() method to
     convert from ISO 639-2/T to ISO 639-1. With the new methods
-    convert_b_to_t and convert_t_to_b it is possible to convert
+    convert_b_to_t() and convert_t_to_b() it is possible to convert
     between ISO 639-2/T and ISO 639-2/B.
 
 o Standards.RDF
@@ -491,28 +492,24 @@ o Standards.RDF
 
 o Stdio
     Two higher order filesystem methods has been added to Stdio,
-    simplify_path and file_equal. The first returns a canonic
-    representation of path without "/./", "/../", "//" and similar
-    path segments. The second is a speedy way to compare if two files
-    contains identical content.
+    simplify_path() and file_equal(). The first returns a canonic
+    representation of its argument without "/./", "/../", "//" and
+    similar path segments. The second is a speedy way to compare if
+    two files have identical content.
 
-    On a slightly lower level the method expand_symlinks has been
-    added. It expands all symlinks along a path on systems with
-    readlink implemented.
-
-    Finally the get_all_active_fd() functions is moved from spider to
-    Stdio in our strive to deprecate the spider module.
+    Finally the get_all_active_fd() function has been moved from
+    spider to Stdio in our strive to deprecate the spider module.
 
 o Stdio.FakeFile
     Wraps a string in an object that exports a Stdio.File interface.
 
 o Stdio.File
-    This object has a few additions; With the sync method the file
-    object can be synchronized with the disk. The line_iterator
+    This object has received a few additions; With the sync() method
+    the file object can be synchronized with the disk. line_iterator()
     returns an iterator object that iterates over the lines in the
-    file. It is possible to open UNIX domain sockets with the new
-    connect_unix method. Finally grantpt can allocate a VTY on systems
-    with /dev/ptmx support.
+    file. It is now possible to open UNIX domain sockets with the
+    connect_unix() method. Finally grantpt() can allocate a VTY on
+    systems with /dev/ptmx support.
 
     Minimal example:
       fd = Stdio.File("/dev/ptmx", "rw" );
@@ -521,15 +518,15 @@ o Stdio.File
         "stdin":fd2,  "stdout":fd2, "stderr":fd2, "setsid":fd2, 
       ]) );
 
-o Stdio.FILE.set_charset
+o Stdio.FILE.set_charset()
     It is possible to set the charset of a FILE object to get
     streaming and transparent charset conversion of data to and from
     the object.
 
 o String
-    Added a few new methods: int2char, int2hex, int2roman, int2size, which
-    convert integers into different string representation, and expand_tabs,
-    which converts tabs to spaces.
+    Added a few new methods: int2char(), int2hex(), int2roman(), int2size(),
+    which convert integers into different string representations, and
+    expand_tabs(), which converts tabs to spaces.
 
     Examples:
       String.int2char(42)   => "*"
@@ -537,9 +534,9 @@ o String
       String.int2roman(42)  => "XLII"
       String.int2size(4200) => "4.1 kb"
 
-   A soundex method is also added, which normalizes names according to
-   the soundex algorithm. The algorithm in itself is not very useful,
-   but some databases supports it.
+   A soundex() method has also been added, which normalizes names according
+   to the soundex algorithm. The algorithm in itself is not very useful,
+   but some databases support it.
 
 o String.Elite
     Contains methods that transfer ordinary readable text into
@@ -553,19 +550,19 @@ o String.HTML
     Contains methods that help in generating HTML.
 
 o System
-    The following methods where added: normalize_path, which work on NT
-    style paths. get_netinfo_property, which queries a NetInfo server on
-    MacOS X. gettimeofday, which uses the system gettimeofday to retrieve
-    the time.
+    The following methods have been added: normalize_path(), which works
+    on NT style paths. get_netinfo_property(), which queries a NetInfo
+    server on MacOS X. gettimeofday(), which uses the system gettimeofday
+    to retrieve the time.
 
 o System.Time
-    Used to get the current time with sub second precision.
+    Used to get the current time with sub-second precision.
 
 o System.Timer
     Measures the time between two calls.
 
 o System.Memory 
-   Handles read/write from mmap'ed or allocated memory.
+    Handles read/write from mmap'ed or allocated memory.
 
 o Tools.PV
     Convenience tool that sets up a canvas with GTK, presents a
@@ -587,8 +584,8 @@ Optimizations:
 --------------
 
 Several general optimizations and tuning of algorithms and
-implementations in Pike has been done since Pike 7.2. Much of the work
-has been to get an general speed up in the compiler and interpreter,
+implementations in Pike have been done since Pike 7.2. Much of the work
+has been to get a general speed up in the compiler and interpreter,
 but some targeted work has also been done to make common code
 constructions execute faster. A comparison between Pike 7.2.440 and
 Pike 7.4.1 done on an IA32 machine running Red Hat Linux:
@@ -607,24 +604,24 @@ Pike 7.4.1 done on an IA32 machine running Red Hat Linux:
        sieve:        10.63  	  6.72
       strcat:         3.22  	  2.25
 
-These tests use standard tests right from The Great Computer Language
+These tests use standard tests straight from The Great Computer Language
 Shootout. If the lists test and the strcat tests are slightly modified
 to use arrays in the first case and normal strings in the second case,
 Pike will yield an even better result.
 
 o Machine code generation
-    On systems with IA32, SPARC or PPC32 processors Pike will generate
-    native machine code as byte code. This byte code can then by
-    executed directly outside the virtual machine and gives a 30%
-    performance boost compared to other systems.
+    On systems with IA32, SPARC or PPC32 processors Pike can use
+    native machine code as byte code. This byte code can then be
+    executed directly outside the virtual machine and give a ~30%
+    performance boost compared to the old byte code.
 
-o Better module dumping
-    More modules than ever dumps successfully into object files,
-    making the Pike startup time less then ever.
+o Improved module dumping
+    More modules than ever can now be dumped successfully into object
+    files, making the Pike startup time less than ever.
 
 o Deferred backtraces
-    Most of the information in backtraces are now calculated upon
-    presenting the backtrace information and not when the backtrace is
+    Most of the information in backtraces is now calculated on demand
+    for the backtrace information and not when the backtrace is
     generated. This improves the performance of catched errors.
 
 
@@ -654,7 +651,7 @@ o Using local:: on variables is an error.
     questionable semantics, which is the reason it's been made an
     error in this version. Pike 7.2 didn't implement it correctly;
     there local:: on variables had only the effect to access the class
-    scope. Now a proper way to access hidden identifiers has been
+    scope. Now a proper way to access shadowed identifiers has been
     added, so all such uses of local:: should be replaced with
     this_program::.
 
@@ -715,8 +712,8 @@ o Thread.Condition()->wait()
     contain a race; it doesn't work to e.g. rely on the internal
     interpreter lock in this case.
 
-o Protocols.LDAP.client
-    The return code from all methods was changed to follow Pike's
+o Protocols.LDAP.client()
+    The return code from all methods has been changed to follow Pike's
     logic better. 0 is now a failure. The old behavior is emulated in
     a compatibility layer.
 
@@ -727,22 +724,22 @@ o Protocols.SNMP
 o Protocols.X
     Support for the X11 XTEST extension has been added.
 
-o dirname
+o dirname()
     Now correctly returns a directory instead of just stripping the
     part after the nearest directory separator.
 
-o default_yp_domain
-    The EFUN default_yp_domain is now only available as
-    Yp.default_domain.
+o default_yp_domain()
+    The EFUN default_yp_domain() is now only available as
+    Yp.default_domain().
 
-o clone/new
-    The functions clone and new have been removed. Instead of doing
+o clone()/new()
+    The functions clone() and new() have been removed. Instead of doing
     clone(x) or new(x), now do x() if x is a program and ((program)x)()
     if x is a string.
 
 o LR
-    LR has been moved to Parser.LR and the API has been changed
-    slightly to conform to current API practice, e.g. regarding casing
+    The LR module has been moved to Parser.LR and the API has been changed
+    slightly to conform to current API practices, e.g. regarding casing
     of symbols.
 
 o wmml documentation removed
@@ -760,8 +757,8 @@ The following changes were considered bugfixes and have no backwards
 compatibility layer.
 
 o enum and typedef have implicit local binding
-    enums and typedefs now always have static binding. In 7.2 they
-    could sometimes be dynamically bound.
+    Symbols defined by enum and typedef now always have static binding.
+    In 7.2 they could sometimes be dynamically bound.
 
 o Image.Layer modes modified
     Alpha channel handling for modes add, subtract, multiply, divide,
@@ -811,14 +808,14 @@ o Some global symbols have been renamed to avoid name clashes.
 o --with-internal-profiling
     FIXME: Expand on this.
 
-o Module symbols not available from other modules.
+o C-module symbols not available from other modules.
     To avoid clashes between modules the symbols of dynamically loaded
     modules are now no longer available to eachother.
     FIXME: How to do now?
 
 o Pike valgrinded
     Pike has been the subject to some Valgrind scrutiny. Some specific
-    Valgrind enhancements has been made to Pike to improve markup of
+    Valgrind enhancements have been made to Pike to improve markup of
     forbidden memory areas. While all Valgrind issues are not yet
     resolved, partially due to Valgrind breakage, our confidence in
     the quality of Pike has been reassured.
@@ -827,28 +824,27 @@ o Pike valgrinded
 Bugs fixed:
 -----------
 
-To browse all bug tickets, visit
-http://pike.ida.liu.se/development/bugs/
+To browse all bug tickets, visit http://pike.ida.liu.se/development/bugs/
 
 o Reworked trampolines to cause less circular references. (solves 1937)
 
 o It is now possible to inherit Pike programs from C programs.
 
-o Works with Autoconf 2.50
+o Now supports Autoconf 2.50 & Autoconf 2.52
 
 
 Uncategorized misc changes:
 ---------------------------
 
 o it is possible to change predefines without forking a new pike
-  add_predefine/remove_predefine
+  add_predefine()/remove_predefine()
 
 o #pragma save_parent
 o #pragma dont_save_parent (overrides constant __pragma_save_parent__)
 
 o dont_dump_module *FIXME: grubba*
 
-System.usleep/nanosleep
+System.usleep()/nanosleep()
    FIXME: per?
 
 master.pike
