@@ -1,4 +1,4 @@
-test_true([["$Id: testsuite.in,v 1.472 2001/11/27 20:41:32 mast Exp $"]]);
+test_true([["$Id: testsuite.in,v 1.473 2001/11/28 17:29:04 mast Exp $"]]);
 
 cond([[all_constants()->_verify_internals]],
 [[
@@ -5034,6 +5034,13 @@ test_equal(values(class c(string a,static int b){}("foo",0)), ({"foo"}))
 test_true(programp(class c(string ... a){}))
 test_equal(indices(class c(string a,static int ... b){}("foo",0)), ({"a"}))
 test_equal(values(class c(static string a, int ... b){}("foo",0)), ({({0})}))
+
+test_do([[
+  class A (int i) {};
+  class B (int i, int j) {inherit A;};
+  class C {inherit B;};
+  C (1,1);
+]])
 
 // type checks
 test_compile_error([[} int foo() { return]]);
