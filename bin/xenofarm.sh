@@ -1,16 +1,16 @@
 #! /bin/sh
 
-# $Id: xenofarm.sh,v 1.19 2003/03/28 10:19:49 grubba Exp $
+# $Id: xenofarm.sh,v 1.20 2003/09/12 09:40:20 nilsson Exp $
 # This file scripts the xenofarm actions and creates a result package
 # to send back.
 
 log() {
-  echo $1 | tee -a build/xenofarm/mainlog.txt
+  echo $1 | tee -a xenofarm_result/mainlog.txt
 }
 
 log_start() {
   log "BEGIN $1"
-  TZ=GMT date >> build/xenofarm/mainlog.txt
+  TZ=GMT date >> xenofarm_result/mainlog.txt
 }
 
 log_end() {
@@ -20,12 +20,12 @@ log_end() {
   else
     log "FAIL"
   fi
-  TZ=GMT date >> build/xenofarm/mainlog.txt
+  TZ=GMT date >> xenofarm_result/mainlog.txt
 }
 
 xenofarm_build() {
   log_start compile
-  $MAKE $MAKE_FLAGS > build/xenofarm/compilelog.txt 2>&1
+  $MAKE $MAKE_FLAGS > xenofarm_result/compilelog.txt 2>&1
   log_end $?
   [ $LASTERR = 0 ] || return 1
 }
@@ -33,12 +33,12 @@ xenofarm_build() {
 xenofarm_post_build() {
   log_start verify
   $MAKE $MAKE_FLAGS METATARGET=verify TESTARGS="-a -T" > \
-    build/xenofarm/verifylog.txt 2>&1
+    xenofarm_result/verifylog.txt 2>&1
   log_end $?
   [ $LASTERR = 0 ] || return 1
   
   log_start export
-  $MAKE $MAKE_FLAGS bin_export > build/xenofarm/exportlog.txt 2>&1
+  $MAKE $MAKE_FLAGS bin_export > xenofarm_result/exportlog.txt 2>&1
   log_end $?
   [ $LASTERR = 0 ] || return 1
 }
@@ -63,9 +63,9 @@ fi
 
 log_start response_assembly
   # Basic stuff
-  cp buildid.txt build/xenofarm/
+  cp buildid.txt xenofarm_result/
   # Configuration
-  cp "$BUILDDIR/config.info" build/xenofarm/configinfo.txt || /bin/true
+  cp "$BUILDDIR/config.info" xenofarm_result/configinfo.txt || /bin/true
   (
     cd "$BUILDDIR"
     test -f config.log && cat config.log
@@ -76,8 +76,8 @@ log_start response_assembly
       echo
       cat "$f"
     done
-  ) > build/xenofarm/configlogs.txt
-  cp "$BUILDDIR/config.cache" build/xenofarm/configcache.txt || /bin/true;
+  ) > xenofarm_result/configlogs.txt
+  cp "$BUILDDIR/config.cache" xenofarm_result/configcache.txt || /bin/true;
   # Compilation
   if test "`find $BUILDDIR -name '*.fail' -print`" = ""; then :; else
     (
@@ -86,24 +86,24 @@ log_start response_assembly
       echo "The following file(s) failed to compile with full optimization."
       echo "This may affect performance negatively."
       find . -name '*.fail' -print | sed -e 's/\.fail$$//' -e 's/^/	/'
-    ) >build/xenofarm/compilation_failure.txt
+    ) >xenofarm_result/compilation_failure.txt
   fi
   # Installation
-  cp "$BUILDDIR/dumpmodule.log" build/xenofarm/dumplog.txt || /bin/true
+  cp "$BUILDDIR/dumpmodule.log" xenofarm_result/dumplog.txt || /bin/true
   # Testing
-  if test ! -f "build/xenofarm/exportlog.txt"; then
-    cp "$BUILDDIR/testsuite" build/xenofarm/testsuite.txt || /bin/true;
+  if test ! -f "xenofarm_result/exportlog.txt"; then
+    cp "$BUILDDIR/testsuite" xenofarm_result/testsuite.txt || /bin/true;
   fi
   # Core files
   find . -name "core" -exec \
     gdb --batch --nx --command=bin/xenofarm_gdb_cmd "$BUILDDIR/pike" {} >> \
-       build/xenofarm/_core.txt ";"
+       xenofarm_result/_core.txt ";"
   find . -name "*.core" -exec \
     gdb --batch --nx --command=bin/xenofarm_gdb_cmd "$BUILDDIR/pike" {} >> \
-      build/xenofarm/_core.txt ";"
+      xenofarm_result/_core.txt ";"
   find . -name "core.*" -exec \
     gdb --batch --nx --command=bin/xenofarm_gdb_cmd "$BUILDDIR/pike" {} >> \
-      build/xenofarm/_core.txt ";"
+      xenofarm_result/_core.txt ";"
 log_end $?
 
 log "END"
