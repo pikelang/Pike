@@ -1,4 +1,4 @@
-/* $Id: _rsa.pike,v 1.1 2000/05/04 11:22:56 grubba Exp $
+/* $Id: _rsa.pike,v 1.2 2000/05/04 16:05:28 grubba Exp $
  *
  * Follow the PKCS#1 standard for padding and encryption.
  */
@@ -18,7 +18,25 @@ int size;
 bignum p;
 bignum q;
 
-int encrypt_mode; /* For block cipher compatible functions */
+bignum get_n()
+{
+  return n;
+}
+
+bignum get_e()
+{
+  return e;
+}
+
+string cooked_get_n()
+{
+  return n->digits(256);
+}
+
+string cooked_get_e()
+{
+  return e->digits(256);
+}
 
 object set_public_key(bignum modulo, bignum pub)
 {
