@@ -3,10 +3,13 @@
 #
 # see: dh_installdeb(1)
 # 
-# $Id: postinst,v 1.1 2002/08/02 21:12:15 grendel Exp $
+# $Id: postinst,v 1.2 2002/08/07 22:10:59 grendel Exp $
 #
 
 set -e
+
+PIKE=7.3
+PIKEBIN=pike${PIKE}
 
 # summary of how this script can be called:
 #        * <postinst> `configure' <most-recently-configured-version>
@@ -25,17 +28,32 @@ set -e
 #     so that unnecessary prompting doesn't happen if a package's
 #     installation fails and the `postinst' is called with `abort-upgrade',
 #     `abort-remove' or `abort-deconfigure'.
-LOCAL_DIRS="share/pike/site_pike share/pike7.3/site_pike lib/pike/site_pike lib/pike7.3/site_pike include/pike include/pike7.3"
+LOCAL_DIRS="share/pike/site_pike share/pike${PIKE}/site_pike lib/pike/site_pike lib/pike${PIKE}/site_pike include/pike include/pike${PIKE}"
 
 case "$1" in
     configure)
-    /usr/sbin/update-alternatives --install /usr/bin/pike pike /usr/bin/pike7.3 10 \
-    --slave /usr/share/man/man1/pike.1.gz pike.1.gz /usr/share/man/man1/pike7.3.1.gz
+    /usr/sbin/update-alternatives --install /usr/bin/pike pike /usr/bin/${PIKEBIN} 10 \
+    --slave /usr/share/man/man1/pike.1.gz pike.1.gz /usr/share/man/man1/${PIKEBIN}.1.gz
     for d in $LOCAL_DIRS; do
         if [ ! -d /usr/local/$d ]; then
             install -d -m 755 -o root -g root /usr/local/$d
         fi
     done
+    
+    PIKEVER=`/usr/bin/$PIKEBIN -e 'string v; int rel;sscanf(version(), "Pike v%s release %d", v, rel); write(v+"."+rel);'` || ""
+    if [ -x /usr/lib/pike${PIKE}/${PIKEVER}/dumpmodule.pike ]; then
+        CURDIR=`pwd`
+        cd /usr/lib/pike${PIKE}/${PIKEVER}/
+        echo Precompiling modules...
+        /usr/bin/${PIKEBIN} ./dumpmodule.pike --report-failed \
+                                              --recursive \
+                                              --progress-bar \
+                                              /usr/lib/pike${PIKE}/${PIKEVER}/modules \
+                                              /usr/lib/pike${PIKE}/${PIKEVER}/0.6 \
+                                              /usr/lib/pike${PIKE}/${PIKEVER}/7.0 \
+                                              /usr/lib/pike${PIKE}/${PIKEVER}/7.2
+                                              
+    fi
     ;;
 
     abort-upgrade|abort-remove|abort-deconfigure)
