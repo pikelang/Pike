@@ -4,7 +4,7 @@
 ||| See the files COPYING and DISCLAIMER for more information.
 \*/
 #include "global.h"
-RCSID("$Id: mpz_glue.c,v 1.14 1997/04/25 16:23:21 nisse Exp $");
+RCSID("$Id: mpz_glue.c,v 1.15 1997/04/26 01:12:31 nisse Exp $");
 #include "gmp_machine.h"
 #include "types.h"
 
@@ -555,8 +555,8 @@ static void mpzmod_small_factor(INT32 args)
   if (args)
     {
       get_all_args("Gmp.mpz->small_factor", args, "%i", &limit);
-      if (limit <= 2)
-	error("Gmp.mpz->small_factor: limit argument must be at least 2.\n");
+      if (limit < 1)
+	error("Gmp.mpz->small_factor: limit argument must be at least 1.\n");
     }
   else
     limit = INT_MAX;
@@ -566,8 +566,8 @@ static void mpzmod_small_factor(INT32 args)
 
 static void mpzmod_next_prime(INT32 args)
 {
-  int count = 25;
-  int limit = INT_MAX;
+  INT32 count = 25;
+  INT32 limit = INT_MAX;
   struct object *o;
 
   switch(args)
@@ -576,8 +576,10 @@ static void mpzmod_next_prime(INT32 args)
     break;
   case 1:
     get_all_args("Gmp.mpz->next_prime", args, "%i", &count);
+    break;
   default:
     get_all_args("Gmp.mpz->next_prime", args, "%i%i", &count, &limit);
+    break;
   }
   pop_n_elems(args);
   
