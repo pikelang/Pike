@@ -4,7 +4,7 @@
 ||| See the files COPYING and DISCLAIMER for more information.
 \*/
 #include "global.h"
-RCSID("$Id: docode.c,v 1.10 1997/01/30 03:51:32 hubbe Exp $");
+RCSID("$Id: docode.c,v 1.11 1997/02/14 04:45:57 hubbe Exp $");
 #include "las.h"
 #include "program.h"
 #include "language.h"
@@ -285,7 +285,10 @@ static int do_docode2(node *n,int flags)
 
   case '?':
   {
+    INT32 *prev_switch_jumptable = current_switch_jumptable;
     int adroppings , bdroppings;
+    current_switch_jumptable=0;
+
 
     if(!CDDR(n))
     {
@@ -293,6 +296,7 @@ static int do_docode2(node *n,int flags)
       do_jump_when_zero(CAR(n), tmp1);
       DO_CODE_BLOCK(CADR(n));
       emit(F_LABEL, tmp1);
+      current_switch_jumptable = prev_switch_jumptable;
       return 0;
     }
 
@@ -302,6 +306,7 @@ static int do_docode2(node *n,int flags)
       do_jump_when_non_zero(CAR(n), tmp1);
       DO_CODE_BLOCK(CDDR(n));
       emit(F_LABEL,tmp1);
+      current_switch_jumptable = prev_switch_jumptable;
       return 0;
     }
 
@@ -328,6 +333,8 @@ static int do_docode2(node *n,int flags)
     }
 
     emit(F_LABEL, tmp2);
+
+    current_switch_jumptable = prev_switch_jumptable;
     return adroppings;
   }
       

@@ -156,7 +156,7 @@
 /* This is the grammar definition of Pike. */
 
 #include "global.h"
-RCSID("$Id: language.yacc,v 1.23 1997/02/11 07:09:11 hubbe Exp $");
+RCSID("$Id: language.yacc,v 1.24 1997/02/14 04:45:57 hubbe Exp $");
 #ifdef HAVE_MEMORY_H
 #include <memory.h>
 #endif
@@ -223,7 +223,8 @@ void fix_comp_stack(int sp)
 
 %type <string> F_IDENTIFIER
 %type <string> F_STRING
-%type <string> cast simple_type
+%type <string> cast
+%type <string> simple_type
 %type <string> low_string
 %type <string> optional_identifier
 %type <string> optional_rename_inherit
@@ -629,13 +630,15 @@ optional_stars: optional_stars '*' { $$=$1 + 1; }
   | /* empty */ { $$=0; }
   ;
 
-cast: '(' type ')' { $$=pop_type(); } ;
-
+cast: '(' type ')' { $$=pop_type(); }
+    ;
+  
 type: type '*' { push_type(T_ARRAY); }
   | type2
   ;
 
 simple_type: type2 { $$=pop_type(); }
+           ;
 
 type2: type2 '|' type3 { push_type(T_OR); }
   | type3
@@ -833,7 +836,7 @@ statement: unused2 ';' { $$=$1; }
   | foreach
   | break ';'
   | continue ';'
-  | error ';' { $$=0; }
+  | error ';' { reset_type_stack(); $$=0; }
   | ';' { $$=0; } 
   ;
 
@@ -1048,7 +1051,7 @@ expr00: expr0
 expr0: expr01
   | expr4 '=' expr0  { $$=mknode(F_ASSIGN,$3,$1); }
   | expr4 assign expr0  { $$=mknode($2,$1,$3); }
-  | error assign expr01 { $$=0; }
+  | error assign expr01 { $$=0; reset_type_stack(); }
   ;
 
 expr01: expr1 { $$ = $1; }
