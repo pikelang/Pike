@@ -1,4 +1,4 @@
-test_true([["$Id: testsuite.in,v 1.450 2001/09/05 03:54:00 hubbe Exp $"]]);
+test_true([["$Id: testsuite.in,v 1.451 2001/09/11 05:59:46 hubbe Exp $"]]);
 
 cond([[all_constants()->_verify_internals]],
 [[
@@ -4479,6 +4479,16 @@ cond([[ sizeof( cpp("__AUTO_BIGNUM__")/"__AUTO_BIGNUM__" ) == 1 ]],
   test_any([[int k=10->pow(30); 
 	    array a=({k+17,k+16,k+13,k+14,k+12,k,k+9});
             return sort(a)[0]==k && sort(a)[-1]==k+17]],1)
+
+  test_do([[
+     // This is a memleak test
+     rm("testsuite_test.pike");
+     Stdio.write_file("testsuite_test.pike",
+	"constant Q=10000000000000000;\n"
+	"int main() {}\n");
+     Process.system(RUNPIKE +" testsuite_test.pike");
+     rm("testsuite_test.pike");
+  ]])
 
 // test the corresponding integer operations first
   test_any([[int k=100; int j=k+1;
