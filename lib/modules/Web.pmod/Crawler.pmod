@@ -33,7 +33,7 @@
 //! @enddl
 
 // Author:  Johan Schön.
-// $Id: Crawler.pmod,v 1.15 2003/09/11 16:53:18 kiwi Exp $
+// $Id: Crawler.pmod,v 1.16 2003/09/11 18:44:35 nilsson Exp $
 
 #define CRAWLER_DEBUG
 #ifdef CRAWLER_DEBUG
@@ -210,16 +210,16 @@ class Rule
   int check(string|Standards.URI uri);
 }
 
-// @param doesn't work with the autodocs. @decl doesn't seem to be
-// working either here.
 //! A rule that uses glob expressions
-//! param pattern
-//!  a glob pattern that the rule will match against.
-//! @example
-//! GlobRule("http://pike.ida.liu.se/*.xml");
 class GlobRule(string pattern)
 {
   inherit Rule;  
+
+  //! @decl void create(string pattern)
+  //! @param pattern
+  //!  A glob pattern that the rule will match against.
+  //! @example
+  //!  GlobRule("http://pike.ida.liu.se/*.xml");
 
   int check(string|Standards.URI uri)
   {
