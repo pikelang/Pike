@@ -2,12 +2,12 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: threads.c,v 1.236 2004/05/01 12:31:35 mast Exp $
+|| $Id: threads.c,v 1.237 2004/06/29 03:09:42 aldem Exp $
 */
 
 #ifndef CONFIGURE_TEST
 #include "global.h"
-RCSID("$Id: threads.c,v 1.236 2004/05/01 12:31:35 mast Exp $");
+RCSID("$Id: threads.c,v 1.237 2004/06/29 03:09:42 aldem Exp $");
 
 PMOD_EXPORT int num_threads = 1;
 PMOD_EXPORT int threads_disabled = 0;
@@ -1676,7 +1676,7 @@ void f_thread_id_id_number(INT32 args)
   push_int64(PTR_TO_INT(THREAD_T_TO_PTR(THIS_THREAD->id)));
 }
 
-/*! @decl mixed result()
+/*! @decl mixed wait()
  *!
  *! Waits for the thread to complete, and then returns
  *! the value returned from the thread function.
