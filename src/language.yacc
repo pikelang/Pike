@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: language.yacc,v 1.333 2004/03/17 10:30:37 grubba Exp $
+|| $Id: language.yacc,v 1.334 2004/03/18 14:45:34 grubba Exp $
 */
 
 %pure_parser
@@ -113,7 +113,7 @@
 /* This is the grammar definition of Pike. */
 
 #include "global.h"
-RCSID("$Id: language.yacc,v 1.333 2004/03/17 10:30:37 grubba Exp $");
+RCSID("$Id: language.yacc,v 1.334 2004/03/18 14:45:34 grubba Exp $");
 #ifdef HAVE_MEMORY_H
 #include <memory.h>
 #endif
@@ -774,6 +774,10 @@ def: modifiers type_or_error optional_stars TOK_IDENTIFIER push_compiler_frame0
 			(Pike_compiler->varargs?IDENTIFIER_VARARGS:0),
 			0,
 			OPT_EXTERNAL_DEPEND|OPT_SIDE_EFFECT);
+
+      fprintf(stderr, "%s:%d: current_function_number: %d\n",
+	      __FILE__, __LINE__,
+	      Pike_compiler->compiler_frame->current_function_number);
 
       Pike_compiler->varargs=0;
 
@@ -1931,6 +1935,11 @@ lambda: TOK_LAMBDA line_number_info push_compiler_frame1
 #endif /* LAMBDA_DEBUG */
     if(Pike_compiler->compiler_pass == 2)
       Pike_compiler->compiler_frame->current_function_number=isidentifier(name);
+
+    fprintf(stderr, "%s:%d: current_function_number: %d\n",
+	    __FILE__, __LINE__,
+	    Pike_compiler->compiler_frame->current_function_number);
+
     f=dooptcode(name,
 		$7,
 		type,
@@ -1954,10 +1963,12 @@ lambda: TOK_LAMBDA line_number_info push_compiler_frame1
     free_node ($2);
     pop_compiler_frame();
   }
-  | TOK_LAMBDA push_compiler_frame1 error
+  | TOK_LAMBDA line_number_info push_compiler_frame1 error
   {
     pop_compiler_frame();
     $$ = mkintnode(0);
+    COPY_LINE_NUMBER_INFO($$, $2);
+    free_node($2);
   }
   ;
 
@@ -2024,6 +2035,10 @@ local_function: TOK_IDENTIFIER push_compiler_frame1 func_args
     }
     Pike_compiler->varargs=0;
     Pike_compiler->compiler_frame->current_function_number=id;
+
+    fprintf(stderr, "%s:%d: current_function_number: %d\n",
+	    __FILE__, __LINE__,
+	    Pike_compiler->compiler_frame->current_function_number);
     n=0;
     if(Pike_compiler->compiler_pass > 1 &&
        (i=ID_FROM_INT(Pike_compiler->new_program, id)))
@@ -2160,6 +2175,10 @@ local_function2: optional_stars TOK_IDENTIFIER push_compiler_frame1 func_args
     }
     Pike_compiler->varargs=0;
     Pike_compiler->compiler_frame->current_function_number=id;
+
+    fprintf(stderr, "%s:%d: current_function_number: %d\n",
+	    __FILE__, __LINE__,
+	    Pike_compiler->compiler_frame->current_function_number);
     n=0;
     if(Pike_compiler->compiler_pass > 1 &&
        (i=ID_FROM_INT(Pike_compiler->new_program, id)))
@@ -2321,6 +2340,10 @@ optional_create_arguments: /* empty */ { $$ = 0; }
 		      (Pike_compiler->varargs?IDENTIFIER_VARARGS:0),
 		      0,
 		      OPT_SIDE_EFFECT);
+
+    fprintf(stderr, "%s:%d: current_function_number: %d\n",
+	    __FILE__, __LINE__,
+	    Pike_compiler->compiler_frame->current_function_number);
 
     Pike_compiler->varargs = 0;
 
@@ -2956,7 +2979,10 @@ m_expr_list2: assoc_pair
   | m_expr_list2 ',' error
   ;
 
-assoc_pair:  expr0 expected_colon expr0 { $$=mknode(F_ARG_LIST,$1,$3); }
+assoc_pair:  expr0 expected_colon expr0 
+  {
+    $$=mknode(F_ARG_LIST,$1,$3);
+  }
   | expr0 expected_colon error { free_node($1); $$=0; }
   ;
 
@@ -3899,6 +3925,8 @@ void yyerror(char *str)
   if(Pike_interpreter.recoveries && Pike_sp-Pike_interpreter.evaluator_stack < Pike_interpreter.recoveries->stack_pointer)
     Pike_fatal("Stack error (underflow)\n");
 #endif
+
+  fprintf(stderr, "YYERROR: %s\n", str);
 
   if (Pike_compiler->num_parse_error > 20) return;
   Pike_compiler->num_parse_error++;
