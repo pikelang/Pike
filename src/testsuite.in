@@ -1,5 +1,5 @@
 START_MARKER
-test_true([["$Id: testsuite.in,v 1.725 2004/05/02 18:35:12 nilsson Exp $"]]);
+test_true([["$Id: testsuite.in,v 1.726 2004/05/13 23:33:15 nilsson Exp $"]]);
 
 // This triggered a bug only if run sufficiently early.
 test_compile_any([[#pike 7.2]])
@@ -8963,6 +8963,8 @@ test_eq(hash("bar"),2091518428)
 test_eq(hash("bar",10),8)
 test_eq(hash("b\666arqwerty1234"),1829582221)
 test_eq(hash(""),0)
+test_eval_error( return hash("foo",0) )
+test_eval_error( return hash("foo",-1) )
 
 // - hash_7_4
 define(test_hash_7_4, [[
@@ -8986,6 +8988,7 @@ test_hash_7_4("bar",2091518428)
 test_hash_7_4([["bar",10]],8)
 test_hash_7_4("b\666arqwerty1234", 2142487018, 1858424874)
 test_hash_7_4("",0)
+test_eval_error( return hash_7_4("foo",0) )
 
 // - hash_7_0
 define(test_hash_7_0, [[
@@ -9009,6 +9012,7 @@ test_hash_7_0("bar",26689)
 test_hash_7_0([["bar",10]],9)
 test_hash_7_0("b\666arqwerty1234", 2142487018, 1858424874)
 test_hash_7_0("",0)
+test_eval_error( return hash_7_0("foo",0) )
 
 // - indices
 test_equal(indices("foo"),({0,1,2}))
@@ -9279,6 +9283,10 @@ test_equal([[random_seed(4711),map(allocate(10,1000), random)]],
 	   [[({598,11,331,991,383,553,997,53,272,381})]])
 
 // - random_string
+test_eq( sizeof(random_string(47)), 47 )
+test_eq( random_string(0), "" )
+test_eval_error( return random_string(-1); )
+
 // - readlink
 // - remove_call_out
 
