@@ -1,6 +1,6 @@
 #!/usr/local/bin/pike
 
-/* $Id: export.pike,v 1.30 2000/03/27 00:45:25 hubbe Exp $ */
+/* $Id: export.pike,v 1.31 2000/03/27 20:29:45 hubbe Exp $ */
 
 #include <simulate.h>
 import Stdio;
@@ -205,7 +205,7 @@ int main(int argc, string *argv)
   object o=Stdio.File();
 
   int first=1;
-  foreach(files/50,files)
+  foreach(files/50.0,files)
     {
       if(Process.create_process(({"tar",
 				    first?"cvf":"rvf",

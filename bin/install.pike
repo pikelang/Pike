@@ -24,7 +24,17 @@ int istty()
   if(!istty_cache)
   {
     istty_cache=!!Stdio.stdin->tcgetattr();
-    if(!istty_cache) istty_cache=-1;
+    if(!istty_cache)
+    {
+      istty_cache=-1;
+    }else{
+      switch(getenv("TERM"))
+      {
+	case "dumb":
+	case "emacs":
+	  istty_cache=-1;
+      }
+    }
   }
   return istty_cache>0;
 #endif
@@ -514,7 +524,7 @@ done
   string tmpmsg=".";
 
   string tararg="cf";
-  foreach(to_export/50, array files_to_tar)
+  foreach(to_export/50.0, array files_to_tar)
     {
       status("Creating",tmpname+".tar",tmpmsg);
       tmpmsg+=".";
@@ -1127,7 +1137,7 @@ void do_install()
       foreach(to_dump, string mod) rm(mod+".o");
       /* Dump 50 modules at a time */
       write("\n");
-      foreach(to_dump/50,to_dump)
+      foreach(to_dump/50.0,to_dump)
 	{
 	  write("    ");
 	  Process.create_process( ({pike,

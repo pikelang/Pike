@@ -1,6 +1,6 @@
 #!/usr/local/bin/pike
 
-/* $Id: test_pike.pike,v 1.39 2000/03/25 22:45:59 hubbe Exp $ */
+/* $Id: test_pike.pike,v 1.40 2000/03/27 20:29:45 hubbe Exp $ */
 
 import Stdio;
 
@@ -27,7 +27,17 @@ int istty()
   if(!istty_cache)
   {
     istty_cache=!!Stdio.stdin->tcgetattr();
-    if(!istty_cache) istty_cache=-1;
+    if(!istty_cache)
+    {
+      istty_cache=-1;
+    }else{
+      switch(getenv("TERM"))
+      {
+	case "dumb":
+	case "emacs":
+	  istty_cache=-1;
+      }
+    }
   }
   return istty_cache>0;
 #endif
