@@ -35,13 +35,13 @@ This is a terse documentation about WMML.
 </man_syntax>
 <man_arguments>
 <aargdesc><aarg>language</aarg>
-          <adesc>what language the example is written in 
-                 (pike is the only supported)</adesc></aargdesc>
+          <adesc>what language the example is written in;
+                 pike and c are supported</adesc></aargdesc>
 <aargdesc><aarg>meta</aarg>
           <adesc>comma-separated list of ?</adesc></aargdesc>
 <man_description>
 This tag marks an area as an example. If <tt>language</tt> equals
-"<tt>pike</tt>", the are will count as preformatted.
+"<tt>pike</tt>" or "<tt>c</tt>", the are will count as preformatted.
 </man_description>
 <man_see>man_example, data_description</man_see>
 </method>

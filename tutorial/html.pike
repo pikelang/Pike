@@ -404,6 +404,38 @@ SGML data_description(mapping arg,int pos,array(object) data,
 	       ret+=({"   ",Sgml.Tag("b",([]),t[3],preify(t[4],id)),"\n"});
 	 return ({Sgml.Tag("pre",([]),pos,({"({\n"})+ret+({"})\n"}))});
       }
+
+      case "mapping":
+      {
+	 SGML ret=({});
+	 int ns,id,nl,ins;
+	 ns=max(@Array.map(d,
+			   lambda(array z)
+			   {
+			      if (z[0] && z[2])
+				 return strlen(z[0])+
+				    strlen(z[1])+
+				    strlen(z[2])+1;
+			      return strlen(z[0]||z[2]||"")+strlen(z[1]||"");
+			   }))+5;
+	 if (ns>30) id=8,nl=1; else id=ns+2,nl=0;
+	 foreach (d,array t)
+	    if (t[1])
+	    {
+	       if (t[0] && t[2]) 
+		  ret+=({sprintf("   %-*s ",
+				 ns,"\""+t[1]+"\" : "+t[0]+" "+t[2],ins)});
+	       else
+		  ret+=({sprintf("   %-*s ",
+				 ns,"\""+t[1]+"\" : "+(t[2]||t[0]),ins)});
+	       ret+=({Sgml.Tag("i",([]),t[3],
+			       (nl?({"\n"+" "*id}):({}))+
+			       preify(t[4],id)),"\n"});
+	    }
+	    else /* group title */
+	       ret+=({"   ",Sgml.Tag("b",([]),t[3],preify(t[4],id)),"\n"});
+	 return ({Sgml.Tag("pre",([]),pos,({"([\n"})+ret+({"])\n"}))});
+      }
       default:
 	 werror("Warning: Illegal/unimplemented data type %O"
 		" (near "+orig->location()+")\n",type);

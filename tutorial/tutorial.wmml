@@ -11230,9 +11230,9 @@ about the file. Currently file_stat returns 7 entries:<br>
 <data_description type=array(int)>
 <elem value=mode>file mode, protection bits etc. etc. </elem>
 <elem value=size>file size for regular files, <br>
--2 for dirs,<br>
--3 for links,<br>
--4 for otherwise </elem>
+  -2 for dirs,<br>
+  -3 for links,<br>
+  -4 for otherwise </elem>
 <elem value=atime>last access time </elem>
 <elem value=mtime>last modify time </elem>
 <elem value=ctime>last status time change </elem>
@@ -11651,24 +11651,24 @@ mapping(string:int) localtime(int <I>time</I>);
 Given a time represented as second since 1970, as returned by the
 function time(), this function returns a mapping with the following
 components:
-<p><table border=0 cellpadding=0 cellspacing=0>
-<tr valign=top><td> sec      </td><td> seconds over the minute </td><td> 0 - 59 </td></tr>
-<tr valign=top><td> min      </td><td> minutes over the hour   </td><td> 0 - 59 </td></tr>
-<tr valign=top><td> hour     </td><td> what hour in the day    </td><td> 0 - 23 </td></tr>
-<tr valign=top><td> mday     </td><td> day of the month        </td><td> 1 - 31 </td></tr>
-<tr valign=top><td> mon      </td><td> what month              </td><td> 0 - 11 </td></tr>
-<tr valign=top><td> year     </td><td> years since 1900        </td><td> 0 - </td></tr>
-<tr valign=top><td> wday     </td><td> day of week (0=Sunday)  </td><td> 0 - 6 </td></tr>
-<tr valign=top><td> yday     </td><td> day of year             </td><td> 0 - 365 </td></tr>
-<tr valign=top><td> isdst    </td><td> is daylight saving time </td><td> 0/1 </td></tr>
-<tr valign=top><td> timezone </td><td> difference between local time and UTC </td></tr>
-</table>
+<data_description type=mapping>
+<elem type=int(0..59) name=sec  >seconds over the minute  </elem>
+<elem type=int(0..59) name=min  >minutes over the hour    </elem>
+<elem type=int(0..59) name=hour >what hour in the day     </elem>
+<elem type=int(1..31) name=mday >day of the month         </elem>
+<elem type=int(0..11) name=mon  >what month               </elem>
+<elem type=int(0..)   name=year >years since 1900         </elem>
+<elem type=int(0..6)  name=wday >day of week (0=Sunday)   </elem>
+<elem type=int(0..365) name=yday>day of year              </elem> 
+<elem type=int(0..1)  name=isdst>is daylight saving time  </elem>
+<elem type=int    name=timezone>difference between local time and UTC </elem>
+</data_description>
 </man_description>
 <man_note>
 The 'timezone' might not be available on all platforms.
 </man_note>
 <man_see>
-gmtime, time, ctime, mktime
+Calendar, gmtime, time, ctime, mktime
 </man_see>
 </function>
 

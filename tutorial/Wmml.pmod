@@ -805,18 +805,20 @@ SGML low_make_concrete_wmml(SGML data)
 	      foreach(reserved_pike,string keyword)
 		reswords[keyword]="ex_keyword";
 
-	      ret+=({parse_pike_code(tag->data[0],
-				     tag->pos,
-				     reswords)});
+	      ret+=({Sgml.Tag("pre",([]),tag->pos,
+			      ({parse_pike_code(tag->data[0],
+						tag->pos,
+						reswords)}))});
 	      continue;
 	      
 	    case "c":
 	      foreach(reserved_c,string keyword)
 		reswords[keyword]="ex_keyword";
 
-	      ret+=({parse_pike_code(tag->data[0],
-				      tag->pos,
-				      reswords)});
+	      ret+=({Sgml.Tag("pre",([]),tag->pos,
+			      ({parse_pike_code(tag->data[0],
+						tag->pos,
+						reswords)}))});
 	      continue;
 	  }
       }
