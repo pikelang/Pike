@@ -8,7 +8,7 @@
 //! set_preview_text().
 //! 
 //! The base filter is not yet implemented in Pike GTK.
-//! @i{<font size="-1">
+//! @i{
 //! Filters can be used to limit the fonts shown. There are 2 filters in
 //! the GtkFontSelectionDialog - a base filter and a user filter. The
 //! base filter can not be changed by the user, so this can be used when
@@ -17,7 +17,7 @@
 //! fixed-width font). The user filter can be changed or reset by the
 //! user, by using the 'Reset Filter' button or changing the options on
 //! the 'Filter' page of the dialog.
-//! </font>@}
+//! @}
 //!@code{ GTK.FontSelectionDialog("Select a font")@}
 //!@xml{<image>../images/gtk_fontselectiondialog.png</image>@}
 //!

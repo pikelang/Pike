@@ -5,21 +5,21 @@
 //! procedure manages an InputDialog widget. It creates the dialog if
 //! it isn't present, and shows it otherwise.
 //! 
-//! <pre><font size="-1">
+//! @pre{
 //! GTK.InputDialog inputd;
-//! void&nbsp;create_input_dialog&nbsp;()
+//! void create_input_dialog ()
 //! {
-//! &nbsp;&nbsp;if&nbsp;(!inputd)
-//! &nbsp;&nbsp;{
-//! &nbsp;&nbsp;&nbsp;&nbsp;inputd&nbsp;=&nbsp;GTK.InputDialog();
-//! &nbsp;&nbsp;&nbsp;&nbsp;inputd-&gt;close_button()-&gt;signal_connect("clicked",inputd-&gt;hide,&nbsp;0);
-//! &nbsp;&nbsp;&nbsp;&nbsp;inputd-&gt;save_button()-&gt;hide();
-//! &nbsp;&nbsp;&nbsp;&nbsp;inputd-&gt;show();
-//! &nbsp;&nbsp;}
-//! &nbsp;&nbsp;else
-//! &nbsp;&nbsp;&nbsp;&nbsp;inputd-&gt;show();
+//!   if (!inputd)
+//!   {
+//!     inputd = GTK.InputDialog();
+//!     inputd-&gt;close_button()-&gt;signal_connect("clicked",inputd-&gt;hide, 0);
+//!     inputd-&gt;save_button()-&gt;hide();
+//!     inputd-&gt;show();
+//!   }
+//!   else
+//!     inputd-&gt;show();
 //! }
-//! </font></pre>
+//! @}
 //!@code{ GTK.InputDialog()@}
 //!@xml{<image>../images/gtk_inputdialog.png</image>@}
 //!

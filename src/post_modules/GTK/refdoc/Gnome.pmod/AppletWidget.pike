@@ -5,14 +5,14 @@
 //! 
 //! The simplest applet one can write would be along the lines of:
 //! 
-//! <pre>
+//! @pre{
 //! int main( int argc, array argv )
 //! {
-//! &nbsp; Gnome.init( "hello", "1.0", argv, 0 );
-//! &nbsp; Gnome.AppletWidget("hello")-&gt;add(GTK.Label("Hello World!"))-&gt;show_all();
-//! &nbsp; GTK.applet_widget_gtk_main();
+//!   Gnome.init( "hello", "1.0", argv, 0 );
+//!   Gnome.AppletWidget("hello")-&gt;add(GTK.Label("Hello World!"))-&gt;show_all();
+//!   GTK.applet_widget_gtk_main();
 //! }
-//! </pre>
+//! @}
 //! This creates an applet which just sits on the panel, not really
 //! doing anything, in real life the label would be substituted by
 //! something which actually does something useful. As you can see the
@@ -23,23 +23,23 @@
 //! the x.desktop file goes into $prefix/share/applets/&lt;category&gt;/.
 //! 
 //! Example hello.desktop:
-//! <pre>
+//! @pre{
 //! [Desktop Entry]
-//! &nbsp;Name=Hello Applet
-//! &nbsp;Comment=An example Hello World type Applet
-//! &nbsp;Type=PanelApplet
-//! &nbsp;Exec=hello.pike
-//! &nbsp;Icon=gnome-hello.png
-//! &nbsp;Terminal=0
-//! </pre>
+//!  Name=Hello Applet
+//!  Comment=An example Hello World type Applet
+//!  Type=PanelApplet
+//!  Exec=hello.pike
+//!  Icon=gnome-hello.png
+//!  Terminal=0
+//! @}
 //! Example hello.gnorba:
-//! <pre>
+//! @pre{
 //! [hello]
-//! &nbsp;type=exe
-//! &nbsp;repo_id=IDL:GNOME/Applet:1.0
-//! &nbsp;description=Hello Applet
-//! &nbsp;location_info=hello.pike
-//! </pre>
+//!  type=exe
+//!  repo_id=IDL:GNOME/Applet:1.0
+//!  description=Hello Applet
+//!  location_info=hello.pike
+//! @}
 //! One thing to keep in mind is that the Exec line for the .desktop
 //! doesn't actually get executed when the Type is PanelApplet. The
 //! Exec line should be the GOAD ID specified in the .gnorba file (the
@@ -52,22 +52,22 @@
 //!  a special interface to "add callbacks" to the menu. A very simple
 //!  example would be (making our hello applet even more feature full):
 //! 
-//! <pre>
+//! @pre{
 //! void hello_there()
 //! {
-//! &nbsp; write( "Hello there, indeed!\n" );
+//!   write( "Hello there, indeed!\n" );
 //! }
 //!
 //! int main( int argc, array argv )
 //! {
-//! &nbsp; Gnome.AppletWidget w;
-//! &nbsp; Gnome.init( "hello", "1.0", argv, 0 );
-//! &nbsp; w = Gnome.AppletWidget("hello");
-//! &nbsp; w-&gt;add(GTK.Label("Hello World!"))-&gt;show_all();
-//! &nbsp; w-&gt;register_callback( "hello", "Hello there", hello_there, 0 );
-//! &nbsp; GTK.applet_widget_gtk_main();
+//!   Gnome.AppletWidget w;
+//!   Gnome.init( "hello", "1.0", argv, 0 );
+//!   w = Gnome.AppletWidget("hello");
+//!   w-&gt;add(GTK.Label("Hello World!"))-&gt;show_all();
+//!   w-&gt;register_callback( "hello", "Hello there", hello_there, 0 );
+//!   GTK.applet_widget_gtk_main();
 //! }
-//! </pre>
+//! @}
 //! Now the user will see a "Hello There" menu item on the applet menu,
 //! and when selected, the applet will print "Hello There". Useful huh?
 //! 

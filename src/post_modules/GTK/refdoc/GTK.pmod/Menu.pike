@@ -14,16 +14,16 @@
 //! popup() function. The example below shows how an application can
 //! pop up a menu when the 3rd mouse button is pressed.
 //! 
-//! <pre><font size="-1">
-//! &nbsp; GTK.Menu menu = create_menu();
-//! &nbsp; GTK.Window window = create_window();
-//! &nbsp; window->signal_connect( "button_press_event", lambda(GTK.Menu m,
-//! &nbsp;                                                      GTK.Window w,
-//! &nbsp;                                                      mapping e ) {
-//! &nbsp;           if( e->button == 3 )
-//! &nbsp;            menu->popup();
-//! &nbsp;        }, menu );
-//! </font></pre>
+//! @pre{
+//!   GTK.Menu menu = create_menu();
+//!   GTK.Window window = create_window();
+//!   window->signal_connect( "button_press_event", lambda(GTK.Menu m,
+//!                                                        GTK.Window w,
+//!                                                        mapping e ) {
+//!             if( e->button == 3 )
+//!              menu->popup();
+//!          }, menu );
+//! @}
 //!
 //!
 

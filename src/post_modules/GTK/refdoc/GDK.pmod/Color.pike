@@ -37,7 +37,7 @@ Image.Color.Color image_color_object( );
 //!
 
 int pixel( );
-//! Returns the pixel value of the color. See <a href="gdk.image.xml#set_pixel">GDK.Image->set_pixel</a>.
+//! Returns the pixel value of the color. See @xml{<url  href="gdk.image.xml#set_pixel">GDK.Image->set_pixel</url>@}.
 //!
 //!
 

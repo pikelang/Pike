@@ -1,7 +1,7 @@
-//! <a href="http://glade.pn.org/">Glade</a> is a free GUI builder for
+//! @xml{<url  href="http://glade.pn.org/">Glade</url>@} is a free GUI builder for
 //! GTK+ and Gnome. It's normally used to create C-code, but can also
-//! produce code for other languages. <a
-//! href="http://www.daa.com.au/~james/gnome/">Libglade</a> is a utility
+//! produce code for other languages. @xml{<url 
+//! href="http://www.daa.com.au/~james/gnome/">Libglade</url>@} is a utility
 //! library that builds the GUI from the Glade XML save files. This
 //! module uses libglade and allows you to easily make GUI designs to
 //! be used with your Pike applications. Since PiGTK doesn't
@@ -65,6 +65,6 @@ GTK.GladeXML signal_autoconnect( mapping callbacks, mixed data );
 //! mapping should consist of handler name : function pairs. The
 //! data argument will be saved and sent as the first argument to all
 //! callback functions.
-//! <p align="right"><font size="2">@i{$Id: GladeXML.pike,v 1.4 2001/07/18 18:47:31 nilsson Exp $@}</font>
+//! <p align="right">@i{$Id: GladeXML.pike,v 1.5 2001/07/27 01:52:35 nilsson Exp $@}
 //!
 //!

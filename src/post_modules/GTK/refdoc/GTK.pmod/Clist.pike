@@ -383,16 +383,16 @@ GTK.Clist set_column_width( int column, int width );
 
 GTK.Clist set_compare_func( function cmpfun );
 //! Set the compare function. The function will be called with a
-//! mapping as it's only argument, like this:<pre>
-//! &nbsp; ([
-//! &nbsp;    "clist":the clist widget,
-//! &nbsp;    "sort_column":the column to sort on,
-//! &nbsp;    "row1_data":The user data pointer for the first row,
-//! &nbsp;    "row2_data":The user data pointer for the second row,
-//! &nbsp;    "row1_text":The text in the sort cell in the first row
-//! &nbsp;    "row2_text":The text in the sort cell in the second row
-//! &nbsp; ])
-//! </pre>
+//! mapping as it's only argument, like this:@pre{
+//!   ([
+//!      "clist":the clist widget,
+//!      "sort_column":the column to sort on,
+//!      "row1_data":The user data pointer for the first row,
+//!      "row2_data":The user data pointer for the second row,
+//!      "row1_text":The text in the sort cell in the first row
+//!      "row2_text":The text in the sort cell in the second row
+//!   ])
+//! @}
 //! The return value is one of:
 //!   1: Row 1 is more than row 2
 //!   0: The rows are equal

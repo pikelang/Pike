@@ -81,14 +81,14 @@ GTK.Progress set_format_string( string format );
 //! %[field width][character]
 //! 0&lt;=width&gt;=2
 //! Supported characters:
-//! <blockquote><pre>
+//! @pre{
 //! %: Insert a %
 //! p or P: The percentage completed, with 'digits' number of decimals
 //! v or V: The actual value, with digits decimals.
 //! l or L: The lower value (from the adjustment)
 //! u or U: The higer value (from the adjustment)
 //! %: Insert a %
-//! </pre></blockquote>The default format is '%P%%'
+//! @}The default format is '%P%%'
 //! 
 //!
 //!

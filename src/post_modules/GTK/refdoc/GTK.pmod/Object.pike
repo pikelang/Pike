@@ -44,15 +44,15 @@ mixed signal_connect_new( string signal, function callback, mixed|void callback_
 //!
 //! 
 //! The old interface:
-//! <pre>
+//! @pre{
 //!   void signal_handler( mixed my_arg, GTK.Object object,
 //!                        mixed ... signal_arguments )
-//! </pre>
+//! @}
 //! The new interface:
-//! <pre>
+//! @pre{
 //!   void signal_handler( mixed ... signal_arguments,
 //!                        mixed my_arg, GTK.Object object )
-//! </pre>
+//! @}
 //! 
 //! The return value of this function can be used to remove a signal
 //! with signal_disconnect, and block and unblock the signal will

@@ -31,7 +31,7 @@
 //! always disable this by unsetting the GTK.CanFocus flag on the
 //! scrollbar, like this:
 //! 
-//! <tt>scrollbar->unset_flag( GTK.CanFocus );</tt>
+//! @tt{scrollbar->unset_flag( GTK.CanFocus );@}
 //! 
 //! The key bindings (which are, of course, only active when the widget
 //! has focus) are slightly different between horizontal and vertical
@@ -108,19 +108,20 @@ GTK.Range set_update_policy( int when );
 //! user interaction it will change the value field of its Adjustment
 //! and emit the "value_changed" signal on this Adjustment. The update
 //! policies are:
-//! <dl>
-//! <dt>GTK.UpdatePolicyContinuous</dt>
-//! <dd>This is the default. The "value_changed" signal is emitted
+//! @dl
+//! @item GTK.UpdatePolicyContinuous
+//! This is the default. The "value_changed" signal is emitted
 //! continuously, i.e., whenever the slider is moved by even the
-//! tiniest amount.</dd>
-//! <dt>GTK.UpdatePolicyDiscontinuous</dt>
-//! <dd> The "value_changed" signal is only emitted once the slider has
-//! stopped moving and the user has released the mouse button.</dd>
-//! <dt>GTK.UpdatePolicyDelayed</dt>
-//! <dd>The "value_changed" signal is emitted when the user releases
+//! tiniest amount.
+//! @item GTK.UpdatePolicyDiscontinuous
+//!  The "value_changed" signal is only emitted once the slider has
+//! stopped moving and the user has released the mouse button.
+//! @item GTK.UpdatePolicyDelayed
+//! The "value_changed" signal is emitted when the user releases
 //! the mouse button, or if the slider stops moving for a short period
-//! of time.</dd>
-//! </dl>
+//! of time.
+//! @enddl
+//!
 //!
 //!
 

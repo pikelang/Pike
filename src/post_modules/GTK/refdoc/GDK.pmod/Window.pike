@@ -41,13 +41,13 @@ mapping get_property( GDK.Atom atom, int|void offset, int|void delete_when_done 
 //! Example usage: Find the 'virtual' root window (many window managers
 //! put large windows over the screen)
 //! 
-//! <pre>
-//! &nbsp; GDK.Window root = GTK.root_window();
-//! &nbsp; array maybe=root->children()->
-//! &nbsp;             get_property(GDK.Atom.__SWM_VROOT)-({0});
-//! &nbsp; if(sizeof(maybe))
-//! &nbsp;   root=GDK.Window( maybe[0]->data[0] );
-//! </pre>
+//! @pre{
+//!   GDK.Window root = GTK.root_window();
+//!   array maybe=root->children()->
+//!               get_property(GDK.Atom.__SWM_VROOT)-({0});
+//!   if(sizeof(maybe))
+//!     root=GDK.Window( maybe[0]->data[0] );
+//! @}
 //!
 //!
 
