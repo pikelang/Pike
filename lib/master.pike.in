@@ -6,7 +6,7 @@
 // Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 // for more information.
 //
-// $Id: master.pike.in,v 1.323 2004/01/12 03:25:10 nilsson Exp $
+// $Id: master.pike.in,v 1.324 2004/01/12 04:39:07 nilsson Exp $
 
 #pike __REAL_VERSION__
 
@@ -3069,7 +3069,7 @@ string describe_module(object|program mod, array(object)|void ret_obj)
   } else if (programp (mod)) {
     parent_fun = mod;
     // When running with debug we might be called before __INIT, so
-    // we have to check is objects exists before we use it.
+    // we have to check if objects exists before we use it.
     if (objects && objectp (mod = objects[parent_fun]) && ret_obj)
       ret_obj[0] = mod;
   }
