@@ -5,7 +5,7 @@
 \*/
 /**/
 #include "global.h"
-RCSID("$Id: zlibmod.c,v 1.37 2001/01/24 19:03:25 grubba Exp $");
+RCSID("$Id: zlibmod.c,v 1.38 2001/02/08 12:44:38 hubbe Exp $");
 
 #include "zlib_machine.h"
 
@@ -327,6 +327,11 @@ static int do_inflate(dynamic_buffer *buf,
   {
     fail=Z_STREAM_ERROR;
   }else{
+#if 0
+  static int fnord=0;
+  fnord++;
+#endif
+
     do
     {
       char *loc;
@@ -335,9 +340,31 @@ static int do_inflate(dynamic_buffer *buf,
       THREADS_ALLOW();
       this->gz.next_out=(Bytef *)loc;
       this->gz.avail_out=BUF;
+#if 0
+      fprintf(stderr,"INFLATE[%d]: avail_out=%7d  avail_in=%7d flush=%d\n",
+	      fnord,
+	      this->gz.avail_out,
+	      this->gz.avail_in,
+	      flush);
+      fprintf(stderr,"INFLATE[%d]: mode=%d\n",fnord,
+	      this->gz.state ? *(int *)(this->gz.state) : -1);
+#endif
+	      
       ret=inflate(& this->gz, flush);
+#if 0
+      fprintf(stderr,"Result [%d]: avail_out=%7d  avail_in=%7d  ret=%d\n",
+	      fnord,
+	      this->gz.avail_out,
+	      this->gz.avail_in,
+	      ret);
+#endif
+
       THREADS_DISALLOW();
       low_make_buf_space(-((ptrdiff_t)this->gz.avail_out), buf);
+
+      /* BUG WORKAROUND -Hubbe */
+      if(ret == Z_BUF_ERROR) ret=Z_OK;
+
       if(ret != Z_OK)
       {
 	fail=ret;
@@ -382,7 +409,7 @@ static void gz_inflate(INT32 args)
   initialize_buf(&buf);
 
   SET_ONERROR(err,toss_buffer,&buf);
-  fail=do_inflate(&buf,this,Z_PARTIAL_FLUSH);
+  fail=do_inflate(&buf,this,Z_NO_FLUSH);
   UNSET_ONERROR(err);
 
   if(fail != Z_OK && fail != Z_STREAM_END)
