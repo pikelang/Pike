@@ -1,5 +1,5 @@
 /*
- * $Id: passwords.c,v 1.28 1999/05/27 18:31:30 grubba Exp $
+ * $Id: passwords.c,v 1.29 2000/08/07 18:45:36 grubba Exp $
  *
  * Password handling for Pike.
  *
@@ -22,7 +22,7 @@
 #include "system_machine.h"
 #include "system.h"
 
-RCSID("$Id: passwords.c,v 1.28 1999/05/27 18:31:30 grubba Exp $");
+RCSID("$Id: passwords.c,v 1.29 2000/08/07 18:45:36 grubba Exp $");
 
 #include "module_support.h"
 #include "interpret.h"
@@ -484,7 +484,7 @@ void f_get_all_groups(INT32 args)
 #ifdef HAVE_GETPWNAM
 void f_get_groups_for_user(INT32 arg)
 {
-  struct group *gr;
+  struct group *gr = NULL;
   struct passwd *pw;
   struct array *a;
   char *user = NULL;	/* Keep compiler happy */
@@ -535,16 +535,14 @@ void f_get_groups_for_user(INT32 arg)
   pop_stack();
 
   setgrent();
-  while(1)
-  {
+
+  do {
     int e;
     THREADS_ALLOW_UID();
 
-    while(1)
+    while ((gr = getgrent()))
     {
-      gr=getgrent();
-      if(!gr) break;
-      if(gr->gr_gid == base_gid) continue;
+      if((size_t)gr->gr_gid == (size_t)base_gid) continue;
       for(e=0;gr->gr_mem[e];e++)
 	if(!strcmp(gr->gr_mem[e],user))
 	  break;
@@ -557,7 +555,7 @@ void f_get_groups_for_user(INT32 arg)
     push_int(gr->gr_gid);
     a=append_array(a,sp-1);
     pop_stack();
-  }
+  } while(gr);
   endgrent();
 
   UNLOCK_IMUTEX(&password_protection_mutex);
