@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: system.c,v 1.153 2003/08/05 19:11:24 nilsson Exp $
+|| $Id: system.c,v 1.154 2003/09/05 19:36:15 nilsson Exp $
 */
 
 /*
@@ -20,7 +20,7 @@
 #include "system_machine.h"
 #include "system.h"
 
-RCSID("$Id: system.c,v 1.153 2003/08/05 19:11:24 nilsson Exp $");
+RCSID("$Id: system.c,v 1.154 2003/09/05 19:36:15 nilsson Exp $");
 
 #ifdef HAVE_WINDOWS_H
 #include <windows.h>
@@ -580,8 +580,7 @@ void f_initgroups(INT32 args)
   if(!CHECK_SECURITY(SECURITY_BIT_SECURITY))
     Pike_error("initgroups: permission denied.\n");
 #endif
-  
-  VALID_FILE_IO("initgroups","status");
+
   get_all_args("initgroups", args, "%s%i", &user, &group);
   err = initgroups(user, group);
   if (err < 0) {
