@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: encode.c,v 1.183 2003/06/05 20:51:39 mast Exp $
+|| $Id: encode.c,v 1.184 2003/06/05 21:53:18 mast Exp $
 */
 
 #include "global.h"
@@ -27,7 +27,7 @@
 #include "bignum.h"
 #include "pikecode.h"
 
-RCSID("$Id: encode.c,v 1.183 2003/06/05 20:51:39 mast Exp $");
+RCSID("$Id: encode.c,v 1.184 2003/06/05 21:53:18 mast Exp $");
 
 /* #define ENCODE_DEBUG */
 
@@ -1625,6 +1625,7 @@ void f_encode_value(INT32 args)
   UNSET_ONERROR(tmp);
 
   free_mapping(data->encoded);
+  free_array (data->delayed);
 
   pop_n_elems(args);
   push_string(low_free_buf(&data->buf));
@@ -1703,6 +1704,7 @@ void f_encode_value_canonic(INT32 args)
   UNSET_ONERROR(tmp);
 
   free_mapping(data->encoded);
+  free_array (data->delayed);
 
   pop_n_elems(args);
   push_string(low_free_buf(&data->buf));
