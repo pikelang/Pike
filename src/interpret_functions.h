@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: interpret_functions.h,v 1.177 2004/11/27 22:48:10 mast Exp $
+|| $Id: interpret_functions.h,v 1.178 2004/12/04 14:07:20 grubba Exp $
 */
 
 /*
@@ -368,9 +368,7 @@ OPCODE1_TAIL(F_MARK_AND_GLOBAL, "mark & global", I_UPDATE_SP|I_UPDATE_M_SP, {
   *(Pike_mark_sp++)=Pike_sp;
 
   OPCODE1(F_GLOBAL, "global", I_UPDATE_SP, {
-    low_object_index_no_free(Pike_sp,
-			     Pike_fp->current_object,
-			     arg1 + Pike_fp->context.identifier_level);
+    low_index_current_object_no_free(Pike_sp, arg1);
     Pike_sp++;
     print_return_value();
   });
@@ -462,11 +460,8 @@ OPCODE2(F_LOCAL_2_GLOBAL, "global = local", 0, {
 });
 
 OPCODE2(F_GLOBAL_2_LOCAL, "local = global", 0, {
-  INT32 tmp = arg1 + Pike_fp->context.identifier_level;
   free_svalue(Pike_fp->locals + arg2);
-  low_object_index_no_free(Pike_fp->locals + arg2,
-			   Pike_fp->current_object,
-			   tmp);
+  low_index_current_object_no_free(Pike_fp->locals + arg2, arg1);
 });
 
 OPCODE1(F_LOCAL_LVALUE, "& local", I_UPDATE_SP, {
@@ -1694,9 +1689,7 @@ OPCODE1(F_LOCAL_INDEX, "local index", 0, {
 OPCODE2(F_GLOBAL_LOCAL_INDEX, "global[local]", I_UPDATE_SP, {
   LOCAL_VAR(struct svalue *s);
   LOCAL_VAR(struct svalue tmp);
-  low_object_index_no_free(Pike_sp,
-			   Pike_fp->current_object,
-			   arg1 + Pike_fp->context.identifier_level);
+  low_index_current_object_no_free(Pike_sp, arg1);
   Pike_sp++;
   s=Pike_fp->locals+arg2;
   if(s->type == PIKE_T_STRING) s->subtype=0;
