@@ -22,7 +22,7 @@
 #include "builtin_functions.h"
 #include <signal.h>
 
-RCSID("$Id: signal_handler.c,v 1.84 1998/08/08 22:52:42 grubba Exp $");
+RCSID("$Id: signal_handler.c,v 1.85 1998/08/12 16:22:43 grubba Exp $");
 
 #ifdef HAVE_PASSWD_H
 # include <passwd.h>
@@ -1377,6 +1377,9 @@ void f_create_process(INT32 args)
 #endif /* PROC_DEBUG */
 	if(setgroups(storage.num_wanted_gids, storage.wanted_gids))
 	{
+#ifdef PROC_DEBUG
+	  fprintf(stderr, "setgroups() failed.\n");
+#endif /* PROC_DEBUG */
 	  exit(77);
 	}
       }
@@ -1393,7 +1396,12 @@ void f_create_process(INT32 args)
 	{
 	  int initgroupgid;
 	  if(!pw) pw=getpwuid(wanted_uid);
-	  if(!pw) exit(77);
+	  if(!pw) {
+#ifdef PROC_DEBUG
+	    fprintf(stderr, "getpwuid() failed.\n");
+#endif /* PROC_DEBUG */
+	    exit(77);
+	  }
 	  initgroupgid=pw->pw_gid;
 /*	  printf("uid=%d euid=%d initgroups(%s,%d)\n",getuid(),geteuid(),pw->pw_name, initgroupgid); */
 #ifdef PROC_DEBUG
@@ -1412,7 +1420,12 @@ void f_create_process(INT32 args)
 	      gid_t x[]={ 65534 };
 	      if(setgroups(0, x))
 #endif /* SETGROUPS */
+	      {
+#ifdef PROC_DEBUG
+		fprintf(stderr, "initgroups() failed.\n");
+#endif /* PROC_DEBUG */
 		exit(77);
+	      }
 	    }
 	}
 #endif /* INITGROUPS */
