@@ -1,5 +1,5 @@
 #include "global.h"
-#if defined(HAVE_PTHREAD_MUTEX_UNLOCK) || defined(HAVE_MUTEX_UNLOCK)
+#if defined(_REENTRANT) || defined(HAVE_MUTEX_UNLOCK)
 
 #include <sys/types.h>
 
@@ -93,7 +93,9 @@ mylock_t *newlock( int id )
   {
     pthread_mutexattr_t attributes;
     pthread_mutexattr_init( &attributes );
+#ifdef PTHREAD_PROCESS_SHARED
     pthread_mutexattr_setpshared( &attributes,  PTHREAD_PROCESS_SHARED );
+#endif
     pthread_mutex_init( &lock->lock, &attributes );
     pthread_mutexattr_destroy( &attributes );
   }

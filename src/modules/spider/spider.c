@@ -1778,7 +1778,7 @@ void init_spider_efuns(void)
 	   "function(int:int)", OPT_SIDE_EFFECT);
 	   
 
-#if defined(HAVE_PTHREAD_MUTEX_UNLOCK) || defined(HAVE_MUTEX_UNLOCK)
+#if defined(_REENTRANT) || defined(HAVE_MUTEX_UNLOCK)
   add_efun("_lock", f_lock, "function(int:int)", OPT_SIDE_EFFECT);
   add_efun("_unlock", f_unlock, "function(int:int)", OPT_SIDE_EFFECT);
   add_efun("_free_lock", f_freelock, "function(int:int)", OPT_SIDE_EFFECT);

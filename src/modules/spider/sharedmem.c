@@ -1,9 +1,10 @@
+#include "global.h"
 #include <sys/types.h>
 
 #ifdef HAVE_THREAD_H
 # include <thread.h>
 #else
-# ifdef HAVE_PTHREAD_H
+# if defined(_REENTRANT) && defined(HAVE_PTHREAD_H)
 #  include <pthread.h>
 # endif
 #endif
