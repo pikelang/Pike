@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: math.c,v 1.57 2003/02/05 12:45:51 grubba Exp $
+|| $Id: math.c,v 1.58 2003/03/28 15:24:58 nilsson Exp $
 */
 
 #include "global.h"
@@ -22,6 +22,10 @@
 #include <ieeefp.h>
 #endif
 
+#ifdef HAVE_FP_CLASS_H
+#include <fp_class.h>
+#endif
+
 #ifdef HAVE_FLOATINGPOINT_H
 #include <floatingpoint.h>
 #endif
@@ -34,7 +38,7 @@
   if(sp[-1].type!=T_FLOAT) SIMPLE_BAD_ARG_ERROR(X, 1, "float")
 
 
-RCSID("$Id: math.c,v 1.57 2003/02/05 12:45:51 grubba Exp $");
+RCSID("$Id: math.c,v 1.58 2003/03/28 15:24:58 nilsson Exp $");
 
 #ifndef M_PI
 #define M_PI 3.1415926535897932384626433832795080
