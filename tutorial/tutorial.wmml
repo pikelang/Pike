@@ -1331,7 +1331,7 @@ Also, these functions operates on strings:
 <dd>This function replaces all occurances of the string <i>from</i> in <i>s</i> with <i>to</i> and returns the new string.
 
 <dt><tt>string reverse(string <i>s</i>)</tt>
-<dd>This function returns a copy of <i>s</s> with the last byte from <i>s</i>
+<dd>This function returns a copy of <i>s</i> with the last byte from <i>s</i>
     first, the second last in second place and so on.
 
 <dt><tt>string search(string <i>haystack</i>, string <i>needle</i>)</tt>
@@ -7689,7 +7689,7 @@ The encoding can be any of
 <li>binary
 <li>quoted-printable
 <li>x-uue
-</ul></tt>
+</ul></tt><br>
 The encoding string is not case sensitive.
 <p>
 <dt><encaps>SEE ALSO</encaps><dd>
@@ -7822,7 +7822,7 @@ The encoding can be any of
 <li>binary
 <li>quoted-printable
 <li>x-uue
-</ul></tt>
+</ul></tt><br>
 The encoding string is not case sensitive.  For the <tt>x-uue</tt> encoding,
 an optional filename string may be supplied.
 <p>
@@ -8026,7 +8026,7 @@ a sequence of lexical elements.  These are:
 <li>domain-literals
 <li>comments
 <li>atoms
-</ul>
+</ul><br>
 This function will analyze a string containing the header value, and produce
 an array containing the lexical elements.  Individual special characters
 will be returned as characters (i.e. <tt>int</tt>s).  Quoted-strings,
@@ -8087,8 +8087,8 @@ Message object for each part of the message.  If the message is not a
 multipart, this field is <tt>0</tt>.
 <p>
 <dt><encaps>SEE ALSO</encaps><dd>
-<a href=#MIME.Message.type>MIME.Message.type</a>,
-<a href=#MIME.Message.boundary>MIME.Message.boundary</a>
+<a href=#MIME.Message.type>MIME.Message-&gt;type</a>,
+<a href=#MIME.Message.boundary>MIME.Message-&gt;boundary</a>
 <p>
 </dl>
 </a>
@@ -8110,7 +8110,7 @@ are handled internally by the module, you should not need to access this
 field.
 <p>
 <dt><encaps>SEE ALSO</encaps><dd>
-<a href=#MIME.Message.setboundary>MIME.Message.setboundary</a>
+<a href=#MIME.Message.setboundary>MIME.Message-&gt;setboundary</a>
 <p>
 </dl>
 </a>
@@ -8528,7 +8528,7 @@ The new data should comply to the format indicated by the
 Do not use this method unless you know what you are doing.
 <p>
 <dt><encaps>SEE ALSO</encaps><dd>
-<a href=#></a>
+<a href=#MIME.Message.getdata>MIME.Message-&gt;getdata</a>
 <p>
 </dl>
 </a>
