@@ -1,5 +1,5 @@
 #
-# $Id: configure.in,v 1.7 1997/10/05 03:41:43 grubba Exp $
+# $Id: configure.in,v 1.8 1998/02/23 17:37:12 grubba Exp $
 #
 # Configure script for the odbc-module
 #
@@ -32,7 +32,16 @@ if test x$with_odbc = xyes; then
       foodir=$INFORMIXDIR/cli/dlls
     fi
 
-    for pike_cv_odbc_lib_dir in $foodir /opt/ISLIodbc/*/lib /usr/opt/ISLIodbc/*/lib /usr/local/lib /usr/local/odbc/lib /usr/local/lib/odbc /usr/odbc/lib /usr/lib/odbc /usr/lib /lib/odbc /lib no; do
+    if test "x$MIMER_HOME" = "x" ; then
+      :
+    else
+      foodir="$foodir $MIMER_HOME/lib $MIMER_HOME/modules/.odbc/"
+    fi
+
+    for pike_cv_odbc_lib_dir in $foodir /opt/*odbc/*/lib /usr/opt/*odbc/*/lib \
+        /opt/*odbc/lib /usr/opt/*odbc/lib /usr/local/lib /usr/local/odbc/lib \
+        /usr/local/lib/odbc /usr/odbc/lib /usr/lib/odbc /usr/lib \
+        /lib/odbc /lib no; do
       if test -d $pike_cv_odbc_lib_dir/.; then
         if ls $pike_cv_odbc_lib_dir/*odbc* >/dev/null 2>&1 ; then
 	  break
@@ -61,7 +70,13 @@ if test x$with_odbc = xyes; then
       foodir=$INFORMIXDIR/cli/include
     fi
 
-    for pike_cv_odbc_include_dir in $foodir /opt/ISLIodbc/*/include /usr/local/include /usr/local/odbc/include /usr/local/include/odbc /usr/odbc/include /usr/include/odbc /usr/include /include/odbc /include no; do
+    # MIMER doesn't include the odbc-headerfiles.
+
+    for pike_cv_odbc_include_dir in $foodir /opt/*odbc/*/include \
+        /usr/opt/*odbc/*/include /opt/*odbc/include /usr/opt/*odbc/include \
+        /usr/local/include /usr/local/odbc/include /usr/local/include/odbc \
+        /usr/odbc/include /usr/include/odbc /usr/include \
+	/include/odbc /include no; do
       if test -d $pike_cv_odbc_include_dir/.; then
         if ls $pike_cv_odbc_include_dir/qeodbc.h >/dev/null 2>&1; then
           break
@@ -128,6 +143,19 @@ if test x$with_odbc = xyes; then
     LDFLAGS=$OLD_LDFLAGS
   else
     AC_DEFINE(HAVE_ODBC)
+
+    cat <<EOF
+
+ODBC support enabled.
+
+NOTE:
+On most systems you need to configure the files
+odbc.ini and odbcinst.ini to reflect your installation
+(check the manual for your ODBC library).
+You may also need to set LD_LIBRARY_PATH (or equvivalent)
+so that libodbc.so the apropriate files.
+
+EOF
 
   fi
 else
