@@ -188,7 +188,7 @@
 /* This is the grammar definition of Pike. */
 
 #include "global.h"
-RCSID("$Id: language.yacc,v 1.176 2000/03/30 20:04:14 grubba Exp $");
+RCSID("$Id: language.yacc,v 1.177 2000/04/06 19:24:08 hubbe Exp $");
 #ifdef HAVE_MEMORY_H
 #include <memory.h>
 #endif
@@ -1603,11 +1603,11 @@ lambda: F_LAMBDA push_compiler_frame1
   }
   ;
 
-local_function: F_IDENTIFIER push_compiler_frame1
+local_function: F_IDENTIFIER push_compiler_frame1 func_args 
   {
     char buf[40];
     struct pike_string *name,*type;
-    int id;
+    int id,e;
     node *n;
     struct identifier *i=0;
 
@@ -1616,6 +1616,29 @@ local_function: F_IDENTIFIER push_compiler_frame1
       free_string(compiler_frame->current_return_type);
     copy_shared_string(compiler_frame->current_return_type,
 		       $<n>0->u.sval.u.string);
+
+
+    /***/
+    push_finished_type(compiler_frame->current_return_type);
+    
+    e=$3-1;
+    if(varargs)
+    {
+      push_finished_type(compiler_frame->variable[e].type);
+      e--;
+      varargs=0;
+      pop_type_stack();
+    }else{
+      push_type(T_VOID);
+    }
+    push_type(T_MANY);
+    for(; e>=0; e--)
+      push_finished_type(compiler_frame->variable[e].type);
+    
+    push_type(T_FUNCTION);
+    
+    type=compiler_pop_type();
+    /***/
 
     sprintf(buf,"__lambda_%ld_%ld",
 	    (long)new_program->id,
@@ -1628,40 +1651,86 @@ local_function: F_IDENTIFIER push_compiler_frame1
 
     name=make_shared_string(buf);
 
+    id=define_function(name,
+		       type,
+		       0,
+		       IDENTIFIER_PIKE_FUNCTION,
+		       0);
+    n=0;
+#if 0
     if(compiler_pass > 1 &&
-       (id=isidentifier(name)) &&
        (i=ID_FROM_INT(new_program, id)))
-    {
-      if(i->identifier_flags & IDENTIFIER_SCOPED)
-      {
-	n = mktrampolinenode(id);
-      }else{
+      if(!(i->identifier_flags & IDENTIFIER_SCOPED))
 	n = mkidentifiernode(id);
-      }
-      copy_shared_string(type,i->type);
-    }
-    else
-    {
-      id=define_function(name,
-			 function_type_string,
-			 0,
-			 IDENTIFIER_PIKE_FUNCTION,
-			 0);
-      n = mktrampolinenode(id);
-      copy_shared_string(type, function_type_string);
-    }
+#endif
 
     low_add_local_name(compiler_frame->previous,
 		       $1->u.sval.u.string, type, n);
+
+    fprintf(stderr,"FNORD: ");
+    simple_describe_type(type);
+    fprintf(stderr,"\n");
+
     $<number>$=id;
     free_string(name);
   }
-  func_args failsafe_block
+  failsafe_block
   {
-    int e;
-    struct pike_string *type,*name;
-    struct identifier *i=ID_FROM_INT(new_program, $<number>3);
-    name=i->name;
+    int localid;
+    struct identifier *i=ID_FROM_INT(new_program, $<number>4);
+
+    $5=mknode(F_COMMA_EXPR,$5,mknode(F_RETURN,mkintnode(0),0));
+
+    debug_malloc_touch($5);
+    dooptcode(i->name,
+	      $5,
+	      i->type,
+	      ID_STATIC | ID_PRIVATE | ID_INLINE);
+
+    pop_compiler_frame();
+    free_node($1);
+
+    /* WARNING: If the local function adds more variables we are screwed */
+    /* WARNING2: if add_local_name stops adding local variables at the end,
+     *           this has to be fixed.
+     */
+
+    localid=compiler_frame->current_number_of_locals-1;
+    if(compiler_frame->variable[localid].def)
+    {
+      $$=copy_node(compiler_frame->variable[localid].def);
+    }else{
+      $$ = mknode(F_ASSIGN, mktrampolinenode($<number>3),
+		mklocalnode(localid,0));
+    }
+  }
+  | F_IDENTIFIER push_compiler_frame1 error
+  {
+    pop_compiler_frame();
+    $$=mkintnode(0);
+  }
+  ;
+
+local_function2: optional_stars F_IDENTIFIER push_compiler_frame1 func_args 
+  {
+    char buf[40];
+    struct pike_string *name,*type;
+    int id,e;
+    node *n;
+    struct identifier *i=0;
+
+    /***/
+    debug_malloc_touch(compiler_frame->current_return_type);
+    
+    push_finished_type($<n>0->u.sval.u.string);
+    if ($1 && (compiler_pass == 2)) {
+      yywarning("The *-syntax in types is obsolete. Use array instead.");
+    }
+    while($1--) push_type(T_ARRAY);
+
+    if(compiler_frame->current_return_type)
+      free_string(compiler_frame->current_return_type);
+    compiler_frame->current_return_type=compiler_pop_type();
 
     /***/
     push_finished_type(compiler_frame->current_return_type);
@@ -1685,51 +1754,6 @@ local_function: F_IDENTIFIER push_compiler_frame1
     type=compiler_pop_type();
     /***/
 
-    
-    $5=mknode(F_COMMA_EXPR,$5,mknode(F_RETURN,mkintnode(0),0));
-
-    debug_malloc_touch($5);
-    dooptcode(name,
-	      $5,
-	      type,
-	      ID_STATIC | ID_PRIVATE | ID_INLINE);
-
-    pop_compiler_frame();
-    free_node($1);
-    free_string(type);
-
-    /* WARNING: If the local function adds more variables we are screwed */
-    $$=copy_node(compiler_frame->variable[
-      compiler_frame->current_number_of_locals-1].def
-      );
-  }
-  | F_IDENTIFIER push_compiler_frame1 error
-  {
-    pop_compiler_frame();
-    $$=mkintnode(0);
-  }
-  ;
-
-local_function2: optional_stars F_IDENTIFIER push_compiler_frame1
-  {
-    char buf[40];
-    struct pike_string *name,*type;
-    int id;
-    node *n;
-    struct identifier *i=0;
-
-    debug_malloc_touch(compiler_frame->current_return_type);
-    
-    push_finished_type($<n>0->u.sval.u.string);
-    if ($1 && (compiler_pass == 2)) {
-      yywarning("The *-syntax in types is obsolete. Use array instead.");
-    }
-    while($1--) push_type(T_ARRAY);
-
-    if(compiler_frame->current_return_type)
-      free_string(compiler_frame->current_return_type);
-    compiler_frame->current_return_type=compiler_pop_type();
-
 
     sprintf(buf,"__lambda_%ld_%ld",
 	    (long)new_program->id,
@@ -1742,79 +1766,56 @@ local_function2: optional_stars F_IDENTIFIER push_compiler_frame1
 
     name=make_shared_string(buf);
 
+
+    id=define_function(name,
+		       type,
+		       0,
+		       IDENTIFIER_PIKE_FUNCTION,
+		       0);
+    n=0;
+#if 0
     if(compiler_pass > 1 &&
-       (id=isidentifier(name)) &&
        (i=ID_FROM_INT(new_program, id)))
-    {
-      if(i->identifier_flags & IDENTIFIER_SCOPED)
-      {
-	n = mktrampolinenode(id);
-      }else{
+      if(!(i->identifier_flags & IDENTIFIER_SCOPED))
 	n = mkidentifiernode(id);
-      }
-      copy_shared_string(type,i->type);
-    }
-    else
-    {
-      id=define_function(name,
-			 function_type_string,
-			 0,
-			 IDENTIFIER_PIKE_FUNCTION,
-			 0);
-      n = mktrampolinenode(id);
-      copy_shared_string(type, function_type_string);
-    }
+#endif
 
     low_add_local_name(compiler_frame->previous,
 		       $2->u.sval.u.string, type, n);
     $<number>$=id;
     free_string(name);
   }
-  func_args failsafe_block
+  failsafe_block
   {
-    int e;
-    struct pike_string *type, *name;
-    struct identifier *i=ID_FROM_INT(new_program, $<number>4);
-    name=i->name;
+    int localid;
+    struct identifier *i=ID_FROM_INT(new_program, $<number>5);
 
     debug_malloc_touch($6);
     $6=mknode(F_COMMA_EXPR,$6,mknode(F_RETURN,mkintnode(0),0));
 
-    /***/
-    push_finished_type(compiler_frame->current_return_type);
-    
-    e=$5-1;
-    if(varargs)
-    {
-      push_finished_type(compiler_frame->variable[e].type);
-      e--;
-      varargs=0;
-      pop_type_stack();
-    }else{
-      push_type(T_VOID);
-    }
-    push_type(T_MANY);
-    for(; e>=0; e--)
-      push_finished_type(compiler_frame->variable[e].type);
-    
-    push_type(T_FUNCTION);
-    
-    type=compiler_pop_type();
-    /***/
 
     debug_malloc_touch($6);
-    dooptcode(name,
+    dooptcode(i->name,
 	      $6,
-	      type,
+	      i->type,
 	      ID_STATIC | ID_PRIVATE | ID_INLINE);
 
     pop_compiler_frame();
     free_node($2);
+
     /* WARNING: If the local function adds more variables we are screwed */
-    $$=copy_node(compiler_frame->variable[
-      compiler_frame->current_number_of_locals-1].def
-      );
-    free_string(type);
+    /* WARNING2: if add_local_name stops adding local variables at the end,
+     *           this has to be fixed.
+     */
+
+    localid=compiler_frame->current_number_of_locals-1;
+    if(compiler_frame->variable[localid].def)
+    {
+      $$=copy_node(compiler_frame->variable[localid].def);
+    }else{
+      $$ = mknode(F_ASSIGN, mktrampolinenode($<number>5),
+		mklocalnode(localid,0));
+    }
   }
   | optional_stars F_IDENTIFIER push_compiler_frame1 error
   {

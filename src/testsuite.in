@@ -1,4 +1,4 @@
-test_true([["$Id: testsuite.in,v 1.292 2000/03/30 20:05:24 grubba Exp $"]]);
+test_true([["$Id: testsuite.in,v 1.293 2000/04/06 19:24:08 hubbe Exp $"]]);
 
 cond([[all_constants()->_verify_internals]],
 [[
@@ -331,6 +331,8 @@ class b {
 }
 ]])
 test_compile([[Stdio.File foo=Stdio.FILE();]])
+
+test_any([[string gurk="bozo"; string b(int x) { return (x?b(x-1)+gurk:""); }; return b(5)]],[["bozo"*5]])
 
 dnl this should really work...
 dnl test_compile_any([[void foo(int,string,...);]])
