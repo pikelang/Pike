@@ -1,4 +1,4 @@
-# $Id: configure.in,v 1.71 2005/01/24 14:45:03 grubba Exp $
+# $Id: configure.in,v 1.72 2005/01/25 14:13:57 grubba Exp $
 AC_INIT(system.c)
 AC_CONFIG_HEADER(system_machine.h)
 
@@ -56,6 +56,35 @@ else
   AC_MSG_RESULT(no)
 fi
 
+if test "`uname`" = "AIX"; then
+  # Pike's use of getaddrinfo SIGSEGVs for some users on some releases of
+  # AIX 5L 5.1.
+  #
+  # AIX 5L getaddrinfo is broken prior to
+  # AIX 5100-06 Recommended Maintenance
+  #
+  # getaddrinfo is implemented in /usr/lib/ia64l64/libc.so.1,
+  # which is part of the bos.rte.libc. AIX 5100-06 contains
+  # U496907 bos.rte.libc 5.1.0.59
+  #
+  # Suspected causes:
+  # IY29763  2 submodule getaddrinfo gets wrong sin6_len
+  # IY44782  2 malloc struct sockaddr_in6 in getaddrinfo() needs to be bzero
+  # IY51966  2 THIRD PARTY IMAPD CORE DUMP WHEN CALLING GETADDRINFO
+
+  # Path:Fileset:Level:PTF Id:State:Type:Description
+  libc_ver="`lslpp -qcl bos.rte.libc 2>/dev/null| awk -F: '{ print $3 }'`"
+  case "$libc_ver" in
+    5.1.0.*)
+      if test "`echo $libc_ver | awk -F. '{ print $4 }'`" -lt 59; then
+	AC_MSG_WARN([AIX 5.1 with libc older than 5.1.0.59 detected ($libc_ver)
+Disabling use of getaddrinfo.])
+	ac_cv_func_getaddrinfo=broken
+      fi
+    ;;
+  esac
+fi
+     
 AC_HAVE_FUNCS(syslog link symlink readlink resolvepath chown \
 	initgroups setgroups getgroups seteuid setresuid setegid setresgid \
         geteuid getpgrp getpgid getppid getuid getgid setuid setgid setpgrp \
@@ -68,35 +97,8 @@ AC_HAVE_FUNCS(syslog link symlink readlink resolvepath chown \
         getspnam_r innetgr utime sleep usleep nanosleep \
         getrlimit setrlimit  \
         setitimer getitimer mmap munmap \
-	gettimeofday settimeofday prctl inet_ntoa inet_ntop)
+	gettimeofday settimeofday prctl inet_ntoa inet_ntop getaddrinfo)
 
-if test "`uname`" = "AIX"; then
-  libc_ver="`lslpp -ql bos.rte.libc 2>/dev/null| awk '{ print $2 }'`"
-fi
-
-case "$libc_ver" in
-  5.1.0.*)
-    # Pike's use of getaddrinfo SIGSEGVs for some users on some releases of
-    # AIX 5L 5.1.
-    #
-    # AIX 5L getaddrinfo is broken prior to
-    # AIX 5100-06 Recommended Maintenance
-    # U496907 bos.rte.libc 5.1.0.59
-    #
-    # Suspected causes:
-    # IY29763  2 submodule getaddrinfo gets wrong sin6_len
-    # IY44782  2 malloc struct sockaddr_in6 in getaddrinfo() needs to be bzero
-    # IY51966  2 THIRD PARTY IMAPD CORE DUMP WHEN CALLING GETADDRINFO
-    if test "`echo $libc_ver | awk -F. '{ print $4 }'`" -ge 59; then
-      AC_HAVE_FUNCS(getaddrinfo)
-    fi
-  ;;
-  *)
-    # Some other OS.
-    AC_HAVE_FUNCS(getaddrinfo)
-  ;;
-esac
-     
 if test "x$ac_cv_func_setpgrp" = "xyes"; then
   AC_MSG_CHECKING([if setpgrp takes two arguments (BSD)])
   AC_CACHE_VAL(pike_cv_setprgp_bsd, [
