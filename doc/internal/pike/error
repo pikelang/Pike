@@ -15,7 +15,7 @@ DESCRIPTION
 	resent active catch() call.
 
 KEYWORDS
-	internals
+	error_handling
 
 SEE ALSO
 	SET_ONERROR, fatal, throw

@@ -34,5 +34,8 @@ EXAMPLE
 	  UNSET_ONERROR(tmp);
 	}
 
+KEYWORDS
+	error_handling
+
 SEE ALSO
 	UNSET_ONERROR, error

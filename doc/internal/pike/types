@@ -27,7 +27,7 @@ DESCRIPTION
 	together.
 
 KEYWORDS
-	internals
+	data_types
 
 SEE ALSO
 	add_function, add_efun

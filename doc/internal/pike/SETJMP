@@ -40,10 +40,8 @@ EXAMPLE
 	  UNSETJMP(foo)
 	}
 
-
-
 KEYWORDS
-	internals
+	error_handling
 
 SEE ALSO
 	throw, error, UNSETJMP, SET_ONERROR, UNSET_ONERROR

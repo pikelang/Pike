@@ -13,5 +13,8 @@ DESCRIPTION
 	explicitly, so if you don't know what types are involved you should
 	use -1 for the type field.
 
+KEYWORDS
+	data_types
+
 SEE ALSO
 	mapping, array, svalue

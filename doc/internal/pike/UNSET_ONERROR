@@ -5,5 +5,8 @@ DESCRIPTION
 	This function cleans up after a SET_ONERROR call.
 	See SET_ONERROR for more details.
 
+KEYWORDS
+	error_handling
+
 SEE ALSO
 	SET_ONERROR, SETJMP

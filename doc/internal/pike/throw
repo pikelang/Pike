@@ -14,7 +14,7 @@ DESCRIPTION
 	not return. See SETJMP for more details.
 
 KEYWORDS
-	internals
+	error_handling
 
 SEE ALSO
 	SETJMP, error

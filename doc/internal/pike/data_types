@@ -1,0 +1,10 @@
+NAME
+	data_types - Pike internal data types
+
+DESCRIPTION
+	Of course the Pike source uses a lot of data types except for those
+	that represents mappings, arrays, strings etc. Callbacks, stack frames
+	and type fields are just the beginning.
+
+KEYWORDS
+	internals
