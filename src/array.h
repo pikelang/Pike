@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: array.h,v 1.46 2003/03/30 16:15:09 mast Exp $
+|| $Id: array.h,v 1.47 2003/04/26 16:23:26 mast Exp $
 */
 
 #ifndef ARRAY_H
@@ -112,6 +112,7 @@ PMOD_EXPORT INT32 array_find_destructed_object(struct array *v);
 INT32 *get_order(struct array *v, cmpfun fun);
 INLINE int set_svalue_cmpfun(const struct svalue *a, const struct svalue *b);
 PMOD_EXPORT void sort_array_destructively(struct array *v);
+PMOD_EXPORT INT32 *stable_sort_array_destructively(struct array *v);
 PMOD_EXPORT INT32 *get_set_order(struct array *a);
 PMOD_EXPORT INT32 *get_switch_order(struct array *a);
 PMOD_EXPORT INT32 *get_alpha_order(struct array *a);
