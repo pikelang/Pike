@@ -40,7 +40,7 @@ done
 
 IFS="$save_ifs"
 (
-cat <<\EOF
+cat <<EOF
 divert(-1)
 
 dnl generates a script that is supposed to test Pike
@@ -49,7 +49,7 @@ dnl submit more tests.
 
 changequote([[,]])
 
-define(DOIT,ifelse([foo],foo,[DOIT($1)]))dnl
+define(DOIT,ifelse([foo],foo,[DOIT(\$1)]))dnl
 DOIT([[errprint([This m4 cannot handle quote strings with more than one character
 Please consider installing GNU m4.])
 m4exit(1)
@@ -63,134 +63,133 @@ define(CONDITION,[[]])
 define(DOTEST,[[dnl
 divert(0)dnl
 define([[TESTNO]],incr(TESTNO))dnl
-CONDITION()test TESTNO, expected result: [[$1]]
-[[$2]]
+CONDITION()__file__:__line__: test TESTNO, expected result: [[\$1]]
+[[\$2]]
 SEPARATOR
 divert(-1)dnl]])
 
 define(test_any, [[DOTEST(EQ,dnl
-mixed a() { [[$1]]; }
-mixed b() { return [[$2]]; })]])
+mixed a() { [[\$1]]; }
+mixed b() { return [[\$2]]; })]])
 
 define(test_any_equal, [[DOTEST(EQUAL,dnl
-mixed a() { [[$1]]; }
-mixed b() { return [[$2]]; })]])
+mixed a() { [[\$1]]; }
+mixed b() { return [[\$2]]; })]])
 
 define(test_eq,[[DOTEST(EQ,dnl
-mixed a() { return [[$1]]; }
-mixed b() { return [[$2]]; })]])
+mixed a() { return [[\$1]]; }
+mixed b() { return [[\$2]]; })]])
 
 define(test_equal,[[DOTEST(EQUAL,dnl
-mixed a() { return [[$1]]; }
-mixed b() { return [[$2]]; })]])
+mixed a() { return [[\$1]]; }
+mixed b() { return [[\$2]]; })]])
 
 define(test_do,[[DOTEST(RUN,dnl
-mixed a() { [[$1]]; })]])
+mixed a() { [[\$1]]; })]])
 
 define(test_true, [[DOTEST(TRUE,dnl
-mixed a() { return [[$1]]; })]])
+mixed a() { return [[\$1]]; })]])
 
 define(test_false, [[DOTEST(FALSE,dnl
-mixed a() { return [[$1]]; })]])
+mixed a() { return [[\$1]]; })]])
 
 define(test_compile,[[DOTEST(COMPILE,dnl
-void x() { [[$1]] ; } )]])
+void x() { [[\$1]] ; } )]])
 
 define(test_compile_any,[[DOTEST(COMPILE,dnl
-[[$1]] )]])
+[[\$1]] )]])
 
 define(test_compile_error,[[DOTEST(COMPILE_ERROR,dnl
-mixed a() { [[$1]];})]])
+mixed a() { [[\$1]];})]])
 
 define(test_compile_error_any,[[DOTEST(COMPILE_ERROR,dnl
-[[$1]])]])
+[[\$1]])]])
 
 define(test_eval_error,[[DOTEST(EVAL_ERROR,dnl
-mixed a() { [[$1]]; })]])
+mixed a() { [[\$1]]; })]])
 
 define(test_define_program,[[DOTEST(RUN,dnl
-void a() { add_constant("[[$1]]",class c {
-  [[$2]]
+void a() { add_constant("[[\$1]]",class c {
+  [[\$2]]
 });})]])
 
 define(test_program, [[DOTEST(TRUE,dnl
-[[$1]])]])
+[[\$1]])]])
 
 define(test_tests, [[DOTEST(RUNCT,dnl
-[[$1]])]])
+[[\$1]])]])
 
 define(cond,[[
-define([[CONDITION]],[[COND $1
+define([[CONDITION]],[[COND \$1
 ]])
-$2
+\$2
 define([[CONDITION]],[[]])
 ]])
-define(ifefun,[[cond([[all_constants()->$1]],[[$2]])]])
+define(ifefun,[[cond([[all_constants()->\$1]],[[\$2]])]])
 
 define(TESTNO,0)
 
 // testing < > <= >=
 define([[test_cmp]],[[
-test_true($1<$2)
-test_false($1>$2)
-test_true($2>$1)
-test_false($2<$1)
-test_true($1<=$2)
-test_false($1>=$2)
-test_true($2>=$1)
-test_false($2<=$1)
-test_true($2<=$2)
-test_true($1>=$1) ]])
+test_true(\$1<\$2)
+test_false(\$1>\$2)
+test_true(\$2>\$1)
+test_false(\$2<\$1)
+test_true(\$1<=\$2)
+test_false(\$1>=\$2)
+test_true(\$2>=\$1)
+test_false(\$2<=\$1)
+test_true(\$2<=\$2)
+test_true(\$1>=\$1) ]])
 
 define([[test_cmp3]],[[
-test_cmp($1,$2)
-test_cmp($2,$3)
-test_cmp($1,$3)
+test_cmp(\$1,\$2)
+test_cmp(\$2,\$3)
+test_cmp(\$1,\$3)
 
- test_true(`<($1,$2,$3))
-test_false(!`<($1,$2,$3))
-test_false(`<($1,$3,$2))
- test_true(!`<($1,$3,$2))
-test_false(`<($2,$3,$1))
-test_false(`<($2,$1,$3))
-test_false(`<($3,$1,$2))
-test_false(`<($3,$2,$1))
-test_false(`<($3,$2,$2,$1))
+ test_true(\`<(\$1,\$2,\$3))
+test_false(!\`<(\$1,\$2,\$3))
+test_false(\`<(\$1,\$3,\$2))
+ test_true(!\`<(\$1,\$3,\$2))
+test_false(\`<(\$2,\$3,\$1))
+test_false(\`<(\$2,\$1,\$3))
+test_false(\`<(\$3,\$1,\$2))
+test_false(\`<(\$3,\$2,\$1))
+test_false(\`<(\$3,\$2,\$2,\$1))
 
- test_true(`<=($1,$2,$3))
-test_false(!`<=($1,$2,$3))
-test_false(`<=($1,$3,$2))
-test_false(`<=($2,$3,$1))
-test_false(`<=($2,$1,$3))
- test_true(!`<=($2,$1,$3))
-test_false(`<=($3,$1,$2))
-test_false(`<=($3,$2,$1))
- test_true(`<=($1,$1,$2,$2,$3,$3))
+ test_true(\`<=(\$1,\$2,\$3))
+test_false(!\`<=(\$1,\$2,\$3))
+test_false(\`<=(\$1,\$3,\$2))
+test_false(\`<=(\$2,\$3,\$1))
+test_false(\`<=(\$2,\$1,\$3))
+ test_true(!\`<=(\$2,\$1,\$3))
+test_false(\`<=(\$3,\$1,\$2))
+test_false(\`<=(\$3,\$2,\$1))
+ test_true(\`<=(\$1,\$1,\$2,\$2,\$3,\$3))
 
-test_false(`>($1,$2,$3))
-test_false(`>($1,$3,$2))
-test_false(`>($2,$3,$1))
-test_false(`>($2,$1,$3))
-test_false(`>($3,$1,$2))
- test_true(`>($3,$2,$1))
-test_false(`>($3,$2,$2,$1))
+test_false(\`>(\$1,\$2,\$3))
+test_false(\`>(\$1,\$3,\$2))
+test_false(\`>(\$2,\$3,\$1))
+test_false(\`>(\$2,\$1,\$3))
+test_false(\`>(\$3,\$1,\$2))
+ test_true(\`>(\$3,\$2,\$1))
+test_false(\`>(\$3,\$2,\$2,\$1))
 
-test_false(`>=($1,$2,$3))
-test_false(`>=($1,$3,$2))
-test_false(`>=($2,$3,$1))
-test_false(`>=($2,$1,$3))
-test_false(`>=($3,$1,$2))
- test_true(!`>=($3,$1,$2))
- test_true(`>=($3,$2,$1))
- test_true(`>=($3,$3,$2,$2,$1,$1))
-test_false(!`>=($3,$3,$2,$2,$1,$1))
+test_false(\`>=(\$1,\$2,\$3))
+test_false(\`>=(\$1,\$3,\$2))
+test_false(\`>=(\$2,\$3,\$1))
+test_false(\`>=(\$2,\$1,\$3))
+test_false(\`>=(\$3,\$1,\$2))
+ test_true(!\`>=(\$3,\$1,\$2))
+ test_true(\`>=(\$3,\$2,\$1))
+ test_true(\`>=(\$3,\$3,\$2,\$2,\$1,\$1))
+test_false(!\`>=(\$3,\$3,\$2,\$2,\$1,\$1))
 
-test_equal(min($2,$1,$3), $1)
-test_equal(max($2,$1,$3), $3)
+test_equal(min(\$2,\$1,\$3), \$1)
+test_equal(max(\$2,\$1,\$3), \$3)
  ]])
 
+include($1)
 EOF
-
-cat $1
 ) | (shift ; $M4 "$@" - )
 

@@ -1,6 +1,6 @@
 #!/usr/local/bin/pike
 
-/* $Id: test_pike.pike,v 1.63 2002/05/02 16:00:31 nilsson Exp $ */
+/* $Id: test_pike.pike,v 1.64 2002/05/05 00:01:28 mast Exp $ */
 
 import Stdio;
 
@@ -374,7 +374,7 @@ int main(int argc, array(string) argv)
       {
 	signal_watchdog();
 
-	int skip=0;
+	int skip=0, prev_errors = errors;
 	string test,condition;
 	string|int type;
 	object o;
@@ -422,10 +422,23 @@ int main(int argc, array(string) argv)
 	  }
 	}
 
+	int testno, testline;
+	sscanf(test, "%s\n%s", type, test);
+	sscanf(type, "%s: test %d, expected result: %s", string testfile, testno, type);
+
+	if (testfile) {
+	  array split = testfile / ":";
+	  testline = (int) split[-1];
+	  testfile = split[..sizeof (split) - 2] * ":";
+	}
+
+	string pad_on_error = "\n";
 	if(istty())
         {
-	  if(!verbose)
-	    werror("%6d\r",e+1);
+	  if(!verbose) {
+	    werror("test %d, line %d\r", e+1, testline);
+	    pad_on_error = "                                        \r";
+	  }
 	}
 	else if(quiet){
 	  if(skip) {
@@ -468,9 +481,11 @@ int main(int argc, array(string) argv)
 	}
 	if(skip) continue;
 
-	int testno;
-	sscanf(test, "%s\n%s", type, test);
-	sscanf(type, "test %d, expected result: %s", testno, type);
+	if (!testfile || !testno || !type) {
+	  werror ("%sInvalid format in test file: %O\n", pad_on_error, type);
+	  errors++;
+	  continue;
+	}
 
 	if (prompt) {
 	  if (Stdio.Readline()->
@@ -482,14 +497,15 @@ int main(int argc, array(string) argv)
 
 	if(verbose)
 	{
-	  werror("Doing test %d (%d total)%s\n", testno, successes+errors+1, extra_info);
+	  werror("Doing test %d (%d total) at %s:%d%s\n",
+		 testno, successes+errors+1, testfile, testline, extra_info);
 	  if(verbose>1) bzot(test);
 	}
 
 	if(check > 1) _verify_internals();
 	
 	shift++;
-	string fname = testsuite + ": Test " + testno +
+	string fname = testfile + ":" + testline + ": Test " + testno +
 	  " (shift " + (shift%3) + ")";
 
 	string widener = ([ 0:"",
@@ -541,10 +557,10 @@ int main(int argc, array(string) argv)
 	  mixed err;
 	case "COMPILE":
 	  _dmalloc_set_name(fname,0);
-	  if(catch(compile_string(to_compile, fname)))
+	  if(catch(compile_string(to_compile, testsuite)))
 	  {
 	    _dmalloc_set_name();
-	    werror("\n" + fname + " failed.\n");
+	    werror(pad_on_error + fname + " failed.\n");
 	    bzot(test);
 	    errors++;
 	  }
@@ -557,14 +573,14 @@ int main(int argc, array(string) argv)
 	case "COMPILE_ERROR":
 	  master()->set_inhibit_compile_errors(1);
 	  _dmalloc_set_name(fname,0);
-	  if(catch(compile_string(to_compile, fname)))
+	  if(catch(compile_string(to_compile, testsuite)))
 	  {
 	    _dmalloc_set_name();
 	    successes++;
 	  }
 	  else {
 	    _dmalloc_set_name();
-	    werror("\n" + fname + " failed (expected compile error).\n");
+	    werror(pad_on_error + fname + " failed (expected compile error).\n");
 	    bzot(test);
 	    errors++;
 	  }
@@ -577,7 +593,7 @@ int main(int argc, array(string) argv)
 
 	  at = gauge {
 	    err=catch {
-	      clone(compile_string(to_compile, fname))->a();
+	      clone(compile_string(to_compile, testsuite))->a();
 	    };
 	  };
 	  if(err)
@@ -589,7 +605,7 @@ int main(int argc, array(string) argv)
 	  }
 	  else {
 	    _dmalloc_set_name();
-	    werror("\n" + fname + " failed (expected eval error).\n");
+	    werror(pad_on_error + fname + " failed (expected eval error).\n");
 	    bzot(test);
 	    errors++;
 	  }
@@ -599,7 +615,7 @@ int main(int argc, array(string) argv)
 	default:
 	  if (err = catch{
 	    _dmalloc_set_name(fname,0);
-	    o=clone(compile_string(to_compile,fname));
+	    o=clone(compile_string(to_compile,testsuite));
 	    _dmalloc_set_name();
 	    
 	    if(check > 1) _verify_internals();
@@ -626,7 +642,7 @@ int main(int argc, array(string) argv)
 
 	  }) {
 	    // trace(0);
-	    werror("\n" + fname + " failed.\n");
+	    werror(pad_on_error + fname + " failed.\n");
 	    bzot(test);
 	    if (arrayp(err) && sizeof(err) && stringp(err[0])) {
 	      werror("Error: " + master()->describe_backtrace(err));
@@ -641,7 +657,7 @@ int main(int argc, array(string) argv)
 	  if( o->__cpp_line != o->__rtl_line ||
 	      ( computed_line && computed_line!=o->__cpp_line))
 	    {
-	      werror("\n" + fname + " Line numbering failed.\n");
+	      werror(pad_on_error + fname + " Line numbering failed.\n");
 	      bzot(test + linetester);
 	      werror("   CPP lines: %d\n",o->__cpp_line);
 	      werror("   RTL lines: %d\n",o->__rtl_line);
@@ -658,7 +674,7 @@ int main(int argc, array(string) argv)
 	  case "FALSE":
 	    if(a)
 	    {
-	      werror("\n" + fname + " failed.\n");
+	      werror(pad_on_error + fname + " failed.\n");
 	      bzot(test);
 	      werror(sprintf("o->a(): %O\n",a));
 	      errors++;
@@ -671,7 +687,7 @@ int main(int argc, array(string) argv)
 	  case "TRUE":
 	    if(!a)
 	    {
-	      werror("\n" + fname + " failed.\n");
+	      werror(pad_on_error + fname + " failed.\n");
 	      bzot(test);
 	      werror(sprintf("o->a(): %O\n",a));
 	      errors++;
@@ -687,7 +703,7 @@ int main(int argc, array(string) argv)
 
 	  case "RUNCT":
 	    if(!a || !arrayp(a) || sizeof(a)!=2 || !intp(a[0]) || !intp(a[1])) {
-	      werror("\n" + fname + " failed to return proper results.\n");
+	      werror(pad_on_error + fname + " failed to return proper results.\n");
 	      bzot(test);
 	      werror(sprintf("o->a(): %O\n",a));
 	      errors++;
@@ -695,17 +711,18 @@ int main(int argc, array(string) argv)
 	    else {
 	      successes += a[0];
 	      errors += a[1];
-	      if(a[1])
-		werror("%d/%d tests failed.\n", a[1], a[0]+a[1]);
-	      else
-		werror("Did %d tests in %s.\n", a[0], fname);
+	      if (verbose)
+		if(a[1])
+		  werror("%d/%d tests failed.\n", a[1], a[0]+a[1]);
+		else
+		  werror("Did %d tests in %s.\n", a[0], fname);
 	    }
 	    break;
 
 	  case "EQ":
 	    if(a!=b)
 	    {
-	      werror("\n" + fname + " failed.\n");
+	      werror(pad_on_error + fname + " failed.\n");
 	      bzot(test);
 	      werror(sprintf("o->a(): %O\n",a));
 	      werror(sprintf("o->b(): %O\n",b));
@@ -719,7 +736,7 @@ int main(int argc, array(string) argv)
 	  case "EQUAL":
 	    if(!equal(a,b))
 	    {
-	      werror("\n" + fname + " failed.\n");
+	      werror(pad_on_error + fname + " failed.\n");
 	      bzot(test);
 	      werror(sprintf("o->a(): %O\n",a));
 	      werror(sprintf("o->b(): %O\n",b));
@@ -735,7 +752,9 @@ int main(int argc, array(string) argv)
 	    errors++;
 	  }
 	}
-	
+
+	if (errors > prev_errors) werror ("\n");
+
 	if(check > 2) _verify_internals();
 	
 	if(fail && errors)
@@ -751,7 +770,7 @@ int main(int argc, array(string) argv)
 
       if(istty())
       {
-	werror("             \r");
+	werror("                                        \r");
       }
       else if(quiet) {
 	if(!qskipp && !qmadep);
