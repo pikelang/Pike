@@ -1,4 +1,4 @@
-AC_REVISION("$Id: configure.in,v 1.346 2000/03/03 01:49:49 hubbe Exp $")
+AC_REVISION("$Id: configure.in,v 1.347 2000/03/04 16:25:35 grubba Exp $")
 AC_INIT(interpret.c)
 AC_CONFIG_HEADER(machine.h)
 
@@ -526,7 +526,7 @@ AC_ARG_WITH(poll,        [  --with-poll            use poll instead of select],[
 ])
 AC_ARG_WITH(max-fd,      [  --with-max-fd=X        set how many filedescriptors can be used at once],[pike_cv_max_open_fd=$withval],[])
 AC_ARG_WITH(oob,	 [  --with-oob             enable out-of-band data handling],[AC_DEFINE(WITH_OOB)],[])
-AC_ARG_WITH(thread-trace,[  --with-trace-threads   enable individual tracing of threads],[AC_DEFINE(TRACE_THREADS)],[])
+AC_ARG_WITH(thread-trace,[  --with-thread-trace    enable individual tracing of threads],[AC_DEFINE(THREAD_TRACE)],[])
 AC_ARG_WITH(compiler-trace,[  --with-compiler-trace  enable tracing of the compiler],[AC_DEFINE(YYDEBUG)],[])
 AC_ARG_WITH(security,    [  --with-security        enable internal pike security system],[AC_DEFINE(PIKE_SECURITY)],[])
 AC_ARG_WITH(bignums,     [  --without-bignums      disable internal conversion to bignums],[],[with_bignums=yes])

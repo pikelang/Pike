@@ -1,5 +1,5 @@
 /*
- * $Id: acconfig.h,v 1.53 1999/12/08 15:51:37 grubba Exp $
+ * $Id: acconfig.h,v 1.54 2000/03/04 16:24:37 grubba Exp $
  */
 #ifndef MACHINE_H
 #define MACHINE_H
@@ -302,7 +302,7 @@
 #undef WITH_OOB
 
 /* Enable individual tracing of threads */
-#undef TRACE_THREADS
+#undef THREAD_TRACE
 
 /* Enable tracing of the compiler */
 #undef YYDEBUG
