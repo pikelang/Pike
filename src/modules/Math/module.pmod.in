@@ -362,6 +362,8 @@ int choose(int n, int k)
 //! The 10-logarithm of @[x].
 float log10(float x) { return log(x)/log(10.0); }
 
+//! The 2-logarithm of @[x].
+float log2(float x) { return log(x)/log(2.0); }
 
 
 // Only available when there is Gmp.mpz
