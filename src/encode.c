@@ -25,7 +25,7 @@
 #include "version.h"
 #include "bignum.h"
 
-RCSID("$Id: encode.c,v 1.74 2000/09/30 20:12:03 hubbe Exp $");
+RCSID("$Id: encode.c,v 1.75 2000/10/02 21:59:20 hubbe Exp $");
 
 /* #define ENCODE_DEBUG */
 
@@ -1544,7 +1544,6 @@ static void decode_value2(struct decode_data *data)
 		break;
 
 	      case T_PROGRAM:
-		p->inherits[d].parent_identifier=0;
 		p->inherits[d].prog=Pike_sp[-1].u.program;
 		Pike_sp--;
 		dmalloc_touch_svalue(Pike_sp);
