@@ -1,6 +1,8 @@
 
 #pike __REAL_VERSION__
+//! @ignore
 static private inherit @module@;
+//! @endignore
 
 class ascii {
   static private string s = "";
@@ -22,6 +24,7 @@ class ascii {
   }
 }
 
+//! @belongs Locale.Charset
 //! Returns a charset decoder object.
 //! @param name
 //!   The name of the character set to decode from. Supported charsets
@@ -122,6 +125,7 @@ class _encoder
   }
 }
 
+//! @belongs Locale.Charset
 //! Returns a charset encoder object.
 //! @param name
 //!   The name of the character set to decode from. Supported charsets
