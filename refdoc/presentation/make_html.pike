@@ -708,24 +708,17 @@ string parse_not_doc(Node n) {
 
     case "method":
       if(method++) ret += "<br />\n";
-      ret += "<tt>";
-      string name = c->get_attributes()->name;
-
 #ifdef DEBUG
       if(!c->get_first_element("returntype"))
 	continue;
 	//	throw( ({ "No returntype element in method element.\n", backtrace() }) );
 #endif
-      if( !((<"create">)[name]) )
-	ret += parse_type(get_first_element(c->get_first_element("returntype"))) + " "; // Check for more children
-
-      string class_path = render_class_path(c);
-      if(has_suffix(class_path, "()->") && c->get_attributes()->name == "create")
-	ret += class_path[..sizeof(class_path)-5] + "<b>(</b>";
-      else
-	ret += class_path +"<b><font color='#000066'>" + c->get_attributes()->name + "</font>(</b>";
-
-      ret += parse_not_doc( c->get_first_element("arguments") ) + "<b>)</b></tt>";
+      ret += "<tt>" + parse_type(get_first_element(c->get_first_element("returntype"))); // Check for more children
+      ret += " ";
+      ret += render_class_path(c);
+      ret += "<b><font color='#000066'>" + c->get_attributes()->name + "</font>(</b>";
+      ret += parse_not_doc( c->get_first_element("arguments") );
+      ret += "<b>)</b></tt>";
       break;
 
     case "argument":
@@ -785,9 +778,7 @@ string parse_docgroup(Node n) {
   //  werror("%O\n", m["homogen-name"]);
   if(m["homogen-type"]) {
     string type = "<font face='Helvetica'>" + quote(String.capitalize(m["homogen-type"])) + "</font>\n";
-    if(m["homogen-type"]=="method" && m["homogen-name"]=="create")
-      ret += "<font size='+1'><b>Constructor</b></font>";
-    else if(m["homogen-name"])
+    if(m["homogen-name"])
       ret += type + "<font size='+1'><b>" + quote((m->belongs?m->belongs+" ":"") + m["homogen-name"]) +
 	"</b></font>\n";
     else
