@@ -1,5 +1,5 @@
 /*
- * $Id: lexer.h,v 1.13 1999/12/17 21:09:49 hubbe Exp $
+ * $Id: lexer.h,v 1.14 1999/12/30 14:46:07 grubba Exp $
  *
  * Lexical analyzer template.
  * Based on lex.c 1.62
@@ -697,6 +697,9 @@ static int low_yylex(YYSTYPE *yylval)
 	  break;
 	  case TWO_CHAR('e','l'):
 	    if(ISWORD("else")) return F_ELSE;
+	  break;
+	  case TWO_CHAR('e','x'):
+	    if(ISWORD("extern")) return F_EXTERN;
 	  break;
 	  case TWO_CHAR('f','i'):
 	    if(ISWORD("final")) return F_FINAL_ID;
