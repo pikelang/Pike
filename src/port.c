@@ -577,16 +577,27 @@ int VFPRINTF(FILE *f,char *s,va_list args)
 #if defined(DEBUG) && !defined(HANDLES_UNALIGNED_MEMORY_ACCESS)
 unsigned INT16 EXTRACT_UWORD(unsigned char *p)
 {
-  return (EXTRACT_UCHAR(p)<<8) + EXTRACT_UCHAR(p+1);
+  unsigned INT16 a;
+  ((unsigned char *)&a)[0]=p[0];
+  ((unsigned char *)&a)[1]=p[1];
+  return a;
 }
 
 INT16 EXTRACT_WORD(unsigned char *p)
 {
-  return (EXTRACT_CHAR(p)<<8) | EXTRACT_UCHAR(p+1);
+  INT16 a;
+  ((unsigned char *)&a)[0]=p[0];
+  ((unsigned char *)&a)[1]=p[1];
+  return a;
 }
 
 INT32 EXTRACT_INT(unsigned char *p)
 {
-  return (EXTRACT_WORD(p)<<16) | EXTRACT_UWORD(p+2);
+  INT16 a;
+  ((unsigned char *)&a)[0]=p[0];
+  ((unsigned char *)&a)[1]=p[1];
+  ((unsigned char *)&a)[2]=p[2];
+  ((unsigned char *)&a)[3]=p[3];
+  return a;
 }
 #endif
