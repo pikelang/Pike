@@ -1,4 +1,4 @@
-# $Id: configure.in,v 1.86 2003/05/14 20:40:23 marcus Exp $
+# $Id: configure.in,v 1.87 2003/05/15 13:25:41 marcus Exp $
 AC_INIT(file.c)
 AC_CONFIG_HEADER(file_machine.h)
 
@@ -1128,21 +1128,28 @@ fi
 if test yes = "$ac_cv_func_grantpt"; then
   pt_chmod_dirs=""
   case "$pike_cv_sys_os" in
-    Solaris) pt_chmod_dirs="/lib /usr/lib" ;;
+    Solaris|HP-UX|OSF1) pt_chmod_dirs="/lib /usr/lib /lbin /usr/lbin" ;;
   esac
   if test x = x"$pt_chmod_dirs"; then
     :
   else
-    AC_MSG_CHECKING(for pt_chmod since OS is $pike_cv_sys_os)
+    AC_MSG_CHECKING(for pt_chmod or chgpt since OS is $pike_cv_sys_os)
     AC_CACHE_VAL(pike_cv_pt_chmod_path, [
       pike_cv_pt_chmod_path=no
       for i in $pt_chmod_dirs; do
-        if test -x ${i}/pt_chmod; then
-          pike_cv_pt_chmod_path="${i}/pt_chmod"
+	for j in pt_chmod cghpt; do
+          if test -x ${i}/${j}; then
+            pike_cv_pt_chmod_path="${i}/${j}"
+	    break
+          else
+            :
+          fi
+	done
+	if test no = "$pike_cv_pt_chmod_path"; then
+	  :
+	else
 	  break
-        else
-          :
-        fi
+	fi
       done
     ])
     AC_MSG_RESULT($pike_cv_pt_chmod_path)
