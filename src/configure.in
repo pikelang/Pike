@@ -1,4 +1,4 @@
-AC_REVISION("$Id: configure.in,v 1.766 2004/02/08 16:44:26 grubba Exp $")
+AC_REVISION("$Id: configure.in,v 1.767 2004/02/09 20:42:38 grubba Exp $")
 AC_INIT(interpret.c)
 AC_CONFIG_HEADER(machine.h)
 
@@ -60,7 +60,7 @@ if test "x$CONFIG_SHELL" = "x"; then
     AC_MSG_WARN([Found bash as $ac_cv_path_bash_prog.
 Will attempt to restart configure with bash for performance.
 If this fails, please set CONFIG_SHELL to /bin/sh before starting configure.])
-    CONFIG_SHELL="$ac_cv_path_bash_prog"
+    CONFIG_SHELL="$ac_cv_path_bash_prog -norc"
     export CONFIG_SHELL
     echo $CONFIG_SHELL "$srcdir/configure" $ac_configure_args
     eval exec $CONFIG_SHELL "$srcdir/configure" $ac_configure_args
