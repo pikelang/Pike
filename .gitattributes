@@ -24,6 +24,7 @@ testfont binary
 /bin/httpd.pike foreign_ident
 /bin/make_ci.pike foreign_ident
 /bin/mkpeep.pike foreign_ident
+/bin/mktreeopt.pike foreign_ident
 /bin/mkwmml.pike foreign_ident
 /bin/pikedoc.pike foreign_ident
 /bin/pikedoc2.pike foreign_ident
