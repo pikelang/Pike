@@ -1,6 +1,6 @@
 #!/usr/local/bin/pike
 
-/* $Id: sendfiletest.pike,v 1.5 2000/10/07 12:00:23 grubba Exp $ */
+/* $Id: sendfiletest.pike,v 1.6 2000/10/07 13:11:38 grubba Exp $ */
 
 constant TEST_SIZE = 16384;
 
@@ -103,7 +103,7 @@ void done(int sent, int expected)
     werror(sprintf("Test %d failed: %d != %d\n", testno, sent, expected));
     exit(1);
   }
-  next();
+  call_out(next, 0);
 }
 
 /*
@@ -164,8 +164,6 @@ void test4()
     werror("Stdio.sendfile() failed!\n");
     exit(1);
   }
-
-  next();
 }
 
 void test5()
