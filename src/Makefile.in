@@ -1,5 +1,5 @@
 #
-# $Id: Makefile.in,v 1.299 2002/04/11 20:27:49 mast Exp $
+# $Id: Makefile.in,v 1.300 2002/04/11 20:30:03 mast Exp $
 #
 
 # This line is needed on some machines.
@@ -758,7 +758,7 @@ backend.o: $(SRCDIR)/backend.c
 # Internal testing target
 run_yacc: $(SRCDIR)/language.c
 
-$(SRCDIR)/configure: $(SRCDIR)/configure.in
+$(SRCDIR)/configure: $(SRCDIR)/configure.in $(SRCDIR)/aclocal.m4
 	cd $(SRCDIR) && autoconf
 
 config.status: $(SRCDIR)/configure
