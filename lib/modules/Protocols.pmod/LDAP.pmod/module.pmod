@@ -1,4 +1,4 @@
-// $Id: module.pmod,v 1.6 2005/03/11 16:49:57 mast Exp $
+// $Id: module.pmod,v 1.7 2005/03/11 17:52:33 mast Exp $
 
 #include "ldap_globals.h"
 
@@ -877,12 +877,19 @@ constant GUID_NTDS_QUOTAS_CONTAINER        = "6227f0af1fc2410d8e3bb10615bb5b0f";
 static mapping(mixed:string) constant_val_lookup;
 
 string get_constant_name (mixed val)
-//! If @[val] matches any constant in this module, its name is
-//! returned.
+//! If @[val] matches any non-integer constant in this module, its
+//! name is returned.
 {
   if (!constant_val_lookup) {
     array(string) names = indices (this_program);
     array(mixed) vals = values (this_program);
+    for (int i = 0; i < sizeof (names);)
+      if (intp (vals[i])) {
+	names = names[..i-1] + names[i+1..];
+	vals = vals[..i-1] + vals[i+1..];
+      }
+      else
+	i++;
     constant_val_lookup = mkmapping (vals, names);
     if (sizeof (constant_val_lookup) != sizeof (names))
       error ("Found %d duplicate constant names.\n",
