@@ -51,7 +51,7 @@ License: GPL/LGPL
 Homepage: http://pike.ida.liu.se/
 Maintainer: Xavier BEAUDOUIN <kiwi@caudium.net>
 PostInstScript: <<
-update-alternatives --install %p/bin/pike pike %p/sw/bin/pike74 40
+update-alternatives --install %p/bin/pike pike %p/bin/pike74 40
 <<
 PreRmScript: <<
 if [ $i != "upgrade" ]; then
