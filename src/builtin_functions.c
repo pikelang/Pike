@@ -2,11 +2,11 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: builtin_functions.c,v 1.550 2004/12/14 16:26:28 mast Exp $
+|| $Id: builtin_functions.c,v 1.551 2004/12/16 17:08:36 mast Exp $
 */
 
 #include "global.h"
-RCSID("$Id: builtin_functions.c,v 1.550 2004/12/14 16:26:28 mast Exp $");
+RCSID("$Id: builtin_functions.c,v 1.551 2004/12/16 17:08:36 mast Exp $");
 #include "interpret.h"
 #include "svalue.h"
 #include "pike_macros.h"
@@ -4353,9 +4353,9 @@ static time_t my_tm_diff(const struct tm *t1, const struct tm *t2)
   /* Overflow detection. (Should possibly be done on the other fields
    * too to cope with very large invalid dates.) */
   if ((t1->tm_year > t2->tm_year) && (base < 0))
-    return 0x7fffffff;
+    return MAX_TIME_T;
   if ((t1->tm_year < t2->tm_year) && (base > 0))
-    return -0x7fffffff;
+    return MIN_TIME_T;
 
   base +=
     (t1->tm_mon - t2->tm_mon) * 2678400 +
@@ -4446,13 +4446,19 @@ static int my_time_inverse (struct tm *target_tm, time_t *result, time_fn timefn
     }
 
     if (INT_TYPE_ADD_OVERFLOW (current_ts, diff_ts)) {
+      if (diff_ts > 0 && current_ts < MAX_TIME_T)
+	current_ts = MAX_TIME_T;
+      else if (diff_ts < 0 && current_ts > MIN_TIME_T)
+	current_ts = MIN_TIME_T;
+      else {
 #ifdef DEBUG_MY_TIME_INVERSE
-      fprintf (stderr, "got overflow adding %ld and %ld\n",
-	       (long) current_ts, (long) diff_ts);
+	fprintf (stderr, "outside time_t range\n");
 #endif
-      return 0;
+	return 0;
+      }
     }
-    current_ts += diff_ts;
+    else
+      current_ts += diff_ts;
   }
 
 #ifdef DEBUG_MY_TIME_INVERSE
