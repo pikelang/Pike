@@ -1,4 +1,4 @@
-/* $Id: master.pike.in,v 1.73 1999/11/26 21:51:46 grubba Exp $
+/* $Id: master.pike.in,v 1.74 1999/11/29 16:36:12 grubba Exp $
  * 
  * Master-file for Pike.
  *
@@ -1039,12 +1039,22 @@ void set_inhibit_compile_errors(mixed f)
 {
   inhibit_compile_errors->set(f);
 }
+
+mixed get_inhibit_compile_errors()
+{
+  return inhibit_compiler_errors->get();
+}
 #else /* !constant(thread_local) */
 mixed inhibit_compile_errors;
 
 void set_inhibit_compile_errors(mixed f)
 {
   inhibit_compile_errors=f;
+}
+
+mixed get_inhibit_compile_errors()
+{
+  return inhibit_compiler_errors;
 }
 #endif /* constant(thread_local) */
 
