@@ -1,5 +1,5 @@
 #
-# $Id: Makefile.in,v 1.83 1998/04/24 18:23:06 hubbe Exp $
+# $Id: Makefile.in,v 1.84 1998/04/27 15:18:09 grubba Exp $
 #
 
 # This line is needed on some machines.
@@ -390,7 +390,7 @@ bin_export:
 new_peep_engine:
 	$(RUNPIKE) $(TMP_BINDIR)/mkpeep.pike $(SRCDIR)/peep.in >$(SRCDIR)/peep_engine.c
 
-$(SRCDIR)/peep_engine.c: $(SRCDIR)/peep.in
+$(SRCDIR)/peep_engine.c: $(SRCDIR)/peep.in $(TMP_BINDIR)/mkpeep.pike
 	echo "" >$(SRCDIR)/peep_engine.c
 	-$(RUNPIKE) $(TMP_BINDIR)/mkpeep.pike $(SRCDIR)/peep.in >$(SRCDIR)/peep_engine.c
 
