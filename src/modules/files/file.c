@@ -5,7 +5,7 @@
 \*/
 /**/
 #include "global.h"
-RCSID("$Id: file.c,v 1.170 2000/04/03 23:32:20 hubbe Exp $");
+RCSID("$Id: file.c,v 1.171 2000/04/11 17:17:56 hubbe Exp $");
 #include "fdlib.h"
 #include "interpret.h"
 #include "svalue.h"
@@ -2654,11 +2654,9 @@ void PIKE_CONCAT(Y,_ref) (INT32 args) {				\
      extern int d_flag;                                         \
      if(d_flag)							\
      {								\
-       if(o)							\
-       {							\
-         fprintf(stderr,"Possible gc() failiure detected\n");	\
-         describe(o);						\
-       }							\
+       fprintf(stderr,"Possible gc() failiure detected\n");	\
+       describe(fp->current_object);				\
+       if(o) describe(o);					\
      }								\
    );								\
    error("Stdio.File(): not open.\n");				\
