@@ -308,12 +308,12 @@ class GetProperty
   int window;
   int property;
   int type;
-  int longOffset;
-  int longLength;
+  int longOffset = 0;
+  int longLength = 1024;
 
   string to_string()
   {
-    return build_request(sprintf("%4c%4c%4c" "4c%4c",
+    return build_request(sprintf("%4c%4c%4c" "%4c%4c",
 				 window, property, type,
 				 longOffset, longLength),
 			 delete);
@@ -342,7 +342,7 @@ class GetProperty
 	{
 	  m->data = allocate(length);
 	  for (int i = 0; i<length; i++)
-	    sscanf(reply->rest[24+4*i..27+2*i], "%4c", m->data[i]);
+	    sscanf(reply->rest[24+4*i..27+4*i], "%4c", m->data[i]);
 	  break;
 	}
       default:
