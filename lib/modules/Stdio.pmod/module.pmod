@@ -1,4 +1,4 @@
-// $Id: module.pmod,v 1.89 2000/09/28 03:39:14 hubbe Exp $
+// $Id: module.pmod,v 1.90 2000/10/11 13:23:06 grubba Exp $
 #pike __REAL_VERSION__
 
 
@@ -1309,7 +1309,7 @@ static class nb_sendfile
 #ifdef SENDFILE_DEBUG
       werror("Stdio.sendfile(): NOOP!\n");
 #endif /* SENDFILE_DEBUG */
-      call_out(cb, 0, 0, @args);
+      call_out(cb, 0, 0, @a);
       return;
     }
 
