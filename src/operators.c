@@ -6,7 +6,7 @@
 /**/
 #include "global.h"
 #include <math.h>
-RCSID("$Id: operators.c,v 1.74 1999/12/13 20:18:00 grubba Exp $");
+RCSID("$Id: operators.c,v 1.75 1999/12/13 20:44:15 grubba Exp $");
 #include "interpret.h"
 #include "svalue.h"
 #include "multiset.h"
@@ -1871,7 +1871,7 @@ void o_compl(void)
 
   case T_TYPE:
     type_stack_mark();
-    push_unfinished_type(sp[-1].u.string);
+    push_unfinished_type(sp[-1].u.string->str);
     push_type(T_NOT);
     pop_stack();
     push_string(pop_unfinished_type());
