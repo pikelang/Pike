@@ -2,11 +2,11 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: backend.cmod,v 1.142 2005/01/27 15:10:04 mast Exp $
+|| $Id: backend.cmod,v 1.143 2005/01/27 16:03:18 mast Exp $
 */
 
 #include "global.h"
-RCSID("$Id: backend.cmod,v 1.142 2005/01/27 15:10:04 mast Exp $");
+RCSID("$Id: backend.cmod,v 1.143 2005/01/27 16:03:18 mast Exp $");
 #include "fdlib.h"
 #include "backend.h"
 #include <errno.h>
@@ -62,14 +62,15 @@ RCSID("$Id: backend.cmod,v 1.142 2005/01/27 15:10:04 mast Exp $");
 
 #ifdef POLL_DEBUG
 #define IF_PD(x)	x
+#else /* !POLL_DEBUG */
+#define IF_PD(x)
+#endif /* POLL_DEBUG */
+
 #ifdef PIKE_THREADS
 #define THR_NO PTR_TO_INT (THREAD_T_TO_PTR (th_self()))
 #else
 #define THR_NO getpid()
 #endif
-#else /* !POLL_DEBUG */
-#define IF_PD(x)
-#endif /* POLL_DEBUG */
 
 /* Declarations for the legacy backend interface stuff. */
 
