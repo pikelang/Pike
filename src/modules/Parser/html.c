@@ -24,8 +24,8 @@ extern struct program *parser_html_program;
 
 /*
 #define SCAN_DEBUG
-#define DEBUG
 */
+#define DEBUG
 
 #ifdef DEBUG
 #undef DEBUG
@@ -277,7 +277,7 @@ static void tag_name(struct parser_html_storage *this,
 		     struct piece *feed,int c);
 static void tag_args(struct parser_html_storage *this,
 		     struct piece *feed,int c,struct svalue *def,
-		     int skip_name);
+		     int skip_name, int to_tag_end);
 
 static int quote_tag_lookup (struct parser_html_storage *this,
 			     struct piece *feed, int c,
@@ -1885,10 +1885,10 @@ static int scan_forward_arg(struct parser_html_storage *this,
 
       for (i=0; i<this->nargq; i++)
 	 if (ch==this->argq_start[i]) break;
-      if (i==this->nargq) /* it was whitespace */
+      if (i==this->nargq) { /* it was whitespace */
 	if (ch == this->tag_fin) {
 	  FORWARD_CHAR (*destp, *d_p, feed, c);
-	  if ((this->flags & FLAG_MATCH_TAG) && q ||
+	  if (((this->flags & FLAG_MATCH_TAG) && q) ||
 	      index_shared_string (feed->s, c) != this->tag_end) {
 	    DEBUG_MARK_SPOT("scan_forward_arg: tag fin char",
 			    destp[0],*d_p);
@@ -1906,6 +1906,7 @@ static int scan_forward_arg(struct parser_html_storage *this,
 			  destp[0],*d_p);
 	  break;
 	}
+      }
 
 in_quote_cont:
       DEBUG_MARK_SPOT("scan_forward_arg: quoted",destp[0],*d_p);
@@ -2507,7 +2508,7 @@ static newstate tag_callback(struct parser_html_storage *this,
 
    args=3;
    ref_push_object(thisobj);
-   tag_args(this,this->start,this->cstart,NULL,1);
+   tag_args(this,this->start,this->cstart,NULL,1,1);
 
    if (v->type==T_ARRAY && v->u.array->size>1)
    {
@@ -2578,7 +2579,7 @@ static newstate container_callback(struct parser_html_storage *this,
 
    args=4;
    ref_push_object(thisobj);
-   tag_args(this,this->start,this->cstart,NULL,1);
+   tag_args(this,this->start,this->cstart,NULL,1,1);
    push_feed_range(startc,cstartc,endc,cendc);
 
    if (v->type==T_ARRAY && v->u.array->size>1)
@@ -4025,7 +4026,7 @@ static INLINE void tag_push_default_arg(struct svalue *def)
 }
 
 static void tag_args(struct parser_html_storage *this,struct piece *feed,int c,
-		     struct svalue *def, int skip_name)
+		     struct svalue *def, int skip_name, int to_tag_end)
 {
    struct piece *s1=NULL,*s2=NULL,*s3;
    int flags = this->flags;
@@ -4061,7 +4062,8 @@ static void tag_args(struct parser_html_storage *this,struct piece *feed,int c,
       if ((flags & (FLAG_STRICT_TAGS|FLAG_XML_TAGS)) != FLAG_STRICT_TAGS &&
 	  ch==this->tag_fin) {
 	FORWARD_CHAR(s1, c1, s3, c3);
-	if (c3==s3->s->len || index_shared_string(s3->s,c3)==this->tag_end)
+	if ((c3==s3->s->len || index_shared_string(s3->s,c3)==this->tag_end) &&
+	    to_tag_end)
 	  break;
 	else if (n && s1==s2 && c1==c2) { /* previous arg value didn't really end */
 	  DEBUG_MARK_SPOT("html_tag_args arg val continues",s3,c3);
@@ -4071,7 +4073,7 @@ static void tag_args(struct parser_html_storage *this,struct piece *feed,int c,
 	  continue;
 	}
       }
-      else if (ch==this->tag_end) /* end */
+      else if (ch==this->tag_end && to_tag_end) /* end */
 	 break;
 
 new_arg:
@@ -4111,7 +4113,7 @@ new_arg:
 	else break;
       } while (1);
 
-      if (ch==this->tag_end) /* end */
+      if (ch==this->tag_end && to_tag_end) /* end */
       {
 	 tag_push_default_arg(def);
 	 break;
@@ -4212,10 +4214,10 @@ static void html_tag_args(INT32 args)
      case TYPE_CONT:
        if (args)
        {
-	 tag_args(THIS,THIS->start,THIS->cstart,&def,1);
+	 tag_args(THIS,THIS->start,THIS->cstart,&def,1,1);
 	 free_svalue(&def);
        }
-       else tag_args(THIS,THIS->start,THIS->cstart,NULL,1);
+       else tag_args(THIS,THIS->start,THIS->cstart,NULL,1,1);
        break;
      default:
        push_int(0);
@@ -4288,7 +4290,7 @@ static void html_tag(INT32 args)
 }
 
 /*
-**! method string html_context()
+**! method string context()
 **!	Returns the current output context as a string:
 **!	<ul>
 **!	<li><b>"data"</b>: In top level data. This is always returned
@@ -4330,7 +4332,7 @@ static void html_parse_tag_args(INT32 args)
    check_all_args("parse_tag_args",args,BIT_STRING,0);
    feed.s=sp[-args].u.string;
    feed.next=NULL;
-   tag_args(THIS,&feed,0,NULL,0);
+   tag_args(THIS,&feed,0,NULL,0,0);
    stack_pop_n_elems_keep_top(args);
 }
 
