@@ -5,7 +5,7 @@
 \*/
 /**/
 #include "global.h"
-RCSID("$Id: program.c,v 1.113 1999/03/04 06:05:09 hubbe Exp $");
+RCSID("$Id: program.c,v 1.114 1999/03/05 02:15:04 hubbe Exp $");
 #include "program.h"
 #include "object.h"
 #include "dynamic_buffer.h"
@@ -1077,19 +1077,22 @@ int low_reference_inherited_identifier(struct program_state *q,
   return np->num_identifier_references -1;
 }
 
-static int middle_reference_inherited_identifier(
-  struct program_state *state,
-  struct pike_string *super_name,
-  struct pike_string *function_name)
+node *reference_inherited_identifier(struct pike_string *super_name,
+				   struct pike_string *function_name)
 {
-  int e,i;
-  struct program *p=state?state->new_program:new_program;
+  int n,e,id;
+  struct program_state *state=previous_program_state;
+
+  struct program *p;
+
 
 #ifdef PIKE_DEBUG
   if(function_name!=debug_findstring(function_name))
     fatal("reference_inherited_function on nonshared string.\n");
 #endif
-  
+
+  p=new_program;
+
   for(e=p->num_inherits-1;e>0;e--)
   {
     if(p->inherits[e].inherit_level!=1) continue;
@@ -1099,30 +1102,59 @@ static int middle_reference_inherited_identifier(
       if(super_name != p->inherits[e].name)
 	continue;
 
-    i=low_reference_inherited_identifier(state,e,function_name);
-    if(i==-1) continue;
-    return i;
+    id=low_reference_inherited_identifier(0,e,function_name);
+
+    if(id!=-1)
+      return mkidentifiernode(id);
+
+    if(ISCONSTSTR(function_name,"`->") ||
+       ISCONSTSTR(function_name,"`[]"))
+    {
+      return mkapplynode(mkprgnode(magic_index_program),
+			 mknode(F_ARG_LIST,mkintnode(e),mkintnode(0)));
+    }
+
+    if(ISCONSTSTR(function_name,"`->=") ||
+       ISCONSTSTR(function_name,"`[]="))
+    {
+      return mkapplynode(mkprgnode(magic_set_index_program),
+			 mknode(F_ARG_LIST,mkintnode(e),mkintnode(0)));
+    }
   }
-  return -1;
-}
 
-node *reference_inherited_identifier(struct pike_string *super_name,
-				   struct pike_string *function_name)
-{
-  int i,n;
-  struct program_state *p=previous_program_state;
 
-  i=middle_reference_inherited_identifier(0,
-					  super_name,
-					  function_name);
-  if(i!=-1) return mkidentifiernode(i);
-
-  for(n=0;n<compilation_depth;n++,p=p->previous)
+  for(n=0;n<compilation_depth;n++,state=state->previous)
   {
-    i=middle_reference_inherited_identifier(p,super_name,
-					    function_name);
-    if(i!=-1)
-      return mkexternalnode(n,i,ID_FROM_INT(p->new_program, i));
+    struct program *p=state->new_program;
+    
+    for(e=p->num_inherits-1;e>0;e--)
+    {
+      if(p->inherits[e].inherit_level!=1) continue;
+      if(!p->inherits[e].name) continue;
+      
+      if(super_name)
+	if(super_name != p->inherits[e].name)
+	  continue;
+      
+      id=low_reference_inherited_identifier(state,e,function_name);
+
+      if(id!=-1)
+	return mkexternalnode(n,id,ID_FROM_INT(state->new_program, id));
+
+      if(ISCONSTSTR(function_name,"`->") ||
+	 ISCONSTSTR(function_name,"`[]"))
+      {
+	return mkapplynode(mkprgnode(magic_index_program),
+			   mknode(F_ARG_LIST,mkintnode(e),mkintnode(n+1)));
+      }
+      
+      if(ISCONSTSTR(function_name,"`->=") ||
+	 ISCONSTSTR(function_name,"`[]="))
+      {
+	return mkapplynode(mkprgnode(magic_set_index_program),
+			   mknode(F_ARG_LIST,mkintnode(e),mkintnode(n+1)));
+      }
+    }
   }
 
   return 0;

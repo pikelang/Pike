@@ -4,7 +4,7 @@
 ||| See the files COPYING and DISCLAIMER for more information.
 \*/
 #include "global.h"
-RCSID("$Id: object.c,v 1.58 1999/03/04 06:05:06 hubbe Exp $");
+RCSID("$Id: object.c,v 1.59 1999/03/05 02:14:59 hubbe Exp $");
 #include "object.h"
 #include "dynamic_buffer.h"
 #include "interpret.h"
@@ -1169,7 +1169,7 @@ void count_memory_in_objects(INT32 *num_, INT32 *size_)
 
 struct magic_index_struct
 {
-  short inherit_no;
+  struct inherit *inherit;
   struct object *o;
 };
 
@@ -1180,42 +1180,63 @@ struct program *magic_set_index_program=0;
 
 static void f_magic_index_create(INT32 args)
 {
+  struct inherit *inherit;
   struct object *o;
-  int inherit_no;
+  struct program *p;
+  int inherit_no,parent_level;
 
   if(MAGIC_THIS->o)
     error("Cannot call this function twice.\n");
 
-  get_all_args("create",args,"%i",&inherit_no);
+  get_all_args("create",args,"%i%i",&inherit_no,&parent_level);
 
   o=fp->next->current_object;
   if(!o) error("Illegal magic index call.\n");
 
+  
+  inherit=INHERIT_FROM_INT(o->prog, fp->next->fun);
+
+  while(parent_level--)
+  {
+    int i;
+    if(inherit->parent_offset)
+    {
+      i=o->parent_identifier;
+      o=o->parent;
+      parent_level+=inherit->parent_offset-1;
+    }else{
+      i=inherit->parent_identifier;
+      o=inherit->parent;
+    }
+    
+    if(!o)
+      error("Parent was lost!\n");
+    
+    if(!(p=o->prog))
+      error("Attempting to access variable in destructed object\n");
+    
+    inherit=INHERIT_FROM_INT(p, i);
+  }
+
   add_ref(MAGIC_THIS->o=o);
-  MAGIC_THIS->inherit_no=inherit_no;
+  MAGIC_THIS->inherit = inherit + inherit_no;
 }
 
 static void f_magic_index(INT32 args)
 {
-  int f,inherit_no;
+  struct inherit *inherit;
+  int f;
   struct pike_string *s;
   struct object *o;
-  struct program *p;
 
   get_all_args("::`->",args,"%S",&s);
 
   if(!(o=MAGIC_THIS->o))
     error("Magic index error\n");
 
-  if(!(p=o->prog))
-    error("Indexing a destructed object!\n");
+  inherit=MAGIC_THIS->inherit;
 
-  inherit_no=MAGIC_THIS->inherit_no;
-
-  if(inherit_no >= p->num_inherits || inherit_no < 0)
-    error("Bad magic index (inherit_no=%d p->num_inherits=%d)!\n",inherit_no,p->num_inherits);
-
-  f=find_shared_string_identifier(s,p->inherits[inherit_no].prog);
+  f=find_shared_string_identifier(s,inherit->prog);
 
   if(f<0)
   {
@@ -1225,7 +1246,7 @@ static void f_magic_index(INT32 args)
   }else{
     struct svalue sval;
     low_object_index_no_free(&sval,o,f+
-			     p->inherits[inherit_no].identifier_level);
+			     inherit->identifier_level);
     pop_stack();
     *sp=sval;
     sp++;
@@ -1234,33 +1255,26 @@ static void f_magic_index(INT32 args)
 
 static void f_magic_set_index(INT32 args)
 {
-  int f,inherit_no;
+  int f;
   struct pike_string *s;
   struct object *o;
-  struct program *p;
   struct svalue *val;
+  struct inherit *inherit;
 
   get_all_args("::`->=",args,"%S%*",&s,&val);
 
   if(!(o=MAGIC_THIS->o))
     error("Magic index error\n");
 
-  if(!(p=o->prog))
-    error("Indexing a destructed object!\n");
+  inherit=MAGIC_THIS->inherit;
 
-  inherit_no=MAGIC_THIS->inherit_no;
-
-  if(inherit_no >= p->num_inherits || inherit_no < 0)
-    error("Bad magic index!\n");
-
-  f=find_shared_string_identifier(s,p->inherits[inherit_no].prog);
+  f=find_shared_string_identifier(s,inherit->prog);
 
   if(f<0)
   {
     error("No such variable in object.\n");
   }else{
-    object_low_set_index(o, f+
-			 p->inherits[inherit_no].identifier_level,
+    object_low_set_index(o, f+inherit->identifier_level,
 			 val);
     pop_n_elems(args);
     push_int(0);
@@ -1276,15 +1290,15 @@ void init_object(void)
   map_variable("__obj","object",ID_STATIC,
 	       offset  + OFFSETOF(magic_index_struct, o), T_OBJECT);
   add_function("`()",f_magic_index,"function(string:mixed)",0);
-  add_function("create",f_magic_index_create,"function(int:void)",0);
+  add_function("create",f_magic_index_create,"function(int,int:void)",0);
   magic_index_program=end_program();
 
   start_new_program();
   offset=ADD_STORAGE(struct magic_index_struct);
   map_variable("__obj","object",ID_STATIC,
 	       offset  + OFFSETOF(magic_index_struct, o), T_OBJECT);
-  add_function("`()",f_magic_index,"function(string,mixed:void)",0);
-  add_function("create",f_magic_index_create,"function(int:void)",0);
+  add_function("`()",f_magic_set_index,"function(string,mixed:void)",0);
+  add_function("create",f_magic_index_create,"function(int,int:void)",0);
   magic_set_index_program=end_program();
 }
 

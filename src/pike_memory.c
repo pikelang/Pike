@@ -10,7 +10,7 @@
 #include "pike_macros.h"
 #include "gc.h"
 
-RCSID("$Id: pike_memory.c,v 1.32 1999/02/27 21:27:00 grubba Exp $");
+RCSID("$Id: pike_memory.c,v 1.33 1999/03/05 02:15:02 hubbe Exp $");
 
 /* strdup() is used by several modules, so let's provide it */
 #ifndef HAVE_STRDUP
@@ -894,6 +894,7 @@ static void add_location(struct memhdr *mh, int locnum)
   if(!ml)
   {
     ml=alloc_memloc();
+    ml->times=0;
     ml->locnum=locnum;
     ml->next=mh->locations;
     ml->mh=mh;
