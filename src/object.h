@@ -5,7 +5,7 @@
 \*/
 
 /*
- * $Id: object.h,v 1.66 2001/12/13 11:16:56 mast Exp $
+ * $Id: object.h,v 1.67 2001/12/16 22:48:09 mast Exp $
  */
 #ifndef OBJECT_H
 #define OBJECT_H
@@ -37,6 +37,8 @@ extern struct object *master_object;
 extern struct program *master_program;
 extern struct program *magic_index_program;
 extern struct program *magic_set_index_program;
+extern struct program *magic_indices_program;
+extern struct program *magic_values_program;
 
 #define free_object(O) do{ struct object *o_=(O); debug_malloc_touch(o_); debug_malloc_touch(o_->storage); if(!sub_ref(o_)) schedule_really_free_object(o_); }while(0)
 

@@ -5,7 +5,7 @@
 \*/
 /**/
 #include "global.h"
-RCSID("$Id: object.c,v 1.189 2001/11/08 23:34:29 nilsson Exp $");
+RCSID("$Id: object.c,v 1.190 2001/12/16 22:48:08 mast Exp $");
 #include "object.h"
 #include "dynamic_buffer.h"
 #include "interpret.h"
@@ -1696,6 +1696,8 @@ struct magic_index_struct
 
 struct program *magic_index_program=0;
 struct program *magic_set_index_program=0;
+struct program *magic_indices_program=0;
+struct program *magic_values_program=0;
 
 void push_magic_index(struct program *type, int inherit_no, int parent_level)
 {
@@ -1748,7 +1750,7 @@ static void f_magic_index(INT32 args)
     Pike_error("Magic index error\n");
 
   if(!o->prog)
-    Pike_error("Magic index on destructed object!\n");
+    Pike_error("::`-> on destructed object.\n");
 
   inherit=MAGIC_THIS->inherit;
 
@@ -1794,7 +1796,7 @@ static void f_magic_set_index(INT32 args)
     Pike_error("Magic index error\n");
 
   if(!o->prog)
-    Pike_error("Magic index on destructed object!\n");
+    Pike_error("::`->= on destructed object.\n");
 
   inherit=MAGIC_THIS->inherit;
 
@@ -1809,6 +1811,59 @@ static void f_magic_set_index(INT32 args)
     pop_n_elems(args);
     push_int(0);
   }
+}
+
+/*! @decl mixed ::_indices()
+ *!
+ *! Builtin function to list the identifiers of an object.
+ *! This is useful when @[_indices] has been overloaded.
+ *!
+ *! @seealso
+ *!   @[::_values, ::`->]
+ */
+static void f_magic_indices (INT32 args)
+{
+  struct object *obj;
+  struct program *prog;
+  struct array *res;
+  int e;
+
+  pop_n_elems (args);
+
+  if(!(obj = MAGIC_THIS->o)) Pike_error ("Magic index error\n");
+  if(!(prog = obj->prog)) Pike_error ("Object is destructed.\n");
+
+  push_array (res = allocate_array_no_init (prog->num_identifier_index, 0));
+  for (e = 0; e < (int) prog->num_identifier_index; e++) {
+    copy_shared_string (ITEM(res)[e].u.string,
+			ID_FROM_INT (prog, prog->identifier_index[e])->name);
+    ITEM(res)[e].type = T_STRING;
+  }
+}
+
+/*! @decl mixed ::_values()
+ *!
+ *! Builtin function to list the values of the identifiers of an
+ *! object. This is useful when @[_values] has been overloaded.
+ *!
+ *! @seealso
+ *!   @[::_indices, ::`->]
+ */
+static void f_magic_values (INT32 args)
+{
+  struct object *obj;
+  struct program *prog;
+  struct array *res;
+  int e;
+
+  pop_n_elems (args);
+
+  if(!(obj = MAGIC_THIS->o)) Pike_error ("Magic index error\n");
+  if(!(prog = obj->prog)) Pike_error ("Object is destructed.\n");
+
+  push_array (res = allocate_array_no_init (prog->num_identifier_index, 0));
+  for (e = 0; e < (int) prog->num_identifier_index; e++)
+    low_object_index_no_free (ITEM(res) + e, obj, prog->identifier_index[e]);
 }
 
 void init_object(void)
@@ -1829,6 +1884,20 @@ void init_object(void)
 	       offset  + OFFSETOF(magic_index_struct, o), T_OBJECT);
   add_function("`()",f_magic_set_index,"function(string,mixed:void)",0);
   magic_set_index_program=end_program();
+
+  start_new_program();
+  offset=ADD_STORAGE(struct magic_index_struct);
+  map_variable("__obj","object",ID_STATIC,
+	       offset  + OFFSETOF(magic_index_struct, o), T_OBJECT);
+  add_function("`()",f_magic_indices,"function(:array(string))",0);
+  magic_indices_program=end_program();
+
+  start_new_program();
+  offset=ADD_STORAGE(struct magic_index_struct);
+  map_variable("__obj","object",ID_STATIC,
+	       offset  + OFFSETOF(magic_index_struct, o), T_OBJECT);
+  add_function("`()",f_magic_values,"function(:array)",0);
+  magic_values_program=end_program();
 }
 
 void exit_object(void)
@@ -1848,6 +1917,18 @@ void exit_object(void)
   {
     free_program(magic_set_index_program);
     magic_set_index_program=0;
+  }
+
+  if(magic_indices_program)
+  {
+    free_program(magic_indices_program);
+    magic_indices_program=0;
+  }
+
+  if(magic_values_program)
+  {
+    free_program(magic_values_program);
+    magic_values_program=0;
   }
 }
 

@@ -1,5 +1,5 @@
 /*
- * $Id: interpret_functions.h,v 1.98 2001/12/16 02:49:39 mast Exp $
+ * $Id: interpret_functions.h,v 1.99 2001/12/16 22:48:08 mast Exp $
  *
  * Opcode definitions for the interpreter.
  */
@@ -1614,6 +1614,14 @@ OPCODE2(F_MAGIC_INDEX, "::`[]", {
 
 OPCODE2(F_MAGIC_SET_INDEX, "::`[]=", {
   push_magic_index(magic_set_index_program, arg2, arg1);
+});
+
+OPCODE2(F_MAGIC_INDICES, "::_indices", {
+  push_magic_index(magic_indices_program, arg2, arg1);
+});
+
+OPCODE2(F_MAGIC_VALUES, "::_values", {
+  push_magic_index(magic_values_program, arg2, arg1);
 });
 
 OPCODE0(F_CAST, "cast", {

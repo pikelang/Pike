@@ -5,7 +5,7 @@
 \*/
 /**/
 #include "global.h"
-RCSID("$Id: docode.c,v 1.137 2001/12/10 02:08:13 mast Exp $");
+RCSID("$Id: docode.c,v 1.138 2001/12/16 22:48:07 mast Exp $");
 #include "las.h"
 #include "program.h"
 #include "pike_types.h"
@@ -605,6 +605,8 @@ static int do_docode2(node *n, INT16 flags)
   {
   case F_MAGIC_INDEX:
   case F_MAGIC_SET_INDEX:
+  case F_MAGIC_INDICES:
+  case F_MAGIC_VALUES:
     emit2(n->token,
 	  n->u.node.b->u.sval.u.integer,
 	  n->u.node.a->u.sval.u.integer);

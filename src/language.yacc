@@ -112,7 +112,7 @@
 /* This is the grammar definition of Pike. */
 
 #include "global.h"
-RCSID("$Id: language.yacc,v 1.267 2001/12/16 02:49:40 mast Exp $");
+RCSID("$Id: language.yacc,v 1.268 2001/12/16 22:48:08 mast Exp $");
 #ifdef HAVE_MEMORY_H
 #include <memory.h>
 #endif
@@ -3360,6 +3360,12 @@ low_idents: TOK_IDENTIFIER
 		ISCONSTSTR(Pike_compiler->last_identifier, "`[]=")) {
 	$$ = mknode(F_MAGIC_SET_INDEX, mknewintnode($1),
 		    mknewintnode(inherit_depth+1));
+      } else if(ISCONSTSTR(Pike_compiler->last_identifier, "_indices")) {
+	$$ = mknode(F_MAGIC_INDICES, mknewintnode($1),
+		    mknewintnode(inherit_depth+1));
+      } else if(ISCONSTSTR(Pike_compiler->last_identifier, "_values")) {
+	$$ = mknode(F_MAGIC_VALUES, mknewintnode($1),
+		    mknewintnode(inherit_depth+1));
       } else {
 	if (inherit_state->new_program->inherits[$1].name) {
 	  my_yyerror("Undefined identifier %s::%s.",
@@ -3409,6 +3415,14 @@ low_idents: TOK_IDENTIFIER
 		ISCONSTSTR($2->u.sval.u.string,"`[]=") )
 	{
 	  $$=mknode(F_MAGIC_SET_INDEX,mknewintnode(0),mknewintnode(0));
+	}
+	else if(ISCONSTSTR($2->u.sval.u.string,"_indices"))
+	{
+	  $$=mknode(F_MAGIC_INDICES,mknewintnode(0),mknewintnode(0));
+	}
+	else if(ISCONSTSTR($2->u.sval.u.string,"_values"))
+	{
+	  $$=mknode(F_MAGIC_VALUES,mknewintnode(0),mknewintnode(0));
 	}
 	else
 	{
