@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: opcodes.h,v 1.36 2003/11/14 10:12:29 mast Exp $
+|| $Id: opcodes.h,v 1.37 2003/11/17 14:39:48 grubba Exp $
 */
 
 #ifndef OPCODES_H
@@ -124,6 +124,9 @@ struct hash_table;
 #endif
 
 extern struct instr instrs[];
+#ifdef PIKE_USE_MACHINE_CODE
+extern size_t instrs_checksum;
+#endif /* PIKE_USE_MACHINE_CODE */
 
 /* Opcode enum */
 
