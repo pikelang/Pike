@@ -1,3 +1,11 @@
+Tue Nov 26 21:36:40 1996  Fredrik Hubinette  <hubbe@cytocin.hubbe.net>
+
+	* master()->cast_to_program() now searches through
+	  PIKE_INCLUDE_PATH if you give it a program name without
+	  any slashes in it.
+	* zero_type now accepts 'mixed'
+	* object_program now accepts 'mixed'
+
 Mon Nov 25 13:22:15 1996  Fredrik Hubinette  <hubbe@cytocin.hubbe.net>
 
 	* /precompiled/stack added
