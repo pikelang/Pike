@@ -1,0 +1,358 @@
+This document describes the keywords recognized by the AutoDoc parser, and their
+intended use. JHS is working on a more elaborate manual and style guide.
+
+================================================================================
+
+  META KEYWORDS
+
+================================================================================
+
+Keyword:      @appears
+Description:  Tell where the documentation for an item should be shown.
+              Gives the full new name of the item. Must be placed first in
+              the block, or immediately after any @module, @class, or @decl's.
+Arguments:    <name>
+              Where:
+                <name> is an "absolute" name with identifiers separated by dots.
+                  It can also be prefixed by 'scope::' where scope is one of
+                  the valid scope modules.
+Children:     -
+Groups with:  -
+Examples:     //! @appears predef::stat
+              //!   This function is globally visible.
+              array stat() {
+                // function body
+              }
+
+________________________________________________________________________________
+
+Keyword:      @belongs
+Description:  Tell where the documentation for an item should be shown. Gives
+              the name of the new parent module or parent class.
+Arguments:    <name>
+              Where:
+                <name> is an "absolute" name with identifiers separated by dots.
+                  It can also be prefixed by 'scope::' where scope is one of
+                  the valid scope modules.
+Children:     -
+Groups with:  -
+Examples:
+              //! @decl int func()
+              //! @belongs AnotherModule
+
+________________________________________________________________________________
+
+Keyword:      @class
+Description:  Declare and enter a new scope for a class. Only in C mode. Until
+              an @endclass is found, all declarations will be regarded as
+              children of the class.
+Arguments:    <name>
+              Where:
+                <name> is a valid Pike identifier. Not the "absolute" name
+                  with dots.
+Children:     Documentation for the class, or empty.
+Groups with:  -
+Examples:
+              /*! @class Arne
+               *!  A class with a Swedish name. */
+
+________________________________________________________________________________
+
+Keyword:      @decl
+Description:  Declare a Pike entity and state that the current documentation
+              block "is about" that entity. If the documentation block is bound
+              to a Pike entity by adjacency (if it is a Pike file being
+              extracted), then @decl is allowed iff:
+                1. The Pike entity in the adjacent code is one method.
+                2. All @decl's in the block are methods with the same name as
+                   that method. (look at the last example below)
+Arguments:    <declaration>
+              Where:
+                <declaration> is a valid Pike declaration. A trailing ";" is
+                  optional.
+Children:     Documentation for the entity. After all @decl's may follow one of
+              @appears or @belongs.
+Groups with:  @decl
+Examples:
+              //! @decl void explode(string victim);
+              //! @decl float root(float x)
+              //! @decl mapping(string:string) arguments;
+              //!  Doc for these three disparate things.
+
+              //! @decl float cube(float f)
+              //! @decl int cube(int i)
+              //!  This is how to document a "polymorph" function.
+              float|int cube(float|int x) { /* body */ }
+
+________________________________________________________________________________
+
+Keyword:      @endclass
+Description:  Leave the class scope entered by @class.
+Arguments:    [name]
+              Where:
+                [name] if present, must be the same as the argument to @class.
+Children:
+Groups with:  -
+Examples:
+              /*! @endclass Reinhold */
+
+________________________________________________________________________________
+
+Keyword:      @endmodule
+Description:  Leave the module scope entered by @module
+Arguments:    [name]
+              Where:
+                [name] if present, must be the same as the argument to @module.
+Children:     -
+Groups with:  -
+Examples:
+              /*! @endmodule Roine */
+
+________________________________________________________________________________
+
+Keyword:      @module
+Description:  Declare and enter a new scope for a module. Only in C mode. Until
+              an @endmodule is found, all declarations will be regarded as
+              children of the module.
+Arguments:    <name>
+              Where:
+                <name> is a valid Pike identifier. Not the "absolute" name
+                  with dots.
+Children:     Documentation for the module, or empty.
+Groups with:  -
+Examples:
+              /*! @module Kenny
+               *!  A module with a Norwegian name. */
+
+________________________________________________________________________________
+================================================================================
+
+  DELIMITER KEYWORDS AT THE TOP LEVEL
+
+================================================================================
+
+Keyword:      @deprecated
+Description:  Documents the fact that the entity is deprecated by one or
+              several other classes/modules/methods/variables.
+Arguments:    [item_1 [, item_2 [, item_3 ... ]]]
+                Where:
+                  [item_n] is an "absolute" name pointing to a Pike entity. It
+                    may use the 'scope::' prefix.
+Children:     -
+Groups with:  @deprecated
+Examples:
+              //! @deprecated IO.initPrinter, IO.sendPrinterCommand
+              //! @deprecated predef::search
+
+________________________________________________________________________________
+
+Keyword:      @example
+Description:  Example code for the documented item.
+Arguments:    -
+Children:     Text (with markup).
+Groups with:  -
+Examples:
+              @example
+                array a = func();
+                if (sizeof(a) > MAX)      // security check
+                  exit(1);
+
+________________________________________________________________________________
+
+Keyword:      @note
+Description:  Important information about the documented item.
+Arguments:    -
+Children:     Text (with markup).
+Groups with:  -
+Examples:
+              @note
+                Do not call this function unless you know what you are doing.
+                No bounds/sanity checking on arguments is performed!
+
+________________________________________________________________________________
+
+Keyword:      @param
+Description:  Documentation for a method parameter. Only allowed when
+              documenting functions.
+Arguments:    <name>
+              Where:
+                <name> is a valid Pike parameter name.
+Children:     The documentation for the parameter.
+Groups with:  @param
+Examples:
+              @param x
+              @param y
+                The coordinates of the thing.
+              @param name
+                The name of the thing.
+
+________________________________________________________________________________
+
+Keyword:      @returns
+Description:  Documentation for the return value of a method. The type of the
+              return value is deduced from the declaration.
+Arguments:    -
+Children:     The doc.
+Groups with:  -
+Examples:
+              @returns
+                The square root of the sum of the cubes of the inverse numbers.
+
+________________________________________________________________________________
+
+Keyword:      @seealso
+Description:  Refer to other stuff that is related to the entity in question.
+Arguments:    -
+Children:     Text (with markup).
+Groups with:  -
+Examples:     //! @seealso
+              //!  @[calc_checksum_w()] is used for wide strings.
+
+________________________________________________________________________________
+================================================================================
+
+  TEXT MARKUP KEYWORDS
+
+================================================================================
+
+Keyword:      @array - @endarray
+Description:  Documentation of the layout of an array.
+Arguments:    -
+Children:     @elem
+Groups with:  -
+Examples:     @array
+                @elem mixed 0..
+                  All elements are of type mixed.
+              @endarray
+
+________________________________________________________________________________
+
+Keyword:      @dl - @enddl
+Description:  Render a definition list.
+Arguments:    -
+Children:     @item
+Groups with:  -
+Examples:     @dl
+                @item Britta
+                  My first teacher. She was very nice.
+                @item Boris
+                  One of the best tennis players in the universe.
+              @enddl
+
+________________________________________________________________________________
+
+Keyword:      @elem
+Description:  Documentation for an array element or a range of array elements.
+              Only inside @array - @endarray.
+Arguments:    <type> <index range>
+              Where:
+                <type> is the Pike type of the element at the index.
+                <index range> is one of the following:
+                  number             (at index number only)
+                  number..           (from number to end of array)
+                  number1..number2   (from number1 to inclusive number2)
+                  ..number           (from beginning to inclusive number)
+                And number can be an integer literal or an identifier:
+                  4711   -42    MAX
+Children:     Documentation for the array elements at the given index or
+              indices.
+Groups with:  @elem
+Examples:     @elem int 0
+                The first element is an integer.
+              @elem string 1..
+                The rest of the elements are strings.
+              @elem array(string) MIN..MAX
+                The elements at these positions are themselves arrays.
+
+________________________________________________________________________________
+
+Keyword:      @i{ ... @}
+Description:  Italics.
+Children:     Text that will be rendered in italics.
+Examples:     You really look @i{italic@}! - You mean @i{Italian@}, don't you?
+
+________________________________________________________________________________
+
+Keyword:      @item
+Description:  A definition term inside @dl
+Arguments:    <name>
+              Where:
+                <name> is any string that will be the name of the term.
+Children:     Text (with markup)
+Groups with:  @item
+Examples:
+
+________________________________________________________________________________
+
+Keyword:      @mapping - @endmapping
+Description:  Documentation of the layout of a mapping.
+Arguments:    -
+Children:     @member
+Examples:     @mapping
+                @member int "ip"
+                  The IP# of the host.
+                @member string "address"
+                  The name of the host.
+              @endmapping
+
+________________________________________________________________________________
+
+Keyword:      @member
+Description:  Documentation for a member of a mapping.
+              Only inside @mapping - @endmapping.
+Arguments:    <type> <index_value>
+              Where:
+                <type> is the Pike type of the value stored at the index.
+                <index_value> is the index value. Can be a string or integer
+                  literal, or an identifier.
+Children:     -
+Groups with:  -
+Examples:     @member string "name"
+              @member int "age"
+                These two entries in the mapping provide personal data.
+
+________________________________________________________________________________
+
+Keyword:      @ref{ ... @}
+Description:  A reference to a Pike entity. There is also a shortcut for this
+              keyword, since it is expected to be so common: @[ ... ]
+Children:     Text that will be interpreted as a Pike name.
+Groups with:  -
+Examples:     My favourite class is @ref{Vanilla.Ice.Cream@}, it tastes much
+              better than @[Nougat.Glass] or @[`+].
+
+________________________________________________________________________________
+
+Keyword:      @section - @endsection
+Description:  Begin a new section in the text.
+Arguments:    <name>
+              Where:
+                <name> is any text that is the name of the section.
+Children:     Text (with markup)
+Groups with:  -
+Examples:
+              @section One - Introduction
+                ...
+              @endsection
+              @section Two - Intrinsics & Details about the Interface
+                ...
+              @endsection
+
+________________________________________________________________________________
+
+Keyword:      @tt{ ... @}
+Description:  Teletype.
+Children:     Text that will be rendered in teletype.
+Examples:     Type @tt{rm -rf *@} to erase several days of work.
+
+________________________________________________________________________________
+
+Keyword:      @xml{ ... @}
+Description:  XML escape. Inside this tag the characters <>& are not quoted and
+              this makes it possible to insert raw XML. Note that the usual
+              rules apply to @ and that @i{...@}-style tags can be used inside.
+Children:     Text with markup.
+Examples:     @xml{<b>Bold</b> and @i{italic@}@}
+
+________________________________________________________________________________
+
