@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: html.c,v 1.168 2004/02/10 22:46:07 mast Exp $
+|| $Id: html.c,v 1.169 2004/03/02 13:01:05 nilsson Exp $
 */
 
 #include "global.h"
@@ -57,22 +57,22 @@ extern struct program *parser_html_program;
  * can't see the point with making these things changeable. */
 /* #define CONFIGURABLE_MARKUP */
 
-/*
-**! module Parser
-**! class HTML
-**!	This is a simple parser for SGML structured markups.
-**!	It's not really HTML, but it's useful for that 
-**!	purpose. 
-**!
-**!	<p>The simple way to use it is to give it some information
-**!	about available tags and containers, and what 
-**!	callbacks those is to call. 
-**!
-**!	<p>The object is easily reused, by calling the <ref>clone</ref>()
-**!	function. 
-**!
-**! see also: add_tag, add_container, clone
-*/
+/*! @module Parser
+ */
+
+/*! @class HTML
+ *! This is a simple parser for SGML structured markups. It's not
+ *! really HTML, but it's useful for that *! purpose.
+ *!
+ *! The simple way to use it is to give it some information about
+ *! available tags and containers, and what callbacks those is to
+ *! call.
+ *!
+ *! The object is easily reused, by calling the @[clone()] function.
+ *!
+ *! @seealso
+ *!  @[add_tag], @[add_container], @[finish]
+ */
 
 struct location
 {
@@ -792,37 +792,32 @@ static void exit_html_struct(struct object *o)
 
 /****** setup callbacks *****************************/
 
-/*
-**! method Parser.HTML _set_tag_callback(function to_call)
-**! method Parser.HTML _set_entity_callback(function to_call)
-**! method Parser.HTML _set_data_callback(function to_call)
-**!	These functions set up the parser object to
-**!	call the given callbacks upon tags, entities
-**!	and/or data.
-**!
-**!	<p>The callbacks will <i>only</i> be called if there isn't
-**!	another tag/container/entity handler for these.
-**!
-**!	<p>The function will be called with the parser
-**!	object as first argument, and the active string
-**!	as second. 
-**!
-**!	<p>Note that no parsing of the contents has been done.
-**!	Both endtags and normal tags are called, there is
-**!	no container parsing.
-**!
-**!	<p>The return values from the callbacks are handled in the
-**!	same way as the return values from callbacks registered with
-**!	<ref>add_tag</ref> and similar functions.
-**!
-**!	<p>The data callback will be called as seldom as possible with
-**!	the longest possible string, as long as it doesn't get called
-**!	out of order with any other callback. It will never be called
-**!	with a zero length string.
-**!
-**! returns the object being called
-**!
-*/
+/*! @decl Parser.HTML _set_tag_callback(function to_call)
+ *! @decl Parser.HTML _set_entity_callback(function to_call)
+ *! @decl Parser.HTML _set_data_callback(function to_call)
+ *!
+ *! These functions set up the parser object to call the given
+ *! callbacks upon tags, entities and/or data. The callbacks will
+ *! @i{only@} be called if there isn't another tag/container/entity
+ *! handler for these.
+ *!
+ *! The callback function will be called with the parser object as
+ *! first argument, and the active string as second. Note that no
+ *! parsing of the contents has been done. Both endtags and normal
+ *! tags are called; there is no container parsing.
+ *!
+ *! The return values from the callbacks are handled in the same way
+ *! as the return values from callbacks registered with @[add_tag] and
+ *! similar functions.
+ *!
+ *! The data callback will be called as seldom as possible with the
+ *! longest possible string, as long as it doesn't get called out of
+ *! order with any other callback. It will never be called with a zero
+ *! length string.
+ *!
+ *! @returns
+ *!   Returns the object being called.
+ */
 
 static void html__set_tag_callback(INT32 args)
 {
@@ -851,79 +846,88 @@ static void html__set_entity_callback(INT32 args)
    ref_push_object(THISOBJ);
 }
 
-/*
-**! method Parser.HTML add_tag(string name,mixed to_do)
-**! method Parser.HTML add_container(string name,mixed to_do)
-**! method Parser.HTML add_entity(string entity,mixed to_do)
-**! method Parser.HTML add_quote_tag(string name,mixed to_do,string end)
-**! method Parser.HTML add_tags(mapping(string:mixed) tags)
-**! method Parser.HTML add_containers(mapping(string:mixed) containers)
-**! method Parser.HTML add_entities(mapping(string:mixed) entities)
-**!	Registers the actions to take when parsing various things.
-**!	Tags, containers, entities are as usual. add_quote_tag() adds
-**!	a special kind of tag that reads any data until the next
-**!	occurrence of the end string immediately before a tag end.
-**!
-**!	<tt>to_do</tt> can be:
-**!
-**!	<ul>
-**!
-**!	<li><b>a function</b> to be called. The function is on the form
-**!	<pre>
-**!     mixed tag_callback(Parser.HTML parser,mapping args,mixed ... extra)
-**!	mixed container_callback(Parser.HTML parser,mapping args,string content,mixed ... extra)
-**!	mixed entity_callback(Parser.HTML parser,mixed ... extra)
-**!	mixed quote_tag_callback(Parser.HTML parser,string content,mixed ... extra)
-**!	</pre>
-**!	depending on what realm the function is called by.</li>
-**!
-**!	<li><b>a string</b>. This tag/container/entity is then replaced
-**!	by the string. The string is normally not reparsed, i.e. it's
-**!	equivalent to writing a function that returns the string in an
-**!	array (but a lot faster). If <ref>reparse_strings</ref> is
-**!	set the string will be reparsed, though.</li>
-**!
-**!	<li><b>an array</b>. The first element is a function as above.
-**!	It will receive the rest of the array as extra arguments. If
-**!	extra arguments are given by <ref>set_extra</ref>(), they will
-**!	appear after the ones in this array.</li>
-**!
-**!	<li><b>zero</b>. If there is a tag/container/entity with the
-**!	given name in the parser, it's removed.</li>
-**!
-**!	</ul>
-**!
-**!     The callback function can return:
-**!
-**!	<ul>
-**!
-**!	<li><b>a string</b>; this string will be pushed on the parser
-**!	stack and be parsed. Be careful not to return anything
-**!	in this way that could lead to a infinite recursion.</li>
-**!
-**!	<li><b>an array</b>; the element(s) of the array is the result
-**!	of the function. This will not be parsed. This is useful for
-**!	avoiding infinite recursion. The array can be of any size,
-**!	this means the empty array is the most effective to return if
-**!	you don't care about the result. If the parser is operating in
-**!	<ref>mixed_mode</ref>, the array can contain anything.
-**!	Otherwise only strings are allowed.</li>
-**!
-**!	<li><b>zero</b>; this means "don't do anything", ie the
-**!	item that generated the callback is left as it is, and
-**!	the parser continues.</li>
-**!
-**!	<li><b>one</b>; reparse the last item again. This is useful to
-**!	parse a tag as a container, or vice versa: just add or remove
-**!	callbacks for the tag and return this to jump to the right
-**!	callback.</li>
-**!	</ul>
-**!
-**! returns the object being called
-**!
-**! see also: tags, containers, entities
-**!	
-*/
+/*! @decl Parser.HTML add_tag(string name,mixed to_do)
+ *! @decl Parser.HTML add_container(string name,mixed to_do)
+ *! @decl Parser.HTML add_entity(string entity,mixed to_do)
+ *! @decl Parser.HTML add_quote_tag(string name,mixed to_do,string end)
+ *! @decl Parser.HTML add_tags(mapping(string:mixed) tags)
+ *! @decl Parser.HTML add_containers(mapping(string:mixed) containers)
+ *! @decl Parser.HTML add_entities(mapping(string:mixed) entities)
+ *!
+ *! Registers the actions to take when parsing various things. Tags,
+ *! containers, entities are as usual. @[add_quote_tag()] adds a special
+ *! kind of tag that reads any data until the next occurrence of the
+ *! end string immediately before a tag end.
+ *!
+ *! @param to_do
+ *!   This argument can be any of the following.
+ *!
+ *!   @mixed
+' *!	@type function
+ *!       The function will be called as a callback function. It will
+ *!       get the following arguments, depending on the type of
+ *!       callback.
+ *!	@pre{
+ *! mixed tag_callback(Parser.HTML parser,mapping args,mixed ... extra)
+ *! mixed container_callback(Parser.HTML parser,mapping args,string content,mixed ... extra)
+ *! mixed entity_callback(Parser.HTML parser,mixed ... extra)
+ *! mixed quote_tag_callback(Parser.HTML parser,string content,mixed ... extra)
+ *!	@}
+ *!
+ *!     @type string
+ *!       This tag/container/entity is then replaced by the string.
+ *!       The string is normally not reparsed, i.e. it's equivalent to
+ *!       writing a function that returns the string in an array (but
+ *!       a lot faster). If @[reparse_strings] is set the string will
+ *!       be reparsed, though.
+ *!
+ *!     @type array
+ *!       The first element is a function as above. It will receive
+ *!       the rest of the array as extra arguments. If extra arguments
+ *!       are given by @[set_extra()], they will appear after
+ *!       the ones in this array.
+ *!
+ *!     @type int(0..)
+ *!       If there is a tag/container/entity with the given name in
+ *!       the parser, it's removed.
+ *!
+ *!   @endmixed
+ *!
+ *! The callback function can return:
+ *!
+ *!   @mixed
+ *!
+ *!	@type string
+ *!       This string will be pushed on the parser stack and be
+ *!       parsed. Be careful not to return anything in this way that
+ *!       could lead to a infinite recursion.
+ *!
+ *!	@type array
+ *!       The element(s) of the array is the result of the function.
+ *!       This will not be parsed. This is useful for avoiding
+ *!       infinite recursion. The array can be of any size, this means
+ *!       the empty array is the most effective to return if you don't
+ *!       care about the result. If the parser is operating in
+ *!       @[mixed_mode], the array can contain anything. Otherwise
+ *!       only strings are allowed.
+ *!
+ *!	@type int(0..0)
+ *!       This means "don't do anything", ie the item that generated
+ *!       the callback is left as it is, and the parser continues.
+ *!
+ *!	@type int(1..1)
+ *!       Reparse the last item again. This is useful to parse a tag
+ *!       as a container, or vice versa: just add or remove callbacks
+ *!       for the tag and return this to jump to the right callback.
+ *!   @endmixed
+ *!
+ *! @returns
+ *!   Returns the object being called.
+ *!
+ *! @seealso
+ *!   @[tags], @[containers], @[entities]
+ *!	
+ */
 
 static void html_add_tag(INT32 args)
 {
@@ -1237,18 +1241,20 @@ static void html_add_entities(INT32 args)
    ref_push_object(THISOBJ);
 }
 
-/*
-**! method Parser.HTML clear_tags()
-**! method Parser.HTML clear_containers()
-**! method Parser.HTML clear_entities()
-**! method Parser.HTML clear_quote_tags()
-**!	Removes all registered definitions in the different
-**!	categories.
-**!
-**! returns the object being called
-**!
-**! see also: add_tag, add_tags, add_container, add_containers, add_entity, add_entities
-*/
+/*! @decl Parser.HTML clear_tags()
+ *! @decl Parser.HTML clear_containers()
+ *! @decl Parser.HTML clear_entities()
+ *! @decl Parser.HTML clear_quote_tags()
+ *!
+ *! Removes all registered definitions in the different categories.
+ *!
+ *! @returns
+ *!   Returns the object being called.
+ *!
+ *! @seealso
+ *!   @[add_tag], @[add_tags], @[add_container], @[add_containers],
+ *!   @[add_entity], @[add_entities]
+ */
 
 static void html_clear_tags (INT32 args)
 {
@@ -1282,24 +1288,20 @@ static void html_clear_quote_tags (INT32 args)
   ref_push_object (THISOBJ);
 }
 
-/*
-**! method mapping tags()
-**! method mapping containers()
-**! method mapping entities()
-**! method mapping quote_tags()
-**!	Returns the current callback settings. For quote_tags, the
-**!	values are arrays ({callback, end_quote}).
-**!
-**!	<p>Note that when matching is done case insensitively, all names
-**!	will be returned in lowercase.
-**!
-**!	<p>Implementation note: With the exception of quote_tags(), these
-**!	run in constant time since they return copy-on-write mappings.
-**!	However, quote_tags() allocates a new mapping and thus runs in
-**!	linear time.
-**!
-**! see also: add_tag, add_tags, add_container, add_containers, add_entity, add_entities
-*/
+/*! @decl mapping(string:mixed) tags()
+ *! @decl mapping(string:mixed) containers()
+ *! @decl mapping(string:mixed) entities()
+ *!
+ *! Returns the current callback settings. When matching is done case
+ *! insensitively, all names will be returned in lowercase.
+ *!
+ *! Implementation note: These run in constant time since they return
+ *! copy-on-write mappings.
+ *!
+ *! @seealso
+ *!   @[add_tag], @[add_tags], @[add_container], @[add_containers],
+ *!   @[add_entity], @[add_entities]
+ */
 
 static void html_tags(INT32 args)
 {
@@ -1318,6 +1320,19 @@ static void html_entities(INT32 args)
    pop_n_elems(args);
    push_mapping(copy_mapping(THIS->mapentity)); /* deferred copy */
 }
+
+/*! @decl mapping(string:array(mixed|string)) quote_tags()
+ *!
+ *! Returns the current callback settings. The values are arrays
+ *! ({callback, end_quote}). When matching is done case insensitively,
+ *! all names will be returned in lowercase.
+ *!
+ *! Implementation note: @[quote_tags()] allocates a new mapping for
+ *! every call and thus, unlike e.g. @[tags()] runs in linear time.
+ *!
+ *! @seealso
+ *!   @[add_quote_tag]
+ */
 
 static void html_quote_tags(INT32 args)
 {
@@ -3817,26 +3832,24 @@ static void low_feed(struct pike_string *ps)
    }
 }
 
-/*
-**! method Parser.HTML feed()
-**! method Parser.HTML feed(string s)
-**! method Parser.HTML feed(string s,int do_parse)
-**!	Feed new data to the <ref>Parser.HTML</ref>
-**!	object. This will start a scan and may result in
-**!	callbacks. Note that it's possible that all 
-**!	data fed isn't processed - to do that, call
-**!	<ref>finish</ref>().
-**!
-**!	<p>If the function is called without arguments,
-**!	no data is fed, but the parser is run.
-**!
-**!	<p>If the string argument is followed by a 0,
-**!	<tt>-&gt;feed(s,0);</tt>, the string is fed,
-**!	but the parser isn't run.
-**!
-**! returns the object being called
-**! see also: finish, read, feed_insert
-*/
+/*! @decl Parser.HTML feed()
+ *! @decl Parser.HTML feed(string s, void|int do_parse)
+ *!
+ *! Feed new data to the @[Parser.HTML] object. This will start a scan
+ *! and may result in callbacks. Note that it's possible that all data
+ *! fed isn't processed - to do that, call @[finish()].
+ *!
+ *! If the function is called without arguments, no data is fed, but
+ *! the parser is run. If the string argument is followed by a
+ *! @expr{0@}, @expr{->feed(s,0);@}, the string is fed, but the parser
+ *! isn't run.
+ *!
+ *! @returns
+ *!   Returns the object being called.
+ *!
+ *! @seealso
+ *!   @[finish], @[read], @[feed_insert]
+ */
 
 static void html_feed(INT32 args)
 {
@@ -3863,14 +3876,15 @@ static void html_feed(INT32 args)
    ref_push_object(THISOBJ);
 }
 
-/*
-**! method Parser.HTML feed_insert(string s)
-**!	This pushes a string on the parser stack.
-**!	(I'll write more about this mechanism later.)
-**!
-**! returns the object being called
-**! note: don't use
-*/
+/*! @decl Parser.HTML feed_insert(string s)
+ *! This pushes a string on the parser stack.
+ *!
+ *! @returns
+ *!   Returns the object being called.
+ *!
+ *! @note
+ *!   Don't use!
+ */
 
 static void html_feed_insert(INT32 args)
 {
@@ -3896,14 +3910,14 @@ static void html_feed_insert(INT32 args)
    ref_push_object(THISOBJ);
 }
 
-/*
-**! method Parser.HTML finish()
-**! method Parser.HTML finish(string s)
-**!	Finish a parser pass. A string may be sent here, similar to
-**!	feed().
-**!
-**! returns the object being called
-*/
+/*! @decl Parser.HTML finish()
+ *! @decl Parser.HTML finish(string s)
+ *! Finish a parser pass. A string may be sent here, similar to
+ *! feed().
+ *!
+ *! @returns
+ *!   Returns the object being called.
+ */
 
 static void html_finish(INT32 args)
 {
@@ -3918,14 +3932,14 @@ static void html_finish(INT32 args)
    ref_push_object(THISOBJ);
 }
 
-/*
-**! method string|array(mixed) read()
-**! method string|array(mixed) read(int max_elems)
-**!	Read parsed data from the parser object. 
-**!
-**! returns a string of parsed data if the parser isn't in
-**!	<ref>mixed_mode</ref>, an array of arbitrary data otherwise.
-*/
+/*! @decl string|array(mixed) read()
+ *! @decl string|array(mixed) read(int max_elems)
+ *! Read parsed data from the parser object.
+ *!
+ *! @returns
+ *!   Returns a string of parsed data if the parser isn't in
+ *!   @[mixed_mode], an array of arbitrary data otherwise.
+ */
 
 static void html_read(INT32 args)
 {
@@ -4025,16 +4039,16 @@ static void html_read(INT32 args)
    }
 }
 
-/*
-**! method Parser.HTML write_out(mixed ... args)
-**!	Send data to the output stream, i.e. it won't be parsed and
-**!	it won't be sent to the data callback, if any.
-**!
-**!	<p>Any data is allowed when the parser is running in
-**!	<ref>mixed_mode</ref>. Only strings are allowed otherwise.
-**!
-**! returns the object being called
-*/
+/*! @decl Parser.HTML write_out(mixed ... args)
+ *! Send data to the output stream, i.e. it won't be parsed and it
+ *! won't be sent to the data callback, if any.
+ *!
+ *! Any data is allowed when the parser is running in @[mixed_mode].
+ *! Only strings are allowed otherwise.
+ *!
+ *! @returns
+ *!   Returns the object being called.
+ */
 
 static void html_write_out(INT32 args)
 {
@@ -4051,17 +4065,24 @@ static void html_write_out(INT32 args)
 
 /** query *******************************************/
 
-/* 
-**! method array(int) at();
-**! method int at_line();
-**! method int at_char();
-**! method int at_column();
-**!	Returns the current position. Characters and columns count
-**!	from 0, lines count from 1.
-**!
-**!	<p><ref>at</ref>() gives an array consisting of
-**!	({<i>line</i>,<i>char</i>,<i>column</i>}), in that order.
-*/
+/*! @decl array(int) at()
+ *! @decl int at_line()
+ *! @decl int at_char()
+ *! @decl int at_column()
+ *!
+ *! Returns the current position. Characters and columns count from
+ *! @expr{0@}, lines count from @expr{1@}.
+ *!
+ *! @[at()] gives an array with the following layout.
+ *! @array
+ *!   @elem int 0
+ *!     Line.
+ *!   @elem int 1
+ *!     Character.
+ *!   @elem int 2
+ *!     Column.
+ *! @endarray
+ */
 
 static void html_at_line(INT32 args)
 {
@@ -4090,13 +4111,12 @@ static void html_at(INT32 args)
    f_aggregate(3);
 }
 
-/*
-**! method string current()
-**!	Gives the current range of data, ie the whole tag/entity/etc
-**!	being parsed in the current callback. Returns zero if there's
-**!	no current range, i.e. when the function is not called in a
-**!	callback.
-*/
+/*! @decl string current()
+ *!
+ *! Gives the current range of data, ie the whole tag/entity/etc being
+ *! parsed in the current callback. Returns zero if there's no current
+ *! range, i.e. when the function is not called in a callback.
+ */
 
 static void html_current(INT32 args)
 {
@@ -4109,34 +4129,40 @@ static void html_current(INT32 args)
       push_int(0);
 }
 
-/*
-**! method array tag()
-**! method string tag_name()
-**! method mapping(string:mixed) tag_args()
-**! method string tag_content()
-**! method array tag(mixed default_value)
-**! method string tag_args(mixed default_value)
-**!     These give parsed information about the current thing being
-**!     parsed, e.g. the current tag, container or entity. They return
-**!     zero if they're not applicable.
-**!
-**!	<p><tt>tag_name</tt> gives the name of the current tag. If used
-**!	from an entity callback, it gives the string inside the
-**!	entity.
-**!
-**!	<p><tt>tag_args</tt> gives the arguments of the current tag,
-**!	parsed to a convenient mapping consisting of key:value pairs.
-**!	If the current thing isn't a tag, it gives zero. default_value
-**!	is used for arguments which have no value in the tag. If
-**!	default_value isn't given, the value is set to the same string
-**!	as the key.
-**!
-**!	<p><tt>tag_content</tt> gives the content of the current tag, if
-**!	it's a container or quote tag.
-**!
-**!	<p><tt>tag()</tt> gives the equivalent of
-**!	<tt>({tag_name(),tag_args(), tag_content()})</tt>.
-*/
+/*! @decl string tag_name()
+ *!
+ *! Gives the name of the current tag, or zero. If used from an entity
+ *! callback, it gives the string inside the entity.
+ *!
+ */
+
+/*! @decl mapping(string:mixed) tag_args(void|mixed default_value)
+ *!
+ *! Gives the arguments of the current tag, parsed to a convenient
+ *! mapping consisting of key:value pairs. If the current thing isn't
+ *! a tag, it gives zero. @[default_value] is used for arguments which
+ *! have no value in the tag. If @[default_value] isn't given, the
+ *! value is set to the same string as the key.
+ */
+
+/*! @decl string tag_content()
+ *!
+ *! Gives the content of the current tag, if it's a container or quote
+ *! tag. Otherwise returns zero.
+ */
+
+/*! @decl array tag(void|mixed default_value)
+ *!
+ *! Returns the equivalent of the following calls.
+ *! @array
+ *!   @elem string 0
+ *!     @expr{tag_name()@}
+ *!   @elem mapping(string:mixed) 1
+ *!     @expr{tag_args(default_value)@}
+ *!   @elem string 2
+ *!     @expr{tag_content()@}
+ *! @endarray
+ */
 
 static void tag_name(struct parser_html_storage *this,struct piece *feed,
 		     ptrdiff_t c, int skip_tag_start)
@@ -4469,30 +4495,30 @@ static void html_tag(INT32 args)
    f_aggregate(3);
 }
 
-/*
-**! method string context()
-**!	Returns the current output context as a string:
-**!
-**!	<ul>
-**!
-**!	<li><b>"data"</b>: In top level data. This is always returned
-**!	when called from tag or container callbacks.</li>
-**!
-**!	<li><b>"arg"</b>: In an unquoted argument.</li>
-**!
-**!	<li><b>A single character string</b>: In a quoted argument.
-**!	The string contains the starting quote character.</li>
-**!
-**!	<li><b>"splice_arg"</b>: In a splice argument.</li>
-**!
-**!	</ul>
-**!
-**!	<p>This function is typically only useful in entity callbacks,
-**!	which can be called both from text and argument values of
-**!	different sorts.
-**!
-**! see also: splice_arg
-*/
+/*! @decl string context()
+ *! Returns the current output context as a string.
+ *!
+ *! @string
+ *!   @value "data"
+ *!     In top level data. This is always returned when called from
+ *!     tag or container callbacks.
+ *!   @value "arg"
+ *!     In an unquoted argument.
+ *!   @value "splice_arg"
+ *!     In a splice argument.
+ *! @endstring
+ *!
+ *! The return value can also be a single character string, in which
+ *! case the context is a quoted argument. The string contains the
+ *! starting quote character.
+ *!
+ *! This function is typically only useful in entity callbacks, which
+ *! can be called both from text and argument values of different
+ *! sorts.
+ *!
+ *! @seealso
+ *!   @[splice_arg]
+ */
 
 static void html_context(INT32 args)
 {
@@ -4508,13 +4534,14 @@ static void html_context(INT32 args)
   }
 }
 
-/*
-**! method string parse_tag_name(string tag)
-**!	Parses the tag name from a tag string without the surrounding
-**!	brackets, i.e. a string on the form "<tt>tagname some="tag"
-**!	args</tt>".
-**! returns the tag name or an empty string if none
-*/
+/*! @decl string parse_tag_name(string tag)
+ *!
+ *! Parses the tag name from a tag string without the surrounding
+ *! brackets, i.e. a string on the form @expr{"tagname some='tag'
+ *! args"@}.
+ *! @returns
+ *!   Returns the tag name or an empty string if none.
+ */
 
 static void html_parse_tag_name(INT32 args)
 {
@@ -4526,14 +4553,18 @@ static void html_parse_tag_name(INT32 args)
    stack_pop_n_elems_keep_top(args);
 }
 
-/*
-**! method mapping parse_tag_args(string tag)
-**!	Parses the tag arguments from a tag string without the name
-**!	and surrounding brackets, i.e. a string on the form
-**!	"<tt>some="tag" args</tt>".
-**! returns a mapping containing the tag arguments
-**! see also: tag_args
-*/
+/*! @decl mapping parse_tag_args(string tag)
+ *!
+ *! Parses the tag arguments from a tag string without the name and
+ *! surrounding brackets, i.e. a string on the form @expr{"some='tag'
+ *! args"@}.
+ *!
+ *! @returns
+ *!   Returns a mapping containing the tag arguments.
+ *!
+ *! @seealso
+ *!   @[tag_args]
+ */
 
 static void html_parse_tag_args(INT32 args)
 {
@@ -4547,15 +4578,14 @@ static void html_parse_tag_args(INT32 args)
 
 /** debug *******************************************/
 
-/*
-**! method mapping _inspect()
-**! 	This is a low-level way of debugging a parser.
-**!	This gives a mapping of the internal state
-**!	of the Parser.HTML object.
-**!
-**!	<p>The format and contents of this mapping may
-**!	change without further notice.
-*/
+/*! @decl mapping _inspect()
+ *!
+ *! This is a low-level way of debugging a parser. This gives a
+ *! mapping of the internal state of the Parser.HTML object.
+ *!
+ *! The format and contents of this mapping may change without further
+ *! notice.
+ */
 
 static void html__inspect(INT32 args)
 {
@@ -4683,24 +4713,22 @@ static void html_create(INT32 args)
    pop_n_elems(args);
 }
 
-/*
-**! method Parser.HTML clone(mixed ... args)
-**!	Clones the <ref>Parser.HTML</ref> object.
-**!	A new object of the same class is created,
-**!	filled with the parse setup from the 
-**!	old object.
-**!
-**!	<p>This is the simpliest way of flushing a
-**!	parse feed/output.
-**!
-**!	<p>The arguments to clone is sent to the
-**!	new object, simplifying work for custom classes 
-**!	that inherits <ref>Parser.HTML</ref>.
-**! returns the new object.
-**!
-**! note:
-**!	create is called _before_ the setup is copied.
-*/
+/*! @decl Parser.HTML clone(mixed ... args)
+ *!
+ *! Clones the @[Parser.HTML] object. A new object of the same class
+ *! is created, filled with the parse setup from the old object.
+ *!
+ *! This is the simpliest way of flushing a parse feed/output.
+ *!
+ *! The arguments to clone is sent to the new object, simplifying work
+ *! for custom classes that inherits @[Parser.HTML].
+ *!
+ *! @returns
+ *!   Returns the new object.
+ *!
+ *! @note
+ *!   create is called _before_ the setup is copied.
+ */
 
 static void html_clone(INT32 args)
 {
@@ -4783,13 +4811,14 @@ static void html_clone(INT32 args)
 
 /****** setup ***************************************/
 
-/*
-**! method Parser.HTML set_extra(mixed ...args)
-**!	Sets the extra arguments passed to all tag, container and
-**!	entity callbacks.
-**!
-**! returns the object being called
-*/
+/*! @decl Parser.HTML set_extra(mixed ...args)
+ *!
+ *! Sets the extra arguments passed to all tag, container and entity
+ *! callbacks.
+ *!
+ *! @returns
+ *!   Returns the object being called.
+ */
 
 static void html_set_extra(INT32 args)
 {
@@ -4806,12 +4835,12 @@ static void html_set_extra(INT32 args)
    ref_push_object(THISOBJ);
 }
 
-/*
-**! method array get_extra()
-**!	Gets the extra arguments set by <ref>set_extra</ref>().
-**!
-**! returns the object being called
-*/
+/*! @decl array get_extra()
+ *! Gets the extra arguments set by @[set_extra()].
+ *!
+ *! @returns
+ *!   Returns the object being called.
+ */
 
 static void html_get_extra(INT32 args)
 {
@@ -4822,24 +4851,24 @@ static void html_get_extra(INT32 args)
     ref_push_array (&empty_array);
 }
 
-/*
-**! method string splice_arg(void|string name)
-**!	If given a string, it sets the splice argument name to it. It
-**!	returns the old splice argument name.
-**!
-**!	<p>If a splice argument name is set, it's parsed in all tags,
-**!	both those with callbacks and those without. Wherever it
-**!	occurs, its value (after being parsed for entities in the
-**!	normal way) is inserted directly into the tag. E.g:
-**!	<pre>
-**!	&lt;foo arg1="val 1" splice="arg2='val 2' arg3" arg4&gt;
-**!	</pre>
-**!	becomes
-**!	<pre>
-**!	&lt;foo arg1="val 1" arg2='val 2' arg3 arg4&gt;
-**!	</pre>
-**!	if "splice" is set as the splice argument name.
-*/
+/*! @decl string splice_arg(void|string name)
+ *!
+ *! If given a string, it sets the splice argument name to it. It
+ *! returns the old splice argument name.
+ *!
+ *! If a splice argument name is set, it's parsed in all tags, both
+ *! those with callbacks and those without. Wherever it occurs, its
+ *! value (after being parsed for entities in the normal way) is
+ *! inserted directly into the tag. E.g:
+ *!
+ *! @pre{<foo arg1="val 1" splice="arg2='val 2' arg3" arg4>@}
+ *!
+ *! becomes
+ *!
+ *! @pre{<foo arg1="val 1" arg2='val 2' arg3 arg4>@}
+ *!
+ *! if @expr{"splice"@} is set as the splice argument name.
+ */
 
 static void html_splice_arg (INT32 args)
 {
@@ -4858,106 +4887,112 @@ static void html_splice_arg (INT32 args)
    else push_int (0);
 }
 
-/*
-**! method int case_insensitive_tag(void|int value)
-**! method int ignore_tags(void|int value)
-**! method int ignore_unknown(void|int value)
-**! method int lazy_argument_end(void|int value)
-**! method int lazy_entity_end(void|int value)
-**! method int match_tag(void|int value)
-**! method int max_parse_depth(void|int value)
-**! method int mixed_mode(void|int value)
-**! method int reparse_strings(void|int value)
-**! method int ws_before_tag_name(void|int value)
-**! method int xml_tag_syntax(void|int value)
-**!	Functions to query or set flags. These set the associated flag
-**!	to the value if any is given and returns the old value.
-**!
-**!	<p>The flags are:
-**!
-**!	<ul>
-**!
-**!	<li><b>case_insensitive_tag</b>: All tags and containers
-**!	are matched case insensitively, and argument names are
-**!	converted to lowercase. Tags added with
-**!	<ref>add_quote_tag</ref>() are not affected, though. Switching
-**!	to case insensitive mode and back won't preserve the case of
-**!	registered tags and containers.</li>
-**!
-**!	<li><b>ignore_tags</b>: Do not look for tags at all.
-**!	Normally tags are matched even when there's no callbacks for
-**!	them at all. When this is set, the tag delimiters '&lt;' and
-**!	'&gt;' will be treated as any normal character.</li>
-**!
-**!	<li><b>ignore_unknown</b>: Treat unknown tags and entities
-**!	as text data, continuing parsing for tags and entities inside
-**!	them.</li>
-**!
-**!	<li><b>lazy_argument_end</b>: A '&gt;' in a tag argument
-**!	closes both the argument and the tag, even if the argument is
-**!	quoted.</li>
-**!
-**!	<li><b>lazy_entity_end</b>: Normally, the parser search
-**!	indefinitely for the entity end character (i.e. ';'). When
-**!	this flag is set, the characters '&', '&lt;', '&gt;', '"',
-**!	''', and any whitespace breaks the search for the entity end,
-**!	and the entity text is then ignored, i.e. treated as data.</li>
-**!
-**!	<li><b>match_tag</b>: Unquoted nested tag starters and
-**!	enders will be balanced when parsing tags. This is the
-**!	default.</li>
-**!
-**!	<li><b>max_stack_depth</b>: Maximum recursion depth during
-**!	parsing. Recursion occurs when a tag/container/entity/quote
-**!	tag callback function returns a string to be reparsed. The
-**!	default value is 10.</li>
-**!
-**!	<li><b>mixed_mode</b>: Allow callbacks to return arbitrary
-**!	data in the arrays, which will be concatenated in the output.</li>
-**!
-**!	<li><b>reparse_strings</b>: When a plain string is used as
-**!	a tag/container/entity/quote tag callback, it's not reparsed
-**!	if this flag is unset. Setting it causes all such strings to
-**!	be reparsed.</li>
-**!
-**!	<li><b>ws_before_tag_name</b>: Allow whitespace between the
-**!	tag start character and the tag name.</li>
-**!
-**!	<li><b>xml_tag_syntax</b>: Whether or not to use XML syntax
-**!	to tell empty tags and container tags apart:<br>
-**!
-**!	<b>0</b>: Use HTML syntax only. If there's a '/' last in a
-**!	tag, it's just treated as any other argument.<br>
-**!
-**!	<b>1</b>: Use HTML syntax, but ignore a '/' if it comes
-**!	last in a tag. This is the default.<br>
-**!
-**!	<b>2</b>: Use XML syntax, but when a tag that does not end
-**!	with '/&gt;' is found which only got a non-container tag
-**!	callback, treat it as a non-container (i.e. don't start to
-**!	seek for the container end).<br>
-**!
-**!	<b>3</b>: Use XML syntax only. If a tag got both container
-**!	and non-container callbacks, the non-container callback is
-**!	called when the empty element form (i.e. the one ending with
-**!	'/&gt;') is used, and the container callback otherwise. If
-**!	only a container callback exists, it gets the empty string as
-**!	content when there's none to be parsed. If only a
-**!	non-container callback exists, it will be called (without the
-**!	content argument) for both kinds of tags.</li>
-**!
-**!     </ul>
-**!
-**! note:
-**!	When functions are specified with
-**!	<ref>_set_tag_callback</ref>() or
-**!	<ref>_set_entity_callback</ref>(), all tags or entities,
-**!	respectively, are considered known. However, if one of those
-**!	functions return 1 and ignore_unknown is set, they are treated
-**!	as text data instead of making another call to the same
-**!	function again.
-**!
-*/
+/*! @decl int case_insensitive_tag(void|int value)
+ *!
+ *! All tags and containers are matched case insensitively, and
+ *! argument names are converted to lowercase. Tags added with
+ *! @[add_quote_tag()] are not affected, though. Switching to case
+ *! insensitive mode and back won't preserve the case of registered
+ *! tags and containers.
+ */
+
+/*! @decl int ignore_tags(void|int value)
+ *!
+ *! Do not look for tags at all. Normally tags are matched even when
+ *! there's no callbacks for them at all. When this is set, the tag
+ *! delimiters @expr{'<'@} and @expr{'>'@} will be treated as any
+ *! normal character.
+ */
+
+/*! @decl int ignore_unknown(void|int value)
+ *!
+ *! Treat unknown tags and entities as text data, continuing parsing
+ *! for tags and entities inside them.
+ *!
+ *! @note
+ *!   When functions are specified with @[_set_tag_callback()] or
+ *!   @[_set_entity_callback()], all tags or entities, respectively,
+ *!   are considered known. However, if one of those functions return
+ *!   1 and ignore_unknown is set, they are treated as text data
+ *!   instead of making another call to the same function again.
+ */
+
+/*! @decl int lazy_argument_end(void|int value)
+ *!
+ *! A @expr{'>'@} in a tag argument closes both the argument and the
+ *! tag, even if the argument is quoted.
+ */
+
+/*! @decl int lazy_entity_end(void|int value)
+ *!
+ *! Normally, the parser search indefinitely for the entity end
+ *! character (i.e. @expr{';'@}). When this flag is set, the
+ *! characters @expr{'&'@}, @expr{'<'@}, @expr{'>'@}, @expr{'"'@},
+ *! @expr{'''@}, and any whitespace breaks the search for the entity
+ *! end, and the entity text is then ignored, i.e. treated as
+ *! data.
+ */
+
+/*! @decl int match_tag(void|int value)
+ *!
+ *! Unquoted nested tag starters and enders will be balanced when
+ *! parsing tags. This is the default.
+ */
+
+/*! @decl int max_parse_depth(void|int value)
+ *!
+ *! Maximum recursion depth during parsing. Recursion occurs when a
+ *! tag/container/entity/quote tag callback function returns a string
+ *! to be reparsed. The default value is @expr{10@}.
+ */
+
+/*! @decl int mixed_mode(void|int value)
+ *!
+ *! Allow callbacks to return arbitrary data in the arrays, which will
+ *! be concatenated in the output.
+ */
+
+/*! @decl int reparse_strings(void|int value)
+ *!
+ *! When a plain string is used as a tag/container/entity/quote tag
+ *! callback, it's not reparsed if this flag is unset. Setting it
+ *! causes all such strings to be reparsed.
+ */
+
+/*! @decl int ws_before_tag_name(void|int value)
+ *!
+ *! Allow whitespace between the tag start character and the tag
+ *! name.
+ */
+
+/*! @decl int xml_tag_syntax(void|int value)
+ *!
+ *! Whether or not to use XML syntax to tell empty tags and container
+ *! tags apart.
+ *!
+ *! @int
+ *!   @value 0
+ *!     Use HTML syntax only. If there's a @expr{'/'@} last in a tag,
+ *!     it's just treated as any other argument.
+ *!   @value 1
+ *!     Use HTML syntax, but ignore a @expr{'/'@} if it comes last in
+ *!     a tag. This is the default.
+ *!   @value 2
+ *!     Use XML syntax, but when a tag that does not end with
+ *!     @expr{'/>'@} is found which only got a non-container tag
+ *!     callback, treat it as a non-container (i.e. don't start to
+ *!     seek for the container end).
+ *!   @value 3
+ *!     Use XML syntax only. If a tag got both container and
+ *!     non-container callbacks, the non-container callback is called
+ *!     when the empty element form (i.e. the one ending with
+ *!     @expr{'/>'@}) is used, and the container callback otherwise.
+ *!     If only a container callback exists, it gets the empty string
+ *!     as content when there's none to be parsed. If only a
+ *!     non-container callback exists, it will be called (without the
+ *!     content argument) for both kinds of tags.
+ *! @endint
+ */
 
 static void html_ignore_tags(INT32 args)
 {
@@ -5190,6 +5225,13 @@ static void html_ignore_comments(INT32 args)
    pop_n_elems(args);
    push_int(o);
 }
+
+/*! @endclass
+ */
+
+/*! @endmodule
+ */
+
 
 /****** module init *********************************/
 
