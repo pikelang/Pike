@@ -5,7 +5,7 @@
 \*/
 /**/
 #include "global.h"
-RCSID("$Id: las.c,v 1.240 2001/02/24 15:45:06 grubba Exp $");
+RCSID("$Id: las.c,v 1.241 2001/02/25 13:37:50 grubba Exp $");
 
 #include "language.h"
 #include "interpret.h"
@@ -2130,7 +2130,7 @@ static void low_print_tree(node *foo,int needlval)
   {
     char *s;
     init_buf();
-    low_describe_type(foo->type->str);
+    my_describe_type(foo->type);
     s=simple_free_buf();
     fprintf(stderr, "(%s){",s);
     free(s);
@@ -2143,7 +2143,7 @@ static void low_print_tree(node *foo,int needlval)
   {
     char *s;
     init_buf();
-    low_describe_type(foo->type->str);
+    my_describe_type(foo->type);
     s=simple_free_buf();
     fprintf(stderr, "[%s]{",s);
     free(s);

@@ -5,7 +5,7 @@
 \*/
 
 /*
- * $Id: pike_types.h,v 1.51 2001/02/23 14:44:20 grubba Exp $
+ * $Id: pike_types.h,v 1.52 2001/02/25 13:37:50 grubba Exp $
  */
 #ifndef PIKE_TYPES_H
 #define PIKE_TYPES_H
@@ -196,7 +196,7 @@ struct pike_type *debug_compiler_pop_type(void);
 struct pike_type *parse_type(char *s);
 void stupid_describe_type(char *a, ptrdiff_t len);
 void simple_describe_type(struct pike_type *s);
-char *low_describe_type(char *t);
+void my_describe_type(struct pike_type *type);
 struct pike_string *describe_type(struct pike_type *type);
 TYPE_T compile_type_to_runtime_type(struct pike_type *s);
 struct pike_type *or_pike_types(struct pike_type *a,
