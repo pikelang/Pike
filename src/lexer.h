@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: lexer.h,v 1.43 2003/02/26 12:34:58 mast Exp $
+|| $Id: lexer.h,v 1.44 2003/03/09 14:20:25 grubba Exp $
 */
 
 /*
@@ -722,7 +722,7 @@ static int low_yylex(YYSTYPE *yylval)
     {
       char *p1, *p2;
       double f;
-      long l;
+      long l = 0;
       struct svalue sval;
 
       lex.pos -= (1<<SHIFT);
