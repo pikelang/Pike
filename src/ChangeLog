@@ -1,3 +1,8 @@
+Mon May 19 03:00:49 1997  Fredrik Hubinette  <hubbe@cytocin.hubbe.net>
+
+	* Many bugfixes added
+	* support for combined Pike/C modules added
+
 Fri Apr 25 18:22:04 1997  Niels Möller  <nisse@infovav.se>
 
 	* modules/Gmp/mpz_glue.c (mpzmod_probably_prime_p): Added optional
