@@ -1,5 +1,5 @@
 /*
- * $Id: nt.c,v 1.4 1998/09/18 21:40:43 hubbe Exp $
+ * $Id: nt.c,v 1.5 1998/10/21 23:46:56 marcus Exp $
  *
  * NT system calls for Pike
  *
@@ -183,7 +183,7 @@ static void low_encode_user_info_0(USER_INFO_0 *tmp)
 {
 #define SAFE_PUSH_WSTR(X) \ 
   if(X) \
-    push_string(make_shared_string2((INT16 *) X)); \
+    push_string(make_shared_string1((INT16 *) X)); \
   else \
     push_int(0)
 
