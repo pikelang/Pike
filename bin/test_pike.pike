@@ -1,6 +1,6 @@
 #! /usr/bin/env pike
 
-/* $Id: test_pike.pike,v 1.98 2004/04/23 16:05:26 grubba Exp $ */
+/* $Id: test_pike.pike,v 1.99 2004/04/23 16:38:45 grubba Exp $ */
 
 #if !constant(_verify_internals)
 #define _verify_internals()
@@ -432,9 +432,11 @@ int main(int argc, array(string) argv)
     if (forked) {
       foreach(testsuites, string testsuite) {
 	Stdio.File p = Stdio.File();
+	Stdio.File p2 = p->pipe();
 	object pid =
 	  Process.create_process(forked + ({ testsuite }),
-				 ([ "stdout":p->pipe(Stdio.PROP_IPC) ]));
+				 ([ "stdout":p2 ]));
+	p2->close();
 	string raw_results;
 	string results = lower_case(raw_results = p->read());
 	int err = pid->wait();
