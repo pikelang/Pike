@@ -4,7 +4,7 @@
 ||| See the files COPYING and DISCLAIMER for more information.
 \*/
 #include "global.h"
-RCSID("$Id: main.c,v 1.50 1998/04/16 01:23:42 hubbe Exp $");
+RCSID("$Id: main.c,v 1.51 1998/04/24 00:26:59 hubbe Exp $");
 #include "fdlib.h"
 #include "backend.h"
 #include "module.h"
@@ -311,9 +311,9 @@ int dbm_main(int argc, char **argv)
     }
   }
 #endif
-
+  
   GETTIMEOFDAY(&current_time);
-
+  
   init_shared_string_table();
   init_interpreter();
   init_cpp();
