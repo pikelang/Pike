@@ -9185,7 +9185,7 @@ This method lists all available tables.
 <man_see>
 Yabu.db-&gt;table,
 Yabu.db-&gt;sync,
-Yabu.db-&gt;purge
+Yabu.db-&gt;purge,
 Yabu.db-&gt;_values
 </man_see>
 
@@ -9204,7 +9204,7 @@ This method returns all available tables.
 <man_see>
 Yabu.db-&gt;table,
 Yabu.db-&gt;sync,
-Yabu.db-&gt;purge
+Yabu.db-&gt;purge,
 Yabu.db-&gt;_indices
 </man_see>
 
@@ -9315,7 +9315,7 @@ This method lists all record names in the table.
 Yabu.table-&gt;set,
 Yabu.table-&gt;get,
 Yabu.table-&gt;delete,
-Yabu.table-&gt;purge
+Yabu.table-&gt;purge,
 Yabu.table-&gt;_values
 </man_see>
 
@@ -9335,7 +9335,7 @@ This method returns all record names in the table.
 Yabu.table-&gt;set,
 Yabu.table-&gt;get,
 Yabu.table-&gt;delete,
-Yabu.table-&gt;purge
+Yabu.table-&gt;purge,
 Yabu.table-&gt;_indices
 </man_see>
 
