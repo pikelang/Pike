@@ -1,7 +1,7 @@
 /*
 **! module Image
 **! note
-**!	$Id: layers.c,v 1.32 1999/08/10 10:13:21 mirar Exp $
+**!	$Id: layers.c,v 1.33 1999/08/10 12:57:36 mirar Exp $
 **! class Layer
 **! see also: layers
 **!
@@ -13,12 +13,16 @@
 **! 
 **! void write_image(string desc,
 **! 		     string filename,
-**! 		     Image img)
+**! 		     Image img,
+**!                  string longdesc)
 **! {
 **!    begin_tag("tr");
 **!    write(mktag("td",(["align":"right","valign":"center"]),
 **!          mktag("b",0,desc)));
 **!    write(mktag("td",(["align":"right"]),illustration_jpeg(img,(["dpi":150.0]))));
+**!    write(mktag("td",(["align":"left","valign":"center"]),
+**!          replace(longdesc,({",",";",")",({",<wbr>",";<wbr>",")<wbr>"}))))/
+**!          "<wbr>"/1*({mktag("wbr")})));
 **!    write(end_tag());
 **! }
 **! 
@@ -157,12 +161,16 @@
 **! //    write_image("bottom layer image","ai",a->image());
 **! //    write_image("bottom layer alpha","aa",b->alpha());
 **! 
-**!    write_image("top layer","b",lay(({ltrans,b}))->image());
-**!    write_image("bottom layer","a",lay(({ltrans,a}))->image());
+**!    write_image("top layer","b",lay(({ltrans,b}))->image(),
+**!		   "");
+**!    write_image("bottom layer","a",lay(({ltrans,a}))->image(),
+**!                "");
 **! 
 **!    write(mktag("tr",0,mktag("td",0,"\240")));
 **! 
-**!    foreach (Layer()->available_modes(),string mode)
+**!    foreach (Array.transpose(({Layer()->available_modes(),
+**!                               Layer()->descriptions()})),
+**!             [string mode,string desc])
 **!    {
 **!	  if ((&lt;"add","equal","replace","replace_hsv","darken",
 **!	        "dissolve","screen","logic_equal">)[mode])
@@ -180,7 +188,7 @@
 **! 		  0,0,560,80);
 **       xv(r);
 **! 
-**! 	  write_image(mode,mode,lay(({ltrans,r}))->image());
+**! 	  write_image(mode,mode,lay(({ltrans,r}))->image(),desc);
 **!    }
 **! 
 **!    write(end_tag());
@@ -195,7 +203,7 @@
 
 #include <math.h> /* floor */
 
-RCSID("$Id: layers.c,v 1.32 1999/08/10 10:13:21 mirar Exp $");
+RCSID("$Id: layers.c,v 1.33 1999/08/10 12:57:36 mirar Exp $");
 
 #include "image_machine.h"
 
@@ -342,68 +350,119 @@ struct layer_mode_desc
    lm_row_func *func;
    int optimize_alpha; /* alpha 0 -> skip layer */
    struct pike_string *ps;
+   char *desc;
 } layer_mode[]=
 {
-   {"normal",        lm_normal,        1, NULL            },
-   {"add",           lm_add,           1, NULL            }, 
-   {"subtract",      lm_subtract,      1, NULL            }, 
-   {"multiply",      lm_multiply,      1, NULL            }, 
-   {"divide",        lm_divide,        1, NULL            }, 
-   {"modulo",        lm_modulo,        1, NULL            }, 
-   {"invsubtract",   lm_invsubtract,   1, NULL            }, 
-   {"invdivide",     lm_invdivide,     1, NULL            }, 
-   {"invmodulo",     lm_invmodulo,     1, NULL            }, 
-   {"difference",    lm_difference,    1, NULL            }, 
-   {"max",           lm_max,           1, NULL            }, 
-   {"min",           lm_min,           1, NULL            }, 
-   {"bitwise_and",   lm_bitwise_and,   1, NULL            }, 
-   {"bitwise_or",    lm_bitwise_or,    1, NULL            }, 
-   {"bitwise_xor",   lm_bitwise_xor,   1, NULL            }, 
+   {"normal",        lm_normal,        1, NULL,
+    "D=(L*aL+S*(1-aL)*aS)/(aL+(1-aL)*aS), aD=(aL+(1-aL)*aS)"},
+   {"add",           lm_add,           1, NULL,
+    "D=L+S, apply alpha as \"normal\" mode"}, 
+   {"subtract",      lm_subtract,      1, NULL,
+    "D=L-S, apply alpha as \"normal\" mode"}, 
+   {"multiply",      lm_multiply,      1, NULL,
+    "D=L*S, apply alpha as \"normal\" mode"}, 
+   {"divide",        lm_divide,        1, NULL,
+    "D=L/S, apply alpha as \"normal\" mode"}, 
+   {"modulo",        lm_modulo,        1, NULL,
+    "D=L%S, apply alpha as \"normal\" mode"}, 
+   {"invsubtract",   lm_invsubtract,   1, NULL,
+    "D=S-L, apply alpha as \"normal\" mode"}, 
+   {"invdivide",     lm_invdivide,     1, NULL,
+    "D=S/L, apply alpha as \"normal\" mode"}, 
+   {"invmodulo",     lm_invmodulo,     1, NULL,
+    "D=S%L, apply alpha as \"normal\" mode"}, 
+   {"difference",    lm_difference,    1, NULL,
+    "D=abs(L-S), apply alpha as \"normal\" mode"}, 
+   {"max",           lm_max,           1, NULL,
+    "D=max(L,S), apply alpha as \"normal\" mode"}, 
+   {"min",           lm_min,           1, NULL,
+    "D=min(L,S), apply alpha as \"normal\" mode"}, 
+   {"bitwise_and",   lm_bitwise_and,   1, NULL,
+    "D=L&S, apply alpha as \"normal\" mode"}, 
+   {"bitwise_or",    lm_bitwise_or,    1, NULL,
+    "D=L|S, apply alpha as \"normal\" mode"}, 
+   {"bitwise_xor",   lm_bitwise_xor,   1, NULL,
+    "D=L^S, apply alpha as \"normal\" mode"}, 
 
-   {"replace",       lm_replace,       1, NULL            },
-   {"red",           lm_red,           1, NULL            },
-   {"green",         lm_green,         1, NULL            },
-   {"blue",          lm_blue,          1, NULL            },
+   {"replace",       lm_replace,       1, NULL,
+    "D=(L*aL+S*(1-aL)*aS)/(aL+(1-aL)*aS), aD=aS"},
+   {"red",           lm_red,           1, NULL,
+    "Dr=(Lr*aLr+Sr*(1-aLr)*aSr)/(aLr+(1-aLr)*aSr), Dgb=Sgb, aD=aS"},
+   {"green",         lm_green,         1, NULL,
+    "Dg=(Lg*aLg+Sg*(1-aLg)*aSg)/(aLg+(1-aLg)*aSg), Drb=Srb, aD=aS"},
+   {"blue",          lm_blue,          1, NULL,
+    "Db=(Lb*aLb+Sb*(1-aLb)*aSb)/(aLb+(1-aLb)*aSb), Drg=Srg, aD=aS"},
 
-   {"replace_hsv",   lm_replace_hsv,   1, NULL            },
-   {"hue",           lm_hue,           1, NULL            },
-   {"saturation",    lm_saturation,    1, NULL            },
-   {"value",         lm_value,         1, NULL            },
-   {"color",         lm_color,         1, NULL            }, /* h+s */
+   {"replace_hsv",   lm_replace_hsv,   1, NULL,
+    "Dhsv=(Lhsv*aLrgb+Shsv*(1-aLrgb)*aSrgb)/(aLrgb+(1-aLrgb)*aSrgb), aD=aS"},
+   {"hue",           lm_hue,           1, NULL,
+    "Dh=(Lh*aLr+Sh*(1-aLr)*aSr)/(aLr+(1-aLr)*aSr), Dsv=Lsv, aD=aS"},
+   {"saturation",    lm_saturation,    1, NULL,
+    "Ds=(Ls*aLg+Ss*(1-aLg)*aSg)/(aLg+(1-aLg)*aSg), Dhv=Lhv, aD=aS"},
+   {"value",         lm_value,         1, NULL,
+    "Dv=(Lv*aLb+Sv*(1-aLb)*aSb)/(aLb+(1-aLb)*aSb), Dhs=Lhs, aD=aS"},
+   {"color",         lm_color,         1, NULL,
+    "Dhs=(Lhs*aLrg+Shs*(1-aLrg)*aSrg)/(aLrg+(1-aLrg)*aSrg), Dv=Lv, aD=aS"},
 
-   {"darken",        lm_darken,        1, NULL            }, 
-   {"lighten",       lm_lighten,       1, NULL            }, 
-   {"saturate",      lm_saturate,      1, NULL            }, 
-   {"desaturate",    lm_desaturate,    1, NULL            }, 
+   {"darken",        lm_darken,        1, NULL,
+    "Dv=min(Lv,Sv), Dhs=Lhs, aD=aS"},
+   {"lighten",       lm_lighten,       1, NULL,
+    "Dv=max(Lv,Sv), Dhs=Lhs, aD=aS"},
+   {"saturate",      lm_saturate,      1, NULL,
+    "Ds=max(Ls,Ss), Dhv=Lhv, aD=aS"},
+   {"desaturate",    lm_desaturate,    1, NULL,
+    "Ds=min(Ls,Ss), Dhv=Lhv, aD=aS"},
 
-   {"dissolve",      lm_dissolve,      1, NULL            }, 
-   {"behind",        lm_behind,        1, NULL            }, 
-   {"erase",         lm_erase,         1, NULL            }, 
+   {"dissolve",      lm_dissolve,      1, NULL,
+    "i=random 0 or 1, D=i?L:S, aD=i+aS"}, 
+   {"behind",        lm_behind,        1, NULL,
+    "D=(S*aS+L*(1-aS)*aL)/(aS+(1-aS)*aL), aD=(aS+(1-aS)*aL); "
+    "simply swap S and L"},
+   {"erase",         lm_erase,         1, NULL,
+    "D=S, aD=aS*(1-aL)"}, 
 
-   {"screen",        lm_screen,        1, NULL            }, 
-   {"overlay",       lm_overlay,       1, NULL            }, 
-   {"burn_alpha",    (lm_row_func*)lm_spec_burn_alpha, 1, NULL },
+   {"screen",        lm_screen,        1, NULL,
+    "1-(1-S)*(1-L), apply alpha as \"normal\""}, 
+   {"overlay",       lm_overlay,       1, NULL,
+    "(1-(1-a)*(1-b)-a*b)*a+a*b, apply alpha as \"normal\""},
+   {"burn_alpha",    (lm_row_func*)lm_spec_burn_alpha, 1, NULL,
+    "aD=aL+aS, D=L+S; special optimizations for speed"},
 
-   {"equal",         lm_equal,         0, NULL            },
-   {"not_equal",     lm_not_equal,     0, NULL            },
-   {"less",          lm_less,          0, NULL            },
-   {"more",          lm_more,          0, NULL            },
-   {"less_or_equal", lm_less_or_equal, 0, NULL            },
-   {"more_or_equal", lm_more_or_equal, 0, NULL            },
+   {"equal",         lm_equal,         0, NULL,
+    "each channel D=max if L==S, 0 otherwise, apply with alpha"},
+   {"not_equal",     lm_not_equal,     0, NULL,
+    "each channel D=max if L!=S, 0 otherwise, apply with alpha"},
+   {"less",          lm_less,          0, NULL,
+    "each channel D=max if L<S, 0 otherwise, apply with alpha"},
+   {"more",          lm_more,          0, NULL,
+    "each channel D=max if L>S, 0 otherwise, apply with alpha"},
+   {"less_or_equal", lm_less_or_equal, 0, NULL,
+    "each channel D=max if L<=S, 0 otherwise, apply with alpha"},
+   {"more_or_equal", lm_more_or_equal, 0, NULL,
+    "each channel D=max if L>=S, 0 otherwise, apply with alpha"},
 
-   {"logic_equal",   lm_logic_equal,   0, NULL            },
-   {"logic_not_equal",lm_logic_not_equal,0, NULL          },
-   {"logic_strict_less",lm_logic_strict_less,0, NULL      },
-   {"logic_strict_more",lm_logic_strict_more,0, NULL      },
-   {"logic_strict_less_equal",lm_logic_strict_less_or_equal,0, NULL      },
-   {"logic_strict_more_equal",lm_logic_strict_more_or_equal,0, NULL      },
+   {"logic_equal",   lm_logic_equal,   0, NULL,
+    "logic: D=white and opaque if L==S, black and transparent otherwise"},
+   {"logic_not_equal",lm_logic_not_equal,0, NULL,
+    "logic: D=white and opaque if any L!=S, "
+    "black and transparent otherwise"},
+   {"logic_strict_less",lm_logic_strict_less,0, NULL,
+    "logic: D=white and opaque if all L<S, black and transparent otherwise"},
+   {"logic_strict_more",lm_logic_strict_more,0, NULL,
+    "logic: D=white and opaque if all L>S, black and transparent otherwise"},
+   {"logic_strict_less_equal",lm_logic_strict_less_or_equal,0, NULL,
+    "logic: D=white and opaque if all L<=L, "
+    "black and transparent otherwise"},
+   {"logic_strict_more_equal",lm_logic_strict_more_or_equal,0, NULL,
+    "logic: D=white and opaque if all L>=L, "
+    "black and transparent otherwise"},
 } ;
 
 #define LAYER_MODES ((int)NELEM(layer_mode))
 
 /*
 
-Px=pixel, Ax=alpha [0-1], Rx,Gx,Bx, Hx,Sx,Vx = kanaler
+Xp=pixel, Ax=alpha [0-1], Rx,Gx,Bx, Hx,Sx,Vx = kanaler
 Xs=källbild
 Xl=aktuellt lager
 Xd=målbild
@@ -910,6 +969,17 @@ static void image_layer_available_modes(INT32 args)
       
    for (i=0; i<LAYER_MODES; i++)
       ref_push_string(layer_mode[i].ps);
+
+   f_aggregate(LAYER_MODES);
+}
+
+static void image_layer_descriptions(INT32 args)
+{
+   int i;
+   pop_n_elems(args);
+      
+   for (i=0; i<LAYER_MODES; i++)
+      ref_push_string(make_shared_string(layer_mode[i].desc));
 
    f_aggregate(LAYER_MODES);
 }
@@ -2580,6 +2650,8 @@ void image_lay(INT32 args)
 
    /* ok, do it! */
    img_lay(l,layers,dest);
+
+   free(l);
    
    sp--;
    pop_n_elems(args);
@@ -2839,6 +2911,8 @@ void init_image_layers(void)
    ADD_FUNCTION("mode",image_layer_mode,tFunc(tNone,tStr),0);
 
    ADD_FUNCTION("available_modes",image_layer_available_modes,
+		tFunc(tNone,tArr(tStr)),0);
+   ADD_FUNCTION("descriptions",image_layer_descriptions,
 		tFunc(tNone,tArr(tStr)),0);
 
    ADD_FUNCTION("xsize",image_layer_xsize,tFunc(tNone,tInt),0);
