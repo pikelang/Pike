@@ -18,6 +18,8 @@ string packages=
 \\usepackage{amsmath}
 \\usepackage{longtable}
 \\usepackage[pdftex]{graphicx}
+\\usepackage[pdftex]{color}
+\\usepackage{colortbl}
 ";
 
 string convert_gfx(TAG tag)
