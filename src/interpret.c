@@ -2,11 +2,11 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: interpret.c,v 1.296 2003/03/19 09:44:00 grubba Exp $
+|| $Id: interpret.c,v 1.297 2003/03/20 17:43:42 mast Exp $
 */
 
 #include "global.h"
-RCSID("$Id: interpret.c,v 1.296 2003/03/19 09:44:00 grubba Exp $");
+RCSID("$Id: interpret.c,v 1.297 2003/03/20 17:43:42 mast Exp $");
 #include "interpret.h"
 #include "object.h"
 #include "program.h"
@@ -684,14 +684,11 @@ void reset_evaluator(void)
 }
 
 #ifdef PIKE_DEBUG
+
 #define BACKLOG 1024
 struct backlog
 {
-#ifdef HAVE_COMPUTED_GOTO
-  PIKE_OPCODE_T instruction;
-#else /* !HAVE_COMPUTED_GOTO */
-  INT32 instruction;
-#endif /* HAVE_COMPUTED_GOTO */
+  PIKE_INSTR_T instruction;
   INT32 arg,arg2;
   struct program *program;
   PIKE_OPCODE_T *pc;
@@ -704,6 +701,136 @@ struct backlog
 
 struct backlog backlog[BACKLOG];
 int backlogp=BACKLOG-1;
+
+static inline void low_debug_instr_prologue (PIKE_OPCODE_T *pc, PIKE_INSTR_T instr)
+{
+  if(Pike_interpreter.trace_level > 2)
+  {
+    char *file, *f;
+    struct pike_string *filep;
+    INT32 linep;
+
+    filep = get_line(pc,Pike_fp->context.prog,&linep);
+    if (filep && !filep->size_shift) {
+      file = filep->str;
+      while((f=STRCHR(file,'/')))
+	file=f+1;
+    }
+    fprintf(stderr,"- %s:%4ld:(%"PRINTPTRDIFFT"d): "
+	    "%-25s %4"PRINTPTRDIFFT"d %4"PRINTPTRDIFFT"d\n",
+	    file ? file : "-",(long)linep,
+	    pc-Pike_fp->context.prog->program,
+	    get_opcode_name(instr),
+	    Pike_sp-Pike_interpreter.evaluator_stack,
+	    Pike_mark_sp-Pike_interpreter.mark_stack);
+    free_string(filep);
+  }
+
+#ifdef HAVE_COMPUTED_GOTO
+  if (instr) 
+    ADD_RUNNED(instr);
+  else
+    Pike_fatal("NULL Instruction!\n");
+#else /* !HAVE_COMPUTED_GOTO */
+  if(instr + F_OFFSET < F_MAX_OPCODE) 
+    ADD_RUNNED(instr);
+#endif /* HAVE_COMPUTED_GOTO */
+
+  if(d_flag)
+  {
+    backlogp++;
+    if(backlogp >= BACKLOG) backlogp=0;
+
+    if(backlog[backlogp].program)
+      free_program(backlog[backlogp].program);
+
+    backlog[backlogp].program=Pike_fp->context.prog;
+    add_ref(Pike_fp->context.prog);
+    backlog[backlogp].instruction=instr;
+    backlog[backlogp].pc=pc;
+    backlog[backlogp].stack = Pike_sp - Pike_interpreter.evaluator_stack;
+    backlog[backlogp].mark_stack = Pike_mark_sp - Pike_interpreter.mark_stack;
+#ifdef _REENTRANT
+    backlog[backlogp].thread_state=Pike_interpreter.thread_state;
+#endif
+
+#ifdef _REENTRANT
+    CHECK_INTERPRETER_LOCK();
+    if(d_flag>1) DEBUG_CHECK_THREAD();
+#endif
+
+    Pike_sp[0].type=99; /* an invalid type */
+    Pike_sp[1].type=99;
+    Pike_sp[2].type=99;
+    Pike_sp[3].type=99;
+      
+    if(Pike_sp<Pike_interpreter.evaluator_stack ||
+       Pike_mark_sp < Pike_interpreter.mark_stack || Pike_fp->locals>Pike_sp)
+      Pike_fatal("Stack error (generic) sp=%p/%p mark_sp=%p/%p locals=%p.\n",
+		 Pike_sp,
+		 Pike_interpreter.evaluator_stack,
+		 Pike_mark_sp,
+		 Pike_interpreter.mark_stack,
+		 Pike_fp->locals);
+      
+    if(Pike_mark_sp > Pike_interpreter.mark_stack+Pike_stack_size)
+      Pike_fatal("Mark Stack error (overflow).\n");
+
+
+    if(Pike_mark_sp < Pike_interpreter.mark_stack)
+      Pike_fatal("Mark Stack error (underflow).\n");
+
+    if(Pike_sp > Pike_interpreter.evaluator_stack+Pike_stack_size)
+      Pike_fatal("stack error (overflow).\n");
+      
+    if(/* Pike_fp->fun>=0 && */ Pike_fp->current_object->prog &&
+       Pike_fp->locals+Pike_fp->num_locals > Pike_sp)
+      Pike_fatal("Stack error (stupid!).\n");
+
+    if(Pike_interpreter.recoveries &&
+       (Pike_sp-Pike_interpreter.evaluator_stack <
+	Pike_interpreter.recoveries->stack_pointer))
+      Pike_fatal("Stack error (underflow).\n");
+
+    if(Pike_mark_sp > Pike_interpreter.mark_stack &&
+       Pike_mark_sp[-1] > Pike_sp)
+      Pike_fatal("Stack error (underflow?)\n");
+      
+    if(d_flag > 9) do_debug();
+
+    debug_malloc_touch(Pike_fp->current_object);
+    switch(d_flag)
+    {
+      default:
+      case 3:
+	check_object(Pike_fp->current_object);
+	/*	  break; */
+
+      case 2:
+	check_object_context(Pike_fp->current_object,
+			     Pike_fp->context.prog,
+			     Pike_fp->current_object->storage+
+			     Pike_fp->context.storage_offset);
+      case 1:
+      case 0:
+	break;
+    }
+  }
+}
+
+#define DEBUG_LOG_ARG(ARG)					\
+  (backlog[backlogp].arg = (ARG),				\
+   (Pike_interpreter.trace_level>3 ?				\
+    sprintf(trace_buffer, "-    Arg = %ld\n",			\
+	    (long) backlog[backlogp].arg),			\
+    write_to_stderr(trace_buffer,strlen(trace_buffer)) : 0))
+
+#define DEBUG_LOG_ARG2(ARG2)					\
+  (backlog[backlogp].arg2 = (ARG2),				\
+   (Pike_interpreter.trace_level>3 ?				\
+    sprintf(trace_buffer, "-    Arg2 = %ld\n",			\
+	    (long) backlog[backlogp].arg2),			\
+    write_to_stderr(trace_buffer,strlen(trace_buffer)) : 0))
 
 void dump_backlog(void)
 {
@@ -734,26 +861,29 @@ void dump_backlog(void)
       }
 #endif
 
-      file = get_line(backlog[e].pc-1,backlog[e].program, &line);
+      file = get_line(backlog[e].pc,backlog[e].program, &line);
 #ifdef HAVE_COMPUTED_GOTO
-      fprintf(stderr,"%s:%ld: %s",
+      fprintf(stderr,"%s:%ld:(%"PRINTPTRDIFFT"d): %s",
 	      file->str,
 	      (long)line,
+	      backlog[e].pc - backlog[e].program->program,
 	      get_opcode_name(backlog[e].instruction));
 #else /* !HAVE_COMPUTED_GOTO */
-      if(backlog[e].instruction < 0 || backlog[e].instruction+F_OFFSET > F_MAX_OPCODE)
+      if(backlog[e].instruction+F_OFFSET > F_MAX_OPCODE)
       {
-	fprintf(stderr,"%s:%ld: ILLEGAL INSTRUCTION %d\n",
+	fprintf(stderr,"%s:%ld:(%"PRINTPTRDIFFT"d): ILLEGAL INSTRUCTION %d\n",
 		file->str,
 		(long)line,
+		backlog[e].pc - backlog[e].program->program,
 		backlog[e].instruction + F_OFFSET);
 	free_string(file);
 	continue;
       }
 
-      fprintf(stderr,"%s:%ld: %s",
+      fprintf(stderr,"%s:%ld:(%"PRINTPTRDIFFT"d): %s",
 	      file->str,
 	      (long)line,
+	      backlog[e].pc - backlog[e].program->program,
 	      low_get_f_name(backlog[e].instruction + F_OFFSET, backlog[e].program));
       if(instrs[backlog[e].instruction].flags & I_HASARG2)
       {
@@ -778,7 +908,13 @@ void dump_backlog(void)
   }while(e!=backlogp);
 }
 
-#endif
+#else  /* PIKE_DEBUG */
+
+#define DEBUG_LOG_ARG(arg) 0
+#define DEBUG_LOG_ARG2(arg2) 0
+
+#endif	/* !PIKE_DEBUG */
+
 static int o_catch(PIKE_OPCODE_T *pc);
 
 
@@ -816,23 +952,66 @@ void *dummy_label = NULL;
   } while(0)
 #endif /* !CALL_MACHINE_CODE */
 
+#ifdef PIKE_DEBUG
+
+static void debug_instr_prologue (PIKE_OPCODE_T *pc, PIKE_INSTR_T instr)
+{
+  low_debug_instr_prologue (pc, instr);
+}
+
+#define DEBUG_PROLOGUE(OPCODE, EXTRA) do {				\
+    if (d_flag || Pike_interpreter.trace_level > 2) {			\
+      debug_instr_prologue (Pike_fp->pc, (OPCODE) - F_OFFSET);		\
+      EXTRA;								\
+    }									\
+  } while (0)
+
+/* The following are intended to be called directly from generated
+ * machine code. */
+void simple_debug_instr_prologue_0 (PIKE_OPCODE_T *pc, PIKE_INSTR_T instr)
+{
+  if (d_flag || Pike_interpreter.trace_level > 2)
+    low_debug_instr_prologue (pc, instr);
+}
+void simple_debug_instr_prologue_1 (PIKE_OPCODE_T *pc, PIKE_INSTR_T instr,
+				    INT32 arg)
+{
+  if (d_flag || Pike_interpreter.trace_level > 2) {
+    low_debug_instr_prologue (pc, instr);
+    DEBUG_LOG_ARG (arg);
+  }
+}
+void simple_debug_instr_prologue_2 (PIKE_OPCODE_T *pc, PIKE_INSTR_T instr,
+				    INT32 arg1, INT32 arg2)
+{
+  if (d_flag || Pike_interpreter.trace_level > 2) {
+    low_debug_instr_prologue (pc, instr);
+    DEBUG_LOG_ARG (arg1);
+    DEBUG_LOG_ARG2 (arg2);
+  }
+}
+
+#else  /* !PIKE_DEBUG */
+#define DEBUG_PROLOGUE(OPCODE, EXTRA) do {} while (0)
+#endif	/* !PIKE_DEBUG */
+
 #define OPCODE0(O,N,F,C) \
 void PIKE_CONCAT(opcode_,O)(void) { \
   DEF_PROG_COUNTER; \
-DO_IF_DEBUG(if(Pike_interpreter.trace_level > 3) fprintf(stderr,"- (%p,%ld): %s()\n",PROG_COUNTER,DO_NOT_WARN((long)(Pike_sp-Pike_interpreter.evaluator_stack)),N));\
+  DEBUG_PROLOGUE (O, ;);						\
 C }
 
 #define OPCODE1(O,N,F,C) \
 void PIKE_CONCAT(opcode_,O)(INT32 arg1) {\
   DEF_PROG_COUNTER; \
-DO_IF_DEBUG(if(Pike_interpreter.trace_level > 3) fprintf(stderr,"- (%p,%ld): %s(%d)\n",PROG_COUNTER,DO_NOT_WARN((long)(Pike_sp-Pike_interpreter.evaluator_stack)),N,arg1)); \
+  DEBUG_PROLOGUE (O, DEBUG_LOG_ARG (arg1));				\
 C }
 
 
 #define OPCODE2(O,N,F,C) \
 void PIKE_CONCAT(opcode_,O)(INT32 arg1,INT32 arg2) { \
   DEF_PROG_COUNTER; \
-DO_IF_DEBUG(if(Pike_interpreter.trace_level > 3) fprintf(stderr,"- (%p,%ld): %s(%d,%d)\n",PROG_COUNTER,DO_NOT_WARN((long)(Pike_sp-Pike_interpreter.evaluator_stack)),N,arg1,arg2)); \
+  DEBUG_PROLOGUE (O, DEBUG_LOG_ARG (arg1); DEBUG_LOG_ARG2 (arg2));	\
 C }
 
 #ifdef OPCODE_INLINE_BRANCH
@@ -840,10 +1019,7 @@ C }
 int PIKE_CONCAT(test_opcode_,O)(void) { \
     int branch_taken = 0;	\
     DEF_PROG_COUNTER; \
-    DO_IF_DEBUG(if(Pike_interpreter.trace_level > 3) \
-      fprintf(stderr, "- (%p,%ld): %s()\n", PROG_COUNTER, \
-              DO_NOT_WARN((long)(Pike_sp-Pike_interpreter.evaluator_stack)), \
-              N));\
+    DEBUG_PROLOGUE (O, ;);						\
     C; \
     return branch_taken; \
   }
@@ -852,10 +1028,7 @@ int PIKE_CONCAT(test_opcode_,O)(void) { \
 int PIKE_CONCAT(test_opcode_,O)(INT32 arg1) {\
     int branch_taken = 0;	\
     DEF_PROG_COUNTER; \
-    DO_IF_DEBUG(if(Pike_interpreter.trace_level > 3) \
-      fprintf(stderr, "- (%p,%ld): %s(%d)\n", PROG_COUNTER, \
-              DO_NOT_WARN((long)(Pike_sp-Pike_interpreter.evaluator_stack)), \
-              N, arg1)); \
+    DEBUG_PROLOGUE (O, DEBUG_LOG_ARG (arg1));				\
     C; \
     return branch_taken; \
   }
@@ -865,10 +1038,7 @@ int PIKE_CONCAT(test_opcode_,O)(INT32 arg1) {\
 int PIKE_CONCAT(test_opcode_,O)(INT32 arg1, INT32 arg2) { \
     int branch_taken = 0;	\
     DEF_PROG_COUNTER; \
-    DO_IF_DEBUG(if(Pike_interpreter.trace_level > 3) \
-      fprintf(stderr, "- (%p,%ld): %s(%d,%d)\n", PROG_COUNTER, \
-              DO_NOT_WARN((long)(Pike_sp-Pike_interpreter.evaluator_stack)), \
-              N, arg1, arg2)); \
+    DEBUG_PROLOGUE (O, DEBUG_LOG_ARG (arg1); DEBUG_LOG_ARG2 (arg2));	\
     C; \
     return branch_taken; \
   }

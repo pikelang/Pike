@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: interpreter.h,v 1.82 2003/02/16 13:54:06 mast Exp $
+|| $Id: interpreter.h,v 1.83 2003/03/20 17:43:42 mast Exp $
 */
 
 #undef LOW_GET_ARG
@@ -55,23 +55,19 @@
 
 #ifdef PIKE_DEBUG
 
-#define GET_ARG() (backlog[backlogp].arg=(			\
+#define GET_ARG() (						\
   instr=prefix,							\
   prefix=0,							\
   instr += LOW_GET_ARG(),					\
-  (Pike_interpreter.trace_level>3 ?				\
-     sprintf(trace_buffer, "-    Arg = %ld\n", (long)instr),	\
-     write_to_stderr(trace_buffer,strlen(trace_buffer)) : 0),	\
-  instr))
+  DEBUG_LOG_ARG (instr),					\
+  instr)
 
-#define GET_ARG2() (backlog[backlogp].arg2=(			\
+#define GET_ARG2() (						\
   instr=prefix2,						\
   prefix2=0,							\
   instr += LOW_GET_ARG(),					\
-  (Pike_interpreter.trace_level>3 ?				\
-     sprintf(trace_buffer, "-    Arg2 = %ld\n",	(long)instr),	\
-     write_to_stderr(trace_buffer,strlen(trace_buffer)) : 0),	\
-  instr))
+  DEBUG_LOG_ARG2 (instr),					\
+  instr)
 
 #else /* !PIKE_DEBUG */
 
@@ -88,12 +84,12 @@
 
 static int eval_instruction(PIKE_OPCODE_T *pc)
 {
+  PIKE_INSTR_T instr;
 #ifdef HAVE_COMPUTED_GOTO
   static void *strap = &&init_strap;
-  void *instr = NULL;
+  instr = NULL;
 #else /* !HAVE_COMPUTED_GOTO */
   unsigned INT32 prefix2=0,prefix=0;
-  unsigned INT32 instr;
 #endif /* HAVE_COMPUTED_GOTO */
 
 #ifdef HAVE_COMPUTED_GOTO
@@ -108,122 +104,10 @@ static int eval_instruction(PIKE_OPCODE_T *pc)
     Pike_fp->pc = pc++;
 
     STEP_BREAK_LINE
-    
+
 #ifdef PIKE_DEBUG
-
-    if(Pike_interpreter.trace_level > 2)
-    {
-      char *file, *f;
-      struct pike_string *filep;
-      INT32 linep;
-
-      filep = get_line(pc-1,Pike_fp->context.prog,&linep);
-      file = filep->str;
-      while((f=STRCHR(file,'/')))
-	file=f+1;
-      fprintf(stderr,"- %s:%4ld:(%lx): %-25s %4ld %4ld\n",
-	      file,(long)linep,
-	      DO_NOT_WARN((long)(pc-Pike_fp->context.prog->program-1)),
-#ifdef HAVE_COMPUTED_GOTO
-	      get_opcode_name(instr),
-#else /* !HAVE_COMPUTED_GOTO */
-	      get_f_name(instr + F_OFFSET),
-#endif /* HAVE_COMPUTED_GOTO */
-	      DO_NOT_WARN((long)(Pike_sp-Pike_interpreter.evaluator_stack)),
-	      DO_NOT_WARN((long)(Pike_mark_sp-Pike_interpreter.mark_stack)));
-      free_string(filep);
-    }
-
-#ifdef HAVE_COMPUTED_GOTO
-    if (instr) 
-      ADD_RUNNED(instr);
-    else
-      Pike_fatal("NULL Instruction!\n");
-#else /* !HAVE_COMPUTED_GOTO */
-    if(instr + F_OFFSET < F_MAX_OPCODE) 
-      ADD_RUNNED(instr + F_OFFSET);
-#endif /* HAVE_COMPUTED_GOTO */
-
-    if(d_flag)
-    {
-      backlogp++;
-      if(backlogp >= BACKLOG) backlogp=0;
-
-      if(backlog[backlogp].program)
-	free_program(backlog[backlogp].program);
-
-      backlog[backlogp].program=Pike_fp->context.prog;
-      add_ref(Pike_fp->context.prog);
-      backlog[backlogp].instruction=instr;
-      backlog[backlogp].pc=pc;
-      backlog[backlogp].stack = Pike_sp - Pike_interpreter.evaluator_stack;
-      backlog[backlogp].mark_stack = Pike_mark_sp - Pike_interpreter.mark_stack;
-#ifdef _REENTRANT
-      backlog[backlogp].thread_state=Pike_interpreter.thread_state;
-#endif
-
-#ifdef _REENTRANT
-      CHECK_INTERPRETER_LOCK();
-      if(d_flag>1) DEBUG_CHECK_THREAD();
-#endif
-
-      Pike_sp[0].type=99; /* an invalid type */
-      Pike_sp[1].type=99;
-      Pike_sp[2].type=99;
-      Pike_sp[3].type=99;
-      
-      if(Pike_sp<Pike_interpreter.evaluator_stack ||
-	 Pike_mark_sp < Pike_interpreter.mark_stack || Pike_fp->locals>Pike_sp)
-	Pike_fatal("Stack error (generic) sp=%p/%p mark_sp=%p/%p locals=%p.\n",
-	      Pike_sp,
-	      Pike_interpreter.evaluator_stack,
-	      Pike_mark_sp,
-	      Pike_interpreter.mark_stack,
-	      Pike_fp->locals);
-      
-      if(Pike_mark_sp > Pike_interpreter.mark_stack+Pike_stack_size)
-	Pike_fatal("Mark Stack error (overflow).\n");
-
-
-      if(Pike_mark_sp < Pike_interpreter.mark_stack)
-	Pike_fatal("Mark Stack error (underflow).\n");
-
-      if(Pike_sp > Pike_interpreter.evaluator_stack+Pike_stack_size)
-	Pike_fatal("stack error (overflow).\n");
-      
-      if(/* Pike_fp->fun>=0 && */ Pike_fp->current_object->prog &&
-	 Pike_fp->locals+Pike_fp->num_locals > Pike_sp)
-	Pike_fatal("Stack error (stupid!).\n");
-
-      if(Pike_interpreter.recoveries &&
-	 (Pike_sp-Pike_interpreter.evaluator_stack <
-	  Pike_interpreter.recoveries->stack_pointer))
-	Pike_fatal("Stack error (underflow).\n");
-
-      if(Pike_mark_sp > Pike_interpreter.mark_stack &&
-	 Pike_mark_sp[-1] > Pike_sp)
-	Pike_fatal("Stack error (underflow?)\n");
-      
-      if(d_flag > 9) do_debug();
-
-      debug_malloc_touch(Pike_fp->current_object);
-      switch(d_flag)
-      {
-	default:
-	case 3:
-	  check_object(Pike_fp->current_object);
-/*	  break; */
-
-	case 2:
-	  check_object_context(Pike_fp->current_object,
-			       Pike_fp->context.prog,
-			       Pike_fp->current_object->storage+
-			       Pike_fp->context.storage_offset);
-	case 1:
-	case 0:
-	  break;
-      }
-    }
+    if (d_flag || Pike_interpreter.trace_level > 2)
+      low_debug_instr_prologue (Pike_fp->pc, instr);
 #endif
 
 #ifdef HAVE_COMPUTED_GOTO
