@@ -20,6 +20,11 @@ string capitalize(string s)
   return upper_case(s[0..0])+s[1..sizeof(s)];
 }
 
+string sillycaps(string s)
+{
+  return Array.map(s/" ",capitalize)*" ";
+}
+
 string strmult(string str, int num)
 {
 #if 1
