@@ -1,7 +1,7 @@
 /*
 **! module Image
 **! note
-**!	$Id: colors.c,v 1.54 2001/07/19 21:09:37 nilsson Exp $
+**!	$Id: colors.c,v 1.55 2001/07/30 13:19:35 nilsson Exp $
 **! submodule Color
 **!
 **!	This module keeps names and easy handling 
@@ -88,6 +88,13 @@
 **!
 **!
 **! appendix Image.Color colors
+**!
+**! This table lists all the different named colors available in Image.Color.
+**! The first column shows the actual color while the five following columns
+**! demonstrates the modifiers neon, light, dark, bright and dull. The color
+**! begind the name of the color is produced by calling neon()->dark()->dark()->dark()
+**! from the color object itself, i.e. Image.Color.mintcream->neon()->dark()->dark()->dark().
+**!
 **! <execute>
 **! 
 **! import Image;
@@ -150,6 +157,8 @@
 **!    array orig=({Color.black,Color.red,Color.green,Color.yellow,
 **! 		    Color.blue,Color.violet,Color.cyan,Color.white});
 **!    cs-=orig;
+**!    cs-=({Color.pikegreen,Color.avantgardepikegreen,Color.roxenorange,
+**!          Color.pikeblue}); // Lame sort of easter egg.
 **!    
 **!    array grey=Array.filter(cs,lambda(object c) { return c->s==0; });
 **!    array colored=cs-grey;
@@ -161,9 +170,9 @@
 **! 			      }),colored);
 **! 
 **!    Array.map(({orig}),color_info);
-**!    write("\240");
+**!    // write("\240");
 **!    Array.map(({grey}),color_info);
-**!    write("\240");
+**!    // write("\240");
 **!    Array.map(colored/8.0,color_info);
 **! }
 **! 
@@ -179,7 +188,7 @@
 
 #include "global.h"
 
-RCSID("$Id: colors.c,v 1.54 2001/07/19 21:09:37 nilsson Exp $");
+RCSID("$Id: colors.c,v 1.55 2001/07/30 13:19:35 nilsson Exp $");
 
 #include "image_machine.h"
 
