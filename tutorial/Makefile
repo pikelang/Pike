@@ -65,8 +65,8 @@ tutorial.ps: tutorial.dvi
 tutorial.ps.gz: tutorial.ps
 	gzip -9 <tutorial.ps >tutorial.ps.gz
 
-tutorial.ps.bz: tutorial.ps
-	bzip -9 <tutorial.ps >tutorial.ps.gz
+tutorial.ps.bz2: tutorial.ps
+	bzip2 -9 <tutorial.ps >tutorial.ps.bz2
 
 tutorial.pdftex: .DUMMY $(SRCFILES)
 	$(pike) ./wmmltohtml2 tutorial.wmml pdflatex tutorial
