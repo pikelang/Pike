@@ -4,8 +4,7 @@ PREFLAGS=$(DEFINES) -I. -I$(SRCDIR) -I$(SRCDIR)/../.. -I../..
 CFLAGS=$(PREFLAGS) $(OTHERFLAGS) @DEFS@
 
 FILES=spider.o discdate.o stardate.o sdebug.o tree.o \
-      streamed_parser.o encode_decode.o http_parse.o \
-      accesseddb.o dumudp.o
+      streamed_parser.o http_parse.o accesseddb.o dumudp.o
 
 spider.a: $(FILES)
 	-rm -f spider.a

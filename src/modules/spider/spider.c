@@ -418,15 +418,15 @@ int extract_word(char *s, int i, int len)
   SKIP_SPACE();
   j=i;
 
-  /* Should we allow "foo"bar'gazonk' ? We do now. */
+  /* Should we allow "foo"bar'gazonk' ? We don't now. */
   
   for(;i<len; i++)
   {
     switch(s[i])
     {
     case '-':  
-      if(!endquote) 
-	break;
+     if(!endquote) 
+       break;
 
     case ' ':
     case '\t':
@@ -434,17 +434,17 @@ int extract_word(char *s, int i, int len)
     case '\r':
     case '>':
     case '=':
-      if(!inquote)
-	goto done;
-      break;
+     if(!inquote)
+       goto done;
+     break;
 
-    case '"':
+     case '"':
       if(inquote)
       {
 	if(endquote=='"')
 	{
 	  PUSH();
-	  inquote = 0;
+	  goto done;
 	}
       }
       else
@@ -462,7 +462,7 @@ int extract_word(char *s, int i, int len)
 	if(endquote == '\'')
 	{
 	  PUSH();
-	  inquote = 0;
+	  goto done;
 	}
       }
       else
@@ -1424,6 +1424,7 @@ void f_getpwent(INT32 args)
 }
 #endif
 
+#if 0
 void f_fcgi_create_listen_socket(INT32 args)
 {
   int fd, true;
@@ -1449,34 +1450,15 @@ void f_fcgi_create_listen_socket(INT32 args)
   pop_n_elems(args);
   push_int(1);
 }
-
-void f_decode_value(INT32 args);
-void f_encode_value(INT32 args);
+#endif
 
 void init_spider_efuns(void) 
 {
-#ifndef DEBUG
-  /* This _will_ leak some memory. It is supposed to. These
-   * make_shared_string's are here to define a few very commonly used
-   * strings, to speed spinner up a little.  
-   */
-  make_shared_string("HTTP/1.0");
-  make_shared_string("GET");
-  make_shared_string("POST");
-#endif
-
+#if 0
   add_efun("fcgi_create_listen_socket", f_fcgi_create_listen_socket,
 	   "function(int:int)", OPT_SIDE_EFFECT);
-	   
-
-#if 0
-  add_efun("encode_value", f_encode_value, "function(mixed:string)", 
-	   OPT_TRY_OPTIMIZE);
-
-  add_efun("decode_value", f_decode_value, "function(string:mixed)",
-	   OPT_TRY_OPTIMIZE);
 #endif
-
+  
   add_efun("http_decode_string",f_http_decode_string,"function(string:string)",
 	   OPT_TRY_OPTIMIZE);
 
@@ -1492,11 +1474,9 @@ void init_spider_efuns(void)
   add_efun("endpwent", f_endpwent, "function(void:int)", OPT_EXTERNAL_DEPEND);
 #endif
 
-  add_efun("set_start_quote", f_set_start_quote, "function(int:int)",
-	   OPT_EXTERNAL_DEPEND);
+  add_efun("set_start_quote",f_set_start_quote,"function(int:int)",OPT_EXTERNAL_DEPEND);
 
-  add_efun("set_end_quote", f_set_end_quote, "function(int:int)", 
-	   OPT_EXTERNAL_DEPEND);
+  add_efun("set_end_quote",f_set_end_quote,"function(int:int)",OPT_EXTERNAL_DEPEND);
 
 #ifdef HAVE_SEND_FD
   /* Defined above */
