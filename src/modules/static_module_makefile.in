@@ -5,12 +5,20 @@ MAKE_FLAGS = "prefix=$(prefix)" "exec_prefix=$(exec_prefix)" "CC=$(CC)" "OTHERFL
 
 all: module.a dummy
 
-dummy:
-	echo >linker_options modules/$(MODNAME)/module.a $(MODULE_LDFLAGS)
-	echo >modlist_headers "void pike_module_$(MODNAME)_init(void), pike_module_$(MODNAME)_exit(void);"
-	echo >modlist_segment " ,{ \"$(MODNAME)\", pike_module_$(MODNAME)_init, pike_module_$(MODNAME)_exit } "
-	echo >module.pmod "inherit _static_modules.$(MODNAME);"
+dummy:	linker_options modlist_headers modlist_segment module.pmod
 	tmp="$(INSTALL_NAME)" ; if test x$$tmp = x ; then tmp="$(MODNAME)"; fi ; $(INSTALL) module.pmod $(TMP_LIBDIR)/modules/$$tmp.pmod
+
+linker_options: Makefile
+	echo >linker_options modules/$(MODNAME)/module.a $(MODULE_LDFLAGS)
+
+modlist_headers: Makefile
+	echo >modlist_headers "void pike_module_$(MODNAME)_init(void), pike_module_$(MODNAME)_exit(void);"
+
+modlist_segment: Makefile
+	echo >modlist_segment " ,{ \"$(MODNAME)\", pike_module_$(MODNAME)_init, pike_module_$(MODNAME)_exit } "
+
+module.pmod: Makefile
+	echo >module.pmod "inherit _static_modules.$(MODNAME);"
 
 module.a: $(OBJS)
 	-rm -f module.a

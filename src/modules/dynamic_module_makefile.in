@@ -5,11 +5,17 @@ MAKE_FLAGS = "prefix=$(prefix)" "exec_prefix=$(exec_prefix)" "CC=$(CC)" "OTHERFL
 
 all: module.@SO@ dummy
 
-dummy:	$(DUMMY)
-	echo "$(LINKER_OPTIONS)" >linker_options
-	echo "" >modlist_headers
-	echo "" >modlist_segment
+dummy:	$(DUMMY) linker_options modlist_headers modlist_segment
 	tmp="$(INSTALL_NAME)" ; if test x$$tmp = x ; then tmp="$(MODNAME)"; fi ; $(INSTALL) module.so $(TMP_LIBDIR)/modules/$$tmp.so
+
+linker_options: Makefile
+	echo "$(LINKER_OPTIONS)" >linker_options
+
+modlist_headers: Makefile
+	echo "" >modlist_headers
+
+modlist_segment: Makefile
+	echo "" >modlist_segment
 
 module.so: $(OBJS)
 	$(TMP_BINDIR)/smartlink "@LDSHARED@" -o module.@SO@ $(OBJS) $(MODULE_LDFLAGS)
