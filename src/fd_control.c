@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: fd_control.c,v 1.51 2004/09/18 20:50:50 nilsson Exp $
+|| $Id: fd_control.c,v 1.52 2004/12/30 13:28:22 grubba Exp $
 */
 
 #ifndef TESTING
@@ -185,9 +185,22 @@ PMOD_EXPORT int set_close_on_exec(int fd, int which)
 {
 #ifndef HAVE_BROKEN_F_SETFD
   int ret;
+  if (which) {
+    do {
+      which = fcntl(fd, F_GETFD);
+    } while (which < 0 && errno == EINTR);
+    if (which < 0) which = FD_CLOEXEC;
+    else which |= FD_CLOEXEC;
+  } else {
+    do {
+      which = fcntl(fd, F_GETFD);
+    } while (which < 0 && errno == EINTR);
+    if (which < 0) which = 0;
+    else which &= ~FD_CLOEXEC;
+  }
   do 
   {
-    ret=fcntl(fd, F_SETFD, which ? FD_CLOEXEC : 0);
+    ret=fcntl(fd, F_SETFD, which);
   } while (ret <0 && errno==EINTR );
   return ret;
 #else /* HAVE_BROKEN_F_SETFD */
