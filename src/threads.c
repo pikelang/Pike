@@ -1,5 +1,5 @@
 #include "global.h"
-RCSID("$Id: threads.c,v 1.96 1999/05/12 04:45:58 hubbe Exp $");
+RCSID("$Id: threads.c,v 1.97 1999/05/13 17:43:37 grubba Exp $");
 
 int num_threads = 1;
 int threads_disabled = 0;
@@ -17,6 +17,8 @@ int threads_disabled = 0;
 #include "gc.h"
 #include "main.h"
 #include "module_support.h"
+
+#include <errno.h>
 
 int live_threads = 0;
 COND_T live_threads_change;
