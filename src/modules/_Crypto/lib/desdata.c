@@ -5,12 +5,12 @@
  *
  *	Generate tables used by desUtil.c and desCode.h.
  */
-#include "stdio.h"
+#include	<stdio.h>
 #include	"desinfo.h"
 #include	"desCode.h"
 
 #include "RCSID.h"
-RCSID2(desdata_cRcs, "$Id: desdata.c,v 1.5 2001/07/03 18:52:24 david%hedbor.org Exp $");
+RCSID2(desdata_cRcs, "$Id: desdata.c,v 1.6 2001/07/03 19:10:34 grubba Exp $");
 
 /* list of weak and semi-weak keys
 
