@@ -118,7 +118,7 @@ NAME_ARGS(page);
                                         &expand,
                                         &fill,
                                         &pack_type );
-  pop_n_elems(args);
+  my_pop_n_elems(args);
   push_text( "expand" );
   push_int( expand );
   push_text( "fill" );

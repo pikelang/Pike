@@ -40,7 +40,7 @@ NAME_ARGS(pixmap,mask);
     mask = get_gdkobject( b, Bitmap );
   THIS->obj = GTK_OBJECT( gtk_pixmap_new( img, mask ) );
   pgtk__init_this_object();
-  pop_n_elems(args);
+  my_pop_n_elems(args);
 }
 
 FUNCTION(set, "function(object,object|void:object)")
@@ -76,7 +76,7 @@ FUNCTION(get, "function(void:mapping)");
 //            "pixmap_insensitive":insensitive version of the pixmap <br>
 //          ]) <br>
 {
-  pop_n_elems( args );
+  my_pop_n_elems( args );
 
 
   push_text( "pixmap" );

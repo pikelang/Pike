@@ -27,7 +27,7 @@ NAME_ARGS(title,groupmember);
     THIS->obj=GTK_OBJECT(gtk_radio_menu_item_new_with_label(mylist,label));
   else
     THIS->obj=GTK_OBJECT(gtk_radio_menu_item_new(mylist));
-  pop_n_elems(args);
+  my_pop_n_elems(args);
   pgtk__init_this_object();
 }
 

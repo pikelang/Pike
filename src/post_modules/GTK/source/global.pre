@@ -33,7 +33,7 @@ NAME_ARGS(rc);
   char *s;
   get_all_args("parse_rc", args, "%s", &s );
   gtk_rc_parse_string( s );
-  pop_n_elems(args);
+  my_pop_n_elems(args);
   push_int( 0 );
 /*   gtk_widget_propagate_default_style(); */
 }
@@ -46,7 +46,7 @@ FUNCTION(root_window, "function(void:object)");
 RETURNS(GDK.Window);
 // Returns the root window of the current display (as a GDK.Window)
 {
-  pop_n_elems( args );
+  my_pop_n_elems( args );
   if(pgtk_root_window) 
   {
     ref_push_object( pgtk_root_window );
@@ -151,6 +151,7 @@ NAME_ARGS(argv, do_not_parse_rc);
   g_log_set_handler("Glib",G_LOG_LEVEL_ERROR,  (void *)do_error, NULL );
   g_log_set_handler("Glib",G_LOG_LEVEL_WARNING,(void *)do_error, NULL );
   g_log_set_handler("Glib",G_LOG_LEVEL_MESSAGE,(void *)do_error, NULL );
+  gtk_set_locale();
   gtk_init( &argc, &data );
   g_log_set_handler("Gdk",G_LOG_LEVEL_CRITICAL,(void *)do_error, NULL );
   g_log_set_handler("Gdk",G_LOG_LEVEL_ERROR,   (void *)do_error, NULL );
@@ -195,7 +196,7 @@ NAME_ARGS(argv, do_not_parse_rc);
 # error Fixme. This needs some work.
 #endif  
 
-  pop_n_elems(args);
+  my_pop_n_elems(args);
   /*
    * Now it's time to return the leftovers.
    */
@@ -210,7 +211,7 @@ FUNCTION(flush, "function(void:void)")
 {
   gdk_flush();
   while(g_main_iteration( 0 ) );
-  pop_n_elems(args);
+  my_pop_n_elems(args);
   push_int(0);
 }
 
@@ -218,7 +219,7 @@ FUNCTION(low_flush, "function(void:void)")
 // Flush X. Not normally needed.
 {
   XFlush( GDK_DISPLAY() );
-  pop_n_elems( args );
+  my_pop_n_elems( args );
   push_int( 0 );
 }
 
@@ -231,4 +232,69 @@ NAME_ARGS(argc,no_pgtkrc);
   pgtk_global_setup_gtk( args );
 }
 
+
+FUNCTION(main, "function(void:void)");
+// Start GTK in blocking mode.<br>
+// Doing this disables asynchronous I/O in pike.<br>
+// You can return -1 from main in pike to run GTK (and the rest of
+// pike) in asynchrounous mode.
+{
+  gtk_main();
+}
+
+FUNCTION(main_quit, "function(void:void)");
+// Exit from the gtk_main function on the next iteration.
+{
+  gtk_main_quit();
+}
+
+FUNCTION(main_level, "function(void:int)");
+// Return the current recursion depth.
+{
+  push_int( gtk_main_level() );
+}
+
+FUNCTION(main_iteration_do, "function(int:void)");
+NAME_ARGS(block);
+// Run one iteration in the mainloop. If block is true, wait for an
+// event before returning.
+{
+  int n;
+  get_all_args( "gtk_main_iteration_do", args, "%d", &n );
+  gtk_main_iteration_do( n );
+}
+
+FUNCTION(true, "function(void:int)");
+// Always returns true.
+// To be used as a signal function.
+{
+  push_int( 1 );
+}
+
+FUNCTION(false, "function(void:int)");
+// Always returns false.
+// To be used as a signal function.
+{
+  push_int( 0 );
+}
+
+FUNCTION(grab_add, "function(object:void)");
+ARGS(GTK.Widget);
+NAME_ARGS(widget);
+{
+  struct object *o;
+  get_all_args( "gtk_grab_add", args, "%o", &o );
+  gtk_grab_add( GTK_WIDGET( get_gtkobject( o ) ) );
+  my_pop_n_elems( args );
+}
+
+FUNCTION(grab_remove, "function(object:void)");
+ARGS(GTK.Widget);
+NAME_ARGS(widget);
+{
+  struct object *o;
+  get_all_args( "gtk_grab_remove", args, "%o", &o );
+  gtk_grab_remove( GTK_WIDGET( get_gtkobject( o ) ) );
+  my_pop_n_elems( args );
+}
 

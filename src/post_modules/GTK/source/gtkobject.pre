@@ -14,7 +14,7 @@ FUNCTION(destroy, "function(void:void)");
     gtk_object_destroy( THIS->obj );
     THIS->obj = NULL;
   }
-  pop_n_elems(args);
+  my_pop_n_elems(args);
   push_int(0);
 }
 
@@ -104,7 +104,7 @@ NAME_ARGS(signal_name,callback_function,callback_arg);
   id = gtk_signal_connect_full(THIS->obj, a, 0, 
                                (void *)pgtk_signal_func_wrapper, b,
 			       (void *)pgtk_free_signal_data, FALSE, FALSE);
-  pop_n_elems(args);
+  my_pop_n_elems(args);
   push_int( id );
 }
 

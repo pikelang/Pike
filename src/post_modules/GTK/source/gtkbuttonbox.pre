@@ -27,7 +27,7 @@ FUNCTION(get_child_size, "function(void:mapping)");
 // Return the child size as ([ "x":xsize, "y":ysize ]) 
 {
   int x, y;
-  pop_n_elems(args);
+  my_pop_n_elems(args);
   gtk_button_box_get_child_size( GTK_BUTTON_BOX( THIS->obj ), &x, &y );
   push_constant_text( "x" );
   push_int( x );
@@ -39,7 +39,7 @@ FUNCTION(get_child_ipadding, "function(void:mapping)");
 // Return the default inter-child padding ([ "x":xpadding, "y":ypadding ]) 
 {
   int x, y;
-  pop_n_elems(args);
+  my_pop_n_elems(args);
   gtk_button_box_get_child_ipadding( GTK_BUTTON_BOX( THIS->obj ), &x, &y );
   push_constant_text( "x" );
   push_int( x );

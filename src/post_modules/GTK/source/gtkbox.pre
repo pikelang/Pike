@@ -56,7 +56,7 @@ RETURNS("mapping(string:int)");
   gtk_box_query_child_packing( GTK_BOX( THIS->obj ), 
                                GTK_WIDGET( get_gtkobject( o ) ),
                                &ex, &fi, &pa, &ty );
-  pop_n_elems( args );
+  my_pop_n_elems( args );
   push_constant_text( "expand" );
   push_int( ex );
   push_constant_text( "fill" );

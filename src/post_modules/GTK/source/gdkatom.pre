@@ -17,6 +17,6 @@ NAME_ARGS(atom_name, only_if_exists);
 FUNCTION(get_name, "function(void:string)");
 // Returns the name of the atom.
 {
-  pop_n_elems(args);
+  my_pop_n_elems(args);
   push_text( gdk_atom_name( (GdkAtom)THIS->obj ) );
 }

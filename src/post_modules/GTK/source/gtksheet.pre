@@ -126,7 +126,7 @@ FUNCTION(get_attributes, "function(int,int:mapping)");
   int x, y;
   GtkSheetCellAttr attr;
   get_all_args( "get_attributes", args, "%d%d", &x, &y );
-  pop_n_elems( args );
+  my_pop_n_elems( args );
   if( gtk_sheet_get_attributes( GTK_SHEET(THIS->obj),x,y, &attr ) )
   {
     push_text("justification"); 
@@ -203,7 +203,7 @@ FUNCTION(select_range, "function(void:mapping)");
 NAME_ARGS(x0,y0,x1,y1);
 {
   GtkSheetRange r;
-  pop_n_elems(args);
+  my_pop_n_elems(args);
   gtk_sheet_select_range( GTK_SHEET( THIS->obj ), &r );
   push_text( "x0" ); push_int( r.col0 );
   push_text( "y0" ); push_int( r.row0 );
@@ -215,7 +215,7 @@ FUNCTION(unselect_range, "function(void:mapping)");
 NAME_ARGS(x0,y0,x1,y1);
 {
   GtkSheetRange r;
-  pop_n_elems(args);
+  my_pop_n_elems(args);
   gtk_sheet_unselect_range( GTK_SHEET( THIS->obj ), &r );
   push_text( "x0" ); push_int( r.col0 );
   push_text( "y0" ); push_int( r.row0 );
@@ -227,7 +227,7 @@ int COMPLEX_FUNCTION(set_active_cell, int, int);
 FUNCTION(get_active_cell, "function(void:mapping)");
 {
   int x, y;
-  pop_n_elems(args);
+  my_pop_n_elems(args);
   gtk_sheet_get_active_cell( GTK_SHEET(THIS->obj), &x, &y );
   push_text( "row" ); push_int( x );
   push_text( "col" ); push_int( y );
@@ -239,7 +239,7 @@ string COMPLEX_FUNCTION(cell_get_text, int, int);
 COMPLEX_FUNCTION(cell_clear, int, int);
 FUNCTION(clear, "function(void:object)");
 {
-  pop_n_elems(args);
+  my_pop_n_elems(args);
   gtk_sheet_range_clear(GTK_SHEET(THIS->obj), NULL);
   RETURN_THIS();
 }
@@ -258,7 +258,7 @@ FUNCTION(get_pixel_info, "function(int,int:mapping)");
   int x, y, r, c;
   get_all_args( "get_pixel_info", args, "%d%d", &x, &y );
   
-  pop_n_elems(args);
+  my_pop_n_elems(args);
   gtk_sheet_get_pixel_info( GTK_SHEET(THIS->obj),x,y, &r, &c );
   push_text( "row" ); push_int( r );
   push_text( "col" ); push_int( c );

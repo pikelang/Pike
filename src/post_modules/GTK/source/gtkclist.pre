@@ -168,7 +168,7 @@ NAME_ARGS( row, column );
   gchar *p = NULL;
   get_all_args( "get_*", args, "%d%d", &x, &y );
 
-  pop_n_elems( args );
+  my_pop_n_elems( args );
   gtk_clist_get_text( GTK_CLIST( THIS->obj ), x, y, &p );
   if(p)
     push_text(p);
@@ -210,7 +210,7 @@ NAME_ARGS( row, column );
   GdkBitmap *b = NULL;
   get_all_args( "get_*", args, "%d%d", &x, &y );
 
-  pop_n_elems( args );
+  my_pop_n_elems( args );
   gtk_clist_get_pixmap( GTK_CLIST( THIS->obj ), x, y, &p, &b );
   push_text( "pixmap" );
   if(p)
@@ -273,7 +273,7 @@ NAME_ARGS( row, column );
   get_all_args( "get_*", args, "%d%d", &x, &y );
 
   gtk_clist_get_pixtext( GTK_CLIST( THIS->obj ), x, y, &t, &s, &p, &b );
-  pop_n_elems( args );
+  my_pop_n_elems( args );
 
   push_text( "spacing" );
   push_int( s );
@@ -424,7 +424,7 @@ NAME_ARGS(row);
   get_all_args( "get_row_data", args, "%d", &row );
 
   o = gtk_clist_get_row_data( GTK_CLIST( THIS->obj ), row );
-  pop_n_elems( args );
+  my_pop_n_elems( args );
   if(o)
     ref_push_object( o );
   else
@@ -440,7 +440,7 @@ NAME_ARGS(data);
   struct object *o;
   get_all_args( "find_row_from_data", args, "%o", &o );
   row = gtk_clist_find_row_from_data( GTK_CLIST( THIS->obj ), o );
-  pop_n_elems(args);
+  my_pop_n_elems(args);
   push_int( row );
 }
 
@@ -471,7 +471,7 @@ RETURNS(mapping(string:int));
   get_all_args( "get_selection_info", args, "%d%d", &x, &y );
   gtk_clist_get_selection_info( GTK_CLIST( THIS->obj ), x, y, &r, &c );
 
-  pop_n_elems( args );
+  my_pop_n_elems( args );
   push_text( "row" );
   push_int( r );
   push_text( "column" );
@@ -499,7 +499,7 @@ NAME_ARGS(row);
   GtkStyle *style;
   int row;
   get_all_args("get_foreground", args, "%d", &row );
-  pop_n_elems(args);
+  my_pop_n_elems(args);
   if (row < 0 || row >= clist->rows)
     error("Invalid row.\n");
   clist_row = (g_list_nth (clist->row_list, row))->data;
@@ -529,7 +529,7 @@ NAME_ARGS(row);
   GtkStyle *style;
   int row;
   get_all_args("get_background", args, "%d", &row );
-  pop_n_elems(args);
+  my_pop_n_elems(args);
   if (row < 0 || row >= clist->rows)
     error("Invalid row.\n");
   clist_row = (g_list_nth (clist->row_list, row))->data;

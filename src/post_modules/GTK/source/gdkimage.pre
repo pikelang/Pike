@@ -133,7 +133,7 @@ NAME_ARGS(x,y);
   int x, y;
   get_all_args("get_pixel", args, "%d%d", &x, &y);
   if(!THIS->obj) error("No image.\n");
-  pop_n_elems(args);
+  my_pop_n_elems(args);
   push_int( gdk_image_get_pixel( (void *)THIS->obj, x, y ) );
 }
 FUNCTION(set_pixel, "function(int,int,int:object)")

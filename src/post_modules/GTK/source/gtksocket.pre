@@ -30,14 +30,14 @@ FUNCTION(id, "function(void:int)");
 {
   if( !GTK_WIDGET( THIS->obj )->window )
     error("You must realize this widget before calling this function.\n");
-  pop_n_elems( args );
+  my_pop_n_elems( args );
   push_int(GDK_WINDOW_XWINDOW( GTK_WIDGET( THIS->obj )->window ));
 }
 
 FUNCTION(has_plug, "function(void:int)");
 // Returns true if this socket is occupied
 {
-  pop_n_elems( args );
+  my_pop_n_elems( args );
   if( GTK_SOCKET( THIS->obj )->plug_window 
       || gtk_container_children( GTK_CONTAINER( THIS->obj )) )
     push_int( 1 );

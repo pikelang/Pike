@@ -10,7 +10,7 @@ RETURNS(array(GTK.Widget));
 {
   GList *s = GTK_LIST( THIS->obj )->selection;
   int j = 0;
-  pop_n_elems(args);
+  my_pop_n_elems(args);
   while( s )
   {
     push_gtkobjectclass( (void *)s->data, pgtk_list_item_program );

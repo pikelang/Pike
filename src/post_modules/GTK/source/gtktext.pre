@@ -118,7 +118,7 @@ FUNCTION(get_text, "function(void:string)")
 {
   struct pike_string *res;
   unsigned int i;
-  pop_n_elems(args);
+  my_pop_n_elems(args);
   res = begin_shared_string( gtk_text_get_length( GTK_TEXT( THIS->obj ) ) );
   for(i=0; i<(unsigned int)res->len; i++)
     res->str[i] = GTK_TEXT_INDEX( GTK_TEXT( THIS->obj ), i );

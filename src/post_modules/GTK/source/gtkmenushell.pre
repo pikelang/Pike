@@ -49,7 +49,7 @@ RETURNS(array(GTK.MenuItem));
 {
   GList *g;
   int n = 0;
-  pop_n_elems(args);
+  my_pop_n_elems(args);
   g = GTK_MENU_SHELL( THIS->obj )->children;
   while(g)
   {

@@ -8,7 +8,7 @@ FUNCTION(data, "function(void:string)");
 // or 32 bits per character).
 {
   int length = ((GtkSelectionData *)THIS->obj)->length;
-  pop_n_elems( args );
+  my_pop_n_elems( args );
   if(length < 0)
   {
     push_int(0);
@@ -37,7 +37,7 @@ FUNCTION(format, "function(void:int)");
 // Returns the selction format.<br>
 // The format is the number of bits per character.
 {
-  pop_n_elems( args );
+  my_pop_n_elems( args );
   push_int( ((GtkSelectionData *)THIS->obj)->format );
 }
 
@@ -47,7 +47,7 @@ FUNCTION(length, "function(void:int)");
 // The size of the data in characters (as returned by data()) is not
 // nessasarily the same.
 {
-  pop_n_elems( args );
+  my_pop_n_elems( args );
   push_int( ((GtkSelectionData *)THIS->obj)->length );
 }
 
@@ -68,7 +68,7 @@ NAME_ARGS(data);
 }
 
 
-#define RETURN_GDKATOM(X) pop_n_elems(args); push_pgdkobject( ((void *)((GtkSelectionData *)THIS->obj)->X), pgtk_Gdk_Atom_program );
+#define RETURN_GDKATOM(X) my_pop_n_elems(args); push_pgdkobject( ((void *)((GtkSelectionData *)THIS->obj)->X), pgtk_Gdk_Atom_program );
 
 
 FUNCTION(target, "function(void:object)");

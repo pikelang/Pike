@@ -103,7 +103,7 @@ RETURNS(GTK.CTreeNode);
                                    is_leaf,
                                    expanded);
 
-  pop_n_elems(args);
+  my_pop_n_elems(args);
   push_pgdkobject( sibling, pgtk_CTreeNode_program );
 }
 
@@ -201,7 +201,7 @@ NAME_ARGS(data,root);
   if(root)
     root_node = get_pgdkobject( root, pgtk_CTreeNode_program );
   row = gtk_ctree_find_by_row_data( GTK_CTREE( THIS->obj ), root_node, o );
-  pop_n_elems(args);
+  my_pop_n_elems(args);
 
   if(row == NULL)
     push_int( 0 );
@@ -293,7 +293,7 @@ NAME_ARGS( node, column );
   gchar *p = NULL;
   get_all_args( "get_*", args, "%o%d", &x, &y );
 
-  pop_n_elems( args );
+  my_pop_n_elems( args );
   gtk_ctree_node_get_text( GTK_CTREE( THIS->obj ), 
                            get_pgdkobject(x,pgtk_CTreeNode_program), 
                            y, &p );
@@ -314,7 +314,7 @@ NAME_ARGS( row, column );
   GdkBitmap *b = NULL;
   get_all_args( "get_*", args, "%d%d", &x, &y );
 
-  pop_n_elems( args );
+  my_pop_n_elems( args );
   gtk_ctree_node_get_pixmap( GTK_CTREE( THIS->obj ), 
                              get_pgdkobject(x,pgtk_CTreeNode_program),
                              y, &p, &b );
@@ -355,7 +355,7 @@ NAME_ARGS( row, column );
   gtk_ctree_node_get_pixtext( GTK_CTREE( THIS->obj ), 
                               get_pgdkobject(x,pgtk_CTreeNode_program),
                               y, &t, &s, &p, &b );
-  pop_n_elems( args );
+  my_pop_n_elems( args );
 
   push_text( "spacing" );
   push_int( s );
@@ -455,7 +455,7 @@ NAME_ARGS(node);
 
   o = gtk_ctree_node_get_row_data( GTK_CTREE( THIS->obj ),  
                                    get_pgdkobject(row,pgtk_CTreeNode_program));
-  pop_n_elems( args );
+  my_pop_n_elems( args );
   if(o)
     ref_push_object( o );
   else
@@ -513,7 +513,7 @@ RETURNS(GTK.CTreeRow);
 // <b>DEPRECATED</b>, all CTreeRow functions are also available
 // directly in this object.
 {
-  pop_n_elems(args);
+  my_pop_n_elems(args);
   push_pgdkobject( GTK_CTREE_ROW( THIS->obj ), pgtk_CTreeRow_program );
 }
 
@@ -521,7 +521,7 @@ FUNCTION(parent, "function(void:object)");
 RETURNS(GTK.CTreeNode);
 // Returns the parent node
 {
-  pop_n_elems(args);
+  my_pop_n_elems(args);
   push_pgdkobject( GTK_CTREE_NODE(GTK_CTREE_ROW( THIS->obj )->parent), 
                    pgtk_CTreeNode_program );
 }
@@ -530,7 +530,7 @@ FUNCTION(child, "function(void:object)");
 RETURNS(GTK.CTreeNode);
 // Returns the first child node
 {
-  pop_n_elems(args);
+  my_pop_n_elems(args);
   push_pgdkobject( GTK_CTREE_NODE(GTK_CTREE_ROW( THIS->obj )->children), 
                    pgtk_CTreeNode_program );
 }
@@ -540,7 +540,7 @@ FUNCTION(next, "function(void:object)");
 RETURNS(GTK.CTreeNode);
 // Returns the next sibling (the next on the same  level)
 {
-  pop_n_elems(args);
+  my_pop_n_elems(args);
   push_pgdkobject( GTK_CTREE_NODE_NEXT( THIS->obj ), pgtk_CTreeNode_program );
 }
 
@@ -548,7 +548,7 @@ FUNCTION(prev, "function(void:object)");
 RETURNS(GTK.CTreeNode);
 // Returns the previous sibling (the next on the same level)
 {
-  pop_n_elems(args);
+  my_pop_n_elems(args);
   push_pgdkobject( GTK_CTREE_NODE_PREV( THIS->obj ), pgtk_CTreeNode_program );
 }
 

@@ -40,7 +40,7 @@ NAME_ARGS(value,lower,upper,step_increment,page_increment,page_size);
   if(!THIS->obj) 
     error("Failed to initiate adjustment\n");
   pgtk__init_this_object();
-  pop_n_elems(args);
+  my_pop_n_elems(args);
   push_int( 0 );
 }
 COMPLEX_FUNCTION(set_value, float);

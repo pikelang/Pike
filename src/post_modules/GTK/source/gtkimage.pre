@@ -32,7 +32,7 @@ NAME_ARGS(image,mask);
   }
   THIS->obj = GTK_OBJECT( gtk_image_new( img, mask ) );
   pgtk__init_this_object();
-  pop_n_elems(args);
+  my_pop_n_elems(args);
 }
 
 FUNCTION(set, "function(object,object|void:object)")
@@ -72,7 +72,7 @@ FUNCTION(get, "function(void:mapping)");
 {
   GdkImage *v;
   GdkBitmap *m;
-  pop_n_elems(args);
+  my_pop_n_elems(args);
   gtk_image_get( GTK_IMAGE( THIS->obj ), &v, &m );
   push_text( "image" );
   if(v)

@@ -1,4 +1,16 @@
 PROGRAM(GdkRegion);
+
+static void return_gdkregion( int n, void *r )
+{
+  struct object *o;
+  my_pop_n_elems( n );
+  o = low_clone( pgtk_GdkRegion_program );
+  call_c_initializers( o );
+  ((struct object_wrapper *)o->storage)->obj = r;
+  push_object( o );
+}
+
+
 FUNCTION(create, "function(void:void)");
 // Create a new (empty) region
 // 
@@ -23,12 +35,12 @@ NAME_ARGS(victim);
   r = get_gdkobject( o, Region );
   if(!r)
   {
-    pop_n_elems(args);
+    my_pop_n_elems(args);
     push_int(0);
     return;
   } else {
     int eq = gdk_region_equal( (GdkRegion *)THIS->obj, r );
-    pop_n_elems(args);
+    my_pop_n_elems(args);
     push_int(eq);
   }
 }
@@ -39,7 +51,7 @@ NAME_ARGS(x,y);
 {
   int x, y;
   get_all_args( "point_in", args, "%d%d", &x, &y );
-  pop_n_elems(args);
+  my_pop_n_elems(args);
   push_int( gdk_region_point_in( (GdkRegion *)THIS->obj, x, y ) );
 }
 
@@ -56,7 +68,7 @@ NAME_ARGS(rectangle);
     error("Bad argument 1 to GDK.rect_in( GDK.Rectangle r )\n");
   } else {
     int b = gdk_region_rect_in((GdkRegion *)THIS->obj,  r);
-    pop_n_elems(args);
+    my_pop_n_elems(args);
     push_int( b );
   }
 }
@@ -106,11 +118,7 @@ NAME_ARGS(with);
     r = gdk_regions_union( (GdkRegion *)THIS->obj, v);
   else
     error("Bad argument to union: Not Region or Rectangle\n");
-  pop_n_elems(args);
-  o = low_clone( pgtk_GdkRegion_program );
-  call_c_initializers( o );
-  ((struct object_wrapper *)o->storage)->obj = (void *)r;
-  push_object( o );
+  return_gdkregion( args, r );
   return;
 }
 
@@ -130,11 +138,7 @@ NAME_ARGS(with);
   } else {
     error("Bad argument to intersect: Not a GDK.Region object\n");
   }
-  pop_n_elems(args);
-  o = low_clone( pgtk_GdkRegion_program );
-  call_c_initializers( o );
-  ((struct object_wrapper *)o->storage)->obj = (void *)r;
-  push_object( o );
+  return_gdkregion( args, r );
   return;
 }
 
@@ -154,11 +158,7 @@ NAME_ARGS(with);
   } else {
     error("Bad argument to subtract: Not a GDK.Region object\n");
   }
-  pop_n_elems(args);
-  o = low_clone( pgtk_GdkRegion_program );
-  call_c_initializers( o );
-  ((struct object_wrapper *)o->storage)->obj = (void *)r;
-  push_object( o );
+  return_gdkregion( args, r );
   return;
 }
 
@@ -178,10 +178,6 @@ NAME_ARGS(with);
   } else {
     error("Bad argument to xor: Not a GDK.Region object\n");
   }
-  pop_n_elems(args);
-  o = low_clone( pgtk_GdkRegion_program );
-  call_c_initializers( o );
-  ((struct object_wrapper *)o->storage)->obj = (void *)r;
-  push_object( o );
+  return_gdkregion( args, r );
   return;
 }

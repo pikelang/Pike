@@ -46,7 +46,7 @@ RETURNS(array(GTK.Widget));
 {
   GList *g;
   int n = 0;
-  pop_n_elems(args);
+  my_pop_n_elems(args);
   g = gtk_container_children( GTK_CONTAINER( THIS->obj ) );
   while(g)
   {

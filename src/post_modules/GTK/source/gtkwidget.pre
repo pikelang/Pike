@@ -136,7 +136,7 @@ FUNCTION(get_gdkwindow, "function(void:object)");
 RETURNS(GDK.Window);
 // Return the GDK.Window associated with this widget, if any.
 {
-  pop_n_elems(args);
+  my_pop_n_elems(args);
   if(GTK_WIDGET(THIS->obj)->window)
   {
     struct object *o;
@@ -613,7 +613,7 @@ NAME_ARGS(mask);
 // GTK.Visible.
 RETURNS(GTK.Widget);
 {
-  pop_n_elems(args);
+  my_pop_n_elems(args);
   push_int( GTK_WIDGET_FLAGS(GTK_WIDGET(THIS->obj)) | sp[-1].u.integer );
 }
 

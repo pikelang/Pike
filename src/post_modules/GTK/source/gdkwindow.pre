@@ -42,14 +42,14 @@ NAME_ARGS(XWindowID|parent,void|atrributes);
 FUNCTION(is_viewable, "function(void:int)");
 // Return 1 if the window is mapped.
 {
-  pop_n_elems(args);
+  my_pop_n_elems(args);
   push_int(gdk_window_is_viewable( (GdkWindow *)THIS->obj ));
 }
 
 FUNCTION(is_visible, "function(void:int)");
 // Return 1 if the window, or a part of the window, is visible right now.
 {
-  pop_n_elems(args);
+  my_pop_n_elems(args);
   push_int(gdk_window_is_visible( (GdkWindow *)THIS->obj ));
 }
 
@@ -245,7 +245,7 @@ RETURNS(array(GDK.Window));
     n++;
     l = l->next;
   }
-  pop_n_elems(args);
+  my_pop_n_elems(args);
   f_aggregate(n);
 }
 
@@ -476,7 +476,7 @@ NAME_ARGS( property, offset, delete_when_done );
                        &retdata ))
   {
     struct object *o;
-    pop_n_elems(args);
+    my_pop_n_elems(args);
     push_text( "type" );
     push_text( gdk_atom_name( actual_property_type ) );
     push_text( "width" );
@@ -500,7 +500,7 @@ NAME_ARGS( property, offset, delete_when_done );
     f_aggregate_mapping( 6 );
     return;
   }
-  pop_n_elems(args);
+  my_pop_n_elems(args);
   push_int( 0 );
 }
 

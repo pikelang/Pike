@@ -32,7 +32,7 @@ NAME_ARGS(type);
 
   if(!strcmp(type, "mapping"))
   {
-    pop_n_elems(args);
+    my_pop_n_elems(args);
     push_text( "x" );
     push_int( r->x );
     push_text( "y" );
@@ -43,7 +43,7 @@ NAME_ARGS(type);
     push_int( r->height );
     f_aggregate_mapping( 8 );
   } else if(!strcmp(type, "array")) {
-    pop_n_elems(args);
+    my_pop_n_elems(args);
     push_int( r->x );
     push_int( r->y );
     push_int( r->width );

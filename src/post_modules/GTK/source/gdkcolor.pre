@@ -85,7 +85,7 @@ FUNCTION(image_color_object, "function(void:object)");
            ((GdkColor *)THIS->obj)->green,
            ((GdkColor *)THIS->obj)->blue );
 
-  pop_n_elems(args);
+  my_pop_n_elems(args);
   pgtk_get_image_module();
   pgtk_index_stack( "Color" );
   pgtk_index_stack(colorname);

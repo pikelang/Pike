@@ -9,7 +9,7 @@ FUNCTION(get_source_widget, "function(void:object)");
 // Return the drag source widget.
 RETURNS(GTK.Widget);
 {
-  pop_n_elems(args);
+  my_pop_n_elems(args);
   push_gtkobjectclass(gtk_drag_get_source_widget(((GdkDragContext *)THIS->obj)),
                       pgtk_widget_program);
 }

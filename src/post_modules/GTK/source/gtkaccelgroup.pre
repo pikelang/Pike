@@ -50,7 +50,7 @@ RETURNS(GTK.AccelGroup);
 /* { */
 /*   int k, mod; */
 /*   get_all_args("check", args, "%d%d", &k, &mod ); */
-/*   pop_n_elems(args); */
+/*   my_pop_n_elems(args); */
 /*   push_int( gtk_accelerator_table_check( (void *)THIS->obj, k, mod ) ); */
 /* } */
 /* FUNCTION(set_mod_mask, "function(int:object)") */

@@ -13,7 +13,7 @@ NAME_ARGS(num_points);
   int num_points, q=0;
   gfloat *vector;
   get_all_args("get_vector", args, "%d", &num_points);
-  pop_n_elems(args);
+  my_pop_n_elems(args);
   vector = malloc(sizeof(gfloat) * num_points);
   gtk_curve_get_vector( GTK_CURVE(THIS->obj), num_points, vector );
   while(q < num_points)
