@@ -146,6 +146,69 @@ object get_set()
   return .types.imap_set()->init(atom);
 }
 
+/* Parses an object that can be a string, an atom (possibly with
+ * options in brackets) or a list */
+mapping get_token(int eol)
+{
+  skip_whitespace();
+  if (!strlen(buffer))
+    return 0;
+
+  if (eol && (buffer[0] == eol))
+  {
+    buffer = buffer[1..];
+    return ([ "type" : "eol", "eol" : 1 ]);
+  }
+  switch(buffer[0])
+  {
+  case '(':
+    buffer = buffer[1..];
+    return ([ "type" : "list", "list" : 1 ]);
+  case '"': {
+    string s = get_string();
+    return s && ([ "type" : "string", "string" : s ]);
+  }
+  case "{": {
+    object s = get_string();
+    return s && ({ "type" : "literal", "length" : s->length; });
+  }
+  default: {
+    string atom = get_atom(1);
+
+    if (!strlen(buffer) || (buffer[0] != '['))
+      return ([ "type" : "atom", "atom" : atom ]);
+
+    buffer = buffer[1..];
+    return ([ "type" : "atom_options", "atom" : atom, "options" : 1 ]);
+  }
+  }
+}
+
+/* Reads a <start.size> suffix */
+mapping get_range(mapping atom)
+{
+  if (!strlen(buffer) || (buffer[0] != '<'))
+    return atom;
+
+  buffer = buffer[1..];
+
+  int start = get_number();
+  if ((start < 0) || !strlen(buffer) || (buffer[0] != '.'))
+    return 0;
+
+  buffer = buffer[1..];
+      
+  int size = get_number();
+  if ((size <= 0) || !strlen(buffer) || (buffer[0] != '>'))
+    return 0;
+      
+  buffer = buffer[1..];
+
+  atom->range = ({ start, size });
+
+  return atom;
+}
+
 /* Parses an object that (recursivly) can contain atoms (possible
    * with options in brackets) or lists. Note that strings are not
    * accepted, as it is a little difficult to wait for the
@@ -153,8 +216,7 @@ object get_set()
    *
    * FXME: This function is used to read fetch commands. This breaks
    * rfc-2060 compliance, as the names of headers can be represented
-   * as string literals.
-   */
+   * as string literals. */
   
 mapping get_simple_list(int max_depth)
 {
@@ -204,7 +266,7 @@ array do_parse_simple_list(int max_depth, int terminator)
    * brackets. Naturally, the atom itself cannot contain any brackets.
    *
    * Returns a mapping
-   *    type : "type",
+   *    type : "atom",
    *    atom : name,
    *    raw : name[options]
    *    options : parsed options,
