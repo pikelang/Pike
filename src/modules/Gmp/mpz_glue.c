@@ -2,11 +2,11 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: mpz_glue.c,v 1.147 2003/05/19 09:47:15 grubba Exp $
+|| $Id: mpz_glue.c,v 1.148 2003/05/19 19:02:17 mast Exp $
 */
 
 #include "global.h"
-RCSID("$Id: mpz_glue.c,v 1.147 2003/05/19 09:47:15 grubba Exp $");
+RCSID("$Id: mpz_glue.c,v 1.148 2003/05/19 19:02:17 mast Exp $");
 #include "gmp_machine.h"
 #include "module.h"
 
@@ -100,39 +100,27 @@ void mpzmod_reduce(struct object *o)
    * of the INT_TYPE. */
   size_t pos = (INT_TYPE_BITS + GMP_NUMB_BITS - 1) / GMP_NUMB_BITS - 1;
 
-  if (mpz_size(mpz) <= pos + 1) {
+  if (mpz_size (mpz) <= pos + 1) {
     /* NOTE: INT_TYPE is signed, while GMP_NUMB is unsigned.
      *       Thus INT_TYPE_BITS is usually 31 and GMP_NUMB_BITS 32.
      */
-    /* NOTE: In gmp 2.0 -0x80000000 is encoded as -0x00000000. */
 #if INT_TYPE_BITS == GMP_NUMB_BITS
-    mp_limb_t val = mpz_getlimbn(mpz, 0);
     /* NOTE: Overflow is not possible. */
-    if (neg) {
-      res = ~((val - 1) & GMP_NUMB_MASK);
-    } else {
-      res = val & GMP_NUMB_MASK;
-    }
+    res = mpz_getlimbn (mpz, 0) & GMP_NUMB_MASK;
 #elif INT_TYPE_BITS < GMP_NUMB_BITS
-    mp_limb_t val = mpz_getlimbn(mpz, 0) & GMP_NUMB_MASK;
-    /* Potential overflow if the MSB is set. */
-    if (val & ~((((mp_limb_t)1)<<INT_TYPE_BITS) - 1)) goto overflow;
-    if (neg) {
-      res = ~((val - 1) & ((((mp_limb_t)1)<<INT_TYPE_BITS)-1));
-    } else {
-      res = val & ((((mp_limb_t)1)<<INT_TYPE_BITS)-1);
-    }
+    mp_limb_t val = mpz_getlimbn (mpz, 0) & GMP_NUMB_MASK;
+    if (val >= (mp_limb_t) 1 << INT_TYPE_BITS) goto overflow;
+    res = val;
 #else
-    /* FIXME: May need to account for encoding of -0x80000000 here too. */
     for (;; pos--) {
-      res |= mpz_getlimbn(mpz, pos) & GMP_NUMB_MASK;
+      res |= mpz_getlimbn (mpz, pos) & GMP_NUMB_MASK;
       if (pos == 0) break;
       if (res >= (INT_TYPE) 1 << (INT_TYPE_BITS - GMP_NUMB_BITS)) goto overflow;
       res <<= GMP_NUMB_BITS;
     }
-    if (neg) res = -res;
 #endif
 
+    if (neg) res = -res;
     free_object (o);
     push_int (res);
     return;
@@ -286,8 +274,10 @@ void get_mpz_from_digits(MP_INT *tmp,
       /* We need to fix the case with binary
        * 0b101... and -0b101... numbers.
        *
-       * FIXME: What about hexadecimal and octal?
+       * What about hexadecimal and octal?
        *	/grubba 2003-05-16
+       *
+       * No sweat - they are handled by mpz_set_str. /mast
        */
       if(!base && digits->len > 2)
       {

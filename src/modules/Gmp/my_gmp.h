@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: my_gmp.h,v 1.19 2003/03/30 14:21:37 mast Exp $
+|| $Id: my_gmp.h,v 1.20 2003/05/19 19:02:17 mast Exp $
 */
 
 /*
@@ -57,13 +57,24 @@ struct pike_string *low_get_mpz_digits(MP_INT *mpz, int base);
 #define mpz_xor my_mpz_xor
 #endif
 
-#ifndef HAVE_MPZ_GETLIMBN
-#define mpz_getlimbn(mpz, pos) ((mpz)->_mp_d[pos])
-#endif
-
 #ifndef HAVE_MPZ_FITS_ULONG_P
 #define mpz_fits_ulong_p(n) (!mpz_cmp_ui ((n), mpz_get_ui (n)))
 #endif
+
+#ifdef MPZ_GETLIMBN_WORKS
+#define MPZ_GETLIMBN(MPZ, N) mpz_getlimbn(MPZ, N)
+#else  /* !MPZ_GETLIMBN_WORKS */
+/* In old gmp versions (at least 2.0) mpz_getlimbn doesn't understand
+ * that negative numbers are stored with negative sizes, so it regards
+ * all N to be outside the mantissa then. */
+mp_limb_t MPZ_GETLIMBN (mpz_srcptr gmp_z, mp_size_t gmp_n)
+{
+  if (mpz_size (gmp_z) <= gmp_n || gmp_n < 0)
+    return 0;
+  else
+    return gmp_z->_mp_d[gmp_n];
+}
+#endif	/* !MPZ_GETLIMBN_WORKS */
 
 extern struct program *mpzmod_program;
 extern struct program *mpq_program;

@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: acconfig.h,v 1.4 2003/03/30 14:21:37 mast Exp $
+|| $Id: acconfig.h,v 1.5 2003/05/19 19:02:17 mast Exp $
 */
 
 #ifndef GMP_MACHINE_H
@@ -49,5 +49,8 @@
 
 /* Define to the size of mp_limb_t */
 #undef SIZEOF_MP_LIMB_T
+
+/* Define if mpz_getlimbn works on negative numbers. */
+#undef MPZ_GETLIMBN_WORKS
 
 #endif
