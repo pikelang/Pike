@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: image.c,v 1.202 2003/06/07 15:30:03 nilsson Exp $
+|| $Id: image.c,v 1.203 2003/07/23 18:29:32 nilsson Exp $
 */
 
 /*
@@ -101,7 +101,7 @@
 
 #include "stralloc.h"
 #include "global.h"
-RCSID("$Id: image.c,v 1.202 2003/06/07 15:30:03 nilsson Exp $");
+RCSID("$Id: image.c,v 1.203 2003/07/23 18:29:32 nilsson Exp $");
 #include "pike_macros.h"
 #include "object.h"
 #include "constants.h"
@@ -1474,9 +1474,11 @@ void image_line(INT32 args)
 **!	<table><tr valign=center>
 **!	<td><illustration> return lena(); </illustration></td>
 **!	<td><illustration> return lena()->copy()->box(40,10,10,80,0,255,0); </illustration></td>
+**!	<td><illustration> return lena()->copy()->box(40,10,10,80,255,0,0,75); </illustration></td>
 **!	</tr><tr>
 **!	<td>original</td>
 **!	<td>->box<wbr>(40,10,<wbr>10,80,<wbr>0,255,0)</td>
+**!	<td>->box<wbr>(40,10,<wbr>10,80,<wbr>255,0,0,75)</td>
 **!	</tr></table>
 **! 
 **! returns the object called
@@ -2079,7 +2081,7 @@ static void image_gradients(INT32 args)
 **!	<table><tr valign=center>
 **!	<td><illustration> return lena(); </illustration></td>
 **!	<td><illustration> return lena()->test()</illustration></td>
-**!	<td><illustration> return lena()->copy()->test()</illustration></td>
+**!	<td><illustration> return lena()->test()</illustration></td>
 **!	</tr><tr>
 **!	<td>original</td>
 **!	<td>->test()</td>
@@ -2861,6 +2863,32 @@ fprintf(stderr," %d,%d,%d)\n",src[x+y*xsize].r,src[x+y*xsize].g,src[x+y*xsize].b
 **!    This value is squared and compared with the square of the 
 **!    distance above.
 **!
+**!	<table><tr valign=center>
+**!	<td><illustration> return lena()->select_from(35,35,16); </illustration></td>
+**!	<td><illustration> return lena()->select_from(35,35,32); </illustration></td>
+**!	<td><illustration> return lena()->select_from(35,35,64); </illustration></td>
+**!	<td><illustration> return lena()->select_from(35,35,96); </illustration></td>
+**!	<td><illustration> return lena()->select_from(35,35,128); </illustration></td>
+**!	<td><illustration> return lena()->select_from(35,35,192); </illustration></td>
+**!	<td><illustration> return lena()->select_from(35,35,256); </illustration></td>
+**!	</tr><tr>
+**!	<td>35, 35, 16</td>
+**!	<td>35, 35, 32</td>
+**!	<td>35, 35, 64</td>
+**!	<td>35, 35, 96</td>
+**!	<td>35, 35, 128</td>
+**!	<td>35, 35, 192</td>
+**!	<td>35, 35, 256</td>
+**!	</tr></table>
+**!
+**!	<table><tr valign=center>
+**!	<td><illustration> return lena(); </illustration></td>
+**!	<td><illustration> return lena()*lena()->select_from(35,35,200); </illustration></td>
+**!	</tr><tr>
+**!	<td>original</td>
+**!	<td>original * select_from(35,35,200)</td>
+**!	</tr></table>
+**!
 **! returns the new image object
 **!
 **! arg int x
@@ -2932,6 +2960,17 @@ void image_select_from(INT32 args)
 **!	scales the image with a factor, without smoothing.
 **!     This routine is faster than scale, but gives less correct
 **!     results
+**!
+**!	<table><tr valign=center>
+**!	<td><illustration> return lena(); </illustration></td>
+**!	<td><illustration> return lena()->bitscale(0.75); </illustration></td>
+**!	<td><illustration> return lena()->scale(0.75); </illustration></td>
+**!	</tr><tr>
+**!	<td>original</td>
+**!	<td>bitscale(0.75)</td>
+**!	<td>scale(0.75)</td>
+**!	</tr></table>
+**!
 **! returns the new image object
 **! arg float factor
 **!	factor to use for both x and y
@@ -4287,7 +4326,19 @@ static void image__sprintf( INT32 args )
 /*
 **! method object grey_blur(int no_pass)
 **!	Works like blur, but only operates on the r color channel.
-**!     A faster alternative to blur for grey scale images.
+**!     A faster alternative to blur for grey scale images. @[no_pass]
+**!     is the number of times the blur matrix is applied.
+**!
+**!	<table><tr valign=center>
+**!	<td><illustration> return lena(); </illustration></td>
+**!	<td><illustration> return lena()->grey_blur(1); </illustration></td>
+**!	<td><illustration> return lena()->grey_blur(5); </illustration></td>
+**!	</tr><tr>
+**!	<td>original</td>
+**!	<td>grey_blur(1)</td>
+**!	<td>grey_blur(5)</td>
+**!	</tr></table>
+**!
 **! see also: blur
 */
 
@@ -4349,6 +4400,18 @@ static void image_grey_blur( INT32 args )
 **! method string blur(int no_pass)
 **!	A special case of apply_matrix that creates a blur effect.
 **!     About four times faster than the generic apply_matrix.
+**!     @[no_pass] is the number of times the blur matrix is applied.
+**!
+**!	<table><tr valign=center>
+**!	<td><illustration> return lena(); </illustration></td>
+**!	<td><illustration> return lena()->blur(1); </illustration></td>
+**!	<td><illustration> return lena()->blur(5); </illustration></td>
+**!	</tr><tr>
+**!	<td>original</td>
+**!	<td>blur(1)</td>
+**!	<td>blur(5)</td>
+**!	</tr></table>
+**!
 **! see also: apply_matrix, grey_blur
 */
 
