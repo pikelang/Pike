@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: charsetmod.c,v 1.44 2004/08/17 20:15:08 nilsson Exp $
+|| $Id: charsetmod.c,v 1.45 2004/08/17 20:45:26 nilsson Exp $
 */
 
 #ifdef HAVE_CONFIG_H
@@ -10,7 +10,7 @@
 #endif /* HAVE_CONFIG_H */
 
 #include "global.h"
-RCSID("$Id: charsetmod.c,v 1.44 2004/08/17 20:15:08 nilsson Exp $");
+RCSID("$Id: charsetmod.c,v 1.45 2004/08/17 20:45:26 nilsson Exp $");
 #include "program.h"
 #include "interpret.h"
 #include "stralloc.h"
@@ -1769,6 +1769,9 @@ PIKE_MODULE_EXIT
 
   if(std_cs_program != NULL)
     free_program(std_cs_program);
+
+  if(multichar_program != NULL)
+    free_program(multichar_program);
 
   iso2022_exit();
 }
