@@ -2,11 +2,11 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: builtin_functions.c,v 1.544 2004/04/29 21:25:59 nilsson Exp $
+|| $Id: builtin_functions.c,v 1.545 2004/04/30 17:19:40 mast Exp $
 */
 
 #include "global.h"
-RCSID("$Id: builtin_functions.c,v 1.544 2004/04/29 21:25:59 nilsson Exp $");
+RCSID("$Id: builtin_functions.c,v 1.545 2004/04/30 17:19:40 mast Exp $");
 #include "interpret.h"
 #include "svalue.h"
 #include "pike_macros.h"
@@ -2952,6 +2952,8 @@ static int find_longest_prefix(char *str,
   INT32 c,match=-1;
   ptrdiff_t tmp;
 
+  check_c_stack(2048);
+
   while(a<b)
   {
     c=(a+b)/2;
@@ -3014,15 +3016,26 @@ static int replace_sortfun(struct tupel *a,struct tupel *b)
   return DO_NOT_WARN((int)my_quick_strcmp(a->ind, b->ind));
 }
 
+struct replace_many_context
+{
+  struct string_builder ret;
+  struct tupel *v;
+};
+
+static void free_replace_many_context (struct replace_many_context *ctx)
+{
+  free_string_builder (&ctx->ret);
+  free ((char *) ctx->v);
+}
+
 static struct pike_string *replace_many(struct pike_string *str,
 					struct array *from,
 					struct array *to)
 {
   INT32 e,num;
   ptrdiff_t s, length;
-  struct string_builder ret;
-
-  struct tupel *v;
+  struct replace_many_context ctx;
+  ONERROR uwp;
 
   int set_start[256];
   int set_end[256];
@@ -3048,20 +3061,22 @@ static struct pike_string *replace_many(struct pike_string *str,
       Pike_error("replace: to array not array(string).\n");
   }
 
-  v=(struct tupel *)xalloc(sizeof(struct tupel)*from->size);
+  ctx.v=(struct tupel *)xalloc(sizeof(struct tupel)*from->size);
+  init_string_builder(&ctx.ret,str->size_shift);
+  SET_ONERROR (uwp, free_replace_many_context, &ctx);
 
   for(num=e=0;e<from->size;e++)
   {
     if(ITEM(from)[e].u.string->size_shift > str->size_shift)
       continue;
 
-    v[num].ind=ITEM(from)[e].u.string;
-    v[num].val=ITEM(to)[e].u.string;
-    v[num].prefix=-2; /* Uninitialized */
+    ctx.v[num].ind=ITEM(from)[e].u.string;
+    ctx.v[num].val=ITEM(to)[e].u.string;
+    ctx.v[num].prefix=-2; /* Uninitialized */
     num++;
   }
 
-  fsort((char *)v,num,sizeof(struct tupel),(fsortfun)replace_sortfun);
+  fsort((char *)ctx.v,num,sizeof(struct tupel),(fsortfun)replace_sortfun);
 
   MEMSET(set_start, 0, sizeof(set_start));
   MEMSET(set_end, 0, sizeof(set_end));
@@ -3069,15 +3084,13 @@ static struct pike_string *replace_many(struct pike_string *str,
   for(e=0;e<num;e++)
   {
     INT32 x;
-    x=index_shared_string(v[num-1-e].ind,0);
+    x=index_shared_string(ctx.v[num-1-e].ind,0);
     if((x<(INT32)NELEM(set_start)) && (x >= 0))
       set_start[x]=num-e-1;
-    x=index_shared_string(v[e].ind,0);
+    x=index_shared_string(ctx.v[e].ind,0);
     if((x<(INT32)NELEM(set_end)) && (x >= 0))
       set_end[x]=e+1;
   }
-
-  init_string_builder(&ret,str->size_shift);
 
   length=str->len;
 
@@ -3102,26 +3115,27 @@ static struct pike_string *replace_many(struct pike_string *str,
       a=find_longest_prefix(str->str+(s << str->size_shift),
 			    length,
 			    str->size_shift,
-			    v, a, b);
+			    ctx.v, a, b);
 
       if(a!=-1)
       {
-	ch = v[a].ind->len;
+	ch = ctx.v[a].ind->len;
 	if(!ch) ch=1;
 	s+=ch;
 	length-=ch;
-	string_builder_shared_strcat(&ret,v[a].val);
+	string_builder_shared_strcat(&ctx.ret,ctx.v[a].val);
 	continue;
       }
     }
-    string_builder_putchar(&ret,
+    string_builder_putchar(&ctx.ret,
 			   DO_NOT_WARN((INT32)ch));
     s++;
     length--;
   }
 
-  free((char *)v);
-  return finish_string_builder(&ret);
+  UNSET_ONERROR (uwp);
+  free((char *)ctx.v);
+  return finish_string_builder(&ctx.ret);
 }
 
 /*! @decl string replace(string s, string from, string to)
