@@ -12,9 +12,9 @@ AC_HEADER_STDC
 AC_CHECK_HEADERS( signal.h arpa/inet.h )
 AC_CHECK_HEADERS( signal.h arpa/inet.h)
 
-AC_ARG_WITH(GL,  [  --without-GTK     no support for GTK],[without_GTK=yes],[without_GTK=no])
+AC_ARG_WITH(GTK, [  --without-GTK           no support for GTK],[],[with_GTK=yes])
 
-if test "x$without_GTK" = "xno" ; then
+if test "x$with_GTK" = "xyes" ; then
 
 
 
@@ -320,6 +320,10 @@ fi
 
 saved_LIBS="$LIBS"
 
+AC_ARG_WITH(gnome, [  --without-gnome         no support for gnome],[],[with_gnome=yes])
+
+if test "x$with_gnome" = "xyes"; then
+
 AC_SUBST(GNOME_CFLAGS)
 AC_SUBST(GNOME_LIBS)
 
@@ -336,6 +340,8 @@ else
   pgtk_has_gnome=gnome
   AC_DEFINE(HAVE_GNOME)
   AC_MSG_RESULT(yes);
+fi
+
 fi
 
 AC_CHECK_LIB(Xpm, XpmReadFileToXpmImage)
