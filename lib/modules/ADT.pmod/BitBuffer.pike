@@ -1,5 +1,5 @@
 //
-// $Id: BitBuffer.pike,v 1.7 2004/12/14 23:48:13 nilsson Exp $
+// $Id: BitBuffer.pike,v 1.8 2005/01/04 08:10:14 nilsson Exp $
 
 //! Implements a FIFO bit buffer, i.e. a buffer that operates on bits
 //! instead of bytes. It is not designed for performance, but as a way
@@ -94,9 +94,12 @@ int get( int bits ) {
 
 //! Reads @[bytes] (or less) bytes from the buffer and returns as
 //! string.
-string read( int bytes )
+string read( void|int bytes )
 {
-  bytes = min(bytes, _sizeof()/8);
+  if( zero_type(bytes) )
+    bytes = _sizeof()/8;
+  else
+    bytes = min(bytes, _sizeof()/8);
   String.Buffer buf = String.Buffer(bytes);
   while(bytes--)
     buf->putchar( get(8) );
