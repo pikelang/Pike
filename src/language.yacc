@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: language.yacc,v 1.314 2004/03/12 21:45:30 grubba Exp $
+|| $Id: language.yacc,v 1.315 2004/03/13 13:22:40 grubba Exp $
 */
 
 %pure_parser
@@ -113,7 +113,7 @@
 /* This is the grammar definition of Pike. */
 
 #include "global.h"
-RCSID("$Id: language.yacc,v 1.314 2004/03/12 21:45:30 grubba Exp $");
+RCSID("$Id: language.yacc,v 1.315 2004/03/13 13:22:40 grubba Exp $");
 #ifdef HAVE_MEMORY_H
 #include <memory.h>
 #endif
@@ -137,6 +137,8 @@ RCSID("$Id: language.yacc,v 1.314 2004/03/12 21:45:30 grubba Exp $");
 #include "bignum.h"
 
 #define YYMAXDEPTH	1000
+
+/* #define FORCE_RESOLVE_DEBUG */
 
 #ifdef PIKE_DEBUG
 #ifndef YYDEBUG
@@ -380,10 +382,11 @@ optional_rename_inherit: ':' TOK_IDENTIFIER { $$=$2; }
 
 force_resolve: /* empty */
   {
-    $$=force_resolve;
-    force_resolve=1;
+    $$ = Pike_compiler->flags;
+    Pike_compiler->flags |= COMPILATION_FORCE_RESOLVE;
 #ifdef FORCE_RESOLVE_DEBUG
-    fputs("force_resolve on\n", stderr);
+    fprintf(stderr, "force_resolve on, flags: 0x%02x (0x%02x)\n",
+	    Pike_compiler->flags, $$);
 #endif
   }
   ;
@@ -439,9 +442,10 @@ program_ref: low_program_ref
 inheritance: modifiers TOK_INHERIT force_resolve
   low_program_ref optional_rename_inherit ';'
   {
-    force_resolve = $3;
+    Pike_compiler->flags = $3;
 #ifdef FORCE_RESOLVE_DEBUG
-    fprintf(stderr, "force_resolve restored to %d\n", force_resolve);
+    fprintf(stderr, "Compilation flags restored to 0x%02x.\n",
+	    Pike_compiler->flags);
 #endif
     if (($1 & ID_EXTERN) && (Pike_compiler->compiler_pass == 1)) {
       yywarning("Extern declared inherit.");
@@ -458,9 +462,10 @@ inheritance: modifiers TOK_INHERIT force_resolve
   }
   | modifiers TOK_INHERIT force_resolve low_program_ref error ';'
   {
-    force_resolve = $3;
+    Pike_compiler->flags = $3;
 #ifdef FORCE_RESOLVE_DEBUG
-    fprintf(stderr, "force_resolve restored to %d\n", force_resolve);
+    fprintf(stderr, "Compilation flags restored to 0x%02x.\n",
+	    Pike_compiler->flags);
 #endif
     free_node($4);
     pop_stack();
@@ -468,9 +473,10 @@ inheritance: modifiers TOK_INHERIT force_resolve
   }
   | modifiers TOK_INHERIT force_resolve low_program_ref error TOK_LEX_EOF
   {
-    force_resolve = $3;
+    Pike_compiler->flags = $3;
 #ifdef FORCE_RESOLVE_DEBUG
-    fprintf(stderr, "force_resolve restored to %d\n", force_resolve);
+    fprintf(stderr, "Compilation flags restored to 0x%02x.\n",
+	    Pike_compiler->flags);
 #endif
     free_node($4);
     pop_stack();
@@ -479,9 +485,10 @@ inheritance: modifiers TOK_INHERIT force_resolve
   }
   | modifiers TOK_INHERIT force_resolve low_program_ref error '}'
   {
-    force_resolve = $3;
+    Pike_compiler->flags = $3;
 #ifdef FORCE_RESOLVE_DEBUG
-    fprintf(stderr, "force_resolve restored to %d\n", force_resolve);
+    fprintf(stderr, "Compilation flags restored to 0x%02x.\n",
+	    Pike_compiler->flags);
 #endif
     free_node($4);
     pop_stack();
@@ -2409,7 +2416,7 @@ class: modifiers TOK_CLASS optional_identifier
       if ($1 & ID_EXTERN) {
 	yywarning("Extern declared class definition.");
       }
-      low_start_new_program(0, $3->u.sval.u.string,
+      low_start_new_program(0, 1, $3->u.sval.u.string,
 			    $1,
 			    &$<number>$);
 
@@ -2429,7 +2436,7 @@ class: modifiers TOK_CLASS optional_identifier
       i=isidentifier($3->u.sval.u.string);
       if(i<0)
       {
-	low_start_new_program(Pike_compiler->new_program, 0,
+	low_start_new_program(Pike_compiler->new_program, 2, 0,
 			      $1,
 			      &$<number>$);
 	yyerror("Pass 2: program not defined!");
@@ -2441,7 +2448,7 @@ class: modifiers TOK_CLASS optional_identifier
 	  s=&PROG_FROM_INT(Pike_compiler->new_program,i)->constants[id->func.offset].sval;
 	  if(s->type==T_PROGRAM)
 	  {
-	    low_start_new_program(s->u.program,
+	    low_start_new_program(s->u.program, 2,
 				  $3->u.sval.u.string,
 				  $1,
 				  &$<number>$);
@@ -2451,13 +2458,13 @@ class: modifiers TOK_CLASS optional_identifier
 
 	  }else{
 	    yyerror("Pass 2: constant redefined!");
-	    low_start_new_program(Pike_compiler->new_program, 0,
+	    low_start_new_program(Pike_compiler->new_program, 2, 0,
 				  $1,
 				  &$<number>$);
 	  }
 	}else{
 	  yyerror("Pass 2: class constant no longer constant!");
-	  low_start_new_program(Pike_compiler->new_program, 0,
+	  low_start_new_program(Pike_compiler->new_program, 2, 0,
 				$1,
 				&$<number>$);
 	}
@@ -3363,7 +3370,7 @@ low_idents: TOK_IDENTIFIER
     }else if(!($$=find_module_identifier(Pike_compiler->last_identifier,1)) &&
 	     !($$ = program_magic_identifier (Pike_compiler, 0, 0,
 					      Pike_compiler->last_identifier, 0))) {
-      if(force_resolve ||
+      if((Pike_compiler->flags & COMPILATION_FORCE_RESOLVE) ||
 	 ((!Pike_compiler->num_parse_error) &&
 	  (Pike_compiler->compiler_pass==2))) {
 	my_yyerror("Undefined identifier %s.", Pike_compiler->last_identifier->str);
@@ -3422,7 +3429,8 @@ low_idents: TOK_IDENTIFIER
 	/* All done. */
       }
       else {
-	if (force_resolve || (Pike_compiler->compiler_pass == 2)) {
+	if ((Pike_compiler->flags & COMPILATION_FORCE_RESOLVE) ||
+	    (Pike_compiler->compiler_pass == 2)) {
 	  if (inherit_state->new_program->inherits[$1].name) {
 	    my_yyerror("Undefined identifier %s::%s.",
 		       inherit_state->new_program->inherits[$1].name->str,

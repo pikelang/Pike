@@ -2,11 +2,11 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: program.c,v 1.484 2003/11/25 18:29:30 jonasw Exp $
+|| $Id: program.c,v 1.485 2004/03/13 13:22:39 grubba Exp $
 */
 
 #include "global.h"
-RCSID("$Id: program.c,v 1.484 2003/11/25 18:29:30 jonasw Exp $");
+RCSID("$Id: program.c,v 1.485 2004/03/13 13:22:39 grubba Exp $");
 #include "program.h"
 #include "object.h"
 #include "dynamic_buffer.h"
@@ -1407,6 +1407,14 @@ void fixate_program(void)
     Pike_fatal("Cannot fixate optimized program\n");
 #endif
 
+  /* Fixup identifier overrides. */
+  for (i = 0; i < p->num_identifier_references; i++) {
+    struct reference *ref = p->identifier_references + i;
+    if (ref->id_flags & ID_HIDDEN) continue;
+    if (ref->inherit_offset != 0) continue;
+    override_identifier (ref, ID_FROM_PTR (p, ref)->name);
+  }
+
   /* Ok, sort for binsearch */
   for(e=i=0;i<(int)p->num_identifier_references;i++)
   {
@@ -1482,7 +1490,7 @@ void fixate_program(void)
 
   p->flags |= PROGRAM_FIXED;
 
-  if(Pike_compiler->check_final)
+  if(Pike_compiler->flags & COMPILATION_CHECK_FINAL)
   {
     for(i=0;i<(int)p->num_identifier_references;i++)
     {
@@ -1595,11 +1603,12 @@ struct program *low_allocate_program(void)
  * Start building a new program
  */
 void low_start_new_program(struct program *p,
+			   int pass,
 			   struct pike_string *name,
 			   int flags,
 			   int *idp)
 {
-  int e,id=0;
+  int id=0;
   struct svalue tmp;
 
 #if 0
@@ -1640,7 +1649,6 @@ void low_start_new_program(struct program *p,
     }
     if(compilation_depth >= 1)
       add_ref(p->parent = Pike_compiler->new_program);
-    e=1;
   }else{
     tmp.u.program=p;
     add_ref(p);
@@ -1654,7 +1662,6 @@ void low_start_new_program(struct program *p,
       free_type(i->type);
       i->type=get_type_of_svalue(&tmp);
     }
-    e=2;
   }
   p->flags &=~ PROGRAM_VIRGIN;
   Pike_compiler->parent_identifier=id;
@@ -1671,7 +1678,7 @@ void low_start_new_program(struct program *p,
 #define PUSH
 #include "compilation.h"
 
-  Pike_compiler->compiler_pass=e;
+  Pike_compiler->compiler_pass = pass;
 
   Pike_compiler->num_used_modules=0;
 
@@ -1854,7 +1861,7 @@ PMOD_EXPORT void debug_start_new_program(int line, const char *file)
 	     "threads_disabled:%d, compilation_depth:%d\n",
 	     (long)th_self(), line, file, threads_disabled, compilation_depth));
 
-  low_start_new_program(0,0,0,0);
+  low_start_new_program(0,1,0,0,0);
   store_linenumber(line,lex.current_file);
   debug_malloc_name(Pike_compiler->new_program, file, line);
 
@@ -3270,7 +3277,7 @@ void low_inherit(struct program *p,
 
     if (fun.id_flags & ID_NOMASK)
     {
-      Pike_compiler->check_final++;
+      Pike_compiler->flags |= COMPILATION_CHECK_FINAL;
     }
     
     if(fun.id_flags & ID_PRIVATE) fun.id_flags|=ID_HIDDEN;
@@ -5217,7 +5224,6 @@ extern void yyparse(void);
 #endif
 
 struct Supporter *current_supporter=0;
-int force_resolve = 0;
 
 
 #ifdef PIKE_DEBUG
@@ -5422,7 +5428,7 @@ int report_compiler_dependency(struct program *p)
   int ret=0;
   struct Supporter *c,*cc;
   verify_supporters();
-  if (force_resolve)
+  if (Pike_compiler->flags & COMPILATION_FORCE_RESOLVE)
     return 0;
   for(cc=current_supporter;cc;cc=cc->previous)
   {
@@ -5624,7 +5630,7 @@ static int run_pass1(struct compilation *c)
   if(c->target && !(c->target->flags & PROGRAM_VIRGIN))
     Pike_error("Placeholder program is not virgin!\n");
 
-  low_start_new_program(c->target,0,0,0);
+  low_start_new_program(c->target,1,0,0,0);
   c->supporter.prog = Pike_compiler->new_program;
 
   CDFPRINTF((stderr,
@@ -5704,7 +5710,7 @@ void run_pass2(struct compilation *c)
   debug_malloc_touch(c->placeholder);
 
   run_init(c);
-  low_start_new_program(c->p,0,0,0);
+  low_start_new_program(c->p,2,0,0,0);
   free_program(c->p);
   c->p=0;
 

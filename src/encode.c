@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: encode.c,v 1.164 2003/11/18 14:22:52 grubba Exp $
+|| $Id: encode.c,v 1.165 2004/03/13 13:22:40 grubba Exp $
 */
 
 #include "global.h"
@@ -29,7 +29,7 @@
 #include "bignum.h"
 #include "pikecode.h"
 
-RCSID("$Id: encode.c,v 1.164 2003/11/18 14:22:52 grubba Exp $");
+RCSID("$Id: encode.c,v 1.165 2004/03/13 13:22:40 grubba Exp $");
 
 /* #define ENCODE_DEBUG */
 
@@ -3067,7 +3067,7 @@ static void decode_value2(struct decode_data *data)
 	  /* Start the new program. */
 	  orig_compilation_depth = compilation_depth;
 	  compilation_depth = -1;
-	  low_start_new_program(NULL, NULL, 0, NULL);
+	  low_start_new_program(NULL, 1, NULL, 0, NULL);
 	  p = Pike_compiler->new_program;
 
 	  /* We don't want to be affected by #pragma save_parent or
