@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: pike_regexp.c,v 1.23 2002/10/21 17:06:22 marcus Exp $
+|| $Id: pike_regexp.c,v 1.24 2003/08/12 16:47:52 nilsson Exp $
 */
 
 /*
@@ -169,12 +169,6 @@
 #define	OPERAND(p)	((p) + 3)
 
 /*
- * The first byte of the regexp internal "program" is actually this magic
- * number; the start node begins in the second byte.
- */
-#define	MAGIC	0234
-
-/*
  * Utility definitions.
  */
 
@@ -311,7 +305,6 @@ regexp *pike_regcomp(char *exp,int excompat)
     regnpar = 1;
     regsize = 0L;
     regcode = &regdummy;
-    regc(MAGIC);
     if (reg(0, &flags) == (char *)NULL)
 	return ((regexp *)NULL);
 
@@ -328,7 +321,6 @@ regexp *pike_regcomp(char *exp,int excompat)
     regparse = exp2;
     regnpar = 1;
     regcode = r->program;
-    regc(MAGIC);
     if (reg(0, &flags) == NULL)
 	return ((regexp *) NULL);
 
@@ -337,7 +329,7 @@ regexp *pike_regcomp(char *exp,int excompat)
     r->reganch = 0;
     r->regmust = NULL;
     r->regmlen = 0;
-    scan = r->program + 1;	/* First BRANCH. */
+    scan = r->program;	/* First BRANCH. */
     if (OP(regnext(scan)) == END) {	/* Only one top-level choice. */
 	scan = OPERAND(scan);
 
@@ -788,11 +780,7 @@ int pike_regexec(regexp *prog, char *string)
 	regerror("NULL parameter");
 	return (0);
     }
-    /* Check validity of program. */
-    if (UCHARAT(prog->program) != MAGIC) {
-	regerror("corrupted program");
-	return (0);
-    }
+
     /* If there is a "must appear" string, look for it. */
     if (prog->regmust != (char *)NULL) {
 	s = string;
@@ -860,7 +848,7 @@ char           *string;
 	*sp++ = (char *)NULL;
 	*ep++ = (char *)NULL;
     }
-    if (regmatch(prog->program + 1)) {
+    if (regmatch(prog->program)) {
 	prog->startp[0] = string;
 	prog->endp[0] = reginput;
 	return (1);
@@ -1175,7 +1163,7 @@ regexp         *r;
     register char   op = EXACTLY;	/* Arbitrary non-END op. */
     register char  *nxt;
 
-    s = r->program + 1;
+    s = r->program;
     while (op != END) {		/* While that wasn't END last time... */
 	op = OP(s);
 	printf("%2ld%s",	/* Where, what. */
@@ -1304,10 +1292,7 @@ char *pike_regsub(regexp *prog, char *source, char *dest, int n)
 	regerror("NULL parm to regsub");
 	return NULL;
     }
-    if (UCHARAT(prog->program) != MAGIC) {
-	regerror("damaged regexp fed to regsub");
-	return NULL;
-    }
+
     src = source;
     dst = dest;
     while ((c = *src++) != '\0') {
