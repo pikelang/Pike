@@ -1,4 +1,4 @@
-// $Id: testsuite.in,v 1.32 2004/02/13 06:36:12 nilsson Exp $
+// $Id: testsuite.in,v 1.33 2004/02/14 02:43:16 nilsson Exp $
 
 // Nettle.Yarrow
 
@@ -330,27 +330,29 @@ test_do( add_constant("DSA") )
 
 dnl Crypto.substitution
 
-test_do( add_constant("C", Crypto.substitution()) )
+test_do( add_constant("C", Crypto.Substitution()) )
 
 dnl ROT
 test_do( C->set_rot_key() )
-test_eq( C->encode("Pelle"), "Cryyr" )
-test_eq( C->decode("Cryyr"), "Pelle" )
+test_eq( C->encrypt("Pelle"), "Cryyr" )
+test_eq( C->decrypt("Cryyr"), "Pelle" )
 dnl --- Jay Kominek ROT13 conformance test
-test_eq( C->encode("ABCDEFGHIJKLMNOPQRSTUVWXYZ"),"NOPQRSTUVWXYZABCDEFGHIJKLM" )
-test_eq( C->encode("abcdefghijklmnopqrstuvwxyz"),"nopqrstuvwxyzabcdefghijklm" )
-test_eq( C->encode("0123456789-= "), "0123456789-= " )
-test_eq( C->encode("!@#$%^&*()_+"), "!@#$%^&*()_+" )
-test_eq( C->encode("[]{};':\",./<>?"),[[ "[]{};':\",./<>?" ]])
+test_eq( C->encrypt("ABCDEFGHIJKLMNOPQRSTUVWXYZ"),
+  "NOPQRSTUVWXYZABCDEFGHIJKLM" )
+test_eq( C->encrypt("abcdefghijklmnopqrstuvwxyz"),
+  "nopqrstuvwxyzabcdefghijklm" )
+test_eq( C->encrypt("0123456789-= "), "0123456789-= " )
+test_eq( C->encrypt("!@#$%^&*()_+"), "!@#$%^&*()_+" )
+test_eq( C->encrypt("[]{};':\",./<>?"),[[ "[]{};':\",./<>?" ]])
 dnl --- End of Jay Kominek ROT 13 conformance test
 test_do( C->set_rot_key(2) )
-test_eq( C->encode("Pelle"), "Rgnng" )
-test_eq( C->decode("Rgnng"), "Pelle" )
+test_eq( C->encrypt("Pelle"), "Rgnng" )
+test_eq( C->decrypt("Rgnng"), "Pelle" )
 test_do( C->set_rot_key(3, "ABCabcåäö"/1) )
-test_eq( C->encode("Abbas"), "aääås" )
-test_eq( C->decode("aääås"), "Abbas" )
+test_eq( C->encrypt("Abbas"), "aääås" )
+test_eq( C->decrypt("aääås"), "Abbas" )
 test_do( C->set_null_chars(0.2, "xyz"/1) )
-test_eq( C->decode(C->encode("A"*100)), "A"*100 )
+test_eq( C->decrypt(C->encrypt("A"*100)), "A"*100 )
 
 test_do( add_constant("C") )
 

@@ -86,10 +86,10 @@ testfont binary
 /lib/modules/Calendar.pmod/events/regional foreign_ident
 /lib/modules/Calendar.pmod/mkrules.pike foreign_ident
 /lib/modules/Calendar.pmod/testsuite.in foreign_ident
+/lib/modules/Crypto.pmod/Koremutake.pmod foreign_ident
 /lib/modules/Crypto.pmod/PGP.pmod foreign_ident
 /lib/modules/Crypto.pmod/RSA.pike foreign_ident
 /lib/modules/Crypto.pmod/Random.pmod foreign_ident
-/lib/modules/Crypto.pmod/koremutake.pmod foreign_ident
 /lib/modules/Crypto.pmod/testsuite.in foreign_ident
 /lib/modules/Debug.pmod/Subject.pike foreign_ident
 /lib/modules/Debug.pmod/module.pmod foreign_ident
