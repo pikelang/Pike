@@ -244,23 +244,27 @@ void image_make_ascii(INT32 args)
   int i, x, y,xy=0,y2=0, xmax=0,ymax=0,max,sum0,sum1,sum2,sum3;
   struct pike_string *s;
 
-  if (!THIS->img) { error("no image\n");  return; }
+  if (!THIS->img) { error("Called Image.Image object is not initialized\n");;  return; }
 
   this=THIS;
 
   if (args<4)
   {
-    error("Too few arguments to image->make_ascii\n");
+    SIMPLE_TOO_FEW_ARGS_ERROR("image->make_ascii\\n",1);
   }
   
   if (sp[-args].type!=T_OBJECT)
-    error("Illegal argument 1 to image->make_ascii\n");
+    bad_arg_error("image->make_ascii\\n",sp-args,args,1,"",sp+1-1-args,
+		"Bad argument 1 to image->make_ascii\n()\n");
   if (sp[1-args].type!=T_OBJECT)
-    error("Illegal argument 2 to image->make_ascii\n");
+    bad_arg_error("image->make_ascii\\n",sp-args,args,2,"",sp+2-1-args,
+		"Bad argument 2 to image->make_ascii\n()\n");
   if (sp[2-args].type!=T_OBJECT)
-    error("Illegal argument 3 to image->make_ascii\n");
+    bad_arg_error("image->make_ascii\\n",sp-args,args,3,"",sp+3-1-args,
+		"Bad argument 3 to image->make_ascii\n()\n");
   if (sp[3-args].type!=T_OBJECT)
-    error("Illegal argument 4 to image->make_ascii\n");
+    bad_arg_error("image->make_ascii\\n",sp-args,args,4,"",sp+4-1-args,
+		"Bad argument 4 to image->make_ascii\n()\n");
   img[0]=(struct image*)sp[-args].u.object->storage;
   img[1]=(struct image*)sp[1-args].u.object->storage;
   img[2]=(struct image*)sp[2-args].u.object->storage;
@@ -512,7 +516,7 @@ THREADS_ALLOW();
    d=malloc(sizeof(rgb_group)*img->xsize*img->ysize +1);
 THREADS_DISALLOW();
 
-   if(!d) error("Out of memory.\n");
+   if(!d) resource_error(NULL,0,0,"memory",0,"Out of memory.\n");
    
 THREADS_ALLOW();
 
@@ -601,7 +605,8 @@ void image_apply_max(INT32 args)
 
    if (args<1 ||
        sp[-args].type!=T_ARRAY)
-      error("Illegal arguments to Image.Image->apply_max()\n");
+      bad_arg_error("Image",sp-args,args,0,"",sp-args,
+		"Bad arguments to Image()\n");
 
    if (args>3) 
       if (sp[1-args].type!=T_INT ||
@@ -651,7 +656,7 @@ void image_apply_max(INT32 args)
    if (width==-1) width=0;
 
    matrix=malloc(sizeof(rgbd_group)*width*height+1);
-   if (!matrix) error("Out of memory");
+   if (!matrix) resource_error(NULL,0,0,"memory",0,"Out of memory.\n");
    
    for (i=0; i<height; i++)
    {

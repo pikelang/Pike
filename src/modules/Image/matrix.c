@@ -1,9 +1,9 @@
-/* $Id: matrix.c,v 1.19 1999/05/20 17:34:37 mirar Exp $ */
+/* $Id: matrix.c,v 1.20 1999/06/18 19:19:27 mirar Exp $ */
 
 /*
 **! module Image
 **! note
-**!	$Id: matrix.c,v 1.19 1999/05/20 17:34:37 mirar Exp $
+**!	$Id: matrix.c,v 1.20 1999/06/18 19:19:27 mirar Exp $
 **! class Image
 */
 
@@ -185,7 +185,7 @@ CHRONO("scale begin");
    if (newy<1) newy=1;
 
    new=malloc(newx*newy*sizeof(rgbd_group) +1);
-   if (!new) error("Out of memory!\n");
+   if (!new) resource_error(NULL,0,0,"memory",0,"Out of memory.\n");
    THREADS_ALLOW();
 
    for (y=0; y<newx*newy; y++)
@@ -239,7 +239,7 @@ CHRONO("scale end");
 
    THREADS_DISALLOW();
    if (!d) 
-      error("Out of memory!\n");
+      resource_error(NULL,0,0,"memory",0,"Out of memory.\n");
 }
 
 /* Special, faster, case for scale=1/2 */
@@ -254,7 +254,7 @@ void img_scale2(struct image *dest, struct image *source)
    if (!THIS->img || newx<=0 || newy<=0) return; /* no way */
 
    new=malloc(newx*newy*sizeof(rgb_group) +1);
-   if (!new) error("Out of memory\n");
+   if (!new) resource_error(NULL,0,0,"memory",0,"Out of memory.\n");
    THREADS_ALLOW();
    MEMSET(new,0,newx*newy*sizeof(rgb_group));
 
@@ -361,7 +361,8 @@ void image_scale(INT32 args)
    else
    {
       free_object(o);
-      error("illegal arguments to image->scale()\n");
+      bad_arg_error("image->scale",sp-args,args,0,"",sp-args,
+		"Bad arguments to image->scale()\n");
    }
    pop_n_elems(args);
    push_object(o);
@@ -393,7 +394,7 @@ void image_ccw(INT32 args)
 
    pop_n_elems(args);
 
-   if (!THIS->img) error("no image\n");
+   if (!THIS->img) error("Called Image.Image object is not initialized\n");;
 
    o=clone_object(image_program,0);
    img=(struct image*)o->storage;
@@ -401,7 +402,7 @@ void image_ccw(INT32 args)
    if (!(img->img=malloc(sizeof(rgb_group)*THIS->xsize*THIS->ysize+1)))
    {
       free_object(o);
-      error("Out of memory\n");
+      resource_error(NULL,0,0,"memory",0,"Out of memory.\n");
    }
    img->xsize=THIS->ysize;
    img->ysize=THIS->xsize;
@@ -431,7 +432,7 @@ static void img_cw(struct image *is,struct image *id)
    if (id->img) free(id->img);
    *id=*is;
    if (!(id->img=malloc(sizeof(rgb_group)*is->xsize*is->ysize+1)))
-      error("Out of memory\n");
+      resource_error(NULL,0,0,"memory",0,"Out of memory.\n");
 
    id->xsize=is->ysize;
    id->ysize=is->xsize;
@@ -457,7 +458,7 @@ void img_ccw(struct image *is,struct image *id)
    if (id->img) free(id->img);
    *id=*is;
    if (!(id->img=malloc(sizeof(rgb_group)*is->xsize*is->ysize+1)))
-      error("Out of memory\n");
+      resource_error(NULL,0,0,"memory",0,"Out of memory.\n");
 
    id->xsize=is->ysize;
    id->ysize=is->xsize;
@@ -500,7 +501,7 @@ void image_cw(INT32 args)
 
    pop_n_elems(args);
 
-   if (!THIS->img) error("no image\n");
+   if (!THIS->img) error("Called Image.Image object is not initialized\n");;
 
    o=clone_object(image_program,0);
    img=(struct image*)o->storage;
@@ -508,7 +509,7 @@ void image_cw(INT32 args)
    if (!(img->img=malloc(sizeof(rgb_group)*THIS->xsize*THIS->ysize+1)))
    {
       free_object(o);
-      error("Out of memory\n");
+      resource_error(NULL,0,0,"memory",0,"Out of memory.\n");
    }
    ys=img->xsize=THIS->ysize;
    i=xs=img->ysize=THIS->xsize;
@@ -552,7 +553,7 @@ void image_mirrorx(INT32 args)
 
    pop_n_elems(args);
 
-   if (!THIS->img) error("no image\n");
+   if (!THIS->img) error("Called Image.Image object is not initialized\n");;
 
    o=clone_object(image_program,0);
    img=(struct image*)o->storage;
@@ -560,7 +561,7 @@ void image_mirrorx(INT32 args)
    if (!(img->img=malloc(sizeof(rgb_group)*THIS->xsize*THIS->ysize+1)))
    {
       free_object(o);
-      error("Out of memory\n");
+      resource_error(NULL,0,0,"memory",0,"Out of memory.\n");
    }
 
    i=THIS->ysize;
@@ -601,7 +602,7 @@ void image_mirrory(INT32 args)
 
    pop_n_elems(args);
 
-   if (!THIS->img) error("no image\n");
+   if (!THIS->img) error("Called Image.Image object is not initialized\n");;
 
    o=clone_object(image_program,0);
    img=(struct image*)o->storage;
@@ -609,7 +610,7 @@ void image_mirrory(INT32 args)
    if (!(img->img=malloc(sizeof(rgb_group)*THIS->xsize*THIS->ysize+1)))
    {
       free_object(o);
-      error("Out of memory\n");
+      resource_error(NULL,0,0,"memory",0,"Out of memory.\n");
    }
 
    i=THIS->ysize;
@@ -829,15 +830,16 @@ void image_skewx(INT32 args)
    struct object *o;
 
    if (args<1)
-      error("too few arguments to image->skewx()\n");
+      SIMPLE_TOO_FEW_ARGS_ERROR("image->skewx",1);
    else if (sp[-args].type==T_FLOAT)
       diff=THIS->ysize*sp[-args].u.float_number;
    else if (sp[-args].type==T_INT)
       diff=sp[-args].u.integer;
    else
-      error("illegal argument to image->skewx()\n");
+      bad_arg_error("image->skewx",sp-args,args,0,"",sp-args,
+		"Bad arguments to image->skewx()\n");
 
-   if (!THIS->img) error("no image\n");
+   if (!THIS->img) error("Called Image.Image object is not initialized\n");;
 
    o=clone_object(image_program,0);
 
@@ -892,15 +894,16 @@ void image_skewy(INT32 args)
    struct object *o;
 
    if (args<1)
-      error("too few arguments to image->skewy()\n");
+      SIMPLE_TOO_FEW_ARGS_ERROR("image->skewy",1);
    else if (sp[-args].type==T_FLOAT)
       diff=THIS->xsize*sp[-args].u.float_number;
    else if (sp[-args].type==T_INT)
       diff=sp[-args].u.integer;
    else
-      error("illegal argument to image->skewx()\n");
+      bad_arg_error("image->skewx",sp-args,args,0,"",sp-args,
+		"Bad arguments to image->skewx()\n");
 
-   if (!THIS->img) error("no image\n");
+   if (!THIS->img) error("Called Image.Image object is not initialized\n");;
 
    o=clone_object(image_program,0);
 
@@ -919,15 +922,16 @@ void image_skewx_expand(INT32 args)
    struct object *o;
 
    if (args<1)
-      error("too few arguments to image->skewx()\n");
+      SIMPLE_TOO_FEW_ARGS_ERROR("image->skewx",1);
    else if (sp[-args].type==T_FLOAT)
       diff=THIS->ysize*sp[-args].u.float_number;
    else if (sp[-args].type==T_INT)
       diff=sp[-args].u.integer;
    else
-      error("illegal argument to image->skewx()\n");
+      bad_arg_error("image->skewx",sp-args,args,0,"",sp-args,
+		"Bad arguments to image->skewx()\n");
 
-   if (!THIS->img) error("no image\n");
+   if (!THIS->img) error("Called Image.Image object is not initialized\n");;
 
    o=clone_object(image_program,0);
 
@@ -946,15 +950,16 @@ void image_skewy_expand(INT32 args)
    struct object *o;
 
    if (args<1)
-      error("too few arguments to image->skewy()\n");
+      SIMPLE_TOO_FEW_ARGS_ERROR("image->skewy",1);
    else if (sp[-args].type==T_FLOAT)
       diff=THIS->xsize*sp[-args].u.float_number;
    else if (sp[-args].type==T_INT)
       diff=sp[-args].u.integer;
    else
-      error("illegal argument to image->skewx()\n");
+      bad_arg_error("image->skewx",sp-args,args,0,"",sp-args,
+		"Bad arguments to image->skewx()\n");
 
-   if (!THIS->img) error("no image\n");
+   if (!THIS->img) error("Called Image.Image object is not initialized\n");;
 
    o=clone_object(image_program,0);
 
@@ -976,15 +981,16 @@ void img_rotate(INT32 args,int xpn)
    struct image *dest,d0,dest2;
 
    if (args<1)
-      error("too few arguments to image->rotate()\n");
+      SIMPLE_TOO_FEW_ARGS_ERROR("image->rotate",1);
    else if (sp[-args].type==T_FLOAT)
       angle=sp[-args].u.float_number;
    else if (sp[-args].type==T_INT)
       angle=sp[-args].u.integer;
    else
-      error("illegal argument to image->rotate()\n");
+      bad_arg_error("image->rotate",sp-args,args,0,"",sp-args,
+		"Bad arguments to image->rotate()\n");
 
-   if (!THIS->img) error("no image\n");
+   if (!THIS->img) error("Called Image.Image object is not initialized\n");;
 
    dest2.img=d0.img=NULL;
 
@@ -1082,11 +1088,13 @@ void img_translate(INT32 args,int expand)
 
    if (sp[-args].type==T_FLOAT) xt=sp[-args].u.float_number;
    else if (sp[-args].type==T_INT) xt=sp[-args].u.integer;
-   else error("illegal argument 1 to image->translate()\n");
+   else bad_arg_error("image->translate",sp-args,args,1,"",sp+1-1-args,
+		"Bad argument 1 to image->translate()\n");
 
    if (sp[1-args].type==T_FLOAT) yt=sp[1-args].u.float_number;
    else if (sp[1-args].type==T_INT) yt=sp[1-args].u.integer;
-   else error("illegal argument 2 to image->translate()\n");
+   else bad_arg_error("image->translate",sp-args,args,2,"",sp+2-1-args,
+		"Bad argument 2 to image->translate()\n");
 
    getrgb(THIS,2,args,"image->translate()\n");
 
@@ -1102,7 +1110,7 @@ void img_translate(INT32 args,int expand)
    if (!(img->img=malloc(sizeof(rgb_group)*img->xsize*img->ysize+1)))
    {
       free_object(o);
-      error("Out of memory\n");
+      resource_error(NULL,0,0,"memory",0,"Out of memory.\n");
    }
 
    if (!xt)

@@ -1,11 +1,11 @@
 #include "global.h"
 
-/* $Id: colortable.c,v 1.70 1999/06/18 14:45:04 mast Exp $ */
+/* $Id: colortable.c,v 1.71 1999/06/18 19:19:16 mirar Exp $ */
 
 /*
 **! module Image
 **! note
-**!	$Id: colortable.c,v 1.70 1999/06/18 14:45:04 mast Exp $
+**!	$Id: colortable.c,v 1.71 1999/06/18 19:19:16 mirar Exp $
 **! class Colortable
 **!
 **!	This object keeps colortable information,
@@ -20,7 +20,7 @@
 #undef COLORTABLE_DEBUG
 #undef COLORTABLE_REDUCE_DEBUG
 
-RCSID("$Id: colortable.c,v 1.70 1999/06/18 14:45:04 mast Exp $");
+RCSID("$Id: colortable.c,v 1.71 1999/06/18 19:19:16 mirar Exp $");
 
 #include <math.h> /* fabs() */
 
@@ -610,7 +610,7 @@ static struct nct_flat _img_reduce_number_of_colors(struct nct_flat flat,
 
    flat.entries=realloc(newe,i*sizeof(struct nct_flat_entry));
    flat.numentries=i;
-   if (!flat.entries) { free(newe); error("out of memory\n"); }
+   if (!flat.entries) { free(newe); resource_error(NULL,0,0,"memory",0,"Out of memory.\n"); }
 
    for (j=0; j<i; j++)
       flat.entries[j].no=j;
@@ -766,7 +766,7 @@ rerun_rehash:
 	 if (!hash)
 	 {
 	    free(oldhash);
-	    error("out of memory\n");
+	    resource_error(NULL,0,0,"memory",0,"Out of memory.\n");
 	 }
 	 k=hashsize;
 	 while (k--) hash[k].pixels=0;
@@ -809,7 +809,7 @@ rerun_mask:
       if (!hash)
       {
 	 free(oldhash);
-	 error("out of memory\n");
+	 resource_error(NULL,0,0,"memory",0,"Out of memory.\n");
       }
       
       k=hashsize;
@@ -852,7 +852,7 @@ rerun_mask:
    if (!flat.entries)
    {
       free(hash);
-      error("out of memory\n");
+      resource_error(NULL,0,0,"memory",0,"Out of memory.\n");
    }
    j=0;
    i=hashsize;
@@ -1317,7 +1317,7 @@ rerun_rehash_add_1:
 	    free(oldhash);
 	    free_colortable_struct(&tmp1);
 	    free_colortable_struct(&tmp2);
-	    error("out of memory\n");
+	    resource_error(NULL,0,0,"memory",0,"Out of memory.\n");
 	 }
 	 k=hashsize;
 	 while (k--) hash[k].pixels=0;
@@ -1363,7 +1363,7 @@ rerun_rehash_add_2:
 	    free(oldhash);
 	    free_colortable_struct(&tmp1);
 	    free_colortable_struct(&tmp2);
-	    error("out of memory\n");
+	    resource_error(NULL,0,0,"memory",0,"Out of memory.\n");
 	 }
 	 i=hashsize;
 	 while (i--) hash[i].pixels=0;
@@ -1406,7 +1406,7 @@ rerun_rehash_add_2:
    if (!flat.entries)
    {
       free(hash);
-      error("out of memory\n");
+      resource_error(NULL,0,0,"memory",0,"Out of memory.\n");
    }
    j=0;
    i=hashsize;
@@ -1499,7 +1499,7 @@ rerun_rehash_add_1:
 	    free(oldhash);
 	    free_colortable_struct(&tmp1);
 	    free_colortable_struct(&tmp2);
-	    error("out of memory\n");
+	    resource_error(NULL,0,0,"memory",0,"Out of memory.\n");
 	 }
 	 k=hashsize;
 	 while (k--) hash[k].pixels=0;
@@ -1545,7 +1545,7 @@ rerun_rehash_add_2:
 	    free(oldhash);
 	    free_colortable_struct(&tmp1);
 	    free_colortable_struct(&tmp2);
-	    error("out of memory\n");
+	    resource_error(NULL,0,0,"memory",0,"Out of memory.\n");
 	 }
 	 i=hashsize;
 	 while (i--) hash[i].pixels=0;
@@ -1582,7 +1582,7 @@ rerun_rehash_add_2:
    if (!flat.entries)
    {
       free(hash);
-      error("out of memory\n");
+      resource_error(NULL,0,0,"memory",0,"Out of memory.\n");
    }
    j=0;
    i=hashsize;
@@ -2181,7 +2181,8 @@ static void image_colortable_add(INT32 args)
 	       }
 	    }
 	    else 
-	       error("Illegal argument 2 to Image.Colortable->add|create\n");
+	       bad_arg_error("Image",sp-args,args,2,"",sp+2-1-args,
+		"Bad argument 2 to Image()\n");
 	 else
 	 {
 	    THIS->u.flat=_img_get_flat_from_image(img,256); 
@@ -2191,7 +2192,8 @@ static void image_colortable_add(INT32 args)
 	    THIS->type=NCT_FLAT;
 	 }
       }
-      else error("Illegal argument 1 to Image.Colortable->add|create\n");
+      else bad_arg_error("Image",sp-args,args,1,"",sp+1-1-args,
+		"Bad argument 1 to Image()\n");
    }
    else if (sp[-args].type==T_ARRAY)
    {
@@ -2229,7 +2231,8 @@ static void image_colortable_add(INT32 args)
       THIS->u.cube=_img_get_cube_from_args(args);
       THIS->type=NCT_CUBE;
    }
-   else error("Illegal argument(s) to Image.Colortable->add|create\n");
+   else bad_arg_error("Image",sp-args,args,0,"",sp-args,
+		"Bad arguments to Image()\n");
    pop_n_elems(args);
    ref_push_object(THISOBJ);
 
@@ -2391,7 +2394,8 @@ void image_colortable_operator_plus(INT32 args)
 	 if (!src) abort();
       }
       else {
-	error("Image-colortable->`+: Illegal argument %d\n",i+2);
+	bad_arg_error("Image-colortable->`+",sp-args,args,0,"",sp-args,
+		"Bad arguments to Image-colortable->`+()\n");
 	/* Not reached, but keeps the compiler happy. */
 	src = NULL;
       }
@@ -2432,14 +2436,16 @@ void image_colortable_operator_minus(INT32 args)
 	 if (!src) 
 	 { 
 	    free_object(o); 
-	    error("Illegal argument %d to Image.Colortable->`-",i+2); 
+	    bad_arg_error("Image",sp-args,args,i+2,"",sp+i+2-1-args,
+		"Bad argument %d to Image()\n",i+2); 
 	 }
 	 _img_sub_colortable(dest,src);
       }
       else 
       { 
 	 free_object(o); 
-	 error("Illegal argument %d to Image.Colortable->`-",i+2); 
+	 bad_arg_error("Image",sp-args,args,i+2,"",sp+i+2-1-args,
+		"Bad argument %d to Image()\n",i+2); 
       }
    pop_n_elems(args);
    push_object(o);
@@ -2844,7 +2850,8 @@ void image_colortable_cubicles(INT32 args)
 	    THIS->lu.cubicles.accur=CUBICLE_DEFAULT_ACCUR;
       }
       else
-	 error("Illegal arguments to colortable->cubicles()\n");
+	 bad_arg_error("colortable->cubicles",sp-args,args,0,"",sp-args,
+		"Bad arguments to colortable->cubicles()\n");
    else
    {
       THIS->lu.cubicles.r=CUBICLE_DEFAULT_R;
@@ -3128,7 +3135,7 @@ static INLINE void _build_cubicle(struct neo_colortable *nct,
    int *p=malloc(n*sizeof(struct nctlu_cubicle));
    int *pp; /* write */
 
-   if (!p) error("out of memory (kablamm, typ) in _build_cubicle in colortable->map()\n");
+   if (!p) resource_error(NULL,0,0,"memory",0,"Out of memory.\n");
 
    rmin=(r*256)/red;   rmax=((r+1)*256)/red-1;
    gmin=(g*256)/green; gmax=((g+1)*256)/green-1;
@@ -3510,7 +3517,7 @@ void image_colortable_map(INT32 args)
    struct object *o;
 
    if (args<1)
-      error("too few arguments to colortable->map()\n");
+      SIMPLE_TOO_FEW_ARGS_ERROR("colortable->map",1);
 
    if (sp[-args].type==T_STRING)
    {
@@ -3584,10 +3591,11 @@ void image_colortable_map(INT32 args)
 
    if (sp[-args].type!=T_OBJECT ||
        ! (src=(struct image*)get_storage(sp[-args].u.object,image_program)))
-      error("illegal argument 1 to colortable->map(), expecting image object\n");
+      bad_arg_error("colortable->map",sp-args,args,1,"",sp+1-1-args,
+		"Bad argument 1 to colortable->map()\n");
 
    if (!src->img) 
-      error("colortable->map(): source image is empty\n");
+      error("Called Image.Image object is not initialized\n");;
 
    o=clone_object(image_program,0);
    dest=(struct image*)(o->storage);
@@ -3597,7 +3605,7 @@ void image_colortable_map(INT32 args)
    if (!dest->img)
    {
       free_object(o);
-      error("colortable->map(): out of memory\n");
+      resource_error(NULL,0,0,"memory",0,"Out of memory.\n");
    }
 
    if (!image_colortable_map_image(THIS,src->img,dest->img,
@@ -3666,12 +3674,13 @@ void image_colortable_index_32bit(INT32 args)
 void image_colortable_spacefactors(INT32 args)
 {
    if (args<3)
-      error("Too few arguments to colortable->spacefactors()\n");
+      SIMPLE_TOO_FEW_ARGS_ERROR("colortable->spacefactors",1);
 
    if (sp[0-args].type!=T_INT ||
        sp[1-args].type!=T_INT ||
        sp[2-args].type!=T_INT)
-      error("Illegal argument(s) to colortable->spacefactors()\n");
+      bad_arg_error("colortable->spacefactors",sp-args,args,0,"",sp-args,
+		"Bad arguments to colortable->spacefactors()\n");
 
    THIS->spacefactor.r=sp[0-args].u.integer;
    THIS->spacefactor.g=sp[1-args].u.integer;
@@ -3725,7 +3734,8 @@ void image_colortable_floyd_steinberg(INT32 args)
 
    if (args>=1) 
       if (sp[-args].type!=T_INT) 
-	 error("colortable->spacefactors(): Illegal argument 1\n");
+	 bad_arg_error("colortable->spacefactors",sp-args,args,0,"",sp-args,
+		"Bad arguments to colortable->spacefactors()\n");
       else 
 	 THIS->du.floyd_steinberg.dir=sp[-args].u.integer;
    else 
@@ -3736,7 +3746,8 @@ void image_colortable_floyd_steinberg(INT32 args)
       else if (sp[5-args].type==T_INT)
 	 factor=(float)sp[5-args].u.integer;
       else
-	 error("colortable->spacefactors(): Illegal argument 6\n");
+	 bad_arg_error("colortable->spacefactors",sp-args,args,0,"",sp-args,
+		"Bad arguments to colortable->spacefactors()\n");
    if (args>=5)
    {
       if (sp[1-args].type==T_FLOAT)
@@ -3744,25 +3755,29 @@ void image_colortable_floyd_steinberg(INT32 args)
       else if (sp[1-args].type==T_INT)
 	 forward=(float)sp[1-args].u.integer;
       else
-	 error("colortable->spacefactors(): Illegal argument 2\n");
+	 bad_arg_error("colortable->spacefactors",sp-args,args,0,"",sp-args,
+		"Bad arguments to colortable->spacefactors()\n");
       if (sp[2-args].type==T_FLOAT)
 	 downforward=(float)sp[2-args].u.float_number;
       else if (sp[2-args].type==T_INT)
 	 downforward=(float)sp[2-args].u.integer;
       else
-	 error("colortable->spacefactors(): Illegal argument 3\n");
+	 bad_arg_error("colortable->spacefactors",sp-args,args,0,"",sp-args,
+		"Bad arguments to colortable->spacefactors()\n");
       if (sp[3-args].type==T_FLOAT)
 	 down=(float)sp[3-args].u.float_number;
       else if (sp[3-args].type==T_INT)
 	 down=(float)sp[3-args].u.integer;
       else
-	 error("colortable->spacefactors(): Illegal argument 4\n");
+	 bad_arg_error("colortable->spacefactors",sp-args,args,0,"",sp-args,
+		"Bad arguments to colortable->spacefactors()\n");
       if (sp[4-args].type==T_FLOAT)
 	 downback=(float)sp[4-args].u.float_number;
       else if (sp[4-args].type==T_INT)
 	 downback=(float)sp[4-args].u.integer;
       else
-	 error("colortable->spacefactors(): Illegal argument 5\n");
+	 bad_arg_error("colortable->spacefactors",sp-args,args,0,"",sp-args,
+		"Bad arguments to colortable->spacefactors()\n");
    }
 
    sum=forward+downforward+down+downback;
@@ -3875,7 +3890,8 @@ void image_colortable_randomcube(INT32 args)
       if (sp[-args].type!=T_INT||
 	  sp[1-args].type!=T_INT||
 	  sp[2-args].type!=T_INT)
-	 error("Image.Colortable->randomcube(): illegal argument(s)\n");
+	 bad_arg_error("Image.Colortable->randomcube",sp-args,args,0,"",sp-args,
+		"Bad arguments to Image.Colortable->randomcube()\n");
       else
       {
 	 THIS->du.randomcube.r=sp[-args].u.integer;
@@ -3908,7 +3924,8 @@ void image_colortable_randomgrey(INT32 args)
 
    if (args) 
       if (sp[-args].type!=T_INT)
-	 error("Image.Colortable->randomgrey(): illegal argument(s)\n");
+	 bad_arg_error("Image.Colortable->randomgrey",sp-args,args,0,"",sp-args,
+		"Bad arguments to Image.Colortable->randomgrey()\n");
       else
 	 THIS->du.randomcube.r=sp[-args].u.integer;
    else if (THIS->type==NCT_CUBE && THIS->u.cube.r)
@@ -4139,7 +4156,8 @@ void image_colortable_ordered(INT32 args)
 	  sp[1-args].type!=T_INT||
 	  sp[2-args].type!=T_INT) 
       {
-	 error("Image.Colortable->ordered(): illegal argument(s)\n");
+	 bad_arg_error("Image.Colortable->ordered",sp-args,args,0,"",sp-args,
+		"Bad arguments to Image.Colortable->ordered()\n");
 	 /* Not reached, but keep the compiler happy */
 	 r = 0;
 	 g = 0;
@@ -4178,7 +4196,8 @@ void image_colortable_ordered(INT32 args)
    {
       if (sp[3-args].type!=T_INT||
 	  sp[4-args].type!=T_INT)
-	 error("Image.Colortable->ordered(): illegal argument(s)\n");
+	 bad_arg_error("Image.Colortable->ordered",sp-args,args,0,"",sp-args,
+		"Bad arguments to Image.Colortable->ordered()\n");
       else
       {
 	 xsize=MAX(sp[3-args].u.integer,1);
@@ -4194,7 +4213,8 @@ void image_colortable_ordered(INT32 args)
 	  sp[8-args].type!=T_INT||
           sp[9-args].type!=T_INT||
 	  sp[10-args].type!=T_INT)
-	 error("Image.Colortable->ordered(): illegal argument(s)\n");
+	 bad_arg_error("Image.Colortable->ordered",sp-args,args,0,"",sp-args,
+		"Bad arguments to Image.Colortable->ordered()\n");
       else
       {
 	 THIS->du.ordered.rx=sp[5-args].u.integer;
@@ -4209,7 +4229,8 @@ void image_colortable_ordered(INT32 args)
    {
       if (sp[5-args].type!=T_INT||
 	  sp[6-args].type!=T_INT)
-	 error("Image.Colortable->ordered(): illegal argument(s)\n");
+	 bad_arg_error("Image.Colortable->ordered",sp-args,args,0,"",sp-args,
+		"Bad arguments to Image.Colortable->ordered()\n");
       else
       {
 	 THIS->du.ordered.rx=
@@ -4224,7 +4245,7 @@ void image_colortable_ordered(INT32 args)
    errors=ordered_calculate_errors(xsize,ysize);
    if (!errors) 
    {
-      error("out of memory\n");
+      resource_error(NULL,0,0,"memory",0,"Out of memory.\n");
       return;
    }
 
@@ -4249,7 +4270,7 @@ void image_colortable_ordered(INT32 args)
       if (THIS->du.ordered.rdiff) free(THIS->du.ordered.rdiff);
       if (THIS->du.ordered.gdiff) free(THIS->du.ordered.gdiff);
       if (THIS->du.ordered.bdiff) free(THIS->du.ordered.bdiff);
-      error("out of memory!\n");
+      resource_error(NULL,0,0,"memory",0,"Out of memory.\n");
       return;
    }
 

@@ -1,10 +1,10 @@
-/* $Id: blit.c,v 1.36 1999/05/25 12:00:22 mirar Exp $ */
+/* $Id: blit.c,v 1.37 1999/06/18 19:19:14 mirar Exp $ */
 #include "global.h"
 
 /*
 **! module Image
 **! note
-**!	$Id: blit.c,v 1.36 1999/05/25 12:00:22 mirar Exp $
+**!	$Id: blit.c,v 1.37 1999/06/18 19:19:14 mirar Exp $
 **! class Image
 */
 
@@ -217,7 +217,7 @@ void img_crop(struct image *dest,
       *dest=*img;
       new=malloc( (x2-x1+1)*(y2-y1+1)*sizeof(rgb_group) + 1);
       if (!new) 
-	error("Out of memory.\n");
+	resource_error(NULL,0,0,"memory",0,"Out of memory.\n");
       THREADS_ALLOW();
       MEMCPY(new,img->img,(x2-x1+1)*(y2-y1+1)*sizeof(rgb_group));
       THREADS_DISALLOW();
@@ -227,7 +227,7 @@ void img_crop(struct image *dest,
 
    new=malloc( (x2-x1+1)*(y2-y1+1)*sizeof(rgb_group) +1);
    if (!new)
-     error("Out of memory.\n");
+     resource_error(NULL,0,0,"memory",0,"Out of memory.\n");
 
    img_clear(new,THIS->rgb,(x2-x1+1)*(y2-y1+1));
 
@@ -258,7 +258,7 @@ void img_clone(struct image *newimg,struct image *img)
 {
    if (newimg->img) free(newimg->img);
    newimg->img=malloc(sizeof(rgb_group)*img->xsize*img->ysize +1);
-   if (!newimg->img) error("Out of memory!\n");
+   if (!newimg->img) resource_error(NULL,0,0,"memory",0,"Out of memory.\n");
    THREADS_ALLOW();
    MEMCPY(newimg->img,img->img,sizeof(rgb_group)*img->xsize*img->ysize);
    THREADS_DISALLOW();
@@ -291,7 +291,8 @@ void image_paste(INT32 args)
    if (args<1
        || sp[-args].type!=T_OBJECT
        || !(img=(struct image*)get_storage(sp[-args].u.object,image_program)))
-      error("illegal argument 1 to image->paste()\n");
+      bad_arg_error("image->paste",sp-args,args,1,"",sp+1-1-args,
+		"Bad argument 1 to image->paste()\n");
    if (!THIS->img) return;
 
    if (!img->img) return;
@@ -301,7 +302,8 @@ void image_paste(INT32 args)
       if (args<3 
 	  || sp[1-args].type!=T_INT
 	  || sp[2-args].type!=T_INT)
-         error("illegal arguments to image->paste()\n");
+         bad_arg_error("image->paste",sp-args,args,0,"",sp-args,
+		"Bad arguments to image->paste()\n");
       x1=sp[1-args].u.integer;
       y1=sp[2-args].u.integer;
    }
@@ -369,7 +371,8 @@ void image_paste_alpha(INT32 args)
        || !sp[-args].u.object
        || !(img=(struct image*)get_storage(sp[-args].u.object,image_program))
        || sp[1-args].type!=T_INT)
-      error("illegal arguments to image->paste_alpha()\n");
+      bad_arg_error("image->paste_alpha",sp-args,args,0,"",sp-args,
+		"Bad arguments to image->paste_alpha()\n");
    if (!THIS->img) return;
    if (!img->img) return;
    THIS->alpha=(unsigned char)(sp[1-args].u.integer);
@@ -378,7 +381,8 @@ void image_paste_alpha(INT32 args)
    {
       if (sp[2-args].type!=T_INT
 	  || sp[3-args].type!=T_INT)
-         error("illegal arguments to image->paste_alpha()\n");
+         bad_arg_error("image->paste_alpha",sp-args,args,0,"",sp-args,
+		"Bad arguments to image->paste_alpha()\n");
       x1=sp[2-args].u.integer;
       y1=sp[3-args].u.integer;
    }
@@ -454,10 +458,12 @@ CHRONO("image_paste_mask init");
       error("illegal number of arguments to image->paste_mask()\n");
    if (sp[-args].type!=T_OBJECT
        || !(img=(struct image*)get_storage(sp[-args].u.object,image_program)))
-      error("illegal argument 1 to image->paste_mask()\n");
+      bad_arg_error("image->paste_mask",sp-args,args,1,"",sp+1-1-args,
+		"Bad argument 1 to image->paste_mask()\n");
    if (sp[1-args].type!=T_OBJECT
        || !(mask=(struct image*)get_storage(sp[1-args].u.object,image_program)))
-      error("illegal argument 2 to image->paste_mask()\n");
+      bad_arg_error("image->paste_mask",sp-args,args,2,"",sp+2-1-args,
+		"Bad argument 2 to image->paste_mask()\n");
    if (!THIS->img) return;
 
    if (!mask->img) return;
@@ -554,11 +560,12 @@ void image_paste_alpha_color(INT32 args)
    int arg=1;
 
    if (args<1)
-      error("too few arguments to image->paste_alpha_color()\n");
+      SIMPLE_TOO_FEW_ARGS_ERROR("image->paste_alpha_color",1);
    if (sp[-args].type!=T_OBJECT
        || !sp[-args].u.object
        || !(mask=(struct image*)get_storage(sp[-args].u.object,image_program)))
-      error("illegal argument 1 to image->paste_alpha_color()\n");
+      bad_arg_error("image->paste_alpha_color",sp-args,args,1,"",sp+1-1-args,
+		"Bad argument 1 to image->paste_alpha_color()\n");
    if (!THIS->img) return;
    if (!mask->img) return;
 

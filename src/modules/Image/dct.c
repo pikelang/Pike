@@ -1,9 +1,9 @@
-/* $Id: dct.c,v 1.13 1999/04/22 12:40:29 mirar Exp $ */
+/* $Id: dct.c,v 1.14 1999/06/18 19:19:20 mirar Exp $ */
 
 /*
 **! module Image
 **! note
-**!	$Id: dct.c,v 1.13 1999/04/22 12:40:29 mirar Exp $
+**!	$Id: dct.c,v 1.14 1999/06/18 19:19:20 mirar Exp $
 **! class Image
 */
 
@@ -78,19 +78,19 @@ void image_dct(INT32 args)
    double *costbl;
    rgb_group *pix;
    
-   if (!THIS->img) error("no image\n");
+   if (!THIS->img) error("Called Image.Image object is not initialized\n");;
 
    fprintf(stderr,"%lu bytes, %lu bytes\n",
 	   (unsigned long)(sizeof(rgbd_group)*THIS->xsize*THIS->ysize),
 	   (unsigned long)(sizeof(rgb_group)*THIS->xsize*THIS->ysize+1));
     
    if (!(area=malloc(sizeof(rgbd_group)*THIS->xsize*THIS->ysize+1)))
-      error("Out of memory\n");
+      resource_error(NULL,0,0,"memory",0,"Out of memory.\n");
 
    if (!(costbl=malloc(sizeof(double)*THIS->xsize+1)))
    {
       free(area);
-      error("Out of memory\n");
+      resource_error(NULL,0,0,"memory",0,"Out of memory.\n");
    }
 
    o=clone_object(image_program,0);
@@ -104,7 +104,8 @@ void image_dct(INT32 args)
       img->xsize=MAXIMUM(1,sp[-args].u.integer);
       img->ysize=MAXIMUM(1,sp[1-args].u.integer);
    }
-   else error("Illegal arguments to image->dct()\n");
+   else bad_arg_error("image->dct",sp-args,args,0,"",sp-args,
+		"Bad arguments to image->dct()\n");
 
    if (!(img->img=(rgb_group*)malloc(sizeof(rgb_group)*
 				     img->xsize*img->ysize+1)))
@@ -112,7 +113,7 @@ void image_dct(INT32 args)
       free(area);
       free(costbl);
       free_object(o);
-      error("Out of memory\n");
+      resource_error(NULL,0,0,"memory",0,"Out of memory.\n");
    }
 
    xsz2=THIS->xsize*2.0;

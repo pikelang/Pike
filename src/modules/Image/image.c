@@ -1,9 +1,9 @@
-/* $Id: image.c,v 1.145 1999/06/09 19:41:45 mirar Exp $ */
+/* $Id: image.c,v 1.146 1999/06/18 19:19:23 mirar Exp $ */
 
 /*
 **! module Image
 **! note
-**!	$Id: image.c,v 1.145 1999/06/09 19:41:45 mirar Exp $
+**!	$Id: image.c,v 1.146 1999/06/18 19:19:23 mirar Exp $
 **! class Image
 **!
 **!	The main object of the <ref>Image</ref> module, this object
@@ -97,7 +97,7 @@
 
 #include "stralloc.h"
 #include "global.h"
-RCSID("$Id: image.c,v 1.145 1999/06/09 19:41:45 mirar Exp $");
+RCSID("$Id: image.c,v 1.146 1999/06/18 19:19:23 mirar Exp $");
 #include "pike_macros.h"
 #include "object.h"
 #include "constants.h"
@@ -395,7 +395,7 @@ THREADS_ALLOW();
    d=malloc(sizeof(rgb_group)*img->xsize*img->ysize +1);
 THREADS_DISALLOW();
 
-   if(!d) error("Out of memory.\n");
+   if(!d) resource_error(NULL,0,0,"memory",0,"Out of memory.\n");
    
 THREADS_ALLOW();
 CHRONO("apply_matrix, one");
@@ -536,7 +536,8 @@ void image_create(INT32 args)
    if (args<2) return;
    if (sp[-args].type!=T_INT||
        sp[1-args].type!=T_INT)
-      error("Image.Image->create(): Illegal arguments\n");
+      bad_arg_error("Image.Image->create",sp-args,args,0,"",sp-args,
+		"Bad arguments to Image.Image->create()\n");
 
    getrgb(THIS,2,args,args,"Image.Image->create()"); 
 
@@ -552,7 +553,7 @@ void image_create(INT32 args)
 
    THIS->img=malloc(sizeof(rgb_group)*THIS->xsize*THIS->ysize +1);
    if (!THIS->img)
-     error("Image.Image->create(): out of memory\n");
+     resource_error(NULL,0,0,"memory",0,"Out of memory.\n");
 
    img_clear(THIS->img,THIS->rgb,THIS->xsize*THIS->ysize);
    pop_n_elems(args);
@@ -601,7 +602,8 @@ void image_clone(INT32 args)
       if (args<2||
 	  sp[-args].type!=T_INT||
 	  sp[1-args].type!=T_INT)
-	 error("Illegal arguments to Image.Image->clone()\n");
+	 bad_arg_error("Image",sp-args,args,0,"",sp-args,
+		"Bad arguments to Image()\n");
 
    o=clone_object(image_program,0);
    img=(struct image*)(o->storage);
@@ -627,7 +629,7 @@ void image_clone(INT32 args)
       if (!img->img)
       {
 	 free_object(o);
-	 error("out of memory\n");
+	 resource_error(NULL,0,0,"memory",0,"Out of memory.\n");
       }
       if (img->xsize==THIS->xsize 
 	  && img->ysize==THIS->ysize)
@@ -683,7 +685,7 @@ void image_clear(INT32 args)
    if (!img->img)
    {
      free_object(o);
-     error("out of memory\n");
+     resource_error(NULL,0,0,"memory",0,"Out of memory.\n");
    }
 
    img_clear(img->img,img->rgb,img->xsize*img->ysize);
@@ -749,9 +751,10 @@ void image_copy(INT32 args)
        sp[1-args].type!=T_INT||
        sp[2-args].type!=T_INT||
        sp[3-args].type!=T_INT)
-      error("illegal arguments to Image.Image->copy()\n");
+      bad_arg_error("Image",sp-args,args,0,"",sp-args,
+		"Bad arguments to Image()\n");
 
-   if (!THIS->img) error("no image\n");
+   if (!THIS->img) error("Called Image.Image object is not initialized\n");;
 
    getrgb(THIS,4,args,args,"Image.Image->copy()"); 
 
@@ -794,11 +797,11 @@ static void image_change_color(INT32 args)
    struct image *img;
    int arg;
 
-   if (!THIS->img) error("no image\n");
+   if (!THIS->img) error("Called Image.Image object is not initialized\n");;
 
    to=THIS->rgb;   
    if (!(arg=getrgb(THIS,0,args,3,"Image.Image->change_color()")))
-      error("too few arguments to Image.Image->change_color()\n");
+      SIMPLE_TOO_FEW_ARGS_ERROR("Image",1);
    from=THIS->rgb;
    if (getrgb(THIS,arg,args,args,"Image.Image->change_color()"))
       to=THIS->rgb;
@@ -810,7 +813,7 @@ static void image_change_color(INT32 args)
    if (!(img->img=malloc(sizeof(rgb_group)*img->xsize*img->ysize +1)))
    {
       free_object(o);
-      error("out of memory\n");
+      resource_error(NULL,0,0,"memory",0,"Out of memory.\n");
    }
 
    left=THIS->xsize*THIS->ysize;
@@ -894,7 +897,8 @@ void image_autocrop(INT32 args)
 
    if (args) 
       if (sp[-args].type!=T_INT)
-         error("Illegal argument to Image.Image->autocrop()\n");
+         bad_arg_error("Image",sp-args,args,0,"",sp-args,
+		"Bad arguments to Image()\n");
       else
          border=sp[-args].u.integer; 
 
@@ -910,7 +914,7 @@ void image_autocrop(INT32 args)
 
    if (!THIS->img)
    {
-      error("no image\n");
+      error("Called Image.Image object is not initialized\n");;
       return;
    }
 
@@ -961,7 +965,8 @@ void image_autocrop(INT32 args)
 void image_setcolor(INT32 args)
 {
    if (args<3)
-      error("illegal arguments to Image.Image->setcolor()\n");
+      bad_arg_error("Image",sp-args,args,0,"",sp-args,
+		"Bad arguments to Image()\n");
    getrgb(THIS,0,args,args,"Image.Image->setcolor()");
    pop_n_elems(args);
    ref_push_object(THISOBJ);
@@ -998,7 +1003,8 @@ void image_setpixel(INT32 args)
    if (args<2||
        sp[-args].type!=T_INT||
        sp[1-args].type!=T_INT)
-      error("Illegal arguments to Image.Image->setpixel()\n");
+      bad_arg_error("Image",sp-args,args,0,"",sp-args,
+		"Bad arguments to Image()\n");
    getrgb(THIS,2,args,args,"Image.Image->setpixel()");   
    if (!THIS->img) return;
    x=sp[-args].u.integer;
@@ -1026,9 +1032,10 @@ void image_getpixel(INT32 args)
    if (args<2||
        sp[-args].type!=T_INT||
        sp[1-args].type!=T_INT)
-      error("Illegal arguments to Image.Image->getpixel()\n");
+      bad_arg_error("Image",sp-args,args,0,"",sp-args,
+		"Bad arguments to Image()\n");
 
-   if (!THIS->img) error("No image.\n");
+   if (!THIS->img) error("Called Image.Image object is not initialized\n");;
 
    x=sp[-args].u.integer;
    y=sp[1-args].u.integer;
@@ -1080,7 +1087,8 @@ void image_line(INT32 args)
        sp[1-args].type!=T_INT||
        sp[2-args].type!=T_INT||
        sp[3-args].type!=T_INT)
-      error("Illegal arguments to Image.Image->line()\n");
+      bad_arg_error("Image",sp-args,args,0,"",sp-args,
+		"Bad arguments to Image()\n");
    getrgb(THIS,4,args,args,"Image.Image->line()");
    if (!THIS->img) return;
 
@@ -1127,7 +1135,8 @@ void image_box(INT32 args)
        sp[1-args].type!=T_INT||
        sp[2-args].type!=T_INT||
        sp[3-args].type!=T_INT)
-      error("Illegal arguments to Image.Image->box()\n");
+      bad_arg_error("Image",sp-args,args,0,"",sp-args,
+		"Bad arguments to Image()\n");
    getrgb(THIS,4,args,args,"Image.Image->box()");
    if (!THIS->img) return;
 
@@ -1178,7 +1187,8 @@ void image_circle(INT32 args)
        sp[1-args].type!=T_INT||
        sp[2-args].type!=T_INT||
        sp[3-args].type!=T_INT)
-      error("illegal arguments to Image.Image->circle()\n");
+      bad_arg_error("Image",sp-args,args,0,"",sp-args,
+		"Bad arguments to Image()\n");
    getrgb(THIS,4,args,args,"Image.Image->circle()");
    if (!THIS->img) return;
 
@@ -1383,7 +1393,7 @@ void image_tuned_box(INT32 args)
     error("Illegal number of arguments to Image.Image->tuned_box()\n");
 
   if (!THIS->img)
-    error("no image\n");
+    error("Called Image.Image object is not initialized\n");;
 
   x1=sp[-args].u.integer;
   y1=sp[1-args].u.integer;
@@ -1580,13 +1590,14 @@ static void image_gradients(INT32 args)
 	  a->item[4].type!=T_INT)
       {
 	 while (first) { c=first; first=c->next; free(c); }
-	 error("Image.Image->gradients: Illegal argument %d\n",n);
+	 bad_arg_error("Image.Image->gradients",sp-args,args,0,"",sp-args,
+		"Bad arguments to Image.Image->gradients()\n");
       }
       c=malloc(sizeof(struct gr_point));
       if (!c)
       {
 	 while (first) { c=first; first=c->next; free(c); }
-	 error("Image.Image->gradients: out of memory\n");
+	 resource_error(NULL,0,0,"memory",0,"Out of memory.\n");
       }
       c->next=first;
       c->x=a->item[0].u.integer;
@@ -1600,7 +1611,7 @@ static void image_gradients(INT32 args)
    }
 
    if (!first) 
-      error("Image.Image->gradients: need at least one argument\n");
+      SIMPLE_TOO_FEW_ARGS_ERROR("Image.Image->gradients",1);
 
    THREADS_ALLOW();
 
@@ -1790,7 +1801,7 @@ void image_grey(INT32 args)
    if (!(img->img=malloc(sizeof(rgb_group)*THIS->xsize*THIS->ysize+1)))
    {
       free_object(o);
-      error("Out of memory\n");
+      resource_error(NULL,0,0,"memory",0,"Out of memory.\n");
    }
 
    d=img->img;
@@ -1852,7 +1863,7 @@ void image_color(INT32 args)
    struct object *o;
    struct image *img;
 
-   if (!THIS->img) error("no image\n");
+   if (!THIS->img) error("Called Image.Image object is not initialized\n");;
    if (args<3)
    {
       if (args>0 && sp[-args].type==T_INT)
@@ -1871,7 +1882,7 @@ void image_color(INT32 args)
    if (!(img->img=malloc(sizeof(rgb_group)*THIS->xsize*THIS->ysize+1)))
    {
       free_object(o);
-      error("Out of memory\n");
+      resource_error(NULL,0,0,"memory",0,"Out of memory.\n");
    }
 
    d=img->img;
@@ -1919,7 +1930,7 @@ void image_invert(INT32 args)
    struct object *o;
    struct image *img;
 
-   if (!THIS->img) error("no image\n");
+   if (!THIS->img) error("Called Image.Image object is not initialized\n");;
 
    o=clone_object(image_program,0);
    img=(struct image*)o->storage;
@@ -1927,7 +1938,7 @@ void image_invert(INT32 args)
    if (!(img->img=malloc(sizeof(rgb_group)*THIS->xsize*THIS->ysize+1)))
    {
       free_object(o);
-      error("Out of memory\n");
+      resource_error(NULL,0,0,"memory",0,"Out of memory.\n");
    }
 
    d=img->img;
@@ -1989,7 +2000,7 @@ void image_threshold(INT32 args)
    struct object *o;
    struct image *img;
 
-   if (!THIS->img) error("no image\n");
+   if (!THIS->img) error("Called Image.Image object is not initialized\n");;
 
    getrgb(THIS,0,args,args,"Image.Image->threshold()");
 
@@ -1999,7 +2010,7 @@ void image_threshold(INT32 args)
    if (!(img->img=malloc(sizeof(rgb_group)*THIS->xsize*THIS->ysize+1)))
    {
       free_object(o);
-      error("Out of memory\n");
+      resource_error(NULL,0,0,"memory",0,"Out of memory.\n");
    }
 
    d=img->img;
@@ -2101,7 +2112,7 @@ void image_hsv_to_rgb(INT32 args)
    struct object *o;
    struct image *img;
    char *err = NULL;
-   if (!THIS->img) error("no image\n");
+   if (!THIS->img) error("Called Image.Image object is not initialized\n");;
 
    o=clone_object(image_program,0);
    img=(struct image*)o->storage;
@@ -2110,7 +2121,7 @@ void image_hsv_to_rgb(INT32 args)
    if (!(img->img=malloc(sizeof(rgb_group)*THIS->xsize*THIS->ysize+1)))
    {
       free_object(o);
-      error("Out of memory\n");
+      resource_error(NULL,0,0,"memory",0,"Out of memory.\n");
    }
 
    d=img->img;
@@ -2186,7 +2197,7 @@ void image_rgb_to_hsv(INT32 args)
    rgb_group *s,*d;
    struct object *o;
    struct image *img;
-   if (!THIS->img) error("no image\n");
+   if (!THIS->img) error("Called Image.Image object is not initialized\n");;
 
    o=clone_object(image_program,0);
    img=(struct image*)o->storage;
@@ -2195,7 +2206,7 @@ void image_rgb_to_hsv(INT32 args)
    if (!(img->img=malloc(sizeof(rgb_group)*THIS->xsize*THIS->ysize+1)))
    {
       free_object(o);
-      error("Out of memory\n");
+      resource_error(NULL,0,0,"memory",0,"Out of memory.\n");
    }
 
    d=img->img;
@@ -2280,7 +2291,7 @@ void image_distancesq(INT32 args)
    struct object *o;
    struct image *img;
 
-   if (!THIS->img) error("no image\n");
+   if (!THIS->img) error("Called Image.Image object is not initialized\n");;
 
    getrgb(THIS,0,args,args,"Image.Image->distancesq()");
 
@@ -2290,7 +2301,7 @@ void image_distancesq(INT32 args)
    if (!(img->img=malloc(sizeof(rgb_group)*THIS->xsize*THIS->ysize+1)))
    {
       free_object(o);
-      error("Out of memory\n");
+      resource_error(NULL,0,0,"memory",0,"Out of memory.\n");
    }
 
    d=img->img;
@@ -2451,16 +2462,18 @@ void image_select_from(INT32 args)
    struct image *img;
    INT32 low_limit=0;
 
-   if (!THIS->img) error("no image\n");
+   if (!THIS->img) error("Called Image.Image object is not initialized\n");;
 
    if (args<2 
        || sp[-args].type!=T_INT
        || sp[1-args].type!=T_INT)
-      error("Illegal argument(s) to Image.Image->select_from()\n");
+      bad_arg_error("Image",sp-args,args,0,"",sp-args,
+		"Bad arguments to Image()\n");
 
    if (args>=3) 
       if (sp[2-args].type!=T_INT)
-	 error("Illegal argument 3 (edge value) to Image.Image->select_from()\n");
+	 bad_arg_error("Image",sp-args,args,3,"",sp+3-1-args,
+		"Bad argument 3 (edge value) to Image()\n");
       else
 	 low_limit=MAXIMUM(0,sp[2-args].u.integer);
    else
@@ -2473,7 +2486,7 @@ void image_select_from(INT32 args)
    if (!(img->img=malloc(sizeof(rgb_group)*THIS->xsize*THIS->ysize+1)))
    {
       free_object(o);
-      error("Out of memory\n");
+      resource_error(NULL,0,0,"memory",0,"Out of memory.\n");
    }
    MEMSET(img->img,0,sizeof(rgb_group)*img->xsize*img->ysize);
 
@@ -2641,7 +2654,8 @@ CHRONO("apply_matrix");
 
    if (args<1 ||
        sp[-args].type!=T_ARRAY)
-      error("Illegal arguments to Image.Image->apply_matrix()\n");
+      bad_arg_error("Image",sp-args,args,0,"",sp-args,
+		"Bad arguments to Image()\n");
 
    if (args>3) 
       if (sp[1-args].type!=T_INT ||
@@ -2691,7 +2705,7 @@ CHRONO("apply_matrix");
    if (width==-1) width=0;
 
    matrix=malloc(sizeof(rgbd_group)*width*height+1);
-   if (!matrix) error("Out of memory");
+   if (!matrix) resource_error(NULL,0,0,"memory",0,"Out of memory.\n");
    
    for (i=0; i<height; i++)
    {
@@ -2807,7 +2821,7 @@ static void _image_outline(INT32 args,int mask)
    struct image *img;
 
    if (!THIS->img || !THIS->xsize || !THIS->ysize)
-      error("Image.Image->outline: no image\n");
+      error("Called Image.Image object is not initialized\n");;
 
    if (args && sp[-args].type==T_ARRAY)
    {
@@ -2828,7 +2842,7 @@ static void _image_outline(INT32 args,int mask)
       if (width==-1) width=0;
 
       matrix=malloc(sizeof(int)*width*height+1);
-      if (!matrix) error("Out of memory");
+      if (!matrix) resource_error(NULL,0,0,"memory",0,"Out of memory.\n");
    
       for (i=0; i<height; i++)
       {
@@ -2852,7 +2866,7 @@ static void _image_outline(INT32 args,int mask)
    img->rgb=THIS->rgb;
 
    tmp=malloc((THIS->xsize+width)*(THIS->ysize+height));
-   if (!tmp) { free_object(o); error("out of memory\n"); }
+   if (!tmp) { free_object(o); resource_error(NULL,0,0,"memory",0,"Out of memory.\n"); }
    MEMSET(tmp,0,(THIS->xsize+width)*(THIS->ysize+height));
  
    s=THIS->img;
@@ -3015,16 +3029,16 @@ void image_modify_by_intensity(INT32 args)
    struct image *img;
    long div;
 
-   if (!THIS->img) error("no image\n");
+   if (!THIS->img) error("Called Image.Image object is not initialized\n");;
    if (args<5) 
-      error("too few arguments to Image.Image->modify_by_intensity()\n");
+      SIMPLE_TOO_FEW_ARGS_ERROR("Image",1);
    
    getrgbl(&rgb,0,args,"Image.Image->modify_by_intensity()");
    div=rgb.r+rgb.g+rgb.b;
    if (!div) div=1;
 
    s=malloc(sizeof(rgb_group)*(args-3)+1);
-   if (!s) error("Out of memory\n");
+   if (!s) resource_error(NULL,0,0,"memory",0,"Out of memory.\n");
 
    for (x=0; x<args-3; x++)
    {
@@ -3052,7 +3066,7 @@ void image_modify_by_intensity(INT32 args)
    if (!list) 
    {
       free(s);
-      error("out of memory\n");
+      resource_error(NULL,0,0,"memory",0,"Out of memory.\n");
    }
    for (x=0; x<args-4; x++)
    {
@@ -3076,7 +3090,7 @@ void image_modify_by_intensity(INT32 args)
    if (!(img->img=malloc(sizeof(rgb_group)*THIS->xsize*THIS->ysize+1)))
    {
       free_object(o);
-      error("Out of memory\n");
+      resource_error(NULL,0,0,"memory",0,"Out of memory.\n");
    }
 
    d=img->img;
@@ -3158,24 +3172,28 @@ void image_gamma(INT32 args)
    float gammar,gammab,gammag;
    COLORTYPE newr[256];
 
-   if (!THIS->img) error("no image\n");
+   if (!THIS->img) error("Called Image.Image object is not initialized\n");;
    if (args==1) 
       if (sp[-args].type==T_INT) 
 	 gammar=gammab=gammag=(float)sp[-args].u.integer;
       else if (sp[-args].type==T_FLOAT) 
 	 gammar=gammab=gammag=sp[-args].u.float_number;
-      else error("Image.Image->gamma(): illegal argument 1\n");
+      else bad_arg_error("Image.Image->gamma",sp-args,args,0,"",sp-args,
+		"Bad arguments to Image.Image->gamma()\n");
    else if (args==3)
    {
       if (sp[-args].type==T_INT) gammar=(float)sp[-args].u.integer;
       else if (sp[-args].type==T_FLOAT) gammar=sp[-args].u.float_number;
-      else error("Image.Image->gamma(): illegal argument 1\n");
+      else bad_arg_error("Image.Image->gamma",sp-args,args,0,"",sp-args,
+		"Bad arguments to Image.Image->gamma()\n");
       if (sp[1-args].type==T_INT) gammag=(float)sp[1-args].u.integer;
       else if (sp[1-args].type==T_FLOAT) gammag=sp[1-args].u.float_number;
-      else error("Image.Image->gamma(): illegal argument 2\n");
+      else bad_arg_error("Image.Image->gamma",sp-args,args,0,"",sp-args,
+		"Bad arguments to Image.Image->gamma()\n");
       if (sp[2-args].type==T_INT) gammab=(float)sp[2-args].u.integer;
       else if (sp[2-args].type==T_FLOAT) gammab=sp[2-args].u.float_number;
-      else error("Image.Image->gamma(): illegal argument 3\n");
+      else bad_arg_error("Image.Image->gamma",sp-args,args,0,"",sp-args,
+		"Bad arguments to Image.Image->gamma()\n");
    }
    else
       error("Image.Image->gamma(): illegal number of arguments\n");
@@ -3203,7 +3221,7 @@ void image_gamma(INT32 args)
    if (!(img->img=malloc(sizeof(rgb_group)*THIS->xsize*THIS->ysize+1)))
    {
       free_object(o);
-      error("Out of memory\n");
+      resource_error(NULL,0,0,"memory",0,"Out of memory.\n");
    }
 
    d=img->img;
@@ -3286,7 +3304,8 @@ void image_select_colors(INT32 args)
 
    if (args<1
       || sp[-args].type!=T_INT)
-      error("Illegal argument to Image.Image->select_colors()\n");
+      bad_arg_error("Image",sp-args,args,0,"",sp-args,
+		"Bad arguments to Image()\n");
 
    colors=sp[-args].u.integer;
    pop_n_elems(args);
@@ -3326,7 +3345,8 @@ void image_write_lsb_rgb(INT32 args)
 
    if (args<1
        || sp[-args].type!=T_STRING)
-      error("Illegal argument to Image.Image->write_lowbit()\n");
+      bad_arg_error("Image",sp-args,args,0,"",sp-args,
+		"Bad arguments to Image()\n");
    
    s=sp[-args].u.string->str;
    l=sp[-args].u.string->len;
@@ -3395,7 +3415,8 @@ void image_write_lsb_grey(INT32 args)
 
    if (args<1
        || sp[-args].type!=T_STRING)
-      error("Illegal argument to Image.Image->write_lowbit()\n");
+      bad_arg_error("Image",sp-args,args,0,"",sp-args,
+		"Bad arguments to Image()\n");
    
    s=sp[-args].u.string->str;
    l=sp[-args].u.string->len;
@@ -3479,7 +3500,7 @@ void image_cast(INT32 args)
 	 int i,j;
 	 rgb_group *s=THIS->img;
 
-	 if (!THIS->img) error("no image\n");
+	 if (!THIS->img) error("Called Image.Image object is not initialized\n");;
 	 
 	 pop_n_elems(args);
 
@@ -3498,7 +3519,7 @@ void image_cast(INT32 args)
       }
       if (strncmp(sp[-args].u.string->str,"string",6)==0)
       {
-	 if (!THIS->img) error("no image\n");
+	 if (!THIS->img) error("Called Image.Image object is not initialized\n");;
 
 	 pop_n_elems(args);
 	 push_string(make_shared_binary_string((char *)THIS->img,
@@ -3520,7 +3541,7 @@ void image_tobitmap(INT32 args)
    rgb_group *s;
 
    pop_n_elems(args);
-   if (!THIS->img) error("No image.\n");
+   if (!THIS->img) error("Called Image.Image object is not initialized\n");;
 
    xs=(THIS->xsize+7)>>3;
 

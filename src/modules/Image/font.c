@@ -1,4 +1,4 @@
-/* $Id: font.c,v 1.51 1999/06/03 17:20:11 mirar Exp $ */
+/* $Id: font.c,v 1.52 1999/06/18 19:19:21 mirar Exp $ */
 #include "global.h"
 
 #define SPACE_CHAR 'i'
@@ -9,7 +9,7 @@ extern unsigned char * image_default_font;
 /*
 **! module Image
 **! note
-**!	$Id: font.c,v 1.51 1999/06/03 17:20:11 mirar Exp $
+**!	$Id: font.c,v 1.52 1999/06/18 19:19:21 mirar Exp $
 **! class Font
 **!
 **! note
@@ -557,13 +557,14 @@ void font_write(INT32 args)
    maxwidth2=1;
 
    width_of=(int *)malloc((args+1)*sizeof(int));
-   if(!width_of) error("Out of memory\n");
+   if(!width_of) resource_error(NULL,0,0,"memory",0,"Out of memory.\n");
 
    for (j=0; j<args; j++)
    {
       int max;
       if (sp[j-args].type!=T_STRING)
-	 error("font->write: illegal argument(s)\n");
+	 bad_arg_error("font->write",sp-args,args,0,"",sp-args,
+		"Bad arguments to font->write()\n");
      
       xsize = max = 1;
       to_write_len = sp[j-args].u.string->len;
@@ -625,7 +626,7 @@ void font_write(INT32 args)
    img->rgb.r=img->rgb.g=img->rgb.b=255;
    img->img=malloc(img->xsize*img->ysize*sizeof(rgb_group)+1);
 
-   if (!img) { free_object(o); free(width_of); error("Out of memory\n"); }
+   if (!img) { free_object(o); free(width_of); resource_error(NULL,0,0,"memory",0,"Out of memory.\n"); }
 
    MEMSET(img->img,0,img->xsize*img->ysize*sizeof(rgb_group));
 
@@ -757,7 +758,8 @@ void font_text_extents(INT32 args)
      p_wchar2 *to_write2;
      int to_write_len;
      if (sp[j-args].type!=T_STRING)
-	error("font->write: illegal argument(s)\n");
+	bad_arg_error("font->write",sp-args,args,0,"",sp-args,
+		"Bad arguments to font->write()\n");
      
      xsize = max = 1;
      to_write_len = sp[j-args].u.string->len;

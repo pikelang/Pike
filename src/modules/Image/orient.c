@@ -1,9 +1,9 @@
-/* $Id: orient.c,v 1.11 1999/04/13 12:32:29 mirar Exp $ */
+/* $Id: orient.c,v 1.12 1999/06/18 19:19:28 mirar Exp $ */
 
 /*
 **! module Image
 **! note
-**!	$Id: orient.c,v 1.11 1999/04/13 12:32:29 mirar Exp $
+**!	$Id: orient.c,v 1.12 1999/06/18 19:19:28 mirar Exp $
 **! class Image
 */
 
@@ -159,7 +159,7 @@ void image_orient(INT32 args)
   float mag;
   int i, w, h;
 
-  if (!THIS->img) { error("no image\n");  return; }
+  if (!THIS->img) { error("Called Image.Image object is not initialized\n");;  return; }
 
   this=THIS;
 
@@ -170,7 +170,8 @@ void image_orient(INT32 args)
     else if (sp[-args].type==T_FLOAT)
       mag=sp[-args].u.float_number;
     else {
-      error("Illegal argument 1 to image->orient\n");
+      bad_arg_error("image->orient\\n",sp-args,args,1,"",sp+1-1-args,
+		"Bad argument 1 to image->orient\n()\n");
       /* Not reached, but keeps the compiler happy. */
       mag = 0.0;
     }
@@ -183,7 +184,8 @@ void image_orient(INT32 args)
   if (args>1)
   {
     if (sp[1-args].type!=T_ARRAY) 
-      error("Illegal argument 2 to image->orient\n");
+      bad_arg_error("image->orient\\n",sp-args,args,2,"",sp+2-1-args,
+		"Bad argument 2 to image->orient\n()\n");
     if (sp[1-args].u.array->size!=4)
       error("The array given as argument 2 to image->orient do not have size 4\n");
     for(i=0; i<4; i++)
@@ -271,7 +273,7 @@ void image_orient4(INT32 args)
   struct object *o[5];
   struct image *img[5];
   
-  if (!THIS->img) { error("no image\n");  return; }
+  if (!THIS->img) { error("Called Image.Image object is not initialized\n");;  return; }
 
   pop_n_elems(args);
   _image_orient(THIS,o,img);
