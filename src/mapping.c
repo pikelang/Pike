@@ -4,7 +4,7 @@
 ||| See the files COPYING and DISCLAIMER for more information.
 \*/
 #include "global.h"
-RCSID("$Id: mapping.c,v 1.25 1998/01/08 17:20:07 hubbe Exp $");
+RCSID("$Id: mapping.c,v 1.26 1998/01/13 01:51:28 grubba Exp $");
 #include "main.h"
 #include "object.h"
 #include "mapping.h"
@@ -18,6 +18,7 @@ RCSID("$Id: mapping.c,v 1.25 1998/01/08 17:20:07 hubbe Exp $");
 #include "interpret.h"
 #include "las.h"
 #include "gc.h"
+#include "stralloc.h"
 
 #define AVG_LINK_LENGTH 4
 #define MIN_LINK_LENGTH 1
