@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: builtin_functions.c,v 1.579 2004/12/14 15:07:46 mast Exp $
+|| $Id: builtin_functions.c,v 1.580 2004/12/14 16:22:01 mast Exp $
 */
 
 #include "global.h"
@@ -4430,7 +4430,8 @@ static time_t my_tm_diff(const struct tm *t1, const struct tm *t2)
 
 typedef struct tm *time_fn (const time_t *);
 
-/* Inverse operation of gmtime or localtime.
+/* Inverse operation of gmtime or localtime. Unlike mktime(3), this
+ * doesn't fill in a normalized time in target_tm.
  */
 static int my_time_inverse (struct tm *target_tm, time_t *result, time_fn timefn)
 {
@@ -4629,14 +4630,13 @@ PMOD_EXPORT void f_mktime (INT32 args)
 #endif /* HAVE_GMTIME */
 
   {
-#ifdef HAVE_MKTIME
-
+#ifndef HAVE_GMTIME
 #ifdef STRUCT_TM_HAS_GMTOFF
     /* BSD-style */
     date.tm_gmtoff = 0;
 #else
 #ifdef STRUCT_TM_HAS___TM_GMTOFF
-    /* Linux-style */
+    /* (Old) Linux-style */
     date.__tm_gmtoff = 0;
 #else
     if((args > 7) && (Pike_sp[7-args].subtype == NUMBER_NUMBER))
@@ -4655,50 +4655,56 @@ PMOD_EXPORT void f_mktime (INT32 args)
     }
 #endif /* STRUCT_TM_HAS___TM_GMTOFF */
 #endif /* STRUCT_TM_HAS_GMTOFF */
+#endif  /* !HAVE_GMTIME */
 
+#ifdef HAVE_MKTIME
     retval = mktime(&date);
-  
-    if (retval != -1) {
-#if defined(STRUCT_TM_HAS_GMTOFF) || defined(STRUCT_TM_HAS___TM_GMTOFF)
-      if((args > 7) && (Pike_sp[7-args].subtype == NUMBER_NUMBER))
-      {
-	/* Post-adjust for the timezone.
-	 *
-	 * Note that tm_gmtoff has the opposite sign of timezone.
-	 *
-	 * Note also that it must be post-adjusted, since the gmtoff
-	 * field is set by mktime(3).
-	 */
-#ifdef STRUCT_TM_HAS_GMTOFF
-	retval += tz + date.tm_gmtoff;
-#else
-	retval += tz + date.__tm_gmtoff;
-#endif /* STRUCT_TM_HAS_GMTOFF */
-      }
-
-      if ((isdst != -1) && (isdst != date.tm_isdst)) {
-	/* Some stupid libc's (Hi Linux!) don't accept that we've set isdst... */
-#ifdef HAVE_LOCALTIME
-	if (!my_time_inverse (&date, &retval, localtime))
-	  PIKE_ERROR("mktime", "Cannot convert.\n", Pike_sp, args);
-#else
-	/* Last resort: Assumes a one hour DST. */
-	retval += 3600 * (isdst - date.tm_isdst);
+    if (retval == -1)
 #endif
-      }
-#endif /* STRUCT_TM_HAS_GMTOFF || STRUCT_TM_HAS___TM_GMTOFF */
-    }
-    else
-#endif	/* HAVE_MKTIME */
-
     {
 #ifdef HAVE_LOCALTIME
-      /* mktime might fail on dates before 1970 (GNU libc 2.3.2), so
-       * try our own inverse function with localtime. */
+      /* mktime might fail on dates before 1970 (e.g. GNU libc 2.3.2),
+       * so try our own inverse function with localtime. */
       if (!my_time_inverse (&date, &retval, localtime))
 #endif
 	PIKE_ERROR("mktime", "Time conversion unsuccessful.\n", Pike_sp, args);
     }
+
+#if !defined (HAVE_GMTIME) && (defined(STRUCT_TM_HAS_GMTOFF) || defined(STRUCT_TM_HAS___TM_GMTOFF))
+    if((args > 7) && (Pike_sp[7-args].subtype == NUMBER_NUMBER))
+    {
+      /* Post-adjust for the timezone.
+       *
+       * Note that tm_gmtoff has the opposite sign of timezone.
+       *
+       * Note also that it must be post-adjusted, since the gmtoff
+       * field is set by mktime(3).
+       */
+#ifdef STRUCT_TM_HAS_GMTOFF
+      retval += tz + date.tm_gmtoff;
+#else
+      retval += tz + date.__tm_gmtoff;
+#endif /* STRUCT_TM_HAS_GMTOFF */
+    }
+#endif /* !HAVE_GMTIME && (STRUCT_TM_HAS_GMTOFF || STRUCT_TM_HAS___TM_GMTOFF) */
+
+#if 0
+    /* Disabled since the adjustment done here with a hardcoded one
+     * hour is bogus in many time zones. mktime(3) in GNU libc is
+     * documented to normalize the date spec, which means that e.g.
+     * asking for DST time in a non-DST zone will override tm_isdst.
+     * /mast */
+    if ((isdst != -1) && (isdst != date.tm_isdst)) {
+      /* Some stupid libc's (Hi Linux!) don't accept that we've set isdst... */
+#ifdef HAVE_LOCALTIME
+      if (!my_time_inverse (&date, &retval, localtime))
+	PIKE_ERROR("mktime", "Cannot convert.\n", Pike_sp, args);
+#else
+      /* Last resort: Assumes a one hour DST. */
+      retval += 3600 * (isdst - date.tm_isdst);
+#endif
+    }
+#endif	/* 0 */
   }
 
   pop_n_elems(args);
