@@ -1,4 +1,4 @@
-// $Id: RDF.pike,v 1.15 2003/08/18 15:50:40 nilsson Exp $
+// $Id: RDF.pike,v 1.16 2003/08/22 14:24:47 nilsson Exp $
 
 #pike __REAL_VERSION__
 
@@ -685,7 +685,7 @@ this_program `|(mixed data) {
     if(r==data->rdf_subject) return rdf_subject;
     if(r==data->rdf_object) return rdf_object;
     if(r==data->rdf_type) return rdf_type;
-    if(!functionp(r->get_uri)) error("Unknown resource found\n");
+    if(!functionp(r->get_uri)) return r;
     return make_resource(r->get_uri());
   };
 
