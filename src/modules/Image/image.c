@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: image.c,v 1.201 2003/01/27 11:59:14 mirar Exp $
+|| $Id: image.c,v 1.202 2003/06/07 15:30:03 nilsson Exp $
 */
 
 /*
@@ -101,7 +101,7 @@
 
 #include "stralloc.h"
 #include "global.h"
-RCSID("$Id: image.c,v 1.201 2003/01/27 11:59:14 mirar Exp $");
+RCSID("$Id: image.c,v 1.202 2003/06/07 15:30:03 nilsson Exp $");
 #include "pike_macros.h"
 #include "object.h"
 #include "constants.h"
@@ -4284,6 +4284,13 @@ static void image__sprintf( INT32 args )
   }
 }
 
+/*
+**! method object grey_blur(int no_pass)
+**!	Works like blur, but only operates on the r color channel.
+**!     A faster alternative to blur for grey scale images.
+**! see also: blur
+*/
+
 static void image_grey_blur( INT32 args )
 {
   /* Basically a exactly like blur, but only uses the r color channel. */
@@ -4338,7 +4345,12 @@ static void image_grey_blur( INT32 args )
   ref_push_object( THISOBJ );
 }
 
-
+/*
+**! method string blur(int no_pass)
+**!	A special case of apply_matrix that creates a blur effect.
+**!     About four times faster than the generic apply_matrix.
+**! see also: apply_matrix, grey_blur
+*/
 
 static void image_blur( INT32 args )
 /* about four times faster than the generic apply matrix for this
