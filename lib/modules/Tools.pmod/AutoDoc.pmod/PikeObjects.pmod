@@ -4,7 +4,7 @@
 // classes, modules, methods, variables ...
 // The classes can produce XML representations of themselves.
 
-#pragma strict_types
+// #pragma strict_types
 #include "./debug.h"
 
 static inherit "module.pmod";

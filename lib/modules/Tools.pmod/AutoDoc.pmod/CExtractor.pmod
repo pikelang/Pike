@@ -6,7 +6,7 @@
 // a root node. Use the functions in ProcessXML.pmod to merge
 // the module trees extracted from the different C files.
 
-#pragma strict_types
+// #pragma strict_types
 
 static inherit .PikeObjects;
 static inherit .DocParser;

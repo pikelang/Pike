@@ -4,7 +4,7 @@
 // EXTRACTION OF DOCUMENTATION FROM PIKE SOURCE FILES
 //========================================================================
 
-#pragma strict_types
+// #pragma strict_types
 
 static inherit .PikeObjects;
 static inherit .DocParser;
