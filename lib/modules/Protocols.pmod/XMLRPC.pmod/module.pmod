@@ -20,9 +20,20 @@
 //!   translated to Pike @code{int@}.
 //! XML-RPC @tt{<string>@} and @tt{<base64>@} are translated to
 //!   Pike @code{string@}.
-//! XML_RPC @tt{<double>@} is translated to @code{float@}.
+//! XML_RPC @tt{<double>@} is translated to Pike @code{float@}.
 //! XML-RPC @tt{<struct>@} is translated to Pike @code{mapping@}.
 //! XML-RPC @tt{<array>@} is translated to Pike @code{array@}.
+//! XML-RPC @tt{<dateTime.iso8601>@} is translated to Pike Calendar object.
+//!
+//! @note
+//! The XML-RPC @tt{<dateTime.iso8601>@} datatype is currently only
+//! partially implemented. It is decoded but cannot be encoded. Also,
+//! the current implementation breaks the specification by assuming
+//! GMT (if anything, UTC is probably more appropriate). The
+//! specification says: "What timezone should be assumed for the
+//! dateTime.iso8601 type? UTC? Localtime? Don't assume a timezone. It
+//! should be specified by the server in its documentation what
+//! assumptions it makes about timezones."
 //!
 
 //! Represents a function call made to a XML-RPC server.
@@ -129,15 +140,16 @@ static constant common_dtd_fragment = #"
   <!ELEMENT params  (param*)>
   <!ELEMENT param   (value)>
 
-  <!ELEMENT value   (boolean|i4|int|double|string|base64|array|struct|dateTime.iso8601)>
+  <!ELEMENT value   (boolean|i4|int|double|string|base64|
+                     array|struct|dateTime.iso8601)>
 
-  <!ELEMENT boolean (#PCDATA)>
-  <!ELEMENT i4      (#PCDATA)>
-  <!ELEMENT int     (#PCDATA)>
-  <!ELEMENT double  (#PCDATA)>
-  <!ELEMENT string  (#PCDATA)>
-  <!ELEMENT base64  (#PCDATA)>
-  <!ELEMENT dateTime.iso8601  (#PCDATA)>
+  <!ELEMENT boolean          (#PCDATA)>
+  <!ELEMENT i4               (#PCDATA)>
+  <!ELEMENT int              (#PCDATA)>
+  <!ELEMENT double           (#PCDATA)>
+  <!ELEMENT string           (#PCDATA)>
+  <!ELEMENT base64           (#PCDATA)>
+  <!ELEMENT dateTime.iso8601 (#PCDATA)>
 
   <!ELEMENT array   (data)>
   <!ELEMENT data    (value*)>
@@ -217,7 +229,9 @@ static mixed decode(string xml_input, string dtd_input)
 			     case "struct":
 			       return mkmapping(@Array.transpose(data));
 		             case "dateTime.iso8601":
-			       return Calendar.parse ("%dT%h:%m:%s %z", (data * "") + " GMT")->set_timezone ("locale");
+			       return Calendar.parse("%dT%h:%m:%s %z",
+						     data*""+" GMT")->
+				 set_timezone("locale");
 			   }
 			   error("Unknown element %O.\n", name);
 			 case "error":
