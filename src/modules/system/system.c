@@ -1,5 +1,5 @@
 /*
- * $Id: system.c,v 1.54 1998/05/31 14:08:28 grubba Exp $
+ * $Id: system.c,v 1.55 1998/06/24 07:43:30 hubbe Exp $
  *
  * System-call module for Pike
  *
@@ -14,7 +14,7 @@
 #include "system.h"
 
 #include "global.h"
-RCSID("$Id: system.c,v 1.54 1998/05/31 14:08:28 grubba Exp $");
+RCSID("$Id: system.c,v 1.55 1998/06/24 07:43:30 hubbe Exp $");
 #ifdef HAVE_WINSOCK_H
 #include <winsock.h>
 #endif
@@ -169,7 +169,7 @@ static void report_error(const char *function_name)
     break;
 #endif /* ESTALE */
   case ESRCH:
-    error_msg = "No suck process";
+    error_msg = "No such process";
     break;
   }
   error("%s(): Failed:%s\n", function_name, error_msg);
