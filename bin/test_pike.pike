@@ -1,6 +1,6 @@
 #!/usr/local/bin/pike
 
-/* $Id: test_pike.pike,v 1.27 1999/08/30 06:21:17 hubbe Exp $ */
+/* $Id: test_pike.pike,v 1.28 1999/10/21 21:19:12 grubba Exp $ */
 
 import Stdio;
 
@@ -179,6 +179,10 @@ int main(int argc, string *argv)
 	  mixed a,b;
 	
 	  if(check) _verify_internals();
+	  if(check>3) {
+	    gc();
+	    _verify_internals();
+	  }
 	
 	  test=tests[e];	
 	  if(sscanf(test,"COND %s\n%s",condition,test)==2)
