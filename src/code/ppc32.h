@@ -1,5 +1,5 @@
 /*
- * $Id: ppc32.h,v 1.12 2002/04/08 03:08:51 marcus Exp $
+ * $Id: ppc32.h,v 1.13 2002/05/11 10:47:07 mast Exp $
  */
 
 #define PPC_INSTR_B_FORM(OPCD,BO,BI,BD,AA,LK)			\
@@ -120,17 +120,19 @@ void ppc32_flush_code_generator_state(void);
     INT32 tmp = PIKE_PC;						\
     if(ppc32_codegen_state & PPC_CODEGEN_PC_ISSET) {			\
       INT32 diff = (tmp-ppc32_codegen_last_pc)*sizeof(PIKE_OPCODE_T);	\
-      if ((-32768 <= diff) && (diff <= 32767)) {			\
-	/* addi pike_pc,pike_pc,diff */					\
-	ADDI(PPC_REG_PIKE_PC, PPC_REG_PIKE_PC, diff);			\
-      } else {								\
-	/* addis pike_pc,pike_pc,%hi(diff) */				\
-	ADDIS(PPC_REG_PIKE_PC, PPC_REG_PIKE_PC, (diff+32768)>>16);	\
-        if ((diff &= 0xffff) > 32767)					\
-          diff -= 65536;						\
-	if (diff) {							\
-	  /* addi pike_pc,pike_pc,%lo(diff) */				\
+      if (diff) {							\
+	if ((-32768 <= diff) && (diff <= 32767)) {			\
+	  /* addi pike_pc,pike_pc,diff */				\
 	  ADDI(PPC_REG_PIKE_PC, PPC_REG_PIKE_PC, diff);			\
+	} else {							\
+	  /* addis pike_pc,pike_pc,%hi(diff) */				\
+	  ADDIS(PPC_REG_PIKE_PC, PPC_REG_PIKE_PC, (diff+32768)>>16);	\
+	  if ((diff &= 0xffff) > 32767)					\
+	    diff -= 65536;						\
+	  if (diff) {							\
+	    /* addi pike_pc,pike_pc,%lo(diff) */			\
+	    ADDI(PPC_REG_PIKE_PC, PPC_REG_PIKE_PC, diff);		\
+	  }								\
 	}								\
       }									\
     } else {								\
@@ -147,6 +149,11 @@ void ppc32_flush_code_generator_state(void);
     /* stw pike_pc,pc(pike_fp) */					\
     STW(PPC_REG_PIKE_PC, PPC_REG_PIKE_FP, OFFSETOF(pike_frame, pc));	\
   } while(0)
+
+#define ADJUST_PIKE_PC(pc) do {						\
+    ppc32_codegen_last_pc = pc;						\
+    ppc32_codegen_state |= PPC_CODEGEN_PC_ISSET;			\
+  } while (0)
 
 #define ins_pointer(PTR)  add_to_program((INT32)(PTR))
 #define read_pointer(OFF) (Pike_compiler->new_program->program[(INT32)(OFF)])
