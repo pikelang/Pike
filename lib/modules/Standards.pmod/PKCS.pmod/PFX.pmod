@@ -9,31 +9,36 @@
 
 import Standards.ASN1
 
-pkcs_7_id = .Identifiers.pkcs_id->append(7);
-data_id = pkcs_7_id->append(1);
-signed_data_id = pkcs_7_id->append(2);
-enveloped_data_id = pkcs_7_id->append(3);
-signed_and_enveloped_data_id = pkcs_7_id->append(4);
-digested_data_id = pkcs_7_id->append(5);
-encrypted_data_id = pkcs_7_id->append(7);
+object pkcs_7_id = .Identifiers.pkcs_id->append(7);
+object data_id = pkcs_7_id->append(1);
+object signed_data_id = pkcs_7_id->append(2);
+object enveloped_data_id = pkcs_7_id->append(3);
+object signed_and_enveloped_data_id = pkcs_7_id->append(4);
+object digested_data_id = pkcs_7_id->append(5);
+object encrypted_data_id = pkcs_7_id->append(7);
 
-pkcs_12_id = .Identifiers.pkcs_id->append(12);
-pkcs_12_pbe_id = pkcs_12_id->append(1);
-pbe_sha_rc4 = pkcs_12_pbe_id->append(1);
-pbe_sha_rc4_weak = pkcs_12_pbe_id->append(2);
-pbe_sha_3tripledes = pkcs_12_pbe_id->append(3);
-pbe_sha_2triple_des = pkcs_12_pbe_id->append(4);
-pbe_sha_rc2= pkcs_12_pbe_id->append(5);
-pbe_sha_rc2_weak = pkcs_12_pbe_id->append(6);
+object pkcs_12_id = .Identifiers.pkcs_id->append(12);
+object pkcs_12_pbe_id = pkcs_12_id->append(1);
+object pbe_sha_rc4 = pkcs_12_pbe_id->append(1);
+object pbe_sha_rc4_weak = pkcs_12_pbe_id->append(2);
+object pbe_sha_3tripledes = pkcs_12_pbe_id->append(3);
+object pbe_sha_2triple_des = pkcs_12_pbe_id->append(4);
+object pbe_sha_rc2= pkcs_12_pbe_id->append(5);
+object pbe_sha_rc2_weak = pkcs_12_pbe_id->append(6);
 
-pkcs_12_version1_id = pkcs_12_id->append(10);
-pkcs_12_bag_id = pkcs_12_version1_id->append(1);
-keybag_id = pkcs_12_bag_id->append(1);
-pkcs_8_keybag_id = pkcs_12_bag_id->append(2);
-certbag_id = pkcs_12_bag_id->append(3);
-crlbag_id = pkcs_12_bag_id->append(4);
-secretbag_id = pkcs_12_bag_id->append(5);
-safebag_id = pkcs_12_bag_id->append(6);
+object pkcs_12_version1_id = pkcs_12_id->append(10);
+object pkcs_12_bag_id = pkcs_12_version1_id->append(1);
+object keybag_id = pkcs_12_bag_id->append(1);
+object pkcs_8_shroudedkeybag_id = pkcs_12_bag_id->append(2);
+object certbag_id = pkcs_12_bag_id->append(3);
+object crlbag_id = pkcs_12_bag_id->append(4);
+object secretbag_id = pkcs_12_bag_id->append(5);
+object safebag_id = pkcs_12_bag_id->append(6);
+
+object pkcs_9_id = .Identifiers.pkcs_id->append(9);
+
+object certTypes_id = pkcs_9_id->append(22);
+object x509Certificate_id = certTypes_id->append(1);
 
 /* Perhaps ContentInfo should be moved into a separate module, with
    other PKCS#7 stuff? */
@@ -105,7 +110,16 @@ class ContentInfo_meta
 	  /* Neglects the valid_types field of meta_explicit */
 	  return ::init( ({ type, meta_explicit(0, 0)()->init(contents) }) );
 	}
+
+#if 0
+      string get_data_der()
+	{
+	  return elements[1]->get_der();
+	}
+#endif
+
     }
+  
   void create(mapping|void types)
     {
       content_types = types;
@@ -249,16 +263,21 @@ class KeyBag
     }
 }
 
-class pfx
+/* Defaults for generated MAC:s */
+   
+#define SALT_SIZE 17
+#define MAC_COUNT 1
+
+class PFX
 {
   inherit asn1_sequence;
 
-  object data;
+  object safes;
   string passwd; /* Assumed to be latin1 */
-  
+
   object init(object s)
     {
-      data = s;
+      safes = s;
       return this_object();
     }
 
@@ -275,22 +294,136 @@ class pfx
     }
   
   /* passwd is assumed to be latin 1 */
-  object set_passwd(string passwd)
+  object set_passwd(string s)
     {
-      hmac = Crypto.hmac(Crypto.sha)(latin1_to_bmp(passwd));
+      passwd = latin1_to_bmp(passwd);
     }
 
-  der_encode()
+  string string_pad(string d, int block_size)
     {
-      if (hmac)
+      int s = sizeof(d);
+
+      if (s)
+      { /* Extend to a multiple of the block soze */
+	int n = (s + 63) / block_size; // number of blocks 
+	int k = (n+s-1) / s;
+	d = (d * k) [..n*block_size-1];
+      }
+      return d;
+    }
+  
+  string generate_key(string salt, int id, int count, int needed)
+    { /* Supports only SHA-1 */
+      string D = sprintf("%c", id) * 64;
+
+      string I = string_pad(salt, 64) + string_pad(passwd, 64);
+
+      string A = D+I;
+
+      for(int i; i<count; i++)
+	A = Crypto.sha()->update(A)->digest;
+
+      if (strlen(A)<needed)
+	error("PFX: Step 6c) of section 6.1 not implemented.\n");
+
+      return A[..ndeded-1];
+    }
+
+  string get_hmac(string salt, int count)
+    {
+      string key = generate_key(salt, 3, count, 20);
+
+      return Crypto.hmac(Crypto.sha)(key)
+	// Extract value from the data field
+	(elements[1]->elements[1]->value);
+    }
+  
+  string der_encode()
+    {
+      elements = allocate(2 + !!passwd);
+      elements[0] = asn1_integer(3); // version
+      elements[1] = safes;
+      if (passwd)
       {	/* Password-integrity mode */
+	salt = Crypto.randomness.reasonably_random()->read(SALT_SIZE);
+
+	elements[2] = asn1_sequence(
+	  ({ asn1_sequence(
+	    ({ Identifiers.sha_id,
+	       asn1_octet_string(get_hmac(salt, MAC_COUNT)) }) ),
+	     asn1_octet_string(salt)
+	     /* , optional count, default = 1 */
+	  }) );
 	
+      } else {
+	error("Only passwd authentication supported\n");
+      }
+    }
+
+  int uses_passwd_integrity()
+    {
+      return elements[1]->elements[0] == data_id;
+    }
   
-		    
-  
-  
+  int verify_passwd()
+    {
+      if (elements[2]->elements[0]->elements[0] != Identifiers.sha1_id)
+	error("Unexpected hash algorithm\n");
+      string salt = elements[2]->elements[1]->value;
+      int count = (sizeof(elements[2]->elements) == 3)
+	? (int) elements[2]->elements[2]->value : 1;
+      if (count < 1)
+	error("Bad count\n");
+
+      return (elements[2]->elements[0]->elements[1]->value
+	      == get_hmac(salt, count));
+    }
 }
 
-object simple_make_pfx(
-      
+class SafeBag_meta
+{
+  object type; /* Object identifier */
+
+  class
+/* PrivateKeyInfo (pkcs#8), aka KeyBag (pkcs#12) */
+
+/* Note that the ASN.1 type is a sequence of the structure this
+ * function creates */
+object make_key_info(object id, string key)
+{
+  return asn1_sequence( ({ asn1_integer(0),
+			   id, asnt_octet_string(key) }) );
+}
+
+object make safe_bag(object id, object contents, object|void attributes)
+{
+  return asn1_sequence( ({ id, contents })
+			+ (attributes ? ({ attributes }) : ({ }) ));
+}
   
+/* A SafeBag instance, with type of KeyBag */
+object make_key_bag(array keys, object|void attributes)
+{
+  return make_safe_bag(keybag_id, asn1_sequence(keys), attributes);
+}
+
+/* A safe bag of type certBag, containing a certBag of type x509Certificate */
+object make x509_cert_bag(string cert, object|void attributes)
+{
+  return asn1_sequence(certbag_id,
+		       asn1_sequence( ({ x509Certificate_id, cert }) ),
+		       attributes);
+}
+
+object make_safecontents(object ...bags)
+{
+  return asn1_sequence(
+/* Makes a PFX of unencrypted bags */
+object simple_make_pfx(array bags, string passwd)
+{
+  object safe_contents = asn1_sequence(bags);
+  
+  object pfx = PFX(ContentInfo_meta()(data_id,
+				      asn1_string(safes->get_der())));
+  pfx->set_passwd(passwd);
+}
