@@ -5,6 +5,8 @@
 int last_len;
 int redump_all;
 string pike;
+array(string) files_to_delete=({});
+array(string) files_to_not_delete=({});
 array(string) to_dump=({});
 array(string) to_export=({});
 
@@ -213,15 +215,30 @@ int install_file(string from,
     ret=low_install_file(from,to);
   else
     ret=low_install_file(from,to,mode);
+
+  array(string) tmp=to/".";
+  string ext=tmp[-1];
+
   if((ret || redump_all) && dump)
   {
-    switch(reverse(to)[..4])
+    switch(ext)
     {
-      case "ekip.":
+      case ".pike":
 	if(glob("*/master.pike",to)) break;
-      case "domp.":
+
+      case ".pmod":
 	to_dump+=({to});
     }
+  }
+
+  // This magic deletes the remnants of static modules
+  // when dynamic modules are installed.
+  if(ret && ext == "so")
+  {
+    tmp[-1]="pmod";
+    files_to_delete+=({ tmp*"." });
+  }else{
+    files_to_not_delete+=({ to });
   }
   return ret;
 }
@@ -1092,6 +1109,11 @@ void do_install()
 				  "--quiet"
 				  }) + to_dump)->wait();
     }
+
+    // Delete any .pmod files that would shadow the .so
+    // files that we just installed. For a new installation
+    // this never does anything. -Hubbe
+    Array.map(files_to_delete - files_to_not_delete,rm);
     
 #if constant(symlink)
     if(lnk)
@@ -1141,7 +1163,6 @@ int main(int argc, string *argv)
 
   argv=Getopt.get_args(argv);
       
-
   foreach(argv[1..], string foo)
     if(sscanf(foo,"%s=%s",string var, string value)==2)
       vars[var]=value;
