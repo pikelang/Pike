@@ -1,5 +1,5 @@
 #
-# $Id: configure.in,v 1.6 1999/07/30 16:15:11 marcus Exp $
+# $Id: configure.in,v 1.7 2000/01/17 16:30:38 grubba Exp $
 #
 AC_INIT(image_ttf.c)
 AC_CONFIG_HEADER(config.h)
@@ -8,10 +8,13 @@ AC_ARG_WITH(ttflib,     [  --with(out)-ttflib       Support TTF via ttf.lib (fre
 AC_MODULE_INIT()
 
 if test x$with_ttflib = xyes ; then
-  AC_CHECK_HEADERS(freetype.h)
-  AC_CHECK_HEADERS(ftxkern.h)
-  if test $ac_cv_header_freetype_h = yes -a \
-          $ac_cv_header_ftxkern_h = yes ; then
+  AC_CHECK_HEADERS(freetype.h ftxkern.h freetype/freetype.h freetype/ftxkern.h)
+
+  parent="$ac_cv_header_ftxkern_h$ac_cv_header_freetype_h"
+  subdir="$ac_cv_header_freetype_ftxkern_h$ac_cv_header_freetype_freetype_h"
+  freetype_h="$ac_cv_header_freetype_h$ac_cv_header_freetype_freetype_h"
+
+  if test "$parent" = "yesyes" -o "$subdir" = "yesyes"; then
     AC_CHECK_LIB(ttf, TT_Open_Collection, [
       AC_DEFINE(HAVE_LIBTTF) 
       LIBS="${LIBS-} -lttf"
@@ -19,7 +22,11 @@ if test x$with_ttflib = xyes ; then
     AC_MSG_CHECKING([if TT_Horizontal_Header has the member Reserved0])
     AC_CACHE_VAL(pike_cv_tt_hh_reserved0, [
       AC_TRY_COMPILE([
+#ifdef HAVE_FREETYPE_FREETYPE_H
+#include <freetype/freetype.h>
+#else
 #include <freetype.h>
+#endif
       ],[
   extern TT_Horizontal_Header *horiz;
 
@@ -34,9 +41,10 @@ if test x$with_ttflib = xyes ; then
     if test "x$pike_cv_tt_hh_reserved0" = "xyes"; then
       AC_DEFINE(HAVE_TT_H_H_Reserved0)
     else :; fi
-  elif test $ac_cv_header_freetype_h = yes -a \
-          $ac_cv_header_ftxkern_h = no ; then
-     AC_MSG_WARN(Detected freetype library (libttf), but too old version)
+  else
+    if test "$freetype_h" = "nono"; then :; else
+      AC_MSG_WARN(Detected freetype library (libttf), but too old version)
+    fi
   fi
 fi
 

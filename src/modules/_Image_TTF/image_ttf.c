@@ -1,16 +1,25 @@
 /*
- * $Id: image_ttf.c,v 1.25 1999/11/23 10:24:57 mast Exp $
+ * $Id: image_ttf.c,v 1.26 2000/01/17 16:33:41 grubba Exp $
  */
 
 #include "config.h"
 
 
 #include "global.h"
-RCSID("$Id: image_ttf.c,v 1.25 1999/11/23 10:24:57 mast Exp $");
+RCSID("$Id: image_ttf.c,v 1.26 2000/01/17 16:33:41 grubba Exp $");
 
 #ifdef HAVE_LIBTTF
+#if defined(HAVE_FREETYPE_FREETYPE_H) && defined(HAVE_FREETYPE_FTXKERN_H)
+
+#include <freetype/freetype.h>
+#include <freetype/ftxkern.h>
+
+#else /* !HAVE_FREETYPE_FREETYPE_H || !HAVE_FREETYPE_FTXKERN_H */
+
 #include <freetype.h>
 #include <ftxkern.h>
+
+#endif /* HAVE_FREETYPE_FREETYPE_H && HAVE_FREETYPE_FTXKERN_H */
 #endif /* HAVE_LIBTTF */
 
 #include "pike_macros.h"
