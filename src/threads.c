@@ -1,5 +1,5 @@
 #include "global.h"
-RCSID("$Id: threads.c,v 1.83 1998/08/27 20:43:25 grubba Exp $");
+RCSID("$Id: threads.c,v 1.84 1998/09/05 19:40:50 grubba Exp $");
 
 int num_threads = 1;
 int threads_disabled = 0;
@@ -1155,7 +1155,10 @@ static struct farmer *new_farmer(void (*fun)(void *), void *args)
   me->harvest = fun;
   co_init( &me->harvest_moon );
 #ifdef UNIX_THREADS
-  thr_create(NULL,65536,farm,(void *)me,THR_DAEMON|THR_DETACHED,0);
+  /* FIXME: Why not increase the stacksize of th_create_small(),
+   * and use it instead?
+   */
+  thr_create(NULL, 65536, farm, me, THR_DAEMON|THR_DETACHED, &me->me);
 #else
   th_create_small(&me->me, farm, me);
 #endif
