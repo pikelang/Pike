@@ -1,4 +1,4 @@
-// $Id: Float.pmod,v 1.1 2003/11/07 21:28:07 mast Exp $
+// $Id: Float.pmod,v 1.2 2003/11/07 21:55:45 mast Exp $
 
 #pike __REAL_VERSION__
 
@@ -35,12 +35,23 @@ constant EPSILON = __builtin.FLOAT_EPSILON;
 //! @expr{--with-long-double-precision@}. The default is to use the
 //! longest available float type that fits inside a pointer.
 
+#if constant (__builtin.__FLOAT_PRECISION_FLOAT__)
 constant FLOAT_PRECISION = __builtin.__FLOAT_PRECISION_FLOAT__;
+#endif
+#if constant (__builtin.__DOUBLE_PRECISION_FLOAT__)
 constant DOUBLE_PRECISION = __builtin.__DOUBLE_PRECISION_FLOAT__;
+#endif
+#if constant (__builtin.__LONG_DOUBLE_PRECISION_FLOAT__)
 constant LONG_DOUBLE_PRECISION = __builtin.__LONG_DOUBLE_PRECISION_FLOAT__;
-//! Tells which C compiler float type that is used for Pike floats by
-//! this Pike instance. One of these constants is @expr{1@} while the
-//! other two is @expr{0@}.
+#endif
+
+//! @decl constant FLOAT_PRECISION;
+//! @decl constant DOUBLE_PRECISION;
+//! @decl constant LONG_DOUBLE_PRECISION;
+//!
+//! Tells which C compiler float type that is used for Pike floats.
+//! Only one of these constants will exist (with the value @expr{1@})
+//! at runtime.
 //!
 //! @dl
 //! @item FLOAT_PRECISION
@@ -50,3 +61,9 @@ constant LONG_DOUBLE_PRECISION = __builtin.__LONG_DOUBLE_PRECISION_FLOAT__;
 //! @item LONG_DOUBLE_PRECISION
 //!   The @expr{long double@} type of the C compiler is used.
 //! @enddl
+//!
+//! @note
+//! The float type can be controlled when Pike is compiled with the
+//! configure flags @expr{--with-double-precision@} and
+//! @expr{--with-long-double-precision@}. The default is to use the
+//! longest available float type that fits inside a pointer.
