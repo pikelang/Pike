@@ -30,7 +30,11 @@
 #include "error.h"
 
 #ifndef S_ISREG
+#ifdef S_IFREG
+#define S_ISREG(mode)   (((mode) & (S_IFMT)) == (S_IFREG))
+#else
 #define S_ISREG(mode)   (((mode) & (_S_IFMT)) == (_S_IFREG))
+#endif
 #endif
 
 /*
@@ -206,7 +210,7 @@ static INLINE void free_input(struct input *i)
 #endif
     break;
   }
-  free(i);
+  free((char *)i);
 }
 
 /* do the done_callback, then close and free everything */
@@ -389,7 +393,7 @@ static INLINE struct pike_string* gimme_some_data(unsigned long pos)
       sbuffers-=b->s->len;
       nbuffers--;
       free_string(b->s);
-      free(b);
+      free((char *)b);
 
       /* Wake up first input if it was sleeping and we
        * have room for more in the buffer.
@@ -705,7 +709,7 @@ static void pipe_output(INT32 args)
 	sbuffers-=b->s->len;
 	nbuffers--;
 	free_string(b->s);
-	free(b);
+	free((char *)b);
       }
       THIS->lastbuffer=NULL;
 
@@ -827,7 +831,7 @@ static void pipe_write_output_callback(INT32 args)
    if (args<1 || sp[-args].type!=T_OBJECT)
      error("Illegal argument to pipe->write_output_callback\n");
 
-   if(!sp[-args].u.object->prog) return 0;
+   if(!sp[-args].u.object->prog) return;
 
    if(sp[-args].u.object->prog != output_program)
      error("Illegal argument to pipe->write_output_callback\n");
@@ -841,7 +845,7 @@ static void pipe_close_output_callback(INT32 args)
   struct output *o;
    if (args<1 || sp[-args].type!=T_OBJECT)
 
-   if(!sp[-args].u.object->prog) return 0;
+   if(!sp[-args].u.object->prog) return;
 
    if(sp[-args].u.object->prog != output_program)
      error("Illegal argument to pipe->close_output_callback\n");
