@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: encode.c,v 1.166 2003/02/24 18:56:08 mast Exp $
+|| $Id: encode.c,v 1.167 2003/02/24 18:57:16 mast Exp $
 */
 
 #include "global.h"
@@ -27,12 +27,12 @@
 #include "bignum.h"
 #include "pikecode.h"
 
-RCSID("$Id: encode.c,v 1.166 2003/02/24 18:56:08 mast Exp $");
+RCSID("$Id: encode.c,v 1.167 2003/02/24 18:57:16 mast Exp $");
 
 /* #define ENCODE_DEBUG */
 
 /* Use the old encoding method for programs. */
-#define OLD_PIKE_ENCODE_PROGRAM
+/* #define OLD_PIKE_ENCODE_PROGRAM */
 
 #ifdef ENCODE_DEBUG
 /* Pass a nonzero integer as the third arg to encode_value,
