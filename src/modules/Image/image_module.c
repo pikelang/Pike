@@ -1,13 +1,13 @@
 #include "global.h"
 #include "stralloc.h"
 #include "global.h"
-RCSID("$Id: image_module.c,v 1.6 2000/11/21 10:16:08 per Exp $");
+RCSID("$Id: image_module.c,v 1.7 2001/03/20 21:52:39 david%hedbor.org Exp $");
 #include "pike_macros.h"
 #include "interpret.h"
 #include "program.h"
 #include "object.h"
 #include "operators.h"
-
+#include "error.h"
 #include "image.h"
 
 #define IMAGE_INITER
@@ -86,9 +86,9 @@ static void image_magic_index(INT32 args)
    int i;
 
    if (args!=1) 
-      error("Image.`[]: Too few or too many arguments\n");
+      Pike_error("Image.`[]: Too few or too many arguments\n");
    if (sp[-1].type!=T_STRING)
-      error("Image.`[]: Illegal type of argument\n");
+      Pike_error("Image.`[]: Illegal type of argument\n");
 
    for (i=0; i<(int)NELEM(submagic); i++)
       if (sp[-1].u.string==submagic[i].ps)
