@@ -1,5 +1,5 @@
 /*
- * $Id: mysql.c,v 1.55 2002/04/11 09:14:45 jhs Exp $
+ * $Id: mysql.c,v 1.56 2002/04/11 10:10:20 jhs Exp $
  *
  * SQL database functionality for Pike
  *
@@ -93,7 +93,7 @@ typedef struct dynamic_buffer_s dynamic_buffer;
  * Globals
  */
 
-RCSID("$Id: mysql.c,v 1.55 2002/04/11 09:14:45 jhs Exp $");
+RCSID("$Id: mysql.c,v 1.56 2002/04/11 10:10:20 jhs Exp $");
 
 /*! @module Mysql
  *!
@@ -562,7 +562,7 @@ static void mysql__sprintf(INT32 args)
       info = mysql_get_host_info(socket);
       MYSQL_DISALLOW();
 
-      push_text("Mysql(/* %s */)");
+      push_text("mysql(/* %s */)");
       push_text(info);
       f_sprintf(2);
 
@@ -574,7 +574,7 @@ static void mysql__sprintf(INT32 args)
 
     case 't':
     {
-      struct pike_string * res = make_shared_binary_string("Mysql", 5);
+      struct pike_string * res = make_shared_binary_string("mysql", 5);
       push_string(res);
       return;
     }
