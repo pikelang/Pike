@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: las.c,v 1.357 2005/02/15 18:17:35 grubba Exp $
+|| $Id: las.c,v 1.358 2005/02/18 13:49:33 grubba Exp $
 */
 
 #include "global.h"
@@ -1773,102 +1773,6 @@ void resolv_program(node *n)
     case T_PROGRAM:
       break;
   }
-}
-
-node *recursive_add_call_arg(node *n, node *arg)
-{
-  node *tmp;
-
-  if (!n) {
-    /* Earlier parse error. */
-    return NULL;
-  }
-
-  switch(n->token)
-  {
-    case F_ASSIGN:
-    case F_INC:
-    case F_DEC:
-    case F_POP_VALUE:
-      tmp=recursive_add_call_arg(CAR(n), arg);
-#ifdef SHARED_NODES
-      if(tmp != n)
-      {
-	n=defrost_node(n);
-	_CAR(n)=tmp;
-	n=freeze_node(n);
-      }
-#else
-      _CAR(n)=tmp;
-#endif
-      break;
-
-    case F_AUTO_MAP:
-    case F_APPLY:
-      if(CAR(n) && CAR(n)->token == F_CONSTANT &&
-	 CAR(n)->u.sval.type == T_FUNCTION &&
-	 CAR(n)->u.sval.subtype == FUNCTION_BUILTIN &&
-	 CAR(n)->u.sval.u.efun->name &&
-	 CAR(n)->u.sval.u.efun->name->str[0]=='`')
-      {
-	/* FALL THROUGH */
-      }else{
-	tmp=mknode(F_ARG_LIST, CDR(n), arg);
-#ifdef SHARED_NODES
-	n=defrost_node(n);
-	_CDR(n)=tmp;
-	n=freeze_node(n);
-#else
-	_CDR(n)=tmp;
-#endif
-	break;
-      }
-      
-    case F_OR_EQ:
-    case F_XOR_EQ:
-    case F_LSH_EQ:
-    case F_RSH_EQ:
-    case F_ADD_EQ:
-    case F_SUB_EQ:
-    case F_MULT_EQ:
-    case F_MOD_EQ:
-    case F_DIV_EQ:
-    case F_ARG_LIST:
-    case F_LOR:
-    case F_LAND:
-      tmp=recursive_add_call_arg(CDR(n), arg);
-#ifdef SHARED_NODES
-      {
-	n=defrost_node(n);
-	_CDR(n)=tmp;
-	n=freeze_node(n);
-      }
-#else
-      _CDR(n)=tmp;
-#endif
-      break;
-
-    case F_CAST:
-    case F_SOFT_CAST:
-      tmp=recursive_add_call_arg(CAR(n), arg);
-#ifdef SHARED_NODES
-      {
-	n=defrost_node(n);
-	_CAR(n)=tmp;
-	n=freeze_node(n);
-      }
-#else
-      _CAR(n)=tmp;
-#endif
-      break;
-      
-    default:
-      yyerror("Syntax error in implicit lambda.");
-      free_node(arg);
-      break;
-  }
-
-  return n;
 }
 
 node *index_node(node *n, char *node_name, struct pike_string *id)

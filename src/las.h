@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: las.h,v 1.70 2004/12/18 18:06:18 grubba Exp $
+|| $Id: las.h,v 1.71 2005/02/18 13:50:12 grubba Exp $
 */
 
 #ifndef LAS_H
@@ -181,7 +181,7 @@ extern struct node_hash_table node_hash;
 #define SCOPE_SCOPED 2
 #define SCOPE_SCOPE_USED 4
 
-BLOCK_ALLOC_FILL_PAGES(node_s, 2)
+BLOCK_ALLOC_FILL_PAGES(node_s, 2);
 
 /* Prototypes begin here */
 int car_is_node(node *n);
@@ -213,7 +213,6 @@ node *debug_mksoftcastnode(struct pike_type *type, node *n);
 void resolv_constant(node *n);
 void resolv_class(node *n);
 void resolv_class(node *n);
-node *recursive_add_call_arg(node *n, node *arg);
 node *index_node(node *n, char *node_name, struct pike_string *id);
 int node_is_eq(node *a,node *b);
 node *debug_mktypenode(struct pike_type *t);
