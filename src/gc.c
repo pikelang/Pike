@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: gc.c,v 1.236 2003/09/24 01:08:09 mast Exp $
+|| $Id: gc.c,v 1.237 2003/09/29 19:41:23 mast Exp $
 */
 
 #include "global.h"
@@ -33,7 +33,7 @@ struct callback *gc_evaluator_callback=0;
 
 #include "block_alloc.h"
 
-RCSID("$Id: gc.c,v 1.236 2003/09/24 01:08:09 mast Exp $");
+RCSID("$Id: gc.c,v 1.237 2003/09/29 19:41:23 mast Exp $");
 
 int gc_enabled = 1;
 
@@ -209,6 +209,9 @@ static enum {
 
 struct callback_list gc_callbacks;
 
+/* These callbacks are run early in the check pass of the gc and when
+ * locate_references is called. They are typically used to mark
+ * external references (using gc_mark_external) for debug purposes. */
 struct callback *debug_add_gc_callback(callback_func call,
 				 void *arg,
 				 callback_func free_func)
@@ -514,7 +517,7 @@ void describe_location(void *real_memblock,
 	     ( tmp.prog->storage_needed - tmp.prog->inherits[0].storage_offset ))
 	  {
 	    fprintf(stderr,"%*s  **In storage for inherit %d",indent,"",e);
-	    if(tmp.name)
+	    if(tmp.name && !tmp.name->size_shift)
 	      fprintf(stderr," (%s)",tmp.name->str);
 	    fprintf(stderr,"\n");
 	  }
@@ -1575,6 +1578,17 @@ static void exit_gc(void)
 }
 
 #ifdef PIKE_DEBUG
+/* This function marks some known externals. The rest are handled by
+ * callbacks added with add_gc_callback. */
+static void mark_externals (void)
+{
+  struct mapping *constants;
+  if (master_object)
+    gc_mark_external (master_object, " as master_object");
+  if ((constants = get_builtin_constants()))
+    gc_mark_external (constants, " as global constants mapping");
+}
+
 void locate_references(void *a)
 {
   int tmp, orig_in_gc = Pike_in_gc;
@@ -1595,23 +1609,14 @@ void locate_references(void *a)
   check_for=a;
 
   GC_ENTER (NULL, PIKE_T_UNKNOWN) {
+    mark_externals();
+    call_callback(& gc_callbacks, NULL);
+
     gc_check_all_arrays();
     gc_check_all_multisets();
     gc_check_all_mappings();
     gc_check_all_programs();
     gc_check_all_objects();
-
-#ifdef PIKE_DEBUG
-    if(master_object)
-      gc_mark_external (master_object, " as master_object");
-    {
-      extern struct mapping *builtin_constants;
-      if(builtin_constants)
-	gc_mark_external (builtin_constants, " as builtin_constants");
-    }
-#endif
-  
-    call_callback(& gc_callbacks, NULL);
   } GC_LEAVE;
 
 #ifdef DEBUG_MALLOC
@@ -2747,9 +2752,15 @@ size_t do_gc(void *ignored, int explicit_call)
     GC_VERBOSE_DO(fprintf(stderr, "| pretouch: %u things\n", n));
   }
 
+  /* First we count internal references */
   Pike_in_gc=GC_PASS_CHECK;
   gc_ext_weak_refs = 0;
-  /* First we count internal references */
+
+#ifdef PIKE_DEBUG
+  mark_externals();
+#endif
+  call_callback(& gc_callbacks, NULL);
+
   ACCEPT_UNFINISHED_TYPE_FIELDS {
     gc_check_all_arrays();
     gc_check_all_multisets();
@@ -2757,22 +2768,6 @@ size_t do_gc(void *ignored, int explicit_call)
     gc_check_all_programs();
     gc_check_all_objects();
   } END_ACCEPT_UNFINISHED_TYPE_FIELDS;
-
-#ifdef PIKE_DEBUG
-  if(master_object)
-    gc_mark_external (master_object, " as master_object");
-
-  {
-    extern struct mapping *builtin_constants;
-    if(builtin_constants)
-      gc_mark_external (builtin_constants, " as builtin_constants");
-  }
-#endif
-
-  /* These callbacks are mainly for the check pass, but can also
-   * do things that are normally associated with the mark pass
-   */
-  call_callback(& gc_callbacks, NULL);
 
   GC_VERBOSE_DO(fprintf(stderr, "| check: %u references in %d things, "
 			"counted %"PRINTSIZET"u weak refs\n",
