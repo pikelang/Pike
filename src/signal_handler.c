@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: signal_handler.c,v 1.295 2004/04/06 13:00:47 nilsson Exp $
+|| $Id: signal_handler.c,v 1.296 2004/05/02 23:22:43 nilsson Exp $
 */
 
 #include "global.h"
@@ -26,7 +26,7 @@
 #include "main.h"
 #include <signal.h>
 
-RCSID("$Id: signal_handler.c,v 1.295 2004/04/06 13:00:47 nilsson Exp $");
+RCSID("$Id: signal_handler.c,v 1.296 2004/05/02 23:22:43 nilsson Exp $");
 
 #ifdef HAVE_PASSWD_H
 # include <passwd.h>
@@ -2567,17 +2567,15 @@ void f_create_process(INT32 args)
       if(cmd->size < 1)
 	Pike_error("Too few elements in argument array.\n");
       
-      for(e=0;e<cmd->size;e++) {
-	if(ITEM(cmd)[e].type!=T_STRING)
-	  Pike_error("Argument is not a string.\n");
-	if(ITEM(cmd)[e].u.string->size_shift)
-	  Pike_error("Argument is not an 8-bit string.\n");	
+      if(cmd->type_field & ~BIT_STRING) {
+	array_fix_type_field(cmd);
+	if(cmd->type_field & ~BIT_STRING)
+	  Pike_error("Bad argument 1 to Process().\n");
       }
 
-      array_fix_type_field(cmd);
-
-      if(cmd->type_field & ~BIT_STRING)
-	Pike_error("Bad argument 1 to Process().\n");
+      for(e=0;e<cmd->size;e++)
+	if(ITEM(cmd)[e].u.string->size_shift)
+	  Pike_error("Argument is not an 8-bit string.\n");	
   }
 
 
