@@ -1,4 +1,4 @@
-// $Id: module.pmod,v 1.151 2002/08/27 09:45:05 grubba Exp $
+// $Id: module.pmod,v 1.152 2002/08/28 12:40:57 grubba Exp $
 #pike __REAL_VERSION__
 
 inherit files;
@@ -1627,6 +1627,14 @@ string read_file(string filename,void|int start,void|int len)
 //! If @[len] is omitted, the rest of the file will be returned.
 //!
 //! If @[start] is also omitted, the entire file will be returned.
+//!
+//! @throws
+//!   Throws an error if @[filename] isn't a regular file.
+//!
+//! @returns
+//!   Returns @tt{0@} (zero) on failure to open @[filename].
+//!
+//!   Returns a string with the requested data otherwise.
 //!
 //! @seealso
 //! @[read_file], @[write_file()], @[append_file()]
