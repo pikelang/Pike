@@ -1,5 +1,5 @@
 /*
- * $Id: sql.pike,v 1.44 2001/01/08 18:30:24 grubba Exp $
+ * $Id: sql.pike,v 1.45 2001/01/08 19:04:55 mast Exp $
  *
  * Implements the generic parts of the SQL-interface
  *
@@ -10,7 +10,7 @@
 
 //.
 //. File:	sql.pike
-//. RCSID:	$Id: sql.pike,v 1.44 2001/01/08 18:30:24 grubba Exp $
+//. RCSID:	$Id: sql.pike,v 1.45 2001/01/08 19:04:55 mast Exp $
 //. Author:	Henrik Grubbström (grubba@idonex.se)
 //.
 //. Synopsis:	Implements the generic parts of the SQL-interface.
@@ -507,7 +507,7 @@ array(string) list_dbs(string|void wild)
   }
   if (wild) {
     res = filter(res,
-		 Regexp(replace(wild, ({"%", "_"}), ({".*", "."}))->match);
+		 Regexp(replace(wild, ({"%", "_"}), ({".*", "."})))->match);
   }
   return(res);
 }
@@ -534,7 +534,7 @@ array(string) list_tables(string|void wild)
   }
   if (wild) {
     res = filter(res,
-		 Regexp(replace(wild, ({"%", "_"}), ({".*", "."}))->match);
+		 Regexp(replace(wild, ({"%", "_"}), ({".*", "."})))->match);
   }
   return(res);
 }
