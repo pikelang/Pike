@@ -1,5 +1,5 @@
 /*
- * $Id: oracle.c,v 1.7 1998/01/30 06:20:21 hubbe Exp $
+ * $Id: oracle.c,v 1.8 1998/02/02 18:07:42 marcus Exp $
  *
  * Pike interface to Oracle databases.
  *
@@ -34,7 +34,7 @@
 
 #endif
 
-RCSID("$Id: oracle.c,v 1.7 1998/01/30 06:20:21 hubbe Exp $");
+RCSID("$Id: oracle.c,v 1.8 1998/02/02 18:07:42 marcus Exp $");
 
 #ifdef HAVE_ORACLE
 
@@ -588,11 +588,11 @@ void pike_module_exit(void)
   if(oracle_program)
   {
     free_program(oracle_program);
-    oracle_program=0;
+    oracle_program = NULL;
   }
   if (oracle_result_program) {
     free_program(oracle_result_program);
-    oracle_program = NULL;
+    oracle_result_program = NULL;
   }
 #endif
 }
