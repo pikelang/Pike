@@ -50,7 +50,7 @@ GTK.Button enter( );
 //!
 //!
 
-GTK.Widget get_child( );
+GTK.Widget child( );
 //! The (one and only) child of this container.
 //!
 //!
