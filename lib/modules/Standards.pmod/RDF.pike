@@ -1,4 +1,4 @@
-// $Id: RDF.pike,v 1.8 2002/11/29 01:29:44 nilsson Exp $
+// $Id: RDF.pike,v 1.9 2003/04/10 22:58:48 nilsson Exp $
 
 //! Represents an RDF domain which can contain any number of complete
 //! statements.
@@ -106,9 +106,15 @@ void add_statement(Resource subj, Resource pred, Resource obj) {
 
 //! Returns an RDF resource with the given URI as identifier,
 //! or zero.
-Resource get_resource(string uri) {
+URIResource get_resource(string uri) {
   if(uris[uri]) return uris[uri];
   return 0;
+}
+
+//! Returns an RDF resource with the given URI as identifier,
+//! or if no such resrouce exists, creates it and returns it.
+URIResource make_resource(string uri) {
+  return get_resource(uri) || URIResource(uri);
 }
 
 //! Returns an array with the statements that matches the given
@@ -363,14 +369,85 @@ string encode_n_triple_string(string in) {
 
 
 //
+// XML code
+//
+
+#define Node Parser.XML.NSTree.NSNode
+
+static Node add_xml_children(Node p, string rdfns) {
+  if(p->get_ns()!=rdfns) error("Namespace strangeness.\n");
+  string subj_uri = p->get_attributes()->about;
+  if(!subj_uri) error("Missing about attribute.\n");
+  Resource subj = make_resource(subj_uri);
+
+  mapping m = p->get_ns_attributes();
+  foreach(m; string ns; mapping m) {
+    if(ns==rdfns) continue;
+    foreach(m; string pred; string obj)
+      add_statement( subj, make_resource(ns+pred), LiteralResource(obj) );
+  }
+
+  foreach(p->get_elements(), Node c) {
+    string pred_uri = c->get_ns() + c->get_any_name();
+    Resource obj;
+    string obj_uri = c->get_ns_attributes()[rdfns] &&
+      c->get_ns_attributes()[rdfns]->resource;
+    if(obj_uri) {
+      obj = make_resource(obj_uri);
+      mapping m = c->get_ns_attributes();
+      foreach(m; string ns; mapping m) {
+	if(ns==rdfns) continue;
+	foreach(m; string pred; string subobj)
+	  add_statement( obj, make_resource(ns+pred),
+			 LiteralResource(subobj) );
+      }
+    }
+    else {
+      array(Node) dc = c->get_elements("Description");
+      if(sizeof(dc)) {
+	if(sizeof(dc)!=1) error("More than one Description.\n");
+	obj = add_xml_children(dc[0], rdfns);
+      }
+      else
+	obj = LiteralResource(c[0]->get_text());
+    }
+    add_statement( subj, make_resource(pred_uri), obj );
+  }
+
+  return subj;
+}
+
+//! @decl Standards.RDF parse_xml(string|Parser.XML.NSTree.NSNode in)
+//! Adds the statements represented by the string or tree @[in] to the
+//! RDF domain. If @[in] is a tree the in-node should be the @tt{RDF@}
+//! node of the XML serialization.
+this_program parse_xml(string|Node in) {
+  Node n;
+  if(stringp(in)) {
+    n = Parser.XML.NSTree.parse_input(in);
+    n = n->get_first_element("RDF");
+  }
+  else
+    n = in;
+  string rdfns = n->get_ns();
+
+  foreach(n->get_elements("Description"), Node c)
+    add_xml_children(c, rdfns);
+
+  return this_object();
+}
+
+//
 // lfuns
 //
 
+//! Returns the number of statements in the RDF domain.
 int _sizeof() {
   if(!sizeof(statements)) return 0;
   return `+( @sizeof(values(statements)[*]) );
 }
 
+//!
 string _sprintf(int t) {
-  return t=='O' && sprintf("%O(%d)", _sizeof());
+  return t=='O' && sprintf("%O(%d)", this_program, _sizeof());
 }
