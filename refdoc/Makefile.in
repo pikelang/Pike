@@ -1,7 +1,7 @@
 #
 # Sub Makefile for extracting AutoDoc mk II to XML
 #
-# $Id: Makefile.in,v 1.7 2001/04/25 19:44:47 grubba Exp $
+# $Id: Makefile.in,v 1.8 2001/04/25 19:46:08 grubba Exp $
 #
 # Henrik Grubbström 2001-02-02
 #
@@ -19,7 +19,7 @@ all: extract
 
 extract: xml recurse
 
-.SUFFIXES: .c .pike .pmod.in .xml
+.SUFFIXES: .c .pike .pmod .pmod.in .xml
 
 .c.xml: $(ROOT)/../bin/autodoc.pike
 	@rm -f "$@.new" 2>/dev/null || /bin/true
