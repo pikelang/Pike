@@ -2,7 +2,7 @@
 
 // LDAP client protocol implementation for Pike.
 //
-// $Id: client.pike,v 1.32 2001/11/05 11:46:57 hop Exp $
+// $Id: client.pike,v 1.33 2001/11/05 11:52:03 hop Exp $
 //
 // Honza Petrous, hop@unibase.cz
 //
@@ -241,9 +241,6 @@ int _prof_gtim;
     //!  @[LDAP.client.result.first], @[LDAP.client.result.next]
     int count_entries() { return(entrycnt - actnum); }
 
-    //! @decl mapping(string:array(string)) fetch()
-    //! @decl mapping(string:array(string)) fetch(int index)
-    //!
     //! Returns a mapping with an entry for each attribute.
     //! Each entry is an array of values of the attribute.
     //!
@@ -352,7 +349,7 @@ int _prof_gtim;
   void create(string|void url, object|void context)
   {
 
-    info = ([ "code_revision" : ("$Revision: 1.32 $"/" ")[1] ]);
+    info = ([ "code_revision" : ("$Revision: 1.33 $"/" ")[1] ]);
 
     if(!url || !sizeof(url))
       url = LDAP_DEFAULT_URL;
