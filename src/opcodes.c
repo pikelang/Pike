@@ -27,7 +27,7 @@
 #include "bignum.h"
 #include "operators.h"
 
-RCSID("$Id: opcodes.c,v 1.111 2001/06/17 18:18:05 grubba Exp $");
+RCSID("$Id: opcodes.c,v 1.112 2001/06/17 19:15:15 grubba Exp $");
 
 void index_no_free(struct svalue *to,struct svalue *what,struct svalue *ind)
 {
@@ -154,7 +154,27 @@ void o_cast_to_int(void)
       sp--;
       dmalloc_touch_svalue(sp);
     }
+    if(sp[-1].type != PIKE_T_INT)
+    {
+      if(sp[-1].type == T_OBJECT && sp[-1].u.object->prog)
+      {
+	int f=FIND_LFUN(sp[-1].u.object->prog, LFUN__IS_TYPE);
+	if( f != -1)
+	{
+	  struct pike_string *s;
+	  MAKE_CONSTANT_SHARED_STRING(s, "int");
+	  push_string(s);
+	  apply_low(sp[-2].u.object, f, 1);
+	  f=!IS_ZERO(sp-1);
+	  pop_stack();
+	  if(f) return;
+	}
+      }
+      Pike_error("Cast failed, wanted int, got %s\n",
+		 get_name_of_type(sp[-1].type));
+    }
     break;
+
   case T_FLOAT:
     {
       int i=DO_NOT_WARN((int)(sp[-1].u.float_number));
@@ -219,6 +239,138 @@ void o_cast_to_int(void)
   default:
     Pike_error("Cannot cast %s to int.\n", get_name_of_type(sp[-1].type));
   }
+}
+
+void o_cast_to_string(void)
+{
+  char buf[200];
+  switch(sp[-1].type)
+  {
+  case PIKE_T_STRING:
+    return;
+
+  case T_OBJECT:
+    {
+      struct pike_string *s;
+      MAKE_CONSTANT_SHARED_STRING(s, "string");
+      push_string(s);
+      if(!sp[-2].u.object->prog)
+	Pike_error("Cast called on destructed object.\n");
+      if(FIND_LFUN(sp[-2].u.object->prog,LFUN_CAST) == -1)
+	Pike_error("No cast method in object.\n");
+      apply_lfun(sp[-2].u.object, LFUN_CAST, 1);
+      free_svalue(sp-2);
+      sp[-2]=sp[-1];
+      sp--;
+      dmalloc_touch_svalue(sp);
+    }
+    if(sp[-1].type != PIKE_T_STRING)
+    {
+      if(sp[-1].type == T_OBJECT && sp[-1].u.object->prog)
+      {
+	int f=FIND_LFUN(sp[-1].u.object->prog, LFUN__IS_TYPE);
+	if( f != -1)
+	{
+	  struct pike_string *s;
+	  MAKE_CONSTANT_SHARED_STRING(s, "string");
+	  push_string(s);
+	  apply_low(sp[-2].u.object, f, 1);
+	  f=!IS_ZERO(sp-1);
+	  pop_stack();
+	  if(f) return;
+	}
+      }
+      Pike_error("Cast failed, wanted string, got %s\n",
+		 get_name_of_type(sp[-1].type));
+    }
+    return;
+
+  case T_ARRAY:
+    {
+      int i;
+      struct array *a = sp[-1].u.array;
+      struct pike_string *s;
+      int shift = 0;
+
+      for(i = a->size; i--; ) {
+	unsigned INT32 val;
+	if (a->item[i].type != T_INT) {
+	  Pike_error("cast: Item %d is not an integer.\n", i);
+	}
+	val = (unsigned INT32)a->item[i].u.integer;
+	if (val > 0xff) {
+	  shift = 1;
+	  if (val > 0xffff) {
+	    shift = 2;
+	    while(i--)
+	      if (a->item[i].type != T_INT)
+		Pike_error("cast: Item %d is not an integer.\n", i);
+	    break;
+	  }
+	  while(i--) {
+	    if (a->item[i].type != T_INT) {
+	      Pike_error("cast: Item %d is not an integer.\n", i);
+	    }
+	    val = (unsigned INT32)a->item[i].u.integer;
+	    if (val > 0xffff) {
+	      shift = 2;
+	      while(i--)
+		if (a->item[i].type != T_INT)
+		  Pike_error("cast: Item %d is not an integer.\n", i);
+	      break;
+	    }
+	  }
+	  break;
+	}
+      }
+      s = begin_wide_shared_string(a->size, shift);
+      switch(shift) {
+      case 0:
+	for(i = a->size; i--; ) {
+	  s->str[i] = a->item[i].u.integer;
+	}
+	break;
+      case 1:
+	{
+	  p_wchar1 *str1 = STR1(s);
+	  for(i = a->size; i--; ) {
+	    str1[i] = a->item[i].u.integer;
+	  }
+	}
+	break;
+      case 2:
+	{
+	  p_wchar2 *str2 = STR2(s);
+	  for(i = a->size; i--; ) {
+	    str2[i] = a->item[i].u.integer;
+	  }
+	}
+	break;
+      default:
+	free_string(end_shared_string(s));
+	fatal("cast: Bad shift: %d.\n", shift);
+	break;
+      }
+      s = end_shared_string(s);
+      pop_stack();
+      push_string(s);
+    }
+    return;
+	    
+  case T_INT:
+    sprintf(buf, "%ld", (long)sp[-1].u.integer);
+    break;
+	    
+  case T_FLOAT:
+    sprintf(buf, "%f", (double)sp[-1].u.float_number);
+    break;
+
+  default:
+    Pike_error("Cannot cast %s to string.\n", get_name_of_type(sp[-1].type));
+  }
+	
+  sp[-1].type = PIKE_T_STRING;
+  sp[-1].u.string = make_shared_string(buf);
 }
 
 void o_cast(struct pike_type *type, INT32 run_time_type)
@@ -328,8 +480,12 @@ void o_cast(struct pike_type *type, INT32 run_time_type)
 	
     case T_INT:
       o_cast_to_int();
-      break;
+      return;
 	
+    case T_STRING:
+      o_cast_to_string();
+      return;
+
       case T_FLOAT:
       {
 	FLOAT_TYPE f = 0.0;
@@ -352,101 +508,6 @@ void o_cast(struct pike_type *type, INT32 run_time_type)
 	
 	sp[-1].type=T_FLOAT;
 	sp[-1].u.float_number=f;
-	break;
-      }
-      
-      case T_STRING:
-      {
-	char buf[200];
-	switch(sp[-1].type)
-	{
-	  case T_INT:
-	    sprintf(buf,"%ld",(long)sp[-1].u.integer);
-	    break;
-	    
-	  case T_FLOAT:
-	    sprintf(buf,"%f",(double)sp[-1].u.float_number);
-	    break;
-
-	  case T_ARRAY:
-	    {
-	      int i;
-	      struct array *a = sp[-1].u.array;
-	      struct pike_string *s;
-	      int shift = 0;
-
-	      for(i = a->size; i--; ) {
-		unsigned INT32 val;
-		if (a->item[i].type != T_INT) {
-		  Pike_error("cast: Item %d is not an integer.\n", i);
-		}
-		val = (unsigned INT32)a->item[i].u.integer;
-		if (val > 0xff) {
-		  shift = 1;
-		  if (val > 0xffff) {
-		    shift = 2;
-		    while(i--)
-		      if (a->item[i].type != T_INT)
-			Pike_error("cast: Item %d is not an integer.\n", i);
-		    break;
-		  }
-		  while(i--) {
-		    if (a->item[i].type != T_INT) {
-		      Pike_error("cast: Item %d is not an integer.\n", i);
-		    }
-		    val = (unsigned INT32)a->item[i].u.integer;
-		    if (val > 0xffff) {
-		      shift = 2;
-		      while(i--)
-			if (a->item[i].type != T_INT)
-			  Pike_error("cast: Item %d is not an integer.\n", i);
-		      break;
-		    }
-		  }
-		  break;
-		}
-	      }
-	      s = begin_wide_shared_string(a->size, shift);
-	      switch(shift) {
-	      case 0:
-		for(i = a->size; i--; ) {
-		  s->str[i] = a->item[i].u.integer;
-		}
-		break;
-	      case 1:
-		{
-		  p_wchar1 *str1 = STR1(s);
-		  for(i = a->size; i--; ) {
-		    str1[i] = a->item[i].u.integer;
-		  }
-		}
-		break;
-	      case 2:
-		{
-		  p_wchar2 *str2 = STR2(s);
-		  for(i = a->size; i--; ) {
-		    str2[i] = a->item[i].u.integer;
-		  }
-		}
-		break;
-	      default:
-		free_string(end_shared_string(s));
-		fatal("cast: Bad shift: %d.\n", shift);
-		break;
-	      }
-	      s = end_shared_string(s);
-	      pop_stack();
-	      push_string(s);
-	      return;
-	    }
-	    break;
-	    
-	  default:
-	    Pike_error("Cannot cast %s to string.\n",get_name_of_type(sp[-1].type));
-	}
-	
-	sp[-1].type=T_STRING;
-	sp[-1].u.string=make_shared_string(buf);
 	break;
       }
       
