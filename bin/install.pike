@@ -162,11 +162,15 @@ class WixNode
 {
   inherit Parser.XML.Tree.SimpleElementNode;
 
-  static void create(string name, mapping(string:string) attrs)
+  static void create(string name, mapping(string:string) attrs,
+		     string|void text)
   {
     ::create("http://schemas.microsoft.com/wix/2003/01/wi" + name, attrs);
     mTagName = name;
     mNamespace = "http://schemas.microsoft.com/wix/2003/01/wi";
+    if (text) {
+      add_child(Parser.XML.Tree.SimpleTextNode(text));
+    }
   }
 }
 
@@ -176,15 +180,10 @@ class File
   string source;
   string id;
 
-  static void create(string name, string source, string|void id)
+  static void create(string name, string source, string id)
   {
     File::name = name;
     File::source = source;
-    if (!id) {
-      id = "_" + String.string2hex(Crypto.MD5()->
-				   update(source+Stdio.read_bytes(source))->
-				   digest());
-    }
     File::id = id;
   }
 
@@ -192,7 +191,7 @@ class File
   {
     mapping(string:string) attrs = ([
       "Id":id,
-      "Name":String.string2hex(Crypto.MD5()->update(name)->digest())[..7],
+      "Name":id[1..8]+"."+id[9..11],
       "LongName":name,
       "Vital":"yes",
       //      "KeyPath":"yes",
@@ -220,13 +219,16 @@ class Directory
 {
   string name;
   string id;
+  Standards.UUID.UUID guid;
   string source;
   mapping(string:int) sub_sources = ([]);
   mapping(string:File) files = ([]);
   mapping(string:Directory) sub_dirs = ([]);
 
-  static void create(string name, string|void id)
+  static void create(string name, string parent_guid, string|void id)
   {
+    guid = Standards.UUID.make_version3(name, parent_guid);
+    if (!id) id = "_"+guid->str()-"-";
     Directory::name = name;
     Directory::id = id;
   }
@@ -234,7 +236,10 @@ class Directory
   void add_path(string dest, string src)
   {
     if (search(dest, "/") == -1) {
-      files[dest] = File(dest, src);
+      files[dest] = File(dest, src,
+			 "_" +
+			 Standards.UUID.make_version3(dest, guid->encode())->
+			 str() - "-");
       if (has_suffix(src, "/"+dest)) {
 	sub_sources[combine_path(src, "..")]++;
       }
@@ -243,7 +248,7 @@ class Directory
       string dname = path[0];
       Directory d = sub_dirs[dname];
       if (!d) {
-	d = sub_dirs[dname] = Directory(dname);
+	d = sub_dirs[dname] = Directory(dname, guid->encode());
       }
       d->add_path(dest[sizeof(dname)+1..], src);
     }
@@ -281,14 +286,21 @@ class Directory
   {
     if (!parent) parent = "";
     parent += "/" + name;
-    if (!id) {
-      id = "_" + String.string2hex(Crypto.MD5()->update(parent)->digest());
-    }
+    
     mapping(string:string) attrs = ([
-      "Name":String.string2hex(Crypto.MD5()->update(name)->digest())[..7],
-      "LongName":name,
       "Id":id,
     ]);
+    // Win32 stupidity...
+    if ((sizeof(name) > 11 ||
+	 sizeof(name/".") > 2 ||
+	 sizeof((name/".")[0]) > 8 ||
+	 (sizeof(name/".") == 2 && sizeof((name/".")[1]) > 3)) &&
+	(name != "SourceDir")) {
+      attrs->LongName = name;
+      attrs->Name = guid->str()[..7];
+    } else {
+      attrs->Name = name;
+    }
     if (source) {
       attrs->src = source+"/";
 #if 0
@@ -305,19 +317,452 @@ class Directory
     }
     WixNode node = WixNode("Directory", attrs);
     foreach(sub_dirs;; Directory d) {
+      node->add_child(Parser.XML.Tree.SimpleTextNode("\n"));
       node->add_child(d->gen_xml(parent));
     }
     if (sizeof(files)) {
+      node->add_child(Parser.XML.Tree.SimpleTextNode("\n"));
       WixNode component = WixNode("Component", ([
 				    "Id":"C_" + id,
-				    "Guid":Standards.UUID.new_string(),
+				    "Guid":guid->str(),
 				  ]));
       foreach(files;; File f) {
+	component->add_child(Parser.XML.Tree.SimpleTextNode("\n"));
 	component->add_child(f->gen_xml());
       }
+      node->add_child(Parser.XML.Tree.SimpleTextNode("\n"));
       node->add_child(component);
     }
+    node->add_child(Parser.XML.Tree.SimpleTextNode("\n"));
     return node;
+  }
+}
+
+class Dialog
+{
+  string id;
+  string banner;
+
+  class Control
+  {
+    string id;
+    int x;
+    int y;
+    int width;
+    int height;
+    int disabled;
+    constant type = "";
+    string font = "\\VSI_MS_Sans_Serif13.0_0_0";
+    string text;
+
+    mapping(string:string) get_attrs()
+    {
+      mapping(string:string) res = ([
+	"Type":type,
+	"Id":id,
+	"X":(string)x,
+	"Y":(string)y,
+	"Width":(string)width,
+	"Height":(string)height,
+      ]);
+      if (disabled) {
+	res->Disabled="yes";
+      }
+      return res;
+    }
+
+    array(WixNode) get_children()
+    {
+      if (text) {
+	return ({
+	  WixNode("Text", ([]), sprintf("{%s}%s", font, text)),
+	});
+      }
+      return ({});
+    }
+
+    WixNode gen_xml()
+    {
+      mapping(string:string) attrs = get_attrs();
+      foreach(attrs; string attr; string val) {
+	if (!stringp(val)) {
+	  error("Bad attributes for control: %O\n", attrs);
+	}
+      }
+      WixNode res = WixNode("Control", attrs);
+      foreach(get_children(), WixNode subnode) {
+	res->add_child(subnode);
+      }
+      return res;
+    }
+  }
+
+  class TextLabel
+  {
+    inherit Control;
+    constant type = "Text";
+    int x = 18;
+    int height = 12;
+    int transparent = 0;
+    mapping(string:string) get_attrs()
+    {
+      mapping(string:string) res = ::get_attrs();
+      if (transparent) res->Transparent = "yes";
+      return res;
+    }
+  }
+
+  class BannerText
+  {
+    inherit TextLabel;
+    string id = "Banner";
+    int x = 9;
+    int y = 9;
+    int width = 306;
+    int height = 33;
+    int transparent = 1;
+    string font = "\\VSI_MS_Sans_Serif16.0_1_0";
+    static void create()
+    {
+      text = banner;
+    }
+  }
+
+  class BannerBmp
+  {
+    inherit Control;
+    constant type = "Bitmap";
+    string id = "BannerBmp";
+    int x = 0;
+    int y = 0;
+    int width = 375;
+    int height = 52;
+    string bitmap = "Pike_banner";
+    mapping(string:string) get_attrs()
+    {
+      mapping(string:string) res = ::get_attrs();
+      res->TabSkip = "no";
+      res->Text = bitmap;
+      return res;
+    }
+  }
+
+  class Line
+  {
+    inherit Control;
+    constant type = "Line";
+    string id = "Line";
+    int x = 0;
+    int y = 52;
+    int width = 375;
+    int height = 6;
+    string text = "MsiHorizontalLine";
+  }
+
+  class Line2
+  {
+    inherit Line;
+    string id = "Line2";
+    int y = 252;
+  }
+
+  class Button
+  {
+    inherit Control;
+    constant type = "PushButton";
+    int y = 261;
+    int width = 66;
+    int height = 18;
+  }
+
+  class CancelButton
+  {
+    inherit Button;
+    int x = 156;
+    string text = "Cancel";
+    string id = "Cancel";
+
+    mapping(string:string) get_attrs()
+    {
+      mapping res = ::get_attrs();
+      res->Cancel = "yes";
+      return res;
+    }
+  }
+
+  class PrevButton
+  {
+    inherit Button;
+    int x = 228;
+    string text = "< &Back";
+    string id = "Prev";
+
+    array(WixNode) get_children()
+    {
+      string prev_dialog_prop = sprintf("%s_PrevArgs", Dialog::id);
+      if (disabled) {
+	return ::get_children();
+      }
+      return ({
+	@::get_children(),
+	WixNode("Publish", ([
+		  "Event":"NewDialog",
+		  "Value":sprintf("[%s]", prev_dialog_prop),
+		]),
+		sprintf("%s<>\"\"", prev_dialog_prop)),
+	WixNode("Condition", ([ "Action":"disable" ]),
+		sprintf("%s=\"\"", prev_dialog_prop)),
+	WixNode("Condition", ([ "Action":"enable" ]),
+		sprintf("%s<>\"\"", prev_dialog_prop)),
+      });
+    }
+  }
+
+  class NextButton
+  {
+    inherit Button;
+    int x = 300;
+    string text = "&Next >";
+    string id = "Next";
+    int disabled = 1;
+
+    mapping(string:string) get_attrs()
+    {
+      mapping(string:string) res = ::get_attrs();
+      if (!disabled) {
+	res->Default = "yes";
+      }
+      return res;
+    }
+
+    array(WixNode) get_children()
+    {
+      string next_dialog_prop = sprintf("%s_NextArgs", Dialog::id);
+      if (disabled) {
+	return ::get_children();
+      }
+      return ({
+	@::get_children(),
+	WixNode("Publish", ([
+		  "Event":"NewDialog",
+		  "Value":sprintf("[%s]", next_dialog_prop),
+		]),
+		sprintf("%s<>\"\"", next_dialog_prop)),
+	WixNode("Publish", ([
+		  "Event":"EndDialog",
+		  "Value":"Return",
+		]),
+		sprintf("%s=\"\"", next_dialog_prop)),
+      });
+    }
+  }
+
+  class ProgressBar
+  {
+    inherit Control;
+    constant type = "ProgressBar";
+    string id = "ProgressBar";
+    int x = 18;
+    int y = 108;
+    int width = 336;
+    int height = 15;
+    string text = "MsiProgressBar";
+    array(WixNode) get_children()
+    {
+      return ({
+	@::get_children(),
+	@map(({ "StopServices", "DeleteServices", "StartServices",
+		"WriteRegistryValues", "RemoveRegistryValues",
+		"RemoveFiles", "MoveFiles", "UnmoveFiles", "InstallFiles",
+	       "WriteIniValues", "InstallAdminPackage", "SetProgress",
+		}), lambda(string event) {
+		      return WixNode("Subscribe", ([
+				       "Attribute":"Progress",
+				       "Event":event,
+				     ]));
+		    }),
+      });
+    }    
+  }
+
+  int width = 373;
+  int height = 287;
+  string title = "[ProductName]";
+
+  array(Control) controls;
+
+  mapping(string:string) get_attrs()
+  {
+    return ([
+      "Id":id,
+      "Width":(string)width,
+      "Height":(string)height,
+      "Title":title,
+    ]);
+  }
+
+  WixNode gen_xml()
+  {
+    WixNode res = WixNode("Dialog", get_attrs());
+    foreach(controls, Control c) {
+      res->add_child(c->gen_xml());
+    }
+    return res;
+  }
+
+  static void create()
+  {
+    // NOTE: __INIT must have finished before the objects are cloned.
+    controls = ({
+      BannerBmp(),
+      BannerText(),
+      Line(),
+      CancelButton(),
+      PrevButton(),
+      NextButton(),
+      Line2(),
+    });
+  }
+}
+
+class FolderDialog
+{
+  inherit Dialog;
+
+  string id = "FolderForm";
+  string banner = "Select Installation Folder";
+
+  mapping(string:string) get_attrs()
+  {
+    mapping(string:string) res = ::get_attrs();
+    res->TrackDiskSpace = "yes";
+    return res;
+  }
+
+  class NextButton
+  {
+    inherit Dialog::NextButton;
+
+    int disabled = 0;
+
+    array(WixNode) get_children()
+    {
+      return ({
+	@::get_children(),
+	WixNode("Publish", ([
+		  "Event":"SetTargetPath",
+		  "Value":"TARGETDIR",
+		]), "1"),
+	WixNode("Publish", ([
+		  "Event":"EndDialog",
+		  "Value":"Return",
+		]), "1"),
+      });
+    }
+  }
+
+  class FolderLabel
+  {
+    inherit TextLabel;
+    int y = 114;
+    int width = 348;
+    string text = "&Folder:";
+    string id = "FolderLabel";
+    mapping(string:string) get_attrs()
+    {
+      mapping(string:string) res = ::get_attrs();
+      res->TabSkip = "no";
+      return res;
+    }
+  }
+
+  class FolderEdit
+  {
+    inherit Control;
+    constant type = "PathEdit";
+    int x = 18;
+    int y = 126;
+    int width = 252;
+    int height = 18;
+    string id = "PathEdit";
+    string text = "MsiPathEdit";
+    
+    mapping(string:string) get_attrs()
+    {
+      mapping(string:string) res = ::get_attrs();
+      res->Sunken = "yes";
+      res->Property = "TARGETDIR";
+      return res;
+    }
+  }
+
+  static void create()
+  {
+    ::create();
+    controls += ({
+      FolderLabel(),
+      FolderEdit(),
+    });
+  }
+}
+
+class ProgressDialog
+{
+  inherit Dialog;
+
+  string id = "ProgressDialog";
+  string banner = "Installing...";
+
+  class PrevButton
+  {
+    inherit Dialog::PrevButton;
+    int disabled = 1;
+  }
+
+  mapping(string:string) get_attrs()
+  {
+    mapping(string:string) res = ::get_attrs();
+    res->Modeless = "yes";
+    return res;
+  }
+
+  static void create()
+  {
+    ::create();
+    controls += ({
+      ProgressBar(),
+    });
+  }
+}
+
+class UI
+{
+  array(Dialog) dialogs = ({
+    FolderDialog(),
+    ProgressDialog(),
+  });
+
+  WixNode gen_xml()
+  {
+    WixNode res = WixNode("UI", ([]));
+    foreach(dialogs, Dialog d) {
+      res->add_child(d->gen_xml());
+    }
+    res->add_child(WixNode("InstallUISequence", ([]))->
+		   add_child(WixNode("Custom", ([
+				       "After":"ValidateProductID",
+				       "Action":"InitTarget",
+				     ]),
+				     "TARGETDIR=\"\""))->
+		   add_child(WixNode("Show", ([
+				       "After":"CostFinalize",
+				       "Dialog":"FolderForm",
+				     ])))->
+		   add_child(WixNode("Show", ([
+				       "After":"FolderForm",
+				       "Dialog":"ProgressDialog",
+				     ]))));
+    return res;
   }
 }
 
@@ -609,7 +1054,7 @@ constant tmpdir="~piketmp";
 void do_export()
 {
   if (export == 2) {
-    status("Creating", export_base_name+"_module.wxs");
+    status("Creating", /*export_base_name*/"Pike"+"_module.wxs");
 
 #define TRANSLATE(X,Y) combine_path(".",X) : Y
     mapping translator = ([
@@ -618,15 +1063,18 @@ void do_export()
       TRANSLATE(vars->SRCDIR,"src"),
       TRANSLATE(vars->TMP_BINDIR,"bin"),
       TRANSLATE(vars->MANDIR_SRC,"man"),
-      TRANSLATE(vars->DOCDIR_SRC,"refdoc"),
-      TRANSLATE(vars->TMP_LIBDIR,"build/lib"),
+      TRANSLATE(vars->DOCDIR_SRC,"doc"),
+      TRANSLATE(vars->TMP_LIBDIR,"lib"),
+      TRANSLATE(combine_path(vars->TMP_BUILDDIR, "doc_build"), "doc/src"),
       "unpack_master.pike" : "build/master.pike",
       "":"build",
     ]);
 
-    Directory root = Directory("SourceDir", "TARGETDIR");
+    Directory root = Directory("SourceDir",
+			       Standards.UUID.new(),//UUID(pike_upgrade_guid)->encode(),
+			       "PIKE_TARGETDIR");
 
-    foreach(to_export, string src) {
+    foreach(sort(to_export), string src) {
       root->add_path(translate(src, translator), src);
     }
 
@@ -659,12 +1107,26 @@ void do_export()
 					    ])))->
 			  add_child(root->gen_xml())));
 
-    Stdio.write_file(export_base_name+"_module.wxs", xml_root->render_xml());
+    Stdio.write_file(/*export_base_name*/"Pike"+"_module.wxs", xml_root->render_xml());
 
-    // Generate the custom actions needed to install the master,
-    // and finalize the pike binary.
+    // Generate the banner image.
+    status("Creating", "Pike_banner.bmp");
 
-    status("Creating", export_base_name+"_actions.wxs");
+    mapping(string:Image.Image) logo =
+      Image._decode(Stdio.read_bytes(combine_path(vars->BASEDIR,
+						  "refdoc/src_images/pike_logo.gif")));
+
+    Image.Image banner = Image.Image(500, 70, 255,255,255);
+
+    banner->paste_mask(logo->img, logo->alpha,
+		       490-logo->img->xsize(),
+		       (70 - logo->img->ysize())/2);
+    
+    Stdio.write_file("Pike_banner.bmp", Image.BMP.encode(banner));
+
+    // Generate the UserInterface
+
+    status("Creating", /*export_base_name*/"Pike"+"_ui.wxs");
 
     xml_root = Parser.XML.Tree.SimpleRootNode()->
       add_child(Parser.XML.Tree.SimpleHeaderNode((["version":"1.0",
@@ -673,20 +1135,49 @@ void do_export()
 			  "xmlns":"http://schemas.microsoft.com/wix/2003/01/wi",
 			]))->
 		add_child(WixNode("Fragment", ([
-				    "Id":"PikeActions",
+				    "Id":"PikeUI",
 				  ]))->
-			  add_child(WixNode("CustomAction", ([
-					      "Id":"FinalizePike",
-					      "ExeCommand":
-					      "-m"+translate("unpack_master.pike", translator)+
-					      " -DNOT_INSTALLED"+
-					      " "+translate( combine_path(vars->TMP_BINDIR,"install.pike"), translator),
-					      "FileKey":root->sub_dirs->build->files["pike.exe"]->id,
-					      
-					    ])))->
-			  add_child(WixNode("CustomAction", ([
-					      "Id":"InstallMaster",
+			  add_child(UI()->gen_xml())->
+			  add_child(WixNode("Binary", ([
+					      "Id":"Pike_banner",
+					      "src":"Pike_banner.bmp"
 					    ])))));
+
+    Stdio.write_file(/*export_base_name*/"Pike"+"_ui.wxs",
+		     xml_root->render_xml());
+
+    // Generate the custom actions needed to install the master,
+    // and finalize the pike binary.
+
+    status("Creating", export_base_name+"_actions.wxs");
+
+    string run_install =
+      translate("pike", translator) +
+      " -DNOT_INSTALLED" +
+      " -m" + translate("unpack_master.pike", translator) + " " +
+      translate(combine_path(vars->TMP_BINDIR,"install.pike"), translator);
+    WixNode fragment_list =
+      WixNode("Fragment", ([
+		"Id":"PikeActions",
+	      ]))->
+      add_child(WixNode("CustomAction", ([
+			  "Id":"FinalizePike",
+			  "Directory":"PIKE_TARGETDIR",
+			  "ExeCommand":run_install + " --finalize",
+			])))->
+      add_child(WixNode("CustomAction", ([
+			  "Id":"InstallMaster",
+			  "Directory":"PIKE_TARGETDIR",
+			  "ExeCommand":run_install + " --install-master",
+			])));
+
+    xml_root = Parser.XML.Tree.SimpleRootNode()->
+      add_child(Parser.XML.Tree.SimpleHeaderNode((["version":"1.0",
+						   "encoding":"utf-8"])))->
+      add_child(WixNode("Wix", ([
+			  "xmlns":"http://schemas.microsoft.com/wix/2003/01/wi",
+			]))->
+		add_child(fragment_list));
 
     Stdio.write_file(export_base_name+"_actions.wxs", xml_root->render_xml());
 
@@ -720,7 +1211,7 @@ void do_export()
 			  "Cabinet":"Pike.cab",
 			])))->
       add_child(WixNode("Directory", ([
-			  "Id":"TARGETDIR",
+			  "Id":"PIKE_TARGETDIR",
 			  "Name":"SourceDir",
 			]))->
 		add_child(WixNode("Merge", ([
@@ -736,7 +1227,7 @@ void do_export()
 					  __REAL_MINOR__,
 					  __REAL_BUILD__),
 			  "Level":"1",
-			  "ConfigurableDirectory":"TARGETDIR",
+			  "ConfigurableDirectory":"PIKE_TARGETDIR",
 			]))->
 		add_child(WixNode("MergeRef", ([
 				    "Id":"Pike",
@@ -752,12 +1243,78 @@ void do_export()
 				    "IncludeMinimum":"yes",
 				  ]))))->
       add_child(WixNode("CustomAction", ([
-			  "Id":"DIRCA_TARGETDIR",
-			  "Property":"TARGETDIR",
+			  "Id":"QueryTarget",
+			  "Property":"PIKE_TARGETDIR",
 			  "Value":"[ProgramFilesFolder][Manufacturer]\[ProductName]",
 			  "Execute":"firstSequence",
-			])));
-						      
+			])))
+->
+      add_child(WixNode("InstallExecuteSequence", ([]))->
+		add_child(WixNode("Custom", ([
+				    "Action":"QueryTarget",
+				    "Before":"InstallFiles",
+				  ]),
+				  "PIKE_TARGETDIR=\"\""))
+#if 0
+->
+		add_child(WixNode("Custom", ([
+				    "Action":"FinalizePike",
+				    "After":"InstallFiles",
+				  ])))->
+		add_child(WixNode("Custom", ([
+				    "Action":"InstallMaster",
+				    "After":"FinalizePike",
+				  ])))
+#endif /* 0 */
+		)
+#if 0
+->
+      add_child(WixNode("UI", ([]))->
+		add_child(WixNode("Dialog", ([
+				    "Id":"TargetDialog",
+				    "Title":"[ProductName]",
+				    "TrackDiskSpace":"yes",
+				    "Width":"373",
+				    "Height":"287",
+				  ]))->
+			  add_child(WixNode("Control", ([
+					      "Id":"TargetEdit",
+					      "Type":"PathEdit",
+					      "Property":"PIKE_TARGETDIR",
+					      "Sunken":"yes",
+					      "Width":"258",
+					      "Height":"18",
+					      "X":"18",
+					      "Y":"126",
+					    ])))->
+			  add_child(WixNode("Control", ([
+					      "Id":"NextButton",
+					      "Type":"PushButton",
+					      "Default":"yes",
+					      "Width":"66",
+					      "Height":"18",
+					      "X":"300",
+					      "Y":"261",
+					    ]))->
+				    add_child(WixNode("Publish", ([
+							"Event":"SetTarget",
+							"Value":"PIKE_TARGETDIR",
+						      ])))->
+				    add_child(WixNode("Publish", ([
+							"Event":"EndDialog",
+							"Value":"Return"
+						      ])))))->
+		add_child(WixNode("InstallUISequence", ([]))->
+			  add_child(WixNode("Custom", ([
+					      "Action":"QueryTarget",
+					      "Before":"TargetDialog",
+					    ])))->
+			  add_child(WixNode("Show", ([
+					      "Dialog":"TargetDialog",
+					      "Before":"ProgressForm",
+					    ])))))
+#endif /* 0 */
+;
 
     xml_root = Parser.XML.Tree.SimpleRootNode()->
       add_child(Parser.XML.Tree.SimpleHeaderNode((["version":"1.0",
@@ -1371,6 +1928,21 @@ int pre_install(array(string) argv)
       include_prefix=combine_path(prefix,"include","pike");
       man_prefix=combine_path(prefix,"man");
       break;
+  case "--finalize":
+    prefix = getcwd();
+    exec_prefix = combine_path(prefix, "bin");
+    lib_prefix = combine_path(prefix, "lib");
+    vars->TMP_BUILDDIR = "build";
+    finalize_pike();
+    return 0;
+  case "--install-master":
+    prefix = getcwd();
+    exec_prefix = combine_path(prefix, "bin");
+    lib_prefix = combine_path(prefix, "lib");
+    include_prefix = combine_path(prefix,"include","pike");
+    make_master("lib/master.pike", "lib/master.pike.in",
+		lib_prefix, include_prefix);
+    return 0;
   }
   break;
   }
@@ -1535,9 +2107,60 @@ void dump_modules()
   status_clear(1);
 }
 
-void do_install()
+void finalize_pike()
 {
   pike=combine_path(exec_prefix,"pike");
+  // Ugly way to detect NT installation
+  string pike_bin_file=combine_path(vars->TMP_BUILDDIR,"pike");
+  if(file_stat(pike_bin_file+".exe"))
+  {
+    pike_bin_file+=".exe";
+    pike+=".exe";
+  }
+
+  if(export)
+    to_export += ({ pike_bin_file });
+  else {
+    status("Finalizing",pike_bin_file);
+    string pike_bin=Stdio.read_file(pike_bin_file);
+
+    if (!pike_bin) {
+      // Failed to read bin file, most likely Cygwin.
+
+      status("Finalizing",pike_bin_file,"FAILED");
+      if (!istty()) {
+	werror("Finalizing of %O failed!\n", pike_bin_file);
+	werror("Not found in %s.\n"
+	       "%O\n", getcwd(), get_dir("."));
+	werror("BUILDDIR: %O\n"
+	       "exe-stat: %O\n",
+	       vars->TMP_BUILDDIR, file_stat(pike_bin_file+".exe"));
+      }
+      exit(1);
+    }
+
+    int pos=search(pike_bin, MASTER_COOKIE);
+
+    if(pos>=0)
+    {
+      status("Finalizing",pike_bin_file,"...");
+      pike_bin_file=combine_path(vars->TMP_BUILDDIR,"pike.tmp");
+      Stdio.write_file(pike_bin_file, pike_bin);
+      Stdio.File f=Stdio.File(pike_bin_file,"rw");
+      f->seek(pos+sizeof(MASTER_COOKIE));
+      f->write(combine_path(lib_prefix,"master.pike"));
+      f->close();
+      status("Finalizing",pike_bin_file,"done");
+    }
+    else
+      werror("Warning! Failed to finalize master location!\n");
+
+    if(install_file(pike_bin_file,pike)) redump_all=1;
+  }
+}
+
+void do_install()
+{
   if(!export)
   {
     status1("Installing Pike in %s, please wait...\n", fakeroot(prefix));
@@ -1554,51 +2177,7 @@ void do_install()
 
   mixed err = catch {
 
-    // Ugly way to detect NT installation
-    string pike_bin_file=combine_path(vars->TMP_BUILDDIR,"pike");
-    if(file_stat(pike_bin_file+".exe"))
-    {
-      pike_bin_file+=".exe";
-      pike+=".exe";
-    }
-
-    if(export)
-      to_export += ({ pike_bin_file });
-    else {
-      status("Finalizing",pike_bin_file);
-      string pike_bin=Stdio.read_file(pike_bin_file);
-
-      if (!pike_bin) {
-	// Failed to read bin file, most likely Cygwin.
-
-	status("Finalizing",pike_bin_file,"FAILED");
-	if (!istty()) {
-	  werror("Finalizing of %O failed!\n", pike_bin_file);
-	  werror("Not found in %s.\n%O\n", getcwd(), get_dir("."));
-	  werror("BUILDDIR: %O\nexe-stat: %O\n",
-		 vars->TMP_BUILDDIR, file_stat(pike_bin_file+".exe"));
-	}
-	exit(1);
-      }
-
-      int pos=search(pike_bin, MASTER_COOKIE);
-
-      if(pos>=0)
-      {
-	status("Finalizing",pike_bin_file,"...");
-	pike_bin_file=combine_path(vars->TMP_BUILDDIR,"pike.tmp");
-	Stdio.write_file(pike_bin_file, pike_bin);
-	Stdio.File f=Stdio.File(pike_bin_file,"rw");
-	f->seek(pos+sizeof(MASTER_COOKIE));
-	f->write(combine_path(lib_prefix,"master.pike"));
-	f->close();
-	status("Finalizing",pike_bin_file,"done");
-      }
-      else
-	werror("Warning! Failed to finalize master location!\n");
-
-      if(install_file(pike_bin_file,pike)) redump_all=1;
-    }
+      finalize_pike();
 
 #ifdef __NT__
     // Copy needed DLL files (like libmySQL.dll if available).
@@ -1791,6 +2370,8 @@ int main(int argc, array(string) argv)
     ({"notty",Getopt.NO_ARG,({"-t","--notty"})}),
     ({"--interactive",Getopt.NO_ARG,({"-i","--interactive"})}),
     ({"--new-style",Getopt.NO_ARG,({"--new-style"})}),
+    ({"--finalize",Getopt.NO_ARG,({"--finalize"})}),
+    ({"--make-master",Getopt.NO_ARG,({"--make-master"})}),
     ({"no-autodoc",Getopt.NO_ARG,({"--no-autodoc","--no-refdoc"})}),
     ({"no-gui",Getopt.NO_ARG,({"--no-gui","--no-x"})}),
     ({"--export",Getopt.NO_ARG,({"--export"})}),
