@@ -1,5 +1,5 @@
 #
-# $Id: configure.in,v 1.36 2003/02/26 18:17:42 agehall Exp $
+# $Id: configure.in,v 1.37 2003/03/28 11:45:16 marcus Exp $
 #
 # Configure script for the mysql-module
 #
@@ -393,6 +393,9 @@ $ret_type * STDCALL mysql_fetch_lengths(MYSQL_RES *mysql)
 			   $pike_cv_mysql_fetch_lengths_ret_type)
       fi
     else :; fi
+
+    AC_CHECK_FUNCS(CreateSemaphoreA)
+
   fi
 fi
 
