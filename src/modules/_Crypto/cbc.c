@@ -1,5 +1,5 @@
 /*
- * $Id: cbc.c,v 1.19 2001/02/10 21:09:08 grubba Exp $
+ * $Id: cbc.c,v 1.20 2001/03/28 15:07:40 grubba Exp $
  *
  * CBC (Cipher Block Chaining Mode) crypto module for Pike.
  *
@@ -381,7 +381,7 @@ void pike_cbc_init(void)
   ADD_STORAGE(struct pike_crypto_cbc);
 
   /* function(program|object:void) */
-  ADD_FUNCTION("create", f_create, tFunc(tOr(tPrg, tObj), tVoid), 0);
+  ADD_FUNCTION("create", f_create, tFunc(tOr(tPrg(tObj), tObj), tVoid), 0);
 
   /* function(void:int) */
   ADD_FUNCTION("query_block_size", f_query_block_size, tFunc(tNone, tInt), 0);

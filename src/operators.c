@@ -6,7 +6,7 @@
 /**/
 #include "global.h"
 #include <math.h>
-RCSID("$Id: operators.c,v 1.132 2001/03/18 16:10:10 grubba Exp $");
+RCSID("$Id: operators.c,v 1.133 2001/03/28 15:07:39 grubba Exp $");
 #include "interpret.h"
 #include "svalue.h"
 #include "multiset.h"
@@ -3400,10 +3400,10 @@ static void exit_string_assignment_storage(struct object *o)
 void init_operators(void)
 {
   /* function(string,int:int)|function(object,string:mixed)|function(array(0=mixed),int:0)|function(mapping(mixed:1=mixed),mixed:1)|function(multiset,mixed:int)|function(string,int,int:string)|function(array(2=mixed),int,int:array(2))|function(program:mixed) */
-  ADD_EFUN2("`[]",f_index,tOr7(tFunc(tStr tInt,tInt),tFunc(tObj tStr,tMix),tFunc(tArr(tSetvar(0,tMix)) tInt,tVar(0)),tFunc(tMap(tMix,tSetvar(1,tMix)) tMix,tVar(1)),tFunc(tMultiset tMix,tInt),tFunc(tStr tInt tInt,tStr),tOr(tFunc(tArr(tSetvar(2,tMix)) tInt tInt,tArr(tVar(2))),tFunc(tPrg,tMix))),OPT_TRY_OPTIMIZE,0,0);
+  ADD_EFUN2("`[]",f_index,tOr7(tFunc(tStr tInt,tInt),tFunc(tObj tStr,tMix),tFunc(tArr(tSetvar(0,tMix)) tInt,tVar(0)),tFunc(tMap(tMix,tSetvar(1,tMix)) tMix,tVar(1)),tFunc(tMultiset tMix,tInt),tFunc(tStr tInt tInt,tStr),tOr(tFunc(tArr(tSetvar(2,tMix)) tInt tInt,tArr(tVar(2))),tFunc(tPrg(tObj),tMix))),OPT_TRY_OPTIMIZE,0,0);
 
   /* function(array(object|mapping|multiset|array),string:array(mixed))|function(object|mapping|multiset|program,string:mixed) */
-  ADD_EFUN2("`->",f_arrow,tOr(tFunc(tArr(tOr4(tObj,tMapping,tMultiset,tArray)) tStr,tArr(tMix)),tFunc(tOr4(tObj,tMapping,tMultiset,tPrg) tStr,tMix)),OPT_TRY_OPTIMIZE,0,0);
+  ADD_EFUN2("`->",f_arrow,tOr(tFunc(tArr(tOr4(tObj,tMapping,tMultiset,tArray)) tStr,tArr(tMix)),tFunc(tOr4(tObj,tMapping,tMultiset,tPrg(tObj)) tStr,tMix)),OPT_TRY_OPTIMIZE,0,0);
 
   ADD_EFUN("`[]=", f_index_assign,
 	   tOr4(tFunc(tObj tStr tSetvar(0,tMix), tVar(0)),
@@ -3424,10 +3424,10 @@ void init_operators(void)
 			tOr(tInt,tFloat),tInt01),
 		 tFuncV(tSetvar(0,tOr4(tString,tMapping,tMultiset,tArray))
 			tVar(0), tVar(0),tInt01),
-		 tFuncV(tOr3(tObj,tProgram,tFunction) tMix,tMix,tInt01),
-		 tFuncV(tMix tOr3(tObj,tProgram,tFunction),tMix,tInt01),
+		 tFuncV(tOr3(tObj,tPrg(tObj),tFunction) tMix,tMix,tInt01),
+		 tFuncV(tMix tOr3(tObj,tPrg(tObj),tFunction),tMix,tInt01),
 		 tFuncV(tType(tMix) tType(tMix),
-			tOr3(tProgram,tFunction,tType(tMix)),tInt01)),
+			tOr3(tPrg(tObj),tFunction,tType(tMix)),tInt01)),
 	    OPT_WEAK_TYPE|OPT_TRY_OPTIMIZE,optimize_eq,generate_comparison);
   /* function(mixed...:int) */
   ADD_EFUN2("`!=",f_ne,
@@ -3435,10 +3435,10 @@ void init_operators(void)
 			tOr(tInt,tFloat),tInt01),
 		 tFuncV(tSetvar(0,tOr4(tString,tMapping,tMultiset,tArray))
 			tVar(0), tVar(0),tInt01),
-		 tFuncV(tOr3(tObj,tProgram,tFunction) tMix,tMix,tInt01),
-		 tFuncV(tMix tOr3(tObj,tProgram,tFunction),tMix,tInt01),
+		 tFuncV(tOr3(tObj,tPrg(tObj),tFunction) tMix,tMix,tInt01),
+		 tFuncV(tMix tOr3(tObj,tPrg(tObj),tFunction),tMix,tInt01),
 		 tFuncV(tType(tMix) tType(tMix),
-			tOr3(tProgram,tFunction,tType(tMix)),tInt01)),
+			tOr3(tPrg(tObj),tFunction,tType(tMix)),tInt01)),
 	    OPT_WEAK_TYPE|OPT_TRY_OPTIMIZE,0,generate_comparison);
   /* function(mixed:int) */
   ADD_EFUN2("`!",f_not,tFuncV(tMix,tVoid,tInt01),
@@ -3518,7 +3518,7 @@ multiset & mapping -> mapping
 		     F_AND_TYPE(tMapping),
 		     F_AND_TYPE(tMultiset),
 		     F_AND_TYPE(tString),
-		     F_AND_TYPE(tOr(tType(tMix),tPrg)) ),
+		     F_AND_TYPE(tOr(tType(tMix),tPrg(tObj))) ),
 
 	       tIfnot(tFuncV(tNone, tNot(tMapping), tMix),
 		      tFuncV(tNone,
@@ -3536,7 +3536,7 @@ multiset & mapping -> mapping
        tFuncV(tSetvar(3,tMultiset),tSetvar(4,tMultiset),tOr(tVar(3),tVar(4))),	\
        tFuncV(tSetvar(5,tArray),tSetvar(6,tArray),tOr(tVar(5),tVar(6))),	\
        tFuncV(tString,tString,tString),						\
-       tFuncV(tOr(tType(tMix),tPrg),tOr(tType(tMix),tPrg),tType(tMix)))
+       tFuncV(tOr(tType(tMix),tPrg(tObj)),tOr(tType(tMix),tPrg(tObj)),tType(tMix)))
 
   ADD_EFUN2("`|",f_or,LOG_TYPE,OPT_TRY_OPTIMIZE,optimize_binary,generate_or);
 
@@ -3613,7 +3613,7 @@ multiset & mapping -> mapping
 		 tFunc(tFlt,tFlt),
 		 tFunc(tStr,tStr),
 		 tFunc(tType(tSetvar(0, tMix)), tType(tNot(tVar(0)))),
-		 tFunc(tProgram, tType(tMix))),
+		 tFunc(tPrg(tObj), tType(tMix))),
 	    OPT_TRY_OPTIMIZE,0,generate_compl);
   /* function(string|multiset|array|mapping|object:int) */
   ADD_EFUN2("sizeof", f_sizeof,

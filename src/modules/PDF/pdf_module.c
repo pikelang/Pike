@@ -1,7 +1,7 @@
 #include "global.h"
 #include "stralloc.h"
 #include "global.h"
-RCSID("$Id: pdf_module.c,v 1.7 2001/01/21 07:42:16 mirar Exp $");
+RCSID("$Id: pdf_module.c,v 1.8 2001/03/28 15:07:40 grubba Exp $");
 #include "pike_macros.h"
 #include "interpret.h"
 #include "program.h"
@@ -173,7 +173,7 @@ static void pdf_magic_index(INT32 args)
 void pike_module_init(void)
 {
    char type_of_index[]=
-      tFunc(tStr,tOr3(tObj,tPrg,""))
+      tFunc(tStr,tOr3(tObj,tPrg(tObj),""))
 
 #undef PDF_FUNCTION
 #undef PDF_SUBMODMAG

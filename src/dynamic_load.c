@@ -8,7 +8,7 @@
 #  include "pike_macros.h"
 #  include "main.h"
 
-RCSID("$Id: dynamic_load.c,v 1.51 2001/02/06 19:20:06 grubba Exp $");
+RCSID("$Id: dynamic_load.c,v 1.52 2001/03/28 15:07:38 grubba Exp $");
 
 #endif /* !TESTING */
 
@@ -368,7 +368,7 @@ void init_dynamic_load(void)
   
 /* function(string:program) */
 
-  ADD_EFUN("load_module",f_load_module,tFunc(tStr,tPrg),OPT_EXTERNAL_DEPEND);
+  ADD_EFUN("load_module",f_load_module,tFunc(tStr,tPrg(tObj)),OPT_EXTERNAL_DEPEND);
 #endif
 }
 

@@ -5,7 +5,7 @@
 \*/
 
 /*
- * $Id: svalue.h,v 1.84 2001/03/28 10:02:44 hubbe Exp $
+ * $Id: svalue.h,v 1.85 2001/03/28 15:07:40 grubba Exp $
  */
 #ifndef SVALUE_H
 #define SVALUE_H
@@ -141,8 +141,8 @@ struct svalue
 #define MagictFunc(RET,ARGS) tFuncV(ARGS "", tVoid, RET)
 #define tFunction tFuncV("" ,tOr(tZero,tVoid),tOr(tMix,tVoid))
 #define tNone ""
-#define tPrg "\005"
-#define tProgram "\005"
+#define tPrg(X) "\005" X
+#define tProgram(X) "\005" X
 #define tStr "\006"
 #define tString "\006"
 #define tType(T) "\007" T
@@ -180,8 +180,8 @@ struct svalue
 #define tOr9(A,B,C,D,E,F,G,H,I) tOr(A,tOr8(B,C,D,E,F,G,H,I))
 #define tMix "\373"
 #define tMixed "\373"
-#define tComplex tOr6(tArray,tMapping,tMultiset,tObj,tFunction,tProgram)
-#define tStringIndicable tOr5(tMapping,tObj,tFunction,tProgram,tMultiset)
+#define tComplex tOr6(tArray,tMapping,tMultiset,tObj,tFunction,tPrg(tObj))
+#define tStringIndicable tOr5(tMapping,tObj,tFunction,tPrg(tObj),tMultiset)
 #define tRef tOr(tString,tComplex)
 #define tIfnot(X,Y) tAnd(tNot(X),Y)
 #define tAny tOr(tVoid,tMix)

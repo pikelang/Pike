@@ -1,7 +1,7 @@
 #include "global.h"
 #include "stralloc.h"
 #include "global.h"
-RCSID("$Id: image_module.c,v 1.9 2000/12/01 08:10:01 hubbe Exp $");
+RCSID("$Id: image_module.c,v 1.10 2001/03/28 15:07:40 grubba Exp $");
 #include "pike_macros.h"
 #include "interpret.h"
 #include "program.h"
@@ -228,7 +228,7 @@ static void init_cpuidflags( )
 void pike_module_init(void)
 {
    char type_of_index[]=
-      tFunc(tStr,tOr3(tObj,tPrg,""))
+      tFunc(tStr,tOr3(tObj,tPrg(tObj),""))
 
 #undef IMAGE_FUNCTION
 #undef IMAGE_SUBMODMAG

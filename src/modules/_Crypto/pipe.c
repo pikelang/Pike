@@ -1,5 +1,5 @@
 /*
- * $Id: pipe.c,v 1.20 2001/02/13 14:42:53 grubba Exp $
+ * $Id: pipe.c,v 1.21 2001/03/28 15:07:41 grubba Exp $
  *
  * PIPE crypto module for Pike.
  *
@@ -351,7 +351,7 @@ void pike_pipe_init(void)
 
   /* function(program|object|array(program|mixed) ...:void) */
   ADD_FUNCTION("create", f_create,
-	       tFuncV(tNone, tOr3(tPrg,tObj,tArr(tOr(tPrg,tMix))), tVoid), 0);
+	       tFuncV(tNone, tOr3(tPrg(tObj),tObj,tArr(tOr(tPrg(tObj),tMix))), tVoid), 0);
 
   /* function(void:string) */
   ADD_FUNCTION("name", f_name, tFunc(tNone, tStr), 0);

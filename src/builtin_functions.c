@@ -5,7 +5,7 @@
 \*/
 /**/
 #include "global.h"
-RCSID("$Id: builtin_functions.c,v 1.355 2001/03/20 02:45:50 hubbe Exp $");
+RCSID("$Id: builtin_functions.c,v 1.356 2001/03/28 15:07:38 grubba Exp $");
 #include "interpret.h"
 #include "svalue.h"
 #include "pike_macros.h"
@@ -7464,7 +7464,7 @@ void init_builtin_efuns(void)
   
 #ifdef PROFILING
   ADD_EFUN("get_profiling_info", f_get_prof_info,
-	   tFunc(tPrg,tArray), OPT_EXTERNAL_DEPEND);
+	   tFunc(tPrg(tObj),tArray), OPT_EXTERNAL_DEPEND);
 #endif /* PROFILING */
 
   ADD_EFUN("_refs",f__refs,tFunc(tRef,tInt),OPT_EXTERNAL_DEPEND);
@@ -7478,7 +7478,7 @@ void init_builtin_efuns(void)
   ADD_PROTOTYPE("_main", tFunc(tArr(tStr) tArr(tStr),tVoid), 0);
 
   ADD_PROTOTYPE("cast_to_object", tFunc(tString tString, tObj), 0);
-  ADD_PROTOTYPE("cast_to_program", tFunc(tStr tStr tOr(tVoid, tObj), tPrg), 0);
+  ADD_PROTOTYPE("cast_to_program", tFunc(tStr tStr tOr(tVoid, tObj), tPrg(tObj)), 0);
   ADD_PROTOTYPE("compile_error", tFunc(tStr tInt tStr, tVoid), 0);
   ADD_PROTOTYPE("compile_warning", tFunc(tStr tInt tStr, tVoid), 0);
   ADD_PROTOTYPE("decode_charset", tFunc(tStr tStr, tStr), 0);
@@ -7487,7 +7487,7 @@ void init_builtin_efuns(void)
   ADD_PROTOTYPE("handle_import",
 		tFunc(tStr tOr(tStr, tVoid) tOr(tObj, tVoid), tMix), 0);
   ADD_PROTOTYPE("handle_include", tFunc(tStr tStr tInt, tStr), 0);
-  ADD_PROTOTYPE("handle_inherit", tFunc(tStr tStr tOr(tObj, tVoid), tPrg), 0);
+  ADD_PROTOTYPE("handle_inherit", tFunc(tStr tStr tOr(tObj, tVoid), tPrg(tObj)), 0);
   
   /* FIXME: Are these three actually supposed to be used?
    * They are called by encode.c:rec_restore_value
@@ -7497,7 +7497,7 @@ void init_builtin_efuns(void)
 #if 0 /* they are not required - Hubbe */
   ADD_PROTOTYPE("functionof", tFunc(tStr, tFunction), ID_OPTIONAL);
   ADD_PROTOTYPE("objectof", tFunc(tStr, tObj), ID_OPTIONAL);
-  ADD_PROTOTYPE("programof", tFunc(tStr, tPrg), ID_OPTIONAL);
+  ADD_PROTOTYPE("programof", tFunc(tStr, tPrg(tObj)), ID_OPTIONAL);
 #endif
 
   ADD_PROTOTYPE("read_include", tFunc(tStr, tStr), 0);
@@ -7578,7 +7578,7 @@ void init_builtin_efuns(void)
   ADD_EFUN("combine_path",f_combine_path,tFuncV(tNone,tStr,tStr),0);
   
   ADD_EFUN("compile", f_compile,
-	   tFunc(tStr tOr(tObj, tVoid) tOr(tInt, tVoid) tOr(tInt, tVoid) tOr(tPrg, tVoid) tOr(tObj, tVoid) ,tPrg),
+	   tFunc(tStr tOr(tObj, tVoid) tOr(tInt, tVoid) tOr(tInt, tVoid) tOr(tPrg(tObj), tVoid) tOr(tObj, tVoid) ,tPrg(tObj)),
 	   OPT_EXTERNAL_DEPEND);
   
 /* function(1=mixed:1) */
@@ -7635,7 +7635,7 @@ void init_builtin_efuns(void)
 	   tOr3(tFunc(tOr(tStr,tArray),tArr(tInt)),
 		tFunc(tOr(tMap(tSetvar(1,tMix),tMix),tSet(tSetvar(1,tMix))),
 		      tArr(tVar(1))),
-		tFunc(tOr(tObj,tPrg),tArr(tStr))),
+		tFunc(tOr(tObj,tPrg(tObj)),tArr(tStr))),
 	    OPT_TRY_OPTIMIZE,fix_indices_type,0);
   
 /* function(mixed:int) */
@@ -7664,7 +7664,7 @@ void init_builtin_efuns(void)
 		tFunc(tObj,tObj),
 		tFunc(tMapping,tMapping),
 		tFunc(tMultiset,tMultiset),
-		tFunc(tPrg,tPrg),
+		tFunc(tPrg(tObj),tPrg(tObj)),
 		tFunc(tArray,tArray)),OPT_EXTERNAL_DEPEND);
   
 /* function(object:object)|function(mapping:mapping)|function(multiset:multiset)|function(program:program)|function(array:array) */
@@ -7672,11 +7672,11 @@ void init_builtin_efuns(void)
 	   tOr5(tFunc(tObj,tObj),
 		tFunc(tMapping,tMapping),
 		tFunc(tMultiset,tMultiset),
-		tFunc(tPrg,tPrg),
+		tFunc(tPrg(tObj),tPrg(tObj)),
 		tFunc(tArray,tArray)),OPT_EXTERNAL_DEPEND);
   
 /* function(mixed:program) */
-  ADD_EFUN2("object_program", f_object_program,tFunc(tMix, tPrg),
+  ADD_EFUN2("object_program", f_object_program,tFunc(tMix, tPrg(tObj)),
 	    OPT_TRY_OPTIMIZE, fix_object_program_type, 0);
   
 /* function(mixed:int) */
@@ -7721,7 +7721,7 @@ void init_builtin_efuns(void)
 		tFunc(tString tArr(tInt), tArr(tInt)),
 		tFunc(tArr(tSetvar(0,tMix)) tArr(tInt), tArr(tVar(1))),
 		tFunc(tArray tArr(tNot(tInt)), tArray),
-		tFunc(tOr4(tObj,tFunction,tProgram,tInt) tArray, tArray)), 0);
+		tFunc(tOr4(tObj,tFunction,tPrg(tObj),tInt) tArray, tArray)), 0);
 
 /* function(:int *) */
   ADD_EFUN("rusage", f_rusage,tFunc(tNone,tArr(tInt)),OPT_EXTERNAL_DEPEND);
@@ -7810,7 +7810,7 @@ void init_builtin_efuns(void)
 	   tOr(tFunc(tOr(tStr,tMultiset),tArr(tInt)),
 	       tFunc(tOr4(tArr(tSetvar(0,tMix)),
 			  tMap(tMix,tSetvar(0,tMix)),
-			  tObj,tPrg),
+			  tObj,tPrg(tObj)),
 		     tArr(tVar(0)))),0,fix_values_type,0);
   
 /* function(mixed:int) */
@@ -7949,7 +7949,7 @@ void init_builtin_efuns(void)
 #define tMapStuff(IN,SUB,OUTFUN,OUTSET,OUTPROG,OUTMIX,OUTARR,OUTMAP) \
   tOr7( tFuncV(IN tFuncV(SUB,tMix,tSetvar(2,tAny)),tMix,OUTFUN), \
         tIfnot(tFuncV(IN tFunction,tMix,tMix), \
-	       tOr(tFuncV(IN tProgram, tMix, OUTPROG), \
+	       tOr(tFuncV(IN tPrg(tObj), tMix, OUTPROG), \
 		   tFuncV(IN tObj, tMix, OUTMIX))), \
 	tFuncV(IN tSet(tMix),tMix,OUTSET), \
 	tFuncV(IN tMap(tMix, tSetvar(2,tMix)), tMix, OUTMAP), \
@@ -7982,7 +7982,7 @@ void init_builtin_efuns(void)
 			   tSet(tArr(tMix)),
 			   tSet(tOr(tInt0,tVar(2)))),
 
-		 tMapStuff(tOr(tProgram,tFunction),tMix,
+		 tMapStuff(tOr(tPrg(tObj),tFunction),tMix,
 			   tMap(tStr,tVar(2)),
 			   tMap(tStr,tInt01),
 			   tMap(tStr,tObj),
@@ -7999,7 +7999,7 @@ void init_builtin_efuns(void)
 		       tFuncV(tMap(tSetvar(3,tMix),tStringIndicable) tString,tMix,
 			      tMap(tVar(3),tMix)),
 		       tFuncV(tSet(tStringIndicable) tString,tMix,tSet(tMix)),
-		       tFuncV(tOr(tProgram,tFunction) tString,tMix,tMapping)),
+		       tFuncV(tOr(tPrg(tObj),tFunction) tString,tMix,tMapping)),
 
 		 tFuncV(tObj,tMix,tMix) ),
 	    OPT_TRY_OPTIMIZE, fix_map_node_info, 0);
@@ -8007,7 +8007,7 @@ void init_builtin_efuns(void)
   ADD_EFUN2("filter", f_filter,
 	    tOr3(tFuncV(tSetvar(1,tOr4(tArray,tMapping,tMultiset,tString)),
 			tMixed,tVar(1)),
-		 tFuncV(tOr(tProgram,tFunction),tMixed,tMap(tString,tMix)),
+		 tFuncV(tOr(tPrg(tObj),tFunction),tMixed,tMap(tString,tMix)),
 		 tFuncV(tObj,tMix,tMix) ) ,
 	    OPT_TRY_OPTIMIZE, fix_map_node_info, 0);
 
@@ -8024,7 +8024,7 @@ void init_builtin_efuns(void)
 	   OPT_TRY_OPTIMIZE);
 		
   ADD_FUNCTION2("inherit_list", f_inherit_list,
-		tFunc(tOr(tObj,tProgram),tArr(tProgram)), 0, OPT_TRY_OPTIMIZE);
+		tFunc(tOr(tObj,tPrg(tObj)),tArr(tPrg(tObj))), 0, OPT_TRY_OPTIMIZE);
   ADD_FUNCTION2("function_defined", f_function_defined,
 	       tFunc(tFunction,tString), 0, OPT_TRY_OPTIMIZE);
 

@@ -111,7 +111,7 @@
 /* This is the grammar definition of Pike. */
 
 #include "global.h"
-RCSID("$Id: language.yacc,v 1.234 2001/03/18 21:49:52 grubba Exp $");
+RCSID("$Id: language.yacc,v 1.235 2001/03/28 15:07:39 grubba Exp $");
 #ifdef HAVE_MEMORY_H
 #include <memory.h>
 #endif
@@ -1199,7 +1199,7 @@ type2: type2 '|' type3 { push_type(T_OR); }
 
 type3: TOK_INT_ID  opt_int_range    {}
   | TOK_FLOAT_ID    { push_type(T_FLOAT); }
-  | TOK_PROGRAM_ID  { push_type(T_PROGRAM); }
+  | TOK_PROGRAM_ID  { push_object_type(0, 0); push_type(T_PROGRAM); }
   | TOK_VOID_ID     { push_type(T_VOID); }
   | TOK_MIXED_ID    { push_type(T_MIXED); }
   | TOK_STRING_ID { push_type(T_STRING); }

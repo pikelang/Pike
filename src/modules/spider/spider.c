@@ -43,7 +43,7 @@
 #include "threads.h"
 #include "operators.h"
 
-RCSID("$Id: spider.c,v 1.103 2001/03/12 10:51:30 hubbe Exp $");
+RCSID("$Id: spider.c,v 1.104 2001/03/28 15:07:41 grubba Exp $");
 
 #ifdef HAVE_PWD_H
 #include <pwd.h>
@@ -1052,7 +1052,7 @@ void pike_module_init(void)
   empty_string = sp[-1];
   pop_stack();
 
-  ADD_EFUN("_low_program_name", f__low_program_name,tFunc(tProgram,tStr),0);
+  ADD_EFUN("_low_program_name", f__low_program_name,tFunc(tPrg(tObj),tStr),0);
 
 
 /* function(int:int) */
