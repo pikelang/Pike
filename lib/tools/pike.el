@@ -1,5 +1,5 @@
 ;;; pike.el -- Font lock definitions for Pike and other LPC files.
-;;; $Id: pike.el,v 1.28 2001/04/26 02:23:42 mast Exp $
+;;; $Id: pike.el,v 1.29 2001/05/16 23:04:52 mast Exp $
 ;;; Copyright (C) 1995, 1996, 1997, 1998, 1999 Per Hedbor.
 ;;; This file is distributed as GPL
 
@@ -32,9 +32,8 @@
 (defvar pike-font-lock-refdoc-error-face 'pike-font-lock-refdoc-error-face)
 
 (defgroup pike-faces nil
-  "Faces used by the pike color highlighting mode."
-  :group 'font-lock
-  :group 'faces)
+  "Extra faces used by the Pike color highlighting mode."
+  :group 'font-lock)
 
 (defface pike-font-lock-refdoc-face
   '((t))
@@ -110,20 +109,24 @@ The name is assumed to begin with a capital letter.")
     ;; The identifier should get submatch 1 but not the integer.
     (concat pike-font-lock-identifier-regexp "\\|-?[" digit "]+")))
 
-(defconst pike-font-lock-semantic-whitespace
-  (concat "[ \t\n\r]*"
-	  "\\("				; 1
-	  (concat "\\("			; 2
-		  "//[^\n\r]*[\n\r]"
-		  "\\|"
-		  "/\\*\\([^*]\\|\\*[^/]\\)*\\*/" ; 3
-		  "\\|"
-		  "\\\\[\n\r]"
-		  "\\|"
-		  "@[\n\r]\\s *//[.!|]"	; Line continuations in autodoc comments.
-		  "\\)")
-	  "[ \t\n\r]*"
-	  "\\)*"))
+(let ((non-ws-sem-ws
+       (concat "//[^\n\r]*[\n\r]"	; Line comment.
+	       "\\|"
+	       "/\\*\\([^*]\\|\\*[^/]\\)*\\*/" ; Block comment.
+	       "\\|"
+	       "\\\\[\n\r]"		; Macro continuation.
+	       "\\|"
+	       "@[\n\r]\\s *//[.!|]")))	; Line continuations in autodoc comments.
+
+  (defconst pike-font-lock-semantic-whitespace
+    (concat "[ \t\n\r]*\\("		; 1
+	    "\\(" non-ws-sem-ws "\\)"	; 2 3
+	    "[ \t\n\r]*\\)*"))
+
+  (defconst pike-font-lock-non-null-semantic-whitespace
+    (concat "\\([ \t\n\r]\\|"		; 1
+	    non-ws-sem-ws		; 2
+	    "\\)+")))
 
 (defconst pike-font-lock-qualified-identifier
   (concat "\\([ \t\n\r]*\\.?[ \t\n\r]*"	; 1
@@ -140,27 +143,6 @@ The name is assumed to begin with a capital letter.")
 			 (match-beginning 2) (match-end 2))))
 	    (set-buffer-file-coding-system (symbol-concat coding))))
     (t nil)))
-
-(defconst pike-font-lock-maybe-type-end
-  (concat "\\(\\.\\.\\.\\|[\]\)]\\)"	; 1
-	  pike-font-lock-semantic-whitespace ; 2-4
-	  "\\(\\<\\sw\\|\\<\\s_\\|[`\(]\\)" ; 5
-	  "\\|"
-	  "\\(\\sw\\|\\s_\\)"		; 6
-	  pike-font-lock-semantic-whitespace ; 7-9
-	  "\\(\\<\\sw\\|\\<\\s_\\|`\\)")) ; 10
-
-(defvar pike-font-lock-last-type-start nil)
-(defvar pike-font-lock-last-type-end nil)
-(defvar pike-font-lock-real-limit nil)
-(defvar pike-font-lock-more-identifiers nil)
-
-;; The following variable records the identifiers that have been font
-;; locked so far in the latest run of `pike-font-lock-find-type' and
-;; the following `pike-font-lock-fontify-type's. It's used to undo all
-;; the highlights in the current type if we later find chars that
-;; don't belong in a type.
-(defvar pike-font-lock-maybe-ids nil)
 
 (defsubst pike-font-lock-beginning-of-macro ()
   "Move to the beginning of the macro containing point.
@@ -234,11 +216,33 @@ Otherwise t is returned."
 	(setq pos (point))
 	(forward-comment -20)))))
 
+(defconst pike-font-lock-maybe-type-end
+  (concat "\\(\\.\\.\\.\\|[\]\)]\\)"	; 1
+	  pike-font-lock-semantic-whitespace ; 2-4
+	  "\\(\\<\\w\\|[\(`\"'0-9]\\)" ; 5
+	  "\\|"
+	  "\\(\\w\\)"			; 6
+	  pike-font-lock-non-null-semantic-whitespace ; 7 8
+	  "\\(\\<\\w\\|\\<\\s_\\|[`\"'0-9]\\)")) ; 9
+
+(defvar pike-font-lock-last-type-start nil)
+(defvar pike-font-lock-last-type-end nil)
+(defvar pike-font-lock-real-limit nil)
+(defvar pike-font-lock-more-identifiers nil)
+
+;; The following variable records the identifiers that have been font
+;; locked so far in the latest run of `pike-font-lock-find-type' and
+;; the following `pike-font-lock-fontify-type's. It's used to undo all
+;; the highlights in the current type if we later find chars that
+;; don't belong in a type.
+(defvar pike-font-lock-maybe-ids nil)
+
 (defun pike-font-lock-find-type (limit)
   "Finds the beginning of a type."
   ;; The trick we use here is (in principle) to find two consecutive
   ;; identifiers without an operator between them. It works only if
-  ;; things like keywords have been fontified first.
+  ;; things like keywords, comments and strings have been fontified
+  ;; first.
   (let* ((start (point))
 	 no-face-pos continue-pos check-macro-end cast cast-end-pos beg-pos)
     ;; We store the limit given to this function for use in the
@@ -257,7 +261,7 @@ Otherwise t is returned."
 		;; hits especially inside strings and comments.
 		(goto-char no-face-pos)
 	      (throw 'done nil))
-	  (setq continue-pos (or (match-beginning 5) (match-beginning 10)))
+	  (setq continue-pos (or (match-beginning 5) (match-beginning 9)))
 	  (catch 'continue
 	    (goto-char (or (match-end 1) (match-end 6)))
 	    (setq check-macro-end
@@ -282,7 +286,7 @@ Otherwise t is returned."
 			    (setq beg-pos (point))
 			    (pike-font-lock-backward-syntactic-ws)
 			    (cond
-			     ((eq tok-beg ?\()
+			     ((memq tok-beg '(?\( ?\[))
 			      ;; Cast or a subtype expression start.
 			      (when (memq (char-syntax (preceding-char)) '(?w ?_))
 				(goto-char (scan-sexps (point) -1))
@@ -296,14 +300,17 @@ Otherwise t is returned."
 					(setq beg-pos prev-beg-pos)
 				      (throw 'continue t))
 				    nil))))
-			     ((eq tok-beg ?\[)
-			      ;; Soft cast.
-			      nil)
 			     ((memq (preceding-char) '(?| ?. ?& ?! ?~))
 			      ;; Some operator valid on the top level of a type
 			      ;; (yes, we're a little ahead of time here).
 			      (goto-char (scan-sexps (point) -1))
-			      t)))
+			      t)
+			     ((eq (preceding-char) ?#)
+			      ;; Some kind of preprocessor directive.
+			      (if prev-beg-pos
+					(setq beg-pos prev-beg-pos)
+				      (throw 'continue t))
+			      nil)))
 			  (>= (point) start))
 		    (setq cast nil)))
 	      ;; Should only get here if the scan-sexps above fails.
@@ -464,20 +471,90 @@ reposition the cursor to fontify more identifiers."
 	       ;; Check for a char that precedes a statement.
 	       (memq (preceding-char) '(?\} ?\{ ?\) ?\;))
 	       ;; Check for a keyword that precedes a statement.
-	       (condition-case nil
-		   (progn (backward-sexp) nil)
-		 (error t))
-	       (save-match-data
-		 (looking-at "\\(else\\|do\\)\\>[^_]")))
+	       (and (condition-case nil
+			(progn (backward-sexp) t)
+		      (error nil))
+		    (save-match-data
+		      (looking-at "\\(else\\|do\\)\\>"))))
 	      (throw 'found t)))))))
+
+(defconst pike-font-lock-autodoc-comment-1
+  ;; This part matches a line oriented keyword with
+  ;; continuation lines.
+  (concat "\\(//\\)\\([.!|]\\)"		; 1 2
+	  "\\("				; 3
+	  "\\s *@\\([A-Za-z_]+\\)\\(\\s \\|$\\)" ; 4 5
+	  "\\([^@\n\r]\\|@\\(.\\|\\([\n\r]\\s *//[.!|]\\)\\)\\)*" ; 6-8
+	  "@?\\)"
+	  "\\([\n\r]\\|\\'\\)"))	; 9
+
+(defconst pike-font-lock-autodoc-comment-2
+  ;; This part matches a block with no line oriented keywords.
+  ;; (Negations become messy easily, especially while ensuring
+  ;; that no bad backtracking occurs...)
+  (concat "\\(//\\)\\([.!|]\\)"		; 1 2
+	  "\\("				; 10
+	  "\\s *"
+	  (concat "\\("			; 11
+		  (concat "\\("		; 12
+			  "[^@ \t\n\r]\\|"
+			  (concat "@\\(" ; 13
+				  "[^A-Za-z_\n\r]\\|"
+				  "[A-Za-z_]+[^A-Za-z_ \t\n\r]"
+				  "\\)")
+			  "\\)"
+			  "\\([^@\n\r]\\|@.\\)*") ; 14
+		  "\\)?")
+	  (concat "\\("			; 15
+		  "@[\n\r]\\s *//[.!|]\\([^@\n\r]\\|@.\\)*" ; 16
+		  "\\|"
+		  "[\n\r]\\s *//[.!|]"
+		  "\\s *"
+		  (concat "\\("		; 17
+			  (concat "\\("	; 18
+				  "[^@ \t\n\r]\\|"
+				  (concat "@\\(" ; 19
+					  "[^A-Za-z_\n\r]\\|"
+					  "[A-Za-z_]+[^A-Za-z_ \t\n\r]"
+					  "\\)")
+				  "\\)"
+				  "\\([^@\n\r]\\|@.\\)*") ; 20
+			  "\\)?")
+		  "\\)*")
+	  "@?\\)"
+	  "\\([\n\r]\\|\\'\\)"))	; 21
+
+(defun pike-font-lock-find-autodoc (limit)
+  (catch 'found
+    (while (re-search-forward "^\\([^/\n\r]\\|/[^/\n\r]\\)*\\(//\\)[.!|]" limit t)
+      (goto-char (match-beginning 2))
+      (when (save-restriction
+	      (narrow-to-region (point) limit)
+	      (cond ((looking-at pike-font-lock-autodoc-comment-1)
+		     t)
+		    ((looking-at pike-font-lock-autodoc-comment-2)
+		     (let ((match (match-data)))
+		       (setcdr (nthcdr 5 match)
+			       (nconc (make-list 14 nil)
+				      (nthcdr 6 match)))
+		       (set-match-data match))
+		     t)))
+	(goto-char (setq pike-font-lock-real-limit (match-end 0)))
+	(throw 'found t)))
+    nil))
+
+;; For use inside (function ...) since we can't use , there to do the
+;; constant concatenation. (Works only after byte compilation.)
+(defmacro pike-font-lock-concat-const (&rest consts)
+  (apply 'concat (mapcar 'eval consts)))
 
 (defconst pike-font-lock-some
   `(;; Keywords:
-    (,(concat pike-font-lock-keyword-regexp "[^_]")
+    (,pike-font-lock-keyword-regexp
      1 font-lock-keyword-face)
 	 
     ;; Modifiers:
-    (,(concat pike-font-lock-modifier-regexp "[^_]")
+    (,pike-font-lock-modifier-regexp
      1 font-lock-preprocessor-face)
 
     ;; Class names:
@@ -507,15 +584,19 @@ reposition the cursor to fontify more identifiers."
 	    ("^[ \t]*#[ \t]*include[ \t]+\\(<[^>\"\n]+>\\)"
 	     1 font-lock-string-face)
 
-	    ("^[ \t]*#[ \t]*define[ \t]+\\(\\sw+\\)\("
-	     1 font-lock-function-name-face)
-	    ("^[ \t]*#[ \t]*define[ \t]+\\(\\sw+\\)"
-	     1 font-lock-variable-name-face)
+	    ;; #define
+	    (,(concat "^\\s *#\\s *define\\s +"
+		      "\\("		; 1
+		      (concat "\\(\\w+\\)\(\\|" ; 2
+			      "\\(\\w+\\)\\(\\s \\|$\\)") ; 3 4
+		      "\\)")
+	     (2 font-lock-function-name-face nil t)
+	     (3 font-lock-variable-name-face nil t))
 
 	    ;; Fontify symbol names in #if ...defined 
 	    ;; etc preprocessor directives.
 	    ("^[ \t]*#[ \t]*\\(el\\)?if\\>"
-	     ("\\<\\(defined\\|efun\\|constant\\)\\>[ \t]*(?\\(\\sw+\\)?" 
+	     ("\\<\\(defined\\|efun\\|constant\\)\\>[ \t]*(?\\(\\w+\\)?"
 	      nil nil
 	      (1 font-lock-reference-face)
 	      (2 font-lock-variable-name-face nil t)))
@@ -533,31 +614,35 @@ reposition the cursor to fontify more identifiers."
 	     1 font-lock-reference-face)
 
 	    ;; Scope references.
-	    ((lambda (limit)
-	       (when (re-search-forward
-		      ,(concat pike-font-lock-identifier-regexp	; 1
-			       "[ \t\n\r]*\\(\\.\\|::\\)" ; 2
-			       "[ \t\n\r]*\\(\\sw\\|`\\)") ; 3
-		      limit t)
-		 ;; Must back up the last bit since it can be the next
-		 ;; identifier to match.
-		 (goto-char (match-beginning 3))))
+	    (,(function
+	       (lambda (limit)
+		 (when (re-search-forward
+			(pike-font-lock-concat-const
+			 pike-font-lock-identifier-regexp ; 1
+			 "[ \t\n\r]*\\(\\.\\|::\\)" ; 2
+			 "[ \t\n\r]*\\(\\w\\|`\\)") ; 3
+			limit t)
+		   ;; Must back up the last bit since it can be the next
+		   ;; identifier to match.
+		   (goto-char (match-beginning 3)))))
 	     1 font-lock-reference-face)
 
 	    ;; Inherits.
 	    (,(concat "\\<inherit\\s +"
 		      "\\(" pike-font-lock-qualified-identifier "\\)" ; 1-3
-		      "[ \t\n\r]*\\(:" ; 4
+		      "[ \t\n\r]*\\(:"	; 4
 		      pike-font-lock-semantic-whitespace ; 5-7
 		      pike-font-lock-identifier-regexp ; 8
 		      "\\)?")
 	     (8 font-lock-reference-face nil t)
-	     ((lambda (limit)
-		(when (looking-at ,(concat "\\.?[ \t\n\r]*"
-					   pike-font-lock-identifier-regexp
-					   "[ \t\n\r]*"))
-		  (goto-char (match-end 0))))
-	      (goto-char (match-beginning 1))
+	     (,(function
+		(lambda (limit)
+		  (when (looking-at (pike-font-lock-concat-const
+				     "\\.?[ \t\n\r]*"
+				     pike-font-lock-identifier-regexp
+				     "[ \t\n\r]*"))
+		    (goto-char (match-end 0)))))
+	      (progn (goto-char (match-beginning 1)) nil)
 	      (goto-char (match-end 0))
 	      (1 font-lock-type-face))))))
 
@@ -623,63 +708,87 @@ types are recognized.")
 
 (defconst pike-font-lock-keywords-3
   (append `(;; Autodoc comments.
-	    (,(concat "^\\([^/]\\|/[^/]\\)*"
-		      "\\(//[^.!|\n\r]\\|\\(//\\)\\([.!|]\\)\\([^\n\r]*\\)\\)")
-	     (3 pike-font-lock-refdoc-init2-face prepend t)
-	     (4 pike-font-lock-refdoc-init-face prepend t)
-	     (5 pike-font-lock-refdoc-face prepend t)
-	     ("\\(@\\(\\w+{?\\|\\[[^\]]*\\]\\|[@}]\\|$\\)\\)\\|\\(@.\\)"
-	      (if (match-end 4) (goto-char (match-end 4)) (end-of-line))
+	    (pike-font-lock-find-autodoc
+	     (1 pike-font-lock-refdoc-init2-face prepend)
+	     (2 pike-font-lock-refdoc-init-face prepend)
+	     (3 font-lock-reference-face t t)
+	     (3 pike-font-lock-refdoc-keyword-face prepend t)
+	     (10 pike-font-lock-refdoc-face prepend t)
+
+	     ;; A Pike declaration inside the comment. Reset the
+	     ;; comment highlight so that we can redo it as code.
+	     (,(function
+		(lambda (limit)
+		  (when (and (< (point) pike-font-lock-real-limit)
+			     (looking-at "decl\\|member\\|index\\|elem"))
+		    (put-text-property (match-end 0) pike-font-lock-real-limit
+				       'face nil)
+		    nil)))
+	      (progn (goto-char (or (match-beginning 4) pike-font-lock-real-limit))
+		     nil)
+	      nil)
+
+	     ;; Must (re)handle the string literals ourselves inside
+	     ;; the declaration.
+	     (,(function
+		(lambda (limit)
+		  (re-search-forward "\"[^\"]*\"\\|'[^']*'"
+				     pike-font-lock-real-limit t)))
+	      (progn (goto-char (or (match-end 5) pike-font-lock-real-limit))
+		     nil)
+	      nil
+	      (0 font-lock-string-face))
+
+	     ;; Special case when the declaration is a #define.
+	     (,(function
+		(lambda (limit)
+		  (prog1
+		      (and (< (point) pike-font-lock-real-limit)
+			   (looking-at (pike-font-lock-concat-const
+					pike-font-lock-semantic-whitespace ; 1-3
+					"\\(#\\s *define\\)\\s +" ; 4
+					"\\(" ; 5
+					(concat "\\(\\w+\\)\(\\|" ; 6
+						"\\(\\w+\\)\\(\\s \\|$\\)") ; 7 8
+					"\\)")))
+		    (goto-char pike-font-lock-real-limit))))
+	      (progn (goto-char (or (match-end 5) pike-font-lock-real-limit))
+		     nil)
+	      nil
+	      (4 font-lock-reference-face)
+	      (6 font-lock-function-name-face nil t)
+	      (7 font-lock-variable-name-face nil t))
+
+	     (,(function
+		(lambda (limit)
+		  (re-search-forward
+		   (pike-font-lock-concat-const
+		    "\\(@\\(\\w+{\\|\\[\\([^\]@]\\|@@\\)*\\]\\|[@}]\\|$\\)\\)\\|"
+		    "\\(@\\(\\w+\\|\\W\\)\\)")
+		   pike-font-lock-real-limit t)))
+	      ;; In-text markup and markup errors.
+	      (progn (goto-char (or (match-end 5) (match-end 2)))
+		     nil)
 	      nil
 	      (1 font-lock-reference-face t t)
 	      (1 pike-font-lock-refdoc-keyword-face prepend t)
-	      (3 pike-font-lock-refdoc-error-face t t)))
+	      (4 pike-font-lock-refdoc-error-face t t))
 
-	    (,(concat "^\\([^/]\\|/[^/]\\)*//[.!|][^\n\r]*" ; 1
-		      "@\\(decl\\|member\\|index\\|elem\\)" ; 2
-		      "\\([^@\n\r]\\|@\\(.\\|[\n\r]\\)\\)*") ; 3 4
-	     ;; A Pike declaration inside the comment. Reset the
-	     ;; comment highlight so that we can redo it as code.
-	     ((lambda (limit)
-		(setq pike-font-lock-real-limit (match-end 0))
-		(put-text-property (point) limit 'face nil)
-		nil)
-	      (goto-char (match-end 2))
-	      nil)
-	     ;; Markup line continuations.
-	     ((lambda (limit)
-		(re-search-forward "\\(@\\)[\n\r]\\s *\\(\\(//\\)\\([.!|]\\)\\)"
-				   pike-font-lock-real-limit t))
-	      (goto-char (match-end 2))
-	      nil
-	      (1 font-lock-reference-face)
-	      (2 font-lock-comment-face)
-	      (3 pike-font-lock-refdoc-init2-face prepend)
-	      (4 pike-font-lock-refdoc-init-face prepend))
-	     ;; Must (re)handle the string literals ourselves.
-	     ((lambda (limit)
-		(re-search-forward "\"[^\"]*\"\\|'[^']*'"
-				   pike-font-lock-real-limit t))
-	      (goto-char (match-end 2))
-	      nil
-	      (0 font-lock-string-face))
-	     ;; Always highlight the first argument after @member and @elem
-	     ;; as a type; the type recognition code might miss it since it
-	     ;; may be followed by a non-identifier. FIXME: This doesn't
-	     ;; work when the pike type contains whitespace.
-	     (pike-font-lock-fontify-type
-	      (if (progn
-		    (goto-char (match-beginning 2))
-		    (looking-at "\\(member\\|elem\\)\\s *\\(\\S *\\)"))
-		  (progn
-		    (goto-char (match-beginning 2))
-		    (setq pike-font-lock-last-type-start (point)
-			  pike-font-lock-last-type-end (match-end 0)
-			  pike-font-lock-more-identifiers nil
-			  pike-font-lock-maybe-ids nil))
-		(setq pike-font-lock-last-type-end (point)))
+	     ;; Markup line continuations. Uses match 8 or 15 in
+	     ;; pike-font-lock-autodoc-comment to decide whether
+	     ;; there's anything to do at all.
+	     (,(function
+		(lambda (limit)
+		  (re-search-forward "[\n\r]\\(\\s *\\(//\\)\\([.!|]\\)\\)"
+				     pike-font-lock-real-limit t)))
+	      (progn (goto-char (if (or (match-end 8) (match-end 15))
+				    (match-end 2)
+				  pike-font-lock-real-limit))
+		     nil)
 	      (goto-char pike-font-lock-real-limit)
-	      (1 font-lock-type-face nil t))))
+	      (1 font-lock-comment-face t)
+	      (2 pike-font-lock-refdoc-init2-face prepend)
+	      (3 pike-font-lock-refdoc-init-face prepend))))
 
 	  pike-font-lock-more
 
