@@ -1,5 +1,5 @@
 #include "global.h"
-RCSID("$Id: threads.c,v 1.124 2000/05/20 13:31:23 grubba Exp $");
+RCSID("$Id: threads.c,v 1.125 2000/05/20 18:43:18 grubba Exp $");
 
 int num_threads = 1;
 int threads_disabled = 0;
@@ -1387,6 +1387,9 @@ static struct farmer {
 
 static MUTEX_T rosie STATIC_MUTEX_INIT;
 
+
+static int _num_farmers, _num_idle_farmers;
+
 static TH_RETURN_TYPE farm(void *_a)
 {
   struct farmer *me = (struct farmer *)_a;
@@ -1399,26 +1402,32 @@ static TH_RETURN_TYPE farm(void *_a)
 
     me->harvest = 0;
     mt_lock( &rosie );
+    if( ++_num_idle_farmers > 16 )
+    {
+      --_num_idle_farmers;
+      --_num_farmers;
+      mt_unlock( &rosie );
+      free( me );
+      return NULL;
+    }
     me->neighbour = farmers;
     farmers = me;
 /*     fprintf(stderr, "farm_wait %p\n", me); */
     while(!me->harvest) co_wait( &me->harvest_moon, &rosie );
+    --_num_idle_farmers;
     mt_unlock( &rosie );
 /*     fprintf(stderr, "farm_endwait %p\n", me); */
   } while(1);
   /* NOT_REACHED */
-  return NULL;	/* Keep the compiler happy. */
+  return NULL;/* Keep the compiler happy. */
 }
 
 int th_num_idle_farmers(void)
 {
-  int q = 0;
-  struct farmer *f = farmers;
-  while(f) { f = f->neighbour; q++; }
-  return q;
+  return _num_idle_farmers;
 }
 
-static int _num_farmers;
+
 int th_num_farmers(void)
 {
   return _num_farmers;
