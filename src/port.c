@@ -3,6 +3,7 @@
 ||| Pike is distributed as GPL (General Public License)
 ||| See the files COPYING and DISCLAIMER for more information.
 \*/
+/**/
 #include "global.h"
 #include "pike_macros.h"
 #include "time_stuff.h"
@@ -17,7 +18,7 @@
 #include <float.h>
 #include <string.h>
 
-RCSID("$Id: port.c,v 1.24 2000/08/13 21:33:27 sigge Exp $");
+RCSID("$Id: port.c,v 1.25 2000/11/02 18:49:16 grubba Exp $");
 
 #ifdef sun
 time_t time PROT((time_t *));
@@ -58,6 +59,10 @@ time_t TIME(time_t *t)
   return tv.tv_sec;
 }
 #endif
+
+#ifndef HUGE
+#define HUGE HUGE_VAL
+#endif /*!HUGE*/
 
 /*
  * This file defines things that may have to be changem when porting
