@@ -1,5 +1,5 @@
 /*
- * $Id: gc.h,v 1.48 2000/06/12 13:51:58 mast Exp $
+ * $Id: gc.h,v 1.49 2000/06/12 19:33:27 mast Exp $
  */
 #ifndef GC_H
 #define GC_H
@@ -68,7 +68,6 @@ struct marker
   INT32 weak_refs;		/* Weak (implying internal) references. */
 #ifdef PIKE_DEBUG
   INT32 xrefs;			/* Known external references. */
-  INT32 saved_refs;		/* Object refcount during check and mark pass. */
 #endif
   unsigned INT16 cycle;		/* Cycle id number. */
   unsigned INT16 flags;
@@ -120,7 +119,6 @@ void debug_gc_touch(void *a);
 INT32 real_gc_check(void *a);
 INT32 real_gc_check_weak(void *a);
 void locate_references(void *a);
-void debug_gc_check_count_free(void *a);
 void gc_add_extra_ref(void *a);
 void gc_free_extra_ref(void *a);
 int debug_gc_is_referenced(void *a);
@@ -192,7 +190,6 @@ void f__gc_status(INT32 args);
   dmalloc_touch(struct callback *,debug_add_gc_callback((X),(Y),(Z)))
 
 #ifndef PIKE_DEBUG
-#define debug_gc_check_count_free(X)
 #define gc_add_extra_ref(X) (++*(INT32 *)(X))
 #define gc_free_extra_ref(X)
 #endif

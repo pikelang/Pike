@@ -23,7 +23,7 @@
 #include "queue.h"
 #include "bignum.h"
 
-RCSID("$Id: svalue.c,v 1.75 2000/06/12 13:51:58 mast Exp $");
+RCSID("$Id: svalue.c,v 1.76 2000/06/12 19:33:09 mast Exp $");
 
 struct svalue dest_ob_zero = { T_INT, 0 };
 
@@ -1296,7 +1296,6 @@ void real_gc_xmark_svalues(struct svalue *s, int num)
 
 #define ZAP_SVALUE()							\
       do {								\
-        debug_gc_check_count_free(s->u.refs);					\
 	free_svalue(s);							\
 	s->type = T_INT;						\
 	s->u.integer = 0;						\
@@ -1305,7 +1304,6 @@ void real_gc_xmark_svalues(struct svalue *s, int num)
 
 #define ZAP_SHORT_SVALUE()						\
       do {								\
-        debug_gc_check_count_free(u->refs);					\
 	free_short_svalue(u, type);					\
 	u->refs = 0;							\
       } while (0)
