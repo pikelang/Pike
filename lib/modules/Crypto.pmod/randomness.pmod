@@ -1,4 +1,4 @@
-// $Id: randomness.pmod,v 1.1 2003/03/19 17:46:30 nilsson Exp $
+// $Id: randomness.pmod,v 1.2 2003/03/24 17:09:18 nilsson Exp $
 
 //! Assorted stronger or weaker randomnumber generators.
 //! These devices try to collect entropy from the environment.
@@ -93,9 +93,7 @@ class RandomSource {
 }
 
 // Compatibility
-class pike_random {
-  inherit RandomSource;
-}
+constant pike_random = RandomSource;
 
 #ifdef __NT__
 static class NTSource {
