@@ -4,7 +4,7 @@
 ||| See the files COPYING and DISCLAIMER for more information.
 \*/
 #include "global.h"
-RCSID("$Id: backend.c,v 1.32 1998/05/12 19:46:28 grubba Exp $");
+RCSID("$Id: backend.c,v 1.33 1998/06/13 21:16:51 grubba Exp $");
 #include "fdlib.h"
 #include "backend.h"
 #include <errno.h>
@@ -633,8 +633,9 @@ void backend(void)
     THREADS_DISALLOW();
     may_need_wakeup=0;
 
-    if(i>=0)
-    {
+    if (!i) {
+      /* Timeout */
+    } else if (i>0) {
 #ifdef DEBUG
       int num_active = i;
 #endif /* DEBUG */
