@@ -83,7 +83,14 @@ class Cipher
   }
 }
 
-constant CBC = Nettle.CBC;
-constant Buffer = Nettle.Proxy;
+class CBC {
+  inherit Cipher;
+  inherit Nettle.CBC;
+}
+
+class Buffer {
+  inherit Cipher;
+  inherit Nettle.Proxy;
+}
 
 #endif /* constant(Nettle) */
