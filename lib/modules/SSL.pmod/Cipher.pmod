@@ -1,5 +1,5 @@
 //
-//  $Id: Cipher.pmod,v 1.1 2003/01/27 15:03:00 nilsson Exp $
+//  $Id: Cipher.pmod,v 1.2 2003/03/07 17:43:32 nilsson Exp $
 
 #pike __REAL_VERSION__
 
@@ -31,13 +31,12 @@ class mac_none
 //!
 class MACsha
 {
-  constant pad_1 =  "6666666666666666666666666666666666666666";
-  constant pad_2 = ("\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\"
-		    "\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\");
+  static constant pad_1 =  "6666666666666666666666666666666666666666";
+  static constant pad_2 = ("\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\"
+			   "\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\");
 
-  constant algorithm = Crypto.sha;
-
-  string secret;
+  static constant algorithm = Crypto.sha;
+  static string secret;
 
   //!
   string hash_raw(string data)
@@ -78,7 +77,7 @@ class MACsha
   }
 
   //!
-  void create (string|void s)
+  static void create (string|void s)
   {
     secret = s || "";
   }
@@ -88,18 +87,18 @@ class MACsha
 class MACmd5 {
   inherit MACsha;
 
-  constant pad_1 =  "666666666666666666666666666666666666666666666666";
-  constant pad_2 = ("\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\"
-		    "\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\");
+  static constant pad_1 =  "666666666666666666666666666666666666666666666666";
+  static constant pad_2 = ("\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\"
+			   "\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\");
   
-  constant algorithm = Crypto.md5;
+  static constant algorithm = Crypto.md5;
 }
 
 //!
 class MAChmac_sha {
 
-  string secret;
-  Crypto.hmac hmac;
+  static string secret;
+  static Crypto.hmac hmac;
 
   //!
   string hash(object packet, Gmp.mpz seq_num) {
@@ -115,7 +114,7 @@ class MAChmac_sha {
   }
 
   //!
-  void create(string|void s) {
+  static void create(string|void s) {
     secret = s || "";
     hmac=Crypto.hmac(Crypto.sha);
   }
@@ -126,14 +125,15 @@ class MAChmac_md5 {
   inherit MAChmac_sha;
 
   //!
-  void create(string|void s) {
+  static void create(string|void s) {
     secret = s || "";
     hmac=Crypto.hmac(Crypto.md5);
   }
 }
 
 // Hashfn is either a Crypto.md5 or Crypto.sha 
-static string P_hash(object hashfn,int hlen,string secret,string seed,int len) {
+static string P_hash(object hashfn, int hlen, string secret,
+		     string seed, int len) {
    
   Crypto.hmac hmac=Crypto.hmac(hashfn);
   string temp=seed;
@@ -196,6 +196,7 @@ class DES3
   }
 }
 
+//!
 ADT.struct rsa_sign(object context, string cookie, ADT.struct struct)
 {
   /* Exactly how is the signature process defined? */
@@ -215,6 +216,7 @@ ADT.struct rsa_sign(object context, string cookie, ADT.struct struct)
   return struct;
 }
 
+//!
 int rsa_verify(object context, string cookie, ADT.struct struct,
 	       Gmp.mpz signature)
 {
@@ -227,6 +229,7 @@ int rsa_verify(object context, string cookie, ADT.struct struct,
   return context->rsa->raw_verify(digest, signature);
 }
 
+//!
 ADT.struct dsa_sign(object context, string cookie, ADT.struct struct)
 {
   /* NOTE: The details are not described in the SSL 3 spec. */
@@ -235,11 +238,13 @@ ADT.struct dsa_sign(object context, string cookie, ADT.struct struct)
   return struct;
 }
 
+//!
 ADT.struct anon_sign(object context, string cookie, ADT.struct struct)
 {
   return struct;
 }
 
+//!
 class DHParameters
 {
   Gmp.mpz p, g, order;
@@ -256,8 +261,8 @@ class DHParameters
    */
 
   /* p = 2^1024 - 2^960 - 1 + 2^64 * floor( 2^894 Pi + 129093 ) */
-  
-  Gmp.mpz orm96() {
+
+  static Gmp.mpz orm96() {
     p = Gmp.mpz("FFFFFFFF FFFFFFFF C90FDAA2 2168C234 C4C6628B 80DC1CD1"
 		"29024E08 8A67CC74 020BBEA6 3B139B22 514A0879 8E3404DD"
 		"EF9519B3 CD3A431B 302B0A6D F25F1437 4FE1356D 6D51C245"
@@ -271,7 +276,7 @@ class DHParameters
     return this_object();
   }
 
-  void create(object ... args) {
+  static void create(object ... args) {
     switch (sizeof(args))
     {
     case 0:
