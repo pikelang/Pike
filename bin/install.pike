@@ -744,10 +744,38 @@ class UI
 
   WixNode gen_xml()
   {
-    WixNode res = WixNode("UI", ([]));
+    WixNode res = WixNode("UI", ([]))->
+      add_child(WixNode("Property", ([ "Id":"DefaultUIFont" ]),
+			"VsdDefaultUIFont.524F4245_5254_5341_4C45_534153783400"));
+    //res->add_child(WixNode("Property", ([ "Id":"ErrorDialog" ]), "ErrorDialog"));
     foreach(dialogs, Dialog d) {
       res->add_child(d->gen_xml());
     }
+    res->add_child(WixNode("TextStyle", ([
+			     "Id":"VSI_MS_Sans_Serif13.0_0_0",
+			     "FaceName":"MS Sans Serif",
+			     "Size":"9",
+			     "Red":"0",
+			     "Green":"0",
+			     "Blue":"0",
+			   ])));
+    res->add_child(WixNode("TextStyle", ([
+			     "Id":"VSI_MS_Sans_Serif16.0_1_0",
+			     "FaceName":"MS Sans Serif",
+			     "Size":"12",
+			     "Red":"0",
+			     "Green":"0",
+			     "Blue":"0",
+			     "Bold":"yes",
+			   ])));
+    res->add_child(WixNode("TextStyle", ([
+			     "Id":"VsdDefaultUIFont.524F4245_5254_5341_4C45_534153783400",
+			     "FaceName":"MS Sans Serif",
+			     "Size":"9",
+			     "Red":"0",
+			     "Green":"0",
+			     "Blue":"0",
+			   ])));
     res->add_child(WixNode("InstallUISequence", ([]))->
 		   add_child(WixNode("Custom", ([
 				       "After":"ValidateProductID",
