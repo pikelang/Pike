@@ -9,3 +9,4 @@ modlist_headers
 modlist_segment
 module_testsuite
 msql_config.h
+remake
