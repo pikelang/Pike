@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: program.c,v 1.575 2004/11/05 16:21:23 grubba Exp $
+|| $Id: program.c,v 1.576 2004/11/05 17:56:34 grubba Exp $
 */
 
 #include "global.h"
@@ -7620,9 +7620,6 @@ int find_child(struct program *parent, struct program *child)
 
 void yywarning(char *fmt, ...)
 {
-  char buf[4711];
-  va_list args;
-
   /* If we have parse errors we might get erroneous warnings,
    * so don't print them.
    * This has the additional benefit of making it easier to
@@ -7630,16 +7627,24 @@ void yywarning(char *fmt, ...)
    */
   if (Pike_compiler->num_parse_error) return;
 
-  va_start(args,fmt);
-  Pike_vsnprintf (buf, sizeof (buf), fmt, args);
-  va_end(args);
-
+  /* Don't bother generating the warning message if we don't have
+   * anywhere to report it...
+   */
   if ((error_handler && error_handler->prog) || get_master()) {
+    struct string_builder s;
+    va_list args;
+
+    init_string_builder(&s, 0);
+    va_start(args,fmt);
+    string_builder_vsprintf(&s, fmt, args);
+    va_end(args);
+
     ref_push_string(lex.current_file);
     push_int(lex.current_line);
-    push_text(buf);
+    push_string(finish_string_builder(&s));
 
-    low_safe_apply_handler("compile_warning", error_handler, compat_handler, 3);
+    low_safe_apply_handler("compile_warning",
+			   error_handler, compat_handler, 3);
     pop_stack();
   }
 }
