@@ -1200,7 +1200,15 @@ class ParseBlock
 
 	addfuncs+=
 	  IFDEF(define,
-		({"  start_new_program();\n"})+
+		({
+		  IFDEF("PROG_"+upper_case(name)+"_ID",
+			({
+			  sprintf("  START_NEW_PROGRAM_ID(%s);\n",
+				  upper_case(name)),
+			  "#else\n",
+			  "  start_new_program();\n"
+			}))
+		})+
 		IFDEF("THIS_"+upper_case(name),
 		      ({ sprintf("\n  %s_storage_offset=ADD_STORAGE(struct %s_struct);\n",name,name) }) )+
 		subclass->addfuncs+
