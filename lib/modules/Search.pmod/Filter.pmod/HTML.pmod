@@ -1,7 +1,7 @@
 // This file is part of Roxen Search
 // Copyright © 2000,2001 Roxen IS. All rights reserved.
 //
-// $Id: HTML.pmod,v 1.37 2004/08/07 15:26:59 js Exp $
+// $Id: HTML.pmod,v 1.38 2005/03/08 15:29:02 anders Exp $
 
 // Filter for text/html
 
@@ -30,7 +30,6 @@ static void create() {
   parser->ignore_unknown(1);
   parser->match_tag(0);
 
-  parser->add_quote_tag("!--", return_zero, "--");
   parser->add_quote_tag("?", return_zero, "?");
 
   parser->_set_tag_callback(lambda(Parser.HTML p, string data) {
@@ -160,15 +159,17 @@ static string clean(string data) {
 
   // FIXME: This information should be pushed to the body field
   // of the image file, if it is indexed.
-  array parse_img(Parser.HTML p, mapping m)  {
-    if( m->alt && sizeof(m->alt) )
-      dadd(" ", clean(m->alt));
-    if( m->title && sizeof(m->title) )
-      dadd(" ", clean(m->title));
+  array parse_img(Parser.HTML p, mapping m, mapping e)  {
+    if( !e->noindex ) {
+      if( m->alt && sizeof(m->alt) )
+	dadd(" ", clean(m->alt));
+      if( m->title && sizeof(m->title) )
+	dadd(" ", clean(m->title));
+    }
     return ({});
   };
 
-  array parse_applet(Parser.HTML p, mapping m) {
+  array parse_applet(Parser.HTML p, mapping m, mapping e) {
     // FIXME: The alt information should be pushed to the body field
     // of all the resources linked from this tag.
     if( m->src ) ladd( m->src );
@@ -177,16 +178,20 @@ static string clean(string data) {
 			 // by the applet.
     if( m->code ) ladd( m->code ); // URL to the applets code/class.
     if( m->codebase ) ladd( m->codebase );
-    if( m->alt && sizeof(m->alt) ) dadd(" ", clean(m->alt));
+    if( m->alt && sizeof(m->alt) )
+      if( !e->noindex )
+	dadd(" ", clean(m->alt));
     return ({});
   };
 
   // <area>, <bgsound>
-  array parse_src_alt(Parser.HTML p, mapping m) {
+  array parse_src_alt(Parser.HTML p, mapping m, mapping e) {
     // FIXME: The alt information should be pushed to the body field
     // of all the resources linked from this tag.
     if( m->src ) ladd( m->src );
-    if( m->alt && sizeof(m->alt) ) dadd(" ", clean(m->alt));
+    if( m->alt && sizeof(m->alt) )
+      if( !e->noindex )
+	dadd(" ", clean(m->alt));
     return ({});
   };
 
@@ -210,14 +215,15 @@ static string clean(string data) {
     return ({});
   };
 
-  array parse_object(Parser.HTML p, mapping m) {
+  array parse_object(Parser.HTML p, mapping m, mapping e) {
     if( m->archive ) ladd( m->archive );
     if( m->classid ) ladd( m->classid );
     if( m->code ) ladd( m->code );
     if( m->codebase ) ladd( m->codebase );
     if( m->data ) ladd( m->data );
     if( m->standby && sizeof(m->standby) )
-      dadd(" ", clean(m->standby) );
+      if ( !e->noindex )
+	dadd(" ", clean(m->standby) );
     return ({});
   };
 
@@ -266,11 +272,26 @@ static string clean(string data) {
     return ({});
   };
 
+  // <!-- robots:noindex -->...<!-- /robots:noindex -->
+  mixed parse_comment(Parser.HTML p, string c, mapping extra)
+  {
+    if(has_value(c, "/robots:noindex"))
+      extra->noindex--;
+    else if(has_value(c, "robots:noindex"))
+      extra->noindex++;
+    return ({""});
+  };
+
   String.Buffer databuf=String.Buffer(sizeof(data));
   Parser.HTML parser = parser->clone();
+
+  mapping extra = ([]);
+  parser->set_extra(extra);
+  parser->add_quote_tag("!--", parse_comment, "--");
   parser->add_quote_tag("![CDATA[",
-			lambda(Parser.HTML p, string data) {
-			  dadd(data);
+			lambda(Parser.HTML p, string data, mapping e) {
+			  if(!e->noindex)
+			    dadd(data);
 			}, "]]");
 
   //  parser->add_container("rank",parse_rank);
@@ -278,8 +299,8 @@ static string clean(string data) {
 			     "h1": parse_headline,
 			     "h2": parse_headline,
 			     "h3": parse_headline, 
-			     "noindex": parse_noindex,
-			     "no-index":parse_noindex,
+			     "noindex":  parse_noindex,
+			     "no-index": parse_noindex,
 			     "no_index": parse_noindex,  ]) );
 			     
   parser->add_tags( ([ "meta":parse_meta,
@@ -306,22 +327,26 @@ static string clean(string data) {
 
   dadd = databuf->add;
   int space;
-  parser->_set_data_callback(lambda(Parser.HTML p, string data) {
-			       if(space) dadd(" ");
-  			       dadd(data);
-			       space = 1;
+  parser->_set_data_callback(lambda(Parser.HTML p, string data, mapping e) {
+			       if (!e->noindex) {
+				 if(space) dadd(" ");
+				 dadd(data);
+				 space = 1;
+			       }
 			     });
-  parser->_set_entity_callback(lambda(Parser.HTML p, string data) {
-				 if(entities[data]) {
-				   dadd(entities[data]);
-				   space = 0;
-				   return;
-				 }
-				 string c = Parser.
-				   decode_numeric_xml_entity(data);
-				 if(c) {
-				   space = 0;
-				   dadd(c);
+  parser->_set_entity_callback(lambda(Parser.HTML p, string data, mapping e) {
+				 if(!e->noindex) {
+				   if(entities[data]) {
+				     dadd(entities[data]);
+				     space = 0;
+				     return;
+				   }
+				   string c = Parser.
+				     decode_numeric_xml_entity(data);
+				   if(c) {
+				     space = 0;
+				     dadd(c);
+				   }
 				 }
 			       });
   
