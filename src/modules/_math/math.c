@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: math.c,v 1.73 2004/03/06 01:58:57 nilsson Exp $
+|| $Id: math.c,v 1.74 2004/03/07 01:34:11 nilsson Exp $
 */
 
 #include "global.h"
@@ -37,7 +37,7 @@
   if(sp[-args].type!=T_FLOAT) SIMPLE_BAD_ARG_ERROR(X, 1, "float"); \
   TRIM_STACK(1)
 
-RCSID("$Id: math.c,v 1.73 2004/03/06 01:58:57 nilsson Exp $");
+RCSID("$Id: math.c,v 1.74 2004/03/07 01:34:11 nilsson Exp $");
 
 #ifndef M_PI
 #define M_PI 3.1415926535897932384626433832795080
@@ -464,12 +464,12 @@ void f_pow(INT32 args)
 
   switch(Pike_sp[-2].type * 16 + Pike_sp[-1].type)
   {
-    case T_OBJECT * 17:
     case T_INT * 17:
+#ifdef AUTO_BIGNUM
+    case T_OBJECT * 17:
     case T_INT * 16 + T_OBJECT:
     case T_OBJECT * 16 + T_INT:
     case T_OBJECT * 16 + T_FLOAT:
-#ifdef AUTO_BIGNUM
       stack_swap();
       push_constant_text("pow");
       f_index(2);
@@ -728,10 +728,15 @@ PIKE_MODULE_INIT
   ADD_EFUN("atanh",f_atanh,tFunc(tFlt,tFlt),0);
  
 /* function(float:float)|function(int:int) */
+#ifdef AUTO_BIGNUM
   ADD_EFUN("sqrt",f_sqrt,tOr3(tFunc(tFlt,tFlt),
 			      tFunc(tInt,tInt),
 			      tFunc(tObj,tMix)),0);
-  
+#else
+  ADD_EFUN("sqrt",f_sqrt,tOr(tFunc(tFlt,tFlt),
+			     tFunc(tInt,tInt)),0);
+#endif
+
 /* function(float:float) */
   ADD_EFUN("log",f_log,tFunc(tFlt,tFlt),0);
   
@@ -739,12 +744,20 @@ PIKE_MODULE_INIT
   ADD_EFUN("exp",f_exp,tFunc(tNUM,tFlt),0);
   
 /* function(float,float:float) */
+#ifdef AUTO_BIGNUM
   ADD_EFUN("pow",f_pow,
 	   tOr5(tFunc(tFlt tFlt,tFlt),
 		tFunc(tInt tFlt,tFlt),
 		tFunc(tFlt tInt,tFlt),
 		tFunc(tInt tInt,tInt),
 		tFunc(tObj tOr3(tInt,tObj,tFlt),tMix)),0);
+#else
+  ADD_EFUN("pow",f_pow,
+	   tOr4(tFunc(tFlt tFlt,tFlt),
+		tFunc(tInt tFlt,tFlt),
+		tFunc(tFlt tInt,tFlt),
+		tFunc(tInt tInt,tInt)),0);
+#endif
   
 /* function(float:float) */
   ADD_EFUN("floor",f_floor,tFunc(tFlt,tFlt),0);
