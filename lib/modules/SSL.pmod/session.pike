@@ -1,5 +1,5 @@
 //
-// $Id: session.pike,v 1.34 2004/02/29 02:56:04 nilsson Exp $
+// $Id: session.pike,v 1.35 2004/07/05 17:02:36 grubba Exp $
 
 #pike __REAL_VERSION__
 #pragma strict_types
@@ -156,8 +156,8 @@ array(string) generate_keys(string client_random, string server_random,
   array(string) keys = allocate(6);
 
 #ifdef SSL3_DEBUG
-  werror("client_random: %O\nserver_random: %O\n",
-	 client_random, server_random);
+  werror("client_random: %O\nserver_random: %O\nversion: %d.%d\n",
+	 client_random, server_random, version[0], version[1]);
 #endif
   // client_write_MAC_secret
   keys[0] = key_data->get_fix_string(cipher_spec->hash_size);
