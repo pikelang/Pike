@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: xml.c,v 1.62 2003/03/11 15:00:07 grubba Exp $
+|| $Id: xml.c,v 1.63 2003/06/02 20:59:42 nilsson Exp $
 */
 
 #include "global.h"
@@ -2291,7 +2291,7 @@ static int really_low_parse_dtd(struct xmldata *data)
 
 static int low_parse_dtd(struct xmldata *data)
 {
-  int done=0;
+  int done;
   struct svalue *save_sp=sp;
 
   done=really_low_parse_dtd(data);
