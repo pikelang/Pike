@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: ia32.c,v 1.26 2003/03/21 14:36:16 mast Exp $
+|| $Id: ia32.c,v 1.27 2003/03/28 01:56:29 mast Exp $
 */
 
 /*
@@ -444,7 +444,7 @@ static void ins_debug_instr_prologue (PIKE_INSTR_T instr, INT32 arg1, INT32 arg2
     ia32_call_c_function (simple_debug_instr_prologue_0);
 }
 #else  /* !PIKE_DEBUG */
-#define ins_debug_instr_prologue(instr, arg1, arg2) 0
+#define ins_debug_instr_prologue(instr, arg1, arg2)
 #endif
 
 void ins_f_byte(unsigned int b)
