@@ -367,7 +367,7 @@ static void decode_value2(struct decode_data *data)
 
 #ifdef DEBUG
 #undef decode_value2
-#define decode_value2(X) do { struct svalue *_=sp; decode_value2_(X); if(sp!=_+1) fatal("decode_value2 failed!\n"); } while(0);
+#define decode_value2(X) do { struct svalue *_=sp; decode_value2_(X); if(sp!=_+1) fatal("decode_value2 failed!\n"); } while(0)
 #endif
 
 
