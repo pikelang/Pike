@@ -20,6 +20,8 @@
 #include <fcntl.h>
 
 #include "global.h"
+RCSID("$Id");
+
 #include "stralloc.h"
 #include "types.h"
 #include "macros.h"

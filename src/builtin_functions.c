@@ -4,6 +4,7 @@
 ||| See the files COPYING and DISCLAIMER for more information.
 \*/
 #include "global.h"
+RCSID("$Id: builtin_functions.c,v 1.10 1996/11/14 01:24:07 hubbe Exp $");
 #include "interpret.h"
 #include "svalue.h"
 #include "macros.h"

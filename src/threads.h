@@ -22,6 +22,7 @@ extern struct object *thread_id;
 #define mt_trylock(X) pthread_mutex_trylock(X)
 #define mt_unlock(X) pthread_mutex_unlock(X)
 #define mt_destroy(X) pthread_mutex_destroy(X)
+#define DEFINE_MUTEX(X) MUTEX_T X
 
 extern MUTEX_T interpreter_lock;
 
@@ -106,9 +107,11 @@ void th_cleanup();
 /* Prototypes end here */
 
 #else
+#define DEFINE_MUTEX(X)
 #define mt_init(X)
 #define mt_lock(X)
 #define mt_unlock(X)
+#define mt_destroy(X)
 #define THREADS_ALLOW()
 #define THREADS_DISALLOW()
 #define th_init()

@@ -5,6 +5,7 @@
 \*/
 #include <math.h>
 #include "global.h"
+RCSID("$Id");
 #include "interpret.h"
 #include "svalue.h"
 #include "multiset.h"

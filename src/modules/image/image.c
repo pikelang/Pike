@@ -5,6 +5,7 @@
 
 #include "stralloc.h"
 #include "global.h"
+RCSID("$Id");
 #include "types.h"
 #include "macros.h"
 #include "object.h"

@@ -70,6 +70,14 @@ char *alloca ();
 #undef HAVE_MEMORY_H
 #endif
 
+#if __GNUC__ > 2 || (__GNUC__ == 2 && __GNUC_MINOR__ >= 7)
+#define RCSID(X) \
+ static char *rcsid __attribute__ ((unused)) =X;
+#elif 
+#define RCSID(X) \
+ static char *rcsid = X;
+#endif
+
 #if defined(__GNUC__) && !defined(DEBUG) && !defined(lint)
 #define INLINE inline
 #else

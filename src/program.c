@@ -4,6 +4,7 @@
 ||| See the files COPYING and DISCLAIMER for more information.
 \*/
 #include "global.h"
+RCSID("$Id");
 #include "program.h"
 #include "object.h"
 #include "dynamic_buffer.h"

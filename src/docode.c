@@ -4,6 +4,7 @@
 ||| See the files COPYING and DISCLAIMER for more information.
 \*/
 #include "global.h"
+RCSID("$Id: docode.c,v 1.4 1996/11/14 01:24:08 hubbe Exp $");
 #include "las.h"
 #include "program.h"
 #include "language.h"

@@ -4,6 +4,7 @@
 ||| See the files COPYING and DISCLAIMER for more information.
 \*/
 #include "global.h"
+RCSID("$Id: main.c,v 1.10 1996/11/14 01:24:12 hubbe Exp $");
 #include "types.h"
 #include "backend.h"
 #include "module.h"

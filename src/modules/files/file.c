@@ -6,6 +6,7 @@
 #define READ_BUFFER 16384
 
 #include "global.h"
+RCSID("$Id");
 #include "types.h"
 #include "interpret.h"
 #include "svalue.h"
