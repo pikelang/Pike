@@ -68,9 +68,14 @@ mapping _decode( string what, void|mapping opts )
   if(sizeof(data) < ncolors+2)
     error("Too few elements in array to decode color values\n");
   array colors;
-  if(cpp < 4)
-    colors = data[1..ncolors];
-  else
+
+// kludge? probable FIXME?
+// I can't see why the colors not always must be sorted...
+//  /Mirar 2003-01-31
+
+//   if(cpp < 4)
+//     colors = data[1..ncolors];
+//   else
     colors = sort(data[1..ncolors]);
   TD("Creating images");
   object i = Image.image( width, height );
