@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: sprintf.c,v 1.121 2004/11/02 14:38:12 aldem Exp $
+|| $Id: sprintf.c,v 1.122 2004/11/07 06:57:16 nilsson Exp $
 */
 
 /* TODO: use ONERROR to cleanup fsp */
@@ -302,8 +302,6 @@
 #include "config.h"
 
 #include <math.h>
-
-#define sp Pike_sp
 
 #define FORMAT_INFO_STACK_SIZE 200
 #define RETURN_SHARED_STRING
@@ -874,12 +872,12 @@ INLINE static int do_one(struct format_stack *fs,
      GET_ARRAY(_v);							\
      for(tmp=0;tmp<_v->size;tmp++)					\
      {									\
-       struct svalue *save_sp=sp;					\
-       array_index_no_free(sp,_v,tmp);					\
-       sp++;								\
+       struct svalue *save_sp=Pike_sp;					\
+       array_index_no_free(Pike_sp,_v,tmp);				\
+       Pike_sp++;							\
        low_pike_sprintf(fs, &_b,begin,SUBTRACT_PCHARP(a,begin)+1,	\
-			sp-1,1,nosnurkel+1);				\
-       if(save_sp < sp) pop_stack();					\
+			Pike_sp-1,1,nosnurkel+1);			\
+       if(save_sp < Pike_sp) pop_stack();				\
      }									\
      fs->fsp->b=MKPCHARP_STR(_b.s);					\
      fs->fsp->len=_b.s->len;						\
@@ -932,11 +930,11 @@ INLINE static int do_one(struct format_stack *fs,
 	      	SET_CYCLIC_RET(1);					      \
 	      	apply_low(sv->u.object, fun, 2);                              \
 									      \
-	      	if(sp[-1].type == T_STRING)				      \
+	      	if(Pike_sp[-1].type == T_STRING)			      \
 	      	{	                                                      \
               	  DO_IF_DEBUG( if(fs->fsp->to_free_string)                    \
-              		       Pike_fatal("OOps in sprintf\n"); )                  \
-              	  fs->fsp->to_free_string = (--sp)->u.string;	              \
+              		       Pike_fatal("OOps in sprintf\n"); )             \
+              	  fs->fsp->to_free_string = (--Pike_sp)->u.string;            \
 	      								      \
 	      	  fs->fsp->b = MKPCHARP_STR(fs->fsp->to_free_string);	      \
 	      	  fs->fsp->len = fs->fsp->to_free_string->len;		      \
@@ -946,7 +944,7 @@ INLINE static int do_one(struct format_stack *fs,
                   END_CYCLIC();						      \
 	      	  break;						      \
 	      	}							      \
-	      	if(!SAFE_IS_ZERO(sp-1))					      \
+	      	if(!SAFE_IS_ZERO(Pike_sp-1))				      \
 	      	{							      \
 	      	   sprintf_error(fs,"argument %d (object) returned "	      \
 	      			 "illegal value from _sprintf()\n",	      \
@@ -1021,22 +1019,25 @@ static void low_pike_sprintf(struct format_stack *fs,
 
     for(INC_PCHARP(a,1);;INC_PCHARP(a,1))
     {
-/*      fprintf(stderr,"sprintf-flop: %d (%c)\n",EXTRACT_PCHARP(a),EXTRACT_PCHARP(a)); */
+#if 0
+      fprintf(stderr,"sprintf-flop: %d (%c)\n",
+	      EXTRACT_PCHARP(a),EXTRACT_PCHARP(a));
+#endif
       switch(EXTRACT_PCHARP(a))
       {
       default:
 	if(EXTRACT_PCHARP(a) < 256 && 
 	   isprint(EXTRACT_PCHARP(a)))
 	{
-	  sprintf_error(fs, "Error in format string, %c is not a format.\n",EXTRACT_PCHARP(a));
+	  sprintf_error(fs, "Error in format string, %c is not a format.\n",
+			EXTRACT_PCHARP(a));
 	}else{
-	  sprintf_error(fs, "Error in format string, \\%o is not a format.\n",EXTRACT_PCHARP(a));
+	  sprintf_error(fs,"Error in format string, u+%04x is not a format.\n",
+			EXTRACT_PCHARP(a));
 	}
-	Pike_fatal("Foo, you shouldn't be here!\n");
 
-        /* First the modifiers */
-
-      case '0': 
+      /* First the modifiers */
+      case '0':
 	 if (setwhat<2) 
 	 { 
 	    fs->fsp->flags|=ZERO_PAD; 
@@ -1097,7 +1098,10 @@ static void low_pike_sprintf(struct format_stack *fs,
 	tmp=0;
 	for(INC_PCHARP(a,1);INDEX_PCHARP(a,tmp)!='\'';tmp++)
 	{
-/*	  fprintf(stderr,"Sprinf-glop: %d (%c)\n",INDEX_PCHARP(a,tmp),INDEX_PCHARP(a,tmp)); */
+#if 0
+	  fprintf(stderr, "Sprinf-glop: %d (%c)\n",
+		  INDEX_PCHARP(a,tmp), INDEX_PCHARP(a,tmp));
+#endif
 	  if(COMPARE_PCHARP(a,>=,format_end))
 	    sprintf_error(fs, "Unfinished pad string in format string.\n");
 	}
@@ -1134,7 +1138,8 @@ static void low_pike_sprintf(struct format_stack *fs,
 	} else
 	  tmp=STRTOL_PCHARP(a,&a,10);
 	if(EXTRACT_PCHARP(a)!=']') 
-	  sprintf_error(fs, "Expected ] in format string, not %c.\n",EXTRACT_PCHARP(a));
+	  sprintf_error(fs, "Expected ] in format string, not %c.\n",
+			EXTRACT_PCHARP(a));
 	if(tmp >= num_arg)
 	  sprintf_error(fs, "Not enough arguments to [%d].\n",tmp);
 	arg = argp+tmp;
@@ -1182,17 +1187,17 @@ static void low_pike_sprintf(struct format_stack *fs,
 
 /*	    check_threads_etc(); */
 	    q=low_array_get_item_ptr(w,tmp,T_ARRAY);
-	    s=sp;
+	    s=Pike_sp;
 	    if(q)
 	    {
 	      add_ref(q->array);
 	      push_array_items(q->array);
 	    }else{
-	      array_index_no_free(sp,w,tmp);
-	      sp++;
+	      array_index_no_free(Pike_sp,w,tmp);
+	      Pike_sp++;
 	    }
-	    low_pike_sprintf(fs, &b,ADD_PCHARP(a,1),e-2,s,sp-s,0);
-	    pop_n_elems(sp-s);
+	    low_pike_sprintf(fs, &b,ADD_PCHARP(a,1),e-2,s,Pike_sp-s,0);
+	    pop_n_elems(Pike_sp-s);
 	  }
 #ifdef PIKE_DEBUG
 	  if(fs->fsp < fs->format_info_stack)
@@ -1624,25 +1629,6 @@ static void low_pike_sprintf(struct format_stack *fs,
   }
 }
 
-
-/* An C-callable pike_sprintf
-
-** This doesn't seem to work at all.  The prototype for
-** low_pike_sprintf has changed _a lot_ since this code was
-** written.  It should probably be removed.  // Marcus
-
-dynbuf_string pike_sprintf(char *format,struct svalue *argp,int num_arg)
-{
-  dynbuf_string prefix;
-  prefix.str=0;
-  prefix.len=0;
-
-  free_sprintf_strings();
-  fsp=format_info_stack-1;
-  return low_pike_sprintf(format,strlen(format),argp,num_arg,prefix,0);
-}
- */
-
 /* The efun */
 void f_sprintf(INT32 args)
 {
@@ -1653,7 +1639,7 @@ void f_sprintf(INT32 args)
 
   struct format_stack fs;
 
-  argp=sp-args;
+  argp=Pike_sp-args;
   
   fs.fsp = fs.format_info_stack-1;
 
@@ -1662,19 +1648,18 @@ void f_sprintf(INT32 args)
       /* Try checking if we can cast it to a string... */
       ref_push_object(argp[0].u.object);
       o_cast(string_type_string, PIKE_T_STRING);
-      if (sp[-1].type != T_STRING) {
+      if (Pike_sp[-1].type != T_STRING) {
 	/* We don't accept objects... */
 	Pike_error("sprintf(): Cast to string failed.\n");
       }
       /* Replace the original object with the new string. */
-      assign_svalue(argp, sp-1);
+      assign_svalue(argp, Pike_sp-1);
       /* Clean up the stack. */
       pop_stack();
     } else {
       SIMPLE_BAD_ARG_ERROR("sprintf", 1, "string|object");
     }
   }
-/*  fprintf(stderr,"SPRINTF: %s\n",argp->u.string->str); */
 
   init_string_builder(&r,0);
   SET_ONERROR(err_format_stack, free_sprintf_strings, &fs);
