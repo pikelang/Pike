@@ -1,7 +1,7 @@
 /* cipher.cmod -*- c -*- */
 
 #include "global.h"
-RCSID("$Id: cipher.cmod,v 1.26 2003/12/14 00:08:33 nilsson Exp $");
+RCSID("$Id: cipher.cmod,v 1.27 2004/01/23 08:04:16 nilsson Exp $");
 #include "interpret.h"
 #include "svalue.h"
 #include "array.h"
@@ -663,7 +663,7 @@ pike_des3_set_key(void *c,
 {
   struct des3_ctx *ctx = (struct des3_ctx *) c;
   int i;
-  char *nkotb[24];
+  char nkotb[24];
 
   switch( length ) {
   case 7+7:
