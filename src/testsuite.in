@@ -1,4 +1,4 @@
-test_true([["$Id: testsuite.in,v 1.41 1997/05/19 09:32:40 hubbe Exp $"]])
+test_true([["$Id: testsuite.in,v 1.42 1997/05/20 01:06:45 hubbe Exp $"]])
 test_eq(1e1,10.0)
 test_eq(1E1,10.0)
 test_eq(1e+1,10.0)
@@ -1651,9 +1651,9 @@ test_search3($1,($1[1..]))
 ]])
 
 test_search4("SUNE")
-test_search4("kapitäl>")
+test_search4("kapit\344l>")
 test_search4("-------------------+")
-test_search4("å-------------------")
+test_search4("\345-------------------")
 test_search4(sprintf("%'argel-bargel glop-glyf?'2000n"))
 
 // - sizeof
