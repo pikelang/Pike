@@ -27,7 +27,9 @@
 #include <math.h>
 #include <fcntl.h>
 #include <errno.h>
+#ifdef HAVE_TIME_H
 #include <time.h>
+#endif
 
 #define LEXDEBUG 0
 #define EXPANDMAX 50000
@@ -363,7 +365,13 @@ static void link_inputstate(struct inputstate *i)
 static void free_inputstate(struct inputstate *i)
 {
   if(!i) return;
-  if(i->fd>=0) close(i->fd);
+  if(i->fd>=0)
+  {
+  retry:
+    if(close(i->fd)< 0)
+      if(errno == EINTR)
+	goto retry;
+  }
   if(i->data && !i->dont_free_data) free(i->data);
   free_inputstate(i->next);
   free((char *)i);
@@ -945,10 +953,13 @@ static void handle_include(char *name)
     my_yyerror("Couldn't include file '%s'.",name);
     return;
   }
-
+  
+ retry:
   fd=open(sp[-1].u.string->str,O_RDONLY);
   if(fd < 0)
   {
+    if(errno == EINTR) goto retry;
+
     my_yyerror("Couldn't open file to include '%s'.",sp[-1].u.string->str);
     return;
   }
