@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: acconfig.h,v 1.133 2003/12/07 19:42:59 marcus Exp $
+|| $Id: acconfig.h,v 1.134 2004/01/12 12:26:41 marcus Exp $
 */
 
 #ifndef MACHINE_H
@@ -237,6 +237,9 @@
 
 /* Define if you have isless */
 #undef HAVE_ISLESS
+
+/* Define if you have isunordered */
+#undef HAVE_ISUNORDERD
 
 /* Define if you have crypt.  */
 #undef HAVE_CRYPT

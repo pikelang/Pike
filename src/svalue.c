@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: svalue.c,v 1.182 2003/11/15 16:38:37 mast Exp $
+|| $Id: svalue.c,v 1.183 2004/01/12 12:26:42 marcus Exp $
 */
 
 #include "global.h"
@@ -30,7 +30,7 @@
 
 #define sp Pike_sp
 
-RCSID("$Id: svalue.c,v 1.182 2003/11/15 16:38:37 mast Exp $");
+RCSID("$Id: svalue.c,v 1.183 2004/01/12 12:26:42 marcus Exp $");
 
 struct svalue dest_ob_zero = {
   T_INT, 0,
@@ -771,7 +771,7 @@ PMOD_EXPORT int is_eq(const struct svalue *a, const struct svalue *b)
     return 0;
       
   case T_FLOAT:
-    if (PIKE_ISNAN(a->u.float_number) != PIKE_ISNAN(b->u.float_number)) {
+    if (PIKE_ISUNORDERED(a->u.float_number, b->u.float_number)) {
       return 0;
     }
     return a->u.float_number == b->u.float_number;
@@ -1028,7 +1028,7 @@ PMOD_EXPORT int is_lt(const struct svalue *a, const struct svalue *b)
 #ifdef HAVE_ISLESS
       return isless(a->u.float_number, b->u.float_number);
 #else
-      if (PIKE_ISNAN(a->u.float_number) || PIKE_ISNAN(b->u.float_number)) {
+      if (PIKE_ISUNORDERED(a->u.float_number, b->u.float_number)) {
 	return 0;
       }
       return a->u.float_number < b->u.float_number;
