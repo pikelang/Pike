@@ -1,4 +1,4 @@
-AC_REVISION("$Id: configure.in,v 1.103 1997/07/09 02:23:48 hubbe Exp $")
+AC_REVISION("$Id: configure.in,v 1.104 1997/08/10 00:49:52 grubba Exp $")
 AC_INIT(interpret.c)
 AC_CONFIG_HEADER(machine.h)
 
@@ -206,20 +206,7 @@ fi
 
 if test "$GCC" = "yes"; then
   if test $cflags_is_set = no; then
-    AC_MSG_CHECKING(-pipe)
-    OLD_CFLAGS="$CFLAGS"
-    CFLAGS="$CFLAGS -pipe"
-    AC_CACHE_VAL(pike_cv_option_pipe,
-    [
-      AC_TRY_COMPILE([],[],pike_cv_option_pipe=yes,pike_cv_option_pipe=no)
-    ])
-
-    if test "$pike_cv_option_pipe" = "yes" ; then
-      AC_MSG_RESULT(-pipe found)
-    else
-      AC_MSG_RESULT(-pipe not found)
-      CFLAGS="$OLD_CFLAGS"
-    fi
+    AC_SYS_COMPILER_FLAG(-pipe, pipe)
   fi
 else
 #
@@ -1445,6 +1432,7 @@ then
 	NetBSD) LDSHARED="ld -Bshareable";;
 	OpenBSD*) LDSHARED="ld -Bshareable";;
 	SCO_SV*) LDSHARED="cc -G -KPIC -Wl,-Bexport";;
+	UNIX_SV) LDSHARED="ld -G";;
 	*) LDSHARED="ld";;
 	esac
 fi
