@@ -521,7 +521,11 @@ o Tools.PV
 Optimizations:
 --------------
 
-o Machine code used on some architectures.
+o Machine code generation
+    On systems with IA32, SPARC or PPC32 processors Pike will generate
+    native machine code as byte code. This byte code can then by
+    executed directly outside the virtual machine and gives a 30%
+    performance boost compared to other systems.
 
 o Computed goto
 
@@ -533,11 +537,12 @@ o Overall speed improvements.
     arrays
     replace
 
-o Deferred backtraces.
+o Deferred backtraces
+    Most of the information in backtraces are now calculated upon
+    presenting the backtrace information and not when the backtrace is
+    generated. This improves the performance of catched errors.
 
 o Saved 8 bytes per object for objects not using their parent scope
-
-o Improvement and bug tickets closed: 1499
 
 
 Compatibility changes:
