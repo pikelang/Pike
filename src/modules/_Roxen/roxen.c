@@ -287,6 +287,127 @@ static void f_http_decode_string(INT32 args)
    push_string(end_shared_string(newstr));
 }
 
+static void f_html_encode_string( INT32 args )
+{
+  struct pike_string *str;
+  int newlen;
+
+  if( args != 1 )
+    Pike_error("Wrong number of arguments to html_encode_string\n" );
+  
+  switch( Pike_sp[-1].type )
+  {
+    struct pike_string *s;
+    void o_cast(struct pike_string *type, INT32 run_time_type);
+
+    case PIKE_T_INT:
+      /* Optimization, this is basically a inlined cast_int_to_string */
+      {
+	char buf[21], *b = buf+19;
+	int neg, i, j=0;
+	i = Pike_sp[-1].u.integer;
+	pop_stack();
+	if( i < 0 )
+	{
+	  neg = 1;
+	  i = -i;
+	}
+	else
+	  neg = 0;
+
+	buf[20] = 0;
+
+	while( i > 10 )
+	{
+	  b[ -j++ ] = '0'+(i%10);
+	  i /= 10;
+	}
+	b[ -j++ ] = '0'+(i%10);
+	if( neg )  b[ -j++ ] = '-';
+	push_text( b-j+1 );
+      }
+      return;
+
+    case PIKE_T_FLOAT:
+      /* Optimization, no need to check the resultstring for
+       * unsafe characters. 
+       */
+      MAKE_CONSTANT_SHARED_STRING( s, tString );
+      o_cast(s, PIKE_T_STRING);
+      return;
+
+    default:
+      MAKE_CONSTANT_SHARED_STRING( s, tString );
+      o_cast(s, PIKE_T_STRING);
+    case PIKE_T_STRING:
+      break;
+  }
+
+  str = Pike_sp[-1].u.string;
+  newlen = str->len;
+
+#define COUNT(T) {							\
+    T *s = (T *)str->str;						\
+    int i;								\
+    for( i = 0; i<str->len; i++ )					\
+      switch( s[i] )							\
+      {									\
+	case 0:   /* &#0; 	*/			\
+	case '<': /* &lt; 	*/			\
+	case '>': newlen+=3; break;/* &gt; 	*/			\
+	case '&': /* &amp;	*/			\
+	case '"': /* &#34;	*/			\
+	case '\'': newlen+=4;break;/* &#39;	*/		  	\
+      }									\
+    }
+
+#define ADD(X) if(sizeof(X)-sizeof("")==4) ADD4(X); else ADD5(X)
+
+#define ADD4(X) ((d[0] = X[0]), (d[1] = X[1]), (d[2] = X[2]), (d[3] = X[3]),\
+                (d+=3))
+
+#define ADD5(X) ((d[0] = X[0]), (d[1] = X[1]), (d[2] = X[2]), (d[3] = X[3]),\
+                 (d[4] = X[4]), (d+=4))
+
+#define REPLACE(T) {							\
+    T *s = (T *)str->str;						\
+    T *d = (T *)res->str;						\
+    int i;								\
+    for( i = 0; i<str->len; i++,s++,d++ )				\
+      switch( *s )							\
+      {									\
+	case 0:   ADD("&#0;");  break;					\
+	case '&': ADD("&amp;"); break;					\
+	case '<': ADD("&lt;");  break;					\
+	case '>': ADD("&gt;");  break;					\
+	case '"': ADD("&#34;"); break;					\
+	case '\'':ADD("&#39;"); break;					\
+	default: *d = *s;   break;					\
+      }									\
+  }									\
+
+  switch( str->size_shift )
+  {
+    case 0: COUNT(unsigned char);  break;
+    case 1: COUNT(unsigned short); break;
+    case 2: COUNT(int);            break;
+  }
+
+  if( newlen == str->len )
+    return; /* Already on stack. */
+
+  {
+    struct pike_string *res = begin_wide_shared_string(newlen,str->size_shift);
+    switch( str->size_shift )
+    {
+      case 0: REPLACE(unsigned char); break;
+      case 1: REPLACE(unsigned short); break;
+      case 2: REPLACE(int); break;
+    }
+    pop_stack();
+    push_string( low_end_shared_string( res ) );
+  }
+}
 /*! @endmodule
  */
 
@@ -298,6 +419,9 @@ void pike_module_init()
   pike_add_function("http_decode_string", f_http_decode_string,
                "function(string:string)", 0 );
 
+  pike_add_function("html_encode_string", f_html_encode_string,
+		    "function(mixed:string)", 0 );
+  
   start_new_program();
   ADD_STORAGE( struct header_buf  );
   pike_add_function( "feed", f_hp_feed, "function(string:array(string|mapping))",0 );
