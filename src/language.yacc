@@ -171,7 +171,7 @@
 /* This is the grammar definition of Pike. */
 
 #include "global.h"
-RCSID("$Id: language.yacc,v 1.74 1998/04/13 12:51:09 grubba Exp $");
+RCSID("$Id: language.yacc,v 1.75 1998/04/14 17:02:04 grubba Exp $");
 #ifdef HAVE_MEMORY_H
 #include <memory.h>
 #endif
@@ -609,6 +609,12 @@ def: modifiers type_or_error optional_stars F_IDENTIFIER
     yyerrok;
 /*     if(num_parse_error>5) YYACCEPT; */
   }
+  | error '}'
+  {
+    YYBACKUP('}', 0);
+    reset_type_stack();
+    yyerrok;
+  }
   ;
 
 optional_dot_dot_dot: F_DOT_DOT_DOT { $$=1; }
@@ -885,6 +891,10 @@ new_name: optional_stars F_IDENTIFIER
 		     mkcastnode(void_type_string,
 				mknode(F_ASSIGN,$5,
 				       mkidentifiernode($<number>4))));
+    free_node($2);
+  }
+  | optional_stars F_IDENTIFIER '=' error
+  {
     free_node($2);
   }
   | optional_stars bad_identifier '=' expr0
