@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: global.h,v 1.96 2004/03/16 14:43:02 mast Exp $
+|| $Id: global.h,v 1.97 2004/09/26 15:10:29 marcus Exp $
 */
 
 #ifndef GLOBAL_H
@@ -375,10 +375,12 @@ typedef struct p_wchar_p
 #define DO_IF_INTERNAL_PROFILING(X)
 #endif
 
+#ifndef INLINE
 #if defined(__GNUC__) && !defined(PIKE_DEBUG) && !defined(lint)
 #define INLINE inline
 #else
 #define INLINE
+#endif
 #endif
 
 /* PMOD_EXPORT exports a function / variable / whatever.
