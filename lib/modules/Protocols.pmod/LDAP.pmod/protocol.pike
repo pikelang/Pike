@@ -2,7 +2,7 @@
 
 // LDAP client protocol implementation for Pike.
 //
-// $Id: protocol.pike,v 1.17 2005/03/29 17:59:31 mast Exp $
+// $Id: protocol.pike,v 1.18 2005/04/06 19:45:51 mast Exp $
 //
 // Honza Petrous, hop@unibase.cz
 //
@@ -27,12 +27,10 @@ import Protocols.LDAP;
 
 #include "ldap_globals.h"
 
-#include "ldap_errors.h"
-
   // private variables 
   int next_id = 1;				// message id counter
   int ldap_version = LDAP_DEFAULT_VERSION;	// actually used protocol vers.
-  string ldap_rem_errstr = ldap_errlist[LDAP_SUCCESS]; // last remote error description
+  string ldap_rem_errstr = ldap_error_strings[LDAP_SUCCESS]; // last remote error description
   int ldap_errno = LDAP_SUCCESS;		// last error code
 
   /*private*/ string readbuf="";		// read buffer
@@ -49,27 +47,37 @@ import Protocols.LDAP;
 
 static int last_io_time; // Timestamp when I/O on the fd was made last.
 
-  int seterr(int errno) {
+  int seterr(int errno, void|string errstr) {
   // Sets ldap_err* variables and returns errno
 
-    //ldap_rem_errstr = errstr;
+    ldap_rem_errstr = errstr;
     ldap_errno = errno;
     return errno;
   }
 
   //!
-  //! Returns error number of last transaction.
+  //! Returns the error number from the last transaction.
   //!
   //! @seealso
-  //!  @[LDAP.protocol.error_string]
+  //!  @[error_string], @[server_error_string]
   int error_number() { return ldap_errno; }
 
   //!
-  //! Returns error description of search result.
+  //! Returns the description of the error from the last transaction.
+  //! This is the error string from the server, or a standard error
+  //! message corresponding to the error number if the server didn't
+  //! provide any description.
   //!
   //! @seealso
-  //!  @[LDAP.protocol.error_number]
-  string error_string() { return ldap_errlist[ldap_errno]; }
+  //!  @[server_error_string], @[error_number]
+  string error_string() { return ldap_rem_errstr || ldap_error_strings[ldap_errno]; }
+
+//! Returns the error string from the server, or zero if the server
+//! didn't provide any.
+//!
+//! @seealso
+//!  @[error_string], @[error_number]
+string server_error_string() {return ldap_rem_errstr;}
 
   array error() { return ({error_number(), error_string()}); }
 

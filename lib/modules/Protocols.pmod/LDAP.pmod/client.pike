@@ -2,7 +2,7 @@
 
 // LDAP client protocol implementation for Pike.
 //
-// $Id: client.pike,v 1.92 2005/04/06 16:49:16 mast Exp $
+// $Id: client.pike,v 1.93 2005/04/06 19:45:51 mast Exp $
 //
 // Honza Petrous, hop@unibase.cz
 //
@@ -73,8 +73,6 @@
 
 #include "ldap_globals.h"
 
-#include "ldap_errors.h"
-
 #if constant(SSL.Cipher.CipherAlgorithm)
 import SSL.Constants;
 #endif
@@ -132,7 +130,7 @@ static function(string:string) get_attr_decoder (string attr,
 #ifdef DEBUG
   else if (!nowarn && !has_suffix (attr, ";binary") && !has_value (attr, ";binary;"))
     werror ("Warning: Couldn't fetch attribute description for %O - "
-	    "binary content assumed.\n", attr);
+	    "binary content assumed.\n%s", attr, describe_backtrace(backtrace()));
 #endif
   return 0;
 }
@@ -306,6 +304,10 @@ static function(string:string) get_attr_encoder (string attr)
       resultcode = ASN1_DECODE_RESULTCODE(rawres[lastel]);
       DWRITE(sprintf("result.create: code=%d\n",resultcode));
       resultstring = ASN1_DECODE_RESULTSTRING(rawres[lastel]);
+      if (resultstring == "")
+	resultstring = 0;
+      else if (ldap_version >= 3)
+	resultstring = utf8_to_string (resultstring);
       DWRITE(sprintf("result.create: str=%s\n",resultstring));
 #ifdef V3_REFERRALS
       // referral (v3 mode)
@@ -338,21 +340,30 @@ static function(string:string) get_attr_encoder (string attr)
     }
 
     //!
-    //! Returns error number of search result.
+    //! Returns the error number in the search result.
     //!
     //! @seealso
-    //!  @[LDAP.client.result.error_string]
+    //!  @[error_string], @[server_error_string]
     int error_number() { return resultcode; }
 
     //!
-    //! Returns error description of search result.
+    //! Returns the description of the error in the search result.
+    //! This is the error string from the server, or a standard error
+    //! message corresponding to the error number if the server didn't
+    //! provide any description.
     //!
     //! @seealso
-    //!  @[LDAP.client.result.error_number]
+    //!  @[server_error_string], @[error_number]
     string error_string() {
-      return ((stringp(resultstring) && sizeof(resultstring)) ?
-	      resultstring : ldap_errlist[resultcode]);
+      return resultstring || ldap_error_strings[resultcode];
     }
+
+    //! Returns the error string from the server, or zero if the
+    //! server didn't provide any.
+    //!
+    //! @seealso
+    //!  @[error_string], @[error_number]
+    string server_error_string() {return resultstring;}
 
     //!
     //! Returns the number of entries.
@@ -548,7 +559,7 @@ static function(string:string) get_attr_encoder (string attr)
   void create(string|mapping(string:mixed)|void url, object|void context)
   {
 
-    info = ([ "code_revision" : ("$Revision: 1.92 $"/" ")[1] ]);
+    info = ([ "code_revision" : ("$Revision: 1.93 $"/" ")[1] ]);
 
     if(!url || !sizeof(url))
       url = LDAP_DEFAULT_URL;
@@ -782,7 +793,7 @@ void reset_options()
    if (!last_rv->error_number())
      bound_dn = dn;
    DWRITE_HI(sprintf("client.BIND: %s\n", last_rv->error_string()));
-   seterr (last_rv->error_number());
+   seterr (last_rv->error_number(), last_rv->error_string());
    return !!bound_dn;
 
   } // bind
@@ -861,7 +872,7 @@ void reset_options()
 
    last_rv = result(({raw}));
    DWRITE_HI(sprintf("client.DELETE: %s\n", last_rv->error_string()));
-   seterr(last_rv->error_number());
+   seterr (last_rv->error_number(), last_rv->error_string());
    return !last_rv->error_number();
 
   } // delete
@@ -937,7 +948,7 @@ void reset_options()
 
    last_rv = result(({raw}));
    DWRITE_HI(sprintf("client.COMPARE: %s\n", last_rv->error_string()));
-   seterr(last_rv->error_number());
+   seterr (last_rv->error_number(), last_rv->error_string());
    return last_rv->error_number() == LDAP_COMPARE_TRUE;
 
   } // compare
@@ -1016,7 +1027,7 @@ void reset_options()
 
     last_rv = result(({raw}));
     DWRITE_HI(sprintf("client.ADD: %s\n", last_rv->error_string()));
-    seterr(last_rv->error_number());
+    seterr (last_rv->error_number(), last_rv->error_string());
     return !last_rv->error_number();
 
   } // add
@@ -1606,7 +1617,7 @@ multiset(string) get_supported_controls()
 
     PROFILE("result", last_rv = result (rawarr, 0, flags));
     if(objectp(last_rv))
-      seterr (last_rv->error_number());
+      seterr (last_rv->error_number(), last_rv->error_string());
     //if (rv->error_number() || !rv->num_entries())	// if error or entries=0
     //  rv = rv->error_number();
 
@@ -1692,7 +1703,7 @@ mapping(string:string|array(string)) read (
     });
 
   PROFILE ("result", last_rv = result (rawarr, 0, flags));
-  seterr (last_rv->error_number());
+  seterr (last_rv->error_number(), last_rv->error_string());
 
   if (ldap_errno != LDAP_SUCCESS) return 0;
   return last_rv->fetch();
@@ -1958,7 +1969,7 @@ mapping(string:mixed) get_parsed_url() {return lauth;}
 
     last_rv = result(({raw}));
     DWRITE_HI(sprintf("client.MODIFYDN: %s\n", last_rv->error_string()));
-    seterr(last_rv->error_number());
+    seterr (last_rv->error_number(), last_rv->error_string());
     return !last_rv->error_number();
 
   }  //modifydn
@@ -2035,7 +2046,7 @@ mapping(string:mixed) get_parsed_url() {return lauth;}
 
     last_rv = result(({raw}));
     DWRITE_HI(sprintf("client.MODIFY: %s\n", last_rv->error_string()));
-    seterr(last_rv->error_number());
+    seterr (last_rv->error_number(), last_rv->error_string());
     return !last_rv->error_number();
 
   } // modify
