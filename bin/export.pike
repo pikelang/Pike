@@ -1,6 +1,6 @@
 #! /usr/bin/env pike
 
-/* $Id: export.pike,v 1.61 2004/03/12 12:49:13 grubba Exp $ */
+/* $Id: export.pike,v 1.62 2004/03/12 13:22:28 grubba Exp $ */
 
 multiset except_modules = (<>);
 string vpath;
@@ -213,7 +213,7 @@ int main(int argc, array(string) argv)
 
 	case "snapshot":
 	  snapshot=1;
-	  break,
+	  break;
       }
     }
 
