@@ -66,16 +66,3 @@ If modules or functionality residing in the standard Pike repository
 is missing in your package, the package documentation should clearly
 state so and provide a description for how to aquire a complete Pike
 installation.
-
-
-  Crypto code
-
-For political reasons it might be wanted to make a Pike release
-without support for encryption and decryption. By executing the make
-target "lobotomize" in a source tree, fresh from CVS, all encryption
-code should be removed from it. Enryption dependent parts of Pike,
-such as SSL and parts of PKCS and X509, will also be removed.
-Cryptographic hashes and signatures will remain in Pike and still be
-functional. Please verify manually that all encryption code really is
-gone in your release.
-

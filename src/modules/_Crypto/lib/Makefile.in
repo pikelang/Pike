@@ -1,4 +1,4 @@
-# $Id: Makefile.in,v 1.36 2002/05/04 16:51:33 mast Exp $
+# $Id: Makefile.in,v 1.37 2003/03/19 16:41:10 nilsson Exp $
 #
 # Makefile for low-level crypto library
 
@@ -37,11 +37,7 @@ O=		$(SO) $(GO)
 SRC_TARGETS=$(GH)
 MODULE_CLEAN_EXTRA=*.i *.x desTest $(GC)
 
-# BEGIN NATIONAL SECURITY
-MASS_DESTRUCTION_OBJS = idea.o arcfour.o cast.o rijndael.o $(O)
-# END NATIONAL SECURITY
-
-OBJS = $(MASS_DESTRUCTION_OBJS) sha.o md2.o md4.o md5.o crypt_md5.o
+OBJS = idea.o arcfour.o cast.o rijndael.o sha.o md2.o md4.o md5.o crypt_md5.o
 
 @dynamic_module_makefile@
 

@@ -595,8 +595,6 @@ testfont binary
 /src/modules/_Charset/misc.c foreign_ident
 /src/modules/_Charset/tables.c foreign_ident
 /src/modules/_Charset/testsuite.in foreign_ident
-/src/modules/_Crypto/.build_lobotomized_crypto foreign_ident
-/src/modules/_Crypto/.exportable_files foreign_ident
 /src/modules/_Crypto/Makefile.in foreign_ident
 /src/modules/_Crypto/acconfig.h foreign_ident
 /src/modules/_Crypto/arcfour.c foreign_ident

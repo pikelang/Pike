@@ -1,4 +1,4 @@
-# $Id: configure.in,v 1.14 2001/02/27 18:52:26 grubba Exp $
+# $Id: configure.in,v 1.15 2003/03/19 16:42:28 nilsson Exp $
 AC_INIT(crypto.c)
 AC_CONFIG_HEADER(config.h)
 
@@ -10,10 +10,7 @@ AC_MODULE_INIT()
 
 AC_ARG_WITH(rsaref,     [  --with-rsaref[=path]      Support for RSAREF],[],[])
 
-PIKE_FEATURE(Crypto,[yes (lobotomized)])
-# BEGIN NATIONAL SECURITY 
 PIKE_FEATURE_OK(Crypto)
-# END NATIONAL SECURITY
 
 if test x$with_rsaref = x ; then
   :
