@@ -6,7 +6,7 @@
 /**/
 #include "global.h"
 #include <math.h>
-RCSID("$Id: operators.c,v 1.68 1999/11/05 01:31:41 hubbe Exp $");
+RCSID("$Id: operators.c,v 1.69 1999/11/11 15:20:56 grubba Exp $");
 #include "interpret.h"
 #include "svalue.h"
 #include "multiset.h"
@@ -446,8 +446,8 @@ static node *optimize_eq(node *n)
   node **first_arg, **second_arg, *ret;
   if(count_args(CDR(n))==2)
   {
-    first_arg=my_get_arg(&CDR(n), 0);
-    second_arg=my_get_arg(&CDR(n), 1);
+    first_arg=my_get_arg(&_CDR(n), 0);
+    second_arg=my_get_arg(&_CAR(n), 1);
 
 #ifdef PIKE_DEBUG
     if(!first_arg || !second_arg)
@@ -456,14 +456,18 @@ static node *optimize_eq(node *n)
     if(node_is_false(*first_arg) && !node_may_overload(*second_arg,LFUN_EQ))
     {
       ret=*second_arg;
+#ifndef SHARED_NODES
       *second_arg=0;
+#endif /* !SHARED_NODES */
       return mkopernode("`!",ret,0);
     }
 
     if(node_is_false(*second_arg)  && !node_may_overload(*first_arg,LFUN_EQ))
     {
       ret=*first_arg;
+#ifndef SHARED_NODES
       *first_arg=0;
+#endif /* !SHARED_NODES */
       return mkopernode("`!",ret,0);
     }
   }
@@ -477,7 +481,7 @@ static node *optimize_not(node *n)
 
   if(count_args(CDR(n))==1)
   {
-    first_arg=my_get_arg(&CDR(n), 0);
+    first_arg=my_get_arg(&_CDR(n), 0);
 #ifdef PIKE_DEBUG
     if(!first_arg)
       fatal("Couldn't find argument!\n");
@@ -485,6 +489,14 @@ static node *optimize_not(node *n)
     if(node_is_true(*first_arg))  return mkintnode(0);
     if(node_is_false(*first_arg)) return mkintnode(1);
 
+#ifdef SHARED_NODES
+#define TMP_OPT(X,Y) do {			\
+    if((more_args=is_call_to(*first_arg, X)))	\
+    {						\
+      node *tmp=*more_args;			\
+      return mkopernode(Y,tmp,0);		\
+    } } while(0)
+#else /* !SHARED_NODES */
 #define TMP_OPT(X,Y) do {			\
     if((more_args=is_call_to(*first_arg, X)))	\
     {						\
@@ -492,6 +504,7 @@ static node *optimize_not(node *n)
       *more_args=0;				\
       return mkopernode(Y,tmp,0);		\
     } } while(0)
+#endif /* SHARED_NODES */
 
     TMP_OPT(f_eq, "`!=");
     TMP_OPT(f_ne, "`==");
@@ -511,8 +524,8 @@ static node *optimize_binary(node *n)
   node **first_arg, **second_arg, *ret;
   if(count_args(CDR(n))==2)
   {
-    first_arg=my_get_arg(&CDR(n), 0);
-    second_arg=my_get_arg(&CDR(n), 1);
+    first_arg=my_get_arg(&_CDR(n), 0);
+    second_arg=my_get_arg(&_CDR(n), 1);
 
 #ifdef PIKE_DEBUG
     if(!first_arg || !second_arg)
@@ -531,10 +544,11 @@ static node *optimize_binary(node *n)
 		   mknode(F_ARG_LIST,
 			  CDR(*first_arg),
 			  *second_arg));
+#ifndef SHARED_NODES
 	CAR(n)=0;
 	CDR(*first_arg)=0;
 	*second_arg=0;
-	
+#endif /* !SHARED_NODES */
 	return ret;
       }
       
@@ -547,10 +561,11 @@ static node *optimize_binary(node *n)
 		   mknode(F_ARG_LIST,
 			  *first_arg,
 			  CDR(*second_arg)));
+#ifndef SHARED_NODES
 	CAR(n)=0;
 	*first_arg=0;
 	CDR(*second_arg)=0;
-	
+#endif /* SHARED_NODES */
 	return ret;
       }
     }

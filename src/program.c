@@ -5,7 +5,7 @@
 \*/
 /**/
 #include "global.h"
-RCSID("$Id: program.c,v 1.171 1999/11/05 23:21:29 grubba Exp $");
+RCSID("$Id: program.c,v 1.172 1999/11/11 15:23:08 grubba Exp $");
 #include "program.h"
 #include "object.h"
 #include "dynamic_buffer.h"
@@ -546,6 +546,19 @@ void low_start_new_program(struct program *p,
 			   int flags)
 {
   int e,id=0;
+
+#if 0  
+#ifdef SHARED_NODES
+  if (!node_hash.table) {
+    node_hash.table = malloc(sizeof(node *)*16411);
+    if (!node_hash.table) {
+      fatal("Out of memory!\n");
+    }
+    MEMSET(node_hash.table, 0, sizeof(node *)*16411);
+    node_hash.size = 16411;
+  }
+#endif /* SHARED_NODES */
+#endif /* 0 */
 
   /* We don't want to change thread, but we don't want to
    * wait for the other threads to complete.
@@ -1089,6 +1102,10 @@ struct program *end_first_pass(int finish)
   }
   toss_compilation_resources();
 
+#ifdef SHARED_NODES
+  /* free(node_hash.table); */
+#endif /* SHARED_NODES */
+
 #define POP
 #include "compilation.h"
 
@@ -1299,13 +1316,13 @@ node *reference_inherited_identifier(struct pike_string *super_name,
     if(ISCONSTSTR(function_name,"`->") ||
        ISCONSTSTR(function_name,"`[]"))
     {
-      return mknode(F_MAGIC_INDEX,mkintnode(e),mkintnode(0));
+      return mknode(F_MAGIC_INDEX,mknewintnode(e),mknewintnode(0));
     }
 
     if(ISCONSTSTR(function_name,"`->=") ||
        ISCONSTSTR(function_name,"`[]="))
     {
-      return mknode(F_MAGIC_SET_INDEX,mkintnode(e),mkintnode(0));
+      return mknode(F_MAGIC_SET_INDEX,mknewintnode(e),mknewintnode(0));
     }
   }
 
@@ -1332,14 +1349,14 @@ node *reference_inherited_identifier(struct pike_string *super_name,
 	 ISCONSTSTR(function_name,"`[]"))
       {
 	return mkapplynode(mkprgnode(magic_index_program),
-			   mknode(F_ARG_LIST,mkintnode(e),mkintnode(n+1)));
+			   mknode(F_ARG_LIST,mknewintnode(e),mknewintnode(n+1)));
       }
       
       if(ISCONSTSTR(function_name,"`->=") ||
 	 ISCONSTSTR(function_name,"`[]="))
       {
 	return mkapplynode(mkprgnode(magic_set_index_program),
-			   mknode(F_ARG_LIST,mkintnode(e),mkintnode(n+1)));
+			   mknode(F_ARG_LIST,mknewintnode(e),mknewintnode(n+1)));
       }
     }
   }
@@ -1557,7 +1574,7 @@ void compiler_do_inherit(node *n,
     case F_IDENTIFIER:
       p=new_program;
       offset=0;
-      numid=n->u.number;
+      numid=n->u.id.number;
       goto continue_inherit;
       
     case F_EXTERNAL:
