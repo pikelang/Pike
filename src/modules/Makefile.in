@@ -1,4 +1,4 @@
-# $Id: Makefile.in,v 1.31 1999/10/04 03:04:31 hubbe Exp $
+# $Id: Makefile.in,v 1.32 1999/10/05 19:48:36 grubba Exp $
 
 @SET_MAKE@
 
@@ -34,41 +34,71 @@ modlist.h: $(MODULE_SEGMENTS)
 	( for a in $(MODULES) ; do cat $$a/modlist_segment ; done ; ) >modlist.h
 
 modlist_headers.h: $(MODULE_SEGMENTS)
-	( for a in $(MODULES) ; do cat $$a/modlist_segment; done ) | sed -e 's/^.*{.*,\(.*\),\(.*\).*}.*$$/void \1(void),\2(void);/' >modlist_headers.h
+	( for a in $(MODULES) ; do \
+	    cat $$a/modlist_segment; \
+	  done \
+	) | sed -e 's/^.*{.*,\(.*\),\(.*\).*}.*$$/void \1(void),\2(void);/' >modlist_headers.h
 
 linker_options: $(MODULE_LINKOPTS)
-	( for a in $(MODULES) ; do cat $$a/linker_options; done ; ) >linker_options
+	( for a in $(MODULES) ; do \
+	    cat $$a/linker_options; \
+	  done \
+	) >linker_options
 
 Makefile: $(SRCDIR)/Makefile.in $(SRCDIR)/dependencies ./config.status
 	CONFIG_FILES=Makefile CONFIG_HEADERS="" ./config.status
 	touch remake
-	@echo "Run make again"
+	@echo "Run make again" >&2
 	@exit 1
 
 depend:
-	for a in $(MODULES) ; do ( cd $$a ; ${MAKE} $(MAKE_FLAGS) MODNAME=$$a depend ) ; done
+	for a in $(MODULES) ; do \
+	  ( cd $$a ; ${MAKE} $(MAKE_FLAGS) MODNAME=$$a depend ) ; \
+	done
 
 install:
-	for a in $(MODULES) ; do ( cd $$a ; ${MAKE} $(MAKE_FLAGS) MODNAME=$$a install ) ; done
+	for a in $(MODULES) ; do \
+	  ( cd $$a ; ${MAKE} $(MAKE_FLAGS) MODNAME=$$a install ) ; \
+	done
 
 clean:
-	for a in $(MODULES) ; do ( cd $$a ; ${MAKE} $(MAKE_FLAGS) MODNAME=$$a clean ) ; done
+	for a in $(MODULES) ; do \
+	  ( cd $$a ; ${MAKE} $(MAKE_FLAGS) MODNAME=$$a clean ) ; \
+	done
 	-rm -f linker_options modlist.h modlist_headers.h
 
 verify:
-	for a in $(MODULES) ; do ( cd $$a ; echo verifying $$a ; ${MAKE} $(MAKE_FLAGS) MODNAME=$$a verify ) || exit $$? ; done
+	for a in $(MODULES) ; do \
+	  ( cd $$a ; \
+	    echo verifying $$a ; \
+	    ${MAKE} $(MAKE_FLAGS) MODNAME=$$a verify \
+	  ) || exit $$? ; \
+	done
 
 verbose_verify:
-	for a in $(MODULES) ; do ( cd $$a ; ${MAKE} $(MAKE_FLAGS) MODNAME=$$a verbose_verify ) || exit $$? ; done
+	for a in $(MODULES) ; do \
+	  ( cd $$a ; \
+	    ${MAKE} $(MAKE_FLAGS) MODNAME=$$a verbose_verify \
+	  ) || exit $$? ; \
+	done
 
 fdtestsuites:
-	for a in $(MODULES) ; do echo $$a ; $(TMP_BINDIR)/mktestsuite $(SRCDIR)/$$a/testsuite.in >$$a/module_testsuite -DSRCDIR=$(SRCDIR)/$$a || exit $$? ; done	
+	for a in $(MODULES) ; do \
+	  echo $$a ; \
+	  $(TMP_BINDIR)/mktestsuite $(SRCDIR)/$$a/testsuite.in >$$a/module_testsuite -DSRCDIR=$(SRCDIR)/$$a || exit $$? ; \
+	done	
 
 testsuites:
-	for a in $(MODULES) ; do (cd $$a; make module_testsuite) ; done	
+	for a in $(MODULES) ; do \
+	  (cd $$a; make module_testsuite) ; \
+	done
 
 extra_tests:
-	for a in $(MODULES) ; do ( cd $$a ; ${MAKE} $(MAKE_FLAGS) MODNAME=$$a extra_tests ) || exit $$? ; done
+	for a in $(MODULES) ; do \
+	  ( cd $$a ; \
+	    ${MAKE} $(MAKE_FLAGS) MODNAME=$$a extra_tests \
+	  ) || exit $$? ; \
+	done
 
 
 @dependencies@

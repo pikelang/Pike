@@ -1,5 +1,5 @@
 #
-# $Id: dynamic_module_makefile.in,v 1.58 1999/10/05 05:33:12 hubbe Exp $
+# $Id: dynamic_module_makefile.in,v 1.59 1999/10/05 19:48:37 grubba Exp $
 #
 
 
@@ -27,13 +27,25 @@ force:
 	@:;
 
 $(MODULE_ARCHIVES) ThisIsAPhonyTargetBlaBlaBla: force
-	@a=`echo $@ | sed -e 's@/[^/]*$$@@'` ; echo Making $(MODNAME)/$$a ; ( rm $$a/remake >/dev/null 2>&1 ||: ; cd $$a && ( $(MAKE) $(MAKE_FLAGS) || ( test -f remake ; $(MAKE) $(MAKE_FLAGS) ) ) ) || exit $$?
+	@a=`echo $@ | sed -e 's@/[^/]*$$@@'` ; \
+	echo Making $(MODNAME)/$$a ; \
+	( rm $$a/remake >/dev/null 2>&1 ||: ; \
+	  cd $$a && ( $(MAKE) $(MAKE_FLAGS) || \
+	              ( test -f remake ; $(MAKE) $(MAKE_FLAGS) ) ) \
+	) || exit $$?
 
 dummy:	$(DUMMY) linker_options modlist_headers modlist_segment module.so
 	@tmp="$(INSTALL_NAME)" ; \
 	if test x$$tmp = x ; then tmp="$(MODNAME)"; else :; fi ;\
 	tmp2="___$$tmp" ; \
-	if [ -f $(SRCDIR)/module.pmod.in ]; then sed -e "s/@module@/.$$tmp2/" <$(SRCDIR)/module.pmod.in >$(TMP_LIBDIR)/modules/$$tmp.pmod ; else if [ -f ./module.pmod.in ]; then sed -e "s/@module@/.$$tmp2/" <./module.pmod.in >$(TMP_LIBDIR)/modules/$$tmp.pmod; else tmp2="$$tmp"; fi; fi ; \
+	if [ -f $(SRCDIR)/module.pmod.in ]; then \
+	  sed -e "s/@module@/.$$tmp2/" <$(SRCDIR)/module.pmod.in >$(TMP_LIBDIR)/modules/$$tmp.pmod ; \
+	else \
+	  if [ -f ./module.pmod.in ]; then \
+	    sed -e "s/@module@/.$$tmp2/" <./module.pmod.in >$(TMP_LIBDIR)/modules/$$tmp.pmod; \
+	   else tmp2="$$tmp"; \
+	  fi; \
+	fi ; \
 	$(TMP_BINDIR)/install_module module.so $(TMP_LIBDIR)/modules/$$tmp2.so
 
 .SUFFIXES: .c .o
@@ -45,9 +57,9 @@ dummy:	$(DUMMY) linker_options modlist_headers modlist_segment module.so
 	@echo "Compiling $<" ;\
 	if $(CC) $(CFLAGS) -c $< -o $@ ; then : ;\
 	else \
-	echo "WARNING: Compiler failiure! Trying without optimization!" ;\
-	echo "echo $(CC) $(PREFLAGS) $(NOOPTFLAGS) -c $< -o $@" ;\
-	NO_ULIMIT=yes $(CC) $(PREFLAGS) $(NOOPTFLAGS) -c $< -o $@ ;\
+	  echo "WARNING: Compiler failure! Trying without optimization!" >&2;\
+	  echo "echo $(CC) $(PREFLAGS) $(NOOPTFLAGS) -c $< -o $@" >&2;\
+	  NO_ULIMIT=yes $(CC) $(PREFLAGS) $(NOOPTFLAGS) -c $< -o $@ ;\
 	fi
 
 linker_options: Makefile
@@ -62,7 +74,7 @@ modlist_segment: Makefile
 Makefile: $(MODULE_BASE)/dynamic_module_makefile $(SRCDIR)/Makefile.in $(SRCDIR)/dependencies $(SRCDIR)/$(CONFIG_HEADERS).in config.status
 	CFLAGS="$(REAL_CFLAGS)" LDFLAGS="$(REAL_LDFLAGS)" CPPFLAGS="$(REAL_CPPFLAGS)" CONFIG_FILES=Makefile CONFIG_HEADERS="$(CONFIG_HEADERS)" ./config.status
 	touch remake
-	@echo "Run make again"
+	@echo "Run make again" >&2
 	@exit 1
 
 $(SRCDIR)/configure: $(SRCDIR)/configure.in $(PIKE_SRC_DIR)/aclocal.m4
@@ -77,9 +89,10 @@ config.status: $(SRCDIR)/configure
 module.so: $(OBJS)  $(MODULE_ARCHIVES)
 	@echo "linking $(MODNAME)" ;\
 	if $(TMP_BINDIR)/smartlink "@LDSHARED@" $(LDFLAGS) -o module.@SO@ $(OBJS) $(MODULE_ARCHIVES) $(MODULE_LDFLAGS) $(LIBGCC) -lc $(LIBGCC) ; then \
-	if test @SO@ != so ; then mv module.@SO@ module.so ; else :; fi ;\
+	  if test @SO@ != so ; then mv module.@SO@ module.so ; else :; fi ;\
 	else \
-	echo Linking failed:  $(TMP_BINDIR)/smartlink "@LDSHARED@" $(LDFLAGS) -o module.@SO@ $(OBJS) $(MODULE_ARCHIVES) $(MODULE_LDFLAGS) $(LIBGCC) -lc $(LIBGCC) ;\
+	  echo "Linking failed:" >&2; \
+	  echo $(TMP_BINDIR)/smartlink "@LDSHARED@" $(LDFLAGS) -o module.@SO@ $(OBJS) $(MODULE_ARCHIVES) $(MODULE_LDFLAGS) $(LIBGCC) -lc $(LIBGCC) >&2 ;\
 	fi
 
 $(OBJS) : $(MODULE_BASE)/dynamic_module_makefile
