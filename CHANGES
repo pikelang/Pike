@@ -120,6 +120,13 @@ o this
     of a surrounding class with Foo::this.
 
 o The Local module
+    All Pike modules and classes found in the directory hierarchies
+    /usr/local/pike_modules, /opt/pike_modules, /opt/share/pike_modules,
+    /usr/local/share/pike_modules, $HOME/pike_modules, and
+    $PIKE_LOCAL_PATH (a :-separated list of directories) are available
+    with the prefix "Local.". Local.add_path() and Local.remove_path()
+    respectively adds and removes entries from the list of paths to
+    inspect when resolving Local.* symbols.
 
 o enum reserved
 
