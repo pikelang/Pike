@@ -1,5 +1,5 @@
 #
-# $Id: Makefile.in,v 1.222 2000/12/01 19:54:40 grubba Exp $
+# $Id: Makefile.in,v 1.223 2000/12/01 19:56:48 grubba Exp $
 #
 
 # This line is needed on some machines.
@@ -503,8 +503,10 @@ bin_export: aclocal
 	@case " $(CC)" in \
 	  *\ rnt*) \
 	    $(MAKE) $(MAKE_FLAGS) uncompress_header ;\
+	    echo "Compressing..." ;\
 	    filename=`echo *.burk | sed 's@\.burk$$@@g'`.exe ;\
 	    ( cat uncompress_header.exe ; gzip -9 -c *.burk ) > $$filename ;\
+	    echo "Done." ;\
 	  ;; \
 	esac
 
