@@ -1,6 +1,6 @@
 // LDAP client protocol implementation for Pike.
 //
-// $Id: client.pike,v 1.16 2000/07/20 14:54:41 hop Exp $
+// $Id: client.pike,v 1.17 2000/07/20 15:00:12 hop Exp $
 //
 // Honza Petrous, hop@unibase.cz
 //
@@ -50,8 +50,6 @@
 //
 //	newer versions - see CVS at roxen.com (hop)
 //
-//			 - corrected deUTF8 values in result
-//			 -
 //
 // Specifications:
 //
