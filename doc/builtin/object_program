@@ -6,6 +6,7 @@ SYNTAX
 
 DESCRIPTION
 	This function returns the program from which o was cloned.
+	If o is not an object, or o was destructed zero is returned.
 
 KEYWORDS
 	object
