@@ -1,12 +1,12 @@
 /*
- * $Id: dumudp.c,v 1.42 1999/07/26 11:52:06 grubba Exp $
+ * $Id: dumudp.c,v 1.43 1999/08/17 15:23:41 grubba Exp $
  */
 
 #include "global.h"
 
 #include "config.h"
 
-RCSID("$Id: dumudp.c,v 1.42 1999/07/26 11:52:06 grubba Exp $");
+RCSID("$Id: dumudp.c,v 1.43 1999/08/17 15:23:41 grubba Exp $");
 #include "fdlib.h"
 #include "interpret.h"
 #include "svalue.h"
@@ -162,6 +162,9 @@ static void udp_bind(INT32 args)
     error("socket failed\n");
     return;
   }
+
+  /* Make sure this fd gets closed on exec. */
+  set_close_on_exec(fd, 1);
 
   o=1;
   if(fd_setsockopt(fd, SOL_SOCKET, SO_REUSEADDR, (char *)&o, sizeof(int)) < 0)
