@@ -1,4 +1,4 @@
-AC_REVISION("$Id: configure.in,v 1.86 1997/04/17 02:17:00 hubbe Exp $")
+AC_REVISION("$Id: configure.in,v 1.87 1997/04/17 02:58:45 hubbe Exp $")
 AC_INIT(interpret.c)
 AC_CONFIG_HEADER(machine.h)
 
@@ -1429,7 +1429,7 @@ fi
 
    OLD_CFLAGS="$CFLAGS"
    CFLAGS="$CFLAGS $LINKFORSHARED"
-    AC_TRY_RUN([int main() { exit(0); }], pike_cv_sys_dynamic_linkforshared="$LINKFORSHARED", pike_cv_sys_dynamic_loading='')
+    AC_TRY_RUN([int main() { exit(0); }], pike_cv_sys_sys_linkforshared="$LINKFORSHARED", pike_cv_sys_linkforshared='')
    CFLAGS="$OLD_CFLAGS"
 ])
 
