@@ -1,7 +1,7 @@
 // This file is part of Roxen Search
 // Copyright © 2001 Roxen IS. All rights reserved.
 //
-// $Id: Utils.pmod,v 1.10 2001/07/05 18:55:37 nilsson Exp $
+// $Id: Utils.pmod,v 1.11 2001/07/05 23:21:22 nilsson Exp $
 
 public array(string) tokenize_and_normalize( string what )
 //! This can be optimized quite significantly when compared to
@@ -65,37 +65,71 @@ class Logger {
 		"extra varchar(255))");
   }
 
-  void log_event( int code, string type, void|string extra ) {
+  void log_event( int code, string type, void|string extra, void|int log_profile ) {
     Sql.Sql db = get_db();
     if(!db) return;
 
+    if(zero_type(log_profile))
+      log_profile = profile;
+
     if(extra)
       db->query("INSERT INTO eventlog (profile,code,type,extra) VALUES (%d,%d,%s,%s)",
-		profile, code, type, extra);
+		log_profile, code, type, extra);
     else
       db->query("INSERT INTO eventlog (profile, code,type) VALUES (%d,%d,%s)",
-		profile, code, type);
+		log_profile, code, type);
   }
 
-  void log_error( int code, void|string extra ) {
+  void log_error( int code, void|string extra, void|int log_profile ) {
     log_event( code, "error", extra );
   }
 
-  void log_warning( int code, void|string extra ) {
-    log_event( code, "warning", extra );
+  void log_warning( int code, void|string extra, void|int log_profile ) {
+    log_event( code, "warning", extra, log_profile );
   }
 
-  void log_notice( int code, void|string extra ) {
-    log_event( code, "notice", extra );
+  void log_notice( int code, void|string extra, void|int log_profile ) {
+    log_event( code, "notice", extra, log_profile );
+  }
+
+  int add_program_name(int code, string name) {
+    int add = search( ({ "multiprocess_crawler", "buffer_c2f", "filter",
+			 "buffer_f2i", "indexer" }), name );
+    if(add==-1)
+      throw( ({ "Unknown program name \""+name+"\".\n", backtrace() }) );
+
+    return code + add;
   }
 
   private mapping codes = ([
-    100 : "Started %s with %s",
-    101 : "Exiting %s due to signal",
-    102 : "Connecting %s to %s",
-    103 : "%s failed to set up pipe",
-    104 : "Fetched %s",
-    404 : "File %s not found",
+    10 : "Started crawler with %s.",
+    11 : "Started crawler-to-filter buffer with %s.",
+    12 : "Started filter with %s.",
+    13 : "Started filter-to-indexer buffer with %s.",
+    14 : "Started indexer with %s.",
+
+    20 : "Exiting crawler due to signal.",
+    21 : "Exiting crawler-to-filter buffer due to signal.",
+    22 : "Exiting filter due to signal.",
+    23 : "Exiting filter-to-indexer buffer due to signal.",
+    24 : "Exiting indexer due to signal.",
+
+    30 : "Crawler failed to set up pipe.",
+    31 : "Crawler-to-filter buffer failed to set up pipe.",
+    32 : "Filter failed to set up pipe.",
+    33 : "Filter-to-indexer buffer failed to set up pipe.",
+    34 : "Indexer failed to set up pipe.",
+
+    40 : "Fetched %s.",
+    41 : "Unknown language code \"%s\".",
+    42 : "Crawler exited normally.",
+    43 : "Cleared search database.",
+
+    50 : "Crawler did not get any connection from the process.",
+    51 : "Crawler-to-filter bufferdid not get any connection from the process.",
+    52 : "Filter did not get any connection from the process.",
+    53 : "Filter-to-indexer buffer did not get any connection from the process.",
+    54 : "Indexer did not get any connection from the process.",
   ]);
 
   array(array(string|int)) get_log( int profile, array(string) types,
