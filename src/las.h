@@ -5,7 +5,7 @@
 \*/
 
 /*
- * $Id: las.h,v 1.37 2000/05/09 01:17:59 hubbe Exp $
+ * $Id: las.h,v 1.38 2000/05/17 19:30:14 grubba Exp $
  */
 #ifndef LAS_H
 #define LAS_H
@@ -58,6 +58,18 @@ struct compiler_frame
   int is_inline;
   struct local_variable variable[MAX_LOCAL];
 };
+
+#ifdef SHARED_NODES_MK2
+
+struct node_hash_table
+{
+  struct node_identifier **table;
+  INT32 size;
+};
+
+extern struct node_hash_table node_hash;
+
+#endif /* SHARED_NODES_MK2 */
 
 #ifdef SHARED_NODES
 
@@ -127,6 +139,7 @@ void resolv_class(node *n);
 void resolv_class(node *n);
 node *index_node(node *n, char *node_name, struct pike_string *id);
 int node_is_eq(node *a,node *b);
+node *debug_mktypenode(struct pike_string *t);
 node *debug_mkconstantsvaluenode(struct svalue *s);
 node *debug_mkliteralsvaluenode(struct svalue *s);
 node *debug_mksvaluenode(struct svalue *s);
@@ -169,16 +182,17 @@ void resolv_program(node *n);
 #define mkexternalnode(level, i, id) dmalloc_touch(node *, debug_mkexternalnode(level, i, id))
 #define mkcastnode(type, n) dmalloc_touch(node *, debug_mkcastnode(type, dmalloc_touch(node *, n)))
 #define mksoftcastnode(type, n) dmalloc_touch(node *, debug_mksoftcastnode(type, dmalloc_touch(node *, n)))
+#define mktypenode(t)       dmalloc_touch(node *, debug_mktypenode(t))
 #define mkconstantsvaluenode(s) dmalloc_touch(node *, debug_mkconstantsvaluenode(dmalloc_touch(struct svalue *, s)))
 #define mkliteralsvaluenode(s) dmalloc_touch(node *, debug_mkliteralsvaluenode(dmalloc_touch(struct svalue *, s)))
 #define mksvaluenode(s)     dmalloc_touch(node *, debug_mksvaluenode(dmalloc_touch(struct svalue *, s)))
 
 
-#if defined(PIKE_DEBUG) && defined(SHARED_NODES)
+#if defined(PIKE_DEBUG) && (defined(SHARED_NODES) || defined(SHARED_NODES_MK2))
 #define check_node_hash(X)	debug_check_node_hash(X)
-#else /* !PIKE_DEBUG || !SHARED_NODES */
+#else /* !PIKE_DEBUG || (!SHARED_NODES && !SHARED_NODES_MK2) */
 #define check_node_hash(X)	(X)
-#endif /* PIKE_DEBUG && SHARED_NODES */
+#endif /* PIKE_DEBUG && (SHARED_NODES || SHARED_NODES_MK2) */
 
 /* lvalue variants of CAR(n) & CDR(n) */
 #define _CAR(n) (dmalloc_touch(node *,(n))->u.node.a)
