@@ -25,7 +25,7 @@
 #include "main.h"
 #include <signal.h>
 
-RCSID("$Id: signal_handler.c,v 1.132 1999/05/17 20:31:25 hubbe Exp $");
+RCSID("$Id: signal_handler.c,v 1.133 1999/05/23 22:50:58 grubba Exp $");
 
 #ifdef HAVE_PASSWD_H
 # include <passwd.h>
@@ -812,6 +812,10 @@ static void exit_pid_status(struct object *o)
 static void report_child(int pid,
 			 WAITSTATUSTYPE status)
 {
+#ifdef PROC_DEBUG
+  /* FIXME: This won't work if WAITSTATUSTYPE == union wait. */
+  fprintf(stderr, "report_child(%d, %d)\n", (int)pid, (int)status);
+#endif /* PROC_DEBUG */
   process_done(pid);
   if(pid_mapping)
   {
@@ -921,7 +925,7 @@ static TH_RETURN_TYPE wait_thread(void *data)
     if(pid>0)
     {
 #ifdef PROC_DEBUG
-      fprintf(stderr, "wait thread: locking interpreter\n",pid,errno);
+      fprintf(stderr, "wait thread: locking interpreter, pid=%d\n",pid);
 #endif
 
       mt_lock(&interpreter_lock);
@@ -2606,14 +2610,20 @@ static void f_kill(INT32 args)
     pid = sp[-args].u.integer;
     break;
 
+    /* FIXME: What about if it's an object? */
+
   default:
     error("Bad argument 1 to kill().\n");
   }
     
   if(sp[1-args].type != T_INT)
-    error("Bad argument 1 to kill().\n");
+    error("Bad argument 2 to kill().\n");
 
   signum = sp[1-args].u.integer;
+
+#ifdef PROC_DEBUG
+  fprintf(stderr, "kill: pid=%d, signum=%d\n", pid, signum);
+#endif /* PROC_DEBUG */
 
   THREADS_ALLOW_UID();
   res = !kill(pid, signum);
@@ -2622,6 +2632,36 @@ static void f_kill(INT32 args)
   check_signals(0,0,0);
   pop_n_elems(args);
   push_int(res);
+}
+
+static void f_pid_status_kill(INT32 args)
+{
+  int pid = THIS->pid;
+  INT_TYPE signum;
+  int res;
+
+#ifdef PIKE_SECURITY
+  if(!CHECK_SECURITY(SECURITY_BIT_SECURITY))
+    error("pid->kill: permission denied.\n");
+#endif
+
+  get_all_args("pid->kill", args, "%i", &signum);
+
+  if (pid < 0) {
+    error("pid->kill(): No process\n");
+  }
+
+#ifdef PROC_DEBUG
+  fprintf(stderr, "pid->kill: pid=%d, signum=%d\n", pid, signum);
+#endif /* PROC_DEBUG */
+
+  THREADS_ALLOW_UID();
+  res = !kill(pid, signum);
+  THREADS_DISALLOW_UID();
+
+  check_signals(0,0,0);
+  pop_n_elems(args);
+  push_int(args);
 }
 
 #else
@@ -2692,6 +2732,25 @@ static void f_kill(INT32 args)
       break;
   }
 }
+
+static void f_pid_status_kill(INT32 args)
+{
+  INT_TYPE signum;
+
+#ifdef PIKE_SECURITY
+  if(!CHECK_SECURITY(SECURITY_BIT_SECURITY))
+    error("kill: permission denied.\n");
+#endif
+
+  get_all_args("pid->kill", args, "%i", &signum);
+
+  pop_n_elems(args);
+
+  push_int(THIS->pid);
+  push_int(signum);
+  f_kill(2);
+}
+
 #endif
 
 #endif
@@ -2902,6 +2961,10 @@ void init_signals(void)
   ADD_FUNCTION("status",f_pid_status_status,tFunc(,tInt),0);
   /* function(:int) */
   ADD_FUNCTION("pid",f_pid_status_pid,tFunc(,tInt),0);
+#ifdef HAVE_KILL
+  /* function(int:int) */
+  ADD_FUNCTION("kill",f_pid_status_kill,tFunc(tInt,tInt), 0);
+#endif /* HAVE_KILL */
   /* function(array(string),void|mapping(string:mixed):object) */
   ADD_FUNCTION("create",f_create_process,tFunc(tArr(tStr) tOr(tVoid,tMap(tStr,tMix)),tObj),0);
   pid_status_program=end_program();
