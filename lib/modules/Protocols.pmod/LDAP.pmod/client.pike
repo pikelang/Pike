@@ -1,6 +1,6 @@
 // LDAP client protocol implementation for Pike.
 //
-// $Id: client.pike,v 1.3 1999/08/25 05:04:30 hubbe Exp $
+// $Id: client.pike,v 1.4 1999/08/27 21:55:03 grubba Exp $
 //
 // Honza Petrous, hop@unibase.cz
 //
@@ -73,7 +73,7 @@
 #define ASN1_DECODE_ENTRIES(X)		_New_decode(X)
 #define ASN1_DECODE_DN(X)		(string)(.ldap_privates.ldap_der_decode(X)->elements[1]->elements[0]->value)
 #define ASN1_DECODE_RAWDEBUG(X)		(.ldap_privates.ldap_der_decode(X)->debug_string())
-#define ASN1_GET_ATTR_ARRAY(X)		(array)(.ldap_privates.ldap_der_decode(X)->elements[1]->elements[1]->elements[1..])
+#define ASN1_GET_ATTR_ARRAY(X)		(array)(.ldap_privates.ldap_der_decode(X)->elements[1]->elements[1]->elements)
 #define ASN1_GET_ATTR_NAME(X)		((X)->elements[0]->value)
 
   inherit .protocol;
