@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: jvm.c,v 1.46 2002/10/25 15:25:49 jonasw Exp $
+|| $Id: jvm.c,v 1.47 2003/01/03 17:48:22 grubba Exp $
 */
 
 /*
@@ -22,7 +22,7 @@
 #endif /* HAVE_CONFIG_H */
 
 #include "global.h"
-RCSID("$Id: jvm.c,v 1.46 2002/10/25 15:25:49 jonasw Exp $");
+RCSID("$Id: jvm.c,v 1.47 2003/01/03 17:48:22 grubba Exp $");
 #include "program.h"
 #include "interpret.h"
 #include "stralloc.h"
@@ -47,9 +47,10 @@ RCSID("$Id: jvm.c,v 1.46 2002/10/25 15:25:49 jonasw Exp $");
 #endif /* HAVE_WINBASE_H */
 
 #ifdef _REENTRANT
-#if defined(HAVE_SPARC_CPU) || defined(HAVE_X86_CPU) || defined(HAVE_PPC_CPU)
+#if defined(HAVE_SPARC_CPU) || defined(HAVE_X86_CPU) || defined(HAVE_PPC_CPU) \
+    defined(HAVE_ALPHA_CPU)
 #define SUPPORT_NATIVE_METHODS
-#endif /* HAVE_SPARC_CPU || HAVE_X86_CPU */
+#endif /* HAVE_SPARC_CPU || HAVE_X86_CPU || HAVE_PPC_CPU || HAVE_ALPHA_CPU */
 #endif /* _REENTRANT */
 
 #ifdef __NT__
@@ -1617,7 +1618,63 @@ static void *low_make_stub(struct cpu_context *ctx, void *data, int statc,
 }
 
 #else
+#ifdef HAVE_ALPHA_CPU
+
+/* NB: Assumes that pointers are 64bit! */
+
+struct cpu_context {
+  unsigned void *code[8];
+};
+
+static void *low_make_stub(struct cpu_context *ctx, void *data, int statc,
+			   void (*dispatch)(), int args)
+{
+  unsigned INT32 *p = &ctx->code[2];
+
+  /* The stub gets 3 parameters in $16, $17 and $18,
+   * and must shift them one register to $17, $18 and $19,
+   * so that $16 can be set to data, and then jump to dispatch.
+   */
+
+  /* ro:
+   *   .quad data
+   *   .quad dispatch
+   * entry:
+   *   mov $18, $19
+   *   ldq $1, ro
+   *   mov $17, $18
+   *   ldq $2, ro+8
+   *   mov $16, $17
+   *   mov $1, $16
+   *   jmp ($2)
+   */
+
+  ctx->code[0] = data;
+  ctx->code[1] = dispatch;
+
+  /* mov $18, $19 */
+  *p++ = 0x13045246;
+  /* ldq $1, ro */
+  *p++ = 0x10803da4; *p++ = 0x000021a4;
+  /* mov $17, $18 */
+  *p++ = 0x12043146;
+  /* ldq $2, ro+8 */
+  *p++ = 0x18805da4; *p++ = 0x000042a4;
+  /* mov $16, $17 */
+  *p++ = 0x11041046;
+  /* mov $1, $16 */
+  *p++ = 0x10042144;
+  /* jmp ($2) */
+  *p++ = 0x0000e26b; *p++ = 0x1f04ff47;
+  /* Padding? */
+  *p++ = 0x0000fe2f; *p++ = 0x1f04ff47;
+
+  return &ctx->code[2];
+}
+
+#else
 #error How did you get here?  It should never happen.
+#endif /* HAVE_ALPHA_CPU */
 #endif /* HAVE_PPC_CPU */
 #endif /* HAVE_X86_CPU */
 #endif /* HAVE_SPARC_CPU */
