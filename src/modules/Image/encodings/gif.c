@@ -1,9 +1,9 @@
-/* $Id: gif.c,v 1.9 1997/11/03 01:53:49 mirar Exp $ */
+/* $Id: gif.c,v 1.10 1997/11/05 03:42:35 mirar Exp $ */
 
 /*
 **! module Image
 **! note
-**!	$Id: gif.c,v 1.9 1997/11/03 01:53:49 mirar Exp $
+**!	$Id: gif.c,v 1.10 1997/11/05 03:42:35 mirar Exp $
 **! submodule GIF
 **!
 **!	This submodule keep the GIF encode/decode capabilities
@@ -13,6 +13,16 @@
 **!	usable for a limited color palette - a GIF image can 
 **!	only contain as most 256 colors - and animations.
 **!
+**!	Simple encoding:
+**!	<ref>encode</ref>, <ref>encode_trans</ref>
+**!
+**!	Advanced stuff:
+**!	<ref>render_block</ref>, <ref>header_block</ref>,
+**!	<ref>end_block</ref>, <ref>netscape_loop_block</ref>
+**!
+**!	Very advanced stuff:
+**!	<ref>_render_block</ref>, <ref>_gce_block</ref>
+**!
 **! see also: Image, Image.image, Image.colortable
 */
 
@@ -21,7 +31,7 @@
 
 #include "stralloc.h"
 #include "global.h"
-RCSID("$Id: gif.c,v 1.9 1997/11/03 01:53:49 mirar Exp $");
+RCSID("$Id: gif.c,v 1.10 1997/11/05 03:42:35 mirar Exp $");
 #include "pike_macros.h"
 #include "object.h"
 #include "constants.h"
@@ -117,6 +127,8 @@ string _encode(array data);
 **!
 **!	This GIF encoder doesn't support different size
 **!	of colors in global palette and color resolution.
+**!
+**! see also: header_block, end_block
 */
 
 void image_gif_header_block(INT32 args)
@@ -245,6 +257,8 @@ void image_gif_header_block(INT32 args)
 **!
 **!	The result of this function is always ";" or "\x3b",
 **!	but I recommend using this function anyway for code clearity.
+**!
+**! see also: header_block, end_block
 */
 
 void image_gif_end_block(INT32 args)
@@ -334,11 +348,11 @@ static void image_gif__gce_block(INT32 args)
 **! arg int ysize
 **!	Size of the image. Length if the <tt>indices</tt> string
 **!	must be xsize*ysize.
-**! int bpp
+**! arg int bpp
 **!	Bits per pixels in the indices. Valid range 1..8.
-**! string indices
+**! arg string indices
 **!	The image indices as an 8bit indices.
-**! string colortable
+**! arg string colortable
 **!	Colortable with colors to write as palette.
 **!	If this argument is zero, no local colortable is written.
 **!	Colortable string len must be 1<<bpp.
@@ -357,7 +371,7 @@ static void image_gif__render_block(INT32 args)
 {
    int xpos,ypos,xs,ys,bpp,interlace;
    int localpalette=0;
-   struct pike_string *ips,*cps,*ps;
+   struct pike_string *ips,*cps=NULL,*ps;
    char buf[20];
    struct gif_lzw lzw;
    int i;
@@ -517,6 +531,21 @@ static void image_gif__render_block(INT32 args)
 **!	the first with graphic control extensions for such things
 **!	as delay or transparency.
 **!
+**!	Example:
+**!	<pre>
+**!	img1=<ref>Image.image</ref>([...]);
+**!	img2=<ref>Image.image</ref>([...]);
+**!	[...] // make your very-nice images
+**!	nct=<ref>Image.colortable</ref>([...]); // make a nice colortable
+**!	write(<ref>Image.GIF.header_block</ref>(xsize,ysize,nct)); // write a GIF header
+**!	write(<ref>Image.GIF.render_block</ref>(img1,nct,0,0,0,10)); // write a render block
+**!	write(<ref>Image.GIF.render_block</ref>(img2,nct,0,0,0,10)); // write a render block
+**!	[...]
+**!	write(<ref>Image.GIF.end_block</ref>()); // write end block
+**!	// voila! A GIF animation on stdout.
+**!	</pre>
+**!
+**!
 **! arg object img
 **!	The image.
 **! arg object colortable
@@ -557,7 +586,7 @@ static void image_gif__render_block(INT32 args)
 **!     <dt compact>4-7<dd>To be defined.
 **!     </dl>
 **!
-**! see also: encode, _encode, header_block, end_block
+**! see also: encode, header_block, end_block
 **! 
 **! note
 **!	This is in the advanced sector of the GIF support;
@@ -786,7 +815,6 @@ void image_gif_render_block(INT32 args)
 **! method string encode(object img);
 **! method string encode(object img,int colors);
 **! method string encode(object img,object colortable);
-**!
 **! method string encode_trans(object img,object alpha);
 **! method string encode_trans(object img,int tr_r,int tr_g,int tr_b);
 **! method string encode_trans(object img,int colors,object alpha);
@@ -799,7 +827,14 @@ void image_gif_render_block(INT32 args)
 **!     Create a complete GIF file.
 **!
 **!	The latter (<ref>encode_trans</ref>) functions 
-**!	adds transparency capabilities.
+**!	add transparency capabilities.
+**!
+**!	Example:
+**!	<pre>
+**!	img=<ref>Image.image</ref>([...]);
+**!	[...] // make your very-nice image
+**!	write(<ref>Image.GIF.encode</ref>(img)); // write it as GIF on stdout 
+**!	</pre>
 **!
 **! arg object img
 **!	The image which to encode.
@@ -814,8 +849,8 @@ void image_gif_render_block(INT32 args)
 **!	color indicates transparency. GIF has only transparent
 **!	or nontransparent (no real alpha channel).
 **!	You can always dither a transparency channel:
-**!	<tt>Image.colortable(my_alpha, ({({0,0,0}),({255,255,255})}))->
-**!	    ->full() ->floyd_steinberg() ->map(my_alpha)</tt>
+**!	<tt>Image.colortable(my_alpha, ({({0,0,0}),({255,255,255})}))<wbr>
+**!	    ->full()<wbr>->floyd_steinberg()<wbr>->map(my_alpha)</tt>
 **! arg int tr_r
 **! arg int tr_g
 **! arg int tr_b
