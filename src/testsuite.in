@@ -1,4 +1,4 @@
-test_true([["$Id: testsuite.in,v 1.379 2001/01/25 09:41:08 hubbe Exp $"]]);
+test_true([["$Id: testsuite.in,v 1.380 2001/01/26 00:54:17 mast Exp $"]]);
 
 cond([[all_constants()->_verify_internals]],
 [[
@@ -1973,6 +1973,12 @@ test_equal([[ `+( ([1:2]), ([1:2]), ([2:3,4:5]), ([6:7,1:2]),([8:9])  )]],[[ ([1
 test_any([[mapping m=([1:2,3:2]); return search(m,2,search(m,2))!=-1;]],1)
 
 test_any([[mapping m=([]); for(int e=0;e<1000;e++) m[e&3]+=({e}); return sizeof(m)==4 && sizeof(m[0])==250;]],1)
+
+test_any([[
+  mapping m = set_weak_flag (([1:1]), 1);
+  m_delete (m, 1);
+  return get_weak_flag (([]));
+]], 0);
 
 // destructed indices
 test_any([[{
