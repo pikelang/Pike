@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: acconfig.h,v 1.131 2003/11/19 17:10:05 grubba Exp $
+|| $Id: acconfig.h,v 1.132 2003/11/25 17:50:11 jonasw Exp $
 */
 
 #ifndef MACHINE_H
@@ -443,6 +443,9 @@
 
 /* Define if you have the pthread_yield function.  */
 #undef HAVE_PTHREAD_YIELD
+
+/* Define if you have the pthread_yield_np function.  */
+#undef HAVE_PTHREAD_YIELD_NP
 
 /* Hack for stupid glibc linuxthreads */
 #undef HAVE_PTHREAD_INITIAL_THREAD_BOS
