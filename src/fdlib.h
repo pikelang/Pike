@@ -1,5 +1,5 @@
 /*
- * $Id: fdlib.h,v 1.34 2000/07/28 17:16:55 hubbe Exp $
+ * $Id: fdlib.h,v 1.35 2000/08/17 21:18:31 grubba Exp $
  */
 #ifndef FDLIB_H
 #define FDLIB_H
@@ -230,7 +230,7 @@ typedef struct my_fd_set_s my_fd_set;
    }									\
 }while(0)
 
-extern long da_handle[MAX_OPEN_FILEDESCRIPTORS];
+extern HANDLE da_handle[MAX_OPEN_FILEDESCRIPTORS];
 extern int fd_type[MAX_OPEN_FILEDESCRIPTORS];
 
 #define fd_FD_CLR(X,Y) FD_CLR((SOCKET)da_handle[X],Y)
