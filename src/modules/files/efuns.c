@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: efuns.c,v 1.157 2005/01/08 15:36:51 grubba Exp $
+|| $Id: efuns.c,v 1.158 2005/01/08 16:09:02 grubba Exp $
 */
 
 #include "global.h"
@@ -846,21 +846,20 @@ void f_get_dir(INT32 args)
   f_add(2);
   str = Pike_sp[-1].u.string;
 
-#ifdef READDIR_DEBUG
-  fprintf(stderr, "FindFirstFile(\"%s\")...\n", str->str);
-#endif /* READDIR_DEBUG */
-
   if ((!(dir_str = require_wstring1(str, &to_free))) ||
       (wcslen(dir_str) != (size_t)str->len)) {
     /* Filenames with NUL and filenames that are
      * too wide are not supported. */
     if (to_free) free(to_free);
-    fprintf(stderr, "require_wstring1() failed or spurious NUL.\n");
     errno = ENOENT;
     pop_n_elems(args);
     push_int(0);
     return;
   }
+
+#ifdef READDIR_DEBUG
+  fprintf(stderr, "FindFirstFile(\"%S\")...\n", dir_str);
+#endif /* READDIR_DEBUG */
 
   dir = FindFirstFileW(dir_str, &d);
 
