@@ -3,7 +3,7 @@
 #include "error.h"
 #include <math.h>
 
-RCSID("$Id: fdlib.c,v 1.21 1998/07/15 23:26:23 hubbe Exp $");
+RCSID("$Id: fdlib.c,v 1.22 1998/07/16 19:12:11 hubbe Exp $");
 
 #ifdef HAVE_WINSOCK_H
 
@@ -340,45 +340,13 @@ int fd_connect (FD fd, struct sockaddr *a, int len)
 SOCKFUN4(getsockopt,int,int,void*,int*)
 SOCKFUN4(setsockopt,int,int,void*,int)
 SOCKFUN3(recv,void *,int,int)
+SOCKFUN2(getsockname,struct sockaddr *,int)
+SOCKFUN2(getpeername,struct sockaddr *,int)
 SOCKFUN5(recvfrom,void *,int,int,struct sockaddr *,int*)
 SOCKFUN3(send,void *,int,int)
 SOCKFUN5(sendto,void *,int,int,struct sockaddr *,int*)
 SOCKFUN1(shutdown, int)
 SOCKFUN1(listen, int)
-
-int fd_getsockname(FD fd, struct sockaddr *a, size_t *b)
-{
-  SOCKET ret;
-  mt_lock(&fd_mutex);
-  if(fd_type[fd] != FD_SOCKET)
-  {
-    mt_unlock(&fd_mutex); 
-    errno=ENOTSUPP; 
-     return -1; 
-  } 
-  ret=(SOCKET)da_handle[fd]; 
-  mt_unlock(&fd_mutex); 
-  ret=getsockname(fd,a,(int *)b); 
-  if(ret == SOCKET_ERROR) errno=WSAGetLastError(); 
-  return (int)ret; 
-}
-
-int fd_getpeername(FD fd, struct sockaddr *a, size_t *b)
-{
-  SOCKET ret;
-  mt_lock(&fd_mutex);
-  if(fd_type[fd] != FD_SOCKET)
-  {
-    mt_unlock(&fd_mutex); 
-    errno=ENOTSUPP; 
-     return -1; 
-  } 
-  ret=(SOCKET)da_handle[fd]; 
-  mt_unlock(&fd_mutex); 
-  ret=getsockname(fd,a,(int *)b); 
-  if(ret == SOCKET_ERROR) errno=WSAGetLastError(); 
-  return (int)ret; 
-}
 
 int fd_close(FD fd)
 {
