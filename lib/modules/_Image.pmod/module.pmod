@@ -1,5 +1,5 @@
 //! module Image
-//! $Id: module.pmod,v 1.1 1999/05/28 12:40:11 mirar Exp $
+//! $Id: module.pmod,v 1.2 1999/05/28 13:35:02 mirar Exp $
 
 
 //! method object(Image.Image) load()
@@ -24,7 +24,7 @@ mapping _load(void|object|string file)
    if (!file) file=Stdio.stdin;
    else if (stringp(file))
    {
-      object f=Stdio.stdin();
+      object f=Stdio.File();
       if (!f->open(file,"r"))
 	 error("Image._load: Can't open %O for input.\n",file);
       file=f;
