@@ -85,17 +85,6 @@ static private class Extractor {
     case "class":
     case "module":
       {
-	if ((parent == root) && (meta->type != "namespace")) {
-	  // Use the default namespace "predef"...
-	  if (!(parent = root->findChild("predef"))) {
-	    // Create the namespace.
-	    parent = NameSpace();
-	    parent->name = "predef";
-	    root->AddChild(parent);
-	    parent->documentation = Documentation();
-	    parent->documentation->xml = "";
-	  }
-	}
         object(Class)|object(Module) alreadyChild =
           parent->findChild(meta->name);
         object(Class)|object(Module) c;
@@ -184,7 +173,7 @@ static private class Extractor {
 
   }
 
-  void parseClassBody(Class|Module|NameSpace|AutoDoc c, AutoDoc root) {
+  void parseClassBody(Class|Module|NameSpace c, AutoDoc root) {
     for(;;) {
       array(string|Class|Module|DocGroup) a = parseObject(c, root);
       if (!a)
@@ -192,24 +181,17 @@ static private class Extractor {
       switch ([string]a[0]) {
         case "namespace":
           //werror("in parent %O: found child %O\n", c->name, a[1]->name);
-          // Check if it was a @class or @module that was reentered:
+          // Check if it was a namespace we already know of:
           if (search(root->children, a[1]) < 0)
-            root->AddChild([object(Class)|object(Module)]a[1]);
+            root->AddChild([object(NameSpace)]a[1]);
           break;
 	  
         case "class":
         case "module":
           //werror("in parent %O: found child %O\n", c->name, a[1]->name);
           // Check if it was a @class or @module that was reentered:
-	  if (c == root) {
-	    // Get the default (predef::) namespace.
-	    NameSpace ns = root->findChild("predef");
-	    if (search(ns->children, a[1]) < 0)
-	      ns->AddChild([object(Class)|object(Module)]a[1]);
-	  } else {
-	    if (search(c->children, a[1]) < 0)
-	      c->AddChild([object(Class)|object(Module)]a[1]);
-	  }
+	  if (search(c->children, a[1]) < 0)
+	    c->AddChild([object(Class)|object(Module)]a[1]);
           break;
         case "docgroup":
           c->AddGroup([object(DocGroup)]a[1]);
@@ -219,10 +201,21 @@ static private class Extractor {
   }
 }
 
-AutoDoc extract(string s, string|void filename)
+AutoDoc extract(string s, string|void filename, string|void namespace)
 {
   Extractor e = Extractor(s, filename);
-  AutoDoc m = AutoDoc(); // the top-level module
-  e->parseClassBody(m, m);
+
+  // Create the top-level module.
+  AutoDoc m = AutoDoc();
+
+  // Create the default namespace.
+  NameSpace ns = NameSpace();
+  ns->name = namespace || "predef";
+  ns->documentation = Documentation();
+  ns->documentation->xml = "";
+  m->AddChild(ns);
+
+  // Perform the actual parsing.
+  e->parseClassBody(ns, m);
   return m;
 }
