@@ -8,13 +8,16 @@
 #ifdef HAVE_SYS_TYPES_H
 #include <sys/types.h>
 #endif
+#ifdef HAVE_WINDOWS_H
+#include <windows.h>
+#endif
 #include <sys/stat.h>
 #include "time_stuff.h"
 #include <fcntl.h>
 #include <errno.h>
 #include "rusage.h"
 
-RCSID("$Id: rusage.c,v 1.15 2001/02/23 14:47:18 grubba Exp $");
+RCSID("$Id: rusage.c,v 1.16 2001/12/04 13:06:41 tomas Exp $");
 
 #ifdef HAVE_SYS_TIMES_H
 #include <sys/times.h>
@@ -34,6 +37,32 @@ static INT32 rusage_values[30];
  * cpu usage.
  */
 
+#ifdef __NT__
+INT32 *low_rusage(void)
+{
+  union {
+    unsigned __int64 ft_scalar;
+    FILETIME ft_struct;
+  } creationTime, exitTime, kernelTime, userTime;
+  if (GetProcessTimes(GetCurrentProcess(),
+                      &creationTime.ft_struct,
+                      &exitTime.ft_struct,
+                      &kernelTime.ft_struct,
+                      &userTime.ft_struct))
+    {
+      rusage_values[0] = (INT32)userTime.ft_scalar/10000;  /* user time */
+      rusage_values[1] = (INT32)kernelTime.ft_scalar/10000;  /* system time */
+    }
+  else
+    {
+      rusage_values[0] = 0;  /* user time */
+      rusage_values[1] = 0;  /* system time */
+    }
+
+  return & rusage_values[0];
+}
+
+#else /* __NT__ */
 #ifdef GETRUSAGE_THROUGH_PROCFS
 #include <sys/procfs.h>
 #include "fdlib.h"
@@ -207,6 +236,7 @@ INT32 *low_rusage(void)
 #endif /* HAVE_TIMES */
 #endif /* HAVE_GETRUSAGE */
 #endif /* GETRUSAGE_THROUGH_PROCFS */
+#endif /* __NT__ */
 
 
 #ifdef NEED_CONVERT_TIME
