@@ -1,9 +1,9 @@
-/* $Id: pattern.c,v 1.6 1997/10/09 12:18:49 grubba Exp $ */
+/* $Id: pattern.c,v 1.7 1997/10/12 16:45:28 mirar Exp $ */
 
 /*
 **! module Image
 **! note
-**!	$Id: pattern.c,v 1.6 1997/10/09 12:18:49 grubba Exp $<br>
+**!	$Id: pattern.c,v 1.7 1997/10/12 16:45:28 mirar Exp $<br>
 **! class image
 */
 
@@ -191,8 +191,15 @@ static void init_colorrange(rgb_group *cr,struct svalue *s,char *where)
 /*
 **! method void noise(array(float|int|array(int)) colorrange)
 **! method void noise(array(float|int|array(int)) colorrange,float scale,float xdiff,float ydiff,float cscale)
-**! 	gives a new image with the old image's size,
-**!	filled width a 'noise' pattern
+**! 	Gives a new image with the old image's size,
+**!	filled width a 'noise' pattern.
+**!
+**!	The random seed may be different with each instance of pike.
+**!
+**!	Example: 
+**!	<tt>->noise( ({0,({255,0,0}), 0.3,({0,255,0}), 0.6,({0,0,255}), 0.8,({255,255,0})}), 0.005,0,0,0.5 );</tt>
+**!	<br><illustration>return image(200,100)->noise( ({0,({255,0,0}), 0.3,({0,255,0}), 0.6,({0,0,255}), 0.8,({255,255,0})}), 0.005,0,0,0.2 );</illustration>
+**!
 **! arg array(float|int|array(int)) colorrange
 **! 	colorrange table
 **! arg float scale
@@ -257,6 +264,13 @@ void image_noise(INT32 args)
 **! method void turbulence(array(float|int|array(int)) colorrange,int octaves,float scale,float xdiff,float ydiff,float cscale)
 **! 	gives a new image with the old image's size,
 **!	filled width a 'turbulence' pattern
+**!
+**!	The random seed may be different with each instance of pike.
+**!
+**!	Example: <br>
+**!	<tt>->turbulence( ({0,({229,204,204}), 0.9,({229,20,20}), 0.9,0}) );</tt>
+**!	<br><illustration>return image(200,100)->
+**!     turbulence( ({0,({229,204,204}), 0.9,({229,20,20}), 0.9,0}));</illustration>
 **! arg array(float|int|array(int)) colorrange
 **! 	colorrange table
 **! arg int octaves
