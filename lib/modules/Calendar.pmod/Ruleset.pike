@@ -1,3 +1,7 @@
+//! module Calendar
+//! subclass Ruleset
+//!	This is the container class for rules.
+
 class Timezone
 {
    constant is_timezone=1;
@@ -56,6 +60,18 @@ class Language
 
 Language language;
 
+mapping(string:string) abbr2zone=
+([
+   "AMT":"America/Manaus",
+   "AST":"America/Curacao",
+   "CDT":"America/Costa_Rica",
+   "CST":"America/El_Salvador",
+   "EST":"America/Panama",
+   "GST":"Asia/Dubai",
+   "IST":"Asia/Jerusalem",
+   "WST":"Australia/Perth",
+]);
+
 this_program set_timezone(string|Timezone t)
 {
    this_program r=clone();
@@ -82,6 +98,32 @@ this_program set_language(string|Language lang)
    if (!lang->is_language)
       error("Not a language: %O\n",lang);
    r->language=lang;
+   return r;
+}
+
+//! method Ruleset set_abbr2zone(mapping(string:string) abbr2zone)
+//!	Sets the guess-mapping for timezones. 
+//!	Default is the mapping
+//!
+//!	<pre>
+//! 	Abbreviation Interpretation
+//!	AMT          America/Manaus       [UTC-4]
+//!	AST	     America/Curacao      [UTC-4]
+//!	CDT	     America/Costa_Rica   [UTC-5]
+//!	CST	     America/El Salvador  [UTC-6]
+//!	EST	     America/Panama       [UTC-5]
+//!	GST          Asia/Dubai           [UTC+4]
+//!	IST          Asia/Jerusalem       [UTC+2]
+//!	WST          Australia/Perth      [UTC+8]
+//!	</pre>
+//!
+//! see also: YMD.parse
+
+
+this_program set_abbr2zone(mapping(string:string) m)
+{
+   this_program r=clone();
+   r->abbr2zone=m;
    return r;
 }
 
