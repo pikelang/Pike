@@ -47,7 +47,7 @@ int main(int argc, string *argv)
     "-D__WIN32__",
     "-D_WIN32",
     "-D__NT__",
-    "-D__STDC__",
+//    "-D__STDC__",  
     "-nologo",
   });
 
