@@ -5,7 +5,7 @@
 \*/
 /**/
 #include "global.h"
-RCSID("$Id: docode.c,v 1.97 2001/01/15 00:26:51 mast Exp $");
+RCSID("$Id: docode.c,v 1.98 2001/01/15 18:53:24 mast Exp $");
 #include "las.h"
 #include "program.h"
 #include "pike_types.h"
@@ -115,6 +115,7 @@ static int current_stack_depth = 0;
     /* Only cover the current label if it's closed. */			\
     new_label__.name = 0;						\
     new_label__.break_label = new_label__.continue_label = -1;		\
+    new_label__.emit_break_label = 0;					\
     new_label__.cleanups = 0;						\
     new_label__.stack_depth = current_stack_depth;			\
     current_label = &new_label__;					\
@@ -1348,7 +1349,7 @@ static int do_docode2(node *n, INT16 flags)
     else {
       if (n->token == F_BREAK) {
 	for (label = current_label; label; label = label->prev)
-	  if (label->break_label >= 0)
+	  if (label->break_label >= 0 && !label->emit_break_label)
 	    goto label_found_2;
 	yyerror("Break outside loop or switch.");
 	return 0;
@@ -1409,7 +1410,6 @@ static int do_docode2(node *n, INT16 flags)
     current_label->name = &name;
 
     if (!name.next) {
-      current_label->emit_break_label = 0;
       if (n->token == F_CUSTOM_STMT_LABEL)
 	/* The statement we precede has custom label handling; leave
 	 * the statement_label "open" so the statement will use it

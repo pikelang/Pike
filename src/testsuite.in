@@ -1,4 +1,4 @@
-test_true([["$Id: testsuite.in,v 1.369 2001/01/15 11:14:46 mirar Exp $"]]);
+test_true([["$Id: testsuite.in,v 1.370 2001/01/15 18:53:24 mast Exp $"]]);
 
 cond([[all_constants()->_verify_internals]],
 [[
@@ -4339,6 +4339,15 @@ test_any([[
   }
   return i;
 ]], 0);
+test_any([[
+  int i;
+  for (i = 1; i <= 4; i++)
+    foo: {
+      if (i > 5) break foo;
+      break;
+    }
+  return i;
+]], 1);
 test_any_equal([[
   int a, b;
 foo:
