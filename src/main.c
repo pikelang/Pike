@@ -4,7 +4,7 @@
 ||| See the files COPYING and DISCLAIMER for more information.
 \*/
 #include "global.h"
-RCSID("$Id: main.c,v 1.17 1997/01/18 21:34:33 hubbe Exp $");
+RCSID("$Id: main.c,v 1.18 1997/02/07 01:08:18 hubbe Exp $");
 #include "types.h"
 #include "backend.h"
 #include "module.h"
@@ -200,12 +200,15 @@ void main(int argc, char **argv, char **env)
 
   GETTIMEOFDAY(&current_time);
 
-  init_modules_efuns();
+  init_shared_string_table();
+  init_interpreter();
+  init_lex();
+  init_types();
+
+  init_modules();
   master();
   call_callback(& post_master_callbacks, 0);
   free_callback(& post_master_callbacks);
-  init_modules_programs();
-
   
   a=allocate_array_no_init(argc,0);
   for(num=0;num<argc;num++)
@@ -248,25 +251,15 @@ void main(int argc, char **argv, char **env)
 }
 
 
-void init_main_efuns()
+void init_main(void)
 {
-  init_shared_string_table();
-  init_interpreter();
-  init_lex();
-  init_types();
+  th_init();
   init_builtin_efuns();
   init_signals();
-  th_init();
   init_dynamic_load();
 }
 
-void init_main_programs()
-{
-  th_init_programs();
-}
-
-
-void exit_main()
+void exit_main(void)
 {
   void cleanup_added_efuns();
   void cleanup_pike_types();
