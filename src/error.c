@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: error.c,v 1.98 2002/12/16 12:12:37 mast Exp $
+|| $Id: error.c,v 1.99 2003/01/04 15:22:11 nilsson Exp $
 */
 
 #define NO_PIKE_SHORTHAND
@@ -23,7 +23,7 @@
 #include "threads.h"
 #include "gc.h"
 
-RCSID("$Id: error.c,v 1.98 2002/12/16 12:12:37 mast Exp $");
+RCSID("$Id: error.c,v 1.99 2003/01/04 15:22:11 nilsson Exp $");
 
 #undef ATTRIBUTE
 #define ATTRIBUTE(X)
@@ -46,7 +46,7 @@ PMOD_EXPORT const char msg_assert_onerr[] =
   "%s ASSERT_ONERROR(%p) failed\n";
 #endif
 PMOD_EXPORT const char msg_bad_arg[] =
-  "Bad argument %d to %s(). Expected %s\n";
+  "Bad argument %d to %s(). Expected %s.\n";
 PMOD_EXPORT const char msg_too_few_args[] =
   "Too few arguments to %s().\n";
 PMOD_EXPORT const char msg_out_of_mem[] =
