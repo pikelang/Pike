@@ -1,3 +1,9 @@
+pike7.4 (7.4.15-1) unstable; urgency=low
+
+  * Latest upstream version.
+
+ -- Marek Habersack <grendel@debian.org>  Wed, 19 Mar 2003 03:17:12 +0100
+
 pike7.4 (7.4.13-4) unstable; urgency=low
 
   * Disabled the machine code generation for the sparc platform. It was
