@@ -1,12 +1,12 @@
 /*
- * $Id: image_ttf.c,v 1.9 1999/02/01 02:46:21 hubbe Exp $
+ * $Id: image_ttf.c,v 1.10 1999/02/09 16:16:52 grubba Exp $
  */
 
 #include "config.h"
 
 
 #include "global.h"
-RCSID("$Id: image_ttf.c,v 1.9 1999/02/01 02:46:21 hubbe Exp $");
+RCSID("$Id: image_ttf.c,v 1.10 1999/02/09 16:16:52 grubba Exp $");
 
 #ifdef HAVE_LIBTTF
 #include <freetype.h>
@@ -339,11 +339,20 @@ static void image_ttf_face_properties(INT32 args)
       push_text("caret_Slope_Rise"); push_int(prop.horizontal->caret_Slope_Rise);
       push_text("caret_Slope_Run"); push_int(prop.horizontal->caret_Slope_Run);
       push_text("Reserved"); 
+#ifdef HAVE_TT_H_H_Reserved0
+      /* FreeType 1.2 stable and later. */
+      push_int(prop.horizontal->Reserved0);
+      push_int(prop.horizontal->Reserved1);
+      push_int(prop.horizontal->Reserved2);
+      push_int(prop.horizontal->Reserved3);
+      push_int(prop.horizontal->Reserved4);
+#else /* !HAVE_TT_H_H_Reserved0 */
       push_int(prop.horizontal->Reserved[0]);
       push_int(prop.horizontal->Reserved[1]);
       push_int(prop.horizontal->Reserved[2]);
       push_int(prop.horizontal->Reserved[3]);
       push_int(prop.horizontal->Reserved[4]);
+#endif /* HAVE_TT_H_H_Reserved0 */
       f_aggregate(5);
       push_text("metric_Data_Format"); push_int(prop.horizontal->metric_Data_Format);
       push_text("number_Of_HMetrics"); push_int(prop.horizontal->number_Of_HMetrics);
