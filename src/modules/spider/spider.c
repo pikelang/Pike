@@ -1391,6 +1391,11 @@ void f_gethostbyname(INT32 args)
 #if defined(HAVE_GETPWNAM) || defined(HAVE_GETPWUID) || defined(HAVE_SETPWENT) || defined(HAVE_ENDPWENT) || defined(HAVE_GETPWENT)
 static void push_pwent(struct passwd *ent)
 {
+  if(!ent)
+  {
+    push_int(0);
+    return;
+  }
   push_text(ent->pw_name);
 
 #ifdef HAVE_GETSPNAM
