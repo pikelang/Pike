@@ -94,7 +94,8 @@ int main(int argc, string *argv)
 	case "oper_comp": operation="compile"; break;
 	case "debug":
 	cflags+=({"-d2"});
-	ldopts+=({"DEBUG","WATCOM","ALL"});
+//	ldopts+=({"DEBUG","CODEVIEW","ALL"});
+	ldopts+=({"DEBUG","CODEVIEW","OPTION","CVPACK"});
 	debug=1;
 	break;
 	
@@ -166,7 +167,7 @@ int main(int argc, string *argv)
   string errorfile="TMP"+getpid()+".err";
   rm(errorfile);
 
-  cflags+=({"-bm","-zq","-hw","-sg"});
+  cflags+=({"-bm","-zq","-hc","-sg"});
 
   switch(operation)
   {
