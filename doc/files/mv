@@ -9,5 +9,8 @@ DESCRIPTION
 	file already exists, it will be overwritten. Returns 1 on sucess,
 	0 otherwise.
 
+KEYWORDS
+	file
+
 SEE ALSO
 	files/rm

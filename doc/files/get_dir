@@ -8,5 +8,8 @@ DESCRIPTION
 	Return an array of all filenames in the directory dir, or zero if
 	no such directory exists.
 
+KEYWORDS
+	file
+
 SEE ALSO
 	files/mkdir, files/cd

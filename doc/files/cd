@@ -8,5 +8,8 @@ DESCRIPTION
 	Change the current directory for the whole LPC process, return
 	1 for success, 0 otherwise.
 
+KEYWORDS
+	file
+
 SEE ALSO
 	files/getcwd

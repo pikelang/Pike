@@ -7,5 +7,8 @@ SYNTAX
 DESCRIPTION
 	Return the arcus tangent value for f.
 
+KEYWORDS
+	float
+
 SEE ALSO
 	math/tan, math/asin, math/acos

@@ -8,5 +8,8 @@ DESCRIPTION
 	Return the natural logarithm of f.
 	exp( log(x) ) == x for x > 0.
 
+KEYWORDS
+	float
+
 SEE ALSO
 	math/pow, math/exp

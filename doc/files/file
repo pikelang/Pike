@@ -38,12 +38,12 @@ DESCRIPTION
 	Open a file for read write or append. The variable how should
 	contain one or more of the following letters:
 
-		'r'	: open file for reading
-		'w'	: open file for writing
-		'a'	: open file for append (use with 'w')
-		't'	: truncate file at close (use with 'w')
-		'c'	: create file if it doesn't exist (use with 'w')
-		'x'	: fail if file already exist (use with 'c')
+	'r'	open file for reading
+	'w'	open file for writing
+	'a'	open file for append (use with 'w')
+	't'	truncate file at close (use with 'w')
+	'c'	create file if it doesn't exist (use with 'w')
+	'x'	fail if file already exist (use with 'c')
 
 	How should _always_ contain at least one of 'r' or 'w'.
 
@@ -171,17 +171,17 @@ DESCRIPTION
 	transfer speed when it does.
 
 SEE ALSO
-	files/socket, port/accept
-
+	file->open_socket, port->accept
 
 ============================================================================
 NAME
 	set_nonblocking - make stream nonblocking
 
 SYNTAX
-	void file->set_nonblocking(function read_callback,
-			           function write_callback,
-			           function close_callback);
+	void file->set_nonblocking(
+	       function read_callback,
+	       function write_callback,
+	       function close_callback);
 
 DESCRIPTION
 	This function sets a stream to nonblocking mode. When data arrives on
@@ -305,7 +305,7 @@ DESCRIPTION
 	the argument a reference to the same file, it creates a new file
 	with the same properties and places it in the argument.
 
-EXAMPLE	
+EXAMPLE
 	/* Redirect stdin to come from the file 'foo' */
 	object o;
 	o=clone((program)"/precompiled/file");

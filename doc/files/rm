@@ -7,6 +7,8 @@ SYNTAX
 DESCRIPTION
 	Remove a file or directory, return 0 if it fails. Nonzero otherwise.
 
+KEYWORDS
+	file
+
 SEE ALSO
 	files/mkdir
-	

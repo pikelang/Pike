@@ -7,5 +7,8 @@ SYNTAX
 DESCRIPTION
 	Return the cosinus value for f.
 
+KEYWORDS
+	float
+
 SEE ALSO
 	math/acos, math/sin

@@ -7,5 +7,8 @@ SYNTAX
 DESCRIPTION
 	Return the tangent value for f.
 
+KEYWORDS
+	float
+
 SEE ALSO
 	math/atan, math/sin, math/cos

@@ -6,18 +6,18 @@ DESCRIPTION
 	regexp package written in C. It contains a few simple functions to
 	handle regexps. A short description of regexp follows:
 
-	.      Matches any character
-	[abc]  Matches a, b or c
-	[a-z]  Matches any character a to z inclusive
-	[^ac]  Matches any character except a and c
-	(x)    Matches x (x might be any regexp)
-	x*     Matches zero or more occurances of 'x' (x may be anything)
-	x|y    Matches x or y. (x or y may be any regexp)
-	xy     Matches xy (x and y may be any regexp)
-	^      Matches beginning of string (but no characters)
-	$      Matches end of string (but no characters)
-	<x>    Used with split() to put the string matching x into the
-	       result array.
+	.	Matches any character
+	[abc]	Matches a, b or c
+	[a-z]	Matches any character a to z inclusive
+	[^ac]	Matches any character except a and c
+	(x)	Matches x (x might be any regexp)
+	x*	Matches zero or more occurances of 'x' (x may be anything)
+	x|y	Matches x or y. (x or y may be any regexp)
+	xy	Matches xy (x and y may be any regexp)
+	^	Matches beginning of string (but no characters)
+	$	Matches end of string (but no characters)
+	<x>	Used with split() to put the string matching x into the
+		result array.
 
 	Note that \ can be used to quote these characters in which case
 	they match themselves, nothing else. Also note that when quoting
@@ -27,7 +27,7 @@ DESCRIPTION
 	For more information about regexps, refer to your unix manuals such
 	as sed or ed.
 
-	Descriptions of all functions in /precompiled/file follows:
+	Descriptions of all functions in /precompiled/regexp follows:
 
 ============================================================================
 NAME

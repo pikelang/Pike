@@ -174,5 +174,8 @@ EXAMPLES
 	> quit
 	Exiting.
 
+KEYWORDS
+	string
+
 SEE ALSO
 	sscanf

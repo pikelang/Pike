@@ -8,5 +8,8 @@ DESCRIPTION
 	Return the natural exponent of f.
 	log( exp( x ) ) == x as long as exp(x) doesn't overflow an int.
 
+KEYWORDS
+	float
+
 SEE ALSO
 	math/pow, math/log

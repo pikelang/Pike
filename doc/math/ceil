@@ -8,5 +8,8 @@ DESCRIPTION
 	Return the closest integral value higher or equal to x.
 	Note that ceil() does _not_ return an int, merely an integral value.
 
+KEYWORDS
+	float
+
 SEE ALSO
 	math/floor
