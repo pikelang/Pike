@@ -163,6 +163,8 @@ Layer decode_layer(mapping layer, mapping i)
     }
     c->data = 0;
   }
+//   werror(" mode %s image %O alpha %O\n",
+// 	 l->mode, l->image, l->alpha );
 //   werror("alpha/mask took %4.5f seconds\n", (gethrtime()-st)/1000000.0 );
 //   werror("TOTAL took %4.5f seconds\n\n", (gethrtime()-stt)/1000000.0 );
   return l;
@@ -211,9 +213,6 @@ string translate_mode( string mode )
    case "scrn":      return "screen";
    case "over":      return "overlay";
 
-
-   case "div ":      return "divide"; //?
-   case "idiv":      return "divide"; //?
    case "dark":      return "min";
    case "lite":      return "max";
 
@@ -221,14 +220,6 @@ string translate_mode( string mode )
    case "sat ":      return "saturation";
    case "colr":      return "color";
    case "lum ":      return "value";
-
-   case "smud":     
-     werror("WARNING: Unsupported mode (smudge). Skipping layer\n");
-     return 0;
-
-// WARNING: PSD: Unsupported mode: sLit
-// WARNING: PSD: Unsupported mode: hLit
-
 
    default:
      werror("WARNING: PSD: Unsupported mode: "+mode+". Skipping layer\n");
@@ -310,6 +301,7 @@ array decode_layers( string|mapping what, mapping|void opts )
       }
     }
   }
+  werror("%O\n", layers );
   return layers;
 }
 
