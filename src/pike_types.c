@@ -5,7 +5,7 @@
 \*/
 /**/
 #include "global.h"
-RCSID("$Id: pike_types.c,v 1.146 2001/02/09 17:30:22 hubbe Exp $");
+RCSID("$Id: pike_types.c,v 1.147 2001/06/29 17:13:26 grubba Exp $");
 #include <ctype.h>
 #include "svalue.h"
 #include "pike_types.h"
@@ -3539,4 +3539,6 @@ int pike_type_allow_premature_toss(char *type)
     case T_STRING:
       return 1;
   }
+  /* NOT_REACHED */
+  return 0;
 }
