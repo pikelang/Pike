@@ -465,7 +465,7 @@ static void low_accept_loop(struct args *arg)
 	struct cache *c, *p = NULL;
 	struct log *l, *n = NULL;
 	/* oups. */
-	mt_lock_interpreter();
+	low_mt_lock_interpreter(); /* Can run even if threads_disabled. */
 	for(i=0; i<CACHE_HTABLE_SIZE; i++)
 	{
 	  e = arg->cache->htable[i];

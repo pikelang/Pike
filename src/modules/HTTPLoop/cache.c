@@ -86,7 +86,7 @@ static int ensure_interpreter_lock(void)
   {
     if( thi->swapped ) /* We are swapped out.. */
     {
-      mt_lock_interpreter();
+      low_mt_lock_interpreter(); /* Can run even if threads_disabled. */
       return 1;
     }
     return 0; /* we are swapped in */
@@ -96,8 +96,8 @@ static int ensure_interpreter_lock(void)
   if( num_threads == 1 )
     free=num_threads++;
   wake_up_backend();
-  mt_lock_interpreter();
-  if( free ) 
+  low_mt_lock_interpreter();	/* Can run even if threads_disabled. */
+  if( free )
     num_threads--;
   return 1;
 }

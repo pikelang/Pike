@@ -6,7 +6,7 @@
 /**/
 #define NO_PIKE_SHORTHAND
 #include "global.h"
-RCSID("$Id: file.c,v 1.225 2001/10/28 18:05:31 nilsson Exp $");
+RCSID("$Id: file.c,v 1.226 2001/11/01 18:10:40 mast Exp $");
 #include "fdlib.h"
 #include "interpret.h"
 #include "svalue.h"
@@ -2848,7 +2848,7 @@ static TH_RETURN_TYPE proxy_thread(void * data)
 
   fd_close(p->to);
   fd_close(p->from);
-  mt_lock_interpreter();
+  low_mt_lock_interpreter();	/* Can run even if threads_disabled. */
   num_threads--;
   mt_unlock_interpreter();
   free((char *)p);
