@@ -1,5 +1,5 @@
 /*
- * $Id: threads.h,v 1.76 2000/03/25 20:58:46 hubbe Exp $
+ * $Id: threads.h,v 1.77 2000/03/29 22:08:50 hubbe Exp $
  */
 #ifndef THREADS_H
 #define THREADS_H
@@ -39,11 +39,9 @@
 #endif /* _UNIX_THREADS */
 
 #ifdef _MIT_POSIX_THREADS
-#ifdef HAVE_PTHREAD_H
 #define POSIX_THREADS
 #include <pthread.h>
 #undef HAVE_PTHREAD_H
-#endif
 #endif /* _MIT_POSIX_THREADS */
 
 #ifdef _SGI_SPROC_THREADS
