@@ -25,7 +25,7 @@
 #include "version.h"
 #include "bignum.h"
 
-RCSID("$Id: encode.c,v 1.104 2001/07/02 01:45:25 mast Exp $");
+RCSID("$Id: encode.c,v 1.105 2001/07/03 04:30:06 hubbe Exp $");
 
 /* #define ENCODE_DEBUG */
 
@@ -119,8 +119,6 @@ double LDEXP(double x, int exp)
 #define SIZE_SHIFT 6
 #define MAX_SMALL (1<<(8-SIZE_SHIFT))
 #define COUNTER_START -MAX_SMALL
-
-
 
 struct encode_data
 {
@@ -1037,12 +1035,20 @@ void f_encode_value_canonic(INT32 args)
   push_string(low_free_buf(&data->buf));
 }
 
+
+struct unfinished_prog_link
+{
+  struct unfinished_prog_link *next;
+  struct program *prog;
+};
+
 struct decode_data
 {
   unsigned char *data;
   ptrdiff_t len;
   ptrdiff_t ptr;
   struct mapping *decoded;
+  struct unfinished_prog_link *unfinished_programs;
   struct svalue counter;
   struct object *codec;
   int pickyness;
@@ -1956,6 +1962,7 @@ static void decode_value2(struct decode_data *data)
 
 	  debug_malloc_touch(dat);
 
+
 	  SET_ONERROR(err1, restore_type_stack, Pike_compiler->type_stackp);
 	  SET_ONERROR(err2, restore_type_mark, Pike_compiler->pike_type_mark_stackp);
 
@@ -1969,6 +1976,7 @@ static void decode_value2(struct decode_data *data)
 	    decode_number(p->identifiers[d].opt_flags,data);
 	    decode_number(p->identifiers[d].func.offset,data);
 	  }
+
 
 	  UNSET_ONERROR(err2);
 	  UNSET_ONERROR(err1);
@@ -2003,13 +2011,61 @@ static void decode_value2(struct decode_data *data)
 	    Pike_compiler->new_program=new_program_save;
 	  }
 	  UNSET_ONERROR(err3);
-	  p->flags &=~ PROGRAM_AVOID_CHECK;
-	  p->flags |= PROGRAM_FINISHED;
+
 	  ref_push_program(p);
 
+	  /* Logic for the PROGRAM_FINISHED flag:
+	   * The purpose of this code is to make sure that the PROGRAM_FINISHED
+	   * flat is not set on the program until all inherited programs also
+	   * have that flag. -Hubbe
+	   */
+	  for(d=1;d<p->num_inherits;d++)
+	    if(! (p->inherits[d].prog->flags & PROGRAM_FINISHED))
+	      break;
+
+	  if(d == p->num_inherits)
+	  {
+	    int done=0;
+	    struct unfinished_prog_link *l, **ptr;
+	    p->flags &=~ PROGRAM_AVOID_CHECK;
+	    p->flags |= PROGRAM_FINISHED;
+	    
 #ifdef PIKE_DEBUG
-	  check_program(p);
+	    check_program(p);
 #endif /* PIKE_DEBUG */
+
+	    /* It is possible that we need to restart loop
+	     * in some cases... /Hubbe
+	     */
+	    for(ptr= &data->unfinished_programs ; (l=*ptr);)
+	    {
+	      struct program *pp=l->prog;
+	      for(d=1;d<pp->num_inherits;d++)
+		if(! (pp->inherits[d].prog->flags & PROGRAM_FINISHED))
+		  break;
+	      
+	      if(d == pp->num_inherits)
+	      {
+		pp->flags &=~ PROGRAM_AVOID_CHECK;
+		pp->flags |= PROGRAM_FINISHED;
+		
+#ifdef PIKE_DEBUG
+		check_program(pp);
+#endif /* PIKE_DEBUG */
+
+		*ptr = l->next;
+		free((char *)l);
+	      }else{
+		ptr=&l->next;
+	      }
+	    }
+	  }else{
+	    struct unfinished_prog_link *l;
+	    l=ALLOC_STRUCT(unfinished_prog_link);
+	    l->prog=p;
+	    l->next=data->unfinished_programs;
+	    data->unfinished_programs=l;
+	  }
 
 #ifdef _REENTRANT
 	  UNSET_ONERROR(err);
@@ -2068,6 +2124,12 @@ static void decode_value2(struct decode_data *data)
 static void free_decode_data(struct decode_data *data)
 {
   free_mapping(data->decoded);
+  while(data->unfinished_programs)
+  {
+    struct unfinished_prog_link *tmp=data->unfinished_programs;
+    data->unfinished_programs=tmp->next;
+    free((char *)tmp);
+  }
 }
 
 static INT32 my_decode(struct pike_string *tmp,
@@ -2083,6 +2145,7 @@ static INT32 my_decode(struct pike_string *tmp,
   data->ptr=0;
   data->codec=codec;
   data->pickyness=0;
+  data->unfinished_programs=0;
 
   if (tmp->size_shift) return 0;
   if(data->len < 5) return 0;
@@ -2097,6 +2160,10 @@ static INT32 my_decode(struct pike_string *tmp,
   SET_ONERROR(err, free_decode_data, data);
   decode_value2(data);
   UNSET_ONERROR(err);
+#ifdef PIKE_DEBUG
+  if(data->unfinished_programs)
+    fatal("We have unfinished programs left in decode()! We may need a double loop!\n");
+#endif
   free_mapping(data->decoded);
   return 1;
 }
