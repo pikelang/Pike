@@ -25,7 +25,7 @@
 #include "main.h"
 #include <signal.h>
 
-RCSID("$Id: signal_handler.c,v 1.146 1999/07/21 02:57:36 hubbe Exp $");
+RCSID("$Id: signal_handler.c,v 1.147 1999/08/06 22:12:17 hubbe Exp $");
 
 #ifdef HAVE_PASSWD_H
 # include <passwd.h>
@@ -1762,7 +1762,7 @@ void f_create_process(INT32 args)
     HANDLE t3=INVALID_HANDLE_VALUE;
     STARTUPINFO info;
     PROCESS_INFORMATION proc;
-    int ret;
+    int ret,err;
     TCHAR *filename=NULL, *command_line=NULL, *dir=NULL;
     void *env=NULL;
 
@@ -1777,12 +1777,12 @@ void f_create_process(INT32 args)
       for(e=0;e<cmd->size;e++)
       {
 	int quote=0;
-	/* if(e) */
+	if(e)
 	{
 	  low_my_putchar(' ', &buf);
-	  quote=STRCHR(ITEM(cmd)[e].u.string->str,'"') ||
-	    STRCHR(ITEM(cmd)[e].u.string->str,' ');
 	}
+	quote=STRCHR(ITEM(cmd)[e].u.string->str,'"') ||
+	  STRCHR(ITEM(cmd)[e].u.string->str,' ');
 
 	if(quote)
 	{
@@ -1807,10 +1807,15 @@ void f_create_process(INT32 args)
 	}
       }
       low_my_putchar(0, &buf);
+      
+/*      fprintf(stderr,"COM: %s\n",buf.s.str); */
+
       command_line=(TCHAR *)buf.s.str;
     }
 
 
+    MEMSET(&info,0,sizeof(info));
+    info.cb=sizeof(info);
     
     GetStartupInfo(&info);
 
@@ -1822,8 +1827,13 @@ void f_create_process(INT32 args)
     if(optional)
     {
       if(tmp=simple_mapping_string_lookup(optional, "cwd"))
+      {
 	if(tmp->type == T_STRING)
+	{
 	  dir=(TCHAR *)STR0(tmp->u.string);
+	  fprintf(stderr,"DIR: %s\n",STR0(tmp->u.string));
+	}
+      }
 
       t1=get_inheritable_handle(optional, "stdin",1);
       if(t1!=INVALID_HANDLE_VALUE) info.hStdInput=t1;
@@ -1870,6 +1880,8 @@ void f_create_process(INT32 args)
     }
 
     THREADS_ALLOW_UID();
+
+
     ret=CreateProcess(filename,
 		      command_line,
 		      NULL,  /* process security attribute */
@@ -1880,6 +1892,7 @@ void f_create_process(INT32 args)
 		      dir,   /* current dir */
 		      &info,
 		      &proc);
+    err=GetLastError();
     THREADS_DISALLOW_UID();
     
     if(env) pop_stack();
@@ -1897,7 +1910,7 @@ void f_create_process(INT32 args)
 
       THIS->pid=proc.dwProcessId;
     }else{
-      error("Failed to start process (%d).\n",GetLastError());
+      error("Failed to start process (%d).\n",err);
     }
   }
 #else /* !__NT__ */
