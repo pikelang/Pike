@@ -445,6 +445,8 @@ static string mergeRef(array(string) ref) {
 static class Scope(string|void type, string|void name) {
   multiset(string) idents = (<>);
 
+  multiset(string) failures = (<>);
+
   string _sprintf(int t) {
     if(t=='O') return sprintf("Scope(%O:%O:", type, name) +
 		 (sort(indices(idents))*",") + ")";
@@ -458,7 +460,15 @@ static class ScopeStack {
     //werror("entering scope type(%O), name(%O)\n", type, name);
     scopeArr += ({ Scope(type, name) });
   }
-  void leave() { scopeArr = scopeArr[..sizeof(scopeArr)-2]; }
+  void leave() {
+    if (sizeof(scopeArr[-1]->failures)) {
+      werror("WARNING: Failed to resolv the following symbols in scope %O:\n"
+	     "%{  %O\n%}\n",
+	     scopeArr[1..]->name * ".",
+	     indices(scopeArr[-1]->failures));
+    }
+    scopeArr = scopeArr[..sizeof(scopeArr)-2];
+  }
 
   void addName(string sym) { scopeArr[-1]->idents[sym] = 1; }
 
@@ -469,7 +479,7 @@ static class ScopeStack {
       return ([ "resolved" : "" ]);
 
 #if 0
-    if (has_prefix(ref, "remove_include_path")) {
+    if (has_prefix(ref, "glGetIntegerv")) {
       werror("ref:%O\n"
 	     "idents:%O\n"
 	     "stack:%O\n",
@@ -490,35 +500,44 @@ static class ScopeStack {
       idents = idents[1..];
     }
     else {
-      array(string) matches = ({});
+      if (!scopeArr[-1]->failures[ref]) {
+	array(string) matches = ({});
 
-      ref = mergeRef(idents);
+	ref = mergeRef(idents);
 
-      string firstIdent = idents[0];
-      for(int i = sizeof(scopeArr)-1; i ; i--) {
-	Scope s = scopeArr[i];
-	if (s->idents[firstIdent])
-	  if (s->type == "params" && !not_param) {
-	    return ([ "param" : ref ]);
-	  }
-	  else {
-	    //werror("[[[[ found in type(%O) name(%O)\n", s->type, s->name);
-	    string res = "";
-	    // work our way from the root of the stack
-	    for (int j = 1; j <= i; j++) {
-	      string name = scopeArr[j]->name;
-	      if (name && name != "")
-		res += name + ".";
-	      //werror("[[[[ name == %O\n", name);
+	string firstIdent = idents[0];
+	for(int i = sizeof(scopeArr)-1; i ; i--) {
+	  Scope s = scopeArr[i];
+	  if (s->idents[firstIdent])
+	    if (s->type == "params" && !not_param) {
+	      return ([ "param" : ref ]);
 	    }
-	    matches += ({ res + ref });
+	    else {
+	      //werror("[[[[ found in type(%O) name(%O)\n", s->type, s->name);
+	      string res = "";
+	      // work our way from the root of the stack
+	      for (int j = 1; j <= i; j++) {
+		string name = scopeArr[j]->name;
+		if (name && name != "")
+		  res += name + ".";
+		//werror("[[[[ name == %O\n", name);
+	      }
+	      matches += ({ res + ref });
+	    }
+	}
+	if (sizeof(matches)) {
+	  return ([ "resolved" : matches*"\0" ]);
+	}
+	// Resolution failure.
+	int i;
+	for (i = sizeof(scopeArr)-1; i; i--) {
+	  if (scopeArr[i]->type != "params") {
+	    scopeArr[i]->failures[ref] = 1;
+	    break;
 	  }
+	}
       }
-      if (sizeof(matches)) {
-	return ([ "resolved" : matches*"\0" ]);
-      }
-      werror("WARNING: Failed to resolv symbol %O in scope %O\n",
-	     ref, scopeArr[1..]->name * ".");
+      return ([ "resolution-failure" : "yes" ]);
     }
 
     // TODO: should we check that the symbol really DOES appear
