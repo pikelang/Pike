@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: crypt_md5.c,v 1.5 2004/03/20 12:51:13 grubba Exp $
+|| $Id: crypt_md5.c,v 1.6 2005/01/26 23:12:51 nilsson Exp $
 */
 
 /*
@@ -28,7 +28,7 @@
 
 #include "nettle.h"
 
-static unsigned char itoa64[] =		/* 0 ... 63 => ascii - 64 */
+static const unsigned char itoa64[] =	/* 0 ... 63 => ascii - 64 */
 	"./0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz";
 
 #define TO64(X,Y,Z) l = (final[X]<<16)|(final[Y]<<8)|final[Z]; \
@@ -40,7 +40,7 @@ static unsigned char itoa64[] =		/* 0 ... 63 => ascii - 64 */
 
 char *pike_crypt_md5(int pl, const char *pw, int sl, const char *salt)
 {
-  static char *magic = "$1$"; /*
+  static const char *const magic = "$1$"; /*
 			       * This string is magic for
 			       * this algorithm.  Having
 			       * it this way, we can get
