@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: fdlib.h,v 1.52 2004/05/10 21:45:13 agehall Exp $
+|| $Id: fdlib.h,v 1.53 2004/11/09 17:06:42 nilsson Exp $
 */
 
 #ifndef FDLIB_H
@@ -154,10 +154,6 @@ PMOD_EXPORT FD debug_fd_dup2(FD from, FD to);
 #undef SOCKFUN3
 #undef SOCKFUN4
 #undef SOCKFUN5
-
-#define SEEK_SET 0
-#define SEEK_CUR 1
-#define SEEK_END 2
 
 #ifndef EWOULDBLOCK
 #define EWOULDBLOCK WSAEWOULDBLOCK
@@ -410,6 +406,8 @@ typedef struct my_fd_set_s my_fd_set;
 #define UNIX_SOCKET_CAPABILITIES (fd_INTERPROCESSABLE | fd_BIDIRECTIONAL | fd_CAN_NONBLOCK)
 #define SOCKET_CAPABILITIES (fd_INTERPROCESSABLE | fd_BIDIRECTIONAL | fd_CAN_NONBLOCK | fd_CAN_SHUTDOWN)
 
+#endif /* Don't HAVE_WINSOCK */
+
 #ifndef SEEK_SET
 #define SEEK_SET 0
 #endif
@@ -421,8 +419,6 @@ typedef struct my_fd_set_s my_fd_set;
 #ifndef SEEK_END
 #define SEEK_END 2
 #endif
-
-#endif /* Don't HAVE_WINSOCK */
 
 #ifndef S_ISREG
 #ifdef S_IFREG
