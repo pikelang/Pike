@@ -25,7 +25,7 @@
 #include "main.h"
 #include <signal.h>
 
-RCSID("$Id: signal_handler.c,v 1.208 2001/11/01 18:10:28 mast Exp $");
+RCSID("$Id: signal_handler.c,v 1.209 2001/11/07 21:35:19 nilsson Exp $");
 
 #ifdef HAVE_PASSWD_H
 # include <passwd.h>
@@ -3583,7 +3583,7 @@ static void f_pid_status_kill(INT32 args)
  *! Returns the process ID of this process.
  *!
  *! @seealso
- *!    @[getppid()], @[getpgrp()]
+ *!    @[system.getppid()], @[system.getpgrp()]
  */
 static void f_getpid(INT32 args)
 {
