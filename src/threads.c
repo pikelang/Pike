@@ -1,5 +1,5 @@
 #include "global.h"
-RCSID("$Id: threads.c,v 1.112 2000/03/17 05:12:30 hubbe Exp $");
+RCSID("$Id: threads.c,v 1.113 2000/03/24 01:24:52 hubbe Exp $");
 
 int num_threads = 1;
 int threads_disabled = 0;
@@ -194,7 +194,7 @@ int co_destroy(COND_T *c)
 #endif
 
 
-#define THIS_THREAD ((struct thread_state *)fp->current_storage)
+#define THIS_THREAD ((struct thread_state *)CURRENT_STORAGE)
 
 struct object *thread_id = NULL;
 static struct callback *threads_evaluator_callback=0;
@@ -632,10 +632,14 @@ TH_RETURN_TYPE new_thread_func(void * data)
   THREADS_FPRINTF(0, (stderr,"THREADS_ALLOW() Thread %08x done\n",
 		      (unsigned int)thread_id));
 
+  cleanup_interpret();
+  DO_IF_DMALLOC(
+    SWAP_OUT_THREAD(OBJ2THREAD(thread_id)); /* de-Init struct */
+    OBJ2THREAD(thread_id)->swapped=0;
+    )
   thread_table_delete(thread_id);
   free_object(thread_id);
   thread_id=0;
-  cleanup_interpret();
   num_threads--;
   if(!num_threads && threads_evaluator_callback)
   {
@@ -708,7 +712,7 @@ void f_this_thread(INT32 args)
   ref_push_object(thread_id);
 }
 
-#define THIS_MUTEX ((struct mutex_storage *)(fp->current_storage))
+#define THIS_MUTEX ((struct mutex_storage *)(CURRENT_STORAGE))
 
 
 /* Note:
@@ -880,7 +884,7 @@ void exit_mutex_obj(struct object *o)
   co_destroy(& THIS_MUTEX->condition);
 }
 
-#define THIS_KEY ((struct key_storage *)(fp->current_storage))
+#define THIS_KEY ((struct key_storage *)(CURRENT_STORAGE))
 void init_mutex_key_obj(struct object *o)
 {
   THREADS_FPRINTF(1, (stderr, "KEY k:%08x, o:%08x\n",
@@ -916,7 +920,7 @@ void exit_mutex_key_obj(struct object *o)
   }
 }
 
-#define THIS_COND ((COND_T *)(fp->current_storage))
+#define THIS_COND ((COND_T *)(CURRENT_STORAGE))
 void f_cond_wait(INT32 args)
 {
   COND_T *c;
@@ -1082,7 +1086,7 @@ void f_thread_local_get(INT32 args)
 {
   struct svalue key;
   struct mapping *m;
-  key.u.integer = ((struct thread_local *)fp->current_storage)->id;
+  key.u.integer = ((struct thread_local *)CURRENT_STORAGE)->id;
   key.type = T_INT;
   key.subtype = NUMBER_NUMBER;
   pop_n_elems(args);
@@ -1099,7 +1103,7 @@ void f_thread_local_set(INT32 args)
 {
   struct svalue key;
   struct mapping *m;
-  key.u.integer = ((struct thread_local *)fp->current_storage)->id;
+  key.u.integer = ((struct thread_local *)CURRENT_STORAGE)->id;
   key.type = T_INT;
   key.subtype = NUMBER_NUMBER;
   if(args>1)

@@ -5,7 +5,7 @@
 \*/
 /**/
 #include "global.h"
-RCSID("$Id: interpret.c,v 1.136 2000/02/15 02:39:01 grubba Exp $");
+RCSID("$Id: interpret.c,v 1.137 2000/03/24 01:24:49 hubbe Exp $");
 #include "interpret.h"
 #include "object.h"
 #include "program.h"
@@ -617,6 +617,13 @@ static void do_trace_call(INT32 args)
     free_svalues(X->locals,X->num_locals,BIT_MIXED);	\
     free((char *)(X->locals));				\
   }							\
+  DO_IF_DMALLOC(					\
+    X->context.prog=0;					\
+    X->context.parent=0;				\
+    X->scope=0;						\
+    X->malloced_locals=0;				\
+    X->locals=0;					\
+ )							\
 }while(0)
 
 BLOCK_ALLOC(pike_frame,128)
@@ -996,6 +1003,7 @@ void mega_apply2(enum apply_type type, INT32 args, void *arg1, void *arg2)
 	int num_args;
 	int num_locals;
 	unsigned char *pc;
+	debug_malloc_touch(fp);
 	pc=new_frame->context.prog->program + function->func.offset;
 	
 	num_locals=EXTRACT_UCHAR(pc++);

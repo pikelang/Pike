@@ -1,4 +1,4 @@
-/* $Id: block_alloc.h,v 1.17 2000/03/22 00:55:07 hubbe Exp $ */
+/* $Id: block_alloc.h,v 1.18 2000/03/24 01:24:49 hubbe Exp $ */
 #undef PRE_INIT_BLOCK
 #undef INIT_BLOCK
 #undef EXIT_BLOCK
@@ -51,7 +51,7 @@ struct DATA *PIKE_CONCAT(alloc_,DATA)(void)				\
 									\
   tmp=PIKE_CONCAT3(free_,DATA,s);					\
   PIKE_CONCAT3(free_,DATA,s)=tmp->BLOCK_ALLOC_NEXT;			\
-  DO_IF_DMALLOC( dmalloc_register(tmp,0, DMALLOC_LOCATION());  )	\
+  DO_IF_DMALLOC( dmalloc_register(tmp,sizeof(struct DATA), DMALLOC_LOCATION());  )\
   INIT_BLOCK(tmp);							\
   return tmp;								\
 }									\
@@ -68,6 +68,15 @@ void PIKE_CONCAT(really_free_,DATA)(struct DATA *d)			\
 void PIKE_CONCAT3(free_all_,DATA,_blocks)(void)				\
 {									\
   struct PIKE_CONCAT(DATA,_block) *tmp;					\
+  DO_IF_DMALLOC(                                                        \
+   for(tmp=PIKE_CONCAT(DATA,_blocks);tmp;tmp=tmp->next)                 \
+   {                                                                    \
+     int tmp2;                                                          \
+     extern void dmalloc_check_block_free(void *p);                     \
+     for(tmp2=0;tmp2<BSIZE;tmp2++)                                      \
+       dmalloc_check_block_free(tmp->x+tmp2);                           \
+   }                                                                    \
+  )                                                                     \
   while((tmp=PIKE_CONCAT(DATA,_blocks)))				\
   {									\
     PIKE_CONCAT(DATA,_blocks)=tmp->next;				\

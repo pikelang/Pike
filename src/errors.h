@@ -68,7 +68,7 @@ DECLARE_ERROR(generic, EMPTY ,
   ERR_FUNC("backtrace",f_error_backtrace,tFunc(tVoid,tArr(tMixed)),0)
 )
 
-#define GENERIC_ERROR_THIS ((struct generic_error_struct *)Pike_fp->current_storage)
+#define GENERIC_ERROR_THIS ((struct generic_error_struct *)CURRENT_STORAGE)
 
 DECLARE_ERROR(index,
 	      ERR_INHERIT(generic),

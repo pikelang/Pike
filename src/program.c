@@ -5,7 +5,7 @@
 \*/
 /**/
 #include "global.h"
-RCSID("$Id: program.c,v 1.213 2000/03/17 05:13:17 hubbe Exp $");
+RCSID("$Id: program.c,v 1.214 2000/03/24 01:24:51 hubbe Exp $");
 #include "program.h"
 #include "object.h"
 #include "dynamic_buffer.h"
@@ -3238,7 +3238,7 @@ void check_all_programs(void)
 #endif
 
 #undef THIS
-#define THIS ((struct pike_trampoline *)(fp->current_storage))
+#define THIS ((struct pike_trampoline *)(CURRENT_STORAGE))
 struct program *pike_trampoline_program=0;
 
 static void apply_trampoline(INT32 args)

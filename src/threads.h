@@ -1,5 +1,5 @@
 /*
- * $Id: threads.h,v 1.74 2000/02/20 10:23:21 hubbe Exp $
+ * $Id: threads.h,v 1.75 2000/03/24 01:24:52 hubbe Exp $
  */
 #ifndef THREADS_H
 #define THREADS_H
@@ -391,7 +391,7 @@ struct thread_state {
        (_tmp)->swapped=1; \
        (_tmp)->Pike_evaluator_stack=Pike_evaluator_stack;\
        (_tmp)->evaluator_stack_malloced=evaluator_stack_malloced;\
-       (_tmp)->Pike_fp=Pike_fp;\
+       debug_malloc_touch( (_tmp)->Pike_fp=Pike_fp );\
        (_tmp)->Pike_mark_sp=Pike_mark_sp;\
        (_tmp)->Pike_mark_stack=Pike_mark_stack;\
        (_tmp)->mark_stack_malloced=mark_stack_malloced;\
@@ -409,7 +409,7 @@ struct thread_state {
        (_tmp)->swapped=0; \
        Pike_evaluator_stack=(_tmp)->Pike_evaluator_stack;\
        evaluator_stack_malloced=(_tmp)->evaluator_stack_malloced;\
-       Pike_fp=(_tmp)->Pike_fp;\
+       debug_malloc_touch( Pike_fp=(_tmp)->Pike_fp );\
        Pike_mark_sp=(_tmp)->Pike_mark_sp;\
        Pike_mark_stack=(_tmp)->Pike_mark_stack;\
        mark_stack_malloced=(_tmp)->mark_stack_malloced;\

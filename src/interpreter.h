@@ -86,7 +86,7 @@ static int eval_instruction(unsigned char *pc)
 	case 2:
 	  check_object_context(Pike_fp->current_object,
 			       Pike_fp->context.prog,
-			       Pike_fp->current_storage);
+			       CURRENT_STORAGE);
 	case 1:
 	case 0:
 	  break;

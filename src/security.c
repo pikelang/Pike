@@ -55,7 +55,7 @@ static struct program *creds_program;
 
 struct object *current_creds=0;
 #undef THIS
-#define THIS ((struct pike_creds *)(fp->current_storage))
+#define THIS ((struct pike_creds *)(CURRENT_STORAGE))
 
 static int valid_creds_object(struct object *o)
 {

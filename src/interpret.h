@@ -5,7 +5,7 @@
 \*/
 
 /*
- * $Id: interpret.h,v 1.37 2000/02/29 03:17:24 hubbe Exp $
+ * $Id: interpret.h,v 1.38 2000/03/24 01:24:49 hubbe Exp $
  */
 #ifndef INTERPRET_H
 #define INTERPRET_H
@@ -241,6 +241,8 @@ extern long long time_base;
 #define stack_size Pike_stack_size
 
 #endif /* !NO_PIKE_SHORTHAND */
+
+#define CURRENT_STORAGE (dmalloc_touch(struct pike_frame *,Pike_fp)->current_storage)
 
 #endif
 

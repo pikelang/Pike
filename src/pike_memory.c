@@ -10,7 +10,7 @@
 #include "pike_macros.h"
 #include "gc.h"
 
-RCSID("$Id: pike_memory.c,v 1.58 2000/03/22 00:56:54 hubbe Exp $");
+RCSID("$Id: pike_memory.c,v 1.59 2000/03/24 01:24:51 hubbe Exp $");
 
 /* strdup() is used by several modules, so let's provide it */
 #ifndef HAVE_STRDUP
@@ -733,6 +733,9 @@ struct memloc
 };
 
 #define MEM_PADDED 1
+#define MEM_WARN_ON_FREE 2
+#define MEM_REFERENCED 4
+#define MEM_IGNORE_LEAK 8
 
 BLOCK_ALLOC(memloc, 16382)
 
@@ -752,8 +755,6 @@ static struct memloc *mlhash[LHSIZE];
 static char rndbuf[RNDSIZE + DEBUG_MALLOC_PAD*2];
 
 static struct memhdr no_leak_memlocs;
-static LOCATION loc_accepted_leak="*acceptable leak*";
-static LOCATION loc_referenced="*referenced*";
 static int memheader_references_located=0;
 
 
@@ -1201,7 +1202,8 @@ void dmalloc_accept_leak(void *p)
   {
     struct memhdr *mh;
     mt_lock(&debug_malloc_mutex);
-    if((mh=my_find_memhdr(p,0))) add_location(mh, loc_accepted_leak);
+    if((mh=my_find_memhdr(p,0)))
+      mh->flags |= MEM_IGNORE_LEAK;
     mt_unlock(&debug_malloc_mutex);
   }
 }
@@ -1286,9 +1288,11 @@ void debug_free(void *p, LOCATION location, int mustfind)
   struct memhdr *mh;
   if(!p) return;
   mt_lock(&debug_malloc_mutex);
-  if(verbose_debug_malloc)
-    fprintf(stderr, "free(%p) (%s)\n", p, LOCATION_NAME(location));
+
   mh=my_find_memhdr(p,0);
+
+  if(verbose_debug_malloc || (mh->flags & MEM_WARN_ON_FREE))
+    fprintf(stderr, "free(%p) (%s)\n", p, LOCATION_NAME(location));
 
   if(!mh && mustfind && p)
   {
@@ -1338,6 +1342,21 @@ void debug_free(void *p, LOCATION location, int mustfind)
   mt_unlock(&debug_malloc_mutex);
 }
 
+void dmalloc_check_block_free(void *p)
+{
+  struct memhdr *mh;
+  mt_lock(&debug_malloc_mutex);
+  mh=my_find_memhdr(p,0);
+
+  if(mh && mh->size>=0 && !(mh->flags & MEM_IGNORE_LEAK))
+  {
+    fprintf(stderr,"Freeing storage for small block still in use %p.\n",p);
+    debug_malloc_dump_references(p);
+  }
+
+  mt_unlock(&debug_malloc_mutex);
+}
+
 void dmalloc_free(void *p)
 {
   debug_free(p, DMALLOC_LOCATION(), 0);
@@ -1376,8 +1395,43 @@ void dump_memhdr_locations(struct memhdr *from,
 	    LOCATION_IS_DYNAMIC(l->location) ? "-->" : "***",
 	    LOCATION_NAME(l->location),
 	    l->times,
-	    find_location(&no_leak_memlocs, l->location) ? "" : "*");
+	    find_location(&no_leak_memlocs, l->location) ? "" :
+	    ( from->flags & MEM_REFERENCED ? "*" : "!*!")
+	    );
   }
+}
+
+static void find_references_to(void *block)
+{
+  unsigned long h;
+  struct memhdr *m;
+
+  for(h=0;h<(unsigned long)memhdr_hash_table_size;h++)
+  {
+    for(m=memhdr_hash_table[h];m;m=m->next)
+    {
+      unsigned int e;
+      struct memhdr *tmp;
+      void **p=m->data;
+      
+      if( ! ((sizeof(void *)-1) & (long) p ))
+      {
+	if(m->size > 0)
+	{
+	  for(e=0;e<m->size/sizeof(void *);e++)
+	  {
+	    if(p[e] == block)
+	    {
+	      fprintf(stderr,"  <from %p word %d>\n",p,e);
+	      m->flags |= MEM_WARN_ON_FREE;
+	    }
+	  }
+	}
+      }
+    }
+  }
+
+  memheader_references_located=1;
 }
 
 void debug_malloc_dump_references(void *x)
@@ -1386,28 +1440,21 @@ void debug_malloc_dump_references(void *x)
   if(!mh) return;
   if(memheader_references_located)
   {
-    int referenced=0;
-    struct memloc *l;
-
-    for(l=mh->locations;l;l=l->next)
-    {
-      if(l->location == loc_accepted_leak) referenced|=2;
-      if(l->location == loc_referenced) referenced|=1;
-    }
-    if(referenced & 2)
+    if(mh->flags & MEM_IGNORE_LEAK)
     {
       fprintf(stderr,"<<<This leak has been ignored>>>\n");
     }
-    else if(referenced & 1)
+    else if(mh->flags & MEM_REFERENCED)
     {
       fprintf(stderr,"<<<Possibly referenced>>>\n");
+      find_references_to(x);
     }
     else
     {
       fprintf(stderr,"<<<=- No known references to this block -=>>>\n");
     }
   }
-  dump_memhdr_locations(my_find_memhdr(x,0),0);
+  dump_memhdr_locations(mh,0);
 }
 
 void list_open_fds(void)
@@ -1443,9 +1490,10 @@ static void low_search_all_memheaders_for_references(void)
   unsigned long h;
   struct memhdr *m;
 
+  
   for(h=0;h<(unsigned long)memhdr_hash_table_size;h++)
     for(m=memhdr_hash_table[h];m;m=m->next)
-      remove_location(m, loc_referenced);
+      m->flags &=~ MEM_REFERENCED;
 
   for(h=0;h<(unsigned long)memhdr_hash_table_size;h++)
   {
@@ -1461,7 +1509,7 @@ static void low_search_all_memheaders_for_references(void)
 	{
 	  for(e=0;e<m->size/sizeof(void *);e++)
 	    if((tmp=find_memhdr(p[e])))
-	      add_location(tmp, loc_referenced);
+	      tmp->flags |= MEM_REFERENCED;
 	}
       }
     }
@@ -1505,16 +1553,9 @@ void cleanup_memhdrs(void)
       {
 	int referenced=0;
 	struct memhdr *tmp;
-	struct memloc *l;
 	void *p=m->data;
 
-	for(l=m->locations;l;l=l->next)
-	{
-	  if(l->location == loc_accepted_leak) referenced|=2;
-	  if(l->location == loc_referenced) referenced|=1;
-	}
-
-	if(referenced & 2) continue;
+	if(m->flags & MEM_IGNORE_LEAK) continue;
 
 	mt_unlock(&debug_malloc_mutex);
 	if(first)
@@ -1523,7 +1564,7 @@ void cleanup_memhdrs(void)
 	  first=0;
 	}
 
-	if(referenced & 1)
+	if(m->flags & MEM_REFERENCED)
 	  fprintf(stderr, "possibly referenced memory: (%p) %ld bytes\n",p, m->size);
 	else
 	  fprintf(stderr, "==LEAK==: (%p) %ld bytes\n",p, m->size);
@@ -1598,10 +1639,10 @@ static void unlock_da_lock(void)
 
 int main(int argc, char *argv[])
 {
-  int e;
+  long e;
   extern int dbm_main(int, char **);
 
-  for(e=0;e<NELEM(rndbuf);e++) rndbuf[e]= (rand() % 511) | 1;
+  for(e=0;e<(long)NELEM(rndbuf);e++) rndbuf[e]= (rand() % 511) | 1;
 
 #if DEBUG_MALLOC_PAD & 3
   fprintf(stderr,"DEBUG_MALLOC_PAD not dividable by four!\n");

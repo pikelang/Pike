@@ -5,7 +5,7 @@
 \*/
 /**/
 #include "global.h"
-RCSID("$Id: object.c,v 1.94 2000/03/20 21:00:04 hubbe Exp $");
+RCSID("$Id: object.c,v 1.95 2000/03/24 01:24:49 hubbe Exp $");
 #include "object.h"
 #include "dynamic_buffer.h"
 #include "interpret.h"
@@ -1298,7 +1298,7 @@ struct magic_index_struct
   struct object *o;
 };
 
-#define MAGIC_THIS ((struct magic_index_struct *)(fp->current_storage))
+#define MAGIC_THIS ((struct magic_index_struct *)(CURRENT_STORAGE))
 #define MAGIC_O2S(o) ((struct magic_index_struct *)&(o->storage))
 
 struct program *magic_index_program=0;

@@ -25,7 +25,7 @@
 #include "main.h"
 #include <signal.h>
 
-RCSID("$Id: signal_handler.c,v 1.167 2000/03/22 00:56:14 hubbe Exp $");
+RCSID("$Id: signal_handler.c,v 1.168 2000/03/24 01:24:52 hubbe Exp $");
 
 #ifdef HAVE_PASSWD_H
 # include <passwd.h>
@@ -898,7 +898,7 @@ static RETSIGTYPE receive_sigchild(int signum)
 #define PROCESS_EXITED 1
 
 #undef THIS
-#define THIS ((struct pid_status *)fp->current_storage)
+#define THIS ((struct pid_status *)CURRENT_STORAGE)
 
 #ifdef USE_PID_MAPPING
 static struct mapping *pid_mapping=0;

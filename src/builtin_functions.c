@@ -5,7 +5,7 @@
 \*/
 /**/
 #include "global.h"
-RCSID("$Id: builtin_functions.c,v 1.245 2000/03/20 21:00:03 hubbe Exp $");
+RCSID("$Id: builtin_functions.c,v 1.246 2000/03/24 01:24:49 hubbe Exp $");
 #include "interpret.h"
 #include "svalue.h"
 #include "pike_macros.h"
@@ -595,6 +595,7 @@ void f_backtrace(INT32 args)
   {
     char *program_name;
 
+    debug_malloc_touch(f);
     frames--;
 
     if(f->current_object && f->context.prog)
@@ -2823,7 +2824,7 @@ void f_localtime(INT32 args)
 #endif
 
 #ifdef HAVE_MKTIME
-static void f_mktime (INT32 args)
+void f_mktime (INT32 args)
 {
   INT_TYPE sec, min, hour, mday, mon, year, isdst;
   struct tm date;

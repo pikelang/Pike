@@ -6,7 +6,7 @@
 /**/
 #include "global.h"
 #include <math.h>
-RCSID("$Id: operators.c,v 1.86 2000/03/01 08:40:52 hubbe Exp $");
+RCSID("$Id: operators.c,v 1.87 2000/03/24 01:24:50 hubbe Exp $");
 #include "interpret.h"
 #include "svalue.h"
 #include "multiset.h"
@@ -2381,7 +2381,7 @@ static int generate_call_function(node *n)
 struct program *string_assignment_program;
 
 #undef THIS
-#define THIS ((struct string_assignment_storage *)(fp->current_storage))
+#define THIS ((struct string_assignment_storage *)(CURRENT_STORAGE))
 static void f_string_assignment_index(INT32 args)
 {
   INT32 i;
