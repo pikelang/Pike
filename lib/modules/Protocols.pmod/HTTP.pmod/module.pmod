@@ -325,6 +325,10 @@ string http_encode_query(mapping(string:int|string) variables)
 //!
 //!	Do not use this function to protect URLs, since
 //!	it will protect URL characters like @tt{'/'@} and @tt{'?'@}.
+//! @param in
+//!     The string to encode
+//! @retruns
+//!     The HTTP encoded string
 string http_encode_string(string in)
 {
    return replace(
@@ -338,7 +342,7 @@ string http_encode_string(string in)
 	 "\220", "\221", "\222", "\223", "\224", "\225", "\226", "\227", 
 	 "\230", "\231", "\232", "\233", "\234", "\235", "\236", "\237", 
 	 " ", "%", "'", "\"", "+", "&", "=", "/", 
-	 "#", ";", "\\", "<", ">" }),
+	 "#", ";", "\\", "<", ">", "\t", "\n", "\r", "@" }),
       ({ 
 	 "%00", "%01", "%02", "%03", "%04", "%05", "%06", "%07",    
 	 "%08", "%09", "%0a", "%0b", "%0c", "%0d", "%0e", "%0f", 
@@ -349,7 +353,8 @@ string http_encode_string(string in)
 	 "%90", "%91", "%92", "%93", "%94", "%95", "%96", "%97", 
 	 "%98", "%99", "%9a", "%9b", "%9c", "%9d", "%9e", "%9f", 
 	 "%20", "%25", "%27", "%22", "%2b", "%26", "%3d", "%2f", 
-	 "%23", "%3b", "%5c", "%3c", "%3e"}));
+	 "%23", "%3b", "%5c", "%3c", "%3e", "%09", "%0a", "%0d",
+         "%40" }));
 }
 
 string http_encode_cookie(string f)
