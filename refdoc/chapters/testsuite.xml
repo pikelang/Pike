@@ -18,13 +18,15 @@
   removed.</dd>
 
   <dt>just_verify</dt>
-  <dd>Runs the testsuite without installing a new test Pike binary.</dd>
+  <dd>Runs the test suite with the flags "<tt>-a -v</tt>", without
+  installing a new test Pike binary.</dd>
 
   <dt>verify</dt>
   <dd>Runs the <tt>tinstall</tt> and <tt>just_verify</tt> targets.</dd>
 
   <dt>verify_installed</dt>
-  <dd></dd>
+  <dd>Runs the test suit with the flags "<tt>-a -v</tt>", with the
+  Pike binary installed on the system.</dd>
 
   <dt>check</dt>
   <dd>Alias for the <tt>verify</tt> make target.</dd>
@@ -33,19 +35,159 @@
   <dd>Alias for the <tt>verify</tt> make target.</dd>
 
   <dt>verbose_verify</dt>
-  <dd></dd>
+  <dd>Runs the <tt>tinstall</tt> make target and then runs the test
+  suite with the flags "<tt>-v -v -a</tt>".</dd>
 
   <dt>gdb_verify</dt>
-  <dd></dd>
+
+  <dd>Runs the test suite inside of gdb. The test suite is started
+  with the flags "<tt>-v -v -a</tt>".</dd>
 
   </dl>
 
-  <p><fixme>Different ways of running the testsuite (all tests, some tests,
-  different build dirs, test suite flags</fixme></p>
+  <p>It is possible to alter the flags given to the
+  <tt>test_install</tt> program by using the <tt>TESTARGS</tt> make variable.
+
+<example>
+make verify TESTARGS="-a -v4 -l2 -t1 -c1 -m"
+</example>
+
+<subsection title="The Test Program">
+
+  <p>The actual testing is done by the program
+  <tt>bin/test_pike.pike</tt>, which can be run as a stand alone
+  application to test any Pike binary with any test suite or test
+  suites. The Pike binary that executes the test program will be
+  tested, and it will be tested with the test suites provided as
+  arguments to the test program.</p>
+
+<example>
+/home/visbur/Pike/7.2/bin/pike bin/test_pike.pike testsuite1 testsuite2
+</example>
+
+  <p>The test_pike.pike program takes the following attributes.</p>
+
+  <dl>
+
+  <dt>-h, --help</dt>
+  <dd>Displays a help message listing all possible arguments.</dd>
+
+  <dt>-a, --auto</dt>
+  <dd>Let the test program find the testsuits self. It will search for
+  files named <tt>testsuite</tt> or <tt>module_testsuite</tt> in the
+  current working directory and all subdirectories.</dd>
+
+  <dt>--no-watchdog</dt>
+  <dd>Normally the the test program has a watchdog activated that
+  aborts testing if a test takes more than 20 minutes to complete (or
+  80 minutes if Pike is compiled with dmalloc). With this argument the
+  watchdog will not be used.</dd>
+
+  <dt>--watchdog=pid</dt>
+  <dd>Run only the watchdog and monitor the process with the given pid.</dd>
+
+  <dt>-v[level], --verbose[=level]</dt>
+
+  <dd>Select the level of verbosity. Every verbose level includes the
+  printouts from the levels below.
+  <matrix>
+  <r><c>0</c><c>No extra printouts.</c></r>
+  <r><c>1</c><c>Some additional information printed out after every
+                finished block of tests.</c></r>
+  <r><c>2</c><c>Some extra information about test that will or won't be
+                run.</c></r>
+  <r><c>3</c><c>Every test is printed out.</c></r>
+  <r><c>4</c><c>Time spent in individual tests are printed out.</c></r>
+  <r><c>10</c><c>The actual pike code compiled, including wrappers, is
+                 printed. Note that the code will be quoted.</c></r>
+
+<example>
+$ pike bin/test_pike.pike -v1 testsuite 
+Doing tests in testsuite (1 tests)
+Total tests: 1  (0 tests skipped)       
+</example>
+
+<example>
+$ pike bin/test_pike.pike -v2 testsuite
+Doing tests in testsuite (1 tests)
+Doing test 1 (1 total) at /home/nilsson/Pike/7.3/lib/modules/ADT.pmod/testsuite.in:9
+Failed tests: 0.                        
+Total tests: 1  (0 tests skipped)
+</example>
+
+<example>
+$ pike bin/test_pike.pike -v4 testsuite 
+Doing tests in testsuite (1 tests)
+Doing test 1 (1 total) at /home/nilsson/Pike/7.3/lib/modules/ADT.pmod/testsuite.in:9
+  0: mixed a() { 
+  1:   object s = ADT.Stack();
+  2:   s-&gt;push(1);
+  3:   return s-&gt;pop();
+  4: ; }
+  5: mixed b() { return 1; }
+
+Time in a(): 0.000, Time in b(): 0.000000
+Failed tests: 0.                        
+Total tests: 1  (0 tests skipped)
+</example>
+
+<example>
+$ pike bin/test_pike.pike -v10 testsuite 
+Doing tests in testsuite (1 tests)
+Doing test 1 (1 total) at /home/nilsson/Pike/7.3/lib/modules/ADT.pmod/testsuite.in:9
+  0: mixed a() { 
+  1:   object s = ADT.Stack();
+  2:   s-&gt;push(1);
+  3:   return s-&gt;pop();
+  4: ; }
+  5: mixed b() { return 1; }
+
+  0: mixed a() { 
+  1:   object s = ADT.Stack();
+  2:   s-&gt;push(1);
+  3:   return s-&gt;pop();
+  4: ; }
+  5: mixed b() { return 1; }
+  6: int __cpp_line=__LINE__; int __rtl_line=[int]backtrace()[-1][1];
+  7: 
+  8: int \30306\30271\30310=0;
+  9: 
+
+Time in a(): 0.000, Time in b(): 0.000000
+Failed tests: 0.                        
+Total tests: 1  (0 tests skipped)
+</example>
+  </dd>
+
+<!--
+-p, --prompt        The user will be asked before every test is run.
+-sX, --start-test=X Where in the testsuite testing should start, e.g. ignores X
+                    tests in every testsuite.
+-eX, --end-after=X  How many tests should be run.
+-f, --fail          If set, the testsuite always fails.
+-lX, --loop=X       The number of times the testsuite should be run. Default is
+                    1.
+-tX, --trace=X      Run tests with trace level X.
+-c[X], --check[=X]  The level of extra pike consistency checks performed.
+                    1   _verify_internals is run before every test.
+                    2   _verify_internals is run after every compilation.
+                    3   _verify_internals is run after every test.
+                    4   An extra gc and _verify_internals is run before
+                        every test.
+                    X<0 For values below zero, _verify_internals will be run
+                        before every n:th test, where n=abs(X).
+-m, --mem, --memory Print out memory allocations after the tests.
+-T, --notty         Format output for non-tty.
+-d, --debug         Opens a debug port.
+-->
+
+  </dl>
+
+</subsection>
 
 </section>
 
-<section title="Writing new tests">
+<section title="Writing New Tests">
 
   <p>Whenever you write a new function in a module or in Pike itself
   it is good to add a few test cases in the test suite to ensure that
@@ -55,8 +197,7 @@
   tests cases. A good test suite for a function includes both some
   trivial tests to ensure that the basic functionality works and some
   nasty tests to test the borderlands of what the function is capable
-  of. Don't hesitate to add a few tests that triggers various
-  compilation errors as well.</p>
+  of.</p>
 
   <p>Also, when a bug in Pike has been found, a minimized test case
   the triggers the bug should also be added to the test suite. After
