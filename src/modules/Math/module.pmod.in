@@ -57,6 +57,11 @@ class Angle {
     set_rad(_angle);
   }
 
+  //! Returns a copy of the object.
+  Angle clone_me() {
+    return Angle(angle, type);
+  }
+
   //! Gets the value in the provided type.
   int|float get(string type) {
     switch(type) {
@@ -181,6 +186,22 @@ class Angle {
     add(90, "deg");
   }
 
+  //! Returns the sinus for the angle.
+  float sin() {
+    return predef::sin(rad());
+  }
+
+  //! Returns the cosinus for the angle.
+  float cos() {
+    return predef::cos(rad());
+  }
+
+  //! Returns the tangen for the angle.
+  float tan() {
+    return predef::tan(rad());
+  }
+
+  //! An angle can be casted to float, int and string.
   float|int|string cast(string to) {
     switch(to) {
     case "float": return (float)angle;
@@ -190,13 +211,20 @@ class Angle {
     throw( ({"Could not cast to "+to+".\n", backtrace()}) );
   }
 
+  //! Returns the sum of this angle and what it is added with. If
+  //! added with an angle, a new angle object is returnes.
   float|int|Angle `+ (float|int|Angle _angle) {
     if(objectp(_angle)) return Angle( angle + _angle->get(type), type );
     return angle + _angle;
   }
 
+  //! @decl Angle add(float|int angle)
+  //! @decl Angle add(float|int angle, string type)
+  //! @decl Angle add(Angle angle)
+  //! Adds the provided angle to the current angle. The result is
+  //! normalized within 360 degrees.
   Angle add(float|int|Angle _angle, void|string _type) {
-    //    if(object(_angle)) return add( _angle->angle, _type||_angle->type);
+    if(objectp(_angle)) return add( _angle->angle, _type||_angle->type);
     if(!_type)
       angle += _angle;
     else
@@ -205,13 +233,20 @@ class Angle {
     return this_object();
   }
 
+  //! Returns the difference between this angle and the provided value.
+  //! If differenced with an angle, a new angle object is returned.
   float|int|Angle `- (float|int|Angle _angle) {
     if(objectp(_angle)) return Angle( angle - _angle->get(type), type );
     return angle - _angle;
   }
 
+  //! @decl Angle subtract(float|int angle)
+  //! @decl Angle subtract(float|int angle, string type)
+  //! @decl Angle subtract(Angle angle)
+  //! Subtracts the provided angle from the current angle. The result is
+  //! normalized within 360 degrees.
   Angle subtract(float|int|Angle _angle, void|string _type) {
-    //    if(object(_angle)) return subtract( _angle->angle, _type||_angle->type);
+    if(objectp(_angle)) return subtract( _angle->angle, _type||_angle->type);
     if(!_type)
       angle -= _angle;
     else
@@ -220,37 +255,48 @@ class Angle {
     return this_object();
   }
 
+  //! Returns the product between this angle and the provided value.
+  //! If differenced with an angle, a new angle object is returned.
   float|int|Angle `* (float|int|Angle _angle) {
     if(objectp(_angle)) return Angle( angle * _angle->get(type), type );
     return angle * _angle;
   }
 
+  //! Returns the fraction between this angle and the provided value.
+  //! If differenced with an angle, a new angle object is returned.
   float|int|Angle `/ (float|int|Angle _angle) {
     if(objectp(_angle)) return Angle( angle / _angle->get(type), type );
     return angle / _angle;
   }
 
+  //! Returns this result of this angle modulo the provided value.
+  //! If differenced with an angle, a new angle object is returned.
   float|int|Angle `% (float|int|Angle _angle) {
     if(objectp(_angle)) return Angle( angle % _angle->get(type), type );
     return angle % _angle;
   }
 
+  //!
   int __hash() {
-    return (int)angle*1000000;
+    return (int)(rad()*1000000);
   }
 
+  //!
   int `== (Angle _angle) {
     return _angle->rad() == rad();
   }
 
+  //!
   int `< (Angle _angle) {
     return rad() < _angle->rad();
   }
 
+  //!
   int `> (Angle _angle) {
     return rad() > _angle->rad();
   }
 
+  //!
   string _sprintf(int t) {
     if(t=='O')
       switch(type) {
