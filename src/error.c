@@ -19,7 +19,7 @@
 #include "module_support.h"
 #include "threads.h"
 
-RCSID("$Id: error.c,v 1.39 1999/10/06 15:30:05 grubba Exp $");
+RCSID("$Id: error.c,v 1.40 1999/12/07 01:33:03 grubba Exp $");
 
 #undef ATTRIBUTE
 #define ATTRIBUTE(X)
@@ -115,7 +115,7 @@ void low_error(char *buf) ATTRIBUTE((noreturn))
   push_error(buf);
   free_svalue(& throw_value);
   throw_value = *--sp;
-  throw_severity=THROW_ERROR;
+  throw_severity = THROW_ERROR;
   in_error=0;
   pike_throw();  /* Hope someone is catching, or we will be out of balls. */
 }
@@ -340,12 +340,19 @@ void f_error_backtrace(INT32 args)
   ref_push_array(GENERIC_ERROR_THIS->backtrace);
 }
 
+#ifdef ERROR_DEBUG
+#define DWERROR(X)	fprintf X
+#else /* !ERROR_DEBUG */
+#define DWERROR(X)
+#endif /* ERROR_DEBUG */
+
 #define INIT_ERROR(FEL)\
   va_list foo; \
   struct object *o; \
   va_start(foo,desc); \
   ASSERT_THREAD_SWAPPED_IN(); \
-  o=low_clone(PIKE_CONCAT(FEL,_error_program));
+  o=low_clone(PIKE_CONCAT(FEL,_error_program)); \
+  DWERROR((stderr, "%s(): Throwing a " #FEL " error\n", func))
 
 #define ERROR_DONE(FOO) \
   PIKE_CONCAT(FOO,_error_va(o,func, \
@@ -413,6 +420,7 @@ void generic_error_va(struct object *o,
 
   ERROR_STRUCT(generic,o)->backtrace=sp[-1].u.array;
   sp--;
+  dmalloc_touch_svalue(sp);
 
   free_svalue(& throw_value);
   throw_value.type=T_OBJECT;
@@ -463,6 +471,8 @@ void bad_arg_error(
     ERROR_STRUCT(bad_arg,o)->got.subtype=NUMBER_UNDEFINED;
     ERROR_STRUCT(bad_arg,o)->got.u.integer=0;
   }
+  DWERROR((stderr, "%s():Bad arg %d (expected %s)\n",
+	   func, which_arg, expected_type));
   ERROR_DONE(generic);
 }
 
