@@ -1,5 +1,5 @@
 #
-# $Id: static_module_makefile.in,v 1.39 1998/10/28 22:54:10 marcus Exp $
+# $Id: static_module_makefile.in,v 1.40 1998/11/07 01:34:47 grubba Exp $
 #
 
 
@@ -69,7 +69,7 @@ module.pmod: Makefile
 	   sed -e "s/@module@/_static_modules.$(MODNAME)/" <./module.pmod.in >module.pmod ;\
 	  else \
 	    echo >module.pmod "inherit _static_modules.$(MODNAME);" ;\
-	  fi \
+	  fi ;\
 	fi
 
 module.a: $(OBJS)
