@@ -2,11 +2,11 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: lex.c,v 1.108 2002/10/11 01:39:33 nilsson Exp $
+|| $Id: lex.c,v 1.109 2002/11/02 13:43:51 grubba Exp $
 */
 
 #include "global.h"
-RCSID("$Id: lex.c,v 1.108 2002/10/11 01:39:33 nilsson Exp $");
+RCSID("$Id: lex.c,v 1.109 2002/11/02 13:43:51 grubba Exp $");
 #include "language.h"
 #include "array.h"
 #include "lex.h"
@@ -173,6 +173,13 @@ void exit_lex(void)
 #define OPCODE1_TAILRETURN(OP, DESC, FLAGS) OPCODE1_TAIL(OP, DESC, FLAGS)
 #define OPCODE2_TAILRETURN(OP, DESC, FLAGS) OPCODE2_TAIL(OP, DESC, FLAGS)
 
+#define OPCODE0_BRANCH(OP,DESC,FLAGS) int PIKE_CONCAT(test_opcode_,OP)(void);
+#define OPCODE1_BRANCH(OP,DESC,FLAGS) int PIKE_CONCAT(test_opcode_,OP)(INT32);
+#define OPCODE2_BRANCH(OP,DESC,FLAGS) int PIKE_CONCAT(test_opcode_,OP)(INT32,INT32);
+#define OPCODE0_TAILBRANCH(OP,DESC,FLAGS) int PIKE_CONCAT(test_opcode_,OP)(void);
+#define OPCODE1_TAILBRANCH(OP,DESC,FLAGS) int PIKE_CONCAT(test_opcode_,OP)(INT32);
+#define OPCODE2_TAILBRANCH(OP,DESC,FLAGS) int PIKE_CONCAT(test_opcode_,OP)(INT32,INT32);
+
 #include "interpret_protos.h"
 
 #undef OPCODE0
@@ -198,6 +205,13 @@ void exit_lex(void)
 #undef OPCODE1_TAILRETURN
 #undef OPCODE2_TAILRETURN
 
+#undef OPCODE0_BRANCH
+#undef OPCODE1_BRANCH
+#undef OPCODE2_BRANCH
+#undef OPCODE0_TAILBRANCH
+#undef OPCODE1_TAILBRANCH
+#undef OPCODE2_TAILBRANCH
+
 #else
 #define ADDR(X)
 #define NULLADDR
@@ -212,12 +226,12 @@ void exit_lex(void)
 #define OPCODE2_TAIL(OP,DESC,FLAGS) { DESC, OP, FLAGS | I_TWO_ARGS ADDR(OP) },
 
 #define OPCODE0_JUMP(OP,DESC,FLAGS) { DESC, OP, FLAGS | I_ISJUMP ADDR(OP) },
-#define OPCODE1_JUMP(OP,DESC,FLAGS) { DESC, OP, FLAGS | I_HASARG ADDR(OP) },
-#define OPCODE2_JUMP(OP,DESC,FLAGS) { DESC, OP, FLAGS | I_TWO_ARGS ADDR(OP) },
+#define OPCODE1_JUMP(OP,DESC,FLAGS) { DESC, OP, FLAGS | I_ISJUMPARG ADDR(OP) },
+#define OPCODE2_JUMP(OP,DESC,FLAGS) { DESC, OP, FLAGS | I_ISJUMPARGS ADDR(OP) },
 
 #define OPCODE0_TAILJUMP(OP,DESC,FLAGS) { DESC, OP, FLAGS | I_ISJUMP ADDR(OP) },
-#define OPCODE1_TAILJUMP(OP,DESC,FLAGS) { DESC, OP, FLAGS | I_HASARG ADDR(OP) },
-#define OPCODE2_TAILJUMP(OP,DESC,FLAGS) { DESC, OP, FLAGS | I_TWO_ARGS ADDR(OP) },
+#define OPCODE1_TAILJUMP(OP,DESC,FLAGS) { DESC, OP, FLAGS | I_ISJUMPARG ADDR(OP) },
+#define OPCODE2_TAILJUMP(OP,DESC,FLAGS) { DESC, OP, FLAGS | I_ISJUMPARGS ADDR(OP) },
 
 #define OPCODE0_RETURN(OP, DESC, FLAGS) OPCODE0(OP, DESC, FLAGS)
 #define OPCODE1_RETURN(OP, DESC, FLAGS) OPCODE1(OP, DESC, FLAGS)
