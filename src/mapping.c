@@ -5,7 +5,7 @@
 \*/
 /**/
 #include "global.h"
-RCSID("$Id: mapping.c,v 1.73 2000/04/15 05:05:28 hubbe Exp $");
+RCSID("$Id: mapping.c,v 1.74 2000/04/15 09:34:02 hubbe Exp $");
 #include "main.h"
 #include "object.h"
 #include "mapping.h"
@@ -624,7 +624,8 @@ void low_mapping_insert(struct mapping *m,
   k->hval = h2;
   md->size++;
 #ifdef PIKE_DEBUG
-  m->debug_size++;
+  if(m->data ==md)
+    m->debug_size++;
 #endif
 
 #ifdef PIKE_DEBUG
@@ -734,7 +735,8 @@ union anything *mapping_get_item_ptr(struct mapping *m,
   md->val_types |= BIT_INT;
   md->size++;
 #ifdef PIKE_DEBUG
-  m->debug_size++;
+  if(m->data ==md)
+    m->debug_size++;
 #endif
 
 #ifdef PIKE_DEBUG
@@ -809,7 +811,8 @@ void map_delete_no_free(struct mapping *m,
   md->free_list=k;
   md->size--;
 #ifdef PIKE_DEBUG
-  m->debug_size--;
+  if(m->data ==md)
+    m->debug_size--;
 #endif
   
   if(md->size < (md->hashsize + 1) * MIN_LINK_LENGTH)
@@ -863,7 +866,8 @@ void check_mapping_for_destruct(struct mapping *m)
 	  md->free_list=k;
 	  md->size--;
 #ifdef PIKE_DEBUG
-	  m->debug_size++;
+	  if(m->data ==md)
+	    m->debug_size++;
 #endif
 	}else{
 	  val_types |= 1 << k->val.type;
@@ -1936,7 +1940,8 @@ void gc_free_all_unreferenced_mappings(void)
 	    md->free_list=k;
 	    md->size--;
 #ifdef PIKE_DEBUG
-	    m->debug_size--;
+	    if(m->data ==md)
+	      m->debug_size--;
 #endif
 	  }else{
 	    prev=&k->next;
@@ -2023,7 +2028,8 @@ void zap_all_mappings(void)
     }
     md->size=0;
 #ifdef PIKE_DEBUG
-    m->debug_size=0;
+    if(m->data ==md)
+      m->debug_size=0;
 #endif
     
     next=m->next;
