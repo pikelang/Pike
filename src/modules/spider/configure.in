@@ -3,31 +3,20 @@ AC_INIT(spider.c)
 AC_PROG_CC
 AC_PROG_RANLIB
 
-AC_CHECK_LIB(pthread, pthread_mutex_unlock)
 AC_CHECK_LIB(socket, socket)
 AC_CHECK_LIB(nsl, gethostbyname)
 
-if test x$ac_cv_lib_pthread_pthread_mutex_unlock = xno ;  then
-  AC_CHECK_LIB(thread, mutex_unlock)
-fi
-
 AC_HAVE_HEADERS(syslog.h sys/syslog.h arpa/inet.h sys/socketvar.h \
 	netinet/in.h sys/mman.h sys/utsname.h netdb.h sys/socket.h pwd.h\
-        shadow.h thread.h sync.h sys/sockio.h sys/conf.h stropts.h\
+        shadow.h sync.h sys/sockio.h sys/conf.h stropts.h\
 	sys/uio.h linux/mman.h)
 
 AC_HAVE_FUNCS(syslog perror getppid getpgrp strdup\
 	gethostname geteuid fchroot seteuid setresuid \
         uname gethostbyname getpwnam getspnam initgroups \
-	mutex_unlock mmap sendmsg getpwent setpwent endpwent \
-	pthread_mutexattr_setpshared)
+	mmap sendmsg getpwent setpwent endpwent)
 
 AC_CHECK_TYPE(time_t, long)
-
-if test x$ac_cv_lib_thread_mutex_unlock = xno ;  then
- AC_HAVE_HEADERS( pthread.h )
- AC_HAVE_FUNCS(pthread_mutex_unlock)
-fi
 
 AC_SUBST(RANLIB)
 AC_SUBST_FILE(dependencies)

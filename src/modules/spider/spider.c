@@ -30,7 +30,6 @@
 #include "mapping.h"
 #include "array.h"
 #include "builtin_functions.h"
-#include "lock.h"
 #include "threads.h"
 
 #ifdef HAVE_PWD_H
@@ -1469,13 +1468,6 @@ void init_spider_efuns(void)
   add_efun("fcgi_create_listen_socket", f_fcgi_create_listen_socket,
 	   "function(int:int)", OPT_SIDE_EFFECT);
 	   
-
-#if defined(_REENTRANT) || defined(HAVE_MUTEX_UNLOCK)
-  add_efun("_lock", f_lock, "function(int:int)", OPT_SIDE_EFFECT);
-  add_efun("_unlock", f_unlock, "function(int:int)", OPT_SIDE_EFFECT);
-  add_efun("_free_lock", f_freelock, "function(int:int)", OPT_SIDE_EFFECT);
-  add_efun("_new_lock", f_newlock, "function(int|void:int)", OPT_SIDE_EFFECT);
-#endif
 
   add_efun("encode_value", f_encode_value, "function(mixed:string)", 
 	   OPT_TRY_OPTIMIZE);
