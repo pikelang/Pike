@@ -61,7 +61,7 @@
 
 import .Bencoding;
 
-constant cvsid="$Id: Torrent.pike,v 1.29 2004/04/01 21:07:50 nilsson Exp $";
+constant cvsid="$Id: Torrent.pike,v 1.30 2004/04/29 12:29:32 nilsson Exp $";
 
 Protocols.HTTP.Session http=Protocols.HTTP.Session();
 
@@ -176,7 +176,7 @@ void decode_metainfo(string s)
 	 error("internal encoder error (?): %O\n !=\n %O\n",
 	       encode(info)+"e",t);
 #endif
-      info_sha1=Crypto.SHA1->hash(encode(info));
+      info_sha1=Crypto.SHA1.hash(encode(info));
    };
    if (!err) return;
 
@@ -366,12 +366,12 @@ int fix_targets(void|int(-1..2) allocate, void|string base_filename,
    if (search(targets->created,0)==-1)
    {
       array(string) want_sha1s=info->pieces/20;
-      string zeropiece=Crypto.SHA1->hash("\0"*info["piece length"]);
+      string zeropiece=Crypto.SHA1.hash("\0"*info["piece length"]);
       file_got=map(want_sha1s,`==,zeropiece);
 
       if (total_bytes%info["piece length"])
 	 file_got[-1]=
-	    Crypto.SHA1->hash("\0"*(total_bytes%info["piece length"]))
+	    Crypto.SHA1.hash("\0"*(total_bytes%info["piece length"]))
 	    == want_sha1s[-1];
    }
    else
@@ -399,8 +399,8 @@ void verify_targets(void|function(int,int:void) progress_callback)
    {
       if (progress_callback) progress_callback(n,sizeof(want_sha1s));
 
-      string sha1=Crypto.SHA1->hash(targets->pread(n*info["piece length"],
-				      info["piece length"])*"");
+      string sha1=Crypto.SHA1.hash(targets->pread(n*info["piece length"],
+						  info["piece length"])*"");
       file_got+=({want_sha1==sha1});
       n++;
    }
@@ -984,13 +984,13 @@ class PieceDownload
 // 			     targets->pread(piece*info["piece length"],
 // 					    info["piece length"])*"");
 
-	    if (Crypto.SHA1->hash(res)!=info->pieces[20*piece..20*piece+19])
+	    if (Crypto.SHA1.hash(res)!=info->pieces[20*piece..20*piece+19])
 	    {
 	       Function.call_callback(
 		  warning,"sha1 checksum failed on piece %d from %s:%d\n",
 		  piece,peer->ip,peer->port);
 // 	       werror("%d bytes: %O!=%O\n",
-// 		      strlen(res),Crypto.SHA1->hash(res),
+// 		      strlen(res),Crypto.SHA1.hash(res),
 //	       info->pieces[20*n..20*n+19]);
 	    }
 	    else
