@@ -1,6 +1,6 @@
 #pike __REAL_VERSION__
 
-// $Id: Query.pike,v 1.51 2003/02/21 21:45:04 mirar Exp $
+// $Id: Query.pike,v 1.52 2003/03/04 21:21:07 mirar Exp $
 
 //!	Open and execute an HTTP query.
 
@@ -65,6 +65,9 @@ static void ponder_answer()
       if ((i=min(i,j))!=10000000) break;
 
       s=con->read(8192,1);
+#ifdef HTTP_QUERY_DEBUG
+      werror("-> %O\n",s);
+#endif
       if (!s || s=="") { i=sizeof(buf); break; }
 
       i=sizeof(buf)-3;
@@ -617,6 +620,75 @@ string data(int|void max_length)
 #if constant(thread_create)
    `()();
 #endif
+
+   if (buf=="") return ""; // already emptied
+
+   if (headers["transfer-encoding"]=="chunked")
+   {
+      string rbuf=buf[datapos..];
+      string lbuf="";
+
+      for (;;)
+      {
+	 int len;
+	 string s;
+
+#ifdef HTTP_QUERY_NOISE
+	 werror("got %d; chunk: %O left: %d\n",strlen(lbuf),rbuf[..40],strlen(rbuf));
+#endif
+
+	 if (sscanf(rbuf,"%x%*[ ]\r\n%s",len,s)==3)
+	 {
+	    if (len==0)
+	    {
+	       for (;;)
+	       {
+		  int i;
+		  if ((i=search(rbuf,"\r\n\r\n"))==-1)
+		  {
+		     s=con->read(8192,1);
+		     if (!s || s=="") return lbuf;
+		     rbuf+=s;
+		     buf+=s;
+		  }
+		  else
+		  {
+#ifdef HTTP_QUERY_NOISE
+		     werror("fin: buf len=%d; res len=%d\n",
+			    strlen(buf),strlen(rbuf));
+#endif
+ 	             // entity_headers=rbuf[..i-1];
+		     return lbuf;
+		  }
+	       }
+	    }
+	    else
+	    {
+	       if (strlen(s)<len)
+	       {
+		  string t=con->read(len-strlen(s)+6); // + crlfx3
+		  if (!t || t=="") return lbuf+s;
+		  buf+=t;
+		  lbuf+=s+t[..len-strlen(s)-1];
+		  rbuf=t[len-strlen(s)+2..];
+	       }
+	       else
+	       {
+		  lbuf+=s[..len-1];
+		  rbuf=s[len+2..];
+	       }
+	    }
+	 }
+	 else
+	 {
+	    s=con->read(8192,1);
+	    if (!s || s=="") return lbuf;
+	    buf+=s;
+	    rbuf+=s;
+	 }
+      }
+   }
+
    int len=(int)headers["content-length"];
    int l;
 // test if len is zero to get around zero_type bug (??!?) /Mirar
@@ -628,6 +700,12 @@ string data(int|void max_length)
    }
    if(!zero_type(max_length) && l>max_length-sizeof(buf)+datapos)
      l = max_length-sizeof(buf)+datapos;
+
+#ifdef HTTP_QUERY_DEBUG
+   werror("fetch data: %d bytes needed, got %d, %d left\n",
+	  len,sizeof(buf)-datapos,l);
+#endif
+
    if(l>0 && con)
    {
      if(headers->server == "WebSTAR")
