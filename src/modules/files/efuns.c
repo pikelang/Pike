@@ -140,7 +140,11 @@ void f_filesystem_stat(INT32 args)
   i = statvfs(s, &st);
 #else
 #ifdef HAVE_STATFS
+#ifdef HAVE_SGI_STATFS
+  i = statfs(s, &st, sizeof(st), 0);
+#else
   i = statfs(s, &st);
+#endif /* HAVE_SGI_STATFS */
 #else
 #ifdef HAVE_USTAT
   if (!(i = stat(s, &statbuf))) {
@@ -186,7 +190,11 @@ void f_filesystem_stat(INT32 args)
     push_text("bfree");
     push_int(st.f_bfree);
     push_text("bavail");
+#ifdef HAVE_STATFS_F_BAVAIL
     push_int(st.f_bavail);
+#else
+    push_int(st.f_bfree);
+#endif /* HAVE_STATFS_F_BAVAIL */
     push_text("files");
     push_int(st.f_files);
     push_text("ffree");
