@@ -173,19 +173,23 @@ class Display
   
   void write_callback()
   {
-    int written = write(buffer);
-    if (written <= 0)
-    {
-      if (io_error_handler)
-	io_error_handler(this_object());
-      close();
-    }
-    else
-    {
-      buffer = buffer[written..];
-      if (!strlen(buffer))
-	set_write_callback(0);
-    }
+    if (strlen(buffer))
+      {
+	int written = write(buffer);
+	if (written < 0)
+	  {
+	    if (io_error_handler)
+	      io_error_handler(this_object());
+	    close();
+	  }
+	else
+	  {
+	    // werror(sprintf("Xlib: wrote '%s'\n", buffer[..written-1]));
+	    buffer = buffer[written..];
+	    // if (!strlen(buffer))
+	    //   set_write_callback(0);
+	  }
+      }
   }
 
   void send(string data)
@@ -193,39 +197,31 @@ class Display
     int ob = strlen(buffer);
     buffer += data;
     if (!ob && strlen(buffer))
-    {
-      set_write_callback(write_callback);
-      /* Socket is most likely non-blocking,
-       * and write_callback() expects to be be able to write
-       * at least one character. So don't call it yet. */
-      // write_callback( ); 
-    }
+      {
+#if 0
+	set_write_callback(write_callback);
+	/* Socket is most likely non-blocking,
+	 * and write_callback() expects to be be able to write
+	 * at least one character. So don't call it yet. */
+#endif
+	write_callback( ); 
+      }
   }
 
+  /* This function leaves the socket in blocking mode */
   int flush()
   { /* FIXME: Not thread-safe */
-//     trace(5);
+    //     trace(5);
     set_blocking();
-    int result = 0;
-    mixed e = catch {
-      do {
-	int written = write(buffer);
-	if (written < 0)
-	  break;
-	buffer = buffer[written..];
-      
-	if (strlen(buffer))
-	  break;
-	set_write_callback(0);
-	result = 1;
-      } while(0);
-    };
-    set_nonblocking();
-    if (e)
-      throw(e);
+
+    int written = write(buffer);
+    if (written < strlen(buffer))
+      return 0;
+    buffer = "";
+
     // werror(sprintf("flush: result = %d\n", result));
-//     trace(0);
-    return result;
+    //     trace(0);
+    return 1;
   }
   
   void default_error_handler(object me, mapping e)
@@ -242,12 +238,12 @@ class Display
     if (event->wid && (w = lookup_id(event->wid))
 	&& ((w->event_callbacks["_"+event->type])
 	    ||(w->event_callbacks[event->type])))
-    {
-      if(w->event_callbacks["_"+event->type])
-	w->event_callbacks["_"+event->type](event,this_object());
-      if(w->event_callbacks[event->type])
-	w->event_callbacks[event->type](event,this_object());
-    }
+      {
+	if(w->event_callbacks["_"+event->type])
+	  w->event_callbacks["_"+event->type](event,this_object());
+	if(w->event_callbacks[event->type])
+	  w->event_callbacks[event->type](event,this_object());
+      }
     else
       if (misc_event_handler)
 	misc_event_handler(event,this_object());
@@ -384,13 +380,13 @@ class Display
 	    get_keyboard_mapping();
 
 	    foreach(values(Extensions), program p)
-	    {
-	      object e = p();
-	      if(e->init( this_object() ))
-		extensions[e->name] = e;
-	      else
-		destruct( e ) ;
-	    }
+	      {
+		object e = p();
+		if(e->init( this_object() ))
+		  extensions[e->name] = e;
+		else
+		  destruct( e ) ;
+	      }
 	    return ({ ACTION_CONNECT });
 	  }
 	case STATE_WAIT_HEADER:
@@ -440,7 +436,7 @@ class Display
 		  case "MotionNotify": {
 		    int root, child;
 		    sscanf(msg, "%*c%c%2c%4c" "%4c%4c%4c"
-			        "%2c%2c%2c%2c" "%2c%c",
+			   "%2c%2c%2c%2c" "%2c%c",
 			   event->detail, event->sequenceNumber, event->time,
 			   root, event->wid, child,
 			   event->rootX, event->rootY, event->eventx, 
@@ -556,14 +552,14 @@ class Display
 		  case "MappingNotify":
 		    get_keyboard_mapping();
 		    event = ([ "type" : "MappingNotify",
-			       "raw" : msg ]);
+				      "raw" : msg ]);
 		    break;
 
 		  default:  /* Any other event */
 		    werror("Unimplemented event: "+
 			   _Xlib.event_types[msg[0] & 0x3f]+"\n");
 		    event = ([ "type" :type,
-			     "raw" : msg ]);
+				      "raw" : msg ]);
 		    break;
 		  }
 		return ({ ACTION_EVENT, event });
@@ -627,20 +623,13 @@ class Display
   
   void read_callback(mixed id, string data)
   {
+    // werror(sprintf("Xlib: received '%s'\n", data));
     received->add_data(data);
     array a;
     while(a = process())
       handle_action(a);
   }
 
-  void process_pending_actions()
-  {
-    array a;
-    while(a = pending_actions->get())
-      handle_action(a);
-    set_read_callback(read_callback);
-  }
-	  
   void close_callback(mixed id)
   {
     werror("Xlib.close_callback\n");
@@ -654,9 +643,19 @@ class Display
     close();
   }
   
+  void process_pending_actions()
+  {
+    array a;
+    while(a = pending_actions->get())
+      handle_action(a);
+    set_nonblocking(read_callback, write_callback, close_callback);
+  }
+
   int open(string|void display)
   {
     int async = !!connect_handler;
+    int is_local;
+    int display_number;
     
     display = display || getenv("DISPLAY");
     if (!display)
@@ -666,29 +665,53 @@ class Display
     if (!fields)
       error("Xlib.pmod: Invalid display name!\n");
 
-    string host = strlen(fields[0]) ? fields[0] : "localhost";
+    if (1 != sscanf(fields[1], "%d", display_number))
+      error(sprintf("Xlib.Display->open: Invalid display number '%s'.\n",
+		    fields[1]));
 
-    if(!strlen(fields[0]))
-    {
-      if(File::open("/tmp/.X11-pipe/X"+((int)fields[1]), "rw"))
+    string host;
+    if (strlen(fields[0]))
+      host = fields[0];
+    else
       {
-	werror("Using local transport\n");
-	host=0;
-      } else
-	werror("Failed to use local transport.\n");
-    }
+	if(File::open("/tmp/.X11-pipe/X"+((int)display_number), "rw"))
+	  {
+	    werror("Using local transport\n");
+	    is_local = 1;
+	  } else {
+	    werror("Failed to use local transport.\n");
+	    host = "localhost";
+	  }
+      }
+    /* Authentication */
 
+    mapping auth_data;
+    object auth_file = Auth.read_auth_data();
+
+    if (auth_file)
+      auth_data = host ? auth_file->lookup_ip(gethostbyname(host)[1][0],
+					      display_number)
+	: auth_file->lookup_local(gethostname(), display_number);
+    else
+      werror("Xlib: Could not read auth-file\n");
+
+    if (!auth_data)
+      auth_data = ([ "name" : "", "data" : ""]);
+    
     /* Asynchronous connection */
     if (async)
       {
-	if (host)
+	if (!is_local)
 	  open_socket();
 	set_nonblocking(0, 0, close_callback);
       }
-    if(host)
-      if (!connect(host, XPORT + (int)fields[1]))
-	return 0;
-
+    if(!is_local)
+      {
+	int port =  XPORT + (int)fields[1];
+	werror(sprintf("Xlib: Connecting to %s:%d\n", host, port));
+	if (!connect(host, port))
+	  return 0;
+      }
     set_buffer( 65536 );
 
     screen_number = (int) fields[2];
@@ -699,28 +722,31 @@ class Display
     pending_actions = ADT.queue();
     sequence_number = 1;
     
-    /* Always uses network byteorder (big endian) 
-     * No authentication */
-    string msg = sprintf("B\0%2c%2c%2c%2c\0\0", 11, 0, 0, 0);
+    /* Always uses network byteorder (big endian) */
+    string msg = sprintf("B\0%2c%2c%2c%2c\0\0%s%s",
+			 11, 0,
+			 strlen(auth_data->name), strlen(auth_data->data),
+			 _Xlib.pad(auth_data->name), _Xlib.pad(auth_data->data));
+
     state = STATE_WAIT_CONNECT;
     received->expect(8);
     send(msg);
     if (async)
       {
-	set_read_callback(read_callback);
+	set_nonblocking(read_callback, write_callback, close_callback);
 	return 1;
       }
     if (!flush())
       return 0;
     
-    set_blocking();
     int result = 0;
     int done = 0;
-    mixed e = catch {
-      while(!done) {
+
+    while(1)
+      {
 	string data = read(received->needs());
 	if (!data)
-	  break;
+	  return 0;
 	received->add_data(data);
 	array a = process();
 	if (a)
@@ -728,22 +754,17 @@ class Display
 	    {
 	    case ACTION_CONNECT:
 	      get_keyboard_mapping();
-	      set_nonblocking(read_callback, 0, close_callback);
-	      result = done = 1;
+	      set_nonblocking(read_callback, write_callback, close_callback);
+	      return 1;
 	      break;
 	    case ACTION_CONNECT_FAILED:
 	      werror("Connection failed: "+a[1]+"\n");
-	      done = 1;
+	      return 0;
 	      break;
 	    default:
 	      error("Xlib.Display->open: Internal error!\n");
 	    }
       }
-    };
-    set_nonblocking();
-    if (e)
-      throw(e);
-    return result;
   }
 
   int send_request(object req, mixed|void handler)
@@ -760,47 +781,42 @@ class Display
 
     int n = send_request(req);
     flush();
-    set_blocking();
     
-    mixed e = catch {
-      while(!done)
-	{
-	  string data = read(0x7fffffff, 1);
-	  if (!data)
-	    break;
-	  received->add_data(data);
-	  array a;
-	  while (!done && (a = process()))
-	    {
-	      if ((a[0] == ACTION_REPLY)
-		  && (a[1]->sequenceNumber == n))
-		{
-		  result = req->handle_reply(a[1]);
-		  done = 1;
-		  success = 1;
-		  break;
-		}
-	      else if ((a[0] == ACTION_ERROR)
-		       && (a[1]->sequenceNumber == n))
-		{
-		  result = req->handle_error(a[1]);
-		  done = 1;
-		  break;
-		}
-	      /* Enqueue all other actions */
-	      pending_actions->put(a);
-	    }
-	}
-    };
-    set_nonblocking();
-    if (e)
-      throw(e);
+    while(!done)
+      {
+	string data = read(0x7fffffff, 1);
+	if (!data)
+	  {
+	    call_out(close_callback, 0);
+	    return ({ 0, 0 });
+	  }
+	received->add_data(data);
+	array a;
+	while (a = process())
+	  {
+	    if ((a[0] == ACTION_REPLY)
+		&& (a[1]->sequenceNumber == n))
+	      {
+		result = req->handle_reply(a[1]);
+		done = 1;
+		success = 1;
+		break;
+	      }
+	    else if ((a[0] == ACTION_ERROR)
+		     && (a[1]->sequenceNumber == n))
+	      {
+		result = req->handle_error(a[1]);
+		done = 1;
+		break;
+	      }
+	    /* Enqueue all other actions */
+	    pending_actions->put(a);
+	  }
+      }
     if (!pending_actions->is_empty())
-    {
-      set_read_callback(0);
       call_out(process_pending_actions, 0);
-    } else
-      set_read_callback( read_callback );
+    else
+      set_nonblocking(read_callback,write_callback,close_callback);
     return ({ success, result });
   }
   
