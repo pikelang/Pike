@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: peep.c,v 1.81 2002/11/04 18:00:59 grubba Exp $
+|| $Id: peep.c,v 1.82 2002/11/07 12:39:13 grubba Exp $
 */
 
 #include "global.h"
@@ -26,7 +26,7 @@
 #include "interpret.h"
 #include "pikecode.h"
 
-RCSID("$Id: peep.c,v 1.81 2002/11/04 18:00:59 grubba Exp $");
+RCSID("$Id: peep.c,v 1.82 2002/11/07 12:39:13 grubba Exp $");
 
 static void asm_opt(void);
 
@@ -156,6 +156,7 @@ void assemble(void)
   int reoptimize=!(debug_options & NO_PEEP_OPTIMIZING);
 #ifdef PIKE_DEBUG
   int synch_depth = 0;
+  size_t fun_start = Pike_compiler->new_program->num_program;
 #endif
 
   c=(p_instr *)instrbuf.s.str;
@@ -549,6 +550,19 @@ void assemble(void)
   free((char *)jumps);
   free((char *)uses);
 
+#ifdef PIKE_DEBUG
+  if (a_flag > 6) {
+    size_t len = (Pike_compiler->new_program->num_program - fun_start)*
+      sizeof(PIKE_OPCODE_T);
+#ifdef DISASSEMBLE_CODE
+    DISASSEMBLE_CODE(Pike_compiler->new_program->program + fun_start, len);
+#else /* !DISASSEMBLE_CODE */
+    {
+      /* FIXME: Hexdump here. */
+    }
+#endif /* DISASSEMBLE_CODE */
+  }
+#endif /* PIKE_DEBUG */
 
   exit_bytecode();
 }
