@@ -5,7 +5,7 @@
 \*/
 #include "global.h"
 #include <math.h>
-RCSID("$Id: operators.c,v 1.37 1998/07/04 16:56:42 grubba Exp $");
+RCSID("$Id: operators.c,v 1.38 1998/07/31 07:06:40 hubbe Exp $");
 #include "interpret.h"
 #include "svalue.h"
 #include "multiset.h"
@@ -1248,19 +1248,20 @@ void o_divide(void)
       case TWO_TYPES(T_ARRAY, T_INT):
       {
 	struct array *a;
-	INT32 size,e,len,pos=0;
+	INT32 size,e,len,pos;
 
 	len=sp[-1].u.integer;
 	if(!len)
 	  PIKE_ERROR("`/", "Division by zero.\n", sp, 2);
-
+	
 	if(len<0)
 	{
 	  len=-len;
 	  size=sp[-2].u.array->size / len;
-	  pos+=sp[-2].u.array->size % len;
+	  pos=sp[-2].u.array->size % len;
 	}else{
 	  size=sp[-2].u.array->size / len;
+	  pos=0;
 	}
 	a=allocate_array(size);
 	for(e=0;e<size;e++)
@@ -1268,8 +1269,8 @@ void o_divide(void)
 	  a->item[e].u.array=friendly_slice_array(sp[-2].u.array,
 						  pos,
 						  pos+len);
-	  a->item[e].type=T_ARRAY;
 	  pos+=len;
+	  a->item[e].type=T_ARRAY;
 	}
 	a->type_field=BIT_ARRAY;
 	pop_n_elems(2);
