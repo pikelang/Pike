@@ -3,7 +3,7 @@
 #include "error.h"
 #include <math.h>
 
-RCSID("$Id: fdlib.c,v 1.34 2000/06/27 15:12:32 grubba Exp $");
+RCSID("$Id: fdlib.c,v 1.35 2000/07/02 15:00:12 grubba Exp $");
 
 #ifdef HAVE_WINSOCK_H
 
@@ -288,7 +288,7 @@ int debug_fd_pipe(int fds[2] DMALLOC_LINE_ARGS)
   return 0;
 }
 
-FD debug_fd_accept(FD fd, struct sockaddr *addr, int *addrlen)
+FD debug_fd_accept(FD fd, struct sockaddr *addr, ACCEPT_SIZE_T *addrlen)
 {
   FD new_fd;
   SOCKET s;
