@@ -5,7 +5,7 @@
 \*/
 /**/
 #include "global.h"
-RCSID("$Id: file.c,v 1.168 2000/03/27 12:38:28 grubba Exp $");
+RCSID("$Id: file.c,v 1.169 2000/04/03 19:41:52 hubbe Exp $");
 #include "fdlib.h"
 #include "interpret.h"
 #include "svalue.h"
@@ -1354,7 +1354,17 @@ static void file_open(INT32 args)
      THREADS_DISALLOW_UID();
 
      if(!fp->current_object->prog)
-	error("Object destructed in file->open()\n");
+     {
+#ifdef DEBUG_MALLOC
+       /* This is a temporary kluge */
+       if(d_flag)
+       {
+	 fprintf(stderr,"Possible gc() failiure detected in open()\n");
+	 describe(fp->current_object);
+       }
+#endif
+       error("Object destructed in file->open()\n");
+     }
 
      if(fd >= MAX_OPEN_FILEDESCRIPTORS)
      {
@@ -2634,13 +2644,26 @@ static int PIKE_CONCAT(Y,_function_number);
 #include "file_functions.h"
 
 
-#define FILE_FUNC(X,Y,Z) \
-void PIKE_CONCAT(Y,_ref) (INT32 args) {\
-  struct object *o=REF; \
-  if(!o || !o->prog) error("Stdio.File(): not open.\n"); \
-  if(o->prog != file_program) \
-     error("Wrong type of object in Stdio.File->_fd\n"); \
-  apply_low(o, PIKE_CONCAT(Y,_function_number), args); \
+#define FILE_FUNC(X,Y,Z)					\
+void PIKE_CONCAT(Y,_ref) (INT32 args) {				\
+  struct object *o=REF;						\
+  if(!o || !o->prog) { 						\
+   /* This is a temporary kluge */                              \
+   DO_IF_DMALLOC(						\
+     if(d_flag)							\
+     {								\
+       if(o)							\
+       {							\
+         fprintf(stderr,"Possible gc() failiure detected\n");	\
+         describe(o);						\
+       }							\
+     }								\
+   );								\
+   error("Stdio.File(): not open.\n");				\
+  }								\
+  if(o->prog != file_program)					\
+     error("Wrong type of object in Stdio.File->_fd\n");	\
+  apply_low(o, PIKE_CONCAT(Y,_function_number), args);		\
 }
 
 #include "file_functions.h"
