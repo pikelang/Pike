@@ -23,7 +23,7 @@
 #include "stuff.h"
 #include "bignum.h"
 
-RCSID("$Id: array.c,v 1.106 2001/06/06 02:22:38 mast Exp $");
+RCSID("$Id: array.c,v 1.107 2001/06/07 08:26:46 hubbe Exp $");
 
 PMOD_EXPORT struct array empty_array=
 {
@@ -79,6 +79,7 @@ PMOD_EXPORT struct array *low_allocate_array(ptrdiff_t size, ptrdiff_t extra_spa
   v->flags=0;
 
   v->malloced_size = DO_NOT_WARN((INT32)(size + extra_space));
+  v->item=v->real_item;
   v->size = DO_NOT_WARN((INT32)size);
   INIT_PIKE_MEMOBJ(v);
   LINK_ARRAY(v);
@@ -515,11 +516,22 @@ PMOD_EXPORT struct array *slice_array(struct array *v, ptrdiff_t start,
   if(d_flag > 1)  array_check_type_field(v);
 #endif
 
-  if(start==0 && v->refs==1)	/* Can we use the same array? */
+#if 1
+  if(v->refs==1)	/* Can we use the same array? */
   {
-    add_ref(v);
-    return array_shrink(v,end);
+    if((end-start) &&
+       (end-start)*2 > v->malloced_size +4 ) /* don't waste too much memory */
+    {
+      add_ref(v);
+      free_svalues(ITEM(v) + end, v->size - end, v->type_field);
+      free_svalues(ITEM(v), start, v->type_field);
+      v->item+=start;
+      v->malloced_size+=start;
+      v->size=end-start;
+      return v;
+    }
   }
+#endif
 
   a=allocate_array_no_init(end-start,0);
   a->type_field = v->type_field;

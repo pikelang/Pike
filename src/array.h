@@ -5,7 +5,7 @@
 \*/
 
 /*
- * $Id: array.h,v 1.35 2001/06/06 02:22:39 mast Exp $
+ * $Id: array.h,v 1.36 2001/06/07 08:26:46 hubbe Exp $
  */
 #ifndef ARRAY_H
 #define ARRAY_H
@@ -26,7 +26,8 @@ struct array
 			 * though.
 			 */
   INT16 flags;          /* ARRAY_* flags */
-  struct svalue item[1];
+  struct svalue *item;
+  struct svalue real_item[1];
 };
 
 #define ARRAY_WEAK_FLAG 1

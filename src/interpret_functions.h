@@ -1,5 +1,5 @@
 /*
- * $Id: interpret_functions.h,v 1.55 2001/05/24 22:39:00 hubbe Exp $
+ * $Id: interpret_functions.h,v 1.56 2001/06/07 08:26:48 hubbe Exp $
  *
  * Opcode definitions for the interpreter.
  */
@@ -442,6 +442,30 @@ OPCODE0(F_LTOSVAL2, "ltosval2")
     s.subtype = 0;
     s.u.integer = 0;
     assign_lvalue(Pike_sp-4, &s);
+  }
+BREAK;
+
+OPCODE0(F_LTOSVAL3, "ltosval3")
+  Pike_sp[0] = Pike_sp[-1];
+  Pike_sp[-1] = Pike_sp[-2];
+  Pike_sp[-2].type = PIKE_T_INT;
+  Pike_sp++;
+  lvalue_to_svalue_no_free(Pike_sp-3, Pike_sp-5);
+
+  /* this is so that foo+=bar (and similar things) will be faster, this
+   * is done by freeing the old reference to foo after it has been pushed
+   * on the stack. That way foo can have only 1 reference if we are lucky,
+   * and then the low array/multiset/mapping manipulation routines can be
+   * destructive if they like
+   */
+  if( (1 << Pike_sp[-3].type) &
+      (BIT_ARRAY | BIT_MULTISET | BIT_MAPPING | BIT_STRING) )
+  {
+    struct svalue s;
+    s.type = PIKE_T_INT;
+    s.subtype = 0;
+    s.u.integer = 0;
+    assign_lvalue(Pike_sp-5, &s);
   }
 BREAK;
 
