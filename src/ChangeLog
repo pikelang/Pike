@@ -1,3 +1,12 @@
+Mon May 25 22:12:40 1998  Henrik Grubbström  <grubba@idonex.se>
+
+	* program.c (program_indices, program_values, program_index_no_free):
+	Added support for retreiving constants from a program without first
+	cloning it.
+	* stralloc.c (verify_shared_strings_tables): Fixed bug "Shared string
+ 	hashed to other number." which occurred if the debug level was higher
+	than 10 when creating a new string.
+
 Wed May 13 23:49:01 1998  Henrik Grubbström  <grubba@idonex.se>
 
 	* modules/system/errnos.list: Added lots (194) of errnos.
