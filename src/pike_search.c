@@ -173,6 +173,9 @@ PMOD_EXPORT char *my_memmem(char *needle,
   /* No free required - Hubbe */
 }
 
+/*! @module __builtin
+ */
+
 /*! @class Search
  */
 
@@ -224,6 +227,9 @@ static void f_pike_search(INT32 args)
 }
 
 /*! @endclass
+ */
+
+/*! @endmodule
  */
 
 /* Compatibility: All functions using these two functions
