@@ -428,7 +428,7 @@ int main(int argc, array(string) argv)
 {
   int portnr = (argc == 2) ? (int) argv[1] : 143;
 
-  .imap_server(Stdio.Port(), portnr, backend(), 1);
+  .imap_server(Stdio.Port(), portnr, 600, backend(), 1);
 
   return -17;
 }
