@@ -1,5 +1,5 @@
 #include "global.h"
-RCSID("$Id: threads.c,v 1.151 2001/02/06 17:10:38 per Exp $");
+RCSID("$Id: threads.c,v 1.152 2001/02/06 17:12:26 per Exp $");
 
 PMOD_EXPORT int num_threads = 1;
 PMOD_EXPORT int threads_disabled = 0;
@@ -1412,9 +1412,8 @@ void th_init(void)
   ADD_STORAGE(struct thread_local);
   ADD_FUNCTION("get",f_thread_local_get,tFunc(tNone,tMix),0);
   ADD_FUNCTION("set",f_thread_local_set,tFunc(tSetvar(1,tMix),tVar(1)),0);
-  ADD_EFUN("crate",f_thread_local_create,
-	   tFunc(tNone,tObjIs_THREAD_LOCAL),
-	   OPT_SIDE_EFFECT);
+  ADD_FUNCTION("crate",f_thread_local_create,
+	       tFunc(tNone,tVoid), OPT_SIDE_EFFECT);
   thread_local_prog=Pike_compiler->new_program;
   add_ref(thread_local_prog);
   end_class("thread_local", 0);
