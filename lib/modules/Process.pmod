@@ -4,7 +4,7 @@ import Stdio;
 
 program create_process = _static_modules.Builtin()->create_process;
 
-varargs int exec(string file,string ... foo)
+int exec(string file,string ... foo)
 {
   if (sizeof(file)) {
     string path;
@@ -65,8 +65,8 @@ string *split_quoted_string(string s)
   return ret;
 }
 
-varargs object spawn(string s,object stdin,object stdout,object stderr,
-		     function|void cleanup, mixed ... args)
+object spawn(string s,object|void stdin,object|void stdout,object|void stderr,
+	     function|void cleanup, mixed ... args)
 {
 #if 1
   mapping data=([]);

@@ -32,7 +32,7 @@ class Fifo {
       r_cond::signal();
     }
   
-  varargs void create(int size)
+  void create(int|void size)
     {
       buffer=allocate(size || 128);
     }

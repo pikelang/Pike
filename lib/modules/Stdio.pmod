@@ -259,3 +259,27 @@ mixed `[](string index)
   default: return ([])[0];
   }
 }
+
+#if constant(system.cp)
+constant cp=system.cp;
+#else
+#define BLOCK 65536
+int cp(string from, string to)
+{
+  string data;
+  object tmp=File();
+  if(tmp->open(from,"r")) return 0;
+  function r=tmp->read;
+  tmp=File();
+  if(tmp->open(to,"wct")) return 0;
+  function w=tmp->write;
+  do
+  {
+    data=r(BLOCK);
+    if(!data) return 0;
+    if(w(data)!=strlen(data)) return 0;
+  }while(strlen(data) == BLOCK);
+
+  return 1;
+}
+#endif

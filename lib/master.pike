@@ -1,4 +1,4 @@
-/* $Id: master.pike,v 1.62 1998/01/17 17:32:55 mirar Exp $
+/* $Id: master.pike,v 1.63 1998/01/21 19:36:19 hubbe Exp $
  *
  * Master-file for Pike.
  */
@@ -121,7 +121,7 @@ mixed *master_file_stat(string x)
 mapping (string:string) environment=([]);
 
 
-varargs mixed getenv(string s)
+mixed getenv(string|void s)
 {
   if(!s) return environment;
   return environment[s];
@@ -433,7 +433,7 @@ object findmodule(string fullname)
   return fc[fullname]=UNDEFINED;
 }
 
-varargs mixed resolv(string identifier, string current_file)
+mixed resolv(string identifier, string|void current_file)
 {
   mixed ret;
   string *tmp,path;

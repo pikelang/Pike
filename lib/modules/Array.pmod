@@ -94,7 +94,7 @@ mixed *sum_arrays(function foo, mixed * ... args)
   return ret;
 }
 
-varargs mixed *sort_array(array foo,function cmp, mixed ... args)
+mixed *sort_array(array foo,function|void cmp, mixed ... args)
 {
   array bar,tmp;
   int len,start;
