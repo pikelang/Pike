@@ -1,5 +1,5 @@
 #
-# $Id: Makefile.in,v 1.320 2002/09/05 15:28:14 marcus Exp $
+# $Id: Makefile.in,v 1.321 2002/09/09 13:45:44 marcus Exp $
 #
 
 # This line is needed on some machines.
@@ -406,7 +406,7 @@ force :
 	@:
 
 # install
-install: pike tools pike-module aclocal
+install: pike tools
 	@$(RUNPIKE) $(TMP_BINDIR)/install.pike $(INSTALLARGS) \
 	exec_prefix="$(exec_prefix)" lib_prefix="$(lib_prefix)" \
 	TMP_LIBDIR="$(TMP_LIBDIR)" LIBDIR_SRC="$(LIBDIR_SRC)" \
@@ -414,7 +414,7 @@ install: pike tools pike-module aclocal
 	man_prefix="$(man_prefix)" pike_name=$(pike_name) \
 	fakeroot="$(buildroot)" PIKE_MODULE_RELOC="$(PIKE_MODULE_RELOC)"
 
-install_interactive: pike tools pike-module aclocal
+install_interactive: pike tools
 	@$(RUNPIKE) $(TMP_BINDIR)/install.pike --interactive \
 	exec_prefix="$(exec_prefix)"  prefix=$(prefix) \
 	TMP_LIBDIR="$(TMP_LIBDIR)" LIBDIR_SRC="$(LIBDIR_SRC)" \
@@ -497,11 +497,11 @@ dynloadtest: dynloadtest.o @EXTRA_OBJS@ fdlib.o port.o
 	$(LD) $(LDFLAGS) dynloadtest.o @EXTRA_OBJS@ fdlib.o port.o $(LIBS) -o dynloadtest
 
 
-tinstall: aclocal master-stamp aclocal
+tinstall: master-stamp
 	-rm -rf test-install
 	$(RUNPIKE) $(TMP_BINDIR)/install.pike $(INSTALLARGS) pike_name="test-pike" lib_prefix="$(lib_prefix)" TMP_LIBDIR="$(TMP_LIBDIR)" LIBDIR_SRC="$(LIBDIR_SRC)" SRCDIR="$(SRCDIR)" prefix="./test-install" MANDIR_SRC="$(MANDIR_SRC)" man_prefix="$(man_prefix)" fakeroot="$(buildroot)" PIKE_MODULE_RELOC="$(PIKE_MODULE_RELOC)"
 
-just-tinstall: aclocal master-stamp aclocal
+just-tinstall: master-stamp
 	$(RUNPIKE) $(TMP_BINDIR)/install.pike $(INSTALLARGS) pike_name="test-pike" lib_prefix="$(lib_prefix)" TMP_LIBDIR="$(TMP_LIBDIR)" LIBDIR_SRC="$(LIBDIR_SRC)" SRCDIR="$(SRCDIR)" prefix="./test-install" MANDIR_SRC="$(MANDIR_SRC)" man_prefix="$(man_prefix)" fakeroot="$(buildroot)" PIKE_MODULE_RELOC="$(PIKE_MODULE_RELOC)"
 
 
@@ -570,6 +570,7 @@ master.pike: $(LIBDIR_SRC)/master.pike.in Makefile
 	if test "x$(PIKE_MODULE_RELOC)" = "x"; then u=s,x,x,; else u='s/^#undef PIKE_MODULE_RELOC/#define PIKE_MODULE_RELOC 1/'; fi; \
 	sed -e 's!¤lib_prefix¤!'"`echo "$(TMP_LIBDIR)" | sed -e "$$t"`"'!' <$(LIBDIR_SRC)/master.pike.in \
 	  | sed -e 's!¤share_prefix¤!'"`echo "$(LIBDIR_SRC)" | sed -e "$$t"`"'!' \
+	  | sed -e 's!¤include_prefix¤!'"`echo "$(TMP_BUILDDIR)" | sed -e "$$t"`"'!' \
 	  | sed -e "$$u" >master.pike
 
 # Want master.pike up-to-date, but yet there's no dependency on the
@@ -589,10 +590,6 @@ pike-module: $(SRCDIR)/pike-module.in Makefile ./pike
 	   --set='lib_prefix=$(TMP_LIBDIR)' --set='share_prefix=$(LIBDIR_SRC)' \
            --output=pike-module
 	-@chmod +x pike-module
-
-aclocal: $(SRCDIR)/aclocal.m4
-	echo >aclocal "define(PIKE_INCLUDE_PATH,$(prefix)/include/pike)"
-	cat >>aclocal $(SRCDIR)/aclocal.m4
 
 # We touch the files that depend on language.h_src and
 # interpret_protos.h_src to ensure that the .h_src.h rule doesn't have
@@ -618,7 +615,7 @@ snapshot_export: source
 
 export: full_export
 
-bin_export: aclocal
+bin_export: 
 	@rm -f *.burk
 	@$(RUNPIKE) $(TMP_BINDIR)/install.pike --export \
 	exec_prefix="$(exec_prefix)" lib_prefix="$(lib_prefix)" \
