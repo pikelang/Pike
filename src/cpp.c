@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: cpp.c,v 1.135 2004/04/15 22:07:48 mast Exp $
+|| $Id: cpp.c,v 1.136 2004/06/30 09:35:43 grubba Exp $
 */
 
 #include "global.h"
@@ -1070,7 +1070,7 @@ static struct pike_string *recode_string(struct cpp *this, struct pike_string *d
     MEMCPY(new_str->str, p, len);
 
     pop_stack();
-    ref_push_string(end_shared_string(new_str));
+    ref_push_string(new_str = end_shared_string(new_str));
 		
     /* Decode the string */
 
