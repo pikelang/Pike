@@ -188,7 +188,7 @@ array(array(string)) namedays_1993=
    ({"Ulrik","Alrik"}), ({"Sixten","Sölve"}), ({"Dennis","Donald"}),
    ({"Silvia","Sylvia"}), ({"Roland","Roine"}), ({"Lars","Lorentz"}),
    ({"Susanna","Sanna"}), ({"Klara","Clary"}), ({"Hillevi","Gullvi"}),
-   ({"William","Bill"}), ({"Stella","Stefan"}), ({"Brynolf","Sigyn"}),
+   ({"William","Bill"}), ({"Stella","Stellan"}), ({"Brynolf","Sigyn"}),
    ({"Verner","Veronika"}), ({"Helena","Lena"}), ({"Magnus","Måns"}),
    ({"Bernhard","Bernt"}), ({"Jon","Jonna"}), ({"Henrietta","Henny"}),
    ({"Signe","Signhild"}), ({"Bartolomeus","Bert"}),
