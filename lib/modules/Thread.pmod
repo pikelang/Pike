@@ -10,6 +10,11 @@ constant Thread=__builtin.thread_id;
 //
 inherit Thread;
 
+// We don't want to create a thread of the module...
+static void create(mixed ... args)
+{
+}
+
 optional Thread `()( mixed f, mixed ... args )
 {
   return thread_create( f, @args );
