@@ -3,7 +3,7 @@
 #
 # Creates testsuit files form the testsuit.in files
 # found in the lib directory.
-# $Id: mklibtests.sh,v 1.1 2002/09/22 15:54:08 marcus Exp $
+# $Id: mklibtests.sh,v 1.2 2002/09/22 16:42:55 marcus Exp $
 #
 
 src_dir=
@@ -17,7 +17,7 @@ recurse () {
       if [ ! -d "$dest_dir$path$fn" ]; then
         if mkdir -p "$dest_dir$path$fn"; then :; else
 	  echo >&2 "Could not create $dest_dir$path$fn"
-	  continye
+	  continue
 	fi
       fi
       ( recurse "$path$fn"/ )
