@@ -25,7 +25,7 @@ typedef struct
     struct
     {
       unsigned char id:2;
-      unsigned int position:14;
+      unsigned int pos:14;
     } body;
     struct
     {

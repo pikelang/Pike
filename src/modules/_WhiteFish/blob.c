@@ -1,7 +1,7 @@
 #include "global.h"
 #include "stralloc.h"
 #include "global.h"
-RCSID("$Id: blob.c,v 1.8 2001/05/24 17:09:01 per Exp $");
+RCSID("$Id: blob.c,v 1.9 2001/05/25 10:25:38 per Exp $");
 #include "pike_macros.h"
 #include "interpret.h"
 #include "program.h"
@@ -94,7 +94,7 @@ Hit wf_blob_hit( Blob *b, int n )
   if( b->eof )
   {
     hit.type = HIT_NOTHING;
-    hit.u.raw = -1;
+    hit.u.raw = 0;
     return hit;
   }
   else

@@ -1,7 +1,9 @@
+#include <math.h>
+
 #include "global.h"
 #include "stralloc.h"
 #include "global.h"
-RCSID("$Id: whitefish.c,v 1.9 2001/05/23 16:00:27 js Exp $");
+RCSID("$Id: whitefish.c,v 1.10 2001/05/25 10:25:38 per Exp $");
 #include "pike_macros.h"
 #include "interpret.h"
 #include "program.h"
@@ -23,6 +25,7 @@ RCSID("$Id: whitefish.c,v 1.9 2001/05/23 16:00:27 js Exp $");
 struct  tofree
 {
   Blob **blobs;
+  Blob **tmp;
   int nblobs;
   struct object *res;
 };
@@ -34,7 +37,59 @@ static void free_stuff( void *_t )
   if( t->res ) free_object( t->res );
   for( i = 0; i<t->nblobs; i++ )
     wf_blob_free( t->blobs[i] );
+  free( t->tmp );
   free( t );
+}
+
+#define OFFSET(X) \
+ (X.type == HIT_BODY?X.u.body.pos:X.type==HIT_FIELD?(X.u.field.pos<<(14-8)):(X.u.anchor.pos<<10))
+
+#define DOFF(X)  MINIMUM((int)sqrt(X),7)
+#define MOFF(X)  (X.type==HIT_BODY?X.u.body.id:X.type==HIT_FIELD?X.u.field.type+3:67)
+
+static void handle_hit( Blob **blobs,
+			int nblobs,
+			struct object *res,
+			int *field_c[68],
+			int *prox_c[8] )
+{
+  int i, j, k, end = 0;
+  Hit *hits = malloc( nblobs * sizeof(Hit) );
+  unsigned char *nhits = malloc( nblobs );
+  unsigned char *pos = malloc( nblobs );
+
+  int matrix[68][8];
+
+  MEMSET(hits, 0, nblobs * sizeof(Hit) );
+  MEMSET(pos, 0, nblobs );
+
+  for( i = 0; i<nblobs; i++ )
+    nhits[i] = wf_blob_nhits( blobs[i] );
+
+
+  for( i = 0; i<nblobs; i++ )
+  {
+    MEMSET( pos, 0, nblobs );
+    for( j = 0; j<nhits[i]; j++ )
+    {
+      hits[i] = wf_blob_hit( blobs[i], j );
+
+      /* forward the other positions */
+      for( k = 0; k<nblobs; k++ )
+	if( k != j &&  pos[ k ] < nhits[ k ] )
+	{
+	  while( hits[k].u.raw < hits[i].u.raw )
+	    hits[k] = wf_blob_hit( blobs[k], pos[k]++ );
+	  if( hits[k].type == hits[i].type )
+	    matrix[MOFF(hits[i])][DOFF(OFFSET(hits[i])-OFFSET(hits[k]))]++;
+	}
+    }
+  }
+  
+
+  /* Now we have our nice matrix. Time to do some multiplication */
+  
+  
 }
 
 static struct object *low_do_query_merge( Blob **blobs,
@@ -45,15 +100,53 @@ static struct object *low_do_query_merge( Blob **blobs,
   struct object *res = wf_resultset_new();
   struct tofree *__f = malloc( sizeof( struct tofree ) );
   ONERROR e;
+  int i, j, end=0;
+  Blob **tmp;
+  
+  tmp = malloc( nblobs * sizeof( Blob *) );
 
   __f->res = res;
   __f->blobs = blobs;
   __f->nblobs = nblobs;
+  __f->tmp    = tmp;
   SET_ONERROR( e, free_stuff, __f );
 
 
   /* Time to do the real work. :-) */
+  for( i = 0; i<nblobs; i++ ) /* Forward to first element */
+    wf_blob_next( blobs[i] );  
 
+
+  /* Main loop: Find the smallest element in the blob array. */
+  while( !end )
+  {
+    int min = blobs[0]->docid;
+    
+    for( i = 1; i<nblobs; i++ )
+      if( blobs[i]->docid < min )
+	min = blobs[i]->docid;
+
+    for( j = 0, i = 0; i < nblobs; i++ )
+      if( blobs[i]->docid == min && !blobs[i]->eof )
+	tmp[j++] = blobs[i];
+
+    handle_hit( tmp, j, res, &field_c, &prox_c );
+    
+    /* Step the 'min' blobs */
+    for( i = 0; i<j; i++ )
+      wf_blob_next( tmp[i] );
+
+    /* Are we done? */
+    end = 1;
+    for( i=0; i<nblobs; i++ )
+      if( !blobs[i]->eof )
+      {
+	end = 0;
+	break;
+      }
+  }
+
+  /* Free workarea and return the result. */
 
   UNSET_ONERROR( e );
   __f->res = 0;
@@ -118,6 +211,7 @@ static void f_do_query_merge( INT32 args )
   Blob **blobs;
 
   struct svalue *cb;
+  struct object *res;
   struct array *_words, *_field, *_prox;
 
   /* 1: Get all arguments. */
@@ -149,9 +243,11 @@ static void f_do_query_merge( INT32 args )
   for( i = 0; i<68; i++ )
     field_coefficients[i] = _field->item[i].u.integer;
 
-  push_object(low_do_query_merge(blobs,numblobs,
-				 field_coefficients,
-			 proximity_coefficients ));
+  res = low_do_query_merge(blobs,numblobs,
+			   field_coefficients,
+			   proximity_coefficients );
+  pop_n_elems( args );
+  push_object( res );
 }
 
 void pike_module_init(void)
