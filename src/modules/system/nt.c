@@ -1,5 +1,5 @@
 /*
- * $Id: nt.c,v 1.38 2001/08/29 18:17:13 mast Exp $
+ * $Id: nt.c,v 1.39 2001/08/29 20:35:18 grubba Exp $
  *
  * NT system calls for Pike
  *
@@ -1948,6 +1948,8 @@ static void f_NetWkstaUserEnum(INT32 args)
  *!   The following transformations are currently done:
  *!   @dl
  *!     @item
+ *!       Trailing slashes are removed.
+ *!     @item
  *!       Extraneous empty extensions are removed.
  *!     @item
  *!       Short filenames are expanded to their corresponding long
@@ -1957,13 +1959,16 @@ static void f_NetWkstaUserEnum(INT32 args)
  *!     @item
  *!       Current- and parent-directory paths are removed ("." and "..").
  *!     @item
+ *!       Relative paths are expanded to absolute paths.
+ *!     @item
  *!       Case-information is restored.
  *!   @enddl
  *!
  *! @returns
- *!   A normalized absolute path.
+ *!   A normalized absolute path without trailing slashes.
  *!
- *!   Throws errors on failure.
+ *!   Throws errors on failure, e.g. if the file or directory doesn't
+ *!   exist.
  *!
  *! @note
  *!   File fork information is currently not supported (invalid data).
