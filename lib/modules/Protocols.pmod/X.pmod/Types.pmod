@@ -565,6 +565,33 @@ class Window
       }
     return a;
   }
+
+  object GetProperty_req(object property, object|void type)
+  {
+    object req = Requests.GetProperty();
+    req->window = id;
+    req->property = property->id;
+    if (type)
+      req->type = type->id;
+    
+    return req;
+  }
+
+  mapping GetProperty(object property, object|void type)
+  {
+    object req = GetProperty_req(property, type);
+    array a = display->blocking_request(req);
+
+    if (!a[0])
+      return 0;
+
+    mapping m = a[1];
+    if (type && (m->type == type->id))
+      m->type = type;
+    else
+      m->type = display->lookup_atom(m->type);
+    return m;
+  }
   
   // Shape extension
   void ShapeRectangles( string kind, int xo, int yo, string operation,
