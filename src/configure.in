@@ -1,4 +1,4 @@
-AC_REVISION("$Id: configure.in,v 1.619 2002/09/03 10:01:51 grubba Exp $")
+AC_REVISION("$Id: configure.in,v 1.620 2002/09/07 12:08:19 grubba Exp $")
 AC_INIT(interpret.c)
 AC_CONFIG_HEADER(machine.h)
 
@@ -1197,7 +1197,13 @@ AC_ARG_WITH(computed-goto,
 	    [], [with_computed_goto=no])
 AC_ARG_WITH(machine-code,
 	MY_DESCR([--without-machine-code],
-		 [don't try to use of machine code on supported architectures.]))
+		 [don't try to use of machine code on supported architectures.]),
+	[], [
+	  # Currently only supported with gcc.
+	  #
+	  # Further tests later on.
+	  with_machine_code="$GCC"
+	])
 
 MY_AC_ARG_WITH(keypair-loop,
 	MY_DESCR([--with-keypair-loop],
