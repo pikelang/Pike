@@ -4,13 +4,31 @@ static mapping parse_color( array color )
   for(int i=0; i<sizeof(color); i+=2 )
     if(lower_case(color[i+1]) != "none")
       res[color[i]] = Colors.parse_color( color[i+1] );
-  return res;
+  return sizeof(res)?res:0;
 }
 
 static array find_color( mapping in, string space )
 {
-  return in && (in[space||"s"] || in->c || in->g || in->g4 || in->m);
-} 
+  if(!in) return 0;
+  switch(space)
+  {
+   default:
+   case "s":
+     if(in->s) return in->s;
+   case "c":
+     if(in->c) return in->c;
+   case "g":
+     if(in->g) return in->g;
+   case "g4":
+     if(in->g4) return in->g4;
+   case "m":
+     if(in->m) return in->m;
+     if(in->s) return in->s;
+  }
+  if(sizeof(in))
+    return values(in)[0];
+  return 0;
+}
 
 mapping _decode( string what, void|mapping opts )
 {
