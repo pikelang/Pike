@@ -5,7 +5,7 @@
 \*/
 
 /*
- * $Id: opcodes.h,v 1.21 2001/07/15 23:14:37 hubbe Exp $
+ * $Id: opcodes.h,v 1.22 2001/07/24 13:51:53 grubba Exp $
  */
 #ifndef OPCODES_H
 #define OPCODES_H
@@ -51,8 +51,11 @@ enum Pike_opcodes
  * These are the predefined functions that can be accessed from Pike.
  */
 
-
 #include "interpret_protos.h"
+
+  /* Used to mark an entry point from eval_instruction(). */
+  F_ENTRY,
+
 /*
  * These are token values that needn't have an associated code for the
  * compiled file

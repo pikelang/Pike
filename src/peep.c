@@ -19,7 +19,7 @@
 #include "interpret.h"
 #include "pikecode.h"
 
-RCSID("$Id: peep.c,v 1.64 2001/07/24 01:16:11 hubbe Exp $");
+RCSID("$Id: peep.c,v 1.65 2001/07/24 13:51:53 grubba Exp $");
 
 static void asm_opt(void);
 
@@ -294,6 +294,12 @@ void assemble(void)
 
     case F_DATA:
       ins_data(c->arg);
+      break;
+
+    case F_ENTRY:
+#ifdef INS_ENTRY
+      INS_ENTRY();
+#endif /* INS_ENTRY */
       break;
 
     case F_LABEL:

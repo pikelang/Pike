@@ -5,7 +5,7 @@
 \*/
 /**/
 #include "global.h"
-RCSID("$Id: las.c,v 1.260 2001/07/24 01:16:11 hubbe Exp $");
+RCSID("$Id: las.c,v 1.261 2001/07/24 13:51:52 grubba Exp $");
 
 #include "language.h"
 #include "interpret.h"
@@ -4962,10 +4962,15 @@ ptrdiff_t eval_low(node *n)
 
   num_strings=Pike_compiler->new_program->num_strings;
   num_constants=Pike_compiler->new_program->num_constants;
-  jump = DO_NOT_WARN((INT32)PC);
 #ifdef PIKE_USE_MACHINE_CODE
   num_relocations = Pike_compiler->new_program->num_relocations;
 #endif /* PIKE_USE_MACHINE_CODE */
+
+  jump = DO_NOT_WARN((INT32)PC);
+
+#ifdef INS_ENTRY
+  INS_ENTRY();
+#endif /* INS_ENTRY */
 
   store_linenumbers=0;
   docode(dmalloc_touch(node *, n));

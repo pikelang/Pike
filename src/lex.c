@@ -5,7 +5,7 @@
 \*/
 /**/
 #include "global.h"
-RCSID("$Id: lex.c,v 1.98 2001/07/16 19:48:58 hubbe Exp $");
+RCSID("$Id: lex.c,v 1.99 2001/07/24 13:51:53 grubba Exp $");
 #include "language.h"
 #include "array.h"
 #include "lex.h"
@@ -251,6 +251,7 @@ struct keyword instr_names[]=
 { "label",		F_LABEL,I_HASARG NULLADDR },
 { "align",		F_ALIGN, I_HASARG NULLADDR },
 { "nop",                F_NOP,0 NULLADDR },
+{ "entry",		F_ENTRY,0 NULLADDR },
 { "function start",     F_START_FUNCTION,0 NULLADDR },
 { "notreached!",        F_NOTREACHED, 0 NULLADDR },
 };
