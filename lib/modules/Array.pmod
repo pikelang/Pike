@@ -244,75 +244,108 @@ array(array(array)) diff3 (array a, array b, array c)
   array(int) seq_bc = diff_longest_sequence (b, c);
   array(int) seq_ca = diff_longest_sequence (c, a);
 
-  // A number bigger than any valid index servers as end of array marker.
-  int eoa = max (sizeof (a), sizeof (b), sizeof (c));
-
-  array(int) ab = allocate (sizeof (a) + 1, -1);
-  array(int) ac = allocate (sizeof (a) + 1, -1);
-  ab[sizeof (a)] = ac[sizeof (a)] = eoa;
-  array(int) bc = allocate (sizeof (b) + 1, -1);
-  array(int) ba = allocate (sizeof (b) + 1, -1);
-  bc[sizeof (b)] = ba[sizeof (b)] = eoa;
-  array(int) ca = allocate (sizeof (c) + 1, -1);
-  array(int) cb = allocate (sizeof (c) + 1, -1);
-  ca[sizeof (c)] = cb[sizeof (c)] = eoa;
+  array(int) aeq = allocate (sizeof (a) + 1);
+  array(int) beq = allocate (sizeof (b) + 1);
+  array(int) ceq = allocate (sizeof (c) + 1);
+  aeq[sizeof (a)] = beq[sizeof (b)] = ceq[sizeof (c)] = 7;
 
   for (int i = 0, j = 0; j < sizeof (seq_ab); i++)
-    if (a[i] == b[seq_ab[j]]) ab[i] = seq_ab[j], ba[seq_ab[j]] = i, j++;
+    if (a[i] == b[seq_ab[j]]) aeq[i] |= 2, beq[seq_ab[j]] |= 1, j++;
   for (int i = 0, j = 0; j < sizeof (seq_bc); i++)
-    if (b[i] == c[seq_bc[j]]) bc[i] = seq_bc[j], cb[seq_bc[j]] = i, j++;
+    if (b[i] == c[seq_bc[j]]) beq[i] |= 2, ceq[seq_bc[j]] |= 1, j++;
   for (int i = 0, j = 0; j < sizeof (seq_ca); i++)
-    if (c[i] == a[seq_ca[j]]) ca[i] = seq_ca[j], ac[seq_ca[j]] = i, j++;
+    if (c[i] == a[seq_ca[j]]) ceq[i] |= 2, aeq[seq_ca[j]] |= 1, j++;
 
   array(array) ares = ({}), bres = ({}), cres = ({});
   int ai = 0, bi = 0, ci = 0;
-  int part = 8;			// Chunk partition bitfield.
+  int prevodd = -2;
 
-  while (min (ac[ai], ab[ai], ba[bi], bc[bi], cb[ci], ca[ci]) != eoa) {
-    int apart = (ac[ai] == -1 && 1) | (ab[ai] == -1 && 2);
-    int bpart = (ba[bi] == -1 && 2) | (bc[bi] == -1 && 4);
-    int cpart = (cb[ci] == -1 && 4) | (ca[ci] == -1 && 1);
-    int newpart = apart | bpart | cpart;
+  int i = 10;
+  while (i-- && !(aeq[ai] & beq[bi] & ceq[ci] & 4)) {
+    array empty = ({}), apart = empty, bpart = empty, cpart = empty;
 
-    //werror ("a %3d %3d %3d %3d\n", ai, ac[ai], ab[ai], apart);
-    //werror ("b %3d %3d %3d %3d\n", bi, ba[bi], bc[bi], bpart);
-    //werror ("c %3d %3d %3d %3d\n", ci, cb[ci], ca[ci], cpart);
-    //werror ("part %d %d\n", part, newpart);
+    if (aeq[ai] == 2 && beq[bi] == 1) { // a and b are equal.
+      do apart += ({a[ai++]}), bi++; while (aeq[ai] == 2 && beq[bi] == 1);
+      bpart = apart;
+      while (!ceq[ci]) cpart += ({c[ci++]});
+      prevodd = 2;
+    }
+    else if (beq[bi] == 2 && ceq[ci] == 1) { // b and c are equal.
+      do bpart += ({b[bi++]}), ci++; while (beq[bi] == 2 && ceq[ci] == 1);
+      cpart = bpart;
+      while (!aeq[ai]) apart += ({a[ai++]});
+      prevodd = 0;
+    }
+    else if (ceq[ci] == 2 && aeq[ai] == 1) { // c and a are equal.
+      do cpart += ({c[ci++]}), ai++; while (ceq[ci] == 2 && aeq[ai] == 1);
+      apart = cpart;
+      while (!beq[bi]) bpart += ({b[bi++]});
+      prevodd = 1;
+    }
+    else if (aeq[ai] & beq[bi] & ceq[ci] == 3) { // All are equal.
+      do apart += ({a[ai++]}), bi++, ci++; while (aeq[ai] & beq[bi] & ceq[ci] == 3);
+      cpart = bpart = apart;
+      prevodd = -1;
+    }
+    else {
+      // Haven't got any equivalences in this block. Avoid adjacent
+      // complementary blocks (e.g. ({({"foo"}),({}),({})}) next to
+      // ({({}),({"bar"}),({"bar"})})). Besides that, leave the
+      // odd-one-out sequence empty in a block where two are equal.
 
-    if ((apart ^ bpart ^ cpart) == 7 && !(apart & bpart & cpart) &&
-	apart && bpart && cpart) {
-      // Solve cyclically interlocking equivalences by arbitrary
-      // breaking one of them.
-      if (ac[ai] != -1) ca[ac[ai]] = -1, ac[ai] = -1;
-      if (ab[ai] != -1) ba[ab[ai]] = -1, ab[ai] = -1;
-      apart = 3;
+      if (aeq[ai] & beq[bi] & ceq[ci]) {
+	// Got cyclically interlocking equivalences. Have to break one
+	// of them. Prefer the shortest.
+	int which, newblock, mask, i, oi;
+	array(int) eq, oeq;
+	array arr;
+	for (i = 0;; i++)
+	  if (aeq[ai] != aeq[ai + i]) {
+	    which = 0, newblock = prevodd != 0 && (prevodd == -2 || sizeof (ares[-1]));
+	    mask = aeq[ai] ^ 3, i = ai, eq = aeq, arr = a;
+	    if (mask == 1) oi = bi, oeq = beq; else oi = ci, oeq = ceq;
+	    break;
+	  }
+	  else if (beq[bi] != beq[bi + i]) {
+	    which = 1, newblock = prevodd != 1 && (prevodd == -2 || sizeof (bres[-1]));
+	    mask = beq[bi] ^ 3, i = bi, eq = beq, arr = b;
+	    if (mask == 1) oi = ci, oeq = ceq; else oi = ai, oeq = aeq;
+	    break;
+	  }
+	  else if (ceq[ci] != ceq[ci + i]) {
+	    which = 2, newblock = prevodd != 2 && (prevodd == -2 || sizeof (cres[-1]));
+	    mask = ceq[ci] ^ 3, i = ci, eq = ceq, arr = c;
+	    if (mask == 1) oi = ai, oeq = aeq; else oi = bi, oeq = beq;
+	    break;
+	  }
+	if (newblock)
+	  ares += ({empty}), bres += ({empty}), cres += ({empty}), prevodd = -1;
+	while (oeq[oi] != mask) oi++;
+	array part = ({});
+	mask ^= 3;
+	do part += ({arr[i++]}), oeq[oi++] = 0; while (eq[i] == mask);
+	switch (which) {
+	  case 0: ai = i; ares[-1] += part; break;
+	  case 1: bi = i; bres[-1] += part; break;
+	  case 2: ci = i; cres[-1] += part; break;
+	}
+	continue;
+      }
+
+      else {
+	switch (prevodd) {
+	  case 0: apart = ares[-1], ares[-1] = ({}); break;
+	  case 1: bpart = bres[-1], bres[-1] = ({}); break;
+	  case 2: cpart = cres[-1], cres[-1] = ({}); break;
+	}
+	prevodd = -1;
+	while (!aeq[ai]) apart += ({a[ai++]});
+	while (!beq[bi]) bpart += ({b[bi++]});
+	while (!ceq[ci]) cpart += ({c[ci++]});
+      }
     }
 
-    if ((part & newpart) == newpart) {
-      // If the previous block had the same equivalence partition or
-      // was a three-part conflict, we should tack any singleton
-      // equivalences we have onto it.
-      if (apart == 3) ares[-1] += ({a[ai++]});
-      if (bpart == 6) bres[-1] += ({b[bi++]});
-      if (cpart == 5) cres[-1] += ({c[ci++]});
-    }
-
-    if (newpart != part) {
-      // Start a new block if the equivalence partition doesn't match
-      // the previous block.
-      part = newpart;
-      ares += ({({})}), bres += ({({})}), cres += ({({})});
-    }
-
-    // Add any composite equivalences. Wait with the singletons (this
-    // may cause an extra iteration, but the necessary conditions to
-    // prevent that are tricky).
-    if (!part) ares[-1] = bres[-1] = cres[-1] += ({a[ai++]}), bi++, ci++;
-    else if (part == 3 && bpart && cpart) bres[-1] = cres[-1] += ({b[bi++]}), ci++;
-    else if (part == 6 && cpart && apart) cres[-1] = ares[-1] += ({c[ci++]}), ai++;
-    else if (part == 5 && apart && bpart) ares[-1] = bres[-1] += ({a[ai++]}), bi++;
-
-    //werror ("%O\n", ({ares[-1], bres[-1], cres[-1]}));
+    ares += ({apart}), bres += ({bpart}), cres += ({cpart});
   }
 
   return ({ares, bres, cres});
