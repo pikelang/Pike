@@ -1,7 +1,7 @@
 /* nettle.cmod -*- c -*- */
 
 #include "global.h"
-RCSID("$Id: nettle.cmod,v 1.19 2003/11/10 00:02:19 nisse Exp $");
+RCSID("$Id: nettle.cmod,v 1.20 2003/11/25 23:30:40 nilsson Exp $");
 #include "interpret.h"
 #include "svalue.h"
 /* For this_object() */
@@ -205,6 +205,223 @@ PIKEFUN string crypt_md5(string pw, string salt)
   RETURN make_shared_string(crypt_md5(pw->len, pw->str,
 				      salt->len, salt->str));
 }
+
+/*! @class CBC
+ *! Implementation of the cipher block chaining mode (CBC).
+ */
+PIKECLASS CBC
+{
+  CVAR struct object *object;
+  CVAR unsigned INT8 *iv;
+  CVAR INT32 block_size;
+  CVAR INT32 mode;
+
+  static const char *crypto_functions[] = {
+    "block_size",
+    "key_size",
+    "set_encrypt_key",
+    "set_decrypt_key",
+    "crypt",
+  NULL
+  };
+
+
+  INIT
+  {
+    THIS->object = 0;
+    THIS->iv = 0;
+    THIS->block_size = 0;
+    THIS->mode = 0;
+  }
+
+  EXIT
+  {
+    if(THIS->object) free_object(THIS->object);
+    if(THIS->iv) {
+      memset(THIS->iv, 0, THIS->block_size);
+      free(THIS->iv);
+    }
+    THIS->iv = 0;
+  }
+
+  INLINE static void assert_is_crypto_object(struct program *p,
+					     const char **required) {
+    while (*required) {
+      if (find_identifier( (char *) *required, p) < 0) {
+	Pike_error("Object is missing identifier \"%s\"\n",
+		   *required);
+      }
+      required++;
+    }
+  }
+
+  INLINE static void cbc_encrypt_step(const unsigned INT8 *source,
+				      unsigned INT8 *dest)
+  {
+    INT32 block_size = THIS->block_size;
+    INT32 i;
+
+    for(i=0; i < block_size; i++)
+      THIS->iv[i] ^= source[i];
+
+    push_string(make_shared_binary_string((INT8 *)THIS->iv, block_size));
+    safe_apply(THIS->object, "crypt", 1);
+
+    if(Pike_sp[-1].type != T_STRING)
+      Pike_error("Expected string from crypt()\n");
+
+    if(Pike_sp[-1].u.string->len != block_size) {
+      Pike_error("Bad string length %ld returned from crypt()\n",
+		 DO_NOT_WARN((long)Pike_sp[-1].u.string->len));
+    }
+    MEMCPY(THIS->iv, Pike_sp[-1].u.string->str, block_size);
+    MEMCPY(dest, Pike_sp[-1].u.string->str, block_size);
+    pop_stack();
+  }
+
+  INLINE static void cbc_decrypt_step(const unsigned INT8 *source,
+				      unsigned INT8 *dest)
+  {
+    INT32 block_size = THIS->block_size;
+    INT32 i;
+
+    push_string(make_shared_binary_string((const INT8 *)source, block_size));
+    safe_apply(THIS->object, "crypt", 1);
+
+    if(Pike_sp[-1].type != T_STRING)
+      Pike_error("Expected string from crypt()\n");
+
+    if(Pike_sp[-1].u.string->len != block_size) {
+      Pike_error("Bad string length %ld returned from crypt()\n",
+		 DO_NOT_WARN((long)Pike_sp[-1].u.string->len));
+    }
+
+    for(i=0; i < block_size; i++)
+      dest[i] = THIS->iv[i] ^ Pike_sp[-1].u.string->str[i];
+
+    pop_stack();
+    MEMCPY(THIS->iv, source, block_size);
+  }
+
+  /*! @decl void create(program|object algorithm, mixed ... args)
+   */
+  PIKEFUN void create(program|object algorithm, mixed ... more) {
+
+    switch(algorithm->type)
+    {
+    case T_PROGRAM:
+      THIS->object = clone_object(algorithm->u.program, args-1);
+      break;
+    case T_FUNCTION:
+      apply_svalue(Pike_sp - args, args-1);
+
+      /* Check return value */
+      if(Pike_sp[-1].type != T_OBJECT)
+	Pike_error("Returned value is not an object.\n");
+
+      add_ref(THIS->object = Pike_sp[-1].u.object);
+      break;
+    case T_OBJECT:
+      if(args!=1) Pike_error("Too many arguments.\n");
+      add_ref(THIS->object = algorithm->u.object);
+      break;
+    default:
+      SIMPLE_BAD_ARG_ERROR("CBC->create", 1, "program|object");
+    }
+
+    pop_stack(); /* Just one element left on the stack in all cases */
+
+    assert_is_crypto_object(THIS->object->prog, crypto_functions);
+
+    safe_apply(THIS->object, "block_size", 0);
+
+    if(Pike_sp[-1].type != T_INT)
+      Pike_error("block_size() didn't return an int.\n");
+    THIS->block_size = Pike_sp[-1].u.integer;
+
+    pop_stack();
+
+    if ((!THIS->block_size) ||
+	(THIS->block_size > 4096))
+      Pike_error("Bad block size %d.\n", THIS->block_size);
+
+    THIS->iv = (unsigned INT8 *)xalloc(THIS->block_size);
+    MEMSET(THIS->iv, 0, THIS->block_size);
+  }
+
+  /*! @decl int block_size()
+   */
+  PIKEFUN int block_size() {
+    RETURN THIS->block_size;
+  }
+
+  /*! @decl int key_size()
+   */
+  PIKEFUN int key_size() {
+    safe_apply(THIS->object, "key_size", args);
+  }
+
+  /*! @decl void set_encrypt_key(string key)
+   */
+  PIKEFUN object set_encrypt_key(string key) {
+    assert(THIS->block_size);
+    NO_WIDE_STRING(key);
+    THIS->mode = 0;
+    safe_apply(THIS->object, "set_encrypt_key", args);
+    pop_stack();
+    RETURN this_object();
+  }
+
+  /*! @decl void set_decrypt_key(string key)
+   */
+  PIKEFUN object set_decrypt_key(string key) {
+    f_CBC_set_encrypt_key(args);
+    THIS->mode = 1;
+  }
+
+  PIKEFUN object set_iv(string iv) {
+    assert(THIS->iv);
+    NO_WIDE_STRING(iv);
+    if(iv->len != THIS->block_size)
+      Pike_error("Argument incompatible with cipher block size.\n");
+    MEMCPY(THIS->iv, iv->str, THIS->block_size);
+    RETURN this_object();
+  }
+
+  PIKEFUN string crypt(string data) {
+    unsigned INT8 *result;
+    INT32 offset = 0;
+
+    NO_WIDE_STRING(data);
+
+    if(data->len % THIS->block_size)
+      Pike_error("Data length not multiple of block size.\n");
+    if(!(result = alloca(data->len)))
+      Pike_error("Out of memory.\n");
+
+    if(THIS->mode == 0) {
+      while (offset < data->len) {
+	cbc_encrypt_step((const unsigned INT8 *)data->str + offset,
+			 result + offset);
+	offset += THIS->block_size;
+      }
+    }
+    else {
+      while (offset < data->len) {
+	cbc_encrypt_step((const unsigned INT8 *)data->str + offset,
+			 result + offset);
+	offset += THIS->block_size;
+      }
+    }
+
+    pop_n_elems(args);
+    push_string(make_shared_binary_string((INT8 *)result, offset));
+    MEMSET(result, 0, offset);
+  }
+}
+
+/*! @endclass
+ */
 
 /*! @endmodule
  */
