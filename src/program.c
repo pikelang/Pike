@@ -5,7 +5,7 @@
 \*/
 /**/
 #include "global.h"
-RCSID("$Id: program.c,v 1.317 2003/03/19 18:31:34 mast Exp $");
+RCSID("$Id: program.c,v 1.318 2003/06/30 17:29:40 mast Exp $");
 #include "program.h"
 #include "object.h"
 #include "dynamic_buffer.h"
@@ -548,11 +548,13 @@ void optimize_program(struct program *p)
 /* internal function to make the index-table */
 int program_function_index_compare(const void *a,const void *b)
 {
-  return
-    DO_NOT_WARN((int)my_order_strcmp(ID_FROM_INT(Pike_compiler->new_program,
-						 *(unsigned short *)a)->name,
-				     ID_FROM_INT(Pike_compiler->new_program,
-						 *(unsigned short *)b)->name));
+  size_t val_a = (size_t)
+    ((char *) ID_FROM_INT(Pike_compiler->new_program, *(unsigned short *)a)->name -
+     (char *) NULL);
+  size_t val_b = (size_t)
+    ((char *) ID_FROM_INT(Pike_compiler->new_program, *(unsigned short *)b)->name -
+     (char *) NULL);
+  return val_a < val_b ? -1 : (val_a == val_b ? 0 : 1);
 }
 
 #ifdef PIKE_DEBUG
@@ -3084,6 +3086,7 @@ int low_find_shared_string_identifier(struct pike_string *name,
   if(prog->flags & PROGRAM_FIXED)
   {
     unsigned short *funindex = prog->identifier_index;
+    size_t val_a = (size_t) ((char *) name - (char *) NULL);
 
 #ifdef PIKE_DEBUG
     if(!funindex)
@@ -3094,10 +3097,12 @@ int low_find_shared_string_identifier(struct pike_string *name,
     min = 0;
     while(max != min)
     {
+      size_t val_t;
       tst=(max + min) >> 1;
       fun = ID_FROM_INT(prog, funindex[tst]);
       if(is_same_string(fun->name,name)) return funindex[tst];
-      if(my_order_strcmp(fun->name, name) > 0)
+      val_t = (size_t) ((char *) fun->name - (char *) NULL);
+      if(val_a < val_t)
 	max=tst;
       else
 	min=tst+1;
