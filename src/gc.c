@@ -29,7 +29,7 @@ struct callback *gc_evaluator_callback=0;
 
 #include "block_alloc.h"
 
-RCSID("$Id: gc.c,v 1.65 2000/04/15 05:05:28 hubbe Exp $");
+RCSID("$Id: gc.c,v 1.66 2000/04/15 05:22:00 hubbe Exp $");
 
 /* Run garbage collect approximate every time we have
  * 20 percent of all arrays, objects and programs is
@@ -831,7 +831,6 @@ void do_gc(void)
   double multiplier;
 #ifdef HAVE_GETHRTIME
 #ifdef PIKE_DEBUG
-#ifdef HAVE_GETHRTIME
   hrtime_t gcstarttime;
 #endif
 #endif
