@@ -81,8 +81,10 @@ Filename: {tmp}\Pike-v7.6.13-Win32-Windows-NT-5.1.2600-i86pc.exe; Parameters: "-
 ;Name: "custom"; Description: "Pike only"; Flags: iscustom
 
 [Components]
-;Name: "gtk"; Description: "GTK+"; Types: full custom; Flags: fixed
-Name: pike; Description: Pike; Types: full; Flags: fixed; ExtraDiskSpaceRequired: 40000000
+Name: gtk; Description: "GTK+"; Types: full custom;
+Name: sdl; Description: "SDL"; Types: full custom;
+Name: glu; Description: "GLU"; Types: full custom;
+Name: pike; Description: Pike; Types: full custom; Flags: fixed; ExtraDiskSpaceRequired: 40000000
 ;Name: "dsinstaller"; Description: "DreamSNES installer"; Types: full;
 
 [Tasks]
