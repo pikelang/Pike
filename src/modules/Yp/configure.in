@@ -5,6 +5,6 @@ sinclude(../module_configure.in)
 
 AC_CHECK_LIB(nsl, gethostbyname)
 
-AC_HAVE_HEADERS(sys/types.h rpcsvc/ypclnt.h rpcsvc/yp_prot.h)
+AC_HAVE_HEADERS(sys/types.h rpc/types.h rpc/rpc.h rpc/clnt.h rpcsvc/ypclnt.h rpcsvc/yp_prot.h)
 
 AC_OUTPUT(Makefile,echo FOO >stamp-h )

@@ -4,6 +4,15 @@
 #ifdef HAVE_SYS_TYPES_H
 #include <sys/types.h>
 #endif /* HAVE_SYS_TYPES_H */
+#ifdef HAVE_RPC_TYPES_H
+#include <rpc/types.h>
+#endif /* HAVE_RPC_TYPES_H */
+#ifdef HAVE_RPC_RPC_H
+#include <rpc/rpc.h>
+#endif /* HAVE_RPC_RPC_H */
+#ifdef HAVE_RPC_CLNT_H
+#include <rpc/clnt.h>
+#endif /* HAVE_RPC_CLNT_H */
 #include <rpcsvc/ypclnt.h>
 #include <rpcsvc/yp_prot.h>
 
