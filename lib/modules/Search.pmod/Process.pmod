@@ -51,8 +51,10 @@ class Indexer(Variable wa_var, void|function get_sb_workarea_view_url)
     Standards.URI url = Standards.URI(_url);
     Standards.URI sb_url;
     
-    if(url->scheme=="sitebuilder")
+    if(url->scheme=="sitebuilder" || url->scheme=="intrawise")
     {
+      if(url->scheme=="intrawise")
+	userpass = "Administrator:admin"; // Temporary
       if(userpass && conf)
         headers["Authorization"]=sprintf("Basic %s", MIME.encode_base64(userpass));
       headers["Request-Metadata"]="";
