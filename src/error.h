@@ -5,7 +5,7 @@
 \*/
 
 /*
- * $Id: error.h,v 1.38 1999/10/06 15:29:49 grubba Exp $
+ * $Id: error.h,v 1.39 2000/02/07 09:15:54 hubbe Exp $
  */
 #ifndef ERROR_H
 #define ERROR_H
@@ -46,20 +46,16 @@ struct pike_frame;
 typedef struct ONERROR
 {
   struct ONERROR *previous;
+  error_call func;
+  void *arg;
 #ifdef PIKE_DEBUG
   const char *file;
   int line;
 #endif /* PIKE_DEBUG */
-  error_call func;
-  void *arg;
 } ONERROR;
 
 typedef struct JMP_BUF
 {
-#ifdef PIKE_DEBUG
-  int line;
-  char *file;
-#endif
   struct JMP_BUF *previous;
   jmp_buf recovery;
   struct pike_frame *fp;
@@ -67,6 +63,10 @@ typedef struct JMP_BUF
   INT32 mark_sp;
   INT32 severity;
   ONERROR *onerror;
+#ifdef PIKE_DEBUG
+  int line;
+  char *file;
+#endif
 } JMP_BUF;
 
 extern JMP_BUF *recoveries;
@@ -142,9 +142,9 @@ extern int throw_severity;
 #else /* !PIKE_DEBUG */
 #define SET_ONERROR(X,Y,Z) \
   do{ \
-     if(!recoveries) break; \
      X.func=(error_call)(Y); \
      X.arg=(void *)(Z); \
+     if(!recoveries) break; \
      X.previous=recoveries->onerror; \
      recoveries->onerror=&X; \
   }while(0)
