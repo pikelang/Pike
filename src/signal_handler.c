@@ -25,7 +25,7 @@
 #include "main.h"
 #include <signal.h>
 
-RCSID("$Id: signal_handler.c,v 1.202 2002/04/26 11:38:38 grubba Exp $");
+RCSID("$Id: signal_handler.c,v 1.203 2003/03/19 14:23:07 grubba Exp $");
 
 #ifdef HAVE_PASSWD_H
 # include <passwd.h>
@@ -878,7 +878,7 @@ static void f_signame(int args)
 #define MY_WAIT_ANY(STATUS,OPT) wait3((STATUS),(OPT),0 )
 #else
 #ifdef HAVE_WAIT4
-#define MY_WAIT_ANY(STATUS,OPT) wait4(-1,(STATUS),(OPT),0 )
+#define MY_WAIT_ANY(STATUS,OPT) wait4(0,(STATUS),(OPT),0 )
 #else
 #define MY_WAIT_ANY(STATUS,OPT) ((errno=ENOTSUP),-1)
 #endif
