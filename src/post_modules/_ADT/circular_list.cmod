@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: circular_list.cmod,v 1.5 2003/04/07 17:27:11 nilsson Exp $
+|| $Id: circular_list.cmod,v 1.6 2003/04/08 15:30:24 jhs Exp $
 */
 
 #include "global.h"
@@ -1200,17 +1200,18 @@ PIKECLASS CircularList
     }
 	
     
-    /*! @decl int `<(object iter)
+    /*! @decl int `<(mixed iter)
      *!    Less then operator
      *!
      *! @returns
      *!    Returns @tt{true@} if this iterator has a lower index
      *!    then @[iter].
-     */  
+     */
 
-    PIKEFUN int `<(object iter)
+    PIKEFUN int `<(mixed iter)
     {
-      if (iter->prog == CircularListIterator_program)
+      if (iter->type == T_OBJECT &&
+	  iter->u.object->prog == CircularListIterator_program)
       {
 	struct CircularListIterator_struct *i = 
 	  OBJ2_CIRCULARLISTITERATOR(iter);
@@ -1221,20 +1222,21 @@ PIKECLASS CircularList
 	SIMPLE_BAD_ARG_ERROR("`<",1,"ADT.CircularList.CircularListIterator");
       }
     }
-	
 
-    /*! @decl int `<(object iter)
+
+    /*! @decl int `>(mixed iter)
      *!    Greater then operator
      *!
      *! @returns
      *!    Returns @tt{true@} if this iterator has a higher index
      *!    then @[iter].
-     */  
+     */
 
 
-    PIKEFUN int `>(object iter)
+    PIKEFUN int `>(mixed iter)
     {
-      if (iter->prog == CircularListIterator_program)
+      if (iter->type == T_OBJECT &&
+	  iter->u.object->prog == CircularListIterator_program)
       {
 	struct CircularListIterator_struct *i = 
 	  OBJ2_CIRCULARLISTITERATOR(iter);
@@ -1242,11 +1244,11 @@ PIKECLASS CircularList
       }
       else
       {
-	SIMPLE_BAD_ARG_ERROR("`<",1,"ADT.CircularList.CircularListIterator");
+	SIMPLE_BAD_ARG_ERROR("`>",1,"ADT.CircularList.CircularListIterator");
       }
     }
 
-    
+
     /*! @decl CircularList get_collection()
      *!
      *! @returns
