@@ -5,7 +5,7 @@
 \*/
 
 /*
- * $Id: mapping.h,v 1.14 1999/02/05 01:03:54 hubbe Exp $
+ * $Id: mapping.h,v 1.15 1999/10/20 01:44:40 hubbe Exp $
  */
 #ifndef MAPPING_H
 #define MAPPING_H
@@ -65,6 +65,14 @@ void mapping_string_insert(struct mapping *m,
 			   struct svalue *val);
 struct svalue *simple_mapping_string_lookup(struct mapping *m,
 					    char *p);
+struct svalue *mapping_mapping_lookup(struct mapping *m,
+				      struct svalue *key1,
+				      struct svalue *key2,
+				      int create);
+struct svalue *mapping_mapping_string_lookup(struct mapping *m,
+				      struct pike_string *key1,
+				      struct pike_string *key2,
+				      int create);
 void mapping_index_no_free(struct svalue *dest,
 			   struct mapping *m,
 			   struct svalue *key);

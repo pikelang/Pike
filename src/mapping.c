@@ -5,7 +5,7 @@
 \*/
 /**/
 #include "global.h"
-RCSID("$Id: mapping.c,v 1.41 1999/09/24 13:03:02 noring Exp $");
+RCSID("$Id: mapping.c,v 1.42 1999/10/20 01:44:38 hubbe Exp $");
 #include "main.h"
 #include "object.h"
 #include "mapping.h"
@@ -513,6 +513,54 @@ struct svalue *simple_mapping_string_lookup(struct mapping *m,
   return 0;
 }
 
+struct svalue *mapping_mapping_lookup(struct mapping *m,
+				      struct svalue *key1,
+				      struct svalue *key2,
+				      int create)
+{
+  struct svalue tmp;
+  struct mapping *m2;
+  struct svalue *s=low_mapping_lookup(m, key1);
+
+  if(!s || !s->type==T_MAPPING)
+  {
+    if(!create) return 0;
+    tmp.u.mapping=allocate_mapping(5);
+    tmp.type=T_MAPPING;
+    mapping_insert(m, key1, &tmp);
+    s=&tmp;
+  }
+
+  m2=s->u.mapping;
+  s=low_mapping_lookup(m2, key2);
+  if(s) return s;
+  if(!create) return 0;
+
+  tmp.type=T_INT;
+  tmp.subtype=NUMBER_UNDEFINED;
+  tmp.u.integer=0;
+
+  mapping_insert(m2, key2, &tmp);
+
+  return low_mapping_lookup(m2, key2);
+}
+
+
+struct svalue *mapping_mapping_string_lookup(struct mapping *m,
+				      struct pike_string *key1,
+				      struct pike_string *key2,
+				      int create)
+{
+  struct svalue k1,k2;
+  k1.type=T_STRING;
+  k1.u.string=key1;
+  k2.type=T_STRING;
+  k2.u.string=key2;
+  return mapping_mapping_lookup(m,&k1,&k2,create);
+}
+
+
+
 void mapping_index_no_free(struct svalue *dest,
 			   struct mapping *m,
 			   struct svalue *key)
@@ -781,9 +829,9 @@ void describe_mapping(struct mapping *m,struct processing *p,int indent)
       q=1;
     }
     for(d=0; d<indent; d++) my_putchar(' ');
-    describe_svalue(& k->ind, indent+2, p);
+    describe_svalue(& k->ind, indent+2, &doing);
     my_putchar(':');
-    describe_svalue(& k->val, indent+2, p);
+    describe_svalue(& k->val, indent+2, &doing);
   }
 
   my_putchar('\n');
