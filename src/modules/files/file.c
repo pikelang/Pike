@@ -6,7 +6,7 @@
 /**/
 #define NO_PIKE_SHORTHAND
 #include "global.h"
-RCSID("$Id: file.c,v 1.190 2000/08/19 11:42:40 grubba Exp $");
+RCSID("$Id: file.c,v 1.191 2000/08/22 14:10:40 mast Exp $");
 #include "fdlib.h"
 #include "interpret.h"
 #include "svalue.h"
@@ -254,7 +254,9 @@ static void just_close_fd(void)
 	default:
 	  ERRNO=errno;
 	  FD=fd;
-	  error("Failed to close file.\n");
+	  push_int(errno);
+	  f_strerror(1);
+	  error("Failed to close file: %s\n", Pike_sp[-1].u.string->str);
 
 	case EBADF:
 	  error("Internal error: Closing a non-active file descriptor %d.\n",fd);
