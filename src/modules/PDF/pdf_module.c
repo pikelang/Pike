@@ -1,7 +1,7 @@
 #include "global.h"
 #include "stralloc.h"
 #include "global.h"
-RCSID("$Id: pdf_module.c,v 1.5 2001/01/17 19:36:41 grubba Exp $");
+RCSID("$Id: pdf_module.c,v 1.6 2001/01/19 13:41:54 grubba Exp $");
 #include "pike_macros.h"
 #include "interpret.h"
 #include "program.h"
@@ -227,9 +227,10 @@ void pike_module_init(void)
       pop_stack();
    }
 
-   for (i=0; i<(int)NELEM(submagic); i++)
+   for (i=0; i<(int)NELEM(submagic); i++) {
       if(!submagic[i].name) continue;
       submagic[i].ps=make_shared_string(submagic[i].name);
+   }
 
 #undef PDF_FUNCTION
 #define PDF_FUNCTION(name,func,def0,def1) ADD_FUNCTION(name,func,def0,def1);
