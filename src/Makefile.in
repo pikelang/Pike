@@ -1,5 +1,5 @@
 #
-# $Id: Makefile.in,v 1.405 2005/03/13 23:43:47 nilsson Exp $
+# $Id: Makefile.in,v 1.406 2005/03/14 23:52:02 nilsson Exp $
 #
 
 # This line is needed on some machines.
@@ -1169,10 +1169,10 @@ stamp-h: $(SRCDIR)/stamp-h.in $(SRCDIR)/machine.h.in config.status
 testsuite: $(SRCDIR)/testsuite.in $(TMP_BINDIR)/mktestsuite
 	if test "$$PIKE_PATH_TRANSLATE" = ""; then \
 	  $(TMP_BINDIR)/mktestsuite $(SRCDIR)/testsuite.in >testsuite \
-	    -DSRCDIR="`echo $(SRCDIR)|posix_to_native.sh`"; \
+	    -DSRCDIR="`echo $(SRCDIR)|./posix_to_native.sh`"; \
 	else \
 	  $(TMP_BINDIR)/mktestsuite $(SRCDIR)/testsuite.in >testsuite \
-	    -DSRCDIR="`echo $(SRCDIR)|sed -e $$PIKE_PATH_TRANSLATE|posix_to_native.sh`"; \
+	    -DSRCDIR="`echo $(SRCDIR)|sed -e $$PIKE_PATH_TRANSLATE|./posix_to_native.sh`"; \
 	fi
 
 header_uncompress: $(SRCDIR)/uncompressor.c
