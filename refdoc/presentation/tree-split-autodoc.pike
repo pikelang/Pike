@@ -1,5 +1,5 @@
 /*
- * $Id: tree-split-autodoc.pike,v 1.3 2001/07/27 03:20:45 nilsson Exp $
+ * $Id: tree-split-autodoc.pike,v 1.4 2001/07/27 15:38:30 nilsson Exp $
  *
  */
 
@@ -22,6 +22,7 @@ class Node
   array(Node) class_children  = ({ });
   array(Node) module_children = ({ });
   array(Node) method_children = ({ });
+  array(Node) appendix_children = ({ });
 
   Node parent;
 
@@ -38,6 +39,7 @@ class Node
     sort(class_children->name, class_children);
     sort(module_children->name, module_children);
     sort(method_children->name, method_children);
+    sort(appendix_children->name, appendix_children);
   }
 
   static function parse_node(string type)
@@ -66,14 +68,15 @@ class Node
   static string parse(string in)
   {
     Parser.HTML parser = Parser.HTML();
-    
+
     parser->case_insensitive_tag(1);
     parser->xml_tag_syntax(3);
 
     parser->add_container("docgroup", my_parse_docgroup);
     parser->add_container("module", parse_node("module"));
     parser->add_container("class",  parse_node("class"));
-    
+    parser->add_container("appendix", parse_node("appendix"));
+
     parser->feed(in);
     parser->finish();
     return parser->read();
@@ -114,7 +117,6 @@ class Node
     return ret;
   }
 
-  
   string make_filename_low()
   {
     string fn = cquote(name);
@@ -161,13 +163,13 @@ class Node
 
       if(refs[reference])
 	return make_link( refs[reference] );
-      
+
       foreach(find_siblings(), Node sibling)
 	if(sibling->name==reference ||
 	   sibling->name+"()"==reference)
 	  return make_link( sibling );
     }
-      
+
     werror("Missed reference: %O\n", _reference);
     return 0;
   }
@@ -199,10 +201,10 @@ class Node
 
   string make_navbar_really_low(array(Node) children, void|int notables)
   {
-    string a="<tr><td>", b="</td></tr>";
+    string a="<tr><td>", b="</td></tr>\n";
     if(notables)
     {
-      a=""; b="<br />";
+      a=""; b="<br />\n";
     }
     string res = "";
     foreach(children, Node node)
@@ -213,7 +215,7 @@ class Node
 	extension="()";
       else
 	my_name="<b>"+my_name+"</b>";
-	  
+
       if(node==this_object())
 	res += sprintf("%s· %s%s%s",
 		       a, my_name, extension, b);
@@ -233,7 +235,7 @@ class Node
       res += make_hier_list(node->parent);
 
       string my_class_path = (node->name!="")?node->make_class_path():"[Top]";
-      
+
       if(node == this_object())
 	res += sprintf("<b>%s</b><br />\n", my_class_path);
       else
@@ -242,7 +244,7 @@ class Node
     }
     return res;
   }
-  
+
   string make_navbar_low(Node root)
   { 
     string res="";
@@ -251,22 +253,20 @@ class Node
 
     res+="<table border='0' cellpadding='1' cellspacing='0' class='sidebar'>";
 
-    array(array(Node)) children_groups;
+    res += make_navbar_really_low(root->module_children);
+    if(sizeof(root->class_children))
+      res += "<tr><td><br /><b>Classes</b></td></tr>\n" +
+	make_navbar_really_low(root->class_children);
 
     if(root->name=="")
-      children_groups = ({ root->module_children,
-			   root->class_children,  });
+      res += "<tr><td><br /><b>Appendices</b></td></tr>\n"+
+	make_navbar_really_low(root->appendix_children);
     else
-      children_groups = ({ root->module_children,
-			   root->class_children,
-			   root->method_children,  });
-    
-    foreach( children_groups, array children)
-      res += make_navbar_really_low(children);
-    
+      res += make_navbar_really_low(root->method_children);
+
     return res+"</table>";
   }
-  
+
   string make_navbar()
   {
     if(type=="method")
@@ -303,12 +303,12 @@ class Node
 
     if(index==0)
       return parent;
-    
+
     tmp = siblings[index-1];
 
     while(sizeof(tmp->find_children()))
       tmp = tmp->find_children()[-1];
-    
+
     return tmp;
   }
 
@@ -332,21 +332,22 @@ class Node
   void make_html(string template, string path)
   {
     werror("Layouting...%s\n", make_class_path());
-    
+
     class_children->make_html(template, path);
     module_children->make_html(template, path);
     method_children->make_html(template, path);
+    appendix_children->make_html(template, path);
     if(!name || !type || name == "top")
       return;
 
     string res;
-    
+
     int num_segments = sizeof(make_filename()/"/")-1;
     string style = ("../"*num_segments)+"style.css";
-    
+
     extra_prefix = "../"*num_segments;
     string contents;
-    
+
     if(name=="")
     {
       contents = "<h1>Top level methods</h1><table class='sidebar'><tr>";
@@ -357,6 +358,13 @@ class Node
 	contents += "</td>"; 
       }
       contents += "</tr></table>";
+    }
+    else if(type=="appendix") {
+      Parser.XML.Tree.Node n = Parser.XML.Tree.parse_input("<appendix name='"+name+"'>"+
+							   data+"</appendix>")[0];
+
+      resolve_reference = my_resolve_reference;
+      contents = parse_appendix(n, 1);
     }
     else
     {
@@ -419,8 +427,8 @@ int main(int argc, array(string) argv)
     return 1;
   }
   mapping m = localtime(time());
-  template = replace(template, ([ "$ver$":version(),
-				  "$when$":sprintf("%4d-%02d-%02d", m->year+1900, m->mon+1, m->mday),
+  template = replace(template, ([ "$version$":version(),
+				  "$date$":sprintf("%4d-%02d-%02d", m->year+1900, m->mon+1, m->mday),
   ]) );
 
   werror("Splitting to destination directory %s...\n", argv[3]);
