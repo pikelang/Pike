@@ -1,7 +1,7 @@
 // This file is part of Roxen Search
 // Copyright © 2001 Roxen IS. All rights reserved.
 //
-// $Id: Word.pmod,v 1.2 2001/07/12 22:50:40 nilsson Exp $
+// $Id: Word.pmod,v 1.3 2001/08/07 12:34:09 js Exp $
 
 // Filter for text/plain
 
@@ -24,7 +24,7 @@ Output filter(Standards.URI uri, string|Stdio.File data, string content_type)
   f->write(data);
   f->close();
   
-  string text=Process.popen(combine_path(__FILE__, "bin/wvware/wvdump")+" "+fn+" -");
+  string text=Process.popen(combine_path(__FILE__, "../../../../bin/wvdump")+" "+fn+" -");
   rm(fn);
 
   string md="", body="";
