@@ -156,7 +156,7 @@
 /* This is the grammar definition of Pike. */
 
 #include "global.h"
-RCSID("$Id: language.yacc,v 1.18 1997/01/19 09:08:00 hubbe Exp $");
+RCSID("$Id: language.yacc,v 1.19 1997/01/27 01:18:01 hubbe Exp $");
 #ifdef HAVE_MEMORY_H
 #include <memory.h>
 #endif
@@ -391,7 +391,7 @@ import: modifiers F_IMPORT idents ';'
     resolv_constant($3);
     free_node($3);
     use_module(sp-1);
-    sp--;
+    pop_stack();
   }
   ;
 
@@ -1153,8 +1153,6 @@ low_idents: F_IDENTIFIER
     }else if(find_module_identifier($1)){
       $$=mkconstantsvaluenode(sp-1);
       pop_stack();
-    }else if((f=lookup_efun($1))){
-      $$=mkconstantsvaluenode(&f->function);
     }else{
       $$=0;
       if( get_master() )
@@ -1184,15 +1182,13 @@ low_idents: F_IDENTIFIER
   }
   | F_PREDEF F_COLON_COLON F_IDENTIFIER
   {
-    struct efun *f;
-    f=lookup_efun($3);
-    if(!f)
-    {
-      my_yyerror("Unknown efun: %s.",$3->str);
-      $$=mkintnode(0);
-    }else{
-      $$=mksvaluenode(&f->function);
-    }
+    struct svalue tmp;
+    node *tmp2;
+    tmp.type=T_MAPPING;
+    tmp.u.mapping=get_builtin_constants();
+    tmp2=mkconstantsvaluenode(&tmp);
+    $$=index_node(tmp2, $3);
+    free_node(tmp2);
     free_string($3);
   }
   | F_IDENTIFIER F_COLON_COLON F_IDENTIFIER
@@ -1222,21 +1218,21 @@ low_idents: F_IDENTIFIER
     setup_fake_program();
     for(e=1;e<(int)fake_program.num_inherits;e++)
     {
-	 if(fake_program.inherits[e].inherit_level!=1) continue;
-	 i=low_reference_inherited_identifier(e,$2);
-	 if(i==-1) continue;
-	 if($$)
-	 {
-	   $$=mknode(F_ARG_LIST,$$,mkidentifiernode(i));
-	 }else{
-	   $$=mkidentifiernode(i);
-	 }
+      if(fake_program.inherits[e].inherit_level!=1) continue;
+      i=low_reference_inherited_identifier(e,$2);
+      if(i==-1) continue;
+      if($$)
+      {
+	$$=mknode(F_ARG_LIST,$$,mkidentifiernode(i));
+      }else{
+	$$=mkidentifiernode(i);
+      }
     }
     if(!$$)
     {
-	 $$=mkintnode(0);
+      $$=mkintnode(0);
     }else{
-	 if($$->token==F_ARG_LIST) $$=mkefuncallnode("aggregate",$$);
+      if($$->token==F_ARG_LIST) $$=mkefuncallnode("aggregate",$$);
     }
     free_string($2);
   }

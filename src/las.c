@@ -4,7 +4,7 @@
 ||| See the files COPYING and DISCLAIMER for more information.
 \*/
 #include "global.h"
-RCSID("$Id: las.c,v 1.13 1997/01/22 05:19:45 hubbe Exp $");
+RCSID("$Id: las.c,v 1.14 1997/01/27 01:19:01 hubbe Exp $");
 
 #include "language.h"
 #include "interpret.h"
@@ -363,22 +363,17 @@ node *mkapplynode(node *func,node *args)
 
 node *mkefuncallnode(char *function, node *args)
 {
-  struct efun *fun;
   struct pike_string *name;
+  node *n;
   name = findstring(function);
-  if(!name)
+  if(!name || !find_module_identifier(name))
   {
     my_yyerror("Internally used efun undefined: %s",function);
     return mkintnode(0);
   }
-      
-  fun = lookup_efun(name);
-  if(!fun)
-  {
-    my_yyerror("Internally used efun undefined: %s",function);
-    return mkintnode(0);
-  }
-  return mkapplynode(mksvaluenode(&fun->function), args);
+  n=mkapplynode(mksvaluenode(sp-1), args);
+  pop_stack();
+  return n;
 }
 
 node *mkopernode(char *oper_id, node *arg1, node *arg2)
