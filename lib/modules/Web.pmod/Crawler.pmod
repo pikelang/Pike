@@ -16,7 +16,7 @@
 
 // Author:  Johan Schön.
 // Copyright (c) Roxen Internet Software 2001
-// $Id: Crawler.pmod,v 1.2 2001/05/25 17:40:26 js Exp $
+// $Id: Crawler.pmod,v 1.3 2001/05/25 20:58:02 js Exp $
 
 #define CRAWLER_DEBUG
 #ifdef CRAWLER_DEBUG
@@ -83,15 +83,20 @@ class Stats(int window_width,
   }
 
   static private mapping(string:int) concurrent_fetchers_per_host = ([]);
+  static private int concurrent_fetchers_total = 0;
 
-  int concurrent_fetchers(string host)
+  int concurrent_fetchers(void|string host)
   {
-    return concurrent_fetchers_per_host[host];
+    if(host)
+      return concurrent_fetchers_per_host[host];
+    else
+      return concurrent_fetchers_total;
   }
 
   int start_fetch(string host)
   {
     concurrent_fetchers_per_host[host]++;
+    concurrent_fetchers_total++;
   }
   
   //! This callback is called when data has arrived for a presently crawled
@@ -106,6 +111,7 @@ class Stats(int window_width,
   void close_callback(Standards.URI uri)
   {
     concurrent_fetchers_per_host[uri->host]--;
+    concurrent_fetchers_total--;
   }
   
 }
@@ -124,7 +130,7 @@ class Policy
 //! A crawler queue.
 //! Does not need to be reentrant safe. The Crawler always runs
 //! in just one thread.
-class Queue(Stats stats, Policy policy)
+class Queue
 {
   //! Get the next URI to index.
   //! Returns -1 if there are no URIs to index at the time of the function call,
@@ -136,6 +142,8 @@ class Queue(Stats stats, Policy policy)
   //! Any URIs that were already present in the queue are silently
   //! disregarded.
   void put(string|array(string)|Standards.URI|array(Standards.URI) uri);
+
+  void done(Standards.URI uri);
 }
 
 class Rule
@@ -193,8 +201,83 @@ class RuleSet
   }
 }
 
+class MemoryQueue
+{
+  Stats stats;
+  Policy policy;
+    
 
-class SimpleQueue(Stats stats, Policy policy)
+  void create(Stats _stats, Policy _policy)
+  {
+    stats=_stats;
+    policy=_policy;
+    werror("stats: %O\n",indices(stats));
+  }
+  
+  inherit Queue;
+
+  private mapping ready_uris=([]);
+  private mapping done_uris=([]);
+
+  void debug()
+  {
+    werror("ready_uris: %O\n",ready_uris);
+    werror("done_uris: %O\n",done_uris); 
+  }
+  
+  //! Get the next URI to index.
+  //! Returns -1 if there are no URIs to index at the time of the function call,
+  //! with respect to bandwidth throttling, outstanding requests and other limits.
+  //! Returns 0 if there are no more URIs to index. 
+  int|Standards.URI get()
+  {
+    if(stats->concurrent_fetchers() > policy->max_concurrent_fetchers)
+      return -1;
+    
+    if(sizeof(ready_uris))
+    {
+      foreach(indices(ready_uris), string ready_uri)
+	if(ready_uris[ready_uri] != 2)
+	{
+	  ready_uris[ready_uri]=2;
+	  return Standards.URI(ready_uri);
+	}
+    }
+
+    werror("concurrent_fetchers: %d\n",stats->concurrent_fetchers());
+    if(stats->concurrent_fetchers())
+      return -1;
+
+    return 0;
+  }
+
+  //! Put one or several URIs in the queue.
+  //! Any URIs that were already present in the queue are silently
+  //! disregarded.
+  void put(string|array(string)|Standards.URI|array(Standards.URI) uri)
+  {
+    if(arrayp(uri))
+    {
+      foreach(uri, string|object _uri)
+        put(_uri);
+      return;
+    }
+    if(!stringp(uri))
+      uri=(string)uri;
+
+    if(!ready_uris[uri] && !done_uris[uri])
+      ready_uris[uri]=1;
+  }
+
+  void done(Standards.URI uri)
+  {
+    m_delete(ready_uris, (string)uri);
+    done_uris[(string)uri]=1;
+  }
+}
+
+
+class ComplexQueue(Stats stats, Policy policy)
 {
   inherit Queue;
 
@@ -242,8 +325,9 @@ class SimpleQueue(Stats stats, Policy policy)
          num_active >= policy->max_concurrent_fetchers_per_host)
         return 0;
 
-      if(!size())
-  	return 0;
+      // FIXME:
+//          if(!size())
+//    	return 0;
 
       return last_mod < other->last_mod;
     }
@@ -281,7 +365,6 @@ class SimpleQueue(Stats stats, Policy policy)
     host_heap->push(uri_stack);
 
     uri=Standards.URI(uri);
-    stats->start_fetch(uri->host);
     return uri;
   }
   
@@ -408,9 +491,16 @@ class Crawler
     
     void got_data()
     {
+//        werror("status: %d\n", status);
+//        werror("status_desc: %O\n", status_desc);
 //        queue->stats->bytes_read_callback(uri, total_bytes());
-//        queue->stats->close_callback(uri);
-      check_links(page_cb(uri, data(), headers, @args));
+      queue->stats->close_callback(uri);
+      if(status==200)
+	check_links(page_cb(uri, data(), headers, @args));
+
+      if(headers->location)
+	check_links(({ Standards.URI(headers->location) }));
+
       queue->done(uri);
     }
     
@@ -431,7 +521,7 @@ class Crawler
       hostname_cache=_hostname_cache;
       set_callbacks(request_ok, request_fail);
       async_request(uri->host, uri->port,
-		    "GET / HTTP/1.0",
+		    sprintf("GET %s HTTP/1.0", uri->get_path_query()),
 		    (["host": uri->host+":"+uri->port,
 		      "user-agent": "Mozilla 4.0 (PikeCrawler)",
 		    ]));
@@ -442,9 +532,11 @@ class Crawler
   {
     foreach(links, Standards.URI link)
     {
-      werror("allow: %d  deny: %d (%s)\n",
-	     allow->check(link), deny->check(link),
-	     (string)link);
+      if(link->fragment)
+	link->fragment=0;
+//        werror("allow: %d  deny: %d (%s)\n",
+//  	     allow->check(link), deny->check(link),
+//  	     (string)link);
       if(!deny->check(link) || allow->check(link))
 	queue->put(link);
     }
@@ -452,15 +544,26 @@ class Crawler
   
   void get_next_uri()
   {
-    CRAWLER_MSG("get_next_uri");
+    //    CRAWLER_MSG("get_next_uri");
     object|int uri=queue->get();
-    CRAWLER_MSGS("uri: %O",uri);
+//      CRAWLER_MSGS("uri: %O",uri);
+
+//      queue->debug();
+
+    if(uri==-1)
+    {
+      call_out(get_next_uri,0.025);
+      return;
+    }
+
+    if(!uri)
+    {
+      done_cb();
+      return;
+    }
     
-//      if(!uri)
-//      {
-//        done_cb();
-//        return;
-//      }
+    queue->stats->start_fetch(uri->host);
+    
     
     if(objectp(uri))
     {
