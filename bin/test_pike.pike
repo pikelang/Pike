@@ -1,6 +1,6 @@
 #!/usr/local/bin/pike
 
-/* $Id: test_pike.pike,v 1.24 1999/05/12 04:38:05 hubbe Exp $ */
+/* $Id: test_pike.pike,v 1.25 1999/06/19 19:49:46 hubbe Exp $ */
 
 import Stdio;
 
@@ -29,6 +29,31 @@ void bzot(string test)
     werror("%3d: %s\n",line++,s);
 }
 
+array find_testsuites(string dir)
+{
+  array(string) ret=({});
+  if(array(string) s=get_dir(dir||"."))
+  {
+    foreach(s, string file)
+      {
+	string name=combine_path(dir||"",file);
+	if(file_size(name)==-2)
+	  ret+=find_testsuites(name);
+      }
+    
+    foreach(s, string file)
+      {
+	switch(file)
+	{
+	  case "testsuite":
+	  case "module_testsuite":
+	    ret+=({ combine_path(dir||"",file) });
+	}
+      }
+  }
+  return ret;
+}
+
 int main(int argc, string *argv)
 {
   int e, verbose, successes, errors, t, check;
@@ -51,6 +76,7 @@ int main(int argc, string *argv)
 #endif
 
   string *args=backtrace()[0][3];
+  array(string) testsuites=({});
   args=args[..sizeof(args)-1-argc];
   add_constant("RUNPIKE",Array.map(args,Process.sh_quote)*" ");
 
@@ -64,6 +90,7 @@ int main(int argc, string *argv)
     ({"trace",Getopt.MAY_HAVE_ARG,({"-t","--trace"})}),
     ({"check",Getopt.MAY_HAVE_ARG,({"-c","--check"})}),
     ({"mem",Getopt.MAY_HAVE_ARG,({"-m","--mem","--memory"})}),
+    ({"auto",Getopt.MAY_HAVE_ARG,({"-a","--auto"})}),
 #ifdef HAVE_DEBUG
     ({"debug",Getopt.MAY_HAVE_ARG,({"-d","--debug"})}),
 #endif
@@ -83,6 +110,10 @@ int main(int argc, string *argv)
 	case "trace": t+=foo(opt[1]); break;
 	case "check": check+=foo(opt[1]); break;
 	case "mem": mem+=foo(opt[1]); break;
+
+	case "auto":
+	  testsuites=find_testsuites(".");
+	  break;
 
 #ifdef HAVE_DEBUG
 	case "debug":
@@ -109,7 +140,7 @@ int main(int argc, string *argv)
       }
     }
 
-  argv=Getopt.get_args(argv,1);
+  argv=Getopt.get_args(argv,1)+testsuites;
   if(sizeof(argv)<1)
   {
     if(!tmp)
