@@ -1,7 +1,7 @@
 // This file is part of Roxen Search
 // Copyright © 2000,2001 Roxen IS. All rights reserved.
 //
-// $Id: HTML.pmod,v 1.33 2003/03/31 11:46:42 grubba Exp $
+// $Id: HTML.pmod,v 1.34 2003/03/31 11:53:29 grubba Exp $
 
 // Filter for text/html
 
@@ -73,7 +73,7 @@ Output filter(Standards.URI uri, string|Stdio.File data,
   void ladd(string html_href)
   {
     low_ladd(Parser.parse_html_entities(html_href));
-  }
+  };
 
   array(string) parse_title(Parser.HTML p, mapping m, string c) {
     res->fields->title=Parser.parse_html_entities(c);
