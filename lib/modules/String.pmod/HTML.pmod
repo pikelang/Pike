@@ -1,4 +1,4 @@
-// $Id: HTML.pmod,v 1.4 2003/03/12 09:58:18 agehall Exp $
+// $Id: HTML.pmod,v 1.5 2003/05/01 23:11:52 nilsson Exp $
 
 #pike __REAL_VERSION__
 
@@ -44,17 +44,20 @@ string select(string name, array(string)|array(array(string)) choices,
   return ret + "</select>";
 }
 
-//! This function should solve most of the obox needs that arises. It creates a table out
-//! of the array of arrays of strings fed into it. The tables will (with default settings)
-//! have a thin black outline around the table and between its cells. Much effort has gone
-//! into finding a simple HTML reresentation of such obox that is rendered in a similar way
-//! in all popular browsers. The current implementation has been tested against IE, Netscape,
-//! Mozilla, Opera and Konquest.
+//! This function should solve most of the obox needs that arises. It
+//! creates a table out of the array of arrays of strings fed into it.
+//! The tables will (with default settings) have a thin black outline
+//! around the table and between its cells. Much effort has gone into
+//! finding a simple HTML reresentation of such obox that is rendered
+//! in a similar way in all popular browsers. The current
+//! implementation has been tested against IE, Netscape, Mozilla,
+//! Opera and Konquest.
 //!
 //! @param rows
-//!   Simply an array of arrays with strings. The strings are the values that should appear
-//!   in the table cells. All rows should have equal number of cells, otherwise the result
-//!   will not be very eye pleasing.
+//!   Simply an array of arrays with strings. The strings are the
+//!   values that should appear in the table cells. All rows should
+//!   have equal number of cells, otherwise the result will not be
+//!   very eye pleasing.
 //! @param frame_color
 //!   The color of the surrounding frame. Defaults to "#000000".
 //! @param cell_color
@@ -64,10 +67,12 @@ string select(string name, array(string)|array(array(string)) choices,
 //! @param padding
 //!   The amount of padding in each cell. Defaults to "3".
 //! @param cell_callback
-//!   If provided, the cell callback will be called for each cell. As in parameters it
-//!   will get the current x and y coordinates in the table. The upper left cell is 0,0.
-//!   In addition to the coordinates it will also receive the background color and the
-//!   contents of the current cell. It is expected to return a td-element.
+//!   If provided, the cell callback will be called for each cell. As
+//!   in parameters it will get the current x and y coordinates in the
+//!   table. The upper left cell is 0,0. In addition to the
+//!   coordinates it will also receive the background color and the
+//!   contents of the current cell. It is expected to return a
+//!   td-element.
 //!
 //! @example
 //!   function cb = lambda(int x, int y, string bgcolor, string contents) {
@@ -77,34 +82,31 @@ string select(string name, array(string)|array(array(string)) choices,
 //!   simple_obox(my_rows, "#0000a0", 0, "1", "3", cb);
 //!
 //! @seealso
-//!   pad_rows
-string simple_obox( array(array(string)) rows, void|string frame_color, void|string cell_color,
+//!   @[pad_rows]
+string simple_obox( array(array(string)) rows,
+		    void|string frame_color, void|string cell_color,
 		    void|string width, void|string padding,
-		    void|function(int, int, string, string : string) cell_callback ) {
-  string res = "";
+		    void|function(int,int,string,string:string) cell_callback )
+{
+  String.Buffer res = String.Buffer();
   if(!cell_color) cell_color = "#ffffff";
   if(cell_callback) {
-    int y;
-    foreach(rows, array(string) row) {
-      int x;
-      res += "<tr>";
-      foreach(row, string cell) {
-	res += cell_callback(x, y, cell_color, cell);
-	x++;
-      }
-      res += "</tr>";
-      y++;
+    foreach(rows; int y; array(string) row) {
+      res->add("<tr>");
+      foreach(row; int x; string cell)
+	res->add( cell_callback(x, y, cell_color, cell) );
+      res->add("</tr>");
     }
   }
   else
     foreach(rows, array(string) row) {
-      res += "<tr>";
+      res->add("<tr>");
       foreach(row, string cell)
-	res += "<td bgcolor='" + cell_color + "'>" + cell + "</td>";
-      res += "</tr>";
+	res->add("<td bgcolor='", cell_color, "'>", cell, "</td>");
+      res->add("</tr>");
     }
 
-  return wrap_simple_obox(res, frame_color, width, padding);
+  return wrap_simple_obox((string)res, frame_color, width, padding);
 }
 
 private string wrap_simple_obox( string rows, void|string frame_color,
