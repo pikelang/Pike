@@ -10,7 +10,7 @@
 // and zic(8) is the usual compiler.
 
 // pike mkrules.pike ../data/{africa,antarctica,asia,australasia,backward,etcetera,europe,northamerica,pacificnew,southamerica,systemv}
-// $Id: mkrules.pike,v 1.7 2003/01/20 17:44:00 nilsson Exp $
+// $Id: mkrules.pike,v 1.8 2003/03/12 19:44:37 nilsson Exp $
 
 #pike __REAL_VERSION__
 
@@ -264,7 +264,7 @@ class Shift
    }
 }
 
-class Rule
+class MyRule
 {
    string id;
 
@@ -491,7 +491,7 @@ class Zone
 	    FIXID(a[1]),-a[0],a[2]);
       else // simple timezone
 	 return sprintf(
-	    "Ruleset.Timezone(%d,%O)",
+	    "Rule.Timezone(%d,%O)",
 	    -(roff+a[0]),a[2]);
    }
 
@@ -574,7 +574,7 @@ class Zone
 	       
       if (sizeof(rules)==1) // simple zone
       {
-	 res+=("Ruleset.Timezone "+cid+"="+
+	 res+=("Rule.Timezone "+cid+"="+
 	       rules[0][4]+";\n");
 	 return res;
       }
@@ -589,9 +589,9 @@ class Zone
       res+=("class "+cid+"\n"
 	    "{\n"
 	    "   inherit TZHistory;\n"
-	    "   Ruleset.Timezone "+
+	    "   Rule.Timezone "+
 	    sort(values(rname))*","+";\n"
-	    "   Ruleset.Timezone whatrule(int ux)\n"
+	    "   Rule.Timezone whatrule(int ux)\n"
 	    "   {\n"
 	    );
 
@@ -644,7 +644,7 @@ void collect_rules(string file)
    }
 
    Zone lastz;
-   Rule lastr;
+   MyRule lastr;
 
    foreach (s/"\n",string line)
    {
@@ -660,7 +660,7 @@ void collect_rules(string file)
 	    else if (sscanf(line,"Rule%*[ \t]%[^ \t]%*[ \t]%s",s,t)==4)
 	    {
 	       if (rules[s]) rules[s]->add(t);
-	       else (lastr=rules[s]=Rule(s))->add(t),arules+=({lastr});
+	       else (lastr=rules[s]=MyRule(s))->add(t),arules+=({lastr});
 	       lastz=0;
 	    }
 	    else if (sscanf(line,"Link%*[ \t]%[^ \t]%*[ \t]%[^ \t]",s,t)==4)
@@ -702,7 +702,7 @@ int main(int ac,array(string) am)
 
    string t=TZrules_base;
 
-   foreach (arules,Rule r)
+   foreach (arules,MyRule r)
       t+=r->dump();
 
    tzrules=compile_string(t)();
@@ -732,7 +732,7 @@ int main(int ac,array(string) am)
 	    t+=z->dump();
 	    if (links[z->id])
 	       foreach(links[z->id],string s)
-		  t+="Ruleset.Timezone "+FIXID(s)+"="+
+		  t+="Rule.Timezone "+FIXID(s)+"="+
 		     FIXID(z->id)+";\n";
 	 }
    };
