@@ -1,5 +1,5 @@
 /*
- * $Id: acconfig.h,v 1.22 1998/05/17 20:39:18 grubba Exp $
+ * $Id: acconfig.h,v 1.23 1998/05/17 22:58:54 grubba Exp $
  */
 #ifndef MACHINE_H
 #define MACHINE_H
@@ -176,6 +176,9 @@
 
 /* Define if your OS has the union wait. */
 #undef HAVE_UNION_WAIT
+
+/* Define if you have isgraph */
+#undef HAVE_ISGRAPH
 
 /* Define if your cpp supports the ANSI concatenation operator ## */
 #undef HAVE_ANSI_CONCAT
