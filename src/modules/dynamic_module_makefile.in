@@ -1,4 +1,4 @@
-PREFLAGS=$(DEFINES) -I. -I$(SRCDIR) -I$(SRCDIR)/../.. -I../.. -I. $(MODULE_CPPFLAGS)
+PREFLAGS=-I. -I$(SRCDIR) -I$(SRCDIR)/../.. -I../.. -I. $(MODULE_CPPFLAGS) $(DEFINES) 
 CFLAGS=$(PREFLAGS) $(OTHERFLAGS) @CCSHARED@ $(MODULE_CFLAGS)
 
 MAKE_FLAGS = "prefix=$(prefix)" "exec_prefix=$(exec_prefix)" "CC=$(CC)" "OTHERFLAGS=$(OTHERFLAGS)" "TMP_BINDIR=$(TMP_BINDIR)" "DEFINES=$(DEFINES)" "TMP_LIBDIR=$(TMP_LIBDIR)" "RUNPIKE=$(RUNPIKE)" "INSTALL=$(INSTALL)" $(MODULE_MAKE_FLAGS)
@@ -19,6 +19,11 @@ modlist_headers: Makefile
 
 modlist_segment: Makefile
 	echo "" >modlist_segment
+
+Makefile: $(SRCDIR)/Makefile.in $(SRCDIR)/dependencies
+	CONFIG_FILES=Makefile CONFIG_HEADERS= ./config.status
+	@echo "Run make again"
+	@exit 1
 
 module.so: $(OBJS)  $(MODULE_ARCHIVES)
 	$(TMP_BINDIR)/smartlink "@LDSHARED@" -o module.@SO@ $(OBJS) $(MODULE_ARCHIVES) $(MODULE_LDFLAGS)
