@@ -3,8 +3,9 @@
 ||| Pike is distributed as GPL (General Public License)
 ||| See the files COPYING and DISCLAIMER for more information.
 \*/
+/**/
 #include "global.h"
-RCSID("$Id: program.c,v 1.105 1998/11/22 11:03:14 hubbe Exp $");
+RCSID("$Id: program.c,v 1.106 1999/02/06 18:06:50 grubba Exp $");
 #include "program.h"
 #include "object.h"
 #include "dynamic_buffer.h"
@@ -45,9 +46,11 @@ RCSID("$Id: program.c,v 1.105 1998/11/22 11:03:14 hubbe Exp $");
 
 #define STRUCT
 #include "compilation.h"
+#undef STRUCT
 
 #define DECLARE
 #include "compilation.h"
+#undef DECLARE
 
 
 char *lfun_names[] = {
@@ -535,6 +538,7 @@ void low_start_new_program(struct program *p,
 
 #define PUSH
 #include "compilation.h"
+#undef PUSH
 
   num_used_modules=0;
 
@@ -944,6 +948,7 @@ struct program *end_first_pass(int finish)
 
 #define POP
 #include "compilation.h"
+#undef POP
 
   exit_type_stack();
 
@@ -2320,6 +2325,11 @@ struct program *compile(struct pike_string *prog)
   /* fprintf(stderr, "compile() Leave: threads_disabled:%d, compilation_depth:%d\n", threads_disabled, compilation_depth); */
 
   exit_threads_disable(NULL);
+
+  /* if (!p) {
+   *   fprintf(stderr, "Failed to compile file: \"%s\"\n", lex.current_file->str);
+   * }
+   */
 
   free_string(lex.current_file);
   lex=save_lex;
