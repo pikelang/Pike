@@ -1,6 +1,7 @@
 #!/usr/local/bin/pike
 
 import Stdio;
+import ".";
 
 #include "types.h"
 

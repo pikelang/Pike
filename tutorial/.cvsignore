@@ -1,8 +1,13 @@
+*.files
+*.md
 .nfs*
+Image.wmml
 ___tmp.*
 extra_textflows.mif
 illustration*.gif
 illustration_cache
+man
+tut*.html
 tutorial-foo.wmml
 tutorial.aux
 tutorial.dvi
@@ -11,7 +16,3 @@ tutorial.log
 tutorial.mif
 tutorial.tex
 tutorial_*.html
-tut*.html
-*.md
-*.files
-man

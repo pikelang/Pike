@@ -1,4 +1,5 @@
 #include "types.h"
+import ".";
 import Sgml;
 
 SGML low_make_concrete_wmml(SGML data);
@@ -929,8 +930,8 @@ string image_to_gif(TAG data, float dpi)
     {
     case "fig":
       werror("Converting ");
-      Process.system("fig2dev -L ps "+params->src+" ___tmp.ps;echo showpage >>___tmp.ps");
-      Process.system("gs -q -sDEVICE=pbmraw -r225 -g2500x2500 -sOutputFile=___tmp.ppm ___tmp.ps </dev/null >/dev/null");
+      Process.system("/bin/sh -c 'fig2dev -L ps "+params->src+" ___tmp.ps;echo showpage >>___tmp.ps'");
+      Process.system("/bin/sh -c 'gs -q -sDEVICE=pbmraw -r225 -g2500x2500 -sOutputFile=___tmp.ppm ___tmp.ps </dev/null >/dev/null'");
       object o=Image.image()->fromppm(Stdio.read_file("___tmp.ppm"))->autocrop()->scale(1.0/3)->rotate(-90);
       o=Image.image(o->xsize()+40, o->ysize()+40, 255,255,255)->paste(o,20,20);
       rm("___tmp.ps");

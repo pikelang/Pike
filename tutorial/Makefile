@@ -28,7 +28,7 @@ the_image_module.html: Image.wmml the_image_module.wmml
 	./wmmltohtml2 <the_image_module.wmml html the_image_module
 
 clean:
-	rm *.html illustration_cache illustration*.gif 
+	rm *.html *.md illustration_cache illustration*.gif 
 
 export:
 	tar czvTf tutorial.files tutorial.tar.gz 

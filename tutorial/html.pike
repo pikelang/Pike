@@ -1,4 +1,5 @@
 #include "types.h"
+import ".";
 inherit Stdio.File : out;
 
 SGML html_toc;
@@ -388,9 +389,11 @@ SGML convert(SGML data)
 	    break;
 	
 	 case "ex_identifier":
-	 case "ex_string":
 	 case "ex_commend":
 	    ret+=convert(data->data);
+	    continue;
+	 case "ex_string":
+	    ret+=convert(replace(data->data," "," "));
 	    continue;
 	
 	 case "example": data->tag="blockquote";break;
