@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: builtin.cmod,v 1.163 2004/09/11 09:44:17 grubba Exp $
+|| $Id: builtin.cmod,v 1.164 2004/09/12 15:29:11 grubba Exp $
 */
 
 #include "global.h"
@@ -3081,6 +3081,16 @@ PIKECLASS List
    *   tail			  prev			  next
    *   tail_sentinel_refs				  refs
    *   tail_pred					  prev
+   */
+
+  /* Suggestions for future functionality:
+   *
+   *   o Join
+   *   o Copy segment
+   *   o Detach segment (requires new iterator implementation)
+   *   o Iterator copy
+   *   o Support for reverse(), filter() and map().
+   *   o Initialization from array.
    */
 
   INIT
