@@ -1,4 +1,4 @@
-test_true([["$Id: testsuite.in,v 1.540 2002/09/24 10:56:15 marcus Exp $"]]);
+test_true([["$Id: testsuite.in,v 1.541 2002/09/24 11:20:16 grubba Exp $"]]);
 
 // This triggered a bug only if run sufficiently early.
 test_compile_any([[#pike 7.2]])
@@ -6997,14 +6997,14 @@ foo:
 ]], ({4, 8}));
 test_any([[
 foo:
-  if (stringp (catch {break foo;}) + 1) return 1;
+  if (stringp (catch {int q=1; break foo;}) + 1) return 1;
   else return 2;
   return 3;
 ]], 3);
 test_any([[
 foo:
   do {
-    if ((3*time() + 5) + stringp (catch {break foo;})) return 1;
+    if ((3*time() + 5) + stringp (catch {int q=1; break foo;})) return 1;
     else return 2;
   } while (0);
   return 3;
@@ -7022,27 +7022,27 @@ foo:
 test_do([[
   void gnu (mixed... args) {};
 foo:
-  gnu (1,2,3, catch {break foo;},4,5);
+  gnu (1,2,3, catch {int q=1; break foo;},4,5);
 ]]);
 test_do([[
   void gnu (mixed... args) {};
 foo:
-  gnu (@indices (all_constants()), catch {break foo;});
+  gnu (@indices (all_constants()), catch {int q=1; break foo;});
 ]]);
 test_do([[
   void gnu (mixed... args) {};
 foo:
-  gnu (@({1,2,3,4,5}), catch {break foo;});
+  gnu (@({1,2,3,4,5}), catch {int q=1; break foo;});
 ]]);
 test_do([[
   void gnu (mixed... args) {};
 foo:
-  gnu (@indices (all_constants()), @allocate (511, 1), catch {break foo;});
+  gnu (@indices (all_constants()), @allocate (511, 1), catch {int q=1; break foo;});
 ]]);
 test_do([[
   void gnu (mixed... args) {};
 foo:
-  gnu (@allocate (511, 1), @indices (all_constants()), catch {break foo;});
+  gnu (@allocate (511, 1), @indices (all_constants()), catch {int q=1; break foo;});
 ]]);
 test_compile_error([[
 foo: {
@@ -8813,7 +8813,7 @@ test_program([[
 ]])
 
 // - throw
-test_eq(20,catch(throw(a())))
+test_eq(20,catch(int q=1; throw(a())))
 
 // - catch compile-errors
 test_any([[ master()->set_inhibit_compile_errors(lambda(){});mixed res = catch{compile_string("dfasfqw123");};master()->set_inhibit_compile_errors(0); return arrayp(res)||objectp(res); ]], 1)
