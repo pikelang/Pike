@@ -1,5 +1,5 @@
 /*
- * $Id: Tokenizer.cmod,v 1.30 2004/12/03 13:47:49 grubba Exp $
+ * $Id: Tokenizer.cmod,v 1.31 2004/12/03 15:26:28 grubba Exp $
  *
  * Interface to pike code tokenizer.
  *
@@ -769,7 +769,7 @@ PIKECLASS IdentifierToken
 
   EXTRA
   {
-    simple_add_constant("token", MK_STRING_SVALUE("identifier"), 0);
+    add_constant(MK_STRING("token"), MK_STRING_SVALUE("identifier"), 0);
     add_integer_constant("is_identifier", 1, 0);
   }
 }
@@ -784,7 +784,7 @@ PIKECLASS OperatorToken
 
   EXTRA
   {
-    simple_add_constant("token", MK_STRING_SVALUE("operator"), 0);
+    add_constant(MK_STRING("token"), MK_STRING_SVALUE("operator"), 0);
     add_integer_constant("is_operator", 1, 0);
   }
 }
@@ -810,7 +810,7 @@ PIKECLASS LiteralToken
 
   EXTRA
   {
-    simple_add_constant("token", MK_STRING_SVALUE("literal"), 0);
+    add_constant(MK_STRING("token"), MK_STRING_SVALUE("literal"), 0);
     add_integer_constant("is_literal", 1, 0);
     /* We want to access the inherited create(). */
     literal_token_inherited_create =
@@ -838,7 +838,7 @@ PIKECLASS StringToken
 
   EXTRA
   {
-    simple_add_constant("token", MK_STRING_SVALUE("string_constant"), 0);
+    add_constant(MK_STRING("token"), MK_STRING_SVALUE("string_constant"), 0);
     add_integer_constant("is_string", 1, 0);
 
     /* Modify the type of "value". */
@@ -857,7 +857,7 @@ PIKECLASS IntegerToken
 
   EXTRA
   {
-    simple_add_constant("token", MK_STRING_SVALUE("int_constant"), 0);
+    add_constant(MK_STRING("token"), MK_STRING_SVALUE("int_constant"), 0);
     add_integer_constant("is_int", 1, 0);
 
     /* Modify the type of "value". */
@@ -876,7 +876,7 @@ PIKECLASS FloatToken
 
   EXTRA
   {
-    simple_add_constant("token", MK_STRING_SVALUE("float_constant"), 0);
+    add_constant(MK_STRING("token"), MK_STRING_SVALUE("float_constant"), 0);
     add_integer_constant("is_float", 1, 0);
 
     /* Modify the type of "value". */
@@ -1517,37 +1517,19 @@ PIKECLASS Group
 
   static int group_token_inherited_create;
   static int group_token_inherited__sprintf;
+  static int group_terminator_fun_num;
 
   CVAR struct object *contents;		/* ADT.List of tokens. */
   CVAR struct object *end_token;	/* Token */
-  CVAR struct pike_string *terminator;
-
-  PIKEVAR mapping(string:string) group_symbols;
 
   INIT
   {
     THIS->contents = clone_object(List_program, 0);
     THIS->end_token = NULL;
-    THIS->terminator = NULL;
-
-    push_constant_text("{");
-    push_constant_text("}");
-    push_constant_text("(");
-    push_constant_text(")");
-    push_constant_text("[");
-    push_constant_text("]");
-    f_aggregate_mapping(6);
-    THIS->group_symbols = Pike_sp[-1].u.mapping;
-    Pike_sp--;
-    dmalloc_touch_svalue(Pike_sp);
   }
 
   EXIT
   {
-    if (THIS->terminator) {
-      free_string(THIS->terminator);
-      THIS->terminator = NULL;
-    }
     if (THIS->end_token) {
       free_object(THIS->end_token);
       THIS->end_token = NULL;
@@ -1560,8 +1542,21 @@ PIKECLASS Group
 
   EXTRA
   {
-    simple_add_constant("token", MK_STRING_SVALUE("group"), 0);
+    /* @decl constant token = "group"
+     */
+    add_constant(MK_STRING("token"), MK_STRING_SVALUE("group"), 0);
+    /* @decl constant is_group = 1
+     */
     add_integer_constant("is_group", 1, 0);
+    /* @decl constant terminator = ""
+     *
+     * Terminator symbol.
+     *
+     * Overloaded with the actual terminator symbol.
+     */
+    group_terminator_fun_num =
+      add_constant(MK_STRING("terminator"), MK_STRING_SVALUE(""), 0);
+
     /* We want to access the inherited create() and _sprintf(). */
     group_token_inherited_create =
       really_low_reference_inherited_identifier(NULL, 1,
@@ -1601,14 +1596,15 @@ PIKECLASS Group
       /* Group end marker. */
       object_index_no_free(Pike_sp, token, MK_STRING_SVALUE("symbol"));
       Pike_sp++;
-      if ((Pike_sp[-1].type == T_STRING) &&
-	  (Pike_sp[-1].u.string == THIS->terminator)) {
+      low_index_current_object_no_free(Pike_sp, group_terminator_fun_num);
+      Pike_sp++;
+      if (is_eq(Pike_sp-2, Pike_sp-1)) {
 	/* Group completed. */
 	if (THIS->end_token) {
 	  free_object(THIS->end_token);
 	}
 	add_ref(THIS->end_token = token);
-	pop_n_elems(args + 1);
+	pop_n_elems(args + 2);
 	push_undefined();
       } else {
 	/* End of group with missing start. */
@@ -1618,20 +1614,14 @@ PIKECLASS Group
 	object_index_no_free(Pike_sp, token, MK_STRING_SVALUE("context"));
 	Pike_sp++;
 	ref_push_string(MK_STRING("grouping"));
-	if (THIS->terminator) {
-	  ref_push_string(MK_STRING("Unexpected %O (expected %O)."));
-	  push_svalue(Pike_sp-5);
-	  ref_push_string(terminator);
-	  apply_current(groupingcompiler_inh_report, 6);
-	} else {
-	  ref_push_string(MK_STRING("Unexpected %O."));
-	  push_svalue(Pike_sp-5);
-	  apply_current(groupingcompiler_inh_report, 5);
-	}
+	ref_push_string(MK_STRING("Unexpected %O (expected %O)."));
+	push_svalue(Pike_sp-6);
+	push_svalue(Pike_sp-6);
+	apply_current(groupingcompiler_inh_report, 6);
 
-	pop_n_elems(args + 2);	/* Token + sym + returnval */
+	pop_n_elems(args + 3);	/* Token + sym + terminator + returnval */
 #else /* !0 */
-	pop_n_elems(args + 1);	/* Token + sym */
+	pop_n_elems(args + 2);	/* Token + sym + terminator */
 #endif /* 0 */
 
 	push_int(0);		/* Ignore the token. */
@@ -1663,25 +1653,7 @@ PIKECLASS Group
     flags ID_STATIC;
   {
     if (symbol) {
-      if (!THIS->group_symbols) {
-	Pike_error("Tokenizer.Group(). Symbol grouping mapping missing.");
-      }
-      mapping_index_no_free(Pike_sp, THIS->group_symbols, Pike_sp-args);
-      Pike_sp++;
-      if (Pike_sp[-1].type != T_STRING) {
-	SIMPLE_ARG_ERROR("Tokenizer.Group()", 1, "Unsupported symbol");
-      }
-      if (THIS->terminator) {
-	free_string(THIS->terminator);
-      }
-      /* FIXME: The terminator should be fixated at token table creation time.
-       */
-      THIS->terminator = Pike_sp[-1].u.string;
-      Pike_sp--;
-
       apply_current(group_token_inherited_create, args);
-    } else {
-      pop_n_elems(args);
     }
   }
 
@@ -1694,23 +1666,15 @@ PIKECLASS Group
   {
     int cnt = 0;
     push_constant_text("Tokenizer.Group(/* ");
-    if (!THIS->group_symbols) {
-      push_constant_text("No grouping symbols. ");
-      cnt++;
-    }
-    if (!THIS->terminator) {
-      push_constant_text("Not initialized. ");
+    if (!THIS->end_token) {
+      push_constant_text("End token %O not found yet. ");
+      low_index_current_object_no_free(Pike_sp, group_terminator_fun_num);
+      Pike_sp++;
+      f_sprintf(2);
       cnt++;
     } else {
-      if (!THIS->end_token) {
-	push_constant_text("End token %O not found yet. ");
-	ref_push_string(THIS->terminator);
-	f_sprintf(2);
-	cnt++;
-      } else {
-	push_constant_text("End token found. ");
-	cnt++;
-      }
+      push_constant_text("End token found. ");
+      cnt++;
     }
     push_constant_text("*/\n");
     push_int(c);
@@ -1735,6 +1699,52 @@ PIKECLASS Group
 /*! @endclass
  */
 
+/*! @class ParenGroup
+ */
+PIKECLASS ParenGroup
+{
+  INHERIT Group;
+
+  EXTRA
+  {
+    /* @decl constant terminator = ")"
+     *
+     * Terminator symbol.
+     */
+    add_constant(MK_STRING("terminator"), MK_STRING_SVALUE(")"), 0);
+  }
+}
+/*! @endclass
+ */
+
+PIKECLASS BracketGroup
+{
+  INHERIT Group;
+
+  EXTRA
+  {
+    /* @decl constant terminator = "]"
+     *
+     * Terminator symbol.
+     */
+    add_constant(MK_STRING("terminator"), MK_STRING_SVALUE("]"), 0);
+  }
+}
+
+PIKECLASS BraceGroup
+{
+  INHERIT Group;
+
+  EXTRA
+  {
+    /* @decl constant terminator = "]"
+     *
+     * Terminator symbol.
+     */
+    add_constant(MK_STRING("terminator"), MK_STRING_SVALUE("]"), 0);
+  }
+}
+
 /*! @class EndGroup
  *!
  *! Used to detect the end of a group.
@@ -1749,7 +1759,7 @@ PIKECLASS EndGroup
   INHERIT Token;
   EXTRA
   {
-    simple_add_constant("token", MK_STRING_SVALUE("end_group"), 0);
+    add_constant(MK_STRING("token"), MK_STRING_SVALUE("end_group"), 0);
     add_integer_constant("is_end_group", 1, 0);
   }
 }
@@ -1769,8 +1779,8 @@ PIKECLASS GroupingCompiler
   EXTRA
   {
     groupingcompiler_inh_report =
-      really_low_reference_inherited_identifier(NULL, 1,
-						f_compiler_basic_tokenizer_report_fun_num);
+      really_low_reference_inherited_identifier(NULL, 2,
+						f_compiler_report_fun_num);
   }
 
   PIKEFUN List group(TokenizingCompiler.pike_tokenizer tokenizer)
@@ -1809,9 +1819,9 @@ PIKECLASS GroupingCompiler
        *   pike_tokenizer()		tokenizer
        *   List()			root_group->contents
        *   Group()			root_group
-       *   Group(token)	<- orig_sp
+       *   FooGroup(token)	<- orig_sp
        *   ...
-       *   Group(token)
+       *   BarGroup(token)
        *   Token
        */
 
