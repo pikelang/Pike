@@ -3,7 +3,7 @@
 #endif /* HAVE_CONFIG_H */
 
 #include "global.h"
-RCSID("$Id: iso2022.c,v 1.20 2000/12/01 08:10:25 hubbe Exp $");
+RCSID("$Id: iso2022.c,v 1.21 2001/06/19 22:48:36 per Exp $");
 #include "program.h"
 #include "interpret.h"
 #include "stralloc.h"
@@ -433,6 +433,7 @@ static void eat_enc_string(struct pike_string *str, struct iso2022enc_stor *s,
     {
       char *p = str->str;
       p_wchar2 c;
+
       while(l--) {
 	if(s1) {
 	  c = *(p_wchar1 *)p;
@@ -698,15 +699,14 @@ static void f_enc_feed(INT32 args)
 {
   struct pike_string *str;
 
-  get_all_args(PRGM_NAME"Dec->feed()", args, "%W", &str);
-
-  eat_enc_string(str, (struct iso2022enc_stor *)fp->current_storage,
-		 ((struct iso2022enc_stor *)fp->current_storage)->replace,
-		 (((struct iso2022enc_stor *)fp->current_storage)->repcb.type
-		  == T_FUNCTION?
-		  &((struct iso2022enc_stor *)fp->current_storage)->repcb :
-		  NULL));
-
+  get_all_args(PRGM_NAME"Enc->feed()", args, "%W", &str);
+  if( str->len )
+    eat_enc_string(str, (struct iso2022enc_stor *)fp->current_storage,
+		   ((struct iso2022enc_stor *)fp->current_storage)->replace,
+		   (((struct iso2022enc_stor *)fp->current_storage)->repcb.type
+		    == T_FUNCTION?
+		    &((struct iso2022enc_stor *)fp->current_storage)->repcb :
+		    NULL));
   pop_n_elems(args);
   push_object(this_object());
 }
