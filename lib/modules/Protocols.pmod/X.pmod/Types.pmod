@@ -253,6 +253,23 @@ class Drawable
   int depth;
   object colormap, parent, visual;
 
+  object CopyArea_req(object gc, object src, object area, int x, int y)
+  {
+    object r= Requests.CopyArea();
+    r->gc = gc;
+    r->src = src;
+    r->area = area;
+    r->dst = this_object();
+    r->x = x;
+    r->y = y;
+    return r;
+  }
+
+  object CopyArea(object gc, object src, object area, int x, int y)
+  {
+    display->send_request( CopyArea_req( gc,src,area,x,y ));
+  }
+
   object CreateGC_req()
   {
     object req = Requests.CreateGC();

@@ -34,6 +34,13 @@ static class extension
   }
 }
 
+class ScreenSaver
+{
+  inherit extension;
+  constant name = "MIT-SCREEN-SAVER";
+  
+
+}
 
 class Shape
 {

@@ -803,6 +803,35 @@ class Bell {
   string to_string() { return build_request("", percent); }
 }
 
+class CopyArea
+{
+  inherit request;
+  constant reqType = 62;
+  object gc;
+  object area;
+  object src, dst;
+  int x,y; 
+  
+  string to_string()
+  {
+    return build_request(sprintf("%4c" "%4c" "%4c" "%2c%2c" "%2c%2c" "%2c%2c",
+				 src->id, dst->id, gc->id, area->x, area->y,
+				 x, y, area->width, area->height));
+  }
+}
+
+class CopyPlane
+{
+  inherit CopyArea;
+  constant reqType = 63;
+  int plane;
+  
+  string to_string()
+  {
+    return ::to_string()+sprintf("%4c", plane);
+  }
+}
+
 class AllocColor
 {
   inherit request;
