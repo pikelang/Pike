@@ -10,7 +10,7 @@
 #include "pike_macros.h"
 #include "gc.h"
 
-RCSID("$Id: pike_memory.c,v 1.116 2001/11/14 15:09:07 jonasw Exp $");
+RCSID("$Id: pike_memory.c,v 1.117 2001/12/12 23:03:09 mast Exp $");
 
 /* strdup() is used by several modules, so let's provide it */
 #ifndef HAVE_STRDUP
@@ -1216,6 +1216,7 @@ static inline unsigned long lhash(struct memhdr *m, LOCATION location)
   }							\
 }while(0)
 
+#undef BLOCK_ALLOC_HSIZE_SHIFT
 #define BLOCK_ALLOC_HSIZE_SHIFT 1
 PTR_HASH_ALLOC(memhdr,16382)
 
