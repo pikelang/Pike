@@ -118,6 +118,10 @@ void push_pgdkobject(void *obj, struct program *def);
 GdkImage *gdkimage_from_pikeimage(struct object *img, int fast, GdkImage *i );
 struct object *pikeimage_from_gdkimage( GdkImage *img );
 
+#ifdef THIS
+#undef THIS
+#endif
+
 #define THIS ((struct object_wrapper *)Pike_fp->current_storage)
 #define THISO ((struct object_wrapper *)Pike_fp->current_storage)->obj
 
