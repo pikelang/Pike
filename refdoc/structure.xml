@@ -1,8 +1,8 @@
 <dir>
   <!-- These three info tags are simply ignored by the splitter: -->
-  <last-altered-by>$Author: jhs $</last-altered-by>
-  <last-altered-at>$Date: 2001/04/18 14:22:47 $</last-altered-at>
-  <file-revision>$Revision: 1.1 $</file-revision>
+  <last-altered-by>$Author: grubba $</last-altered-by>
+  <last-altered-at>$Date: 2001/04/24 22:29:46 $</last-altered-at>
+  <file-revision>$Revision: 1.2 $</file-revision>
   <file name="structure.xml">
     <!-- Don't delete this file on us in the import stage... :) -->
     <!-- This file is not touched at all by the splitter, since -->
@@ -40,6 +40,28 @@
       <target module="Standards" class="URI"/>
     </file>
   </dir>
+  <file name="Calendar.xml">
+    <target module="Calendar"/>
+  </file>
+  <file name="Crypto.xml">
+    <target module="Crypto"/>
+  </file>
+  <file name="GDK.xml">
+    <target module="GDK"/>
+  </file>
+  <!--
+  <file name="GL.xml">
+    <target module="GL"/>
+    <target module="GLU"/>
+    <target module="GLUT"/>
+  </file>
+  -->
+  <file name="GTK.xml">
+    <target module="GTK"/>
+  </file>
+  <file name="Sql.xml">
+    <target module="Sql"/>
+  </file>
   <file name="index.xml">
     <!-- Import all remaining crawled data to this file: -->
     <target module=""/>
