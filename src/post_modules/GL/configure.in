@@ -1,4 +1,4 @@
-# $Id: configure.in,v 1.14 2002/12/14 20:20:52 grubba Exp $
+# $Id: configure.in,v 1.15 2002/12/14 20:36:19 grubba Exp $
 AC_INIT(top.c)
 AC_CONFIG_HEADER(config.h)
 
@@ -105,14 +105,14 @@ else
     if test x"$tmp_gl_fail" = xno; then
       AC_DEFINE(HAVE_GL)
       AUTO_OBJS="auto.o"
-    fi
 
-    if test "x$pike_cv_make_supports_VPATH" = "xno"; then
-      if test -L auto.c.in; then
-        AC_MSG_WARN([Enabling VPATH symlink kludge])
-        test -L auto.c || ln -s $(srcdir)/auto.c auto.c
+      if test "x$pike_cv_make_supports_VPATH" = "xno"; then
+        if test -L auto.c.in; then
+          AC_MSG_WARN([Enabling VPATH symlink kludge])
+          test -L auto.c || ln -s $(srcdir)/auto.c auto.c
+        else :; fi
       else :; fi
-    else :; fi
+    fi
   fi
 
 fi
