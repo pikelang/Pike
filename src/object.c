@@ -5,7 +5,7 @@
 \*/
 /**/
 #include "global.h"
-RCSID("$Id: object.c,v 1.95 2000/03/24 01:24:49 hubbe Exp $");
+RCSID("$Id: object.c,v 1.96 2000/04/06 20:17:05 hubbe Exp $");
 #include "object.h"
 #include "dynamic_buffer.h"
 #include "interpret.h"
@@ -1045,8 +1045,7 @@ void cleanup_objects(void)
   {
     add_ref(o);
     low_destruct(o,1);
-    next=o->next;
-    free_object(o);
+    SET_NEXT_AND_FREE(o,free_object);
   }
   free_object(master_object);
   master_object=0;
@@ -1211,8 +1210,7 @@ void gc_check_all_objects(void)
       }
       POP_FRAME();
     }
-    next=o->next;
-    free_object(o);
+    SET_NEXT_AND_FREE(o,free_object);
   }
 }
 
@@ -1225,8 +1223,7 @@ void gc_mark_all_objects(void)
     {
       add_ref(o);
       gc_mark_object_as_referenced(o);
-      next=o->next;
-      free_object(o);
+      SET_NEXT_AND_FREE(o,free_object);
     }else{
       next=o->next;
     }
@@ -1243,8 +1240,7 @@ void gc_free_all_unreferenced_objects(void)
     {
       add_ref(o);
       call_destroy(o,0);
-      next=o->next;
-      free_object(o);
+      SET_NEXT_AND_FREE(o,free_object);
     }else{
       next=o->next;
     }
@@ -1256,8 +1252,7 @@ void gc_free_all_unreferenced_objects(void)
     {
       add_ref(o);
       destruct(o);
-      next=o->next;
-      free_object(o);
+      SET_NEXT_AND_FREE(o,free_object);
     }else{
       next=o->next;
     }
@@ -1504,8 +1499,7 @@ void check_all_objects(void)
   {
     add_ref(o);
     check_object(o);
-    next=o->next;
-    free_object(o);
+    SET_NEXT_AND_FREE(o,free_object);
   }
 }
 

@@ -5,7 +5,7 @@
 \*/
 /**/
 #include "global.h"
-RCSID("$Id: mapping.c,v 1.70 2000/03/07 23:52:16 hubbe Exp $");
+RCSID("$Id: mapping.c,v 1.71 2000/04/06 20:17:05 hubbe Exp $");
 #include "main.h"
 #include "object.h"
 #include "mapping.h"
@@ -1937,8 +1937,7 @@ void gc_free_all_unreferenced_mappings(void)
 	debug_malloc_touch(m);
 	rehash(m, MAP_SLOTS(md->size));
       }
-      next=m->next;
-      free_mapping(m);
+      SET_NEXT_AND_FREE(m, free_mapping);
     }
     else
     {

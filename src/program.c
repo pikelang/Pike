@@ -5,7 +5,7 @@
 \*/
 /**/
 #include "global.h"
-RCSID("$Id: program.c,v 1.220 2000/04/06 09:05:54 hubbe Exp $");
+RCSID("$Id: program.c,v 1.221 2000/04/06 20:17:05 hubbe Exp $");
 #include "program.h"
 #include "object.h"
 #include "dynamic_buffer.h"
@@ -3480,14 +3480,7 @@ void gc_free_all_unreferenced_programs(void)
 
       /* FIXME: Is there anything else that needs to be freed here? */
 
-      while((next=p->next) && p->refs == 1)
-      {
-	add_ref(next);
-	free_program(p);
-	p=next;
-      }
-
-      free_program(p);
+      SET_NEXT_AND_FREE(p, free_program);
     }else{
       next=p->next;
     }

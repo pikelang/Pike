@@ -16,7 +16,7 @@
 #include "gc.h"
 #include "security.h"
 
-RCSID("$Id: multiset.c,v 1.16 1999/10/29 03:36:48 mast Exp $");
+RCSID("$Id: multiset.c,v 1.17 2000/04/06 20:17:05 hubbe Exp $");
 
 struct multiset *first_multiset;
 
@@ -317,9 +317,8 @@ void gc_free_all_unreferenced_multisets(void)
       add_ref(l);
       free_svalues(ITEM(l->ind), l->ind->size, l->ind->type_field);
       l->ind->size=0;
-      next=l->next;
 
-      free_multiset(l);
+      SET_NEXT_AND_FREE(l, free_multiset);
     }else{
       next=l->next;
     }
