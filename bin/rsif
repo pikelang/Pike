@@ -13,16 +13,16 @@ int main(int argc, string *argv)
 
   for(i=3; i<argc; i++)
   {
-    if(file=read_bytes(argv[i]))
+    if(file_contents=read_bytes(argv[i]))
     {
       if(-1!=strstr(file,argv[1]))
       {
 	write("Processing "+argv[i]+".\n");
-	file=replace(file,argv[1],argv[2]);
+	file_contents=replace(file_contents,argv[1],argv[2]);
 
 	if( mv(argv[i],argv[i]+"~") )
 	{
-	  write_file(argv[i],file);
+	  write_file(argv[i],file_contents);
 	}else{
 	  write("Failed to create backup file.\n");
 	}

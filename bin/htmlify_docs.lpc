@@ -242,6 +242,8 @@ string short(string s)
 inherit "/precompiled/regexp":is_example;
 
 list(string) indexes_done=(<>);
+list(string) pages_done=(<>);
+
 string mkindex(string topic, int usehead)
 {
   string head;
@@ -256,7 +258,9 @@ string mkindex(string topic, int usehead)
     head="<b>All pages:</b>\n";
     ret="<ul>\n";
     foreach(sort_array(m_indices(pages)),a)
-      ret+="<li><a href="+pages[a]+">"+a+"</a>"+short(a)+"\n";
+      {	
+	ret+="<li><a href="+pages[a]+">"+a+"</a>"+short(a)+"\n";
+      }
     
     ret+="</ul>\n";
     break;
@@ -268,6 +272,7 @@ string mkindex(string topic, int usehead)
     {
       if(a[0]!='/') continue;
       
+      pages_done[a]=1;
       ret+="<li><a href="+pages[a]+">"+a+"</a>"+short(a)+"\n";
     }
     
@@ -280,6 +285,8 @@ string mkindex(string topic, int usehead)
     foreach(sort_array(m_indices(pages)),a)
     {
       if(search(a,"example")==-1) continue;
+
+      pages_done[a]=1;
       
       ret+="<li><a href="+pages[a]+">"+a+"</a>"+short(a)+"\n";
     }
@@ -290,13 +297,9 @@ string mkindex(string topic, int usehead)
   case "other":
     head="<b>Other pages</b>\n";
     ret="<ul>\n";
-    foreach(sort_array(m_indices(pages) -
-		       map_array(`|(@m_values(keywords)),html_quote) -
-		       map_array(m_indices(all_efuns()),html_quote)),a)
+    foreach(sort_array(m_indices(pages) - indices(pages_done) ),a)
     {
-      if(a[0]=='/') continue;
       if(a[0..4]=="index") continue;
-      if(search(a,"example")!=-1) continue;
       ret+="<li><a href="+pages[a]+">"+a+"</a>"+short(a)+"\n";
     }
     ret+="</ul>\n";
@@ -310,6 +313,7 @@ string mkindex(string topic, int usehead)
       a=html_quote(a);
       if(pages[a])
       {
+	pages_done[a]=1;
 	ret+="<li><a href="+pages[a]+">"+a+"</a>"+short(a)+"\n";
       }else{
 	if(writepages)
@@ -334,6 +338,7 @@ string mkindex(string topic, int usehead)
     foreach(sort_array(keywords[topic]),a)
     {
       a=html_quote(a);
+      pages_done[a]=1;
       ret+="<li><a href="+pages[a]+">"+a+"</a>"+ short(a) +"\n";
     }
     ret+="</ul></a>\n";
@@ -443,7 +448,8 @@ string convert_page(string path, string fname)
 	  {
 	    string tmp;
 	    tmp=a;
-	    a=explode(a,"/")[-1];
+	    if(a[0]!='`' && a[0]!='/')
+	      a=explode(a,"/")[-1];
 	    if(pages[a])
 	    {
 	      b+=({ "<a href="+pages[a]+">" + a + "</a>" });
@@ -453,7 +459,7 @@ string convert_page(string path, string fname)
 	      b+=({ "<a href="+subpages[name+"-&gt;"+a]+">" + a + "</a>" });
 	    }else{
 	      if(writepages)
-	      perror("Warning, unlinked SEE ALSO: "+a+"\n");
+		perror(path+": Warning, unlinked SEE ALSO: "+a+"\n");
 	      b+=({ tmp });
 	    }
 	  }
@@ -474,6 +480,7 @@ string convert_page(string path, string fname)
 
 	case "RELATED FUNCTIONS":
 	  a=name;
+
 	  sscanf(rest,"%*skeyword %[a-z/A-Z0-9]",a);
 	  rest=mkindex(a, 0);
 	}
@@ -550,7 +557,8 @@ string convert_page(string path, string fname)
 
 	case "LINK":
 	  sscanf(a,"%s %s",a,b);
-	  tmp="<a href="+a+".html>"+b+"</a>";
+	  pages_done[(a/"/")[-1]]=1;
+	  tmp="<a href="+fippel_path(a)+".html>"+b+"</a>";
 	  break;
 
 	default:
@@ -637,6 +645,7 @@ string convert_page(string path, string fname)
       
       if(l > i*2)
       {
+	int err;
 	l=0;
 	foreach(cont/"\n", tmp)
 	{
@@ -644,6 +653,7 @@ string convert_page(string path, string fname)
 	  if(!is_example::match(tmp+"\n"))
 	  {
 	    perror(path+":"+l+": not on example form.\n");
+	    if(++err == 5) break;
 	  }
 	}
       }
