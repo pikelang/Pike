@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: fdlib.h,v 1.49 2003/11/26 16:02:15 grubba Exp $
+|| $Id: fdlib.h,v 1.50 2003/12/17 21:27:17 marcus Exp $
 */
 
 #ifndef FDLIB_H
@@ -404,7 +404,9 @@ typedef struct my_fd_set_s my_fd_set;
    MEMCPY((TO),&(FROM)->tmp,sizeof(*(TO)))
 
 #define FILE_CAPABILITIES (fd_INTERPROCESSABLE | fd_CAN_NONBLOCK)
+#ifndef __amigaos__
 #define PIPE_CAPABILITIES (fd_INTERPROCESSABLE | fd_BUFFERED | fd_CAN_NONBLOCK)
+#endif
 #define UNIX_SOCKET_CAPABILITIES (fd_INTERPROCESSABLE | fd_BIDIRECTIONAL | fd_CAN_NONBLOCK)
 #define SOCKET_CAPABILITIES (fd_INTERPROCESSABLE | fd_BIDIRECTIONAL | fd_CAN_NONBLOCK | fd_CAN_SHUTDOWN)
 
