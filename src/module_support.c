@@ -11,7 +11,7 @@
 
 #define sp Pike_sp
 
-RCSID("$Id: module_support.c,v 1.46 2002/08/15 14:49:22 marcus Exp $");
+RCSID("$Id: module_support.c,v 1.47 2002/08/16 00:34:50 mast Exp $");
 
 /* Checks that args_to_check arguments are OK.
  * Returns 1 if everything worked ok, zero otherwise.
@@ -381,7 +381,7 @@ PMOD_EXPORT void pike_module_export_symbol(char *name,
   struct pike_string *str=make_shared_binary_string(name,len);
   struct svalue s;
   if(!exported_symbols) exported_symbols=allocate_mapping(10);
-  s.u.refs=(INT32 *)ptr;
+  s.u.ptr=ptr;
   s.type=T_INT;
   s.subtype=4711;
   mapping_string_insert(exported_symbols, str, &s);
@@ -398,10 +398,14 @@ PMOD_EXPORT void *pike_module_import_symbol(char *name,
   if(exported_symbols)
   {
     s=low_mapping_string_lookup(exported_symbols, str);
-    if(s && s->type == T_INT && s->subtype == 4711)
+    if(s)
     {
+#ifdef PIKE_DEBUG
+      if (s->type != T_INT || s->subtype != 4711)
+	Pike_fatal("Unexpected value in exported_symbols.\n");
+#endif
       free_string(str);
-      return s->u.refs;
+      return s->u.ptr;
     }
   }
 
@@ -414,10 +418,14 @@ PMOD_EXPORT void *pike_module_import_symbol(char *name,
   {
     s=low_mapping_string_lookup(exported_symbols, str);
 
-    if(s && s->type == T_INT && s->subtype == 4711)
+    if(s)
     {
+#ifdef PIKE_DEBUG
+      if (s->type != T_INT || s->subtype != 4711)
+	Pike_fatal("Unexpected value in exported_symbols.\n");
+#endif
       free_string(str);
-      return s->u.refs;
+      return s->u.ptr;
     }
   }
 
