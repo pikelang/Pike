@@ -1,4 +1,4 @@
-dnl $Id: testsuite.in,v 1.11 2004/02/23 18:07:31 nilsson Exp $
+dnl $Id: testsuite.in,v 1.12 2004/05/01 16:21:50 nilsson Exp $
 
 dnl - ADT.BitBuffer
 
@@ -19,14 +19,26 @@ test_eq( B->feed("foo"), B )
 test_eq( sizeof(B), 3*8+1 )
 test_eq( B->drain(), "\xb3""7\xb7" )
 test_eq( sizeof(B), 1 )
-dnl test_eq( B->put0(4), B )
-dnl test_eq( sizeof(B), 5 )
-dnl test_eq( B->put1(4), B )
-dnl test_eq( sizeof(B), 9 )
-dnl test_eq( B->get(1), 1 )
-dnl test_eq( B->drain(), "\17" )
-dnl test_eq( sizeof(B), 0 )
-dnl test_eq( B->drain(), "" )
+test_eq( B->get(1), 1 )
+
+test_eq( B->feed("\xff\0"), B )
+test_eq( B->get(7), 127 )
+test_eq( B->get(4), 8 )
+test_eq( B->get(5), 0 )
+
+test_eq( B->put1(9), B )
+test_eq( B->get(9), 0b111111111 )
+
+test_eq( B->put1(1), B )
+test_eq( B->put0(4), B )
+test_eq( sizeof(B), 5 )
+test_eq( B->put1(4), B )
+test_eq( sizeof(B), 9 )
+test_eq( B->get(1), 1 )
+test_eq( B->drain(), "\17" )
+test_eq( sizeof(B), 0 )
+test_eq( B->drain(), "" )
+test_eval_error( B->get(1) )
 
 test_do( add_constant( "B" ) )
 
