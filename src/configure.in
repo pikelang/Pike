@@ -1,8 +1,8 @@
-AC_REVISION("$Id: configure.in,v 1.591 2002/06/25 16:54:52 grubba Exp $")
+AC_REVISION("$Id: configure.in,v 1.592 2002/06/25 17:08:56 grubba Exp $")
 AC_INIT(interpret.c)
 AC_CONFIG_HEADER(machine.h)
 
-if test "AC_ACVERSION" -ge 2.50; then
+if test "0`echo 'if(AC_ACVERSION >= 2.50)1'|bc`" = "01"; then
   AC_MSG_WARN([configure script has been generated with autoconf 2.50 or later.])
   if test "x$cache_file" = "x/dev/null"; then
     cache_file=./config.cache
