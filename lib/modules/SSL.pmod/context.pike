@@ -1,5 +1,5 @@
 //
-// $Id: context.pike,v 1.23 2004/01/27 17:47:05 bill Exp $
+// $Id: context.pike,v 1.24 2004/01/27 21:59:43 grubba Exp $
 
 #pike __REAL_VERSION__
 #pragma strict_types
@@ -61,7 +61,7 @@ void set_trusted_issuers(array(array)  i)
 }
 
 //! Get the list of trusted issuers. See @[set_trusted_issuers]. 
-array(string) get_trusted_issuers()
+array(array) get_trusted_issuers()
 {
   return trusted_issuers;
 }
