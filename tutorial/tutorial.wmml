@@ -18,10 +18,10 @@ Programming, using and understanding
 
 <h2> Preface </h2>
 
-This book was written with with the intention to make anybody with a little
+This book was written with the intention to make anybody with a little
 programming experience able to use Pike. It should also be possible to
 gain a deep understanding of how Pike works and to some extent why it works
-like it does from this book. It also teaches you how to write your own
+the way does from this book. It will teach you how to write your own
 extentions to Pike. I have been trying for years to get someone else to
 write this book, but since it seems impossible without paying a fortune for
 it I will have to do it myself. 
@@ -31,7 +31,7 @@ me iron out some of the rough spots.
 
 The book assumes that
 you have programmed some other programming language before and that you
-have some experience with UNIX.
+have some experience of UNIX.
 <p>
 
 <HR NEWPAGE>
@@ -49,16 +49,24 @@ and also compare Pike with other languages. If you want to start
 learning Pike immediately you can skip this chapter.
 
 <h2>Overview</h2>
-The overall layout of this book had been made for people who want to
+This book is designed for people who want to
 learn Pike fast. Since Pike is a simple language to learn, especially
-if you have other programming experience, this should benefit most people.
+if you have some prior programming experience, this should benefit most people.
+<p>
 Chapter one is devoted to background information about Pike and this book.
 It is not really nesesary to read this chapter to learn how to use and
-program pike, but it might help explain why some things work like they do.
-It might be more interesting to re-read this chapter after you have
+program pike, but it might help explain why some things work th way they do.
+It might be more interesting to re-read the chapter after you have
 learned the basics of Pike programming.
 Chapter two is where the action starts. It is a crash course in Pike with
-examples and explanations about some of the basics.
+examples and explanations about some of the basics. It explains the
+fundamenals of the pike data types and control structures
+The systematic documentation of all pike capabilities starts in chapther three
+with a description of all control structures in pike. It then continues with
+all the data types in chapter four and operators in chapter five. Chapter
+six deals with object orientation in pike, which is slightly different than
+what you might be used to.
+
 <!-- FIXME (finish this overview) -->
 <p>
 
@@ -80,9 +88,9 @@ I got financial backing from Signum Support AB for writing µLPC. Signum
 is a company dedicated to supporting GNU and GPL software and they wanted
 to create more GPL software.
 <p>
-When µLPC became usable, Informationsvävarna AB started using it for
+When µLPC became usable, InformationsVävarna AB started using it for
 their webserver. Before then, Roxen (then called Spinner) was non-commercial
-and written in LPC4. Then in 1996 I started working for Informationsvävarna
+and written in LPC4. Then in 1996 I started working for InformationsVävarna
 developing µLPC for them. We also changed the name of µLPC to Pike to
 get a more commercially viable name.
 <p>
@@ -116,7 +124,7 @@ get a more commercially viable name.
 <dd> Pike is similar to Tcl/Tk in intent and they both have good string
      handling. Pike has better data types and is much faster however.
      On the other hand Tcl/Tk has X windows system support.
-<!--The idea from the begining was similar but the implementation is very different.-->
+<!-- The idea from the begining was similar but the implementation is very different.-->
 </dl>
 
 <H2> What is Pike </H2>
@@ -561,9 +569,7 @@ The main function doesn't do much; it checks whether there was anything on the c
 	  }
 	}
 </pre>
-</h2>
 
-</section>
 <section title="Taking care of input">
 Now, it would be better and more general if we could enter more records into our database. Let's add such a function and modify the <tt>main()</tt> function to accept "commands".
 <p>
@@ -865,7 +871,7 @@ where a statement is expected and it looks like this:
 Please note that there is no semicolon after the parenthesis or after the
 <tt>else</tt>. Step by step, <tt>if</tt> does the following:
 <ol>
-<li><First it evaluates <i>expression</i>.<br>
+<li>First it evaluates <i>expression</i>.<br>
 <li>If the result was <b>false</b> go to point 5.
 <li>Execute <i>statement1</i>.
 <li>Jump to point 6.
@@ -971,7 +977,7 @@ evaluates the expression again and so forth... Here is an example of
 how it could be used:
 <pre>
 	int e=1;
-	while(e<5)
+	while(e&lt;5)
 	{
 	  show_record(e);
 	  e=e+1;
@@ -1003,7 +1009,7 @@ For does the following steps:
 </ol>
 This means that the example in the while section can be written like this:
 <pre>
-	for(int e=1; e<5; e=e+1)
+	for(int e=1; e&lt;5; e=e+1)
 	  show_record(e);
 </pre>
 </section>
@@ -1060,7 +1066,7 @@ function in chapter 2. What foreach does is:
 doing the same thing with a <tt>for</tt> loop, as shown here:
 <pre>
 	array tmp1= <i>array expression</i> ;
-	for ( tmp2 = 0; tmp2 < sizeof(tmp1); tmp2++ )
+	for ( tmp2 = 0; tmp2 &lt; sizeof(tmp1); tmp2++ )
 	{
 	  <i>variable</i> = tmp1 [ tmp2 ];
 	  <i>statement</i> ;
@@ -1430,11 +1436,11 @@ use the operators <tt>&gt;</tt>, <tt>&gt;=</tt>, <tt>&lt;</tt> or <tt>&lt;=</tt>
     <i>a</i> with all the elements that are also present in <i>b</i> removed.
     So <tt>({1,3,8,3,2}) - ({3,1})</tt> returns <tt>({8,2})</tt>.
 
-<dt> Intersection (<tt><i>a</i> & <i>b</i></tt>)
+<dt> Intersection (<tt><i>a</i> &amp; <i>b</i></tt>)
 <dd> Intersection returns an array with all values that are present in both
      <i>a</i> and <i>b</i>. The order of the elements will be the same as
      the the order of the elements in <i>a</i>. Example:
-     <tt>({1,3,7,9,11,12}) & ({4,11,8,9,1})</tt> will return:
+     <tt>({1,3,7,9,11,12}) &amp; ({4,11,8,9,1})</tt> will return:
      <tt>({1,9,11})</tt>.
 
 <dt> Union (<tt><i>a</i> | <i>b</i></tt>)
@@ -1561,11 +1567,11 @@ The following operators and functions are important to use mappings:
      either mapping, it will be taken from the right side of the operator.
      This is to make it easier to add new values to a mapping with <tt>+=</tt>.
      Some examples:<br>
-     <tt>([1:3, 3:1]) + ([2:5, 3:7])</tt> returns </tt>([1:3, 2:5, 3:7 ])</tt><br>
-     <tt>([1:3, 3:1]) - ([2:5, 3:7])</tt> returns </tt>([1:3])</tt><br>
-     <tt>([1:3, 3:1]) | ([2:5, 3:7])</tt> returns </tt>([1:3, 2:5, 3:7 ])</tt><br>
-     <tt>([1:3, 3:1]) & ([2:5, 3:7])</tt> returns </tt>([3:7])</tt><br>
-     <tt>([1:3, 3:1]) ^ ([2:5, 3:7])</tt> returns </tt>([1:3, 2:5])</tt><br>
+     <tt>([1:3, 3:1]) + ([2:5, 3:7])</tt> returns <tt>([1:3, 2:5, 3:7 ])</tt><br>
+     <tt>([1:3, 3:1]) - ([2:5, 3:7])</tt> returns <tt>([1:3])</tt><br>
+     <tt>([1:3, 3:1]) | ([2:5, 3:7])</tt> returns <tt>([1:3, 2:5, 3:7 ])</tt><br>
+     <tt>([1:3, 3:1]) &amp; ([2:5, 3:7])</tt> returns <tt>([3:7])</tt><br>
+     <tt>([1:3, 3:1]) ^ ([2:5, 3:7])</tt> returns <tt>([1:3, 2:5])</tt><br>
 
 <dt> same ( <tt><i>a</i> == <i>b</i></tt> )
 <dd> Returns 1 if <i>a</i> is <b>the same</b> mapping as <i>b</i>, 0 otherwise.
@@ -1603,7 +1609,7 @@ The following operators and functions are important to use mappings:
 <dt><tt>int zero_type(mixed t)</tt>
 <dd>When indexing a mapping and the index is not found, zero is returned. However, problems can arise if you have also stored zeroes in the mapping. This function allows you to see the difference between the two cases. If <tt>zero_type(<i>m</i> [ <i>ind</i> ])</tt> returns 1, it means that the value was not present
 in the mapping. If the value was present in the mapping, <tt>zero_type</tt> will return something else than 1.
-</ul>
+</dl>
 </section>
 
 
@@ -1625,9 +1631,9 @@ Otherwise <i>ind</i> will be removed from the multiset instead.
 <p>
 Writing a constant multiset is similar to writing an array:
 <pre>
-	(< >)      // Empty multiset
-	(< 17 >)  // Multiset with one index: 17
-	(< "", 1, 3.0, 1 >) // Multiset with 3 indexes
+	(&lt; &gt;)      // Empty multiset
+	(&lt; 17 &gt;)  // Multiset with one index: 17
+	(&lt; "", 1, 3.0, 1 &gt;) // Multiset with 3 indexes
 </pre>
 Note that you can actually have two of the same index in a multiset. This is
 normally not used, but can be practical at times.
@@ -2092,7 +2098,7 @@ the complete list of combinations of types you can use with these operators:
 </tr>
 
 <tr>
-<td><i>string</i>&nbsp;+&nbsp;<i>string</i><br>
+<td><tt><i>string</i>&nbsp;+&nbsp;<i>string</i><br>
   <i>int</i>&nbsp;+&nbsp;<i>string</i><br>
   <i>float</i>&nbsp;+&nbsp;<i>string</i><br>
   <i>string</i>&nbsp;+&nbsp;<i>int</i><br>
@@ -2122,27 +2128,27 @@ the complete list of combinations of types you can use with these operators:
 </tr>
 
 <tr>
-<td><i>string</i>&nbsp;-&nbsp;<i>string</i></tt></td><td>string</td><td>A copy of the left string with all occurances of the right string removed.</td>
+<td><tt><i>string</i>&nbsp;-&nbsp;<i>string</i></tt></td><td>string</td><td>A copy of the left string with all occurances of the right string removed.</td>
 </tr>
 
 <tr>
-<td><i>array</i>&nbsp;-&nbsp;<i>array</i></tt></td><td>array</td><td>A copy of the right array with all elements present in the right array removed. Example: <tt>({2,1,4,5,3,6,7}) - ({3,5,1})</tt> will return <tt>({2,4,6,7})</tt>.</td>
+<td><tt><i>array</i>&nbsp;-&nbsp;<i>array</i></tt></td><td>array</td><td>A copy of the right array with all elements present in the right array removed. Example: <tt>({2,1,4,5,3,6,7}) - ({3,5,1})</tt> will return <tt>({2,4,6,7})</tt>.</td>
 </tr>
 
 <tr>
-<td><i>mapping</i>&nbsp;-&nbsp;<i>mapping</i></tt></td><td>mapping</td><td>A new mapping with all index-value pairs from the left mapping, except those indexes that are also present in the right mapping.</td>
+<td><tt><i>mapping</i>&nbsp;-&nbsp;<i>mapping</i></tt></td><td>mapping</td><td>A new mapping with all index-value pairs from the left mapping, except those indexes that are also present in the right mapping.</td>
 </tr>
 
 <tr>
-<td><i>multiset</i>&nbsp;-&nbsp;<i>multiset</i></tt></td><td>multiset</td><td>A copy of the left multiset without any index present in the left multiset.</td>
+<td><tt><i>multiset</i>&nbsp;-&nbsp;<i>multiset</i></tt></td><td>multiset</td><td>A copy of the left multiset without any index present in the left multiset.</td>
 </tr>
 
 <tr>
-<td>-&nbsp;<i>int</i></tt></td><td>int</td><td>Same as 0 - <i>int</i>.</td>
+<td><tt>-&nbsp;<i>int</i></tt></td><td>int</td><td>Same as 0 - <i>int</i>.</td>
 </tr>
 
 <tr>
-<td>-&nbsp;<i>float</i></tt></td><td>float</td><td>Same as 0 - <i>float</i>.</td>
+<td><tt>-&nbsp;<i>float</i></tt></td><td>float</td><td>Same as 0 - <i>float</i>.</td>
 </tr>
 
 <tr>
@@ -2156,7 +2162,7 @@ the complete list of combinations of types you can use with these operators:
 </tr>
 
 <tr>
-<td><i>array(string)</i>&nbsp;*&nbsp;<i>string</i></tt></td><td>string</td><td>All the strings in the array are concatenated with the string on the right in between each string. Example: <tt>({"foo,"bar})*"-"</tt> will return <tt>"foo-bar".</tt></td>
+<td><tt><i>array(string)</i>&nbsp;*&nbsp;<i>string</i></tt></td><td>string</td><td>All the strings in the array are concatenated with the string on the right in between each string. Example: <tt>({"foo,"bar})*"-"</tt> will return <tt>"foo-bar".</tt></td>
 </tr>
 
 <tr>
@@ -2164,7 +2170,7 @@ the complete list of combinations of types you can use with these operators:
 </tr>
 
 <tr>
-<td><tt><i>float</i>&nbsp;.&nbsp;<i>int</i><br>
+<td><tt><i>float</i>&nbsp;/&nbsp;<i>int</i><br>
   <i>int</i>&nbsp;/&nbsp;<i>float</i><br>
   <i>float</i>&nbsp;/&nbsp;<i>float</i></tt></td><td>float</td><td>The right value diveded by the left value.</td>
 </tr>
@@ -2291,7 +2297,7 @@ complex data type.
 <table border=1>
 <tr><th>Function</th>		<th>Syntax</th>	<th>Identifier</th> <th>Returns</th></tr>
 <tr><td>Index</td>		<td>a [ b ]</td><td>`[]</td>	<td>Returns the index b from a.</td></tr>
-<tr><td>Lookup</td>	<td>a -&gt;<i>identifier</i></td>	<td>`-&gt</td>	<td>Looks up the identifer. Same as a["<i>identifeir</i>"].</td></tr>
+<tr><td>Lookup</td>	<td>a -&gt;<i>identifier</i></td>	<td>`-&gt;</td>	<td>Looks up the identifer. Same as a["<i>identifeir</i>"].</td></tr>
 <tr><td>Assign index</td>	<td>a [ b ] = c</td><td>`[]=;</td><td>Sets the index b in a to c.</td></tr>
 <tr><td>Assign index</td>	<td>a -&gt;<i>identifier</i> = c</td><td>`-&gt;=</td><td>Sets the index "<i>identifier</i>" in a to c.</td></tr>
 <tr><td>Range</td>	<td>a [ b .. c]</td>		<td>`[..]</td>		<td>Returns a slice of a starting at the index b and ending at c.</td></tr>
@@ -2315,7 +2321,7 @@ can only be indexed on certain things as shown in this list:
 </tr>
 
 <tr>
-<td><tt><i>string</i>[<i>int</i>]</tt></tt></td><td>Returns the ascii value of the Nth character in the string.</td>
+<td><tt><i>string</i>[<i>int</i>]</tt></td><td>Returns the ascii value of the Nth character in the string.</td>
 </tr>
 
 <tr>
@@ -2330,7 +2336,7 @@ can only be indexed on certain things as shown in this list:
 <tr>
 <td><tt>
   <i>multiset</i>[<i>mixed</i>]<br>
-  <i>multiset</i>-&gt<i>identifier</i>
+  <i>multiset</i>-&gt;<i>identifier</i>
      </tt></td><td>Returns 1 if the index is present in the multiset, 0 otherwise.</td>
 </tr>
 
@@ -2338,7 +2344,7 @@ can only be indexed on certain things as shown in this list:
 <tr>
 <td><tt>
   <i>multiset</i>[<i>mixed</i>]=<i>mixed</i><br>
-  <i>multiset</i>-&gt<i>identifier=<i>mixed</i></i>
+  <i>multiset</i>-&gt;<i>identifier=<i>mixed</i></i>
      </tt></td><td>If the mixed value is <b>true</b> the index is added to the multiset. Otherwise the index is removed from the multiset.</td>
 </tr>
 
@@ -2346,7 +2352,7 @@ can only be indexed on certain things as shown in this list:
 <tr>
 <td><tt>
   <i>mapping</i>[<i>mixed</i>]<br>
-  <i>mapping</i>-&gt<i>identifier</i>
+  <i>mapping</i>-&gt;<i>identifier</i>
      </tt></td><td>Returns the value ascociated with the index, 0 if it is not found.</td>
 </tr>
 
@@ -2354,7 +2360,7 @@ can only be indexed on certain things as shown in this list:
 <tr>
 <td><tt>
   <i>mapping</i>[<i>mixed</i>]=<i>mixed</i><br>
-  <i>mapping</i>-&gt<i>identifier</i>=<i>mixed</i></i>
+  <i>mapping</i>-&gt;<i>identifier</i>=<i>mixed</i>
      </tt></td><td>Associate the second mixed value with the first mixed value.</td>
 </tr>
 
@@ -2418,16 +2424,16 @@ Here is a list of all the combinations:
 <center>
 <table border=1>
 <tr><th>Syntax</th> <th>Same as</th> <th>Function</th></tr>
-<tr><td><tt><i>variable</i> += <i>expression</i><tt></td><td> <i>variable</i> = <i>variable</i> + <i>expression</i></td><td>Add <i>expression</i> to <i>variable</i></td></tr>
-<tr><td><tt><i>variable</i> -= <i>expression</i><tt></td><td> <i>variable</i> = <i>variable</i> - <i>expression</i></td><td>Subtract <i>expression</i> from <i>variable</i></td></tr>
-<tr><td><tt><i>variable</i> *= <i>expression</i><tt></td><td> <i>variable</i> = <i>variable</i> * <i>expression</i></td><td>Multiply <i>variable</i> with <i>expression</i></td></tr>
-<tr><td><tt><i>variable</i> /= <i>expression</i><tt></td><td> <i>variable</i> = <i>variable</i> / <i>expression</i></td><td>Divide <i>variable</i> by <i>expression</i></td></tr>
-<tr><td><tt><i>variable</i> %= <i>expression</i><tt></td><td> <i>variable</i> = <i>variable</i> % <i>expression</i></td><td>Modulo <i>variable</i> by <i>expression</i></td></tr>
-<tr><td><tt><i>variable</i> <<= <i>expression</i><tt></td><td> <i>variable</i> = <i>variable</i> << <i>expression</i></td><td>Shift <i>variable</i> <i>expression</i> bits left</td></tr>
-<tr><td><tt><i>variable</i> >>= <i>expression</i><tt></td><td> <i>variable</i> = <i>variable</i> >> <i>expression</i></td><td>Shift <i>variable</i> <i>expression</i> bits right</td></tr>
-<tr><td><tt><i>variable</i> |= <i>expression</i><tt></td><td> <i>variable</i> = <i>variable</i> | <i>expression</i></td><td>Or <i>variable</i> with <i>expression</i></td></tr>
-<tr><td><tt><i>variable</i> &= <i>expression</i><tt></td><td> <i>variable</i> = <i>variable</i> & <i>expression</i></td><td>And <i>variable</i> with <i>expression</i></td></tr>
-<tr><td><tt><i>variable</i> ^= <i>expression</i><tt></td><td> <i>variable</i> = <i>variable</i> ^ <i>expression</i></td><td>Xor <i>variable</i> with <i>expression</i></td></tr>
+<tr><td><tt><i>variable</i> += <i>expression</i></tt></td><td> <i>variable</i> = <i>variable</i> + <i>expression</i></td><td>Add <i>expression</i> to <i>variable</i></td></tr>
+<tr><td><tt><i>variable</i> -= <i>expression</i></tt></td><td> <i>variable</i> = <i>variable</i> - <i>expression</i></td><td>Subtract <i>expression</i> from <i>variable</i></td></tr>
+<tr><td><tt><i>variable</i> *= <i>expression</i></tt></td><td> <i>variable</i> = <i>variable</i> * <i>expression</i></td><td>Multiply <i>variable</i> with <i>expression</i></td></tr>
+<tr><td><tt><i>variable</i> /= <i>expression</i></tt></td><td> <i>variable</i> = <i>variable</i> / <i>expression</i></td><td>Divide <i>variable</i> by <i>expression</i></td></tr>
+<tr><td><tt><i>variable</i> %= <i>expression</i></tt></td><td> <i>variable</i> = <i>variable</i> % <i>expression</i></td><td>Modulo <i>variable</i> by <i>expression</i></td></tr>
+<tr><td><tt><i>variable</i> &lt;&lt;= <i>expression</i></tt></td><td> <i>variable</i> = <i>variable</i> &lt;&lt; <i>expression</i></td><td>Shift <i>variable</i> <i>expression</i> bits left</td></tr>
+<tr><td><tt><i>variable</i> &gt;&gt;= <i>expression</i></tt></td><td> <i>variable</i> = <i>variable</i> &gt;&gt; <i>expression</i></td><td>Shift <i>variable</i> <i>expression</i> bits right</td></tr>
+<tr><td><tt><i>variable</i> |= <i>expression</i></tt></td><td> <i>variable</i> = <i>variable</i> | <i>expression</i></td><td>Or <i>variable</i> with <i>expression</i></td></tr>
+<tr><td><tt><i>variable</i> &amp;= <i>expression</i></tt></td><td> <i>variable</i> = <i>variable</i> &amp; <i>expression</i></td><td>And <i>variable</i> with <i>expression</i></td></tr>
+<tr><td><tt><i>variable</i> ^= <i>expression</i></tt></td><td> <i>variable</i> = <i>variable</i> ^ <i>expression</i></td><td>Xor <i>variable</i> with <i>expression</i></td></tr>
 </table>
 </center>
 <p>
@@ -2485,7 +2491,7 @@ Then there are the increment and decrement operators. The increment and
 decrement operators are somwhat limited: they can only be used on
 integers. They provide a short and fast way to add or subtract one
 to an integer. If the operator is written before the variable
-((tt>++<i>a</i></tt>) the returned value will be what the variable
+(<tt>++<i>a</i></tt>) the returned value will be what the variable
 is after the operator has added/subtracted one to it. If the operator
 is after the variable (<tt><i>a</i>++</tt>) it will instead return the
 value of the variable before it was incremented/decremented.
@@ -2496,7 +2502,7 @@ possible. Here is a list of all casts that actually _do_ anything:
 <center>
 <table border=1>
 <tr><th>casting from</th><th>to</th><th>operation</th></tr>
-<tr><td>int</td><td>string</td><td>Convert the int to ASCII representation</tdt></tr>
+<tr><td>int</td><td>string</td><td>Convert the int to ASCII representation</td></tr>
 <tr><td>float</td><td>string</td><td>Convert the float to ASCII representation</td></tr>
 <tr><td>string</td><td>int</td><td>Convert decimal, octal or hexadecimal number to an int.</td></tr>
 <tr><td>string</td><td>float</td><td>Convert ASCII number to a float.</td></tr>
@@ -2515,7 +2521,6 @@ much. In fact, it simply evaluates the two arguments and then returns
 the right hand one. This operator is mostly useful to produce smaller code,
 or to make defines that can be used in expressions.
 <p>
-</center>
 </section>
 
 <section title="Operator precedence">
@@ -2557,7 +2562,7 @@ Examples:
 <tr><td><tt> 1+2*2*4 </tt></td><td><tt> 1+((2*2)*4) </tt></td></tr>
 <tr><td><tt> (1+2)*2*4 </tt></td><td><tt> ((1+2)*2)*4 </tt></td></tr>
 <tr><td><tt> 1+4,c=2|3+5 </tt></td><td><tt> (1+4),(c=(2|3)+5) </tt></td></tr>
-<tr><td><tt> 1+5 & 4 == 3 </tt></td><td><tt> (1+(5 & 4)) == 3 </tt></td></tr>
+<tr><td><tt> 1+5 &amp; 4 == 3 </tt></td><td><tt> (1+(5 &amp; 4)) == 3 </tt></td></tr>
 <tr><td><tt> c=1,99 </tt></td><td><tt> (c=1),99 </tt></td></tr>
 <tr><td><tt> !a++ + ~--a()</tt></td><td><tt> (!(a++)) + (~((--a)())) </tt></td></tr>
 </table>
@@ -2757,7 +2762,7 @@ that works by just changing what an identifier is pointing at.
 
 </section>
 
-<sectrion title="Multiple inherit">
+<section title="Multiple inherit">
 You can inherit any number of programs in one program, you can even inherit the
 same thing more than once. If you do this you will a separate set of functions
 and variables for each inherit. To access a specific function you need to name
@@ -3062,9 +3067,9 @@ Example:
 	// This might generate "division by zero"
 	mixed error=catch { x/=y; };
 </pre>
-</a>
-</a>
 </section>
+</a>
+</a>
 
 <a name=gauge>
 <section title="gauge">
@@ -3172,7 +3177,7 @@ When you use <tt>Stdio</tt> Pike will look for that module:
 <li> In directories specified with -M on the command line.
 <li> In directories in the environment variable PIKE_MODULE_PATH
 <li> In the directory with builtin modules, usually /usr/local/lib/pike/modules/
-</ul>
+</ol>
 
 For each of these directories, Pike will do the following:
 <ol>
@@ -3276,8 +3281,8 @@ written in C. What follows is a description of all the functions in
 <tt>object Stdio.File();<br>
 or<br>
 object Stdio.File(string <I>fd</I>);<br>
-or
-object(Stdio.File) Stdio.File(string <i>file</i>, string <i>mode</i>);</br>
+or<br>
+object(Stdio.File) Stdio.File(string <i>file</i>, string <i>mode</i>);<br>
 </tt>
 <p>
 <dt><encaps>DESCRIPTION</encaps><dd>
@@ -4811,7 +4816,7 @@ the calling function and the called function will execute at the same time. Exam
 <pre>
 	void foo(int x)
 	{
-	  for(int e=0;e<5;e++)
+	  for(int e=0;e&lt;5;e++)
 	  {
 	    sleep(1);
 	    write("Hello from thread "+x+".\n");
@@ -5013,7 +5018,7 @@ mixed read()
 <a name=Thread.Mutex.lock>
 <dl>
 <dt><encaps>NAME</encaps><dd>
-<tt>Thread.Mutex-&gtlock</tt> - lock the mutex
+<tt>Thread.Mutex-&gt;lock</tt> - lock the mutex
 <p>
 <dt><encaps>SYNTAX</encaps><dd>
 <tt>object lock();<br>
@@ -5033,7 +5038,7 @@ be unlocked.
 <a name=Thread.Mutex.trylock>
 <dl>
 <dt><encaps>NAME</encaps><dd>
-<tt>Thread.Mutex-&gttrylock</tt> - try to lock the mutex
+<tt>Thread.Mutex-&gt;trylock</tt> - try to lock the mutex
 <p>
 <dt><encaps>SYNTAX</encaps><dd>
 <tt>object trylock();<br>
@@ -5190,7 +5195,7 @@ Fifos are only available on systems with POSIX threads support.
 <a name=Thread.Fifo.create>
 <dl>
 <dt><encaps>NAME</encaps><dd>
-<tt>Thread.Fifo-&gtcreate</tt> - initialize the fifo
+<tt>Thread.Fifo-&gt;create</tt> - initialize the fifo
 <p>
 <dt><encaps>SYNTAX</encaps><dd>
 <tt>void create(int <I>size</I>);<br>
@@ -5289,7 +5294,7 @@ Queues are only available on systems with POSIX or UNIX threads support.
 <a name=Thread.Queue.write>
 <dl>
 <dt><encaps>NAME</encaps><dd>
-<tt>Thread.Queue-&gtwrite</tt> - queue a value
+<tt>Thread.Queue-&gt;write</tt> - queue a value
 <p>
 <dt><encaps>SYNTAX</encaps><dd>
 <tt>void write(mixed <I>value</I>);<br>
@@ -5307,7 +5312,7 @@ room for it.
 <a name=Thread.Queue.read>
 <dl>
 <dt><encaps>NAME</encaps><dd>
-<tt>Thread.Queue-&gtread</tt> - read a value from the queue
+<tt>Thread.Queue-&gt;read</tt> - read a value from the queue
 <p>
 <dt><encaps>SYNTAX</encaps><dd>
 <tt>mixed read();<br>
@@ -5326,7 +5331,7 @@ thread writes a value to the queue.
 <a name=Thread.Queue.size>
 <dl>
 <dt><encaps>NAME</encaps><dd>
-<tt>Thread.Queue-&gtsize</tt> - return number of values in queue
+<tt>Thread.Queue-&gt;size</tt> - return number of values in queue
 <p>
 <dt><encaps>SYNTAX</encaps><dd>
 <tt>int queue-&gt;size();<br>
@@ -5441,9 +5446,9 @@ As stated in the beginning of this chapter; Pike threads are only available
 on some UNIX systems. The above example does not work if your systems does
 not have threads.
 </section>
+</chapter>
 </a>
 
-</chapter>
 <chapter title="Modules for specific data types">
 
 There are a few modules that provide extra functions that operate specifically
@@ -6378,11 +6383,12 @@ the exec fails for some reason.
 <br>
 </tt>
 </dl>
-
 </a>
-<hr noshade size=1>
-</section>
 
+</section>
+</a>
+
+<a name=Regexp>
 <section title="Regexp">
 Regexp is short for <b>Regular Expression</b>. A regular expression is
 a standardized way to make pattern that match certain strings. In Pike
@@ -6424,7 +6430,6 @@ they match themselves, nothing else. Also note that when quoting
 these something in Pike you need two \ because Pike also uses
 this character for quoting.
 <p>
-<p>
 To make make regexps fast, they are compiled in a similar way that Pike is,
 they can then be used over and over again without needing to be recompiled.
 To give the user full control over the compilations and use of regexp an
@@ -6433,7 +6438,6 @@ object oriented interface is provided.
 You might wonder what you use regexp for, hopefully it should be more clear
 when you read about the following functions:
 
-</a>
 <hr noshade size=1>
 <a name=Regexp.create>
 <dl>
@@ -6514,6 +6518,7 @@ You can only have 40 subregexps.
 <!-- FIXME: write and document Regexp-&gt;explode -->
 
 </section>
+</a>
 
 <a name=Gmp>
 <section title="Gmp">
@@ -6650,12 +6655,13 @@ or<br>
 (int) mpz<br>
 or<br>
 (float) mpz<br>
-<p><br>
-DESCRIPTION<br>
-This function converts an mpz to a string, int or float. This is<br>
-necessary when you want to view, store or use the result of an mpz<br>
-calculation.<br>
 </tt>
+<br>
+<p>
+<dt><encaps>DESCRIPTION</encaps><dd>
+This function converts an mpz to a string, int or float. This is
+necessary when you want to view, store or use the result of an mpz
+calculation.
 <p>
 <dt><encaps>SEE ALSO</encaps><dd>
 <a href=#cast>cast</a>
@@ -6726,7 +6732,6 @@ This is the an interface to the gdbm library. This module might or
 might not be available in your Pike depending on whether the gdbm library
 was available on your system when Pike was compiled.
 
-</a>
 <hr noshade size=1>
 <a name=Gdbm.create>
 <dl>
@@ -7209,25 +7214,12 @@ This function performs gzip style compression on a string and
 returns the packed data. Streaming can be done by calling this
 functon several times and concatenating the returned data.
 The optional 'flush' argument should be one f the following:
-<p><table border=0 cellpadding=0 cellspacing=0>
-<tr valign=top><td> Gz.NO_FLUSH       </td><td> Only data that doesn't fit in the </td></tr>
-<tr valign=top><td>  </td></tr>
-</table>
-<dl><dt><dd><table border=0 cellpadding=0 cellspacing=0>
-<tr valign=top><td>  </td><td> internal buffers is returned. </td></tr>
-<tr valign=top><td>  </td></tr>
-</table>
-</dl><table border=0 cellpadding=0 cellspacing=0>
+<p>
+<table border=0 cellpadding=0 cellspacing=0>
+<tr valign=top><td> Gz.NO_FLUSH       </td><td> Only data that doesn't fit in the internal buffers is returned. </td></tr>
 <tr valign=top><td> Gz.PARTIAL_FLUSH </td><td> All input is packed and returned. </td></tr>
 <tr valign=top><td> Gz.SYNC_FLUSH    </td><td> All input is packed and returned. </td></tr>
-</table>
-<dl><dt><dd><table border=0 cellpadding=0 cellspacing=0>
-<tr valign=top><td>  </td><td> Packing is syncronized. </td></tr>
-<tr valign=top><td>  </td></tr>
-</table>
-</dl><table border=0 cellpadding=0 cellspacing=0>
-<tr valign=top><td> Gz.FINISH        </td><td> All input is packed and an 'end of </td></tr>
-<tr valign=top><td>  </td><td>  </td><td>  </td><td>  </td><td> data' marker is appended. </td></tr>
+<tr valign=top><td> Gz.FINISH        </td><td> All input is packed and an 'end of data' marker is appended. </td></tr>
 </table>
 
 <p>Using flushing will degrade packing. Normally NO_FLUSH should be
@@ -7730,7 +7722,7 @@ The encoding can be any of
 <li>binary
 <li>quoted-printable
 <li>x-uue
-</ul></tt><br>
+</ul></tt>
 The encoding string is not case sensitive.
 <p>
 <dt><encaps>SEE ALSO</encaps><dd>
@@ -7864,7 +7856,7 @@ The encoding can be any of
 <li>binary
 <li>quoted-printable
 <li>x-uue
-</ul></tt><br>
+</ul></tt>
 The encoding string is not case sensitive.  For the <tt>x-uue</tt> encoding,
 an optional filename string may be supplied.  If a nonzero value is passed
 as <i>no_linebreaks</i>, the result string will not contain any linebreaks
@@ -8111,7 +8103,7 @@ a sequence of lexical elements.  These are:
 <li>domain-literals
 <li>comments
 <li>atoms
-</ul><br>
+</ul>
 This function will analyze a string containing the header value, and produce
 an array containing the lexical elements.  Individual special characters
 will be returned as characters (i.e. <tt>int</tt>s).  Quoted-strings,
@@ -9363,7 +9355,7 @@ The main object of the <a href=#Image>Image</a> module, this object
 <a name=Image.image.%60%26>
 <dl>
 <dt><encaps>NAME</encaps><dd>
-<tt>`&</tt> - makes a new image out of the minimum pixels values<p><dt><encaps>SYNTAX</encaps><dd>
+<tt>`&amp;</tt> - makes a new image out of the minimum pixels values<p><dt><encaps>SYNTAX</encaps><dd>
 <tt>object `&amp;(object&nbsp;operand)<br>
 object `&amp;(array(int)&nbsp;color)<br>
 object `&amp;(int&nbsp;value)</tt>
@@ -9420,7 +9412,7 @@ Multiplies pixel values and creates a new image.
 the new image object
 <p>
 <dt><encaps>SEE ALSO</encaps><dd>
-<a href=#Image.image.%60->Image.image-&gt;`-</a>, <a href=#Image.image.%60+>Image.image-&gt;`+</a>, <a href=#Image.image.%60|>Image.image-&gt;`|</a>, <a href=#Image.image.%60%26>Image.image-&gt;`&</a> and <a href=#Image.image.add_layers>Image.image-&gt;add_layers</a>
+<a href=#Image.image.%60->Image.image-&gt;`-</a>, <a href=#Image.image.%60+>Image.image-&gt;`+</a>, <a href=#Image.image.%60|>Image.image-&gt;`|</a>, <a href=#Image.image.%60%26>Image.image-&gt;`&amp;</a> and <a href=#Image.image.add_layers>Image.image-&gt;add_layers</a>
 </p>
 </dl>
 </a>
@@ -9450,7 +9442,7 @@ adds two images; values are truncated at 255.
 the new image object
 <p>
 <dt><encaps>SEE ALSO</encaps><dd>
-<a href=#Image.image.%60->Image.image-&gt;`-</a>, <a href=#Image.image.%60|>Image.image-&gt;`|</a>, <a href=#Image.image.%60%26>Image.image-&gt;`&</a>, <a href=#Image.image.%60*>Image.image-&gt;`*</a> and <a href=#Image.image.add_layers>Image.image-&gt;add_layers</a>
+<a href=#Image.image.%60->Image.image-&gt;`-</a>, <a href=#Image.image.%60|>Image.image-&gt;`|</a>, <a href=#Image.image.%60%26>Image.image-&gt;`&amp;</a>, <a href=#Image.image.%60*>Image.image-&gt;`*</a> and <a href=#Image.image.add_layers>Image.image-&gt;add_layers</a>
 </p>
 </dl>
 </a>
@@ -9481,7 +9473,7 @@ makes a new image out of the difference
 the new image object
 <p>
 <dt><encaps>SEE ALSO</encaps><dd>
-<a href=#Image.image.%60+>Image.image-&gt;`+</a>, <a href=#Image.image.%60|>Image.image-&gt;`|</a>, <a href=#Image.image.%60%26>Image.image-&gt;`&</a>, <a href=#Image.image.%60*>Image.image-&gt;`*</a> and <a href=#Image.image.add_layers>Image.image-&gt;add_layers</a>
+<a href=#Image.image.%60+>Image.image-&gt;`+</a>, <a href=#Image.image.%60|>Image.image-&gt;`|</a>, <a href=#Image.image.%60%26>Image.image-&gt;`&amp;</a>, <a href=#Image.image.%60*>Image.image-&gt;`*</a> and <a href=#Image.image.add_layers>Image.image-&gt;add_layers</a>
 </p>
 </dl>
 </a>
@@ -9512,7 +9504,7 @@ makes a new image out of the maximum pixels values
 the new image object
 <p>
 <dt><encaps>SEE ALSO</encaps><dd>
-<a href=#Image.image.%60->Image.image-&gt;`-</a>, <a href=#Image.image.%60+>Image.image-&gt;`+</a>, <a href=#Image.image.%60%26>Image.image-&gt;`&</a>, <a href=#Image.image.%60*>Image.image-&gt;`*</a> and <a href=#Image.image.add_layers>Image.image-&gt;add_layers</a>
+<a href=#Image.image.%60->Image.image-&gt;`-</a>, <a href=#Image.image.%60+>Image.image-&gt;`+</a>, <a href=#Image.image.%60%26>Image.image-&gt;`&amp;</a>, <a href=#Image.image.%60*>Image.image-&gt;`*</a> and <a href=#Image.image.add_layers>Image.image-&gt;add_layers</a>
 </p>
 </dl>
 </a>
@@ -9572,7 +9564,7 @@ Using the called object as base, adds layers using masks,
 a new image object
 <p>
 <dt><encaps>SEE ALSO</encaps><dd>
-<a href=#Image.image.paste_mask>Image.image-&gt;paste_mask</a>, <a href=#Image.image.paste_alpha>Image.image-&gt;paste_alpha</a>, <a href=#Image.image.paste_alpha_color>Image.image-&gt;paste_alpha_color</a>, <a href=#Image.image.%60|>Image.image-&gt;`|</a>, <a href=#Image.image.%60%26>Image.image-&gt;`&</a>, <a href=#Image.image.%60*>Image.image-&gt;`*</a>, <a href=#Image.image.%60+>Image.image-&gt;`+</a> and <a href=#Image.image.%60->Image.image-&gt;`-</a>
+<a href=#Image.image.paste_mask>Image.image-&gt;paste_mask</a>, <a href=#Image.image.paste_alpha>Image.image-&gt;paste_alpha</a>, <a href=#Image.image.paste_alpha_color>Image.image-&gt;paste_alpha_color</a>, <a href=#Image.image.%60|>Image.image-&gt;`|</a>, <a href=#Image.image.%60%26>Image.image-&gt;`&amp;</a>, <a href=#Image.image.%60*>Image.image-&gt;`*</a>, <a href=#Image.image.%60+>Image.image-&gt;`+</a> and <a href=#Image.image.%60->Image.image-&gt;`-</a>
 </p>
 </dl>
 </a>
@@ -10564,7 +10556,7 @@ the new image object
 <dt><encaps>DESCRIPTION</encaps><dd>
 mirrors an image:
 <center>
-<image src=lenna.rs dpi=225 align=center>&nbsp-&gt;&nbsp;<illustration align=center src=lenna.rs dpi=225>return src->mirrorx();</illustration><br>
+<image src=lenna.rs dpi=225 align=center>&nbsp;-&gt;&nbsp;<illustration align=center src=lenna.rs dpi=225>return src->mirrorx();</illustration><br>
 </center>
 </p>
 <dt><encaps>RETURNS</encaps><dd>
@@ -10584,7 +10576,7 @@ the new image object
 <dt><encaps>DESCRIPTION</encaps><dd>
 mirrors an image:
 <center>
-<image src=lenna.rs dpi=225 align=center>&nbsp-&gt;&nbsp;;<illustration align=center src=lenna.rs dpi=225>return src->mirrory();</illustration><br>
+<image src=lenna.rs dpi=225 align=center>&nbsp;-&gt;&nbsp;;<illustration align=center src=lenna.rs dpi=225>return src->mirrory();</illustration><br>
 </center>
 </p>
 </dl>
@@ -10820,7 +10812,7 @@ object rotate_expand(int|float&nbsp;angle, int&nbsp;r, int&nbsp;g, int&nbsp;b)</
 Rotates an image a certain amount of degrees (360° is 
      a complete rotation) counter-clockwise:
 <center>
-<image src=lenna.rs dpi=225 align=center>&nbsp-&gt;&nbsp;<illustration align=center src=lenna.rs dpi=225>return src->rotate(45)</illustration><br>
+<image src=lenna.rs dpi=225 align=center>&nbsp;-&gt;&nbsp;<illustration align=center src=lenna.rs dpi=225>return src->rotate(45)</illustration><br>
 </center>
      The "expand" variant of functions stretches the 
      image border pixels rather then filling with 
@@ -11013,7 +11005,7 @@ object skewx_expand(int&nbsp;yfactor, int&nbsp;r, int&nbsp;g, int&nbsp;b)</tt>
 Skews an image an amount of pixels or a factor;
      a skew-x is a transformation:
 <center>
-<image src=lenna.rs dpi=225 align=center>&nbsp-&gt;&nbsp;<illustration align=center src=lenna.rs dpi=225>return src->skewx(0.3)</illustration><br>
+<image src=lenna.rs dpi=225 align=center>&nbsp;-&gt;&nbsp;<illustration align=center src=lenna.rs dpi=225>return src->skewx(0.3)</illustration><br>
 </center>
 </p>
 <dt><encaps>ARGUMENTS</encaps><dd><dl>
@@ -11057,7 +11049,7 @@ object skewy_expand(int&nbsp;xfactor, int&nbsp;r, int&nbsp;g, int&nbsp;b)</tt>
 Skews an image an amount of pixels or a factor;
      a skew-y is a transformation:
 <center>
-<image src=lenna.rs dpi=225 align=center>&nbsp-&gt;&nbsp;<illustration align=center src=lenna.rs dpi=225>return src->skewy(0.3)</illustration><br>
+<image src=lenna.rs dpi=225 align=center>&nbsp;-&gt;&nbsp;<illustration align=center src=lenna.rs dpi=225>return src->skewy(0.3)</illustration><br>
 </center>
      The "expand" variant of functions stretches the 
      image border pixels rather then filling with 
@@ -12451,7 +12443,6 @@ Note that ceil() does _not_ return an int, merely an integral value.
 <tt>object clone(program <I>p</I>,mixed ... <I>args</I>);</tt><br>
 or<br>
 <tt>object new(program <I>p</I>,mixed ... <I>args</I>);</tt><br>
-</tt>
 <p>
 <dt><encaps>DESCRIPTION</encaps><dd>
 new() or clone() creates an object from the program p. Or in C++ terms:
@@ -15473,7 +15464,7 @@ This is the BNF for Pike:
 <tr valign=top><td>expression</td><td>::=</td><td>expression2 { "," expression2 }</td></tr>
 <tr valign=top><td>expression2</td><td>::=</td><td>{ lvalue ( "=" | "+=" | "*=" | "/=" | "&amp;=" | "|=" | "^=" | "&lt;&lt;=" | "&gt;&gt;=" | "%=" ) } expression3</td></tr>
 <tr valign=top><td>expression3</td><td>::=</td><td>expression4 '?' expression3 ":" expression3 </td></tr>
-<tr valign=top><td>expression4</td><td>::=</td><td>{ expression5 ( "||" | "&amp;&amp;" | "|" | "^" | "&amp;" | "==" | "!=" | "&gt;" | "&lg;" | "&gt;=" | "&lt;=" | "&lt;&lt;" | "&gt;&gt;" | "+" | "*" | "/" | "%" ) } expression5</td></tr>
+<tr valign=top><td>expression4</td><td>::=</td><td>{ expression5 ( "||" | "&amp;&amp;" | "|" | "^" | "&amp;" | "==" | "!=" | "&gt;" | "&lt;" | "&gt;=" | "&lt;=" | "&lt;&lt;" | "&gt;&gt;" | "+" | "*" | "/" | "%" ) } expression5</td></tr>
 <tr valign=top><td>expression5</td><td>::=</td><td>expression6 | "(" type ")" expression5 | "--" expression6 | "++" expression6 | expression6 "--" | expression6 "++" | "~" expression5 | "-" expression5 </td></tr>
 <tr valign=top><td>expression6</td><td>::=</td><td>string | number | float | catch | guage | typeof | sscanf | lambda | class | constant_identifer | call | index | mapping | multiset | array | parenthesis | arrow </td></tr>
 <tr valign=top><td>number</td><td>::=</td><td>digit { digit } | "0x" { digits } | "'" character "'" </td></tr>
