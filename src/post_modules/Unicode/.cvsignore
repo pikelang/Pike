@@ -16,3 +16,4 @@ decompositions.h
 canonicals.h
 wordbits.h
 unicode_module.c
+unicode_module.cmod.compiled
