@@ -10,7 +10,7 @@ fix()
 
   if [ ! -f $1/Makefile.in ]; then
     cp $1/Makefile.src $1/Makefile.in
-  else if cmp $1/Makefile.src $1/Makefile.in >/dev/null; then
+  elif cmp $1/Makefile.src $1/Makefile.in >/dev/null; then
     :
   else
     # This might not be strictly necessary, but you
