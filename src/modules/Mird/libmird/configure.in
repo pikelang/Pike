@@ -7,7 +7,7 @@
 # configure.in for Pike environment
 #
 
-# $Id: configure.in,v 1.10 2003/01/03 15:10:12 grubba Exp $
+# $Id: configure.in,v 1.11 2003/12/07 15:33:16 marcus Exp $
 AC_INIT(internal.h)
 AC_CONFIG_HEADER(config.h)
 
@@ -254,12 +254,14 @@ AC_CACHE_VAL(mird_cv_int16,
   	[mird_cv_int16=long],
   	[AC_TRY_RUN([int main() { return sizeof(long char)!=2; }],
   	  [mird_cv_int16="long long"],
-  	  [AC_MSG_RESULT([no, giving up])
-  	   AC_DEFINE(MIRD_WONT_WORK)],[?])],[?])],[?])],
+  	  [mird_cv_int16="no, giving up"],[?])],[?])],[?])],
     [AC_MSG_CHECKING([cross-compiling, guessing])
      mird_cv_int16="short"])])
 AC_MSG_RESULT($mird_cv_int16)
 AC_DEFINE_UNQUOTED(INT16,$mird_cv_int16)
+case "$mird_cv_int16" in
+  no*) AC_DEFINE(MIRD_WONT_WORK);;
+esac
 
 AC_MSG_CHECKING(for 32 bit int)
 AC_CACHE_VAL(mird_cv_int32,
@@ -271,12 +273,14 @@ AC_CACHE_VAL(mird_cv_int32,
 	[mird_cv_int32="long long"],
   	[AC_TRY_RUN([int main() { return sizeof(short)!=4; }],
   	  [mird_cv_int32="short"],
-  	  [AC_MSG_RESULT([no, giving up])
-  	   AC_DEFINE(MIRD_WONT_WORK)],[?])],[?])],[?])],
+  	  [mird_cv_int32="no, giving up"],[?])],[?])],[?])],
     [AC_MSG_CHECKING([cross-compiling, guessing])
      mird_cv_int32="long"])])
 AC_MSG_RESULT($mird_cv_int32)
 AC_DEFINE_UNQUOTED(INT32,$mird_cv_int32)
+case "$mird_cv_int32" in
+  no*) AC_DEFINE(MIRD_WONT_WORK);;
+esac
 
 AC_MSG_CHECKING(for 64 bit int)
 AC_CACHE_VAL(mird_cv_int64,
