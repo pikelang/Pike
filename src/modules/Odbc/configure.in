@@ -1,5 +1,5 @@
 #
-# $Id: configure.in,v 1.9 1998/02/24 13:07:23 grubba Exp $
+# $Id: configure.in,v 1.10 1998/07/13 02:01:40 mast Exp $
 #
 # Configure script for the odbc-module
 #
@@ -15,7 +15,7 @@ OLD_LIBS=$LIBS
 OLD_LDFLAGS=$LDFLAGS
 OLD_CPPFLAGS=$CPPFLAGS
 
-AC_ARG_WITH(odbc,  [  --without-odbc       no support for the ODBC databases],[],[with_odbc=yes])
+AC_ARG_WITH(odbc,  [  --without-odbc       no support for ODBC databases],[],[with_odbc=yes])
 
 if test x$with_odbc = xyes; then
 
@@ -64,7 +64,7 @@ if test x$with_odbc = xyes; then
       foodir=$INFORMIXDIR/cli/include
     fi
 
-    # MIMER doesn't include the odbc-headerfiles.
+    # MIMER doesn't include the odbc header files.
 
     for pike_cv_odbc_include_dir in $foodir /opt/*odbc/*/include \
         /usr/opt/*odbc/*/include /opt/*odbc/include /usr/opt/*odbc/include \
@@ -130,7 +130,7 @@ if test x$with_odbc = xyes; then
     :
   fi
   if test x$pike_cv_odbc = xno; then
-    # Restore variables, so we don't link with unnessesary libs
+    # Restore variables, so we don't link with unnecessary libs
 
     LIBS=$OLD_LIBS
     CPPFLAGS=$OLD_CPPFLAGS
@@ -146,8 +146,8 @@ NOTE:
 On most systems you need to configure the files
 odbc.ini and odbcinst.ini to reflect your installation
 (check the manual for your ODBC library).
-You may also need to set LD_LIBRARY_PATH (or equvivalent)
-so that libodbc.so the apropriate files.
+You may also need to set LD_LIBRARY_PATH (or equivalent)
+so that libodbc.so finds the appropriate files.
 
 EOF
 
