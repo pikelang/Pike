@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: encode.c,v 1.165 2004/03/13 13:22:40 grubba Exp $
+|| $Id: encode.c,v 1.166 2004/05/11 09:43:00 grubba Exp $
 */
 
 #include "global.h"
@@ -28,8 +28,11 @@
 #include "version.h"
 #include "bignum.h"
 #include "pikecode.h"
+#include "pike_types.h"
+#include "opcodes.h"
+#include "peep.h"
 
-RCSID("$Id: encode.c,v 1.165 2004/03/13 13:22:40 grubba Exp $");
+RCSID("$Id: encode.c,v 1.166 2004/05/11 09:43:00 grubba Exp $");
 
 /* #define ENCODE_DEBUG */
 
@@ -40,6 +43,9 @@ RCSID("$Id: encode.c,v 1.165 2004/03/13 13:22:40 grubba Exp $");
 /* Pass a nonzero integer as the third arg to encode_value,
  * encode_value_canonic and decode_value to activate this debug. */
 #define EDB(N,X) do { debug_malloc_touch(data); if (data->debug>=N) {X;} } while (0)
+#ifndef PIKE_DEBUG
+#error ENCODE_DEBUG requires PIKE_DEBUG
+#endif
 #else
 #define EDB(N,X) do { debug_malloc_touch(data); } while (0)
 #endif
@@ -92,15 +98,17 @@ RCSID("$Id: encode.c,v 1.165 2004/03/13 13:22:40 grubba Exp $");
 #define TAG_INT 8
 #define TAG_TYPE 9           /* Not supported yet */
 
+#define TAG_DELAYED 14		/* Note: Coincides with T_ZERO. */
 #define TAG_AGAIN 15
 #define TAG_MASK 15
 #define TAG_NEG 16
 #define TAG_SMALL 32
 #define SIZE_SHIFT 6
 #define MAX_SMALL (1<<(8-SIZE_SHIFT))
-#define COUNTER_START -MAX_SMALL
+#define COUNTER_START (-MAX_SMALL)
 
 /* Entries used to encode the identifier_references table. */
+#define ID_ENTRY_EFUN_CONSTANT	-3
 #define ID_ENTRY_RAW		-2
 #define ID_ENTRY_EOT		-1
 #define ID_ENTRY_VARIABLE	0
