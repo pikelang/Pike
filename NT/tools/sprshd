@@ -18,6 +18,8 @@ void handle_incoming_connection(object(Stdio.File) io)
   string dir=cmd[0];
   cmd=cmd[1..];
 
+  write("Doing "+cmd*" "+"\n");
+
   switch(cmd[0])
   {
     case "getenv":
