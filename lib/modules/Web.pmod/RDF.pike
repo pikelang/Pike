@@ -1,4 +1,4 @@
-// $Id: RDF.pike,v 1.18 2003/10/14 23:52:10 nilsson fake $
+// $Id: RDF.pike,v 1.19 2003/10/14 23:52:55 nilsson Exp $
 
 #pike __REAL_VERSION__
 
@@ -75,6 +75,10 @@ class RDFResource {
 
   string get_3_tuple_name() {
     return "RDF:"+id;
+  }
+
+  string get_qname() {
+    return "rdf:"+id;
   }
 }
 
