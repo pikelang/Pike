@@ -5,7 +5,7 @@
 \*/
 /**/
 #include "global.h"
-RCSID("$Id: builtin_functions.c,v 1.208 1999/11/22 21:01:43 grubba Exp $");
+RCSID("$Id: builtin_functions.c,v 1.209 1999/11/23 07:07:00 hubbe Exp $");
 #include "interpret.h"
 #include "svalue.h"
 #include "pike_macros.h"
@@ -5499,7 +5499,7 @@ void init_builtin_efuns(void)
 		tFunc(tIntPos tMix tObj,tArr(tVar(1))),
 		tFunc(tIntPos tObj tOr(tVoid,tMix),tArr(tVar(1))),
 		tFunc(tIntPos tMix tMix 
-		      tFuncV(,tMix,tSetvar(1,tMix)),tArr(tVar(1)))),
+		      tFuncV(tNone,tMix,tSetvar(1,tMix)),tArr(tVar(1)))),
 	   OPT_TRY_OPTIMIZE);
 		
   ADD_FUNCTION("inherit_list",f_inherit_list,tFunc(tProgram,tArr(tProgram)),0);

@@ -5,7 +5,7 @@
 \*/
 
 /*
- * $Id: global.h,v 1.38 1999/08/06 23:04:05 hubbe Exp $
+ * $Id: global.h,v 1.39 1999/11/23 07:07:03 hubbe Exp $
  */
 #ifndef GLOBAL_H
 #define GLOBAL_H
@@ -164,7 +164,13 @@ char *alloca ();
 
 /* we here define a few types with more defined values */
 
+#if SIZEOF_LONG >= 8
+#define INT64 long
+#else
+#if SIZEOF_LONG_LONG - 0 >= 8
 #define INT64 long long
+#endif
+#endif
 
 #if SIZEOF_SHORT >= 4
 #define INT32 short

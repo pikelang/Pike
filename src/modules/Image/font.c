@@ -1,4 +1,4 @@
-/* $Id: font.c,v 1.56 1999/10/16 09:40:00 mirar Exp $ */
+/* $Id: font.c,v 1.57 1999/11/23 07:07:39 hubbe Exp $ */
 #include "global.h"
 
 #define SPACE_CHAR 'i'
@@ -9,7 +9,7 @@ extern unsigned char * image_default_font;
 /*
 **! module Image
 **! note
-**!	$Id: font.c,v 1.56 1999/10/16 09:40:00 mirar Exp $
+**!	$Id: font.c,v 1.57 1999/11/23 07:07:39 hubbe Exp $
 **! class Font
 **!
 **! note
@@ -286,7 +286,7 @@ static INLINE off_t file_size(int fd)
 {
   struct stat tmp;
   if((!fd_fstat(fd, &tmp)) &&
-     S_ISREG(tmp.st_mode))
+     ( tmp.st_mode & S_IFMT) == S_IFREG)
      return (off_t)tmp.st_size;
   return -1;
 }

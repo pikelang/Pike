@@ -1,4 +1,4 @@
-AC_REVISION("$Id: configure.in,v 1.331 1999/11/18 07:58:20 hubbe Exp $")
+AC_REVISION("$Id: configure.in,v 1.332 1999/11/23 07:07:02 hubbe Exp $")
 AC_INIT(interpret.c)
 AC_CONFIG_HEADER(machine.h)
 
@@ -1131,6 +1131,8 @@ AC_CHECK_SIZEOF(int,4)
 AC_CHECK_SIZEOF(short,2)
 AC_CHECK_SIZEOF(float,4)
 AC_CHECK_SIZEOF(double,8)
+AC_CHECK_SIZEOF(long,4)
+AC_CHECK_SIZEOF(long long,0)
 
 AC_MY_CHECK_TYPE(size_t,long)
 AC_MY_CHECK_TYPE(off_t,long)
@@ -1571,8 +1573,6 @@ AC_CHECK_FUNCS( \
  localtime \
  gmtime \
  memchr \
- memcpy \
- memset \
  mktime \
  perror \
  rindex \
@@ -2151,6 +2151,38 @@ int main()
      ((char *)memmem(d,0,a,strlen(a)))!=a ||
      memmem(d,strlen(d)+1,a,strlen(a))!=0)
     exit(1);
+  exit(0);
+}
+])
+
+########################################################################
+
+MY_CHECK_FUNCTION(memcpy,
+[
+#include <string.h>
+char *a="foo bar gazonk";
+char foo[23];
+int main()
+{
+  memcpy(foo, a, strlen(a)+1);
+  memcpy(foo, a+4, 3);
+  if(strcmp(foo,"bar bar gazonk")) exit(1);
+  exit(0);
+}
+])
+
+########################################################################
+
+MY_CHECK_FUNCTION(memset,
+[
+#include <string.h>
+char foo[23];
+int main()
+{
+  memset(foo, 0, 11);
+  memset(foo, 'a', 10);
+  memset(foo, 'b', 5);
+  if(strcmp(foo,"bbbbbaaaaa")) exit(1);
   exit(0);
 }
 ])
@@ -2877,6 +2909,8 @@ AC_MSG_RESULT($pike_cv_gcc_attributes)
 if test "$pike_cv_gcc_attributes" = yes; then
  AC_DEFINE(HAVE_FUNCTION_ATTRIBUTES)
 fi
+
+#############################################################################
 
 AC_MSG_CHECKING(how to concatenate two symbols)
 AC_CACHE_VAL(pike_cv_cpp_symbol_concat, [

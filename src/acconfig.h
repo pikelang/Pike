@@ -1,5 +1,5 @@
 /*
- * $Id: acconfig.h,v 1.50 1999/11/13 00:34:50 grubba Exp $
+ * $Id: acconfig.h,v 1.51 1999/11/23 07:06:59 hubbe Exp $
  */
 #ifndef MACHINE_H
 #define MACHINE_H
@@ -138,6 +138,12 @@
 
 /* Define if you have memmem.  */
 #undef HAVE_MEMMEM
+
+/* Define if you have memset.  */
+#undef HAVE_MEMSET
+
+/* Define if you have memcpy.  */
+#undef HAVE_MEMCPY
 
 /* Define this if you have dlopen */
 #undef HAVE_DLOPEN

@@ -1,5 +1,5 @@
 /*
- * $Id: requestobject.c,v 1.1 1999/11/14 00:43:15 per Exp $
+ * $Id: requestobject.c,v 1.2 1999/11/23 07:07:28 hubbe Exp $
  */
 
 #include "global.h"
@@ -23,7 +23,9 @@
 
 #include <stdlib.h>
 #include <errno.h>
+#ifdef HAVE_UNISTD_H
 #include <unistd.h>
+#endif
 #include <sys/types.h>
 #ifdef HAVE_SYS_SOCKET_H
 #include <sys/socket.h>

@@ -17,7 +17,7 @@
 #include <float.h>
 #include <string.h>
 
-RCSID("$Id: port.c,v 1.21 1999/08/31 23:31:13 hubbe Exp $");
+RCSID("$Id: port.c,v 1.22 1999/11/23 07:07:05 hubbe Exp $");
 
 #ifdef sun
 time_t time PROT((time_t *));
@@ -269,9 +269,11 @@ void MEMCPY(void *bb,const void *aa,int s)
       /*     fprintf(stderr, "plain ol' memcpy\n"); */
       memcpy( bb, aa, s );
 #else
-      char *b=(char *)bb;
-      char *a=(char *)aa;
-      for(;s;s--) *(b++)=*(a++);
+      {
+	char *b=(char *)bb;
+	char *a=(char *)aa;
+	for(;s;s--) *(b++)=*(a++);
+      }
 #endif
 #ifdef TRY_USE_MMX
     }

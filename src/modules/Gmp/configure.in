@@ -1,10 +1,43 @@
-# $Id: configure.in,v 1.9 1999/11/11 11:30:40 hubbe Exp $
+# $Id: configure.in,v 1.10 1999/11/23 07:07:14 hubbe Exp $
 AC_INIT(mpz_glue.c)
 AC_CONFIG_HEADER(gmp_machine.h)
 AC_ARG_WITH(gmp,     [  --with(out)-gmp        Support bignums],[],[with_gmp=yes])
 AC_ARG_WITH(bignums, [  --with(out)-bignums    Support automatic bignum conversion],[],[with_bignums=yes])
 
 AC_MODULE_INIT()
+
+#############################################################################
+# Copied from ../../configure.in
+
+AC_MSG_CHECKING(how to concatenate two symbols)
+AC_CACHE_VAL(pike_cv_cpp_symbol_concat, [
+  AC_TRY_COMPILE([
+int AABB=0;
+#define CONCAT(X,Y)	X##Y
+  ], [
+    return CONCAT(AA,BB);
+  ], pike_cv_cpp_symbol_concat=ANSI, [
+    AC_TRY_COMPILE([
+int AABB=0;
+#define CONCAT(X,Y)	X/**/Y
+    ], [
+      return CONCAT(AA,BB);
+    ], pike_cv_cpp_symbol_concat=KR, [
+      pike_cv_cpp_symbol_concat=Unknown
+    ])
+  ])
+])
+AC_MSG_RESULT($pike_cv_cpp_symbol_concat)
+case "$pike_cv_cpp_symbol_concat" in
+  "ANSI")
+    AC_DEFINE(HAVE_ANSI_CONCAT)
+  ;;
+  "KR")
+    AC_DEFINE(HAVE_KR_CONCAT)
+  ;;
+esac
+
+#############################################################################
 
 define([AC_CHECK_GMP],
 [
@@ -17,6 +50,13 @@ OLDLIBS="${LIBS-}"
 LIBS="${LIBS-} -l$1"
 AC_TRY_RUN([
 #include <stdio.h>
+
+#ifdef HAVE_ANSI_CONCAT
+#define __MPN(x) __mpn_##x
+#else
+#define __MPN(x) __mpn_/**/x
+#endif
+
 #include <$2>
 int main(int argc, char **argv)
 {
