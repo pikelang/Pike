@@ -6,7 +6,7 @@
 /**/
 #include "global.h"
 #include <math.h>
-RCSID("$Id: operators.c,v 1.113 2000/12/01 08:09:51 hubbe Exp $");
+RCSID("$Id: operators.c,v 1.114 2000/12/08 15:47:55 grubba Exp $");
 #include "interpret.h"
 #include "svalue.h"
 #include "multiset.h"
@@ -2725,7 +2725,7 @@ void init_operators(void)
   ADD_EFUN2("`+",f_add,
 	    tOr7(tIfnot(tFuncV(tNone,tNot(tOr(tObj,tMix)),tMix),tFunction),
 		 tFuncV(tInt,tInt,tInt),
-		 tIfnot(tFuncV(tInt,tInt,tMix),
+		 tIfnot(tFuncV(tNone,tNot(tFlt),tMix),
 			tFuncV(tOr(tInt,tFlt),tOr(tInt,tFlt),tFlt)),
 		 tIfnot(tFuncV(tOr(tInt,tFlt),tOr(tInt,tFlt),tMix),
 			tFuncV(tOr3(tStr,tInt,tFlt),
@@ -2741,7 +2741,7 @@ void init_operators(void)
   ADD_EFUN2("`-",f_minus,
 	    tOr7(tIfnot(tFuncV(tNone,tNot(tOr(tObj,tMix)),tMix),tFunction),
 		 tFuncV(tInt,tInt,tInt),
-		 tIfnot(tFuncV(tInt,tInt,tMix),
+		 tIfnot(tFuncV(tNone,tNot(tFlt),tMix),
 			tFuncV(tOr(tInt,tFlt),tOr(tInt,tFlt),tFlt)),
 		 tFuncV(tArr(tSetvar(0,tMix)),tArray,tArr(tVar(0))),
 		 tFuncV(tMap(tSetvar(1,tMix),tSetvar(2,tMix)),
@@ -2832,12 +2832,12 @@ multiset & mapping -> mapping
 	    "function(string,int:string) 
 	    "function(string,float:string) 
   */
-  ADD_EFUN2("`*",f_multiply,
+  ADD_EFUN2("`*", f_multiply,
 	    tOr9(tIfnot(tFuncV(tNone,tNot(tOr(tObj,tMix)),tMix),tFunction),
 		 tFunc(tArr(tArr(tSetvar(1,tMix))) 
 		       tArr(tSetvar(1,tMix)),tArr(tVar(1))),
 		 tFuncV(tInt,tInt,tInt),
-		 tIfnot(tFuncV(tInt,tInt,tMix),
+		 tIfnot(tFuncV(tNone,tNot(tFlt),tMix),
 			tFuncV(tOr(tFlt,tInt),tOr(tFlt,tInt),tFlt)),
 		 tFunc(tArr(tStr) tStr,tStr),
 		 tFunc(tArr(tSetvar(0,tMix)) tInt,tArr(tVar(0))),
@@ -2851,7 +2851,15 @@ multiset & mapping -> mapping
 	    "!function(int...:mixed)&function(float|int...:float)|"
 	    "function(array(0=mixed),array|int|float...:array(array(0)))|"
 	    "function(string,string|int|float...:array(string)) */
-  ADD_EFUN2("`/",f_divide,tOr5(tIfnot(tFuncV(tNone,tNot(tOr(tObj,tMix)),tMix),tFunction),tFuncV(tInt,tInt,tInt),tIfnot(tFuncV(tNone,tInt,tMix),tFuncV(tNone,tOr(tFlt,tInt),tFlt)),tFuncV(tArr(tSetvar(0,tMix)),tOr3(tArray,tInt,tFlt),tArr(tArr(tVar(0)))),tFuncV(tStr,tOr3(tStr,tInt,tFlt),tArr(tStr))),
+  ADD_EFUN2("`/", f_divide,
+	    tOr5(tIfnot(tFuncV(tNone,tNot(tOr(tObj,tMix)),tMix),tFunction),
+		 tFuncV(tInt, tInt, tInt),
+		 tIfnot(tFuncV(tNone, tNot(tFlt), tMix),
+			tFuncV(tOr(tFlt,tInt),tOr(tFlt,tInt),tFlt)),
+		 tFuncV(tArr(tSetvar(0,tMix)),
+			tOr3(tArray,tInt,tFlt),
+			tArr(tArr(tVar(0)))),
+		 tFuncV(tStr,tOr3(tStr,tInt,tFlt),tArr(tStr))),
 	    OPT_TRY_OPTIMIZE,0,generate_divide);
 
   /* function(mixed,object:mixed)|"
