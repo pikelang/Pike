@@ -175,7 +175,7 @@ int main(int argc, string *argv)
 	  cflags+=({
 //	    "-Z7",
 	    "-Zi",
-	    "-FR",
+//	    "-FR",   // This flag confuses libtool
 //	    "-Yd",
 	  });
 	  debug=1;
@@ -300,7 +300,7 @@ int main(int argc, string *argv)
   {
     case "exe":
       if(!output) output="a.out";
-      cflags+=({"-Fe"+fixpath(output)+".exe"});
+      cflags+=({"-Fe"+fixpath(output)+".exe","BINMODE.OBJ"});
 //      cflags+=({"-MT" + (debug?"d":"") });
       wantfile=output+".exe";
       break;
