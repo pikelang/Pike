@@ -1,5 +1,5 @@
 //
-// $Id: Decode.pmod,v 1.17 2003/01/27 02:46:27 nilsson Exp $
+// $Id: Decode.pmod,v 1.18 2003/07/23 16:17:50 grubba Exp $
 //
 
 #pike __REAL_VERSION__
@@ -15,7 +15,9 @@ import .Types;
 //! Primitive unconstructed ASN1 data type.
 class primitive
 {
+  //! @decl inherit Types.Object
   inherit Object;
+
   constant constructed = 0;
   int combined_tag;
 
@@ -50,7 +52,9 @@ class primitive
 //! constructed type
 class constructed
 {
+  //! @decl inherit Types.Object
   inherit Object;
+
   constant constructed = 1;
   int combined_tag;
 
