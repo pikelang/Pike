@@ -4,7 +4,7 @@
 ||| See the files COPYING and DISCLAIMER for more information.
 \*/
 #include "global.h"
-RCSID("$Id: builtin_functions.c,v 1.148 1999/02/10 21:46:38 hubbe Exp $");
+RCSID("$Id: builtin_functions.c,v 1.149 1999/02/11 01:38:08 hubbe Exp $");
 #include "interpret.h"
 #include "svalue.h"
 #include "pike_macros.h"
@@ -3745,7 +3745,7 @@ void init_builtin_efuns(void)
   
 #ifdef PROFILING
   ADD_EFUN("get_profiling_info", f_get_prof_info,
-	   tFunc(tProg,tArr), OPT_EXTERNAL_DEPEND);
+	   tFunc(tPrg,tArr), OPT_EXTERNAL_DEPEND);
 #endif /* PROFILING */
 
   ADD_EFUN("_refs",f__refs,tFunc(tRef,tInt),OPT_EXTERNAL_DEPEND);
