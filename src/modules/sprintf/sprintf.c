@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: sprintf.c,v 1.107 2003/05/15 10:42:36 grubba Exp $
+|| $Id: sprintf.c,v 1.108 2003/06/02 20:51:15 nilsson Exp $
 */
 
 /* TODO: use ONERROR to cleanup fsp */
@@ -286,7 +286,7 @@
  *!   @[lfun::_sprintf()]
  */
 #include "global.h"
-RCSID("$Id: sprintf.c,v 1.107 2003/05/15 10:42:36 grubba Exp $");
+RCSID("$Id: sprintf.c,v 1.108 2003/06/02 20:51:15 nilsson Exp $");
 #include "pike_error.h"
 #include "array.h"
 #include "svalue.h"
@@ -1017,7 +1017,7 @@ static void low_pike_sprintf(struct format_stack *fs,
 			     int nosnurkel)
 {
   int argument=0;
-  int tmp,setwhat,pos,d,e;
+  int tmp,setwhat,d,e;
   char buffer[140];
   struct format_info *f,*start;
   double tf;
@@ -1060,7 +1060,7 @@ static void low_pike_sprintf(struct format_stack *fs,
     }
     num_snurkel=0;
     arg=NULL;
-    setwhat=pos=0;
+    setwhat=0;
     begin=a;
 
     for(INC_PCHARP(a,1);;INC_PCHARP(a,1))
