@@ -1,4 +1,4 @@
-// $Id: module.pmod,v 1.44 1999/04/16 14:04:42 grubba Exp $
+// $Id: module.pmod,v 1.45 1999/04/19 18:33:52 grubba Exp $
 
 import String;
 
@@ -236,6 +236,7 @@ class File
     return 1;
   }
 
+  // FIXME: No way to specify the maximum to read.
   static void __stdio_read_callback()
   {
 #if defined(__STDIO_DEBUG) && !defined(__NT__)
@@ -690,6 +691,9 @@ static class nb_sendfile
   static int reader_awake;
   static int writer_awake;
 
+  static int blocking_to;
+  static int blocking_from;
+
   /* Reader */
 
   static void reader_done()
@@ -697,7 +701,7 @@ static class nb_sendfile
     from->set_nonblocking(0,0,0);
     from = 0;
     if (trailers) {
-      to_write += (trailers - ({""}));
+      to_write += trailers;
     }
     if (sizeof(to_write)) {
       start_writer();
@@ -707,6 +711,21 @@ static class nb_sendfile
   static void close_cb(mixed ignored)
   {
     reader_done();
+  }
+
+  static void do_read()
+  {
+    string more_data = from->read(65536, 1);
+    if (more_data == "") {
+      // EOF.
+      from = 0;
+      if (trailers) {
+	to_write += (trailers - ({ "" }));
+	trailers = 0;
+      }
+    } else {
+      to_write += ({ more_data });
+    }
   }
 
   static void read_cb(mixed ignored, string data)
@@ -722,12 +741,26 @@ static class nb_sendfile
     } else {
       to_write += ({ data });
     }
-    if (sizeof(to_write) > READER_HALT) {
-      // Go to sleep.
-      from->set_nonblocking(0,0,0);
-      reader_awake = 0;
+    if (blocking_to) {
+      while(sizeof(to_write)) {
+	if (!do_write()) {
+	  // Connection closed or Disk full.
+	  writer_done();
+	  return;
+	}
+      }
+      if (!from) {
+	writer_done();
+	return;
+      }
+    } else {
+      if (sizeof(to_write) > READER_HALT) {
+	// Go to sleep.
+	from->set_nonblocking(0,0,0);
+	reader_awake = 0;
+      }
+      start_writer();
     }
-    start_writer();
   }
 
   static void start_reader()
@@ -759,7 +792,7 @@ static class nb_sendfile
     cb(sent, @a);
   }
 
-  static void write_cb(mixed ignored)
+  static int do_write()
   {
     int bytes = to->write(to_write);
 
@@ -772,30 +805,42 @@ static class nb_sendfile
 	  to_write[n] = to_write[n][bytes..];
 	  to_write = to_write[n..];
 
-	  if (sizeof(to_write) < READER_RESTART) {
-	    start_reader();
-	  }
-	  return;
+	  return 1;
 	} else {
 	  bytes -= sizeof(to_write[n]);
 	  if (!bytes) {
 	    to_write = to_write[n+1..];
-	    if (sizeof(to_write) < READER_RESTART) {
-	      if (!sizeof(to_write)) {
-		// Go to sleep.
-		to->set_nonblocking(0,0,0);
-		writer_awake = 0;
-		if (!from) {
-		  // Done!
-		  writer_done();
-		  return;
-		}
-	      }
-	      start_reader();
-	    }
-	    return;
+	    return 1;
 	  }
 	}
+      }
+      // Not reached, but...
+      return 1;
+    } else {
+      // Premature end of file!
+      return 0;
+    }
+  }
+
+  static void write_cb(mixed ignored)
+  {
+    if (do_write()) {
+      if (from) {
+	if (blocking_from) {
+	  do_read();
+	} else {
+	  if (sizeof(to_write) < READER_RESTART) {
+	    if (!sizeof(to_write)) {
+	      // Go to sleep.
+	      to->set_nonblocking(0,0,0);
+	      writer_awake = 0;
+	    }
+	    start_reader();
+	  }
+	}
+      } else if (!sizeof(to_write)) {
+	// Done.
+	writer_done();
       }
     } else {
       // Premature end of file!
@@ -808,6 +853,20 @@ static class nb_sendfile
     if (!writer_awake) {
       writer_awake = 1;
       to->set_nonblocking(0, write_cb, 0);
+    }
+  }
+
+  /* Blocking */
+  static void do_blocking()
+  {
+    if (from && (sizeof(to_write) < READER_RESTART)) {
+      do_read();
+    }
+    if (sizeof(to_write) && do_write()) {
+      call_out(do_blocking, 0);
+    } else {
+      from = 0;
+      writer_done();
     }
   }
 
@@ -849,14 +908,41 @@ static class nb_sendfile
     callback = cb;
     args = a;
 
+    blocking_to = ((!to->set_nonblocking) ||
+		   (to->mode && !(to->mode() & PROP_NONBLOCK)));
+
+    if (blocking_to && to->set_blocking) {
+      to->set_blocking();
+    }
+
     if (from) {
+      blocking_from = ((!from->set_nonblocking) ||
+		       (from->mode && !(from->mode() & PROP_NONBLOCK)));
+	
       if (off >= 0) {
 	from->seek(off);
       }
-      start_reader();
+      if (blocking_from) {
+	if (from->set_blocking) {
+	  from->set_blocking();
+	}
+      } else {
+	start_reader();
+      }
     }
-    if (sizeof(to_write)) {
-      start_writer();
+
+    if (blocking_to) {
+      if (!from || blocking_from) {
+	// Can't use the reader to push data.
+
+	// Could have a direct call to do_blocking here,
+	// but then the callback would be called from the wrong context.
+	call_out(do_blocking, 0);
+      }
+    } else {
+      if (sizeof(to_write)) {
+	start_writer();
+      }
     }
   }
 }
