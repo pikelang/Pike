@@ -1,5 +1,5 @@
 // -*- Pike -*-
-// $Id: manpages,v 1.19 1998/07/28 09:16:59 neotron Exp $
+// $Id: manpages,v 1.20 1999/04/17 15:55:36 grubba Exp $
 
 #include "types.h"
 
@@ -102,7 +102,11 @@ string make_manpage(string base, SGML data, string ind, string fbase)
 	case "br":
 	case "ex_br":
 	  res+="\n.br\n";
-	  stripws=1;
+	  if (tag->params->keep_ws) {
+	    stripws = 0;
+	  } else {
+	    stripws=1;
+	  }
 	  break;
 
 	case "ex_indent":
