@@ -1,5 +1,5 @@
 /*
- * $Id: lexer.h,v 1.17 2000/05/11 14:09:46 grubba Exp $
+ * $Id: lexer.h,v 1.18 2000/08/03 11:33:31 grubba Exp $
  *
  * Lexical analyzer template.
  * Based on lex.c 1.62
@@ -24,15 +24,16 @@
 #define SKIPWHITE() do { while(ISSPACE(LOOK())) lex.pos++; }while(0)
 #define SKIPUPTO(X) do { while(LOOK()!=(X) && LOOK()) lex.pos++; }while(0)
 
-#define READBUF(X) {				\
+#define READBUF(X) do {				\
   register int C;				\
-  buf=lex.pos;					\
-  while((C=LOOK()) && (X)) lex.pos++;		\
-  len=lex.pos - buf;				\
-}
+  buf = lex.pos;				\
+  while((C = LOOK()) && (X))			\
+    lex.pos++;					\
+  len = (size_t)(lex.pos - buf);		\
+} while(0)
 
 #define TWO_CHAR(X,Y) ((X)<<8)+(Y)
-#define ISWORD(X) (len==(long)strlen(X) && !MEMCMP(buf,X,strlen(X)))
+#define ISWORD(X) ((len == strlen(X)) && !MEMCMP(buf,X,strlen(X)))
 
 /*
  * Function renaming
@@ -55,16 +56,17 @@
 #define SKIPWHITE() do { while(ISSPACE(LOOK())) lex.pos += (1<<SHIFT); }while(0)
 #define SKIPUPTO(X) do { while(LOOK()!=(X) && LOOK()) lex.pos += (1<<SHIFT); }while(0)
 
-#define READBUF(X) {				\
+#define READBUF(X) do {				\
   register int C;				\
-  buf=lex.pos;					\
-  while((C=LOOK()) && (X)) lex.pos+=(1<<SHIFT);	\
-  len=(lex.pos - buf) >> SHIFT;			\
-}
+  buf = lex.pos;				\
+  while((C = LOOK()) && (X))			\
+    lex.pos += (1<<SHIFT);			\
+  len = (size_t)((lex.pos - buf) >> SHIFT);	\
+} while(0)
 
 #define TWO_CHAR(X,Y) ((X)<<8)+(Y)
 
-#define ISWORD(X) (len==(long)strlen(X) && low_isword(buf, X, strlen(X)))
+#define ISWORD(X) ((len == strlen(X)) && low_isword(buf, X, strlen(X)))
 
 /* Function renaming */
 #if (SHIFT == 1)
@@ -93,7 +95,7 @@
 
 #define lex_isidchar(X) ((((unsigned) X)>=256) || isidchar(X))
 
-static int low_isword(char *buf, char *X, int len)
+static int low_isword(char *buf, char *X, size_t len)
 {
   while(len--) {
     if (INDEX_CHARP(buf, len, SHIFT) != ((unsigned char *)X)[len]) {
@@ -264,7 +266,8 @@ int yylex(YYSTYPE *yylval)
 static int low_yylex(YYSTYPE *yylval)
 #endif /* LEXDEBUG>4 */
 {
-  INT32 c,len;
+  INT32 c;
+  size_t len;
   char *buf;
 
 #ifdef __CHECKER__
@@ -779,6 +782,9 @@ static int low_yylex(YYSTYPE *yylval)
 	  case TWO_CHAR('t','y'):
 	    if(ISWORD("typeof")) return TOK_TYPEOF;
 	  break;
+	  case TWO_CHAR('v','a'):
+	    if(ISWORD("variant")) return TOK_VARIANT;
+	  break;
 	  case TWO_CHAR('v','o'):
 	    if(ISWORD("void")) return TOK_VOID_ID;
 	  break;
@@ -789,7 +795,7 @@ static int low_yylex(YYSTYPE *yylval)
 	}
 	{
 #if (SHIFT == 0)
-	  struct pike_string *tmp = make_shared_binary_string(buf,len);
+	  struct pike_string *tmp = make_shared_binary_string(buf, len);
 #else /* SHIFT != 0 */
 #if (SHIFT == 1)
 	  struct pike_string *tmp = make_shared_binary_string1((p_wchar1 *)buf,
