@@ -1,5 +1,5 @@
 /*
- * $Id: jvm.c,v 1.5 1999/06/11 21:03:19 marcus Exp $
+ * $Id: jvm.c,v 1.6 1999/06/13 22:37:14 marcus Exp $
  *
  * Pike interface to Java Virtual Machine
  *
@@ -16,7 +16,7 @@
 #endif /* HAVE_CONFIG_H */
 
 #include "global.h"
-RCSID("$Id: jvm.c,v 1.5 1999/06/11 21:03:19 marcus Exp $");
+RCSID("$Id: jvm.c,v 1.6 1999/06/13 22:37:14 marcus Exp $");
 #include "program.h"
 #include "interpret.h"
 #include "stralloc.h"
@@ -59,6 +59,7 @@ static struct program *jthrowable_program = NULL, *jarray_program = NULL;
 static struct program *method_program = NULL, *static_method_program = NULL;
 static struct program *field_program = NULL, *static_field_program = NULL;
 static struct program *natives_program = NULL, *attachment_program = NULL;
+static struct program *monitor_program = NULL;
 static SIZE_T jarray_stor_offs = 0;
 
 struct jvm_storage {
@@ -101,6 +102,13 @@ struct field_storage {
   char type, subtype;
 };
 
+struct monitor_storage {
+  struct object *obj;
+#ifdef _REENTRANT
+  THREAD_T tid;
+#endif /* _REENTRANT */
+};
+
 #ifdef _REENTRANT
 
 struct att_storage {
@@ -120,6 +128,7 @@ struct att_storage {
 #define THIS_JARRAY ((struct jarray_storage *)(fp->current_storage+jarray_stor_offs))
 #define THIS_METHOD ((struct method_storage *)(fp->current_storage))
 #define THIS_FIELD ((struct field_storage *)(fp->current_storage))
+#define THIS_MONITOR ((struct monitor_storage *)(fp->current_storage))
 
 #define THIS_NATIVES ((struct natives_storage *)(fp->current_storage))
 #ifdef _REENTRANT
@@ -136,11 +145,6 @@ DefineClass
 GetObjectClass
 
 Array stuff
-
-MonitorEnter
-MonitorExit
-
-fatal x_clear x_descr f_cre f_fld_cre f_mtd_cre f_javath f_throw_new
 
 array input to make_jargs
 
@@ -432,6 +436,27 @@ static void f_jobj_instance(INT32 args)
 
   pop_n_elems(args);
   push_int(n);
+}
+
+static void f_monitor_enter(INT32 args)
+{
+  struct jobj_storage *jo = THIS_JOBJ;
+  JNIEnv *env;
+  struct jvm_storage *j =
+    (struct jvm_storage *)get_storage(jo->jvm, jvm_program);
+
+  pop_n_elems(args);
+  if((env=jvm_procure_env(jo->jvm))) {
+    jint res = (*env)->MonitorEnter(env, jo->jobj);
+    jvm_vacate_env(jo->jvm, env);
+    if(res)
+      push_int(0);
+    else {
+      push_object(this_object());
+      push_object(clone_object(monitor_program, 1));
+    }
+  }
+  else push_int(0);
 }
 
 
@@ -2426,6 +2451,73 @@ static void f_att_create(INT32 args)
 #endif /* _REENTRANT */
 
 
+/* Monitor */
+
+static void init_monitor_struct(struct object *o)
+{
+  struct monitor_storage *m = THIS_MONITOR;
+  m->obj = NULL;
+}
+
+static void exit_monitor_struct(struct object *o)
+{
+  JNIEnv *env;
+  struct monitor_storage *m = THIS_MONITOR;
+  struct jobj_storage *j;
+
+  if ((m->obj && (j=THAT_JOBJ(m->obj)))) {
+#ifdef _REENTRANT
+    THREAD_T me = th_self();
+    if (!th_equal(me, m->tid))
+      ;
+    else
+#endif /* _REENTRANT */
+      if ((env = jvm_procure_env(j->jvm)) != NULL) {
+	(*env)->MonitorExit(env, j->jobj);
+	jvm_vacate_env(j->jvm, env);
+      }
+  }
+  if (m->obj)
+    free_object(m->obj);
+}
+
+static void monitor_gc_check(struct object *o)
+{
+  struct monitor_storage *m = THIS_MONITOR;
+
+  if(m->obj)
+    gc_check(m->obj);
+}
+
+static void monitor_gc_mark(struct object *o)
+{
+  struct monitor_storage *m = THIS_MONITOR;
+
+  if(m->obj)
+    gc_mark_object_as_referenced(m->obj);
+}
+
+static void f_monitor_create(INT32 args)
+{
+  struct monitor_storage *m=THIS_MONITOR;
+  struct object *obj;
+
+  get_all_args("Java.monitor->create()", args, "%o", &obj);
+
+  if(get_storage(obj, jobj_program) == NULL)
+    error("Bad argument 1 to create().\n");
+
+#ifdef _REENTRANT
+  m->tid = th_self();
+#endif /* _REENTRANT */
+
+  m->obj = obj;
+  obj->refs++;
+  pop_n_elems(args);
+  return;
+}
+
+
 /* JVM */
 
 
@@ -2755,6 +2847,7 @@ void pike_module_init(void)
   add_function("`==", f_jobj_eq, "function(mixed:int)", 0);
   add_function("__hash", f_jobj_hash, "function(:int)", 0);
   add_function("is_instance_of", f_jobj_instance, "function(object:int)", 0);
+  add_function("monitor_enter", f_monitor_enter, "function(:object)", 0);
   set_init_callback(init_jobj_struct);
   set_exit_callback(exit_jobj_struct);
   set_gc_check_callback(jobj_gc_check);
@@ -2848,6 +2941,16 @@ void pike_module_init(void)
   static_field_program = end_program();
   static_field_program->flags |= PROGRAM_DESTRUCT_IMMEDIATE;
 
+  start_new_program();
+  ADD_STORAGE(struct monitor_storage);
+  add_function("create", f_monitor_create, "function(object:void)", 0);
+  set_init_callback(init_monitor_struct);
+  set_exit_callback(exit_monitor_struct);
+  set_gc_check_callback(monitor_gc_check);
+  set_gc_mark_callback(monitor_gc_mark);
+  monitor_program = end_program();
+  monitor_program->flags |= PROGRAM_DESTRUCT_IMMEDIATE;
+
 #ifdef SUPPORT_NATIVE_METHODS
   start_new_program();
   ADD_STORAGE(struct natives_storage);
@@ -2929,6 +3032,10 @@ void pike_module_exit(void)
   if(method_program) {
     free_program(method_program);
     method_program=NULL;
+  }
+  if(monitor_program) {
+    free_program(monitor_program);
+    monitor_program=NULL;
   }
   if(natives_program) {
     free_program(natives_program);

@@ -216,6 +216,8 @@ static class jobject {
 	return method;
       case "_obj":
 	return obj;
+      case "_monitor_enter":
+	return obj->monitor_enter;
       default:
 	return `[](n);
       } else
@@ -267,6 +269,8 @@ static class jarray {
       return sizeof(obj);
     else if(n == "_obj")
       return obj;
+    else if(n == "_monitor_enter")
+      return obj->monitor_enter;
     else
       return ([])[0];
   }
