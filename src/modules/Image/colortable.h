@@ -1,7 +1,7 @@
 /*
 **! module Image
 **! note
-**!	$Id: colortable.h,v 1.18 2000/08/07 13:43:32 grubba Exp $
+**!	$Id: colortable.h,v 1.19 2000/08/09 17:13:15 grubba Exp $
 */
 
 #ifdef PIKE_IMAGE_COLORTABLE_H
@@ -33,10 +33,10 @@ struct nct_scale
    struct nct_scale *next;
    rgb_group low,high;
    rgbl_group vector; /* high-low */
-   float invsqvector; /* |vector|² */
+   double invsqvector; /* |vector|² */
    INT32 realsteps;
    int steps;
-   float mqsteps;     /* 1.0/(steps-1) */
+   double mqsteps;     /* 1.0/(steps-1) */
    int no[1];  /* actually no[steps] */
 };
 

@@ -1,11 +1,11 @@
 #include "global.h"
 
-/* $Id: colortable.c,v 1.83 2000/08/07 13:58:00 grubba Exp $ */
+/* $Id: colortable.c,v 1.84 2000/08/09 17:11:45 grubba Exp $ */
 
 /*
 **! module Image
 **! note
-**!	$Id: colortable.c,v 1.83 2000/08/07 13:58:00 grubba Exp $
+**!	$Id: colortable.c,v 1.84 2000/08/09 17:11:45 grubba Exp $
 **! class Colortable
 **!
 **!	This object keeps colortable information,
@@ -20,7 +20,7 @@
 #undef COLORTABLE_DEBUG
 #undef COLORTABLE_REDUCE_DEBUG
 
-RCSID("$Id: colortable.c,v 1.83 2000/08/07 13:58:00 grubba Exp $");
+RCSID("$Id: colortable.c,v 1.84 2000/08/09 17:11:45 grubba Exp $");
 
 #include <math.h> /* fabs() */
 
@@ -293,19 +293,19 @@ static void stderr_print_entries(struct nct_flat_entry *src,int n)
 
 enum nct_reduce_method { NCT_REDUCE_MEAN, NCT_REDUCE_WEIGHT };
 
-static int reduce_recurse(struct nct_flat_entry *src,
-			  struct nct_flat_entry *dest,
-			  int src_size,
-			  int target_size,
-			  int level,
-			  rgbl_group sf,
-			  rgbd_group position,rgbd_group space,
-			  enum nct_reduce_method type)
+static ptrdiff_t reduce_recurse(struct nct_flat_entry *src,
+				struct nct_flat_entry *dest,
+				ptrdiff_t src_size,
+				ptrdiff_t target_size,
+				int level,
+				rgbl_group sf,
+				rgbd_group position,rgbd_group space,
+				enum nct_reduce_method type)
 {
-   int n,i,m;
+   ptrdiff_t n,i,m;
    rgbl_group sum={0,0,0},diff={0,0,0};
    rgbl_group min={256,256,256},max={0,0,0};
-   unsigned long mmul,tot=0;
+   size_t mmul,tot=0;
    INT32 gdiff=0,g;
    int left,right;
    enum { SORT_R,SORT_G,SORT_B,SORT_GREY } st;
@@ -349,7 +349,7 @@ static int reduce_recurse(struct nct_flat_entry *src,
 	    
 	    for (i=0; i<src_size; i++)
 	    {
-	       unsigned long mul=src[i].weight;
+	       size_t mul=src[i].weight;
 	       
 	       sum.r+=src[i].color.r*mul;
 	       sum.g+=src[i].color.g*mul;
@@ -416,7 +416,7 @@ static int reduce_recurse(struct nct_flat_entry *src,
    tot=0;
    for (i=0; i<src_size; i++)
    {
-      unsigned long mul;
+      size_t mul;
       if ((mul=src[i].weight)==WEIGHT_NEEDED)
 	 mul=mmul;
       sum.r+=src[i].color.r*mul;
@@ -440,7 +440,7 @@ static int reduce_recurse(struct nct_flat_entry *src,
 
    for (i=0; i<src_size; i++)
    {
-      unsigned long mul;
+      size_t mul;
       if ((mul=src[i].weight)==WEIGHT_NEEDED)
 	 mul=mmul;
       diff.r+=(sq(src[i].color.r-(INT32)sum.r)/8)*mul;
@@ -483,7 +483,7 @@ static int reduce_recurse(struct nct_flat_entry *src,
       while (left<right) \
       { \
          struct nct_flat_entry tmp; \
-         if ((long)src[left].color.C>sum.C)  \
+         if ((ptrdiff_t)src[left].color.C>sum.C)  \
 	    tmp=src[left],src[left]=src[right],src[right--]=tmp; \
          else left++; \
       } \
@@ -570,7 +570,7 @@ static int reduce_recurse(struct nct_flat_entry *src,
 
    if (m>target_size-n && n<=i) /* right is too big, try again */
    {
-      int oldn=n;
+      ptrdiff_t oldn=n;
 
       i=target_size-m;
       if (src_size-left<target_size-i) i+=(target_size-i)-(src_size-left);
@@ -608,8 +608,8 @@ static struct nct_flat _img_reduce_number_of_colors(struct nct_flat flat,
    newe=malloc(sizeof(struct nct_flat_entry)*flat.numentries);
    if (!newe) { return flat; }
 
-   i=reduce_recurse(flat.entries,newe,flat.numentries,maxcols,0,sf,
-		    pos,space,NCT_REDUCE_WEIGHT);
+   i = reduce_recurse(flat.entries,newe, flat.numentries, maxcols, 0, sf,
+		      pos, space, NCT_REDUCE_WEIGHT);
 
    free(flat.entries);
 
