@@ -1,5 +1,5 @@
 /*
- * $Id: module.pmod,v 1.3 2000/09/28 03:38:48 hubbe Exp $
+ * $Id: module.pmod,v 1.4 2001/01/24 08:31:24 mirar Exp $
  *
  */
 
@@ -68,7 +68,27 @@ class SGML
       mapping args;
       int line,char,column;
       string file;
-      array(SGMLatom) data;
+      array(SGMLatom) data=({});
+
+      string _sprintf(int t,mapping m)
+      {
+	 if (t=='O')
+	 {
+	    string res=name;
+	    if (sizeof(args))
+	       foreach ( [array]args, [string i,string v])
+		  res+=sprintf(" %s=%O",i,v);
+
+	    res="<"+res+">";
+	    string i=" "*(m->indent);
+	    if (sizeof(data))
+	       foreach (data,SGMLatom a)
+		  res+=replace(sprintf("\n%O",a),
+			       "\n","\n"+i);
+
+	    return "SGMLatom("+res+")";
+	 }
+      }
    }
 
    static array(array(object(SGMLatom)|string)) res=({({})});
@@ -105,7 +125,7 @@ class SGML
       res[0]+=({t});
       tagstack=({t})+tagstack;
       res=({({})})+res;
-      
+
       return ({}); // don't care
    }
 
@@ -135,7 +155,7 @@ class SGML
 //! note:
 //! 	No, it doesn't read the file itself. See <ref>feed</ref>.
 
-   int i;
+   static int i;
 
    void create(void|string _file)
    {
@@ -166,9 +186,14 @@ class SGML
    array finish()
    {
       p->finish();
+      foreach ( tagstack, SGMLatom a )
+      {
+	 a->data+=res[0];
+	 res=res[1..];
+      }
+      tagstack=({});
       data=res[0];
       res=0;
-      werror("i=%O\n",i);
       return data;
    }
 
