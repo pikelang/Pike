@@ -1,7 +1,7 @@
 // This file is part of Roxen Search
 // Copyright © 2001 Roxen IS. All rights reserved.
 //
-// $Id: Utils.pmod,v 1.37 2003/01/31 11:55:05 mattias Exp $
+// $Id: Utils.pmod,v 1.38 2003/08/14 14:22:54 mattias Exp $
 
 #if !constant(report_error)
 #define report_error werror
@@ -448,6 +448,7 @@ Scheduler get_scheduler(string db_name) {
 class Scheduler {
 
   private int next_run;
+  private mapping(int:int) entry_queue;
   private mapping(int:int) crawl_queue;
   private mapping(int:int) compact_queue;
   private mapping db_profiles;
@@ -464,7 +465,7 @@ class Scheduler {
   void new_entry(int latency, array(int) profiles) {
     int would_be_indexed = time() + latency*60;
     foreach(profiles, int profile)
-      crawl_queue[profile] = 0;
+      entry_queue[profile] = 0;
     WERR("New entry.  time: "+(would_be_indexed-time())+" profiles: "+(array(string))profiles*",");
     if(next_run && next_run<would_be_indexed && next_run>=time())
       return;
@@ -473,6 +474,7 @@ class Scheduler {
   }
 
   void schedule() {
+    entry_queue = ([]);
     crawl_queue = ([]);
     compact_queue = ([]);
 
@@ -498,7 +500,7 @@ class Scheduler {
     }
 
     if(!sizeof(crawl_queue) && !sizeof(compact_queue)) return;
-    next_run = min( @values(crawl_queue)+values(compact_queue) );
+    next_run = min( @values(crawl_queue)+values(compact_queue)+values(entry_queue) );
     reschedule();
   }
 
@@ -527,6 +529,17 @@ class Scheduler {
     WERR(sizeof(crawl_queue)+" profiles in crawl queue.");
     foreach(indices(crawl_queue), int id) {
       if(crawl_queue[id]>t || !db_profiles[id]) continue;
+      object dbp = db_profiles[id];
+      if(dbp && dbp->ready_to_crawl()) {
+	WERR("Scheduler starts crawling "+id);
+	dbp->action_reindex();
+	entry_queue = ([]);
+      }
+    }
+
+    WERR(sizeof(entry_queue)+" profiles in entry queue.");
+    foreach(indices(entry_queue), int id) {
+      if(entry_queue[id]>t || !db_profiles[id]) continue;
       object dbp = db_profiles[id];
       if(dbp && dbp->ready_to_crawl()) {
 	WERR("Scheduler starts crawling "+id);
