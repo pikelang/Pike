@@ -9,6 +9,8 @@ constant count=__builtin.string_count;
 constant width=__builtin.string_width;
 constant trim_whites = __builtin.string_trim_whites;
 constant trim_all_whites = __builtin.string_trim_all_whites;
+constant Iterator = __builtin.string_iterator;
+constant SplitIterator = __builtin.string_split_iterator;
 
 /*
  * Implode an array of strings to an english 'list'

@@ -5,7 +5,7 @@
 \*/
 /**/
 #include "global.h"
-RCSID("$Id: iterators.cmod,v 1.4 2001/02/28 14:26:30 grubba Exp $");
+RCSID("$Id: iterators.cmod,v 1.5 2001/05/17 16:49:22 grubba Exp $");
 #include "main.h"
 #include "object.h"
 #include "mapping.h"
@@ -25,6 +25,7 @@ RCSID("$Id: iterators.cmod,v 1.4 2001/02/28 14:26:30 grubba Exp $");
 #include "opcodes.h"
 #include "pike_error.h"
 #include "program.h"
+#include "operators.h"
 
 DECLARATIONS
 
@@ -369,6 +370,413 @@ PIKECLASS string_iterator
     }
 };
 
+/*! @module String
+ */
+
+/*! @class SplitIterator
+ */
+PIKECLASS string_split_iterator
+{
+  CVAR struct pike_string *buffer;
+  CVAR struct pike_string *current;
+  CVAR int offset;
+  CVAR int index;
+  CVAR p_wchar2 *split_set;
+  CVAR int split_set_size;
+  CVAR int flags;
+  CVAR struct svalue feed;
+
+#define SIMPLE_SKIP_CASE(THIS, SHIFT, OFF) case SHIFT: 	\
+    while((OFF < THIS->buffer->len) &&			\
+          PIKE_CONCAT(STR,SHIFT)(THIS->buffer)[OFF] ==	\
+          THIS->split_set[0]) {				\
+      OFF++;						\
+    }							\
+    break
+
+#define COMPLEX_SKIP_CASE(THIS, SHIFT, OFF) case SHIFT:		\
+    while(OFF < THIS->buffer->len) {				\
+      int i;							\
+      p_wchar2 ch = PIKE_CONCAT(STR,SHIFT)(THIS->buffer)[OFF];	\
+      for (i=0; i < THIS->split_set_size; i++) {		\
+	if (ch == THIS->split_set[i]) {				\
+	  goto PIKE_CONCAT(continue_skip,SHIFT);		\
+	}							\
+      }								\
+      break;							\
+    PIKE_CONCAT(continue_skip,SHIFT):				\
+      OFF++;							\
+    }								\
+    break
+  
+#define SIMPLE_SCAN_CASE(THIS, SHIFT, OFF) case SHIFT:	\
+    while((OFF < THIS->buffer->len) &&			\
+          PIKE_CONCAT(STR,SHIFT)(THIS->buffer)[OFF] !=	\
+          THIS->split_set[0]) {				\
+      OFF++;						\
+    }							\
+    break
+
+#define COMPLEX_SCAN_CASE(THIS, SHIFT, OFF) case SHIFT:		\
+    while(OFF < THIS->buffer->len) {				\
+      int i;							\
+      p_wchar2 ch = PIKE_CONCAT(STR,SHIFT)(THIS->buffer)[OFF];	\
+      for (i=0; i < THIS->split_set_size; i++) {		\
+	if (ch == THIS->split_set[i]) {				\
+	  goto PIKE_CONCAT(break_scan,SHIFT);			\
+	}							\
+      }								\
+      OFF++;							\
+    }								\
+  PIKE_CONCAT(break_scan, SHIFT):				\
+    break
+
+  void find_next(struct string_split_iterator_struct *ssi)
+    {
+      int offset = ssi->offset;
+      int end;
+      if (ssi->current) {
+	free_string(ssi->current);
+      }
+      ssi->current = NULL;
+      if (!ssi->buffer) {
+	return;
+      }
+    reskip_empty:
+      if (ssi->flags) {
+	/* Skip empty */
+	if (ssi->split_set_size == 1) {
+	  switch(ssi->buffer->size_shift) {
+	    SIMPLE_SKIP_CASE(ssi, 0, offset);
+	    SIMPLE_SKIP_CASE(ssi, 1, offset);
+	    SIMPLE_SKIP_CASE(ssi, 2, offset);
+	  default:
+	    fatal("Unsupported size shift!\n");
+	  }
+	} else {
+	  switch(ssi->buffer->size_shift) {
+	    COMPLEX_SKIP_CASE(ssi, 0, offset);
+	    COMPLEX_SKIP_CASE(ssi, 1, offset);
+	    COMPLEX_SKIP_CASE(ssi, 2, offset);
+	  default:
+	    fatal("Unsupported size shift!\n");
+	  }
+	}
+      }
+      if (offset >= ssi->buffer->len) {
+	if (ssi->feed.type == T_INT) {
+	  free_string(ssi->buffer);
+	  ssi->buffer = NULL;
+	  ssi->offset = 0;
+	  return;
+	} else {
+	  /* Attempt to fill the buffer with some more. */
+	  apply_svalue(&ssi->feed, 0);
+	  if (Pike_sp[-1].type != T_STRING) {
+	    Pike_error("Bad return value from feed callback, "
+		       "expected string.\n");
+	  }
+	  free_string(ssi->buffer);
+	  ssi->buffer = Pike_sp[-1].u.string;
+	  ssi->offset = 0;
+	  Pike_sp--;
+	  goto reskip_empty;
+	}
+      }
+      ssi->index++;
+      end = offset;
+    scan_more:
+      if (ssi->split_set_size == 1) {
+	switch(ssi->buffer->size_shift) {
+	  SIMPLE_SCAN_CASE(ssi, 0, end);
+	  SIMPLE_SCAN_CASE(ssi, 1, end);
+	  SIMPLE_SCAN_CASE(ssi, 2, end);
+	default:
+	  fatal("Unsupported size shift!\n");
+	}
+      } else {
+	switch(ssi->buffer->size_shift) {
+	  COMPLEX_SCAN_CASE(ssi, 0, end);
+	  COMPLEX_SCAN_CASE(ssi, 1, end);
+	  COMPLEX_SCAN_CASE(ssi, 2, end);
+	default:
+	  fatal("Unsupported size shift!\n");
+	}
+      }
+      ref_push_string(ssi->buffer);
+      push_int(offset);
+      push_int(end-1);
+      o_range();
+      if ((end == ssi->buffer->len) && (ssi->feed.type != T_INT)) {
+	apply_svalue(&ssi->feed, 0);
+	if ((Pike_sp[-1].type == T_STRING) &&
+	    (Pike_sp[-1].u.string->len)) {
+	  f_add(2);
+	  if (Pike_sp[-1].type != T_STRING) {
+	    Pike_error("Bad result from string concatenation!\n");
+	  }
+	  free_string(ssi->buffer);
+	  ssi->buffer = Pike_sp[-1].u.string;
+	  Pike_sp--;
+	  end -= offset;
+	  offset = 0;
+	  goto scan_more;
+	}
+	pop_stack();	/* Pop the end of stream marker. */
+
+	/* Make sure we don't call feed() any more. */
+	free_svalue(&ssi->feed);
+	ssi->feed.type = T_INT;
+	ssi->feed.u.integer = 0;
+      }
+      ssi->offset = end+1;
+      ssi->current = Pike_sp[-1].u.string;
+      Pike_sp--;
+    }
+  
+  PIKEFUN string value()
+    {
+      if (THIS->current) {
+	ref_push_string(THIS->current);
+      } else {
+	push_int(0);
+	Pike_sp[-1].subtype = NUMBER_UNDEFINED;
+      }
+    }
+
+  PIKEFUN int index()
+    {
+      if (!THIS->current) {
+	push_int(0);
+	Pike_sp[-1].subtype = NUMBER_UNDEFINED;
+      }else{
+	RETURN THIS->index;
+      }
+    }
+
+  PIKEFUN object `+(int steps)
+    {
+      struct object *o=low_clone(string_split_iterator_program);
+      int i;
+      struct string_split_iterator_struct *ssi;
+      (ssi = OBJ2_STRING_SPLIT_ITERATOR(o))[0]=*THIS;
+      if (THIS->buffer) {
+	add_ref(THIS->buffer);
+      }
+      if (THIS->current) {
+	add_ref(THIS->current);
+      }
+      add_ref_svalue(&THIS->feed);
+      for (i=0; i < steps; i++) {
+	find_next(ssi);
+      }
+      RETURN o;
+    }
+
+  PIKEFUN object `+=(int steps)
+  {
+    int i;
+    for(i = 0; i < steps; i++) {
+      find_next(THIS);
+    }
+    REF_RETURN Pike_fp->current_object;
+  }
+
+  PIKEFUN int first()
+    {
+      Pike_error("Not supported.\n");
+    }
+  PIKEFUN int next()
+    {
+      find_next(THIS);
+      RETURN !!THIS->current;
+    }
+
+  PIKEFUN int `!()
+    {
+      RETURN !THIS->current;
+    }
+
+  PIKEFUN int _sizeof()
+  {
+    INT_TYPE res = 0;
+    if (THIS->buffer) {
+      int i, off;
+      ref_push_string(THIS->buffer);
+      if (THIS->offset) {
+	push_int(THIS->offset);
+	push_int(THIS->buffer->len);
+	o_range();
+      }
+      for (i = 1; THIS->feed.type != T_INT; i++) {
+	apply_svalue(&THIS->feed, 0);
+	if ((Pike_sp[-1].type != T_STRING) ||
+	    (!Pike_sp[-1].u.string->len)) {
+	  /* End of stream marker. */
+	  pop_stack();
+	  free_svalue(&THIS->feed);
+	  THIS->feed.type = T_INT;
+	  THIS->feed.u.integer = 0;
+	  break;
+	}
+      }
+      f_add(i);	/* Join the segments. */
+      free_string(THIS->buffer);
+      THIS->buffer = Pike_sp[-1].u.string;
+      THIS->offset = 0;
+      Pike_sp--;
+
+      /* Perform the scan. */
+      for (off=0; off < THIS->buffer->len; off++) {
+	if (THIS->flags) {
+	  if (THIS->split_set_size == 1) {
+	    switch(THIS->buffer->size_shift) {
+	      SIMPLE_SKIP_CASE(THIS, 0, off);
+	      SIMPLE_SKIP_CASE(THIS, 1, off);
+	      SIMPLE_SKIP_CASE(THIS, 2, off);
+	    default:
+	      fatal("Unsupported size shift!\n");
+	    }
+	  } else {
+	    switch(THIS->buffer->size_shift) {
+	      COMPLEX_SKIP_CASE(THIS, 0, off);
+	      COMPLEX_SKIP_CASE(THIS, 1, off);
+	      COMPLEX_SKIP_CASE(THIS, 2, off);
+	    default:
+	      fatal("Unsupported size shift!\n");
+	    }	  
+	  }
+	  if (off >= THIS->buffer->len) {
+	    break;
+	  }
+	}
+	res++;
+	if (THIS->split_set_size == 1) {
+	  switch(THIS->buffer->size_shift) {
+	    SIMPLE_SCAN_CASE(THIS, 0, off);
+	    SIMPLE_SCAN_CASE(THIS, 1, off);
+	    SIMPLE_SCAN_CASE(THIS, 2, off);
+	  default:
+	    fatal("Unsupported size shift!\n");
+	  }
+	} else {
+	  switch(THIS->buffer->size_shift) {
+	    COMPLEX_SCAN_CASE(THIS, 0, off);
+	    COMPLEX_SCAN_CASE(THIS, 1, off);
+	    COMPLEX_SCAN_CASE(THIS, 2, off);
+	  default:
+	    fatal("Unsupported size shift!\n");
+	  }
+	}
+	off++;	/* Skip the end split character. */
+	if ((!THIS->flags) && (off == THIS->buffer->len)) {
+	  /* Ends with an empty segment. */
+	  res++;
+	  break;
+	}
+      }
+    }
+    if (THIS->current) {
+      res++;
+    }
+    RETURN res;
+  }
+
+  PIKEFUN void create(string buffer, int|array(int)|multiset(int) split_set,
+		      int|void flags, function(:string)|void feed)
+    {
+      if (THIS->buffer) {
+	Pike_error("String.split() iterators cannot be reused.\n");
+      }
+      if (split_set->type == T_INT) {
+	THIS->split_set = (p_wchar2 *)xalloc(sizeof(p_wchar2));
+	THIS->split_set[0] = split_set->u.integer;
+	THIS->split_set_size = 1;
+      } else {
+	struct array *a;
+	int i;
+	if (split_set->type == T_ARRAY) {
+	  a = split_set->u.array;
+	} else if (split_set->type == T_MULTISET) {
+	  a = split_set->u.multiset->ind;
+	} else {
+	  SIMPLE_BAD_ARG_ERROR("String.split", 2,
+			       "int|array(int)|multiset(int)");
+	}
+	if (!a->size) {
+	  SIMPLE_BAD_ARG_ERROR("String.split", 2,
+			       "int|array(int)|multiset(int)");
+	}
+	for (i=0; i < a->size; i++) {
+	  if (a->item[i].type != T_INT) {
+	    SIMPLE_BAD_ARG_ERROR("String.split", 2,
+				 "int|array(int)|multiset(int)");
+	  }
+	}
+	THIS->split_set = (p_wchar2 *)xalloc(a->size * sizeof(p_wchar2));
+	for (i=0; i < a->size; i++) {
+	  THIS->split_set[i] = a->item[i].u.integer;
+	}
+	THIS->split_set_size = a->size;
+      }
+      add_ref(THIS->buffer = buffer);
+      if (args > 2) {
+	if (flags->type == T_INT) {
+	  THIS->flags = flags->u.integer;
+	} else {
+	  THIS->flags = 0;
+	}
+	if (args > 3) {
+	  assign_svalue(&THIS->feed, feed);
+	} else {
+	  /* NB: THIS->feed has already been set to 0 by the init code. */
+	}
+      } else {
+	THIS->flags = 0;
+      }
+      THIS->offset = 0;
+      THIS->current = NULL;
+      THIS->index = -1;
+      find_next(THIS);
+    }
+  
+  INIT 
+    {
+      THIS->buffer = NULL;
+      THIS->current = NULL;
+      THIS->offset = 0;
+      THIS->index = 0;
+      THIS->split_set = NULL;
+      THIS->split_set_size = 0;
+      THIS->flags = 0;
+      THIS->feed.type = T_INT;
+      THIS->feed.u.integer = 0;
+    }
+
+  EXIT
+    {
+      if (THIS->buffer) {
+	free_string(THIS->buffer);
+	THIS->buffer = NULL;
+      }
+      if (THIS->current) {
+	free_string(THIS->current);
+	THIS->current = NULL;
+      }
+      free(THIS->split_set);
+      THIS->split_set = NULL;
+      free_svalue(&THIS->feed);
+      THIS->feed.type = T_INT;
+      THIS->feed.u.integer = 0;
+    }
+};
+
+/*! @endclass
+ */
+
+/*! @endmodule
+ */
+
 PIKEFUN object Iterator(object|array|mapping|multiset|string data)
 {
   switch(data->type)
@@ -497,6 +905,31 @@ int foreach_iterate(struct object *o)
 	}
 
 	i->pos++;
+	return 1;
+      }else{
+	return 0;
+      }
+    }
+    if(o->prog == string_split_iterator_program)
+    {
+      struct string_split_iterator_struct *i=OBJ2_STRING_SPLIT_ITERATOR(o);
+      if(i->current)
+      {
+	if(Pike_sp[-4].type != T_INT)
+	{
+	  push_int(i->index);
+	  assign_lvalue(Pike_sp-5, Pike_sp-1);
+	  pop_stack();
+	}
+
+	if(Pike_sp[-2].type != T_INT)
+	{
+	  ref_push_string(i->current);
+	  assign_lvalue(Pike_sp-3, Pike_sp-1);
+	  pop_stack();
+	}
+
+	find_next(i);
 	return 1;
       }else{
 	return 0;
