@@ -1,9 +1,9 @@
-/* $Id: image.h,v 1.8 1997/05/29 19:37:38 mirar Exp $ */
+/* $Id: image.h,v 1.9 1997/10/12 21:11:33 mirar Exp $ */
 
 /*
 **! module Image
 **! note
-**!	$Id: image.h,v 1.8 1997/05/29 19:37:38 mirar Exp $<br>
+**!	$Id: image.h,v 1.9 1997/10/12 21:11:33 mirar Exp $<br>
 */
 
 #define MAX_NUMCOL 32768
@@ -169,6 +169,7 @@ void image_to8bit_closest(INT32 args);
 void image_to8bit(INT32 args);
 void image_to8bit_fs(INT32 args);
 void image_tozbgr(INT32 args);
+void image_torgb(INT32 args);
 void image_to8bit_rgbcube(INT32 args);
 void image_to8bit_rgbcube_rdither(INT32 args);
 void image_tobitmap(INT32 args);
