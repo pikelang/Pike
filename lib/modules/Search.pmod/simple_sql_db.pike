@@ -46,7 +46,7 @@ void create(string host)
 mapping(string:int) page_stat(string uri)
 {
   array res=db->query("SELECT last_changed, last_indexed, size "
-		      "FROM document WHERE uri='%s'", uri);
+		      "FROM document WHERE uri='%s'", db->quote(uri));
   if(!sizeof(res)) return 0;
   return (mapping(string:int))res[0];
 }
@@ -67,7 +67,7 @@ void insert_page(string uri, string title, string description, int last_changed,
   // Find out our document id
   int doc_id;
   if( catch( doc_id=(int)db->query(sprintf("SELECT id FROM document "
-					   "WHERE uri='%s'", uri))[0]->id ))
+					   "WHERE uri='%s'", db->quote(uri)))[0]->id ))
     doc_id=0;
 
 
@@ -77,8 +77,9 @@ void insert_page(string uri, string title, string description, int last_changed,
     db->query(sprintf("INSERT INTO document "
 		      "(uri, title, description, last_changed, size, mime_type)"
 		      " VALUES ('%s', '%s', '%s', %d, %d, %d)",
-		      uri, title, description, last_changed, size, mime_type));
-    doc_id = (int)db->query("SELECT id FROM document WHERE uri='%s'", uri)[0]->id;
+		      db->quote(uri), title, description, last_changed, size, mime_type));
+    werror("uri: %O\n",uri);
+    doc_id = (int)db->query("SELECT id FROM document WHERE uri='%s'", db->quote(uri))[0]->id;
     new=1;
   }
   else
@@ -119,7 +120,7 @@ void remove_page(string uri)
 {
   int doc_id;
   mixed error=catch( doc_id=db->query("SELECT id FROM document WHERE uri='%s'",
-				      uri)[0]->id );
+				      db->quote(uri))[0]->id );
   if(error) return;
   db->query("REMOVE FROM document WHERE id=%d", doc_id);
   db->query("REMOVE FROM occurence WHERE document_id=%d", doc_id);
