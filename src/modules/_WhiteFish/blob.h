@@ -2,10 +2,12 @@ typedef struct _Blob
 {
   int word;
   struct svalue *feed;
-
+  int docid;
   char *blob;
   int len;
   int pos;
+  int eof;
+  struct pike_string *str;
 } Blob;
 
 
@@ -37,4 +39,6 @@ int   wf_blob_next( Blob *b );
 int   wf_blob_nhits( Blob *b );
 Hit   wf_blob_hit( Blob *b, int n );
 int   wf_blob_docid( Blob *b );
+int   wf_blob_eof( Blob *b );
+void  wf_blob_free( Blob *b );
 

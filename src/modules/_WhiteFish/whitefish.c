@@ -1,13 +1,15 @@
 #include "global.h"
 #include "stralloc.h"
 #include "global.h"
-RCSID("$Id: whitefish.c,v 1.3 2001/05/22 13:29:21 per Exp $");
+RCSID("$Id: whitefish.c,v 1.4 2001/05/22 13:52:27 per Exp $");
 #include "pike_macros.h"
 #include "interpret.h"
 #include "program.h"
 #include "program_id.h"
 #include "object.h"
 #include "operators.h"
+#include "array.h"
+#include "module_support.h"
 
 #include "config.h"
 
@@ -18,6 +20,44 @@ RCSID("$Id: whitefish.c,v 1.3 2001/05/22 13:29:21 per Exp $");
 /* must be included last */
 #include "module_magic.h"
 
+struct  tofree
+{
+  Blob **blobs;
+  int nblobs;
+  struct object *res;
+};
+
+void free_stuff( void *_t )
+{
+  struct tofree *t= (struct tofree *)_t;
+  int i;
+  if( t->res ) free_object( t->res );
+  for( i = 0; i<t->nblobs; i++ )
+    wf_blob_free( t->blobs[i] );
+  free( t );
+}
+
+static struct object *low_do_query_merge( Blob **blobs,
+					  int nblobs,
+					  int field_c[68],
+					  int prox_c[8],
+					  int field )
+{
+  struct object *res = wf_resultset_new();
+  struct tofree *__f = malloc( sizeof( struct tofree ) );
+  ONERROR e;
+
+  __f->res = res;
+  __f->blobs = blobs;
+  __f->nblobs = nblobs;
+  SET_ONERROR( e, free_stuff, __f );
+
+  UNSET_ONERROR( e );
+  __f->res = 0;
+  free_stuff( __f );
+  return res;
+}
+				
 
 static void f_do_query_merge( INT32 args )
 /*! @decl ResultSet do_query_merge( array(int) musthave,          @
@@ -81,9 +121,46 @@ static void f_do_query_merge( INT32 args )
  */
 {
   int proximity_coefficients[8];
-  int field_cofficients[68];
+  int field_coefficients[68];
+  int numblobs, i;
+  Blob **blobs;
 
-  Blob *blobs;
+  struct svalue *cb;
+  struct array *_words, *_field, *_prox;
+  int field;
+
+  /* 1: Get all arguments. */
+  get_all_args( "do_query_merge", args, "%a%a%a%O%d",
+		&_words, &_field, &_prox, &cb, &field );
+
+  if( _field->size != 68 )
+    Pike_error("Illegal size of field_coefficients array (expected 68)\n" );
+  if( _prox->size != 8 )
+    Pike_error("Illegal size of proximity_coefficients array (expected 8)\n" );
+
+  numblobs = _words->size;
+  if( !numblobs )
+  {
+    struct object *o = wf_resultset_new( );
+    pop_n_elems( args );
+    push_object( o );
+    return;
+  }
+
+  blobs = malloc( sizeof(Blob *) * numblobs );
+
+  for( i = 0; i<numblobs; i++ )
+    blobs[i] = wf_blob_new( cb, _words->item[i].u.integer );
+
+  for( i = 0; i<8; i++ )
+    proximity_coefficients[i] = _prox->item[i].u.integer;
+
+  for( i = 0; i<48; i++ )
+    field_coefficients[i] = _field->item[i].u.integer;
+
+  push_object(low_do_query_merge(blobs,numblobs,
+				 field_coefficients,
+				 proximity_coefficients,field ));
 }
 
 void pike_module_init(void)
