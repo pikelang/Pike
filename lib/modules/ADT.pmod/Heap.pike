@@ -8,16 +8,10 @@ static private int num_values;
 #ifdef DEBUG
 void verify_heap()
 {
-  int e;
-  for(e=1;e<num_values;e++)
-  {
+  for(int e=1; e<num_values; e++)
     if(values[(e-1)/2] > values[e])
-    {
-      write(sprintf("Error in HEAP (%d, %d) num_values=%d\n",
-		    (e-1)/2, e, num_values));
-      exit(1);
-    }
-  }
+      error("Error in HEAP (%d, %d) num_values=%d\n",
+	    (e-1)/2, e, num_values);
 }
 #else
 #define verify_heap()
@@ -95,9 +89,9 @@ void adjust(mixed value)
   verify_heap();
 }
 
-//! @fixme
-//!   Document this function
-mixed top()
+//! Removes and returns the item on top of the heap,
+//! which also is the smallest value in the heap.
+mixed pop()
 {
   mixed ret;
   if(!num_values)
@@ -118,7 +112,9 @@ mixed top()
   verify_heap();
 }
 
-//! @fixme
-//!   Document this function
-int size() { return num_values; }
+//! Returns the number of elements in the heap.
+int _sizeof() { return num_values; }
 
+// compat
+mixed top() { return pop(); }
+int size() { return _sizeof(); }
