@@ -1,5 +1,5 @@
 #
-# $Id: Makefile.in,v 1.99 1998/07/09 16:01:21 grubba Exp $
+# $Id: Makefile.in,v 1.100 1998/07/15 23:32:18 hubbe Exp $
 #
 
 # This line is needed on some machines.
@@ -134,7 +134,7 @@ all: module_objects hilfe
 	$(MAKE) $(MAKE_FLAGS) pike
 
 pike: $(OBJ) modules/linker_options
-	-@mv pike pike.old 2>/dev/null || true
+	-@if [ -f pike ] ; then mv pike pike.old || : ; else : ; fi
 	$(LD) $(LDFLAGS) $(OBJ) `cat modules/linker_options` $(LIBS) -o pike
 
 # purify
