@@ -1,4 +1,4 @@
-// $Id: module.pmod,v 1.192 2004/03/13 10:44:37 agehall Exp $
+// $Id: module.pmod,v 1.193 2004/04/04 23:53:44 mast Exp $
 #pike __REAL_VERSION__
 
 inherit files;
@@ -794,10 +794,9 @@ class File
       }else{
 #if constant(System.EWOULDBLOCK)
 	if (errno() == System.EWOULDBLOCK) {
-#if 0
-	  // Why this? Callbacks aren't single-shot. /mast
+	  // Necessary to reregister since the callback is disabled
+	  // until a successful read() has been done.
 	  ::set_read_callback(__stdio_read_callback);
-#endif
 	  return;
 	}
 #endif
@@ -842,10 +841,19 @@ class File
   static void __stdio_read_oob_callback()
   {
     string s=::read_oob(8192,1);
-    if(s && sizeof(s))
+    if(s)
     {
-      ___read_oob_callback(___id, s);
+      if (sizeof(s))
+	___read_oob_callback(___id, s);
     }else{
+#if constant(System.EWOULDBLOCK)
+      if (errno() == System.EWOULDBLOCK) {
+	// Necessary to reregister since the callback is disabled
+	// until a successful read() has been done.
+	::set_read_oob_callback(__stdio_read_oob_callback);
+	return;
+      }
+#endif
       ::set_read_oob_callback(0);
       if (___close_callback) {
 	// Why this? The oob callbacks doesn't get called at eof or
@@ -880,7 +888,7 @@ class File
   //!
   //! These functions set the various callbacks, which will be called
   //! when various events occur on the stream. A zero as argument will
-  //! remove a callback.
+  //! remove the callback.
   //!
   //! A @[Pike.Backend] object is responsible for calling the
   //! callbacks. It requires a thread to be waiting in it to execute
@@ -932,6 +940,14 @@ class File
   //!   Callbacks are also set by @[set_nonblocking()].
   //!
   //! @note
+  //! The callbacks are disabled until they have accessed the stream,
+  //! i.e. the @[write_cb] callback is disabled until something has
+  //! been written with @[write], and the @[write_oob_cb] callback is
+  //! disabled until something has been written with @[write_oob].
+  //! Since the read callbacks get the data right away, this effect is
+  //! not noticeable for them.
+  //!
+  //! @note
   //! Installing callbacks means that you will start doing I/O on the
   //! stream from the thread running the backend. If you are running
   //! these set functions from another thread you must be prepared
@@ -950,8 +966,8 @@ class File
   //! the two often are used together they don't have to be.
   //!
   //! @note
-  //! The file object will stay referenced as long as callbacks are
-  //! installed.
+  //! The file object will stay referenced from the backend object as
+  //! long as there are callbacks that can receive events.
   //!
   //! @bugs
   //! Setting a close callback without a read callback currently only
