@@ -1,4 +1,4 @@
-dnl $Id: aclocal.m4,v 1.91 2004/03/07 16:39:35 grubba Exp $
+dnl $Id: aclocal.m4,v 1.92 2004/03/09 09:47:41 grubba Exp $
 
 dnl Some compatibility with Autoconf 2.50+. Not complete.
 dnl newer Autoconf calls substr m4_substr
@@ -356,7 +356,7 @@ define(PIKE_FEATURE_OK,[
 
 define([AC_LOW_MODULE_INIT],
 [
-  # $Id: aclocal.m4,v 1.91 2004/03/07 16:39:35 grubba Exp $
+  # $Id: aclocal.m4,v 1.92 2004/03/09 09:47:41 grubba Exp $
 
   MY_AC_PROG_CC
 
@@ -755,12 +755,14 @@ define(PIKE_ENABLE_BUNDLE, [
     echo "Bundles not available."
     ifelse([$3], , :, [ AC_MSG_ERROR([$3]) ])
   else
-    for f in "$pike_bundle_dir/[$1]"*.tar.gz no; do
-      if test -f "$f"; then
+    # Note: OSF/1 /bin/sh does not support glob expansion of
+    #       expressions like "$pike_bundle_dir/[$1]"*.tar.gz.
+    for f in `cd "$pike_bundle_dir" && echo [$1]*.tar.gz` no; do
+      if test -f "$pike_bundle_dir/$f"; then
         # Notify toplevel that we want the bundle.
 	# Note that invalidation of the cache variables can't be done
 	# until the bundle actually has been built.
-	PIKE_MSG_WARN([Enabling bundle $1 from $f.])
+	PIKE_MSG_WARN([Enabling bundle $1 from $pike_bundle_dir/$f.])
         echo "[$2]" >"[$1].bundle"
 	break
       fi
