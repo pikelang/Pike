@@ -2,12 +2,12 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: file.c,v 1.317 2004/04/06 13:00:49 nilsson Exp $
+|| $Id: file.c,v 1.318 2004/04/14 11:34:02 grubba Exp $
 */
 
 #define NO_PIKE_SHORTHAND
 #include "global.h"
-RCSID("$Id: file.c,v 1.317 2004/04/06 13:00:49 nilsson Exp $");
+RCSID("$Id: file.c,v 1.318 2004/04/14 11:34:02 grubba Exp $");
 #include "fdlib.h"
 #include "pike_netlib.h"
 #include "interpret.h"
@@ -840,6 +840,13 @@ static void file_peek(INT32 args)
   pop_n_elems(args);
   push_int(ret);
 }
+
+/* NOTE: Some versions of AIX seem to have a
+ *         #define events reqevents
+ *       in one of the poll headerfiles. This will break
+ *       the fd_box event handling.
+ */
+#undef events
 
 #endif
 
