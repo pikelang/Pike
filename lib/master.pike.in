@@ -1,6 +1,6 @@
 /* -*- Pike -*-
  *	
- * $Id: master.pike.in,v 1.81 1999/12/06 22:16:05 grubba Exp $
+ * $Id: master.pike.in,v 1.82 1999/12/06 23:55:41 grubba Exp $
  * 
  * Master-file for Pike.
  *
@@ -65,7 +65,7 @@ string basename(string x)
 #define FILE_STAT_CACHE
 
 #define UNDEFINED (([])[0])
-#define error(X) throw( ({ (X), backtrace()[0..sizeof(backtrace())-2] }) )
+#define error(X) throw( ({ (X), backtrace()/*[0..sizeof(backtrace())-2]*/ }) )
 
 string describe_backtrace(mixed *trace);
 object low_cast_to_object(string oname, string current_file);
@@ -1461,9 +1461,12 @@ string describe_backtrace(mixed trace, void|int linewidth)
 	else if(arrayp(tmp))
 	{
 	  string pos;
-	  if(sizeof(tmp)>=2 && stringp(tmp[0]) && intp(tmp[1]))
-	  {
-	    pos=trim_file_name(tmp[0])+":"+tmp[1];
+	  if(sizeof(tmp)>=2 && stringp(tmp[0])) {
+	    if (intp(tmp[1])) {
+	      pos=trim_file_name(tmp[0])+":"+tmp[1];
+	    } else {
+	      pos = sprintf("%s:Bad line %t", trim_file_name(tmp[0]), tmp[1]);
+	    }
 	  }else{
 	    mixed desc="Unknown program";
 	    if(sizeof(tmp)>=3 && functionp(tmp[2]))
@@ -1499,6 +1502,8 @@ string describe_backtrace(mixed trace, void|int linewidth)
 	    }else{
 	      row=sprintf("%s:\n%s",pos,sprintf("    %*-/s",linewidth-6,data));
 	    }
+	  } else {
+	    row = pos;
 	  }
 	}
 	else
