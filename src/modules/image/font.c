@@ -3,9 +3,11 @@
 #include <sys/types.h>
 #include <sys/stat.h>
 
-#ifdef _AIX
+#ifdef HAVE_FCNTL_H
 #include <fcntl.h>
-#else
+#endif
+
+#ifdef HAVE_SYS_FCNTL_H
 #include <sys/fcntl.h>
 #endif
 
