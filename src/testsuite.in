@@ -1,4 +1,4 @@
-test_true([["$Id: testsuite.in,v 1.25 1997/02/27 10:12:02 hubbe Exp $"]])
+test_true([["$Id: testsuite.in,v 1.26 1997/02/27 12:18:34 hubbe Exp $"]])
 teste_eval_error(mixed foo=({}); sort(@foo); )
 test_compile_error([[int foo() { return 1} ; constant foo=(["foo":foo]); return foo->foo();]])
 test_eval_error(mixed *foo=({}); return mkmapping(foo,({1})); )
@@ -123,7 +123,7 @@ cond([[all_constants()->thread_create]],
 
 // /precompiled/mutex
   test_true(Thread.Mutex())
-  test_do(add_constant("_tmp_mutex",Builtin.Mutex()))
+  test_do(add_constant("_tmp_mutex",Thread.Mutex()))
   test_true(_tmp_mutex->lock())
   test_true(_tmp_mutex->lock())
   test_true(_tmp_mutex->trylock())
@@ -137,6 +137,9 @@ cond([[all_constants()->thread_create]],
 
   test_true(objectp(clone(Thread.Fifo)))
   test_true(objectp(clone(Thread.Queue)))
+
+  test_any([[object o=Thread.Fifo(); thread_create(lambda(object f) { for(e=0;e<10000;e++) f->write(random(4711)); f->write(-1); },o); int tmp=0; while(o->read() != -1) tmp++; return tmp;]],10000)
+  test_any([[object o=Thread.Queue(); thread_create(lambda(object f) { for(e=0;e<10000;e++) f->write(random(4711)); f->write(-1); },o); int tmp=0; while(o->read() != -1) tmp++; return tmp;]],10000)
 ]])
 
 
