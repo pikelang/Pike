@@ -101,7 +101,7 @@ mixed reduce(function fun, array arr, mixed|void zero)
   if(sizeof(arr))
     zero = arr[0];
   for(int i=1; i<sizeof(arr); i++)
-    zero = fun(zero, arr[i]);
+    zero = ([function(mixed,mixed:mixed)]fun)(zero, arr[i]);
   return zero;
 }
 
@@ -110,7 +110,7 @@ mixed rreduce(function fun, array arr, mixed|void zero)
   if(sizeof(arr))
     zero = arr[-1];
   for(int i=sizeof(arr)-2; i>=0; --i)
-    zero = fun(arr[i], zero);
+    zero = ([function(mixed,mixed:mixed)]fun)(arr[i], zero);
   return zero;
 }
 
@@ -154,21 +154,21 @@ int search_array(array arr, mixed fun, mixed ... args)
   if(stringp(fun))
   {
     for(e=0;e<sizeof(arr);e++)
-      if(([array(object)]arr)[e][fun](@args))
+      if(([function(mixed...:mixed)]([array(object)]arr)[e][fun])(@args))
 	return e;
     return -1;
   }
   else if(functionp(fun))
   {
     for(e=0;e<sizeof(arr);e++)
-      if(([function]fun)(arr[e],@args))
+      if(([function(mixed,mixed...:mixed)]fun)(arr[e],@args))
 	return e;
     return -1;
   }
   else if(intp(fun))
   {
     for(e=0;e<sizeof(arr);e++)
-      if(([array(function)]arr)[e](@args))
+      if(([array(function(mixed...:mixed))]arr)[e](@args))
 	return e;
     return -1;
   }
@@ -184,7 +184,7 @@ array sum_arrays(function foo, array(mixed) ... args)
   int e,d;
   ret=allocate(sizeof(args[0]));
   for(e=0;e<sizeof(args[0]);e++)
-    ret[e]=foo(@ column(args, e));
+    ret[e]=([function(mixed...:mixed)]foo)(@ column(args, e));
   return ret;
 }
 
@@ -227,7 +227,8 @@ array sort_array(array foo,function|void cmp, mixed ... args)
       
       while(1)
       {
-	if(cmp(foo[foop],foo[barp],@args) <= 0)
+	if(([function(mixed,mixed,mixed...:int)]cmp)(foo[foop],foo[barp],@args)
+	    <= 0)
 	{
 	  bar[start++]=foo[foop++];
 	  if(foop == fooend)
@@ -262,11 +263,11 @@ array columns(array x, array ind)
   return ret;
 }
 
-array transpose_old(array x)
+array transpose_old(array(array|string) x)
 {
    if (!sizeof(x)) return x;
-   array ret=allocate(sizeof(x[0]));
-   for(int e=0;e<sizeof(x[0]);e++) ret[e]=column(x,e);
+   array ret=allocate(sizeof([array|string]x[0]));
+   for(int e=0;e<sizeof([array|string]x[0]);e++) ret[e]=column(x,e);
    return ret;
 }
 
@@ -550,6 +551,6 @@ int lyskom_sort_func(string a,string b)
 array flatten(array a)
 {
   array ret=({});
-  foreach(a, a) ret+=arrayp(a)?flatten(a):({a});
+  foreach(a, mixed b) ret+=arrayp(b)?flatten([array]b):({b});
   return ret;
 }

@@ -5,7 +5,7 @@ constant width=__builtin.string_width;
 
 /*
  * Implode an array of strings to an english 'list'
- * ie. ({"foo","bar","gazonk"}) beomces "foo, bar and gazonk"
+ * ie. ({"foo","bar","gazonk"}) becomes "foo, bar and gazonk"
  */
 string implode_nicely(array(string|int|float) foo, string|void and)
 {
@@ -14,7 +14,7 @@ string implode_nicely(array(string|int|float) foo, string|void and)
   switch(sizeof(foo))
   {
   case 0: return "";
-  case 1: return foo[0];
+  case 1: return ([array(string)]foo)[0];
   default: return foo[0..sizeof(foo)-2]*", "+" "+and+" "+foo[-1];
   }
 }

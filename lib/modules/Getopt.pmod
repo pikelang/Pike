@@ -8,20 +8,20 @@
 //			           "../configurations");
 
 
-string|int find_option(array argv,
-		       array|string shortform,
-		       array|string|void longform,
-		       array|string|void envvars,
-		       mixed|void def,
+string|int find_option(array(string) argv,
+		       array(string)|string shortform,
+		       array(string)|string|void longform,
+		       array(string)|string|void envvars,
+		       string|int|void def,
 		       int|void throw_errors)
 {
-  mixed value;
+  string|int value;
   int i,hasarg;
 
   hasarg=query_num_arg() > 4;
-  if(!arrayp(longform)) longform=({longform});
-  if(!arrayp(shortform)) shortform=({shortform});
-  if(!arrayp(envvars)) envvars=({envvars});
+  if(!arrayp(longform)) longform=({[string]longform});
+  if(!arrayp(shortform)) shortform=({[string]shortform});
+  if(!arrayp(envvars)) envvars=({[string]envvars});
 
   for(i=1; i<sizeof(argv); i++)
   {
@@ -110,8 +110,8 @@ string|int find_option(array argv,
   }
 
   if(arrayp(envvars))
-    foreach(envvars, value)
-      if(value && (value=getenv(value)))
+    foreach([array(string)]envvars, value)
+      if(value && (value=[string]getenv([string]value)))
 	return value;
   
   return def;
@@ -131,15 +131,16 @@ constant MAY_HAVE_ARG=3;
 #define ENV 3
 #define DEF 4
 
-array find_all_options(array(string) argv, array options,
+array find_all_options(array(string) argv,
+		       array(array(array(string)|string)) options,
 		       void|int posix_me_harder, void|int throw_errors)
 {
-  mapping quick=([]);
-  foreach(options, mixed opt)
+  mapping(string:array(string|array(string))) quick=([]);
+  foreach(options, array(array(string)|string) opt)
     {
-      mixed aliases=opt[ALIASES];
-      if(!arrayp(aliases)) aliases=({aliases});
-      foreach(aliases, mixed optname)
+      array(string)|string aliases=[array(string)|string]opt[ALIASES];
+      if(!arrayp(aliases)) aliases=({[string]aliases});
+      foreach([array(string)]aliases, string optname)
 	{
 	  if(optname[0..1]=="--")
 	  {
@@ -233,18 +234,18 @@ array find_all_options(array(string) argv, array options,
   }
 
   multiset done=mkmultiset(column(ret, 0));
-  foreach(options, array(string) option)
+  foreach(options, array(string|array(string)) option)
     {
-      string name=option[NAME];
+      string name=[string]option[NAME];
       if(done[name]) continue;
       if(sizeof(option) > ENV)
       {
-	mixed foo=option[ENV];
+	array(string)|string foo=option[ENV];
 	if(!foo) continue;
-	if(stringp(foo)) foo=({foo});
-	foreach(foo, foo)
+	if(stringp(foo)) foo=({[string]foo});
+	foreach([array(string)]foo, foo)
 	  {
-	    if(foo=getenv(foo))
+	    if(foo=[string]getenv([string]foo))
 	    {
 	      ret+=({ ({name, foo}) });
 	      done[name]=1;
