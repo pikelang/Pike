@@ -1,6 +1,6 @@
 #! /usr/bin/env pike
 
-/* $Id: export.pike,v 1.51 2002/04/28 13:28:54 mikael%brandstrom.org Exp $ */
+/* $Id: export.pike,v 1.52 2002/04/28 21:47:14 mikael%brandstrom.org Exp $ */
 
 multiset except_modules = (<>);
 string vpath;
@@ -118,7 +118,7 @@ array(string) build_file_list(string vpath, string list_file)
       Stdio.Stat fs;
       if((fs = file_stat(name)) && fs->isdir)
 	ret += get_files(name);
-      else
+      else if(fs && fs->isreg)
 	ret += ({ name });
     }
   return ret;
@@ -299,14 +299,18 @@ Usage: export.pike <arguments> <except modules>
 Creates a pike distribution. Needs one tar and one gzip binary in the path.
 Mandatory arguments:
 
- name       Name of export archive (%maj, %min, %bld, %Y, %M, %D, %h, %m, %s
-            are replaced with apropiate values).
- exportlist A file which lists all the files and directories to be exported.
- srcdir     The path to the source directory.
+--name=<name> 
+	Name of export archive (%maj, %min, %bld, %Y, %M, %D, %h, %m, %s
+	are replaced with apropiate values).
+--exportlist=<listfile>
+	A file which lists all the files and directories to be exported.
+--srcdir=<dir>
+	The path to Pike source directory.
 
 Optional arguments:
 
- rebuild    Not implemented.
- tag        Bump the Pike build version and tag the CVS tree.
- help       Show this text.
+--rebuild    
+	Not implemented.
+--tag	Bump the Pike build version and tag the CVS tree.
+--help  Show this text.
 ";
