@@ -22,7 +22,7 @@
 #include "builtin_functions.h"
 #include <signal.h>
 
-RCSID("$Id: signal_handler.c,v 1.70 1998/06/25 14:54:35 grubba Exp $");
+RCSID("$Id: signal_handler.c,v 1.71 1998/06/25 15:02:56 grubba Exp $");
 
 #ifdef HAVE_PASSWD_H
 # include <passwd.h>
@@ -732,7 +732,7 @@ static void free_perishables(struct perishables *storage)
   
 #endif
 
-  exit_threads_disable();
+  exit_threads_disable(NULL);
 }
 
 #endif
@@ -972,7 +972,7 @@ void f_create_process(INT32 args)
     storage.wanted_gids_array=0;
 #endif
 
-    init_threads_disable();
+    init_threads_disable(NULL);
 
     SET_ONERROR(err, free_perishables, &storage);
 
