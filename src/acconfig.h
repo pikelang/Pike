@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: acconfig.h,v 1.130 2003/11/15 17:39:15 mast Exp $
+|| $Id: acconfig.h,v 1.131 2003/11/19 17:10:05 grubba Exp $
 */
 
 #ifndef MACHINE_H
@@ -64,6 +64,9 @@
 
 /* Define this to use the new multiset implementation. */
 #undef PIKE_NEW_MULTISETS
+
+/* Define this to get portable dumped bytecode. */
+#undef PIKE_PORTABLE_BYTECODE
 
 /* Enable profiling */
 #undef PROFILING
