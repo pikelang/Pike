@@ -1,4 +1,4 @@
-dnl $Id: configure.in,v 1.12 2001/02/27 18:52:25 grubba Exp $
+dnl $Id: configure.in,v 1.13 2001/06/25 21:07:00 david%hedbor.org Exp $
 dnl (C) 1997 Francesco Chemolli <kinkie@kame.usr.dsi.unimi.it>
 
 AC_INIT(postgres.c)
@@ -135,6 +135,7 @@ dnl last check, just to be sure
   if test x$ac_cv_func_PQsetdbLogin = xno; then
     AC_MSG_WARN(No Login-related functions, username and password will be silently ignored)
   fi
+  AC_CHECK_FUNCS(PQsetnonblocking)
 fi
 
 if test  x$ac_cv_lib_pq_PQclear != xyes; then

@@ -1,4 +1,4 @@
-/* $Id: pg_types.h,v 1.3 1998/03/28 14:41:17 grubba Exp $ */
+/* $Id: pg_types.h,v 1.4 2001/06/25 21:07:00 david%hedbor.org Exp $ */
 #ifndef _PG_TYPES_H_
 #define _PG_TYPES_H_
 
@@ -15,6 +15,9 @@ struct pgres_object_data {
 	struct pike_string *last_error;
 	PGresult * last_result;
 	struct svalue * notify_callback;
+#ifdef PQ_THREADSAFE
+        PIKE_MUTEX_T mutex;
+#endif
 };
 
 /* The header name could be deceiving, but who cares? */
