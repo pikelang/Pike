@@ -26,7 +26,7 @@
 #include "bignum.h"
 #include "operators.h"
 
-RCSID("$Id: opcodes.c,v 1.76 2000/07/05 23:01:48 hubbe Exp $");
+RCSID("$Id: opcodes.c,v 1.77 2000/07/07 15:31:14 grubba Exp $");
 
 void index_no_free(struct svalue *to,struct svalue *what,struct svalue *ind)
 {
@@ -388,10 +388,10 @@ void o_cast(struct pike_string *type, INT32 run_time_type)
 	switch(sp[-1].type)
 	{
 	  case T_STRING:
-	    if(fp->pc)
+	    if(Pike_fp->pc)
 	    {
 	      INT32 lineno;
-	      push_text(get_line(fp->pc, fp->context.prog, &lineno));
+	      push_text(get_line(Pike_fp->pc, Pike_fp->context.prog, &lineno));
 	    }else{
 	      push_int(0);
 	    }
@@ -411,10 +411,10 @@ void o_cast(struct pike_string *type, INT32 run_time_type)
       switch(sp[-1].type)
       {
 	case T_STRING:
-	  if(fp->pc)
+	  if(Pike_fp->pc)
 	  {
 	    INT32 lineno;
-	    push_text(get_line(fp->pc, fp->context.prog, &lineno));
+	    push_text(get_line(Pike_fp->pc, Pike_fp->context.prog, &lineno));
 	  }else{
 	    push_int(0);
 	  }

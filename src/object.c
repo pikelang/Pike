@@ -5,7 +5,7 @@
 \*/
 /**/
 #include "global.h"
-RCSID("$Id: object.c,v 1.132 2000/07/06 23:25:26 mast Exp $");
+RCSID("$Id: object.c,v 1.133 2000/07/07 15:31:14 grubba Exp $");
 #include "object.h"
 #include "dynamic_buffer.h"
 #include "interpret.h"
@@ -147,7 +147,7 @@ struct object *low_clone(struct program *p)
 
 #define LOW_PUSH_FRAME(O)	do{		\
   struct pike_frame *pike_frame=alloc_pike_frame();		\
-  pike_frame->next=fp;				\
+  pike_frame->next=Pike_fp;			\
   pike_frame->current_object=O;			\
   pike_frame->locals=0;				\
   pike_frame->num_locals=0;				\
@@ -155,7 +155,7 @@ struct object *low_clone(struct program *p)
   pike_frame->pc=0;					\
   pike_frame->context.prog=0;                        \
   pike_frame->context.parent=0;                        \
-  fp= pike_frame
+  Pike_fp= pike_frame
 
 #define PUSH_FRAME(O) \
   LOW_PUSH_FRAME(O); \
@@ -182,19 +182,22 @@ struct object *low_clone(struct program *p)
   
 
 #ifdef DEBUG
-#define CHECK_FRAME() if(pike_frame != fp) fatal("Frame stack out of whack.\n");
+#define CHECK_FRAME() do { \
+    if(pike_frame != Pike_fp) \
+      fatal("Frame stack out of whack.\n"); \
+  } while(0)
 #else
 #define CHECK_FRAME()
 #endif
 
 #define POP_FRAME()				\
   CHECK_FRAME()					\
-  fp=pike_frame->next;				\
+  Pike_fp=pike_frame->next;			\
   pike_frame->next=0;				\
   free_pike_frame(pike_frame); }while(0)
 
 #define LOW_POP_FRAME()				\
-  add_ref(fp->current_object); \
+  add_ref(Pike_fp->current_object); \
   POP_FRAME();
 
 
@@ -483,7 +486,7 @@ static void call_destroy(struct object *o, int foo)
   e=FIND_LFUN(o->prog,LFUN_DESTROY);
   if(e != -1
 #ifdef DO_PIKE_CLEANUP
-     && evaluator_stack
+     && Pike_interpreter.evaluator_stack
 #endif
     )
   {
@@ -582,8 +585,12 @@ void low_destruct(struct object *o,int do_free)
 	free_svalue(s);
       }else{
 	union anything *u;
+	int rtt = pike_frame->context.prog->identifiers[d].run_time_type;
 	u=(union anything *)(pike_frame->current_storage +
 			     pike_frame->context.prog->identifiers[d].func.offset);
+#ifdef PIKE_DEBUG
+	if (rtt <= MAX_REF_TYPE) debug_malloc_touch(u->refs);
+#endif /* PIKE_DEBUG */
 	free_short_svalue(u, pike_frame->context.prog->identifiers[d].run_time_type);
 	DO_IF_DMALLOC(u->refs=(void *)-1);
       }
@@ -1135,6 +1142,8 @@ void cleanup_objects(void)
       debug_malloc_touch(o->storage);
       call_destroy(o,1);
       low_destruct(o,1);
+    } else {
+      debug_malloc_touch(o);
     }
     SET_NEXT_AND_FREE(o,free_object);
   }
@@ -1506,10 +1515,10 @@ void push_magic_index(struct program *type, int inherit_no, int parent_level)
   struct object *o,*magic;
   struct program *p;
 
-  o=fp->current_object;
+  o=Pike_fp->current_object;
   if(!o) error("Illegal magic index call.\n");
   
-  inherit=INHERIT_FROM_INT(fp->current_object->prog, fp->fun);
+  inherit=INHERIT_FROM_INT(Pike_fp->current_object->prog, Pike_fp->fun);
 
   while(parent_level--)
   {

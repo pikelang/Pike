@@ -83,7 +83,7 @@ static void f_call_with_creds(INT32 args)
 {
   struct object *o;
 
-  switch(sp[-args].type)
+  switch(Pike_sp[-args].type)
   {
     case T_INT:
       /* We might want allocate a bit for this so that we can
@@ -93,14 +93,14 @@ static void f_call_with_creds(INT32 args)
        * Indeed. Consider the case when this function is used as a callback.
        * /grubba 1999-07-12
        */
-      o=fp->current_object->prot;
+      o=Pike_fp->current_object->prot;
       break;
 
     case T_OBJECT:
-      o=sp[-args].u.object;
+      o=Pike_sp[-args].u.object;
       if(!CHECK_SECURITY(SECURITY_BIT_SECURITY) &&
-	 !(fp->current_object->prot && 
-	   (OBJ2CREDS(fp->current_object->prot)->may_always & SECURITY_BIT_SECURITY)))
+	 !(Pike_fp->current_object->prot && 
+	   (OBJ2CREDS(Pike_fp->current_object->prot)->may_always & SECURITY_BIT_SECURITY)))
 	error("call_with_creds: permission denied.\n");
       
       break;
@@ -122,10 +122,10 @@ static void f_call_with_creds(INT32 args)
   /* NOTE: curent_creds will be restored by the mega_apply() that called us.
    */
 
-  free_svalue(sp-2);
-  sp[-2]=sp[-1];
-  sp--;
-  dmalloc_touch_svalue(sp);
+  free_svalue(Pike_sp-2);
+  Pike_sp[-2]=Pike_sp[-1];
+  Pike_sp--;
+  dmalloc_touch_svalue(Pike_sp);
 }
 
 /*: <pikedoc type=txt>
@@ -296,7 +296,7 @@ static void creds_apply(INT32 args)
   {
     if(sp[-args].u.array->prot)
       free_object(sp[-args].u.array->prot);
-    add_ref( sp[-args].u.array->prot=fp->current_object );
+    add_ref( sp[-args].u.array->prot=Pike_fp->current_object );
   }else{
     error("creds->apply(): permission denied.\n");
   }
