@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: gc.h,v 1.113 2004/05/23 00:44:50 nilsson Exp $
+|| $Id: gc.h,v 1.114 2004/05/23 01:49:24 nilsson Exp $
 */
 
 #ifndef GC_H
@@ -170,7 +170,7 @@ struct marker
    * references. Set to 0 during mark pass if a nonweak reference is
    * found. Decreased during zap weak pass as gc_do_weak_free() is
    * called. */
-#ifdef DO_PIKE_CLEANUP
+#if defined(DO_PIKE_CLEANUP) || defined(PIKE_DEBUG)
   INT32 xrefs;
   /* Known external references. Increased by gc_mark_external(). */
   INT32 saved_refs;
