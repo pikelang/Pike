@@ -1,8 +1,10 @@
+/* -*- C -*- */
 /*\
 ||| This file a part of Pike, and is copyright by Fredrik Hubinette
 ||| Pike is distributed as GPL (General Public License)
 ||| See the files COPYING and DISCLAIMER for more information.
 \*/
+/**/
 %pure_parser
 /*
  * These values are used by the stack machine, and can not be directly
@@ -186,7 +188,7 @@
 /* This is the grammar definition of Pike. */
 
 #include "global.h"
-RCSID("$Id: language.yacc,v 1.160 2000/01/02 23:39:11 mast Exp $");
+RCSID("$Id: language.yacc,v 1.161 2000/01/25 22:41:29 grubba Exp $");
 #ifdef HAVE_MEMORY_H
 #include <memory.h>
 #endif
@@ -1044,21 +1046,56 @@ simple_identifier_type: identifier_type
   ;
 
 identifier_type: idents
-     { 
-       struct program *p;
-       resolv_program($1);
-       if((p=program_from_svalue(sp-1)))
-       {
-         push_type_int(p->id);
-       }else{
-         push_type_int(0);
-       }
-       push_type(0);
-       push_type(T_OBJECT);
-       pop_stack();
-       free_node($1);
-     }
-     ;
+  { 
+    resolv_constant($1);
+
+    if (sp[-1].type == T_TYPE) {
+      /* "typedef" */
+      push_finished_type(sp[-1].u.string);
+    } else {
+      /* object type */
+      struct program *p = NULL;
+
+      if (sp[-1].type == T_OBJECT) {
+	if(!sp[-1].u.object->prog)
+	{
+	  pop_stack();
+	  push_int(0);
+	  yyerror("Destructed object used as program identifier.");
+	}else{
+	  f_object_program(1);
+	}
+      }
+
+      switch(sp[-1].type) {
+      case T_FUNCTION:
+	if(p = program_from_function(sp-1))
+	  break;
+      
+      default:
+	if (compiler_pass!=1)
+	  yyerror("Illegal program identifier.");
+	pop_stack();
+	push_int(0);
+	break;
+	
+      case T_PROGRAM:
+	p = sp[-1].u.program;
+	break;
+      }
+
+      if(p) {
+	push_type_int(p->id);
+      }else{
+	push_type_int(0);
+      }
+      push_type(0);
+      push_type(T_OBJECT);
+    }
+    pop_stack();
+    free_node($1);
+  }
+  ;
 
 type4: type4 '|' type8 { push_type(T_OR); }
   | type8
