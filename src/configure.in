@@ -1,5 +1,6 @@
 AC_INIT(interpret.c)
 AC_PROG_CC
+AC_C_CROSS
 
 # We need some special hacks when running slowaris
 AC_PATH_PROG(uname_prog,uname,no)
@@ -100,33 +101,87 @@ fi
 
 AC_CONFIG_HEADER(machine.h)
 AC_PROG_INSTALL
-AC_PROG_YACC
 AC_PROG_CPP
 AC_PROG_RANLIB
 AC_SET_MAKE
-AC_CHECK_PROG(has_strings, strings, yes, no)
 
-if test "$has_strings" = "yes"; then
-  yacc_prog=`echo $YACC | sed 's/^\([^ ]*\) .*$/\1/'`
-  AC_PATH_PROG(yacc_prog,$yacc_prog,/bin/true)
-
-  AC_MSG_CHECKING(if $YACC handles pure_parser)
-  AC_CACHE_VAL(lpc_cv_yacc_pure_parser,
-  [
-    lpc_cv_yacc_pure_parser=no
-    strings $yacc_prog >conftest.bar
-    if egrep pure_parser conftest.bar >/dev/null; then
-      lpc_cv_yacc_pure_parser=yes
+AC_MSG_CHECKING(for yacc clone that handles %pure_parser)
+AC_CACHE_VAL(lpc_cv_prog_working_yacc,
+[
+for YACC in byacc "bison -y" yacc "echo Get bison if you want to make export" ; do
+  set dummy $YACC; ac_word=$2
+  has_it=no
+  IFS="${IFS= 	}"; ac_save_ifs="$IFS"; IFS="${IFS}:"
+  for ac_dir in $PATH; do
+    test -z "$ac_dir" && ac_dir=.
+    if test -f $ac_dir/$ac_word; then
+      has_it="yes"
+      break
     fi
-  ])
+  done
+  IFS="$ac_save_ifs"
+  
+  if test "$has_it" = "yes"; then
+cat >conftest.y<<\EOF
+%pure_parser
+%{
+void parse();
+void yyerror(char *);
+%}
+%%
+all: foo bar
+foo: 'f' 'o' 'o' { parse(); } ;
+bar: 'b' 'a' 'r' ;
+%%
+int context;
 
-  if test "$lpc_cv_yacc_pure_parser" = "yes"; then
-    AC_MSG_RESULT(yes)
-  else
-    AC_MSG_RESULT([[no, get bison and retry... (giving up)]])
-    exit 1
+int yylex(YYSTYPE *yylval)
+{
+  switch(context++)
+  {
+    case 0: return 'f';
+    case 1: return 'o';
+    case 2: return 'o';
+    case 3: return 'b';
+    case 4: return 'a';
+    case 5: return 'r';
+    default: return 0;
+  }
+}
+
+int depth=0;
+void parse()
+{
+  int tmp;
+  if(depth++>5) return;
+  tmp=context;
+  context=0;
+  yyparse();
+  context=tmp;
+}
+int errors=0;
+void yyerror(char *fel) { errors++; }
+int main()
+{
+  parse();
+  exit(errors);
+}
+EOF
+    if $YACC -d conftest.y 1>&5 2>&5; then
+      AC_TRY_RUN([
+#include "y.tab.c"
+],pure_parser_works=yes,pure_parser_works=no)
+      if test "$pure_parser_works" = "yes"; then
+        break
+      fi
+    fi
   fi
-fi
+done
+lpc_cv_prog_working_yacc="$YACC"
+])
+
+YACC="$lpc_cv_prog_working_yacc"
+AC_MSG_RESULT($YACC)
 
 AC_MSG_CHECKING(first yacc define)
 AC_CACHE_VAL(lpc_cv_yacc_first,
@@ -138,7 +193,7 @@ all: GURKA
 %%
 EOF
 lpc_cv_yacc_first=257;
-if $YACC -d conftest.y ; then
+if $YACC -d conftest.y 1>&5 2>&5; then
   if test -f y.tab.h; then
     lpc_cv_yacc_first=`egrep GURKA y.tab.h | sed 's/^#[^0-9]*\([0-9]*\)[^0-9]*$/\1/'`
     echo $lpc_cv_yacc_first >conftest.out
@@ -762,6 +817,7 @@ BUILDDIR=`pwd`
 
 AC_CONFIG_SUBDIRS($dirs)
 
+AC_SUBST(YACC)
 AC_SUBST(MODULE_OBJS)
 AC_SUBST(INSTALL)
 AC_SUBST(WARN)
