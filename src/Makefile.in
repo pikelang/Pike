@@ -1,5 +1,5 @@
 #
-# $Id: Makefile.in,v 1.366 2003/11/05 17:14:28 grubba Exp $
+# $Id: Makefile.in,v 1.367 2003/11/07 18:32:42 nilsson Exp $
 #
 
 # This line is needed on some machines.
@@ -499,7 +499,7 @@ dynloadtest: dynloadtest.o @EXTRA_OBJS@ fdlib.o port.o
 	$(LD) $(LDFLAGS) dynloadtest.o @EXTRA_OBJS@ fdlib.o port.o $(LIBS) -o dynloadtest
 
 
-tinstall: master-stamp autodoc-stamp
+tinstall: master-stamp
 	-rm -rf test-install
 	$(RUNPIKE) $(TMP_BINDIR)/install.pike lib_prefix="$(lib_prefix)" \
 	TMP_LIBDIR="$(TMP_LIBDIR)" LIBDIR_SRC="$(LIBDIR_SRC)" \
@@ -509,7 +509,7 @@ tinstall: master-stamp autodoc-stamp
 	PIKE_MODULE_RELOC="$(PIKE_MODULE_RELOC)" pike_name="test-pike" \
 	prefix="./test-install" $(INSTALLARGS)
 
-just-tinstall: master-stamp autodoc-stamp
+just-tinstall: master-stamp
 	$(RUNPIKE) $(TMP_BINDIR)/install.pike lib_prefix="$(lib_prefix)" \
 	TMP_LIBDIR="$(TMP_LIBDIR)" LIBDIR_SRC="$(LIBDIR_SRC)" \
 	SRCDIR="$(SRCDIR)" DOCDIR_SRC="$(DOCDIR_SRC)" \
