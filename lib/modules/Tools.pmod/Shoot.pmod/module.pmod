@@ -33,7 +33,7 @@ lambda()
    array res=({master()->_pike_file_name});
    if (master()->_master_file_name)
       res+=({"-m"+master()->_master_file_name});
-   foreach (reverse(master()->pike_module_path);;string path)
+   foreach (master()->pike_module_path;;string path)
       res+=({"-M"+path});
    if (-1==search(res[0],"/"))
       res[0]=locate_binary(getenv("PATH")/":",res[0]);
@@ -62,6 +62,7 @@ class ExecTest(string id,Test test)
       nruns=0;
       string status;
       float tg=0.0;
+      int testntot=0;
 
       if (!silent) 
 	 write(test->name+"..........................."[strlen(test->name)..]);
@@ -87,6 +88,8 @@ class ExecTest(string id,Test test)
 	 array v=status/"\n";
 	 memusage=(int)v[0];
 	 tg+=(float)v[1];
+	 if (v[2]!="no")
+	    testntot+=(int)v[2];
 
 	 truns=time(t0)-tz;
 	 if (truns >= maximum_seconds || 
@@ -97,11 +100,15 @@ class ExecTest(string id,Test test)
 
       if (silent) return;
 
-      write("%6.3fs %6.3fs %5dkb %5s\n",
+      write("%6.3fs %6.3fs %5dkb %5s%s\n",
 	    tseconds,
 	    useconds,
 	    memusage/1024,
-	    "("+nruns+")");
+	    "("+nruns+")",
+	    test->present_n
+	    ?" ("+test->present_n(testntot,nruns,tseconds,
+				  useconds,memusage)+")"
+	    :"");
    }
 }
 
@@ -110,7 +117,8 @@ class ExecTest(string id,Test test)
 //! data to stdout. @[id] is the current test.
 void _shoot(string id)
 {
-   float tg=gauge { Tools.Shoot[id]()->perform(); };
+   object test;
+   float tg=gauge { (test=Tools.Shoot[id]())->perform(); };
 
    string s;
    if ( (s=Stdio.read_bytes("/proc/"+getpid()+"/statm")) )
@@ -119,4 +127,9 @@ void _shoot(string id)
       write("-1\n");
 
    write("%.6f\n",tg);
+
+   if (test->present_n)
+      write("%d\n",test->n);
+   else
+      write("no\n");
 }

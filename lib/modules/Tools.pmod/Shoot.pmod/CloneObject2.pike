@@ -17,3 +17,7 @@ void perform()
     Target(i); //->swap();
 }
 
+string present_n(int ntot,int nruns,float tseconds,float useconds,int memusage)
+{
+   return sprintf("%.0f/s",ntot/useconds);
+}

@@ -2,19 +2,24 @@ inherit Tools.Shoot.Test;
 
 constant name="Loops Recursed";
 
-int n=16;
+int n=0;
+int iter=16;
 int d=5;
-int x=0;
 
 void recur(int d)
 {
    if (d--)
-      for (int i=0; i<n; i++) recur(d);
+      for (int i=0; i<iter; i++) recur(d);
    else
-      x++;
+      n++;
 }
 
 void perform()
 {
    recur(d);
+}
+
+string present_n(int ntot,int nruns,float tseconds,float useconds,int memusage)
+{
+   return sprintf("%.0f iters/s",ntot/useconds);
 }

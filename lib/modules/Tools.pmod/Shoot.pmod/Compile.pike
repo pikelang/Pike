@@ -10,15 +10,17 @@ inherit Tools.Shoot.Test;
 
 constant name="Compile";
 
+int n;
+
 void perform()
 {
-   int n=2000,v=10,runs=10;
+   int ops=2000,v=10,runs=10;
    string prog="";
 
    for (int i=0; i<v; i++)
       prog+=sprintf("int %c=random(1000);\n",i+'a');
    
-   for (int i=0; i<n; i++)
+   for (int i=0; i<ops; i++)
    {
       int c=random(4),d;
       switch (c)
@@ -48,4 +50,11 @@ void perform()
    prog="int test() {\n"+prog+"   return a;\n};\n";
    for (int i=0; i<runs; i++)
       compile_string(prog);
+
+   n=sizeof(prog/"\n")*runs;
+}
+
+string present_n(int ntot,int nruns,float tseconds,float useconds,int memusage)
+{
+   return sprintf("%.0f lines/s",ntot/useconds);
 }
