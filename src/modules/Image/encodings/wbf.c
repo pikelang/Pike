@@ -5,7 +5,7 @@
 #include <ctype.h>
 
 #include "stralloc.h"
-RCSID("$Id: wbf.c,v 1.10 2002/05/11 00:12:39 nilsson Exp $");
+RCSID("$Id: wbf.c,v 1.11 2002/07/30 11:25:30 nilsson Exp $");
 #include "pike_macros.h"
 #include "object.h"
 #include "mapping.h"
@@ -371,7 +371,6 @@ static void push_wap_type0_image_data( struct image *i )
         p[x/8] |= 128 >> (x%8);
       is++;
     }
-    printf("\n");
   }
   push_string( make_shared_binary_string( (char *)data,
 					  i->ysize * (i->xsize+7)/8 ) );
