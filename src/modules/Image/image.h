@@ -1,7 +1,7 @@
 /*
 **! module Image
 **! note
-**!	$Id: image.h,v 1.37 2000/08/05 11:07:31 grubba Exp $
+**!	$Id: image.h,v 1.38 2000/08/05 23:47:27 grubba Exp $
 */
 
 #ifdef PIKE_IMAGE_IMAGE_H
@@ -50,9 +50,14 @@ static inline char DOUBLE_TO_CHAR(double d)
 {
   return (char)d;
 }
+static inline COLORTYPE DOUBLE_TO_COLORTYPE(double d)
+{
+  return (COLORTYPE)d;
+}
 #else /* !__ECL */
 #define DOUBLE_TO_INT(D)	((int)(D))
 #define DOUBLE_TO_CHAR(D)	((char)(D))
+#define DOUBLE_TO_COLORTYPE(D)	((COLORTYPE)(D))
 #endif /* __ECL */
 
 
