@@ -112,7 +112,7 @@
 /* This is the grammar definition of Pike. */
 
 #include "global.h"
-RCSID("$Id: language.yacc,v 1.257 2001/08/02 22:24:10 hubbe Exp $");
+RCSID("$Id: language.yacc,v 1.258 2001/08/10 18:54:00 mast Exp $");
 #ifdef HAVE_MEMORY_H
 #include <memory.h>
 #endif
@@ -605,6 +605,8 @@ push_compiler_frame0: /* empty */
       copy_pike_type(Pike_compiler->compiler_frame->current_type,
 		Pike_compiler->compiler_frame->previous->current_type);
     }
+
+    $<number>$ = lex.current_line;
   }
   ;
 
@@ -748,9 +750,9 @@ def: modifiers type_or_error optional_stars TOK_IDENTIFIER push_compiler_frame0
       struct identifier *i;
 #ifdef PIKE_DEBUG
       struct pike_string *save_file = lex.current_file;
-      lex.current_file = $8->current_file;
+      lex.current_file = $4->current_file;
 #endif
-      lex.current_line = $8->line_number;
+      lex.current_line = $4->line_number;
 
       if (($1 & ID_EXTERN) && (Pike_compiler->compiler_pass == 1)) {
 	yywarning("Extern declared function definition.");
@@ -1808,6 +1810,7 @@ continue: TOK_CONTINUE optional_label { $$=mknode(F_CONTINUE,$2,0); } ;
 push_compiler_frame1: /* empty */
   {
     push_compiler_frame(SCOPE_LOCAL);
+    $<number>$ = lex.current_line;
   }
   ;
 
@@ -1830,7 +1833,9 @@ lambda: TOK_LAMBDA push_compiler_frame1
     char buf[40];
     int f,e;
     struct pike_string *name;
-    
+    int save_line = lex.current_line;
+    lex.current_line = $<number>1;
+
     debug_malloc_touch($6);
     $6=mknode(F_COMMA_EXPR,$6,mknode(F_RETURN,mkintnode(0),0));
     type=find_return_type($6);
@@ -1864,9 +1869,10 @@ lambda: TOK_LAMBDA push_compiler_frame1
     
     type=compiler_pop_type();
 
-    sprintf(buf,"__lambda_%ld_%ld",
+    sprintf(buf,"__lambda_%ld_%ld_line_%d",
 	    (long)Pike_compiler->new_program->id,
-	    (long)(Pike_compiler->local_class_counter++ & 0xffffffff)); /* OSF/1 cc bug. */
+	    (long)(Pike_compiler->local_class_counter++ & 0xffffffff), /* OSF/1 cc bug. */
+	    (int) lex.current_line);
     name=make_shared_string(buf);
 
 #ifdef LAMBDA_DEBUG
@@ -1886,6 +1892,7 @@ lambda: TOK_LAMBDA push_compiler_frame1
     }
     free_string(name);
     free_type(type);
+    lex.current_line = save_line;
     pop_compiler_frame();
   }
   | TOK_LAMBDA push_compiler_frame1 error
@@ -1938,9 +1945,10 @@ local_function: TOK_IDENTIFIER push_compiler_frame1 func_args
     type=compiler_pop_type();
     /***/
 
-    sprintf(buf,"__lambda_%ld_%ld",
+    sprintf(buf,"__lambda_%ld_%ld_line_%d",
 	    (long)Pike_compiler->new_program->id,
-	    (long)(Pike_compiler->local_class_counter++ & 0xffffffff)); /* OSF/1 cc bug. */
+	    (long)(Pike_compiler->local_class_counter++ & 0xffffffff), /* OSF/1 cc bug. */
+	    (int) $1->line_number);
 
 #ifdef LAMBDA_DEBUG
     fprintf(stderr, "%d: LAMBDA: %s 0x%08lx 0x%08lx\n",
@@ -1973,6 +1981,12 @@ local_function: TOK_IDENTIFIER push_compiler_frame1 func_args
   {
     int localid;
     struct identifier *i=ID_FROM_INT(Pike_compiler->new_program, $<number>4);
+    int save_line = lex.current_line;
+#ifdef PIKE_DEBUG
+    struct pike_string *save_file = lex.current_file;
+    lex.current_file = $1->current_file;
+#endif
+    lex.current_line = $1->line_number;
 
     $5=mknode(F_COMMA_EXPR,$5,mknode(F_RETURN,mkintnode(0),0));
 
@@ -1984,6 +1998,10 @@ local_function: TOK_IDENTIFIER push_compiler_frame1 func_args
 
     i->opt_flags = Pike_compiler->compiler_frame->opt_flags;
 
+    lex.current_line = save_line;
+#ifdef PIKE_DEBUG
+    lex.current_file = save_file;
+#endif
     pop_compiler_frame();
     free_node($1);
 
@@ -2065,9 +2083,10 @@ local_function2: optional_stars TOK_IDENTIFIER push_compiler_frame1 func_args
     /***/
 
 
-    sprintf(buf,"__lambda_%ld_%ld",
+    sprintf(buf,"__lambda_%ld_%ld_line_%d",
 	    (long)Pike_compiler->new_program->id,
-	    (long)(Pike_compiler->local_class_counter++ & 0xffffffff)); /* OSF/1 cc bug. */
+	    (long)(Pike_compiler->local_class_counter++ & 0xffffffff), /* OSF/1 cc bug. */
+	    (int) $2->line_number);
 
 #ifdef LAMBDA_DEBUG
     fprintf(stderr, "%d: LAMBDA: %s 0x%08lx 0x%08lx\n",
@@ -2100,6 +2119,12 @@ local_function2: optional_stars TOK_IDENTIFIER push_compiler_frame1 func_args
   {
     int localid;
     struct identifier *i=ID_FROM_INT(Pike_compiler->new_program, $<number>5);
+    int save_line = lex.current_line;
+#ifdef PIKE_DEBUG
+    struct pike_string *save_file = lex.current_file;
+    lex.current_file = $2->current_file;
+#endif
+    lex.current_line = $2->line_number;
 
     debug_malloc_touch($6);
     $6=mknode(F_COMMA_EXPR,$6,mknode(F_RETURN,mkintnode(0),0));
@@ -2113,6 +2138,10 @@ local_function2: optional_stars TOK_IDENTIFIER push_compiler_frame1 func_args
 
     i->opt_flags = Pike_compiler->compiler_frame->opt_flags;
 
+    lex.current_line = save_line;
+#ifdef PIKE_DEBUG
+    lex.current_file = save_file;
+#endif
     pop_compiler_frame();
     free_node($2);
 
@@ -2329,8 +2358,10 @@ class: modifiers TOK_CLASS optional_identifier
     {
       struct pike_string *s;
       char buffer[42];
-      sprintf(buffer,"__class_%ld_%ld",(long)Pike_compiler->new_program->id,
-	      (long)Pike_compiler->local_class_counter++);
+      sprintf(buffer,"__class_%ld_%ld_line_%d",
+	      (long)Pike_compiler->new_program->id,
+	      (long)Pike_compiler->local_class_counter++,
+	      (int) $<number>2);
       s=make_shared_string(buffer);
       $3=mkstrnode(s);
       free_string(s);
@@ -2351,9 +2382,9 @@ class: modifiers TOK_CLASS optional_identifier
 
       if(lex.current_file)
       {
-	store_linenumber(lex.current_line, lex.current_file);
+	store_linenumber($<number>2, lex.current_file);
 	debug_malloc_name(Pike_compiler->new_program, lex.current_file->str,
-			  lex.current_line);
+			  $<number>2);
       }
     }else{
       int i;
@@ -2950,6 +2981,8 @@ optional_block: ';' /* EMPTY */ { $$=0; }
     char buf[40];
     int f/*, e */;
     struct pike_string *name;
+    int save_line = lex.current_line;
+    lex.current_line = $<number>2;
 
     /* block code */
     unuse_modules(Pike_compiler->num_used_modules - $<number>1);
@@ -2979,9 +3012,10 @@ optional_block: ';' /* EMPTY */ { $$=0; }
 #endif /* !USE_PIKE_TYPE */
     type=compiler_pop_type();
 
-    sprintf(buf,"__lambda_%ld_%ld",
+    sprintf(buf,"__lambda_%ld_%ld_line_%d",
 	    (long)Pike_compiler->new_program->id,
-	    (long)(Pike_compiler->local_class_counter++ & 0xffffffff)); /* OSF/1 cc bug. */
+	    (long)(Pike_compiler->local_class_counter++ & 0xffffffff), /* OSF/1 cc bug. */
+	    (int) lex.current_line);
     name=make_shared_string(buf);
 
 #ifdef LAMBDA_DEBUG
@@ -2999,6 +3033,8 @@ optional_block: ';' /* EMPTY */ { $$=0; }
     } else {
       $$ = mkidentifiernode(f);
     }
+
+    lex.current_line = save_line;
     free_string(name);
     free_type(type);
     pop_compiler_frame();
