@@ -1,16 +1,24 @@
 // Compatibility module
-// $Id: __default.pmod,v 1.12 2002/11/30 22:33:51 bill Exp $
+// $Id: __default.pmod,v 1.13 2002/12/21 17:29:11 grubba Exp $
 
 #pike 7.3
 
-//! Pike 7.2 efun compatibility module.
+//! Pike 7.2 compatibility.
 //!
-//! The methods in this module will appear as efuns in
+//! The symbols in this namespace will appear in
 //! programs that use @tt{#pike 7.2@} or lower.
 
-string dirname(string x)
+//! Remove the last segment from @[path].
+//!
+//! This implementation differs from @[predef::dirname()]
+//! in that it will return @tt{""@} for the input @tt{"/"@}
+//! while @[predef::dirname()] will return @["/"].
+//!
+//! @seealso
+//!   @[predef::dirname()]
+string dirname(string path)
 {
-  array(string) tmp=explode_path(x);
+  array(string) tmp = explode_path(path);
   return tmp[..sizeof(tmp)-2]*"/";
 }
 
@@ -89,6 +97,7 @@ function(string|program, mixed ... : object) clone = new;
 
 // spider
 #define SPIDER(X) constant X = spider.##X
+
 //! @ignore
 SPIDER(_low_program_name);
 SPIDER(set_start_quote);
@@ -116,6 +125,8 @@ mapping(string:mixed) all_constants()
 #endif
   ADD(new);
   ADD(clone);
+
+  // spider
   ADD(_low_program_name);
   ADD(set_start_quote);
   ADD(set_end_quote);
@@ -130,3 +141,4 @@ mapping(string:mixed) all_constants()
 
   return ret;
 }
+
