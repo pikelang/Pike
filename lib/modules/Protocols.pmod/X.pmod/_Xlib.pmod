@@ -6,21 +6,48 @@
 object display_re = Regexp("([^:]*):([0-9]+).([0-9]+)");
 
 array(string) window_attributes =
-({ "background_pixmap",
-   "background_pixel",
-   "border_pixmap",
-   "border_pixel",
-   "bit_gravity",
-   "win_gravity",
-   "backing_store",
-   "backing_bit_planes",
-   "backing_pixel",
-   "override_redirect",
-   "save_under",
-   "event_mask",
-   "do_not_propagate_mask",
-   "colormap",
-   "cursor" });
+({ "BackPixmap",
+   "BackPixel",
+   "BorderPixmap",
+   "BorderPixel",
+   "BitGravity",
+   "WinGravity",
+   "BackingStore",
+   "BackingPlanes",
+   "BackingPixel",
+   "OverrideRedirect",
+   "SaveUnder",
+   "EventMask",
+   "DontPropagate",
+   "Colormap",
+   "Cursor" });
+
+array(string) gc_attributes =
+({
+  "Function",
+  "PlaneMask",
+  "Foreground",
+  "Background",
+  "LineWidth",
+  "LineStyle",
+  "CapStyle",
+  "JoinStyle",
+  "FillStyle",
+  "FillRule",
+  "Tile",
+  "Stipple",
+  "TileStipXOrigin",
+  "TileStipYOrigin",
+  "Font",
+  "SubwindowMode",
+  "GraphicsExposures",
+  "ClipXOrigin",
+  "ClipYOrigin",
+  "ClipMask",
+  "DashOffset",
+  "DashList",
+  "ArcMode"
+});
 
 mapping(string:int) event_masks =
 ([

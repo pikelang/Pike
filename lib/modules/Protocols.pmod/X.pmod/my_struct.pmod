@@ -3,8 +3,7 @@
  * This should replace ADT.struct at some time.
  */
 
-#define error(x) throw( ({ (x), backtrace() }) )
-// #include "error.h"
+#include "error.h"
 
 class struct {     
   string buffer;

@@ -2,7 +2,7 @@
  *
  */
 
-#define error(x) throw( ({ (x), backtrace() }) )
+#include "error.h"
 
 constant XPORT = 6000;
 
@@ -353,106 +353,135 @@ class Display
 	case STATE_WAIT_HEADER:
 	  {
 	    received->expect(32); /* Correct for most of the cases */
-	    string type = _Xlib.event_types[msg[0]];
-	    switch(type)
+	    string type = _Xlib.event_types[msg[0] & 0x3f];
+	    if (type == "Error")
 	      {
-	      case "Error":
-		{
-		  mapping m = ([]);
-		  sscanf(msg, "%*c%c%2c%4c%2c%c",
-			 m->errorCode, m->sequenceNumber, m->resourceID,
-			 m->minorCode, m->majorCode);
-		  return ({ ACTION_ERROR, m });
-		}
-	      case "Reply":
-		{
-		  reply = ([]);
-		  int length;
-	      
-		  sscanf(msg, "%*c%c%2c%4c%s",
-			 reply->data1, reply->sequenceNumber, length,
-			 reply->rest);
-		  if (!length)
-		    return ({ ACTION_REPLY, reply });
-
-		  state = STATE_WAIT_REPLY;
-		  received->expect(length*4);
-	      
-		  break;
-		}
-#if 0 
-	      case "KeyPress":
-	      case "KeyRelease":
-	      case "ButtonPress":
-	      case "ButtonRelease":
-	      case "MotionNotify":
-		...
-	      case "EnterNotify":
-	      case "LeaveNotify":
-		...
-	      case "FocusIn":
-	      case "FocusOut":
-		...
-#endif
-	      case "KeymapNotify":
-		return ({ ACTION_EVENT,
-			    ([ "type" : "KeymapNotify",
-			     "map" : msg[1..] ]) });
-#if 0		
-	      case "Expose":
-		...
-	      case "GraphicsExpose":
-		...
-	      case "NoExpose":
-		...
-	      case "VisibilityNotify":
-		...
-	      case "CreateNotify":
-		...
-	      case "DestroyNotify":
-		...
-	      case "UnmapNotify":
-		...
-	      case "MapNotify":
-		...
-	      case "MapRequest":
-		...
-	      case "ReparentNotify":
-		...
-	      case "ConfigureNotify":
-		...
-	      case "ConfigureRequest":
-		...
-	      case "GravityNotify":
-		...
-	      case "ResizeRequest":
-		...
-	      case "CirculateNotify":
-		...
-	      case "CirculateRequest":
-		...
-	      case "PropertyNotify":
-		...
-	      case "SelectionClear":
-		...
-	      case "SelectionRequest":
-		...
-	      case "SelectionNotify":
-		...
-	      case "ColormapNotify":
-		...
-	      case "ClientMessage":
-		...
-	      case "MappingNotify":
-#endif		
-	      default:  /* Any other event */
-		return ({ ACTION_EVENT,
-			    ([ "type" : "Unimplemented",
-			     "name" : type,
-			     "raw" : msg ]) });
-	      
+		mapping m = ([]);
+		sscanf(msg, "%*c%c%2c%4c%2c%c",
+		       m->errorCode, m->sequenceNumber, m->resourceID,
+		       m->minorCode, m->majorCode);
+		return ({ ACTION_ERROR, m });
 	      }
-	    break;
+	    else if (type == "Reply")
+	      {
+		reply = ([]);
+		int length;
+	      
+		sscanf(msg, "%*c%c%2c%4c%s",
+		       reply->data1, reply->sequenceNumber, length,
+		       reply->rest);
+		if (!length)
+		  return ({ ACTION_REPLY, reply });
+
+		state = STATE_WAIT_REPLY;
+		received->expect(length*4);
+	      }
+	    else
+	      {
+		mapping event = ([ "type" : type ]);
+		switch(type)
+		  {
+		  case "KeyPress":
+		  case "KeyRelease":
+		  case "ButtonPress":
+		  case "ButtonRelease":
+		  case "MotionNotify": {
+		    int root, child;
+		    sscanf(msg, "%*c%c%2c%4c" "%4c%4c%4c" "%2c%2c%2c%2c" "%2c%c",
+			   event->detail, event->sequenceNumber, event->time,
+			   root, event->wid, child,
+			   event->rootX, event->rootY, event->eventx, event->eventY,
+			   event->state, event->sameScreen);
+		    event->root = lookup_id(root);
+		    event->event = lookup_id(event->wid);
+		    event->child = child && lookup_id(child);
+		    break;
+		  }
+#if 0 
+		
+		  case "EnterNotify":
+		  case "LeaveNotify":
+		    ...;
+		  case "FocusIn":
+		  case "FocusOut":
+		    ...;
+#endif
+		  case "KeymapNotify":
+		    event->map = msg[1..];
+		    break;
+		  case "Expose": {
+		    sscanf(msg, "%*4c%4c" "%2c%2c%2c%2c" "%2c",
+			   event->wid,
+			   event->x, event->y, event->width, event->height,
+			   event->count);
+		    event->window = lookup_id(event->wid);
+		    break;
+		  }
+#if 0		
+		  case "GraphicsExpose":
+		    ...;
+		  case "NoExpose":
+		    ...;
+		  case "VisibilityNotify":
+		    ...;
+#endif
+		  case "CreateNotify": {
+		    int window;
+		    sscanf(msg, "%*4c%4c%4c" "%2c%2c" "%2c%2c%2c" "%c",
+			   event->wid, window,
+			   event->x, event->y,
+			   event->width, event->height, event->borderWidth,
+			   event->override);
+		    event->parent = lookup_id(event->wid);
+		    event->window = lookup_id(window) || window;
+		    break;
+		  }
+#if 0
+		  case "DestroyNotify":
+		    ...;
+		  case "UnmapNotify":
+		    ...;
+		  case "MapNotify":
+		    ...;
+		  case "MapRequest":
+		    ...;
+		  case "ReparentNotify":
+		    ...;
+		  case "ConfigureNotify":
+		    ...;
+		  case "ConfigureRequest":
+		    ...;
+		  case "GravityNotify":
+		    ...;
+		  case "ResizeRequest":
+		    ...;
+		  case "CirculateNotify":
+		    ...;
+		  case "CirculateRequest":
+		    ...;
+		  case "PropertyNotify":
+		    ...;
+		  case "SelectionClear":
+		    ...;
+		  case "SelectionRequest":
+		    ...;
+		  case "SelectionNotify":
+		    ...;
+		  case "ColormapNotify":
+		    ...;
+		  case "ClientMessage":
+		    ...;
+		  case "MappingNotify":
+#endif		
+		  default:  /* Any other event */
+		    event = ([ "type" : "Unimplemented",
+			     "name" : type,
+			     "raw" : msg ]);
+		    break;
+		  }
+		return ({ ACTION_EVENT, event });
+	      }
+	    break; 
 	  }
 	case STATE_WAIT_REPLY:
 	  reply->rest += msg;
