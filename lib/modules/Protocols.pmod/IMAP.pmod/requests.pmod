@@ -1,6 +1,6 @@
 /* IMAP.requests
  *
- * $Id: requests.pmod,v 1.24 1999/02/08 18:02:05 grubba Exp $
+ * $Id: requests.pmod,v 1.25 1999/02/08 18:09:53 grubba Exp $
  */
 
 import .types;
@@ -247,9 +247,11 @@ class select
   }
 }
 
-static private class low_fetch
+class fetch
 {
-  mapping bad(string msg);
+  inherit request;
+
+  constant arg_info = ({ ({ "set" }), ({ "any", 3 }) });
 
   mapping easy_process(object message_set, mapping request)
   {
@@ -414,12 +416,6 @@ static private class low_fetch
     res->section = path[1..];
     return (res->wanted == "rfc822") && res;
   }
-}
-
-class fetch {
-  inherit request;
-  constant arg_info = ({ ({ "set" }), ({ "any", 3 }) });
-  inherit low_fetch;
 }
 
 class search
@@ -699,10 +695,9 @@ class search
 }
 
 class uid {
-  inherit request;
-  constant arg_info = ({ ({ "atom" }), ({ "set" }), ({ "any", 3 }) });
+  inherit fetch;
 
-  static private inherit low_fetch : low_fetch;
+  constant arg_info = ({ ({ "atom" }), ({ "set" }), ({ "any", 3 }) });
 
   mapping easy_process(mapping cmd, object message_set, mapping request)
   {
@@ -714,7 +709,7 @@ class uid {
     switch(lower_case(cmd->atom)) {
     case "fetch":
       object local_set = server->uid_to_local(message_set);
-      return(low_fetch::easy_process(local_set, request));
+      return(fetch::easy_process(local_set, request));
       break;
     case "search":
     case "copy":
