@@ -4,7 +4,7 @@ PREFLAGS=$(DEFINES) -I$(SRCDIR) -I$(SRCDIR)/../.. -I../..
 CFLAGS=$(PREFLAGS) $(OTHERFLAGS) @DEFS@
 
 FILES =	image.o font.o quant.o lzw.o togif.o matrix.o pnm.o blit.o \
-	pattern.o # dct.o
+	pattern.o dct.o
 
 image.a: $(FILES)
 	-rm -f image.a
