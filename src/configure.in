@@ -1,4 +1,4 @@
-AC_REVISION("$Id: configure.in,v 1.511 2001/03/23 20:57:10 grubba Exp $")
+AC_REVISION("$Id: configure.in,v 1.512 2001/03/23 22:24:30 grubba Exp $")
 AC_INIT(interpret.c)
 AC_CONFIG_HEADER(machine.h)
 
@@ -1036,43 +1036,43 @@ if test "$cflags_is_set" = "no"; then
    sun4c)
     # The -sparclite option seems to generate assembler that /bin/as doesn't
     # understand.	/grubba 1998-07-17
-    # AC_SYS_COMPILER_FLAG(-msparclite,sparclite,OPTIMIZE) 
+    # AC_SYS_COMPILER_FLAG(-msparclite,sparclite,CFLAGS) 
    ;;
    sun4m)
-    AC_SYS_COMPILER_FLAG(-mv8,microsparc,OPTIMIZE)
+    AC_SYS_COMPILER_FLAG(-mv8,microsparc,CFLAGS)
    ;;
    sun4d)
-    AC_SYS_COMPILER_FLAG(-msupersparc,supersparc,OPTIMIZE)
+    AC_SYS_COMPILER_FLAG(-msupersparc,supersparc,CFLAGS)
    ;;
    sun4u)
-    AC_SYS_COMPILER_FLAG(-mcpu=ultrasparc,mcpu_ultrasparc,OPTIMIZE,[
-      AC_SYS_COMPILER_FLAG(-msupersparc,supersparc,OPTIMIZE)
+    AC_SYS_COMPILER_FLAG(-mcpu=ultrasparc,mcpu_ultrasparc,CFLAGS,[
+      AC_SYS_COMPILER_FLAG(-msupersparc,supersparc,CFLAGS)
     ])
    ;;
    i586)
-    AC_SYS_COMPILER_FLAG(-mpentium,pentium,OPTIMIZE)
+    AC_SYS_COMPILER_FLAG(-mpentium,pentium,CFLAGS)
    ;;
    i686)
-    AC_SYS_COMPILER_FLAG(-mcpu=i686,mcpu_i686,OPTIMIZE,[
-        AC_SYS_COMPILER_FLAG(-mpentiumpro,pentiumpro,OPTIMIZE,[
-	    AC_SYS_COMPILER_FLAG(-mpentium,pentium,OPTIMIZE)
+    AC_SYS_COMPILER_FLAG(-mcpu=i686,mcpu_i686,CFLAGS,[
+        AC_SYS_COMPILER_FLAG(-mpentiumpro,pentiumpro,CFLAGS,[
+	    AC_SYS_COMPILER_FLAG(-mpentium,pentium,CFLAGS)
         ])
     ])
-    AC_SYS_COMPILER_FLAG(-march=i686,march_i686,OPTIMIZE)
+    AC_SYS_COMPILER_FLAG(-march=i686,march_i686,CFLAGS)
    ;;
    i86pc)
      case "`isalist 2>/dev/null`" in 
         *pentium_pro*)
-	 AC_SYS_COMPILER_FLAG(-mcpu=i686,mcpu_i686,OPTIMIZE,[
-	 	 AC_SYS_COMPILER_FLAG(-mpentiumpro,pentiumpro,OPTIMIZE,[
-	 	     AC_SYS_COMPILER_FLAG(-mpentium,pentium,OPTIMIZE)
+	 AC_SYS_COMPILER_FLAG(-mcpu=i686,mcpu_i686,CFLAGS,[
+	 	 AC_SYS_COMPILER_FLAG(-mpentiumpro,pentiumpro,CFLAGS,[
+	 	     AC_SYS_COMPILER_FLAG(-mpentium,pentium,CFLAGS)
 	 	 ])
 	 ])
-         AC_SYS_COMPILER_FLAG(-march=i686,march_i686,OPTIMIZE)
+         AC_SYS_COMPILER_FLAG(-march=i686,march_i686,CFLAGS)
 	;;
         *pentium*)
-         AC_SYS_COMPILER_FLAG(-mcpu=pentium,pentium,OPTIMIZE,[
-           AC_SYS_COMPILER_FLAG(-m486,486,OPTIMIZE)
+         AC_SYS_COMPILER_FLAG(-mcpu=pentium,pentium,CFLAGS,[
+           AC_SYS_COMPILER_FLAG(-m486,486,CFLAGS)
          ])
 	;;
      esac
@@ -1238,7 +1238,7 @@ if test "$cflags_is_set" = "no"; then
     if test "x$with_cdebug" = "xyes" ; then
       # FIXME:
       # Maybe should remove the -g flag if this succeeds.
-      AC_SYS_COMPILER_FLAG(-g3,g3,OPTIMIZE)
+      AC_SYS_COMPILER_FLAG(-g3,g3,CFLAGS)
       AC_SYS_COMPILER_FLAG(-trapuv,trapuv,WARN)
     fi
     AC_SYS_COMPILER_FLAG(-host,host,OPTIMIZE)
@@ -1262,7 +1262,7 @@ if test "$cflags_is_set" = "no"; then
     AC_SYS_COMPILER_FLAG(-fullwarn,fullwarn,WARN)
     AC_SYS_COMPILER_FLAG(-woff 1209,woff_1209,WARN)
     if test x$with_cdebug = xyes ; then
-      AC_SYS_COMPILER_FLAG(-g3,g3,OPTIMIZE)
+      AC_SYS_COMPILER_FLAG(-g3,g3,CFLAGS)
     fi
     if test x$with_rtldebug = xyes ; then
       AC_SYS_COMPILER_FLAG(-trapuw,trapuw,WARN)
