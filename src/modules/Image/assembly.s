@@ -8,6 +8,9 @@
 
  global image_sub_buffer_mmx_x86asm
 
+ global image_clear_buffer_mmx_x86asm_eq
+ global image_clear_buffer_mmx_x86asm_from
+
  global image_get_cpuid
 
 ;  do not use the function from mmxlib, since that might be
@@ -60,6 +63,76 @@ image_get_cpuid:
 	ret
 
 
+;  Clear an image to a solid color
+;  void image_clear_buffer_mmx_x86asm_eq( char *d, 
+;                                         int npixels_div_8,
+;                                         int colv );
+image_clear_buffer_mmx_x86asm_eq:
+	enter 0,0
+	mov ecx, [ebp+12]
+	mov eax, [ebp+16]
+	;;  now in eax:	  00 xx
+	shl eax, 8
+	or eax, [ebp+16]
+	;;  now in mm0:	  xx xx
+	pinsrw mm0, eax, 0
+	pinsrw mm0, eax, 1
+	pinsrw mm0, eax, 2
+	pinsrw mm0, eax, 3
+	mov eax, [ebp+8]
+
+	align 32
+.loop:
+	movq [eax], mm0
+	add eax, 8
+
+	movq [eax], mm0
+	add eax, 8
+
+	movq [eax], mm0
+	add eax, 8		; 8
+
+	dec ecx
+	jnz .loop
+
+	emms
+	leave
+	ret
+
+
+image_clear_buffer_mmx_x86asm_from:
+	enter 0,0
+	mov eax, [ebp+8]
+	mov ecx, [ebp+12]
+
+	movq mm0, [eax]
+
+	add eax, 8
+	movq mm1, [eax]
+
+	add eax, 8
+	movq mm2, [eax]
+	dec ecx
+	add eax, 8
+
+	align 32
+.loop:
+	movq [eax], mm0
+	add eax, 8
+
+	movq [eax], mm1
+	add eax, 8
+
+	movq [eax], mm2
+	add eax, 8
+
+	loopnz .loop, ecx
+
+	emms
+	leave
+	ret
+
+
 ; Add two images
 ;
 ; void image_add_buffers_mmx_x86asm( char *d,
@@ -74,6 +147,7 @@ image_add_buffers_mmx_x86asm:
 	mov edx, [ebp+16]
 	mov ecx, [ebp+20]
 
+	align 32
 .loop:
 	movq	mm0, [edx]
 	add	edx, 8
@@ -108,6 +182,7 @@ image_mult_buffers_mmx_x86asm:
 
 	pxor    mm4,mm4
 
+	align 32
 .loop:
 	movd	  mm0, [eax]
 	add	  eax, 4
@@ -169,6 +244,7 @@ image_sub_buffer_mmx_x86asm:
 ;  int is 0:	 r b g r   
 ;	  4:	 g r b g  
 ; 	  8:	 b g r b
+	align 32
 .loop:
  	movd	  mm0,[eax]
 	add	  eax,4
@@ -232,6 +308,7 @@ image_add_buffer_mmx_x86asm:
 ;  int is 0:	 r b g r   
 ;	  4:	 g r b g  
 ; 	  8:	 b g r b
+	align 32
 .loop:
  	movd	  mm0,[eax]	
 	add	  eax,4		
@@ -295,6 +372,7 @@ image_mult_buffer_mmx_x86asm:
 ;  int is 0:	 r b g r   
 ;	  4:	 g r b g  
 ; 	  8:	 b g r b
+	align 32
 .loop:
  	movd	  mm0,[eax]	
 	add	  eax,4		
