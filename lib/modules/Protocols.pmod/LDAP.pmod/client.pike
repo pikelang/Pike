@@ -2,7 +2,7 @@
 
 // LDAP client protocol implementation for Pike.
 //
-// $Id: client.pike,v 1.58 2004/06/18 13:05:50 grubba Exp $
+// $Id: client.pike,v 1.59 2004/06/18 15:16:32 grubba Exp $
 //
 // Honza Petrous, hop@unibase.cz
 //
@@ -370,7 +370,7 @@ import SSL.Constants;
   void create(string|void url, object|void context)
   {
 
-    info = ([ "code_revision" : ("$Revision: 1.58 $"/" ")[1] ]);
+    info = ([ "code_revision" : ("$Revision: 1.59 $"/" ")[1] ]);
 
     if(!url || !sizeof(url))
       url = LDAP_DEFAULT_URL;
@@ -937,6 +937,7 @@ import SSL.Constants;
 		})) ;
   }
 
+IF_ELSE_PAGED_SEARCH(static multiset(string) supported_controls;,)
 
   //! Search LDAP directory.
   //!
@@ -983,7 +984,43 @@ import SSL.Constants;
       filter = string_to_utf8(filter);
     }
 
-    object|int search_request =
+    object|int search_request;
+
+    IF_ELSE_PAGED_SEARCH({
+	if (!supported_controls) {
+	  // We need to find out if controls are supported.
+	  PROFILE("supported_controls", {
+	      supported_controls = (<>);
+	      search_request =
+		make_search_op("", 0, 0, 0, 0, 0,
+			       "(objectClass=*)", ({"supportedControl"}));
+	      //werror("search_request: %O\n", search_request);
+	      if(intp(raw = do_op(search_request))) {
+		THROW(({error_string()+"\n",backtrace()}));
+		return 0;
+	      }
+	      do {
+		object res = .ldap_privates.ldap_der_decode(raw);
+		if (res->elements[1]->get_tag() == 5) break;
+		//werror("res: %O\n", res);
+		foreach(res->elements[1]->elements[1]->elements, object attr) {
+		  if (attr->elements[0]->value == "supportedControl") {
+		    supported_controls |= (<
+		      @(attr->elements[1]->elements->value)
+		      >);
+		    //werror("supported_controls: %O\n", supported_controls);
+		  }
+		}
+		if (intp(raw = readmsg(id))) {
+		  THROW(({error_string()+"\n",backtrace()}));
+		  return 0;
+		}
+	      } while (0);
+	    });
+	}
+      },);
+
+    search_request =
       make_search_op(ldap_basedn, ldap_scope, ldap_deref,
 	ldap_sizelimit, ldap_timelimit, attrsonly, filter,
 	attrs||lauth->attributes);
@@ -998,10 +1035,11 @@ import SSL.Constants;
     do {
       PROFILE("send_search_op", {
 	  IF_ELSE_PAGED_SEARCH(
-	    object controls =
-	      .ldap_privates.asn1_sequence(0, ({
-		// LDAP_SERVER_DOMAIN_SCOPE_OID
-		// "Tells server not to generate referrals" (NtLdap.h)
+            array ctrls = ({});
+	    if (supported_controls["1.2.840.113556.1.4.1339"]) {
+	      // LDAP_SERVER_DOMAIN_SCOPE_OID
+	      // "Tells server not to generate referrals" (NtLdap.h)
+	      ctrls += ({
 		Standards.ASN1.Types.asn1_sequence(({
 						// controlType
 		  Standards.ASN1.Types.asn1_octet_string("1.2.840.113556.1.4.1339"),
@@ -1009,9 +1047,12 @@ import SSL.Constants;
 						// controlValue
 		  Standards.ASN1.Types.asn1_octet_string(""),
 		  })),
-		  
-		// LDAP Control Extension for Simple Paged Results Manipulation
-		// RFC 2696.
+	      });
+	    }
+	    if (supported_controls["1.2.840.113556.1.4.319"]) {
+	      // LDAP Control Extension for Simple Paged Results Manipulation
+	      // RFC 2696.
+	      ctrls += ({
 		Standards.ASN1.Types.asn1_sequence(({
 						// controlType
 		  Standards.ASN1.Types.asn1_octet_string("1.2.840.113556.1.4.319"),
@@ -1024,7 +1065,13 @@ import SSL.Constants;
 		      cookie,			// cookie
 		    }))->get_der()),
 		  })),
-		})),);
+	      });
+	    }
+	    object controls;
+	    if (sizeof(ctrls)) {
+	      controls = .ldap_privates.asn1_sequence(0, ctrls);
+	    }
+	    ,);
 
 	  if(intp(raw = do_op(search_request,
 			      IF_ELSE_PAGED_SEARCH(controls, 0)))) {
