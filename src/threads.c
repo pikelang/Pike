@@ -1,5 +1,5 @@
 #include "global.h"
-RCSID("$Id: threads.c,v 1.49 1998/01/02 08:18:43 hubbe Exp $");
+RCSID("$Id: threads.c,v 1.50 1998/01/03 07:12:12 hubbe Exp $");
 
 int num_threads = 1;
 int threads_disabled = 0;
@@ -14,6 +14,74 @@ int threads_disabled = 0;
 #include "constants.h"
 #include "program.h"
 #include "gc.h"
+
+#ifdef SIMULATE_COND_WITH_EVENT
+int co_wait(COND_T *c, MUTEX_T *m)
+{
+  struct cond_t_queue me;
+  event_init(&me.event);
+  mt_lock(& c->lock);
+
+  me.next=c->tail;
+  c->tail=&me;
+  if(!c->head) c->head=&me;
+
+  mt_unlock(& c->lock);
+  mt_unlock(m);
+  event_wait(&me.event);
+  mt_lock(m);
+
+  event_destroy(& me.event);
+  /* Cancellation point?? */
+
+  return 0;
+}
+
+int co_signal(COND_T *c)
+{
+  struct cond_t_queue *t;
+  mt_lock(& c->lock);
+  if(t=c->head)
+  {
+    c->head=t->next;
+    t->next=0;
+    if(!c->head) c->tail=0;
+  }
+  mt_unlock(& c->lock);
+  if(t)
+    event_signal(& t->event);
+  return 0;
+}
+
+int co_broadcast(COND_T *c)
+{
+  struct cond_t_queue *t,*n;
+  mt_lock(& c->lock);
+  n=c->head;
+  c->head=c->tail=0;
+  mt_unlock(& c->lock);
+
+  while((t=n))
+  {
+    n=t->next;
+    event_signal(& t->event);
+  }
+
+  return 0;
+}
+
+int co_destroy(COND_T *c)
+{
+  struct cond_t_queue *t;
+  mt_lock(& c->lock);
+  n=c->head;
+  c->head=c->tail=0;
+  if(t) return EBUSY;
+  return 0;
+}
+
+#endif
+
 
 #define THIS_THREAD ((struct thread_state *)fp->current_storage)
 

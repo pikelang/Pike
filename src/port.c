@@ -26,14 +26,14 @@ time_t time PROT((time_t *));
 
 void GETTIMEOFDAY(struct timeval *t)
 {
-  double t;
+  double t2;
   FILETIME tmp;
   GetSystemTimeAsFileTime(&tmp);
-  t=tmp.dwHighDateTime * pow(2.0,32) + (double)tmp.dwLowDateTime;
-  t/=10000000.0;
-  t+=11644473600.0;
-  t->tv_sec=floor(t);
-  t->tv_usec=(t - t->tv_sec)*1000000.0;
+  t2=tmp.dwHighDateTime * pow(2.0,32.0) + (double)tmp.dwLowDateTime;
+  t2/=10000000.0;
+  t2-=11644473600.0;
+  t->tv_sec=floor(t2);
+  t->tv_usec=(t2 - t->tv_sec)*1000000.0;
 }
 
 #else

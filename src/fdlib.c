@@ -1,4 +1,5 @@
 #include "fdlib.h"
+#include <math.h>
 
 #ifdef HAVE_WINSOCK_H
 
@@ -11,6 +12,8 @@ long da_handle[MAX_OPEN_FILEDESCRIPTORS];
 static int fd_type[MAX_OPEN_FILEDESCRIPTORS];
 int first_free_handle;
 
+#define FDDEBUG(X)
+
 void fd_init()
 {
   int e;
@@ -20,14 +23,14 @@ void fd_init()
   {
     fatal("No winsock available.\n");
   }
-/*  fprintf(stderr,"Using %s\n",wsadata.szDescription); */
+  FDDEBUG(fprintf(stderr,"Using %s\n",wsadata.szDescription));
   
   fd_type[0]=FD_CONSOLE;
-  da_handle[0]=GetStdHandle(STD_INPUT_HANDLE);
+  da_handle[0]=(long)GetStdHandle(STD_INPUT_HANDLE);
   fd_type[1]=FD_CONSOLE;
-  da_handle[1]=GetStdHandle(STD_OUTPUT_HANDLE);
+  da_handle[1]=(long)GetStdHandle(STD_OUTPUT_HANDLE);
   fd_type[2]=FD_CONSOLE;
-  da_handle[2]=GetStdHandle(STD_ERROR_HANDLE);
+  da_handle[2]=(long)GetStdHandle(STD_ERROR_HANDLE);
 
   first_free_handle=3;
   for(e=3;e<MAX_OPEN_FILEDESCRIPTORS-1;e++)
@@ -46,6 +49,7 @@ FD fd_open(char *file, int open_mode, int create_mode)
   FD fd;
   DWORD omode,cmode,amode;
   omode=0;
+  FDDEBUG(fprintf(stderr,"fd_open(%s,0x%x,%o)\n",file,open_mode,create_mode));
   if(first_free_handle == FD_NO_MORE_FREE)
   {
     errno=EMFILE;
@@ -101,10 +105,13 @@ FD fd_open(char *file, int open_mode, int create_mode)
     return -1;
   }
 
+
   fd=first_free_handle;
   first_free_handle=fd_type[fd];
   fd_type[fd]=FD_FILE;
-  da_handle[fd]=x;
+  da_handle[fd]=(long)x;
+
+  FDDEBUG(fprintf(stderr,"Opened %s file as %d (%d)\n",file,fd,x));
 
   return fd;
 }
@@ -128,7 +135,9 @@ FD fd_socket(int domain, int type, int proto)
   fd=first_free_handle;
   first_free_handle=fd_type[fd];
   fd_type[fd]=FD_SOCKET;
-  da_handle[fd]=(HANDLE)s;
+  da_handle[fd]=(long)s;
+
+  FDDEBUG(fprintf(stderr,"New socket: %d (%d)\n",fd,s));
 
   return fd;
 }
@@ -154,21 +163,26 @@ FD fd_accept(FD fd, struct sockaddr *addr, int *addrlen)
     return -1;
   }
   
-  fd=first_free_handle;
-  first_free_handle=fd_type[fd];
-  fd_type[fd]=FD_SOCKET;
-  da_handle[fd]=(HANDLE)s;
-  return fd;
+  new_fd=first_free_handle;
+  first_free_handle=fd_type[new_fd];
+  fd_type[new_fd]=FD_SOCKET;
+  da_handle[new_fd]=(long)s;
+
+  FDDEBUG(fprintf(stderr,"Accept on %d (%d) returned new socket: %d (%d)\n",fd,da_handle[fd],new_fd,s));
+
+  return new_fd;
 }
 
 #define SOCKFUN(NAME,X1,X2) \
 int PIKE_CONCAT(fd_,NAME) X1 { int ret; \
+  FDDEBUG(fprintf(stderr, #NAME " on %d (%d)\n",fd,da_handle[fd])); \
   if(fd_type[fd] != FD_SOCKET) { \
      errno=ENOTSUPP; \
      return -1; \
    } \
    ret=NAME X2; \
    if(ret == SOCKET_ERROR) errno=WSAGetLastError(); \
+   FDDEBUG(fprintf(stderr, #NAME " returned %d (%d)\n",ret,errno)); \
    return ret; \
 }
 
@@ -202,7 +216,8 @@ SOCKFUN1(listen, int)
 
 int fd_close(FD fd)
 {
-  if(!CloseHandle(da_handle[fd]))
+  FDDEBUG(fprintf(stderr,"Closing %d (%d)\n",fd,da_handle[fd]));
+  if(!CloseHandle((HANDLE)da_handle[fd]))
   {
     errno=GetLastError();
     return -1;
@@ -215,6 +230,7 @@ int fd_close(FD fd)
 long fd_write(FD fd, void *buf, long len)
 {
   DWORD ret;
+  FDDEBUG(fprintf(stderr,"Writing %d bytes to %d (%d)\n",len,fd,da_handle[fd]));
   switch(fd_type[fd])
   {
     case FD_SOCKET:
@@ -228,7 +244,7 @@ long fd_write(FD fd, void *buf, long len)
 
     case FD_CONSOLE:
     case FD_FILE:
-      if(!WriteFile(da_handle[fd], buf, len, &ret,0) && !ret)
+      if(!WriteFile((HANDLE)da_handle[fd], buf, len, &ret,0) && !ret)
       {
 	errno=GetLastError();
 	return -1;
@@ -241,27 +257,32 @@ long fd_write(FD fd, void *buf, long len)
   }
 }
 
-long fd_read(FD fd, void *buf, long len)
+long fd_read(FD fd, void *to, long len)
 {
   DWORD ret;
+  FDDEBUG(fprintf(stderr,"Reading %d bytes from %d (%d) to %lx\n",len,fd,da_handle[fd],(int)(char *)to));
   switch(fd_type[fd])
   {
     case FD_SOCKET:
-      ret=recv((SOCKET)da_handle[fd], buf, len, 0);
+      ret=recv((SOCKET)da_handle[fd], to, len, 0);
       if(ret<0)
       {
 	errno=WSAGetLastError();
 	return -1;
       }
+      FDDEBUG(fprintf(stderr,"Read returned %ld\n",ret));
       return ret;
 
     case FD_CONSOLE:
     case FD_FILE:
-      if(!ReadFile(da_handle[fd], buf, len, &ret,0) && !ret)
+      ret=0;
+      if(!ReadFile((HANDLE)da_handle[fd], to, len, &ret,0) && !ret)
       {
 	errno=GetLastError();
+	FDDEBUG(fprintf(stderr,"Read failed %d\n",errno));
 	return -1;
       }
+      FDDEBUG(fprintf(stderr,"Read returned %ld\n",ret));
       return ret;
 
     default:
@@ -288,22 +309,63 @@ long fd_lseek(FD fd, long pos, int where)
   return ret;
 }
 
+static long convert_filetime_to_time_t(FILETIME tmp)
+{
+  double t;
+  t=tmp.dwHighDateTime * pow(2.0,32.0) + (double)tmp.dwLowDateTime;
+  t/=10000000.0;
+  t-=11644473600.0;
+  return (long)floor(t);
+}
+
 int fd_fstat(FD fd, struct stat *s)
 {
+  DWORD x;
   int ret;
+  FILETIME c,a,m;
+  FDDEBUG(fprintf(stderr,"fstat on %d (%d)\n",fd,da_handle[fd]));
   if(fd_type[fd]!=FD_FILE)
   {
     errno=ENOTSUPP;
     return -1;
   }
 
-  ret=fstat(da_handle[fd], s);
-  if(ret<0)
+  MEMSET(s, 0, sizeof(struct stat));
+  s->st_nlink=1;
+
+  switch(fd_type[fd])
   {
-    errno=GetLastError();
-    return -1;
+    case FD_SOCKET:
+      s->st_mode=S_IFSOCK;
+      break;
+
+    default:
+      switch(GetFileType((HANDLE)da_handle[fd]))
+      {
+	default:
+	case FILE_TYPE_UNKNOWN: s->st_mode=0;        break;
+	case FILE_TYPE_DISK:
+	  s->st_mode=S_IFREG; 
+	  s->st_size=GetFileSize((HANDLE)da_handle[fd],&x);
+	  if(x)
+	  {
+	    s->st_size=0x7fffffff;
+	  }
+	  if(!GetFileTime((HANDLE)da_handle[fd], &c, &a, &m))
+	  {
+	    errno=GetLastError();
+	    return -1;
+	  }
+	  s->st_ctime=convert_filetime_to_time_t(c);
+	  s->st_atime=convert_filetime_to_time_t(a);
+	  s->st_mtime=convert_filetime_to_time_t(m);
+	  break;
+	case FILE_TYPE_CHAR:    s->st_mode=S_IFCHR;  break;
+	case FILE_TYPE_PIPE:    s->st_mode=S_IFFIFO; break;
+      }
   }
-  return ret;
+  s->st_mode |= 0666;
+  return 0;
 }
 
 int fd_select(int fds, FD_SET *a, FD_SET *b, FD_SET *c, struct timeval *t)
@@ -340,16 +402,58 @@ int fd_ioctl(FD fd, int cmd, void *data)
 }
 
 
-FD fd_dup(FD fd)
+FD fd_dup(FD from)
 {
-  errno=ENOTSUPP;
-  return -1;
+  FD fd;
+  HANDLE x,p=GetCurrentProcess();
+  if(!DuplicateHandle(p,(HANDLE)da_handle[from],p,&x,NULL,1,DUPLICATE_SAME_ACCESS))
+  {
+    errno=GetLastError();
+    return -1;
+  }
+
+  fd=first_free_handle;
+  first_free_handle=fd_type[fd];
+  fd_type[fd]=fd_type[from];
+  da_handle[fd]=(long)x;
+  
+  FDDEBUG(fprintf(stderr,"Dup %d (%d) to %d (%d)\n",from,da_handle[from],fd,x));
+  return fd;
 }
 
 FD fd_dup2(FD to, FD from)
 {
-  errno=ENOTSUPP;
-  return -1;
+  HANDLE x,p=GetCurrentProcess();
+  if(!DuplicateHandle(p,(HANDLE)da_handle[from],p,&x,NULL,1,DUPLICATE_SAME_ACCESS))
+  {
+    errno=GetLastError();
+    return -1;
+  }
+
+  if(fd_type[to] < FD_NO_MORE_FREE)
+  {
+    if(!CloseHandle((HANDLE)da_handle[to]))
+    {
+      errno=GetLastError();
+      return -1;
+    }
+  }else{
+    int *prev,next;
+    for(prev=&first_free_handle;(next=*prev) != FD_NO_MORE_FREE;prev=fd_type+next)
+    {
+      if(next==to)
+      {
+	*prev=fd_type[next];
+	break;
+      }
+    }
+  }
+  fd_type[to]=fd_type[from];
+  da_handle[to]=(long)x;
+
+  FDDEBUG(fprintf(stderr,"Dup2 %d (%d) to %d (%d)\n",from,da_handle[from],to,x));
+
+  return to;
 }
 
 #endif

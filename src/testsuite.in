@@ -1,4 +1,4 @@
-test_true([["$Id: testsuite.in,v 1.62 1997/12/03 22:46:18 hubbe Exp $"]])
+test_true([["$Id: testsuite.in,v 1.63 1998/01/03 07:12:11 hubbe Exp $"]])
 test_eq(1e1,10.0)
 test_eq(1E1,10.0)
 test_eq(1e+1,10.0)
@@ -396,20 +396,20 @@ test_eq(foo->i[0],17)
 test_do(add_constant("foo"));
 
 // signum, signame
-test_eq(signum("SIGKILL"),9)
-test_eq(signum("SIGINT"),2)
-test_eq(signame(9),"SIGKILL")
-test_eq(signame(2),"SIGINT")
+test_true(intp(signum("SIGKILL")))
 
 // kill, signal, getpid
 test_true(intp(getpid()))
-test_do(signal(signum("SIGFPE"),lambda() { add_constant("AFJLLAF",17); }))
-test_do(kill(getpid(),signum("SIGFPE")))
-test_do(sleep(2))
-test_eq(AFJLLAF,17)
-test_do(add_constant("AFJLLAF"))
-test_do(signal(signum("SIGFPE",0)))
-test_do(signal(signum("SIGFPE")))
+cond([[all_constants()->kill]],
+[[
+  test_do(signal(signum("SIGFPE"),lambda() { add_constant("AFJLLAF",17); }))
+  test_do(kill(getpid(),signum("SIGFPE")))
+  test_do(sleep(2))
+  test_eq(AFJLLAF,17)
+  test_do(add_constant("AFJLLAF"))
+  test_do(signal(signum("SIGFPE",0)))
+  test_do(signal(signum("SIGFPE")))
+]])
 
 // typeof
 test_eq(typeof(1),"int")

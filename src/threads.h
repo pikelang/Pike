@@ -155,20 +155,57 @@ extern struct object *thread_id;
 #ifdef NT_THREADS
 #include <process.h>
 
-#define MUTEX_T HANDLE
-#define mt_init(X)
-#define mt_lock(X)
-#define mt_trylock(X)
-#define mt_unlock(X)
-#define mt_destroy(X)
-
 #define THREAD_T HANDLE
 #define th_setconcurrency(X)
 #define th_create(ID,fun,arg)  _beginthreadex(NULL, 2*1024*1024, fun, arg, 0, ID)
 #define th_exit(foo) _endthreadex(foo)
-#define th_self() 
+#define th_self() GetCurrentThread()
+#define th_destroy(X) CloseHandle(*(X))
+#define th_yield() Sleep(0)
+
+#define MUTEX_T HANDLE
+#define mt_init(X) (*(X)=CreateMutex(NULL, 0, NULL))
+#define mt_lock(X) WaitForSingleObject(*(X), INFINITE)
+#define mt_trylock(X) WaitForSingleObject(*(X), 0)
+#define mt_unlock(X) ReleaseMutex(*(X))
+#define mt_destroy(X) CloseHandle(*(X))
+
+#define EVENT_T HANDLE
+#define event_init(X) (*(X)=CreateEvent(NULL, 1, 0, NULL))
+#define event_signal(X) SetEvent(*(X))
+#define event_destroy(X) CloseHandle(*(X))
+#define event_wait(X) WaitForSingleObject(*(X), INFINITE) 
 
 #endif
+
+
+#if !defined(COND_T) && defined(EVENT_T) && defined(MUTEX_T)
+
+#define SIMULATE_COND_WITH_EVENT
+
+struct cond_t_queue
+{
+  struct cond_t_queue *next;
+  EVENT_T event;
+};
+
+struct cond_t_s
+{
+  MUTEX_T lock;
+  struct cond_t_queue *head, *tail
+} COND_T;
+
+#define COND_T struct cond_t_s
+
+#define co_init(X) mt_init(& (X)->lock)
+
+int co_wait(COND_T *c, MUTEX_T *m);
+int co_signal(COND_T *c);
+int co_broadcast(COND_T *c);
+int co_destroy(COND_T *c);
+
+#endif
+
 
 extern MUTEX_T interpreter_lock;
 
@@ -194,6 +231,14 @@ struct thread_state {
   JMP_BUF *recoveries;
   struct object * thread_id;
 };
+
+#ifndef th_destroy
+#define th_destroy(X)
+#endif
+
+#ifndef th_yield
+#define th_yield()
+#endif
 
 /* Define to get a debug-trace of some of the threads operations. */
 /* #define VERBOSE_THREADS_DEBUG */

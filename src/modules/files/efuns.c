@@ -4,6 +4,7 @@
 ||| See the files COPYING and DISCLAIMER for more information.
 \*/
 #include "global.h"
+#include "fdlib.h"
 #include "interpret.h"
 #include "svalue.h"
 #include "stralloc.h"

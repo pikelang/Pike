@@ -1,6 +1,6 @@
 #!/usr/local/bin/pike
 
-/* $Id: test_pike.pike,v 1.4 1997/05/31 22:03:40 grubba Exp $ */
+/* $Id: test_pike.pike,v 1.5 1998/01/03 07:11:24 hubbe Exp $ */
 
 #include <simulate.h>
 
@@ -12,7 +12,7 @@
 int main(int argc, string *argv)
 {
   int e, verbose, successes, errors, t, check;
-  string *tests;
+  string *tests,tmp;
   program testprogram;
   int start, fail, mem;
   int loop=1;
@@ -81,21 +81,27 @@ int main(int argc, string *argv)
 	  perror("Unknown argument: "+opt+".\n");
 	  exit(1);
 	}
-	tests=(read_bytes(argv[e])||"")/"\n....\n";
+	tmp=read_bytes(argv[e]);
+	if(!tmp)
+	{
+	  perror("Failed to read test file, errno="+errno()+".\n");
+	  exit(1);
+	}
     }
   }
 
-  if(!tests)
+  if(!tmp)
   {
-    tests=(clone((program)"/precompiled/file","stdin")->read(0x7fffffff)||"")/"\n....\n";
+    tmp=Stdio.stdin->read(0x7fffffff);
+    if(!tmp)
+    {
+      perror("Failed to read test file, errno="+errno()+".\n");
+      exit(1);
+    }
   }
 
-  if(!tests)
-  {
-    perror("Failed to read test file!\n");
-    exit(1);
-  }
 
+  tests=tmp/"\n....\n";
   tests=tests[0..sizeof(tests)-2];
 
   while(loop--)

@@ -15,6 +15,10 @@
 #include <errno.h>
 #endif
 
+#ifdef HAVE_SYS_STAT_H
+#include <sys/stat.h>
+#endif
+
 #ifdef HAVE_WINSOCK_H
 
 
@@ -101,6 +105,10 @@ extern long da_handle[MAX_OPEN_FILEDESCRIPTORS];
 #define fd_FD_SET(X,Y) FD_SET((SOCKET)da_handle[X],Y)
 #define fd_FD_ISSET(X,Y) FD_ISSET((SOCKET)da_handle[X],Y)
 #define fd_FD_ZERO(X) FD_ZERO(X)
+
+#ifndef S_IFSOCK
+#define S_IFSOCK 0140000
+#endif
 
 #else
 

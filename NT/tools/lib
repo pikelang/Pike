@@ -1,5 +1,5 @@
 CLEANUP=yes
-DEBUG=yes
+DEBUG=no
 
 if [ $DEBUG = yes ]; then
   set -x

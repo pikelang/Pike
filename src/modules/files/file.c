@@ -6,7 +6,7 @@
 #define READ_BUFFER 8192
 
 #include "global.h"
-RCSID("$Id: file.c,v 1.63 1998/01/02 01:06:33 hubbe Exp $");
+RCSID("$Id: file.c,v 1.64 1998/01/03 07:13:05 hubbe Exp $");
 #include "fdlib.h"
 #include "interpret.h"
 #include "svalue.h"
@@ -260,14 +260,14 @@ static int map(int flags)
   ret=0;
   switch(flags & (FILE_READ|FILE_WRITE))
   {
-  case FILE_READ: ret=O_RDONLY; break;
-  case FILE_WRITE: ret=O_WRONLY; break;
-  case FILE_READ | FILE_WRITE: ret=O_RDWR; break;
+  case FILE_READ: ret=fd_RDONLY; break;
+  case FILE_WRITE: ret=fd_WRONLY; break;
+  case FILE_READ | FILE_WRITE: ret=fd_RDWR; break;
   }
-  if(flags & FILE_APPEND) ret|=O_APPEND;
-  if(flags & FILE_CREATE) ret|=O_CREAT;
-  if(flags & FILE_TRUNC) ret|=O_TRUNC;
-  if(flags & FILE_EXCLUSIVE) ret|=O_EXCL;
+  if(flags & FILE_APPEND) ret|=fd_APPEND;
+  if(flags & FILE_CREATE) ret|=fd_CREAT;
+  if(flags & FILE_TRUNC) ret|=fd_TRUNC;
+  if(flags & FILE_EXCLUSIVE) ret|=fd_EXCL;
   return ret;
 }
 
@@ -295,7 +295,7 @@ static struct pike_string *do_read(int fd,
     do{
       int fd=FD;
       THREADS_ALLOW();
-      i=read(fd, str->str+bytes_read, r);
+      i=fd_read(fd, str->str+bytes_read, r);
       THREADS_DISALLOW();
 
       check_signals(0,0,0);
@@ -350,7 +350,7 @@ static struct pike_string *do_read(int fd,
       buf = low_make_buf_space(try_read, &b);
 
       THREADS_ALLOW();
-      i=read(fd, buf, try_read);
+      i=fd_read(fd, buf, try_read);
       THREADS_DISALLOW();
 
       check_signals(0,0,0);
@@ -456,7 +456,7 @@ static void file_write(INT32 args)
   {
     int fd=FD;
     THREADS_ALLOW();
-    i=write(fd, str->str + written, str->len - written);
+    i=fd_write(fd, str->str + written, str->len - written);
     THREADS_DISALLOW();
 
 #ifdef _REENTRANT
@@ -1268,7 +1268,7 @@ static void file_dup2(INT32 args)
   if(fd < 0)
     error("File given to dup2 not open.\n");
 
-  if(dup2(FD,fd) < 0)
+  if(fd_dup2(FD,fd) < 0)
   {
     ERRNO=errno;
     pop_n_elems(args);

@@ -19,7 +19,7 @@ test_true(rm("conftest"))
 test_eq(file_stat("conftest"),0)
 
 // - file->write
-test_any(int e; object o=clone(Stdio.File); if(!o->open("conftest","wct")) return -1; e=o->write("sune"); if(!o->close()) return -1; return e,4)
+test_any(int e; object o=clone(Stdio.File); if(!o->open("conftest","wct")) return -3; e=o->write("sune"); if(!o->close()) return -2; return e,4)
 
 // - file->read
 test_any(string s; object o=clone(Stdio.File); if(!o->open("conftest","r")) return -1; s=o->read(4); if(!o->close()) return -1; return s,"sune")
@@ -35,7 +35,7 @@ test_any(string s; object o=clone(Stdio.File); if(!o->open("conftest","r")) retu
 test_any(object o=clone(Stdio.File); return o->open("conftest","r") && o->read(4711) && o->tell() == 4711 && o->close(),1)
 
 // - file->stat
-test_any(object o=clone(Stdio.File); return equal(o->open("conftest","r") && o->stat(), file_stat("conftest")),1)
+test_equal([[Stdio.File("conftest","r")->stat()]],[[file_stat("conftest")]])
 
 // - file->errno
 test_do(clone(Stdio.File,"stdin")->errno())
@@ -69,7 +69,7 @@ test_any([[object o=clone(Stdio.File); o->open("conftest","r"); o=o->dup(); retu
 est_any([[object o=clone(Stdio.File),o2=clone(Stdio.File); o->open("conftest","r"); o2->assign(o); return o2->read(100)]] ,sprintf("%'+-*'100s",""))
 
 // - file->dup2
-test_any([[object o=clone(Stdio.File),o2=clone(Stdio.File); o2->pipe(); o->open("conftest","r"); o->dup2(o2); return o2->read(100)]] ,sprintf("%'+-*'100s",""))
+test_any([[object o=clone(Stdio.File),o2=clone(Stdio.File); o2->pipe(); o->open("conftest","r"); o2->dup2(o); return o2->read(100)]] ,sprintf("%'+-*'100s",""))
 
 test_eq(Process.popen("echo foo"),"foo\n")
 

@@ -1,4 +1,4 @@
-/* $Id: font.c,v 1.23 1997/12/28 09:29:32 hubbe Exp $ */
+/* $Id: font.c,v 1.24 1998/01/03 07:12:40 hubbe Exp $ */
 #include <config.h>
 
 #define SPACE_CHAR 'i'
@@ -6,7 +6,7 @@
 /*
 **! module Image
 **! note
-**!	$Id: font.c,v 1.23 1997/12/28 09:29:32 hubbe Exp $
+**!	$Id: font.c,v 1.24 1998/01/03 07:12:40 hubbe Exp $
 **! class font
 **!
 **! note
@@ -94,6 +94,7 @@ Kerningtable types:
 
 
 #include "global.h"
+#include "fdlib.h"
 
 #include <sys/types.h>
 #include <sys/stat.h>
@@ -212,10 +213,10 @@ static INLINE int char_width(struct font *this, unsigned char c)
 }  
 
 #ifndef HAVE_MMAP
-static INLINE int my_read(int from, char *buf, int towrite)
+static INLINE int my_read(int from, void *t, int towrite)
 {
   int res;
-  while((res = read(from, buf, towrite)) < 0)
+  while((res = fd_read(from, t, towrite)) < 0)
   {
     switch(errno)
     {
@@ -235,7 +236,7 @@ static INLINE long file_size(int fd)
 {
   struct stat tmp;
   int res;
-  if((!fstat(fd, &tmp)) &&
+  if((!fd_fstat(fd, &tmp)) &&
      (tmp.st_mode & S_IFREG)) {
     return res = tmp.st_size;
   }
@@ -300,29 +301,32 @@ void font_load(INT32 args)
 #ifdef FONT_DEBUG
      fprintf(stderr,"FONT open '%s'\n",sp[-args].u.string->str);
 #endif
-     fd = open(sp[-args].u.string->str,O_RDONLY);
+     fd = fd_open(sp[-args].u.string->str,fd_RDONLY,0);
    } while(fd < 0 && errno == EINTR);
 
    if (fd >= 0)
    {
       long size;
-      struct font *new;
+      struct font *new_font;
 
       size = file_size(fd);
       if (size > 0)
       {
-	 new=THIS=(struct font *)xalloc(sizeof(struct font));
+	 new_font=THIS=(struct font *)xalloc(sizeof(struct font));
 
 	 THREADS_ALLOW();
 #ifdef HAVE_MMAP
-	 new->mem = 
+	 new_font->mem = 
 	    mmap(0,size,PROT_READ,MAP_SHARED,fd,0);
-	 new->mmaped_size=size;
+	 new_font->mmaped_size=size;
 #else
-	 new->mem = malloc(size);
-	 if ((new->mem) && (!my_read(fd,new->mem,size))) {
-	   free(new->mem);
-	   new->mem = NULL;
+	 new_font->mem = malloc(size);
+#ifdef FONT_DEBUG
+	 fprintf(stderr,"FONT Malloced %p (%d)\n",new_font->mem,size);
+#endif
+	 if ((new_font->mem) && (!my_read(fd,new_font->mem,size))) {
+	   free(new_font->mem);
+	   new_font->mem = NULL;
 	 }
 #endif
 	 THREADS_DISALLOW();
@@ -366,18 +370,18 @@ void font_load(INT32 args)
 
 		  THIS->chars=ntohl(fh->chars);
 
-		  new=malloc(sizeof(struct font)+
+		  new_font=malloc(sizeof(struct font)+
 			     sizeof(struct _char)*(THIS->chars-1));
-		  new->mem=THIS->mem;
+		  new_font->mem=THIS->mem;
 #ifdef HAVE_MMAP
-		  new->mmaped_size=THIS->mmaped_size;
+		  new_font->mmaped_size=THIS->mmaped_size;
 #endif
-		  new->chars=THIS->chars;
-		  new->xspacing_scale = 1.0;
-		  new->yspacing_scale = 1.0;
-		  new->justification = J_LEFT;
+		  new_font->chars=THIS->chars;
+		  new_font->xspacing_scale = 1.0;
+		  new_font->yspacing_scale = 1.0;
+		  new_font->justification = J_LEFT;
 		  free(THIS);
-		  THIS=new;
+		  THIS=new_font;
 
 		  THIS->height=ntohl(fh->height);
 		  THIS->baseline=ntohl(fh->baseline);
@@ -400,7 +404,7 @@ void font_load(INT32 args)
 			fprintf(stderr,"FONT failed on char %02xh %d '%c'\n",
 				i,i,i);
 #endif
-			free_font_struct(new);
+			free_font_struct(new_font);
 			THIS=NULL;
 			pop_n_elems(args);
 			push_int(0);
@@ -409,7 +413,7 @@ void font_load(INT32 args)
 
 		  }
 
-		  close(fd);
+		  fd_close(fd);
 		  pop_n_elems(args);
 		  THISOBJ->refs++;
 		  push_object(THISOBJ);   /* success */
@@ -435,7 +439,7 @@ void font_load(INT32 args)
 #ifdef FONT_DEBUG
       else fprintf(stderr,"FONT size failure\n");
 #endif
-      close(fd);
+      fd_close(fd);
    } /* fd failure */
 #ifdef FONT_DEBUG
    else fprintf(stderr,"FONT fd failure\n");

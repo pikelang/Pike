@@ -223,7 +223,7 @@ static void port_bind(INT32 args)
   addr.sin_family = AF_INET;
 
   THREADS_ALLOW();
-  tmp=fd_bind(fd, (struct sockaddr *)&addr, sizeof(addr)) < 0 || listen(fd, 16384) < 0;
+  tmp=fd_bind(fd, (struct sockaddr *)&addr, sizeof(addr)) < 0 || fd_listen(fd, 16384) < 0;
   THREADS_DISALLOW();
 
   if(tmp)

@@ -193,7 +193,8 @@ string read_bytes(string filename,void|int start,void|int len)
   case 2:
     len=0x7fffffff;
   case 3:
-    f->seek(start);
+    if(start)
+      f->seek(start);
   }
   ret=f->read(len);
   f->close();
