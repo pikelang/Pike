@@ -2,12 +2,12 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: Shuffler.cmod,v 1.25 2003/11/16 16:01:06 grubba Exp $
+|| $Id: Shuffler.cmod,v 1.26 2004/03/10 00:50:16 nilsson Exp $
 */
 
 #include "global.h"
 #include "stralloc.h"
-RCSID("$Id: Shuffler.cmod,v 1.25 2003/11/16 16:01:06 grubba Exp $");
+RCSID("$Id: Shuffler.cmod,v 1.26 2004/03/10 00:50:16 nilsson Exp $");
 #include "pike_macros.h"
 #include "interpret.h"
 #include "threads.h"
@@ -635,17 +635,23 @@ PIKECLASS Shuffle
 
     if( args > 1 )
     {
+#ifdef AUTO_BIGNUM
       if( start->type == PIKE_T_OBJECT )
 	int64_from_bignum( &rstart, start->u.object );
-      else if( start->type == PIKE_T_INT && !start->subtype )
-	rstart = start->u.integer;
+      else
+#endif
+	if( start->type == PIKE_T_INT && !start->subtype )
+	  rstart = start->u.integer;
     }
     if( args > 2 )
     {
+#ifdef AUTO_BIGNUM
       if( length->type == PIKE_T_OBJECT )
 	int64_from_bignum( &rlength, length->u.object );
-      else if( length->type == PIKE_T_INT && !length->subtype )
-	rlength = length->u.integer;
+      else
+#endif
+	if( length->type == PIKE_T_INT && !length->subtype )
+	  rlength = length->u.integer;
     }
     if( rlength == 0 )
     {
