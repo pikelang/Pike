@@ -636,9 +636,11 @@ member int rows;
 //! Return the number of rows
 member int row_height;
 //! Return the height of the row
+/* 
 member int row_center_offset;
 //! Return the number of pixels from the top of the row to the center
 //! of the row.
+*/
 member int columns;
 //! Return the number of columns in this clist
 
