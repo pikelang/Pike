@@ -2,11 +2,11 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: timeout.c,v 1.17 2004/03/10 16:31:41 nilsson Exp $
+|| $Id: timeout.c,v 1.18 2005/01/04 15:49:43 grubba Exp $
 */
 
 #include "config.h"
-#ifndef __NT__
+#if !defined(__NT__) && !defined(__WIN32__)
 #include <global.h>
 #include <threads.h>
 #include <signal.h>
