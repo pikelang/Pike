@@ -4,7 +4,7 @@
 ||| See the files COPYING and DISCLAIMER for more information.
 \*/
 #include "global.h"
-RCSID("$Id: lex.c,v 1.30 1997/11/08 01:34:40 hubbe Exp $");
+RCSID("$Id: lex.c,v 1.31 1997/12/16 22:31:25 grubba Exp $");
 #include "language.h"
 #include "array.h"
 #include "lex.h"
@@ -1867,6 +1867,70 @@ static void low_lex(void)
 	else
 	  UNGETSTR(" 0 ",3);
 
+	continue;
+      } else if (!strcmp("resolv", my_yylval.str)) {
+	int res = 0;
+	struct svalue *oldsp = sp;
+
+	SKIPWHITE();
+	if (!GOBBLE('(')) {
+	  yyerror("Missing '(' in #if resolv().\n");
+	  return;
+	}
+	READBUF(isidchar(C));
+
+	/* code from low_idents here */
+	if (get_master) {
+	  push_text(buf);
+	  current_file->refs++;
+	  push_string(current_file);
+
+	  SAFE_APPLY_MASTER("resolv", 2);
+
+	  if ((throw_value.type != T_STRING) &&
+	      (!(IS_ZERO(sp-1) && sp[-1].subtype == 1))) {
+	    res = 1;
+	  }
+	} else {
+	  res = 0;
+	}
+
+	while(GOBBLE('.')) {
+	  READBUF(isidchar(C));
+	  if (res) {
+	    JMP_BUF recovery;
+
+	    push_text(buf);
+
+	    free_svalue(&throw_value);
+	    throw_value.type = T_INT;
+
+	    if (SETJMP(recovery)) {
+	      res = 0;
+	    } else {
+	      f_index(2);
+	      if (IS_ZERO(sp-1) && sp[-1].subtype == 1) {
+		res = 0;
+	      }
+	    }
+	    UNSETJMP(recovery);
+	  }
+	}
+	
+	if (!GOBBLE(')')) {
+	  yyerror("Missing ')' in #if resolv().\n");
+	  return;
+	}
+
+	if (sp > oldsp) {
+	  pop_n_elems(sp - oldsp);
+	}
+
+	if (res) {
+	  UNGETSTR(" 1 ", 3);
+	} else {
+	  UNGETSTR(" 0 ", 3);
+	}
 	continue;
       }
 
