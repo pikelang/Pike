@@ -1,6 +1,6 @@
 #!/bin/sh
 
-# $Id: uname,v 1.18 2004/08/09 14:46:49 mast Exp $
+# $Id: uname,v 1.19 2004/10/26 14:07:01 grubba Exp $
 
 . $NTTOOLS
 
@@ -15,7 +15,7 @@ for a in "$@"
 do
   case "$a" in
     --version)
-      ver=`echo "$Revision: 1.18 $" |sed -e 's/.* \(.*\) .*/\1/'`
+      ver=`echo "$Revision: 1.19 $" |sed -e 's/.* \(.*\) .*/\1/'`
       echo "Fake NT uname version $ver by Fredrik Hubinette and others"
       exit 0
     ;;
@@ -81,6 +81,8 @@ if [ "$S$R$V" = "" ]; then :; else
   #       and then something like:
   # Windows NT Version 4.0
   #       or
+  # Microsoft Windows 2000 [Version 5.00.2195]
+  #       or
   # Microsoft Windows XP [Version 5.1.2600]
   RAW_VERSION="`sprsh cmd /c ver`"
 fi
@@ -100,7 +102,7 @@ fi
 
 if [ X$R = Xyes -o X$V = Xyes ]; then
   # Release number or Version number.
-  OUTPUT="$OUTPUT `echo $RAW_VERSION|sed -e's/[^0-9.]*//g'`"
+  OUTPUT="$OUTPUT `echo $RAW_VERSION|sed -e 's/.*Version//'|sed -e's/[^0-9.]*//g'`"
   # If there are more than one processor, apply "-smp"
   NUMPROCS="`getntenv NUMBER_OF_PROCESSORS`"
   if [ "x$NUMPROCS" != "x" ] && [ "$NUMPROCS" -gt 1 ]; then
