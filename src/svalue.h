@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: svalue.h,v 1.108 2002/10/11 01:39:38 nilsson Exp $
+|| $Id: svalue.h,v 1.109 2002/11/21 15:12:02 marcus Exp $
 */
 
 #ifndef SVALUE_H
@@ -189,6 +189,9 @@ struct svalue
 #define tRef tOr(tString,tComplex)
 #define tIfnot(X,Y) tAnd(tNot(X),Y)
 #define tAny tOr(tVoid,tMix)
+#define tName(X,Y) "\361\0"X"\0"Y
+#define tName1(X,Y) "\361\1"X"\0\0"Y
+#define tName2(X,Y) "\361\2"X"\0\0\0\0"Y
 
 #define tSimpleCallable tOr3(tArray,tFunction,tObj)
 #define tCallable tOr3(tArr(tSimpleCallable),tFunction,tObj)
