@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: sprintf.c,v 1.109 2003/06/11 14:27:35 jhs Exp $
+|| $Id: sprintf.c,v 1.110 2003/06/11 16:29:57 jhs Exp $
 */
 
 /* TODO: use ONERROR to cleanup fsp */
@@ -134,7 +134,8 @@
  *!       Uppercase signed hexadecimal integer.
  *!     @value 'c'
  *!       Character. If a fieldsize has been specified this will output
- *!       the low-order bytes of the integer in network byte order.
+ *!       the low-order bytes of the integer in network (big endian) byte
+ *!       order. To get little endian byte order, negate the field size.
  *!     @value 'f'
  *!       Float. (Locale dependent formatting.)
  *!     @value 'g'
@@ -174,119 +175,110 @@
  *!   a string.
  *!
  *! @example
- *! Pike v7.3 release 11 running Hilfe v2.0 (Incremental Pike Frontend)
- *! > int screen_width=70;
- *! Result: 70
- *! > mixed sample;
- *! > write(sprintf("fish: %c\n", 65));
- *! fish: A
- *! Result: 8
- *! > write(sprintf("Hello green friends\n"));
- *! Hello green friends
- *! Result: 20
- *! > write(sprintf("num: %d\n", 10));
- *! num: 10
- *! Result: 8
- *! > write(sprintf("num: %+10d\n", 10));
- *! num:        +10
- *! Result: 16
- *! > write(sprintf("num: %010d\n", 5*2));
- *! num: 0000000010
- *! Result: 16
- *! > write(sprintf("num: %|10d\n", 20/2));
- *! num:     10
- *! Result: 16
- *! > write(sprintf("%|*s\n",screen_width,"THE NOT END"));
- *!                              THE NOT END
- *! Result: 71
- *! > write(sprintf("%|=*s\n",screen_width, "fun with penguins\n"));
- *!                           fun with penguins
- *! Result: 71
- *! > write(sprintf("%-=*O\n",screen_width,({ "fish", 9, "gumbies", 2 })));
- *! ({ @xml{/@}* 4 elements *@xml{/@}
- *!     "fish",
- *!     9,
- *!     "gumbies",
- *!     2
- *! })
- *! Result: 426
- *! > write(sprintf("%-=*s\n", screen_width,
+ *! Pike v7.4 release 13 running Hilfe v3.5 (Incremental Pike Frontend)
+ *! > sprintf("The unicode character %c has character code %04X.", 'A', 'A');
+ *! (1) Result: "The unicode character A has character code 0041."
+ *! > sprintf("#%@02X is the HTML code for purple.", Image.Color.purple->rgb());
+ *! (2) Result: "#A020F0 is the HTML code for purple."
+ *! > int n=4711;
+ *! > sprintf("%d = hexadecimal %x = octal %o = %b binary", n, n, n, n);
+ *! (3) Result: "4711 = hexadecimal 1267 = octal 11147 = 1001001100111 binary"
+ *!
+ *! @note
+ *!   sprintf style formatting is applied by many formatting functions, such
+ *!   @[write()] and @[werror].
+ *!
+ *! @example
+ *! > write(#"Formatting examples:
+ *! Left adjusted  [%-10d]
+ *! Centered       [%|10d]
+ *! Right adjusted [%10d]
+ *! Zero padded    [%010d]
+ *! ", n, n, n, n);
+ *! Formatting examples:
+ *! Left adjusted  [4711      ]
+ *! Centered       [   4711   ]
+ *! Right adjusted [      4711]
+ *! Zero padded    [0000004711]
+ *! (5) Result: 142
+ *! int screen_width=70;
+ *! > write("%-=*s\n", screen_width,
  *! >> "This will wordwrap the specified string within the "+
  *! >> "specified field size, this is useful say, if you let "+
  *! >> "users specify their screen size, then the room "+
  *! >> "descriptions will automagically word-wrap as appropriate.\n"+
- *! >> "slosh-n's will of course force a new-line when needed.\n"));
+ *! >> "slosh-n's will of course force a new-line when needed.\n");
  *! This will wordwrap the specified string within the specified field
  *! size, this is useful say, if you let users specify their screen size,
  *! then the room descriptions will automagically word-wrap as
  *! appropriate.
  *! slosh-n's will of course force a new-line when needed.
- *! Result: 355
- *! > write(sprintf("%-=*s %-=*s\n", screen_width/2,
+ *! (6) Result: 355
+ *! > write("%-=*s %-=*s\n", screen_width/2,
  *! >> "Two columns next to each other (any number of columns will "+
  *! >> "of course work) independantly word-wrapped, can be useful.",
  *! >> screen_width/2-1,
  *! >> "The - is to specify justification, this is in addherence "+
  *! >> "to std sprintf which defaults to right-justification, "+
- *! >> "this version also supports centre and right justification."));
+ *! >> "this version also supports centre and right justification.");
  *! Two columns next to each other (any The - is to specify justification,
  *! number of columns will of course    this is in addherence to std
  *! work) independantly word-wrapped,   sprintf which defaults to
  *! can be useful.                      right-justification, this version
  *!                                     also supports centre and right
  *!                                     justification.
- *! Result: 426
- *! > write(sprintf("%-$*s\n", screen_width,
+ *! (7) Result: 426
+ *! > write("%-$*s\n", screen_width,
  *! >> "Given a\nlist of\nslosh-n\nseparated\n'words',\nthis option\n"+
  *! >> "creates a\ntable out\nof them\nthe number of\ncolumns\n"+
  *! >> "be forced\nby specifying a\npresision.\nThe most obvious\n"+
- *! >> "use is for\nformatted\nls output."));
+ *! >> "use is for\nformatted\nls output.");
  *! Given a          list of          slosh-n
  *! separated        'words',         this option
  *! creates a        table out        of them
  *! the number of    columns          be forced
  *! by specifying a  presision.       The most obvious
  *! use is for       formatted        ls output.
- *! Result: 312
- *! > write(sprintf("%-#*s\n", screen_width,
+ *! (8) Result: 312
+ *! > write("%-#*s\n", screen_width,
  *! >> "Given a\nlist of\nslosh-n\nseparated\n'words',\nthis option\n"+
  *! >> "creates a\ntable out\nof them\nthe number of\ncolumns\n"+
  *! >> "be forced\nby specifying a\npresision.\nThe most obvious\n"+
- *! >> "use is for\nformatted\nls output."));
+ *! >> "use is for\nformatted\nls output.");
  *! Given a          creates a        by specifying a
  *! list of          table out        presision.
  *! slosh-n          of them          The most obvious
  *! separated        the number of    use is for
  *! 'words',         columns          formatted
  *! this option      be forced        ls output.
- *! Result: 312
+ *! (9) Result: 312
  *! > sample = ([ "align":"left", "valign":"middle" ]);
- *! Result: ([ @xml{/@}* 2 elements *@xml{/@}
+ *! (10) Result: ([ @xml{/@}* 2 elements *@xml{/@}
  *!          "align":"left",
  *!          "valign":"middle"
  *!        ])
- *! > write(sprintf("<td%{ %s='%s'%}>\n", (array)sample));
+ *! > write("<td%{ %s='%s'%}>\n", (array)sample);
  *! <td valign='middle' align='left'>
- *! Result: 34
- *! >  write(sprintf("Of course all the simple printf options "+
+ *! (11) Result: 34
+ *! >  write("Of course all the simple printf options "+
  *! >> "are supported:\n %s: %d %x %o %c\n",
  *! >> "65 as decimal, hex, octal and a char",
- *! >> 65, 65, 65, 65));
+ *! >> 65, 65, 65, 65);
  *! Of course all the simple printf options are supported:
  *!  65 as decimal, hex, octal and a char: 65 41 101 A
- *! Result: 106
- *! > write(sprintf("%[0]d, %[0]x, %[0]X, %[0]o, %[0]c\n", 75));
+ *! (12) Result: 106
+ *! > write("%[0]d, %[0]x, %[0]X, %[0]o, %[0]c\n", 75);
  *! 75, 4b, 4B, 113, K
- *! Result: 19
- *! > write(sprintf("%|*s\n",screen_width, "THE END"));
+ *! (13) Result: 19
+ *! > write("%|*s\n",screen_width, "THE END");
  *!                                THE END
- *! Result: 71
+ *! (14) Result: 71
  *!
  *! @seealso
  *!   @[lfun::_sprintf()]
  */
 #include "global.h"
-RCSID("$Id: sprintf.c,v 1.109 2003/06/11 14:27:35 jhs Exp $");
+RCSID("$Id: sprintf.c,v 1.110 2003/06/11 16:29:57 jhs Exp $");
 #include "pike_error.h"
 #include "array.h"
 #include "svalue.h"
@@ -356,7 +348,7 @@ struct format_stack
 
 #define FIELD_LEFT 1
 #define FIELD_CENTER 2
-#define PAD_POSITIVE 4 
+#define PAD_POSITIVE 4
 #define LINEBREAK 8
 #define COLUMN_MODE 16
 #define ZERO_PAD 32
