@@ -152,7 +152,7 @@ static void perlmod_create(INT32 args)
 	error("Perl: Too few elements in argv array.\n");
 
       if(THIS->argv_strings->type_field & ~BIT_STRING)
-	error("Bad argument 2 to Perl->create().\n");
+	error("Bad argument 1 to Perl->create().\n");
   }
 
   THIS->argv=(char **)xalloc(sizeof(char *)*THIS->argv_strings->size);
