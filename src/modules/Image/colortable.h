@@ -1,7 +1,7 @@
 /*
 **! module Image
 **! note
-**!	$Id: colortable.h,v 1.16 1999/04/10 02:02:05 mirar Exp $
+**!	$Id: colortable.h,v 1.17 1999/04/11 12:55:43 mirar Exp $
 */
 
 #ifdef PIKE_IMAGE_COLORTABLE_H
@@ -195,10 +195,10 @@ int image_colortable_size(struct neo_colortable *nct);
 void image_colortable_write_rgb(struct neo_colortable *nct,
 				unsigned char *dest);
 
-void image_colortable_write_rgba(struct neo_colortable *nct,
+void image_colortable_write_rgbz(struct neo_colortable *nct,
 				 unsigned char *dest);
 
-void image_colortable_write_bgra(struct neo_colortable *nct,
+void image_colortable_write_bgrz(struct neo_colortable *nct,
 				 unsigned char *dest);
 
 int image_colortable_initiate_dither(struct neo_colortable *nct,

@@ -1,12 +1,12 @@
 #include "global.h"
 #include <config.h>
 
-/* $Id: colortable.c,v 1.60 1999/04/10 05:18:18 mirar Exp $ */
+/* $Id: colortable.c,v 1.61 1999/04/11 12:55:40 mirar Exp $ */
 
 /*
 **! module Image
 **! note
-**!	$Id: colortable.c,v 1.60 1999/04/10 05:18:18 mirar Exp $
+**!	$Id: colortable.c,v 1.61 1999/04/11 12:55:40 mirar Exp $
 **! class colortable
 **!
 **!	This object keeps colortable information,
@@ -21,7 +21,7 @@
 #undef COLORTABLE_DEBUG
 #undef COLORTABLE_REDUCE_DEBUG
 
-RCSID("$Id: colortable.c,v 1.60 1999/04/10 05:18:18 mirar Exp $");
+RCSID("$Id: colortable.c,v 1.61 1999/04/11 12:55:40 mirar Exp $");
 
 #include <math.h> /* fabs() */
 
@@ -922,6 +922,54 @@ static struct nct_flat _img_get_flat_from_string(struct pike_string *str)
       flat.entries[i].color.r=str->str[i*3];
       flat.entries[i].color.g=str->str[i*3+1];
       flat.entries[i].color.b=str->str[i*3+2];
+      flat.entries[i].weight=1;
+      flat.entries[i].no=i;
+   }
+
+   return flat;
+}
+
+static struct nct_flat _img_get_flat_from_bgr_string(struct pike_string *str)
+{
+   struct nct_flat flat;
+   int i;
+
+   flat.numentries=str->len/3;
+   if (flat.numentries<1) 
+      error("Can't make a colortable with less then one (1) color.\n");
+
+   flat.entries=(struct nct_flat_entry*)
+      xalloc(flat.numentries*sizeof(struct nct_flat_entry));
+
+   for (i=0; i<flat.numentries; i++)
+   {
+      flat.entries[i].color.r=str->str[i*3+2];
+      flat.entries[i].color.g=str->str[i*3+1];
+      flat.entries[i].color.b=str->str[i*3];
+      flat.entries[i].weight=1;
+      flat.entries[i].no=i;
+   }
+
+   return flat;
+}
+
+static struct nct_flat _img_get_flat_from_bgrz_string(struct pike_string *str)
+{
+   struct nct_flat flat;
+   int i;
+
+   flat.numentries=str->len/4;
+   if (flat.numentries<1) 
+      error("Can't make a colortable with less then one (1) color.\n");
+
+   flat.entries=(struct nct_flat_entry*)
+      xalloc(flat.numentries*sizeof(struct nct_flat_entry));
+
+   for (i=0; i<flat.numentries; i++)
+   {
+      flat.entries[i].color.r=str->str[i*4+2];
+      flat.entries[i].color.g=str->str[i*4+1];
+      flat.entries[i].color.b=str->str[i*4];
       flat.entries[i].weight=1;
       flat.entries[i].no=i;
    }
@@ -2150,7 +2198,28 @@ static void image_colortable_add(INT32 args)
    }
    else if (sp[-args].type==T_STRING)
    {
-      THIS->u.flat=_img_get_flat_from_string(sp[-args].u.string);
+      if (args>1)
+      {
+	 if (sp[1-args].type!=T_INT)
+	    SIMPLE_BAD_ARG_ERROR("Image.colortable",2,"int");
+	 switch (sp[1-args].u.integer)
+	 {
+	    case 0: /* rgb */
+	       THIS->u.flat=_img_get_flat_from_string(sp[-args].u.string); 
+	       break;
+	    case 1: /* bgr */
+	       THIS->u.flat=_img_get_flat_from_bgr_string(sp[-args].u.string); 
+	       break;
+	    case 2: /* bgrz */
+	       THIS->u.flat=
+		  _img_get_flat_from_bgrz_string(sp[-args].u.string); 
+	       break;
+	    default:
+	       SIMPLE_BAD_ARG_ERROR("Image.colortable",2,"int(0..2)");
+	 }
+      }
+      else
+	 THIS->u.flat=_img_get_flat_from_string(sp[-args].u.string);
       THIS->type=NCT_FLAT;
    }
    else if (sp[-args].type==T_INT)
@@ -2432,7 +2501,7 @@ void image_colortable_write_rgb(struct neo_colortable *nct,
       free(flat.entries);
 }
 
-void image_colortable_write_rgba(struct neo_colortable *nct,
+void image_colortable_write_rgbz(struct neo_colortable *nct,
 				 unsigned char *dest)
 {
    struct nct_flat flat;
@@ -2460,7 +2529,7 @@ void image_colortable_write_rgba(struct neo_colortable *nct,
       free(flat.entries);
 }
 
-void image_colortable_write_bgra(struct neo_colortable *nct,
+void image_colortable_write_bgrz(struct neo_colortable *nct,
 				 unsigned char *dest)
 {
    struct nct_flat flat;

@@ -1,9 +1,9 @@
-/* $Id: bmp.c,v 1.1 1999/03/22 14:35:25 mirar Exp $ */
+/* $Id: bmp.c,v 1.2 1999/04/11 12:55:13 mirar Exp $ */
 
 /*
 **! module Image
 **! note
-**!	$Id: bmp.c,v 1.1 1999/03/22 14:35:25 mirar Exp $
+**!	$Id: bmp.c,v 1.2 1999/04/11 12:55:13 mirar Exp $
 **! submodule BMP
 **!
 **!	This submodule keeps the BMP (Windows Bitmap)
@@ -30,7 +30,7 @@
 #include <ctype.h>
 
 #include "stralloc.h"
-RCSID("$Id: bmp.c,v 1.1 1999/03/22 14:35:25 mirar Exp $");
+RCSID("$Id: bmp.c,v 1.2 1999/04/11 12:55:13 mirar Exp $");
 #include "pike_macros.h"
 #include "object.h"
 #include "constants.h"
@@ -38,6 +38,7 @@ RCSID("$Id: bmp.c,v 1.1 1999/03/22 14:35:25 mirar Exp $");
 #include "svalue.h"
 #include "threads.h"
 #include "array.h"
+#include "mapping.h"
 #include "error.h"
 
 
@@ -94,7 +95,7 @@ static INLINE unsigned long _int_from_16bit(unsigned char *data)
 **! arg object colortable
 **!	Colortable object. 
 **!
-**  see also: decode
+**! see also: decode
 **!
 **! returns the encoded image as a string
 **!
@@ -104,19 +105,19 @@ static INLINE unsigned long _int_from_16bit(unsigned char *data)
 
 void img_bmp_encode(INT32 args)
 {
-   struct object *o,*oc;
-   struct image *img;
-   struct neo_colortable *nct;
-   int n=0,bpp;
+   struct object *o=NULL,*oc=NULL;
+   struct image *img=NULL;
+   struct neo_colortable *nct=NULL;
+   int n=0,bpp=0;
    int size,offs;
    struct pike_string *ps; 
 
    if (!args)
-      error("Image.BMP.encode: Illegal number of arguments\n");
+      SIMPLE_TOO_FEW_ARGS_ERROR("Image.BMP.encode",1);
 
    if (sp[-args].type!=T_OBJECT ||
        !(img=(struct image*)get_storage(o=sp[-args].u.object,image_program)))
-      error("Image.BMP.encode: Illegal argument 1, expected image object\n");
+      SIMPLE_BAD_ARG_ERROR("Image.BMP.encode",1,"image object");
 
    if (args==1)
       nct=NULL,oc=NULL;
@@ -124,16 +125,14 @@ void img_bmp_encode(INT32 args)
       if (sp[-args].type!=T_OBJECT ||
 	  !(nct=(struct neo_colortable*)
 	    get_storage(oc=sp[1-args].u.object,image_colortable_program)))
-	 error("Image.BMP.encode: Illegal argument 2, "
-	       "expected colortable object\n");
+	 SIMPLE_BAD_ARG_ERROR("Image.BMP.encode",2,"colortable object");
 
    if (!nct) 
       bpp=24;
    else if (image_colortable_size(nct)<=256)
       bpp=8; /* only supports this for now */
    else
-      error("Image.BMP.encode: Illegal argument 2, "
-	    "can only handle less or equal then 256 colors\n");
+      SIMPLE_BAD_ARG_ERROR("Image.BMP.encode",2,"colortable object with max 256 colors");
 
    if (oc) oc->refs++;
    o->refs++;
@@ -171,7 +170,7 @@ void img_bmp_encode(INT32 args)
    {
       ps=begin_shared_string((1<<bpp)*4);
       MEMSET(ps->str,0,(1<<bpp)*4);
-      image_colortable_write_bgra(nct,(unsigned char *)ps->str);
+      image_colortable_write_bgrz(nct,(unsigned char *)ps->str);
       push_string(end_shared_string(ps));
       n++;
    }
@@ -183,6 +182,7 @@ void img_bmp_encode(INT32 args)
 
    if (nct)
    {
+      /* 8bpp image */
       ps=begin_shared_string(img->xsize*img->ysize);
       image_colortable_index_8bit_image(nct,img->img,(unsigned char *)ps->str,
 					img->xsize*img->ysize,img->xsize);
@@ -191,24 +191,18 @@ void img_bmp_encode(INT32 args)
    }
    else
    {
-      if (sizeof(rgb_group)==3)
-	 push_string(make_shared_binary_string((char*)img->img,
-					       img->xsize*img->ysize*3));
-      else
+      unsigned char *c;
+      int n=img->xsize*img->ysize;
+      rgb_group *s=img->img;
+      c=(unsigned char*)((ps=begin_shared_string(n*3))->str);
+      while (n--)
       {
-	 unsigned char *c;
-	 int n=img->xsize*img->ysize;
-	 rgb_group *s=img->img;
-	 c=(unsigned char*)((ps=begin_shared_string(n*3))->str);
-	 while (n--)
-	 {
-	    *(c++)=s->r;
-	    *(c++)=s->g;
-	    *(c++)=s->b;
-	    s++;
-	 }
-	 push_string(end_shared_string(ps));
+	 *(c++)=s->b;
+	 *(c++)=s->g;
+	 *(c++)=s->r;
+	 s++;
       }
+      push_string(end_shared_string(ps));
       n++;
    }
    
@@ -239,6 +233,298 @@ void img_bmp_encode(INT32 args)
    pop_stack();  /* get rid of colortable & source objects */
 }
 
+/*
+**! method mapping _decode(string data)
+**! method mapping decode_header(string data)
+**! method object decode(string data)
+**!	Decode a BMP. Not all modes are supported.
+**!
+**!	<ref>decode</ref> gives an image object,
+**!	<ref>_decode</ref> gives a mapping in the format
+**!	<pre>
+**!		"type":"image/bmp",
+**!		"image":image object,
+**!		"colortable":colortable object (if applicable)
+**!
+**!		"xsize":int,
+**!		"ysize":int,
+**!		"compression":int,
+**!		"bpp":int,
+**!		"windows":int,
+**!	</pre>
+**!
+**! see also: encode
+**!
+**! returns the encoded image as a string
+**!
+**! bugs
+**!	Doesn't support all BMP modes. At all.
+*/
+
+void i_img_bmp__decode(INT32 args,int header_only)
+{
+   p_wchar0 *s;
+   int len;
+   int xsize=0,ysize=0,bpp=0,comp=0;
+   struct image *img=NULL;
+   struct neo_colortable *nct=NULL;
+   struct object *o;
+   rgb_group *d;
+   int n=0,j,i,y,skip;
+   int windows=0;
+
+   if (args<1)
+      SIMPLE_TOO_FEW_ARGS_ERROR("Image.BMP.decode",1);
+
+   if (sp[-args].type!=T_STRING)
+      SIMPLE_BAD_ARG_ERROR("Image.BMP.decode",1,"string");
+   if (sp[-args].u.string->size_shift)
+      SIMPLE_BAD_ARG_ERROR("Image.BMP.decode",1,"8 bit string");
+
+   s=(p_wchar0*)sp[-args].u.string->str;
+   len=sp[-args].u.string->len;
+
+   pop_n_elems(args-1);
+   
+   if (len<20)
+      error("Image.BMP.decode: not a BMP (file to short)\n");
+
+   if (s[0]!='B' || s[1]!='M')
+      error("Image.BMP.decode: not a BMP (illegal header)\n");
+
+   /* ignore stupid info like file size */
+
+   switch (int_from_32bit(s+14))
+   {
+      case 40: /* windows mode */
+
+	 if (len<54)
+	    error("Image.BMP.decode: unexpected EOF in header\n");
+
+	 push_text("xsize");
+	 push_int(xsize=int_from_32bit(s+14+4*1));
+	 n++;
+
+	 push_text("ysize");
+	 push_int(ysize=int_from_32bit(s+14+4*2));
+	 n++;
+
+	 push_text("target_planes");
+	 push_int(int_from_16bit(s+14+4*3));
+	 n++;
+
+	 push_text("bpp");
+	 push_int(bpp=int_from_16bit(s+14+4*3+2));
+	 n++;
+
+	 push_text("compression");
+	 push_int(comp=int_from_32bit(s+14+4*4));
+	 n++;
+
+	 push_text("xres");
+	 push_int(int_from_32bit(s+14+4*5));
+	 n++;
+
+	 push_text("yres");
+	 push_int(int_from_32bit(s+14+4*6));
+	 n++;
+	 
+	 push_text("windows");
+	 push_int(windows=1);
+	 n++;
+
+	 s+=54;
+	 len-=54;
+
+	 break;
+
+      case 12: /* dos (?) mode */
+
+	 if (len<26)
+	    error("Image.BMP.decode: unexpected EOF in header\n");
+
+	 push_text("xsize");
+	 push_int(xsize=int_from_16bit(s+14+4));
+	 n++;
+
+	 push_text("ysize");
+	 push_int(ysize=int_from_16bit(s+14+6));
+	 n++;
+
+	 push_text("target_planes");
+	 push_int(int_from_16bit(s+14+8));
+	 n++;
+
+	 push_text("bpp");
+	 push_int(bpp=int_from_16bit(s+14+10));
+	 n++;
+
+	 push_text("compression");
+	 push_int(comp=0);
+	 n++;
+
+	 s+=26;
+	 len-=26;
+
+	 break;
+
+      default:
+	 error("Image.BMP.decode: not a BMP (illegal info)\n");
+   }
+
+   if (header_only)
+   {
+      f_aggregate_mapping(n*2);
+      stack_swap();
+      pop_stack();
+      return;
+   }
+
+   if (bpp!=24) /* get palette */
+   {
+      push_text("colortable");
+
+      if (windows)
+      {
+	 if ((4<<bpp)>len)
+	    error("Image.BMP.decode: unexpected EOF in palette\n");
+
+	 push_string(make_shared_binary_string(s,(4<<bpp)));
+	 push_int(2);
+	 push_object(o=clone_object(image_colortable_program,2));
+	 nct=(struct neo_colortable*)get_storage(o,image_colortable_program);
+
+	 s+=(4<<bpp);
+	 len-=(4<<bpp);
+      }
+      else
+      {
+	 if ((3<<bpp)>len)
+	    error("Image.BMP.decode: unexpected EOF in palette\n");
+
+	 push_string(make_shared_binary_string(s,(3<<bpp)));
+	 push_int(1);
+	 push_object(o=clone_object(image_colortable_program,2));
+	 nct=(struct neo_colortable*)get_storage(o,image_colortable_program);
+
+	 s+=(3<<bpp);
+	 len-=(3<<bpp);
+      }
+   }
+
+   push_text("image");
+
+   push_int(xsize);
+   push_int(ysize);
+   push_object(o=clone_object(image_program,2));
+   img=(struct image*)get_storage(o,image_program);
+   n++;
+
+   if (comp)
+      error("Image.BMP.decode: can't handle compressed BMP\n");
+
+   switch (bpp)
+   {
+      case 24:
+	 j=(len)/3;
+	 y=img->ysize;
+	 while (j && y--)
+	 {
+	    d=img->img+img->xsize*y;
+	    i=img->xsize; if (i>j) i=j; 
+	    j-=i;
+	    while (i--)
+	    {
+	       d->b=*(s++);
+	       d->g=*(s++);
+	       d->r=*(s++);
+	       d++;
+	    }
+	 }
+	 break;
+      case 8:
+	 skip=4-(img->xsize&3);
+	 j=len;
+	 y=img->ysize;
+	 while (j && y--)
+	 {
+	    d=img->img+img->xsize*y;
+	    i=img->xsize; if (i>j) i=j; 
+	    j-=i;
+	    while (i--)
+	       *(d++)=nct->u.flat.entries[*(s++)].color;
+	    if (j>=skip) { j-=skip; s+=skip; }
+	 }
+	 break;
+      case 4:
+	 skip=3-((img->xsize/2)&3);
+	 j=len;
+	 y=img->ysize;
+	 while (j && y--)
+	 {
+	    d=img->img+img->xsize*y;
+	    i=img->xsize;
+	    while (i && j--)
+	    {
+	       if (i) *(d++)=nct->u.flat.entries[(s[0]>>4)&15].color,i--;
+	       if (i) *(d++)=nct->u.flat.entries[s[0]&15].color,i--;
+	       s++;
+	    }
+	    if (j>=skip) { j-=skip; s+=skip; }
+	 }
+	 break;
+      case 1:
+	 skip=3-((img->xsize/8)&3);
+	 j=len;
+	 y=img->ysize;
+	 while (j && y--)
+	 {
+	    d=img->img+img->xsize*y;
+	    i=img->xsize;
+	    while (i && j--)
+	    {
+	       if (i) *(d++)=nct->u.flat.entries[!!(s[0]&128)].color,i--;
+	       if (i) *(d++)=nct->u.flat.entries[!!(s[0]&64)].color,i--;
+	       if (i) *(d++)=nct->u.flat.entries[!!(s[0]&32)].color,i--;
+	       if (i) *(d++)=nct->u.flat.entries[!!(s[0]&16)].color,i--;
+	       if (i) *(d++)=nct->u.flat.entries[!!(s[0]&8)].color,i--;
+	       if (i) *(d++)=nct->u.flat.entries[!!(s[0]&4)].color,i--;
+	       if (i) *(d++)=nct->u.flat.entries[!!(s[0]&2)].color,i--;
+	       if (i) *(d++)=nct->u.flat.entries[s[0]&1].color,i--;
+	       s++;
+	    }
+	    if (j>=skip) { j-=skip; s+=skip; }
+	 }
+	 break;
+      default:
+	 error("Image.BMP.decode: unknown bpp: %d\n",bpp);
+   }
+
+   f_aggregate_mapping(n*2);
+   stack_swap();
+   pop_stack();
+}
+
+
+void img_bmp__decode(INT32 args)
+{
+   return i_img_bmp__decode(args,0);
+}
+
+void img_bmp_decode_header(INT32 args)
+{
+   return i_img_bmp__decode(args,1);
+}
+
+void f_index(INT32);
+
+void img_bmp_decode(INT32 args)
+{
+   img_bmp__decode(args);
+   push_text("image");
+   f_index(2);
+}
+
 struct program *image_bmp_module_program=NULL;
 
 void init_image_bmp(void)
@@ -247,6 +533,12 @@ void init_image_bmp(void)
    
    add_function("encode",img_bmp_encode,
 		"function(object,void|object:string)",0);
+   add_function("_decode",img_bmp__decode,
+		"function(string:mapping)",0);
+   add_function("ddecode",img_bmp_decode,
+		"function(string:object)",0);
+   add_function("decode_header",img_bmp_decode_header,
+		"function(string:mapping)",0);
 
    image_bmp_module_program=end_program();
    push_object(clone_object(image_bmp_module_program,0));
