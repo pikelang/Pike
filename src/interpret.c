@@ -2,11 +2,11 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: interpret.c,v 1.292 2003/02/16 13:54:05 mast Exp $
+|| $Id: interpret.c,v 1.293 2003/02/16 17:50:09 grubba Exp $
 */
 
 #include "global.h"
-RCSID("$Id: interpret.c,v 1.292 2003/02/16 13:54:05 mast Exp $");
+RCSID("$Id: interpret.c,v 1.293 2003/02/16 17:50:09 grubba Exp $");
 #include "interpret.h"
 #include "object.h"
 #include "program.h"
@@ -1207,10 +1207,8 @@ int low_mega_apply(enum apply_type type, INT32 args, void *arg1, void *arg2)
       if( Pike_interpreter.thread_state &&
 	  !th_equal(Pike_interpreter.thread_state->id, self) )
 	Pike_fatal("Current thread is wrong.\n");
-	
-      if(thread_for_id(th_self()) != Pike_interpreter.thread_obj)
-	Pike_fatal("thread_for_id() (or Pike_interpreter.thread_obj) failed in mega_apply! "
-	      "%p != %p\n", thread_for_id(self), Pike_interpreter.thread_obj);
+
+      DEBUG_CHECK_THREAD();
     }
 #endif
 
