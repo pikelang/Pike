@@ -1,4 +1,4 @@
-dnl $Id: testsuite.in,v 1.34 2004/07/14 11:09:05 grubba Exp $
+dnl $Id: testsuite.in,v 1.35 2004/07/14 13:48:06 grubba Exp $
 
 START_MARKER
 
@@ -388,7 +388,9 @@ test_eq(Colors.color_name( ({105,105,105}) ), "dimgrey")
 dnl - Getopt
 dnl setup
 test_do(add_constant("original_POSIX_ME_HARDER", getenv("POSIX_ME_HARDER"));)
+test_do(add_constant("original_foo", getenv("foo"));)
 test_do(putenv("POSIX_ME_HARDER", 0);)
+test_do(putenv("foo", "bar");)
 // The following code is broken if the testsuite isn't run with -F,
 // and messing around with internal structures in the master is not
 // a good idea.
@@ -396,11 +398,11 @@ test_do(putenv("POSIX_ME_HARDER", 0);)
 //
 dnl test_do( add_constant("getopt_env", master()->environment); )
 dnl test_do( master()->environment=([ "foo": ({ "foo", "bar" }) ]); )
-dnl test_equal(getenv("foo"), "bar")
-dnl test_equal(master()->getenv("foo"), "bar")
 dnl test_eq(function_object(getenv), master())
-dnl test_false(getenv("POSIX_ME_HARDER"))
-dnl test_false(master()->getenv("POSIX_ME_HARDER"))
+test_equal(getenv("foo"), "bar")
+test_equal(master()->getenv("foo"), "bar")
+test_false(getenv("POSIX_ME_HARDER"))
+test_false(master()->getenv("POSIX_ME_HARDER"))
 
 test_eq( Getopt.find_option( ({}), "a" ), 0 )
 test_eq( Getopt.find_option( "-a,-b"/",", "a" ), 0 )
@@ -634,6 +636,7 @@ test_any_equal([[
 ]],[[ ({ "x", "a", "-b" }) ]])
 
 test_do( putenv("POSIX_ME_HARDER", "1"); )
+test_eq( getenv("POSIX_ME_HARDER"), "1")
 test_eval_error( Getop.get_args(({ "x", "a", "-b" }), -1, 1) )
 test_equal( Getopt.get_args(({ "x", "a", "-b" }), 0, 1), ({ "x", "a", "-b" }))
 test_eval_error( Getopt.get_args(({ "x", 0, "-b" }), 0, 1))
