@@ -1,4 +1,4 @@
-/* $Id: mkxml.pike,v 1.13 2001/05/06 18:52:04 grubba Exp $ */
+/* $Id: mkxml.pike,v 1.14 2001/05/07 09:14:18 mirar Exp $ */
 
 import Stdio;
 import Array;
@@ -85,7 +85,7 @@ mapping lower_nowM()
 
 void report(string s)
 {
-   verbose("mkwmml:   "+s+"\n");
+   verbose("mkxml:   "+s+"\n");
 }
 
 #define complain(X) (X)
@@ -271,29 +271,30 @@ string fixdesc(string s,string prefix,string where)
    string t,u,v,q;
 
    t=s; s="";
-   while (sscanf(t,"%s<ref%s>%s</ref>%s",t,q,u,v)==4)
-   {
-      if (search(u,"<ref")!=-1)
-      {
-	 werror("warning: unclosed <ref>\n%O\n",s);
-	 u=replace(u,"<ref","&lt;ref");
-      }
+
+// we don't need to parse 'ref' at all
+//     while (sscanf(t,"%s<ref%s>%s</ref>%s",t,q,u,v)==4)
+//     {
+//        if (search(u,"<ref")!=-1)
+//        {
+//  	 werror("warning: unclosed <ref>\n%O\n",s);
+//  	 u=replace(u,"<ref","&lt;ref");
+//        }
       
-      if (sscanf(q," to=%s",q))
-	 s+=htmlify(t)+make_nice_reference(q,prefix,u);
-      else
-	 s+=htmlify(t)+make_nice_reference(u,prefix,u);
-      t=v;
-   }
-   if (search(t,"<ref")!=-1)
-   {
-      werror("%O\n",t);
-      error("buu\n");
-   }
+//        if (sscanf(q," to=%s",q))
+//  	 s+=htmlify(t)+make_nice_reference(q,prefix,u);
+//        else
+//  	 s+=htmlify(t)+make_nice_reference(u,prefix,u);
+//        t=v;
+//     }
+//     if (search(s,"<ref")!=-1)
+//     {
+//        werror("%O\n",s);
+//        error("buu\n");
+//     }
 
    s+=htmlify(t);
 
-   // Paragraph handling.
    t=s; s="";
    for (;;)
    {
@@ -303,7 +304,7 @@ string fixdesc(string s,string prefix,string where)
       if (b[..11]=="illustration" &&
 	  sscanf(t,"%s<illustration%s>%s</illustration>%s",t,q,u,v)==4)
       {
-	 s+="<p>"+replace(t,"\n\n","\n\n</p><p>")+
+	 s+=replace(t,"\n\n","\n\n<p>")+
 	    "<illustration __from__='"+where+"' src=image_ill.pnm"+q+">\n"
 	    +replace(u,"lena()","src")+"</illustration>";
 	 t=v;
@@ -311,19 +312,21 @@ string fixdesc(string s,string prefix,string where)
       else if (b[..2]=="pre" &&
 	  sscanf(t,"%s<pre%s>%s</pre>%s",t,q,u,v)==4)
       {
-	 s+="<p>"+replace(t,"\n\n","\n\n</p><p>")+
-	    "<pre"+q+">\n"+u+"</pre></p>";
+	 s+=replace(t,"\n\n","\n\n<p>")+
+	    "<pre"+q+">\n"+u+"</pre>";
 	 t=v;
       }
       else
       {
-	 s+="<p>"+replace(a,"\n\n","\n\n</p><p>")+"<"+b+"></p>";
+	 s+=replace(a,"\n\n","\n\n<p>")+"<"+b+">";
 	 t=c;
       }
    }
-   s+="<p>"+replace(t,"\n\n","\n\n</p><p>")+"</p>";
+   s+=replace(t,"\n\n","\n\n<p>");
 
-   return replace(s, "<p></p>", "");
+   if (where)
+      return "<source-position " +where+ "/>\n"+s;
+   return s;
 }
 
 
@@ -499,12 +502,23 @@ string doctype(string type,void|string indent)
    return nindent+"<object>"+type+"</object>";
 }
 
+constant convname=
+([
+   "`>":"`&gt;",
+   "`<":"`&lt;",
+   "`>=":"`&gt;=",
+   "`<=":"`&lt;=",
+   "`&":"`&amp;",
+]);
+
 void docdecl(string enttype,
 	     string decl,
 	     object f)
 {
    string rv,name,params=0;
    sscanf(decl,"%s %s(%s",rv,name,params);
+
+   if (convname[name]) name=convname[name];
 
    f->write("<"+enttype+" name="+S(name)+">");
    
@@ -556,6 +570,8 @@ void docdecl(string enttype,
    f->write("</"+enttype+">");
 }
 
+Parser.HTML html2xml;
+
 void document(string enttype,
 	      mapping huh,string name,string prefix,
 	      object f)
@@ -567,12 +583,14 @@ void document(string enttype,
    else
       names=({name});
 
-   verbose("mkwmml: "+name+" : "+names*","+"\n");
+   verbose("mkxml: "+name+" : "+names*","+"\n");
 
    array v=name/".";
    string canname=v[-1];
    sscanf(canname,"%s->",canname);
    sscanf(canname,"%s()",canname);
+
+   if (convname[canname]) canname=convname[canname];
 
    switch (enttype)
    {
@@ -594,6 +612,7 @@ void document(string enttype,
 	 else
 	    foreach (names,string name)
 	    {
+	       if (convname[name]) name=convname[name];
 	       f->write("<"+enttype+" name="+S(name)+">\n");
 	       f->write("</"+enttype+">");
 	    }
@@ -601,76 +620,57 @@ void document(string enttype,
    }
    f->write("<source-position " + huh->_line + "/>\n");
 
-// [SYNTAX]
-
-//     if (huh->decl)
-//     {
-//        f->write("<man_syntax>\n");
-
-//        if (enttype=="function" ||
-//  	  enttype=="method")
-//  	 f->write(replace(htmlify(map(huh->decl,synopsis_to_html,huh)*
-//  				  "<br>\n"),"\n","\n\t")+"\n");
-//        else
-//  	 f->write(huh->decl);
-
-//        f->write("</man_syntax>\n\n");
-//     }
-
 // [DESCRIPTION]
 
-   if (huh->desc || huh->returns || huh->bugs || huh->added ||
-       huh["see_also"])
-      f->write("<doc>\n");
+   string res="";
 
    if (huh->desc)
    {
-      f->write("<text>\n");
+      res+="<text>\n";
 
       if (huh->inherits)
       {
 	 string s="";
 	 foreach (huh->inherits,string what)
-	    f->write("inherits "+make_nice_reference(what,prefix,what)+
-		     "<br>\n");
-	 f->write("<br>\n");
+	    res+="inherits "+make_nice_reference(what,prefix,what)+
+	       "<br>\n";
+	 res+="<br>\n";
       }
 
-      f->write(fixdesc(huh->desc,prefix,huh->_line)+"\n");
-      f->write("</text>\n");
+      res+=fixdesc(huh->desc,prefix,huh->_line)+"\n";
+      res+="</text>\n";
    }
 
 // [ARGUMENTS]
 
-#if 0
+#if 1
    if (huh->args)
    {
       string rarg="";
-      f->write("<man_arguments>\n");
       mapping arg;
+      
+      array v=({});
+      
       foreach (huh->args, arg)
       {
+	 v+=arg->args;
 	 if (arg->desc)
 	 {
-	    f->write("\t<aargdesc>\n"
-		     +fixdesc(rarg+"\t\t<aarg>"
-			      +arg->args*"</aarg>\n\t\t<aarg>"
-			      +"</aarg>",prefix,arg->_line)
-		     +"\n<adesc>"
-		     +fixdesc(arg->desc,prefix,arg->_line)
-		     +"</adesc></aargdesc>\n\n");
-	    rarg="";
-	 }
-	 else
-	 {
-	    rarg+="\t\t<aarg>"
-	       +arg->args*"</aarg>\n\t\t<aarg>"+
-	       "</aarg>\n";
+	    res+="<group>\n";
+	    foreach (v,string arg)
+	    {
+	       string rv,name,params;
+	       if (sscanf(arg,"%s %s(%s",rv,name,params)<2)
+		  name=arg;
+	       res+="   <param name="+S(name)+">\n";
+	    }
+	    res+=
+	       "<text>"+
+	       fixdesc(arg->desc,prefix,arg->_line)+
+	       "</text></group>\n";
 	 }
       }
       if (rarg!="") error("trailing args w/o desc on "+arg->_line+"\n");
-
-      f->write("</man_arguments>\n\n");
    }
 #endif
 
@@ -678,9 +678,9 @@ void document(string enttype,
 
    if (huh->returns)
    {
-      f->write("<group><returns/>\n");
-      f->write(fixdesc(huh->returns,prefix,huh->_line)+"\n");
-      f->write("</group>\n");
+      res+="<group><returns/>\n";
+      res+=fixdesc(huh->returns,prefix,huh->_line)+"\n";
+      res+="</group>\n";
    }
 
 
@@ -688,18 +688,18 @@ void document(string enttype,
 
    if (huh->note && huh->note->desc)
    {
-      f->write("<group><note/>\n");
-      f->write(fixdesc(huh->note->desc,prefix,huh->_line)+"\n");
-      f->write("</group>\n");
+      res+="<group><note/>\n";
+      res+=fixdesc(huh->note->desc,prefix,huh->_line)+"\n";
+      res+="</group>\n";
    }
 
 // [BUGS]
 
    if (huh->bugs && huh->bugs->desc)
    {
-      f->write("<group><bugs/>\n");
-      f->write(fixdesc(huh->bugs->desc,prefix,huh->_line)+"\n");
-      f->write("</group>\n");
+      res+="<group><bugs/>\n";
+      res+=fixdesc(huh->bugs->desc,prefix,huh->_line)+"\n";
+      res+="</group>\n";
    }
 
 // [ADDED]
@@ -713,14 +713,22 @@ void document(string enttype,
 
    if (huh["see also"])
    {
-      f->write("<group><see_also/>\n");
-      f->write(htmlify(huh["see also"]*", "));
-      f->write("</group>\n");
+      res+="<group><see_also/>\n";
+      res+=fixdesc(
+	 map(huh["see also"],
+	       lambda(string s)
+	       {
+		  return "<ref>"+htmlify(s)+"</ref>";
+	       })*", ",
+	 prefix,0);
+      res+="</group>\n";
    }
 
-   if (huh->desc || huh->returns || huh->bugs || huh->added ||
-       huh["see_also"])
-      f->write("</doc>\n");
+   if (res!="")
+   {
+      res=html2xml->finish(res)->read();
+      f->write("<doc>\n"+res+"\n</doc>\n");
+   }
 
 // ---childs----
 
@@ -811,57 +819,86 @@ void document(string enttype,
 
 void make_doc_files()
 {
+   html2xml=Parser.HTML();
+   html2xml->add_tag("p",lambda(mixed...) { return ({"</p><p>"}); });
+   html2xml->add_tag("br",lambda(mixed...) { return ({"<br/>"}); });
+   html2xml->add_container(
+      "text",
+      lambda(Parser.HTML p,mapping args,string cont)
+      {
+//  	 werror("%O\n",cont);
+	 cont=p->clone()->finish(cont)->read();
+//  	 werror("---\n");
+//  	 werror("%O\n",cont);
+	 string res="<text><p>"+cont+"</p></text>";
+	 string t;
+	 do
+	 {
+	    t=res;
+	    res=replace(res,"<p></p>","");
+	    res=replace(res,"<br/></p>","</p>");
+	 }
+	 while (t!=res);
+	 return ({res});
+      });
+
    stderr->write("modules: "+sort(indices(parse))*", "+"\n");
 
    stdout->write("<module name=''>\n");
+   
    foreach (sort(indices(parse)-({"_order"})),string module)
       document("module",parse[module],module,module+".",stdout);
+
    stdout->write("</module>\n");
 }
 
-void process_line(string s, string currentfile, int line)
-{
-  int i;
-  s=getridoftabs(s);
+int inpre=0;
 
-  if ((i=search(s,"**!"))!=-1 || (i=search(s,"//!"))!=-1)
-  {
-    string kw,arg;
-    
-    sscanf(s[i+3..],"%*[ \t]%[^: \t\n\r]%*[: \t]%s",kw,arg);
-    if (keywords[kw])
-    {
-      string err;
-      if ( (err=keywords[kw](arg,"file='"+currentfile+"' line='"+line+"'")) )
+void process_line(string s,string currentfile,int line)
+{
+   s=getridoftabs(s);
+
+   int i;
+   if ((i=search(s,"**!"))!=-1 || (i=search(s,"//!"))!=-1)
+   {
+      string kw,arg;
+
+      sscanf(s[i+3..],"%*[ \t]%[^: \t\n\r]%*[: \t]%s",kw,arg);
+      if (keywords[kw])
       {
-	stderr->write("mkwmml: "+
-		      currentfile+"file='"+currentfile+"' line="+line);
-	exit(1);
+	 string err;
+	 if ( (err=keywords[kw](arg,"file='"+currentfile+"' line='"+line+"'")) )
+	 {
+	    stderr->write("mkxml: "+
+			  currentfile+"file='"+currentfile+"' line="+line);
+	    exit(1);
+	 }
+	 inpre=0;
       }
-    }
-    else if (s[i+3..]!="")
-    {
-      string d=s[i+3..];
-      //  	    sscanf(d,"%*[ \t]!%s",d);
-      //	    if (search(s,"$Id")!=-1) report("Id: "+d);
-      if (!descM) descM=methodM;
-      if (!descM)
+      else if (s[i+3..]!="")
       {
-	stderr->write("mkwmml: "+
-		      currentfile+" line "+line+
-		      ": illegal description position\n");
-	exit(1);
+	 string d=s[i+3..];
+   //  	    sscanf(d,"%*[ \t]!%s",d);
+   //	    if (search(s,"$Id")!=-1) report("Id: "+d);
+	 if (!descM) descM=methodM;
+	 if (!descM)
+	 {
+	    stderr->write("mkxml: "+
+			  currentfile+" line "+line+
+			  ": illegal description position\n");
+	    exit(1);
+	 }
+	 if (!descM->desc) descM->desc="";
+	 else descM->desc+="\n";
+	 d=getridoftabs(d);
+	 descM->desc+=d;
       }
-      if (!descM->desc) descM->desc="";
-      else descM->desc+="\n";
-      d=getridoftabs(d);
-      descM->desc+=d;
-    }
-    else if (descM) {
-      if (!descM->desc) descM->desc="";
-      else descM->desc+="\n";
-    }
-  }
+      else if (descM)
+      {
+	 if (!descM->desc) descM->desc="";
+	 else descM->desc+="\n";
+      }
+   }
 }
 
 int main(int ac,string *files)
@@ -882,15 +919,17 @@ int main(int ac,string *files)
    if (sizeof(files) && files[0]=="--nonverbose") 
       files=files[1..],verbose=lambda(){};
 
-   stderr->write("mkwmml: reading files...\n");
+   stderr->write("mkxml: reading files...\n");
 
    for (;;)
    {
       int i;
+      inpre=0;
+
       if (!f) 
       {
 	 if (!sizeof(files)) break;
-	 verbose("mkwmml: reading "+files[0]+"...\n");
+	 verbose("mkxml: reading "+files[0]+"...\n");
 	 f=File();
 	 currentfile=files[0];
 	 files=files[1..];
@@ -906,7 +945,7 @@ int main(int ac,string *files)
 	 t=f->read(8192);
 	 if (!t) 
 	 {
-	    werror("mkwmml: failed to read %O\n",currentfile);
+	    werror("mkxml: failed to read %O\n",currentfile);
 	    f=0;
 	    continue;
 	 }
@@ -917,13 +956,12 @@ int main(int ac,string *files)
       s=ss[0]; ss=ss[1..];
 
       line++;
-
-      process_line(s, currentfile, line);
+      process_line(s,currentfile,line);
    }
 
 //   stderr->write(sprintf("%O",parse));
 
-   stderr->write("mkwmml: making docs...\n\n");
+   stderr->write("mkxml: making docs...\n\n");
 
    make_doc_files();
 
