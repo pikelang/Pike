@@ -5,7 +5,7 @@
 */
 
 /*
- * $Id: backend.cmod,v 1.164 2005/01/27 15:10:04 mast Exp $
+ * $Id: backend.cmod,v 1.165 2005/01/27 15:50:55 mast Exp $
  *
  * Backend object.
  */
@@ -66,14 +66,15 @@
 
 #ifdef POLL_DEBUG
 #define IF_PD(x)	x
+#else /* !POLL_DEBUG */
+#define IF_PD(x)
+#endif /* POLL_DEBUG */
+
 #ifdef PIKE_THREADS
 #define THR_NO PTR_TO_INT (THREAD_T_TO_PTR (th_self()))
 #else
 #define THR_NO getpid()
 #endif
-#else /* !POLL_DEBUG */
-#define IF_PD(x)
-#endif /* POLL_DEBUG */
 
 /* Declarations for the legacy backend interface stuff. */
 
