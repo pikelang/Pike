@@ -6,13 +6,13 @@
 #define c4 c[3]
 #define c5 c[4]
 
-void main()
+void main(int argc, array argv)
 {
   int tests, fail, part, opl;
   write("Performing Unicode normalization tests\n");
   write("See http://www.unicode.org/Public/3.1-Update/" FILE "\n" );
 
-  foreach( Stdio.File( FILE,"r" )->read()/"\n", string l )
+  foreach( Stdio.File( argv[1]+FILE,"r" )->read()/"\n", string l )
   {
     if( !strlen( l ) )
       continue;

@@ -1,1 +1,1 @@
-test_false(Process.system(RUNPIKE+" SRCDIR/test.pike"))
+test_false(Process.system(RUNPIKE+" \"SRCDIR/test.pike\" \"SRCDIR\""))
