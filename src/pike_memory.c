@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: pike_memory.c,v 1.139 2003/03/02 14:28:42 grubba Exp $
+|| $Id: pike_memory.c,v 1.140 2003/03/15 18:19:20 grubba Exp $
 */
 
 #include "global.h"
@@ -11,7 +11,7 @@
 #include "pike_macros.h"
 #include "gc.h"
 
-RCSID("$Id: pike_memory.c,v 1.139 2003/03/02 14:28:42 grubba Exp $");
+RCSID("$Id: pike_memory.c,v 1.140 2003/03/15 18:19:20 grubba Exp $");
 
 /* strdup() is used by several modules, so let's provide it */
 #ifndef HAVE_STRDUP
@@ -2237,16 +2237,27 @@ static void low_search_all_memheaders_for_references(void)
       struct memhdr *tmp;
       void **p=m->data;
 
-      if( ! ((sizeof(void *)-1) & (long) p ))
+      if( ! ((sizeof(void *)-1) & (size_t)p ))
       {
 	if(m->size > 0)
 	{
 #ifdef __NT__
 	  __try {
 #endif
-	    for(e=0;e<m->size/sizeof(void *);e++)
-	      if((tmp=find_memhdr(p[e])))
+	    for(e=0;e<m->size/sizeof(void *);e++) {
+	      void *addr = p[e];
+	      if (!addr || ((sizeof(void *)-1) & (size_t)addr)) {
+		/* No need to hunt for memhdrs for NULL or
+		 * unaligned addresses.
+		 * This also filters out memory areas that have
+		 * been cleared by block_alloc.h:really_free_*() et al.
+		 *	/grubba 2003-03-15
+		 */
+		continue;
+	      }
+	      if((tmp=find_memhdr(addr)))
 		tmp->flags |= MEM_REFERENCED;
+	    }
 #ifdef __NT__
 	  }
 	  __except( 1 ) {
