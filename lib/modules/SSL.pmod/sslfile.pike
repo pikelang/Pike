@@ -1,6 +1,6 @@
 #pike __REAL_VERSION__
 
-/* $Id: sslfile.pike,v 1.66 2004/01/14 22:36:49 bill Exp $
+/* $Id: sslfile.pike,v 1.67 2004/01/15 22:05:44 bill Exp $
  */
 
 //! Interface similar to @[Stdio.File].
@@ -69,7 +69,7 @@ static array(string) write_buffer; // Encrypted data to be written.
 static String.Buffer read_buffer; // Decrypted data that has been read.
 
 static mixed callback_id;
-static function(void|mixed:int) accept_callback;
+static function(object, void|mixed:int) accept_callback;
 static function(mixed,string:int) read_callback;
 static function(void|mixed:int) write_callback;
 static function(void|mixed:int) close_callback;
@@ -826,10 +826,13 @@ function(object,int|object,string:void) query_alert_callback()
   return conn && conn->alert_callback;
 }
 
-void set_accept_callback (function(void|mixed:void) accept)
+void set_accept_callback (function(object,void|mixed:void) accept)
 //! Install a function that will be called when the handshake is
 //! finished and the connection is ready for use.
 //!
+//! the callback function will be called with the sslfile object
+//! and the additional id arguments (set with @[set_id]).
+//! 
 //! @note
 //! Like the read, write and close callbacks, installing this callback
 //! implies callback mode, even after the handshake is done.
@@ -1208,7 +1211,7 @@ static int ssl_read_callback (int called_from_real_backend, string input)
 	    SSL3_DEBUG_MSG ("ssl_read_callback: Calling accept callback %O\n",
 			    accept_callback);
 	    RESTORE;
-	    return accept_callback (callback_id);
+	    return accept_callback (this, callback_id);
 	  }
 	}
 

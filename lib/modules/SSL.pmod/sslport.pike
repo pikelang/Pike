@@ -12,13 +12,15 @@ inherit ADT.Queue : accept_queue;
 
 constant sslfile = SSL.sslfile;
 
-function(object:void) accept_callback;
+function(object, mixed|void:void) accept_callback;
 
-void finished_callback(object f)
+void finished_callback(object f, mixed|void id)
 {
   accept_queue::put(f);
   while (accept_callback && !accept_queue::is_empty())
-    accept_callback(query_id());
+  {
+    accept_callback(f, id);
+  }
 }
 
 void ssl_callback(mixed id)
