@@ -66,7 +66,7 @@ import ".";
 // ----------------------------------------------------------------
 // static
 
-Ruleset.Timezone UTC=Ruleset.Timezone(0,"UTC");
+Ruleset.Timezone UTC=Ruleset()->Timezone(0,"UTC");
 
 // ----------------------------------------------------------------
 // from the system

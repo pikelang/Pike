@@ -34,7 +34,7 @@ static private int __sanity_check=lambda()
    return 1;
 }();
 
-Ruleset.Timezone Timezone_UTC=Ruleset.Timezone(0,"UTC"); // needed for dumping
+Ruleset.Timezone Timezone_UTC=Ruleset()->Timezone(0,"UTC"); // needed for dumping
 
 string calendar_name() { return "Time"; }
 
