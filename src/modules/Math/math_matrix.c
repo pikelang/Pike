@@ -1,4 +1,4 @@
-/* $Id: math_matrix.c,v 1.23 2001/04/17 20:22:06 js Exp $ */
+/* $Id: math_matrix.c,v 1.24 2001/04/18 12:01:45 mirar Exp $ */
 
 #include "global.h"
 #include "config.h"
@@ -394,9 +394,18 @@ void matrix__sprintf(INT32 args)
    switch (x)
    {
       case 'O':
-	 push_constant_text("Math.Matrix( ");
-	 push_constant_text("({ ({ ");
-	 n=2;
+	 if (THIS->ysize>80 || THIS->xsize>80 ||
+	     THIS->xsize*THIS->ysize > 500)
+	 {
+	    sprintf(buf,"Math.Matrix( %d x %d elements )",
+		    THIS->xsize,THIS->ysize);
+	    push_text(buf);
+	    stack_pop_n_elems_keep_top(args);
+	    return;
+	 }
+
+	 push_constant_text("Math.Matrix( ({ ({ ");
+	 n=1;
 	 for (y=0; y<THIS->ysize; y++)
 	 {
 	    for (x=0; x<THIS->xsize; x++)
