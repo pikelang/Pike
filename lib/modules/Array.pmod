@@ -124,9 +124,12 @@ array sum_arrays(function(mixed ...:mixed) sum, array ... args)
   return ret;
 }
 
-//! This function sorts an array after a compare-function @[cmp]
-//! which takes two arguments and should return @tt{1@} if the first argument
-//! is larger then the second.
+//! @decl array sort_array(array arr, function|void cmp, mixed ... args)
+//!
+//! This function sorts the array @[arr] after a compare-function
+//! @[cmp] which takes two arguments and should return @tt{1@} if the
+//! first argument is larger then the second. Returns the sorted array
+//! - @[arr] is not sorted destructively.
 //!
 //! The remaining arguments @[args] will be sent as 3rd, 4th etc. argument
 //! to @[cmp].
