@@ -440,8 +440,8 @@ test_any([[{
 test_any([[
   object p = Parser.HTML();
   p->add_tag ("t", lambda (object p, mapping a) {return ({1});});
-  return !!catch (p->finish("a<t>b")->read());
-]], 1);
+  return !!catch (p->finish("a<t>b")) + p->read();
+]], "1a");
 test_any_equal([[
   object p = Parser.HTML();
   p->mixed_mode (1);
@@ -454,6 +454,20 @@ test_any_equal([[
   p->add_tag ("t", lambda (object p, mapping a) {return ({a});});
   return p->finish("<t a=b>")->read();
 ]], ({(["a": "b"])}));
+test_any_equal([[{
+  object p = Parser.HTML();
+  p->mixed_mode (1);
+  p->add_tag ("t", lambda (object p, mapping a) {return ({1});});
+  p->feed ("a<t>b");
+  return ({!!catch (p->mixed_mode (0))}) + p->read();
+}]], ({1, "a", 1, "b"}));
+test_any_equal([[{
+  object p = Parser.HTML();
+  p->mixed_mode (1);
+  p->add_tag ("t", lambda (object p, mapping a) {return ({"x"});});
+  p->feed ("a<")->feed ("t>")->feed ("b");
+  return !!catch (p->mixed_mode (0)) + p->read();
+}]], "0axb");
 
 // Matching tags and quotes
 test_any([[
@@ -1035,3 +1049,13 @@ test_any([[{
   p->_set_data_callback (lambda () {});
   return p->finish ("<x>")->read();
 }]], "<x>");
+test_any([[{
+  object p = Parser.HTML();
+  p->feed("foo");
+  return p->read(0) + " " + p->read(1) + " " + p->read(2) + " " + p->read(3);
+}]], " f oo ");
+test_any([[{
+  object p = Parser.HTML();
+  p->feed("f")->feed("o")->feed("")->feed("o");
+  return p->read(0) + " " + p->read(1) + " " + p->read(2) + " " + p->read(3);
+}]], " f oo ");
