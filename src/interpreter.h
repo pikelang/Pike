@@ -1307,7 +1307,7 @@ static int eval_instruction(unsigned char *pc)
 	   * for array, mapping and multiset, so we perform a more lenient
 	   * check for them.
 	   */
-	  if (!pike_types_le(sval_type, weak_type_type_string) ||
+	  if (!pike_types_le(sval_type, weak_type_string) ||
 	      !match_types(sval_type, sp[-2].u.string)) {
 	    struct pike_string *t1;
 	    struct pike_string *t2;
