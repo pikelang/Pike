@@ -2,7 +2,7 @@
  * This code is (C) Francesco Chemolli, 1997.
  * You may use, modify and redistribute it freely under the terms
  * of the GNU General Public License, version 2.
- * $Id: msqlmod.c,v 1.12 2000/04/18 06:54:05 jonasw Exp $
+ * $Id: msqlmod.c,v 1.13 2000/04/30 21:15:24 kinkie Exp $
  *
  * This version is intended for Pike/0.5 and later.
  * It won't compile under older versions of the Pike interpreter.
@@ -35,7 +35,7 @@
 #include "operators.h"
 #include "multiset.h"
 
-RCSID("$Id: msqlmod.c,v 1.12 2000/04/18 06:54:05 jonasw Exp $");
+RCSID("$Id: msqlmod.c,v 1.13 2000/04/30 21:15:24 kinkie Exp $");
 #include "version.h"
 
 #ifdef _REENTRANT
@@ -357,7 +357,7 @@ static void select_db(INT32 args)
 /* array(mapping(string:mixed)) query (string sqlquery) */
 static void do_query (INT32 args)
 {
-	int status, num_fields,num_rows,j,k,tmp_socket,*types,*duplicate_names_map;
+	int status, num_fields,num_rows,j,k,tmp_socket,*duplicate_names_map;
 	m_result * result;
 	m_field * current_field;
 	m_row row;
@@ -404,14 +404,13 @@ static void do_query (INT32 args)
 		return;
 	}
 
-	/*First off: we need to know the field names and types 
+	/*First off: we need to know the field names
 	 *in their correct order, and store them in arrays for further analysis
 	 */
 	num_fields=msqlNumFields(result);
-	types = malloc (sizeof(int)*num_fields);
 	duplicate_names_map = malloc (sizeof(int)*num_fields);
 	names = malloc (sizeof(char*)*num_fields);
-	if (!types || !duplicate_names_map || !names)
+	if (!duplicate_names_map || !names)
 		error ("Memory exhausted.\n");
 
 	/* initialize support structure for duplicate column names */
@@ -447,7 +446,6 @@ static void do_query (INT32 args)
 		}
 		else
 			push_text(current_field->name);
-		types[j]=current_field->type;
 	}
 
 	field_names=aggregate_array(num_fields);
@@ -464,15 +462,7 @@ static void do_query (INT32 args)
 				push_int(0);
 				continue;
 			}
-			switch (types[k]) {
-#ifdef MSQL_VERSION_2
-				case UINT_TYPE: /*this may lose the MSB and overflow.
-													Is htere a better way?*/
-#endif
-				case INT_TYPE: push_int(atoi((char *)row[k])); break;
-				case REAL_TYPE: push_float(atof((char *)row[k])); break;
-				default: push_text((char *)row[k]); break;
-			}
+			push_text((char *)row[k]); break;
 		}
 		this_row=aggregate_array(num_fields);
 		this_result=mkmapping(field_names,this_row);
@@ -483,7 +473,6 @@ static void do_query (INT32 args)
 	/* Wrap it up and free the used memory */
 	f_aggregate(num_rows); /* aggregate and push the resulting array */
 	free_array(field_names);
-	free(types);
 	free(duplicate_names_map);
 	free(names);
 	msqlFreeResult(result);
