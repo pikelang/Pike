@@ -10,7 +10,7 @@
 #include "pike_macros.h"
 #include "gc.h"
 
-RCSID("$Id: pike_memory.c,v 1.42 1999/08/17 02:46:22 hubbe Exp $");
+RCSID("$Id: pike_memory.c,v 1.43 1999/09/25 20:30:46 grubba Exp $");
 
 /* strdup() is used by several modules, so let's provide it */
 #ifndef HAVE_STRDUP
@@ -877,8 +877,8 @@ static struct memhdr *my_find_memhdr(void *p, int already_gone)
 #if DEBUG_MALLOC_PAD - 0 > 0
   if(debug_malloc_check_all)
   {
-    long h;
-    for(h=0;h<memhdr_hash_table_size;h++)
+    unsigned long h;
+    for(h=0;h<(unsigned long)memhdr_hash_table_size;h++)
     {
       for(mh=memhdr_hash_table[h]; mh; mh=mh->next)
       {
@@ -1175,7 +1175,7 @@ void list_open_fds(void)
   unsigned long h;
   mt_lock(&debug_malloc_mutex);
 
-  for(h=0;h<memhdr_hash_table_size;h++)
+  for(h=0;h<(unsigned long)memhdr_hash_table_size;h++)
   {
     struct memhdr *m;
     for(m=memhdr_hash_table[h];m;m=m->next)
@@ -1225,7 +1225,7 @@ void cleanup_memhdrs(void)
   if(verbose_debug_exit)
   {
     int first=1;
-    for(h=0;h<memhdr_hash_table_size;h++)
+    for(h=0;h<(unsigned long)memhdr_hash_table_size;h++)
     {
       struct memhdr *m;
       for(m=memhdr_hash_table[h];m;m=m->next)
@@ -1340,8 +1340,8 @@ int debug_malloc_close_fd(int fd, const char *fn, int line)
 
 void reset_debug_malloc(void)
 {
-  INT32 h;
-  for(h=0;h<memhdr_hash_table_size;h++)
+  unsigned long h;
+  for(h=0;h<(unsigned long)memhdr_hash_table_size;h++)
   {
     struct memhdr *m;
     for(m=memhdr_hash_table[h];m;m=m->next)
