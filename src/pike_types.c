@@ -5,7 +5,7 @@
 \*/
 /**/
 #include "global.h"
-RCSID("$Id: pike_types.c,v 1.104 1999/12/18 14:59:38 mast Exp $");
+RCSID("$Id: pike_types.c,v 1.105 1999/12/19 14:56:37 grubba Exp $");
 #include <ctype.h>
 #include "svalue.h"
 #include "pike_types.h"
@@ -2009,10 +2009,23 @@ static int low_pike_types_le2(char *a, char *b, int array_cnt)
   case T_OR:
     /* OK, if both of the parts are a subset */
     a++;
-    ret=low_pike_types_le(a, b, array_cnt);
-    if (!ret) return 0;
-    a+=type_length(a);
-    return low_pike_types_le(a, b, array_cnt);
+    if (EXTRACT_UCHAR(a) == T_VOID) {
+      /* Special case for T_VOID */
+      /* FIXME: Should probably be handled as T_ZERO. */
+      a += type_length(a);
+      return low_pike_types_le(a, b, array_cnt);
+    } else {
+      ret=low_pike_types_le(a, b, array_cnt);
+      if (!ret) return 0;
+      a+=type_length(a);
+      if (EXTRACT_UCHAR(a) == T_VOID) {
+	/* Special case for T_VOID */
+	/* FIXME: Should probably be handled as T_ZERO. */
+	return 1;
+      } else {
+	return low_pike_types_le(a, b, array_cnt);
+      }
+    }
 
   case T_NOT:
     return !low_pike_types_le(a+1, b, array_cnt);
@@ -2683,6 +2696,47 @@ struct pike_string *index_type(struct pike_string *type,
 }
 
 
+static struct pike_string *low_array_value_type(char *arr_t)
+{
+  struct pike_string *res = NULL;
+  struct pike_string *sub_t;
+
+  while (EXTRACT_UCHAR(arr_t) == T_OR) {
+    arr_t++;
+    sub_t = low_array_value_type(arr_t);
+    arr_t += type_length(arr_t);
+    if (sub_t) {
+      if (res) {
+	struct pike_string *new = or_pike_types(res, sub_t, 1);
+	free_string(res);
+	free_string(sub_t);
+	res = new;
+      } else {
+	res = sub_t;
+      }
+    }
+  }
+  if (EXTRACT_UCHAR(arr_t) != T_ARRAY)
+    return res;
+  arr_t++;
+  sub_t = make_shared_binary_string(arr_t, type_length(arr_t));
+  if (res) {
+    struct pike_string *new = or_pike_types(res, sub_t, 1);
+    free_string(res);
+    free_string(sub_t);
+    return new;
+  }
+  return sub_t;
+}
+
+struct pike_string *array_value_type(struct pike_string *array_type)
+{
+  struct pike_string *t = low_array_value_type(array_type->str);
+  if (!t) copy_shared_string(t, mixed_type_string);
+  return t;
+}
+
+
 #ifdef DEBUG_MALLOC
 #define low_key_type(X,Y) ((struct pike_string *)debug_malloc_touch(debug_low_key_type((X),(Y))))
 #else
@@ -2947,7 +3001,7 @@ struct pike_string *check_call(struct pike_string *args,
       if (!strict_check_call(type->str, args->str)) {
 	struct pike_string *type_t = describe_type(type);
 
-	if (!low_pike_types_le(type->str, tFunction, 0)) {
+	if (!low_pike_types_le(type->str, tFuncV(tNone,tZero,tMix), 0)) {
 	  yywarning("Calling non-function value.");
 	  yywarning("Type called: %s", type_t->str);
 	} else {
