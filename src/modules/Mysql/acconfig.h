@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: acconfig.h,v 1.11 2003/03/28 21:33:31 marcus Exp $
+|| $Id: acconfig.h,v 1.12 2005/02/16 16:52:58 grubba Exp $
 */
 
 /*
@@ -37,5 +37,8 @@
 
 /* Define if you have the mysql_unix_port variable. */
 #undef HAVE_MYSQL_UNIX_PORT
+
+/* Define if your mysql.h defines SHUTDOWN_DEFAULT */
+#undef HAVE_SHUTDOWN_DEFAULT
 
 #endif /* PIKE_MYSQL_CONFIG_H */
