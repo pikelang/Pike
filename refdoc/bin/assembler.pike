@@ -7,6 +7,7 @@ int appendix;
 
 mapping queue = ([]);
 mapping appendix_queue = ([]);
+array(Node) chapters = ({});
 
 Node void_node = Node(XML_ELEMENT, "void", ([]), 0);
 
@@ -193,7 +194,6 @@ void chapter_ref_expansion(Node n, string dir) {
 
     case "section":
       c->get_attributes()->number = (string)++section;
-      toc[chapter] += ({ c->get_attributes()->title });
       section_ref_expansion(c);
       break;
 
@@ -252,6 +252,7 @@ void ref_expansion(Node n, string dir, void|string file) {
       if(c->get_attributes()->unnumbered!="1")
 	c->get_attributes()->number = (string)++chapter;
       toc += ({ ({ c->get_attributes()->title, file }) });
+      chapters += ({ c });
       chapter_ref_expansion(c, dir);
       break;
 
@@ -343,6 +344,33 @@ void move_items(Node n, mapping jobs, void|Node wrapper) {
     }
 }
 
+string make_toc_entry(Node n) {
+  if(n->get_tag_name()=="section")
+    return n->get_attributes()->title;
+
+  while(n->get_attributes()->hidden)
+    n = n->get_first_element();
+
+  array a = reverse(n->get_ancestors(1));
+  array b = a->get_any_name();
+  int root;
+  foreach( ({ "manual", "dir", "file", "chapter",
+	      "section", "subsection" }), string node)
+    root = max(root, search(b, node));
+  a = a[root+1..];
+  if(sizeof(a) && a[0]->get_attributes()->name=="")
+    a = a[1..];
+  return a->get_attributes()->name * ".";
+}
+
+void make_toc() {
+  for(int i; i<sizeof(chapters); i++) {
+    foreach(chapters[i]->get_elements(), Node c)
+      if( (< "section", "module", "class" >)[c->get_tag_name()] )
+	toc[i] += ({ make_toc_entry(c) });
+  }
+}
+
 void report_failed_entries(mapping scope, string path) {
   if(scope[0]) {
     werror("Failed to move %s\n", path[1..]);
@@ -389,6 +417,8 @@ int(0..1) main(int num, array(string) args) {
     report_failed_entries(queue, "");
     return 1;
   }
+
+  make_toc();
 
   werror("Writing final manual source file.\n");
   write( (string)n );
