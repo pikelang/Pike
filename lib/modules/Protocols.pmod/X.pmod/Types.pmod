@@ -18,6 +18,44 @@ class XResource
   }
 }
 
+class Font
+{
+  inherit XResource;
+
+  object QueryTextExtents_req(string str)
+  {
+    object req = Requests.QueryTextExtents();
+    req->font = id;
+    req->str = str;
+    return req;
+  }
+
+  mapping(string:int) QueryTextExtents16(string str)
+  {
+    object req = QueryTextExtents_req(str);
+    return display->blocking_request(req)[1];
+  }
+
+  mapping(string:int) QueryTextExtents(string str)
+  {
+    return QueryTextExtents16("\0"+str/""*"\0");
+  }
+
+  object CloseFont_req()
+  {
+    object req = Requests.CloseFont();
+    req->id = id;
+    return req;
+  }
+
+  void CloseFont()
+  {
+    object req = CloseFont_req();
+    display->send_request(req);
+  }
+
+}
+
 class Visual
 {
   inherit XResource;
@@ -36,6 +74,8 @@ class GC
 {
   inherit XResource;
 
+  mapping(string:mixed) values;
+
   object ChangeGC_req(mapping attributes)
   {
     object req = Requests.ChangeGC();
@@ -48,6 +88,20 @@ class GC
   {
     object req = ChangeGC_req(attributes);
     display->send_request(req);
+    values |= attributes;
+  }
+
+  mapping(string:mixed) GetGCValues()
+  {
+    return values;
+  }
+
+  void create(mixed ... args)
+  {
+    ::create(@args);
+    values = mkmapping(_Xlib.gc_attributes,
+		       ({ 3, -1, 0, 1, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0,
+			  0, 0, 1, 0, 0, 0, 0, 4, 1 }));
   }
 }
 
@@ -196,7 +250,7 @@ class Drawable
     object req = FillPoly_req(gc->id, shape, coordMode, points);
     display->send_request(req);
   }
-  
+
   object FillRectangles_req(int gc, array(object) r)
   {
     object req = Requests.PolyFillRectangle();
@@ -250,6 +304,25 @@ class Drawable
     object req = PutImage_req(gc, depth, tx, ty, width, height, data);
     req->format = format;
     display->send_request(req);
+  }
+
+  object ImageText8_req(int gc, int x, int y, string str)
+  {
+    object req = Requests.ImageText8();
+    req->drawable = id;
+    req->gc = gc;
+    req->x = x;
+    req->y = y;
+    req->str = str;
+    return req;
+  }
+
+  void ImageText8(object gc, int x, int y, string str)
+  {
+    if(sizeof(str)>255)
+      error("ImageText8: string to long\n");
+    object req = ImageText8_req(gc->id, x, y, str);
+    display->send_request(req);    
   }
 }
 
@@ -600,6 +673,18 @@ class Window
   void Map()
   {
     display->send_request(Map_req());
+  }
+
+  object Unmap_req()
+  {
+    object req = Requests.UnmapWindow();
+    req->id = id;
+    return req;
+  }
+
+  void Unmap()
+  {
+    display->send_request(Unmap_req());
   }
 
   object ListProperties_req()
