@@ -54,6 +54,7 @@ testfont binary
 /lib/modules/MIME.pmod foreign_ident
 /lib/modules/Protocols.pmod/IMAP.pmod/imap_server.pike foreign_ident
 /lib/modules/Protocols.pmod/IMAP.pmod/requests.pmod foreign_ident
+/lib/modules/Protocols.pmod/IRC.pmod/Requests.pmod foreign_ident
 /lib/modules/Protocols.pmod/Ident.pmod foreign_ident
 /lib/modules/Protocols.pmod/LDAP.pmod/client.pike foreign_ident
 /lib/modules/Protocols.pmod/LDAP.pmod/ldap_errors.h foreign_ident
