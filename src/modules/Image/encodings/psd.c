@@ -1,5 +1,5 @@
 #include "global.h"
-RCSID("$Id: psd.c,v 1.24 2000/11/21 10:38:11 per Exp $");
+RCSID("$Id: psd.c,v 1.25 2000/11/23 11:08:37 per Exp $");
 
 #include "image_machine.h"
 
@@ -631,8 +631,6 @@ static void decode_resources( struct buffer *b )
     if( !(name.len & 1) ) psd_read_uchar( b );
     data = psd_read_string( b );
     data.len++;
-/*     fprintf( stderr, "id: %d; namelen=%d; size=%d\n", */
-/* 	     id, name.len, data.len ); */
 
     if( data.len & 1 ) psd_read_uchar( b );
 
@@ -654,7 +652,7 @@ static void decode_resources( struct buffer *b )
 	push_constant_text( "guides" );
 	{
 	  int i,num_guides;
-	  short magic1, magic2, magic3, magic4, magic5, magic6; // from gimp.
+	  short magic1, magic2, magic3, magic4, magic5, magic6; /*from gimp.*/
 	  magic1 = psd_read_short( &data ); magic2 = psd_read_short( &data );
 	  magic3 = psd_read_short( &data ); magic4 = psd_read_short( &data );
 	  magic5 = psd_read_short( &data ); magic6 = psd_read_short( &data );
