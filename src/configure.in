@@ -1,4 +1,4 @@
-AC_REVISION("$Id: configure.in,v 1.830 2004/05/04 20:47:47 grubba Exp $")
+AC_REVISION("$Id: configure.in,v 1.831 2004/05/08 08:32:51 agehall Exp $")
 AC_INIT(interpret.c)
 AC_CONFIG_HEADER(machine.h)
 
@@ -647,6 +647,9 @@ fi
 #############################################################################
 
 ## Build smartlink
+AC_ARG_ENABLE(smartlink_binary, MY_DESCR([--disable-smartlink-binary],
+   [do not build and use the smartlink binary]),
+	      [], [force_smartlink_script_only=yes])
 
 AC_CHECK_HEADERS(stdlib.h string.h unistd.h sys/stat.h sys/types.h sys/errno.h)
 
@@ -768,6 +771,8 @@ case "$pike_cv_sys_os" in
    ;;
 esac
 
+# Skip fi user does not wish to use smartlink binary.
+if test "x$force_smartlink_script_only" = "x"; then
 # Strip smartlink from $CC
 REALCC="`echo $CC|sed -e 's/.*smartlink //'`"
 
@@ -890,6 +895,12 @@ else
     SMARTLINK="$BINDIR/smartlink"
   fi
 fi
+else # force_smartlink_script_only
+     AC_MSG_CHECKING(for smartlink build script)
+     SMARTLINK="$BINDIR/smartlink"
+     REALCC="$CC"
+     AC_MSG_RESULT($SMARTLINK)
+fi # force_smartlink_script_only
 
 CC="$SMARTLINK $REALCC"
 pike_cv_prog_CC="$CC"
