@@ -2,13 +2,13 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: unicode_module.cmod,v 1.7 2003/04/28 00:32:43 mast Exp $
+|| $Id: unicode_module.cmod,v 1.8 2003/08/08 19:14:36 jhs Exp $
 */
 
 #include "global.h"
 #include "stralloc.h"
 #include "global.h"
-RCSID("$Id: unicode_module.cmod,v 1.7 2003/04/28 00:32:43 mast Exp $");
+RCSID("$Id: unicode_module.cmod,v 1.8 2003/08/08 19:14:36 jhs Exp $");
 #include "pike_macros.h"
 #include "interpret.h"
 #include "program.h"
@@ -43,10 +43,11 @@ static void push_words( int *d, struct words *w )
   uc_words_free( w );
 }
 
-/*! @decl array(string) split_words(string intput)
- *!
- *! @fixme
- *!   Document this function.
+/*! @decl array(string) split_words(string input)
+ *! Splits the input string into an array of words, on the boundaries between
+ *! the different kinds of word characters as defined by @[is_wordchar]. The
+ *! result is an array of words, with the non-word characters between them
+ *! thrown away.
  */
 PIKEFUN array(string) split_words( string input )
 {
@@ -60,9 +61,7 @@ PIKEFUN array(string) split_words( string input )
 }
 
 /*! @decl array(string) split_words_and_normalize(string input)
- *!
- *! @fixme
- *!   Document this function.
+ *! A less wasteful equivalent of @[split_words](@[normalize](@[input])).
  */
 PIKEFUN array(string) split_words_and_normalize( string input )
 {
@@ -147,9 +146,10 @@ PIKEFUN string normalize( string s, string flags )
 }
 
 /*! @decl int is_wordchar(int c)
- *!
- *! @fixme
- *!   Document this function.
+ *! Returns 2 for CJK single-word characters, 1 for normal characters
+ *! that may be part of a word (such as letters and digits) and 0 for
+ *! all other characters (control characters, whitespace, punctuation
+ *! and so on).
  */
 PIKEFUN int is_wordchar( int c )
 {
