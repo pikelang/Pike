@@ -1366,12 +1366,12 @@ class Second
 
    string timeofday()
    {
-      return sprintf("%02s:%02s",m->timeofday(),name());
+      return sprintf("%s:%02s",m->timeofday(),name());
    }
 
    string timeofyear()
    {
-      return sprintf("%02s:%02s",m->timeofyear(),name());
+      return sprintf("%s:%02s",m->timeofyear(),name());
    }
 
 //-- greater --------------------------------------------------------
