@@ -1,4 +1,4 @@
-AC_REVISION("$Id: configure.in,v 1.348 2000/03/06 18:07:28 mast Exp $")
+AC_REVISION("$Id: configure.in,v 1.349 2000/03/12 14:57:47 grubba Exp $")
 AC_INIT(interpret.c)
 AC_CONFIG_HEADER(machine.h)
 
@@ -901,7 +901,7 @@ if test $cppflags_is_set = no -a x${C_INCLUDE_PATH-} = x ; then
   for d in `echo ${with_include_path} | sed 's/:/ /g'` \
     `echo $prefix | sed "s@^NONE@$ac_default_prefix@g"`/include \
     /usr/local/include /sw/local/include /usr/gnu/include /opt/gnu/include \
-    /sw/gnu/include /sw/include /usr/freeware/include \
+    /sw/gnu/include /sw/include /usr/freeware/include /usr/pkg/include \
     `echo /usr/X11*/include | sort -r` $srcdir `pwd`
   do
     AC_MSG_CHECKING($d)
@@ -948,7 +948,7 @@ if test $ldflags_is_set = no ; then
   for d in `echo ${with_lib_path} | sed 's/:/ /g'` \
     `echo $exec_prefix | sed "s@^NONE@$prefix/lib@g" | sed "s@^NONE@$ac_default_prefix/lib@g"` \
     /usr/local/lib /sw/local/lib /sw/lib \
-    /usr/gnu/lib /opt/gnu/lib /sw/gnu/lib /usr/freeware/lib \
+    /usr/gnu/lib /opt/gnu/lib /sw/gnu/lib /usr/freeware/lib /usr/pkg/lib \
     `echo /usr/X11*/lib | sort -r`
   do
     AC_MSG_CHECKING($d)
@@ -973,7 +973,7 @@ fi
 echo Searching for binary directories...
 for d in `echo $exec_prefix | sed "s@^NONE@$prefix@g" | sed "s@^NONE@$ac_default_prefix@g"` \
     "" /usr /usr/ccs /usr/local /sw/local /usr/gnu /opt/gnu /sw/gnu \
-    /sw /usr/freeware
+    /sw /usr/freeware /usr/pkg
 do
   AC_MSG_CHECKING($d/bin)
   if test -d "$d/bin/." ; then
