@@ -1,10 +1,12 @@
-# $Id: configure.in,v 1.7 2003/08/08 12:27:30 nilsson Exp $
+# $Id: configure.in,v 1.8 2003/08/08 12:48:26 nilsson Exp $
 AC_INIT(pike_regexp.c)
 AC_CONFIG_HEADER(config.h)
 
 AC_MODULE_INIT()
 
 AC_HAVE_HEADERS(string.h)
+
+REGEXP_OBJS="pike_regexp.o"
 
 AC_SUBST(REGEXP_OBJS)
 
