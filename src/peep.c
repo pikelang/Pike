@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: peep.c,v 1.78 2002/11/02 13:42:07 grubba Exp $
+|| $Id: peep.c,v 1.79 2002/11/02 14:58:08 grubba Exp $
 */
 
 #include "global.h"
@@ -26,7 +26,7 @@
 #include "interpret.h"
 #include "pikecode.h"
 
-RCSID("$Id: peep.c,v 1.78 2002/11/02 13:42:07 grubba Exp $");
+RCSID("$Id: peep.c,v 1.79 2002/11/02 14:58:08 grubba Exp $");
 
 static void asm_opt(void);
 
@@ -385,11 +385,71 @@ void assemble(void)
 	break;
 
       case I_ISJUMPARGS:
+#ifdef INS_F_JUMP_WITH_TWO_ARGS
+	tmp = INS_F_JUMP_WITH_TWO_ARGS(c->opcode, c->arg, c->arg2);
+	if(tmp != -1)
+	{
+#ifdef ADJUST_PIKE_PC
+	  if (instrs[c->opcode - F_OFFSET].flags & I_PC_AT_NEXT)
+	    ADJUST_PIKE_PC (PIKE_PC);
+#endif
+
+	  /* Step ahead to the pointer instruction, and inline it. */
+#ifdef PIKE_DEBUG
+	  if (c[1].opcode != F_POINTER) {
+	    Pike_fatal("Expected opcode %s to be followed by a pointer\n",
+		       instrs[c->opcode - F_OFFSET].name);
+	  }
+#endif /* PIKE_DEBUG */
+	  c++;
+	  e++;
+	  UPDATE_F_JUMP(tmp, jumps[c->arg]);
+	  jumps[c->arg]=~tmp;
+	  break;
+	}
+#endif /* INS_F_JUMP_WITH_TWO_ARGS */
+
+	/* FALL_THROUGH
+	 *
+	 * Note that the pointer in this case will be handled by the
+	 * next turn through the loop.
+	 */
+
       case I_TWO_ARGS:
 	ins_f_byte_with_2_args(c->opcode, c->arg, c->arg2);
 	break;
 
       case I_ISJUMPARG:
+#ifdef INS_F_JUMP_WITH_ARG
+	tmp = INS_F_JUMP_WITH_ARG(c->opcode, c->arg);
+	if(tmp != -1)
+	{
+#ifdef ADJUST_PIKE_PC
+	  if (instrs[c->opcode - F_OFFSET].flags & I_PC_AT_NEXT)
+	    ADJUST_PIKE_PC (PIKE_PC);
+#endif
+
+	  /* Step ahead to the pointer instruction, and inline it. */
+#ifdef PIKE_DEBUG
+	  if (c[1].opcode != F_POINTER) {
+	    Pike_fatal("Expected opcode %s to be followed by a pointer\n",
+		       instrs[c->opcode - F_OFFSET].name);
+	  }
+#endif /* PIKE_DEBUG */
+	  c++;
+	  e++;
+	  UPDATE_F_JUMP(tmp, jumps[c->arg]);
+	  jumps[c->arg]=~tmp;
+	  break;
+	}
+#endif /* INS_F_JUMP_WITH_ARG */
+
+	/* FALL_THROUGH
+	 *
+	 * Note that the pointer in this case will be handled by the
+	 * next turn through the loop.
+	 */
+
       case I_HASARG:
 	ins_f_byte_with_arg(c->opcode, c->arg);
 	break;
@@ -424,6 +484,12 @@ void assemble(void)
 #ifdef ALIGN_PIKE_JUMPS
     if(e+1 < length)
     {
+      /* FIXME: Note that this code won't work for opcodes of type
+       *        I_ISJUMPARG or I_ISJUMPARGS, since c may already
+       *        have been advanced to the corresponding F_POINTER.
+       *        With the current opcode set this is a non-issue, but...
+       * /grubba 2002-11-02
+       */
       switch(c->opcode)
       {
 	case F_RETURN:
