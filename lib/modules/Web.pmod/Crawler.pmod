@@ -16,7 +16,7 @@
 
 // Author:  Johan Schön.
 // Copyright (c) Roxen Internet Software 2001
-// $Id: Crawler.pmod,v 1.3 2001/06/26 03:14:14 js Exp $
+// $Id: Crawler.pmod,v 1.4 2001/07/06 03:13:49 js Exp $
 
 #define CRAWLER_DEBUG
 #ifdef CRAWLER_DEBUG
@@ -189,14 +189,14 @@ class Queue
 
 class Rule
 {
-  int check(Standards.URI uri);
+  int check(string|Standards.URI uri);
 }
 
 class GlobRule(string pattern)
 {
   inherit Rule;
 
-  int check(Standards.URI uri)
+  int check(string|Standards.URI uri)
   {
     return glob(pattern, (string)uri);
   }
@@ -213,7 +213,7 @@ class RegexpRule
     regexp=Regexp(re);
   }
 
-  int check(Standards.URI uri)
+  int check(string|Standards.URI uri)
   {
     return regexp->match((string)uri);
   }
@@ -233,7 +233,7 @@ class RuleSet
     rules[rule]=0;
   }
 
-  int check(Standards.URI uri)
+  int check(string|Standards.URI uri)
   {
     foreach(indices(rules), Rule rule)
       if(rule->check(uri))
