@@ -5,7 +5,7 @@
 \*/
 
 /*
- * $Id: interpret.h,v 1.79 2001/03/09 02:27:57 hubbe Exp $
+ * $Id: interpret.h,v 1.80 2001/04/28 19:39:20 mast Exp $
  */
 #ifndef INTERPRET_H
 #define INTERPRET_H
@@ -165,7 +165,7 @@ PMOD_EXPORT const char *Pike_check_c_stack_errmsg;
 #define ref_push_type_value(S) do{ struct pike_type *_=(S); debug_malloc_touch(_); _->refs++; Pike_sp->u.type=_; Pike_sp++->type=PIKE_T_TYPE; }while(0)
 #define ref_push_object(O) do{ struct object  *_=(O); debug_malloc_touch(_); _->refs++; Pike_sp->u.object=_; Pike_sp++->type=PIKE_T_OBJECT; }while(0)
 
-#define push_svalue(S) do { struct svalue *_=(S); assign_svalue_no_free(Pike_sp,_); Pike_sp++; }while(0)
+#define push_svalue(S) do { const struct svalue *_=(S); assign_svalue_no_free(Pike_sp,_); Pike_sp++; }while(0)
 
 #define stack_dup() push_svalue(Pike_sp-1)
 #define stack_swap() do { struct svalue _=Pike_sp[-1]; Pike_sp[-1]=Pike_sp[-2]; Pike_sp[-2]=_; } while(0)
