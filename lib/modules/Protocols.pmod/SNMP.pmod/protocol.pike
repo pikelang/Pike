@@ -17,7 +17,7 @@
 //!      2570   : v3 description
 //!
 
-// $Id: protocol.pike,v 1.11 2003/04/23 14:01:57 nilsson Exp $
+// $Id: protocol.pike,v 1.12 2003/09/01 16:35:09 nilsson Exp $
 
 
 #include "snmp_globals.h"
@@ -241,7 +241,7 @@ mapping readmsg() {
   mapping rv;
 
   rv = read();
-  return(rv);
+  return rv;
 }
 
 //! decode ASN1 data, if garbaged ignore it
@@ -258,10 +258,10 @@ mapping decode_asn1_msg(mapping rawd) {
 		   "version":xdec->elements[0]->value,
 		   "community":xdec->elements[1]->value,
 		   "op":xdec->elements[2]->get_tag(),
-		   "attribute":Array.map(xdec->elements[2]->elements[3]->elements, lambda(object duo) { return(([(array(string))(duo->elements[0]->id)*".":duo->elements[1]->value])); } )
+		   "attribute":Array.map(xdec->elements[2]->elements[3]->elements, lambda(object duo) { return ([(array(string))(duo->elements[0]->id)*".":duo->elements[1]->value]); } )
   ]);
 
-  return(([msgid:msg]));
+  return ([msgid:msg]);
 }
 
 
@@ -282,7 +282,7 @@ mapping|int from_pool(string msgid) {
 
    msg = msgpool[msgid];
    msgpool -= ([msgid:msg]);
-   return(msg);
+   return msg;
 }
 
 
@@ -292,7 +292,7 @@ private mapping readmsg_from_pool(int msgid) {
 
   mapping rv = from_pool((string)msgid);
   if(rv)
-    return(rv);
+    return rv;
 
 #define HACK 1
 #ifdef HACK
@@ -300,7 +300,7 @@ private mapping readmsg_from_pool(int msgid) {
   to_pool(tmpm);
 #endif
 
-  return(from_pool((string)msgid));
+  return from_pool((string)msgid);
 }
 
 
@@ -323,7 +323,7 @@ private int writemsg(string rem_addr, int rem_port, object pdu) {
   DWRITE(sprintf("protocol.writemsg: %O\n", rawd));
 
   msize = send(rem_addr, rem_port, rawd);
-  return(msize = sizeof(rawd) ? SNMP_SUCCESS : SNMP_SEND_ERROR);
+  return (msize = sizeof(rawd) ? SNMP_SUCCESS : SNMP_SEND_ERROR);
 }
 
 
@@ -333,7 +333,7 @@ private int get_req_id() {
   //LOCK
   int rv = request_id++;
   //UNLOCK
-  return(rv);
+  return rv;
 }
 
 //:
@@ -343,7 +343,7 @@ array(mapping)|int read_response(int msgid) {
   mapping rawpdu = readmsg_from_pool(msgid);
 
 
-  return(({rawpdu}));
+  return ({rawpdu});
 }
 
 //!
@@ -365,7 +365,7 @@ int get_request(array(string) varlist, string|void rem_addr,
   foreach(varlist, string varname)
     vararr += ({Standards.ASN1.Types.asn1_sequence(
 	      ({Standards.ASN1.Types.asn1_identifier(
-		  @Array.map(varname/".", lambda(string el){ return((int)el);})),
+		  @Array.map(varname/".", lambda(string el){ return (int)el;})),
 		Standards.ASN1.Types.asn1_integer(1)}) //doesn't sense but req
 	      )});
 
@@ -391,7 +391,7 @@ object mk_asn1_val(string type, int|string val) {
   switch(type) {
     case "oid":		// OID
 	rv = Standards.ASN1.Types.asn1_identifier(
-		@Array.map(val/".", lambda(string el){ return((int)el);}));
+		@Array.map(val/".", lambda(string el){ return (int)el;}));
 	break;
 
     case "int":		// INTEGER
@@ -480,7 +480,7 @@ int get_response(mapping varlist, mapping origdata, int|void errcode, int|void e
     if(arrayp(varlist[varname]) || sizeof(varlist[varname]) > 1) {
       vararr += ({Standards.ASN1.Types.asn1_sequence(
 		 ({Standards.ASN1.Types.asn1_identifier(
-		    @Array.map(varname/".", lambda(string el){ return((int)el);})),
+		    @Array.map(varname/".", lambda(string el){ return (int)el;})),
 		   mk_asn1_val(varlist[varname][0], varlist[varname][1])})
 	      )});
     }
@@ -520,7 +520,7 @@ int get_nextrequest(array(string) varlist, string|void rem_addr,
   foreach(varlist, string varname)
     vararr += ({Standards.ASN1.Types.asn1_sequence(
 	      ({Standards.ASN1.Types.asn1_identifier(
-		 @Array.map(varname/".", lambda(string el){ return((int)el);})),
+		 @Array.map(varname/".", lambda(string el){ return (int)el; })),
 		Standards.ASN1.Types.asn1_integer(1)}) //doesn't sense but req
 	      )});
 
@@ -589,7 +589,7 @@ int set_request(mapping varlist, string|void rem_addr,
   foreach(indices(varlist), string varname)
     vararr += ({Standards.ASN1.Types.asn1_sequence(
 	        ({Standards.ASN1.Types.asn1_identifier(
-		    @Array.map(varname/".", lambda(string el){ return((int)el);})),
+		    @Array.map(varname/".", lambda(string el){ return (int)el; })),
 		  mk_asn1_val(varlist[varname][0], varlist[varname][1])})
 	      )});
 
@@ -670,7 +670,7 @@ int trap(mapping varlist, string oid, int type, int spectype, int ticks,
   foreach(indices(varlist), string varname)
     vararr += ({Standards.ASN1.Types.asn1_sequence(
 	        ({Standards.ASN1.Types.asn1_identifier(
-		    @Array.map(varname/".", lambda(string el){ return((int)el);})),
+		    @Array.map(varname/".", lambda(string el){ return (int)el; })),
 		  mk_asn1_val(varlist[varname][0], varlist[varname][1])})
 	      )});
   pdu = Protocols.LDAP.ldap_privates.asn1_context_sequence(4,

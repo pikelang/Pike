@@ -2,7 +2,7 @@
 
 // LDAP client protocol implementation for Pike.
 //
-// $Id: client.pike,v 1.49 2003/07/01 15:21:59 anders Exp $
+// $Id: client.pike,v 1.50 2003/09/01 16:36:47 nilsson Exp $
 //
 // Honza Petrous, hop@unibase.cz
 //
@@ -140,14 +140,14 @@ int _prof_gtim;
       array res = ({});
 
       if(!sizeof(x->elements))
-	return(res);
+	return res;
       foreach(x->elements[1]->elements, object val1) 
 	res += ({ val1->value });
       if(ver == 3) {
         // deUTF8
         res = Array.map(res, utf2s);
       }
-      return(res);
+      return res;
     }
 
     private array _New_decode(array ar) {
@@ -167,7 +167,7 @@ int _prof_gtim;
 	res += ({attrs});
       }
 
-      return (res);
+      return res;
     } // _New_decode
 
     //!
@@ -182,7 +182,7 @@ int _prof_gtim;
       if (lastel < 0) {
         global::seterr (LDAP_LOCAL_ERROR);
         THROW(({"LDAP: Internal error.\n",backtrace()}));
-        return(-global::ldap_errno);
+        return -global::ldap_errno;
       }
       DWRITE(sprintf("result.create: rawres=%O\n",rawres[lastel]));
 
@@ -216,7 +216,7 @@ int _prof_gtim;
       }
 #endif
 
-      return(this_object());
+      return this;
 
     }
 
@@ -225,7 +225,7 @@ int _prof_gtim;
     //!
     //! @seealso
     //!  @[LDAP.client.result.error_string]
-    int error_number() { return(resultcode); }
+    int error_number() { return resultcode; }
 
     //!
     //! Returns error description of search result.
@@ -233,8 +233,8 @@ int _prof_gtim;
     //! @seealso
     //!  @[LDAP.client.result.error_number]
     string error_string() {
-      return((stringp(resultstring) && sizeof(resultstring)) ? 
-		resultstring : ldap_errlist[resultcode]);
+      return ((stringp(resultstring) && sizeof(resultstring)) ?
+	      resultstring : ldap_errlist[resultcode]);
     }
 
     //!
@@ -242,7 +242,7 @@ int _prof_gtim;
     //!
     //! @seealso
     //!  @[LDAP.client.result.count_entries]
-    int num_entries() { return(entrycnt); }
+    int num_entries() { return entrycnt; }
 
     //!
     //! Returns the number of entries from current cursor
@@ -250,7 +250,7 @@ int _prof_gtim;
     //!
     //! @seealso
     //!  @[LDAP.client.result.first], @[LDAP.client.result.next]
-    int count_entries() { return(entrycnt - actnum); }
+    int count_entries() { return entrycnt - actnum; }
 
     //! Returns a mapping with an entry for each attribute.
     //! Each entry is an array of values of the attribute.
@@ -264,16 +264,16 @@ int _prof_gtim;
 	idx = actnum + 1;
       if ((idx <= num_entries()) && (idx > 0)) {
 	actnum = idx - 1;
-        return(entry[actnum]);
+        return entry[actnum];
       }
-      return(0);
+      return 0;
     }
 
     //!
     //! Returns distinguished name (DN) of the current entry
     //! in the result list. Notice that this is the same
     //! as fetch()->dn[0].
-    string get_dn() { return(fetch()["dn"][0]); }
+    string get_dn() { return fetch()["dn"][0]; }
 
     //!
     //! Initialized the result cursor to the first entry
@@ -293,9 +293,9 @@ int _prof_gtim;
     int next() {
       if (actnum < (num_entries()-1)) {
 	actnum++;
-	return(count_entries());
+	return count_entries();
       }
-      return(0);
+      return 0;
     }
 
   } // end of class 'result' ---------------
@@ -307,9 +307,9 @@ int _prof_gtim;
     if ((ldap_version != 2) && (ldap_version != 3)) {
       seterr (LDAP_PROTOCOL_ERROR);
       THROW(({"LDAP: Unknown/unsupported protocol version.\n",backtrace()}));
-      return(-ldap_errno);
+      return -ldap_errno;
     }
-    return(0);
+    return 0;
   }
 
   private int chk_binded() {
@@ -318,11 +318,11 @@ int _prof_gtim;
     if ((ldap_version == 2) && !binded) {
       seterr (LDAP_PROTOCOL_ERROR);
       THROW(({"LDAP: Must binded first.\n",backtrace()}));
-      return(-ldap_errno);
+      return -ldap_errno;
     }
     if ((ldap_version == 3) && !binded)
       bind();
-    return(0);
+    return 0;
   }
 
   private int chk_dn(string dn) {
@@ -330,9 +330,9 @@ int _prof_gtim;
     if ((!dn) || (!sizeof(dn))) {
       seterr (LDAP_INVALID_DN_SYNTAX);
       THROW(({"LDAP: Invalid DN syntax.\n",backtrace()}));
-      return(-ldap_errno);
+      return -ldap_errno;
     }
-    return(0);
+    return 0;
   }
 
   //! Several information about code itself and about active connection too
@@ -360,7 +360,7 @@ int _prof_gtim;
   void create(string|void url, object|void context)
   {
 
-    info = ([ "code_revision" : ("$Revision: 1.49 $"/" ")[1] ]);
+    info = ([ "code_revision" : ("$Revision: 1.50 $"/" ")[1] ]);
 
     if(!url || !sizeof(url))
       url = LDAP_DEFAULT_URL;
@@ -449,7 +449,7 @@ int _prof_gtim;
 
     msgval = ASN1_APPLICATION_SEQUENCE(0, ({vers, namedn, auth}));
 
-    return (do_op(msgval));
+    return do_op(msgval);
   }
 
   //! @decl int bind()
@@ -494,7 +494,7 @@ int _prof_gtim;
     if (!version)
       version = LDAP_DEFAULT_VERSION;
     if (chk_ver())
-      return(0);
+      return 0;
     if (!stringp(dn))
       dn = mappingp(lauth->ext) ? lauth->ext->bindname||"" : "";
     if (!stringp(pass))
@@ -506,7 +506,7 @@ int _prof_gtim;
     }
     if(intp(raw = send_bind_op(dn, pass))) {
       THROW(({error_string()+"\n",backtrace()}));
-      return(-ldap_errno);
+      return -ldap_errno;
     }
 
    binded = 0;
@@ -526,7 +526,7 @@ int _prof_gtim;
 
     //ldap::close();
 
-    return (1);
+    return 1;
   }
 
   void destroy() {
@@ -541,7 +541,7 @@ int _prof_gtim;
 
     if (send_unbind_op() < 1) {
       THROW(({error_string()+"\n",backtrace()}));
-      return(-ldap_errno);
+      return -ldap_errno;
     }
     binded = 0;
     DWRITE_HI("client.UNBIND: OK\n");
@@ -551,7 +551,7 @@ int _prof_gtim;
   private int|string send_op_withdn(int op, string dn) {
   // DELETE, ...
 
-    return (do_op(ASN1_APPLICATION_OCTET_STRING(op, dn)));
+    return do_op(ASN1_APPLICATION_OCTET_STRING(op, dn));
 
   }
 
@@ -573,23 +573,23 @@ int _prof_gtim;
     mixed raw;
 
     if (chk_ver())
-      return(0);
+      return 0;
     if (chk_binded())
-      return(0);
+      return 0;
     if (chk_dn(dn))
-      return(0);
+      return 0;
     if(ldap_version == 3) {
       dn = string_to_utf8(dn);
     }
     if(intp(raw = send_op_withdn(10, dn))) {
       THROW(({error_string()+"\n",backtrace()}));
-      return(0);
+      return 0;
     }
 
    last_rv = result(({raw}));
    DWRITE_HI(sprintf("client.DELETE: %s\n", last_rv->error_string()));
-   seterr (last_rv->error_number());
-   return (!last_rv->error_number());
+   seterr(last_rv->error_number());
+   return !last_rv->error_number();
 
   } // delete
 
@@ -607,7 +607,7 @@ int _prof_gtim;
 		})
 	     );
 
-    return (do_op(msgval));
+    return do_op(msgval);
   }
 
 
@@ -634,24 +634,24 @@ int _prof_gtim;
     // if (!aval || sizeof(aval)<2)
     //  error
     if (chk_ver())
-      return(0);
+      return 0;
     if (chk_binded())
-      return(0);
+      return 0;
     if (chk_dn(dn))
-      return(0);
+      return 0;
     if(ldap_version == 3) {
       dn = string_to_utf8(dn);
       aval = Array.map(aval, string_to_utf8);
     }
     if(intp(raw = send_compare_op(dn, aval))) {
       THROW(({error_string()+"\n",backtrace()}));
-      return(0);
+      return 0;
     }
 
    last_rv = result(({raw}));
    DWRITE_HI(sprintf("client.COMPARE: %s\n", last_rv->error_string()));
-   seterr (last_rv->error_number());
-   return (!last_rv->error_number());
+   seterr(last_rv->error_number());
+   return !last_rv->error_number();
 
   } // compare
 
@@ -680,7 +680,7 @@ int _prof_gtim;
 		  Standards.ASN1.Types.asn1_sequence(oatt)
 		}));
 
-    return (do_op(msgval));
+    return do_op(msgval);
   }
 
 
@@ -706,11 +706,11 @@ int _prof_gtim;
     mixed raw;
 
     if (chk_ver())
-      return(0);
+      return 0;
     if (chk_binded())
-      return(0);
+      return 0;
     if (chk_dn(dn))
-      return(0);
+      return 0;
     if(ldap_version == 3) {
       dn = string_to_utf8(dn);
       array(string) keys = indices(attrs);
@@ -720,13 +720,13 @@ int _prof_gtim;
     }
     if(intp(raw = send_add_op(dn, attrs))) {
       THROW(({error_string()+"\n",backtrace()}));
-      return(0);
+      return 0;
     }
 
     last_rv = result(({raw}));
     DWRITE_HI(sprintf("client.ADD: %s\n", last_rv->error_string()));
-    seterr (last_rv->error_number());
-    return (!last_rv->error_number());
+    seterr(last_rv->error_number());
+    return !last_rv->error_number();
 
   } // add
 
@@ -759,7 +759,7 @@ int _prof_gtim;
       ; // silent error: Missed right-enclosed bracket !
     }
     //DWRITE(sprintf("client.sub1: arr=%O\n",rvarr));
-    return(rvarr);
+    return rvarr;
   }
 
   /*private*/ object make_simple_filter(string filter) {
@@ -771,21 +771,21 @@ int _prof_gtim;
     DWRITE(sprintf("client.make_simple_filter: filter: [%s]\n", filter));
     if((op = predef::search(filter, ">=")) > 0)	{ // greater or equal
       DWRITE("client.make_simple_filter: [>=]\n");
-      return(ASN1_CONTEXT_SEQUENCE(5,
+      return ASN1_CONTEXT_SEQUENCE(5,
 		({Standards.ASN1.Types.asn1_octet_string(filter[..(op-1)]),
 		  Standards.ASN1.Types.asn1_octet_string(filter[(op+2)..])
-		})));
+		}));
     }
     if((op = predef::search(filter, "<=")) > 0)	{ // less or equal
       DWRITE("client.make_simple_filter: [<=]\n");
-      return(ASN1_CONTEXT_SEQUENCE(6,
+      return ASN1_CONTEXT_SEQUENCE(6,
 		({Standards.ASN1.Types.asn1_octet_string(filter[..(op-1)]),
 		  Standards.ASN1.Types.asn1_octet_string(filter[(op+2)..])
-		})));
+		}));
     }
     if((op = predef::search(filter, "=")) > 0) {	// equal, substring
 	if((filter[-2] == '=') && (filter[-1] == '*'))  // any (=*)
-	  return(make_simple_filter(filter[..op-1]));
+	  return make_simple_filter(filter[..op-1]);
 	ix = predef::search(filter[(op+1)..], "*");
 	if ((ix != -1) && (filter[op+ix] != '\\')) {	// substring
 	    object ohlp;
@@ -820,21 +820,21 @@ int _prof_gtim;
 	    // for
 
 	    DWRITE(sprintf("client.make_simple_filter: substring: [%s]:\n%O\n", filter, ahlp));
-	    return(ASN1_CONTEXT_SEQUENCE(4,
+	    return ASN1_CONTEXT_SEQUENCE(4,
 		({Standards.ASN1.Types.asn1_octet_string(filter[..(op-1)]),
 		  Standards.ASN1.Types.asn1_sequence(oarr)
-		})));
+		}));
       } else {				   // equal
         DWRITE("client.make_simple_filter: [=]\n");
-	return(ASN1_CONTEXT_SEQUENCE(3,
+	return ASN1_CONTEXT_SEQUENCE(3,
 		({Standards.ASN1.Types.asn1_octet_string(filter[..(op-1)]),
 		  Standards.ASN1.Types.asn1_octet_string(filter[(op+1)..])
-		})));
+		}));
       }
     } // if equal,substring
     // present
     DWRITE("client.make_simple_filter: [present]\n");
-    return(ASN1_CONTEXT_OCTET_STRING(7, filter));
+    return ASN1_CONTEXT_OCTET_STRING(7, filter);
 }
 
 
@@ -859,9 +859,9 @@ int _prof_gtim;
       string f2 = reverse(filter[1..]);
       if((ix = predef::search(f2, ")")) > -1) {
 	filter = reverse(f2[ix+1..]);
-	return(make_filter(filter));
+	return make_filter(filter);
       }
-      return(-1); // error in filter expr.
+      return -1; // error in filter expr.
     }
 #endif
 
@@ -875,21 +875,21 @@ int _prof_gtim;
 		if (objectp(ohlp = make_filter(sub1expr)))
 		  oarr += ({ohlp});
 		else
-		  return(0); // error: Filter parameter error!
+		  return 0; // error: Filter parameter error!
       	      DWRITE(sprintf("client.make_filter: expr_cnt=%d\n",sizeof(oarr)));
 	      //ohlp = Standards.ASN1.Encode.asn1_set(@oarr);
 	      op = 0;
 	      if (filter[0] == '|')
 		op = 1;
-	      return(ASN1_CONTEXT_SET(op, oarr));
+	      return ASN1_CONTEXT_SET(op, oarr);
       case '!':		// not
 	      if (objectp(ohlp = make_filter(filter_get_sub1expr(filter[1..])[0])))
-	        return(ASN1_CONTEXT_SEQUENCE(2, ({ ohlp}) ));
+	        return ASN1_CONTEXT_SEQUENCE(2, ({ ohlp}) );
 	      else
-		return(0); // error: Filter parameter error!
+		return 0; // error: Filter parameter error!
 	      break;
       default :		// we assume simple filter
-	      return(make_simple_filter(filter));
+	      return make_simple_filter(filter);
     }
 }
 
@@ -903,7 +903,7 @@ int _prof_gtim;
     array(object) ohlp;
 
     if(!objectp(ofilt = make_filter(filter))) {
-      return(-seterr(LDAP_FILTER_ERROR));
+      return -seterr(LDAP_FILTER_ERROR);
     }
     ohlp = ({ofilt});
     if (arrayp(attrs)) { //explicitly defined attributes
@@ -924,7 +924,7 @@ int _prof_gtim;
 		   @ohlp
 		})) ;
 
-    return (do_op(msgval));
+    return do_op(msgval);
   }
 
 
@@ -966,9 +966,9 @@ int _prof_gtim;
 
     DWRITE_HI("client.SEARCH: " + (string)filter + "\n");
     if (chk_ver())
-      return(0);
+      return 0;
     if (chk_binded())
-      return(0);
+      return 0;
     if(ldap_version == 3) {
       filter = string_to_utf8(filter);
     }
@@ -979,7 +979,7 @@ int _prof_gtim;
 			ldap_sizelimit, ldap_timelimit, attrsonly, filter,
 			attrs||lauth->attributes))) {
       THROW(({error_string()+"\n",backtrace()}));
-      return(0);
+      return 0;
     }
 #ifdef LDAP_PROTOCOL_PROFILE
     };
@@ -998,7 +998,7 @@ int _prof_gtim;
 #endif
       if (intp(raw)) {
         THROW(({error_string()+"\n",backtrace()}));
-        return(0);
+        return 0;
       }
       rawarr += ({raw});
     } // while
@@ -1020,7 +1020,7 @@ int _prof_gtim;
 
     DWRITE_HI(sprintf("client.SEARCH: %s (entries: %d)\n",
     			last_rv->error_string(), last_rv->num_entries()));
-    return(last_rv);
+    return last_rv;
 
   } // search
 
@@ -1036,7 +1036,7 @@ int _prof_gtim;
     }
     ldap_basedn = base_dn;
     DWRITE_HI("client.SET_BASEDN = " + base_dn + "\n");
-    return(old_dn);
+    return old_dn;
   }
 
   //!
@@ -1056,15 +1056,15 @@ int _prof_gtim;
 	case "sub": scope = 2; break;
 	case "one": scope = 1; break;
 	case "base": scope = 0; break;
-	default: return (-1);
+	default: return -1;
       }
     else
      if(scope != 0 && scope != 1 && scope != 2)
-       return (-1);
+       return -1;
  
     ldap_scope = scope;
     DWRITE_HI("client.SET_SCOPE = " + (string)scope + "\n");
-    return(old_scope);
+    return old_scope;
   }
 
   //! @param option_type
@@ -1079,26 +1079,26 @@ int _prof_gtim;
 		  //if (intp(value))
 		    ldap_deref = value;
 		  //else
-		  //  return(-1);
+		  //  return -1;
 		  break;
 	case 2: // LDAP_OPT_SIZELIMIT
 		  //if (intp(value))
 		    ldap_sizelimit = value;
 		  //else
-		  //  return(-1);
+		  //  return -1;
 		  break;
 	case 3: // LDAP_OPT_TIMELIMIT
 		  //if (intp(value))
 		    ldap_timelimit = value;
 		  //else
-		  //  return(-1);
+		  //  return -1;
 		  break;
 	case 4: // LDAP_OPT_REFERRALS
-	default: return(-1);
+	default: return -1;
     }
 	
 
-    return(0);
+    return 0;
   }
 
   //! @param option_type
@@ -1109,15 +1109,15 @@ int _prof_gtim;
     DWRITE_HI("client.GET_OPTION: " + (string)opttype + "\n");
     switch (opttype) {
 	case 1: // LDAP_OPT_DEREF
-		  return(ldap_deref);
+		  return ldap_deref;
 	case 2: // LDAP_OPT_SIZELIMIT
-		  return(ldap_sizelimit);
+		  return ldap_sizelimit;
 	case 3: // LDAP_OPT_TIMELIMIT
-		  return(ldap_timelimit);
+		  return ldap_timelimit;
 	case 4: // LDAP_OPT_REFERRALS
     }
 
-    return(-1);
+    return -1;
   }
 
   private int|string send_modify_op(string dn,
@@ -1131,7 +1131,7 @@ int _prof_gtim;
 
     foreach(indices(attropval), atype) {
       if(!intp((attropval[atype])[0]))
-	return(seterr (LDAP_PROTOCOL_ERROR));
+	return seterr(LDAP_PROTOCOL_ERROR);
       attrarr = ({});
       for(int ix=1; ix<sizeof(attropval[atype]); ix++)
 	attrarr += ({Standards.ASN1.Types.asn1_octet_string(
@@ -1155,7 +1155,7 @@ int _prof_gtim;
 		   Standards.ASN1.Types.asn1_sequence(oatt)
 		}));
 
-    return (do_op(msgval));
+    return do_op(msgval);
   }
 
   private int|string send_modifydn_op(string dn, string newrdn,
@@ -1171,7 +1171,7 @@ int _prof_gtim;
 
     msgval = ASN1_APPLICATION_SEQUENCE(12, seq);
 
-    return (do_op(msgval));
+    return do_op(msgval);
   }
 
   //!  The Modify DN Operation allows a client to change the leftmost
@@ -1205,11 +1205,11 @@ int _prof_gtim;
     mixed raw;
 
     if (chk_ver())
-      return(0);
+      return 0;
     if (chk_binded())
-      return(0);
+      return 0;
     if (chk_dn(dn))
-      return(0);
+      return 0;
     if(ldap_version == 3) {
       dn = string_to_utf8(dn);
       newrdn = string_to_utf8(newrdn);
@@ -1217,13 +1217,13 @@ int _prof_gtim;
     }
     if(intp(raw = send_modifydn_op(dn, newrdn, deleteoldrdn, newsuperior))) {
       THROW(({error_string()+"\n",backtrace()}));
-      return(0);
+      return 0;
     }
 
     last_rv = result(({raw}));
     DWRITE_HI(sprintf("client.MODIFYDN: %s\n", last_rv->error_string()));
-    seterr (last_rv->error_number());
-    return (!last_rv->error_number());
+    seterr(last_rv->error_number());
+    return !last_rv->error_number();
 
   }  //modifydn
 
@@ -1265,11 +1265,11 @@ int _prof_gtim;
     mixed raw;
 
     if (chk_ver())
-      return(0);
+      return 0;
     if (chk_binded())
-      return(0);
+      return 0;
     if (chk_dn(dn))
-      return(0);
+      return 0;
     if(ldap_version == 3) {
       dn = string_to_utf8(dn);
       array(string) keys = indices(attropval);
@@ -1284,13 +1284,13 @@ int _prof_gtim;
     }
     if(intp(raw = send_modify_op(dn, attropval))) {
       THROW(({error_string()+"\n",backtrace()}));
-      return(0);
+      return 0;
     }
 
     last_rv = result(({raw}));
     DWRITE_HI(sprintf("client.MODIFY: %s\n", last_rv->error_string()));
-    seterr (last_rv->error_number());
-    return (!last_rv->error_number());
+    seterr(last_rv->error_number());
+    return !last_rv->error_number();
 
   } // modify
 
@@ -1321,7 +1321,7 @@ int _prof_gtim;
 
 #ifdef LDAP_URL_STRICT
     if (url[..2] != "://")
-      return(-1);
+      return -1;
 #endif
 
     s = (url[3..] / "/")[0];
@@ -1356,7 +1356,7 @@ int _prof_gtim;
       case 1: res += ([ "basedn" : ar[0] ]);
     }
 
-    return (res);
+    return res;
 
   } //parse_uri
 

@@ -79,7 +79,7 @@ string ordered(int i)
   int rest = i%100;
   int base = i-rest;
   if (!i) {
-    return("napacen");
+    return "napacen";
   }
   if (!rest2) {
     return replace(number(i)+"ti"," ","");

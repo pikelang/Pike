@@ -4,7 +4,7 @@
 
 //! Russian language locale
 
-// $Id: rus.pmod,v 1.1 2002/10/01 10:57:57 nilsson Exp $
+// $Id: rus.pmod,v 1.2 2003/09/01 16:37:32 nilsson Exp $
 
 inherit "abstract";
 
@@ -195,10 +195,10 @@ string number(int num, string|void gender)
   if (!gender)   /* Solitary numbers are inflected as masculine */
     gender = "m";
   if (num<0) {
-    return("минус"+_number(-num, gender));
+    return "минус"+_number(-num, gender);
   } if (num) {
-    return(_number(num, gender));
+    return _number(num, gender);
   } else {
-    return("ноль");
+    return "ноль";
   }
 }

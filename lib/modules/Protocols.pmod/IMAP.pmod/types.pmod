@@ -17,7 +17,7 @@ string imap_format_array(array a)
 {
 #if 0
   if (!sizeof(a)) {
-    return("");
+    return "";
   }
   a = Array.map(a, imap_format);
   string res = a[0];
@@ -37,7 +37,7 @@ string imap_format_array(array a)
 
 array imap_check_array(array a)
 {
-  return(Array.filter(a, lambda(mixed item, array index) {
+  return Array.filter(a, lambda(mixed item, array index) {
 			   index[0]++;
 			   if (!item || stringp(item) || objectp(item)) {
 			     return 1;
@@ -48,7 +48,7 @@ array imap_check_array(array a)
 			     backtrace()
 			   }) ));
 			   return 0;
-			 }, ({ -1 }) ));
+			 }, ({ -1 }) );
 }
 
 /* Output types */

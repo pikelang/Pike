@@ -16,7 +16,7 @@ void rc(mapping rdata, int idx) {
   o->to_pool(rdata);
   rv = o->read_response(idx);
 
-  write(sprintf("Returned object: %O\n", rv));
+  write("Returned object: %O\n", rv);
  
   exit(0);
 }
@@ -50,10 +50,10 @@ write("Index: "+(string)idx+"\n");
   o->set_read_callback(rc, idx);
   o->set_nonblocking();
   co = call_out(tt, 2);
-  return(-13);
+  return -13;
 #else
   rv = o->read_response(idx);
-  write(sprintf("Returned object: %O\n", rv));
+  write("Returned object: %O\n", rv);
 #endif
 
 }

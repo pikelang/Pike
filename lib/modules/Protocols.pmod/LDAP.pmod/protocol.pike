@@ -2,7 +2,7 @@
 
 // LDAP client protocol implementation for Pike.
 //
-// $Id: protocol.pike,v 1.9 2003/01/20 17:44:01 nilsson Exp $
+// $Id: protocol.pike,v 1.10 2003/09/01 16:36:47 nilsson Exp $
 //
 // Honza Petrous, hop@unibase.cz
 //
@@ -52,7 +52,7 @@
 
     //ldap_rem_errstr = errstr;
     ldap_errno = errno;
-    return(errno);
+    return errno;
   }
 
   //!
@@ -60,16 +60,16 @@
   //!
   //! @seealso
   //!  @[LDAP.protocol.error_string]
-  int error_number() { return(ldap_errno); }
+  int error_number() { return ldap_errno; }
 
   //!
   //! Returns error description of search result.
   //!
   //! @seealso
   //!  @[LDAP.protocol.error_number]
-  string error_string() { return(ldap_errlist[ldap_errno]); }
+  string error_string() { return ldap_errlist[ldap_errno]; }
 
-  array error() { return(({error_number(), error_string()})); }
+  array error() { return ({error_number(), error_string()}); }
 
 
   static void read_answer() {
@@ -85,14 +85,14 @@
       seterr (LDAP_TIMEOUT);
       DWRITE_HI("protocol.read_anwer: ERROR: connection timeout.\n");
       THROW(({"LDAP: connection timeout.\n",backtrace()}));
-      //return(-ldap_errno);
+      //return -ldap_errno;
       return;
     }
     if (readbuf[0] != '0') {
       seterr (LDAP_PROTOCOL_ERROR);
       DWRITE_HI("protocol.read_anwer: ERROR: retv=<"+sprintf("%O",readbuf)+">\n");
       THROW(({"LDAP: Protocol mismatch.\n",backtrace()}));
-      //return(-ldap_errno);
+      //return -ldap_errno;
       return;
     }
     DWRITE(sprintf("protocol.read_anwer: sizeof = %d\n", sizeof(readbuf)));
@@ -103,7 +103,7 @@
       if (msglen == 0x80) { // RFC not allows unexplicitly defined length
 	seterr (LDAP_PROTOCOL_ERROR);
 	THROW(({"LDAP: Protocol mismatch.\n",backtrace()}));
-	//return(-ldap_errno);
+	//return -ldap_errno;
 	return;
       }
       ofs = (msglen & 0x7f) + 2;
@@ -113,7 +113,7 @@
       if (!s || (sizeof(s) < ix)) {
 	seterr (LDAP_PROTOCOL_ERROR);
 	THROW(({"LDAP: Protocol mismatch.\n",backtrace()}));
-	//return(-ldap_errno);
+	//return -ldap_errno;
 	return;
       }
       readbuf += s;
@@ -129,7 +129,7 @@
     if (!s || (sizeof(s) < ix)) {
       seterr (LDAP_SERVER_DOWN);
       THROW(({"LDAP: connection closed by server.\n",backtrace()}));
-      //return(-ldap_errno);
+      //return -ldap_errno;
       return;
     }
     readbuf += s;
@@ -149,19 +149,19 @@
     string shlp;
 
     if (sizeof(readbuf) < 3)
-      return(0);  // PDU have min. 3 bytes
+      return 0;  // PDU have min. 3 bytes
 
     if (readbuf[0] != '0')
-      return(1);  // PDU has bad header -> forced execution
+      return 1;  // PDU has bad header -> forced execution
     
     msglen = readbuf[1];
     if (msglen & 0x80) { // > 0x7f
       if (msglen == 0x80)
-	return(1); // forced execution 
+	return 1; // forced execution
       ofs = (msglen & 0x7f) + 2;
       ix = ofs - sizeof(readbuf);
       if(ix > 0)
-	return(0);  // incomplete PDU
+	return 0;  // incomplete PDU
       msglen = 0;
       shlp = reverse(readbuf[2..ofs]);
       for (ix=0; ix<sizeof(shlp); ix++) {
@@ -170,9 +170,9 @@
     }
     ix = (ofs + msglen) - sizeof(readbuf);
     if(ix > 0)
-      return(0);  // incomplete PDU
+      return 0;  // incomplete PDU
 
-    return(1);
+    return 1;
   }
 
   void create(object fd) {
@@ -208,7 +208,7 @@
     if (rv < 2) {
       seterr (LDAP_SERVER_DOWN);
       THROW(({"LDAP: connection closed by server.\n",backtrace()}));
-      return(-ldap_errno);
+      return -ldap_errno;
     }
     DWRITE(sprintf("protocol.do_op: write OK [%d bytes].\n",rv));
     msgval = 0; msgid = 0;
@@ -220,7 +220,7 @@
     read_answer();
     // now is all in 'readbuf'   
 
-    return(readbuf);
+    return readbuf;
 
   }
 
@@ -238,13 +238,13 @@
       seterr (LDAP_TIMEOUT);
       DWRITE_HI("protocol.readmsg: ERROR: connection timeout.\n");
       THROW(({"LDAP: connection timeout.\n",backtrace()}));
-      return(-ldap_errno);
+      return -ldap_errno;
     }
     if (!retv || (sizeof(retv) != 2) || (retv[0] != '0')) {
       seterr (LDAP_PROTOCOL_ERROR);
       DWRITE_HI("protocol.readmsg: ERROR: retv=<"+sprintf("%O",retv)+">\n");
       THROW(({"LDAP: Protocol mismatch.\n",backtrace()}));
-      return(-ldap_errno);
+      return -ldap_errno;
     }
     DWRITE(sprintf("protocol.readmsg: sizeof = %d\n", sizeof(retv)));
 
@@ -253,13 +253,13 @@
       if (msglen == 0x80) { // RFC not allows unexplicitly defined length
 	seterr (LDAP_PROTOCOL_ERROR);
 	THROW(({"LDAP: Protocol mismatch.\n",backtrace()}));
-	return(-ldap_errno);
+	return -ldap_errno;
       }
       s = ldapfd->read(msglen & 0x7f);
       if (!s) {
 	seterr (LDAP_PROTOCOL_ERROR);
 	THROW(({"LDAP: Protocol mismatch.\n",backtrace()}));
-	return(-ldap_errno);
+	return -ldap_errno;
       }
       retv += s;
       msglen = 0; // !!! RESTRICTION: 2^32 !!!
@@ -272,11 +272,11 @@
     if (!s | (sizeof(s) < msglen)) {
       seterr (LDAP_SERVER_DOWN);
       THROW(({"LDAP: connection closed by server.\n",backtrace()}));
-      return(-ldap_errno);
+      return -ldap_errno;
     }
     retv += s;
     DWRITE(sprintf("protocol.readmsg: %s\n", .ldap_privates.ldap_der_decode(retv)->debug_string()));
-    return (retv);
+    return retv;
   }
 
   int writemsg(object msgop) {
@@ -304,11 +304,11 @@
     if (rv < 2) {
       seterr (LDAP_SERVER_DOWN);
       THROW(({"LDAP: connection closed by server.\n",backtrace()}));
-      return(-ldap_errno);
+      return -ldap_errno;
     }
     DWRITE(sprintf("protocol.writemsg: write OK [%d bytes].\n",rv));
     msgval = 0; msgid = 0;
-    return (msgnum);
+    return msgnum;
   }
 
 

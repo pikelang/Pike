@@ -3,7 +3,7 @@
 
 //! Swedish language locale
 
-// $Id: swe.pmod,v 1.1 2002/10/01 10:57:57 nilsson Exp $
+// $Id: swe.pmod,v 1.2 2003/09/01 16:37:32 nilsson Exp $
 
 inherit "abstract";
 
@@ -143,10 +143,10 @@ string _number(int num)
 string number(int num)
 {
   if (num<0) {
-    return("minus "+_number(-num));
+    return "minus "+_number(-num);
   } if (num) {
-    return(_number(num));
+    return _number(num);
   } else {
-    return("noll");
+    return "noll";
   }
 }
