@@ -1,6 +1,6 @@
 #!/usr/local/bin/pike
 
-/* $Id: socktest.pike,v 1.22 2003/04/10 02:04:35 nilsson Exp $ */
+/* $Id: socktest.pike,v 1.23 2003/10/04 18:59:31 grubba Exp $ */
 
 
 import Stdio;
@@ -12,6 +12,33 @@ import String;
 
 //int idnum;
 //mapping in_cleanup=([]);
+
+void fd_fail()
+{
+  array(int) fds = sort(Stdio.get_all_active_fd());
+
+  if (sizeof(fds)) {
+    werror("%d open fds:\n", sizeof(fds));
+    int i;
+    for(i=0; i < sizeof(fds); i++) {
+      if (i) {
+	werror(", %d", fds[i]);
+      } else {
+	werror("  %d", fds[i]);
+      }
+      int j;
+      for (j = i; j+1 < sizeof(fds); j++) {
+	if (fds[j+1] != fds[j]+1) break;
+      }
+      if (j != i) {
+	werror(" - %d", fds[j]);
+	i = j;
+      }
+    }
+    werror("\n");
+  }
+  exit(1);
+}
 
 class Socket {
   import Stdio;
@@ -109,7 +136,7 @@ class Socket {
       if(!open_socket())
       {
 	werror("Failed to open socket: "+strerror(errno())+"\n");
-	exit(1);
+	fd_fail();
       }
     }
     set_id(0);
@@ -151,7 +178,7 @@ class Socket2
 void die()
 {
   werror("No callbacks for 20 seconds!\n");
-  exit(1);
+  fd_fail();
 }
 
 int counter;
@@ -246,9 +273,9 @@ array(object(Socket)) stdtest()
   sock2=port2::accept();
   if(!sock2)
   {
-    werror("Accept returned 0\n");
+    werror("Accept returned 0, errno: %d\n", port2::errno());
     sleep(1);
-    exit(1);
+    fd_fail();
   }
   sock2=Socket(sock2);
   sock->output_buffer="foo";
@@ -267,8 +294,8 @@ array(object) spair(int type)
     sock2=port2::accept();
     if(!sock2)
     {
-      werror("Accept returned 0\n");
-      exit(1);
+      werror("Accept returned 0, errno: %d\n", port2::errno());
+      fd_fail();
     }
   }else{
     sock2=sock1->pipe(Stdio.PROP_BIDIRECTIONAL |
@@ -276,8 +303,8 @@ array(object) spair(int type)
 		      Stdio.PROP_SHUTDOWN);
     if(!sock2)
     {
-      werror("File->pipe() failed 0\n");
-      exit(1);
+      werror("File->pipe() failed 0, errno: %d\n", sock1->errno());
+      fd_fail();
     }
   }
   return ({sock1,sock2});
@@ -355,7 +382,7 @@ void finish()
 	  if(!sock2)
 	  {
 	    werror("Failed to open pipe: "+strerror(sock1->errno())+".\n");
-	    exit(1);
+	    fd_fail();
 	  }
 	  sock1=Socket(sock1);
 	  sock2=Socket(sock2);
@@ -378,7 +405,7 @@ void finish()
 	if(!sock2)
 	{
 	  werror("Failed to open pipe: "+strerror(sock1->errno())+".\n");
-	  exit(1);
+	  fd_fail();
 	}
 	sock1=Socket2(sock1);
 	sock2=Socket2(sock2);
@@ -417,7 +444,7 @@ void accept_callback()
   object o=port1::accept();
   if(!o)
   {
-    werror("Accept failed");
+    werror("Accept failed, errno: %d\n", port1::errno());
   }
   o=Socket(o);
   o->expected_data = "foobar" * 4711;
@@ -434,14 +461,14 @@ int main()
   if(!port1::bind(0, accept_callback))
   {
     werror("Bind failed. (%d)\n",port1::errno());
-    exit(1);
+    fd_fail();
   }
   sscanf(port1::query_address(),"%*s %d",portno1);
 
   if(!port2::bind(0))
   {
     werror("Bind failed(2). (%d)\n",port2::errno());
-    exit(1);
+    fd_fail();
   }
 
   sscanf(port2::query_address(),"%*s %d",portno2);
