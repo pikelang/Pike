@@ -1,4 +1,4 @@
-AC_REVISION("$Id: configure.in,v 1.602 2002/08/19 15:32:06 grubba Exp $")
+AC_REVISION("$Id: configure.in,v 1.603 2002/08/19 15:50:38 grubba Exp $")
 AC_INIT(interpret.c)
 AC_CONFIG_HEADER(machine.h)
 
@@ -5697,20 +5697,24 @@ CFLAGS="$NEW_CFLAGS"
 
 case "x$pike_cv_sys_os" in
   xWindows_NT)
+    signal_handler="custom NT"
   ;;
 
   xLinux)
     # Linux's stupid thread implementation doesn't survive USE_WAIT_THREAD.
+    signal_handler="SIGCHILD"
     AC_DEFINE(USE_SIGCHILD)
   ;;
 
   *)
-   # This is valid for at least Solaris, AIX and Darwin.
-   if grep _REENTRANT confdefs.h >/dev/null 2>&1; then
-     AC_DEFINE(USE_WAIT_THREAD)
-   else
-     AC_DEFINE(USE_SIGCHILD)
-   fi
+    # This is valid for at least Solaris, AIX and Darwin.
+    if grep _REENTRANT confdefs.h >/dev/null 2>&1; then
+      signal_handler="wait thread"
+      AC_DEFINE(USE_WAIT_THREAD)
+    else
+      signal_handler="SIGCHILD"
+      AC_DEFINE(USE_SIGCHILD)
+    fi
   ;;
 esac
 
@@ -5913,6 +5917,7 @@ cross-compiled.. $cross_compiling
 features:
 PAD_FEATURE([dynamic loading])$pike_cv_sys_dynamic_loading
 PAD_FEATURE([threads])$using_threads
+PAD_FEATURE([signal handler])$signal_handler
 PAD_FEATURE([cdebug])$with_cdebug
 PAD_FEATURE([rtldebug])$with_rtldebug
 PAD_FEATURE([dmalloc])$with_dmalloc
