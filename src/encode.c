@@ -25,7 +25,7 @@
 #include "version.h"
 #include "bignum.h"
 
-RCSID("$Id: encode.c,v 1.111 2001/07/15 21:16:04 hubbe Exp $");
+RCSID("$Id: encode.c,v 1.112 2001/07/15 21:45:31 mast Exp $");
 
 /* #define ENCODE_DEBUG */
 
@@ -1150,7 +1150,7 @@ struct unfinished_prog_link
 
 struct unfinished_obj_link
 {
-  struct unfinished_prog_link *next;
+  struct unfinished_obj_link *next;
   struct object *o;
 };
 
@@ -1862,9 +1862,6 @@ static void decode_value2(struct decode_data *data)
 	if(data->pickyness)
 	  Pike_error("Failed to decode object.\n");
 
-#ifdef ENCODE_DEBUG
-      data->depth -= 2;
-#endif
       break;
     }
 
