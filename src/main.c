@@ -5,7 +5,7 @@
 \*/
 /**/
 #include "global.h"
-RCSID("$Id: main.c,v 1.141 2001/12/19 23:52:11 mast Exp $");
+RCSID("$Id: main.c,v 1.142 2002/01/03 12:04:06 grubba Exp $");
 #include "fdlib.h"
 #include "backend.h"
 #include "module.h"
@@ -655,6 +655,8 @@ int dbm_main(int argc, char **argv)
   GETTIMEOFDAY(&current_time);
   
   TRACE((stderr, "Init interpreter...\n"));
+
+  low_th_init();
   
   init_shared_string_table();
   init_interpreter();
@@ -662,7 +664,6 @@ int dbm_main(int argc, char **argv)
   init_lex();
   init_program();
   init_object();
-  low_th_init();
 
   TRACE((stderr, "Init modules...\n"));
 
