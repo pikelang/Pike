@@ -26,7 +26,7 @@
 #include "bignum.h"
 #include "pikecode.h"
 
-RCSID("$Id: encode.c,v 1.139 2002/04/07 19:30:08 mast Exp $");
+RCSID("$Id: encode.c,v 1.140 2002/05/02 14:48:10 mast Exp $");
 
 /* #define ENCODE_DEBUG */
 
@@ -1166,7 +1166,7 @@ static void free_encode_data(struct encode_data *data)
   free_mapping(data->encoded);
 }
 
-/*! @decl string encode_value(mixed value, object|void codec, int|void trace)
+/*! @decl string encode_value(mixed value, object|void codec)
  *!
  *! Code a value into a string.
  *!
@@ -1203,7 +1203,14 @@ void f_encode_value(INT32 args)
   data=&d;
 
   check_all_args("encode_value", args, BIT_MIXED, BIT_VOID | BIT_OBJECT,
-		 BIT_VOID | BIT_INT, 0);
+#ifdef ENCODE_DEBUG
+		 /* This argument is only an internal debug helper.
+		  * It's intentionally not part of the function
+		  * prototype, to keep the argument position free for
+		  * other uses in the future. */
+		 BIT_VOID | BIT_INT,
+#endif
+		 0);
 
   initialize_buf(&data->buf);
   data->canonic = 0;
@@ -1232,8 +1239,7 @@ void f_encode_value(INT32 args)
   push_string(low_free_buf(&data->buf));
 }
 
-/*! @decl string encode_value_canonic(mixed value, object|void codec, @
- *!                                   int|void trace)
+/*! @decl string encode_value_canonic(mixed value, object|void codec)
  *!
  *! Code a value into a string on canonical form.
  *!
@@ -1258,7 +1264,14 @@ void f_encode_value_canonic(INT32 args)
   data=&d;
 
   check_all_args("encode_value_canonic", args, BIT_MIXED, BIT_VOID | BIT_OBJECT,
-		 BIT_VOID | BIT_INT, 0);
+#ifdef ENCODE_DEBUG
+		 /* This argument is only an internal debug helper.
+		  * It's intentionally not part of the function
+		  * prototype, to keep the argument position free for
+		  * other uses in the future. */
+		 BIT_VOID | BIT_INT,
+#endif
+		 0);
 
   initialize_buf(&data->buf);
   data->canonic = 1;
@@ -3045,8 +3058,7 @@ static void rec_restore_value(char **v, ptrdiff_t *l)
   }
 }
 
-/*! @decl mixed decode_value(string coded_value, object|void codec, @
- *!                          int|void trace)
+/*! @decl mixed decode_value(string coded_value, object|void codec)
  *!
  *! Decode a value from a string.
  *!
@@ -3070,7 +3082,14 @@ void f_decode_value(INT32 args)
 
   check_all_args("decode_value", args,
 		 BIT_STRING, BIT_VOID | BIT_OBJECT | BIT_INT,
-		 BIT_VOID | BIT_INT, 0);
+#ifdef ENCODE_DEBUG
+		 /* This argument is only an internal debug helper.
+		  * It's intentionally not part of the function
+		  * prototype, to keep the argument position free for
+		  * other uses in the future. */
+		 BIT_VOID | BIT_INT,
+#endif
+		 0);
 
 #ifdef ENCODE_DEBUG
   debug = args > 2 ? Pike_sp[2-args].u.integer : 0;
