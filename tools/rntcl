@@ -277,7 +277,7 @@ int main(int argc, array(string) argv)
 	  break;
 
         case "ldpath":
-	  ldflags+=({"-LIBPATH:"+fixpath(option[1])});
+	  ldopts+=({"-LIBPATH:"+fixpath(option[1])});
 	  break;
 	  
 	case "define": cflags+=({"-D"+option[1]}); break;
