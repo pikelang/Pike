@@ -29,6 +29,7 @@
  * BUGS/LIMITATIONS
  *  o Parenthesis must match, even within #if 0
  *  o Not all Pike types are supported yet
+ *  o Line numbers are wrong after INIT
  */
 
 #define PC Parser.C
