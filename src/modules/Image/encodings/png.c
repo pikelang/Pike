@@ -1,5 +1,5 @@
 #include "global.h"
-RCSID("$Id: png.c,v 1.7 1998/04/05 21:10:43 mirar Exp $");
+RCSID("$Id: png.c,v 1.8 1998/04/06 00:51:24 mirar Exp $");
 
 #include "config.h"
 
@@ -31,6 +31,7 @@ static struct pike_string *param_image;
 static struct pike_string *param_alpha;
 static struct pike_string *param_type;
 static struct pike_string *param_bpp;
+static struct pike_string *param_background;
 
 
 void f_add(INT32 args);
@@ -57,6 +58,25 @@ static INLINE void push_nbo_32bit(unsigned long x)
 static INLINE unsigned long int_from_32bit(unsigned char *data)
 {
    return (data[0]<<24)|(data[1]<<16)|(data[2]<<8)|(data[3]);
+}
+
+#define int_from_16bit(X) _int_from_16bit((unsigned char*)(X))
+static INLINE unsigned long _int_from_16bit(unsigned char *data)
+{
+   return (data[0]<<8)|(data[1]);
+}
+
+static INLINE COLORTYPE _png_c16(unsigned long z,int bpp)
+{
+   switch (bpp)
+   {
+      case 16: return z>>8; break;
+      case 4:  return z*17; break;
+      case 2:  return z*0x55; break;
+      case 1:  return z*255; break;
+      default: return z;
+   }
+
 }
 
 static INLINE INT32 call_gz_crc32(INT32 args)
@@ -381,6 +401,7 @@ static struct pike_string *_png_unfilter(unsigned char *data,
       }
       x=xsize;
 
+#if 0
       fprintf(stderr,
 	      "%05d 0x%08lx %02x %02x %02x > %02x < %02x %02x %02x "
 	      "len=%d xsize=%d sbb=%d next=0x%08lx d=0x%lx nd=0x%lx\n",
@@ -390,6 +411,7 @@ static struct pike_string *_png_unfilter(unsigned char *data,
 	      (unsigned long)s+xsize+1,
 	      (unsigned long)d,
 	      (unsigned long)d+xsize);
+#endif
 
       switch (*(s++))
       {
@@ -479,8 +501,9 @@ static int _png_write_rgb(rgb_group *w1,
 			  unsigned char *s,
 			  unsigned long len,
 			  unsigned long width,
-			  int n,
-			  struct neo_colortable *ct)
+			  unsigned long n,
+			  struct neo_colortable *ct,
+			  struct pike_string *trns)
 {
    /* returns 1 if interlace, 0 if not */
    /* w1, wa1 will be freed upon error */
@@ -491,6 +514,8 @@ static int _png_write_rgb(rgb_group *w1,
 
    rgb_group *d1=w1;
    rgb_group *da1=wa1;
+
+   unsigned long n0=n;
 
    unsigned long x,mz;
 
@@ -544,7 +569,7 @@ static int _png_write_rgb(rgb_group *w1,
 		  if (x) 
 		  {
 		     x--,q=(((*s)>>4)&15)|((*s)&240);
-		  d1->r=d1->g=d1->b=q; d1++;
+		     d1->r=d1->g=d1->b=q; d1++;
 		  }
 		  if (x) 
 		  {
@@ -577,6 +602,14 @@ static int _png_write_rgb(rgb_group *w1,
 	       free(wa1); free(w1);
 	       error("Image.PNG->_decode: Unsupported color type/bit depth %d (grey)/%d bit.\n",
 		     type,bpp);
+	 }
+	 if (trns && trns->len==2)
+	 {
+	    rgb_group tr;
+	    tr.r=tr.g=tr.b=_png_c16(int_from_16bit(trns->str),bpp);
+	    n=n0;
+	    while (n--) *(da1++)=tr;
+	    return 1; /* alpha channel */
 	 }
 	 return 0; /* no alpha channel */
 
@@ -611,6 +644,17 @@ static int _png_write_rgb(rgb_group *w1,
 	       error("Image.PNG->_decode: Unsupported color type/bit depth %d (rgb)/%d bit.\n",
 		     type,bpp);
 	 }
+	 if (trns && trns->len==6)
+	 {
+	    rgb_group tr;
+	    tr.r=_png_c16(int_from_16bit(trns->str),bpp);
+	    tr.g=_png_c16(int_from_16bit(trns->str+2),bpp);
+	    tr.b=_png_c16(int_from_16bit(trns->str+4),bpp);
+
+	    n=n0;
+	    while (n--) *(da1++)=tr;
+	    return 1; /* alpha channel */
+	 }
 	 return 0; /* no alpha channel */
 
       case 3: /* 1,2,4,8 bit palette index */
@@ -634,65 +678,174 @@ static int _png_write_rgb(rgb_group *w1,
 	    case 1:
 	       if (n>len*8) n=len*8;
 	       x=width;
-	       while (n)
-	       {
-		  if (x) x--,*(d1++)=ct->u.flat.entries[CUTPLTE(((*s)>>7)&1,mz)].color;
-		  if (x) x--,*(d1++)=ct->u.flat.entries[CUTPLTE(((*s)>>6)&1,mz)].color;
-		  if (x) x--,*(d1++)=ct->u.flat.entries[CUTPLTE(((*s)>>5)&1,mz)].color;
-		  if (x) x--,*(d1++)=ct->u.flat.entries[CUTPLTE(((*s)>>4)&1,mz)].color;
-		  if (x) x--,*(d1++)=ct->u.flat.entries[CUTPLTE(((*s)>>3)&1,mz)].color;
-		  if (x) x--,*(d1++)=ct->u.flat.entries[CUTPLTE(((*s)>>2)&1,mz)].color;
-		  if (x) x--,*(d1++)=ct->u.flat.entries[CUTPLTE(((*s)>>1)&1,mz)].color;
-		  if (x) x--,*(d1++)=ct->u.flat.entries[CUTPLTE((*s)&1,mz)].color;
-		  s++;
-		  if (n<8) break;
-		  n-=8;
-		  if (!x) x=width;
-	       }
+	       if (!trns)
+		  while (n)
+		  {
+		     if (x) x--,*(d1++)=ct->u.flat.entries[CUTPLTE(((*s)>>7)&1,mz)].color;
+		     if (x) x--,*(d1++)=ct->u.flat.entries[CUTPLTE(((*s)>>6)&1,mz)].color;
+		     if (x) x--,*(d1++)=ct->u.flat.entries[CUTPLTE(((*s)>>5)&1,mz)].color;
+		     if (x) x--,*(d1++)=ct->u.flat.entries[CUTPLTE(((*s)>>4)&1,mz)].color;
+		     if (x) x--,*(d1++)=ct->u.flat.entries[CUTPLTE(((*s)>>3)&1,mz)].color;
+		     if (x) x--,*(d1++)=ct->u.flat.entries[CUTPLTE(((*s)>>2)&1,mz)].color;
+		     if (x) x--,*(d1++)=ct->u.flat.entries[CUTPLTE(((*s)>>1)&1,mz)].color;
+		     if (x) x--,*(d1++)=ct->u.flat.entries[CUTPLTE((*s)&1,mz)].color;
+		     s++;
+		     if (n<8) break;
+		     n-=8;
+		     if (!x) x=width;
+		  }
+	       else
+		  while (n)
+		  {
+		     int i;
+		     for (i=8; i;)
+		     {
+			i--;
+			if (x) 
+			{
+			   int m=((*s)>>i)&1;
+			   x--;
+			   *(d1++)=ct->u.flat.entries[CUTPLTE(m,mz)].color;
+			   if (m>=trns->len)
+			      *(da1++)=white;
+			   else
+			   {
+			      da1->r=trns->str[m];
+			      da1->g=trns->str[m];
+			      da1->b=trns->str[m];
+			      da1++;
+			   }
+			}
+		     }
+		     s++;
+		     if (n<8) break;
+		     n-=8;
+		     if (!x) x=width;
+		  }
 	       break;
 	    case 2:
 	       if (n>len*4) n=len*4;
 	       x=width;
-	       while (n)
-	       {
-		  if (x) x--,*(d1++)=ct->u.flat.entries[CUTPLTE(((*s)>>6)&3,mz)].color;
-		  if (x) x--,*(d1++)=ct->u.flat.entries[CUTPLTE(((*s)>>4)&3,mz)].color;
-		  if (x) x--,*(d1++)=ct->u.flat.entries[CUTPLTE(((*s)>>2)&3,mz)].color;
-		  if (x) x--,*(d1++)=ct->u.flat.entries[CUTPLTE((*s)&3,mz)].color;
-		  s++;
-		  if (n<4) break;
-		  n-=4;
-		  if (!x) x=width;
-	       }
+	       if (trns)
+		  while (n)
+		  {
+		     if (x) x--,*(d1++)=ct->u.flat.entries[CUTPLTE(((*s)>>6)&3,mz)].color;
+		     if (x) x--,*(d1++)=ct->u.flat.entries[CUTPLTE(((*s)>>4)&3,mz)].color;
+		     if (x) x--,*(d1++)=ct->u.flat.entries[CUTPLTE(((*s)>>2)&3,mz)].color;
+		     if (x) x--,*(d1++)=ct->u.flat.entries[CUTPLTE((*s)&3,mz)].color;
+		     s++;
+		     if (n<4) break;
+		     n-=4;
+		     if (!x) x=width;
+		  }
+	       else
+		  while (n)
+		  {
+		     int i;
+		     for (i=8; i;)
+		     {
+			i-=2;
+			if (x) 
+			{
+			   int m=((*s)>>i)&3;
+			   x--;
+			   *(d1++)=ct->u.flat.entries[CUTPLTE(m,mz)].color;
+			   if (m>=trns->len)
+			      *(da1++)=white;
+			   else
+			   {
+			      da1->r=trns->str[m];
+			      da1->g=trns->str[m];
+			      da1->b=trns->str[m];
+			      da1++;
+			   }
+			}
+		     }
+		     s++;
+		     if (n<8) break;
+		     n-=8;
+		     if (!x) x=width;
+		  }
 	       break;
 	    case 4:
 	       if (n>len*2) n=len*2;
 	       x=width;
-	       while (n)
-	       {
-		  if (x) x--,*(d1++)=ct->u.flat.entries[CUTPLTE(((*s)>>4)&15,mz)].color;
-		  if (x) x--,*(d1++)=ct->u.flat.entries[CUTPLTE((*s)&15,mz)].color;
-		  s++;
-		  if (n<2) break;
-		  n--;
-		  if (!x) x=width;
-	       }
+	       if (trns)
+		  while (n)
+		  {
+		     if (x) x--,*(d1++)=ct->u.flat.entries[CUTPLTE(((*s)>>4)&15,mz)].color;
+		     if (x) x--,*(d1++)=ct->u.flat.entries[CUTPLTE((*s)&15,mz)].color;
+		     s++;
+		     if (n<2) break;
+		     n--;
+		     if (!x) x=width;
+		  }
+	       else
+		  while (n)
+		  {
+		     int i;
+		     for (i=8; i>4;)
+		     {
+			i-=4;
+			if (x) 
+			{
+			   int m=((*s)>>i)&3;
+			   x--;
+			   *(d1++)=ct->u.flat.entries[CUTPLTE(m,mz)].color;
+			   if (m>=trns->len)
+			      *(da1++)=white;
+			   else
+			   {
+			      da1->r=trns->str[m];
+			      da1->g=trns->str[m];
+			      da1->b=trns->str[m];
+			      da1++;
+			   }
+			}
+		     }
+		     s++;
+		     if (n<8) break;
+		     n-=8;
+		     if (!x) x=width;
+		  }
 	       break;
 	    case 8:
 	       if (n>len) n=len;
-	       while (n)
-	       {
-		  *(d1++)=ct->u.flat.entries[CUTPLTE(*s,mz)].color;
-		  s++;
-		  n--;
-	       }
+
+	       if (trns)
+		  while (n)
+		  {
+		     *(d1++)=ct->u.flat.entries[CUTPLTE(*s,mz)].color;
+
+		     s++;
+		     n--;
+		  }
+	       else
+		  while (n)
+		  {
+		     int m=CUTPLTE(*s,mz);
+		     *(d1++)=ct->u.flat.entries[m].color;
+		     if (m>=trns->len)
+			*(da1++)=white;
+		     else
+		     {
+			da1->r=trns->str[m];
+			da1->g=trns->str[m];
+			da1->b=trns->str[m];
+			da1++;
+		     }
+
+		     s++;
+		     n--;
+		  }
 	       break;
 	       
 	    default:
+	       free(w1); free(wa1);
 	       error("Image.PNG->_decode: Unsupported color type/bit depth %d (palette)/%d bit.\n",
 		     type,bpp);
 	 }
-	 return 0; /* no alpha channel */
+	 return !trns; /* alpha channel if trns chunk */
 
       case 4: /* 8 or 16 bit grey,a */
 	 switch (bpp)
@@ -791,12 +944,12 @@ static void image_png__decode(INT32 args)
    struct array *a;
    struct mapping *m;
    struct neo_colortable *ct=NULL;
-   rgb_group *d1,*da1,*w1,*wa1,*t1;
-   struct pike_string *fs;
+   rgb_group *d1,*da1,*w1,*wa1,*t1,*ta1=NULL;
+   struct pike_string *fs,*trns=NULL;
    unsigned char *s,*s0;
    struct image *img;
 
-   int n=0,i,x,y;
+   int n=0,i,x=-1,y;
    struct ihdr
    {
       INT32 width,height;
@@ -845,6 +998,11 @@ static void image_png__decode(INT32 args)
       data=(unsigned char*)b->item[1].u.string->str;
       len=(unsigned long)b->item[1].u.string->len;
 
+      if (!i &&
+	  int_from_32bit((unsigned char*)b->item[0].u.string->str)
+	  != 0x49484452 )
+	 error("Imge.PNG.decode: first chunk isn't IHDR\n");
+
       switch (int_from_32bit((unsigned char*)b->item[0].u.string->str))
       {
 	 /* ------ major chunks ------------ */
@@ -889,7 +1047,8 @@ static void image_png__decode(INT32 args)
          case 0x49444154: /* IDAT */
 	    /* compressed image data. push, n++ */
 	    if (ihdr.compression!=0)
-	       free_mapping(m);
+	       error("Image.PNG._decode: unknown compression (%d)\n",
+		     ihdr.compression);
 
 	    push_string(b->item[1].u.string);
 	    b->item[1].u.string->refs++;
@@ -913,12 +1072,60 @@ static void image_png__decode(INT32 args)
 	    break;
 
          case 0x624b4744: /* bKGD */
+	    switch (ihdr.type)
+	    {
+	       case 0:
+	       case 4:
+		  if (b->item[1].u.string->len==2)
+		  {
+		     int z=_png_c16(b->item[1].u.string->str[0],ihdr.bpp);
+		     push_int(z);
+		     push_int(z);
+		     push_int(z);
+		  }
+		  else
+		     continue;
+		  break;
+	       case 3:
+		  if (b->item[1].u.string->len!=1 ||
+		      !ct || ct->type!=NCT_FLAT ||
+		      b->item[1].u.string->str[0] >=
+		      ct->u.flat.numentries)
+		     continue;
+		  else
+		  {
+		     push_int(ct->u.flat.entries[(int)b->item[1].u.string->str[0]].color.r);
+		     push_int(ct->u.flat.entries[(int)b->item[1].u.string->str[0]].color.g);
+		     push_int(ct->u.flat.entries[(int)b->item[1].u.string->str[0]].color.b);
+		  }
+		  break;
+	       default:
+		  if (b->item[1].u.string->len!=6)
+		  {
+		     int j;
+		     for (j=0; j<3; j++)
+		     {
+			int z=_png_c16(b->item[1].u.string->str[j],ihdr.bpp);
+			push_int(z);
+		     }
+		  }
+		  break;
+	    }
+	    f_aggregate(3);
+	    push_string(param_background);
+	    param_background->refs++;
+	    mapping_insert(m,sp-1,sp-2);
+	    pop_n_elems(2);
 	    break;
 
          case 0x68495354: /* hIST */
 	    break;
 
          case 0x74524e53: /* tRNS */
+	    push_string(trns=b->item[1].u.string);
+	    push_int(-2);
+	    mapping_insert(m,sp-1,sp-2);
+	    sp-=2; /* we have no own ref to trns */
 	    break;
 
          case 0x70485973: /* pHYs */
@@ -961,7 +1168,7 @@ static void image_png__decode(INT32 args)
 
    fs=sp[-1].u.string; 
    push_int(-1);
-   mapping_insert(m,sp-2,sp-1);
+   mapping_insert(m,sp-1,sp-2);
 
    pop_n_elems(2);
 
@@ -989,11 +1196,11 @@ static void image_png__decode(INT32 args)
 			  NULL);
 	 push_string(fs);
 	 if (!_png_write_rgb(w1,wa1,
-			     ihdr.type,ihdr.bpp,fs->str,
+			     ihdr.type,ihdr.bpp,(unsigned char*)fs->str,
 			     fs->len,
 			     ihdr.width,
 			     ihdr.width*ihdr.height,
-			     ct))
+			     ct,trns))
 	 {
 	    free(wa1);
 	    wa1=NULL;
@@ -1005,12 +1212,15 @@ static void image_png__decode(INT32 args)
 
 	 /* need arena */
 	 t1=malloc(sizeof(rgb_group)*ihdr.width*ihdr.height);
-	 if (!t1)
+	 if (wa1) ta1=malloc(sizeof(rgb_group)*ihdr.width*ihdr.height);
+	 if (!t1 || (wa1 && !ta1))
 	 {
-	    if (wa1) free(wa1); free(w1); 
+	    free(w1); 
+	    if (wa1) free(wa1); 
+	    if (ta1) free(ta1); 
+	    if (ta1) free(t1); 
 	    error("Image.PNG->_decode: out of memory (close one)\n");
 	 }
-
 	 /* loop over adam7 interlace's 
 	    and write them to the arena */
 
@@ -1028,14 +1238,15 @@ static void image_png__decode(INT32 args)
 			     &s0);
 
 	    push_string(ds);
-	    if (!_png_write_rgb(w1,wa1,ihdr.type,ihdr.bpp,ds->str,ds->len,
+	    if (!_png_write_rgb(w1,wa1,ihdr.type,ihdr.bpp,
+				(unsigned char*)ds->str,ds->len,
 				(ihdr.width+adam7[i].xd-1-adam7[i].x0)/
 				adam7[i].xd,
 				(ihdr.width+adam7[i].xd-1-adam7[i].x0)/
 				adam7[i].xd*
 				(ihdr.height+adam7[i].yd-1-adam7[i].y0)/
 				adam7[i].yd,
-				ct))
+				ct,trns))
 	    {
 	       if (wa1) free(wa1);
 	       wa1=NULL;
@@ -1045,12 +1256,20 @@ static void image_png__decode(INT32 args)
 	       for (x=adam7[i].x0;x<ihdr.width;x+=adam7[i].xd)
 		  t1[x+y*ihdr.width]=*(d1++);
 
+	    if (wa1)
+	    {
+	       da1=wa1;
+	       for (y=adam7[i].y0;y<ihdr.height;y+=adam7[i].yd)
+		  for (x=adam7[i].x0;x<ihdr.width;x+=adam7[i].xd)
+		     ta1[x+y*ihdr.width]=*(da1++);
+	    }
+
 	    pop_stack();
 	 }
 	 
 	 free(w1);
-	 if (wa1) free(wa1);
 	 w1=t1;
+	 if (wa1) { free(wa1); wa1=ta1; }
 
 	 break;
       default:
@@ -1073,7 +1292,7 @@ static void image_png__decode(INT32 args)
    img->img=w1;
    mapping_insert(m,sp-2,sp-1);
    pop_n_elems(2);
-
+   
    if (wa1)
    {
       push_string(param_alpha);
@@ -1097,7 +1316,19 @@ static void image_png__decode(INT32 args)
    mapping_insert(m,sp-2,sp-1);
    pop_n_elems(2);
 
+   push_string(make_shared_string("xsize"));
+   push_int(ihdr.width);
+   mapping_insert(m,sp-2,sp-1);
+   pop_n_elems(2);
+   push_string(make_shared_string("ysize"));
+   push_int(ihdr.height);
+   mapping_insert(m,sp-2,sp-1);
+   pop_n_elems(2);
+
    push_int(-1);
+   map_delete(m,sp-1);
+   pop_stack();
+   push_int(-2);
    map_delete(m,sp-1);
    pop_stack();
 }
@@ -1171,6 +1402,33 @@ static void image_png_decode(INT32 args)
    f_index(2);
 }
 
+static void image_png_decode_alpha(INT32 args)
+{
+   struct svalue s;
+   if (!args)
+      error("Image.PNG.decode: missing argument(s)\n");
+   
+   image_png__decode(args);
+   assign_svalue_no_free(&s,sp-1);
+   push_string(make_shared_string("alpha"));
+   f_index(2);
+
+   if (sp[-1].type==T_INT)
+   {
+      push_svalue(&s);
+      push_string(make_shared_string("xsize"));
+      f_index(2);
+      push_svalue(&s);
+      push_string(make_shared_string("ysize"));
+      f_index(2);
+      push_int(255);
+      push_int(255);
+      push_int(255);
+      push_object(clone_object(image_program,3));
+   }
+   free_svalue(&s);
+}
+
 /*** module init & exit & stuff *****************************************/
 
 void exit_image_png(void)
@@ -1180,6 +1438,7 @@ void exit_image_png(void)
    free_string(param_image);
    free_string(param_alpha);
    free_string(param_bpp);
+   free_string(param_background);
    free_string(param_type);
 }
 
@@ -1238,6 +1497,8 @@ struct object *init_image_png(void)
 		      "function(array|string,void|mapping(string:int):object)",0);
 	 add_function("decode",image_png_decode,
 		      "function(string,void|mapping(string:int):object)",0);
+	 add_function("decode_alpha",image_png_decode_alpha,
+		      "function(string,void|mapping(string:int):object)",0);
       }
       add_function("encode",image_png_encode,
 		   "function(object,void|mapping(string:int):string)",
@@ -1250,6 +1511,7 @@ struct object *init_image_png(void)
    param_alpha=make_shared_string("alpha");
    param_bpp=make_shared_string("bpp");
    param_type=make_shared_string("type");
+   param_background=make_shared_string("background");
    
    return clone_object(end_program(),0);
 }
