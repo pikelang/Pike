@@ -1,4 +1,4 @@
-/* $Id: font.c,v 1.44 1999/04/13 12:32:20 mirar Exp $ */
+/* $Id: font.c,v 1.45 1999/04/25 19:58:22 grubba Exp $ */
 #include "global.h"
 #include <config.h>
 
@@ -7,7 +7,7 @@
 /*
 **! module Image
 **! note
-**!	$Id: font.c,v 1.44 1999/04/13 12:32:20 mirar Exp $
+**!	$Id: font.c,v 1.45 1999/04/25 19:58:22 grubba Exp $
 **! class Font
 **!
 **! note
@@ -282,10 +282,9 @@ static INLINE int my_read(int from, void *t, int towrite)
 static INLINE long file_size(int fd)
 {
   struct stat tmp;
-  int res;
   if((!fd_fstat(fd, &tmp)) &&
      (tmp.st_mode & S_IFREG)) 
-     return res = tmp.st_size;
+     return (long)tmp.st_size;
   return -1;
 }
 
@@ -366,10 +365,10 @@ void font_load(INT32 args)
 
    if (fd >= 0)
    {
-      long size;
+      size_t size;
       struct font *new_font;
 
-      size = file_size(fd);
+      size = (size_t) file_size(fd);
       if (size > 0)
       {
 	 new_font=THIS=(struct font *)xalloc(sizeof(struct font));
