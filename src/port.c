@@ -20,7 +20,7 @@
 #include <float.h>
 #include <string.h>
 
-RCSID("$Id: port.c,v 1.45 2001/03/19 16:03:48 mirar Exp $");
+RCSID("$Id: port.c,v 1.46 2001/03/19 16:04:45 mirar Exp $");
 
 #ifdef sun
 time_t time PROT((time_t *));
@@ -713,7 +713,7 @@ static int hrtime_is_calibrated = 0;
 			   :"=a" (l),					\
 			   "=d" (h))
 
-long long rtsc()
+static INLINE long long rtsc()
 {
    long long now;
    unsigned long nl,nh;
