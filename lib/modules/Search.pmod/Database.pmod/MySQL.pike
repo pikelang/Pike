@@ -1,7 +1,7 @@
 // This file is part of Roxen Search
 // Copyright © 2000,2001 Roxen IS. All rights reserved.
 //
-// $Id: MySQL.pike,v 1.67 2001/08/30 20:36:16 js Exp $
+// $Id: MySQL.pike,v 1.68 2001/08/31 16:34:27 js Exp $
 
 inherit .Base;
 
@@ -22,7 +22,7 @@ void init_tables()
 #"create table if not exists document (id            int unsigned primary key
 			               auto_increment not null,
                          uri_id        int unsigned not null,
-                         language char(3) default null,
+                         language varchar(255) default null,
                          INDEX index_language (language),
                          INDEX index_uri_id (uri_id))"
 			 );

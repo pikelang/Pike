@@ -1,7 +1,7 @@
 // This file is part of Roxen Search
 // Copyright © 2001 Roxen IS. All rights reserved.
 //
-// $Id: Base.pmod,v 1.16 2001/08/20 20:01:54 js Exp $
+// $Id: Base.pmod,v 1.17 2001/08/31 16:34:27 js Exp $
 
 //! Base class for Roxen Search database storage abstraction implementations.
 
@@ -25,7 +25,7 @@ int get_uri_id(string uri,  void|int do_not_create);
 //! @param uri
 //!   The URI to be retrieved or created.
 //! @param language
-//!   A three letter ISO-639-2 language code, or 0 if the document is language neutral.
+//!   A two letter ISO-639-1 language code, or 0 if the document is language neutral.
 //! @param do_not_create
 //!   If non-zero, do not create the document.
 //! @returns
@@ -40,7 +40,7 @@ int get_document_id(string uri, void|string language, void|int do_not_create);
 //!     @member string "uri"
 //!       The URI of the document.
 //!     @member void|string "language"
-//!       The ISO-639-2 language code of the document, or 0 if not set.
+//!       The ISO-639-1 language code of the document, or 0 if not set.
 //!   @endmapping
 mapping get_uri_and_language(int|array(int) doc_id);
 
@@ -48,7 +48,7 @@ mapping get_uri_and_language(int|array(int) doc_id);
 //! @param uri
 //!   The URI of the resource being indexed.
 //! @param language
-//!   A three letter ISO-639-2 language code, or 0 if the document is language neutral.
+//!   A two letter ISO-639-1 language code, or 0 if the document is language neutral.
 //! @param field
 //!   The field name for the words being indexed.
 //! @param words
@@ -62,7 +62,7 @@ void insert_words(Standards.URI|string uri,
 //! @param uri
 //!   The URI of the resource being indexed.
 //! @param language
-//!   A three letter ISO-639-2 language code, or 0 if the document is language neutral.
+//!   A two letter ISO-639-1 language code, or 0 if the document is language neutral.
 //! @param metadata
 //!   A collection of metadata strings to be set for a document. The strings may be wide.
 //!   The "body" metadata may be cut off at 64K.
@@ -74,14 +74,14 @@ void set_metadata(Standards.URI|string uri,
 //! @param uri
 //!   The URI of the resource whose metadata should be removed.
 //! @param language
-//!   A three letter ISO-639-2 language code, or 0 if the document is language neutral.
+//!   A two letter ISO-639-1 language code, or 0 if the document is language neutral.
 void remove_metadata(Standards.URI|string uri, void|string language);
 
 //! Retrieve a metadata collection for a document.
 //! @param uri
 //!   The URI of the resource being indexed.
 //! @param language
-//!   A three letter ISO-639-2 language code, or 0 if the document is language neutral.
+//!   A two letter ISO-639-1 language code, or 0 if the document is language neutral.
 //! @param wanted_fields
 //!   An array containing the wanted metadata field names, or 0.
 //! @returns
@@ -98,7 +98,7 @@ mapping(int:string) get_special_metadata(array(int) doc_ids,
 //! @param uri
 //!   The URI of the resource being indexed.
 //! @param language
-//!   A three letter ISO-639-2 language code. If zero, delete all existing language forks
+//!   A two letter ISO-639-1 language code. If zero, delete all existing language forks
 //!   with the URI of @[uri].
 void remove_document(string|Standards.URI uri, void|string language);
 
