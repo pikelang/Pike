@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: main.c,v 1.219 2004/12/30 13:40:19 grubba Exp $
+|| $Id: main.c,v 1.220 2005/01/01 13:42:16 grubba Exp $
 */
 
 #include "global.h"
@@ -663,37 +663,3 @@ int main(int argc, char **argv)
   pike_do_exit(num);
   return num; /* avoid warning */
 }
-
-void exit_main(void)
-{
-#ifdef DO_PIKE_CLEANUP
-  size_t count;
-
-  if (exit_with_cleanup) {
-    /* Destruct all remaining objects while we have a proper execution
-     * environment. The downside is that the leak report below will
-     * always report destructed objects. We use the gc in a special mode
-     * for this to get a reasonably sane destruct order. */
-    gc_destruct_everything = 1;
-    count = do_gc (NULL, 1);
-    while (count) {
-      size_t new_count = do_gc (NULL, 1);
-      if (new_count >= count) {
-	fprintf (stderr, "Some destroy function is creating new objects "
-		 "during final cleanup - can't exit cleanly.\n");
-	break;
-      }
-      count = new_count;
-    }
-    gc_destruct_everything = 0;
-  }
-
-  /* Unload dynamic modules before static ones. */
-  exit_dynamic_load();
-#endif
-}
-
-void init_main(void)
-{
-}
-
