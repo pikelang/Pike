@@ -1,6 +1,6 @@
 /* IMAP.requests
  *
- * $Id: requests.pmod,v 1.77 1999/03/28 23:17:31 grubba Exp $
+ * $Id: requests.pmod,v 1.78 1999/03/28 23:37:44 grubba Exp $
  */
 
 import .types;
@@ -308,7 +308,7 @@ class status
     array(string) res = server->status(session, mailbox, list);
 
     if (res) {
-      send("*", "STATUS", imap_string(mailbox), imap_list(res));
+      send("*", "STATUS", mailbox, imap_list(res));
       send(tag, "OK");
     } else {
       send(tag, "NO");
