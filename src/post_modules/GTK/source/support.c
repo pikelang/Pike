@@ -509,6 +509,27 @@ struct my_pixel pgtk_pixel_from_xpixel( unsigned int pix, GdkImage *i )
   return res;
 }
 
+static void push_atom( GdkAtom a )
+{
+  /* this should really be inserted in the GDK.Atom mapping. */
+  push_pgdkobject( (void *)a, pgtk_Gdk_Atom_program );
+}
+
+void push_Xpseudo32bitstring( void *f, int nelems )
+{
+  if( sizeof( long ) != 4 )
+  {
+    long *q = (long *)f;
+    int *res = malloc( nelems * 4 ), i;
+    for(i=0; i<nelems; i++ )
+      res[i] = q[i];
+    push_string( make_shared_binary_string2( res, nelems ) );
+    free( res );
+  } else {
+    push_string( make_shared_binary_string2( f, nelems ) );
+  }
+}
+
 
 int pgtkbuttonfuncwrapper(GtkObject *obj, struct signal_data *d, void *foo)
 {
@@ -547,19 +568,19 @@ void push_gdk_event(GdkEvent *e)
      push_text("width");   push_int(e->expose.area.width);
      push_text("height");  push_int(e->expose.area.height);
      break;
+
    case GDK_MOTION_NOTIFY:
      push_text("type");    push_text("motion");
-     push_text("time");    push_int(e->motion.time);
      push_text("x");       push_float(e->motion.x);
      push_text("y");       push_float(e->motion.y);
      push_text("pressure");push_float(e->motion.pressure);
      push_text("xtilt");   push_float(e->motion.xtilt);
      push_text("ytilt");   push_float(e->motion.ytilt);
      push_text("state");   push_int(e->motion.state);
-     push_text("time");    push_int(e->motion.time);
      push_text("deviceid");push_int(e->motion.deviceid);
+     push_text("is_hint"); push_int(e->motion.is_hint);
      push_text("x_root");  push_float(e->motion.x_root);
-     push_text("y_root");  push_int(e->motion.y_root);
+     push_text("y_root");  push_float(e->motion.y_root);
      break;
 
    case GDK_BUTTON_PRESS:
@@ -585,7 +606,7 @@ void push_gdk_event(GdkEvent *e)
      push_text("button");    push_int(e->button.button);
      push_text("deviceid");push_int(e->button.deviceid);
      push_text("x_root");  push_float(e->button.x_root);
-     push_text("y_root");  push_int(e->button.y_root);
+     push_text("y_root");  push_float(e->button.y_root);
      break;
      
    case GDK_KEY_PRESS:
@@ -608,14 +629,23 @@ void push_gdk_event(GdkEvent *e)
    case GDK_ENTER_NOTIFY:
      push_text("type");   push_text("enter_notify");
      goto enter_event;
+
    case GDK_LEAVE_NOTIFY:
      push_text("type");   push_text("leave_notify");
   enter_event:
      push_text("detail"); push_int(e->crossing.detail);
+     push_text("mode");   push_int(e->crossing.mode );
+     push_text("focus");   push_int(e->crossing.focus );
+     push_text("state");   push_int(e->crossing.state );
+     push_text("x_root");   push_float(e->crossing.x_root );
+     push_text("y_root");   push_float(e->crossing.y_root );
+     push_text("x");   push_float(e->crossing.x );
+     push_text("y");   push_float(e->crossing.y );
      break;
 
    case GDK_FOCUS_CHANGE:
      push_text("type");   push_text("focus");
+     push_text("in");     push_int( e->focus_change.in );
      break;
 
    case GDK_CONFIGURE:
@@ -628,40 +658,75 @@ void push_gdk_event(GdkEvent *e)
 
    case GDK_MAP:
      push_text("type");   push_text("map");
+     push_text("x"); push_int(e->configure.x);
+     push_text("y"); push_int(e->configure.x);
+     push_text("width"); push_int(e->configure.width);
+     push_text("height"); push_int(e->configure.height);
      break;
+
    case GDK_UNMAP:
      push_text("type");   push_text("unmap");
+     push_text("x"); push_int(e->configure.x);
+     push_text("y"); push_int(e->configure.x);
+     push_text("width"); push_int(e->configure.width);
+     push_text("height"); push_int(e->configure.height);
      break;
 
    case GDK_PROPERTY_NOTIFY:
      push_text("type");   push_text("property");
+     push_text("atom");   push_atom( e->property.atom );
+     push_text("state");  push_int( e->property.state );
      break;
 
    case GDK_SELECTION_CLEAR:
      push_text("type");   push_text("selection_clear");
-     break;
+     goto selection_event;
 
    case GDK_SELECTION_REQUEST:
      push_text("type");   push_text("selection_request");
-     break;
+     goto selection_event;
 
    case GDK_SELECTION_NOTIFY:
      push_text("type");   push_text("selection_notify");
+  selection_event:
+     push_text("selection"); push_atom( e->selection.selection );
+     push_text("target");    push_atom( e->selection.target );
+     push_text("property");  push_atom( e->selection.property );
+     push_text("requestor"); push_int( e->selection.requestor );
      break;
 
    case GDK_PROXIMITY_IN:
      push_text("type");   push_text("proximity_in");
+     push_text( "deviceid" ); push_int( e->proximity.deviceid );
      break;
    case GDK_PROXIMITY_OUT:
      push_text("type");   push_text("proximity_out");
+     push_text( "deviceid" ); push_int( e->proximity.deviceid );
      break;
 
    case GDK_CLIENT_EVENT:
      push_text("type"); push_text("client");
+     push_text( "message_type" ); 
+     push_atom( e->client.message_type );
+     push_text("data_format"); push_int(e->client.data_format);
+     push_text( "data" );
+     switch( e->client.data_format )
+     {
+      case 8:
+        push_string( make_shared_binary_string( e->client.data.b, 20 ) );
+        break;
+      case 16:
+        push_string(make_shared_binary_string1(e->client.data.s, 10));
+        break;
+      case 32:
+        push_Xpseudo32bitstring( e->client.data.l, 5 );
+        break;
+     }
      break;
 
    case GDK_VISIBILITY_NOTIFY:
      push_text("type"); push_text("visibility");
+     push_text("state"); push_int( e->visibility.state );
      break;
 
    case GDK_NO_EXPOSE:
@@ -670,11 +735,29 @@ void push_gdk_event(GdkEvent *e)
 
 
    case GDK_DRAG_ENTER:
+     push_text("type"); push_text("drag_enter");
+     goto dnd_event;
    case GDK_DRAG_LEAVE:
+     push_text("type"); push_text("drag_leave");
+     goto dnd_event;
    case GDK_DRAG_MOTION:
+     push_text("type"); push_text("drag_motion");
+     goto dnd_event;
    case GDK_DRAG_STATUS:
+     push_text("type"); push_text("drag_status");
+     goto dnd_event;
    case GDK_DROP_START:
+     push_text("type"); push_text("drop_start");
+     goto dnd_event;
    case GDK_DROP_FINISHED:
+     push_text("type"); push_text("drop_finished");
+  dnd_event:
+
+     push_text( "send_event" ); push_int( e->dnd.send_event );
+     push_text( "x_root" ); push_int( e->dnd.x_root );
+     push_text( "y_root" ); push_int( e->dnd.y_root );
+     push_text( "context" ); 
+     push_gdkobject( e->dnd.context, DragContext); 
      break;
   }
   f_aggregate_mapping( sp - osp );

@@ -27,8 +27,8 @@ FUNCTION(data, "function(void:string)");
      break;
    case 32:
      length /= 4;
-     push_string( make_shared_binary_string2((void *)((GtkSelectionData *)THIS->obj)
-                                             ->data, length ) );
+     push_Xpseudo32bitstring( (void *)((GtkSelectionData *)THIS->obj)->data,
+                              length );
      break;
   }
 }
