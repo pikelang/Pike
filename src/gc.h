@@ -1,5 +1,5 @@
 /*
- * $Id: gc.h,v 1.83 2001/07/05 01:44:56 mast Exp $
+ * $Id: gc.h,v 1.84 2001/07/11 14:13:18 grubba Exp $
  */
 #ifndef GC_H
 #define GC_H
@@ -236,7 +236,7 @@ void gc_delayed_free(void *a, TYPE_T type);
 void debug_gc_mark_enqueue(queue_call call, void *data);
 int gc_mark(void *a);
 PMOD_EXPORT void gc_cycle_enqueue(gc_cycle_check_cb *checkfn, void *data, int weak);
-void gc_cycle_run_queue();
+void gc_cycle_run_queue(void);
 int gc_cycle_push(void *x, struct marker *m, int weak);
 void do_gc_recurse_svalues(struct svalue *s, int num);
 void do_gc_recurse_short_svalue(union anything *u, TYPE_T type);
