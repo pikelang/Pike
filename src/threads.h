@@ -216,7 +216,7 @@ struct thread_state {
    SWAP_IN_THREAD(_tmp);\
  } while(0)
 
-#ifdef DEBUG
+#if defined(DEBUG) && ! defined(DONT_HIDE_GLOBALS)
 /* Note that scalar types are used in place of pointers and vice versa
  * below. This is intended to cause compiler warnings/errors if
  * there is an attempt to use the global variables in an unsafe
