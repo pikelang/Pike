@@ -5,7 +5,7 @@
 \*/
 
 /*
- * $Id: object.h,v 1.22 1999/01/31 22:50:30 grubba Exp $
+ * $Id: object.h,v 1.23 1999/02/01 20:34:34 grubba Exp $
  */
 #ifndef OBJECT_H
 #define OBJECT_H
@@ -29,9 +29,6 @@ struct object
   INT16 parent_identifier;
   struct object *next;
   struct object *prev;
-#ifdef PIKE_SECURITY
-  char *pad;		/* FIXME: Kluge to get longlong alignment of storage */
-#endif
   char storage[1];
 };
 
