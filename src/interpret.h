@@ -5,7 +5,7 @@
 \*/
 
 /*
- * $Id: interpret.h,v 1.67 2000/09/12 17:06:08 grubba Exp $
+ * $Id: interpret.h,v 1.68 2000/11/20 01:20:24 mast Exp $
  */
 #ifndef INTERPRET_H
 #define INTERPRET_H
@@ -29,6 +29,9 @@ struct Pike_interpreter {
 #endif
   char *stack_top;
   DO_IF_SECURITY(struct object *current_creds;)
+
+  int svalue_stack_margin;
+  int c_stack_margin;
 
 #ifdef PROFILING
 #ifdef HAVE_GETHRTIME
@@ -80,7 +83,8 @@ struct external_variable_context
 #endif
 
 #define check_stack(X) do { \
-  if(Pike_sp - Pike_interpreter.evaluator_stack + (X) >= Pike_stack_size) \
+  if(Pike_sp - Pike_interpreter.evaluator_stack + \
+     Pike_interpreter.svalue_stack_margin + (X) >= Pike_stack_size) \
     error("Svalue stack overflow. " \
 	  "(%ld of %ld entries on stack, needed %ld more entries)\n", \
 	  PTRDIFF_T_TO_LONG(Pike_sp - Pike_interpreter.evaluator_stack), \
@@ -93,8 +97,10 @@ struct external_variable_context
     error("Mark stack overflow.\n");		\
   }while(0)
 
-#define check_c_stack(X) do { 			\
-  ptrdiff_t x_= ((char *)&x_) + STACK_DIRECTION * (X) - Pike_interpreter.stack_top ;	\
+#define check_c_stack(X) do {						\
+  ptrdiff_t x_= ((char *)&x_) +						\
+    STACK_DIRECTION * (Pike_interpreter.c_stack_margin + (X)) -		\
+    Pike_interpreter.stack_top ;					\
   x_*=STACK_DIRECTION;							\
   if(x_>0)								\
     low_error("C stack overflow.\n");					\
@@ -246,6 +252,7 @@ PMOD_EXPORT void find_external_context(struct external_variable_context *loc,
 				       int arg2);
 PMOD_EXPORT void mega_apply(enum apply_type type, INT32 args, void *arg1, void *arg2);
 PMOD_EXPORT void f_call_function(INT32 args);
+PMOD_EXPORT void call_handle_error(void);
 PMOD_EXPORT int apply_low_safe_and_stupid(struct object *o, INT32 offset);
 PMOD_EXPORT void safe_apply_low(struct object *o,int fun,int args);
 PMOD_EXPORT void safe_apply(struct object *o, char *fun ,INT32 args);

@@ -5,7 +5,7 @@
 \*/
 /**/
 #include "global.h"
-RCSID("$Id: program.c,v 1.281 2000/11/08 22:21:32 hubbe Exp $");
+RCSID("$Id: program.c,v 1.282 2000/11/20 01:20:25 mast Exp $");
 #include "program.h"
 #include "object.h"
 #include "dynamic_buffer.h"
@@ -305,13 +305,7 @@ static struct node_s *index_modules(struct pike_string *ident,
 
     if(SETJMP(tmp))
     {
-      ONERROR tmp2;
-      SET_ONERROR(tmp2, exit_on_error,
-		  "Error in handle_error in master object!");
-      assign_svalue_no_free(Pike_sp++, &throw_value);
-      APPLY_MASTER("handle_error", 1);
-      pop_stack();
-      UNSET_ONERROR(tmp2);
+      call_handle_error();
       yyerror("Couldn't index module.");
     } else {
       int e = num_used_modules;
@@ -2996,14 +2990,9 @@ int store_constant(struct svalue *foo,
 
   if(SETJMP(tmp2))
   {
-    ONERROR tmp;
     struct svalue zero;
 
-    SET_ONERROR(tmp,exit_on_error,"Error in store_constant in compiler!");
-    assign_svalue_no_free(Pike_sp++, & throw_value);
-    APPLY_MASTER("handle_error", 1);
-    pop_stack();
-    UNSET_ONERROR(tmp);
+    call_handle_error();
 
     yyerror("Couldn't store constant.");
 

@@ -5,7 +5,7 @@
 \*/
 /**/
 #include "global.h"
-RCSID("$Id: interpret.c,v 1.172 2000/10/01 08:51:52 hubbe Exp $");
+RCSID("$Id: interpret.c,v 1.173 2000/11/20 01:20:24 mast Exp $");
 #include "interpret.h"
 #include "object.h"
 #include "program.h"
@@ -57,6 +57,11 @@ RCSID("$Id: interpret.c,v 1.172 2000/10/01 08:51:52 hubbe Exp $");
 #define EVALUATOR_STACK_SIZE	100000
 
 #define TRACE_LEN (100 + t_flag * 10)
+
+/* Keep some margin on the stack space checks. They're lifted when
+ * handle_error runs to give it some room. */
+#define SVALUE_STACK_MARGIN 100	/* Tested in 7.1: 40 was enough, 30 wasn't. */
+#define C_STACK_MARGIN 2000	/* Tested in 7.1: 1500 was enough, 1400 wasn't. */
 
 
 #ifdef PIKE_DEBUG
@@ -176,6 +181,9 @@ use_malloc:
   Pike_sp=Pike_interpreter.evaluator_stack;
   Pike_mark_sp=Pike_interpreter.mark_stack;
   Pike_fp=0;
+
+  Pike_interpreter.svalue_stack_margin = SVALUE_STACK_MARGIN;
+  Pike_interpreter.c_stack_margin = C_STACK_MARGIN;
 
 #ifdef PIKE_DEBUG
   {
@@ -1431,6 +1439,25 @@ PMOD_EXPORT void f_call_function(INT32 args)
   mega_apply(APPLY_STACK,args,0,0);
 }
 
+PMOD_EXPORT void call_handle_error(void)
+{
+  if (Pike_interpreter.svalue_stack_margin) {
+    ONERROR tmp;
+    int old_t_flag = t_flag;
+    t_flag = 0;
+    Pike_interpreter.svalue_stack_margin = 0;
+    Pike_interpreter.c_stack_margin = 0;
+    SET_ONERROR(tmp,exit_on_error,"Error in handle_error in master object!");
+    assign_svalue_no_free(Pike_sp++, & throw_value);
+    APPLY_MASTER("handle_error", 1);
+    pop_stack();
+    UNSET_ONERROR(tmp);
+    Pike_interpreter.svalue_stack_margin = SVALUE_STACK_MARGIN;
+    Pike_interpreter.c_stack_margin = C_STACK_MARGIN;
+    t_flag = old_t_flag;
+  }
+}
+
 PMOD_EXPORT int apply_low_safe_and_stupid(struct object *o, INT32 offset)
 {
   JMP_BUF tmp;
@@ -1486,22 +1513,7 @@ PMOD_EXPORT void safe_apply_low(struct object *o,int fun,int args)
   if(SETJMP(recovery))
   {
     if(throw_value.type == T_ARRAY)
-    {
-      static int inside=0;
-      if(!inside)
-      {
-	ONERROR tmp;
-	/* We silently ignore errors if we are already describing one.. */
-	inside=1;
-	SET_ONERROR(tmp,exit_on_error,"Error in handle_error in master object!");
-	assign_svalue_no_free(Pike_sp++, & throw_value);
-	APPLY_MASTER("handle_error", 1);
-	pop_stack();
-	UNSET_ONERROR(tmp);
-	inside=0;
-      }
-    }
-      
+      call_handle_error();
     Pike_sp->u.integer = 0;
     Pike_sp->subtype=NUMBER_NUMBER;
     Pike_sp->type = T_INT;

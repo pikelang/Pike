@@ -5,7 +5,7 @@
 \*/
 /**/
 #include "global.h"
-RCSID("$Id: las.c,v 1.221 2000/10/03 18:18:29 grubba Exp $");
+RCSID("$Id: las.c,v 1.222 2000/11/20 01:20:25 mast Exp $");
 
 #include "language.h"
 #include "interpret.h"
@@ -1517,15 +1517,10 @@ node *index_node(node *n, char *node_name, struct pike_string *id)
 
   if(SETJMP(tmp))
   {
-    ONERROR tmp;
     struct svalue s;
 
-    SET_ONERROR(tmp,exit_on_error,"Error in handle_error in master object!");
-    assign_svalue_no_free(Pike_sp++, &throw_value);
     assign_svalue_no_free(&s, &throw_value);
-    APPLY_MASTER("handle_error", 1);
-    pop_stack();
-    UNSET_ONERROR(tmp);
+    call_handle_error();
 
     if (node_name) {
       my_yyerror("Couldn't index module '%s'.", node_name);
