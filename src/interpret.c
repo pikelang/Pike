@@ -5,7 +5,7 @@
 \*/
 /**/
 #include "global.h"
-RCSID("$Id: interpret.c,v 1.240 2001/08/15 03:31:55 hubbe Exp $");
+RCSID("$Id: interpret.c,v 1.241 2001/08/15 09:26:32 hubbe Exp $");
 #include "interpret.h"
 #include "object.h"
 #include "program.h"
@@ -1452,35 +1452,33 @@ int low_mega_apply(enum apply_type type, INT32 args, void *arg1, void *arg2)
 	if(function->identifier_flags & IDENTIFIER_SCOPE_USED)
 	  new_frame->expendible+=num_locals;
 	
-	/* adjust arguments on stack */
-	if(args < num_args) /* push zeros */
-	{
-	  clear_svalues_undefined(Pike_sp, num_args-args);
-	  Pike_sp += num_args-args;
-	  args += num_args-args;
-	}
 	
 	if(function->identifier_flags & IDENTIFIER_VARARGS)
 	{
-	  f_aggregate(args - num_args); /* make array */
+	  /* adjust arguments on stack */
+	  if(args < num_args) /* push zeros */
+	  {
+	    push_undefines(num_args-args);
+	    f_aggregate(0);
+	  }else{
+	    f_aggregate(args - num_args); /* make array */
+	  }
 	  args = num_args+1;
 	}else{
-	  if(args > num_args)
-	  {
-	    /* pop excessive */
+	  /* adjust arguments on stack */
+	  if(args < num_args) /* push zeros */
+	    push_undefines(num_args-args);
+	  else
 	    pop_n_elems(args - num_args);
-	    args=num_args;
-	  }
+	  args=num_args;
 	}
 
 	if(num_locals > args)
-	  clear_svalues(Pike_sp, num_locals - args);
-	Pike_sp += num_locals - args;
+	  push_zeroes(num_locals-args);
 
 	new_frame->num_locals=num_locals;
 	new_frame->num_args=num_args;
-	new_frame->save_mark_sp=Pike_mark_sp;
-	new_frame->mark_sp_base=Pike_mark_sp;
+	new_frame->save_mark_sp=new_frame->mark_sp_base=Pike_mark_sp;
 	check_threads_etc();
 	new_frame->pc = pc
 #ifdef ENTRY_PROLOGUE_SIZE

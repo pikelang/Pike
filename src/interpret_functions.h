@@ -1,5 +1,5 @@
 /*
- * $Id: interpret_functions.h,v 1.85 2001/07/28 00:33:50 hubbe Exp $
+ * $Id: interpret_functions.h,v 1.86 2001/08/15 09:26:33 hubbe Exp $
  *
  * Opcode definitions for the interpreter.
  */
@@ -115,12 +115,14 @@
   if(Pike_fp -> flags & PIKE_FRAME_RETURN_INTERNAL)	\
   {							\
     int f=Pike_fp->flags;				\
-    low_return();					\
+    if(f & PIKE_FRAME_RETURN_POP)			\
+       low_return_pop();				\
+     else						\
+       low_return();					\
+							\
     DO_IF_DEBUG(if (t_flag)				\
       fprintf(stderr, "Returning to 0x%p\n",		\
 	      Pike_fp->pc));				\
-    if(f & PIKE_FRAME_RETURN_POP)			\
-      pop_stack();					\
     DO_JUMP_TO(Pike_fp->pc);				\
   }							\
   DO_IF_DEBUG(if (t_flag)				\
@@ -144,7 +146,7 @@
 #define DO_INDEX do {				\
   struct svalue s;				\
   index_no_free(&s,Pike_sp-2,Pike_sp-1);	\
-  pop_n_elems(2);				\
+  pop_2_elems();				\
   *Pike_sp=s;					\
   Pike_sp++;					\
   print_return_value();				\
@@ -428,7 +430,7 @@ OPCODE1(F_ARRAY_LVALUE, "[ lvalues ]", {
 });
 
 OPCODE1(F_CLEAR_2_LOCAL, "clear 2 local", {
-  free_svalues(Pike_fp->locals + arg1, 2, -1);
+  free_mixed_svalues(Pike_fp->locals + arg1, 2);
   Pike_fp->locals[arg1].type = PIKE_T_INT;
   Pike_fp->locals[arg1].subtype = 0;
   Pike_fp->locals[arg1].u.integer = 0;
@@ -439,7 +441,7 @@ OPCODE1(F_CLEAR_2_LOCAL, "clear 2 local", {
 
 OPCODE1(F_CLEAR_4_LOCAL, "clear 4 local", {
   int e;
-  free_svalues(Pike_fp->locals + arg1, 4, -1);
+  free_mixed_svalues(Pike_fp->locals + arg1, 4);
   for(e = 0; e < 4; e++)
   {
     Pike_fp->locals[arg1+e].type = PIKE_T_INT;
@@ -630,7 +632,7 @@ OPCODE0(F_ADD_TO_AND_POP, "+= and pop", {
       Pike_sp[-1].u.integer += Pike_sp[-2].u.integer;
       assign_lvalue(Pike_sp-4,Pike_sp-1);
       Pike_sp-=2;
-      pop_n_elems(2);
+      pop_2_elems();
       goto add_and_pop_done;
     }
   }
@@ -688,7 +690,7 @@ OPCODE0(F_INC, "++x", {
      )
   {
     INT32 val = ++u->integer;
-    pop_n_elems(2);
+    pop_2_elems();
     push_int(val);
   } else {
     lvalue_to_svalue_no_free(Pike_sp, Pike_sp-2); Pike_sp++;
@@ -708,7 +710,7 @@ OPCODE0(F_DEC, "--x", {
      )
   {
     INT32 val = --u->integer;
-    pop_n_elems(2);
+    pop_2_elems();
     push_int(val);
   } else {
     lvalue_to_svalue_no_free(Pike_sp, Pike_sp-2); Pike_sp++;
@@ -728,7 +730,7 @@ OPCODE0(F_DEC_AND_POP, "x-- and pop", {
 )
   {
     --u->integer;
-    pop_n_elems(2);
+    pop_2_elems();
   }else{
     lvalue_to_svalue_no_free(Pike_sp, Pike_sp-2); Pike_sp++;
     push_int(1);
@@ -747,7 +749,7 @@ OPCODE0(F_INC_AND_POP, "x++ and pop", {
      )
   {
     ++u->integer;
-    pop_n_elems(2);
+    pop_2_elems();
   } else {
     lvalue_to_svalue_no_free(Pike_sp, Pike_sp-2); Pike_sp++;
     push_int(1);
@@ -766,7 +768,7 @@ OPCODE0(F_POST_INC, "x++", {
      )
   {
     INT32 val = u->integer++;
-    pop_n_elems(2);
+    pop_2_elems();
     push_int(val);
   } else {
     lvalue_to_svalue_no_free(Pike_sp, Pike_sp-2); Pike_sp++;
@@ -789,7 +791,7 @@ OPCODE0(F_POST_DEC, "x--", {
      )
   {
     INT32 val = u->integer--;
-    pop_n_elems(2);
+    pop_2_elems();
     push_int(val);
   } else {
     lvalue_to_svalue_no_free(Pike_sp, Pike_sp-2); Pike_sp++;
@@ -1034,7 +1036,7 @@ OPCODE1_JUMP(F_BRANCH_IF_NOT_LOCAL, "branch if !local", {
     }else{ \
       SKIPJUMP(); \
     } \
-    pop_n_elems(2); \
+    pop_2_elems(); \
   })
 
 CJUMP(F_BRANCH_WHEN_EQ, "branch if ==", is_eq);
@@ -1087,10 +1089,10 @@ OPCODE0_JUMP(F_LOR, "||", {
 OPCODE0_JUMP(F_EQ_OR, "==||", {
   if(!is_eq(Pike_sp-2,Pike_sp-1))
   {
-    pop_n_elems(2);
+    pop_2_elems();
     SKIPJUMP();
   }else{
-    pop_n_elems(2);
+    pop_2_elems();
     push_int(1);
     DOJUMP();
   }
@@ -1099,16 +1101,17 @@ OPCODE0_JUMP(F_EQ_OR, "==||", {
 OPCODE0_JUMP(F_EQ_AND, "==&&", {
   if(is_eq(Pike_sp-2,Pike_sp-1))
   {
-    pop_n_elems(2);
+    pop_2_elems();
     SKIPJUMP();
   }else{
-    pop_n_elems(2);
+    pop_2_elems();
     push_int(0);
     DOJUMP();
   }
 });
 
 OPCODE0_JUMP(F_CATCH, "catch", {
+  check_c_stack(8192);
   switch (o_catch((PIKE_OPCODE_T *)(((INT32 *)PROG_COUNTER)+1)))
   {
   case 1:
@@ -1234,7 +1237,7 @@ OPCODE0_JUMP(F_LOOP, "loop", { /* loopcnt */
     o_subtract();
     DOJUMP();
   } else {
-    pop_n_elems(2);
+    pop_2_elems();
     SKIPJUMP();
   }
 });
@@ -1379,7 +1382,7 @@ OPCODE0(F_RSH, ">>", {
 #define COMPARISON(ID,DESC,EXPR)	\
   OPCODE0(ID, DESC, {			\
     INT32 val = EXPR;			\
-    pop_n_elems(2);			\
+    pop_2_elems();			\
     push_int(val);			\
   })
 
@@ -1679,7 +1682,7 @@ OPCODE0(F_INDIRECT, "indirect", {
   lvalue_to_svalue_no_free(&s,Pike_sp-2);
   if(s.type != PIKE_T_STRING)
   {
-    pop_n_elems(2);
+    pop_2_elems();
     *Pike_sp=s;
     Pike_sp++;
   }else{
@@ -1869,6 +1872,52 @@ OPCODE1(F_CALL_BUILTIN1_AND_POP, "call builtin1 & pop", {
   pop_stack();
 });
 
+#define DO_RECUR(XFLAGS) do{						   \
+  PIKE_OPCODE_T *addr;							   \
+  register struct pike_frame *new_frame;				   \
+  ptrdiff_t args;							   \
+									   \
+  fast_check_threads_etc(6);						   \
+  check_stack(256);							   \
+									   \
+  new_frame=alloc_pike_frame();						   \
+									   \
+  new_frame->refs=1;							   \
+  new_frame->next=Pike_fp;						   \
+									   \
+  Pike_fp->pc = (PIKE_OPCODE_T *)(((INT32 *)PROG_COUNTER) + 1);		   \
+  addr = PROG_COUNTER+GET_JUMP();					   \
+  args=addr[-1];							   \
+									   \
+  new_frame->num_args = new_frame->args = args;				   \
+  new_frame->locals=new_frame->save_sp=new_frame->expendible=Pike_sp-args; \
+  new_frame->save_mark_sp = new_frame->mark_sp_base = Pike_mark_sp;	   \
+                                                                           \
+  push_zeroes((new_frame->num_locals = (ptrdiff_t)addr[-2]) - args);       \
+                                                                           \
+  DO_IF_DEBUG({								   \
+    if(t_flag > 3)							   \
+      fprintf(stderr,"-    Allocating %d extra locals.\n",		   \
+	      new_frame->num_locals - new_frame->num_args);		   \
+  });									   \
+									   \
+                                                                           \
+  new_frame->fun=Pike_fp->fun;						   \
+  new_frame->ident=Pike_fp->ident;					   \
+  new_frame->current_storage=Pike_fp->current_storage;                     \
+  if(Pike_fp->scope) add_ref(new_frame->scope=Pike_fp->scope);		   \
+  add_ref(new_frame->current_object=Pike_fp->current_object);		   \
+  new_frame->context=Pike_fp->context;                                     \
+  add_ref(new_frame->context.prog);					   \
+  if(new_frame->context.parent)						   \
+    add_ref(new_frame->context.parent);					   \
+  Pike_fp=new_frame;							   \
+  new_frame->flags=PIKE_FRAME_RETURN_INTERNAL | XFLAGS;			   \
+									   \
+  DO_JUMP_TO(addr);							   \
+}while(0)
+
+
 /* Assume that the number of arguments is correct */
 OPCODE1_JUMP(F_COND_RECUR, "recur if not overloaded", {
   /* FIXME:
@@ -1879,8 +1928,11 @@ OPCODE1_JUMP(F_COND_RECUR, "recur if not overloaded", {
   if(Pike_fp->current_object->prog != Pike_fp->context.prog)
   {
     PIKE_OPCODE_T *addr = (PIKE_OPCODE_T *)(((INT32 *)PROG_COUNTER) + 1);
+    PIKE_OPCODE_T *faddr = PROG_COUNTER+GET_JUMP();
+    ptrdiff_t args=faddr[-1];
+      
     if(low_mega_apply(APPLY_LOW,
-		      DO_NOT_WARN((INT32)(Pike_sp - *--Pike_mark_sp)),
+		      args,
 		      Pike_fp->current_object,
 		      (void *)(arg1+Pike_fp->context.identifier_level)))
     {
@@ -1894,109 +1946,15 @@ OPCODE1_JUMP(F_COND_RECUR, "recur if not overloaded", {
   /* FALL THROUGH */
 
   /* Assume that the number of arguments is correct */
-  /* FIXME: Use new recursion stuff */
-  OPCODE0_TAILJUMP(F_RECUR, "recur", {
-    PIKE_OPCODE_T *addr;
-    struct pike_frame *new_frame;
-    
-    fast_check_threads_etc(6);
-    check_c_stack(8192);
-    check_stack(256);
-    
-    new_frame=alloc_pike_frame();
-    new_frame[0]=Pike_fp[0];
-    
-    new_frame->refs=1;
-    new_frame->next=Pike_fp;
-    
-    new_frame->save_sp = new_frame->expendible =
-      new_frame->locals = *--Pike_mark_sp;
-    new_frame->num_args = new_frame->args =
-      DO_NOT_WARN((INT32)(Pike_sp - new_frame->locals));
-    new_frame->save_mark_sp = Pike_mark_sp;
-    new_frame->mark_sp_base = Pike_mark_sp;
-    
-    addr = PROG_COUNTER+GET_JUMP();
-    new_frame->num_locals = (ptrdiff_t)addr[-2];
-    
-    DO_IF_DEBUG({
-      if(new_frame->num_args != (ptrdiff_t)addr[-1])
-	fatal("Wrong number of arguments in F_RECUR %d!=%d\n",
-	      new_frame->num_args,
-	      (ptrdiff_t)addr[-1]);
-      
-      if(t_flag > 3)
-	fprintf(stderr,"-    Allocating %d extra locals.\n",
-		new_frame->num_locals - new_frame->num_args);
-    });
-    
-    Pike_fp->pc = (PIKE_OPCODE_T *)(((INT32 *)PROG_COUNTER) + 1);
-    
-    clear_svalues(Pike_sp, new_frame->num_locals - new_frame->num_args);
-    Pike_sp += new_frame->num_locals - new_frame->args;
-    
-    if(new_frame->scope) add_ref(new_frame->scope);
-    add_ref(new_frame->current_object);
-    add_ref(new_frame->context.prog);
-    if(new_frame->context.parent)
-      add_ref(new_frame->context.parent);
-    Pike_fp=new_frame;
-    new_frame->flags=PIKE_FRAME_RETURN_INTERNAL;
 
-    DO_JUMP_TO(addr);
+  OPCODE0_TAILJUMP(F_RECUR, "recur", {
+    DO_RECUR(0);
   });
 });
 
 /* Ugly code duplication */
 OPCODE0_JUMP(F_RECUR_AND_POP, "recur & pop", {
-  PIKE_OPCODE_T *addr;
-  struct pike_frame *new_frame;
-  
-  fast_check_threads_etc(6);
-  check_c_stack(8192);
-  check_stack(256);
-  
-  new_frame=alloc_pike_frame();
-  new_frame[0]=Pike_fp[0];
-  
-  new_frame->refs=1;
-  new_frame->next=Pike_fp;
-  
-  new_frame->save_sp = new_frame->expendible =
-    new_frame->locals = *--Pike_mark_sp;
-  new_frame->num_args = new_frame->args =
-    DO_NOT_WARN((INT32)(Pike_sp - new_frame->locals));
-  new_frame->save_mark_sp = Pike_mark_sp;
-  new_frame->mark_sp_base = Pike_mark_sp;
-  
-  addr = PROG_COUNTER+GET_JUMP();
-  new_frame->num_locals = (ptrdiff_t)addr[-2];
-  
-  DO_IF_DEBUG({
-    if(new_frame->num_args != (ptrdiff_t)addr[-1])
-      fatal("Wrong number of arguments in F_RECUR %d!=%d\n",
-	    new_frame->num_args,
-	    (ptrdiff_t)addr[-1]);
-    
-    if(t_flag > 3)
-      fprintf(stderr,"-    Allocating %d extra locals.\n",
-	      new_frame->num_locals - new_frame->num_args);
-  });
-  
-  Pike_fp->pc = (PIKE_OPCODE_T *)(((INT32 *)PROG_COUNTER) + 1);
-  
-  clear_svalues(Pike_sp, new_frame->num_locals - new_frame->num_args);
-  Pike_sp += new_frame->num_locals - new_frame->args;
-  
-  if(new_frame->scope) add_ref(new_frame->scope);
-  add_ref(new_frame->current_object);
-  add_ref(new_frame->context.prog);
-  if(new_frame->context.parent)
-    add_ref(new_frame->context.parent);
-  Pike_fp=new_frame;
-  new_frame->flags=PIKE_FRAME_RETURN_INTERNAL | PIKE_FRAME_RETURN_POP;
-
-  DO_JUMP_TO(addr);
+  DO_RECUR(PIKE_FRAME_RETURN_POP);
 });
 
 
@@ -2006,12 +1964,13 @@ OPCODE0_JUMP(F_TAIL_RECUR, "tail recursion", {
   int x;
   INT32 num_locals;
   PIKE_OPCODE_T *addr;
-  INT32 args = DO_NOT_WARN((INT32)(Pike_sp - *--Pike_mark_sp));
+  INT32 args;
 
   fast_check_threads_etc(6);
 
   addr=PROG_COUNTER+GET_JUMP();
-  num_locals=EXTRACT_UCHAR(addr-2);
+  args=addr[-1];
+  num_locals=addr[-2];
 
 
   DO_IF_DEBUG({
@@ -2031,8 +1990,7 @@ OPCODE0_JUMP(F_TAIL_RECUR, "tail recursion", {
     pop_n_elems(Pike_sp - (Pike_fp->locals + args));
   }
 
-  clear_svalues(Pike_sp, num_locals - args);
-  Pike_sp += num_locals - args;
+  push_zeroes(num_locals - args);
 
   DO_IF_DEBUG({
     if(Pike_sp != Pike_fp->locals + Pike_fp->num_locals)

@@ -5,7 +5,7 @@
 \*/
 
 /*
- * $Id: interpret.h,v 1.96 2001/08/15 03:31:55 hubbe Exp $
+ * $Id: interpret.h,v 1.97 2001/08/15 09:26:32 hubbe Exp $
  */
 #ifndef INTERPRET_H
 #define INTERPRET_H
@@ -205,6 +205,29 @@ extern const char *Pike_check_c_stack_errmsg;
 #define stack_dup() push_svalue(Pike_sp-1)
 #define stack_swap() do { struct svalue _=Pike_sp[-1]; Pike_sp[-1]=Pike_sp[-2]; Pike_sp[-2]=_; } while(0)
 
+#define push_zeroes(N) do{			\
+    struct svalue *s_=Pike_sp;			\
+    ptrdiff_t num_= (N);			\
+    for(;num_-- > 0;s_++)			\
+    {						\
+      s_->type=PIKE_T_INT;			\
+      s_->subtype=NUMBER_NUMBER;		\
+      s_->u.integer=0;				\
+    }						\
+    Pike_sp=s_;					\
+}while(0)
+
+#define push_undefines(N) do{			\
+    struct svalue *s_=Pike_sp;			\
+    ptrdiff_t num_= (N);			\
+    for(;num_-- > 0;s_++)			\
+    {						\
+      s_->type=PIKE_T_INT;			\
+      s_->subtype=NUMBER_UNDEFINED;		\
+      s_->u.integer=0;				\
+    }						\
+    Pike_sp=s_;					\
+}while(0)
 
 #define stack_pop_to_no_free(X) (*(X)=*--Pike_sp)
 #define stack_pop_to(X) do { struct svalue *_=(X); free_svalue(_); stack_pop_to_no_free(_); }while(0)
