@@ -2,7 +2,7 @@
 
 // LDAP client protocol implementation for Pike.
 //
-// $Id: client.pike,v 1.31 2002/12/04 13:55:56 mast Exp $
+// $Id: client.pike,v 1.32 2003/07/01 15:38:10 anders Exp $
 //
 // Honza Petrous, hop@unibase.cz
 //
@@ -358,7 +358,7 @@ int _prof_gtim;
   void create(string|void url, object|void context)
   {
 
-    info = ([ "code_revision" : ("$Revision: 1.31 $"/" ")[1] ]);
+    info = ([ "code_revision" : ("$Revision: 1.32 $"/" ")[1] ]);
 
     if(!url || !sizeof(url))
       url = LDAP_DEFAULT_URL;
@@ -423,10 +423,12 @@ int _prof_gtim;
   // Simple BIND operation
 
     object msgval, vers, namedn, auth, app;
+    string pass = password;
+    password = "censored";
 
     vers = Standards.ASN1.Types.asn1_integer(ldap_version);
     namedn = Standards.ASN1.Types.asn1_octet_string(name);
-    auth = ASN1_CONTEXT_OCTET_STRING(0, password);
+    auth = ASN1_CONTEXT_OCTET_STRING(0, pass);
     // SASL credentials ommited
 
     msgval = ASN1_APPLICATION_SEQUENCE(0, ({vers, namedn, auth}));
@@ -464,6 +466,8 @@ int _prof_gtim;
     int id;
     mixed raw;
     object rv;
+    string pass = password;
+    password = "censored";
 
     if (!version)
       version = LDAP_DEFAULT_VERSION;
@@ -471,14 +475,14 @@ int _prof_gtim;
       return(-ldap_errno);
     if (!stringp(dn))
       dn = mappingp(lauth->ext) ? lauth->ext->bindname||"" : "";
-    if (!stringp(password))
-      password = "";
+    if (!stringp(pass))
+      pass = "";
     ldap_version = version;
     if(ldap_version == 3) {
       dn = string_to_utf8(dn);
-      password = string_to_utf8(password);
+      pass = string_to_utf8(pass);
     }
-    if(intp(raw = send_bind_op(dn, password))) {
+    if(intp(raw = send_bind_op(dn, pass))) {
       THROW(({error_string()+"\n",backtrace()}));
       return(-ldap_errno);
     }
