@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: pike_memory.c,v 1.135 2002/12/01 03:28:51 mast Exp $
+|| $Id: pike_memory.c,v 1.136 2002/12/01 05:35:15 mast Exp $
 */
 
 #include "global.h"
@@ -11,7 +11,7 @@
 #include "pike_macros.h"
 #include "gc.h"
 
-RCSID("$Id: pike_memory.c,v 1.135 2002/12/01 03:28:51 mast Exp $");
+RCSID("$Id: pike_memory.c,v 1.136 2002/12/01 05:35:15 mast Exp $");
 
 /* strdup() is used by several modules, so let's provide it */
 #ifndef HAVE_STRDUP
@@ -676,6 +676,8 @@ int dmalloc_print_trace;
 
 #undef DO_IF_DMALLOC
 #define DO_IF_DMALLOC(X)
+#undef DO_IF_NOT_DMALLOC
+#define DO_IF_NOT_DMALLOC(X) X
 
 
 #include "threads.h"
@@ -1495,8 +1497,8 @@ static int add_location_cleanup(struct memhdr *mh,
 }
 #endif
 				 
-static inline void add_location(struct memhdr *mh,
-				LOCATION location)
+static void add_location(struct memhdr *mh,
+			 LOCATION location)
 {
   struct memloc *ml;
   unsigned long l;
@@ -1786,6 +1788,9 @@ static int low_dmalloc_mark_as_free(void *p, int already_gone)
   struct memhdr *mh=find_memhdr(p);
   if(mh)
   {
+    if (mh->flags & MEM_TRACE) {
+      fprintf(stderr, "Marking memhdr %p as free\n", mh);
+    }
     if(!(mh->flags & MEM_FREE))
     {
       mh->size=~mh->size;
