@@ -413,6 +413,53 @@ class ListProperties
   }
 }
 
+#if 0
+class GrabPointer
+{
+  inherit request;
+  constant reqType = 26;
+}
+
+class UnGrabPointer
+{
+  inherit request;
+  constant reqType = 27;
+}
+#endif
+
+class GrabButton
+{
+  inherit request;
+  constant reqType = 28;
+
+  int ownerEvents;
+  int grabWindow;
+  int eventMask;
+  int pointerMode;
+  int keyboardMode;
+  int confineTo;
+  int cursor;
+  int button;
+  int modifiers;
+
+  string to_string()
+  {
+    return build_request(sprintf("%4c%2c" "%c%c" "%4c%4c%c\0%2c",
+				 grabWindow, eventMask,
+				 pointerMode, keyboardMode,
+				 confineTo, cursor, button, modifiers),
+			 ownerEvents);
+  }
+}
+
+#if 0
+class UnGrabButton
+{
+  inherit request;
+  constant reqType = 29;
+}
+#endif
+
 class CreateGC
 {
   inherit request;
