@@ -1,6 +1,6 @@
 // ID3.pmod
 //
-//  $Id: ID3.pmod,v 1.3 2002/04/11 20:57:25 nilsson Exp $
+//  $Id: ID3.pmod,v 1.4 2002/04/17 07:26:04 hop%unibase.cz Exp $
 //
 
 //! ID3 decoder/encoder.
@@ -331,12 +331,12 @@ class Frame {
   program get_frame_data(string id) {
     if( (< "TIT1", "TIT2", "TIT3", "TALB", "TOAL", "TSST", "TSRC",
 	   "TPE1", "TPE2", "TPE3", "TPE4", "TOPE", "TEXT", "TOLY",
-	   "TCOM", "TENC" >)[id] )
+	   "TCOM", "TENC", "TYER" >)[id] )
       return Frame_TextPlain;
     if( (< "TMCL", "TIPL" >)[id] )
       return Frame_TextMapping;
-    //if( (< "TRCK" >)[id] )
-      //return Frame_TRCK;
+    if( (< "TRCK" >)[id] )
+      return Frame_TRCK;
     // FIXME: Look for program in this module.
     return Frame_Dummy;
   }
@@ -566,6 +566,8 @@ class Frame_TextAofB {
     // Not against the spec, really...
     if(a > b) error( "(A/B) A bigger than B.\n" );
     if(!a) error( "Element is zero.\n" );
+
+    return ({ a, b });
   }
 
   string low_encode(int a, int b) {
@@ -592,6 +594,11 @@ class Frame_TRCK {
   string encode() {
     return low_encode(track, tracks);
   }
+
+  string get_string() {
+    return (track ? (string)track : "") + (tracks ? "/"+tracks : "");
+  }
+
 }
 
 class Frame_TPOS {
@@ -812,6 +819,14 @@ class Tag {
 	case "TCON":
         case "TCM":
 	  catch(rv->genre = fr1->data->get_string());
+          break;
+        case "TYER":
+        case "TYE":
+          catch(rv->year = fr1->data->get_string());
+          break;
+        case "TRCK":
+        case "TRK":
+          catch(rv->track = fr1->data->get_string());
           break;
       }
      return rv;
