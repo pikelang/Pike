@@ -1,5 +1,5 @@
 /*
- * $Id: system.c,v 1.74 1999/10/27 14:53:24 grubba Exp $
+ * $Id: system.c,v 1.75 1999/10/27 15:03:57 grubba Exp $
  *
  * System-call module for Pike
  *
@@ -15,7 +15,7 @@
 #include "system_machine.h"
 #include "system.h"
 
-RCSID("$Id: system.c,v 1.74 1999/10/27 14:53:24 grubba Exp $");
+RCSID("$Id: system.c,v 1.75 1999/10/27 15:03:57 grubba Exp $");
 #ifdef HAVE_WINSOCK_H
 #include <winsock.h>
 #endif
@@ -815,11 +815,12 @@ void f_uname(INT32 args)
   old_sp = sp;
 
   for(i=0; i < NELEM(si_fields); i++) {
-    int res;
+    long res;
     res = sysinfo(si_fields[i].command, buffer, PIKE_SI_BUFLEN);
 
-    if (res == 0) {
+    if (res >= 0) {
       push_text(si_fields[i].name);
+      /* FIXME: Get the length from the return value? */
       push_text(buffer);
     }
   }
