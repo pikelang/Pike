@@ -6,8 +6,9 @@
 #  include "module.h"
 #  include "stralloc.h"
 #  include "pike_macros.h"
+#  include "main.h"
 
-RCSID("$Id: dynamic_load.c,v 1.32 1999/01/31 23:50:15 per Exp $");
+RCSID("$Id: dynamic_load.c,v 1.33 1999/02/01 01:36:06 per Exp $");
 
 #endif /* !TESTING */
 
