@@ -1,0 +1,9 @@
+NAME
+	low_level - low level routines supplied by pike
+
+DESCRIPTIONS
+	These functions are here to help you write fast and portable modules.
+	Pike itself also uses them for the same purpose.
+
+KEYWORDS
+	internals

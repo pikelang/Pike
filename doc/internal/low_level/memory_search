@@ -1,0 +1,23 @@
+NAME
+	memory_search - search memory for a sequence of bytes
+
+SYNTAX
+	#include "memory.h"
+	
+	char *memory_search(struct mem_searcher *s,
+			    char *haystack,
+			    SIZE_T haystacklen);
+
+DESCRIPTION
+	This function searches through a memory region (called 'haystack')
+	for a sequence of bytes (called 'needle'). If found, a pointer to
+	the first occurance of 'needle' in 'haystack' is returned. The needle
+	is given by calling init_memsearch to initialize a struct mem_searcher
+	that can then be used with this function.
+
+KEYWORDS
+	low_level
+
+SEE ALSO
+	init_memsearch
+

@@ -1,0 +1,18 @@
+NAME
+	set_close_on_exec - set the close-on-exec flag on a filedescriptor
+
+SYNTAX
+	#include "fd_control.h"
+
+	void set_close_on_exec(int fd, int onoff)
+
+DESCRIPTION
+	This function sets the close-on-exec flag on a filedescriptor. If
+	onoff is true, the filedescriptor will be closed whenever an exec()
+	is executed. If it is false, the fildescriptor will remain open.
+
+KEYWORDS
+	low_level
+
+SEE ALSO
+	set_nonblocking

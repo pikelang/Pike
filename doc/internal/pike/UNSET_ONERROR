@@ -1,0 +1,9 @@
+NAME
+	UNSET_ONERROR - cleanup after an SET_ONERROR
+
+DESCRIPTION
+	This function cleans up after a SET_ONERROR call.
+	See SET_ONERROR for more details.
+
+SEE ALSO
+	SET_ONERROR, SETJMP

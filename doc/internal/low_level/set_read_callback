@@ -1,0 +1,24 @@
+NAME
+	set_read_callback - set 'data available' callback
+
+SYNTAX
+	#include "backend.h"
+
+	void set_read_callback(int fd,file_callback cb,void *data);
+
+DESCRIPTION
+	This function sets what function should be called when there is
+	more data to be read from 'fd'. The 'file_callback' should be a
+	function like this:
+
+	void file_callback(int fd, void *data);
+
+	The arguments are the same as sent to set_read_callback().
+	To disable the read callback, call set_read_callback again with
+	cb and data equal to zero.
+
+KEYWORDS
+	low_level
+
+SEE ALSO
+	set_write_callback, set_nonblocking

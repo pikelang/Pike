@@ -1,0 +1,49 @@
+NAME
+	SETJMP - catch errors
+
+SYNTAX
+	#include "error.h"
+
+	int SETJMP(JMP_BUF buf);
+
+DESCRIPTION
+	These macros are wrappers to the setjmp/longjmp routines with some
+	added support for cleaning up the Pike stack and other things that
+	might need freeing. What SETJUMP does is that it lets you catch
+	Pike errors much like the Pike function catch(). When called,
+	SETJMP returns zero, so the 'failsafe' code is executed. If an error
+	occurs in that code the processor will jump directly to the SETJMP
+	again and it will return 'true'. Then the 'error' code will be
+	executed.
+
+NOTA BENE
+	SETJMP is a macro
+
+	'buf' has to be a local variable
+
+	There are some limitations to how you can use local variables in the
+	same function as setjump/longjump. See setjup(3) for more details.
+
+EXAMPLE
+	#include "error.h"
+
+	void do_catch()
+	{
+	  JMP_BUF buf;
+
+	  if(SETJMP(buf)) {
+	    /* An error / longjump occured */
+	  } else {
+	    /* Execute failsafe code here */
+	  }
+
+	  UNSETJMP(foo)
+	}
+
+
+
+KEYWORDS
+	internals
+
+SEE ALSO
+	throw, error, UNSETJMP, SET_ONERROR, UNSET_ONERROR

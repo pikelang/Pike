@@ -16,3 +16,6 @@ DESCRIPTION
 
 KEYWORDS
 	internals
+
+SEE ALSO
+	SET_ONERROR, fatal, throw

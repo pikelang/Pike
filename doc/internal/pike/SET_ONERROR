@@ -1,0 +1,38 @@
+NAME
+	SET_ONERROR - call this function if an error occurs
+
+SYNTAX
+	#include "error.h"
+
+	void SET_ONERROR(ONERROR tmp, void (*func)(void *), void *arg);
+
+DESCRIPTION
+	This function sets an error handler to be called when an error
+	occurs. When an error occurs the function 'func' is called with
+	the argument 'arg'. The advantage of this method over using SETJMP
+	for cleanup handling is that this should be slightly faster and it
+	does not have problems with undefined local variables.
+
+NOTA BENE
+	SET_ONERROR is a macro
+
+	'tmp' has to be a local variable.
+
+EXAMPLE
+	#include "error.h"
+	#include "memory.h"
+
+	void do_something()
+	{
+	  ONERROR tmp;
+	  char *mem=xalloc(4711);
+
+	  SET_ONERROR(tmp, (void (*)(void *)) free, mem);
+
+	  /* Do some code that might cause an Pike error */
+
+	  UNSET_ONERROR(tmp);
+	}
+
+SEE ALSO
+	UNSET_ONERROR, error

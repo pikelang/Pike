@@ -1,0 +1,28 @@
+NAME
+	init_memsearch - initialize a memory search struct
+
+SYNTAX
+	#include "memory.h"
+
+	void init_memsearch(struct mem_searcher *s,
+			    char *needle,
+			    SIZE_T needlelen,
+			    SIZE_T max_haystacklen);
+
+DESCRIPTION
+	This function initializes a struct mem_searcher to be used with
+	the function memory_search. 'needle' is the byte sequence to
+	search for, and needlelen is how many bytes long the 'needle' is.
+	The argument 'max_haystacklen' is an approximation of how much
+	this memory searcher will be used. More time will be spent optimizing
+	the memory searcher struct if max_haystacklen is large.
+
+NOTA BENE
+	The needle is not copied by this function. It must still be available
+	when memory_search is called.
+
+KEYWORDS
+	low_level
+
+SEE ALSO
+	memory_search

@@ -1,0 +1,16 @@
+NAME
+	hashmem - hash a memory region
+
+SYNTAX
+	#include "memory.h"
+
+	unsigned INT32 hashmem(const unsigned char *a,INT32 len,INT32 mlen);
+
+DESCRIPTION
+	This function looks at the memory region beginning at 'a' and is 'len'
+	bytes long and returns a hash value depending on the bytes in that
+	region. The argument 'mlen' is how many bytes it should actually look
+	at, larger mlen gives better values but slower hashing.
+
+KEYWORDS
+	low_level
