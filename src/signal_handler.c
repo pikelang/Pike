@@ -25,7 +25,7 @@
 #include "main.h"
 #include <signal.h>
 
-RCSID("$Id: signal_handler.c,v 1.131 1999/05/08 00:39:51 hubbe Exp $");
+RCSID("$Id: signal_handler.c,v 1.132 1999/05/17 20:31:25 hubbe Exp $");
 
 #ifdef HAVE_PASSWD_H
 # include <passwd.h>
@@ -1329,7 +1329,7 @@ static int set_priority( int pid, char *to )
     /* Time to get tricky :-) */
     struct {
       id_t pc_cid;
-      pri_t rt_pri;
+      short rt_pri;
       ulong rt_tqsecs;
       long rt_tqnsecs;
       long padding[10];
@@ -1395,7 +1395,7 @@ static int set_priority( int pid, char *to )
     if(prilevel == 2)
     {
       class = SCHED_RR;
-      prilevel = -2; // lowest RR priority...
+      prilevel = -2; /* lowest RR priority... */
       param.sched_priority = sched_get_priority_min( class )+
         (sched_get_priority_max( class )-
          sched_get_priority_min( class ))/3 * (prilevel+2);
