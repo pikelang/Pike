@@ -187,6 +187,7 @@ testfont binary
 /src/modules/Image/pattern.c foreign_ident
 /src/modules/Image/pnm.c foreign_ident
 /src/modules/Image/polyfill.c foreign_ident
+/src/modules/Image/polygon.c foreign_ident
 /src/modules/Image/togif.c foreign_ident
 /src/modules/Image/x.c foreign_ident
 /src/modules/MIME/Makefile.in foreign_ident
