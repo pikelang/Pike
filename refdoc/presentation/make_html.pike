@@ -471,7 +471,7 @@ string parse_text(Node n, void|String.Buffer ret) {
 	break;
       }
       string ref;
-      ref = c->get_attributes()->resolved;
+      //ref = c->get_attributes()->resolved;
       if(!ref) ref = parse_text(c);
       ret->add("<font face='courier'>", ref, "</font> ");
       break;
