@@ -1,5 +1,5 @@
 /*
- * $Id: pike_threadlib.h,v 1.13 2002/02/05 19:15:58 mast Exp $
+ * $Id: pike_threadlib.h,v 1.14 2002/04/09 21:14:11 mikael%unix.pp.se Exp $
  */
 #ifndef PIKE_THREADLIB_H
 #define PIKE_THREADLIB_H
@@ -465,12 +465,6 @@ PMOD_EXPORT extern int t_flag;
 #define SWAP_OUT_TRACE(_tmp)
 #define SWAP_IN_TRACE(_tmp)
 #endif /* THREAD_TRACE */
-
-#if defined(PROFILING) && defined(HAVE_GETHRTIME)
-#define DO_IF_PROFILING(X) X
-#else
-#define DO_IF_PROFILING(X)
-#endif
 
 #define SWAP_OUT_THREAD(_tmp) do {				\
        (_tmp)->state=Pike_interpreter;				\

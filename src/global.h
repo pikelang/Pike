@@ -5,7 +5,7 @@
 \*/
 
 /*
- * $Id: global.h,v 1.66 2002/01/16 02:54:12 nilsson Exp $
+ * $Id: global.h,v 1.67 2002/04/09 21:14:11 mikael%unix.pp.se Exp $
  */
 #ifndef GLOBAL_H
 #define GLOBAL_H
@@ -452,5 +452,15 @@ char *crypt(char *, char *);
 #else
 #define DO_IF_RUN_UNLOCKED(X)
 #endif
+
+/* Used in more than one place, better put it here */
+
+#if defined(PROFILING) && defined(HAVE_GETHRTIME)
+#define DO_IF_PROFILING(X) X
+#else
+#define DO_IF_PROFILING(X)
+#endif
+
+
 
 #endif
