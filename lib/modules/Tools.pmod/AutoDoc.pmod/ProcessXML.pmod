@@ -363,41 +363,65 @@ static Node findNode(Node root, array(string) ref) {
 }
 
 static class ReOrganizeTask {
-  array(string) belongsRef = 0;
-  string newName = 0;
+  string belongsNamespace;
+  array(string) belongsRef;
+  string newName;
   Node n;
 }
 
 static array(ReOrganizeTask) tasks;
 
 // current is a <module>, <class> or <docgroup> node
-static void recurseAppears(Node root, Node current) {
+static void recurseAppears(string namespace, Node current) {
   mapping attr = current->get_attributes() || ([]);
   if (attr["appears"] || attr["belongs"] || attr["global"]) {
     ReOrganizeTask t = ReOrganizeTask();
+    array(string) a = ({});
     if (string attrRef = attr["appears"]) {
-      array(string) a = splitRef(attrRef);
-      t->belongsRef = a[0 .. sizeof(a) - 2];
+      a = splitRef(attrRef);
       t->newName = a[-1];
+      a = a[0 .. sizeof(a)-2];
     }
     else if (string belongsRef = attr["belongs"]) {
-      array(string) a = splitRef(belongsRef);
-      t->belongsRef = a;
+      a = splitRef(belongsRef);
     }
+    if (sizeof(a) && has_suffix(a[0], "::")) {
+      // Note: This assignment affects the default namespace
+      //       for nodes under this one, but it seems a
+      //       reasonable behaviour.
+      if (a[0] != "top::")
+	namespace = a[0];
+    } else {
+      // Prefix with the durrent namespace.
+      a = ({ namespace }) + a;
+    }
+    // Strip the :: from the namespace name.
+    a[0] = a[0][..sizeof(a[0])-3];
+    t->belongsRef = a;
     t->n = current;
     tasks += ({ t });
   }
   if ( (<"class", "module">)[ current->get_any_name() ] )
     foreach (current->get_children(), Node child)
       if ((<"module", "class", "docgroup">)[child->get_any_name()])
-        recurseAppears(root, child);
+        recurseAppears(namespace, child);
 }
 
 //! Take care of all the @@appears and @@belongs directives everywhere,
 //! and rearrange the nodes in the tree accordingly
+//!
+//! @param root
+//!   The root (@tt{<autodoc>@}) node of the documentation tree.
 void handleAppears(Node root) {
   tasks = ({ });
-  recurseAppears(root, root);
+  foreach(root->get_elements("namespace"), Node namespaceNode) {
+    string namespace = namespaceNode->get_attributes()->name + "::";
+    foreach(namespaceNode->get_children(), Node child) {
+      if ((<"module", "class", "docgroup">)[child->get_any_name()]) {
+	recurseAppears(namespace, child);
+      }
+    }
+  }
   tasks = Array.sort_array(
     tasks,
     lambda (ReOrganizeTask task1, ReOrganizeTask task2) {
