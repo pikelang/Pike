@@ -981,7 +981,7 @@ void mapping_search_no_free(struct svalue *to,
     k=k->next;
   }
 
-  while(h < m->hashsize)
+  while(h < (unsigned INT32)m->hashsize)
   {
     while(k)
     {
