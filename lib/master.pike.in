@@ -6,7 +6,7 @@
 // Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 // for more information.
 //
-// $Id: master.pike.in,v 1.240 2002/12/09 22:19:13 mast Exp $
+// $Id: master.pike.in,v 1.241 2002/12/14 04:34:55 nilsson Exp $
 
 #pike __REAL_VERSION__
 
@@ -1360,7 +1360,7 @@ class CompatResolver
     m_delete (predefines, name);
   }
 
-  //!
+  //! Returns a mapping with the current predefines.
   mapping get_predefines()
   {
     return predefines;
@@ -1856,8 +1856,22 @@ void _main(array(string) orig_argv, array(string) env)
 
   if(sizeof(argv)==1)
   {
-    if(run_tool)
-      _error( "Pike: -x specified without tool name.\n");
+    if(run_tool) {
+      werror("Pike -x specificed without tool name.\n"
+	     "Available tools:\n");
+      mapping t = ([]);
+      int i;
+      object ts = main_resolv(({ "Tools", "Standalone" }));
+      foreach(indices(ts), string s) {
+	object o = ts[s]();
+	if(!o->main) continue;
+	t[s] = o->description || "";
+	i = max(i, sizeof(s));
+      }
+      foreach(sort(indices(t)), string s)
+	werror(" %-"+i+"s %s\n", s, t[s]);
+      exit(1);
+    }
     main_resolv( ({ "Tools", "Hilfe" }) )->StdinHilfe();
     exit(0);
   }
