@@ -6,6 +6,136 @@
 
 <!--
 TODO: Add a section about casts
+
+An Appendix about kompiling
+Running Pike on NT
+
+Hedda-notes: 
+
+Fix chapter 3 to be one reference-part and one tutorial-part.
+Make sure that all global functions and modules are described.
+Write an appendix about old functions, behaviors and keywords.
+  ("How to convert from old versions of Pike")
+
+
+Missing funktions in the manual:
+UNDEFINED
+_debug
+_describe
+_static_modules
+_typeof
+    "`!",
+    "`!=",
+    "`%",
+    "`&",
+    "`()",
+    "`*",
+    "`+",
+    "`-",
+    "`->",
+    "`/",
+    "`<",
+    "`<<",
+    "`<=",
+    "`==",
+    "`>",
+    "`>=",
+    "`>>",
+    "`[]",
+    "`^",
+    "`|",
+    "`~",   (All these should be checked for updates in 5)
+abs
+all_threads (link to threads)
+atan2
+atexit
+chmod
+chroot
+cleargroups
+closelog
+endpwent
+endgrent
+filesystem_stat
+get_all_groups
+get_all_users
+get_groups_for_user
+getgrent
+getgroups
+getegid
+geteuid
+getgid
+getgrgid
+getgrnam
+gethostbyaddr
+gethostbyname
+gethostname
+gethrtime
+gethrvtime
+getpgrp
+getppid
+getpwent
+getpwnam
+getpwuid
+getuid
+gmtime
+hardlink
+initgroups
+innetgr
+max
+min
+object_variablep
+openlog
+readlink
+resolvepath
+set_priority
+set_weak_flag
+setegid
+seteuid
+setgid
+setgrent
+setgroups
+setpwent
+setuid
+sgn
+symlink
+syslog
+this_thread
+thread_create
+thread_local
+thread_set_concurrency
+umask
+uname
+werror
+
+
+
+These functions shall be removed from chapter 16:
+catch      (Should be a link to misc)
+query_host_name  (Simulate-function! Move!)
+typeof         (Not a function and is documented in one way in misc
+                and another way in 16 (with a typo `?))
+
+
+
+
+Wrongly placed functions:
+_do_call_outs
+new
+basename  
+cpp 
+
+
+Errors:
+explode_path (error in "explode_path - exit Pike interpreter")
+
+Chapter 16 should be named "builtin functions"
+
+"This chapter is a reference for all the builtin functions in
+ Pike. They are listed in alphabetical order." is not correct if not
+all global functions are included (like threads and Stdio-stuff).
+If the Threads och Stdio-functions begin to work in the modules,
+this comment can be erased.
+
 --> 
 
 <firstpage>

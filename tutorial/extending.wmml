@@ -1,3 +1,10 @@
+<!--
+TODO:
+A chapter about wmml, Mdoc (The autodoc from the Image-module) and how
+to write moduledocementation.
+
+-->
+
 <chapter title="Pike internals - how to extend Pike">
 The rest of this book describes how Pike works and how to extend it with
 your own functions written in C or C++. Even if you are not interested in
