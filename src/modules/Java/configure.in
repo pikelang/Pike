@@ -49,14 +49,17 @@ if test "x$with_java" = xyes -a "x$enable_binary" != xno; then
 	*) pike_cv_java_arch="`echo $aix_cputype | tr 'ABCDEFGHIJKLMNOPQRSTUVWXYZ' 'abcdefghijklmnopqrstuvwxyz'`";;
       esac
     else
-      if pike_cv_java_arch="`$uname -p || uname -p`"; then :; else pike_cv_java_arch=no; fi
+      if pike_cv_java_arch="`$uname -p || uname -p 2>/dev/null`"; then :;
+      else pike_cv_java_arch=no; fi
     fi
 
     dnl Linux kluge
 
-    if test x"$pike_cv_java_arch" = xunknown; then
-      [pike_cv_java_arch="`uname -m | sed -e 's/^i[4-9]86/i386/'`"]
+    if test x"$pike_cv_java_arch":"$pike_cv_java_sysos" = xunknown:linux -o \
+	    x"$pike_cv_java_arch":"$pike_cv_java_sysos" = xno:linux; then
+      pike_cv_java_arch="`uname -m`"
     fi
+    pike_cv_java_arch="`echo $pike_cv_java_arch|sed -e 's/^i[[4-9]]86/i386/'`"
   ])
   AC_MSG_RESULT($pike_cv_java_arch)
 
