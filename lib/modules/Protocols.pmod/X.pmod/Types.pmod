@@ -21,7 +21,6 @@ class XResource
   void Free()
   {
     object req = this_object()->FreeRequest();
-    werror("free "+id+"\n");
     req->id = id;
     display->send_request( req );
   }
@@ -424,7 +423,7 @@ class Window
 {
   inherit Drawable;
   int currentInputMask;
-  constant FreeRequest = lambda(){}; // FIXME!!
+  function FreeRequest = lambda(){}; // FIXME!!
   mapping(string:array(function)) event_callbacks = ([ ]);
 
   int alt_gr, num_lock, shift, control, caps_lock;
