@@ -2,7 +2,7 @@
 // Copyright © 2000, Roxen IS.
 // By Martin Nilsson and Andreas Lange
 //
-// $Id: extract.pike,v 1.9 2001/02/20 02:16:47 nilsson Exp $
+// $Id: extract.pike,v 1.10 2001/02/20 06:21:31 nilsson Exp $
 //
 
 
@@ -158,10 +158,15 @@ array(mapping) languagefiles(string searchpath, void|string skiplang) {
   // Based on the searchpath, returns list of files - skiplang-file
   string pattern = replace(searchpath, "%%", "%");
   string dirbase = (pattern/"%L")[0];
-  if(dirbase!="" && dirbase[-1]!='/') {
+  if(dirbase=="") {
+    dirbase="./";
+    pattern = "./" + pattern;
+  }
+  else if(dirbase[-1]!='/') {
     array split = dirbase/"/";
     dirbase = split[..sizeof(split)-2]*"/"+"/";
   }
+
   string s_patt;
   if(search(pattern, "/", sizeof(dirbase))==-1)
     s_patt=pattern[sizeof(dirbase)..];
@@ -1033,7 +1038,7 @@ int main(int argc, array(string) argv) {
 
   if( (!(xml_name && args->sync && args->xmlpath && args->baselang)) && 
       (!sizeof(files) || args->help) ) {
-    sscanf("$Revision: 1.9 $", "$"+"Revision: %s $", string v);
+    sscanf("$Revision: 1.10 $", "$"+"Revision: %s $", string v);
     werror("\n  Locale Extractor Utility "+v+"\n\n");
     werror("  Syntax: extract.pike [arguments] infile(s)\n\n");
     werror("  Arguments: --project=name  default: first found in infile\n");
