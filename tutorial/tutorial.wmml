@@ -5376,6 +5376,20 @@ setuid, getuid, setgid, seteuid, geteuid, setegid, getegid
 
 <hr noshade size=1>
 
+<function name=getgroups title="get the supplemental group access list" fullpath>
+<man_syntax>
+array(int) getgroups();<br>
+</man_syntax>
+<man_description>
+Get the current supplemental group access list for this process.
+</man_description>
+<man_see>
+initgroups, setgroups, getgid, setgid, getegid, setegid
+</man_see>
+</function>
+
+<hr noshade size=1>
+
 <function name=gethostbyaddr title="gets information about a host given its address" fullpath>
 <man_syntax>
 array gethostbyaddr(string <I>addr</I>);<br>
@@ -5622,6 +5636,20 @@ Sets the real group ID, effective group ID and saved group ID to <i>gid</i>.
 </man_description>
 <man_see>
 setuid, getuid, getgid, seteuid, geteuid, setegid, getegid
+</man_see>
+</function>
+
+<hr noshade size=1>
+
+<function name=setgroups title="set the supplemental group access list" fullpath>
+<man_syntax>
+void getgroups(array(int) gids);<br>
+</man_syntax>
+<man_description>
+Set the supplemental group access list for this process.
+</man_description>
+<man_see>
+initgroups, getgroups, getgid, setgid, getegid, setegid
 </man_see>
 </function>
 
