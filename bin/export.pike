@@ -1,6 +1,6 @@
 #!/usr/local/bin/pike
 
-/* $Id: export.pike,v 1.20 1998/05/13 23:29:09 hubbe Exp $ */
+/* $Id: export.pike,v 1.21 1998/08/21 04:43:57 hubbe Exp $ */
 
 #include <simulate.h>
 
@@ -110,7 +110,7 @@ int main(int argc, string *argv)
 
     werror("Creating tag "+tag+" in the background.\n");
     cvs=Process.create_process(({"cvs","tag","-R","-F",tag}),
-			   (["cwd":"pike/src"]));
+			   (["cwd":"pike"]));
   }else{
     vpath=replace(replace(getversion()," ","-"),"-release-",".");
   }
