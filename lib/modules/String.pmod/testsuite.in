@@ -1,4 +1,4 @@
-dnl $Id: testsuite.in,v 1.13 2004/02/26 19:31:37 agehall Exp $
+dnl $Id: testsuite.in,v 1.14 2004/02/26 20:32:51 agehall Exp $
 
 test_eq([[ String.Buffer()->add("xxx") ]], 3)
 test_any([[
@@ -275,5 +275,5 @@ dnl MISSING TEST: String.HTML.Obox
 test_eq( String.int2text(1),    "one" )
 test_eq( String.int2text(100),  "onehundred" )
 test_eq( String.int2text(1000), "one thousand" )
-test_eq( String.int2text(4242), "four thousand twohundredfortytwo" )
+test_eq( String.int2text(4242), "four thousand twohundredfourtytwo" )
 test_eq( String.int2text(-1),   "minus one" )
