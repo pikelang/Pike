@@ -487,9 +487,10 @@ static class package {
 	cls->get_static_method("getPackages",
 			       "()[Ljava/lang/Package;");
       i->packages =
-	Array.map(gap(), lambda(object o, object nm) {
-			   return (string)nm(o);
-			 }, cls->get_method("getName","()Ljava/lang/String;"));
+	Array.map(values(gap()), lambda(object o, object nm) {
+				   return (string)nm(o);
+				 },
+		  cls->get_method("getName","()Ljava/lang/String;"));
 
       cls = i->jvm->find_class("java/lang/Object");
       i->getclass_method = cls->get_method("getClass",
