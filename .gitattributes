@@ -171,6 +171,7 @@ testfont binary
 /lib/modules/Protocols.pmod/LDAP.pmod/client.pike foreign_ident
 /lib/modules/Protocols.pmod/LDAP.pmod/ldap_errors.h foreign_ident
 /lib/modules/Protocols.pmod/LDAP.pmod/ldap_privates.pmod foreign_ident
+/lib/modules/Protocols.pmod/LDAP.pmod/module.pmod foreign_ident
 /lib/modules/Protocols.pmod/LDAP.pmod/protocol.pike foreign_ident
 /lib/modules/Protocols.pmod/LMTP.pmod foreign_ident
 /lib/modules/Protocols.pmod/LPD.pmod foreign_ident

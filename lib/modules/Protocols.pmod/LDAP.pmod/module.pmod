@@ -1,22 +1,70 @@
+// $Id: module.pmod,v 1.4 2005/03/11 13:19:49 mast Exp $
+
+#include "ldap_globals.h"
+
 constant MODIFY_ADD = 0;
 constant MODIFY_DELETE = 1;
 constant MODIFY_REPLACE = 2;
-//! Constants used in the attropval argument to
+//! Constants used in the @expr{attropval@} argument to
 //! @[Protocols.LDAP.client.modify].
 
-string quote_filter_value (string s)
+string ldap_encode_string (string str)
 //! Quote characters in the given string as necessary for use as a
-//! value in a search filter.
+//! string literal in filters and various composite LDAP attributes.
 //!
-//! @note
-//! Quoting is done according to section 4 in RFC 2254.
+//! The quoting is compliant with RFCs 2252 (section 4.3) and 2254
+//! (section 4). All characters that can be special in those RFCs are
+//! quoted using the @expr{\xx@} syntax, but the set might be
+//! extended.
 //!
 //! @seealso
-//!   @[Protocols.LDAP.client.search]
+//!   @[ldap_decode_string], @[Protocols.LDAP.client.search]
 {
-  return replace (s,
-		  ({"*",    "(",    ")",    "\\",   "\0"}),
-		  ({"\\2a", "\\28", "\\29", "\\5c", "\\00"}));
+  return replace (str,
+    ({"\0",   "#",    "$",    "'",    "(",    ")",    "*",    "\\"}),
+    ({"\\00", "\\23", "\\24", "\\27", "\\28", "\\29", "\\2a", "\\5c"}));
+}
+
+string ldap_decode_string (string str)
+//! Decodes all @expr{\xx@} escapes in @[str].
+//!
+//! @seealso
+//!   @[ldap_encode_string]
+{
+  string orig_str = str, res = "";
+  while (1) {
+    sscanf (str, "%[^\\]%s", string val, str);
+    res += val;
+    if (str == "") break;
+    // str[0] == '\\' now.
+    if (sscanf (str, "\\%1x%1x%s", int high, int low, str) == 3)
+      // Use two %1x to force reading of exactly two hex digits;
+      // something like %2.2x is currently not supported.
+      res += sprintf ("%c", (high << 4) + low);
+    else
+      ERROR ("Invalid backslash escape %O in string %O.\n", str[..2], orig_str);
+  }
+  return res;
+}
+
+string encode_dn_value (string str)
+//! Encode the given string for use as an attribute value in a
+//! distinguished name (on string form).
+//!
+//! The encoding is according to RFC 2253 section 2.4 with the
+//! exception that characters above @expr{0x7F@} aren't UTF-8 encoded.
+//! UTF-8 encoding can always be done afterwards on the complete DN,
+//! which also is done internally by the @[Protocols.LDAP] functions
+//! when LDAPv3 is used.
+{
+  str = replace (str,
+		 ({",",   "+",   "\"",   "\\",   "<",   ">",   ";"}),
+		 ({"\\,", "\\+", "\\\"", "\\\\", "\\<", "\\>", "\\;"}));
+  if (has_suffix (str, " "))
+    str = str[..sizeof (str) - 2] + "\\ ";
+  if (has_prefix (str, " ") || has_prefix (str, "#"))
+    str = "\\" + str;
+  return str;
 }
 
 // Constants to make more human readable names for some known
@@ -727,8 +775,13 @@ constant ATD_supportedFeatures = ([ // RFC 3674, 2
 
 constant _standard_attr_type_descrs = ([]); // Filled in by create().
 
-// Constants for Microsoft AD Well-Known Object GUIDs
-
+//! Constants for Microsoft AD Well-Known Object GUIDs. These are e.g.
+//! used in LDAP URLs:
+//!
+//! @code
+//!   "ldap://server/<WKGUID=" + Protocols.LDAP.GUID_USERS_CONTAINER +
+//!   ",dc=my,dc=domain,dc=com>"
+//! @endcode
 constant GUID_USERS_CONTAINER              = "a9d1ca15768811d1aded00c04fd8d5cd";
 constant GUID_COMPUTRS_CONTAINER           = "aa312825768811d1aded00c04fd8d5cd";
 constant GUID_SYSTEMS_CONTAINER            = "ab1d30f3768811d1aded00c04fd8d5cd";
