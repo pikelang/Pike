@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: signal_handler.c,v 1.276 2003/09/06 23:09:24 nilsson Exp $
+|| $Id: signal_handler.c,v 1.277 2003/09/30 19:49:40 mast Exp $
 */
 
 #include "global.h"
@@ -26,7 +26,7 @@
 #include "main.h"
 #include <signal.h>
 
-RCSID("$Id: signal_handler.c,v 1.276 2003/09/06 23:09:24 nilsson Exp $");
+RCSID("$Id: signal_handler.c,v 1.277 2003/09/30 19:49:40 mast Exp $");
 
 #ifdef HAVE_PASSWD_H
 # include <passwd.h>
@@ -675,7 +675,8 @@ void process_done(pid_t pid, const char *from)
     default:
 #ifdef PROC_DEBUG
       dump_process_history(pid);
-      fprintf(stderr,"Process debug: Unknown child %ld in %s! (status=%d)\n",(long)pid,from,process_info[pid]);
+      fprintf(stderr,"[%d] Process debug: Unknown child %ld in %s! (status=%d)\n",
+	      getpid(), (long)pid,from,process_info[pid]);
 #endif
       break;
   }
@@ -725,7 +726,7 @@ static RETSIGTYPE receive_signal(int signum)
 void my_signal(int sig, sigfunctype fun)
 {
 #ifdef PROC_DEBUG
-  fprintf(stderr, "my_signal(%d, 0x%p)\n", sig, (void *)fun);
+  fprintf(stderr, "[%d] my_signal(%d, 0x%p)\n", getpid(), sig, (void *)fun);
 #endif
 #ifdef HAVE_SIGACTION
   {
@@ -881,7 +882,7 @@ static void f_signal(int args)
   ASSERT_SECURITY_ROOT("signal");
 
 #ifdef PROC_DEBUG
-  fprintf(stderr, "f_signal(%d)\n", args);
+  fprintf(stderr, "[%d] f_signal(%d)\n", getpid(), args);
 #endif
 
   check_signals(0,0,0);
@@ -1056,7 +1057,7 @@ static RETSIGTYPE receive_sigchild(int signum)
   WAITSTATUSTYPE status;
 
 #ifdef PROC_DEBUG
-  fprintf (stderr, "receive_sigchild\n");
+  fprintf (stderr, "[%d] receive_sigchild\n", getpid());
 #endif
 
   SAFE_FIFO_DEBUG_BEGIN();
@@ -1069,7 +1070,7 @@ static RETSIGTYPE receive_sigchild(int signum)
   {
     BEGIN_FIFO_PUSH(wait,wait_data);
 #ifdef PROC_DEBUG
-    fprintf (stderr, "receive_sigchild got pid %d\n", pid);
+    fprintf (stderr, "[%d] receive_sigchild got pid %d\n", getpid(), pid);
 #endif
     FIFO_DATA(wait,wait_data).pid=pid;
     FIFO_DATA(wait,wait_data).status=status;
@@ -1155,8 +1156,8 @@ static void report_child(int pid,
 {
 #ifdef PROC_DEBUG
   /* FIXME: This won't work if WAITSTATUSTYPE == union wait. */
-  fprintf(stderr, "report_child(%d, %d, \"%s\")\n",
-	  (int)pid, *(int *) &status, from);
+  fprintf(stderr, "[%d] report_child(%d, %d, \"%s\")\n",
+	  getpid(), (int)pid, *(int *) &status, from);
 #endif /* PROC_DEBUG */
   if (!WIFSTOPPED(status)) {
     process_done(pid, from);
@@ -1210,7 +1211,7 @@ static void report_child(int pid,
       map_delete(pid_mapping, &key);
 #ifdef PROC_DEBUG
     }else{
-      fprintf(stderr,"report_child on unknown child: %d,%d\n",pid,status);
+      fprintf(stderr,"[%d] report_child on unknown child: %d,%d\n",getpid(),pid,status);
 #endif
     }
   }
@@ -1225,22 +1226,22 @@ static MUTEX_T wait_thread_mutex;
 static void do_da_lock(void)
 {
 #ifdef PROC_DEBUG
-  fprintf(stderr, "fork: getting the lock.\n");
+  fprintf(stderr, "[%d] fork: getting the lock.\n", getpid());
 #endif
   mt_lock(&wait_thread_mutex);
 #ifdef PROC_DEBUG
-  fprintf(stderr, "fork: got the lock.\n");
+  fprintf(stderr, "[%d] fork: got the lock.\n", getpid());
 #endif
 }
 
 static void do_bi_do_da_lock(void)
 {
 #ifdef PROC_DEBUG
-  fprintf(stderr, "wait thread: This is your wakeup call!\n");
+  fprintf(stderr, "[%d] wait thread: This is your wakeup call!\n", getpid());
 #endif
   co_signal(&start_wait_thread);
 #ifdef PROC_DEBUG
-  fprintf(stderr, "fork: releasing the lock.\n");
+  fprintf(stderr, "[%d] fork: releasing the lock.\n", getpid());
 #endif
   mt_unlock(&wait_thread_mutex);
 }
@@ -1260,7 +1261,7 @@ static TH_RETURN_TYPE wait_thread(void *data)
     int err;
 
 #ifdef PROC_DEBUG
-    fprintf(stderr, "wait_thread: getting the lock.\n");
+    fprintf(stderr, "[%d] wait_thread: getting the lock.\n", getpid());
 #endif
 
     mt_lock(&wait_thread_mutex);
@@ -1271,17 +1272,17 @@ static TH_RETURN_TYPE wait_thread(void *data)
     if(pid < 0 && err == ECHILD)
     {
 #ifdef PROC_DEBUG
-      fprintf(stderr, "wait_thread: sleeping\n");
+      fprintf(stderr, "[%d] wait_thread: sleeping\n", getpid());
 #endif
       co_wait(&start_wait_thread, &wait_thread_mutex);
 
 #ifdef PROC_DEBUG
-      fprintf(stderr, "wait_thread: waking up\n");
+      fprintf(stderr, "[%d] wait_thread: waking up\n", getpid());
 #endif
     }
 
 #ifdef PROC_DEBUG
-    fprintf(stderr, "wait_thread: releasing the lock.\n");
+    fprintf(stderr, "[%d] wait_thread: releasing the lock.\n", getpid());
 #endif
 
     mt_unlock(&wait_thread_mutex);
@@ -1293,8 +1294,8 @@ static TH_RETURN_TYPE wait_thread(void *data)
       if(pid <= 0) pid=MY_WAIT_ANY(&status, 0|WUNTRACED);
 
 #ifdef PROC_DEBUG
-      fprintf(stderr, "wait thread: pid=%d status=%d errno=%d\n",
-	      pid, status, errno);
+      fprintf(stderr, "[%d] wait thread: pid=%d status=%d errno=%d\n",
+	      getpid(), pid, status, errno);
 #endif
     
 #ifdef ENODEV
@@ -1334,14 +1335,14 @@ static TH_RETURN_TYPE wait_thread(void *data)
 	  ) {
 #if !defined(_W_SLWTED) && !defined(_W_SEWTED) && !defined(_W_SFWTED)
 #ifdef PROC_DEBUG
-	fprintf(stderr, "wait thread: Got signal %d from pid %d\n",
-		WSTOPSIG(status), pid);
+	fprintf(stderr, "[%d] wait thread: Got signal %d from pid %d\n",
+		getpid(), WSTOPSIG(status), pid);
 #endif /* PROC_DEBUG */
 	ptrace(PTRACE_CONT, pid, CAST_TO_PTRACE_ADDR(1), WSTOPSIG(status));
 #else /* defined(_W_SLWTED) || defined(_W_SEWTED) || defined(_W_SFWTED) */
 #ifdef PROC_DEBUG
-	fprintf(stderr, "wait thread: Got L/E/F status (0x%08x) from pid %d\n",
-		status, pid);
+	fprintf(stderr, "[%d] wait thread: Got L/E/F status (0x%08x) from pid %d\n",
+		getpid(), status, pid);
 #endif /* PROC_DEBUG */
 	ptrace(PTRACE_CONT, pid, CAST_TO_PTRACE_ADDR(1), 0);
 #endif /* !defined(_W_SLWTED) && !defined(_W_SEWTED) && !defined(_W_SFWTED) */
@@ -1350,13 +1351,13 @@ static TH_RETURN_TYPE wait_thread(void *data)
 #endif /* HAVE_PTRACE && (SIGPROF || _W_SLWTED || _W_SEWTED || _W_SFWTED) */
 
 #ifdef PROC_DEBUG
-      fprintf(stderr, "wait thread: locking interpreter, pid=%d\n",pid);
+      fprintf(stderr, "[%d] wait thread: locking interpreter, pid=%d\n",getpid(),pid);
 #endif
 
       low_mt_lock_interpreter(); /* Can run even if threads_disabled. */
 
 #ifdef PROC_DEBUG
-      fprintf(stderr, "wait thread: reporting the event!\n");
+      fprintf(stderr, "[%d] wait thread: reporting the event!\n", getpid());
 #endif
       report_child(pid, status, "wait_thread");
       co_broadcast(& process_status_change);
@@ -1473,7 +1474,8 @@ static void f_pid_status_wait(INT32 args)
 	   * for receive_sigchild to put the entry into the wait_data
 	   * fifo. In either case we just loop and try again. */
 #ifdef PROC_DEBUG
-	  fprintf(stderr, "wait(%d): Child isn't reaped yet, looping.\n", pid);
+	  fprintf(stderr, "[%d] wait(%d): Child isn't reaped yet, looping.\n",
+		  getpid(), pid);
 #endif
 	  pid = -1;
 	}
@@ -1483,7 +1485,7 @@ static void f_pid_status_wait(INT32 args)
       }
       else {
 #ifdef PROC_DEBUG
-	fprintf(stderr, "wait(%d): Waiting for child...\n", pid);
+	fprintf(stderr, "[%d] wait(%d): Waiting for child...\n", getpid(), pid);
 #endif
 	THREADS_ALLOW();
 	pid = WAITPID(pid, &status, 0|WUNTRACED);
@@ -1525,7 +1527,7 @@ static void f_pid_status_wait(INT32 args)
 		while (!kill(pid, 0) &&
 		       !wait_for_stopped && (this->state == PROCESS_STOPPED)) {
 #ifdef PROC_DEBUG
-		  fprintf(stderr, "wait(%d): Sleeping...\n", pid);
+		  fprintf(stderr, "[%d] wait(%d): Sleeping...\n", getpid(), pid);
 #endif /* PROC_DEBUG */
 #ifdef HAVE_POLL
 #ifdef NEED_SIGNAL_SAFE_FIFO
@@ -1548,7 +1550,7 @@ static void f_pid_status_wait(INT32 args)
 	      }
 	      /* The process has died. */
 #ifdef PROC_DEBUG
-	      fprintf(stderr, "wait(%d): Process dead.\n", pid);
+	      fprintf(stderr, "[%d] wait(%d): Process dead.\n", getpid(), pid);
 #endif /* PROC_DEBUG */
 	      if (THIS->state == PROCESS_RUNNING &&
 		  !wait_for_stopped && THIS->state == PROCESS_STOPPED) {
@@ -1557,9 +1559,9 @@ static void f_pid_status_wait(INT32 args)
 		 * doesn't work, let the main loop complain.
 		 */
 #ifdef PROC_DEBUG
-		fprintf(stderr, "wait(%d): ... but not officially, yet.\n"
+		fprintf(stderr, "[%d] wait(%d): ... but not officially, yet.\n"
 			"wait(%d): Sleeping some more...\n",
-			pid, pid);
+			getpid(), pid, pid);
 #endif /* PROC_DEBUG */
 		THREADS_ALLOW();
 #ifdef HAVE_POLL
@@ -1777,8 +1779,8 @@ static void f_trace_process_cont(INT32 args)
    */
   if (cont_signal == SIGKILL) {
 #ifdef PROC_DEBUG
-    fprintf(stderr, "cont(): Continue with SIGKILL for pid %d on FreeBSD\n",
-	    THIS->pid);
+    fprintf(stderr, "[%d] cont(): Continue with SIGKILL for pid %d on FreeBSD\n",
+	    getpid(), THIS->pid);
 #endif /* PROC_DEBUG */
     if (kill(THIS->pid, SIGKILL) == -1) {
       int err = errno;
@@ -2867,7 +2869,8 @@ void f_create_process(INT32 args)
     storage.stderr_b = get_amigados_handle(optional, "stderr", 2);
 
 #ifdef PROC_DEBUG
-    fprintf(stderr, "SystemTags(\"%s\", SYS_Asynch, TRUE, NP_Input, %p, NP_Output, %p, NP_Error, %p, %s, %p, TAG_END);\n",
+    fprintf(stderr, "[%d] SystemTags(\"%s\", SYS_Asynch, TRUE, NP_Input, %p, NP_Output, %p, NP_Error, %p, %s, %p, TAG_END);\n",
+	    getpid(),
 	storage.cmd_buf.s.str, storage.stdin_b, storage.stdout_b, storage.stderr_b,
 	(storage.cwd_lock!=0? "NP_CurrentDir":"TAG_IGNORE"),
 	storage.cwd_lock);
@@ -3278,8 +3281,8 @@ void f_create_process(INT32 args)
     }
 
 #ifdef PROC_DEBUG
-    fprintf(stderr,"control_pipe: %d, %d\n",
-	    control_pipe[0], control_pipe[1]);
+    fprintf(stderr,"[%d] control_pipe: %d, %d\n",
+	    getpid(), control_pipe[0], control_pipe[1]);
 #endif
 #if 0 /* Changed to 0 by hubbe 990306 - why do we need it? */
     init_threads_disable(NULL);
@@ -3297,7 +3300,7 @@ void f_create_process(INT32 args)
       do {
 
 #ifdef PROC_DEBUG
-	fprintf(stderr,"Forking... (pid=%d errno=%d)\n",pid,errno);
+	fprintf(stderr,"[%d] Forking... (pid=%d errno=%d)\n",getpid(),pid,errno);
 #endif
 #if defined(HAVE_FORK1) && defined(_REENTRANT)
 	pid=fork1();
@@ -3308,7 +3311,7 @@ void f_create_process(INT32 args)
 	  errnum = errno;
 	  if (errnum == EAGAIN) {
 #ifdef PROC_DEBUG
-	    fprintf(stderr, "Fork failed with EAGAIN\n");
+	    fprintf(stderr, "[%d] Fork failed with EAGAIN\n", getpid());
 #endif /* PROC_DEBUG */
 	    /* Process table full or similar.
 	     * Try sleeping for a bit.
@@ -3328,19 +3331,19 @@ void f_create_process(INT32 args)
 	    }
 	  } else if (errnum == EINTR) {
 #ifdef PROC_DEBUG
-	    fprintf(stderr, "Fork failed with EINTR\n");
+	    fprintf(stderr, "[%d] Fork failed with EINTR\n", getpid());
 #endif /* PROC_DEBUG */
 	    /* Try again */
 	    continue;
 #ifdef PROC_DEBUG
 	  } else {
-	    fprintf(stderr, "Fork failed with errno:%d\n", errnum);
+	    fprintf(stderr, "[%d] Fork failed with errno:%d\n", getpid(), errnum);
 #endif /* PROC_DEBUG */
 	  }
 	}
 #ifdef PROC_DEBUG
 	else if (pid) {
-	  fprintf(stderr, "Fork ok pid:%d\n", pid);
+	  fprintf(stderr, "[%d] Fork ok pid:%d\n", getpid(), pid);
 	} else {
 	  write(2, "Fork ok pid:0\n", 14);
 	}
@@ -3364,11 +3367,11 @@ void f_create_process(INT32 args)
 
     if(pid) {
 #ifdef PROC_DEBUG
-      fprintf(stderr, "th_at_fork_parent()...\n");
+      fprintf(stderr, "[%d] th_at_fork_parent()...\n", getpid());
 #endif /* PROC_DEBUG */
       th_atfork_parent();
 #ifdef PROC_DEBUG
-      fprintf(stderr, "th_at_fork_parent() done\n");
+      fprintf(stderr, "[%d] th_at_fork_parent() done\n", getpid());
 #endif /* PROC_DEBUG */
     } else {
 #ifdef PROC_DEBUG
@@ -3411,7 +3414,7 @@ void f_create_process(INT32 args)
       int olderrno;
 
 #ifdef PROC_DEBUG
-      fprintf(stderr, "Parent\n");
+      fprintf(stderr, "[%d] Parent\n", getpid());
 #endif /* PROC_DEBUG */
 
       process_started(pid);  /* Debug */
@@ -3483,7 +3486,7 @@ void f_create_process(INT32 args)
       THREADS_ALLOW();
 
 #ifdef PROC_DEBUG
-      fprintf(stderr, "Parent: Wake up child.\n");
+      fprintf(stderr, "[%d] Parent: Wake up child.\n", getpid());
 #endif /* PROC_DEBUG */
       while (((e = write(control_pipe[0], buf, 1)) < 0) && (errno == EINTR))
 	;
@@ -3497,7 +3500,7 @@ void f_create_process(INT32 args)
       }
 
 #ifdef PROC_DEBUG
-      fprintf(stderr, "Parent: Wait for child...\n");
+      fprintf(stderr, "[%d] Parent: Wait for child...\n", getpid());
 #endif /* PROC_DEBUG */
       /* Wait for exec or error */
       while (((e = read(control_pipe[0], buf, 3)) < 0) && (errno == EINTR))
@@ -3511,7 +3514,7 @@ void f_create_process(INT32 args)
 #endif
 
 #ifdef PROC_DEBUG
-      fprintf(stderr, "Parent: Child init done.\n");
+      fprintf(stderr, "[%d] Parent: Child init done.\n", getpid());
 #endif /* PROC_DEBUG */
 
       if (!e) {
@@ -3690,8 +3693,8 @@ void f_create_process(INT32 args)
         if( chdir( tmp_cwd ) )
         {
 #ifdef PROC_DEBUG
-          fprintf(stderr, "%s:%d: child: chdir(\"%s\") failed, errno=%d\n",
-                  __FILE__, __LINE__, tmp_cwd, errno);
+	  fprintf(stderr, "[%d] child: chdir(\"%s\") failed, errno=%d\n",
+		  getpid(), tmp_cwd, errno);
 #endif /* PROC_DEBUG */
           PROCERROR(PROCE_CHDIR, 0);
         }
@@ -3930,9 +3933,9 @@ void f_create_process(INT32 args)
       execvp(storage.argv[0],storage.argv);
 #ifdef PROC_DEBUG
       fprintf(stderr,
-	      "Child: execvp(\"%s\", ...) failed\n"
+	      "[%d] Child: execvp(\"%s\", ...) failed\n"
 	      "errno = %d\n",
-	      storage.argv[0], errno);
+	      getpid(), storage.argv[0], errno);
 #endif /* PROC_DEBUG */
 #ifndef HAVE_BROKEN_F_SETFD
       /* No way to tell about this on broken OS's :-( */
@@ -4010,6 +4013,8 @@ void Pike_f_fork(INT32 args)
   if(pid)
   {
     struct pid_status *p;
+
+    process_started(pid);
 
 #ifdef USE_SIGCHILD
     if(!signal_evaluator_callback)
@@ -4161,7 +4166,7 @@ static void f_kill(INT32 args)
   signum = Pike_sp[1-args].u.integer;
 
 #ifdef PROC_DEBUG
-  fprintf(stderr, "kill: pid=%d, signum=%d\n", pid, signum);
+  fprintf(stderr, "[%d] kill: pid=%d, signum=%d\n", getpid(), pid, signum);
 #endif /* PROC_DEBUG */
 
   THREADS_ALLOW_UID();
@@ -4202,7 +4207,7 @@ static void f_pid_status_kill(INT32 args)
   }
 
 #ifdef PROC_DEBUG
-  fprintf(stderr, "pid->kill: pid=%d, signum=%d\n", pid, signum);
+  fprintf(stderr, "[%d] pid->kill: pid=%d, signum=%d\n", getpid(), pid, signum);
 #endif /* PROC_DEBUG */
 
   THREADS_ALLOW_UID();
