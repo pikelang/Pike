@@ -1,6 +1,6 @@
 // ID3.pmod
 //
-//  $Id: ID3.pmod,v 1.12 2003/08/24 21:19:20 nilsson Exp $
+//  $Id: ID3.pmod,v 1.13 2003/09/04 00:09:06 nilsson Exp $
 //
 
 #pike __REAL_VERSION__
@@ -68,8 +68,10 @@ class Buffer(Stdio.File buffer) {
 //!   @[int_to_synchsafe]
 int synchsafe_to_int(array(int) bytes) {
   int res;
-  foreach(bytes, int byte)
+  foreach(bytes, int byte) {
+    if(byte==255) error("Synchsafe integer not synchsafe.\n");
     res = res << 7 | byte;
+  }
   return res;
 }
 
@@ -113,14 +115,18 @@ class TagHeader {
 	     bytes[0], bytes[1] );
 
     minor_version = bytes[0];
+    if( minor_version == 255 )
+      error( "Illegal minor version.\n");
     sub_version = bytes[1];
+    if( sub_version == 255 )
+      error( "Illegal sub version.\n");
     decode_flags(bytes[2]);
-    tag_size = synchsafe_to_int( bytes[1..] );
+    tag_size = synchsafe_to_int( bytes[3..] );
   }
 
   void decode_flags( int byte ) {
-    if(byte&&0b1111)
-      error( "Unknown flag set in tag header flag field.\n" );
+    if(byte&0b1111)
+      error( "Unknown flag set in tag header flag field. (%08b)\n", byte );
 
     flag_unsynchronisation = TEST(byte,7);
     flag_extended_header = TEST(byte,6);
@@ -161,10 +167,8 @@ class ExtendedHeader {
 
   int size;
   string data;
-  TagHeader header;
 
-  void create(void|Buffer buffer, void|TagHeader thd) {
-    if(thd) header = thd;
+  void create(void|Buffer buffer) {
     if(buffer) decode(buffer);
   }
 
@@ -197,6 +201,7 @@ class ExtendedHeader {
   void decode(Buffer buffer) {
     size = synchsafe_to_int( (array)buffer->read(4) );
     int flagbytes = buffer->read(1)[0];
+    if(!flagbytes) error("At least one flag byte is required.\n");
     decode_flags(buffer->read(flagbytes));
 
     if(flag_crc)
@@ -353,7 +358,7 @@ class Frame {
     flag_read_only = flag0 & 1<<4;
 
     if(flag0 & 0b10001111)
-      error( "Unknown flag in frame flag field.\n" );
+      error( "Unknown flag in first frame flag field. (%08b)\n", flag0 );
 
     flag_grouping = flag1 & 1<<6;
     flag_compression = flag1 & 1<<3;
@@ -362,7 +367,7 @@ class Frame {
     flag_dli = flag1 & 1;
 
     if(flag1 & 0b10110000)
-      error( "Unknown flag in frame flag field.\n" );
+      error( "Unknown flag in second frame flag field (%08b).\n", flag1 );
   }
 
   array(int) encode_flags() {
@@ -483,9 +488,9 @@ class Tagv2 {
     header = TagHeader(buffer);
     buffer->set_limit(header->tag_size);
     if(header->flag_extended_header)
-      extended_header = ExtendedHeader(buffer, header);
-      while(buffer->bytes_left() && buffer->peek()!= "\0")
-	  frames += ({ Frame(buffer, header) });
+      extended_header = ExtendedHeader(buffer);
+    while(buffer->bytes_left() && buffer->peek()!= "\0")
+      frames += ({ Frame(buffer, header) });
     padding = buffer->bytes_left();
 
     // Verify that padding is all zero.
@@ -512,12 +517,20 @@ class Tagv2 {
       if(f->id==id) return f;
     return 0;
   }
+
+  string _sprintf(int t, mapping args) {
+    if(t!='O') return 0;
+    if(!header) return sprintf("ID3v2()");
+    return sprintf("ID3v%d.%d.%d(%d)", header->major_version,
+		   header->minor_version, header->sub_version,
+		   sizeof(frames));
+  }
 }
 
 array terminator = ({ "\0", "\0\0", "\0" });
 
 
-// --- Tags -----------------------------------------------------------------------
+// --- Tags ------------------------------------------------------------------
 
 class Frame_UFID {
   inherit FrameData;
@@ -531,7 +544,9 @@ class Frame_UFID {
   }
 
   string encode() {
-    if(!system) error( "Can not encode UFID frame. Missing owner identifier (system).\n" );
+    if(!system)
+      error( "Can not encode UFID frame. "
+	     "Missing owner identifier (system).\n" );
     if(!id) error( "Can not encode UFID frame. Missing identifier.\n" );
     return system + "\0" + id;
   }
@@ -544,7 +559,9 @@ class Frame_TextPlain {
 
   void decode(string data) {
     int encoding;
-    if(!sizeof(data)) error( "Malformed text frame. Missing encoding byte.\n" );
+    if(!sizeof(data))
+      error( "Malformed text frame. Missing encoding byte.\n" );
+
     sscanf(data, "%c%s", encoding, data);
     texts = map(data / terminator[encoding], decode_string, encoding);
   }
@@ -893,5 +910,9 @@ class Tag {
       }
      return rv;
    }
+
+  static string _sprintf(int t, mapping args) {
+    return t=='O' && sprintf("Tag(%O)", tag);
+  }
 
 }
