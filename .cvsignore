@@ -6,6 +6,8 @@ alpha_cc
 build
 mudlib
 reports
+smap
+smap.tar.gz
 solaris
 test
 test1

@@ -38,6 +38,8 @@ core
 /build
 /mudlib
 /reports
+/smap
+/smap.tar.gz
 /solaris
 /test
 /test1
