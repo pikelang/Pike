@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: interpret_functions.h,v 1.168 2004/05/20 20:13:38 grubba Exp $
+|| $Id: interpret_functions.h,v 1.169 2004/08/26 16:12:12 grubba Exp $
 */
 
 /*
@@ -2418,6 +2418,14 @@ OPCODE0(F_ZERO_TYPE, "zero_type", 0, {
     Pike_sp[-1].u.integer=Pike_sp[-1].subtype;
     Pike_sp[-1].subtype=NUMBER_NUMBER;
   }
+});
+
+OPCODE0(F_SWAP,"swap",0,{
+  stack_swap();
+});
+
+OPCODE0(F_DUP,"dup",I_UPDATE_SP,{
+  stack_dup();
 });
 
 /*
