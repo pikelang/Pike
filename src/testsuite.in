@@ -1,4 +1,4 @@
-test_true([["$Id: testsuite.in,v 1.700 2004/02/28 20:22:02 mast Exp $"]]);
+test_true([["$Id: testsuite.in,v 1.701 2004/03/07 21:08:52 nilsson Exp $"]]);
 
 // This triggered a bug only if run sufficiently early.
 test_compile_any([[#pike 7.2]])
@@ -9264,6 +9264,21 @@ test_eq(search("foolbar","gazonk"),-1)
 test_eq(search("qowiueproqiuweproiwqueoplkjljlklksjjriwueproiuwerowieu","lkjljlklksjj"),24)
 test_eq(search("lkjljlklksjjriwueproiuwerlskjdvlaskjfowieu","lkjljlklksjj"),0)
 test_eq(search("aaaaaaaaaaaaaaaaaaaaaaaalkjljlklksjj","lkjljlklksjj"),24)
+
+// Search cache is initialized with 10 slots.
+test_eq(search("aaaaaaaaaaaaaaaaaaaaaaaalkjljlklksjj1","lkjljlklksjj1"),24)
+test_eq(search("aaaaaaaaaaaaaaaaaaaaaaaalkjljlklksjj2","lkjljlklksjj2"),24)
+test_eq(search("aaaaaaaaaaaaaaaaaaaaaaaalkjljlklksjj3","lkjljlklksjj3"),24)
+test_eq(search("aaaaaaaaaaaaaaaaaaaaaaaalkjljlklksjj4","lkjljlklksjj4"),24)
+test_eq(search("aaaaaaaaaaaaaaaaaaaaaaaalkjljlklksjj5","lkjljlklksjj5"),24)
+test_eq(search("aaaaaaaaaaaaaaaaaaaaaaaalkjljlklksjj6","lkjljlklksjj6"),24)
+test_eq(search("aaaaaaaaaaaaaaaaaaaaaaaalkjljlklksjj7","lkjljlklksjj7"),24)
+test_eq(search("aaaaaaaaaaaaaaaaaaaaaaaalkjljlklksjj8","lkjljlklksjj8"),24)
+test_eq(search("aaaaaaaaaaaaaaaaaaaaaaaalkjljlklksjj9","lkjljlklksjj9"),24)
+test_eq(search("aaaaaaaaaaaaaaaaaaaaaaaalkjljlklksjj0","lkjljlklksjj0"),24)
+test_eq(search("aaaaaaaaaaaaaaaaaaaaaaaalkjljlklksjjx","lkjljlklksjjx"),24)
+test_eq(search("aaaaaaaaaaaaaaaaaaaaaaaalkjljlklksjj","lkjljlklksjj"),24)
+
 test_eq(search("foobargazonk","oo"),1)
 test_eq(search("foobargazonk","o",3),9)
 test_eq(search("foobargazonk","o",9),9)
