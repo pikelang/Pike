@@ -43,7 +43,7 @@
 #include "threads.h"
 #include "operators.h"
 
-RCSID("$Id: spider.c,v 1.102 2001/07/03 02:25:05 david%hedbor.org Exp $");
+RCSID("$Id: spider.c,v 1.103 2001/07/03 09:23:33 hubbe Exp $");
 
 #ifdef HAVE_PWD_H
 #include <pwd.h>
@@ -201,13 +201,13 @@ void f_parse_html(INT32 args)
   strings=0;
   do_html_parse(ss,cont,single,&strings,MAX_PARSE_RECURSE,extra_args);
 
-  UNSET_ONERROR(serr);
-  UNSET_ONERROR(cerr);
-  UNSET_ONERROR(sserr);
   if (extra_args) {
     UNSET_ONERROR(eerr);
     free_array(extra_args);
   }
+  UNSET_ONERROR(sserr);
+  UNSET_ONERROR(cerr);
+  UNSET_ONERROR(serr);
 
   free_mapping(cont);
   free_mapping(single);
@@ -260,13 +260,15 @@ void f_parse_html_lines(INT32 args)
   SET_ONERROR(sserr, do_free_string, ss);
   strings=0;
   do_html_parse_lines(ss,cont,single,&strings,MAX_PARSE_RECURSE,extra_args,1);
-  UNSET_ONERROR(serr);
-  UNSET_ONERROR(cerr);
-  UNSET_ONERROR(sserr);
+
   if(extra_args) {
     UNSET_ONERROR(eerr);
     free_array(extra_args);
   }
+  UNSET_ONERROR(sserr);
+  UNSET_ONERROR(cerr);
+  UNSET_ONERROR(serr);
+
   free_mapping(cont);
   free_mapping(single);
   if(strings > 1)
@@ -573,8 +575,8 @@ void do_html_parse(struct pike_string *ss,
 	SET_ONERROR(sv1, do_free_svalue, &sval1);
 	SET_ONERROR(sv2, do_free_svalue, &sval2);
 	apply_svalue(&sval1,2+(extra_args?extra_args->size:0));
-	UNSET_ONERROR(sv1);
 	UNSET_ONERROR(sv2);
+	UNSET_ONERROR(sv1);
 	free_svalue(&sval2);
 	free_svalue(&sval1);
 
@@ -651,8 +653,8 @@ void do_html_parse(struct pike_string *ss,
 	SET_ONERROR(sv1, do_free_svalue, &sval1);
 	SET_ONERROR(sv2, do_free_svalue, &sval2);
 	apply_svalue(&sval1,3+(extra_args?extra_args->size:0));
-	UNSET_ONERROR(sv1);
 	UNSET_ONERROR(sv2);
+	UNSET_ONERROR(sv1);
 	free_svalue(&sval1);
 	free_svalue(&sval2);
 
