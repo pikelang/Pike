@@ -5,7 +5,7 @@
 \*/
 /**/
 #include "global.h"
-RCSID("$Id: docode.c,v 1.115 2001/06/08 01:41:53 hubbe Exp $");
+RCSID("$Id: docode.c,v 1.116 2001/06/11 18:50:52 grubba Exp $");
 #include "las.h"
 #include "program.h"
 #include "pike_types.h"
@@ -1197,8 +1197,13 @@ static int do_docode2(node *n, INT16 flags)
 
   case F_ARG_LIST:
   case F_COMMA_EXPR:
-    tmp1 = do_docode(CAR(n), (INT16)(flags & ~WANT_LVALUE));
-    tmp1+=do_docode(CDR(n),flags);
+    tmp1 = 0;
+    /* Avoid a bit of recursion by looping... */
+    do {
+      tmp1 += do_docode(CAR(n), (INT16)(flags & ~WANT_LVALUE));
+    } while ((n = CDR(n)) &&
+	     ((n->token == F_ARG_LIST) || (n->token == F_COMMA_EXPR)));
+    tmp1 += do_docode(n, flags);
     return DO_NOT_WARN((INT32)tmp1);
 
 
