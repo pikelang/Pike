@@ -410,12 +410,27 @@ class DeferredLocale( static string project,
     return ({ project, get_lang, key, fallback });
   }
 
+  static int `<( mixed what )
+  {
+    return lookup() < what;
+  }
+
+  static int `> ( mixed what )
+  {
+    return lookup() > what;
+  }
+
+  static int `==( mixed what )
+  {
+    return lookup() == what;
+  }
+
   static inline string lookup()
   {
     return translate(project, get_lang(), key, fallback);
   }
 
-  string _sprintf(int c)
+  static string _sprintf(int c)
   {
     switch(c)
     {
@@ -427,43 +442,44 @@ class DeferredLocale( static string project,
 	error(sprintf("Illegal formatting char '%c'\n", c));
     }
   }
-  string `+(mixed ... args)
+  static string `+(mixed ... args)
   {
     return predef::`+(lookup(), @args);
   }
-  string ``+(mixed ... args)
+  static string ``+(mixed ... args)
   {
     return predef::`+(@args, lookup());
   }
-  int _sizeof()
+  static int _sizeof()
   {
     return sizeof(lookup());
   }
-  int|string `[](int a,int|void b)
+  static int|string `[](int a,int|void b)
   {
     if (query_num_arg() < 2) {
       return lookup()[a];
     }
     return lookup()[a..b];
   }
-  array(string) `/(string s)
+  static array(string) `/(string s)
   {
     return lookup()/s;
   }
-  array(int) _indices()
+  static array(int) _indices()
   {
     return indices(lookup());
   }
-  array(int) _values()
+  static array(int) _values()
   {
     return values(lookup());
   }
-  mixed cast(string to)
+  static mixed cast(string to)
   {
     if(to=="string") return lookup();
+    if(to=="mixed" || to=="object") return this_object();
     throw( ({ "Cannot cast DeferredLocale to "+to+".\n", backtrace() }) );
   }
-  int _is_type(string type) {
+  static int _is_type(string type) {
     return type=="string";
   }
 };
