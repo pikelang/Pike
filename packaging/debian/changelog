@@ -1,3 +1,9 @@
+pike7.6 (7.6.12-1) unstable; urgency=low
+
+  * Release number bumped by export.pike.
+
+ -- Marek Habersack <grendel@debian.org>  Tue, 10 Aug 2004 15:29:54 +0200
+
 pike7.6 (7.6.11-3) unstable; urgency=medium
 
   * Gotten rid of gdk-imlib1-dev build dependency
