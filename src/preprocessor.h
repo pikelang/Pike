@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: preprocessor.h,v 1.62 2004/02/07 02:49:20 nilsson Exp $
+|| $Id: preprocessor.h,v 1.63 2004/02/27 12:41:47 nilsson Exp $
 */
 
 /*
@@ -1413,13 +1413,12 @@ static ptrdiff_t lower_cpp(struct cpp *this,
 
 	    if (!safe_apply_handler ("handle_include",
 				     this->handler, this->compat_handler,
-				     3, BIT_STRING)) {
+				     3, BIT_STRING) ||
+		!(new_file=Pike_sp[-1].u.string) ) {
 	      cpp_handle_exception (this, "Couldn't include file.");
 	      pop_n_elems(Pike_sp-save_sp);
 	      break;
 	    }
-	    
-	    new_file=Pike_sp[-1].u.string;
 
 	    /* Why not just use ref_push_string(new_file)? */
 	    assign_svalue_no_free(Pike_sp,Pike_sp-1);
