@@ -1,3 +1,10 @@
+pike7.6 (7.6.9-2) unstable; urgency=low
+
+  * Make sure all bugs filed against Pike 7.4 will not appear here
+  * Pike 7.6 will replace Pike 7.4 in Debian soon.
+
+ -- Marek Habersack <grendel@debian.org>  Wed,  9 Jun 2004 13:40:35 +0200
+
 pike7.6 (7.6.9-1) unstable; urgency=low
 
   * The latest cvs snapshot
