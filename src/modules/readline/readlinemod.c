@@ -13,7 +13,7 @@
 #include "pike_macros.h"
 #include "threads.h"
 
-RCSID("$Id: readlinemod.c,v 1.8 1998/03/28 13:54:12 grubba Exp $");
+RCSID("$Id: readlinemod.c,v 1.9 1998/04/26 11:47:08 hubbe Exp $");
 
 #include <errno.h>
 
@@ -113,7 +113,7 @@ char *my_rl_complete(char *text, int status)
     fatal("Bad idea!\n");
   return res;
 #else
-  return low_do_rl_comlete(text,status);
+  return low_do_rl_complete(text,status);
 #endif
 }
 
