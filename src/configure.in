@@ -1,4 +1,4 @@
-AC_REVISION("$Id: configure.in,v 1.136 1997/11/04 22:45:14 grubba Exp $")
+AC_REVISION("$Id: configure.in,v 1.137 1997/11/23 03:28:39 per Exp $")
 AC_INIT(interpret.c)
 AC_CONFIG_HEADER(machine.h)
 
@@ -193,12 +193,8 @@ if test $cflags_is_set = no; then
 ### Non-gcc thingies. This should probably be enhanced...
 
   # Solaris
-  AC_SYS_OS_COMPILER_FLAG(Solaris,-dalign,dalign,OPTIMIZE)
   AC_SYS_OS_COMPILER_FLAG(Solaris,-fast,fast,OPTIMIZE)
-  AC_SYS_OS_COMPILER_FLAG(Solaris,-native,native,OPTIMIZE)
   AC_SYS_OS_COMPILER_FLAG(Solaris,-xdepend,xdepend,OPTIMIZE)
-  AC_SYS_OS_COMPILER_FLAG(Solaris,-fd,fd,WARN)
-  AC_SYS_OS_COMPILER_FLAG(Solaris,-xtransition,xtransition,WARN)
   AC_SYS_OS_COMPILER_FLAG(Solaris,-xs,xs,CFLAGS)
   # Causes __STDC__ to be 1 which causes several headerfiles to behave
   # differently.
@@ -245,10 +241,10 @@ case "$CC" in
   ;;
 esac
 
-
-  AC_SYS_CPU_COMPILER_FLAG(sun4m,-Xpipe=micro,microsparc,OPTIMIZE)
-  AC_SYS_CPU_COMPILER_FLAG(sun4d,-Xpipe=super,supersparc,OPTIMIZE)
-  AC_SYS_CPU_COMPILER_FLAG(sun4u,-Xpipe=super,ultrasparc,OPTIMIZE)
+# Old cc for solaris.
+#  AC_SYS_CPU_COMPILER_FLAG(sun4m,-Xpipe=micro,microsparc,OPTIMIZE)
+#  AC_SYS_CPU_COMPILER_FLAG(sun4d,-Xpipe=super,supersparc,OPTIMIZE)
+#  AC_SYS_CPU_COMPILER_FLAG(sun4u,-Xpipe=super,ultrasparc,OPTIMIZE)
 
   case "${CFLAGS-} $OPTIMIZE" in
      *-O*) ;;
