@@ -1,7 +1,7 @@
 /* nettle.cmod -*- c -*- */
 
 #include "global.h"
-RCSID("$Id: nettle.cmod,v 1.8 2003/08/01 19:23:14 nilsson Exp $");
+RCSID("$Id: nettle.cmod,v 1.9 2003/08/05 18:05:13 nilsson Exp $");
 #include "interpret.h"
 #include "svalue.h"
 /* For this_object() */
@@ -12,6 +12,7 @@ RCSID("$Id: nettle.cmod,v 1.8 2003/08/01 19:23:14 nilsson Exp $");
 
 #ifdef HAVE_LIBNETTLE
 
+#include "nettle/yarrow.h"
 #include "nettle.h"
 
 #include <assert.h>
@@ -21,6 +22,103 @@ RCSID("$Id: nettle.cmod,v 1.8 2003/08/01 19:23:14 nilsson Exp $");
 DECLARATIONS
 
 /*! @module Nettle
+ *! Low level crypto functions used by the @[Crypto] module. Unless
+ *! you are doing something very special, you would want to use the
+ *! Crypto module instead.
+ */
+
+/*! @class Yarrow
+ *!
+ *! Yarrow is a family of pseudo-randomness generators, designed for
+ *! cryptographic use, by John Kelsey, Bruce Schneier and Niels Ferguson.
+ *! Yarrow-160 is described in a paper at
+ *! @url{http://www.counterpane.com/yarrow.html@}, and it uses SHA1 and
+ *! triple-DES, and has a 160-bit internal state. Nettle implements
+ *! Yarrow-256, which is similar, but uses SHA256 and AES to get an
+ *! internal state of 256 bits.
+ */
+PIKECLASS Yarrow
+{
+  CVAR const struct yarrow256_ctx *ctx;
+
+  PIKEFUN void create() {
+    yarrow256_init(THIS->ctx, 0, NULL);
+  }
+
+  /*! @decl Yarrow seed(string data)
+   *! The random generator needs to be seeded before
+   *! it can be used. The seed must be at least 32
+   *! characters long. The seed could be stored from
+   *! a previous run by inserting the value returned
+   *! from @[get_seed].
+   *! @returns
+   *!   Returns the called object.
+   */
+  PIKEFUN object seed(string data)
+  {
+    /* FIXME: Take figure in error msg from define */
+    if(data->len < YARROW256_SEED_FILE_SIZE)
+      Pike_error( "Seed must be at least 32 characters.\n" );
+
+    NO_WIDE_STRING(data);
+    yarrow256_seed(THIS->ctx, data->len, data->str);
+    RETURN this_object();
+  }
+
+  /*! @decl string get_seed()
+   *! Returns part of the internal state so that it can
+   *! be saved for later seeding.
+   */
+  PIKEFUN string get_seed()
+  {
+    RETURN make_shared_string(THIS->ctx->seed_file);
+  }
+
+  /*! @decl int(0..1) is_seeded()
+   *! Returns 1 if the random generator is seeded and ready
+   *! to generator output. 0 otherwise.
+   */
+  PIKEFUN int(0..1) is_seeded()
+  {
+    RETURN yarrow256_is_seeded(THIS->ctx);
+  }
+
+  PIKEFUN void force_reseed()
+  {
+    yarrow256_force_reseed(THIS->ctx);
+  }
+
+  PIKEFUN int(0..) needed_sources()
+  {
+    RETURN yarrow256_needed_sources(THIS->ctx);
+  }
+
+  /*! @decl string random_string(int length)
+   *! Returns a pseudo-random string of the requested @[length].
+   */
+  PIKEFUN string random_string(int length)
+  {
+    struct pike_string *rnd;
+    if(length < 0)
+      Pike_error("Invalid length, must be positive.\n");
+    if( !yarrow256_is_seeded(THIS->ctx) )
+      Pike_error("Random generator not seeded.\n");
+    rnd = begin_shared_string(length);
+    yarrow256_random(THIS->ctx, length, rnd->str);
+    RETURN end_shared_string(rnd);
+  }
+
+  INIT
+  {
+    THIS->ctx = xalloc(sizeof(struct yarrow256_ctx));
+  }
+  EXIT
+  {
+    free(THIS->ctx);
+  }
+}
+
+/*! @endclass
  */
 
 /*! @endmodule
