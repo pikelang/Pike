@@ -10,6 +10,7 @@ string newline(string in) {
 }
 
 string fix_row(string in) {
+  if(in==".BP") return "";
   if(in==".P" || in==".br" || in==".IP") return "\n";
   in = replace(in, ([ "@":"@@",
 		      "\\-":"-",
@@ -19,9 +20,17 @@ string fix_row(string in) {
     if(has_value(b, "]")) error("] in reference.\n");
     in = a + "@[" + b + "]" + c;
   }
+
   while( sscanf(in, "%s\\f2%s\\fP%s", a, b, c)==3 ||
 	 sscanf(in, "%s\\f2%s\\f1%s", a, b, c)==3 )
     in = a + "@i{" + b + "@}" + c;
+
+  // We should read delim
+  while( sscanf(in, "%s$%s$%s", a, b, c)==3 ) {
+    if( sscanf(b, "%s sup %s^-^%s", string d, string e, string f)==3 )
+      b = d+e+f;
+    in = a+b+c;
+  }
 
   return in+"\n";
 }
@@ -38,7 +47,7 @@ string fix_xml_row(string in) {
 
 mapping(string:array(array(string)|string)) docs = ([]);
 
-string preprocess_man(array(string) rows ) {
+string preprocess_man(array(string) rows, string fn) {
 
   string _args;
   string desc;
@@ -120,10 +129,10 @@ string preprocess_man(array(string) rows ) {
       // 3 - begun second cell
       if(has_prefix(row, ".TP")) {
 	if(!tp_state) {
-	  desc += "@xml{<matrix>\n";
+	  desc += "\n@xml{<matrix>\n";
 	}
 	else if(tp_state==2) {
-	  desc += "</c><c></c></r>\n";
+	  desc += "<c></c></r>\n";
 	}
 	else if(tp_state==3) {
 	  desc += "</c></r>\n";
@@ -155,8 +164,10 @@ string preprocess_man(array(string) rows ) {
       desc += fix_row(row);
       break;
     case "PARAMETERS":
-      if(has_prefix(row, ".TP"))
+      if(has_prefix(row, ".TP")) {
 	param_spec = 1;
+	continue;
+      }
       if(param_spec) {
  	if(sscanf(row, "%*s\\f2%s\\fP", string p)==2) {
 	  param_spec = 0;
@@ -166,6 +177,8 @@ string preprocess_man(array(string) rows ) {
 	    param = "";
 	  param += "@param " + p + "\n\n";
 	}
+	else
+	  error("No param variable\n");
       }
       else
         param += fix_row(row);
@@ -178,6 +191,15 @@ string preprocess_man(array(string) rows ) {
       seealso += fix_row(row);
     }
   }
+
+  mapping names = mkmapping(map(indices(prots), lower_case), indices(prots));
+  fn = "gl" + fn;
+  string name;
+  if(name = names[fn+"4f"]) prots = ([ name[..sizeof(name)-3] : prots[name] ]);
+  else if(name = names[fn+"3f"]) prots = ([ name[..sizeof(name)-3] : prots[name] ]);
+  else if(name = names[fn+"2f"]) prots = ([ name[..sizeof(name)-3] : prots[name] ]);
+  else if(name = names[fn+"f"])  prots = ([ name[..sizeof(name)-2] : prots[name] ]);
+  else if(name = names[fn+"2"])  prots = ([ name[..sizeof(name)-2] : prots[name] ]);
 
   // Assemble result
   string res = "";
@@ -194,13 +216,17 @@ string preprocess_man(array(string) rows ) {
 string process_man(string name, string prot_ret, array(string) prot_types) {
   if(!docs[name]) werror("%O is not documented\n", name);
   if(!docs[name]) error("%O is not documented\n", name);
-  array args = docs[name][0];
+
+  array args;
+  string doc;
+  [ args, doc ] = m_delete(docs, name);
+
 
   if( sizeof(prot_types) != sizeof(args) )
     error("Prototype argument types and names mismatch in size. %O %O\n", prot_types, args);
   prot_types = (prot_types[*] + " ")[*] + args[*];
 
-  return "@decl " + prot_ret + " " + name + "(" + (prot_types*", ") + ")\n\n" + docs[name][1];
+  return "@decl " + prot_ret + " " + name + "(" + (prot_types*", ") + ")\n\n" + doc;
 }
 
 string comment(string in) {
@@ -346,8 +372,19 @@ void prefetch() {
   foreach(glob("*.3gl", get_dir("release/xc/doc/man/GL/gl/")), string fn) {
     werror("Prefetching %O\n", fn);
     array(string) rows = Stdio.read_file("release/xc/doc/man/GL/gl/"+fn)/"\n";
-    preprocess_man(rows);
+    preprocess_man(rows, fn[..sizeof(fn)-5]);
   }
+}
+
+string first_page() {
+
+  string ret = "@module GL\n\nNot implemented methods:\n\n";
+
+  ret += "@xml{<matrix>\n";
+  foreach(sort(indices(docs)), string name)
+    ret += "<r><c>" + name + "</c></r>\n";
+  ret += "</matrix>@}\n";
+  return comment(ret);
 }
 
 void main() {
@@ -355,24 +392,27 @@ void main() {
   prefetch();
 
   string doc = "";
-  /*
+
   foreach( func_misc, array func) {
     if(catch {
+      werror("Processing %O\n", func[0]);
       doc += document(func[0], func[1]) + "\n";
     }) werror("Failed with %O\n", func[0]);
   }
-  */
+
   foreach( funcV, string func) {
       werror("Processing %O\n", func);
       doc += document(func, "V") + "\n";
   }
+
   foreach( funcEV, string func) {
       werror("Processing %O\n", func);
       doc += document(func, "VE") + "\n";
   }
 
   doc = "\n/* AutoDoc generated from OpenGL man pages\n$Id"
-    "$ */\n\n/*! @module GL\n */\n\n" + doc + "\n/*! @endmodule\n */\n\n";
+    "$ */\n\n" + first_page() + "\n\n" + doc +
+    "\n/*! @endmodule\n */\n\n";
 
   Stdio.write_file("autodoc.c", doc);
 }
