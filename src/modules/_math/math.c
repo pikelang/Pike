@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: math.c,v 1.77 2004/03/20 17:20:59 grubba Exp $
+|| $Id: math.c,v 1.78 2004/03/20 19:28:31 grubba Exp $
 */
 
 #include "global.h"
@@ -37,7 +37,7 @@
   if(sp[-args].type!=T_FLOAT) SIMPLE_BAD_ARG_ERROR(X, 1, "float"); \
   TRIM_STACK(1)
 
-RCSID("$Id: math.c,v 1.77 2004/03/20 17:20:59 grubba Exp $");
+RCSID("$Id: math.c,v 1.78 2004/03/20 19:28:31 grubba Exp $");
 
 #ifndef M_PI
 #define M_PI 3.1415926535897932384626433832795080
@@ -496,7 +496,7 @@ void f_pow(INT32 args)
 	    square *= square;
 	  }
 	}
-	pop_n_elems(args);
+	pop_n_elems(2);
 	push_int(res);
 	return;
       }
