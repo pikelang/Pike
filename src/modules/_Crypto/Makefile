@@ -5,13 +5,13 @@ CC=gcc
 PIKESRCDIR=../../pike/src
 
 # And you need a dir where Pike was compiled (might be same as sourcedir)
-PIKEBUILDDIR=../../pike/build/sol2.5
+PIKEBUILDDIR=../../../work/pike
 
 # The SSLeay root is here
 SSLROOT=/usr/local/ssl/
 
 # Include search path
-IFLAGS=-I$(PIKESRCDIR) -I$(PIKEBUILDDIR) -I$(SSLROOT)/include
+IFLAGS=-I$(PIKESRCDIR) -I$(PIKEBUILDDIR) -Iinclude -I$(SSLROOT)/include
 
 # Additional C preprocessor flags
 CPPFLAGS=
@@ -19,14 +19,23 @@ CPPFLAGS=
 # The flags to generate a shared library
 CFLAGS=-Wall -O -shared -fpic $(IFLAGS) $(CPPFLAGS) -pedantic -Wall
 
-LDFLAGS=-shared -fpic -R$(SSLROOT)/lib -L$(SSLROOT)/lib
+LDFLAGS=-shared -fpic -Llib  -R$(SSLROOT)/lib -L$(SSLROOT)/lib
 LOADLIBES=-lcrypto -lssl
 
-OBJS=crypto.o md5.o md2.o idea.o des.o invert.o cbc.o pipe.o
+OBJS=crypto.o md5.o md2.o idea.o des.o invert.o cbc.o pipe.o sha.o
 
 # The actual rules
 
-crypto.so: $(OBJS)
-	$(CC) $(LDFLAGS) $^ -o crypto.so $(LOADLIBES)
+crypto.so: $(OBJS) lib/libib.a
+	$(CC) $(LDFLAGS) $(OBJS) -Llib -lib -o crypto.so
+
+idea.so: idea.o lib/libib.a
+	$(CC) $(LDFLAGS) idea.o -Llib -lib -o idea.so
+
+sha.so: sha.o lib/libib.a
+	$(CC) $(LDFLAGS) sha.o -Llib -lib -o sha.so
+
+lib/libib.a:
+	cd lib; $(MAKE) libib.a
 
 $(OBJS) : precompiled_crypto.h
