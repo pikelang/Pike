@@ -29,6 +29,7 @@ void f_load_module(INT32 args)
 {
   void *module;
   struct module_list *new_module;
+  int res;
 
   if(sp[-args].type != T_STRING)
     error("Bad argument 1 to load_module()\n");
@@ -36,7 +37,6 @@ void f_load_module(INT32 args)
 #define RTLD_NOW 0
 #endif
   module=dlopen(sp[-args].u.string->str, RTLD_NOW);
-  pop_stack();
 
   if(module)
   {
@@ -51,14 +51,16 @@ void f_load_module(INT32 args)
     {
       char *foo,  buf1[1024], buf2[1024];
       foo=STRRCHR(sp[-args].u.string->str,'/');
-      if(!foo) foo=sp[-args].u.string->str;
-      foo++;
+      if(foo)
+	foo++;
+      else
+	foo=sp[-args].u.string->str;
       if(strlen(foo) < 1000)
       {
 	strcpy(buf1, foo);
 	foo=buf1;
       
-	while((*foo <= 'a' && *foo >= 'z' ) || (*foo <= 'A' && *foo >= 'Z' ))
+	while((*foo >= 'a' && *foo <= 'z' ) || (*foo >= 'A' && *foo <= 'Z' ))
 	  foo++;
 
 	*foo=0;
@@ -92,17 +94,18 @@ void f_load_module(INT32 args)
     new_module->mod.refs=0;
 
     tmp=current_module;
-    current_module=& new_module->mod;
+    current_module = & new_module->mod;
 
     (*(fun)init)();
     (*(fun)init2)();
 
     current_module=tmp;
 
-    push_int(1);
-  } else {
-    push_int(0);
-  }
+    res = 1;
+  } else
+    res = 0;
+  pop_n_elems(args);
+  push_int(res);
 }
 
 
