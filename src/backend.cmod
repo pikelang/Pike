@@ -2,11 +2,11 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: backend.cmod,v 1.39 2003/03/27 18:25:08 mast Exp $
+|| $Id: backend.cmod,v 1.40 2003/03/30 12:44:00 grubba Exp $
 */
 
 #include "global.h"
-RCSID("$Id: backend.cmod,v 1.39 2003/03/27 18:25:08 mast Exp $");
+RCSID("$Id: backend.cmod,v 1.40 2003/03/30 12:44:00 grubba Exp $");
 #include "fdlib.h"
 #include "backend.h"
 #include <errno.h>
@@ -2107,6 +2107,9 @@ PMOD_EXPORT int write_to_stderr(char *a, size_t len)
 #define WRAP(CB)							    \
 void PIKE_CONCAT(set_,CB)(int fd,file_callback cb,void *data)		    \
 {									    \
+  if (!default_backend && !cb && !data && !get_backend_for_fd(fd)) {	    \
+    return;								    \
+  }									    \
   PIKE_CONCAT(backend_set_,CB)(really_get_backend_for_fd(fd),fd,cb, data);  \
 }									    \
 									    \
