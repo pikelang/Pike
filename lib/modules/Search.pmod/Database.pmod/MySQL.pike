@@ -1,7 +1,7 @@
 // SQL blob based database
 // Copyright © 2000,2001 Roxen IS.
 //
-// $Id: MySQL.pike,v 1.24 2001/06/05 22:54:24 per Exp $
+// $Id: MySQL.pike,v 1.25 2001/06/09 23:21:51 js Exp $
 
 inherit Search.Database.Base;
 
@@ -20,15 +20,16 @@ void recreate_tables()
   
   db->query(
 #"create table uri      (id          int unsigned primary key auto_increment not null,
-                         uri         text not null,
-                         uri_md5     char(16) not null,
+                         uri         text binary not null,
+                         uri_md5     char(32) binary not null,
                          UNIQUE(uri_md5))"
 			 );
 
   db->query(
 #"create table document (id            int unsigned primary key auto_increment not null,
                          uri_id        int unsigned not null,
-                         language_code char(3),
+                         indexed       tinyint not null,
+                         language_code char(3) default null,
                          INDEX index_language_code (language_code),
                          INDEX index_uri_id (uri_id))"
 			 );
@@ -54,10 +55,8 @@ void recreate_tables()
 }
 
 // This is the database object that all queries will be made to.
-object db;
-int removed;
-
-string host;
+static object db;
+static string host;
 
 void create(string _host)
 {
@@ -69,22 +68,15 @@ string _sprintf()
   return sprintf("Search.Database.MySQL(%O)", host);
 }
 
-mapping stats()
-{
-  mapping tmp=([]);
-  tmp->words=(int)db->query("select count(*) as c from occurance")[0]->c;
-  tmp->documents=(int)db->query("select count(*) as c from document")[0]->c;
-  return tmp;
-}
 
-string to_md5(string url)
+static string to_md5(string url)
 {
   object md5 = Crypto.md5();
   md5->update(url);
-  return md5->digest();
+  return Crypto.string_to_hex(md5->digest());
 }
 
-int hash_word(string word)
+static int hash_word(string word)
 {
   return hash(word);
   string hashed=Crypto.md5()->update(word[..254]*16)->digest();
@@ -96,7 +88,7 @@ int hash_word(string word)
 
 int get_uri_id(string uri, void|int do_not_create)
 {
-  string s=sprintf("select id from uri where uri_md5='%s'", db->quote(to_md5(uri)));
+  string s=sprintf("select id from uri where uri_md5='%s'", to_md5(uri));
   array a=db->query(s);
   if(sizeof(a))
     return (int)a[0]->id;
@@ -133,7 +125,7 @@ int get_document_id(string uri, void|string language_code)
   return db->master_sql->insert_id();
 }
 
-mapping field_cache = ([]);
+static mapping field_cache = ([]);
 int get_field_id(string field, void|int do_not_create)
 {
   if(field=="body")      return 0;
@@ -177,7 +169,7 @@ void insert_words(Standards.URI|string uri, void|string language,
 }
 
 void set_metadata(Standards.URI|string uri, void|string language,
-		  mapping(string:string) md)
+			 mapping(string:string) md)
 {
   int doc_id;
   if(!intp(uri))
@@ -201,8 +193,8 @@ void set_metadata(Standards.URI|string uri, void|string language,
 }
 
 mapping(string:string) get_metadata(int|Standards.URI|string uri,
-				    void|string language,
-				    void|array(string) wanted_fields)
+					   void|string language,
+					   void|array(string) wanted_fields)
 {
   int doc_id;
   if(intp(uri))
@@ -231,7 +223,7 @@ mapping get_uri_and_language(int doc_id)
   return (["uri":1,"language":1]) & a[0];
 }
 
-int docs;
+static int docs;
 void remove_document(string|Standards.URI uri, void|string language)
 {
   int uri_id=get_uri_id((string)uri);
@@ -255,7 +247,7 @@ void remove_document(string|Standards.URI uri, void|string language)
 }
 
 
-void sync_thread( _WhiteFish.Blobs blobs, int docs )
+static void sync_thread( _WhiteFish.Blobs blobs, int docs )
 {
   int s = time();
   int q;
@@ -276,7 +268,7 @@ void sync_thread( _WhiteFish.Blobs blobs, int docs )
   werror("----------- sync() done %3ds %5dw -------\n", time()-s,q);
 }
 
-object old_thread;
+static object old_thread;
 int sync()
 {
 #if constant(thread_create)
@@ -316,7 +308,101 @@ void zap()
   db->query("delete from field");
 }
 
+class Queue
+{
+  Web.Crawler.Stats stats;
+  Web.Crawler.Policy policy;
+  Web.Crawler.RuleSet allow,deny;
+  
+  inherit Web.Crawler.Queue;
 
-// Query functions
-// -------------------------------------
+  void create( Web.Crawler.Stats _stats,
+	       Web.Crawler.Policy _policy, 
+	       void|Web.Crawler.RuleSet _allow,
+	       void|Web.Crawler.RuleSet _deny)
+  {
+    stats = _stats;
+    policy = _policy;
+    allow=_allow;
+    deny=_deny;
+  }
 
+  static int done_uri( string|Standards.URI uri )
+  {
+    return sizeof(db->query("select indexed from document where indexed=2 and uri_id=%d",
+			    get_uri_id(uri)));
+  }
+
+  mapping hascache = ([]);
+  static int has_uri( string|Standards.URI uri )
+  {
+    uri = (string)uri;
+    if( sizeof(hascache) > 100000 )
+      hascache = ([]);
+    return hascache[uri]||
+      (hascache[uri]=sizeof(db->query("select indexed from document where uri_id=%d",
+				      get_uri_id(uri))));
+  }
+
+  static void add_uri( Standards.URI uri )
+  {
+    if(check_link(uri, allow, deny) && !has_uri(uri))
+    {
+      db->query( "insert into document (uri) values (%s)", (string)uri );
+    }
+  }
+
+  static int empty_count;
+
+  static array possible=({});
+  int p_c;
+  int|Standards.URI get()
+  {
+    if(stats->concurrent_fetchers() > policy->max_concurrent_fetchers)
+      return -1;
+
+    if( sizeof( possible ) <= p_c )
+    {
+      p_c = 0;
+      possible = db->query( "select uri from document where indexed=0" )->uri;
+    }
+
+    if( sizeof( possible ) > p_c )
+    {
+      string u = possible[p_c++];
+      empty_count=0;
+      db->query( "update document set indexed=1 where uri=%s", (string)u );
+      return Standards.URI(u);
+    }
+
+    if(stats->concurrent_fetchers())
+    {
+      return -1;
+    }
+    // delay for (quite) a while.
+    if( empty_count++ > 1000 )
+    {
+      return 0;
+    }
+    return -1;
+  }
+
+  void put(string|array(string)|Standards.URI|array(Standards.URI) uri)
+  {
+    if(arrayp(uri))
+    {
+      foreach(uri, string|object _uri)
+        put(_uri);
+      return;
+    }
+    if(!objectp(uri))
+      uri=Standards.URI(uri);
+    
+    add_uri(uri);
+  }
+
+  void done(Standards.URI uri)
+  {
+    db->query( "update document set indexed=2 where uri=%s", (string)uri );
+  }
+}
