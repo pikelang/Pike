@@ -2,7 +2,9 @@
 
 #pike __REAL_VERSION__
 
-object PCRE=_Regexp_PCRE; // Regexp.PCRE
+#if constant(_Regexp_PCRE)
+constant PCRE=_Regexp_PCRE; // Regexp.PCRE
+#endif
 
 inherit @module@;
 
