@@ -1,6 +1,8 @@
 
 #include "remote.h"
 
+constant is_remote_call = 1;
+
 string objectid;
 string name;
 object con;
