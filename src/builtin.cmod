@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: builtin.cmod,v 1.168 2004/09/14 17:57:08 grubba Exp $
+|| $Id: builtin.cmod,v 1.169 2004/09/15 08:08:42 grubba Exp $
 */
 
 #include "global.h"
@@ -3072,7 +3072,6 @@ PIKECLASS List
   CVAR struct list_node *tail;		/* Always NULL. */
   CVAR INT32 tail_sentinel_refs;
   CVAR struct list_node *tail_pred;
-  CVAR INT32 num_iterators;
 
 #define HEAD_SENTINEL(this)	((struct list_node *)(&this->head))
 #define TAIL_SENTINEL(this)	((struct list_node *)(&this->tail))
@@ -3106,8 +3105,7 @@ PIKECLASS List
     THIS->tail = NULL;
     THIS->head = TAIL_SENTINEL(THIS);
     THIS->tail_pred = HEAD_SENTINEL(THIS);
-    THIS->head_sentinel_refs = THIS->tail_sentinel_refs = 1;
-    THIS->num_iterators = 0;
+    THIS->head_sentinel_refs = THIS->tail_sentinel_refs = 2;
   }
 
   EXIT
@@ -3156,14 +3154,8 @@ PIKECLASS List
   /* Called at gc_check time. */
   GC_CHECK
   {
-    if (THIS->num_iterators) {
-      /* The iterators will take care of checking the list for us. */
-      return;
-    }
-    /* Kludge. */
-    THIS->head_sentinel_refs++;
     gc_check_list_node_backward(HEAD_SENTINEL(THIS), " as a list node");
-    THIS->head_sentinel_refs--;
+    gc_check_list_node_forward(TAIL_SENTINEL(THIS), " as a list node");
   }
 
   /* Called at gc_mark time */
@@ -3332,27 +3324,15 @@ PIKECLASS List
       parent = (struct List_struct *)(loc.o->storage +
 				      loc.inherit->storage_offset);
       add_ref(THIS->cur = parent->head);
-      parent->num_iterators++;
       THIS->ind = 0;
     }
 
     EXIT
     {
-      struct external_variable_context loc;
-      struct List_struct *parent;
       if (THIS->cur) {
 	free_list_node(THIS->cur);
 	THIS->cur = NULL;
       }
-
-      /* Find our parent. */
-      loc.o = Pike_fp->current_object;
-      loc.parent_identifier = Pike_fp->fun;
-      loc.inherit = INHERIT_FROM_INT(loc.o->prog, loc.parent_identifier);
-      find_external_context(&loc, 1);
-      parent = (struct List_struct *)(loc.o->storage +
-				      loc.inherit->storage_offset);
-      parent->num_iterators--;
     }
 
     /* Called at gc_check time. */
