@@ -1,5 +1,5 @@
 #
-# $Id: Makefile.in,v 1.384 2004/09/18 20:28:10 nilsson Exp $
+# $Id: Makefile.in,v 1.385 2004/09/30 03:50:27 mbaehr Exp $
 #
 
 # This line is needed on some machines.
@@ -212,6 +212,8 @@ all: module_objects tools
 	  find . -name '*.fail' -print | sed -e 's/\.fail$$//' -e 's/^/	/'; \
 	  echo; \
 	fi
+
+doc: documentation
 
 documentation: onepage.xml traditional.xml modref.xml
 	cd $(DOCDIR) && $(MAKE) $(MAKE_FLAGS) PIKE="$(RUNPIKE)" \
