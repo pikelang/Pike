@@ -43,7 +43,7 @@
 #include "threads.h"
 #include "operators.h"
 
-RCSID("$Id: spider.c,v 1.108 2001/07/03 19:59:06 hubbe Exp $");
+RCSID("$Id: spider.c,v 1.109 2001/07/11 12:25:48 grubba Exp $");
 
 #ifdef HAVE_PWD_H
 #include <pwd.h>
@@ -1166,7 +1166,7 @@ void pike_module_init(void)
 /* function(int:string) */
   ADD_EFUN("fd_info", f_fd_info,tFunc(tInt,tStr), OPT_EXTERNAL_DEPEND);
   {
-    extern void init_xml();
+    extern void init_xml(void);
     init_xml();
   }
 }
@@ -1177,7 +1177,7 @@ void pike_module_exit(void)
   int i;
   free_string(empty_string.u.string);
   {
-    extern void exit_xml();
+    extern void exit_xml(void);
     exit_xml();
   }
 }
