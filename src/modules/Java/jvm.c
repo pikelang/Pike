@@ -1,5 +1,5 @@
 /*
- * $Id: jvm.c,v 1.20 2000/06/24 07:20:37 hubbe Exp $
+ * $Id: jvm.c,v 1.21 2000/07/07 13:13:23 grubba Exp $
  *
  * Pike interface to Java Virtual Machine
  *
@@ -16,7 +16,7 @@
 #endif /* HAVE_CONFIG_H */
 
 #include "global.h"
-RCSID("$Id: jvm.c,v 1.20 2000/06/24 07:20:37 hubbe Exp $");
+RCSID("$Id: jvm.c,v 1.21 2000/07/07 13:13:23 grubba Exp $");
 #include "program.h"
 #include "interpret.h"
 #include "stralloc.h"
@@ -122,17 +122,17 @@ struct att_storage {
 #endif /* _REENTRANT */
 
 
-#define THIS_JVM ((struct jvm_storage *)(fp->current_storage))
+#define THIS_JVM ((struct jvm_storage *)(Pike_fp->current_storage))
 #define THAT_JOBJ(o) ((struct jobj_storage *)get_storage((o),jobj_program))
-#define THIS_JOBJ ((struct jobj_storage *)(fp->current_storage))
-#define THIS_JARRAY ((struct jarray_storage *)(fp->current_storage+jarray_stor_offs))
-#define THIS_METHOD ((struct method_storage *)(fp->current_storage))
-#define THIS_FIELD ((struct field_storage *)(fp->current_storage))
-#define THIS_MONITOR ((struct monitor_storage *)(fp->current_storage))
+#define THIS_JOBJ ((struct jobj_storage *)(Pike_fp->current_storage))
+#define THIS_JARRAY ((struct jarray_storage *)(Pike_fp->current_storage+jarray_stor_offs))
+#define THIS_METHOD ((struct method_storage *)(Pike_fp->current_storage))
+#define THIS_FIELD ((struct field_storage *)(Pike_fp->current_storage))
+#define THIS_MONITOR ((struct monitor_storage *)(Pike_fp->current_storage))
 
-#define THIS_NATIVES ((struct natives_storage *)(fp->current_storage))
+#define THIS_NATIVES ((struct natives_storage *)(Pike_fp->current_storage))
 #ifdef _REENTRANT
-#define THIS_ATT ((struct att_storage *)(fp->current_storage))
+#define THIS_ATT ((struct att_storage *)(Pike_fp->current_storage))
 #endif /* _REENTRANT */
 
 
@@ -531,11 +531,11 @@ static void f_method_create(INT32 args)
 
   if((env = jvm_procure_env(c->jvm))==NULL) {
     pop_n_elems(args);
-    destruct(fp->current_object);
+    destruct(Pike_fp->current_object);
     return;
   }
 
-  m->method = (fp->current_object->prog==static_method_program?
+  m->method = (Pike_fp->current_object->prog==static_method_program?
 	       (*env)->GetStaticMethodID(env, c->jobj, name->str, sig->str):
 	       (*env)->GetMethodID(env, c->jobj, name->str, sig->str));
 
@@ -543,7 +543,7 @@ static void f_method_create(INT32 args)
 
   if(m->method == 0) {
     pop_n_elems(args);
-    destruct(fp->current_object);
+    destruct(Pike_fp->current_object);
     return;
   }
 
@@ -1137,7 +1137,7 @@ static void f_field_create(INT32 args)
 
   if((env = jvm_procure_env(c->jvm))) {
 
-    f->field = (fp->current_object->prog==static_field_program?
+    f->field = (Pike_fp->current_object->prog==static_field_program?
 		(*env)->GetStaticFieldID(env, c->jobj, name->str, sig->str):
 		(*env)->GetFieldID(env, c->jobj, name->str, sig->str));
 
@@ -1146,7 +1146,7 @@ static void f_field_create(INT32 args)
 
   if(f->field == 0) {
     pop_n_elems(args);
-    destruct(fp->current_object);
+    destruct(Pike_fp->current_object);
     return;
   }
 
@@ -1651,7 +1651,7 @@ static void native_dispatch(struct native_method_context *ctx,
 			    jvalue *rc)
 {
   extern struct program *thread_id_prog;
-  struct Pike_interpreter *state;
+  struct thread_state *state;
 
   if((state = thread_state_for_id(th_self()))!=NULL) {
     /* This is a pike thread.  Do we have the interpreter lock? */
@@ -1971,7 +1971,7 @@ static void f_natives_create(INT32 args)
   pop_n_elems(args);
 
   if(rc<0)
-    destruct(fp->current_object);
+    destruct(Pike_fp->current_object);
 }
 
 #endif /* SUPPORT_NATIVE_METHODS */
@@ -2305,7 +2305,7 @@ static void f_javaarray_getelt(INT32 args)
   if(args>1) {
     INT32 m = sp[1-args].u.integer;
     pop_n_elems(args);
-    javaarray_subarray(jo->jvm, fp->current_object, jo->jobj, ja->ty, n, m);
+    javaarray_subarray(jo->jvm, Pike_fp->current_object, jo->jobj, ja->ty, n, m);
     return;
   }
 
@@ -2634,7 +2634,7 @@ static void f_att_create(INT32 args)
   att->tid = th_self();
   if((*jvm->jvm)->AttachCurrentThread(jvm->jvm,
 				      (void **)&att->env, &att->args)<0)
-    destruct(fp->current_object);
+    destruct(Pike_fp->current_object);
 }
 
 #endif /* _REENTRANT */
@@ -2855,7 +2855,7 @@ static void exit_jvm_struct(struct object *o)
   struct jvm_storage *j = THIS_JVM;
   JNIEnv *env;
 
-  if(j->jvm != NULL && (env = jvm_procure_env(fp->current_object))) {
+  if(j->jvm != NULL && (env = jvm_procure_env(Pike_fp->current_object))) {
     if(j->class_system)
       (*env)->DeleteGlobalRef(env, j->class_system);
     if(j->class_runtimex)
@@ -2868,7 +2868,7 @@ static void exit_jvm_struct(struct object *o)
       (*env)->DeleteGlobalRef(env, j->class_class);
     if(j->class_object)
       (*env)->DeleteGlobalRef(env, j->class_object);
-    jvm_vacate_env(fp->current_object, env);
+    jvm_vacate_env(Pike_fp->current_object, env);
   }
 
   while(j->jvm) {
@@ -2913,9 +2913,9 @@ static void f_get_version(INT32 args)
 {
   JNIEnv *env;
   pop_n_elems(args);
-  if((env = jvm_procure_env(fp->current_object))) {
+  if((env = jvm_procure_env(Pike_fp->current_object))) {
     push_int((*env)->GetVersion(env));
-    jvm_vacate_env(fp->current_object, env);
+    jvm_vacate_env(Pike_fp->current_object, env);
   } else
     push_int(0);
 }
@@ -2927,11 +2927,11 @@ static void f_find_class(INT32 args)
   jclass c;
 
   get_all_args("find_class", args, "%s", &cn);
-  if((env = jvm_procure_env(fp->current_object))) {
+  if((env = jvm_procure_env(Pike_fp->current_object))) {
     c = (*env)->FindClass(env, cn);
     pop_n_elems(args);
-    push_java_class(c, fp->current_object, env);
-    jvm_vacate_env(fp->current_object, env);
+    push_java_class(c, Pike_fp->current_object, env);
+    jvm_vacate_env(Pike_fp->current_object, env);
   } else {
     pop_n_elems(args);
     push_int(0);
@@ -2950,11 +2950,11 @@ static void f_define_class(INT32 args)
   get_all_args("define_class", args, "%s%o%S", &name, &obj, &str);
   if((ldr = THAT_JOBJ(obj))==NULL)
     error("Bad argument 2 to define_class().\n");
-  if((env = jvm_procure_env(fp->current_object))) {
+  if((env = jvm_procure_env(Pike_fp->current_object))) {
     c = (*env)->DefineClass(env, name, ldr->jobj, (jbyte*)str->str, str->len);
     pop_n_elems(args);
-    push_java_class(c, fp->current_object, env);
-    jvm_vacate_env(fp->current_object, env);
+    push_java_class(c, Pike_fp->current_object, env);
+    jvm_vacate_env(Pike_fp->current_object, env);
   } else {
     pop_n_elems(args);
     push_int(0);
@@ -2966,9 +2966,9 @@ static void f_exception_check(INT32 args)
   JNIEnv *env;
 
   pop_n_elems(args);
-  if((env = jvm_procure_env(fp->current_object))) {
+  if((env = jvm_procure_env(Pike_fp->current_object))) {
     push_int((((*env)->ExceptionCheck(env))==JNI_TRUE? 1 : 0));
-    jvm_vacate_env(fp->current_object, env);
+    jvm_vacate_env(Pike_fp->current_object, env);
   } else
     push_int(0);
 }
@@ -2978,10 +2978,10 @@ static void f_exception_occurred(INT32 args)
   JNIEnv *env;
 
   pop_n_elems(args);
-  if((env = jvm_procure_env(fp->current_object))) {
+  if((env = jvm_procure_env(Pike_fp->current_object))) {
     push_java_throwable((*env)->ExceptionOccurred(env),
-			fp->current_object, env);
-    jvm_vacate_env(fp->current_object, env);
+			Pike_fp->current_object, env);
+    jvm_vacate_env(Pike_fp->current_object, env);
   } else
     push_int(0);
 }
@@ -2991,9 +2991,9 @@ static void f_exception_describe(INT32 args)
   JNIEnv *env;
 
   pop_n_elems(args);
-  if((env = jvm_procure_env(fp->current_object))) {
+  if((env = jvm_procure_env(Pike_fp->current_object))) {
     (*env)->ExceptionDescribe(env);
-    jvm_vacate_env(fp->current_object, env);
+    jvm_vacate_env(Pike_fp->current_object, env);
   }
   push_int(0);
 }
@@ -3003,9 +3003,9 @@ static void f_exception_clear(INT32 args)
   JNIEnv *env;
 
   pop_n_elems(args);
-  if((env = jvm_procure_env(fp->current_object))) {
+  if((env = jvm_procure_env(Pike_fp->current_object))) {
     (*env)->ExceptionClear(env);
-    jvm_vacate_env(fp->current_object, env);
+    jvm_vacate_env(Pike_fp->current_object, env);
   }
   push_int(0);
 }
@@ -3016,9 +3016,9 @@ static void f_javafatal(INT32 args)
   char *msg;
 
   get_all_args("fatal", args, "%s", &msg);
-  if((env = jvm_procure_env(fp->current_object))) {
+  if((env = jvm_procure_env(Pike_fp->current_object))) {
     (*env)->FatalError(env, msg);
-    jvm_vacate_env(fp->current_object, env);
+    jvm_vacate_env(Pike_fp->current_object, env);
   }
   pop_n_elems(args);
   push_int(0);
@@ -3032,10 +3032,10 @@ static void f_new_boolean_array(INT32 args)
   get_all_args("new_boolean_array", args, "%i", &n);
   pop_n_elems(args);
 
-  if((env = jvm_procure_env(fp->current_object))) {
-    push_java_array((*env)->NewBooleanArray(env, n), fp->current_object,
+  if((env = jvm_procure_env(Pike_fp->current_object))) {
+    push_java_array((*env)->NewBooleanArray(env, n), Pike_fp->current_object,
 		    env, 'Z');
-    jvm_vacate_env(fp->current_object, env);
+    jvm_vacate_env(Pike_fp->current_object, env);
   } else
     push_int(0);
 }
@@ -3048,10 +3048,10 @@ static void f_new_byte_array(INT32 args)
   get_all_args("new_byte_array", args, "%i", &n);
   pop_n_elems(args);
 
-  if((env = jvm_procure_env(fp->current_object))) {
-    push_java_array((*env)->NewByteArray(env, n), fp->current_object,
+  if((env = jvm_procure_env(Pike_fp->current_object))) {
+    push_java_array((*env)->NewByteArray(env, n), Pike_fp->current_object,
 		    env, 'B');
-    jvm_vacate_env(fp->current_object, env);
+    jvm_vacate_env(Pike_fp->current_object, env);
   } else
     push_int(0);
 }
@@ -3064,10 +3064,10 @@ static void f_new_char_array(INT32 args)
   get_all_args("new_char_array", args, "%i", &n);
   pop_n_elems(args);
 
-  if((env = jvm_procure_env(fp->current_object))) {
-    push_java_array((*env)->NewCharArray(env, n), fp->current_object,
+  if((env = jvm_procure_env(Pike_fp->current_object))) {
+    push_java_array((*env)->NewCharArray(env, n), Pike_fp->current_object,
 		    env, 'C');
-    jvm_vacate_env(fp->current_object, env);
+    jvm_vacate_env(Pike_fp->current_object, env);
   } else
     push_int(0);
 }
@@ -3080,10 +3080,10 @@ static void f_new_short_array(INT32 args)
   get_all_args("new_short_array", args, "%i", &n);
   pop_n_elems(args);
 
-  if((env = jvm_procure_env(fp->current_object))) {
-    push_java_array((*env)->NewShortArray(env, n), fp->current_object,
+  if((env = jvm_procure_env(Pike_fp->current_object))) {
+    push_java_array((*env)->NewShortArray(env, n), Pike_fp->current_object,
 		    env, 'S');
-    jvm_vacate_env(fp->current_object, env);
+    jvm_vacate_env(Pike_fp->current_object, env);
   } else
     push_int(0);
 }
@@ -3096,10 +3096,10 @@ static void f_new_int_array(INT32 args)
   get_all_args("new_int_array", args, "%i", &n);
   pop_n_elems(args);
 
-  if((env = jvm_procure_env(fp->current_object))) {
-    push_java_array((*env)->NewIntArray(env, n), fp->current_object,
+  if((env = jvm_procure_env(Pike_fp->current_object))) {
+    push_java_array((*env)->NewIntArray(env, n), Pike_fp->current_object,
 		    env, 'I');
-    jvm_vacate_env(fp->current_object, env);
+    jvm_vacate_env(Pike_fp->current_object, env);
   } else
     push_int(0);
 }
@@ -3112,10 +3112,10 @@ static void f_new_long_array(INT32 args)
   get_all_args("new_long_array", args, "%i", &n);
   pop_n_elems(args);
 
-  if((env = jvm_procure_env(fp->current_object))) {
-    push_java_array((*env)->NewLongArray(env, n), fp->current_object,
+  if((env = jvm_procure_env(Pike_fp->current_object))) {
+    push_java_array((*env)->NewLongArray(env, n), Pike_fp->current_object,
 		    env, 'J');
-    jvm_vacate_env(fp->current_object, env);
+    jvm_vacate_env(Pike_fp->current_object, env);
   } else
     push_int(0);
 }
@@ -3128,10 +3128,10 @@ static void f_new_float_array(INT32 args)
   get_all_args("new_float_array", args, "%i", &n);
   pop_n_elems(args);
 
-  if((env = jvm_procure_env(fp->current_object))) {
-    push_java_array((*env)->NewFloatArray(env, n), fp->current_object,
+  if((env = jvm_procure_env(Pike_fp->current_object))) {
+    push_java_array((*env)->NewFloatArray(env, n), Pike_fp->current_object,
 		    env, 'F');
-    jvm_vacate_env(fp->current_object, env);
+    jvm_vacate_env(Pike_fp->current_object, env);
   } else
     push_int(0);
 }
@@ -3144,10 +3144,10 @@ static void f_new_double_array(INT32 args)
   get_all_args("new_double_array", args, "%i", &n);
   pop_n_elems(args);
 
-  if((env = jvm_procure_env(fp->current_object))) {
-    push_java_array((*env)->NewDoubleArray(env, n), fp->current_object,
+  if((env = jvm_procure_env(Pike_fp->current_object))) {
+    push_java_array((*env)->NewDoubleArray(env, n), Pike_fp->current_object,
 		    env, 'D');
-    jvm_vacate_env(fp->current_object, env);
+    jvm_vacate_env(Pike_fp->current_object, env);
   } else
     push_int(0);
 }
