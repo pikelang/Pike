@@ -613,6 +613,33 @@ static void img_apply_matrix(struct image *dest,
 
 /***************** methods *************************************/
 
+void image_create(INT32 args)
+{
+   if (args<2) return;
+   if (sp[-args].type!=T_INT||
+       sp[1-args].type!=T_INT)
+      error("Illegal arguments to image->clone()\n");
+
+   getrgb(THIS,2,args,"image->create()"); 
+
+   if (THIS->img) free(THIS->img);
+	
+   THIS->xsize=sp[-args].u.integer;
+   THIS->ysize=sp[1-args].u.integer;
+   if (THIS->xsize<0) THIS->xsize=0;
+   if (THIS->ysize<0) THIS->ysize=0;
+
+   THIS->img=malloc(sizeof(rgb_group)*THIS->xsize*THIS->ysize +1);
+   if (!THIS->img)
+   {
+     free_object(o);
+     error("out of memory\n");
+   }
+
+   img_clear(THIS->img,THIS->rgb,THIS->xsize*THIS->ysize);
+   pop_n_elems(args);
+}
+
 void image_new(INT32 args)
 {
    struct object *o;
@@ -1697,6 +1724,8 @@ void init_image_programs()
    start_new_program();
    add_storage(sizeof(struct image));
 
+   add_function("create",image_create,
+		"function(int,int,"RGB_TYPE":void)",0);
    add_function("new",image_new,
 		"function(int,int,"RGB_TYPE":void)",0);
    add_function("toppm",image_toppm,
