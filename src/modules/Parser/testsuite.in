@@ -1229,4 +1229,16 @@ test_any([[{
 test_parser([[{
   object p = Parser.HTML();
   return p->finish (WIDENER "<x y=")->read();
-}]], WIDENER "<x y=")
+}]], WIDENER "<x y=");
+test_program([[{
+  int i;
+  class X
+  {
+    inherit Parser.HTML;
+    void create() {i++;}
+  }
+  int a()
+  {
+    return !!X()->clone();
+  }
+}]]);
