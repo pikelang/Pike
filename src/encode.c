@@ -25,7 +25,7 @@
 #include "version.h"
 #include "bignum.h"
 
-RCSID("$Id: encode.c,v 1.72 2000/09/15 17:03:39 grubba Exp $");
+RCSID("$Id: encode.c,v 1.73 2000/09/30 19:42:40 hubbe Exp $");
 
 /* #define ENCODE_DEBUG */
 
@@ -665,6 +665,7 @@ static void encode_value2(struct svalue *val, struct encode_data *data)
 	  code_number(p->inherits[d].inherit_level,data);
 	  code_number(p->inherits[d].identifier_level,data);
 	  code_number(p->inherits[d].parent_offset,data);
+	  code_number(p->inherits[d].parent_identifier,data);
 	  code_number(p->inherits[d].storage_offset,data);
 
 	  if(p->inherits[d].parent)
@@ -1513,6 +1514,7 @@ static void decode_value2(struct decode_data *data)
 	  {
 	    decode_number(p->inherits[d].inherit_level,data);
 	    decode_number(p->inherits[d].identifier_level,data);
+	    decode_number(p->inherits[d].parent_identifier,data);
 	    decode_number(p->inherits[d].parent_offset,data);
 	    decode_number(p->inherits[d].storage_offset,data);
 
