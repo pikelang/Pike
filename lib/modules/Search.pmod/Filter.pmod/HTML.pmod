@@ -1,7 +1,7 @@
 // This file is part of Roxen Search
 // Copyright © 2000,2001 Roxen IS. All rights reserved.
 //
-// $Id: HTML.pmod,v 1.14 2001/06/23 02:08:54 js Exp $
+// $Id: HTML.pmod,v 1.15 2001/06/28 11:07:20 js Exp $
 
 // Filter for text/html
 
@@ -35,6 +35,17 @@ Output filter(Standards.URI uri, string|Stdio.File data,
 
   data = .Charset.decode_http( data, headers, default_charset );
 
+  void parse_rank(Parser.HTML p, mapping m, string c)
+  {
+    if(!m->name)
+      return;
+    
+    if(res->fields[m->name])
+      res->fields[m->name] += " "+c;
+    else
+      res->fields[m->name] = c;
+  };
+  
   void parse_meta(Parser.HTML p, mapping m )
   {
     string n = m["http-equiv"]||m->name;
@@ -73,7 +84,7 @@ Output filter(Standards.URI uri, string|Stdio.File data,
 
   parser->match_tag(0);
   parser->add_tag("meta",parse_meta );
-
+  parser->add_container("rank",parse_rank);
   parser->add_container("title",parse_title);
   parser->add_container("a",parse_a);
 
