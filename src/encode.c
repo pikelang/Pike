@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: encode.c,v 1.166 2004/05/11 09:43:00 grubba Exp $
+|| $Id: encode.c,v 1.167 2004/05/11 10:49:55 grubba Exp $
 */
 
 #include "global.h"
@@ -32,7 +32,7 @@
 #include "opcodes.h"
 #include "peep.h"
 
-RCSID("$Id: encode.c,v 1.166 2004/05/11 09:43:00 grubba Exp $");
+RCSID("$Id: encode.c,v 1.167 2004/05/11 10:49:55 grubba Exp $");
 
 /* #define ENCODE_DEBUG */
 
@@ -294,11 +294,15 @@ static void encode_type(struct pike_type *t, struct encode_data *data)
       goto one_more_type;
     
     case T_ASSIGN:
-      if (((ptrdiff_t)t->car < 0) || ((ptrdiff_t)t->car > 9)) {
-	Pike_fatal("Bad assign marker: %ld\n", (long)(ptrdiff_t)t->car);
+      {
+	ptrdiff_t marker = CAR_TO_INT(t);
+	if ((marker < 0) || (marker > 9)) {
+	  Pike_fatal("Bad assign marker: %ld\n",
+		     (long)marker);
+	}
+	addchar('0' + marker);
+	t = t->cdr;
       }
-      addchar('0' + (ptrdiff_t)t->car);
-      t = t->cdr;
       goto one_more_type;
 
     case T_FUNCTION:
@@ -332,12 +336,12 @@ static void encode_type(struct pike_type *t, struct encode_data *data)
       {
 	ptrdiff_t val;
 
-	val = (ptrdiff_t)t->car;
+	val = CAR_TO_INT(t);
 	addchar((val >> 24)&0xff);
 	addchar((val >> 16)&0xff);
 	addchar((val >> 8)&0xff);
 	addchar(val & 0xff);
-	val = (ptrdiff_t)t->cdr;
+	val = CDR_TO_INT(t);
 	addchar((val >> 24)&0xff);
 	addchar((val >> 16)&0xff);
 	addchar((val >> 8)&0xff);
@@ -365,14 +369,14 @@ static void encode_type(struct pike_type *t, struct encode_data *data)
 
     case T_OBJECT:
     {
-      addchar((ptrdiff_t)t->car);
+      addchar(CAR_TO_INT(t));
 
       if(t->cdr)
       {
-	int id = (int)(ptrdiff_t)t->cdr;
+	ptrdiff_t id = CDR_TO_INT(t);
 	if( id >= PROG_DYNAMIC_ID_START )
 	{
-	  struct program *p=id_to_program((ptrdiff_t)t->cdr);
+	  struct program *p=id_to_program(id);
 	  if(p)
 	  {
 	    ref_push_program(p);
