@@ -110,7 +110,10 @@ struct used_vars;
 void fix_type_field(node *n);
 struct timer_oflo;
 int eval_low(node *n);
-void dooptcode(struct pike_string *name,node *n, int args);
+int dooptcode(struct pike_string *name,
+	      node *n,
+	      struct pike_string *type,
+	      int modifiers);
 INT32 get_opt_info();
 /* Prototypes end here */
 

@@ -4,7 +4,7 @@
 ||| See the files COPYING and DISCLAIMER for more information.
 \*/
 #include "global.h"
-RCSID("$Id: program.c,v 1.20 1997/02/11 07:20:15 hubbe Exp $");
+RCSID("$Id: program.c,v 1.21 1997/02/18 05:13:35 hubbe Exp $");
 #include "program.h"
 #include "object.h"
 #include "dynamic_buffer.h"
@@ -547,16 +547,14 @@ struct program *end_program()
   {
     union idptr tmp;
     struct pike_string *s;
+    push_locals();
     s=make_shared_string("__INIT");
-    tmp.offset=PC;
-    ins_byte(0, A_PROGRAM); /* num locals */
-    ins_byte(0, A_PROGRAM); /* num args */
-    dooptcode(s,mknode(F_ARG_LIST,init_node,mknode(F_RETURN,mkintnode(0),0)),0);
-    define_function(s,
-		    function_type_string,
-		    0,  /* ID_STATIC, */
-		    IDENTIFIER_PIKE_FUNCTION,
-		    & tmp);
+    dooptcode(s,
+	      mknode(F_ARG_LIST,
+		     init_node,mknode(F_RETURN,mkintnode(0),0)),
+	      function_type_string,
+	      0);
+    pop_locals();
     free_string(s);
     init_node=0;
   }
@@ -1663,4 +1661,30 @@ void count_memory_in_programs(INT32 *num_, INT32 *size_)
   }
   *num_=num;
   *size_=size;
+}
+void push_locals()
+{
+  struct locals *l;
+  l=ALLOC_STRUCT(locals);
+  l->current_type=0;
+  l->current_return_type=0;
+  l->next=local_variables;
+  l->current_number_of_locals=0;
+  l->max_number_of_locals=0;
+  local_variables=l;
+}
+
+void pop_locals()
+{
+  struct locals *l;
+  free_all_local_names();
+  l=local_variables->next;
+  if(local_variables->current_type)
+    free_string(local_variables->current_type);
+  if(local_variables->current_return_type)
+    free_string(local_variables->current_return_type);
+  free((char *)local_variables);
+
+  local_variables=l;
+  /* insert check if ( local->next == parent locals ) here */
 }

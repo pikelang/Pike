@@ -156,7 +156,7 @@
 /* This is the grammar definition of Pike. */
 
 #include "global.h"
-RCSID("$Id: language.yacc,v 1.24 1997/02/14 04:45:57 hubbe Exp $");
+RCSID("$Id: language.yacc,v 1.25 1997/02/18 05:13:34 hubbe Exp $");
 #ifdef HAVE_MEMORY_H
 #include <memory.h>
 #endif
@@ -181,8 +181,6 @@ RCSID("$Id: language.yacc,v 1.24 1997/02/14 04:45:57 hubbe Exp $");
 #define YYDEBUG 1
 #endif
 
-static void push_locals();
-static void pop_locals();
 void free_all_local_names();
 void add_local_name(struct pike_string *,struct pike_string *);
 
@@ -524,8 +522,6 @@ def: modifiers type_or_error optional_stars F_IDENTIFIER '(' arguments ')'
     int e;
     if($9)
     {
-      union idptr tmp;
-      int args, vargs;
       for(e=0; e<$6; e++)
       {
 	if(!local_variables->variable[e].name ||
@@ -534,25 +530,8 @@ def: modifiers type_or_error optional_stars F_IDENTIFIER '(' arguments ')'
 	  my_yyerror("Missing name for argument %d",e);
 	}
       }
-      
-      tmp.offset=PC;
-      args=count_arguments($<string>8);
-      if(args < 0) 
-      {
-	args=~args;
-	vargs=IDENTIFIER_VARARGS;
-      }else{
-	vargs=0;
-      }
-      ins_byte(local_variables->max_number_of_locals, A_PROGRAM);
-      ins_byte(args, A_PROGRAM);
-      dooptcode($4, $9, $6);
-      
-      define_function($4,
-		      $<string>8,
-		      $1,
-		      IDENTIFIER_PIKE_FUNCTION | vargs,
-		      &tmp);
+
+      dooptcode($4, $9, $<string>8, $1);
     }
     if(local_variables->current_return_type)
     {
@@ -858,8 +837,7 @@ lambda: F_LAMBDA
   {
     struct pike_string *type;
     char buf[40];
-    int f,e,args,vargs;
-    union idptr func;
+    int f,e;
     struct pike_string *name;
     
     setup_fake_program();
@@ -884,28 +862,15 @@ lambda: F_LAMBDA
     push_type(T_FUNCTION);
     
     type=pop_type();
-    func.offset=PC;
-    
-    args=count_arguments(type);
-    if(args < 0) 
-    {
-      args=~args;
-      vargs=IDENTIFIER_VARARGS;
-    }else{
-      vargs=0;
-    }
-    ins_byte(local_variables->max_number_of_locals, A_PROGRAM);
-    ins_byte(args, A_PROGRAM);
     
     sprintf(buf,"__lambda_%ld",
 	    (long)fake_program.num_identifier_references);
     name=make_shared_string(buf);
-    dooptcode(name,mknode(F_ARG_LIST,$6,mknode(F_RETURN,mkintnode(0),0)),$4);
-    f=define_function(name,
-		      type,
-		      0,
-		      IDENTIFIER_PIKE_FUNCTION | vargs,
-		      &func);
+
+    f=dooptcode(name,
+	      mknode(F_ARG_LIST,$6,mknode(F_RETURN,mkintnode(0),0)),
+	      type,
+	      0);
     free_string(name);
     free_string(type);
     pop_locals();
@@ -1413,29 +1378,3 @@ void free_all_local_names()
   local_variables->max_number_of_locals = 0;
 }
 
-static void push_locals()
-{
-  struct locals *l;
-  l=ALLOC_STRUCT(locals);
-  l->current_type=0;
-  l->current_return_type=0;
-  l->next=local_variables;
-  l->current_number_of_locals=0;
-  l->max_number_of_locals=0;
-  local_variables=l;
-}
-
-static void pop_locals()
-{
-  struct locals *l;
-  free_all_local_names();
-  l=local_variables->next;
-  if(local_variables->current_type)
-    free_string(local_variables->current_type);
-  if(local_variables->current_return_type)
-    free_string(local_variables->current_return_type);
-  free((char *)local_variables);
-
-  local_variables=l;
-  /* insert check if ( local->next == parent locals ) here */
-}

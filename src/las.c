@@ -4,7 +4,7 @@
 ||| See the files COPYING and DISCLAIMER for more information.
 \*/
 #include "global.h"
-RCSID("$Id: las.c,v 1.20 1997/02/11 07:10:54 hubbe Exp $");
+RCSID("$Id: las.c,v 1.21 1997/02/18 05:13:35 hubbe Exp $");
 
 #include "language.h"
 #include "interpret.h"
@@ -1882,14 +1882,123 @@ static node *eval(node *n)
 
 INT32 last_function_opt_info;
 
-void dooptcode(struct pike_string *name,node *n, int args)
+static int stupid_args(node *n, int expected,int vargs)
 {
+  if(!n) return expected;
+  switch(n->token)
+  {
+  case F_PUSH_ARRAY:
+    if(!vargs) return -1;
+
+    if(stupid_args(CAR(n), expected,vargs) == expected+1)
+      return 65535;
+    return -1;
+
+  case F_ARG_LIST:
+    expected=stupid_args(CAR(n), expected,vargs);
+    if(expected==-1) return -1;
+    return stupid_args(CDR(n), expected,vargs);
+  case F_LOCAL:
+    return n->u.number==expected ? expected + 1 : -1;
+  default:
+    return -1;
+  }
+}
+
+static is_null_branch(node *n)
+{
+  if(!n) return 1;
+  if(n->token==F_CAST && n->type==void_type_string)
+    return is_null_branch(CAR(n));
+  if(n->token==F_ARG_LIST)
+    return is_null_branch(CAR(n)) && is_null_branch(CDR(n));
+  return 0;
+}
+
+static struct svalue *is_stupid_func(node *n,
+				     int args,
+				     int vargs)
+{
+  node *a,*b;
+  int tmp;
+  while(1)
+  {
+    if(!n) return 0;
+
+    if(n->token == F_ARG_LIST)
+    {
+      if(is_null_branch(CAR(n)))
+	n=CDR(n);
+      else
+	n=CAR(n);
+      continue;
+    }
+
+    if(n->token == F_CAST && n->type==void_type_string)
+    {
+      n=CAR(n);
+      continue;
+    }
+    break;
+  }
+
+  if(n->token != F_RETURN) return 0;
+  n=CAR(n);
+
+  if(n->token != F_APPLY) return 0;
+
+  tmp=stupid_args(CDR(n),0,vargs);
+  if(!(vargs?tmp==65535:tmp==args)) return 0;
+
+  n=CAR(n);
+  if(n->token != F_CONSTANT) return 0;
+  return &n->u.sval;
+}
+
+int dooptcode(struct pike_string *name,
+	      node *n,
+	      struct pike_string *type,
+	      int modifiers)
+{
+  union idptr tmp;
+  int args, vargs, ret;
+  struct svalue *foo;
+
 #ifdef DEBUG
   if(a_flag > 1)
     fprintf(stderr,"Doing function '%s' at %x\n",name->str,PC);
 #endif
   last_function_opt_info=OPT_SIDE_EFFECT;
+
+  args=count_arguments(type);
+  if(args < 0) 
+  {
+    args=~args;
+    vargs=IDENTIFIER_VARARGS;
+  }else{
+    vargs=0;
+  }
   n=mknode(F_ARG_LIST,n,0);
+
+  if(foo=is_stupid_func(n, args, vargs))
+  {
+    if(foo->type == T_FUNCTION && foo->subtype==FUNCTION_BUILTIN)
+    {
+      tmp.c_fun=foo->u.efun->function;
+      ret=define_function(name,
+			  type,
+			  modifiers,
+			  IDENTIFIER_C_FUNCTION | vargs,
+			  &tmp);
+      free_node(n);
+      return ret;
+    }
+  }
+  
+  tmp.offset=PC;
+  ins_byte(local_variables->max_number_of_locals, A_PROGRAM);
+  ins_byte(args, A_PROGRAM);
+  
 #ifdef DEBUG
   if(a_flag > 2)
   {
@@ -1900,9 +2009,16 @@ void dooptcode(struct pike_string *name,node *n, int args)
   if(!num_parse_error)
   {
     do_code_block(n);
-    last_function_opt_info = n->tree_info;
   }
+  
+  ret=define_function(name,
+		      type,
+		      modifiers,
+		      IDENTIFIER_PIKE_FUNCTION | vargs,
+		      &tmp);
+
   free_node(n);
+  return ret;
 }
 
 INT32 get_opt_info() { return last_function_opt_info; }

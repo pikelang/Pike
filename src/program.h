@@ -249,6 +249,8 @@ void gc_check_all_programs();
 void gc_mark_all_programs();
 void gc_free_all_unreferenced_programs();
 void count_memory_in_programs(INT32 *num_, INT32 *size_);
+void push_locals();
+void pop_locals();
 /* Prototypes end here */
 
 
