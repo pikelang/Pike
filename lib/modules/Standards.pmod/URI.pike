@@ -4,7 +4,7 @@
 //! absolute form, as defined in RFC 2396 and RFC 3986.
 
 // Implemented by Johan Sundström and Johan Schön.
-// $Id: URI.pike,v 1.19 2005/03/30 18:26:23 grubba Exp $
+// $Id: URI.pike,v 1.20 2005/03/31 00:25:59 nilsson Exp $
 
 #pragma strict_types
 
@@ -347,6 +347,8 @@ mixed `[]=(string property, mixed value)
     case "password":
     case "host":
     case "port":
+      if(!stringp(value))
+	error("%s value not string.\n", property);
       ::`[]=(property, value);
       authority = (user ? user + (password ? ":" + password : "") + "@" : "") +
 	(host?(has_value(host, ":")?("["+host+"]"):host):"") +
@@ -354,11 +356,14 @@ mixed `[]=(string property, mixed value)
 	return value;
 
     case "authority":
+      if(!stringp(value)) error("authority value not string.\n");
       authority = [string]value;
       parse_authority(); // Set user, password, host and port accordingly
       return value;
 
     case "base_uri":
+      if(!stringp(value) || !(objectp(value) && ([object]value)->reparse_uri))
+	error("base_uri value neither object nor string.\n");
       reparse_uri([object(this_program)|string]value);
       return base_uri;
 
@@ -370,7 +375,8 @@ mixed `[]=(string property, mixed value)
        * "http") for the sake of robustness but should only produce
        * lowercase scheme names for consistency.
        */
-      value = lower_case(value);
+      if(!stringp(value)) error("scheme value not string.\n");
+      value = lower_case([string]value);
 
       // FALL_THROUGH
     default:
