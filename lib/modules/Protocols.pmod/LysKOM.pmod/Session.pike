@@ -1,6 +1,6 @@
 #pike __REAL_VERSION__
 
-//  $Id: Session.pike,v 1.24 2000/11/26 17:31:45 nilsson Exp $
+//  $Id: Session.pike,v 1.25 2001/09/24 22:29:56 js Exp $
 //! module Protocols
 //! submodule LysKOM
 //! class Session
@@ -643,7 +643,12 @@ class Text
 
 object text(int no)
 {
-   return _text[no] || (_text[no]=Text(no));
+  if(_text[no])
+    return _text[no];
+  if(sizeof(_text)>1000)
+    _text = ([]);
+  
+  return (_text[no]=Text(no));
 }
 
 class Membership
