@@ -1,5 +1,5 @@
 #
-# $Id: Makefile.in,v 1.291 2002/03/10 03:28:33 mast Exp $
+# $Id: Makefile.in,v 1.292 2002/03/12 09:27:32 mast Exp $
 #
 
 # This line is needed on some machines.
@@ -65,7 +65,6 @@ OSFLAGS=
 WARN=@WARN@
 
 #add extra defines here
-# Be sure to use -g  when looking for bugs
 DEFINES=@CPPFLAGS@
 
 # -O should work with all compilers
@@ -302,10 +301,8 @@ hilfe: $(TMP_BINDIR)/hilfe Makefile
 	@echo "Done."
 
 dump_modules: pike master-stamp $(SRCDIR)/dumpmodule.pike
-	args="$(DUMPARGS)"; \
-	$(RUNPIKE) $(SRCDIR)/dumpmodule.pike \
-	$${args:- --log-file --update-only=dumpversion --report-failed} \
-	--recursive --target-dir=lib "$(LIBDIR_SRC)/modules"
+	if [ "x$(DUMPARGS)" = x ] ; then args="--log-file --update-only=dumpversion --report-failed" ; else args="$(DUMPARGS)" ; fi; \
+	$(RUNPIKE) $(SRCDIR)/dumpmodule.pike $$args --recursive --target-dir=lib "$(LIBDIR_SRC)/modules"
 
 force_dump_modules:
 	-rm dumpversion 2>/dev/null
@@ -449,7 +446,7 @@ module_testsuites:
 	( cd post_modules && $(MAKE) $(MAKE_FLAGS) testsuites )
 
 just_verify: module_testsuites testsuite master-stamp
-	if test "$(TESTARGS)" = "" ; then args="-a" ; else args="$(TESTARGS)" ; fi; \
+	if test "x$(TESTARGS)" = x ; then args="-a" ; else args="$(TESTARGS)" ; fi; \
 	$(RUNPIKE) $(TMP_BINDIR)/test_pike.pike $$args
 
 # Testsuite for dynamic loading debugging
