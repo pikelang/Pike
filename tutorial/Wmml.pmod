@@ -611,9 +611,14 @@ SGML low_make_concrete_wmml(SGML data)
 	{
 	  string filename=tag->params->file;
 	  string file=Stdio.read_file(filename);
-	  SGML tmp=group(lex(file,filename));
-	  verify(tmp,file,filename);
-	  ret+=low_make_concrete_wmml(tmp);
+	  if (file) {
+	    SGML tmp=group(lex(file,filename));
+	    verify(tmp,file,filename);
+	    ret+=low_make_concrete_wmml(tmp);
+	  } else {
+	    werror(sprintf("File %O not found specified in tag %O near %s\n",
+			   filename, tag->tag, tag->location()));
+	  }
 	  continue;
 	}
 	  
