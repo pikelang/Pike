@@ -2,11 +2,11 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: _xpm.c,v 1.24 2003/09/05 16:21:22 nilsson Exp $
+|| $Id: _xpm.c,v 1.25 2003/10/13 16:13:55 grubba Exp $
 */
 
 #include "global.h"
-RCSID("$Id: _xpm.c,v 1.24 2003/09/05 16:21:22 nilsson Exp $");
+RCSID("$Id: _xpm.c,v 1.25 2003/10/13 16:13:55 grubba Exp $");
 
 #include "image_machine.h"
 
@@ -233,7 +233,7 @@ void f__xpm_write_rows( INT32 args )
   rgb_group *dst, *adst;
   INT_TYPE y,x,  bpc;
 
-  get_all_args("_xpm_write_rows",args,"%o%o%d%a%a",
+  get_all_args("_xpm_write_rows",args,"%o%o%i%a%a",
                &img,&alpha,&bpc,&colors,&pixels);
 
   iimg = (struct image *)get_storage( img, image_program );
