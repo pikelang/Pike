@@ -1,6 +1,6 @@
 
 /*
- * $Id: tga.c,v 1.12 2000/03/27 07:42:35 hubbe Exp $
+ * $Id: tga.c,v 1.13 2000/03/27 07:46:00 hubbe Exp $
  *
  *  Targa codec for pike. Based on the tga plugin for gimp.
  *
@@ -77,7 +77,7 @@
 #include "image.h"
 #include "colortable.h"
 
-RCSID("$Id: tga.c,v 1.12 2000/03/27 07:42:35 hubbe Exp $");
+RCSID("$Id: tga.c,v 1.13 2000/03/27 07:46:00 hubbe Exp $");
 
 #ifndef MIN
 # define MIN(X,Y) ((X)<(Y)?(X):(Y))
@@ -695,7 +695,7 @@ static struct image_alpha ReadImage(struct buffer *fp, struct tga_header *hdr)
                if( !really_no_alpha )
 	       {
                  ad->r = ad->g = ad->b = *sd;
-		 add++;
+		 ad++;
 	       }
                sd++;
              }
