@@ -51,6 +51,7 @@ static void f_update(INT32 args)
 {
   sha_update(THIS, (unsigned INT8 *) (sp-args)->u.string->str, (sp-args)->u.string->len);
   pop_n_elems(args);
+  push_object(this_object());
 }
 
 static void f_digest(INT32 args)
@@ -77,7 +78,7 @@ void MOD_INIT(sha)(void)
   add_storage(sizeof(struct sha_ctx));
   add_function("name", f_name, "function(void:string)", OPT_TRY_OPTIMIZE);
   add_function("create", f_create, "function(void|object:void)", 0);
-  add_function("update", f_update, "function(string:void)", 0);
+  add_function("update", f_update, "function(string:object)", 0);
   add_function("digest", f_digest, "function(void:string)", 0);
   end_class(MODULE_PREFIX "sha", 0);
 }

@@ -1,5 +1,5 @@
 /*
- * $Id: md5.c,v 1.3 1997/03/11 03:16:53 nisse Exp $
+ * $Id: md5.c,v 1.4 1997/04/18 20:05:58 nisse Exp $
  *
  * A pike module for getting access to some common cryptos.
  *
@@ -58,6 +58,7 @@ static void f_update(INT32 args)
 {
   md5_update(THIS, (unsigned INT8 *) (sp-args)->u.string->str, (sp-args)->u.string->len);
   pop_n_elems(args);
+  push_object(this_object());
 }
 
 static void f_digest(INT32 args)
@@ -84,7 +85,7 @@ void MOD_INIT(md5)(void)
   add_storage(sizeof(struct md5_ctx));
   add_function("name", f_name, "function(void:string)", 0);
   add_function("create", f_create, "function(void|object:void)", 0);
-  add_function("update", f_update, "function(string:void)", 0);
+  add_function("update", f_update, "function(string:object)", 0);
   add_function("digest", f_digest, "function(void:string)", 0);
   end_class(MODULE_PREFIX "md5", 0);
 }
