@@ -8,7 +8,22 @@ import Stdio;
 #define strerror(X) ("errno="+X)
 #endif
 
-program create_process = __builtin.create_process;
+constant create_process = __builtin.create_process;
+
+class Process
+{
+  inherit __builtin.create_process;
+
+  void create( string|array(string) args, mapping m )
+  {
+    if( stringp( args ) )
+      args = split_quoted_string( args );
+    if( m )
+      ::create( args, m );
+    else
+      ::create( args );
+  }
+}
 
 int exec(string file,string ... foo)
 {
@@ -137,8 +152,8 @@ array(string) split_quoted_string(string s)
   return ret;
 }
 
-object spawn(string s,object|void stdin,object|void stdout,object|void stderr,
-	     function|void cleanup, mixed ... args)
+Process spawn(string s,object|void stdin,object|void stdout,object|void stderr,
+	      function|void cleanup, mixed ... args)
 {
 #if 1
   mapping data=(["env":getenv()]);
@@ -152,7 +167,7 @@ object spawn(string s,object|void stdin,object|void stdout,object|void stderr,
 #endif /* __NT__||__amigaos__ */
 #else
 
-  object pid;
+  Process pid;
 
 #if constant(fork)
   pid=fork();
