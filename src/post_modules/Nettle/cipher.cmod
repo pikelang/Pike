@@ -1,7 +1,7 @@
 /* cipher.cmod -*- c -*- */
 
 #include "global.h"
-RCSID("$Id: cipher.cmod,v 1.14 2003/08/25 23:37:09 nilsson Exp $");
+RCSID("$Id: cipher.cmod,v 1.15 2003/08/26 11:14:07 nilsson Exp $");
 #include "interpret.h"
 #include "svalue.h"
 
@@ -241,7 +241,7 @@ PIKECLASS CipherState
     {
       THIS->ctx = NULL;
       THIS->crypt = NULL;
-      THIS->key_size = NULL;
+      THIS->key_size = 0;
     }
 
   EXIT
