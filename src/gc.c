@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: gc.c,v 1.216 2003/04/02 19:22:43 mast Exp $
+|| $Id: gc.c,v 1.217 2003/04/28 00:34:12 mast Exp $
 */
 
 #include "global.h"
@@ -33,7 +33,7 @@ struct callback *gc_evaluator_callback=0;
 
 #include "block_alloc.h"
 
-RCSID("$Id: gc.c,v 1.216 2003/04/02 19:22:43 mast Exp $");
+RCSID("$Id: gc.c,v 1.217 2003/04/28 00:34:12 mast Exp $");
 
 int gc_enabled = 1;
 
@@ -2584,11 +2584,13 @@ size_t do_gc(void *ignored, int explicit_call)
   Pike_in_gc=GC_PASS_CHECK;
   gc_ext_weak_refs = 0;
   /* First we count internal references */
-  gc_check_all_arrays();
-  gc_check_all_multisets();
-  gc_check_all_mappings();
-  gc_check_all_programs();
-  gc_check_all_objects();
+  ACCEPT_UNFINISHED_TYPE_FIELDS {
+    gc_check_all_arrays();
+    gc_check_all_multisets();
+    gc_check_all_mappings();
+    gc_check_all_programs();
+    gc_check_all_objects();
+  } END_ACCEPT_UNFINISHED_TYPE_FIELDS;
 
 #ifdef PIKE_DEBUG
   if(master_object)
@@ -2624,19 +2626,21 @@ size_t do_gc(void *ignored, int explicit_call)
   /* Next we mark anything with external references. Note that we can
    * follow the same reference several times, e.g. with shared mapping
    * data blocks. */
-  gc_mark_all_arrays();
-  run_queue(&gc_mark_queue);
-  gc_mark_all_multisets();
-  run_queue(&gc_mark_queue);
-  gc_mark_all_mappings();
-  run_queue(&gc_mark_queue);
-  gc_mark_all_programs();
-  run_queue(&gc_mark_queue);
-  gc_mark_all_objects();
-  run_queue(&gc_mark_queue);
+  ACCEPT_UNFINISHED_TYPE_FIELDS {
+    gc_mark_all_arrays();
+    run_queue(&gc_mark_queue);
+    gc_mark_all_multisets();
+    run_queue(&gc_mark_queue);
+    gc_mark_all_mappings();
+    run_queue(&gc_mark_queue);
+    gc_mark_all_programs();
+    run_queue(&gc_mark_queue);
+    gc_mark_all_objects();
+    run_queue(&gc_mark_queue);
 #ifdef PIKE_DEBUG
-  if(gc_debug) gc_mark_all_strings();
+    if(gc_debug) gc_mark_all_strings();
 #endif /* PIKE_DEBUG */
+  } END_ACCEPT_UNFINISHED_TYPE_FIELDS;
 
   GC_VERBOSE_DO(fprintf(stderr,
 			"| mark: %u markers referenced, %u weak references freed,\n"

@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: error.c,v 1.106 2003/04/07 17:28:55 nilsson Exp $
+|| $Id: error.c,v 1.107 2003/04/28 00:34:12 mast Exp $
 */
 
 #define NO_PIKE_SHORTHAND
@@ -23,7 +23,7 @@
 #include "threads.h"
 #include "gc.h"
 
-RCSID("$Id: error.c,v 1.106 2003/04/07 17:28:55 nilsson Exp $");
+RCSID("$Id: error.c,v 1.107 2003/04/28 00:34:12 mast Exp $");
 
 #undef ATTRIBUTE
 #define ATTRIBUTE(X)
@@ -111,6 +111,10 @@ PMOD_EXPORT JMP_BUF *init_recovery(JMP_BUF *r, size_t stack_pop_levels DEBUG_LIN
 
 PMOD_EXPORT DECLSPEC(noreturn) void pike_throw(void) ATTRIBUTE((noreturn))
 {
+#ifdef TRACE_UNFINISHED_TYPE_FIELDS
+  accept_unfinished_type_fields++;
+#endif
+
   while(Pike_interpreter.recoveries && throw_severity > Pike_interpreter.recoveries->severity)
   {
     while(Pike_interpreter.recoveries->onerror)
@@ -156,6 +160,10 @@ PMOD_EXPORT DECLSPEC(noreturn) void pike_throw(void) ATTRIBUTE((noreturn))
 				 Pike_interpreter.recoveries->file);
     debug_malloc_touch(throw_value.u.refs);
   }
+#endif
+
+#ifdef TRACE_UNFINISHED_TYPE_FIELDS
+  accept_unfinished_type_fields--;
 #endif
 
   longjmp(Pike_interpreter.recoveries->recovery,1);
