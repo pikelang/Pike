@@ -1,5 +1,5 @@
 #include "global.h"
-RCSID("$Id: psd.c,v 1.16 2000/11/16 19:16:19 per Exp $");
+RCSID("$Id: psd.c,v 1.17 2000/11/20 15:08:00 per Exp $");
 
 #include "image_machine.h"
 
@@ -244,6 +244,7 @@ static struct buffer read_pstring( struct buffer *data )
     layer->flags = read_uchar( src );
     read_uchar( src );
     layer->extra_data = read_string( src );
+    layer->extra_data.len++;
     if(layer->extra_data.len)
     {
       struct buffer tmp = layer->extra_data;
