@@ -6,7 +6,7 @@
 // Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 // for more information.
 //
-// $Id: master.pike.in,v 1.257 2003/02/27 14:27:35 grubba Exp $
+// $Id: master.pike.in,v 1.258 2003/02/27 14:52:30 marcus Exp $
 
 #pike __REAL_VERSION__
 
@@ -2930,7 +2930,7 @@ class Codec (void|string fname, void|int mkobj)
 }
 
 
-mapping(string:Codec) codecs = set_weak_flag(([]));
+mapping(string:Codec) codecs = set_weak_flag(([]),1);
 Codec get_codec(string|void fname, int|void mkobj)
 {
   string key = fname + "\0" + mkobj;
