@@ -1,4 +1,4 @@
-// $Id: module.pmod,v 1.197 2004/04/06 16:40:02 grubba Exp $
+// $Id: module.pmod,v 1.198 2004/04/06 17:05:38 grubba Exp $
 #pike __REAL_VERSION__
 
 inherit files;
@@ -671,22 +671,13 @@ class File
     }else{
       File _o = [object(File)]o;
       _fd = _o->_fd;
-      if(___read_callback = _o->___read_callback)
-	_fd->_read_callback=__stdio_read_callback;
-
-      if(___write_callback = _o->___write_callback)
-	_fd->_write_callback=__stdio_write_callback;
-
-      if ((___close_callback = _o->___close_callback) && (!___read_callback)) {
-	_fd->_read_callback = __stdio_close_callback;
-      }
-      if(___read_oob_callback = _o->___read_oob_callback)
-	_fd->_read_oob_callback = __stdio_read_oob_callback;
-
-      if(___write_oob_callback = _o->___write_oob_callback)
-	_fd->_write_oob_callback = __stdio_write_oob_callback;
+      ___read_callback = _o->___read_callback;
+      ___write_callback = _o->___write_callback;
+      ___close_callback = _o->___close_callback;
+      ___read_oob_callback = _o->___read_oob_callback;
+      ___write_oob_callback = _o->___write_oob_callback;
       ___id = _o->___id;
-      
+      fix_internal_callbacks();
     }
     return 0;
   }
@@ -706,22 +697,13 @@ class File
     to->_fd = _fd;
 
     // FIXME: This looks broken... Isn't __stdio_*_callback declared static?
-    if(to->___read_callback = ___read_callback)
-      _fd->_read_callback=to->__stdio_read_callback;
-
-    if(to->___write_callback = ___write_callback)
-      _fd->_write_callback=to->__stdio_write_callback;
-
-    if ((to->___close_callback = ___close_callback) && (!___read_callback)) {
-      _fd->_read_callback = to->__stdio_close_callback;
-    }
-    if(to->___read_oob_callback = ___read_oob_callback)
-      _fd->_read_oob_callback=to->__stdio_read_oob_callback;
-
-    if(to->___write_oob_callback = ___write_oob_callback)
-      _fd->_write_oob_callback=to->__stdio_write_oob_callback;
+    to->set_read_callback(query_read_callback());
+    to->set_write_callback(query_write_callback());
+    to->set_close_callback(query_close_callback());
+    to->set_read_oob_callback(query_read_oob_callback());
+    to->set_write_oob_callback(query_write_oob_callback());
     to->_setup_debug( debug_file, debug_mode, debug_bits );
-    to->___id = ___id;
+    to->set_id(query_id());
     return to;
   }
 
