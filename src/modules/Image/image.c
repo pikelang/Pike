@@ -1,4 +1,4 @@
-/* $Id: image.c,v 1.16 1997/03/23 14:31:57 mirar Exp $ */
+/* $Id: image.c,v 1.17 1997/03/24 20:41:06 mirar Exp $ */
 
 #include "global.h"
 
@@ -7,7 +7,7 @@
 
 #include "stralloc.h"
 #include "global.h"
-RCSID("$Id: image.c,v 1.16 1997/03/23 14:31:57 mirar Exp $");
+RCSID("$Id: image.c,v 1.17 1997/03/24 20:41:06 mirar Exp $");
 #include "types.h"
 #include "pike_macros.h"
 #include "object.h"
@@ -739,6 +739,8 @@ void image_circle(INT32 args)
 	       y+circle_cos_mul(i,ry),
 	       x+circle_sin_mul(i+1,rx),
 	       y+circle_cos_mul(i+1,ry));
+   
+   pop_n_elems(args);
    THISOBJ->refs++;
    push_object(THISOBJ);
 }
