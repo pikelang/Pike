@@ -186,13 +186,19 @@ static void internal_parse_typeA(char **s)
     while(isspace(**s)) ++*s;
     if(**s == '(')
     {
+      type_stack_mark();
       ++*s;
+      type_stack_mark();
       internal_parse_type(s);
+      type_stack_reverse();
       if(**s != ':') error("Expecting ':'.\n");
       ++*s;
+      type_stack_mark();
       internal_parse_type(s);
+      type_stack_reverse();
       if(**s != ')') error("Expecting ')'.\n");
       ++*s;
+      type_stack_reverse();
     }else{
       push_type(T_MIXED);
       push_type(T_MIXED);
