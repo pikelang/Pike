@@ -130,11 +130,12 @@ test_eq(lower_case(sprintf("%e",-Math.inf)),"-inf")
 test_eq(lower_case(sprintf("%E",-Math.inf)),"-inf")
 
 dnl test for "nan" problems
-test_eq(lower_case(sprintf("%f",Math.nan)),"nan") 
-test_eq(lower_case(sprintf("%g",Math.nan)),"nan")
-test_eq(lower_case(sprintf("%G",Math.nan)),"nan")
-test_eq(lower_case(sprintf("%e",Math.nan)),"nan")
-test_eq(lower_case(sprintf("%E",Math.nan)),"nan")
+dnl At least the following variants exist: "nan", "Nan", "NaN", "NaNQ".
+test_eq(lower_case(sprintf("%f",Math.nan)[..2]),"nan") 
+test_eq(lower_case(sprintf("%g",Math.nan)[..2]),"nan")
+test_eq(lower_case(sprintf("%G",Math.nan)[..2]),"nan")
+test_eq(lower_case(sprintf("%e",Math.nan)[..2]),"nan")
+test_eq(lower_case(sprintf("%E",Math.nan)[..2]),"nan")
 
 test_eq(sprintf("%s","foobaR"),"foobaR")
 test_eq(sprintf("%s","foo\nbar"),"foo\nbar")
