@@ -5,7 +5,7 @@
 \*/
 /**/
 #include "global.h"
-RCSID("$Id: program.c,v 1.386 2001/12/06 13:56:05 grubba Exp $");
+RCSID("$Id: program.c,v 1.387 2001/12/06 14:10:19 grubba Exp $");
 #include "program.h"
 #include "object.h"
 #include "dynamic_buffer.h"
@@ -4011,11 +4011,8 @@ void program_index_no_free(struct svalue *to, struct program *p,
     if (IDENTIFIER_IS_CONSTANT(id->identifier_flags)) {
       struct program *p2 = PROG_FROM_INT(p, e);
       struct svalue *val = &p2->constants[id->func.offset].sval;
-      if ((val->type != T_PROGRAM) ||
-	  !(val->u.program->flags & PROGRAM_USES_PARENT)) {
-	assign_svalue_no_free(to, val);
-	return;
-      }
+      assign_svalue_no_free(to, val);
+      return;
     }
   }
 
