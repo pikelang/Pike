@@ -8,7 +8,7 @@ inherit _Crypto;
 import Nettle;
 
 //!
-class HashAlgorithm
+class Hash
 {
   inherit HashInfo;
 
@@ -35,7 +35,7 @@ class MD5_Algorithm
 {
   // NOTE: Depends on the order of INIT invocations.
   inherit MD5_Info;
-  inherit HashAlgorithm;
+  inherit Hash;
 
   MD5_State `()() { return MD5_State(); }
 }
@@ -65,7 +65,7 @@ class MD4_Algorithm
 {
   // NOTE: Depends on the order of INIT invocations.
   inherit MD4_Info;
-  inherit HashAlgorithm;
+  inherit Hash;
 
   MD4_State `()() { return MD4_State(); }
 }
@@ -80,7 +80,7 @@ class MD2_Algorithm
 {
   // NOTE: Depends on the order of INIT invocations.
   inherit MD2_Info;
-  inherit HashAlgorithm;
+  inherit Hash;
 
   MD2_State `()() { return MD2_State(); }
 }
@@ -89,29 +89,29 @@ MD2_Algorithm MD2 = MD2_Algorithm();
 
 #endif
 
-class SHA1_Algorithm
+class SHA_Algorithm
 {
   // NOTE: Depends on the order of INIT invocations.
   inherit SHA1_Info;
-  inherit HashAlgorithm;
+  inherit Hash;
 
   SHA1_State `()() { return SHA1_State(); }
 }
 
-SHA1_Algorithm SHA1 = SHA1_Algorithm();
+SHA_Algorithm SHA = SHA_Algorithm();
 
 class SHA256_Algorithm
 {
   // NOTE: Depends on the order of INIT invocations.
   inherit SHA256_Info;
-  inherit HashAlgorithm;
+  inherit Hash;
 
   SHA256_State `()() { return SHA256_State(); }
 }
 
 SHA256_Algorithm SHA256 = SHA256_Algorithm();
 
-class CipherAlgorithm
+class Cipher
 {
   inherit CipherInfo;
 
@@ -130,7 +130,7 @@ class AES_Algorithm
 {
   // NOTE: Depends on the order of INIT invocations.
   inherit AES_Info;
-  inherit CipherAlgorithm;
+  inherit Cipher;
 
   AES_State `()() { return AES_State(); }
 }
@@ -141,7 +141,7 @@ class ARCFOUR_Algorithm
 {
   // NOTE: Depends on the order of INIT invocations.
   inherit ARCFOUR_Info;
-  inherit CipherAlgorithm;
+  inherit Cipher;
 
   ARCFOUR_State `()() { return ARCFOUR_State(); }
 }
@@ -152,7 +152,7 @@ class BLOWFISH_Algorithm
 {
   // NOTE: Depends on the order of INIT invocations.
   inherit BLOWFISH_Info;
-  inherit CipherAlgorithm;
+  inherit Cipher;
 
   BLOWFISH_State `()() { return BLOWFISH_State(); }
 }
@@ -163,18 +163,42 @@ class CAST_Algorithm
 {
   // NOTE: Depends on the order of INIT invocations.
   inherit CAST128_Info;
-  inherit CipherAlgorithm;
+  inherit Cipher;
 
   CAST128_State `()() { return CAST128_State(); }
 }
 
 CAST_Algorithm CAST = CAST_Algorithm();
 
+class DES_Algorithm
+{
+  // NOTE: Depends on the order of INIT invocations.
+  inherit DES_Info;
+  inherit Cipher;
+
+  DES_State `()() { return DES_State(); }
+}
+
+DES_Algorithm DES = DES_Algorithm();
+
+#if 0
+class IDEA_Algorithm
+{
+  // NOTE: Depends on the order of INIT invocations.
+  inherit IDEA_Info;
+  inherit Cipher;
+
+  IDEA_State `()() { return IDEA_State(); }
+}
+
+IDEA_Algorithm IDEA = IDEA_Algorithm();
+#endif
+
 class Serpent_Algorithm
 {
   // NOTE: Depends on the order of INIT invocations.
   inherit Serpent_Info;
-  inherit CipherAlgorithm;
+  inherit Cipher;
 
   Serpent_State `()() { return Serpent_State(); }
 }
@@ -185,7 +209,7 @@ class Twofish_Algorithm
 {
   // NOTE: Depends on the order of INIT invocations.
   inherit Twofish_Info;
-  inherit CipherAlgorithm;
+  inherit Cipher;
 
   Twofish_State `()() { return Twofish_State(); }
 }
