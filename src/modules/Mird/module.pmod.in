@@ -1,16 +1,17 @@
 #pike __REAL_VERSION__
-import ".";
 
 #if constant(@module@.Mird)
+
 
 class Mird
 {
    constant Glue=@module@;
 
+   constant TABLE2ID_TABLE=1;
+   constant ID2TABLE_TABLE=2;
+
    Glue.Mird mird;
 
-#define TABLE2ID_TABLE 1
-#define ID2TABLE_TABLE 2
 #define NEXT_TABLE "_mird_magic_next_free_table"
 
    mapping table2id=([]); 

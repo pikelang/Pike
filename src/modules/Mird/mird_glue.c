@@ -628,12 +628,13 @@ static void pmtr_create(INT32 args)
 {
    struct pmtr_storage *this=THIS;
 
-   struct pmird_storage *pmird;
+   struct pmird_storage *pmird=NULL;
 
    if (args<1)
       SIMPLE_TOO_FEW_ARGS_ERROR("Transaction",1);
-   
-   if ( !(pmird=(struct pmird_storage*)
+
+   if ( !sp[-1].type==T_OBJECT ||
+	!(pmird=(struct pmird_storage*)
 	  get_storage(sp[-args].u.object,mird_program)) )
       SIMPLE_BAD_ARG_ERROR("Transaction",1,"Mird object");
 
