@@ -1,6 +1,7 @@
 #!/usr/local/bin/pike
 
-program p;
+int quiet=0;
+program p; /* program being dumped */
 
 #ifdef PIKE_FAKEROOT
 string fakeroot(string s)
@@ -141,14 +142,6 @@ class Codec
   }
 }
 
-int quiet=0;
-
-constant progress_width = 45;
-
-int progress_bar    = 0;
-int progress_offset = 0;
-int progress_max    = 0;
-
 Stdio.File logfile;
 
 class Handler
@@ -237,6 +230,12 @@ void dumpit(string file)
 #endif
   }
 }
+
+constant progress_width = 45;
+
+int progress_bar    = 0;
+int progress_offset = 0;
+int progress_max    = 0;
 
 void update_progress(string name, int cur, int max)
 {
