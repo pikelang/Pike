@@ -2,11 +2,11 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: object.c,v 1.232 2003/03/30 02:08:08 mast Exp $
+|| $Id: object.c,v 1.233 2003/03/30 16:18:03 mast Exp $
 */
 
 #include "global.h"
-RCSID("$Id: object.c,v 1.232 2003/03/30 02:08:08 mast Exp $");
+RCSID("$Id: object.c,v 1.233 2003/03/30 16:18:03 mast Exp $");
 #include "object.h"
 #include "dynamic_buffer.h"
 #include "interpret.h"
@@ -736,6 +736,7 @@ void destruct(struct object *o)
 
   debug_malloc_touch(o);
   debug_malloc_touch(o->storage);
+  debug_malloc_touch(p);
   o->prog=0;
 
   
@@ -1551,22 +1552,6 @@ PMOD_EXPORT int object_equal_p(struct object *a, struct object *b, struct proces
 
 void cleanup_objects(void)
 {
-  struct object *o, *next;
-
-  for(o=first_object;o;o=next)
-  {
-    add_ref(o);
-    if(o->prog && !(o->prog->flags & PROGRAM_NO_EXPLICIT_DESTRUCT))
-    {
-      debug_malloc_touch(o);
-      debug_malloc_touch(o->storage);
-      call_destroy(o,1);
-      destruct(o);
-    } else {
-      debug_malloc_touch(o);
-    }
-    SET_NEXT_AND_FREE(o,free_object);
-  }
   destruct_objects_to_destruct_cb();
 }
 
