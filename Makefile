@@ -1,5 +1,5 @@
 #
-# $Id: Makefile,v 1.134 2004/03/12 11:20:38 grubba Exp $
+# $Id: Makefile,v 1.135 2004/03/30 19:44:57 nilsson Exp $
 #
 # Meta Makefile
 #
@@ -60,6 +60,8 @@ builddir:
 	done; \
 	if [ x$$NEWBUILD = xYEP ]; then \
 	  cp refdoc/autodoc.xml "$$builddir" || true; \
+	  mkdir "$$builddir"/doc_build || true; \
+	  cp -R refdoc/images "$$builddir"/doc_build/images || true; \
 	fi; \
 	cd "$$builddir"
 
