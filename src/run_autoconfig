@@ -7,10 +7,11 @@ need_to_make_depend=no
 fix()
 {
   if [ -f $1/acconfig.h ]; then
-    # autoheader runs autoconf
     echo "Running autoheader in $1"
     ( cd $1 ; autoheader )
-  elif [ -f $1/configure.in ]; then
+  fi
+
+  if [ -f $1/configure.in ]; then
     echo "Running autoconf in $1"
     ( cd $1 ; autoconf )
   fi
