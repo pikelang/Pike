@@ -1,4 +1,4 @@
-test_true([["$Id: testsuite.in,v 1.377 2001/01/20 13:46:42 hubbe Exp $"]]);
+test_true([["$Id: testsuite.in,v 1.378 2001/01/23 06:08:20 hubbe Exp $"]]);
 
 cond([[all_constants()->_verify_internals]],
 [[
@@ -811,6 +811,13 @@ int a()
      (has_value(testargs/" ", "-q") ||
       has_value(testargs/" ", "-quiet") ) )
     quiet=1;
+
+  switch(getenv("TERM"))
+  {
+    case "dumb":
+    case "emacs":
+      quiet=1;
+  }
 
   int total_tests;
   for(maxdepth=1;maxdepth<9 && !errors;maxdepth++)
@@ -3102,6 +3109,13 @@ ifefun(gc,
        (has_value(testargs/" ", "-q") ||
         has_value(testargs/" ", "-quiet") ) )
       quiet=1;
+
+    switch(getenv("TERM"))
+    {
+      case "dumb":
+      case "emacs":
+        quiet=1;
+    }
 
     int test_failed = 0;
     for (int test = 0; test < sizeof (destruct_order_tests); test++) {
@@ -6213,6 +6227,7 @@ test_true(ADT.Table.table( ({ ({ "a", "b", 42 }), ({ "c", "b", 41 }), ({ "a", "a
 test_equal([[Process.split_quoted_string("test ")]],[[({"test"})]])
 test_equal([[Process.split_quoted_string("'test'")]],[[({"test"})]])
 test_equal([[Process.split_quoted_string("foo 'test' bar")]],[[({"foo","test","bar"})]])
+test_equal([[Process.split_quoted_string("pike -m master.pike 'write(\"test\");'")]],[[({"pike","-m","master.pike","write(\"test\");"})]])
 test_false([[Process.system(RUNPIKE +" -e 'exit(0)'")]])
 test_true([[Process.system(RUNPIKE+" -e 'exit(1)'")]])
 test_any([[object p=Process.create_process(Process.split_quoted_string(RUNPIKE)+({"-e","exit(2)"})); sleep(10); return p->wait()]],2)
@@ -6451,6 +6466,9 @@ void test_dir(string dir, int|void base_size)
       case "oracle.pike":
       case "postgres.pike":
       case "sybase.pike":
+#if !constant(GTK.Window)
+      case "GTKSupport.pmod":
+#endif
         continue; // These modules cannot be tested properly by this test
     }
     string file=combine_path(dir,s);
