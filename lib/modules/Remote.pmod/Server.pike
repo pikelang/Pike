@@ -60,7 +60,7 @@ void create(string host, int p, void|int _max_call_threads)
     if(!port->bind(p, got_connection, host))
       throw(({"Failed to bind to port\n", backtrace()}));
   }
-  else if(!port->bind(p, got_connection, host))
+  else if(!port->bind(p, got_connection))
     throw(({"Failed to bind to port\n", backtrace()}));
 
   DEBUGMSG("listening to " + host + ":" + p + "\n");
