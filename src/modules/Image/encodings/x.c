@@ -1,9 +1,9 @@
-/* $Id: x.c,v 1.14 1998/03/26 03:12:00 hubbe Exp $ */
+/* $Id: x.c,v 1.15 1998/04/18 00:08:41 mirar Exp $ */
 
 /*
 **! module Image
 **! note
-**!	$Id: x.c,v 1.14 1998/03/26 03:12:00 hubbe Exp $
+**!	$Id: x.c,v 1.15 1998/04/18 00:08:41 mirar Exp $
 **! submodule X
 **!
 **!	This submodule handles encoding and decoding of
@@ -29,7 +29,7 @@
 #include <winsock.h>
 #endif
 
-RCSID("$Id: x.c,v 1.14 1998/03/26 03:12:00 hubbe Exp $");
+RCSID("$Id: x.c,v 1.15 1998/04/18 00:08:41 mirar Exp $");
 #include "pike_macros.h"
 #include "object.h"
 #include "constants.h"
@@ -344,8 +344,8 @@ THREADS_ALLOW();
 	    while (x>=3)
 	    {
 	       d[0]^=d[1],d[1]^=d[0],d[0]^=d[1];
-	       d+=3;
-	       x-=3;
+	       d+=2;
+	       x-=2;
 	    }
 	    break;
          case 1:
