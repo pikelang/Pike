@@ -2,7 +2,7 @@
  * This code is (C) Francesco Chemolli, 1997.
  * You may use, modify and redistribute it freely under the terms
  * of the GNU General Public License, version 2.
- * $Id: msqlmod.c,v 1.1.1.1 1997/10/14 21:55:42 grubba Exp $
+ * $Id: msqlmod.c,v 1.2 1997/10/15 00:07:58 grubba Exp $
  *
  * This versione is intended for Pike/0.5 and later.
  * It won't compile under older versions of the Pike interpreter.
@@ -31,9 +31,11 @@
 #include <mapping.h>
 #include <stralloc.h>
 #include <builtin_functions.h>
+#include "operators.h"
+#include "multiset.h"
 #include <module_support.h>
 
-RCSID("$Id: msqlmod.c,v 1.1.1.1 1997/10/14 21:55:42 grubba Exp $");
+RCSID("$Id: msqlmod.c,v 1.2 1997/10/15 00:07:58 grubba Exp $");
 
 #ifdef _REENTRANT
 MUTEX_T pike_msql_mutex;
@@ -261,7 +263,7 @@ static void do_list_dbs (INT32 args)
 		f_aggregate(0); /*empty array if no databases*/
 		return;
 	}
-	while (row=msqlFetchRow(result)) /*it's fast, we're in RAM*/
+	while ((row=msqlFetchRow(result))) /*it's fast, we're in RAM*/
 	{
 		numrows++;
 		push_text(row[0]);
@@ -306,7 +308,7 @@ static void do_list_tables (INT32 args)
 		f_aggregate(0); /*empty array if no databases*/
 		return;
 	}
-	while (row=msqlFetchRow(result))
+	while ((row=msqlFetchRow(result)))
 	{
 		numrows++;
 		push_text(row[0]);
