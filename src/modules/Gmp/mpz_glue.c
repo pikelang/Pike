@@ -2,11 +2,11 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: mpz_glue.c,v 1.125 2003/02/07 08:56:08 mirar Exp $
+|| $Id: mpz_glue.c,v 1.126 2003/02/15 16:26:57 grubba Exp $
 */
 
 #include "global.h"
-RCSID("$Id: mpz_glue.c,v 1.125 2003/02/07 08:56:08 mirar Exp $");
+RCSID("$Id: mpz_glue.c,v 1.126 2003/02/15 16:26:57 grubba Exp $");
 #include "gmp_machine.h"
 #include "module.h"
 
@@ -881,7 +881,7 @@ static void name(INT32 args)						\
   for(e=0; e<args; e++)							\
    if(sp[e-args].type != T_INT || sp[e-args].u.integer<=0 TOOBIGTEST)	\
     get_mpz(sp+e-args, 1);						\
-  res = fast_clone_object(THIS_PROGRAM, 0);				\
+  res = fast_clone_object(THIS_PROGRAM);				\
   mpz_set(OBTOMPZ(res), THIS);						\
   for(e=0;e<args;e++)							\
     if(sp[e-args].type != T_INT)					\
@@ -925,7 +925,7 @@ static void PIKE_CONCAT(name,_rhs)(INT32 args)				\
   for(e=0; e<args; e++)							\
    if(sp[e-args].type != T_INT || sp[e-args].u.integer<=0)		\
     get_mpz(sp+e-args, 1);						\
-  res = fast_clone_object(THIS_PROGRAM, 0);				\
+  res = fast_clone_object(THIS_PROGRAM);				\
   mpz_set(OBTOMPZ(res), THIS);						\
   for(e=0;e<args;e++)							\
     if(sp[e-args].type != T_INT)					\
@@ -996,7 +996,7 @@ static void mpzmod_gcd(INT32 args)
   for(e=0; e<args; e++)
    if(sp[e-args].type != T_INT || sp[e-args].u.integer<=0)
     get_mpz(sp+e-args, 1);
-  res = fast_clone_object(THIS_PROGRAM, 0);
+  res = fast_clone_object(THIS_PROGRAM);
   mpz_set(OBTOMPZ(res), THIS);
   for(e=0;e<args;e++)
     if(sp[e-args].type != T_INT)
@@ -1017,7 +1017,7 @@ static void mpzmod_sub(INT32 args)
     for (e = 0; e<args; e++)
       get_mpz(sp + e - args, 1);
   
-  res = fast_clone_object(THIS_PROGRAM, 0);
+  res = fast_clone_object(THIS_PROGRAM);
   mpz_set(OBTOMPZ(res), THIS);
 
   if(args)
@@ -1042,7 +1042,7 @@ static void mpzmod_rsub(INT32 args)
   
   a=get_mpz(sp-1,1);
   
-  res = fast_clone_object(THIS_PROGRAM, 0);
+  res = fast_clone_object(THIS_PROGRAM);
 
   mpz_sub(OBTOMPZ(res), a, THIS);
   pop_n_elems(args);
@@ -1061,7 +1061,7 @@ static void mpzmod_div(INT32 args)
 	Pike_error("Division by zero.\n");	
   }
   
-  res = fast_clone_object(THIS_PROGRAM, 0);
+  res = fast_clone_object(THIS_PROGRAM);
   mpz_set(OBTOMPZ(res), THIS);
   for(e=0;e<args;e++)	
   {
@@ -1087,7 +1087,7 @@ static void mpzmod_rdiv(INT32 args)
 
   a=get_mpz(sp-1,1);
   
-  res=fast_clone_object(THIS_PROGRAM,0);
+  res=fast_clone_object(THIS_PROGRAM);
   mpz_fdiv_q(OBTOMPZ(res), a, THIS);
   pop_n_elems(args);
   PUSH_REDUCED(res);
@@ -1102,7 +1102,7 @@ static void mpzmod_mod(INT32 args)
     if (!mpz_sgn(get_mpz(sp+e-args, 1)))
       Pike_error("Division by zero.\n");	
   
-  res = fast_clone_object(THIS_PROGRAM, 0);
+  res = fast_clone_object(THIS_PROGRAM);
   mpz_set(OBTOMPZ(res), THIS);
   for(e=0;e<args;e++)	
     mpz_fdiv_r(OBTOMPZ(res), OBTOMPZ(res), OBTOMPZ(sp[e-args].u.object));
@@ -1123,7 +1123,7 @@ static void mpzmod_rmod(INT32 args)
 
   a=get_mpz(sp-1,1);
   
-  res=fast_clone_object(THIS_PROGRAM,0);
+  res=fast_clone_object(THIS_PROGRAM);
   mpz_fdiv_r(OBTOMPZ(res), a, THIS);
   pop_n_elems(args);
   PUSH_REDUCED(res);
@@ -1140,9 +1140,9 @@ static void mpzmod_gcdext(INT32 args)
 
   a = get_mpz(sp-1, 1);
   
-  g = fast_clone_object(THIS_PROGRAM, 0);
-  s = fast_clone_object(THIS_PROGRAM, 0);
-  t = fast_clone_object(THIS_PROGRAM, 0);
+  g = fast_clone_object(THIS_PROGRAM);
+  s = fast_clone_object(THIS_PROGRAM);
+  t = fast_clone_object(THIS_PROGRAM);
 
   mpz_gcdext(OBTOMPZ(g), OBTOMPZ(s), OBTOMPZ(t), THIS, a);
   pop_n_elems(args);
@@ -1160,8 +1160,8 @@ static void mpzmod_gcdext2(INT32 args)
 
   a = get_mpz(sp-args, 1);
   
-  g = fast_clone_object(THIS_PROGRAM, 0);
-  s = fast_clone_object(THIS_PROGRAM, 0);
+  g = fast_clone_object(THIS_PROGRAM);
+  s = fast_clone_object(THIS_PROGRAM);
 
   mpz_gcdext(OBTOMPZ(g), OBTOMPZ(s), NULL, THIS, a);
   pop_n_elems(args);
@@ -1179,7 +1179,7 @@ static void mpzmod_invert(INT32 args)
   modulo = get_mpz(sp-args, 1);
   if (!mpz_sgn(modulo))
     Pike_error("divide by zero\n");
-  res = fast_clone_object(THIS_PROGRAM, 0);
+  res = fast_clone_object(THIS_PROGRAM);
   if (mpz_invert(OBTOMPZ(res), THIS, modulo) == 0)
   {
     free_object(res);
@@ -1196,7 +1196,7 @@ static void name(INT32 args)				\
   struct object *res;					\
   for(e=0; e<args; e++)					\
     get_mpz(sp+e-args, 1);				\
-  res = fast_clone_object(THIS_PROGRAM, 0);		\
+  res = fast_clone_object(THIS_PROGRAM);		\
   mpz_set(OBTOMPZ(res), THIS);				\
   for(e=0;e<args;e++)					\
     fun(OBTOMPZ(res), OBTOMPZ(res),			\
@@ -1213,7 +1213,7 @@ static void mpzmod_compl(INT32 args)
 {
   struct object *o;
   pop_n_elems(args);
-  o=fast_clone_object(THIS_PROGRAM,0);
+  o=fast_clone_object(THIS_PROGRAM);
   mpz_com(OBTOMPZ(o), THIS);
   PUSH_REDUCED(o);
 }
@@ -1225,7 +1225,7 @@ static void name(INT32 args)				\
   MP_INT *arg;						\
   if(!args) Pike_error("Comparison with one argument?\n");	\
   if (!(arg = get_mpz(sp-args, 0)))			\
-    do { default; }while(0);				\
+    default;						\
   else							\
     i=mpz_cmp(THIS, arg) cmp 0;				\
   pop_n_elems(args);					\
@@ -1292,7 +1292,7 @@ static void mpzmod_next_prime(INT32 args)
   }
   pop_n_elems(args);
   
-  o = fast_clone_object(THIS_PROGRAM, 0);
+  o = fast_clone_object(THIS_PROGRAM);
   mpz_next_prime(OBTOMPZ(o), THIS, count, limit);
   
   PUSH_REDUCED(o);
@@ -1312,7 +1312,7 @@ static void mpzmod_sqrt(INT32 args)
   if(mpz_sgn(THIS)<0)
     Pike_error("Gmp.mpz->sqrt() on negative number.\n");
 
-  o=fast_clone_object(THIS_PROGRAM,0);
+  o=fast_clone_object(THIS_PROGRAM);
   mpz_sqrt(OBTOMPZ(o), THIS);
   PUSH_REDUCED(o);
 }
@@ -1325,8 +1325,8 @@ static void mpzmod_sqrtrem(INT32 args)
   if(mpz_sgn(THIS)<0)
     Pike_error("Gmp.mpz->sqrtrem() on negative number.\n");
 
-  root = fast_clone_object(THIS_PROGRAM,0);
-  rem = fast_clone_object(THIS_PROGRAM,0);
+  root = fast_clone_object(THIS_PROGRAM);
+  rem = fast_clone_object(THIS_PROGRAM);
   mpz_sqrtrem(OBTOMPZ(root), OBTOMPZ(rem), THIS);
   PUSH_REDUCED(root); PUSH_REDUCED(rem);
   f_aggregate(2);
@@ -1351,7 +1351,7 @@ static void mpzmod_lsh(INT32 args)
       if(mpz_cmp_si(THIS, -1)<0 || mpz_cmp_si(THIS, 1)>0)
 	 goto too_large;
 #endif
-    res = fast_clone_object(THIS_PROGRAM, 0);
+    res = fast_clone_object(THIS_PROGRAM);
     mpz_mul_2exp(OBTOMPZ(res), THIS, sp[-1].u.integer);
   } else {
 #if SIZEOF_INT_TYPE > SIZEOF_LONG
@@ -1367,11 +1367,11 @@ too_large:
 	  Pike_error("Gmp.mpz->lsh: shift count too large.\n");
        else {
     /* Special case: shifting 0 left any number of bits still yields 0 */
-	  res = fast_clone_object(THIS_PROGRAM, 0);
+	  res = fast_clone_object(THIS_PROGRAM);
 	  mpz_set_si(OBTOMPZ(res), 0);
        }
     } else {
-       res = fast_clone_object(THIS_PROGRAM, 0);
+       res = fast_clone_object(THIS_PROGRAM);
        mpz_mul_2exp(OBTOMPZ(res), THIS, i);
     }
   }
@@ -1395,13 +1395,13 @@ static void mpzmod_rsh(INT32 args)
 /* unsigned long int is the type of the argument to mpz_mul_2exp */
      if (sp[-1].u.integer != (unsigned long int)sp[-1].u.integer)
      {
-	res = fast_clone_object(THIS_PROGRAM, 0);
+	res = fast_clone_object(THIS_PROGRAM);
 	mpz_set_si(OBTOMPZ(res), mpz_sgn(THIS)<0? -1:0);
      }
      else
 #endif
      {
-	res = fast_clone_object(THIS_PROGRAM, 0);
+	res = fast_clone_object(THIS_PROGRAM);
 	mpz_fdiv_q_2exp(OBTOMPZ(res), THIS, sp[-1].u.integer);
      } 
   }
@@ -1412,7 +1412,7 @@ static void mpzmod_rsh(INT32 args)
      if(mpz_sgn(mi)<0)
 	Pike_error("Gmp.mpz->rsh: Shift count must be positive.\n");
      i=mpz_get_si(mi);
-     res = fast_clone_object(THIS_PROGRAM, 0);
+     res = fast_clone_object(THIS_PROGRAM);
      if(mpz_cmp_si(mi, i))
 	mpz_set_si(OBTOMPZ(res), mpz_sgn(THIS)<0? -1:0);
      else
@@ -1438,11 +1438,11 @@ static void mpzmod_rlsh(INT32 args)
       Pike_error("Gmp.mpz->``<<: shift count too large.\n");
     else {
       /* Special case: shifting 0 left any number of bits still yields 0 */
-      res = fast_clone_object(THIS_PROGRAM, 0);
+      res = fast_clone_object(THIS_PROGRAM);
       mpz_set_si(OBTOMPZ(res), 0);
     }
   } else {
-    res = fast_clone_object(THIS_PROGRAM, 0);
+    res = fast_clone_object(THIS_PROGRAM);
     mpz_mul_2exp(OBTOMPZ(res), OBTOMPZ(sp[-1].u.object), i);
   }
   pop_n_elems(args);
@@ -1459,7 +1459,7 @@ static void mpzmod_rrsh(INT32 args)
   if(mpz_sgn(THIS) < 0)
     Pike_error("Gmp.mpz->``>> on negative number.\n");
   i=mpz_get_si(THIS);
-  res = fast_clone_object(THIS_PROGRAM, 0);
+  res = fast_clone_object(THIS_PROGRAM);
   if(mpz_cmp_si(THIS, i))
     mpz_set_si(OBTOMPZ(res), mpz_sgn(OBTOMPZ(sp[-1].u.object))<0? -1:0);
   else
@@ -1479,7 +1479,7 @@ static void mpzmod_powm(INT32 args)
   n = get_mpz(sp - 1, 1);
   if (!mpz_sgn(n))
     Pike_error("Gmp.mpz->powm: Divide by zero\n");
-  res = fast_clone_object(THIS_PROGRAM, 0);
+  res = fast_clone_object(THIS_PROGRAM);
   mpz_powm(OBTOMPZ(res), THIS, get_mpz(sp - 2, 1), n);
   pop_n_elems(args);
   PUSH_REDUCED(res);
@@ -1502,7 +1502,7 @@ static void mpzmod_pow(INT32 args)
       if(mpz_cmp_si(THIS, -1)<0 || mpz_cmp_si(THIS, 1)>0)
 	 goto too_large;
 #endif
-    res = fast_clone_object(THIS_PROGRAM, 0);
+    res = fast_clone_object(THIS_PROGRAM);
     mpz_pow_ui(OBTOMPZ(res), THIS, sp[-1].u.integer);
   } else {
 #if SIZEOF_INT_TYPE > SIZEOF_LONG
@@ -1519,7 +1519,7 @@ too_large:
        else {
     /* Special case: these three integers can be raised to any power
        without overflowing.						 */
-	  res = fast_clone_object(THIS_PROGRAM, 0);
+	  res = fast_clone_object(THIS_PROGRAM);
 	  switch(mpz_get_si(THIS)) {
 	     case 0:
 		mpz_set_si(OBTOMPZ(res), 0);
@@ -1534,7 +1534,7 @@ too_large:
        }
     }
     else {
-      res = fast_clone_object(THIS_PROGRAM, 0);
+      res = fast_clone_object(THIS_PROGRAM);
       mpz_pow_ui(OBTOMPZ(res), THIS, i);
     }
   }
@@ -1589,7 +1589,7 @@ static void gmp_fac(INT32 args)
     SIMPLE_BAD_ARG_ERROR("Gmp.fac", 1, "int");
   if (sp[-1].u.integer < 0)
     SIMPLE_BAD_ARG_ERROR("Gmp.fac", 1, "positive exponent");
-  res = fast_clone_object(mpzmod_program, 0);
+  res = fast_clone_object(mpzmod_program);
   mpz_fac_ui(OBTOMPZ(res), sp[-1].u.integer);
   pop_n_elems(args);
   PUSH_REDUCED(res);
@@ -1602,7 +1602,7 @@ static void mpzmod_random(INT32 args)
   if(mpz_sgn(THIS) <= 0)
     Pike_error("Random on negative number.\n");
 
-  res=fast_clone_object(THIS_PROGRAM,0);
+  res=fast_clone_object(THIS_PROGRAM);
   /* We add two to assure reasonably uniform randomness */
   mpz_random(OBTOMPZ(res), DO_NOT_WARN((int)(mpz_size(THIS) + 2)));
   mpz_fdiv_r(OBTOMPZ(res), OBTOMPZ(res), THIS); /* modulo */
@@ -1726,6 +1726,7 @@ PIKE_MODULE_EXIT
   ADD_FUNCTION("gcdext2",mpzmod_gcdext2,tFunc(tMpz_arg,tArr(tMpz_ret)),0);\
   ADD_FUNCTION("invert", mpzmod_invert,tFunc(tMpz_arg,tMpz_ret),0);	\
 									\
+  ADD_FUNCTION("sgn", mpzmod_sgn, tFunc(tNone,tInt), 0);		\
   ADD_FUNCTION("sqrt", mpzmod_sqrt,tFunc(tNone,tMpz_ret),0);		\
   ADD_FUNCTION("_sqrt", mpzmod_sqrt,tFunc(tNone,tMpz_ret),0);		\
   ADD_FUNCTION("sqrtrem",mpzmod_sqrtrem,tFunc(tNone,tArr(tMpz_ret)),0);\

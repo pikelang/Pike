@@ -2,11 +2,11 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: mpq.cmod,v 1.15 2002/11/28 23:45:42 marcus Exp $
+|| $Id: mpq.cmod,v 1.16 2003/02/15 16:29:22 grubba Exp $
 */
 
 #include "global.h"
-RCSID("$Id: mpq.cmod,v 1.15 2002/11/28 23:45:42 marcus Exp $");
+RCSID("$Id: mpq.cmod,v 1.16 2003/02/15 16:29:22 grubba Exp $");
 #include "gmp_machine.h"
 
 #if defined(HAVE_GMP2_GMP_H) && defined(HAVE_LIBGMP2)
@@ -270,7 +270,7 @@ PIKECLASS mpq
   
   PIKEFUN int get_int()
     {
-      struct object *res = fast_clone_object(mpzmod_program, 0);
+      struct object *res = fast_clone_object(mpzmod_program);
       mpz_tdiv_q(OBTOMPZ(res), mpq_numref(THISMPQ), mpq_denref(THISMPQ));
       /* FIXME */
 #ifdef AUTO_BIGNUM
@@ -487,7 +487,7 @@ PIKECLASS mpq
 	  /* Fall through */
 	case T_INT:
 	case T_FLOAT:
-	  o=fast_clone_object(mpq_program,0);
+	  o=fast_clone_object(mpq_program);
 	  get_new_mpq(OBTOMPQ(o), s);
 	  free_svalue(s);
 	  s->u.object=o;
@@ -504,7 +504,7 @@ PIKECLASS mpq
       struct object *res;
       for(e=0; e<args; e++)
 	get_mpq(sp+e-args, 1);
-      res = fast_clone_object(mpq_program, 0);
+      res = fast_clone_object(mpq_program);
       mpq_set(OBTOMPQ(res), THISMPQ);
       for(e=0;e<args;e++)
 	mpq_add(OBTOMPQ(res), OBTOMPQ(res), OBTOMPQ(sp[e-args].u.object));
@@ -519,7 +519,7 @@ PIKECLASS mpq
       struct object *res;
       for(e=0; e<args; e++)
 	get_mpq(sp+e-args, 1);
-      res = fast_clone_object(mpq_program, 0);
+      res = fast_clone_object(mpq_program);
       mpq_set(OBTOMPQ(res), THISMPQ);
       for(e=0;e<args;e++)
 	mpq_add(OBTOMPQ(res), OBTOMPQ(res), OBTOMPQ(sp[e-args].u.object));
@@ -600,7 +600,7 @@ PIKECLASS mpq
       struct object *res;
       mult_convert_args(args);
       
-      res = fast_clone_object(mpq_program, 0);
+      res = fast_clone_object(mpq_program);
       mpq_set(OBTOMPQ(res), THISMPQ);
       mult_args(OBTOMPQ(res), 0,args);
       
@@ -613,7 +613,7 @@ PIKECLASS mpq
       struct object *res;
       mult_convert_args(args);
       
-      res = fast_clone_object(mpq_program, 0);
+      res = fast_clone_object(mpq_program);
       mpq_set(OBTOMPQ(res), THISMPQ);
       mult_args(OBTOMPQ(res), 0,args);
       
@@ -638,7 +638,7 @@ PIKECLASS mpq
 	for (e = 0; e<args; e++)
 	  get_mpq(sp + e - args, 1);
       
-      res = fast_clone_object(mpq_program, 0);
+      res = fast_clone_object(mpq_program);
       mpq_set(OBTOMPQ(res), THISMPQ);
       
       if(args)
@@ -657,7 +657,7 @@ PIKECLASS mpq
     {
       struct object *res;
       MP_RAT *a=get_mpq(sv,1);
-      res = fast_clone_object(mpq_program, 0);
+      res = fast_clone_object(mpq_program);
       mpq_sub(OBTOMPQ(res), a, THISMPQ);
       RETURN res;
     }
@@ -672,7 +672,7 @@ PIKECLASS mpq
 	if (!mpq_sgn(get_mpq(sp+e-args, 1)))
 	  Pike_error("Division by zero.\n");
       
-      res = fast_clone_object(mpq_program, 0);
+      res = fast_clone_object(mpq_program);
       mpq_set(OBTOMPQ(res), THISMPQ);
       for(e=0;e<args;e++)	
 	mpq_div(OBTOMPQ(res), OBTOMPQ(res), OBTOMPQ(sp[e-args].u.object));
@@ -690,7 +690,7 @@ PIKECLASS mpq
       
       a=get_mpq(sv,1);
       
-      res=fast_clone_object(mpq_program,0);
+      res=fast_clone_object(mpq_program);
       mpq_div(OBTOMPQ(res), a, THISMPQ);
       
       RETURN res;
@@ -708,7 +708,7 @@ PIKECLASS mpq
 	if (!mpq_sgn(get_mpq(sp+e-args, 1)))
 	  Pike_error("Modulo by zero.\n");	
   
-      res = fast_clone_object(mpq_program, 0);
+      res = fast_clone_object(mpq_program);
       
       mpq_init(tmp);
       mpq_set(OBTOMPQ(res), THISMPQ);
@@ -751,7 +751,7 @@ PIKECLASS mpq
       
       a=get_mpq(sp-1,1);
       
-      res=fast_clone_object(mpq_program,0);
+      res=fast_clone_object(mpq_program);
       
       mpz_mul(mpq_numref(OBTOMPQ(res)), mpq_numref(a), mpq_denref(THISMPQ));
       
@@ -776,7 +776,7 @@ PIKECLASS mpq
       struct object *res;
       if (!mpq_sgn(THISMPQ))
 	Pike_error("divide by zero in mpq->invert\n");
-      res = fast_clone_object(mpq_program, 0);
+      res = fast_clone_object(mpq_program);
       mpq_inv(OBTOMPQ(res), THISMPQ);
       RETURN res;
     }
@@ -786,7 +786,7 @@ PIKECLASS mpq
     flags ID_STATIC;
     {
       struct object *o;
-      o=fast_clone_object(mpq_program,0);
+      o=fast_clone_object(mpq_program);
       mpq_set_si(OBTOMPQ(o), -1, 1);
       mpq_sub(OBTOMPQ(o),OBTOMPQ(o), THISMPQ);
       
