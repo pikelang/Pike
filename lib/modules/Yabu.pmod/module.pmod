@@ -4,7 +4,7 @@
  * associated with a unique key.
  */
 
-constant cvs_id = "$Id: module.pmod,v 1.21 2000/06/29 12:13:33 noring Exp $";
+constant cvs_id = "$Id: module.pmod,v 1.22 2000/07/04 14:48:41 mast Exp $";
 
 #define ERR(msg) throw(({ "(Yabu) "+msg+"\n", backtrace() }))
 #define IO_ERR(msg) throw(({ sprintf("(Yabu) %s, %s (%d)\n",msg,strerror(errno()),errno()),backtrace() }))
@@ -666,7 +666,7 @@ class Table {
     foreach(almost_free - working, string k)
       db->free(k);
 
-    dirty = sizeof(working);
+    dirty = 0;
     UNLOCK();
   }
 
@@ -923,7 +923,6 @@ class Table {
     sync();
     destruct(index);
     destruct(db);
-    destruct(lock_file);
     remove_call_out(sync_schedule);
   }
 
