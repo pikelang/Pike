@@ -1,5 +1,5 @@
 /*
- * $Id: odbc_result.c,v 1.1 1997/03/10 19:01:52 grubba Exp $
+ * $Id: odbc_result.c,v 1.2 1997/03/12 00:38:18 grubba Exp $
  *
  * Pike  interface to ODBC compliant databases
  *
@@ -17,7 +17,7 @@
 #ifdef HAVE_ODBC
 
 #include "global.h"
-RCSID("$Id: odbc_result.c,v 1.1 1997/03/10 19:01:52 grubba Exp $");
+RCSID("$Id: odbc_result.c,v 1.2 1997/03/12 00:38:18 grubba Exp $");
 
 #include "interpret.h"
 #include "object.h"
@@ -367,7 +367,17 @@ static void f_fetch_row(INT32 args)
   }
 }
  
+/* int eof() */
+static void f_eof(INT32 args)
+{
+  error("odbc->eof(): Not implemented yet!\n");
+}
 
+/* void seek() */
+static void f_seek(INT32 args)
+{
+  error("odbc->seek(): Not implemented yet!\n");
+}
  
 /*
  * Module linkage
