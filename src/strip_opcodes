@@ -1,16 +1,65 @@
 #!/bin/sh
 
-# Stupid IRIX cpp turns --- into -- -
-sed -e 's/^# \([0-9]* "[^"]*"\).*$/#line \1/;s/^# \([0-9]*\).*$/#line \1/;t
+sed -e '
+  # First convert #line directives.
+  s/^# \([0-9]* "[^"]*"\).*$/#line \1/
+  s/^# \([0-9]*\).*$/#line \1/
+  t
+
+  # Output all complete OPCODE[0-9].* --- expressions
+  # accumulated so far.
 : loop
-/OPCODE[0-9]/!b keepnl
-s/ -- \{0,1\}- / ½ /g;t loop
-h;s/^[^½]*\(OPCODE[0-9][^½]*\) ½.*$/\1¤/p;t more
-N;b loop
+  /OPCODE[0-9]/!b keepnl
+
+  # Stupid IRIX cpp turns --- into -- -
+  # SysV sed does not support multi-character *-expressions,
+  # so we use % instead.
+  s/ -- \{0,1\}- / ½ /g
+
+  # Make sure the substitute flag is cleared.
+  t loop
+
+  h
+  s/^[^½]*\(OPCODE[0-9][^½]*\) ½.*$/\1¤/p
+  t more
+  N
+  b loop
+
+  # Remove the match from the hold space,
+  # and check for more.
 : more
-g;s/^[^½]*OPCODE[0-9][^½]* ½\(.*\)$/\1/;b loop
+  g
+  s/^[^½]*OPCODE[0-9][^½]* ½\(.*\)$/\1/
+  b loop
+
+  # Keep only the newlines.
 : keepnl
-s/.//g' | sed -e ': loop
-/¤$/{N;s/¤\n//;b loop
-};/^[ 	]*$/{H;d;};/^#line/{h;d;};x;s/^\
-//;p;s/.//g;x'
+  s/.//g' | sed -e '
+  # Remove newlines that were inserted by p.
+: loop
+  /¤$/{
+    N
+    s/¤\n//
+    b loop
+  }
+  # Put empty lines in hold, and start the next cycle.
+  /^[ 	]*$/{
+    H
+    d
+  }
+  # Clear hold, and put #line directives there,
+  # and start the next cycle.
+  /^#line/{
+    h
+    d
+  }
+
+  # Print hold except for a possible initial newline.
+  x
+  s/^\
+//
+  p
+
+  # Clear hold.
+  s/.//g
+  x'
