@@ -1,0 +1,162 @@
+#module Image.image
+{
+//-----------------------------------------------------------------------
+#chapter testuite
+
+#test Image.PNM.decode, ==
+   object img1=Image.PNM.decode("P1\n5 5\n0 1 1 1 1\n1 0 1 1 1\n1 1 0 1 1\n1 1 1 0 1\n1 1 1 1 0");
+   object img2=Image.PNM.decode("P4\n5 5\nx¸Øèð");
+   if (img1!=img2) fail("differ\n");
+   ok();
+
+#test MIME.decode_base64
+   if ("hejsan, hoppsan" != MIME.decode_base64("aGVqc2FuLCBob3Bwc2Fu\n"))
+      fail("differ");
+   ok();
+
+#test Image.GIF.decode, MIME.decode_base64, ==
+   object img1=Image.GIF.decode(MIME.decode_base64("R0lGODlhBQAFAIAAAAAAAP///ywAAAAABQAFAAACCAxwEWrY8BwoADs="));
+   object img2=Image.PNM.decode("P4\n5 5\nx\00èØèð");
+   if (img1!=img2) fail("differ\n");
+   ok();
+
+//-----------------------------------------------------------------------
+#chapter create
+
+#test Image.image() no image
+   object img=Image.image();
+   if (!img ||
+       img->xsize() ||
+       img->ysize()) fail("have size");
+   ok();
+
+#test Image.image() image
+   object img=Image.image(100,100);
+   if (!img ||
+       img->xsize()!=100 ||
+       img->ysize()!=100) fail("wrong size");
+   if (img!=0) fail("wrong color");
+   ok();
+
+#test Image.image() too big
+   int x=1; while ((x<<1)>0) x=(x<<1)+1;
+   if (!catch { Image.image(x,2); } ||
+       !catch { Image.image(x/32768,32769); }) fail("permitted");
+   ok();
+
+#test Image.image() color
+   object img=Image.image(1000,1000,17,42,96);
+   if (!img ||
+       img->xsize()!=1000 ||
+       img->ysize()!=1000) fail("wrong size");
+   if (img!=({17,42,96})) fail("wrong color");
+   ok();
+
+//-----------------------------------------------------------------------
+#chapter testsuite II
+
+#test Image.image->test(), ==
+   object img=Image.image(10,10);
+   img=img->test();
+   if (equal(img->max(),({0,0,0}))) fail("failed");
+   img->setpixel(2,2,0,255,0);
+   if (img==img->invert()) fail("failed");
+   ok();
+   
+//-----------------------------------------------------------------------
+#chapter copy
+
+#test Image.image->copy
+   object img=Image.image(100,100)->test();
+   if (img!=img->copy()) fail("differ");
+   if (img->copy(25,25,75,75)!=img->copy(25,25,75,75)) fail("subregion differ");
+   if (img->copy(25,25,75,75)==img) fail("subregion doesn't differ");
+   img->setpixel(2,2,0,255,0);
+   if (img->copy()==img->invert()->copy()) fail("copy of other doesn't differ");
+   ok();
+
+#test Image.image->clear
+   object img=Image.image(100,100)->test();
+   if (img->clear()==img) fail("doesn't differ");
+   if (img->clear(0,0,0)!=0) fail("wrong color (black)");
+   if (img->clear(1,255,0)!=({1,255,0})) fail("wrong color (color)");
+   ok();
+
+#test Image.image->clone
+   object img=Image.image(100,100)->test();
+   if (img!=img->clone()) fail("differ");
+   img->setpixel(2,2,0,255,0);
+   if (img->clone()==img->invert()->clone()) fail("clone of other doesn't differ");
+   ok();
+
+//-----------------------------------------------------------------------
+#chapter testuite III
+
+#test equal, copy_value
+   array a=({0,0,0});
+   array b=copy_value(a); b[0]=17; b[1]=42; b[2]=128;
+   if (!equal( ({0,0,0}), a)) fail("differ (1)");
+   if (!equal( ({17,42,128}), b)) fail("differ (2)");
+   ok();
+
+#test Image.image->max()
+   if (!equal( ({0,0,0}), 
+	       Image.image(10,10,0,0,0)->max() ))
+      fail("erranous (1)");
+   if (!equal( ({17,42,36}), 
+	       Image.image(10,10,17,42,36)->max() ))
+      fail("erranous (2)");
+   if (!equal( ({17,42,36}), 
+	       Image.image(10,10,0,0,0)
+	       ->setpixel(5,5,17,42,36)->max() ))
+      fail("erranous (3)");
+   if (!equal( ({17,42,36}), 
+	       Image.image(10,10,0,0,0)
+	       ->setpixel(2,2,1,2,3)
+	       ->setpixel(3,3,17,42,36)
+	       ->setpixel(4,4,3,2,1)
+	       ->max()))
+      fail("erranous (4)");
+   ok();
+
+//-----------------------------------------------------------------------
+#chapter plain
+
+#test setpixel, getpixel
+   object img=Image.image(10,10,255,0,0);
+   if (!equal(img->getpixel(5,5),({255,0,0}))) fail("getpixel erranous");
+   img->setpixel(5,5,1,2,3);
+   if (!equal(img->getpixel(5,5),({1,2,3}))) fail("failed");
+   ok();
+
+#test setpixel alpha
+   object img=Image.image(10,10,255,0,0);
+   img->setpixel(5,5,0,255,0,127);
+   if (!equal(img->getpixel(5,5),({127,128,0}))) fail("failed");
+   ok();
+
+#test Image.image->line structure
+   object img=Image.image(100,100,0,0,0);
+   foreach (({40,50,60}),int z)
+   { 
+      img->line(50-z,0,50,50,255,255,255);
+      img->line(50-z,100,50,50,255,255,255);
+      img->line(0,50-z,50,50,255,255,255);
+      img->line(100,50-z,50,50,255,255,255);
+   }
+   object img1=Image.GIF.decode(MIME.decode_base64(
+      "R0lGODlhZABkAIAAAAAAAP///ywAAAAAZABkAAAC/wxwCGaq/l6UktZ6Mdat9sdsmziOpWl6WPMp\r\nYZrCcTxLLfLdi07Tve9brFQeXjB4RIKGQ5tQqYRGccTN7TWdZlPXWNeo1Wq7zqoLLBYjyWZXUa1W\r\ns526Kzoeby5H2L37npfn5kcUEGDY1icoqEe10qL4dMbIaFXW9pcIWBkFacknOTjJWenZaHWoSSpo\r\narO50yr0uvrpeBmkmDNLe1s3FhqayquUc0osLLozjEuIs4va+8xZfJt3SO28bIKdzNjXgaxdNTcd\r\nDi4dB+6qbT4qbhu73J79rt7Mjnwubt9dn99Pip+yd48GhVvF4h5BEPYOlrIFbOEbRw6tQUTH6xpF\r\njP9N9En0ISyhN3gfj1FkRbKkSVkcqQhUiSthRWYsWpZMxQDdC5swcUaksROmtxC7ggodKovmwKMP\r\nNQKNxJTVtTs+o9KaygWq1aEzYfHcuq2iU7D4IHUlG9DcV7RP3bElqPUtO7k36X5ca9fL2byl9vKV\r\nivfvo8CCXREu7CwuYjFEFwdM6rjpz8i/FFOO+eTwX5Ga+XK+nO4kaMaiR3cSOdn0NlGd6fJrLfe1\r\namKsZ2O+aBsoIdhoufEm6zu3l93Cwzb7bTUe8qjKi9eCmFp4c+fr7i0XSi767OzXe2LqrpI7dbfQ\r\noUs3pn20L0y511c7zx488+fjFaaHz74+D/lH99cJR2+efqD890ABADs="));
+   if (img!=img1) fail("differ");
+   ok();
+
+#test Image.image->line color 1
+   object img=Image.image(100,100,0,0,0);
+   img->line(40,0,0,40);
+   if (!equal( ({0,0,0}), img->max() )) fail("differ (reset)");
+   img->line(10,10,20,20,128,13,42);
+   if (!equal( ({128,13,42}), img->max() )) fail("differ (direct)");
+   img->setcolor(200,19,99);
+   img->line(30,20,20,30);
+   if (!equal( ({200,19,99}), img->max() )) fail("differ (setcolor)");
+   ok();
+
