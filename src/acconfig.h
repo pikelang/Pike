@@ -1,5 +1,5 @@
 /*
- * $Id: acconfig.h,v 1.24 1998/05/24 22:40:21 marcus Exp $
+ * $Id: acconfig.h,v 1.25 1998/05/29 20:41:39 grubba Exp $
  */
 #ifndef MACHINE_H
 #define MACHINE_H
@@ -109,6 +109,9 @@
 #undef FLOAT_IS_IEEE_LITTLE
 #undef DOUBLE_IS_IEEE_BIG
 #undef DOUBLE_IS_IEEE_LITTLE
+
+/* Define this if strtol exists, and doesn't cut at 0x7fffffff */
+#undef HAVE_WORKING_STRTOL
 
 /* The rest of this file is just to eliminate warnings */
 
