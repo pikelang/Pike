@@ -4151,6 +4151,127 @@ of just <tt>write</tt> because they are the same function.
 </anchor>
 </anchor>
 
+<module name="Terminfo">
+<section title="Stdio.Terminfo">
+<function name=Stdio.Terminfo.getFallbackTerm title="get fallback terminal">
+<man_syntax>
+object(Stdio.Terminfo.Terminfo) getFallbackTerm(string <I>term</I>);
+</man_syntax>
+<man_description>
+Returns an object describing the fallback terminal for the
+terminal <I>term</I>. This is usually equvivalent to
+<tt>Stdio.Terminfo.getTerm("dumb")</tt>.
+</man_description>
+<man_see>
+Stdio.Terminfo.getTerm
+</man_see>
+</function>
+
+<hr noshade size=1>
+
+<function name=Stdio.Terminfo.getTerm title="get terminal description">
+<man_syntax>
+object(Stdio.Terminfo.Terminfo)|object(Stdio.Terminfo.Termcap) getTerm();<br>
+or<br>
+object(Stdio.Terminfo.Terminfo)|object(Stdio.Terminfo.Termcap) getTerm(string <I>term</I>);
+</man_syntax>
+<man_description>
+Returns an object describing the terminal <I>term</I>. If <I>term</I>
+is not specified, it will default to <tt>getenv("TERM")</tt> or if
+that fails to <tt>"dumb"</tt>.
+<p>
+Lookup of terminal information will first be done in the systems
+terminfo database, and if that fails in the termcap database. If
+neither database exists, a hardcoded entry for <tt>"dumb"</tt> will be used.
+</man_description>
+<man_see>
+Stdio.Terminfo.getTerminfo, Stdio.Terminfo.getTermcap, Stdio.getFallbackTerm
+</man_see>
+</function>
+
+<hr noshade size=1>
+
+<function name=Stdio.Terminfo.getTermcap title="get termcap description">
+<man_syntax>
+object(Stdio.Terminfo.Termcap) getTermcap(string <I>term</I>);<br>
+</man_syntax>
+<man_description>
+Return the terminal description of <I>term</I> from the systems
+termcap database. Returns 0 if not found.
+</man_description>
+<man_see>
+Stdio.Terminfo.getTerm, Stdio.Terminfo.getTerminfo
+</man_see>
+</function>
+
+<hr noshade size=1>
+
+<function name=Stdio.Terminfo.getTerminfo title="get terminfo description">
+<man_syntax>
+object(Stdio.Terminfo.Terminfo) getTerminfo(string <I>term</I>);<br>
+</man_syntax>
+<man_description>
+Return the terminal description of <I>term</I> from the systems
+terminfo database. Returns 0 if not found.
+</man_description>
+<man_see>
+Stdio.Terminfo.getTerm, Stdio.Terminfo.getTermcap
+</man_see>
+</function>
+
+<hr noshade size=1>
+
+<!-- FIXME: More documentation here. -->
+</section>
+</module>
+
+<class name="Readline">
+<section title="Stdio.Readline">
+
+<hr noshade size=1>
+<method name=create title="init readline">
+<man_syntax>
+object(Stdio.Readline) Stdio.Readline();<br>
+or<br>
+object(Stdio.Readline) Stdio.Readline(object <I>infd</I>);<br>
+or<br>
+object(Stdio.Readline) Stdio.Readline(object <I>infd</I>,<br keep_ws>
+<dl><dt><dd>
+                                      object|string <I>interm</I>);<br>
+</dl><br>
+or<br>
+object(Stdio.Readline) Stdio.Readline(object <I>infd</I>,<br keep_ws>
+<dl><dt><dd>
+                                      object|string <I>interm</I>,<br keep_ws>
+                                      object <I>outfd</I>);<br>
+</dl><br>
+or<br>
+object(Stdio.Readline) Stdio.Readline(object <I>infd</I>,<br keep_ws>
+<dl><dt><dd>
+                                      object|string <I>interm</I>,<br keep_ws>
+                                      object <I>outfd</I>,<br keep_ws>
+                                      object|string <I>outterm</I>);<br>
+</dl>
+</man_syntax>
+<man_description>
+Creates a Readline object, that takes input from <I>infd</I>, and has output
+on <I>outfd</I>.
+<p>
+<I>infd</I> defaults to <tt>Stdio.stdout</tt>.
+<p>
+<I>interm</I> defaults to <tt>Stdio.Terminfo.getTerm()</tt>.
+<p>
+<I>outfd</I> defaults to <I>infd</I>, unless <I>infd</I> is 0, in
+which case <I>outfd</I> defaults to <tt>Stdio.stdout</tt>.
+<p>
+<I>outterm</I> defaults to <I>interm</I>.
+</man_description>
+</method>
+
+<!-- FIXME: More documentation needed. -->
+</section>
+</class>
+
 <section title="Other Stdio functions">
 The Stdio module also contains a collection of high level IO functions
 to make it easy to write short and readable Pike programs. Most of these
@@ -4232,17 +4353,19 @@ line editing at his/her disposal when entering the line.
 <function name=sendfile title="send contents from one file to another">
 <man_syntax>
 object sendfile(array(string) <I>headers</I>,<br>
-<dl><dt><dd>object <I>from</I>, int <I>offset</I>, int <I>len</I>,<br>
-array(string) <I>trailers</I>,<br>
-object <I>to</I>);<br>
+<dl><dt><dd>
+                object <I>from</I>, int <I>offset</I>, int <I>len</I>,<br keep_ws>
+                array(string) <I>trailers</I>,<br keep_ws>
+                object <I>to</I>);<br>
 </dl><br>
 or<br>
 object sendfile(array(string) <I>headers</I>,<br>
-<dl><dt><dd>object <I>from</I>, int <I>offset</I>, int <I>len</I>,<br>
-array(string) <I>trailers</I>,<br>
-object <I>to</I>,<br>
-function(int, mixed ...:void) <I>callback</I>,<br>
-mixed ... <I>args</I>);<br>
+<dl><dt><dd>
+                object <I>from</I>, int <I>offset</I>, int <I>len</I>,<br keep_ws>
+                array(string) <I>trailers</I>,<br keep_ws>
+                object <I>to</I>,<br keep_ws>
+                function(int, mixed ...:void) <I>callback</I>,<br keep_ws>
+                mixed ... <I>args</I>);<br>
 </dl>
 </man_syntax>
 <man_description>
