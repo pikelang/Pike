@@ -36,6 +36,17 @@ static struct callback *free_callbacks =0;
 #ifdef DEBUG
 extern int d_flag;
 
+static int is_in_free_list(struct callback * c)
+{
+  struct callback *foo;
+  int e;
+  for(foo=free_callbacks;foo;foo=foo->next)
+    if(foo==c)
+      return 1;
+
+  return 0;
+}
+
 static void check_callback_chain(struct callback_list *lst)
 {
   int e,len=0;
@@ -67,12 +78,16 @@ static void check_callback_chain(struct callback_list *lst)
 	
 	if(tmp->callbacks[e].free_func == (callback_func)remove_callback)
 	{
-	  for(foo=free_callbacks;foo;foo=foo->next)
-	    if(foo==tmp->callbacks+e)
-	      break;
-	  
-	  if(!foo)
+	  if(!is_in_free_list(tmp->callbacks+e))
 	    fatal("Lost track of a struct callback!\n");
+
+	  if(tmp->callbacks[e].next &&
+	     !is_in_free_list(tmp->callbacks[e].next))
+	    fatal("Free callback has next in Z'ha'dum!\n");
+
+	}else{
+	  if(is_in_free_list(tmp->callbacks[e].next))
+	    fatal("Non-free callback has next in free list!\n");
 	}
 	
 	if(tmp->callbacks[e].next)
@@ -93,7 +108,7 @@ static void check_callback_chain(struct callback_list *lst)
 	    fatal("Callback next pointer pointing to Z'ha'dum\n");
 	}
       }
-  }
+    }
   }
 }
 #else
@@ -150,6 +165,16 @@ void call_callback(struct callback_list *lst, void *arg)
     {
       if(l->free_func)
 	l->free_func(l, l->arg, 0);
+
+      while(*ptr != l)
+      {
+	ptr=&(ptr[0]->next);
+	if(!*ptr)
+	{
+	  /* We totally failed to find where we are in the linked list.. */
+	  fatal("Callback linked list breakdown.\n");
+	}
+      }
 
       *ptr=l->next;
       l->next=free_callbacks;

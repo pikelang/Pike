@@ -295,10 +295,10 @@ void do_gc()
 	    (long)(tmp2-num_objects),(long)tmp2);
 #endif
 
-#ifndef ALWAYS_GC
+#ifdef ALWAYS_GC
   ADD_GC_CALLBACK();
 #else
-  if(d_flag > 3) ADD_GC_CALLBCK();
+  if(d_flag > 3) ADD_GC_CALLBACK();
 #endif
   in_gc=0;
 }

@@ -1,3 +1,12 @@
+Thu Dec  5 13:34:40 1996  Fredrik Hubinette  <hubbe@cytocin.hubbe.net>
+
+	* callback.c, gc.c: fixed garbage collection calls
+
+Wed Dec  4 20:42:05 1996  Fredrik Hubinette  <hubbe@cytocin.hubbe.net>
+
+	* new functions: _next and _prev
+	* zero_type now returns 2 for destructed object/functions
+
 Thu Dec  5 04:18:41 1996  Per Hedbor  <per@puck.infovav.se>
 
 	* interpret.c (lvalue_to_svalue_no_free): Added special error
