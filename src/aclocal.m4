@@ -1,4 +1,4 @@
-dnl $Id: aclocal.m4,v 1.78 2003/09/12 13:51:19 marcus Exp $
+dnl $Id: aclocal.m4,v 1.79 2003/09/14 14:23:35 nilsson Exp $
 
 dnl Some compatibility with Autoconf 2.50+. Not complete.
 dnl newer Autoconf calls substr m4_substr
@@ -329,7 +329,7 @@ define(PIKE_FEATURE_OK,[
 
 define([AC_LOW_MODULE_INIT],
 [
-  # $Id: aclocal.m4,v 1.78 2003/09/12 13:51:19 marcus Exp $
+  # $Id: aclocal.m4,v 1.79 2003/09/14 14:23:35 nilsson Exp $
 
   MY_AC_PROG_CC
 
@@ -479,7 +479,7 @@ pushdef([AC_OUTPUT],
     if_autoconf(2,50,,[
       # Kludge for autoconf 2.13 and earlier prefixing all substitution
       # source files with $ac_given_source_dir/ (aka $srcdir/).
-      make_variables_in="`cd $srcdir;pwd|sed -e 's@[[^/]]*@@g;s@/@../@g'`$make_variables_in"
+      make_variables_in="`cd $srcdir;pwd|sed -e 's@[[[^/]]]*@@g;s@/@../@g'`$make_variables_in"
     ])
   else
 
