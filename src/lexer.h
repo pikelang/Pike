@@ -1,5 +1,5 @@
 /*
- * $Id: lexer.h,v 1.2 1999/02/20 19:53:00 grubba Exp $
+ * $Id: lexer.h,v 1.3 1999/02/20 20:06:22 grubba Exp $
  *
  * Lexical analyzer template.
  * Based on lex.c 1.62
@@ -710,8 +710,8 @@ static int low_yylex(YYSTYPE *yylval)
 	    if(ISWORD("object")) return F_OBJECT_ID;
 	  break;
 	  case TWO_CHAR('p','r'):
-	    if(ISWORD("predef")) return F_PREDEF;
 	    if(ISWORD("program")) return F_PROGRAM_ID;
+	    if(ISWORD("predef")) return F_PREDEF;
 	    if(ISWORD("private")) return F_PRIVATE;
 	    if(ISWORD("protected")) return F_PROTECTED;
 	    break;
@@ -726,8 +726,8 @@ static int low_yylex(YYSTYPE *yylval)
 	    if(ISWORD("sscanf")) return F_SSCANF;
 	  break;
 	  case TWO_CHAR('s','t'):
-	    if(ISWORD("static")) return F_STATIC;
 	    if(ISWORD("string")) return F_STRING_ID;
+	    if(ISWORD("static")) return F_STATIC;
 	  break;
 	  case TWO_CHAR('s','w'):
 	    if(ISWORD("switch")) return F_SWITCH;
