@@ -25,7 +25,7 @@ mapping(string:string|array(string))
    {
       string i,v;
       if (sscanf(s,"%s=%s",i,v)<2) v=i=http_decode_string(s);
-      else i=http_decode_string(i),v=http_decode_string(v);
+      else i=http_decode_string(replace(i,"+"," ")),v=http_decode_string(replace(v,"+"," "));
       if (dest[i]) 
 	 if (arrayp(dest[i])) dest[i]+=({v});
 	 else dest[i]=({dest[i],v});
