@@ -1,4 +1,4 @@
-/* $Id: master.pike.in,v 1.32 1998/10/16 17:32:11 grubba Exp $
+/* $Id: master.pike.in,v 1.33 1998/10/16 18:38:32 grubba Exp $
  * 
  * Master-file for Pike.
  *
@@ -469,6 +469,46 @@ class dirnode
     }
     return cache[index]=ind(index);
   }
+
+  int _cache_full;
+  void fill_cache()
+  {
+    if (_cache_full) {
+      return;
+    }
+
+    if (module) {
+      foreach(indices(module), string index) {
+	cache[index] = module[index];
+      }
+    }
+
+    foreach(get_dir(dirname), string fname) {
+      catch {
+	if (((< ".pike", ".pmod" >)[fname[sizeof(fname)-5..]]) &&
+	    !zero_type(`[](fname[..sizeof(fname)-6]))) {
+	  continue;
+	}
+      };
+      catch {
+	if ((fname[sizeof(fname)-3..] == ".so") &&
+	    !zero_type(`[](fname[..sizeof(fname)-4]))) {
+	  continue;
+	}
+      };
+    }
+    _cache_full = 1;
+  }
+  array(string) _indices()
+  {
+    fill_cache();
+    return indices(cache);
+  }
+  array(mixed) _values()
+  {
+    fill_cache();
+    return values(cache);
+  }
 };
 
 class joinnode
@@ -515,6 +555,31 @@ class joinnode
       cache[index] = ret;
     }
     return ret;
+  }
+  int _cache_full;
+  void fill_cache()
+  {
+    if (_cache_full) {
+      return;
+    }
+    foreach(joined_modules, object|mapping o) {
+      foreach(indices(o), string index) {
+	if (zero_type(cache[index])) {
+	  `[](index);
+	}
+      }
+    }
+    _cache_full = 1;
+  }
+  array(string) _indices()
+  {
+    fill_cache();
+    return indices(cache);
+  }
+  array(mixed) _values()
+  {
+    fill_cache();
+    return values(cache);
   }
 };
 
