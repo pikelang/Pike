@@ -1,6 +1,6 @@
 /* -*- Pike -*-
  *	
- * $Id: master.pike.in,v 1.126 2000/08/27 18:29:26 mirar Exp $
+ * $Id: master.pike.in,v 1.127 2000/08/29 14:46:36 mast Exp $
  * 
  * Master-file for Pike.
  *
@@ -93,9 +93,6 @@ string basename(string x)
 
 #define UNDEFINED (([])[0])
 #define error(X) throw( ({ (X), backtrace()/*[0..sizeof(backtrace())-2]*/ }) )
-
-string describe_backtrace(array trace);
-object low_cast_to_object(string oname, string current_file);
 
 array(string) pike_include_path=({});
 array(string) pike_module_path=({});
@@ -1399,141 +1396,186 @@ string read_include(string f)
   return master_read_file(f);
 }
 
-int clipped=0;
-int canclip=0;
-
-// FIXME
-string stupid_describe(mixed m, int maxlen)
+class Describer
 {
-  string typ;
-  if (catch (typ=sprintf("%t",m)))
-    typ = "object";		// Object with a broken _sprintf(), probably.
-  switch(typ)
+  int clipped=0;
+  int canclip=0;
+  mapping(mixed:int|string) ident = ([]);
+  int identcount = 0;
+
+  void identify_parts (mixed stuff)
   {
-    case "int":
-    case "float":
-      return (string)m;
-      
-    case "string":
-      canclip++;
-      if(sizeof(m) < maxlen)
-      {
-	string t = sprintf("%O", m);
-	if (sizeof(t) < (maxlen + 2)) {
-	  return t;
-	}
-	t = 0;
-      }
-      clipped++;
-      if(maxlen>10)
-      {
-	return sprintf("%O+[%d]",m[..maxlen-5],sizeof(m)-(maxlen-5));
-      }else{
-	return "string["+sizeof(m)+"]";
-      }
-      
-    case "array":
-      if(!sizeof(m)) return "({})";
-      if(maxlen<5)
-      {
-	clipped++;
-	return "array["+sizeof(m)+"]";
-      }
-      canclip++;
-      return "({" + stupid_describe_comma_list(m,maxlen-2) +"})";
-      
-    case "mapping":
-      if(!sizeof(m)) return "([])";
-      return "mapping["+sizeof(m)+"]";
-      
-    case "multiset":
-      if(!sizeof(m)) return "(<>)";
-      return "multiset["+sizeof(m)+"]";
-      
-    case "function":
-      if(string tmp=describe_program(m)) return tmp;
-      if(object o=function_object(m))
-	return (describe_object(o)||"")+"->"+function_name(m);
-      else {
-	string tmp;
-	if (catch (tmp = function_name(m)))
-	  // The function object has probably been destructed.
-	  return "function";
-	return tmp || "function";
-      }
-
-    case "program":
-      if(string tmp=describe_program(m)) return tmp;
-      return typ;
-
-    default:
-      if (objectp(m))
-	if(string tmp=describe_object(m)) return tmp;
-      return typ;
-  }
-}
-
-string stupid_describe_comma_list(array x, int maxlen)
-{
-  string ret="";
-
-  if(!sizeof(x)) return "";
-  if(maxlen<0) return ",,,"+sizeof(x);
-
-  int clip=min(maxlen/2,sizeof(x));
-  int len=maxlen;
-  int done=0;
-
-//  int loopcount=0;
-
-  while(1)
-  {
-//    if(loopcount>10000) werror("len=%d\n",len);
-    array(string) z=allocate(clip);
-    array(int) isclipped=allocate(clip);
-    array(int) clippable=allocate(clip);
-    for(int e=0;e<clip;e++)
-    {
-      clipped=0;
-      canclip=0;
-      z[e]=stupid_describe(x[e],len);
-      isclipped[e]=clipped;
-      clippable[e]=canclip;
+    if (arrayp (stuff)) {
+      if (!ident[stuff]++)
+	foreach (stuff, mixed elem)
+	  identify_parts (elem);
     }
+    else if (multisetp (stuff)) {
+      if (!ident[stuff]++)
+	foreach (indices (stuff), mixed elem)
+	  identify_parts (elem);
+    }
+    else if (mappingp (stuff)) {
+      if (!ident[stuff]++)
+	foreach (indices (stuff), mixed elem)
+	  identify_parts (elem), identify_parts (stuff[elem]);
+    }
+    else if (objectp (stuff))
+      ident[stuff]++;
+  }
+
+  string describe (mixed m, int maxlen)
+  {
+    if (stringp (ident[m])) return ident[m];
+    else if (intp (ident[m]) && ident[m] > 1)
+      ident[m] = "@" + identcount++;
+
+    string res, typ;
+    if (catch (typ=sprintf("%t",m)))
+      typ = "object";		// Object with a broken _sprintf(), probably.
+    switch(typ)
+    {
+      case "int":
+      case "float":
+	return (string)m;
+      
+      case "string":
+	canclip++;
+	if(sizeof(m) < maxlen)
+	{
+	  string t = sprintf("%O", m);
+	  if (sizeof(t) < (maxlen + 2)) {
+	    return t;
+	  }
+	  t = 0;
+	}
+	clipped++;
+	if(maxlen>10)
+	{
+	  return sprintf("%O+[%d]",m[..maxlen-5],sizeof(m)-(maxlen-5));
+	}else{
+	  return "string["+sizeof(m)+"]";
+	}
+      
+      case "array":
+	if(!sizeof(m)) res = "({})";
+	else {
+	  if(maxlen<5)
+	  {
+	    clipped++;
+	    res = "array["+sizeof(m)+"]";
+	  }
+	  else {
+	    canclip++;
+	    res = "({" + describe_comma_list(m,maxlen-2) +"})";
+	  }
+	}
+	break;
+      
+      case "mapping":
+	if(!sizeof(m)) res = "([])";
+	else res = "mapping["+sizeof(m)+"]";
+	break;
+      
+      case "multiset":
+	if(!sizeof(m)) res = "(<>)";
+	else res = "multiset["+sizeof(m)+"]";
+	break;
+      
+      case "function":
+	if(string tmp=describe_program(m)) return tmp;
+	if(object o=function_object(m)) {
+	  string s = describe_object(o);
+	  if (s && s != "object") return s+"->"+function_name(m);
+	  else return function_name(m);
+	}
+	else {
+	  string tmp;
+	  if (catch (tmp = function_name(m)))
+	    // The function object has probably been destructed.
+	    return "function";
+	  return tmp || "function";
+	}
+
+      case "program":
+	if(string tmp=describe_program(m)) return tmp;
+	return typ;
+
+      default:
+	if (objectp(m))
+	  if(string tmp=describe_object(m)) {
+	    res = tmp;
+	    break;
+	  }
+	return typ;
+    }
+
+    if (stringp (ident[m]))
+      return ident[m] + "=" + res;
+    return res;
+  }
+
+  string describe_comma_list(array x, int maxlen)
+  {
+    string ret="";
+
+    if(!sizeof(x)) return "";
+    if(maxlen<0) return ",,,"+sizeof(x);
+
+    int clip=min(maxlen/2,sizeof(x));
+    int len=maxlen;
+    int done=0;
+
+    //  int loopcount=0;
 
     while(1)
     {
-//      if(loopcount>10000)  werror("clip=%d maxlen=%d\n",clip,maxlen);
-      string ret = z[..clip-1]*",";
-//      if(loopcount>10000)  werror("sizeof(ret)=%d z=%O isclipped=%O done=%d\n",sizeof(ret),z[..clip-1],isclipped[..clip-1],done);
-      if(done || sizeof(ret)<=maxlen+1)
+      //    if(loopcount>10000) werror("len=%d\n",len);
+      array(string) z=allocate(clip);
+      array(int) isclipped=allocate(clip);
+      array(int) clippable=allocate(clip);
+      for(int e=0;e<clip;e++)
       {
-	int tmp=sizeof(x)-clip-1;
-//	if(loopcount>10000) werror("CLIPPED::::: %O\n",isclipped);
-	clipped=`+(0,@isclipped);
-	if(tmp>=0)
-	{
-	  clipped++;
-	  ret+=",,,"+tmp;
-	}
-	canclip++;
-	return ret;
+	clipped=0;
+	canclip=0;
+	z[e]=describe(x[e],len);
+	isclipped[e]=clipped;
+	clippable[e]=canclip;
       }
 
-      int last_newlen=len;
-      int newlen;
-      int clipsuggest;
       while(1)
       {
-//	if(loopcount++ > 20000) return "";
-//	if(!(loopcount & 0xfff)) werror("GNORK\n");
-	int smallsize=0;
-	int num_large=0;
-	clipsuggest=0;
-
-	for(int e=0;e<clip;e++)
+	//      if(loopcount>10000)  werror("clip=%d maxlen=%d\n",clip,maxlen);
+	string ret = z[..clip-1]*",";
+	//      if(loopcount>10000)  werror("sizeof(ret)=%d z=%O isclipped=%O done=%d\n",sizeof(ret),z[..clip-1],isclipped[..clip-1],done);
+	if(done || sizeof(ret)<=maxlen+1)
+	{
+	  int tmp=sizeof(x)-clip-1;
+	  //	if(loopcount>10000) werror("CLIPPED::::: %O\n",isclipped);
+	  clipped=`+(0,@isclipped);
+	  if(tmp>=0)
 	  {
-//	    if(loopcount>10000) werror("sizeof(z[%d])=%d  len=%d\n",e,sizeof(z[e]),len);
+	    clipped++;
+	    ret+=",,,"+tmp;
+	  }
+	  canclip++;
+	  return ret;
+	}
+
+	int last_newlen=len;
+	int newlen;
+	int clipsuggest;
+	while(1)
+	{
+	  //	if(loopcount++ > 20000) return "";
+	  //	if(!(loopcount & 0xfff)) werror("GNORK\n");
+	  int smallsize=0;
+	  int num_large=0;
+	  clipsuggest=0;
+
+	  for(int e=0;e<clip;e++)
+	  {
+	    //	    if(loopcount>10000) werror("sizeof(z[%d])=%d  len=%d\n",e,sizeof(z[e]),len);
 
 	    if((sizeof(z[e])>=last_newlen || isclipped[e]) && clippable[e])
 	      num_large++;
@@ -1543,30 +1585,31 @@ string stupid_describe_comma_list(array x, int maxlen)
 	    if(num_large * 15 + smallsize < maxlen) clipsuggest=e+1;
 	  }
 	
-//	if(loopcount>10000) werror("num_large=%d  maxlen=%d  smallsize=%d clippsuggest=%d\n",num_large,maxlen,smallsize,clipsuggest);
-	newlen=num_large ? (maxlen-smallsize)/num_large : 0;
+	  //	if(loopcount>10000) werror("num_large=%d  maxlen=%d  smallsize=%d clippsuggest=%d\n",num_large,maxlen,smallsize,clipsuggest);
+	  newlen=num_large ? (maxlen-smallsize)/num_large : 0;
 	
-//	if(loopcount>10000) werror("newlen=%d\n",newlen);
+	  //	if(loopcount>10000) werror("newlen=%d\n",newlen);
 
-	if(newlen<8 || newlen >= last_newlen) break;
-	last_newlen=newlen;
-//	if(loopcount>10000) werror("len decreased, retrying.\n");
-      }
+	  if(newlen<8 || newlen >= last_newlen) break;
+	  last_newlen=newlen;
+	  //	if(loopcount>10000) werror("len decreased, retrying.\n");
+	}
 
-      if(newlen < 8 && clip)
-      {
-	clip-= (clip/4) || 1;
-	if(clip > clipsuggest) clip=clipsuggest;
-//	if(loopcount>10000) werror("clip decreased, retrying.\n");
-      }else{
-	len=newlen;
-	done++;
-	break;
+	if(newlen < 8 && clip)
+	{
+	  clip-= (clip/4) || 1;
+	  if(clip > clipsuggest) clip=clipsuggest;
+	  //	if(loopcount>10000) werror("clip decreased, retrying.\n");
+	}else{
+	  len=newlen;
+	  done++;
+	  break;
+	}
       }
     }
-  }
 
-  return ret;
+    return ret;
+  }
 }
 
 string describe_object(object o)
@@ -1610,7 +1653,6 @@ string describe_backtrace(mixed trace, void|int linewidth)
   int e;
   string ret;
   int backtrace_len=((int)getenv("PIKE_BACKTRACE_LEN")) || bt_max_string_len;
-  
 
   if(!linewidth)
   {
@@ -1639,6 +1681,9 @@ string describe_backtrace(mixed trace, void|int linewidth)
   {
     ret+="No backtrace.\n";
   }else{
+    Describer desc = Describer();
+    desc->identify_parts (trace);
+
     for(e = sizeof(trace)-1; e>=0; e--)
     {
       mixed tmp;
@@ -1697,7 +1742,7 @@ string describe_backtrace(mixed trace, void|int linewidth)
 	      data ="unknown function";
 	    
 	    data+="("+
-	      stupid_describe_comma_list(tmp[3..], backtrace_len)+
+	      desc->describe_comma_list(tmp[3..], backtrace_len)+
 	    ")";
 
 	    if(sizeof(pos)+sizeof(data) < linewidth-4)
