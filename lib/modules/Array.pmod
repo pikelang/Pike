@@ -90,7 +90,7 @@ mixed filter(mixed arr, mixed fun, mixed ... args)
   }
 }
 
-mixed foldl(function fun, array arr, mixed|void zero)
+mixed reduce(function fun, array arr, mixed|void zero)
 {
   if(sizeof(arr))
     zero = arr[0];
@@ -99,7 +99,7 @@ mixed foldl(function fun, array arr, mixed|void zero)
   return zero;
 }
 
-mixed foldr(function fun, array arr, mixed|void zero)
+mixed rreduce(function fun, array arr, mixed|void zero)
 {
   if(sizeof(arr))
     zero = arr[-1];
@@ -107,8 +107,6 @@ mixed foldr(function fun, array arr, mixed|void zero)
     zero = fun(arr[i], zero);
   return zero;
 }
-
-function reduce = foldl;
 
 array shuffle(array arr)
 {
