@@ -1,8 +1,8 @@
-# $Id: Makefile.in,v 1.9 2004/01/29 23:16:03 nilsson Exp $
+# $Id: Makefile.in,v 1.10 2004/02/26 21:26:32 nilsson Exp $
 @make_variables@
 VPATH=@srcdir@
 
-OBJS = nettle.o hash.o cipher.o crypt_md5.o idea.o nt.o
+OBJS = nettle.o hash.o cipher.o crypt_md5.o nt.o @IDEA_OBJ@
 
 MODULE_LDFLAGS = @LDFLAGS@ @LIBS@
 CONFIG_HEADERS=@CONFIG_HEADERS@
