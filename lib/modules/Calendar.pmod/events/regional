@@ -1,6 +1,6 @@
 ### Calendar module
 ### Event definition file
-### $Id: regional,v 1.1 2000/08/10 07:15:05 mirar Exp $
+### $Id: regional,v 1.2 2000/09/02 15:05:34 mirar Exp $
 
 ### ====================================================================================================
 
@@ -67,6 +67,9 @@
 ###
 ###
 
+### No <id> may contain a doublequote ('"');
+### <name> may escape doublequote ('\"').
+
 ### ====================================================================================================
 
 # Global Events
@@ -103,6 +106,7 @@
   Event "un"                            - "UN Day"                         Fixed Oct 24
   Event "unity"                         - "Unity Day"                      Fixed Feb 22
 
+
 # feast events
 
   Event "family"                        - "Family Day"                     Fixed Dec 25
@@ -117,6 +121,15 @@
 # astronomical events
 
   Event "perseid meteor shower"         - "Perseid Meteor Shower"          Fixed Aug 11
+
+# ====================================================================================================
+
+# caribbean (political) events
+
+Region "caribbean"
+  Event "caribbean/caricom"             - "CARICOM Day"                    WDRel Jul Mon 1st
+  Event "caribbean/schoelcher"          - "Schoelcher Day"                 Fixed Jul 21
+  Event "caribbean/emancipation"        - "Emancipation Day"               WDRel Aug Mon 1st
 
 # ====================================================================================================
 
@@ -239,36 +252,40 @@ Region "bahai"
   Event "bahai/martyrdom of bab"        - "Martyrdom of Bab"               Fixed Jul  9
   Event "bahai/naw-ruz"                 - "Naw-Rúz"                        Fixed Mar 21
 
+# anglican church (?)
+Region "anglican church"
+  Event "anglican church/name of jesus"  - "Feast of the Name of Jesus"    Fixed Aug  7
+
 # ====================================================================================================
 
 # afghanistan
-Region "afghanistan"
-  Event "afghanistan/afghan new year"   - "Afghan New Year"                Fixed Mar 21
-  Event "afghanistan/revolution"        - "Revolution Day"                 Fixed Apr 27
-  Event "afghanistan/workers"           - "Workers' Day"                   Fixed May  1
-  Event "afghanistan/independence"      - "Independence Day"               Fixed May 27
-  Event "afghanistan/mothers"           - "Mother's Day"                   Fixed Jun 14
-  Event "afghanistan/childrens"         - "Children's Day"                 Fixed Aug 30
-  Event "afghanistan/national assembly"  - "National Assembly Day"         WDRel Sep Wed 2nd
+Region "af"
+  Event "af/afghan new year"   - "Afghan New Year"                Fixed Mar 21
+  Event "af/revolution"        - "Revolution Day"                 Fixed Apr 27
+  Event "af/workers"           - "Workers' Day"                   Fixed May  1
+  Event "af/independence"      - "Independence Day"               Fixed May 27
+  Event "af/mothers"           - "Mother's Day"                   Fixed Jun 14
+  Event "af/childrens"         - "Children's Day"                 Fixed Aug 30
+  Event "af/national assembly"  - "National Assembly Day"         WDRel Sep Wed 2nd
 
 
 # albania
-Region "albania"
+Region "al"
   Add   "new year 2d"                   - # "New Year"                     Fixed Jan  1  2 days
-  Event "albania/proclamation of the republic"  - "Proclamation of the Republic Day" Fixed Jan 11
+  Event "al/proclamation of the republic"  - "Proclamation of the Republic Day" Fixed Jan 11
   Add   "womens"                        - # "Int. Women's Day"             Fixed Mar  8
-  Event "albania/army"                  - "Army Day"                       Fixed Jul 10
-  Event "albania/independence"          - "Independence Day"               Fixed Nov 28
-  Event "albania/liberation"            - "Liberation Day"                 Fixed Nov 29
+  Event "al/army"                  - "Army Day"                       Fixed Jul 10
+  Event "al/independence"          - "Independence Day"               Fixed Nov 28
+  Event "al/liberation"            - "Liberation Day"                 Fixed Nov 29
 
 
 # algeria
-Region "algeria"
+Region "dz"
   Add   "new year"                      - # "New Year's Day"               Fixed Jan  1
   Add   "labor"                         - # "Labor Day"                    Fixed May  1
-  Event "algeria/national"              - "National Day"                   Fixed Jun 19
-  Event "algeria/independence"          - "Independence Day"               Fixed Jul  3
-  Event "algeria/revolution"            - "Revolution Day"                 Fixed Nov  1
+  Event "dz/national"              - "National Day"                   Fixed Jun 19
+  Event "dz/independence"          - "Independence Day"               Fixed Jul  3
+  Event "dz/revolution"            - "Revolution Day"                 Fixed Nov  1
 
 
 # american baptist
@@ -277,83 +294,79 @@ Region "american baptist"
 
 
 # american samoa
-Region "american samoa"
+Region "as"
   Include "us"
   Add   "new year"                      - # "New Year's Day"               Fixed Jan  1
-  Event "american samoa/flag"           - "Flag Day"                       Fixed Apr 17
+  Event "as/flag"           - "Flag Day"                       Fixed Apr 17
   Add   "labor"                         - # "Labor Day"                    Fixed May  1
   Add   "c/christmas"                   - # "Christmas Day"                Fixed Dec 25
 
 
 # andorra
-Region "andorra"
+Region "ad"
   Add   "new year"                      - # "New Year's Day"               Fixed Jan  1
   Add   "c/epiphany"                    - # "Epiphany"                     Fixed Jan  6
   Add   "c/good friday"                 - # "Good Friday"                  Easter -2
   Add   "c/easter monday"               - # "Easter Monday"                Easter +1
-  Event "andorra/national feast"        - "National Feast Day"             Fixed Sep  8
+  Event "ad/national feast"        - "National Feast Day"             Fixed Sep  8
   Add   "c/christmas"                   - # "Christmas Day"                Fixed Dec 25
   Add   "c/boxing"                      - # "Boxing Day"                   Fixed Dec 26
 
 
-# anglican church
-Region "anglican church"
-  Event "anglican church/name of jesus"  - "Feast of the Name of Jesus"    Fixed Aug  7
-
 
 # angola
-Region "angola"
+Region "ao"
   Add   "new year"                      - # "New Year's Day"               Fixed Jan  1
-  Event "angola/martyrs"                - "Day of Martyrs of the Colonial Repression" Fixed Jan  4
-  Event "angola/national holiday"       - "National Holiday"               Fixed Feb  4
-  Event "angola/victory"                - "Victory Day"                    Fixed Mar 27
-  Event "angola/youth"                  - "Youth Day"                      Fixed Apr 14
-  Event "angola/workers"                - "Workers' Day"                   Fixed May  1
-  Event "angola/armed forces"           - "Armed Forces Day"               Fixed Aug  1
-  Event "angola/national heros"         - "National Hero's Day"            Fixed Sep 17
-  Event "angola/independence"           - "Independence Day"               Fixed Nov 11
-  Event "angola/pioneers"               - "Pioneers' Day"                  Fixed Dec  1
-  Event "angola/mpla foundation"        - "MPLA Foundation Day"            Fixed Dec 10
+  Event "ao/martyrs"                - "Day of Martyrs of the Colonial Repression" Fixed Jan  4
+  Event "ao/national holiday"       - "National Holiday"               Fixed Feb  4
+  Event "ao/victory"                - "Victory Day"                    Fixed Mar 27
+  Event "ao/youth"                  - "Youth Day"                      Fixed Apr 14
+  Event "ao/workers"                - "Workers' Day"                   Fixed May  1
+  Event "ao/armed forces"           - "Armed Forces Day"               Fixed Aug  1
+  Event "ao/national heros"         - "National Hero's Day"            Fixed Sep 17
+  Event "ao/independence"           - "Independence Day"               Fixed Nov 11
+  Event "ao/pioneers"               - "Pioneers' Day"                  Fixed Dec  1
+  Event "ao/mpla foundation"        - "MPLA Foundation Day"            Fixed Dec 10
   Add   "family"                        - # "Family Day"                   Fixed Dec 25
 
 
 # anguilla
-Region "anguilla"
+Region "ai"
   Add   "new year"                      - # "New Year's Day"               Fixed Jan  1
   Add   "c/good friday"                 - # "Good Friday"                  Easter -2
   Add   "c/easter monday"               - # "Easter Monday"                Easter +1
   Add   "labor"                         - # "Labor Day"                    Fixed May  1
-  Event "anguilla/anguilla"             - "Anguilla Day"                   Fixed Jun  1
+  Event "ai/anguilla"                   - "Anguilla Day"                   Fixed Jun  1
   Add   "c/whitmonday"                  - # "Whitmonday"                   Easter +50
   Add   "c/christmas"                   - # "Christmas Day"                Fixed Dec 25
 
 
 # antigua and barbuda
-Region "antigua and barbuda"
+Region "ag"
   Add   "new year"                      - # "New Year's Day"               Fixed Jan  1
   Add   "c/good friday"                 - # "Good Friday"                  Easter -2
   Add   "c/easter monday"               - # "Easter Monday"                Easter +1
   Add   "labor"                         - # "Labor Day"                    Fixed May  1
   Add   "c/whitmonday"                  - # "Whitmonday"                   Easter +50
   Add   "caribbean/caricom"             - # "CARICOM Day"                  WDRel Jul Mon 1st
-  Event "antigua and barbuda/independence"  - "Independence Day"           Fixed Nov  1
+  Event "ag/independence"               - "Independence Day"           Fixed Nov  1
   Add   "c/christmas"                   - # "Christmas Day"                Fixed Dec 25
   Add   "c/boxing"                      - # "Boxing Day"                   Fixed Dec 26
 
 
 # argentina
-Region "argentina"
-  Event "argentina/revolution"          h "Revolution Anniversary"         Fixed May 25
-  Event "argentina/flag"                h "Flag's Day"                     Fixed Jun 20
+Region "ar"
+  Event "ar/revolution"          h "Revolution Anniversary"         Fixed May 25
+  Event "ar/flag"                h "Flag's Day"                     Fixed Jun 20
   Add   "labor"                         h # "Labor Day"                    Fixed May  1
-  Event "argentina/race"                h "Race's Day"                     Fixed Oct 12
+  Event "ar/race"                h "Race's Day"                     Fixed Oct 12
   Add   "sunday"                        h # "Sun"                          Weekday ---
-  Event "argentina/soberanys"           h "Soberany's Day"                 Fixed Jun 10
-  Event "argentina/independence"        h "Independence Day"               Fixed Jul  9
+  Event "ar/soberanys"           h "Soberany's Day"                 Fixed Jun 10
+  Event "ar/independence"        h "Independence Day"               Fixed Jul  9
   Add   "new year"                      h # "New Year's Day"               Fixed Jan  1
   Add   "c/easter"                      h # "Easter"                       Easter +0
-  Event "argentina/malvinas"            h "Malvinas Day"                   Fixed Apr  2
-  Event "argentina/gral san martin"     h "Gral San Martín decease"     Fixed Aug 17
+  Event "ar/malvinas"            h "Malvinas Day"                   Fixed Apr  2
+  Event "ar/gral san martin"     h "Gral San Martín decease"     Fixed Aug 17
   Add   "c/immaculate conception"       h # "Immaculate Conception"        Fixed Dec  8
   Add   "c/good friday"                 h # "Good Friday"                  Easter -2
   Add   "c/christmas"                   h # "Christmas Day"                Fixed Dec 25
@@ -366,16 +379,16 @@ Region "argentina"
 
 
 # armenia
-Region "armenia"
-  Event "armenia/christmas"             - "Christmas"                      Fixed Jan  6
-  Event "armenia/martyrs"               - "Martyrs' Day"                   Fixed Apr 24
-  Event "armenia/republic"              - "Republic Day"                   Fixed May 28
+Region "am"
+  Event "am/christmas"             - "Christmas"                      Fixed Jan  6
+  Event "am/martyrs"               - "Martyrs' Day"                   Fixed Apr 24
+  Event "am/republic"              - "Republic Day"                   Fixed May 28
 
 
 # aruba
-Region "aruba"
+Region "aw"
   Add   "new year"                      - # "New Year's Day"               Fixed Jan  1
-  Event "aruba/aruba flag"              - "Aruba Flag Day"                 Fixed Mar 18
+  Event "aw/aruba flag"              - "Aruba Flag Day"                 Fixed Mar 18
   Add   "c/easter"                      - # "Easter"                       Easter +0
   Add   "labor"                         - # "Labor Day"                    Fixed May  1
   Add   "c/ascension"                   - # "Ascension"                    Easter +39
@@ -385,66 +398,66 @@ Region "aruba"
 
 
 # australia
-Region "australia"
+Region "au"
   Add   "c/easter monday"               h # "Easter Monday"                Easter +1
   Add   "c/good friday"                 h # "Good Friday"                  Easter -2
-  Event "australia/australia"           h "Australia Day"                  Fixed Jan 26
+  Event "au/australia"           h "Australia Day"                  Fixed Jan 26
   Add   "new year"                      h # "New Year's Day"               Fixed Jan  1
   Add   "c/easter"                      h # "Easter"                       Easter +0
   Add   "anzac"                         h # "ANZAC Day"                    Fixed Apr 25
   Add   "uk/queens"                     h # "Queen's Birthday"             WDRel Jun Thu 2nd
   Add   "c/christmas"                   h # "Christmas Day"                Fixed Dec 25
   Add   "c/boxing"                      h # "Boxing Day"                   Fixed Dec 26
-  Event "australia/eight hour"          - "Eight Hour Day"                 Fixed Oct 11
+  Event "au/eight hour"          - "Eight Hour Day"                 Fixed Oct 11
 
 
 # australia/new south wales
-Region "australia/new south wales"
-  Include "australia"
-  Event "australia/summer bank holiday"  h "Bank Holiday"                  WDRel Aug Mon 4th
+Region "au/new south wales"
+  Include "au"
+  Event "au/summer bank holiday"  h "Bank Holiday"                  WDRel Aug Mon 4th
 
 
 # australia/northern territory
-Region "australia/northern territory"
-  Include "australia"
+Region "au/northern territory"
+  Include "au"
   Add   "labor"                         h # "Labor Day"                    Fixed May  1
 
 
 # australia/queensland
-Region "australia/queensland"
-  Include "australia"
-  Event "australia/summer bank holiday"  h "Bank Holiday"                  WDRel Aug Mon 4th
+Region "au/queensland"
+  Include "au"
+  Event "au/summer bank holiday"  h "Bank Holiday"                  WDRel Aug Mon 4th
 
 
 # australia/south australia
-Region "australia/south australia"
-  Include "australia"
-  Event "australia/proclamation"        h "Proclamation Day"               Fixed Dec 28
+Region "au/south au"
+  Include "au"
+  Event "au/proclamation"        h "Proclamation Day"               Fixed Dec 28
   Add   "labor"                         h # "Labor Day"                    Fixed May  1
 
 
 # australia/tasmania
-Region "australia/tasmania"
-  Include "australia"
-  Event "australia/hobert regatta"      h "Hobert Regatta Day"             Fixed Feb  9
-  Event "australia/spring bank holiday"  h "Bank Holiday"                  WDRel Mar Mon 4th
-  Event "australia/recreation"          - "Recreation Day"                 Fixed Nov  1
+Region "au/tasmania"
+  Include "au"
+  Event "au/hobert regatta"      h "Hobert Regatta Day"             Fixed Feb  9
+  Event "au/spring bank holiday"  h "Bank Holiday"                  WDRel Mar Mon 4th
+  Event "au/recreation"          - "Recreation Day"                 Fixed Nov  1
 
 
 # australia/victoria
-Region "australia/victoria"
-  Include "australia"
-  Event "australia/spring bank holiday"  h "Bank Holiday"                  WDRel Mar Mon 4th
-  Event "australia/show"                h "Show Day"                       WDRel Nov Tue 1st
-  Event "australia/second new years"    - "Second New Year's Day"          Fixed Jan  2
+Region "au/victoria"
+  Include "au"
+  Event "au/spring bank holiday"  h "Bank Holiday"                  WDRel Mar Mon 4th
+  Event "au/show"                h "Show Day"                       WDRel Nov Tue 1st
+  Event "au/second new years"    - "Second New Year's Day"          Fixed Jan  2
 
 
 # australia/western australia
-Region "australia/western australia"
-  Include "australia"
-  Event "australia/spring bank holiday"  h "Bank Holiday"                  WDRel Mar Mon 4th
-  Event "australia/foundation"          h "Foundation Day"                 Fixed Jun  7
-  Event "australia/show"                h "Show Day"                       WDRel Nov Tue 1st
+Region "au/western au"
+  Include "au"
+  Event "au/spring bank holiday"  h "Bank Holiday"                  WDRel Mar Mon 4th
+  Event "au/foundation"          h "Foundation Day"                 Fixed Jun  7
+  Event "au/show"                h "Show Day"                       WDRel Nov Tue 1st
 
 
 # austria
@@ -452,118 +465,118 @@ Region "austria"
   Add   "new year"                      - # "New Year's Day"               Fixed Jan  1
   Add   "c/epiphany"                    - # "Epiphany"                     Fixed Jan  6
   Add   "c/easter monday"               - # "Easter Monday"                Easter +1
-  Event "austria/second republic"       - "Second Republic Day"            Fixed Apr 27
+  Event "at/second republic"       - "Second Republic Day"            Fixed Apr 27
   Add   "labor"                         - # "Labor Day"                    Fixed May  1
-  Event "austria/national"              - "National Day"                   Fixed May 15
+  Event "at/national"              - "National Day"                   Fixed May 15
   Add   "c/ascension"                   - # "Ascension"                    Easter +39
   Add   "c/whitmonday"                  - # "Whitmonday"                   Easter +50
   Add   "c/corpus christi"              - # "Corpus Christi"               Easter +60
   Add   "c/assumption"                  - # "Assumption Day"               Fixed Aug 15
-  Event "austria/national holiday of austria"  - "National Holiday of Austria" Fixed Oct 26
-  Event "austria/national holiday"      - "National Holiday"               Fixed Oct 26
+  Event "at/national holiday of austria"  - "National Holiday of Austria" Fixed Oct 26
+  Event "at/national holiday"      - "National Holiday"               Fixed Oct 26
   Add   "c/all saints"                  - # "All Saints Day"               Fixed Nov  1
-  Event "austria/republic"              - "Republic Day"                   Fixed Nov 12
+  Event "at/republic"              - "Republic Day"                   Fixed Nov 12
   Add   "c/immaculate conception"       - # "Immaculate Conception"        Fixed Dec  8
   Add   "c/christmas"                   - # "Christmas Day"                Fixed Dec 25
 
 
 # bahamas
-Region "bahamas"
+Region "bs"
   Add   "new year"                      - # "New Year's Day"               Fixed Jan  1
   Add   "c/good friday"                 - # "Good Friday"                  Easter -2
   Add   "c/easter monday"               - # "Easter Monday"                Easter +1
   Add   "labor"                         - # "Labor Day"                    Fixed May  1
-  Event "bahamas/labor"                 - "Labour Day"                     WDRel Jun Fri 1st
+  Event "bs/labor"                 - "Labour Day"                     WDRel Jun Fri 1st
   Add   "c/whitmonday"                  - # "Whitmonday"                   Easter +50
-  Event "bahamas/independence"          - "Independence Day"               Fixed Jul 10
+  Event "bs/independence"          - "Independence Day"               Fixed Jul 10
   Add   "caribbean/emancipation"        - # "Emancipation Day"             WDRel Aug Mon 1st
-  Event "bahamas/fox hill"              - "Fox Hill Day"                   WDRel Aug Tue 2nd
+  Event "bs/fox hill"              - "Fox Hill Day"                   WDRel Aug Tue 2nd
   Add   "columbus"                      - # "Columbus Day"                 Fixed Oct 12
   Add   "c/christmas"                   - # "Christmas Day"                Fixed Dec 25
 
 
 # bahrain
-Region "bahrain"
+Region "bh"
   Add   "new year"                      - # "New Year's Day"               Fixed Jan  1
-  Event "bahrain/national of bahrain"   - "National Day of Bahrain"        Fixed Dec 16
+  Event "bh/national of bahrain"   - "National Day of Bahrain"        Fixed Dec 16
 
 
 # bangladesh
-Region "bangladesh"
-  Event "bangladesh/national mourning"  - "National Mourning Day"          Fixed Feb 21
-  Event "bangladesh/independence"       - "Independence Day"               Fixed Mar 26
-  Event "bangladesh/bengali new year"   - "Bengali New Year"               Fixed Apr 14
+Region "bd"
+  Event "bd/national mourning"  - "National Mourning Day"          Fixed Feb 21
+  Event "bd/independence"       - "Independence Day"               Fixed Mar 26
+  Event "bd/bengali new year"   - "Bengali New Year"               Fixed Apr 14
   Add   "may day"                       - # "May Day"                      Fixed May  1
-  Event "bangladesh/revolution"         - "Revolution Day"                 Fixed Nov  7
-  Event "bangladesh/victory"            - "Victory Day"                    Fixed Dec 16
+  Event "bd/revolution"         - "Revolution Day"                 Fixed Nov  7
+  Event "bd/victory"            - "Victory Day"                    Fixed Dec 16
   Add   "c/christmas"                   - # "Christmas Day"                Fixed Dec 25
 
 
 # barbados
-Region "barbados"
+Region "bb"
   Add   "new year"                      - # "New Year's Day"               Fixed Jan  1
-  Event "barbados/errol barrow"         - "Errol Barrow Day"               Fixed Jan 21
+  Event "bb/errol barrow"         - "Errol Barrow Day"               Fixed Jan 21
   Add   "c/good friday"                 - # "Good Friday"                  Easter -2
   Add   "c/easter monday"               - # "Easter Monday"                Easter +1
   Add   "labor"                         - # "Labor Day"                    Fixed May  1
   Add   "c/whitmonday"                  - # "Whitmonday"                   Easter +50
-  Event "barbados/united nations"       - "United Nations Day"             Fixed Oct  7
-  Event "barbados/independence"         - "Independence Day"               Fixed Nov 30
+  Event "bb/united nations"       - "United Nations Day"             Fixed Oct  7
+  Event "bb/independence"         - "Independence Day"               Fixed Nov 30
   Add   "c/christmas"                   - # "Christmas Day"                Fixed Dec 25
 
 
 # belgium
-Region "belgium"
+Region "be"
   Add   "new year"                      - # "New Year's Day"               Fixed Jan  1
   Add   "c/easter monday"               - # "Easter Monday"                Easter +1
   Add   "labor"                         - # "Labor Day"                    Fixed May  1
   Add   "c/ascension"                   - # "Ascension"                    Easter +39
   Add   "c/whitmonday"                  - # "Whitmonday"                   Easter +50
-  Event "belgium/independence"          - "Independence Day"               Fixed Jul 21  2 days
+  Event "be/independence"          - "Independence Day"               Fixed Jul 21  2 days
   Add   "c/assumption"                  - # "Assumption Day"               Fixed Aug 15
   Add   "c/all saints"                  - # "All Saints Day"               Fixed Nov  1
   Add   "c/all souls"                   - # "All Souls Day"                Fixed Nov  2
   Add   "armistice"                     - # "Armistice Day"                Fixed Nov 11
-  Event "belgium/kings"                 - "King's Birthday"                Fixed Nov 15
-  Event "belgium/dynasty"               - "Dynasty Day"                    Fixed Nov 15
+  Event "be/kings"                 - "King's Birthday"                Fixed Nov 15
+  Event "be/dynasty"               - "Dynasty Day"                    Fixed Nov 15
   Add   "c/christmas"                   - # "Christmas Day"                Fixed Dec 25
   Add   "c/boxing"                      - # "Boxing Day"                   Fixed Dec 26
 
 
 # belize
-Region "belize"
+Region "bz"
   Add   "new year"                      - # "New Year's Day"               Fixed Jan  1
-  Event "belize/baron bliss"            - "Baron Bliss Day"                Fixed Mar  9
+  Event "bz/baron bliss"            - "Baron Bliss Day"                Fixed Mar  9
   Add   "c/good friday"                 - # "Good Friday"                  Easter -2
   Add   "c/holy saturday"               - # "Holy Saturday"                Easter -1
   Add   "c/easter monday"               - # "Easter Monday"                Easter +1
   Add   "labor"                         - # "Labor Day"                    Fixed May  1
-  Event "belize/commonwealth"           - "Commonwealth Day"               Fixed May 24
-  Event "belize/national"               - "National Day"                   Fixed Sep 10
-  Event "belize/saint georges cay"      - "St. George's Cay Day"           Fixed Sep 10
-  Event "belize/independence"           - "Independence Day"               Fixed Sep 21
-  Event "belize/pan american"           - "Pan American Day"               Fixed Oct 12
-  Event "belize/garifuna"               - "Garifuna Day"                   Fixed Nov 19
+  Event "bz/commonwealth"           - "Commonwealth Day"               Fixed May 24
+  Event "bz/national"               - "National Day"                   Fixed Sep 10
+  Event "bz/saint georges cay"      - "St. George's Cay Day"           Fixed Sep 10
+  Event "bz/independence"           - "Independence Day"               Fixed Sep 21
+  Event "bz/pan american"           - "Pan American Day"               Fixed Oct 12
+  Event "bz/garifuna"               - "Garifuna Day"                   Fixed Nov 19
   Add   "c/christmas"                   - # "Christmas Day"                Fixed Dec 25
   Add   "c/boxing"                      - # "Boxing Day"                   Fixed Dec 26
 
 
 # benin
-Region "benin"
+Region "bj"
   Add   "new year"                      - # "New Year's Day"               Fixed Jan  1
-  Event "benin/martyrs"                 - "Martyrs' Day"                   Fixed Jan 16
-  Event "benin/youth"                   - "Youth Day"                      Fixed Apr  1
+  Event "bj/martyrs"                 - "Martyrs' Day"                   Fixed Jan 16
+  Event "bj/youth"                   - "Youth Day"                      Fixed Apr  1
   Add   "c/good friday"                 - # "Good Friday"                  Easter -2
   Add   "c/easter monday"               - # "Easter Monday"                Easter +1
-  Event "benin/workers"                 - "Workers' Day"                   Fixed May  1
+  Event "bj/workers"                 - "Workers' Day"                   Fixed May  1
   Add   "c/ascension"                   - # "Ascension"                    Easter +39
   Add   "c/whitmonday"                  - # "Whitmonday"                   Easter +50
   Add   "c/assumption"                  - # "Assumption Day"               Fixed Aug 15
-  Event "benin/armed forces"            - "Armed Forces Day"               Fixed Oct 26
+  Event "bj/armed forces"            - "Armed Forces Day"               Fixed Oct 26
   Add   "c/all saints"                  - # "All Saints Day"               Fixed Nov  1
-  Event "benin/national"                - "National Day"                   Fixed Nov 30
+  Event "bj/national"                - "National Day"                   Fixed Nov 30
   Add   "c/christmas"                   - # "Christmas Day"                Fixed Dec 25
-  Event "benin/harvest"                 - "Harvest Day"                    Fixed Dec 31
+  Event "bj/harvest"                 - "Harvest Day"                    Fixed Dec 31
 
 
 # bermuda
@@ -691,172 +704,256 @@ Region "burundi"
   Event "burundi/anniversary of the revolution"  - "Anniversary of the Revolution" Fixed Nov 30
   Add   "c/christmas"                   - # "Christmas Day"                Fixed Dec 25
 
-# cambodia
+#--------------------------------------------------------------
+# Cambodia 
+#--------------------------------------------------------------
 Region "cambodia"
-  Event "cambodia/national"             - "National Day"                   Fixed Jan  7
-  Event "cambodia/independence"         - "Independence Day"               Fixed Apr 17
-  Add   "labor"                         - # "Labor Day"                    Fixed May  1
+  Add   "new year"                      h # "New Year's Day" (1-Jan 2000)
+  Event "cambodia/victory over the genocidal regime"  h "Victory Day Over the Genocidal Regime" Fixed Jan  7
+# Cambodia Makha Puja 1-Feb moveable but still researching
+  Event "cambodia/women"                h "Women's Day"                            Fixed Mar  8
+  Event "cambodia/cambodian new year"   h "Cambodian New Year (3 days)"            Fixed Apr 14
+  Event "cambodia/independence"         h "Independence Day"                       Fixed Apr 17
+  Add   "labor"                         h # "Labor Day" (1-May 2000)
+# Ploughing Ceremony 3-May moveable but still researching
   Event "cambodia/khmer republic constitution"  - "Khmer Republic Constitution Day" Fixed May 12
+# Visaka Buja Day (Birth of the Buddha) 18-May moveable but still researching
   Event "cambodia/day of hatred"        - "Day of Hatred"                  Fixed May 20
+  Event "cambodia/international children"  h "International Children's Day"        Fixed Jun  1
+# Ashala Puja 16-Jun moveable but still researching
   Event "cambodia/memorial"             - "Memorial Day"                   Fixed Jun 28
   Event "cambodia/ancestors"            - "Feast of the Ancestors"         Fixed Sep 22
+  Event "cambodia/constitutional declaration"  h "Constitutional Declaration Day"  Fixed Sep 24
+  Event "cambodia/cambodia peace treaty"  h "Cambodia Peace Treaty Day"            Fixed Oct 23
+# Phansa 23-Oct moveable but still researching
+  Event "cambodia/kings birthday"       h "King's Birthday (3 days)"               Fixed Oct 30
+# Phchum Ben Day (Feast of the Ancestors) 8-Oct moveable but still researching
+  Event "cambodia/national independence"  h "National Independence Day"            Fixed Nov  9
+# Fete des Eaux (3 days) 21-Nov moveable but still researching
+  Event "cambodia/human right"          h "Human Rights Day"                       Fixed Dec 10
 
 
-# cameroon
+#--------------------------------------------------------------
+# Cameroon 
+#--------------------------------------------------------------
 Region "cameroon"
-  Event "cameroon/independence"         - "Independence Day"               Fixed Jan  1
-  Event "cameroon/youth"                - "Youth Day"                      Fixed Feb 11
-  Add   "c/good friday"                 - # "Good Friday"                  Easter -2
-  Add   "c/easter monday"               - # "Easter Monday"                Easter +1
-  Add   "labor"                         - # "Labor Day"                    Fixed May  1
+  Event "cameroon/independence"         h "Independence Day"                       Fixed Jan  1
+  Add   "new year"                      h # "New Year's Day" (1-Jan 2000)
+  Event "cameroon/djoulde soumae"       h "Djoulde Soumae (End of Ramadan)"        Islamic_Fixed Schawwâl 1
+  Event "cameroon/youth"                h "Youth Day"                              Fixed Feb 11
+  Event "cameroon/feast of the sacrifice"  h "Feast of the Sacrifice (Festival of the Sheep)" Islamic_Fixed Dhu'l-Hiddja 9
+  Add   "c/good friday"                 h # "Good Friday" (21-Apr 2000)
+  Add   "c/easter monday"               h # "Easter Monday" (24-Apr 2000)
+  Add   "labor"                         h # "Labor Day" (1-May 2000)
   Event "cameroon/commemoration of national institutions"  - "Commemoration of National Institutions Day" Fixed May 10
-  Event "cameroon/constitution"         - "Constitution Day"               Fixed May 20
-  Add   "c/ascension"                   - # "Ascension"                    Easter +39
+  Event "cameroon/national"             h "National Day"                           Fixed May 20
+  Event "cameroon/sheep festival"       h "Sheep Festival"                         Fixed May 21
+  Add   "c/ascension"                   h # "Ascension Thursday" (1-Jun 2000)
   Add   "c/pentecost monday"            - # "Pentecost Monday"             Easter +50
-  Add   "c/assumption"                  - # "Assumption Day"               Fixed Aug 15
-  Event "cameroon/unification"          - "Unification Day"                Fixed Oct  1
+  Event "cameroon/mouloud"              h "Mouloud (Birth of the Prophet)"         Islamic_Fixed Rebîu'l-awwal 12
+  Add   "c/assumption"                  h # "Assumption" (15-Aug 2000)
+  Event "cameroon/unification"          h "Unification Day"                        Fixed Oct  1
   Add   "c/all saints"                  - # "All Saints Day"               Fixed Nov  1
   Event "cameroon/human rights"         - "Human Rights Day"               Fixed Dec 10
-  Add   "c/christmas"                   - # "Christmas Day"                Fixed Dec 25
+  Add   "c/christmas"                   h # "Christmas" (25-Dec 2000)
 
 
-# canada
+#--------------------------------------------------------------
+# Canada 
+#--------------------------------------------------------------
 Region "canada"
-  Add   "new year"                      - # "New Year's Day"               Fixed Jan  1
-  Add   "c/good friday"                 - # "Good Friday"                  Easter -2
-  Add   "c/easter monday"               - # "Easter Monday"                Easter +1
-  Event "canada/victoria"               - "Victoria Day"                   Fixed May 24
-  Event "canada/dominion"               - "Dominion Day"                   Fixed Jul  1
-  Event "canada/civic holiday"          - "Civic Holiday"                  WDRel Aug Mon 1st
-  Event "canada/klondike gold discovery"  - "Klondike Gold Discovery Day"  WDRel Aug 18 Fri -1 excl
-  Event "canada/labor"                  - "Labor Day"                      WDRel Sep Mon 1st
-  Event "canada/remembrance"            - "Remembrance Day"                Fixed Nov 11
-  Event "canada/discovery"              - "Discovery Day"                  WDRel Jun 24 Mon +0
+  Add   "new year"                      h # "New Year's Day" (1-Jan 2000)
+  Event "canada/groundhog"              h "Groundhog Day"                          Fixed Feb  2
+  Add   "saints/valentine"              h # "St. Valentine's Day" (14-Feb 2000)
+  Event "canada/national flag of canada"  h "National Flag of Canada Day"          Fixed Feb 15
+  Event "canada/family"                 h "Family Day"                             WDRel Feb Mon 3rd
+# Event "canada/heritage"               h "Heritage Day"                           Friday before the last Sunday in February                          
+  Event "canada/commonwealth"           h "Commonwealth Day"                       Fixed Mar  9
+  Add   "saints/patrick"                h # "St. Patrick's Day" (17-Mar 2000)
+  Event "canada/april fools"            h "April Fools' Day"                       Fixed Apr  1
+  Event "canada/daylight saving time begins"  h "Daylight Saving Time begins"      WDRel Apr Sun 1st
+  Event "canada/saint george"           h "Saint George's Day"                     Fixed Apr 20
+  Add   "c/good friday"                 h # "Good Friday" (21-Apr 2000)
+  Event "canada/earth"                  h "Earth Day"                              Fixed Apr 22
+  Event "canada/canada book"            h "Canada Book Day"                        Fixed Apr 23
+  Add   "c/easter"                      h # "Easter Sunday" (23-Apr 2000)
+  Add   "c/easter monday"               h # "Easter Monday" (24-Apr 2000)
+  Event "canada/national of mourning"   h "National Day of Mourning"               Fixed Apr 28
+  Add   "mothers"                       h # "Mother's Day" (14-May 2000)
+  Event "canada/victoria"               h "Victoria Day"                           WDRel May 24 Mon -1 incl
+  Add   "fathers"                       h # "Fathers Day" (18-Jun 2000)
+  Event "canada/discovery"              h "Discovery Day (Newfoundland & Labrador)" Fixed Jun 24
+  Event "canada/fete nationale"         h "Fete Nationale (Quebec)"                Fixed Jun 24
+  Event "canada/national public service week"  h "National Public Service Week"    WDRel Jun Sun 3rd
+  Event "canada/canada"                 h "Canada Day"                             Fixed Jul  1
+  Event "canada/orangeman"              h "Orangeman's Day"                        Fixed Jul 12
+  Event "canada/micmac festival of saints/ann"  h "MicMac Festival of St. Ann"     Fixed Jul 30
+  Event "canada/british colombia"       h "British Colombia Day"                   WDRel Aug Mon 1st
+  Event "canada/civic holiday"          h "Civic Holiday"                          WDRel Aug Mon 1st
+  Event "canada/heritage"               h "Heritage Day"                           WDRel Aug Mon 1st
+  Event "canada/natal"                  h "Natal Day"                              WDRel Aug Mon 1st
+  Event "canada/new brunswick"          h "New Brunswick Day"                      WDRel Aug Mon 1st
+  Event "canada/acadian"                h "Acadian Day"                            Fixed Aug 15
+  Event "canada/discovery"              h "Discovery Day (Yukon)"                  WDRel Aug 17 Mon 0
+  Event "canada/labour"                 h "Labour Day"                             WDRel Sep Mon 1st
+  Event "canada/thanksgiving"           h "Thanksgiving Day"                       WDRel Oct Mon 2nd
+  Event "canada/daylight saving time ends"  h "Daylight Saving Time ends"          WDRel Oct Sun last
+  Add   "halloween"                     h # "Hallowe'en" (31-Oct 2000)
+  Event "canada/remembrance"            h "Remembrance Day"                        Fixed Nov 11
+  Add   "c/christmas"                   h # "Christmas" (25-Dec 2000)
+  Add   "c/boxing"                      h # "Boxing Day" (26-Dec 2000)
+  Add   "new years eve"                 h # "New Year's Eve" (31-Dec 2000)
 
-# cape verde
+#--------------------------------------------------------------
+# Cape Verde 
+#--------------------------------------------------------------
 Region "cape verde"
-  Add   "new year"                      - # "New Year's Day"               Fixed Jan  1
-  Event "cape verde/national heroes"    - "National Heroes' Day"           Fixed Jan 20
-  Add   "labor"                         - # "Labor Day"                    Fixed May  1
-  Event "cape verde/independence"       - "Independence Day"               Fixed Jul  5
-  Add   "c/assumption"                  - # "Assumption Day"               Fixed Aug 15
-  Event "cape verde/national"           - "National Day"                   Fixed Sep 12
-  Add   "c/all saints"                  - # "All Saints Day"               Fixed Nov  1
-  Add   "c/christmas"                   - # "Christmas Day"                Fixed Dec 25
+  Add   "new year"                      h # "New Year's Day" (1-Jan 2000)
+  Event "cape verde/national heroe"     h "National Heroes Day"                    Fixed Jan 20
+  Event "cape verde/carnival"           h "Carnival"                               Easter -47
+  Add   "c/good friday"                 h # "Good Friday" (21-Apr 2000)
+  Add   "c/easter monday"               h # "Easter Monday" (24-Apr 2000)
+  Add   "labor"                         h # "Labor Day" (1-May 2000)
+  Event "cape verde/independence"       h "Independence Day"                       Fixed Jul  5
+  Add   "c/assumption"                  h # "Assumption Day" (15-Aug 2000)
+  Event "cape verde/national"           h "National Day"                           Fixed Sep 12
+  Event "cape verde/all saint"          h "All Saint's Day"                        Fixed Nov  1
+  Add   "c/christmas"                   h # "Christmas" (25-Dec 2000)
 
 
-# caribbean
-Region "caribbean"
-  Event "caribbean/caricom"             - "CARICOM Day"                    WDRel Jul Mon 1st
-  Event "caribbean/schoelcher"          - "Schoelcher Day"                 Fixed Jul 21
-  Event "caribbean/emancipation"        - "Emancipation Day"               WDRel Aug Mon 1st
-
-
-# cayman islands
+#--------------------------------------------------------------
+# Cayman Islands 
+#--------------------------------------------------------------
 Region "cayman islands"
-  Add   "new year"                      - # "New Year's Day"               Fixed Jan  1
-  Add   "c/ash wednesday"               - # "Ash wednesday"                Easter -46
-  Add   "c/good friday"                 - # "Good Friday"                  Easter -2
-  Add   "c/easter monday"               - # "Easter Monday"                Easter +1
-  Add   "c/christmas"                   - # "Christmas Day"                Fixed Dec 25
+  Add   "new year"                      h # "New Year's Day" (1-Jan 2000)
+  Add   "c/ash wednesday"               h # "Ash Wednesday" (8-Mar 2000)
+  Add   "c/good friday"                 h # "Good Friday" (21-Apr 2000)
+  Add   "c/easter monday"               h # "Easter Monday" (24-Apr 2000)
+  Event "cayman islands/discovery"      h "Discovery Day"                          WDRel May Mon 3rd
+  Event "cayman islands/queens birthday"  h "Queen's Birthday"                     WDRel Jun 3 Mon +2 incl 
+  Event "cayman islands/constitution"   h "Constitution Day"                       WDRel Jul Mon 1st
+# Event "cayman islands/pirates week"   h "Pirates Week"                           # 23-Oct 22-Oct 21-Oct 20-Oct 25-Oct last week in October
+  Event "cayman islands/remembrance"    h "Remembrance Day"                        Fixed Nov 11
+  Add   "c/christmas"                   h # "Christmas" (25-Dec 2000)
+  Add   "c/boxing"                      h # "Boxing Day" (26-Dec 2000)
+  Event "cayman islands/public holiday"  h "Public Holiday"                        Fixed Dec 27
 
-
-# central african republic
+#--------------------------------------------------------------
+# Central African Republic 
+#--------------------------------------------------------------
 Region "central african republic"
-  Add   "new year"                      - # "New Year's Day"               Fixed Jan  1
-  Event "central african republic/boganda"  - "Boganda Day"                Fixed Mar 29
-  Add   "c/easter monday"               - # "Easter Monday"                Easter +1
-  Add   "labor"                         - # "Labor Day"                    Fixed May  1
+  Add   "new year"                      h # "New Year's Day" (1-Jan 2000)
+  Event "central african republic/boganda"  h "Boganda Day"                        Fixed Mar 29
+  Add   "c/easter monday"               h # "Easter Monday" (24-Apr 2000)
+  Add   "labor"                         h # "Labor Day" (1-May 2000)
   Event "central african republic/first government"  - "anniversary of first government" Fixed May 15
-  Add   "c/ascension"                   - # "Ascension"                    Easter +39
+  Add   "c/ascension"                   h # "Ascension Thursday" (1-Jun 2000)
   Add   "c/pentecost"                   - # "Pentecost"                    Easter +49
-  Event "central african republic/independence"  - "Independence Day"      Fixed Aug 13
-  Add   "c/assumption"                  - # "Assumption Day"               Fixed Aug 15
-  Add   "c/all saints"                  - # "All Saints Day"               Fixed Nov  1
-  Event "central african republic/national holiday"  - "national holiday"  Fixed Nov 11
+  Event "central african republic/national of prayer"  h "National Day of Prayer"  Fixed Jun 30
+  Event "central african republic/independence"  h "Independence Day"              Fixed Aug 13
+  Add   "c/assumption"                  h # "Assumption Day" (15-Aug 2000)
+  Add   "c/all saints"                  - # "All Saints Day"                       Fixed Nov  1
+  Event "central african republic/national holiday"  - "national holiday"          Fixed Nov 11
   Event "central african republic/republic"  - "Anniversary of the Proclamation of the Republic" Fixed Dec  1
-  Event "central african republic/day after republic"  - "Day after Republic Day" Fixed Dec  2
-  Add   "c/christmas"                   - # "Christmas Day"                Fixed Dec 25
+  Event "central african republic/day after republic"  - "Day after Republic Day"  Fixed Dec  2
+  Add   "c/christmas"                   h # "Christmas" (25-Dec 2000)
 
 
-# central america
-Region "central america"
-  Event "central america/independence"  - "Independence Day"               Fixed Sep 15
-
-
-# chad
+#--------------------------------------------------------------
+# Chad 
+#--------------------------------------------------------------
 Region "chad"
-  Add   "new year"                      - # "New Year's Day"               Fixed Jan  1
-  Event "chad/national"                 - "National Day"                   Fixed Jan 11
+  Add   "new year"                      h # "New Year's Day" (1-Jan 2000)
+  Add   "islamic/al fitr"               h # "Id al Fitr (End of Ramadan)" (8-Jan 2000)
+  Add   "islamic/al fitr"               h # "Id al Fitr (End of Ramadan)" (28-Dec 2000)
+  Add   "islamic/al adha"               h # "Id al-Adha" (16-Mar 2000)
   Event "chad/creation of the union of central african states"  - "Creation of the Union of Central African States Day" Fixed Apr  2
-  Add   "c/easter monday"               - # "Easter Monday"                Easter +1
-  Add   "labor"                         - # "Labor Day"                    Fixed May  1
+  Event "chad/national"                 h "National Day"                           Fixed Apr 13
+  Add   "c/easter monday"               h # "Easter Monday" (24-Apr 2000)
+  Add   "labor"                         h # "Labor Day" (1-May 2000)
+  Add   "africa"                        h # "Africa Day" (25-May 2000)
   Add   "c/ascension"                   - # "Ascension"                    Easter +39
-  Add   "africa"                        - # "Africa Day"                   Fixed May 25
   Add   "c/pentecost"                   - # "Pentecost"                    Easter +49
-  Event "chad/traditional independence []"  - "Traditional Independence Day []" Fixed Aug 11
-  Event "chad/independence"             - "Independence Day"               Fixed Aug 11
-  Add   "c/assumption"                  - # "Assumption Day"               Fixed Aug 15
+  Event "chad/revolution"               h "Revolution Day"                         Fixed Jun  7
+  Event "chad/mouloud"                  h "Mouloud (Prophet's Birthday)"           Islamic_Fixed Rebîu'l-awwal 12
+  Event "chad/independence"             h "Independence Day"                       Fixed Aug 11
+  Add   "c/assumption"                  h # "Assumption Day" (15-Aug 2000)
   Add   "c/all saints"                  - # "All Saints Day"               Fixed Nov  1
-  Event "chad/republic"                 - "Republic Day"                   Fixed Nov 28
-  Add   "c/christmas"                   - # "Christmas Day"                Fixed Dec 25
+  Event "chad/republic"                 h "Republic Day"                           Fixed Nov 28
+  Event "chad/festival of freedom and democracy"  h "Festival of Freedom and Democracy" Fixed Dec  1
+  Add   "c/christmas"                   h # "Christmas" (25-Dec 2000)
 
 
-# chile
+#--------------------------------------------------------------
+# Chile 
+#--------------------------------------------------------------
 Region "chile"
-  Add   "new year"                      - # "New Year's Day"               Fixed Jan  1
-  Add   "c/good friday"                 - # "Good Friday"                  Easter -2
-  Add   "labor"                         - # "Labor Day"                    Fixed May  1
-  Event "chile/navy"                    - "Navy Day"                       Fixed May 21
+  Add   "new year"                      h # "New Year's Day" (1-Jan 2000)
+  Add   "c/good friday"                 h # "Good Friday" (21-Apr 2000)
+  Add   "c/easter monday"               h # "Easter Monday" (24-Apr 2000)
+  Add   "labor"                         h # "Labor Day" (1-May 2000)
+  Event "chile/naval glorie"            h "Naval Glories Day (Battle of Iquique)"  Fixed May 21
   Add   "c/ascension"                   - # "Ascension"                    Easter +39
-  Add   "c/corpus christi"              - # "Corpus Christi"               Easter +60
+  Add   "c/corpus christi"              h # "Corpus Christi" (22-Jun 2000)
   Add   "saints/peter"                  - # "St. Peter"                    Fixed Jun 29
   Add   "saints/paul"                   - # "St. Paul"                     Fixed Jun 29
-  Add   "c/assumption"                  - # "Assumption Day"               Fixed Aug 15
-  Event "chile/national holiday"        - "National Holiday"               Fixed Sep 11
-  Event "chile/independence"            - "Independence Day"               Fixed Sep 18
-  Event "chile/independence2"           - "Independence Day"               Fixed Sep 18  2 days
-  Event "chile/armed forces"            - "Armed Forces Day"               Fixed Sep 19
-  Add   "columbus"                      - # "Columbus Day"                 Fixed Oct 12
-  Add   "c/all saints"                  - # "All Saints Day"               Fixed Nov  1
-  Add   "c/immaculate conception"       - # "Immaculate Conception"        Fixed Dec  8
-  Add   "c/christmas"                   - # "Christmas Day"                Fixed Dec 25
+  Add   "c/assumption"                  h # "Assumption Day" (15-Aug 2000)
+  Event "chile/reconciliation"          h "Reconciliation Day"                     WDRel Sep Mon 1st
+  Event "chile/dia de la unidad nacional"  h "Dia de la Unidad Nacional (National Union Day)" Fixed Sep  6
+  Event "chile/independence"            h "Independence Day"                       Fixed Sep 18 2 days
+  Event "chile/armed force"             h "Armed Forces Day"                       Fixed Sep 19
+  Event "chile/day of the race"         h "Day of the Race"                        Fixed Oct 12
+  Event "chile/all saint"               h "All Saint's Day"                        Fixed Nov  1
+  Add   "c/immaculate conception"       h # "Immaculate Conception" (8-Dec 2000)
+  Add   "c/christmas"                   h # "Christmas" (25-Dec 2000)
 
-
-# china
+#--------------------------------------------------------------
+# China 
+#--------------------------------------------------------------
 Region "china"
-  Add   "new year 2d"                   - # "New Year"                     Fixed Jan  1  2 days
-  Add   "womens"                        - # "Int. Women's Day"             Fixed Mar  8
-  Event "china/tree planting"           - "Tree Planting Day"              Fixed Apr  1
-  Add   "labor"                         - # "Labor Day"                    Fixed May  1
-  Event "china/youth"                   - "Youth Day"                      Fixed May  4
-  Event "china/childrens"               - "Children's Day"                 Fixed Jun  1
-  Event "china/ccps"                    - "The CCP's Birthday"             Fixed Jul  1
-  Event "china/teachers"                - "Teacher's Day"                  Fixed Sep  1
-  Event "china/national"                - "National Day"                   Fixed Oct  1
+  Add   "new year"                      h # "New Year's Day" (1-Jan 2000)
+# Event "china/lunar new year"          h "Lunar New Year's Day"                   China Lunar New Year's Day 5-Feb 24-Jan 12-Feb 1-Feb 22-Jan moveable
+# Event "china/spring festival"         h "Spring Festival"                        China Spring Festival 5-Feb 24-Jan 12-Feb 1-Feb 22-Jan moveable
+  Add   "chinese/new year"              h # "Chinese New Year" (8-Mar 2000)
+  Event "china/women"                   h "Women's Day"                            Fixed Mar  8
+# Event "china/4apr"                    h "4-Apr"                                  China 4-Apr 5-Apr 5-Apr 5-Apr 4-Apr moveable
+  Add   "labor"                         h # "Labor Day" (1-May 2000)
+  Event "china/national youth"          h "National Youth Day"                     Fixed May  4
+  Event "china/international children"  h "International Children's Day"           Fixed Jun  1
+# Event "china/dragon boat festival"    h "Dragon Boat Festival Day"               China Dragon Boat Festival Day 6-Jun 25-Jun 15-Jun 4-Jun 22-Jun static
+  Event "china/communist party foundation"  h "Communist Party Foundation"         Fixed Jul  1
+# China Chih Nu 7-Jul moveable but still researching
+# China Chung Yuan 15-Jul moveable but still researching
+# China Kwan Kung 29-Jul moveable but still researching
+  Event "china/peoples liberation army"  h "People's Liberation Army Day"          Fixed Aug  1
+# Event "china/mid autumn festival"     h "Mid Autumn Festival"                    China Mid Autumn Festival 12-Sep 1-Oct 21-Sep 11-Sep 28-Sep moveable
+  Event "china/pr chinas birthday"      h "P.R. China's Birthday"                  Fixed Oct  1
+  Event "china/national"                h "National Day"                           Fixed Oct  2
 
-
-# columbia
-Region "columbia"
-  Add   "new year"                      - # "New Year's Day"               Fixed Jan  1
-  Add   "c/epiphany"                    - # "Epiphany"                     Fixed Jan  6
-  Add   "c/holy thursday"               - # "Holy Thursday"                Easter -3
-  Add   "c/good friday"                 - # "Good Friday"                  Easter -2
-  Add   "labor"                         - # "Labor Day"                    Fixed May  1
-  Add   "c/ascension"                   - # "Ascension"                    Easter +39
-  Event "columbia/thanksgiving"         - "Thanksgiving Day"               Fixed Jun  5
-  Add   "c/corpus christi"              - # "Corpus Christi"               Easter +60
-  Add   "saints/peter"                  - # "St. Peter"                    Fixed Jun 29
-  Add   "saints/paul"                   - # "St. Paul"                     Fixed Jun 29
-  Event "columbia/independence"         - "Independence Day"               Fixed Jul 20
-  Event "columbia/battle of boyaca"     - "Battle of Boyaca Day"           Fixed Aug  7
-  Add   "c/assumption"                  - # "Assumption Day"               Fixed Aug 15
-  Add   "columbus"                      - # "Columbus Day"                 Fixed Oct 12
-  Add   "c/all saints"                  - # "All Saints Day"               Fixed Nov  1
-  Event "columbia/cartagena independence"  - "Cartagena Independence Day"  Fixed Nov 11
-  Add   "c/immaculate conception"       - # "Immaculate Conception"        Fixed Dec  8
-  Add   "c/christmas"                   - # "Christmas Day"                Fixed Dec 25
-
+#--------------------------------------------------------------
+# Colombia 
+#--------------------------------------------------------------
+Region "colombia"
+  Add   "new year"                      h # "New Year's Day" (1-Jan 2000)
+  Add   "c/epiphany"                    - # "Epiphany"                             Fixed Jan  6
+  Event "colombia/st joseph"            h "St. Joseph's Day"                       WDRel Mar 19 Mon +1 incl
+  Add   "c/holy thursday"               h # "Holy Thursday" (20-Apr 2000)
+  Add   "c/good friday"                 h # "Good Friday" (21-Apr 2000)
+  Add   "labor"                         h # "Labor Day" (1-May 2000)
+  Add   "c/ascension"                   h # "Ascension Thursday" (1-Jun 2000)
+  Event "columbia/thanksgiving"         - "Thanksgiving Day"                   	   Fixed Jun  5
+  Add   "c/corpus christi"              - # "Corpus Christi"                   	   Easter +60
+  Add   "saints/peter"                  - # "St. Peter"                        	   Fixed Jun 29
+  Add   "saints/paul"                   - # "St. Paul"                         	   Fixed Jun 29
+  Event "colombia/independence"         h "Independence Day"                       Fixed Jul 20
+  Event "colombia/battle of boyaca"     h "Battle of Boyaca"                       Fixed Aug  7
+  Add   "c/assumption"                  h # "Assumption Day" (15-Aug 2000)
+  Add   "columbus"                      - # "Columbus Day"                         Fixed Oct 12
+  Add   "c/all saints"                  - # "All Saints Day"                       Fixed Nov  1
+  Event "colombia/independence of cartagena"  h "Independence of Cartagena"        Fixed Nov 11
+  Add   "c/immaculate conception"       h # "Immaculate Conception" (8-Dec 2000)
+  Add   "c/christmas"                   h # "Christmas" (25-Dec 2000)
+  Event "colombia/sagrado corazon"      h "Sagrado Corazon"                        Easter +68
 
 # comoros
 Region "comoros"
@@ -864,52 +961,138 @@ Region "comoros"
   Event "comoros/anniversary of president abdallahs assassination"  - "Anniversary of President Abdallah's Assassination" Fixed Nov 27
 
 
-# congo
+#--------------------------------------------------------------
+# Congo (Republic of) 
+#--------------------------------------------------------------
 Region "congo"
-  Add   "new year"                      - # "New Year's Day"               Fixed Jan  1
+  Add   "new year"                      h # "New Year's Day" (1-Jan 2000)
   Event "congo/martyr of independence"  - "Martyr of Independence Day"     Fixed Jan  4
+  Event "congo/president"               h "President's Day"                        Fixed Feb  5
+  Event "congo/youth"                   h "Youth Day"                              Fixed Feb  8
+  Event "congo/congolese women"         h "Congolese Women's Day"                  Fixed Mar  8
+  Event "congo/marien ngouabi"          h "Marien Ngouabi Day"                     Fixed Mar 18
   Add   "c/easter monday"               - # "Easter Monday"                Easter +1
+  Add   "labor"                         h # "Labor Day" (1-May 2000)
+  Event "congo/day of national reconciliation"  h "Day of National Reconciliation" Fixed Jun 10
+  Event "congo/foundation of the nations army"  h "Foundation of the Nation's Army" Fixed Jun 22
   Add   "c/ascension"                   - # "Ascension"                    Easter +39
   Add   "c/pentecost"                   - # "Pentecost"                    Easter +49
-  Event "congo/day before independence"  - "day before Independence Day"   Fixed Jun 29
+  Event "congo/day before independence"  - "day before Independence Day"           Fixed Jun 29
+  Event "congo/upswing of the revolution"  h "Upswing of the Revolution"           Fixed Jul 31
+  Event "congo/revolution anniversary"  h "Revolution Anniversary"                 Fixed Aug 13
   Add   "c/assumption"                  - # "Assumption Day"               Fixed Aug 15
-  Event "congo/independence"            - "Independence Day"               Fixed Aug 15
-  Add   "c/all saints"                  - # "All Saints Day"               Fixed Nov  1
-  Event "congo/day before army"         - "day before Army Day"            Fixed Nov 16
-  Event "congo/day before national"     - "day before national day"        Fixed Nov 23
+  Event "congo/independence"            h "Independence Day"                       Fixed Aug 15
+  Add   "c/all saints"                  - # "All Saints Day"                  	   Fixed Nov  1
+  Event "congo/day before army"         - "day before Army Day"                	   Fixed Nov 16
+  Event "congo/army"                    - "Army Day (?)"                       	   Fixed Nov 17
+  Event "congo/day before national"     - "day before national day"           	   Fixed Nov 23
+  Event "congo/national"                - "national day (?)"                   	   Fixed Nov 24
+  Event "congo/children"                h "Children's Day"                         Fixed Dec 25
+  Event "congo/foundation of the congolese labour party"  h "Foundation of the Congolese Labour Party" Fixed Dec 31
+  Event "congo/republic"                h "Republic Day"                           Fixed Dec 31
   Add   "c/christmas"                   - # "Christmas Day"                Fixed Dec 25
 
+#--------------------------------------------------------------
+# Cook Islands 
+#--------------------------------------------------------------
+Region "cook islands"
+  Add   "new year"                      h # "New Year's Day" (1-Jan 2000)
+  Add   "anzac"                         h # "Anzac Day" (25-Apr 2000)
+  Add   "c/good friday"                 h # "Good Friday" (21-Apr 2000)
+  Add   "c/easter"                      h # "Easter" (23-Apr 2000)
+  Add   "c/easter monday"               h # "Easter Monday" (24-Apr 2000)
+  Event "cook islands/queens birthday"  h "Queen's Birthday"                       WDRel Jun Mon 2nd
+  Event "cook islands/gospel"           h "Gospel Day (Rarotonga only)"            Fixed Jul 25
+  Event "cook islands/constitution"     h "Constitution Day"                       Fixed Aug  4
+  Event "cook islands/gospel"           h "Gospel Day"                             Fixed Oct 25
+  Add   "c/christmas"                   h # "Christmas" (25-Dec 2000)
+  Add   "c/boxing"                      h # "Boxing Day" (26-Dec 2000)
+  Add   "new years eve"                 h # "New Year's Eve" (31-Dec 2000)
 
 # corsica
 Region "corsica"
   Event "corsica/napoleons"             - "Napoleon's Day"                 Fixed Aug 15
 
-
-# costa rica
+#--------------------------------------------------------------
+# Costa Rica 
+#--------------------------------------------------------------
 Region "costa rica"
-  Event "costa rica/battle of rivas"    - "Battle of Rivas Day"            Fixed Apr 11
-  Event "costa rica/independence"       - "Independence Day"               Fixed Sep 15
+  Add   "new year"                      h # "New Year's Day" (1-Jan 2000)
+  Event "costa rica/saint joseph"       h "Saint Joseph's Day"                     Fixed Mar 19
+  Event "costa rica/battle of rivas"    h "Battle of Rivas"                        Fixed Apr 11
+  Event "costa rica/national heroe"     h "National Heroes Day"                    Fixed Apr 11
+  Add   "c/holy thursday"               h # "Holy Thursday" (20-Apr 2000)
+  Add   "c/good friday"                 h # "Good Friday" (21-Apr 2000)
+  Add   "labor"                         h # "Labor Day" (1-May 2000)
+  Add   "c/corpus christi"              h # "Corpus Christi" (22-Jun 2000)
+  Event "costa rica/guanacaste"         h "Guanacaste Day"                         Fixed Jul 25
+  Event "costa rica/saints/peter & paul"  h "St. Peter & Paul Day"                 Fixed Jun 29
+  Event "costa rica/virgin of the angel"  h "Virgin of the Angels Day"             Fixed Aug  2
+  Add   "c/assumption"                  h # "Assumption Day" (15-Aug 2000)
+  Event "costa rica/mother"             h "Mother's Day"                           Fixed Aug 15
+  Event "costa rica/independence"       h "Independence Day"                       Fixed Sep 15
+  Event "costa rica/dia de la raza"     h "Dia de la Raza"                         Fixed Oct 12
+  Add   "c/christmas"                   h # "Christmas" (25-Dec 2000)
+  Add   "new years eve"                 h # "New Year's Eve" (31-Dec 2000)
 
 
-# croatia
+#--------------------------------------------------------------
+# Croatia 
+#--------------------------------------------------------------
 Region "croatia"
-  Add   "new year"                      - # "New Year's Day"               Fixed Jan  1
-  Add   "c/epiphany"                    - # "Epiphany"                     Fixed Jan  6
-  Add   "labor"                         - # "Labor Day"                    Fixed May  1
-  Event "croatia/republic"              - "Republic Day"                   Fixed May 30
-  Event "croatia/national holiday"      - "National Holiday"               Fixed Jun 22
-  Add   "c/assumption"                  - # "Assumption Day"               Fixed Aug 15
-  Add   "c/christmas"                   - # "Christmas Day"                Fixed Dec 25
+  Add   "new year"                      h # "New Year's Day" (1-Jan 2000)
+  Add   "c/epiphany"                    h # "Epiphany (Julian Calendar)" (6-Jan 2000)
+  Add   "c/easter monday"               h # "Easter Monday (Gregorian Calendar)" (24-Apr 2000)
+  Add   "labor"                         h # "Labor Day" (1-May 2000)
+  Event "croatia/republic"              h "Republic Day"                           Fixed May 30
+  Event "croatia/antifascist struggle commemoration"  h "Antifascist Struggle Commemoration Day" Fixed Jun 22
+  Event "croatia/homeland thanksgiving"  h "Homeland Thanksgiving Day"             Fixed Aug  5
+  Add   "c/assumption"                  h # "Assumption Day" (15-Aug 2000)
+  Event "croatia/all saint"             h "All Saint's Day"                        Fixed Nov  1
+  Add   "c/christmas"                   h # "Christmas" (25-Dec 2000)
+  Event "croatia/second of christmas"   h "Second day of Christmas"                Fixed Dec 26
 
-
-# cuba
+#--------------------------------------------------------------
+# Cuba 
+#--------------------------------------------------------------
 Region "cuba"
-  Event "cuba/liberation"               - "Liberation Day"                 Fixed Jan  1
-  Add   "labor"                         - # "Labor Day"                    Fixed May  1
+  Event "cuba/liberation"               h "Liberation Day"                         Fixed Jan  1
+  Add   "new year"                      h # "New Year's Day" (1-Jan 2000)
+  Event "cuba/victory of the armed forces"  h "Victory of the Armed Forces"        Fixed Jan  2
+  Event "cuba/baire proclamation"       h "Baire Proclamation"                     Fixed Feb 24
+  Event "cuba/revolutionary attack on the presidential palace"  h "Revolutionary Attack on the Presidential Palace" Fixed Mar 13
+  Event "cuba/women"                    h "Women's Day"                            Fixed Mar 28
+  Event "cuba/militia"                  h "Militia Day"                            Fixed Apr 16
+  Event "cuba/victory at girn"          h "Victory at Gir-n"                       Fixed Apr 19
+  Add   "labor"                         h # "Labor Day" (1-May 2000)
   Event "cuba/independence"             - "Independence Day"               Fixed May 20
-  Event "cuba/revolution"               - "Revolution Day"                 Fixed Jul 26
-  Event "cuba/wars of independence"     - "Wars of Independence Day"       Fixed Oct 10
+  Event "cuba/moncada anniversary"      h "Moncada Anniversary"                    Fixed Jul 25
+  Event "cuba/anniversary of the moncada barracks attack"  h "Anniversary of the Moncada Barracks Attack Day" Fixed Jul 26
+  Event "cuba/revolution"               h "Revolution Day"                         Fixed Jul 27
+  Event "cuba/independence war"         h "Independence War (Beginning of)"        Fixed Oct 10
+  Add   "c/christmas"                   h # "Christmas" (25-Dec 2000)
+  Event "cuba/second of christmas"      h "Second day of Christmas"                Fixed Dec 26
 
+#--------------------------------------------------------------
+# Curacao 
+#--------------------------------------------------------------
+Region "curacao"
+  Add   "new year"                      h # "New Year's Day" (1-Jan 2000)
+  Event "curacao/carnival"              h "Carnival"                               Easter -48
+  Add   "c/good friday"                 h # "Good Friday" (21-Apr 2000)
+  Add   "c/easter"                      h # "Easter" (23-Apr 2000)
+  Add   "c/easter monday"               h # "Easter Monday" (24-Apr 2000)
+  Event "curacao/queen beatrixs birthday"  h "Queen Beatrix's Birthday"            Fixed Apr 30
+  Add   "labor"                         h # "Labor Day" (1-May 2000)
+  Add   "c/ascension"                   h # "Ascension" (1-Jun 2000)
+  Event "curacao/flag"                  h "Flag Day"                               Fixed Jul  2
+  Event "curacao/antillean"             h "Antillean Day"                          Fixed Oct 21
+  Event "curacao/christma"              h "Christmas Day"                          Fixed Dec 25
+  Add   "c/boxing"                      h # "Boxing Day" (26-Dec 2000)
+
+#--------------------------------------------------------------
+# Turkish Cyprus ("south")
+#--------------------------------------------------------------
 
 # cyprus/greece
 Region "cyprus/greece"
@@ -927,6 +1110,10 @@ Region "cyprus/greece"
   Add   "c/christmas"                   - # "Christmas Day"                Fixed Dec 25
   Add   "c/boxing"                      - # "Boxing Day"                   Fixed Dec 26
 
+#--------------------------------------------------------------
+# Turkish Cyprus ("northern")
+#--------------------------------------------------------------
+
 # cyprus/turkey
 Region "cyprus/turkey"
   Add   "new year"                      - # "New Year's Day"               Fixed Jan  1
@@ -940,6 +1127,9 @@ Region "cyprus/turkey"
   Event "cyprus/communal resistance"    - "Communal Resistance Day"        Fixed Aug  1
   Add   "turkey/victory"                - # "Victory Day"                  Fixed Aug 30
   Add   "turkey/independence"           - # "Independence Day"             Fixed Oct 29
+  Add   "islamic/al fitr"               h # "Id al Fitr (End of Ramadan)" (8-Jan 2000)
+  Add   "islamic/al adha"               h # "Eid al-Adha (Feast of the Sacrifice)" (16-Mar 2000)
+  Event "cyprus/proclamation of t r northern cyprus"  h "Proclamation of \"T. R. Northern Cyprus\"" Fixed Nov 15
 
 
 # czech republic
@@ -954,22 +1144,52 @@ Region "czech republic"
   Add   "saints/stephen"                - # "St. Stephen"                  Fixed Dec 26
 
 
-# denmark
+#--------------------------------------------------------------
+# Denmark 
+#--------------------------------------------------------------
 Region "denmark"
+  Add   "new year"                      h # "New Year's Day" (1-Jan 2000)
+  Event "denmark/3 king"                h "3 King's Day"                           Fixed Jan  6
   Event "denmark/fjortende februar"     - "Fjortende Februar"              Fixed Feb 14
-  Event "denmark/birthday of queen margrethe ii"  - "Birthday of Queen Margrethe II" Fixed Apr 16
+  Event "denmark/"                      h "(similar to Hallowe'en)"                Fixed Mar  5
+  Add   "c/palm sunday"                 h # "Palm Sunday" (14-Apr 2000)
+  Event "denmark/birthday of queen"     - "Birthday of Queen Margrethe II" Fixed Apr 16
+  Add   "c/holy thursday"               h # "Holy Thursday" (20-Apr 2000)
+  Add   "c/good friday"                 h # "Good Friday " (21-Apr 2000)
+  Add   "c/easter"                      h # "Easter Sunday" (23-Apr 2000)
+  Add   "c/easter monday"               h # "Easter Monday" (24-Apr 2000)
+  Add   "mothers"                       h # "Mother's Day" (14-May 2000)
+  Event "denmark/great prayer"          h "Great Prayer Day"                       Easter +26
   Event "denmark/liberation"            - "Liberation Day"                 Fixed May  5
-  Event "denmark/common prayer"         - "Common Prayer Day"              Easter +26
-  Event "denmark/constitution"          - "Constitution Day"               Fixed Jun  5
-  Event "denmark/valdemars"             - "Valdemar's Day"                 Fixed Jun 15
+  Event "denmark/prince fredriks birthday"  h "Prince Fredrik's Birthday"          Fixed May 26
+  Add   "c/ascension"                   h # "Ascension Thursday" (11-Jun 2000)
+  Event "denmark/constitution"          h "Constitution Day"                       Fixed Jun  5
+# Denmark Father's Day Fars Dag 5-Jun
+  Add   "c/pentecost"                   h # "Pentecost" (11-Jun 2000)
+  Add   "c/pentecost monday"            h # "Pentecost Monday" (12-Jun 2000)
+  Event "denmark/valdemar"              h "Valdemars Day"                          Fixed Jun 15
+  Add   "c/trinity"                     h # "Trinity" (18-Jun 2000)
+  Event "denmark/midsummer party"       h "Midsummer Party"                        Fixed Jun 23
+  Event "denmark/morten"                h "Mortens Day"                            Fixed Nov 11
+  Add   "c/christmas eve"               h # "Christmas Eve" (24-Dec 2000)
+  Add   "c/christmas"                   h # "Christmas" (25-Dec 2000)
+  Event "denmark/2nd of christmas"      h "2nd day of Christmas"                   Fixed Dec 26
+  Add   "new years eve"                 h # "New Year's Eve" (31-Dec 2000)
 
 
-# djibouti
+#--------------------------------------------------------------
+# Djibouti 
+#--------------------------------------------------------------
 Region "djibouti"
-  Add   "new year"                      - # "New Year's Day"               Fixed Jan  1
-  Event "djibouti/workers"              - "Workers' Day"                   Fixed May  1
+  Add   "new year"                      h # "New Year's Day" (1-Jan 2000)
+  Add   "islamic/al fitr"               h # "Id al Fitr (End of Ramadan)" (8-Jan 2000)
+  Add   "islamic/al adha"               h # "Id al-Adha" (16-Mar 2000)
+  Add   "islamic/new year"              h # "Islamic New Year" (6-Apr 2000)
+  Event "djibouti/fete du travail"      h "Fete du Travail"                Fixed May  1
+  Event "djibouti/mouloud"              h "Mouloud (Birth of the Prophet)" Islamic_Fixed Rebîu'l-awwal 12
   Event "djibouti/independence feast"   - "Independence Feast Day"         Fixed Jun 27
-  Add   "c/christmas"                   - # "Christmas Day"                Fixed Dec 25
+  Event "djibouti/independence"         h "Independence Day"               Fixed Jul 27
+  Add   "c/christmas"                   h # "Christmas" (25-Dec 2000)
 
 
 # dominica
