@@ -351,7 +351,7 @@ class client {
 	domains = domain;
       else
 	if(stringp(domain))
-	  domains = ({ domains });
+	  domains = ({ domain });
 	
     }
   }
