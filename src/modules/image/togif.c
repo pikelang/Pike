@@ -1,4 +1,4 @@
-/* $Id: togif.c,v 1.15 1996/11/23 04:42:44 law Exp $ */
+/* $Id: togif.c,v 1.16 1996/11/23 07:24:06 law Exp $ */
 /*
 
 togif 
@@ -519,21 +519,49 @@ void image_gif_begin(INT32 args)
 {
    dynamic_buffer buf;
    long i;
+   int colors,bpp;
+   struct colortable *ct=NULL;
+
+   if (args)
+      if (sp[-args].type==T_INT && sp[-args].u.integer!=0)
+	 ct=colortable_quant(THIS,max(256,min(2,sp[-args].u.integer)));
+      else if (sp[-args].type==T_ARRAY)
+	 ct=colortable_from_array(sp[-args].u.array,"image->gif_begin()\n");
 
    pop_n_elems(args);
 
    buf.s.str=NULL;
    initialize_buf(&buf);
 
+   colors=4; bpp=2;
+   while (colors<ct->numcol) { colors<<=1; bpp++; }
+
    low_my_binary_strcat("GIF89a",6,&buf);
    buf_word((unsigned short)THIS->xsize,&buf);
    buf_word((unsigned short)THIS->ysize,&buf);
-   low_my_putchar( (char)(0x77), &buf);
-   /* 7 is bpp - 1   7 is "no" global colormap + resolution (??!) */
+   low_my_putchar( (char)((0x80*!!ct) | 0x70 | (bpp-1) ), &buf);
+   /* | global colormap | 3 bits color res | sort | 3 bits bpp */
+   /* color res is'nt cared of */
 
    low_my_putchar( 0, &buf ); /* background color */
    low_my_putchar( 0, &buf ); /* just zero */
 
+   if (!!ct)
+   {
+      for (i=0; i<ct->numcol; i++)
+      {
+	 low_my_putchar(ct->clut[i].r,&buf);
+	 low_my_putchar(ct->clut[i].g,&buf);
+	 low_my_putchar(ct->clut[i].b,&buf);
+      }
+
+      for (; i<colors; i++)
+      {
+	 low_my_putchar(0,&buf);
+	 low_my_putchar(0,&buf);
+	 low_my_putchar(0,&buf);
+      }
+   }
    push_string(low_free_buf(&buf));
 }
 
@@ -545,7 +573,7 @@ void image_gif_end(INT32 args)
 
 void image_gif_netscape_loop(INT32 args)
 {
-   unsigned short loops;
+   unsigned short loops=0;
    char buf[30];
    if (args)
       if (sp[-args].type!=T_INT) 
@@ -562,13 +590,14 @@ void image_gif_netscape_loop(INT32 args)
    push_string(make_shared_binary_string(buf,19));
 }
 
-static void img_gif_add(INT32 args,int fs)
+static void img_gif_add(INT32 args,int fs,int lm)
 {
    INT32 x,y,i;
    struct lzw lzw;
    rgb_group *rgb;
    struct colortable *ct=NULL;
    dynamic_buffer buf;
+   int colors,bpp;
 
 CHRONO("gif add init");
 
@@ -586,10 +615,10 @@ CHRONO("gif add init");
    }
 
 
-   if (args>0 && sp[-args].type==T_ARRAY)
-      ct=colortable_from_array(sp[-args].u.array,"image->gif_add()\n");
-   else if (args!=3 && sp[-args].type==T_INT)
-      ct=colortable_quant(THIS,max(256,min(2,sp[-args].u.integer)));
+   if (args>2 && sp[2-args].type==T_ARRAY)
+      ct=colortable_from_array(sp[2-args].u.array,"image->gif_add()\n");
+   else if (args>3 && sp[2-args].type==T_INT)
+      ct=colortable_quant(THIS,max(256,min(2,sp[2-args].u.integer)));
 
    if (args>2+!!ct)
    {
@@ -612,6 +641,9 @@ CHRONO("gif add init");
 
    if (!ct) ct=colortable_quant(THIS,256);
 
+   colors=4; bpp=2;
+   while (colors<ct->numcol) { colors<<=1; bpp++; }
+
    low_my_putchar( ',', &buf ); /* image separator */
 
    buf_word(x,&buf); /* leftofs */
@@ -619,32 +651,35 @@ CHRONO("gif add init");
    buf_word(THIS->xsize,&buf); /* width */
    buf_word(THIS->ysize,&buf); /* height */
 
-   low_my_putchar(0x80|7, &buf); 
+   low_my_putchar((0x80*lm)|(bpp-1), &buf); 
       /* not interlaced (interlaced == 0x40) */
       /* local colormap ( == 0x80) */
       /* 8 bpp in map ( == 0x07)   */
 
-   for (i=0; i<ct->numcol; i++)
+   if (lm)
    {
-      low_my_putchar(ct->clut[i].r,&buf);
-      low_my_putchar(ct->clut[i].g,&buf);
-      low_my_putchar(ct->clut[i].b,&buf);
-   }
-   for (; i<256; i++)
-   {
-      low_my_putchar(0,&buf);
-      low_my_putchar(0,&buf);
-      low_my_putchar(0,&buf);
+      for (i=0; i<ct->numcol; i++)
+      {
+	 low_my_putchar(ct->clut[i].r,&buf);
+	 low_my_putchar(ct->clut[i].g,&buf);
+	 low_my_putchar(ct->clut[i].b,&buf);
+      }
+      for (; i<colors; i++)
+      {
+	 low_my_putchar(0,&buf);
+	 low_my_putchar(0,&buf);
+	 low_my_putchar(0,&buf);
+      }
    }
 
-   low_my_putchar( 8, &buf ); /* bits per pixel , or min 2 */
+   low_my_putchar( bpp, &buf ); 
    
    i=THIS->xsize*THIS->ysize;
    rgb=THIS->img;
 
 CHRONO("begin pack");
 
-   lzw_init(&lzw,8);
+   lzw_init(&lzw,bpp);
    if (!fs)
       while (i--) lzw_add(&lzw,colortable_rgb(ct,*(rgb++)));
    else
@@ -699,11 +734,21 @@ CHRONO("done");
 
 void image_gif_add(INT32 args)
 {
-   img_gif_add(args,0);
+   img_gif_add(args,0,1);
 }
 
 void image_gif_add_fs(INT32 args)
 {
-   img_gif_add(args,1);
+   img_gif_add(args,1,1);
+}
+
+void image_gif_add_nomap(INT32 args)
+{
+   img_gif_add(args,0,0);
+}
+
+void image_gif_add_fs_nomap(INT32 args)
+{
+   img_gif_add(args,1,0);
 }
 

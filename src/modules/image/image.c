@@ -1,4 +1,4 @@
-/* $Id: image.c,v 1.26 1996/11/22 20:28:16 law Exp $ */
+/* $Id: image.c,v 1.27 1996/11/23 07:24:03 law Exp $ */
 
 #include "global.h"
 
@@ -7,7 +7,7 @@
 
 #include "stralloc.h"
 #include "global.h"
-RCSID("$Id: image.c,v 1.26 1996/11/22 20:28:16 law Exp $");
+RCSID("$Id: image.c,v 1.27 1996/11/23 07:24:03 law Exp $");
 #include "types.h"
 #include "macros.h"
 #include "object.h"
@@ -1474,6 +1474,10 @@ void init_image_programs()
    add_function("gif_add",image_gif_add,
 		"function(int|void,int|void:string)",0);
    add_function("gif_add_fs",image_gif_add_fs,
+		"function(int|void,int|void:string)",0);
+   add_function("gif_add_nomap",image_gif_add_nomap,
+		"function(int|void,int|void:string)",0);
+   add_function("gif_add_fs_nomap",image_gif_add_fs_nomap,
 		"function(int|void,int|void:string)",0);
    add_function("gif_end",image_gif_end,
 		"function(:string)",0);

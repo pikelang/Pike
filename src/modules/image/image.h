@@ -1,4 +1,4 @@
-/* $Id: image.h,v 1.9 1996/11/14 12:34:59 law Exp $ */
+/* $Id: image.h,v 1.10 1996/11/23 07:24:04 law Exp $ */
 
 #define MAX_NUMCOL 32768
 #define QUANT_MAP_BITS 4
@@ -79,6 +79,8 @@ void image_fromgif(INT32 args);
 void image_gif_begin(INT32 args);
 void image_gif_add(INT32 args);
 void image_gif_add_fs(INT32 args);
+void image_gif_add_nomap(INT32 args);
+void image_gif_add_fs_nomap(INT32 args);
 void image_gif_end(INT32 args);
 void image_gif_netscape_loop(INT32 args);
 
