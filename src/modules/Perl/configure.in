@@ -1,30 +1,39 @@
-# $Id: configure.in,v 1.7 2000/02/09 01:16:07 leif Exp $
+# $Id: configure.in,v 1.8 2000/04/19 17:56:54 grubba Exp $
 AC_INIT(perlmod.c)
 AC_CONFIG_HEADER(perl_machine.h)
 
 AC_MODULE_INIT()
 
-AC_CHECK_PROGS(perl, perl perl5, x)
+AC_ARG_WITH(perl, [  --with-perl           enable the Perl module],[],
+	    [with_perl="no"])
 
-AC_MSG_CHECKING(if perl is embeddable)
-AC_CACHE_VAL(pike_cv_perlmod_have_perl,
-[
-pike_cv_perlmod_have_perl=no
+if test "x$with_perl" = "xno"; then :; else
 
-objs=
+  if test "x$with_perl" = "xyes"; then
+    AC_CHECK_PROGS(perl, perl perl5, x)
+  else
+    AC_CHECK_PROGS(perl, "$with_perl" perl perl5, x)
+  fi
 
-if test x$perl != xx ; then
-  # We have perl, but do we have perlembed?
-  PERL_LDFLAGS=`perl -MExtUtils::Embed -e ldopts`
-  PERL_CCFLAGS=`perl -MExtUtils::Embed -e ccopts`
+  AC_MSG_CHECKING(if perl is embeddable)
+  AC_CACHE_VAL(pike_cv_perlmod_have_perl,
+  [
+    pike_cv_perlmod_have_perl=no
 
-  if test "x$PERL_LDFLAGS$PERL_CCFLAGS" != x; then
-     OLD_LIBS="${LDFLAGS-}"
-     OLD_CFLAGS="${CFLAGS-}"
-     CFLAGS="$CFLAGS $PERL_CCFLAGS"
-     LIBS="$LIBS $PERL_LDFLAGS"
+    objs=
 
-     AC_TRY_RUN([
+    if test x$perl != xx ; then
+      # We have perl, but do we have perlembed?
+      PERL_LDFLAGS=`perl -MExtUtils::Embed -e ldopts`
+      PERL_CCFLAGS=`perl -MExtUtils::Embed -e ccopts`
+
+      if test "x$PERL_LDFLAGS$PERL_CCFLAGS" != x; then
+	OLD_LIBS="${LDFLAGS-}"
+	OLD_CFLAGS="${CFLAGS-}"
+	CFLAGS="$CFLAGS $PERL_CCFLAGS"
+	LIBS="$LIBS $PERL_LDFLAGS"
+
+	AC_TRY_RUN([
 #include <EXTERN.h>
 #include <perl.h>
 #include <unistd.h>
@@ -49,28 +58,28 @@ int main(int argc, char **argv, char **env)
   perl_free(my_perl);
   return 0;
 }
-],pike_cv_perlmod_have_perl=yes)
+	],pike_cv_perlmod_have_perl=yes)
 
-     LIBS="${OLD_LIBS-}"
-     CFLAGS="${OLD_CFLAGS-}"
+	LIBS="${OLD_LIBS-}"
+	CFLAGS="${OLD_CFLAGS-}"
+      fi
+    fi
+  ])
+
+  if test "x$pike_cv_perlmod_have_perl" = xyes ; then
+    extra_objs='perlxsi.o'
+    if test "x$PERL_CCFLAGS" = x ; then
+      PERL_LDFLAGS=`perl -MExtUtils::Embed -e ldopts`
+      PERL_CCFLAGS=`perl -MExtUtils::Embed -e ccopts`
+    fi
+    AC_DEFINE(HAVE_PERL)
+    AC_MSG_RESULT(yes)
+  else
+    PERL_LDFLAGS=''
+    PERL_CCFLAGS=''
+    AC_MSG_RESULT(no)
   fi
 fi
-])
-
-if test "x$pike_cv_perlmod_have_perl" = xyes ; then
-  extra_objs='perlxsi.o'
-  if test "x$PERL_CCFLAGS" = x ; then
-    PERL_LDFLAGS=`perl -MExtUtils::Embed -e ldopts`
-    PERL_CCFLAGS=`perl -MExtUtils::Embed -e ccopts`
-  fi
-  AC_DEFINE(HAVE_PERL)
-  AC_MSG_RESULT(yes)
-else
-  PERL_LDFLAGS=''
-  PERL_CCFLAGS=''
-  AC_MSG_RESULT(no)
-fi
-
 
 AC_SUBST(perl)
 AC_SUBST(extra_objs)
