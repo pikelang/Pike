@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: dlopen.c,v 1.57 2002/10/27 18:39:19 grubba Exp $
+|| $Id: dlopen.c,v 1.58 2002/10/27 21:18:49 grubba Exp $
 */
 
 #include <global.h>
@@ -199,7 +199,7 @@ size_t STRNLEN(char *s, size_t maxlen)
 
 #else /* PIKE_CONCAT */
 
-RCSID("$Id: dlopen.c,v 1.57 2002/10/27 18:39:19 grubba Exp $");
+RCSID("$Id: dlopen.c,v 1.58 2002/10/27 21:18:49 grubba Exp $");
 
 #endif
 
@@ -1623,22 +1623,32 @@ static int dl_load_coff_files(struct DLHandle *ret,
 	    int flag = ((size_t)loc) & 0xf;
 	    unsigned INT64 instr = 0;
 	    unsigned INT64 S;
+	    unsigned INT64 lost_bits;
 	    loc = (void *)(((size_t)loc) & ~((size_t)0xf));
 
-	    /* Read sub-instruction. */
-	    /* FIXME: Probably ought to save the extra bits for the
-	     *        write-back stage.
+	    /* Read sub-instruction.
+	     *
+	     * The instruction is msb aligned to avoid needing
+	     * to shift in case 2.
+	     *
+	     * Note that the low order bits are kept as is to
+	     * simplify the write-back.
+	     *
+	     * lost_bits is used to retain the high order bits
+	     * that are lost due to the shift.
 	     */
 	    switch (flag) {
 	    case 0:
-	      instr = ((unsigned INT64 *)loc)[0] >> 5;
+	      lost_bits = ((unsigned INT64 *)loc)[0];
+	      instr = lost_bits << 18;
 	      break;
 	    case 1:
-	      instr = ((((unsigned INT32 *)loc)[1]) >> 12) |
-		(((unsigned INT64)((unsigned INT32 *)loc)[2]) << 18);
+	      lost_bits = ((unsigned INT32 *)loc)[2];
+	      instr = (lost_bits << 41) |
+		(((unsigned INT64)((unsigned INT32 *)loc)[1]) << 9);
 	      break;
 	    case 2:
-	      instr = ((unsigned INT64 *)loc)[1] >> 23;
+	      instr = ((unsigned INT64 *)loc)[1];
 	      break;
 	    default:
 	      sprintf(err, "Unsupported relocation: %d, 0x%p, %d",
@@ -1650,7 +1660,7 @@ static int dl_load_coff_files(struct DLHandle *ret,
 	      return -1;
 	    }
 #ifdef DLDEBUG
-	    fprintf(stderr, "DL: instr 0x%p\n", (void *)instr);
+	    fprintf(stderr, "DL: instr 0x%p\n", (void *)(instr >> 23));
 #endif
 	    switch (RELOCS(r).type) {
 	      /* We will need to support more types here */
@@ -1663,18 +1673,18 @@ static int dl_load_coff_files(struct DLHandle *ret,
 	    case COFFReloc_IA64_pcrel21b:
 	      /* Instruction format M22, M23, B1, B2, B3, B6
 	       *
-	       * 4 33333333 33222222 22221111 11111100 00000000
-	       * 0 98765432 10987654 32109876 54321098 76543210
-	       * X XXX.XXX. ........ ........ ...XXXXX XXXXXXXX
+	       * 43333333 33322222 22222111 11111110 00000000 0
+	       * 09876543 21098765 43210987 65432109 87654321 0
+	       * XXXX.XXX ........ ........ ....XXXX XXXXXXXX X
 	       *
 	       * S += ptr - loc
 	       */
-	      S = (instr & 0x1ffffe000) + ((ptr - loc)<<(13 - 4));
-	      if (S & 0x200000000) {
+	      S = (instr & 0x00fffff000000000) + ((ptr - loc)<<(23 - 4));
+	      if (S & 0x0100000000000000) {
 		/* Got carry, adjust sign. */
-		instr ^= 0x1000000000;
+		instr ^= 0x0800000000000000;
 	      }
-	      instr = (instr & ~0x1ffffe000) | (S & 0x1ffffe000);
+	      instr = (instr & ~0x00fffff000000000) | (S & 0x00fffff000000000);
 	      break;
 
 	      UNIMPLEMENTED_REL(COFFReloc_IA64_pcrel21m);
@@ -1683,16 +1693,17 @@ static int dl_load_coff_files(struct DLHandle *ret,
 	    case COFFReloc_IA64_gprel22:
 	      /* Instruction format A5
 	       *
-	       * 4 33333333 33222222 22221111 11111100 00000000
-	       * 0 98765432 10987654 32109876 54321098 76543210
-	       * X XXX..... ........ ..XX.... ...XXXXX XXXXXXXX
+	       * 43333333 33322222 22222111 11111110 00000000 0
+	       * 09876543 21098765 43210987 65432109 87654321 0
+	       * XXXX.... ........ ...XX... ....XXXX XXXXXXXX X
 	       *
 	       * S += ptr - gp;
 	       */
 	      S = (ptr - (char *)gp) +
-		(((instr & 0xfe0000) >> 12)|((instr & 0x1fffc00000) >> 14));
-	      instr = (instr & 0x1e000301fff) |
-		((S & 0x3fff80)<<15)|((S & 0x7f)<<13);
+		(((instr & 0x0fffe00000000000) >> 38)|
+		 ((instr & 0x000007f000000000) >> 36));
+	      instr = (instr & ~0x0fffe7f000000000) |
+		((S & 0x3fff80)<<38)|((S & 0x7f)<<36);
 #ifdef DLDEBUG
 	      if ((S & ~0x3fffff) + ((S & 0x200000)<<1)) {
 		fprintf(stderr, "DL: gp relative offset > 22 bits: 0x%p\n",
@@ -1704,20 +1715,21 @@ static int dl_load_coff_files(struct DLHandle *ret,
 	    case COFFReloc_IA64_ltoff22:
 	      /* Instruction format A5
 	       *
-	       * 4 33333333 33222222 22221111 11111100 00000000
-	       * 0 98765432 10987654 32109876 54321098 76543210
-	       * X XXX..... ........ ..XX.... ...XXXXX XXXXXXXX
+	       * 43333333 33322222 22222111 11111110 00000000 0
+	       * 09876543 21098765 43210987 65432109 87654321 0
+	       * XXXX.... ........ ...XX... ....XXXX XXXXXXXX X
 	       *
 	       * gp[gp_pos] = S + ptr;
 	       * S = gp_pos++;
 	       */
 
 	      gp[gp_pos] = ((unsigned INT64) ptr) +
-		(((instr & 0xfe0000) >> 12)|((instr & 0x1fffc00000) >> 14));
+		(((instr & 0x0fffe00000000000) >> 38)|
+		 ((instr & 0x000007f000000000) >> 36));
 
 	      /* Note: multiplies gp_pos with 8 in the same operation. */
-	      instr = (instr & 0x1e000301fff) |
-		((gp_pos & 0x07fff0)<<18) | ((gp_pos & 0x00000f)<<16);
+	      instr = (instr & ~0x0fffe7f000000000) |
+		((gp_pos & 0x07fff0)<<41) | ((gp_pos & 0x00000f)<<39);
 	      gp_pos++;
 	      break;
 
@@ -1737,26 +1749,22 @@ static int dl_load_coff_files(struct DLHandle *ret,
 	      return -1;
 	    }
 #ifdef DLDEBUG
-	    fprintf(stderr, "DL: relocated instr 0x%p\n", (void *)instr);
+	    fprintf(stderr, "DL: relocated instr 0x%p\n",
+		    (void *)(instr >> 23));
 #endif
 	    /* Store back the modified instruction. */
 	    switch(flag) {
 	    case 0:
-	      ((unsigned INT64 *)loc)[0] =
-		(((unsigned INT64 *)loc)[0] & 0xffffc0000000001f) |
-		((instr & 0x1ffffffffff)<<5);
+	      ((unsigned INT64 *)loc)[0] = (lost_bits & 0xffffc00000000000) |
+		(instr >> 18)
 	      break;
 	    case 1:
-	      ((unsigned INT32 *)loc)[1] =
-		(((unsigned INT32 *)loc)[1] & 0x3fff) | (instr << 14);
-	      ((unsigned INT32 *)loc)[2] =
-		(((unsigned INT32 *)loc)[2] & 0xff800000) |
-		((instr >> 18) & 0x7fffff);
+	      ((unsigned INT32 *)loc)[1] = (instr >> 9);
+	      ((unsigned INT32 *)loc)[2] = (lost_bits & ~0x7fffff) |
+		(instr >> 41);
 	      break;
 	    case 2:
-	      ((unsigned INT64 *)loc)[1] =
-		(((unsigned INT64 *)loc)[1] & 0x7fffff) |
-		((instr & 0x1ffffffffff)<<23);
+	      ((unsigned INT64 *)loc)[1] = instr;
 	      break;
 	    }
 	  }
