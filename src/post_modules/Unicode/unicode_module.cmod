@@ -2,13 +2,13 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: unicode_module.cmod,v 1.11 2004/04/11 18:51:10 per Exp $
+|| $Id: unicode_module.cmod,v 1.12 2004/04/11 20:44:28 per Exp $
 */
 
 #include "global.h"
 #include "stralloc.h"
 #include "global.h"
-RCSID("$Id: unicode_module.cmod,v 1.11 2004/04/11 18:51:10 per Exp $");
+RCSID("$Id: unicode_module.cmod,v 1.12 2004/04/11 20:44:28 per Exp $");
 #include "pike_macros.h"
 #include "interpret.h"
 #include "program.h"
@@ -39,7 +39,6 @@ static void push_words( struct buffer *data, struct words *w )
 				  w->words[i].size );
   }
   r->type_field = BIT_STRING;
-  pop_stack();
   push_array( r );
   uc_buffer_free( data );
   uc_words_free( w );
@@ -89,15 +88,17 @@ PIKEFUN array(string) split_words_and_normalize( string input )
      optflags OPT_TRY_OPTIMIZE;
 {
   struct words *res;
-  struct buffer *data;
   if( !input->size_shift && (res = unicode_split_words_pikestr0( input )) )
   {
     push_words0( input, res );
+    return;
   }
-  else
+
   {
-    data = unicode_decompose_buffer(uc_buffer_from_pikestring(input), COMPAT_BIT);
+    struct buffer *data;
+    data = uc_buffer_from_pikestring(input);
     pop_n_elems( args );
+    data = unicode_decompose_buffer( data, COMPAT_BIT );
     res = unicode_split_words_buffer( data );
     push_words( data, res );
   }
