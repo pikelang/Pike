@@ -5,7 +5,7 @@
 \*/
 
 /*
- * $Id: error.h,v 1.43 2000/06/03 23:44:01 noring Exp $
+ * $Id: error.h,v 1.44 2000/06/05 14:29:11 grubba Exp $
  */
 #ifndef ERROR_H
 #define ERROR_H
@@ -250,8 +250,6 @@ void cleanup_error(void);
 #define SIMPLE_DIVISION_BY_ZERO_ERROR(FUNC) \
      math_error(FUNC, Pike_sp-args, args, 0, "Division by zero.\n")
 
-#endif
-
 #ifndef PIKE_DEBUG
 #define check_recovery_context() ((void)0)
 #endif
@@ -293,3 +291,9 @@ void cleanup_error(void);
                 rethrow; \
         } \
         while(0)
+
+/* Generic error stuff */
+#define ERR_EXT_DECLARE
+#include "errors.h"
+
+#endif
