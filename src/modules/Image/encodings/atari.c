@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: atari.c,v 1.2 2003/12/13 23:33:21 nilsson Exp $
+|| $Id: atari.c,v 1.3 2003/12/14 22:48:36 nilsson Exp $
 */
 
 #include "global.h"
@@ -12,6 +12,26 @@
 #include "atari.h"
 
 extern struct program *image_program;
+
+void rotate_atari_palette(struct atari_palette* pal, unsigned int left,
+			  unsigned int right)
+{
+  rgb_group tmp;
+  unsigned int i;
+
+  if(right>left) {
+    tmp = pal->colors[right];
+    for(i=right; i>left; i--)
+      pal->colors[i] = pal->colors[i-1];
+    pal->colors[left] = tmp;
+  }
+  else {
+    tmp = pal->colors[left];
+    for(i=left; i<right; i++)
+      pal->colors[i] = pal->colors[i+1];
+    pal->colors[right] = tmp;
+  }
+}
 
 /* pal is 2*size of palette data */
 struct atari_palette* decode_atari_palette(unsigned char *pal,
