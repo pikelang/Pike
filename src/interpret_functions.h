@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: interpret_functions.h,v 1.119 2002/11/14 18:09:12 grubba Exp $
+|| $Id: interpret_functions.h,v 1.120 2002/11/14 20:19:06 marcus Exp $
 */
 
 /*
@@ -2195,7 +2195,7 @@ OPCODE0_JUMP(F_TAIL_RECUR, "tail recursion", 0, {
   num_locals = READ_INCR_BYTE(addr);
   args = READ_INCR_BYTE(addr);
   addr += ENTRY_PROLOGUE_SIZE;
-
+  SET_PROG_COUNTER(addr);
 
   if(Pike_sp-args != Pike_fp->locals)
   {
@@ -2215,7 +2215,8 @@ OPCODE0_JUMP(F_TAIL_RECUR, "tail recursion", 0, {
       Pike_fatal("Sp whacked!\n");
   });
 
-  DO_JUMP_TO(addr);
+  FETCH;
+  DONE;
 });
 
 OPCODE0(F_BREAKPOINT, "breakpoint", 0, {
