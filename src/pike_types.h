@@ -5,7 +5,7 @@
 \*/
 
 /*
- * $Id: pike_types.h,v 1.63 2001/03/18 00:59:34 grubba Exp $
+ * $Id: pike_types.h,v 1.64 2001/03/27 22:02:16 grubba Exp $
  */
 #ifndef PIKE_TYPES_H
 #define PIKE_TYPES_H
@@ -157,7 +157,7 @@ extern struct pike_type_location *all_pike_type_locations;
 
 #define MAKE_CONSTANT_TYPE(T, X) do {		\
     static struct pike_type_location type_;	\
-    if (!type_.t} {				\
+    if (!type_.t) {				\
       type_.t = CONSTTYPE(X);			\
       type_.next = all_pike_type_locations;	\
       all_pike_type_locations = &type_;		\
