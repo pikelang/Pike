@@ -3,12 +3,13 @@
 #endif /* HAVE_CONFIG_H */
 
 #include "global.h"
-RCSID("$Id: iso2022.c,v 1.8 1999/04/27 20:24:26 marcus Exp $");
+RCSID("$Id: iso2022.c,v 1.9 1999/05/09 07:18:00 hubbe Exp $");
 #include "program.h"
 #include "interpret.h"
 #include "stralloc.h"
 #include "object.h"
 #include "module_support.h"
+#include "error.h"
 
 #include "iso2022.h"
 
