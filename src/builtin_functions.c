@@ -5,7 +5,7 @@
 \*/
 /**/
 #include "global.h"
-RCSID("$Id: builtin_functions.c,v 1.363 2002/10/03 17:23:29 mast Exp $");
+RCSID("$Id: builtin_functions.c,v 1.364 2002/10/15 13:51:39 grubba Exp $");
 #include "interpret.h"
 #include "svalue.h"
 #include "pike_macros.h"
@@ -4157,6 +4157,18 @@ PMOD_EXPORT void f_mktime (INT32 args)
   date.tm_mon=mon;
   date.tm_year=year;
 
+  if (args > 6) {
+    if (Pike_sp[6-args].type != T_INT) {
+      PIKE_ERROR("mktime", "Bad argument 6 (expected int).\n", Pike_sp, args);
+    }
+    if (args > 7) {
+      if (Pike_sp[7-args].type != T_INT) {
+	PIKE_ERROR("mktime", "Bad argument 7 (expected int).\n",
+		   Pike_sp, args);
+      }
+    }
+  }
+
   if ((args > 6) && (Pike_sp[6-args].subtype == NUMBER_NUMBER))
   {
     date.tm_isdst = Pike_sp[6-args].u.integer;
@@ -4171,11 +4183,30 @@ PMOD_EXPORT void f_mktime (INT32 args)
 #ifdef STRUCT_TM_HAS___TM_GMTOFF
   /* Linux-style */
   date.__tm_gmtoff = 0;
+#else
+  if((args > 7) && (Pike_sp[7-args].subtype == NUMBER_NUMBER))
+  {
+    /* Pre-adjust for the timezone.
+     *
+     * Note that pre-adjustment must be done on AIX for dates
+     * near Jan 1, 1970, sine AIX mktime(3) doesn't support
+     * negative time.
+     */
+    date.tm_sec += Pike_sp[7-args].u.integer
+#ifdef HAVE_EXTERNAL_TIMEZONE
+      - timezone
+#endif /* HAVE_EXTERNAL_TIMEZONE */
+      ;
+  }
 #endif /* STRUCT_TM_HAS___TM_GMTOFF */
 #endif /* STRUCT_TM_HAS_GMTOFF */
 
-  raw = retval = mktime(&date);
+  retval = mktime(&date);
   
+  if (raw == -1)
+    PIKE_ERROR("mktime", "Cannot convert.\n", Pike_sp, args);
+
+#if defined(STRUCT_TM_HAS_GMTOFF) || defined(STRUCT_TM_HAS___TM_GMTOFF)
   if((args > 7) && (Pike_sp[7-args].subtype == NUMBER_NUMBER))
   {
     /* Adjust for the timezone. */
@@ -4191,9 +4222,15 @@ PMOD_EXPORT void f_mktime (INT32 args)
 #endif /* STRUCT_TM_HAS___TM_GMTOFF */
 #endif /* STRUCT_TM_HAS_GMTOFF */
   }
+#endif /* STRUCT_TM_HAS_GMTOFF || STRUCT_TM_HAS___TM_GMTOFF */
 
-  if (raw == -1)
-    PIKE_ERROR("mktime", "Cannot convert.\n", Pike_sp, args);
+  if ((args > 6) && (Pike_sp[6-args].subtype == NUMBER_NUMBER) &&
+      (Pike_sp[6-args].u.integer != -1) &&
+      (Pike_sp[6-args].u.integer != date.tm_isdst)) {
+    /* Some stupid libc's (Hi Linux!) don't accept that we've set isdst... */
+    retval += 3600 * (Pike_sp[6-args].u.integer - date.tm_isdst);
+  }
+
   pop_n_elems(args);
   push_int(retval);
 }
