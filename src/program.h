@@ -5,7 +5,7 @@
 \*/
 
 /*
- * $Id: program.h,v 1.128 2001/06/08 11:01:27 hubbe Exp $
+ * $Id: program.h,v 1.129 2001/06/08 19:32:46 grubba Exp $
  */
 #ifndef PROGRAM_H
 #define PROGRAM_H
@@ -336,6 +336,7 @@ struct program
 
 
 extern struct object *error_handler;
+extern struct object *compat_handler;
 
 extern struct program *first_program;
 extern struct program *pike_trampoline_program;
