@@ -1,4 +1,4 @@
-#/usr/local/bin/pike
+#!/usr/local/bin/pike
 #define ECL
-#defing WIN64
+#define WIN64
 #include "rntcl"

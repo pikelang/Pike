@@ -368,7 +368,7 @@ int main(int argc, string *argv)
     int first_line=1;
     int forced_error=0;
     string trailer = "";
-    // cl.exe and ecl.exe echoe the file name of the file we are compiling
+    // cl.exe and ecl.exe echo the file name of the file we are compiling
     // first, we need to get rid of that to make configure behave.
     // CL: We also convert warning D4002 into an error.
     // ECL: We also convert warning 147 into an error, and command line
