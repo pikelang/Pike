@@ -1,5 +1,5 @@
 /*
- * $Id: pikecode.h,v 1.4 2001/07/26 21:04:13 marcus Exp $
+ * $Id: pikecode.h,v 1.5 2002/04/07 19:28:16 mast Exp $
  *
  * Generic headerfile for the code-generator.
  *
@@ -31,31 +31,16 @@ void ins_f_byte_with_2_args(unsigned int a,
 #define PIKE_BYTECODE_IA32	3
 #define PIKE_BYTECODE_PPC32     4
 
-/* Note: PIKE_BYTECODE_METHOD gets defined to one of the above values below. */
-
-#ifdef PIKE_USE_MACHINE_CODE
-#if defined(__i386__) || defined(__i386)
-#define PIKE_BYTECODE_METHOD	PIKE_BYTECODE_IA32
+#if PIKE_BYTECODE_METHOD == PIKE_BYTECODE_IA32
 #include "code/ia32.h"
-#elif defined(sparc) || defined(__sparc__) || defined(__sparc)
-#define PIKE_BYTECODE_METHOD	PIKE_BYTECODE_SPARC
+#elif PIKE_BYTECODE_METHOD == PIKE_BYTECODE_SPARC
 #include "code/sparc.h"
-#elif defined(__ppc__) || defined(_POWER)
-#define PIKE_BYTECODE_METHOD	PIKE_BYTECODE_PPC32
+#elif PIKE_BYTECODE_METHOD == PIKE_BYTECODE_PPC32
 #include "code/ppc32.h"
-#else /* Unsupported cpu */
-#error Unknown CPU. Run configure --without-machine-code.
-#endif /* CPU type */
-#elif defined(HAVE_COMPUTED_GOTO)
-#define PIKE_BYTECODE_METHOD	PIKE_BYTECODE_GOTO
+#elif PIKE_BYTECODE_METHOD == PIKE_BYTECODE_GOTO
 #include "code/computedgoto.h"
-#else /* Default */
-#define PIKE_BYTECODE_METHOD	PIKE_BYTECODE_DEFAULT
+#else
 #include "code/bytecode.h"
-#endif /* Interpreter type. */
-
-#ifndef PIKE_BYTECODE_METHOD
-#error PIKE_BYTECODE_METHOD not defined!
-#endif /* !PIKE_BYTECODE_METHOD */
+#endif
 
 #endif /* CODE_PIKECODE_H */

@@ -1,4 +1,4 @@
-AC_REVISION("$Id: configure.in,v 1.576 2002/04/07 15:19:28 marcus Exp $")
+AC_REVISION("$Id: configure.in,v 1.577 2002/04/07 19:28:16 mast Exp $")
 AC_INIT(interpret.c)
 AC_CONFIG_HEADER(machine.h)
 
@@ -1607,35 +1607,6 @@ else
 fi
 
 #############################################################################
-
-## Check if we should default to --with-machine-code
-
-#############################################################################
-
-if test "$with_machine_code" = "no"; then :; else
-  if test "x${GCC-}" = xyes ; then
-    case "`uname -p 2>/dev/null || echo unknown`" in
-      powerpc|sparc|ia32|i?86)
-        with_machine_code="yes"
-      ;;
-      unknown)
-        case "`uname -m`" in
-          powerpc|sparc|ia32|i?86)
-            with_machine_code="yes"
-          ;;
-	  ia64)
-	    # with_machine_code="yes"
-	  ;;
-	esac
-      ;;
-    esac
-  else :; fi
-
-  if test "$with_machine_code" = "yes"; then
-    echo 'Enabling machine-code interpreter.'
-    AC_DEFINE(PIKE_USE_MACHINE_CODE)
-  else :; fi
-fi
 
 if test ! -d modules/. ; then
   mkdir modules
@@ -3426,6 +3397,42 @@ fi
 AC_MSG_RESULT($pike_cv_hardware_alignment)
 AC_DEFINE_UNQUOTED(PIKE_INT32_ALIGNMENT,$pike_cv_hardware_alignment)
 
+#############################################################################
+
+## Check if we should default to --with-machine-code
+
+#############################################################################
+
+if test "$with_machine_code" = "no"; then :; else
+
+  AC_MSG_CHECKING(machine code architecture)
+  AC_CACHE_VAL(pike_cv_machine_code_arch, [
+    pike_cv_machine_code_arch=unknown
+    AC_TRY_COMPILE([
+#if !defined(__i386__) && !defined(__i386)
+#error Not ia32 architecture
+#endif
+    ], [], [pike_cv_machine_code_arch=ia32], [])
+    AC_TRY_COMPILE([
+#if !defined(sparc) && !defined(__sparc__) && !defined(__sparc)
+#error Not sparc architecture
+#endif
+    ], [], [pike_cv_machine_code_arch=sparc], [])
+    AC_TRY_COMPILE([
+#if !defined(__ppc__) && !defined(_POWER)
+#error Not ppc32 architecture
+#endif
+    ], [], [pike_cv_machine_code_arch=ppc32], [])
+  ])
+  AC_MSG_RESULT($pike_cv_machine_code_arch)
+  if test "x$pike_cv_machine_code_arch" = xunknown ; then
+    with_machine_code="no"
+  else
+    with_machine_code="yes"
+    AC_DEFINE(PIKE_USE_MACHINE_CODE)
+  fi
+fi
+
 ########################################################################
 
 if test yes = "$with_machine_code"; then
@@ -4631,6 +4638,16 @@ if test "x$with_computed_goto" = "xyes"; then
     AC_DEFINE(HAVE_COMPUTED_GOTO)
   else :; fi
 else :; fi
+
+#############################################################################
+
+if test "$with_machine_code" = "yes" ; then
+  AC_DEFINE_UNQUOTED(PIKE_BYTECODE_METHOD, PIKE_BYTECODE_`echo $pike_cv_machine_code_arch | tr a-z A-Z`)
+elif test "x$pike_cv_gcc_computed_goto" = "xyes"; then
+  AC_DEFINE(PIKE_BYTECODE_METHOD, PIKE_BYTECODE_GOTO)
+else
+  AC_DEFINE(PIKE_BYTECODE_METHOD, PIKE_BYTECODE_DEFAULT)
+fi
 
 #############################################################################
 

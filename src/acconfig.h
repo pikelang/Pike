@@ -1,5 +1,5 @@
 /*
- * $Id: acconfig.h,v 1.96 2002/03/21 14:02:37 grubba Exp $
+ * $Id: acconfig.h,v 1.97 2002/04/07 19:28:16 mast Exp $
  */
 #ifndef MACHINE_H
 #define MACHINE_H
@@ -244,6 +244,9 @@
 
 /* Define this to use machine code */
 #undef PIKE_USE_MACHINE_CODE
+
+/* Define this to one of the available bytecode methods. */
+#undef PIKE_BYTECODE_METHOD
 
 /* You have gcc-type function attributes? */
 #undef HAVE_FUNCTION_ATTRIBUTES
