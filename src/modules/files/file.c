@@ -5,7 +5,7 @@
 \*/
 
 #include "global.h"
-RCSID("$Id: file.c,v 1.86 1998/04/09 02:53:10 hubbe Exp $");
+RCSID("$Id: file.c,v 1.87 1998/04/09 03:08:03 hubbe Exp $");
 #include "fdlib.h"
 #include "interpret.h"
 #include "svalue.h"
@@ -202,7 +202,7 @@ static void free_fd_stuff(void)
   check_internal_reference(THIS);
 }
 
-static void just_close_fd()
+static void just_close_fd(void)
 {
   int fd=FD;
   if(fd<0) return;
