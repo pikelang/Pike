@@ -1,16 +1,17 @@
-/* $Id: RSA.pike,v 1.1 2004/02/03 13:49:07 nilsson Exp $
+/* $Id: RSA.pike,v 1.2 2004/02/04 00:32:45 nilsson Exp $
  *
  * Follow the PKCS#1 standard for padding and encryption.
  */
 
 #pike __REAL_VERSION__
+#pragma strict_types
 
 #if constant(Gmp.mpz)
 
 static Gmp.mpz n;  /* modulo */
 static Gmp.mpz e;  /* public exponent */
 static Gmp.mpz d;  /* private exponent (if known) */
-int(12..) size;
+static int size;
 
 /* Extra info associated with a private key. Not currently used. */
    
@@ -103,18 +104,31 @@ this_program set_private_key(Gmp.mpz|int priv, array(Gmp.mpz|int)|void extra)
   {
     p = Gmp.mpz(extra[0]);
     q = Gmp.mpz(extra[1]);
-    n = p*q;
+    n = [object(Gmp.mpz)](p*q);
     size = n->size(256);
   }
   return this;
 }
 
-//! Returns the crypto block size.
-int(9..) query_blocksize() { return size - 3; }
+//! Returns the crypto block size, or zero if not yet set.
+int query_blocksize() {
+  if(!size) return 0;
+  return size - 3;
+}
 
 //! Pads the @[message] to the current block size with method @[type]
 //! and returns the result as an integer.
-Gmp.mpz rsa_pad(string message, int(1..2) type, mixed|void random)
+//! @param type
+//!   @int
+//!     @value 1
+//!       The message is padded with @expr{0xff@} bytes.
+//!     @value 2
+//!       The message is padded with random data, using the @[random]
+//!       function if provided. Otherwise
+//!       @[Crypto.Random.random_string] will be used.
+//!   @endint
+Gmp.mpz rsa_pad(string message, int(1..2) type,
+		function(int:string)|void random)
 {
   string cookie;
   int len;
@@ -141,43 +155,59 @@ Gmp.mpz rsa_pad(string message, int(1..2) type, mixed|void random)
   return Gmp.mpz(sprintf("%c", type) + cookie + "\0" + message, 256);
 }
 
+//! Reverse the effect of @[rsa_pad].
 string rsa_unpad(Gmp.mpz block, int type)
 {
   string s = block->digits(256);
-  int(-1..) i = search(s, "\0");
+  int i = search(s, "\0");
 
   if ((i < 9) || (sizeof(s) != (size - 1)) || (s[0] != type))
     return 0;
   return s[i+1..];
 }
 
+//! Pads the @[digest] with @[rsa_pad] type 1 and signs it.
 Gmp.mpz raw_sign(string digest)
 {
   return rsa_pad(digest, 1, 0)->powm(d, n);
 }
 
+//! Signs @[digest] as @[raw_sign] and returns the signature as a byte
+//! string.
 string cooked_sign(string digest)
 {
   return raw_sign(digest)->digits(256);
 }
 
+//! Verifies the @[digest] against the signature @[s], assuming pad
+//! type 1.
+//! @seealso
+//!   @[rsa_pad], @[raw_sign]
 int(0..1) raw_verify(string digest, Gmp.mpz s)
 {
   return s->powm(e, n) == rsa_pad(digest, 1, 0);
 }
 
-string encrypt(string s, mixed|void r)
+//! Pads the message @[s] with @[rsa_pad] type 2, signs it and returns
+//! the signature as a byte string.
+//! @param r
+//!   Optional random function to be passed down to @[rsa_pad].
+string encrypt(string s, function(int:string)|void r)
 {
   return rsa_pad(s, 2, r)->powm(e, n)->digits(256);
 }
 
+//! Decrypt a message encrypted with @[encrypt].
 string decrypt(string s)
 {
   return rsa_unpad(Gmp.mpz(s, 256)->powm(d, n), 2);
 }
 
-int(0..) rsa_size() { return n->size(); }
+//! Returns the size of the key in terms of number of bits.
+int(0..) rsa_size() { return [int(0..)](size*8); }
 
+//! Compares the public key of this RSA object with another RSA
+//! object.
 int(0..1) public_key_equal(this_program rsa)
 {
   return n == rsa->get_n() && e == rsa->get_e();
@@ -238,7 +268,7 @@ int md5_verify(string message, string signature)
 
 //! @fixme
 //!   Document this function.
-Gmp.mpz get_prime(int bits, function r)
+Gmp.mpz get_prime(int bits, function(int:string) r)
 {
   int len = (bits + 7) / 8;
   int bit_to_set = 1 << ( (bits - 1) % 8);
@@ -255,9 +285,10 @@ Gmp.mpz get_prime(int bits, function r)
   return p;
 }
 
-//! @fixme
-//!   Document this function.
-this_program generate_key(int bits, function|void r)
+//! Generate a valid RSA key pair with the size @[bits]. A random
+//! function may be provided as arguemnt @[r], otherwise
+//! @[Crypto.Random.random_string] will be used.
+this_program generate_key(int(128..) bits, function(int:string)|void r)
 {
   if (!r)
     r = Crypto.Random.random_string;
@@ -273,9 +304,10 @@ this_program generate_key(int bits, function|void r)
   {
     Gmp.mpz p = get_prime(s1, r);
     Gmp.mpz q = get_prime(s2, r);
-    Gmp.mpz phi = Gmp.mpz(p-1)*Gmp.mpz(q-1);
+    Gmp.mpz phi = [object(Gmp.mpz)](Gmp.mpz([object(Gmp.mpz)](p-1))*
+				    Gmp.mpz([object(Gmp.mpz)](q-1)));
 
-    array gs; /* gcd(pub, phi), and pub^-1 mod phi */
+    array(Gmp.mpz) gs; /* gcd(pub, phi), and pub^-1 mod phi */
     Gmp.mpz pub = Gmp.mpz(
 #ifdef SSL3_32BIT_PUBLIC_EXPONENT
 			 random(1 << 30) |
@@ -288,7 +320,7 @@ this_program generate_key(int bits, function|void r)
     if (gs[1] < 0)
       gs[1] += phi;
     
-    set_public_key(p * q, pub);
+    set_public_key( [object(Gmp.mpz)](p * q), pub);
     set_private_key(gs[1], ({ p, q }));
 
   } while (!sha_verify(msg, sha_sign(msg, r)));
@@ -303,6 +335,8 @@ static int encrypt_mode; // For block cipher compatible functions
 
 //! @fixme
 //!   Document this function.
+//! @seealso
+//!   @[set_decrypt_key], @[crypt]
 this_program set_encrypt_key(array(Gmp.mpz) key)
 {
   set_public_key(key[0], key[1]);
@@ -312,6 +346,8 @@ this_program set_encrypt_key(array(Gmp.mpz) key)
 
 //! @fixme
 //!   Document this function.
+//! @seealso
+//!   @[set_encrypt_key], @[crypt]
 this_program set_decrypt_key(array(Gmp.mpz) key)
 {
   set_public_key(key[0], key[1]);
@@ -322,6 +358,8 @@ this_program set_decrypt_key(array(Gmp.mpz) key)
 
 //! @fixme
 //!   Document this function.
+//! @seealso
+//!   @[set_encrypt_key], @[set_decrypt_key]
 string crypt(string s)
 {
   return (encrypt_mode ? encrypt(s) : decrypt(s));
