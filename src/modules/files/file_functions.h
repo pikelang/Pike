@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: file_functions.h,v 1.24 2002/11/09 21:34:26 per Exp $
+|| $Id: file_functions.h,v 1.25 2003/03/12 09:23:36 agehall Exp $
 */
 
 FILE_FUNC("open",file_open,"function(string,string,void|int:int)")
@@ -88,6 +88,10 @@ FILE_FUNC("open",file_open,"function(string,string,void|int:int)")
 
 #ifdef SO_KEEPALIVE
    FILE_FUNC("set_keepalive",file_set_keepalive,"function(int:int)")
+#endif
+
+#ifdef HAVE_NOTIFICATIONS
+   FILE_FUNC("notify", file_set_notify, "function(int,function,void|int:void)");
 #endif
 
 #undef FILE_FUNC

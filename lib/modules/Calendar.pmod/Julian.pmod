@@ -5,7 +5,7 @@
 //!
 //! 	This is the Julian calendar, conjured up by
 //!	the old Romans when their calendar were just too
-//!	wierd. It was used by the christians as so far
+//!	weird. It was used by the christians as so far
 //!	as the 18th century in some parts of the world.
 //!	(Especially the protestantic and orthodox parts.)
 //!

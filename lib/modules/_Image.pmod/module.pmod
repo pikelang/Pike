@@ -1,6 +1,6 @@
 #pike __REAL_VERSION__
 
-// $Id: module.pmod,v 1.33 2003/01/31 02:02:48 mast Exp $
+// $Id: module.pmod,v 1.34 2003/03/12 09:23:37 agehall Exp $
 
 static constant fmts = ([
   "image/x-pnm" : "PNM",
@@ -30,7 +30,7 @@ mapping _decode( string data )
 
   // macbinary decoding
   if (data[102..105]=="mBIN" ||
-      data[65..68]=="JPEG" ||    // wierd standard, that
+      data[65..68]=="JPEG" ||    // weird standard, that
       data[69..72]=="8BIM")
   {
      int i;

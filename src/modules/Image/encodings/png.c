@@ -2,11 +2,11 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: png.c,v 1.53 2003/01/28 08:26:50 mirar Exp $
+|| $Id: png.c,v 1.54 2003/03/12 09:23:36 agehall Exp $
 */
 
 #include "global.h"
-RCSID("$Id: png.c,v 1.53 2003/01/28 08:26:50 mirar Exp $");
+RCSID("$Id: png.c,v 1.54 2003/03/12 09:23:36 agehall Exp $");
 
 #include "image_machine.h"
 
@@ -1266,7 +1266,7 @@ static void img_png_decode(INT32 args,int header_only)
    {
       png_decompress(ihdr.compression);
       if (sp[-1].type!=T_STRING)
-	 Pike_error("Image.PNG._decode: got wierd stuff from decompression\n");
+	 Pike_error("Image.PNG._decode: got weird stuff from decompression\n");
    }
    else
       Pike_error("Image.PNG._decode: illegal compression type 0x%02x\n",

@@ -1,4 +1,4 @@
-// $Id: Terminfo.pmod,v 1.14 2003/01/20 17:44:01 nilsson Exp $
+// $Id: Terminfo.pmod,v 1.15 2003/03/12 09:23:37 agehall Exp $
 #pike __REAL_VERSION__
 
 
@@ -240,7 +240,7 @@ class Termcap {
 	map[name]=data;
 	
       }
-      else // wierd
+      else // weird
       {
 	// ignore
       }
@@ -492,7 +492,7 @@ class TermcapDB {
       while (sscanf(buf,"%*[ \t\r]%s",buf)<2 || !sizeof(buf))
 	if (!more_data()) {
 	  buf = "";
-	  return res; // eof, or illegal... wierd
+	  return res; // eof, or illegal... weird
 	}
       while ((i=search(buf, "\n"))<0)
       {

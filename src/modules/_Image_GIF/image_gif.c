@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: image_gif.c,v 1.14 2002/10/21 17:06:25 marcus Exp $
+|| $Id: image_gif.c,v 1.15 2003/03/12 09:23:36 agehall Exp $
 */
 
 /*
@@ -39,7 +39,7 @@
 #include <ctype.h>
 
 #include "stralloc.h"
-RCSID("$Id: image_gif.c,v 1.14 2002/10/21 17:06:25 marcus Exp $");
+RCSID("$Id: image_gif.c,v 1.15 2003/03/12 09:23:36 agehall Exp $");
 #include "pike_macros.h"
 #include "object.h"
 #include "constants.h"
@@ -2235,7 +2235,7 @@ void image_gif_decode_layer(INT32 args)
 **!     </pre>
 **!
 **! note:
-**!	The wierd name of this function (not <tt>_decode</tt>
+**!	The weird name of this function (not <tt>_decode</tt>
 **!	as the other decoders) is because gif was the first
 **!	decoder and was written before the API was finally
 **!	defined. Sorry about that. /Mirar

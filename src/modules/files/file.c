@@ -2,12 +2,12 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: file.c,v 1.257 2003/03/03 22:03:44 nilsson Exp $
+|| $Id: file.c,v 1.258 2003/03/12 09:23:36 agehall Exp $
 */
 
 #define NO_PIKE_SHORTHAND
 #include "global.h"
-RCSID("$Id: file.c,v 1.257 2003/03/03 22:03:44 nilsson Exp $");
+RCSID("$Id: file.c,v 1.258 2003/03/12 09:23:36 agehall Exp $");
 #include "fdlib.h"
 #include "interpret.h"
 #include "svalue.h"
@@ -41,6 +41,13 @@ RCSID("$Id: file.c,v 1.257 2003/03/03 22:03:44 nilsson Exp $");
 #include <sys/param.h>
 #endif /* HAVE_SYS_PARAM_H */
 #include <errno.h>
+
+#ifdef HAVE_NOTIFICATIONS
+#ifdef __linux__
+#define _GNU_SOURCE
+#endif
+#endif
+
 #include <fcntl.h>
 #include <signal.h>
 
@@ -3342,6 +3349,64 @@ static void f_get_all_active_fd(INT32 args)
   f_aggregate(fds);
 }
 
+#ifdef HAVE_NOTIFICATIONS
+
+/*! @decl void notify(void|int notification, function(void:void) callback)
+ *! Receive notification when change occur within the fd.
+ *! To use, create a Stdio.File object of a directory like
+ *! Stdio.File(".") and then call notify() with the appropriate
+ *! parameters.
+ *!
+ *! @note
+ *! When a program registers for some notification, only the first notification
+ *! will be recieved unless DN_MULTISHOT is specified as part of the notification argument.
+ *!
+ *! @note
+ *! At present, this function is Linux-specific and requires a kernel which supports the F_NOTIFY fcntl() call.
+ *!
+ *! @arg notification
+ *! What to notify the callback of. See the Stdio.DN_* constants for more information
+ *! about possible notifications.
+ *!
+ *! @arg callback
+ *! Function which should be called when notification is recieved. The function gets
+ *! the signal used to indicate the notification as its argument and shouldn't return
+ *! anyting.
+ */
+void file_set_notify(INT32 args) {
+  int notifications = 0;
+
+  if (args == 1)
+    SIMPLE_TOO_FEW_ARGS_ERROR("notify",2);
+
+  if (args > 2)
+    SIMPLE_TOO_FEW_ARGS_ERROR("notify", 2);
+
+  if (args && Pike_sp[-args].type!=PIKE_T_INT)
+    SIMPLE_BAD_ARG_ERROR("notify", 0, "int");
+
+  if (args && Pike_sp[1-args].type!=PIKE_T_FUNCTION)
+    SIMPLE_BAD_ARG_ERROR("notify", 1, "function(void:void)");
+
+  if (args) {
+    notifications = Pike_sp[1-args].u.integer;
+  }
+
+#ifdef __linux__
+  if (args) {
+    pop_n_elems(1);
+    push_int(SIGIO);
+
+  }
+  fcntl(FD, F_NOTIFY, notifications);
+#endif /* __linux__ */
+
+  pop_n_elems(args);
+}
+
+#endif /* HAVE_NOTIFICATIONS */
+
+
 /*! @decl constant PROP_BIDIRECTIONAL
  *! @fixme
  *! Document this constant.
@@ -3592,6 +3657,58 @@ PIKE_MODULE_INIT
   add_integer_constant("PROP_SHUTDOWN",fd_CAN_SHUTDOWN,0);
   add_integer_constant("PROP_BUFFERED",fd_BUFFERED,0);
   add_integer_constant("PROP_BIDIRECTIONAL",fd_BIDIRECTIONAL,0);
+
+#ifdef DN_ACCESS
+  /*! @decl constant DN_ACCESS
+   *! Used in @[File.notify()] to get a callback when files within a directory are accessed.
+   */
+  add_integer_constant("DN_ACCESS", DN_ACCESS, 0);
+#endif
+
+#ifdef DN_MODIFY
+  /*! @decl constant DN_MODIFY
+   *! Used in @[File.notify()] to get a callback when files within a directory are modified.
+   */
+  add_integer_constant("DN_MODIFY", DN_MODIFY, 0);
+#endif
+
+#ifdef DN_CREATE
+  /*! @decl constant DN_CREATE
+   *! Used in @[File.notify()] to get a callback when new files are created within a directory.
+   */
+  add_integer_constant("DN_CREATE", DN_CREATE, 0);
+#endif
+
+#ifdef DN_DELETE
+  /*! @decl constant DN_DELETE
+   *! Used in @[File.notify()] to get a callback when files are deleted within a directory.
+   */
+  add_integer_constant("DN_DELETE", DN_DELETE, 0);
+#endif
+
+#ifdef DN_RENAME
+  /*! @decl constant DN_ACCESS
+   *! Used in @[File.notify()] to get a callback when files within a directory are renamed.
+   */
+  add_integer_constant("DN_RENAME", DN_RENAME, 0);
+#endif
+
+#ifdef DN_ATTRIB
+  /*! @decl constant DN_ACCESS
+   *! Used in @[File.notify()] to get a callback when attributes of files within a directory are changed.
+   */
+  add_integer_constant("DN_ATTRIB", DN_ATTRIB, 0);
+#endif
+
+#ifdef DN_MULTISHOT
+  /*! @decl constant DN_MULTISHOT
+   *! Used in @[File.notify()]. If DN_MULTISHOT is used, signals will
+   *! be sent for all notifications the program has registred for. Otherwise
+   *! only the first event the program is listening for will be recieved and
+   *! then the program must reregister for the events to recieve futher events.
+   */
+  add_integer_constant("DN_MULTISHOT", DN_MULTISHOT, 0);
+#endif
 
 #ifdef WITH_OOB
   add_integer_constant("__HAVE_OOB__",1,0);

@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: bmp.c,v 1.39 2002/12/01 05:37:28 mast Exp $
+|| $Id: bmp.c,v 1.40 2003/03/12 09:23:37 agehall Exp $
 */
 
 /*
@@ -25,7 +25,7 @@
 #include <ctype.h>
 
 #include "stralloc.h"
-RCSID("$Id: bmp.c,v 1.39 2002/12/01 05:37:28 mast Exp $");
+RCSID("$Id: bmp.c,v 1.40 2003/03/12 09:23:37 agehall Exp $");
 #include "pike_macros.h"
 #include "object.h"
 #include "constants.h"
@@ -284,7 +284,7 @@ void img_bmp_encode(INT32 args)
    if (sp[-1].type!=T_OBJECT ||
        !(img=(struct image*)get_storage(o=sp[-1].u.object,image_program))) {
       free_object(oc);
-      Pike_error("Image.BMP.encode: wierd result from ->mirrory()\n");
+      Pike_error("Image.BMP.encode: weird result from ->mirrory()\n");
    }
    if (nct) push_object(oc);
 

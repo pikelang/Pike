@@ -1,6 +1,6 @@
 //! module Calendar
 
-// $Id: TimeRanges.pmod,v 1.20 2003/03/10 01:24:08 nilsson Exp $
+// $Id: TimeRanges.pmod,v 1.21 2003/03/12 09:23:37 agehall Exp $
 
 #pike __REAL_VERSION__
 
@@ -681,7 +681,7 @@ class TimeRange
 //!
 //! known bugs:
 //!	_equal is not currently possible to overload,
-//!	due to wierd bugs, so equal uses `== for now.
+//!	due to weird bugs, so equal uses `== for now.
 
    int(0..1) `==(TimeRange what) 
    { 

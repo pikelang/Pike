@@ -1,4 +1,4 @@
-/* $Id: MirarDocParser.pike,v 1.19 2003/01/20 17:44:01 nilsson Exp $ */
+/* $Id: MirarDocParser.pike,v 1.20 2003/03/12 09:23:37 agehall Exp $ */
 
 /* MirarDoc documentation extractor.
  */
@@ -736,7 +736,7 @@ void document(string enttype,
 		  method_names-=method->names;
 	       }
 	    if (method_names[method_name])
-	       werror("failed to find "+method_name+" again, wierd...\n");
+	       werror("failed to find "+method_name+" again, weird...\n");
 	 }
    }
 

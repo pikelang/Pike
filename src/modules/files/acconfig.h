@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: acconfig.h,v 1.18 2002/10/11 01:39:54 nilsson Exp $
+|| $Id: acconfig.h,v 1.19 2003/03/12 09:23:36 agehall Exp $
 */
 
 #ifndef FILE_MACHINE_H
@@ -76,5 +76,8 @@
 
 /* With termios */
 #undef WITH_TERMIOS 
+
+/* Filesystem notifications */
+#undef HAVE_NOTIFICATIONS
 
 #endif

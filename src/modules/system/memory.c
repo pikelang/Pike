@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: memory.c,v 1.19 2003/03/02 21:11:04 grubba Exp $
+|| $Id: memory.c,v 1.20 2003/03/12 09:23:36 agehall Exp $
 */
 
 /*! @module System
@@ -19,7 +19,7 @@
  *!	Don't blame Pike if you shoot your foot off.
  */
 #include "global.h"
-RCSID("$Id: memory.c,v 1.19 2003/03/02 21:11:04 grubba Exp $");
+RCSID("$Id: memory.c,v 1.20 2003/03/12 09:23:36 agehall Exp $");
 
 #include "system_machine.h"
 
@@ -274,7 +274,7 @@ static void memory__mmap(INT32 args,int complain,int private)
       f_call_function(1);
       if (sp[-1].type!=T_INT)
 	 SIMPLE_BAD_ARG_ERROR("Memory.mmap",1,
-			      "(string or) Stdio.File (wierd query_fd)");
+			      "(string or) Stdio.File (weird query_fd)");
       fd=sp[-1].u.integer;
       sp--;
       if (fd<0) {

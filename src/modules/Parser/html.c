@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: html.c,v 1.161 2003/01/20 18:18:40 nilsson Exp $
+|| $Id: html.c,v 1.162 2003/03/12 09:23:36 agehall Exp $
 */
 
 #include "global.h"
@@ -3744,7 +3744,7 @@ static void try_feed(int finished)
 
 #ifdef PIKE_DEBUG
 	    if (THIS->stack->local_feed)
-	       Pike_fatal("internal wierdness in Parser.HTML: feed left\n");
+	       Pike_fatal("internal weirdness in Parser.HTML: feed left\n");
 #endif
 
 	    really_free_feed_stack (THIS->stack);

@@ -1,4 +1,4 @@
-# $Id: configure.in,v 1.81 2002/11/09 21:34:26 per Exp $
+# $Id: configure.in,v 1.82 2003/03/12 09:23:36 agehall Exp $
 AC_INIT(file.c)
 AC_CONFIG_HEADER(file_machine.h)
 
@@ -1100,6 +1100,26 @@ int main()
 if test "$pike_cv_func_working_getcwd" = yes; then
   AC_MSG_RESULT(yes)
   AC_DEFINE(HAVE_WORKING_GETCWD)
+else
+  AC_MSG_RESULT(no)
+fi
+
+AC_MSG_CHECKING(if filesystem notifications exists)
+AC_CACHE_VAL(pike_cv_have_notifications, [
+  AC_TRY_COMPILE([
+  #ifdef __linux__
+  #define _GNU_SOURCE
+  #include <fcntl.h>
+  #endif
+  ],[
+       #ifdef __linux__
+         int test = F_NOTIFY;
+       #endif
+  ], [ pike_cv_have_notifications=yes ], [ pike_cv_have_notifications=no ])
+])
+if test "$pike_cv_have_notifications" = "yes"; then
+  AC_MSG_RESULT(yes)
+  AC_DEFINE(HAVE_NOTIFICATIONS)
 else
   AC_MSG_RESULT(no)
 fi
