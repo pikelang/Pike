@@ -5,7 +5,7 @@
 \*/
 /**/
 #include "global.h"
-RCSID("$Id: las.c,v 1.227 2000/12/01 20:19:25 grubba Exp $");
+RCSID("$Id: las.c,v 1.228 2000/12/01 20:43:10 grubba Exp $");
 
 #include "language.h"
 #include "interpret.h"
@@ -362,10 +362,14 @@ BLOCK_ALLOC(node_s, NODES)
 
 struct node_hash_table node_hash;
 
-static size_t hash_node(node *n)
+static INLINE size_t hash_node(node *n)
 {
-  DO_HASHMEM((unsigned char *)&(n->token),
+  size_t ret_;
+
+  DO_HASHMEM(ret_, (unsigned char *)&(n->token),
 	     sizeof(node) - OFFSETOF(node_s, token), sizeof(node));
+
+  return ret_;
 }
 
 static void add_node(node *n)
