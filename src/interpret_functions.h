@@ -1,5 +1,5 @@
 /*
- * $Id: interpret_functions.h,v 1.73 2001/07/09 16:25:27 grubba Exp $
+ * $Id: interpret_functions.h,v 1.74 2001/07/10 16:52:03 grubba Exp $
  *
  * Opcode definitions for the interpreter.
  */
@@ -134,6 +134,7 @@ OPCODE0(F_FLOAT, "push float", {
   Pike_sp->type=PIKE_T_FLOAT;
   MEMCPY((void *)&Pike_sp->u.float_number, pc, sizeof(FLOAT_TYPE));
   pc += DO_IF_ELSE_COMPUTED_GOTO(1, sizeof(FLOAT_TYPE));
+  FETCH;
   Pike_sp++;
 });
 
@@ -814,8 +815,8 @@ OPCODE0(F_POP_TO_MARK, "pop to mark", {
 /* These opcodes are only used when running with -d. The reason for
  * the two aliases is mainly to keep the indentation in asm debug
  * output. */
-OPCODE0(F_CLEANUP_SYNCH_MARK, "cleanup synch mark", {
-  OPCODE0_TAIL(F_POP_SYNCH_MARK, "pop synch mark", {
+OPCODE0_TAIL(F_CLEANUP_SYNCH_MARK, "cleanup synch mark", {
+  OPCODE0(F_POP_SYNCH_MARK, "pop synch mark", {
     if (*--Pike_mark_sp != Pike_sp && d_flag) {
       ptrdiff_t should = *Pike_mark_sp - Pike_interpreter.evaluator_stack;
       ptrdiff_t is = Pike_sp - Pike_interpreter.evaluator_stack;
@@ -1006,6 +1007,7 @@ OPCODE0_JUMP(F_CATCH, "catch", {
   default:
     pc += GET_JUMP();
   }
+  FETCH;
 });
 
 OPCODE0(F_ESCAPE_CATCH, "escape catch", {
@@ -1028,6 +1030,7 @@ OPCODE1(F_SWITCH, "switch", {
     DO_IF_ELSE_COMPUTED_GOTO(1, sizeof(INT32));
   if(*(INT32*)pc < 0) fast_check_threads_etc(7);
   pc += *(INT32*)pc;
+  FETCH;
   pop_stack();
 });
 
@@ -1046,6 +1049,7 @@ OPCODE1(F_SWITCH_ON_INDEX, "switch on index", {
     DO_IF_ELSE_COMPUTED_GOTO(1, sizeof(INT32));
   if(*(INT32*)pc < 0) fast_check_threads_etc(7);
   pc+=*(INT32*)pc;
+  FETCH;
 });
 
 OPCODE2(F_SWITCH_ON_LOCAL, "switch on local", {
@@ -1058,6 +1062,7 @@ OPCODE2(F_SWITCH_ON_LOCAL, "switch on local", {
     DO_IF_ELSE_COMPUTED_GOTO(1, sizeof(INT32));
   if(*(INT32*)pc < 0) fast_check_threads_etc(7);
   pc+=*(INT32*)pc;
+  FETCH;
 });
 
 
@@ -1129,11 +1134,10 @@ OPCODE0_JUMP(F_FOREACH, "foreach", { /* array, lvalue, X, i */
     PIKE_ERROR("foreach", "Bad argument 1.\n", Pike_sp-3, 1);
   if(Pike_sp[-1].u.integer < Pike_sp[-4].u.array->size)
   {
-    fast_check_threads_etc(10);
     if(Pike_sp[-1].u.integer < 0)
       Pike_error("Foreach loop variable is negative!\n");
     assign_lvalue(Pike_sp-3, Pike_sp[-4].u.array->item + Pike_sp[-1].u.integer);
-    pc += GET_JUMP();
+    DOJUMP();
     Pike_sp[-1].u.integer++;
   }else{
     SKIPJUMP();
@@ -1152,8 +1156,7 @@ OPCODE0_JUMP(F_NEW_FOREACH, "foreach++", { /* iterator, lvalue, lvalue */
     PIKE_ERROR("foreach", "Bad argument 1.\n", Pike_sp-3, 1);
   if(foreach_iterate(Pike_sp[-5].u.object))
   {
-    fast_check_threads_etc(10);
-    pc+=GET_JUMP();
+    DOJUMP();
   }else{
     SKIPJUMP();
   }
@@ -1211,9 +1214,10 @@ OPCODE0_JUMP(F_NEW_FOREACH, "foreach++", { /* iterator, lvalue, lvalue */
       {
 	int f=Pike_fp->flags;
 	low_return();
+	pc=Pike_fp->pc;
+	FETCH;
         if(f & PIKE_FRAME_RETURN_POP)
           pop_stack();
-	pc=Pike_fp->pc;
 	DONE;
       }
       return -1;
@@ -1467,6 +1471,7 @@ OPCODE1(F_STRING_INDEX, "string index", {
 
       CASE(F_POS_INT_INDEX);
       push_int(GET_ARG());
+      FETCH;
       print_return_value();
       goto do_index;
 
@@ -1620,8 +1625,9 @@ if(low_mega_apply(TYPE,DO_NOT_WARN((INT32)(Pike_sp - *--Pike_mark_sp)),	   \
 		  ARG2, ARG3))						   \
 {									   \
   Pike_fp->next->pc=pc;							   \
-  Pike_fp->flags |= PIKE_FRAME_RETURN_INTERNAL;				   \
   pc=Pike_fp->pc;							   \
+  FETCH;								   \
+  Pike_fp->flags |= PIKE_FRAME_RETURN_INTERNAL;				   \
 }									   \
 });									   \
 									   \
@@ -1630,8 +1636,9 @@ OP(PIKE_CONCAT3(F_,OPCODE,_AND_POP),NAME " & pop", {			   \
 		    ARG2, ARG3))					   \
   {									   \
     Pike_fp->next->pc=pc;						   \
-    Pike_fp->flags |= PIKE_FRAME_RETURN_INTERNAL | PIKE_FRAME_RETURN_POP;  \
     pc=Pike_fp->pc;							   \
+    FETCH;								   \
+    Pike_fp->flags |= PIKE_FRAME_RETURN_INTERNAL | PIKE_FRAME_RETURN_POP;  \
   }else{								   \
     pop_stack();							   \
   }									   \
@@ -1643,6 +1650,7 @@ OP(PIKE_CONCAT3(F_,OPCODE,_AND_RETURN),NAME " & return", {		   \
   {									   \
     DO_IF_DEBUG(Pike_fp->next->pc=0);					   \
     pc=Pike_fp->pc;							   \
+    FETCH;								   \
     unlink_previous_frame();						   \
   }else{								   \
     goto do_dumb_return;						   \
@@ -1654,8 +1662,9 @@ OP(PIKE_CONCAT(F_MARK_,OPCODE),"mark, " NAME, {				   \
 		    ARG2, ARG3))					   \
   {									   \
     Pike_fp->next->pc=pc;						   \
-    Pike_fp->flags |= PIKE_FRAME_RETURN_INTERNAL;			   \
     pc=Pike_fp->pc;							   \
+    FETCH;								   \
+    Pike_fp->flags |= PIKE_FRAME_RETURN_INTERNAL;			   \
   }									   \
 });									   \
 									   \
@@ -1664,8 +1673,9 @@ OP(PIKE_CONCAT3(F_MARK_,OPCODE,_AND_POP),"mark, " NAME " & pop", {	   \
 		    ARG2, ARG3))					   \
   {									   \
     Pike_fp->next->pc=pc;						   \
-    Pike_fp->flags |= PIKE_FRAME_RETURN_INTERNAL | PIKE_FRAME_RETURN_POP;  \
     pc=Pike_fp->pc;							   \
+    FETCH;								   \
+    Pike_fp->flags |= PIKE_FRAME_RETURN_INTERNAL | PIKE_FRAME_RETURN_POP;  \
   }else{								   \
     pop_stack();							   \
   }									   \
@@ -1677,6 +1687,7 @@ OP(PIKE_CONCAT3(F_MARK_,OPCODE,_AND_RETURN),"mark, " NAME " & return", {   \
   {									   \
     DO_IF_DEBUG(Pike_fp->next->pc=0);					   \
     pc=Pike_fp->pc;							   \
+    FETCH;								   \
     unlink_previous_frame();						   \
   }else{								   \
     goto do_dumb_return;						   \
@@ -1787,8 +1798,11 @@ OPCODE1_JUMP(F_COND_RECUR, "recur if not overloaded", {
 		      (void *)(arg1+Pike_fp->context.identifier_level)))
     {
       Pike_fp->next->pc=pc;
-      Pike_fp->flags |= PIKE_FRAME_RETURN_INTERNAL;
       pc=Pike_fp->pc;
+      FETCH;
+      Pike_fp->flags |= PIKE_FRAME_RETURN_INTERNAL;
+    } else {
+      FETCH;
     }
     DONE;
   }
@@ -1841,6 +1855,10 @@ OPCODE1_JUMP(F_COND_RECUR, "recur if not overloaded", {
 		  new_frame->num_locals - new_frame->num_args);
       });
 
+      Pike_fp->pc = pc + DO_IF_ELSE_COMPUTED_GOTO(1, sizeof(INT32));
+      pc=addr;
+      FETCH;
+
       clear_svalues(Pike_sp, new_frame->num_locals - new_frame->num_args);
       Pike_sp += new_frame->num_locals - new_frame->args;
 
@@ -1849,9 +1867,7 @@ OPCODE1_JUMP(F_COND_RECUR, "recur if not overloaded", {
       add_ref(new_frame->context.prog);
       if(new_frame->context.parent)
 	add_ref(new_frame->context.parent);
-      Pike_fp->pc = pc + DO_IF_ELSE_COMPUTED_GOTO(1, sizeof(INT32));
       Pike_fp=new_frame;
-      pc=addr;
       new_frame->flags=PIKE_FRAME_RETURN_INTERNAL;
       if (opcode) {
 	/* F_RECUR_AND_POP */
@@ -1893,20 +1909,21 @@ OPCODE0_JUMP(F_TAIL_RECUR, "tail recursion", {
   }
 
   clear_svalues(Pike_sp, num_locals - args);
+  pc=addr;
+  FETCH;
   Pike_sp += num_locals - args;
 
   DO_IF_DEBUG({
     if(Pike_sp != Pike_fp->locals + Pike_fp->num_locals)
       fatal("Sp whacked!\n");
   });
-
-  pc=addr;
 });
 
 OPCODE0(F_BREAKPOINT, "breakpoint", {
   extern void o_breakpoint(void);
-  o_breakpoint();
   pc--;
+  FETCH;
+  o_breakpoint();
 });
 
 OPCODE0(F_THIS_OBJECT, "this_object", {

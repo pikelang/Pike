@@ -13,13 +13,13 @@
 
 #ifdef HAVE_COMPUTED_GOTO
 
-#define CASE(OP)	PIKE_CONCAT(LABEL_,OP):
+#define CASE(OP)	PIKE_CONCAT(LABEL_,OP): FETCH
+#define FETCH		(instr = pc[0])
 #ifdef PIKE_DEBUG
 #define DONE		continue
 #else /* !PIKE_DEBUG */
 #define DONE		do {	\
-    Pike_fp->pc = pc;		\
-    instr = (pc++)[0];		\
+    Pike_fp->pc = pc++;		\
     goto *instr;		\
   } while(0)
     
@@ -27,7 +27,7 @@
 
 #define LOW_GET_ARG()	((INT32)(ptrdiff_t)(*(pc++)))
 #define LOW_GET_JUMP()	((INT32)(ptrdiff_t)(*(pc)))
-#define LOW_SKIPJUMP()	(pc++)
+#define LOW_SKIPJUMP()	(instr = (++pc)[0])
 
 #define GET_ARG()	LOW_GET_ARG()
 #define GET_ARG2()	LOW_GET_ARG()
@@ -36,6 +36,7 @@
 
 #define CASE(X)		case (X)-F_OFFSET:
 #define DONE		break
+#define FETCH
 
 #define LOW_GET_ARG()	((pc++)[0])
 #define LOW_GET_JUMP()	EXTRACT_INT(pc)
@@ -91,6 +92,7 @@
     INT32 tmp; \
     tmp = GET_JUMP(); \
     pc += tmp; \
+    FETCH; \
     if(tmp < 0) \
       fast_check_threads_etc(6); \
   } while(0)
@@ -117,8 +119,8 @@ static int eval_instruction(PIKE_OPCODE_T *pc)
   debug_malloc_touch(Pike_fp);
   while(1)
   {
-    Pike_fp->pc = pc;
-    instr = (pc++)[0];
+    instr = pc[0];
+    Pike_fp->pc = pc++;
 
     STEP_BREAK_LINE
     
@@ -278,12 +280,14 @@ static int eval_instruction(PIKE_OPCODE_T *pc)
 #define OPCODE0(OP, DESC, CODE) CASE(OP); CODE; DONE
 #define OPCODE1(OP, DESC, CODE) CASE(OP); { \
     INT32 arg1=GET_ARG(); \
+    FETCH; \
     CODE; \
   } DONE
 
 #define OPCODE2(OP, DESC, CODE) CASE(OP); { \
     INT32 arg1=GET_ARG(); \
     INT32 arg2=GET_ARG2(); \
+    FETCH; \
     CODE; \
   } DONE
 
@@ -300,12 +304,14 @@ static int eval_instruction(PIKE_OPCODE_T *pc)
  */
 #define OPCODE1_JUMP(OP, DESC, CODE) CASE(OP); { \
     INT32 arg1=GET_ARG(); \
+    FETCH; \
     CODE; \
   } DONE
 
 #define OPCODE2_JUMP(OP, DESC, CODE) CASE(OP); { \
     INT32 arg1=GET_ARG(); \
     INT32 arg2=GET_ARG2(); \
+    FETCH; \
     CODE; \
   } DONE
 
