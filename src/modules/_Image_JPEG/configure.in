@@ -1,5 +1,5 @@
 #
-# $Id: configure.in,v 1.20 2003/12/16 19:52:17 grendel Exp $
+# $Id: configure.in,v 1.21 2005/02/26 00:43:15 nilsson Exp $
 #
 AC_INIT(image_jpeg.c)
 AC_CONFIG_HEADER(config.h)
@@ -43,7 +43,6 @@ int main(int argc, char **argv)
 #define FILE void
 #define size_t unsigned int
 #include <jpeglib.h>
-#include <jconfig.h>
       ],[
   JDIMENSION block_test;
   jpeg_component_info *compptr;
@@ -65,12 +64,10 @@ int main(int argc, char **argv)
 #define FILE void
 #define size_t unsigned int
 #include <jpeglib.h>
-#include <jconfig.h>
       ],[
 #define FILE void
 #define size_t unsigned int
 #include <jpeglib.h>
-#include <jconfig.h>
 
 j_decompress_ptr srcinfo;
 void *test_ptr;
