@@ -1,3 +1,19 @@
+pike7.3 (7.3.60-2) unstable; urgency=low
+
+  * Latest cvs snapshot. The most important changes:
+        * lib/modules/Protocols.pmod/HTTP.pmod/module.pmod: Added missing
+          file argument for put_url().
+        * lib/modules/Array.pmod: CHANGES says that there should be an
+          Array.Iterator.  So let's have one.
+        * lib/modules/Parser.pmod/XML.pmod/DOM.pmod: Added iterators, nice
+          _sprintf to Nodes, and made all lfuns static.
+        * src/post_modules/Shuffler/Shuffler.cmod: If the done-callback
+          destroyed the shuffler object, the shuffler crashed when signaling
+          that data wasn't sent thru the give_back function. This might have
+          other implications but seems to work as a fix for now.
+
+ -- Marek Habersack <grendel@debian.org>  Sat,  9 Nov 2002 19:46:43 +0100
+
 pike7.3 (7.3.60-1) unstable; urgency=low
 
   * Latest upstream version. The most important changes:
