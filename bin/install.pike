@@ -2,7 +2,7 @@
 
 // Pike installer and exporter.
 //
-// $Id: install.pike,v 1.134 2004/11/30 15:46:52 grubba Exp $
+// $Id: install.pike,v 1.135 2004/12/04 16:39:24 grubba Exp $
 
 #define USE_GTK
 
@@ -521,8 +521,13 @@ void do_export()
     // Clean up dumped files and modules on uninstall.
     recurse_uninstall_file(root->sub_dirs["lib"], "*.o");
 
-    // Make sure the kludge directory exists (forward compat).
-    root->extra_ids["KLUDGE_TARGETDIR"] = 1;
+    // We need to have a unique name for the TARGETDIR
+    // due to light not rewriting [TARGETDIR] in the
+    // property custom action below.
+    //
+    // Note: The directory we get merged into must also have
+    //       this id as long as the bug exists.
+    root->extra_ids["PIKE_TARGETDIR"] = 1;
 
     // Generate the XML directory tree.
     WixNode xml_root =
@@ -536,40 +541,33 @@ void do_export()
 
     module_node->
       add_child(WixNode("CustomAction", ([
-			  "Id":"FinalizePike",
-			  // Note: Need to use the kludge directory here
-			  //       rather than the root directory due to
-			  //       bugs in light.
-			  //	/grubba 2004-11-08
-			  "Directory":"KLUDGE_TARGETDIR",
-			  "Execute":"deferred",
-			  "ExeCommand":"[KLUDGE_TARGETDIR]\\bin\\pike "
-			  "-mlib\\master.pike bin\\install.pike "
-			  "--finalize BASEDIR=. TMP_BUILDDIR=bin",
+			  "Id":"SetFinalizePike",
+			  "Property":"FinalizePike",
+			  "Value":"[PIKE_TARGETDIR]",
+			  "Execute":"immediate",
 			])))->
       add_child(Standards.XML.Wix.line_feed)->
       add_child(WixNode("CustomAction", ([
-			  "Id":"InstallMaster",
-			  // Note: Need to use the kludge directory here
-			  //       rather than the root directory due to
-			  //       bugs in light.
-			  //	/grubba 2004-11-08
-			  "Directory":"KLUDGE_TARGETDIR",
+			  "Id":"FinalizePike",
+			  "BinaryKey":"PikeInstaller",
+			  "VBScriptCall":"FinalizePike",
 			  "Execute":"deferred",
-			  "ExeCommand":"[KLUDGE_TARGETDIR]\\bin\\pike "
-			  "-mlib\\master.pike bin\\install.pike "
-			  "--install-master BASEDIR=.",
+			])))->
+      add_child(Standards.XML.Wix.line_feed)->
+      add_child(WixNode("Binary", ([
+			  "Id":"PikeInstaller",
+			  "src":"PikeWin32Installer.vbs",
 			])))->
       add_child(Standards.XML.Wix.line_feed)->
       add_child(WixNode("InstallExecuteSequence", ([]), "\n")->
 		add_child(WixNode("Custom", ([
-				    "Action":"FinalizePike",
+				    "Action":"SetFinalizePike",
 				    "After":"WriteRegistryValues",
 				  ]), "REMOVE=\"\""))->
 		add_child(Standards.XML.Wix.line_feed)->
 		add_child(WixNode("Custom", ([
-				    "Action":"InstallMaster",
-				    "After":"FinalizePike",
+				    "Action":"FinalizePike",
+				    "After":"SetFinalizePike",
 				  ]), "REMOVE=\"\""))->
 		add_child(Standards.XML.Wix.line_feed))->
       add_child(Standards.XML.Wix.line_feed);
