@@ -188,7 +188,7 @@ void shape_combine_mask(GDK.Bitmap mask, int xoffset, int yoffset )
   RETURN_THIS();
 }
 %{
-#ifndef __NT__
+#if !defined(__NT__) && !defined(HAVE_GTK_20)
 static GList *pgdk_window_get_children (GdkWindow *window)
 {
   GdkWindowPrivate *private;
@@ -236,7 +236,7 @@ array(GDK.Window) children()
   GList *l;
   int n = 0;
 
-#ifndef __NT__
+#if !defined(__NT__) && !defined(HAVE_GTK_20)
   l = pgdk_window_get_children( (GdkWindow *)THIS->obj );
 #else
   l = gdk_window_get_children( (GdkWindow *)THIS->obj );
