@@ -1,4 +1,4 @@
-# $Id: configure.in,v 1.7 1999/11/08 21:39:13 grubba Exp $
+# $Id: configure.in,v 1.8 1999/11/08 21:41:25 grubba Exp $
 AC_INIT(top.c)
 AC_CONFIG_HEADER(config.h)
 
@@ -19,7 +19,7 @@ else
 
   AC_CHECK_HEADERS(windef.h wingdi.h GL/gl.h GL/glx.h)
 
-  if test "x$ac_cv_header_windef_h$ac_cv_wingdi.h$ac_cv_header_GL_gl.h$ac_cv_header_GL_glx.h" = "xnononono"; then
+  if test "x$ac_cv_header_windef_h$ac_cv_wingdi_h$ac_cv_header_GL_gl_h$ac_cv_header_GL_glx_h" = "xnononono"; then
     # Solaris 7 comes with libGL, but without the headerfiles by default.
     :
   else
