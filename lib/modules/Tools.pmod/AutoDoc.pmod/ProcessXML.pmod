@@ -106,7 +106,8 @@ string extractXML(string filename, int|void pikeMode, string|void type,
     object m = (type == "module")
       ? .PikeExtractor.extractModule(contents, filename, name)
       : .PikeExtractor.extractClass(contents, filename, name);
-    return makeWrapper(parentModules, m)->xml();
+    if (m)
+      return makeWrapper(parentModules, m)->xml();
   }
   return "";
 }
