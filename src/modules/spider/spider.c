@@ -43,7 +43,7 @@
 #include "threads.h"
 #include "operators.h"
 
-RCSID("$Id: spider.c,v 1.89 2000/02/16 04:00:18 per Exp $");
+RCSID("$Id: spider.c,v 1.90 2000/04/18 06:54:13 jonasw Exp $");
 
 #ifdef HAVE_PWD_H
 #include <pwd.h>
@@ -1146,7 +1146,7 @@ struct thread_args
   char buffer[BUFFER];
 };
 
-MUTEX_T done_lock;
+MUTEX_T done_lock STATIC_MUTEX_INIT;
 struct thread_args *done;
 
 /* WARNING! This function is running _without_ any stack etc. */

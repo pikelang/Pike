@@ -2,7 +2,7 @@
  * This code is (C) Francesco Chemolli, 1997.
  * You may use, modify and redistribute it freely under the terms
  * of the GNU General Public License, version 2.
- * $Id: msqlmod.c,v 1.11 2000/04/13 18:37:16 grubba Exp $
+ * $Id: msqlmod.c,v 1.12 2000/04/18 06:54:05 jonasw Exp $
  *
  * This version is intended for Pike/0.5 and later.
  * It won't compile under older versions of the Pike interpreter.
@@ -35,11 +35,11 @@
 #include "operators.h"
 #include "multiset.h"
 
-RCSID("$Id: msqlmod.c,v 1.11 2000/04/13 18:37:16 grubba Exp $");
+RCSID("$Id: msqlmod.c,v 1.12 2000/04/18 06:54:05 jonasw Exp $");
 #include "version.h"
 
 #ifdef _REENTRANT
-MUTEX_T pike_msql_mutex;
+MUTEX_T pike_msql_mutex STATIC_MUTEX_INIT;
 #define MSQL_LOCK() mt_lock(&pike_msql_mutex)
 #define MSQL_UNLOCK() mt_unlock(&pike_msql_mutex)
 #else

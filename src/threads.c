@@ -1,5 +1,5 @@
 #include "global.h"
-RCSID("$Id: threads.c,v 1.119 2000/04/15 05:05:28 hubbe Exp $");
+RCSID("$Id: threads.c,v 1.120 2000/04/18 06:53:48 jonasw Exp $");
 
 int num_threads = 1;
 int threads_disabled = 0;
@@ -1359,7 +1359,7 @@ static struct farmer {
   COND_T harvest_moon;
 } *farmers;
 
-static MUTEX_T rosie;
+static MUTEX_T rosie STATIC_MUTEX_INIT;
 
 static TH_RETURN_TYPE farm(void *_a)
 {

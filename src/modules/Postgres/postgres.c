@@ -38,7 +38,7 @@
 
 /* Actual code */
 #ifdef _REENTRANT
-MUTEX_T pike_postgres_mutex;
+MUTEX_T pike_postgres_mutex STATIC_MUTEX_INIT;
 #define PQ_LOCK() mt_lock(&pike_postgres_mutex);
 #define PQ_UNLOCK() mt_unlock(&pike_postgres_mutex);
 #else
@@ -56,7 +56,7 @@ static void pgdebug (char * a, ...) {}
 
 struct program * postgres_program;
 
-RCSID("$Id: postgres.c,v 1.16 2000/04/04 14:18:51 grubba Exp $");
+RCSID("$Id: postgres.c,v 1.17 2000/04/18 06:54:08 jonasw Exp $");
 
 #define THIS ((struct pgres_object_data *) fp->current_storage)
 

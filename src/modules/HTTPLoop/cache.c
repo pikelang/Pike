@@ -30,9 +30,9 @@ struct cache *first_cache;
 
 static struct pike_string *free_queue[1024];
 static int numtofree;
-static MUTEX_T tofree_mutex;
+static MUTEX_T tofree_mutex STATIC_MUTEX_INIT;
 
-static MUTEX_T cache_entry_lock;
+static MUTEX_T cache_entry_lock STATIC_MUTEX_INIT;
 int next_free_ce, num_cache_entries;
 struct cache_entry *free_cache_entries[1024];
 

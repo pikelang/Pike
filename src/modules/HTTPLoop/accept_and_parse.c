@@ -70,10 +70,10 @@ struct program *accept_loop_program;
 #endif
 
 #define MAXLEN (1024*1024*10)
-static MUTEX_T queue_mutex;
+static MUTEX_T queue_mutex STATIC_MUTEX_INIT;
 static struct args *request, *last;
 
-static MUTEX_T arg_lock;
+static MUTEX_T arg_lock STATIC_MUTEX_INIT;
 static int next_free_arg, num_args;
 static struct args *free_arg_list[100];
 
@@ -584,14 +584,16 @@ static void f_accept_with_http_parse(INT32 nargs)
   {
     struct log *log = aap_malloc(sizeof(struct log));
     MEMSET(log, 0, sizeof(struct log));
+    mt_init(&log->log_lock);
     args->log = log;
     log->next = aap_first_log;
     aap_first_log = log;
   }
   c = aap_malloc(sizeof(struct cache));
+  MEMSET(c, 0, sizeof(struct cache));
+  mt_init(&c->mutex);
   c->next = first_cache;
   first_cache = c;
-  MEMSET(c, 0, sizeof(struct cache));
   args->cache = c;
   c->max_size = ms;
   args->fd = ((struct port *)port->storage)->fd;

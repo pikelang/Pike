@@ -4,7 +4,7 @@
 ||| See the files COPYING and DISCLAIMER for more information.
 \*/
 #include "global.h"
-RCSID("$Id: gdbmmod.c,v 1.8 1999/06/19 20:20:38 hubbe Exp $");
+RCSID("$Id: gdbmmod.c,v 1.9 2000/04/18 06:53:53 jonasw Exp $");
 #include "gdbm_machine.h"
 #include "threads.h"
 
@@ -22,7 +22,7 @@ RCSID("$Id: gdbmmod.c,v 1.8 1999/06/19 20:20:38 hubbe Exp $");
 #include <gdbm.h>
 
 #ifdef _REENTRANT
-static MUTEX_T gdbm_lock;
+static MUTEX_T gdbm_lock STATIC_MUTEX_INIT;
 #endif  
 
 struct gdbm_glue

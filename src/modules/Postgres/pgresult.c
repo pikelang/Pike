@@ -1,5 +1,5 @@
 /*
- * $Id: pgresult.c,v 1.11 1999/04/30 07:22:52 hubbe Exp $
+ * $Id: pgresult.c,v 1.12 2000/04/18 06:54:08 jonasw Exp $
  *
  * Postgres95 support for pike/0.5 and up
  *
@@ -63,10 +63,10 @@
 #include "builtin_functions.h"
 #include "module_support.h"
 
-RCSID("$Id: pgresult.c,v 1.11 1999/04/30 07:22:52 hubbe Exp $");
+RCSID("$Id: pgresult.c,v 1.12 2000/04/18 06:54:08 jonasw Exp $");
 
 #ifdef _REENTRANT
-MUTEX_T pike_postgres_result_mutex;
+MUTEX_T pike_postgres_result_mutex STATIC_MUTEX_INIT;
 #define PQ_LOCK() mt_lock(&pike_postgres_mutex)
 #define PQ_UNLOCK() mt_unlock(&pike_postgres_mutex)
 #else

@@ -1,5 +1,5 @@
 /*
- * $Id: threads.h,v 1.83 2000/04/17 18:47:44 mast Exp $
+ * $Id: threads.h,v 1.84 2000/04/18 06:53:48 jonasw Exp $
  */
 #ifndef THREADS_H
 #define THREADS_H
@@ -655,5 +655,20 @@ extern int thread_storage_offset;
 #ifndef NO_PIKE_SHORTHAND
 #define MUTEX_T PIKE_MUTEX_T
 #endif
+
+
+/* Initializer macros for static mutex and condition variables */
+#ifdef PTHREAD_MUTEX_INITIALIZER
+#define STATIC_MUTEX_INIT  = PTHREAD_MUTEX_INITIALIZER
+#else
+#define STATIC_MUTEX_INIT
+#endif
+#ifdef PTHREAD_COND_INITIALIZER
+#define STATIC_COND_INIT   = PTHREAD_COND_INITIALIZER
+#else
+#define STATIC_COND_INIT
+#endif
+
+
 
 #endif /* THREADS_H */
