@@ -1,5 +1,5 @@
 /*
- * $Id: nt.c,v 1.9 1999/05/11 18:06:56 marcus Exp $
+ * $Id: nt.c,v 1.10 1999/05/11 18:23:00 marcus Exp $
  *
  * NT system calls for Pike
  *
@@ -972,6 +972,10 @@ void exit_nt_system_calls(void)
       netapilib=0;
       netusergetinfo=0;
       netuserenum=0;
+      netusergetgroups=0;
+      netusergetlocalgroups=0;
+      netgroupenum=0;
+      netlocalgroupenum=0;
       netapibufferfree=0;
     }
   }
