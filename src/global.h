@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: global.h,v 1.88 2003/04/16 18:03:12 kiwi Exp $
+|| $Id: global.h,v 1.89 2003/04/17 11:24:08 kiwi Exp $
 */
 
 #ifndef GLOBAL_H
@@ -137,10 +137,10 @@ void *alloca();
 #endif
 
 #ifdef HAVE_MALLOC_H
-#if !defined(__FreeBSD__) || !defined(__OpenBSD__)
+#if !defined(__FreeBSD__) && !defined(__OpenBSD__)
 /* FreeBSD and OpenBSD has <malloc.h>, but it just contains a warning... */
 #include <malloc.h>
-#endif /* !__FreeBSD__ || !__OpenBSD */
+#endif /* !__FreeBSD__ && !__OpenBSD */
 #undef HAVE_MALLOC_H
 #endif
 
