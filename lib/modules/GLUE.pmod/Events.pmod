@@ -1,6 +1,8 @@
 //
-// $Id: Events.pmod,v 1.1 2004/01/24 21:35:45 nilsson Exp $
+// $Id: Events.pmod,v 1.2 2004/01/24 21:42:25 nilsson Exp $
 //
+
+#pike __REAL_VERSION__
 
 //! GLUE Event abstraction.
 
