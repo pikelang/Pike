@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: constants.c,v 1.49 2003/08/20 16:31:44 mast Exp $
+|| $Id: constants.c,v 1.50 2004/01/13 00:48:54 nilsson Exp $
 */
 
 #include "global.h"
@@ -18,7 +18,7 @@
 #include "security.h"
 #include "block_alloc.h"
 
-RCSID("$Id: constants.c,v 1.49 2003/08/20 16:31:44 mast Exp $");
+RCSID("$Id: constants.c,v 1.50 2004/01/13 00:48:54 nilsson Exp $");
 
 struct mapping *builtin_constants = 0;
 
@@ -162,6 +162,11 @@ PMOD_EXPORT struct callable *quick_add_efun(const char *name, ptrdiff_t name_len
   struct pike_type *t;
   struct callable *ret;
 
+#if PIKE_DEBUG
+  if(simple_mapping_string_lookup(builtin_constants, name))
+    Pike_fatal("%s added as efun more than once.\n", name);
+#endif
+
   n = make_shared_binary_string(name, name_length);
   t = make_pike_type(type);
 #ifdef DEBUG
@@ -171,7 +176,7 @@ PMOD_EXPORT struct callable *quick_add_efun(const char *name, ptrdiff_t name_len
   s.subtype=FUNCTION_BUILTIN;
   add_ref(n);
   ret=s.u.efun=low_make_callable(fun, n, t, flags, optimize, docode);
-  low_add_efun(n, &s);
+  mapping_string_insert(builtin_constants, n, &s);
   free_svalue(&s);
   free_string(n);
   return ret;
