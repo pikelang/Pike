@@ -2,12 +2,12 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: file.c,v 1.306 2003/10/28 11:46:02 mast Exp $
+|| $Id: file.c,v 1.307 2003/10/29 15:37:28 mast Exp $
 */
 
 #define NO_PIKE_SHORTHAND
 #include "global.h"
-RCSID("$Id: file.c,v 1.306 2003/10/28 11:46:02 mast Exp $");
+RCSID("$Id: file.c,v 1.307 2003/10/29 15:37:28 mast Exp $");
 #include "fdlib.h"
 #include "pike_netlib.h"
 #include "interpret.h"
@@ -956,7 +956,12 @@ static int PIKE_CONCAT(file_,X) (int fd, void *data)		\
   PIKE_CONCAT(set_,X)(fd, 0, 0);				\
   check_internal_reference(f);                                  \
   check_destructed(& f->X );				        \
-  if(!UNSAFE_IS_ZERO(& f->X )) {				\
+  if(UNSAFE_IS_ZERO(& f->X )) {					\
+    PIKE_CONCAT (set_,X) (fd, 0, 0);				\
+    check_internal_reference (THIS);				\
+  }								\
+  else {							\
+    f->my_errno = errno; /* Propagate the backend setting. */	\
     apply_svalue(& f->X, 0);					\
     if (Pike_sp[-1].type == PIKE_T_INT &&			\
 	Pike_sp[-1].u.integer == -1) {				\
