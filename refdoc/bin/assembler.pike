@@ -18,8 +18,8 @@ class TocNode {
   string path;
   int(1..3) depth;
 
-  int|void walk_preorder_2(mixed ... args) {
-    mChildren = ({});
+  static void make_children() {
+    if(sizeof(mChildren)) return;
     foreach(toc, array ent) {
       string file = ent[1][sizeof(String.common_prefix( ({ path, ent[1] }) ))..];
       if(file[0]=='/') file = file[1..];
@@ -38,8 +38,10 @@ class TocNode {
       if(sizeof(ent)>3 && depth>1)
 	foreach(ent[3..], string subtit) {
 	  Node dd = Node( XML_ELEMENT, "dd", ([]), 0 );
-	  Node link = Node( XML_ELEMENT, "url", ([ "href" : file ]), 0 );
-	  link->add_child( Node( XML_TEXT, 0, 0, ent[2]+"."+(++sub)+". "+subtit ) );
+	  sub++;
+	  Node link = Node( XML_ELEMENT, "url",
+			    ([ "href" : file+"#"+sub ]), 0 );
+	  link->add_child( Node( XML_TEXT, 0, 0, ent[2]+"."+sub+". "+subtit ) );
 	  dd->add_child( link );
 	  add_child( dd );
 	  add_child( Node( XML_TEXT, 0, 0, "\n" ) );
@@ -47,10 +49,22 @@ class TocNode {
 	  // TODO: Add depth 3 here
 	}
     }
+  }
+
+  int walk_preorder_2(mixed ... args) {
+    make_children();
     ::walk_preorder_2( @args );
   }
 
-  int count_children() { return sizeof(toc)*3; }
+  array(Node) get_children() {
+    make_children();
+    return ::get_children();
+  }
+
+  int count_children() {
+    make_children();
+    return ::count_children();
+  }
 
   void create(string _path, int(1..3) _depth) {
     path = _path;
