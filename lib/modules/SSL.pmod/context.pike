@@ -1,4 +1,4 @@
-/* $Id: context.pike,v 1.6 1998/08/26 07:09:12 nisse Exp $
+/* $Id: context.pike,v 1.7 1999/02/15 14:41:37 nisse Exp $
  *
  * Keeps track of global data for an SSL server,
  * such as preferred encryption algorithms and session cache.
@@ -37,6 +37,15 @@ array(int) preferred_suites =
    SSL_rsa_with_null_sha,
    SSL_rsa_with_null_md5
 });
+
+void export_mode()
+{
+  preferred_suites =
+    ({ SSL_rsa_export_with_rc4_40_md5,
+       SSL_rsa_with_null_sha,
+       SSL_rsa_with_null_md5
+    });
+}
 
 array(int) preferred_compressors =
 ({ COMPRESSION_null });
