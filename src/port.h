@@ -5,7 +5,7 @@
 \*/
 
 /*
- * $Id: port.h,v 1.32 2000/12/16 05:34:05 marcus Exp $
+ * $Id: port.h,v 1.33 2000/12/22 23:46:05 grubba Exp $
  */
 #ifndef PORT_H
 #define PORT_H
@@ -82,7 +82,7 @@ void *MEMSET (void *s,int c,size_t n);
 #endif
 
 #ifdef TRY_USE_MMX
-void MEMCPY(void *b,const void *a,size_t s);
+PMOD_EXPORT void MEMCPY(void *b,const void *a,size_t s);
 # define __builtin_memcpy MEMCPY
 #else
 # ifndef HAVE_MEMCPY
@@ -99,19 +99,19 @@ void MEMCPY(void *b,const void *a,size_t s);
 #endif
 
 #ifndef HAVE_MEMMOVE
-void MEMMOVE(void *b,const void *a,size_t s);
+PMOD_EXPORT void MEMMOVE(void *b,const void *a,size_t s);
 #else
 #  define MEMMOVE memmove
 #endif
 
 #ifndef HAVE_MEMCMP
-int MEMCMP(const void *b,const void *a,size_t s);
+PMOD_EXPORT int MEMCMP(const void *b,const void *a,size_t s);
 #else
 #  define MEMCMP(X,Y,Z) memcmp((char*)(X),(char*)(Y),(Z))
 #endif
 
 #ifndef HAVE_MEMCHR
-void *MEMCHR(void *p,char c,size_t e);
+PMOD_EXPORT void *MEMCHR(void *p,char c,size_t e);
 #else
 #  define MEMCHR(X,Y,Z) ((void *)memchr(X,Y,Z))
 #endif
@@ -120,7 +120,7 @@ void *MEMCHR(void *p,char c,size_t e);
 #  ifdef HAVE_INDEX
 #    define STRCHR(X,Y) ((char *)index(X,Y))
 #  else
-char *STRCHR(char *s,char c);
+PMOD_EXPORT char *STRCHR(char *s,char c);
 #  endif
 #else
 #  define STRCHR strchr
@@ -133,20 +133,20 @@ char *STRCHR(char *s,char c);
 #  ifdef HAVE_RINDEX
 #    define STRRCHR(X,Y) ((char *)rindex(X,Y))
 #  else
-char *STRRCHR(char *s,int c);
+PMOD_EXPORT char *STRRCHR(char *s,int c);
 #  endif
 #else
 #  define STRRCHR strrchr
 #endif
 
 #ifndef HAVE_STRSTR
-char *STRSTR(char *s1,const char *s2);
+PMOD_EXPORT char *STRSTR(char *s1,const char *s2);
 #else
 #  define STRSTR strstr
 #endif
 
 #ifndef HAVE_STRTOK
-char *STRTOK(char *s1,char *s2);
+PMOD_EXPORT char *STRTOK(char *s1,char *s2);
 #else
 #  define STRTOK strtok
 #endif
@@ -156,13 +156,13 @@ char *STRTOK(char *s1,char *s2);
 #endif
 
 #ifndef HAVE_VFPRINTF
-int VFPRINTF(FILE *f,char *s,va_list args);
+PMOD_EXPORT int VFPRINTF(FILE *f,char *s,va_list args);
 #else
 #  define VFPRINTF vfprintf
 #endif
 
 #ifndef HAVE_VSPRINTF
-int VSPRINTF(char *buf,char *fmt,va_list args);
+PMOD_EXPORT int VSPRINTF(char *buf,char *fmt,va_list args);
 #else
 #  define VSPRINTF vsprintf
 #endif
