@@ -2,10 +2,9 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: msql_config.h.in,v 1.4 2002/10/11 02:06:25 nilsson Exp $
+|| $Id: msql_config.h.in,v 1.5 2002/11/25 01:02:46 nilsson Exp $
 */
 
-/* $Id: msql_config.h.in,v 1.4 2002/10/11 02:06:25 nilsson Exp $ */
 #undef STDC_HEADERS
 
 #undef HAVE_MSQL_H

@@ -2,10 +2,9 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: pgres_config.h.in,v 1.7 2002/10/11 02:06:26 nilsson Exp $
+|| $Id: pgres_config.h.in,v 1.8 2002/11/25 01:01:46 nilsson Exp $
 */
 
-/* $Id: pgres_config.h.in,v 1.7 2002/10/11 02:06:26 nilsson Exp $ */
 #undef STDC_HEADERS
 
 /* Define if you have the <postgres.h> header file.  */
