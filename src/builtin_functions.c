@@ -2,11 +2,11 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: builtin_functions.c,v 1.486 2003/04/27 14:13:52 grubba Exp $
+|| $Id: builtin_functions.c,v 1.487 2003/04/27 17:41:20 mast Exp $
 */
 
 #include "global.h"
-RCSID("$Id: builtin_functions.c,v 1.486 2003/04/27 14:13:52 grubba Exp $");
+RCSID("$Id: builtin_functions.c,v 1.487 2003/04/27 17:41:20 mast Exp $");
 #include "interpret.h"
 #include "svalue.h"
 #include "pike_macros.h"
@@ -3748,17 +3748,42 @@ TYPEP(f_floatp, "floatp", T_FLOAT, "float")
  *!   same way as @[index]. I.e. if index 3 is moved to position 0 in @[index]
  *!   index 3 will be moved to position 0 in all the other arrays as well.
  *!
- *!   @[sort()] can sort strings, integers and floats in ascending order.
- *!   Arrays will be sorted first on the first element of each array.
- *!   Objects will be sorted in ascending order according to @[`<()], @[`>()]
- *!   and @[`==()].
+ *!   The sort order is as follows:
+ *!
+ *!   @ul
+ *!   @item
+ *!     Integers and floats are sorted in ascending order.
+ *!   @item
+ *!     Strings are sorted primarily on the first characters that are
+ *!     different, and secondarily with shorter strings before longer.
+ *!     Different characters are sorted in ascending order on the
+ *!     character value. Thus the sort order is not locale dependent.
+ *!   @item
+ *!     Arrays are sorted recursively on the first element. Empty
+ *!     arrays are sorted before nonempty ones.
+ *!   @item
+ *!     Multisets are sorted recursively on the first index. Empty
+ *!     multisets are sorted before nonempty ones.
+ *!   @item
+ *!     Objects are sorted in ascending order according to @[`<()],
+ *!     @[`>()] and @[`==()].
+ *!   @item
+ *!     Other types aren't reordered.
+ *!   @item
+ *!     Different types are sorted in this order: Arrays, mappings,
+ *!     multisets, objects, functions, programs, strings, types,
+ *!     integers and floats. Note however that objects can control
+ *!     their ordering wrt other types with @[`<], @[`>] and @[`==],
+ *!     so this ordering of types only applies to objects without
+ *!     those functions.
+ *!   @endul
  *!
  *! @returns
- *!   The first argument will be returned.
+ *!   The first argument is returned.
  *! 
  *! @note
- *!   The sorting algorithm used is not stable, ie elements that are equal
- *!   may get reordered.
+ *!   The sort is stable, i.e. elements that are compare-wise equal
+ *!   aren't reordered.
  *!
  *! @seealso
  *!   @[Array.sort_array], @[reverse()]
@@ -3766,28 +3791,39 @@ TYPEP(f_floatp, "floatp", T_FLOAT, "float")
 PMOD_EXPORT void f_sort(INT32 args)
 {
   INT32 e,*order;
+  struct array *a;
 
   if(args < 1)
     SIMPLE_TOO_FEW_ARGS_ERROR("sort", 1);
+  if(Pike_sp[-args].type != T_ARRAY)
+    SIMPLE_BAD_ARG_ERROR("sort", 1, "array");
+  a = Pike_sp[-args].u.array;
 
-  for(e=0;e<args;e++)
+  for(e=1;e<args;e++)
   {
     if(Pike_sp[e-args].type != T_ARRAY)
       SIMPLE_BAD_ARG_ERROR("sort", e+1, "array");
 
-    if(Pike_sp[e-args].u.array->size != Pike_sp[-args].u.array->size)
+    if(Pike_sp[e-args].u.array->size != a->size)
       bad_arg_error("sort", Pike_sp-args, args, e+1, "array", Pike_sp+e-args,
 		    "Argument %d has wrong size.\n", (e+1));
   }
 
   if(args > 1)
   {
-    order=get_alpha_order(Pike_sp[-args].u.array);
-    for(e=0;e<args;e++) order_array(Pike_sp[e-args].u.array,order);
-    free((char *)order);
+    order = stable_sort_array_destructively(a);
+    for(e=1;e<args;e++) order_array(Pike_sp[e-args].u.array,order);
     pop_n_elems(args-1);
-  } else {
-    sort_array_destructively(Pike_sp[-args].u.array);
+    free((char *)order);
+  }
+  else {
+    /* If there are only simple types in the array we can use unstable
+     * sorting. */
+    array_fix_bad_type_field (a);
+    if (a->type_field & BIT_COMPLEX)
+      free (stable_sort_array_destructively (a));
+    else
+      sort_array_destructively (a);
   }
 }
 
