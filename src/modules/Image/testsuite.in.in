@@ -1,5 +1,5 @@
 // -*- pike -*-
-// $Id: testsuite.in.in,v 1.19 1999/06/19 19:05:45 mirar Exp $
+// $Id: testsuite.in.in,v 1.20 1999/06/19 19:26:02 mirar Exp $
 #module Image.Image
 {
 //-----------------------------------------------------------------------
@@ -196,6 +196,31 @@
    img->setpixel(2,2,0,255,0);
    if (img->clone()==img->invert()->clone()) fail("clone of other doesn't differ");
    ok();
+
+#test Image.Image->find_autocrop
+   object img=Image.Image(20,20);
+   img->box(4,4,8,8,Image.Color.red);
+   img->box(8,8,12,12,Image.Color.green);
+   img->box(12,4,16,8,Image.Color.blue);
+
+   array z;
+   if (!equal(z=img->find_autocrop(),({ 4, 4, 16, 12 })))
+      fail(sprintf("find_autocrop() returned %O, not %O\n",z,({ 4, 4, 16, 12 })));
+   if (!equal(z=img->find_autocrop(5),({ -1, -1, 21, 17 })))
+      fail(sprintf("find_autocrop(5) returned %O, not %O\n",z,({ -1, -1, 21, 17 })));
+   if (!equal(z=img->find_autocrop(-2),({ 6, 6, 14, 10 })))
+      fail(sprintf("find_autocrop(-2) returned %O, not %O\n",z,({ 6, 6, 14, 10 })));
+
+   if (!equal(z=img->find_autocrop(0,1,0,0,0),({ 4, 0, 19, 19 })))
+      fail(sprintf("find_autocrop(0,1,0,0,0) returned %O, not %O\n",z,({ 4, 0, 19, 19 })));
+   if (!equal(z=img->find_autocrop(0,0,1,0,0),({ 0, 0, 16, 19 })))
+      fail(sprintf("find_autocrop(0,0,1,0,0) returned %O, not %O\n",z,({ 0, 0, 16, 19 })));
+   if (!equal(z=img->find_autocrop(0,0,0,1,0),({ 0, 4, 19, 19 })))
+      fail(sprintf("find_autocrop(0,0,0,1,0) returned %O, not %O\n",z,({ 0, 4, 19, 19 })));
+   if (!equal(z=img->find_autocrop(0,0,0,0,1),({ 0, 0, 19, 12 })))
+      fail(sprintf("find_autocrop(0,0,0,0,1) returned %O, not %O\n",z,({ 0, 0, 19, 12 })));
+   ok();
+
 
 #test Image.Image->autocrop
    object img=Image.Image(20,20);
