@@ -185,7 +185,7 @@ static private array(function) compile_language(string|array l,
    case "?":
      return compile_language(l[1], c)+c;
    default:
-     throw(({"Internal error\n"+sprintf("%O\n", l), backtrace()}));
+     error("Internal error\n%O\n", l);
   }
 }
 
@@ -368,6 +368,8 @@ static private mixed cleanup_parse(function(string,string,mapping
 		    "\".", ([]), @extra);
 }
 
+//! @fixme
+//!   Document this function
 array parse(string data,
 	    function(string,string,mapping,array|string,mapping(string:mixed),
 		     mixed ...:mixed) callback, mixed ... extra)
@@ -376,6 +378,8 @@ array parse(string data,
     (({cleanup_parse(callback, extra)}) - ({0}));
 }
 
+//! @fixme
+//!   Document this function
 array parse_dtd(string data,
 		function(string,string,mapping,array|string,
 			 mapping(string:mixed),mixed ...:mixed) callback,
