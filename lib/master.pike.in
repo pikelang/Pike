@@ -6,7 +6,7 @@
 // Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 // for more information.
 //
-// $Id: master.pike.in,v 1.335 2004/03/05 13:42:56 nilsson Exp $
+// $Id: master.pike.in,v 1.336 2004/03/15 13:04:55 mast Exp $
 
 #pike __REAL_VERSION__
 //#pragma strict_types
@@ -3304,6 +3304,8 @@ string describe_backtrace(array|object trace, void|int linewidth)
 	return sprintf ("%s<Backtrace in error array is %t, expected array>\n",
 			ret, trace);
     }
+    else
+      ret = "";
   }
 
   else
