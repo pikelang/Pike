@@ -1,4 +1,4 @@
-AC_REVISION("$Id: configure.in,v 1.770 2004/02/26 17:02:11 grubba Exp $")
+AC_REVISION("$Id: configure.in,v 1.771 2004/02/26 17:16:45 grubba Exp $")
 AC_INIT(interpret.c)
 AC_CONFIG_HEADER(machine.h)
 
@@ -6862,6 +6862,8 @@ AC_OUTPUT(Makefile \
             chmod +x precompile.sh
           ])
 
+set -x
+
 # Check if we have to enable some bundles
 if test "$pike_bundle_dir" = ""; then :; else
   bundle_info="`find . -type f -name '*.bundle'`"
@@ -6887,6 +6889,7 @@ $bundle_info])
         # FIXME: Configure bundle --prefix=`pwd`/bundles --static
         # FIXME: Compile bundle
         # FIXME: Install bundle
+        :
       fi
     done
     # Clear the caches.
@@ -6902,6 +6905,8 @@ $bundle_info])
     exit 17
   fi
 fi
+
+set +x
 
 # NOTE: M4 uses [] as quotes.
 
