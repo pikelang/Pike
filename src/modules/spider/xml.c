@@ -2446,7 +2446,7 @@ static struct pike_string *very_low_parse_xml(struct xmldata *data,
 
 	  default:
 	    /* 'Normal' tag (we hope) */
-	    push_constant_text(">"); /* This might change */
+	    push_constant_text(">"); 
 
 	    READ(1);
 	    SIMPLE_READNAME();
@@ -2482,6 +2482,19 @@ static struct pike_string *very_low_parse_xml(struct xmldata *data,
 	    {
 	      case '>':
 		READ(1);
+
+		{
+		  struct svalue *save_sp=sp;
+
+		  push_constant_text("<");
+		  assign_svalues_no_free(sp,sp-3,2,BIT_STRING|BIT_MAPPING);
+		  sp+=2;
+		  push_int(0);
+		  SYS();
+		  
+		  pop_n_elems(sp-save_sp);
+		}
+
 		if(low_parse_xml(data, sp[-2].u.string,0))
 		  XMLERROR("Unmatched tag.");
 		SYS();
