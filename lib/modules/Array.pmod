@@ -549,8 +549,11 @@ array flatten(array a, mapping|void state)
   if (state && state[a]) return state[a];
   if (!state) state = ([a:({})]);
   else state[a] = ({});
-  foreach(a, mixed b) state[a]+=arrayp(b)?flatten([array]b, state):({b});
-  return state[a];
+  array res = allocate(sizeof(a));
+  foreach(a; int i; mixed b) {
+    res[i] = arrayp(b)?flatten([array]b, state):({b});
+  }
+  return state[a] = (res*({}));
 }
 
 //! Sum the elements of an array using `+
