@@ -1,5 +1,5 @@
 #
-# $Id: Makefile.in,v 1.294 2002/04/07 12:31:03 nilsson Exp $
+# $Id: Makefile.in,v 1.295 2002/04/08 01:50:14 marcus Exp $
 #
 
 # This line is needed on some machines.
@@ -512,7 +512,7 @@ fast_verify_testsuite: testsuite
 
 # run hilfe, for interactive testing
 run_hilfe:
-	$(RUNPIKE) $(TMP_BINDIR)/hilfe
+	$(RUNPIKE)
 
 feature_list:
 	$(RUNPIKE) $(TMP_BINDIR)/feature_list
