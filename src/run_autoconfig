@@ -1,6 +1,6 @@
 #!/bin/sh
 #
-# $Id: run_autoconfig,v 1.36 2003/02/06 17:06:12 grubba Exp $
+# $Id: run_autoconfig,v 1.37 2003/02/20 11:56:09 grubba Exp $
 #
 # Bootstrap script
 
@@ -42,8 +42,10 @@ autoheader=autoheader
 
 autoconf_version="`\"$autoconf\" --version|head -1|awk '{ print $NF }'`"
 
-extra_ac_args=""
-extra_ah_args=""
+ac_args="--localdir=$localdir"
+ah_args=""
+
+autom4te_polluted="no"
 
 if [ "`echo \"$autoconf_version\"|awk -F. '{ print $1 }'`" -ne "2" -o \
      "`echo \"$autoconf_version\"|awk -F. '{ print $2 }'`" -le "10" -o \
@@ -62,13 +64,14 @@ if [ "`echo \"$autoconf_version\"|awk -F. '{ print $1 }'`" -ne "2" -o \
     # NB: autoheader 2.53 is stupid, and has broken handling of warnings.
     #     1) The warning flags are not passed along to autoconf.
     #     2) The option --warnings is misspelled by missing the last 's'.
-    extra_ac_args="-Wno-obsolete"
-    extra_ah_args="-Wno-obsolete"
+    ac_args="-Wno-obsolete --prepend-include=$localdir"
+    ah_args="-Wno-obsolete"
     # Attempt to kludge around Perl's stupid warnings about locale settings.
     LANGUAGE=C LC_CTYPE=C LANG=C export LANGUAGE LC_CTYPE LANG
     LC_MONETARY=C LC_NUMERIC=C export LC_MONETARY LC_NUMERIC
     LC_MESSAGES=C LC_COLLATE=C export LC_MESSAGES LC_COLLATE
     LC_TIME=C LC_ALL=C export LC_TIME LC_ALL
+    autom4te_polluted=yes
   fi;
 else :; fi
 
@@ -93,13 +96,13 @@ IFS=''
 
   if [ -f $dir/configure.in ] && grep AC_CONFIG_HEADER $dir/configure.in >/dev/null; then
     echo "Running $autoheader in $dir"
-    ( cd $dir ; "$autoheader" $extra_ah_args && echo foo >stamp-h.in )
+    ( cd $dir ; "$autoheader" $ah_args && echo foo >stamp-h.in )
   fi
 
   if [ -f $dir/configure.in ]; then
     if grep AC_INIT $dir/configure.in >/dev/null; then
       echo "Running $autoconf in $dir"
-      ( cd $dir ; "$autoconf" $extra_ac_args --localdir=$localdir )
+      ( cd $dir ; "$autoconf" $ac_args )
     else
       echo "$dir seems to use Cygnus-configure."
     fi
@@ -108,6 +111,13 @@ IFS=''
   if [ -f $dir/Makefile.in -a ! -f $dir/dependencies ] && egrep @dependencies@ $dir/Makefile.in >/dev/null; then
     touch $dir/dependencies
     need_to_make_depend=yes
+  fi
+
+  if [ "autom4te_pollution" = "yes" ]; then
+    # autoconf 2.53+ pullutes the source tree with cache-directories.
+    for d in $dir/autom4te*.cache; do
+      test -d "$d" && rm -rf "$d"
+    done
   fi
 done
 
