@@ -1,4 +1,4 @@
-// $Id: module.pmod,v 1.97 2000/12/10 01:23:14 per Exp $
+// $Id: module.pmod,v 1.98 2000/12/12 14:39:58 grubba Exp $
 #pike __REAL_VERSION__
 
 
@@ -72,6 +72,9 @@ class BlockFile
   }
 }
 
+//! This is the basic I/O object, it provides socket communication as well
+//! as file access. It does not buffer reads and writes or provide line-by-line
+//! reading, that is done with @[Stdio.FILE] object.
 class File
 {
   inherit Fd_ref;
@@ -104,6 +107,9 @@ class File
 #define CHECK_OPEN()
 #endif
 
+  //! Returns the error code for the last command on this file.
+  //! Error code is normally cleared when a command is successful.
+  //!
   int errno()
   {
     return _fd && ::errno();
@@ -141,6 +147,38 @@ class File
     }
   }
 
+  //! @decl int open(string filename, string mode)
+  //! @decl int open(string filename, string mode, int mask)
+  //!
+  //! Open a file for read, write or append. The parameter @[mode] should
+  //! contain one or more of the following letters:
+  //! @string
+  //!   @member 'r'
+  //!   Open file for reading.
+  //!   @member 'w'
+  //!   Open file for writing.
+  //!   @member 'a'
+  //!   Open file for append (use with @tt{'w'@}).
+  //!   @member 't'
+  //!   Truncate file at open (use with @tt{'w'@}).
+  //!   @member 'c'
+  //!   Create file if it doesn't exist (use with @tt{'w'@}).
+  //!   @member 'x'
+  //!   Fail if file already exists (use with @tt{'c'@}).
+  //! @endstring
+  //!
+  //! @[mode] should always contain at least one of the letters @tt{'r'@} or
+  //! @tt{'w'@}.
+  //!
+  //! The parameter @[mask] is protection bits to use if the file is created.
+  //! Default is @tt{0666@} (read+write for all in octal notation).
+  //!
+  //! @returns
+  //! This function returns 1 for success, 0 otherwise.
+  //!
+  //! @seealso
+  //! @[close()], @[create()]
+  //!
   int open(string file, string mode, void|int bits)
   {
     _fd=Fd();
@@ -154,6 +192,21 @@ class File
     return ::open(file,mode,bits);
   }
 
+  //! This makes this file into a socket ready for connections. The reason
+  //! for this function is so that you can set the socket to nonblocking
+  //! or blocking (default is blocking) before you call @[connect()].
+  //!
+  //! If you give a @[port] number to this function, the socket will be
+  //! bound to this @[port] locally before connecting anywhere. This is
+  //! only useful for some silly protocols like @b{FTP@}. You may also
+  //! specify an @[address] to bind to if your machine has many IP numbers.
+  //!
+  //! @returns
+  //! This function returns 1 for success, 0 otherwise.
+  //!
+  //! @seealso
+  //! @[connect()], @[set_nonblocking()], @[set_blocking()]
+  //!
   int open_socket(int|void port, string|void address)
   {
     _fd=Fd();
@@ -173,6 +226,20 @@ class File
     }
   }
 
+  //! This function connects a socket previously created with
+  //! @[open_socket()] to a remote socket. The @[host] argument is the
+  //! hostname or IP number for the remote machine.
+  //!
+  //! @returns
+  //! This function returns 1 for success, 0 otherwise.
+  //!
+  //! @note
+  //! If the socket is in nonblocking mode, you have to wait for a write
+  //! or close callback before you know if the connection failed or not.
+  //!
+  //! @seealso
+  //! @[query_address()]
+  //!
   int connect(string host, int port)
   {
     if(!_fd) _fd=Fd();
@@ -181,9 +248,9 @@ class File
 #endif
     is_file = 0;
     debug_file="socket";
-    debug_mode=host+":"+port; 
+    debug_mode=ip+":"+port; 
     debug_bits=0;
-    return ::connect(host,port);
+    return ::connect(ip,port);
   }
 
   static private function(int, mixed ...:void) _async_cb;
@@ -208,7 +275,13 @@ class File
     set_nonblocking(0,0,0);
     cb(0, @args);
   }
-  // NOTE: Zaps nonblocking-state.
+
+
+  //! FIXME:
+  //!   Document this function.
+  //!
+  //! @note
+  //! Zaps nonblocking-state.
   int async_connect(string host, int port,
 		    function(int, mixed ...:void) callback,
 		    mixed ... args)
@@ -232,6 +305,18 @@ class File
     return(1);	// OK so far. (Or rather the callback will be used).
   }
 
+  //! This function creates a bi-directional pipe between the object it
+  //! was called in and an object that is returned. The two ends of the
+  //! pipe are indistinguishable. If the File object this function is
+  //! called in was open to begin with, it will be closed before the pipe
+  //! is created.
+  //!
+  //! FIXME:
+  //! Document the @tt{PROP_@} properties.
+  //!
+  //! @seealso
+  //! @[Process.create_process()]
+  //!
   File pipe(void|int how)
   {
     _fd=Fd();
@@ -252,6 +337,39 @@ class File
     }
   }
 
+  //! @decl void create()
+  //! @decl void create(string filename)
+  //! @decl void create(string filename, string mode)
+  //! @decl void create(string filename, string mode, int mask)
+  //! @decl void create(string descriptorname)
+  //! @decl void create(int fd)
+  //! @decl void create(int fd, string mode)
+  //!
+  //! There are four basic ways to create a Stdio.File object.
+  //! The first is calling it without any arguments, in which case the you
+  //! have to call @[open()], @[connect()] or some other method which connects
+  //! the File object with a stream.
+  //!
+  //! The second way is calling it with a @[filename] and open @[mode]. This is
+  //! the same thing as cloning and then calling @[open()], except shorter and
+  //! faster.
+  //!
+  //! The third way is to call it with @[descriptorname] of @tt{"stdin"@},
+  //! @tt{"stdout"@} or @tt{"stderr"@}. This will open the specified
+  //! standard stream.
+  //!
+  //! For the advanced users, you can use the file descriptors of the
+  //! systems (note: emulated by pike on some systems - like NT). This is
+  //! only useful for streaming purposes on unix systems. This is @b{not
+  //! recommended at all@} if you don't know what you're into. Default
+  //! @[mode] for this is @tt{"rw"@}.
+  //!
+  //! @note
+  //! Open mode will be filtered through the system UMASK. You
+  //! might need to use @[chmod()] later.
+  //!
+  //! @seealso
+  //! @[open()], @[connect()], @[Stdio.FILE],
   void create(int|string|void file,void|string mode,void|int bits)
   {
     if (zero_type(file)) return;
@@ -303,6 +421,13 @@ class File
     }
   }
 
+  //! This function takes a clone of Stdio.File and assigns all
+  //! variables of this file from it. It can be used together with @[dup()]
+  //! to move files around.
+  //!
+  //! @seealso
+  //! @[dup()]
+  //!
   int assign(File|Fd o)
   {
     is_file = o->is_file;
@@ -332,6 +457,14 @@ class File
     return 0;
   }
 
+  //! This function returns a clone of Stdio.File with all variables
+  //! copied from this file.
+  //!
+  //! @note
+  //! All variables, even @tt{id@}, are copied.
+  //!
+  //! @seealso
+  //! @[assign()]
   File dup()
   {
     File to = File();
@@ -357,6 +490,19 @@ class File
   }
 
 
+  //! @decl int close()
+  //! @decl int close(string how)
+  //!
+  //! Close the file. Optionally, specify "r", "w" or "rw" to close just
+  //! the read, just the write or both read and write part of the file
+  //! respectively.
+  //!
+  //! @note
+  //! This function will not call the @tt{close_callback@}.
+  //!
+  //! @seealso
+  //! @[open]
+  //!
   int close(void|string how)
   {
     if(::close(how||"rw"))
@@ -446,18 +592,160 @@ class File
     return ___##X;					\
   }
 
+  //! @decl void set_read_callback(function(mixed, string:void) read_cb)
+  //!
+  //! This function sets the @tt{read_callback@} for the file. The
+  //! @tt{read_callback@} is called whenever there is data to read from
+  //! the file.
+  //!
+  //! @note
+  //! This function does not set the file nonblocking.
+  //!
+  //! @seealso
+  //! @[set_nonblocking()], @[read()],
+  //! @[query_read_callback()], @[set_write_callback()],
+  //! @[set_close_callback()], @[set_read_oob_callback]
+  //! @[set_write_oob_callback()]
+
+  //! @decl function(mixed, string:void) query_read_callback()
+  //!
+  //! This function returns the @tt{read_callback@}, which has been set with
+  //! @[set_nonblocking()] or @[set_read_callback()].
+  //!
+  //! @seealso
+  //! @[set_nonblocking()], @[set_read_callback]
+
   CBFUNC(read_callback)
+
+  //! @decl void set_write_callback(function(mixed:void) write_cb)
+  //!
+  //! This function sets the @tt{write_callback@} for the file. The
+  //! @tt{write_callback@} is called whenever there is buffer space
+  //! available to write to for the file.
+  //!
+  //! @note
+  //! This function does not set the file nonblocking.
+  //!
+  //! @seealso
+  //! @[set_nonblocking()], @[write()],
+  //! @[query_write_callback()], @[set_read_callback()],
+  //! @[set_close_callback()], @[set_read_oob_callback]
+  //! @[set_write_oob_callback()]
+
+  //! @decl function(mixed:void) query_write_callback()
+  //!
+  //! This function returns the @tt{write_callback@}, which has been set with
+  //! @[set_nonblocking()] or @[set_write_callback()].
+  //!
+  //! @seealso
+  //! @[set_nonblocking()], @[set_write_callback]
+
   CBFUNC(write_callback)
+
+  //! @decl void set_read_oob_callback(function(mixed, string:void) read_oob_cb)
+  //!
+  //! FIXME:
+  //!   Document this function.
+
+  //! @decl function(mixed, string:void) query_read_oob_callback()
+  //!
+  //! FIXME:
+  //!   Document this function.
+
+  //! @decl void set_write_oob_callback(function(mixed:void) write_oob_cb)
+  //!
+  //! FIXME:
+  //!   Document this function.
+
+  //! @decl function(mixed:void) query_write_oob_callback()
+  //!
+  //! FIXME:
+  //!   Document this function.
+
 #if constant(files.__HAVE_OOB__)
   CBFUNC(read_oob_callback)
   CBFUNC(write_oob_callback)
 #endif
 
+  //! @decl void set_close_callback(function(mixed:void) close_cb)
+  //!
+  //! This function sets the @tt{close_callback@} for the file. The
+  //! @tt{close callback@} is called when the remote end of a socket or
+  //! pipe is closed.
+  //!
+  //! @note
+  //! This function does not set the file nonblocking.
+  //!
+  //! @seealso
+  //! @[set_nonblocking()], @[close]
+  //! @[query_close_callback()], @[set_read_callback()],
+  //! @[set_write_callback()]
+  //!
+  void set_close_callback(mixed c)  { ___close_callback=c; }
+
+  //! @decl function(mixed:void) query_close_callback()
+  //!
+  //! This function returns the @tt{close_callback@}, which has been set with
+  //! @[set_nonblocking()] or @[set_close_callback()].
+  //!
+  //! @seealso
+  //! @[set_nonblocking()], @[set_close_callback()]
+  //!
   mixed query_close_callback()  { return ___close_callback; }
-  mixed set_close_callback(mixed c)  { ___close_callback=c; }
-  void set_id(mixed i) { ___id=i; }
+
+  //! This function sets the @tt{id@} of this file. The @tt{id@} is mainly
+  //! used as an identifier that is sent as the first argument to all
+  //! callbacks. The default @tt{id@} is @tt{0@} (zero). Another possible
+  //! use of the @tt{id@} is to hold all data related to this file in a
+  //! mapping or array.
+  //!
+  //! @seealso
+  //! @[query_id()]
+  //!
+  void set_id(mixed id) { ___id=id; }
+
+  //! This function returns the @tt{id@} that has been set with @[set_id()].
+  //!
+  //! @seealso
+  //! @[set_id()]
+  //!
   mixed query_id() { return ___id; }
 
+  //! @decl void set_nonblocking(function(mixed, string:void) read_callback,
+  //!                            function(mixed:void) write_callback,
+  //!                            function(mixed:void) close_callback)
+  //! @decl void set_nonblocking(function(mixed, string:void) read_callback,
+  //!                            function(mixed:void) write_callback,
+  //!                            function(mixed:void) close_callback,
+  //!                            function(mixed, string:void) read_oob_callback,
+  //!                            function(mixed:void) write_oob_callback)
+  //! @decl void set_nonblocking()
+  //!
+  //! This function sets a stream to nonblocking mode. When data arrives on
+  //! the stream, @[read_callback] will be called with some or all of this
+  //! data. When the stream has buffer space over for writing,
+  //! @[write_callback] will be called so that you can write more data to it.
+  //! If the stream is closed at the other end, @[close_callback] will be
+  //! called. 
+  //!
+  //! When out-of-band data arrives on the stream, @[read_oob_callback] will
+  //! be called with some or all of this data. When the stream allows
+  //! out-of-band data to be sent, @[write_oob_callback] will be called so that
+  //! you can write out-of-band data to it.
+  //!
+  //! All callbacks will have the id of file as first argument when called
+  //! (see @[set_id()]).
+  //!
+  //! If no arguments are given, the callbacks will not be changed. The
+  //! stream will just be set to nonblocking mode.
+  //!
+  //! @note
+  //! Out-of-band data will note be supported if Pike was compiled with the
+  //! option @tt{'--without-oob'@}.
+  //!
+  //! @seealso
+  //! @[set_blocking()], @[set_id()]
+  //!
   void set_nonblocking(mixed|void rcb,
 		       mixed|void wcb,
 		       mixed|void ccb,
@@ -494,6 +782,12 @@ class File
 
   }
 
+  //! This function sets a stream to blocking mode. i.e. all reads and writes
+  //! will wait until data has been transferred before returning.
+  //!
+  //! @seealso
+  //! @[set_nonblocking()]
+  //!
   void set_blocking()
   {
     CHECK_OPEN();
@@ -509,7 +803,7 @@ class File
     ::_enable_callbacks();
   }
 
-  void destroy()
+  static void destroy()
   {
     if(_fd)
     { 
@@ -541,6 +835,22 @@ class Port
     }
   }
 
+  //! @decl void create()
+  //! @decl void create(int port)
+  //! @decl void create(int port, function accept_callback)
+  //! @decl void create(int port, function accept_callback, string ip)
+  //! @decl void create("stdin")
+  //! @decl void create("stdin", function accept_callback)
+  //!
+  //! If the first argument is other than @tt{"stdin"@} the arguments will
+  //! be passed to @[bind()].
+  //!
+  //! When create is called with @tt{"stdin"@} as the first argument, a
+  //! socket is created out of the file descriptor @tt{0@}. This is only
+  //! useful if that actually is a socket to begin with.
+  //!
+  //! @seealso
+  //! @[bind]
   void create( string|int|void p,
                void|mixed cb,
                string|void ip )
@@ -557,6 +867,13 @@ class Port
       ::create( p );
   }
 
+  //! This function completes a connection made from a remote machine to
+  //! this port. It returns a two-way stream in the form of a clone of
+  //! Stdio.File. The new file is by default set to blocking mode.
+  //!
+  //! @seealso
+  //! @[Stdio.File]
+  //!
   File accept()
   {
     if(object x=::accept())
@@ -620,6 +937,16 @@ class FILE
   }
 
   /* Public functions. */
+
+  //! Read one line of input.
+  //!
+  //! @returns
+  //! This function returns the line read if successful, and @tt{0@} if
+  //! no more lines are available.
+  //!
+  //! @seealso
+  //! @[ngets()], @[read()]
+  //!
   string gets()
   {
     if( sizeof( cached_lines ) > lp+1 )
@@ -705,6 +1032,7 @@ class FILE
     return query_num_arg() ? file::pipe(flags) : file::pipe();
   }
 
+  
   int assign(object foo)
   {
     bpos=0; cached_lines=({});
@@ -724,12 +1052,18 @@ class FILE
     error("Cannot use nonblocking IO with buffered files.\n");
   }
 
-  int printf(string fmt, mixed ... data)
+  //! This function does approximately the same as:
+  //! @tt{write(sprintf(format,@data))@}.
+  //!
+  //! @seealso
+  //! @[write()], @[sprintf()]
+  //!
+  int printf(string format, mixed ... data)
   {
     if(!sizeof(data))
-      return file::write(fmt);
+      return file::write(format);
     else
-      return file::write(sprintf(fmt,@data));
+      return file::write(sprintf(format,@data));
   }
     
   string read(int|void bytes,void|int(0..1) now)
@@ -757,13 +1091,27 @@ class FILE
     return extract(bytes);
   }
 
-  string ungets(string s)
+  //! This function puts a string back in the input buffer. The string
+  //! can then be read with eg @[read()], @[gets()] or @[getchar()].
+  //!
+  //! @seealso
+  //! @[read()], @[gets()], @[getchar()]
+  //!
+  void ungets(string s)
   {
     cached_lines = ({});
     b=s+b[bpos..];
     bpos=0;
   }
 
+  //! This function returns one character from the input stream.
+  //!
+  //! @returns
+  //! Returns the ASCII value of the character.
+  //!
+  //! @note
+  //! Returns an @tt{int@} and not a @tt{string@} of length 1.
+  //!
   int getchar()
   {
     cached_lines = ({});
@@ -777,6 +1125,16 @@ class FILE
 
 FILE stdin=FILE("stdin");
 
+//! @decl string read_file(string filename)
+//! @decl string read_file(string filename, int start, int len)
+//!
+//! Read @[len] lines from a file @[filename] after skipping @[start] lines
+//! and return those lines as a string. If both @[start] and @[len] are omitted
+//! the whole file is read.
+//!
+//! @seealso
+//! @[read_bytes()], @[write_file()]
+//!
 string read_file(string filename,void|int start,void|int len)
 {
   FILE f;
@@ -817,7 +1175,21 @@ string read_file(string filename,void|int start,void|int len)
   return ret;
 }
 
-string read_bytes(string filename,void|int start,void|int len)
+//! @decl string read_bytes(string filename, int start, int len)
+//! @decl string read_bytes(string filename, int start)
+//! @decl string read_bytes(string filename)
+//!
+//! Read @[len] number of bytes from the file @[filename] starting at byte
+//! @[start], and return it as a string.
+//!
+//! If @[len] is omitted, the rest of the file will be returned.
+//!
+//! If @[start] is also omitted, the entire file will be returned.
+//!
+//! @seealso
+//! @[read_file], @[write_file()], @[append_file()]
+//!
+string read_bytes(string filename, void|int start,void|int len)
 {
   string ret;
   File f = File();
@@ -848,7 +1220,15 @@ string read_bytes(string filename,void|int start,void|int len)
   return ret;
 }
 
-int write_file(string filename, string what, int|void access)
+//! Append the string @[str] onto the file @[filename].
+//!
+//! @returns
+//! Returns number of bytes written.
+//!
+//! @seealso
+//! @[read_bytes()]
+//!
+int write_file(string filename, string str, int|void access)
 {
   int ret;
   File f = File();
@@ -860,7 +1240,7 @@ int write_file(string filename, string what, int|void access)
   if(!f->open(filename, "twc", access))
     error("Couldn't open file "+filename+".\n");
   
-  ret=f->write(what);
+  ret=f->write(str);
   f->close();
   return ret;
 }
@@ -882,23 +1262,51 @@ int append_file(string filename, string what, int|void access)
   return ret;
 }
 
-int file_size(string s)
+//! Give the size of a file. Size -1 indicates that the file either
+//! does not exist, or that it is not readable by you. Size -2
+//! indicates that it is a directory.
+//!
+//! @seealso
+//! @[file_stat()], @[write_file()], @[read_bytes()]
+//!
+int file_size(string filename)
 {
   Stat stat;
-  stat=file_stat(s);
+  stat = file_stat(filename);
   if(!stat) return -1;
   return stat[1]; 
 }
 
-// Warning: This does not work on NT
-// (Consider paths like: k:/fnord)
-// -Hubbe
-string append_path(string p, string ... v)
+//! Append @[relative] paths to an @[absolute] path and remove any
+//! @tt{"//"@}, @tt{"../"@} or @tt{"/."@} to produce a straightforward
+//! absolute path as a result.
+//!
+//! @tt{"../"@} is ignorded in the relative paths if it makes the
+//! created path begin with something else than the absolute path
+//! (or so far created path).
+//!
+//! @note
+//! Warning: This does not work on NT.
+//! (Consider paths like: k:/fnord)
+//!
+//! @seealso
+//! @[combine_path()]
+//!
+string append_path(string absolute, string ... relative)
 {
-  return combine_path(p, @map(v, lambda(string s)
-				 { return combine_path("/", s)[1..]; }));
+  return combine_path(absolute,
+		      @map(relative, lambda(string s) {
+				       return combine_path("/", s)[1..];
+				     }));
 }
 
+//! This function prints a message to stderr along with a description
+//! of what went wrong if available. It uses the system errno to find
+//! out what went wrong, so it is only applicable to IO errors.
+//!
+//! @seealso
+//! @[werror()]
+//!
 void perror(string s)
 {
 #if efun(strerror)
@@ -912,24 +1320,57 @@ void perror(string s)
  * Predicates.
  */
 
+//! Check if a @[path] is a file.
+//!
+//! @returns
+//! Returns true if the given path is a file, otherwise false.
+//!
+//! @seealso
+//! @[exist()], @[is_dir()], @[is_link()], @[file_stat()]
+//!
 int is_file(string path)
 {
   if (Stat s = file_stat (path)) return s->isreg;
   return 0;
 }
 
+//! Check if a @[path] is a directory.
+//!
+//! @returns
+//! Returns true if the given path is a directory, otherwise false.
+//!
+//! @seealso
+//! @[exist()], @[is_file()], @[is_link()], @[file_stat()]
+//!
 int is_dir(string path)
 {
   if (Stat s = file_stat (path)) return s->isdir;
   return 0;
 }
 
+//! Check if a @[path] is a symbolic link.
+//!
+//! @returns
+//! Returns true if the given path is a symbolic link, otherwise false.
+//!
+//! @seealso
+//! @[exist()], @[is_dir()], @[is_file()], @[file_stat()]
+//!
 int is_link(string path)
 {
   if (Stat s = file_stat (path, 1)) return s->islnk;
   return 0;
 }
 
+//! Check if a @[path] exists.
+//!
+//! @returns
+//! Returns true if the given path exists (is a directory or file),
+//! otherwise false.
+//!
+//! @seealso
+//! @[is_dir()], @[is_file()], @[is_link()], @[file_stat()]
+//!
 int exist(string path)
 {
    return !!file_stat(path);
@@ -996,14 +1437,26 @@ void async_cp(string from, string to,
   sendfile(0, from_file, 0, -1, 0, to_file, call_cp_cb, cb, @args);
 }
 
-int mkdirhier (string dir, void|int mode)
+//! Creates zero or more directories to ensure that the given @[pathname] is
+//! a directory.
+//!
+//! If a @[mode] is given, it's used for the new directories after being &'ed
+//! with the current umask (on OS'es that support this).
+//!
+//! @returns
+//! Returns zero if it fails and nonzero if it is successful.
+//!
+//! @seealso
+//! @[mkdir()]
+//!
+int mkdirhier (string pathname, void|int mode)
 {
   if (zero_type (mode)) mode = 0777; // &'ed with umask anyway.
-  if (!sizeof (dir)) return 0;
+  if (!sizeof(pathname)) return 0;
   string path;
-  if (dir[0] == '/') dir = dir[1..], path = "/";
+  if (pathname[0] == '/') pathname = pathname[1..], path = "/";
   else path = "";
-  foreach (dir / "/", string name) {
+  foreach (pathname / "/", string name) {
     path += name;
     mkdir(path, mode);
     path += "/";
@@ -1011,6 +1464,14 @@ int mkdirhier (string dir, void|int mode)
   return is_dir (path);
 }
 
+//! Remove a file or directory a directory tree.
+//!
+//! @returns
+//! Returns 0 on failure, nonzero otherwise.
+//!
+//! @seealso
+//! @[rm]
+//!
 int recursive_rm (string path)
 {
   int res = 1;
@@ -1436,7 +1897,47 @@ static class nb_sendfile
   }
 }
 
-// FIXME: Support for timeouts?
+//! @decl object sendfile(array(string) headers
+//!                       File from, int offset, int len,
+//!                       array(string) trailers,
+//!                       File to)
+//! @decl object sendfile(array(string) headers
+//!                       File from, int offset, int len,
+//!                       array(string) trailers,
+//!                       File to,
+//!                       function(int, mixed ...:void) callback,
+//!                       mixed ... args)
+//!
+//! Sends @[headers] followed by @[len] bytes starting at @[offset]
+//! from the file @[from] followed by @[trailers] to the file @[to].
+//! When completed @[callback] will be called with the total number of
+//! bytes sent as the first argument, followed by @[args].
+//!
+//! Any of @[headers], @[from] and @[trailers] may be left out
+//! by setting them to @tt{0@}.
+//!
+//! Setting @[offset] to @tt{-1@} means send from the current position in
+//! @[from].
+//!
+//! Setting @[len] to @tt{-1@} means send until @[from]'s end of file is
+//! reached.
+//!
+//! @note
+//! The sending is performed asynchronously, and may complete
+//! before the function returns.
+//!
+//! For @[callback] to be called, the backend must be active (ie
+//! @[main()] must have returned @tt{-1@}).
+//!
+//! In some cases, the backend must also be active for any sending to
+//! be performed at all.
+//!
+//! @bugs
+//! FIXME: Support for timeouts?
+//!
+//! @seealso
+//! @[Stdio.File->set_nonblocking()]
+//!
 object sendfile(array(string) headers,
 		object from, int offset, int len,
 		array(string) trailers,
@@ -1466,43 +1967,82 @@ object sendfile(array(string) headers,
 
 class UDP
 {
-   inherit files.UDP;
+  inherit files.UDP;
 
-   private static array extra=0;
-   private static function callback=0;
+  private static array extra=0;
+  private static function callback=0;
 
-   static string _sprintf( int f )
-   {
-     switch( f )
-     {
-      case 't':
-        return "Stdio.UDP";
-      case 'O':
-        return sprintf("%t()", this_object() );
-     }
-   }
+  static string _sprintf( int f )
+  {
+    switch( f )
+    {
+    case 't':
+      return "Stdio.UDP";
+    case 'O':
+      return sprintf("%t()", this_object() );
+    }
+  }
 
-   object set_nonblocking(mixed ...stuff)
-   {
-      if (stuff!=({})) 
-	 set_read_callback(@stuff);
-      return _set_nonblocking();
-   }
+  //! @decl UDP set_nonblocking()
+  //! @decl UDP set_nonblocking(function(mapping(string:int|string),
+  //!                                    mixed ...:void) read_cb,
+  //!                           mixed ... extra_args)
+  //!
+  //! Set this object to nonblocking mode.
+  //!
+  //! If @[read_cb] and @[extra_args] are specified, they will be passed on
+  //! to @[set_read_callback()].
+  //!
+  //! @returns
+  //! The called object.
+  //!
+  this_program set_nonblocking(mixed ...stuff)
+  {
+    if (stuff!=({})) 
+      set_read_callback(@stuff);
+    return _set_nonblocking();
+  }
 
-   object set_read_callback(function f,mixed ...ext)
-   {
-      extra=ext;
-      callback=f;
-      _set_read_callback(_read_callback);
-      return this_object();
-   }
+  //! @decl UDP set_read_callback(function(mapping(string:int|string),
+  //!                                      mixed...) read_cb,
+  //!                             mixed ... extra_args);
+  //!
+  //! The @[read_cb] function will receive a mapping similar to the mapping
+  //! returned by @[read()]:
+  //! @mapping
+  //!   @member "data" string
+  //!     Received data.
+  //!   @member "ip" string
+  //!     Data was sent from this IP.
+  //!   @member "port" int
+  //!     Data was sent from this port.
+  //! @endmapping
+  //!
+  //! @returns
+  //! The called object.
+  //!
+  //! @seealso
+  //! @[read()]
+  //!
+  this_program set_read_callback(function f,mixed ...ext)
+  {
+    extra=ext;
+    callback=f;
+    _set_read_callback(_read_callback);
+    return this_object();
+  }
    
-   private static void _read_callback()
-   {
-      mapping i;
-      if (i=read())
-	callback(i,@extra);
-   }
+  private static void _read_callback()
+  {
+    mapping i;
+    if (i=read())
+      callback(i,@extra);
+  }
 }
 
+//! @decl void werror(string s)
+//!
+//! Write a message to stderr. Stderr is normally the console, even if
+//! the process output has been redirected to a file or pipe.
+//!
 constant werror=predef::werror;
