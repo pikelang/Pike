@@ -4637,30 +4637,28 @@ This function returns the object that identifies this thread.
 </function>
 
 
-<anchor name=Thread.Mutex>
-<dl>
-<dt><encaps>NAME</encaps><dd>
-<tt>Thread.Mutex</tt> - mutex locks
-<p>
-<dt><encaps>DESCRIPTION</encaps><dd>
+<class name=Thread.Mutex title="mutex locks">
+<man_description>
 Thread.Mutex is a pre-compiled Pike program that implements
 mutual exclusion locks. Mutex locks are used to prevent multiple
 threads from simultaneously execute sections of code which access
 or change shared data. The basic operations for a mutex is locking
 and unlocking, if a thread attempts to lock an already locked mutex
 the thread will sleep until the mutex is unlocked.
-<p>
-<dt><encaps>NOTA BENE</encaps><dd>
+</man_description>
+<man_note>
 Mutex locks are only available on systems with POSIX or UNIX threads support.
 <p>
 In POSIX threads, mutex locks can only be unlocked by the same thread
 locked them. In Pike any thread can unlock a locked mutex.
-<p>
-
-<dt><encaps>EXAMPLE</encaps><dd>
-This simple program can be used to exchange data between two
-programs. It is similar to Thread.Fifo, but can only hold one
-element of data.
+</man_note>
+<man_example>
+<pre>
+/* This simple program can be used to exchange data between two
+ * programs. It is similar to Thread.Fifo, but can only hold one
+ * element of data.
+ */
+</pre>
 <example language=pike>
 inherit Thread.Mutex : r_mutex;
 inherit Thread.Mutex : w_mutex;
@@ -4685,62 +4683,50 @@ mixed read()
   return tmp;
 }
 </example>
-</dl>
+</man_example>
+</class>
 
-</anchor>
 <hr noshade size=1>
-<anchor name=Thread.Mutex.lock>
-<dl>
-<dt><encaps>NAME</encaps><dd>
-<tt>Thread.Mutex-&gt;lock</tt> - lock the mutex
-<p>
-<dt><encaps>SYNTAX</encaps><dd>
-<tt>object lock();<br>
-</tt>
-<p>
-<dt><encaps>DESCRIPTION</encaps><dd>
+
+<method name=Thread.Mutex-&gt;lock title="lock the mutex">
+<man_syntax>
+object lock();
+</man_syntax>
+<man_description>
 This function attempts to lock the mutex, if the mutex is already
 locked the current thread will sleep until the lock is unlocked by some
 other thread. The value returned is the 'key' to the lock. When the
 key is destructed or has no more references the lock will automatically
 be unlocked. The key will also be destructed if the lock is destructed.
-<p>
-</dl>
+</man_description>
+</method>
 
-</anchor>
 <hr noshade size=1>
-<anchor name=Thread.Mutex.trylock>
-<dl>
-<dt><encaps>NAME</encaps><dd>
-<tt>Thread.Mutex-&gt;trylock</tt> - try to lock the mutex
-<p>
-<dt><encaps>SYNTAX</encaps><dd>
-<tt>object trylock();<br>
-</tt>
-<p>
-<dt><encaps>DESCRIPTION</encaps><dd>
+
+<method name=Thread.Mutex-&gt;trylock title="try to lock the mutex">
+<man_syntax>
+object trylock();
+</man_syntax>
+<man_description>
 This function performs the same operation as lock(), but if the mutex
 is already locked zero will be returned instead of sleeping until the
 lock is unlocked.
-<p>
-</dl>
+</man_description>
+</method>
 
 <hr newpage noshade size=1>
-<anchor name=Thread.Condition>
-<dl>
-<dt><encaps>NAME</encaps><dd>
-<tt>Thread.Condition</tt> - condition variables
-<p>
-<dt><encaps>DESCRIPTION</encaps><dd>
+
+<class name=Thread.Condition title="condition variables">
+<man_description>
 Thread.Condition is a pre-compiled Pike program that implements
 condition variables. Condition variables are used by threaded programs
 to wait for events happening in other threads.
-<p>
-<dt><encaps>NOTA BENE</encaps><dd>
+</man_description>
+<man_note>
 Condition variables are only available on systems with POSIX or UNIX threads
 support.
-<p>
-<dt><encaps>EXAMPLE</encaps><dd>
+</man_note>
+<man_example>
 <example language=pike>
 // This program implements a fifo that can be used to send
 // data between two threads.
@@ -4778,175 +4764,128 @@ void write(mixed v)
   r_cond::signal();
 }
 </example>
-<p>
-<dt><encaps>SEE ALSO</encaps><dd>
-<link to=Thread.Mutex>Thread.Mutex</link>
-<p>
-</dl>
+</man_example>
+<man_see>
+Thread.Mutex
+</man_see>
+</class>
 
-</anchor>
 <hr noshade size=1>
-<anchor name=Thread.Condition.wait>
-<dl>
-<dt><encaps>NAME</encaps><dd>
-<tt>Thread.Condition-&gt;wait</tt> - wait for condition
-<p>
-<dt><encaps>SYNTAX</encaps><dd>
-<tt>void wait();<br>
-or<br>
-void wait(object <I>mutex_key</I>);<br>
-</tt>
-<p>
-<dt><encaps>DESCRIPTION</encaps><dd>
+
+<method name=Thread.Condition-&gt;wait title="wait for condition">
+<man_syntax>
+void wait();<br>
+void wait(object <I>mutex_key</I>);
+</man_syntax>
+<man_description>
 This function makes the current thread sleep until the condition
 variable is signalled. The optional argument should be the 'key'
 to a mutex lock. If present the mutex lock will be unlocked before
 waiting for the condition in one atomic operation. After waiting
 for the condition the mutex referenced by mutex_key will be re-locked.
-<p>
-<dt><encaps>SEE ALSO</encaps><dd>
-<link to=Thread.Mutex.lock>Thread.Mutex-&gt;lock</link>
-<p>
-</dl>
+</man_description>
+<man_see>
+Thread.Mutex-&gt;lock
+</man_see>
+</method>
 
-</anchor>
 <hr noshade size=1>
-<anchor name=Thread.Condition.signal>
-<dl>
-<dt><encaps>NAME</encaps><dd>
-<tt>Thread.Condition-&gt;signal</tt> - signal a condition variable
-<p>
-<dt><encaps>SYNTAX</encaps><dd>
-<tt>void signal();<br>
-</tt>
-<p>
-<dt><encaps>DESCRIPTION</encaps><dd>
+
+<method name=Thread.Condition.signal title="signal a condition variable">
+<man_syntax>
+void signal();
+</man_syntax>
+<man_description>
 Signal wakes up one of the threads currently waiting for the
 condition.
-<p>
-<dt><encaps>BUGS</encaps><dd>
+</man_description>
+<man_bugs>
 It sometimes wakes up more than one thread.
-<p>
-</dl>
+</man_bugs>
+</method>
 
-</anchor>
 <hr noshade size=1>
-<anchor name=Thread.Condition.broadcast>
-<dl>
-<dt><encaps>NAME</encaps><dd>
-<tt>Thread.Condition-&gt;broadcast</tt> - signal all waiting threads
-<p>
-<dt><encaps>SYNTAX</encaps><dd>
-<tt>void broadcast();<br>
-</tt>
-<p>
-<dt><encaps>DESCRIPTION</encaps><dd>
+
+<method name=Thread.Condition-&gt;broadcast title="signal all waiting threads">
+<man_syntax>
+void broadcast();
+</man_syntax>
+<man_description>
 This function wakes up all threads currently waiting for this
 condition.
-<p>
-</dl>
+</man_description>
+</method>
 
-</anchor>
 <hr noshade size=1>
-<anchor name=Thread.Fifo>
-<dl>
-<dt><encaps>NAME</encaps><dd>
-<tt>Thread.Fifo</tt> - first in, first out object
-<p>
-<dt><encaps>DESCRIPTION</encaps><dd>
+
+<class name=Thread.Fifo title="first in, first out object">
+<man_description>
 Thread.Fifo implements a fixed length fifo. A fifo is a queue
 of values and is often used as a stream of data between two threads.
-<p>
-<dt><encaps>SEE ALSO</encaps><dd>
-<link to=Thread.Queue>Thread.Queue</link>
-<p>
-<dt><encaps>NOTA BENE</encaps><dd>
+</man_description>
+<man_note>
 Fifos are only available on systems with POSIX threads support.
-<p>
-<p>
-</dl>
+</man_note>
+<man_see>
+Thread.Queue
+</man_see>
+</class>
 
-</anchor>
 <hr noshade size=1>
-<anchor name=Thread.Fifo.create>
-<dl>
-<dt><encaps>NAME</encaps><dd>
-<tt>Thread.Fifo-&gt;create</tt> - initialize the fifo
-<p>
-<dt><encaps>SYNTAX</encaps><dd>
-<tt>void create(int <I>size</I>);<br>
-or<br>
+
+<method name=Thread.Fifo-&gt;create title="initialize the fifo">
+<man_syntax>
+void create(int <I>size</I>);<br>
 object(Thread.Fifo) Thread.Fifo();<br>
-or<br>
 object(Thread.Fifo) Thread.Fifo(int <i>size</i>);<br>
-</tt>
-<p>
-<dt><encaps>DESCRIPTION</encaps><dd>
+</man_syntax>
+<man_description>
 The function create() is called when the fifo is cloned, if the
 optional size argument is present it sets how many values can be
 written to the fifo without blocking. The default size is 128.
-<p>
-</dl>
+</man_description>
+</method>
 
-</anchor>
 <hr noshade size=1>
-<anchor name=Thread.Fifo.write>
-<dl>
-<dt><encaps>NAME</encaps><dd>
-<tt>Thread.Fifo-&gt;write</tt> - queue a value
-<p>
-<dt><encaps>SYNTAX</encaps><dd>
-<tt>void write(mixed <I>value</I>);<br>
-</tt>
-<p>
-<dt><encaps>DESCRIPTION</encaps><dd>
+
+<method name=Thread.Fifo-&gt;write title="queue a value">
+<man_syntax>
+void write(mixed <I>value</I>);
+</man_syntax>
+<man_description>
 This function puts a value last in the fifo. If there is no more
 room in the fifo the current thread will sleep until space is
 available.
-<p>
-</dl>
+</man_description>
+</method>
 
-</anchor>
 <hr noshade size=1>
-<anchor name=Thread.Fifo.read>
-<dl>
-<dt><encaps>NAME</encaps><dd>
-<tt>Thread.Fifo-&gt;read</tt> - read a value from the fifo
-<p>
-<dt><encaps>SYNTAX</encaps><dd>
-<tt>mixed read();<br>
-</tt>
-<p>
-<dt><encaps>DESCRIPTION</encaps><dd>
+
+<method name=Thread.Fifo-&gt;read title="read a value from the fifo">
+<man_syntax>
+mixed read();
+</man_syntax>
+<man_description>
 This function retrieves a value from the fifo. Values will be
 returned in the order they were written. If there are no values
 present in the fifo the current thread will sleep until some other
 thread writes a value to the fifo.
-<p>
-</dl>
+</man_description>
+</method>
 
-</anchor>
 <hr noshade size=1>
-<anchor name=Thread.Fifo.size>
-<dl>
-<dt><encaps>NAME</encaps><dd>
-<tt>Thread.Fifo-&gt;size</tt> - return number of values in fifo
-<p>
-<dt><encaps>SYNTAX</encaps><dd>
-<tt>int size();<br>
-</tt>
-<p>
-<dt><encaps>DESCRIPTION</encaps><dd>
+
+<method name=Thread.Fifo-&gt;size title="return number of values in fifo">
+<man_syntax>
+int size();
+</man_syntax>
+<man_description>
 This function returns how many values are currently in the fifo. <!-- L}ter fel /hedda -->
-<p>
-</dl>
+</man_description>
+</method>
 
-</anchor>
-
-
-
-</anchor>
 <hr noshade size=1>
+
 <anchor name=Thread.Queue>
 <dl>
 <dt><encaps>NAME</encaps><dd>
