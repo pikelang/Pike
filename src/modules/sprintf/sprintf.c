@@ -99,7 +99,7 @@
 */
 
 #include "global.h"
-RCSID("$Id: sprintf.c,v 1.36 1999/06/17 18:49:36 noring Exp $");
+RCSID("$Id: sprintf.c,v 1.37 1999/06/17 19:59:43 noring Exp $");
 #include "error.h"
 #include "array.h"
 #include "svalue.h"
@@ -1012,23 +1012,32 @@ static void low_pike_sprintf(struct string_builder *r,
 	fsp->b=MKPCHARP(x,0);
 	sprintf(buffer,"%%*.*%c",EXTRACT_PCHARP(a));
 	GET_FLOAT(tf);
-	
-	if(fsp->precision<0)
-	  tf = rint(tf*pow(10.0, (double)fsp->precision));
+
+	if(fsp->precision<0) {
+	  double m=pow(10.0, (double)fsp->precision);
+	  tf=rint(tf*m)/m;
+	}
 	
 	sprintf(x,buffer,
 		fsp->width,
 		fsp->precision<0?0:fsp->precision,tf);
 	fsp->len=strlen(x);
 	
-	/* Pad with ending zeroes, if necessary. */
-	if(fsp->precision<0 &&
-	   (('0'<x[0] && x[0]<='9') || ('0'<x[1] && x[1]<='9')))
+	/* Make sure that the last digits really are zero. */
+	if(fsp->precision<0)
 	{
-	  INT32 i;
-	  for(i = 0; i<-fsp->precision; i++)
-	    x[fsp->len++] = '0';
-	  x[fsp->len] = 0;
+	  INT32 i, j;
+	  /* Find the ending of the number.  May
+	     be skew because of space padding. */
+	  for(i=fsp->len-1; i>=0; i--)
+ 	    if('0'<=x[i] && x[i]<='9')
+	    {
+	      i+=fsp->precision+1;
+	      if(i>=0 && '0'<=x[i] && x[i]<='9')
+		for(j=0; j<-fsp->precision; j++)
+		  x[i+j]='0';
+	      break;
+	    }
 	}
 	
 	fsp->fi_free_string=x;
