@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: nt.c,v 1.14 2003/01/10 14:25:13 grubba Exp $
+|| $Id: nt.c,v 1.15 2003/01/10 14:57:05 grubba Exp $
 */
 
 /*
@@ -35,10 +35,14 @@
 /*! @module Crypto
  */
 
-/*! @class nt
+/*! @module nt
+ *!
+ *! Module containing Windows specific crypto-related stuff.
  */
 
-/*! @class CryptoContext
+/*! @class CryptAcquireContext
+ *!
+ *! Class representing an HCRYPTPROV handle.
  */
 
 struct cryptcontext_storage {
@@ -64,6 +68,8 @@ static void exit_cryptcontext_struct(struct object *o)
 }
 
 /*! @decl string CryptGenRandom(int size, string|void init)
+ *!
+ *! Retreive some random data.
  */
 static void f_CryptGenRandom(INT32 args)
 {
@@ -145,7 +151,7 @@ static void f_CryptAcquireContext(INT32 args)
 /*! @endclass
  */
 
-/*! @endclass
+/*! @endmodule
  */
 
 /*! @endmodule
@@ -157,11 +163,13 @@ static void f_CryptAcquireContext(INT32 args)
 void pike_nt_init(void)
 {
 #ifdef __NT__
+  struct program *nt_program = NULL;
+  struct object *nt_object = NULL;
+
+  start_new_program();
 
 #define SIMPCONST(X) \
       add_integer_constant(#X,X,0);
-
-  start_new_program();
 
   SIMPCONST(PROV_RSA_FULL);
   SIMPCONST(PROV_RSA_SIG);
@@ -191,18 +199,13 @@ void pike_nt_init(void)
 	       tFunc(tInt tOr(tString,tVoid),tString), 0);
   end_class("CryptAcquireContext", 0);
 
-  end_class("nt", 0);
-
-
+  nt_program = end_program();
+  add_object_constant("nt", nt_object = clone_object(nt_program, 0), 0);
+  free_object(nt_object);
+  free_program(nt_program);
 #endif /* __NT__ */
 }
 
 void pike_nt_exit(void)
 {
-#ifdef __NT__
-  if(cryptcontext_program) {
-    free_program(cryptcontext_program);
-    cryptcontext_program=NULL;
-  }
-#endif /* __NT__ */
 }
