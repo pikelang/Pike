@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: las.c,v 1.352 2004/11/05 16:21:23 grubba Exp $
+|| $Id: las.c,v 1.353 2004/11/06 07:35:17 nilsson Exp $
 */
 
 #include "global.h"
@@ -3833,7 +3833,7 @@ void fix_type_field(node *n)
 	    if (state) {
 	      struct identifier *id = ID_FROM_INT(state->new_program, id_no);
 	      if (id && id->name) {
-		name = id->name->str;
+		name = id->name;
 #if 0
 #ifdef PIKE_DEBUG
 		/* FIXME: This test crashes on valid code because the type of the
