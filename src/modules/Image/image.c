@@ -1,9 +1,9 @@
-/* $Id: image.c,v 1.62 1997/11/13 07:30:30 hedda Exp $ */
+/* $Id: image.c,v 1.63 1997/11/20 22:31:19 mirar Exp $ */
 
 /*
 **! module Image
 **! note
-**!	$Id: image.c,v 1.62 1997/11/13 07:30:30 hedda Exp $
+**!	$Id: image.c,v 1.63 1997/11/20 22:31:19 mirar Exp $
 **! class image
 **!
 **!	The main object of the <ref>Image</ref> module, this object
@@ -82,7 +82,7 @@
 
 #include "stralloc.h"
 #include "global.h"
-RCSID("$Id: image.c,v 1.62 1997/11/13 07:30:30 hedda Exp $");
+RCSID("$Id: image.c,v 1.63 1997/11/20 22:31:19 mirar Exp $");
 #include "pike_macros.h"
 #include "object.h"
 #include "constants.h"
@@ -2702,13 +2702,17 @@ void pike_module_init(void)
    add_function("gif_begin",image_gif_begin,
 		"function(int:string)",0);
    add_function("gif_add",image_gif_add,
-		"function(int|void,int|void:string)",0);
+		"function(int|void,int|void,int|float:string)"
+		"|function(int|void,int|void,array(array(int)),int|float:string)",0);
    add_function("gif_add_fs",image_gif_add_fs,
-		"function(int|void,int|void:string)",0);
+		"function(int|void,int|void,int|float:string)"
+		"|function(int|void,int|void,array(array(int)),int|float:string)",0);
    add_function("gif_add_nomap",image_gif_add_nomap,
-		"function(int|void,int|void:string)",0);
+		"function(int|void,int|void,int|float:string)"
+		"|function(int|void,int|void,array(array(int)),int|float:string)",0);
    add_function("gif_add_fs_nomap",image_gif_add_fs_nomap,
-		"function(int|void,int|void:string)",0);
+		"function(int|void,int|void,int|float:string)"
+		"|function(int|void,int|void,array(array(int)),int|float:string)",0);
    add_function("gif_end",image_gif_end,
 		"function(:string)",0);
    add_function("gif_netscape_loop",image_gif_netscape_loop,
