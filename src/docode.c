@@ -5,7 +5,7 @@
 \*/
 /**/
 #include "global.h"
-RCSID("$Id: docode.c,v 1.96 2001/01/14 21:39:36 grubba Exp $");
+RCSID("$Id: docode.c,v 1.97 2001/01/15 00:26:51 mast Exp $");
 #include "las.h"
 #include "program.h"
 #include "pike_types.h"
@@ -36,6 +36,7 @@ struct cleanup_frame
   struct cleanup_frame *prev;
   cleanup_func cleanup;
   void *cleanup_arg;
+  int stack_depth;
 };
 
 struct statement_label_name
@@ -55,17 +56,24 @@ struct statement_label
    * following statement. */
   INT32 break_label, continue_label;
   int emit_break_label;
+  int stack_depth;
   struct cleanup_frame *cleanups;
 };
 
 static struct statement_label top_statement_label_dummy =
-  {0, 0, -1, -1, 0, 0};
+  {0, 0, -1, -1, 0, -1, 0};
 static struct statement_label *current_label = &top_statement_label_dummy;
+#ifdef PIKE_DEBUG
+static int current_stack_depth = -4711;
+#else
+static int current_stack_depth = 0;
+#endif
 
 #define PUSH_CLEANUP_FRAME(func, arg) do {				\
   struct cleanup_frame cleanup_frame__;					\
   cleanup_frame__.cleanup = (cleanup_func) (func);			\
   cleanup_frame__.cleanup_arg = (void *)(ptrdiff_t) (arg);		\
+  cleanup_frame__.stack_depth = current_stack_depth;			\
   DO_IF_DEBUG(								\
     if (current_label->cleanups == (void *)(ptrdiff_t) -1)		\
       fatal("current_label points to an unused statement_label.\n");	\
@@ -96,6 +104,7 @@ static struct statement_label *current_label = &top_statement_label_dummy;
 } while (0)
 
 #define POP_AND_DO_CLEANUP						\
+  do_pop(current_stack_depth - cleanup_frame__.stack_depth);		\
   cleanup_frame__.cleanup(cleanup_frame__.cleanup_arg);			\
   POP_AND_DONT_CLEANUP
 
@@ -107,9 +116,16 @@ static struct statement_label *current_label = &top_statement_label_dummy;
     new_label__.name = 0;						\
     new_label__.break_label = new_label__.continue_label = -1;		\
     new_label__.cleanups = 0;						\
+    new_label__.stack_depth = current_stack_depth;			\
     current_label = &new_label__;					\
   }									\
-  DO_IF_DEBUG(else new_label__.cleanups = (void *)(ptrdiff_t) -1;)
+  else {								\
+    DO_IF_DEBUG(							\
+      new_label__.cleanups = (void *)(ptrdiff_t) -1;			\
+      new_label__.stack_depth = current_stack_depth;			\
+    )									\
+    current_label->stack_depth = current_stack_depth;			\
+  }
 
 #define POP_STATEMENT_LABEL						\
   current_label = new_label__.prev;					\
@@ -209,6 +225,7 @@ void do_pop(int x)
   case 1: emit0(F_POP_VALUE); break;
   default: emit1(F_POP_N_ELEMS,x); break;
   }
+  current_stack_depth -= x;
 }
 
 void do_cleanup_pop(int x)
@@ -218,6 +235,16 @@ void do_cleanup_pop(int x)
     emit0(F_POP_MARK);
 #endif
   do_pop(x);
+}
+
+void do_pop_mark()
+{
+  emit0(F_POP_MARK);
+}
+
+void do_pop_to_mark()
+{
+  emit0(F_POP_TO_MARK);
 }
 
 void do_escape_catch()
@@ -230,10 +257,15 @@ void do_escape_catch()
 int do_docode(node *n, INT16 flags)
 {
   int i;
+  int stack_depth_save = current_stack_depth;
   int save_current_line=lex.current_line;
   if(!n) return 0;
   lex.current_line=n->line_number;
+#ifdef PIKE_DEBUG
+  if (current_stack_depth == -4711) fatal("do_docode() used outside docode().\n");
+#endif
   i=do_docode2(check_node_hash(n), flags);
+  current_stack_depth = stack_depth_save + i;
 
   lex.current_line=save_current_line;
   return i;
@@ -308,6 +340,7 @@ void do_cond_jump(node *n, int label, int iftrue, int flags)
       do_jump(F_BRANCH_WHEN_NON_ZERO, label);
     else
       do_jump(F_BRANCH_WHEN_ZERO, label);
+    current_stack_depth--;
   }else{
     if(iftrue)
       do_jump(F_LOR, label);
@@ -357,6 +390,9 @@ static inline struct compiler_frame *find_local_frame(INT32 depth)
 
 int do_lfun_call(int id,node *args)
 {
+  emit0(F_MARK);
+  PUSH_CLEANUP_FRAME(do_pop_mark, 0);
+  do_docode(args,0);
 #if 1
   if(id == Pike_compiler->compiler_frame->current_function_number)
   {
@@ -365,25 +401,19 @@ int do_lfun_call(int id,node *args)
     {
       if(Pike_compiler->compiler_frame->is_inline)
       {
-	emit0(F_MARK);
-	do_docode(args,0);
 	Pike_compiler->compiler_frame->recur_label=do_jump(F_RECUR,
 					    Pike_compiler->compiler_frame->recur_label);
-	return 1;
       }else{
-	emit0(F_MARK);
-	do_docode(args,0);
 	emit1(F_COND_RECUR,id);
 	Pike_compiler->compiler_frame->recur_label=do_jump(F_POINTER,
 					    Pike_compiler->compiler_frame->recur_label);
-	return 1;
       }
     }
   }
+  else
 #endif
-  emit0(F_MARK);
-  do_docode(args,0);
-  emit1(F_CALL_LFUN, id);
+    emit1(F_CALL_LFUN, id);
+  POP_AND_DONT_CLEANUP;
   return 1;
 }
 
@@ -499,10 +529,22 @@ static int do_docode2(node *n, INT16 flags)
     emit1(F_NUMBER,0);
     return 1;
 
-  case F_PUSH_ARRAY:
+  case F_PUSH_ARRAY: {
+    if (current_label != &top_statement_label_dummy || current_label->cleanups) {
+      /* Might not have a surrounding apply node if evaluated as a
+       * constant by the optimizer. */
+#ifdef PIKE_DEBUG
+      if (!current_label->cleanups ||
+	  (current_label->cleanups->cleanup != do_pop_mark &&
+	   current_label->cleanups->cleanup != do_pop_to_mark))
+	fatal("F_PUSH_ARRAY unexpected in this context.\n");
+#endif
+      current_label->cleanups->cleanup = do_pop_to_mark;
+    }
     code_expression(CAR(n), 0, "`@");
     emit0(F_PUSH_ARRAY);
-    return -0x7ffffff;
+    return 0;
+  }
 
   case '?':
   {
@@ -804,12 +846,6 @@ static int do_docode2(node *n, INT16 flags)
   {
     node *arr;
     INT32 *prev_switch_jumptable = current_switch_jumptable;
-    PUSH_CLEANUP_FRAME(do_cleanup_pop, 4);
-    PUSH_STATEMENT_LABEL;
-
-    current_switch_jumptable=0;
-    current_label->break_label=alloc_label();
-    current_label->continue_label=alloc_label();
 
     arr=CAR(n);
     
@@ -829,6 +865,7 @@ static int do_docode2(node *n, INT16 flags)
     }
     tmp2=do_docode(CAR(n),DO_NOT_COPY);
     emit0(F_CONST0);
+    current_stack_depth++;
 
   foreach_arg_pushed:
 #ifdef PIKE_DEBUG
@@ -839,6 +876,13 @@ static int do_docode2(node *n, INT16 flags)
     if(d_flag)
       emit0(F_MARK);
 #endif
+    PUSH_CLEANUP_FRAME(do_cleanup_pop, 4);
+
+    PUSH_STATEMENT_LABEL;
+    current_switch_jumptable=0;
+    current_label->break_label=alloc_label();
+    current_label->continue_label=alloc_label();
+
     tmp3=do_branch(-1);
     tmp1=ins_label(-1);
     DO_CODE_BLOCK(CDR(n));
@@ -859,12 +903,6 @@ static int do_docode2(node *n, INT16 flags)
   case F_DEC_LOOP:
   {
     INT32 *prev_switch_jumptable = current_switch_jumptable;
-    PUSH_CLEANUP_FRAME(do_cleanup_pop, 3);
-    PUSH_STATEMENT_LABEL;
-
-    current_switch_jumptable=0;
-    current_label->break_label=alloc_label();
-    current_label->continue_label=alloc_label();
 
     tmp2=do_docode(CAR(n),0);
 #ifdef PIKE_DEBUG
@@ -875,6 +913,12 @@ static int do_docode2(node *n, INT16 flags)
     if(d_flag)
       emit0(F_MARK);
 #endif
+    PUSH_CLEANUP_FRAME(do_cleanup_pop, 3);
+
+    PUSH_STATEMENT_LABEL;
+    current_switch_jumptable=0;
+    current_label->break_label=alloc_label();
+    current_label->continue_label=alloc_label();
     tmp3=do_branch(-1);
     tmp1=ins_label(-1);
 
@@ -974,11 +1018,13 @@ static int do_docode2(node *n, INT16 flags)
 	     !CAR(n)->u.sval.u.efun->docode(n))
 	  {
 	    emit0(F_MARK);
+	    PUSH_CLEANUP_FRAME(do_pop_mark, 0);
 	    do_docode(CDR(n),0);
 	    tmp1=store_constant(& CAR(n)->u.sval,
 				!(CAR(n)->tree_info & OPT_EXTERNAL_DEPEND),
 				CAR(n)->name);
 	    emit1(F_APPLY, DO_NOT_WARN((INT32)tmp1));
+	    POP_AND_DONT_CLEANUP;
 	  }
 	  if(n->type == void_type_string)
 	    return 0;
@@ -991,11 +1037,13 @@ static int do_docode2(node *n, INT16 flags)
       }
 
       emit0(F_MARK);
+      PUSH_CLEANUP_FRAME(do_pop_mark, 0);
       do_docode(CDR(n),0);
       tmp1=store_constant(& CAR(n)->u.sval,
 			  !(CAR(n)->tree_info & OPT_EXTERNAL_DEPEND),
 			  CAR(n)->name);
       emit1(F_APPLY, DO_NOT_WARN((INT32)tmp1));
+      POP_AND_DONT_CLEANUP;
       
       return 1;
     }
@@ -1019,6 +1067,7 @@ static int do_docode2(node *n, INT16 flags)
       node *foo;
 
       emit0(F_MARK);
+      PUSH_CLEANUP_FRAME(do_pop_mark, 0);
       do_docode(CAR(n),0);
       do_docode(CDR(n),0);
 
@@ -1041,6 +1090,7 @@ static int do_docode2(node *n, INT16 flags)
 	}
       }
       free_node(foo);
+      POP_AND_DONT_CLEANUP;
       return 1;
     }
 
@@ -1090,6 +1140,7 @@ static int do_docode2(node *n, INT16 flags)
     cases=count_cases(CDR(n));
 
     tmp1=emit1(F_SWITCH,0);
+    current_stack_depth--;
     emit1(F_ALIGN,sizeof(INT32));
 
     current_switch_values_on_stack=0;
@@ -1282,11 +1333,11 @@ static int do_docode2(node *n, INT16 flags)
       for (label = current_label; label; label = label->prev)
 	for (lbl_name = label->name; lbl_name; lbl_name = lbl_name->next)
 	  if (lbl_name->str == name)
-	    goto label_found;
+	    goto label_found_1;
       my_yyerror("No surrounding statement labeled '%s'.", name->str);
       return 0;
 
-    label_found:
+    label_found_1:
       if (n->token == F_CONTINUE && label->continue_label < 0) {
 	my_yyerror("Cannot continue the non-loop statement on line %d.",
 		   lbl_name->line_number);
@@ -1294,29 +1345,31 @@ static int do_docode2(node *n, INT16 flags)
       }
     }
 
-    else
+    else {
       if (n->token == F_BREAK) {
-	label = current_label;
-	if(label->break_label < 0)
-	{
-	  yyerror("Break outside loop or switch.");
-	  return 0;
-	}
+	for (label = current_label; label; label = label->prev)
+	  if (label->break_label >= 0)
+	    goto label_found_2;
+	yyerror("Break outside loop or switch.");
+	return 0;
       }
       else {
 	for (label = current_label; label; label = label->prev)
 	  if (label->continue_label >= 0)
-	    goto continue_label_found;
+	    goto label_found_2;
 	yyerror("Continue outside loop.");
 	return 0;
-      continue_label_found:
-	;
       }
+    label_found_2: ;
+    }
 
     for (p = current_label; 1; p = p->prev) {
       struct cleanup_frame *q;
-      for (q = p->cleanups; q; q = q->prev)
+      for (q = p->cleanups; q; q = q->prev) {
+	do_pop(current_stack_depth - q->stack_depth);
 	q->cleanup(q->cleanup_arg);
+      }
+      do_pop(current_stack_depth - p->stack_depth);
       if (p == label) break;
     }
 
@@ -1385,26 +1438,28 @@ static int do_docode2(node *n, INT16 flags)
 
   case F_CATCH: {
     INT32 *prev_switch_jumptable = current_switch_jumptable;
-    PUSH_STATEMENT_LABEL;
+    tmp1=do_jump(F_CATCH,-1);
+    PUSH_CLEANUP_FRAME(do_escape_catch, 0);
 
+    PUSH_STATEMENT_LABEL;
     current_switch_jumptable=0;
     current_label->break_label=alloc_label();
     if (TEST_COMPAT(7,0))
       current_label->continue_label=alloc_label();
-    PUSH_CLEANUP_FRAME(do_escape_catch, 0);
 
-    tmp1=do_jump(F_CATCH,-1);
     DO_CODE_BLOCK(CAR(n));
 
     if (TEST_COMPAT(7,0))
       ins_label(current_label->continue_label);
     ins_label(current_label->break_label);
     emit0(F_THROW_ZERO);
-    ins_label(DO_NOT_WARN((INT32)tmp1));
-
     current_switch_jumptable = prev_switch_jumptable;
-    POP_AND_DONT_CLEANUP;
     POP_STATEMENT_LABEL;
+
+    ins_label(DO_NOT_WARN((INT32)tmp1));
+    current_stack_depth++;
+
+    POP_AND_DONT_CLEANUP;
     return 1;
   }
 
@@ -1610,6 +1665,11 @@ static int do_docode2(node *n, INT16 flags)
 
 void do_code_block(node *n)
 {
+#ifdef PIKE_DEBUG
+  if (current_stack_depth != -4711) fatal("Reentrance in do_code_block().\n");
+  current_stack_depth = 0;
+#endif
+
   init_bytecode();
   label_no=1;
 
@@ -1647,6 +1707,10 @@ void do_code_block(node *n)
     DO_CODE_BLOCK(n);
   }
   assemble();
+
+#ifdef PIKE_DEBUG
+  current_stack_depth = -4711;
+#endif
 }
 
 int docode(node *n)
@@ -1654,9 +1718,15 @@ int docode(node *n)
   int tmp;
   int label_no_save = label_no;
   dynamic_buffer instrbuf_save = instrbuf;
+  int stack_depth_save = current_stack_depth;
+  struct statement_label *label_save = current_label;
+  struct cleanup_frame *top_cleanups_save = top_statement_label_dummy.cleanups;
 
   instrbuf.s.str=0;
   label_no=1;
+  current_stack_depth = 0;
+  current_label = &top_statement_label_dummy;	/* Fix these two to */
+  top_statement_label_dummy.cleanups = 0;	/* please F_PUSH_ARRAY. */
   init_bytecode();
 
   tmp=do_docode(n,0);
@@ -1664,5 +1734,8 @@ int docode(node *n)
 
   instrbuf=instrbuf_save;
   label_no = label_no_save;
+  current_stack_depth = stack_depth_save;
+  current_label = label_save;
+  top_statement_label_dummy.cleanups = top_cleanups_save;
   return tmp;
 }
