@@ -1,4 +1,4 @@
-test_true([["$Id: testsuite.in,v 1.396 2001/03/20 12:48:23 grubba Exp $"]]);
+test_true([["$Id: testsuite.in,v 1.397 2001/03/23 00:50:45 mast Exp $"]]);
 
 cond([[all_constants()->_verify_internals]],
 [[
@@ -5124,6 +5124,39 @@ test_eq([[cpp("#define FOO(X,Y) (X) (Y)\nFOO( (A),(B) )")]],"# 1 \"-\"\n\n( (A) 
 test_eq([[cpp("#define F 'F'\nF")]],"# 1 \"-\"\n\n'F'")
 test_eq([[cpp("#define MAX(X,Y) ((X)>(Y)?(X):(Y))\n#define MAX3(X,Y,Z) MAX(MAX(X,Y),Z)\nMAX3(1,2,3)")]],"# 1 \"-\"\n\n\n(( (( 1 )>( 2 )?( 1 ):( 2 )) )>( 3 )?( (( 1 )>( 2 )?( 1 ):( 2 )) ):( 3 ))")
 test_eq([[cpp("foo\xfeff""bar \xfeff gazonk")]],[[cpp("foobar  gazonk")]])
+
+test_eq([[compile_string(#"
+#define Y(y) #y
+#define X(x) x(z)
+string a() {return X(Y);}
+")()->a()]], "z")
+test_eq([[compile_string(#"
+#define Y() \"z\"
+#define X(x) x()
+string a() {return X(Y);}
+")()->a()]], "z")
+test_compile_error([[
+#define Y(y) y
+#define X(x) x()
+X(Y)
+]])
+test_compile_error([[
+#define Y() y
+#define X(x) x(z)
+X(Y)
+]])
+test_true([[compile_string(#"
+#define Y() z
+#define X(x) x()
+int z() {return 0;}
+mixed a() {return functionp(X(Y));}
+")()->a()]])
+test_false([[compile_string(#"
+#define Y z
+#define X(x) x()
+int z() {return 0;}
+mixed a() {return functionp(X(Y));}
+")()->a()]])
 
 test_any(int e; object o=clone(Stdio.File); if(!o->open("conftest.h","wct")) return -1; e=o->write("return 17;\n"); if(!o->close()) return -1; return e,11)
 

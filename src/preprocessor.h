@@ -1,5 +1,5 @@
 /*
- * $Id: preprocessor.h,v 1.36 2000/12/05 21:08:21 per Exp $
+ * $Id: preprocessor.h,v 1.37 2001/03/23 00:50:45 mast Exp $
  *
  * Preprocessor template.
  * Based on cpp.c 1.45
@@ -892,10 +892,7 @@ static ptrdiff_t lower_cpp(struct cpp *this,
 	    
 	    if(!GOBBLE('('))
 	    {
-	      char buffer[1024];
-	      sprintf(buffer, "Missing ( in the macro %.950s.", 
-		      d->link.s->str);
-	      cpp_error(this, buffer);
+	      string_builder_shared_strcat(&this->buf,s);
 	      break;
 	    }
 	    
