@@ -1,3 +1,9 @@
+Tue May  5 17:28:10 1998  Fredrik Hubinette  <hubbe@cytocin.hubbe.net>
+
+	* bugfix in cpp()
+	* sleep(X) is no longer aborted by signals
+	* sleep(X,1) is aborted by signals
+
 Thu Apr 23 17:36:57 1998  Fredrik Hubinette  <hubbe@cytocin.hubbe.net>
 
 	* local 'import' in function blocks implementd
