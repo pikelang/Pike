@@ -5,7 +5,7 @@
 \*/
 /**/
 #include "global.h"
-RCSID("$Id: las.c,v 1.272 2001/11/08 23:34:29 nilsson Exp $");
+RCSID("$Id: las.c,v 1.273 2001/12/06 14:10:30 grubba Exp $");
 
 #include "language.h"
 #include "interpret.h"
@@ -954,8 +954,12 @@ node *debug_mknode(short token, node *a, node *b)
 	      break;
 
 	    case T_PROGRAM:
-	      if(a->u.sval.u.program->flags & PROGRAM_CONSTANT)
+	      if(a->u.sval.u.program->flags & PROGRAM_CONSTANT) {
 		opt_flags=0;
+	      }
+	      if (a->u.sval.u.program->flags & PROGRAM_USES_PARENT) {
+		yyerror("Can not clone program without parent context.");
+	      }
 	      break;
 	  }
 	  break;
