@@ -2480,6 +2480,11 @@ static struct pike_string *very_low_parse_xml(struct xmldata *data,
 
 	    switch(PEEK(0))
 	    {
+	      default:
+		XMLERROR("Failed to find end of tag.");
+		pop_n_elems(3);
+		break;
+
 	      case '>':
 		READ(1);
 		if(low_parse_xml(data, sp[-2].u.string,0))
