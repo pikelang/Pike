@@ -5,7 +5,7 @@
 \*/
 
 #include "global.h"
-RCSID("$Id: file.c,v 1.133 1999/01/21 09:15:41 hubbe Exp $");
+RCSID("$Id: file.c,v 1.134 1999/01/29 12:34:05 hubbe Exp $");
 #include "fdlib.h"
 #include "interpret.h"
 #include "svalue.h"
@@ -1081,7 +1081,7 @@ static void file_open(INT32 args)
 {
   int flags,fd;
   int access;
-  struct pike_string *str;
+  struct pike_string *str,*flag_str;
   close_fd();
   
   if(args < 2)
@@ -1103,7 +1103,7 @@ static void file_open(INT32 args)
 
   str=sp[-args].u.string;
   
-  flags=parse(sp[1-args].u.string->str);
+  flags=parse(flag_str=sp[1-args].u.string->str);
 
 #ifdef PIKE_SECURITY
   if(!CHECK_SECURITY(SECURITY_BIT_SECURITY))
@@ -1111,20 +1111,54 @@ static void file_open(INT32 args)
     if(!CHECK_SECURITY(SECURITY_BIT_CONDITIONAL_IO))
       error("Permission denied.\n");
 
-    push_text("open");
-    ref_push_string(str);
-    
     if(flags && (FILE_APPEND | FILE_TRUNC | FILE_CREATE | FILE_WRITE))
     {
-      push_int(1);
+      push_text("write");
     }else{
-      push_int(0);
+      push_text("read");
     }
 
-    SAFE_APPLY_MASTER("check_security",3);
-    if(IS_ZERO(sp-1))
-      error("Permission denied.\n");
-    pop_stack();
+    ref_push_object(fp->current_object);
+    ref_push_string(str);
+    ref_push_string(flag_str);
+    push_int(access);
+
+    safe_apply_low(OBJ2CREDS(current_creds)->user,"valid_open",5);
+    switch(sp[-1].tupe)
+    {
+      case T_INT:
+	switch(sp[-1].u.integer)
+	{
+	  case 0: /* return 0 */
+	    ERRNO=EPERM;
+	    pop_n_elems(args-1);
+	    push_int(0);
+	    return;
+	    
+	  case 1: /* return 1 */
+	    pop_n_elems(args-1);
+	    push_int(1);
+	    return;
+	    
+	  case 2: /* ok */
+	    pop_stack();
+	    break;
+	    
+	  case 3: /* permission denied */
+	    error("Stdio.file->open: permission denied.\n");
+	    
+	  default:
+	    error("Error in user->valid_open, wrong return value.\n");
+	}
+	break;
+
+      default:
+	error("Error in user->valid_open, wrong return type.\n");
+
+      case T_STRING:
+	str=sp[-1].u.string;
+	args++;
+    }
   }
 #endif
       
