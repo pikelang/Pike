@@ -910,7 +910,8 @@ class Display
     if(fonts[name]) return fonts[name];
     object req = OpenFont_req(name);
     send_request(req);
-    return Types.Font(this_object(), req->fid);
+    fonts[name] = Types.Font(this_object(), req->fid);
+    return fonts[name];
   }
 
   object CreateGlyphCursor_req(object sourcefont, object maskfont,
