@@ -5,7 +5,11 @@ config.status
 configure
 dependencies
 file_machine.h
+file_machine.h.in
 linker_options
+modlist_headers
+modlist_segment
+module.pmod
+module_testsuite
 stamp-h
 stamp-h.in
-file_machine.h.in

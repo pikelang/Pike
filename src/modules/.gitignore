@@ -1,8 +1,12 @@
-/configure
-/dependencies
 /Makefile
 /config.log
 /config.status
+/configure
+/dependencies
+/dynamic_module_makefile
 /lib_dirs
 /linker_options
 /master_lib_dirs
+/modlist.h
+/modlist_headers.h
+/static_module_makefile

@@ -6,7 +6,10 @@ config.status
 configure
 dependencies
 gdbm_machine.h
+gdbm_machine.h.in
 linker_options
+modlist_headers
+modlist_segment
+module_testsuite
 stamp-h
 stamp-h.in
-gdbm_machine.h.in

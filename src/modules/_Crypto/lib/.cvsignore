@@ -4,3 +4,11 @@ config.log
 config.status
 configure
 dependencies
+desQuickCore.c
+desQuickFips.c
+desSmallCore.c
+desSmallFips.c
+desdata
+keymap.h
+parity.h
+rotors.h

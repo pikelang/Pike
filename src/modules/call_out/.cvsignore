@@ -4,4 +4,9 @@ config.log
 config.status
 configure
 dependencies
+linker_options
+modlist_headers
+modlist_segment
+module.pmod
+module_testsuite
 stamp-h

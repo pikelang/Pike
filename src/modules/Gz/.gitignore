@@ -5,7 +5,10 @@
 /configure
 /dependencies
 /linker_options
+/modlist_headers
+/modlist_segment
+/module_testsuite
 /stamp-h
-/zlib_machine.h
 /stamp-h.in
+/zlib_machine.h
 /zlib_machine.h.in

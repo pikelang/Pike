@@ -5,7 +5,11 @@
 /configure
 /dependencies
 /linker_options
+/modlist_headers
+/modlist_segment
+/module.pmod
+/module_testsuite
 /stamp-h
+/stamp-h.in
 /system_machine.h
 /system_machine.h.in
-/stamp-h.in
