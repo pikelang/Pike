@@ -112,7 +112,7 @@
 /* This is the grammar definition of Pike. */
 
 #include "global.h"
-RCSID("$Id: language.yacc,v 1.259 2001/08/16 00:36:47 mast Exp $");
+RCSID("$Id: language.yacc,v 1.260 2001/08/16 04:38:51 mast Exp $");
 #ifdef HAVE_MEMORY_H
 #include <memory.h>
 #endif
@@ -150,6 +150,7 @@ int low_add_local_name(struct compiler_frame *,
 		       struct pike_string *, struct pike_type *, node *);
 static node *lexical_islocal(struct pike_string *);
 static void safe_inc_enum(void);
+static int call_handle_import(struct pike_string *s);
 
 static int inherit_depth;
 static struct program_state *inherit_state = NULL;
@@ -374,24 +375,15 @@ optional_rename_inherit: ':' TOK_IDENTIFIER { $$=$2; }
 low_program_ref: string_constant
   {
     ref_push_string($1->u.sval.u.string);
-    ref_push_string($1->u.sval.u.string);
-    ref_push_string(lex.current_file);
-    
-    if (error_handler && error_handler->prog) {
-      ref_push_object(error_handler);
-      SAFE_APPLY_MASTER("handle_inherit", 3);
-    } else {
-      SAFE_APPLY_MASTER("handle_inherit", 2);
+    if (call_handle_inherit($1->u.sval.u.string)) {
+      $$=mksvaluenode(Pike_sp-1);
+      pop_stack();
     }
-
-    if(Pike_sp[-1].type != T_PROGRAM)
-      my_yyerror("Couldn't cast string \"%s\" to program",
-		 $1->u.sval.u.string->str);
-    free_node($1);
-    $$=mksvaluenode(Pike_sp-1);
+    else
+      $$=mknewintnode(0);
     if($$->name) free_string($$->name);
-    add_ref( $$->name=Pike_sp[-2].u.string );
-    pop_stack();
+    add_ref( $$->name=Pike_sp[-1].u.string );
+    free_node($1);
   }
   | idents
   {
@@ -460,17 +452,11 @@ import: TOK_IMPORT idents ';'
   }
   | TOK_IMPORT string ';'
   {
-    ref_push_string($2->u.sval.u.string);
-    free_node($2);
-    ref_push_string(lex.current_file);
-    if (error_handler && error_handler->prog) {
-      ref_push_object(error_handler);
-      SAFE_APPLY_MASTER("handle_import", 3);
-    } else {
-      SAFE_APPLY_MASTER("handle_import", 2);
+    if (call_handle_import($2->u.sval.u.string)) {
+      use_module(Pike_sp-1);
+      pop_stack();
     }
-    use_module(Pike_sp-1);
-    pop_stack();
+    free_node($2);
   }
   | TOK_IMPORT error ';' { yyerrok; }
   | TOK_IMPORT error TOK_LEX_EOF
@@ -3185,19 +3171,17 @@ idents: low_idents
   }
   | '.' TOK_IDENTIFIER
   {
-    node *tmp;
-    push_text(".");
-    ref_push_string(lex.current_file);
-    if (error_handler && error_handler->prog) {
-      ref_push_object(error_handler);
-      SAFE_APPLY_MASTER("handle_import", 3);
-    } else {
-      SAFE_APPLY_MASTER("handle_import", 2);
+    struct pike_string *dot;
+    MAKE_CONSTANT_SHARED_STRING(dot, ".");
+    if (call_handle_import(dot)) {
+      node *tmp=mkconstantsvaluenode(Pike_sp-1);
+      pop_stack();
+      $$=index_node(tmp, ".", $2->u.sval.u.string);
+      free_node(tmp);
     }
-    tmp=mkconstantsvaluenode(Pike_sp-1);
-    pop_stack();
-    $$=index_node(tmp, ".", $2->u.sval.u.string);
-    free_node(tmp);
+    else
+      $$=mknewintnode(0);
+    free_string(dot);
     if(Pike_compiler->last_identifier) free_string(Pike_compiler->last_identifier);
     copy_shared_string(Pike_compiler->last_identifier, $2->u.sval.u.string);
     free_node($2);
@@ -3713,7 +3697,7 @@ void yyerror(char *str)
     }
     push_int(lex.current_line);
     push_text(str);
-    safe_apply_handler("compile_error", error_handler, compat_handler, 3);
+    low_safe_apply_handler("compile_error", error_handler, compat_handler, 3);
     pop_stack();
   }else{
     if (lex.current_file) {
@@ -3880,7 +3864,7 @@ static void safe_inc_enum(void)
     while(Pike_sp > save_sp) pop_stack();
 
     push_svalue(&s);
-    safe_apply_handler("compile_exception", error_handler, compat_handler, 1);
+    low_safe_apply_handler("compile_exception", error_handler, compat_handler, 1);
     if (IS_ZERO(sp-1)) yy_describe_exception(&s);
     pop_stack();
     free_svalue(&s);
@@ -3894,6 +3878,44 @@ static void safe_inc_enum(void)
     fatal("stack thrashed in enum.\n");
   }
 #endif /* PIKE_DEBUG */
+}
+
+
+static int call_handle_import(struct pike_string *s)
+{
+  int args;
+
+  ref_push_string(s);
+  ref_push_string(lex.current_file);
+  if (error_handler && error_handler->prog) {
+    ref_push_object(error_handler);
+    args = 3;
+  }
+  else args = 2;
+
+  if (safe_apply_handler("handle_import", error_handler, compat_handler,
+			 args, BIT_MAPPING|BIT_OBJECT|BIT_PROGRAM|BIT_ZERO))
+    if (Pike_sp[-1].type != T_INT)
+      return 1;
+    else {
+      pop_stack();
+      if (!s->size_shift)
+	my_yyerror("Couldn't find module to import: %s",s->str);
+      else
+	yyerror("Couldn't find module to import");
+    }
+  else {
+    struct svalue thrown = throw_value;
+    throw_value.type = T_INT;
+    my_yyerror("Error finding module to import");
+    push_svalue(&thrown);
+    low_safe_apply_handler("compile_exception", error_handler, compat_handler, 1);
+    if (IS_ZERO(sp-1)) yy_describe_exception(&thrown);
+    pop_stack();
+    free_svalue(&thrown);
+  }
+
+  return 0;
 }
 
 void cleanup_compiler(void)

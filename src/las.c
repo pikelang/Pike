@@ -5,7 +5,7 @@
 \*/
 /**/
 #include "global.h"
-RCSID("$Id: las.c,v 1.264 2001/08/16 00:36:47 mast Exp $");
+RCSID("$Id: las.c,v 1.265 2001/08/16 04:38:51 mast Exp $");
 
 #include "language.h"
 #include "interpret.h"
@@ -1690,8 +1690,8 @@ node *index_node(node *n, char *node_name, struct pike_string *id)
 
   if(SETJMP(tmp))
   {
-    struct svalue s;
-    assign_svalue_no_free(&s, &throw_value);
+    struct svalue thrown = throw_value;
+    throw_value.type = T_INT;
 
     if (node_name) {
       my_yyerror("Couldn't index module '%s'.", node_name);
@@ -1699,11 +1699,11 @@ node *index_node(node *n, char *node_name, struct pike_string *id)
       yyerror("Couldn't index module.");
     }
 
-    push_svalue(&s);
-    safe_apply_handler("compile_exception", error_handler, compat_handler, 1);
-    if (IS_ZERO(sp-1)) yy_describe_exception(&s);
+    push_svalue(&thrown);
+    low_safe_apply_handler("compile_exception", error_handler, compat_handler, 1);
+    if (IS_ZERO(sp-1)) yy_describe_exception(&thrown);
     pop_stack();
-    free_svalue(&s);
+    free_svalue(&thrown);
   }else{
     resolv_constant(n);
     switch(Pike_sp[-1].type)
@@ -1786,7 +1786,7 @@ node *index_node(node *n, char *node_name, struct pike_string *id)
 
 	  if (thrown.type != PIKE_T_UNKNOWN) {
 	    push_svalue(&thrown);
-	    safe_apply_handler("compile_exception", error_handler, compat_handler, 1);
+	    low_safe_apply_handler("compile_exception", error_handler, compat_handler, 1);
 	    if (IS_ZERO(sp-1)) yy_describe_exception(&thrown);
 	    pop_stack();
 	    free_svalue(&thrown);
@@ -5000,35 +5000,19 @@ ptrdiff_t eval_low(node *n)
       /* Generate error message */
       if(!Pike_compiler->catch_level)
       {
-        if(throw_value.type == T_ARRAY && throw_value.u.array->size)
-        {
-	  union anything *a;
-	  a=low_array_get_item_ptr(throw_value.u.array, 0, T_STRING);
-	  if(a)
-	  {
-	    yyerror(a->string->str);
-	  }else{
-	    yyerror("Nonstandard error format.");
-	  }
-	}
-	else if(throw_value.type == T_OBJECT)
-	{
-	  ref_push_object(throw_value.u.object);
-	  push_int(0);
-	  f_index(2);
-	  if(Pike_sp[-1].type != T_STRING)
-	    yyerror("Nonstandard error format.");
-	  else
-	    yyerror(Pike_sp[-1].u.string->str);
-	  pop_stack();
-	}
-	else
-	{
-	  yyerror("Nonstandard error format.");
-	}
+	struct svalue thrown = throw_value;
+	throw_value.type = T_INT;
+	yyerror("Error evaluating constant.\n");
+	push_svalue(&thrown);
+	low_safe_apply_handler("compile_exception", error_handler, compat_handler, 1);
+	if (IS_ZERO(sp-1)) yy_describe_exception(&thrown);
+	pop_stack();
+	free_svalue(&thrown);
       }
-      free_svalue(&throw_value);
-      throw_value.type = T_INT;
+      else {
+	free_svalue(&throw_value);
+	throw_value.type = T_INT;
+      }
     }else{
       if(foo.yes)
 	pop_n_elems(Pike_sp-save_sp);

@@ -5,7 +5,7 @@
 \*/
 
 /*
- * $Id: program.h,v 1.142 2001/08/15 20:58:44 mast Exp $
+ * $Id: program.h,v 1.143 2001/08/16 04:38:53 mast Exp $
  */
 #ifndef PROGRAM_H
 #define PROGRAM_H
@@ -414,6 +414,7 @@ PMOD_EXPORT void do_inherit(struct svalue *s,
 void compiler_do_inherit(node *n,
 			 INT32 flags,
 			 struct pike_string *name);
+int call_handle_inherit(struct pike_string *s);
 void simple_do_inherit(struct pike_string *s,
 		       INT32 flags,
 		       struct pike_string *name);
@@ -599,6 +600,9 @@ void make_program_executable(struct program *p);
 #ifndef NO_PIKE_SHORTHAND
 #define add_function pike_add_function
 #endif
+
+#define ADD_INHERIT(PROGRAM, FLAGS) \
+  low_inherit((PROGRAM), 0, 0, 0, (FLAGS), 0)
 
 #define START_NEW_PROGRAM_ID(ID) do { \
     start_new_program();  \

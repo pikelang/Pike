@@ -5,7 +5,7 @@
 \*/
 
 /*
- * $Id: cpp.c,v 1.92 2001/08/15 22:18:41 mast Exp $
+ * $Id: cpp.c,v 1.93 2001/08/16 04:38:49 mast Exp $
  */
 #include "global.h"
 #include "stralloc.h"
@@ -28,6 +28,9 @@
 #include "version.h"
 
 #include <ctype.h>
+
+#undef ATTRIBUTE
+#define ATTRIBUTE(X)
 
 #define CPP_NO_OUTPUT 1
 #define CPP_EXPECT_ELSE 2
@@ -118,8 +121,8 @@ void cpp_error(struct cpp *this,char *err)
     ref_push_string(this->current_file);
     push_int(this->current_line);
     push_text(err);
-    safe_apply_handler("compile_error", this->handler,
-		       this->compat_handler, 3);
+    low_safe_apply_handler("compile_error", this->handler,
+			   this->compat_handler, 3);
     pop_stack();
   }else{
     (void)fprintf(stderr, "%s:%ld: %s\n",
@@ -127,6 +130,54 @@ void cpp_error(struct cpp *this,char *err)
 		  (long)this->current_line,
 		  err);
     fflush(stderr);
+  }
+}
+
+void cpp_error_sprintf(struct cpp *this, char *fmt, ...)  ATTRIBUTE((format(printf,2,3)))
+{
+  va_list args;
+  char buf[8192];
+
+  va_start(args,fmt);
+#ifdef HAVE_VSNPRINTF
+  vsnprintf(buf, 8190, fmt, args);
+#else /* !HAVE_VSNPRINTF */
+  VSPRINTF(buf, fmt, args);
+#endif /* HAVE_VSNPRINTF */
+  va_end(args);
+
+  if((size_t)strlen(buf) >= (size_t)sizeof(buf))
+    fatal("Buffer overflow in cpp_error.\n");
+
+  cpp_error(this, buf);
+}
+
+void cpp_describe_exception(struct cpp *this, struct svalue *thrown)
+{
+  /* FIXME: Doesn't handle wide string error messages. */
+  struct pike_string *s = 0;
+
+  if ((thrown->type == T_ARRAY) && thrown->u.array->size &&
+      (thrown->u.array->item[0].type == T_STRING)) {
+    /* Old-style backtrace */
+    s = thrown->u.array->item[0].u.string;
+  } else if (thrown->type == T_OBJECT) {
+    struct generic_error_struct *ge;
+    if ((ge = (struct generic_error_struct *)
+	 get_storage(thrown->u.object, generic_error_program))) {
+      s = ge->desc;
+    }
+  }
+
+  if (s && !s->size_shift) {
+    extern void f_string_trim_all_whites(INT32 args);
+    ref_push_string(s);
+    f_string_trim_all_whites(1);
+    push_constant_text("\n");
+    push_constant_text(" ");
+    f_replace(3);
+    cpp_error(this, sp[-1].u.string->str);
+    pop_stack();
   }
 }
 
@@ -1095,10 +1146,34 @@ static void check_constant(struct cpp *this,
 	push_int(0);
       }
 
-      safe_apply_handler("resolv", this->handler, this->compat_handler, 3);
-      
-      res=(throw_value.type!=T_STRING) &&
-	(!(IS_ZERO(sp-1) && sp[-1].subtype == NUMBER_UNDEFINED));
+      if (safe_apply_handler("resolv", this->handler,
+			     this->compat_handler, 3, 0))
+	res = !(IS_ZERO(sp-1) && sp[-1].subtype == NUMBER_UNDEFINED);
+      else {
+	if (throw_value.type == T_STRING && !throw_value.u.string->size_shift) {
+	  cpp_error(this, throw_value.u.string->str);
+	  free_svalue(&throw_value);
+	  throw_value.type = T_INT;
+	  res = 0;
+	}
+	else {
+	  struct svalue thrown = throw_value;
+	  throw_value.type = T_INT;
+
+	  if (!s->size_shift)
+	    cpp_error_sprintf(this, "Error resolving '%s'.", s->str);
+	  else
+	    cpp_error(this, "Error resolving identifier.");
+
+	  push_svalue(&thrown);
+	  low_safe_apply_handler("compile_exception", this->handler,
+				 this->compat_handler, 1);
+	  if (IS_ZERO(sp-1)) cpp_describe_exception(this, &thrown);
+	  pop_stack();
+	  free_svalue(&thrown);
+	  res = 0;
+	}
+      }
     }else{
       res=0;
     }
@@ -1113,11 +1188,24 @@ static void check_constant(struct cpp *this,
       push_int(0);
     }
 
-    safe_apply_handler("handle_import", this->handler,
-		       this->compat_handler, 3);
+    if (safe_apply_handler("handle_import", this->handler,
+			   this->compat_handler, 3,
+			   BIT_MAPPING|BIT_OBJECT|BIT_PROGRAM))
+      res = !(IS_ZERO(sp-1) && sp[-1].subtype == NUMBER_UNDEFINED);
+    else {
+      struct svalue thrown = throw_value;
+      throw_value.type = T_INT;
 
-    res=(throw_value.type!=T_STRING) &&
-      (!(IS_ZERO(sp-1) && sp[-1].subtype == NUMBER_UNDEFINED));
+      cpp_error(this, "Error importing '.'.");
+
+      push_svalue(&thrown);
+      low_safe_apply_handler("compile_exception", this->handler,
+			     this->compat_handler, 1);
+      if (IS_ZERO(sp-1)) cpp_describe_exception(this, &thrown);
+      pop_stack();
+      free_svalue(&thrown);
+      res = 0;
+    }
   }
 
   while(1)
@@ -1224,6 +1312,8 @@ static int do_safe_index_call(struct pike_string *s)
   if(!s) return 0;
   
   if (SETJMP(recovery)) {
+    /* FIXME: Maybe call compile_exception here, but then we probably
+     * want to provide some extra flag to it. */
     res = 0;
     free_svalue(&throw_value);
     throw_value.type = T_INT;

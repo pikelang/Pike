@@ -5,7 +5,7 @@
 \*/
 
 /*
- * $Id: interpret.h,v 1.97 2001/08/15 09:26:32 hubbe Exp $
+ * $Id: interpret.h,v 1.98 2001/08/16 04:38:50 mast Exp $
  */
 #ifndef INTERPRET_H
 #define INTERPRET_H
@@ -362,10 +362,15 @@ PMOD_EXPORT int apply_low_safe_and_stupid(struct object *o, INT32 offset);
 PMOD_EXPORT void safe_apply_low(struct object *o,int fun,int args);
 PMOD_EXPORT void safe_apply_low2(struct object *o,int fun,int args, int handle_errors);
 PMOD_EXPORT void safe_apply(struct object *o, char *fun ,INT32 args);
-PMOD_EXPORT void safe_apply_handler(const char *fun,
-				    struct object *handler,
-				    struct object *compat,
-				    INT32 args);
+PMOD_EXPORT void low_safe_apply_handler(const char *fun,
+					struct object *handler,
+					struct object *compat,
+					INT32 args);
+PMOD_EXPORT int safe_apply_handler(const char *fun,
+				   struct object *handler,
+				   struct object *compat,
+				   INT32 args,
+				   TYPE_FIELD rettypes);
 PMOD_EXPORT void apply_lfun(struct object *o, int fun, int args);
 PMOD_EXPORT void apply_shared(struct object *o,
 		  struct pike_string *fun,

@@ -5,7 +5,7 @@
 \*/
 /**/
 #include "global.h"
-RCSID("$Id: program.c,v 1.365 2001/08/15 23:00:12 mast Exp $");
+RCSID("$Id: program.c,v 1.366 2001/08/16 04:38:52 mast Exp $");
 #include "program.h"
 #include "object.h"
 #include "dynamic_buffer.h"
@@ -760,8 +760,8 @@ static struct node_s *index_modules(struct pike_string *ident,
 
     if(SETJMP(tmp))
     {
-      struct svalue s;
-      assign_svalue_no_free(&s, &throw_value);
+      struct svalue thrown = throw_value;
+      throw_value.type = T_INT;
 
       if (!ident->size_shift) {
 	my_yyerror("Couldn't index module '%s'.", ident->str);
@@ -769,11 +769,11 @@ static struct node_s *index_modules(struct pike_string *ident,
 	yyerror("Couldn't index module.");
       }
 
-      push_svalue(&s);
-      safe_apply_handler("compile_exception", error_handler, compat_handler, 1);
-      if (IS_ZERO(sp-1)) yy_describe_exception(&s);
+      push_svalue(&thrown);
+      low_safe_apply_handler("compile_exception", error_handler, compat_handler, 1);
+      if (IS_ZERO(sp-1)) yy_describe_exception(&thrown);
       pop_stack();
-      free_svalue(&s);
+      free_svalue(&thrown);
     } else {
       int e = num_used_modules;
       struct svalue *m = modules - num_used_modules;
@@ -890,15 +890,7 @@ struct node_s *find_module_identifier(struct pike_string *ident,
 	push_int(0);
       }
 
-      safe_apply_handler("resolv", error_handler, compat_handler, 3);
-
-      if(throw_value.type == T_STRING)
-      {
-	if(Pike_compiler->compiler_pass==2)
-	  my_yyerror("%s",throw_value.u.string->str);
-      }
-      else
-      {
+      if (safe_apply_handler("resolv", error_handler, compat_handler, 3, 0)) {
 	if(!resolve_cache)
 	  resolve_cache=dmalloc_touch(struct mapping *, allocate_mapping(10));
 	mapping_string_insert(resolve_cache,ident,Pike_sp-1);
@@ -907,8 +899,31 @@ struct node_s *find_module_identifier(struct pike_string *ident,
 	{
 	  ret=mkconstantsvaluenode(Pike_sp-1);
 	}
+	pop_stack();
       }
-      pop_stack();
+      else
+	if(Pike_compiler->compiler_pass==2) {
+	  if (throw_value.type == T_STRING && !throw_value.u.string->size_shift) {
+	    yyerror(throw_value.u.string->str);
+	    free_svalue(&throw_value);
+	    throw_value.type = T_INT;
+	  }
+	  else {
+	    struct svalue thrown = throw_value;
+	    throw_value.type = T_INT;
+
+	    if (!ident->size_shift)
+	      my_yyerror("Error resolving '%s'.", ident->str);
+	    else
+	      yyerror("Error resolving identifier.");
+
+	    push_svalue(&thrown);
+	    low_safe_apply_handler("compile_exception", error_handler, compat_handler, 1);
+	    if (IS_ZERO(sp-1)) yy_describe_exception(&thrown);
+	    pop_stack();
+	    free_svalue(&thrown);
+	  }
+	}
     }
     END_CYCLIC();
     if(ret) return ret;
@@ -2765,22 +2780,49 @@ void compiler_do_inherit(node *n,
   }
 }
 
+int call_handle_inherit(struct pike_string *s)
+{
+  int args;
+
+  reference_shared_string(s);
+  push_string(s);
+  ref_push_string(lex.current_file);
+  if (error_handler && error_handler->prog) {
+    ref_push_object(error_handler);
+    args = 3;
+  }
+  else args = 2;
+
+  if (safe_apply_handler("handle_inherit", error_handler, compat_handler,
+			 args, BIT_PROGRAM|BIT_FUNCTION|BIT_ZERO))
+    if (Pike_sp[-1].type != T_INT)
+      return 1;
+    else {
+      pop_stack();
+      if (!s->size_shift)
+	my_yyerror("Couldn't find program: %s",s->str);
+      else
+	yyerror("Couldn't find program");
+    }
+  else {
+    struct svalue thrown = throw_value;
+    throw_value.type = T_INT;
+    my_yyerror("Error finding program");
+    push_svalue(&thrown);
+    low_safe_apply_handler("compile_exception", error_handler, compat_handler, 1);
+    if (IS_ZERO(sp-1)) yy_describe_exception(&thrown);
+    pop_stack();
+    free_svalue(&thrown);
+  }
+
+  return 0;
+}
 
 void simple_do_inherit(struct pike_string *s,
 		       INT32 flags,
 		       struct pike_string *name)
 {
-  reference_shared_string(s);
-  push_string(s);
-  ref_push_string(lex.current_file);
-  safe_apply_handler("handle_inherit", error_handler, compat_handler, 2);
-
-  if(Pike_sp[-1].type != T_PROGRAM)
-  {
-    my_yyerror("Couldn't find file to inherit %s",s->str);
-    pop_stack();
-    return;
-  }
+  if (!call_handle_inherit(s)) return;
 
   if(name)
   {
@@ -3761,16 +3803,16 @@ int store_constant(struct svalue *foo,
 
   if(SETJMP(tmp2))
   {
-    struct svalue zero, s;
-    assign_svalue_no_free(&s, &throw_value);
+    struct svalue zero, thrown = throw_value;
+    throw_value.type = T_INT;
 
     yyerror("Couldn't store constant.");
 
-    push_svalue(&s);
-    safe_apply_handler("compile_exception", error_handler, compat_handler, 1);
-    if (IS_ZERO(sp-1)) yy_describe_exception(&s);
+    push_svalue(&thrown);
+    low_safe_apply_handler("compile_exception", error_handler, compat_handler, 1);
+    if (IS_ZERO(sp-1)) yy_describe_exception(&thrown);
     pop_stack();
-    free_svalue(&s);
+    free_svalue(&thrown);
 
     zero.type = T_INT;
     zero.subtype = NUMBER_NUMBER;
@@ -5314,7 +5356,7 @@ void yywarning(char *fmt, ...) ATTRIBUTE((format(printf,1,2)))
     push_int(lex.current_line);
     push_text(buf);
 
-    safe_apply_handler("compile_warning", error_handler, compat_handler, 3);
+    low_safe_apply_handler("compile_warning", error_handler, compat_handler, 3);
     pop_stack();
   }
 }

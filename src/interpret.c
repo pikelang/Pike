@@ -5,7 +5,7 @@
 \*/
 /**/
 #include "global.h"
-RCSID("$Id: interpret.c,v 1.242 2001/08/15 20:55:51 mast Exp $");
+RCSID("$Id: interpret.c,v 1.243 2001/08/16 04:38:50 mast Exp $");
 #include "interpret.h"
 #include "object.h"
 #include "program.h"
@@ -1816,9 +1816,10 @@ PMOD_EXPORT void safe_apply_low2(struct object *o,int fun,int args, int handle_e
     Pike_sp->type = T_INT;
     Pike_sp++;
   }else{
-    ptrdiff_t expected_stack = Pike_sp - Pike_interpreter.evaluator_stack + 1;
+    /* ptrdiff_t expected_stack = Pike_sp - Pike_interpreter.evaluator_stack + 1; */
     Pike_sp+=args;
     apply_low(o,fun,args);
+    /* apply_low already does this, afaics. /mast
     if(Pike_sp - Pike_interpreter.evaluator_stack > expected_stack)
       pop_n_elems(Pike_sp - Pike_interpreter.evaluator_stack - expected_stack);
     if(Pike_sp - Pike_interpreter.evaluator_stack < expected_stack)
@@ -1828,6 +1829,7 @@ PMOD_EXPORT void safe_apply_low2(struct object *o,int fun,int args, int handle_e
       Pike_sp->type = T_INT;
       Pike_sp++;
     }
+    */
   }
   UNSETJMP(recovery);
 }
@@ -1845,39 +1847,93 @@ PMOD_EXPORT void safe_apply(struct object *o, char *fun ,INT32 args)
   safe_apply_low2(o, find_identifier(fun, o->prog), args, 1);
 }
 
-PMOD_EXPORT void safe_apply_handler(const char *fun,
-				    struct object *handler,
-				    struct object *compat,
-				    INT32 args)
+PMOD_EXPORT void low_safe_apply_handler(const char *fun,
+					struct object *handler,
+					struct object *compat,
+					INT32 args)
 {
   int i;
 #if 0
-  fprintf(stderr, "safe_apply_handler(\"%s\", 0x%08p, 0x%08p, %d)\n",
+  fprintf(stderr, "low_safe_apply_handler(\"%s\", 0x%08p, 0x%08p, %d)\n",
 	  fun, handler, compat, args);
 #endif /* 0 */
-
-  free_svalue(&throw_value);
-  throw_value.type = T_INT;
-
   if (handler && handler->prog &&
       (i = find_identifier(fun, handler->prog)) != -1) {
-    safe_apply_low2(handler, i, args, 0);
+    safe_apply_low2(handler, i, args, 1);
   } else if (compat && compat->prog &&
 	     (i = find_identifier(fun, compat->prog)) != -1) {
-    safe_apply_low2(compat, i, args, 0);
+    safe_apply_low2(compat, i, args, 1);
   } else {
     struct object *master_obj = master();
     if ((i = find_identifier(fun, master_obj->prog)) != -1)
-      safe_apply_low2(master_obj, i, args, 0);
+      safe_apply_low2(master_obj, i, args, 1);
     else {
       pop_n_elems(args);
       push_undefined();
     }
   }
-  if (throw_value.type != T_STRING && throw_value.type != T_INT) {
-    free_svalue(&throw_value);
-    throw_value.type = T_INT;
+}
+
+PMOD_EXPORT int safe_apply_handler(const char *fun,
+				   struct object *handler,
+				   struct object *compat,
+				   INT32 args,
+				   TYPE_FIELD rettypes)
+{
+  JMP_BUF recovery;
+  int i, ret;
+#if 0
+  fprintf(stderr, "safe_apply_handler(\"%s\", 0x%08p, 0x%08p, %d)\n",
+	  fun, handler, compat, args);
+#endif /* 0 */
+
+  Pike_sp-=args;
+  free_svalue(& throw_value);
+  throw_value.type=T_INT;
+
+  if (SETJMP(recovery))
+    ret = 0;
+  else {
+    Pike_sp += args;
+
+    if (handler && handler->prog &&
+	(i = find_identifier(fun, handler->prog)) != -1) {
+      apply_low(handler, i, args);
+    } else if (compat && compat->prog &&
+	       (i = find_identifier(fun, compat->prog)) != -1) {
+      apply_low(compat, i, args);
+    } else {
+      struct object *master_obj = master();
+      if ((i = find_identifier(fun, master_obj->prog)) != -1)
+	apply_low(master_obj, i, args);
+      else {
+	pop_n_elems(args);
+	push_undefined();
+	goto dont_check_ret_type;
+      }
+    }
+
+    if (rettypes &&
+	!(((1 << Pike_sp[-1].type) & rettypes) ||
+	  ((rettypes & BIT_ZERO) &&
+	   Pike_sp[-1].type == T_INT &&
+	   Pike_sp[-1].u.integer == 0))) {
+      push_constant_text("Invalid return value from %s: %O\n");
+      push_text(fun);
+      push_svalue(Pike_sp - 3);
+      f_sprintf(3);
+      if (!Pike_sp[-1].u.string->size_shift)
+	Pike_error("%s", Pike_sp[-1].u.string->str);
+      else
+	Pike_error("Invalid return value from %s\n", fun);
+    }
+
+  dont_check_ret_type:
+    ret = 1;
   }
+
+  UNSETJMP(recovery);
+  return ret;
 }
 
 PMOD_EXPORT void apply_lfun(struct object *o, int fun, int args)

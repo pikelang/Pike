@@ -1,5 +1,5 @@
 /*
- * $Id: preprocessor.h,v 1.44 2001/08/16 00:36:47 mast Exp $
+ * $Id: preprocessor.h,v 1.45 2001/08/16 04:38:52 mast Exp $
  *
  * Preprocessor template.
  * Based on cpp.c 1.45
@@ -750,16 +750,16 @@ static ptrdiff_t calc(struct cpp *this, WCHAR *data, ptrdiff_t len,
 
   if (SETJMP(recovery))
   {
-    struct svalue s;
-    assign_svalue_no_free(&s, &throw_value);
+    struct svalue thrown = throw_value;
+    throw_value.type = T_INT;
 
-    yyerror("Error calculating expression.");
+    cpp_error(this, "Error evaluating expression.");
 
-    push_svalue(&s);
-    safe_apply_handler("compile_exception", error_handler, compat_handler, 1);
-    if (IS_ZERO(sp-1)) yy_describe_exception(&s);
+    push_svalue(&thrown);
+    low_safe_apply_handler("compile_exception", error_handler, compat_handler, 1);
+    if (IS_ZERO(sp-1)) cpp_describe_exception(this, &thrown);
     pop_stack();
-    free_svalue(&s);
+    free_svalue(&thrown);
 
     pos=tmp;
     FIND_EOL();
@@ -918,11 +918,14 @@ static ptrdiff_t lower_cpp(struct cpp *this,
 		    arguments[arg].len=0;
 		    continue;
 		  }else{
-		    char buffer[1024];
-		    sprintf(buffer,
-			    "Too few arguments to macro %.950s, expected %d.",
-			    d->link.s->str, d->args);
-		    cpp_error(this, buffer);
+		    if (!d->link.s->size_shift)
+		      cpp_error_sprintf(this,
+					"Too few arguments to macro %s, expected %d.",
+					d->link.s->str, d->args);
+		    else
+		      cpp_error_sprintf(this,
+					"Too few arguments to macro, expected %d.",
+					d->args);
 		    break;
 		  }
 		}
@@ -978,11 +981,12 @@ static ptrdiff_t lower_cpp(struct cpp *this,
 	    }
 	    SKIPWHITE();
 	    if(!GOBBLE(')')) {
-	      char buffer[1024];
-	      sprintf(buffer, "Missing ) in the macro %.950s.", 
-		      d->link.s->str);
 	      this->current_line = start_line;
-	      cpp_error(this, buffer);
+	      if (!d->link.s->size_shift)
+		cpp_error_sprintf(this, "Missing ) in the macro %s.",
+				  d->link.s->str);
+	      else
+		cpp_error(this, "Missing ) in macro.");
 	    }
 	  }
 	  
