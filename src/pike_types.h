@@ -5,7 +5,7 @@
 \*/
 
 /*
- * $Id: pike_types.h,v 1.11 1998/03/28 15:06:01 grubba Exp $
+ * $Id: pike_types.h,v 1.12 1998/04/24 00:08:43 hubbe Exp $
  */
 #ifndef PIKE_TYPES_H
 #define PIKE_TYPES_H
@@ -42,7 +42,15 @@ struct node_s
 #define STRUCT_NODE_S_DECLARED
 #endif
 
+
 typedef struct node_s node;
+
+#define PIKE_TYPE_STACK_SIZE 100000
+
+extern unsigned char type_stack[PIKE_TYPE_STACK_SIZE];
+extern unsigned char *type_stackp;
+extern unsigned char *pike_type_mark_stack[PIKE_TYPE_STACK_SIZE/4];
+extern unsigned char **pike_type_mark_stackp;
 
 extern int max_correct_args;
 extern struct pike_string *string_type_string;
@@ -61,14 +69,31 @@ extern struct pike_string *any_type_string;
 #define init_type_stack type_stack_mark
 #define exit_type_stack pop_stack_mark
 
+#define push_type(X) do {				\
+  *type_stackp=(X);					\
+  type_stackp++;					\
+  if(type_stackp >= type_stack + sizeof(type_stack))	\
+    yyerror("Type stack overflow.");			\
+} while(0)
+
+
+#define type_stack_mark() do {				\
+  *pike_type_mark_stackp=type_stackp;				\
+  pike_type_mark_stackp++;					\
+  if(pike_type_mark_stackp >= pike_type_mark_stack + NELEM(pike_type_mark_stack))	\
+    yyerror("Type mark stack overflow.");		\
+} while(0)
+
+#define reset_type_stack() do {			\
+   type_stack_pop_to_mark();			\
+  type_stack_mark();				\
+} while(0)
+
 /* Prototypes begin here */
 void init_types(void);
-void push_type(unsigned char tmp);
-void type_stack_mark(void);
 INT32 pop_stack_mark(void);
 void pop_type_stack(void);
 void type_stack_pop_to_mark(void);
-void reset_type_stack(void);
 void type_stack_reverse(void);
 void push_type_int(unsigned INT32 i);
 void push_unfinished_type(char *s);

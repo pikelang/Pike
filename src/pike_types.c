@@ -4,7 +4,7 @@
 ||| See the files COPYING and DISCLAIMER for more information.
 \*/
 #include "global.h"
-RCSID("$Id: pike_types.c,v 1.40 1998/04/16 01:23:02 hubbe Exp $");
+RCSID("$Id: pike_types.c,v 1.41 1998/04/24 00:08:42 hubbe Exp $");
 #include <ctype.h>
 #include "svalue.h"
 #include "pike_types.h"
@@ -121,7 +121,7 @@ void init_types(void)
 static int type_length(char *t)
 {
   char *q=t;
-
+one_more_type:
   switch(EXTRACT_UCHAR(t++))
   {
     default:
@@ -132,8 +132,7 @@ static int type_length(char *t)
       
     case T_ASSIGN:
       t++;
-      t+=type_length(t);
-      break;
+      goto one_more_type;
       
     case T_FUNCTION:
       while(EXTRACT_UCHAR(t)!=T_MANY) t+=type_length(t); /* skip arguments */
@@ -147,7 +146,7 @@ static int type_length(char *t)
     case T_ARRAY:
     case T_MULTISET:
     case T_NOT:
-      t+=type_length(t);
+      goto one_more_type;
       
     case '0':
     case '1':
@@ -177,35 +176,19 @@ static int type_length(char *t)
 }
 
 
-#define STACK_SIZE 100000
-static unsigned char type_stack[STACK_SIZE];
-static unsigned char *type_stackp=type_stack;
-static unsigned char *mark_stack[STACK_SIZE/4];
-static unsigned char **mark_stackp=mark_stack;
+unsigned char type_stack[PIKE_TYPE_STACK_SIZE];
+unsigned char *type_stackp=type_stack;
+unsigned char *pike_type_mark_stack[PIKE_TYPE_STACK_SIZE/4];
+unsigned char **pike_type_mark_stackp=pike_type_mark_stack;
 
-void push_type(unsigned char tmp)
-{
-  *type_stackp=tmp;
-  type_stackp++;
-  if(type_stackp > type_stack + sizeof(type_stack))
-    yyerror("Type stack overflow.");
-}
-
-void type_stack_mark(void)
-{
-  *mark_stackp=type_stackp;
-  mark_stackp++;
-  if(mark_stackp > mark_stack + NELEM(mark_stack))
-    yyerror("Type mark stack overflow.");
-}
 
 INT32 pop_stack_mark(void)
 { 
-  mark_stackp--;
-  if(mark_stackp<mark_stack)
+  pike_type_mark_stackp--;
+  if(pike_type_mark_stackp<pike_type_mark_stack)
     fatal("Type mark stack underflow\n");
 
-  return type_stackp - *mark_stackp;
+  return type_stackp - *pike_type_mark_stackp;
 }
 
 void pop_type_stack(void)
@@ -222,12 +205,6 @@ void type_stack_pop_to_mark(void)
   if(type_stackp<type_stack)
     fatal("Type stack underflow\n");
 #endif
-}
-
-void reset_type_stack(void)
-{
-  type_stack_pop_to_mark();
-  type_stack_mark();
 }
 
 void type_stack_reverse(void)
@@ -341,140 +318,190 @@ static void internal_parse_typeA(char **_s)
   buf[len]=0;
   *s += len;
   
-  if(!strcmp(buf,"int")) push_type(T_INT);
-  else if(!strcmp(buf,"float")) push_type(T_FLOAT);
-  else if(!strcmp(buf,"object"))
+  switch(buf[0])
   {
-    push_type_int(0);
-    push_type(0);
-    push_type(T_OBJECT);
-  }
-  else if(!strcmp(buf,"program")) push_type(T_PROGRAM);
-  else if(!strcmp(buf,"string")) push_type(T_STRING);
-  else if(!strcmp(buf,"void")) push_type(T_VOID);
-  else if(!strcmp(buf,"mixed")) push_type(T_MIXED);
-  else if(!strcmp(buf,"unknown")) push_type(T_UNKNOWN);
-  else if(!strcmp(buf,"function"))
-  {
-    while(ISSPACE(**s)) ++*s;
-    if(**s == '(')
-    {
-      ++*s;
-      while(ISSPACE(**s)) ++*s;
-      type_stack_mark();
-      while(1)
-      {
-	if(**s == ':')
-	{
-	  push_type(T_MANY);
-	  push_type(T_VOID);
-	  break;
-	}
+    case 'i':
+      if(!strcmp(buf,"int")) { push_type(T_INT); break; }
+      goto bad_type;
 
-	type_stack_mark();
-	type_stack_mark();
-	type_stack_mark();
-	internal_parse_type(_s);
-	type_stack_reverse();
-	if(**s==',')
+    case 'f':
+      if(!strcmp(buf,"function"))
+      {
+	while(ISSPACE(**s)) ++*s;
+	if(**s == '(')
 	{
 	  ++*s;
 	  while(ISSPACE(**s)) ++*s;
-	}
-	else if(s[0][0]=='.' && s[0][1]=='.' && s[0][2]=='.')
-	{
+	  type_stack_mark();
+	  while(1)
+	  {
+	    if(**s == ':')
+	    {
+	      push_type(T_MANY);
+	      push_type(T_VOID);
+	      break;
+	    }
+	    
+	    type_stack_mark();
+	    type_stack_mark();
+	    type_stack_mark();
+	    internal_parse_type(_s);
+	    type_stack_reverse();
+	    if(**s==',')
+	    {
+	      ++*s;
+	      while(ISSPACE(**s)) ++*s;
+	    }
+	    else if(s[0][0]=='.' && s[0][1]=='.' && s[0][2]=='.')
+	    {
+	      type_stack_reverse();
+	      push_type(T_MANY);
+	      type_stack_reverse();
+	      *s+=3;
+	      while(ISSPACE(**s)) ++*s;
+	      if(**s != ':') error("Missing ':' after ... in function type.\n");
+	      break;
+	    }
+	    pop_stack_mark();
+	    pop_stack_mark();
+	  }
+	  ++*s;
+	  type_stack_mark();
+	  internal_parse_type(_s);  /* return type */
 	  type_stack_reverse();
+	  if(**s != ')') error("Missing ')' in function type.\n");
+	  ++*s;
+	  type_stack_reverse(); 
+	}else{
+	  push_type(T_MIXED);
+	  push_type(T_MIXED);
 	  push_type(T_MANY);
-	  type_stack_reverse();
-	  *s+=3;
-	  while(ISSPACE(**s)) ++*s;
-	  if(**s != ':') error("Missing ':' after ... in function type.\n");
-	  break;
 	}
-	pop_stack_mark();
-	pop_stack_mark();
+	push_type(T_FUNCTION);
+	break;
       }
-      ++*s;
-      type_stack_mark();
-      internal_parse_type(_s);  /* return type */
-      type_stack_reverse();
-      if(**s != ')') error("Missing ')' in function type.\n");
-      ++*s;
-      type_stack_reverse(); 
-   }else{
-      push_type(T_MIXED);
-      push_type(T_MIXED);
-      push_type(T_MANY);
-    }
-    push_type(T_FUNCTION);
+      if(!strcmp(buf,"float")) { push_type(T_FLOAT); break; }
+      goto bad_type;
+
+    case 'o':
+      if(!strcmp(buf,"object"))
+      {
+	push_type_int(0);
+	push_type(0);
+	push_type(T_OBJECT);
+	break;
+      }
+      goto bad_type;
+
+
+    case 'p':
+      if(!strcmp(buf,"program")) { push_type(T_PROGRAM); break; }
+      goto bad_type;
+
+
+    case 's':
+      if(!strcmp(buf,"string")) { push_type(T_STRING); break; }
+      goto bad_type;
+
+    case 'v':
+      if(!strcmp(buf,"void")) { push_type(T_VOID); break; }
+      goto bad_type;
+
+    case 'm':
+      if(!strcmp(buf,"mixed")) { push_type(T_MIXED); break; }
+      if(!strcmp(buf,"mapping"))
+      {
+	while(ISSPACE(**s)) ++*s;
+	if(**s == '(')
+	{
+	  type_stack_mark();
+	  ++*s;
+	  type_stack_mark();
+	  internal_parse_type(_s);
+	  type_stack_reverse();
+	  if(**s != ':') error("Expecting ':'.\n");
+	  ++*s;
+	  type_stack_mark();
+	  internal_parse_type(_s);
+	  type_stack_reverse();
+	  if(**s != ')') error("Expecting ')'.\n");
+	  ++*s;
+	  type_stack_reverse();
+	}else{
+	  push_type(T_MIXED);
+	  push_type(T_MIXED);
+	}
+	push_type(T_MAPPING);
+	break;
+      }
+      if(!strcmp(buf,"multiset"))
+      {
+	while(ISSPACE(**s)) ++*s;
+	if(**s == '(')
+	{
+	  ++*s;
+	  internal_parse_type(_s);
+	  if(**s != ')') error("Expecting ')'.\n");
+	  ++*s;
+	}else{
+	  push_type(T_MIXED);
+	}
+	push_type(T_MULTISET);
+	break;
+      }
+      goto bad_type;
+
+    case 'u':
+      if(!strcmp(buf,"unknown")) { push_type(T_UNKNOWN); break; }
+      goto bad_type;
+
+    case 'a':
+      if(!strcmp(buf,"array"))
+      {
+	while(ISSPACE(**s)) ++*s;
+	if(**s == '(')
+	{
+	  ++*s;
+	  internal_parse_type(_s);
+	  if(**s != ')') error("Expecting ')'.\n");
+	  ++*s;
+	}else{
+	  push_type(T_MIXED);
+	}
+	push_type(T_ARRAY);
+	break;
+      }
+      goto bad_type;
+
+    case '0':
+    case '1':
+    case '2':
+    case '3':
+    case '4':
+    case '5':
+    case '6':
+    case '7':
+    case '8':
+    case '9':
+      if(atoi(buf)<10)
+      {
+	while(ISSPACE(**s)) ++*s;
+	if(**s=='=')
+	{
+	  ++*s;
+	  internal_parse_type(_s);
+	  push_type(buf[0]);
+	  push_type(T_ASSIGN);
+	}else{
+	  push_type(buf[0]);
+	}
+	break;
+      }
+
+    default:
+  bad_type:
+      error("Couldn't parse type. (%s)\n",buf);
   }
-  else if(!strcmp(buf,"mapping"))
-  {
-    while(ISSPACE(**s)) ++*s;
-    if(**s == '(')
-    {
-      type_stack_mark();
-      ++*s;
-      type_stack_mark();
-      internal_parse_type(_s);
-      type_stack_reverse();
-      if(**s != ':') error("Expecting ':'.\n");
-      ++*s;
-      type_stack_mark();
-      internal_parse_type(_s);
-      type_stack_reverse();
-      if(**s != ')') error("Expecting ')'.\n");
-      ++*s;
-      type_stack_reverse();
-    }else{
-      push_type(T_MIXED);
-      push_type(T_MIXED);
-    }
-    push_type(T_MAPPING);
-  }
-  else if(!strcmp(buf,"array"))
-  {
-    while(ISSPACE(**s)) ++*s;
-    if(**s == '(')
-    {
-      ++*s;
-      internal_parse_type(_s);
-      if(**s != ')') error("Expecting ')'.\n");
-      ++*s;
-    }else{
-      push_type(T_MIXED);
-    }
-    push_type(T_ARRAY);
-  }
-  else if(!strcmp(buf,"multiset"))
-  {
-    while(ISSPACE(**s)) ++*s;
-    if(**s == '(')
-    {
-      ++*s;
-      internal_parse_type(_s);
-      if(**s != ')') error("Expecting ')'.\n");
-      ++*s;
-    }else{
-      push_type(T_MIXED);
-    }
-    push_type(T_MULTISET);
-  }
-  else if(buf[0]>='0' && buf[0]<='9' && atoi(buf)<10)
-  {
-    while(ISSPACE(**s)) ++*s;
-    if(**s=='=')
-    {
-      ++*s;
-      internal_parse_type(_s);
-      push_type(buf[0]);
-      push_type(T_ASSIGN);
-    }else{
-      push_type(buf[0]);
-    }
-  }
-  else
-    error("Couldn't parse type. (%s)\n",buf);
 
   while(ISSPACE(**s)) ++*s;
 }
@@ -592,7 +619,7 @@ void stupid_describe_type(char *a,INT32 len)
       case T_PROGRAM: printf("program"); break;
       case T_OBJECT:
 	printf("object(%s %ld)",
-	       EXTRACT_UCHAR(a+e+1)?"inherits":"clone of",
+	       EXTRACT_UCHAR(a+e+1)?"clone of":"inherits",
 	       (long)EXTRACT_INT(a+e+2));
 	e+=sizeof(INT32)+1;
 	break;
@@ -855,26 +882,14 @@ static struct pike_string *or_pike_types(struct pike_string *a,
   return pop_unfinished_type();
 }
 
-static struct pike_string *low_object_fun_type(char *t,
-					       struct pike_string *tmp)
-{
-  struct program *p;
-  int i;
-  p=id_to_program(EXTRACT_INT(t+2));
-  if(!p) return 0;
-  i=FIND_LFUN(p, LFUN_CALL);
-
-  return ID_FROM_INT(p, i)->type;
-}
-
 static struct pike_string *low_object_lfun_type(char *t, short lfun)
 {
   struct program *p;
   int i;
   p=id_to_program(EXTRACT_INT(t+2));
   if(!p) return 0;
-  i=FIND_LFUN(p, LFUN_CALL);
-
+  i=FIND_LFUN(p, lfun);
+  if(i==-1) return 0;
   return ID_FROM_INT(p, i)->type;
 }
 
