@@ -2,12 +2,12 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: file.c,v 1.313 2004/04/04 15:57:33 grubba Exp $
+|| $Id: file.c,v 1.314 2004/04/05 01:36:05 mast Exp $
 */
 
 #define NO_PIKE_SHORTHAND
 #include "global.h"
-RCSID("$Id: file.c,v 1.313 2004/04/04 15:57:33 grubba Exp $");
+RCSID("$Id: file.c,v 1.314 2004/04/05 01:36:05 mast Exp $");
 #include "fdlib.h"
 #include "pike_netlib.h"
 #include "interpret.h"
@@ -24,6 +24,7 @@ RCSID("$Id: file.c,v 1.313 2004/04/04 15:57:33 grubba Exp $");
 #include "security.h"
 #include "bignum.h"
 #include "builtin_functions.h"
+#include "gc.h"
 
 #include "file_machine.h"
 #include "file.h"
@@ -106,7 +107,7 @@ RCSID("$Id: file.c,v 1.313 2004/04/04 15:57:33 grubba Exp $");
 
 #undef THIS
 #define THIS ((struct my_file *)(Pike_fp->current_storage))
-#define FD (THIS->fd)
+#define FD (THIS->box.fd)
 #define ERRNO (THIS->my_errno)
 
 #define READ_BUFFER 8192
@@ -176,87 +177,86 @@ static struct my_file *get_file_storage(struct object *o)
 }
 
 #ifdef PIKE_DEBUG
-#define CHECK_FILEP(o) \
-do { if(o->prog && !get_storage(o,file_program)) Pike_fatal("%p is not a file object.\n",o); } while (0)
-#define DEBUG_CHECK_INTERNAL_REFERENCE(X) do {				\
-  if( ((X)->fd!=-1 && (							\
-     (query_read_callback((X)->fd)==file_read_callback) ||		\
-     (query_write_callback((X)->fd)==file_write_callback) ||		\
-     (query_read_oob_callback((X)->fd)==file_read_oob_callback) ||	\
-     (query_write_oob_callback((X)->fd)==file_write_oob_callback))) !=  \
-  !!( (X)->flags & FILE_HAS_INTERNAL_REF ))				\
-         Pike_fatal("Internal reference is wrong. %d\n",(X)->flags & FILE_HAS_INTERNAL_REF);		\
-   } while (0)
-#else
-#define CHECK_FILEP(o)
-#define DEBUG_CHECK_INTERNAL_REFERENCE(X)
-#endif
-#define SET_INTERNAL_REFERENCE(f) \
-  do { CHECK_FILEP(f->myself); if(!(f->flags & FILE_HAS_INTERNAL_REF)) { add_ref(f->myself); f->flags|=FILE_HAS_INTERNAL_REF; } }while (0)
-
-#define REMOVE_INTERNAL_REFERENCE(f) \
-  do { CHECK_FILEP(f->myself); if(f->flags & FILE_HAS_INTERNAL_REF) {  f->flags&=~FILE_HAS_INTERNAL_REF; free_object(f->myself); } }while (0)
-
-static void check_internal_reference(struct my_file *f)
+static void debug_check_internals (struct my_file *f)
 {
-  if(f->fd!=-1)
-  {
-    if(query_read_callback(f->fd) == file_read_callback ||
-       query_write_callback(f->fd) == file_write_callback ||
-       query_read_oob_callback(f->fd) == file_read_oob_callback ||
-       query_write_oob_callback(f->fd) == file_write_oob_callback
-       )
-       {
-	 SET_INTERNAL_REFERENCE(f);
-	 return;
-       }
-  }
+  size_t ev;
 
-  REMOVE_INTERNAL_REFERENCE(f);
+  if (f->box.ref_obj->prog && file_program &&
+      !get_storage(f->box.ref_obj,file_program))
+    Pike_fatal ("ref_obj is not a file object.\n");
+
+  for (ev = 0; ev < NELEM (f->event_cbs); ev++)
+    if (f->event_cbs[ev].type == PIKE_T_INT &&
+	f->box.backend && f->box.events & (1 << ev))
+      Pike_fatal ("Got event flag but no callback for event %d.\n", ev);
+}
+#else
+#define debug_check_internals(f) do {} while (0)
+#endif
+
+#define ADD_FD_EVENTS(F, EVENTS) do {					\
+    struct my_file *f_ = (F);						\
+    if (!f_->box.backend)						\
+      INIT_FD_CALLBACK_BOX (&f_->box, default_backend, f_->box.ref_obj,	\
+			    f_->box.fd, (EVENTS), got_fd_event);	\
+    else								\
+      set_fd_callback_events (&f_->box, f_->box.events | (EVENTS));	\
+  } while (0)
+
+/* Note: The file object might be freed after this. */
+#define SUB_FD_EVENTS(F, EVENTS) do {					\
+    struct my_file *f_ = (F);						\
+    if (f_->box.backend)						\
+      set_fd_callback_events (&f_->box, f_->box.events & ~(EVENTS));	\
+  } while (0)
+
+static int got_fd_event (struct fd_callback_box *box, int event)
+{
+  struct my_file *f = (struct my_file *) box;
+  struct svalue *cb = &f->event_cbs[event];
+
+  f->my_errno = errno;		/* Propagate backend setting. */
+
+  /* The event is turned on again in the read and write functions. */
+  SUB_FD_EVENTS (f, 1 << event);
+
+  check_destructed (cb);
+  if (!UNSAFE_IS_ZERO (cb)) {
+    apply_svalue (cb, 0);
+    if (Pike_sp[-1].type == PIKE_T_INT && Pike_sp[-1].u.integer == -1) {
+      pop_stack();
+      return -1;
+    }
+    pop_stack();
+  }
+  return 0;
 }
 
 static void init_fd(int fd, int open_mode)
 {
+  size_t ev;
   FD=fd;
   ERRNO=0;
-  REMOVE_INTERNAL_REFERENCE(THIS);
+  THIS->box.backend = NULL;
   THIS->flags=0;
   THIS->open_mode=open_mode;
-  THIS->read_callback.type=PIKE_T_INT;
-  THIS->read_callback.u.integer=0;
-  THIS->write_callback.type=PIKE_T_INT;
-  THIS->write_callback.u.integer=0;
-  THIS->read_oob_callback.type=PIKE_T_INT;
-  THIS->read_oob_callback.u.integer=0;
-  THIS->write_oob_callback.type=PIKE_T_INT;
-  THIS->write_oob_callback.u.integer=0;
+  for (ev = 0; ev < NELEM (THIS->event_cbs); ev++) {
+    THIS->event_cbs[ev].type = PIKE_T_INT;
+    THIS->event_cbs[ev].subtype = NUMBER_NUMBER;
+    THIS->event_cbs[ev].u.integer = 0;
+  }
 #if defined(HAVE_FD_FLOCK) || defined(HAVE_FD_LOCKF)
   THIS->key=0;
 #endif
 #ifdef PIKE_DEBUG
-  {
-    struct Backend_struct *b = get_backend_for_fd (fd);
-    if (fd >= 0 && b)
-      Pike_fatal ("Got unexpected backend %p for new fd %d\n", b, fd);
-  }
+  if (fd >= 0) debug_check_fd_not_in_use (fd);
 #endif
-}
-
-
-void reset_variables(void)
-{
-  free_svalue(& THIS->read_callback);
-  THIS->read_callback.type=PIKE_T_INT;
-  free_svalue(& THIS->write_callback);
-  THIS->write_callback.type=PIKE_T_INT;
-  free_svalue(& THIS->read_oob_callback);
-  THIS->read_oob_callback.type=PIKE_T_INT;
-  free_svalue(& THIS->write_oob_callback);
-  THIS->write_oob_callback.type=PIKE_T_INT;
 }
 
 static void free_fd_stuff(void)
 {
+  size_t ev;
+
 #if defined(HAVE_FD_FLOCK) || defined(HAVE_FD_LOCKF)
   if(THIS->key)
   {
@@ -264,7 +264,13 @@ static void free_fd_stuff(void)
     THIS->key=0;
   }
 #endif
-  check_internal_reference(THIS);
+
+  for (ev = 0; ev < NELEM (THIS->event_cbs); ev++) {
+    free_svalue(& THIS->event_cbs[ev]);
+    THIS->event_cbs[ev].type=PIKE_T_INT;
+    THIS->event_cbs[ev].subtype = NUMBER_NUMBER;
+    THIS->event_cbs[ev].u.integer = 0;
+  }
 }
 
 static void close_fd_quietly(void)
@@ -272,11 +278,9 @@ static void close_fd_quietly(void)
   int fd=FD;
   if(fd<0) return;
 
-  set_backend_for_fd(fd, NULL);
+  free_fd_stuff();
+  change_fd_for_box (&THIS->box, -1);
 
-  check_internal_reference(THIS);
-
-  FD=-1;
   while(1)
   {
     int i, e;
@@ -291,12 +295,18 @@ static void close_fd_quietly(void)
     {
       switch(e)
       {
-	default:
-	{
-	  /* Delay close until next gc() */
-	  struct object *o=file_make_object_from_fd(fd,0,0);
-	  ((struct my_file *)(o->storage))->read_callback.u.object=o;
-	  ((struct my_file *)(o->storage))->read_callback.type=PIKE_T_OBJECT;
+	default: {
+	  JMP_BUF jmp;
+	  if (SETJMP (jmp))
+	    call_handle_error();
+	  else {
+	    ERRNO=errno=e;
+	    change_fd_for_box (&THIS->box, fd);
+	    push_int(e);
+	    f_strerror(1);
+	    Pike_error("Failed to close file: %s\n", Pike_sp[-1].u.string->str);
+	  }
+	  UNSETJMP (jmp);
 	  break;
 	}
 
@@ -315,16 +325,17 @@ static void close_fd_quietly(void)
   }
 }
 
-static void just_close_fd(void)
+static void close_fd(void)
 {
   int fd=FD;
   if(fd<0) return;
 
-  set_backend_for_fd(fd, NULL);
+  free_fd_stuff();
+  change_fd_for_box (&THIS->box, -1);
 
-  check_internal_reference(THIS);
+  if ( (THIS->flags & FILE_NOT_OPENED) )
+     return;
 
-  FD=-1;
   while(1)
   {
     int i, e;
@@ -341,7 +352,7 @@ static void just_close_fd(void)
       {
 	default:
 	  ERRNO=errno=e;
-	  FD=fd;
+	  change_fd_for_box (&THIS->box, fd);
 	  push_int(e);
 	  f_strerror(1);
 	  Pike_error("Failed to close file: %s\n", Pike_sp[-1].u.string->str);
@@ -363,18 +374,6 @@ static void just_close_fd(void)
     }
     break;
   }
-}
-
-static void close_fd(void)
-{
-  free_fd_stuff();
-  reset_variables();
-  if ( (THIS->flags & FILE_NOT_OPENED) )
-  {
-     FD=-1;
-     return;
-  }
-  just_close_fd();
 }
 
 void my_set_close_on_exec(int fd, int to)
@@ -505,11 +504,8 @@ static struct pike_string *do_read(int fd,
 
     UNSET_ONERROR(ebuf);
 
-    if(!SAFE_IS_ZERO(& THIS->read_callback))
-    {
-      set_read_callback(FD, file_read_callback, THIS);
-      SET_INTERNAL_REFERENCE(THIS);
-    }
+    if(!SAFE_IS_ZERO(& THIS->event_cbs[PIKE_FD_READ]))
+      ADD_FD_EVENTS (THIS, PIKE_BIT_FD_READ);
 
     if(bytes_read == str->len)
     {
@@ -581,11 +577,8 @@ static struct pike_string *do_read(int fd,
 
     UNSET_ONERROR(ebuf);
 
-    if(!SAFE_IS_ZERO(& THIS->read_callback))
-    {
-      set_read_callback(FD, file_read_callback, THIS);
-      SET_INTERNAL_REFERENCE(THIS);
-    }
+    if(!SAFE_IS_ZERO(& THIS->event_cbs[PIKE_FD_READ]))
+      ADD_FD_EVENTS (THIS, PIKE_BIT_FD_READ);
 
     return low_free_buf(&b);
 #undef CHUNK
@@ -643,11 +636,8 @@ static struct pike_string *do_read_oob(int fd,
 
     UNSET_ONERROR(ebuf);
 
-    if(!SAFE_IS_ZERO(& THIS->read_oob_callback))
-    {
-      set_read_oob_callback(FD, file_read_oob_callback, THIS);
-      SET_INTERNAL_REFERENCE(THIS);
-    }
+    if(!SAFE_IS_ZERO(& THIS->event_cbs[PIKE_FD_READ_OOB]))
+      ADD_FD_EVENTS (THIS, PIKE_BIT_FD_READ_OOB);
 
     if(bytes_read == str->len)
     {
@@ -793,7 +783,7 @@ static void file_peek(INT32 args)
   int ret;
   int timeout=1;
 
-  fds.fd=THIS->fd;
+  fds.fd=FD;
   fds.events=POLLIN;
   fds.revents=0;
 
@@ -824,8 +814,8 @@ static void file_peek(INT32 args)
   tv.tv_usec=1;
   tv.tv_sec=0;
   fd_FD_ZERO(&tmp);
-  fd_FD_SET(THIS->fd, &tmp);
-  ret = THIS->fd;
+  fd_FD_SET(FD, &tmp);
+  ret = FD;
 
   if (args)
   {
@@ -844,7 +834,7 @@ static void file_peek(INT32 args)
     ERRNO=errno;
     ret=-1;
   }else{
-    ret = (ret > 0) && fd_FD_ISSET(THIS->fd, &tmp);
+    ret = (ret > 0) && fd_FD_ISSET(FD, &tmp);
   }
 #endif
   pop_n_elems(args);
@@ -948,100 +938,70 @@ static void file_read_oob(INT32 args)
   }
 }
 
-#undef CBFUNCS
-#define CBFUNCS(X)						\
-static int PIKE_CONCAT(file_,X) (int fd, void *data)		\
-{								\
-  struct my_file *f=(struct my_file *)data;			\
-  PIKE_CONCAT(set_,X)(fd, 0, 0);				\
-  check_internal_reference(f);                                  \
-  check_destructed(& f->X );				        \
-  if(UNSAFE_IS_ZERO(& f->X )) {					\
-    PIKE_CONCAT (set_,X) (fd, 0, 0);				\
-    check_internal_reference (THIS);				\
-  }								\
-  else {							\
-    f->my_errno = errno; /* Propagate the backend setting. */	\
-    apply_svalue(& f->X, 0);					\
-    if (Pike_sp[-1].type == PIKE_T_INT &&			\
-	Pike_sp[-1].u.integer == -1) {				\
-      pop_stack();						\
-      return -1;						\
-    }								\
-    pop_stack();						\
-  }     							\
-  return 0;							\
-}								\
-								\
-static void PIKE_CONCAT(file_set_,X) (INT32 args)		\
-{								\
-  if(FD<0)							\
-    Pike_error("File is not open.\n");				\
-  if(!args)							\
-    SIMPLE_TOO_FEW_ARGS_ERROR("Stdio.File->set_" #X, 1);	\
-  /* Assign afterwards in case UNSAFE_IS_ZERO throws. */	\
-  if(UNSAFE_IS_ZERO(Pike_sp-args))				\
-  {								\
-    free_svalue (&THIS->X);					\
-    THIS->X.type = PIKE_T_INT;					\
-    THIS->X.u.integer = 0;					\
-    PIKE_CONCAT(set_,X)(FD, 0, 0);				\
-    check_internal_reference(THIS);                             \
-  }else{							\
-    assign_svalue(& THIS->X, Pike_sp-args);			\
-    PIKE_CONCAT(set_,X)(FD, PIKE_CONCAT(file_,X), THIS);	\
-    SET_INTERNAL_REFERENCE(THIS);                               \
-  }								\
-}								\
-								\
-static void PIKE_CONCAT(file_query_,X) (INT32 args)		\
-{								\
-  pop_n_elems(args);						\
-  push_svalue(& THIS->X);					\
+static void set_fd_event_cb (struct my_file *f, struct svalue *cb, int event)
+{
+  if (UNSAFE_IS_ZERO (cb)) {
+    free_svalue (&f->event_cbs[event]);
+    f->event_cbs[event].type = PIKE_T_INT;
+    f->event_cbs[event].subtype = NUMBER_NUMBER;
+    f->event_cbs[event].u.integer = 0;
+    SUB_FD_EVENTS (f, 1 << event);
+  }
+  else {
+    assign_svalue (&f->event_cbs[event], cb);
+    ADD_FD_EVENTS (f, 1 << event);
+  }
 }
 
-CBFUNCS(read_callback)
-CBFUNCS(write_callback)
-CBFUNCS(read_oob_callback)
-CBFUNCS(write_oob_callback)
+#undef CBFUNCS
+#define CBFUNCS(CB, EVENT)						\
+  static void PIKE_CONCAT(file_set_,CB) (INT32 args)			\
+  {									\
+    if(!args)								\
+      SIMPLE_TOO_FEW_ARGS_ERROR("Stdio.File->set_" #CB, 1);		\
+    set_fd_event_cb (THIS, Pike_sp-args, EVENT);			\
+  }									\
+									\
+  static void PIKE_CONCAT(file_query_,CB) (INT32 args)			\
+  {									\
+    pop_n_elems(args);							\
+    push_svalue(& THIS->event_cbs[EVENT]);				\
+  }
+
+CBFUNCS(read_callback, PIKE_FD_READ)
+CBFUNCS(write_callback, PIKE_FD_WRITE)
+CBFUNCS(read_oob_callback, PIKE_FD_READ_OOB)
+CBFUNCS(write_oob_callback, PIKE_FD_WRITE_OOB)
 
 static void file__enable_callbacks(INT32 args)
 {
+  struct my_file *f = THIS;
+  size_t ev;
+  int cb_events = 0;
+
   if(FD<0)
     Pike_error("File is not open.\n");
 
-#define DO_TRIGGER(X) \
-  if(UNSAFE_IS_ZERO(& THIS->X ))				\
-  {								\
-    PIKE_CONCAT(set_,X)(FD, 0, 0);				\
-  }else{							\
-    PIKE_CONCAT(set_,X)(FD, PIKE_CONCAT(file_,X), THIS);	\
-  }
+  debug_check_internals (f);
 
-DO_TRIGGER(read_callback)
-DO_TRIGGER(write_callback)
-DO_TRIGGER(read_oob_callback)
-DO_TRIGGER(write_oob_callback)
+  for (ev = 0; ev < NELEM (f->event_cbs); ev++)
+    if (!UNSAFE_IS_ZERO (&f->event_cbs[ev]))
+      cb_events |= 1 << ev;
 
-  check_internal_reference(THIS);
+  if (cb_events) ADD_FD_EVENTS (f, cb_events);
+
   pop_n_elems(args);
   push_int(0);
 }
 
 static void file__disable_callbacks(INT32 args)
 {
+  struct my_file *f = THIS;
+
   if(FD<0)
     Pike_error("File is not open.\n");
-#define DO_DISABLE(X) \
-  PIKE_CONCAT(set_,X)(FD, 0, 0);
 
-
-DO_DISABLE(read_callback)
-DO_DISABLE(write_callback)
-DO_DISABLE(read_oob_callback)
-DO_DISABLE(write_oob_callback)
-
-  check_internal_reference(THIS);
+  SUB_FD_EVENTS (f, ~0);
 
   pop_n_elems(args);
   push_int(0);
@@ -1228,11 +1188,8 @@ static void file_write(INT32 args)
 
       free(iovbase);
 
-      if(!SAFE_IS_ZERO(& THIS->write_callback))
-      {
-	set_write_callback(FD, file_write_callback, THIS);
-	SET_INTERNAL_REFERENCE(THIS);
-      }
+      if(!SAFE_IS_ZERO(& THIS->event_cbs[PIKE_FD_WRITE]))
+	ADD_FD_EVENTS (THIS, PIKE_BIT_FD_WRITE);
       ERRNO=0;
 
       pop_stack();
@@ -1296,11 +1253,8 @@ static void file_write(INT32 args)
     }
   }
 
-  if(!SAFE_IS_ZERO(& THIS->write_callback))
-  {
-    set_write_callback(FD, file_write_callback, THIS);
-    SET_INTERNAL_REFERENCE(THIS);
-  }
+  if(!SAFE_IS_ZERO(& THIS->event_cbs[PIKE_FD_WRITE]))
+    ADD_FD_EVENTS (THIS, PIKE_BIT_FD_WRITE);
   ERRNO=0;
 
   pop_n_elems(args);
@@ -1405,12 +1359,8 @@ static void file_write_oob(INT32 args)
     }
   }
 
-  if(!SAFE_IS_ZERO(& THIS->write_oob_callback))
-  {
-    set_write_oob_callback(FD, file_write_oob_callback, THIS);
-    SET_INTERNAL_REFERENCE(THIS);
-  }
-
+  if(!SAFE_IS_ZERO(& THIS->event_cbs[PIKE_FD_WRITE_OOB]))
+    ADD_FD_EVENTS (THIS, PIKE_BIT_FD_WRITE_OOB);
   ERRNO=0;
 
   pop_n_elems(args);
@@ -1419,10 +1369,11 @@ static void file_write_oob(INT32 args)
 
 static int do_close(int flags)
 {
+  struct my_file *f = THIS;
   if(FD == -1) return 1; /* already closed */
   ERRNO=0;
 
-  flags &= THIS->open_mode;
+  flags &= f->open_mode;
 
   switch(flags & (FILE_READ | FILE_WRITE))
   {
@@ -1430,37 +1381,33 @@ static int do_close(int flags)
     return 0;
 
   case FILE_READ:
-    if(THIS->open_mode & FILE_WRITE)
+    if(f->open_mode & FILE_WRITE)
     {
-      set_read_callback(FD,0,0);
-      set_read_oob_callback(FD,0,0);
+      SUB_FD_EVENTS (f, PIKE_BIT_FD_READ|PIKE_BIT_FD_READ_OOB);
       fd_shutdown(FD, 0);
-      THIS->open_mode &=~ FILE_READ;
-      check_internal_reference(THIS);
+      f->open_mode &=~ FILE_READ;
       return 0;
     }else{
-      THIS->flags&=~FILE_NOT_OPENED;
+      f->flags&=~FILE_NOT_OPENED;
       close_fd();
       return 1;
     }
 
   case FILE_WRITE:
-    if(THIS->open_mode & FILE_READ)
+    if(f->open_mode & FILE_READ)
     {
-      set_write_callback(FD,0,0);
-      set_write_oob_callback(FD,0,0);
+      SUB_FD_EVENTS (f, PIKE_BIT_FD_WRITE|PIKE_BIT_FD_WRITE_OOB);
       fd_shutdown(FD, 1);
-      THIS->open_mode &=~ FILE_WRITE;
-      check_internal_reference(THIS);
+      f->open_mode &=~ FILE_WRITE;
       return 0;
     }else{
-      THIS->flags&=~FILE_NOT_OPENED;
+      f->flags&=~FILE_NOT_OPENED;
       close_fd();
       return 1;
     }
 
   case FILE_READ | FILE_WRITE:
-    THIS->flags&=~FILE_NOT_OPENED;
+    f->flags&=~FILE_NOT_OPENED;
     close_fd();
     return 1;
 
@@ -2171,19 +2118,20 @@ static void file_mode(INT32 args)
  *! Set the backend used for the callbacks.
  *!
  *! @note
- *! The backend does not keep a reference to this object, not even a
- *! weak one. So if this object runs out of other references it will
- *! still be destructed quickly (after closing, if necessary).
+ *! The backend keeps a reference to this object only when it is in
+ *! callback mode. So if this object hasn't got any active callbacks
+ *! and it runs out of other references, it will still be destructed
+ *! quickly (after closing, if necessary).
+ *!
+ *! Also, this object does not keep a reference to the backend.
  *!
  *! @seealso
  *!   @[query_backend], @[set_nonblocking], @[set_read_callback], @[set_write_callback]
  */
 static void file_set_backend (INT32 args)
 {
-  int fd = FD;
+  struct my_file *f = THIS;
   struct Backend_struct *backend;
-
-  if(fd < 0) Pike_error ("File not open.\n");
 
   if (!args)
     SIMPLE_TOO_FEW_ARGS_ERROR ("Stdio.File->set_backend", 1);
@@ -2194,7 +2142,11 @@ static void file_set_backend (INT32 args)
   if (!backend)
     SIMPLE_BAD_ARG_ERROR ("Stdio.File->set_backend", 1, "object(Pike.Backend)");
 
-  set_backend_for_fd (fd, backend);
+  if (f->box.backend)
+    change_backend_for_box (&f->box, backend);
+  else
+    INIT_FD_CALLBACK_BOX (&f->box, backend, f->box.ref_obj,
+			  f->box.fd, 0, got_fd_event);
 
   pop_n_elems (args - 1);
 }
@@ -2208,14 +2160,9 @@ static void file_set_backend (INT32 args)
  */
 static void file_query_backend (INT32 args)
 {
-  struct object *b;
-  if(FD < 0) Pike_error ("File not open.\n");
   pop_n_elems (args);
-  b = get_backend_obj_for_fd (FD);
-  if (b)
-    ref_push_object (b);
-  else
-    push_int (0);
+  ref_push_object (get_backend_obj (THIS->box.backend ? THIS->box.backend :
+				    default_backend));
 }
 
 /*! @decl void set_nonblocking()
@@ -2316,15 +2263,12 @@ static void file_query_fd(INT32 args)
 struct object *file_make_object_from_fd(int fd, int mode, int guess)
 {
   struct object *o=low_clone(file_program);
+  struct my_file *f = (struct my_file *) o->storage;
   call_c_initializers(o);
-  ((struct my_file *)(o->storage))->fd=fd;
-  ((struct my_file *)(o->storage))->open_mode=mode | fd_query_properties(fd, guess);
+  f->box.fd=fd;
+  f->open_mode=mode | fd_query_properties(fd, guess);
 #ifdef PIKE_DEBUG
-  {
-    struct Backend_struct *b = get_backend_for_fd (fd);
-    if (fd >= 0 && b)
-      Pike_fatal ("Got unexpected backend %p for new fd %d\n", b, fd);
-  }
+  debug_check_fd_not_in_use (fd);
 #endif
   return o;
 }
@@ -2708,7 +2652,7 @@ static void file_pipe(INT32 args)
 
     my_set_close_on_exec(inout[1],1);
     my_set_close_on_exec(inout[0],1);
-    FD=inout[1];
+    change_fd_for_box (&THIS->box, inout[1]);
 
     ERRNO=0;
     push_object(file_make_object_from_fd(inout[0], (type&fd_BIDIRECTIONAL?FILE_WRITE:0)| FILE_READ,type));
@@ -2718,7 +2662,7 @@ static void file_pipe(INT32 args)
 
     my_set_close_on_exec(inout[0],1);
     my_set_close_on_exec(inout[1],1);
-    FD=inout[0];
+    change_fd_for_box (&THIS->box, inout[0]);
 
     ERRNO=0;
     push_object(file_make_object_from_fd(inout[1], (type&fd_BIDIRECTIONAL?FILE_READ:0)| FILE_WRITE,type));
@@ -2728,36 +2672,36 @@ static void file_pipe(INT32 args)
 static void file_handle_events(int event)
 {
   struct object *o=Pike_fp->current_object;
+  struct my_file *f = THIS;
   switch(event)
   {
     case PROG_EVENT_INIT:
-      FD=-1;
-      ERRNO=0;
-      THIS->open_mode=0;
-      THIS->flags=0;
-#if defined(HAVE_FD_FLOCK) || defined(HAVE_FD_LOCKF)
-      THIS->key=0;
-#endif /* HAVE_FD_FLOCK */
-      THIS->myself=o;
-      /* map_variable will take care of the rest */
+      init_fd (-1, 0);
+      f->box.ref_obj = o;
       break;
 
     case PROG_EVENT_EXIT:
-      if(!(THIS->flags & (FILE_NO_CLOSE_ON_DESTRUCT |
-			  FILE_LOCK_FD |
-			  FILE_NOT_OPENED)))
+      if(!(f->flags & (FILE_NO_CLOSE_ON_DESTRUCT |
+		       FILE_LOCK_FD |
+		       FILE_NOT_OPENED)))
 	close_fd_quietly();
-      free_fd_stuff();
-      
-      REMOVE_INTERNAL_REFERENCE(THIS);
-      /* map_variable will free callbacks */
+      else
+	free_fd_stuff();
+      unhook_fd_callback_box (&f->box);
       break;
 
-#ifdef PIKE_DEBUG
-    case PROG_EVENT_GC_CHECK:
-      DEBUG_CHECK_INTERNAL_REFERENCE(THIS);
+    case PROG_EVENT_GC_RECURSE:
+      if (f->box.backend) {
+	/* Need to deregister events if the gc has freed callbacks.
+	 * This might lead to the file object being freed altogether. */
+	int cb_events = 0;
+	size_t ev;
+	for (ev = 0; ev < NELEM (f->event_cbs); ev++)
+	  if (f->event_cbs[ev].type != PIKE_T_INT)
+	    cb_events |= 1 << ev;
+	SUB_FD_EVENTS (f, ~cb_events);
+      }
       break;
-#endif
   }
 }
 
@@ -2766,46 +2710,28 @@ static void low_dup(struct object *toob,
 		    struct my_file *to,
 		    struct my_file *from)
 {
-  my_set_close_on_exec(to->fd, to->fd > 2);
-  REMOVE_INTERNAL_REFERENCE(to);
+  size_t ev;
+
+  debug_check_internals (from);
+
+  my_set_close_on_exec(to->box.fd, to->box.fd > 2);
+
   to->open_mode=from->open_mode;
-  to->flags=from->flags & ~FILE_HAS_INTERNAL_REF;
+  to->flags=from->flags;
 
-  assign_svalue(& to->read_callback, & from->read_callback);
-  assign_svalue(& to->write_callback, & from->write_callback);
-  assign_svalue(& to->read_oob_callback,
-		& from->read_oob_callback);
-  assign_svalue(& to->write_oob_callback,
-		& from->write_oob_callback);
+  /* Note: This previously enabled all events for which there were
+   * callbacks instead of copying the event settings from the source
+   * file. */
 
-  if(UNSAFE_IS_ZERO(& from->read_callback))
-  {
-    set_read_callback(to->fd, 0,0);
-  }else{
-    set_read_callback(to->fd, file_read_callback, to);
-  }
+  unhook_fd_callback_box (&to->box);
+  if (from->box.backend)
+    INIT_FD_CALLBACK_BOX (&to->box, from->box.backend, to->box.ref_obj,
+			  to->box.fd, from->box.events, got_fd_event);
 
-  if(UNSAFE_IS_ZERO(& from->write_callback))
-  {
-    set_write_callback(to->fd, 0,0);
-  }else{
-    set_write_callback(to->fd, file_write_callback, to);
-  }
+  for (ev = 0; ev < NELEM (to->event_cbs); ev++)
+    assign_svalue (&to->event_cbs[ev], &from->event_cbs[ev]);
 
-  if(UNSAFE_IS_ZERO(& from->read_oob_callback))
-  {
-    set_read_oob_callback(to->fd, 0,0);
-  }else{
-    set_read_oob_callback(to->fd, file_read_oob_callback, to);
-  }
-
-  if(UNSAFE_IS_ZERO(& from->write_oob_callback))
-  {
-    set_write_oob_callback(to->fd, 0,0);
-  }else{
-    set_write_oob_callback(to->fd, file_write_oob_callback, to);
-  }
-  check_internal_reference(to);
+  debug_check_internals (to);
 }
 
 /*! @decl int dup2(Stdio.File to)
@@ -2841,14 +2767,14 @@ static void file_dup2(INT32 args)
     SIMPLE_BAD_ARG_ERROR("Stdio.File->dup2", 1, "Stdio.File");
 
 
-  if(fd->fd < 0)
+  if(fd->box.fd < 0)
     Pike_error("File given to dup2 not open.\n");
 
   if (fd->flags & FILE_LOCK_FD) {
     Pike_error("File has been temporarily locked from closing.\n");
   }
 
-  if(fd_dup2(FD,fd->fd) < 0)
+  if(fd_dup2(FD,fd->box.fd) < 0)
   {
     ERRNO=errno;
     pop_n_elems(args);
@@ -2866,9 +2792,9 @@ static void file_dup2(INT32 args)
  */
 static void file_dup(INT32 args)
 {
-  int f;
+  int fd;
   struct object *o;
-  struct my_file *fd;
+  struct my_file *f;
 
   pop_n_elems(args);
 
@@ -2876,17 +2802,17 @@ static void file_dup(INT32 args)
     Pike_error("File not open.\n");
 
 
-  if((f=fd_dup(FD)) < 0)
+  if((fd=fd_dup(FD)) < 0)
   {
     ERRNO=errno;
     pop_n_elems(args);
     push_int(0);
     return;
   }
-  o=file_make_object_from_fd(f, THIS->open_mode, THIS->open_mode);
-  fd=((struct my_file *)(o->storage));
+  o=file_make_object_from_fd(fd, THIS->open_mode, THIS->open_mode);
+  f=((struct my_file *)(o->storage));
   ERRNO=0;
-  low_dup(o, fd, THIS);
+  low_dup(o, f, THIS);
   push_object(o);
 }
 
@@ -2898,7 +2824,6 @@ static void file_open_socket(INT32 args)
   int family=-1;
 
   close_fd();
-  FD=-1;
 
   if (args > 2 && Pike_sp[2-args].type == PIKE_T_INT &&
       Pike_sp[2-args].u.integer != 0)
@@ -2975,7 +2900,7 @@ static void file_open_socket(INT32 args)
 
   init_fd(fd, FILE_READ | FILE_WRITE | fd_query_properties(fd, SOCKET_CAPABILITIES));
   my_set_close_on_exec(fd,1);
-  FD = fd;
+  change_fd_for_box (&THIS->box, FD);
   ERRNO=0;
 
   pop_n_elems(args);
@@ -3059,10 +2984,8 @@ static void file_connect_unix( INT32 args )
   strcpy( name.sun_path, Pike_sp[-args].u.string->str );
   pop_n_elems(args);
 
-  if(FD >= 0)
-    file_close(0);
-
-  FD = socket(AF_UNIX,SOCK_STREAM,0);
+  close_fd();
+  change_fd_for_box (&THIS->box, socket(AF_UNIX,SOCK_STREAM,0));
 
   if( FD < 0 )
   {
@@ -3370,7 +3293,7 @@ void file_proxy(INT32 args)
   if(!f)
     SIMPLE_BAD_ARG_ERROR("Stdio.File->proxy", 1, "Stdio.File");
 
-  from=fd_dup(f->fd);
+  from=fd_dup(f->box.fd);
   if(from<0)
   {
     ERRNO=errno;
@@ -3451,7 +3374,7 @@ static void low_file_lock(INT32 args, int flags)
   
   destruct_objects_to_destruct();
 
-  if(FD==-1)
+  if(FD < 0)
     Pike_error("Stdio.File->lock(): File is not open.\n");
 
   if(!args || UNSAFE_IS_ZERO(Pike_sp-args))
@@ -3526,15 +3449,17 @@ static void file_lock(INT32 args)
 /* If (fd_LOCK_EX | fd_LOCK_NB) is used with lockf, the result will be
  * F_TEST, which only tests for the existance of a lock on the file.
  */
+#ifdef HAVE_FD_FLOCK
 static void file_trylock(INT32 args)
 {
-  low_file_lock(args,
-#ifdef HAVE_FD_FLOCK
-		fd_LOCK_EX |
-#endif
-		fd_LOCK_NB
-		);
+  low_file_lock(args, fd_LOCK_EX | fd_LOCK_NB);
 }
+#else
+static void file_trylock(INT32 args)
+{
+  low_file_lock(args, fd_LOCK_NB);
+}
+#endif
 
 #define THIS_KEY ((struct file_lock_key_storage *)(Pike_fp->current_storage))
 static void init_file_lock_key(struct object *o)
@@ -3550,7 +3475,7 @@ static void exit_file_lock_key(struct object *o)
 {
   if(THIS_KEY->f)
   {
-    int fd=THIS_KEY->f->fd;
+    int fd=THIS_KEY->f->box.fd;
     int err;
 #ifdef PIKE_DEBUG
     if(THIS_KEY->f->key != o)
@@ -3876,11 +3801,7 @@ static void fd__sprintf(INT32 args)
     case 'O':
     {
       char buf[20];
-#ifdef PIKE_DEBUG
-      sprintf (buf, "Fd(%"PRINTPIKEINT"d)", FD);
-#else
       sprintf (buf, "Fd(%d)", FD);
-#endif
       push_text(buf);
       return;
     }
@@ -3914,13 +3835,14 @@ PIKE_MODULE_INIT
 #define FILE_FUNC(X,Y,Z) PIKE_CONCAT(Y,_function_number)=ADD_FUNCTION(X,Y,Z,0)
 #define FILE_OBJ tObjImpl_STDIO_FD
 #include "file_functions.h"
-  map_variable("_read_callback","mixed",0,OFFSETOF(my_file, read_callback),PIKE_T_MIXED);
-  map_variable("_write_callback","mixed",0,OFFSETOF(my_file, write_callback),PIKE_T_MIXED);
-  map_variable("_read_oob_callback","mixed",0,OFFSETOF(my_file, read_oob_callback),PIKE_T_MIXED);
-  map_variable("_write_oob_callback","mixed",0,OFFSETOF(my_file, write_oob_callback),PIKE_T_MIXED);
-#ifdef PIKE_DEBUG
-  map_variable("fd", "int", ID_STATIC|ID_PRIVATE, OFFSETOF (my_file, fd), PIKE_T_INT);
-#endif
+  map_variable("_read_callback","mixed",0,
+	       OFFSETOF(my_file, event_cbs[PIKE_FD_READ]),PIKE_T_MIXED);
+  map_variable("_write_callback","mixed",0,
+	       OFFSETOF(my_file, event_cbs[PIKE_FD_WRITE]),PIKE_T_MIXED);
+  map_variable("_read_oob_callback","mixed",0,
+	       OFFSETOF(my_file, event_cbs[PIKE_FD_READ_OOB]),PIKE_T_MIXED);
+  map_variable("_write_oob_callback","mixed",0,
+	       OFFSETOF(my_file, event_cbs[PIKE_FD_WRITE_OOB]),PIKE_T_MIXED);
 
   /* function(int, void|mapping:string) */
   ADD_FUNCTION("_sprintf",fd__sprintf,
@@ -4031,13 +3953,7 @@ PIKE_MODULE_INIT
 
   add_integer_constant("__HAVE_OOB__",1,0);
 #ifdef PIKE_OOB_WORKS
-#if (!defined(HAVE_POLL) || !defined(HAVE_AND_USE_POLL)) && \
-  defined(HAVE_SYS_EVENT_H) && defined(HAVE_KQUEUE)
-  /* FIXME: kqueue doesn't seem to support out of band data. */
-  add_integer_constant("__OOB__",0,0);
-#else
   add_integer_constant("__OOB__",PIKE_OOB_WORKS,0);
-#endif /* USE_KQUEUE */
 #else
   add_integer_constant("__OOB__",-1,0); /* unknown */
 #endif
@@ -4077,5 +3993,5 @@ int fd_from_object(struct object *o)
   struct my_file *f=get_file_storage(o);
   if(!f)
     return fd_from_portobject( o );
-  return f->fd;
+  return f->box.fd;
 }

@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: sendfile.c,v 1.66 2004/03/30 11:55:07 grubba Exp $
+|| $Id: sendfile.c,v 1.67 2004/04/05 01:36:05 mast Exp $
 */
 
 /*
@@ -697,11 +697,10 @@ static void worker(void *this_)
     } else {
       /* Destructed. */
       if (this->from_fd >= 0) {
-	set_backend_for_fd(this->from_fd, NULL);
 	fd_close(this->from_fd);
       }
       /* Paranoia */
-      this->from->fd = -1;
+      change_fd_for_box (&this->from->box, -1);
     }
   }
   if (this->to_file->prog) {
@@ -709,11 +708,10 @@ static void worker(void *this_)
   } else {
     /* Destructed */
     if (this->to_fd >= 0) {
-      set_backend_for_fd(this->to_fd, NULL);
       fd_close(this->to_fd);
     }
     /* Paranoia */
-    this->to->fd = -1;
+    change_fd_for_box (&this->to->box, -1);
   }
     
   /* Neither of the following can be done in our current context
@@ -820,10 +818,10 @@ static void sf_create(INT32 args)
     sp[5-args].u.object = sf.to_file;
   }
   if ((sf.to->flags & FILE_LOCK_FD) ||
-      (sf.to->fd < 0)) {
+      (sf.to->box.fd < 0)) {
     SIMPLE_BAD_ARG_ERROR("sendfile", 6, "object(Stdio.File)");
   }
-  sf.to_fd = sf.to->fd;
+  sf.to_fd = sf.to->box.fd;
 
   if (sf.from_file && !sf.len) {
     /* No need for the from_file object. */
@@ -859,10 +857,10 @@ static void sf_create(INT32 args)
       sp[1-args].u.object = sf.from_file;
     }
     if ((sf.from->flags & FILE_LOCK_FD) ||
-	(sf.from->fd < 0)) {
+	(sf.from->box.fd < 0)) {
       SIMPLE_BAD_ARG_ERROR("sendfile", 2, "object(Stdio.File)");
     }
-    sf.from_fd = sf.from->fd;
+    sf.from_fd = sf.from->box.fd;
   }
 
   /* Do some extra arg checking */

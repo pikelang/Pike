@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: udp.c,v 1.62 2003/12/12 17:41:50 nilsson Exp $
+|| $Id: udp.c,v 1.63 2004/04/05 01:36:05 mast Exp $
 */
 
 #define NO_PIKE_SHORTHAND
@@ -10,7 +10,7 @@
 
 #include "file_machine.h"
 
-RCSID("$Id: udp.c,v 1.62 2003/12/12 17:41:50 nilsson Exp $");
+RCSID("$Id: udp.c,v 1.63 2004/04/05 01:36:05 mast Exp $");
 #include "fdlib.h"
 #include "pike_netlib.h"
 #include "interpret.h"
@@ -132,19 +132,14 @@ RCSID("$Id: udp.c,v 1.62 2003/12/12 17:41:50 nilsson Exp $");
 #include "dmalloc.h"
 
 struct udp_storage {
-  int fd;
+  struct fd_callback_box box;	/* Must be first. */
   int my_errno;
    
   int type;
   int protocol;
 
-  struct svalue read_callback;
+  struct svalue read_callback;	/* Mapped. */
 };
-
-/* FIXME: This class does not keep an extra ref while the read
- * callback is registered. It'll probably segfault in
- * udp_read_callback if the object has run out of refs. /mast
- */
 
 void zero_udp(struct object *ignored);
 void exit_udp(struct object *ignored);
@@ -152,7 +147,7 @@ void exit_udp(struct object *ignored);
 #undef THIS
 #define THIS ((struct udp_storage *)Pike_fp->current_storage)
 #define THISOBJ (Pike_fp->current_object)
-#define FD (THIS->fd)
+#define FD (THIS->box.fd)
 
 /*! @module Stdio
  */
@@ -192,18 +187,17 @@ static void udp_bind(INT32 args)
 #endif /* !SOL_IP && HAVE_GETPROTOBYNAME */
 
   if(args < 1)
-    SIMPLE_TOO_FEW_ARGS_ERROR("UDP->bind", 1);
+    SIMPLE_TOO_FEW_ARGS_ERROR("Stdio.UDP->bind", 1);
 
   if(Pike_sp[-args].type != PIKE_T_INT &&
      (Pike_sp[-args].type != PIKE_T_STRING ||
       Pike_sp[-args].u.string->size_shift))
-    SIMPLE_BAD_ARG_ERROR("UDP->bind", 1, "int|string (8bit)");
+    SIMPLE_BAD_ARG_ERROR("Stdio.UDP->bind", 1, "int|string (8bit)");
 
   if(FD != -1)
   {
-    set_backend_for_fd(FD, NULL);
     fd_close(FD);
-    FD = -1;
+    change_fd_for_box (&THIS->box, -1);
   }
 
   addr_len = get_inet_addr(&addr, (args > 1 && Pike_sp[1-args].type==PIKE_T_STRING?
@@ -218,7 +212,7 @@ static void udp_bind(INT32 args)
   {
     pop_n_elems(args);
     THIS->my_errno=errno;
-    Pike_error("UDP->bind: failed to create socket\n");
+    Pike_error("Stdio.UDP->bind: failed to create socket\n");
   }
 
   /* Make sure this fd gets closed on exec. */
@@ -229,7 +223,7 @@ static void udp_bind(INT32 args)
   {
     fd_close(fd);
     THIS->my_errno=errno;
-    Pike_error("UDP->bind: setsockopt SO_REUSEADDR failed\n");
+    Pike_error("Stdio.UDP->bind: setsockopt SO_REUSEADDR failed\n");
   }
 
 #ifndef SOL_IP
@@ -256,7 +250,7 @@ static void udp_bind(INT32 args)
 
   if (THIS->type==SOCK_RAW && THIS->protocol==255 /* raw */)
      if(fd_setsockopt(fd, SOL_IP, IP_HDRINCL, (char *)&o, sizeof(int)))
-	Pike_error("UDP->bind: setsockopt IP_HDRINCL failed\n");
+	Pike_error("Stdio.UDP->bind: setsockopt IP_HDRINCL failed\n");
 #endif /* IP_HDRINCL */
 
   THREADS_ALLOW_UID();
@@ -269,12 +263,12 @@ static void udp_bind(INT32 args)
   {
     fd_close(fd);
     THIS->my_errno=errno;
-    Pike_error("UDP->bind: failed to bind to port %d\n",
+    Pike_error("Stdio.UDP->bind: failed to bind to port %d\n",
 	       (unsigned INT16)Pike_sp[-args].u.integer);
     return;
   }
 
-  FD=fd;
+  change_fd_for_box (&THIS->box, fd);
   pop_n_elems(args);
   ref_push_object(THISOBJ);
 }
@@ -438,7 +432,7 @@ void udp_read(INT32 args)
   pop_n_elems(args);
   fd = FD;
   if (FD < 0)
-    Pike_error("UDP: not open\n");
+    Pike_error("Stdio.UDP->read: not open\n");
   do {
     THREADS_ALLOW();
     res = fd_recvfrom(fd, buffer, UDP_BUFFSIZE, flags,
@@ -449,7 +443,7 @@ void udp_read(INT32 args)
     check_threads_etc();
   } while((res==-1) && (e==EINTR));
 
-  THIS->my_errno=e;
+  THIS->my_errno=errno=e;
 
   if(res<0)
   {
@@ -459,13 +453,15 @@ void udp_read(INT32 args)
        case WSAEBADF:
 #endif
        case EBADF:
-	  set_read_callback( FD, 0, 0 );
+	  if (THIS->box.backend)
+	    set_fd_callback_events (&THIS->box, 0);
 	  Pike_error("Socket closed\n");
 #ifdef ESTALE
        case ESTALE:
 #endif
        case EIO:
-	  set_read_callback( FD, 0, 0 );
+	  if (THIS->box.backend)
+	    set_fd_callback_events (&THIS->box, 0);
 	  Pike_error("I/O error\n");
        case ENOMEM:
 #ifdef ENOSR
@@ -544,7 +540,7 @@ void udp_sendto(INT32 args)
     }
     if(Pike_sp[3-args].u.integer & ~3) {
       Pike_error("Illegal 'flags' value passed to "
-		 "UDP->send(string to, int|string port, string message, int flags)\n");
+		 "Stdio.UDP->send(string to, int|string port, string message, int flags)\n");
     }
   }
 
@@ -576,7 +572,8 @@ void udp_sendto(INT32 args)
 #endif
 	  Pike_error("Too big message\n");
        case EBADF:
-	  set_read_callback( FD, 0, 0 );
+	  if (THIS->box.backend)
+	    set_fd_callback_events (&THIS->box, 0);
 	  Pike_error("Socket closed\n");
        case ENOMEM:
 #ifdef ENOSR
@@ -586,7 +583,8 @@ void udp_sendto(INT32 args)
        case EINVAL:
 #ifdef ENOTSOCK
        case ENOTSOCK:
-	  set_read_callback( FD, 0, 0 );
+	  if (THIS->box.backend)
+	    set_fd_callback_events (&THIS->box, 0);
 	  Pike_error("Not a socket!!!\n");
 #endif
        case EWOULDBLOCK:
@@ -598,14 +596,15 @@ void udp_sendto(INT32 args)
 }
 
 
-void zero_udp(struct object *ignored)
+void zero_udp(struct object *o)
 {
-  MEMSET(THIS, 0, sizeof(struct udp_storage));
-  THIS->read_callback.type=PIKE_T_INT;
+  THIS->box.backend = NULL;
+  THIS->box.ref_obj = o;
   FD = -1;
-
+  THIS->my_errno = 0;
   THIS->type=SOCK_DGRAM;
   THIS->protocol=0;
+  /* map_variable handles read_callback. */
 }
 
 void exit_udp(struct object *ignored)
@@ -614,28 +613,32 @@ void exit_udp(struct object *ignored)
 
   if(fd != -1)
   {
-    set_backend_for_fd(fd, NULL);
-
     THREADS_ALLOW();
     fd_close(fd);
     THREADS_DISALLOW();
   }
-  free_svalue(& THIS->read_callback );
-  THIS->read_callback.type = PIKE_T_INT; /* Avoid uncertainty. */
+
+  unhook_fd_callback_box (&THIS->box);
+
+  /* map_variable handles read_callback. */
 }
 
-#define THIS_DATA ((struct udp_storage *)data)
-
-static int udp_read_callback( int fd, void *data )
+static int got_udp_event (struct fd_callback_box *box, int event)
 {
-  check_destructed (&THIS_DATA->read_callback);
-  if(UNSAFE_IS_ZERO(&THIS_DATA->read_callback))
-    set_read_callback(THIS_DATA->fd, 0, 0);
+  struct udp_storage *u = (struct udp_storage *) box;
+#ifdef PIKE_DEBUG
+  if (event != PIKE_FD_READ)
+    Pike_fatal ("Got unexpected event %d.\n", event);
+#endif
+
+  u->my_errno = errno;		/* Propagate backend setting. */
+
+  check_destructed (&u->read_callback);
+  if (UNSAFE_IS_ZERO (&u->read_callback))
+    set_fd_callback_events (&u->box, 0);
   else {
-    THIS_DATA->my_errno = errno; /* Propagate the backend setting. */
-    apply_svalue(& THIS_DATA->read_callback, 0);
-    if (Pike_sp[-1].type == PIKE_T_INT &&
-	Pike_sp[-1].u.integer == -1) {
+    apply_svalue (&u->read_callback, 0);
+    if (Pike_sp[-1].type == PIKE_T_INT && Pike_sp[-1].u.integer == -1) {
       pop_stack();
       return -1;
     }
@@ -646,23 +649,23 @@ static int udp_read_callback( int fd, void *data )
 
 static void udp_set_read_callback(INT32 args)
 {
-  if(FD < 0)
-    Pike_error("File is not open.\n");
-
+  struct udp_storage *u = THIS;
   if(args < 1)
-    SIMPLE_TOO_FEW_ARGS_ERROR("UDP->set_read_callback", 1);
+    SIMPLE_TOO_FEW_ARGS_ERROR("Stdio.UDP->set_read_callback", 1);
   if(args > 1)
     pop_n_elems(args-1);
 
+  assign_svalue(& u->read_callback, Pike_sp-1);
   if (UNSAFE_IS_ZERO (Pike_sp - 1)) {
-    free_svalue (&THIS->read_callback);
-    THIS->read_callback.type = PIKE_T_INT;
-    THIS->read_callback.u.integer = 0;
-    set_read_callback (FD, 0, 0);
+    if (u->box.backend)
+      set_fd_callback_events (&u->box, 0);
   }
   else {
-    assign_svalue(& THIS->read_callback, Pike_sp-1);
-    set_read_callback(FD, udp_read_callback, THIS);
+    if (!u->box.backend)
+      INIT_FD_CALLBACK_BOX (&u->box, default_backend, u->box.ref_obj,
+			    u->box.fd, PIKE_BIT_FD_READ, got_udp_event);
+    else
+      set_fd_callback_events (&u->box, PIKE_BIT_FD_READ);
   }
 
   pop_stack();
@@ -740,7 +743,7 @@ static void udp_connect(INT32 args)
      if(FD < 0)
      {
 	THIS->my_errno=errno;
-	Pike_error("UDP->connect: failed to create socket\n");
+	Pike_error("Stdio.UDP->connect: failed to create socket\n");
      }
      set_close_on_exec(FD, 1);
   }
@@ -753,7 +756,7 @@ static void udp_connect(INT32 args)
   if(tmp < 0)
   {
     THIS->my_errno=errno;
-    Pike_error("UDP->connect: failed to connect\n");
+    Pike_error("Stdio.UDP->connect: failed to connect\n");
   }else{
     THIS->my_errno=0;
     pop_n_elems(args);
@@ -771,12 +774,12 @@ static void udp_query_address(INT32 args)
 {
   PIKE_SOCKADDR addr;
   int i;
-  int fd = THIS->fd;
+  int fd = FD;
   char buffer[496],*q;
   ACCEPT_SIZE_T len;
 
   if(fd <0)
-    Pike_error("UDP->query_address(): Port not bound yet.\n");
+    Pike_error("Stdio.UDP->query_address(): Port not bound yet.\n");
 
   THREADS_ALLOW();
 
@@ -805,6 +808,55 @@ static void udp_query_address(INT32 args)
   push_text(buffer);
 }
 
+/*! @decl void set_backend (Pike.Backend backend)
+ *!
+ *! Set the backend used for the read callback.
+ *!
+ *! @note
+ *! The backend keeps a reference to this object as long as there can
+ *! be calls to the read callback, but this object does not keep a
+ *! reference to the backend.
+ *!
+ *! @seealso
+ *!   @[query_backend]
+ */
+static void udp_set_backend (INT32 args)
+{
+  struct udp_storage *u = THIS;
+  struct Backend_struct *backend;
+
+  if (!args)
+    SIMPLE_TOO_FEW_ARGS_ERROR ("Stdio.UDP->set_backend", 1);
+  if (Pike_sp[-args].type != PIKE_T_OBJECT)
+    SIMPLE_BAD_ARG_ERROR ("Stdio.UDP->set_backend", 1, "object(Pike.Backend)");
+  backend = (struct Backend_struct *)
+    get_storage (Pike_sp[-args].u.object, Backend_program);
+  if (!backend)
+    SIMPLE_BAD_ARG_ERROR ("Stdio.UDP->set_backend", 1, "object(Pike.Backend)");
+
+  if (u->box.backend)
+    change_backend_for_box (&u->box, backend);
+  else
+    INIT_FD_CALLBACK_BOX (&u->box, backend, u->box.ref_obj,
+			  u->box.fd, 0, got_udp_event);
+
+  pop_n_elems (args - 1);
+}
+
+/*! @decl Pike.Backend query_backend()
+ *!
+ *! Return the backend used for the read callback.
+ *!
+ *! @seealso
+ *!   @[set_backend]
+ */
+static void udp_query_backend (INT32 args)
+{
+  pop_n_elems (args);
+  ref_push_object (get_backend_obj (THIS->box.backend ? THIS->box.backend :
+				    default_backend));
+}
+
 /*! @decl int errno()
  *!
  *! Returns the error code for the last command on this object.
@@ -826,9 +878,9 @@ static void udp_set_type(INT32 args)
    INT_TYPE type=0;
    INT_TYPE proto=0;
    if (args<2)
-      get_all_args("UDP->set_type",args,"%i",&type);
+      get_all_args("Stdio.UDP->set_type",args,"%i",&type);
    else
-      get_all_args("UDP->set_type",args,"%i%i",&type,&proto);
+      get_all_args("Stdio.UDP->set_type",args,"%i%i",&type,&proto);
 
    THIS->type=(int)type;
    THIS->protocol=(int)proto;
@@ -910,6 +962,9 @@ void init_udp(void)
 
   ADD_FUNCTION("set_blocking",udp_set_blocking,tFunc(tVoid,tObj), 0 );
   ADD_FUNCTION("query_address",udp_query_address,tFunc(tNone,tStr),0);
+
+  ADD_FUNCTION ("set_backend", udp_set_backend, tFunc(tObj,tVoid), 0);
+  ADD_FUNCTION ("query_backend", udp_query_backend, tFunc(tVoid,tObj), 0);
 
   ADD_FUNCTION("errno",udp_errno,tFunc(tNone,tInt),0);
 

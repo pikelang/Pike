@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: socket.c,v 1.84 2004/04/03 22:47:06 mast Exp $
+|| $Id: socket.c,v 1.85 2004/04/05 01:36:05 mast Exp $
 */
 
 #define NO_PIKE_SHORTHAND
@@ -24,7 +24,7 @@
 #include "file_machine.h"
 #include "file.h"
 
-RCSID("$Id: socket.c,v 1.84 2004/04/03 22:47:06 mast Exp $");
+RCSID("$Id: socket.c,v 1.85 2004/04/05 01:36:05 mast Exp $");
 
 #ifdef HAVE_SYS_TYPE_H
 #include <sys/types.h>
@@ -71,36 +71,62 @@ RCSID("$Id: socket.c,v 1.84 2004/04/03 22:47:06 mast Exp $");
 
 struct port
 {
-  int fd;
-  int xref;
+  struct fd_callback_box box;	/* Must be first. */
   int my_errno;
-  struct svalue accept_callback;
-  struct svalue id;
+  struct svalue accept_callback; /* Mapped. */
+  struct svalue id;		/* Mapped. */
 };
 
 #undef THIS
 #define THIS ((struct port *)(Pike_fp->current_storage))
-static int port_accept_callback(int fd,void *data);
 
-static void do_close(struct port *p, struct object *o)
+static int got_port_event (struct fd_callback_box *box, int event)
 {
- retry:
-  if(p->fd >= 0)
-  {
-    set_backend_for_fd(p->fd, NULL);
+  struct port *p = (struct port *) box;
+#ifdef PIKE_DEBUG
+#ifndef __NT__
+  if(!query_nonblocking(p->box.fd))
+    Pike_fatal("Port is in blocking mode in port accept callback!!!\n");
+#endif
+  if (event != PIKE_FD_READ)
+    Pike_fatal ("Got unexpected event %d.\n", event);
+#endif
 
-    if(fd_close(p->fd) < 0)
+  p->my_errno = errno;		/* Propagate backend setting. */
+  push_svalue (&p->id);
+  apply_svalue(& p->accept_callback, 1);
+  pop_stack();
+  return 0;
+}
+
+static void assign_accept_cb (struct port *p, struct svalue *cb)
+{
+  assign_svalue(& p->accept_callback, cb);
+  if (UNSAFE_IS_ZERO (cb)) {
+    if (p->box.backend)
+      set_fd_callback_events (&p->box, 0);
+  }
+  else {
+    if (!p->box.backend)
+      INIT_FD_CALLBACK_BOX (&p->box, default_backend, p->box.ref_obj,
+			    p->box.fd, PIKE_BIT_FD_READ, got_port_event);
+    else
+      set_fd_callback_events (&p->box, PIKE_BIT_FD_READ);
+    set_nonblocking(p->box.fd,1);
+  }
+}
+
+static void do_close(struct port *p)
+{
+  retry:
+  if(p->box.fd >= 0)
+  {
+    if(fd_close(p->box.fd) < 0)
       if(errno == EINTR) {
 	check_threads_etc();
 	goto retry;
       }
-  }
-
-  p->fd=-1;
-  while(p->xref) 
-  {
-    p->xref--;
-    free_object(o);
+    change_fd_for_box (&p->box, -1);
   }
 }
 
@@ -147,24 +173,6 @@ static void port_errno(INT32 args)
   push_int(THIS->my_errno);
 }
 
-
-static int port_accept_callback(int fd,void *data)
-{
-  struct port *f;
-  f=(struct port *)data;
-#ifndef __NT__
-#ifdef PIKE_DEBUG
-  if(!query_nonblocking(f->fd))
-    Pike_fatal("Port is in blocking mode in port accept callback!!!\n");
-#endif
-#endif
-
-  assign_svalue_no_free(Pike_sp++, &f->id);
-  apply_svalue(& f->accept_callback, 1);
-  pop_stack();
-  return 0;
-}
-
 /*! @decl int listen_fd(int fd, void|function accept_callback)
  *!
  *! This function does the same as port->bind, except that instead
@@ -180,8 +188,9 @@ static int port_accept_callback(int fd,void *data)
  */
 static void port_listen_fd(INT32 args)
 {
+  struct port *p = THIS;
   int fd;
-  do_close(THIS,Pike_fp->current_object);
+  do_close(p);
 
   if(args < 1)
     SIMPLE_TOO_FEW_ARGS_ERROR("Port->bind_fd", 1);
@@ -193,7 +202,7 @@ static void port_listen_fd(INT32 args)
 
   if(fd<0)
   {
-    THIS->my_errno=EBADF;
+    errno = p->my_errno=EBADF;
     pop_n_elems(args);
     push_int(0);
     return;
@@ -201,26 +210,15 @@ static void port_listen_fd(INT32 args)
 
   if(fd_listen(fd, 16384) < 0)
   {
-    THIS->my_errno=errno;
+    p->my_errno=errno;
     pop_n_elems(args);
     push_int(0);
     return;
   }
 
-  if(args > 1)
-  {
-    assign_svalue(& THIS->accept_callback, Pike_sp+1-args);
-    set_nonblocking(fd,1);
-    if(!SAFE_IS_ZERO(& THIS->accept_callback))
-    {
-      add_ref(Pike_fp->current_object);
-      THIS->xref++;
-      set_read_callback(fd, port_accept_callback, (void *)THIS);
-    }
-  }
-
-  THIS->fd=fd;
-  THIS->my_errno=0;
+  change_fd_for_box (&p->box, fd);
+  if(args > 1) assign_accept_cb (p, Pike_sp+1-args);
+  p->my_errno=0;
   pop_n_elems(args);
   push_int(1);
 }
@@ -241,10 +239,11 @@ static void port_listen_fd(INT32 args)
  */
 static void port_bind(INT32 args)
 {
+  struct port *p = THIS;
   PIKE_SOCKADDR addr;
   int addr_len,fd,tmp;
 
-  do_close(THIS,Pike_fp->current_object);
+  do_close(p);
 
   if(args < 1)
     SIMPLE_TOO_FEW_ARGS_ERROR("Port->bind", 1);
@@ -265,7 +264,7 @@ static void port_bind(INT32 args)
 
   if(fd < 0)
   {
-    THIS->my_errno=errno;
+    p->my_errno=errno;
     pop_n_elems(args);
     push_int(0);
     return;
@@ -276,9 +275,9 @@ static void port_bind(INT32 args)
     int o=1;
     if(fd_setsockopt(fd, SOL_SOCKET, SO_REUSEADDR, (char *)&o, sizeof(int)) < 0)
     {
-      THIS->my_errno=errno;
+      p->my_errno=errno;
       while (fd_close(fd) && errno == EINTR) {}
-      errno = THIS->my_errno;
+      errno = p->my_errno;
       pop_n_elems(args);
       push_int(0);
       return;
@@ -294,29 +293,17 @@ static void port_bind(INT32 args)
 
   if(tmp)
   {
-    THIS->my_errno=errno;
+    p->my_errno=errno;
     while (fd_close(fd) && errno == EINTR) {}
-    errno = THIS->my_errno;
+    errno = p->my_errno;
     pop_n_elems(args);
     push_int(0);
     return;
   }
 
-
-  if(args > 1)
-  {
-    assign_svalue(& THIS->accept_callback, Pike_sp+1-args);
-    if(!SAFE_IS_ZERO(& THIS->accept_callback))
-    {
-      add_ref(Pike_fp->current_object);
-      THIS->xref++;
-      set_read_callback(fd, port_accept_callback, (void *)THIS);
-      set_nonblocking(fd,1);
-    }
-  }
-
-  THIS->fd=fd;
-  THIS->my_errno=0;
+  change_fd_for_box (&p->box, fd);
+  if(args > 1) assign_accept_cb (p, Pike_sp+1-args);
+  p->my_errno=0;
   pop_n_elems(args);
   push_int(1);
 }
@@ -328,7 +315,7 @@ static void port_bind(INT32 args)
 static void port_close (INT32 args)
 {
   pop_n_elems (args);
-  do_close (THIS, Pike_fp->current_object);
+  do_close (THIS);
 }
 
 /* @decl void create("stdin", void|function accept_callback)
@@ -351,30 +338,22 @@ static void port_create(INT32 args)
       port_bind(args); /* pops stack */
       return;
     }else{
+      struct port *p = THIS;
+
       if(Pike_sp[-args].type != PIKE_T_STRING)
 	SIMPLE_TOO_FEW_ARGS_ERROR("Port->create", 1);
 
       if(strcmp("stdin",Pike_sp[-args].u.string->str))
 	Pike_error("port->create() called with string other than 'stdin'\n");
 
-      do_close(THIS,Pike_fp->current_object);
-      THIS->fd=0;
+      do_close(p);
+      change_fd_for_box (&p->box, 0);
 
-      if(fd_listen(THIS->fd, 16384) < 0)
+      if(fd_listen(p->box.fd, 16384) < 0)
       {
-	THIS->my_errno=errno;
+	p->my_errno=errno;
       }else{
-	if(args > 1)
-	{
-	  assign_svalue(& THIS->accept_callback, Pike_sp+1-args);
-	  if(!SAFE_IS_ZERO(& THIS->accept_callback))
-	  {
-	    add_ref(Pike_fp->current_object);
-	    THIS->xref++;
-	    set_read_callback(THIS->fd, port_accept_callback, (void *)THIS);
-	    set_nonblocking(THIS->fd,1);
-	  }
-	}
+	if(args > 1) assign_accept_cb (p, Pike_sp+1-args);
       }
     }
   }
@@ -394,20 +373,20 @@ static void port_accept(INT32 args)
   struct object *o;
   ACCEPT_SIZE_T len=0;
 
-  if(THIS->fd < 0)
+  if(this->box.fd < 0)
     Pike_error("port->accept(): Port not open.\n");
 
   THREADS_ALLOW();
   len=sizeof(addr);
   do {
-    fd=fd_accept(this->fd, (struct sockaddr *)&addr, &len);
+    fd=fd_accept(this->box.fd, (struct sockaddr *)&addr, &len);
     err = errno;
   } while (fd < 0 && err == EINTR);
   THREADS_DISALLOW();
 
   if(fd < 0)
   {
-    THIS->my_errno=errno = err;
+    this->my_errno=errno = err;
     pop_n_elems(args);
     push_int(0);
     return;
@@ -435,11 +414,11 @@ static void socket_query_address(INT32 args)
 #endif
   ACCEPT_SIZE_T len;
 
-  if(THIS->fd <0)
+  if(THIS->box.fd <0)
     Pike_error("socket->query_address(): Socket not bound yet.\n");
 
   len=sizeof(addr);
-  i=fd_getsockname(THIS->fd,(struct sockaddr *)&addr,&len);
+  i=fd_getsockname(THIS->box.fd,(struct sockaddr *)&addr,&len);
   pop_n_elems(args);
   if(i < 0 || len < (int)sizeof(addr.ipv4))
   {
@@ -461,29 +440,70 @@ static void socket_query_address(INT32 args)
   push_text(buffer);
 }
 
+/*! @decl void set_backend (Pike.Backend backend)
+ *!
+ *! Set the backend used for the accept callback.
+ *!
+ *! @note
+ *! The backend keeps a reference to this object as long as the port
+ *! is accepting connections, but this object does not keep a
+ *! reference to the backend.
+ *!
+ *! @seealso
+ *!   @[query_backend]
+ */
+static void port_set_backend (INT32 args)
+{
+  struct port *p = THIS;
+  struct Backend_struct *backend;
+
+  if (!args)
+    SIMPLE_TOO_FEW_ARGS_ERROR ("Stdio.Port->set_backend", 1);
+  if (Pike_sp[-args].type != PIKE_T_OBJECT)
+    SIMPLE_BAD_ARG_ERROR ("Stdio.Port->set_backend", 1, "object(Pike.Backend)");
+  backend = (struct Backend_struct *)
+    get_storage (Pike_sp[-args].u.object, Backend_program);
+  if (!backend)
+    SIMPLE_BAD_ARG_ERROR ("Stdio.Port->set_backend", 1, "object(Pike.Backend)");
+
+  if (p->box.backend)
+    change_backend_for_box (&p->box, backend);
+  else
+    INIT_FD_CALLBACK_BOX (&p->box, backend, p->box.ref_obj,
+			  p->box.fd, 0, got_port_event);
+
+  pop_n_elems (args - 1);
+}
+
+/*! @decl Pike.Backend query_backend()
+ *!
+ *! Return the backend used for the accept callback.
+ *!
+ *! @seealso
+ *!   @[set_backend]
+ */
+static void port_query_backend (INT32 args)
+{
+  pop_n_elems (args);
+  ref_push_object (get_backend_obj (THIS->box.backend ? THIS->box.backend :
+				    default_backend));
+}
+
 
 static void init_port_struct(struct object *o)
 {
-  THIS->fd=-1;
-  THIS->xref=0;
-  THIS->id.type=PIKE_T_INT;
-#ifdef __CHECKER__
-  THIS->id.subtype=0;
-#endif
-  THIS->id.u.integer=0;
-  THIS->accept_callback.type=PIKE_T_INT;
+  THIS->box.backend = NULL;
+  THIS->box.ref_obj = o;
+  THIS->box.fd = -1;
   THIS->my_errno=0;
+  /* map_variable takes care of id and accept_callback. */
 }
 
 static void exit_port_struct(struct object *o)
 {
-  do_close(THIS,o);
-#if 0
-  free_svalue(& THIS->id);
-  free_svalue(& THIS->accept_callback);
-  THIS->id.type=PIKE_T_INT;
-  THIS->accept_callback.type=PIKE_T_INT;
-#endif
+  do_close(THIS);
+  unhook_fd_callback_box (&THIS->box);
+  /* map_variable takes care of id and accept_callback. */
 }
 
 /*! @endclass
@@ -523,6 +543,8 @@ void port_setup_program(void)
   ADD_FUNCTION("accept",port_accept,tFunc(tNone,tObjIs_STDIO_FD),0);
   /* function(void|string|int,void|mixed,void|string:void) */
   ADD_FUNCTION("create",port_create,tFunc(tOr3(tVoid,tStr,tInt) tOr(tVoid,tMix) tOr(tVoid,tStr),tVoid),0);
+  ADD_FUNCTION ("set_backend", port_set_backend, tFunc(tObj,tVoid), 0);
+  ADD_FUNCTION ("query_backend", port_query_backend, tFunc(tVoid,tObj), 0);
 
   set_init_callback(init_port_struct);
   set_exit_callback(exit_port_struct);
@@ -535,5 +557,5 @@ int fd_from_portobject( struct object *p )
 {
   struct port *po = (struct port *)get_storage( p, port_program );
   if(!po) return -1;
-  return po->fd;
+  return po->box.fd;
 }

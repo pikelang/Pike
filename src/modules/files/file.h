@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: file.h,v 1.34 2004/04/03 23:33:22 mast Exp $
+|| $Id: file.h,v 1.35 2004/04/05 01:36:05 mast Exp $
 */
 
 #ifndef FILE_H
@@ -26,28 +26,24 @@
 #endif
 
 #include "pike_netlib.h"
+#include "backend.h"
 
 struct my_file
 {
+  struct fd_callback_box box;	/* Must be first. */
+  /* The box is hooked in whenever box.backend is set. */
+
+  struct svalue event_cbs[PIKE_FD_NUM_EVENTS];
+  /* Callbacks can be set without having the corresponding bits in
+   * box.events, but not the other way around. */
+
   short open_mode;
   short flags;
-#ifdef PIKE_DEBUG
-  /* It can be useful to have this mapped as a pike variable for debug
-   * messages. */
-  INT_TYPE fd;
-#else
-  FD fd;
-#endif
   int my_errno;
-  struct svalue read_callback;
-  struct svalue write_callback;
-  struct svalue read_oob_callback;
-  struct svalue write_oob_callback;
 
-#if defined(HAVE_FD_FLOCK) || defined(HAVE_FD_LOCKF) 
+#if defined(HAVE_FD_FLOCK) || defined(HAVE_FD_LOCKF)
   struct object *key;
 #endif
-  struct object *myself;
 };
 
 #ifdef _REENTRANT
@@ -103,12 +99,6 @@ extern struct program *file_ref_program;
 
 extern int get_inet_addr(PIKE_SOCKADDR *addr,char *name,char *service, INT_TYPE port, int udp);
 
-#define CBFUNCS(X) \
-static int PIKE_CONCAT(file_,X) (int fd, void *data);		\
-static void PIKE_CONCAT(file_set_,X) (INT32 args);		\
-static void PIKE_CONCAT(file_query_,X) (INT32 args);		\
-
-
 #ifdef _REENTRANT
 void low_do_sendfile(struct pike_sendfile *);
 #endif /* _REENTRANT */
@@ -116,9 +106,12 @@ void low_do_sendfile(struct pike_sendfile *);
 /* Prototypes begin here */
 void my_set_close_on_exec(int fd, int to);
 void do_set_close_on_exec(void);
+
+#define CBFUNCS(X) \
+static void PIKE_CONCAT(file_set_,X) (INT32 args); \
+static void PIKE_CONCAT(file_query_,X) (INT32 args);
 CBFUNCS(read_callback)
 CBFUNCS(write_callback)
-
 CBFUNCS(read_oob_callback)
 CBFUNCS(write_oob_callback)
 
@@ -152,7 +145,6 @@ void push_stat(PIKE_STAT_T *s);
 #define FILE_SET_CLOSE_ON_EXEC  0x0800
 
 /* flags */
-#define FILE_HAS_INTERNAL_REF   0x0001
 #define FILE_NO_CLOSE_ON_DESTRUCT 0x0002
 #define FILE_LOCK_FD		0x0004
 #define FILE_NOT_OPENED         0x0010

@@ -2,11 +2,11 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: termios.c,v 1.22 2004/01/22 23:14:27 nilsson Exp $
+|| $Id: termios.c,v 1.23 2004/04/05 01:36:05 mast Exp $
 */
 
 #include "global.h"
-RCSID("$Id: termios.c,v 1.22 2004/01/22 23:14:27 nilsson Exp $");
+RCSID("$Id: termios.c,v 1.23 2004/04/05 01:36:05 mast Exp $");
 #include "file_machine.h"
 
 #if defined(HAVE_TERMIOS_H)
@@ -121,7 +121,7 @@ RCSID("$Id: termios.c,v 1.22 2004/01/22 23:14:27 nilsson Exp $");
 
 #undef THIS
 #define THIS ((struct my_file *)(Pike_fp->current_storage))
-#define FD (THIS->fd)
+#define FD (THIS->box.fd)
 #define ERRNO (THIS->my_errno)
 
 void file_tcgetattr(INT32 args)
