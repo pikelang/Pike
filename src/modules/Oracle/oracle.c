@@ -1,5 +1,5 @@
 /*
- * $Id: oracle.c,v 1.40 2000/09/29 20:18:16 hubbe Exp $
+ * $Id: oracle.c,v 1.41 2000/10/01 08:55:37 hubbe Exp $
  *
  * Pike interface to Oracle databases.
  *
@@ -47,7 +47,7 @@
 #include <oci.h>
 #include <math.h>
 
-RCSID("$Id: oracle.c,v 1.40 2000/09/29 20:18:16 hubbe Exp $");
+RCSID("$Id: oracle.c,v 1.41 2000/10/01 08:55:37 hubbe Exp $");
 
 
 #define BLOB_FETCH_CHUNK 16384
@@ -258,7 +258,7 @@ void *parent_storage(int depth)
 #ifdef PIKE_DEBUG
 void *check_storage(void *storage, unsigned long magic, char *prog)
 {
-  if( magic != *((unsigned long *)storage))
+  if( storage && magic != *((unsigned long *)storage))
   {
     fprintf(stderr, "Wrong magic number! expected a %s\n",prog);
     fprintf(stderr, "Expected %lx, got %lx\n",magic,*((unsigned long *)storage));
