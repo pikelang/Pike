@@ -51,7 +51,7 @@ in the <b>master object</b>:
 <p>
 Aside from the above functions, which are expected from the Pike binary,
 the master object is also expected to provide functions used by Pike
-scripts. The current master add the following global functions:
+scripts. The current master object adds the following global functions:
 <dl><dd>
 	add_include_path,
 	remove_include_path,
@@ -154,7 +154,7 @@ A <tt>struct svalue</tt> has three members:
 <dt><tt>union anything u</tt>
 <dd>This union contains the data. Depending on what the <tt>type</tt> member
     is, you can access one of the following union members:
-<!-- FIXME: these needs to be linked to the approperiate chapters -->
+<!-- FIXME: these need to be linked to the approperiate chapters -->
 <table border=1>
 <tr><th><tt>type</tt> is:</th><th>member to use:</th><th>notes:</th></tr>
 <tr><td><tt>T_INT</tt></td><td><tt>INT_TYPE integer</tt></td><td></td></tr>
@@ -165,7 +165,7 @@ A <tt>struct svalue</tt> has three members:
 <tr><td><tt>T_MULTISET</tt></td><td><tt>struct multiset *multiset</tt></td><td></td></tr>
 <tr><td><tt>T_OBJECT</tt></td><td><tt>struct object *object</tt></td><td></td></tr>
 <tr><td><tt>T_PROGRAM</tt></td><td><tt>struct program *program</tt></td><td></td></tr>
-<tr><td><tt>T_FUNCTION</tt></td><td><tt>struct callble *efun</tt></td><td>If <tt>subtype == FUNCTION_BUILTIN</tt></td></tr>
+<tr><td><tt>T_FUNCTION</tt></td><td><tt>struct callable *efun</tt></td><td>If <tt>subtype == FUNCTION_BUILTIN</tt></td></tr>
 <tr><td><tt>T_FUNCTION</tt></td><td><tt>struct object *object</tt></td><td>If <tt>subtype != FUNCTION_BUILTIN</tt></td></tr>
 </table>
 </dl>
@@ -359,7 +359,7 @@ A <tt>struct pike_string</tt> has these members:
 <dd>This points to the next string in the hash table. Internal use only.
 <dt><tt>int size_shift;</tt>
 <dd>This represents the size of the characters in the string. Currently
-    size_shift has three valid values: 0, 1 and 2. These values means that
+    size_shift has three valid values: 0, 1 and 2. These values mean that
     the characters in the string are 1, 2 and 4 bytes long respectively.
 <dt><tt>char str[1];</tt>
 <dd>This is the actual data. Note that you should never use this member
@@ -424,7 +424,8 @@ to you to free with <tt>free_string</tt> unless you send the string to
 a function such as <tt>push_string</tt> which eats the reference for you. 
 </man_description>
 <man_see>
-free_string, push_string, begin_shared_string, make_shared_binary_string
+free_string, push_string, begin_shared_string, make_shared_binary_string,
+make_shared_string1, make_shared_string2
 </man_see>
 </function>
 
@@ -441,7 +442,8 @@ This allows for strings with zeros in them. It is also more efficient to
 call this routine if you already know the length of the string <i>str</i>.
 </man_description>
 <man_see>
-free_string, push_string, begin_shared_string, make_shared_binary_string
+free_string, push_string, begin_shared_string, make_shared_string,
+make_shared_binary_string1, make_shared_binary_string2
 </man_see>
 </function>
 
@@ -461,7 +463,7 @@ If after calling this function you decide that you do not need this string
 after all, you can simply call <tt>free</tt> on the returned string to
 free it. It is also possible to call
 <tt>free_string(end_shared_string(<i>s</i>))</tt> but that would be much less
-effective.
+efficient.
 </man_description>
 <man_example language=c>
 	// This is in effect equal to s=make_shared_string("test")
@@ -473,7 +475,8 @@ effective.
 	s=end_shared_string(s);
 </man_example>
 <man_see>
-free_string, push_string, make_shared_string, end_shared_string
+begin_wide_shared_string, free_string, push_string,
+make_shared_string, end_shared_string
 </man_see>
 </function>
 
@@ -507,10 +510,9 @@ struct pike_string *begin_wide_shared_string(INT32 <i>len</i>, int <i>size_shift
 <man_description>
 This function is a more generic version of <tt>begin_shared_string</tt>.
 It allocates space for a string of length <i>len</i> where each character
-is <tt>1 &lt;&;lt; <i>size_shift</i></tt> bytes. As with <tt>begin_shared_string</tt>
-it is your responsibility to initialize the string and call
-<tt>end_shared_string</tt>.
-on it.
+is <tt>1 &lt;&lt; <i>size_shift</i></tt> bytes. As with <tt>begin_shared_string</tt>
+it is your responsibility to initialize the string and to call
+<tt>end_shared_string</tt> on it.
 </man_description>
 <man_example language=c>
 	struct pike_string *s=begin_wide_shared_string(1,2);
@@ -537,7 +539,7 @@ struct pike_string *make_shared_binary_string2(p_whcar2 *<i>str</i>,INT32 <i>len
 <man_description>
 These functions are the wide string equivialents of
 <tt>make_shared_string</tt> and <tt>make_shared_binary_string</tt>.
-Of course, the functions ending in 1 use 2-byte characters and the ones
+The functions ending in 1 use 2-byte characters and the ones
 ending in 2 use 4-byte characters.
 </man_description>
 <man_see>
