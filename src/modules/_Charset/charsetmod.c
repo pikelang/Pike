@@ -3,7 +3,7 @@
 #endif /* HAVE_CONFIG_H */
 
 #include "global.h"
-RCSID("$Id: charsetmod.c,v 1.11 1999/03/07 01:12:31 grubba Exp $");
+RCSID("$Id: charsetmod.c,v 1.12 1999/04/27 01:45:03 marcus Exp $");
 #include "program.h"
 #include "interpret.h"
 #include "stralloc.h"
@@ -32,6 +32,7 @@ static struct program *std_16bite_program = NULL;
 struct std_cs_stor { 
   struct string_builder strbuild;
   struct pike_string *retain, *replace;
+  struct svalue repcb;
 };
 
 struct std_rfc_stor {
@@ -70,7 +71,8 @@ static void f_create(INT32 args)
 {
   struct std_cs_stor *s = (struct std_cs_stor *)fp->current_storage;
 
-  check_all_args("create()", args, BIT_STRING|BIT_VOID|BIT_INT, 0);
+  check_all_args("create()", args, BIT_STRING|BIT_VOID|BIT_INT,
+		 BIT_FUNCTION|BIT_VOID|BIT_INT);
 
   if(args>0 && sp[-args].type == T_STRING) {
     if(s->replace != NULL)
@@ -78,8 +80,22 @@ static void f_create(INT32 args)
     add_ref(s->replace = sp[-args].u.string);
   }
 
+  if(args>1 && sp[1-args].type == T_FUNCTION)
+    assign_svalue(&s->repcb, &sp[1-args]);
+
   pop_n_elems(args);
   push_int(0);
+}
+
+static void f_set_repcb(INT32 args)
+{
+  struct std_cs_stor *s = (struct std_cs_stor *)fp->current_storage;
+
+  check_all_args("set_replacement_callback()", args,
+		 BIT_FUNCTION|BIT_INT, 0);
+
+  if(args>0)
+    assign_svalue(&s->repcb, &sp[-args]);
 }
 
 static void f_drain(INT32 args)
@@ -372,7 +388,8 @@ static void f_rfc1345(INT32 args)
   p_wchar1 *tabl;
 
   check_all_args("rfc1345()", args, BIT_STRING, BIT_INT|BIT_VOID,
-		 BIT_STRING|BIT_VOID|BIT_INT, 0);
+		 BIT_STRING|BIT_VOID|BIT_INT, BIT_FUNCTION|BIT_VOID|BIT_INT,
+		 0);
 
   str = sp[-args].u.string;
 
@@ -399,8 +416,7 @@ static void f_rfc1345(INT32 args)
 	
 	if(hi2) {
 	  struct std16e_stor *s16;
-	  s16 = push_std_16bite((args>2 && sp[2-args].type==T_STRING?args-2:0),
-				args, lowtrans, 65536);
+	  s16 = push_std_16bite((args>2? args-2:0), args, lowtrans, 65536);
 	  
 	  s16->lowtrans = lowtrans;
 	  s16->lo = lowtrans;
@@ -415,8 +431,7 @@ static void f_rfc1345(INT32 args)
 	      }
 	} else {
 	  struct std8e_stor *s8;
-	  s8 = push_std_8bite((args>2 && sp[2-args].type==T_STRING? args-2:0),
-			      args, lowtrans, 65536);
+	  s8 = push_std_8bite((args>2? args-2:0), args, lowtrans, 65536);
 	  
 	  s8->lowtrans = lowtrans;
 	  s8->lo = lowtrans;
@@ -460,8 +475,7 @@ static void f_rfc1345(INT32 args)
       int i;
       unsigned int c;
 
-      s8 = push_std_8bite((args>2 && sp[2-args].type == T_STRING? args-2:0),
-			  args, lo, 65536);
+      s8 = push_std_8bite((args>2? args-2:0), args, lo, 65536);
       s8->lowtrans = lo;
       s8->lo = lo;
       s8->hi = lo;
@@ -1069,8 +1083,12 @@ void pike_module_init(void)
   ADD_FUNCTION("drain", f_drain,tFunc(,tStr), 0);
   /* function(:object) */
   ADD_FUNCTION("clear", f_clear,tFunc(,tObj), 0);
-  /* function(string|void:void) */
-  ADD_FUNCTION("create", f_create,tFunc(tOr(tStr,tVoid),tVoid), 0);
+  /* function(string|void,function(string:string)|void:void) */
+  ADD_FUNCTION("create", f_create,tFunc(tOr(tStr,tVoid) tOr(tFunc(tStr,tStr),tVoid),tVoid), 0);
+  /* function(function(string:string):void) */
+  ADD_FUNCTION("set_replacement_callback", f_set_repcb,tFunc(tFunc(tStr,tStr),tVoid), 0);
+  map_variable("_repcb", "function(string:string)", ID_STATIC,
+	       OFFSETOF(std_cs_stor, repcb), T_MIXED);
   set_init_callback(init_stor);
   set_exit_callback(exit_stor);
   std_cs_program = end_program();
@@ -1172,7 +1190,8 @@ void pike_module_init(void)
   std_8bit_program = end_program();
 
   add_function_constant("rfc1345", f_rfc1345,
-			"function(string,int|void,string|void:object)", 0);
+			"function(string,int|void,string|void,"
+			"function(string:string)|void:object)", 0);
 }
 
 void pike_module_exit(void)

@@ -3,7 +3,7 @@
 #endif /* HAVE_CONFIG_H */
 
 #include "global.h"
-RCSID("$Id: iso2022.c,v 1.6 1999/03/07 01:22:04 grubba Exp $");
+RCSID("$Id: iso2022.c,v 1.7 1999/04/27 01:45:04 marcus Exp $");
 #include "program.h"
 #include "interpret.h"
 #include "stralloc.h"
@@ -36,6 +36,7 @@ struct iso2022enc_stor {
   struct gdesc g[2];
   struct pike_string *replace;
   struct string_builder strbuild;
+  struct svalue repcb;
 };
 
 #define EMIT(X) string_builder_putchar(&s->strbuild,(X))
@@ -583,7 +584,8 @@ static void f_create(INT32 args)
 {
   struct iso2022enc_stor *s = (struct iso2022enc_stor *)fp->current_storage;
 
-  check_all_args("create()", args, BIT_STRING|BIT_VOID|BIT_INT, 0);
+  check_all_args("create()", args, BIT_STRING|BIT_VOID|BIT_INT,
+		 BIT_FUNCTION|BIT_VOID|BIT_INT, 0);
 
   if(args>0 && sp[-args].type == T_STRING) {
     if(s->replace != NULL)
@@ -591,8 +593,22 @@ static void f_create(INT32 args)
     add_ref(s->replace = sp[-args].u.string);
   }
 
+  if(args>1 && sp[1-args].type == T_FUNCTION)
+    assign_svalue(&s->repcb, &sp[1-args]);
+
   pop_n_elems(args);
   push_int(0);
+}
+
+static void f_set_repcb(INT32 args)
+{
+  struct iso2022enc_stor *s = (struct iso2022enc_stor *)fp->current_storage;
+
+  check_all_args("set_replacement_callback()", args,
+		 BIT_FUNCTION|BIT_INT, 0);
+
+  if(args>0)
+    assign_svalue(&s->repcb, &sp[-args]);
 }
 
 static void init_stor(struct object *o)
@@ -668,8 +684,12 @@ void iso2022_init(void)
   ADD_FUNCTION("drain", f_enc_drain,tFunc(,tStr), 0);
   /* function(:object) */
   ADD_FUNCTION("clear", f_enc_clear,tFunc(,tObj), 0);
-  /* function(string|void:void) */
-  ADD_FUNCTION("create", f_create,tFunc(tOr(tStr,tVoid),tVoid), 0);
+  /* function(string|void,function(string:string)|void:void) */
+  ADD_FUNCTION("create", f_create,tFunc(tOr(tStr,tVoid) tOr(tFunc(tStr,tStr),tVoid),tVoid), 0);
+  /* function(function(string:string):void) */
+  ADD_FUNCTION("set_replacement_callback", f_set_repcb,tFunc(tFunc(tStr,tStr),tVoid), 0);
+  map_variable("_repcb", "function(string:string)", ID_STATIC,
+	       OFFSETOF(iso2022enc_stor, repcb), T_MIXED);
   set_init_callback(init_enc_stor);
   set_exit_callback(exit_enc_stor);
   add_program_constant("ISO2022Enc", iso2022enc_program = end_program(),
