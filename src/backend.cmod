@@ -2,11 +2,11 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: backend.cmod,v 1.104 2004/04/03 16:53:18 grubba Exp $
+|| $Id: backend.cmod,v 1.105 2004/04/03 18:54:45 grubba Exp $
 */
 
 #include "global.h"
-RCSID("$Id: backend.cmod,v 1.104 2004/04/03 16:53:18 grubba Exp $");
+RCSID("$Id: backend.cmod,v 1.105 2004/04/03 18:54:45 grubba Exp $");
 #include "fdlib.h"
 #include "backend.h"
 #include <errno.h>
@@ -408,6 +408,10 @@ _syscall4(int, epoll_wait, int, epfd, struct epoll_event *, pevents,
 #define MY_POLL(PFD, TIMEOUT)				\
   epoll_wait(PFD, poll_fds, POLL_SET_SIZE, TIMEOUT)
 
+#ifndef PIKE_POLL_DEVICE
+#define PIKE_POLL_DEVICE	"/dev/epoll"
+#endif /* !PIKE_POLL_DEVICE */
+
 int POLL_DEVICE_SET_EVENTS(int pfd, int fd, INT32 events)
 {
   int e;
@@ -621,7 +625,7 @@ static void copy_selectors(struct active_selectors *to,
 #define MY_POLLWREXCEPT	EVFILT_WRITE
 #define MY_POLLWRBAND	EVFILT_WRITE
 
-#define MY_POLL(SET, TIMEOUT)	kqueue((SET), NULL, 0, evs, nevs, (TIMEOUT))
+#define MY_POLL(SET, TIMEOUT)	kevent((SET), NULL, 0, evs, nevs, (TIMEOUT))
 
 int MY_FD_CLR(int pfd, int fd, int filter)
 {
@@ -633,7 +637,7 @@ int MY_FD_CLR(int pfd, int fd, int filter)
    */
   EV_SET(&ev, fd, filter, EV_DISABLE, 0, 0, 0);
   
-  return kqueue(pfd, &ev, 1, NULL, 0, NULL);
+  return kevent(pfd, &ev, 1, NULL, 0, NULL);
 }
 
 int MY_FD_SET(int pfd, int fd, int filter)
@@ -646,7 +650,7 @@ int MY_FD_SET(int pfd, int fd, int filter)
    */
   EV_SET(ev+1, fd, filter, EV_ENABLE, 0, 0, 0);
   
-  return kqueue(pfd, ev, 2, NULL, 0, NULL);
+  return kevent(pfd, ev, 2, NULL, 0, NULL);
 }
 
 #else  /* !HAVE_POLL && !HAVE_KQUEUE */
