@@ -43,7 +43,7 @@ Driver options:
  -E --preprocess=<f>  : Run only the preprocessor.
  -w --warnings        : Enable warnings
  -W --no-warnings     : Disable warnings
- --show-all-cpp-warnings : Enable usually supressed cpp warnings.
+ --picky-cpp          : Enable usually supressed cpp warnings and errors.
  --autoreload         : Automatically reload changed modules.
  --compiler-trace     : Turn on tracing of the Pike compiler.
  --assembler-debug=#  : Set peephole optimizer debug level.
