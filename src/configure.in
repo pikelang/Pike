@@ -1,4 +1,4 @@
-AC_REVISION("$Id: configure.in,v 1.296 1999/05/30 20:53:56 grubba Exp $")
+AC_REVISION("$Id: configure.in,v 1.297 1999/05/30 20:59:26 grubba Exp $")
 AC_INIT(interpret.c)
 AC_CONFIG_HEADER(machine.h)
 
@@ -320,8 +320,9 @@ string:
     ])
     AC_MSG_RESULT($pike_cv_ac_r_sparc_ua32)
     if test "$pike_cv_ac_r_sparc_ua32" = "yes"; then
-      AC_MSG_WARN([Your gcc/as combination may generate R_SPARC_UA32 relocations.])
-      AC_MSG_WARN([R_SPARC_UA32 relocations are unsupported in Solaris >= 2.4])
+      AC_MSG_WARN([Your gcc/as combo may generate R_SPARC_UA32 relocations.])
+      AC_MSG_WARN([R_SPARC_UA32 relocations are unsupported in Solaris >= 2.3,])
+      AC_MSG_WARN([and have broken support in Solaris 7.])
       AC_MSG_WARN([You may want to consider backing out patch 107058-01, or])
       AC_MSG_WARN([recompile your gcc with a modified config/sparc/sol2.h.])
       exit 1
