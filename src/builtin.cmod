@@ -1,5 +1,5 @@
 /* -*- c -*-
- * $Id: builtin.cmod,v 1.68 2001/09/28 01:54:49 hubbe Exp $
+ * $Id: builtin.cmod,v 1.69 2001/10/04 19:40:02 nilsson Exp $
  */
 
 #include "global.h"
@@ -1371,7 +1371,7 @@ PIKECLASS Buffer
     REF_RETURN fp->current_object;
   }
 
-  /*! @decl void add(string ... data)
+  /*! @decl int add(string ... data)
    *!
    *!   Adds @[data] to the buffer. Returns the size of the buffer.
    *!
