@@ -5,7 +5,7 @@
 \*/
 /**/
 #include "global.h"
-RCSID("$Id: builtin_functions.c,v 1.178 1999/07/27 20:21:18 mirar Exp $");
+RCSID("$Id: builtin_functions.c,v 1.179 1999/07/28 21:02:07 grubba Exp $");
 #include "interpret.h"
 #include "svalue.h"
 #include "pike_macros.h"
@@ -86,10 +86,12 @@ void f_aggregate(INT32 args)
 void f_trace(INT32 args)
 {
   extern int t_flag;
-  int old_t_flag=t_flag;
-  get_all_args("trace",args,"%i",&t_flag);
+  INT_TYPE t;
+
+  get_all_args("trace", args, "%i", &t);
   pop_n_elems(args);
-  push_int(old_t_flag);
+  push_int(t_flag);
+  t_flag = t;
 }
 
 void f_hash(INT32 args)
@@ -1882,8 +1884,9 @@ void f_mkmapping(INT32 args)
   FLAGS = (FLAGS & ~FLAG) | ( ONOFF ? FLAG : 0 )
 void f_set_weak_flag(INT32 args)
 {
-  int ret;
   struct svalue *s;
+  INT_TYPE ret;
+
   get_all_args("set_weak_flag",args,"%*%i",&s,&ret);
 
   switch(s->type)
@@ -2148,12 +2151,15 @@ void f__verify_internals(INT32 args)
 
 void f__debug(INT32 args)
 {
-  INT32 i=d_flag;
+  INT_TYPE d;
+
   CHECK_SECURITY_OR_ERROR(SECURITY_BIT_SECURITY,
 			  ("_debug: permission denied.\n"));
-  get_all_args("_debug",args,"%i",&d_flag);
+
+  get_all_args("_debug", args, "%i", &d);
   pop_n_elems(args);
-  push_int(i);
+  push_int(d_flag);
+  d_flag = d;
 }
 
 #ifdef YYDEBUG
@@ -2161,12 +2167,13 @@ void f__debug(INT32 args)
 void f__compiler_trace(INT32 args)
 {
   extern int yydebug;
-  INT32 i = yydebug;
+  INT_TYPE yyd;
   CHECK_SECURITY_OR_ERROR(SECURITY_BIT_SECURITY,
 			  ("_compiler_trace: permission denied.\n"));
-  get_all_args("_compiler_trace", args, "%i", &yydebug);
+  get_all_args("_compiler_trace", args, "%i", &yyd);
   pop_n_elems(args);
-  push_int(i);
+  push_int(yydebug);
+  yydebug = yyd;
 }
 
 #endif /* YYDEBUG */
@@ -2251,7 +2258,7 @@ void f_localtime(INT32 args)
 #ifdef HAVE_MKTIME
 static void f_mktime (INT32 args)
 {
-  INT32 sec, min, hour, mday, mon, year, isdst;
+  INT_TYPE sec, min, hour, mday, mon, year, isdst;
   struct tm date;
   struct svalue s;
   struct svalue * r;
@@ -2291,9 +2298,9 @@ static void f_mktime (INT32 args)
   date.tm_year=year;
   if(sp[6-args].subtype == NUMBER_NUMBER)
   {
-    date.tm_isdst=sp[6-args].u.integer;
+    date.tm_isdst = sp[6-args].u.integer;
   }else{
-    date.tm_isdst=-1;
+    date.tm_isdst = -1;
   }
 
 #if STRUCT_TM_HAS_GMTOFF
@@ -2301,8 +2308,8 @@ static void f_mktime (INT32 args)
   {
     date.tm_gmtoff=sp[7-args].u.intger;
   }else{
-    time_t tmp=0;
-    data.tm_gmtoff=localtime(&t).tm_gmtoff;
+    time_t tmp = 0;
+    data.tm_gmtoff=localtime(&tmp).tm_gmtoff;
   }
   retval=mktime(&date);
 #else
@@ -4297,12 +4304,19 @@ void f_filter(INT32 args)
 	       push_svalue(a->item+i);
 	       if (m++>32) 
 	       {
-		  f_aggregate(m),m=0;
-		  if (++k>32) f_add(k),k=1;
+		  f_aggregate(m);
+		  m=0;
+		  if (++k>32) {
+		    f_add(k);
+		    k=1;
+		  }
 	       }
 	    }
-	 if (m||!k) f_aggregate(m);
-	 if (m||k) f_add(k+1);
+	 if (m || !k) {
+	   f_aggregate(m);
+	   k++;
+	 }
+	 if (k > 1) f_add(k);
 	 stack_pop_n_elems_keep_top(2);
 	 return;
 
@@ -4425,7 +4439,8 @@ void f_filter(INT32 args)
 void f_enumerate(INT32 args)
 {
    struct array *d;
-   int i,n;
+   int i;
+   INT_TYPE n;
 
    if (args<1)
       SIMPLE_TOO_FEW_ARGS_ERROR("enumarate", 1);
@@ -4444,9 +4459,9 @@ void f_enumerate(INT32 args)
        (sp[1-args].type==T_INT &&
 	sp[2-args].type==T_INT))
    {
-      int step,start;
+      INT_TYPE step,start;
 
-      get_all_args("enumerate",args,"%i%i%i",&n,&step,&start);
+      get_all_args("enumerate", args, "%i%i%i", &n, &step, &start);
       if (n<0) 
 	 SIMPLE_BAD_ARG_ERROR("enumerate",1,"int(0..)");
 
@@ -4466,9 +4481,9 @@ void f_enumerate(INT32 args)
 	     (sp[2-args].type==T_INT ||
 	      sp[2-args].type==T_FLOAT) ) )
    {
-      float step,start;
+      FLOAT_TYPE step, start;
 
-      get_all_args("enumerate",args,"%i%F%F",&n,&step,&start);
+      get_all_args("enumerate", args, "%i%F%F", &n, &step, &start);
       if (n<0) 
 	 SIMPLE_BAD_ARG_ERROR("enumerate",1,"int(0..)");
 
@@ -4484,7 +4499,7 @@ void f_enumerate(INT32 args)
    }
    else
    {
-      get_all_args("enumerate",args,"%i",&n);
+      get_all_args("enumerate", args, "%i", &n);
       if (n<0) SIMPLE_BAD_ARG_ERROR("enumerate",1,"int(0..)");
       if (args>4) pop_n_elems(args-4);
       if (args<4)
