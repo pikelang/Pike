@@ -1,4 +1,4 @@
-test_true([["$Id: testsuite.in,v 1.52 1997/09/10 01:24:36 hubbe Exp $"]])
+test_true([["$Id: testsuite.in,v 1.53 1997/09/11 19:28:48 grubba Exp $"]])
 test_eq(1e1,10.0)
 test_eq(1E1,10.0)
 test_eq(1e+1,10.0)
@@ -161,7 +161,7 @@ cond([[all_constants()->thread_create]],
   test_do(add_constant("_tmp_mutex_lock"))
   test_true(_tmp_mutex->trylock())
   test_do(add_constant("_tmp_mutex"))
-  test_any([[ object m = Thread.Mutex(); object k = m->lock(); thread_create(lambda(object k){ sleep(10); }, k);if (catch{m->lock(); return 0;}) { return 1; } return 0; ]],1)
+  test_any([[ object m = Thread.Mutex(); object k = m->lock(); thread_create(lambda(object k){ sleep(10); catch { destruct(k); }; }, k);if (catch{m->lock(); return 0;}) { return 1; } return 0; ]],1)
   test_any([[ mixed *data=({0,Thread.Mutex(),Thread.Mutex(),0}); data[3]=data[2]->lock(); thread_create(lambda(mixed *data) {object o=data[1]->lock(); destruct(data[3]); sleep(10); data[0]=1; destruct(o);  },data); object l=data[2]->lock(1); object ll=data[1]->lock(); return data[0]; ]],1)
   test_any([[
 mixed *data=({1, Thread.Mutex(), Thread.Condition(), 0});
