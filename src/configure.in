@@ -1,4 +1,4 @@
-AC_REVISION("$Id: configure.in,v 1.657 2002/12/11 10:46:02 mirar Exp $")
+AC_REVISION("$Id: configure.in,v 1.658 2002/12/11 10:47:13 mirar Exp $")
 AC_INIT(interpret.c)
 AC_CONFIG_HEADER(machine.h)
 
@@ -6214,6 +6214,8 @@ if test "x$with_valgrind" != xno ; then
 valgrind........ yes, using $VALGRIND $VALGRINDARGS
 EOF
 fi
+
+cat >>config.info <<EOF
 
 features:
 PAD_FEATURE([dynamic loading])$pike_cv_sys_dynamic_loading
