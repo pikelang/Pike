@@ -1,5 +1,5 @@
 #
-# $Id: configure.in,v 1.6 2002/08/06 17:07:57 kiwi Exp $
+# $Id: configure.in,v 1.7 2002/08/06 20:01:53 kiwi Exp $
 #
 AC_INIT(ffmpeg.c)
 AC_CONFIG_HEADER(config.h)
@@ -57,7 +57,7 @@ dnl don't ask me why.
       AC_DEFINE(HAVE_WORKING_LIBFFMPEG)
 dnl      PIKE_FEATURE(FFmpeg)
     else 
-      PIKE_FEATURE(FFmpeg,[no, detected library, but not working])
+      PIKE_FEATURE(FFmpeg,[no])
     fi
 fi
 
