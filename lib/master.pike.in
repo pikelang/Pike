@@ -1,4 +1,4 @@
-/* $Id: master.pike.in,v 1.52 1999/06/19 19:50:19 hubbe Exp $
+/* $Id: master.pike.in,v 1.53 1999/06/22 17:38:09 mirar Exp $
  * 
  * Master-file for Pike.
  *
@@ -948,7 +948,9 @@ void compile_error(string file,int line,string err)
   {
     werror(sprintf("%s:%d:%s\n",trim_file_name(file),line,err));
   }
-  else if(functionp(inhibit_compile_errors))
+  else if(objectp(inhibit_compile_errors) ||
+	  programp(inhibit_compile_errors) ||
+	  functionp(inhibit_compile_errors))
   {
     inhibit_compile_errors(file,line,err);
   }
