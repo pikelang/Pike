@@ -16,8 +16,8 @@ The top-level makefile (in this directory, not the src directory) has
 all the magic you need to build pike directly from CVS.  Just type
 'make'.
 
-You will need autoconf, automake, gnu m4, bison, a C compiler and the
-GMP library.  You probably also want to use GNU make and libz.
+You will need autoconf, gnu m4, bison, a C compiler and the GMP
+library. You probably also want to use GNU make and libz.
 
 If that doesn't work, or you like making things difficult for
 yourself, try the Old instructions:
