@@ -2,11 +2,11 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: program.c,v 1.488 2004/03/31 14:28:22 grubba Exp $
+|| $Id: program.c,v 1.489 2004/05/27 13:20:05 grubba Exp $
 */
 
 #include "global.h"
-RCSID("$Id: program.c,v 1.488 2004/03/31 14:28:22 grubba Exp $");
+RCSID("$Id: program.c,v 1.489 2004/05/27 13:20:05 grubba Exp $");
 #include "program.h"
 #include "object.h"
 #include "dynamic_buffer.h"
@@ -1362,6 +1362,11 @@ struct pike_string *find_program_name(struct program *p, INT32 *line)
 int override_identifier (struct reference *ref, struct pike_string *name)
 {
   int id = -1, cur_id = 0;
+
+  int new_is_variable =
+    IDENTIFIER_IS_VARIABLE(ID_FROM_PTR(Pike_compiler->new_program,
+                                       ref)->identifier_flags);
+
   /* This loop could possibly be optimized by looping over
    * each inherit and looking up 'name' in each inherit
    * and then see if should be overwritten
@@ -1389,6 +1394,21 @@ int override_identifier (struct reference *ref, struct pike_string *name)
 	    Pike_compiler->new_program->identifier_references[cur_id].id_flags);
 #endif
 
+    if (!new_is_variable &&
+        IDENTIFIER_IS_VARIABLE(ID_FROM_INT(Pike_compiler->new_program,
+                                           cur_id)->identifier_flags)) {
+      /* Overloading a variable with a constant or a function.
+       * This is generally a bad idea.
+       */
+      Pike_compiler->new_program->identifier_references[cur_id].id_flags |=
+        ID_INLINE|ID_HIDDEN;
+      yywarning("Attempt to override a non local variable %s%s%swith a non variable.",
+                (name&&!name->size_shift)?"\"":"",
+                (name&&!name->size_shift)?name->str:"",
+                (name&&!name->size_shift)?"\" ":"");
+      continue;
+    }
+
     Pike_compiler->new_program->identifier_references[cur_id]=*ref;
     id = cur_id;
   }
@@ -1411,7 +1431,6 @@ void fixate_program(void)
    *        breaks the testsuite without further backports from Pike 7.5.
    *        /grubba 2004-03-18
    */
-#if 0
   /* Fixup identifier overrides. */
   for (i = 0; i < p->num_identifier_references; i++) {
     struct reference *ref = p->identifier_references + i;
@@ -1419,7 +1438,6 @@ void fixate_program(void)
     if (ref->inherit_offset != 0) continue;
     override_identifier (ref, ID_FROM_PTR (p, ref)->name);
   }
-#endif /* 0 */
 
   /* Ok, sort for binsearch */
   for(e=i=0;i<(int)p->num_identifier_references;i++)
