@@ -214,7 +214,7 @@ void cut_buffer(int where)
 void print_version()
 {
   write(version()+
-	" Running Hilfe v1.5 (Incremental Pike Frontend)\n");
+	" running Hilfe v1.5 (Incremental Pike Frontend)\n");
 }
 
 
