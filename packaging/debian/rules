@@ -6,7 +6,7 @@
 # architecture-dependant package, as well as an architecture-independent
 # package.
 #
-# $Id: rules,v 1.5 2002/08/05 22:36:37 grendel Exp $
+# $Id: rules,v 1.6 2002/08/05 23:08:50 grendel Exp $
 #
 
 # Uncomment this to turn on verbose mode. 
@@ -185,7 +185,7 @@ install: build
 	chmod 644 `find $(CURDIR)/debian/pike7.3-core/usr/include/pike7.3/ -type f -print`
 
 	install -m 755 -d -o root -g root $(CURDIR)/debian/pike7.3-dev/usr/share/emacs
-	cp -p $(CURDIR)/tools/pike.el $(CURDIR)/debian/pike7.3-dev/usr/share/emacs
+	cp -p $(CURDIR)/debian/pike.el $(CURDIR)/debian/pike7.3-dev/usr/share/emacs
         # Remove some files that shouldn't be there...
 
 	-rm -f $(CURDIR)/debian/pike7.3-core/usr/lib/pike7.3/$(VERSION)/master.pike.in
