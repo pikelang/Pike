@@ -194,6 +194,9 @@ static void f_hp_create( INT32 args )
   push_int(0);
 }
 
+/*! @endclass
+ */
+
 static void f_make_http_headers( INT32 args )
 /*! @decl string @
  *!          make_http_headers(mapping(string:string|array(string)) headers)
