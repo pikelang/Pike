@@ -1,7 +1,7 @@
 /* cipher.cmod -*- c -*- */
 
 #include "global.h"
-RCSID("$Id: cipher.cmod,v 1.7 2003/05/08 13:50:45 grubba Exp $");
+RCSID("$Id: cipher.cmod,v 1.8 2003/07/29 21:00:06 nilsson Exp $");
 #include "interpret.h"
 #include "svalue.h"
 
@@ -16,6 +16,9 @@ RCSID("$Id: cipher.cmod,v 1.7 2003/05/08 13:50:45 grubba Exp $");
 #include "nettle.h"
 
 #include <nettle/aes.h>
+#include <nettle/cast128.h>
+#include <nettle/serpent.h>
+#include <nettle/twofish.h>
 #include <nettle/nettle-meta.h>
 
 #include <assert.h>
@@ -273,6 +276,153 @@ PIKECLASS AES_State
     }
 }
 /*! @endclass AES_State */
+
+static int
+CAST128_check_key(ptrdiff_t len, const char *key)
+{
+  return (len>=CAST128_MIN_KEY_SIZE && len<=CAST128_MAX_KEY_SIZE);
+}
+
+/*! @class CAST128_Info
+ *!
+ *! Internal mixin class, intended to be multiply inherited
+ *! together with CipherInfo. */
+
+PIKECLASS CAST128_Info
+{
+  INIT
+    {
+      struct CipherInfo_struct *CipherInfo = GET_INFO(this_object());
+
+      if (CipherInfo && !CipherInfo->meta)
+      {
+	CipherInfo->meta = &nettle_cast128;
+	CipherInfo->check_key = &CAST128_check_key;
+      }
+    }
+}
+
+/*! @endclass CAST128_Info */
+
+/*! @class CAST128_State
+ *!
+ *! State for CAST128 encyption
+ */
+PIKECLASS CAST128_State
+{
+  INHERIT CAST128_Info;
+  INHERIT CipherState;
+  CVAR struct cast128_ctx cast128;
+
+  INIT
+    {
+      struct CipherState_struct *state
+	= (struct CipherState_struct *) get_storage(this_object(),
+						    CipherState_program);
+
+      assert(state);
+      state->ctx = &THIS->cast128;
+    }
+}
+/*! @endclass CAST128_State */
+
+static int
+SERPENT_check_key(ptrdiff_t len, const char *key)
+{
+  return (len>=SERPENT_MIN_KEY_SIZE && len<=SERPENT_MAX_KEY_SIZE);
+}
+
+/*! @class SERPENT_Info
+ *!
+ *! Internal mixin class, intended to be multiply inherited
+ *! together with CipherInfo. */
+
+PIKECLASS SERPENT_Info
+{
+  INIT
+    {
+      struct CipherInfo_struct *CipherInfo = GET_INFO(this_object());
+
+      if (CipherInfo && !CipherInfo->meta)
+      {
+	CipherInfo->meta = &nettle_serpent256;
+	CipherInfo->check_key = &SERPENT_check_key;
+      }
+    }
+}
+
+/*! @endclass SERPENT_Info */
+
+/*! @class SERPENT_State
+ *!
+ *! State for SERPENT encyption
+ */
+PIKECLASS SERPENT_State
+{
+  INHERIT SERPENT_Info;
+  INHERIT CipherState;
+  CVAR struct serpent_ctx serpent;
+
+  INIT
+    {
+      struct CipherState_struct *state
+	= (struct CipherState_struct *) get_storage(this_object(),
+						    CipherState_program);
+
+      assert(state);
+      state->ctx = &THIS->serpent;
+    }
+}
+/*! @endclass SERPENT_State */
+
+static int
+TWOFISH_check_key(ptrdiff_t len, const char *key)
+{
+  return (len>=TWOFISH_MIN_KEY_SIZE && len<=TWOFISH_MAX_KEY_SIZE);
+}
+
+/*! @class TWOFISH_Info
+ *!
+ *! Internal mixin class, intended to be multiply inherited
+ *! together with CipherInfo. */
+
+PIKECLASS TWOFISH_Info
+{
+  INIT
+    {
+      struct CipherInfo_struct *CipherInfo = GET_INFO(this_object());
+
+      if (CipherInfo && !CipherInfo->meta)
+      {
+	CipherInfo->meta = &nettle_twofish256;
+	CipherInfo->check_key = &TWOFISH_check_key;
+      }
+    }
+}
+
+/*! @endclass TWOFISH_Info */
+
+/*! @class TWOFISH_State
+ *!
+ *! State for TWOFISH encyption
+ */
+PIKECLASS TWOFISH_State
+{
+  INHERIT TWOFISH_Info;
+  INHERIT CipherState;
+  CVAR struct twofish_ctx twofish;
+
+  INIT
+    {
+      struct CipherState_struct *state
+	= (struct CipherState_struct *) get_storage(this_object(),
+						    CipherState_program);
+
+      assert(state);
+      state->ctx = &THIS->twofish;
+    }
+}
+/*! @endclass TWOFISH_State */
 
 /*! @endmodule Nettle */
 
