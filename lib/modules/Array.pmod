@@ -194,8 +194,8 @@ array(array(array(mixed))) diff3(array mid,array left,array right)
    array lmid,ldst;
    array rmid,rdst;
 
-   [lmid,ldst]=Array.diff(mid,left);
-   [rmid,rdst]=Array.diff(mid,right);
+   [lmid,ldst]=diff(mid,left);
+   [rmid,rdst]=diff(mid,right);
 
    array res=({});
    int lpos=0,rpos=0;
@@ -252,5 +252,5 @@ array(array(array(mixed))) diff3(array mid,array left,array right)
       n+=x;
    }
    
-   return Array.transpose(res);
+   return transpose(res);
 }
