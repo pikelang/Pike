@@ -14,7 +14,7 @@
 #include "stuff.h"
 #include "bignum.h"
 
-RCSID("$Id: peep.c,v 1.28 1999/11/08 20:50:51 grubba Exp $");
+RCSID("$Id: peep.c,v 1.29 2000/04/18 17:23:35 hubbe Exp $");
 
 struct p_instr_s
 {
@@ -289,6 +289,8 @@ void assemble(void)
 	jumps[c->arg]=tmp;
 	break;
 
+	case I_TWO_ARGS:
+	  /* */
 	case I_HASARG:
 	  ins_f_byte_with_arg(c->opcode, c->arg);
 	  break;

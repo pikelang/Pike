@@ -5,7 +5,7 @@
 \*/
 /**/
 #include "global.h"
-RCSID("$Id: lex.c,v 1.67 1999/11/30 07:50:17 hubbe Exp $");
+RCSID("$Id: lex.c,v 1.68 2000/04/18 17:23:35 hubbe Exp $");
 #include "language.h"
 #include "array.h"
 #include "lex.h"
@@ -71,8 +71,19 @@ void exit_lex(void)
 #endif
 }
 
+#define OPCODE0(OP,DESC) { DESC, OP, 0 },
+#define OPCODE1(OP,DESC) { DESC, OP, I_HASARG },
+#define OPCODE2(OP,DESC) { DESC, OP, I_TWO_ARGS },
+
+#define OPCODE0_TAIL(OP,DESC) { DESC, OP, 0 },
+#define OPCODE1_TAIL(OP,DESC) { DESC, OP, I_HASARG },
+#define OPCODE2_TAIL(OP,DESC) { DESC, OP, I_TWO_ARGS },
+
+#define LEXER
+
 struct keyword instr_names[]=
 {
+#include "interpret_protos.h"
 { "!",			F_NOT,0 },	
 { "!=",			F_NE,0 },	
 { "%",			F_MOD,0 },	
@@ -120,20 +131,15 @@ struct keyword instr_names[]=
 { "break",		F_BREAK,0 },	
 { "case",		F_CASE,0 },	
 { "cast",		F_CAST,0 },	
-{ "const-1",		F_CONST_1,0 },	
-{ "constant",           F_CONSTANT, I_HASARG },
 { "continue",		F_CONTINUE,0 },	
 { "copy_value",         F_COPY_VALUE,0 },
 { "default",		F_DEFAULT,0 },	
 { "do-while",		F_DO,0 },	
 { "dumb return",	F_DUMB_RETURN,0 },	
-{ "float number",	F_FLOAT,0 },
 { "for",		F_FOR,0 },
-{ "global",		F_GLOBAL, I_HASARG },
 { "index",              F_INDEX,0 },
 { "->x",                F_ARROW, I_HASARG },
 { "clear string subtype", F_CLEAR_STRING_SUBTYPE },
-{ "arrow string",       F_ARROW_STRING, I_HASARG },
 { "indirect",		F_INDIRECT,0 },
 
 { "branch",             F_BRANCH, I_ISJUMP },
@@ -165,11 +171,8 @@ struct keyword instr_names[]=
 
 { "local function call",F_CALL_LFUN, I_HASARG },
 { "local function call and pop",F_CALL_LFUN_AND_POP, I_HASARG },
-{ "local function",	F_LFUN, I_HASARG },	
-{ "trampoline",         F_TRAMPOLINE, I_HASARG },	
 { "local",		F_LOCAL, I_HASARG },	
 { "lexical local",	F_LEXICAL_LOCAL, I_HASARG },	
-{ "external",		F_EXTERNAL, I_HASARG },
 { "& external",		F_EXTERNAL_LVALUE, I_HASARG },
 { "LDA",			F_LDA, I_HASARG },
 { "mark & local",	F_MARK_AND_LOCAL, I_HASARG },	
@@ -181,14 +184,8 @@ struct keyword instr_names[]=
 { "mark",               F_MARK,0 },
 { "mark mark",          F_MARK2,0 },
 { "pop mark",           F_POP_MARK,0 },
-{ "negative number",	F_NEG_NUMBER, I_HASARG },
-{ "number",             F_NUMBER, I_HASARG },
 { "pop",		F_POP_VALUE,0 },	
 { "pop_n_elems",        F_POP_N_ELEMS, I_HASARG },
-{ "push UNDEFINED",     F_UNDEFINED,0 },
-{ "push 0",             F_CONST0,0 },
-{ "push 1",             F_CONST1,0 },
-{ "push 0x7fffffff",    F_BIGNUM,0 },
 { "range",              F_RANGE,0 },
 { "return",		F_RETURN,0 },
 { "return 0",		F_RETURN_0,0 },
@@ -196,7 +193,6 @@ struct keyword instr_names[]=
 { "return local",	F_RETURN_LOCAL, I_HASARG },
 { "return if true",	F_RETURN_IF_TRUE, 0 },
 { "sscanf",		F_SSCANF, I_HASARG },	
-{ "string",             F_STRING, I_HASARG },
 { "switch",		F_SWITCH, I_HASARG },
 { "unary minus",	F_NEGATE,0 },
 { "while",		F_WHILE,0 },	
@@ -233,7 +229,6 @@ struct keyword instr_names[]=
 { "nop",                F_NOP,0 },
 { "add integer",        F_ADD_INT, I_HASARG },
 { "add -integer",       F_ADD_NEG_INT, I_HASARG },
-{ "mark & string",      F_MARK_AND_STRING, I_HASARG },
 { "mark & call",        F_MARK_APPLY, I_HASARG },
 { "mark, call & pop",   F_MARK_APPLY_POP, I_HASARG },
 { "apply and return",   F_APPLY_AND_RETURN, I_HASARG },

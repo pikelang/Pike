@@ -1,5 +1,5 @@
 #
-# $Id: Makefile.in,v 1.187 2000/04/10 21:34:26 hubbe Exp $
+# $Id: Makefile.in,v 1.188 2000/04/18 17:23:35 hubbe Exp $
 #
 
 # This line is needed on some machines.
@@ -532,6 +532,11 @@ module_objects: machine.h global.h modules/static_module_makefile modules/dynami
 	@( cd modules ; rm remake >/dev/null 2>&1 || : ; \
 	   $(MAKE) $(MAKE_PARALLEL) $(MAKE_FLAGS) || \
 	     ( test -f remake && $(MAKE) $(MAKE_PARALLEL) $(MAKE_FLAGS) ) ) || exit $$?
+
+interpret_protos.h: $(SRCDIR)/interpret_functions.h
+	egrep '^OPCODE' <$(SRCDIR)/interpret_functions.h >interpret_protos.h
+
+lex.o: $(SRCDIR)/lex.c interpret_protos.h
 
 language.o: $(SRCDIR)/language.c $(SRCDIR)/object.h $(SRCDIR)/interpret.h $(SRCDIR)/program.h
 
