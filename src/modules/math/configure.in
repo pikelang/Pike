@@ -3,6 +3,12 @@ AC_INIT(math.c)
 AC_PROG_CC
 AC_PROG_RANLIB
 
+AC_CHECK_LIB(m, floor)
+if test "${ac_cv_lib_m}" = "no" -a "${lpc_cv_sys_os}" = "Linux"; then
+  AC_MSG_WARN(I will compensate for this by adding -lc -lm)
+  LIBS="${LIBS} -lc -lm"
+fi
+
 AC_SUBST(RANLIB)
 
 AC_OUTPUT(Makefile,echo FOO >stamp-h )

@@ -9,6 +9,7 @@ math.a: $(FILES)
 	-rm -f math.a
 	ar cq math.a $(FILES)
 	-@RANLIB@ math.a
+	echo >linker_options @LIBS@
 
 clean:
 	-rm -f *.o

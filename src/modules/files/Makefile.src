@@ -9,6 +9,7 @@ files.a: $(FILES)
 	-rm -f files.a
 	ar cq files.a $(FILES)
 	-@RANLIB@ files.a
+	echo >linker_options @LIBS@
 
 clean:
 	-rm -f *.o *.a
