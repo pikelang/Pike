@@ -23,7 +23,7 @@
 #include "module_support.h"
 #include "security.h"
 
-RCSID("$Id: opcodes.c,v 1.37 1999/04/15 04:08:15 hubbe Exp $");
+RCSID("$Id: opcodes.c,v 1.38 1999/06/19 09:55:58 mirar Exp $");
 
 void index_no_free(struct svalue *to,struct svalue *what,struct svalue *ind)
 {
@@ -755,21 +755,21 @@ static INT32 really_low_sscanf(char *input,
     {
       switch(match[cnt])
       {
-      case '*':
-	no_assign=1;
-	cnt++;
-	if(cnt>=match_len)
-	  error("Error in sscanf format string.\n");
-	continue;
+	case '*':
+	  no_assign=1;
+	  cnt++;
+	  if(cnt>=match_len)
+	    error("Error in sscanf format string.\n");
+	  continue;
 
-      case '0': case '1': case '2': case '3': case '4':
-      case '5': case '6': case '7': case '8': case '9':
-      {
-	char *t;
-	field_length=STRTOL(match+cnt,&t,10);
-	cnt=t-match;
-	continue;
-      }
+	case '0': case '1': case '2': case '3': case '4':
+	case '5': case '6': case '7': case '8': case '9':
+	{
+	  char *t;
+	  field_length=STRTOL(match+cnt,&t,10);
+	  cnt=t-match;
+	  continue;
+	}
 
 	case '{':
 	{
@@ -796,7 +796,7 @@ static INT32 really_low_sscanf(char *input,
 	  sval.u.array=allocate_array(0);
 	  SET_ONERROR(err, do_free_array, sval.u.array);
 
-	  while(1)
+	  while(input_len-eye)
 	  {
 	    int yes;
 	    struct svalue *save_sp=sp;
@@ -822,412 +822,412 @@ static INT32 really_low_sscanf(char *input,
 	  break;
 	}
 
-      case 'c':
-	if(field_length == -1) field_length = 1;
-	if(eye+field_length > input_len)
-	{
-	  chars_matched[0]=eye;
-	  return matches;
-	}
-	sval.type=T_INT;
-	sval.subtype=NUMBER_NUMBER;
-	sval.u.integer=0;
-	while(--field_length >= 0)
-	{
-	  sval.u.integer<<=8;
-	  sval.u.integer|=EXTRACT_UCHAR(input+eye);
-	  eye++;
-	}
-	break;
-
-      case 'd':
-      {
-	char * t;
-
-	if(eye>=input_len)
-	{
-	  chars_matched[0]=eye;
-	  return matches;
-	}
-	if(field_length != -1 && eye+field_length < input_len)
-	{
-	  char save=input[eye+field_length];
-	  input[eye+field_length]=0; /* DANGEROUS */
-	  sval.u.integer=STRTOL(input+eye,&t,10);
-	  input[eye+field_length]=save;
-	}else
-	  sval.u.integer=STRTOL(input+eye,&t,10);
-
-	if(input + eye == t)
-	{
-	  chars_matched[0]=eye;
-	  return matches;
-	}
-	eye=t-input;
-	sval.type=T_INT;
-	sval.subtype=NUMBER_NUMBER;
-	break;
-      }
-
-      case 'x':
-      {
-	char * t;
-
-	if(eye>=input_len)
-	{
-	  chars_matched[0]=eye;
-	  return matches;
-	}
-	if(field_length != -1 && eye+field_length < input_len)
-	{
-	  char save=input[eye+field_length];
-	  input[eye+field_length]=0; /* DANGEROUS */
-	  sval.u.integer=STRTOL(input+eye,&t,16);
-	  input[eye+field_length]=save;
-	}else
-	  sval.u.integer=STRTOL(input+eye,&t,16);
-	if(input + eye == t)
-	{
-	  chars_matched[0]=eye;
-	  return matches;
-	}
-	eye=t-input;
-	sval.type=T_INT;
-	sval.subtype=NUMBER_NUMBER;
-	break;
-      }
-
-      case 'o':
-      {
-	char * t;
-
-	if(eye>=input_len)
-	{
-	  chars_matched[0]=eye;
-	  return matches;
-	}
-	if(field_length != -1 && eye+field_length < input_len)
-	{
-	  char save=input[eye+field_length];
-	  input[eye+field_length]=0; /* DANGEROUS */
-	  sval.u.integer=STRTOL(input+eye,&t,8);
-	  input[eye+field_length]=save;
-	}else
-	  sval.u.integer=STRTOL(input+eye,&t,8);
-	if(input + eye == t)
-	{
-	  chars_matched[0]=eye;
-	  return matches;
-	}
-	eye=t-input;
-	sval.type=T_INT;
-	sval.subtype=NUMBER_NUMBER;
-	break;
-      }
-
-      case 'D':
-      case 'i':
-      {
-	char * t;
-
-	if(eye>=input_len)
-	{
-	  chars_matched[0]=eye;
-	  return matches;
-	}
-	if(field_length != -1 && eye+field_length < input_len)
-	{
-	  char save=input[eye+field_length];
-	  input[eye+field_length]=0; /* DANGEROUS */
-	  sval.u.integer=STRTOL(input+eye,&t,0);
-	  input[eye+field_length]=save;
-	}else
-	  sval.u.integer=STRTOL(input+eye,&t,0);
-	if(input + eye == t)
-	{
-	  chars_matched[0]=eye;
-	  return matches;
-	}
-	eye=t-input;
-	sval.type=T_INT;
-	sval.subtype=NUMBER_NUMBER;
-	break;
-      }
-
-      case 'f':
-      {
-	char * t;
-
-	if(eye>=input_len)
-	{
-	  chars_matched[0]=eye;
-	  return matches;
-	}
-	sval.u.float_number=STRTOD(input+eye,&t);
-	if(input + eye == t)
-	{
-	  chars_matched[0]=eye;
-	  return matches;
-	}
-	eye=t-input;
-	sval.type=T_FLOAT;
-#ifdef __CHECKER__
-	sval.subtype=0;
-#endif
-	break;
-      }
-
-      case 'F':
-	if(field_length == -1) field_length = 4;
-	if(field_length != 4 && field_length != 8)
-	  error("Invalid IEEE width %d in sscanf format string.\n",
-		field_length);
-	if(eye+field_length > input_len)
-	{
-	  chars_matched[0]=eye;
-	  return matches;
-	}
-	sval.type=T_FLOAT;
-#ifdef __CHECKER__
-	sval.subtype=0;
-#endif
-	switch(field_length) {
-	case 4:
-#ifdef FLOAT_IS_IEEE_BIG
-	  {
-	    float f;
-	    ((char *)&f)[0] = *(input+eye);
-	    ((char *)&f)[1] = *(input+eye+1);
-	    ((char *)&f)[2] = *(input+eye+2);
-	    ((char *)&f)[3] = *(input+eye+3);
-	    sval.u.float_number = f;
-	  }
-#else
-#ifdef FLOAT_IS_IEEE_LITTLE
-	  {
-	    float f;
-	    ((char *)&f)[3] = *(input+eye);
-	    ((char *)&f)[2] = *(input+eye+1);
-	    ((char *)&f)[1] = *(input+eye+2);
-	    ((char *)&f)[0] = *(input+eye+3);
-	    sval.u.float_number = f;
-	  }
-#else
-	  sval.u.float_number = low_parse_IEEE_float(input+eye, 4);
-#endif
-#endif
-	  eye += 4;
-	  break;
-	case 8:
-#ifdef DOUBLE_IS_IEEE_BIG
-	  {
-	    double d;
-	    ((char *)&d)[0] = *(input+eye);
-	    ((char *)&d)[1] = *(input+eye+1);
-	    ((char *)&d)[2] = *(input+eye+2);
-	    ((char *)&d)[3] = *(input+eye+3);
-	    ((char *)&d)[4] = *(input+eye+4);
-	    ((char *)&d)[5] = *(input+eye+5);
-	    ((char *)&d)[6] = *(input+eye+6);
-	    ((char *)&d)[7] = *(input+eye+7);
-	    sval.u.float_number = (float)d;
-	  }
-#else
-#ifdef DOUBLE_IS_IEEE_LITTLE
-	  {
-	    double d;
-	    ((char *)&d)[7] = *(input+eye);
-	    ((char *)&d)[6] = *(input+eye+1);
-	    ((char *)&d)[5] = *(input+eye+2);
-	    ((char *)&d)[4] = *(input+eye+3);
-	    ((char *)&d)[3] = *(input+eye+4);
-	    ((char *)&d)[2] = *(input+eye+5);
-	    ((char *)&d)[1] = *(input+eye+6);
-	    ((char *)&d)[0] = *(input+eye+7);
-	    sval.u.float_number = (float)d;
-	  }
-#else
-	  sval.u.float_number = low_parse_IEEE_float(input+eye, 8);
-#endif
-#endif
-	  eye += 8;
-	  break;
-	}
-	break;
-
-      case 's':
-	if(field_length != -1)
-	{
-	  if(input_len - eye < field_length)
+	case 'c':
+	  if(field_length == -1) field_length = 1;
+	  if(eye+field_length > input_len)
 	  {
 	    chars_matched[0]=eye;
 	    return matches;
 	  }
-
-	  sval.type=T_STRING;
-#ifdef __CHECKER__
-	  sval.subtype=0;
-#endif
-	  sval.u.string=make_shared_binary_string(input+eye,field_length);
-	  eye+=field_length;
+	  sval.type=T_INT;
+	  sval.subtype=NUMBER_NUMBER;
+	  sval.u.integer=0;
+	  while(--field_length >= 0)
+	  {
+	    sval.u.integer<<=8;
+	    sval.u.integer|=EXTRACT_UCHAR(input+eye);
+	    eye++;
+	  }
 	  break;
-	}
 
-	if(cnt+1>=match_len)
+	case 'd':
 	{
-	  sval.type=T_STRING;
-#ifdef __CHECKER__
-	  sval.subtype=0;
-#endif
-	  sval.u.string=make_shared_binary_string(input+eye,input_len-eye);
-	  eye=input_len;
-	  break;
-	}else{
-	  char *end_str_start;
-	  char *end_str_end;
-	  char *s=0;		/* make gcc happy */
-	  char *p=0;		/* make gcc happy */
-	  int start,contains_percent_percent, new_eye;
+	  char * t;
 
-	  start=eye;
-	  end_str_start=match+cnt+1;
-          
-	  s=match+cnt+1;
-	test_again:
-	  if(*s=='%')
+	  if(eye>=input_len)
 	  {
-	    s++;
-	    if(*s=='*') s++;
-	    switch(*s)
-	    {
-	    case 'n':
-	      s++;
-	      goto test_again;
-	      
-	    case 's':
-	      error("Illegal to have two adjecent %%s.\n");
-	      return 0;		/* make gcc happy */
-	      
-	      /* sscanf("foo-bar","%s%d",a,b) might not work as expected */
-	    case 'd':
-	      for(e=0;e<256;e++) set[e]=1;
-	      for(e='0';e<='9';e++) set[e]=0;
-	      set['-']=0;
-	      goto match_set;
-
-	    case 'o':
-	      for(e=0;e<256;e++) set[e]=1;
-	      for(e='0';e<='7';e++) set[e]=0;
-	      goto match_set;
-
-	    case 'x':
-	      for(e=0;e<256;e++) set[e]=1;
-	      for(e='0';e<='9';e++) set[e]=0;
-	      for(e='a';e<='f';e++) set[e]=0;
-	      goto match_set;
-
-	    case 'D':
-	      for(e=0;e<256;e++) set[e]=1;
-	      for(e='0';e<='9';e++) set[e]=0;
-	      set['-']=0;
-	      set['x']=0;
-	      goto match_set;
-
-	    case 'f':
-	      for(e=0;e<256;e++) set[e]=1;
-	      for(e='0';e<='9';e++) set[e]=0;
-	      set['.']=set['-']=0;
-	      goto match_set;
-
-	    case '[':		/* oh dear */
-	      read_set((unsigned char *)match,s-match+1,set,match_len);
-	      for(e=0;e<256;e++) set[e]=!set[e];
-	      goto match_set;
-	    }
+	    chars_matched[0]=eye;
+	    return matches;
 	  }
-
-	  contains_percent_percent=0;
-
-	  for(e=cnt;e<match_len;e++)
+	  if(field_length != -1 && eye+field_length < input_len)
 	  {
-	    if(match[e]=='%')
-	    {
-	      if(match[e+1]=='%')
-	      {
-		contains_percent_percent=1;
-		e++;
-	      }else{
-		break;
-	      }
-	    }
-	  }
-	   
-	  end_str_end=match+e;
+	    char save=input[eye+field_length];
+	    input[eye+field_length]=0; /* DANGEROUS */
+	    sval.u.integer=STRTOL(input+eye,&t,10);
+	    input[eye+field_length]=save;
+	  }else
+	    sval.u.integer=STRTOL(input+eye,&t,10);
 
-	  if(!contains_percent_percent)
+	  if(input + eye == t)
 	  {
-	    s=my_memmem(end_str_start,
-			end_str_end-end_str_start,
-			input+eye,
-			input_len-eye);
-	    if(!s)
-	    {
-	      chars_matched[0]=eye;
-	      return matches;
-	    }
-	    eye=s-input;
-	    new_eye=eye+end_str_end-end_str_start;
-	  }else{
-	    for(;eye<input_len;eye++)
-	    {
-	      p=input+eye;
-	      for(s=end_str_start;s<end_str_end;s++,p++)
-	      {
-		if(*s!=*p) break;
-		if(*s=='%') s++;
-	      }
-	      if(s==end_str_end)
-		break;
-	    }
-	    if(eye==input_len)
-	    {
-	      chars_matched[0]=eye;
-	      return matches;
-	    }
-	    new_eye=p-input;
+	    chars_matched[0]=eye;
+	    return matches;
 	  }
-
-	  sval.type=T_STRING;
-#ifdef __CHECKER__
-	  sval.subtype=0;
-#endif
-	  sval.u.string=make_shared_binary_string(input+start,eye-start);
-
-	  cnt=end_str_end-match-1;
-	  eye=new_eye;
+	  eye=t-input;
+	  sval.type=T_INT;
+	  sval.subtype=NUMBER_NUMBER;
 	  break;
 	}
 
-      case '[':
-	cnt=read_set((unsigned char *)match,cnt+1,set,match_len);
+	case 'x':
+	{
+	  char * t;
 
-      match_set:
-	for(e=eye;eye<input_len && set[EXTRACT_UCHAR(input+eye)];eye++);
-	sval.type=T_STRING;
+	  if(eye>=input_len)
+	  {
+	    chars_matched[0]=eye;
+	    return matches;
+	  }
+	  if(field_length != -1 && eye+field_length < input_len)
+	  {
+	    char save=input[eye+field_length];
+	    input[eye+field_length]=0; /* DANGEROUS */
+	    sval.u.integer=STRTOL(input+eye,&t,16);
+	    input[eye+field_length]=save;
+	  }else
+	    sval.u.integer=STRTOL(input+eye,&t,16);
+	  if(input + eye == t)
+	  {
+	    chars_matched[0]=eye;
+	    return matches;
+	  }
+	  eye=t-input;
+	  sval.type=T_INT;
+	  sval.subtype=NUMBER_NUMBER;
+	  break;
+	}
+
+	case 'o':
+	{
+	  char * t;
+
+	  if(eye>=input_len)
+	  {
+	    chars_matched[0]=eye;
+	    return matches;
+	  }
+	  if(field_length != -1 && eye+field_length < input_len)
+	  {
+	    char save=input[eye+field_length];
+	    input[eye+field_length]=0; /* DANGEROUS */
+	    sval.u.integer=STRTOL(input+eye,&t,8);
+	    input[eye+field_length]=save;
+	  }else
+	    sval.u.integer=STRTOL(input+eye,&t,8);
+	  if(input + eye == t)
+	  {
+	    chars_matched[0]=eye;
+	    return matches;
+	  }
+	  eye=t-input;
+	  sval.type=T_INT;
+	  sval.subtype=NUMBER_NUMBER;
+	  break;
+	}
+
+	case 'D':
+	case 'i':
+	{
+	  char * t;
+
+	  if(eye>=input_len)
+	  {
+	    chars_matched[0]=eye;
+	    return matches;
+	  }
+	  if(field_length != -1 && eye+field_length < input_len)
+	  {
+	    char save=input[eye+field_length];
+	    input[eye+field_length]=0; /* DANGEROUS */
+	    sval.u.integer=STRTOL(input+eye,&t,0);
+	    input[eye+field_length]=save;
+	  }else
+	    sval.u.integer=STRTOL(input+eye,&t,0);
+	  if(input + eye == t)
+	  {
+	    chars_matched[0]=eye;
+	    return matches;
+	  }
+	  eye=t-input;
+	  sval.type=T_INT;
+	  sval.subtype=NUMBER_NUMBER;
+	  break;
+	}
+
+	case 'f':
+	{
+	  char * t;
+
+	  if(eye>=input_len)
+	  {
+	    chars_matched[0]=eye;
+	    return matches;
+	  }
+	  sval.u.float_number=STRTOD(input+eye,&t);
+	  if(input + eye == t)
+	  {
+	    chars_matched[0]=eye;
+	    return matches;
+	  }
+	  eye=t-input;
+	  sval.type=T_FLOAT;
 #ifdef __CHECKER__
-	sval.subtype=0;
+	  sval.subtype=0;
 #endif
-	sval.u.string=make_shared_binary_string(input+e,eye-e);
-	break;
+	  break;
+	}
 
-      case 'n':
-	sval.type=T_INT;
-	sval.subtype=NUMBER_NUMBER;
-	sval.u.integer=eye;
-	break;
+	case 'F':
+	  if(field_length == -1) field_length = 4;
+	  if(field_length != 4 && field_length != 8)
+	    error("Invalid IEEE width %d in sscanf format string.\n",
+		  field_length);
+	  if(eye+field_length > input_len)
+	  {
+	    chars_matched[0]=eye;
+	    return matches;
+	  }
+	  sval.type=T_FLOAT;
+#ifdef __CHECKER__
+	  sval.subtype=0;
+#endif
+	  switch(field_length) {
+	    case 4:
+#ifdef FLOAT_IS_IEEE_BIG
+	    {
+	      float f;
+	      ((char *)&f)[0] = *(input+eye);
+	      ((char *)&f)[1] = *(input+eye+1);
+	      ((char *)&f)[2] = *(input+eye+2);
+	      ((char *)&f)[3] = *(input+eye+3);
+	      sval.u.float_number = f;
+	    }
+#else
+#ifdef FLOAT_IS_IEEE_LITTLE
+	    {
+	      float f;
+	      ((char *)&f)[3] = *(input+eye);
+	      ((char *)&f)[2] = *(input+eye+1);
+	      ((char *)&f)[1] = *(input+eye+2);
+	      ((char *)&f)[0] = *(input+eye+3);
+	      sval.u.float_number = f;
+	    }
+#else
+	    sval.u.float_number = low_parse_IEEE_float(input+eye, 4);
+#endif
+#endif
+	    eye += 4;
+	    break;
+	    case 8:
+#ifdef DOUBLE_IS_IEEE_BIG
+	    {
+	      double d;
+	      ((char *)&d)[0] = *(input+eye);
+	      ((char *)&d)[1] = *(input+eye+1);
+	      ((char *)&d)[2] = *(input+eye+2);
+	      ((char *)&d)[3] = *(input+eye+3);
+	      ((char *)&d)[4] = *(input+eye+4);
+	      ((char *)&d)[5] = *(input+eye+5);
+	      ((char *)&d)[6] = *(input+eye+6);
+	      ((char *)&d)[7] = *(input+eye+7);
+	      sval.u.float_number = (float)d;
+	    }
+#else
+#ifdef DOUBLE_IS_IEEE_LITTLE
+	    {
+	      double d;
+	      ((char *)&d)[7] = *(input+eye);
+	      ((char *)&d)[6] = *(input+eye+1);
+	      ((char *)&d)[5] = *(input+eye+2);
+	      ((char *)&d)[4] = *(input+eye+3);
+	      ((char *)&d)[3] = *(input+eye+4);
+	      ((char *)&d)[2] = *(input+eye+5);
+	      ((char *)&d)[1] = *(input+eye+6);
+	      ((char *)&d)[0] = *(input+eye+7);
+	      sval.u.float_number = (float)d;
+	    }
+#else
+	    sval.u.float_number = low_parse_IEEE_float(input+eye, 8);
+#endif
+#endif
+	    eye += 8;
+	    break;
+	  }
+	  break;
+
+	case 's':
+	  if(field_length != -1)
+	  {
+	    if(input_len - eye < field_length)
+	    {
+	      chars_matched[0]=eye;
+	      return matches;
+	    }
+
+	    sval.type=T_STRING;
+#ifdef __CHECKER__
+	    sval.subtype=0;
+#endif
+	    sval.u.string=make_shared_binary_string(input+eye,field_length);
+	    eye+=field_length;
+	    break;
+	  }
+
+	  if(cnt+1>=match_len)
+	  {
+	    sval.type=T_STRING;
+#ifdef __CHECKER__
+	    sval.subtype=0;
+#endif
+	    sval.u.string=make_shared_binary_string(input+eye,input_len-eye);
+	    eye=input_len;
+	    break;
+	  }else{
+	    char *end_str_start;
+	    char *end_str_end;
+	    char *s=0;		/* make gcc happy */
+	    char *p=0;		/* make gcc happy */
+	    int start,contains_percent_percent, new_eye;
+
+	    start=eye;
+	    end_str_start=match+cnt+1;
+          
+	    s=match+cnt+1;
+      test_again:
+	    if(*s=='%')
+	    {
+	      s++;
+	      if(*s=='*') s++;
+	      switch(*s)
+	      {
+		case 'n':
+		  s++;
+		  goto test_again;
+	      
+		case 's':
+		  error("Illegal to have two adjecent %%s.\n");
+		  return 0;		/* make gcc happy */
+	      
+		  /* sscanf("foo-bar","%s%d",a,b) might not work as expected */
+		case 'd':
+		  for(e=0;e<256;e++) set[e]=1;
+		  for(e='0';e<='9';e++) set[e]=0;
+		  set['-']=0;
+		  goto match_set;
+
+		case 'o':
+		  for(e=0;e<256;e++) set[e]=1;
+		  for(e='0';e<='7';e++) set[e]=0;
+		  goto match_set;
+
+		case 'x':
+		  for(e=0;e<256;e++) set[e]=1;
+		  for(e='0';e<='9';e++) set[e]=0;
+		  for(e='a';e<='f';e++) set[e]=0;
+		  goto match_set;
+
+		case 'D':
+		  for(e=0;e<256;e++) set[e]=1;
+		  for(e='0';e<='9';e++) set[e]=0;
+		  set['-']=0;
+		  set['x']=0;
+		  goto match_set;
+
+		case 'f':
+		  for(e=0;e<256;e++) set[e]=1;
+		  for(e='0';e<='9';e++) set[e]=0;
+		  set['.']=set['-']=0;
+		  goto match_set;
+
+		case '[':		/* oh dear */
+		  read_set((unsigned char *)match,s-match+1,set,match_len);
+		  for(e=0;e<256;e++) set[e]=!set[e];
+		  goto match_set;
+	      }
+	    }
+
+	    contains_percent_percent=0;
+
+	    for(e=cnt;e<match_len;e++)
+	    {
+	      if(match[e]=='%')
+	      {
+		if(match[e+1]=='%')
+		{
+		  contains_percent_percent=1;
+		  e++;
+		}else{
+		  break;
+		}
+	      }
+	    }
+	   
+	    end_str_end=match+e;
+
+	    if(!contains_percent_percent)
+	    {
+	      s=my_memmem(end_str_start,
+			  end_str_end-end_str_start,
+			  input+eye,
+			  input_len-eye);
+	      if(!s)
+	      {
+		chars_matched[0]=eye;
+		return matches;
+	      }
+	      eye=s-input;
+	      new_eye=eye+end_str_end-end_str_start;
+	    }else{
+	      for(;eye<input_len;eye++)
+	      {
+		p=input+eye;
+		for(s=end_str_start;s<end_str_end;s++,p++)
+		{
+		  if(*s!=*p) break;
+		  if(*s=='%') s++;
+		}
+		if(s==end_str_end)
+		  break;
+	      }
+	      if(eye==input_len)
+	      {
+		chars_matched[0]=eye;
+		return matches;
+	      }
+	      new_eye=p-input;
+	    }
+
+	    sval.type=T_STRING;
+#ifdef __CHECKER__
+	    sval.subtype=0;
+#endif
+	    sval.u.string=make_shared_binary_string(input+start,eye-start);
+
+	    cnt=end_str_end-match-1;
+	    eye=new_eye;
+	    break;
+	  }
+
+	case '[':
+	  cnt=read_set((unsigned char *)match,cnt+1,set,match_len);
+
+  match_set:
+	  for(e=eye;eye<input_len && set[EXTRACT_UCHAR(input+eye)];eye++);
+	  sval.type=T_STRING;
+#ifdef __CHECKER__
+	  sval.subtype=0;
+#endif
+	  sval.u.string=make_shared_binary_string(input+e,eye-e);
+	  break;
+
+	case 'n':
+	  sval.type=T_INT;
+	  sval.subtype=NUMBER_NUMBER;
+	  sval.u.integer=eye;
+	  break;
     
-      default:
-	error("Unknown sscanf token %%%c\n",match[cnt]);
+	default:
+	  error("Unknown sscanf token %%%c\n",match[cnt]);
       }
       break;
     }
