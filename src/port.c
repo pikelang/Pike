@@ -17,7 +17,7 @@
 #include <float.h>
 #include <string.h>
 
-RCSID("$Id: port.c,v 1.23 2000/06/08 22:10:51 hubbe Exp $");
+RCSID("$Id: port.c,v 1.24 2000/08/13 21:33:27 sigge Exp $");
 
 #ifdef sun
 time_t time PROT((time_t *));
@@ -401,11 +401,6 @@ double STRTOD(char * nptr, char **endptr)
 
   /* Eat whitespace.  */
   while (ISSPACE(*s)) ++s;
-
-  /* Get the sign.  */
-  sign = *s == '-' ? -1 : 1;
-  if (*s == '-' || *s == '+')
-    ++s;
 
   /* Get the sign.  */
   sign = *s == '-' ? -1 : 1;
