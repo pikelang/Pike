@@ -103,14 +103,11 @@ import Getopt;
       if(c=catch(a=sprintf("%O",foo->___Foo4711())))
       {
 	trace(0);
+	if(objectp(c) && c->is_generic_error)
+	  catch { c = ({ c[0], c[1] }); };
 	if(arrayp(c) && sizeof(c)==2 && arrayp(c[1]))
 	{
 	  c[1]=c[1][sizeof(backtrace())..];
-	  write(describe_backtrace(c));
-	}
-	else if(objectp(c) && c->is_generic_error)
-	{
-	  c->__backtrace=c->__backtrace[sizeof(backtrace())..];
 	  write(describe_backtrace(c));
 	}else{
 	  write(sprintf("Error in evalutation: %O\n",c));
