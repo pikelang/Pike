@@ -143,3 +143,9 @@ int INS_F_JUMP_WITH_TWO_ARGS(unsigned int op,
 void CHECK_RELOC(size_t reloc, size_t program_size)
 	Check if a relocation is valid for the program.
 	Should throw an error on bad relocations.
+
+OPCODE_INLINE_BRANCH
+	If defined test functions that return non zero if the branch
+	is to be taken will be generated for I_BRANCH instructions.
+	This is to facilitate easier inlining of branches in the
+	machine code.
