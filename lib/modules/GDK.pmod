@@ -1,5 +1,3 @@
-#if constant(GTK.parse_rc)
-
 inherit GTK;
 #define INDEX(x) predef::`->(this_object(),(x))
 
@@ -49,5 +47,3 @@ mixed `[](string what)
   return ([])[0];
 //   return  GDKSupport[what];
 }
-
-#endif
