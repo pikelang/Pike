@@ -1,4 +1,4 @@
-#if consant(@module@.oracle)
+#if constant(@module@.oracle)
 
 inherit @module@ : M;
 
