@@ -41,7 +41,7 @@ static unsigned int TOKENIZE(struct array **res, CHAR *data, unsigned int len)
 	  break;
 	}
 
-	/* fallthrough. */
+	/* FALL_THROUGH */
       case '1':  case '2':    case '3':  case '4':
       case '5':  case '6':    case '7':  case '8':
       case '9':
@@ -204,6 +204,7 @@ static unsigned int TOKENIZE(struct array **res, CHAR *data, unsigned int len)
 	    pos++;
 	  else if( data[pos] == '"' )
 	    break;
+	  /* FIXME: Newline in string detection! */
 	  pos++;
 	}
 	if( pos >= len )
@@ -211,8 +212,21 @@ static unsigned int TOKENIZE(struct array **res, CHAR *data, unsigned int len)
 	break;
 	
       case '#':
+	pos++;
+	if (data[pos] == '\"') {
+	  /* Support for #"" */
+	  for (pos++; pos < len; pos++) {
+	    if (data[pos] == '\"') break;
+	    if (data[pos] == '\\') pos++;
+	  }
+	  if (pos >= len)
+	    goto failed_to_find_end;
+	  break;
+	}
+	/* FIXME: #string. */
 	NEWLINE();
-	while( data[pos-1]=='\\' || (pos>1 && data[pos-1]=='\r' && data[pos-2]=='\\') )
+	while( data[pos-1]=='\\' ||
+	       (pos>2 && data[pos-1]=='\r' && data[pos-2]=='\\') )
 	{
 	  pos++;
 	  NEWLINE();
