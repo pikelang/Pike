@@ -39,7 +39,7 @@ Source: "X:\win32-pike\icons\pike_red.ico"; DestDir: "{app}/icons"; Flags: ignor
 
 ;;;Begin SDL files
 Source: "X:\win32-pike\dlls\SDL.dll"; DestDir: "{app}/bin"; Flags: ignoreversion restartreplace sharedfile; Components: sdl
-;;;End MySQL files
+;;;End SDL files
 
 ;;;Begin GLU files
 Source: "X:\win32-pike\dlls\glu32.dll"; DestDir: "{app}/bin"; Flags: ignoreversion restartreplace sharedfile; Components: GLU
