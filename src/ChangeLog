@@ -1,3 +1,8 @@
+Sat Apr 12 16:38:25 1997  Henrik Grubbström  <grubba@infovav.se>
+
+	* modules/spider/spider.c (push_parsed_tag, tagsequal, find_endtag):
+	Fixed a couple of html_parse bugs.
+
 Thu Apr 10 22:38:42 1997  David Kågedal  <kg@infovav.se>
 
 	* module_support.c(error_type): Removed extra comma to avoid
