@@ -4,7 +4,7 @@ VPATH=.:./../..:../..
 PREFLAGS=-I. -I$(SRCDIR) -I$(SRCDIR)/../.. -I../..
 CFLAGS=$(PREFLAGS) $(OTHERFLAGS)
 
-FILES=spider.o
+FILES=spider.o discdate.o stardate.o sdebug.o
 
 spider.a: $(FILES)
 	-rm -f spider.a
@@ -12,10 +12,10 @@ spider.a: $(FILES)
 	-ranlib spider.a
 
 clean:
-	-rm -f *.o
+	-rm -f *.o *.a
 
 depend:
-	gcc -MM $(PREFLAGS) $(SRCDIR)/*.c | sed 's;$(SRCDIR)/;;g' | sed 's;\.\./;;g' | sed 's;\./;;g' >$(SRCDIR)/dependencies
+	gcc -MM $(PREFLAGS) $(SRCDIR)/*.c  >$(SRCDIR)/dependencies
 
 include ./dependencies
 

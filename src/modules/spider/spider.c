@@ -26,11 +26,8 @@
 #include "builtin_efuns.h"
 
 
-#include "discdate.c"
-#include "stardate.c"
-#include "debug.c"
 #include "spider.h"
-
+#include "conf.h"
 #ifdef HAVE_NETINET_IN_H
 #include <netinet/in.h>
 #endif

@@ -1,3 +1,15 @@
+#include "stralloc.h"
+#include "global.h"
+#include "types.h"
+#include "macros.h"
+#include "object.h"
+#include "add_efun.h"
+#include "interpret.h"
+#include "svalue.h"
+#include "mapping.h"
+#include "array.h"
+#include "builtin_efuns.h"
+#include "spider.h"
 #define	FIT(x,y) while((x)<0)(x)+=(y);while((x)>(y))(x)-=(y)
 
 #define MAXPRECISION       7
