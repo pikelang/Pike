@@ -2,12 +2,13 @@ build
 reports
 test
 test.lpc
+test1
+testcache
 uLPC_v1.0E-10.tar.gz
 uLPC_v1.0E-12.tar.gz
 uLPC_v1.0E-13.tar.gz
+uLPC_v1.0E-7.tar.gz
 uLPC_v1.0E-8.tar.gz
 uLPC_v1.0E-9.tar.gz
 uLPC_v1.1E-12.tar.gz
 uLPC_v1.7E-12.tar.gz
-test1
-testcache
