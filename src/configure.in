@@ -1,4 +1,4 @@
-AC_REVISION("$Id: configure.in,v 1.448 2000/12/27 10:38:16 mirar Exp $")
+AC_REVISION("$Id: configure.in,v 1.449 2000/12/27 10:44:51 mirar Exp $")
 AC_INIT(interpret.c)
 AC_CONFIG_HEADER(machine.h)
 
@@ -1496,8 +1496,16 @@ socket.h ieeefp.h fp_class.h floatingpoint.h  sys/priocntl.h sys/sched.h \
 windows.h errno.h stddef.h mmx.h)
 
 # some Linux systems have a broken resource.h that compiles anyway /Mirar
-AC_TRY_COMPILE([#include <sys/resource.h>],[],
-	AC_DEFINE(HAVE_SYS_RESOURCE_H),[])
+AC_MSG_CHECKING([for sys/resource.h])
+AC_CACHE_VAL(pike_cv_sys_resource_h,
+	[AC_TRY_COMPILE([#include <sys/resource.h>],[],
+	        [pike_cv_sys_resource_h=yes],[pike_cv_sys_resource_h=no])])
+if test "x$pike_cv_sys_resource_h" = "xyes"; then
+  AC_MSG_RESULT(yes)
+  AC_DEFINE(HAVE_SYS_RESOURCE_H)
+else
+  AC_MSG_RESULT(no)
+fi
 
 AC_CHECK_SIZEOF(char *,4)
 AC_CHECK_SIZEOF(int, 4)
