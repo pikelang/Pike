@@ -22,7 +22,7 @@
 #include <fcntl.h>
 
 #include "global.h"
-RCSID("$Id: pipe.c,v 1.14 1997/10/10 18:59:47 grubba Exp $");
+RCSID("$Id: pipe.c,v 1.15 1998/01/13 23:00:35 hubbe Exp $");
 
 #include "threads.h"
 #include "stralloc.h"
@@ -71,6 +71,9 @@ RCSID("$Id: pipe.c,v 1.14 1997/10/10 18:59:47 grubba Exp $");
 
 static struct program *pipe_program, *output_program;
 
+#ifdef THIS
+#undef THIS
+#endif
 #define THIS ((struct pipe *)(fp->current_storage))
 #define THISOBJ (fp->current_object)
 

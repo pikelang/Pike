@@ -1,10 +1,10 @@
-/* $Id: blit.c,v 1.25 1997/12/22 23:26:43 hubbe Exp $ */
+/* $Id: blit.c,v 1.26 1998/01/13 22:59:21 hubbe Exp $ */
 #include "global.h"
 
 /*
 **! module Image
 **! note
-**!	$Id: blit.c,v 1.25 1997/12/22 23:26:43 hubbe Exp $
+**!	$Id: blit.c,v 1.26 1998/01/13 22:59:21 hubbe Exp $
 **! class image
 */
 
@@ -25,6 +25,9 @@
 #include "image.h"
 
 extern struct program *image_program;
+#ifdef THIS
+#undef THIS /* Needed for NT */
+#endif
 #define THIS ((struct image *)(fp->current_storage))
 #define THISOBJ (fp->current_object)
 

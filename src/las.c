@@ -4,7 +4,7 @@
 ||| See the files COPYING and DISCLAIMER for more information.
 \*/
 #include "global.h"
-RCSID("$Id: las.c,v 1.39 1997/10/05 03:39:25 grubba Exp $");
+RCSID("$Id: las.c,v 1.40 1998/01/13 22:56:44 hubbe Exp $");
 
 #include "language.h"
 #include "interpret.h"
@@ -34,7 +34,6 @@ int lasdebug=0;
 static node *eval(node *);
 static void optimize(node *n);
 
-dynamic_buffer areas[NUM_AREAS];
 node *init_node = 0;
 int num_parse_error;
 int cumulative_parse_error=0;
@@ -46,6 +45,7 @@ int car_is_node(node *n)
 {
   switch(n->token)
   {
+  case F_EXTERNAL:
   case F_IDENTIFIER:
   case F_CONSTANT:
   case F_LOCAL:
@@ -60,6 +60,7 @@ int cdr_is_node(node *n)
 {
   switch(n->token)
   {
+  case F_EXTERNAL:
   case F_IDENTIFIER:
   case F_CONSTANT:
   case F_LOCAL:
@@ -135,9 +136,9 @@ struct node_chunk
 static struct node_chunk *node_chunks=0;
 static node *free_nodes=0;
 
-void free_all_nodes(void)
+void free_all_nodes()
 {
-  if(!local_variables)
+  if(!compiler_frame)
   {
     node *tmp;
     struct node_chunk *tmp2;
@@ -240,7 +241,7 @@ static node *mkemptynode(void)
   res=free_nodes;
   free_nodes=CAR(res);
   res->token=0;
-  res->line_number=current_line;
+  res->line_number=lex.current_line;
   res->type=0;
   res->node_info=0;
   res->tree_info=0;
@@ -271,6 +272,10 @@ node *mknode(short token,node *a,node *b)
     }else{
       res->node_info |= OPT_SIDE_EFFECT | OPT_EXTERNAL_DEPEND; /* for now */
     }
+    break;
+
+  case F_UNDEFINED:
+    res->node_info |= OPT_EXTERNAL_DEPEND | OPT_SIDE_EFFECT;
     break;
 
   case F_RETURN:
@@ -310,7 +315,9 @@ node *mknode(short token,node *a,node *b)
 
   if(a) a->parent = res;
   if(b) b->parent = res;
-  if(!num_parse_error) optimize(res);
+
+  if(!num_parse_error && compiler_pass==2)
+    optimize(res);
 
 #ifdef DEBUG
   if(d_flag > 3)
@@ -372,13 +379,12 @@ node *mkefuncallnode(char *function, node *args)
   struct pike_string *name;
   node *n;
   name = findstring(function);
-  if(!name || !find_module_identifier(name))
+  if(!name || !(n=find_module_identifier(name)))
   {
     my_yyerror("Internally used efun undefined: %s",function);
     return mkintnode(0);
   }
-  n=mkapplynode(mksvaluenode(sp-1), args);
-  pop_stack();
+  n=mkapplynode(n, args);
   return n;
 }
 
@@ -394,7 +400,7 @@ node *mklocalnode(int var)
 {
   node *res = mkemptynode();
   res->token = F_LOCAL;
-  copy_shared_string(res->type, local_variables->variable[var].type);
+  copy_shared_string(res->type, compiler_frame->variable[var].type);
   res->node_info = OPT_NOT_CONST;
   res->tree_info=res->node_info;
 #ifdef __CHECKER__
@@ -408,11 +414,10 @@ node *mkidentifiernode(int i)
 {
   node *res = mkemptynode();
   res->token = F_IDENTIFIER;
-  setup_fake_program();
-  copy_shared_string(res->type, ID_FROM_INT(&fake_program, i)->type);
+  copy_shared_string(res->type, ID_FROM_INT(new_program, i)->type);
 
   /* FIXME */
-  if(IDENTIFIER_IS_CONSTANT(ID_FROM_INT(&fake_program, i)->identifier_flags))
+  if(IDENTIFIER_IS_CONSTANT(ID_FROM_INT(new_program, i)->identifier_flags))
   {
     res->node_info = OPT_EXTERNAL_DEPEND;
   }else{
@@ -424,6 +429,27 @@ node *mkidentifiernode(int i)
   CDR(res)=0;
 #endif
   res->u.number = i;
+  return res;
+}
+
+node *mkexternalnode(int level,
+		     int i,
+		     struct identifier *id)
+{
+  node *res = mkemptynode();
+  res->token = F_EXTERNAL;
+
+  copy_shared_string(res->type, id->type);
+
+  /* FIXME */
+  res->node_info = OPT_NOT_CONST;
+  res->tree_info=res->node_info;
+
+#ifdef __CHECKER__
+  CDR(res)=0;
+#endif
+  res->u.integer.a = level;
+  res->u.integer.b = i;
   return res;
 }
 
@@ -451,6 +477,9 @@ node *mkcastnode(struct pike_string *type,node *n)
 void resolv_constant(node *n)
 {
   struct identifier *i;
+  struct program *p;
+  INT32 numid;
+
   if(!n)
   {
     push_int(0);
@@ -459,31 +488,49 @@ void resolv_constant(node *n)
     {
     case F_CONSTANT:
       push_svalue(& n->u.sval);
+      return;
+
+    case F_EXTERNAL:
+      p=parent_compilation(n->u.integer.a);
+      if(!p)
+      {
+	yyerror("Failed to resolv external constant");
+	push_int(0);
+	return;
+      }
+      numid=n->u.integer.b;
       break;
 
     case F_IDENTIFIER:
-      setup_fake_program();
-      i=ID_FROM_INT(& fake_program, n->u.number);
-	
-      if(IDENTIFIER_IS_CONSTANT(i->identifier_flags))
-      {
-	push_svalue(PROG_FROM_INT(&fake_program, n->u.number)->constants +
-		    i->func.offset);
-      }else{
-	yyerror("Identifier is not a constant");
-	push_int(0);
-      }
+      p=new_program;
+      numid=n->u.number;
       break;
 
     case F_LOCAL:
-	yyerror("Expected constant, got local variable");
-	push_int(0);
-	break;
+      yyerror("Expected constant, got local variable");
+      push_int(0);
+      return;
 
     case F_GLOBAL:
-	yyerror("Expected constant, got global variable");
-	push_int(0);
-	break;
+      yyerror("Expected constant, got global variable");
+      push_int(0);
+      return;
+
+    default:
+      yyerror("Expected constant, got something else");
+      push_int(0);
+      return;
+    }
+
+    i=ID_FROM_INT(p, numid);
+    
+    if(IDENTIFIER_IS_CONSTANT(i->identifier_flags))
+    {
+      push_svalue(PROG_FROM_INT(new_program, numid)->constants +
+		  i->func.offset);
+    }else{
+      yyerror("Identifier is not a constant");
+      push_int(0);
     }
   }
 }
@@ -798,8 +845,7 @@ static void low_print_tree(node *foo,int needlval)
 
   case F_IDENTIFIER:
     if(needlval) putchar('&');
-    setup_fake_program();
-    printf("%s",ID_FROM_INT(&fake_program, foo->u.number)->name->str);
+    printf("%s",ID_FROM_INT(new_program, foo->u.number)->name->str);
     break;
 
   case F_ASSIGN:
@@ -1235,8 +1281,7 @@ void fix_type_field(node *n)
       switch(CAR(n)->token)
       {
       case F_IDENTIFIER:
-	setup_fake_program();
-	name=ID_FROM_INT(&fake_program, CAR(n)->u.number)->name->str;
+	name=ID_FROM_INT(new_program, CAR(n)->u.number)->name->str;
 	break;
 	
       case F_CONSTANT:
@@ -1281,11 +1326,11 @@ void fix_type_field(node *n)
     {
       yyerror("You cannot return a void expression");
     }
-    if(local_variables &&
-       local_variables->current_return_type &&
-       !match_types(local_variables->current_return_type,CAR(n)->type) &&
+    if(compiler_frame &&
+       compiler_frame->current_return_type &&
+       !match_types(compiler_frame->current_return_type,CAR(n)->type) &&
        !(
-	 local_variables->current_return_type==void_type_string &&
+	 compiler_frame->current_return_type==void_type_string &&
 	 CAR(n)->token == F_CONSTANT &&
 	 IS_ZERO(& CAR(n)->u.sval)
 	 )
@@ -1364,7 +1409,7 @@ static void zapp_try_optimize(node *n)
 static void optimize(node *n)
 {
   node *tmp1, *tmp2, *tmp3;
-  INT32 save_line = current_line;
+  INT32 save_line = lex.current_line;
   do
   {
     if(car_is_node(n) && !(CAR(n)->node_info & OPT_OPTIMIZED))
@@ -1377,7 +1422,7 @@ static void optimize(node *n)
       n=CDR(n);
       continue;
     }
-    current_line = n->line_number;
+    lex.current_line = n->line_number;
 
 
     n->tree_info = n->node_info;
@@ -1807,7 +1852,7 @@ static void optimize(node *n)
     n->node_info |= OPT_OPTIMIZED;
     n=n->parent;
   }while(n);
-  current_line = save_line;
+  lex.current_line = save_line;
 }
 
 struct timer_oflo
@@ -1842,10 +1887,9 @@ int eval_low(node *n)
 #endif
 
   if(num_parse_error) return -1;
-  setup_fake_program();
 
-  num_strings=fake_program.num_strings;
-  num_constants=fake_program.num_constants;
+  num_strings=new_program->num_strings;
+  num_constants=new_program->num_constants;
   jump=PC;
 
   store_linenumbers=0;
@@ -1853,7 +1897,6 @@ int eval_low(node *n)
   ins_f_byte(F_DUMB_RETURN);
   store_linenumbers=1;
 
-  setup_fake_program();
   ret=-1;
   if(!num_parse_error)
   {
@@ -1896,21 +1939,19 @@ int eval_low(node *n)
     remove_callback(tmp_callback);
   }
 
-  while(fake_program.num_strings > num_strings)
+  while(new_program->num_strings > num_strings)
   {
-    fake_program.num_strings--;
-    free_string(fake_program.strings[fake_program.num_strings]);
-    areas[A_STRINGS].s.len-=sizeof(struct pike_string *);
+    new_program->num_strings--;
+    free_string(new_program->strings[new_program->num_strings]);
   }
 
-  while(fake_program.num_constants > num_constants)
+  while(new_program->num_constants > num_constants)
   {
-    fake_program.num_constants--;
-    free_svalue(fake_program.constants + fake_program.num_constants);
-    areas[A_CONSTANTS].s.len-=sizeof(struct svalue);
+    new_program->num_constants--;
+    free_svalue(new_program->constants + new_program->num_constants);
   }
 
-  areas[A_PROGRAM].s.len=jump;
+  new_program->num_program=jump;
 
   return ret;
 }
@@ -2037,15 +2078,9 @@ int dooptcode(struct pike_string *name,
   struct svalue *foo;
 
 #ifdef DEBUG
-  if(recoveries && sp-evaluator_stack < recoveries->sp)
-    fatal("Stack error before dooptcode (underflow)\n");
-#endif
-
-#ifdef DEBUG
   if(a_flag > 1)
     fprintf(stderr,"Doing function '%s' at %x\n",name->str,PC);
 #endif
-  last_function_opt_info=OPT_SIDE_EFFECT;
 
   args=count_arguments(type);
   if(args < 0) 
@@ -2055,44 +2090,44 @@ int dooptcode(struct pike_string *name,
   }else{
     vargs=0;
   }
-  n=mknode(F_ARG_LIST,n,0);
-
-  if((foo=is_stupid_func(n, args, vargs)))
+  if(compiler_pass==1)
   {
-    if(foo->type == T_FUNCTION && foo->subtype==FUNCTION_BUILTIN)
+    tmp.offset=-1;
+  }else{
+    n=mknode(F_ARG_LIST,n,0);
+    
+    if((foo=is_stupid_func(n, args, vargs)))
     {
-      tmp.c_fun=foo->u.efun->function;
-      ret=define_function(name,
-			  type,
-			  modifiers,
-			  IDENTIFIER_C_FUNCTION | vargs,
-			  &tmp);
-      free_node(n);
-      return ret;
+      if(foo->type == T_FUNCTION && foo->subtype==FUNCTION_BUILTIN)
+      {
+	tmp.c_fun=foo->u.efun->function;
+	ret=define_function(name,
+			    type,
+			    modifiers,
+			    IDENTIFIER_C_FUNCTION | vargs,
+			    &tmp);
+	free_node(n);
+	return ret;
+      }
+    }
+
+    tmp.offset=PC;
+    add_to_program(compiler_frame->max_number_of_locals);
+    add_to_program(args);
+  
+#ifdef DEBUG
+    if(a_flag > 2)
+    {
+      fprintf(stderr,"Coding: ");
+      print_tree(n);
+    }
+#endif
+    if(!num_parse_error)
+    {
+      do_code_block(n);
     }
   }
   
-  tmp.offset=PC;
-  ins_byte(local_variables->max_number_of_locals, A_PROGRAM);
-  ins_byte(args, A_PROGRAM);
-  
-#ifdef DEBUG
-  if(a_flag > 2)
-  {
-    fprintf(stderr,"Coding: ");
-    print_tree(n);
-  }
-#endif
-  if(!num_parse_error)
-  {
-    do_code_block(n);
-  }
-  
-#ifdef DEBUG
-  if(recoveries && sp-evaluator_stack < recoveries->sp)
-    fatal("Stack error after do_code_block (underflow)\n");
-#endif
-
   ret=define_function(name,
 		      type,
 		      modifiers,
@@ -2102,7 +2137,5 @@ int dooptcode(struct pike_string *name,
   free_node(n);
   return ret;
 }
-
-INT32 get_opt_info(void) { return last_function_opt_info; }
 
 

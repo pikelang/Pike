@@ -1,5 +1,5 @@
 /*
- * $Id: des.c,v 1.10 1997/12/22 23:28:31 hubbe Exp $
+ * $Id: des.c,v 1.11 1998/01/13 23:01:11 hubbe Exp $
  *
  * A pike module for getting access to some common cryptos.
  *
@@ -43,6 +43,7 @@ struct pike_crypto_des {
 		    unsigned INT32 *method, unsigned INT8 *src);
 };
 
+#undef THIS
 #define THIS ((struct pike_crypto_des *) fp->current_storage)
 
 /*

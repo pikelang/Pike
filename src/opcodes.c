@@ -90,7 +90,7 @@ void cast(struct pike_string *s)
       push_string(describe_type(s));
       if(!sp[-2].u.object->prog)
 	error("Cast called on destructed object.\n");
-      if(sp[-2].u.object->prog->lfuns[LFUN_CAST] == -1)
+      if(FIND_LFUN(sp[-2].u.object->prog,LFUN_CAST) == -1)
 	error("No cast method in object.\n");
       apply_lfun(sp[-2].u.object, LFUN_CAST, 1);
       free_svalue(sp-2);
@@ -235,7 +235,7 @@ void f_cast(void)
       push_string(s);
       if(!sp[-2].u.object->prog)
 	error("Cast called on destructed object.\n");
-      if(sp[-2].u.object->prog->lfuns[LFUN_CAST] == -1)
+      if(FIND_LFUN(sp[-2].u.object->prog,LFUN_CAST) == -1)
 	error("No cast method in object.\n");
       apply_lfun(sp[-2].u.object, LFUN_CAST, 1);
       free_svalue(sp-2);

@@ -6,7 +6,36 @@
 #ifndef PIKE_TYPES_H
 #define PIKE_TYPES_H
 
-#include "las.h"
+#include "svalue.h"
+
+struct node_s
+{
+  unsigned INT16 token;
+  INT16 line_number;
+  INT16 node_info;
+  INT16 tree_info;
+  struct pike_string *type;
+  struct node_s *parent;
+  union 
+  {
+    int number;
+    struct svalue sval;
+    struct
+    {
+      struct node_s *a,*b;
+    } node;
+    struct
+    {
+      int a,b;
+    } integer;
+  } u;
+};
+
+#ifndef STRUCT_NODE_S_DECLARED
+#define STRUCT_NODE_S_DECLARED
+#endif
+
+typedef struct node_s node;
 
 extern int max_correct_args;
 extern struct pike_string *string_type_string;

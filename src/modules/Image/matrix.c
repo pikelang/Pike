@@ -1,9 +1,9 @@
-/* $Id: matrix.c,v 1.12 1998/01/06 21:39:29 mirar Exp $ */
+/* $Id: matrix.c,v 1.13 1998/01/13 22:59:23 hubbe Exp $ */
 
 /*
 **! module Image
 **! note
-**!	$Id: matrix.c,v 1.12 1998/01/06 21:39:29 mirar Exp $
+**!	$Id: matrix.c,v 1.13 1998/01/13 22:59:23 hubbe Exp $
 **! class image
 */
 
@@ -26,6 +26,10 @@
 #include "image.h"
 
 extern struct program *image_program;
+#ifdef THIS
+#undef THIS /* Needed for NT */
+#endif
+
 #define THIS ((struct image *)(fp->current_storage))
 #define THISOBJ (fp->current_object)
 

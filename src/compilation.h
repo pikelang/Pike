@@ -14,7 +14,6 @@
  * defining PUSH pushes the selected state(s) on the stack(s)
  * defining POP pops the selected state(s) from the stack(s)
  *
- * define FILE_STATE to select the file state
  * define PROGRAM_STATE to select the program state
  */
 
@@ -75,35 +74,19 @@
   ZMEMBER(struct pike_string *,X)
 #endif
 
-#ifdef PROGRAM_STATE
   SNAME(program_state,previous_program_state)
   ZMEMBER(INT32,last_line)
   STRMEMBER(last_file,"last_file")
-  ZMEMBER(struct program,fake_program)
+  ZMEMBER(struct program *,new_program)
+  ZMEMBER(struct program *,malloc_size_program)
   ZMEMBER(node *,init_node)
   ZMEMBER(INT32,last_pc)
   ZMEMBER(int,num_parse_error)
-  ZMEMBER(struct locals *,local_variables)
-  ZMEMBER(dynamic_buffer,inherit_names)
+  ZMEMBER(struct compiler_frame *,compiler_frame)
   ZMEMBER(dynamic_buffer,used_modules)
-  ZMEMBER2(dynamic_buffer,areas,[NUM_AREAS])
   IMEMBER(int,comp_stackp)
+  IMEMBER(int,compiler_pass)
   SEND
-#endif
-
-#ifdef FILE_STATE
-  SNAME(file_state,previous_file_state)
-  ZMEMBER(INT32,old_line)
-  ZMEMBER(INT32,current_line)
-  ZMEMBER(INT32,nexpands)
-  ZMEMBER(int,pragma_all_inline)
-  ZMEMBER(struct inputstate *,istate)
-  ZMEMBER(struct hash_table *,defines)
-  ZMEMBER(struct program_state *,previous_program_state)
-  STRMEMBER(current_file,"current_file")
-  SEND
-#endif
-
 
 #undef PCODE
 #undef STRMEMBER
@@ -113,3 +96,8 @@
 #undef ZMEMBER2
 #undef SNAME
 #undef SEND
+
+#undef STRUCT
+#undef PUSH
+#undef POP
+#undef DECLARE

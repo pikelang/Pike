@@ -1,5 +1,5 @@
 #include "global.h"
-RCSID("$Id: threads.c,v 1.50 1998/01/03 07:12:12 hubbe Exp $");
+RCSID("$Id: threads.c,v 1.51 1998/01/13 22:56:51 hubbe Exp $");
 
 int num_threads = 1;
 int threads_disabled = 0;
@@ -74,9 +74,10 @@ int co_destroy(COND_T *c)
 {
   struct cond_t_queue *t;
   mt_lock(& c->lock);
-  n=c->head;
-  c->head=c->tail=0;
-  if(t) return EBUSY;
+  t=c->head;
+  mt_unlock(& c->lock);
+  if(t) return -1;
+  mt_destroy(& c->lock);
   return 0;
 }
 
@@ -191,7 +192,9 @@ void f_thread_create(INT32 args)
   arg->id=clone_object(thread_id_prog,0);
   ((struct thread_state *)arg->id->storage)->status=THREAD_RUNNING;
 
-  tmp=th_create(&dummy,new_thread_func,arg);
+  tmp=th_create(&((struct thread_state *)arg->id->storage)->id,
+		new_thread_func,
+		arg);
 
   if(!tmp)
   {
@@ -509,6 +512,7 @@ void init_thread_obj(struct object *o)
 void exit_thread_obj(struct object *o)
 {
   co_destroy(& THIS_THREAD->status_change);
+  th_destroy(& THIS_THREAD->id);
 }
 
 #ifdef DEBUG
@@ -577,7 +581,7 @@ void th_init(void)
   set_init_callback(init_mutex_key_obj);
   set_exit_callback(exit_mutex_key_obj);
   mutex_key=end_program();
-  mutex_key->flags|=PROG_DESTRUCT_IMMEDIATE;
+  mutex_key->flags|=PROGRAM_DESTRUCT_IMMEDIATE;
   if(!mutex_key)
     fatal("Failed to initialize mutex_key program!\n");
 

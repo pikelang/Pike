@@ -1,9 +1,9 @@
-/* $Id: pattern.c,v 1.10 1997/12/22 23:26:49 hubbe Exp $ */
+/* $Id: pattern.c,v 1.11 1998/01/13 22:59:24 hubbe Exp $ */
 
 /*
 **! module Image
 **! note
-**!	$Id: pattern.c,v 1.10 1997/12/22 23:26:49 hubbe Exp $
+**!	$Id: pattern.c,v 1.11 1998/01/13 22:59:24 hubbe Exp $
 **! class image
 */
 
@@ -25,6 +25,10 @@
 #include "image.h"
 
 extern struct program *image_program;
+#ifdef THIS
+#undef THIS
+#endif
+
 #define THIS ((struct image *)(fp->current_storage))
 #define THISOBJ (fp->current_object)
 

@@ -503,6 +503,16 @@ struct pike_string *add_shared_strings(struct pike_string *a,
   return ret;
 }
 
+struct pike_string *add_and_free_shared_strings(struct pike_string *a,
+						struct pike_string *b)
+{
+  INT32 alen=a->len;
+  a=realloc_shared_string(a,alen + b->len);
+  MEMCPY(a->str+alen,b->str,b->len);
+  free_string(b);
+  return end_shared_string(a);
+}
+
 /*** replace function ***/
 struct pike_string *string_replace(struct pike_string *str,
 				     struct pike_string *del,

@@ -1,5 +1,5 @@
 /*
- * $Id: pipe.c,v 1.10 1997/11/16 22:25:45 nisse Exp $
+ * $Id: pipe.c,v 1.11 1998/01/13 23:01:11 hubbe Exp $
  *
  * PIPE crypto module for Pike.
  *
@@ -35,6 +35,7 @@ struct pike_crypto_pipe {
   INT32 mode;
 };
 
+#undef THIS
 #define THIS	((struct pike_crypto_pipe *)(fp->current_storage))
 /*
  * Globals

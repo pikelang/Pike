@@ -111,7 +111,7 @@ void ins_f_byte(unsigned int b)
   if(b>255)
     error("Instruction too big %d\n",b);
 #endif
-  ins_byte((unsigned char)b,A_PROGRAM);
+  add_to_program((unsigned char)b);
 }
 
 static void ins_f_byte_with_arg(unsigned int a,unsigned INT32 b)
@@ -127,20 +127,20 @@ static void ins_f_byte_with_arg(unsigned int a,unsigned INT32 b)
     if( b < 256*256)
     {
       ins_f_byte(F_PREFIX_CHARX256);
-      ins_byte(b>>8, A_PROGRAM);
+      add_to_program(b>>8);
     }else if(b < 256*256*256) {
       ins_f_byte(F_PREFIX_WORDX256);
-      ins_byte(b >> 16, A_PROGRAM);
-      ins_byte(b >> 8, A_PROGRAM);
+      add_to_program(b>>16);
+      add_to_program(b>>8);
     }else{
       ins_f_byte(F_PREFIX_24BITX256);
-      ins_byte(b >> 24, A_PROGRAM);
-      ins_byte(b >> 16, A_PROGRAM);
-      ins_byte(b >> 8, A_PROGRAM);
+      add_to_program(b>>24);
+      add_to_program(b>>16);
+      add_to_program(b>>8);
     }
   }
   ins_f_byte(a);
-  ins_byte(b, A_PROGRAM);
+  add_to_program(b);
 }
 
 void assemble(void)
@@ -248,11 +248,11 @@ void assemble(void)
     {
     case F_NOP: break;
     case F_ALIGN:
-      while(PC % c->arg) ins_byte(0, A_PROGRAM);
+      while(PC % c->arg) add_to_program(0);
       break;
 
     case F_BYTE:
-      ins_byte(c->arg, A_PROGRAM);
+      add_to_program(c->arg);
       break;
 
     case F_LABEL:
@@ -276,7 +276,7 @@ void assemble(void)
 	if(c->arg > max_label || c->arg < 0) fatal("Jump to unknown label?\n");
 #endif
 	tmp=PC;
-	ins_int(jumps[c->arg],A_PROGRAM);
+	ins_int(jumps[c->arg], (void(*)(char))add_to_program);
 	jumps[c->arg]=tmp;
 	break;
 
@@ -352,7 +352,7 @@ int insopt(int f, INT32 b, int cl, struct pike_string *cf)
 
   p->opcode=f;
   p->line=cl;
-  copy_shared_string(p->file, current_file);
+  copy_shared_string(p->file, lex.current_file);
   p->arg=b;
 
   return p - (p_instr *)instrbuf.s.str;

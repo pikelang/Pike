@@ -4,7 +4,7 @@
 ||| See the files COPYING and DISCLAIMER for more information.
 \*/
 #include "global.h"
-RCSID("$Id: docode.c,v 1.23 1997/09/22 01:01:15 hubbe Exp $");
+RCSID("$Id: docode.c,v 1.24 1998/01/13 22:56:42 hubbe Exp $");
 #include "las.h"
 #include "program.h"
 #include "language.h"
@@ -15,7 +15,7 @@ RCSID("$Id: docode.c,v 1.23 1997/09/22 01:01:15 hubbe Exp $");
 #include "array.h"
 #include "pike_macros.h"
 #include "error.h"
-#include "pike_memory.h"
+#include "memory.h"
 #include "svalue.h"
 #include "main.h"
 #include "lex.h"
@@ -32,47 +32,14 @@ static INT32 current_switch_default;
 static INT32 current_switch_values_on_stack;
 static INT32 *current_switch_jumptable =0;
 
-void ins_byte(unsigned char b,int area)
-{
-  add_to_mem_block(area, (char *)&b, 1);
-}
-
-void ins_signed_byte(char b,int area)
-{
-  add_to_mem_block(area, (char *)&b, 1);
-}
-
-void ins_short(INT16 l,int area)
-{
-  add_to_mem_block(area, (char *)&l, sizeof(INT16));
-}
-
-/*
- * Store an INT32.
- */
-void ins_int(INT32 l,int area)
-{
-  add_to_mem_block(area, (char *)&l+0, sizeof(INT32));
-}
-
 void upd_int(int offset, INT32 tmp)
 {
-#ifdef HANDLES_UNALIGNED_MEMORY_ACCESS
-  *((int *)(areas[A_PROGRAM].s.str+offset))=tmp;
-#else
-  MEMCPY(areas[A_PROGRAM].s.str+offset, (char *)&tmp,sizeof(tmp));
-#endif
+  MEMCPY(new_program->program+offset, (char *)&tmp,sizeof(tmp));
 }
 
 INT32 read_int(int offset)
 {
-  INT32 tmp;
-#ifdef HANDLES_UNALIGNED_MEMORY_ACCESS
-  tmp=*((int *)(areas[A_PROGRAM].s.str+offset));
-#else
-  MEMCPY((char *)&tmp, areas[A_PROGRAM].s.str+offset,sizeof(tmp));
-#endif
-  return tmp;
+  return EXTRACT_INT(new_program->program+offset);
 }
 
 int store_linenumbers=1;
@@ -148,12 +115,12 @@ void do_pop(int x)
 int do_docode(node *n,INT16 flags)
 {
   int i;
-  int save_current_line=current_line;
+  int save_current_line=lex.current_line;
   if(!n) return 0;
-  current_line=n->line_number;
+  lex.current_line=n->line_number;
   i=do_docode2(n, flags);
 
-  current_line=save_current_line;
+  lex.current_line=save_current_line;
   return i;
 }
 
@@ -174,8 +141,8 @@ static void code_expression(node *n, int flags, char *err)
   case 2:
     fatal("Internal compiler error (%s), line %ld, file %s\n",
 	  err,
-	  (long)current_line,
-	  current_file?current_file->str:"Unknown");
+	  (long)lex.current_line,
+	  lex.current_file?lex.current_file->str:"Unknown");
   }
 }
 
@@ -279,8 +246,7 @@ static int do_docode2(node *n,int flags)
     default:
       yyerror("Illegal lvalue.");
       emit(F_NUMBER,0);
-      emit(F_NUMBER,0);
-      return 2;
+      return 1;
 
     case F_LVALUE_LIST:
     case F_LOCAL:
@@ -289,12 +255,30 @@ static int do_docode2(node *n,int flags)
     case F_INDEX:
     case F_ARROW:
     case F_ARG_LIST:
+    case F_EXTERNAL:
       break;
     }
   }
 
   switch(n->token)
   {
+  case F_EXTERNAL:
+    emit(F_LDA, n->u.integer.a);
+    if(flags & DO_LVALUE)
+    {
+      emit(F_EXTERNAL_LVALUE, n->u.integer.b);
+      return 2;
+    }else{
+      emit(F_EXTERNAL, n->u.integer.b);
+      return 1;
+    }
+    break;
+
+  case F_UNDEFINED:
+    yyerror("Undefined identifier");
+    emit(F_NUMBER,0);
+    return 1;
+
   case F_PUSH_ARRAY:
     code_expression(CAR(n), 0, "`@");
     emit2(F_PUSH_ARRAY);
@@ -368,7 +352,7 @@ static int do_docode2(node *n,int flags)
     tmp1=do_docode(CAR(n),DO_LVALUE);
 #ifdef DEBUG
     if(tmp1 != 2)
-      fatal("HELP! FATAL INTERNAL COMPILER ERROR\n");
+      fatal("HELP! FATAL INTERNAL COMPILER ERROR (7)\n");
 #endif
 
     if(match_types(CAR(n)->type,array_type_string) ||
@@ -441,7 +425,7 @@ static int do_docode2(node *n,int flags)
       switch(CDR(n)->token)
       {
       case F_LOCAL:
-	if(CDR(n)->u.number >= local_variables->max_number_of_locals)
+	if(CDR(n)->u.number >= compiler_frame->max_number_of_locals)
 	  yyerror("Illegal to use local variable here.");
 
 	code_expression(CAR(n), 0, "RHS");
@@ -450,7 +434,7 @@ static int do_docode2(node *n,int flags)
 	break;
 
       case F_IDENTIFIER:
-	if(!IDENTIFIER_IS_VARIABLE( ID_FROM_INT(& fake_program, CDR(n)->u.number)->identifier_flags))
+	if(!IDENTIFIER_IS_VARIABLE( ID_FROM_INT(new_program, CDR(n)->u.number)->identifier_flags))
 	{
 	  yyerror("Cannot assign functions or constants.\n");
 	}else{
@@ -501,7 +485,7 @@ static int do_docode2(node *n,int flags)
   case F_RANGE:
     tmp1=do_docode(CAR(n),DO_NOT_COPY);
     if(do_docode(CDR(n),DO_NOT_COPY)!=2)
-      fatal("Compiler internal error (at %ld).\n",(long)current_line);
+      fatal("Compiler internal error (at %ld).\n",(long)lex.current_line);
     emit2(n->token);
     return tmp1;
 
@@ -510,7 +494,7 @@ static int do_docode2(node *n,int flags)
     tmp1=do_docode(CAR(n),DO_LVALUE);
 #ifdef DEBUG
     if(tmp1 != 2)
-      fatal("HELP! FATAL INTERNAL COMPILER ERROR (again)\n");
+      fatal("HELP! FATAL INTERNAL COMPILER ERROR (1)\n");
 #endif
 
     if(flags & DO_POP)
@@ -527,7 +511,7 @@ static int do_docode2(node *n,int flags)
     tmp1=do_docode(CAR(n),DO_LVALUE);
 #ifdef DEBUG
     if(tmp1 != 2)
-      fatal("HELP! FATAL INTERNAL COMPILER ERROR (yet again)\n");
+      fatal("HELP! FATAL INTERNAL COMPILER ERROR (2)\n");
 #endif
     if(flags & DO_POP)
     {
@@ -703,7 +687,7 @@ static int do_docode2(node *n,int flags)
       return 1;
     }
     else if(CAR(n)->token == F_IDENTIFIER &&
-	    IDENTIFIER_IS_FUNCTION(ID_FROM_INT(& fake_program, CAR(n)->u.number)->identifier_flags))
+	    IDENTIFIER_IS_FUNCTION(ID_FROM_INT(new_program, CAR(n)->u.number)->identifier_flags))
     {
       emit2(F_MARK);
       do_docode(CDR(n),0);
@@ -722,14 +706,15 @@ static int do_docode2(node *n,int flags)
 
       tmp=findstring("call_function");
       if(!tmp) yyerror("No call_function efun.");
-      if(!find_module_identifier(tmp))
+      foo=find_module_identifier(tmp);
+      if(!foo || !foo->token==F_CONSTANT)
       {
 	yyerror("No call_function efun.");
       }else{
-	tmp1=store_constant(sp-1, 1);
-	pop_stack();
+	tmp1=store_constant(& foo->u.sval, 1);
 	emit(F_APPLY, tmp1);
       }
+      free_node(foo);
       return 1;
     }
 
@@ -790,12 +775,12 @@ static int do_docode2(node *n,int flags)
     current_switch_jumptable[current_switch_case++]=-1;
 
     DO_CODE_BLOCK(CDR(n));
-
+    
 #ifdef DEBUG
     if(sp-save_sp != cases)
       fatal("Count cases is wrong!\n");
 #endif
-    
+
     f_aggregate(cases);
     order=get_switch_order(sp[-1].u.array);
 
@@ -1065,7 +1050,7 @@ static int do_docode2(node *n,int flags)
     }
 
   case F_LOCAL:
-    if(n->u.number >= local_variables->max_number_of_locals)
+    if(n->u.number >= compiler_frame->max_number_of_locals)
       yyerror("Illegal to use local variable here.");
     if(flags & DO_LVALUE)
     {
@@ -1077,7 +1062,7 @@ static int do_docode2(node *n,int flags)
     }
 
   case F_IDENTIFIER:
-    if(IDENTIFIER_IS_FUNCTION(ID_FROM_INT(& fake_program, n->u.number)->identifier_flags))
+    if(IDENTIFIER_IS_FUNCTION(ID_FROM_INT(new_program, n->u.number)->identifier_flags))
     {
       if(flags & DO_LVALUE)
       {

@@ -5,7 +5,7 @@
 \*/
 #include <math.h>
 #include "global.h"
-RCSID("$Id: operators.c,v 1.21 1997/12/03 22:46:17 hubbe Exp $");
+RCSID("$Id: operators.c,v 1.22 1998/01/13 22:56:47 hubbe Exp $");
 #include "interpret.h"
 #include "svalue.h"
 #include "multiset.h"
@@ -49,7 +49,7 @@ COMPARISON(f_ge,"`>=",!is_lt(sp-2,sp-1))
 #define CALL_OPERATOR(OP, args) \
  if(!sp[-args].u.object->prog) \
    error("Operator %s called in destructed object.\n",lfun_names[OP]); \
- if(sp[-args].u.object->prog->lfuns[OP] == -1) \
+ if(FIND_LFUN(sp[-args].u.object->prog,OP) == -1) \
    error("No operator %s in object.\n",lfun_names[OP]); \
  apply_lfun(sp[-args].u.object, OP, args-1); \
  free_svalue(sp-2); \
@@ -76,7 +76,7 @@ void f_add(INT32 args)
       {
 	if(sp[-args].type == T_OBJECT &&
 	  sp[-args].u.object->prog &&
-	  sp[-args].u.object->prog->lfuns[LFUN_ADD] != -1)
+	   FIND_LFUN(sp[-args].u.object->prog,LFUN_ADD) != -1)
 	{
 	  apply_lfun(sp[-args].u.object, LFUN_ADD, args-1);
 	  free_svalue(sp-2);
@@ -88,7 +88,7 @@ void f_add(INT32 args)
 	{
 	  if(sp[e-args].type == T_OBJECT &&
 	     sp[e-args].u.object->prog &&
-	     sp[e-args].u.object->prog->lfuns[LFUN_RADD] != -1)
+	     FIND_LFUN(sp[e-args].u.object->prog,LFUN_RADD) != -1)
 	  {
 	    struct svalue *tmp=sp+e-args;
 	    check_stack(e);
@@ -391,7 +391,7 @@ static int call_lfun(int left, int right)
 {
   if(sp[-2].type == T_OBJECT &&
      sp[-2].u.object->prog &&
-     sp[-2].u.object->prog->lfuns[left] != -1)
+     FIND_LFUN(sp[-2].u.object->prog,left) != -1)
   {
     apply_lfun(sp[-2].u.object, left, 1);
     free_svalue(sp-2);
@@ -402,7 +402,7 @@ static int call_lfun(int left, int right)
 
   if(sp[-1].type == T_OBJECT &&
      sp[-1].u.object->prog &&
-     sp[-1].u.object->prog->lfuns[right] != -1)
+     FIND_LFUN(sp[-1].u.object->prog,right) != -1)
   {
     push_svalue(sp-2);
     apply_lfun(sp[-2].u.object, right, 1);
@@ -1418,6 +1418,21 @@ static int generate_sizeof(node *n)
   return 1;
 }
 
+void f_call_function(INT32 args)
+{
+  mega_apply(APPLY_STACK,args,0,0);
+}
+
+static int generate_call_function(node *n)
+{
+  node **arg;
+  emit2(F_MARK);
+  do_docode(CDR(n),DO_NOT_COPY);
+  emit2(F_CALL_FUNCTION);
+  return 1;
+}
+
+
 void init_operators(void)
 {
   add_efun2("`[]",f_index,
@@ -1462,4 +1477,9 @@ void init_operators(void)
 
   add_efun2("`~",f_compl,"function(object:mixed)|function(int:int)|function(float:float)|function(string:string)",OPT_TRY_OPTIMIZE,0,generate_compl);
   add_efun2("sizeof", f_sizeof, "function(string|multiset|array|mapping|object:int)",0,0,generate_sizeof);
+
+  add_efun2("`()",f_call_function,"function(mixed,mixed ...:mixed)",OPT_SIDE_EFFECT | OPT_EXTERNAL_DEPEND,0,generate_call_function);
+
+  /* This one should be removed */
+  add_efun2("call_function",f_call_function,"function(mixed,mixed ...:mixed)",OPT_SIDE_EFFECT | OPT_EXTERNAL_DEPEND,0,generate_call_function);
 }

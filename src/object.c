@@ -4,7 +4,7 @@
 ||| See the files COPYING and DISCLAIMER for more information.
 \*/
 #include "global.h"
-RCSID("$Id: object.c,v 1.30 1998/01/02 01:05:48 hubbe Exp $");
+RCSID("$Id: object.c,v 1.31 1998/01/13 22:56:46 hubbe Exp $");
 #include "object.h"
 #include "dynamic_buffer.h"
 #include "interpret.h"
@@ -19,6 +19,8 @@ RCSID("$Id: object.c,v 1.30 1998/01/02 01:05:48 hubbe Exp $");
 #include "gc.h"
 #include "backend.h"
 #include "callback.h"
+#include "cpp.h"
+#include "builtin_functions.h"
 
 struct object *master_object = 0;
 struct program *master_program =0;
@@ -28,7 +30,7 @@ struct object fake_object = { 1 }; /* start with one reference */
 
 void setup_fake_object(void)
 {
-  fake_object.prog=&fake_program;
+  fake_object.prog=new_program;
   fake_object.next=0;
   fake_object.refs=0xffffff;
 }
@@ -38,6 +40,9 @@ struct object *low_clone(struct program *p)
   int e;
   struct object *o;
   struct frame frame;
+
+  if(!(p->flags & PROGRAM_FINISHED))
+    error("Attempting to clone an unfinished program\n");
 
 #ifdef PROFILING
   p->num_clones++;
@@ -49,12 +54,22 @@ struct object *low_clone(struct program *p)
 
   o->prog=p;
   p->refs++;
+  o->parent=0;
+  o->parent_identifier=0;
   o->next=first_object;
   o->prev=0;
   if(first_object)
     first_object->prev=o;
   first_object=o;
   o->refs=1;
+  return o;
+}
+
+static void call_c_initializers(struct object *o)
+{
+  int e;
+  struct frame frame;
+  struct program *p=o->prog;
 
   frame.parent_frame=fp;
   frame.current_object=o;
@@ -103,11 +118,9 @@ struct object *low_clone(struct program *p)
 
   free_object(frame.current_object);
   fp = frame.parent_frame;
-
-  return o;
 }
 
-static void init_object(struct object *o, int args)
+static void call_pike_initializers(struct object *o, int args)
 {
   apply_lfun(o,LFUN___INIT,0);
   pop_stack();
@@ -118,9 +131,25 @@ static void init_object(struct object *o, int args)
 struct object *clone_object(struct program *p, int args)
 {
   struct object *o=low_clone(p);
-  init_object(o,args);
+  call_c_initializers(o);
+  call_pike_initializers(o,args);
   return o;
 }
+
+struct object *parent_clone_object(struct program *p,
+				   struct object *parent,
+				   int parent_identifier,
+				   int args)
+{
+  struct object *o=low_clone(p);
+  o->parent=parent;
+  parent->refs++;
+  o->parent_identifier=parent_identifier;
+  call_c_initializers(o);
+  call_pike_initializers(o,args);
+  return o;
+}
+
 
 struct object *get_master(void)
 {
@@ -143,12 +172,34 @@ struct object *get_master(void)
 
   if(!master_program)
   {
-    master_name=make_shared_string(master_file);
-    master_program=compile_file(master_name);
-    free_string(master_name);
-    if(!master_program) return 0;
+    INT32 len;
+    struct pike_string *s;
+
+
+    FILE *f=fopen(master_file,"r");
+    fseek(f,0,SEEK_END);
+    len=ftell(f);
+    fseek(f,0,SEEK_SET);
+    s=begin_shared_string(len);
+    fread(s->str,1,len,f);
+    fclose(f);
+    push_string(end_shared_string(s));
+    push_text(master_file);
+    f_cpp(2);
+    f_compile(1);
+
+    if(sp[-1].type != T_PROGRAM)
+    {
+      pop_stack();
+      return 0;
+    }
+    master_program=sp[-1].u.program;
+    sp--;
   }
   master_object=clone_object(master_program,0);
+
+  call_c_initializers(master_object);
+  call_pike_initializers(master_object,0);
 
   apply_lfun(master_object,LFUN___INIT,0);
   pop_stack();
@@ -181,9 +232,16 @@ void destruct(struct object *o)
 
   o->refs++;
 
-  if(o->prog->lfuns[LFUN_DESTROY] != -1)
+  if(o->parent)
   {
-    safe_apply_low(o, o->prog->lfuns[LFUN_DESTROY], 0);
+    free_object(o->parent);
+    o->parent=0;
+  }
+
+  e=FIND_LFUN(o->prog,LFUN_DESTROY);
+  if(e != -1)
+  {
+    safe_apply_low(o, e, 0);
     pop_stack();
   }
 
@@ -293,7 +351,7 @@ void destruct_objects_to_destruct(void)
 
 void really_free_object(struct object *o)
 {
-  if(o->prog && (o->prog->flags & PROG_DESTRUCT_IMMEDIATE))
+  if(o->prog && (o->prog->flags & PROGRAM_DESTRUCT_IMMEDIATE))
   {
     o->refs++;
     destruct(o);
@@ -353,8 +411,16 @@ void low_object_index_no_free(struct svalue *to,
     {
       struct svalue *s;
       s=PROG_FROM_INT(p,f)->constants + i->func.offset;
-      check_destructed(s);
-      assign_svalue_no_free(to, s);
+      if(s->type==T_PROGRAM)
+      {
+	to->type=T_FUNCTION;
+	to->subtype=f;
+	to->u.object=o;
+	o->refs++;
+      }else{
+	check_destructed(s);
+	assign_svalue_no_free(to, s);
+      }
       break;
     }
 
@@ -389,10 +455,23 @@ void object_index_no_free2(struct svalue *to,
     return; /* make gcc happy */
   }
 
-  if(index->type != T_STRING)
+  switch(index->type)
+  {
+  case T_STRING:
+    f=find_shared_string_identifier(index->u.string, p);
+    free_string(index->u.string);
+    index->type=T_LVALUE;
+    index->u.integer=f;
+    break;
+    
+  case T_LVALUE:
+    f=index->u.integer;
+    break;
+      
+  default:
     error("Lookup on non-string value.\n");
+  }
 
-  f=find_shared_string_identifier(index->u.string, p);
   if(f < 0)
   {
     to->type=T_INT;
@@ -419,7 +498,7 @@ void object_index_no_free(struct svalue *to,
   }
   lfun=ARROW_INDEX_P(index) ? LFUN_ARROW : LFUN_INDEX;
 
-  if(p->lfuns[lfun] != -1)
+  if(FIND_LFUN(p, lfun) != -1)
   {
     push_svalue(index);
     apply_lfun(o,lfun,1);
@@ -478,10 +557,25 @@ void object_set_index2(struct object *o,
     return; /* make gcc happy */
   }
 
-  if(index->type != T_STRING)
-    error("Lookup on non-string value.\n");
+  switch(index->type)
+  {
+  case T_STRING:
+    f=find_shared_string_identifier(index->u.string, p);
+    if(f<0)
+      error("No such variable (%s) in object.\n", index->u.string->str);
+    free_string(index->u.string);
+    index->type=T_LVALUE;
+    index->u.integer=f;
+    break;
 
-  f=find_shared_string_identifier(index->u.string, p);
+  case T_LVALUE:
+    f=index->u.integer;
+    break;
+
+  default:
+    error("Lookup on non-string value.\n");
+  }
+
   if(f < 0)
   {
     error("No such variable (%s) in object.\n", index->u.string->str);
@@ -505,7 +599,7 @@ void object_set_index(struct object *o,
 
   lfun=ARROW_INDEX_P(index) ? LFUN_ASSIGN_ARROW : LFUN_ASSIGN_INDEX;
 
-  if(p->lfuns[lfun] != -1)
+  if(FIND_LFUN(p,lfun) != -1)
   {
     push_svalue(index);
     push_svalue(from);
@@ -564,13 +658,27 @@ union anything *object_get_item_ptr(struct object *o,
   }
 
   f=ARROW_INDEX_P(index) ? LFUN_ASSIGN_ARROW : LFUN_ASSIGN_INDEX;
-  if(p->lfuns[f] != -1)
+  if(FIND_LFUN(p,f) != -1)
     error("Cannot do incremental operations on overloaded index (yet).\n");
 
-  if(index->type != T_STRING)
-    error("Lookup on non-string value.\n");
+  switch(index->type)
+  {
+  case T_STRING:
+    f=find_shared_string_identifier(index->u.string, p);
+    free_string(index->u.string);
+    index->type=T_LVALUE;
+    index->u.integer=f;
+    break;
 
-  f=find_shared_string_identifier(index->u.string, p);
+  case T_LVALUE:
+    f=index->u.integer;
+    break;
+
+  default:
+    error("Lookup on non-string value.\n");
+    return 0;
+  }
+
   if(f < 0)
   {
     error("No such variable in object.\n");
@@ -733,10 +841,10 @@ struct array *object_indices(struct object *o)
   if(!p)
     error("indices() on destructed object.\n");
 
-  if(p->lfuns[LFUN__INDICES]==-1)
+  if(FIND_LFUN(p,LFUN__INDICES) == -1)
   {
-    a=allocate_array_no_init(p->num_identifier_indexes,0);
-    for(e=0;e<(int)p->num_identifier_indexes;e++)
+    a=allocate_array_no_init(p->num_identifier_index,0);
+    for(e=0;e<(int)p->num_identifier_index;e++)
     {
       copy_shared_string(ITEM(a)[e].u.string,
 			 ID_FROM_INT(p,p->identifier_index[e])->name);
@@ -762,10 +870,10 @@ struct array *object_values(struct object *o)
   if(!p)
     error("values() on destructed object.\n");
 
-  if(p->lfuns[LFUN__INDICES]==-1)
+  if(FIND_LFUN(p,LFUN__VALUES)==-1)
   {
-    a=allocate_array_no_init(p->num_identifier_indexes,0);
-    for(e=0;e<(int)p->num_identifier_indexes;e++)
+    a=allocate_array_no_init(p->num_identifier_index,0);
+    for(e=0;e<(int)p->num_identifier_index;e++)
     {
       low_object_index_no_free(ITEM(a)+e, o, p->identifier_index[e]);
     }
@@ -790,6 +898,9 @@ void gc_mark_object_as_referenced(struct object *o)
 
     if(!o || !(p=o->prog)) return; /* Object already destructed */
     o->refs++;
+
+    if(o->parent)
+      gc_mark_object_as_referenced(o);
 
     frame.parent_frame=fp;
     frame.current_object=o;  /* refs already updated */
@@ -842,6 +953,14 @@ void gc_check_all_objects(void)
 
   for(o=first_object;o;o=o->next)
   {
+#ifdef DEBUG
+    if(o->parent)
+      if(gc_check(o->parent)==-2)
+	fprintf(stderr,"(in object at %lx -> parent)\n",(long)o);
+#else
+    if(o->parent)
+      gc_check(o->parent);
+#endif
     if(o->prog)
     {
       INT32 e,d;

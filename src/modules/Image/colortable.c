@@ -1,11 +1,11 @@
 #include <config.h>
 
-/* $Id: colortable.c,v 1.32 1998/01/11 20:50:33 mirar Exp $ */
+/* $Id: colortable.c,v 1.33 1998/01/13 22:59:21 hubbe Exp $ */
 
 /*
 **! module Image
 **! note
-**!	$Id: colortable.c,v 1.32 1998/01/11 20:50:33 mirar Exp $
+**!	$Id: colortable.c,v 1.33 1998/01/13 22:59:21 hubbe Exp $
 **! class colortable
 **!
 **!	This object keeps colortable information,
@@ -21,7 +21,7 @@
 #undef COLORTABLE_REDUCE_DEBUG
 
 #include "global.h"
-RCSID("$Id: colortable.c,v 1.32 1998/01/11 20:50:33 mirar Exp $");
+RCSID("$Id: colortable.c,v 1.33 1998/01/13 22:59:21 hubbe Exp $");
 
 #include <sys/types.h>
 #include <sys/stat.h>
@@ -78,6 +78,9 @@ extern struct program *image_program;
 #define SQ(x) ((x)*(x))
 static INLINE int sq(int x) { return x*x; }
 
+#ifdef THIS
+#undef THIS /* Needed for NT */
+#endif
 #define THIS ((struct neo_colortable *)(fp->current_storage))
 #define THISOBJ (fp->current_object)
 

@@ -333,9 +333,9 @@ unsigned INT32 hash_svalue(struct svalue *s)
       break;
     }
 
-    if(s->u.object->prog->lfuns[LFUN___HASH] != -1)
+    if(FIND_LFUN(s->u.object->prog,LFUN___HASH) != -1)
     {
-      safe_apply_low(s->u.object, s->u.object->prog->lfuns[LFUN___HASH], 0);
+      safe_apply_low(s->u.object, FIND_LFUN(s->u.object->prog,LFUN___HASH), 0);
       if(sp[-1].type == T_INT)
       {
 	q=sp[-1].u.integer;
@@ -375,9 +375,9 @@ int svalue_is_true(struct svalue *s)
   case T_OBJECT:
     if(!s->u.object->prog) return 0;
 
-    if(s->u.object->prog->lfuns[LFUN_NOT]!=-1)
+    if(FIND_LFUN(s->u.object->prog,LFUN_NOT)!=-1)
     {
-      safe_apply_low(s->u.object,s->u.object->prog->lfuns[LFUN_NOT],0);
+      safe_apply_low(s->u.object,FIND_LFUN(s->u.object->prog,LFUN_NOT),0);
       if(sp[-1].type == T_INT && sp[-1].u.integer == 0)
       {
 	pop_stack();
@@ -394,6 +394,8 @@ int svalue_is_true(struct svalue *s)
     
 }
 
+#define TWO_TYPES(X,Y) (((X)<<8)|(Y))
+
 int is_eq(struct svalue *a, struct svalue *b)
 {
   check_type(a->type);
@@ -406,9 +408,24 @@ int is_eq(struct svalue *a, struct svalue *b)
 
   if (a->type != b->type)
   {
-    if(a->type == T_OBJECT)
+    switch(TWO_TYPES((1<<a->type),(1<<b->type)))
     {
-      if(a->u.object->prog->lfuns[LFUN_EQ] != -1)
+    case TWO_TYPES(BIT_FUNCTION,BIT_PROGRAM):
+      return program_from_function(a) == b->u.program;
+    
+    case TWO_TYPES(BIT_PROGRAM,BIT_FUNCTION):
+      return program_from_function(b) == a->u.program;
+
+    case TWO_TYPES(BIT_OBJECT, BIT_ARRAY):
+    case TWO_TYPES(BIT_OBJECT, BIT_MAPPING):
+    case TWO_TYPES(BIT_OBJECT, BIT_MULTISET):
+    case TWO_TYPES(BIT_OBJECT, BIT_OBJECT):
+    case TWO_TYPES(BIT_OBJECT, BIT_FUNCTION):
+    case TWO_TYPES(BIT_OBJECT, BIT_PROGRAM):
+    case TWO_TYPES(BIT_OBJECT, BIT_STRING):
+    case TWO_TYPES(BIT_OBJECT, BIT_INT):
+    case TWO_TYPES(BIT_OBJECT, BIT_FLOAT):
+      if(FIND_LFUN(a->u.object->prog,LFUN_EQ) != -1)
       {
       a_is_obj:
 	assign_svalue_no_free(sp, b);
@@ -423,11 +440,17 @@ int is_eq(struct svalue *a, struct svalue *b)
 	  return 1;
 	}
       }
-    }
+    if(b->type != T_OBJECT) return 0;
 
-    if(b->type == T_OBJECT)
-    {
-      if(b->u.object->prog->lfuns[LFUN_EQ] != -1)
+    case TWO_TYPES(BIT_ARRAY,BIT_OBJECT):
+    case TWO_TYPES(BIT_MAPPING,BIT_OBJECT):
+    case TWO_TYPES(BIT_MULTISET,BIT_OBJECT):
+    case TWO_TYPES(BIT_FUNCTION,BIT_OBJECT):
+    case TWO_TYPES(BIT_PROGRAM,BIT_OBJECT):
+    case TWO_TYPES(BIT_STRING,BIT_OBJECT):
+    case TWO_TYPES(BIT_INT,BIT_OBJECT):
+    case TWO_TYPES(BIT_FLOAT,BIT_OBJECT):
+      if(FIND_LFUN(b->u.object->prog,LFUN_EQ) != -1)
       {
       b_is_obj:
 	assign_svalue_no_free(sp, a);
@@ -449,10 +472,10 @@ int is_eq(struct svalue *a, struct svalue *b)
   switch(a->type)
   {
   case T_OBJECT:
-    if(a->u.object->prog->lfuns[LFUN_EQ] != -1)
+    if(FIND_LFUN(a->u.object->prog,LFUN_EQ) != -1)
       goto a_is_obj;
 
-    if(b->u.object->prog->lfuns[LFUN_EQ] != -1)
+    if(FIND_LFUN(b->u.object->prog,LFUN_EQ) != -1)
       goto b_is_obj;
 
   case T_MULTISET:
@@ -578,7 +601,7 @@ int is_lt(struct svalue *a,struct svalue *b)
     a_is_object:
       if(!a->u.object->prog)
 	error("Comparison on destructed object.\n");
-      if(a->u.object->prog->lfuns[LFUN_LT] == -1)
+      if(FIND_LFUN(a->u.object->prog,LFUN_LT) == -1)
 	error("Object lacks '<\n");
       assign_svalue_no_free(sp, b);
       sp++;
@@ -597,7 +620,7 @@ int is_lt(struct svalue *a,struct svalue *b)
     {
       if(!b->u.object->prog)
 	error("Comparison on destructed object.\n");
-      if(b->u.object->prog->lfuns[LFUN_GT] == -1)
+      if(FIND_LFUN(b->u.object->prog,LFUN_GT) == -1)
 	error("Object lacks '>\n");
       assign_svalue_no_free(sp, a);
       sp++;
@@ -878,7 +901,12 @@ TYPE_FIELD gc_check_svalues(struct svalue *s, int num)
     case T_OBJECT:
       if(s->u.object->prog)
       {
-	gc_check(s->u.object);
+#ifdef DEBUG
+	if(gc_check(s->u.object) == -2)
+	  fprintf(stderr,"(in svalue at %lx, type = %d)\n",(long)s,s->type);
+#else	  
+	  gc_check(s->u.object);
+#endif
       }else{
 	free_svalue(s);
 	s->type=T_INT;
@@ -1030,9 +1058,9 @@ INT32 pike_sizeof(struct svalue *s)
   case T_OBJECT:
     if(!s->u.object->prog)
       error("sizeof() on destructed object.\n");
-    if(s->u.object->prog->lfuns[LFUN__SIZEOF] == -1)
+    if(FIND_LFUN(s->u.object->prog,LFUN__SIZEOF) == -1)
     {
-      return s->u.object->prog->num_identifier_indexes;
+      return s->u.object->prog->num_identifier_index;
     }else{
       apply_lfun(s->u.object, LFUN__SIZEOF, 0);
       if(sp[-1].type != T_INT)

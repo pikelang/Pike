@@ -1,5 +1,5 @@
 /*
- * $Id: cbc.c,v 1.9 1997/11/16 22:25:39 nisse Exp $
+ * $Id: cbc.c,v 1.10 1998/01/13 23:01:10 hubbe Exp $
  *
  * CBC (Cipher Block Chaining Mode) crypto module for Pike.
  *
@@ -35,6 +35,7 @@ struct pike_crypto_cbc {
   INT32 mode;
 };
 
+#undef THIS
 #define THIS	((struct pike_crypto_cbc *)(fp->current_storage))
 /*
  * Globals

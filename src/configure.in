@@ -1,4 +1,4 @@
-AC_REVISION("$Id: configure.in,v 1.148 1998/01/10 21:19:08 hubbe Exp $")
+AC_REVISION("$Id: configure.in,v 1.149 1998/01/13 22:56:40 hubbe Exp $")
 AC_INIT(interpret.c)
 AC_CONFIG_HEADER(machine.h)
 
@@ -692,6 +692,16 @@ fi
 if test x$with_threads = xyes ; then
   OLDLIBS="$LIBS"
 
+if test "x$pike_cv_sys_os" = "xWindows_NT" ; then
+  # NT has threads...
+
+  AC_DEFINE(_REENTRANT)
+  AC_DEFINE(_THREAD_SAFE)
+  AC_DEFINE(_UNIX_THREADS)
+  AC_DEFINE(NT_THREADS)
+
+else
+
   AC_MSG_CHECKING(unix threads)
   case "x$pike_cv_sys_os" in
     *)
@@ -872,6 +882,7 @@ int main()
       # fi
     fi
   fi
+fi  # NT
 else
   # Without threads
   :

@@ -14,6 +14,7 @@
 #include "program.h"
 #include "error.h"
 #include "module_support.h"
+#include "las.h"
 
 #include <sha.h>
 

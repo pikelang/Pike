@@ -1,9 +1,9 @@
-/* $Id: image.c,v 1.72 1998/01/08 18:44:27 mirar Exp $ */
+/* $Id: image.c,v 1.73 1998/01/13 22:59:23 hubbe Exp $ */
 
 /*
 **! module Image
 **! note
-**!	$Id: image.c,v 1.72 1998/01/08 18:44:27 mirar Exp $
+**!	$Id: image.c,v 1.73 1998/01/13 22:59:23 hubbe Exp $
 **! class image
 **!
 **!	The main object of the <ref>Image</ref> module, this object
@@ -82,7 +82,7 @@
 
 #include "stralloc.h"
 #include "global.h"
-RCSID("$Id: image.c,v 1.72 1998/01/08 18:44:27 mirar Exp $");
+RCSID("$Id: image.c,v 1.73 1998/01/13 22:59:23 hubbe Exp $");
 #include "pike_macros.h"
 #include "object.h"
 #include "constants.h"
@@ -99,6 +99,10 @@ RCSID("$Id: image.c,v 1.72 1998/01/08 18:44:27 mirar Exp $");
 
 struct program *image_program;
 extern struct program *image_colortable_program;
+
+#ifdef THIS
+#undef THIS /* Needed for NT */
+#endif
 
 #define THIS ((struct image *)(fp->current_storage))
 #define THISOBJ (fp->current_object)

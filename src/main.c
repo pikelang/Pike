@@ -4,7 +4,7 @@
 ||| See the files COPYING and DISCLAIMER for more information.
 \*/
 #include "global.h"
-RCSID("$Id: main.c,v 1.31 1998/01/10 21:19:09 hubbe Exp $");
+RCSID("$Id: main.c,v 1.32 1998/01/13 22:56:45 hubbe Exp $");
 #include "fdlib.h"
 #include "backend.h"
 #include "module.h"
@@ -93,6 +93,28 @@ void main(int argc, char **argv)
   master_file = 0;
 #ifdef HAVE_GETENV
   master_file = getenv("PIKE_MASTER");
+#endif
+#if __NT__
+  {
+    char buffer[4096];
+    DWORD len=sizeof(buffer)-1,type=REG_SZ;
+    
+    if(RegQueryValueEx(HKEY_CURRENT_USER,
+		       "SOFTWARE\\Idonex\\Pike\\0.6\\PIKE_MASTER",
+		       0,
+		       &type,
+		       buffer,
+		       &len)==ERROR_SUCCESS ||
+       RegQueryValueEx(HKEY_CURRENT_USER,
+		       "SOFTWARE\\Idonex\\Pike\\0.6\\PIKE_MASTER",
+		       0,
+		       &type,
+		       buffer,
+		       &len)==ERROR_SUCCESS)
+    {
+      master_file=strdup(buffer);
+    }
+  }
 #endif
   if(!master_file) master_file = DEFAULT_MASTER;
 

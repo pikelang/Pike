@@ -7,11 +7,23 @@
 #define LAS_H
 
 #include "global.h"
+#include "pike_types.h"
 #include "svalue.h"
 #include "dynamic_buffer.h"
 #include "program.h"
 
 #define MAX_GLOBAL_VARIABLES 1000
+
+
+void yyerror(char *s);
+int islocal(struct pike_string *str);
+int verify_declared(struct pike_string *str);
+
+
+extern node *init_node;
+extern int num_parse_error;
+extern int cumulative_parse_error;
+extern struct compiler_frame *compiler_frame;
 
 struct local_variable
 {
@@ -19,45 +31,16 @@ struct local_variable
   struct pike_string *type;
 };
 
-struct locals
+struct compiler_frame
 {
-  struct locals *next;
+  struct compiler_frame *previous;
+
   struct pike_string *current_type;
   struct pike_string *current_return_type;
   int current_number_of_locals;
   int max_number_of_locals;
   struct local_variable variable[MAX_LOCAL];
 };
-
-void yyerror(char *s);
-int islocal(struct pike_string *str);
-int verify_declared(struct pike_string *str);
-
-struct node_s
-{
-  unsigned INT16 token;
-  INT16 line_number;
-  INT16 node_info;
-  INT16 tree_info;
-  struct pike_string *type;
-  struct node_s *parent;
-  union 
-  {
-    int number;
-    struct svalue sval;
-    struct
-    {
-      struct node_s *a,*b;
-    } node;
-  } u;
-};
-
-typedef struct node_s node;
-
-extern struct locals *local_variables;
-extern node *init_node;
-extern int num_parse_error;
-extern int cumulative_parse_error;
 
 #define OPT_OPTIMIZED       0x1    /* has been processed by optimize(),
 				    * only used in node_info
@@ -79,7 +62,7 @@ int car_is_node(node *n);
 int cdr_is_node(node *n);
 INT32 count_args(node *n);
 struct node_chunk;
-void free_all_nodes(void);
+void free_all_nodes();
 void free_node(node *n);
 node *mknode(short token,node *a,node *b);
 node *mkstrnode(struct pike_string *str);
@@ -90,6 +73,9 @@ node *mkefuncallnode(char *function, node *args);
 node *mkopernode(char *oper_id, node *arg1, node *arg2);
 node *mklocalnode(int var);
 node *mkidentifiernode(int i);
+node *mkexternalnode(int level,
+		     int i,
+		     struct identifier *id);
 node *mkcastnode(struct pike_string *type,node *n);
 void resolv_constant(node *n);
 node *index_node(node *n, struct pike_string * id);
@@ -113,7 +99,6 @@ int dooptcode(struct pike_string *name,
 	      node *n,
 	      struct pike_string *type,
 	      int modifiers);
-INT32 get_opt_info(void);
 /* Prototypes end here */
 
 #define CAR(n) ((n)->u.node.a)
@@ -125,20 +110,9 @@ INT32 get_opt_info(void);
 
 #define GAUGE_RUSAGE_INDEX 0
 
-#define A_PROGRAM 0
-#define A_STRINGS 1
-#define A_INHERITS 2
-#define A_IDENTIFIERS 3
-#define A_IDENTIFIER_REFERENCES 4
-#define A_CONSTANTS 5
-#define A_LINENUMBERS 6
-#define NUM_AREAS 7
-
 #define add_to_mem_block(N,Data,Size) low_my_binary_strcat(Data,Size,areas+N)
-#define IDENTIFIERP(i) (((struct reference *)areas[A_IDENTIFIER_REFERENCES].s.str)+i)
-#define INHERIT(i) (((struct inherit *)areas[A_INHERITS].s.str)+i)
-#define PC (areas[A_PROGRAM].s.len)
-
-extern dynamic_buffer areas[NUM_AREAS];
+#define IDENTIFIERP(i) (new_program->identifier_references+(i))
+#define INHERIT(i) (new_program->inherits+(i))
+#define PC (new_program->num_program)
 
 #endif

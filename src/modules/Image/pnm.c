@@ -1,9 +1,9 @@
-/* $Id: pnm.c,v 1.8 1997/11/02 03:46:52 mirar Exp $ */
+/* $Id: pnm.c,v 1.9 1998/01/13 22:59:24 hubbe Exp $ */
 
 /*
 **! module Image
 **! note
-**!	$Id: pnm.c,v 1.8 1997/11/02 03:46:52 mirar Exp $
+**!	$Id: pnm.c,v 1.9 1998/01/13 22:59:24 hubbe Exp $
 **! class image
 */
 
@@ -24,6 +24,9 @@
 
 #include "image.h"
 
+#ifdef THIS
+#undef THIS
+#endif
 #define THIS ((struct image *)(fp->current_storage))
 #define THISOBJ (fp->current_object)
 

@@ -1,4 +1,4 @@
-test_true([["$Id: testsuite.in,v 1.63 1998/01/03 07:12:11 hubbe Exp $"]])
+test_true([["$Id: testsuite.in,v 1.64 1998/01/13 22:56:51 hubbe Exp $"]])
 test_eq(1e1,10.0)
 test_eq(1E1,10.0)
 test_eq(1e+1,10.0)
@@ -7,8 +7,19 @@ test_eq(1e-1,0.1)
 test_eq('\x20',32)
 test_eq("\x20","\040")
 
-test_eq(class { static int foo=17; }()->foo,0)
-test_eval_error(class { static int foo=17; }()->foo=18;)
+
+test_any([[object o=class foo{int c;class bar{void create(){c++;};}}(); o->bar(); return o->c;]],1)
+test_do([[add_constant("GURKA2",class foo { int c; class bar{void create() {c+=17;}}}()); ]])
+test_any([[class x { inherit GURKA2.bar; }(); return GURKA2->c;]],17)
+test_any([[class x { inherit GURKA2.bar; }(); return GURKA2->c;]],34)
+
+test_do([[add_constant("GURKA2",class foo { int c; class bar{void create() { class sune { void create() {c+=17;}}(); }}}()); ]])
+test_any([[class x { inherit GURKA2.bar; }(); return GURKA2->c;]],17)
+test_any([[class x { inherit GURKA2.bar; }(); return GURKA2->c;]],34)
+test_do([[add_constant("GURKA2");]]);
+
+test_eq(class c { static int foo=17; }()->foo,0)
+test_eval_error(class c { static int foo=17; }()->foo=18;)
 test_equal( [[ ({ (["foo":"bar"]), (<"foo">), ([]) })->foo ]], [[ ({"bar",1,0}) ]])
 test_any([[mixed a=({([]),0}); a[1]=a; return a->foo[0];]],0)
 test_eval_error([[return column(({0}),"foo");]])
@@ -30,7 +41,7 @@ test_compile_error([[void foo() { return destruct(this_object()); }]])
 test_any([[class foo { constant x=17; }; class bar { inherit foo; constant x=18; }; return bar()->x;]],18)
 test_program([[inline string foo(string s){ while(s[0] == ' ' || s[0] == '\t') s = s[1..]; return(s); } string a() { return foo("   bar"); }]])
 test_true([[lambda(function f) {return 1;}(object_program(this_object()));]])
-test_eq([[class { int `()(){ return 4711; } }()(); ]],4711)
+test_eq([[class c { int `()(){ return 4711; } }()(); ]],4711)
 teste_eval_error(mixed foo=({}); sort(@foo); )
 test_compile_error([[int foo() { return 1} ; constant foo=(["foo":foo]); return foo->foo();]])
 test_compile_error([[class T{void p(object e,object f){lambda::create(f);}}]])
@@ -73,13 +84,12 @@ test_any([[float p=2.0; p--; return p;]],1.0);
 test_any([[float p=2.0; return --p;]],1.0);
 
 test_compile_error(int foo() { LJjjjjJJJ ; })
-test_true(clone(class { constant i=1; })->i)
-test_true(clone(class { constant i=0; mixed `->(string s) { if(s=="i") return 1; }})->i)
-test_true(clone(class { constant i=1; mixed `->(string s) { return 0; }})["i"])
-test_true(clone(class { constant i=0; mixed `[](string s) { if(s=="i") return 1; }})["i"])
-test_eq([[class{mixed `[](int a,int b) { return a+b; }}()[1..4]]],5)
-test_true(clone(class { mixed `[]=(mixed a, mixed b) { if(a!=b) throw(1); }})[1]=1)
-test_true(clone(class { mixed `->=(mixed a, mixed b) { if(a!=b) throw(1); }})->i="i")
+test_true(clone(class c { constant i=1; })->i)
+test_true(clone(class c { constant i=0; mixed `->(string s) { if(s=="i") return 1; }})->i)
+test_true(clone(class c { constant i=1; mixed `->(string s) { return 0; }})["i"])
+test_true(clone(class c { constant i=0; mixed `[](string s) { if(s=="i") return 1; }})["i"])
+test_true(clone(class c { mixed `[]=(mixed a, mixed b) { if(a!=b) throw(1); }})[1]=1)
+test_true(clone(class c { mixed `->=(mixed a, mixed b) { if(a!=b) throw(1); }})->i="i")
 
 test_compile(class A {}; class B { inherit A; })
 
@@ -99,9 +109,9 @@ test_program(inherit test;)
 test_program(inherit test; int a() { return foo; } )
 test_define_program(test,[[class TEST { int a() { return 1; } }]])
 test_program(inherit test; inherit TEST; )
-test_compile_error(class { object(Stdio.File) foo; object(Regexp) bar=foo; })
-test_do(class { object foo; object(Regexp) bar=foo; })
-test_do(class { object(Stdio.File) foo; object bar=foo; })
+test_compile_error(class c { object(Stdio.File) foo; object(Regexp) bar=foo; })
+test_do(class c { object foo; object(Regexp) bar=foo; })
+test_do(class c { object(Stdio.File) foo; object bar=foo; })
 test_any(if(int i=1) return i; return 0;,1)
 test_compile(for(int i=0;i<100;i++) return 0;)
 test_compile(foreach(({}),mixed i){})
@@ -376,20 +386,20 @@ ifefun(gc,
 [[
   test_true(intp(gc()));
   test_any([[ array a=({0}); a[0]=a; gc(); a=0; return gc() > 0; ]],1);
-  test_any([[object o=class {object o;}(); o->o=o; gc(); o=0; return gc() > 0; ]],1);
-  test_any([[object o=class {object o;}(); o->o=o; gc(); o=0; return gc() > 0; ]],1);
+  test_any([[object o=class c {object o;}(); o->o=o; gc(); o=0; return gc() > 0; ]],1);
+  test_any([[object o=class c {object o;}(); o->o=o; gc(); o=0; return gc() > 0; ]],1);
   test_any([[mapping m=([]); m[m]=m; gc(); m=0; return gc() > 0; ]],1);
   test_any([[multiset m=(<>); m[m]=1; gc(); m=0; return gc() > 0; ]],1);
 ]])
 
 
 test_eq("\377"[0],255)
-test_do(add_constant("foo",clone(class {int i;})))
+test_do(add_constant("foo",clone(class c {int i;})))
 test_eq(foo->i,0)
 test_do(foo->i=17)
 test_eq(foo->i,17)
 test_do(add_constant("foo"));
-test_do(add_constant("foo",clone(class {int *i=({0});})))
+test_do(add_constant("foo",clone(class c {int *i=({0});})))
 test_eq(foo->i[0],0)
 test_do(foo->i[0]=17)
 test_eq(foo->i[0],17)
@@ -419,12 +429,12 @@ test_eq(typeof(0.0),"float")
 test_eq(typeof(all_constants()["all_constants"]),"mixed")
 
 // class
-test_true(programp(class {}))
-test_true(functionp(clone(class { int foo() { return 1; }})->foo))
-test_true(clone(class { int foo() { return 1; }})->foo())
-test_true(clone(class { int i=1; })->i)
-test_false(clone(class { int foo() { return 1; }})->bar)
-test_eq(clone(clone(class { program foo=class { int i=20; }; })->foo)->i,20)
+test_true(programp(class c {}))
+test_true(functionp(clone(class c { int foo() { return 1; }})->foo))
+test_true(clone(class c { int foo() { return 1; }})->foo())
+test_true(clone(class c { int i=1; })->i)
+test_false(clone(class c { int foo() { return 1; }})->bar)
+test_eq(clone(clone(class c { program foo=class c { int i=20; }; })->foo)->i,20)
 
 // type checks
 test_compile_error([[} int foo() { return]]);
@@ -969,15 +979,13 @@ test_any(int e;string t=""; for(e=0;e<10;e++) switch(e) { default: t+=e; case 4.
 test_any([[float e,q; q=0.0; for(e=0.1;e<10.0;e+=1.0) switch(e) { default: q+=e; case 4.0..8.0: } return q]],0.1+1.1+2.1+3.1+8.1+9.1)
 
 // testing preprocessor
-test_program([[
-#include <simulate.h>
-mixed a() { return explode ; }
-]])
-test_program([[
-#include "lib/include/simulate.h"
-mixed a() { return implode; }
-]])
-
+test_any(int e; object o=clone(Stdio.File); if(!o->open("conftest.h","wct")) return -1; e=o->write("return 17;\n"); if(!o->close()) return -1; return e,11)
+test_any([[
+#include "conftest.h"
+]],17)
+dnltest_any([[
+dnl#include <conftest.h>
+dnl]],17)
 test_true(intp(__LINE__))
 test_true(stringp(__FILE__))
 test_true(stringp(__DATE__))
@@ -1702,6 +1710,7 @@ test_search3($1,($1[..strlen($1)-3]))
 test_search3($1,($1[1..]))
 ]])
 
+dnl some m4 doesn't handle 8 bit characters...
 test_search4("SUNE")
 test_search4("kapit\344l>")
 test_search4("-------------------+")
@@ -1785,7 +1794,7 @@ test_program(inherit test; inherit test2; mixed a() { setw(20); setb(22); return
 test_program(inherit test2; inherit test; mixed a() { w=20; b=22; return getw()==20 && getb()==22; })
 test_program(inherit test2; inherit test; mixed a() { setw(20); setb(22); return w==20 && b==22; })
 
-test_eval_error(clone(class{int i;void foo(){ destruct(this_object());i=0;}})->foo())
+test_eval_error(clone(class c{int i;void foo(){ destruct(this_object());i=0;}})->foo())
 
 // Pike modules
 // LR

@@ -4,7 +4,7 @@
 ||| See the files COPYING and DISCLAIMER for more information.
 \*/
 #include "global.h"
-RCSID("$Id: pike_types.c,v 1.26 1997/09/29 00:57:55 hubbe Exp $");
+RCSID("$Id: pike_types.c,v 1.27 1998/01/13 22:56:48 hubbe Exp $");
 #include <ctype.h>
 #include "svalue.h"
 #include "pike_types.h"
@@ -715,7 +715,7 @@ static char *low_match_types(char *a,char *b, int flags)
     struct program *p;
     if((p=id_to_program(EXTRACT_INT(a+1))))
     {
-      int i=p->lfuns[LFUN_CALL];
+      int i=FIND_LFUN(p,LFUN_CALL);
       if(i == -1) return 0;
       return low_match_types(ID_FROM_INT(p, i)->type->str, b, flags);
     }
@@ -727,7 +727,7 @@ static char *low_match_types(char *a,char *b, int flags)
     struct program *p;
     if((p=id_to_program(EXTRACT_INT(b+1))))
     {
-      int i=p->lfuns[LFUN_CALL];
+      int i=FIND_LFUN(p,LFUN_CALL);
       if(i == -1) return 0;
       return low_match_types(a, ID_FROM_INT(p, i)->type->str, flags);
     }
@@ -927,13 +927,13 @@ static struct pike_string *low_index_type(char *t, node *n)
     {
       if(n->token == F_ARROW)
       {
-	if(p->lfuns[LFUN_ARROW] != -1 || p->lfuns[LFUN_ASSIGN_ARROW] != -1)
+	if(FIND_LFUN(p,LFUN_ARROW)!=-1 || FIND_LFUN(p,LFUN_ASSIGN_ARROW)!=-1)
 	{
 	  reference_shared_string(mixed_type_string);
 	  return mixed_type_string;
 	}
       }else{
-	if(p->lfuns[LFUN_INDEX] != -1 || p->lfuns[LFUN_ASSIGN_INDEX] != -1)
+	if(FIND_LFUN(p,LFUN_INDEX) != -1 || FIND_LFUN(p,LFUN_ASSIGN_INDEX) != -1)
 	{
 	  reference_shared_string(mixed_type_string);
 	  return mixed_type_string;
@@ -1046,10 +1046,10 @@ static int low_check_indexing(char *type, char *index_type, node *n)
     {
       if(n->token == F_ARROW)
       {
-	if(p->lfuns[LFUN_ARROW] != -1 || p->lfuns[LFUN_ASSIGN_ARROW] != -1)
+	if(FIND_LFUN(p,LFUN_ARROW) != -1 || FIND_LFUN(p,LFUN_ASSIGN_ARROW) != -1)
 	return 1;
       }else{
-	if(p->lfuns[LFUN_INDEX] != -1 || p->lfuns[LFUN_ASSIGN_INDEX] != -1)
+	if(FIND_LFUN(p,LFUN_INDEX) != -1 || FIND_LFUN(p,LFUN_ASSIGN_INDEX) != -1)
 	return 1;
       }
       return !!low_match_types(string_type_string->str, index_type,0);
@@ -1188,7 +1188,7 @@ struct pike_string *get_type_of_svalue(struct svalue *s)
   case T_PROGRAM:
   {
     char *a;
-    int id=s->u.program->lfuns[LFUN_CREATE];
+    int id=FIND_LFUN(s->u.program,LFUN_CREATE);
     if(id>=0)
     {
       a=ID_FROM_INT(s->u.program, id)->type->str;

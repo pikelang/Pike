@@ -43,6 +43,7 @@ struct frame
 #define push_object(O) do{ struct object  *_=(O); sp->u.object=_; sp++->type=T_OBJECT; }while(0)
 #define push_float(F) do{ float _=(F); sp->u.float_number=_; sp++->type=T_FLOAT; }while(0)
 #define push_text(T) push_string(make_shared_string((T)))
+#define push_constant_text(T) do{ sp->subtype=0; MAKE_CONSTANT_SHARED_STRING(sp->u.string,T); sp++->type=T_STRING; }while(0)
 
 #define ref_push_program(P) do{ struct program *_=(P); _->refs++; sp->u.program=_; sp++->type=T_PROGRAM; }while(0)
 #define ref_push_mapping(M) do{ struct mapping *_=(M); _->refs++; sp->u.mapping=_; sp++->type=T_MAPPING; }while(0)
@@ -52,6 +53,19 @@ struct frame
 #define ref_push_object(O) do{ struct object  *_=(O); _->refs++; sp->u.object=_; sp++->type=T_OBJECT; }while(0)
 
 #define push_svalue(S) do { struct svalue *_=(S); assign_svalue_no_free(sp,_); sp++; }while(0)
+
+enum apply_type
+{
+  APPLY_STACK, /* The function is the first argument */
+  APPLY_SVALUE, /* arg1 points to an svalue containing the function */
+   APPLY_LOW    /* arg1 is the object pointer,(int)arg2 the function */
+};
+
+#define apply_low(O,FUN,ARGS) \
+  mega_apply(APPLY_LOW, (ARGS), (void*)(O),(void*)(FUN))
+
+#define strict_apply_svalue(SVAL,ARGS) \
+  mega_apply(APPLY_SVALUE, (ARGS), (void*)(SVAL),0)
 
 #define APPLY_MASTER(FUN,ARGS) \
 do{ \
@@ -103,8 +117,8 @@ void pop_n_elems(INT32 x);
 void reset_evaluator(void);
 struct backlog;
 void dump_backlog(void);
+void mega_apply(enum apply_type type, INT32 args, void *arg1, void *arg2);
 int apply_low_safe_and_stupid(struct object *o, INT32 offset);
-void apply_low(struct object *o, int fun, int args);
 void safe_apply_low(struct object *o,int fun,int args);
 void safe_apply(struct object *o, char *fun ,INT32 args);
 void apply_lfun(struct object *o, int fun, int args);
@@ -112,7 +126,6 @@ void apply_shared(struct object *o,
 		  struct pike_string *fun,
 		  int args);
 void apply(struct object *o, char *fun, int args);
-void strict_apply_svalue(struct svalue *s, INT32 args);
 void apply_svalue(struct svalue *s, INT32 args);
 void slow_check_stack(void);
 void cleanup_interpret(void);

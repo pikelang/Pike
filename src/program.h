@@ -8,6 +8,8 @@
 
 #include <stdarg.h>
 #include "global.h"
+#include "pike_types.h"
+#include "svalue.h"
 
 #define LFUN___INIT 0
 #define LFUN_CREATE 1
@@ -55,6 +57,11 @@ extern char *lfun_names[];
 #ifndef STRUCT_SVALUE_DECLARED
 #define STRUCT_SVALUE_DECLARED
 struct svalue;
+#endif
+
+#ifndef STRUCT_NODE_S_DECLARED
+#define STRUCT_NODE_S_DECLARED
+struct node_s;
 #endif
 
 #ifndef STRUCT_OBJECT_DECLARED
@@ -133,35 +140,48 @@ struct reference
 {
   unsigned INT16 inherit_offset;
   unsigned INT16 identifier_offset;
-  INT16 id_flags; /* ID_* static, private etc.. */
+  INT16 id_flags; /* static, private etc.. */
 };
+
 
 struct inherit
 {
-  struct program *prog;
   INT16 inherit_level; /* really needed? */
   INT16 identifier_level;
+  INT16 parent_identifier;
   INT32 storage_offset;
+  struct object *parent;
+  struct program *prog;
+  struct pike_string *name;
 };
 
-#define PROG_DESTRUCT_IMMEDIATE 1
+/* program parts have been realloced into one block */
+#define PROGRAM_OPTIMIZED 1
+
+/* program has gone through pass 1 of compiler, prototypes etc. will
+ * not change from now on
+ */
+#define PROGRAM_FIXED 2
+
+/* Program is done and can be cloned */
+#define PROGRAM_FINISHED 4
+
+/* Program has gone through first compiler pass */
+#define PROGRAM_PASS_1_DONE 8
+
+/* Program will be destructed as soon at it runs out of references. */
+#define PROGRAM_DESTRUCT_IMMEDIATE 15
 
 struct program
 {
   INT32 refs;
   INT32 id;             /* used to identify program in caches */
+  INT32 flags;
   INT32 storage_needed; /* storage needed in the object struct */
 
   struct program *next;
   struct program *prev;
-  unsigned char *program;
-  struct pike_string **strings;
-  struct inherit *inherits;
-  struct reference *identifier_references;
-  struct identifier *identifiers;
-  unsigned INT16 *identifier_index;
-  struct svalue *constants;
-  char *linenumbers;
+
   void (*init)(struct object *);
   void (*exit)(struct object *);
   void (*gc_marked)(struct object *);
@@ -173,15 +193,13 @@ struct program
 #endif /* PROFILING */
 
   SIZE_T total_size;
-  SIZE_T num_linenumbers;
-  SIZE_T program_size;
-  unsigned INT16 flags;
-  unsigned INT16 num_constants;
-  unsigned INT16 num_strings;
-  unsigned INT16 num_identifiers;
-  unsigned INT16 num_identifier_references;
-  unsigned INT16 num_identifier_indexes;
-  unsigned INT16 num_inherits;
+
+#define FOO(NUMTYPE,TYPE,NAME) TYPE * NAME ;
+#include "program_areas.h"
+
+#define FOO(NUMTYPE,TYPE,NAME) NUMTYPE PIKE_CONCAT(num_,NAME) ;
+#include "program_areas.h"
+  
   INT16 lfuns[NUM_LFUNS];
 };
 
@@ -192,33 +210,51 @@ struct program
 #define PROG_FROM_INT(P,X) PROG_FROM_PTR(P,(P)->identifier_references+(X))
 #define ID_FROM_INT(P,X) ID_FROM_PTR(P,(P)->identifier_references+(X))
 
+#define FIND_LFUN(P,N) ((P)->flags & PROGRAM_FIXED?(P)->lfuns[(N)]:find_identifier(lfun_names[(N)],(P)))
+
 #define free_program(p) do{ struct program *_=(p); if(!--_->refs) really_free_program(_); }while(0)
 
 extern struct object fake_object;
-extern struct program fake_program;
+extern struct program *new_program;
 extern struct program *first_program;
+extern int compiler_pass;
+
+#define FOO(NUMTYPE,TYPE,NAME) void PIKE_CONCAT(add_to_,NAME(TYPE ARG));
+#include "program_areas.h"
 
 /* Prototypes begin here */
+void ins_int(INT32 i, void (*func)(char tmp));
+void ins_short(INT16 i, void (*func)(char tmp));
 void use_module(struct svalue *s);
-int find_module_identifier(struct pike_string *ident);
+struct node_s *find_module_identifier(struct pike_string *ident);
+struct program *parent_compilation(int level);
 struct program *id_to_program(INT32 id);
-void setup_fake_program(void);
+void optimize_program(struct program *p);
+void fixate_program(void);
+void low_start_new_program(struct program *p,
+			   struct pike_string *name,
+			   int flags);
 void start_new_program(void);
 void really_free_program(struct program *p);
 void dump_program_desc(struct program *p);
-void toss_current_program(void);
 void check_program(struct program *p);
+struct program *end_first_pass(int finish);
 struct program *end_program(void);
 SIZE_T add_storage(SIZE_T size);
 void set_init_callback(void (*init)(struct object *));
 void set_exit_callback(void (*exit)(struct object *));
 void set_gc_mark_callback(void (*m)(struct object *));
-int low_reference_inherited_identifier(int e,struct pike_string *name);
+int low_reference_inherited_identifier(int e,
+				       struct pike_string *name);
 int reference_inherited_identifier(struct pike_string *super_name,
 				   struct pike_string *function_name);
 void rename_last_inherit(struct pike_string *n);
-void do_inherit(struct program *p,INT32 flags, struct pike_string *name);
-void simple_do_inherit(struct pike_string *s, INT32 flags,struct pike_string *name);
+void do_inherit(struct svalue *prog,
+		INT32 flags,
+		struct pike_string *name);
+void simple_do_inherit(struct pike_string *s,
+		       INT32 flags,
+		       struct pike_string *name);
 int isidentifier(struct pike_string *s);
 int low_define_variable(struct pike_string *name,
 			struct pike_string *type,
@@ -261,6 +297,8 @@ INT32 define_function(struct pike_string *name,
 		      INT16 flags,
 		      INT8 function_flags,
 		      union idptr *func);
+int low_find_shared_string_identifier(struct pike_string *name,
+				      struct program *prog);
 struct ff_hash;
 int find_shared_string_identifier(struct pike_string *name,
 				  struct program *prog);
@@ -270,11 +308,8 @@ int store_constant(struct svalue *foo, int equal);
 void start_line_numbering(void);
 void store_linenumber(INT32 current_line, struct pike_string *current_file);
 char *get_line(unsigned char *pc,struct program *prog,INT32 *linep);
-void my_yyerror(char *fmt,...);
-void compile(void);
-struct program *compile_file(struct pike_string *file_name);
-struct program *compile_string(struct pike_string *prog,
-			       struct pike_string *name);
+void my_yyerror(char *fmt,...)  ATTRIBUTE((format(printf,1,2)));
+struct program *compile(struct pike_string *prog);
 void add_function(char *name,void (*cfun)(INT32),char *type,INT16 flags);
 void check_all_programs(void);
 void cleanup_program(void);
@@ -283,16 +318,18 @@ void gc_check_all_programs(void);
 void gc_mark_all_programs(void);
 void gc_free_all_unreferenced_programs(void);
 void count_memory_in_programs(INT32 *num_, INT32 *size_);
-void push_locals(void);
-void pop_locals(void);
+void push_compiler_frame(void);
+void pop_local_variables(int level);
+void pop_compiler_frame(void);
 char *get_storage(struct object *o, struct program *p);
+struct program *low_program_from_function(struct program *p,
+					  INT32 i);
+struct program *program_from_function(struct svalue *f);
+struct program *program_from_svalue(struct svalue *s);
+struct find_child_cache_s;
+int find_child(struct program *parent, struct program *child);
+void yywarning(char *fmt, ...) ATTRIBUTE((format(printf,1,2)));
 /* Prototypes end here */
 
 
-void my_yyerror(char *fmt,...) ATTRIBUTE((format (printf, 1, 2)));
-
 #endif
-
-
-
-

@@ -276,7 +276,7 @@ void describe_something(void *a, int t)
 	break;
       }
 
-      for(pos=0;pos<(long)p->program_size && pos<100;pos++)
+      for(pos=0;pos<(long)p->num_program && pos<100;pos++)
       {
 	tmp=get_line(p->program+pos, p, &line);
 	if(tmp && line)

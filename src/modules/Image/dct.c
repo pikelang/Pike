@@ -1,9 +1,9 @@
-/* $Id: dct.c,v 1.10 1997/12/22 23:26:45 hubbe Exp $ */
+/* $Id: dct.c,v 1.11 1998/01/13 22:59:22 hubbe Exp $ */
 
 /*
 **! module Image
 **! note
-**!	$Id: dct.c,v 1.10 1997/12/22 23:26:45 hubbe Exp $
+**!	$Id: dct.c,v 1.11 1998/01/13 22:59:22 hubbe Exp $
 **! class image
 */
 
@@ -25,6 +25,9 @@
 #include "image.h"
 
 extern struct program *image_program;
+#ifdef THIS
+#undef THIS /* Needed for NT */
+#endif
 #define THIS ((struct image *)(fp->current_storage))
 #define THISOBJ (fp->current_object)
 

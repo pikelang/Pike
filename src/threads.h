@@ -154,11 +154,12 @@ extern struct object *thread_id;
 
 #ifdef NT_THREADS
 #include <process.h>
+#include <windows.h>
 
 #define THREAD_T HANDLE
 #define th_setconcurrency(X)
-#define th_create(ID,fun,arg)  _beginthreadex(NULL, 2*1024*1024, fun, arg, 0, ID)
-#define th_exit(foo) _endthreadex(foo)
+#define th_create(ID,fun,arg)  (!(*(ID)=_beginthread(fun, 2*1024*1024, arg)))
+#define th_exit(foo) _endthread(foo)
 #define th_self() GetCurrentThread()
 #define th_destroy(X) CloseHandle(*(X))
 #define th_yield() Sleep(0)
@@ -189,10 +190,10 @@ struct cond_t_queue
   EVENT_T event;
 };
 
-struct cond_t_s
+typedef struct cond_t_s
 {
   MUTEX_T lock;
-  struct cond_t_queue *head, *tail
+  struct cond_t_queue *head, *tail;
 } COND_T;
 
 #define COND_T struct cond_t_s
@@ -221,6 +222,7 @@ struct thread_state {
   char swapped;
   char status;
   COND_T status_change;
+  THREAD_T id;
 
   /* Swapped variables */
   struct svalue *sp,*evaluator_stack;

@@ -1781,7 +1781,7 @@ static void check_constant(struct cpp *this,
     if(!isidchar(data[dlen]))
       break;
 
-  push_string(binary_findstring(data, dlen));
+  push_string(make_shared_binary_string(data, dlen));
   if((sv=low_mapping_string_lookup(get_builtin_constants(),
 				   sp[-1].u.string)))
   {
