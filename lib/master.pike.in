@@ -1,6 +1,6 @@
 /* -*- Pike -*-
  *	
- * $Id: master.pike.in,v 1.87 1999/12/27 20:28:45 mast Exp $
+ * $Id: master.pike.in,v 1.88 1999/12/28 02:34:19 mast Exp $
  * 
  * Master-file for Pike.
  *
@@ -260,15 +260,17 @@ static program low_findprog(string pname, string ext, object|void handler)
   if(!autoreload_on || load_time[fname]>=time())
 #endif
   {
-    if(ret=programs[fname]) return ret;
+    if(!zero_type (ret=programs[fname])) return ret;
   }
 
   if( (s=master_file_stat(fname))  && s[1]>=0 )
   {
     AUTORELOAD_BEGIN();
 
+#ifdef PIKE_AUTORELOAD
     if (load_time[fname] > s[3])
-      if (ret=programs[fname]) return ret;
+      if (!zero_type (ret=programs[fname])) return ret;
+#endif
 
     switch(ext)
     {
@@ -308,12 +310,9 @@ static program low_findprog(string pname, string ext, object|void handler)
       
       if ( mixed e=catch { ret=compile_file(fname); } )
       {
-	if(arrayp(e) &&
-	   sizeof(e)==2 &&
-	   arrayp(e[1]) &&
-	   sizeof(e[1]) == sizeof(backtrace()))
-	  e[1]=({});
-	throw(e);
+	if(arrayp(e) && sizeof(e) && stringp (e[0]))
+	  if (handler) handler->compile_error(fname, 0, e[0]);
+	  else compile_error(fname, 0, e[0]);
       }
       break;
 #if constant(load_module)
@@ -327,10 +326,10 @@ static program low_findprog(string pname, string ext, object|void handler)
     }
 
     AUTORELOAD_FINISH(ret,programs,fname);
-    
+
     return programs[fname]=ret;
   }
-  return UNDEFINED;
+  return 0;
 }
 
 static program findprog(string pname, string ext, object|void handler)
@@ -644,9 +643,10 @@ class dirnode
   }
 };
 
+static class ZERO_TYPE {};
+
 class joinnode
 {
-  class ZERO_TYPE {};
   array(object|mapping) joined_modules;
   mapping cache=([]);
 
@@ -813,12 +813,14 @@ mixed resolv_base(string identifier, string|void current_file)
 mapping resolv_cache = set_weak_flag( ([]), 1 );
 mixed resolv(string identifier, string|void current_file)
 {
-  if( resolv_cache[identifier+current_file] )
-    return resolv_cache[identifier+current_file];
+  mixed ret;
+  if( !zero_type (ret = resolv_cache[identifier+current_file]) )
+    return ret == ZERO_TYPE ? UNDEFINED : resolv_cache[identifier+current_file];
   array(string) tmp=identifier/".";
-  mixed ret=resolv_base(tmp[0]);
+  ret=resolv_base(tmp[0]);
   foreach(tmp[1..],string index) ret=ret[index];
-  return resolv_cache[identifier+current_file]=ret;
+  resolv_cache[identifier+current_file] = zero_type (ret) ? ZERO_TYPE : ret;
+  return ret;
 }
 
 // These are useful if you want to start other Pike processes
