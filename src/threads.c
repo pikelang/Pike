@@ -2,12 +2,12 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: threads.c,v 1.205 2003/02/16 03:50:23 mast Exp $
+|| $Id: threads.c,v 1.206 2003/02/16 13:55:20 mast Exp $
 */
 
 #ifndef CONFIGURE_TEST
 #include "global.h"
-RCSID("$Id: threads.c,v 1.205 2003/02/16 03:50:23 mast Exp $");
+RCSID("$Id: threads.c,v 1.206 2003/02/16 13:55:20 mast Exp $");
 
 PMOD_EXPORT int num_threads = 1;
 PMOD_EXPORT int threads_disabled = 0;
@@ -1806,7 +1806,6 @@ void th_init(void)
 
 #ifdef UNIX_THREADS
   
-/* function(int:void) */
   ADD_EFUN("thread_set_concurrency",f_thread_set_concurrency,tFunc(tInt,tVoid), OPT_SIDE_EFFECT);
 #endif
 
@@ -1832,16 +1831,12 @@ void th_init(void)
 
   START_NEW_PROGRAM_ID(THREAD_MUTEX);
   ADD_STORAGE(struct mutex_storage);
-  /* function(int(0..2)|void:object(mutex_key)) */
   ADD_FUNCTION("lock",f_mutex_lock,
 	       tFunc(tOr(tInt02,tVoid),tObjIs_THREAD_MUTEX_KEY),0);
-  /* function(int(0..2)|void:object(mutex_key)) */
   ADD_FUNCTION("trylock",f_mutex_trylock,
 	       tFunc(tOr(tInt02,tVoid),tObjIs_THREAD_MUTEX_KEY),0);
-  /* function(:object(Pike_interpreter.thread_id)) */
   ADD_FUNCTION("current_locking_thread",f_mutex_locking_thread,
 	   tFunc(tNone,tObjIs_THREAD_ID), 0);
-  /* function(:object(Pike_interpreter.thread_id)) */
   ADD_FUNCTION("current_locking_key",f_mutex_locking_key,
 	   tFunc(tNone,tObjIs_THREAD_MUTEX_KEY), 0);
   set_init_callback(init_mutex_obj);
@@ -1850,12 +1845,9 @@ void th_init(void)
 
   START_NEW_PROGRAM_ID(THREAD_CONDITION);
   ADD_STORAGE(COND_T);
-  /* function(object(mutex_key):void) */
   ADD_FUNCTION("wait",f_cond_wait,
 	       tFunc(tObjIs_THREAD_MUTEX_KEY,tVoid),0);
-  /* function(:void) */
   ADD_FUNCTION("signal",f_cond_signal,tFunc(tNone,tVoid),0);
-  /* function(:void) */
   ADD_FUNCTION("broadcast",f_cond_broadcast,tFunc(tNone,tVoid),0);
   set_init_callback(init_cond_obj);
   set_exit_callback(exit_cond_obj);
@@ -1896,15 +1888,11 @@ void th_init(void)
   thread_storage_offset=ADD_STORAGE(struct thread_state);
   PIKE_MAP_VARIABLE("result", OFFSETOF(thread_state, result),
 		    tMix, T_MIXED, 0);
-  /* function(mixed ...:void) */
   ADD_FUNCTION("create",f_thread_create,
 	       tFuncV(tNone,tMixed,tVoid),
 	       ID_STATIC);
-  /* function(:array) */
   ADD_FUNCTION("backtrace",f_thread_backtrace,tFunc(tNone,tArray),0);
-  /* function(:mixed) */
   ADD_FUNCTION("wait",f_thread_id_result,tFunc(tNone,tMix),0);
-  /* function(:int) */
   ADD_FUNCTION("status",f_thread_id_status,tFunc(tNone,tInt),0);
   ADD_FUNCTION("_sprintf",f_thread_id__sprintf,tFunc(tNone,tStr),0);
   ADD_FUNCTION("id_number",f_thread_id_id_number,tFunc(tNone,tInt),0);
@@ -1920,12 +1908,10 @@ void th_init(void)
   /* Backward compat... */
   add_global_program("thread_create", thread_id_prog);
 
-  /* function(:object(Pike_interpreter.thread_id)) */
   ADD_EFUN("this_thread",f_this_thread,
 	   tFunc(tNone,tObjIs_THREAD_ID),
 	   OPT_EXTERNAL_DEPEND);
 
-  /* function(:array(object(Pike_interpreter.thread_id))) */
   ADD_EFUN("all_threads",f_all_threads,
 	   tFunc(tNone,tArr(tObjIs_THREAD_ID)),
 	   OPT_EXTERNAL_DEPEND);
