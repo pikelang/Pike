@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: efuns.c,v 1.156 2005/01/06 16:13:56 grubba Exp $
+|| $Id: efuns.c,v 1.157 2005/01/08 15:36:51 grubba Exp $
 */
 
 #include "global.h"
@@ -807,7 +807,9 @@ void f_get_dir(INT32 args)
 {
 #ifdef __NT__
   HANDLE dir;
-  WIN32_FIND_DATA d;
+  WIN32_FIND_DATAW d;
+  p_wchar1 *dir_str;
+  p_wchar1 *to_free = NULL;
 #else /* !__NT__ */
   DIR *dir;
 #endif /* __NT__ */
@@ -815,7 +817,11 @@ void f_get_dir(INT32 args)
 
   VALID_FILE_IO("get_dir","read");
 
+#ifdef __NT__
+  get_all_args("get_dir",args,".%W",&str);
+#else /* !__NT__ */
   get_all_args("get_dir",args,".%S",&str);
+#endif /* __NT__ */
 
   if(!str) {
 #if defined(__amigaos4__)
@@ -827,15 +833,9 @@ void f_get_dir(INT32 args)
     args++;
   }
 
-  if (strlen(str->str) != (size_t)str->len) {
-    /* Filenames with NUL are not supported. */
-    errno = ENOENT;
-    pop_n_elems(args);
-    push_int(0);
-    return;
-  }
-
 #ifdef __NT__
+  /* FIXME: Consider using a stringbuilder with width 1? */
+
   /* Append "/" "*". */
   if (str->len && (str->str[str->len-1] != '/') &&
       (str->str[str->len-1] != '\\')) {
@@ -850,7 +850,21 @@ void f_get_dir(INT32 args)
   fprintf(stderr, "FindFirstFile(\"%s\")...\n", str->str);
 #endif /* READDIR_DEBUG */
 
-  dir = FindFirstFile((LPCSTR)str->str, &d);
+  if ((!(dir_str = require_wstring1(str, &to_free))) ||
+      (wcslen(dir_str) != (size_t)str->len)) {
+    /* Filenames with NUL and filenames that are
+     * too wide are not supported. */
+    if (to_free) free(to_free);
+    fprintf(stderr, "require_wstring1() failed or spurious NUL.\n");
+    errno = ENOENT;
+    pop_n_elems(args);
+    push_int(0);
+    return;
+  }
+
+  dir = FindFirstFileW(dir_str, &d);
+
+  if (to_free) free(to_free);
 
   if (dir == DO_NOT_WARN(INVALID_HANDLE_VALUE)) {
 #ifdef READDIR_DEBUG
@@ -866,7 +880,7 @@ void f_get_dir(INT32 args)
 
   do {
 #ifdef READDIR_DEBUG
-    fprintf(stderr, "  \"%s\"\n", d.cFileName);
+    fprintf(stderr, "  \"%S\"\n", d.cFileName);
 #endif /* READDIR_DEBUG */
     /* Filter "." and ".." from the list. */
     if(d.cFileName[0]=='.')
@@ -874,9 +888,9 @@ void f_get_dir(INT32 args)
       if(!d.cFileName[1]) continue;
       if(d.cFileName[1]=='.' && !d.cFileName[2]) continue;
     }
-    push_text(d.cFileName);
+    push_string(make_shared_binary_string1(d.cFileName, wcslen(d.cFileName)));
     DO_AGGREGATE_ARRAY(120);
-  } while(FindNextFile(dir, &d));
+  } while(FindNextFileW(dir, &d));
 
 #ifdef READDIR_DEBUG
   fprintf(stderr, "  DONE\n");
@@ -889,6 +903,14 @@ void f_get_dir(INT32 args)
   stack_pop_n_elems_keep_top(args);
 
 #else /* !__NT__ */
+
+  if (strlen(str->str) != (size_t)str->len) {
+    /* Filenames with NUL are not supported. */
+    errno = ENOENT;
+    pop_n_elems(args);
+    push_int(0);
+    return;
+  }
 
   THREADS_ALLOW_UID();
   dir = opendir(str->str);
