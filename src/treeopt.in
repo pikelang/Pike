@@ -1,6 +1,6 @@
 // -*- c -*-
 //
-// $Id: treeopt.in,v 1.39 2000/04/30 11:24:12 grubba Exp $
+// $Id: treeopt.in,v 1.40 2000/04/30 13:52:54 grubba Exp $
 //
 // The tree optimizer
 //
@@ -31,19 +31,27 @@ F_RETURN(-, *):
   F_RETURN(0, -);
 
 // @({ a, b, c })  =>  a, b, c
+// Nonconstant array
 F_PUSH_ARRAY(F_APPLY(F_CONSTANT
 		     [$$->u.sval.type == T_FUNCTION]
 		     [$$->u.sval.subtype == FUNCTION_BUILTIN]
 		     [$$->u.sval.u.efun->function == debug_f_aggregate], 0), *):
   $0;
 
+// @({ a, b, c })  =>  a, b, c
+// Constant array
 F_PUSH_ARRAY(0 = F_CONSTANT[$$->u.sval.type == T_ARRAY], *):
   {
     struct array *a = $0->u.sval.u.array;
     node *n = NULL;
     int i;
     for(i=0; i<a->size; i++) {
-      n = mknode(F_ARG_LIST, n, mksvaluenode(a->item+i));
+      if (n) {
+	n = mknode(F_ARG_LIST, n, mksvaluenode(a->item+i));
+      } else {
+	/* i is always 0 here. */
+	n = mksvaluenode(a->item);
+      }
     }
     $$ = n;
   }
