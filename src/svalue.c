@@ -20,7 +20,7 @@
 #include "pike_macros.h"
 #include <ctype.h>
 
-RCSID("$Id: svalue.c,v 1.29 1998/04/26 11:45:21 hubbe Exp $");
+RCSID("$Id: svalue.c,v 1.30 1998/04/28 22:34:18 hubbe Exp $");
 
 struct svalue dest_ob_zero = { T_INT, 0 };
 
@@ -772,8 +772,7 @@ void describe_svalue(struct svalue *s,int indent,struct processing *p)
 	      break;
 
             default:
-	      if(is8bitalnum(((unsigned char *)s->u.string->str)[i]) ||
-		 isprint(((unsigned char *)s->u.string->str)[i]))
+	      if(isprint(((unsigned char *)s->u.string->str)[i]))
 	      {
 		my_putchar(s->u.string->str[i]);
 		break;
