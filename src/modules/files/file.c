@@ -6,7 +6,7 @@
 /**/
 #define NO_PIKE_SHORTHAND
 #include "global.h"
-RCSID("$Id: file.c,v 1.239 2002/08/15 14:50:27 marcus Exp $");
+RCSID("$Id: file.c,v 1.240 2002/08/16 12:51:30 grubba Exp $");
 #include "fdlib.h"
 #include "interpret.h"
 #include "svalue.h"
@@ -2646,7 +2646,7 @@ static void file_set_keepalive(INT32 args)
   push_int(!i);
 }
 
-#ifdef AF_UNIX
+#ifdef HAVE_SYS_UN_H
 #include <sys/un.h>
 
 /*! @decl int(0..1) connect_unix( string filename )
@@ -2705,7 +2705,7 @@ static void file_connect_unix( INT32 args )
     push_int(1);
   }
 }
-#endif
+#endif /* HAVE_SYS_UN_H */
 
 /*! @decl int(0..1) connect(string dest_addr, int dest_port)
  *! @decl int(0..1) connect(string dest_addr, int dest_port, @

@@ -48,9 +48,9 @@
   FILE_FUNC("set_buffer",file_set_buffer,"function(int,string|void:void)")
   FILE_FUNC("open_socket",file_open_socket,"function(int|void,string|void:int)")
   FILE_FUNC("connect",file_connect,"function(string,int:int)|function(string,int,string,int:int)")
-#ifdef AF_UNIX
+#ifdef HAVE_SYS_UN_H
   FILE_FUNC("connect_unix",file_connect_unix,"function(string:int)")
-#endif
+#endif /* HAVE_SYS_UN_H */
   FILE_FUNC("query_address",file_query_address,"function(int|void:string)")
   FILE_FUNC("create",file_create,"function(void|string,void|string:void)")
   FILE_FUNC("`<<",file_lsh,"function(mixed:object)")
