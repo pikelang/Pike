@@ -8,6 +8,8 @@ int appendix;
 mapping queue = ([]);
 mapping appendix_queue = ([]);
 
+Node void_node = Node(XML_ELEMENT, "void", ([]), 0);
+
 // array( array(name,file) )
 array toc = ({});
 class TocNode {
@@ -37,6 +39,9 @@ class Entry (Node target) {
   }
 }
 
+
+// --- Some debug functions
+
 string visualize(Node n, int depth) {
   if(n->get_node_type() == XML_TEXT)
     return Parser.XML.Tree.text_quote(n->get_text());
@@ -65,15 +70,19 @@ string visualize(Node n, int depth) {
   return data + "</" + name + ">";
 }
 
+string vis(Node n) {
+  if(!n || n->get_node_type()!=XML_ELEMENT) return sprintf("%O", n);
+  return sprintf("<%s%{ %s='%s'%}>", n->get_tag_name(), (array)n->get_attributes());
+}
+
+// ---
+
+
 class mvEntry {
   inherit Entry;
   constant type = "mv";
 
   void `()(Node data) {
-    Node p = data->get_parent();
-    if(p)
-      p->remove_child(data);
-
     if(args) {
       mapping m = data->get_attributes();
       foreach(indices(args), string index)
@@ -236,6 +245,11 @@ void ref_expansion(Node n, string dir, void|string file) {
       c->get_attributes()->number = (string)++appendix;
       toc += ({ ({ c->get_attributes()->name, file }) });
       break;
+
+    case "void":
+      c->get_parent()->remove_child(c);
+      void_node->add_child(c);
+      chapter_ref_expansion(c);
     }
   }
 }
@@ -264,16 +278,20 @@ void move_appendices(Node n) {
 Node wrap(Node n, Node wrapper) {
   if(wrapper->count_children())
     wrap(n, wrapper[0]);
-  else
+  else {
+    Node p = n->get_parent();
+    if(p) p->remove_child(n);
     wrapper->add_child(n);
+  }
   return wrapper;
 }
 
 void move_items(Node n, mapping jobs, void|Node wrapper) {
   if(jobs[0]) {
-    Node m = n;
-    if(wrapper) m = wrap(n, wrapper->clone());
-    jobs[0](m);
+    if(wrapper)
+      jobs[0]( wrap(n, wrapper->clone()) );
+    else
+      jobs[0](n);
     m_delete(jobs, 0);
   }
 
@@ -281,12 +299,11 @@ void move_items(Node n, mapping jobs, void|Node wrapper) {
     foreach(n->get_elements(type), Node c) {
       mapping m = c->get_attributes();
       string name = m->name || m["homogen-name"];
-      if(type!="docgroup") werror("Testing %O %O\n", type, name);
       mapping|Entry e = jobs[ name ];
       if(!e) continue;
       if(mappingp(e)) {
 	Node wr = Node(XML_ELEMENT, n->get_tag_name(),
-		       n->get_attributes()+([]), 0);
+		       n->get_attributes()+(["hidden":"1"]), 0);
 	if(wrapper)
 	  wr = wrap( wr, wrapper->clone() );
 
@@ -309,6 +326,7 @@ void report_failed_entries(mapping scope, string path) {
 
 int(0..1) main(int num, array(string) args) {
 
+  int T = time();
   if(num<3)
     error("To few arguments\n");
 
@@ -338,5 +356,6 @@ int(0..1) main(int num, array(string) args) {
 
   werror("Writing final manual source file.\n");
   write( (string)n );
+  werror("Took %d seconds.\n\n", time()-T);
   return 0;
 }
