@@ -1,6 +1,6 @@
 #pike __REAL_VERSION__
 
-// $Id: Session.pike,v 1.3 2003/02/21 21:45:04 mirar Exp $
+// $Id: Session.pike,v 1.4 2003/02/22 10:21:18 mirar Exp $
 
 import Protocols.HTTP;
 
@@ -39,7 +39,7 @@ class Request
 //!	Loops will currently not be detected, only the limit
 //!	works to stop loops.
 
-   int follow_redirects= // parent
+   int follow_redirects= // from parent, will count down
       function_object(object_program(this_object()))->follow_redirects;
 
 //!	Cookie callback. When a request is performed,
@@ -51,6 +51,8 @@ class Request
    function(string,Standards.URI:mixed) cookie_encountered=set_http_cookie;
 
 // ----------------
+
+   int(0..1) con_https; // internal flag
 
 //!	Prepares the HTTP Query object for the connection,
 //!	and returns the parameters to use with @[do_sync],
@@ -70,11 +72,8 @@ class Request
 	 url=Standards.URI(url);
       url_requested=url;
 
-      if(!con) con = give_me_connection(url);
-
       if(!request_headers)
 	 request_headers = ([]);
-  
   
 #if constant(SSL.sslfile) 	
       if(url->scheme!="http" && url->scheme!="https")
@@ -82,7 +81,7 @@ class Request
 	       "protocols than HTTP or HTTPS\n",
 	       url->scheme);
   
-      con->https= (url->scheme=="https")? 1 : 0;
+      con_https= (url->scheme=="https")? 1 : 0;
 #else
       if(url->scheme!="http"	)
 	 error("Protocols.HTTP can't handle %O or any other "
@@ -151,6 +150,7 @@ class Request
    {
       for (;;)
       {
+	 if(!con) con=give_me_connection(url_requested);
 	 con->sync_request(@args);
 	 if (con->ok) 
 	 {
@@ -184,9 +184,12 @@ class Request
 //!	The called object.
 //! @seealso
 //!     @[prepare_method], @[do_sync], @[do_async], @[wait]
+//! @note
+//!	@[do_thread] does not rerun redirections automatically
 
    Request do_thread(array(string|int|mapping) args)
    {
+      if(!con) con=give_me_connection(url_requested);
       con->thread_request(@args);
       return this_object();
    }
@@ -246,6 +249,18 @@ class Request
 
    Request do_async(array(string|int|mapping) args)
    {
+      if(!con)
+      {
+	 if (connections_host_n[connection_lookup(url_requested)]>=
+	     maximum_connections_per_server ||
+	     (!connections_kept_n &&
+	      connections_inuse_n>=maximum_total_connections))
+	 {
+	    wait_for_connection(do_async,args);
+	    return this_object();
+	 }
+	 con=give_me_connection(url_requested);
+      }
       con->set_callbacks(async_ok,async_fail);
       con->async_request(@args);
       return this_object();
@@ -274,20 +289,37 @@ class Request
       if (headers_callback)
 	 headers_callback(@extra_callback_arguments);
 
+      // clear callbacks for possible garbation of this Request object
+      con->set_callbacks(0,0);
+
       if (data_callback)
 	 con->async_fetch(async_data); // start data downloading
+      else
+	 extra_callback_arguments=0; // to allow garb
    }
 
    static void async_fail(object q)
    {
-      if (fail_callback)
-	 fail_callback(@extra_callback_arguments);
+      // clear callbacks for possible garbation of this Request object
+      con->set_callbacks(0,0);
+
+      if (fail_callback) fail_callback(@extra_callback_arguments);
+      extra_callback_arguments=0; // clear references there too
    }
 
    static void async_data()
    {
-      if (data_callback)
-	 data_callback(@extra_callback_arguments);
+      // clear callbacks for possible garbation of this Request object
+      con->set_callbacks(0,0);
+
+      if (data_callback) data_callback(@extra_callback_arguments);
+      extra_callback_arguments=0; // clear references there too
+   }
+
+   void wait_for_connection(function callback,mixed ...args)
+   {
+      freed_connection_callbacks+=({({connection_lookup(url_requested),
+				      callback,args})});
    }
 
 // ----------------
@@ -553,16 +585,12 @@ int|float time_to_keep_unused_connections=10;
 //!	Maximum number of connections to the same server.
 //!	Used only by async requests.
 //!	Defaults to 10 connections.
-//! @bugs
-//!	Not yet implemented. 
 int maximum_connections_per_server=10;
 
 //!	Maximum total number of connections. Limits only
 //!	async requests, and the number of kept-alive connections
 //!	(live connections + kept-alive connections <= this number)
 //!	Defaults to 50 connections.
-//! @bugs
-//!	Limit not yet implemented for async. 
 int maximum_total_connections=50;
 
 
@@ -571,6 +599,7 @@ int maximum_total_connections=50;
 mapping(string:array(KeptConnection)) connection_cache=([]);
 int connections_kept_n=0;
 int connections_inuse_n=0;
+mapping(string:int) connections_host_n=([]);
 
 static class KeptConnection
 {
@@ -593,9 +622,12 @@ static class KeptConnection
       connection_cache[lookup]-=({this_object()});
       if (!sizeof(connection_cache[lookup]))
 	 m_delete(connection_cache,lookup);
+      remove_call_out(disconnect); // if called externally
 
       if (q->con) destruct(q->con);
       connections_kept_n--;
+      if (!--connections_host_n[lookup])
+	 m_delete(connections_host_n,lookup);
       destruct(q);
       destruct(this_object());
    }
@@ -605,8 +637,8 @@ static class KeptConnection
       connection_cache[lookup]-=({this_object()});
       if (!sizeof(connection_cache[lookup]))
 	 m_delete(connection_cache,lookup);
-
       remove_call_out(disconnect);
+
       connections_kept_n--;
       return q; // subsequently, this object is removed (no refs)
    }
@@ -635,11 +667,48 @@ Query give_me_connection(Standards.URI url)
    }
    else
    {
+      if (connections_kept_n+connections_inuse_n+1
+	  >= maximum_total_connections &&
+	  sizeof(connection_cache))
+      {
+         // close one if we have it kept
+	 array(KeptConnection) all=`+(@values(connection_cache));
+	 KeptConnection one=all[random(sizeof(all))];
+	 one->disconnect(); // removes itself
+      }
+
       q=Query();
       q->hostname_cache=hostname_cache;
+      connections_host_n[connection_lookup(url)]++; // new
    }
    connections_inuse_n++;
    return q;
+}
+
+//
+// called when there might be a free connection
+
+// queue of what to call when we get new free connections
+array(array) freed_connection_callbacks=({});
+                    // ({lookup,callback,args})
+
+static inline void freed_connection(string lookup_freed)
+{
+   if (connections_inuse_n>=maximum_total_connections)
+      return;
+
+   foreach (freed_connection_callbacks;;array v)
+   {
+      [string lookup, function callback, array args]=v;
+      if (lookup==lookup_freed ||
+	  connections_host_n[lookup]<
+	  maximum_connections_per_server)
+      {
+	 freed_connection_callbacks-=({v}); 
+	 callback(@args);
+	 return;
+      }
+   }
 }
 
 //!	Return a previously used Query object to the keep-alive
@@ -649,6 +718,7 @@ Query give_me_connection(Standards.URI url)
 void return_connection(Standards.URI url,Query query)
 {
    connections_inuse_n--;
+   string lookup=connection_lookup(url);
    if (query->con) 
    {
       if (query->headers->connection &&
@@ -659,12 +729,16 @@ void return_connection(Standards.URI url,Query query)
       {
          // clean up
 	 query->set_callbacks(0,0);
-	 KeptConnection(connection_lookup(url),query);
+	 KeptConnection(lookup,query);
+	 freed_connection(lookup);
 	 return;
       }
       destruct(query->con);
    }
    destruct(query);
+   if (!--connections_host_n[lookup])
+      m_delete(connections_host_n,lookup);
+   freed_connection(lookup);
 }
 
 // ================================================================
@@ -818,7 +892,7 @@ string post_url_data(string|Standards.URI url,
 // async operation
 
 Request async_do_method(string method,
-			string url,
+			Standards.URI|string url,
 			void|mapping query_variables,
 			void|string data,
 			function callback_headers_ok,
@@ -826,15 +900,19 @@ Request async_do_method(string method,
 			function callback_fail,
 			array callback_arguments)
 {
-   mapping extra_headers=0;
-   if (method=="POST")
-      extra_headers=(["content-type":"application/x-www-form-urlencoded"]);
-   
+   if(stringp(url)) url=Standards.URI(url);
+
    Request p=Request();
+
    p->set_callbacks(callback_headers_ok,
 		    callback_data_ok,
 		    callback_fail,
 		    p,@callback_arguments);
+
+   mapping extra_headers=0;
+   if (method=="POST")
+      extra_headers=(["content-type":"application/x-www-form-urlencoded"]);
+
    p->do_async(p->prepare_method(method,url,query_variables,
 				 extra_headers,data));
    return p;
