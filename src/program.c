@@ -5,7 +5,7 @@
 \*/
 /**/
 #include "global.h"
-RCSID("$Id: program.c,v 1.301 2001/03/12 22:42:19 hubbe Exp $");
+RCSID("$Id: program.c,v 1.302 2001/03/12 23:46:22 hubbe Exp $");
 #include "program.h"
 #include "object.h"
 #include "dynamic_buffer.h"
@@ -1903,6 +1903,7 @@ static void add_compat_event_handler(void)
 /*
  * set a callback used to initialize clones of this program
  * the init function is called at clone time
+ * This function is obsolete, use pike_set_prog_event_callback instead.
  */
 PMOD_EXPORT void set_init_callback(void (*init)(struct object *))
 {
@@ -1913,6 +1914,7 @@ PMOD_EXPORT void set_init_callback(void (*init)(struct object *))
 /*
  * set a callback used to de-initialize clones of this program
  * the exit function is called at destruct
+ * This function is obsolete, use pike_set_prog_event_callback instead.
  */
 PMOD_EXPORT void set_exit_callback(void (*exit)(struct object *))
 {
@@ -1931,6 +1933,8 @@ PMOD_EXPORT void set_exit_callback(void (*exit)(struct object *))
  * The callback might be called more than once for the same instance
  * during a gc pass. The gc assumes that the references are enumerated
  * in the same order in that case.
+ *
+ * This function is obsolete, use pike_set_prog_event_callback instead.
  */
 PMOD_EXPORT void set_gc_recurse_callback(void (*m)(struct object *))
 {
@@ -1948,11 +1952,22 @@ PMOD_EXPORT void set_gc_recurse_callback(void (*m)(struct object *))
  * for all shared instances. The return value from gc_check is useful
  * to ensure this; it's zero when called the first time for its
  * argument.
+ *
+ * This function is obsolete, use pike_set_prog_event_callback instead.
  */
 PMOD_EXPORT void set_gc_check_callback(void (*m)(struct object *))
 {
   add_compat_event_handler();
   ((oldhandlertype *)Pike_compiler->new_program->program)[PROG_EVENT_GC_CHECK]=m;
+}
+
+void pike_set_prog_event_callback(void (*cb)(enum pike_program_event))
+{
+#ifdef PIKE_DEBUG
+  if(Pike_compiler->new_program->event_handler)
+    fatal("Program already has an event handler!\n");
+#endif
+  Pike_compiler->new_program->event_handler=cb;
 }
 
 int low_reference_inherited_identifier(struct program_state *q,

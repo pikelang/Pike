@@ -9,6 +9,10 @@
  * PIKECLASS fnord 
  *  attributes;
  * {
+ *   CVAR int foo;
+ *   PIKEVAR mapping m;
+ *
+ *   DECLARE_STOARGE; // optional
  *
  *   PIKEFUN int function_name (int x, CTYPE char * foo)
  *    attribute;
@@ -942,7 +946,7 @@ class ParseBlock
 			  type->type_number()),
 		    }));
 	ret+=DEFINE(define);
-	ret+=({ PC.Token("/*VAR*/") });
+	ret+=({ PC.Token("DECLARE_STORAGE") });
 	ret+=rest;
       }
 
@@ -960,18 +964,22 @@ class ParseBlock
     
 	thestruct+=IFDEF(define,var[..pos-1]+({";"}));
 	ret+=DEFINE(define);
-	ret+=({ PC.Token("/*VAR*/") });
+	ret+=({ PC.Token("DECLARE_STORAGE") });
 	ret+=var[pos+1..];
       }
 
 
       
-      ret=(ret/({"MARK"}))*({PC.Token("PIKE_INTERNAL"),PC.Token("mark")});
       ret=(ret/({"INIT"}))*({PC.Token("PIKE_INTERNAL"),PC.Token("init")});
       ret=(ret/({"EXIT"}))*({PC.Token("PIKE_INTERNAL"),PC.Token("exit")});
+      ret=(ret/({"GC_RECURSE"}))*({PC.Token("PIKE_INTERNAL"),PC.Token("mark")});
+      ret=(ret/({"GC_CHECK"}))*({PC.Token("PIKE_INTERNAL"),PC.Token("mark")});
 
       x=ret/({"PIKE_INTERNAL"});
       ret=x[0];
+      
+      string ev_handler_define=mkname(base,"event","handler","defined");
+      array ev_handler=({});
       for(int f=1;f<sizeof(x);f++)
       {
 	array func=x[f];
@@ -987,14 +995,30 @@ class ParseBlock
 	string funcname=mkname(name,base,"struct");
 	string define=mkname("internal",name,base,"defined");
 	ret+=DEFINE(define);
-	ret+=({ PC.Token(sprintf("void %s(struct object *thisobj)\n",funcname)) });
+	ret+=DEFINE(ev_handler_define);
+	ret+=({ PC.Token(sprintf("static void %s()\n",funcname)) });
 	ret+=body;
 	ret+=rest;
-	addfuncs+=IFDEF(define,
-			({ PC.Token(sprintf("  set_%s_callback(%s);\n",name,funcname)) }));
+	ev_handler+=IFDEF(define,({
+	  sprintf("  case PROG_EVENT_%s: %s(); break;\n",
+		  upper_case(name),
+		  funcname)
+	}));
       }
-
-      
+      if(sizeof(ev_handler))
+      {
+	string funcname=mkname(base,"event","handler");
+	ret+=IFDEF(ev_handler_define,
+		   ({
+		     sprintf("static void %s(enum pike_program_event ev) {\n",funcname),
+		       "  switch(ev) {\n"
+		       })+
+		   ev_handler+
+		   ({"  }\n}\n"}));
+	
+	addfuncs+=IFDEF(ev_handler_define,
+			({ PC.Token(sprintf("  pike_set_prog_event_callback(%s);\n",funcname)) }));
+      }
 
 
       if(sizeof(thestruct))
@@ -1027,13 +1051,9 @@ class ParseBlock
 	  +declarations;
       }
 
-      if(sizeof(declarations))
-      {
-	x=ret/({"/*VAR*/"});
-	
-	ret=x[..sizeof(x)-2]*({})+declarations+x[-1];
-	declarations=({});
-      }
+      x=ret/({"DECLARE_STORAGE"});
+      ret=x[..sizeof(x)-2]*({})+declarations+x[-1];
+      declarations=({});
 
       x=ret/({"PIKEFUN"});
       ret=x[0];

@@ -5,7 +5,7 @@
 \*/
 /**/
 #include "global.h"
-RCSID("$Id: backend.cmod,v 1.9 2001/03/12 18:31:06 grubba Exp $");
+RCSID("$Id: backend.cmod,v 1.10 2001/03/12 23:46:22 hubbe Exp $");
 #include "fdlib.h"
 #include "backend.h"
 #include <errno.h>
@@ -29,6 +29,13 @@ RCSID("$Id: backend.cmod,v 1.9 2001/03/12 18:31:06 grubba Exp $");
 #include "stuff.h"
 #include "bignum.h"
 #include "svalue.h"
+
+/*
+ * Things to do
+ * o GC handling for call_out
+ * o what happens to callbacks on destruct?
+ * o automatic callback assignment based on current thread
+ */
 
 #ifdef HAVE_SYS_SELECT_H
 #include <sys/select.h>
@@ -446,11 +453,13 @@ PIKECLASS Backend
   /* Should really exist only in PIKE_DEBUG, but 
    * #ifdefs on the last cvar confuses precompile.pike.
    *	/grubba 2001-03-12
+   * Should be fixed now -Hubbe
    */
+#ifdef PIKE_DEBUG
   CVAR int inside_call_out;
+#endif
 
-
-  
+  DECLARE_STORAGE
   /*
    * Call out defines
    */
