@@ -1036,8 +1036,8 @@ int main(int argc, array(string) argv)
   string output="a.out";
 //  werror("%O\n",argv);
   werror("Pike Win32 partial linker.\n"
-	 "$Id: pntld,v 1.9 2001/01/26 12:45:37 hubbe Exp $\n"
-	 "Written by Fredrik Hubinette 2000\n");
+	 "$Id: pntld,v 1.10 2001/01/26 12:58:48 hubbe Exp $\n"
+	 "Written by Fredrik Hubinette 2000 - 2001\n");
 
   foreach(Getopt.find_all_options(argv,aggregate(
     ({"output",Getopt.HAS_ARG,({"-o"})}),
