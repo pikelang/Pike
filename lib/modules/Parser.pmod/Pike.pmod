@@ -4,7 +4,7 @@
 //
 // #pike __REAL_VERSION__
 //
-// $Id: Pike.pmod,v 1.36 2004/10/30 12:00:44 mast Exp $
+// $Id: Pike.pmod,v 1.37 2004/11/26 04:27:25 nilsson Exp $
 
 //! This module parses and tokenizes Pike source code.
 
@@ -251,7 +251,8 @@ array(string) split(string data, void|mapping state)
 	  pos = bqstart;
           UNKNOWN_TOKEN;
 	}
-        int chars = backquoteops[data[pos..pos+2]]
+        int chars = backquoteops[data[pos..pos+3]]
+	  || backquoteops[data[pos..pos+2]]
           || backquoteops[data[pos..pos+1]]
           || backquoteops[data[pos..pos]];
         if (chars)
