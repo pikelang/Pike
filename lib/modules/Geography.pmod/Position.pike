@@ -478,9 +478,10 @@ array(float) ECEF() {
   float N = equatorial_radius /
     sqrt(1-eccentricity_squared()*sin(lat)*sin(lat));
 
-  float X = (N + alt)*cos(lat)*cos(long);
-  float Y = (N + alt)*cos(lat)*sin(long);
-  float Z = (N*(1-eccentricity_squared())+alt) * sin(lat);
+  constant torad=Math.pi/180;
+  float X = (N + alt)*cos(lat*torad)*cos(long*torad);
+  float Y = (N + alt)*cos(lat*torad)*sin(long*torad);
+  float Z = (N*(1-eccentricity_squared())+alt) * sin(lat*torad);
 
   return ({ X, Y, Z });
 }
@@ -530,4 +531,14 @@ int `>(object pos)
 string _sprintf(int|void t)
 {
   return t=='O' && sprintf("%O(%s, %s)", object_program(this_object()), latitude(), longitude());
+}
+
+//! Calculate the euclidian distance between two Geography.Position.
+//! Result is in meter. This uses the ECEF function.
+
+float euclidian_distance(this_program p)
+{
+   return sqrt(`+(@map(Array.sum_arrays(
+			  `-,ECEF(),p->ECEF()),
+		       lambda(float f) { return f*f; })));
 }
