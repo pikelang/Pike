@@ -1064,8 +1064,8 @@ void fix_smartlink(string src, string dest, string include_prefix)
 void dump_modules()
 {
   string master=combine_path(lib_prefix,"master.pike");
-  mixed s1=file_stat(master);
-  mixed s2=file_stat(master+".o");
+  Stdio.Stat s1=file_stat(master);
+  Stdio.Stat s2=file_stat(master+".o");
   mapping(string:mapping(string:string)) options = ([
     "env":getenv()-([
       "PIKE_PROGRAM_PATH":"",
@@ -1075,7 +1075,7 @@ void dump_modules()
       ]) ]);
 
 
-  if(!s1 || !s2 || s1[3]>=s2[3] || redump_all)
+  if(!s2 || s1->mtime>=s2->mtime || redump_all)
   {
     int retcode;
     mixed error = catch {
@@ -1100,75 +1100,73 @@ void dump_modules()
 	     retcode);
   }
 
-  if(sizeof(to_dump))
-  {
-    rm("dumpmodule.log");
+  if(!sizeof(to_dump)) return;
 
-    foreach(to_dump, string mod)
-      rm(mod+".o");
+  rm("dumpmodule.log");
 
-    // Dump 25 modules at a time
+  foreach(to_dump, string mod)
+    rm(mod+".o");
 
-    array cmd=({fakeroot(pike) });
+  array cmd=({ fakeroot(pike) });
 
-    if(vars->fakeroot)
-      cmd+=({
-	sprintf("-DPIKE_FAKEROOT=%O",vars->fakeroot),
-	  sprintf("-DPIKE_FAKEROOT_OMIT=%O",
-		  Array.map( ({
-		    getcwd(),
-		    vars->LIBDIR_SRC,
-		    vars->SRCDIR,
-		    vars->TMP_BINDIR,
-		    vars->MANDIR_SRC,
-		    vars->TMP_LIBDIR,
-		    vars->BASEDIR,
-		    vars->fakeroot,
-		  }), globify)*":"),
-	  "-m",combine_path(vars->TMP_LIBDIR,"master.pike")
-	  });
+  if(vars->fakeroot)
+    cmd+=({
+      sprintf("-DPIKE_FAKEROOT=%O",vars->fakeroot),
+      sprintf("-DPIKE_FAKEROOT_OMIT=%O",
+	      map( ({
+		getcwd(),
+		vars->LIBDIR_SRC,
+		vars->SRCDIR,
+		vars->TMP_BINDIR,
+		vars->MANDIR_SRC,
+		vars->TMP_LIBDIR,
+		vars->BASEDIR,
+		vars->fakeroot,
+	      }), globify)*":"),
+      "-m",combine_path(vars->TMP_LIBDIR,"master.pike")
+    });
 
-    cmd+=({ "-x", "dump",
-	    "--log-file",	// --distquiet below might override this.
+  cmd+=({ "-x", "dump",
+	  "--log-file",	// --distquiet below might override this.
 #ifdef USE_GTK
-	      label1?"--distquiet":
+	  label1?"--distquiet":
 #endif
-      "--quiet"});
+	  "--quiet"});
 
-    int offset = 1;
-    foreach(to_dump/25.0, array delta_dump)
-    {
-      mixed err = catch {
-	object p=
-	  Process.create_process(cmd +
-				 ( istty() ?
-				   ({
-				     sprintf("--progress-bar=%d,%d",
-					     offset, sizeof(to_dump))
-				   }) : ({}) ) +
-				 delta_dump, options);
-	int retcode=p->wait();
-	if (retcode)
-	{
-	  werror("Dumping of some modules failed (not fatal) (0x%08x)\n",
-		 retcode);
-	}
-      };
-      if (err) {
-	werror("Failed to spawn module dumper (not fatal):\n"
+  // Dump 25 modules at a time as to not confuse systems with
+  // very short memory for application arguments.
+
+  int offset = 1;
+  foreach(to_dump/25.0, array delta_dump)
+  {
+    mixed err = catch {
+      object p=
+	Process.create_process(cmd +
+			       ( istty() ?
+				 ({
+				   sprintf("--progress-bar=%d,%d",
+					   offset, sizeof(to_dump))
+				 }) : ({}) ) +
+			       delta_dump, options);
+      int retcode=p->wait();
+      if (retcode)
+	werror("Dumping of some modules failed (not fatal) (0x%08x)\n",
+	       retcode);
+    };
+    if (err) {
+      werror("Failed to spawn module dumper (not fatal):\n"
 	       "%s\n", describe_backtrace(err));
-      }
-
-      offset += sizeof(delta_dump);
     }
 
-    if(progress_bar)
-      // The last files copied does not really count (should
-      // really be a third phase)...
-      progress_bar->set_phase(1.0, 0.0);
-
-    status_clear(1);
+    offset += sizeof(delta_dump);
   }
+
+  if(progress_bar)
+    // The last files copied does not really count (should
+    // really be a third phase)...
+    progress_bar->set_phase(1.0, 0.0);
+
+  status_clear(1);
 }
 
 void do_install()
