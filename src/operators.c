@@ -6,7 +6,7 @@
 /**/
 #include "global.h"
 #include <math.h>
-RCSID("$Id: operators.c,v 1.89 2000/04/12 11:14:50 mirar Exp $");
+RCSID("$Id: operators.c,v 1.90 2000/04/12 16:55:56 grubba Exp $");
 #include "interpret.h"
 #include "svalue.h"
 #include "multiset.h"
@@ -28,6 +28,7 @@ RCSID("$Id: operators.c,v 1.89 2000/04/12 11:14:50 mirar Exp $");
 #include "module_support.h"
 #include "pike_macros.h"
 #include "bignum.h"
+#include "builtin_functions.h"
 
 #define OP_DIVISION_BY_ZERO_ERROR(FUNC) \
      math_error(FUNC, sp-2, 2, 0, "Division by zero.\n")
@@ -502,6 +503,19 @@ static node *optimize_not(node *n)
     TMP_OPT(f_le, "`>");
     TMP_OPT(f_ge, "`<");
 #undef TMP_OPT
+    if((more_args = is_call_to(*first_arg, f_search)) &&
+       (count_args(*more_args) == 2)) {
+      node *search_args = *more_args;
+      if ((search_args->token == F_ARG_LIST) &&
+	  CAR(search_args) &&
+	  (CAR(search_args)->type == string_type_string) &&
+	  CDR(search_args) &&
+	  (CDR(search_args)->type == string_type_string)) {
+	/* !search(string a, string b)  =>  has_prefix(a, b) */
+	ADD_NODE_REF(*more_args);
+	return mkefuncallnode("has_prefix", search_args);
+      }
+    }
   }
 
   return 0;
