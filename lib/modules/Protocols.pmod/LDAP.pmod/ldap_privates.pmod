@@ -1,6 +1,6 @@
 // LDAP client protocol implementation for Pike.
 //
-// $Id: ldap_privates.pmod,v 1.3 1999/08/25 05:04:32 hubbe Exp $
+// $Id: ldap_privates.pmod,v 1.4 2000/09/14 14:17:02 hop Exp $
 //
 // Honza Petrous, hop@unibase.cz
 //
@@ -174,7 +174,7 @@ object|mapping der_decode(object data, mapping types)
   if ( (raw_tag & 0x1f) == 0x1f)
     error("ASN1.Decode: High tag numbers is not supported\n");
 
-  int len = data->get_uint(1);
+  len = data->get_uint(1);
   if (len & 0x80)
     len = data->get_uint(len & 0x7f);
 

@@ -1,6 +1,6 @@
 // LDAP client protocol implementation for Pike.
 //
-// $Id: client.pike,v 1.14 2000/02/17 17:59:53 hop Exp $
+// $Id: client.pike,v 1.15 2000/09/14 14:17:02 hop Exp $
 //
 // Honza Petrous, hop@unibase.cz
 //
@@ -48,6 +48,11 @@
 //
 //	v1.14 2000-02-17 - added decoding of UTF8 strings for v3 protocol
 //
+//	newer versions - see CVS at roxen.com (hop)
+//
+//			 - corrected deUTF8 values in result
+//			 -
+//
 // Specifications:
 //
 //	RFC 1558			  (search filter representations)
@@ -87,6 +92,7 @@
     private int ldap_deref = 0;		// 0: ...
     private int ldap_sizelimit = 0;
     private int ldap_timelimit = 0;
+    private mapping lauth = ([]);
 
 
 
@@ -108,7 +114,7 @@
     int count_entries() { return(entrycnt - actnum); }
 
 
-    private array _get_attr_values(object x) {
+    private array _get_attr_values(int ver, object x) {
 
       array res = ({});
 
@@ -116,6 +122,10 @@
 	return(res);
       foreach(x->elements[1]->elements, object val1) 
 	res += ({ val1->value });
+      if(ver == 3) {
+        // deUTF8
+        res = Array.map(res, utf8_to_string);
+      }
       return(res);
     }
 
@@ -129,14 +139,9 @@
 	attrs = (["dn":({ASN1_DECODE_DN(raw1)})]);
 	entry1 = ASN1_GET_ATTR_ARRAY(raw1);
 	foreach(entry1, object attr1) {
-	  attrs += ([ASN1_GET_ATTR_NAME(attr1):_get_attr_values(attr1)]);
+	  attrs += ([ASN1_GET_ATTR_NAME(attr1):_get_attr_values(ldap_version, attr1)]);
 	}
 	res += ({attrs});
-      }
-
-      if(ldap_version == 3) {
-        // deUTF8
-        res = Array.map(res, utf8_to_string);
       }
 
       return (res);
@@ -230,6 +235,8 @@
       THROW(({"LDAP: Must binded first.\n",backtrace()}));
       return(-ldap_errno);
     }
+    if ((ldap_version == 3) && !binded)
+      bind();
     return(0);
   }
 
@@ -247,29 +254,37 @@
   //
   // create(string|void server)
   //
-  //	server:		server name (hostname or IP, default: 127.0.0.1)
-  //			with optional port number (default: 389)
+  //	server:		server URL in form "ldap://hostname/basedn???!bindname=
   void create(string|void server)
   {
-    int port = LDAP_DEFAULT_PORT;
 
     if(!server || !sizeof(server))
-      server = (string)LDAP_DEFAULT_HOST;
-    else
-      if(predef::search(server,":")>0) {
-	port = (int)((server / ":")[1]);
-	server = (server / ":")[0];
-      }
+      server = LDAP_DEFAULT_URL;
+
+    lauth = parse_url(server);
+
+    if(!stringp(lauth->scheme) || (lauth->scheme != "ldap")) {
+      THROW(({"Unknown scheme in server URL.\n",backtrace()}));
+    }
+
+    if(!lauth->host)
+      lauth += ([ "host" : parse_url(LDAP_DEFAULT_URL)->host ]);
+    if(!lauth->port)
+      lauth += ([ "port" : parse_url(LDAP_DEFAULT_URL)->port ]);
       
-    ::create(server, port);
-    if(!::connected) 
-    {
+    ::create(lauth->host, lauth->port);
+    if(!::connected) {
       THROW(({"Failed to connect to LDAP server.\n",backtrace()}));
     }
     DWRITE(sprintf("client.create: remote = %s\n", query_address()));
-    DWRITE_HI("client.OPEN: " + server + " - OK\n");
+    DWRITE_HI("client.OPEN: " + lauth->host + ":" + (string)(lauth->port) + " - OK\n");
 
     binded = 0;
+
+    if(lauth->scope)
+      set_scope(lauth->scope);
+    if(lauth->basedn)
+      set_basedn(lauth->basedn);
 
   } // create
 
@@ -306,7 +321,7 @@
     if (chk_ver())
       return(-ldap_errno);
     if (!stringp(name))
-      name = "";
+      name = mappingp(lauth->ext) ? lauth->ext->bindname||"" : "";
     if (!stringp(password))
       password = "";
     ldap_version = proto;
@@ -728,6 +743,8 @@
     array(string) rawarr = ({});
     mixed rv;
 
+    filter=filter||lauth->filter; // default from LDAP URI
+
     DWRITE_HI("client.SEARCH: " + (string)filter + "\n");
     if (chk_ver())
       return(-ldap_errno);
@@ -939,6 +956,66 @@
     return (seterr (rv->error_number()));
 
   } // modify
+
+
+  // API function
+  //
+  // parse_url(string ldapuri)
+  //
+  //	ldapuri:	LDAP URL
+  mapping|int parse_url (string ldapuri) {
+
+  // ldap://machine.at.home.cz:123/c=cz?attr1,attr2,attr3?sub?(uid=*)?!bindname=uid=hop,dc=unibase,dc=cz"
+
+  string url=ldapuri, s, scheme;
+  array ar;
+  mapping res;
+
+    s = (url / ":")[0];
+    url = url[sizeof(s)..];
+
+    res = ([ "scheme" : s ]);
+
+#ifdef LDAP_URL_STRICT
+    if (url[..2] != "://")
+      return(-1);
+#endif
+
+    s = (url[3..] / "/")[0];
+    url = url[sizeof(s)+4..];
+
+    res += ([ "host" : (s / ":")[0] ]);
+
+    if(sizeof(s / ":") > 1)
+      res += ([ "port" : (int)((s / ":")[1]) ]);
+
+    ar = url / "?";
+
+    switch (sizeof(ar)) {
+      case 5: if (sizeof(ar[4])) {
+		mapping extensions = ([]);
+		foreach(ar[4] / ",", string ext) {
+		  int ix = predef::search(ext, "=");
+		  if(ix)
+		    extensions += ([ ext[..(ix-1)] : replace(ext[ix+1..],QUOTED_COMMA, ",") ]);
+		}
+		if (sizeof(extensions))
+		  res += ([ "ext" : extensions ]);
+	      }
+      //case 5: res += ([ "ext" : ar[4] ]);
+      case 4: res += ([ "filter" : ar[3] ]);
+      case 3: switch (ar[2]) {
+		case "sub": res += ([ "scope" : 2 ]); break;
+		case "one": res += ([ "scope" : 1 ]); break;
+		default: res += ([ "scope" : 0]); // = "base"
+	      }
+      case 2: res += sizeof(ar[1]) ? ([ "attributes" : ar[1] / "," ]) : ([]);
+      case 1: res += ([ "basedn" : ar[0] ]);
+    }
+
+    return (res);
+
+  } //parse_uri
 
 
 #endif
