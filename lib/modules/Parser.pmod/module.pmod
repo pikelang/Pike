@@ -1,5 +1,5 @@
 /*
- * $Id: module.pmod,v 1.19 2003/07/12 06:48:23 mirar Exp $
+ * $Id: module.pmod,v 1.20 2003/11/07 17:57:21 nilsson Exp $
  *
  */
 
@@ -63,8 +63,10 @@ class SGML
 {
    string file;
 
+   //!
    class SGMLatom
    {
+      //!
       string name;
       mapping args;
       int line,char,column;
@@ -92,11 +94,11 @@ class SGML
       }
    }
 
-   static array(array(object(SGMLatom)|string)) res=({({})});
+   static array(array(SGMLatom|string)) res=({({})});
    static array(SGMLatom) tagstack=({});
    static array(object) errors;
 
-   array(object(SGMLatom)|string) data;
+   array(SGMLatom|string) data;
 
    static private array(string) got_tag(object g)
    {
@@ -134,7 +136,7 @@ class SGML
    {
       level+=2;
       if (!arr) arr=data;
-      foreach (arr,string|object(SGMLatom) t)
+      foreach (arr,string|SGMLatom t)
 	 if (stringp(t))
 	    write("%*s%-=*s\n",level,"",79-level,sprintf("%O",t));
 	 else

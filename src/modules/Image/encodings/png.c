@@ -2,11 +2,11 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: png.c,v 1.54 2003/03/12 09:23:36 agehall Exp $
+|| $Id: png.c,v 1.55 2003/11/07 17:44:30 nilsson Exp $
 */
 
 #include "global.h"
-RCSID("$Id: png.c,v 1.54 2003/03/12 09:23:36 agehall Exp $");
+RCSID("$Id: png.c,v 1.55 2003/11/07 17:44:30 nilsson Exp $");
 
 #include "image_machine.h"
 
@@ -1704,7 +1704,7 @@ static void image_png_decode(INT32 args)
 /*! @decl Image.Image decode_alpha(string data, @
  *!     void|mapping(string:mixed) options)
  *!   Decodes the alpha channel in a PNG file. The
- *!   @[optios] mapping is the same as for @[_decode].
+ *!   @[options] mapping is the same as for @[_decode].
  *!
  *! @throws
  *!   Throws upon error in data.

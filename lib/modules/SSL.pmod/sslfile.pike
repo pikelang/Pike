@@ -1,6 +1,6 @@
 #pike __REAL_VERSION__
 
-/* $Id: sslfile.pike,v 1.63 2003/11/04 18:35:33 mast Exp $
+/* $Id: sslfile.pike,v 1.64 2003/11/07 17:50:34 nilsson Exp $
  */
 
 //! Interface similar to @[Stdio.File].
@@ -510,7 +510,7 @@ static void destroy()
 
 string read (void|int length, void|int(0..1) not_all)
 //! Read some (decrypted) data from the connection. Works like
-//! @[Stdio.read].
+//! @[Stdio.File.read].
 //!
 //! @note
 //! I/O errors from both reading and writing might occur in blocking
@@ -558,7 +558,7 @@ string read (void|int length, void|int(0..1) not_all)
 
 int write (string|array(string) data, mixed... args)
 //! Write some (unencrypted) data to the connection. Works like
-//! @[Stdio.write] except that this function often buffers some data
+//! @[Stdio.File.write] except that this function often buffers some data
 //! internally, so there's no guarantee that all the consumed data has
 //! been successfully written to the stream in nonblocking mode. It
 //! keeps the internal buffering to a minimum, however.

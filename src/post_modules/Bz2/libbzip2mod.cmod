@@ -1,5 +1,5 @@
 #include "global.h"
-RCSID("$Id: libbzip2mod.cmod,v 1.12 2003/02/18 13:47:33 finnman Exp $");
+RCSID("$Id: libbzip2mod.cmod,v 1.13 2003/11/07 17:46:05 nilsson Exp $");
 #include "interpret.h"
 #include "svalue.h"
 #include "stralloc.h"
@@ -465,7 +465,7 @@ PIKECLASS Deflate
    *! returns the packed data. Streaming can be done by calling this
    *! function several times and concatenating the returned data.
    *!
-   *! The optional argument @[flush] should be one of the following:
+   *! The optional argument @[flush_mode] should be one of the following:
    *! @int
    *!   @value Bz2.BZ_RUN
    *!     Runs Bz2.Deflate->feed()

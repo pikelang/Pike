@@ -4,7 +4,7 @@
 //
 // #pike __REAL_VERSION__
 //
-// $Id: C.pmod,v 1.39 2003/04/07 18:23:10 jhs Exp $
+// $Id: C.pmod,v 1.40 2003/11/07 17:55:26 nilsson Exp $
 
 //! Splits the @[data] string into an array of tokens. An additional
 //! element with a newline will be added to the resulting array of
@@ -445,7 +445,7 @@ array hide_whitespaces(array tokens)
 
 //! Reconstitutes the token array into a plain string again; essentially
 //! reversing @[split()] and whichever of the @[tokenize], @[group] and
-//! @[hide_whitespace] methods may have been invoked.
+//! @[hide_whitespaces] methods may have been invoked.
 string simple_reconstitute(array(string|object(Token)|array) tokens)
 {
   string ret="";

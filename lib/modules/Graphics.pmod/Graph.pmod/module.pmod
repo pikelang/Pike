@@ -2,11 +2,10 @@
 
 #include "graph.h"
 
-private inherit "polyline.pike";
-private inherit "create_graph.pike";
-private inherit "create_bars.pike";
-private inherit "create_pie.pike";
-private inherit "create_graph.pike";
+private inherit .polyline;
+private inherit .create_graph;
+private inherit .create_bars;
+private inherit .create_pie;
 
 //! This function sets all unset elements in diagram_data to its
 //! default value as well as performing some simple sanity checks.
