@@ -2,11 +2,11 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: docode.c,v 1.171 2003/09/19 13:42:37 grubba Exp $
+|| $Id: docode.c,v 1.172 2003/11/07 21:29:47 mast Exp $
 */
 
 #include "global.h"
-RCSID("$Id: docode.c,v 1.171 2003/09/19 13:42:37 grubba Exp $");
+RCSID("$Id: docode.c,v 1.172 2003/11/07 21:29:47 mast Exp $");
 #include "las.h"
 #include "program.h"
 #include "pike_types.h"
@@ -1284,7 +1284,7 @@ static int do_docode2(node *n, int flags)
       node **a2=my_get_arg(&_CAR(arr),1);
       if(a1 && a2 && a2[0]->token==F_CONSTANT &&
 	 a2[0]->u.sval.type==T_INT &&
-	 a2[0]->u.sval.u.integer==0x7fffffff &&
+	 a2[0]->u.sval.u.integer==MAX_INT_TYPE &&
 	a1[0]->type == int_type_string)
       {
 	/* Optimize foreach(x[start..],y). */

@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: language.yacc,v 1.324 2003/10/01 16:35:26 mast Exp $
+|| $Id: language.yacc,v 1.325 2003/11/07 21:29:47 mast Exp $
 */
 
 %pure_parser
@@ -113,7 +113,7 @@
 /* This is the grammar definition of Pike. */
 
 #include "global.h"
-RCSID("$Id: language.yacc,v 1.324 2003/10/01 16:35:26 mast Exp $");
+RCSID("$Id: language.yacc,v 1.325 2003/11/07 21:29:47 mast Exp $");
 #ifdef HAVE_MEMORY_H
 #include <memory.h>
 #endif
@@ -3611,9 +3611,9 @@ comma_expr_or_zero: /* empty */ { $$=mkintnode(0); }
   | TOK_LEX_EOF { yyerror("Unexpected end of file."); $$=0; }
   ;
 
-comma_expr_or_maxint: /* empty */ { $$=mkintnode(0x7fffffff); }
+comma_expr_or_maxint: /* empty */ { $$=mkintnode(MAX_INT_TYPE); }
   | comma_expr
-  | TOK_LEX_EOF { yyerror("Unexpected end of file."); $$=mkintnode(0x7fffffff); }
+  | TOK_LEX_EOF { yyerror("Unexpected end of file."); $$=mkintnode(MAX_INT_TYPE); }
   ;
 
 gauge: TOK_GAUGE catch_arg
