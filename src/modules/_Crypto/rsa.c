@@ -1,5 +1,5 @@
 /*
- * $Id: rsa.c,v 1.2 2000/01/27 00:23:42 grubba Exp $
+ * $Id: rsa.c,v 1.3 2000/01/27 21:16:27 grubba Exp $
  *
  * Glue to RSA BSAFE's RSA implementation.
  *
@@ -10,18 +10,25 @@
 #include "global.h"
 #include "svalue.h"
 #include "program.h"
+#include "object.h"
+#include "interpret.h"
+#include "error.h"
+
+#include "module_support.h"
 
 #include "crypto.h"
 
-#if defined(HAVE_B_RSA_PUBLIC_KEY_TYPE) && defined(AUTO_BIGNUM)
+#ifdef HAVE_LIBCRYPTOCI
+#ifndef HAVE_RSA_LIB
 #define HAVE_RSA_LIB
-#endif /* HAVE_B_RSA_PUBLIC_KEY_TYPE && AUTO_BIGNUM */
+#endif /* !HAVE_RSA_LIB */
+#endif /* HAVE_LIBCRYPTOCI */
 
 #ifdef HAVE_RSA_LIB
 
 #include <bsafe.h>
 
-RSCID("$Id: rsa.c,v 1.2 2000/01/27 00:23:42 grubba Exp $");
+RCSID("$Id: rsa.c,v 1.3 2000/01/27 21:16:27 grubba Exp $");
 
 struct pike_rsa_data
 {
@@ -89,7 +96,7 @@ static void f_set_public_key(INT32 args)
   key_info.exponent.data = sp[-1].u.string->str;
   key_info.exponent.len = sp[-1].u.string->len;
 
-  if ((code = B_SetKeyInfo(THIS->key, KI_RSAPublic, (POINTER)&A_RSA_KEY))) {
+  if ((code = B_SetKeyInfo(THIS->key, KI_RSAPublic, (POINTER)&key_info))) {
     error("Failed to set public key.\n");
   }
   
@@ -132,7 +139,7 @@ static void f_set_private_key(INT32 args)
   key_info.exponent.data = sp[-1].u.string->str;
   key_info.exponent.len = sp[-1].u.string->len;
 
-  if ((code = B_SetKeyInfo(THIS->key, KI_RSAPrivate, (POINTER)&A_RSA_KEY))) {
+  if ((code = B_SetKeyInfo(THIS->key, KI_RSAPrivate, (POINTER)&key_info))) {
     error("Failed to set public key.\n");
   }
   
@@ -293,10 +300,10 @@ void pike_rsa_init(void)
 	       tFunc(tString tObj, tInt), 0);
 
   ADD_FUNCTION("sign", f_sign,
-	       tFunc(tString tProg tOr(tMix, tVoid), tObj), 0);
+	       tFunc(tString tPrg tOr(tMix, tVoid), tObj), 0);
 
   ADD_FUNCTION("verify", f_verify,
-	       tFunc(tString tProg tObj, tInt), 0);
+	       tFunc(tString tPrg tObj, tInt), 0);
 
   ADD_FUNCTION("sha_sign", f_sha_sign,
 	       tFunc(tString tOr(tMix, tVoid), tString), 0);
