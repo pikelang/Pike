@@ -1,4 +1,4 @@
-test_true([["$Id: testsuite.in,v 1.454 2001/09/28 00:01:45 hubbe Exp $"]]);
+test_true([["$Id: testsuite.in,v 1.455 2001/09/29 08:47:03 hubbe Exp $"]]);
 
 cond([[all_constants()->_verify_internals]],
 [[
@@ -1750,11 +1750,15 @@ dnl test_compile_error([[void foo() { return destruct(this_object()); }]])
 test_any([[class foo { constant x=17; }; class bar { inherit foo; constant x=18; }; return bar()->x;]],18)
 test_program([[inline string foo(string s){ while(s[0] == ' ' || s[0] == '\t') s = s[1..]; return(s); } string a() { return foo("   bar"); }]])
 
+
+// lambda function tests
+
 test_true([[lambda(int x) { return lambda() { return x; };}]])
 test_eq([[lambda(int x) { return lambda() { return x; };}(4)()]],4)
 test_eq([[lambda(int x) { return lambda() { return x; };}(17)()]],17)
 test_eq([[lambda(int x) { return lambda() { return lambda() { return x; };};}(17)()()]],17)
 
+// local function tests
 test_eq(120,
         [[ lambda()
            {
@@ -1771,6 +1775,32 @@ test_eq([[function f;
 	  { {int _i = i; f = lambda(int j) { return _i+j; }; } int FEL; }
 	return f(17);]]);
 
+test_any([[
+  int x,y,z;
+  function p;
+  void foo() { y+=7; };
+  void bar()
+  {
+    foo();
+    void gazonk()
+    {
+      foo();
+      void quux()
+      {
+        foo();
+        y+=4711;
+      };
+      p=quux;
+    };
+
+    gazonk();
+    gazonk();
+  };
+  foo();
+  bar();
+  p();
+  return y;
+]], 7 * 5 + 4711 )
 
 test_any([[
    int x=1;
@@ -1779,6 +1809,7 @@ test_any([[
    return x;
 ]], 11)
 
+// implicit lambda tests
 test_any([[
    int x=1;
    void for10(function f) { for(int e=0;e<10;e++) f(); };
@@ -1997,8 +2028,70 @@ test_any_equal([[
 ]],
 [[ ({ ({15,25}), ({35,45}) }) ]])
 
+test_any_equal([[
+  mixed a=({1,2,3});
+  a[*] += -2;
+  return a;
+]], [[ ({-1,0,1}) ]])
+
+test_any_equal([[
+  mixed a=({1,2,3});
+  a[*] += -1;
+  return a;
+]], [[ ({0,1,2}) ]])
+
+test_any_equal([[
+  mixed a=({1,2,3});
+  a[*] += 0;
+  return a;
+]], [[ ({1,2,3}) ]])
+
+test_any_equal([[
+  mixed a=({1,2,3});
+  a[*] += 1;
+  return a;
+]], [[ ({2,3,4}) ]])
+
+test_any_equal([[
+  mixed a=({1,2,3});
+  a[*] += 2;
+  return a;
+]], [[ ({3,4,5}) ]])
+
+
+test_any_equal([[
+  mixed a=({1,2,3});
+  return a[*] += -2;
+]], [[ ({-1,0,1}) ]])
+
+test_any_equal([[
+  mixed a=({1,2,3});
+  return a[*] += -1;
+]], [[ ({0,1,2}) ]])
+
+test_any_equal([[
+  mixed a=({1,2,3});
+  return a[*] += 0;
+]], [[ ({1,2,3}) ]])
+
+test_any_equal([[
+  mixed a=({1,2,3});
+  return a[*] += 1;
+]], [[ ({2,3,4}) ]])
+
+test_any_equal([[
+  mixed a=({1,2,3});
+  return a[*] += 2;
+]], [[ ({3,4,5}) ]])
+
 test_equal([[ "foo"[ ({ 2,0,1,2 })[*] ]  ]],
            [[ ({ 'o', 'f', 'o', 'o' }) ]])
+
+test_equal([[ ({ ({1}), ({2}), ({3}) })[*][0] ]],
+           [[ ({ 1,2,3 }) ]])
+
+test_equal([[ ({ ({1,2}), ({3,4}), ({5,6}) })[*][ ({0,1,1})[*] ] ]],
+           [[ ({ 1,4,6 }) ]])
 
 // map tests
 test_any_equal(array a = ({({1,0,0}),({1,1,0}),({0,1,1})}); return map(a,`[],1);,

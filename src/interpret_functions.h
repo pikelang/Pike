@@ -1,5 +1,5 @@
 /*
- * $Id: interpret_functions.h,v 1.95 2001/09/29 06:19:27 hubbe Exp $
+ * $Id: interpret_functions.h,v 1.96 2001/09/29 08:47:03 hubbe Exp $
  *
  * Opcode definitions for the interpreter.
  */
@@ -198,11 +198,16 @@ OPCODE1(F_CONSTANT, "constant", {
   print_return_value();
 });
 
-OPCODE0(F_SWAP,"swap",{
-  struct svalue tmp;
-  tmp=Pike_sp[-2];
-  Pike_sp[-2]=Pike_sp[-1];
-  Pike_sp[-1]=tmp;
+
+/* Generic swap instruction:
+ * swaps the arg1 top values with the arg2 values beneath
+ */
+OPCODE2(F_REARRANGE,"rearrange",{
+  int e;
+  check_stack(arg2);
+  MEMCPY(Pike_sp,Pike_sp-arg1-arg2,sizeof(struct svalue)*arg2);
+  MEMMOVE(Pike_sp-arg1-arg2,Pike_sp-arg1,sizeof(struct svalue)*arg1);
+  MEMCPY(Pike_sp-arg2,Pike_sp,sizeof(struct svalue)*arg2);
 });
 
 /* The rest of the basic 'push value' instructions */	
@@ -583,6 +588,7 @@ OPCODE0(F_LTOSVAL, "lvalue to svalue", {
   dmalloc_touch_svalue(Pike_sp-1);
   lvalue_to_svalue_no_free(Pike_sp, Pike_sp-2);
   Pike_sp++;
+  print_return_value();
 });
 
 OPCODE0(F_LTOSVAL2, "ltosval2", {

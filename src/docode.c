@@ -5,7 +5,7 @@
 \*/
 /**/
 #include "global.h"
-RCSID("$Id: docode.c,v 1.134 2001/09/29 06:19:26 hubbe Exp $");
+RCSID("$Id: docode.c,v 1.135 2001/09/29 08:47:03 hubbe Exp $");
 #include "las.h"
 #include "program.h"
 #include "pike_types.h"
@@ -521,6 +521,27 @@ static int do_encode_automap_arg_list(node *n,
   }
 }
 
+static void emit_builtin_svalue(char *func)
+{
+  INT32 tmp1;
+  struct pike_string *n1=make_shared_string(func);
+  node *n=find_module_identifier(n1,0);
+  free_string(n1);
+
+  switch(n?n->token:0)
+  {
+    case F_CONSTANT:
+      tmp1=store_constant(&n->u.sval,
+			  n->tree_info & OPT_EXTERNAL_DEPEND,
+			  n->name);
+      emit1(F_CONSTANT, DO_NOT_WARN((INT32)tmp1));
+      break;
+
+    default:
+      my_yyerror("docode: Failed to make svalue for builtin %s",func);
+  }
+  free_node(n);
+}
 
 static int do_docode2(node *n, INT16 flags)
 {
@@ -718,22 +739,11 @@ static int do_docode2(node *n, INT16 flags)
   case F_MULT_EQ:
   case F_MOD_EQ:
   case F_DIV_EQ:
-    tmp1=do_docode(CAR(n),DO_LVALUE);
-#ifdef PIKE_DEBUG
-    if(tmp1 != 2)
-      fatal("HELP! FATAL INTERNAL COMPILER ERROR (7)\n");
-#endif
-    
-
     if(CAR(n)->token == F_AUTO_MAP_MARKER ||
        CDR(n)->token == F_AUTO_MAP_MARKER)
     {
       char *opname;
-      struct pike_string *opstr;
-      node *op;
 
-      emit0(F_MARK);
-      
       if(CAR(n)->token == F_AUTO_MAP_MARKER)
       {
 	int depth=0;
@@ -743,11 +753,14 @@ static int do_docode2(node *n, INT16 flags)
 	  depth++;
 	  tmp=CAR(tmp);
 	}
+	tmp1=do_docode(tmp,DO_LVALUE);
+	emit0(F_MARK);
 	emit0(F_MARK);
 	emit0(F_LTOSVAL);
 	emit1(F_NUMBER,depth);
 	emit_apply_builtin("__builtin.automap_marker");
       }else{
+	tmp1=do_docode(CAR(n),DO_LVALUE);
 	emit0(F_LTOSVAL);
       }
 
@@ -768,17 +781,8 @@ static int do_docode2(node *n, INT16 flags)
 	  opname="`make gcc happy";
       }
 
-      opstr=findstring(opname);
-      if(!opstr || !(op=find_module_identifier(opstr, 0)))
-      {
-	my_yyerror("Failed to find operator %s\n",opname);
-	do_pop(2);
-	return 1;
-      }
-      
-      code_expression(op, 0, "assignment");
-      free_node(op);
-      emit0(F_SWAP);
+      emit_builtin_svalue(opname);
+      emit2(F_REARRANGE,1,1);
 
       if(CDR(n)->token == F_AUTO_MAP)
       {
@@ -788,6 +792,12 @@ static int do_docode2(node *n, INT16 flags)
       }
       emit_apply_builtin("__automap__");
     }else{
+      tmp1=do_docode(CAR(n),DO_LVALUE);
+#ifdef PIKE_DEBUG
+      if(tmp1 != 2)
+	fatal("HELP! FATAL INTERNAL COMPILER ERROR (7)\n");
+#endif
+
       if(n->token == F_ADD_EQ && (flags & DO_POP))
       {
 	code_expression(CDR(n), 0, "assignment");
@@ -987,35 +997,125 @@ static int do_docode2(node *n, INT16 flags)
 
   case F_INC:
   case F_POST_INC:
-    tmp1=do_docode(CAR(n),DO_LVALUE);
+    if(CAR(n)->token == F_AUTO_MAP_MARKER)
+    {
+      int depth=0;
+      int ret=0;
+      node *tmp=CAR(n);
+      while(tmp->token == F_AUTO_MAP_MARKER)
+      {
+	depth++;
+	tmp=CAR(tmp);
+      }
+
+      tmp1=do_docode(tmp,DO_LVALUE);
+      if(n->token == F_POST_INC)
+      {
+	emit0(F_LTOSVAL);
+	emit2(F_REARRANGE,1,2);
+	ret++;
+	flags|=DO_POP;
+      }
+
 #ifdef PIKE_DEBUG
-    if(tmp1 != 2)
-      fatal("HELP! FATAL INTERNAL COMPILER ERROR (1)\n");
+      if(tmp1 != 2)
+	fatal("HELP! FATAL INTERNAL COMPILER ERROR (1)\n");
 #endif
 
-    if(flags & DO_POP)
-    {
-      emit0(F_INC_AND_POP);
-      return 0;
+      emit0(F_MARK);
+      emit0(F_MARK);
+      emit0(F_LTOSVAL);
+      emit1(F_NUMBER, depth);
+      emit_apply_builtin("__builtin.automap_marker");
+      emit_builtin_svalue("`+");
+      emit2(F_REARRANGE,1,1);
+      emit1(F_NUMBER, 1);
+      emit_apply_builtin("__automap__");
+
+      if(flags & DO_POP)
+      {
+	emit0(F_ASSIGN_AND_POP);
+      }else{
+	emit0(F_ASSIGN);
+	ret++;
+      }
+      return ret;
     }else{
-      emit0(n->token);
-      return 1;
+      tmp1=do_docode(CAR(n),DO_LVALUE);
+#ifdef PIKE_DEBUG
+      if(tmp1 != 2)
+	fatal("HELP! FATAL INTERNAL COMPILER ERROR (1)\n");
+#endif
+
+      if(flags & DO_POP)
+      {
+	emit0(F_INC_AND_POP);
+	return 0;
+      }else{
+	emit0(n->token);
+	return 1;
+      }
     }
 
   case F_DEC:
   case F_POST_DEC:
-    tmp1=do_docode(CAR(n),DO_LVALUE);
-#ifdef PIKE_DEBUG
-    if(tmp1 != 2)
-      fatal("HELP! FATAL INTERNAL COMPILER ERROR (2)\n");
-#endif
-    if(flags & DO_POP)
+    if(CAR(n)->token == F_AUTO_MAP_MARKER)
     {
-      emit0(F_DEC_AND_POP);
-      return 0;
+      int depth=0;
+      int ret=0;
+      node *tmp=CAR(n);
+      while(tmp->token == F_AUTO_MAP_MARKER)
+      {
+	depth++;
+	tmp=CAR(tmp);
+      }
+
+      tmp1=do_docode(tmp,DO_LVALUE);
+      if(n->token == F_POST_DEC)
+      {
+	emit0(F_LTOSVAL);
+	emit2(F_REARRANGE,1,2);
+	ret++;
+	flags|=DO_POP;
+      }
+
+#ifdef PIKE_DEBUG
+      if(tmp1 != 2)
+	fatal("HELP! FATAL INTERNAL COMPILER ERROR (1)\n");
+#endif
+
+      emit0(F_MARK);
+      emit0(F_MARK);
+      emit0(F_LTOSVAL);
+      emit1(F_NUMBER, depth);
+      emit_apply_builtin("__builtin.automap_marker");
+      emit_builtin_svalue("`-");
+      emit2(F_REARRANGE,1,1);
+      emit1(F_NUMBER, 1);
+      emit_apply_builtin("__automap__");
+
+      if(flags & DO_POP)
+      {
+	emit0(F_ASSIGN_AND_POP);
+      }else{
+	emit0(F_ASSIGN);
+	ret++;
+      }
+      return ret;
     }else{
-      emit0(n->token);
-      return 1;
+      tmp1=do_docode(CAR(n),DO_LVALUE);
+#ifdef PIKE_DEBUG
+      if(tmp1 != 2)
+	fatal("HELP! FATAL INTERNAL COMPILER ERROR (2)\n");
+#endif
+      if(flags & DO_POP)
+      {
+	emit0(F_DEC_AND_POP);
+	return 0;
+      }else{
+	emit0(n->token);
+	return 1;
+      }
     }
 
   case F_FOR:
@@ -2056,7 +2156,6 @@ static int do_docode2(node *n, INT16 flags)
     return 1;
 
   case F_AUTO_MAP_MARKER:
-    if(flags & DO_LVALUE) return do_docode(CAR(n), flags);
     yyerror("[*] not supported here.\n");
     emit0(F_CONST0);
     return 1;
