@@ -5,7 +5,7 @@
 \*/
 /**/
 #include "global.h"
-RCSID("$Id: builtin_functions.c,v 1.304 2000/08/28 15:03:33 grubba Exp $");
+RCSID("$Id: builtin_functions.c,v 1.305 2000/08/28 17:55:07 grubba Exp $");
 #include "interpret.h"
 #include "svalue.h"
 #include "pike_macros.h"
@@ -1054,13 +1054,17 @@ PMOD_EXPORT void f_string_to_unicode(INT32 args)
     out = begin_shared_string(len);
     if (len) {
       MEMSET(out->str, 0, len);	/* Clear the upper (and lower) byte */
+#if 0
+      /* Configure now succeeds in detecting the bug. */
       /* KLUDGE WARNING
-       * On Solaris 8 x86 memset(3C) sometimes doesn't clear the last bytes.
+       * In gcc 2.96 Solaris 8 x86 memset(3C) sometimes doesn't clear the
+       * last 2 bytes.
        * Unfortunately, I haven't been able to trigg the bug in configure.
        *	/grubba 2000-08-28
        */
       out->str[len-1] = 0;
       out->str[len-2] = 0;
+#endif /* 0 */
 #ifdef PIKE_DEBUG
       if (d_flag) {
 	for(i = len; i--;) {
