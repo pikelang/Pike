@@ -1233,13 +1233,16 @@ class ParseBlock
 	string name=(string)proto[0];
 	mapping attributes=parse_attributes(proto[1..]);
 
-	ParseBlock subclass = ParseBlock(body[1..sizeof(body)-2],name);
-	string program_var =mkname(name,"program");
+	ParseBlock subclass = ParseBlock(body[1..sizeof(body)-2],
+					 mkname(base, name));
+	string program_var = mkname(base, name, "program");
 
-	string define=make_unique_name("class",name,"defined");
+	string define = make_unique_name("class", base, name, "defined");
 
 	ret+=DEFINE(define);
-	ret+=({sprintf("struct program *%s=0;\n",program_var)});
+	ret+=({sprintf("struct program *%s=0;\n"
+		       "int %s_fun_num=-1;\n",
+		       program_var, program_var)});
 	ret+=subclass->declarations;
 	ret+=subclass->code;
 
@@ -1265,7 +1268,8 @@ class ParseBlock
 		  sprintf("  Pike_compiler->new_program->flags |= %s;\n",
 			  attributes->program_flags):"",
 		  sprintf("  %s=end_program();\n",program_var),
-		  sprintf("  add_program_constant(%O,%s,%s);\n",
+		  sprintf("  %s_fun_num=add_program_constant(%O,%s,%s);\n",
+			  program_var,
 			  name,
 			  program_var,
 			  attributes->flags || "0"),
