@@ -1338,7 +1338,7 @@ static void simple_read_attributes(struct xmldata *data,
   SKIPSPACE();
   
   /* Read unordered attributes */
-  while(isFirstNameChar(PEEK(0)))
+  while(data->input.len>0 && isFirstNameChar(PEEK(0)))
   {
     int iscd;
     SIMPLE_READNAME();
@@ -1828,6 +1828,7 @@ static int really_low_parse_dtd(struct xmldata *data)
 			  while(PEEK(0)=='|')
 			  {
 			    READ(1);
+			    SKIPSPACE();
 			    SIMPLE_READNAME();
 			    SKIPSPACE();
 			    check_stack(1);
