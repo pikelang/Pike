@@ -230,7 +230,7 @@ struct cache_entry *aap_cache_lookup(char *s, int len,char *ho, int hlen,
       int t = aap_get_time();
       if(e->stale_at < t)
       {
-        app_free_cache_entry( c, e, prev, h );
+        aap_free_cache_entry( c, e, prev, h );
 	if(!nolock) mt_unlock(&c->mutex);
 	return 0;
       }
@@ -275,7 +275,7 @@ void aap_clean_cache()
           e = c->htable[i];
           cv = i;
         }
-      app_free_cache_entry( c, e, 0, cv );
+      aap_free_cache_entry( c, e, 0, cv );
     }
     mt_unlock( &c->mutex );
     c = c->next;
