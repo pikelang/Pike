@@ -1,6 +1,6 @@
 // -*- c -*-
 //
-// $Id: treeopt.in,v 1.63 2001/05/19 21:38:05 grubba Exp $
+// $Id: treeopt.in,v 1.64 2001/05/26 17:13:23 grubba Exp $
 //
 // The tree optimizer
 //
@@ -9,12 +9,22 @@
 
 // Note: This can cause problems if optimize is called
 // before the other tests... /Hubbe
-0 = F_APPLY(1 = F_CONSTANT
+0 = F_APPLY(F_CONSTANT
 	    [$$->u.sval.type == T_FUNCTION]
 	    [$$->u.sval.subtype == FUNCTION_BUILTIN]
 	    [$$->u.sval.u.efun->optimize]
             [ (tmp1=$$->u.sval.u.efun->optimize($0)) ], *):
+{
+  goto use_tmp1;
+}
+;
 
+// Note: This can cause problems if optimize is called
+// before the other tests... /Hubbe
+0 = F_APPLY(F_CONSTANT
+	    [$$->u.sval.type == T_PROGRAM]
+	    [$$->u.sval.u.program->optimize]
+            [ (tmp1=$$->u.sval.u.program->optimize($0)) ], *):
 {
   goto use_tmp1;
 }
