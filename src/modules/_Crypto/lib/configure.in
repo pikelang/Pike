@@ -1,11 +1,11 @@
-# $Id: configure.in,v 1.8 2000/08/02 15:34:59 grubba Exp $
+# $Id: configure.in,v 1.9 2000/08/02 16:02:43 grubba Exp $
 AC_INIT(sha.c)
 
 MY_AC_PROG_CC
 AC_PROG_CPP
 AC_PROG_RANLIB
 
-CROSS="$ac_cv_prog_CC_cross"
+CROSS="$ac_cv_prog_cc_cross"
 AC_SUBST(CROSS)
 
 AC_C_CONST
