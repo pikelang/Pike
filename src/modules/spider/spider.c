@@ -43,7 +43,7 @@
 #include "threads.h"
 #include "operators.h"
 
-RCSID("$Id: spider.c,v 1.102 2001/02/14 14:46:18 grubba Exp $");
+RCSID("$Id: spider.c,v 1.103 2001/03/12 10:51:30 hubbe Exp $");
 
 #ifdef HAVE_PWD_H
 #include <pwd.h>
@@ -942,9 +942,7 @@ void f_get_all_active_fd(INT32 args)
   int i,fds,q, ne;
   struct stat foo;
 
-  ne = fds_size;
-  if( MAX_OPEN_FILEDESCRIPTORS > ne )
-    ne = MAX_OPEN_FILEDESCRIPTORS;
+  ne = MAX_OPEN_FILEDESCRIPTORS;
 
   pop_n_elems(args);
   for (i=fds=0; i<ne; i++)

@@ -47,6 +47,7 @@ class Codec
     {
 #define CONST(X) case X: return #X
       CONST(_static_modules.files.Stat);
+      CONST(_static_modules.Builtin.__backend);
     }
     encoded+=({x});
     return UNDEFINED;

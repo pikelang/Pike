@@ -1,5 +1,5 @@
 #
-# $Id: Makefile.in,v 1.250 2001/02/24 02:38:31 hubbe Exp $
+# $Id: Makefile.in,v 1.251 2001/03/12 10:51:28 hubbe Exp $
 #
 
 # This line is needed on some machines.
@@ -698,6 +698,8 @@ $(SRCDIR)/language.c: $(SRCDIR)/language.h_src
 $(SRCDIR)/builtin.c: $(SRCDIR)/builtin.cmod precompile.sh-stamp $(TMP_BINDIR)/precompile.pike
 
 $(SRCDIR)/iterators.c: $(SRCDIR)/iterators.cmod precompile.sh-stamp $(TMP_BINDIR)/precompile.pike
+
+$(SRCDIR)/backend.c: $(SRCDIR)/backend.cmod precompile.sh-stamp $(TMP_BINDIR)/precompile.pike
 
 # UnixWare make needs help to find the source file...
 builtin.o: $(SRCDIR)/builtin.c

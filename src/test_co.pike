@@ -1,6 +1,6 @@
 #!/usr/local/bin/pike
 
-/* $Id: test_co.pike,v 1.6 2001/01/15 15:19:01 nilsson Exp $ */
+/* $Id: test_co.pike,v 1.6 2001/03/12 10:51:28 hubbe fake $ */
 
 void verify();
 

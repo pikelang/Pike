@@ -1,6 +1,6 @@
 /* -*- Pike -*-
  *	
- * $Id: master.pike.in,v 1.145 2001/02/24 02:37:01 hubbe Exp $
+ * $Id: master.pike.in,v 1.146 2001/03/12 10:51:27 hubbe Exp $
  * 
  * Master-file for Pike.
  *
@@ -622,6 +622,13 @@ void create()
   add_constant("strlen", sizeof);
   add_constant("UNDEFINED", UNDEFINED);
   add_constant("write", _static_modules.files()->_stdout->write);
+
+#define CO(X)  add_constant(#X,_static_modules.Builtin.__backend->X)
+  CO(call_out);
+  CO(_do_call_outs);
+  CO(find_call_out);
+  CO(remove_call_out);
+  CO(call_out_info);
 
 #if "¤share_prefix¤"[0]!='¤'
   // add path for architecture-dependant files
@@ -1538,6 +1545,16 @@ void _main(array(string) orig_argv, array(string) env)
   i=script->main(sizeof(argv),argv,env);
   if(i >=0) exit(i);
   _async=1;
+  
+  while(1)
+  {
+    mixed err=catch 
+    {
+      while(1)
+	_static_modules.Builtin.__backend(3600.0);
+    };
+    master()->handle_error(err);
+  }
 }
 
 #if constant(thread_local)

@@ -5,7 +5,7 @@
 \*/
 /**/
 #include "global.h"
-RCSID("$Id: main.c,v 1.114 2001/03/10 22:22:39 grubba Exp $");
+RCSID("$Id: main.c,v 1.115 2001/03/12 10:51:29 hubbe Exp $");
 #include "fdlib.h"
 #include "backend.h"
 #include "module.h"
@@ -187,7 +187,6 @@ int dbm_main(int argc, char **argv)
 #endif
 #endif  
 
-  init_backend();
   master_file = 0;
 
 #ifdef HAVE_GETENV
@@ -561,8 +560,6 @@ int dbm_main(int argc, char **argv)
   
     apply(master(),"_main",2);
     pop_stack();
-    
-    backend();
     num=0;
   }
   UNSETJMP(back);
@@ -594,6 +591,7 @@ DECLSPEC(noreturn) void pike_do_exit(int num) ATTRIBUTE((noreturn))
 
 void low_init_main(void)
 {
+  init_backend();
   init_iterators();
   init_pike_searching();
   init_error();
@@ -742,6 +740,7 @@ void low_exit_main(void)
   zap_all_arrays();
   zap_all_mappings();
 
+  exit_backend();
   cleanup_shared_string_table();
 #endif
 

@@ -144,7 +144,7 @@ testfont binary
 /src/alloca.c foreign_ident
 /src/array.c foreign_ident
 /src/array.h foreign_ident
-/src/backend.c foreign_ident
+/src/backend.cmod foreign_ident
 /src/backend.h foreign_ident
 /src/block_alloc.h foreign_ident
 /src/build_modlist_h foreign_ident
@@ -479,9 +479,6 @@ testfont binary
 /src/modules/_math/acconfig.h foreign_ident
 /src/modules/_math/configure.in foreign_ident
 /src/modules/_math/math.c foreign_ident
-/src/modules/call_out/Makefile.in foreign_ident
-/src/modules/call_out/call_out.c foreign_ident
-/src/modules/call_out/configure.in foreign_ident
 /src/modules/call_out/test_co.pike foreign_ident
 /src/modules/configure.in foreign_ident
 /src/modules/dynamic_module_makefile.in foreign_ident
@@ -585,6 +582,7 @@ testfont binary
 /src/stuff.h foreign_ident
 /src/svalue.c foreign_ident
 /src/svalue.h foreign_ident
+/src/test_co.pike foreign_ident
 /src/testsuite.in foreign_ident
 /src/threads.c foreign_ident
 /src/threads.h foreign_ident
