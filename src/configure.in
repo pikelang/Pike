@@ -1,4 +1,4 @@
-AC_REVISION("$Id: configure.in,v 1.368 2000/05/01 16:27:34 grubba Exp $")
+AC_REVISION("$Id: configure.in,v 1.369 2000/05/01 16:34:59 grubba Exp $")
 AC_INIT(interpret.c)
 AC_CONFIG_HEADER(machine.h)
 
@@ -837,7 +837,7 @@ if test $cflags_is_set = no; then
       # More warnings.
       AC_SYS_COMPILER_FLAG(-W4,W3,WARN)
 
-      if test x$with_rtldebug = xywes ; then
+      if test x$with_rtldebug = xyes ; then
         # Initialize auto variables to 0xcc.
 	# (Only if optimizations are turned off with -Od).
         AC_SYS_COMPILER_FLAG(-GZ,GZ,WARN)
