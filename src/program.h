@@ -5,7 +5,7 @@
 \*/
 
 /*
- * $Id: program.h,v 1.152 2002/02/06 17:23:24 grubba Exp $
+ * $Id: program.h,v 1.153 2002/03/01 22:42:40 nilsson Exp $
  */
 #ifndef PROGRAM_H
 #define PROGRAM_H
@@ -189,11 +189,11 @@ struct program_constant
 #define ID_STATIC          0x01	/* Symbol is not visible by indexing */
 #define ID_PRIVATE         0x02	/* Symbol is not visible by inherit */
 #define ID_NOMASK          0x04	/* Symbol may not be overloaded */
-#define ID_PUBLIC          0x08
-#define ID_PROTECTED       0x10
-#define ID_INLINE          0x20
-#define ID_HIDDEN          0x40	/* needed? */
-#define ID_INHERITED       0x80
+#define ID_PUBLIC          0x08 /* Anti private */
+#define ID_PROTECTED       0x10 /* Not currently used at all */
+#define ID_INLINE          0x20 /* Same as local */
+#define ID_HIDDEN          0x40	/* Symbols that are private and inherited one step later */
+#define ID_INHERITED       0x80 /* Symbol is inherited */
 #define ID_OPTIONAL       0x100	/* Symbol is not required by the interface */
 #define ID_EXTERN         0x200	/* Symbol is defined later */
 #define ID_VARIANT	  0x400 /* Function is overloaded by argument. */
