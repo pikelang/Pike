@@ -25,7 +25,7 @@
 #include "version.h"
 #include "bignum.h"
 
-RCSID("$Id: encode.c,v 1.80 2001/01/25 11:34:18 hubbe Exp $");
+RCSID("$Id: encode.c,v 1.81 2001/02/01 15:54:08 grubba Exp $");
 
 /* #define ENCODE_DEBUG */
 
@@ -719,6 +719,23 @@ static void free_encode_data(struct encode_data *data)
   free_mapping(data->encoded);
 }
 
+/*! @decl string encode_value(mixed value, object|void codec)
+ *!
+ *! Code a value into a string.
+ *!
+ *! This function takes a value, and converts it to a string. This string
+ *! can then be saved, sent to another Pike process, packed or used in
+ *! any way you like. When you want your value back you simply send this
+ *! string to @[decode_value()] and it will return the value you encoded.
+ *!
+ *! Almost any value can be coded, mappings, floats, arrays, circular
+ *! structures etc.
+ *!
+ *! To encode objects, programs and functions a codec object must be provided.
+ *!
+ *! @seealso
+ *!   @[decode_value()], @[sprintf()], @[encode_value_canonic()]
+ */
 void f_encode_value(INT32 args)
 {
   ONERROR tmp;
@@ -750,6 +767,24 @@ void f_encode_value(INT32 args)
   push_string(low_free_buf(&data->buf));
 }
 
+/*! @decl string encode_value_canonic(mixed value)
+ *!
+ *! Code a value into a string on canonical form.
+ *!
+ *! Takes a value and converts it to a string on canonical form, much like
+ *! @[encode_value()]. The canonical form means that if an identical value is
+ *! encoded, it will produce exactly the same string again, even if it's
+ *! done at a later time and/or in another Pike process. The produced
+ *! string is compatible with @[decode_value()].
+ *!
+ *! @note
+ *!   Note that this function is more restrictive than @[encode_value()] with
+ *!   respect to the types of values it can encode. It will throw an error
+ *!   if it can't encode to a canonical form.
+ *!
+ *! @seealso
+ *!   @[encode_value()], @[decode_value()]
+ */
 void f_encode_value_canonic(INT32 args)
 {
   ONERROR tmp;
@@ -1787,6 +1822,19 @@ static void rec_restore_value(char **v, ptrdiff_t *l)
   }
 }
 
+/*! @decl mixed decode_value(string coded_value, object|void codec)
+ *!
+ *! Decode a value from a string.
+ *!
+ *! This function takes a string created with @[encode_value()] or
+ *! @[encode_value_canonic()] and converts it back to the value that was
+ *! coded.
+ *!
+ *! If no codec is specified, the current master object will be used as codec.
+ *!
+ *! @seealso
+ *!   @[encode_value()], @[encode_value_canonic()]
+ */
 void f_decode_value(INT32 args)
 {
   struct pike_string *s;
