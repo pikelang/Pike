@@ -15,17 +15,11 @@
  * this is quite system dependent */
 #define PATH  "/usr/sbin:/usr/etc:/usr/bin/:/sbin/:/etc:/bin"
 
-#ifndef __NT__
 #define SYSTEM_COMMANDS ({ "last -256", "arp -a", \
                         "netstat -anv","netstat -mv","netstat -sv", \
                         "uptime","ps -fel","ps aux", \
 			"vmstat -s","vmstat -M", \
 			"iostat","iostat -cdDItx"})
-#else
-#define SYSTEM_COMMANDS ({ "mem /c", "arp -a", "vol", "dir", "net view", \
-    "net statistics workstation","net statistics server", "net view" \
-    "net user" })
-#endif
 			
 #define PRIVATE
 			
@@ -33,6 +27,22 @@ PRIVATE object global_rc4;
 
 PRIVATE string some_entropy()
 {
+#ifdef __NT__
+  object ctx = Crypto.nt.CryptAcquireContext(0, 0, Crypto.nt.PROV_RSA_FULL,
+					     Crypto.nt.CRYPT_VERIFYCONTEXT
+					     /*|Crypto.nt.CRYPT_SILENT*/);
+  if(!ctx)
+    throw(({ "Crypto.random: couldn't create crypto context\n", backtrace()}));
+
+  string res = ctx->CryptGenRandom(8192);
+
+  if(!res)
+    throw(({ "Crypto.random: couldn't generate randomness\n", backtrace()}));
+
+  destruct(ctx);
+
+  return res;
+#else /* !__NT__ */
   string res;
   object parent_pipe, child_pipe;
   mapping env=getenv()+([]);
@@ -43,12 +53,8 @@ PRIVATE string some_entropy()
     throw( ({ "Crypto.random->popen: couldn't create pipe\n", backtrace() }) );
 
 
-#ifndef __NT__
   object null=Stdio.File("/dev/null","rw");
   env["PATH"]=PATH;
-#else
-  object null=Stdio.File("nul:","rw");
-#endif
   
   foreach(SYSTEM_COMMANDS, string cmd)
     {
@@ -64,6 +70,7 @@ PRIVATE string some_entropy()
   destruct(child_pipe);
   
   return parent_pipe->read();
+#endif
 }
 
 
