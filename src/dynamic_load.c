@@ -8,7 +8,7 @@
 #  include "pike_macros.h"
 #  include "main.h"
 
-RCSID("$Id: dynamic_load.c,v 1.37 2000/02/03 19:09:12 grubba Exp $");
+RCSID("$Id: dynamic_load.c,v 1.38 2000/02/17 00:32:42 hubbe Exp $");
 
 #endif /* !TESTING */
 
@@ -255,7 +255,7 @@ void f_load_module(INT32 args)
   module_name = sp[-args].u.string->str;
 
   module=dlopen(module_name, 
-                (d_flag?RTLD_NOW|RTLD_GLOBAL:RTLD_LAZY|RTLD_GLOBAL));
+                (d_flag ? RTLD_NOW : RTLD_LAZY) /* |RTLD_GLOBAL */ );
 
   if(!module)
   {
