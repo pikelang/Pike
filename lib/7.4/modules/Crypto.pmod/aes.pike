@@ -4,6 +4,6 @@ inherit Nettle.AES_State;
 
 string name() { return "AES"; }
 
-int query_key_length() { return key_size(); }
+int query_key_length() { return 32; }
 int query_block_size() { return block_size(); }
 string crypt_block(string p) { return crypt(p); }
