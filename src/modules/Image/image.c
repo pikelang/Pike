@@ -1,9 +1,9 @@
-/* $Id: image.c,v 1.58 1997/11/10 13:24:21 mirar Exp $ */
+/* $Id: image.c,v 1.59 1997/11/10 14:19:54 mirar Exp $ */
 
 /*
 **! module Image
 **! note
-**!	$Id: image.c,v 1.58 1997/11/10 13:24:21 mirar Exp $
+**!	$Id: image.c,v 1.59 1997/11/10 14:19:54 mirar Exp $
 **! class image
 **!
 **!	The main object of the <ref>Image</ref> module, this object
@@ -58,17 +58,15 @@
 **!	<ref>distancesq</ref>, 
 **!	<ref>grey</ref>,
 **!	<ref>invert</ref>, 
-**!	<ref>map_closest</ref>,
-**!	<ref>map_fast</ref>, 
-**!	<ref>select_colors</ref>,
 **!	<ref>modify_by_intensity</ref>,
 **!	<ref>select_from</ref>, 
 **!	<ref>rgb_to_hsv</ref>,
-**!	<ref>hsv_to_rgb</ref>
+**!	<ref>hsv_to_rgb</ref>,
+**!	<ref>Image.colortable</ref>
 **!
 **!	converting to other datatypes: 
 **!	<ref>Image.GIF</ref>,
-**!	<ref>Image.PNG</ref>
+**!	<ref>Image.PNM</ref>
 **!
 **!	special pattern drawing:
 **!	<ref>noise</ref>,
@@ -84,7 +82,7 @@
 
 #include "stralloc.h"
 #include "global.h"
-RCSID("$Id: image.c,v 1.58 1997/11/10 13:24:21 mirar Exp $");
+RCSID("$Id: image.c,v 1.59 1997/11/10 14:19:54 mirar Exp $");
 #include "pike_macros.h"
 #include "object.h"
 #include "constants.h"

@@ -1,9 +1,9 @@
-/* $Id: pnm.c,v 1.2 1997/11/02 18:50:31 grubba Exp $ */
+/* $Id: pnm.c,v 1.3 1997/11/10 14:19:58 mirar Exp $ */
 
 /*
 **! module Image
 **! note
-**!	$Id: pnm.c,v 1.2 1997/11/02 18:50:31 grubba Exp $
+**!	$Id: pnm.c,v 1.3 1997/11/10 14:19:58 mirar Exp $
 **! submodule PNM
 **!
 **!	This submodule keep the PNM encode/decode capabilities
@@ -26,6 +26,21 @@
 ** 	P7 - binary truecolor (used by xv for thumbnails)
 **!	</pre>
 **!
+**!	Simple encoding:<br>
+**!	<ref>encode</ref>,<br> <ref>encode_binary</ref>,<br>
+**!	<ref>encode_ascii</ref>
+**!
+**!	Simple decoding:<br>
+**!	<ref>decode</ref>
+**!
+**!	Advanced encoding:<br>
+**!	<ref>encode_P1</ref>, <br>
+**!	<ref>encode_P2</ref>, <br>
+**!	<ref>encode_P3</ref>, <br>
+**!	<ref>encode_P4</ref>, <br>
+**!	<ref>encode_P5</ref>, <br>
+**!	<ref>encode_P6</ref>
+**!
 **! see also: Image, Image.image, Image.GIF
 */
 
@@ -34,7 +49,7 @@
 
 #include "stralloc.h"
 #include "global.h"
-RCSID("$Id: pnm.c,v 1.2 1997/11/02 18:50:31 grubba Exp $");
+RCSID("$Id: pnm.c,v 1.3 1997/11/10 14:19:58 mirar Exp $");
 #include "pike_macros.h"
 #include "object.h"
 #include "constants.h"

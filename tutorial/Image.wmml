@@ -1,5 +1,3 @@
-<chapter title="Image">
-
 <hr newpage>
 <anchor name=Image>
 <dl>
@@ -27,29 +25,33 @@ This module adds image-drawing and -manipulating
      <td align=left valign=top><link to=Image.GIF>Image.GIF</link></td>
      <td align=left valign=top>GIF encoding/decoding capabilities</td>
      </tr>
+     <tr>
+     <td align=left valign=top><link to=Image.PNM>Image.PNM</link></td>
+     <td align=left valign=top>PNM (PBM/PGM/PPM) encoding/decoding capabilities</td>
+     </tr>
      </table>
 <p>
 
 <dt><encaps>NOTA BENE</encaps><dd>
 <font size=-1><pre>Image module documentation is based on these file versions:
-     $Id: Image.wmml,v 1.3 1997/11/10 13:26:00 mirar Exp $
-     $Id: Image.wmml,v 1.3 1997/11/10 13:26:00 mirar Exp $
-     $Id: Image.wmml,v 1.3 1997/11/10 13:26:00 mirar Exp $
-     $Id: Image.wmml,v 1.3 1997/11/10 13:26:00 mirar Exp $
-     $Id: Image.wmml,v 1.3 1997/11/10 13:26:00 mirar Exp $
-     $Id: Image.wmml,v 1.3 1997/11/10 13:26:00 mirar Exp $
-     $Id: Image.wmml,v 1.3 1997/11/10 13:26:00 mirar Exp $
-     $Id: Image.wmml,v 1.3 1997/11/10 13:26:00 mirar Exp $
-     $Id: Image.wmml,v 1.3 1997/11/10 13:26:00 mirar Exp $
-     $Id: Image.wmml,v 1.3 1997/11/10 13:26:00 mirar Exp $
-     $Id: Image.wmml,v 1.3 1997/11/10 13:26:00 mirar Exp $
-     $Id: Image.wmml,v 1.3 1997/11/10 13:26:00 mirar Exp $
-     $Id: Image.wmml,v 1.3 1997/11/10 13:26:00 mirar Exp $
-     $Id: Image.wmml,v 1.3 1997/11/10 13:26:00 mirar Exp $
-     $Id: Image.wmml,v 1.3 1997/11/10 13:26:00 mirar Exp $
-     $Id: Image.wmml,v 1.3 1997/11/10 13:26:00 mirar Exp $
-     $Id: Image.wmml,v 1.3 1997/11/10 13:26:00 mirar Exp $
-     $Id: Image.wmml,v 1.3 1997/11/10 13:26:00 mirar Exp $
+     $Id: Image.wmml,v 1.4 1997/11/10 14:19:41 mirar Exp $
+     $Id: Image.wmml,v 1.4 1997/11/10 14:19:41 mirar Exp $
+     $Id: Image.wmml,v 1.4 1997/11/10 14:19:41 mirar Exp $
+     $Id: Image.wmml,v 1.4 1997/11/10 14:19:41 mirar Exp $
+     $Id: Image.wmml,v 1.4 1997/11/10 14:19:41 mirar Exp $
+     $Id: Image.wmml,v 1.4 1997/11/10 14:19:41 mirar Exp $
+     $Id: Image.wmml,v 1.4 1997/11/10 14:19:41 mirar Exp $
+     $Id: Image.wmml,v 1.4 1997/11/10 14:19:41 mirar Exp $
+     $Id: Image.wmml,v 1.4 1997/11/10 14:19:41 mirar Exp $
+     $Id: Image.wmml,v 1.4 1997/11/10 14:19:41 mirar Exp $
+     $Id: Image.wmml,v 1.4 1997/11/10 14:19:41 mirar Exp $
+     $Id: Image.wmml,v 1.4 1997/11/10 14:19:41 mirar Exp $
+     $Id: Image.wmml,v 1.4 1997/11/10 14:19:41 mirar Exp $
+     $Id: Image.wmml,v 1.4 1997/11/10 14:19:41 mirar Exp $
+     $Id: Image.wmml,v 1.4 1997/11/10 14:19:41 mirar Exp $
+     $Id: Image.wmml,v 1.4 1997/11/10 14:19:41 mirar Exp $
+     $Id: Image.wmml,v 1.4 1997/11/10 14:19:41 mirar Exp $
+     $Id: Image.wmml,v 1.4 1997/11/10 14:19:41 mirar Exp $
      </pre></font>
 <p>
 
@@ -802,7 +804,7 @@ reduces the number of colors
 </table><p>
 
 <dt><encaps>RETURN VALUE</encaps><dd>
-the new <link to=Image.colortable.colortable>colortable</link> object
+the new <link to=Image.colortable>colortable</link> object
 <p>
 
 </dl>
@@ -867,12 +869,12 @@ sums colortables
 	<td align=left><font size=-2>argument(s)</font></td>	<td align=left><font size=-2>description</font></td></tr>
 
 	<tr align=left><td valign=top>
-<tt>object(<link to=Image.colortable.colortable>colortable</link>) with</tt></td>	<td valign=bottom><link to=Image.colortable.colortable>colortable</link> object with colors to add</td></tr>
+<tt>object(<link to=Image.colortable>colortable</link>) with</tt></td>	<td valign=bottom><link to=Image.colortable>colortable</link> object with colors to add</td></tr>
 
 </table><p>
 
 <dt><encaps>RETURN VALUE</encaps><dd>
-the resulting new <link to=Image.colortable.colortable>colortable</link> object
+the resulting new <link to=Image.colortable>colortable</link> object
 <p>
 
 </dl>
@@ -900,12 +902,12 @@ subtracts colortables
 	<td align=left><font size=-2>argument(s)</font></td>	<td align=left><font size=-2>description</font></td></tr>
 
 	<tr align=left><td valign=top>
-<tt>object(<link to=Image.colortable.colortable>colortable</link>) with</tt></td>	<td valign=bottom><link to=Image.colortable.colortable>colortable</link> object with colors to subtract</td></tr>
+<tt>object(<link to=Image.colortable>colortable</link>) with</tt></td>	<td valign=bottom><link to=Image.colortable>colortable</link> object with colors to subtract</td></tr>
 
 </table><p>
 
 <dt><encaps>RETURN VALUE</encaps><dd>
-the resulting new <link to=Image.colortable.colortable>colortable</link> object
+the resulting new <link to=Image.colortable>colortable</link> object
 <p>
 
 </dl>
@@ -1224,17 +1226,15 @@ The main object of the <link to=Image>Image</link> module, this object
      <link to=Image.image.distancesq>distancesq</link>, 
      <link to=Image.image.grey>grey</link>,
      <link to=Image.image.invert>invert</link>, 
-     <link to=Image.image.map_closest>map_closest</link>,
-     <link to=Image.image.map_fast>map_fast</link>, 
-     <link to=Image.image.select_colors>select_colors</link>,
      <link to=Image.image.modify_by_intensity>modify_by_intensity</link>,
      <link to=Image.image.select_from>select_from</link>, 
      <link to=Image.image.rgb_to_hsv>rgb_to_hsv</link>,
-     <link to=Image.image.hsv_to_rgb>hsv_to_rgb</link>
+     <link to=Image.image.hsv_to_rgb>hsv_to_rgb</link>,
+     <link to=Image.colortable>Image.colortable</link>
 
 <p>     converting to other datatypes: 
      <link to=Image.GIF>Image.GIF</link>,
-     <link to=Image.PNG>Image.PNG</link>
+     <link to=Image.PNM>Image.PNM</link>
 
 <p>     special pattern drawing:
      <link to=Image.image.noise>noise</link>,
@@ -1360,7 +1360,7 @@ Applies a pixel-transform matrix, or filter, to the image.
        ({1,2,1})})
      </pre>
      </td><td>
-     <illustration __from__='image.c line 2051' src=lena.gif>
+     <illustration __from__='image.c line 2049' src=lena.gif>
 
      return src->apply_matrix(
      ({({1,2,1}),
@@ -1369,7 +1369,7 @@ Applies a pixel-transform matrix, or filter, to the image.
      );
      </illustration>
      </td><td>
-     <illustration __from__='image.c line 2051' src=lena.gif>
+     <illustration __from__='image.c line 2049' src=lena.gif>
 
      return src;
      </illustration>
@@ -1384,7 +1384,7 @@ Applies a pixel-transform matrix, or filter, to the image.
        ({-1,-1,-1})})
      </pre>
      </td><td>
-     <illustration __from__='image.c line 2051' src=lena.gif>
+     <illustration __from__='image.c line 2049' src=lena.gif>
 
      return src->apply_matrix(
      ({({-1,-1,-1}),
@@ -1402,7 +1402,7 @@ Applies a pixel-transform matrix, or filter, to the image.
        ({1, 1,1})})
      </pre>
      </td><td>
-     <illustration __from__='image.c line 2051' src=lena.gif>
+     <illustration __from__='image.c line 2049' src=lena.gif>
 
      return src->apply_matrix(
      ({({1, 1,1}),
@@ -1420,7 +1420,7 @@ Applies a pixel-transform matrix, or filter, to the image.
        ({0, 0,0})})
      </pre>
      </td><td>
-     <illustration __from__='image.c line 2051' src=lena.gif>
+     <illustration __from__='image.c line 2049' src=lena.gif>
 
      return src->apply_matrix(
      ({({0, 0,0}),
@@ -1438,7 +1438,7 @@ Applies a pixel-transform matrix, or filter, to the image.
        ({0,-1,-2})}), 128,128,128, 3
      </pre>
      </td><td>
-     <illustration __from__='image.c line 2051' src=lena.gif>
+     <illustration __from__='image.c line 2049' src=lena.gif>
 
      return src->apply_matrix(
      ({({2, 1, 0}),
@@ -1447,7 +1447,7 @@ Applies a pixel-transform matrix, or filter, to the image.
      );
      </illustration>
      </td><td>
-     <illustration __from__='image.c line 2051' src=lena.gif>
+     <illustration __from__='image.c line 2049' src=lena.gif>
 
      return src->grey()->apply_matrix(
      ({({2, 1, 0}),
@@ -1609,11 +1609,7 @@ the image data as a string ("rgbrgbrgb...")
 <p>
 
 <dt><encaps>SEE ALSO</encaps><dd>
-<link to=Image.image.toppm>toppm</link>,
-     <link to=Image.image.togif>togif</link>,
-     <link to=Image.image.tozbgr>tozbgr</link>,
-     <link to=Image.image.to8bit>to8bit</link>,
-     <link to=Image.image.to8bit_rgbcube>to8bit_rgbcube</link>
+<link to=Image.colortable>Image.colortable</link>
 <p>
 
 </dl>
@@ -1831,9 +1827,9 @@ Colorize an image.
 <p>    If no arguments are given, the current color is used as factors.
 
 <p>     <table><tr valign=center>
-     <td><illustration __from__='image.c line 1360' src=lena.gif>
+     <td><illustration __from__='image.c line 1358' src=lena.gif>
  return src; </illustration></td>
-     <td><illustration __from__='image.c line 1360' src=lena.gif>
+     <td><illustration __from__='image.c line 1358' src=lena.gif>
  return src->color(128,128,255); </illustration></td>
      </tr><tr valign=center>
      <td>original</td>
@@ -2059,9 +2055,9 @@ Makes an grey-scale image, for alpha-channel use.
     </pre>
 
 <p>     <table><tr valign=center>
-     <td><illustration __from__='image.c line 1788' src=lena.gif>
+     <td><illustration __from__='image.c line 1786' src=lena.gif>
  return src; </illustration></td>
-     <td><illustration __from__='image.c line 1788' src=lena.gif>
+     <td><illustration __from__='image.c line 1786' src=lena.gif>
  return src->distancesq(255,0,128); </illustration></td>
      </tr><tr valign=center>
      <td>original</td>
@@ -2171,13 +2167,13 @@ color of the requested pixel -- ({int red,int green,int blue})
 <anchor name=Image.image.gif_begin>
 <anchor name=Image.image.gif_add>
 <anchor name=Image.image.gif_end>
-<anchor name=Image.image.togif>
-<anchor name=Image.image.gif_add_fs_nomap>
 <anchor name=Image.image.gif_netscape_loop>
+<anchor name=Image.image.gif_add_nomap>
+<anchor name=Image.image.gif_add_fs_nomap>
+<anchor name=Image.image.togif>
 <anchor name=Image.image.togif_fs>
 <anchor name=Image.image.gif_add_fs>
 <anchor name=Image.image.gif_add*>
-<anchor name=Image.image.gif_add_nomap>
 <dl>
 <dt><encaps>NAME</encaps><dd>
 	<tt>Image.image->gif_add</tt><br>
@@ -2273,11 +2269,11 @@ Makes a grey-scale image (with weighted values).
 
 <p>
      <table><tr valign=center>
-     <td><illustration __from__='image.c line 1289' src=lena.gif>
+     <td><illustration __from__='image.c line 1287' src=lena.gif>
  return src; </illustration></td>
-     <td><illustration __from__='image.c line 1289' src=lena.gif>
+     <td><illustration __from__='image.c line 1287' src=lena.gif>
  return src->grey(); </illustration></td>
-     <td><illustration __from__='image.c line 1289' src=lena.gif>
+     <td><illustration __from__='image.c line 1287' src=lena.gif>
  return src->grey(0,0,255); </illustration></td>
      </tr><tr valign=center>
      <td>original</td>
@@ -2336,31 +2332,31 @@ Converts RGB data to HSV data, or the other way around.
     the pixels as above.
 
 <p>     <table><tr valign=center>
-     <td><illustration __from__='image.c line 1576' src=lena.gif>
+     <td><illustration __from__='image.c line 1574' src=lena.gif>
  return src; </illustration></td>
-     <td><illustration __from__='image.c line 1576' src=lena.gif>
+     <td><illustration __from__='image.c line 1574' src=lena.gif>
  return src->hsv_to_rgb(); </illustration></td>
-     <td><illustration __from__='image.c line 1576' src=lena.gif>
+     <td><illustration __from__='image.c line 1574' src=lena.gif>
  return src->rgb_to_hsv(); </illustration></td>
      </tr><tr valign=center>
      <td>original</td>
      <td>-&gt;hsv_to_rgb();</td>
      <td>-&gt;rgb_to_hsv();</td>
      </tr><tr valign=center>
-     <td><illustration __from__='image.c line 1576' src=lena.gif>
+     <td><illustration __from__='image.c line 1574' src=lena.gif>
 
      return image(67,67)->tuned_box(0,0, 67,67,
                       ({ ({ 255,255,128 }), ({ 0,255,128 }),
                          ({ 255,255,255 }), ({ 0,255,255 })}));
      </illustration></td>
-     <td><illustration __from__='image.c line 1576' src=lena.gif>
+     <td><illustration __from__='image.c line 1574' src=lena.gif>
 
      return image(67,67)->tuned_box(0,0, 67,67,
                       ({ ({ 255,255,128 }), ({ 0,255,128 }),
                          ({ 255,255,255 }), ({ 0,255,255 })}))
           ->hsv_to_rgb();
      </illustration></td>
-     <td><illustration __from__='image.c line 1576' src=lena.gif>
+     <td><illustration __from__='image.c line 1574' src=lena.gif>
 
      return image(67,67)->tuned_box(0,0, 67,67,
                       ({ ({ 255,255,128 }), ({ 0,255,128 }),
@@ -2424,11 +2420,11 @@ Invert an image. Each pixel value gets to be 255-x, where x
     is the old value.
 
 <p>     <table><tr valign=center>
-     <td><illustration __from__='image.c line 1443' src=lena.gif>
+     <td><illustration __from__='image.c line 1441' src=lena.gif>
  return src; </illustration></td>
-     <td><illustration __from__='image.c line 1443' src=lena.gif>
+     <td><illustration __from__='image.c line 1441' src=lena.gif>
  return src->invert(); </illustration></td>
-     <td><illustration __from__='image.c line 1443' src=lena.gif>
+     <td><illustration __from__='image.c line 1441' src=lena.gif>
  return src->rgb_to_hsv()->invert()->hsv_to_rgb(); </illustration></td>
      </tr><tr valign=center>
      <td>original</td>
@@ -2620,9 +2616,9 @@ Recolor an image from intensity values.
     representing intensity values between, linear.
 
 <p>     <table><tr valign=center>
-     <td><illustration __from__='image.c line 2297' src=lena.gif>
+     <td><illustration __from__='image.c line 2295' src=lena.gif>
  return src; </illustration></td>
-     <td><illustration __from__='image.c line 2297' src=lena.gif>
+     <td><illustration __from__='image.c line 2295' src=lena.gif>
  return src->grey()->modify_by_intensity(1,0,0,0,({255,0,0}),({0,255,0})); </illustration></td>
      </tr><tr valign=center>
      <td>original</td>
@@ -2967,10 +2963,10 @@ This function is new (april-97) and rather untested.
 
 
 <hr newpage>
-<anchor name=Image.image.write_lsb_grey>
-<anchor name=Image.image.read_lsb_grey>
-<anchor name=Image.image.read_lsb_rgb>
 <anchor name=Image.image.write_lsb_rgb>
+<anchor name=Image.image.read_lsb_grey>
+<anchor name=Image.image.write_lsb_grey>
+<anchor name=Image.image.read_lsb_rgb>
 <dl>
 <dt><encaps>NAME</encaps><dd>
 	<tt>Image.image->read_lsb_grey</tt><br>
@@ -3017,8 +3013,8 @@ the current object or the read string
 
 
 <hr newpage>
-<anchor name=Image.image.rotate>
 <anchor name=Image.image.rotate_expand>
+<anchor name=Image.image.rotate>
 <dl>
 <dt><encaps>NAME</encaps><dd>
 	<tt>Image.image->rotate</tt><br>
@@ -3521,9 +3517,9 @@ Makes a black-white image.
      for threshold values.
 
 <p>     <table><tr valign=center>
-     <td><illustration __from__='image.c line 1498' src=lena.gif>
+     <td><illustration __from__='image.c line 1496' src=lena.gif>
  return src; </illustration></td>
-     <td><illustration __from__='image.c line 1498' src=lena.gif>
+     <td><illustration __from__='image.c line 1496' src=lena.gif>
  return src->threshold(90,100,110); </illustration></td>
      </tr><tr valign=center>
      <td>original</td>
@@ -3601,11 +3597,11 @@ Draws a filled rectangle with colors (and alpha values) tuned
      rectangle.
 
 <p>     <table><tr valign=center>
-     <td><illustration __from__='image.c line 1136' src=lena.gif>
+     <td><illustration __from__='image.c line 1134' src=lena.gif>
  return src; </illustration></td>
-     <td><illustration __from__='image.c line 1136' src=lena.gif>
+     <td><illustration __from__='image.c line 1134' src=lena.gif>
  return src->copy()->tuned_box(0,0,src->xsize(),src->ysize(),({({255,0,0}),({0,255,0}),({0,0,255}),({255,255,0})})); </illustration></td>
-     <td><illustration __from__='image.c line 1136' src=lena.gif>
+     <td><illustration __from__='image.c line 1134' src=lena.gif>
  return src->copy()->tuned_box(0,0,src->xsize(),src->ysize(),({({255,0,0,255}),({0,255,0,128}),({0,0,255,128}),({255,255,0})})); </illustration></td>
      </tr><tr valign=center>
      <td>original</td>
@@ -4561,6 +4557,21 @@ This submodule keep the PNM encode/decode capabilities
      P5(PGM) - binary greymap 
      P6(PPM) - binary truecolor
      </pre>
+
+<p>     Simple encoding:<br>
+     <link to=Image.PNM.encode>encode</link>,<br> <link to=Image.PNM.encode_binary>encode_binary</link>,<br>
+     <link to=Image.PNM.encode_ascii>encode_ascii</link>
+
+<p>     Simple decoding:<br>
+     <link to=Image.PNM.decode>decode</link>
+
+<p>     Advanced encoding:<br>
+     <link to=Image.PNM.encode_P1>encode_P1</link>, <br>
+     <link to=Image.PNM.encode_P2>encode_P2</link>, <br>
+     <link to=Image.PNM.encode_P3>encode_P3</link>, <br>
+     <link to=Image.PNM.encode_P4>encode_P4</link>, <br>
+     <link to=Image.PNM.encode_P5>encode_P5</link>, <br>
+     <link to=Image.PNM.encode_P6>encode_P6</link>
 <p>
 
 <dt><encaps>SEE ALSO</encaps><dd>
@@ -4604,8 +4615,8 @@ This function may throw errors upon illegal PNM data.
 
 
 <hr newpage>
-<anchor name=Image.PNM.encode_binary>
 <anchor name=Image.PNM.encode>
+<anchor name=Image.PNM.encode_binary>
 <anchor name=Image.PNM.encode_P6>
 <dl>
 <dt><encaps>NAME</encaps><dd>
@@ -4654,4 +4665,3 @@ the encoded image as a string
 
 
 
-</chapter>
