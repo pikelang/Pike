@@ -92,6 +92,11 @@ o Fixed rounding bug in Image.Colortable that caused it to disregard
   exact matches near cubicle boundaries.
 o Fixed opcode level trace and debug (when compiled with
   --with-rtldebug).
+o The Image module can now be compiled on SunOS 4.1.1_U1, whose
+  assembler doesn't like long strings.
+o Hardware optimized IEEE floating point input/output is disabled
+  on NetBSD/alpha and FreeBSD/alpha since these systems only implement
+  partial IEEE support.
 
 Changes since Pike 7.2.30:
 ----------------------------------------------------------------------
