@@ -76,8 +76,8 @@ class NSNode {
     // Get the parent namespace context.
     if(parent) {
       parent->add_child(this_object());
-      nss = parent->get_defined_namespaces();
-      default_ns = parent->get_default_namespace();
+      nss = parent->get_defined_nss();
+      default_ns = parent->get_default_ns();
     }
     else
       nss = ([]);
@@ -129,7 +129,7 @@ class NSNode {
   }
 
   void set_parent(NSNode parent) {
-    nss = parent->get_defined_namespaces() + diff_namespaces();
+    nss = parent->get_defined_nss() + diff_namespaces();
     ::set_parent(parent);
   }
 
@@ -149,7 +149,7 @@ class NSNode {
   }
 
   NSNode clone(void|int(-1..1) direction) {
-    Node n = NSNode(get_node_type(), get_namespace()+":"+get_tag_name(),
+    Node n = NSNode(get_node_type(), get_ns()+":"+get_tag_name(),
 		    get_attributes(), get_text(), mParent);
 
     if(direction!=1) {
