@@ -219,11 +219,7 @@ class dirnode
     if(mixed o=m->findmodule(dirname+"/module"))
     {
       if(mixed tmp=o->_module_value) o=tmp;
-      if(o=o[index])
-      {
-	if(mixed tmp=o->_module_value) o=tmp;
-	return o;
-      }
+      if(o=o[index]) return o;
     }
     if(object o=((object)"/master")->findmodule(dirname+"/"+index))
     {
