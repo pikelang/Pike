@@ -171,7 +171,7 @@
 /* This is the grammar definition of Pike. */
 
 #include "global.h"
-RCSID("$Id: language.yacc,v 1.88 1998/04/24 00:34:55 hubbe Exp $");
+RCSID("$Id: language.yacc,v 1.89 1998/04/26 11:39:45 hubbe Exp $");
 #ifdef HAVE_MEMORY_H
 #include <memory.h>
 #endif
@@ -1776,8 +1776,6 @@ bad_expr_ident:
   { yyerror("lambda is a reserved word."); }
   | F_SSCANF
   { yyerror("sscanf is a reserved word."); }
-  | F_SIZEOF
-  { yyerror("sizeof is a reserved word."); }
   | F_SWITCH
   { yyerror("switch is a reserved word."); }
   | F_TYPEOF
