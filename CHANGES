@@ -498,7 +498,7 @@ o String case conversion is now five times faster than before on
 Compatibility changes:
 ----------------------
 
-o Incompatible changes has been made in ADT.Heap, Array.diff3_old,
+o Incompatible changes have been made in ADT.Heap, Array.diff3_old,
   Crypto, Locale.Charset, Protocols.SMTP, SSL, Sql.sql,
   Standards.ASN1, Standards.PKCS, Stdio.File, Thread.Mutex and
   rusage(). Please refer to the 7.4 namespace in the compatibility
