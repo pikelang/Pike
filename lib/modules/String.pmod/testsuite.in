@@ -1,5 +1,5 @@
 START_MARKER
-dnl $Id: testsuite.in,v 1.20 2004/05/28 00:37:46 nilsson Exp $
+dnl $Id: testsuite.in,v 1.21 2004/07/23 18:57:57 grubba Exp $
 
 test_eq([[ String.Buffer()->add("xxx") ]], 3)
 test_any([[
@@ -240,16 +240,17 @@ test_eq(String.int2size(0),"0 bytes")
 test_eq(String.int2size(1),"1 byte")
 test_eq(String.int2size(2),"2 bytes")
 test_eq(String.int2size(1023),"1023 bytes")
-test_eq(String.int2size(1024),"1.0 kb")
+test_eq(String.int2size(1024),"1 kb")
 test_eq(String.int2size(1025),"1.0 kb")
-test_eq(String.int2size(pow(1024,2)),"1.0 Mb")
-test_eq(String.int2size(pow(1024,3)),"1.0 Gb")
-test_eq(String.int2size(pow(1024,4)),"1.0 Tb")
-test_eq(String.int2size(pow(1024,5)),"1.0 Pb")
-test_eq(String.int2size(pow(1024,6)),"1.0 Eb")
-test_eq(String.int2size(pow(1024,7)),"1.0 Zb")
-test_eq(String.int2size(pow(1024,8)),"1.0 Yb")
-test_eq(String.int2size(pow(1024,9)),"1024.0 Yb")
+test_eq(String.int2size(3<<19), "1.5 Mb")
+test_eq(String.int2size(pow(1024,2)),"1 Mb")
+test_eq(String.int2size(pow(1024,3)),"1 Gb")
+test_eq(String.int2size(pow(1024,4)),"1 Tb")
+test_eq(String.int2size(pow(1024,5)),"1 Pb")
+test_eq(String.int2size(pow(1024,6)),"1 Eb")
+test_eq(String.int2size(pow(1024,7)),"1 Zb")
+test_eq(String.int2size(pow(1024,8)),"1 Yb")
+test_eq(String.int2size(pow(1024,9)),"1024 Yb")
 
 dnl MISSING TEST: expand_tabs
 dnl MISSING TEST: line_expand_tabs
