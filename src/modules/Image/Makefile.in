@@ -1,4 +1,4 @@
-# $Id: Makefile.in,v 1.16 1998/04/29 22:02:04 mirar Exp $
+# $Id: Makefile.in,v 1.17 1998/04/29 22:22:30 hubbe Exp $
 SRCDIR=@srcdir@
 VPATH=@srcdir@:@srcdir@/../..:../..
 OBJS = image.o font.o togif.o matrix.o pnm.o blit.o \
@@ -8,6 +8,7 @@ MODNAME=image
 MODULE_SUBDIRS=encodings
 MODULE_ARCHIVES=encodings/encodings.a
 MODULE_LDFLAGS=@LDFLAGS@
+REAL_TESTSUITE=module_testsuite.in
 
 @SET_MAKE@
 
