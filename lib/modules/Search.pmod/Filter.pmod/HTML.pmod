@@ -20,7 +20,6 @@ static string fix_entities(string text)
 Output filter(Standards.URI uri, string|Stdio.File data,
 	      string content_type)
 {
-  spider;
   Output res=Output();
 
   if(objectp(data))
@@ -30,6 +29,7 @@ Output filter(Standards.URI uri, string|Stdio.File data,
   Parser.HTML parser = Parser.HTML();
 
   parser->case_insensitive_tag(1);
+
   parser->add_container("title",
 			lambda(string t, mapping m, string c)
 			{
@@ -53,7 +53,8 @@ Output filter(Standards.URI uri, string|Stdio.File data,
   parser->add_container("A",
 			lambda(string t, mapping m, string c)
 			{
-			  res->links+=({fix_entities(m->href||"")});
+			  if( m->href )
+			    res->links+=({fix_entities(m->href)});
 			});
   
   parser->_set_data_callback(lambda(object p, string data)
@@ -61,20 +62,27 @@ Output filter(Standards.URI uri, string|Stdio.File data,
 			       databuf->add(data);
 			     });
 
-//    array(string) ignore_tags=({"noindex","script","style","no-index",});
+   array(string) ignore_tags=({"noindex","script","style","no-index",});
 
-//    foreach(ignore_tags, string ignore_tag)
-//      parser->add_container(ignore_tag, "");
+    foreach(ignore_tags, string ignore_tag)
+      parser->add_container(ignore_tag, "");
     
   res->fields->title="";
   res->fields->description="";
   res->fields->keywords="";
 
+  int h = gethrtime();
   parser->feed(data);
   parser->finish();
-  
+  werror("parse: %dms\n", (gethrtime()-h)/1000 );
+
+  h = gethrtime();
   res->fields->body=fix_entities(databuf->get());
+  werror("fix_entities: %dms\n", (gethrtime()-h)/1000 );
+
+  h = gethrtime();
   res->fix_relative_links(uri);
+  werror("fix_relative_links: %dms\n", (gethrtime()-h)/1000 );
   return res;
 }
 

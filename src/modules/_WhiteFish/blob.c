@@ -1,7 +1,7 @@
 #include "global.h"
 #include "stralloc.h"
 #include "global.h"
-RCSID("$Id: blob.c,v 1.19 2001/05/26 12:22:57 per Exp $");
+RCSID("$Id: blob.c,v 1.20 2001/05/26 14:11:35 per Exp $");
 #include "pike_macros.h"
 #include "interpret.h"
 #include "program.h"
@@ -188,6 +188,7 @@ struct hash
 struct blob_data
 {
   int size;
+  int memsize;
   struct hash *hash[HSIZE];
 };
 
@@ -230,6 +231,7 @@ static struct hash *find_hash( struct blob_data *d, int doc_id )
   }
   d->size++;
   h = new_hash( doc_id );
+  d->memsize=0;
   insert_hash( d, h );
   return h;
 }
@@ -254,6 +256,7 @@ static void _append_hit( struct blob_data *d, int doc_id, int hit )
   /* Max 255 hits */
   if( nhits < 255 )
   {
+    if( d->memsize ) d->memsize=0;
     wf_buffer_wshort( h->data, hit );
     ((unsigned char *)h->data->data)[4] = nhits+1;
   }
@@ -336,7 +339,8 @@ static void f_blob_remove( INT32 args )
   push_int(0);
 }
 
-void wf_blob_low_add( int docid, int field, int hash, int off )
+void wf_blob_low_add( struct object *o,
+		      int docid, int field, int hash, int off )
 {
   unsigned short s;
   switch( field )
@@ -351,7 +355,7 @@ void wf_blob_low_add( int docid, int field, int hash, int off )
       s = (3<<14) | ((field-2)<<6) | (off>63?63:off);
       break;
   }
-  _append_hit( THIS, docid, s );
+  _append_hit( ((struct blob_data *)o->storage), docid, s );
 }
 
 static void f_blob_add( INT32 args )
@@ -362,7 +366,7 @@ static void f_blob_add( INT32 args )
   int hash = sp[-1].u.integer;
   if( args != 4 )
     Pike_error( "Illegal number of arguments\n" );
-  wf_blob_low_add( docid, field, hash, off );
+  wf_blob_low_add( Pike_fp->current_object, docid, field, hash, off );
   pop_n_elems( args );
   push_int( 0 );
 }
@@ -393,21 +397,27 @@ int cmp_hit( char *a, char *b )
 
 int wf_blob_low_memsize( struct object *o )
 {
-  int size = HSIZE*sizeof(void *);
-  struct hash *h;
   struct blob_data *tt = ((struct blob_data *)o->storage);
-  int i;
-  
-  for( i = 0; i<HSIZE; i++ )
+
+  if( tt->memsize )
+    return tt->memsize;
+  else
   {
-    h = tt->hash[i];
-    while( h )
+    struct hash *h;
+    int size = HSIZE*sizeof(void *);
+    int i;
+    for( i = 0; i<HSIZE; i++ )
     {
-      size+=sizeof(struct hash)+sizeof(struct buffer )+h->data->allocated_size;
-      h = h->next;
+      h = tt->hash[i];
+      while( h )
+      {
+	size+=sizeof(struct hash)+sizeof(struct buffer )+
+	  h->data->allocated_size;
+	h = h->next;
+      }
     }
+    return tt->memsize = size;
   }
-  return size;
 }
 
 static void f_blob_memsize( INT32 args )

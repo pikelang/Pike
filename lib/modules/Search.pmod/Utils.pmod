@@ -4,7 +4,6 @@ constant replace_to=({" "})*(sizeof(replace_from));
 
 array(string) tokenize(string in)
 {
-  // FIXME: Make this buffered, may run out of pike stack?
   return (in/" ") - ({ "" });
 }
 

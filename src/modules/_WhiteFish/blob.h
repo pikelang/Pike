@@ -69,7 +69,7 @@ int wf_blob_docid( Blob *b );
 int wf_blob_eof( Blob *b );
 /* Returns -1 if there are no more entries available */
 
-void wf_blob_low_add( int docid, int field, int hash, int off );
+void wf_blob_low_add( struct object *o, int docid, int field, int hash, int off );
 /* Add a hit */
 
 int wf_blob_low_memsize( struct object *o );

@@ -1,7 +1,7 @@
 // SQL blob based database
 // Copyright © 2000,2001 Roxen IS.
 //
-// $Id: MySQL.pike,v 1.17 2001/05/25 21:02:49 per Exp $
+// $Id: MySQL.pike,v 1.18 2001/05/26 14:11:35 per Exp $
 
 // inherit Search.Database.Base;
 
@@ -149,9 +149,9 @@ int find_or_create_field_id(string field)
 }
 
 
-mapping blobs=([]);
+_WhiteFish.Blobs blobs = _WhiteFish.Blobs();
 
-#define MAXMEM 8*1024*1024
+#define MAXMEM 20*1024*1024
 
 //! Inserts the words of a resource into the database
 void insert_words(Standards.URI|string uri, void|string language,
@@ -159,62 +159,57 @@ void insert_words(Standards.URI|string uri, void|string language,
 {
   if(!sizeof(words))
     return;
-  werror("field: %O  num words: %d\n",field,sizeof(words));
-  int doc_id=find_or_create_document_id((string)uri, language);
-  int field_id;
-  field_id=find_or_create_field_id(field);
 
-  mapping word_ids=([]);
-  int offset;
-  float f;
-  foreach(words, string word)
-  {
-    int hsh=hash_word(word);
-    if(!blobs[hsh])
-      blobs[hsh]=_WhiteFish.Blob();
-    blobs[hsh]->add(doc_id, field_id, offset++, link_hash);
-  }
+//   werror("\nfield: %O  num words: %d\n",field,sizeof(words));
+
+  int h = gethrtime();
+
+  int doc_id   = find_or_create_document_id((string)uri, language);
+  int field_id = find_or_create_field_id(field);
+
+//   werror("find doc & field: %dms\n", (gethrtime()-h)/1000 );
+
+  h = gethrtime();
+  blobs->add_words_hash( doc_id, words, field_id, link_hash );
+//   werror("add_words: %dms\n", (gethrtime()-h)/1000 );
+
+  h = gethrtime();
+  int memsize=blobs->memsize();
+//   werror("memsize: %dms ", (gethrtime()-h)/1000 );
+//   werror("%.1fM\n", memsize/1024.0/1024.0);
   
-  int memsize=`+(0, @values(blobs)->memsize());
-  werror("memsize: %d  num: %d\n", memsize, sizeof(blobs));
-  
-  if(memsize> MAXMEM)
+  if(memsize > MAXMEM)
     sync();
+//   werror("\n\n");
 }
 
-void remove_document(string uri)
+int docs;
+void remove_document(string|Standards.URI uri, string language)
 {
+  docs++;
 }
 
-
-static void low_sync( array(int) ts )
-{
-  Sql.Sql db = Sql.sql( host );
-  foreach(ts, int word_id)
-  {
-    werror(".");
-    array a=db->query("select hits from word_hit where word_id=%d",word_id);
-    if(sizeof(a))
-      blobs[word_id]->merge(`+("",@a->hits));
-    
-    db->query("replace into word_hit (word_id,first_doc_id,hits) "
-	      "values (%d,%d,%s)", word_id, 0, blobs[word_id]->data());
-  }
-}
 
 int sync()
 {
-  werror("----------- sync() --------------\n");
-#if constant(thread_create)
-  array threads = ({});
-  array ts = indices(blobs);
-  foreach( ts/ (sizeof(ts)/5), ts )
-    threads += ({thread_create( low_sync, ts ) });
-  threads->wait();
-#else
-  low_sync( indices( blobs ) );
-  blobs=([]);
-#endif
+  int s = time();
+  int q;
+  werror("----------- sync() %4d docs --------------\n", docs);
+  do
+  {
+    [int i, _WhiteFish.Blob b] = blobs->read();
+    q++;
+    if( !b )
+      break;
+    string d = b->data();
+    int w;
+    sscanf( d, "%4c", w );
+    db->query("insert into word_hit (word_id,first_doc_id,hits) "
+	      "values (%d,%d,%s)", i, w, d );
+  } while( 1 );
+  blobs = _WhiteFish.Blobs();
+  docs = 0;
+  werror("----------- sync() done %3ds %5dw -------\n", time()-s,q);
 }
 
 string get_blob(int word_id, int num)

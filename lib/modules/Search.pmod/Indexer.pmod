@@ -6,23 +6,41 @@ array(Standards.URI) index_document(Search.Database.MySQL db,
 {
   Search.Filter.Base filter=Search.get_filter(content_type);
   if(!filter)
-    throw("No indexer for content type "+content_type);
+    error("No indexer for content type "+content_type);
 
-  Search.Filter.Base.Output filteroutput=filter->filter(uri, data, content_type);
+//   int h = gethrtime();
+
+  Search.Filter.Base.Output filteroutput=
+    filter->filter(uri, data, content_type);
+
+//   werror("filter: %dms\n", (gethrtime()-h)/1000 );
+
+  db->remove_document( uri, language );
   // Tokenize and normalize all the non-anchor fields
+
   foreach(indices(filteroutput->fields), string field)
-    db->insert_words(uri, language, field,
-		     Search.Utils.tokenize(Search.Utils.normalize
-					   (filteroutput->fields[field])));
+  {
+    if( strlen(filteroutput->fields[field] ) )
+    {
+//       h = gethrtime();
+      string q =Search.Utils.normalize(filteroutput->fields[field]);
+//       werror("normalize: %dms\n", (gethrtime()-h)/1000 );
+    
+//       h = gethrtime();
+      array words = Search.Utils.tokenize(q);
+//       werror("tokenize: %dms\n", (gethrtime()-h)/1000 );
+      db->insert_words(uri, language, field, words);
+    }
+  }
 
   // Tokenize any anchor fields
-
   int source_hash=hash((string)uri)&0xf;
   foreach(indices(filteroutput->uri_anchors || ({ })), string link_uri)
   {
     array(string) words=
-      Search.Utils.tokenize(Search.Utils.normalize(filteroutput->uri_anchors[link_uri]));
-    db->insert_words(link_uri, 0, 0, words, source_hash);
+      Search.Utils.tokenize(Search.Utils.normalize
+			    (filteroutput->uri_anchors[link_uri]));
+    db->insert_words(link_uri, 0, "anchor", words, source_hash);
   }
   return filteroutput->links;
 }
