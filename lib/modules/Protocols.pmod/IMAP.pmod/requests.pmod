@@ -1,6 +1,6 @@
 /* IMAP.requests
  *
- * $Id: requests.pmod,v 1.21 1999/02/02 23:00:12 grubba Exp $
+ * $Id: requests.pmod,v 1.22 1999/02/03 22:10:32 grubba Exp $
  */
 
 import .types;
@@ -302,6 +302,7 @@ class fetch
 	{
 	  return bad("Invalid fetch");
 	}
+	werror("fetch_attrs[%d] = %O\n", i, fetch_attrs[i]);
       }
       break;
     default:
