@@ -5,7 +5,7 @@
 \*/
 /**/
 #include "global.h"
-RCSID("$Id: pike_types.c,v 1.160 2001/03/05 18:53:40 grubba Exp $");
+RCSID("$Id: pike_types.c,v 1.161 2001/03/05 21:32:52 grubba Exp $");
 #include <ctype.h>
 #include "svalue.h"
 #include "pike_types.h"
@@ -257,6 +257,11 @@ void free_type(struct pike_type *t)
       /* Free cdr */
       t = cdr;
       goto loop;
+
+    case PIKE_T_NAME:
+      free_string((struct pike_string *)car);
+      t = cdr;
+      goto loop;
     }
   }
 }
@@ -282,6 +287,37 @@ static inline struct pike_type *mk_type(unsigned INT32 type,
   for(t = pike_type_hash[index]; t; t = t->next) {
     if ((t->hash == hash) && (t->type == type) &&
 	(t->car == car) && (t->cdr == cdr)) {
+      switch(type) {
+      case T_FUNCTION:
+      case T_MANY:
+      case T_TUPLE:
+      case T_MAPPING:
+      case T_OR:
+      case T_AND:
+	/* Free car & cdr */
+	free_type(car);
+	free_type(cdr);
+	break;
+
+      case T_ARRAY:
+      case T_MULTISET:
+      case T_NOT:
+	/* Free car */
+	free_type(car);
+	break;
+	
+      case T_SCOPE:
+      case T_ASSIGN:
+	/* Free cdr */
+	free_type(cdr);
+	break;
+
+      case PIKE_T_NAME:
+	free_string((struct pike_string *)car);
+	free_type(cdr);
+	break;
+      }
+      /* FIXME: Free car & cdr as appropriate. */
       add_ref(t);
       return t;
     }
@@ -387,6 +423,17 @@ void push_assign_type(int marker)
   TYPE_STACK_DEBUG("push_assign_type");
 }
 
+void push_type_name(struct pike_string *name)
+{
+  /* fprintf(stderr, "push_type_name(\"%s\")\n", name->str); */
+  add_ref(name);
+  *Pike_compiler->type_stackp = mk_type(PIKE_T_NAME,
+					(void *)name,
+					*Pike_compiler->type_stackp,
+					PT_COPY_CDR);
+  TYPE_STACK_DEBUG("push_type_name");
+}
+
 void push_finished_type(struct pike_type *t)
 {
   copy_type(*(++Pike_compiler->type_stackp), t);
@@ -426,6 +473,7 @@ void push_type(unsigned INT16 type)
   case T_ASSIGN:
   case T_INT:
   case T_OBJECT:
+  case PIKE_T_NAME:
   default:
     /* Should not occurr. */
     fatal("");
@@ -513,6 +561,11 @@ void pop_type_stack(void)
   case '9':
     /* Leaf */
     break;
+  case PIKE_T_NAME:
+    /* Pop the name and recurse. */
+    push_finished_type(top->cdr);
+    pop_type_stack();
+    break;
   default:
     Pike_error("pop_type_stack(): Unhandled node type: %d\n", top->type);
   }
@@ -580,6 +633,11 @@ void push_finished_type_with_markers(struct pike_type *type,
 #if 0
     fprintf(stderr, "Assign to marker %d.\n", ((ptrdiff_t)type->car)-'0');
 #endif /* 0 */
+    type = type->cdr;
+    goto recurse;
+  }
+  if (type->type == PIKE_T_NAME) {
+    /* Strip the name, since it won't be correct anymore. */
     type = type->cdr;
     goto recurse;
   }
@@ -1032,6 +1090,12 @@ void simple_describe_type(struct pike_type *s)
 	printf("%d", s->type-'0');
 	break;
 
+      case PIKE_T_NAME:
+	printf("{ %s = ", ((struct pike_string *)s->car)->str);
+	simple_describe_type(s->cdr);
+	printf(" }");
+	break;
+
       case T_SCOPE:
 	printf("scope(%ld, ", (long)(ptrdiff_t)s->car);
 	simple_describe_type(s->cdr);
@@ -1151,7 +1215,7 @@ static void low_describe_type(struct pike_type *t)
       my_putchar('(');
       my_putchar((ptrdiff_t)t->car);
       my_putchar('=');
-      low_describe_type(t->cdr);
+      my_describe_type(t->cdr);
       my_putchar(')');
       break;
 
@@ -1159,15 +1223,15 @@ static void low_describe_type(struct pike_type *t)
       my_putchar('{');
       my_putchar((ptrdiff_t)t->car);
       my_putchar(',');
-      low_describe_type(t->cdr);
+      my_describe_type(t->cdr);
       my_putchar('}');
       break;
 
     case T_TUPLE:
       my_putchar('[');
-      low_describe_type(t->car);
+      my_describe_type(t->car);
       my_putchar(',');
-      low_describe_type(t->cdr);
+      my_describe_type(t->cdr);
       my_putchar(']');
       break;
 
@@ -1206,6 +1270,19 @@ static void low_describe_type(struct pike_type *t)
 
     case T_STRING: my_strcat("string"); break;
     case T_TYPE: my_strcat("type"); break;
+
+    case PIKE_T_NAME:
+      if (!((struct pike_string *)t->car)->size_shift) {
+	my_strcat("{ ");
+	my_binary_strcat(((struct pike_string *)t->car)->str,
+			 ((struct pike_string *)t->car)->len);
+	my_strcat(" = ");
+	my_describe_type(t->cdr);
+	my_strcat(" }");
+      } else {
+	my_describe_type(t->cdr);
+      }
+      break;
       
     case T_FUNCTION:
     case T_MANY:
@@ -1231,17 +1308,17 @@ static void low_describe_type(struct pike_type *t)
 	while(t->type != T_MANY)
 	{
 	  if(s++) my_strcat(", ");
-	  low_describe_type(t->car);
+	  my_describe_type(t->car);
 	  t = t->cdr;
 	}
 	if(t->car->type != T_VOID)
 	{
 	  if(s++) my_strcat(", ");
-	  low_describe_type(t->car);
+	  my_describe_type(t->car);
 	  my_strcat(" ...");
 	}
 	my_strcat(" : ");
-	low_describe_type(t->cdr);
+	my_describe_type(t->cdr);
 	my_strcat(")");
       }
       break;
@@ -1251,7 +1328,7 @@ static void low_describe_type(struct pike_type *t)
       my_strcat("array");
       if(t->car->type != T_MIXED) {
 	my_strcat("(");
-	low_describe_type(t->car);
+	my_describe_type(t->car);
 	my_strcat(")");
       }
       break;
@@ -1260,7 +1337,7 @@ static void low_describe_type(struct pike_type *t)
       my_strcat("multiset");
       if(t->car->type != T_MIXED) {
 	my_strcat("(");
-	low_describe_type(t->car);
+	my_describe_type(t->car);
 	my_strcat(")");
       }
       break;
@@ -1269,46 +1346,46 @@ static void low_describe_type(struct pike_type *t)
       my_strcat("!");
       if (t->car->type > T_NOT) {
 	my_strcat("(");
-	low_describe_type(t->car);
+	my_describe_type(t->car);
 	my_strcat(")");
       } else {
-	low_describe_type(t->car);
+	my_describe_type(t->car);
       }
       break;
       
     case T_OR:
       if (t->car->type > T_OR) {
 	my_strcat("(");
-	low_describe_type(t->car);
+	my_describe_type(t->car);
 	my_strcat(")");
       } else {
-	low_describe_type(t->car);
+	my_describe_type(t->car);
       }
       my_strcat(" | ");
       if (t->cdr->type > T_OR) {
 	my_strcat("(");
-	low_describe_type(t->cdr);
+	my_describe_type(t->cdr);
 	my_strcat(")");
       } else {
-	low_describe_type(t->cdr);
+	my_describe_type(t->cdr);
       }
       break;
       
     case T_AND:
       if (t->car->type > T_AND) {
 	my_strcat("(");
-	low_describe_type(t->car);
+	my_describe_type(t->car);
 	my_strcat(")");
       } else {
-	low_describe_type(t->car);
+	my_describe_type(t->car);
       }
       my_strcat(" & ");
       if (t->cdr->type > T_AND) {
 	my_strcat("(");
-	low_describe_type(t->cdr);
+	my_describe_type(t->cdr);
 	my_strcat(")");
       } else {
-	low_describe_type(t->cdr);
+	my_describe_type(t->cdr);
       }
       break;
       
@@ -1316,9 +1393,9 @@ static void low_describe_type(struct pike_type *t)
       my_strcat("mapping");
       if(t->car->type != T_MIXED || t->cdr->type != T_MIXED) {
 	my_strcat("(");
-	low_describe_type(t->car);
+	my_describe_type(t->car);
 	my_strcat(":");
-	low_describe_type(t->cdr);
+	my_describe_type(t->cdr);
 	my_strcat(")");
       }
       break;
@@ -1378,6 +1455,7 @@ TYPE_T compile_type_to_runtime_type(struct pike_type *t)
     return T_INT;
 
   case T_SCOPE:
+  case PIKE_T_NAME:
     return compile_type_to_runtime_type(t->cdr);
 
   case T_MANY:
@@ -1838,6 +1916,9 @@ static struct pike_type *low_match_types2(struct pike_type *a,
       return low_match_types(a->cdr, b, flags);
     }
 
+  case PIKE_T_NAME:
+    return low_match_types(a->cdr, b, flags);
+
   case T_NOT:
     if(low_match_types(a->car, b, (flags ^ B_EXACT ) | NO_MAX_ARGS))
       return 0;
@@ -1918,6 +1999,9 @@ static struct pike_type *low_match_types2(struct pike_type *a,
     }else{
       return low_match_types(a, b->cdr, flags);
     }
+
+  case PIKE_T_NAME:
+    return low_match_types(a, b->cdr, flags);
 
   case T_NOT:
     if(low_match_types(a, b->car, (flags ^ A_EXACT ) | NO_MAX_ARGS))
@@ -2343,6 +2427,10 @@ static int low_pike_types_le2(struct pike_type *a, struct pike_type *b,
       }
     }
 
+  case PIKE_T_NAME:
+    a = a->cdr;
+    goto recurse;
+
   case T_NOT:
     if (b->type == T_NOT) {
       struct pike_type *tmp = a->car;
@@ -2423,6 +2511,10 @@ static int low_pike_types_le2(struct pike_type *a, struct pike_type *b,
     /* OK if a is a subset of either of the parts. */
     ret=low_pike_types_le(a, b->car, array_cnt, flags);
     if (ret) return ret;
+    b = b->cdr;
+    goto recurse;
+
+  case PIKE_T_NAME:
     b = b->cdr;
     goto recurse;
 
@@ -2831,6 +2923,9 @@ static int low_get_return_type(struct pike_type *a, struct pike_type *b)
     if(!tmp) return 0;
     return low_get_return_type(a->cdr, b);
 
+  case PIKE_T_NAME:
+    return low_get_return_type(a->cdr, b);
+
   case T_ARRAY:
     tmp = low_get_return_type(a->car, b);
     if(!tmp) return 0;
@@ -2910,6 +3005,13 @@ static struct pike_type *debug_low_index_type(struct pike_type *t,
     case -1:
       add_ref(zero_type_string);
       return zero_type_string;
+  }
+
+  while(t->type == PIKE_T_NAME) {
+    t = t->cdr;
+  }
+  while(index_type->type == PIKE_T_NAME) {
+    index_type = index_type->cdr;
   }
 
   switch(t->type)
@@ -3182,6 +3284,9 @@ static struct pike_type *debug_low_key_type(struct pike_type *t, node *n)
     /* FIXME: Shouldn't this look at both branches? */
     return low_key_type(t->cdr, n);
 
+  case PIKE_T_NAME:
+    return low_key_type(t->cdr, n);
+
   case T_ARRAY:
   case T_STRING: /* always int */
     add_ref(int_type_string);
@@ -3223,6 +3328,9 @@ static int low_check_indexing(struct pike_type *type,
 
   case T_NOT:
     return low_check_indexing(type->car, index_type, n) != 1;
+
+  case PIKE_T_NAME:
+    return low_check_indexing(type->cdr, index_type, n);
 
   case T_ARRAY:
     if(low_match_types(string_type_string, index_type, 0) &&
@@ -3302,6 +3410,9 @@ static int low_count_arguments(struct pike_type *q)
       if(num2<0 && num<0) return ~num<~num2?num:num2;
       return num<num2?num:num2;
 
+    case PIKE_T_NAME:
+      return low_count_arguments(q->cdr);
+
     default: return 0x7fffffff;
 
     case T_FUNCTION:
@@ -3342,6 +3453,9 @@ static int low_minimum_arguments(struct pike_type *q)
 		     low_count_arguments(q->cdr));
 
     default: return 0;
+
+    case PIKE_T_NAME:
+      return low_minimum_arguments(q->cdr);
 
     case T_FUNCTION:
       num = 0;
@@ -3469,6 +3583,9 @@ struct pike_type *zzap_function_return(struct pike_type *a, INT32 id)
 
     case T_ARRAY:
       return zzap_function_return(a->car, id);
+
+    case PIKE_T_NAME:
+      return zzap_function_return(a->cdr, id);
 
     case T_MIXED:
       /* I wonder when this occurrs, but apparently it does... */
@@ -3699,6 +3816,9 @@ int type_may_overload(struct pike_type *type, int lfun)
     default:
       return 0;
 
+    case PIKE_T_NAME:
+      return type_may_overload(type->cdr, lfun);
+
     case T_OR:
       return type_may_overload(type->car, lfun) ||
 	type_may_overload(type->cdr, lfun);
@@ -3874,6 +3994,7 @@ int pike_type_allow_premature_toss(struct pike_type *type)
     case T_MANY:
       return 0;
 
+    case PIKE_T_NAME:
     case T_SCOPE:
     case T_ASSIGN:
       type = type->cdr;
@@ -7369,8 +7490,10 @@ void cleanup_pike_types(void)
   /* Free the hashtable here. */
   if (pike_type_hash) {
     free(pike_type_hash);
-    pike_type_hash = NULL;
+    /* Don't do this, it messes up stuff... */
+    /* pike_type_hash = NULL; */
   }
-  pike_type_hash_size = 0;
+  /* Don't do this, it messes up stuff... */
+  /* pike_type_hash_size = 0; */
 #endif /* USE_PIKE_TYPE */
 }
