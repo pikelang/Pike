@@ -1,6 +1,12 @@
 Changes since Pike 7.6:
 ----------------------------------------------------------------------
 
+o Stdio.*
+  Stdio.cp can now works recursively in a directory tree
+  Stdio.cp now keep permissions when copying
+  Added Stdio.recursive_mv which work on every OS and when destination isn't 
+  on the same filesystem as the source
+
 o Process.popen
    Process.popen is now able to run in nonblocking mode. If a second
    argument is provided a file object will be opened witht that mode
