@@ -1,5 +1,5 @@
 /*
- * $Id: extract_autodoc.pike,v 1.24 2002/12/10 12:42:29 grubba Exp $
+ * $Id: extract_autodoc.pike,v 1.25 2002/12/10 13:45:36 grubba Exp $
  *
  * AutoDoc mk II extraction script.
  *
@@ -8,7 +8,7 @@
 
 array(string) find_root(string path) {
   if(file_stat(path+"/.autodoc")) {
-    // Note .autodoc files are space-separated to allow for mudulenames like
+    // Note .autodoc files are space-separated to allow for modulenames like
     //      "7.0".
     return (Stdio.read_file(path+"/.autodoc")/"\n")[0]/" " - ({""});
   }
