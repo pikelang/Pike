@@ -1,4 +1,4 @@
-test_true([["$Id: testsuite.in,v 1.425 2001/06/20 15:21:54 grubba Exp $"]]);
+test_true([["$Id: testsuite.in,v 1.426 2001/06/20 16:05:52 grubba Exp $"]]);
 
 cond([[all_constants()->_verify_internals]],
 [[
@@ -2246,7 +2246,7 @@ test_any([[multiset m=(<>);int e;
   return 1;
 ]],1)
 
-test_eq([[
+test_any([[
   multiset m = set_weak_flag((<>), 1);
   m[1] = 1;
   return sizeof(m);
