@@ -1,4 +1,4 @@
-// $Id: Readline.pike,v 1.16 1999/04/30 20:25:11 hubbe Exp $
+// $Id: Readline.pike,v 1.17 1999/06/04 21:26:29 hubbe Exp $
 
 class OutputController
 {
@@ -939,7 +939,7 @@ string set_prompt(string newp)
   {
     if(newline_func)
     {
-      werror("\nNew prompt!!! %O\n",newline_func);
+//      werror("\nNew prompt!!! %O\n",newline_func);
       int p=cursorpos;
       setcursorpos(0);
       output_controller->bol();
