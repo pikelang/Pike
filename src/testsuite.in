@@ -1,4 +1,4 @@
-test_true([["$Id: testsuite.in,v 1.195 1999/09/14 22:54:52 noring Exp $"]])
+test_true([["$Id: testsuite.in,v 1.196 1999/09/16 23:56:12 hubbe Exp $"]])
 cond([[all_constants()->_verify_internals]],
 [[
   test_do(_verify_internals())
@@ -2585,6 +2585,7 @@ test_eq(all_constants()["all_constants"],all_constants)
 test_true(arrayp(allocate(0)))
 test_equal(allocate(2),({0,0}))
 test_false(allocate(2)==({0,0}))
+test_true(allocate(65536,random))
 
 // - backtrace
 test_true(arrayp(backtrace()))

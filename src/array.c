@@ -20,8 +20,9 @@
 #include "gc.h"
 #include "main.h"
 #include "security.h"
+#include "stuff.h"
 
-RCSID("$Id: array.c,v 1.53 1999/08/21 23:21:06 noring Exp $");
+RCSID("$Id: array.c,v 1.54 1999/09/16 23:56:08 hubbe Exp $");
 
 struct array empty_array=
 {
@@ -1349,7 +1350,26 @@ int check_that_array_is_constant(struct array *a)
 {
   array_fix_type_field(a);
   if(a->type_field & (BIT_FUNCTION | BIT_OBJECT))
-    return 0;
+  {
+    int e;
+    for(e=0;e<a->size;e++)
+    {
+      switch(ITEM(a)[e].type)
+      {
+	case T_FUNCTION:
+	  if(ITEM(a)[e].subtype == FUNCTION_BUILTIN) continue;
+	  /* Fall through */
+	case T_OBJECT:
+	  if(ITEM(a)[e].u.object -> next == ITEM(a)[e].u.object)
+	  {
+	    /* This is a fake object used during the
+	     * compilation!
+	     */
+	    return 0;
+	  }
+      }
+    }
+  }
   return 1;
 }
 
@@ -1359,6 +1379,9 @@ node *make_node_from_array(struct array *a)
   INT32 e;
 
   array_fix_type_field(a);
+  if(!a->size)
+      return mkefuncallnode("aggregate",0);
+    
   if(a->type_field == BIT_INT)
   {
     for(e=0; e<a->size; e++)
@@ -1369,6 +1392,40 @@ node *make_node_from_array(struct array *a)
       return mkefuncallnode("allocate",mkintnode(a->size));
     }
   }
+  if(!is_more_than_one_bit(a->type_field))
+  {
+    e=0;
+    switch(a->type_field)
+    {
+      case BIT_INT:
+	for(e=1; e<a->size; e++)
+	  if(ITEM(a)[e].u.integer != ITEM(a)[0].u.integer)
+	    break;
+	if(e==a->size && ITEM(a)[0].u.integer==0)
+	  return mkefuncallnode("allocate",mkintnode(a->size));
+	break;
+	
+      case BIT_STRING:
+      case BIT_PROGRAM:
+      case BIT_OBJECT:
+	for(e=1; e<a->size; e++)
+	  if(ITEM(a)[e].u.refs != ITEM(a)[0].u.refs)
+	    break;
+	break;
+	
+      case BIT_FUNCTION:
+	for(e=1; e<a->size; e++)
+	  if(ITEM(a)[e].u.object != ITEM(a)[0].u.object ||
+	     ITEM(a)[e].subtype != ITEM(a)[0].subtype)
+	    break;
+	break;
+    }
+    if(e == a->size)
+      return mkefuncallnode("allocate",mknode(F_ARG_LIST,
+					      mkintnode(a->size),
+					      mksvaluenode(ITEM(a))));
+  }
+  
   if(check_that_array_is_constant(a))
   {
     s.type=T_ARRAY;

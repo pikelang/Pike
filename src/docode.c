@@ -4,7 +4,7 @@
 ||| See the files COPYING and DISCLAIMER for more information.
 \*/
 #include "global.h"
-RCSID("$Id: docode.c,v 1.49 1999/08/03 00:45:09 hubbe Exp $");
+RCSID("$Id: docode.c,v 1.50 1999/09/16 23:56:09 hubbe Exp $");
 #include "las.h"
 #include "program.h"
 #include "language.h"
@@ -233,6 +233,24 @@ static int do_docode2(node *n,int flags)
     flags &=~DO_LVALUE_IF_POSSIBLE;
   }else{
     flags &=~DO_INDIRECT;
+  }
+
+  /* Stack check */
+  {
+    long x_= ((char *)&x_) + STACK_DIRECTION * (32768) - stack_top ;
+    x_*=STACK_DIRECTION;						
+    if(x_>0)
+    {
+      yyerror("Too dep recursion in compiler. (please report this)");
+
+      emit(F_NUMBER,0);
+      if(flags & DO_LVALUE)
+      {
+	emit(F_NUMBER,0);
+	return 2;
+      }
+      return 1;
+    }
   }
 
   switch(n->token)
