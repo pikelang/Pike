@@ -30,7 +30,7 @@ static string make_example_image( string data, int toplevel )
 			    }),
 			    ([ "stderr":Stdio.stderr,
 			       "stdout":Stdio.stdout ]) )->wait();
-  return ("@code{" + data + "@}\n"
+  return ("@expr{" + data + "@}\n"
 	  "@xml{<image>../"+tim+"</image>@}\n");
 }
 
@@ -96,7 +96,8 @@ static string trim_xml( string what )
 
   while( sscanf( what, "%s<dl>%s</dl>%s", a,b,c ) == 3 ) {
     what = a + "@dl\n";
-    object p = Parser.XML.Tree.parse_input(b);
+    object p = Parser.XML.Tree.parse_input("<dl>"+b+"</dl>");
+    p = p->get_first_element("dl");
     foreach(p->get_children(), object n) {
       if(n->get_any_name()=="dt")
         what += " @item " + (n->get_children()->render_xml()*"" - "\n") + "\n";
