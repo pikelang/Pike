@@ -25,6 +25,15 @@
 /* This must be included last! */
 #include "module_magic.h"
 
+/*! @module Math
+ */
+
+/*! @module Transforms
+ */
+
+/*! @class FFT
+ */
+
 PIKECLASS FFT
 {
 
@@ -275,6 +284,15 @@ PIKECLASS FFT
     }
 #endif /* HAVE_RFFTW_H */
 }
+
+/*! @endclass
+ */
+
+/*! @endmodule
+ */
+
+/*! @endmodult
+ */
 
 void init_math_transforms()
 {
