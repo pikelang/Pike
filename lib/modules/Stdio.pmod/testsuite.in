@@ -110,3 +110,17 @@ lambda()
 ]],({"hej","hopp","gazonk"}))
 
 test_true(rm("testsuite.tmp"))
+
+// Stdio.FakeFile
+
+test_eq( Stdio.FakeFile("abc")->read(600), "abc" )
+test_any([[
+  object x=Stdio.FakeFile("abc");
+  x->read(600);
+  return x->read(600);
+]], "")
+test_any([[
+  object x=Stdio.FakeFile("abc");
+  x->read(2);
+  return x->read(2);
+]], "c")
