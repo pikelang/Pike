@@ -1,5 +1,5 @@
 /*
- * $Id: oracle.c,v 1.58 2001/10/05 14:39:46 leif Exp $
+ * $Id: oracle.c,v 1.59 2002/02/07 16:55:19 stewa Exp $
  *
  * Pike interface to Oracle databases.
  *
@@ -53,7 +53,7 @@
 
 #include <math.h>
 
-RCSID("$Id: oracle.c,v 1.58 2001/10/05 14:39:46 leif Exp $");
+RCSID("$Id: oracle.c,v 1.59 2002/02/07 16:55:19 stewa Exp $");
 
 
 #define BLOB_FETCH_CHUNK 16384
@@ -86,6 +86,7 @@ RCSID("$Id: oracle.c,v 1.58 2001/10/05 14:39:46 leif Exp $");
 
 #define BLOCKSIZE 2048
 
+#define IS_SUCCESS(RES) ((RES == OCI_SUCCESS) || (RES == OCI_SUCCESS_WITH_INFO))
 
 #if defined(SERIALIZE_CONNECT)
 DEFINE_MUTEX(oracle_serialization_mutex);
@@ -347,6 +348,7 @@ struct inout
     char str[STATIC_BUFFERS];
 #endif
   } u;
+  OCILobLocator *lob;
 };
 
 static void free_inout(struct inout *i);
@@ -520,7 +522,10 @@ static void exit_dbresultinfo_struct(struct object *o)
 #ifdef ORACLE_DEBUG
   fprintf(stderr,"%s\n",__FUNCTION__);
 #endif
-  OCIHandleFree(THIS_RESULTINFO->define_handle, OCI_HTYPE_DEFINE);
+  if(THIS_RESULTINFO->define_handle) {
+    debug_malloc_touch(THIS_RESULTINFO->define_handle);
+    OCIHandleFree(THIS_RESULTINFO->define_handle, OCI_HTYPE_DEFINE);
+  }
   free_inout( & THIS_RESULTINFO->data);
 }
 
@@ -694,6 +699,13 @@ static sb4 output_callback(struct inout *inout,
 #endif
       return OCI_CONTINUE;
 
+  case SQLT_CLOB:
+  case SQLT_BLOB:
+    *bufpp=inout->lob;
+    inout->xlen=sizeof(inout->lob); /* ? */
+    *piecep = OCI_ONE_PIECE;
+    return OCI_CONTINUE;
+
     case SQLT_FLT:
       *bufpp=&inout->u.f;
       inout->xlen=sizeof(inout->u.f);
@@ -796,7 +808,7 @@ static void f_fetch_fields(INT32 args)
 		       (void **)&column_parameter,
 		       i+1);
 	
-	if(rc != OCI_SUCCESS) { errfunc="OciParamGet"; break; }
+	if(!IS_SUCCESS(rc)) { errfunc="OciParamGet"; break; }
 	
 	rc=OCIAttrGet((void *)column_parameter,
 		      OCI_DTYPE_PARAM,
@@ -805,7 +817,7 @@ static void f_fetch_fields(INT32 args)
 		      OCI_ATTR_DATA_TYPE,
 		      dbcon->error_handle);
 	
-	if(rc != OCI_SUCCESS) { errfunc="OCIAttrGet, OCI_ATTR_DATA_TYPE"; break;}
+	if(!IS_SUCCESS(rc)) { errfunc="OCIAttrGet, OCI_ATTR_DATA_TYPE"; break;}
 	
 	rc=OCIAttrGet((void *)column_parameter,
 		      OCI_DTYPE_PARAM,
@@ -814,7 +826,7 @@ static void f_fetch_fields(INT32 args)
 		      OCI_ATTR_DATA_SIZE,
 		      dbcon->error_handle);
 	
-	if(rc != OCI_SUCCESS) { errfunc="OCIAttrGet, OCI_ATTR_DATA_SIZE"; break;}
+	if(!IS_SUCCESS(rc)) { errfunc="OCIAttrGet, OCI_ATTR_DATA_SIZE"; break;}
 	
 	rc=OCIAttrGet((void *)column_parameter,
 		      OCI_DTYPE_PARAM,
@@ -823,7 +835,7 @@ static void f_fetch_fields(INT32 args)
 		      OCI_ATTR_SCALE,
 		      dbcon->error_handle);
 	
-	if(rc != OCI_SUCCESS) { errfunc="OCIAttrGet, OCI_ATTR_SCALE"; break;}
+	if(!IS_SUCCESS(rc)) { errfunc="OCIAttrGet, OCI_ATTR_SCALE"; break;}
 	
 	rc=OCIAttrGet((void *)column_parameter,
 		      OCI_DTYPE_PARAM,
@@ -832,14 +844,14 @@ static void f_fetch_fields(INT32 args)
 		      OCI_ATTR_NAME,
 		      dbcon->error_handle);
 
-	if(rc != OCI_SUCCESS) { errfunc="OCIAttrGet, OCI_ATTR_NAME"; break;}
+	if(!IS_SUCCESS(rc)) { errfunc="OCIAttrGet, OCI_ATTR_NAME"; break;}
 
       }while(0);
 
       THREADS_DISALLOW();
 /*      UNLOCK(dbcon->lock); */
 
-      if(rc != OCI_SUCCESS)
+      if(!IS_SUCCESS(rc))
 	ora_error_handler(dbcon->error_handle, rc, errfunc);
 
 #ifdef ORACLE_DEBUG
@@ -906,6 +918,29 @@ static void f_fetch_fields(INT32 args)
 	  data_size=-1;
 	  type=SQLT_LNG;
 	  break;
+	  
+      case SQLT_CLOB:
+      case SQLT_BLOB:
+	if(type == SQLT_BLOB)
+	  type_name = "blob";
+	else
+	  type_name="clob";
+	if (rc = OCIDescriptorAlloc(
+				    (dvoid *) get_oracle_environment(),
+				    (dvoid **) &info->data.lob, 
+				    (ub4)OCI_DTYPE_LOB, 
+				    (size_t) 0, 
+				    (dvoid **) 0))
+	  {
+#ifdef ORACLE_DEBUG
+	    fprintf(stderr,"OCIDescriptorAlloc failed!\n");
+#endif
+	    info->data.lob = 0;
+	    info->define_handle = 0;
+	    ora_error_handler(dbcon->error_handle, rc, "OCIDescriptorAlloc");
+	  }
+	data_size=sizeof(info->data.lob); /* ? */
+	break;
 
 	case SQLT_RID:
 	case SQLT_RDD:
@@ -953,6 +988,8 @@ static void f_fetch_fields(INT32 args)
 			&info->define_handle,
 			dbcon->error_handle,
 			i+1,
+			info->data.lob ? 
+			& info->data.lob :
 			& info->data.u,
 #ifdef STATIC_BUFFERS
 			data_size<0? STATIC_BUFFERS :data_size,
@@ -977,7 +1014,7 @@ static void f_fetch_fields(INT32 args)
 	      SQLT_INT);
 #endif
 
-      if(rc != OCI_SUCCESS)
+      if(!IS_SUCCESS(rc))
 	ora_error_handler(dbcon->error_handle, rc, "OCIDefineByPos");
 
 #ifndef STATIC_BUFFERS
@@ -985,7 +1022,7 @@ static void f_fetch_fields(INT32 args)
 			  dbcon->error_handle,
 			  info,
 			  define_callback);
-      if(rc != OCI_SUCCESS)
+      if(!IS_SUCCESS(rc))
 	ora_error_handler(dbcon->error_handle, rc, "OCIDefineDynamic");
 #endif
 
@@ -1000,6 +1037,15 @@ static void f_fetch_fields(INT32 args)
 static void push_inout_value(struct inout *inout,
 			     struct dbcon *dbcon)
 {
+  ub4   loblen = 0;
+  ub1   *bufp = 0;
+  ub4   amtp = 0;
+  char buffer[100];
+  sword rc;
+  sb4 bsize=100;
+  int rslt;
+  char *errfunc=0;
+  
 #ifdef ORACLE_DEBUG
   fprintf(stderr,"%s .. (type = %d, indicator = %d, len= %d)\n",__FUNCTION__,inout->ftype,inout->indicator, inout->xlen);
 #endif
@@ -1008,6 +1054,8 @@ static void push_inout_value(struct inout *inout,
   {
     switch(inout->ftype)
     {
+      case SQLT_CLOB:
+      case SQLT_BLOB:
       case SQLT_BIN:
       case SQLT_LBI:
       case SQLT_AFC:
@@ -1017,7 +1065,7 @@ static void push_inout_value(struct inout *inout,
       case SQLT_STR:
 	ref_push_object(nullstring_object);
 	break;
-	
+
       case SQLT_ODT:
       case SQLT_DAT:
 	ref_push_object(nulldate_object);
@@ -1064,6 +1112,61 @@ static void push_inout_value(struct inout *inout,
       STRING_BUILDER_STR(inout->output)=0;;
       break;
 
+    case SQLT_CLOB:
+    case SQLT_BLOB:
+    {
+      sword ret;
+      if((ret = OCILobGetLength(dbcon->context, dbcon->error_handle,
+				inout->lob, &loblen)) != OCI_SUCCESS) {
+#ifdef ORACLE_DEBUG
+	fprintf(stderr,"OCILobGetLength failed.\n");
+#endif
+	errfunc = "OCILobGetLength";
+      } else {
+	amtp = loblen;
+	if(bufp = malloc(loblen)) {
+	  if((ret = OCILobRead(dbcon->context,
+			       dbcon->error_handle,
+			       inout->lob, 
+			       &amtp, 
+			       1, 
+			       (dvoid *) bufp,
+			       loblen, 
+			       (dvoid *)0, 
+			       (sb4 (*)(dvoid *, CONST dvoid *, ub4, ub1)) 0,
+			       (ub2) 0, 
+			       (ub1) SQLCS_IMPLICIT)) != OCI_SUCCESS) 
+	    {
+#ifdef ORACLE_DEBUG
+	      fprintf(stderr,"OCILobRead failed\n");
+#endif
+	      errfunc = "OCILobRead";
+	    }
+	}
+	else {
+	  ret = 1;
+	  errfunc = "malloc";
+	}
+      }
+#ifdef ORACLE_DEBUG
+      fprintf(stderr,"LOB length: %d\n",loblen);
+#endif
+      if(ret == OCI_SUCCESS)
+	push_string(make_shared_binary_string(loblen ? bufp : "",loblen));
+      else
+	ora_error_handler(dbcon->error_handle, ret, errfunc);
+      
+      if(bufp)
+	free(bufp);
+#if 0
+      /*  Handle automatically freed when environment handle is deallocated.
+	  Not needed according according to doc.*/
+      if(inout->lob)
+	OCIDescriptorFree((dvoid *) inout->lob, (ub4) OCI_DTYPE_LOB);
+#endif
+      }
+      break;
+	
     case SQLT_ODT:
     case SQLT_DAT:
       push_object(low_clone(Date_program));
@@ -1096,7 +1199,7 @@ static void push_inout_value(struct inout *inout,
 			 OCI_NUMBER_SIGNED,
 			 &integer);
 
-      if(ret == OCI_SUCCESS)
+      if(IS_SUCCESS(ret))
       {
 	push_int(integer);
       }else{
@@ -1117,7 +1220,7 @@ static void push_inout_value(struct inout *inout,
 			    0,
 			    &buf_size,
 			    buffer);
-	if(ret == OCI_SUCCESS)
+	if(IS_SUCCESS(ret))
 	{
 	  push_string(make_shared_binary_string(buffer,buf_size));
 	  convert_stack_top_to_bignum();
@@ -1202,7 +1305,7 @@ static void f_fetch_row(INT32 args)
     return;
   }
 
-  if(rc != OCI_SUCCESS)
+  if(!IS_SUCCESS(rc))
     ora_error_handler(dbcon->error_handle, rc, "OCIStmtFetch");
 
   check_stack(dbquery->cols);
@@ -1772,7 +1875,7 @@ static void f_big_query_create(INT32 args)
   }
 #endif
 
-  if(rc)
+  if(!IS_SUCCESS(rc))
     ora_error_handler(dbcon->error_handle, rc, 0);
 
   pop_n_elems(args);
@@ -1864,7 +1967,7 @@ static void dbdate_sprintf(INT32 args)
 		   &bsize,
 		   buffer);
 		
-  if(rc != OCI_SUCCESS)
+  if(!IS_SUCCESS(rc))
     ora_error_handler(get_global_error_handle(), rc,"OCIDateToText");
 
   pop_n_elems(args);
