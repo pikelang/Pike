@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: pike_memory.h,v 1.46 2003/05/13 19:34:31 mast Exp $
+|| $Id: pike_memory.h,v 1.47 2003/11/13 02:09:11 mast Exp $
 */
 
 #ifndef MEMORY_H
@@ -140,27 +140,6 @@ PMOD_EXPORT size_t hashstr(const unsigned char *str, ptrdiff_t maxn);
 PMOD_EXPORT size_t simple_hashmem(const unsigned char *str, ptrdiff_t len, ptrdiff_t maxn);
 PMOD_EXPORT size_t simple_hashmem1(const p_wchar1 *str, ptrdiff_t len, ptrdiff_t maxn);
 PMOD_EXPORT size_t simple_hashmem2(const p_wchar2 *str, ptrdiff_t len, ptrdiff_t maxn);
-PMOD_EXPORT void init_memsearch(struct mem_searcher *s,
-		    char *needle,
-		    size_t needlelen,
-		    size_t max_haystacklen);
-PMOD_EXPORT char *memory_search(struct mem_searcher *s,
-		    char *haystack,
-		    size_t haystacklen);
-PMOD_EXPORT void init_generic_memsearcher(struct generic_mem_searcher *s,
-			      void *needle,
-			      size_t needlelen,
-			      int needle_shift,
-			      size_t estimated_haystack,
-			      int haystack_shift);
-PMOD_EXPORT void *generic_memory_search(struct generic_mem_searcher *s,
-			    void *haystack,
-			    size_t haystacklen,
-			    int haystack_shift);
-PMOD_EXPORT char *my_memmem(char *needle,
-		size_t needlelen,
-		char *haystack,
-		size_t haystacklen);
 PMOD_EXPORT void memfill(char *to,
 	     INT32 tolen,
 	     char *from,
