@@ -1,5 +1,5 @@
 #include "global.h"
-RCSID("$Id: psd.c,v 1.30 2001/06/13 13:01:57 grubba Exp $");
+RCSID("$Id: psd.c,v 1.31 2002/05/11 00:11:10 nilsson Exp $");
 
 #include "image_machine.h"
 
@@ -26,26 +26,14 @@ RCSID("$Id: psd.c,v 1.30 2001/06/13 13:01:57 grubba Exp $");
 #include "colortable.h"
 #include "bignum.h"
 
-/* MUST BE INCLUDED LAST */
-#include "module_magic.h"
-
-
-/* The sp macro conflicts with Solaris 2.5.1's <netinet/in.h>. */
-#ifdef sp
-#undef sp
-#define STACKPOINTER_WAS_DEFINED
-#endif /* sp */
-
 #ifdef HAVE_NETINET_IN_H
 #include <netinet/in.h>
 #endif
 
-/* Restore the sp macro */
-#ifdef STACKPOINTER_WAS_DEFINED
-#define sp Pike_sp
-#undef STACK_POINTER_WAS_DEFINED
-#endif /* STACKPOINTER_WAS_DEFINED */
+/* MUST BE INCLUDED LAST */
+#include "module_magic.h"
 
+#define sp Pike_sp
 
 extern struct program *image_colortable_program;
 extern struct program *image_program;

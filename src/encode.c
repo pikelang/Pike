@@ -26,7 +26,7 @@
 #include "bignum.h"
 #include "pikecode.h"
 
-RCSID("$Id: encode.c,v 1.143 2002/05/10 16:10:26 grubba Exp $");
+RCSID("$Id: encode.c,v 1.144 2002/05/11 00:28:59 nilsson Exp $");
 
 /* #define ENCODE_DEBUG */
 
@@ -41,12 +41,6 @@ RCSID("$Id: encode.c,v 1.143 2002/05/10 16:10:26 grubba Exp $");
 #define EDB(N,X) do { debug_malloc_touch(data); } while (0)
 #endif
 
-/* The sp macro conflicts with Solaris 2.5.1's <sys/conf.h>. */
-#ifdef sp
-#undef sp
-#define STACKPOINTER_WAS_DEFINED
-#endif /* sp */
-
 #ifdef _AIX
 #include <net/nh.h>
 #endif
@@ -60,12 +54,6 @@ RCSID("$Id: encode.c,v 1.143 2002/05/10 16:10:26 grubba Exp $");
 #endif /* HAVE_IEEEFP_H */
 
 #include <math.h>
-
-/* Restore the sp macro */
-#ifdef STACKPOINTER_WAS_DEFINED
-#define sp Pike_sp
-#undef STACK_POINTER_WAS_DEFINED
-#endif /* STACKPOINTER_WAS_DEFINED */
 
 #ifdef PIKE_DEBUG
 #define encode_value2 encode_value2_
@@ -2368,9 +2356,9 @@ static void decode_value2(struct decode_data *data)
       for(e=0;e<num;e++)
       {
 	decode_value2(data);
-	assign_svalue(a->item+e , sp-1);
+	assign_svalue(a->item+e , Pike_sp-1);
 	pop_stack();
-	dmalloc_touch_svalue(sp);
+	dmalloc_touch_svalue(Pike_sp);
       }
       array_fix_type_field(a);
 #ifdef PIKE_NEW_MULTISETS
