@@ -2,7 +2,7 @@
 
 // Incremental Pike Evaluator
 //
-// $Id: Hilfe.pmod,v 1.27 2002/02/20 02:33:35 nilsson Exp $
+// $Id: Hilfe.pmod,v 1.28 2002/02/21 19:47:57 nilsson Exp $
 
 constant hilfe_todo = #"List of known Hilfe bugs/room for improvements:
 
@@ -21,24 +21,139 @@ constant hilfe_todo = #"List of known Hilfe bugs/room for improvements:
   end of that token can not be found.
 - Filter exit/quit from history. Could be done by adding a 'pop'
   method to Readline.History and call it from StdinHilfes' destroy.
-- Make Hilfe thread safe (Move ___Hilfe and ___hilfe to the
-  resolver in the compiler object).
 - Remove tokens_to_code kludge, either by fixing Parser.Pike so
   that it returns the correct tokens, or by fixing Pike so that
   \"( < > )\" is a valid statement.
-- Make it possible to easily change history size, e.g.
-  \"set history 5\".
-- Make it possible to easily change result format, e.g.
-  \"set resultformat %[1]O (%[0]d)\".
-- Make it possible to quickly undefine variables, e.g. \"reset a\".
+- Fix so that objects with 'broken' `== can be adde to variables.
+- Shorten backtraces that are outputted in hilfe.
 - Add some better multiline edit support.
 - Tab completion of variable and module names.
 ";
 
 
+//! Variable reset command. Put ___Hilfe->commands->reset = Tools.Hilfe.command_reset;
+//! in your .hilferc to have this command defined when you open Hilfe.
+void|string command_reset(int|Evaluator e, void|string line, void|array(string) tokens) {
+  if(!e) return "Undefines the given symbol.";
+  if(e==1) return #"
+Undefines any variable, constant, function or program, specified by
+name. Example: \"reset tmp\"";
+
+  string n = sizeof(tokens)>2 && tokens[2];
+  if(!n) {
+    e->write("No symbol given as argument to reset.\n");
+    return;
+  }
+  if(zero_type(e->variables[n]) && zero_type(e->constants[n]) &&
+     zero_type(e->functions[n]) && zero_type(e->programs[n])) {
+    e->write("Symbol %O not defined.\n", n);
+    return;
+  }
+
+  m_delete(e->variables, n);
+  m_delete(e->types, n);
+  m_delete(e->constants, n);
+  m_delete(e->functions, n);
+  m_delete(e->programs, n);
+}
+
+
 //
 // Built in commands
 //
+
+private void|string command_set(int|Evaluator e, void|string line, void|array(string) tokens) {
+  if(e==0) return "Change Hilfe settings.";
+  if(e==1) return #"
+Change Hilfe settings. Used as \"set <setting> <parameter>\".
+Available parameters:
+
+assembler_debug
+    Changes the level of assembler debug used when evaluating
+    expressions in Pike. Requires that Pike is compiled with
+    RTL debug.
+
+compiler_trace
+    Changes the level of compiler trace used when evaluating
+    expressions in Pike. Requires that Pike is compiled with
+    RTL debug.
+
+debug
+    Changes the level of debug used when evaluating expressions in
+    Pike. Requires that Pike is compiled with RTL debug.
+
+history
+    Change the maximum number of entries that are kept in the
+    result history. Default is 10.
+
+trace
+     Changes the level of trace used when evaluating expressions
+     in Pike. Possible values are:
+       0 Off
+       1 Calls to Pike functions are printed.
+       2 Calls to buitin functions are printed.
+       3 Every opcode interpreted is printed.
+       4 Arguments to these opcodes are printed as well.";
+
+  line = sizeof(tokens)>2 && tokens[2];
+  function write = e->write;
+
+  if(!line) {
+    write("No setting to change given.\n");
+    return;
+  }
+
+  int(0..1) arg_check(string arg) {
+    if(line!=arg) return 0;
+    if(sizeof(tokens)<5) {
+      write("Not enough number of arguments to set %s\n", line);
+      line = "";
+      return 0;
+    }
+    return 1;
+  };
+
+  if(arg_check("trace")) {
+    e->trace_level = (int)tokens[4];
+    return;
+  }
+
+  if(arg_check("assembler_debug")) {
+#if constant(_assembler_debug)
+    e->assembler_debug_level = (int)tokens[4];
+#else
+    write("Assembler debug not available.\n");
+#endif
+    return;
+  }
+
+  if(arg_check("compiler_trace")) {
+#if constant(_compiler_trace)
+    e->compiler_trace_level = (int)tokens[4];
+#else
+    write("Compiler trace not available.\n");
+#endif
+    return;
+  }
+
+  if(arg_check("debug")) {
+#if constant(_debug)
+    e->debug_level = (int)tokens[4];
+#else
+    write("Debug not available.\n");
+#endif
+    return;
+  }
+
+  if(arg_check("history")) {
+    e->history->set_maxsize((int)tokens[4]);
+    return;
+  }
+
+  if(line=="") return;
+  write("No setting named %O exists.\n", line);
+  // Prompt (>/>>)
+}
 
 private void|string command_exit(int|Evaluator e, void|string line, void|array(string) tokens) {
   if(intp(e)) return "Exit Hilfe.";
@@ -124,6 +239,37 @@ Enter \"help me more\" for further Hilfe help.
     write(describe_backtrace(err)+"\n\n");
 }
 
+private void|string command_look(Evaluator e, string line, array(string) tokens) {
+  string ret = "You are inside a Hilfe. It smells good here. You see ";
+
+  array(string) thing(mixed thing, string what, void|string a, void|string b) {
+    if(!sizeof(thing)) return ({});
+    return ({ sizeof(thing)+" "+what+(sizeof(thing)==1?(a||""):(b||"s")) });
+  };
+
+  array tmp = ({});
+  tmp += thing(e->imports, "import");
+  tmp += thing(e->inherits, "inherit");
+  tmp += thing(e->history, "history entr", "y", "ies");
+  if(sizeof(tmp))
+    ret += String.implode_nicely(tmp) + ".";
+  else
+    ret += "nothing.";
+
+  tmp = ({});
+  tmp += thing(e->variables, "variable");
+  tmp += thing(e->constants, "constant");
+  tmp += thing(e->functions, "function");
+  tmp += thing(e->programs, "program");
+  if(sizeof(tmp))
+    ret += " You are carrying " + String.implode_nicely(tmp) + ".";
+  else
+    ret += " You are empty handed.";
+
+  ret += " You can go in any direction from here.";
+  e->write("%-=67s\n", ret);
+}
+
 private object command_dump = class {
 
     private function write;
@@ -152,12 +298,12 @@ dump wrapper
 	return;
       }
       write("Last compiled wrapper:\n");
-      write(e->last_compiled_expr);
-    }
-
-    private void history(Evaluator e) {
-      e->history->show_history();
-      return;
+      int i;
+      string w = map(e->last_compiled_expr/"\n",
+		     lambda(string in) {
+		       return sprintf("%03d: %s", ++i, in);
+		     })*"\n";
+      write(w+"\n");
     }
 
     private string print_mapping(array(string) ind, array val) {
@@ -210,10 +356,10 @@ dump wrapper
 	wrapper(e);
 	return;
       case "state":
-	e->state->show_state();
+	write(e->state->status());
 	return;
       case "history":
-	history(e);
+	write(e->history->status());
 	return;
       case "":
 	dump(e);
@@ -227,10 +373,55 @@ dump wrapper
 private void|string command_new(int|Evaluator e, void|string line, void|array(string) tokens) {
   if(!e) return "Clears the Hilfe state.";
   if(e==1) return #"
-Clears the current Hilfe state. This includes the parser state,
-variables, constants, functions, programs, inherits, imports and
-the history. It does not include the currently installed commands.
-Note that code in your .hilferc will not be reevaluated.";
+new
+      Clears the current Hilfe state. This includes the parser
+      state, variables, constants, functions, programs, inherits,
+      imports and the history. It does not include the currently
+      installed commands. Note that code in your .hilferc will not
+      be reevaluated.
+
+new history
+      Remove all history entries from the result history.
+
+new constants
+new functions
+new programs
+new variables
+      Clears all locally defined symbols of the given type.
+
+new imports
+new inherits
+      Removes all imports/inherits made.";
+
+  line = sizeof(tokens)>2 && tokens[2];
+  switch(line) {
+  case "variables":
+    e->variables = ([]);
+    e->types = ([]);
+    return;
+  case "constants":
+    e->constants = ([]);
+    return;
+  case "functions":
+    e->functions = ([]);
+    return;
+  case "programs":
+    e->programs = ([]);
+    return;
+  case "imports":
+    e->imports = ({});
+    return;
+  case "inherits":
+    e->inherits = ({});
+    return;
+  case "history":
+    e->history->flush();
+    return;
+  }
+  if(line) {
+    e->write("Unknown specifier %O.\n", line);
+    return;
+  }
   e->reset_evaluator();
 }
 
@@ -317,6 +508,8 @@ private class ParserState {
   //! Returns true if there is any waiting expression that can be fetched
   //! with @[read].
   int datap() {
+    if(sizeof(pipeline)==1 && whitespace[pipeline[0][0]])
+      pipeline = ({});
     return sizeof(ready);
   }
 
@@ -341,13 +534,14 @@ private class ParserState {
     block = 0;
   }
 
-  //! Show the current parser state. Used by "dump state".
-  void show_state() {
-    write("Current parser state\n");
-    write("Parenthesis stack: %s\n", pstack->arr[..pstack->ptr]*" ");
-    write("Current pipline: %O\n", pipeline);
-    write("Last token: %O\n", last);
-    write("Current block: %O\n", block);
+  //! Returns the current parser state. Used by "dump state".
+  string status() {
+    string ret = "Current parser state\n";
+    ret += sprintf("Parenthesis stack: %s\n", pstack->arr[..pstack->ptr]*" ");
+    ret += sprintf("Current pipline: %O\n", pipeline);
+    ret += sprintf("Last token: %O\n", last);
+    ret += sprintf("Current block: %O\n", block);
+    return ret;
   }
 
   string _sprintf(int type) {
@@ -358,7 +552,7 @@ private class ParserState {
 //! In every Hilfe object (@[Evaluator]) there is a HilfeHistory
 //! object that manages the result history. That history object is
 //! accessible both from __ and ___Hilfe->history in Hilfe expressions.
-private class HilfeHistory {
+private class _HilfeHistory {
 
   private int size=10;
   private int last_entry_num;
@@ -388,8 +582,10 @@ private class HilfeHistory {
       history = history[sizeof(history)-size..];
   }
 
-  //! Returns true if there is any items in the history.
-  int has_content() { return sizeof(history); }
+  //! Returns the number of entries currently in the history.
+  int _sizeof() {
+    return sizeof(history);
+  }
 
   //! Empty the history.
   void flush() {
@@ -421,20 +617,57 @@ private class HilfeHistory {
       error("Hilfe History Error: The oldest history entry is %d.\n",
 	    get_first_entry_num());
     return history[i-get_first_entry_num()];
-
   }
 
-  //! Shows the contents of the history.
-  void show_history() {
+  //! Returns the history status.
+  string status() {
+    string ret = "";
     int abs_num = get_first_entry_num();
     int rel_num = -sizeof(history);
     foreach(history, mixed value)
-      write(" %2d (%2d) : %s\n", abs_num++, rel_num++,
-	    replace(sprintf("%O",value), "\n", "\n           "));
+      ret += sprintf(" %2d (%2d) : %s\n", abs_num++, rel_num++,
+		     replace(sprintf("%O",value), "\n", "\n           "));
+    ret += sprintf("%d out of %d possible entries used.\n", sizeof(history), size);
+    return ret;
   }
 
   string _sprintf(int type) {
     if(type=='O' || type=='t') return "HilfeHistory";
+  }
+}
+
+private class HilfeHistory {
+
+  inherit ADT.History;
+
+  // Add content overview
+  string status() {
+    string ret = "";
+    int abs_num = get_first_entry_num();
+    int rel_num = -_sizeof();
+    for(abs_num; abs_num<get_latest_entry_num()+1; abs_num++)
+      ret += sprintf(" %2d (%2d) : %s\n", abs_num, rel_num++,
+		     replace(sprintf("%O", `[](abs_num)), "\n",
+			     "\n           "));
+    ret += sprintf("%d out of %d possible entries used.\n",
+		   _sizeof(), get_maxsize());
+    return ret;
+  }
+
+  // Give better names in backtraces.
+  mixed `[](int i) {
+    mixed ret;
+    array err = catch( ret = ::`[](i) );
+    if(err)
+      error(err[0]);
+    return ret;
+  }
+
+  // Give the object a better name.
+  string _sprintf(int t) {
+    if(t=='O') return "HilfeHistory("+_sizeof()+"/"+get_maxsize()+")";
+    if(t=='t') return "HilfeHistory";
+    error("Can't print History object as '%c'.\n", t);
   }
 }
 
@@ -494,7 +727,7 @@ class Evaluator {
   array(string) inherits;
 
   //! The current result history.
-  HilfeHistory history = HilfeHistory();
+  HilfeHistory history = HilfeHistory(10);
 
   //! The function to use when writing this to the user.
   function write;
@@ -503,28 +736,22 @@ class Evaluator {
   void create()
   {
     print_version();
+    commands->set = command_set;
     commands->exit = command_exit;
     commands->quit = command_exit;
     commands->help = command_help;
     commands->dump = command_dump;
     commands->new = command_new;
     commands->hej = lambda() { write("Tjabba!\n"); };
-    commands->look = lambda() {
-		       write("You are inside a Hilfe. You see ");
-		       if(!sizeof(variables+constants+functions+programs))
-			 write("nothing.");
-		       else
-			 command_dump(this_object(), "dump");
-		       write("\nYou can go in any direction from here.\n"); };
+    commands->look = command_look;
     reset_evaluator();
-    add_constant("___Hilfe", this_object());
   }
 
   //! Displays the current version of Hilfe.
   void print_version()
   {
     write(version()+
-	  " running Hilfe v3.0 (Incremental Pike Frontend)\n");
+	  " running Hilfe v3.1 (Incremental Pike Frontend)\n");
   }
 
   //! Cleras the current state, history and removes all locally
@@ -657,6 +884,11 @@ class Evaluator {
       vtype[tokens[0]] = old_value;
   }
 
+  private constant object_ops = (< ";", "->", "[",
+				   "+", "-", "/", "*",
+				   "&", "|", "^", "<<", ">>",
+				   "%", "~", "==", "<", ">" >);
+
   //! Parses a Pike expression. Returns 0 if everything went well,
   //! or a string with an error message otherwise.
   int(0..0)|string parse_expression(array(string) tokens)
@@ -687,7 +919,7 @@ class Evaluator {
       case "while":
       case "foreach":
 	// Parse loops.
-	evaluate("mixed ___HilfeWrapper() { " + code + " ; }\n",0);
+	evaluate(code, 0);
 	return 0;
 
       case "inherit":
@@ -766,7 +998,7 @@ class Evaluator {
 	  }
 	}
 
-	if(tokens[pos]==";" || tokens[pos]=="->" || tokens[pos]=="[")
+	if(object_ops[tokens[pos]])
 	  break;
 
 	// This is a new function
@@ -796,7 +1028,7 @@ class Evaluator {
     }
 
     // parse expressions
-    evaluate("mixed ___HilfeWrapper() { return " + code + " }\n", 1);
+    evaluate("return " + code, 1);
     return 0;
   }
 
@@ -810,12 +1042,39 @@ class Evaluator {
   //! The last created wrapper in which an expression was evaluated.
   string last_compiled_expr;
 
-  private object compile_handler = class
-    {
-      void compile_error(string file,int line,string err)
-      {
+  //! The current trace level.
+  int trace_level;
+#if constant(_assembler_debug)
+  //! The current assembler debug level.
+  //! Only available if Pike is compiled with RTL debug.
+  int assembler_debug_level;
+#endif
+#if constant(_compiler_trace)
+  //! The current compiler trace level.
+  //! Only available if Pike is compiled with RTL debug.
+  int compiler_trace_level;
+#endif
+#if constant(_debug)
+  //! The current debug level.
+  //! Only available if Pike is compiled with RTL debug.
+  int debug_level
+#endif
+
+  function reswrite = lambda(string sres, int num, mixed res) {
+			write( "Result %d: %s\n", num,
+			       replace(sres, "\n", "\n        ") );
+		      };
+
+  private object compile_handler = class {
+      void compile_error(string file, int line, string err) {
 	write(sprintf("Compiler Error: %s:%s:%s\n",master()->trim_file_name(file),
 		      line?(string)line:"-", err));
+      }
+
+      mapping(string:mixed) hilfe_symbols;
+
+      mapping(string:mixed) get_default_module() {
+	return all_constants() + hilfe_symbols;
       }
 
       string _sprintf(int type) {
@@ -827,8 +1086,10 @@ class Evaluator {
   private string tokens_to_code(array(string) tokens) {
     string ret = "";
     foreach(tokens, string token) {
+      if(token=="." && sizeof(ret))
+	ret = ret[..sizeof(ret)-2];
       ret += token;
-      if( !(< "(", ">" >)[token] ) ret += " ";
+      if( !(< "(", ">", "." >)[token] ) ret += " ";
     }
     return ret;
   }
@@ -849,6 +1110,11 @@ class Evaluator {
       return 0;
     }
 
+    if(new_var=="=") {
+      write("Hilfe Error: No variable name specified.\n");
+      return 0;
+    }
+
     mapping symbols = constants + functions + programs;
 
     if(new_var=="__")
@@ -860,7 +1126,7 @@ class Evaluator {
     if(new_var=="_")
       write("Hilfe Warning: History variable _ is no longer reachable.\n");
     else if(zero_type(symbols["_"]) && zero_type(variables["__"])
-	    && history->has_content()) {
+	    && sizeof(history)) {
       symbols["_"] = history[-1];
     }
 
@@ -870,11 +1136,6 @@ class Evaluator {
        map(inherits, lambda(string f) { return "inherit "+f+";\n"; }) * "\n" + "\n" +
 
        map(imports, lambda(string f) { return "import "+f+";\n"; }) * "\n" + "\n" +
-
-       map(indices(symbols),
-	   lambda(string f) {
-	     return sprintf("constant %s=___hilfe.%s;", f, f);
-	   } ) * "\n" + "\n" +
 
        map(indices(variables),
 	   lambda(string f) {
@@ -886,20 +1147,20 @@ class Evaluator {
 	   lambda(string f) {
 	     return sprintf("    \"%s\":%s,",f,f);
 	   }) * "\n" +
-       "\n  ]);\n}\n"+
+       "\n  ]);\n}\n" +
 
        "# 1\n" + f + "\n");
+
+    compile_handler->hilfe_symbols = symbols;
+    compile_handler->hilfe_symbols->___Hilfe = this_object();
+    compile_handler->hilfe_symbols->___hilfe = variables;
+    compile_handler->hilfe_symbols->write = write;
 
     last_compiled_expr = prog;
     program p;
     mixed err;
 
-    mixed oldwrite=all_constants()->write;
-    add_constant("write", write);
-    add_constant("___hilfe", symbols+variables);
-    err=catch( p=compile_string(prog, "-", compile_handler) );
-    add_constant("___hilfe");
-    add_constant("write", oldwrite);
+    err = catch(p=compile_string(prog, "HilfeInput", compile_handler));
 
     if(err)
     {
@@ -925,14 +1186,42 @@ class Evaluator {
   //! and the result buffer updated with its value.
   void evaluate(string a, int(0..1) show_result)
   {
+    if(trace_level)
+      a = "\ntrace("+trace_level+");\n" + a;
+#if constant(_assembler_debug)
+    if(assembler_debug_level)
+      a = "\n_assembler_debug("+assembler_debug_level+");\n" + a;
+#endif
+#if constant(_compiler_trace)
+    if(compiler_trace_level)
+      a = "\n_compiler_trace("+compiler_trace_level+");\n" + a;
+#endif
+#if constant(_debug)
+    if(debug_level)
+      a = "\n_debug("+compiler_level+");\n" + a;
+#endif
+    a = "mixed ___HilfeWrapper() { " + a + " ; }";
+
     object o;
     if( o=hilfe_compile(a) )
     {
-      mixed err;
       mixed res;
-      if( (err=catch(res=o->___HilfeWrapper())) || (err=catch(a=sprintf("%O", res))) )
-      {
+      mixed err = catch{
+	res = o->___HilfeWrapper();
 	trace(0);
+#if constant(_assembler_debug)
+	_assembler_debug(0);
+#endif
+#if constant(_compiler_trace)
+	_compiler_trace(0);
+#endif
+#if constant(_debug)
+	_debug(0);
+#endif
+      };
+
+      if( err || (err=catch(a=sprintf("%O", res))) )
+      {
 	if(objectp(err) && err->is_generic_error)
 	  catch { err = ({ err[0], err[1] }); };
 
@@ -946,9 +1235,8 @@ class Evaluator {
       }
       else {
 	if(show_result) {
-	  history->add(res);
-	  write( "Result %d: %s\n", history->get_last_entry_num(),
-		 replace(a, "\n", "\n        ") );
+	  history->push(res);
+	  reswrite( a, history->get_latest_entry_num(), res );
 	}
 	else
 	  write("Ok.\n");
@@ -1021,7 +1309,7 @@ class StdinHilfe
     if(string home=getenv("HOME")||getenv("USERPROFILE"))
     {
       if(string s=Stdio.read_file(home+"/.hilferc"))
-	add_buffer(s);
+	map(s/"\n", add_buffer);
     }
 
     readline = Stdio.Readline();
