@@ -1047,7 +1047,7 @@ void dump_modules()
     foreach(to_dump, string mod)
       rm(mod+".o");
       
-    /* Dump 50 modules at a time */
+    /* Dump 25 modules at a time */
 
     array cmd=({fakeroot(pike) });
 
@@ -1077,18 +1077,20 @@ void dump_modules()
 //      werror("%O\n",cmd);
 
     int offset = 1;
-    foreach(to_dump/50.0, array delta_dump)
-      {
+    foreach(to_dump/25.0, array delta_dump)
+    {
+      catch {
 	Process.create_process(cmd +
 			       ( istty() ? 
 				 ({
 				   "--progress-bar",
-				     sprintf("%d,%d", offset, sizeof(to_dump))
-				     }) : ({"--quiet"}) ) +
+				   sprintf("%d,%d", offset, sizeof(to_dump))
+				 }) : ({"--quiet"}) ) +
 			       delta_dump, options)->wait();
+      };
 
-	offset += sizeof(delta_dump);
-      }
+      offset += sizeof(delta_dump);
+    }
       
     if(progress_bar)
       /* The last files copied does not really count (should
