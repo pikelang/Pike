@@ -51,21 +51,21 @@ mapping(string : int) keywordtype =
   "pre" : BRACEKEYWORD,
   "ref" : BRACEKEYWORD,
   "xml" : BRACEKEYWORD,  // well, not really, but....
-  "code" : BRACEKEYWORD,
   "expr" : BRACEKEYWORD,
   "image" : BRACEKEYWORD,
 
   "deprecated" : SINGLEKEYWORD,
 
-  "example" : DELIMITERKEYWORD,
-  "note" : DELIMITERKEYWORD,
   "bugs" : DELIMITERKEYWORD,
-  "returns" : DELIMITERKEYWORD,
-  "throws" : DELIMITERKEYWORD,
-  "param" : DELIMITERKEYWORD,
-  "seealso" : DELIMITERKEYWORD,
+  "example" : DELIMITERKEYWORD,
   "fixme" : DELIMITERKEYWORD,
+  "note" : DELIMITERKEYWORD,
+  "param" : DELIMITERKEYWORD,
+  "returns" : DELIMITERKEYWORD,
+  "seealso" : DELIMITERKEYWORD,
+  "throws" : DELIMITERKEYWORD,
 
+  "code" : CONTAINERKEYWORD,
   "section" : CONTAINERKEYWORD,
 
   "constant" : DELIMITERKEYWORD, // used inside @decl enum Foo
@@ -103,7 +103,7 @@ mapping(string:array(string)) required_attributes =
 ]);  
 
 static constant standard = (<
-  "note", "bugs", "example", "seealso", "deprecated", "fixme"
+  "note", "bugs", "example", "seealso", "deprecated", "fixme", "code"
 >);
 
 mapping(string : multiset(string)) allowedChildren =
