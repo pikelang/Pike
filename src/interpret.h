@@ -5,7 +5,7 @@
 \*/
 
 /*
- * $Id: interpret.h,v 1.22 1998/08/10 23:33:29 hubbe Exp $
+ * $Id: interpret.h,v 1.23 1998/11/20 01:57:23 hubbe Exp $
  */
 #ifndef INTERPRET_H
 #define INTERPRET_H
@@ -161,5 +161,13 @@ extern int evaluator_stack_malloced, mark_stack_malloced;
 struct callback;
 extern struct callback_list evaluator_callbacks;
 extern void call_callback(struct callback_list *, void *);
+
+#ifdef PROFILING
+#ifdef HAVE_GETHRTIME
+extern long long accounted_time;
+extern long long time_base;
+#endif
+#endif
+
 #endif
 

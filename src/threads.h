@@ -1,5 +1,5 @@
 /*
- * $Id: threads.h,v 1.53 1998/09/05 20:08:27 grubba Exp $
+ * $Id: threads.h,v 1.54 1998/11/20 01:57:24 hubbe Exp $
  */
 #ifndef THREADS_H
 #define THREADS_H
@@ -295,6 +295,14 @@ struct thread_state {
   JMP_BUF *recoveries;
   struct object * thread_id;
   char *stack_top;
+
+#ifdef PROFILING
+#ifdef HAVE_GETHRTIME
+  long long accounted_time;
+  long long time_base;
+#endif
+#endif
+
 #ifdef THREAD_TRACE
   int t_flag;
 #endif /* THREAD_TRACE */
@@ -336,6 +344,12 @@ struct thread_state {
 #define SWAP_IN_TRACE(_tmp)
 #endif /* THREAD_TRACE */
 
+#if defined(PROFILING) && defined(HAVE_GETHRTIME)
+#define DO_IF_PROFILING(X)
+#else
+#define DO_IF_PROFILING(X)
+#endif
+
 #define SWAP_OUT_THREAD(_tmp) do { \
        (_tmp)->swapped=1; \
        (_tmp)->evaluator_stack=evaluator_stack;\
@@ -348,6 +362,8 @@ struct thread_state {
        (_tmp)->sp=sp; \
        (_tmp)->stack_top=stack_top; \
        (_tmp)->thread_id=thread_id;\
+       DO_IF_PROFILING( (_tmp)->accounted_time=accounted_time; ) \
+       DO_IF_PROFILING( (_tmp)->time_base = gethrvtime() - time_base; ) \
        SWAP_OUT_TRACE(_tmp); \
       } while(0)
 
@@ -363,6 +379,8 @@ struct thread_state {
        sp=(_tmp)->sp;\
        stack_top=(_tmp)->stack_top;\
        thread_id=(_tmp)->thread_id;\
+       DO_IF_PROFILING( accounted_time=(_tmp)->accounted_time; ) \
+       DO_IF_PROFILING(  time_base = (_tmp)->time_base + gethrvtime(); ) \
        SWAP_IN_TRACE(_tmp); \
      } while(0)
 
