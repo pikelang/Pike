@@ -1,5 +1,5 @@
 /*
- * $Id: mysql.pike,v 1.2 2004/09/29 13:36:08 per Exp $
+ * $Id: mysql.pike,v 1.3 2004/09/29 15:05:17 per Exp $
  *
  * Glue for the old broken Mysql-module which fetched all rows at once always
  */
@@ -27,11 +27,3 @@ int|object big_query(mixed ... args) {
   return res;
 }
 
-array query( mixed ... args ) 
-{
-    LOCK();
-    mixed res= ::query(@args);
-    UNLOCK(); // Avoid any possible tail-recursion optimizations by not returning directly above.
-
-    return res;
-}
