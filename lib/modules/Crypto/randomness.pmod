@@ -14,8 +14,12 @@
 /* Collect somewhat random data from the environment. Unfortunately,
  * this is quite system dependent */
 #define PATH  "/usr/sbin:/usr/etc:/usr/bin/:/sbin/:/etc:/bin"
-#define SYSTEM_COMMANDS "rup & ping -s 255.255.255.255 256 30 &" \
-                        "uptime & ps -fel & vmstat -s & iostat -cdDItx &"
+#define SYSTEM_COMMANDS "last & netstat -anv & netstat -mv & netstat -sv & " \
+                        "ping -s 255.255.255.255 256 10 & " \
+			"ping -c 10 -s 256 255.255.255.255 & " \
+                        "uptime & ps -fel & ps aux & " \
+			"vmstat -s & vmstat -M & " \
+			"iostat & iostat -cdDItx &"
 			
 #define PRIVATE
 			
