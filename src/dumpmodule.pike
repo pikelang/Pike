@@ -3,7 +3,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: dumpmodule.pike,v 1.37 2003/01/27 01:17:09 grendel Exp $
+|| $Id: dumpmodule.pike,v 1.38 2003/02/21 18:49:32 marcus Exp $
 */
 
 int quiet = 1, report_failed = 0, recursive = 0, update = 0;
@@ -44,7 +44,10 @@ static string fixup_path(string x)
 /* FIXME: this is a bit ad-hoc */
 string mkmodulename(mixed x, string dirname)
 {
-  if(!sscanf(dirname,"%*slib/modules/%s",dirname))
+  if(master()->relocate_module &&
+     dirname[..20]=="/${PIKE_MODULE_PATH}/")
+    dirname = dirname[21..];
+  else if(!sscanf(dirname,"%*slib/modules/%s",dirname))
     return 0;
   dirname-=".pmod";
   dirname=replace(dirname,"/",".");
