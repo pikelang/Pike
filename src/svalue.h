@@ -5,7 +5,7 @@
 \*/
 
 /*
- * $Id: svalue.h,v 1.89 2001/04/28 19:32:55 mast Exp $
+ * $Id: svalue.h,v 1.90 2001/04/28 21:33:19 mast Exp $
  */
 #ifndef SVALUE_H
 #define SVALUE_H
@@ -373,7 +373,9 @@ static inline union anything *dmalloc_check_union(union anything *u,int type, ch
 
 
 #define swap_svalues_unlocked(X,Y)  do {		\
-  struct svalue *_a=(X),*_b=(Y),_tmp;			\
+  struct svalue *_a=(X);				\
+  struct svalue *_b=(Y);				\
+  struct svalue _tmp;					\
   assert_svalue_locked(_a); assert_svalue_locked(_b);	\
   _tmp=*_a; *_a=*_b; *_b=_tmp;				\
 }while(0)
@@ -406,7 +408,8 @@ static inline union anything *dmalloc_check_union(union anything *u,int type, ch
 }while(0)
 
 #define assign_svalue_no_free_unlocked(X,Y) do {	\
-  struct svalue _tmp, *_to=(X);				\
+  struct svalue _tmp;					\
+  struct svalue *_to=(X);				\
   const struct svalue *_from=(Y);			\
   check_type(_from->type); check_refs(_from);		\
   *_to=_tmp=*_from;					\
