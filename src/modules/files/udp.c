@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: udp.c,v 1.65 2004/05/07 21:09:37 grubba Exp $
+|| $Id: udp.c,v 1.66 2004/05/09 11:07:35 grubba Exp $
 */
 
 #define NO_PIKE_SHORTHAND
@@ -10,7 +10,7 @@
 
 #include "file_machine.h"
 
-RCSID("$Id: udp.c,v 1.65 2004/05/07 21:09:37 grubba Exp $");
+RCSID("$Id: udp.c,v 1.66 2004/05/09 11:07:35 grubba Exp $");
 #include "fdlib.h"
 #include "pike_netlib.h"
 #include "interpret.h"
@@ -130,13 +130,6 @@ RCSID("$Id: udp.c,v 1.65 2004/05/07 21:09:37 grubba Exp $");
 #endif
 
 #include "dmalloc.h"
-
-/* NOTE: Some versions of AIX seem to have a
- *         #define events reqevents
- *       in one of the poll headerfiles. This will break
- *       the fd_box event handling.
- */
-#undef events
 
 struct udp_storage {
   struct fd_callback_box box;	/* Must be first. */
