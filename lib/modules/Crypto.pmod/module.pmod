@@ -85,6 +85,8 @@ constant Buffer = Nettle.Proxy;
 
 // Phase out classes. Remove in Pike 7.7.
 
+//! @ignore
+
 #define PHASER(X,Y) static int(0..1) X##whiner; \
 class X { \
   static int do_whine = X##whiner?0:(X##whiner = \
@@ -111,6 +113,8 @@ PHASER(md5,MD5);
 PHASER(rijndael,AES);
 PHASER(rsa,RSA);
 PHASER(sha,SHA1);
+
+//! @endignore
 
 
 #endif /* constant(Nettle.HashInfo) */
