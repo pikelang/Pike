@@ -151,17 +151,6 @@ test_any([[{
 		     {p->write_out ("[" + a["&e;"] + "]"); return 0;});
   return p->finish ("&e; <t x='&e;' &e;=&e;>")->read();
 }]], "x [&e;]<t x='x' x>");
-test_any_equal([[
-  object p = Parser.HTML();
-  array a = ({ });
-  p->_set_tag_callback (
-    lambda (object p, string str) {
-      a += ({ p->tag_name() });
-      return 0;
-    });
-  p->finish("<t>x</t>");
-  return a;
-]], ({ "t", "/t" }));
 
 // Current context functions
 test_any([[{
@@ -194,6 +183,17 @@ test_any([[{
 }]], ("T(<t a=&e; <t>>|t|0|data) Q(<q <\"' &e; p>|q| <\"' &e; |data) "
       "&eC(<c x=y -- >x</c>|c|x|data) E(&e;|e|0|data) "
       "<x &e; q=E(&e;|e|0|arg)> <x q='E(&e;|e|0|')'> <x E(&e;|e|0|splice_arg)>"));
+test_any_equal([[
+  object p = Parser.HTML();
+  array a = ({ });
+  p->_set_tag_callback (
+    lambda (object p, string str) {
+      a += ({ p->tag_name() });
+      return 0;
+    });
+  p->finish("<t>x</t>");
+  return a;
+]], ({ "t", "/t" }));
 
 // Argument quoting
 test_any([[
@@ -429,7 +429,7 @@ test_any_equal([[
   return p->finish("<t a=b>")->read();
 ]], ({(["a": "b"])}));
 
-// Unbalanced tags and quotes
+// Matching tags and quotes
 test_any([[
   object p = Parser.HTML();
   p->add_tag ("t", "b");
@@ -492,6 +492,21 @@ test_any_equal([[
   p->add_tag ("t", lambda (object p, mapping a) {return p->tag((<>));});
   return p->finish("<t a b='b>")->read();
 ]], ({"t", (["a": (<>), "b": "b>"]), 0}));
+test_any([[{
+  object p = Parser.HTML();
+  p->_set_tag_callback (lambda (object p, string s) {return ({"[",s,"]"});});
+  return p->finish ("<t <bar // > >xab")->read();
+}]],"[<t <bar // > >]xab");
+test_any([[{
+  object p = Parser.HTML();
+  p->_set_tag_callback (lambda (object p, string s) {return ({"[",s,"]"});});
+  return p->finish ("<t <bar/>>xab")->read();
+}]],"[<t <bar/>>]xab");
+test_any([[{
+  object p = Parser.HTML();
+  p->_set_tag_callback (lambda (object p, string s) {return ({"[",s,"]"});});
+  return p->finish ("<t </bar>/>xab")->read();
+}]],"[<t </bar>/>]xab");
 
 // Redefinition during parsing
 test_any([[

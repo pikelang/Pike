@@ -1499,8 +1499,12 @@ static int scan_forward(struct piece *feed,
       int i=0;
       fprintf(stderr,"    n=%d%s; ",num_look_for,rev?"; rev":"");
       for (i=0; i<num_look_for; i++)
-	 if (look_for[i]<33 || (look_for[i]>126 && look_for[i]<160)
-	     || look_for[i]>255)
+	 if (i > 30) {
+	   fprintf (stderr, "\nnum_look_for suspiciously large: %d", num_look_for);
+	   break;
+	 }
+	 else if (look_for[i]<33 || (look_for[i]>126 && look_for[i]<160)
+		  || look_for[i]>255)
 	    fprintf(stderr,"%d ",look_for[i]);
 	 else
 	    fprintf(stderr,"%d:'%c' ",look_for[i],look_for[i]);
@@ -1956,20 +1960,23 @@ static int scan_for_end_of_tag(struct parser_html_storage *this,
 	 continue;
       }
 
-      if (ch == this->tag_fin && !(match_tag && q)) {
+      if (ch == this->tag_fin) {
 	DEBUG_MARK_SPOT("scan for end of tag: tag_fin",
 			 destp[0],*d_p);
 	FORWARD_CHAR (*destp, *d_p, feed, c);
-	ch = index_shared_string (feed->s, c);
-	if (ch == this->tag_end) {
-	  if (got_fin) *got_fin = 1;
-	  *destp = feed;
-	  *d_p = c;
-	  DEBUG_MARK_SPOT("scan for end of tag: end by tag_fin + tag_end",
-			  destp[0],*d_p);
-	  return 1;
+	if (match_tag && q) continue;
+	else {
+	  ch = index_shared_string (feed->s, c);
+	  if (ch == this->tag_end) {
+	    if (got_fin) *got_fin = 1;
+	    *destp = feed;
+	    *d_p = c;
+	    DEBUG_MARK_SPOT("scan for end of tag: end by tag_fin + tag_end",
+			    destp[0],*d_p);
+	    return 1;
+	  }
+	  else continue;
 	}
-	else continue;
       }
 
       if (ch==this->tag_end) {
@@ -4696,7 +4703,7 @@ static void html_ignore_tags(INT32 args)
 
 static void html_case_insensitive_tag(INT32 args)
 {
-   int o=THIS->flags & FLAG_CASE_INSENSITIVE_TAG;
+   int o=!!(THIS->flags & FLAG_CASE_INSENSITIVE_TAG);
    check_all_args("case_insensitive_tag",args,BIT_VOID|BIT_INT,0);
    if (args) {
      if (sp[-args].u.integer) THIS->flags |= FLAG_CASE_INSENSITIVE_TAG;
@@ -4732,7 +4739,7 @@ static void html_case_insensitive_tag(INT32 args)
 
 static void html_lazy_argument_end(INT32 args)
 {
-   int o=THIS->flags & FLAG_LAZY_END_ARG_QUOTE;
+   int o=!!(THIS->flags & FLAG_LAZY_END_ARG_QUOTE);
    check_all_args("lazy_argument_end",args,BIT_VOID|BIT_INT,0);
    if (args) {
      if (sp[-args].u.integer) THIS->flags |= FLAG_LAZY_END_ARG_QUOTE;
@@ -4745,7 +4752,7 @@ static void html_lazy_argument_end(INT32 args)
 
 static void html_lazy_entity_end(INT32 args)
 {
-   int o=THIS->flags & FLAG_LAZY_ENTITY_END;
+   int o=!!(THIS->flags & FLAG_LAZY_ENTITY_END);
    check_all_args("lazy_entity_end",args,BIT_VOID|BIT_INT,0);
    if (args) {
      if (sp[-args].u.integer) THIS->flags |= FLAG_LAZY_ENTITY_END;
@@ -4757,7 +4764,7 @@ static void html_lazy_entity_end(INT32 args)
 
 static void html_match_tag(INT32 args)
 {
-   int o=THIS->flags & FLAG_MATCH_TAG;
+   int o=!!(THIS->flags & FLAG_MATCH_TAG);
    check_all_args("match_tag",args,BIT_VOID|BIT_INT,0);
    if (args) {
      if (sp[-args].u.integer) THIS->flags |= FLAG_MATCH_TAG;
@@ -4769,7 +4776,7 @@ static void html_match_tag(INT32 args)
 
 static void html_mixed_mode(INT32 args)
 {
-   int o=THIS->flags & FLAG_MIXED_MODE;
+   int o=!!(THIS->flags & FLAG_MIXED_MODE);
    check_all_args("mixed_mode",args,BIT_VOID|BIT_INT,0);
    if (args) {
      if (sp[-args].u.integer) THIS->flags |= FLAG_MIXED_MODE;
@@ -4781,7 +4788,7 @@ static void html_mixed_mode(INT32 args)
 
 static void html_ignore_unknown(INT32 args)
 {
-   int o=THIS->flags & FLAG_IGNORE_UNKNOWN;
+   int o=!!(THIS->flags & FLAG_IGNORE_UNKNOWN);
    check_all_args("ignore_unknown",args,BIT_VOID|BIT_INT,0);
    if (args) {
      if (sp[-args].u.integer) THIS->flags |= FLAG_IGNORE_UNKNOWN;
@@ -4817,7 +4824,7 @@ static void html_xml_tag_syntax(INT32 args)
 
 static void html_ws_before_tag_name(INT32 args)
 {
-   int o=THIS->flags & FLAG_WS_BEFORE_TAG_NAME;
+   int o=!!(THIS->flags & FLAG_WS_BEFORE_TAG_NAME);
    check_all_args("ws_before_tag_name",args,BIT_VOID|BIT_INT,0);
    if (args) {
      if (sp[-args].u.integer) THIS->flags |= FLAG_WS_BEFORE_TAG_NAME;
@@ -4830,7 +4837,7 @@ static void html_ws_before_tag_name(INT32 args)
 #ifdef DEBUG
 static void html_debug_mode(INT32 args)
 {
-   int o=THIS->flags & FLAG_DEBUG_MODE;
+   int o=!!(THIS->flags & FLAG_DEBUG_MODE);
    check_all_args("debug_mode",args,BIT_VOID|BIT_INT,0);
    if (args) {
      if (sp[-args].u.integer) THIS->flags |= FLAG_DEBUG_MODE;
