@@ -7,13 +7,6 @@
 #define CONFIG_H
 
 /*
- * Define DEBUG and be sure to compile with -g if you want to debug uLPC
- * with DEBUG defined debugging becomes much easier.
- */
-
-#define DEBUG
-
-/*
  * Define the evaluator stack size, used for just about everything.
  */
 #define EVALUATOR_STACK_SIZE	50000

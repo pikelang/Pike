@@ -1,3 +1,8 @@
+Tue Oct 31 18:57:49 1995  Fredrik Hubinette  <hubbe@sparky.signum.se>
+
+	* Makefile.in, config.h: moved DEBUG to Makefile
+	* lpc_signals.c: fixed a warning
+
 Sun Oct 29 04:02:03 1995  Fredrik Hubinette  <hubbe@sparky.signum.se>
 
         * v1.0E-13 released

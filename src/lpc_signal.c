@@ -160,8 +160,8 @@ static RETSIGTYPE receive_signal(int signum)
 
 void check_signals()
 {
-  extern int d_flag;
 #ifdef DEBUG
+  extern int d_flag;
   if(d_flag>5) do_debug(0);
 #endif
 
