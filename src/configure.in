@@ -1,4 +1,4 @@
-AC_REVISION("$Id: configure.in,v 1.142 1997/12/22 17:38:25 hubbe Exp $")
+AC_REVISION("$Id: configure.in,v 1.143 1998/02/16 20:50:39 marcus Exp $")
 AC_INIT(interpret.c)
 AC_CONFIG_HEADER(machine.h)
 
@@ -1710,6 +1710,7 @@ then
 	FreeBSD*) LDSHARED="ld -Bshareable";;
 	NetBSD) LDSHARED="ld -Bshareable";;
 	OpenBSD*) LDSHARED="ld -Bshareable";;
+	BSD/OS*) LDSHARED="ld -r";;
 	SCO_SV*) LDSHARED="cc -G -KPIC -Wl,-Bexport";;
 	UNIX_SV) LDSHARED="ld -G";;
 	*) LDSHARED="ld";;
@@ -1722,7 +1723,10 @@ AC_MSG_RESULT($LDSHARED)
 AC_MSG_CHECKING(CCSHARED)
 if test -z "$CCSHARED" ; then
   if test "$GCC" = yes ; then
-    CCSHARED="-fpic"
+    case $pike_cv_sys_os in
+      BSD/OS*) CCSHARED="";;
+      *) CCSHARED="-fpic";;
+    esac
   else
     case $pike_cv_sys_os in
 	hp*|HP*) CCSHARED="+z"; ;;
