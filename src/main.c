@@ -4,7 +4,7 @@
 ||| See the files COPYING and DISCLAIMER for more information.
 \*/
 #include "global.h"
-RCSID("$Id: main.c,v 1.48 1998/04/13 14:21:28 grubba Exp $");
+RCSID("$Id: main.c,v 1.49 1998/04/14 19:04:05 hubbe Exp $");
 #include "fdlib.h"
 #include "backend.h"
 #include "module.h"
@@ -433,7 +433,6 @@ void low_exit_main(void)
   free_svalue(& throw_value);
   throw_value.type=T_INT;
 
-  cleanup_callbacks();
 #if defined(DEBUG) && defined(DEBUG_MALLOC)
   if(verbose_debug_exit)
   {
@@ -502,6 +501,7 @@ void low_exit_main(void)
   zap_all_mappings();
 
   cleanup_shared_string_table();
+  cleanup_callbacks();
 #endif
 }
 
