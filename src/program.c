@@ -5,7 +5,7 @@
 \*/
 /**/
 #include "global.h"
-RCSID("$Id: program.c,v 1.199 2000/01/16 00:32:50 hubbe Exp $");
+RCSID("$Id: program.c,v 1.200 2000/01/27 23:17:12 hubbe Exp $");
 #include "program.h"
 #include "object.h"
 #include "dynamic_buffer.h"
@@ -1468,15 +1468,15 @@ node *reference_inherited_identifier(struct pike_string *super_name,
       if(ISCONSTSTR(function_name,"`->") ||
 	 ISCONSTSTR(function_name,"`[]"))
       {
-	return mkapplynode(mkprgnode(magic_index_program),
-			   mknode(F_ARG_LIST,mknewintnode(e),mknewintnode(n+1)));
+	return mknode(F_MAGIC_INDEX,
+		      mknewintnode(e),mknewintnode(n+1));
       }
       
       if(ISCONSTSTR(function_name,"`->=") ||
 	 ISCONSTSTR(function_name,"`[]="))
       {
-	return mkapplynode(mkprgnode(magic_set_index_program),
-			   mknode(F_ARG_LIST,mknewintnode(e),mknewintnode(n+1)));
+	return mknode(F_MAGIC_SET_INDEX,
+		      mknewintnode(e),mknewintnode(n+1));
       }
     }
   }
