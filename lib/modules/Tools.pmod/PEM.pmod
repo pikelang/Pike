@@ -111,8 +111,10 @@ class rfc934 {
 	  initial_text = current;
 	else
 	{
+#ifdef PEM_DEBUG
 	  werror(sprintf("boundary='%s'\ncurrent='%s'\n",
 			 boundary, current));
+#endif
 	  encapsulated
 	    += ({ encapsulated_message()->init(boundary, current) });
 	}
@@ -169,7 +171,7 @@ class pem_msg
       object msg = rfc934()->init(s);
       parts = ([ ]);
 
-      parts->initial_text = msg->initial_text;
+      initial_text = msg->initial_text;
 
       for(int i = 0; i<sizeof(msg->encapsulated); i += 2 )
       {
@@ -196,7 +198,7 @@ class pem_msg
 	{
 	  /* This was the last section. Use the final_boundary. */
 	  res = end_pem_re->split(msg->get_final_boundary());
-	  parts->final_text = msg->final_text;
+	  final_text = msg->final_text;
 	}
 
 	if (!res || (res[0] != name))
