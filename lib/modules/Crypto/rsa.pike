@@ -122,16 +122,16 @@ object generate_key(int bits, function|void r)
     while ((gs = pub->gcdext2(phi))[0] != 1)
       pub += 1;
 
-    werror(sprintf("p = %s\nq = %s\ne = %s\nd = %s\n",
-		   p->digits(), q->digits(), pub->digits(), gs[1]->digits()));
+//    werror(sprintf("p = %s\nq = %s\ne = %s\nd = %s\n",
+//		   p->digits(), q->digits(), pub->digits(), gs[1]->digits()));
     if (gs[1] < 0)
       gs[1] += phi;
     
     set_public_key(p * q, pub);
     set_private_key(gs[1]);
 
-    werror(sprintf("p = %s\nq = %s\ne = %s\nd = %s\n",
-		   p->digits(), q->digits(), pub->digits(), gs[1]->digits()));
+//    werror(sprintf("p = %s\nq = %s\ne = %s\nd = %s\n",
+//		   p->digits(), q->digits(), pub->digits(), gs[1]->digits()));
   } while (!sha_verify(msg, sha_sign(msg, r)));
   return this_object();
 }
