@@ -1,4 +1,4 @@
-test_true([["$Id: testsuite.in,v 1.514 2002/05/11 21:29:58 mast Exp $"]]);
+test_true([["$Id: testsuite.in,v 1.515 2002/05/12 00:29:32 mast Exp $"]]);
 
 cond([[all_constants()->_verify_internals]],
 [[
@@ -2469,6 +2469,21 @@ test_do([[
   // bug 3006
   class X {
     constant foo = Foo;
+    class Foo {}
+    void bar()
+    {
+      foo f = Foo();
+    }
+  };
+]])
+
+test_do([[
+  // bug 3006, generalized version
+  class X {
+    constant a = b;
+    constant b = c;
+    constant c = d;
+    constant d = Foo;
     class Foo {}
     void bar()
     {
