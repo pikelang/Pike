@@ -1,5 +1,5 @@
 //
-// $Id: module.pmod.in,v 1.17 2003/07/23 16:00:42 grubba Exp $
+// $Id: module.pmod.in,v 1.18 2003/09/05 12:41:47 grubba Exp $
 //
 // Interface to pike code tokenizer.
 //
@@ -1686,7 +1686,7 @@ class PikeCompiler
 	"inherit":NameSpace,
 	"inline":Modifier,
 	//"int":IntType,
-	//"lambda":Lambda,
+	"lambda":Lambda,
 	//"multiset":MultisetType,
 	//"mapping":MappingType,
 	//"mixed":MixedType,
