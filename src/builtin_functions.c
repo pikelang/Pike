@@ -4,7 +4,7 @@
 ||| See the files COPYING and DISCLAIMER for more information.
 \*/
 #include "global.h"
-RCSID("$Id: builtin_functions.c,v 1.87 1998/03/20 22:31:04 hubbe Exp $");
+RCSID("$Id: builtin_functions.c,v 1.88 1998/03/26 13:20:29 grubba Exp $");
 #include "interpret.h"
 #include "svalue.h"
 #include "pike_macros.h"
@@ -1172,6 +1172,29 @@ void f_functionp(INT32 args)
 
 void f_sleep(INT32 args)
 {
+#ifdef HAVE_POLL
+  int ms;
+
+  if(!args)
+    error("Too few arguments to sleep.\n");
+
+  switch(sp[-args].type) {
+  case T_INT:
+    ms = sp[-args].u.integer * 1000;
+    break;
+  case T_FLOAT:
+    ms = (int)(sp[-args].u.float_number * 1000.0);
+    break;
+  default:
+    error("Bad argument 1 to sleep.\n");
+    break;
+  }
+
+  THREADS_ALLOW();
+  poll(NULL, 0, ms);
+  THREADS_DISALLOW();
+
+#else /* !HAVE_POLL */
   struct timeval t1,t2,t3;
   INT32 a,b;
 
@@ -1203,11 +1226,14 @@ void f_sleep(INT32 args)
   my_add_timeval(&t1, &t2);
   
   pop_n_elems(args);
+
+#if 0
   while(1)
   {
+#endif /* 0 */
     GETTIMEOFDAY(&t2);
     if(my_timercmp(&t1, <= , &t2))
-      break;
+      return;
 
     t3=t1;
     my_subtract_timeval(&t3, &t2);
@@ -1215,8 +1241,10 @@ void f_sleep(INT32 args)
     THREADS_ALLOW();
     select(0,0,0,0,&t3);
     THREADS_DISALLOW();
-    check_threads_etc();
+#if 0
   }
+#endif /* 0 */
+#endif /* HAVE_POLL */
 }
 
 void f_gc(INT32 args)
