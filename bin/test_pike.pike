@@ -1,6 +1,6 @@
 #!/usr/local/bin/pike
 
-/* $Id: test_pike.pike,v 1.6 1998/02/24 22:48:13 hubbe Exp $ */
+/* $Id: test_pike.pike,v 1.7 1998/03/20 22:29:39 hubbe Exp $ */
 
 #include <simulate.h>
 
@@ -211,11 +211,6 @@ int main(int argc, string *argv)
 	a=b=0;
       }
       
-      if(errors || verbose)
-      {
-	werror("Failed tests: "+errors+".\n");
-      }
-      
     }
     if(mem)
     {
@@ -241,6 +236,11 @@ int main(int argc, string *argv)
 		    total));
     }
   }
+  if(errors || verbose)
+  {
+    werror("Failed tests: "+errors+".\n");
+  }
+      
   if(verbose)
   {
     werror("Total tests: %d\n",successes+errors);
