@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: multiset.c,v 1.54 2002/10/27 17:16:30 mast Exp $
+|| $Id: multiset.c,v 1.55 2002/11/19 13:57:50 mast Exp $
 */
 
 #include "global.h"
@@ -14,7 +14,7 @@
  * Created by Martin Stjernholm 2001-05-07
  */
 
-RCSID("$Id: multiset.c,v 1.54 2002/10/27 17:16:30 mast Exp $");
+RCSID("$Id: multiset.c,v 1.55 2002/11/19 13:57:50 mast Exp $");
 
 #include "builtin_functions.h"
 #include "gc.h"
@@ -269,7 +269,7 @@ void free_multiset_data (struct multiset_data *msd);
     size += (int) datasize;						\
   } while (0)
 
-BLOCK_ALLOC (multiset, 511)
+BLOCK_ALLOC (multiset, (4 * 1024 - 3 * sizeof (void *)) / sizeof (struct multiset))
 
 /* Note: The returned block has no refs. */
 static struct multiset_data *low_alloc_multiset_data (int allocsize, INT16 flags)
@@ -5243,7 +5243,7 @@ void test_multiset (void)
 #include "gc.h"
 #include "security.h"
 
-RCSID("$Id: multiset.c,v 1.54 2002/10/27 17:16:30 mast Exp $");
+RCSID("$Id: multiset.c,v 1.55 2002/11/19 13:57:50 mast Exp $");
 
 struct multiset *first_multiset;
 
