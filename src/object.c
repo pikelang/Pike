@@ -2,11 +2,11 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: object.c,v 1.223 2003/02/15 15:52:36 mast Exp $
+|| $Id: object.c,v 1.224 2003/02/15 16:02:05 grubba Exp $
 */
 
 #include "global.h"
-RCSID("$Id: object.c,v 1.223 2003/02/15 15:52:36 mast Exp $");
+RCSID("$Id: object.c,v 1.224 2003/02/15 16:02:05 grubba Exp $");
 #include "object.h"
 #include "dynamic_buffer.h"
 #include "interpret.h"
@@ -351,7 +351,11 @@ PMOD_EXPORT struct object *debug_clone_object(struct program *p, int args)
   return o;
 }
 
-PMOD_EXPORT struct object *fast_clone_object(struct program *p, int args)
+/* Clone and initialize an object, but do not call the pike initializers.
+ *
+ * WARNING: Only use this function if you know what you are doing...
+ */
+PMOD_EXPORT struct object *fast_clone_object(struct program *p)
 {
   ONERROR tmp;
   struct object *o=low_clone(p);

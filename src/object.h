@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: object.h,v 1.77 2003/02/15 15:00:34 grubba Exp $
+|| $Id: object.h,v 1.78 2003/02/15 16:02:05 grubba Exp $
 */
 
 #ifndef OBJECT_H
@@ -60,7 +60,7 @@ void call_prog_event(struct object *o, int event);
 void call_pike_initializers(struct object *o, int args);
 PMOD_EXPORT void do_free_object(struct object *o);
 PMOD_EXPORT struct object *debug_clone_object(struct program *p, int args);
-PMOD_EXPORT struct object *fast_clone_object(struct program *p, int args);
+PMOD_EXPORT struct object *fast_clone_object(struct program *p);
 PMOD_EXPORT struct object *parent_clone_object(struct program *p,
 					       struct object *parent,
 					       ptrdiff_t parent_identifier,
