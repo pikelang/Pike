@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: svalue.c,v 1.217 2004/12/19 18:34:15 grubba Exp $
+|| $Id: svalue.c,v 1.218 2005/01/20 13:08:23 grubba Exp $
 */
 
 #include "global.h"
@@ -712,6 +712,7 @@ PMOD_EXPORT int is_eq(const struct svalue *a, const struct svalue *b)
 	if ((p = a->u.object->prog) &&
 	    ((fun = FIND_LFUN(p->inherits[a->subtype].prog, LFUN_EQ)) != -1))
 	{
+	  /* FIXME: CYCLIC */
 	  push_svalue(b);
 	  apply_low(a->u.object,
 		    fun + p->inherits[a->subtype].identifier_level, 1);
@@ -743,6 +744,7 @@ PMOD_EXPORT int is_eq(const struct svalue *a, const struct svalue *b)
 	if ((p = b->u.object->prog) &&
 	    ((fun = FIND_LFUN(p->inherits[b->subtype].prog, LFUN_EQ)) != -1))
 	{
+	  /* FIXME: CYCLIC */
 	  push_svalue(a);
 	  apply_low(b->u.object,
 		    fun + p->inherits[b->subtype].identifier_level, 1);
@@ -1731,6 +1733,7 @@ PMOD_EXPORT void print_short_svalue (FILE *out, const union anything *a, TYPE_T 
   else {
     struct svalue sval;
     sval.type = type;
+    sval.subtype = 0;
     sval.u = *a;
     print_svalue (out, &sval);
   }
