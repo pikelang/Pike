@@ -7022,7 +7022,8 @@ getuid, setgid, getgid, seteuid, geteuid, setegid, getegid
 void symlink(string <I>from</I>, string <I>to</I>);<br>
 </man_syntax>
 <man_description>
-Creates a symbolic link named <i>to</i> pointing to <i>from</i>.
+Creates a symbolic link for an original file <i>from</i> with
+the new name <i>to</i>.
 </man_description>
 <man_see>
 hardlink, readlink, mv, rm
