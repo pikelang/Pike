@@ -5,7 +5,7 @@
 \*/
 /**/
 #include "global.h"
-RCSID("$Id: main.c,v 1.92 2000/07/06 00:30:32 hubbe Exp $");
+RCSID("$Id: main.c,v 1.93 2000/07/07 01:47:05 hubbe Exp $");
 #include "fdlib.h"
 #include "backend.h"
 #include "module.h"
@@ -397,7 +397,7 @@ int dbm_main(int argc, char **argv)
 #define RLIMIT_NOFILE RLIMIT_OFILE
 #endif
 
-  stack_top = (char *)&argv;
+  Pike_interpreter.stack_top = (char *)&argv;
 
   /* Adjust for anything already pushed on the stack.
    * We align on a 64 KB boundary.
@@ -409,10 +409,10 @@ int dbm_main(int argc, char **argv)
    */
 #if STACK_DIRECTION < 0
   /* Equvivalent with |= 0xffff */
-  stack_top += (~((unsigned long)stack_top)) & 0xffff;
+  Pike_interpreter.stack_top += (~((unsigned long)Pike_interpreter.stack_top)) & 0xffff;
 #else /* STACK_DIRECTION >= 0 */
   /* Equvivalent with &= ~0xffff */
-  stack_top -= ( ((unsigned long)stack_top)) & 0xffff;
+  Pike_interpreter.stack_top -= ( ((unsigned long)Pike_interpreter.stack_top)) & 0xffff;
 #endif /* STACK_DIRECTION < 0 */
 
 #if defined(HAVE_GETRLIMIT) && defined(RLIMIT_STACK)
@@ -430,7 +430,7 @@ int dbm_main(int argc, char **argv)
 	lim.rlim_cur=Pike_INITIAL_STACK_SIZE;
 #endif
 
-      stack_top += STACK_DIRECTION * lim.rlim_cur;
+      Pike_interpreter.stack_top += STACK_DIRECTION * lim.rlim_cur;
 
 #ifdef HAVE_PTHREAD_INITIAL_THREAD_BOS
 #if defined(HAVE_DLOPEN) && defined(HAVE_DLFCN_H)
@@ -460,25 +460,25 @@ int dbm_main(int argc, char **argv)
 	 */
 	
 	if(__pthread_initial_thread_bos && 
-	   (__pthread_initial_thread_bos - stack_top) *STACK_DIRECTION < 0)
-	  stack_top=__pthread_initial_thread_bos;
+	   (__pthread_initial_thread_bos - Pike_interpreter.stack_top) *STACK_DIRECTION < 0)
+	  Pike_interpreter.stack_top=__pthread_initial_thread_bos;
       }
 #endif
 #endif
-      stack_top -= STACK_DIRECTION * 8192 * sizeof(char *);
+      Pike_interpreter.stack_top -= STACK_DIRECTION * 8192 * sizeof(char *);
 
 #ifdef STACK_DEBUG
       fprintf(stderr, "1: C-stack: 0x%08p - 0x%08p, direction:%d\n",
-	      &argv, stack_top, STACK_DIRECTION);
+	      &argv, Pike_interpreter.stack_top, STACK_DIRECTION);
 #endif /* STACK_DEBUG */
     }
   }
 #else /* !HAVE_GETRLIMIT || !RLIMIT_STACK */
   /* 128 MB seems a bit extreme, most OS's seem to have their limit at ~8MB */
-  stack_top += STACK_DIRECTION * (1024*1024 * 8 - 8192 * sizeof(char *));
+  Pike_interpreter.stack_top += STACK_DIRECTION * (1024*1024 * 8 - 8192 * sizeof(char *));
 #ifdef STACK_DEBUG
   fprintf(stderr, "2: C-stack: 0x%08p - 0x%08p, direction:%d\n",
-	  &argv, stack_top, STACK_DIRECTION);
+	  &argv, Pike_interpreter.stack_top, STACK_DIRECTION);
 #endif /* STACK_DEBUG */
 #endif /* HAVE_GETRLIMIT && RLIMIT_STACK */
 

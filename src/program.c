@@ -5,7 +5,7 @@
 \*/
 /**/
 #include "global.h"
-RCSID("$Id: program.c,v 1.246 2000/07/02 02:26:29 mast Exp $");
+RCSID("$Id: program.c,v 1.247 2000/07/07 01:48:08 hubbe Exp $");
 #include "program.h"
 #include "object.h"
 #include "dynamic_buffer.h"
@@ -288,7 +288,7 @@ static struct node_s *index_modules(struct pike_string *ident,
   {
     ONERROR tmp;
     SET_ONERROR(tmp,exit_on_error,"Error in handle_error in master object!");
-    assign_svalue_no_free(sp++, & throw_value);
+    assign_svalue_no_free(Pike_sp++, & throw_value);
     APPLY_MASTER("handle_error", 1);
     pop_stack();
     UNSET_ONERROR(tmp);
@@ -302,13 +302,13 @@ static struct node_s *index_modules(struct pike_string *ident,
       ref_push_string(ident);
       f_index(2);
 
-      if(!IS_UNDEFINED(sp-1))
+      if(!IS_UNDEFINED(Pike_sp-1))
       {
 	UNSETJMP(tmp);
 	if(!*module_index_cache)
 	  *module_index_cache=allocate_mapping(10);
-	mapping_string_insert(*module_index_cache, ident, sp-1);
-	ret=mksvaluenode(sp-1);
+	mapping_string_insert(*module_index_cache, ident, Pike_sp-1);
+	ret=mksvaluenode(Pike_sp-1);
 	pop_stack();
 	return ret;
       }
@@ -419,11 +419,11 @@ struct node_s *find_module_identifier(struct pike_string *ident,
       {
 	if(!resolve_cache)
 	  resolve_cache=dmalloc_touch(struct mapping *, allocate_mapping(10));
-	mapping_string_insert(resolve_cache,ident,sp-1);
+	mapping_string_insert(resolve_cache,ident,Pike_sp-1);
 
-	if(!(IS_ZERO(sp-1) && sp[-1].subtype==1))
+	if(!(IS_ZERO(Pike_sp-1) && Pike_sp[-1].subtype==1))
 	{
-	  ret=mkconstantsvaluenode(sp-1);
+	  ret=mkconstantsvaluenode(Pike_sp-1);
 	}
       }
       pop_stack();
@@ -526,10 +526,15 @@ int program_function_index_compare(const void *a,const void *b)
 #ifdef PIKE_DEBUG
 char *find_program_name(struct program *p, INT32 *line)
 {
+#ifdef DEBUG_MALLOC
+  char *tmp;
+#endif
   INT32 pos;
+  INT32 l;
+  if(!line) line=&l;
 
 #ifdef DEBUG_MALLOC
-  char *tmp=dmalloc_find_name(p);
+  tmp=dmalloc_find_name(p);
   *line=0;
   if(tmp) return tmp;
 #endif
@@ -799,7 +804,7 @@ void low_start_new_program(struct program *p,
     fprintf (stderr, "%.*sstarting program %d (pass=%d): ",
 	     compilation_depth, "                ", Pike_compiler->new_program->id, Pike_compiler->compiler_pass);
     push_string (name);
-    print_svalue (stderr, --sp);
+    print_svalue (stderr, --Pike_sp);
     putc ('\n', stderr);
   }
   else
@@ -1515,10 +1520,10 @@ int low_reference_inherited_identifier(struct program_state *q,
 
   for(d=0;d<(int)np->num_identifier_references;d++)
   {
-    struct reference *fp;
-    fp=np->identifier_references+d;
+    struct reference *refp;
+    refp=np->identifier_references+d;
 
-    if(!MEMCMP((char *)fp,(char *)&funp,sizeof funp)) return d;
+    if(!MEMCMP((char *)refp,(char *)&funp,sizeof funp)) return d;
   }
 
   if(q)
@@ -1889,7 +1894,7 @@ void compiler_do_inherit(node *n,
 
     default:
       resolv_class(n);
-      do_inherit(sp-1, flags, name);
+      do_inherit(Pike_sp-1, flags, name);
       pop_stack();
   }
 }
@@ -1904,7 +1909,7 @@ void simple_do_inherit(struct pike_string *s,
   ref_push_string(lex.current_file);
   SAFE_APPLY_MASTER("handle_inherit", 2);
 
-  if(sp[-1].type != T_PROGRAM)
+  if(Pike_sp[-1].type != T_PROGRAM)
   {
     my_yyerror("Couldn't find file to inherit %s",s->str);
     pop_stack();
@@ -1916,7 +1921,7 @@ void simple_do_inherit(struct pike_string *s,
     free_string(s);
     s=name;
   }
-  do_inherit(sp-1, flags, s);
+  do_inherit(Pike_sp-1, flags, s);
   free_string(s);
   pop_stack();
 }
@@ -2048,7 +2053,7 @@ int define_variable(struct pike_string *name,
 	     compilation_depth, "                ", Pike_compiler->compiler_pass, d->str);
     free_string (d);
     push_string (name);
-    print_svalue (stderr, --sp);
+    print_svalue (stderr, --Pike_sp);
     putc ('\n', stderr);
   }
 #endif
@@ -2183,7 +2188,7 @@ int add_constant(struct pike_string *name,
       fprintf (stderr, "%.*sdeclaring constant (pass=%d): ",
 	       compilation_depth, "                ", Pike_compiler->compiler_pass);
     push_string (name);
-    print_svalue (stderr, --sp);
+    print_svalue (stderr, --Pike_sp);
     putc ('\n', stderr);
   }
 #endif
@@ -2447,7 +2452,7 @@ INT32 define_function(struct pike_string *name,
 	     compilation_depth, "                ", Pike_compiler->compiler_pass, d->str);
     free_string (d);
     push_string (name);
-    print_svalue (stderr, --sp);
+    print_svalue (stderr, --Pike_sp);
     putc ('\n', stderr);
   }
 #endif
@@ -2825,7 +2830,7 @@ int store_constant(struct svalue *foo,
     struct svalue zero;
 
     SET_ONERROR(tmp,exit_on_error,"Error in store_constant in compiler!");
-    assign_svalue_no_free(sp++, & throw_value);
+    assign_svalue_no_free(Pike_sp++, & throw_value);
     APPLY_MASTER("handle_error", 1);
     pop_stack();
     UNSET_ONERROR(tmp);
@@ -2880,7 +2885,7 @@ struct array *program_indices(struct program *p)
     }
   }
   f_aggregate(n);
-  res = sp[-1].u.array;
+  res = Pike_sp[-1].u.array;
   add_ref(res);
   pop_stack();
   return(res);
@@ -2904,7 +2909,7 @@ struct array *program_values(struct program *p)
     }
   }
   f_aggregate(n);
-  res = sp[-1].u.array;
+  res = Pike_sp[-1].u.array;
   add_ref(res);
   pop_stack();
   return(res);
@@ -3159,7 +3164,7 @@ struct program *compile(struct pike_string *prog,
   {
     /* FIXME: support '#Pike 0.6' here */
     apply(error_handler,"get_default_module",0);
-    if(IS_ZERO(sp-1))
+    if(IS_ZERO(Pike_sp-1))
     {
       pop_stack();
       ref_push_mapping(get_builtin_constants());
@@ -3207,7 +3212,7 @@ struct program *compile(struct pike_string *prog,
   low_start_new_program(0,0,0,0);
 
   initialize_buf(&used_modules);
-  use_module(sp-1);
+  use_module(Pike_sp-1);
 
   if(lex.current_file)
   {
@@ -3246,7 +3251,7 @@ struct program *compile(struct pike_string *prog,
     Pike_compiler->compiler_pass=2;
     lex.pos=prog->str;
 
-    use_module(sp-1);
+    use_module(Pike_sp-1);
 
     CDFPRINTF((stderr, "compile(): Second pass\n"));
 
@@ -3932,7 +3937,7 @@ struct program *program_from_svalue(struct svalue *s)
       }
       push_svalue(s);
       f_object_program(1);
-      p=program_from_svalue(sp-1);
+      p=program_from_svalue(Pike_sp-1);
       pop_stack();
       return p; /* We trust that there is a reference somewhere... */
     }
@@ -4231,8 +4236,8 @@ void *parent_storage(int depth)
   struct object *o;
   INT32 i;
 
-  inherit=&fp->context;
-  o=fp->current_object;
+  inherit=&Pike_fp->context;
+  o=Pike_fp->current_object;
   
   if(!o)
     error("Current object is destructed\n");

@@ -5,7 +5,7 @@
 \*/
 /**/
 #include "global.h"
-RCSID("$Id: las.c,v 1.180 2000/06/24 00:48:13 hubbe Exp $");
+RCSID("$Id: las.c,v 1.181 2000/07/07 01:48:40 hubbe Exp $");
 
 #include "language.h"
 #include "interpret.h"
@@ -1125,10 +1125,10 @@ void resolv_class(node *n)
   check_tree(n,0);
 
   resolv_constant(n);
-  switch(sp[-1].type)
+  switch(Pike_sp[-1].type)
   {
     case T_OBJECT:
-      if(!sp[-1].u.object->prog)
+      if(!Pike_sp[-1].u.object->prog)
       {
 	pop_stack();
 	push_int(0);
@@ -1155,10 +1155,10 @@ void resolv_program(node *n)
   check_tree(n,0);
 
   resolv_class(n);
-  switch(sp[-1].type)
+  switch(Pike_sp[-1].type)
   {
     case T_FUNCTION:
-      if(program_from_function(sp-1))
+      if(program_from_function(Pike_sp-1))
 	break;
       
     default:
@@ -1185,7 +1185,7 @@ node *index_node(node *n, char *node_name, struct pike_string *id)
   {
     ONERROR tmp;
     SET_ONERROR(tmp,exit_on_error,"Error in handle_error in master object!");
-    assign_svalue_no_free(sp++, & throw_value);
+    assign_svalue_no_free(Pike_sp++, & throw_value);
     APPLY_MASTER("handle_error", 1);
     pop_stack();
     UNSET_ONERROR(tmp);
@@ -1198,7 +1198,7 @@ node *index_node(node *n, char *node_name, struct pike_string *id)
     push_int(0);
   }else{
     resolv_constant(n);
-    switch(sp[-1].type)
+    switch(Pike_sp[-1].type)
     {
     case T_INT:
       if(!Pike_compiler->num_parse_error) {
@@ -1231,7 +1231,7 @@ node *index_node(node *n, char *node_name, struct pike_string *id)
     {
       int c;
       DECLARE_CYCLIC();
-      c=(int)BEGIN_CYCLIC(sp[-1].u.refs, id);
+      c=(int)BEGIN_CYCLIC(Pike_sp[-1].u.refs, id);
       if(c>1)
       {
 	my_yyerror("Recursive module dependency in '%s'.",id->str);
@@ -1241,29 +1241,29 @@ node *index_node(node *n, char *node_name, struct pike_string *id)
 	SET_CYCLIC_RET(c+1);
 	ref_push_string(id);
 	{
-	  struct svalue *save_sp = sp-2;
+	  struct svalue *save_sp = Pike_sp-2;
 	  JMP_BUF recovery;
 	  if (SETJMP(recovery)) {
 	    /* f_index() threw an error!
 	     *
 	     * FIXME: Report the error thrown.
 	     */
-	    if (sp > save_sp) {
-	      pop_n_elems(sp - save_sp);
-	    } else if (sp != save_sp) {
+	    if (Pike_sp > save_sp) {
+	      pop_n_elems(Pike_sp - save_sp);
+	    } else if (Pike_sp != save_sp) {
 	      fatal("f_index() munged stack!\n");
 	    }
 	    push_int(0);
-	    sp[-1].subtype = NUMBER_UNDEFINED;
+	    Pike_sp[-1].subtype = NUMBER_UNDEFINED;
 	  } else {
 	    f_index(2);
 	  }
 	  UNSETJMP(recovery);
 	}
       
-	if(sp[-1].type == T_INT &&
-	   !sp[-1].u.integer &&
-	   sp[-1].subtype==NUMBER_UNDEFINED)
+	if(Pike_sp[-1].type == T_INT &&
+	   !Pike_sp[-1].u.integer &&
+	   Pike_sp[-1].subtype==NUMBER_UNDEFINED)
 	{
 	  if (node_name) {
 	    my_yyerror("Index '%s' not present in module '%s'.",
@@ -1278,7 +1278,7 @@ node *index_node(node *n, char *node_name, struct pike_string *id)
     }
   }
   UNSETJMP(tmp);
-  ret=mkconstantsvaluenode(sp-1);
+  ret=mkconstantsvaluenode(Pike_sp-1);
   pop_stack();
   return ret;
 }
@@ -3599,7 +3599,7 @@ int eval_low(node *n)
 {
   unsigned INT16 num_strings, num_constants;
   INT32 jump;
-  struct svalue *save_sp = sp;
+  struct svalue *save_sp = Pike_sp;
   int ret;
 
 #ifdef PIKE_DEBUG
@@ -3656,10 +3656,10 @@ int eval_low(node *n)
 	  ref_push_object(throw_value.u.object);
 	  push_int(0);
 	  f_index(2);
-	  if(sp[-1].type != T_STRING)
+	  if(Pike_sp[-1].type != T_STRING)
 	    yyerror("Nonstandard error format.");
 	  else
-	    yyerror(sp[-1].u.string->str);
+	    yyerror(Pike_sp[-1].u.string->str);
 	  pop_stack();
 	}
 	else
@@ -3669,9 +3669,9 @@ int eval_low(node *n)
       }
     }else{
       if(foo.yes)
-	pop_n_elems(sp-save_sp);
+	pop_n_elems(Pike_sp-save_sp);
       else
-	ret=sp-save_sp;
+	ret=Pike_sp-save_sp;
     }
 
     remove_callback(tmp_callback);
@@ -3707,7 +3707,6 @@ static node *eval(node *n)
 {
   node *new;
   int args;
-  extern struct svalue *sp;
   if(!is_const(n) || n->token==':')
     return n;
   
@@ -3726,15 +3725,15 @@ static node *eval(node *n)
     break;
 
   case 1:
-    if(Pike_compiler->catch_level && IS_ZERO(sp-1))
+    if(Pike_compiler->catch_level && IS_ZERO(Pike_sp-1))
     {
       pop_stack();
       return n;
     }
     if (n->token == F_SOFT_CAST) {
-      new = mksoftcastnode(n->type, mksvaluenode(sp-1));
+      new = mksoftcastnode(n->type, mksvaluenode(Pike_sp-1));
     } else {
-      new = mksvaluenode(sp-1);
+      new = mksvaluenode(Pike_sp-1);
       if (n->type && (!new->type || ((n->type != new->type) &&
 				     pike_types_le(n->type,new->type)))) {
 	if (new->type)
@@ -3753,7 +3752,7 @@ static node *eval(node *n)
       n=NULL;
       while(args--)
       {
-	n=mknode(F_ARG_LIST,mksvaluenode(sp-1),n);
+	n=mknode(F_ARG_LIST,mksvaluenode(Pike_sp-1),n);
 	pop_stack();
       }
     } else {
@@ -3761,7 +3760,7 @@ static node *eval(node *n)
       n = NULL;
       while(args--)
       {
-	n=mknode(F_ARG_LIST,mksvaluenode(sp-1),n);
+	n=mknode(F_ARG_LIST,mksvaluenode(Pike_sp-1),n);
 	pop_stack();
       }
       n = mksoftcastnode(nn->type, n);

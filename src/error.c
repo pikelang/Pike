@@ -21,7 +21,7 @@
 #include "threads.h"
 #include "gc.h"
 
-RCSID("$Id: error.c,v 1.54 2000/07/07 01:43:32 hubbe Exp $");
+RCSID("$Id: error.c,v 1.55 2000/07/07 01:46:21 hubbe Exp $");
 
 #undef ATTRIBUTE
 #define ATTRIBUTE(X)
@@ -111,7 +111,7 @@ void push_error(char *description)
   f_aggregate(2);
 }
 
-struct svalue throw_value = { T_INT };
+struct svalue throw_value = { PIKE_T_INT };
 int throw_severity;
 static const char *in_error;
 
@@ -300,7 +300,7 @@ void debug_fatal(const char *fmt, ...) ATTRIBUTE((noreturn,format (printf, 1, 2)
     fprintf(stderr,"Attempting to dump backlog (may fail)...\n");
     push_error("Backtrace at time of fatal:\n");
     APPLY_MASTER("describe_backtrace",1);
-    if(Pike_sp[-1].type==T_STRING)
+    if(Pike_sp[-1].type==PIKE_T_STRING)
       write_to_stderr(Pike_sp[-1].u.string->str, Pike_sp[-1].u.string->len);
   }else{
     fprintf(stderr,"No stack - no backtrace.\n");
@@ -396,7 +396,7 @@ void f_error_backtrace(INT32 args)
     if (X) { \
       assign_svalue_no_free( & ERROR_STRUCT(STRUCT,o)->X, X); \
     } else { \
-      ERROR_STRUCT(STRUCT, o)->X.type = T_INT; \
+      ERROR_STRUCT(STRUCT, o)->X.type = PIKE_T_INT; \
       ERROR_STRUCT(STRUCT, o)->X.subtype = 0; \
       ERROR_STRUCT(STRUCT, o)->X.u.integer = 0; \
     } \
@@ -448,7 +448,7 @@ void generic_error_va(struct object *o,
     f_add(2);
   }
 
-  if(Pike_sp[-1].type!=T_ARRAY)
+  if(Pike_sp[-1].type!=PIKE_T_ARRAY)
     fatal("Error failed to generate a backtrace!\n");
 
   ERROR_STRUCT(generic,o)->backtrace=Pike_sp[-1].u.array;
@@ -456,7 +456,7 @@ void generic_error_va(struct object *o,
   dmalloc_touch_svalue(Pike_sp);
 
   free_svalue(& throw_value);
-  throw_value.type=T_OBJECT;
+  throw_value.type=PIKE_T_OBJECT;
   throw_value.u.object=o;
   throw_severity = THROW_ERROR;
   in_error=0;
@@ -500,7 +500,7 @@ void bad_arg_error(
   {
     ERROR_COPY_SVALUE(bad_arg, got);
   }else{
-    ERROR_STRUCT(bad_arg,o)->got.type=T_INT;
+    ERROR_STRUCT(bad_arg,o)->got.type=PIKE_T_INT;
     ERROR_STRUCT(bad_arg,o)->got.subtype=NUMBER_UNDEFINED;
     ERROR_STRUCT(bad_arg,o)->got.u.integer=0;
   }
@@ -520,7 +520,7 @@ void math_error(
   {
     ERROR_COPY_SVALUE(math, number);
   }else{
-    ERROR_STRUCT(math,o)->number.type=T_INT;
+    ERROR_STRUCT(math,o)->number.type=PIKE_T_INT;
     ERROR_STRUCT(math,o)->number.subtype=NUMBER_UNDEFINED;
     ERROR_STRUCT(math,o)->number.u.integer=0;
   }
