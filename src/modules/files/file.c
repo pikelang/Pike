@@ -2,12 +2,12 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: file.c,v 1.250 2002/11/23 15:47:58 mast Exp $
+|| $Id: file.c,v 1.251 2002/11/28 00:36:12 marcus Exp $
 */
 
 #define NO_PIKE_SHORTHAND
 #include "global.h"
-RCSID("$Id: file.c,v 1.250 2002/11/23 15:47:58 mast Exp $");
+RCSID("$Id: file.c,v 1.251 2002/11/28 00:36:12 marcus Exp $");
 #include "fdlib.h"
 #include "interpret.h"
 #include "svalue.h"
@@ -3556,6 +3556,9 @@ PIKE_MODULE_INIT
 #else
   add_integer_constant("__OOB__",-1,0); /* unknown */
 #endif
+#endif
+#ifdef HAVE_SYS_UN_H
+  add_integer_constant("__HAVE_CONNECT_UNIX__",1,0);
 #endif
 
   /* function(:array(int)) */

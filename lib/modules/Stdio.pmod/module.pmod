@@ -1,4 +1,4 @@
-// $Id: module.pmod,v 1.159 2002/11/26 15:01:13 grubba Exp $
+// $Id: module.pmod,v 1.160 2002/11/28 00:36:13 marcus Exp $
 #pike __REAL_VERSION__
 
 inherit files;
@@ -309,6 +309,7 @@ class File
     return ::connect(host, port, client, client_port);
   }
 
+#if constant(files.__HAVE_CONNECT_UNIX__)
   int connect_unix(string path)
   //! Open a UNIX domain socket connection to the specified destination.
   //! 
@@ -328,6 +329,7 @@ class File
     debug_bits = 0;
     return ::connect_unix( path );
   }
+#endif
 
   static private function(int, mixed ...:void) _async_cb;
   static private array(mixed) _async_args;
