@@ -1,7 +1,7 @@
 #pike __REAL_VERSION__
 
 /*
- * $Id: Tree.pmod,v 1.7 2001/01/23 13:42:41 norlin Exp $
+ * $Id: Tree.pmod,v 1.8 2001/02/02 08:17:55 norlin Exp $
  *
  */
 
@@ -115,6 +115,17 @@ class AbstractNode {
     //  altered child node.
     mChildren -= ({ c });
     c->mParent = 0;
+  }
+
+  AbstractNode replace_child(AbstractNode old, AbstractNode new)
+  {
+    // Replace THE FIRST occurrence of old with new.
+    int index = search(mChildren, old);
+    if (index < 0)
+      return 0;
+    mChildren[index] = new;
+    old->mParent = 0;
+    return new;
   }
 
   int|void walk_preorder(function(AbstractNode, mixed ...:int|void) callback,
