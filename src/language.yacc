@@ -110,7 +110,7 @@
 /* This is the grammar definition of Pike. */
 
 #include "global.h"
-RCSID("$Id: language.yacc,v 1.218 2000/11/04 17:43:02 grubba Exp $");
+RCSID("$Id: language.yacc,v 1.219 2000/11/08 22:21:32 hubbe Exp $");
 #ifdef HAVE_MEMORY_H
 #include <memory.h>
 #endif
@@ -1517,7 +1517,11 @@ block:'{'
   {
     /* Trick to store more than one number on compiler stack - Hubbe */
     $<number>$=Pike_compiler->compiler_frame->last_block_level;
-    Pike_compiler->compiler_frame->last_block_level=$<number>2;
+
+    if($<number>$ == -1) /* if 'first block' */
+      Pike_compiler->compiler_frame->last_block_level=0; /* all variables */
+    else
+      Pike_compiler->compiler_frame->last_block_level=$<number>2;
   }
   statements end_block
   {
@@ -3369,6 +3373,17 @@ void yyerror(char *str)
   }
 }
 
+static int low_islocal(struct compiler_frame *f,
+		       struct pike_string *str)
+{
+  int e;
+  for(e=f->current_number_of_locals-1;e>=0;e--)
+    if(f->variable[e].name==str)
+      return e;
+  return -1;
+}
+
+
 
 int low_add_local_name(struct compiler_frame *frame,
 			struct pike_string *str,
@@ -3377,8 +3392,8 @@ int low_add_local_name(struct compiler_frame *frame,
 {
 
   if (str->len && !TEST_COMPAT(7,0)) {
-    int tmp=islocal(str);
-    if(tmp >= frame->last_block_level)
+    int tmp=low_islocal(frame,str);
+    if(tmp>=0 && tmp >= frame->last_block_level)
     {
       if(str->size_shift)
 	my_yyerror("Duplicate local variable, "
@@ -3453,14 +3468,11 @@ int add_local_name(struct pike_string *str,
 			    def);
 }
 
-/* argument must be a shared string */
+
+
 int islocal(struct pike_string *str)
 {
-  int e;
-  for(e=Pike_compiler->compiler_frame->current_number_of_locals-1;e>=0;e--)
-    if(Pike_compiler->compiler_frame->variable[e].name==str)
-      return e;
-  return -1;
+  return low_islocal(Pike_compiler->compiler_frame, str);
 }
 
 /* argument must be a shared string */
