@@ -1,5 +1,5 @@
 /*
- * $Id: acconfig.h,v 1.57 2000/03/28 19:35:26 grubba Exp $
+ * $Id: acconfig.h,v 1.58 2000/05/20 13:30:50 grubba Exp $
  */
 #ifndef MACHINE_H
 #define MACHINE_H
@@ -291,6 +291,9 @@
 
 /* Define if you don't have F_SETFD, or it doesn't work */
 #undef HAVE_BROKEN_F_SETFD
+
+/* Define if your thread implementation doesn't propagate euid & egid. */
+#undef HAVE_BROKEN_LINUX_THREAD_EUID
 
 /* Define if your cpp supports K&R-style concatenation */
 #undef HAVE_KR_CONCAT
