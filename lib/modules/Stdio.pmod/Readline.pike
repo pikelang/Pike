@@ -1,4 +1,4 @@
-// $Id: Readline.pike,v 1.33 2000/04/06 09:06:22 hubbe Exp $
+// $Id: Readline.pike,v 1.34 2000/08/29 14:00:18 noring Exp $
 
 class OutputController
 {
@@ -1081,6 +1081,7 @@ class History
 static private object(OutputController) output_controller;
 static private object(InputController) input_controller;
 static private string prompt="";
+static private array(string) prompt_attrs=0;
 static private string text="", readtext;
 static private function(string:void) newline_func;
 static private int cursorpos = 0;
@@ -1106,10 +1107,10 @@ string get_prompt()
   return prompt;
 }
 
-string set_prompt(string newp)
+string set_prompt(string newp, array(string)|void newattrs)
 {
   string oldp = prompt;
-  if(newp!=prompt)
+  if(newp!=prompt || !equal(prompt_attrs, newattrs))
   {
     if(newline_func)
     {
@@ -1119,11 +1120,13 @@ string set_prompt(string newp)
       output_controller->bol();
       output_controller->clear(1);
       prompt = newp;
+      prompt_attrs = newattrs && copy_value(newattrs);
       cursorpos=strlen(text);
       redisplay(0, 1);
       cursorpos=p;
     }else{
       prompt = newp;
+      prompt_attrs = newattrs && copy_value(newattrs);
     }
   }
   return oldp;
@@ -1290,8 +1293,13 @@ void redisplay(int clear, int|void nobackup)
   output_controller->check_columns();
 
   if(!input_controller->dumb) {
-    if(newline_func == read_newline)
+    if(newline_func == read_newline) {
+      if(prompt_attrs)
+	output_controller->turn_on(@prompt_attrs);
       output_controller->write(prompt);
+      if(prompt_attrs)
+	output_controller->turn_off(@prompt_attrs);      
+    }
     output_controller->write(text,0,hide);
   }
   cursorpos = sizeof(text);
@@ -1393,26 +1401,32 @@ void set_blocking()
   set_nonblocking(0);
 }
 
-string edit(string data, string|void local_prompt)
+string edit(string data, string|void local_prompt, array(string)|void attrs)
 {
   if(data && strlen(data) && input_controller->dumb)
   {
-    string ret=edit("", (local_prompt || get_prompt()) +" ["+data+"] ");
+    string ret=edit("", (local_prompt || get_prompt()) +" ["+data+"] ", attrs);
     return (!ret || !strlen(ret))?data:ret;
   }
   string old_prompt;
-  
+  array(string) old_attrs;
+
   if(newline_func == read_newline)
     return 0;
 
   if(local_prompt)
   {
     old_prompt = get_prompt();
-    set_prompt(local_prompt);
+    old_attrs = prompt_attrs;
+    set_prompt(local_prompt, attrs);
   }
   
   function oldnl = newline_func;
+  if(attrs)
+      output_controller->turn_on(@attrs);
   output_controller->write(local_prompt||prompt);
+  if(attrs)
+      output_controller->turn_off(@attrs);
   initline();
   newline_func = read_newline;
   readtext = "";
@@ -1424,14 +1438,14 @@ string edit(string data, string|void local_prompt)
   set_nonblocking(oldnl);
   
   if(local_prompt)
-    set_prompt(old_prompt);
+    set_prompt(old_prompt, old_attrs);
   
   return (res>=0 || sizeof(readtext)) && readtext;
 }
 
-string read(string|void prompt)
+string read(string|void prompt, array(string)|void attrs)
 {
-  return edit("", prompt);
+  return edit("", prompt, attrs);
 }
 
 void enable_history(array(string)|object(History)|int hist)
