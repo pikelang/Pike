@@ -1,10 +1,10 @@
 SRCDIR=@srcdir@
 VPATH=@srcdir@:@srcdir@/../..:../..
 PREFLAGS=$(DEFINES) -I. -I$(SRCDIR) -I$(SRCDIR)/../.. -I../..
-CFLAGS=$(PREFLAGS) $(OTHERFLAGS) @DEFS@
+CFLAGS=$(PREFLAGS) $(OTHERFLAGS)
 
-FILES=spider.o discdate.o stardate.o sdebug.o tree.o \
-      streamed_parser.o http_parse.o accesseddb.o dumudp.o
+FILES=spider.o discdate.o stardate.o sdebug.o dumudp.o\
+      streamed_parser.o accesseddb.o
 
 spider.a: $(FILES)
 	-rm -f spider.a
