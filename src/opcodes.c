@@ -25,7 +25,7 @@
 #include "security.h"
 #include "bignum.h"
 
-RCSID("$Id: opcodes.c,v 1.56 1999/10/31 21:51:59 grubba Exp $");
+RCSID("$Id: opcodes.c,v 1.57 1999/10/31 22:02:17 grubba Exp $");
 
 void index_no_free(struct svalue *to,struct svalue *what,struct svalue *ind)
 {
@@ -843,8 +843,6 @@ static INLINE float low_parse_IEEE_float(char *b, int sz)
 	    (SVAL).u.float_number = low_parse_IEEE_float((INPUT), 8);
 #endif
 #endif
-
-#define make_shared_binary_string0(X,Y) make_shared_binary_string(X,Y)
 
 #define MK_VERY_LOW_SSCANF(INPUT_SHIFT, MATCH_SHIFT)			\
 static INT32 PIKE_CONCAT4(very_low_sscanf_,INPUT_SHIFT,_,MATCH_SHIFT)(	\
