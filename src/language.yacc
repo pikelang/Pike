@@ -183,7 +183,7 @@
 /* This is the grammar definition of Pike. */
 
 #include "global.h"
-RCSID("$Id: language.yacc,v 1.131 1999/11/12 18:21:11 grubba Exp $");
+RCSID("$Id: language.yacc,v 1.132 1999/11/14 19:33:04 grubba Exp $");
 #ifdef HAVE_MEMORY_H
 #include <memory.h>
 #endif
@@ -1074,7 +1074,7 @@ new_local_name: optional_stars F_IDENTIFIER
     push_finished_type($<n>0->u.sval.u.string);
     while($1--) push_type(T_ARRAY);
     add_local_name($2->u.sval.u.string, compiler_pop_type());
-    $$=mknode(F_ASSIGN,mknewintnode(0),mklocalnode(islocal($2->u.sval.u.string),0));
+    $$=mknode(F_ASSIGN,mkintnode(0),mklocalnode(islocal($2->u.sval.u.string),0));
     free_node($2);
   }
   | optional_stars bad_identifier { $$=0; }
@@ -1110,7 +1110,7 @@ new_local_name2: F_IDENTIFIER
   {
     add_ref($<n>0->u.sval.u.string);
     add_local_name($1->u.sval.u.string, $<n>0->u.sval.u.string);
-    $$=mknode(F_ASSIGN,mknewintnode(0),mklocalnode(islocal($1->u.sval.u.string),0));
+    $$=mknode(F_ASSIGN,mkintnode(0),mklocalnode(islocal($1->u.sval.u.string),0));
     free_node($1);
   }
   | bad_identifier { $$=0; }
@@ -1783,7 +1783,7 @@ low_idents: F_IDENTIFIER
 	  $$=mknode(F_UNDEFINED,0,0);
 	}
       }else{
-	$$=mknewintnode(0);
+	$$=mkintnode(0);
       }
     }
     free_node($1);
@@ -1865,7 +1865,7 @@ low_idents: F_IDENTIFIER
 	}
 	else
 	{
-	  $$=mknewintnode(0);
+	  $$=mkintnode(0);
 	}
     }else{
       if($$->token==F_ARG_LIST) $$=mkefuncallnode("aggregate",$$);
@@ -1878,14 +1878,14 @@ low_idents: F_IDENTIFIER
   }
   ;
 
-comma_expr_or_zero: /* empty */ { $$=mknewintnode(0); }
+comma_expr_or_zero: /* empty */ { $$=mkintnode(0); }
   | comma_expr
   | F_LEX_EOF { yyerror("Unexpected end of file."); $$=0; }
   ;
 
-comma_expr_or_maxint: /* empty */ { $$=mknewintnode(0x7fffffff); }
+comma_expr_or_maxint: /* empty */ { $$=mkintnode(0x7fffffff); }
   | comma_expr
-  | F_LEX_EOF { yyerror("Unexpected end of file."); $$=mknewintnode(0x7fffffff); }
+  | F_LEX_EOF { yyerror("Unexpected end of file."); $$=mkintnode(0x7fffffff); }
   ;
 
 gauge: F_GAUGE catch_arg
