@@ -4,7 +4,7 @@
 ||| See the files COPYING and DISCLAIMER for more information.
 \*/
 #include "global.h"
-RCSID("$Id: interpret.c,v 1.80 1998/04/20 18:43:08 grubba Exp $");
+RCSID("$Id: interpret.c,v 1.81 1998/05/12 23:51:23 hubbe Exp $");
 #include "interpret.h"
 #include "object.h"
 #include "program.h"
@@ -388,9 +388,15 @@ static char trace_buffer[100];
   instr+=EXTRACT_UCHAR(pc++),\
   (t_flag>3 ? sprintf(trace_buffer,"-    Arg = %ld\n",(long)instr),write_to_stderr(trace_buffer,strlen(trace_buffer)) : 0),\
   instr))
+#define GET_ARG2() (\
+  instr=EXTRACT_UCHAR(pc++),\
+  (t_flag>3 ? sprintf(trace_buffer,"-    Arg2= %ld\n",(long)instr),write_to_stderr(trace_buffer,strlen(trace_buffer)) : 0),\
+  instr)
+
 
 #else
 #define GET_ARG() (instr=prefix,prefix=0,instr+EXTRACT_UCHAR(pc++))
+#define GET_ARG2() EXTRACT_UCHAR(pc++)
 #endif
 
 #define CASE(X) case (X)-F_OFFSET:
@@ -741,10 +747,49 @@ static int eval_instruction(unsigned char *pc)
       CASE(F_2_LOCALS);
       assign_svalue_no_free(sp++,fp->locals+GET_ARG());
       print_return_value();
-      assign_svalue_no_free(sp++,fp->locals+GET_ARG());
+      assign_svalue_no_free(sp++,fp->locals+GET_ARG2());
       print_return_value();
       break;
-      
+
+      CASE(F_LOCAL_2_LOCAL);
+      {
+	int tmp=GET_ARG();
+	assign_svalue(fp->locals+tmp, fp->locals+GET_ARG2());
+	break;
+      }
+
+      CASE(F_LOCAL_2_GLOBAL);
+      {
+	INT32 tmp=GET_ARG() + fp->context.identifier_level;
+	struct identifier *i;
+
+	if(!fp->current_object->prog)
+	  error("Cannot access global variables in destructed object.\n");
+
+	i=ID_FROM_INT(fp->current_object->prog, tmp);
+	if(!IDENTIFIER_IS_VARIABLE(i->identifier_flags))
+	  error("Cannot assign functions or constants.\n");
+	if(i->run_time_type == T_MIXED)
+	{
+	  assign_svalue((struct svalue *)GLOBAL_FROM_INT(tmp), fp->locals + GET_ARG2());
+	}else{
+	  assign_to_short_svalue((union anything *)GLOBAL_FROM_INT(tmp),
+				 i->run_time_type,
+				 fp->locals + GET_ARG2());
+	}
+	break;
+      }
+
+      CASE(F_GLOBAL_2_LOCAL);
+      {
+	INT32 tmp=GET_ARG() + fp->context.identifier_level;
+	INT32 tmp2=GET_ARG2();
+	free_svalue(fp->locals + tmp2);
+	low_object_index_no_free(fp->locals + tmp2,
+				 fp->current_object,
+				 tmp);
+	break;
+      }
 
       CASE(F_LOCAL_LVALUE);
       sp[0].type=T_LVALUE;
@@ -1149,6 +1194,20 @@ static int eval_instruction(unsigned char *pc)
       DOJUMP();
       break;
 
+      CASE(F_BRANCH_IF_NOT_LOCAL_ARROW);
+      {
+	struct svalue tmp;
+	tmp.type=T_STRING;
+	tmp.u.string=fp->context.prog->strings[GET_ARG()];
+	tmp.subtype=1;
+	sp->type=T_INT;	
+	sp++;
+	index_no_free(sp-1,fp->locals+GET_ARG2() , &tmp);
+	print_return_value();
+      }
+
+      /* Fall through */
+
       CASE(F_BRANCH_WHEN_ZERO);
       if(!IS_ZERO(sp-1))
       {
@@ -1172,6 +1231,16 @@ static int eval_instruction(unsigned char *pc)
       CASE(F_BRANCH_IF_LOCAL);
       instr=GET_ARG();
       if(IS_ZERO(fp->locals + instr))
+      {
+	pc+=sizeof(INT32);
+      }else{
+	DOJUMP();
+      }
+      break;
+
+      CASE(F_BRANCH_IF_NOT_LOCAL);
+      instr=GET_ARG();
+      if(!IS_ZERO(fp->locals + instr))
       {
 	pc+=sizeof(INT32);
       }else{
@@ -1434,7 +1503,7 @@ static int eval_instruction(unsigned char *pc)
 	struct svalue *s=fp->locals+GET_ARG();
 	if(s->type == T_STRING) s->subtype=0;
 	sp++->type=T_INT;
-	index_no_free(sp-1,fp->locals+GET_ARG(),s);
+	index_no_free(sp-1,fp->locals+GET_ARG2(),s);
 	break;
       }
 
@@ -1448,6 +1517,60 @@ static int eval_instruction(unsigned char *pc)
 	break;
       }
 
+      CASE(F_GLOBAL_LOCAL_INDEX);
+      {
+	struct svalue tmp,*s;
+	low_object_index_no_free(sp,
+				 fp->current_object,
+				 GET_ARG() + fp->context.identifier_level);
+	sp++;
+	s=fp->locals+GET_ARG2();
+	if(s->type == T_STRING) s->subtype=0;
+	index_no_free(&tmp,sp-1,s);
+	free_svalue(sp-1);
+	sp[-1]=tmp;
+	break;
+      }
+
+      CASE(F_LOCAL_ARROW);
+      {
+	struct svalue tmp;
+	tmp.type=T_STRING;
+	tmp.u.string=fp->context.prog->strings[GET_ARG()];
+	tmp.subtype=1;
+	sp->type=T_INT;	
+	sp++;
+	index_no_free(sp-1,fp->locals+GET_ARG2() , &tmp);
+	print_return_value();
+	break;
+      }
+
+      CASE(F_ARROW);
+      {
+	struct svalue tmp,tmp2;
+	tmp.type=T_STRING;
+	tmp.u.string=fp->context.prog->strings[GET_ARG()];
+	tmp.subtype=1;
+	index_no_free(&tmp2, sp-1, &tmp);
+	free_svalue(sp-1);
+	sp[-1]=tmp2;
+	print_return_value();
+	break;
+      }
+
+      CASE(F_STRING_INDEX);
+      {
+	struct svalue tmp,tmp2;
+	tmp.type=T_STRING;
+	tmp.u.string=fp->context.prog->strings[GET_ARG()];
+	tmp.subtype=0;
+	index_no_free(&tmp2, sp-1, &tmp);
+	free_svalue(sp-1);
+	sp[-1]=tmp2;
+	print_return_value();
+	break;
+      }
+
       CASE(F_POS_INT_INDEX);
       push_int(GET_ARG());
       print_return_value();
@@ -1456,23 +1579,6 @@ static int eval_instruction(unsigned char *pc)
       CASE(F_NEG_INT_INDEX);
       push_int(-GET_ARG());
       print_return_value();
-      goto do_index;
-
-      CASE(F_ARROW);
-      copy_shared_string(sp->u.string,fp->context.prog->strings[GET_ARG()]);
-      sp->type=T_STRING;
-      sp->subtype=1;
-      sp++;
-      print_return_value();
-      goto do_index;
-
-      CASE(F_STRING_INDEX);
-      copy_shared_string(sp->u.string,fp->context.prog->strings[GET_ARG()]);
-      sp->type=T_STRING;
-      sp->subtype=0;
-      sp++;
-      print_return_value();
-      /* Fall through */
 
       CASE(F_INDEX);
     do_index:

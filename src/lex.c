@@ -4,7 +4,7 @@
 ||| See the files COPYING and DISCLAIMER for more information.
 \*/
 #include "global.h"
-RCSID("$Id: lex.c,v 1.52 1998/04/27 19:17:16 grubba Exp $");
+RCSID("$Id: lex.c,v 1.53 1998/05/12 23:51:26 hubbe Exp $");
 #include "language.h"
 #include "array.h"
 #include "lex.h"
@@ -137,6 +137,8 @@ struct keyword instr_names[]=
 { "branch",             F_BRANCH, I_ISJUMP },
 { "branch non zero",	F_BRANCH_WHEN_NON_ZERO, I_ISJUMP },	
 { "branch if local",	F_BRANCH_IF_LOCAL, I_HASARG },	
+{ "branch if !local",	F_BRANCH_IF_NOT_LOCAL, I_HASARG },	
+{ "branch if ! local->x",	F_BRANCH_IF_NOT_LOCAL_ARROW, I_HASARG },	
 { "branch when zero",	F_BRANCH_WHEN_ZERO, I_ISJUMP },	
 { "branch if <",	F_BRANCH_WHEN_LT, I_ISJUMP },
 { "branch if >",	F_BRANCH_WHEN_GT, I_ISJUMP },
@@ -234,6 +236,11 @@ struct keyword instr_names[]=
 { "call function",      F_CALL_FUNCTION, 0 },
 { "call function & return", F_CALL_FUNCTION_AND_RETURN, 0 },
 { "+= and pop",         F_ADD_TO_AND_POP, 0 },
+{ "local=local;",       F_LOCAL_2_LOCAL, I_HASARG },
+{ "local=global;",      F_GLOBAL_2_LOCAL, I_HASARG },
+{ "global=local;",      F_LOCAL_2_GLOBAL, I_HASARG },
+{ "local->x",           F_LOCAL_ARROW, I_HASARG },
+{ "global[local]",      F_GLOBAL_LOCAL_INDEX, I_HASARG },
 };
 
 struct instr instrs[F_MAX_INSTR - F_OFFSET];

@@ -4,7 +4,7 @@
 ||| See the files COPYING and DISCLAIMER for more information.
 \*/
 #include "global.h"
-RCSID("$Id: las.c,v 1.61 1998/05/01 15:48:12 grubba Exp $");
+RCSID("$Id: las.c,v 1.62 1998/05/12 23:51:26 hubbe Exp $");
 
 #include "language.h"
 #include "interpret.h"
@@ -2360,7 +2360,11 @@ int dooptcode(struct pike_string *name,
 #endif
     if(!num_parse_error)
     {
+      extern int remove_clear_locals;
+      remove_clear_locals=args;
+      if(vargs) remove_clear_locals++;
       do_code_block(n);
+      remove_clear_locals=0x7fffffff;
     }
   }
   

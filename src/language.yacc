@@ -22,12 +22,13 @@
 %token F_BRANCH_WHEN_LT F_BRANCH_WHEN_GT
 %token F_BRANCH_WHEN_LE F_BRANCH_WHEN_GE
 %token F_BRANCH_WHEN_EQ F_BRANCH_WHEN_NE
-%token F_BRANCH_IF_LOCAL
+%token F_BRANCH_IF_LOCAL F_BRANCH_IF_NOT_LOCAL
+%token F_BRANCH_IF_NOT_LOCAL_ARROW
 %token F_INC_LOOP F_DEC_LOOP
 %token F_INC_NEQ_LOOP F_DEC_NEQ_LOOP
 
 %token F_INDEX F_ARROW F_INDIRECT F_STRING_INDEX F_LOCAL_INDEX
-%token F_LOCAL_LOCAL_INDEX
+%token F_LOCAL_LOCAL_INDEX F_LOCAL_ARROW F_GLOBAL_LOCAL_INDEX
 %token F_POS_INT_INDEX F_NEG_INT_INDEX
 %token F_LTOSVAL F_LTOSVAL2
 %token F_PUSH_ARRAY 
@@ -57,6 +58,7 @@
 %token F_ASSIGN F_ASSIGN_AND_POP
 %token F_ASSIGN_LOCAL F_ASSIGN_LOCAL_AND_POP
 %token F_ASSIGN_GLOBAL F_ASSIGN_GLOBAL_AND_POP
+%token F_LOCAL_2_LOCAL F_LOCAL_2_GLOBAL F_GLOBAL_2_LOCAL
 %token F_ADD F_SUBTRACT F_ADD_INT F_ADD_NEG_INT
 %token F_ADD_TO_AND_POP
 %token F_MULTIPLY F_DIVIDE F_MOD
@@ -79,13 +81,13 @@
  * These are token values that needn't have an associated code for the
  * compiled file
  */
+%token F_MAX_OPCODE
 
 /* This is the end of file marker used by the lexer
  * to enable nicer EOF in error handling.
  */
 %token F_LEX_EOF
 
-%token F_MAX_OPCODE
 %token F_ADD_EQ
 %token F_AND_EQ
 %token F_ARG_LIST
@@ -177,7 +179,7 @@
 /* This is the grammar definition of Pike. */
 
 #include "global.h"
-RCSID("$Id: language.yacc,v 1.95 1998/04/30 16:30:37 hubbe Exp $");
+RCSID("$Id: language.yacc,v 1.96 1998/05/12 23:51:25 hubbe Exp $");
 #ifdef HAVE_MEMORY_H
 #include <memory.h>
 #endif

@@ -1,4 +1,4 @@
-stest_true([["$Id: testsuite.in,v 1.104 1998/05/07 23:49:36 hubbe Exp $"]])
+stest_true([["$Id: testsuite.in,v 1.105 1998/05/12 23:51:27 hubbe Exp $"]])
 cond([[all_constants()->_verify_internals]],
 [[
   test_do(_verify_internals())
@@ -2050,7 +2050,7 @@ test_equal(Array.diff("123.org"/"","http://123.org/"/""),
 // - explode
 test_equal(({"a","b","c",}), "anna bnna c"/"nna ")
 test_equal(({"","",}),"hej"/"hej")
-test_equal(({}),""/"hej")
+test_equal(({""}),""/"hej")
 
 // - fork()
 // FIXME: add tests for fork

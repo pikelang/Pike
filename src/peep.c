@@ -13,7 +13,7 @@
 #include "dmalloc.h"
 #include "stuff.h"
 
-RCSID("$Id: peep.c,v 1.23 1998/05/01 15:45:55 grubba Exp $");
+RCSID("$Id: peep.c,v 1.24 1998/05/12 23:51:26 hubbe Exp $");
 
 struct p_instr_s
 {
@@ -332,6 +332,7 @@ void assemble(void)
 
 /**** Peephole optimizer ****/
 
+int remove_clear_locals=0x7fffffff;
 static int fifo_len, eye,len;
 static p_instr *instructions;
 
