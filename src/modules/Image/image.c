@@ -1,9 +1,9 @@
-/* $Id: image.c,v 1.116 1999/03/22 09:33:40 mirar Exp $ */
+/* $Id: image.c,v 1.117 1999/04/06 03:51:34 per Exp $ */
 
 /*
 **! module Image
 **! note
-**!	$Id: image.c,v 1.116 1999/03/22 09:33:40 mirar Exp $
+**!	$Id: image.c,v 1.117 1999/04/06 03:51:34 per Exp $
 **! class image
 **!
 **!	The main object of the <ref>Image</ref> module, this object
@@ -97,7 +97,7 @@
 
 #include "stralloc.h"
 #include "global.h"
-RCSID("$Id: image.c,v 1.116 1999/03/22 09:33:40 mirar Exp $");
+RCSID("$Id: image.c,v 1.117 1999/04/06 03:51:34 per Exp $");
 #include "pike_macros.h"
 #include "object.h"
 #include "constants.h"
@@ -3478,6 +3478,10 @@ extern void init_image_x(void);
 extern void exit_image_x(void);
 extern void init_image_any(void);
 extern void exit_image_any(void);
+extern void init_image_tga(void);
+extern void exit_image_tga(void);
+extern void init_image_pcx(void);
+extern void exit_image_pcx(void);
 
 /* dynamic encoders (dependent on other modules, loaded dynamically) */
 
@@ -3837,6 +3841,8 @@ void pike_module_init(void)
    init_image_bmp();
    init_image_xwd();
    init_image_any();
+   init_image_tga();
+   init_image_pcx();
    init_image_x();
 }
 
@@ -3856,6 +3862,8 @@ void pike_module_exit(void)
    exit_image_bmp();
    exit_image_xwd();
    exit_image_any();
+   exit_image_tga();
+   exit_image_pcx();
    if (png_object) 
    {
       free_object(png_object);
