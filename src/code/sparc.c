@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: sparc.c,v 1.20 2002/11/07 14:24:24 grubba Exp $
+|| $Id: sparc.c,v 1.21 2002/11/07 16:58:49 grubba Exp $
 */
 
 /*
@@ -66,9 +66,6 @@
 #define SPARC_OP3_XORcc		0x13
 #define SPARC_OP3_XNOR		0x07
 #define SPARC_OP3_XNORcc	0x17
-#define SPARC_OP3_SLL		0x25
-#define SPARC_OP3_SRL		0x26
-#define SPARC_OP3_SRA		0x27
 #define SPARC_OP3_ADD		0x00
 #define SPARC_OP3_ADDcc		0x10
 #define SPARC_OP3_ADDC		0x08
@@ -77,7 +74,14 @@
 #define SPARC_OP3_SUBcc		0x14
 #define SPARC_OP3_SUBC		0x0c
 #define SPARC_OP3_SUBCcc	0x1c
+#define SPARC_OP3_SLL		0x25
+#define SPARC_OP3_SRL		0x26
+#define SPARC_OP3_SRA		0x27
+#define SPARC_OP3_RD		0x28
 #define SPARC_OP3_SAVE		0x3c
+
+#define SPARC_RD_REG_CCR	0x02
+#define SPARC_RD_REG_PC		0x05
 
 #define SPARC_ALU_OP(OP3, D, S1, S2, I)	\
     add_to_program(0x80000000|((D)<<25)|((OP3)<<19)|((S1)<<14)|((I)<<13)| \
@@ -88,6 +92,8 @@
 #define SPARC_SRA(D,S1,S2,I)	SPARC_ALU_OP(SPARC_OP3_SRA, D, S1, S2, I)
 
 #define SPARC_ADD(D,S1,S2,I)	SPARC_ALU_OP(SPARC_OP3_ADD, D, S1, S2, I)
+
+#define SPARC_RD(D, RDREG)	SPARC_ALU_OP(SPARC_OP3_RD, D, RDREG, 0, 0)
 
 #define SPARC_SETHI(D, VAL) \
     add_to_program(0x01000000|((D)<<25)|(((VAL)>>10)&0x3fffff))
@@ -131,6 +137,8 @@
     p_->program[off_] = 0x40000000 | (delta_ & 0x3fffffff);		\
     add_to_relocations(off_);						\
     add_to_program(delay_);						\
+    sparc_last_pc = off_;	/* Value in %o7. */			\
+    sparc_codegen_state |= SPARC_CODEGEN_PC_IS_SET;			\
   } while(0)
 
 /*
@@ -158,7 +166,7 @@ unsigned INT32 sparc_codegen_state = 0;
 int sparc_last_pc = 0;
 
 #define LOAD_PIKE_FP() do {					\
-    if (!(sparc_codegen_state & SPARC_CODEGEN_FP_IS_SET)) {	\
+    if (1 || !(sparc_codegen_state & SPARC_CODEGEN_FP_IS_SET)) {	\
       SET_REG(SPARC_REG_PIKE_FP,				\
 	      ((INT32)(&Pike_interpreter.frame_pointer)));	\
       /* lduw [ %i0 ], %i0 */					\
@@ -184,15 +192,11 @@ void sparc_ins_entry(void)
 /* Update Pike_fp->pc */
 void sparc_update_pc(void)
 {
+  /* rd %pc, %i0 */
+  SPARC_RD(SPARC_REG_I0, SPARC_RD_REG_PC);
   LOAD_PIKE_FP();
-
-  /* call .+8 */
-  add_to_program(0x40000002);
-  /* NOTE: No need to fill the delay slot with a nop, since %o7 is updated
-   *       immediately. (Sparc Architecture Manual V9 p149.)
-   */
-  /* stw %pike_pc, [ %pike_fp + pc ] */
-  add_to_program(0xc0202000|(SPARC_REG_PC<<25)|(SPARC_REG_PIKE_FP<<14)|
+  /* stw %pc, [ %pike_fp + pc ] */
+  add_to_program(0xc0202000|(SPARC_REG_I0<<25)|(SPARC_REG_PIKE_FP<<14)|
 		 OFFSETOF(pike_frame, pc));
 }
 
@@ -247,13 +251,15 @@ static void low_ins_f_byte(unsigned int b, int delay_ok)
 
       LOAD_PIKE_FP();
 
-      /* NOTE: We fill the delay slot with the following opcode.
+      /* Note: We fill the delay slot with the following opcode.
        *       This works since the new %o7 is available immediately.
        *       (Sparc Architecture Manual V9 p149.)
        */
-      /* st %pc, [ %pike_fp, %offset(pike_frame, pc) ] */
-      add_to_program(0xc0202000|(SPARC_REG_PC<<25)|(SPARC_REG_PIKE_FP<<14)|
+
+      /* stw %o7, [ %pike_fp, %offsetof(pike_frame, pc) ] */
+      add_to_program(0xc0202000|(SPARC_REG_O7<<25)|(SPARC_REG_PIKE_FP<<14)|
 		     OFFSETOF(pike_frame, pc));
+      
       delay_ok = 1;
     }
   }
