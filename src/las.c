@@ -5,7 +5,7 @@
 \*/
 /**/
 #include "global.h"
-RCSID("$Id: las.c,v 1.169 2000/03/13 20:54:49 grubba Exp $");
+RCSID("$Id: las.c,v 1.170 2000/03/17 05:13:17 hubbe Exp $");
 
 #include "language.h"
 #include "interpret.h"
@@ -2159,24 +2159,15 @@ static void low_build_function_type(node *n)
 void yytype_error(char *msg, struct pike_string *expected_t,
 		  struct pike_string *got_t, unsigned int flags)
 {
-  struct pike_string *expected = describe_type(expected_t);
-  struct pike_string *got = describe_type(got_t);
-
-  if (flags & YYTE_IS_WARNING) {
-    if (msg) {
+  if (msg)
+  {
+    if (flags & YYTE_IS_WARNING)
       yywarning("%s", msg);
-    }
-    yywarning("Expected: %s", expected->str);
-    yywarning("Got     : %s", got->str);
-  } else {
-    if (msg) {
+    else
       my_yyerror("%s", msg);
-    }
-    my_yyerror("Expected: %s", expected->str);
-    my_yyerror("Got     : %s", got->str);
   }
-  free_string(got);
-  free_string(expected);
+
+  yyexplain_nonmatching_types(expected_t, got_t, flags);
 }
 
 void fix_type_field(node *n)
@@ -2467,7 +2458,7 @@ void fix_type_field(node *n)
 	{
 	  yyerror("Wrong return type.");
 	  yyexplain_nonmatching_types(compiler_frame->current_return_type,
-				      CAR(n)->type);
+				      CAR(n)->type,0);
 	}
 	else if (lex.pragmas & ID_STRICT_TYPES)
 	{

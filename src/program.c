@@ -5,7 +5,7 @@
 \*/
 /**/
 #include "global.h"
-RCSID("$Id: program.c,v 1.212 2000/03/10 20:08:54 hubbe Exp $");
+RCSID("$Id: program.c,v 1.213 2000/03/17 05:13:17 hubbe Exp $");
 #include "program.h"
 #include "object.h"
 #include "dynamic_buffer.h"
@@ -3891,7 +3891,7 @@ int is_compatible(struct program *a, struct program *b)
 }
 
 /* returns 1 if a implements b */
-int yyexplain_not_implements(struct program *a, struct program *b)
+int yyexplain_not_implements(struct program *a, struct program *b, int flags)
 {
   int e;
   struct pike_string *s=findstring("__INIT");
@@ -3907,7 +3907,10 @@ int yyexplain_not_implements(struct program *a, struct program *b)
     if (i == -1) {
       if (b->identifier_references[e].id_flags & (ID_OPTIONAL))
 	continue;		/* It's ok... */
-      my_yyerror("Missing identifier \"%s\".", bid->name->str);
+      if(flags & YYTE_IS_WARNING)
+	yywarning("Missing identifier \"%s\".", bid->name->str);
+      else
+	my_yyerror("Missing identifier \"%s\".", bid->name->str);
       return 0;
     }
 
@@ -3916,8 +3919,15 @@ int yyexplain_not_implements(struct program *a, struct program *b)
       my_yyerror("Type of identifier dentifier \"%s\" does not match.", bid->name->str);
       s1=describe_type(ID_FROM_INT(a,i)->type);
       s2=describe_type(bid->type);
-      my_yyerror("Expected: %s",s1->str);
-      my_yyerror("Got     : %s",s2->str);
+      if(flags & YYTE_IS_WARNING)
+      {
+	yywarning("Expected: %s",s1->str);
+	yywarning("Got     : %s",s2->str);
+      }else{
+	my_yyerror("Expected: %s",s1->str);
+	my_yyerror("Got     : %s",s2->str);
+      }
+
       free_string(s1);
       free_string(s2);
       return 0;

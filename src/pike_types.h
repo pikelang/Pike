@@ -5,7 +5,7 @@
 \*/
 
 /*
- * $Id: pike_types.h,v 1.36 1999/12/29 17:59:34 grubba Exp $
+ * $Id: pike_types.h,v 1.37 2000/03/17 05:13:17 hubbe Exp $
  */
 #ifndef PIKE_TYPES_H
 #define PIKE_TYPES_H
@@ -155,7 +155,7 @@ struct pike_string *or_pike_types(struct pike_string *a,
 struct pike_string *and_pike_types(struct pike_string *a,
 				   struct pike_string *b);
 int strict_check_call(char *fun_type, char *arg_type);
-int check_soft_cast(struct pike_string *from, struct pike_string *to);
+int check_soft_cast(struct pike_string *to, struct pike_string *from);
 int match_types(struct pike_string *a,struct pike_string *b);
 int pike_types_le(struct pike_string *a,struct pike_string *b);
 struct pike_string *index_type(struct pike_string *type,
@@ -178,6 +178,9 @@ struct pike_string *object_type_to_program_type(struct pike_string *obj_t);
 char *get_name_of_type(int t);
 void cleanup_pike_types(void);
 int type_may_overload(char *type, int lfun);
+void yyexplain_nonmatching_types(struct pike_string *type_a,
+				 struct pike_string *type_b,
+				 int flags);
 struct pike_string *make_pike_type(char *t);
 /* Prototypes end here */
 

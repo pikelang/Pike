@@ -5,7 +5,7 @@
 \*/
 /**/
 #include "global.h"
-RCSID("$Id: pike_types.c,v 1.126 2000/03/10 00:58:59 grubba Exp $");
+RCSID("$Id: pike_types.c,v 1.127 2000/03/17 05:13:17 hubbe Exp $");
 #include <ctype.h>
 #include "svalue.h"
 #include "pike_types.h"
@@ -3460,7 +3460,8 @@ int type_may_overload(char *type, int lfun)
 
 
 void yyexplain_nonmatching_types(struct pike_string *type_a,
-				 struct pike_string *type_b)
+				 struct pike_string *type_b,
+				 int flags)
 {
   implements_a=0;
   implements_b=0;
@@ -3474,14 +3475,20 @@ void yyexplain_nonmatching_types(struct pike_string *type_a,
     struct pike_string *s1,*s2;
     s1=describe_type(type_a);
     s2=describe_type(type_b);
-    my_yyerror("Expected: %s",s1->str);
-    my_yyerror("Got     : %s",s2->str);
+    if(flags & YYTE_IS_WARNING)
+    {
+      yywarning("Expected: %s",s1->str);
+      yywarning("Got     : %s",s2->str);
+    }else{
+      my_yyerror("Expected: %s",s1->str);
+      my_yyerror("Got     : %s",s2->str);
+    }
     free_string(s1);
     free_string(s2);
   }
 
   if(implements_a && implements_b)
-    yyexplain_not_implements(implements_a,implements_b);
+    yyexplain_not_implements(implements_a,implements_b,flags);
 }
 
 
