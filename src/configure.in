@@ -1,4 +1,4 @@
-AC_REVISION("$Id: configure.in,v 1.443 2000/12/19 14:23:07 grubba Exp $")
+AC_REVISION("$Id: configure.in,v 1.444 2000/12/19 14:52:56 grubba Exp $")
 AC_INIT(interpret.c)
 AC_CONFIG_HEADER(machine.h)
 
@@ -759,6 +759,7 @@ fi
 if test "x$with_dmalloc" = "x"; then :; else
   if test "x$with_rtldebug" = "xyes"; then :; else
     AC_MSG_WARN([Debug malloc requires rtldebug. Enabling rtldebug.])
+    with_rtldebug=yes
   fi
 fi
 
