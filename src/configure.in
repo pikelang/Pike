@@ -1,4 +1,4 @@
-AC_REVISION("$Id: configure.in,v 1.429 2000/10/13 19:40:08 hubbe Exp $")
+AC_REVISION("$Id: configure.in,v 1.430 2000/10/24 13:25:54 grubba Exp $")
 AC_INIT(interpret.c)
 AC_CONFIG_HEADER(machine.h)
 
@@ -3865,13 +3865,22 @@ if test -z "$LDSHARED" ; then
 	  fi
         fi
       else
-        # Dynamic linking turned off for AIX-cc
-	#
-	# In addition, the dynamic loading test seems to
-	# cause our RS/6000 to hang, which causes the
-	# watchdog-timer to PANIC.
-	pike_cv_sys_dynamic_loading=no
-        LDSHARED="ld"
+        if test "`uname -r`" -ge 3 -a "`uname -v`" -ge 4 ; then
+          LDSHARED="ld -G -bexpall"
+	else if test "`uname -v`" -gt 4 ; then
+	    # Extra forward compatibility...
+	    # AIX 5+
+	    LDSHARED="ld -G -bexpall"
+	  else
+	    # AIX 4.1 and earlier don't have/have unreliable
+	    # handling of dlopen et al.
+	    #
+	    # Even AIX 4.2.1 has buggy dlopen -- NEVER attempt
+	    # to dlopen a file that hasn't been linked with -G.
+	    pike_cv_sys_dynamic_loading=no
+	    LDSHARED="ld"
+	  fi
+        fi
       fi
     ;;
     IRIX*)
