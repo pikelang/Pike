@@ -1,4 +1,4 @@
-AC_REVISION("$Id: configure.in,v 1.697 2003/02/22 13:27:40 grubba Exp $")
+AC_REVISION("$Id: configure.in,v 1.698 2003/02/22 14:49:34 grubba Exp $")
 AC_INIT(interpret.c)
 AC_CONFIG_HEADER(machine.h)
 
@@ -843,7 +843,8 @@ fi #if test "x$enable_binary" != "xno"
 # Restore the -O2 that the default AC_PROG_CC adds.
 
 AC_SYS_COMPILER_FLAG(+O3,plus_O3,OPTIMIZE, [
-  if test "x`uname -p`" = "xia64"; then
+  if test "x`uname -p`" = "xia64" -o \
+          "x`uname -m`" = "xia64"; then
     # We don't trust -O3 on ia64.
     AC_MSG_WARN([Disabling use of -O3 since the architecture is IA64.])
     pike_cv_option_O3=no;
