@@ -1,4 +1,4 @@
-# $Id: configure.in,v 1.14 1996/11/16 05:17:08 hubbe Exp $
+# $Id: configure.in,v 1.15 1996/11/17 01:57:16 hubbe Exp $
 
 AC_INIT(interpret.c)
 
@@ -6,6 +6,18 @@ if test "x${CFLAGS-}" = x ; then
   cflags_is_set=no
 else
   cflags_is_set=yes
+fi
+
+if test "x${CPPFLAGS-}" = x ; then
+  cppflags_is_set=no
+else
+  cppflags_is_set=yes
+fi
+
+if test "x${LDFLAGS-}" = x ; then
+  ldflags_is_set=no
+else
+  ldflags_is_set=yes
 fi
 
 AC_PROG_CC
@@ -123,6 +135,22 @@ else
     CC="$CC -Aa -D_HPUX_SOURCE +Olibcalls"
     AC_TRY_LINK([int foo(int bar);],[ exit(0); ],[],[CC="$OLD_CC"])
   fi
+fi
+
+#
+# If no cppflags or ldflags where given we try to guess some..
+#
+if test $cppflags_is_set$ldflags_is_set = nono ; then
+  for d in /usr/gnu /opt/gnu /usr/local
+  do
+    if test -d $d/lib ; then
+      LDFLAGS="${LDFLAGS} -L$d/lib"
+    fi
+
+    if test -d $d/include ; then
+      CPPFLAGS="${CPPFLAGS} -I$d/include"
+    fi
+  done
 fi
 
 #############################################################################
