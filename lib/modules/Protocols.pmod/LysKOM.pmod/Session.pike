@@ -1,6 +1,6 @@
 #pike __REAL_VERSION__
 
-//  $Id: Session.pike,v 1.28 2002/01/15 18:51:33 bash-peter Exp $
+//  $Id: Session.pike,v 1.29 2002/01/16 01:47:25 nilsson Exp $
 
 import ".";
 
@@ -522,38 +522,19 @@ class AuxItems
   mixed `->(string what) { return `[](what); }
 }
 
-//! @decl prefetch_text
-//! @decl prefetch_stat
-//! @decl error
-//! @decl lines
-//! @decl characters
-//! @decl clear_stat
-//! @decl aux_items
-//! @decl mark_as_read
-//!   @fixme Undocumented.
-//! @decl int no
-//!   The text number, as spicified to @[create].
-//! @decl string text
-//!   The actual text (or body if you wish).
-//! @decl string subject
-//!   The message subject.
-//! @decl string author
-//!   The author of the text.
-//! @decl misc
-//!   Misc info, including what conferences the message is posted to.
-//!   @fixme Needs a more complete description.
-//! @decl int marks
-//!   The number of marks on this text.
-//! @decl creation_time
-//!   The time the text was created on the server.
+//! @fixme
+//!   Undocumented
 class Text
 {
-   int no;
 
-   MiscInfo _misc;
+  //! The text number, as spicified to @[create].
+  int no;
+
+  MiscInfo _misc;
   AuxItems _aux_items;
 
-   object err;
+  //! Undocumented
+  object err;
 
    object _author;
 
@@ -578,6 +559,8 @@ class Text
       _misc=m;
    }
 
+  //! @fixme
+  //!   Undocumented.
   void mark_as_read()
   {
     waitfor_stat();
@@ -594,6 +577,35 @@ class Text
   {
     return sprintf("Text(%d)", no);
   }
+
+  //! @decl mixed prefetch_text
+  //! @decl mixed prefetch_stat
+  //! @decl mixed lines
+  //! @decl mixed characters
+  //! @decl mixed clear_stat
+  //! @decl mixed aux_items
+  //! @fixme
+  //!   Undocumented
+
+  //! @decl string text
+  //!   The actual text (or body if you wish).
+
+  //! @decl string subject
+  //!   The message subject.
+
+  //! @decl string author
+  //!   The author of the text.
+
+  //! @decl mixed misc
+  //!   Misc info, including what conferences the message is posted to.
+  //! @fixme
+  //!   Needs a more complete description.
+
+  //! @decl int marks
+  //!   The number of marks on this text.
+
+  //! @decl mixed creation_time
+  //!   The time the text was created on the server.
 
    mixed `[](string what)
    {
