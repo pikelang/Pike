@@ -299,7 +299,13 @@ class client
 
 #if __NT__
       domain=get_tcpip_param("Domain");
+      if(!domain || !sizeof(domain))
+        domain=get_tcpip_param("DhcpDomain");
+
       nameservers = get_tcpip_param("NameServer") / " ";
+      nameservers+= get_tcpip_param("DhcpNameServer") / " ";
+      nameservers -= ({""});
+
       domains=get_tcpip_param("SearchList") / " "- ({""});
 #else
       string resolv_conf;
