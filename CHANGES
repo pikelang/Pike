@@ -17,6 +17,30 @@ o Fixed bug in Stdio.Port.accept that could case it to fail if a
 o Fixed bug in System.get_netinfo_property that could cause it to
   fail.
 o Robustness fixes in the backend.
+o Bugfix to prevent errors during backtraces due to destructed
+  objects.
+o SSL.sslfile bugfixed so that it doesn't do anything after calling a
+  callback, since the file might be used in non-callback mode in
+  another thread by then. This still doesn't fix the case when the
+  read callback is called after the accept callback (this is however
+  fixed in the development version of Pike). Also nothing is done
+  after the file has been set to nonblocking mode, since the backend
+  might already be using it by then, if it's in another thread.
+o SSL.sslfile bugfixed to not call the write callback while still in
+  handshake.
+o Fixed a race in SSL.sslfile that could occur in set_nonblocking when
+  it was called from another thread than the backend thread.
+o Fixed several bugs in SSL.sslfile where I/O errors or close calls
+  from within callbacks caused it to try to use a closed socket.
+o Mac OS X support in Stdio.Terminfo.
+o Web.Crawler no longer tries to fetch /robots.txt over protocols it
+  doesn't recognize.
+o `| on arrays now preserves the order of the left argument for common
+  elements.
+o Image.lay now ignore zero sized layers.
+o Bugfixed Image.PNG grey scale decoding.
+o _Roxen.http_decode_string now handles %u encoded characters.
+o Fixed crash in GL.glGetString.
 o The normal bunch of unspecified core fixes for rare problems
   discovered since the last release.
 
