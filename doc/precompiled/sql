@@ -25,39 +25,28 @@ SYNTAX
 
 	object(Sql) Sql();
 	or
-	object(Sql) Sql(string|program kind);
+	object(Sql) Sql(object obj);
 	or
-	object(Sql) Sql(object kind);
+	object(Sql) Sql(object obj, string database);
 	or
-	object(Sql) Sql(object kind, int zero, string database);
+	object(Sql) Sql(string hostname);
 	or
-	object(Sql) Sql(string|program kind, string hostname);
+	object(Sql) Sql(string hostname, string database);
 	or
-	object(Sql) Sql(string|program kind, string hostname,
-	                string database);
+	object(Sql) Sql(string hostname, string database, string user);
 	or
-	object(Sql) Sql(string|program kind, string hostname,
-	                string database, string user);
-	or
-	object(Sql) Sql(string|program kind, string hostname,
-			string database, string user, string password);
+	object(Sql) Sql(string hostname,string database,
+	                string user, string password);
 
 DESCRIPTION
 	To access a database, you must first connect to it. This is
 	done with the function Sql().
+	
+	If the first argument is an object, access to the SQL-database will
+	go through that object.
 
-	If kind is not specified, or is "" or 0 (zero), all currently
-	available programs named /precompiled/sql/* will be tried in
-	turn to get a successfull connection.
-
-	If kind is an object, that object will be used to access the SQL-
-	database.
-
-	If kind is a string, a program with that name will be searched for.
-	If one was found it will be used to connect to the SQL-database.
-
-	If kind is a program, that program will be used to connect to the
-	SQL-database.
+	Otherwise all currently available programs named /precompiled/sql/*
+	will be tried in turn to get a successfull connection.
 
 	If hostname is "" or 0 (zero) access to the SQL-database will be
 	done through a UNIX-domain socket. Otherwise communication will
@@ -71,12 +60,20 @@ EXAMPLE
 	/* Connect to the database "test" and dump the table "db" */
 
 	#include <sql.h>
+	#include <mysql.h>
 
 	int main()
 	{
-	  object(Sql) sql = Sql("", "test");
+	  /* First: Do it with the first available SQL-server */
 
-	  write(sprintf("%O\n", sql->query("select * from db")));
+	  object(Sql) sql = Sql(0, "test");
+
+	  write(sprintf("Sql: %O\n", sql->query("select * from db")));
+
+	  /* Second: Use the Mysql-server */
+	  sql = Sql(Mysql(), "test");
+
+	  write(sprintf("Mysql: %O\n", sql->query("select * from db")));
 	}
 
 SEE ALSO
@@ -308,19 +305,27 @@ NAME
 SYNTAX
 	#include <sql.h>
 
-	array(mapping(string:string)) list_fields(string table);
+	array(mapping(string:mixed)) list_fields(string table);
 	or
-	array(mapping(string:string)) list_fields(string table, string wild);
+	array(mapping(string:mixed)) list_fields(string table, string wild);
 
 DESCRIPTION
-	Returns an array with mappings containing the names of the fields
+	Returns an array of mappings containing data about the fields
 	in the specified table.
 
-	If wild is specified, only those matching it are returned.
+	If wild is specified, only those fields matching it are returned.
+
+	The mappings contain at least the following entries:
+
+	 "name":	string	The name of the field.
+	 "table":	string	The name of the table.
+	 "default":	mixed	The default value for the field.
+	 "type":	string	The type of the field.
 
 NOTA BENE
 	Might be better to return just an array(string), and skip the
 	mapping part.
 
 SEE ALSO
-	sql->list_dbs, sql->list_tables
+	sql->list_dbs, sql->list_tables,
+	sql_result->fetch_fields
