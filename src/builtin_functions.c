@@ -5,7 +5,7 @@
 \*/
 /**/
 #include "global.h"
-RCSID("$Id: builtin_functions.c,v 1.379 2001/06/19 22:48:14 per Exp $");
+RCSID("$Id: builtin_functions.c,v 1.380 2001/06/21 12:27:59 grubba Exp $");
 #include "interpret.h"
 #include "svalue.h"
 #include "pike_macros.h"
@@ -221,9 +221,9 @@ PMOD_EXPORT void f_copy_value(INT32 args)
 }
 
 struct case_info {
-  int low;	/* low end of range. */
-  int mode;
-  int data;
+  INT32 low;	/* low end of range. */
+  INT32 mode;
+  INT32 data;
 };
 
 #define CIM_NONE	0	/* Case-less */
@@ -238,18 +238,20 @@ static const struct case_info case_info[] = {
 #else /* !IN_TPIKE */
 #include "case_info.h"
 #endif /* IN_TPIKE */
-  { 0x10000, CIM_NONE, 0x0000, },	/* End sentinel. */
+  { 0x7fffffff, CIM_NONE, 0x0000, },	/* End sentinel. */
 };
 
-static struct case_info *find_ci(int c)
+static struct case_info *find_ci(INT32 c)
 {
   static struct case_info *cache = NULL;
   struct case_info *ci = cache;
   int lo = 0;
   int hi = NELEM(case_info);
 
-  if ((c < 0) || (c > 0xffff))
+  if ((c < 0) || (c > 0xeffff)) {
+    /* Negative, or plane 15 and above. */
     return NULL;
+  }
 
   if ((ci) && (ci[0].low <= c) && (ci[1].low > c)) {
     return ci; 
@@ -269,15 +271,17 @@ static struct case_info *find_ci(int c)
   return(cache = (struct case_info *)case_info + lo);
 }
 
-static struct case_info *find_ci_shift0(int c)
+static struct case_info *find_ci_shift0(INT32 c)
 {
   static struct case_info *cache = NULL;
   struct case_info *ci = cache;
   int lo = 0;
   int hi = CASE_INFO_SHIFT0_HIGH;
 
-  if ((c < 0) || (c > 0xffff))
+  if ((c < 0) || (c > 0xefffff)) {
+    /* Negative, or plane 15 and above. */
     return NULL;
+  }
 
   if ((ci) && (ci[0].low <= c) && (ci[1].low > c)) {
     return ci; 
@@ -298,7 +302,7 @@ static struct case_info *find_ci_shift0(int c)
 }
 
 #define DO_LOWER_CASE(C) do {\
-    int c = C; \
+    INT32 c = C; \
     struct case_info *ci = find_ci(c); \
     if (ci) { \
       switch(ci->mode) { \
@@ -312,7 +316,7 @@ static struct case_info *find_ci_shift0(int c)
   } while(0)
 
 #define DO_LOWER_CASE_SHIFT0(C) do {\
-    int c = C; \
+    INT32 c = C; \
     struct case_info *ci = find_ci_shift0(c); \
     if (ci) { \
       switch(ci->mode) { \
@@ -326,7 +330,7 @@ static struct case_info *find_ci_shift0(int c)
   } while(0)
 
 #define DO_UPPER_CASE(C) do {\
-    int c = C; \
+    INT32 c = C; \
     struct case_info *ci = find_ci(c); \
     if (ci) { \
       switch(ci->mode) { \
@@ -340,7 +344,7 @@ static struct case_info *find_ci_shift0(int c)
   } while(0)
 
 #define DO_UPPER_CASE_SHIFT0(C) do {\
-    int c = C; \
+    INT32 c = C; \
     struct case_info *ci = find_ci_shift0(c); \
     if (ci) { \
       switch(ci->mode) { \
