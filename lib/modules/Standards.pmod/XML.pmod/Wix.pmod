@@ -1,4 +1,4 @@
-// $Id: Wix.pmod,v 1.7 2004/11/03 13:25:30 grubba Exp $
+// $Id: Wix.pmod,v 1.8 2004/11/04 14:51:32 grubba Exp $
 //
 // 2004-11-01 Henrik Grubbström
 
@@ -150,18 +150,23 @@ class Directory
     }
     if ((sizeof(base) > 8) || truncated) {
       int cnt;
-      for (cnt = 0; cnt < 100; cnt++) {
+      for (cnt = 0; cnt < 1000; cnt++) {
 	if (cnt < 10) {
 	  if (!short_names[base = sprintf("%.6s~%.1d", base, cnt)]) {
 	    short_names[base] = 1;
 	    break;
 	  }
-	} else if (!short_names[base = sprintf("%.5s~%.2d", base, cnt)]) {
+	} else if (cnt < 100) {
+	  if (!short_names[base = sprintf("%.5s~%.2d", base, cnt)]) {
+	    short_names[base] = 1;
+	    break;
+	  }
+	} else if (!short_names[base = sprintf("%.4s~%.3d", base, cnt)]) {
 	  short_names[base] = 1;
 	  break;
 	}
       }
-      if (cnt > 99) error("Too many like-named files: %O\n", long_name);
+      if (cnt > 999) error("Too many like-named files: %O\n", long_name);
       //werror("gen_8dot3: %O ==> %O.%O\n", long_name, base, extension);
     }
     if (extension) return sprintf("%s.%s", base, extension);
@@ -301,6 +306,7 @@ class Directory
   {
     foreach(sub_dirs; string dname; Directory d) {
       d->set_sources();
+      // FIXME: What about "."?
       if (d->source &&
 	  has_suffix(d->source, "/" + dname)) {
 	string sub_src = combine_path(d->source, "..");
@@ -368,6 +374,8 @@ class Directory
   }
 }
 
+//! @note
+//!   Modifies @[dir] if it contains files at the root level.
 WixNode get_module_xml(Directory dir, string id, string version,
 		       string|void manufacturer, string|void description,
 		       string|void guid, string|void comments)
@@ -386,6 +394,20 @@ WixNode get_module_xml(Directory dir, string id, string version,
   }
   if (comments) {
     package_attrs->Comments = comments;
+  }
+  if (sizeof(dir->files)) {
+    // Due to bugs in (probably) mergemod.dll or light,
+    // it's not a good idea to have files directly in the
+    // top directory of a module. So we wrap them in an
+    // extra directory level.
+    //	/grubba 2004-11-04
+    Directory d = dir->sub_dirs["."] ||
+      (dir->sub_dirs["."] = Directory(".", dir->guid->encode(), 0, "."));
+    d->short_names = dir->short_names;
+    d->files += dir->files;
+    dir->files = ([]);
+
+    // FIXME: What about sub_sources and other_entries?
   }
   return Parser.XML.Tree.SimpleRootNode()->
     add_child(Parser.XML.Tree.SimpleHeaderNode((["version":"1.0",
