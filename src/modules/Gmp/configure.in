@@ -1,4 +1,4 @@
-# $Id: configure.in,v 1.14 2000/08/01 21:37:47 grubba Exp $
+# $Id: configure.in,v 1.15 2000/08/01 23:02:18 grubba Exp $
 AC_INIT(mpz_glue.c)
 AC_CONFIG_HEADER(gmp_machine.h)
 AC_ARG_WITH(gmp,     [  --with(out)-gmp        Support bignums],[],[with_gmp=yes])
@@ -8,10 +8,7 @@ AC_MODULE_INIT()
 
 # Check if we're cross-compiling.
 
-CROSS=""
-if test "$ac_cv_prog_cc_cross" = "yes"; then
-  CROSS=".pike"
-else :; fi
+CROSS="$ac_cv_prog_cc_cross"
 AC_SUBST(CROSS)
 
 #############################################################################
