@@ -41,36 +41,41 @@ struct  header_buf
   char headers[8192];
   char *pnt;
   ptrdiff_t left;
+  int slash_n, spc;
 };
 
 static void f_hp_feed( INT32 args )
 {
   struct pike_string *str = Pike_sp[-1].u.string;
-  int tot_slash_n=0, slash_n = 0, spc = 0, cnt, num;
+  struct header_buf *hp = THP;
+  int tot_slash_n=hp->slash_n, slash_n = 0, spc = hp->spc, cnt, num;
   char *pp,*ep;
   struct svalue *tmp;
   struct mapping *headers;
   ptrdiff_t os=0, i, j, l;
   unsigned char *in;
-
+  
   if( Pike_sp[-1].type != PIKE_T_STRING )
     Pike_error("Wrong type of argument to feed()\n");
 
-  if( str->len >= THP->left )
+  if( str->len >= hp->left )
     Pike_error("Too many headers\n");
 
-  MEMCPY( THP->pnt, str->str, str->len );
+  MEMCPY( hp->pnt, str->str, str->len );
   pop_n_elems( args );
 
-  for( ep=(THP->pnt+str->len),pp=MAXIMUM(THP->headers,THP->pnt-3); 
+  for( ep=(hp->pnt+str->len),pp=MAXIMUM(hp->headers,hp->pnt-3); 
        pp<ep && slash_n<2; pp++ )
     if( *pp == ' ' )  spc++;
     else if( *pp == '\n' ) slash_n++, tot_slash_n++;
     else if( *pp != '\r' ) slash_n=0;
 
-  THP->left -= str->len;
-  THP->pnt += str->len;
-  THP->pnt[0] = 0;
+  hp->slash_n = tot_slash_n;
+  hp->spc = spc;
+  
+  hp->left -= str->len;
+  hp->pnt += str->len;
+  hp->pnt[0] = 0;
 
   if( slash_n != 2 )
   {
@@ -81,7 +86,7 @@ static void f_hp_feed( INT32 args )
     {
       push_text( "" );
       /* This includes (all eventual) \r\n etc. */
-      push_text( THP->headers ); 
+      push_text( hp->headers ); 
       f_aggregate_mapping( 0 );
       f_aggregate( 3 );
       return;
@@ -90,10 +95,10 @@ static void f_hp_feed( INT32 args )
     return;
   }
 
-  push_string( make_shared_binary_string( pp, THP->pnt - pp ) ); /*leftovers*/
+  push_string( make_shared_binary_string( pp, hp->pnt - pp ) ); /*leftovers*/
   headers = allocate_mapping( 5 );
-  in = THP->headers;
-  l = pp - THP->headers;
+  in = hp->headers;
+  l = pp - hp->headers;
 
   /* find first line here */
   for( i = 0; i < l; i++ )
@@ -154,6 +159,9 @@ static void f_hp_create( INT32 args )
 {
   THP->pnt = THP->headers;
   THP->left = 8192;
+  THP->spc = THP->slash_n = 0;
+  pop_n_elems(args);
+  push_int(0);
 }
 /**** END CLASS HeaderParser */
 
@@ -274,7 +282,7 @@ void pike_module_init()
   start_new_program();
   ADD_STORAGE( struct header_buf  );
   pike_add_function( "feed", f_hp_feed, "function(string:array(string|mapping))",0 );
-  pike_add_function( "create", f_hp_create, "function(void:void)", 0 );
+  pike_add_function( "create", f_hp_create, "function(:void)", ID_STATIC );
   end_class( "HeaderParser", 0 );
 }
 
