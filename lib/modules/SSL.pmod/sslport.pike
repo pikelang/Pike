@@ -55,7 +55,7 @@ object socket_accept()
   return socket::accept();
 }
 
-int accept()
+object accept()
 {
   return accept_queue::get();
 }
