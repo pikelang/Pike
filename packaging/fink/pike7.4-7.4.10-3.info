@@ -54,7 +54,7 @@ PostInstScript: <<
 update-alternatives --install %p/bin/pike pike %p/bin/pike74 40
 <<
 PreRmScript: <<
-if [ $i != "upgrade" ]; then
+if [ $1 != "upgrade" ]; then
   update-alternatives --remove pike %p/bin/pike74
 fi
 <<
