@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: builtin.cmod,v 1.171 2004/09/28 16:58:23 grubba Exp $
+|| $Id: builtin.cmod,v 1.172 2004/10/28 12:51:53 grubba Exp $
 */
 
 #include "global.h"
@@ -3192,6 +3192,51 @@ PIKECLASS List
     flags ID_STATIC;
   {
     push_int(THIS->num_elems);
+  }
+
+  /*! @decl string _sprintf(int c, mapping(string:mixed)|void attr)
+   *!
+   *!   Describe the list.
+   *!
+   *! @seealso
+   *!   @[sprintf()], @[lfun::_sprintf()]
+   */
+  PIKEFUN string _sprintf(int c, mapping(string:mixed)|void attr)
+    flags ID_STATIC;
+  {
+    if (!THIS->num_elems) {
+      push_constant_text("ADT.List(/* empty */)");
+    } else if (c == 'O') {
+      struct list_node *node = THIS->head;
+      if (THIS->num_elems == 1) {
+	push_constant_text("ADT.List(/* 1 element */\n");
+      } else {
+	push_constant_text("ADT.List(/* %d elements */\n");
+	push_int(THIS->num_elems);
+	f_sprintf(2);
+      }
+      while (node->next) {
+	if (node->next->next) {
+	  push_constant_text("    %O,\n");
+	} else {
+	  push_constant_text("    %O\n");
+	}
+	push_svalue(&node->val);
+	f_sprintf(2);
+	node = node->next;
+      }
+      push_constant_text(")");
+      f_add(THIS->num_elems + 2);
+    } else {
+      if (THIS->num_elems == 1) {
+	push_constant_text("ADT.List(/* 1 element */)");
+      } else {
+	push_constant_text("ADT.List(/* %d elements */)");
+	push_int(THIS->num_elems);
+	f_sprintf(2);
+      }
+    }
+    stack_pop_n_elems_keep_top(args);
   }
 
   /*! @decl mixed head()
