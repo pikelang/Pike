@@ -168,10 +168,14 @@ string nicebox(array rows) {
 #endif
 
   foreach(rows, array row) {
-    if(sizeof(row)==1)
-      foreach(row[0], string elem)
-	ret += "<tr><td><tt>" + elem + "</tt></td>" +
-	  (dim==2?"<td>&nbsp;</td>":"") + "</tr>\n";
+    if(sizeof(row)==1) {
+      if(stringp(row[0]))
+	ret += "<tr><td colspan='" + dim + "'>" + row[0] + "</td></tr>\n";
+      else
+	foreach(row[0], string elem)
+	  ret += "<tr><td><tt>" + elem + "</tt></td>" +
+	    (dim==2?"<td>&nbsp;</td>":"") + "</tr>\n";
+    }
     else if(sizeof(row[0])==1)
       ret += "<tr valign='top'><td><tt>" + row[0][0] +
 	"</tt></td><td>" + row[1] + "</td></tr>\n";
@@ -186,8 +190,9 @@ string nicebox(array rows) {
   return ret + "</table></td></tr></table>";
 }
 
-string build_box(Node n, string first, string second, function layout) {
+string build_box(Node n, string first, string second, function layout, void|string header) {
   array rows = ({});
+  if(header) rows += ({ ({ header }) });
   foreach(get_tags(n, first), Node d) {
     array elems = ({});
     foreach(get_tags(d, second), Node e)
@@ -274,7 +279,7 @@ string parse_text(Node n) {
 		       lambda(Node n) {
 			 return parse_type(get_first_element(get_tag(n, "type"))) +
 			   " <font color='green'>" + parse_text(get_tag(n, "index")) +
-			   "</font>"; } );
+			   "</font>"; }, "Array" );
       break;
 
     case "int":
@@ -529,10 +534,13 @@ string parse_type(Node n, void|string debug) {
     break;
 
   case "static": // Not in XSLT
-    ret += "static";
+    ret += "static ";
     break;
   case "optional": // Not in XSLT
-    ret += "optional";
+    ret += "optional ";
+    break;
+  case "local": // Not in XSLT
+    ret += "local ";
     break;
 
   default:
