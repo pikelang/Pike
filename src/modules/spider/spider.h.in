@@ -3,6 +3,8 @@
 #undef HAVE_FCHROOT
 #undef HAVE_GETEGID
 #undef HAVE_GETEUID
+#undef HAVE_SETEUID
+#undef HAVE_SETEUID
 #undef HAVE_GETGID
 #undef HAVE_GETGID
 #undef HAVE_GETPGRP

@@ -27,7 +27,6 @@
 #include "array.h"
 #include "builtin_efuns.h"
 
-#include <pwd.h>
 
 #include "spider.h"
 #include "conf.h"
@@ -576,87 +575,53 @@ void f_localtime(INT32 args)
 
 void f_do_setuid(INT32 args)
 {
-  struct passwd *pw;
-  int id;
   if(!args)
     error("Set uid to what?\n");
 
   if(sp[-1].type != T_INT)
     error("Set uid to _what_?\n");
 
-  if(sp[-1].u.integer == -1)
-  {
-    pw = getpwnam("nobody");
-    id = pw->pw_uid;
-  } else
-    id = sp[-1].u.integer;
-
-  setuid(id);
+  setuid(sp[-1].u.integer);
   pop_n_elems(args-1);
 }
 
 void f_do_setgid(INT32 args)
 {
-  struct passwd *pw;
-  int id;
   if(!args)
     error("Set gid to what?\n");
 
   if(sp[-1].type != T_INT)
     error("Set gid to _what_?\n");
 
-  if(sp[-1].u.integer == -1)
-  {
-    pw = getpwnam("nobody");
-    id = pw->pw_gid;
-  } else
-    id = sp[-1].u.integer;
-  
-  setgid(id);
+  setgid(sp[-1].u.integer);
   pop_n_elems(args-1);
 }
-
+#ifdef HAVE_SETEUID
 void f_do_seteuid(INT32 args)
 {
-  struct passwd *pw;
-  int id;
   if(!args)
     error("Set uid to what?\n");
 
   if(sp[-1].type != T_INT)
     error("Set uid to _what_?\n");
 
-  if(sp[-1].u.integer == -1)
-  {
-    pw = getpwnam("nobody");
-    id = pw->pw_uid;
-  } else
-    id = sp[-1].u.integer;
-
-  seteuid(id);
+  seteuid(sp[-1].u.integer);
   pop_n_elems(args-1);
 }
-
+#endif
+#ifdef HAVE_SETEGID
 void f_do_setegid(INT32 args)
 {
-  struct passwd *pw;
-  int id;
   if(!args)
     error("Set gid to what?\n");
 
   if(sp[-1].type != T_INT)
     error("Set gid to _what_?\n");
-  if(sp[-1].u.integer == -1)
-  {
-    pw = getpwnam("nobody");
-    id = pw->pw_gid;
-  } else
-    id = sp[-1].u.integer;
 
-  setegid(id);
+  setegid(sp[-1].u.integer);
   pop_n_elems(args-1);
 }
-
+#endif
 
 void f_timezone(INT32 args)
 {
@@ -1074,8 +1039,12 @@ void init_spider_efuns(void)
 
   add_efun("setuid", f_do_setuid, "function(int:void)", 0);
   add_efun("setgid", f_do_setgid, "function(int:void)", 0);
+#ifdef HAVE_SETEUID
   add_efun("seteuid", f_do_seteuid, "function(int:void)", 0);
+#endif
+#ifdef HAVE_SETEGID
   add_efun("setegid", f_do_setegid, "function(int:void)", 0);
+#endif
   add_efun("timezone",f_timezone,"function(:int)",0);
   add_efun("get_all_active_fd",f_get_all_active_fd,"function(:array(int))",0);
   add_efun("fd_info",f_fd_info,"function(int:string)",0);
