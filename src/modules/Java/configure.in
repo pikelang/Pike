@@ -43,8 +43,10 @@ if test "x$with_java" = xyes; then
   AC_CACHE_VAL(pike_cv_java_arch, [
     if test "x$pike_cv_java_sysos" = xwindows_nt; then
       uname=uname
-    else
+    elif test -f "/usr/bin/uname"; then
       uname=/usr/bin/uname
+    else
+      uname=/bin/uname
     fi
     if test aix = "$pike_cv_java_sysos" && aix_cputype=`/usr/sbin/lsattr -El proc0 | awk '$1=="type" { print $2; ok=1; exit } END { exit !ok }'`; then
       case "$aix_cputype" in
@@ -53,7 +55,8 @@ if test "x$with_java" = xyes; then
 	*) pike_cv_java_arch="`echo $aix_cputype | tr 'ABCDEFGHIJKLMNOPQRSTUVWXYZ' 'abcdefghijklmnopqrstuvwxyz'`";;
       esac
     else
-      if pike_cv_java_arch="`$uname -p || uname -p`"; then :; else pike_cv_java_arch=no; fi
+      if pike_cv_java_arch="`$uname -p || uname -p 2>/dev/null`"; then :;
+      else pike_cv_java_arch=no; fi
     fi
 
     dnl Linux kluge
