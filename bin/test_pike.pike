@@ -1,12 +1,14 @@
 #!/usr/local/bin/pike
 
-/* $Id: test_pike.pike,v 1.16 1999/02/20 20:22:30 grubba Exp $ */
+/* $Id: test_pike.pike,v 1.17 1999/02/20 21:27:50 grubba Exp $ */
 
 #include <simulate.h>
 
 #if !efun(_verify_internals)
 #define _verify_internals()
 #endif
+
+#define SHIFT_MAX 0 /* 3 */
 
 int foo(string opt)
 {
@@ -167,15 +169,22 @@ int main(int argc, string *argv)
 	  if(verbose>1)
 	    werror(test+"\n");
 	}
-	
+
+	for(int shift=0;shift <= SHIFT_MAX;shift++) {
+
 	if(check > 1) _verify_internals();
 	
-	string fname = argv[f] + ": Test " + (e + 1);
+	string fname = argv[f] + ": Test " + (e + 1) +
+	  " (shift " + shift + ")";
+
+	string widener = ([ 0:"",
+			    1:"\nint \x30c6\x30b9\x30c8=0;\n",
+			    2:"\nint \x10001=0;\n" ])[shift];
 
 	switch(type)
 	{
 	  case "COMPILE":
-	    if(catch(compile_string(test, fname)))
+	    if(catch(compile_string(test + widener, fname)))
 	    {
 	      werror(fname + " failed.\n");
 	      werror(test+"\n");
@@ -187,7 +196,7 @@ int main(int argc, string *argv)
 	    
 	  case "COMPILE_ERROR":
 	    master()->set_inhibit_compile_errors(1);
-	    if(catch(compile_string(test, fname)))
+	    if(catch(compile_string(test + widener, fname)))
 	    {
 	      successes++;
 	    }else{
@@ -200,7 +209,7 @@ int main(int argc, string *argv)
 	    
 	  case "EVAL_ERROR":
 	    master()->set_inhibit_compile_errors(1);
-	    if(catch(clone(compile_string(test, fname))->a()))
+	    if(catch(clone(compile_string(test + widener, fname))->a()))
 	    {
 	      successes++;
 	    }else{
@@ -212,7 +221,7 @@ int main(int argc, string *argv)
 	    break;
 	    
 	  default:
-	    o=clone(compile_string(test,fname));
+	    o=clone(compile_string(test + widener,fname));
 	    
 	    if(check > 1) _verify_internals();
 	    
@@ -290,6 +299,8 @@ int main(int argc, string *argv)
 	
 	if(fail && errors)
 	  exit(1);
+
+	}
 
 	if(!--end) exit(0);
 	
