@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: x.c,v 1.40 2002/10/21 17:06:15 marcus Exp $
+|| $Id: x.c,v 1.41 2003/04/30 15:56:53 grubba Exp $
 */
 
 /*
@@ -28,11 +28,13 @@
 #ifdef HAVE_NETINET_IN_H
 #include <netinet/in.h>
 #endif
-#ifdef HAVE_WINSOCK_H
+#ifdef HAVE_WINSOCK2_H
+#include <winsock2.h>
+#elif defined(HAVE_WINSOCK_H)
 #include <winsock.h>
 #endif
 
-RCSID("$Id: x.c,v 1.40 2002/10/21 17:06:15 marcus Exp $");
+RCSID("$Id: x.c,v 1.41 2003/04/30 15:56:53 grubba Exp $");
 #include "pike_macros.h"
 #include "object.h"
 #include "constants.h"

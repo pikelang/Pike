@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: font.c,v 1.79 2003/03/27 18:25:08 mast Exp $
+|| $Id: font.c,v 1.80 2003/04/30 15:56:53 grubba Exp $
 */
 
 #include "global.h"
@@ -110,7 +110,9 @@ extern const unsigned char image_default_font[];
 #include <netinet/in.h>
 #endif
 
-#ifdef HAVE_WINSOCK_H
+#ifdef HAVE_WINSOCK2_H
+#include <winsock2.h>
+#elif defined(HAVE_WINSOCK_H)
 #include <winsock.h>
 #endif
 

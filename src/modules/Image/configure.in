@@ -1,4 +1,4 @@
-# $Id: configure.in,v 1.25 2003/03/10 23:35:42 kiwi Exp $
+# $Id: configure.in,v 1.26 2003/04/30 15:56:53 grubba Exp $
 AC_INIT(image.c)
 AC_CONFIG_HEADER(image_machine.h)
 
@@ -10,7 +10,7 @@ PIKE_FEATURE_OK(Image)
 
 AC_FUNC_MMAP
 
-AC_CHECK_HEADERS(math.h sys/fcntl.h fcntl.h stdlib.h netinet/in.h winsock.h)
+AC_CHECK_HEADERS(math.h sys/fcntl.h fcntl.h stdlib.h netinet/in.h winsock.h winsock2.h)
 
 AC_CHECK_LIB(m, abs, [], [])
 
