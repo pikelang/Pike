@@ -5,7 +5,7 @@
 \*/
 /**/
 #include "global.h"
-RCSID("$Id: program.c,v 1.349 2001/07/08 21:00:53 grubba Exp $");
+RCSID("$Id: program.c,v 1.350 2001/07/09 11:37:19 grubba Exp $");
 #include "program.h"
 #include "object.h"
 #include "dynamic_buffer.h"
@@ -3976,7 +3976,7 @@ PMOD_EXPORT char *get_program_line(struct program *prog, INT32 *linep)
  * program, and line will be initialized to the line
  * in that file.
  */
-PMOD_EXPORT char *get_line(unsigned char *pc,struct program *prog,INT32 *linep)
+PMOD_EXPORT char *get_line(PIKE_OPCODE_T *pc,struct program *prog,INT32 *linep)
 {
   static char *file, *cnt;
   static INT32 off,line,pid;

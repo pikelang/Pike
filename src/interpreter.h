@@ -1,4 +1,7 @@
 
+#undef LOW_GET_ARG
+#undef LOW_GET_JUMP
+#undef LOW_SKIPJUMP
 #undef GET_ARG
 #undef GET_ARG2
 #undef GET_JUMP
@@ -22,9 +25,12 @@
     
 #endif /* PIKE_DEBUG */
 
-#define LOW_GET_ARG()	((INT32)*(pc++))
-#define LOW_GET_JUMP()	((INT32)*(pc))
+#define LOW_GET_ARG()	((INT32)(ptrdiff_t)(*(pc++)))
+#define LOW_GET_JUMP()	((INT32)(ptrdiff_t)(*(pc)))
 #define LOW_SKIPJUMP()	(pc++)
+
+#define GET_ARG()	LOW_GET_ARG()
+#define GET_ARG2()	LOW_GET_ARG()
 
 #else /* !HAVE_COMPUTED_GOTO */
 
@@ -33,9 +39,7 @@
 
 #define LOW_GET_ARG()	((pc++)[0])
 #define LOW_GET_JUMP()	EXTRACT_INT(pc)
-#define LOW_SKIP_JUMP()	(pc += sizeof(INT32))
-
-#endif /* HAVE_COMPUTED_GOTO */
+#define LOW_SKIPJUMP()	(pc += sizeof(INT32))
 
 #ifdef PIKE_DEBUG
 
@@ -57,21 +61,29 @@
               write_to_stderr(trace_buffer,strlen(trace_buffer)) : 0),\
   instr))
 
+#else /* !PIKE_DEBUG */
+
+#define GET_ARG() (instr=prefix,prefix=0,instr+LOW_GET_ARG())
+#define GET_ARG2() (instr=prefix2,prefix2=0,instr+LOW_GET_ARG())
+
+#endif /* PIKE_DEBUG */
+
+#endif /* HAVE_COMPUTED_GOTO */
+
+#ifdef PIKE_DEBUG
+
 #define GET_JUMP() (backlog[backlogp].arg=(\
   (t_flag>3 ? sprintf(trace_buffer, "-    Target = %+ld\n", \
                       (long)LOW_GET_JUMP()), \
               write_to_stderr(trace_buffer,strlen(trace_buffer)) : 0), \
   LOW_GET_JUMP()))
 
-#define SKIPJUMP() (GET_JUMP(), LOW_SKIP_JUMP())
+#define SKIPJUMP() (GET_JUMP(), LOW_SKIPJUMP())
 
 #else /* !PIKE_DEBUG */
 
-#define GET_ARG() (instr=prefix,prefix=0,instr+LOW_GET_ARG())
-#define GET_ARG2() (instr=prefix2,prefix2=0,instr+LOW_GET_ARG())
-
 #define GET_JUMP() LOW_GET_JUMP()
-#define SKIPJUMP() LOW_SKIP_JUMP()
+#define SKIPJUMP() LOW_SKIPJUMP()
 
 #endif /* PIKE_DEBUG */
 
@@ -92,7 +104,7 @@ static int eval_instruction(PIKE_OPCODE_T *pc)
   unsigned INT32 prefix2=0,prefix=0;
 #ifdef HAVE_COMPUTED_GOTO
   static void *strap = &&init_strap;
-  void *instr;
+  void *instr = NULL;
 #else /* !HAVE_COMPUTED_GOTO */
   unsigned INT32 instr;
 #endif /* HAVE_COMPUTED_GOTO */
@@ -131,8 +143,12 @@ static int eval_instruction(PIKE_OPCODE_T *pc)
 	      DO_NOT_WARN((long)(Pike_mark_sp-Pike_interpreter.mark_stack)));
     }
 
+#ifdef HAVE_COMPUTED_GOTO
+    ADD_RUNNED(instr);
+#else /* !HAVE_COMPUTED_GOTO */
     if(instr + F_OFFSET < F_MAX_OPCODE) 
       ADD_RUNNED(instr + F_OFFSET);
+#endif /* HAVE_COMPUTED_GOTO */
 
     if(d_flag)
     {
@@ -225,7 +241,7 @@ static int eval_instruction(PIKE_OPCODE_T *pc)
 #else /* !HAVE_COMPUTED_GOTO */
     switch(instr)
     {
-#endif /* HAVE_COMPUTED_GOTO */
+      /* NOTE: The prefix handling is not needed in computed-goto mode. */
       /* Support to allow large arguments */
       CASE(F_PREFIX_256); prefix+=256; DONE;
       CASE(F_PREFIX_512); prefix+=512; DONE;
@@ -251,6 +267,7 @@ static int eval_instruction(PIKE_OPCODE_T *pc)
       CASE(F_PREFIX2_CHARX256);
         prefix2 += (pc++)[0]<<8;
       DONE;
+#endif /* HAVE_COMPUTED_GOTO */
 
 
 #define INTERPRETER
@@ -318,39 +335,40 @@ static int eval_instruction(PIKE_OPCODE_T *pc)
 #undef OPCODE1_TAILJUMP
 #undef OPCODE2_TAILJUMP
 #undef LABEL
-#define LABEL(OP)	&&PIKE_CONCAT(LABEL_,OP)
-#define OPCODE0(OP,DESC,CODE)	LABEL(OP),
-#define OPCODE1(OP,DESC,CODE)	LABEL(OP),
-#define OPCODE2(OP,DESC,CODE)	LABEL(OP),
-#define OPCODE0_TAIL(OP,DESC,CODE)	LABEL(OP),
-#define OPCODE1_TAIL(OP,DESC,CODE)	LABEL(OP),
-#define OPCODE2_TAIL(OP,DESC,CODE)	LABEL(OP),
-#define OPCODE0_JUMP(OP,DESC,CODE)	LABEL(OP),
-#define OPCODE1_JUMP(OP,DESC,CODE)	LABEL(OP),
-#define OPCODE2_JUMP(OP,DESC,CODE)	LABEL(OP),
-#define OPCODE0_TAILJUMP(OP,DESC,CODE)	LABEL(OP),
-#define OPCODE1_TAILJUMP(OP,DESC,CODE)	LABEL(OP),
-#define OPCODE2_TAILJUMP(OP,DESC,CODE)	LABEL(OP),
+#define LABEL(OP)			&&PIKE_CONCAT(LABEL_,OP)
+#define NULL_LABEL(OP)			NULL
+#define OPCODE0(OP,DESC)		LABEL(OP),
+#define OPCODE1(OP,DESC)		LABEL(OP),
+#define OPCODE2(OP,DESC)		LABEL(OP),
+#define OPCODE0_TAIL(OP,DESC)		LABEL(OP),
+#define OPCODE1_TAIL(OP,DESC)		LABEL(OP),
+#define OPCODE2_TAIL(OP,DESC)		LABEL(OP),
+#define OPCODE0_JUMP(OP,DESC)		LABEL(OP),
+#define OPCODE1_JUMP(OP,DESC)		LABEL(OP),
+#define OPCODE2_JUMP(OP,DESC)		LABEL(OP),
+#define OPCODE0_TAILJUMP(OP,DESC)	LABEL(OP),
+#define OPCODE1_TAILJUMP(OP,DESC)	LABEL(OP),
+#define OPCODE2_TAILJUMP(OP,DESC)	LABEL(OP),
 
  init_strap:
   strap = &&normal_strap;
   {
     static void *table[] = {
-      LABEL(F_PREFIX_256),
-      LABEL(F_PREFIX_512),
-      LABEL(F_PREFIX_768),
-      LABEL(F_PREFIX_1024),
-      LABEL(F_PREFIX_CHARX256),
-      LABEL(F_PREFIX_WORDX256),
-      LABEL(F_PREFIX_24BITX256),
+      NULL_LABEL(F_PREFIX_256),
+      NULL_LABEL(F_PREFIX_512),
+      NULL_LABEL(F_PREFIX_768),
+      NULL_LABEL(F_PREFIX_1024),
+      NULL_LABEL(F_PREFIX_CHARX256),
+      NULL_LABEL(F_PREFIX_WORDX256),
+      NULL_LABEL(F_PREFIX_24BITX256),
 
-      LABEL(F_PREFIX2_256),
-      LABEL(F_PREFIX2_512),
-      LABEL(F_PREFIX2_768),
-      LABEL(F_PREFIX2_1024),
-      LABEL(F_PREFIX2_CHARX256),
-      LABEL(F_PREFIX2_WORDX256),
-      LABEL(F_PREFIX2_24BITX256),
+      NULL_LABEL(F_PREFIX2_256),
+      NULL_LABEL(F_PREFIX2_512),
+      NULL_LABEL(F_PREFIX2_768),
+      NULL_LABEL(F_PREFIX2_1024),
+      NULL_LABEL(F_PREFIX2_CHARX256),
+      NULL_LABEL(F_PREFIX2_WORDX256),
+      NULL_LABEL(F_PREFIX2_24BITX256),
 
       LABEL(F_INDEX),
       LABEL(F_POS_INT_INDEX),
@@ -362,9 +380,6 @@ static int eval_instruction(PIKE_OPCODE_T *pc)
       LABEL(F_RETURN_1),
       LABEL(F_RETURN_LOCAL),
       LABEL(F_RETURN_IF_TRUE),
-
-      LABEL(F_FOREACH),
-      LABEL(F_NEW_FOREACH),
 
 #include "interpret_protos.h"
     };

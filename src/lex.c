@@ -5,7 +5,7 @@
 \*/
 /**/
 #include "global.h"
-RCSID("$Id: lex.c,v 1.94 2001/07/08 19:35:38 grubba Exp $");
+RCSID("$Id: lex.c,v 1.95 2001/07/09 11:37:21 grubba Exp $");
 #include "language.h"
 #include "array.h"
 #include "lex.h"
@@ -74,7 +74,7 @@ struct instr_counter *init_instr_storage_pointers(int depth)
   return d;
 }
 
-void add_runned(int instr)
+void add_runned(PIKE_OPCODE_T instr)
 {
   int e;
   struct instr_counter **tmp=&instr_counter_storage;

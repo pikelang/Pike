@@ -5,7 +5,7 @@
 \*/
 
 /*
- * $Id: lex.h,v 1.16 2001/06/29 18:19:31 hubbe Exp $
+ * $Id: lex.h,v 1.17 2001/07/09 11:37:20 grubba Exp $
  */
 #ifndef LEX_H
 #define LEX_H
@@ -45,8 +45,12 @@ struct instr
 #ifdef PIKE_DEBUG
 #define ADD_COMPILED(X) instrs[(X)-F_OFFSET].compiles++
 #ifdef INSTR_PROFILING
-extern void add_runned(int);
+extern void add_runned(PIKE_OPCODE_T);
+#ifdef HAVE_COMPUTED_GOTO
+#define ADD_RUNNED(X)	add_runned(X)
+#else /* !HAVE_COMPUTED_GOTO */
 #define ADD_RUNNED(X) add_runned((X)-F_OFFSET)
+#endif /* HAVE_COMPUTED_GOTO */
 #else
 #define ADD_RUNNED(X)
 #endif

@@ -5,7 +5,7 @@
 \*/
 /**/
 #include "global.h"
-RCSID("$Id: interpret.c,v 1.216 2001/07/08 20:58:35 grubba Exp $");
+RCSID("$Id: interpret.c,v 1.217 2001/07/09 11:37:20 grubba Exp $");
 #include "interpret.h"
 #include "object.h"
 #include "program.h"
@@ -135,7 +135,7 @@ static void gc_check_stack_callback(struct callback *foo, void *bar, void *gazon
 }
 #endif
 
-static int eval_instruction(unsigned char *pc);
+static int eval_instruction(PIKE_OPCODE_T *pc);
 
 PMOD_EXPORT void init_interpreter(void)
 {
@@ -639,10 +639,14 @@ void reset_evaluator(void)
 #define BACKLOG 1024
 struct backlog
 {
+#ifdef HAVE_COMPUTED_GOTO
+  PIKE_OPCODE_T instruction;
+#else /* !HAVE_COMPUTED_GOTO */
   INT32 instruction;
+#endif /* HAVE_COMPUTED_GOTO */
   INT32 arg,arg2;
   struct program *program;
-  unsigned char *pc;
+  PIKE_OPCODE_T *pc;
 #ifdef _REENTRANT
   struct object *thread_id;
 #endif
@@ -683,6 +687,12 @@ void dump_backlog(void)
 #endif
 
       file=get_line(backlog[e].pc-1,backlog[e].program, &line);
+#ifdef HAVE_COMPUTED_GOTO
+      fprintf(stderr,"%s:%ld: %s",
+	      file,
+	      (long)line,
+	      low_get_f_name(backlog[e].instruction, backlog[e].program));
+#else /* !HAVE_COMPUTED_GOTO */
       if(backlog[e].instruction < 0 || backlog[e].instruction+F_OFFSET > F_MAX_OPCODE)
       {
 	fprintf(stderr,"%s:%ld: ILLEGAL INSTRUCTION %d\n",
@@ -691,7 +701,6 @@ void dump_backlog(void)
 		backlog[e].instruction + F_OFFSET);
 	continue;
       }
-
 
       fprintf(stderr,"%s:%ld: %s",
 	      file,
@@ -714,12 +723,13 @@ void dump_backlog(void)
       fprintf(stderr," %ld, %ld\n",
 	      DO_NOT_WARN((long)backlog[e].stack),
 	      DO_NOT_WARN((long)backlog[e].mark_stack));
+#endif /* HAVE_COMPUTED_GOTO */
     }
   }while(e!=backlogp);
 }
 
 #endif
-static int o_catch(unsigned char *pc);
+static int o_catch(PIKE_OPCODE_T *pc);
 
 
 #ifdef PIKE_DEBUG
@@ -1458,7 +1468,7 @@ void mega_apply(enum apply_type type, INT32 args, void *arg1, void *arg2)
  * the setjmp won't affect the optimization of
  * eval_instruction
  */
-static int o_catch(unsigned char *pc)
+static int o_catch(PIKE_OPCODE_T *pc)
 {
   JMP_BUF tmp;
   struct svalue *expendible=Pike_fp->expendible;

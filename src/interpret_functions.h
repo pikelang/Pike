@@ -1,5 +1,5 @@
 /*
- * $Id: interpret_functions.h,v 1.71 2001/07/08 19:35:37 grubba Exp $
+ * $Id: interpret_functions.h,v 1.72 2001/07/09 11:37:20 grubba Exp $
  *
  * Opcode definitions for the interpreter.
  */
@@ -19,6 +19,13 @@
 #else /* !AUTO_BIGNUM */
 #define DO_IF_BIGNUM(CODE)
 #endif /* AUTO_BIGNUM */
+
+#undef DO_IF_ELSE_COMPUTED_GOTO
+#ifdef HAVE_COMPUTED_GOTO
+#define DO_IF_ELSE_COMPUTED_GOTO(A, B)	(A)
+#else /* !HAVE_COMPUTED_GOTO */
+#define DO_IF_ELSE_COMPUTED_GOTO(A, B)	(B)
+#endif /* HAVE_COMPUTED_GOTO */
 
 #ifdef GEN_PROTOS
 /* Used to generate the interpret_protos.h file. */
@@ -572,9 +579,9 @@ OPCODE0(F_INC, "++x", {
      )
      )
   {
-    instr=++ u->integer;
+    INT32 val = ++u->integer;
     pop_n_elems(2);
-    push_int(instr);
+    push_int(val);
   } else {
     lvalue_to_svalue_no_free(Pike_sp, Pike_sp-2); Pike_sp++;
     push_int(1);
@@ -592,9 +599,9 @@ OPCODE0(F_DEC, "--x", {
      )
      )
   {
-    instr=-- u->integer;
+    INT32 val = --u->integer;
     pop_n_elems(2);
-    push_int(instr);
+    push_int(val);
   } else {
     lvalue_to_svalue_no_free(Pike_sp, Pike_sp-2); Pike_sp++;
     push_int(1);
@@ -612,7 +619,7 @@ OPCODE0(F_DEC_AND_POP, "x-- and pop", {
      )
 )
   {
-    -- u->integer;
+    --u->integer;
     pop_n_elems(2);
   }else{
     lvalue_to_svalue_no_free(Pike_sp, Pike_sp-2); Pike_sp++;
@@ -631,7 +638,7 @@ OPCODE0(F_INC_AND_POP, "x++ and pop", {
      )
      )
   {
-    instr=++ u->integer;
+    ++u->integer;
     pop_n_elems(2);
   } else {
     lvalue_to_svalue_no_free(Pike_sp, Pike_sp-2); Pike_sp++;
@@ -650,9 +657,9 @@ OPCODE0(F_POST_INC, "x++", {
      )
      )
   {
-    instr=u->integer ++;
+    INT32 val = u->integer++;
     pop_n_elems(2);
-    push_int(instr);
+    push_int(val);
   } else {
     lvalue_to_svalue_no_free(Pike_sp, Pike_sp-2); Pike_sp++;
     stack_dup();
@@ -673,9 +680,9 @@ OPCODE0(F_POST_DEC, "x--", {
      )
      )
   {
-    instr=u->integer --;
+    INT32 val = u->integer--;
     pop_n_elems(2);
-    push_int(instr);
+    push_int(val);
   } else {
     lvalue_to_svalue_no_free(Pike_sp, Pike_sp-2); Pike_sp++;
     stack_dup();
@@ -988,7 +995,8 @@ OPCODE0_JUMP(F_EQ_AND, "==&&", {
 });
 
 OPCODE0_JUMP(F_CATCH, "catch", {
-  switch (o_catch(pc+sizeof(INT32))) {
+  switch (o_catch(pc+DO_IF_ELSE_COMPUTED_GOTO(1, sizeof(INT32))))
+  {
   case 1:
     /* There was a return inside the evaluated code */
     goto do_dumb_return;
@@ -996,7 +1004,7 @@ OPCODE0_JUMP(F_CATCH, "catch", {
     pc = Pike_fp->pc;
     break;
   default:
-    pc+=GET_JUMP();
+    pc += GET_JUMP();
   }
 });
 
@@ -1014,10 +1022,12 @@ OPCODE1(F_SWITCH, "switch", {
   INT32 tmp;
   tmp=switch_lookup(Pike_fp->context.prog->
 		    constants[arg1].sval.u.array,Pike_sp-1);
-  pc=(unsigned char *)DO_ALIGN(pc,((ptrdiff_t)sizeof(INT32)));
-  pc+=(tmp>=0 ? 1+tmp*2 : 2*~tmp) * sizeof(INT32);
+  pc = DO_IF_ELSE_COMPUTED_GOTO(pc, (PIKE_OPCODE_T *)
+				DO_ALIGN(pc,((ptrdiff_t)sizeof(INT32))));
+  pc += (tmp>=0 ? 1+tmp*2 : 2*~tmp) *
+    DO_IF_ELSE_COMPUTED_GOTO(1, sizeof(INT32));
   if(*(INT32*)pc < 0) fast_check_threads_etc(7);
-  pc+=*(INT32*)pc;
+  pc += *(INT32*)pc;
   pop_stack();
 });
 
@@ -1030,8 +1040,10 @@ OPCODE1(F_SWITCH_ON_INDEX, "switch on index", {
   tmp=switch_lookup(Pike_fp->context.prog->
 		    constants[arg1].sval.u.array,Pike_sp-1);
   pop_n_elems(3);
-  pc=(unsigned char *)DO_ALIGN(pc,((ptrdiff_t)sizeof(INT32)));
-  pc+=(tmp>=0 ? 1+tmp*2 : 2*~tmp) * sizeof(INT32);
+  pc = DO_IF_ELSE_COMPUTED_GOTO(pc, (PIKE_OPCODE_T *)
+				DO_ALIGN(pc,((ptrdiff_t)sizeof(INT32))));
+  pc += (tmp>=0 ? 1+tmp*2 : 2*~tmp) *
+    DO_IF_ELSE_COMPUTED_GOTO(1, sizeof(INT32));
   if(*(INT32*)pc < 0) fast_check_threads_etc(7);
   pc+=*(INT32*)pc;
 });
@@ -1040,8 +1052,10 @@ OPCODE2(F_SWITCH_ON_LOCAL, "switch on local", {
   INT32 tmp;
   tmp=switch_lookup(Pike_fp->context.prog->
 		    constants[arg2].sval.u.array,Pike_fp->locals + arg1);
-  pc=(unsigned char *)DO_ALIGN(pc,((ptrdiff_t)sizeof(INT32)));
-  pc+=(tmp>=0 ? 1+tmp*2 : 2*~tmp) * sizeof(INT32);
+  pc = DO_IF_ELSE_COMPUTED_GOTO(pc, (PIKE_OPCODE_T *)
+				DO_ALIGN(pc,((ptrdiff_t)sizeof(INT32))));
+  pc += (tmp>=0 ? 1+tmp*2 : 2*~tmp) *
+    DO_IF_ELSE_COMPUTED_GOTO(1, sizeof(INT32));
   if(*(INT32*)pc < 0) fast_check_threads_etc(7);
   pc+=*(INT32*)pc;
 });
@@ -1147,8 +1161,9 @@ OPCODE0_JUMP(F_NEW_FOREACH, "foreach++", { /* iterator, lvalue, lvalue */
 });
 
 
-      CASE(F_RETURN_LOCAL);
-      instr=GET_ARG();
+    CASE(F_RETURN_LOCAL);
+    {
+      INT32 val = GET_ARG();
 #if defined(PIKE_DEBUG) && defined(GC2)
       /* special case! Pike_interpreter.mark_stack may be invalid at the time we
        * call return -1, so we must call the callbacks here to
@@ -1158,14 +1173,15 @@ OPCODE0_JUMP(F_NEW_FOREACH, "foreach++", { /* iterator, lvalue, lvalue */
       if(d_flag>4) do_debug();
       check_threads_etc();
 #endif
-      if(Pike_fp->expendible <= Pike_fp->locals+instr)
+      if(Pike_fp->expendible <= Pike_fp->locals + val)
       {
-	pop_n_elems(Pike_sp-1 - (Pike_fp->locals+instr));
+	pop_n_elems(Pike_sp-1 - (Pike_fp->locals + val));
       }else{
-	push_svalue(Pike_fp->locals+instr);
+	push_svalue(Pike_fp->locals + val);
       }
       print_return_value();
       goto do_dumb_return;
+    }
 
       CASE(F_RETURN_IF_TRUE);
       if(!IS_ZERO(Pike_sp-1)) goto do_return;
@@ -1264,9 +1280,9 @@ OPCODE0(F_RSH, ">>", {
 
 #define COMPARISON(ID,DESC,EXPR)	\
   OPCODE0(ID, DESC, {			\
-    instr = EXPR;			\
+    INT32 val = EXPR;			\
     pop_n_elems(2);			\
-    push_int(instr);			\
+    push_int(val);			\
   })
 
 COMPARISON(F_EQ, "==", is_eq(Pike_sp-2,Pike_sp-1));
@@ -1586,9 +1602,9 @@ OPCODE0(F_INDIRECT, "indirect", {
 });
       
 OPCODE0(F_SIZEOF, "sizeof", {
-  instr=pike_sizeof(Pike_sp-1);
+  INT32 val = pike_sizeof(Pike_sp-1);
   pop_stack();
-  push_int(instr);
+  push_int(val);
 });
 
 OPCODE1(F_SIZEOF_LOCAL, "sizeof local", {
@@ -1765,7 +1781,7 @@ OPCODE1_JUMP(F_COND_RECUR, "recur if not overloaded", {
    */
   if(Pike_fp->current_object->prog != Pike_fp->context.prog)
   {
-    pc+=sizeof(INT32);
+    pc += sizeof(INT32)/sizeof(PIKE_OPCODE_T);
     if(low_mega_apply(APPLY_LOW,
 		      DO_NOT_WARN((INT32)(Pike_sp - *--Pike_mark_sp)),
 		      Pike_fp->current_object,
@@ -1784,8 +1800,8 @@ OPCODE1_JUMP(F_COND_RECUR, "recur if not overloaded", {
   /* FIXME: Use new recursion stuff */
   OPCODE0_TAILJUMP(F_RECUR, "recur", {
     OPCODE0_TAILJUMP(F_RECUR_AND_POP, "recur & pop", {
-      int opcode = instr;
-      unsigned char *addr;
+      PIKE_OPCODE_T opcode = instr;
+      PIKE_OPCODE_T *addr;
       struct pike_frame *new_frame;
 
       fast_check_threads_etc(6);
@@ -1830,7 +1846,8 @@ OPCODE1_JUMP(F_COND_RECUR, "recur if not overloaded", {
       Pike_fp=new_frame;
       pc=addr;
       new_frame->flags=PIKE_FRAME_RETURN_INTERNAL;
-      if (opcode == F_RECUR_AND_POP-F_OFFSET)
+      if (opcode == DO_IF_ELSE_COMPUTED_GOTO(&&LABEL_F_RECUR_AND_POP,
+					     F_RECUR_AND_POP-F_OFFSET))
 	new_frame->flags|=PIKE_FRAME_RETURN_POP;
     });
   });
@@ -1841,7 +1858,7 @@ OPCODE1_JUMP(F_COND_RECUR, "recur if not overloaded", {
 OPCODE0_JUMP(F_TAIL_RECUR, "tail recursion", {
   int x;
   INT32 num_locals;
-  unsigned char *addr;
+  PIKE_OPCODE_T *addr;
   INT32 args = DO_NOT_WARN((INT32)(Pike_sp - *--Pike_mark_sp));
 
   fast_check_threads_etc(6);
