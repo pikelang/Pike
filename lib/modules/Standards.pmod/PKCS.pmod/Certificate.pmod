@@ -169,7 +169,7 @@ object build_distinguished_name(mapping(string:object) ... args)
   return asn1_sequence(Array.map(args, lambda(mapping rdn)
 				 {
 				   return attribute_set(
-				     Identifiers.name_ids, rdn);
+				     Identifiers.at_ids, rdn);
 				 } ));
 }
 
@@ -191,7 +191,7 @@ class Attribute
 
 class Attributes
 {
-  import Standards.ASN1.Encode;
+  import Standards.ASN1.Types;
   inherit asn1_set;
 
   void create(mapping(string:object) types, mapping(string:array(object)) m)
