@@ -1,16 +1,10 @@
-AC_REVISION("$Id: configure.in,v 1.733 2003/09/11 16:10:42 marcus Exp $")
+AC_REVISION("$Id: configure.in,v 1.734 2003/09/12 13:51:19 marcus Exp $")
 AC_INIT(interpret.c)
 AC_CONFIG_HEADER(machine.h)
 
 rm -f config.warnings 2>/dev/null
 
-ifelse(ifelse(index(AC_ACVERSION,.),-1,0,[m4_eval(
-  substr(AC_ACVERSION, 0, index(AC_ACVERSION,.))-0 >= 2 &&
-  (
-   substr(AC_ACVERSION, 0, index(AC_ACVERSION,.))-0 > 2 ||
-   substr(AC_ACVERSION, index(+AC_ACVERSION,.))-0 >= 50
-  )
-)]),1,[
+if_autoconf(2,50,[
   if test "x$cache_file" = "x/dev/null"; then
     cache_file=./config.cache
     if test -r "$cache_file"; then
