@@ -43,7 +43,8 @@ WARN=@WARN@
 
 #add extra defines here
 # Be sure to use -g and -DDEBUG when looking for bugs
-DEFINES=-DDEBUG -DDEFAULT_MASTER=\"$(lib_prefix)/master.lpc\"
+DEBUGDEF=-DDEBUG
+DEFINES=$(DEBUGDEF) -DDEFAULT_MASTER=\"$(lib_prefix)/master.lpc\"
 
 # -O should work with all compilers
 OPTIMIZE=@OPTIMIZE@
@@ -59,7 +60,7 @@ CPP=@CPP@
 LD=$(CC)
 LDFLAGS=$(CFLAGS)
 
-RUNULPC=$(TMP_BUILDDIR)/ulpc -m $(TMP_LIBDIR)/master.lpc
+RUNULPC=$(TMP_BUILDDIR)/ulpc -m $(TMP_LIBDIR)/master.lpc $(LPCOPTS)
 FIXDEP=$(TMP_BINDIR)/fixdepends.sh
 
 MAKE_FLAGS = "prefix=$(prefix)" "exex_prefix=$(exex_prefix)" "CC=$(CC)" "OTHERFLAGS=$(OTHERFLAGS)" "FIXDEP=$(FIXDEP)"
@@ -188,7 +189,7 @@ docs:
 	mkdir docs
 
 html_docs: docs
-	$(RUNULPC) $(TMP_BINDIR)/htmlify_docs docs $(TMP_DOCDIR) `for a in $MODULES); do echo $(SRCDIR)/$$a ; done`
+	$(RUNULPC) $(TMP_BINDIR)/htmlify_docs docs $(TMP_DOCDIR) `for a in $(MODULES); do echo $(SRCDIR)/$$a/doc ; done`
 
 #
 # uLPC internal targets
