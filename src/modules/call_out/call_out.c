@@ -4,7 +4,7 @@
 ||| See the files COPYING and DISCLAIMER for more information.
 \*/
 #include "global.h"
-RCSID("$Id: call_out.c,v 1.15 1997/10/23 03:53:21 hubbe Exp $");
+RCSID("$Id: call_out.c,v 1.16 1997/10/27 01:44:14 hubbe Exp $");
 #include "array.h"
 #include "dynamic_buffer.h"
 #include "object.h"
@@ -184,6 +184,7 @@ static struct array * new_call_out(int num_arg,struct svalue *argp)
   int e,c;
   call_out *new,**p,**pos;
 
+  PROTECT_CALL_OUTS();
   if(num_pending_calls==call_buffer_size)
   {
     /* here we need to allocate space for more pointers */
@@ -246,6 +247,7 @@ static struct array * new_call_out(int num_arg,struct svalue *argp)
   wake_up_backend();
 #endif
 
+  UNPROTECT_CALL_OUTS();
   return new->args;
 }
 
