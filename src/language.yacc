@@ -113,7 +113,7 @@
 /* This is the grammar definition of Pike. */
 
 #include "global.h"
-RCSID("$Id: language.yacc,v 1.277 2002/05/05 16:31:06 mast Exp $");
+RCSID("$Id: language.yacc,v 1.278 2002/05/09 14:37:45 mast Exp $");
 #ifdef HAVE_MEMORY_H
 #include <memory.h>
 #endif
@@ -3193,7 +3193,7 @@ idents2: idents
 	/* We need to generate a new reference. */
 	int d;
 	struct reference funp = Pike_compiler->new_program->identifier_references[i];
-	funp.id_flags |= ID_HIDDEN;
+	funp.id_flags = (funp.id_flags & ~ID_INHERITED) | ID_INLINE|ID_HIDDEN;
 	i = -1;
 	for(d = 0; d < (int)Pike_compiler->new_program->num_identifier_references; d++) {
 	  struct reference *refp;
