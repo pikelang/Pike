@@ -10,7 +10,7 @@
 #include "pike_macros.h"
 #include "gc.h"
 
-RCSID("$Id: pike_memory.c,v 1.63 2000/04/08 02:01:09 hubbe Exp $");
+RCSID("$Id: pike_memory.c,v 1.64 2000/06/17 02:24:08 hubbe Exp $");
 
 /* strdup() is used by several modules, so let's provide it */
 #ifndef HAVE_STRDUP
@@ -1699,6 +1699,7 @@ int main(int argc, char *argv[])
 {
   long e;
   extern int dbm_main(int, char **);
+  init_memhdr_hash();
 
   for(e=0;e<(long)NELEM(rndbuf);e++) rndbuf[e]= (rand() % 511) | 1;
 
@@ -1711,7 +1712,6 @@ int main(int argc, char *argv[])
   mt_init(&debug_malloc_mutex);
   th_atfork(lock_da_lock, unlock_da_lock,  unlock_da_lock);
 #endif
-  init_memhdr_hash();
 
   return dbm_main(argc, argv);
 }
