@@ -1,5 +1,5 @@
 /*
- * $Id: odbc_result.c,v 1.2 1997/03/12 00:38:18 grubba Exp $
+ * $Id: odbc_result.c,v 1.3 1997/06/10 03:21:42 grubba Exp $
  *
  * Pike  interface to ODBC compliant databases
  *
@@ -17,7 +17,7 @@
 #ifdef HAVE_ODBC
 
 #include "global.h"
-RCSID("$Id: odbc_result.c,v 1.2 1997/03/12 00:38:18 grubba Exp $");
+RCSID("$Id: odbc_result.c,v 1.3 1997/06/10 03:21:42 grubba Exp $");
 
 #include "interpret.h"
 #include "object.h"
@@ -28,6 +28,10 @@ RCSID("$Id: odbc_result.c,v 1.2 1997/03/12 00:38:18 grubba Exp $");
 #include "array.h"
 #include "multiset.h"
 #include "program.h"
+#include "array.h"
+#include "builtin_functions.h"
+#include "pike_memory.h"
+#include "module_support.h"
 
 #include "precompiled_odbc.h"
 
@@ -217,7 +221,7 @@ static void odbc_fix_fields(void)
 
     membuf_size += odbc_fields[i].size;
   }
-  f_aggregate_array(PIKE_ODBC_RES->num_fields);
+  f_aggregate(PIKE_ODBC_RES->num_fields);
 
   sp[-1].u.array->refs++;
   PIKE_ODBC_RES->fields = sp[-1].u.array;

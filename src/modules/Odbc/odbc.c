@@ -1,5 +1,5 @@
 /*
- * $Id: odbc.c,v 1.2 1997/03/22 14:08:51 grubba Exp $
+ * $Id: odbc.c,v 1.3 1997/06/10 03:21:41 grubba Exp $
  *
  * Pike interface to ODBC compliant databases.
  *
@@ -15,7 +15,7 @@
 #endif /* HAVE_CONFIG_H */
 
 #include "global.h"
-RCSID("$Id: odbc.c,v 1.2 1997/03/22 14:08:51 grubba Exp $");
+RCSID("$Id: odbc.c,v 1.3 1997/06/10 03:21:41 grubba Exp $");
 
 #include "interpret.h"
 #include "object.h"
@@ -26,6 +26,7 @@ RCSID("$Id: odbc.c,v 1.2 1997/03/22 14:08:51 grubba Exp $");
 #include "array.h"
 #include "multiset.h"
 #include "program.h"
+#include "module_support.h"
 
 #ifdef HAVE_ODBC
 
@@ -247,7 +248,7 @@ static void f_big_query(INT32 args)
     push_object(fp->current_object);
     fp->current_object->refs++;
 
-    push_object(clone(odbc_result_program, 1));
+    push_object(clone_object(odbc_result_program, 1));
   } else {
     odbc_check_error("odbc->big_query", "Couldn't commit query",
 		     SQLTransact(PIKE_ODBC->henv, PIKE_ODBC->hdbc,
