@@ -1,6 +1,6 @@
 // -*- c -*-
 //
-// $Id: treeopt.in,v 1.11 1999/11/11 05:14:35 mast Exp $
+// $Id: treeopt.in,v 1.12 1999/11/11 16:29:05 grubba Exp $
 //
 // The tree optimizer
 //
@@ -29,6 +29,10 @@ F_CAST[$$->type == void_type_string](F_CONSTANT, *):
 
 F_CAST[$$->type == void_type_string](F_COMMA_EXPR(0, F_CONSTANT), *):
 {
+  tmp1 = $0;
+#ifndef SHARED_NODES
+  $0 = 0;
+#endif /* SHARED_NODES */
   $$ = mkcastnode(void_type_string, $0);
 }
 ;
@@ -40,8 +44,13 @@ F_CAST[$$->type == void_type_string]
 			    OPT_TRY_OPTIMIZE)) == OPT_TRY_OPTIMIZE],
 	       F_ARG_LIST(1, 2)), *):
 {
+  tmp1 = $1;
+  tmp2 = $2;
+#ifndef SHARED_NODES
+  $1 = $2 = 0;
+#endif /* !SHARED_NODES */
   $$ = mkcastnode(void_type_string,
-		  mknode(F_COMMA_EXPR, $1, $2));
+		  mknode(F_COMMA_EXPR, tmp1, tmp2));
 }
 ;
 
@@ -244,6 +253,14 @@ F_LAND(0 = +[node_is_false($$)], *):
 '?'(0, ':'(1, $1)):
   F_COMMA_EXPR($0, $1);
 
+'?'(0, ':'(F_COMMA_EXPR(1, 2), $2)):
+  F_COMMA_EXPR('?'($0, ':'($1, -)), $2);
+
+'?'(0, ':'(1, F_COMMA_EXPR(2, $1))):
+  F_COMMA_EXPR('?'($0, ':'(-, $2)), $1);
+
+'?'(0, ':'(F_COMMA_EXPR(1, 2), F_COMMA_EXPR(3, $2))):
+  F_COMMA_EXPR('?'($0, ':'($1, $3)), $2);
 
 F_NOT(-, *):
   1;
@@ -267,43 +284,35 @@ F_NOT(F_NE(0, 1), *):
   F_EQ($0, $1);
 
 
-F_ADD_EQ(0, 1 = F_CONSTANT[$$->u.sval.type == T_INT]):
-{
-  /* a += 0  ->  a */
-  if (!$1->u.sval.u.integer) {
-    $$ = $0;
-  }
+// a += 0  ->  a
+F_ADD_EQ(0, 1 = F_CONSTANT[$$->u.sval.type == T_INT]
+	 [!($$->u.sval.u.integer)]):
+  $0;
 
-  /* a += 1  ->  ++a */
-  if ($1->u.sval.u.integer == 1) {
-    $$ = mknode(F_INC, $0, 0);
-  }
+// a += 1  ->  ++a
+F_ADD_EQ(0, 1 = F_CONSTANT[$$->u.sval.type == T_INT]
+	 [($$->u.sval.u.integer) == 1]):
+  F_INC($0, -);
 
-  /* a += -1  ->  --a */
-  if ($1->u.sval.u.integer == -1) {
-    $$ = mknode(F_DEC, $0, 0);
-  }
-}
-;
+// a += -1  ->  --a
+F_ADD_EQ(0, 1 = F_CONSTANT[$$->u.sval.type == T_INT]
+	 [($$->u.sval.u.integer) == -1]):
+  F_DEC($0, -);
 
-F_SUB_EQ(0, 1 = F_CONSTANT[$$->u.sval.type == T_INT]):
-{
-  /* a -= 0  ->  a */
-  if (!$1->u.sval.u.integer) {
-    $$ = $0;
-  }
+// a += 0  ->  a
+F_SUB_EQ(0, 1 = F_CONSTANT[$$->u.sval.type == T_INT]
+	 [!($$->u.sval.u.integer)]):
+  $0;
 
-  /* a -= 1  ->  --a */
-  if ($1->u.sval.u.integer == 1) {
-    $$ = mknode(F_DEC, $0, 0);
-  }
+// a -= 1  ->  --a
+F_SUB_EQ(0, 1 = F_CONSTANT[$$->u.sval.type == T_INT]
+	 [($$->u.sval.u.integer) == 1]):
+  F_DEC($0, -);
 
-  /* a -= -1  ->  ++a */
-  if ($1->u.sval.u.integer == -1) {
-    $$ = mknode(F_INC, $0, 0);
-  }
-}
-;
+// a -= -1  ->  ++a
+F_SUB_EQ(0, 1 = F_CONSTANT[$$->u.sval.type == T_INT]
+	 [($$->u.sval.u.integer) == -1]):
+  F_INC($0, -);
 
 F_ARROW(0 = F_CONSTANT[$$->u.sval.type == T_OBJECT]
 	    [$$->u.sval.u.object->prog],
@@ -340,9 +349,13 @@ F_FOR(0, ':'(-, -)):
 F_FOR(0 = +[node_is_true($$)], -):
 {
   /* Infinite loop */
-  $$ = mknode(F_FOR, $0, mknode(':',
-				mkefuncallnode("sleep", mkintnode(255)),
-				0));
+  tmp1 = $0;
+#ifndef SHARED_NODES
+  $0 = 0;
+#endif /* !SHARED_NODES */
+  $$ = mknode(F_FOR, tmp1, mknode(':',
+				  mkefuncallnode("sleep", mkintnode(255)),
+				  0));
 }
 ;
 
@@ -516,7 +529,9 @@ F_FOR(0 = F_APPLY(1 = F_CONSTANT
 	token = F_DEC_LOOP;
     }
     tmp2 = mknode(token, mknode(F_VAL_LVAL, tmp3, *arg1), $3);
+#ifndef SHARED_NODES
     *arg1 = *arg2 = $3 = 0;
+#endif /* !SHARED_NODES */
 
     if(inc)
     {
