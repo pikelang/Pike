@@ -701,7 +701,8 @@ SGML low_make_concrete_wmml(SGML data)
 	   {
 	      string fullname;
 	      if (name[0..strlen(classbase->query())-1]==
-		  classbase->query())
+		  classbase->query() ||
+		  tag->params->fullpath)
 		 fullname=name;
 	      else switch(tag->tag)
 	      {
