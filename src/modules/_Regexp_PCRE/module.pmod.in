@@ -1,5 +1,5 @@
 // -*- Pike -*-
-// $Id: module.pmod.in,v 1.7 2004/02/15 22:43:14 nilsson Exp $
+// $Id: module.pmod.in,v 1.8 2004/02/19 13:53:38 nilsson Exp $
 // original author: mirar
 
 #pike __REAL_VERSION__
@@ -9,6 +9,8 @@ inherit @module@; // C-module
 // there are other maybe useful stuff in _Regexp_PCRE
 // so don't stop compiling because it's not complete:
 #if constant(@module@._pcre) // there are other maybe useful stuff
+
+//! @belongs Regexp.PCRE
 
 //! The main regexp class. Will provide anything needed 
 //! for matching regexps. 
