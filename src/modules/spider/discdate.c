@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: discdate.c,v 1.16 2003/12/12 17:46:19 nilsson Exp $
+|| $Id: discdate.c,v 1.17 2004/09/18 23:43:00 nilsson Exp $
 */
 
 /* DiscDate.C .. converts boring normal dates to fun Discordian Date -><-
@@ -31,7 +31,7 @@
 #include <stdio.h>
 
 
-RCSID("$Id: discdate.c,v 1.16 2003/12/12 17:46:19 nilsson Exp $");
+RCSID("$Id: discdate.c,v 1.17 2004/09/18 23:43:00 nilsson Exp $");
 
 struct disc_time
 {
@@ -121,7 +121,7 @@ static struct disc_time convert(int nday, int nyear)
   return this;
 }
 
-static char *days[5] = 
+static const char *days[5] =
 { 
   "Sweetmorn",
   "Boomtime",
@@ -130,7 +130,7 @@ static char *days[5] =
   "Setting Orange"
   };
 
-static char *seasons[5] = 
+static const char *seasons[5] =
 { 
   "Chaos",
   "Discord",
@@ -139,7 +139,7 @@ static char *seasons[5] =
   "The Aftermath"
   };
 
-static char *holidays[5][2] = 
+static const char *holidays[5][2] =
 { 
   { "Mungday", "Chaoflux" },
   { "Mojoday", "Discoflux" },

@@ -2,12 +2,12 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: freetype.c,v 1.22 2004/06/11 14:18:45 grubba Exp $
+|| $Id: freetype.c,v 1.23 2004/09/18 23:39:45 nilsson Exp $
 */
 
 #include "config.h"
 #include "global.h"
-RCSID("$Id: freetype.c,v 1.22 2004/06/11 14:18:45 grubba Exp $");
+RCSID("$Id: freetype.c,v 1.23 2004/09/18 23:39:45 nilsson Exp $");
 #include "module.h"
 #include "pike_error.h"
 
@@ -61,7 +61,7 @@ struct face
 
 #undef __FTERRORS_H__
 #define FT_ERROR_START_LIST				\
-  struct image_ft_error_lookup {			\
+  static const struct image_ft_error_lookup {		\
     const char *sym;					\
     FT_Error code;					\
     const char *msg;					\
@@ -80,7 +80,7 @@ static void image_ft_error(const char *msg, FT_Error errcode)
 {
   const char *errmsg = NULL;
   if (errcode) {
-    struct image_ft_error_lookup *entry;
+    const struct image_ft_error_lookup *entry;
     for (entry = image_ft_error_lookup; entry->sym; entry++) {
       if (entry->code == errcode) {
 	errmsg = entry->msg;

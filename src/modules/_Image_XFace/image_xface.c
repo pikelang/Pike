@@ -2,11 +2,11 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: image_xface.c,v 1.20 2003/12/01 20:22:16 nilsson Exp $
+|| $Id: image_xface.c,v 1.21 2004/09/18 23:31:20 nilsson Exp $
 */
 
 #include "global.h"
-RCSID("$Id: image_xface.c,v 1.20 2003/12/01 20:22:16 nilsson Exp $");
+RCSID("$Id: image_xface.c,v 1.21 2004/09/18 23:31:20 nilsson Exp $");
 
 #include "module.h"
 #include "config.h"
@@ -80,7 +80,7 @@ extern struct program *image_program;
 */
 
 
-static unsigned char tab[] = {
+static const unsigned char tab[] = {
   0x00, 0x00, 0x80, 0x80, 0x00, 0x00, 0xc7, 0xfb, 0xa0, 0xe8, 0xa0, 0xf0,
   0x00, 0xd8, 0xf0, 0xfb, 0x00, 0x20, 0x00, 0x00, 0xb0, 0xf0, 0xc0, 0xfe,
   0x00, 0x00, 0x00, 0x80, 0x00, 0xb8, 0xa2, 0xf4, 0x00, 0x00, 0x00, 0xb0,
@@ -153,8 +153,8 @@ static unsigned char tab[] = {
 0000 4096 4224 4228 4740 4804 5060 6084 6116 6124 6156 6220 6222 6223 6227
 */
 
-static int taboffs[] = { 0, 4740, 4228, 5060, 4224, 6222, 6220, 6227,
-			 4096, 6116, 6084, 6156 };
+static const int taboffs[] = { 0, 4740, 4228, 5060, 4224, 6222, 6220, 6227,
+			       4096, 6116, 6084, 6156 };
 
 static void xform(unsigned char *i, unsigned char *o)
 {
@@ -181,21 +181,21 @@ static void xform(unsigned char *i, unsigned char *o)
     }
 }
 
-static unsigned int topprob[4][6] = {
+static const unsigned int topprob[4][6] = {
   {1, 255, 251, 0, 4, 251},
   {1, 255, 200, 0, 55, 200},
   {33, 223, 159, 0, 64, 159},
   {131, 0, 0, 0, 125, 131}
 };
 
-static unsigned int botprob[32] = {
+static const unsigned int botprob[32] = {
   0, 0, 38, 0, 38, 38, 13, 152,
   38, 76, 13, 165, 13, 178, 6, 230,
   38, 114, 13, 191, 13, 204, 6, 236,
   13, 217, 6, 242, 5, 248, 3, 253
 };
 
-static int pop(mpz_t val, unsigned int *p)
+static int pop(mpz_t val, const unsigned int *p)
 {
   unsigned long int n;
   int r = 0;
@@ -213,7 +213,7 @@ static int pop(mpz_t val, unsigned int *p)
   return r;
 }
 
-static void push(mpz_t val, unsigned int *p, int r)
+static void push(mpz_t val, const unsigned int *p, int r)
 {
   unsigned long int n;
   mpz_t dum;
