@@ -1,4 +1,4 @@
-AC_REVISION("$Id: configure.in,v 1.683 2003/02/08 22:50:39 mast Exp $")
+AC_REVISION("$Id: configure.in,v 1.684 2003/02/09 15:41:10 mast Exp $")
 AC_INIT(interpret.c)
 AC_CONFIG_HEADER(machine.h)
 
@@ -5744,13 +5744,17 @@ cpu_time_t work_time, wait_time;
 
 TH_RETURN_TYPE work_thread (void *dummy)
 {
-  int max = 1000000;
   cpu_time_t start;
   mt_lock (&m);
   start = get_cpu_time();
-  do
-    work_time = get_cpu_time() - start;
-  while (work_time < (CPU_TIME_TICKS / 10) && --max);
+  do {
+    cpu_time_t t = get_cpu_time();
+    if (t == (cpu_time_t) -1) {
+      work_time = t;
+      break;
+    }
+    work_time = t - start;
+  } while (work_time < (CPU_TIME_TICKS / 10));
   co_signal (&c);
   mt_unlock (&m);
 }
@@ -5773,11 +5777,11 @@ int main()
     fclose (res);
     return 3;
   }
+
   start = get_cpu_time();
   co_wait (&c, &m);
   wait_time = get_cpu_time() - start;
-
-  if (work_time < (CPU_TIME_TICKS / 10)) {
+  if (start == (cpu_time_t) -1 || work_time == (cpu_time_t) -1) {
     fputs ("unknown (get_cpu_time doesn't work)", res);
     fclose (res);
     return 4;
