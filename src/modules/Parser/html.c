@@ -2427,10 +2427,9 @@ static void html_current(INT32 args)
 **!
 **!	<tt>tag_args</tt> gives the arguments of the current tag,
 **!	parsed to a convinient mapping consisting of key:value pairs.
-**!	The default value (if no default_value is given) is the same
-**!	string as the key. The arguments are arrays of arbitrary data
-**!	if the parser is running in <ref>mixed_mode</ref>, otherwise
-**!	they are strings.
+**!	default_value is used for arguments which have no value in the
+**!	tag. If default_value isn't given, the value is set to the
+**!	same string as the key.
 **!
 **!	<tt>tag()</tt> gives the equivalent of
 **!	<tt>({tag_name(),tag_args()})</tt>.
