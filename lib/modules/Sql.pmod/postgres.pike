@@ -1,7 +1,7 @@
 /*
  * This is part of the Postgres module for Pike.
  *
- * $Id: postgres.pike,v 1.19 2003/01/20 17:44:01 nilsson Exp $
+ * $Id: postgres.pike,v 1.20 2003/02/20 15:53:53 stensson Exp $
  *
  */
 
@@ -54,7 +54,8 @@
 #define ERROR(X) throw (({X,backtrace()}))
 
 inherit Postgres.postgres: mo;
-private static mixed callout;
+private static mixed  callout;
+private string has_relexpires = "unknown";
 
 //! @decl void select_db(string dbname)
 //!
@@ -246,7 +247,7 @@ string server_info () {
   return "Postgres/unknown";
 }
 
-//! Lists all the databases availible on the server.
+//! Lists all the databases available on the server.
 //! If glob is specified, lists only those databases matching it.
 array(string) list_dbs (void|string glob) {
 	array name,ret=({});
@@ -282,23 +283,20 @@ array(string) list_tables (void|string glob) {
 	return ret;
 }
 
-//! Returns a mapping, indexed on the column name, of mappings describing the
-//! attributes of a table of the current database.
-//! If a glob is specified, will return descriptions only of the columns matching
-//! it.
+//! Returns a mapping, indexed on the column name, of mappings describing
+//! the attributes of a table of the current database.
+//! If a glob is specified, will return descriptions only of the columns
+//! matching it.
 //!
-//! The current fields are:
+//! The currently defined fields are:
 //!
 //! @mapping
 //!   @member int "has_rules"
 //!
 //!   @member int "is_shared"
 //!
-//!   @member string "expires"
-//!     A string representing an internal date.
-//!
 //!   @member string "owner"
-//!     It's the textual representation of a Postgres uid.
+//!     The textual representation of a Postgres uid.
 //!
 //!   @member string "length"
 //!
@@ -306,28 +304,51 @@ array(string) list_tables (void|string glob) {
 //!     A textual description of the internal (to the server) type-name
 //!
 //!   @member mixed "default"
+//!
+//!   @member string "expires"
+//!     The "relexpires" attribute for the table. Obsolescent; modern
+//!     versions of Postgres don't seem to use this feature, so don't
+//!     count on this field to contain any useful value.
+//!
 //! @endmapping
 //!
-array(mapping(string:mixed)) list_fields (string table, void|string wild) {
-	array row, ret=({});
-	object res=big_query(
-			"SELECT a.attnum, a.attname, t.typname, a.attlen, c.relowner, "
-			"c.relexpires, c.relisshared, c.relhasrules, t.typdefault "
-			"FROM pg_class c, pg_attribute a, pg_type t "
-			"WHERE c.relname = '"+table+"' AND a.attnum > 0 "
-			"AND a.attrelid = c.oid AND a.atttypid = t.oid ORDER BY attnum");
-	while (row=res->fetch_row()) {
-		mapping m;
-    if (wild && sizeof(wild) && !glob(wild,row[1]))
+array(mapping(string:mixed)) list_fields (string table, void|string wild)
+{
+  array row, ret=({});
+
+  if (has_relexpires == "unknown")
+  {
+    if (catch (big_query("SELECT c.relexpires FROM pg_class WHERE 1 == 0")))
+      has_relexpires = "no";
+    else
+      has_relexpires = "yes";
+  }
+
+  object res = big_query(
+	"SELECT a.attnum, a.attname, t.typname, a.attlen, c.relowner, "
+	"c.relisshared, c.relhasrules, t.typdefault " +
+        (has_relexpires == "yes" ? ", c.relexpires " : "") +
+	"FROM pg_class c, pg_attribute a, pg_type t "
+	"WHERE c.relname = '"+table+"' AND a.attnum > 0 "
+	"AND a.attrelid = c.oid AND a.atttypid = t.oid ORDER BY attnum");
+
+  while (row = res->fetch_row())
+  {
+    if (wild && sizeof(wild) && !glob(wild, row[1]))
       continue;
-		row=row[1..];
-		row[4]=mkbool(row[4]);
-		row[5]=mkbool(row[5]);
-		m=mkmapping(({"name","type","length","owner","expires","is_shared"
-				,"has_rules","default"}),row);
-		ret += ({m});
-	}
-	return ret;
+    ret +=
+      ({ ([
+	 "name":	row[1],
+         "type":	row[2],
+         "length":	row[3],
+	 "owner":	row[4],
+         "is_shared":	mkbool(row[5]),
+	 "has_rules":   mkbool(row[6]),
+	 "default":     row[7],
+         "expires":     (sizeof(row) > 8 ? row[8] : 0)
+       ]) });
+  }
+  return ret;
 }
 
 //! This is the only provided interface which allows you to query the
