@@ -1,7 +1,7 @@
 #pike __REAL_VERSION__
 // #pragma strict_types
 
-// $Id: state.pike,v 1.18 2003/03/08 22:12:48 nilsson Exp $
+// $Id: state.pike,v 1.19 2003/03/09 22:30:08 nilsson Exp $
 
 //! A connection switches from one set of state objects to another, one or
 //! more times during its lifetime. Each state object handles a one-way
@@ -17,7 +17,7 @@ void create(object s)
 }
 
 //! Information about the used algorithms.
-.session session;
+object session;
 
 //! Message Authentication Code
 .Cipher.MACAlgorithm mac;
