@@ -682,6 +682,11 @@ void async_fetch(function callback,array ... extra)
    con->set_nonblocking(async_fetch_read,0,async_fetch_close);
 }
 
+string _sprintf()
+{
+  return sprintf("Query(%d %s)", status, status_desc);
+}
+
 /************************ example *****************************/
 
 #if 0
