@@ -1,5 +1,5 @@
 /*
- * $Id: sql.pike,v 1.11 1997/06/27 17:30:32 grubba Exp $
+ * $Id: sql.pike,v 1.12 1997/06/27 17:55:42 grubba Exp $
  *
  * Implements the generic parts of the SQL-interface
  *
@@ -8,7 +8,7 @@
 
 //.
 //. File:	sql.pike
-//. RCSID:	$Id: sql.pike,v 1.11 1997/06/27 17:30:32 grubba Exp $
+//. RCSID:	$Id: sql.pike,v 1.12 1997/06/27 17:55:42 grubba Exp $
 //. Author:	Henrik Grubbström (grubba@infovav.se)
 //.
 //. Synopsis:	Implements the generic parts of the SQL-interface.
@@ -87,7 +87,11 @@ void create(void|string|object host, void|string db,
 
     array(string) arr = host/"://";
     if ((sizeof(arr) > 1) && (arr[0] !="")) {
-      program_names = ({ arr[0] });
+      if (sizeof(arr[0]/".pike") > 1) {
+	program_names = ({ arr[0] });
+      } else {
+	program_names = ({ arr[0]+".pike" });
+      }
       host = arr[1..] * "://";
     }
     arr = host/"@";
@@ -178,11 +182,11 @@ void create(void|string|object host, void|string db,
     }
   }
 
-  if (sizeof(program_names) > 1) {
+  if (!program_names) {
     throw_error("Sql.sql(): Couldn't connect using any of the databases\n");
   } else {
     throw_error("Sql.sql(): Couldn't connect using the " +
-		program_names[0] + " database\n");
+		(program_names[0]/".pike")[0] + " database\n");
   }
 }
 
