@@ -373,14 +373,15 @@ static void exit_mpz_glue(char *foo, struct object *o)
 {
   mpz_clear(THIS);
 }
-
 #endif
 
 void init_gmpmod_efuns(void) {}
 void exit_gmpmod(void)
 {
+#ifdef HAVE_GMP_H
   if(temporary) free_object(temporary);
   free_program(mpzmod_program);
+#endif
 }
 
 void init_gmpmod_programs(void)
