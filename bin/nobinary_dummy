@@ -20,16 +20,16 @@ case "$1" in
 
     for option
     do
-      case "$1" in
+      case "$option" in
         -c)
 	  compile=yes
 	  ;;
 	-o)
 	  shift
-	  prog="$1"
+	  prog="$option"
 	  ;;
 	-o*)
-	  prog=`echo $1 | sed -e's/^-o//'`
+	  prog=`echo $option | sed -e's/^-o//'`
 	  ;;
 	-[ILRDUx])
 	  shift
@@ -38,7 +38,7 @@ case "$1" in
 	  ;;
 	*)
 	  shift
-	  source="`echo \"$1\" | sed -e 's:^.*/\([^/]*\)$:\\1:'`"
+	  source="`echo \"$optioin\" | sed -e 's:^.*/\([^/]*\)$:\\1:'`"
 	  ;;
       esac
     done
