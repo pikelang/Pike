@@ -1,4 +1,4 @@
-/* $Id: block_alloc.h,v 1.41 2002/08/15 14:49:19 marcus Exp $ */
+/* $Id: block_alloc.h,v 1.42 2002/09/30 12:45:56 marcus Exp $ */
 #undef PRE_INIT_BLOCK
 #undef INIT_BLOCK
 #undef EXIT_BLOCK
@@ -9,6 +9,7 @@
 #undef COUNT_BLOCK
 #undef COUNT_OTHER
 #undef BLOCK_ALLOC_HSIZE_SHIFT
+#undef MAX_EMPTY_BLOCKS
 
 #define PRE_INIT_BLOCK(X)
 #define INIT_BLOCK(X)
@@ -16,6 +17,7 @@
 #define COUNT_BLOCK(X)
 #define COUNT_OTHER()
 #define BLOCK_ALLOC_HSIZE_SHIFT 2
+#define MAX_EMPTY_BLOCKS 4
 
 #ifdef PIKE_RUN_UNLOCKED
 #include "threads.h"
@@ -35,11 +37,15 @@
 struct PIKE_CONCAT(DATA,_block)						\
 {									\
   struct PIKE_CONCAT(DATA,_block) *next;				\
+  struct PIKE_CONCAT(DATA,_block) *prev;				\
+  struct DATA *PIKE_CONCAT3(free_,DATA,s);				\
+  INT32 used;								\
   struct DATA x[BSIZE];							\
 };									\
 									\
 static struct PIKE_CONCAT(DATA,_block) *PIKE_CONCAT(DATA,_blocks)=0;	\
-static struct DATA *PIKE_CONCAT3(free_,DATA,s)=(struct DATA *)-1;	\
+static struct PIKE_CONCAT(DATA,_block) *PIKE_CONCAT(DATA,_free_blocks)=(void*)-1;  \
+static INT32 PIKE_CONCAT3(num_empty_,DATA,_blocks)=0;			\
 DO_IF_RUN_UNLOCKED(static PIKE_MUTEX_T PIKE_CONCAT(DATA,_mutex);)       \
 									\
 static void PIKE_CONCAT(alloc_more_,DATA)(void)				\
@@ -53,29 +59,43 @@ static void PIKE_CONCAT(alloc_more_,DATA)(void)				\
     fprintf(stderr,"Fatal: out of memory.\n");				\
     exit(17);								\
   }									\
-  n->next=PIKE_CONCAT(DATA,_blocks);					\
+  if((n->next=PIKE_CONCAT(DATA,_blocks)))				\
+    n->next->prev=n;							\
+  n->prev=NULL;								\
+  n->used=0;								\
   PIKE_CONCAT(DATA,_blocks)=n;						\
+  PIKE_CONCAT(DATA,_free_blocks)=n;					\
 									\
-  for(e=0;e<BSIZE;e++)							\
+  n->x[0].BLOCK_ALLOC_NEXT=NULL;					\
+  PRE_INIT_BLOCK( n->x );						\
+  for(e=1;e<BSIZE;e++)							\
   {									\
-    n->x[e].BLOCK_ALLOC_NEXT=(void *)PIKE_CONCAT3(free_,DATA,s);	\
+    n->x[e].BLOCK_ALLOC_NEXT=(void *)&n->x[e-1];			\
     PRE_INIT_BLOCK( (n->x+e) );						\
-    PIKE_CONCAT3(free_,DATA,s)=n->x+e;					\
   }									\
+  n->PIKE_CONCAT3(free_,DATA,s)=&n->x[BSIZE-1];				\
 }									\
 									\
 BA_STATIC BA_INLINE struct DATA *BA_UL(PIKE_CONCAT(alloc_,DATA))(void)	\
 {									\
   struct DATA *tmp;							\
-  if(!PIKE_CONCAT3(free_,DATA,s))					\
-    PIKE_CONCAT(alloc_more_,DATA)();					\
-  DO_IF_DEBUG(								\
-    else if (PIKE_CONCAT3(free_,DATA,s) == (struct DATA *)-1)		\
-      Pike_fatal("Block alloc not initialized.\n");				\
-  )									\
+  struct PIKE_CONCAT(DATA,_block) *blk;					\
 									\
-  tmp=PIKE_CONCAT3(free_,DATA,s);					\
-  PIKE_CONCAT3(free_,DATA,s)=(struct DATA *)tmp->BLOCK_ALLOC_NEXT;	\
+  if(!(blk = PIKE_CONCAT(DATA,_free_blocks))) {				\
+    PIKE_CONCAT(alloc_more_,DATA)();					\
+    blk = PIKE_CONCAT(DATA,_blocks);					\
+    blk->used++;							\
+  }									\
+  DO_IF_DEBUG(								\
+    else if (PIKE_CONCAT(DATA,_free_blocks) == (void *)-1)		\
+      Pike_fatal("Block alloc not initialized.\n");			\
+  )									\
+  else if(!blk->used++)							\
+    --PIKE_CONCAT3(num_empty_,DATA,_blocks);				\
+									\
+  tmp = blk->PIKE_CONCAT3(free_,DATA,s);				\
+  if(!(blk->PIKE_CONCAT3(free_,DATA,s) = (void *)tmp->BLOCK_ALLOC_NEXT))    \
+    PIKE_CONCAT(DATA,_free_blocks) = blk->prev;				\
   DO_IF_DMALLOC(                                                        \
     dmalloc_unregister(tmp, 1);                                         \
     dmalloc_register(tmp,sizeof(struct DATA), DMALLOC_LOCATION());      \
@@ -112,23 +132,82 @@ static void PIKE_CONCAT(check_free_,DATA)(struct DATA *d)               \
 DO_IF_RUN_UNLOCKED(                                                     \
 void PIKE_CONCAT3(really_free_,DATA,_unlocked)(struct DATA *d)		\
 {									\
+  struct PIKE_CONCAT(DATA,_block) *blk = PIKE_CONCAT(DATA,_free_blocks);     \
+  if((char *)d < (char *)blk ||						\
+     (char *)d >= (char *)(blk->x+BSIZE)) {				\
+    blk = PIKE_CONCAT(DATA,_blocks);					\
+    if((char *)d < (char *)blk ||					\
+       (char *)d >= (char *)(blk->x+BSIZE)) {				\
+      do								\
+        blk = blk->next;						\
+      while((char *)d < (char *)blk ||					\
+            (char *)d >= (char *)(blk->x+BSIZE));			\
+      if(blk == PIKE_CONCAT(DATA,_free_blocks))				\
+        PIKE_CONCAT(DATA,_free_blocks) = blk->prev;			\
+      blk->prev->next = blk->next;					\
+      if(blk->next)							\
+        blk->next->prev = blk->prev;					\
+      blk->prev = NULL;							\
+      blk->next = PIKE_CONCAT(DATA,_blocks);				\
+      blk->next->prev = blk;						\
+      PIKE_CONCAT(DATA,_blocks) = blk;					\
+    }									\
+  }									\
   EXIT_BLOCK(d);							\
   DO_IF_DMALLOC( PIKE_CONCAT(check_free_,DATA)(d);                      \
                  dmalloc_mark_as_free(d, 1);  )				\
-  d->BLOCK_ALLOC_NEXT = (void *)PIKE_CONCAT3(free_,DATA,s);		\
+  d->BLOCK_ALLOC_NEXT = (void *)blk->PIKE_CONCAT3(free_,DATA,s);	\
   PRE_INIT_BLOCK(d);							\
-  PIKE_CONCAT3(free_,DATA,s)=d;						\
+  blk->PIKE_CONCAT3(free_,DATA,s)=d;					\
+  if(!--blk->used &&							\
+     ++PIKE_CONCAT3(num_empty_,DATA,_blocks) > MAX_EMPTY_BLOCKS &&	\
+     blk != PIKE_CONCAT(DATA,_free_blocks)) {				\
+    PIKE_CONCAT(DATA,_blocks) = blk->next;				\
+    blk->next->prev = NULL;						\
+    free(blk);								\
+    --PIKE_CONCAT3(num_empty_,DATA,_blocks);				\
+  }									\
 })									\
 									\
 void PIKE_CONCAT(really_free_,DATA)(struct DATA *d)			\
 {									\
+  struct PIKE_CONCAT(DATA,_block) *blk;					\
   EXIT_BLOCK(d);							\
   DO_IF_RUN_UNLOCKED(mt_lock(&PIKE_CONCAT(DATA,_mutex)));               \
+  blk = PIKE_CONCAT(DATA,_free_blocks);					\
+  if((char *)d < (char *)blk ||						\
+     (char *)d >= (char *)(blk->x+BSIZE)) {				\
+    blk = PIKE_CONCAT(DATA,_blocks);					\
+    if((char *)d < (char *)blk ||					\
+       (char *)d >= (char *)(blk->x+BSIZE)) {				\
+      do								\
+        blk = blk->next;						\
+      while((char *)d < (char *)blk ||					\
+            (char *)d >= (char *)(blk->x+BSIZE));			\
+      if(blk == PIKE_CONCAT(DATA,_free_blocks))				\
+        PIKE_CONCAT(DATA,_free_blocks) = blk->prev;			\
+      blk->prev->next = blk->next;					\
+      if(blk->next)							\
+        blk->next->prev = blk->prev;					\
+      blk->prev = NULL;							\
+      blk->next = PIKE_CONCAT(DATA,_blocks);				\
+      blk->next->prev = blk;						\
+      PIKE_CONCAT(DATA,_blocks) = blk;					\
+    }									\
+  }									\
   DO_IF_DMALLOC( PIKE_CONCAT(check_free_,DATA)(d);                      \
                  dmalloc_mark_as_free(d, 1);  )				\
-  d->BLOCK_ALLOC_NEXT = (void *)PIKE_CONCAT3(free_,DATA,s);		\
+  d->BLOCK_ALLOC_NEXT = (void *)blk->PIKE_CONCAT3(free_,DATA,s);	\
   PRE_INIT_BLOCK(d);							\
-  PIKE_CONCAT3(free_,DATA,s)=d;						\
+  blk->PIKE_CONCAT3(free_,DATA,s)=d;					\
+  if(!--blk->used &&							\
+     ++PIKE_CONCAT3(num_empty_,DATA,_blocks) > MAX_EMPTY_BLOCKS &&	\
+     blk != PIKE_CONCAT(DATA,_free_blocks)) {				\
+    PIKE_CONCAT(DATA,_blocks) = blk->next;				\
+    blk->next->prev = NULL;						\
+    free(blk);								\
+    --PIKE_CONCAT3(num_empty_,DATA,_blocks);				\
+  }									\
   DO_IF_RUN_UNLOCKED(mt_unlock(&PIKE_CONCAT(DATA,_mutex)));             \
 }									\
 									\
@@ -153,7 +232,8 @@ static void PIKE_CONCAT3(free_all_,DATA,_blocks_unlocked)(void)		\
     free((char *)tmp);							\
   }									\
   PIKE_CONCAT(DATA,_blocks)=0;						\
-  PIKE_CONCAT3(free_,DATA,s)=0;						\
+  PIKE_CONCAT(DATA,_free_blocks)=0;					\
+  PIKE_CONCAT3(num_empty_,DATA,_blocks)=0;				\
 }									\
 									\
 void PIKE_CONCAT3(free_all_,DATA,_blocks)(void)				\
@@ -171,12 +251,10 @@ void PIKE_CONCAT3(count_memory_in_,DATA,s)(INT32 *num_, INT32 *size_)	\
   DO_IF_RUN_UNLOCKED(mt_lock(&PIKE_CONCAT(DATA,_mutex)));               \
   for(tmp=PIKE_CONCAT(DATA,_blocks);tmp;tmp=tmp->next)			\
   {									\
-    num+=BSIZE;								\
     size+=sizeof(struct PIKE_CONCAT(DATA,_block));			\
+    num+=tmp->used;							\
     COUNT_BLOCK(tmp);                                                   \
   }									\
-  for(tmp2=PIKE_CONCAT3(free_,DATA,s);tmp2;				\
-          tmp2 = (struct DATA *)tmp2->BLOCK_ALLOC_NEXT) num--;		\
   COUNT_OTHER();                                                        \
   *num_=num;								\
   *size_=size;								\
@@ -188,7 +266,7 @@ void PIKE_CONCAT3(init_,DATA,_blocks)(void)				\
 {                                                                       \
 /*  DO_IF_RUN_UNLOCKED(mt_init_recursive(&PIKE_CONCAT(DATA,_mutex)));*/ \
   DO_IF_RUN_UNLOCKED(mt_init(&PIKE_CONCAT(DATA,_mutex)));               \
-  PIKE_CONCAT3(free_,DATA,s)=0;                                         \
+  PIKE_CONCAT(DATA,_free_blocks)=0;					\
 }                                                                       \
 
 
