@@ -1,4 +1,4 @@
-dnl $Id: configure.in,v 1.19 2003/04/28 09:49:39 grubba Exp $
+dnl $Id: configure.in,v 1.20 2003/04/28 12:24:26 grubba Exp $
 
 AC_INIT(postgres.c)
 AC_CONFIG_HEADER(pgres_config.h)
@@ -95,7 +95,7 @@ dnl check whether we have Postgres 7.2 or newer
   HAVE_PG72=no
   if test -f $pike_cv_pgres_include_dir/pg_config.h; then
     case `grep 'PG_VERSION \"' $pike_cv_pgres_include_dir/pg_config.h | cut -d '"' -f 2` in
-       7.[[2-9]]*|[8-9].*) HAVE_PG72=yes
+       7.[[2-9]]*|[[8-9]].*) HAVE_PG72=yes
              AC_DEFINE(HAVE_PG72) ;;
     esac
   fi
