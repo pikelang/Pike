@@ -11,10 +11,10 @@ VPATH=$(SRCDIR):$(SRCDIR)/../include
 CRYPTO_INCLUDES=$(SRCDIR)/../include
 
 # Additional C preprocessor flags
-CPPFLAGS= $(EXTRA_CPP_FLAGS) -I$(CRYPTO_INCLUDES) -I. -I$(SRCDIR)
+PREFLAGS= $(EXTRA_CPP_FLAGS) -I$(CRYPTO_INCLUDES) -I. -I$(SRCDIR)
 
 # The flags to generate a shared library
-CFLAGS=-Wall -O3
+CFLAGS= $(EXTRA_CFLAGS) $(PREFLAGS)
 
 default: algorithms.a
 
