@@ -41,9 +41,13 @@ struct object *make_bignum_object(void);
 struct object *bignum_from_svalue(struct svalue *s);
 struct pike_string *string_from_bignum(struct object *o, int base);
 void convert_svalue_to_bignum(struct svalue *s);
+void push_int64(INT64 i);
+int int64_from_bignum(INT64 *i, struct object *bignum);
 /* Prototypes end here */
 
 #else
+
+#define push_int64(i) push_int((INT_TYPE)i)
 
 #define INT_TYPE_MUL_OVERFLOW(a, b) 0
 #define INT_TYPE_NEG_OVERFLOW(x)    0

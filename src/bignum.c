@@ -118,4 +118,93 @@ void convert_svalue_to_bignum(struct svalue *s)
   dmalloc_touch_svalue(sp);
 }
 
+#define BIGNUM_INT64_MASK  0xffff
+#define BIGNUM_INT64_SHIFT 16
+
+void push_int64(INT64 i)
+{
+  if(i == (INT_TYPE)i)
+  {
+    push_int((INT_TYPE)i);
+  }
+  else
+  {
+    int neg, pos, lshfun, orfun;
+
+    neg = (i < 0);
+
+    if(neg)
+      i = ~i;
+
+    push_int(i & BIGNUM_INT64_MASK);
+    i >>= BIGNUM_INT64_SHIFT;
+    convert_stack_top_to_bignum();
+    
+    lshfun = FIND_LFUN(sp[-1].u.object->prog, LFUN_LSH);
+    orfun = FIND_LFUN(sp[-1].u.object->prog, LFUN_OR);
+    
+    for(pos = BIGNUM_INT64_SHIFT; i; pos += BIGNUM_INT64_SHIFT)
+    {
+      push_int(i & BIGNUM_INT64_MASK);
+      i >>= BIGNUM_INT64_SHIFT;
+      convert_stack_top_to_bignum();
+      
+      push_int(pos);
+      apply_low(sp[-2].u.object, lshfun, 1);
+      stack_swap();
+      pop_stack();
+      
+      apply_low(sp[-2].u.object, orfun, 1);
+      stack_swap();
+      pop_stack();
+    }
+    
+    if(neg)
+      apply_low(sp[-1].u.object,FIND_LFUN(sp[-1].u.object->prog,LFUN_COMPL),0);
+  }
+}
+
+int int64_from_bignum(INT64 *i, struct object *bignum)
+{
+  int neg, pos, rshfun, andfun;
+
+  *i = 0;
+
+  push_int(0);
+  apply_low(bignum, FIND_LFUN(bignum->prog, LFUN_LT), 1);
+  if(sp[-1].type != T_INT)
+    error("Result from Gmp.bignum->`< not an integer.\n");
+  neg = (--sp)->u.integer;
+
+  if(neg)
+    apply_low(bignum, FIND_LFUN(bignum->prog, LFUN_COMPL), 0);
+
+  rshfun = FIND_LFUN(bignum->prog, LFUN_RSH);
+  andfun = FIND_LFUN(bignum->prog, LFUN_AND);
+  
+  ref_push_object(bignum);
+    
+  for(pos = 0; sp[-1].type != T_INT; )
+  {
+    push_int(BIGNUM_INT64_MASK);
+    apply_low(sp[-2].u.object, andfun, 1);
+    if(sp[-1].type != T_INT)
+      error("Result from Gmp.bignum->`& not an integer.\n");
+    *i |= (INT64)(--sp)->u.integer << (INT64)pos;
+    pos += BIGNUM_INT64_SHIFT;
+    
+    push_int(BIGNUM_INT64_SHIFT);
+    apply_low(sp[-2].u.object, rshfun, 1);
+    stack_swap();
+    pop_stack();
+  }
+  
+  *i |= (INT64)(--sp)->u.integer << (INT64)pos;
+
+  if(neg)
+    *i = ~*i;
+
+  return 1;   /* We may someday return 0 if the conversion fails. */
+}
+
 #endif /* AUTO_BIGNUM */

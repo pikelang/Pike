@@ -5,7 +5,7 @@
 \*/
 /**/
 #include "global.h"
-RCSID("$Id: file.c,v 1.160 1999/09/29 14:55:42 mirar Exp $");
+RCSID("$Id: file.c,v 1.161 1999/10/29 20:55:10 noring Exp $");
 #include "fdlib.h"
 #include "interpret.h"
 #include "svalue.h"
@@ -20,6 +20,7 @@ RCSID("$Id: file.c,v 1.160 1999/09/29 14:55:42 mirar Exp $");
 #include "opcodes.h"
 #include "operators.h"
 #include "security.h"
+#include "bignum.h"
 
 #include "file_machine.h"
 #include "file.h"
@@ -1389,21 +1390,29 @@ static void file_open(INT32 args)
   push_int(fd>=0);
 }
 
-
 static void file_seek(INT32 args)
 {
 #ifdef HAVE_LSEEK64
-  long long to;
+  INT64 to;
 #else
   INT32 to;
 #endif
+  
+#ifdef HAVE_LSEEK64
+#ifdef AUTO_BIGNUM
+  if(1 <= args && is_bignum_object_in_svalue(&sp[-args]))
+    int64_from_bignum(&to, sp[-args].u.object);
+  else
+#endif /* AUTO_BIGNUM */
+#endif
   if(args<1 || sp[-args].type != T_INT)
     error("Bad argument 1 to file->seek(int to).\n");
+  else
+    to=sp[-args].u.integer;
 
   if(FD < 0)
     error("File not open.\n");
 
-  to=sp[-args].u.integer;
   if(args>1)
   {
     if(sp[-args+1].type != T_INT)
@@ -1427,29 +1436,37 @@ static void file_seek(INT32 args)
   if(to<0) ERRNO=errno;
 
   pop_n_elems(args);
-  push_int((INT32)to);
+  push_int64(to);
 }
 
 static void file_tell(INT32 args)
 {
+#ifdef HAVE_LSEEK64
+  INT64 to;
+#else
   INT32 to;
+#endif
 
   if(FD < 0)
     error("File not open.\n");
   
   ERRNO=0;
+#ifdef HAVE_LSEEK64
+  to=lseek64(FD, 0L, SEEK_CUR);
+#else
   to=fd_lseek(FD, 0L, SEEK_CUR);
+#endif
 
   if(to<0) ERRNO=errno;
 
   pop_n_elems(args);
-  push_int(to);
+  push_int64(to);
 }
 
 static void file_truncate(INT32 args)
 {
 #ifdef HAVE_LSEEK64
-  long long len;
+  INT64 len;
 #else
   INT32 len;
 #endif
