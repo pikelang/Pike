@@ -1,6 +1,6 @@
 #pike __REAL_VERSION__
 
-/* $Id: sslfile.pike,v 1.64 2003/11/07 17:50:34 nilsson Exp $
+/* $Id: sslfile.pike,v 1.65 2004/01/14 22:34:37 bill Exp $
  */
 
 //! Interface similar to @[Stdio.File].
@@ -341,6 +341,18 @@ static void create (Stdio.File stream, SSL.context ctx,
     else
       set_nonblocking();
   } LEAVE;
+}
+
+//!
+array get_client_certificates()
+{
+  return conn->session->client_certificate_chain;
+}
+
+//!
+array get_server_certificates()
+{
+  return conn->session->server_certificate_chain;
 }
 
 int close (void|string how, void|int clean_close)

@@ -1,5 +1,5 @@
 //
-// $Id: session.pike,v 1.28 2004/01/11 00:44:30 nilsson Exp $
+// $Id: session.pike,v 1.29 2004/01/14 22:34:37 bill Exp $
 
 #pike __REAL_VERSION__
 // #pragma strict_types
@@ -40,6 +40,8 @@ int ke_method;
 string master_secret;
 
 array(int) version;
+
+//!
 array(string) client_certificate_chain;
 array(string) server_certificate_chain;
 
