@@ -2489,7 +2489,15 @@ the complete list of combinations of types you can use with these operators:
 </tr>
 
 <tr>
+<td><tt><i>string</i>&nbsp;*&nbsp;<i>float</i></tt></td><td>string</td><td>This operation will concatenate the string X times. Example: <tt>"foo"*2.5</tt> will return <tt>"foofoofo"</tt>.</td>
+</tr>
+
+<tr>
 <td><tt><i>array</i>&nbsp;*&nbsp;<i>int</i></tt></td><td>string</td><td>This operation will concatenate the array N times. Example: <tt>({"foo"})*3</tt> will return <tt>({"foo","foo","foo"})</tt>.</td>
+</tr>
+
+<tr>
+<td><tt><i>array</i>&nbsp;*&nbsp;<i>float</i></tt></td><td>string</td><td>This operation will concatenate the array X times. Example: <tt>({1,2,3})*2.5</tt> will return <tt>({1,2,3,1,2,3,1,2})</tt>.</td>
 </tr>
 
 <tr>
