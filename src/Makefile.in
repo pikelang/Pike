@@ -1,5 +1,5 @@
 #
-# $Id: Makefile.in,v 1.202 2000/08/07 11:36:41 grubba Exp $
+# $Id: Makefile.in,v 1.203 2000/08/12 19:17:18 mast Exp $
 #
 
 # This line is needed on some machines.
@@ -103,7 +103,7 @@ MAKE_FLAGS=
 
 # Add alloca.o if you don't have alloca() on your machine.
 #
-OBJ= \
+NOMODULE_OBJ= \
  language.o \
  security.o \
  bignum.o \
@@ -131,7 +131,6 @@ OBJ= \
  main.o \
  mapping.o \
  pike_memory.o \
- module.o \
  module_support.o \
  object.o \
  opcodes.o \
@@ -146,6 +145,8 @@ OBJ= \
  queue.o \
  builtin.o \
  svalue.o @EXTRA_OBJS@
+
+OBJ= module.o $(NOMODULE_OBJ)
 
 MODULE_REQUIREMENTS= \
   machine.h \
@@ -234,8 +235,9 @@ $(TMP_BUILDDIR)/tpike:
 # the recursive make of tpike-real above, that one will never start to
 # make the $(OBJ)s concurrently with this one. stamp-tpike-predep
 # records the $(POBJ) dependencies without tpike.
-pike: $(OBJ) modules/linker_options stamp-tpike-predep
+pike: $(NOMODULE_OBJ) modules/linker_options stamp-tpike-predep
 	$(MAKE) $(MAKE_FLAGS) $(MAKE_PARALLEL) $(POBJ)
+	if [ -f module.o ] ; then : ; else $(MAKE) $(MAKE_FLAGS) module.o ; fi
 	-@if [ -f pike.old ] ; then rm -f pike.old || : ; else : ; fi
 	-@if [ -f pike.old.exe ] ; then rm -f pike.old.exe || : ; else : ; fi
 	-@if [ -f pike ] ; then mv pike pike.old || : ; else : ; fi
@@ -609,8 +611,7 @@ $(SRCDIR)/builtin.c: $(SRCDIR)/builtin.cmod ./precompile.sh $(TMP_BINDIR)/precom
 # Internal testing target
 run_yacc: $(SRCDIR)/language.c
 
-modules/modlist.h: $(MODULE_REQUIREMENTS)
-	( cd modules && $(MAKE) $(MAKE_FLAGS) )
+modules/modlist.h: module_objects
 
 modules/modlist_headers.h: modules/modlist.h
 	touch modules/modlist_headers.h
