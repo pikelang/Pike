@@ -1,8 +1,10 @@
-/* $Id: pgres_config.h.in,v 1.4 2001/06/25 20:52:57 david%hedbor.org Exp $ */
+/* $Id: pgres_config.h.in,v 1.5 2001/11/14 14:49:44 grubba Exp $ */
 #undef STDC_HEADERS
 
 /* Define if you have the <postgres.h> header file.  */
 #undef HAVE_POSTGRES_H
+/* Define if you have the <postgres_fe.h> header file.  */
+#undef HAVE_POSTGRES_FE_H
 /* Define if you have the <libpq-fe.h> header file.  */
 #undef HAVE_LIBPQ_FE_H
 /* Define if you have the pq library (-lpq).  */
@@ -21,6 +23,6 @@
 #endif
 
 /* End of autoconfigurable section */
-#if defined (HAVE_LIBPQ) && defined (HAVE_POSTGRES_H) && defined (HAVE_LIBPQ_FE_H)
+#if defined (HAVE_LIBPQ) && (defined(HAVE_POSTGRES_H) || defined(HAVE_POSTGRES_FE_H)) && defined (HAVE_LIBPQ_FE_H)
 #define HAVE_POSTGRES
 #endif
