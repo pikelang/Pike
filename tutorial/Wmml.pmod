@@ -735,7 +735,8 @@ SGML low_make_concrete_wmml(SGML data)
 			tag->pos,res)});
 
 	   ret+=
-	      ({Tag(tag->tag,(["name":fullnames*","]),tag->pos,
+	      ({Tag(tag->tag,(["name":fullnames*",",
+			       "title":tag->params->title]),tag->pos,
 		    low_make_concrete_wmml(res))});
 	   continue;
 	}
