@@ -43,7 +43,7 @@
 #include "threads.h"
 #include "operators.h"
 
-RCSID("$Id: spider.c,v 1.61 1998/02/24 20:36:05 per Exp $");
+RCSID("$Id: spider.c,v 1.62 1998/03/02 16:09:06 hubbe Exp $");
 
 #ifdef HAVE_PWD_H
 #include <pwd.h>
@@ -1388,11 +1388,11 @@ void pike_module_init(void)
 	   OPT_EXTERNAL_DEPEND);
 
   add_efun("parse_html",f_parse_html,
-	   "function(string,mapping(string:function(string,mapping(string:string),mixed ...:string)),mapping(string:function(string,mapping(string:string),string,mixed ...:string)),mixed ...:string)",
+	   "function(string,mapping(string:function(string|void,mapping(string:string)|void,mixed ...:string)),mapping(string:function(string|void,mapping(string:string)|void,string|void,mixed ...:string)),mixed ...:string)",
 	   0);
 
   add_efun("parse_html_lines",f_parse_html_lines,
-	   "function(string,mapping(string:function(string,mapping(string:string),int,mixed ...:string)),mapping(string:function(string,mapping(string:string),string,int,mixed ...:string)),mixed ...:string)",
+	   "function(string,mapping(string:function(string|void,mapping(string:string)|void,int|void,mixed ...:string)),mapping(string:function(string|void,mapping(string:string)|void,string|void,int|void,mixed ...:string)),mixed ...:string)",
 	   0);
   
 #ifdef HAVE_PERROR
