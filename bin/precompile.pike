@@ -1445,22 +1445,29 @@ class ParseBlock
 		subclass->addfuncs+
 		({
 		  attributes->program_flags?
-		  sprintf("  Pike_compiler->new_program->flags |= %s;\n",
-			  attributes->program_flags):"",
-		  sprintf("  %s=end_program();\n",program_var),
-		  sprintf("  %s_fun_num=add_program_constant(%O,%s,%s);\n",
-			  program_var,
-			  name,
-			  program_var,
-			  attributes->flags || "0"),
+		  PC.Token(sprintf("  Pike_compiler->new_program->flags |= %s;\n",
+				   attributes->program_flags),
+			   proto[1]->line):"",
+		  PC.Token(sprintf("  %s=end_program();\n",program_var),
+			   proto[0]->line),
+		  PC.Token(sprintf("  %s_fun_num=add_program_constant(%O,%s,%s);\n",
+				   program_var,
+				   name,
+				   program_var,
+				   attributes->flags || "0"),
+			   proto[0]->line),
 		    })
 	    );
 	exitfuncs+=
 	  IFDEF(define,
 		subclass->exitfuncs+
 	    ({
-	      sprintf("  if(%s) {\n    free_program(%s);\n    %s=0;\n  }\n",
-		      program_var,program_var,program_var),
+	      sprintf("  if(%s) {\n", program_var),
+	      PC.token(sprintf("    free_program(%s);\n", program_var),
+		       proto[0]->line),
+	      sprintf("    %s=0;\n"
+		      "  }\n",
+		      program_var),
 	      }));
 
 	ret+=rest;
@@ -1479,9 +1486,10 @@ class ParseBlock
 	addfuncs +=
 	  IFDEF(define,
 		({
-		  sprintf("  low_inherit(%s, NULL, -1, 0, %s, NULL);",
-			  mkname((string)name, "program"),
-			  attributes->flags || "0")
+		  PC.Token(sprintf("  low_inherit(%s, NULL, -1, 0, %s, NULL);",
+				   mkname((string)name, "program"),
+				   attributes->flags || "0"),
+			   inh[0]->line),
 		}));
 	ret+=DEFINE(define);
 	ret+=rest;
