@@ -1,5 +1,5 @@
 #
-# $Id: configure.in,v 1.12 1998/09/20 08:32:03 hubbe Exp $
+# $Id: configure.in,v 1.13 1999/03/20 21:06:09 marcus Exp $
 #
 # Configure script for the oracle module
 #
@@ -69,7 +69,7 @@ if test x$with_oracle = xyes; then
 
   echo no > conftest
       
-  if test x"$pike_cv_oracle_oracle_home" != xno -a -f "$pike_cv_oracle_oracle_home/lib/libclient.a"; then
+  if test x"$pike_cv_oracle_oracle_home" != xno -a -f "$pike_cv_oracle_oracle_home/lib/libcommon.a"; then
 
     echo "$pike_cv_oracle_oracle_home/lib" > conftest
 
@@ -77,7 +77,7 @@ if test x$with_oracle = xyes; then
     if test x"$pike_cv_oracle_oratab_file" = xno; then :; else
 
       sed -e '/^#/d' < $pike_cv_oracle_oratab_file | while IFS=":" read sid dir bootstart; do
-        if test -d "$dir/." -a -f "$dir/lib/libclient.a"; then
+        if test -d "$dir/." -a -f "$dir/lib/libcommon.a"; then
 	  if test x"$pike_cv_oracle_oracle_home" = xno; then
             AC_DEFINE_UNQUOTED(ORACLE_HOME, "${dir}")
 	  else
@@ -167,10 +167,14 @@ if test x$with_oracle = xyes; then
 
   if test "x$oracle_lib_dir" = xno -o "x$oracle_include_dir" = xno; then :; else
 
-    CPPFLAGS="-I\"$oracle_include_dir\" ${CPPFLAGS}"
-    LDFLAGS="${LDFLAGS} -L\"$oracle_lib_dir\""
+    CPPFLAGS="-I$oracle_include_dir ${CPPFLAGS}"
+    LDFLAGS="${LDFLAGS} -L$oracle_lib_dir -R$oracle_lib_dir"
 
-    ORACLE_LIBS="-lclient -lsqlnet -lncr -lsqlnet -lclient -lcommon -lgeneric -lsqlnet -lncr -lsqlnet -lclient -lcommon -lgeneric -lepc -lnlsrtl3 -lc3v6 -lcore3 -lnlsrtl3 -lcore3 -lnlsrtl3 $pike_cv_oracle_sysliblist $oracle_aio -lm -lcore3"
+    if test -f "$oracle_lib_dir/libcore4.a"; then
+      ORACLE_LIBS="-lclntsh -lcommon -lcore4 -lnlsrtl3 $pike_cv_oracle_sysliblist $oracle_aio -lm -lcore4"
+    else
+      ORACLE_LIBS="-lclient -lsqlnet -lncr -lsqlnet -lclient -lcommon -lgeneric -lsqlnet -lncr -lsqlnet -lclient -lcommon -lgeneric -lepc -lnlsrtl3 -lc3v6 -lcore3 -lnlsrtl3 -lcore3 -lnlsrtl3 $pike_cv_oracle_sysliblist $oracle_aio -lm -lcore3"
+    fi
 
     OLDLIBS=LIBS
     LIBS="$LIBS $ORACLE_LIBS"
