@@ -1,5 +1,5 @@
 START_MARKER
-test_true([["$Id: testsuite.in,v 1.730 2004/05/28 17:28:09 grubba Exp $"]]);
+test_true([["$Id: testsuite.in,v 1.731 2004/06/13 14:24:48 mast Exp $"]]);
 
 // This triggered a bug only if run sufficiently early.
 test_compile_any([[#pike 7.2]])
@@ -4480,6 +4480,20 @@ define([[MTEST]])
 
 test_equal([[lambda(multiset x){return ({x[17]++,x[17]++,x[17]++});}((<>))]],
 		[[({0,1,1})]])
+
+test_any([[
+  object o1 = class{}(), o2 = class{}(), o3 = class{}();
+  multiset m = (<o1, o2, o3, 17>);
+  destruct (o1), destruct (o2), destruct (o3);
+  return m[17];
+]], 1);
+
+test_any_equal([[
+  object o1 = class{}(), o2 = class{}(), o3 = class{}();
+  multiset m = (<o1, o2, o3, 17>);
+  destruct (o1), destruct (o2), destruct (o3);
+  return copy_value (m);
+]], (<17>));
 
 test_do([[
   multiset a = copy_value ((<(<1,2,3>), ({5,4}), ([1:2]), 1, ({}), (<1,2>), "foo">));
