@@ -5,7 +5,7 @@
 \*/
 
 /*
- * $Id: builtin_functions.h,v 1.12 2000/02/17 00:31:07 hubbe Exp $
+ * $Id: builtin_functions.h,v 1.13 2000/04/30 11:05:08 grubba Exp $
  */
 #ifndef BUILTIN_EFUNS_H
 #define BUILTIN_EFUNS_H
@@ -15,11 +15,11 @@
 #include "callback.h"
 
 /* Prototypes begin here */
+void debug_f_aggregate(INT32 args);
 #ifdef DEBUG_MALLOC
-void _f_aggregate(INT32 args);
-#define f_aggregate(X) do { _f_aggregate(X); debug_malloc_touch(Pike_sp[-1].u.refs); } while (0)
+#define f_aggregate(X) do { debug_f_aggregate(X); debug_malloc_touch(Pike_sp[-1].u.refs); } while (0)
 #else
-void f_aggregate(INT32 args);
+#define f_aggregate(X) debug_f_aggregate(X)
 #endif
 
 void f_equal(INT32 args);

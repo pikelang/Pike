@@ -5,7 +5,7 @@
 \*/
 /**/
 #include "global.h"
-RCSID("$Id: builtin_functions.c,v 1.268 2000/04/28 17:14:47 noring Exp $");
+RCSID("$Id: builtin_functions.c,v 1.269 2000/04/30 11:05:08 grubba Exp $");
 #include "interpret.h"
 #include "svalue.h"
 #include "pike_macros.h"
@@ -70,11 +70,7 @@ void f_equal(INT32 args)
   push_int(i);
 }
 
-#ifdef DEBUG_MALLOC
-void _f_aggregate(INT32 args)
-#else
-void f_aggregate(INT32 args)
-#endif
+void debug_f_aggregate(INT32 args)
 {
   struct array *a;
 #ifdef PIKE_DEBUG
@@ -5794,13 +5790,8 @@ void init_builtin_efuns(void)
 	   tFunc(tStr tOr(tVoid,tMix),tVoid),OPT_SIDE_EFFECT);
 
 /* function(0=mixed ...:array(0)) */
-#ifdef DEBUG_MALLOC
-  ADD_EFUN("aggregate",_f_aggregate,
+  ADD_EFUN("aggregate",debug_f_aggregate,
 	   tFuncV(tNone,tSetvar(0,tMix),tArr(tVar(0))),OPT_TRY_OPTIMIZE);
-#else
-  ADD_EFUN("aggregate",f_aggregate,
-	   tFuncV(tNone,tSetvar(0,tMix),tArr(tVar(0))),OPT_TRY_OPTIMIZE);
-#endif
   
 /* function(0=mixed ...:multiset(0)) */
   ADD_EFUN("aggregate_multiset",f_aggregate_multiset,
