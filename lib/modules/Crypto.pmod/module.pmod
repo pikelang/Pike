@@ -3,7 +3,7 @@
 /* Old crypto module */
 inherit _Crypto;
 
-#if constant(Nettle)
+#if constant(Nettle.HashInfo)
 
 inherit Nettle;
 
@@ -31,4 +31,4 @@ class MD5_Algorithm
 
 MD5_Algorithm MD5 = MD5_Algorithm();
 
-#endif /* constant(Nettle) */
+#endif /* constant(Nettle.HashInfo) */
