@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: port.h,v 1.54 2003/08/08 11:14:59 grubba Exp $
+|| $Id: port.h,v 1.55 2003/11/14 06:55:58 mast Exp $
 */
 
 #ifndef PORT_H
@@ -54,9 +54,13 @@ time_t TIME(time_t *);
 #endif
 
 #ifndef HAVE_RINT
+#define RINTF(X) floorf ((X) + 0.5)
 #define RINT(X) floor( (X) + 0.5 )
+#define RINTL(X) floorl ((X) + 0.5)
 #else
+#define RINTF rintf
 #define RINT rint
+#define RINTL rintl
 #endif
 
 long STRTOL(const char *str,char **ptr,int base);
