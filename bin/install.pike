@@ -28,6 +28,7 @@ int installed_files;
 // (incidentally defined elsewhere in the C code too)
 #define MASTER_COOKIE "(#*&)@(*&$Master Cookie:"
 
+constant pike_upgrade_guid = "FCBB6B90-1608-4A7C-926C-69BBAB366326";
 
 int istty_cache;
 int istty()
@@ -157,6 +158,168 @@ void status_clear(void|int all)
     status(0,"");
 }
 
+class WixNode
+{
+  inherit Parser.XML.Tree.SimpleElementNode;
+
+  static void create(string name, mapping(string:string) attrs)
+  {
+    ::create("http://schemas.microsoft.com/wix/2003/01/wi" + name, attrs);
+    mTagName = name;
+    mNamespace = "http://schemas.microsoft.com/wix/2003/01/wi";
+  }
+}
+
+class File
+{
+  string name;
+  string source;
+  string id;
+
+  static void create(string name, string source, string|void id)
+  {
+    File::name = name;
+    File::source = source;
+    if (!id) {
+      id = "_" + String.string2hex(Crypto.MD5()->
+				   update(source+Stdio.read_bytes(source))->
+				   digest());
+    }
+    File::id = id;
+  }
+
+  WixNode gen_xml()
+  {
+    mapping(string:string) attrs = ([
+      "Id":id,
+      "Name":String.string2hex(Crypto.MD5()->update(name)->digest())[..7],
+      "LongName":name,
+      "Vital":"yes",
+      //      "KeyPath":"yes",
+      //      "DiskId":"1",
+    ]);
+    if (source) {
+      attrs->src = source;
+#if 0
+      if (search(attrs->src, "/") > 0) {
+	// light doesn't like relative paths.
+	attrs->src = combine_path(getcwd(), attrs->src);
+      }
+#endif
+      if (has_prefix(attrs->src, "/home/")) {
+	// KLUDGE
+	attrs->src = "H:" + attrs->src[5..];
+      }
+      attrs->src = replace(attrs->src, "/", "\\");
+    }
+    return WixNode("File", attrs);
+  }
+}
+
+class Directory
+{
+  string name;
+  string id;
+  string source;
+  mapping(string:int) sub_sources = ([]);
+  mapping(string:File) files = ([]);
+  mapping(string:Directory) sub_dirs = ([]);
+
+  static void create(string name, string|void id)
+  {
+    Directory::name = name;
+    Directory::id = id;
+  }
+
+  void add_path(string dest, string src)
+  {
+    if (search(dest, "/") == -1) {
+      files[dest] = File(dest, src);
+      if (has_suffix(src, "/"+dest)) {
+	sub_sources[combine_path(src, "..")]++;
+      }
+    } else {
+      array(string) path = dest/"/";
+      string dname = path[0];
+      Directory d = sub_dirs[dname];
+      if (!d) {
+	d = sub_dirs[dname] = Directory(dname);
+      }
+      d->add_path(dest[sizeof(dname)+1..], src);
+    }
+  }
+
+  void set_sources()
+  {
+    foreach(sub_dirs; string dname; Directory d) {
+      d->set_sources();
+      if (d->source &&
+	  has_suffix(d->source, "/" + dname)) {
+	string sub_src = combine_path(d->source, "..");
+	sub_sources[sub_src] += d->sub_sources[d->source] + 1;
+      }
+    }
+    if (sizeof(sub_sources)) {
+      array(int) cnt = values(sub_sources);
+      array(string) srcs = indices(sub_sources);
+      sort(cnt, srcs);
+      source = srcs[-1];
+      foreach(sub_dirs; string dname; Directory d) {
+	if (d->source == source + "/" + dname) {
+	  d->source = 0;
+	}
+      }
+      foreach(files; string fname; File f) {
+	if (f->source == source + "/" + fname) {
+	  f->source = 0;
+	}
+      }
+    }
+  }
+
+  WixNode gen_xml(string|void parent)
+  {
+    if (!parent) parent = "";
+    parent += "/" + name;
+    if (!id) {
+      id = "_" + String.string2hex(Crypto.MD5()->update(parent)->digest());
+    }
+    mapping(string:string) attrs = ([
+      "Name":String.string2hex(Crypto.MD5()->update(name)->digest())[..7],
+      "LongName":name,
+      "Id":id,
+    ]);
+    if (source) {
+      attrs->src = source+"/";
+#if 0
+      if (search(attrs->src, "/") > 0) {
+	// light doesn't like relative paths.
+	attrs->src = combine_path(getcwd(), attrs->src);
+      }
+#endif
+      if (has_prefix(attrs->src, "/home/")) {
+	// KLUDGE.
+	attrs->src = "H:"+attrs->src[5..];
+      }
+      attrs->src = replace(attrs->src, "/", "\\");
+    }
+    WixNode node = WixNode("Directory", attrs);
+    foreach(sub_dirs;; Directory d) {
+      node->add_child(d->gen_xml(parent));
+    }
+    if (sizeof(files)) {
+      WixNode component = WixNode("Component", ([
+				    "Id":"C_" + id,
+				    "Guid":Standards.UUID.new_string(),
+				  ]));
+      foreach(files;; File f) {
+	component->add_child(f->gen_xml());
+      }
+      node->add_child(component);
+    }
+    return node;
+  }
+}
 
 mapping already_created=([]);
 int mkdirhier(string orig_dir)
@@ -440,11 +603,142 @@ void tarfilter(string filename)
 }
 
 #ifdef __NT__
-  constant tmpdir="~piketmp";
-#endif
+constant tmpdir="~piketmp";
+#endif /* __NT__ */
 
 void do_export()
 {
+  if (export == 2) {
+    status("Creating", export_base_name+"_module.wxs");
+
+#define TRANSLATE(X,Y) combine_path(".",X) : Y
+    mapping translator = ([
+      TRANSLATE(vars->BASEDIR,""),
+      TRANSLATE(vars->LIBDIR_SRC,"lib"),
+      TRANSLATE(vars->SRCDIR,"src"),
+      TRANSLATE(vars->TMP_BINDIR,"bin"),
+      TRANSLATE(vars->MANDIR_SRC,"man"),
+      TRANSLATE(vars->DOCDIR_SRC,"refdoc"),
+      TRANSLATE(vars->TMP_LIBDIR,"build/lib"),
+      "unpack_master.pike" : "build/master.pike",
+      "":"build",
+    ]);
+
+    Directory root = Directory("SourceDir", "TARGETDIR");
+
+    foreach(to_export, string src) {
+      root->add_path(translate(src, translator), src);
+    }
+
+    // Minimize the number of src directives.
+    root->set_sources();
+
+    // Generate the XML tree.
+    WixNode xml_root = Parser.XML.Tree.SimpleRootNode()->
+      add_child(Parser.XML.Tree.SimpleHeaderNode((["version":"1.0",
+						   "encoding":"utf-8"])))->
+      add_child(WixNode("Wix", ([
+			  "xmlns":"http://schemas.microsoft.com/wix/2003/01/wi",
+			]))->
+		add_child(WixNode("Module", ([
+				    "Id":"Pike",
+				    "Guid":Standards.UUID.new_string(),
+				    "Language":"1033",
+				    "Version":sprintf("%d.%d.%d",
+						      __REAL_MAJOR__,
+						      __REAL_MINOR__,
+						      __REAL_BUILD__),
+				  ]))->
+			  add_child(WixNode("Package", ([
+					      "Description":"Pike dist",
+					      "Comments":"Merge with this",
+					      "Id":Standards.UUID.new_string(),
+					      "Manufacturer":"IDA",
+					      "InstallerVersion":"200",
+					      "Compressed":"yes",
+					    ])))->
+			  add_child(root->gen_xml())));
+
+    Stdio.write_file(export_base_name+"_module.wxs", xml_root->render_xml());
+
+    // Generate the main wxs file.
+
+    status("Creating", export_base_name+".wxs");
+
+    WixNode product_node = WixNode("Product", ([
+				     "Name":"Pike",
+				     "Language":"1033",
+				     "UpgradeCode":pike_upgrade_guid,
+				     "Id":Standards.UUID.new_string(),
+				     "Version":sprintf("%d.%d.%d",
+						       __REAL_MAJOR__,
+						       __REAL_MINOR__,
+						       __REAL_BUILD__),
+				     "Manufacturer":"IDA",
+				   ]))->
+      add_child(WixNode("Package", ([
+			  "Manufacturer":"IDA",
+			  "Languages":"1033",
+			  "InstallerVersion":"200",
+			  "Platforms":"Intel",
+			  "Id":Standards.UUID.new_string(),
+			  "Compressed":"yes",
+			  "SummaryCodepage":"1252",
+			])))->
+      add_child(WixNode("Media", ([
+			  "Id":"1",
+			  "EmbedCab":"yes",
+			  "Cabinet":"Pike.cab",
+			])))->
+      add_child(WixNode("Directory", ([
+			  "Id":"TARGETDIR",
+			  "Name":"SourceDir",
+			]))->
+		add_child(WixNode("Merge", ([
+				    "Id":"Pike",
+				    "Language":"1033",
+				    "src":export_base_name+"_module.msm",
+				    "DiskId":"1",
+				  ]))))->
+      add_child(WixNode("Feature", ([
+			  "Id":"F_Pike",
+			  "Title":sprintf("Pike %d.%d.%d",
+					  __REAL_MAJOR__,
+					  __REAL_MINOR__,
+					  __REAL_BUILD__),
+			  "Level":"1",
+			  "ConfigurableDirectory":"TARGETDIR",
+			]))->
+		add_child(WixNode("MergeRef", ([
+				    "Id":"Pike",
+				  ]))))->
+      add_child(WixNode("Upgrade", ([
+			  "Id":Standards.UUID.new_string(),
+			]))->
+		add_child(WixNode("UpgradeVersion", ([
+				    "Minimum":sprintf("%d.0.0",
+						      __REAL_MAJOR__),
+				    "Property":"NEWERPRODUCTFOUND",
+				    "OnlyDetect":"yes",
+				    "IncludeMinimum":"yes",
+				  ]))))->
+      add_child(WixNode("CustomAction", ([
+			  "Id":"DIRCA_TARGETDIR",
+			  "Property":"TARGETDIR",
+			  "Value":"[ProgramFilesFolder][Manufacturer]\[ProductName]",
+			  "Execute":"firstSequence",
+			])));
+						      
+
+    xml_root = Parser.XML.Tree.SimpleRootNode()->
+      add_child(Parser.XML.Tree.SimpleHeaderNode((["version":"1.0",
+						   "encoding":"utf-8"])))->
+      add_child(WixNode("Wix", ([
+			  "xmlns":"http://schemas.microsoft.com/wix/2003/01/wi",
+			]))->add_child(product_node));
+
+    Stdio.write_file(export_base_name+".wxs", xml_root->render_xml());
+  } else {
 #ifdef __NT__
   status("Creating",export_base_name+".burk");
   Stdio.File p=Stdio.File(export_base_name+".burk","wc");
@@ -581,8 +875,8 @@ files COPYING and COPYRIGHT in the Pike distribution for more details.
 		  rm -f "+tmpname+#".x
                   exit 0 ;;
 
-    --list-files) tar xf \"$TARFILE\" "+tmpname+#".tar.gz
-                  tar tfz "+tmpname+#".tar.gz
+    --list-files) tar xbf 1 \"$TARFILE\" "+tmpname+#".tar.gz
+                  tar tbfz 1 "+tmpname+#".tar.gz
                   rm -f "+tmpname+".x "+tmpname+#".tar.gz
                   exit 0 ;;
 
@@ -596,7 +890,7 @@ files COPYING and COPYRIGHT in the Pike distribution for more details.
 done
 "
 		   "echo \"   Loading installation script, please wait...\"\n"
-		   "tar xf \"$TARFILE\" "+tmpname+".tar.gz\n"
+		   "tar xbf 1 \"$TARFILE\" "+tmpname+".tar.gz\n"
 		   "gzip -dc "+tmpname+".tar.gz | tar xf -\n"
 		   "rm -rf "+tmpname+".tar.gz\n"
 		   "( cd '"+export_base_name+".dir'\n"
@@ -617,7 +911,7 @@ done
     );
   chmod(tmpname+".x",0755);
   string script=sprintf("#!/bin/sh\n"
-			"tar xf \"$0\" %s.x\n"
+			"tar xbf 1 \"$0\" %s.x\n"
 			"exec ./%s.x \"$0\" \"$@\"\n", tmpname, tmpname, tmpname);
   if(sizeof(script) >= 100)
   {
@@ -676,6 +970,7 @@ done
   }) ) ->wait();
 
 #endif
+  }
   status1("Export done");
 
   exit(0);
@@ -975,7 +1270,10 @@ int pre_install(array(string) argv)
       install_type="--new-style";
       continue;
 
+    case "--wix":
+      export = 2;
     case "--export":
+      export = export || 1;
       string ver = replace( version(), ([ " ":"-", " release ":"." ]) );
 #if constant(uname)
       mapping(string:string) u = uname();
@@ -1002,28 +1300,27 @@ int pre_install(array(string) argv)
       status1("Building export %s\n", export_base_name);
 
 #ifndef __NT__
-      mkdirhier(export_base_name+".dir");
+      if (export == 1) {
+	mkdirhier(export_base_name+".dir");
 
-      mklink(vars->LIBDIR_SRC,export_base_name+".dir/lib");
-      mklink(vars->SRCDIR,export_base_name+".dir/src");
-      mklink(getcwd(),export_base_name+".dir/build");
-      mklink(vars->TMP_BINDIR,export_base_name+".dir/bin");
-      mklink(vars->MANDIR_SRC,export_base_name+".dir/man");
-      mklink(vars->DOCDIR_SRC,export_base_name+".dir/refdoc");
+	mklink(vars->LIBDIR_SRC,export_base_name+".dir/lib");
+	mklink(vars->SRCDIR,export_base_name+".dir/src");
+	mklink(getcwd(),export_base_name+".dir/build");
+	mklink(vars->TMP_BINDIR,export_base_name+".dir/bin");
+	mklink(vars->MANDIR_SRC,export_base_name+".dir/man");
+	mklink(vars->DOCDIR_SRC,export_base_name+".dir/refdoc");
 
-      cd(export_base_name+".dir");
+	cd(export_base_name+".dir");
 
-      vars->TMP_LIBDIR="build/lib";
-      vars->LIBDIR_SRC="lib";
-      vars->SRCDIR="src";
-      vars->TMP_BINDIR="bin";
-      vars->MANDIR_SRC="man";
-      vars->DOCDIR_SRC="refdoc";
-      vars->TMP_BUILDDIR="build";
-
+	vars->TMP_LIBDIR="build/lib";
+	vars->LIBDIR_SRC="lib";
+	vars->SRCDIR="src";
+	vars->TMP_BINDIR="bin";
+	vars->MANDIR_SRC="man";
+	vars->DOCDIR_SRC="refdoc";
+	vars->TMP_BUILDDIR="build";
+      }
 #endif
-
-      export=1;
       to_export+=({ combine_path(vars->TMP_BINDIR,"install.pike") });
 
     case "":
@@ -1293,15 +1590,21 @@ void do_install()
     if(export)
     {
       string unpack_master = "master.pike";
+      if (export == 1) {
 #ifdef __NT__
-      // We don't want to overwrite the main master...
-      // This is undone by the translator.
-      unpack_master = "unpack_master.pike";
-      make_master(unpack_master, master_src,
-		  tmpdir+"/build/lib", tmpdir+"/build", tmpdir+"/lib");
+	// We don't want to overwrite the main master...
+	// This is undone by the translator.
+	unpack_master = "unpack_master.pike";
+	make_master(unpack_master, master_src,
+		    tmpdir+"/build/lib", tmpdir+"/build", tmpdir+"/lib");
 #else
-      make_master(unpack_master, master_src, "build/lib", "build", "lib");
+	make_master(unpack_master, master_src, "build/lib", "build", "lib");
 #endif
+      } else {
+	unpack_master = "unpack_master.pike";
+	make_master(unpack_master, master_src, "build/lib", "build", "lib");
+      }
+
       to_export+=({
 	unpack_master,
 	combine_path(vars->TMP_BUILDDIR,"specs"),
@@ -1456,6 +1759,7 @@ int main(int argc, array(string) argv)
     ({"no-autodoc",Getopt.NO_ARG,({"--no-autodoc","--no-refdoc"})}),
     ({"no-gui",Getopt.NO_ARG,({"--no-gui","--no-x"})}),
     ({"--export",Getopt.NO_ARG,({"--export"})}),
+    ({"--wix", Getopt.NO_ARG, ({ "--wix" })}),
     ({"--traditional",Getopt.NO_ARG,({"--traditional"})}),
     }) ),array opt)
     {
