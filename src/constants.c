@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: constants.c,v 1.44 2002/11/24 22:47:06 mast Exp $
+|| $Id: constants.c,v 1.45 2002/12/12 17:17:08 nilsson Exp $
 */
 
 #include "global.h"
@@ -18,7 +18,7 @@
 #include "security.h"
 #include "block_alloc.h"
 
-RCSID("$Id: constants.c,v 1.44 2002/11/24 22:47:06 mast Exp $");
+RCSID("$Id: constants.c,v 1.45 2002/12/12 17:17:08 nilsson Exp $");
 
 struct mapping *builtin_constants = 0;
 
@@ -92,7 +92,7 @@ PMOD_EXPORT struct callable *low_make_callable(c_fun fun,
   {
     struct pike_type *z = check_call(function_type_string, type, 0);
     f->may_return_void = (z == void_type_string);
-    if(!z) Pike_fatal("Gnapp!\n");
+    if(!z) Pike_fatal("Function has no valid return type.\n");
     free_type(z);
   }
   f->runs=0;
@@ -185,7 +185,7 @@ void present_constant_profiling(void)
 
 void init_builtin_constants(void)
 {
-  builtin_constants = allocate_mapping(252);
+  builtin_constants = allocate_mapping(250);
 }
 
 void cleanup_added_efuns(void)
