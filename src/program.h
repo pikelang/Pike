@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: program.h,v 1.214 2005/01/20 14:28:03 nilsson Exp $
+|| $Id: program.h,v 1.215 2005/03/14 17:20:23 per Exp $
 */
 
 #ifndef PROGRAM_H
@@ -614,7 +614,11 @@ extern int compilation_depth;
 
 #define COMPILER_IN_CATCH 1
 
-#define ADD_STORAGE(X) low_add_storage(sizeof(X), ALIGNOF(X),0)
+#define ADD_STORAGE(X) do{				\
+	struct { char _x; X _z; } *___offset=NULL;		\
+	low_add_storage(sizeof(X), PTR_TO_INT(&___offset->_z),0);	\
+    }  while(0)
+
 #define STORAGE_NEEDED(X) ((X)->storage_needed - (X)->inherits[0].storage_offset)
 
 #define FOO(NUMTYPE,TYPE,ARGTYPE,NAME) void PIKE_CONCAT(add_to_,NAME(ARGTYPE ARG));
