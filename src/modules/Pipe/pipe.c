@@ -22,7 +22,7 @@
 #include <fcntl.h>
 
 #include "global.h"
-RCSID("$Id: pipe.c,v 1.12 1997/10/05 03:31:09 per Exp $");
+RCSID("$Id: pipe.c,v 1.13 1997/10/05 17:31:47 grubba Exp $");
 
 #include "threads.h"
 #include "stralloc.h"
@@ -627,12 +627,34 @@ static void pipe_input(INT32 args)
 	 i->u.mmap=m;
 #ifdef HAVE_MADVISE
 	 /* Mark the pages as sequential read only access... */
+
+	 /* NOTE:
+	  *
+	  *	Potential race-condition with other threads
+	  */
+
 #ifdef HAVE_GETEUID
-	 if((ou=geteuid()) && !getuid()) seteuid(0);
+	 if((ou=geteuid()) && !getuid()) {
+#ifdef HAVE_SETEUID
+	   seteuid(0);
+#else /* ! HAVE_SETEUID */
+#ifdef HAVE_SETREUID
+	   setresuid(-1, 0, -1);
+#endif /* HAVE_SETRESUID */
+#endif /* HAVE_SETEUID */
+	 }
 #endif
 	 madvise(m, s.st_size, MADV_SEQUENTIAL);
 #ifdef HAVE_GETEUID
-	 if(ou) seteuid(ou);
+	 if(ou) {
+#ifdef HAVE_SETEUID
+	   seteuid(0);
+#else /* ! HAVE_SETEUID */
+#ifdef HAVE_SETREUID
+	   setresuid(-1, ou, -1);
+#endif /* HAVE_SETRESUID */
+#endif /* HAVE_SETEUID */
+	 }
 #endif
 #endif
 	 pop_n_elems(args);
