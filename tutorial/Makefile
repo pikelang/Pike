@@ -80,7 +80,7 @@ export:
 	tar czvTf tutorial_onepage.files tutorial_onepage.tar.gz 
 
 mirar_www: Image.wmml the_image_module.html
-	ln -f illustration*.gif the_image_module*.html /home/mirar/www/image
+	ln -f illustration*.gif illustration*.jpeg the_image_module*.html /home/mirar/www/image
 
 mirar_www_tutorial: tutorial.html
 	ln -f illustration*.gif tutorial*html /home/mirar/www/pike_tutorial

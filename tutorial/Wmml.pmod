@@ -920,6 +920,35 @@ string mkgif(mixed o,void|object alpha)
   return gifname;
 }
 
+string mkjpeg(mixed o,void|int quality)
+{
+   string g=Image.JPEG.encode(o,(["quality":quality||100]));
+
+   int key=hash(g);
+
+   foreach(gifcache[key]||({}),string file)
+   {
+      if(Stdio.read_file(file)==g)
+      {
+	 werror("Cache hit in mkjpeg: "+file+"\n");
+	 return file;
+      }
+   }
+
+   gifnum++;
+   string gifname="illustration"+gifnum+".jpeg";
+   rm(gifname);
+   werror("Writing "+gifname+".\n");
+   Stdio.write_file(gifname,g);
+
+   if(gifcache[key])
+      gifcache[key]+=({gifname});
+   else
+      gifcache[key]=({gifname});
+
+   return gifname;
+}
+
 
 object render_illustration(string pike_code, mapping params, float dpi)
 {
@@ -989,10 +1018,17 @@ array execute_contents(Tag tag)
 {
    string data=get_text(tag->data);
 
+   data=replace(data,"\n<p>","\n");
+
    add_constant("illustration",
 		lambda(object o,void|object alpha)
 		{
 		   return Sgml.Tag("image",(["gif":mkgif(o,alpha)]),0);
+		});
+   add_constant("illustration_jpeg",
+		lambda(object o,void|object alpha)
+		{
+		   return Sgml.Tag("image",(["jpeg":mkjpeg(o,alpha)]),0);
 		});
    add_constant("mktag",
 		lambda(string name,void|mapping arg,void|mixed cont)
@@ -1002,23 +1038,32 @@ array execute_contents(Tag tag)
 				   arg||([]),
 				   tag->pos,
 				   arrayp(cont)?cont:
-				   intp(cont)?({}):({cont}),
+				   intp(cont)?0:({cont}),
 				   tag->file);
 		});
 
    array ret;
 
+   array cerrs=({});
+   master()->set_inhibit_compile_errors(
+      lambda(string file,int line,string err) 
+      { 
+	 cerrs+=({({line,err})}); 
+      });
+
    mixed err=catch
    {
       object po;
-      po=compile_string("#1 \"static stuff\"\n"
+      po=compile_string("#10000 \"static stuff\"\n"
 			"array _res=({({})});\n"
 			"void write(mixed ...args) { _res[0]+=args; }\n"
 			"\n"
 			"void begin_tag(string name,void|mapping p) "
 			"{ _res=({({}),({name,p})})+_res; }\n"
 			"object end_tag() "
-			"{ object t=mktag(@_res[1],_res[0]); "
+			"{ if (sizeof(_res)<2) "
+			"error(\"end_tag w/o begin_tag\\n\");\n"
+			"object t=mktag(@_res[1],_res[0]); "
 			"_res=_res[2..]; return t;}\n"
 			"\n"
 			"#1 \"inline wmml generating code\"\n"
@@ -1026,14 +1071,51 @@ array execute_contents(Tag tag)
       po->main();
       ret=po->_res[0];
    };
-   if (err)
+   master()->set_inhibit_compile_errors(0);
+   if (sizeof(cerrs))
    {
-      werror("error while compiling and running\n"+data+"\n");
+      werror("error while compiling inline "
+	     "wmml-generating script\n");
+      int offs=0;
       if (tag->params->__from__) 
-	 werror("from "+tag->params->__from__+":\n");
-      werror(master()->describe_backtrace(err)+"\n");
+	 werror("from "+tag->params->__from__+"\n");
+
+      array dat=data/"\n";
+      
+      int i,mx=min(max(@column(cerrs,0))+4,sizeof(dat));
+      for (i=max(0,min(@column(cerrs,0))-1);i<mx; i++)
+	 werror("%5d: %s\n",i+offs+1,dat[i]);
+
+      foreach (cerrs,array z)
+	 werror("-:%d:%s\n",@z);
+
       return ({"<!-- failed to execute wmml generator... -->"});
    }
+   else if (err)
+   {
+      werror("error while running inline "
+	     "wmml-generating script\n");
+      int offs=0;
+      if (tag->params->__from__) 
+	 werror("from "+tag->params->__from__+"\n");
+
+      array dat=data/"\n";
+      werror("%O\n",err[1]);
+      foreach (reverse(err[1]),array y)
+	 if (y[0]=="inline wmml generating code" &&
+	     y[1]<10000) 
+	 {
+	    int n=y[1]; 
+	    int i=max(0,n-4),mx=min(sizeof(dat)-1,n+6);
+	    for (;i<mx; i++)
+	       werror("%5d: %s\n",i+offs+1,dat[i]);
+	    break;
+	 }
+
+      werror(master()->describe_backtrace(err));
+      
+      return ({"<!-- failed to execute wmml generator... -->"});
+    }
    return ret;
 }
 
@@ -1044,6 +1126,9 @@ string image_to_gif(TAG data, float dpi)
 
   if(params->gif)
      return params->gif;
+
+  if(params->jpeg)
+     return params->jpeg;
 
   if(params->xfig)
     params->src=params->xfig+".fig";

@@ -45,8 +45,8 @@ TAG mkimgtag(string file, mapping params)
   if(params->alt) p->align=params->alt;
   add_file_to_export_list(file);
   object o=Image.load(file);
-  p->xsize=o->xsize();
-  p->ysize=o->ysize();
+  p->xsize=(string)o->xsize();
+  p->ysize=(string)o->ysize();
   return Sgml.Tag("img",p,0);
 }
 
