@@ -1,5 +1,5 @@
 /*
- * $Id: Sql.pike,v 1.52 2001/10/03 08:54:15 grubba Exp $
+ * $Id: Sql.pike,v 1.53 2001/11/08 15:30:16 anders Exp $
  *
  * Implements the generic parts of the SQL-interface
  *
@@ -93,7 +93,7 @@ function(string:int) decode_datetime;
 //!       Access through a UNIX-domain socket or similar.
 //!   @endmixed
 //!
-//! @param database
+//! @param db
 //!   Select this database.
 //!
 //! @param user
