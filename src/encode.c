@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: encode.c,v 1.222 2004/10/16 12:10:17 grubba Exp $
+|| $Id: encode.c,v 1.223 2004/10/17 05:44:18 agehall Exp $
 */
 
 #include "global.h"
@@ -2267,33 +2267,43 @@ static INT32 decode_portable_bytecode(INT32 string_no)
 
   switch(bytecode->size_shift) {
 #define SIGNED_CHAR(X)	X
-#define EMIT_BYTECODE(STR) do {					\
-    for (e = 0; e < bytecode->len; e += 3) {			\
-      if (STR(bytecode)[e] == F_FILENAME) {			\
-	INT32 strno = STR(bytecode)[e+1];			\
-	if (SIGNED_CHAR((strno < 0) || )			\
-	    (strno >= p->num_strings)) {			\
-	  Pike_error("Bad filename directive number:"		\
-		     " %d (expected 0 - %d).\n",		\
-		     strno, p->num_strings);			\
-	}							\
-	current_file = p->strings[strno];			\
-      } else if (STR(bytecode)[e] == F_LINE) {			\
-	current_line = STR(bytecode)[e+1];			\
-      } else {							\
-	insert_opcode2(STR(bytecode)[e],			\
-		       STR(bytecode)[e+1],			\
-		       STR(bytecode)[e+2],			\
-		       current_line,				\
-		       current_file);				\
-      }								\
-    }								\
+
+    /* The EMIT_BYTECODE2 macro will generate the warning
+     * "comparison is always false due to limited range of data type"
+     * if used on STR0. Thus, the need to have two macros here.
+     */
+#define EMIT_BYTECODE2(STR)				\
+      if (STR(bytecode)[e] == F_FILENAME) {		\
+	INT32 strno = STR(bytecode)[e+1];		\
+	if (SIGNED_CHAR(strno < 0) ||			\
+	    (strno >= p->num_strings)) {		\
+	  Pike_error("Bad filename directive number:"	\
+		     " %d (expected 0 - %d).\n",	\
+		     strno, p->num_strings);		\
+	}						\
+	current_file = p->strings[strno];		\
+      } else if (STR(bytecode)[e] == F_LINE) {		\
+	current_line = STR(bytecode)[e+1];		\
+      } else 
+
+#define EMIT_BYTECODE(STR, X) do {		\
+    for (e = 0; e < bytecode->len; e += 3) {	\
+      X(STR)					\
+      {						\
+	insert_opcode2(STR(bytecode)[e],	\
+		       STR(bytecode)[e+1],	\
+		       STR(bytecode)[e+2],	\
+		       current_line,		\
+		       current_file);		\
+      }						\
+    }						\
   } while(0)
+
   case 2:
     EMIT_BYTECODE(STR2, EMIT_BYTECODE2);
     break;
 #undef SIGNED_CHAR
-#define SIGNED_CHAR(X)
+#define SIGNED_CHAR(X) 0
   case 1:
     EMIT_BYTECODE(STR1, EMIT_BYTECODE2);
     break;
