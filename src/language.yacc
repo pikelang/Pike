@@ -188,7 +188,7 @@
 /* This is the grammar definition of Pike. */
 
 #include "global.h"
-RCSID("$Id: language.yacc,v 1.164 2000/02/17 01:15:22 grubba Exp $");
+RCSID("$Id: language.yacc,v 1.165 2000/02/17 13:48:20 grubba Exp $");
 #ifdef HAVE_MEMORY_H
 #include <memory.h>
 #endif
@@ -667,7 +667,7 @@ def: modifiers type_or_error optional_stars F_IDENTIFIER push_compiler_frame0
     int e;
     /* construct the function type */
     push_finished_type(compiler_frame->current_type);
-    if ($3) {
+    if ($3 && (compiler_pass == 2)) {
       yywarning("The *-syntax in types is obsolete. Use array instead.");
     }
     while(--$3>=0) push_type(T_ARRAY);
@@ -1000,7 +1000,9 @@ type6: type | identifier_type ;
   
 type: type '*'
   {
-    yywarning("The *-syntax in types is obsolete. Use array instead.");
+    if (compiler_pass == 2) {
+       yywarning("The *-syntax in types is obsolete. Use array instead.");
+    }
     push_type(T_ARRAY);
   }
   | type2
@@ -1008,7 +1010,9 @@ type: type '*'
 
 type7: type7 '*'
   {
-    yywarning("The *-syntax in types is obsolete. Use array instead.");
+    if (compiler_pass == 2) {
+      yywarning("The *-syntax in types is obsolete. Use array instead.");
+    }
     push_type(T_ARRAY);
   }
   | type4
@@ -1307,7 +1311,7 @@ new_name: optional_stars F_IDENTIFIER
   {
     struct pike_string *type;
     push_finished_type(compiler_frame->current_type);
-    if ($1) {
+    if ($1 && (compiler_pass == 2)) {
       yywarning("The *-syntax in types is obsolete. Use array instead.");
     }
     while($1--) push_type(T_ARRAY);
@@ -1321,7 +1325,7 @@ new_name: optional_stars F_IDENTIFIER
   {
     struct pike_string *type;
     push_finished_type(compiler_frame->current_type);
-    if ($1) {
+    if ($1 && (compiler_pass == 2)) {
       yywarning("The *-syntax in types is obsolete. Use array instead.");
     }
     while($1--) push_type(T_ARRAY);
@@ -1360,7 +1364,7 @@ new_name: optional_stars F_IDENTIFIER
 new_local_name: optional_stars F_IDENTIFIER
   {    
     push_finished_type($<n>0->u.sval.u.string);
-    if ($1) {
+    if ($1 && (compiler_pass == 2)) {
       yywarning("The *-syntax in types is obsolete. Use array instead.");
     }
     while($1--) push_type(T_ARRAY);
@@ -1372,7 +1376,7 @@ new_local_name: optional_stars F_IDENTIFIER
   | optional_stars F_IDENTIFIER '=' expr0 
   {
     push_finished_type($<n>0->u.sval.u.string);
-    if ($1) {
+    if ($1 && (compiler_pass == 2)) {
       yywarning("The *-syntax in types is obsolete. Use array instead.");
     }
     while($1--) push_type(T_ARRAY);
@@ -1655,7 +1659,7 @@ local_function2: optional_stars F_IDENTIFIER push_compiler_frame1
     debug_malloc_touch(compiler_frame->current_return_type);
     
     push_finished_type($<n>0->u.sval.u.string);
-    if ($1) {
+    if ($1 && (compiler_pass == 2)) {
       yywarning("The *-syntax in types is obsolete. Use array instead.");
     }
     while($1--) push_type(T_ARRAY);
