@@ -69,6 +69,19 @@ class DOMImplementation
   {
     return lower_case(feature)=="xml" && (version == "1.0" || !version);
   }
+
+  Document create_document(string namespace_uri, string qualified_name,
+			   DocumentType|void doctype)
+  {
+    return Document(this_object(), namespace_uri, qualified_name, doctype);
+  }
+
+  DocumentType create_document_type(string qualified_name,
+				    string|void public_id,
+				    string|void system_id)
+  {
+    return DocumentType(this_object(), qualified_name, public_id, system_id);
+  }
 }
 
 class NodeList
@@ -118,6 +131,8 @@ class NamedNodeMap
     if(is_readonly())
       throw(DOMException(DOMException.NO_MODIFICATION_ALLOWED_ERR));
     Node old = map[arg->get_node_name()];
+    if(old == arg)
+      return 0;
     bind(arg);
     map[arg->get_node_name()] = arg;
     if(old)
@@ -137,7 +152,11 @@ class NamedNodeMap
     return old;
   }
 
-  Node `[](int index) { return item(index); }
+  Node `[](int|string index)
+  {
+    return stringp(index)? get_named_item(index) : item(index);
+  }
+
   int _sizeof() { return get_length(); }
   mapping(string:Node) cast(string to) {
     return to[..6] == "mapping" && copy_value(map);
@@ -270,10 +289,17 @@ class Node
       throw(DOMException(DOMException.NOT_FOUND_ERR));
     if(is_ancestor(new_child))
       throw(DOMException(DOMException.HIERARCHY_REQUEST_ERR));
-    if(new_child->get_owner_document() != owner_document)
-      throw(DOMException(DOMException.WRONG_DOCUMENT_ERR));
     if(is_readonly())
       throw(DOMException(DOMException.NO_MODIFICATION_ALLOWED_ERR));
+    if(new_child->get_owner_document() != owner_document)
+      if(get_node_type() == DOCUMENT_NODE &&
+	 new_child->get_node_type() == DOCUMENT_TYPE_NODE &&
+	 !new_child->get_owner_document() &&
+	 functionp(new_child->_set_owner_document))
+	new_child->_set_owner_document(this_object());
+      else
+	throw(DOMException(DOMException.WRONG_DOCUMENT_ERR));
+    
     if(new_child->get_node_type() == DOCUMENT_FRAGMENT_NODE) {
       array(Node) new_children = values(new_child->get_child_nodes());
       foreach(new_children, Node nc)
@@ -361,10 +387,13 @@ class Document
   static program AttrImpl = Attr;
   static program EntityReferenceImpl = EntityReference;
 
+  static DOMImplementation implementation;
+  static string namespace_uri, qualified_name;
+
   int get_node_type() { return DOCUMENT_NODE; }
   string get_node_name() { return "#document"; }
   Document get_owner_document() { return 0; }
-  DOMImplementation get_implementation() { return DOMImplementation(); }
+  DOMImplementation get_implementation() { return implementation; }
 
   DocumentType get_doctype()
   {
@@ -436,9 +465,15 @@ class Document
 	       DOCUMENT_TYPE_NODE>)[child->get_node_type()];
   }
 
-  static void create()
+  static void create(DOMImplementation i, string ns, string qn,
+		     DocumentType|void doctype)
   {
+    implementation = i;
+    namespace_uri = ns;
+    qualified_name = qn;
     owner_document = this_object();
+    if(doctype)
+      append_child(doctype);
   }
 }
 
@@ -508,6 +543,7 @@ class Attr
 
   static string name;
   static int specified = 1;
+  static Element bound_to;
 
   int get_node_type() { return ATTRIBUTE_NODE; }
   string get_node_name() { return get_name(); }
@@ -541,6 +577,13 @@ class Attr
 
   protected void _set_parent(Node new_parent) { }
 
+  protected void _bind(Element new_element)
+  {
+    if(new_element && bound_to)
+      throw(DOMException(DOMException.INUSE_ATTRIBUTE_ERR));
+    bound_to = new_element;
+  }
+
   static int child_is_allowed(Node child)
   {
     return child->get_node_type() == TEXT_NODE ||
@@ -561,12 +604,10 @@ class Attr
 
 class Element
 {
-  inherit Node;
+  inherit Node : node;
 
   static string tag_name;
   static NamedNodeMap attributes;
-
-  static protected int _is_readonly() { return is_readonly(); } /* kluge! */
 
   static NamedNodeMap create_attributes()
   {
@@ -574,9 +615,14 @@ class Element
 
       inherit NamedNodeMap;
 
-      static int is_readonly() { return _is_readonly(); }
-      static void bind(Node n) { } /**/
-      static void unbind(Node n) { } /**/
+      static int is_readonly() { return node::is_readonly(); }
+      static void bind(Node n)
+      {
+	n->_bind(function_object(object_program(this_object())));
+      }
+      static void unbind(Node n) {
+	n->_bind(0);
+      }
 
     }(owner_document);
   }
@@ -751,14 +797,19 @@ class DocumentType
 {
   inherit Node;
 
-  static string name;
+  static string name, public_id, system_id;
   static NamedNodeMap entities, notations;
+  static DOMImplementation implementation;
 
   int get_node_type() { return DOCUMENT_TYPE_NODE; }
   string get_node_name() { return get_name(); }
   string get_name() { return name; }
+  string get_public_id() { return public_id; }
+  string get_system_id() { return system_id; }
   NamedNodeMap get_entities() { return entities; }
   NamedNodeMap get_notations() { return notations; }
+
+  protected void _set_owner_document(Document d) { owner_document = d; }
 
   static void create_entities()
   {
@@ -767,13 +818,16 @@ class DocumentType
 
   static void create_notations()
   {
-    notations = NamedNodeMap(owner_document);    
+    notations = NamedNodeMap(owner_document);
   }
 
-  static void create(Document owner, string _name)
+  static void create(DOMImplementation i, string qn,
+		     string|void pubid, string|void sysid)
   {
-    owner_document = owner;
-    name = _name;
+    implementation = i;
+    name = qn;
+    public_id = pubid;
+    system_id = sysid;
     create_entities();
     create_notations();
   }
@@ -1020,9 +1074,14 @@ class AbstractDOMParser
 
   Document get_document() { return document; }
 
+  static DOMImplementation get_dom_implementation()
+  {
+    return DOMImplementation();
+  }
+
   static Document create_document(InputSource s)
   {
-    return Document();
+    return get_dom_implementation()->create_document(0, 0, 0);
   }
 
   static void parse_callback(string ty, string name, mapping attributes,
@@ -1060,7 +1119,10 @@ class AbstractDOMParser
      case "<?xml":
        break;
      case "<!DOCTYPE":
-       current_node->append_child(DocumentType(document, name));
+       current_node->append_child(document->get_implementation()->
+				  create_document_type(name,
+						       attributes->PUBLIC,
+						       attributes->SYSTEM));
        break;
      case "<!ENTITY":
      case "<!ELEMENT":
