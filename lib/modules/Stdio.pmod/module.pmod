@@ -1,4 +1,4 @@
-// $Id: module.pmod,v 1.116 2001/06/16 11:35:47 per Exp $
+// $Id: module.pmod,v 1.117 2001/06/16 13:48:31 per Exp $
 #pike __REAL_VERSION__
 
 
@@ -334,14 +334,15 @@ class File
     return lambda(){ return read( nbytes); };
   }
 
-  object line_iterator( int trim )
+  object line_iterator( int|void trim )
   //! Returns an iterator that will loop over the lines in this file. 
   //! If trim is true, all '\r' characters will be removed from the
   //! input.
   {
     if( trim )
       return String.SplitIterator( "",(<'\n','\r'>),1,read_function(8192));
-    return String.SplitIterator( "",'\n',1,read_function(8192));
+    // This one is about twice as fast, but it's way less flexible.
+    return __builtin.file_line_iterator( read_function(8192) );
   }
 
 
@@ -1045,6 +1046,8 @@ class FILE
   private int bpos=0, lp, do_lines;
   private array cached_lines = ({});
 
+  private function(string:string) output_conversion, input_conversion;
+  
   static string _sprintf( int type, mapping flags )
   {
     if( type == 't' )
@@ -1060,6 +1063,8 @@ class FILE
       bpos=0;
     }
     string s = file::read(BUFSIZE,1);
+    if( input_conversion )
+      s = input_conversion( s );
     if(s && strlen(s))
       b+=s;
     else
@@ -1083,6 +1088,30 @@ class FILE
 
   /* Public functions. */
 
+  void set_charset( string charset )
+  //! Sets the input and output charset of this file to the specified
+  //! charset.
+  {
+    charset = lower_case( charset );
+    if( charset != "iso-8859-1" &&
+	charset != "ascii")
+    {
+      object in = master()->resolv("Locale.Charset.decoder")( charset );
+      object out = master()->resolv("Locale.Charset.encoder")( charset );
+
+      input_conversion =
+	lambda( string s ) {
+	  return in->feed( s )->drain();
+	};
+      output_conversion =
+	lambda( string s ) {
+	  return out->feed( s )->drain();
+	};
+    }
+    else
+      input_conversion = output_conversion = 0;
+  }
+
   //! Read one line of input.
   //!
   //! @returns
@@ -1090,7 +1119,7 @@ class FILE
   //! no more lines are available.
   //!
   //! @seealso
-  //! @[ngets()], @[read()]
+  //! @[ngets()], @[read()], @[line_iterator()]
   //!
   string gets()
   {
@@ -1205,6 +1234,15 @@ class FILE
     error("Cannot use nonblocking IO with buffered files.\n");
   }
 
+  int write( array(string)|string what  )
+  {
+    if( output_conversion )
+      if( arrayp( what ) )
+	what = map( what, output_conversion );
+      else
+	what = output_conversion( what );
+    return ::write( what );
+  }
   //! This function does approximately the same as:
   //! @code{@[write](@[sprintf](@[format],@@@[data]))@}.
   //!
@@ -1221,14 +1259,17 @@ class FILE
     return lambda(){ return read( nbytes); };
   }
     
-  object line_iterator( int trim )
+  object line_iterator( int|void trim )
   //! Returns an iterator that will loop over the lines in this file. 
   //! If trim is true, all '\r' characters will be removed from the
   //! input.
   {
     if( trim )
       return String.SplitIterator( "",(<'\n','\r'>),1,read_function(8192));
-    return String.SplitIterator( "",'\n',1,read_function(8192));
+    if( input_conversion )
+      return String.SplitIterator( "",'\n',1,read_function(8192));
+    // This one is about twice as fast, but it's way less flexible.
+    return __builtin.file_line_iterator( read_function(8192) );
   }
 
   string read(int|void bytes,void|int(0..1) now)
