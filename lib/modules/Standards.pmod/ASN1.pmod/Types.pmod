@@ -1,4 +1,5 @@
-/* Types.pmod
+/*
+ * $Id: Types.pmod,v 1.14 2000/05/25 20:19:59 sigge Exp $
  *
  * Encodes various asn.1 objects according to the Distinguished
  * Encoding Rules (DER) */
@@ -35,7 +36,7 @@ class asn1_object
   
   int get_cls() { return cls; }
   int get_tag() { return tag; }
-  int get_combinded_tag()
+  int get_combined_tag()
     { return make_combined_tag(get_tag(), get_cls()); }
   
   string der;
