@@ -277,7 +277,19 @@ array group(array(string|Token) tokens, void|mapping groupings)
     {
       case 0: ret+=({token}); break;
       case 1: stack->push(ret); ret=({token}); break;
-      case 2: ret=stack->pop()+({ ret + ({token}) });
+      case 2:
+	if (!sizeof(ret) || !stack->ptr ||
+	    (groupings[(string)ret[0]] != (string)token)) {
+	  // Mismatch
+	  werror(sprintf("**** Grouping mismatch token=%O\n"
+			 "**** tokens: ({ %{%O, %}})\n"
+			 "**** ret: ({ %{%O, %}})\n"
+			 "**** stackdepth: %d\n",
+			 (string)token, (array(string)) tokens,
+			 (array(string))ret, stack->ptr));
+	  return ret;
+	}
+	ret=stack->pop()+({ ret + ({token}) });
     }
   }
   return ret;
