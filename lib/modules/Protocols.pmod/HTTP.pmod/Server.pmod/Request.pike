@@ -180,7 +180,7 @@ static void close_cb()
 
 string _sprintf(int t)
 {
-  return t=='O' sprintf("%O(%s %s)",this_program,request_type,full_query);
+  return t=='O' && sprintf("%O(%s %s)",this_program,request_type,full_query);
 }
 
 // ----------------------------------------------------------------
