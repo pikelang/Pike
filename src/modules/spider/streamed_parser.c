@@ -134,22 +134,10 @@ static int handle_tag()
 {
   int lookup;
 
-/*  push_text( "HT1: %O\nHT2: %O\nHTEND\n" );
-  *sp = sp[-3];
-  sp[-3] = sp[-1];
-  sp[-1] = sp[-2];
-  sp[-2] = *sp;
-  f_sprintf( 3 );
-  f_perror( 1 );
-*/  lookup = set_lookup( DATA->start_tags->ind, sp-2 );
-/*  SWAP;*/
+  lookup = set_lookup( DATA->start_tags->ind, sp-2 );
   apply_svalue( ITEM( DATA->start_tags->val ) + lookup, 2 );
   if (sp[-1].type == T_STRING)
-  {
-    push_text( "handle_tag got string!\n" );
-    f_perror( 1 );
     return 1;
-  }
   else
   {
     pop_stack();
@@ -179,14 +167,6 @@ static int handle_end_tag()
 
 static void add_arg()
 {
-/*  push_text( "HT1: %O\nHT2: %O\nHTEND\n" );
-  *sp = sp[-3];
-  sp[-3] = sp[-1];
-  sp[-1] = sp[-2];
-  sp[-2] = *sp;
-  f_sprintf( 3 );
-  f_perror( 1 );
-  */
   mapping_insert( sp[-3].u.mapping, sp-2, sp-1 );
   pop_stack();
   pop_stack();
@@ -200,7 +180,8 @@ void streamed_parser_parse( INT32 args )
   struct svalue *sp_tag_save;
   
   state = NOTAG;
-  begin = last = 0;
+  begin = 0; 
+  last = -1;
   length = sp[-1].u.string->len;
   if (DATA->last_buffer_size > 0)
   {
@@ -286,7 +267,7 @@ void streamed_parser_parse( INT32 args )
 	if (list_member( DATA->end_tags, sp-1 ))
 	  if (handle_end_tag())
 	  {
-	    if (last > begin)
+	    if (last >= begin)
 	    {
 	      push_string( make_shared_binary_string( str + begin, last - begin + 1 ) );
 	      SWAP;
@@ -365,7 +346,7 @@ void streamed_parser_parse( INT32 args )
 	  f_aggregate_mapping( 0 );
 	  if (handle_tag())
 	  {
-	    if (last > begin)
+	    if (last >= begin)
 	    {
 	      push_string( make_shared_binary_string( str + begin, last - begin + 1 ) );
 	      SWAP;
@@ -392,7 +373,7 @@ void streamed_parser_parse( INT32 args )
        case '>':
 	if (handle_tag())
 	{
-	  if (last > begin)
+	  if (last >= begin)
 	  {
 	    push_string( make_shared_binary_string( str + begin, last - begin + 1 ) );
 	    SWAP;
@@ -425,6 +406,26 @@ void streamed_parser_parse( INT32 args )
 	f_lower_case( 1 );
 	state = TAG_PRE_ARG_VALUE;
 	break;
+       case '>':
+	push_string( make_shared_binary_string( str + ind, c - ind ) );
+	f_lower_case( 1 );
+	push_text( "" );
+	add_arg();
+	if (handle_tag())
+	{
+	  if (last >= begin)
+	  {
+	    push_string( make_shared_binary_string( str + begin, last - begin + 1 ) );
+	    SWAP;
+	  }
+	  begin = c+1;
+	}
+	else
+	  ;
+	last = c;
+	sp_tag_save = 0;
+	state = NOTAG;
+	break;	
       }
       break;
 
@@ -441,7 +442,7 @@ void streamed_parser_parse( INT32 args )
 	add_arg();
 	if (handle_tag())
 	{
-	  if (last > begin)
+	  if (last >= begin)
 	  {
 	    push_string( make_shared_binary_string( str + begin, last - begin + 1 ) );
 	    SWAP;
@@ -473,7 +474,7 @@ void streamed_parser_parse( INT32 args )
 	add_arg();
 	if (handle_tag())
 	{
-	  if (last > begin)
+	  if (last >= begin)
 	  {
 	    push_string( make_shared_binary_string( str + begin, last - begin + 1 ) );
 	    SWAP;
@@ -536,7 +537,7 @@ void streamed_parser_parse( INT32 args )
 	state = TAG_WS;
 	if (handle_tag())
 	{
-	  if (last > begin)
+	  if (last >= begin)
 	  {
 	    push_string( make_shared_binary_string( str + begin, last - begin + 1 ) );
 	    SWAP;
@@ -554,13 +555,9 @@ void streamed_parser_parse( INT32 args )
      default:      
     }
   if (sp_tag_save)
-  {
-    push_text( "sp_tag_save removing\n" );
-    f_perror( 1 );
     while (sp_tag_save <= sp)
       pop_stack();
-  }
-  if (begin < last)
+  if (last >= begin)
     push_string( make_shared_binary_string( str + begin, last - begin + 1 ) );
   if (sp - sp_save == 0)
     push_text( "" );
