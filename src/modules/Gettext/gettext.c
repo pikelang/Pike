@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: gettext.c,v 1.18 2003/10/13 17:41:51 grubba Exp $
+|| $Id: gettext.c,v 1.19 2003/10/16 00:39:06 nilsson Exp $
 */
 
 #include "global.h"
@@ -29,7 +29,7 @@
 
 #define sp Pike_sp
 
-RCSID("$Id: gettext.c,v 1.18 2003/10/13 17:41:51 grubba Exp $");
+RCSID("$Id: gettext.c,v 1.19 2003/10/16 00:39:06 nilsson Exp $");
 
 /*! @module Locale
  */
@@ -478,7 +478,8 @@ PIKE_MODULE_INIT
 
 /* function(void:string) */
 
-  ADD_FUNCTION("gettext", f_gettext, tFunc(tStr,tStr),
+  ADD_FUNCTION("gettext", f_gettext,
+	       tFunc(tStr tOr(tStr,tVoid) tOr(tInt,tVoid),tStr),
 	       OPT_EXTERNAL_DEPEND);
   ADD_FUNCTION("setlocale", f_setlocale, tFunc(tInt tStr,tInt),
 	       OPT_EXTERNAL_DEPEND);
