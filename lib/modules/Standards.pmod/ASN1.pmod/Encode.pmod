@@ -104,7 +104,7 @@ class asn1_integer
       
       if (value < 0)
       {
-	object n = value + Gmp.pow(256, (- value)->size(256));
+	object n = value + pow(256, (- value)->size(256));
 	s = n->digits(256);
 	if (!(s[0] & 0x80))
 	  s = "\377" + s;
