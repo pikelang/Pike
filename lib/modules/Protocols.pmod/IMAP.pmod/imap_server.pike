@@ -1,6 +1,6 @@
 /* imap_server.pike
  *
- * $Id: imap_server.pike,v 1.20 2000/09/28 03:38:56 hubbe Exp $
+ * $Id: imap_server.pike,v 1.21 2002/03/09 18:58:29 nilsson Exp $
  */
 #pike __REAL_VERSION__
 
@@ -139,8 +139,7 @@ class connection
 	io->use_commands(select_commands);
 	break;
       default:
-	throw( ({ sprintf("IMAP.pmod: Internal error, action = %O\n",
-			  action), backtrace() }) );
+	error( "IMAP.pmod: Internal error, action = %O\n", action );
       }
     }
   
@@ -209,8 +208,7 @@ void create(object p, int portnr, int t, object server, int|void debug)
   debug_level = debug;
 
   if (!port->bind(portnr, accept_callback))
-    throw( ({ "IMAP.imap_server->create: bind failed (port already bound?)\n",
-              backtrace() }) );
+    error( "IMAP.imap_server->create: bind failed (port already bound?)\n" );
   if (debug_level)
     werror("IMAP: Bound to port %d\n", portnr);
 }

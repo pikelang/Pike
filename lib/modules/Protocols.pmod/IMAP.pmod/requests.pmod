@@ -1,6 +1,6 @@
 /* IMAP.requests
  *
- * $Id: requests.pmod,v 1.89 2000/09/28 03:38:58 hubbe Exp $
+ * $Id: requests.pmod,v 1.90 2002/03/09 18:58:30 nilsson Exp $
  */
 
 #pike __REAL_VERSION__
@@ -103,8 +103,7 @@ class request
 				   0, 0, append_arg);
 
       default:
-	throw( ({ sprintf("IMAP.requests: Unknown argument type %O\n",
-			  arg_info[argc]), backtrace() }) );
+	error( "IMAP.requests: Unknown argument type %O\n", arg_info[argc] );
       }
     }
 }
@@ -408,7 +407,7 @@ class copy
       server->log(session, "COPY", mailbox_name, 200);
       break;
     default:
-      throw(({ "Bad returncode from copy().\n", backtrace() }));
+      error( "Bad returncode from copy().\n" );
       break;
     }
     return ([ "action" : "finished" ]);
@@ -581,7 +580,7 @@ class fetch
       }
       break;
     default:
-      throw( ({ "Internal error!\n", backtrace() }) );
+      error( "Internal error!\n" );
     }
 
     if (state) {
@@ -804,7 +803,7 @@ class search
 	switch(sizeof(criteria))
 	{
 	case 0:
-	  throw( ({ "IMAP.requests: Internal error!\n", backtrace() }) );
+	  error( "IMAP.requests: Internal error!\n" );
 	case 1:
 	  return criteria[0];
 	default:
@@ -822,7 +821,7 @@ class search
 	switch(sizeof(criteria))
 	{
 	case 0:
-	  throw( ({ "IMAP.requests: Internal error!\n", backtrace() }) );
+	  error( "IMAP.requests: Internal error!\n" );
 	case 1:
 	  return criteria[0];
 	default:

@@ -1,5 +1,5 @@
 //
-// $Id: TELNET.pmod,v 1.17 2001/04/28 19:00:02 grubba Exp $
+// $Id: TELNET.pmod,v 1.18 2002/03/09 18:55:50 nilsson Exp $
 //
 // The TELNET protocol as described by RFC 764 and others.
 //
@@ -387,10 +387,10 @@ class protocol
   void send_##DO(int option)								\
   {											\
     if ((option < 0) || (option > 255)) {						\
-      throw(({ sprintf("Bad TELNET option #%d\n", option), backtrace() }));		\
+      error( "Bad TELNET option #%d\n", option);					\
     }											\
      DWRITE(sprintf("TELNET: send_" #DO "(%s) state is %d\n",lookup_telopt[option] || (string)option,OPTIONS##_options[option])); \
-    switch(OPTIONS##_options[option])								\
+    switch(OPTIONS##_options[option])							\
     {											\
       case NO:										\
       case UNKNOWN:									\
