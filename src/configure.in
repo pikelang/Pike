@@ -1,4 +1,4 @@
-AC_REVISION("$Id: configure.in,v 1.56 1997/02/07 00:54:36 hubbe Exp $")
+AC_REVISION("$Id: configure.in,v 1.57 1997/02/20 00:04:59 hubbe Exp $")
 AC_INIT(interpret.c)
 AC_CONFIG_HEADER(machine.h)
 
@@ -427,26 +427,6 @@ if test "${pike_cv_sys_os}" = "Linux"; then
     AC_MSG_WARN(I will compensate for this by adding -lc -lm)
     LIBS="${LIBS} -lc -lm"
   fi
-
-#if 0
-  if test $ldflags_is_set ; then
-    AC_MSG_CHECKING(for -rdynamic)
-    AC_CACHE_VAL(pike_cv_ld_accepts_rdynamic,
-    [
-      OLD_LDFLAGS="$LDFLAGS"
-      LDFLAGS="$LFFLAGS -rdynamic"
-      AC_TRY_LINK([],[ exit(0); ],[
-        pike_cv_ld_accepts_rdynamic=yes
-      ],[ pike_cv_ld_accepts_rdynamic=no ])
-      LDFLAGS="$OLD_LDFLAGS"
-    ])
-    AC_MSG_RESULT($pike_cv_ld_accepts_rdynamic)
-
-    if test x$pike_cv_ld_accepts_rdynamic = xyes ; then
-       LDFLAGS="$LDFLAGS -rdynamic"
-    fi
-  fi
-#endif
 fi
 
 ########################################################################

@@ -208,8 +208,13 @@ class dirnode
   object|program `[](string index)
   {
     index=dirname+"/"+index;
-    return
-      ((object)"/master")->findmodule(index) || (program) index;
+    if(object o=((object)"/master")->findmodule(index))
+    {
+      if(mixed tmp=o->_module_value)
+	return tmp;
+      return o;
+    }
+    return (program) index;
   }
 };
 
@@ -225,7 +230,7 @@ class mergenode
   }
 };
 
-object low_findmodule(string fullname)
+object findmodule(string fullname)
 {
   mixed *stat;
   program p;
@@ -249,23 +254,11 @@ object low_findmodule(string fullname)
   if(mixed *stat=file_stat(fullname))
   {
     if(stat[1]==-2)
-      return low_findmodule(fullname+"/module");
+      return findmodule(fullname+"/module");
   }
 #endif
 
   return UNDEFINED;
-}
-
-mixed findmodule(string path)
-{
-  if(object o=low_findmodule(path))
-  {
-    if(mixed tmp=o->_module_value)
-    {
-      return tmp;
-    }
-  }
-  return o;
 }
 
 varargs mixed resolv(string identifier, string current_file)
@@ -278,19 +271,30 @@ varargs mixed resolv(string identifier, string current_file)
     tmp=current_file/"/";
     tmp[-1]=identifier;
     path=combine_path(getcwd(), tmp*"/");
-    if(ret=findmodule(path)) return ret;
+    ret=findmodule(path);
   }
 
-  foreach(pike_module_path, path)
-    {
-      path=combine_path(path,identifier);
-      if(ret=findmodule(path)) return ret;
-    }
+  if(!ret)
+  {
+    foreach(pike_module_path, path)
+      {
+	path=combine_path(path,identifier);
+	if(ret=findmodule(path)) break;
+      }
+  }
 
-  string path=combine_path(pike_library_path+"/modules",identifier);
-  if(ret=findmodule(path)) return ret;
+  if(!ret)
+  {
+    string path=combine_path(pike_library_path+"/modules",identifier);
+    if(!(ret=findmodule(path)))
+      ret=_static_modules[identifier];
+  }
 
-  if(ret=_static_modules[identifier]) return ret;
+  if(ret)
+  {
+    if(mixed tmp=ret->_module_value) return tmp;
+    return ret;
+  }
   return UNDEFINED;
 }
 
