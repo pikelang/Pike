@@ -1,4 +1,4 @@
-test_true([["$Id: testsuite.in,v 1.699 2004/02/17 08:43:24 mirar Exp $"]]);
+test_true([["$Id: testsuite.in,v 1.700 2004/02/28 20:22:02 mast Exp $"]]);
 
 // This triggered a bug only if run sufficiently early.
 test_compile_any([[#pike 7.2]])
@@ -319,6 +319,29 @@ test_eq([[
     return Locale.Charset.decoder("utf-8")->feed(s)->drain();
   }))
 ]], [[ "function(string : string)" ]])
+
+// Argument checking
+
+// Test get_all_args.
+test_eval_error([[
+  // A trick to get some svalues to freed refcounted stuff on the stack.
+  lambda (mixed a, mixed b, mixed c) {} (({time()}), ({time()}), ({time()}));
+  // set_weak_flag is chosen since it calls get_all_args with an
+  // argument spec that contains two arguments of different types.
+  ([function] set_weak_flag)();
+]])
+test_eval_error([[
+  lambda (mixed a, mixed b, mixed c) {} (({time()}), ({time()}), ({time()}));
+  ([function] set_weak_flag) (17);
+]])
+test_eval_error([[
+  lambda (mixed a, mixed b, mixed c) {} (({time()}), ({time()}), ({time()}));
+  ([function] set_weak_flag) ("foo");
+]])
+test_eval_error([[
+  lambda (mixed a, mixed b, mixed c) {} (({time()}), ({time()}), ({time()}));
+  ([function] set_weak_flag) (17, "foo");
+]])
 
 // type checks
 
