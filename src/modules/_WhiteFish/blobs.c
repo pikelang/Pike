@@ -1,7 +1,7 @@
 #include "global.h"
 #include "stralloc.h"
 #include "global.h"
-RCSID("$Id: blobs.c,v 1.1 2001/05/26 12:16:56 per Exp $");
+RCSID("$Id: blobs.c,v 1.2 2001/05/26 12:22:57 per Exp $");
 #include "pike_macros.h"
 #include "interpret.h"
 #include "program.h"
@@ -107,6 +107,8 @@ static void f_blobs_add_words( INT32 args )
     struct hash *h= find_hash( blbl, words->item[i].u.integer );
     wf_blob_low_add( docid, field_id, link_hash, i );
   }
+  pop_n_elems( args );
+  push_int(0);
 }
 
 static void f_blobs_add_words_hash( INT32 args )
@@ -136,6 +138,8 @@ static void f_blobs_add_words_hash( INT32 args )
     struct hash *h= find_hash( blbl, w );
     wf_blob_low_add( docid, field_id, link_hash, i );
   }
+  pop_n_elems( args );
+  push_int(0);
 }
 
 static void f_blobs_memsize( INT32 args )
@@ -182,8 +186,10 @@ void init_blobs_program()
 {
   start_new_program();
   ADD_STORAGE( struct blobs );
-  add_function("add_words",f_blobs_add_words,"function(int,int:void)",0 );
-  add_function("add_words_hash",f_blobs_add_words_hash,"function(int:void)",0 );
+  add_function("add_words",f_blobs_add_words,
+	       "function(int,array,int,int:void)",0 );
+  add_function("add_words_hash",f_blobs_add_words_hash,
+	       "function(int,array,int,int:void)",0 );
   add_function("memsize", f_blobs_memsize, "function(void:int)", 0 );
   set_init_callback( init_blobs_struct );
   set_exit_callback( exit_blobs_struct );

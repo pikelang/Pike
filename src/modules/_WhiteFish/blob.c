@@ -1,7 +1,7 @@
 #include "global.h"
 #include "stralloc.h"
 #include "global.h"
-RCSID("$Id: blob.c,v 1.18 2001/05/26 12:16:56 per Exp $");
+RCSID("$Id: blob.c,v 1.19 2001/05/26 12:22:57 per Exp $");
 #include "pike_macros.h"
 #include "interpret.h"
 #include "program.h"
@@ -336,7 +336,7 @@ static void f_blob_remove( INT32 args )
   push_int(0);
 }
 
-void wf_low_blob_add( int docid, int field, int hash, int off )
+void wf_blob_low_add( int docid, int field, int hash, int off )
 {
   unsigned short s;
   switch( field )
@@ -362,7 +362,7 @@ static void f_blob_add( INT32 args )
   int hash = sp[-1].u.integer;
   if( args != 4 )
     Pike_error( "Illegal number of arguments\n" );
-  wf_low_blob_add( docid, field, hash, off );
+  wf_blob_low_add( docid, field, hash, off );
   pop_n_elems( args );
   push_int( 0 );
 }
