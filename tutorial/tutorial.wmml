@@ -7665,7 +7665,8 @@ write(.Table.ASCII.encode(t->select("frukt")->distinct("frukt")->
 <hr noshade size=1>
 
 <module name=Yabu>
-<section title="Yabu">
+<section title="Yabu transaction database">
+
 Yabu is a all purpose database, used to store data records associated with a
 unique key. Yabu is very similar to mappings, however, records are
 stored in files and not in memory. Also, Yabu features <i>tables</i>,
@@ -7674,13 +7675,141 @@ database. A characteristic feature of Yabu is that it allows for
 <i>transactions</i>. A transaction is a sequence of database commands
 that will be accepted in whole, or not at all.<p>
 
-Some effort have been made to make sure that Yabu is crash safe.
+Some effort has been made to make sure that Yabu is crash safe.
 This means that the database should survive process kills, core
-dumps and such -- although this is not something that can absolutely
+dumps and such -- although this is not something that can be absolutely
 guaranteed. Also, all non-commited and pending transactions will
 be cancelled in case of a crash.<p>
 
+Yabu uses three types of objects, listed below:<p>
+
+<ul>
+<li>The <i>db</i> object is the main database object. It can create
+    table objects. The methods available in the db object are:
+    <link to=Yabu.db.table><tt>table</tt></link> (the <tt>[]</tt> operator),
+    <link to=Yabu.db.list_tables><tt>list_tables</tt></link>
+    (<tt>indices</tt>),
+    <link to=Yabu.db.sync><tt>sync</tt></link> and
+    <link to=Yabu.db.purge><tt>purge</tt></link>.
+<li>The <i>table</i> object handles tables. It is used in order to
+    store and fetch records from the database. It can create transaction
+    objects. The methods available in the table object are:
+    <link to=Yabu.table.set><tt>set</tt></link> (the <tt>[]=</tt> operator),
+    <link to=Yabu.table.get><tt>get</tt></link> (the <tt>[]</tt> operator),
+    <link to=Yabu.table.list_keys><tt>list_keys</tt></link> (<tt>indices</tt>),
+    <link to=Yabu.table.delete><tt>delete</tt></link>,
+    <link to=Yabu.table.transaction<tt>transaction</tt></link> and
+    <link to=Yabu.table.purge><tt>purge</tt></link>.
+<li>The <i>transaction</i> object handles transactions. It works
+    like the table object. The difference is that a sequence of commands
+    must end with <tt>commit</tt> or <tt>rollback</tt>. The methods available
+    in the table object are:
+    <link to=Yabu.table.set><tt>set</tt></link> (the <tt>[]=</tt> operator),
+    <link to=Yabu.table.get><tt>get</tt></link> (the <tt>[]</tt> operator),
+    <link to=Yabu.table.list_keys><tt>list_keys</tt></link> (<tt>indices</tt>),
+    <link to=Yabu.table.delete><tt>delete</tt></link>,
+    <link  to=Yabu.transaction.commit><tt>commit</tt></link> and
+    <link  to=Yabu.transaction.rollback><tt>rollback</tt></link>.
+</ul><p>
+
+A Yabu database can operate in two basic modes:<p>
+
+<ul>
+<li> Read mode. In read mode, nothing in the database can be altered,
+     added nor deleted. All Yabu files will be opended in read mode, which
+     means that the database will be in the same state on the disk as it
+     was prior to the opening.
+<li> Write mode. In write mode, records can be altered, added or deleted. In
+     combination with create mode, new tables can also be added. Transactions
+     can optionally be used with write mode. When compressed mode is enabled,
+     all records will be compressed before stored on to disk.
+</ul>
+
+Compressed databases opened without compress mode enabled will be handled
+correctly in both modes, provided that the Gz module is available.
+However, new records will no longer be compressed in write mode.<p>
+
+Transactions make it possible to alter, add or delete several database
+records and guarantee that all changes, or no changes, will be accepted
+by the database. A transaction object is basically a table object with
+a few restrictions and additions, listed below:<p>
+
+<ul>
+<li>Purge is not available in a transaction object.
+<li>Commit. In order to make all changes take affect, commit must be
+    issued at the end of a transaction sequence. Changes done in a
+    transaction object will <i>never</i> take affect before commit,
+    even if the database is shut down, the program crashes etc.
+<li>Rollback. A rollback cancels all changes made by the transaction object.
+</ul><p>
+
+Rollbacks always succeeds. However, with commit that is not always
+the case. A commit will fail if:<p>
+
+<ul>
+<li>A record that is altered by the transaction object is altered
+    again by something else, before commit. This is called a conflict,
+    and will result in an error upon commit.
+</ul><p>
+
+A simple example is illustrated below.<p>
+
+<man_example>
+<example language=pike>
+
+// Create a database called "my.database" in write/create mode.
+object db = Yabu.db("my.database", "wc");
+
+// Create a table called "fruit".
+object table = db["fruit"];
+
+// Store a record called "orange" with the value "yummy".
+table["orange"] = "yummy";
+
+// Store a record called "apple" with the value 42.
+table["apple"] = 42;
+</example>
+</man_example><p>
+
+Transactions are slightly more complex, but not much so. See example
+below.
+
+<man_example>
+<example language=pike>
+
+// Create a database called "my.database"
+// in write/create/transaction mode.
+object db = Yabu.db("my.database", "wct");
+
+// Create a table called "fruit".
+object table = db["fruit"];
+
+// Create a transaction object for table "fruit".
+object transaction = table->transaction();
+
+// Store a record called "orange" with
+// the value "yummy". Note that this record
+// is only visible through the transaction object.
+transaction["orange"] = "yummy";
+
+// Store a record called "apple" with the value 42.
+// As with "orange", this record is invisible
+// for all objects except this transaction object.
+transaction["apple"] = 42;
+
+// Commit the records "orange" and "apple".
+// These records are now a part of the database.
+transaction->commit();
+
+</example>
+</man_example>
+
 <hr noshade size=1>
+
+<section title="The db object">
+
+The db object is used to open a Yabu database. The db object
+creates table objects.<p>
 
 <method name=Yabu.db-&gt;create title="Open a Yabu database">
 <man_syntax>
@@ -7717,8 +7846,8 @@ weather a database is already open or not.
 
 <man_example>
 <example language=pike>
-// Open a database in create/write mode.
-object db = Yabu.db("my.database", "cw");
+// Open a database in create/write/transaction mode.
+object db = Yabu.db("my.database", "cwt");
 
 // Open a database in read mode.
 object db = Yabu.db("my.database", "r");
@@ -7730,9 +7859,7 @@ object db = Yabu.db("my.database", "cwC");
 
 <man_see>
 Yabu.db-&gt;table,
-Yabu.db-&gt;`[],
 Yabu.db-&gt;list_tables,
-Yabu.db-&gt;_indices,
 Yabu.db-&gt;sync,
 Yabu.db-&gt;purge
 </man_see>
@@ -7744,6 +7871,7 @@ Yabu.db-&gt;purge
 <method name=Yabu.db-&gt;table title="Open a table">
 <man_syntax>
 object(table) table(string <i>table_name</i>);<br>
+object(table) `[](string <i>table_name</i>);<br>
 </man_syntax>
 <man_description>
 This method opens a table with <i>table_name</i>. If the table
@@ -7751,29 +7879,7 @@ does not exist, it will be created. A table object will be returned.
 </man_description>
 
 <man_see>
-Yabu.db-&gt;`[],
 Yabu.db-&gt;list_tables,
-Yabu.db-&gt;_indices,
-Yabu.db-&gt;sync,
-Yabu.db-&gt;purge
-</man_see>
-
-</method>
-
-<hr noshade size=1>
-
-<method name=Yabu.db-&gt;`[] title="Open a table">
-<man_syntax>
-object(table) `[](string <i>table_name</i>);<br>
-</man_syntax>
-<man_description>
-Synonymous with <link to=Yabu.db.table>Yabu.table-&gt;table</link>.
-</man_description>
-
-<man_see>
-Yabu.db-&gt;table,
-Yabu.db-&gt;list_tables,
-Yabu.db-&gt;_indices,
 Yabu.db-&gt;sync,
 Yabu.db-&gt;purge
 </man_see>
@@ -7785,6 +7891,7 @@ Yabu.db-&gt;purge
 <method name=Yabu.db-&gt;list_tables title="List all tables">
 <man_syntax>
 array(string) list_tables();<br>
+array(string) _indices();<br>
 </man_syntax>
 <man_description>
 This method lists all available tables.
@@ -7792,28 +7899,6 @@ This method lists all available tables.
 
 <man_see>
 Yabu.db-&gt;table,
-Yabu.db-&gt;`[],
-Yabu.db-&gt;_indices,
-Yabu.db-&gt;sync,
-Yabu.db-&gt;purge
-</man_see>
-
-</method>
-
-<hr noshade size=1>
-
-<method name=Yabu.db-&gt;_indices title="List all tables">
-<man_syntax>
-array(string) _indices();<br>
-</man_syntax>
-<man_description>
-Synonymous with <link to=Yabu.table.set>Yabu.table-&gt;list_tables</link>.
-</man_description>
-
-<man_see>
-Yabu.db-&gt;table,
-Yabu.db-&gt;`[],
-Yabu.db-&gt;list_tables,
 Yabu.db-&gt;sync,
 Yabu.db-&gt;purge
 </man_see>
@@ -7835,9 +7920,7 @@ information in memory.
 
 <man_see>
 Yabu.db-&gt;table,
-Yabu.db-&gt;`[],
 Yabu.db-&gt;list_tables,
-Yabu.db-&gt;_indices,
 Yabu.db-&gt;purge
 </man_see>
 
@@ -7855,19 +7938,26 @@ This method deletes the whole database and all database files stored on disk.
 
 <man_see>
 Yabu.db-&gt;table,
-Yabu.db-&gt;`[],
 Yabu.db-&gt;list_tables,
-Yabu.db-&gt;_indices,
 Yabu.db-&gt;sync
 </man_see>
 
 </method>
 
+</section>
+
 <hr noshade size=1>
+
+<section title="The table object">
+
+The table object is used to store and retrieve information from
+a table. Table objects are created by the db class. A table object
+can create a transaction object.
 
 <method name=Yabu.table-&gt;set title="Store a record in a table">
 <man_syntax>
 mixed set(string key, mixed data);<br>
+mixed `[]=(string key, mixed data);<br>
 </man_syntax>
 <man_description>
 This method stores the contents of <i>data</i> as a record with the name
@@ -7878,24 +7968,8 @@ replaced. Records can only be added to the database in write mode.
 <man_see>
 Yabu.table-&gt;get,
 Yabu.table-&gt;delete,
-Yabu.table-&gt;list_keys
-</man_see>
-
-</method>
-<hr noshade size=1>
-
-<method name=Yabu.table-&gt;`[]= title="Store a record in a table">
-<man_syntax>
-mixed `[]=(string key, mixed data);<br>
-</man_syntax>
-<man_description>
-Synonymous with <link to=Yabu.table.set>Yabu.table-&gt;set</link>.
-</man_description>
-
-<man_see>
-Yabu.table-&gt;get,
-Yabu.table-&gt;delete,
-Yabu.table-&gt;list_keys
+Yabu.table-&gt;list_keys,
+Yabu.table-&gt;purge
 </man_see>
 
 </method>
@@ -7905,6 +7979,7 @@ Yabu.table-&gt;list_keys
 <method name=Yabu.table-&gt;get title="Fetch a record from a table">
 <man_syntax>
 mixed get(string key);<br>
+mixed `[](string key);<br>
 </man_syntax>
 <man_description>
 This method fetches the data associated with the record name
@@ -7914,25 +7989,8 @@ This method fetches the data associated with the record name
 <man_see>
 Yabu.table-&gt;set,
 Yabu.table-&gt;delete,
-Yabu.table-&gt;list_keys
-</man_see>
-
-</method>
-
-<hr noshade size=1>
-
-<method name=Yabu.table-&gt;`[] title="Fetch a record from a table">
-<man_syntax>
-mixed `[](string key);<br>
-</man_syntax>
-<man_description>
-Synonymous with <link to=Yabu.table.get>Yabu.table-&gt;get</link>.
-</man_description>
-
-<man_see>
-Yabu.table-&gt;set,
-Yabu.table-&gt;delete,
-Yabu.table-&gt;list_keys
+Yabu.table-&gt;list_keys,
+Yabu.table-&gt;purge
 </man_see>
 
 </method>
@@ -7942,6 +8000,7 @@ Yabu.table-&gt;list_keys
 <method name=Yabu.table-&gt;list_keys title="List the records in a table">
 <man_syntax>
 array(string) list_keys();<br>
+array(string) _indices();<br>
 </man_syntax>
 <man_description>
 This method lists all record names in the table.
@@ -7950,25 +8009,8 @@ This method lists all record names in the table.
 <man_see>
 Yabu.table-&gt;set,
 Yabu.table-&gt;get,
-Yabu.table-&gt;delete
-</man_see>
-
-</method>
-
-<hr noshade size=1>
-
-<method name=Yabu.table-&gt;_indices title="List the records in a table">
-<man_syntax>
-array(string) _indices();<br>
-</man_syntax>
-<man_description>
-Synonymous with <link to=Yabu.table.get>Yabu.table-&gt;list_keys</link>.
-</man_description>
-
-<man_see>
-Yabu.table-&gt;set,
-Yabu.table-&gt;get,
-Yabu.table-&gt;delete
+Yabu.table-&gt;delete,
+Yabu.table-&gt;purge
 </man_see>
 
 </method>
@@ -7986,7 +8028,8 @@ This method deletes the record with the name <i>key</i>.
 <man_see>
 Yabu.table-&gt;set,
 Yabu.table-&gt;get,
-Yabu.table-&gt;list_keys
+Yabu.table-&gt;list_keys,
+Yabu.table-&gt;purge
 </man_see>
 
 </method>
@@ -8000,6 +8043,14 @@ void purge();<br>
 <man_description>
 This method deletes the whole table and the table files on disk.
 </man_description>
+
+<man_see>
+Yabu.table-&gt;set,
+Yabu.table-&gt;get,
+Yabu.table-&gt;list_keys,
+Yabu.table-&gt;delete
+</man_see>
+
 </method>
 
 <hr noshade size=1>
@@ -8012,14 +8063,7 @@ object(transaction) transaction();<br>
 A transaction is a sequence of table commands that will be accepted in
 whole, or not at all. If the program for some reason crashes or makes
 an abrupt exit during a transaction, the transaction is cancelled.<p>
-This method returns a transaction object. It can be used in the same
-way as a table object. The difference is that in order to make the
-changes take affect, <link to=Yabu.transaction.commit>commit</link>
-must be issued. Before that, all changes will be local to the
-transaction object. Also, if a record in a transaction is altered
-before the transaction is commited, a conflict will arise upon commit.
-A transaction can be cancelled using <link to=Yabu.transaction.rollback>
-rollback</link>.
+This method returns a transaction object.
 </man_description>
 
 <man_see>
@@ -8029,7 +8073,21 @@ Yabu.transaction-&gt;rollback
 
 </method>
 
+</section>
+
 <hr noshade size=1>
+
+<section title="The transaction object">
+
+The transaction object handles transactions. Transaction objects
+are created by the table object. A transaction object can be used
+in the same way as a table object. The difference is that in order
+to make the  changes take affect, <link to=Yabu.transaction.commit>
+commit</link> must be issued. Before that, all changes will be local to
+the transaction object. Also, if a record in a transaction is altered
+before the transaction is commited, a conflict will arise upon commit.
+A transaction can be cancelled using <link to=Yabu.transaction.rollback>
+rollback</link>.
 
 <method name=Yabu.transaction-&gt;commit title="Commit a transaction">
 <man_syntax>
@@ -8065,6 +8123,8 @@ Yabu.transaction-&gt;commit
 </man_see>
 
 </method>
+
+</section>
 
 </section>
 </module>
