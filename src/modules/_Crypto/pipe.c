@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: pipe.c,v 1.27 2003/08/03 20:06:50 nilsson Exp $
+|| $Id: pipe.c,v 1.28 2003/08/03 22:31:14 nilsson Exp $
 */
 
 /*
@@ -288,8 +288,8 @@ static void f_set_decrypt_key(INT32 args)
     safe_apply(THIS->objects[args + i], "set_decrypt_key", n_args);
     pop_stack(); /* Get rid of the void value */
   }
-  push_object(this_object());
   pop_n_elems(args);
+  push_object(this_object());
 }
 
 /*! @decl string crypt_block(string data)
@@ -369,9 +369,11 @@ void pike_pipe_init(void)
   /* function(void:int) */
   ADD_FUNCTION("query_key_length", f_query_key_length, tFunc(tNone, tInt), 0);
   /* function(string:object) */
-  ADD_FUNCTION("set_encrypt_key", f_set_encrypt_key, tFunc(tStr, tObj), 0);
+  ADD_FUNCTION("set_encrypt_key", f_set_encrypt_key,
+               tFuncV(tNone, tStr, tObj), 0);
   /* function(string:object) */
-  ADD_FUNCTION("set_decrypt_key", f_set_decrypt_key, tFunc(tStr, tObj), 0);
+  ADD_FUNCTION("set_decrypt_key", f_set_decrypt_key,
+	       tFuncV(tNone, tStr, tObj), 0);
   /* function(string:string) */
   ADD_FUNCTION("crypt_block", f_crypt_block, tFunc(tStr, tStr), 0);
 
