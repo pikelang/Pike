@@ -421,6 +421,15 @@ int tracker_call_if_starved=60; // delay until ok to call if starved
 //! will fill the peer list
 void update_tracker(void|string event,void|int contact)
 {
+   last_tracker_update=time(1);
+
+   if (find_call_out(update_tracker_loop)!=-1)
+   {
+      remove_call_out(update_tracker_loop);
+      call_out(update_tracker_loop,tracker_update_interval);
+   }
+
+
    mapping req=
       (["info_hash":info_sha1,
 	"peer_id":my_peer_id,
@@ -438,15 +447,22 @@ void update_tracker(void|string event,void|int contact)
 
    if (!q)
    {
-      error("tracker request failed, %s\n",
-	    strerror(errno()));
+      warning("tracker request failed, %s\n",strerror(errno()));
+      return;
+   }
+
+   if (!q->status_desc)
+   {
+      warning("tracker request failed, tracker hanged up\n");
+      return;
    }
 
    if (q->status!=200)
    {
-      error("tracker request failed, code %d %O:\n%O\n",
-	    q->status, (q->status_desc ? q->status_desc[..50] : "?"),
-	    q->data()[..77]);
+      warning("tracker request failed, code %d %O:\n%O\n",
+	      q->status,q->status_desc[..50],
+	      q->data()[..77]);
+      return;
    }
 
    mapping m;
@@ -483,14 +499,6 @@ void update_tracker(void|string event,void|int contact)
 	    else 
 	       peers_unused+=({p});
 	 }
-   }
-
-   last_tracker_update=time(1);
-
-   if (find_call_out(update_tracker_loop)!=-1)
-   {
-      remove_call_out(update_tracker_loop);
-      call_out(update_tracker_loop,tracker_update_interval);
    }
 }
 
