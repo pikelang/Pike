@@ -4,7 +4,7 @@
 // Incremental Pike Evaluator
 //
 
-constant cvs_version = ("$Id: Hilfe.pmod,v 1.90 2002/10/10 02:40:58 nilsson Exp $");
+constant cvs_version = ("$Id: Hilfe.pmod,v 1.91 2002/11/25 05:51:37 nilsson Exp $");
 constant hilfe_todo = #"List of known Hilfe bugs/room for improvements:
 
 - Hilfe can not handle sscanf statements like
@@ -1078,10 +1078,6 @@ private class ParserState {
     ret += sprintf("Current block: %O\n", block);
     return ret;
   }
-
-  string _sprintf(int type) {
-    if(type=='O' || type=='t') return "HilfeParserState";
-  }
 }
 
 //! In every Hilfe object (@[Evaluator]) there is a HilfeHistory
@@ -1805,10 +1801,6 @@ class Evaluator {
     void show_warnings() {
       safe_write(warnings);
     }
-
-    string _sprintf(int type) {
-      if(type=='O' || type=='t') return "HilfeCompileHandler";
-    }
   };
 
   //! Creates a wrapper and compiles the pike code @[f] in it.
@@ -1956,10 +1948,6 @@ class Evaluator {
 
       }
     }
-  }
-
-  string _sprintf(int type) {
-    if(type=='O' || type=='t') return "HilfeEvaluator";
   }
 }
 
