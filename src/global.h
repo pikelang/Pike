@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: global.h,v 1.81 2003/03/12 14:29:56 grubba Exp $
+|| $Id: global.h,v 1.82 2003/03/28 15:47:56 mast Exp $
 */
 
 #ifndef GLOBAL_H
@@ -178,12 +178,26 @@ void *alloca();
 
 #if SIZEOF_LONG >= 8
 #define INT64 long
+#define SIZEOF_INT64 SIZEOF_LONG
+#define MAX_INT64 LONG_MAX
+#define MIN_INT64 LONG_MIN
 #else
 #if SIZEOF___INT64 - 0 >= 8
 #define INT64 __int64
+#define SIZEOF_INT64 SIZEOF___INT64
+#define MAX_INT64 _I64_MAX
+#define MIN_INT64 _I64_MIN
 #else
 #if SIZEOF_LONG_LONG - 0 >= 8
 #define INT64 long long
+#define SIZEOF_INT64 SIZEOF_LONG_LONG
+#ifdef LLONG_MAX
+#define MAX_INT64 LLONG_MAX
+#define MIN_INT64 LLONG_MIN
+#else
+#define MAX_INT64 LONG_LONG_MAX
+#define MIN_INT64 LONG_LONG_MIN
+#endif
 #endif
 #endif
 #endif
@@ -206,8 +220,13 @@ void *alloca();
 #define MIN_INT_TYPE MIN_INT32
 #else
 #if SIZEOF_INT_TYPE == 8
+#ifdef INT64
+#define MAX_INT_TYPE MAX_INT64
+#define MIN_INT_TYPE MIN_INT64
+#else
 #define MAX_INT_TYPE 9223372036854775807LL
 #define MIN_INT_TYPE (-9223372036854775807LL-1)
+#endif
 #else
 #error Unsupported INT_TYPE size
 #endif
