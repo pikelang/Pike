@@ -1,4 +1,4 @@
-AC_REVISION("$Id: configure.in,v 1.406 2000/08/28 13:41:30 grubba Exp $")
+AC_REVISION("$Id: configure.in,v 1.407 2000/08/28 13:51:09 grubba Exp $")
 AC_INIT(interpret.c)
 AC_CONFIG_HEADER(machine.h)
 
@@ -2528,6 +2528,18 @@ char foo[23];
   memset(foo, 0, 6);
   for (i=6; i--;) {
     if (foo[i]) exit(1);
+  }
+  memset(foo+1, 1, 6);
+  for (i=6; i--;) {
+    if (foo[i+1] != 1) exit(1);
+  }
+  memset(foo+2, 0, 6);
+  for (i=6; i--;) {
+    if (foo[i+2]) exit(1);
+  }
+  memset(foo+3, 1, 6);
+  for (i=6; i--;) {
+    if (foo[i+3] != 1) exit(1);
   }
   exit(0);
 ])
