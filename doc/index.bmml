@@ -4,14 +4,14 @@ $version manual
   all the aspects required of a good manual. However, I hope that it is
   still useful in it's present state.
 
- getting started
+ Getting started
 
   For now this section is made up of example code with line by line
   explanations. If there is a word you don't understand I suggest you
   look it up in the index first time you encouter it because it might
   be essential to understanding that piece of code.
 
-	KEYWORD_INDEX examples
+	KEYWORD_LIST examples
 
  Control structures
 
@@ -19,7 +19,7 @@ $version manual
   which statements are executed. Control structures in uLPC are basically
   the same as those in C, with a few exceptions.
 
-	KEYWORD_INDEX control_structures
+	KEYWORD_LIST control
 
  Types
 
@@ -27,21 +27,28 @@ $version manual
   it easy to handle data without worrying about memory management and
   other programming obstacles.
 
-	KEYWORD_INDEX types
+	KEYWORD_LIST types
 
  uLPC and object orientation
 
   This section is about the more fundamental workings of uLPC, such as
   how uLPC compiles code and object orientation.
 
-	KEYWORD_INDEX lpc
+	KEYWORD_LIST lpc
+
+ Builtin functions
+
+  uLPC has a wide range of builtin functions. Most of these are implemented
+  in C, but some are implemented in uLPC using the add_efun function.
+
+	LINK lpc_efuns Here's a list of all built-in functions.
 
  Operators
 
   uLPC operators behave much like the onces in C, but have many many additional
   features. Most of this added functionality is related to the new data types.
 
-	KEYWORD_INDEX operators
+	KEYWORD_LIST operators
 
  Keyword index
 
@@ -53,6 +60,6 @@ $version manual
 
 	KEYWORD_INDEX programs
 
-	KEYWORD_INDEX efuns
-
 	KEYWORD_INDEX other
+
+	LINK lpc_all Here's a list of all pages.
