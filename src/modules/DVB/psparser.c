@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: psparser.c,v 1.7 2002/11/09 14:04:45 grubba Exp $
+|| $Id: psparser.c,v 1.8 2002/12/01 01:51:32 nilsson Exp $
 */
 
 /*
@@ -21,7 +21,7 @@
 int dvb_pes2es(unsigned char *bufin, int count, struct dvb_es_packet *pkt, int id) {
 
 	unsigned char *cptr = bufin;
-	int i = 0, plen, extf = 0, hlen, ptype;
+	int i = 0, plen, extf = 0, hlen;
 	int skipped = 0;
 
 	while(i+4 < count && (cptr[0] != 0 || cptr[1] != 0 || cptr[2] != 1 || cptr[3] != id)) {
