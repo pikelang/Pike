@@ -1,5 +1,5 @@
 #
-# $Id: configure.in,v 1.26 2001/02/14 21:20:41 mirar Exp $
+# $Id: configure.in,v 1.27 2001/02/27 18:52:25 grubba Exp $
 #
 # Configure script for the mysql-module
 #
@@ -30,22 +30,6 @@ OLD_CPPFLAGS=$CPPFLAGS
 MYSQL_LIBS=""
 
 AC_ARG_WITH(mysql,  [  --without-mysql       no support for the Mysql database],[],[with_mysql=yes])
-AC_ARG_WITH(root,   [  --with-root=path      specify a cross-compilation root-directory],[
-  case "$with_root" in
-    /)
-      with_root=""
-    ;;
-    /*)
-    ;;
-    no)
-      with_root=""
-    ;;
-    *)
-      AC_MSG_WARN([Root path $with_root is not absolute. Ignored.])
-      with_root=""
-    ;;
-  esac
-],[with_root=""])
 
 if test x$with_mysql = xno; then
   :

@@ -1,4 +1,4 @@
-# $Id: configure.in,v 1.21 2001/02/13 15:44:16 mirar Exp $
+# $Id: configure.in,v 1.22 2001/02/27 18:52:24 grubba Exp $
 AC_INIT(zlibmod.c)
 AC_CONFIG_HEADER(zlib_machine.h)
 AC_ARG_WITH(zlib,     [  --with(out)-zlib       Support gzip compression],[],[with_zlib=yes])
@@ -46,7 +46,7 @@ define([AC_CHECK_GZ],
 ])
 
 if test "$pike_cv_sys_os" = "Darwin"; then
-  CPPFLAGS="-I/System/Library/Frameworks/Zip.framework/Headers $CPPFLAGS"
+  CPPFLAGS="-I$with_root/System/Library/Frameworks/Zip.framework/Headers $CPPFLAGS"
   LDFLAGS="-framework Zip"
 fi
 

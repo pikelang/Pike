@@ -1,8 +1,10 @@
-dnl $Id: configure.in,v 1.11 2000/10/27 17:35:39 grubba Exp $
+dnl $Id: configure.in,v 1.12 2001/02/27 18:52:25 grubba Exp $
 dnl (C) 1997 Francesco Chemolli <kinkie@kame.usr.dsi.unimi.it>
 
 AC_INIT(postgres.c)
 AC_CONFIG_HEADER(pgres_config.h)
+
+AC_MODULE_INIT()
 
 echo "Configuring Postgres module, (C) 1997 Francesco Chemolli <kinkie@kame.usr.dsi.unimi.it>"
 
@@ -16,15 +18,13 @@ AC_ARG_WITH(libpq-dir,
 	[  --with-libpq-dir=dir               look for library-files in dir],
 	[pike_postgres_user_lib_directory=$withval])
 
-AC_MODULE_INIT()
-
 ac_pike_postgres_skip=no
 
 dnl set up search paths
 
 include_searchpath=""
 lib_searchpath=""
-for a in /usr/local /usr /opt /usr/lib $HOME; do
+for a in $with_root/usr/local $with_root/usr $with_root/opt $with_root/usr/lib $HOME; do
   for b in postgres95 postgres pgsql postgresql .; do
     include_searchpath="$include_searchpath $a/$b/include $a/include/$b"
     lib_searchpath="$lib_searchpath $a/$b/lib $a/lib/$b"

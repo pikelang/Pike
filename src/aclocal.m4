@@ -206,7 +206,7 @@ define(PIKE_FEATURE_OK,[
 
 define([AC_LOW_MODULE_INIT],
 [
-# $Id: aclocal.m4,v 1.28 2001/02/18 12:21:34 mirar Exp $
+# $Id: aclocal.m4,v 1.29 2001/02/27 18:52:26 grubba Exp $
 
 MY_AC_PROG_CC
 
@@ -220,6 +220,22 @@ dependencies=$srcdir/dependencies
 AC_SUBST_FILE(dynamic_module_makefile)
 AC_SUBST_FILE(static_module_makefile)
 
+AC_ARG_WITH(root,   [  --with-root=path      specify a cross-compilation root-directory],[
+  case "$with_root" in
+    /)
+      with_root=""
+    ;;
+    /*)
+    ;;
+    no)
+      with_root=""
+    ;;
+    *)
+      AC_MSG_WARN([Root path $with_root is not absolute. Ignored.])
+      with_root=""
+    ;;
+  esac
+],[with_root=""])
 ])
 
 
