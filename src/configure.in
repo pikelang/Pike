@@ -1,4 +1,4 @@
-AC_REVISION("$Id: configure.in,v 1.779 2004/02/27 14:24:41 grubba Exp $")
+AC_REVISION("$Id: configure.in,v 1.780 2004/02/27 14:33:04 grubba Exp $")
 AC_INIT(interpret.c)
 AC_CONFIG_HEADER(machine.h)
 
@@ -6902,7 +6902,7 @@ $bundle_info])
 	  :
 	else
 	  echo "Extracting bundle $dist_file..."
-	  ( cd "$bundle_dir" && \
+	  ( cd "$pike_bundle_dir" && \
 	    gzip -cd "$dist_file" | tar xf -
 	  )
 	fi
