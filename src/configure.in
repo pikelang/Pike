@@ -1,4 +1,4 @@
-AC_REVISION("$Id: configure.in,v 1.809 2004/03/09 22:01:30 grubba Exp $")
+AC_REVISION("$Id: configure.in,v 1.810 2004/03/10 09:22:37 grubba Exp $")
 AC_INIT(interpret.c)
 AC_CONFIG_HEADER(machine.h)
 
@@ -93,7 +93,7 @@ VPATH=.:$srcdir
 	cat "\$<" >"\$@"
 EOF
     pike_cv_make_supports_VPATH=no
-    if ${MAKE-make} -f conftestmake conftest_VPATH.out >/dev/null 2>&5; then
+    if ${MAKE-make} -f conftestmake conftest_VPATH.out >/dev/null 2>&AC_FD_CC; then
       if test -f conftest_VPATH.out; then
         pike_cv_make_supports_VPATH=yes
       else :; fi
@@ -118,19 +118,33 @@ if test -d "$srcdir/../bundles"; then
   AC_CACHE_VAL(pike_cv_make_supports_spaces_in_SHELL, [
     cat > conftestmake <<EOF
 SHELL=/bin/sh -n
-all:
+false:
 	/bin/false
-other:
+true:
 	/bin/true
+complex_false:
+	test "foo" = "foo" && /bin/false
+complex_true:
+	test "foo" = "bar" || /bin/true
 EOF
-    if ${MAKE-make} -f conftestmake >/dev/null 2>&5; then
+    if ${MAKE-make} -f conftestmake false >/dev/null 2>&AC_FD_CC; then
       # /bin/sh was found, and /bin/false was not executed.
       pike_cv_make_supports_spaces_in_SHELL=yes
-    elif ${MAKE-make} -f conftestmake other >/dev/null 2>&5; then
-      # SHELL was ignored, and both /bin/false and /bin/true were executed.
+    elif ${MAKE-make} -f conftestmake complex_false >/dev/null 2>&AC_FD_CC; then
+      # SHELL is ignored for simple targets, but not for more
+      # complex expressions.
+      # When SHELL is used, spaces are supported.
+      pike_cv_make_supports_spaces_in_SHELL="complex only"
+    elif ${MAKE-make} -f conftestmake complex_true >/dev/null 2>&AC_FD_CC; then
+      # SHELL is ignored for all targets.
       pike_cv_make_supports_spaces_in_SHELL=ignored
+    elif ${MAKE-make} -f conftestmake true >/dev/null 2>&AC_FD_CC; then
+      # SHELL is ignored for simple targets, but not for more
+      # complex expressions.
+      # When SHELL is used, spaces are not supported.
+      pike_cv_make_supports_spaces_in_SHELL=no
     else
-      # SHELL with spaces caused errors.
+      # Spaces are not supported in SHELL.
       pike_cv_make_supports_spaces_in_SHELL=no
     fi
     rm -f conftestmake
@@ -838,7 +852,7 @@ esac
 SMARTLINK="$BUILDDIR/smartlink"
 
 AC_MSG_CHECKING(if $SMARTLINK exists is up to date and works)
-if ls -1tr "$SMARTLINK${ac_exeext}" "$srcdir/smartlink.$ac_ext" 2>/dev/null | head -n 1 | grep "smartlink.$ac_ext" >/dev/null 2>&5 && "$SMARTLINK" -v >/dev/null 2>&5; then
+if ls -1tr "$SMARTLINK${ac_exeext}" "$srcdir/smartlink.$ac_ext" 2>/dev/null | head -n 1 | grep "smartlink.$ac_ext" >/dev/null 2>&AC_FD_CC && "$SMARTLINK" -v >/dev/null 2>&AC_FD_CC; then
   AC_MSG_RESULT(yes)
 else
   AC_MSG_RESULT(no)
@@ -860,8 +874,8 @@ else
 
   AC_MSG_CHECKING(whether smartlink compiles)
 
-  link_cmd='${SMARTBUILDCC-cc} -o smartlink${ac_exeext} $CFLAGS -I. $CPPFLAGS $LDFLAGS $srcdir/smartlink.$ac_ext $LIBS 2>&5'
-  if { (eval echo Compiling smartlink: \"$link_cmd\") 1>&5; (eval $link_cmd) 2>&5; } && "$BUILDDIR/smartlink" -v >/dev/null 2>&5; then
+  link_cmd='${SMARTBUILDCC-cc} -o smartlink${ac_exeext} $CFLAGS -I. $CPPFLAGS $LDFLAGS $srcdir/smartlink.$ac_ext $LIBS 2>&AC_FD_CC'
+  if { (eval echo Compiling smartlink: \"$link_cmd\") 1>&AC_FD_CC; (eval $link_cmd) 2>&AC_FD_CC; } && "$BUILDDIR/smartlink" -v >/dev/null 2>&AC_FD_CC; then
     AC_MSG_RESULT(yes)
   else
     AC_MSG_RESULT(no - use the sh script)
@@ -1016,17 +1030,17 @@ This may cause the dynamic module support to fail.])
     cat > conftest.c <<EOF    
 char *foo[[]] = { "bar" };
 EOF
-    pike_compile='${CC-cc} -S $CFLAGS $CPPFLAGS conftest.c 1>&5'
+    pike_compile='${CC-cc} -S $CFLAGS $CPPFLAGS conftest.c 1>&AC_FD_CC'
     pike_cv_gcc_uaword=no
-    if { (eval echo configure: \"$pike_compile\") >&5; (eval $pike_compile) 2>&5; }; then
-      if grep ".uaword" conftest.s 2>&5 >/dev/null; then
-        echo "configure: result contains .uaword:" >&5
-	cat conftest.s >&5
+    if { (eval echo configure: \"$pike_compile\") >&AC_FD_CC; (eval $pike_compile) 2>&AC_FD_CC; }; then
+      if grep ".uaword" conftest.s 2>&AC_FD_CC >/dev/null; then
+        echo "configure: result contains .uaword:" >&AC_FD_CC
+	cat conftest.s >&AC_FD_CC
         pike_cv_gcc_uaword=yes
       else :; fi
     else
-      echo "configure: failed program was:" >&5
-      cat conftest.c >&5
+      echo "configure: failed program was:" >&AC_FD_CC
+      cat conftest.c >&AC_FD_CC
     fi
     rm -rf conftest.*
   ])
@@ -1107,8 +1121,8 @@ relocations, rerun configure with --with-force-ua32.])
         fi
       
         AC_MSG_CHECKING(if patch_cc1 compiles)
-        link_cmd='${CC-cc} -o patch_cc1${ac_exeext} $CFLAGS -I. $CPPFLAGS $LDFLAGS $srcdir/patch_cc1.$ac_ext $LIBS 2>&5'
-        if { (eval echo Compiling patch_cc1: \"$link_cmd\") 1>&5; (eval $link_cmd) 2>&5; } && "$BUILDDIR/patch_cc1" -v >/dev/null 2>&5; then
+        link_cmd='${CC-cc} -o patch_cc1${ac_exeext} $CFLAGS -I. $CPPFLAGS $LDFLAGS $srcdir/patch_cc1.$ac_ext $LIBS 2>&AC_FD_CC'
+        if { (eval echo Compiling patch_cc1: \"$link_cmd\") 1>&AC_FD_CC; (eval $link_cmd) 2>&AC_FD_CC; } && "$BUILDDIR/patch_cc1" -v >/dev/null 2>&AC_FD_CC; then
           AC_MSG_RESULT(yes)
       
           if test -f "$cc1.patched"; then
@@ -1124,7 +1138,7 @@ Please move it out of the way.])
           fi
 
 	  AC_MSG_CHECKING(if patch_cc1 works)
-	  if ./patch_cc1 "$cc1" 2>&5 >"$cc1.patched"; then
+	  if ./patch_cc1 "$cc1" 2>&AC_FD_CC >"$cc1.patched"; then
 	    if test -f "$cc1.patched"; then :; else
 	      AC_MSG_RESULT(no - failed to create $cc1.patched)
 	      exit 1
@@ -2360,7 +2374,7 @@ int main()
   exit(errors);
 }
 EOF
-    if $YACC -d conftest.y 1>&5 2>&5; then
+    if $YACC -d conftest.y 1>&AC_FD_CC 2>&AC_FD_CC; then
       if test "x$enable_binary" = "xno"; then
 	break
       else
@@ -2416,9 +2430,9 @@ bar: 'b' 'a' 'r' ;
 int yylex(void *yylval) { return 'f'; }
 void yyerror(char *err) { fprintf(stderr, "ERR: %s\\n", err); }
 EOF
-      echo conftest.y: 1>&5
-      cat conftest.y 1>&5
-      if $YACC -d conftest.y 1>&5 2>&5; then
+      echo conftest.y: 1>&AC_FD_CC
+      cat conftest.y 1>&AC_FD_CC
+      if $YACC -d conftest.y 1>&AC_FD_CC 2>&AC_FD_CC; then
         AC_TRY_LINK([
 #include "y.tab.c"
         ], [
@@ -6628,11 +6642,11 @@ EOF
 AC_MSG_CHECKING(if dynamic loading works)
 AC_CACHE_VAL(pike_cv_sys_dynamic_loading,
 [
-  echo $CC -c $CFLAGS $CCSHARED conftest.c -o conftest.o 1>&5
-  $CC -c $CFLAGS $CCSHARED conftest.c -o conftest.o 1>&5 2>&5
+  echo $CC -c $CFLAGS $CCSHARED conftest.c -o conftest.o 1>&AC_FD_CC
+  $CC -c $CFLAGS $CCSHARED conftest.c -o conftest.o 1>&AC_FD_CC 2>&AC_FD_CC
 
-  echo $BINDIR/smartlink $LDSHARED $LDFLAGS conftest.o -o conftest.$SO 1>&5
-  $BINDIR/smartlink $LDSHARED $LDFLAGS conftest.o -o conftest.$SO 1>&5 2>&5
+  echo $BINDIR/smartlink $LDSHARED $LDFLAGS conftest.o -o conftest.$SO 1>&AC_FD_CC
+  $BINDIR/smartlink $LDSHARED $LDFLAGS conftest.o -o conftest.$SO 1>&AC_FD_CC 2>&AC_FD_CC
 
   if test -f conftest.$SO ; then
     mv conftest.$SO myconftest.so
