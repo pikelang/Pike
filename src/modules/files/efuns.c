@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: efuns.c,v 1.153 2004/11/12 13:33:36 grubba Exp $
+|| $Id: efuns.c,v 1.154 2004/11/20 16:19:30 nilsson Exp $
 */
 
 #include "global.h"
@@ -806,7 +806,7 @@ void f_get_dir(INT32 args)
   get_all_args("get_dir",args,".%S",&str);
 
   if(!str) {
-#if defined(__amigaos4__) || defined(__NT__)
+#if defined(__amigaos4__)
     push_constant_text("");
 #else
     push_constant_text(".");
@@ -1335,8 +1335,8 @@ void f_mv(INT32 args)
       if (h != INVALID_HANDLE_VALUE) {
 	do {
 	  if (dir->cFileName[0] != '.' ||
-	      dir->cFileName[1] &&
-	      (dir->cFileName[1] != '.' || dir->cFileName[2])) {
+	      (dir->cFileName[1] &&
+	       (dir->cFileName[1] != '.' || dir->cFileName[2]))) {
 	    /* Target dir not empty. */
 	    FindClose (h);
 	    free (dir);
@@ -1353,15 +1353,17 @@ void f_mv(INT32 args)
     for (p[0] = 'A'; p[0] != 'Z'; p[0]++)
       for (p[1] = 'A'; p[1] != 'Z'; p[1]++) {
 	if (movefileex) {
-	  if (!movefileex (str2->str, s, 0))
+	  if (!movefileex (str2->str, s, 0)) {
 	    if (GetLastError() == ERROR_ALREADY_EXISTS) continue;
 	    else goto nt_rename_kludge_end;
+	  }
 	}
-	else
-	  if (rename (str2->str, s))
+	else {
+	  if (rename (str2->str, s)) {
 	    if (errno == EEXIST) continue;
 	    else goto nt_rename_kludge_end;
-
+	  }
+	}
 	if (movefileex ?
 	    movefileex (str1->str, str2->str, MOVEFILE_REPLACE_EXISTING) :
 	    !rename (str1->str, str2->str)) {
