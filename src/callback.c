@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: callback.c,v 1.32 2002/11/23 17:28:30 mast Exp $
+|| $Id: callback.c,v 1.33 2002/12/11 21:20:13 mast Exp $
 */
 
 #include "global.h"
@@ -11,7 +11,7 @@
 #include "pike_error.h"
 #include "block_alloc.h"
 
-RCSID("$Id: callback.c,v 1.32 2002/11/23 17:28:30 mast Exp $");
+RCSID("$Id: callback.c,v 1.33 2002/12/11 21:20:13 mast Exp $");
 
 struct callback_list fork_child_callback;
 
@@ -32,9 +32,11 @@ struct callback
 };
 
 #define CALLBACK_CHUNK 128
+#if 0
 #ifdef PIKE_DEBUG
 #undef PRE_INIT_BLOCK
 #define PRE_INIT_BLOCK(X) X->free_func=(callback_func)remove_callback;
+#endif
 #endif
 BLOCK_ALLOC(callback, CALLBACK_CHUNK)
 
@@ -42,6 +44,7 @@ BLOCK_ALLOC(callback, CALLBACK_CHUNK)
 #ifdef PIKE_DEBUG
 extern int d_flag;
 
+#if 0
 static int is_in_free_list(struct callback * c)
 {
   struct callback_block *bar;
@@ -62,6 +65,7 @@ static int is_in_free_list(struct callback * c)
 
   return 0;
 }
+#endif
 
 static void check_callback_chain(struct callback_list *lst)
 {
@@ -85,51 +89,53 @@ static void check_callback_chain(struct callback_list *lst)
       len++;
     }
 
-    if (!PIKE_MEM_CHECKER()) {
-      /* Checking freed blocks below, which will cause false alarms
-       * from the memory checker. If one is used then this check is
-       * mostly superfluous anyway. */
-      for(tmp=callback_blocks;tmp;tmp=tmp->next)
+#if 0
+    /* The checks doesn't work with memory checkers like valgrind.
+     * It's also not compatible with the delayed free in block_alloc
+     * when dmalloc is used. Something like this should perhaps be
+     * provided by a consistency check function in block_alloc.
+     * /mast */
+    for(tmp=callback_blocks;tmp;tmp=tmp->next)
+    {
+      for(e=0;e<CALLBACK_CHUNK;e++)
       {
-	for(e=0;e<CALLBACK_CHUNK;e++)
+	int d;
+	struct callback_block *tmp2;
+	
+	if(tmp->x[e].free_func == (callback_func)remove_callback)
 	{
-	  int d;
-	  struct callback_block *tmp2;
-	
-	  if(tmp->x[e].free_func == (callback_func)remove_callback)
-	  {
-	    if(!is_in_free_list(tmp->x+e))
-	      Pike_fatal("Lost track of a struct callback!\n");
+	  if(!is_in_free_list(tmp->x+e))
+	    Pike_fatal("Lost track of a struct callback!\n");
 
-	    if(tmp->x[e].next &&
-	       !is_in_free_list(tmp->x[e].next))
-	      Pike_fatal("Free callback has next in Z'ha'dum!\n");
+	  if(tmp->x[e].next &&
+	     !is_in_free_list(tmp->x[e].next))
+	    Pike_fatal("Free callback has next in Z'ha'dum!\n");
 
-	  }else{
-	    if(is_in_free_list(tmp->x[e].next))
-	      Pike_fatal("Non-free callback has next in free list!\n");
-	  }
+	}else{
+	  if(is_in_free_list(tmp->x[e].next))
+	    Pike_fatal("Non-free callback has next in free list!\n");
+	}
 	
-	  if(tmp->x[e].next)
+	if(tmp->x[e].next)
+	{
+	  d=CALLBACK_CHUNK;
+	  for(tmp2=callback_blocks;tmp2;tmp2=tmp2->next)
 	  {
-	    d=CALLBACK_CHUNK;
-	    for(tmp2=callback_blocks;tmp2;tmp2=tmp2->next)
+	    for(d=0;d<CALLBACK_CHUNK;d++)
 	    {
-	      for(d=0;d<CALLBACK_CHUNK;d++)
-	      {
-		if(tmp2->x+d == tmp->x[e].next)
-		  break;
+	      if(tmp2->x+d == tmp->x[e].next)
+		break;
 	      
-		if(d < CALLBACK_CHUNK) break;
-	      }
+	      if(d < CALLBACK_CHUNK) break;
 	    }
-	  
-	    if(d == CALLBACK_CHUNK)
-	      Pike_fatal("Callback next pointer pointing to Z'ha'dum\n");
 	  }
+	  
+	  if(d == CALLBACK_CHUNK)
+	    Pike_fatal("Callback next pointer pointing to Z'ha'dum\n");
 	}
       }
     }
+#endif
   }
 }
 #else
@@ -176,8 +182,10 @@ PMOD_EXPORT void low_call_callback(struct callback_list *lst, void *arg)
       }
 
       *ptr=l->next;
+#if 0
 #ifdef PIKE_DEBUG
       l->free_func=(callback_func)remove_callback;
+#endif
 #endif
       really_free_callback(l);
     }else{
