@@ -132,7 +132,7 @@ int datapos;
 object conthread;
 #endif
 
-function request_ok,request_fail;
+local function request_ok,request_fail;
 array extra_args;
 
 /****** internal stuff *********************************************/
