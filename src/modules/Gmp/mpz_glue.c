@@ -4,7 +4,7 @@
 ||| See the files COPYING and DISCLAIMER for more information.
 \*/
 #include "global.h"
-RCSID("$Id: mpz_glue.c,v 1.44 1999/10/08 16:35:20 noring Exp $");
+RCSID("$Id: mpz_glue.c,v 1.45 1999/10/15 21:06:19 noring Exp $");
 #include "gmp_machine.h"
 
 #if defined(HAVE_GMP2_GMP_H) && defined(HAVE_LIBGMP2)
@@ -478,7 +478,7 @@ static void mpzmod_sub(INT32 args)
 {
   INT32 e;
   struct object *res;
-  
+
   if (args)
     for (e = 0; e<args; e++)
       get_mpz(sp + e - args, 1);
@@ -770,8 +770,8 @@ static void mpzmod_sqrt(INT32 args)
     error("mpz->sqrt() on negative number.\n");
 
   o=clone_object(mpzmod_program,0);
-  PUSH_REDUCED(o);
   mpz_sqrt(OBTOMPZ(o), THIS);
+  PUSH_REDUCED(o);
 }
 
 static void mpzmod_sqrtrem(INT32 args)
