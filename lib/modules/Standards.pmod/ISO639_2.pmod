@@ -445,6 +445,10 @@ string get_language(string code) {
   return languages[code];
 }
 
+mapping list_languages() {
+  return languages+([]);
+}
+
 static mapping(string:string) conversion=([
   "aa":"aar",
   "ab":"abk",
@@ -608,4 +612,8 @@ static mapping(string:string) conversion=([
 
 string map_639_1(string code) {
   return conversion[code];
+}
+
+mapping list_639_1() {
+  return conversion+([]);
 }
