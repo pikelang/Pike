@@ -1,6 +1,6 @@
 #
-# $Id: pike_verify.supp,v 1.1 2003/10/16 01:12:21 nilsson Exp $
-# Suppresion for valgrind errors outside of Pike triggered
+# $Id: pike_verify.supp,v 1.2 2003/10/16 01:24:49 nilsson Exp $
+# Suppression file for valgrind errors outside of Pike triggered
 # by the Pike test suite.
 #
 
