@@ -5,7 +5,7 @@
 \*/
 
 /*
- * $Id: svalue.h,v 1.45 1999/12/19 16:04:18 grubba Exp $
+ * $Id: svalue.h,v 1.46 2000/01/02 23:29:19 mast Exp $
  */
 #ifndef SVALUE_H
 #define SVALUE_H
@@ -129,7 +129,7 @@ struct svalue
  */
 #define MagictFuncV(RET,REST,ARGS) "\004" ARGS "\021" REST RET
 #define MagictFunc(RET,ARGS) tFuncV(ARGS "", tVoid, RET)
-#define tFunction tFuncV("" ,tOr(tMix,tVoid),tOr(tMix,tVoid))
+#define tFunction tFuncV("" ,tOr(tZero,tVoid),tOr(tMix,tVoid))
 #define tNone ""
 #define tPrg "\005"
 #define tProgram "\005"
