@@ -1,12 +1,13 @@
 // AutoCAD R13/R14/R2000 DWG file decoder
-// $Id: _Image_DWG.pmod,v 1.3 2002/07/10 21:39:34 nilsson Exp $
+// $Id: _Image_DWG.pmod,v 1.4 2004/03/01 22:28:23 nilsson Exp $
 
 #pike __REAL_VERSION__
 
 //! @appears Image.DWG
-//! This module decodes the thumbnail raster images embedded in AutoCAD DWG files for
-//! AutoCAD version R13, R14 and R2000 (which equals to file version 12, 14 and 15).
-//! Implemented according to specifications from @url{http://www.opendwg.org/@}.
+//! This module decodes the thumbnail raster images embedded in
+//! AutoCAD DWG files for AutoCAD version R13, R14 and R2000 (which
+//! equals to file version 12, 14 and 15). Implemented according to
+//! specifications from @url{http://www.opendwg.org/@}.
 
 static constant start = "\x1F\x25\x6D\x07\xD4\x36\x28\x28\x9D\x57\xCA\x3F\x9D\x44\x10\x2B";
 
@@ -71,8 +72,8 @@ mapping __decode(string data) {
       pos += 4;
       int bmp_size = read_RL(data, pos);
       pos += 4;
-      // For some reason AutoCAD thought it wise to skip the first
-      // 14 bytes of the BMP file. "BM", 4 bytes data size, 4 bytes
+      // For some reason AutoCAD thought it wise to skip the first 14
+      // bytes of the BMP file. Add "BM", 4 bytes data size, 4 bytes
       // reserved and 4 bytes offset to image data.
       string header = sprintf("BM%-4c\0\0\0\0\0\0\0\0", bmp_size+14);
       bmps += ({ header+data[bmp_start..bmp_start+bmp_size-1] });
@@ -109,11 +110,10 @@ static Image.Image get_first_image( mapping data ) {
 
 //! Works like @[__decode], but in addition it has the element
 //! @tt{"image"@} in the result mapping, containing the first
-//! successfully decoded bitmap image.
-//! to the result of decode(data).
+//! successfully decoded bitmap image. to the result of decode(data).
 //! @throws
-//!   If no preview was stored, or no preview could
-//!   be decoded an error is thrown.
+//!   If no preview was stored, or no preview could be decoded an
+//!   error is thrown.
 mapping _decode(string data) {
   mapping res = __decode(data);
   res->image = get_first_image(res);
@@ -122,8 +122,8 @@ mapping _decode(string data) {
 
 //! Returns the first successfully decoded bitmap image.
 //! @throws
-//!   If no preview was stored, or no preview could
-//!   be decoded an error is thrown.
+//!   If no preview was stored, or no preview could be decoded an
+//!   error is thrown.
 Image.Image decode(string data) {
   return _decode(data)->image;
 }
