@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: system.c,v 1.130 2002/12/06 14:25:58 mirar Exp $
+|| $Id: system.c,v 1.131 2002/12/06 15:43:32 nilsson Exp $
 */
 
 /*
@@ -20,7 +20,7 @@
 #include "system_machine.h"
 #include "system.h"
 
-RCSID("$Id: system.c,v 1.130 2002/12/06 14:25:58 mirar Exp $");
+RCSID("$Id: system.c,v 1.131 2002/12/06 15:43:32 nilsson Exp $");
 #ifdef HAVE_WINSOCK_H
 #include <winsock.h>
 #endif
@@ -2479,40 +2479,74 @@ static void f_gettimeofday(INT32 args)
  *! Calls getrusage or equivalent function and fills in 
  *! one or more of the rusage fields.
  *!
- *  fixme: tag up as table or pre?
- *! utime    user time (ms)
- *! stime    system time (ms)
- *! maxrss   maximum resident set size [1]
- *! ixrss    integral shared memory size [1]
- *! idrss    integral unshared data size [1] 
- *! isrss    integral unshared stack size [1]
- *! minflt   page reclaims
- *! majflt   page faults
- *! nswap    swaps
- *! inblock  block input operations
- *! oublock  block output operations
- *! msgsnd   messages sent
- *! msgrcv   messages received
- *! nsignals signals received
- *! nvcsw    voluntary context switches
- *! nivcsw   involuntary context switches
- *! sysc     system calls [2]
- *! ioch     chars read and written [2]
- *! rtime    total lwp real (elapsed) time (ms) [2]
- *! ttime    other system trap CPU time (ms) [2]
- *! tftime   text page fault sleep time (ms) [2]
- *! dftime   data page fault sleep time (ms) [2]
- *! kftime   kernel page fault sleep time (ms) [2]
- *! ltime    user lock wait sleep time (ms) [2]
- *! slptime  all other sleep time (ms) [2]
- *! wtime    wait-cpu (latency) time (ms) [2]
- *! stoptime stopped time [2]
- *! brksize  ? [3]
- *! stksize  ? [3]
+ *! @mapping
+ *!   @member int "utime"
+ *!     user time (ms)
+ *!   @member int "stime"
+ *!     system time (ms)
+ *!   @member int "maxrss"
+ *!     maximum resident set size [1]
+ *!   @member int "ixrss"
+ *!     integral shared memory size [1]
+ *!   @member int "idrss"
+ *!     integral unshared data size [1]
+ *!   @member int "isrss"
+ *!     integral unshared stack size [1]
+ *!   @member int "minflt"
+ *!     page reclaims
+ *!   @member int "majflt"
+ *!     page faults
+ *!   @member int "nswap"
+ *!     swaps
+ *!   @member int "inblock"
+ *!     block input operations
+ *!   @member int "oublock"
+ *!     block output operations
+ *!   @member int "msgsnd"
+ *!     messages sent
+ *!   @member int "msgrcv"
+ *!     messages received
+ *!   @member int "nsignals"
+ *!     signals received
+ *!   @member int "nvcsw"
+ *!     voluntary context switches
+ *!   @member int "nivcsw"
+ *!     involuntary context switches
+ *!   @member int "sysc"
+ *!     system calls [2]
+ *!   @member int "ioch"
+ *!     chars read and written [2]
+ *!   @member int "rtime"
+ *!     total lwp real (elapsed) time (ms) [2]
+ *!   @member int "ttime"
+ *!     other system trap CPU time (ms) [2]
+ *!   @member int "tftime"
+ *!     text page fault sleep time (ms) [2]
+ *!   @member int "dftime"
+ *!     data page fault sleep time (ms) [2]
+ *!   @member int "kftime"
+ *!     kernel page fault sleep time (ms) [2]
+ *!   @member int "ltime"
+ *!     user lock wait sleep time (ms) [2]
+ *!   @member int "slptime"
+ *!     all other sleep time (ms) [2]
+ *!   @member int "wtime"
+ *!     wait-cpu (latency) time (ms) [2]
+ *!   @member int "stoptime"
+ *!     stopped time [2]
+ *!   @member int "brksize"
+ *!     ? [3]
+ *!   @member int "stksize"
+ *!     ? [3]
+ *! @endmapping
  *!
+ *! @note
  *! [1] not if /proc rusage is used
+ *!
  *! [2] only from (solaris?) /proc rusage
+ *!
  *! [3] only from /proc PRS usage
+ *!
  *! on some systems, only utime will be filled in.
  */
 
