@@ -4,6 +4,8 @@ static void LM_FUNC(rgb_group *s,rgb_group *l,rgb_group *d,
 		    rgb_group *sa,rgb_group *la,rgb_group *da,
 		    int len,double alpha)
 {
+   union { COLORTYPE r,g,b; } tz,*t=&tz;
+
 #ifndef L_LOGIC
    if (alpha==0.0)
    {
@@ -15,6 +17,10 @@ static void LM_FUNC(rgb_group *s,rgb_group *l,rgb_group *d,
    }
    else if (alpha==1.0)
    {
+#ifdef L_COPY_ALPHA
+      MEMCPY(da,sa,sizeof(rgb_group)*len);
+#define da da da da /* error */
+#endif
       if (!la)  /* no layer alpha => full opaque */
       {
 #ifdef L_MMX_OPER
@@ -81,8 +87,10 @@ static void LM_FUNC(rgb_group *s,rgb_group *l,rgb_group *d,
 	      d->r=L_TRUNC(L_OPER(s->r,l->r));
 	      d->g=L_TRUNC(L_OPER(s->g,l->g));
 	      d->b=L_TRUNC(L_OPER(s->b,l->b));
-	      *da=white;
-	      l++; s++; sa++; da++; d++;
+#ifndef L_COPY_ALPHA
+	      *da=white; da++; 
+#endif
+	      l++; s++; sa++; d++; 
 	   }
       }
       else
@@ -93,61 +101,104 @@ static void LM_FUNC(rgb_group *s,rgb_group *l,rgb_group *d,
 	       d->r=L_TRUNC(L_OPER(s->r,l->r));
 	       d->g=L_TRUNC(L_OPER(s->g,l->g));
 	       d->b=L_TRUNC(L_OPER(s->b,l->b));
+#ifndef L_COPY_ALPHA
 #ifdef L_USE_SA
 	       *da=*sa;
 #else
 	       *da=white;
 #endif
+#endif
 	    }
 	    else if (la->r==0 && la->g==0 && la->b==0)
 	    {
 	       *d=*s;
-	       *da=*sa;
-	    }
-	    else
-	    {
-	       d->r=L_TRUNC(L_OPER(s->r,l->r));
-	       ALPHA_ADD(s,d,d,sa,la,da,r);
-	       d->g=L_TRUNC(L_OPER(s->g,l->g));
-	       ALPHA_ADD(s,d,d,sa,la,da,g);
-	       d->b=L_TRUNC(L_OPER(s->b,l->b));
-	       ALPHA_ADD(s,d,d,sa,la,da,b);
-#ifdef L_USE_SA
+#ifndef L_COPY_ALPHA
 	       *da=*sa;
 #endif
 	    }
-	    l++; s++; la++; sa++; da++; d++;
+	    else
+	    {
+#ifndef L_COPY_ALPHA
+	       t->r=L_TRUNC(L_OPER(s->r,l->r));
+	       ALPHA_ADD(s,t,d,sa,la,da,r);
+	       t->g=L_TRUNC(L_OPER(s->g,l->g));
+	       ALPHA_ADD(s,t,d,sa,la,da,g);
+	       t->b=L_TRUNC(L_OPER(s->b,l->b));
+	       ALPHA_ADD(s,t,d,sa,la,da,b);
+#ifdef L_USE_SA
+	       *da=*sa;
+#endif
+#else
+	       t->r=L_TRUNC(L_OPER(s->r,l->r));
+	       ALPHA_ADD_nA(s,t,d,sa,la,da,r);
+	       t->g=L_TRUNC(L_OPER(s->g,l->g));
+	       ALPHA_ADD_nA(s,t,d,sa,la,da,g);
+	       t->b=L_TRUNC(L_OPER(s->b,l->b));
+	       ALPHA_ADD_nA(s,t,d,sa,la,da,b);
+#endif
+	    }
+	    l++; s++; la++; sa++; d++; 
+#ifndef L_COPY_ALPHA
+	    da++;
+#endif
 	 }
    }
    else
    {
+#ifdef L_COPY_ALPHA
+#undef da
+      MEMCPY(da,sa,sizeof(rgb_group)*len);
+#define da da da
+#endif
       if (!la)  /* no layer alpha => full opaque */
 	 while (len--)
 	 {
-	    d->r=L_TRUNC(L_OPER(s->r,l->r));
-	    ALPHA_ADD_V_NOLA(s,d,d,sa,da,alpha,r);
-	    d->g=L_TRUNC(L_OPER(s->g,l->g));
-	    ALPHA_ADD_V_NOLA(s,d,d,sa,da,alpha,g);
-	    d->b=L_TRUNC(L_OPER(s->b,l->b));
-	    ALPHA_ADD_V_NOLA(s,d,d,sa,da,alpha,b);
+#ifndef L_COPY_ALPHA
+	    t->r=L_TRUNC(L_OPER(s->r,l->r));
+	    ALPHA_ADD_V_NOLA(s,t,d,sa,da,alpha,r);
+	    t->g=L_TRUNC(L_OPER(s->g,l->g));
+	    ALPHA_ADD_V_NOLA(s,t,d,sa,da,alpha,g);
+	    t->b=L_TRUNC(L_OPER(s->b,l->b));
+	    ALPHA_ADD_V_NOLA(s,t,d,sa,da,alpha,b);
 #ifdef L_USE_SA
 	    *da=*sa;
 #endif
-	    l++; s++; sa++; da++; d++;
+	    da++;
+#else
+	    t->r=L_TRUNC(L_OPER(s->r,l->r));
+	    ALPHA_ADD_V_NOLA_nA(s,t,d,sa,da,alpha,r);
+	    t->g=L_TRUNC(L_OPER(s->g,l->g));
+	    ALPHA_ADD_V_NOLA_nA(s,t,d,sa,da,alpha,g);
+	    t->b=L_TRUNC(L_OPER(s->b,l->b));
+	    ALPHA_ADD_V_NOLA_nA(s,t,d,sa,da,alpha,b);
+
+#endif
+	    l++; s++; sa++; d++; 
 	 }
       else
 	 while (len--)
 	 {
-	    d->r=L_TRUNC(L_OPER(s->r,l->r));
-	    ALPHA_ADD_V(s,d,d,sa,la,da,alpha,r);
-	    d->g=L_TRUNC(L_OPER(s->g,l->g));
-	    ALPHA_ADD_V(s,d,d,sa,la,da,alpha,g);
-	    d->b=L_TRUNC(L_OPER(s->b,l->b));
-	    ALPHA_ADD_V(s,d,d,sa,la,da,alpha,b);
+#ifndef L_COPY_ALPHA
+	    t->r=L_TRUNC(L_OPER(s->r,l->r));
+	    ALPHA_ADD_V(s,t,d,sa,la,da,alpha,r);
+	    t->g=L_TRUNC(L_OPER(s->g,l->g));
+	    ALPHA_ADD_V(s,t,d,sa,la,da,alpha,g);
+	    t->b=L_TRUNC(L_OPER(s->b,l->b));
+	    ALPHA_ADD_V(s,t,d,sa,la,da,alpha,b);
 #ifdef L_USE_SA
 	    *da=*sa;
 #endif
-	    l++; s++; la++; sa++; da++; d++;
+	    da++; 
+#else
+	    t->r=L_TRUNC(L_OPER(s->r,l->r));
+	    ALPHA_ADD_V_nA(s,t,d,sa,la,da,alpha,r);
+	    t->g=L_TRUNC(L_OPER(s->g,l->g));
+	    ALPHA_ADD_V_nA(s,t,d,sa,la,da,alpha,g);
+	    t->b=L_TRUNC(L_OPER(s->b,l->b));
+	    ALPHA_ADD_V_nA(s,t,d,sa,la,da,alpha,b);
+#undef da
+#endif
+	    l++; s++; la++; sa++; d++;
 	 }
    }
 #else /* L_LOGIC */
@@ -165,18 +216,18 @@ static void LM_FUNC(rgb_group *s,rgb_group *l,rgb_group *d,
 	    *da=*d=L_LOGIC(L_OPER(s->r,l->r),
 			   L_OPER(s->g,l->g),
 			   L_OPER(s->b,l->b));
-	    l++; s++; sa++; da++; d++;
+	    l++; s++; sa++; d++; da++; 
 	 }
       else
 	 while (len--)
 	 {
 	    if (la->r==0 && la->g==0 && la->b==0)
-	       *d=*da=L_TRANS;
+	       *da=*d=L_TRANS;
 	    else
 	       *da=*d=L_LOGIC(L_OPER(s->r,l->r),
 			      L_OPER(s->g,l->g),
 			      L_OPER(s->b,l->b));
-	    l++; s++; la++; sa++; da++; d++;
+	    l++; s++; la++; sa++; d++; da++; 
 	 }
    }
 #endif /* L_LOGIC */
