@@ -1,4 +1,4 @@
-# $Id: configure.in,v 1.23 1998/05/22 12:43:13 grubba Exp $
+# $Id: configure.in,v 1.24 1998/05/31 14:06:50 grubba Exp $
 AC_INIT(system.c)
 AC_CONFIG_HEADER(system_machine.h)
 
@@ -89,6 +89,27 @@ foo.h_addr_list[0];
 if test "$pike_cv_struct_has_h_addr_list" = yes; then
   AC_MSG_RESULT(yes)
   AC_DEFINE(HAVE_H_ADDR_LIST)
+else
+  AC_MSG_RESULT(no)
+fi
+
+AC_MSG_CHECKING(for in_addr_t)
+AC_CACHE_VAL(pike_cv_type_in_addr_t,
+[
+AC_TRY_COMPILE([
+#include <sys/types.h>
+#include <sys/socket.h>
+#include <netinet/in.h>
+#include <arpa/inet.h>
+#include <netdb.h>
+],[
+  in_addr_t foo;
+],pike_cv_type_in_addr_t=yes,pike_cv_type_in_addr_t=no)
+])
+ 
+if test "$pike_cv_type_in_addr_t" = yes; then
+  AC_MSG_RESULT(yes)
+  AC_DEFINE(HAVE_IN_ADDR_T)
 else
   AC_MSG_RESULT(no)
 fi
