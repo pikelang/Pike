@@ -1,4 +1,4 @@
-/* $Id: master.pike.in,v 1.36 1998/10/31 22:47:11 grubba Exp $
+/* $Id: master.pike.in,v 1.37 1999/02/04 23:44:20 mast Exp $
  * 
  * Master-file for Pike.
  *
@@ -835,7 +835,7 @@ void _main(string *orig_argv, string *env)
 	       "               " + "\n"
 	       "Program path : " + pike_program_path*"\n"
 	       "               " + "\n"
-	       "Master file  : " + _master_file_name + "\n");
+	       "Master file  : " + (_master_file_name || __FILE__) + "\n");
 	exit(0);
 	
       case "execute":
