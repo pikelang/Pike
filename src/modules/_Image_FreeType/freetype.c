@@ -1,6 +1,6 @@
 #include "config.h"
 #include "global.h"
-RCSID("$Id: freetype.c,v 1.4 2001/06/24 03:42:27 per Exp $");
+RCSID("$Id: freetype.c,v 1.5 2001/12/21 23:37:20 nilsson Exp $");
 
 #ifdef HAVE_LIBFT2
 #include <freetype/freetype.h>
@@ -42,7 +42,7 @@ static void image_ft_face_free( struct object *o )
 
 static void image_ft_face_write_char( INT32 args )
 {
-  FT_GlyphSlot  slot = TFACE->glyph; // optimize.
+  FT_GlyphSlot  slot = TFACE->glyph; /* optimize. */
   int c, x, y;
   struct image *i;
   struct object *o;
