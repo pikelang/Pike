@@ -1,5 +1,5 @@
 /*
- * $Id: sql.pike,v 1.36 2000/03/09 05:34:53 mast Exp $
+ * $Id: sql.pike,v 1.37 2000/10/18 20:28:44 mast Exp $
  *
  * Implements the generic parts of the SQL-interface
  *
@@ -8,7 +8,7 @@
 
 //.
 //. File:	sql.pike
-//. RCSID:	$Id: sql.pike,v 1.36 2000/03/09 05:34:53 mast Exp $
+//. RCSID:	$Id: sql.pike,v 1.37 2000/10/18 20:28:44 mast Exp $
 //. Author:	Henrik Grubbström (grubba@idonex.se)
 //.
 //. Synopsis:	Implements the generic parts of the SQL-interface.
@@ -173,7 +173,7 @@ void create(void|string|object host, void|string db,
       // It's nicer now, since it's a thread-local variable,
       // but not by much.
       mixed old_inhib = master()->get_inhibit_compile_errors();
-      master()->set_inhibit_compiler_errors(lambda(){});
+      master()->set_inhibit_compile_errors(lambda(){});
       program_names = indices(Sql);
       // Restore compiler errors mode to whatever it was before.
       master()->set_inhibit_compile_errors(old_inhib);
