@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: builtin.cmod,v 1.109 2003/01/26 11:09:00 mirar Exp $
+|| $Id: builtin.cmod,v 1.110 2003/01/26 18:31:19 mirar Exp $
 */
 
 #include "global.h"
@@ -189,7 +189,7 @@ PIKEFUN string int2hex(int|object x)
   optflags OPT_TRY_OPTIMIZE;
 {
   INT_TYPE c;
-  unsigned long n;
+  unsigned INT_TYPE n;
   int len;
   struct pike_string *s;
 
