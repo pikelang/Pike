@@ -1,5 +1,14 @@
 Wed Jan 29 13:24:46 1997  Fredrik Hubinette  <hubbe@cytocin.hubbe.net>
 
+	* interpret.c, language.yacc, lex.c: added more optcodes to
+	  optimize. New optcodes F_CLEAR_2_LOCAL, F_MARK_AND_LOCAL,
+	  F_2_LOCAL, F_APPLY, F_APPLY_AND_POP
+	* interpret.c: moved some stack checks, now only done if d_flag
+	  is nonzero
+	* lex.c, peep.c: moved the data for hasarg() to lex.c
+        * las.c: fixed optimization, Loop++ should be more effective now.
+	* master.pike: added new options -h/--help -e/--execute
+	* master.pike: now executes hilfe if no arguments are given.
 	* mapping.c: fixed a memory bound error when allocating mappings
 	  with room for zero elements.
 	* modules/files/file.c:
@@ -7,6 +16,7 @@ Wed Jan 29 13:24:46 1997  Fredrik Hubinette  <hubbe@cytocin.hubbe.net>
 	  when the file is in nonblocking mode.
 	  Also fixed so that close on exec is updated only at fork()
 	  or exece().
+	  connect() now calls open_socket() if called on a closed fd.
 
 Wed Jan 29 21:23:26 1997  Per Hedbor  <per@infovav.se>
 
