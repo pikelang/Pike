@@ -1,5 +1,5 @@
 /*
- * $Id: jvm.c,v 1.41 2002/04/24 11:45:16 js Exp $
+ * $Id: jvm.c,v 1.42 2002/04/25 16:13:08 tomas Exp $
  *
  * Pike interface to Java Virtual Machine
  *
@@ -18,7 +18,7 @@
 #endif /* HAVE_CONFIG_H */
 
 #include "global.h"
-RCSID("$Id: jvm.c,v 1.41 2002/04/24 11:45:16 js Exp $");
+RCSID("$Id: jvm.c,v 1.42 2002/04/25 16:13:08 tomas Exp $");
 #include "program.h"
 #include "interpret.h"
 #include "stralloc.h"
@@ -369,6 +369,7 @@ static void f_jobj_cast(INT32 args)
       l = (*env)->GetStringLength(env, jstr);
       push_string(make_shared_binary_string1((p_wchar1 *)wstr, l));
       (*env)->ReleaseStringChars(env, jstr, wstr);
+      (*env)->DeleteLocalRef(env, jstr);
     } else
       push_int(0);
     jvm_vacate_env(jo->jvm, env);
@@ -580,7 +581,7 @@ static void jargs_error(struct object *jvm, JNIEnv *env)
   Pike_error("incompatible types passed to method.\n");
 }
 
-static void make_jargs(jvalue *jargs, INT32 args, char *sig,
+static void make_jargs(jvalue *jargs, INT32 args, char *dorelease, char *sig,
 		       struct object *jvm, JNIEnv *env)
 {
   INT32 i;
@@ -595,6 +596,7 @@ static void make_jargs(jvalue *jargs, INT32 args, char *sig,
       return;
   for(i=0; i<args; i++) {
     struct svalue *sv = &Pike_sp[i-args];
+    dorelease && (*dorelease = 0);
     switch(sv->type) {
     case PIKE_T_INT:
       switch(*sig++) {
@@ -687,11 +689,13 @@ static void make_jargs(jvalue *jargs, INT32 args, char *sig,
 	  for(i=sv->u.string->len; --i>=0; )
 	    newstr[i]=(jchar)(unsigned char)p[i];
 	  jargs->l = (*env)->NewString(env, newstr, sv->u.string->len);
+          dorelease && (*dorelease = 1);
 	}
 	break;
       case 1:
 	jargs->l = (*env)->NewString(env, (jchar*)STR1(sv->u.string),
 				     sv->u.string->len);
+        dorelease && (*dorelease = 1);
 	break;
       case 2:
 	{
@@ -702,6 +706,7 @@ static void make_jargs(jvalue *jargs, INT32 args, char *sig,
 	  for(i=sv->u.string->len; --i>=0; )
 	    newstr[i]=(jchar)(p[i]>0xffff? 0xfffd : p[i]);
 	  jargs->l = (*env)->NewString(env, newstr, sv->u.string->len);
+          dorelease && (*dorelease = 1);
 	}
 	break;
       }
@@ -733,20 +738,42 @@ static void make_jargs(jvalue *jargs, INT32 args, char *sig,
       jargs_error(jvm, env);
     }
     jargs++;
+    dorelease && dorelease++;
   }
 }
 
-static void free_jargs(jvalue *jargs, INT32 args, char *sig)
+static void free_jargs(jvalue *jargs, INT32 args, char *dorelease, char *sig,
+		       struct object *jvm, JNIEnv *env)
 {
+  INT32 i;
+  int do_free_jargs = 1;
   if(jargs == NULL)
     return;
-  free(jargs);
+
+  if(args==-1)
+  {
+      args=1;
+      do_free_jargs = 0;
+  }
+  if (dorelease)
+    for (i=0; i<args; i++)
+    {
+      if (dorelease[i])
+        (*env)->DeleteLocalRef(env, jargs[i].l);
+    }
+
+  if (do_free_jargs)
+  {
+    free(jargs);
+    free(dorelease);
+  }
 }
 
 static void f_call_static(INT32 args)
 {
   struct method_storage *m=THIS_METHOD;
   jvalue *jargs = (m->nargs>0?(jvalue *)xalloc(m->nargs*sizeof(jvalue)):NULL);
+  char *dorelease = (m->nargs>0?(char *)xalloc(m->nargs*sizeof(char)):NULL);
 
   JNIEnv *env;
   struct jobj_storage *co = THAT_JOBJ(m->class);
@@ -762,7 +789,7 @@ static void f_call_static(INT32 args)
     return;
   }
 
-  make_jargs(jargs, args, m->sig->str, co->jvm, env);
+  make_jargs(jargs, args, dorelease, m->sig->str, co->jvm, env);
 
   switch(m->rettype) {
   case 'Z':
@@ -842,7 +869,7 @@ static void f_call_static(INT32 args)
     break;
   }
 
-  free_jargs(jargs, args, m->sig->str);
+  free_jargs(jargs, args, dorelease, m->sig->str, co->jvm, env);
 
   jvm_vacate_env(co->jvm, env);
 }
@@ -851,6 +878,7 @@ static void f_call_virtual(INT32 args)
 {
   struct method_storage *m=THIS_METHOD;
   jvalue *jargs = (m->nargs>0?(jvalue *)xalloc(m->nargs*sizeof(jvalue)):NULL);
+  char *dorelease = (m->nargs>0?(char *)xalloc(m->nargs*sizeof(char)):NULL);
 
   JNIEnv *env;
   struct jobj_storage *co = THAT_JOBJ(m->class);
@@ -872,7 +900,7 @@ static void f_call_virtual(INT32 args)
     return;
   }
 
-  make_jargs(jargs, args-1, m->sig->str, co->jvm, env);
+  make_jargs(jargs, args-1, dorelease, m->sig->str, co->jvm, env);
 
   switch(m->rettype) {
   case 'Z':
@@ -952,7 +980,7 @@ static void f_call_virtual(INT32 args)
     break;
   }
 
-  free_jargs(jargs, args, m->sig->str);
+  free_jargs(jargs, args-1, dorelease, m->sig->str, co->jvm, env);
 
   jvm_vacate_env(co->jvm, env);
 }
@@ -961,6 +989,7 @@ static void f_call_nonvirtual(INT32 args)
 {
   struct method_storage *m=THIS_METHOD;
   jvalue *jargs = (m->nargs>0?(jvalue *)xalloc(m->nargs*sizeof(jvalue)):NULL);
+  char *dorelease = (m->nargs>0?(char *)xalloc(m->nargs*sizeof(char)):NULL);
 
   JNIEnv *env;
   struct jobj_storage *co = THAT_JOBJ(m->class);
@@ -982,7 +1011,7 @@ static void f_call_nonvirtual(INT32 args)
     return;
   }
 
-  make_jargs(jargs, args-1, m->sig->str, co->jvm, env);
+  make_jargs(jargs, args-1, dorelease, m->sig->str, co->jvm, env);
 
   switch(m->rettype) {
   case 'Z':
@@ -1062,7 +1091,7 @@ static void f_call_nonvirtual(INT32 args)
     break;
   }
 
-  free_jargs(jargs, args, m->sig->str);
+  free_jargs(jargs, args-1, dorelease, m->sig->str, co->jvm, env);
 
   jvm_vacate_env(co->jvm, env);
 }
@@ -1170,6 +1199,7 @@ static void f_field_set(INT32 args)
   struct jobj_storage *co = THAT_JOBJ(f->class);
   struct jobj_storage *jo;
   jvalue v;
+  char dorelease;
 
   if(args!=2)
     Pike_error("Incorrect number of arguments to set.\n");
@@ -1185,7 +1215,7 @@ static void f_field_set(INT32 args)
     return;
   }
 
-  make_jargs(&v, -1, f->sig->str, co->jvm, env);
+  make_jargs(&v, -1, &dorelease, f->sig->str, co->jvm, env);
   switch(f->type) {
   case 'Z':
     (*env)->SetBooleanField(env, jo->jobj, f->field, v.z);
@@ -1216,6 +1246,8 @@ static void f_field_set(INT32 args)
     (*env)->SetObjectField(env, jo->jobj, f->field, v.l);
     break;
   }
+
+  free_jargs(&v, -1, &dorelease, f->sig->str, co->jvm, env);
 
   jvm_vacate_env(co->jvm, env);
 
@@ -1309,6 +1341,7 @@ static void f_static_field_set(INT32 args)
   struct jobj_storage *co = THAT_JOBJ(f->class);
   jclass class = co->jobj;
   jvalue v;
+  char dorelease;
 
   if(args!=1)
     Pike_error("Incorrect number of arguments to set.\n");
@@ -1319,7 +1352,7 @@ static void f_static_field_set(INT32 args)
     return;
   }
 
-  make_jargs(&v, -1, f->sig->str, co->jvm, env);
+  make_jargs(&v, -1, &dorelease, f->sig->str, co->jvm, env);
   switch(f->type) {
   case 'Z':
     (*env)->SetStaticBooleanField(env, class, f->field, v.z);
@@ -1350,6 +1383,8 @@ static void f_static_field_set(INT32 args)
     (*env)->SetStaticObjectField(env, class, f->field, v.l);
     break;
   }
+
+  free_jargs(&v, -1, &dorelease, f->sig->str, co->jvm, env);
 
   jvm_vacate_env(co->jvm, env);
 
@@ -1703,9 +1738,11 @@ static void do_native_dispatch(struct native_method_context *ctx,
     memset(rc, 0, sizeof(*rc));
 
     if(*p != 'V') {
-      make_jargs(rc, -1, p, ctx->nat->jvm, env);
+      /* The Local Referens that is created here will be
+         released automatically when we return to java */
+      make_jargs(rc, -1, NULL, p, ctx->nat->jvm, env);
       if((*p == 'L' || *p == '[') && rc->l != NULL)
-	rc->l = (*env)->NewGlobalRef(env, rc->l);
+        rc->l = (*env)->NewLocalRef(env, rc->l);
     }
   }
 
@@ -2137,6 +2174,7 @@ static void f_new_array(INT32 args)
   struct object *o;
   JNIEnv *env;
   jvalue i;
+  char dorelease;
   jarray a;
   INT_TYPE n;
 
@@ -2148,12 +2186,13 @@ static void f_new_array(INT32 args)
   get_all_args("new_array", args, "%i%O", &n, &o);
 
   if((env = jvm_procure_env(jo->jvm))) {
-    make_jargs(&i, -1, "L", jo->jvm, env);
+    make_jargs(&i, -1, &dorelease, "L", jo->jvm, env);
     a = (*env)->NewObjectArray(env, n, jo->jobj, i.l);
     pop_n_elems(args);
     push_java_array(a, jo->jvm, env,
 		    ((*env)->CallBooleanMethod(env, jo->jobj,
 					       j->method_isarray)? '[':'L'));
+    free_jargs(&i, -1, &dorelease, "L", jo->jvm, env);
     jvm_vacate_env(jo->jvm, env);
   } else {
     pop_n_elems(args);
@@ -2449,6 +2488,7 @@ static void f_javaarray_setelt(INT32 args)
   JNIEnv *env;
   INT32 n;
   jvalue jjv;
+  char dorelease;
   char ty2;
 
   if(args<2 || Pike_sp[-args].type != PIKE_T_INT)
@@ -2466,7 +2506,7 @@ static void f_javaarray_setelt(INT32 args)
   }
 
   ty2 = ja->ty;
-  make_jargs(&jjv, -1, &ty2, jo->jvm, env);
+  make_jargs(&jjv, -1, &dorelease, &ty2, jo->jvm, env);
 
   assign_svalue(&Pike_sp[-2], &Pike_sp[-1]);
   pop_n_elems(1);
@@ -2506,6 +2546,8 @@ static void f_javaarray_setelt(INT32 args)
      (*env)->SetObjectArrayElement(env, jo->jobj, n, jjv.l);
      break;
   }
+
+  free_jargs(&jjv, -1, &dorelease, &ty2, jo->jvm, env);
 
   jvm_vacate_env(jo->jvm, env);
 }
