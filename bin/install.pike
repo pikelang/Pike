@@ -12,6 +12,8 @@
 
 constant pike_upgrade_guid = "FCBB6B90-1608-4A7C-926C-69BBAB366326";
 
+constant line_feed = Standards.XML.Wix.line_feed;
+
 string version_str = sprintf("%d.%d.%d",
 			     __REAL_MAJOR__,
 			     __REAL_MINOR__,
@@ -1852,7 +1854,7 @@ int pre_install(array(string) argv)
       install_type="--new-style";
       continue;
 
-    case "--wix":
+    case "--wix-module":
       export = 2;
     case "--export":
       export = export || 1;
@@ -1933,6 +1935,7 @@ int pre_install(array(string) argv)
     lib_prefix = combine_path(prefix, "lib");
     if (!vars->TMP_BUILDDIR) vars->TMP_BUILDDIR="bin";
     finalize_pike();
+    status1("Finalizing done.");
     return 0;
   case "--install-master":
     prefix = getcwd();
@@ -1941,6 +1944,11 @@ int pre_install(array(string) argv)
     include_prefix = combine_path(prefix,"include","pike");
     make_master("lib/master.pike", "lib/master.pike.in",
 		lib_prefix, include_prefix);
+    status1("Intalling master done.");
+    return 0;
+  case "--wix":
+    make_wix();
+    status1("Creating wix done.");
     return 0;
   }
   break;
@@ -1948,6 +1956,93 @@ int pre_install(array(string) argv)
 
   do_install();
   return 0;
+}
+
+// Create a versioned root wix file that installs Pike_module.msm.
+void make_wix()
+{
+  status("Creating", "Pike.wxs");
+
+  Directory root = Directory("SourceDir",
+			     Standards.UUID.UUID(version_guid)->encode(),
+			     "TARGETDIR");
+  root->merge_module(".", "Pike_module.msm", "Pike", "PIKE_TARGETDIR");
+
+  string title = sprintf("Pike v%d.%d release %d",
+			 __REAL_MAJOR__, __REAL_MINOR__, __REAL_BUILD__);
+  WixNode feature_node =
+    WixNode("Feature", ([
+	      "ConfigurableDirectory":"TARGETDIR",
+	      "Title":title,
+	      "Level":"1",
+	      "Id":"F_Pike",
+	    ]))->
+    add_child(line_feed)->
+    add_child(WixNode("MergeRef", ([ "Id":"Pike" ])))->
+    add_child(line_feed);
+
+  // Generate the XML.
+  Parser.XML.Tree.SimpleRootNode root_node =
+    Parser.XML.Tree.SimpleRootNode()->
+    add_child(Parser.XML.Tree.SimpleHeaderNode((["version": "1.0",
+						 "encoding": "utf-8"])))->
+    add_child(WixNode("Wix", (["xmlns":Standards.XML.Wix.wix_ns]))->
+	      add_child(line_feed)->
+	      add_child(WixNode("Product", ([
+				  "Manufacturer":"IDA",
+				  "Name":title,
+				  "Language":"1033",
+				  "UpgradeCode":pike_upgrade_guid,
+				  "Id":version_guid,
+				  "Version":version_str,
+				]))->
+			add_child(line_feed)->
+			add_child(WixNode("Package", ([
+					    "Manufacturer":"IDA",
+					    "Languages":"1033",
+					    "Compressed":"yes",
+					    "InstallerVersion":"200",
+					    "Platforms":"Intel",
+					    "SummaryCodepage":"1252",
+					    "Id":version_guid,
+					  ])))->
+			add_child(line_feed)->
+			add_child(WixNode("Media", ([
+					    "Cabinet":"Pike.cab",
+					    "EmbedCab":"yes",
+					    "Id":"1",
+					  ])))->
+			add_child(line_feed)->
+			add_child(root->gen_xml())->
+			add_child(line_feed)->
+			add_child(feature_node)->
+			add_child(line_feed)->
+			add_child(WixNode("AdminExecuteSequence", ([]), "\n")->
+				  add_child(WixNode("Custom", ([
+						      "Before":"CostInitialize",
+						      "Action":"DIRCA_TARGETDIR",
+						    ]), "TARGETDIR=\"\""))->
+				  add_child(line_feed))->
+			add_child(line_feed)->
+			add_child(WixNode("InstallExecuteSequence", ([
+					  ]), "\n")->
+				  add_child(WixNode("Custom", ([
+						      "Before":"ValidateProductID",
+						      "Action":"DIRCA_TARGETDIR",
+						    ]), "TARGETDIR=\"\""))->
+				  add_child(line_feed)->
+				  add_child(WixNode("RemoveExistingProducts", ([
+						      "After":"InstallInitialize",
+						    ])))->
+				  add_child(line_feed))->
+			add_child(line_feed)->
+			add_child(WixNode("FragmentRef", ([
+					    "Id":"PikeUI",
+					  ])))->
+			add_child(line_feed)))->
+    add_child(line_feed);
+
+  create_file("Pike.wxs", root_node->render_xml());
 }
 
 // Create a master.pike with the correct lib_prefix
@@ -2402,6 +2497,7 @@ int main(int argc, array(string) argv)
     ({"no-gui",Getopt.NO_ARG,({"--no-gui","--no-x"})}),
     ({"--export",Getopt.NO_ARG,({"--export"})}),
     ({"--wix", Getopt.NO_ARG, ({ "--wix" })}),
+    ({"--wix-module", Getopt.NO_ARG, ({ "--wix-module" })}),
     ({"--traditional",Getopt.NO_ARG,({"--traditional"})}),
     }) ),array opt)
     {
