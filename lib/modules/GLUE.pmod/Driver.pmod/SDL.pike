@@ -1,7 +1,9 @@
 //
-// $Id: SDL.pike,v 1.2 2004/01/24 21:42:26 nilsson Exp $
+// $Id: SDL.pike,v 1.3 2004/01/26 09:57:23 grubba Exp $
 
 #pike __REAL_VERSION__
+
+#if constant(SDL.Surface)
 
 inherit .Interface;
 import GLUE.Events;
@@ -281,3 +283,4 @@ void hide_cursor() {
   SDL.show_cursor( SDL.DISABLE );
 }
 
+#endif /* constant(SDL.Surface) */
