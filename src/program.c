@@ -5,7 +5,7 @@
 \*/
 /**/
 #include "global.h"
-RCSID("$Id: program.c,v 1.325 2001/05/24 17:40:19 grubba Exp $");
+RCSID("$Id: program.c,v 1.326 2001/05/26 17:10:26 grubba Exp $");
 #include "program.h"
 #include "object.h"
 #include "dynamic_buffer.h"
@@ -2076,6 +2076,15 @@ void pike_set_prog_event_callback(void (*cb)(enum pike_program_event))
     fatal("Program already has an event handler!\n");
 #endif
   Pike_compiler->new_program->event_handler=cb;
+}
+
+void pike_set_prog_optimize_callback(node *(*opt)(node *))
+{
+#ifdef PIKE_DEBUG
+  if(Pike_compiler->new_program->optimize)
+    fatal("Program already has an optimize handler!\n");
+#endif
+  Pike_compiler->new_program->optimize = opt;
 }
 
 int low_reference_inherited_identifier(struct program_state *q,

@@ -5,7 +5,7 @@
 \*/
 
 /*
- * $Id: program.h,v 1.126 2001/04/28 19:32:56 mast Exp $
+ * $Id: program.h,v 1.127 2001/05/26 17:10:27 grubba Exp $
  */
 #ifndef PROGRAM_H
 #define PROGRAM_H
@@ -301,6 +301,7 @@ struct program
   struct program *prev;
   struct program *parent;
   
+  struct node_s *(*optimize)(struct node_s *n);
 
   void (*event_handler)(enum pike_program_event);
 #ifdef PIKE_DEBUG
@@ -386,6 +387,7 @@ PMOD_EXPORT void set_exit_callback(void (*exit)(struct object *));
 PMOD_EXPORT void set_gc_recurse_callback(void (*m)(struct object *));
 PMOD_EXPORT void set_gc_check_callback(void (*m)(struct object *));
 void pike_set_prog_event_callback(void (*cb)(enum pike_program_event));
+void pike_set_prog_optimize_callback(struct node_s *(*opt)(struct node_s *));
 int low_reference_inherited_identifier(struct program_state *q,
 				       int e,
 				       struct pike_string *name,
