@@ -5,7 +5,7 @@
 \*/
 
 /*
- * $Id: global.h,v 1.23 1998/06/12 19:16:40 noring Exp $
+ * $Id: global.h,v 1.24 1998/08/07 16:12:39 grubba Exp $
  */
 #ifndef GLOBAL_H
 #define GLOBAL_H
@@ -44,6 +44,11 @@ struct sockaddr;
 struct object;
 struct array;
 struct svalue;
+
+#ifndef STRUCT_TIMEVAL_DECLARED
+#define STRUCT_TIMEVAL_DECLARED
+struct timeval;
+#endif
 
 #include "machine.h"
 
