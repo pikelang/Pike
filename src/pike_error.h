@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: pike_error.h,v 1.23 2002/11/23 17:59:11 mast Exp $
+|| $Id: pike_error.h,v 1.24 2002/11/25 00:25:48 mast Exp $
 */
 
 #ifndef PIKE_ERROR_H
@@ -196,7 +196,7 @@ PMOD_EXPORT extern const char msg_assert_onerr[];
 
 /* Prototypes begin here */
 PMOD_EXPORT void check_recovery_context(void);
-PMOD_EXPORT void pike_gdb_breakpoint(void);
+PMOD_EXPORT void pike_gdb_breakpoint(INT32 args);
 PMOD_EXPORT JMP_BUF *init_recovery(JMP_BUF *r, size_t stack_pop_levels DEBUG_LINE_ARGS);
 PMOD_EXPORT DECLSPEC(noreturn) void pike_throw(void) ATTRIBUTE((noreturn));
 PMOD_EXPORT void push_error(const char *description);
