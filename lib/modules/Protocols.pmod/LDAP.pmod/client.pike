@@ -2,7 +2,7 @@
 
 // LDAP client protocol implementation for Pike.
 //
-// $Id: client.pike,v 1.66 2005/01/24 16:17:52 mast Exp $
+// $Id: client.pike,v 1.67 2005/01/26 15:06:44 mast Exp $
 //
 // Honza Petrous, hop@unibase.cz
 //
@@ -370,7 +370,7 @@ import SSL.Constants;
   void create(string|void url, object|void context)
   {
 
-    info = ([ "code_revision" : ("$Revision: 1.66 $"/" ")[1] ]);
+    info = ([ "code_revision" : ("$Revision: 1.67 $"/" ")[1] ]);
 
     if(!url || !sizeof(url))
       url = LDAP_DEFAULT_URL;
@@ -825,28 +825,35 @@ import SSL.Constants;
     // /mast
 #define WS "%*[ \t\n\r]"
 
-    string|int read_filter_value()
+    string read_filter_value()
     // Reads a filter value encoded according to section 4 in RFC 2254
     // and section 3 in the older RFC 1960.
     {
       string res = "";
+      //werror ("read_filter_value %O\n", filter);
       while (1) {
 	sscanf (filter, "%[^()*\\]%s", string val, filter);
 	res += val;
 	if (filter == "" || (<'(', ')', '*'>)[filter[0]]) break;
-	if (sscanf (filter, "\\%2x%s", int chr, filter) == 2)
-	  // RFC 2254.
-	  res += sprintf ("%c", chr);
-	else if ((<"*", "(", ")">)[val = filter[1..1]]) {
+	// filter[0] == '\\' now.
+	if (sscanf (filter, "\\%1x%1x%s", int high, int low, filter) == 3)
+	  // RFC 2254. (Use two %1x to force reading of exactly two
+	  // hex digits; something like %2.2x is currently not
+	  // supported.)
+	  res += sprintf ("%c", (high << 4) + low);
+	else {
 	  // RFC 1960. Note that this RFC doesn't define a consistent
 	  // quoting since a "\" shouldn't be quoted. That means it
 	  // isn't possible to specify a value ending with "\".
-	  res += val;
-	  filter = filter[2..];
+	  if (sscanf (filter, "\\%1[*()]%s", val, filter) == 2)
+	    res += val;
+	  else {
+	    res += filter[..1];
+	    filter = filter[2..];
+	  }
 	}
-	else
-	  FILTER_PARSE_ERR ("Invalid quoting in value.\n");
       }
+      //werror ("read_filter_value => %O (rest: %O)\n", res, filter);
       return res;
     };
 
@@ -933,8 +940,7 @@ import SSL.Constants;
 		FILTER_PARSE_ERR ("Error parsing matching rule identifier.\n");
 	    }
 
-	    string|int val = read_filter_value();
-	    if (intp (val)) return 0;
+	    string val = read_filter_value();
 
 	    res = ASN1_CONTEXT_SEQUENCE (	// 'extensibleMatch'
 	      9, ((matching_rule ?
@@ -948,15 +954,13 @@ import SSL.Constants;
 	  else {
 	    if (attr == "") FILTER_PARSE_ERR ("Expected attribute.\n");
 
-	    string|int|object val = read_filter_value();
-	    if (intp (val)) return 0;
+	    string|object val = read_filter_value();
 
 	    if (op == "=" && has_prefix (filter, "*")) {
 	      array(string) parts = ({val});
 	      do {
 		filter = filter[1..];
 		val = read_filter_value();
-		if (intp (val)) return 0;
 		parts += ({val});
 	      } while (has_prefix (filter, "*"));
 
