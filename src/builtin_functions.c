@@ -4,7 +4,7 @@
 ||| See the files COPYING and DISCLAIMER for more information.
 \*/
 #include "global.h"
-RCSID("$Id: builtin_functions.c,v 1.94 1998/04/14 15:08:44 hedda Exp $");
+RCSID("$Id: builtin_functions.c,v 1.95 1998/04/14 15:48:09 hedda Exp $");
 #include "interpret.h"
 #include "svalue.h"
 #include "pike_macros.h"
@@ -2567,11 +2567,12 @@ void f_splice(INT32 args)
   }
 
   if (i<0)
+  {
     if (sp[i].type!=T_ARRAY) 
       error("Illegal argument 1 to splice.\n");
     else
       sizein=sp[i].u.array->size;
-
+  }
   for(++i; i<0; i++)
     if (sp[i].type!=T_ARRAY) 
       error("Illegal argument to splice.\n");
@@ -2630,6 +2631,7 @@ void f_everynth(INT32 args)
     if (n<1)
       n=1;
     if (args>2)
+    {
       if (sp[2-args].type!=T_INT) 
 	error("Illegal argument 3 to everynth.\n");
       else
@@ -2638,6 +2640,7 @@ void f_everynth(INT32 args)
 	if (start<0)
 	  start=0;
       }
+    }
   }
   a=allocate_array(((size=ina->size)-start+n-1)/n);
   for(; start<size; start+=n)
@@ -2710,6 +2713,7 @@ void f_transpose(INT32 args)
     struct svalue * tva;
     outinner=allocate_array(sizein);
     outinner->type_field=type;
+    outinner->refs++;  /*FIXME Should this be here?*/
     ett=outinner->item;
     tva=in->item;
     for(i=0; i<sizein; i++)
@@ -2717,7 +2721,7 @@ void f_transpose(INT32 args)
       assign_svalue_no_free(ett+i,
 			    (tva+i)->u.array->item+j);
     }
-    out->item[j].u= outinner;
+    out->item[j].u.array=outinner;
     out->item[j].type=T_ARRAY;
   }
 
