@@ -5,7 +5,7 @@
 \*/
 
 /*
- * $Id: cpp.c,v 1.35 1999/02/22 00:25:42 grubba Exp $
+ * $Id: cpp.c,v 1.36 1999/02/22 15:22:24 grubba Exp $
  */
 #include "global.h"
 /* #include "dynamic_buffer.h" */
@@ -871,6 +871,7 @@ static INT32 low_cpp(struct cpp *this,
     case 'l':
       if(WGOBBLE("line"))
 	{
+	  /* FIXME: Why not use SKIPSPACE()? */
 	  while(data[pos]==' ' || data[pos]=='\t') pos++;
 	}else{
 	  goto unknown_preprocessor_directive;
