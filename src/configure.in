@@ -1,4 +1,4 @@
-AC_REVISION("$Id: configure.in,v 1.479 2001/02/14 18:17:12 mirar Exp $")
+AC_REVISION("$Id: configure.in,v 1.480 2001/02/14 18:27:34 mirar Exp $")
 AC_INIT(interpret.c)
 AC_CONFIG_HEADER(machine.h)
 
@@ -5112,8 +5112,8 @@ AC_OUTPUT(Makefile modules/static_module_makefile  post_modules/static_module_ma
 
 # NOTE: M4 uses [] as quotes.
 
-PIKE_VERSION="$(sed -n -e 's/^.*PIKE_MAJOR_VERSION[[ \t]]*\([[^ \t]]*\)/\1/p' <$srcdir/version.h).$(sed -n -e 's/^.*PIKE_MINOR_VERSION[[ \t]]*\([[^ \t]]*\)/\1/p' <$srcdir/version.h).$(sed -n -e 's/^.*PIKE_BUILD_VERSION[[ \t]]*\([[^ \t]]*\)/\1/p' <$srcdir/version.h)"
-PIKE_VERSION_LONG="Pike v$(sed -n -e 's/^.*PIKE_MAJOR_VERSION[[ \t]]*\([[^ \t]]*\)/\1/p' <$srcdir/version.h).$(sed -n -e 's/^.*PIKE_MINOR_VERSION[[ \t]]*\([[^ \t]]*\)/\1/p' <$srcdir/version.h) release $(sed -n -e 's/^.*PIKE_BUILD_VERSION[[ \t]]*\([[^ \t]]*\)/\1/p' <$srcdir/version.h)"
+PIKE_VERSION="`sed -n -e 's/^.*PIKE_MAJOR_VERSION[[ \t]]*\([[^ \t]]*\)/\1/p' <$srcdir/version.h`.`sed -n -e 's/^.*PIKE_MINOR_VERSION[[ \t]]*\([[^ \t]]*\)/\1/p' <$srcdir/version.h`.`sed -n -e 's/^.*PIKE_BUILD_VERSION[[ \t]]*\([[^ \t]]*\)/\1/p' <$srcdir/version.h`"
+PIKE_VERSION_LONG="Pike v`sed -n -e 's/^.*PIKE_MAJOR_VERSION[[ \t]]*\([[^ \t]]*\)/\1/p' <$srcdir/version.h`.`sed -n -e 's/^.*PIKE_MINOR_VERSION[[ \t]]*\([[^ \t]]*\)/\1/p' <$srcdir/version.h` release `sed -n -e 's/^.*PIKE_BUILD_VERSION[[ \t]]*\([[^ \t]]*\)/\1/p' <$srcdir/version.h`"
 
 
 cat >conftest.c <<EOF
@@ -5141,10 +5141,10 @@ echo "pike library.. $prefix/lib/${PIKE_VERSION}/" >>config.info
 
 echo >>config.info
 echo "build information:" >>config.info
-echo "system........ $UNAME$(echo $pike_cv_libgcc_filename | sed -n -e 's+^.*gcc-lib/\([[^/]]*\)/.*$+ (\1)+p')" >>config.info
-uname -a && echo "   $(uname -a)" >>config.info
-hostname && echo "hostname...... $(hostname)" >>config.info
-echo "user.......... $(whoami 2>/dev/null || echo '?')" >>config.info
+echo "system........ $UNAME`echo $pike_cv_libgcc_filename | sed -n -e 's+^.*gcc-lib/\([[^/]]*\)/.*$+ (\1)+p'`" >>config.info
+uname -a && echo "   `uname -a`" >>config.info
+hostname && echo "hostname...... `hostname`" >>config.info
+echo "user.......... `whoami 2>/dev/null || echo '?'`" >>config.info
 echo >>config.info
 echo "source path... $srcdir" >>config.info
 echo "build path.... $BUILDDIR" >>config.info
