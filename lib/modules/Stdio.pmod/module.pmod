@@ -1,4 +1,4 @@
-// $Id: module.pmod,v 1.69 1999/11/22 23:17:31 noring Exp $
+// $Id: module.pmod,v 1.70 1999/11/30 07:40:11 hubbe Exp $
 
 import String;
 
@@ -537,6 +537,11 @@ class FILE {
       if (!query_num_arg()) {
 	bytes = 0x7fffffff;
       }
+
+      /* Optimization - Hubbe */
+      if(!strlen(b) && bytes > BUFSIZE)
+	return ::read(bytes, now);
+
       while(strlen(b) - bpos < bytes)
 	if(!get_data()) {
 	  // EOF.
