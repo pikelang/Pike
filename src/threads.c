@@ -1,5 +1,5 @@
 #include "global.h"
-RCSID("$Id: threads.c,v 1.101 1999/07/01 01:39:13 hubbe Exp $");
+RCSID("$Id: threads.c,v 1.102 1999/08/17 17:20:18 grubba Exp $");
 
 int num_threads = 1;
 int threads_disabled = 0;
@@ -1306,6 +1306,14 @@ int th_num_farmers()
 static struct farmer *new_farmer(void (*fun)(void *), void *args)
 {
   struct farmer *me = malloc(sizeof(struct farmer));
+
+  if (!me) {
+    /* Out of memory */
+    fatal("new_farmer(): Out of memory!\n");
+  }
+
+  dmalloc_accept_leak(me);
+
   _num_farmers++;
   me->neighbour = 0;
   me->field = args;
