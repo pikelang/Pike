@@ -1,5 +1,5 @@
 /*
- * $Id: jvm.c,v 1.37 2002/02/05 15:26:00 tomas Exp $
+ * $Id: jvm.c,v 1.38 2002/02/07 13:32:14 grubba Exp $
  *
  * Pike interface to Java Virtual Machine
  *
@@ -18,7 +18,7 @@
 #endif /* HAVE_CONFIG_H */
 
 #include "global.h"
-RCSID("$Id: jvm.c,v 1.37 2002/02/05 15:26:00 tomas Exp $");
+RCSID("$Id: jvm.c,v 1.38 2002/02/07 13:32:14 grubba Exp $");
 #include "program.h"
 #include "interpret.h"
 #include "stralloc.h"
@@ -2794,6 +2794,7 @@ static void f_create(INT32 args)
   char *classpath = NULL;
   jclass cls;
 
+  /* FIXME: This doesn't loop... */
   while(j->jvm) {
     JavaVM *jvm = j->jvm;
     JNIEnv *env;
