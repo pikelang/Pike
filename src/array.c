@@ -105,7 +105,13 @@ void really_free_array(struct array *v)
     fatal("Tried to free the empty_array.\n");
 #endif
 
+#ifdef DEBUG
+  if(d_flag > 1)  array_check_type_field(v);
+#endif
+
+  v->refs++;
   free_svalues(ITEM(v), v->size, v->type_field);
+  v->refs--;
   array_free_no_free(v);
 }
 
@@ -1421,9 +1427,12 @@ void gc_check_all_arrays()
 
       /* Ugly, but we are not allowed to change type_field
        * at the same time as the array is being built...
+       * Actually we just need beter primitives for building arrays.
        */
       if(!(a->type_field & BIT_UNFINISHED) || a->refs!=1)
 	a->type_field = t;
+      else
+	a->type_field |= t;
     }
 
     a=a->next;
@@ -1472,3 +1481,31 @@ void gc_free_all_unreferenced_arrays()
 
 #endif /* GC2 */
 
+#ifdef DEBUG
+
+void debug_dump_type_field(TYPE_FIELD t)
+{
+  int e;
+  for(e=0;e<MAX_TYPE;e++)
+    if(t & (1<<e))
+      fprintf(stderr," %s",get_name_of_type(e));
+
+  for(;e<16;e++)
+    if(t & (1<<e))
+      fprintf(stderr," <%d>",e);
+}
+
+void debug_dump_array(struct array *a)
+{
+  fprintf(stderr,"Refs=%d, next=%p, prev=%p, size=%d, malloced_size=%d\n",
+	  a->refs,
+	  a->next,
+	  a->prev,
+	  a->size,
+	  a->malloced_size);
+  fprintf(stderr,"Type field = ");
+  debug_dump_type_field(a->type_field);
+  fprintf(stderr,"\n");
+  simple_describe_array(a);
+}
+#endif
