@@ -5,7 +5,7 @@
 \*/
 
 /*
- * $Id: global.h,v 1.36 1999/07/15 16:54:36 hubbe Exp $
+ * $Id: global.h,v 1.37 1999/07/15 18:56:53 grubba Exp $
  */
 #ifndef GLOBAL_H
 #define GLOBAL_H
@@ -35,6 +35,9 @@
 #ifndef __STDC_EXT__
 #  define __STDC_EXT__
 #endif /* !__STDC_EXT__ */
+#ifndef _PROTOTYPES
+#  define _PROTOTYPES
+#endif /* !_PROTOTYPES */
 
 /*
  * Some structure forward declarations are needed.
@@ -113,9 +116,9 @@ char *alloca ();
 #undef HAVE_STDLIB_H
 #endif
 
-#ifdef HAVE_STDLIB_H
+#ifdef HAVE_STDDEF_H
 #include <stddef.h>
-#undef HAVE_STDLIB_H
+#undef HAVE_STDDEF_H
 #endif
 
 #ifdef HAVE_MALLOC_H
