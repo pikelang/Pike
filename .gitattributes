@@ -783,7 +783,6 @@ testfont binary
 /src/post_modules/GTK/gdkeventstrings.h foreign_ident
 /src/post_modules/GTK/module.pmod.in foreign_ident
 /src/post_modules/GTK/pgtk.h foreign_ident
-/src/post_modules/GTK/refdoc/GTK.pmod/GladeXML.pike foreign_ident
 /src/post_modules/GTK/source/encode_truecolor.c foreign_ident
 /src/post_modules/GTK/source/gladexml.pre foreign_ident
 /src/post_modules/GTK/source/support.c foreign_ident

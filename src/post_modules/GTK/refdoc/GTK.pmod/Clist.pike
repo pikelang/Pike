@@ -63,6 +63,11 @@ GTK.Clist clear( );
 //!
 //!
 
+int columns_autosize( );
+//! Resize all columns according to their contents
+//!
+//!
+
 GTK.Clist column_title_active( int column );
 //! Make a specific column title active
 //!
@@ -93,11 +98,6 @@ GTK.Clist column_titles_show( );
 //!
 //!
 
-int columns_autosize( );
-//! Resize all columns according to their contents
-//!
-//!
-
 static GTK.Clist create( int columns );
 //! Create a new empty clist, columns columns wide.
 //! 
@@ -109,7 +109,7 @@ static GTK.Clist create( int columns );
 
 int find_row_from_data( object data );
 //! Find a row in the list that has the given user data.  If no node is
-//! found, 0 is returned.
+//! found, -1 is returned.
 //!
 //!
 
@@ -135,6 +135,11 @@ int get_cell_type( int row, int column );
 //!
 //!
 
+int get_columns( );
+//! Return the number of columns in this clist
+//!
+//!
+
 string get_column_title( int column );
 //! Returns the title of a specified column.
 //!
@@ -142,11 +147,6 @@ string get_column_title( int column );
 
 GTK.Widget get_column_widget( int column );
 //! Return the widget for the specified column title
-//!
-//!
-
-int get_columns( );
-//! Return the number of columns in this clist
 //!
 //!
 
@@ -196,13 +196,13 @@ int get_row_height( );
 //!
 //!
 
-GTK.Style get_row_style( int row );
-//! Return the W(style) object associated with the specified row
+int get_rows( );
+//! Return the number of rows
 //!
 //!
 
-int get_rows( );
-//! Return the number of rows
+GTK.Style get_row_style( int row );
+//! Return the W(style) object associated with the specified row
 //!
 //!
 
@@ -323,7 +323,7 @@ GTK.Clist set_background( int row, GDK.Color color );
 //!
 
 GTK.Clist set_button_actions( int button, int action );
-//! Action is a bitwise or of @[BUTTON_DRAGS], @[BUTTON_EXPANDS], @[BUTTON_IGNORED], @[BUTTON_SELECTS], @[BUTTONBOX_DEFAULT_STYLE], @[BUTTONBOX_EDGE], @[BUTTONBOX_END], @[BUTTONBOX_SPREAD] and @[BUTTONBOX_START]
+//! Action is a bitwise or of @[BUTTONBOX_DEFAULT_STYLE], @[BUTTONBOX_EDGE], @[BUTTONBOX_END], @[BUTTONBOX_SPREAD], @[BUTTONBOX_START], @[BUTTON_DRAGS], @[BUTTON_EXPANDS], @[BUTTON_IGNORED] and @[BUTTON_SELECTS]
 //! Button is the mouse button (normally 1-3, 4 and 5 sometimes beeing
 //! scroll wheel up and scroll wheel down)
 //!

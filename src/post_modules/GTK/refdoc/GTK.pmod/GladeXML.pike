@@ -65,6 +65,5 @@ GTK.GladeXML signal_autoconnect( mapping callbacks, mixed data );
 //! mapping should consist of handler name : function pairs. The
 //! data argument will be saved and sent as the first argument to all
 //! callback functions.
-//! <p align="right">@i{$Id: GladeXML.pike,v 1.5 2001/07/27 01:52:35 nilsson Exp $@}
 //!
 //!

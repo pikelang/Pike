@@ -93,7 +93,7 @@ int find( GTK.CTreeNode node, GTK.CTreeNode start );
 //!
 //!
 
-GTK.Ctree find_by_row_data( object data, CTreeNode root );
+GTK.Ctree find_by_row_data( object data, CTreeNode|void root );
 //! Find a node in the tree starting with root, that has the given user data.
 //! If no node is found, 0 is returned.
 //!
