@@ -185,6 +185,7 @@ testfont binary
 /lib/modules/Standards.pmod/EXIF.pmod foreign_ident
 /lib/modules/Standards.pmod/FIPS10_4.pmod foreign_ident
 /lib/modules/Standards.pmod/ID3.pmod foreign_ident
+/lib/modules/Standards.pmod/PKCS.pmod/Certificate.pmod foreign_ident
 /lib/modules/Standards.pmod/PKCS.pmod/RSA.pmod foreign_ident
 /lib/modules/Standards.pmod/RDF.pike foreign_ident
 /lib/modules/Standards.pmod/URI.pike foreign_ident
