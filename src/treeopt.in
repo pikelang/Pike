@@ -1,6 +1,6 @@
 // -*- c -*-
 //
-// $Id: treeopt.in,v 1.25 1999/11/18 04:15:31 hubbe Exp $
+// $Id: treeopt.in,v 1.26 1999/11/18 17:45:39 grubba Exp $
 //
 // The tree optimizer
 //
@@ -18,38 +18,49 @@
 }
 ;
 
+
+F_POP_VALUE(-, *):
+  -;
+
+// F_POP_VALUE doesn't leave anything on the stack to pop...
+F_POP_VALUE(0 = F_POP_VALUE, *):
+  $0;
+
+// Don't push constants just to pop them.
+F_POP_VALUE(F_CONSTANT, *):
+  -;
+
+// Casts don't have side-effects.
+F_POP_VALUE(F_CAST(0, *), *):
+  F_POP_VALUE($0, -);
+
+// Popping of variables.
+F_POP_VALUE(F_LOCAL, *):
+  -;
+
+// Popping of variables.
+F_POP_VALUE(F_GLOBAL, *):
+  -;
+
+// Popping of variables.
+F_POP_VALUE(F_EXTERNAL, *):
+  -;
+
+
 F_CAST(-,*):
   -;
 
-F_CAST[$$->type == void_type_string](F_CONSTANT, *):
-  -;
-
-// Cast to void overrides other casts.
-F_CAST[$$->type == void_type_string](F_CAST(0, *), *):
-{
-  $$ = mkcastnode(void_type_string, $0);
-}
-;
+// Convert casts to void to F_POP_VALUE
+F_CAST[$$->type == void_type_string](0, *):
+  F_POP_VALUE($0, -);
 
 // void can't be casted to anything else.
-// F_CAST(0 = +[$$->type == void_type_string], *):
-//  $0;
+F_CAST[$$->type != void_type_string](0 = +[$$->type == void_type_string], *):
+  $0;
 
 // This one is probably not needed, since it's handled by mkcastnode()
-// 0 = F_CAST(1 = +[$$->type == $0->type](*, *), *):
-//  $1;
-
-// Casting variables to void
-F_CAST[$$->type == void_type_string](F_LOCAL, *):
-  -;
-
-// Casting variables to void
-F_CAST[$$->type == void_type_string](F_GLOBAL, *):
-  -;
-
-// Casting variables to void
-F_CAST[$$->type == void_type_string](F_EXTERNAL, *):
-  -;
+0 = F_CAST[$$->type != void_type_string](1 = +[$$->type == $0->type](*, *), *):
+  $1;
 
 // Propagate casts towards the leaves
 0 = F_CAST(F_COMMA_EXPR(1, 2), *):
