@@ -1,5 +1,5 @@
 /*
- * $Id: passwords.c,v 1.9 1998/04/16 21:50:39 hubbe Exp $
+ * $Id: passwords.c,v 1.10 1998/04/16 22:44:22 grubba Exp $
  *
  * Password handling for Pike.
  *
@@ -19,7 +19,7 @@
 
 #include "global.h"
 
-RCSID("$Id: passwords.c,v 1.9 1998/04/16 21:50:39 hubbe Exp $");
+RCSID("$Id: passwords.c,v 1.10 1998/04/16 22:44:22 grubba Exp $");
 
 #include "module_support.h"
 #include "interpret.h"
@@ -278,27 +278,79 @@ void f_getpwent(INT32 args)
   mt_unlock(&password_protection_mutex);
 }
 
+/* This is used to save the pwents during THREADS_ALLOW(). */
+struct pike_pwent {
+  struct pike_pwent *next;
+  struct passwd pw;
+};
 
 void f_get_all_users(INT32 args)
 {
-  struct passwd *pw;
+  struct pike_pwent *ppwents = NULL;
+  int nels = 0;
   struct array *a;
+
   pop_n_elems(args);
-  a=low_allocate_array(0,10);
+
+  THREADS_ALLOW();
   mt_lock(&password_protection_mutex);
+
   setpwent();
   while(1)
   {
-    THREADS_ALLOW();
+    struct passwd *pw;
+    struct pike_pwent *nppwent;
+
     pw=getpwent();
-    THREADS_DISALLOW();
     if(!pw) break;
-    push_pwent(pw);
-    a=append_array(a,sp-1);
-    pop_stack();
+
+    nppwent = malloc(sizeof(struct pike_pwent) + strlen(pw->pw_name) +
+		     strlen(pw->pw_passwd) + strlen(pw->pw_gecos) +
+		     strlen(pw->pw_dir) + strlen(pw->pw_shell) + 10);
+    if (!nppwent) {
+      /* FIXME: Out of memory... */
+      break;
+    }
+
+    /* If pw changes here we lose... */
+
+    /* Copy pw to nppwent. */
+    nppwent->pw.pw_uid = pw->pw_uid;
+    nppwent->pw.pw_gid = pw->pw_gid;
+    nppwent->pw.pw_name =   (char *)(nppwent + 1);
+    nppwent->pw.pw_passwd = nppwent->pw.pw_name +   strlen(pw->pw_name) + 1;
+    nppwent->pw.pw_gecos =  nppwent->pw.pw_passwd + strlen(pw->pw_passwd) + 1;
+    nppwent->pw.pw_dir =    nppwent->pw.pw_gecos +  strlen(pw->pw_gecos) + 1;
+    nppwent->pw.pw_shell =  nppwent->pw.pw_dir +    strlen(pw->pw_dir) + 1;
+    strcpy(nppwent->pw.pw_name,   pw->pw_name);
+    strcpy(nppwent->pw.pw_passwd, pw->pw_passwd);
+    strcpy(nppwent->pw.pw_gecos,  pw->pw_gecos);
+    strcpy(nppwent->pw.pw_dir,    pw->pw_dir);
+    strcpy(nppwent->pw.pw_shell,  pw->pw_shell);
+
+    /* Link it in */
+    nppwent->next = ppwents;
+    ppwents = nppwent;
+    nels++;
   }
   endpwent();
+
   mt_unlock(&password_protection_mutex);
+  THREADS_DISALLOW();
+
+  a=low_allocate_array(0, nels);
+
+  while (ppwents) {
+    struct pike_pwent *oppwent = ppwents;
+
+    push_pwent(&(ppwents->pw));
+    a = append_array(a, sp-1);
+    pop_stack();
+
+    ppwents = ppwents->next;
+    free(oppwent);
+  }
+
   push_array(a);
 }
 
@@ -351,26 +403,105 @@ void f_getgrent(INT32 args)
   mt_unlock(&password_protection_mutex);
 }
 
+/* This is used to save the grents during THREADS_ALLOW(). */
+struct pike_grent {
+  struct pike_grent *next;
+  struct group gr;
+};
+
 void f_get_all_groups(INT32 args)
 {
-  struct group *gr;
+  struct pike_grent *pgrents = NULL;
+  int nels = 0;
   struct array *a;
+
   pop_n_elems(args);
-  a=low_allocate_array(0,10);
+
+  THREADS_ALLOW();
   mt_lock(&password_protection_mutex);
+
   setgrent();
   while(1)
   {
-    THREADS_ALLOW();
+    struct group *gr;
+    struct pike_grent *npgrent;
+    char **members;
+
     gr=getgrent();
-    THREADS_DISALLOW();
     if(!gr) break;
-    push_grent(gr);
-    a=append_array(a,sp-1);
-    pop_stack();
+
+    npgrent = malloc(sizeof(struct pike_grent) + strlen(gr->gr_name) +
+		     strlen(gr->gr_passwd) + 5);
+
+    if (!npgrent) {
+      /* Out of memory... */
+      break;
+    }
+
+    /* If gr changes here we lose... */
+
+    if (gr->gr_mem) {
+      int n_mem = 0;
+      int memlen = 0;
+      char *textspace = NULL;
+
+      while (gr->gr_mem[n_mem]) {
+	memlen += strlen(gr->gr_mem[n_mem++]) + 1;
+      }
+
+      n_mem += 2;	/* One NULL and one for buffer. */
+
+      npgrent->gr.gr_mem = malloc(n_mem*sizeof(char *) + memlen);
+
+      if (!npgrent->gr.gr_mem) {
+	/* Out of memory... */
+	free(npgrent);
+	break;
+      }
+      textspace = (char *)(npgrent->gr.gr_mem + n_mem - 1) + 1;
+      n_mem = 0;
+
+      while(gr->gr_mem[n_mem]) {
+	strcpy(textspace, gr->gr_mem[n_mem]);
+	npgrent->gr.gr_mem[n_mem] = textspace;
+	textspace += strlen(textspace) + 1;
+	n_mem++;
+      }
+      npgrent->gr.gr_mem[n_mem] = NULL;
+    }
+
+    npgrent->gr.gr_gid = gr->gr_gid;
+    npgrent->gr.gr_name = (char *)(npgrent + 1) + 1;
+    npgrent->gr.gr_passwd = npgrent->gr.gr_name + strlen(gr->gr_name) + 1;
+    strcpy(npgrent->gr.gr_name, gr->gr_name);
+    strcpy(npgrent->gr.gr_passwd, gr->gr_passwd);
+
+    npgrent->next = pgrents;
+    pgrents = npgrent;
+    nels++;
   }
   endgrent();
+
   mt_unlock(&password_protection_mutex);
+  THREADS_DISALLOW();
+
+  a = low_allocate_array(0, nels);
+
+  while(pgrents) {
+    struct pike_grent *opgrent = pgrents;
+
+    push_grent(&(pgrents->gr));
+    a = append_array(a, sp-1);
+    pop_stack();
+
+    pgrents = pgrents->next;
+
+    if (opgrent->gr.gr_mem) {
+      free(opgrent->gr.gr_mem);
+    }
+    free(opgrent);
+  }
+
   push_array(a);
 }
 
