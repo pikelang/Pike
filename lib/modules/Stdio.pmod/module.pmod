@@ -1,4 +1,4 @@
-// $Id: module.pmod,v 1.61 1999/08/21 01:15:00 grubba Exp $
+// $Id: module.pmod,v 1.62 1999/09/16 20:46:33 noring Exp $
 
 import String;
 
@@ -677,6 +677,34 @@ void perror(string s)
 #else
   stderr->write(s+": errno: "+predef::errno()+"\n");
 #endif
+}
+
+/*
+ * Predicates.
+ *
+ * The macro is used instead of file_size since
+ * is_link requires a special stat mode.
+ */
+#define FILE_STAT_SIZE(path) ((file_stat path)||({0,-1}))[1]
+
+int is_file(string path)
+{
+  return FILE_STAT_SIZE((path)) >= 0;
+}
+
+int is_dir(string path)
+{
+  return FILE_STAT_SIZE((path)) == -2;
+}
+
+int is_link(string path)
+{
+  return FILE_STAT_SIZE((path, 1)) == -3;
+}
+
+int exist(string path)
+{
+   return FILE_STAT_SIZE((path)) != -1;
 }
 
 mixed `[](string index)
