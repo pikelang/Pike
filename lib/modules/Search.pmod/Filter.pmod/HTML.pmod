@@ -1,7 +1,7 @@
 // This file is part of Roxen Search
 // Copyright © 2000,2001 Roxen IS. All rights reserved.
 //
-// $Id: HTML.pmod,v 1.34 2003/03/31 11:53:29 grubba Exp $
+// $Id: HTML.pmod,v 1.35 2003/10/03 14:05:16 wellhard Exp $
 
 // Filter for text/html
 
@@ -227,6 +227,11 @@ Output filter(Standards.URI uri, string|Stdio.File data,
   parser->lazy_entity_end(1);
   parser->ignore_unknown(1);
   parser->match_tag(0);
+  
+  int(0..0) return_zero() {return 0;};
+  parser->add_quote_tag("!--", return_zero, "--");
+  parser->add_quote_tag("![CDATA[", return_zero, "]]");
+  parser->add_quote_tag("?", return_zero, "?");
   
   //  parser->add_container("rank",parse_rank);
   parser->add_containers( ([ "title":parse_title,
