@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: builtin.cmod,v 1.129 2003/04/07 15:30:10 mast Exp $
+|| $Id: builtin.cmod,v 1.130 2003/04/07 16:19:15 mast Exp $
 */
 
 #include "global.h"
@@ -1692,6 +1692,12 @@ PIKECLASS Buffer
       init_string_builder_copy (&str2->str, &str->str);
     apply( res, "add", 1 );
     RETURN res;
+  }
+
+  PIKEFUN object `+=( string what )
+  {
+    f_Buffer_add( 1 );
+    REF_RETURN Pike_fp->current_object;
   }
 
   /*! @decl int add(string ... data)
