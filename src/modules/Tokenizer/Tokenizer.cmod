@@ -1,5 +1,5 @@
 /*
- * $Id: Tokenizer.cmod,v 1.15 2003/12/18 17:46:18 grubba Exp $
+ * $Id: Tokenizer.cmod,v 1.16 2003/12/21 17:17:29 grubba Exp $
  *
  * Interface to pike code tokenizer.
  *
@@ -57,15 +57,16 @@ DECLARATIONS
 PIKECLASS compiler
   flags ID_STATIC;
 {
-  /*! @decl void report(SeverityLevel severity, mixed pos, @
+  /*! @decl void report(SeverityLevel severity, @
+   *!			mapping(string:int|string) context, @
    *!                   string subsystem, string msg, mixed ... extra_args)
    *!   Function called to report messages.
    *!
    *! @param severity
    *!   Message severity.
    *!
-   *! @param pos
-   *!   Position where the message occurred.
+   *! @param context
+   *!   Context where the message occurred.
    *!
    *! @param subsystem
    *!   Subsystem where the message was generated. Currently one of
@@ -85,13 +86,16 @@ PIKECLASS compiler
    *!   The default implementation reports to stderr.
    *!
    *! @note
+   *!   The default implementation currently does no parsing of @[context].
+   *!
+   *! @note
    *!   Overload this function to change the report formatting,
    *!   or to redirect the output.
    *!
    *! @seealso
    *!   @[SeverityLevel]
    */
-  PIKEFUN void report(int(0..3) severity, mixed pos,
+  PIKEFUN void report(int(0..3) severity, mapping(string:int|string) context,
 		      string subsystem, string msg, mixed ... extra_args)
   {
     if (args > 4) {
@@ -136,8 +140,21 @@ PIKECLASS compiler
     // Token number in stream.
     PIKEVAR int(0..) token_num;
 
-    // Current line.
-    PIKEVAR int(1..) line_no;
+    /*! @decl mapping(string:int|string) context
+     *!
+     *!   Current context.
+     *!
+     *!   The following contextual information is available:
+     *!   @mapping
+     *!     @member int(1..) "line"
+     *!       Current line number.
+     *!   @endmapping
+     *!
+     *! @note
+     *!   Do NOT perform destructive operations on the mapping,
+     *!   since it may be shared with other data structures.
+     */
+    PIKEVAR mapping(string:int|string) context;
 
     /*! @decl string current_symbol
      *!
@@ -153,7 +170,8 @@ PIKECLASS compiler
     // Current scanner.
     CVAR void (*scanner)(struct compiler_basic_tokenizer_struct *);
 
-    /*! @decl void report(SeverityLevel severity, mixed pos, @
+    /*! @decl void report(SeverityLevel severity, @
+     *!			  mapping(string:int|string) context, @
      *!                   string subsystem, string msg, mixed ... extra_args)
      *!   Function called to report messages.
      *!
@@ -163,9 +181,14 @@ PIKECLASS compiler
      *! @seealso
      *!   @[Tokenizer.compiler()->report()]
      */
-    PIKEFUN void report(int(0..3) severity, mixed pos, string subsystem,
-			string msg, mixed ... extra_args)
+    PIKEFUN void report(int(0..3) severity,
+			mapping(string:int|string)|int context,
+			string subsystem, string msg, mixed ... extra_args)
     {
+      if (context->type == PIKE_T_INT) {
+	add_ref(context->u.mapping = THIS->context);
+	context->type = T_MAPPING;
+      }
       apply_external(1, f_compiler_report_fun_num, args);
     }
 
@@ -173,7 +196,7 @@ PIKECLASS compiler
     static void report_error(const char *msg)
     {
       push_int(2);
-      push_int(THIS->line_no);
+      ref_push_mapping(THIS->context);
       ref_push_string(MK_STRING("scanner"));
       push_text(msg);
       apply_current(f_compiler_basic_tokenizer_report_fun_num, 4);
@@ -182,6 +205,77 @@ PIKECLASS compiler
 
 #define gobble(C)	(((this->pos < this->data->len) && \
 			  (str[this->pos] == (C)))?(this->pos++,1):0)
+
+    static inline void detach_context(struct compiler_basic_tokenizer_struct *this)
+    {
+      if (this->context->refs > 1) {
+	/* Detach the mapping from other users. */
+	struct mapping *m = copy_mapping(this->context);
+	free_mapping(this->context);
+	this->context = m;
+      }
+    }
+
+    static void inc_line_no(struct compiler_basic_tokenizer_struct *this,
+			    int increment)
+    {
+      struct mapping *m;
+      struct svalue *old;
+      if (!increment) return;
+      detach_context(this);
+      m = this->context;
+      ref_push_string(MK_STRING("line"));
+      old = low_mapping_lookup(m, Pike_sp-1);
+      if (old && (old->type == T_INT)) {
+	/* FIXME: Bignums? */
+	push_int(old->u.integer + increment);
+      } else {
+	push_int(increment);
+      }
+      low_mapping_insert(m, Pike_sp-2, Pike_sp-1, 1);
+      pop_n_elems(2);
+    }
+
+    /*! @decl void set_context(string property, int|string value)
+     *!
+     *!   Set @[property] in @[context] to @[value], and
+     *!   perform any needed detaching.
+     */
+    PIKEFUN void set_context(string property, int|string value)
+    {
+      detach_context(THIS);
+
+      low_mapping_insert(THIS->context, Pike_sp-2, Pike_sp-1, 1);
+    }
+
+    /*! @decl int|string get_context(string property)
+     *! @decl mapping(string:int|string) get_context()
+     *!
+     *!   Either get a single @[property] from @[context],
+     *!   or return the entire mapping @[context].
+     *!
+     *!   Equvivalent to @code{@[context][@[property]]@}, or
+     *!   @code{@[context]@}.
+     *!
+     *!   Provided to simplify C code.
+     */
+    PIKEFUN int|string|mapping(string:int|string) get_context(string|void property)
+      type function(string:int|string)|function(:mapping(string:int|string));
+    {
+      struct svalue *val;
+      if (!property) {
+	pop_n_elems(args);
+	ref_push_mapping(THIS->context);
+	return;
+      }
+      val = low_mapping_lookup(THIS->context, Pike_sp-1);
+      pop_stack();
+      if (val) {
+	push_svalue(val);
+      } else {
+	push_undefined();
+      }
+    }
 
 #define MAKE_SCANNER(SHIFT)						\
     static void PIKE_CONCAT(scan, SHIFT)				\
@@ -194,7 +288,7 @@ PIKECLASS compiler
 	int c = str[this->pos++];					\
 	switch(c) {							\
 	case '\n':							\
-	  this->line_no++;						\
+	  inc_line_no(this, 1);						\
 	  /* FALL_THROUGH */						\
 	case ' ': case '\t': case '\r':					\
 	  /* Plain whitespace. */					\
@@ -317,7 +411,7 @@ PIKECLASS compiler
 	    if (this->pos >= this->data->len) {				\
 	      report_error("Unterminated comment.");			\
 	    }								\
-	    this->line_no += no;					\
+	    inc_line_no(this, no);					\
 	  } else if (gobble('/')) {					\
 	    while ((this->pos < this->data->len) &&			\
 		   (str[this->pos] != '\n')){				\
@@ -441,7 +535,7 @@ PIKECLASS compiler
 									\
 	  /* Error. */							\
 	  push_int(2);							\
-	  push_int(THIS->line_no);					\
+	  ref_push_mapping(THIS->context);				\
 	  push_constant_text("scanner");				\
 	  push_constant_text("Illegal character (hex %02x) '%c'");	\
 	  push_int(c);							\
@@ -514,7 +608,13 @@ PIKECLASS compiler
 
       THIS->pos = 0;
       THIS->token_num = 0;
-      THIS->line_no = 1;
+
+      detach_context(THIS);
+      ref_push_string(MK_STRING("line"));
+      push_int(1);
+      low_mapping_insert(THIS->context, Pike_sp-2, Pike_sp-1, 1);
+      pop_n_elems(2);
+
       if (THIS->current_symbol) {
 	free_string(THIS->current_symbol);
 	THIS->current_symbol = NULL;
@@ -567,8 +667,8 @@ PIKECLASS compiler
       THIS->scanner = NULL;
       THIS->pos = 0;
       THIS->token_num = 0;
-      THIS->line_no = 1;
       THIS->current_symbol = NULL;
+      THIS->context = allocate_mapping(8);
     }
 
     EXIT
@@ -577,58 +677,12 @@ PIKECLASS compiler
 	free_string(THIS->data);
 	THIS->data = NULL;
       }
-      if (THIS->current_symbol) {
-	free_string(THIS->current_symbol);
-	THIS->current_symbol = NULL;
-      }
       THIS->scanner = NULL;
     }
-  }
+  } 
 
   /*! @endclass
    */
-}
-
-/*! @endclass
- */
-
-/*! @class Position
- *!
- *! Filename-linenumber pair.
- */
-PIKECLASS Position
-{
-  /*! @decl string filename
-   */
-  PIKEVAR string filename;
-
-  /*! @decl int line
-   */
-  PIKEVAR int(0..) line;
-
-  PIKEFUN void create(string filename, int line)
-    flags ID_STATIC;
-  {
-    if (THIS->filename) {
-      free_string(THIS->filename);
-    }
-    copy_shared_string(THIS->filename, filename);
-    THIS->line = line;
-  }
-
-  PIKEFUN string _sprintf()
-    flags ID_STATIC;
-  {
-    pop_n_elems(args);
-    ref_push_string(MK_STRING("%s:%d"));
-    if (THIS->filename) {
-      ref_push_string(THIS->filename);
-    } else {
-      ref_push_string(MK_STRING("-"));
-    }
-    push_int(THIS->line);
-    f_sprintf(3);
-  }
 }
 /*! @endclass
  */
@@ -643,38 +697,14 @@ PIKECLASS Token
    */
   PIKEVAR string symbol;
 
-  /*! @decl mixed pos
+  /*! @decl mapping(string:string|int) context
    *!
-   *! Position information.
-   *!
-   *! @note
-   *!   This can be any value, but is intended to contain
-   *!   information pertaining to where the symbol was found.
+   *!   Context information.
    *!
    *! @seealso
-   *!   @[Tokenizer.Position]
+   *!   @[Tokenizer.Context]
    */
-  PIKEVAR mixed pos;
-
-  INIT
-  {
-    THIS->symbol = NULL;
-    THIS->pos.type = PIKE_T_INT;
-    THIS->pos.subtype = NUMBER_UNDEFINED;
-    THIS->pos.u.integer = 0;
-  }
-
-  EXIT
-  {
-    if (THIS->symbol) {
-      free_string(THIS->symbol);
-      THIS->symbol = NULL;
-    }
-    free_svalue(&THIS->pos);
-    THIS->pos.type = PIKE_T_INT;
-    THIS->pos.subtype = NUMBER_UNDEFINED;
-    THIS->pos.u.integer = 0;
-  }
+  PIKEVAR mapping(string:string|int) context;
 
   EXTRA
   {
@@ -685,7 +715,7 @@ PIKECLASS Token
     add_constant(MK_STRING("token"), &tmp, 0);
   }
 
-  PIKEFUN void create(string symbol, mixed pos)
+  PIKEFUN void create(string symbol, mapping(string:string|int) context)
     flags ID_STATIC;
   {
     if (THIS->symbol) {
@@ -693,7 +723,10 @@ PIKECLASS Token
       THIS->symbol = NULL;
     }
     copy_shared_string(THIS->symbol, symbol);
-    assign_svalue(&THIS->pos, pos);
+    if (THIS->context) {
+      free_mapping(THIS->context);
+    }
+    add_ref(THIS->context = context);
   }
 
   PIKEFUN string _sprintf(int format, mapping(string:string|int) options)
@@ -707,7 +740,7 @@ PIKECLASS Token
       }
     } else {
       push_text("%O:%s");
-      push_svalue(&THIS->pos);
+      ref_push_mapping(THIS->context);
       if (THIS->symbol) {
 	ref_push_string(THIS->symbol);
       } else {
@@ -778,14 +811,6 @@ PIKECLASS LiteralToken
     THIS->value.u.integer = 0;
   }
 
-  EXIT
-  {
-    free_svalue(&THIS->value);
-    THIS->value.type = PIKE_T_INT;
-    THIS->value.subtype = NUMBER_UNDEFINED;
-    THIS->value.u.integer = 0;
-  }
-
   EXTRA
   {
     struct svalue tmp = {
@@ -800,7 +825,8 @@ PIKECLASS LiteralToken
 						f_Token_create_fun_num);
   }
 
-  PIKEFUN void create(string token, mixed pos, mixed value)
+  PIKEFUN void create(string token, mapping(string:string|int) pos,
+		      mixed value)
     flags ID_STATIC;
   {
     assign_svalue(&THIS->value, value);
@@ -884,6 +910,8 @@ PIKECLASS FloatToken
  */
 PIKECLASS TokenizingCompiler
 {
+  /*! @decl inherit Compiler
+   */
   INHERIT compiler;
 
   /*! @class pike_tokenizer
@@ -892,21 +920,11 @@ PIKECLASS TokenizingCompiler
    */
   PIKECLASS pike_tokenizer
   {
-    static int tokenizing_compiler_pike_tokenizer_inherited_report = -1;
-    static int tokenizing_compiler_pike_tokenizer_inherited_scan = -1;
-    static int tokenizing_compiler_pike_tokenizer_inherited_line_no = -1;
-    static int tokenizing_compiler_pike_tokenizer_inherited_current_symbol = -1;
-
-    PIKEVAR object(Token) current_token;
-    PIKEVAR string current_file;
-    PIKEVAR object(Position) pos
-      flags ID_STATIC;
-    PIKEVAR mapping(string:Token) token_lookup;
-
-    INIT
-    {
-      THIS->current_file = make_shared_string("-");
-    }
+    static int tc_pt_inh_report = -1;
+    static int tc_pt_inh_scan = -1;
+    static int tc_pt_inh_current_symbol = -1;
+    static int tc_pt_inh_set_context = -1;
+    static int tc_pt_inh_get_context = -1;
 
     EXTRA
     {
@@ -916,6 +934,8 @@ PIKECLASS TokenizingCompiler
       /* FIXME: We may want to extend precompile.pike to handle
        *        this automatically.
        */
+      /*! @decl inherit basic_tokenizer
+       */
       low_inherit(compiler_basic_tokenizer_program,
 		  0,
 		  compiler_basic_tokenizer_program_fun_num +
@@ -923,35 +943,58 @@ PIKECLASS TokenizingCompiler
 		  1 + 42,
 		  0,
 		  NULL);
-      tokenizing_compiler_pike_tokenizer_inherited_report =
+      tc_pt_inh_report =
 	really_low_reference_inherited_identifier(NULL, 1,
 						  f_compiler_basic_tokenizer_report_fun_num);
-      tokenizing_compiler_pike_tokenizer_inherited_scan =
+      tc_pt_inh_scan =
 	really_low_reference_inherited_identifier(NULL, 1,
 						  f_compiler_basic_tokenizer_scan_fun_num);
-      {
-	/* FIXME: Ought to save the identifier numbers for variables too. */
-	tokenizing_compiler_pike_tokenizer_inherited_line_no =
-	  low_reference_inherited_identifier(NULL, 1,
-					     MK_STRING("line_no"),
-					     SEE_STATIC);
-	tokenizing_compiler_pike_tokenizer_inherited_current_symbol =
-	  low_reference_inherited_identifier(NULL, 1,
-					     MK_STRING("current_symbol"),
-					     SEE_STATIC);
-      }
+      /* FIXME: Ought to save the identifier numbers for variables too. */
+      tc_pt_inh_current_symbol =
+	low_reference_inherited_identifier(NULL, 1,
+					   MK_STRING("current_symbol"),
+					   SEE_STATIC);
+      tc_pt_inh_set_context =
+	really_low_reference_inherited_identifier(NULL, 1,
+						  f_compiler_basic_tokenizer_set_context_fun_num);
+      tc_pt_inh_get_context =
+	really_low_reference_inherited_identifier(NULL, 1,
+						  f_compiler_basic_tokenizer_get_context_fun_num);
     }
 
-    PIKEFUN void report(int(0..3) severity, object/*(Position)*/|int|string pos,
-			string subsystem, string msg, mixed ... extras)
-    {
-      if ((pos->type == T_INT) && (THIS->pos)) {
-	add_ref(pos->u.object = THIS->pos);
-	pos->type = T_OBJECT;
-	pos->subtype = 0;
-      }
-      APPLY_SELF(tokenizing_compiler_pike_tokenizer_inherited_report, args);
-    }
+    /*! @decl mapping(string:int|string) context
+     *!   Context information (inherited from @[basic_tokenizer]).
+     *!
+     *!   The context information provided by @[basic_tokenizer]
+     *!   is further extended with the following:
+     *!   @mapping
+     *!     @member string "file"
+     *!       Filename where the token was found.
+     *!
+     *!     @member int(0..) "pike_major"
+     *!     @member int(0..) "pike_minor"
+     *!       Major and minor version of Pike to be emulated.
+     *!
+     *!     @member int(-1..1) "pragma_*"
+     *!       State of pragma @tt{*@}.
+     *!       @int
+     *!         @value -1
+     *!           Disabled.
+     *!         @value 0
+     *!           Default.
+     *!         @value 1
+     *!           Enabled.
+     *!       @endint
+     *!   @endmapping
+     *!
+     *! @note
+     *!   As noted before: Do NOT perform destructive changes on this
+     *!   mapping.
+     */
+
+    PIKEVAR object(Token) current_token;
+
+    PIKEVAR mapping(string:Token) token_lookup;
 
     PIKEFUN void yyerror(string msg, mixed ... extras)
       flags ID_STATIC;
@@ -966,13 +1009,15 @@ PIKECLASS TokenizingCompiler
       Pike_sp[-3].subtype = 0;
       Pike_sp[-3].u.integer = SL_ERROR;
       Pike_sp++;
-      APPLY_SELF(f_TokenizingCompiler_pike_tokenizer_report_fun_num, 4);
+
+      APPLY_SELF(tc_pt_inh_report, 4);
     }
 
     PIKEFUN void handle_pragma(string pragma, string rest)
       flags ID_STATIC;
     {
       /* FIXME: Not implemented yet.
+       * Pragmas are to be stored in @[context].
        * NOTE: Pike code below.
        */
 #if 0
@@ -1173,8 +1218,14 @@ PIKECLASS TokenizingCompiler
 
     PIKEFUN void handle_pike_compat(int major, int minor)
       flags ID_STATIC;
-      prototype;
     {
+      ref_push_string(MK_STRING("pike_major"));
+      push_int(major);
+      APPLY_SELF(tc_pt_inh_set_context, 2);
+      ref_push_string(MK_STRING("pike_minor"));
+      push_int(minor);
+      APPLY_SELF(tc_pt_inh_set_context, 2);
+      pop_n_elems(4-1);	/* Keep one element on the stack. */
     }
 
     PIKEFUN void preprocess(string cmd, string extras)
@@ -1207,7 +1258,7 @@ PIKECLASS TokenizingCompiler
 	ref_push_string(MK_STRING("preprocessor"));
 	ref_push_string(MK_STRING("#error: %s"));
 	ref_push_string(extras);
-	APPLY_SELF(f_TokenizingCompiler_pike_tokenizer_report_fun_num, 4);
+	APPLY_SELF(tc_pt_inh_report, 4);
 	pop_n_elems(args);
 	/* NOTE: We keep one argument on the stack. */
 	return;
@@ -1217,7 +1268,7 @@ PIKECLASS TokenizingCompiler
 	ref_push_string(MK_STRING("preprocessor"));
 	ref_push_string(MK_STRING("#warning: %s"));
 	ref_push_string(extras);
-	APPLY_SELF(f_TokenizingCompiler_pike_tokenizer_report_fun_num, 4);
+	APPLY_SELF(tc_pt_inh_report, 4);
 	pop_n_elems(args);
 	/* NOTE: We keep one argument on the stack. */
 	return;
@@ -1239,7 +1290,7 @@ PIKECLASS TokenizingCompiler
 	  ref_push_string(MK_STRING("preprocessor"));
 	  ref_push_string(MK_STRING("Bad directive: #line %s"));
 	  ref_push_string(extras);
-	  APPLY_SELF(f_TokenizingCompiler_pike_tokenizer_report_fun_num, 4);
+	  APPLY_SELF(tc_pt_inh_report, 4);
 	  pop_n_elems(args);
 	  /* NOTE: We keep one argument on the stack. */
 	  return;
@@ -1254,6 +1305,7 @@ PIKECLASS TokenizingCompiler
       /* Old-style line directive. */
       {
 	int res;
+	ref_push_string(MK_STRING("line"));
 	if (!(res = low_sscanf(cmd, MK_STRING("%d"))) ||
 	    (Pike_sp[-1].type != PIKE_T_INT)) {
 	  push_int(SL_ERROR);
@@ -1262,23 +1314,22 @@ PIKECLASS TokenizingCompiler
 	  ref_push_string(MK_STRING("Bad directive: #line %s %s"));
 	  ref_push_string(cmd);
 	  ref_push_string(extras);
-	  APPLY_SELF(f_TokenizingCompiler_pike_tokenizer_report_fun_num, 5);
-	  pop_n_elems(args + res);
+	  APPLY_SELF(tc_pt_inh_report, 4);
+	  pop_n_elems(args + res + 1);
 	  /* NOTE: We keep one argument on the stack. */
 	  return;
 	}
 	/* Set line_no. */
-	object_low_set_index(Pike_fp->current_object,
-			     Pike_fp->context.identifier_level +
-			     tokenizing_compiler_pike_tokenizer_inherited_line_no,
-			     Pike_sp-1);
+	APPLY_SELF(tc_pt_inh_set_context, 2);
 	pop_stack();
 	if (extras->len) {
 	  /* NOTE: extras is always at the top of the stack here. */
 	  APPLY_SELF(f_TokenizingCompiler_pike_tokenizer_parse_string_fun_num,
 		     1);
-	  free_string(THIS->current_file);
-	  copy_shared_string(THIS->current_file, Pike_sp[-1].u.string);
+	  Pike_sp[0] = Pike_sp[-1];
+	  copy_shared_string(Pike_sp[-1].u.string, MK_STRING("file"));
+	  Pike_sp++;
+	  APPLY_SELF(tc_pt_inh_set_context, 2);
 	}
 	pop_n_elems(args-1);
 	/* NOTE: We keep one argument on the stack. */
@@ -1302,25 +1353,14 @@ PIKECLASS TokenizingCompiler
       Pike_sp[-1].subtype = NUMBER_UNDEFINED;
       Pike_sp[-1].u.integer = 0;
       Pike_sp++;
-      ref_push_string(THIS->current_file);
-      low_object_index_no_free(Pike_sp, Pike_fp->current_object,
-			       Pike_fp->context.identifier_level +
-			       tokenizing_compiler_pike_tokenizer_inherited_line_no);
-      Pike_sp++;
-      clone_object(Position_program, 2);
-      if (Pike_sp[-1].type == T_OBJECT) {
-	if (THIS->pos) {
-	  free_object(THIS->pos);
-	  THIS->pos = NULL;
-	}
-	add_ref(THIS->pos = Pike_sp[-1].u.object);
-      }
+
+      APPLY_SELF(tc_pt_inh_get_context, 0);
 
       /* Stack is now:
        *
        * Pike_sp[-3]	UNDEFINED.
        * Pike_sp[-2]	symbol.
-       * Pike_sp[-1]	pos.
+       * Pike_sp[-1]	context.
        */
 
       args = 3;
@@ -1456,16 +1496,17 @@ PIKECLASS TokenizingCompiler
       }
       push_int(0);	/* Return value. */
       while (1) {
-	APPLY_SELF(tokenizing_compiler_pike_tokenizer_inherited_scan, 0);
+	APPLY_SELF(tc_pt_inh_scan, 0);
 	pop_stack();
 	low_object_index_no_free(Pike_sp, Pike_fp->current_object,
 				 Pike_fp->context.identifier_level +
-				 tokenizing_compiler_pike_tokenizer_inherited_current_symbol);
+				 tc_pt_inh_current_symbol);
 	Pike_sp++;
 	if (SAFE_IS_ZERO(Pike_sp-1)) {
 	  pop_stack();
 	  return;
 	}
+
 	APPLY_SELF(f_TokenizingCompiler_pike_tokenizer_handle_fun_num, 1);
 	if (Pike_sp[-1].type == T_OBJECT) {
 	  add_ref(THIS->current_token = Pike_sp[-1].u.object);
