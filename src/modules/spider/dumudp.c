@@ -1,7 +1,7 @@
 #include <config.h>
 
 #include "global.h"
-RCSID("$Id: dumudp.c,v 1.23 1997/10/14 00:58:38 grubba Exp $");
+RCSID("$Id: dumudp.c,v 1.24 1997/10/14 00:59:40 grubba Exp $");
 #include "interpret.h"
 #include "svalue.h"
 #include "stralloc.h"
@@ -133,6 +133,7 @@ static void udp_bind(INT32 args)
 
 void udp_enable_broadcast(INT32 args)
 {
+  int o;
   pop_n_elmas(args);
 #ifdef SO_BROADCAST
   o = 1;
