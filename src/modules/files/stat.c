@@ -1,9 +1,9 @@
 /*
- * $Id: stat.c,v 1.8 2000/08/29 01:18:56 mast Exp $
+ * $Id: stat.c,v 1.9 2000/08/29 16:27:41 mast Exp $
  */
 
 #include "global.h"
-RCSID("$Id: stat.c,v 1.8 2000/08/29 01:18:56 mast Exp $");
+RCSID("$Id: stat.c,v 1.9 2000/08/29 16:27:41 mast Exp $");
 #include "fdlib.h"
 #include "interpret.h"
 #include "svalue.h"
@@ -196,6 +196,8 @@ static void stat_create (INT32 args)
       }
 
     if ((1 << sp[-1].type) & (BIT_PROGRAM|BIT_OBJECT|BIT_MAPPING)) {
+      MEMSET ((char *) &THIS_STAT->s, 0, sizeof (THIS_STAT->s));
+
 #define ASSIGN_INDEX(ENUM)						\
       do {								\
 	stack_dup();							\
@@ -438,6 +440,13 @@ static void stat_index(INT32 args)
 	args = 2;
       }
 
+      if (sp[-2].type!=T_INT &&
+	  !(sp[-2].type == T_OBJECT && is_bignum_object (sp[-2].u.object)))
+	 SIMPLE_BAD_ARG_ERROR("Stat `[..]",1,"int");
+      if (sp[-1].type!=T_INT &&
+	  !(sp[-1].type == T_OBJECT && is_bignum_object (sp[-1].u.object)))
+	 SIMPLE_BAD_ARG_ERROR("Stat `[..]",2,"int");
+
       /* make in range 0..6 */
       push_int(6);
       f_min(2);
@@ -445,11 +454,6 @@ static void stat_index(INT32 args)
       push_int(0);
       f_max(2);
       stack_swap();
-      
-      if (sp[-2].type!=T_INT)
-	 SIMPLE_BAD_ARG_ERROR("Stat `[..]",2,"int(0..6)");
-      if (sp[-1].type!=T_INT)
-	 SIMPLE_BAD_ARG_ERROR("Stat `[..]",1,"int(0..6)");
 
       from = sp[-2].u.integer;
       to = sp[-1].u.integer;
@@ -473,8 +477,10 @@ static void stat_index_set (INT32 args)
   if (args < 2)
     SIMPLE_TOO_FEW_ARGS_ERROR ("Stat `[]=", 2);
 
-  pop_n_elems (args - 2);
-  args = 2;
+  if (args > 2) {
+    pop_n_elems (args - 2);
+    args = 2;
+  }
 
   if (sp[-1].type == T_INT) int_val = sp[-1].u.integer, got_int_val = 1;
   else if (sp[-1].type == T_OBJECT && is_bignum_object (sp[-1].u.object)) {
@@ -494,15 +500,17 @@ static void stat_index_set (INT32 args)
 
   else if (sp[-2].type == T_STRING) {
     INT_TYPE code;
-    stack_swap();
 
     ref_push_mapping (stat_map);
-    stack_swap();
+    push_svalue (sp-3);
     f_index (2);
     code = sp[-1].u.integer;
     pop_stack();
 
     switch (code) {
+      case 0:
+	SIMPLE_BAD_ARG_ERROR ("Stat `[]=", 1, "a valid index");
+
       case STAT_MODE_STRING:
 	if (sp[-1].type != T_STRING)
 	  SIMPLE_BAD_ARG_ERROR ("Stat `[]=", 2, "string");
@@ -695,15 +703,13 @@ static void stat__sprintf(INT32 args)
       case 'O':
 	 n++; push_constant_text("Stat(");
 	 
-	 ref_push_object(fp->current_object);
 	 ref_push_string(stat_index_strs[STAT_MODE_STRING]);
-	 n++; f_index(2);
+	 n++; stat_index(1);
 
 	 n++; push_constant_text(" ");
 	 
-	 ref_push_object(fp->current_object);
 	 ref_push_string(stat_index_strs[STAT_SIZE]);
-	 n++; f_index(2);
+	 n++; stat_index(1);
 	 n++; push_constant_text("b)");
 	 f_add(n);
 	 return;
