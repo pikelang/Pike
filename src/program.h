@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: program.h,v 1.213 2004/10/30 11:38:28 mast Exp $
+|| $Id: program.h,v 1.214 2005/01/20 14:28:03 nilsson Exp $
 */
 
 #ifndef PROGRAM_H
@@ -898,6 +898,9 @@ void count_memory_in_programs(INT32*,INT32*);
 #define PIKE_MAP_VARIABLE(NAME, OFFSET, TYPE, RTTYPE, FLAGS) \
   quick_map_variable(NAME, CONSTANT_STRLEN(NAME), OFFSET, \
                      TYPE, CONSTANT_STRLEN(TYPE), RTTYPE, FLAGS)
+
+#define MAP_VARIABLE(NAME, TYPE, FLAGS, OFFSET, RTYPE) \
+  PIKE_MAP_VARIABLE(NAME, OFFSET, TYPE, RTYPE, FLAGS)
 
 #define ADD_FUNCTION_DTYPE(NAME,FUN,DTYPE,FLAGS) do {		\
   DTYPE_START;							\
