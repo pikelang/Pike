@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: svalue.h,v 1.116 2003/02/16 03:59:58 mast Exp $
+|| $Id: svalue.h,v 1.117 2003/03/14 15:43:22 grubba Exp $
 */
 
 #ifndef SVALUE_H
@@ -371,11 +371,11 @@ static inline union anything *dmalloc_check_union(union anything *u,int type, ch
 #undef sub_ref
 
 #ifdef PIKE_RUN_UNLOCKED
-#define add_ref(X) pike_atomic_inc32((INT32 *)debug_malloc_pass( &((X)->refs)))
-#define sub_ref(X) pike_atomic_dec_and_test32((INT32 *)debug_malloc_pass( &((X)->refs)))
+#define add_ref(X) pike_atomic_inc32((INT32 *)debug_malloc_update_location( &((X)->refs), DMALLOC_NAMED_LOCATION(" add_ref")))
+#define sub_ref(X) pike_atomic_dec_and_test32((INT32 *)debug_malloc_update_location( &((X)->refs), DMALLOC_NAMED_LOCATION(" sub_ref")))
 #else
-#define add_ref(X) (((INT32 *)debug_malloc_pass( &((X)->refs)))[0]++)
-#define sub_ref(X) (--((INT32 *)debug_malloc_pass( &((X)->refs)))[0] > 0)
+#define add_ref(X) (((INT32 *)debug_malloc_update_location( &((X)->refs), DMALLOC_NAMED_LOCATION(" add_ref")))[0]++)
+#define sub_ref(X) (--((INT32 *)debug_malloc_update_location( &((X)->refs), DMALLOC_NAMED_LOCATION(" sub_ref")))[0] > 0)
 #endif
 
 
@@ -485,7 +485,7 @@ extern struct svalue dest_ob_zero;
 }while(0);
 
 #ifdef DEBUG_MALLOC
-#define free_svalues(X,Y,Z) debug_free_svalues((X),(Y),(Z), DMALLOC_LOCATION());
+#define free_svalues(X,Y,Z) debug_free_svalues((X),(Y),(Z), DMALLOC_NAMED_LOCATION(" free_svalues"));
 #else
 #define free_svalues(X,Y,Z) debug_free_svalues((X),(Y),(Z));
 #endif
@@ -758,7 +758,8 @@ static inline void assign_svalue(struct svalue *to, const struct svalue *from)
 
 #define INIT_PIKE_MEMOBJ(X) do {			\
   struct ref_dummy *v_=(struct ref_dummy *)(X);		\
-  v_->refs=1;						\
+  v_->refs=0;						\
+  add_ref(v_); /* For DMALLOC... */			\
   DO_IF_SECURITY( INITIALIZE_PROT(v_) );		\
   IF_LOCAL_MUTEX(mt_init_recursive(&(v_->mutex)));	\
 }while(0)

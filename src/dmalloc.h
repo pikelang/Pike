@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: dmalloc.h,v 1.43 2003/02/21 17:27:38 mast Exp $
+|| $Id: dmalloc.h,v 1.44 2003/03/14 15:43:22 grubba Exp $
 */
 
 PMOD_EXPORT extern void *debug_xalloc(size_t);
@@ -11,7 +11,10 @@ PMOD_EXPORT extern void *debug_xmalloc(size_t);
 PMOD_EXPORT extern void *debug_xcalloc(size_t,size_t);
 PMOD_EXPORT extern void *debug_xrealloc(void *,size_t);
 
-#define DMALLOC_LOCATION() (("NS"  __FILE__ ":" DEFINETOSTR(__LINE__) )+1)
+#define DMALLOC_NAMED_LOCATION(NAME)	\
+    (("NS" __FILE__ ":" DEFINETOSTR(__LINE__) NAME )+1)
+
+#define DMALLOC_LOCATION() DMALLOC_NAMED_LOCATION("")
 
 #ifdef DMALLOC_TRACE
 #define DMALLOC_TRACELOGSIZE 131072
@@ -66,20 +69,20 @@ char *dmalloc_find_name(void *p);
 #undef strdup
 #endif
 
-#define malloc(x) debug_malloc((x), DMALLOC_LOCATION())
-#define calloc(x, y) debug_calloc((x), (y), DMALLOC_LOCATION())
-#define realloc(x, y) debug_realloc((x), (y), DMALLOC_LOCATION())
-#define free(x) debug_free((x), DMALLOC_LOCATION(),0)
-#define dmfree(x) debug_free((x),DMALLOC_LOCATION(),1)
-#define strdup(x) debug_strdup((x), DMALLOC_LOCATION())
+#define malloc(x) debug_malloc((x), DMALLOC_NAMED_LOCATION(" malloc"))
+#define calloc(x, y) debug_calloc((x), (y), DMALLOC_NAMED_LOCATION(" calloc"))
+#define realloc(x, y) debug_realloc((x), (y), DMALLOC_NAMED_LOCATION(" realloc"))
+#define free(x) debug_free((x), DMALLOC_NAMED_LOCATION(" free"),0)
+#define dmfree(x) debug_free((x),DMALLOC_NAMED_LOCATION(" free"),1)
+#define strdup(x) debug_strdup((x), DMALLOC_NAMED_LOCATION(" strdup"))
 #define DO_IF_DMALLOC(X) X
 #define DO_IF_NOT_DMALLOC(X)
 #define debug_malloc_touch(X) debug_malloc_update_location((void *)(X),DMALLOC_LOCATION())
 #define debug_malloc_pass(X) debug_malloc_update_location((void *)(X),DMALLOC_LOCATION())
 #define dmalloc_touch_struct_ptr(TYPE,X,MEMBER) ((TYPE)debug_malloc_update_location_ptr((void *)(X), ((ptrdiff_t)& (((TYPE)0)->MEMBER)), DMALLOC_LOCATION()))
 
-#define xalloc(X) ((void *)debug_malloc_pass(debug_xalloc(X)))
-#define xfree(X) debug_xfree(debug_malloc_pass((X)))
+#define xalloc(X) ((void *)debug_malloc_update_location((void *)debug_xalloc(X), DMALLOC_NAMED_LOCATION(" xalloc")))
+#define xfree(X) debug_xfree(debug_malloc_update_location((X), DMALLOC_NAMED_LOCATION(" free")))
 void debug_malloc_dump_references(void *x, int indent, int depth, int flags);
 #define dmalloc_touch(TYPE,X) ((TYPE)debug_malloc_update_location((void *)(X),DMALLOC_LOCATION()))
 void debug_malloc_dump_fd(int fd);
