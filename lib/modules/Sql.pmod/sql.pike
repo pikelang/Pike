@@ -1,0 +1,2 @@
+/* Compatibility */
+inherit .Sql;

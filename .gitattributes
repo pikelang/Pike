@@ -125,7 +125,6 @@ testfont binary
 /lib/modules/Sql.pmod/odbc_result.pike foreign_ident
 /lib/modules/Sql.pmod/oracle.pike foreign_ident
 /lib/modules/Sql.pmod/postgres.pike foreign_ident
-/lib/modules/Sql.pmod/sql.pike foreign_ident
 /lib/modules/Sql.pmod/sql_result.pike foreign_ident
 /lib/modules/Sql.pmod/sql_util.pmod foreign_ident
 /lib/modules/Sql.pmod/sybase.pike foreign_ident
