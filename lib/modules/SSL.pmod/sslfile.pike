@@ -1,6 +1,6 @@
 #pike __REAL_VERSION__
 
-/* $Id: sslfile.pike,v 1.76 2004/08/23 14:55:26 mast Exp $
+/* $Id: sslfile.pike,v 1.77 2004/11/30 14:29:37 mast Exp $
  */
 
 #if constant(SSL.Cipher.CipherAlgorithm)
@@ -985,6 +985,12 @@ string query_address(int|void arg)
   // Only signal an error after an explicit close() call.
   if (explicitly_closed) error ("Not open.\n");
   return stream->query_address(arg);
+}
+
+int is_open()
+//!
+{
+  return !explicitly_closed && stream && stream->is_open();
 }
 
 Stdio.File query_stream()
