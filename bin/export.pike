@@ -1,6 +1,6 @@
 #!/usr/local/bin/pike
 
-/* $Id: export.pike,v 1.6 1997/09/09 04:33:29 hubbe Exp $ */
+/* $Id: export.pike,v 1.7 1997/09/09 04:39:43 hubbe Exp $ */
 
 #include <simulate.h>
 
@@ -85,7 +85,7 @@ int main(int argc, string *argv)
 	    get_files(vpath+"/bin"));
 
   perror("Creating "+vpath+".tar.gz:\n");
-  system("tar cvf - "+files*" "+" | gzip -9 pike/"+vpath+".tar.gz");
+  system("tar cvf - "+files*" "+" | gzip -9 >pike/"+vpath+".tar.gz");
   rm(vpath);
   perror("Done.\n");
   return 0;
