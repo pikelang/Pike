@@ -43,7 +43,7 @@
 #include "threads.h"
 #include "operators.h"
 
-RCSID("$Id: spider.c,v 1.74 1998/07/17 14:02:50 grubba Exp $");
+RCSID("$Id: spider.c,v 1.75 1998/07/22 18:10:42 grubba Exp $");
 
 #ifdef HAVE_PWD_H
 #include <pwd.h>
@@ -1339,6 +1339,8 @@ void do_shuffle(void *_a)
     int nread, written=0;
     nread = fd_read(a->from_fd, a->buffer, MY_MIN(BUFFER,a->len));
     if(nread <= 0) {
+      if (!nread)
+	break;
       if(errno == EINTR)
 	continue;
       else
