@@ -10,7 +10,7 @@ int n = m*k; // for reporting
 void perform()
 {
    for (int i=0; i<k; i++)
-      array_sscanf(Crypto.randomness.pike_random()->read(2*m),"%2c"*m);
+      array_sscanf(random_string(2*m),"%2c"*m);
 }
 
 string present_n(int ntot,int nruns,float tseconds,float useconds,int memusage)

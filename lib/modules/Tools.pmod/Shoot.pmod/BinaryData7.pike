@@ -7,7 +7,7 @@ int n = 10000;
 
 void perform()
 {
-   array_sscanf(Crypto.randomness.pike_random()->read(16*n),"%16c"*n);
+   array_sscanf(random_string(16*n),"%16c"*n);
 }
 
 string present_n(int ntot,int nruns,float tseconds,float useconds,int memusage)
