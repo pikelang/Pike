@@ -1,3 +1,10 @@
+/*
+ * $Id: combine_path.h,v 1.3 2001/06/10 14:53:29 grubba Exp $
+ *
+ * Combine path template.
+ *
+ */
+
 #undef IS_SEP
 #undef IS_ABS
 #undef IS_ROOT
@@ -82,9 +89,11 @@ static void APPEND_PATH(struct string_builder *s,
 #define LAST_PUSHED() (s->s->len ? index_shared_string(s->s,s->s->len-1) : 0)
 #define PUSH(X) string_builder_putchar(s,(X))
 
+  /* Ensure s ends with a separator. */
   if(s->s->len && !IS_SEP(LAST_PUSHED()))
     PUSH('/');
 
+  /* Remove initial "./" if any. */
   if(s->s->len==2)
   {
     PCHARP to=MKPCHARP_STR(s->s);
@@ -99,8 +108,9 @@ static void APPEND_PATH(struct string_builder *s,
   {
 #if COMBINE_PATH_DEBUG > 1
     s->s->str[s->s->len]=0;
-    fprintf(stderr,"combine_path(2),   TO: %s\n",s->s->str);
-    fprintf(stderr,"combine_path(2), FROM (%d): %s\n",from,path.ptr+from);
+    fprintf(stderr, "combine_path(2),   TO: \"%s\"\n", s->s->str);
+    fprintf(stderr, "combine_path(2), FROM (%d): \"%s\"\n",
+	    from, path.ptr+from);
 #endif
     if(IS_SEP(LAST_PUSHED()))
     {
@@ -112,8 +122,9 @@ static void APPEND_PATH(struct string_builder *s,
 	int c3;
 #if COMBINE_PATH_DEBUG > 0
 	s->s->str[s->s->len]=0;
-	fprintf(stderr,"combine_path(0),   TO: %s\n",s->s->str);
-	fprintf(stderr,"combine_path(0), FROM (%d): %s\n",from,path.ptr+from);
+	fprintf(stderr, "combine_path(0),   TO: \"%s\"\n", s->s->str);
+	fprintf(stderr, "combine_path(0), FROM (%d): \"%s\"\n",
+		from, path.ptr+from);
 #endif
 
 	switch(INDEX_PCHARP(path, from+1))
@@ -122,12 +133,17 @@ static void APPEND_PATH(struct string_builder *s,
 	    c3=INDEX_PCHARP(path, from+2);
 	    if(IS_SEP(c3) || !c3)
 	    {
+	      /* Handle "..". */
 	      int tmp=s->s->len-1;
 
-	      while(--tmp>=0)
-		if(IS_SEP(index_shared_string(s->s,tmp)))
-		  break;
-	      tmp++;
+	      if (tmp) {
+		while(--tmp>=0)
+		  if(IS_SEP(index_shared_string(s->s, tmp)))
+		    break;
+		tmp++;
+	      } else if (IS_SEP(index_shared_string(s->s, 0))) {
+		tmp++;
+	      }
 	      
 	      if(index_shared_string(s->s,tmp)=='.' &&
 		 index_shared_string(s->s,tmp+1)=='.' && 
@@ -154,8 +170,9 @@ static void APPEND_PATH(struct string_builder *s,
 #ifdef NT_COMBINE_PATH
 	  case '\\':
 #endif
-	  from++;
-	  continue;
+	    /* Handle ".". */
+	    from++;
+	    continue;
 	}
       }
     }
