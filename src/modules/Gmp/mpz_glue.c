@@ -4,7 +4,7 @@
 ||| See the files COPYING and DISCLAIMER for more information.
 \*/
 #include "global.h"
-RCSID("$Id: mpz_glue.c,v 1.45 1999/10/15 21:06:19 noring Exp $");
+RCSID("$Id: mpz_glue.c,v 1.46 1999/10/16 10:50:34 noring Exp $");
 #include "gmp_machine.h"
 
 #if defined(HAVE_GMP2_GMP_H) && defined(HAVE_LIBGMP2)
@@ -663,8 +663,8 @@ static void mpzmod_compl(INT32 args)
   struct object *o;
   pop_n_elems(args);
   o=clone_object(mpzmod_program,0);
-  PUSH_REDUCED(o);
   mpz_com(OBTOMPZ(o), THIS);
+  PUSH_REDUCED(o);
 }
 
 
