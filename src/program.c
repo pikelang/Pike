@@ -5,7 +5,7 @@
 \*/
 /**/
 #include "global.h"
-RCSID("$Id: program.c,v 1.121 1999/04/09 04:14:25 hubbe Exp $");
+RCSID("$Id: program.c,v 1.122 1999/05/01 16:33:11 grubba Exp $");
 #include "program.h"
 #include "object.h"
 #include "dynamic_buffer.h"
@@ -2180,16 +2180,16 @@ void program_index_no_free(struct svalue *to, struct program *p,
       return;
     } else {
       if (s->len < 1024) {
-	error("Index \"%s\" is not constant.", s->str);
+	error("Index \"%s\" is not constant.\n", s->str);
       } else {
-	error("Index is not constant.");
+	error("Index is not constant.\n");
       }
     }
   }
   if (s->len < 1024) {
-    error("No such index \"%s\".", s->str);
+    error("No such index \"%s\".\n", s->str);
   } else {
-    error("No such index.");
+    error("No such index.\n");
   }
 }
 
