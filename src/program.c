@@ -5,7 +5,7 @@
 \*/
 /**/
 #include "global.h"
-RCSID("$Id: program.c,v 1.416 2002/04/26 16:51:03 grubba Exp $");
+RCSID("$Id: program.c,v 1.417 2002/04/26 17:11:16 grubba Exp $");
 #include "program.h"
 #include "object.h"
 #include "dynamic_buffer.h"
@@ -1259,13 +1259,13 @@ void fixate_program(void)
     struct identifier *fun;
     funp=p->identifier_references+i;
     if(funp->id_flags & (ID_HIDDEN|ID_STATIC)) continue;
+    fun=ID_FROM_PTR(p, funp);
     if(funp->id_flags & ID_INHERITED)
     {
       int found_better=-1;
       int funa_is_prototype;
 
       if(funp->id_flags & ID_PRIVATE) continue;
-      fun=ID_FROM_PTR(p, funp);
       funa_is_prototype = fun->func.offset == -1;
 /*    if(fun->func.offset == -1) continue; * prototype */
 
@@ -1302,6 +1302,15 @@ void fixate_program(void)
       }
       if(found_better!=-1)
 	continue;
+    }
+    if ((fun->func.offset == -1) && (funp->id_flags & ID_INLINE) &&
+	IDENTIFIER_IS_PIKE_FUNCTION(fun->identifier_flags)) {
+      if (!fun->name->size_shift && fun->name->len < 900) {
+	my_yyerror("Missing definition for local function %s().",
+		   fun->name->str);
+      } else {
+	yyerror("Missing definition for local function.");
+      }
     }
     add_to_identifier_index(i);
   }
