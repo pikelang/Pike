@@ -367,6 +367,12 @@ void init_thread_obj(struct object *o);
 void exit_thread_obj(struct object *o);
 void th_init(void);
 void th_cleanup(void);
+void thread_table_insert(struct object *o);
+void thread_table_delete(struct object *o);
+struct thread_state *thread_state_for_id(THREAD_T tid);
+struct object *thread_for_id(THREAD_T tid);
+void f_all_threads(INT32 args);
+
 /* Prototypes end here */
 
 #else
