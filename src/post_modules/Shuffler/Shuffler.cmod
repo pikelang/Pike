@@ -2,12 +2,12 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: Shuffler.cmod,v 1.35 2004/08/27 02:26:13 nilsson Exp $
+|| $Id: Shuffler.cmod,v 1.36 2004/09/02 14:35:44 grubba Exp $
 */
 
 #include "global.h"
 #include "stralloc.h"
-RCSID("$Id: Shuffler.cmod,v 1.35 2004/08/27 02:26:13 nilsson Exp $");
+RCSID("$Id: Shuffler.cmod,v 1.36 2004/09/02 14:35:44 grubba Exp $");
 #include "pike_macros.h"
 #include "interpret.h"
 #include "threads.h"
@@ -153,6 +153,10 @@ PIKECLASS Shuffle
 #endif
     _send_more((struct Shuffle_struct*)
      ((char*)box-offsetof(struct Shuffle_struct,box)));
+    /* FIXME: Is this the correct return value?
+     *        /grubba 2004-09-02
+     */
+    return 0;
   }
   
   PIKEFUN void set_throttler( object t )
@@ -788,10 +792,7 @@ PIKECLASS Shuffler
   {
     if( THIS->throttler )
       free_object( THIS->throttler );
-    THIS->throttler = NULL;
-    if( t->type == PIKE_T_OBJECT )
-      THIS->throttler = t->u.object;
-    debug_malloc_touch( THIS->throttler );
+    debug_malloc_touch( THIS->throttler = t );
     Pike_sp--;
     push_int(0);
   }

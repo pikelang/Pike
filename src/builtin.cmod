@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: builtin.cmod,v 1.160 2004/06/02 00:08:34 nilsson Exp $
+|| $Id: builtin.cmod,v 1.161 2004/09/02 14:34:59 grubba Exp $
 */
 
 #include "global.h"
@@ -405,10 +405,8 @@ PIKEFUN int trace(int level, void|string facility, void|int all_threads)
   INT32 old_level;
   if (facility) {
     struct pike_string *gc_str;
-    if (facility->type != T_STRING)
-      SIMPLE_BAD_ARG_ERROR("trace", 2, "void|string");
     MAKE_CONST_STRING(gc_str, "gc");
-    if (facility->u.string == gc_str) {
+    if (facility == gc_str) {
       old_level = gc_trace;
       gc_trace = level;
     }
@@ -484,19 +482,17 @@ PIKEFUN mapping(string:mixed) gc_parameters (void|mapping(string:mixed) params)
 
   if (!params) {
     push_mapping (allocate_mapping (5));
-    params = Pike_sp - 1;
+    params = Pike_sp[-1].u.mapping;
   }
-  else if (params->type != T_MAPPING)
-    SIMPLE_BAD_ARG_ERROR ("Pike.gc_parameters", 1, "void|mapping");
 
 #define HANDLE_PARAM(NAME, CHECK_AND_SET, GET) do {			\
     MAKE_CONST_STRING (str, NAME);					\
-    if ((set = low_mapping_string_lookup (params->u.mapping, str))) {	\
+    if ((set = low_mapping_string_lookup (params, str))) {		\
       CHECK_AND_SET;							\
     }									\
     else {								\
       GET;								\
-      mapping_string_insert (params->u.mapping, str, &get);		\
+      mapping_string_insert (params, str, &get);			\
     }									\
   } while (0)
 
@@ -537,7 +533,7 @@ PIKEFUN mapping(string:mixed) gc_parameters (void|mapping(string:mixed) params)
 #undef HANDLE_PARAM
 #undef HANDLE_FLOAT_FACTOR
 
-  REF_RETURN params->u.mapping;
+  REF_RETURN params;
 }
 
 /*! @decl string ctime(int timestamp)
@@ -861,11 +857,9 @@ PIKEFUN program __empty_program(int|void line, string|void file)
 {
   if (line && line->type != T_INT)
     SIMPLE_BAD_ARG_ERROR("__empty_program", 1, "int|void");
-  else if (file && file->type != T_STRING)
-    SIMPLE_BAD_ARG_ERROR("__empty_program", 2, "string|void");
   else {
     struct program *prog = low_allocate_program();
-    if (file) ext_store_program_line (prog, line->u.integer, file->u.string);
+    if (file) ext_store_program_line (prog, line->u.integer, file);
     RETURN prog;
   }
 }
@@ -1928,20 +1922,20 @@ PIKECLASS multi_string_replace
 
   /*! @decl void create(array(string)|void from, array(string)|void to)
    */
-  PIKEFUN void create(array(string)|void from_, array(string)|void to_)
+  PIKEFUN void create(array(string)|void from, array(string)|void to)
   {
     int i;
-    struct array *from;
-    struct array *to;
     if (!args) {
       push_int(0);
       return;
     }
-    if (!from_ || !to_) {
+    /* FIXME: Why are from and to declared |void, when they aren't allowed
+     *        to be void?
+     *        /grubba 2004-09-02
+     */
+    if (!from || !to) {
       Pike_error("Bad number of arguments to create().\n");
     }
-    from = from_->u.array;
-    to = to_->u.array;
     if (from->size != to->size) {
       Pike_error("Replace must have equal-sized from and to arrays.\n");
     }
@@ -2231,28 +2225,28 @@ PIKECLASS single_string_replace
   }
 
   /*! @decl void create(string|void from, string|void to)
+   *!
+   *! @note
+   *!   May be called with either zero or two arguments.
    */
-  PIKEFUN void create(string|void del_, string|void to_)
+  PIKEFUN void create(string|void del, string|void to)
   {
-    struct pike_string *del;
-    struct pike_string *to;
-
     /* Clean up... */
     exit_single_string_replace_struct();
     
-    if (!del_) return;
+    if (!del) return;
 
-    if (!to_) {
+    if (!to) {
       SIMPLE_BAD_ARG_ERROR("String.SingleReplace->create", 2, "string");
     }
 
-    if (del_->u.string == to_->u.string) {
+    if (del == to) {
       /* No-op... */
       return;
     }
 
-    copy_shared_string(THIS->del, del = del_->u.string);
-    copy_shared_string(THIS->to, to = to_->u.string);
+    copy_shared_string(THIS->del, del);
+    copy_shared_string(THIS->to, to);
 
     if (del->len) {
       THIS->mojt = simple_compile_memsearcher(del);

@@ -2,12 +2,12 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: SDL.cmod,v 1.24 2004/04/17 19:39:25 marcus Exp $
+|| $Id: SDL.cmod,v 1.25 2004/09/02 14:36:01 grubba Exp $
 */
 
 #include "global.h"
 #include "stralloc.h"
-RCSID("$Id: SDL.cmod,v 1.24 2004/04/17 19:39:25 marcus Exp $");
+RCSID("$Id: SDL.cmod,v 1.25 2004/09/02 14:36:01 grubba Exp $");
 #include "pike_macros.h"
 #include "interpret.h"
 #include "program.h"
@@ -1423,18 +1423,12 @@ PIKECLASS Surface {
     SDL_Rect *srcrect = NULL, *dstrect = NULL;
     CHECK_CLASS(dst, Surface, 1);
     if(_srcrect) {
-      if( _srcrect->type != PIKE_T_OBJECT ) {
-	SIMPLE_BAD_ARG_ERROR("blit_surface",2,"SDL.Rect|zero");
-      }
-      CHECK_CLASS(_srcrect->u.object, Rect, 2);
-      srcrect = &(OBJ2_RECT(_srcrect->u.object)->rect);
+      CHECK_CLASS(_srcrect, Rect, 2);
+      srcrect = &(OBJ2_RECT(_srcrect)->rect);
     }
     if(_dstrect) {
-      if( _dstrect->type != PIKE_T_OBJECT ) {
-	SIMPLE_BAD_ARG_ERROR("blit_surface",3,"SDL.Rect|void");
-      }
-      CHECK_CLASS(_dstrect->u.object, Rect, 3);
-      dstrect = &(OBJ2_RECT(_dstrect->u.object)->rect);
+      CHECK_CLASS(_dstrect, Rect, 3);
+      dstrect = &(OBJ2_RECT(_dstrect)->rect);
     }
     
     SDL_BlitSurface(THIS->_s, srcrect,
@@ -1562,12 +1556,8 @@ PIKEFUN int flip(object|void screen) {
   if(!screen) {
     vs = SDL_GetVideoSurface();
   } else {
-    if( screen->type == PIKE_T_OBJECT ) {
-      CHECK_CLASS(screen->u.object, Surface, 5);
-      vs = OBJ2_SURFACE(screen->u.object)->_s;
-    } else {
-      SIMPLE_BAD_ARG_ERROR("SDL.flip",5,"SDL.Surface");      
-    }      
+    CHECK_CLASS(screen, Surface, 5);
+    vs = OBJ2_SURFACE(screen)->_s;
   }
   RETURN SDL_Flip(vs) == 0;
 }
@@ -1601,12 +1591,8 @@ PIKEFUN void update_rect(int x, int y, int w, int h, object|void screen) {
   if(!screen) {
     vs = SDL_GetVideoSurface();
   } else {
-    if( screen->type == PIKE_T_OBJECT ) {
-      CHECK_CLASS(screen->u.object, Surface, 5);
-      vs = OBJ2_SURFACE(screen->u.object)->_s;
-    } else {
-      SIMPLE_BAD_ARG_ERROR("SDL.update_rect",5,"SDL.Surface");      
-    }      
+    CHECK_CLASS(screen, Surface, 5);
+    vs = OBJ2_SURFACE(screen)->_s;
   }
   SDL_UpdateRect(vs, x, y, w, h);
 }
@@ -1756,18 +1742,12 @@ PIKEFUN int blit_surface(object src, object dst,
   CHECK_CLASS(src, Surface, 1);
   CHECK_CLASS(dst, Surface, 2);
   if(_srcrect) {
-    if( _srcrect->type != PIKE_T_OBJECT ) {
-      SIMPLE_BAD_ARG_ERROR("blit_surface",3,"SDL.Rect|zero");
-    }
-    CHECK_CLASS(_srcrect->u.object, Rect, 3);
-    srcrect = &(OBJ2_RECT(_srcrect->u.object)->rect);
+    CHECK_CLASS(_srcrect, Rect, 3);
+    srcrect = &(OBJ2_RECT(_srcrect)->rect);
   }
   if(_dstrect) {
-    if( _dstrect->type != PIKE_T_OBJECT ) {
-      SIMPLE_BAD_ARG_ERROR("blit_surface",4,"SDL.Rect|void");
-    }
-    CHECK_CLASS(_dstrect->u.object, Rect, 4);
-    dstrect = &(OBJ2_RECT(_dstrect->u.object)->rect);
+    CHECK_CLASS(_dstrect, Rect, 4);
+    dstrect = &(OBJ2_RECT(_dstrect)->rect);
   }
       
   RETURN SDL_BlitSurface(OBJ2_SURFACE(src)->_s, srcrect,
@@ -1832,10 +1812,8 @@ PIKEFUN int toggle_fullscreen(void|object screen) {
   if(!screen) {
     vs = SDL_GetVideoSurface();
   } else {
-    if( screen->type == PIKE_T_OBJECT ) {
-      CHECK_CLASS(screen->u.object, Surface, 1);
-      vs = OBJ2_SURFACE(screen->u.object)->_s;
-    }
+    CHECK_CLASS(screen, Surface, 1);
+    vs = OBJ2_SURFACE(screen)->_s;
   }
   if(!vs) { RETURN -1; }
   RETURN SDL_WM_ToggleFullScreen(vs);

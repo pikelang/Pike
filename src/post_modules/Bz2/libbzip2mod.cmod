@@ -1,5 +1,5 @@
 #include "global.h"
-RCSID("$Id: libbzip2mod.cmod,v 1.14 2003/12/12 17:52:01 nilsson Exp $");
+RCSID("$Id: libbzip2mod.cmod,v 1.15 2004/09/02 14:36:15 grubba Exp $");
 #include "interpret.h"
 #include "svalue.h"
 #include "stralloc.h"
@@ -979,31 +979,26 @@ PIKECLASS File
   PIKEFUN int open(string filename, string|void mode){
     struct pike_string *tmp;
     
-    if (args == 1) {
+    if (!mode) {
+      if (args > 1) {
+	pop_n_elems(args-1);
+      }
       f_File_read_open(1);
       return;
-    }
-    else if(args == 2){
-      if(mode->type == T_STRING){
-	tmp = mode->u.string;
-	pop_n_elems(1);
-	if (strcmp(tmp->str, "w") == 0){
-	  f_File_write_open(1);
-	}
-	else if (strcmp(tmp->str, "r") == 0){
-	  f_File_read_open(1);
-	}
-	else{
-	  Pike_error("Unknown open mode for file, should be either 'w' or 'r'");
-	}
-	/* The integer is returned by the called functions f_File_... */
+    } else {
+      /* FIXME: These string comparisons should be cleaned up. */
+      if (strcmp(mode->str, "w") == 0) {
+	pop_stack();
+	f_File_write_open(1);
+      }
+      else if (strcmp(mode->str, "r") == 0) {
+	pop_stack();
+	f_File_read_open(1);
       }
       else{
-	Pike_error("Bad 2 argument in call to Bz2.File()->open()");
+	Pike_error("Unknown open mode for file, should be either 'w' or 'r'");
       }
-    }
-    else{
-      Pike_error("Bad number of arguments in call to Bz2.File()->open()");
+      /* The integer is returned by the called functions f_File_... */
     }
   }
   
