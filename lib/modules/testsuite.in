@@ -1,4 +1,4 @@
-dnl $Id: testsuite.in,v 1.35 2004/07/14 13:48:06 grubba Exp $
+dnl $Id: testsuite.in,v 1.36 2004/07/14 13:48:43 grubba Exp $
 
 START_MARKER
 
@@ -654,7 +654,9 @@ test_any_equal([[
 
 dnl cleanup
 test_do( putenv("POSIX_ME_HARDER", original_POSIX_ME_HARDER); )
+test_do( putenv("foo", original_foo); )
 test_do( add_constant("original_POSIX_ME_HARDER"); )
+test_do( add_constant("original_foo"); )
 test_do( add_constant("opt"); )
 
 dnl - Int
