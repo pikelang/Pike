@@ -907,6 +907,23 @@ class YMD
       return z;
    }
 
+//! method Second second()
+//! method Second second(int n)
+//! method Minute minute(int hour,int minute,int second)
+//! method array(Second) seconds()
+//! method array(Second) seconds(int first,int last)
+//! method int number_of_seconds()
+//! method Minute minute()
+//! method Minute minute(int n)
+//! method Minute minute(int hour,int minute)
+//! method array(Minute) minutes()
+//! method array(Minute) minutes(int first,int last)
+//! method int number_of_minutes()
+//! method Hour hour()
+//! method Hour hour(int n)
+//! method array(Hour) hours()
+//! method array(Hour) hours(int first,int last)
+//! method int number_of_hours()
 
    int number_of_hours() { return (number_of_seconds()+3599)/3600; }
    cHour hour(void|int n) { return get_unit("hour",n); }
@@ -917,7 +934,11 @@ class YMD
    cMinute minute(void|int n,int ... time) 
    { 
       if (sizeof(time))
+      {
+	 if (n==number_of_hours())
+	    return (hour(-1)+1)->minute(time[0]);
 	 return hour(n)->minute(time[0]);
+      }
       return get_unit("minute",n); 
    }
    array(cMinute) minutes(int ...range)
@@ -927,7 +948,11 @@ class YMD
    cSecond second(void|int n,int ...time) 
    { 
       if (sizeof(time)==2)
+      {
+	 if (n==number_of_hours())
+	    return (hour(-1)+1)->minute(time[0])->second(time[1]);
 	 return hour(n)->minute(time[0])->second(time[1]);
+      }
       return get_unit("second",n); 
    }
    array(cSecond) seconds(int ...range)
