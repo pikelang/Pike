@@ -1,7 +1,7 @@
 // This file is part of Roxen Search
 // Copyright © 2000,2001 Roxen IS. All rights reserved.
 //
-// $Id: MySQL.pike,v 1.36 2001/06/22 23:28:45 js Exp $
+// $Id: MySQL.pike,v 1.37 2001/06/22 23:45:52 js Exp $
 
 inherit .Base;
 
@@ -127,6 +127,13 @@ int get_document_id(string uri, void|string language_code)
   return db->master_sql->insert_id();
 }
 
+mapping(string:int) list_fields()
+{
+  array a=db->query("select name,id from fields");
+
+  return mkmapping(a->name, (array(int))a->id);
+}
+
 int allocate_field_id(string field)
 {
   db->query("lock tables field read");
@@ -197,6 +204,8 @@ void set_metadata(Standards.URI|string uri, void|string language,
   int doc_id;
   if(!intp(uri))
     doc_id = get_document_id((string)uri, language);
+
+  // Still our one, single special case
   if(md->body)
     md->body = Gz.deflate(6)->deflate(string_to_utf8(md->body[..64000]),
 				      Gz.FINISH);
