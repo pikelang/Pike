@@ -2,11 +2,11 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: las.c,v 1.306 2002/10/25 13:13:57 marcus Exp $
+|| $Id: las.c,v 1.307 2002/11/18 19:21:43 mast Exp $
 */
 
 #include "global.h"
-RCSID("$Id: las.c,v 1.306 2002/10/25 13:13:57 marcus Exp $");
+RCSID("$Id: las.c,v 1.307 2002/11/18 19:21:43 mast Exp $");
 
 #include "language.h"
 #include "interpret.h"
@@ -2027,6 +2027,12 @@ node *low_mkconstantsvaluenode(struct svalue *s)
   node *res = mkemptynode();
   res->token = F_CONSTANT;
   assign_svalue_no_free(& res->u.sval, s);
+#ifdef SHARED_NODES
+  if (s->type != T_INT && s->type != T_STRING && s->type != T_FUNCTION)
+    /* The subtype is part of the hash, so make sure it got a defined
+     * value here. */
+    res->u.sval.subtype = 0;
+#endif
   if(s->type == T_OBJECT ||
      (s->type==T_FUNCTION && s->subtype!=FUNCTION_BUILTIN))
   {
