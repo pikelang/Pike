@@ -4,7 +4,7 @@
 // Incremental Pike Evaluator
 //
 
-constant cvs_version = ("$Id: Hilfe.pmod,v 1.94 2003/01/05 03:46:39 nilsson Exp $");
+constant cvs_version = ("$Id: Hilfe.pmod,v 1.95 2003/01/19 01:49:17 nilsson Exp $");
 constant hilfe_todo = #"List of known Hilfe bugs/room for improvements:
 
 - Hilfe can not handle sscanf statements like
@@ -1281,7 +1281,7 @@ class Evaluator {
   void add_buffer(string s)
   {
     // Tokenize the input
-    array(string) tokens = state->push_string(s);
+    array(string) tokens = state->push_string(s+"\n");
     array(string) words = s/" ";
     string command = words[0];
 
