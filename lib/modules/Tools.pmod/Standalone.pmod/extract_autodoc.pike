@@ -1,5 +1,5 @@
 /*
- * $Id: extract_autodoc.pike,v 1.29 2002/12/19 14:47:37 grubba Exp $
+ * $Id: extract_autodoc.pike,v 1.30 2002/12/19 15:24:26 grubba Exp $
  *
  * AutoDoc mk II extraction script.
  *
@@ -104,7 +104,7 @@ string extract(string filename, string imgdest, int(0..1) rootless,
        (sizeof(array_sscanf(file[i+11..],"%s\n%*s")[0]/" ") == 1))) {
     // Mirar-style markup.
     Tools.AutoDoc.MirarDocParser mirar_parser =
-      Tools.AutoDoc.MirarDocParser(imgsrc);
+      Tools.AutoDoc.MirarDocParser(imgsrc, !verbosity);
     int lineno = 1;
     foreach(file/"\n", string line) {
       mirar_parser->process_line(line, filename, lineno++);
@@ -164,7 +164,8 @@ string extract(string filename, string imgdest, int(0..1) rootless,
   }
 
   if(result && sizeof(result))
-    return Tools.AutoDoc.ProcessXML.moveImages(result, builddir, imgdest);
+    return Tools.AutoDoc.ProcessXML.moveImages(result, builddir,
+					       imgdest, !verbosity);
 
   return "\n";
 }
