@@ -1,9 +1,11 @@
-/* $Id: sslfile.pike,v 1.18 1999/10/08 13:08:15 grubba Exp $
+/* $Id: sslfile.pike,v 1.19 1999/10/08 13:15:19 grubba Exp $
  *
  */
 
-inherit Stdio.File : socket;
+// inherit Stdio.File : socket;
 inherit "connection" : connection;
+
+object(Stdio.File) socket;
 
 object context;
   
@@ -37,7 +39,7 @@ void die(int status)
 #endif
   }
   is_closed = 1;
-  socket::close();
+  socket->close();
 }
 
 /* Return 0 if the connection is still alive,
@@ -56,7 +58,7 @@ private int queue_write()
 #endif
 
   if (catch {
-    socket::set_write_callback(ssl_write_callback);
+    socket->set_write_callback(ssl_write_callback);
   }) {
     return(0);
   }
@@ -179,7 +181,7 @@ private void ssl_write_callback(mixed id)
 
   if (strlen(write_buffer))
   {
-    int written = socket::write(write_buffer);
+    int written = socket->write(write_buffer);
     if (written > 0)
     {
       write_buffer = write_buffer[written ..];
@@ -187,7 +189,7 @@ private void ssl_write_callback(mixed id)
       if (written < 0)
 #ifdef __NT__
 	// You don't want to know.. (Bug observed in Pike 0.6.132.)
-	if (socket::errno() != 1)
+	if (socket->errno() != 1)
 #endif
 	  die(-1);
     }
@@ -204,10 +206,14 @@ private void ssl_write_callback(mixed id)
     werror("SSL.sslport->ssl_write_callback: Calling write_callback\n");
 #endif
     write_callback(id);
+    if (!this_object()) {
+      // We've been destructed.
+      return;
+    }
     res = queue_write();
   }
   if (!strlen(write_buffer) && !query_write_callback())
-    socket::set_write_callback(0);
+    socket->set_write_callback(0);
   if (res)
     die(res);
 }
@@ -218,7 +224,7 @@ private void ssl_close_callback(mixed id)
   werror("SSL.sslport: ssl_close_callback\n");
 #endif
   if (close_callback)
-    close_callback(socket::query_id());
+    close_callback(socket->query_id());
   if (this_object()) {
     die(closing ? 1 : -1);
   }
@@ -251,7 +257,7 @@ void set_write_callback(function(mixed:void) w)
 #endif
   write_callback = w;
   if (w)
-    socket::set_write_callback(ssl_write_callback);
+    socket->set_write_callback(ssl_write_callback);
 }
 
 function query_write_callback() { return write_callback; }
@@ -280,8 +286,11 @@ void set_nonblocking(function ...args)
     break;
   case 3:
     set_read_callback(args[0]);
-    set_write_callback(args[1]);
     set_close_callback(args[2]);
+    set_write_callback(args[1]);
+    if (!this_object()) {
+      return;
+    }
     break;
   default:
     throw( ({ "SSL.sslfile->set_nonblocking: Wrong number of arguments\n",
@@ -289,7 +298,7 @@ void set_nonblocking(function ...args)
   }
   blocking = 0;
   if (strlen(read_buffer))
-    ssl_read_callback(socket::query_id(), "");
+    ssl_read_callback(socket->query_id(), "");
 }
 
 void set_blocking()
@@ -305,6 +314,11 @@ void set_blocking()
   blocking = 1;
 }
 
+string query_address(int|void arg)
+{
+  return socket->query_address(arg);
+}
+
 #if 0
 object accept()
 {
@@ -318,10 +332,9 @@ void create(object f, object c)
 #ifdef SSL3_DEBUG
   werror("SSL.sslfile->create\n");
 #endif
-  socket::create();
   context = c;
   read_buffer = write_buffer = "";
-  socket::assign(f);
-  socket::set_nonblocking(ssl_read_callback, 0, ssl_close_callback);
+  socket = f;
+  socket->set_nonblocking(ssl_read_callback, 0, ssl_close_callback);
   connection::create(1);
 }
