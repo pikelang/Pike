@@ -121,7 +121,7 @@ class Display
   void read_callback(mixed id, string data);
 
   // FIXME! Should use some sort of (global) db.
-  mapping compose_patterns = decode_value(Stdio.read_bytes("db/compose.db"));
+  mapping compose_patterns;
   
   program Struct = my_struct.struct;
   
@@ -179,6 +179,10 @@ class Display
   
   void create()
   { /* Delay initialization of id_manager */
+    compose_patterns = ([]);
+    catch {
+      compose_patterns = decode_value(Stdio.read_bytes("db/compose.db"));
+    };
     atom_manager::create();
   }
   
