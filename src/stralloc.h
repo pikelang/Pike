@@ -5,7 +5,7 @@
 \*/
 
 /*
- * $Id: stralloc.h,v 1.37 1999/10/23 06:51:34 hubbe Exp $
+ * $Id: stralloc.h,v 1.38 1999/10/31 22:01:18 grubba Exp $
  */
 #ifndef STRALLOC_H
 #define STRALLOC_H
@@ -172,9 +172,11 @@ struct pike_string *end_shared_string(struct pike_string *s);
 struct pike_string * debug_make_shared_binary_string(const char *str,int len);
 struct pike_string * debug_make_shared_binary_pcharp(const PCHARP str,int len);
 struct pike_string * debug_make_shared_pcharp(const PCHARP str);
+struct pike_string * debug_make_shared_binary_string0(const p_wchar0 *str,int len);
 struct pike_string * debug_make_shared_binary_string1(const p_wchar1 *str,int len);
 struct pike_string * debug_make_shared_binary_string2(const p_wchar2 *str,int len);
 struct pike_string *debug_make_shared_string(const char *str);
+struct pike_string *debug_make_shared_string0(const p_wchar0 *str);
 struct pike_string *debug_make_shared_string1(const p_wchar1 *str);
 struct pike_string *debug_make_shared_string2(const p_wchar2 *str);
 void unlink_pike_string(struct pike_string *s);
@@ -270,6 +272,11 @@ p_wchar2 *require_wstring2(struct pike_string *s,
 #define make_shared_binary_string(X,Y) \
  ((struct pike_string *)debug_malloc_update_location(debug_make_shared_binary_string((X),(Y)),__FILE__,__LINE__))
 
+#define make_shared_string0(X) \
+ ((struct pike_string *)debug_malloc_update_location(debug_make_shared_string0(X),__FILE__,__LINE__))
+#define make_shared_binary_string0(X,Y) \
+ ((struct pike_string *)debug_malloc_update_location(debug_make_shared_binary_string0((X),(Y)),__FILE__,__LINE__))
+
 #define make_shared_string1(X) \
  ((struct pike_string *)debug_malloc_update_location(debug_make_shared_string1(X),__FILE__,__LINE__))
 #define make_shared_binary_string1(X,Y) \
@@ -293,6 +300,9 @@ p_wchar2 *require_wstring2(struct pike_string *s,
 #else
 #define make_shared_string debug_make_shared_string
 #define make_shared_binary_string debug_make_shared_binary_string
+
+#define make_shared_string0 debug_make_shared_string0
+#define make_shared_binary_string0 debug_make_shared_binary_string0
 
 #define make_shared_string1 debug_make_shared_string1
 #define make_shared_binary_string1 debug_make_shared_binary_string1
