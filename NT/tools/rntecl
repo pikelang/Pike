@@ -1,7 +1,7 @@
 #!/usr/local/bin/pike
 // -*- Pike -*-
 
-// $Id: rntecl,v 1.3 2000/08/01 15:53:31 grubba Exp $
+// $Id: rntecl,v 1.4 2000/08/14 16:11:46 grubba Exp $
 
 // RNTECL, a front-end to Intel ECL with options similar to GCC
 // Written by Fredrik Hubinette & Henrik Grubbström.
@@ -40,6 +40,13 @@ string remove_ext(string file)
   return reverse(file);
 }
 
+string o_to_obj(string fname)
+{
+  if (fname[sizeof(fname)-3..] == ".o") {
+    return fname + "bj";
+  }
+  return fname;
+}
 
 int main(int argc, string *argv)
 {
@@ -197,7 +204,7 @@ int main(int argc, string *argv)
 
   // Scan through the remaining arguments
   argv=Getopt.get_args(argv);
-  cflags+=Array.map(argv[1..],fixpath);
+  cflags+=Array.map(Array.map(argv[1..],fixpath), o_to_obj);
 
   foreach(argv[1..], string tmp)
   {
@@ -220,7 +227,7 @@ int main(int argc, string *argv)
     case "obj":
       if(!output)
 	output=remove_ext(argv[1])+".o";
-      cflags+=({"-Fo"+fixpath(output)});
+      cflags+=({"-Fo"+fixpath(output+"bj")});
       wantfile=output;
       break;
 
@@ -310,6 +317,16 @@ int main(int argc, string *argv)
 
   if(wantfile)
   {
+    if (target == "obj") {
+      if(!file_stat(wantfile+"bj"))
+      {
+	werror("RNTECL: output file not generated (%s).\n",
+	       wantfile+"bj");
+	exit(1);
+      }
+      rm(wantfile);
+      hardlink(wantfile+"bj", wantfile);
+    }
     if(!file_stat(wantfile))
     {
       werror("RNTECL: output file not generated (%s).\n",wantfile);
