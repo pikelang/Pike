@@ -2,11 +2,11 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: builtin_functions.c,v 1.532 2004/03/02 20:45:47 nilsson Exp $
+|| $Id: builtin_functions.c,v 1.533 2004/03/07 02:05:24 nilsson Exp $
 */
 
 #include "global.h"
-RCSID("$Id: builtin_functions.c,v 1.532 2004/03/02 20:45:47 nilsson Exp $");
+RCSID("$Id: builtin_functions.c,v 1.533 2004/03/07 02:05:24 nilsson Exp $");
 #include "interpret.h"
 #include "svalue.h"
 #include "pike_macros.h"
@@ -6891,54 +6891,6 @@ PMOD_EXPORT void f__dump_backlog(INT32 args)
 
 #endif
 
-/*! @decl array map_array(array arr, function fun, mixed ... args)
- *! @decl array map_array(array(object) arr, string fun, mixed ... args)
- *! @decl array map_array(array(function) arr, int(-1..-1) minus_one, @
- *!                       mixed ... args)
- *!
- *!   This function is similar to @[map()].
- *!
- *! @note
- *!   This function has been deprecated in favour of @[map()].
- *!
- *! @seealso
- *!   @[map()]
- */
-PMOD_EXPORT void f_map_array(INT32 args)
-{
-  ONERROR tmp;
-  INT32 e;
-  struct svalue *fun;
-  struct array *ret,*foo;
-  TYPE_FIELD types;
-
-  if (args < 2)
-    SIMPLE_TOO_FEW_ARGS_ERROR("map_array", 2);
-
-  if(Pike_sp[-args].type != T_ARRAY)
-    SIMPLE_BAD_ARG_ERROR("map_array", 1, "array");
-  
-  foo=Pike_sp[-args].u.array;
-  fun=Pike_sp-args+1;
-
-  ret=allocate_array(foo->size);
-  types = 0;
-  SET_ONERROR(tmp, do_free_array, ret);
-  for(e=0;e<foo->size;e++)
-  {
-    push_svalue(ITEM(foo)+e);
-    assign_svalues_no_free(Pike_sp,fun+1,args-2,-1);
-    Pike_sp+=args-2;
-    apply_svalue(fun,args-1);
-    stack_pop_to_no_free (ITEM(ret) + e);
-    types |= 1 << ITEM(ret)[e].type;
-  }
-  ret->type_field = types;
-  pop_n_elems(args);
-  UNSET_ONERROR(tmp);
-  push_array(ret);
-}
-
 /*! @decl mixed map(mixed arr, void|mixed fun, mixed ... extra)
  *!
  *!   Applies @[fun] to the elements in @[arr] and collects the results.
@@ -7586,7 +7538,7 @@ PMOD_EXPORT void f_filter(INT32 args)
    }
 }
 
-/* map(), map_array() and filter() inherit sideeffects from their
+/* map() and filter() inherit sideeffects from their
  * second argument.
  */
 static node *fix_map_node_info(node *n)
@@ -7604,7 +7556,7 @@ static node *fix_map_node_info(node *n)
 	(cb->u.sval.type == T_FUNCTION) &&
 	(cb->u.sval.subtype == FUNCTION_BUILTIN)) {
       if (cb->u.sval.u.efun->optimize == fix_map_node_info) {
-	/* map(), map_array() or filter(). */
+	/* map() or filter(). */
 	continue;
       }
       node_info &= cb->u.sval.u.efun->flags;
