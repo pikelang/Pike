@@ -84,6 +84,7 @@ array(Search.ResultSet|array(string)) execute(Search.Database.Base db,
                                               Search.RankingProfile defaultRanking)
 {
   Search.Grammar.ParseNode q = parser->parse(query);
+
   q = Search.Grammar.optimize(q);
 
   if (!q)                                  // The query was a null query
@@ -92,8 +93,6 @@ array(Search.ResultSet|array(string)) execute(Search.Database.Base db,
   string error = Search.Grammar.validate(q);
   if (error)
     throw (error);
-
-  werror("Search.Query.execute:\n%s\n", q->print());
 
   return class {
     static Search.RankingProfile defaultRanking;
@@ -113,11 +112,11 @@ array(Search.ResultSet|array(string)) execute(Search.Database.Base db,
     static array(array(string)|string) words = ({ });
     static array(Search.ResultSet) stack = ({ });
     static void push(Search.ResultSet r) {
-      werror("---PUSH\n");
+      //      werror("---PUSH\n");
       stack = ({ r }) + stack;
     }
     static Search.ResultSet pop() {
-      werror("---POP\n");
+      //      werror("---POP\n");
       if (!sizeof(stack))
         error("Very bad!");
       Search.ResultSet r = stack[0];
@@ -133,7 +132,7 @@ array(Search.ResultSet|array(string)) execute(Search.Database.Base db,
     }
 
     void exec(ParseNode q) {
-      werror("EXEC %s\n", q->op);
+      //      werror("EXEC %s\n", q->op);
       switch (q->op) {
         case "and":
           {
