@@ -1,5 +1,5 @@
 /*
- * $Id: extract_autodoc.pike,v 1.19 2002/12/05 16:37:49 grubba Exp $
+ * $Id: extract_autodoc.pike,v 1.20 2002/12/05 16:48:45 grubba Exp $
  *
  * AutoDoc mk II extraction script.
  *
@@ -21,7 +21,7 @@ string imgdir;
 
 int main(int n, array(string) args) {
 
-  if(n!=4) {
+  if(n!=5) {
     write("%s <srcdir> <imgsrc> <builddir> <imgdir>\n", args[0]);
     exit(1);
   }
