@@ -1,4 +1,4 @@
-# $Id: Makefile.in,v 1.13 2000/08/01 23:02:18 grubba Exp $
+# $Id: Makefile.in,v 1.14 2001/01/15 21:07:45 grubba Exp $
 @make_variables@
 VPATH=@srcdir@:@srcdir@/../..:../..
 MODULE_LDFLAGS=@LDFLAGS@ @LIBS@
@@ -24,7 +24,7 @@ prime_table.no: $(SRCDIR)/prime_table.c
 
 # Cross-compiling
 prime_table.yes: $(SRCDIR)/prime_table.pike
-	test -f ./prime_table.yes || ln -s $(SRCDIR)/prime_table.pike ./prime_table.yes
+	test -f ./prime_table.yes || ln -s $(SRCDIR)/prime_table.pike ./prime_table.yes || cp $(SRCDIR)/prime_table.pike ./prime_table.yes
 
 depend: prime_table.out
 
