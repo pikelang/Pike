@@ -1,5 +1,5 @@
 /* nettle.cmod -*- c -*- */
-/* $Id: nettle.cmod,v 1.38 2004/10/07 22:19:11 nilsson Exp $ */
+/* $Id: nettle.cmod,v 1.39 2004/10/22 22:42:10 nilsson Exp $ */
 
 #include "global.h"
 #include "interpret.h"
@@ -54,6 +54,7 @@ PIKECLASS Yarrow
    *!   @[update]
    */
   PIKEFUN void create(void|int arg)
+    flags ID_STATIC;
   {
     INT32 num = 0;
 
@@ -814,7 +815,9 @@ PIKECLASS LFib
   /* @decl void create(int seed)
    * The Lfib generator must be seeded with a number.
    */
-  PIKEFUN void create(int seed) {
+  PIKEFUN void create(int seed)
+    flags ID_STATIC;
+  {
     knuth_lfib_init(THIS->ctx, seed);
   }
 
