@@ -5,7 +5,7 @@
 \*/
 /**/
 #include "global.h"
-RCSID("$Id: interpret.c,v 1.131 1999/10/24 05:56:31 hubbe Exp $");
+RCSID("$Id: interpret.c,v 1.132 1999/12/05 16:35:31 mirar Exp $");
 #include "interpret.h"
 #include "object.h"
 #include "program.h"
@@ -1324,7 +1324,9 @@ void slow_check_stack(void)
   debug_check_stack();
 
   if(sp > &(evaluator_stack[stack_size]))
-    fatal("Stack overflow.\n");
+    fatal("Svalue stack overflow. "
+	  "(%d entries on stack, stack_size is %d entries)\n",
+	  sp-evaluator_stack,stack_size);
 
   if(mark_sp > &(mark_stack[stack_size]))
     fatal("Mark stack overflow.\n");
