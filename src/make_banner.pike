@@ -1,5 +1,5 @@
 /*
- * $Id: make_banner.pike,v 1.1 2004/11/09 13:24:25 grubba Exp $
+ * $Id: make_banner.pike,v 1.2 2004/12/15 21:00:08 grubba Exp $
  *
  * Make a 500×70 banner BMP image suitable for the Wix installer.
  *
@@ -24,9 +24,9 @@ int main(int argc, array(string) argv)
   }
   mapping(string:Image.Image) logo = Image._decode(logo_bytes);
   Image.Image banner = Image.Image(500, 70, 255,255,255);
+  int margin = (70 - logo->img->ysize())/2;
   banner->paste_mask(logo->img, logo->alpha,
-		     490-logo->img->xsize(),
-		     (70 - logo->img->ysize())/2);
+		     500 - (margin + logo->img->xsize()), margin);
   write(Image.BMP.encode(banner));
   return 0;
 }
