@@ -1,5 +1,11 @@
 #!/bin/sh
 
 # Stupid IRIX cpp turns --- into -- -
-sed 's/OPCODE/\
-OPCODE/g' | egrep '^OPCODE[0-9]' | sed -e 's/ --- .*//g' -e 's/ -- - .*//g'
+sed -e 's/ -- - / --- /g;s/^# \([0-9]*\)\( "[^"]*"\|\).*$/#line \1\2/;t;: loop
+/OPCODE[0-9]/!b keepnl;h;s/^\(\|[^-]\|-[^-]\|--[^-]\)*\(OPCODE[0-9]\(\|[^-]\|-[^-]\|--[^-]\)*\) ---.*$/\2¤/p;t more;N;b loop;: more
+g;s/^\(\|[^-]\|-[^-]\|--[^-]\)*\(OPCODE[0-9]\(\|[^-]\|-[^-]\|--[^-]\)*\) ---\(.*\)$/\4/;b loop;: keepnl
+s/[^\
+]//g' | sed -e ':loop
+/¤$/{N;s/¤\
+//;b loop;};/^[ 	]*$/{H;d;};/^#line/{h;d;};x;s/^\
+//;p;s/.//g;x'
