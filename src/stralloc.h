@@ -5,7 +5,7 @@
 \*/
 
 /*
- * $Id: stralloc.h,v 1.38 1999/10/31 22:01:18 grubba Exp $
+ * $Id: stralloc.h,v 1.39 1999/11/22 16:15:59 per Exp $
  */
 #ifndef STRALLOC_H
 #define STRALLOC_H
@@ -125,10 +125,10 @@ extern struct shared_string_location *all_shared_string_locations;
 #define reference_shared_string(s) (s)->refs++
 #define copy_shared_string(to,s) ((to)=(s))->refs++
 
-#define MAKE_CONSTANT_SHARED_STRING(var, text)	\
- do { static struct pike_string *str_;		\
-    if(!str_) str_=make_shared_string((text));	\
-    copy_shared_string((var), str_);		\
+#define MAKE_CONSTANT_SHARED_STRING(var, text)                                  \
+ do { static struct pike_string *str_;                                          \
+    if(!str_) str_=make_shared_binary_string((text),CONSTANT_STRLEN(text));     \
+    copy_shared_string((var), str_);                                            \
  }while(0)
 
 #endif
