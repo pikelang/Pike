@@ -109,8 +109,7 @@ void va_error(char *fmt, va_list args) ATTRIBUTE((noreturn))
   f_backtrace(0);
   f_aggregate(2);
   free_svalue(& throw_value);
-  sp--;
-  throw_value = *sp;
+  throw_value = *--sp;
   throw_severity=THROW_ERROR;
 
   in_error=0;

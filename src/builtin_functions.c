@@ -4,7 +4,7 @@
 ||| See the files COPYING and DISCLAIMER for more information.
 \*/
 #include "global.h"
-RCSID("$Id: builtin_functions.c,v 1.64 1998/01/29 18:10:53 grubba Exp $");
+RCSID("$Id: builtin_functions.c,v 1.65 1998/01/30 06:19:50 hubbe Exp $");
 #include "interpret.h"
 #include "svalue.h"
 #include "pike_macros.h"
@@ -617,9 +617,8 @@ void f_throw(INT32 args)
 {
   if(args < 1)
     error("Too few arguments to throw()\n");
-  pop_n_elems(args-1);
-  throw_value=sp[-1];
-  sp--;
+  assign_svalue(&throw_value,sp-args);
+  pop_n_elems(args);
   pike_throw();
 }
 

@@ -6,7 +6,7 @@
 #define READ_BUFFER 8192
 
 #include "global.h"
-RCSID("$Id: file.c,v 1.71 1998/01/28 01:36:30 hubbe Exp $");
+RCSID("$Id: file.c,v 1.72 1998/01/30 06:20:54 hubbe Exp $");
 #include "fdlib.h"
 #include "interpret.h"
 #include "svalue.h"
@@ -1170,7 +1170,7 @@ static void file_pipe(INT32 args)
   int type=fd_CAN_NONBLOCK | fd_BIDIRECTIONAL;
 
   check_all_args("file->pipe",args, BIT_INT | BIT_VOID, 0);
-  if(args) type = sp[-args].u.integer;;
+  if(args) type = sp[-args].u.integer;
 
   do_close(FD,FILE_READ | FILE_WRITE);
   FD=-1;
@@ -1602,6 +1602,97 @@ static void file_create(INT32 args)
   }
 }
 
+#ifdef _REENTRANT
+
+struct new_thread_data
+{
+  struct object *from;
+  struct object *to;
+  INT32 fromfd, tofd;
+};
+
+static void *proxy_thread(void * data)
+{
+  char buffer[READ_BUFFER];
+  struct new_thread_data *p=(struct new_thread_data *)data;
+
+  while(1)
+  {
+    long len, w;
+    len=fd_read(p->fromfd, buffer, READ_BUFFER);
+    if(len<0)
+    {
+      if(errno==EINTR) continue;
+      break;
+    }
+
+    w=0;
+    while(w<len)
+    {
+      long wl=fd_write(p->tofd, buffer+w, len-w);
+      if(wl<0) if(errno==EINTR) continue;
+      w+=wl;
+    }
+  }
+
+  mt_lock(&interpreter_lock);
+  free_object(p->from);
+  free_object(p->to);
+  mt_unlock(&interpreter_lock);
+  free((char *)p);
+  return 0;
+}
+
+void file_proxy(INT32 args)
+{
+  struct file_struct *f;
+  struct new_thread_data *p;
+  THREAD_T id;
+  check_all_args("Stdio.File->proxy",args, T_OBJECT,0);
+  f=(struct file_struct *)get_storage(sp[-args].u.object, file_program);
+  if(!f)
+    error("Bad argument 1 to Stdio.File->proxy, not a Stdio.File object.\n");
+
+  p=ALLOC_STRUCT(new_thread_data);
+  p->to=fp->current_object;
+  p->tofd=FD;
+  p->from=sp[-args].u.object;
+  p->fromfd=f->fd;
+  p->to->refs++;
+  p->from->refs++;
+  if(th_create_small(&id,new_thread_func,p))
+  {
+    free((char *)p);
+    error("Failed to create thread.\n");
+  }
+  th_destroy(& id);
+  pop_n_elems(args);
+  push_int(0);
+}
+
+void create_proxy_pipe(struct object *o, int for_reading)
+{
+  struct object *n,*n2;
+  push_object(n=clone_object(file_program,0));
+  push_int(fd_INTERPROCESSABLE);
+  apply(n,"pipe",1);
+  n2=sp[-1].u.object;
+  if(for_reading)
+  {
+    ref_push_object(o);
+    apply(n2,"proxy",1);
+    pop_n_elems(2);
+  }else{
+    /* Swap */
+    sp[-2].u.object=n2;
+    sp[-1].u.object=n;
+    apply(o,"proxy",1);
+    pop_stack();
+  }
+}
+
+#endif
+
 void pike_module_exit(void)
 {
   if(file_program)
@@ -1717,6 +1808,9 @@ void pike_module_init(void)
   add_function("create",file_create,"function(void|string,void|string:void)",0);
   add_function("`<<",file_lsh,"function(mixed:object)",0);
 
+#ifdef _REENTRANT
+  add_function("proxy",file_proxy,"function(object:void)",0);
+#endif
   set_init_callback(init_file_struct);
   set_exit_callback(exit_file_struct);
   set_gc_mark_callback(gc_mark_file_struct);

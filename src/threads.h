@@ -70,8 +70,11 @@ extern struct object *thread_id;
 #else
 #define th_yield()
 #endif /* HAVE_PTHREAD_YIELD */
+extern pthread_attr_t pattr;
+extern pthread_attr_t small_pattr;
 
 #define th_create(ID,fun,arg) pthread_create(ID,&pattr,fun,arg)
+#define th_create_small(ID,fun,arg) pthread_create(ID,&small_pattr,fun,arg)
 #define th_exit(foo) pthread_exit(foo)
 #define th_self() pthread_self()
 
@@ -110,6 +113,7 @@ extern struct object *thread_id;
 #define th_setconcurrency(X) thr_setconcurrency(X)
 
 #define th_create(ID,fun,arg) thr_create(NULL,0,fun,arg,THR_DAEMON,ID)
+#define th_create_small(ID,fun,arg) thr_create(NULL,32768,fun,arg,THR_DAEMON,ID)
 #define th_exit(foo) thr_exit(foo)
 #define th_self() thr_self()
 #define th_yield() thr_yield()
@@ -141,6 +145,7 @@ extern struct object *thread_id;
 
 #define PIKE_SPROC_FLAGS	(PR_SADDR|PR_SFDS|PR_SDIR|PS_SETEXITSIG)
 #define th_create(ID, fun, arg)	(((*(ID)) = sproc(fun, PIKE_SPROC_FLAGS, arg)) == -1)
+#define th_create_small(ID, fun, arg)	(((*(ID)) = sproc(fun, PIKE_SPROC_FLAGS, arg)) == -1)
 #define th_exit(X)	exit(X)
 #define th_self()	getpid()
 #define th_yield()	sginap(0)
@@ -159,6 +164,7 @@ extern struct object *thread_id;
 #define THREAD_T HANDLE
 #define th_setconcurrency(X)
 #define th_create(ID,fun,arg)  (!(*(ID)=_beginthread(fun, 2*1024*1024, arg)))
+#define th_create_small(ID,fun,arg)  (!(*(ID)=_beginthread(fun, 32768, arg)))
 #define th_exit(foo) _endthread(foo)
 #define th_self() GetCurrentThread()
 #define th_destroy(X)

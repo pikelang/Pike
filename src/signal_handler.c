@@ -429,7 +429,10 @@ static void report_child(int pid,
 					       pid_status_program)))
 	{
 	  p->state = PROCESS_EXITED;
-	  p->result = WEXITSTATUS(status);
+	  if(WIFEXITED(p->result))
+	    p->result = WEXITSTATUS(status);
+	  else
+	    p->result=-1;
 	}
       }
       map_delete(pid_mapping, &key);
@@ -538,9 +541,12 @@ static TCHAR *convert_string(char *str, int len)
   return ret;
 }
 
-static HANDLE get_inheritable_handle(struct mapping *optional, char *name)
+static HANDLE get_inheritable_handle(struct mapping *optional,
+				     char *name,
+				     int for_reading)
 {
   HANDLE ret=INVALID_HANDLE_VALUE;
+  struct svalue *save_stack=sp;
   struct svalue *tmp;
   if((tmp=simple_mapping_string_lookup(optional, name)))
   {
@@ -549,6 +555,15 @@ static HANDLE get_inheritable_handle(struct mapping *optional, char *name)
       apply(tmp->u.object,"query_fd",0);
       if(sp[-1].type == T_INT)
       {
+	if(!(fd_query_properties(sp[-1].u.integer) & fd_INTERPROCESSABLE))
+	{
+	  void create_proxy_pipe(struct object *o, int for_reading);
+	  
+	  create_proxy_pipe(tmp->u.object, for_reading);
+	    apply(sp[-1].u.object, "query_fd", 0);
+	}
+	
+	  
 	if(!DuplicateHandle(GetCurrentProcess(),
 			    (HANDLE)da_handle[sp[-1].u.integer],
 			    GetCurrentProcess(),
@@ -559,9 +574,9 @@ static HANDLE get_inheritable_handle(struct mapping *optional, char *name)
 	  /* This could cause handle-leaks */
 	  error("Failed to duplicate handle %d.\n",GetLastError());
       }
-      pop_stack();
     }
   }
+  pop_n_elems(sp-save_stack);
   return ret;
 }
 #endif
@@ -654,13 +669,13 @@ void f_create_process(INT32 args)
 	if(tmp->type == T_STRING)
 	  dir=convert_string(tmp->u.string->str, tmp->u.string->len);
 
-      t1=get_inheritable_handle(optional, "stdin");
+      t1=get_inheritable_handle(optional, "stdin",0);
       if(t1!=INVALID_HANDLE_VALUE) info.hStdInput=t1;
 
-      t2=get_inheritable_handle(optional, "stdout");
+      t2=get_inheritable_handle(optional, "stdout",1);
       if(t2!=INVALID_HANDLE_VALUE) info.hStdOutput=t2;
 
-      t3=get_inheritable_handle(optional, "stderr");
+      t3=get_inheritable_handle(optional, "stderr",1);
       if(t3!=INVALID_HANDLE_VALUE) info.hStdError=t3;
 
 	if((tmp=simple_mapping_string_lookup(optional, "env")))

@@ -1,5 +1,5 @@
 #include "global.h"
-RCSID("$Id: threads.c,v 1.54 1998/01/26 20:00:01 hubbe Exp $");
+RCSID("$Id: threads.c,v 1.55 1998/01/30 06:19:51 hubbe Exp $");
 
 int num_threads = 1;
 int threads_disabled = 0;
@@ -143,6 +143,7 @@ struct program *mutex_key = 0;
 struct program *thread_id_prog = 0;
 #ifdef POSIX_THREADS
 pthread_attr_t pattr;
+pthread_attr_t small_pattr;
 #endif
 
 struct thread_starter
@@ -607,6 +608,13 @@ void th_init(void)
   pthread_attr_setstacksize(&pattr, 2 * 1024 * 1204);
 #endif
   pthread_attr_setdetachstate(&pattr, PTHREAD_CREATE_DETACHED);
+
+  pthread_attr_init(&small_pattr);
+#ifdef HAVE_PTHREAD_ATTR_SETSTACKSIZE
+  pthread_attr_setstacksize(&small_pattr, 32768);
+#endif
+  pthread_attr_setdetachstate(&small_pattr, PTHREAD_CREATE_DETACHED);
+
 #endif
 
   add_efun("thread_create",f_thread_create,"function(mixed ...:object)",
