@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: mysql.c,v 1.81 2004/03/19 14:49:44 nilsson Exp $
+|| $Id: mysql.c,v 1.82 2004/06/13 21:45:26 mast Exp $
 */
 
 /*
@@ -97,7 +97,7 @@
  * Globals
  */
 
-RCSID("$Id: mysql.c,v 1.81 2004/03/19 14:49:44 nilsson Exp $");
+RCSID("$Id: mysql.c,v 1.82 2004/06/13 21:45:26 mast Exp $");
 
 /*! @module Mysql
  *!
@@ -866,7 +866,7 @@ static void f_big_query(INT32 args)
 #endif /* HAVE_MYSQL_REAL_QUERY */
 
     if (!tmp) {
-      result = mysql_store_result(socket);
+      result = mysql_use_result(socket);
     }
 
     MYSQL_DISALLOW();
@@ -898,7 +898,7 @@ static void f_big_query(INT32 args)
 #endif /* HAVE_MYSQL_REAL_QUERY */
 
     if (!tmp) {
-      result = mysql_store_result(socket);
+      result = mysql_use_result(socket);
     }
 
     MYSQL_DISALLOW();
