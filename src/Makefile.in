@@ -1,5 +1,5 @@
 #
-# $Id: Makefile.in,v 1.167 1999/11/18 07:58:17 hubbe Exp $
+# $Id: Makefile.in,v 1.168 1999/11/24 06:11:32 mast Exp $
 #
 
 # This line is needed on some machines.
@@ -190,11 +190,22 @@ compiler-warnings : clean
 	@echo 'End of summary'
 	@echo '--------------'
 
-tpike: $(OBJ) $(TOBJ) modules/linker_options
+tpike-real: $(OBJ) $(TOBJ) modules/linker_options
 	-@rm -f tpike || :
 	$(LD) $(LDFLAGS) $(OBJ) $(TOBJ) `cat modules/linker_options` $(LIBS) -o tpike
 
-pike: $(OBJ) $(POBJ) modules/linker_options
+# Only want tpike to exist when using $(RUNTPIKE); we don't want to
+# require it actually being up-to-date.
+tpike:
+	$(MAKE) $(MAKE_FLAGS) $(MAKE_PARALLEL) tpike-real
+
+# Make $(POBJ)s with a recursive make instead of depending on them.
+# This way, we make sure that all other objects shared with tpike are
+# up-to-date first. So if the $(POBJ)s, which depend on tpike, trigs
+# the recursive make of tpike-real above, that one will never start to
+# make the $(OBJ)s concurrently with this one.
+pike: $(OBJ) modules/linker_options
+	$(MAKE) $(MAKE_FLAGS) $(MAKE_PARALLEL) $(POBJ)
 	-@if [ -f pike.old ] ; then rm -f pike.old || : ; else : ; fi
 	-@if [ -f pike.old.exe ] ; then rm -f pike.old.exe || : ; else : ; fi
 	-@if [ -f pike ] ; then mv pike pike.old || : ; else : ; fi
@@ -280,7 +291,7 @@ tidy:
 # make clean
 clean: tidy
 	-( cd modules; $(MAKE) $(MAKE_FLAGS) clean )
-	-rm -rf test-install test-pike
+	-rm -rf test-install test-pike tpike
 	-rm -f TAGS tags yacc.acts yacc.debug yacc.tmp *.debug.log a.out
 	-rm -f hilfe master.pike compiler-warnings
 	-find lib/modules/ -type f -name '*.so_pure*' -exec rm -f \{\} \;
