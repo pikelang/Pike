@@ -1,22 +1,27 @@
 ; Configuration file for Inno Setup 4
 ; By Martin Nilsson
 
+#define MAJOR "7"
+#define MINOR "6"
+#define BUILD "13"
+#define INST  "4"
+
 [Setup]
 InternalCompressLevel=ultra
 SolidCompression=true
 Compression=lzma/normal
 SetupIconFile=pikeinstall.ico
 UninstallIconFile=icons\pike_red.ico
-OutputBaseFilename=Pike-7.6.12-win32-nilsson-beta4
+#emit 'OutputBaseFilename=Pike-'+MAJOR+'.'+MINOR+'.'+BUILD+'-win32-nilsson-beta'+inst
 
 LicenseFile=Copying.txt
 AllowNoIcons=true
 
 ; These are dependent of the Pike version
-VersionInfoVersion=7.6.13.4
-AppVersion=7.6.13.4
-AppName=Pike 7.6
-AppVerName=Pike 7.6.13
+#emit 'VersionInfoVersion='+MAJOR+'.'+MINOR+'.'+BUILD+'.'+INST
+#emit 'AppVersion='+MAJOR+'.'+MINOR+'.'+BUILD+'.'+INST
+#emit 'AppName=Pike '+MAJOR+'.'+MINOR
+#emit 'AppVerName=Pike '+MAJOR+'.'+MINOR+'.'+BUILD
 
 DefaultDirName={pf}\Pike
 DefaultGroupName=Pike
@@ -27,7 +32,6 @@ AppPublisherURL=http://pike.ida.liu.se/
 ; Base installation
 ;; /
 Source: ~piketmp\build\pike.exe; DestDir: {app}; Flags: ignoreversion; Components: base
-Source: ~piketmp\build\pike.syms; DestDir: {app}; Flags: ignoreversion; DestName: pike.exe.syms; Components: base
 Source: ~piketmp\build\COPYING; DestDir: {app}; Flags: ignoreversion; DestName: Copying.txt; Components: base
 Source: ~piketmp\build\COPYRIGHT; DestDir: {app}; Flags: ignoreversion; DestName: Copyright.txt; Components: base
 ;; /lib
@@ -35,12 +39,14 @@ Source: ~piketmp\build\lib\modules\*; Excludes: ___GTK.so,SDL.so; DestDir: {app}
 Source: ~piketmp\lib\*; DestDir: {app}\lib\; Flags: recursesubdirs ignoreversion; Components: base
 ;; /icons
 Source: icons\*; DestDir: {app}\icons\; Components: base
+;; /demo
+Source: demo\*; DestDir: {app}\demo\; Components: base
 ;; tmp
 Source: finalizer.pike; DestDir: {tmp}; Flags: deleteafterinstall ignoreversion; Components: base
-Source: finalizer.bat; DestDir: {tmp}; Flags: deleteafterinstall ignoreversion; Components: base
 
 ; Debug
 Source: ~piketmp\build\pike.pdb; DestDir: {app}; Flags: ignoreversion; Components: debug
+Source: ~piketmp\build\pike.syms; DestDir: {app}; Flags: ignoreversion; DestName: pike.exe.syms; Components: debug
 
 ; GTK
 Source: ~piketmp\build\lib\modules\___GTK.so; DestDir: {app}\lib\modules\; Flags: ignoreversion; Components: gtk
@@ -66,7 +72,8 @@ Name: sdl; Description: SDL; Types: custom full
 Name: associate; Description: Associate .pike and .pmod extensions with Pike; Components: base
 
 [Run]
-Filename: {tmp}\finalizer.bat; Parameters: """{app}\pike.exe"" ""{tmp}\finalizer.pike"" ""{app}\lib\master.pike""; Flags: runhidden"; Flags: runhidden
+Filename: {app}\pike.exe; Parameters: "-m ""{tmp}\finalizer.pike"" ""{app}\lib\master.pike"""; Flags: runhidden
+; Filename: {tmp}\finalizer.bat; Parameters: """{app}\pike.exe"" ""{tmp}\finalizer.pike"" ""{app}\lib\master.pike"""; Flags: runhidden
 
 [Registry]
 Root: HKCR; Subkey: .pike; ValueType: string; ValueData: pike_file; Tasks: associate
@@ -82,13 +89,14 @@ Root: HKCR; Subkey: pike_module; ValueType: string; ValueData: Pike module file;
 ;Root: HKCR; Subkey: pike_module\DefaultIcon; ValueType: string; ValueData: {app}\pike.ico,0; Tasks: associate
 Root: HKCR; Subkey: pike_module\DefaultIcon; ValueType: string; ValueData: {app}\icons\pike_blue.ico,0; Tasks: associate
 Root: HKCR; Subkey: pike_module\Shell\Edit\Command; ValueType: string; ValueData: """notepad.exe"" ""%1"""; Flags: createvalueifdoesntexist; Tasks: associate
+;Root: HKLM; Subkey: SOFTWARE\Pike\7.6.13; ValueType: string; ValueName: PIKE_MASTER; ValueData: {app}\lib\master.pike
+#emit 'Root: HKLM; Subkey: SOFTWARE\Pike\'+MAJOR+'.'+MINOR+'; ValueType: string; ValueName: PIKE_MASTER; ValueData: {app}\lib\master.pike'
 
 [Icons]
 Name: {group}\Pike; Filename: {app}\pike.exe; IconFilename: {app}\icons\icon_magenta.ico
 
 [UninstallDelete]
 Type: filesandordirs; Name: {app}\lib
-Type: filesandordirs; Name: {app}\pike.exe
 
 [Messages]
 LicenseLabel=Please read the following unimportant information before continuing.
