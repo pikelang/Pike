@@ -46,7 +46,8 @@ mixed `[](string what)
     return INDEX("GDK_"+what);
   if(!zero_type(INDEX("GDK_"+upper_case(GTK.unsillycaps(what)))))
     return INDEX("GDK_"+upper_case(GTK.unsillycaps(what)));
-  return  GDKSupport[what];
+  return ([])[0];
+//   return  GDKSupport[what];
 }
 
 #endif
