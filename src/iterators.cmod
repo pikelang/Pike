@@ -2,11 +2,11 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: iterators.cmod,v 1.35 2003/03/14 15:53:09 grubba Exp $
+|| $Id: iterators.cmod,v 1.36 2003/04/18 15:39:34 mast Exp $
 */
 
 #include "global.h"
-RCSID("$Id: iterators.cmod,v 1.35 2003/03/14 15:53:09 grubba Exp $");
+RCSID("$Id: iterators.cmod,v 1.36 2003/04/18 15:39:34 mast Exp $");
 #include "main.h"
 #include "object.h"
 #include "mapping.h"
@@ -33,6 +33,150 @@ RCSID("$Id: iterators.cmod,v 1.35 2003/03/14 15:53:09 grubba Exp $");
 #define sp Pike_sp
 
 DECLARATIONS
+
+/*! @class Iterator
+ *!
+ *! This is the interface for iterator objects. They implement an
+ *! interface to a collection or stream of data items and a cursor
+ *! that can be used to iterate over and examine individual items in
+ *! that data set.
+ *!
+ *! Iterators are typically created to access a data set in some
+ *! specific object, array, mapping, multiset or string. An object can
+ *! have several iterators that access different data sets in it, or
+ *! the same in different ways. E.g. strings have both an iterator for
+ *! access char-by-char (@[String.Iterator]), and another for access
+ *! over splitted substrings (@[String.SplitIterator]).
+ *! @[lfun::_get_iterator] may be defined in an object to get an
+ *! instance of the canonical iterator type for it. It's used by e.g.
+ *! @[foreach] to iterate over the object conveniently.
+ *!
+ *! It's not an error to advance an iterator past the beginning or end
+ *! of the data set; @[`!()] will only return true then, and @[index]
+ *! and @[value] will return @[UNDEFINED]. An iterator in that state
+ *! need not keep track of positions, so it's undefined what happens
+ *! if it's "moved back" into the set of items.
+ *!
+ *! Backward movement for iterators is optional. It's supported if and
+ *! only if @[`-()] is defined, but even then it's undefined how far
+ *! back the iterator can move. Therefore iterators may support only a
+ *! limited amount of backward movement, e.g. when they access a
+ *! stream through a limited buffer. If such an iterator is moved back
+ *! past that limit then it'll behave as if it's pointing entirely
+ *! outside the data set (see above).
+ *!
+ *! An iterator that doesn't support backward movement at all should
+ *! throw an error if it's attempted.
+ *!
+ *! @seealso
+ *!   @[predef::get_iterator], @[lfun::_get_iterator],
+ *!   @[Array.Iterator], @[Mapping.Iterator], @[Multiset.Iterator],
+ *!   @[String.Iterator], @[String.SplitIterator].
+ */
+
+PIKECLASS Iterator
+{
+  /* FIXME: precompile.pike should be fixed to handle prototypes so
+   * that we can declare these functions. */
+
+  /*! @decl void create (void|mixed data)
+   *!
+   *! Initialize this iterator to access a data set in @[data]. The
+   *! type of @[data] is specific to the iterator implementation. An
+   *! iterator might also access some implicit data set, in which
+   *! @[data] isn't specified at all.
+   *!
+   *! The iterator initially points to the first item in the data set,
+   *! if there is any.
+   *!
+   *! The iterator need not support being reused, so this function is
+   *! typically static.
+   */
+
+  /*! @decl int(0..1) `!()
+   *!
+   *! Returns @expr{0@} (zero) when the iterator points to an item,
+   *! @expr{1@} otherwise.
+   */
+
+  /*! @decl Iterator `+ (int steps)
+   *!
+   *! Returns a clone of this iterator which is advanced the specified
+   *! number of steps. The amount may be negative to move backwards.
+   *! If the iterator doesn't support backward movement it should
+   *! throw an exception in that case.
+   */
+
+  /*! @decl Iterator `+= (int steps)
+   *!
+   *! Advance this iterator the specified number of steps and return
+   *! it. The amount may be negative to move backwards. If the
+   *! iterator doesn't support backward movement it should throw an
+   *! exception in that case.
+   */
+
+  /*! @decl optional Iterator `- (int steps)
+   *!
+   *! This lfun should be defined if and only if the iterator supports
+   *! backward movement to some degree. It should back up the
+   *! specified number of steps. The amount may be negative to move
+   *! forward.
+   */
+
+  /*! @decl mixed index()
+   *!
+   *! Returns the current index, or @[UNDEFINED] if the iterator
+   *! doesn't point to any item.
+   *!
+   *! If there's no obvious index set then the index is the current
+   *! position in the data set, counting from @expr{0@}.
+   */
+
+  /*! @decl mixed value()
+   *!
+   *! Returns the current value, or @[UNDEFINED] if the iterator
+   *! doesn't point to any item.
+   */
+
+  /*! @decl optional int _sizeof()
+   *!
+   *! Returns the total number of items in the data set according to
+   *! this iterator. If the size of the data set is unlimited or
+   *! unknown then this function shouldn't be defined.
+   */
+
+  /*! @decl optional void _random()
+   *!
+   *! If this function is defined then it sets the iterator to point
+   *! to a random item in the accessible set. The random distribution
+   *! should be rectangular within that set, and the pseudorandom
+   *! sequence provided by @[random] should be used.
+   */
+
+  /*! @decl optional int first()
+   *!
+   *! If this function is defined then it resets the iterator to point
+   *! to the first item. Returns zero it there are no items at all in
+   *! the data set, one otherwise.
+   *!
+   *! @note
+   *!   It's not enough to set the iterator to the earliest accessible
+   *!   item. If the iterator doesn't support backing up to the
+   *!   original start position then this function should not be
+   *!   implemented.
+   */
+
+  /* The following is left undocumented since it seems to be
+   * superfluous. /mast */
+  /* @decl optional int next()
+   *
+   * If this function is defined it should advance the iterator one
+   * step, just like @expr{@[`+=](1)@} would do.
+   */
+}
+
+/*! @endclass
+ */
 
 PIKECLASS mapping_iterator
 {
@@ -85,9 +229,12 @@ PIKECLASS mapping_iterator
       return step_bucket(i);
     }
   
-  PIKEFUN object `+(int steps)
+  PIKEFUN object `+(int(0..) steps)
     {
       struct object *o=low_clone(mapping_iterator_program);
+      if (steps < 0)
+	SIMPLE_ARG_ERROR ("Mapping.Iterator.`+", 1,
+			  "This iterator doesn't support going backwards.\n");
       OBJ2_MAPPING_ITERATOR(o)[0] = *THIS;
       if (THIS->m)
 	add_ref(THIS->m);
@@ -99,8 +246,11 @@ PIKECLASS mapping_iterator
       RETURN o;
     }
 
-  PIKEFUN object `+=(int steps)
+  PIKEFUN object `+=(int(0..) steps)
     {
+      if (steps < 0)
+	SIMPLE_ARG_ERROR ("Mapping.Iterator.`+=", 1,
+			  "This iterator doesn't support going backwards.\n");
       while(--steps>=0 && mi_step(THIS));
       REF_RETURN Pike_fp->current_object;
     }
@@ -180,10 +330,9 @@ PIKECLASS array_iterator
   
   PIKEFUN mixed value()
     {
-      if(!THIS->a || THIS->pos >= THIS->a->size) 
+      if(!THIS->a || THIS->pos < 0 || THIS->pos >= THIS->a->size)
       {
-	push_int(0);
-	Pike_sp[-1].subtype=NUMBER_UNDEFINED;
+	push_undefined();
       }else{
 	push_svalue(THIS->a->item + THIS->pos);
       }
@@ -191,10 +340,9 @@ PIKECLASS array_iterator
 
   PIKEFUN int index()
     {
-      if(!THIS->a || THIS->pos >= THIS->a->size) 
+      if(!THIS->a || THIS->pos < 0 || THIS->pos >= THIS->a->size)
       {
-	push_int(0);
-	Pike_sp[-1].subtype=NUMBER_UNDEFINED;
+	push_undefined();
       }else{
 	RETURN THIS->pos;
       }
@@ -215,10 +363,19 @@ PIKECLASS array_iterator
     REF_RETURN Pike_fp->current_object;
   }
 
+  PIKEFUN object `-(int steps)
+  {
+    struct object *o=low_clone(array_iterator_program);
+    OBJ2_ARRAY_ITERATOR(o)[0]=*THIS;
+    add_ref(THIS->a);
+    OBJ2_ARRAY_ITERATOR(o)->pos-=steps;
+    RETURN o;
+  }
+
   PIKEFUN int first()
     {
       THIS->pos=0;
-      RETURN THIS->a && THIS->a->size < THIS->pos;
+      RETURN THIS->a && THIS->pos < THIS->a->size;
     }
 
   /* Hubbe: Should this really be destructive ?? */
@@ -234,12 +391,12 @@ PIKECLASS array_iterator
   PIKEFUN int next()
     {
       THIS->pos++;
-      RETURN THIS->a && THIS->a->size < THIS->pos;
+      RETURN THIS->a && THIS->pos >= 0 && THIS->pos < THIS->a->size;
     }
 
   PIKEFUN int `!()
     {
-      RETURN !(THIS->a && THIS->a->size < THIS->pos);
+      RETURN !(THIS->a && THIS->pos >= 0 && THIS->pos < THIS->a->size);
     }
 
   PIKEFUN void create(array a)
@@ -462,10 +619,9 @@ PIKECLASS multiset_iterator
   
   PIKEFUN int value()
     {
-      if(!THIS->a || THIS->pos >= THIS->a->size) 
+      if(!THIS->a || THIS->pos < 0 || THIS->pos >= THIS->a->size)
       {
-	push_int(0);
-	Pike_sp[-1].subtype=NUMBER_UNDEFINED;
+	push_undefined();
       }else{
 	push_int(1);
       }
@@ -473,10 +629,9 @@ PIKECLASS multiset_iterator
 
   PIKEFUN mixed index()
     {
-      if(!THIS->a || THIS->pos >= THIS->a->size) 
+      if(!THIS->a || THIS->pos < 0 || THIS->pos >= THIS->a->size)
       {
-	push_int(0);
-	Pike_sp[-1].subtype=NUMBER_UNDEFINED;
+	push_undefined();
       }else{
 	push_svalue(THIS->a->item + THIS->pos);
       }
@@ -497,10 +652,19 @@ PIKECLASS multiset_iterator
     REF_RETURN Pike_fp->current_object;
   }
 
+  PIKEFUN object `-(int steps)
+  {
+    struct object *o=low_clone(multiset_iterator_program);
+    OBJ2_MULTISET_ITERATOR(o)[0]=*THIS;
+    add_ref(THIS->a);
+    OBJ2_MULTISET_ITERATOR(o)->pos-=steps;
+    RETURN o;
+  }
+
   PIKEFUN int first()
     {
       THIS->pos=0;
-      RETURN THIS->a && THIS->a->size < THIS->pos;
+      RETURN THIS->a && THIS->pos < THIS->a->size;
     }
 
   /* Hubbe: Should this really be destructive ?? */
@@ -516,12 +680,12 @@ PIKECLASS multiset_iterator
   PIKEFUN int next()
     {
       THIS->pos++;
-      RETURN THIS->a && THIS->a->size < THIS->pos;
+      RETURN THIS->a && THIS->pos >= 0 && THIS->pos < THIS->a->size;
     }
 
   PIKEFUN int `!()
     {
-      RETURN !(THIS->a && THIS->a->size < THIS->pos);
+      RETURN !(THIS->a && THIS->pos >= 0 && THIS->pos < THIS->a->size);
     }
 
   PIKEFUN void create(multiset m)
@@ -554,7 +718,7 @@ PIKECLASS string_iterator
   
   PIKEFUN int value()
     {
-      if(!THIS->s || THIS->pos >= THIS->s->len) 
+      if(!THIS->s || THIS->pos < 0 || THIS->pos >= THIS->s->len)
       {
 	push_int(0);
 	Pike_sp[-1].subtype=NUMBER_UNDEFINED;
@@ -565,7 +729,7 @@ PIKECLASS string_iterator
 
   PIKEFUN int index()
     {
-      if(!THIS->s || THIS->pos >= THIS->s->len) 
+      if(!THIS->s || THIS->pos < 0 || THIS->pos >= THIS->s->len)
       {
 	push_int(0);
 	Pike_sp[-1].subtype=NUMBER_UNDEFINED;
@@ -589,10 +753,19 @@ PIKECLASS string_iterator
     REF_RETURN Pike_fp->current_object;
   }
 
+  PIKEFUN object `-(int steps)
+  {
+    struct object *o=low_clone(string_iterator_program);
+    OBJ2_STRING_ITERATOR(o)[0]=*THIS;
+    add_ref(THIS->s);
+    OBJ2_STRING_ITERATOR(o)->pos-=steps;
+    RETURN o;
+  }
+
   PIKEFUN int first()
     {
       THIS->pos=0;
-      RETURN THIS->s && THIS->s->len < THIS->pos;
+      RETURN THIS->s && THIS->pos < THIS->s->len;
     }
 
   /* Hubbe: Should this really be destructive ?? */
@@ -608,12 +781,12 @@ PIKECLASS string_iterator
   PIKEFUN int next()
     {
       THIS->pos++;
-      RETURN THIS->s && THIS->s->len < THIS->pos;
+      RETURN THIS->s && THIS->pos >= 0 && THIS->pos < THIS->s->len;
     }
 
   PIKEFUN int `!()
     {
-      RETURN !(THIS->s && THIS->s->len < THIS->pos);
+      RETURN !(THIS->s && THIS->pos >= 0 && THIS->pos < THIS->s->len);
     }
 
   PIKEFUN void create(string s)
@@ -734,10 +907,13 @@ PIKECLASS file_line_iterator
       }
     }
 
-  PIKEFUN object `+(int steps)
+  PIKEFUN object `+(int(0..) steps)
     {
       struct object *o=low_clone(file_line_iterator_program);
       struct file_line_iterator_struct *ssi;
+      if (steps < 0)
+	SIMPLE_ARG_ERROR ("Stdio.File.LineIterator.`+", 1,
+			  "This iterator doesn't support going backwards.\n");
       (ssi = OBJ2_FILE_LINE_ITERATOR(o))[0]=*THIS;
       if (THIS->buffer) {
 	add_ref(THIS->buffer);
@@ -751,26 +927,14 @@ PIKECLASS file_line_iterator
       RETURN o;
     }
 
-  PIKEFUN object `+=(int steps)
+  PIKEFUN object `+=(int(0..) steps)
     {
+      if (steps < 0)
+	SIMPLE_ARG_ERROR ("Stdio.File.LineIterator.`+=", 1,
+			  "This iterator doesn't support going backwards.\n");
       while( steps-- )
 	fl_find_next(THIS);
       REF_RETURN Pike_fp->current_object;
-    }
-
-  PIKEFUN int first()
-    {
-      Pike_error("Not supported.\n");
-    }
-
-  PIKEFUN object _random()
-    {
-      Pike_error("Not supported.\n");
-    }
-
-  PIKEFUN int _sizeof()
-    {
-      Pike_error("Not supported.\n");
     }
 
   PIKEFUN int next()
@@ -1103,11 +1267,14 @@ PIKECLASS string_split_iterator
       }
     }
 
-  PIKEFUN object `+(int steps)
+  PIKEFUN object `+(int(0..) steps)
     {
       struct object *o=low_clone(string_split_iterator_program);
       int i;
       struct string_split_iterator_struct *ssi;
+      if (steps < 0)
+	SIMPLE_ARG_ERROR ("String.SplitIterator.`+", 1,
+			  "This iterator doesn't support going backwards.\n");
       (ssi = OBJ2_STRING_SPLIT_ITERATOR(o))[0]=*THIS;
       if (THIS->buffer) {
 	add_ref(THIS->buffer);
@@ -1122,24 +1289,18 @@ PIKECLASS string_split_iterator
       RETURN o;
     }
 
-  PIKEFUN object `+=(int steps)
+  PIKEFUN object `+=(int(0..) steps)
   {
     int i;
+    if (steps < 0)
+      SIMPLE_ARG_ERROR ("String.SplitIterator.`+=", 1,
+			"This iterator doesn't support going backwards.\n");
     for(i = 0; i < steps; i++) {
       find_next(THIS);
     }
     REF_RETURN Pike_fp->current_object;
   }
 
-  PIKEFUN int first()
-    {
-      Pike_error("Not supported.\n");
-    }
-
-  PIKEFUN object _random()
-    {
-      Pike_error("Not supported.\n");
-    }
   PIKEFUN int next()
     {
       find_next(THIS);
@@ -1493,7 +1654,25 @@ PIKECLASS string_split_iterator
 /*! @endmodule
  */
 
-PIKEFUN object Iterator(object|array|mapping|multiset|string data)
+/*! @decl Iterator get_iterator (object|array|mapping|multiset|string data)
+ *!
+ *! Creates and returns a canonical iterator for @[data].
+ *!
+ *! If @[data] is an object with @[lfun::_get_iterator] defined then
+ *! it's called in it to create the iterator.
+ *!
+ *! If @[data] is an iterator object that lacks @[lfun::_get_iterator]
+ *! then it's simply returned.
+ *!
+ *! @note
+ *!   This function is used by @[foreach] to get an iterator for an
+ *!   object.
+ *!
+ *! @seealso
+ *!   @[Iterator], @[lfun::_get_iterator]
+ */
+PIKEFUN object(Iterator) get_iterator(object|array|mapping|multiset|string data)
+  efun;
 {
   switch(data->type)
   {
@@ -1516,7 +1695,7 @@ PIKEFUN object Iterator(object|array|mapping|multiset|string data)
 
     case PIKE_T_OBJECT:
       if(!data->u.object->prog)
-	Pike_error("Argument 1 to Iterator() is a destructed object.\n");
+	SIMPLE_ARG_ERROR ("get_iterator", 1, "Got a destructed object.\n");
 
       if(FIND_LFUN(data->u.object->prog, LFUN__GET_ITERATOR) != -1)
       {
@@ -1529,7 +1708,7 @@ PIKEFUN object Iterator(object|array|mapping|multiset|string data)
       return;
 
     default:
-      SIMPLE_BAD_ARG_ERROR("Iterator", 1, "multiset|array|string|mapping|object");
+      SIMPLE_ARG_TYPE_ERROR("get_iterator", 1, "multiset|array|string|mapping|object");
   }
 }
 
@@ -1613,7 +1792,7 @@ int foreach_iterate(struct object *o)
     } else if(o->prog == array_iterator_program)
     {
       struct array_iterator_struct *i=OBJ2_ARRAY_ITERATOR(o);
-      if(i->pos < i->a->size)
+      if(i->pos >= 0 && i->pos < i->a->size)
       {
 	if(Pike_sp[-4].type != T_INT)
 	{
@@ -1660,7 +1839,7 @@ int foreach_iterate(struct object *o)
       return 1;
 
 #else  /* PIKE_NEW_MULTISETS */
-      if(i->pos < i->a->size)
+      if(i->pos >= 0 && i->pos < i->a->size)
       {
 	if(Pike_sp[-4].type != T_INT)
 	  assign_lvalue(Pike_sp-4, i->a->item + i->pos);
@@ -1682,7 +1861,7 @@ int foreach_iterate(struct object *o)
     } else if(o->prog == string_iterator_program)
     {
       struct string_iterator_struct *i=OBJ2_STRING_ITERATOR(o);
-      if(i->pos < i->s->len)
+      if(i->pos >= 0 && i->pos < i->s->len)
       {
 	if(Pike_sp[-4].type != T_INT)
 	{
@@ -1739,7 +1918,8 @@ int foreach_iterate(struct object *o)
 
 void init_iterators(void)
 {
-  INIT
+  INIT;
+  add_global_program ("Iterator", Iterator_program);
 }
 
 void exit_iterators(void)
