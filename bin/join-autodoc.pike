@@ -1,5 +1,5 @@
 /*
- * $Id: join-autodoc.pike,v 1.3 2001/04/23 13:20:11 grubba Exp $
+ * $Id: join-autodoc.pike,v 1.4 2001/04/26 14:32:59 grubba Exp $
  *
  * AutoDoc mk II join script.
  *
@@ -26,6 +26,9 @@ int main(int argc, array(string) argv)
     if (mixed err = catch {
       Tools.AutoDoc.ProcessXML.mergeTrees(dest, src);
     }) {
+      if (arrayp(err)) {
+	throw(err);
+      }
       if (err->position) {
 	werror("%s %O: %s\n", err->part, err->position, err->message);
       } else {
