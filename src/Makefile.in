@@ -136,7 +136,17 @@ install:
 	if [ ! -d "$(prefix)" ]; then mkdir "$(prefix)" ; chmod 755 "$(prefix)" ; else : ; fi
 	if [ ! -d "$(exec_prefix)" ]; then mkdir "$(exec_prefix)" ; chmod 755 "$(exec_prefix)" ; else : ; fi
 	$(INSTALL) ./pike $(exec_prefix)
-	$(INSTALL) $(SRCDIR)/../bin/hilfe $(exec_prefix)
+	if [ -f $(SRCDIR)/../bin/hilfe ]; then \
+	  if [ "$(exec_prefix)" != "/usr/local/bin" -a \
+	       "$(exec_prefix)" != "/usr/local/bin/" ]; then \
+	    if [ -f $(exec_prefix)/hilfe ]; then \
+	      mv $(exec_prefix)/hilfe $(exec_prefix)/hilfe.old; \
+	    else : ; fi && \
+	    sed -e 's!/usr/local/bin!$(exec_prefix)!' <$(SRCDIR)/../bin/hilfe \
+	      >$(exec_prefix)/hilfe && \
+	    chmod 755 $(exec_prefix)/hilfe; \
+	  else $(INSTALL) $(SRCDIR)/../bin/hilfe $(exec_prefix); fi; \
+	else : ; fi
 	if [ ! -d "$(prefix)/lib" ]; then mkdir "$(prefix)/lib" ; chmod 755 "$(prefix)/lib" ; else : ; fi
 	if [ ! -d "$(lib_prefix)" ]; then mkdir "$(lib_prefix)" ; chmod 755 "$(lib_prefix)" ; else : ; fi
 	if [ ! -d "$(prefix)/include" ]; then mkdir "$(prefix)/include"; chmod 755 "$(prefix)/include"; fi
