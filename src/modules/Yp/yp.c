@@ -31,10 +31,15 @@
 /* must be included last */
 #include "module_magic.h"
 
-RCSID("$Id: yp.c,v 1.18 2000/07/28 07:15:01 hubbe Exp $");
+RCSID("$Id: yp.c,v 1.19 2000/08/17 18:31:26 grubba Exp $");
 
+#ifdef HAVE_YPERR_STRING
 #define YPERROR(fun,err) do{ if(err) error("yp->%s(): %s\n", (fun), \
                                            yperr_string(err)); }while(0)
+#else /* !HAVE_YPERR_STRING */
+#define YPERROR(fun,err) do{ if(err) error("yp->%s(): YP error %d.\n", (fun), \
+                                           (err)); }while(0)
+#endif /* HAVE_YPERR_STRING */
 
 struct my_yp_domain
 {
