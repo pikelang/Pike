@@ -1,5 +1,5 @@
 #include "global.h"
-RCSID("$Id: threads.c,v 1.159 2001/06/30 21:28:36 mast Exp $");
+RCSID("$Id: threads.c,v 1.160 2001/08/08 14:18:17 leif Exp $");
 
 PMOD_EXPORT int num_threads = 1;
 PMOD_EXPORT int threads_disabled = 0;
@@ -1037,6 +1037,46 @@ void f_mutex_trylock(INT32 args)
   }
 }
 
+/*! @decl Thread.Thread current_locking_thread()
+ *!
+ *! This mutex method returns the object that identifies the thread that
+ *! has locked the mutex. 0 is returned if the mutex isn't locked.
+ *!
+ *! @seealso
+ *! @[Thread.Thread()]
+ */
+PMOD_EXPORT void f_mutex_locking_thread(INT32 args)
+{
+  struct mutex_storage *m = THIS_MUTEX;
+
+  pop_n_elems(args);
+
+  if (m->key && OB2KEY(m->key)->owner)
+    ref_push_object(OB2KEY(m->key)->owner);
+  else
+    push_int(0);
+}
+
+/*! @decl Thread.Thread current_locking_key()
+ *!
+ *! This mutex method returns the key object currently governing
+ *! the lock on this mutex. 0 is returned if the mutex isn't locked.
+ *!
+ *! @seealso
+ *! @[Thread.Thread()]
+ */
+PMOD_EXPORT void f_mutex_locking_key(INT32 args)
+{
+  struct mutex_storage *m = THIS_MUTEX;
+
+  pop_n_elems(args);
+
+  if (m->key)
+    ref_push_object(m->key);
+  else
+    push_int(0);
+}
+
 void init_mutex_obj(struct object *o)
 {
   co_init(& THIS_MUTEX->condition);
@@ -1682,6 +1722,12 @@ void th_init(void)
   /* function(int(0..2)|void:object(mutex_key)) */
   ADD_FUNCTION("trylock",f_mutex_trylock,
 	       tFunc(tOr(tInt02,tVoid),tObjIs_THREAD_MUTEX_KEY),0);
+  /* function(:object(Pike_interpreter.thread_id)) */
+  ADD_FUNCTION("current_locking_thread",f_mutex_locking_thread,
+	   tFunc(tNone,tObjIs_THREAD_ID), 0);
+  /* function(:object(Pike_interpreter.thread_id)) */
+  ADD_FUNCTION("current_locking_key",f_mutex_locking_key,
+	   tFunc(tNone,tObjIs_THREAD_MUTEX_KEY), 0);
   set_init_callback(init_mutex_obj);
   set_exit_callback(exit_mutex_obj);
   end_class("mutex", 0);
