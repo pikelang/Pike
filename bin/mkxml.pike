@@ -1,4 +1,4 @@
-/* $Id: mkxml.pike,v 1.32 2001/07/27 00:48:38 nilsson Exp $ */
+/* $Id: mkxml.pike,v 1.33 2001/07/28 06:46:07 nilsson Exp $ */
 
 string IMAGE_DIR = "../autodoc/src_images/";
 string makepic1;
@@ -416,7 +416,8 @@ void docdecl(string enttype,
 	     object f)
 {
    string rv,name,params=0;
-   sscanf(decl,"%s %s(%s",rv,name,params);
+   sscanf(decl,"%s %s(%s",rv,name,params) == 3 ||
+     sscanf(decl+"\n","%s %s\n",rv,name);
 
    if (convname[name]) name=convname[name];
 
@@ -550,9 +551,10 @@ void document(string enttype,
 	      decl = ({ huh->decl });
 	    else
 	      decl = huh->decl;
-
 	    foreach(decl, string prot) {
-	      sscanf(prot, "%*s %s(", n);
+	      sscanf(prot, "%*s %s(", n)==2 ||
+		sscanf(prot, "%*s %s ", n)==2 ||
+		sscanf(prot+"\n", "%*s %s\n", n);
 	      if(!m) { m=n; continue; }
 	      if(n!=m) return;
 	    }
@@ -562,21 +564,17 @@ void document(string enttype,
 	}
 	f->write(">\n");
 
-	 if (huh->decl)
-	 {
-	    foreach (arrayp(huh->decl)?huh->decl:({huh->decl}),string decl)
-	    {
-	       docdecl(enttype,decl,f);
-	    }
-	 }
-	 else
-	    foreach (names,string name)
-	    {
-	       if (convname[name]) name=convname[name];
-	       f->write("<"+enttype+" name="+S(name)+">\n");
-	       f->write("</"+enttype+">");
-	    }
-	 break;
+	if (huh->decl) {
+	  foreach (arrayp(huh->decl)?huh->decl:({huh->decl}),string decl)
+	    docdecl(enttype,decl,f);
+	}
+	else
+	  foreach (names,string name) {
+	    if (convname[name]) name=convname[name];
+	    f->write("<"+enttype+" name="+S(name)+">\n");
+	    f->write("</"+enttype+">");
+	  }
+	break;
    }
    f->write("<source-position " + huh->_line + "/>\n");
 
@@ -695,7 +693,7 @@ void document(string enttype,
       foreach(huh->constants,mapping m)
       {
 	 sscanf(m->decl,"%s %s",string type,string name);
-	 sscanf(name,"%s=%s",name,string value);
+	 sscanf(name,"%s=",name);
 	 document("constant",m,prefix+name,prefix+name+".",f);
       }
    }
