@@ -6,7 +6,7 @@
 // Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 // for more information.
 //
-// $Id: master.pike.in,v 1.353 2004/07/04 14:30:09 mast Exp $
+// $Id: master.pike.in,v 1.354 2004/07/04 14:51:19 mast Exp $
 
 #pike __REAL_VERSION__
 //#pragma strict_types
@@ -4226,13 +4226,18 @@ class Decoder (void|string fname, void|int mkobj, void|object handler)
   }
 }
 
-mapping(string:Decoder) codecs = set_weak_flag(([]),1);
+// Note: This mapping is not for caching but for coping with recursion
+// problems by returning the same codec for the same file. As a cache
+// it's really pointless.
+static mapping(string:Decoder) codecs = set_weak_flag (([]), 1);
+
 Decoder get_codec(string|void fname, int|void mkobj, void|object handler)
 {
   if (handler)
-    // Maybe cache these too? Not done right now since explicit
-    // handlers are fairly rare. Note that caching easily could
-    // introduce a cyclic ref through Decoder.handler.
+    // Decoders are currently not reused in this case since it's
+    // tricky to set up a weak multilevel mapping for lookup. This is
+    // seldom a problem since explicit handlers are fairly rare. If it
+    // is then the handler can always override this function.
     return Decoder (fname, mkobj, handler);
   string key = fname + "\0" + mkobj;
   if (codecs[key]) return codecs[key];
