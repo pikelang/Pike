@@ -23,7 +23,7 @@
 #include "stuff.h"
 #include "bignum.h"
 
-RCSID("$Id: array.c,v 1.71 2000/05/11 14:09:44 grubba Exp $");
+RCSID("$Id: array.c,v 1.72 2000/05/24 02:20:43 hubbe Exp $");
 
 struct array empty_array=
 {
@@ -461,7 +461,8 @@ INT32 array_search(struct array *v, struct svalue *s,INT32 start)
    * for destructed objects/functions
    */
   if((v->type_field & (1 << s->type))  ||
-     (IS_ZERO(s) && (v->type_field & (BIT_FUNCTION|BIT_OBJECT))))
+     (IS_ZERO(s) && (v->type_field & (BIT_FUNCTION|BIT_OBJECT))) ||
+     ( (v->type_field | (1<<s->type))  & BIT_OBJECT )) /* for overloading */
   {
     if(start)
     {
