@@ -1,4 +1,4 @@
-// $Id: module.pmod.in,v 1.12 2003/04/15 13:45:23 marcus Exp $
+// $Id: module.pmod.in,v 1.13 2003/04/15 13:53:16 marcus Exp $
 #pike __REAL_VERSION__
 
 inherit @module@;
@@ -92,11 +92,8 @@ class _file {
 			    else
 			      return 1;
 			  });
-      if(write_mode) {
-	if(!has_value(mode, 'a'))
-	  mode += "t";
-	mode += "c";
-      }
+      if(write_mode)
+	mode += "c"+(has_value(mode, 'a')? "w":"t");
     }
     file_pos = 0;
     crc = crc32("");
