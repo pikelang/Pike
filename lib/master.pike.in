@@ -1,6 +1,6 @@
 /* -*- Pike -*-
  *	
- * $Id: master.pike.in,v 1.113 2000/04/10 16:09:32 grubba Exp $
+ * $Id: master.pike.in,v 1.114 2000/04/10 21:20:08 grubba Exp $
  * 
  * Master-file for Pike.
  *
@@ -78,7 +78,7 @@ object low_cast_to_object(string oname, string current_file);
 array(string) pike_include_path=({});
 array(string) pike_module_path=({});
 array(string) pike_program_path=({});
-int want_warnings = 1;
+int want_warnings = 0;
 
 #ifdef PIKE_AUTORELOAD
 
