@@ -1,5 +1,5 @@
 #include "global.h"
-RCSID("$Id: threads.c,v 1.10 1996/11/14 01:36:32 hubbe Exp $");
+RCSID("$Id: threads.c,v 1.11 1996/11/17 01:57:49 hubbe Exp $");
 
 int num_threads = 1;
 int threads_disabled = 0;
@@ -25,7 +25,7 @@ struct thread_starter
   struct array *args;
 };
 
-static void check_threads(struct callback *cb, void *arg)
+static void check_threads(struct callback *cb, void *arg, void * arg2)
 {
   THREADS_ALLOW();
 
