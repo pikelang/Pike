@@ -454,7 +454,7 @@ array decode_layers( string|object|mapping what, mapping|void opts,
           a *= l->mask->image_data->get_layer(shrink)->image();
         else
           a = a2;
-        lay->set_alpha( a );
+        lay->set_image( lay->image(), a );
       }
       layers += ({ lay });
 
