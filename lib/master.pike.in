@@ -1,4 +1,4 @@
-/* $Id: master.pike.in,v 1.54 1999/08/06 22:06:36 hubbe Exp $
+/* $Id: master.pike.in,v 1.55 1999/08/27 21:40:55 hubbe Exp $
  * 
  * Master-file for Pike.
  *
@@ -10,7 +10,7 @@
 // Used by describe_backtrace() et al.
 #if !defined(BT_MAX_STRING_LEN) || (BT_MAX_STRING_LEN <= 0)
 #undef BT_MAX_STRING_LEN
-#define BT_MAX_STRING_LEN	60
+#define BT_MAX_STRING_LEN	255
 #endif /* !defined(BT_MAX_STRING_LEN) || (BT_MAX_STRING_LEN <= 0) */
 
 /*
@@ -1048,7 +1048,7 @@ string read_include(string f)
 }
 
 // FIXME
-string stupid_describe(mixed m)
+string stupid_describe(mixed m, int maxlen)
 {
   switch(string typ=sprintf("%t",m))
   {
@@ -1057,23 +1057,55 @@ string stupid_describe(mixed m)
     return (string)m;
 
   case "string":
-    if(sizeof(m) < BT_MAX_STRING_LEN)
+    if(sizeof(m) < maxlen)
     {
       string t = sprintf("%O", m);
-      if (sizeof(t) < (BT_MAX_STRING_LEN + 2)) {
+      if (sizeof(t) < (maxlen + 2)) {
 	return t;
       }
       t = 0;
     }
+    if(maxlen>10)
+    {
+      return sprintf("%O+[%d]",m[..maxlen-5],sizeof(m)-(maxlen-5));
+    }else{
+      return "string["+sizeof(m)+"]";
+    }
 
   case "array":
+    if(!sizeof(m)) return "({})";
+    if(maxlen<5) return "array["+sizeof(m)+"]";
+    return "({" + stupid_describe_comma_list(m,maxlen-2) +"})";
+
   case "mapping":
+    if(!sizeof(m)) return "([])";
+    return "mapping["+sizeof(m)+"]";
+
   case "multiset":
-    return typ+"["+sizeof(m)+"]";
+    if(!sizeof(m)) return "(<>)";
+    return "multiset["+sizeof(m)+"]";
 
   default:
     return typ;
   }
+}
+
+string stupid_describe_comma_list(array x, int maxlen)
+{
+  string ret="";
+
+  if(maxlen<0) return ",,,"+sizeof(x);
+
+  for(int pos=0;pos<sizeof(x);pos++)
+  {
+    string tmp=stupid_describe(x[pos],maxlen);
+    if(pos) ret+=",";
+    ret+=tmp;
+
+    if(sizeof(ret) >= maxlen)
+      return ret+",,,"+(sizeof(x)-pos);
+  }
+  return ret;
 }
 
 string describe_program(program p)
@@ -1138,15 +1170,9 @@ string describe_backtrace(mixed trace)
 	  } else
 	    row="unknown function";
 	    
-	  row+="(";
-	  for(int e=3;e<sizeof(tmp);e++)
-	  {
-	    row+=stupid_describe(tmp[e])+",";
-	  }
-
-	  if(sizeof(tmp)>3)
-	    row=row[..sizeof(row)-2];
-	  row+=") in ";
+	  row+="("+
+	    stupid_describe_comma_list(tmp[3..], BT_MAX_STRING_LEN)+
+	    ") in ";
 	}
 
 	if(sizeof(tmp)>=2 && stringp(tmp[0]) && intp(tmp[1]))
