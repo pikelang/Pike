@@ -5,7 +5,7 @@
 \*/
 
 /*
- * $Id: pike_macros.h,v 1.19 2000/08/10 09:13:20 grubba Exp $
+ * $Id: pike_macros.h,v 1.20 2000/08/10 09:20:49 grubba Exp $
  */
 #ifndef MACROS_H
 #define MACROS_H
@@ -96,6 +96,6 @@
 
 
 /* Needed for fsort_template.h */
-ptrdiff_t my_log2(size_t x);
+int my_log2(size_t x);
 
 #endif
