@@ -23,7 +23,7 @@
 #include "stuff.h"
 #include "bignum.h"
 
-RCSID("$Id: array.c,v 1.62 2000/03/07 21:23:41 hubbe Exp $");
+RCSID("$Id: array.c,v 1.63 2000/03/26 01:53:58 mast Exp $");
 
 struct array empty_array=
 {
@@ -700,7 +700,7 @@ static int switch_svalue_cmpfun(struct svalue *a, struct svalue *b)
     return 0;
 
   case T_STRING:
-    return my_strcmp(a->u.string, b->u.string);
+    return my_quick_strcmp(a->u.string, b->u.string);
     
   default:
     return set_svalue_cmpfun(a,b);
@@ -772,6 +772,10 @@ INT32 *get_set_order(struct array *a)
 
 /*
  * return an 'order' suitable for switches.
+ *
+ * Note: This is used by encode_value_canonic(). It must keep the
+ * sorting rules for all the types that function allows in multiset
+ * and mapping indices.
  */
 INT32 *get_switch_order(struct array *a)
 {
