@@ -6,7 +6,7 @@
 # architecture-dependant package, as well as an architecture-independent
 # package.
 #
-# $Id: rules,v 1.45 2003/03/25 16:47:41 grendel Exp $
+# $Id: rules,v 1.46 2003/06/09 19:13:28 grendel Exp $
 #
 
 # Uncomment this to turn on verbose mode. 
@@ -259,6 +259,12 @@ install: build
 	for f in `cat $(CURDIR)/debian/tocoredoc.txt`; do \
 		dh_link -p$$f /usr/share/doc/$(PIKE)-core /usr/share/doc/$$f ; \
 	done
+
+	# move the specs file to where it should be
+	install -d -m 755 -o root -g root $(CURDIR)/debian/$(PIKE)-core/usr/lib/pike/$(VERSION)/include/pike
+	install -m 644 -o root -g root $(CURDIR)/debian/$(PIKE)-core/usr/include/pike/$(VERSION)/specs \
+	        $(CURDIR)/debian/$(PIKE)-core/usr/lib/pike/$(VERSION)/include/pike/specs
+	rm $(CURDIR)/debian/$(PIKE)-core/usr/include/pike/$(VERSION)/specs
 
 	dh_movefiles --sourcedir=debian/$(PIKE)-core
 
