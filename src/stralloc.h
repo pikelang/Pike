@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: stralloc.h,v 1.77 2003/06/30 16:57:33 mast Exp $
+|| $Id: stralloc.h,v 1.78 2003/07/30 20:29:27 mast Exp $
 */
 
 #ifndef STRALLOC_H
@@ -287,7 +287,7 @@ PMOD_EXPORT int string_to_svalue_inumber(struct svalue *r,
 			     int maxlength);
 PMOD_EXPORT int wide_string_to_svalue_inumber(struct svalue *r,
 					      void * str,
-					      void **ptr,
+					      void *ptr,
 					      int base,
 					      ptrdiff_t maxlength,
 					      int shift);

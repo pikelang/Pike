@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: stralloc.c,v 1.156 2003/05/15 15:33:31 mast Exp $
+|| $Id: stralloc.c,v 1.157 2003/07/30 20:29:27 mast Exp $
 */
 
 #include "global.h"
@@ -24,7 +24,7 @@
 #include <ctype.h>
 #include <math.h>
 
-RCSID("$Id: stralloc.c,v 1.156 2003/05/15 15:33:31 mast Exp $");
+RCSID("$Id: stralloc.c,v 1.157 2003/07/30 20:29:27 mast Exp $");
 
 /* #define STRALLOC_USE_PRIMES */
 
@@ -2301,7 +2301,7 @@ PMOD_EXPORT int string_to_svalue_inumber(struct svalue *r,
 
 PMOD_EXPORT int wide_string_to_svalue_inumber(struct svalue *r,
 					      void * str,
-					      void **ptr,
+					      void *ptr,
 					      int base,
 					      ptrdiff_t maxlength,
 					      int shift)
@@ -2312,7 +2312,7 @@ PMOD_EXPORT int wide_string_to_svalue_inumber(struct svalue *r,
 				   &tmp,
 				   base,
 				   maxlength);
-  if(ptr) *ptr=(char *)tmp.ptr;
+  if(ptr) *(p_wchar0 **)ptr=tmp.ptr;
   return ret;
 }
 
