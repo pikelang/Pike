@@ -18,6 +18,15 @@ constant filter=predef::filter;
 constant map=predef::map;
 constant permute = __builtin.permute;
 
+//! @[reduce()] sends the first two elements in @[arr] to @[fun],
+//! then the result and the next element in @[arr] to @[fun] and
+//! so on. Then it returns the result. The function will return 
+//! @[zero] if @[arr] is the empty array. If @[arr] has
+//! only one element, that element will be returned.
+//!
+//! @seealso
+//! @[Array.rreduce()]
+//!
 mixed reduce(function fun, array arr, mixed|void zero)
 {
   if(sizeof(arr))
@@ -27,6 +36,15 @@ mixed reduce(function fun, array arr, mixed|void zero)
   return zero;
 }
 
+//! @[rreduce()] sends the last two elements in @[arr] to @[fun],
+//! then the third last element in @[arr] and the result to @[fun] and
+//! so on. Then it returns the result. The function will return 
+//! @[zero] if @[arr] is the empty array. If @[arr] has
+//! only one element, that element will be returned.
+//!
+//! @seealso
+//! @[Array.reduce()]
+//!
 mixed rreduce(function fun, array arr, mixed|void zero)
 {
   if(sizeof(arr))
@@ -36,6 +54,11 @@ mixed rreduce(function fun, array arr, mixed|void zero)
   return zero;
 }
 
+//! @[shuffle()] gives back the same elements, but in random order.
+//!
+//! @seealso
+//! @[Array.permute()]
+//!
 array shuffle(array arr)
 {
   int i = sizeof(arr);
@@ -51,6 +74,14 @@ array shuffle(array arr)
   return(arr);
 }
 
+//! @[search_array()] works like @[map()], only it returns the index
+//! of the first call that returnes true instead.
+//!
+//! If no call returns true, -1 is returned.
+//!
+//! @seealso
+//! @[Array.sum_arrays()], @[map()]
+//!
 int search_array(array arr, mixed fun, mixed ... args)
 {
   int e;
@@ -82,17 +113,29 @@ int search_array(array arr, mixed fun, mixed ... args)
   }
 }
 
-array sum_arrays(function foo, array(mixed) ... args)
+array sum_arrays(function sum, array(mixed) ... args)
 {
   array ret;
   int e,d;
   ret=allocate(sizeof(args[0]));
   for(e=0;e<sizeof(args[0]);e++)
-    ret[e]=([function(mixed...:mixed)]foo)(@ column(args, e));
+    ret[e]=([function(mixed...:mixed)]sum)(@ column(args, e));
   return ret;
 }
 
-array sort_array(array foo,function|void cmp, mixed ... args)
+//! This function sorts an array after a compare-function @[cmp]
+//! which takes two arguments and should return @tt{1@} if the first argument
+//! is larger then the second.
+//!
+//! The remaining arguments @[args] will be sent as 3rd, 4th etc. argument
+//! to @[cmp].
+//!
+//! If @[cmp] is omitted, @[`>()] is used instead.
+//!
+//! @seealso
+//! @[map()], @[sort()], @[`>()]
+//!
+array sort_array(array foo, function|void cmp, mixed ... args)
 {
   array bar,tmp;
   int len,start;
