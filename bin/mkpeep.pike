@@ -2,7 +2,7 @@
 
 #pragma strict_types
 
-/* $Id: mkpeep.pike,v 1.15 2000/04/28 17:47:07 hubbe Exp $ */
+/* $Id: mkpeep.pike,v 1.16 2000/05/16 18:31:54 hubbe Exp $ */
 
 #define JUMPBACK 3
 
@@ -444,7 +444,7 @@ int main(int argc, string *argv)
   write("        fprintf(stderr,\" \");\n");
   write("        dump_instr(instr(e));\n");
   write("      }\n");
-  write("      fprintf(stderr,\"\n\");\n");
+  write("      fprintf(stderr,\"\\\n\");\n");
   write("    }\n");
   write("#endif\n\n");
 
