@@ -346,11 +346,13 @@ static mapping(int:string) ten_numbers = ([
 
 //! Translate an integer into text.
 //! For example, the integer 111 will become "onehundredeleven".
-//! @arg x
+//! @param x
 //! The number to translate to text
-//! @arg lang
+//! @param lang
 //! Optional language selector. This is only semi-supported at this time.
 //! Valid values are 0 for american names and 1 for brittish names. Default are brittish names.
+//! @returns
+//! The integer as plain text.
 string int2text(int x, void|int(0..1) lang) {
   array(string|int) internal_int2txt(int rest, int e, int(0..1) lang) {
     int|string parse_low(int n, int(0..1) lang) {
