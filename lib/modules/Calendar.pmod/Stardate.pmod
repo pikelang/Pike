@@ -4,9 +4,7 @@
 
 #pike __REAL_VERSION__
 
-import ".";
-
-inherit TimeRanges;
+inherit .TimeRanges;
 
 static constant TNGSTARPERJULIAN=1000.0/365.2425;
 static constant TNGSTARPERSECOND=TNGSTARPERJULIAN/86400;
@@ -139,7 +137,7 @@ class cTick
       return ((int)(t/TNGSTARPERJULIAN))+TNG0JULIAN;
    }
 
-   TimeRange add(int n,void|this_program step)
+   static TimeRange _add(int n,void|this_program step)
    {
       float x;
       if (!step) 
@@ -224,7 +222,7 @@ class cTick
       return Tick("stardate",rules,t,to->t-t);
    }
 
-   array _compare(TimeRange with)
+   array(int(-1..1)) _compare(TimeRange with)
    {
       float b1=t;
       float e1=t+len;
@@ -239,12 +237,12 @@ class cTick
 
    int __hash() { return (int)t; }
 
-   cTick set_ruleset(Ruleset r)
+   TimeRange set_ruleset(.Ruleset r)
    {
       return Tick("stardate",r,t,len);
    }
 
-   string _sprintf(int t)
+   string _sprintf(int t, mapping m)
    {
       switch (t)
       {
@@ -306,11 +304,11 @@ function(mixed...:cTick) Day=cTick;
 //  global convinience functions
 //------------------------------------------------------------------------
 
-//! method TimeofDay now()
+//! method Time.TimeofDay now()
 //!	Give the zero-length time period of the
 //!	current time.
 
-TimeofDay now()
+.Time.TimeofDay now()
 {
    return Tick();
 }
