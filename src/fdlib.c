@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: fdlib.c,v 1.58 2003/03/28 01:25:17 mast Exp $
+|| $Id: fdlib.c,v 1.59 2003/03/28 04:22:14 mast Exp $
 */
 
 #include "global.h"
@@ -10,7 +10,7 @@
 #include "pike_error.h"
 #include <math.h>
 
-RCSID("$Id: fdlib.c,v 1.58 2003/03/28 01:25:17 mast Exp $");
+RCSID("$Id: fdlib.c,v 1.59 2003/03/28 04:22:14 mast Exp $");
 
 #ifdef HAVE_WINSOCK_H
 
@@ -177,7 +177,7 @@ static int IsUncRoot(char *path)
   return 0 ;
 }
 
-static int low_stat (char *file, PIKE_STAT_T *buf)
+static int low_stat (const char *file, PIKE_STAT_T *buf)
 {
   char            *path;
   int              drive;       /* A: = 1, B: = 2, ... */
@@ -824,7 +824,7 @@ PMOD_EXPORT PIKE_OFF_T debug_fd_lseek(FD fd, PIKE_OFF_T pos, int where)
 
 #ifdef INT64
   if (pos >= ((INT64) 1 << 32)) {
-    LONG high = pos >> 32;
+    LONG high = DO_NOT_WARN ((LONG) (pos >> 32));
     DWORD err;
     pos &= (1 << 32) - 1;
     ret = SetFilePointer (h, DO_NOT_WARN ((LONG) pos), &high, where);
@@ -876,13 +876,13 @@ PMOD_EXPORT int debug_fd_ftruncate(FD fd, PIKE_OFF_T len)
   }
 
 #ifdef INT64
-  len_hi = len >> 32;
+  len_hi = DO_NOT_WARN ((LONG) (len >> 32));
   len &= (1 << 32) - 1;
 #else
   len_hi = 0;
 #endif
 
-  if (SetFilePointer (h, DO_NOT_WARN ((LONG) len), &len_hi, where) ==
+  if (SetFilePointer (h, DO_NOT_WARN ((LONG) len), &len_hi, FILE_BEGIN) ==
       INVALID_SET_FILE_POINTER &&
       (err = GetLastError()) != NO_ERROR) {
     SetFilePointer(h, oldfp_lo, &oldfp_hi, FILE_BEGIN);
