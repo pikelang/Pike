@@ -1,4 +1,4 @@
-/* $Id: RSA.pike,v 1.4 2004/02/05 19:21:15 nilsson Exp $
+/* $Id: RSA.pike,v 1.5 2004/02/08 03:21:02 nilsson Exp $
  *
  * Follow the PKCS#1 standard for padding and encryption.
  */
@@ -36,13 +36,13 @@ Gmp.mpz get_d()
   return d;
 }
 
-// Returns the first RSA prime (if known).
+//! Returns the first RSA prime (if known).
 Gmp.mpz get_p()
 {
   return p;
 }
 
-// Returns the second RSA prime (if known).
+//! Returns the second RSA prime (if known).
 Gmp.mpz get_q()
 {
   return q;
@@ -66,13 +66,13 @@ string cooked_get_d()
   return d->digits(256);
 }
 
-// Returns the first RSA prime (if known) as a binary string.
+//! Returns the first RSA prime (if known) as a binary string.
 string cooked_get_p()
 {
   return p->digits(256);
 }
 
-// Returns the second RSA prime (if known) as a binary string.
+//! Returns the second RSA prime (if known) as a binary string.
 string cooked_get_q()
 {
   return q->digits(256);
@@ -134,7 +134,6 @@ Gmp.mpz rsa_pad(string message, int(1..2) type,
   int len;
 
   len = size - 3 - sizeof(message);
-  /*  write(sprintf("%d, %d, %d, %s", len, size, sizeof(message), message)); */
   if (len < 8)
     error( "Block too large. (%d,%d)\n", sizeof(message), size-3 );
 
@@ -215,15 +214,15 @@ int(0..1) public_key_equal(this_program rsa)
 
 // end of _rsa
 
-//! @fixme
-//!   Document this function.
+//! Signs the @[message] with a PKCS-1 signature using hash algorithm
+//! @[h].
 Gmp.mpz sign(string message, .Hash h)
 {
   return raw_sign(Standards.PKCS.Signature.build_digestinfo(message, h));
 }
 
-//! @fixme
-//!   Document this function.
+//! Verify PKCS-1 signature @[sign] of message @[msg] using hash
+//! algorithm @[h].
 int(0..1) verify(string msg, .Hash h, Gmp.mpz sign)
 {
   string s = Standards.PKCS.Signature.build_digestinfo(msg, h);
@@ -266,8 +265,8 @@ int md5_verify(string message, string signature)
   return raw_verify(s, Gmp.mpz(signature, 256));
 }
 
-//! @fixme
-//!   Document this function.
+//! Generate a prime with @[bits] number of bits using random function
+//! @[r].
 Gmp.mpz get_prime(int bits, function(int:string) r)
 {
   int len = (bits + 7) / 8;
@@ -334,8 +333,7 @@ this_program generate_key(int(128..) bits, function(int:string)|void r)
 
 static int encrypt_mode; // For block cipher compatible functions
 
-//! @fixme
-//!   Document this function.
+//! Sets the public key to @[key] and the mode to encryption.
 //! @seealso
 //!   @[set_decrypt_key], @[crypt]
 this_program set_encrypt_key(array(Gmp.mpz) key)
@@ -345,8 +343,7 @@ this_program set_encrypt_key(array(Gmp.mpz) key)
   return this;
 }
 
-//! @fixme
-//!   Document this function.
+//! Sets the public key to @[key]and the mod to decryption.
 //! @seealso
 //!   @[set_encrypt_key], @[crypt]
 this_program set_decrypt_key(array(Gmp.mpz) key)
@@ -357,8 +354,7 @@ this_program set_decrypt_key(array(Gmp.mpz) key)
   return this;
 }
 
-//! @fixme
-//!   Document this function.
+//! Encrypt or decrypt depending on set mode.
 //! @seealso
 //!   @[set_encrypt_key], @[set_decrypt_key]
 string crypt(string s)
