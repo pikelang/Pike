@@ -1583,6 +1583,7 @@ void image_distancesq(INT32 args)
    push_object(o);
 }
 
+/*#define DEBUG_ISF*/
 #define ISF_LEFT 4
 #define ISF_RIGHT 8
 
@@ -1598,7 +1599,8 @@ void isf_seek(int mode,int ydir,INT32 low_limit,INT32 x1,INT32 x2,INT32 y,
 	   mode,ydir,low_limit,x1,x2,y,src,dest,xsize,ysize,rgb.r,rgb.g,rgb.b);
 #endif
 
-#define MARK_DISTANCE(_dest,_value) ((_dest).r=(_dest).g=(_dest).b=((_value)?(_value):1)),fprintf(stderr,"%d,",_value)
+#define MARK_DISTANCE(_dest,_value) \
+      ((_dest).r=(_dest).g=(_dest).b=(max(1,255-(_value>>8))))
    if ( mode&ISF_LEFT ) /* scan left from x1 */
    {
       x=x1;
@@ -1664,8 +1666,8 @@ fprintf(stderr," %d,%d,%d)\n",src[x+y*xsize].r,src[x+y*xsize].g,src[x+y*xsize].b
 fprintf(stderr,"==> %d (",DISTANCE(rgb,src[x+y*xsize]));
 fprintf(stderr," %d,%d,%d)\n",src[x+y*xsize].r,src[x+y*xsize].g,src[x+y*xsize].b);
 #endif
-      if ( dest[x+y*xsize].r ||
-	   (j=DISTANCE(rgb,src[x+y*xsize])) >low_limit) /* seen that */
+      if ( dest[x+y*xsize].r || /* seen that */
+	   (j=DISTANCE(rgb,src[x+y*xsize])) >low_limit) 
       {
 	 if (xr<x)
 	    isf_seek(ISF_LEFT*(xr==x1),ydir,low_limit,
@@ -1673,7 +1675,8 @@ fprintf(stderr," %d,%d,%d)\n",src[x+y*xsize].r,src[x+y*xsize].g,src[x+y*xsize].b
 	 while (++x<=x2)
 	    if ( (j=DISTANCE(rgb,src[x+y*xsize])) <=low_limit) break;
 	 xr=x;
-	 x++;
+/*	 x++; hokuspokus /law */
+/*       nån dag ska jag försöka begripa varför... */
 	 if (x>x2) return;
 	 continue;
       }
@@ -1717,7 +1720,7 @@ void image_select_from(INT32 args)
       free_object(o);
       error("Out of memory\n");
    }
-   MEMSET(img->img,sizeof(rgb_group)*img->xsize*img->ysize,0);
+   MEMSET(img->img,0,sizeof(rgb_group)*img->xsize*img->ysize);
 
    if (sp[-args].u.integer>=0 && sp[-args].u.integer<img->xsize 
        && sp[1-args].u.integer>=0 && sp[1-args].u.integer<img->ysize)

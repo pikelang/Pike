@@ -24,8 +24,8 @@ David Kågedal, kg@infovav.se
 /*
 #define QUANT_DEBUG
 #define QUANT_DEBUG_DEEP
-*/
 #define QUANT_CHRONO
+*/
 
 /**********************************************************************/
 
