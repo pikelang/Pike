@@ -53,12 +53,10 @@ $version manual
 
 	TAG operators
 
- Operators
+	LINK operators/operators Operators
 
   uLPC operators behave much like the onces in C, but have many many additional
   features. Most of this added functionality is related to the new data types.
-
-	KEYWORD_LIST operators
 
  Keyword index
 
