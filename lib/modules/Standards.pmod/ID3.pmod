@@ -1,6 +1,6 @@
 // ID3.pmod
 //
-//  $Id: ID3.pmod,v 1.1 2002/04/11 12:09:05 nilsson Exp $
+//  $Id: ID3.pmod,v 1.2 2002/04/11 15:11:10 nilsson Exp $
 //
 
 //! ID3 decoder/encoder.
@@ -99,8 +99,8 @@ class TagHeader {
       error( "Header has wrong identifier. Expected \"ID3\", got %O.\n", data[..2] );
 
     array bytes = (array(int))data[3..];
-    if(bytes[0]!=4 && bytes[0]!= 3)
-      error( "Can only handle ID3v2.4.x. or 2.3.x Got ID3v2."+bytes[0]+"."+bytes[1]+"\n" );
+    if( (< 2, 3, 4 >)[bytes[0]] )
+      error( "Can only handle ID3v2.{2,3,4}.x. Got ID3v2."+bytes[0]+"."+bytes[1]+"\n" );
 
     minor_version = bytes[0];
     sub_version = bytes[1];
@@ -370,7 +370,7 @@ class Frame {
       case 2:
 	id = buffer->read(3);
 	asize =  buffer->read(3);
-        sscanf(asize, "3c", size);
+        sscanf(asize, "%3c", size);
 	break;
     }
 
@@ -428,6 +428,7 @@ class Frame {
   }
 }
 
+//! ID3 version 2 (2.2, 2.3, 2.4) Tags
 class Tagv2 {
 
   TagHeader header;
@@ -462,8 +463,7 @@ class Tagv2 {
   }
 
   string encode() {
-    //hop@string block = frames->encode()*"" + "\0"*padding;
-    string block = Array.map(frames, lambda(object fr) { return fr->encode();})*"" + "\0"*padding;
+    string block = (array(string))frames->encode()*"" + "\0"*padding;
     header->set_flag_unsynchronisation(frames);
     header->tag_size = sizeof(block);
     return header->encode() + block;
@@ -652,7 +652,7 @@ class Frame_Dummy {
 }
 
 
-// ID3v1
+//! ID3 version 1.0 or 1.1 tag
 class Tagv1 {
 
   array frames = ({});
@@ -730,7 +730,15 @@ class FrameDatav1 {
 
 }
 
+//! ID3 tag object
 //!
+//! Tries to find version 2 tags in file and then version 1 tag.
+//!
+//! @note
+//!  Version 1 tag is searched only if version 2 isn't there.
+//!
+//! @seealso
+//!  @[Tagv2], @[Tagv1]
 class Tag {
 
   object tag;
@@ -763,11 +771,14 @@ class Tag {
   }
 
   //! Returns tag values in friendly manner
+  //!
+  //! @note
+  //!  Only version 1 equivalent of version 2 tags
+  //!  are returned.
   mapping friendly_values() {
-
     if(tag->header->major_version == 1)
       return mkmapping(tag->frames->id,
-     			tag->frames->data->get_string());
+		       tag->frames->data->get_string());
 
     mapping rv = ([]);
     foreach(tag->frames, object fr1)
