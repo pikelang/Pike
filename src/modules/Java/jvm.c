@@ -1,5 +1,5 @@
 /*
- * $Id: jvm.c,v 1.12 2000/01/12 04:45:30 marcus Exp $
+ * $Id: jvm.c,v 1.13 2000/02/21 13:48:14 marcus Exp $
  *
  * Pike interface to Java Virtual Machine
  *
@@ -16,7 +16,7 @@
 #endif /* HAVE_CONFIG_H */
 
 #include "global.h"
-RCSID("$Id: jvm.c,v 1.12 2000/01/12 04:45:30 marcus Exp $");
+RCSID("$Id: jvm.c,v 1.13 2000/02/21 13:48:14 marcus Exp $");
 #include "program.h"
 #include "interpret.h"
 #include "stralloc.h"
@@ -2755,11 +2755,13 @@ static void f_create(INT32 args)
     j->vm_args.options[j->vm_args.nOptions].extraInfo = NULL;
     j->vm_args.nOptions++;
   }
+#ifndef __NT__
 #ifdef JAVA_LIBPATH
   j->vm_args.options[j->vm_args.nOptions].optionString =
     "-Djava.library.path="JAVA_LIBPATH;
   j->vm_args.options[j->vm_args.nOptions].extraInfo = NULL;
   j->vm_args.nOptions++;
+#endif
 #endif
 
   /* load and initialize a Java VM, return a JNI interface 
