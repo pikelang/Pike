@@ -979,8 +979,13 @@ int pre_install(array(string) argv)
       catch  {
 	if(!no_gui)
 	{
-	  begin_wizard(argv);
-	  return -1; 
+#ifndef __NT__ /* We are using GTK on Win32!! no DISPLAY required */
+	  if(getenv("DISPLAY"))
+#endif
+	  {
+	    begin_wizard(argv);
+	    return -1; 
+	  }
 	}
       };
 #endif
