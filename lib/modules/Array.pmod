@@ -235,6 +235,7 @@ array transpose_old(array x)
 
 // diff3, complement to diff
 
+
 array(array(array)) diff3 (array a, array b, array c)
 {
   // This does not necessarily produce the optimal sequence between
@@ -256,15 +257,100 @@ array(array(array)) diff3 (array a, array b, array c)
   for (int i = 0, j = 0; j < sizeof (seq_ca); i++)
     if (c[i] == a[seq_ca[j]]) ceq[i] |= 2, aeq[seq_ca[j]] |= 1, j++;
 
+  //werror ("%O\n", ({aeq, beq, ceq}));
+
   array(array) ares = ({}), bres = ({}), cres = ({});
   int ai = 0, bi = 0, ci = 0;
   int prevodd = -2;
 
   while (!(aeq[ai] & beq[bi] & ceq[ci] & 4)) {
-    /* werror ("aeq[%d]=%d beq[%d]=%d ceq[%d]=%d prevodd=%d\n",
-       ai, aeq[ai], bi, beq[bi], ci, ceq[ci], prevodd); */
+    //werror ("aeq[%d]=%d beq[%d]=%d ceq[%d]=%d prevodd=%d\n",
+    //    ai, aeq[ai], bi, beq[bi], ci, ceq[ci], prevodd);
     array empty = ({}), apart = empty, bpart = empty, cpart = empty;
-    int intersect;
+    int side = aeq[ai] & beq[bi] & ceq[ci];
+
+    if ((<1, 2>)[side]) {
+      // Got cyclically interlocking equivalences. Have to break one
+      // of them. Prefer the shortest.
+      int which, merge, inv_side = side ^ 3, i, oi;
+      array(int) eq, oeq;
+      array arr, oarr;
+      int atest = side == 1 ? ceq[ci] != 3 : beq[bi] != 3;
+      int btest = side == 1 ? aeq[ai] != 3 : ceq[ci] != 3;
+      int ctest = side == 1 ? beq[bi] != 3 : aeq[ai] != 3;
+
+      for (i = 0;; i++) {
+	int abreak = atest && aeq[ai] != aeq[ai + i];
+	int bbreak = btest && beq[bi] != beq[bi + i];
+	int cbreak = ctest && ceq[ci] != ceq[ci + i];
+
+	if (abreak + bbreak + cbreak > 1) {
+	  // More than one shortest sequence. Avoid breaking one that
+	  // could give an all-three match later.
+	  if (side == 1) {
+	    if (!atest) cbreak = 0;
+	    if (!btest) abreak = 0;
+	    if (!ctest) bbreak = 0;
+	  }
+	  else {
+	    if (!atest) bbreak = 0;
+	    if (!btest) cbreak = 0;
+	    if (!ctest) abreak = 0;
+	  }
+	  // Prefer breaking one that can be joined with the previous
+	  // diff part.
+	  switch (prevodd) {
+	    case 0: if (abreak) bbreak = cbreak = 0; break;
+	    case 1: if (bbreak) cbreak = abreak = 0; break;
+	    case 2: if (cbreak) abreak = bbreak = 0; break;
+	  }
+	}
+
+	if (abreak) {
+	  which = 0, merge = (<0, -1>)[prevodd];
+	  i = ai, eq = aeq, arr = a;
+	  if (inv_side == 1) oi = bi, oeq = beq, oarr = b;
+	  else oi = ci, oeq = ceq, oarr = c;
+	  break;
+	}
+	if (bbreak) {
+	  which = 1, merge = (<1, -1>)[prevodd];
+	  i = bi, eq = beq, arr = b;
+	  if (inv_side == 1) oi = ci, oeq = ceq, oarr = c;
+	  else oi = ai, oeq = aeq, oarr = a;
+	  break;
+	}
+	if (cbreak) {
+	  which = 2, merge = (<2, -1>)[prevodd];
+	  i = ci, eq = ceq, arr = c;
+	  if (inv_side == 1) oi = ai, oeq = aeq, oarr = a;
+	  else oi = bi, oeq = beq, oarr = b;
+	  break;
+	}
+      }
+      //werror ("  which=%d merge=%d inv_side=%d i=%d oi=%d\n",
+      //      which, merge, inv_side, i, oi);
+
+      int s = i, mask = eq[i];
+      do {
+	eq[i++] &= inv_side;
+	while (!(oeq[oi] & inv_side)) oi++;
+	oeq[oi] &= side;
+      }
+      while (eq[i] == mask);
+
+      if (merge && !eq[s]) {
+	array part = ({});
+	do part += ({arr[s++]}); while (!eq[s]);
+	switch (which) {
+	  case 0: ai = s; ares[-1] += part; break;
+	  case 1: bi = s; bres[-1] += part; break;
+	  case 2: ci = s; cres[-1] += part; break;
+	}
+      }
+    }
+    //werror ("aeq[%d]=%d beq[%d]=%d ceq[%d]=%d prevodd=%d\n",
+    //    ai, aeq[ai], bi, beq[bi], ci, ceq[ci], prevodd);
 
     if (aeq[ai] == 2 && beq[bi] == 1) { // a and b are equal.
       do apart += ({a[ai++]}), bi++; while (aeq[ai] == 2 && beq[bi] == 1);
@@ -284,97 +370,34 @@ array(array(array)) diff3 (array a, array b, array c)
       while (!beq[bi]) bpart += ({b[bi++]});
       prevodd = 1;
     }
-    else if ((intersect = aeq[ai] & beq[bi] & ceq[ci]) == 3) { // All are equal.
-      do apart += ({a[ai++]}), bi++, ci++; while (aeq[ai] & beq[bi] & ceq[ci] == 3);
+
+    else if ((<1*2*3, 3*3*3>)[aeq[ai] * beq[bi] * ceq[ci]]) { // All are equal.
+      // Got to match both when all three are 3 and when they are 1, 2
+      // and 3 in that order modulo rotation (might get such sequences
+      // after breaking the cyclic equivalences above).
+      do apart += ({a[ai++]}), bi++, ci++;
+      while ((<0333, 0123, 0312, 0231>)[aeq[ai] << 6 | beq[bi] << 3 | ceq[ci]]);
       cpart = bpart = apart;
       prevodd = -1;
     }
+
     else {
       // Haven't got any equivalences in this block. Avoid adjacent
       // complementary blocks (e.g. ({({"foo"}),({}),({})}) next to
       // ({({}),({"bar"}),({"bar"})})). Besides that, leave the
       // odd-one-out sequence empty in a block where two are equal.
-
-      if (intersect && (aeq[ai] | beq[bi] | ceq[ci]) != 3) {
-	// Got cyclically interlocking equivalences. Have to break one
-	// of them. Prefer the shortest.
-	int which, newblock, mask, i, oi;
-	array(int) eq, oeq;
-	array arr;
-	for (i = 0;; i++)
-	  if (aeq[ai] != aeq[ai + i]) {
-	    which = 0, newblock = prevodd != 0 && (prevodd == -2 || sizeof (ares[-1]));
-	    mask = aeq[ai] ^ 3, i = ai, eq = aeq, arr = a;
-	    if (mask == 1) oi = bi, oeq = beq; else oi = ci, oeq = ceq;
-	    break;
-	  }
-	  else if (beq[bi] != beq[bi + i]) {
-	    which = 1, newblock = prevodd != 1 && (prevodd == -2 || sizeof (bres[-1]));
-	    mask = beq[bi] ^ 3, i = bi, eq = beq, arr = b;
-	    if (mask == 1) oi = ci, oeq = ceq; else oi = ai, oeq = aeq;
-	    break;
-	  }
-	  else if (ceq[ci] != ceq[ci + i]) {
-	    which = 2, newblock = prevodd != 2 && (prevodd == -2 || sizeof (cres[-1]));
-	    mask = ceq[ci] ^ 3, i = ci, eq = ceq, arr = c;
-	    if (mask == 1) oi = ai, oeq = aeq; else oi = bi, oeq = beq;
-	    break;
-	  }
-	/* werror ("which=%d newblock=%d mask=%d i=%d oi=%d\n",
-	   which, newblock, mask, i, oi); */
-	if (newblock)
-	  ares += ({empty}), bres += ({empty}), cres += ({empty}), prevodd = -1;
-	while (oeq[oi] != mask) oi++;
-	array part = ({});
-	mask ^= 3;
-	do part += ({arr[i++]}), oeq[oi++] = 0; while (eq[i] == mask);
-	switch (which) {
-	  case 0: ai = i; ares[-1] += part; break;
-	  case 1: bi = i; bres[-1] += part; break;
-	  case 2: ci = i; cres[-1] += part; break;
-	}
-	continue;
+      switch (prevodd) {
+	case 0: apart = ares[-1], ares[-1] = ({}); break;
+	case 1: bpart = bres[-1], bres[-1] = ({}); break;
+	case 2: cpart = cres[-1], cres[-1] = ({}); break;
       }
-
-      else {
-	if (intersect) {
-	  // One matches on both sides and the other two doesn't match
-	  // each other. This occurs when the matches aren't
-	  // synchronized. E.g. for a = ({"a"}), b = ({"b","a"}), c =
-	  // ({"a","b","a"}) we got a[0]->b[1], b[0..1]->c[1..2],
-	  // c[0]->a[0]. We shift the match forward to catch the
-	  // all-three match later, i.e. replace c[0]->a[0] with
-	  // c[2]->a[0] in this case.
-	  int i;
-	  array(int) eq;
-	  array arr;
-	  if (aeq[ai] == 3)
-	    if (intersect == 1) i = bi, eq = beq, arr = b; else i = ci, eq = ceq, arr = c;
-	  else if (beq[bi] == 3)
-	    if (intersect == 1) i = ci, eq = ceq, arr = c; else i = ai, eq = aeq, arr = a;
-	  else
-	    if (intersect == 1) i = ai, eq = aeq, arr = a; else i = bi, eq = beq, arr = b;
-	  while (eq[i] == intersect) {
-	    mixed el = arr[i];
-	    eq[i] = 0;
-	    int j = ++i;
-	    while (arr[j] != el || eq[j] & intersect) j++;
-	    eq[j] |= intersect;
-	  }
-	}
-
-	switch (prevodd) {
-	  case 0: apart = ares[-1], ares[-1] = ({}); break;
-	  case 1: bpart = bres[-1], bres[-1] = ({}); break;
-	  case 2: cpart = cres[-1], cres[-1] = ({}); break;
-	}
-	prevodd = -1;
-	while (!aeq[ai]) apart += ({a[ai++]});
-	while (!beq[bi]) bpart += ({b[bi++]});
-	while (!ceq[ci]) cpart += ({c[ci++]});
-      }
+      prevodd = -1;
+      while (!aeq[ai]) apart += ({a[ai++]});
+      while (!beq[bi]) bpart += ({b[bi++]});
+      while (!ceq[ci]) cpart += ({c[ci++]});
     }
 
+    //werror ("%O\n", ({apart, bpart, cpart}));
     ares += ({apart}), bres += ({bpart}), cres += ({cpart});
   }
 
