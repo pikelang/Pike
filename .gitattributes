@@ -1,0 +1,20 @@
+[attr]binary -text -crlf -diff -ident
+* text ident
+
+# Handling of foreign (ie CVS) identifiers.
+#
+[attr]foreign_ident -ident block_commit=Remove-foreign_ident-attribute-before-commit.
+# Files containing CVS ids follow.
+# Remove the corresponding line before committing
+# changes to these files.
+/src/modules/Tokenizer/Makefile.in foreign_ident
+/src/modules/Tokenizer/MetaProg.yacc foreign_ident
+/src/modules/Tokenizer/ParseTree.c foreign_ident
+/src/modules/Tokenizer/Pike.yacc foreign_ident
+/src/modules/Tokenizer/Pike2.yacc foreign_ident
+/src/modules/Tokenizer/Tokenizer.cmod foreign_ident
+/src/modules/Tokenizer/acconfig.h foreign_ident
+/src/modules/Tokenizer/configure.in foreign_ident
+/src/modules/Tokenizer/misc.c foreign_ident
+/src/modules/Tokenizer/module.pmod.in foreign_ident
+/src/modules/Tokenizer/toktest.pike foreign_ident

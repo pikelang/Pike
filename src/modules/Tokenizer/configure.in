@@ -1,0 +1,9 @@
+# $Id: configure.in,v 1.1 2002/10/17 10:43:18 grubba Exp $
+AC_INIT(Tokenizer.cmod)
+AC_CONFIG_HEADER(config.h)
+AC_MODULE_INIT()
+
+YACC="$pike_cv_prog_working_yacc"
+AC_SUBST(YACC)
+
+AC_OUTPUT(Makefile,echo FOO >stamp-h )

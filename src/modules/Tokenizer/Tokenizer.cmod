@@ -1,0 +1,720 @@
+/*
+ * $Id: Tokenizer.cmod,v 1.1 2002/10/17 10:43:18 grubba Exp $
+ *
+ * Interface to pike code tokenizer.
+ *
+ * Henrik Grubbström 2002-07-11
+ */
+
+#include "global.h"
+
+#include "config.h"
+
+#include "svalue.h"
+#include "object.h"
+#include "interpret.h"
+#include "operators.h"
+#include "builtin_functions.h"
+
+/*! @module Tokenizer
+ */
+
+/*! @decl typedef function(SeverityLevel, string, string:void) ReportCB
+ *!   Message report callback type.
+ *! @seealso
+ *!   @[SeverityLevel]
+ */
+
+/*! @class basic_tokenizer
+ */
+PIKECLASS basic_tokenizer
+{
+  // String being converted.
+  CVAR struct pike_string *data;
+
+  // Position in string.
+  CVAR int pos;
+
+  // Token number in stream.
+  PIKEVAR int(0..) token_num;
+
+  // Message report callback.
+  PIKEVAR function(int(0..3),string,string:void) report_cb;
+
+  // Current line.
+  PIKEVAR int(1..) line_no;
+
+  /*! @decl string current_symbol
+   *!
+   *!   Current symbol.
+   *!
+   *!   Set by @[scan()]. Is set to @tt{0@} (zero) at end of stream.
+   *!
+   *! @seealso
+   *!   @[scan()]
+   */
+  PIKEVAR string current_symbol;
+
+  // Current scanner.
+  CVAR void (*scanner)(struct basic_tokenizer_struct *);
+
+  static void report_error(char *msg, ...)
+  {
+  }
+
+#define gobble(C)	(((this->pos < this->data->len) && \
+			  (str[this->pos] == (C)))?(this->pos++,1):0)
+
+#define MAKE_SCANNER(SHIFT)						\
+    static void PIKE_CONCAT(scan, SHIFT)				\
+			   (struct basic_tokenizer_struct *this)	\
+    {									\
+      PIKE_CONCAT(p_wchar, SHIFT) *str = 				\
+	PIKE_CONCAT(STR, SHIFT)(this->data);				\
+      while (this->pos < this->data->len) {				\
+	int start = this->pos;						\
+	int c = str[this->pos++];					\
+	switch(c) {							\
+	case '\n':							\
+	  this->line_no++;						\
+	  /* FALL_THROUGH */						\
+	case ' ': case '\t': case '\r':					\
+	  /* Plain whitespace. */					\
+	  continue;							\
+									\
+	case '\033':	/* ESC */					\
+	case '\233':	/* CSI */					\
+	  /* Assume ANSI/DEC escape sequence.				\
+	   * Format supported:						\
+	   *	    <ESC>[\040-\077]+[\100-\177]			\
+	   * or								\
+	   *	    <CSI>[\040-\077]*[\100-\177]			\
+	   */								\
+	  while ((this->pos < this->data->len) &&			\
+		 (((c = str[this->pos++]) & ~0x1f) == 0x20))		\
+	    ;								\
+	  if ((c & ~0x3f) != 0x40) {					\
+	    /* FIXME: Warning here? */					\
+	    this->pos--;						\
+	  }								\
+	  continue;							\
+									\
+	case '#':							\
+	  /* Preprocessor-style directive (#line, pragma, etc). */	\
+	  while (this->pos < this->data->len) {				\
+	    if (((c = str[this->pos++]) == '\n') || (c == '\r')) {	\
+	      this->pos--;						\
+	      break;							\
+	    }								\
+	  }								\
+	  break;							\
+									\
+	case '0':							\
+	  /* Octal, binary, hexadecimal or float number */		\
+	  gobble('b')||gobble('B')||gobble('x')||gobble('X');		\
+	  /* FALL_THROUGH */						\
+	case '1':							\
+	case '2':							\
+	case '3':							\
+	case '4':							\
+	case '5':							\
+	case '6':							\
+	case '7':							\
+	case '8':							\
+	case '9':							\
+	  /* Number. */							\
+									\
+	  /* Note: Exponent handling is included in			\
+	   * the hexadecimal range.					\
+	   */								\
+	  while(this->pos < this->data->len) {				\
+	    c = str[this->pos];						\
+	    if ((c < '0') || ((c > '9') && (c < 'A')) ||		\
+		((c > 'F') && (c < 'a')) || (c > 'f')) {		\
+	      break;							\
+	    }								\
+	    this->pos++;						\
+	  }								\
+	  break;							\
+									\
+	case '\'':							\
+	case '\"':							\
+	  {								\
+	    /* String or character constant. */				\
+	    int d;							\
+	    while ((this->pos < this->data->len) &&			\
+		   ((d = str[this->pos]) != '\n') &&			\
+		   (d != '\r') && (this->pos++, (d != c))) {		\
+	      if (d == '\\') {						\
+	        if (this->pos < this->data->len) {			\
+		  d = str[this->pos];					\
+		  if ((d == '\r') || (d == '\n')) {			\
+		    break;						\
+		  }							\
+		  this->pos++;						\
+	        }							\
+	      }								\
+	    }								\
+	  }								\
+	  break;							\
+									\
+	  /* Operators. */						\
+	case ':':							\
+	  gobble(':');							\
+	  break;							\
+									\
+	case '.':							\
+	  gobble('.') && gobble('.');					\
+	  break;							\
+									\
+	case '-':							\
+	  if (gobble('>')) break;					\
+	  /* FALL_THROUGH */						\
+	case '+':							\
+	case '&':							\
+	case '|':							\
+	  if (gobble(c)) break;						\
+	  /* FALL_THROUGH */						\
+	case '^':							\
+	case '*':							\
+	case '%':							\
+	case '=':							\
+	case '!':							\
+	  gobble('=');							\
+	  break;							\
+									\
+	case '/':							\
+	  if (gobble('*')) {						\
+	    int no = 0;							\
+	    do {							\
+	      if (gobble('*') && gobble('/')) {				\
+		break;							\
+	      }								\
+	      if (gobble('\n')) {					\
+		no++;							\
+	      } else {							\
+		this->pos++;						\
+	      }								\
+	    } while (this->pos < this->data->len);			\
+	    if (this->pos >= this->data->len) {				\
+	      report_error("Unterminated comment.");			\
+	    }								\
+	    this->line_no += no;					\
+	  } else if (gobble('/')) {					\
+	    while ((this->pos < this->data->len) &&			\
+		   (str[this->pos] != '\n')){				\
+	      this->pos++;						\
+	    }								\
+	    if (this->pos >= this->data->len) {				\
+	      report_error("Unterminated comment.");			\
+	    }								\
+	  } else {							\
+	    gobble('=');						\
+	  }								\
+	  break;							\
+									\
+	case '>':							\
+	  if (gobble(')')) break;					\
+	  /* FALL_THROUGH */						\
+	case '<':							\
+	  gobble(c);							\
+	  gobble('=');							\
+	  break;							\
+									\
+	case '(':							\
+	  gobble('<');							\
+	  break;							\
+									\
+	case ']':							\
+	case '?':							\
+	case ',':							\
+	case '~':							\
+	case '@':							\
+	case ')':							\
+	case '[':							\
+	case '{':							\
+	case ';':							\
+	case '}':							\
+	  break;							\
+									\
+	case '`':							\
+	  gobble('`');							\
+	  gobble('`');							\
+									\
+	  if (this->pos < this->data->len) {				\
+	    switch(c = str[this->pos++]) {				\
+	    case '/':							\
+	    case '%':							\
+	    case '*':							\
+	    case '&':							\
+	    case '|':							\
+	    case '^':							\
+	    case '~':							\
+	      break;							\
+									\
+	    case '<':							\
+	    case '>':							\
+	      if (gobble(c)) break;					\
+	      /* FALL_THROUGH */					\
+	    case '+':							\
+	    case '!':							\
+	    case '=':							\
+	      gobble('=');						\
+	      break;							\
+									\
+	    case '(':							\
+	      if (!gobble(')')) {					\
+		report_error("Illegal ` identifier. Expected `().");	\
+		push_string(string_slice(this->data,			\
+					 start, this->pos - start));	\
+		push_constant_text(")");				\
+		f_add(2);						\
+	        this->current_symbol = Pike_sp[-1].u.string;		\
+		Pike_sp--;						\
+		return;							\
+	      }								\
+	      break;							\
+									\
+	    case '-':							\
+	      if (gobble('>')) {					\
+		gobble('=');						\
+	      }								\
+	      break;							\
+									\
+	    case '[':							\
+	      if (!gobble(']')) {					\
+		report_error("Illegal ` identifier. Expected `[].");	\
+		push_string(string_slice(this->data,			\
+					 start, this->pos - start));	\
+		if (gobble('=')) {					\
+		  push_constant_text("]=");				\
+		} else {						\
+		  push_constant_text("]");				\
+		}							\
+		f_add(2);						\
+	        this->current_symbol = Pike_sp[-1].u.string;		\
+		Pike_sp--;						\
+		return;							\
+	      }								\
+	      gobble('=');						\
+	      break;							\
+									\
+	    default:							\
+	      report_error("Illegal ` identifier.");			\
+	      this->pos--;						\
+	      break;							\
+	    }								\
+	  } else {							\
+	    report_error("Illegal ` identifier at end of file.");	\
+	  }								\
+	  break;							\
+									\
+	default:							\
+	  if ((c >= 256) || isidchar(c)) {				\
+	    /* Identifier. */						\
+	    while(this->pos < this->data->len) {			\
+	      if ((!((c = str[this->pos]) & ~0xff)) && !isidchar(c)) {	\
+	        break;							\
+	      }								\
+	      this->pos++;						\
+	    }								\
+	    break;							\
+	  }								\
+									\
+	  /* Error. */							\
+	  report_error("Illegal character (hex %02x) '%c'", c, c);	\
+	  continue;							\
+	}								\
+	this->current_symbol = string_slice(this->data,			\
+					   start, this->pos - start);	\
+	return;								\
+      }									\
+    }
+
+  MAKE_SCANNER(0)
+  MAKE_SCANNER(1)
+  MAKE_SCANNER(2)
+
+  /* Identifier number for the scan() function.
+   * Note that this is a global variable, and not
+   * part of the struct.
+   */
+  static ptrdiff_t scan_fun_num = 0;
+
+  /*! @decl void scan()
+   *!
+   *!   Called to advance one token in the stream.
+   *!
+   *!   The new token is stored in @[current_symbol].
+   *!
+   *! @note
+   *!   This function is not callable directly, but may be overloaded.
+   */
+  PIKEFUN void scan()
+    flags ID_STATIC;
+  {
+    if (THIS->current_symbol) {
+      free_string(THIS->current_symbol);
+      THIS->current_symbol = NULL;
+    }
+
+    if (!THIS->scanner) {
+      if (THIS->data) {
+	if (!THIS->data->size_shift) {
+	  THIS->scanner = scan0;
+	} else if (THIS->data->size_shift == 1) {
+	  THIS->scanner = scan1;
+	} else {
+	  THIS->scanner = scan2;
+	}
+      } else {
+	/* No data. */
+	return;
+      }
+    }
+    THIS->scanner(THIS);
+    if (THIS->current_symbol) {
+      THIS->token_num++;
+    }
+  }
+
+  /*! @decl void create(string data)
+   *! @decl void create(string data, ReportCB report_cb)
+   *!
+   *! Initialize the basic tokenizer.
+   *!
+   *! @param data
+   *!   String to tokenize.
+   *!
+   *! @param report_cb
+   *!   Optional message report callback.
+   */
+  PIKEFUN void create(string data,
+		      function(int(0..3),string,string:void)|void report_cb)
+    flags ID_STATIC;
+  {
+    if (THIS->data) {
+      free_string(THIS->data);
+    }
+    copy_shared_string(THIS->data, data);
+
+    if (report_cb) {
+      assign_svalue(&THIS->report_cb, report_cb);
+    } else {
+      free_svalue(&THIS->report_cb);
+      THIS->report_cb.type = T_INT;
+      THIS->report_cb.subtype = NUMBER_UNDEFINED;
+      THIS->report_cb.u.integer = 0;
+    }
+
+    THIS->pos = 0;
+    THIS->token_num = 0;
+    THIS->line_no = 1;
+    if (THIS->current_symbol) {
+      free_string(THIS->current_symbol);
+      THIS->current_symbol = NULL;
+    }
+
+    THIS->scanner = NULL;
+
+    mega_apply(APPLY_LOW, 0, Pike_fp->current_object,
+	       (void *)(scan_fun_num + Pike_fp->context.identifier_level));
+    pop_stack();
+  }
+
+  /*! @decl int(0..1) `!()
+   *!
+   *! Check for end of stream.
+   *!
+   *! @returns
+   *!   Returns 1 at end of stream.
+   */
+  PIKEFUN int(0..1) `!()
+    flags ID_STATIC;
+  {
+    RETURN !THIS->current_symbol;
+  }
+
+  PIKEFUN object `+=(int n)
+    flags ID_STATIC;
+  {
+    while (n-- > 0) {
+      mega_apply(APPLY_LOW, 0, Pike_fp->current_object,
+		 (void *)(scan_fun_num + Pike_fp->context.identifier_level));
+      pop_stack();
+    }
+    pop_n_elems(args);
+    f_this_object(0);
+  }
+
+  PIKEFUN int index()
+  {
+    RETURN THIS->token_num;
+  }
+
+  PIKEFUN string value()
+  {
+    add_ref(THIS->current_symbol);
+    RETURN THIS->current_symbol;
+  }
+
+  INIT
+  {
+    THIS->data = NULL;
+    THIS->scanner = NULL;
+    THIS->pos = 0;
+    THIS->token_num = 0;
+    THIS->line_no = 1;
+    THIS->report_cb.type = T_INT;
+    THIS->report_cb.subtype = NUMBER_UNDEFINED;
+    THIS->report_cb.u.integer = 0;
+    THIS->current_symbol = NULL;
+  }
+
+  EXIT
+  {
+    if (THIS->data) {
+      free_string(THIS->data);
+      THIS->data = NULL;
+    }
+    free_svalue(&THIS->report_cb);
+    THIS->report_cb.type = T_INT;
+    THIS->report_cb.subtype = NUMBER_UNDEFINED;
+    THIS->report_cb.u.integer = 0;
+    if (THIS->current_symbol) {
+      free_string(THIS->current_symbol);
+      THIS->current_symbol = NULL;
+    }
+    THIS->scanner = NULL;
+  }
+}
+
+/*! @endclass
+ */
+
+/*! @class Token
+ */
+
+PIKECLASS Token
+{
+  /*! @decl string symbol
+   *!
+   *! Raw symbol as found in the source code.
+   */
+  PIKEVAR string symbol;
+
+  /*! @decl string token
+   *!
+   *! Token group the symbol belongs to.
+   */
+  PIKEVAR string token;
+
+  /*! @decl mixed pos
+   *!
+   *! Position information.
+   *!
+   *! @note
+   *!   This can be any value, but is intended to contain
+   *!   information pertaining to where the symbol was found.
+   *!
+   *! @seealso
+   *!   @[Tokenizer.Position]
+   */
+  PIKEVAR mixed pos;
+
+  /*! @decl mixed value
+   *!
+   *! @[symbol] parsed according to the rules of @[token].
+   */
+  PIKEVAR mixed value;
+
+  INIT
+  {
+    THIS->symbol = NULL;
+    THIS->token = NULL;
+    THIS->pos.type = PIKE_T_INT;
+    THIS->pos.subtype = NUMBER_UNDEFINED;
+    THIS->pos.u.integer = 0;
+    THIS->value.type = PIKE_T_INT;
+    THIS->value.subtype = NUMBER_UNDEFINED;
+    THIS->value.u.integer = 0;
+  }
+
+  EXIT
+  {
+    if (THIS->symbol) {
+      free_string(THIS->symbol);
+      THIS->symbol = NULL;
+    }
+    if (THIS->token) {
+      free_string(THIS->token);
+      THIS->token = NULL;
+    }
+    free_svalue(&THIS->pos);
+    THIS->pos.type = PIKE_T_INT;
+    THIS->pos.subtype = NUMBER_UNDEFINED;
+    THIS->pos.u.integer = 0;
+    free_svalue(&THIS->value);
+    THIS->value.type = PIKE_T_INT;
+    THIS->value.subtype = NUMBER_UNDEFINED;
+    THIS->value.u.integer = 0;
+  }
+
+  PIKEFUN void create(string symbol, string token, mixed value, mixed pos)
+    flags ID_STATIC;
+  {
+    if (THIS->symbol) {
+      free_string(THIS->symbol);
+      THIS->symbol = NULL;
+    }
+    if (THIS->token) {
+      free_string(THIS->token);
+      THIS->token = NULL;
+    }
+    copy_shared_string(THIS->symbol, symbol);
+    copy_shared_string(THIS->token, token);
+    assign_svalue(&THIS->value, value);
+    assign_svalue(&THIS->pos, pos);
+  }
+
+  PIKEFUN string _sprintf(int format, mapping(string:string|int) options)
+    flags ID_STATIC;
+  {
+    push_text("%O:%s:%s:%O");
+    push_svalue(&THIS->pos);
+    if (THIS->symbol) {
+      ref_push_string(THIS->symbol);
+    } else {
+      push_text("NONE");
+    }
+    if (THIS->token) {
+      ref_push_string(THIS->token);
+    } else {
+      push_text("NONE");
+    }
+    push_svalue(&THIS->value);
+    f_sprintf(5);
+    stack_pop_n_elems_keep_top(args);
+    return;
+  }
+}
+
+/*! @endclass
+ */
+
+#if 0
+PIKEFUN object Compile(object tokenizer, object|void handler)
+{
+  struct compiler_context context;
+  int res;
+
+  if (!tokenizer->prog) {
+    SIMPLE_BAD_ARG_ERROR("Compile", 1, "Tokenizer.pike_tokenizer");
+  }
+  add_ref(context.lexer = tokenizer);
+  context.lex_value = find_identifier("value", tokenizer->prog);
+  context.lex_next = FIND_LFUN(tokenizer->prog, LFUN_ADD_EQ);
+  if (handler && (handler->type == PIKE_T_OBJECT) &&
+      handler->u.object->prog) {
+    add_ref(context.handler = handler->u.object);
+    context.handle_report_msg =
+      find_identifier("report_msg", handler->u.object->prog);
+  } else {
+    context.handler = NULL;
+    context.handle_report_msg = -1;
+  }
+
+  context.result.type = T_INT;
+  context.result.subtype = NUMBER_NUMBER;
+  context.result.u.integer = 0;
+
+  context.free_sval_list = NULL;
+  context.sval_block_list = NULL;
+
+  switch (tokenizer_yyparse(&context)) {
+  case 0:	/* Success. */
+    break;
+  case 1:	/* Abort. */
+  case 2:	/* Overflow. */
+  default:	/* Unknown. */
+    fprintf(stderr, "Compilation failed.\n");
+    break;
+  }
+
+  pop_n_elems(args);
+  push_svalue(&context.result);
+  free_context(&context);
+
+  return;
+}
+#endif /* 0 */
+
+
+/*! @endmodule
+ */
+
+void pike_module_init(void)
+{
+  {
+    struct pike_string *type_name;
+    struct svalue type_value;
+
+    /* enum SeverityLevel { NOTICE, WARNING, ERROR, FATAL } */
+    MAKE_CONSTANT_SHARED_STRING(type_name, "SeverityLevel");
+    type_value.type = PIKE_T_TYPE;
+    type_value.subtype = 0;
+    type_value.u.type = CONSTTYPE(tInt03);
+    add_constant(type_name, &type_value, 0);
+    free_svalue(&type_value);
+    add_integer_constant("NOTICE",  0, 0);
+    add_integer_constant("WARNING", 1, 0);
+    add_integer_constant("ERROR",   2, 0);
+    add_integer_constant("FATAL",   3, 0);
+
+    /* typedef function(SeverityLevel, string, string:void) ReportCB */
+    type_stack_mark();
+    push_type(T_VOID);	/* Return type */
+    push_type(T_VOID);	/* Many type */
+    push_type(T_MANY);
+    push_type(PIKE_T_STRING);
+    push_type(PIKE_T_FUNCTION);
+    push_type(PIKE_T_STRING);
+    push_type(PIKE_T_FUNCTION);
+    push_int_type(0, 3);
+    push_type_name(type_name);
+    push_type(PIKE_T_FUNCTION);
+    type_value.type = PIKE_T_TYPE;
+    type_value.subtype = 0;
+    type_value.u.type = pop_unfinished_type();
+    simple_add_constant("ReportCB", &type_value, 0);
+    free_svalue(&type_value);
+
+    free_string(type_name);
+  }
+
+  INIT
+
+  {
+    struct pike_string *scan_string;
+    MAKE_CONSTANT_SHARED_STRING(scan_string, "scan");
+
+    scan_fun_num =
+      really_low_find_shared_string_identifier(scan_string,
+					       basic_tokenizer_program,
+					       SEE_STATIC|SEE_PRIVATE);
+    free_string(scan_string);
+  }
+
+#if 0
+  init_tokenizer_yyparse();
+#endif /* 0 */
+
+  parsetree_module_init();
+}
+
+void pike_module_exit(void) 
+{
+  parsetree_module_exit();
+
+  EXIT
+}

@@ -1,0 +1,28 @@
+# $Id: Makefile.in,v 1.1 2002/10/17 10:43:18 grubba Exp $
+@make_variables@
+VPATH=@srcdir@:@srcdir@/../..:../..
+OBJS=Tokenizer.o ParseTree.o misc.o
+MODULE_LDFLAGS=@LDFLAGS@ @LIBS@
+CONFIG_HEADERS=@CONFIG_HEADERS@
+
+YACC=@YACC@
+YFLAGS=-d -v
+
+@dynamic_module_makefile@
+
+.SUFFIXES: .c .yacc
+
+# UnixWare make needs help to find the source file...
+Tokenizer.o: $(SRCDIR)/Tokenizer.c $(SRCDIR)/tokenizer.h
+
+$(SRCDIR)/Pike.c: Pike.yacc
+	( cd "$(SRCDIR)" && \
+	  $(YACC) $(YFLAGS) Pike.yacc && \
+	  mv y.tab.c Pike.c )
+
+$(SRCDIR)/MetaProg.c: MetaProg.yacc
+	( cd "$(SRCDIR)" && \
+	  $(YACC) $(YFLAGS) MetaProg.yacc && \
+	  mv y.tab.c MetaProg.c )
+
+@dependencies@
