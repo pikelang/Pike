@@ -1,3 +1,8 @@
+Thu Jan 23 20:12:35 1997  Henrik Grubbström  <grubba@infovav.se>
+
+	* modules/files/efuns.c (f_get_dir): Added more variants of
+	readdir_r.
+
 Tue Jan 21 21:19:46 1997  Fredrik Hubinette  <hubbe@cytocin.hubbe.net>
 
 	* las.c: improved typechecking for indexing objects
