@@ -1,7 +1,7 @@
 /*
    Compatibility code for 7.2-
 
-   $Id: client.pike,v 1.1 2002/07/12 13:35:56 hop Exp $
+   $Id: client.pike,v 1.2 2002/12/04 15:13:47 marcus Exp $
 
  */
 
@@ -25,26 +25,26 @@ object|int search (string|void filter, int|void attrsonly,
 int modify (string dn, mapping(string:array(mixed)) attropval) {
 
   ::modify(dn, attropval);
-  return ::last_rv->error_number();
+  return ldap_errno;
 }
 
 int delete (string dn) {
 
   ::delete(dn);
-  return ::last_rv->error_number();
+  return ldap_errno;
 }
 
 int compare (string dn, array(string) aval) {
 
   ::compare(dn, aval);
-  return ::last_rv->error_number();
+  return ldap_errno;
 }
 
 
 int add (string dn, mapping(string:array(string)) attrs) {
 
   ::add(dn, attrs);
-  return ::last_rv->error_number();
+  return ldap_errno;
 }
 
 
@@ -52,5 +52,5 @@ int modifydn (string dn, string newrdn, int deleteoldrdn,
               string|void newsuperior) {
 
   ::modifydn(dn, newrdn, deleteoldrdn, newsuperior);
-  return ::last_rv->error_number();
+  return ldap_errno;
 }
