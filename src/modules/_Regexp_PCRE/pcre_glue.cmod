@@ -2,12 +2,12 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: pcre_glue.cmod,v 1.12 2003/10/08 08:19:16 grubba Exp $
+|| $Id: pcre_glue.cmod,v 1.13 2003/10/08 08:22:07 grubba Exp $
 || (original author: mirar)
 */
 
 #include "global.h"
-RCSID("$Id: pcre_glue.cmod,v 1.12 2003/10/08 08:19:16 grubba Exp $");
+RCSID("$Id: pcre_glue.cmod,v 1.13 2003/10/08 08:22:07 grubba Exp $");
 #include "pcre_machine.h"
 
 #include "pike_macros.h"
@@ -175,6 +175,7 @@ PIKECLASS _pcre
 	 void *firsttable,*nametable;
 	 int namecount,nameentrysize,options;
 	 size_t size,studysize;
+	 struct svalue *save_sp;
 
 	 if (!THIS->re)
 	    Pike_error("need to initialize before info() is called\n");
@@ -210,19 +211,30 @@ PIKECLASS _pcre
 	     pcre_fullinfo(THIS->re,THIS->extra,
 			   PCRE_INFO_STUDYSIZE,&studysize))
 	    Pike_error("pcre_fullinfo gave errors (unexpected)\n");
+
+	 pop_n_elems(args);
+	 save_sp = Pike_sp;
 	  
 	 push_text("backrefmax");   	push_int(backrefmax);
 	 push_text("capturecount"); 	push_int(capturecount);
+#ifdef PCRE_INFO_FIRSTBYTE
 	 push_text("firstbyte"); 	push_int(firstbyte);
+#endif /* PCRE_INFO_FIRSTBYTE */
 	 push_text("firsttable"); 	push_int(0); /* FIXME: table */
 	 push_text("lastliteral"); 	push_int(lastliteral);
+#ifdef PCRE_INFO_NAMECOUNT
 	 push_text("namecount"); 	push_int(namecount);
+#endif /* PCRE_INFO_NAMECOUNT */
+#ifdef PCRE_INFO_NAMEENTRYSIZE
 	 push_text("nameentrysize"); 	push_int(nameentrysize);
+#endif /* PCRE_INFO_NAMEENTRYSIZE */
+#ifdef PCRE_INFO_NAMETABLE
 	 push_text("nametable"); 	push_int(0); /* FIXME: table */
+#endif /* PCRE_INFO_NAMETABLE */
 	 push_text("options"); 	push_int(options);
 	 push_text("size"); 		push_int(size);
 	 push_text("studysize"); 	push_int(studysize);
-	 f_aggregate_mapping(22);
+	 f_aggregate_mapping(Pike_sp - save_sp);
       }
 
 #endif /* HAVE_PCRE_FULLINFO */
