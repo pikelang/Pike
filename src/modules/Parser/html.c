@@ -167,6 +167,9 @@ struct subparse_save
 /*       disabled by FLAG_LAZY_ENTITY_END */
 #define FLAG_NESTLING_ENTITY_END	0x00000800
 
+/* flag: reparse plain strings used as tag/container/entity callbacks */
+#define FLAG_REPARSE_STRINGS		0x00001000
+
 struct parser_html_storage
 {
 /*--- current state -----------------------------------------------*/
@@ -776,7 +779,10 @@ static void html__set_entity_callback(INT32 args)
 **!	depending on what realm the function is called by.
 **!
 **!	<p><li><b>a string</b>. This tag/container/entity is then replaced
-**!	by the string.
+**!	by the string. The string is normally not reparsed, i.e. it's
+**!	equivalent to writing a function that returns the string in an
+**!	array (but a lot faster). If <ref>reparse_strings</ref> is
+**!	set the string will be reparsed, though.
 **!
 **!	<p><li><b>an array</b>. The first element is a function as above.
 **!	It will receive the rest of the array as extra arguments. If
@@ -2410,11 +2416,15 @@ static newstate entity_callback(struct parser_html_storage *this,
    switch (v->type)
    {
       case T_STRING:
-	 push_svalue(v);
-	 put_out_feed(this,sp-1,0);
-	 pop_stack();
 	 skip_feed_range(st,cutstart,ccutstart,cutend,ccutend);
-	 return STATE_DONE;
+	 if (this->flags & FLAG_REPARSE_STRINGS) {
+	   add_local_feed (this, v->u.string);
+	   return STATE_REREAD;
+	 }
+	 else {
+	   put_out_feed(this,v,0);
+	   return STATE_DONE;
+	 }
       case T_FUNCTION:
       case T_OBJECT:
 	 push_svalue(v);
@@ -2477,11 +2487,15 @@ static newstate tag_callback(struct parser_html_storage *this,
    switch (v->type)
    {
       case T_STRING:
-	 push_svalue(v);
-	 put_out_feed(this,sp-1,0);
-	 pop_stack();
 	 skip_feed_range(st,cutstart,ccutstart,cutend,ccutend);
-	 return STATE_DONE;
+	 if (this->flags & FLAG_REPARSE_STRINGS) {
+	   add_local_feed (this, v->u.string);
+	   return STATE_REREAD;
+	 }
+	 else {
+	   put_out_feed(this,v,0);
+	   return STATE_DONE;
+	 }
       case T_FUNCTION:
       case T_OBJECT:
 	 push_svalue(v);
@@ -2548,11 +2562,15 @@ static newstate container_callback(struct parser_html_storage *this,
    switch (v->type)
    {
       case T_STRING:
-	 push_svalue(v);
-	 put_out_feed(this,sp-1,0);
-	 pop_stack();
 	 skip_feed_range(st,cutstart,ccutstart,cutend,ccutend);
-	 return STATE_DONE; /* done */
+	 if (this->flags & FLAG_REPARSE_STRINGS) {
+	   add_local_feed (this, v->u.string);
+	   return STATE_REREAD;
+	 }
+	 else {
+	   put_out_feed(this,v,0);
+	   return STATE_DONE;
+	 }
       case T_FUNCTION:
       case T_OBJECT:
 	 push_svalue(v);
@@ -2620,11 +2638,15 @@ static newstate quote_tag_callback(struct parser_html_storage *this,
    switch (v->type)
    {
       case T_STRING:
-	 push_svalue(v);
-	 put_out_feed(this,sp-1,0);
-	 pop_stack();
 	 skip_feed_range(st,cutstart,ccutstart,cutend,ccutend);
-	 return STATE_DONE; /* done */
+	 if (this->flags & FLAG_REPARSE_STRINGS) {
+	   add_local_feed (this, v->u.string);
+	   return STATE_REREAD;
+	 }
+	 else {
+	   put_out_feed(this,v,0);
+	   return STATE_DONE;
+	 }
       case T_FUNCTION:
       case T_OBJECT:
 	 push_svalue(v);
@@ -4787,24 +4809,21 @@ static void html_splice_arg (INT32 args)
 
 /*
 **! method int case_insensitive_tag(void|int value)
+**! method int ignore_tags(void|int value)
+**! method int ignore_unknown(void|int value)
 **! method int lazy_argument_end(void|int value)
 **! method int lazy_entity_end(void|int value)
 **! method int match_tag(void|int value)
-**! method int mixed_mode(void|int value)
-**! method int ignore_unknown(void|int value)
-**! method int xml_tag_syntax(void|int value)
-**! method int ws_before_tag_name(void|int value)
 **! method int max_parse_depth(void|int value)
+**! method int mixed_mode(void|int value)
+**! method int reparse_strings(void|int value)
+**! method int ws_before_tag_name(void|int value)
+**! method int xml_tag_syntax(void|int value)
 **!	Functions to query or set flags. These set the associated flag
 **!	to the value if any is given and returns the old value.
 **!
 **!	<p>The flags are:
 **!	<ul>
-**!
-**!	<p><li><b>ignore_tags</b>: Do not look for tags at all.
-**!	Normally tags are matched even when there's no callbacks for
-**!	them at all. When this is set, the tag delimiters '&lt;' and
-**!	'&gt;' will be treated as any normal character.
 **!
 **!	<p><li><b>case_insensitive_tag</b>: All tags and containers
 **!	are matched case insensitively, and argument names are
@@ -4812,6 +4831,15 @@ static void html_splice_arg (INT32 args)
 **!	<ref>add_quote_tag</ref>() are not affected, though. Switching
 **!	to case insensitive mode and back won't preserve the case of
 **!	registered tags and containers.
+**!
+**!	<p><li><b>ignore_tags</b>: Do not look for tags at all.
+**!	Normally tags are matched even when there's no callbacks for
+**!	them at all. When this is set, the tag delimiters '&lt;' and
+**!	'&gt;' will be treated as any normal character.
+**!
+**!	<p><li><b>ignore_unknown</b>: Treat unknown tags and entities
+**!	as text data, continuing parsing for tags and entities inside
+**!	them.
 **!
 **!	<p><li><b>lazy_argument_end</b>: A '&gt;' in a tag argument
 **!	closes both the argument and the tag, even if the argument is
@@ -4827,12 +4855,21 @@ static void html_splice_arg (INT32 args)
 **!	enders will be balanced when parsing tags. This is the
 **!	default.
 **!
+**!	<p><li><b>max_stack_depth</b>: Maximum recursion depth during
+**!	parsing. Recursion occurs when a tag/container/entity/quote
+**!	tag callback function returns a string to be reparsed. The
+**!	default value is 10.
+**!
 **!	<p><li><b>mixed_mode</b>: Allow callbacks to return arbitrary
 **!	data in the arrays, which will be concatenated in the output.
 **!
-**!	<p><li><b>ignore_unknown</b>: Treat unknown tags and entities
-**!	as text data, continuing parsing for tags and entities inside
-**!	them.
+**!	<p><li><b>reparse_strings</b>: When a plain string is used as
+**!	a tag/container/entity/quote tag callback, it's not reparsed
+**!	if this flag is unset. Setting it causes all such strings to
+**!	be reparsed.
+**!
+**!	<p><li><b>ws_before_tag_name</b>: Allow whitespace between the
+**!	tag start character and the tag name.
 **!
 **!	<p><li><b>xml_tag_syntax</b>: Whether or not to use XML syntax
 **!	to tell empty tags and container tags apart:<br>
@@ -4856,13 +4893,6 @@ static void html_splice_arg (INT32 args)
 **!	content when there's none to be parsed. If only a
 **!	non-container callback exists, it will be called (without the
 **!	content argument) for both kinds of tags.
-**!
-**!	<p><li><b>ws_before_tag_name</b>: Allow whitespace between the
-**!	tag start character and the tag name.
-**!
-**!	<p><li><b>max_stack_depth</b>: Maximum recursion depth during parsing.
-**!	Recursion occurs when a tag/container/entity callback function returns
-**!	a string to be reparsed.  The default value is 10.
 **!
 **!     </ul>
 **!
@@ -4982,6 +5012,18 @@ static void html_mixed_mode(INT32 args)
    if (args) {
      if (sp[-args].u.integer) THIS->flags |= FLAG_MIXED_MODE;
      else THIS->flags &= ~FLAG_MIXED_MODE;
+   }
+   pop_n_elems(args);
+   push_int(o);
+}
+
+static void html_reparse_strings(INT32 args)
+{
+   int o=!!(THIS->flags & FLAG_REPARSE_STRINGS);
+   check_all_args("reparse_strings",args,BIT_VOID|BIT_INT,0);
+   if (args) {
+     if (sp[-args].u.integer) THIS->flags |= FLAG_REPARSE_STRINGS;
+     else THIS->flags &= ~FLAG_REPARSE_STRINGS;
    }
    pop_n_elems(args);
    push_int(o);
@@ -5206,6 +5248,8 @@ void init_parser_html(void)
    ADD_FUNCTION("match_tag",html_match_tag,
 		tFunc(tOr(tVoid,tInt),tInt),0);
    ADD_FUNCTION("mixed_mode",html_mixed_mode,
+		tFunc(tOr(tVoid,tInt),tInt),0);
+   ADD_FUNCTION("reparse_strings",html_reparse_strings,
 		tFunc(tOr(tVoid,tInt),tInt),0);
    ADD_FUNCTION("ignore_unknown",html_ignore_unknown,
 		tFunc(tOr(tVoid,tInt),tInt),0);
