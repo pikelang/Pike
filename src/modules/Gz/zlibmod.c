@@ -4,7 +4,7 @@
 ||| See the files COPYING and DISCLAIMER for more information.
 \*/
 #include "global.h"
-RCSID("$Id: zlibmod.c,v 1.23 1999/02/10 21:47:46 hubbe Exp $");
+RCSID("$Id: zlibmod.c,v 1.24 1999/06/08 12:35:45 mirar Exp $");
 
 #include "zlib_machine.h"
 
@@ -94,43 +94,32 @@ static int do_deflate(dynamic_buffer *buf,
 		      struct zipper *this,
 		      int flush)
 {
-  int fail=0;
+   int ret=0;
 
-  THREADS_ALLOW();
-  mt_lock(& this->lock);
-  THREADS_DISALLOW();
-  if(!this->gz.state)
-  {
-    fail=Z_STREAM_ERROR;
-  }else{
-    do
-    {
-      char *loc;
-      int ret;
-      loc=low_make_buf_space(BUF,buf);
-      this->gz.next_out=(Bytef *)loc;
-      this->gz.avail_out=BUF;
-      while (1) {
-        THREADS_ALLOW();
-        ret=deflate(& this->gz, flush);
-        THREADS_DISALLOW();
-	if ((ret != Z_BUF_ERROR) || (this->gz.avail_out > MAX_BUF)) {
-	  break;
-	}
-	low_make_buf_space(BUF, buf);
-	this->gz.avail_out += BUF;
-      } 
-      low_make_buf_space(-this->gz.avail_out,buf);
-      if(ret != Z_OK)
+   THREADS_ALLOW();
+   mt_lock(& this->lock);
+   THREADS_DISALLOW();
+   if(!this->gz.state)
+      ret=Z_STREAM_ERROR;
+   else
+      do
       {
-	fail=ret;
-	break;
-      }
-    } while(!this->gz.avail_out || flush==Z_FINISH || this->gz.avail_in);
-  }
+	 this->gz.next_out=low_make_buf_space(
+	    /* recommended by the zlib people */
+	    (this->gz.avail_out =
+	     this->gz.avail_in+this->gz.avail_in/1000+42),
+	    buf);
 
-  mt_unlock(& this->lock);
-  return fail;
+	 THREADS_ALLOW();
+	 ret=deflate(& this->gz, flush);
+	 THREADS_DISALLOW();
+
+	 /* we don't care about Z_BUF_ERROR here; it won't happen. */
+      }
+      while (ret==Z_OK && flush==Z_FINISH);
+
+   mt_unlock(& this->lock);
+   return ret;
 }
 
 static void gz_deflate(INT32 args)
