@@ -1,5 +1,5 @@
 /*
- * $Id: gc.h,v 1.33 2000/04/18 11:45:58 mast Exp $
+ * $Id: gc.h,v 1.34 2000/04/19 13:57:35 mast Exp $
  */
 #ifndef GC_H
 #define GC_H
@@ -7,6 +7,7 @@
 #include "global.h"
 #include "callback.h"
 #include "queue.h"
+#include "threads.h"
 
 extern struct pike_queue gc_mark_queue;
 extern INT32 num_objects;
@@ -25,15 +26,17 @@ extern void *gc_svalue_location;
 #ifdef ALWAYS_GC
 #define GC_ALLOC() do{ num_objects++; num_allocs++;  if(!gc_evaluator_callback) ADD_GC_CALLBACK(); } while(0)
 #else
-#define GC_ALLOC()  do{						\
- num_objects++;							\
- num_allocs++;							\
- DO_IF_DEBUG(							\
-   if(Pike_in_gc >0 && Pike_in_gc<4)				\
-   fatal("Allocating new objects within gc is not allowed!\n");	\
- )                                                              \
- if(num_allocs == alloc_threshold && !gc_evaluator_callback)	\
-   ADD_GC_CALLBACK();						\
+#define GC_ALLOC()  do{							\
+ extern int d_flag;							\
+ num_objects++;								\
+ num_allocs++;								\
+ DO_IF_DEBUG(								\
+   if(d_flag) CHECK_INTERPRETER_LOCK();					\
+   if(Pike_in_gc >0 && Pike_in_gc<4)					\
+     fatal("Allocating new objects within gc is not allowed!\n");	\
+ )									\
+ if(num_allocs == alloc_threshold && !gc_evaluator_callback)		\
+   ADD_GC_CALLBACK();							\
  } while(0)
 #endif
 
@@ -83,24 +86,22 @@ void f__gc_status(INT32 args);
 
 #ifdef PIKE_DEBUG
 #define LOW_GC_FREE() do {						\
-  num_objects-- ; 							\
+  extern int d_flag;							\
+  if(d_flag) CHECK_INTERPRETER_LOCK();					\
+  num_objects-- ;							\
   if(num_objects < 0)							\
     fatal("Panic!! less than zero objects!\n");				\
 }while(0)
 
 #define GC_FREE() do {							\
-  DO_IF_DEBUG(								\
   if(Pike_in_gc >0 && Pike_in_gc<3)					\
     fatal("Freeing objects within gc is not allowed!\n");		\
-  )									\
   LOW_GC_FREE();							\
 }while(0)
 
 #define GC_FREE_OBJ() do {						\
-  DO_IF_DEBUG(								\
   if(Pike_in_gc >1 && Pike_in_gc<4)					\
     fatal("Freeing objects within gc is not allowed!\n");		\
-  )									\
   LOW_GC_FREE();							\
 }while(0)
 

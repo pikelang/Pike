@@ -1,5 +1,5 @@
 #include "global.h"
-RCSID("$Id: threads.c,v 1.120 2000/04/18 06:53:48 jonasw Exp $");
+RCSID("$Id: threads.c,v 1.121 2000/04/19 13:57:36 mast Exp $");
 
 int num_threads = 1;
 int threads_disabled = 0;
@@ -200,6 +200,7 @@ struct object *thread_id = NULL;
 static struct callback *threads_evaluator_callback=0;
 int thread_id_result_variable;
 
+int th_running = 0;
 MUTEX_T interpreter_lock, thread_table_lock, interleave_lock;
 struct program *mutex_key = 0;
 struct program *thread_id_prog = 0;
@@ -1184,6 +1185,7 @@ void low_th_init(void)
 #endif
   pthread_attr_setdetachstate(&small_pattr, PTHREAD_CREATE_DETACHED);
 
+  th_running = 1;
 #endif
 }
 
@@ -1321,6 +1323,8 @@ void th_init(void)
 
 void th_cleanup(void)
 {
+  th_running = 0;
+
   if(thread_id)
   {
     thread_table_delete(thread_id);

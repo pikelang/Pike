@@ -1,5 +1,5 @@
 /*
- * $Id: threads.h,v 1.84 2000/04/18 06:53:48 jonasw Exp $
+ * $Id: threads.h,v 1.85 2000/04/19 13:57:35 mast Exp $
  */
 #ifndef THREADS_H
 #define THREADS_H
@@ -256,6 +256,7 @@ int co_destroy(COND_T *c);
 
 #endif
 
+extern int th_running;
 
 extern PIKE_MUTEX_T interpreter_lock;
 
@@ -541,13 +542,36 @@ struct thread_state {
   THREADS_DISALLOW()
 
 #ifdef PIKE_DEBUG
-#define ASSERT_THREAD_SWAPPED_IN() do { 			\
-  struct thread_state *_tmp=thread_state_for_id(th_self());	\
-  if(_tmp->swapped) fatal("Thread is not swapped in!\n"); \
+
+#define ASSERT_THREAD_SWAPPED_IN() do {				\
+    struct thread_state *_tmp=thread_state_for_id(th_self());	\
+    if(_tmp->swapped) fatal("Thread is not swapped in!\n");	\
   }while(0)
 
+#ifdef __NT__
+#define TRYLOCK_INTERPRETER_LOCK() do {} while (0)
 #else
+#define TRYLOCK_INTERPRETER_LOCK() do {					\
+  if (th_running && !mt_trylock(&interpreter_lock))			\
+    fatal("Haven't got interpreter lock.\n");				\
+} while (0)
+#endif
+
+#define CHECK_INTERPRETER_LOCK() do {					\
+  if (th_running) {							\
+    THREAD_T self;							\
+    TRYLOCK_INTERPRETER_LOCK();						\
+    self = th_self();							\
+    if( thread_id && !th_equal( OBJ2THREAD(thread_id)->id, self) )	\
+      fatal("Current thread is wrong.\n");				\
+  }									\
+} while (0)
+
+#else
+
 #define ASSERT_THREAD_SWAPPED_IN()
+#define CHECK_INTERPRETER_LOCK() do {} while (0)
+
 #endif
 
 /* Prototypes begin here */
@@ -638,6 +662,9 @@ void th_farm(void (*fun)(void *), void *here);
 #define low_init_threads_disable()
 #define init_threads_disable(X)
 #define exit_threads_disable(X)
+
+#define TRYLOCK_INTERPRETER_LOCK() do {} while (0)
+#define CHECK_INTERPRETER_LOCK() do {} while (0)
 
 #endif /* PIKE_THREADS */
 
