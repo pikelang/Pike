@@ -1,9 +1,9 @@
-/* $Id: ilbm.c,v 1.5 1999/04/07 17:47:12 marcus Exp $ */
+/* $Id: ilbm.c,v 1.6 1999/04/09 17:09:34 marcus Exp $ */
 
 /*
 **! module Image
 **! note
-**!	$Id: ilbm.c,v 1.5 1999/04/07 17:47:12 marcus Exp $
+**!	$Id: ilbm.c,v 1.6 1999/04/09 17:09:34 marcus Exp $
 **! submodule ILBM
 **!
 **!	This submodule keep the ILBM encode/decode capabilities
@@ -14,7 +14,7 @@
 #include "global.h"
 
 #include "stralloc.h"
-RCSID("$Id: ilbm.c,v 1.5 1999/04/07 17:47:12 marcus Exp $");
+RCSID("$Id: ilbm.c,v 1.6 1999/04/09 17:09:34 marcus Exp $");
 #include "pike_macros.h"
 #include "object.h"
 #include "constants.h"
@@ -516,6 +516,197 @@ void img_ilbm_decode(INT32 args)
    pop_stack();
 }
 
+
+
+/** encoding *****************************************/
+
+/*
+**! method string encode(object image)
+**! method string encode(object image, mapping options)
+**! 	Encodes an ILBM image. 
+**!
+**!     The <tt>options</tt> argument may be a mapping
+**!	containing zero or more encoding options:
+**!
+**!	<pre>
+**!	normal options:
+**!	    "alpha":image object
+**!		Use this image as mask
+**!		(Note: ILBM mask is boolean.
+**!		 The values are calculated by (r+2g+b)/4>=128.)
+**!
+**!	    "palette":colortable object
+**!		Use this as palette for pseudocolor encoding
+**!
+**!	</pre>
+*/
+
+static struct pike_string *make_bmhd(struct BMHD *bmhd)
+{
+  unsigned char bdat[20];
+
+  bdat[0] = (bmhd->w>>8); bdat[1] = bmhd->w&0xff;
+  bdat[2] = (bmhd->h>>8); bdat[3] = bmhd->h&0xff;
+  bdat[4] = (bmhd->x>>8); bdat[5] = bmhd->x&0xff;
+  bdat[6] = (bmhd->y>>8); bdat[7] = bmhd->y&0xff;
+  bdat[8] = bmhd->nPlanes;
+  bdat[9] = bmhd->masking;
+  bdat[10] = bmhd->compression;
+  bdat[11] = bmhd->pad1;
+  bdat[12] = (bmhd->transparentColor>>8); bdat[13]=bmhd->transparentColor&0xff;
+  bdat[14] = bmhd->xAspect;
+  bdat[15] = bmhd->yAspect;
+  bdat[16] = (bmhd->pageWidth>>8); bdat[17] = bmhd->pageWidth&0xff;
+  bdat[18] = (bmhd->pageHeight>>8); bdat[19] = bmhd->pageHeight&0xff;
+
+  return make_shared_binary_string(bdat, 20);
+}
+
+static void chunky2planar(INT32 *src, int w,
+			  unsigned char *dest, int destmod, int depth)
+{
+  int x, p, bit=0x80;
+  for(x=0; x<w; x+=8) {
+    INT32 p0, p1, p2, p3, p4, p5, p6, p7;
+    switch(w-x) {
+    default:
+      p0 = *src++; p1 = *src++; p2 = *src++; p3 = *src++;
+      p4 = *src++; p5 = *src++; p6 = *src++; p7 = *src++; break;
+    case 7:
+      p0 = *src++; p1 = *src++; p2 = *src++; p3 = *src++;
+      p4 = *src++; p5 = *src++; p6 = *src++; p7 = 0; break;
+    case 6:
+      p0 = *src++; p1 = *src++; p2 = *src++; p3 = *src++;
+      p4 = *src++; p5 = *src++; p6 = p7 = 0; break;
+    case 5:
+      p0 = *src++; p1 = *src++; p2 = *src++; p3 = *src++;
+      p4 = *src++; p5 = p6 = p7 = 0; break;
+    case 4:
+      p0 = *src++; p1 = *src++; p2 = *src++; p3 = *src++;
+      p4 = p5 = p6 = p7 = 0; break;
+    case 3:
+      p0 = *src++; p1 = *src++; p2 = *src++;
+      p3 = p4 = p5 = p6 = p7 = 0; break;
+    case 2:
+      p0 = *src++; p1 = *src++; p2 = p3 = p4 = p5 = p6 = p7 = 0; break;
+    case 1:
+      p0 = *src; p1 = p2 = p3 = p4 = p5 = p6 = p7 = 0; break;
+    }
+    for(p=0; p<depth; p++) {
+      dest[p*destmod] =
+	((p0&1)<<7)|((p1&1)<<6)|((p2&1)<<5)|((p3&1)<<4)|
+	((p4&1)<<3)|((p5&1)<<2)|((p6&1)<<1)|(p7&1);
+      p0>>=1; p1>>=1; p2>>=1; p3>>=1;
+      p4>>=1; p5>>=1; p6>>=1; p7>>=1;
+    }
+    dest++;
+  }
+}
+
+static struct pike_string *make_body(struct BMHD *bmhd,
+				     struct image *img, struct image *alpha,
+				     struct neo_colortable *ctable)
+{
+  unsigned int x, y;
+  int rbyt = ((bmhd->w+15)&~15)>>3;
+  int eplanes = (bmhd->masking == mskHasMask? bmhd->nPlanes+1:bmhd->nPlanes);
+  unsigned char *line = alloca(rbyt*eplanes);
+  INT32 *cptr, *cline = alloca((rbyt<<3)*sizeof(INT32));
+  rgb_group *src = img->img;
+  struct string_builder bldr;
+
+  memset(line, 0, rbyt*eplanes);
+  init_string_builder(&bldr, 0);
+  for(y=0; y<bmhd->h; y++) {
+    cptr = cline;
+    if(ctable != NULL)
+    {
+      
+    } else {
+      for(x=0; x<bmhd->w; x++) {
+	/* ILBM-24 */
+	*cptr++ = (src->b<<16)|(src->g<<8)|src->r;
+	src++;
+      }
+    }
+    chunky2planar(cline, bmhd->w, line, rbyt, bmhd->nPlanes);
+    /* compress */
+    string_builder_binary_strcat(&bldr, line, rbyt*eplanes);
+  }
+  return finish_string_builder(&bldr);
+}
+
+static void image_ilbm_encode(INT32 args)
+{
+  struct object *imgo;
+  struct mapping *optm = NULL;
+  struct image *alpha = NULL, *img;
+  struct neo_colortable *ct = NULL;
+  struct pike_string *res;
+  struct BMHD bmhd;
+  int bpp, n = 0;
+
+  extern struct pike_string *make_iff(char *id, struct array *chunks);
+
+  get_all_args("encode", args, (args>1 && !IS_ZERO(&sp[1-args])? "%o%m":"%o"),
+	       &imgo, &optm);
+
+  if((img=(struct image*)get_storage(imgo, image_program))==NULL)
+     error("Image.ILBM.encode: illegal argument 1\n");
+
+  if(optm != NULL) {
+    struct svalue *s;
+    if((s = simple_mapping_string_lookup(optm, "alpha"))!=NULL && !IS_ZERO(s))
+      if(s->type != T_OBJECT ||
+	 (alpha=(struct image*)get_storage(s->u.object, image_program))==NULL)
+	error("Image.ILBM.encode: option (arg 2) \"alpha\" has illegal type\n");
+    if((s=simple_mapping_string_lookup(optm, "palette"))!=NULL && !IS_ZERO(s))
+      if(s->type != T_OBJECT ||
+	 (ct=(struct neo_colortable*)
+	  get_storage(s->u.object, image_colortable_program))==NULL)
+	error("Image.ILBM.encode: option (arg 2) \"palette\" has illegal type\n");
+  }
+
+  if (!img->img)
+    error("Image.ILBM.encode: no image\n");
+  if (alpha && !alpha->img)
+    error("Image.ILBM.encode: no alpha image\n");
+
+  if(ct) {
+    int sz = image_colortable_size(ct);
+    for(bpp=1; (1<<bpp)<sz; bpp++);
+  } else
+    bpp = 24;
+
+  bmhd.w = img->xsize;
+  bmhd.h = img->ysize;
+  bmhd.x = bmhd.y = 0;
+  bmhd.nPlanes = bpp;
+  bmhd.masking = mskNone;
+  bmhd.compression = cmpNone;
+  bmhd.pad1 = 0;
+  bmhd.transparentColor = 0;
+  bmhd.xAspect = bmhd.yAspect = 1;
+  bmhd.pageWidth = img->xsize;
+  bmhd.pageHeight = img->ysize;
+
+  push_svalue(&string_[string_BMHD]);
+  push_string(make_bmhd(&bmhd));
+  f_aggregate(2);
+  n++;
+
+  push_svalue(&string_[string_BODY]);
+  push_string(make_body(&bmhd, img, alpha, ct));
+  f_aggregate(2);
+  n++;
+
+  f_aggregate(n);
+  res = make_iff("ILBM", sp[-1].u.array);
+  pop_n_elems(args+1);
+  push_string(res);
+}
+
+
 /** module *******************************************/
 
 struct program *image_encoding_ilbm_program=NULL;
@@ -539,6 +730,8 @@ void init_image_ilbm(void)
 		"function(string|array:mapping)",0);
    add_function("decode",img_ilbm_decode,
 		"function(string|array:object)",0);
+   add_function("encode",image_ilbm_encode,
+		"function(object,void|mapping(string:mixed):string)",0);
 
    image_encoding_ilbm_program=end_program();
    push_object(clone_object(image_encoding_ilbm_program,0));
