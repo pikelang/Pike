@@ -1,5 +1,5 @@
 #include "global.h"
-RCSID("$Id: threads.c,v 1.169 2001/10/05 01:30:14 hubbe Exp $");
+RCSID("$Id: threads.c,v 1.170 2001/10/28 18:02:49 nilsson Exp $");
 
 PMOD_EXPORT int num_threads = 1;
 PMOD_EXPORT int threads_disabled = 0;
@@ -530,7 +530,7 @@ PMOD_EXPORT struct object *thread_for_id(THREAD_T tid)
  *! This function returns an array with the thread ids of all threads.
  *!
  *! @seealso
- *!   @[Thread.Thread()]
+ *!   @[Thread()]
  */
 PMOD_EXPORT void f_all_threads(INT32 args)
 {
@@ -730,7 +730,7 @@ int num_lwps = 1;
  *!
  *! @returns
  *!   The returned value will be the same as the return value of
- *!   @[Thread.this_thread()] for the new thread.
+ *!   @[this_thread()] for the new thread.
  *!
  *! @note
  *!   This function is only available on systems with POSIX or UNIX or WIN32
@@ -786,6 +786,9 @@ void f_thread_create(INT32 args)
 
 #ifdef UNIX_THREADS
 /*! @decl void thread_set_concurrency(int concurrency)
+ *!
+ *! @fixme
+ *!   Document this function
  */
 void f_thread_set_concurrency(INT32 args)
 {
@@ -803,7 +806,7 @@ void f_thread_set_concurrency(INT32 args)
  *! This function returns the object that identifies this thread.
  *!
  *! @seealso
- *! @[Thread.Thread()]
+ *! @[Thread()]
  */
 PMOD_EXPORT void f_this_thread(INT32 args)
 {
@@ -837,7 +840,7 @@ struct key_storage
 
 /*! @class Mutex
  *!
- *! @[Thread.Mutex] is a class that implements mutual exclusion locks.
+ *! @[Mutex] is a class that implements mutual exclusion locks.
  *! Mutex locks are used to prevent multiple threads from simultaneously
  *! execute sections of code which access or change shared data. The basic
  *! operations for a mutex is locking and unlocking. If a thread attempts
@@ -1028,7 +1031,7 @@ void f_mutex_trylock(INT32 args)
  *! has locked the mutex. 0 is returned if the mutex isn't locked.
  *!
  *! @seealso
- *! @[Thread.Thread()]
+ *! @[Thread()]
  */
 PMOD_EXPORT void f_mutex_locking_thread(INT32 args)
 {
@@ -1048,7 +1051,7 @@ PMOD_EXPORT void f_mutex_locking_thread(INT32 args)
  *! the lock on this mutex. 0 is returned if the mutex isn't locked.
  *!
  *! @seealso
- *! @[Thread.Thread()]
+ *! @[Thread()]
  */
 PMOD_EXPORT void f_mutex_locking_key(INT32 args)
 {
@@ -1131,7 +1134,7 @@ void exit_mutex_key_obj(struct object *o)
  *!   can't be done accurately without continuations.
  *!
  *! @seealso
- *!   @[Thread.Mutex]
+ *!   @[Mutex]
  */
 
 /*! @decl void wait()
@@ -1146,7 +1149,7 @@ void exit_mutex_key_obj(struct object *o)
  *! for the condition the mutex referenced by mutex_key will be re-locked.
  *!
  *! @seealso
- *!   @[Thread.Mutex->lock()]
+ *!   @[Mutex->lock()]
  */
 void f_cond_wait(INT32 args)
 {
@@ -1391,7 +1394,7 @@ static void thread_was_checked(struct object *o)
  *!
  *! This class allows you to have variables which are separate for each
  *! thread that uses it. It has two methods: @[get()] and @[set()]. A value
- *! stored in an instance of @[Thread.Local] can only be retrieved by that
+ *! stored in an instance of @[Local] can only be retrieved by that
  *! same thread.
  *!
  *! @note
@@ -1420,7 +1423,7 @@ PMOD_EXPORT void f_thread_local(INT32 args)
  *!
  *! Get the thread local value.
  *!
- *! This returns the value prevoiusly stored in the @[Thread.Local] object by
+ *! This returns the value prevoiusly stored in the @[Local] object by
  *! the @[set()] method by this thread.
  *!
  *! @seealso
