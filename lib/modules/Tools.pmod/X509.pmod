@@ -2,13 +2,13 @@
 //#pragma strict_types
 
 /* 
- * $Id: X509.pmod,v 1.30 2004/02/07 15:53:55 nilsson Exp $
+ * $Id: X509.pmod,v 1.31 2004/02/29 03:00:02 nilsson Exp $
  *
  * Some random functions for creating RFC-2459 style X.509 certificates.
  *
  */
 
-#if constant(Standards.ASN1.Types.Sequence)
+#if constant(Standards.ASN1.Types.Sequence) && constant(Crypto.Hash)
 
 import Standards.ASN1.Types;
 import Standards.PKCS;
