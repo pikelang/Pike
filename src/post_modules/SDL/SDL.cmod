@@ -2,12 +2,12 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: SDL.cmod,v 1.12 2002/11/26 21:29:23 mast Exp $
+|| $Id: SDL.cmod,v 1.13 2003/03/18 03:36:21 nilsson Exp $
 */
 
 #include "global.h"
 #include "stralloc.h"
-RCSID("$Id: SDL.cmod,v 1.12 2002/11/26 21:29:23 mast Exp $");
+RCSID("$Id: SDL.cmod,v 1.13 2003/03/18 03:36:21 nilsson Exp $");
 #include "pike_macros.h"
 #include "interpret.h"
 #include "program.h"
@@ -229,7 +229,6 @@ PIKEFUN int was_init(int flags) {
  *!  @[SDL.init()],  @[SDL.init_sub_system()], @[SDL.quit_sub_system()]
  */ 
 PIKEFUN void quit() {
-printf("SDL Quit\n");
   SDL_Quit();
 }
 
