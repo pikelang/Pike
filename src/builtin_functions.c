@@ -4,7 +4,7 @@
 ||| See the files COPYING and DISCLAIMER for more information.
 \*/
 #include "global.h"
-RCSID("$Id: builtin_functions.c,v 1.78 1998/03/06 16:28:47 grubba Exp $");
+RCSID("$Id: builtin_functions.c,v 1.79 1998/03/09 23:23:53 grubba Exp $");
 #include "interpret.h"
 #include "svalue.h"
 #include "pike_macros.h"
@@ -663,10 +663,9 @@ void f_exit(INT32 args)
 void f_time(INT32 args)
 {
   pop_n_elems(args);
-  if(args)
-    push_int(current_time.tv_sec);
-  else
-    push_int((INT32)TIME(0));
+  if(!args)
+    GETTIMEOFDAY(&current_time);
+  push_int(current_time.tv_sec);
 }
 
 void f_crypt(INT32 args)
