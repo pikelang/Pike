@@ -8,9 +8,9 @@ inherit "module.pmod";
 
 private void parseError(string s, mixed ... args) {
   s = sprintf(s, @args);
-  werror(s);
+  werror(s+"\n");
   s = "Doc markup error: " + s;
-  throw( s );
+  throw(({ s, 0 }));
 }
 
 inherit .PikeObjects;
@@ -128,6 +128,10 @@ private string elemArgHandler(string keyword, string arg) {
   Type t = parser->parseOrType();
   if (!t)
     parseError("expected type, got %O", arg);
+  if (parser->peekToken() == "...") {
+    t = VarargsType(t);
+    parser->eat("...");
+  }
   do {
     string s = parser->parseLiteral() || parser->parseIdents();
     if (!s)
@@ -313,15 +317,24 @@ static private string xmlNode(string s) {  /* now, @xml works like @i & @tt */
       }
       else if (s[i] == '[') {  // @ref shortcut
         int j = ++i;
-        multiset(int) forbidden = (<'@','\n','['>);
-        while (s[j] && s[j] != ']' && !forbidden[s[j]] )
+        multiset(int) forbidden = (<'@','\n'>);
+	int level = 1;
+        while (s[j] && level && !forbidden[s[j]] ) {
+	  if (s[j] == ']') {
+	    level--;
+	  } else if (s[j] == '[') {
+	    level++;
+	  }
           ++j;
-        if (forbidden[s[j]])
-          parseError("forbidden character inside @[...]");
-        if (!s[j])
+	}
+        if (level) {
+	  if (forbidden[s[j]]) {
+	    parseError("forbidden character inside @[...]: %O", s[i-2..j]);
+	  }
           parseError("@[ without matching ]");
-        res += xmltag("ref", xmlquote(s[i .. j - 1]));
-        i = j + 1;
+	}
+        res += xmltag("ref", xmlquote(s[i .. j - 2]));
+        i = j;
       }
       else if (s[i] == '}') {
         if (!sizeof(tagstack)) {

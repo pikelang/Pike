@@ -15,6 +15,7 @@ static string quoteString(string s) {
 static void parseError(string message, mixed ... args) {
   message = sprintf(message, @args);
   werror("parseError! \n");
+  // werror(sprintf("%s\n", describe_backtrace(backtrace())));
   message = "Pike parser error: " + message;
   throw ( ({ message, currentline }) );
 }
@@ -132,7 +133,7 @@ string readToken(int | void with_newlines) {
   }
   if (isDocComment(s))
     ++nReadDocComments;
-  //  werror("    read: %O  %s\n", s, with_newlines ? "(WNL)" : "");
+  // werror("    read: %O  %s\n", s, with_newlines ? "(WNL)" : "");
   return s;
 }
 
@@ -140,10 +141,11 @@ string readToken(int | void with_newlines) {
 string eat(multiset(string) | string token) {
   string s = peekToken();
   if (multisetp(token)) {
-    if (!token[s])
+    if (!token[s]) {
       parseError("expected one of " +
                  Array.map(Array.uniq(indices(token)), quoteString) * ", " +
                  " , got " + quoteString(s));
+    }
   }
   else {
     if (s != token)
