@@ -2,11 +2,11 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: termios.c,v 1.21 2003/10/13 17:42:54 grubba Exp $
+|| $Id: termios.c,v 1.22 2004/01/22 23:14:27 nilsson Exp $
 */
 
 #include "global.h"
-RCSID("$Id: termios.c,v 1.21 2003/10/13 17:42:54 grubba Exp $");
+RCSID("$Id: termios.c,v 1.22 2004/01/22 23:14:27 nilsson Exp $");
 #include "file_machine.h"
 
 #if defined(HAVE_TERMIOS_H)
@@ -264,7 +264,7 @@ void file_tcsetattr(INT32 args)
    if (!IS_UNDEFINED(sp-1)) \
    { \
       if (sp[-1].type!=T_INT)  \
-         Pike_error("illegal argument 1 to tcsetattr: key %s has illegal value",sflag); \
+         Pike_error("illegal argument 1 to tcsetattr: key %s has illegal value\n",sflag); \
       if (sp[-1].u.integer) ti.where|=flag; else ti.where&=~flag; \
    } \
    pop_stack();
@@ -276,7 +276,7 @@ void file_tcsetattr(INT32 args)
    if (!IS_UNDEFINED(sp-1)) \
    { \
       if (sp[-1].type!=T_INT)  \
-         Pike_error("illegal argument 1 to tcsetattr: key %s has illegal value",scc); \
+         Pike_error("illegal argument 1 to tcsetattr: key %s has illegal value\n",scc); \
       ti.c_cc[cc]=(char)sp[-1].u.integer; \
    } \
    pop_stack();
@@ -294,7 +294,7 @@ void file_tcsetattr(INT32 args)
    if (!IS_UNDEFINED(sp-1)) 
    {
       if (sp[-1].type!=T_INT)  
-   	 Pike_error("illegal argument 1 to tcsetattr: key %s has illegal value","csize"); 
+   	 Pike_error("illegal argument 1 to tcsetattr: key %s has illegal value\n","csize");
 
       switch (sp[-1].u.integer)
       {
@@ -311,7 +311,7 @@ void file_tcsetattr(INT32 args)
 	 case 5: ti.c_cflag=(ti.c_cflag&~CSIZE)|CS5; break;
 #endif
 	 default:
-	    Pike_error("illegal argument 1 to tcsetattr: value of key %s is not a valid char size","csize"); 
+	    Pike_error("illegal argument 1 to tcsetattr: value of key %s is not a valid char size\n","csize");
       }
    }
    pop_stack();
@@ -325,7 +325,7 @@ void file_tcsetattr(INT32 args)
    if (!IS_UNDEFINED(sp-1)) 
    {
       if (sp[-1].type!=T_INT)  
-   	 Pike_error("illegal argument 1 to tcsetattr: key %s has illegal value","ospeed"); 
+   	 Pike_error("illegal argument 1 to tcsetattr: key %s has illegal value\n","ospeed");
       switch (sp[-1].u.integer)
       {
 #define TERMIOS_SPEED(B,V) case V: push_int(B); break;

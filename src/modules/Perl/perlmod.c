@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: perlmod.c,v 1.33 2003/09/05 21:38:12 nilsson Exp $
+|| $Id: perlmod.c,v 1.34 2004/01/22 23:14:54 nilsson Exp $
 */
 
 #define NO_PIKE_SHORTHAND
@@ -631,7 +631,7 @@ static void _perlmod_call(INT32 args, int perlflags)
 
   if (Pike_sp[-args].type != PIKE_T_STRING ||
       Pike_sp[-args].u.string->size_shift)
-       Pike_error("bad Perl function name (must be an 8-bit string)");
+       Pike_error("bad Perl function name (must be an 8-bit string)\n");
 
   ENTER;
   SAVETMPS;
@@ -652,7 +652,7 @@ static void _perlmod_call(INT32 args, int perlflags)
       case PIKE_T_STRING:
         if (s->u.string->size_shift)
         { PUTBACK; FREETMPS; LEAVE;
-          Pike_error("widestrings not supported in Pike-to-Perl call interface");
+          Pike_error("widestrings not supported in Pike-to-Perl call interface\n");
           return;
         }
         XPUSHs(sv_2mortal(newSVpv(s->u.string->str, s->u.string->len)));
@@ -1115,7 +1115,7 @@ static void perlmod_array_size_limit(INT32 args)
 
     case 1:
       if (Pike_sp[-args].type != PIKE_T_INT || Pike_sp[-args].u.integer < 1)
-           Pike_error("Argument must be a integer in range 1 to 2147483647.");
+           Pike_error("Argument must be a integer in range 1 to 2147483647.\n");
       _THIS->array_size_limit = Pike_sp[-args].u.integer;
       break;
 

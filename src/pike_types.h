@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: pike_types.h,v 1.92 2003/11/14 11:15:14 mast Exp $
+|| $Id: pike_types.h,v 1.93 2004/01/22 23:17:27 nilsson Exp $
 */
 
 #ifndef PIKE_TYPES_H
@@ -136,7 +136,7 @@ void debug_push_reverse_type(unsigned int type);
 
 #define type_stack_mark() do {				\
   if(Pike_compiler->pike_type_mark_stackp >= pike_type_mark_stack + NELEM(pike_type_mark_stack))	\
-    Pike_fatal("Type mark stack overflow.");		\
+    Pike_fatal("Type mark stack overflow.\n");		\
   else {						\
     *Pike_compiler->pike_type_mark_stackp=Pike_compiler->type_stackp;				\
     Pike_compiler->pike_type_mark_stackp++;					\
@@ -265,8 +265,8 @@ int pike_type_allow_premature_toss(struct pike_type *type);
   unsafe_type_stack_mark();						\
 } while (0)
 #define DTYPE_END(TYPESTR) do {						\
-  if(Pike_compiler->type_stackp >= type_stack + sizeof(type_stack))			\
-    Pike_fatal("Type stack overflow.");					\
+  if(Pike_compiler->type_stackp >= type_stack + sizeof(type_stack))	\
+    Pike_fatal("Type stack overflow.\n");				\
   type_stack_reverse();							\
   (TYPESTR)=pop_unfinished_type();					\
 } while (0)

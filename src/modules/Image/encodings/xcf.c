@@ -2,11 +2,11 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: xcf.c,v 1.46 2003/10/24 23:34:42 nilsson Exp $
+|| $Id: xcf.c,v 1.47 2004/01/22 23:11:34 nilsson Exp $
 */
 
 #include "global.h"
-RCSID("$Id: xcf.c,v 1.46 2003/10/24 23:34:42 nilsson Exp $");
+RCSID("$Id: xcf.c,v 1.47 2004/01/22 23:11:34 nilsson Exp $");
 
 #include "image_machine.h"
 
@@ -136,7 +136,7 @@ static void f_substring_get_int( INT32 args )
   unsigned char *p;
   int x = sp[-1].u.integer;
   if( x > s->len>>2 )
-    Pike_error("Index %d out of range", x );
+    Pike_error("Index %d out of range.\n", x );
 
   p = ((unsigned char *)s->s->str) + s->offset + x*4;
   res = (p[0]<<24) | (p[1]<<16) | (p[2]<<8) | p[3];
@@ -151,7 +151,7 @@ static void f_substring_get_uint( INT32 args )
   unsigned char *p;
   int x = sp[-1].u.integer;
   if( x > s->len>>2 )
-    Pike_error("Index %d out of range", x );
+    Pike_error("Index %d out of range.\n", x );
 
   p = ((unsigned char *)s->s->str) + s->offset + x*4;
   res = (p[0]<<24) | (p[1]<<16) | (p[2]<<8) | p[3];
@@ -165,7 +165,7 @@ static void f_substring_get_ushort( INT32 args )
   unsigned char *p;
   int x = sp[-1].u.integer;
   if( x > s->len>>1 )
-    Pike_error("Index %d out of range", x );
+    Pike_error("Index %d out of range.\n", x );
 
   p = ((unsigned char *)s->s->str) + s->offset + x*2;
   res = (p[2]<<8) | p[3];
@@ -179,7 +179,7 @@ static void f_substring_get_short( INT32 args )
   unsigned char *p;
   int x = sp[-1].u.integer;
   if( x > s->len>>1 )
-    Pike_error("Index %d out of range", x );
+    Pike_error("Index %d out of range.\n", x );
 
   p = ((unsigned char *)s->s->str) + s->offset + x*2;
   res = (p[2]<<8) | p[3];

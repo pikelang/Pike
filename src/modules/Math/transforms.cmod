@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: transforms.cmod,v 1.10 2003/03/04 16:03:57 grubba Exp $
+|| $Id: transforms.cmod,v 1.11 2004/01/22 23:13:08 nilsson Exp $
 */
 
 #include "global.h"
@@ -75,7 +75,7 @@ PIKECLASS FFT
       int i, j;
 
       if (args<1)
-	Pike_error("Too few arguments to rFFT()\n");
+	SIMPLE_TOO_FEW_ARGS_ERROR("rFFT", 1);
 
       if (Pike_sp[-args].type==PIKE_T_ARRAY)
 	{
@@ -258,7 +258,7 @@ PIKECLASS FFT
       case 0:
 	break;
       default:
-	Pike_error("Invalid number of arguments");
+	Pike_error("Invalid number of arguments\n");
       }
 
     THIS->r_rc_plan_size = n;

@@ -2,11 +2,11 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: program.c,v 1.553 2004/01/19 12:28:30 grubba Exp $
+|| $Id: program.c,v 1.554 2004/01/22 23:17:28 nilsson Exp $
 */
 
 #include "global.h"
-RCSID("$Id: program.c,v 1.553 2004/01/19 12:28:30 grubba Exp $");
+RCSID("$Id: program.c,v 1.554 2004/01/22 23:17:28 nilsson Exp $");
 #include "program.h"
 #include "object.h"
 #include "dynamic_buffer.h"
@@ -7409,7 +7409,7 @@ ptrdiff_t low_get_storage(struct program *o, struct program *p)
   hval%=GET_STORAGE_CACHE_SIZE;
 #ifdef PIKE_DEBUG
   if(hval>GET_STORAGE_CACHE_SIZE)
-    Pike_fatal("hval>GET_STORAGE_CACHE_SIZE");
+    Pike_fatal("hval>GET_STORAGE_CACHE_SIZE\n");
 #endif
   if(get_storage_cache[hval].oid == oid &&
      get_storage_cache[hval].pid == pid)

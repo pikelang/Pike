@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: image_gif.c,v 1.19 2003/12/12 17:42:22 nilsson Exp $
+|| $Id: image_gif.c,v 1.20 2004/01/22 23:13:35 nilsson Exp $
 */
 
 /*
@@ -39,7 +39,7 @@
 #include <ctype.h>
 
 #include "stralloc.h"
-RCSID("$Id: image_gif.c,v 1.19 2003/12/12 17:42:22 nilsson Exp $");
+RCSID("$Id: image_gif.c,v 1.20 2004/01/22 23:13:35 nilsson Exp $");
 #include "pike_macros.h"
 #include "object.h"
 #include "constants.h"
@@ -2417,7 +2417,7 @@ void image_gif__encode(INT32 args)
 
    if (args<1 ||
        sp[-args].type!=T_ARRAY)
-      Pike_error("Image.GIF._encode: Illegal argument (expected array)");
+      Pike_error("Image.GIF._encode: Illegal argument (expected array)\n");
 
    add_ref(a=sp[-args].u.array);
    pos=0;

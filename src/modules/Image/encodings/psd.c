@@ -2,11 +2,11 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: psd.c,v 1.39 2003/10/13 17:39:08 grubba Exp $
+|| $Id: psd.c,v 1.40 2004/01/22 23:11:12 nilsson Exp $
 */
 
 #include "global.h"
-RCSID("$Id: psd.c,v 1.39 2003/10/13 17:39:08 grubba Exp $");
+RCSID("$Id: psd.c,v 1.40 2004/01/22 23:11:12 nilsson Exp $");
 
 #include "image_machine.h"
 
@@ -339,7 +339,7 @@ static void f_decode_packbits_encoded(INT32 args)
   int compression = 0;
   struct buffer b, ob, d;
   if(sp[-args].type != T_STRING)
-    Pike_error("Internal argument error");
+    Pike_error("Internal argument error.\n");
 
 
   if(args == 5)

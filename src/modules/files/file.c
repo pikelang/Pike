@@ -2,12 +2,12 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: file.c,v 1.310 2003/12/12 17:41:17 nilsson Exp $
+|| $Id: file.c,v 1.311 2004/01/22 23:14:09 nilsson Exp $
 */
 
 #define NO_PIKE_SHORTHAND
 #include "global.h"
-RCSID("$Id: file.c,v 1.310 2003/12/12 17:41:17 nilsson Exp $");
+RCSID("$Id: file.c,v 1.311 2004/01/22 23:14:09 nilsson Exp $");
 #include "fdlib.h"
 #include "pike_netlib.h"
 #include "interpret.h"
@@ -1129,7 +1129,7 @@ static void file_write(INT32 args)
 
 #ifdef PIKE_DEBUG
       if (Pike_sp[-args].type != PIKE_T_STRING) {
-	Pike_error("Bad return value from string multiplication.");
+	Pike_error("Bad return value from string multiplication.\n");
       }
 #endif /* PIKE_DEBUG */
 #ifdef HAVE_WRITEV

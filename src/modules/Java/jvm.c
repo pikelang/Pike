@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: jvm.c,v 1.65 2003/12/19 22:19:40 marcus Exp $
+|| $Id: jvm.c,v 1.66 2004/01/22 23:12:20 nilsson Exp $
 */
 
 /*
@@ -22,7 +22,7 @@
 #endif /* HAVE_CONFIG_H */
 
 #include "global.h"
-RCSID("$Id: jvm.c,v 1.65 2003/12/19 22:19:40 marcus Exp $");
+RCSID("$Id: jvm.c,v 1.66 2004/01/22 23:12:20 nilsson Exp $");
 #include "program.h"
 #include "interpret.h"
 #include "stralloc.h"
@@ -2646,7 +2646,7 @@ static void f_javaarray_getelt(INT32 args)
 
   if(args<1 || Pike_sp[-args].type != PIKE_T_INT ||
      (args>1 && Pike_sp[1-args].type != PIKE_T_INT))
-    Pike_error("Bad args to `[].");
+    Pike_error("Bad args to `[].\n");
 
   n = Pike_sp[-args].u.integer;
 
@@ -2723,7 +2723,7 @@ static void f_javaarray_setelt(INT32 args)
   char ty2;
 
   if(args<2 || Pike_sp[-args].type != PIKE_T_INT)
-    Pike_error("Bad args to `[]=.");
+    Pike_error("Bad args to `[]=.\n");
 
   if(args>2)
     pop_n_elems(args-2);

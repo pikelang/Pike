@@ -2,11 +2,11 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: docode.c,v 1.173 2003/11/19 17:19:29 grubba Exp $
+|| $Id: docode.c,v 1.174 2004/01/22 23:17:27 nilsson Exp $
 */
 
 #include "global.h"
-RCSID("$Id: docode.c,v 1.173 2003/11/19 17:19:29 grubba Exp $");
+RCSID("$Id: docode.c,v 1.174 2004/01/22 23:17:27 nilsson Exp $");
 #include "las.h"
 #include "program.h"
 #include "pike_types.h"
@@ -1989,7 +1989,7 @@ static int do_docode2(node *n, int flags)
 
   case F_ARROW:
     if(CDR(n)->token != F_CONSTANT || CDR(n)->u.sval.type!=T_STRING)
-      Pike_fatal("Bugg in F_ARROW, index not string.");
+      Pike_fatal("Bugg in F_ARROW, index not string.\n");
     if(flags & WANT_LVALUE)
     {
       /* FIXME!!!! ??? I wonder what needs fixing... /Hubbe */
@@ -2028,7 +2028,7 @@ static int do_docode2(node *n, int flags)
       }
       
       if(do_docode(CDR(n),0) != 1)
-	Pike_fatal("Internal compiler error, please report this (1).");
+	Pike_fatal("Internal compiler error, please report this (1).\n");
       if(CDR(n)->token != F_CONSTANT &&
 	match_types(CDR(n)->type, string_type_string))
 	emit0(F_CLEAR_STRING_SUBTYPE);

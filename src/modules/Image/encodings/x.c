@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: x.c,v 1.42 2003/12/17 21:08:57 marcus Exp $
+|| $Id: x.c,v 1.43 2004/01/22 23:11:34 nilsson Exp $
 */
 
 /*
@@ -37,7 +37,7 @@
 #include <winsock.h>
 #endif
 
-RCSID("$Id: x.c,v 1.42 2003/12/17 21:08:57 marcus Exp $");
+RCSID("$Id: x.c,v 1.43 2004/01/22 23:11:34 nilsson Exp $");
 #include "pike_macros.h"
 #include "object.h"
 #include "constants.h"
@@ -494,7 +494,7 @@ static void image_x_encode_pseudocolor_1byte_exact(INT32 args,
 					  img->xsize*img->ysize,img->xsize))
    {
       free_string(end_shared_string(dest));
-      Pike_error("Image.x.encode_pseudocolor: colortable not initialised");
+      Pike_error("Image.x.encode_pseudocolor: colortable not initialised.\n");
    }
 
    if (!translate && !linemod)
@@ -566,7 +566,7 @@ static void image_x_encode_pseudocolor_1byte(INT32 args,
 					  img->xsize*img->ysize,img->xsize))
    {
       free_string(end_shared_string(dest));
-      Pike_error("Image.x.encode_pseudocolor: colortable not initialised");
+      Pike_error("Image.x.encode_pseudocolor: colortable not initialised.\n");
    }
 
    dest2=begin_shared_string(((img->xsize*bpp+blinemod)*img->ysize+7)/8);
@@ -667,7 +667,7 @@ static void image_x_encode_pseudocolor_2byte(INT32 args,
 					  img->xsize*img->ysize,img->xsize))
    {
       free_string(end_shared_string(dest));
-      Pike_error("Image.x.encode_pseudocolor: colortable not initialised");
+      Pike_error("Image.x.encode_pseudocolor: colortable not initialised.\n");
    }
 
    dest2=begin_shared_string(((img->xsize*bpp+blinemod)*img->ysize+7)/8);

@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: colortable.c,v 1.117 2003/03/12 09:23:37 agehall Exp $
+|| $Id: colortable.c,v 1.118 2004/01/22 23:10:52 nilsson Exp $
 */
 
 #include "global.h"
@@ -24,7 +24,7 @@
 /* #define COLORTABLE_REDUCE_DEBUG */
 /* #define CUBICLE_DEBUG */
 
-RCSID("$Id: colortable.c,v 1.117 2003/03/12 09:23:37 agehall Exp $");
+RCSID("$Id: colortable.c,v 1.118 2004/01/22 23:10:52 nilsson Exp $");
 
 #include <math.h> /* fabs() */
 
@@ -3276,7 +3276,7 @@ void build_rigid(struct neo_colortable *nct)
    int rc,gc,bc;
    int di,hdi,hhdi;
 
-   if (nct->lu.rigid.index) Pike_fatal("rigid is initialized twice");
+   if (nct->lu.rigid.index) Pike_fatal("rigid is initialized twice.\n");
 
    index=malloc(sizeof(int)*r*g*b);
    dist=malloc(sizeof(int)*r*g*b);
