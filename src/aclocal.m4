@@ -7,11 +7,14 @@ undefine([ac_cv_prog_CC])
 
 define([AC_LOW_MODULE_INIT],
 [
-# $Id: aclocal.m4,v 1.2 1999/01/29 12:25:24 hubbe Exp $
+# $Id: aclocal.m4,v 1.3 1999/04/23 22:11:30 grubba Exp $
 
 MY_AC_PROG_CC
 
 AC_DEFINE(POSIX_SOURCE)
+
+AC_SUBST(CONFIG_HEADERS)
+
 AC_SUBST_FILE(dependencies)
 dependencies=$srcdir/dependencies
 
