@@ -2,11 +2,11 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: png.c,v 1.49 2003/01/09 16:47:02 grubba Exp $
+|| $Id: png.c,v 1.50 2003/01/09 22:59:39 nilsson Exp $
 */
 
 #include "global.h"
-RCSID("$Id: png.c,v 1.49 2003/01/09 16:47:02 grubba Exp $");
+RCSID("$Id: png.c,v 1.50 2003/01/09 22:59:39 nilsson Exp $");
 
 #include "image_machine.h"
 
@@ -312,7 +312,7 @@ static void image_png___decode(INT32 args)
  *!           Color used.
  *!         @value 4
  *!           Alpha channel used.
- *!       @endit
+ *!       @endint
  *!       Valid values are 0, 2, 3, 4 and 6.
  *!     @member int "xsize"
  *!     @member int "ysize"
