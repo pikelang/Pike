@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: signal_handler.c,v 1.289 2003/12/09 08:08:59 nilsson Exp $
+|| $Id: signal_handler.c,v 1.290 2003/12/20 19:35:04 marcus Exp $
 */
 
 #include "global.h"
@@ -26,7 +26,7 @@
 #include "main.h"
 #include <signal.h>
 
-RCSID("$Id: signal_handler.c,v 1.289 2003/12/09 08:08:59 nilsson Exp $");
+RCSID("$Id: signal_handler.c,v 1.290 2003/12/20 19:35:04 marcus Exp $");
 
 #ifdef HAVE_PASSWD_H
 # include <passwd.h>
@@ -1917,7 +1917,7 @@ static BPTR get_amigados_handle(struct mapping *optional, char *name, int fd)
   struct svalue *tmp;
   BPTR b;
 
-  if((tmp=simple_mapping_string_lookup(optional, name)))
+  if(optional && (tmp=simple_mapping_string_lookup(optional, name)))
   {
     if(tmp->type == T_OBJECT)
     {
@@ -2882,7 +2882,7 @@ void f_create_process(INT32 args)
     }
     low_my_putchar('\0', &storage.cmd_buf);
 
-    if((tmp=simple_mapping_string_lookup(optional, "cwd")))
+    if(optional && (tmp=simple_mapping_string_lookup(optional, "cwd")))
       if(tmp->type == T_STRING)
         if((storage.cwd_lock=Lock((char *)STR0(tmp->u.string), ACCESS_READ))==0)
 	  Pike_error("Failed to lock cwd \"%s\".\n", STR0(tmp->u.string));
