@@ -150,6 +150,9 @@ PMOD_EXPORT void push_int64(INT64 i)
       i = -i;
       neg = 1;
     }
+
+    resolve_auto_bignum_program();
+
 #if PIKE_BYTEORDER == 1234
     {
       char digits[8];
