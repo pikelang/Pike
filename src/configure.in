@@ -1,4 +1,4 @@
-AC_REVISION("$Id: configure.in,v 1.281 1999/05/02 08:11:35 hubbe Exp $")
+AC_REVISION("$Id: configure.in,v 1.282 1999/05/08 00:31:29 hubbe Exp $")
 AC_INIT(interpret.c)
 AC_CONFIG_HEADER(machine.h)
 
@@ -54,6 +54,16 @@ pike_cv_prog_CC_save="$CC"
 # The above has problems if the smartlink binary is removed. /grubba
 AC_PROG_CC
 AC_ISC_POSIX
+#############################################################################
+
+AC_CHECK_HEADERS(fnord/fnord/fnord.h)
+
+if test "x$ac_cv_header_fnord_fnord_fnord_h" = xyes ; then
+  AC_MSG_RESULT("AC_MSG_HEADER is obviously not working properly.")
+  exit 1
+fi
+
+#############################################################################
 AC_MINIX
 
 if test $ac_cv_prog_gcc = yes; then
