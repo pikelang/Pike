@@ -1,14 +1,25 @@
 /*
 **! module Image
 **! note
-**!	$Id: layers.c,v 1.35 1999/08/12 00:08:55 per Exp $
+**!	$Id: layers.c,v 1.36 1999/08/12 14:01:33 mirar Exp $
 **! class Layer
 **! see also: layers
 **!
 
 **!
 **!
-**! <add_appendix name="layers" title="Image.Layer modes"><execute>
+**! <add_appendix name="layers" title="Image.Layer modes">
+**! <dl compact>
+**! <dt><i>The variables in the expression:</i>
+**! <dt>L<dd><i>The active layer</i>
+**! <dt>S<dd><i>The source layer (the sum of the layers below)</i>
+**! <dt>D<dd><i>The destintion layer (the result)</i>
+**! <dt>Xrgb<dd><i>Layer red (<b>Xr</b>), green (<b>Xg</b>) or blue channel (<b>Xb</b>) </i>
+**! <dt>Xhsv<dd><i>Layer hue (<b>Xh</b>), saturation (<b>Xs</b>) or value channel (<b>Xv</b>) (virtual channels)</i>
+**! <dt>aX<dd><i>Layer alpha, channel in layer alpha</i>
+**! </dl>
+**! <i>All channels are calculated separately, if nothing else is specified.</i>
+**! <execute>
 **! import Image;
 **! 
 **! void write_image(string desc,
@@ -20,9 +31,10 @@
 **!    write(mktag("td",(["align":"right","valign":"center"]),
 **!          mktag("b",0,desc)));
 **!    write(mktag("td",(["align":"right"]),illustration_jpeg(img,(["dpi":150.0]))));
-**!    write(mktag("td",(["align":"left","valign":"center"]),
-**!          replace(longdesc,({",",";",")",({",<wbr>",";<wbr>",")<wbr>"}))))/
-**!          "<wbr>"/1*({mktag("wbr")})));
+**!    write(mktag("td",(["align":"left","valign":"center"]),longdesc));
+**           (replace(longdesc,({",",";",")"}),
+**                    ({",<wbr>",";<wbr>",")<wbr>"}))/
+**            "<wbr>")/1*({mktag("wbr")}) ) );
 **!    write(end_tag());
 **! }
 **! 
@@ -202,8 +214,11 @@
 #include "global.h"
 
 #include <math.h> /* floor */
+#ifdef TRY_USE_MMX
+#include <mmx.h>
+#endif
 
-RCSID("$Id: layers.c,v 1.35 1999/08/12 00:08:55 per Exp $");
+RCSID("$Id: layers.c,v 1.36 1999/08/12 14:01:33 mirar Exp $");
 
 #include "image_machine.h"
 
@@ -354,7 +369,7 @@ struct layer_mode_desc
 } layer_mode[]=
 {
    {"normal",        lm_normal,        1, NULL,
-    "D=(L*aL+S*(1-aL)*aS)/(aL+(1-aL)*aS), aD=(aL+(1-aL)*aS)"},
+    "D=(L*aL+S*(1-aL)*aS) / (aL+(1-aL)*aS), aD=(aL+(1-aL)*aS)"},
    {"add",           lm_add,           1, NULL,
     "D=L+S, apply alpha as \"normal\" mode"}, 
    {"subtract",      lm_subtract,      1, NULL,
@@ -385,24 +400,24 @@ struct layer_mode_desc
     "D=L^S, apply alpha as \"normal\" mode"}, 
 
    {"replace",       lm_replace,       1, NULL,
-    "D=(L*aL+S*(1-aL)*aS)/(aL+(1-aL)*aS), aD=aS"},
+    "D=(L*aL+S*(1-aL)*aS) / (aL+(1-aL)*aS), aD=aS"},
    {"red",           lm_red,           1, NULL,
-    "Dr=(Lr*aLr+Sr*(1-aLr)*aSr)/(aLr+(1-aLr)*aSr), Dgb=Sgb, aD=aS"},
+    "Dr=(Lr*aLr+Sr*(1-aLr)*aSr) / (aLr+(1-aLr)*aSr), Dgb=Sgb, aD=aS"},
    {"green",         lm_green,         1, NULL,
-    "Dg=(Lg*aLg+Sg*(1-aLg)*aSg)/(aLg+(1-aLg)*aSg), Drb=Srb, aD=aS"},
+    "Dg=(Lg*aLg+Sg*(1-aLg)*aSg) / (aLg+(1-aLg)*aSg), Drb=Srb, aD=aS"},
    {"blue",          lm_blue,          1, NULL,
-    "Db=(Lb*aLb+Sb*(1-aLb)*aSb)/(aLb+(1-aLb)*aSb), Drg=Srg, aD=aS"},
+    "Db=(Lb*aLb+Sb*(1-aLb)*aSb) / (aLb+(1-aLb)*aSb), Drg=Srg, aD=aS"},
 
    {"replace_hsv",   lm_replace_hsv,   1, NULL,
-    "Dhsv=(Lhsv*aLrgb+Shsv*(1-aLrgb)*aSrgb)/(aLrgb+(1-aLrgb)*aSrgb), aD=aS"},
+    "Dhsv=(Lhsv*aLrgb+Shsv*(1-aLrgb)*aSrgb) / (aLrgb+(1-aLrgb)*aSrgb), aD=aS"},
    {"hue",           lm_hue,           1, NULL,
-    "Dh=(Lh*aLr+Sh*(1-aLr)*aSr)/(aLr+(1-aLr)*aSr), Dsv=Lsv, aD=aS"},
+    "Dh=(Lh*aLr+Sh*(1-aLr)*aSr) / (aLr+(1-aLr)*aSr), Dsv=Lsv, aD=aS"},
    {"saturation",    lm_saturation,    1, NULL,
-    "Ds=(Ls*aLg+Ss*(1-aLg)*aSg)/(aLg+(1-aLg)*aSg), Dhv=Lhv, aD=aS"},
+    "Ds=(Ls*aLg+Ss*(1-aLg)*aSg) / (aLg+(1-aLg)*aSg), Dhv=Lhv, aD=aS"},
    {"value",         lm_value,         1, NULL,
-    "Dv=(Lv*aLb+Sv*(1-aLb)*aSb)/(aLb+(1-aLb)*aSb), Dhs=Lhs, aD=aS"},
+    "Dv=(Lv*aLb+Sv*(1-aLb)*aSb) / (aLb+(1-aLb)*aSb), Dhs=Lhs, aD=aS"},
    {"color",         lm_color,         1, NULL,
-    "Dhs=(Lhs*aLrg+Shs*(1-aLrg)*aSrg)/(aLrg+(1-aLrg)*aSrg), Dv=Lv, aD=aS"},
+    "Dhs=(Lhs*aLrg+Shs*(1-aLrg)*aSrg) / (aLrg+(1-aLrg)*aSrg), Dv=Lv, aD=aS"},
 
    {"darken",        lm_darken,        1, NULL,
     "Dv=min(Lv,Sv), Dhs=Lhs, aD=aS"},
@@ -416,7 +431,7 @@ struct layer_mode_desc
    {"dissolve",      lm_dissolve,      1, NULL,
     "i=random 0 or 1, D=i?L:S, aD=i+aS"}, 
    {"behind",        lm_behind,        1, NULL,
-    "D=(S*aS+L*(1-aS)*aL)/(aS+(1-aS)*aL), aD=(aS+(1-aS)*aL); "
+    "D=(S*aS+L*(1-aS)*aL) / (aS+(1-aS)*aL), aD=(aS+(1-aS)*aL); "
     "simply swap S and L"},
    {"erase",         lm_erase,         1, NULL,
     "D=S, aD=aS*(1-aL)"}, 
@@ -426,7 +441,7 @@ struct layer_mode_desc
    {"overlay",       lm_overlay,       1, NULL,
     "(1-(1-a)*(1-b)-a*b)*a+a*b, apply alpha as \"normal\""},
    {"burn_alpha",    (lm_row_func*)lm_spec_burn_alpha, 1, NULL,
-    "aD=aL+aS, D=L+S; special optimizations for speed"},
+    "aD=aL+aS, D=L+S; experimental, may change or be removed"},
 
    {"equal",         lm_equal,         0, NULL,
     "each channel D=max if L==S, 0 otherwise, apply with alpha"},
@@ -460,74 +475,6 @@ struct layer_mode_desc
 
 #define LAYER_MODES ((int)NELEM(layer_mode))
 
-/*
-
-Xp=pixel, Ax=alpha [0-1], Rx,Gx,Bx, Hx,Sx,Vx = kanaler
-Xs=källbild
-Xl=aktuellt lager
-Xd=målbild
-
-normal 		Pd=(Pl*Al+Ps*(1-Al)*As)/(Al+(1-Al)*As)
-		Ad=(Al+(1-Al)*As)
-
-operand layers: 
-   (Ad=(Al+(1-Al)*As))
-
-add             Pd=Pl+Ps
-subtract        Pd=Ps-Pl
-multiply        Pd=Ps*Pl
-divide          Pd=Ps/Pl
-invmodulo       Pd=Ps%Pl (measured in color values)
-
-invsubtract     Pd=Pl-Ps                             | keeps alpha 
-invdivide       Pd=Pl/Ps                             | from below
-invmodulo       Pd=Pl%Ps (measured in color values)  |
-
-difference      Pd=abs(Ps-Pl)
-min             Pd=min(Ps,Pl)
-max             Pd=max(Ps,Pl)
-bitwise_and     Pd=Ps&Pl
-bitwise_or      Pd=Ps|Pl
-bitwise_xor     Pd=Ps^Pl
-
-
-replace channel layers: 
-    (Ad=As)
-replace		Pd=(Pl*Al+Ps*(1-Al)*As)/(Al+(1-Al)*As)
-red             Pd=Ps,Rd=(Rl*Al+Rs*(1-Al)*As)/(Al+(1-Al)*As)
-green           Pd=Ps,Gd=(Gl*Al+Gs*(1-Al)*As)/(Al+(1-Al)*As)
-blue            Pd=Ps,Bd=(Bl*Al+Bs*(1-Al)*As)/(Al+(1-Al)*As)
-
-replace_hsv     same as replace, but r,g,b alpha is operating on h,s,v
-hue             Pd=Ps,Hd=(Hl*Al+Hs*(1-Al)*As)/(Al+(1-Al)*As)
-saturation      Pd=Ps,Sd=(Sl*Al+Ss*(1-Al)*As)/(Al+(1-Al)*As)
-value           Pd=Ps,Vd=(Vl*Al+Vs*(1-Al)*As)/(Al+(1-Al)*As)
-color           Vd=Vs,HSd=(HSl*Al+HSs*(1-Al)*As)/(Al+(1-Al)*As)
-
-lighten         Pd=Ps,Vd=max(Vs,Vl)
-darken          Pd=Ps,Vd=min(Vs,Vl)
-saturate        Pd=Ps,Vd=max(Ss,Sl)
-desaturate      Pd=Ps,Vd=min(Ss,Sl)
-
-
-special layers:
-
-dissolve        i=round(random(Al)) typ
-                Pd=Al*i+As*(1-i)
-		Ad=i+As
-
-erase           Pd=Ps
-                Ad=As*(1-Al)
-
-behind          Pd=(Ps*As+Pl*(1-As)*Al)/(As+(1-As)*Al)
-		Ad=(As+(1-As)*Al)
-		note: alpha value connects to layer below,
-		tuning how "much" behind the image is placed
-
-screen          
-overlay         
-
-*/
 
 
 
@@ -1397,171 +1344,15 @@ static void lm_normal(rgb_group *s,rgb_group *l,rgb_group *d,
 
 /* operators from template */
 
-#if 0
-
 #define LM_FUNC lm_add
 #define L_TRUNC(X) MINIMUM(255,(X))
 #define L_OPER(A,B) ((A)+(int)(B))
+#define L_MMX_OPER(A,MMXR) paddusb_m2r(A,MMXR)
 #include "layer_oper.h"
+#undef L_MMX_OPER
 #undef LM_FUNC
 #undef L_TRUNC
 #undef L_OPER
-
-#else
-
-#define L_TRUNC(X) MINIMUM(255,(X))
-#define L_OPER(A,B) ((A)+(int)(B))
-
-#ifdef TRY_USE_MMX
-#include <mmx.h>
-#endif
-
-static void lm_add(rgb_group *s,rgb_group *l,rgb_group *d,
-		   rgb_group *sa,rgb_group *la,rgb_group *da,
-		   int len,double alpha)
-{
-   if (alpha==0.0)
-   {
-      MEMCPY(d,s,sizeof(rgb_group)*len);
-      MEMCPY(da,sa,sizeof(rgb_group)*len);
-      return; 
-   }
-   else if (alpha==1.0)
-   {
-      if (!la)  /* no layer alpha => full opaque */
-      {
-#ifdef TRY_USE_MMX
-	extern int try_use_mmx;
-	if(try_use_mmx)
-	{
-	  /* Strangely enough, this doesn't seem to make things
-	   * any faster. Guess I should take a look at the generated
-	   * assembler code...
-	   * /Hubbe
-	   */
-
-	  int num=sizeof(rgb_group) * len;
-	  unsigned char *source=(char *)s;
-	  unsigned char *dest=(char *)d;
-	  unsigned char *sourcel=(char *)l;
-	  
-	  while (num-->0 && (7&(int)dest))
-	  {
-	    *dest=L_TRUNC(L_OPER(*source,*sourcel));
-	    source++;
-	    sourcel++;
-	    dest++;
-	  }
-	  
-	  
-	  while(num > 16)
-	  {
-	    movq_m2r(*source, mm0);
-	    source+=8;
-	    movq_m2r(*source, mm1);
-	    source+=8;
-	    paddusb_m2r(*sourcel, mm0);
-	    sourcel+=8;
-	    paddusb_m2r(*sourcel, mm1);
-	    sourcel+=8;
-	    movq_r2m(mm0,*dest);
-	    dest+=8;
-	    movq_r2m(mm1,*dest);
-	    dest+=8;
-	    num-=16;
-	  }
-	  if (num > 8)
-	  {
-	    movq_m2r(*source, mm0);
-	    source+=8;
-	    paddusb_m2r(*sourcel, mm0);
-	    sourcel+=8;
-	    movq_r2m(mm0,*dest);
-	    dest+=8;
-	    num-=8;
-	  }
-          emms();
-	  while (num-->0)
-	  {
-	    *dest=L_TRUNC(L_OPER(*source,*sourcel));
-	    source++;
-	    sourcel++;
-	    dest++;
-	  }
-	}
-	else
-#endif
-	{
-	  while (len--)
-	  {
-	    d->r=L_TRUNC(L_OPER(s->r,l->r));
-	    d->g=L_TRUNC(L_OPER(s->g,l->g));
-	    d->b=L_TRUNC(L_OPER(s->b,l->b));
-	    *da=white;
-	    l++; s++; sa++; da++; d++;
-	  }
-	}
-      }
-      else
-	 while (len--)
-	 {
-	    if (la->r==COLORMAX && la->g==COLORMAX && la->b==COLORMAX)
-	    {
-	       d->r=L_TRUNC(L_OPER(s->r,l->r));
-	       d->g=L_TRUNC(L_OPER(s->g,l->g));
-	       d->b=L_TRUNC(L_OPER(s->b,l->b));
-	       *da=white;
-	    }
-	    else if (la->r==0 && la->g==0 && la->b==0)
-	    {
-	       *d=*s;
-	       *da=*sa;
-	    }
-	    else
-	    {
-	       d->r=L_TRUNC(L_OPER(s->r,l->r));
-	       ALPHA_ADD(s,d,d,sa,la,da,r);
-	       d->g=L_TRUNC(L_OPER(s->g,l->g));
-	       ALPHA_ADD(s,d,d,sa,la,da,g);
-	       d->b=L_TRUNC(L_OPER(s->b,l->b));
-	       ALPHA_ADD(s,d,d,sa,la,da,b);
-	    }
-	    l++; s++; la++; sa++; da++; d++;
-	 }
-   }
-   else
-   {
-      if (!la)  /* no layer alpha => full opaque */
-	 while (len--)
-	 {
-	    d->r=L_TRUNC(L_OPER(s->r,l->r));
-	    ALPHA_ADD_V_NOLA(s,d,d,sa,da,alpha,r);
-	    d->g=L_TRUNC(L_OPER(s->g,l->g));
-	    ALPHA_ADD_V_NOLA(s,d,d,sa,da,alpha,g);
-	    d->b=L_TRUNC(L_OPER(s->b,l->b));
-	    ALPHA_ADD_V_NOLA(s,d,d,sa,da,alpha,b);
-	    l++; s++; sa++; da++; d++;
-	 }
-      else
-	 while (len--)
-	 {
-	    d->r=L_TRUNC(L_OPER(s->r,l->r));
-	    ALPHA_ADD_V(s,d,d,sa,la,da,alpha,r);
-	    d->g=L_TRUNC(L_OPER(s->g,l->g));
-	    ALPHA_ADD_V(s,d,d,sa,la,da,alpha,g);
-	    d->b=L_TRUNC(L_OPER(s->b,l->b));
-	    ALPHA_ADD_V(s,d,d,sa,la,da,alpha,b);
-	    l++; s++; la++; sa++; da++; d++;
-	 }
-   }
-}
-
-#undef L_TRUNC
-#undef L_OPER
-
-#endif
-
-
 
 #define LM_FUNC lm_subtract
 #define L_TRUNC(X) MAXIMUM(0,(X))
@@ -2204,29 +1995,16 @@ static void lm_spec_burn_alpha(struct layer *ly,
 
    if (ly->alpha_value==1.0)
       if (!l)
-	 if (ly->fill.r==COLORMAX &&
-	     ly->fill.g==COLORMAX &&
-	     ly->fill.b==COLORMAX)
-	 {
-	    smear_color(d,white,len);
-	    while (len--)
-	    {
-	       da->r=MINIMUM(sa->r+la->r,COLORMAX);
-	       da->g=MINIMUM(sa->g+la->g,COLORMAX);
-	       da->b=MINIMUM(sa->b+la->b,COLORMAX);
-	       da++; sa++; la++; 
-	    }
-	 }
-	 else if (ly->fill.r!=0 ||
+	 if (ly->fill.r!=0 ||
 	     ly->fill.g!=0 ||
 	     ly->fill.b!=0)
 	 {
 	    rgb_group fill=ly->fill;
 	    while (len--)
 	    {
-	       d->r=MINIMUM(s->r+fill.r,COLORMAX);
-	       d->g=MINIMUM(s->g+fill.g,COLORMAX);
-	       d->b=MINIMUM(s->b+fill.b,COLORMAX);
+	       d->r=MINIMUM(s->r+la->r,COLORMAX);
+	       d->g=MINIMUM(s->g+la->g,COLORMAX);
+	       d->b=MINIMUM(s->b+la->b,COLORMAX);
 	       da->r=MINIMUM(sa->r+la->r,COLORMAX);
 	       da->g=MINIMUM(sa->g+la->g,COLORMAX);
 	       da->b=MINIMUM(sa->b+la->b,COLORMAX);

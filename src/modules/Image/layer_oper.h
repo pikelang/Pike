@@ -16,14 +16,69 @@ static void LM_FUNC(rgb_group *s,rgb_group *l,rgb_group *d,
    else if (alpha==1.0)
    {
       if (!la)  /* no layer alpha => full opaque */
-	 while (len--)
-	 {
-	    d->r=L_TRUNC(L_OPER(s->r,l->r));
-	    d->g=L_TRUNC(L_OPER(s->g,l->g));
-	    d->b=L_TRUNC(L_OPER(s->b,l->b));
-	    *da=white;
-	    l++; s++; sa++; da++; d++;
-	 }
+      {
+#ifdef L_MMX_OPER
+#ifdef TRY_USE_MMX
+	extern int try_use_mmx;
+	if(try_use_mmx)
+	{
+	  int num=sizeof(rgb_group) * len;
+	  unsigned char *source=(char *)s;
+	  unsigned char *dest=(char *)d;
+	  unsigned char *sourcel=(char *)l;
+	  
+	  while (num-->0 && (7&(int)dest))
+	  {
+	    *dest=L_TRUNC(L_OPER(*source,*sourcel));
+	    source++;
+	    sourcel++;
+	    dest++;
+	  }
+	  
+	  
+	  while(num > 16)
+	  {
+	    moveq_m2r(*source, mm0);
+	    moveq_m2r(source[8], mm1);
+	    L_MMX_OPER(*sourcel, mm0);
+	    L_MMX_OPER(sourcel[8], mm1); /* paddusb_m2r */
+	    moveq_r2m(mm0,*dest);
+	    moveq_r2m(mm1,dest[8]);
+	    source+=16;
+	    sourcel+=16;
+	    dest+=16;
+	  }
+	  if (num > 8)
+	  {
+	    movq_m2r(*source, mm0);
+	    L_MMX_OPER(*sourcel, mm0);
+	    movq_r2m(mm0,*dest);
+	    source+=8;
+	    sourcel+=8;
+	    dest+=8;
+	    num-=8;
+	  }
+          emms();
+	  while (num-->0)
+	  {
+	    *dest=L_TRUNC(L_OPER(*source,*sourcel));
+	    source++;
+	    sourcel++;
+	    dest++;
+	  }
+	}
+	else
+#endif
+#endif
+	   while (len--)
+	   {
+	      d->r=L_TRUNC(L_OPER(s->r,l->r));
+	      d->g=L_TRUNC(L_OPER(s->g,l->g));
+	      d->b=L_TRUNC(L_OPER(s->b,l->b));
+	      *da=white;
+	      l++; s++; sa++; da++; d++;
+	   }
+      }
       else
 	 while (len--)
 	 {
