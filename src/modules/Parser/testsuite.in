@@ -909,6 +909,11 @@ test_any([[{
   return p->finish ("a<t>b<x>c</t>d</t>e")->read();
 }]], "a[b<x>c]d</t>e");
 
+// parse_tag_args
+test_equal(Parser.HTML()->parse_tag_args("<"), ([]));
+test_equal(Parser.HTML()->parse_tag_args(">"), ([]));
+test_equal(Parser.HTML()->parse_tag_args("<br/>"), (["br/": "br/"]));
+
 // Misc
 test_any([[
   object p = Parser.HTML();
@@ -1017,8 +1022,6 @@ test_any([[{
     feed("<? ? >")->
     finish()->read();
 }]], "<? ? >");
-test_equal(Parser.HTML()->parse_tag_args("<"), ([]));
-test_equal(Parser.HTML()->parse_tag_args(">"), ([]));
 test_any([[{
   object p = Parser.HTML();
   p->_set_tag_callback (lambda () {return "T";});
