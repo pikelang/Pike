@@ -3,7 +3,7 @@
 //! This module implements EXIF (Exchangeable image file format for
 //! Digital Still Cameras) 2.2 parsing.
 
-// $Id: EXIF.pmod,v 1.22 2004/03/15 22:47:22 nilsson Exp $
+// $Id: EXIF.pmod,v 1.23 2004/04/13 20:35:05 nilsson Exp $
 //  Johan Schön <js@roxen.com>, July 2001.
 //  Based on Exiftool by Robert F. Tobler <rft@cg.tuwien.ac.at>.
 //
@@ -270,6 +270,75 @@ static mapping CANON_D30_MAKERNOTE = ([
   0x000C:	({"MN_CameraSerialNumber",  	}),
   //  0x000F:       ({"MN_CustomFunctions",         "CUSTOM", canon_custom }),
 ]);
+
+static mapping NIKON_D_MAKERNOTE = ([
+  0x0001: ({ "MN_FirmwareVersion" }),
+  0x0002: ({ "MN_ISO" }),
+  0x0004: ({ "MN_Quality" }),
+  0x0005: ({ "MN_WhiteBalance" }),
+  0x0006: ({ "MN_Sharpening" }),
+  0x0007: ({ "MN_FocusMode" }),
+  0x0008: ({ "MN_FlashSetting" }),
+  0x0009: ({ "MN_FlashMode" }),
+  0x000b: ({ "MN_WhiteBalanceFine" }),
+  0x000c: ({ "MN_WhiteBalandeRBCoefficients" }),
+  0x0012: ({ "MN_FlashCompensation" }),
+  0x0013: ({ "MN_ISO2" }),
+  0x0081: ({ "MN_ToneCompensation" }),
+  0x0083: ({ "MN_LensType", "MAP",
+	     ([ "0" : "AF non D",
+		"1" : "Manual",
+		"2" : "AF-D/AF-S",
+		"6" : "AF-D G",
+		"10" : "AF-D VR",
+	     ]) }),
+  0x0084: ({ "MN_Lens" }),
+  0x0087: ({ "MN_FlashUsed", "MAP",
+	     ([ "0" : "Flash not fired",
+		"4" : "Unknown",
+		"7" : "External",
+		"9" : "On camera",
+	     ]) }),
+  0x008c: ({ "MN_ContrastCurve" }),
+  0x008d: ({ "MN_ColorMode" }),
+  0x0090: ({ "MN_LightType" }),
+  0x0092: ({ "MN_Hue" }),
+  0x0e01: ({ "MN_CaptureEditorData" }),
+]);
+
+static mapping|string nikon_D70_makernote(string data, mapping real_tags) {
+  object f = Stdio.FakeFile(data);
+  if(f->read(10)!="Nikon\0\2\20\0\0") return data;
+  string order = f->read(2);
+  string code = f->read(2);
+  if(sizeof(code)!=2 || short_value(code, order)!=42) return data;
+
+  mapping tags = ([]);
+  int offset=long_value(f->read(4), order);
+  while(offset>0)
+  {
+    exif_seek(f,offset,10);
+    int num_entries=short_value(f->read(2), order);
+    for(int i=0; i<num_entries; i++)
+      tags|=parse_tag(f, tags, NIKON_D_MAKERNOTE, 10, order);
+
+    offset=long_value(f->read(4), order);
+
+    if(offset == 0)
+      if(tags["ExifOffset"])
+      {
+	offset=(int)tags["ExifOffset"];
+	m_delete(tags, "ExifOffset");
+      }
+  }
+
+  foreach(tags; string name; mixed value)
+    if(has_prefix(name, "MN_"))
+      real_tags[name] = m_delete(tags, name);
+  if(sizeof(tags))
+    return tags;
+  return UNDEFINED;
+}
 
 static mapping nikon_iso(array(int) data) {
   mapping res=([]);
@@ -753,6 +822,7 @@ static mapping TAG_INFO = ([
 		    ([
 		      "NIKON_E990":  ({"TAGS", NIKON_990_MAKERNOTE}),
 		      "NIKON":  ({"TAGS", NIKON_990_MAKERNOTE}),
+		      "NIKON CORPORATION": ({"CUSTOM", nikon_D70_makernote}),
 		      "Canon":  ({"TAGS", CANON_D30_MAKERNOTE}),
 		      "FUJIFILM": ({"TAGS", FUJIFILM_MAKERNOTE}),
 		      "OLYMPUS DIGITAL CAMERA": ({"TAGS", OLYMPUS_MAKERNOTE}),
@@ -938,8 +1008,11 @@ static mapping parse_tag(Stdio.File file, mapping tags, mapping exif_info,
 	  model = tags["Model"];
 	  tags[tag_name]= tag_map[make+"_"+model] || tag_map[make] || format_bytes(str);
 	}
-      else if(tag_format=="CUSTOM")
-	tags[tag_name]=tag_map(str);
+      else if(tag_format=="CUSTOM") {
+	mixed res = tag_map(str,tags);
+	if(!zero_type(res))
+	  tags[tag_name]=res;
+      }
       else
 	tags[tag_name]=format_bytes(str);
     }
