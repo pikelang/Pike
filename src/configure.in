@@ -1,4 +1,4 @@
-AC_REVISION("$Id: configure.in,v 1.673 2003/01/08 19:35:42 mast Exp $")
+AC_REVISION("$Id: configure.in,v 1.674 2003/01/10 11:11:04 mirar Exp $")
 AC_INIT(interpret.c)
 AC_CONFIG_HEADER(machine.h)
 
@@ -6065,6 +6065,9 @@ esac
 # Since all $OPTIMIZE flags have to be automatically included in $CFLAGS
 # (because otherwise the tests will not be accurate) we have to remove all
 # OPTIMIZE flags from the regular CFLAGS...
+# (also some other misc work on the flags)
+
+INTERPRET_DEOPTIMIZE=
 
 OPT_GOT_OFLAG=no
 OPT_GOT_MCPU=no
@@ -6077,7 +6080,7 @@ do
      *\ $opt\ *) ;;
      *)
        case "$opt" in
-	  -O*)   
+	  -O*)
 	    if test "x$OPT_GOT_OFLAG" = "xno"; then
               # only use the first -O flag (from make.conf etc)
 	      OPT_GOT_OFLAG=yes 
@@ -6086,6 +6089,20 @@ do
 	      else
 	        OPT_NOT_USED="${OPT_NOT_USED-} $opt"
               fi
+	    fi
+	    ;;
+	  -f*) 
+	    if test "x$opt" = "x-fomit-frame-pointer" -a \
+	            "x$with_machine_code" = xyes; then
+	       INTERPRET_DEOPTIMIZE=-fno-omit-frame-pointer
+	       PIKE_MSG_WARN([-fno-omit-frame-pointer used for interpret.c,
+since the use of machine code is broken by -fomit-frame-pointer])
+	    fi
+
+	    if test "x$with_copt" != xno; then 
+	      OPTIMIZE="${OPTIMIZE-} $opt" 
+	    else
+	      OPT_NOT_USED="${OPT_NOT_USED-} $opt"
 	    fi
 	    ;;
           -pipe) 
@@ -6116,6 +6133,8 @@ unset NEW_CFLAGS
 unset OPT_GOT_OFLAG
 unset OPT_GOT_MCPU
 unset OPT_GOT_ARCH
+
+AC_SUBST(INTERPRET_DEOPTIMIZE)
 
 #############################################################################
 dnl handled above in the CFLAGS/OPTIMIZE split

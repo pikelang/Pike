@@ -1,5 +1,5 @@
 #
-# $Id: Makefile.in,v 1.342 2003/01/09 19:52:22 grubba Exp $
+# $Id: Makefile.in,v 1.343 2003/01/10 11:11:04 mirar Exp $
 #
 
 # This line is needed on some machines.
@@ -79,6 +79,9 @@ DEFINES=@CPPFLAGS@
 
 # -O should work with all compilers
 OPTIMIZE=@OPTIMIZE@
+
+# interpret.o can't have -fomit-frame-pointer
+INTERPRET_DEOPTIMIZE=@INTERPRET_DEOPTIMIZE@
 
 # Set to a flag for parallelizing make, e.g. -j2. It's given to make
 # at the level where it's most effective.
@@ -365,23 +368,25 @@ undump_modules: delete_dumped_modules
 # First try compiling with optimization and if that doesn't work, without.
 # GCC dumps core on some files @ OSF1
 # This kluge should work around that...
+# Extra kludge added: interpret.o gets special flags (deoptimization)
 .c.o:
 	@echo "Compiling $<" ;\
 	rm -f $@.fail >/dev/null 2>&1; \
-	if $(CC) $(CFLAGS) -c $< -o $@ ; then : ; else \
+	if test "x$@" = "xinterpret.o"; then EXTRAFLAGS="$(INTERPRET_DEOPTIMIZE)"; else EXTRAFLAGS=; fi; \
+	if $(CC) $(CFLAGS) $$EXTRAFLAGS -c $< -o $@ ; then : ; else \
 	  status=$$?; \
 	  if test x"@noopt_retry@" = xyes ; then \
 	    echo "WARNING: Compiler failure! Trying without optimization!" >&2;\
-	    echo "$(CC) $(PREFLAGS) $(CFLAGS) -c $< -o $@" >$@.fail ;\
-	    if NO_ULIMIT=yes $(CC) $(PREFLAGS) $(NOOPTFLAGS) -c $< -o $@ ; then : ; else \
+	    echo "$(CC) $(PREFLAGS) $(CFLAGS) $$EXTRAFLAGS -c $< -o $@" >$@.fail ;\
+	    if NO_ULIMIT=yes $(CC) $(PREFLAGS) $(NOOPTFLAGS) $$EXTRAFLAGS -c $< -o $@ ; then : ; else \
 	      status=$$?; \
 	      echo "Compilation command was:" >&2;\
-	      echo "$(CC) $(PREFLAGS) $(NOOPTFLAGS) -c $< -o $@" >&2 ;\
+	      echo "$(CC) $(PREFLAGS) $(NOOPTFLAGS) $$EXTRAFLAGS -c $< -o $@" >&2 ;\
 	      exit $$status; \
 	    fi; \
 	  else \
 	    echo "Compilation command was:" >&2;\
-	    echo "$(CC) $(PREFLAGS) $(CFLAGS) -c $< -o $@" >&2 ;\
+	    echo "$(CC) $(PREFLAGS) $(CFLAGS) $$EXTRAFLAGS -c $< -o $@" >&2 ;\
 	    exit $$status; \
 	  fi; \
 	fi
