@@ -2,12 +2,12 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: file.c,v 1.275 2003/04/30 10:31:51 grubba Exp $
+|| $Id: file.c,v 1.276 2003/05/14 20:21:15 marcus Exp $
 */
 
 #define NO_PIKE_SHORTHAND
 #include "global.h"
-RCSID("$Id: file.c,v 1.275 2003/04/30 10:31:51 grubba Exp $");
+RCSID("$Id: file.c,v 1.276 2003/05/14 20:21:15 marcus Exp $");
 #include "fdlib.h"
 #include "pike_netlib.h"
 #include "interpret.h"
@@ -1475,10 +1475,28 @@ static int do_close(int flags)
  */
 static void file_grantpt( INT32 args )
 {
-#if defined(HAVE_GRANTPT)
+#if defined(HAVE_GRANTPT) || defined(USE_PT_CHMOD)
   pop_n_elems(args);
+#if defined(USE_PT_CHMOD)
+  push_constant_text("Process.Process");
+  APPLY_MASTER("resolv", 1);
+  push_constant_text(USE_PT_CHMOD);
+  push_constant_text("4");
+  f_aggregate(2);
+  push_constant_text("fds");
+  ref_push_object(Pike_fp->current_object);
+  ref_push_object(Pike_fp->current_object);
+  f_aggregate(2);
+  f_aggregate_mapping(2);
+  apply_svalue(Pike_sp-3, 2);
+  apply(Pike_sp[-1].u.object, "wait", 0);
+  if(!UNSAFE_IS_ZERO(Pike_sp-1))
+    Pike_error(USE_PT_CHMOD " returned error %d.\n", Pike_sp[-1].u.integer);
+  pop_n_elems(3);
+#else
   if( grantpt( FD ) )
     Pike_error("grantpt failed: %s\n", strerror(errno));
+#endif
   push_text( ptsname( FD ) );
 #if defined(HAVE_UNLOCKPT)
   if( unlockpt( FD ) )

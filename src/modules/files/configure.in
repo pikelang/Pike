@@ -1,4 +1,4 @@
-# $Id: configure.in,v 1.84 2003/04/22 16:06:07 marcus Exp $
+# $Id: configure.in,v 1.85 2003/05/14 20:21:15 marcus Exp $
 AC_INIT(file.c)
 AC_CONFIG_HEADER(file_machine.h)
 
@@ -1123,6 +1123,37 @@ if test "$pike_cv_have_notifications" = "yes"; then
   AC_DEFINE(HAVE_NOTIFICATIONS)
 else
   AC_MSG_RESULT(no)
+fi
+
+if test yes = "$ac_cv_func_grantpt"; then
+  pt_chmod_dirs=""
+  case "$pike_cv_sys_os" in
+    Solaris) pt_chmod_dirs="/lib /usr/lib" ;;
+  esac
+  if test x = x"$pt_chmod_dirs"; then
+    :
+  else
+    AC_MSG_CHECKING(for pt_chmod since OS is $pike_cv_sys_os)
+    AC_CACHE_VAL(pike_cv_pt_chmod_path, [
+      pike_cv_pt_chmod_path=no
+      for i in $pt_chmod_dirs; do
+        if test -x ${i}/pt_chmod; then
+          pike_cv_pt_chmod_path="${i}/pt_chmod"
+	  break
+        else
+          :
+        fi
+      done
+    ])
+    AC_MSG_RESULT($pike_cv_pt_chmod_path)
+    if test "no" = pike_cv_pt_chmod_path; then
+      :
+    else
+      AC_DEFINE_UNQUOTED(USE_PT_CHMOD,"$pike_cv_pt_chmod_path")
+    fi
+  fi
+else
+  :
 fi
 
 AC_OUTPUT(Makefile,echo FOO >stamp-h )
