@@ -4,7 +4,7 @@
 ||| See the files COPYING and DISCLAIMER for more information.
 \*/
 #include "global.h"
-RCSID("$Id: interpret.c,v 1.76 1998/04/10 22:24:19 hubbe Exp $");
+RCSID("$Id: interpret.c,v 1.77 1998/04/16 01:19:37 hubbe Exp $");
 #include "interpret.h"
 #include "object.h"
 #include "program.h"
@@ -1502,7 +1502,7 @@ static int eval_instruction(unsigned char *pc)
       push_int(pike_sizeof(fp->locals+GET_ARG()));
       break;
 
-      CASE(F_SSCANF); f_sscanf(GET_ARG()); break;
+      CASE(F_SSCANF); o_sscanf(GET_ARG()); break;
 
       CASE(F_CALL_LFUN);
       apply_low(fp->current_object,
