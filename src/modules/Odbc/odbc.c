@@ -1,5 +1,5 @@
 /*
- * $Id: odbc.c,v 1.5 1997/11/02 18:42:12 grubba Exp $
+ * $Id: odbc.c,v 1.6 1997/11/02 22:19:49 grubba Exp $
  *
  * Pike interface to ODBC compliant databases.
  *
@@ -15,7 +15,7 @@
 #endif /* HAVE_CONFIG_H */
 
 #include "global.h"
-RCSID("$Id: odbc.c,v 1.5 1997/11/02 18:42:12 grubba Exp $");
+RCSID("$Id: odbc.c,v 1.6 1997/11/02 22:19:49 grubba Exp $");
 
 #include "interpret.h"
 #include "object.h"
@@ -46,21 +46,21 @@ struct program *odbc_program = NULL;
  * Helper functions
  */
 
-volatile void odbc_error(const char *fun, const char *msg,
-			 struct precompiled_odbc *odbc, HSTMT hstmt,
-			 RETCODE code, void (*clean)(void));
+void odbc_error(const char *fun, const char *msg,
+		struct precompiled_odbc *odbc, HSTMT hstmt,
+		RETCODE code, void (*clean)(void));
 
-static INLINE volatile void odbc_check_error(const char *fun, const char *msg,
-					     RETCODE code, void (*clean)(void))
+static INLINE void odbc_check_error(const char *fun, const char *msg,
+				    RETCODE code, void (*clean)(void))
 {
   if ((code != SQL_SUCCESS) && (code != SQL_SUCCESS_WITH_INFO)) {
     odbc_error(fun, msg, PIKE_ODBC, PIKE_ODBC->hstmt, code, clean);
   }
 }
 
-volatile void odbc_error(const char *fun, const char *msg,
-			 struct precompiled_odbc *odbc, HSTMT hstmt,
-			 RETCODE code, void (*clean)(void))
+void odbc_error(const char *fun, const char *msg,
+		struct precompiled_odbc *odbc, HSTMT hstmt,
+		RETCODE code, void (*clean)(void))
 {
   RETCODE _code;
   unsigned char errcode[256];

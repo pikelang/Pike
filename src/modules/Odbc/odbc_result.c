@@ -1,5 +1,5 @@
 /*
- * $Id: odbc_result.c,v 1.6 1997/11/02 18:41:59 grubba Exp $
+ * $Id: odbc_result.c,v 1.7 1997/11/02 22:20:51 grubba Exp $
  *
  * Pike  interface to ODBC compliant databases
  *
@@ -17,7 +17,7 @@
 #ifdef HAVE_ODBC
 
 #include "global.h"
-RCSID("$Id: odbc_result.c,v 1.6 1997/11/02 18:41:59 grubba Exp $");
+RCSID("$Id: odbc_result.c,v 1.7 1997/11/02 22:20:51 grubba Exp $");
 
 #include "interpret.h"
 #include "object.h"
@@ -67,8 +67,8 @@ static void clean_sql_res(void)
   PIKE_ODBC_RES->hstmt = SQL_NULL_HSTMT;
 }
 
-static INLINE volatile void odbc_check_error(const char *fun, const char *msg,
-					     RETCODE code, void (*clean)(void))
+static INLINE void odbc_check_error(const char *fun, const char *msg,
+				    RETCODE code, void (*clean)(void))
 {
   if ((code != SQL_SUCCESS) && (code != SQL_SUCCESS_WITH_INFO)) {
     odbc_error(fun, msg, PIKE_ODBC_RES->odbc, PIKE_ODBC_RES->hstmt,
