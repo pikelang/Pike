@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: program_id.h,v 1.19 2003/10/27 23:21:44 mast Exp $
+|| $Id: program_id.h,v 1.20 2004/05/01 12:33:38 mast Exp $
 */
 
 #ifndef PROGRAM_ID_H
@@ -83,6 +83,10 @@
 #define     PROG_STDIO_IPPROTO_ID                                   034
 #define tObjImpl_STDIO_IPPROTO		      "\003\000\000\000\000\034"
 #define   tObjIs_STDIO_IPPROTO		      "\003\001\000\000\000\034"
+
+#define     PROG_THREAD_MUTEX_COMPAT_7_4_ID                          35
+#define tObjImpl_THREAD_MUTEX_COMPAT_7_4      "\003\000\000\000\000\035"
+#define   tObjIs_THREAD_MUTEX_COMPAT_7_4      "\003\001\000\000\000\035"
 
 #define     PROG_GMP_MPZ_ID                                         040
 #define tObjImpl_GMP_MPZ                      "\003\000\000\000\000\040"

@@ -2,12 +2,12 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: threads.c,v 1.235 2004/04/26 16:21:19 mast Exp $
+|| $Id: threads.c,v 1.236 2004/05/01 12:31:35 mast Exp $
 */
 
 #ifndef CONFIGURE_TEST
 #include "global.h"
-RCSID("$Id: threads.c,v 1.235 2004/04/26 16:21:19 mast Exp $");
+RCSID("$Id: threads.c,v 1.236 2004/05/01 12:31:35 mast Exp $");
 
 PMOD_EXPORT int num_threads = 1;
 PMOD_EXPORT int threads_disabled = 0;
@@ -1129,6 +1129,14 @@ struct key_storage
  *! disappeared, but further calls to the functions in this class will
  *! fail as is usual for destructed objects.
  *!
+ *! @note
+ *! Pike 7.4 and earlier destructed any outstanding lock when the
+ *! mutex was destructed, but threads waiting in @[lock] still got
+ *! functioning locks as discussed above. This is inconsistent no
+ *! matter how you look at it, so it was changed in 7.6. The old
+ *! behavior is retained in compatibility mode for applications that
+ *! explicitly destruct mutexes to unlock them.
+ *!
  *! @seealso
  *!   @[trylock()]
  */
@@ -1369,6 +1377,26 @@ void exit_mutex_obj(struct object *o)
   else
     co_destroy(& m->condition);
 #endif
+}
+
+void exit_mutex_obj_compat_7_4(struct object *o)
+{
+  struct mutex_storage *m = THIS_MUTEX;
+  struct object *key = m->key;
+
+  THREADS_FPRINTF(1, (stderr, "DESTROYING MUTEX m:%p\n", THIS_MUTEX));
+
+  if(key) {
+    m->key=0;
+    destruct(key); /* Will destroy m->condition if m->num_waiting is zero. */
+  }
+  else {
+#ifdef PIKE_DEBUG
+    if (m->num_waiting)
+      Pike_error ("key/num_waiting confusion.\n");
+#endif
+    co_destroy(& m->condition);
+  }
 }
 
 /*! @endclass
@@ -2055,6 +2083,20 @@ void th_init(void)
   set_init_callback(init_mutex_obj);
   set_exit_callback(exit_mutex_obj);
   end_class("mutex", 0);
+
+  START_NEW_PROGRAM_ID(THREAD_MUTEX_COMPAT_7_4);
+  ADD_STORAGE(struct mutex_storage);
+  ADD_FUNCTION("lock",f_mutex_lock,
+	       tFunc(tOr(tInt02,tVoid),tObjIs_THREAD_MUTEX_KEY),0);
+  ADD_FUNCTION("trylock",f_mutex_trylock,
+	       tFunc(tOr(tInt02,tVoid),tObjIs_THREAD_MUTEX_KEY),0);
+  ADD_FUNCTION("current_locking_thread",f_mutex_locking_thread,
+	   tFunc(tNone,tObjIs_THREAD_ID), 0);
+  ADD_FUNCTION("current_locking_key",f_mutex_locking_key,
+	   tFunc(tNone,tObjIs_THREAD_MUTEX_KEY), 0);
+  set_init_callback(init_mutex_obj);
+  set_exit_callback(exit_mutex_obj_compat_7_4);
+  end_class("mutex_compat_7_4", 0);
 
   START_NEW_PROGRAM_ID(THREAD_CONDITION);
   ADD_STORAGE(COND_T);
