@@ -12,7 +12,7 @@ Output filter(Standards.URI uri, string|Stdio.File data, string content_type)
   if(objectp(data))
     data=data->read();
   
-  res->fields->body_normal=data;
+  res->fields->body=data;
 
   return res;  
 }
