@@ -43,7 +43,7 @@
 #include "threads.h"
 #include "operators.h"
 
-RCSID("$Id: spider.c,v 1.80 2001/07/03 21:05:40 david%hedbor.org Exp $");
+RCSID("$Id: spider.c,v 1.81 2001/07/04 20:08:51 david%hedbor.org Exp $");
 
 #ifdef HAVE_PWD_H
 #include <pwd.h>
@@ -357,14 +357,14 @@ void f_parse_html(INT32 args)
   strings=0;
   do_html_parse(ss,cont,single,&strings,MAX_PARSE_RECURSE,extra_args);
 
-  UNSET_ONERROR(sserr);
-  UNSET_ONERROR(cerr);
-  UNSET_ONERROR(serr);
-
   if (extra_args) {
     UNSET_ONERROR(eerr);
     free_array(extra_args);
   }
+
+  UNSET_ONERROR(sserr);
+  UNSET_ONERROR(cerr);
+  UNSET_ONERROR(serr);
 
   free_mapping(cont);
   free_mapping(single);
@@ -419,10 +419,12 @@ void f_parse_html_lines(INT32 args)
 
   strings=0;
   do_html_parse_lines(ss,cont,single,&strings,MAX_PARSE_RECURSE,extra_args,1);
+
   if (extra_args) {
     UNSET_ONERROR(eerr);
     free_array(extra_args);
   }
+
   UNSET_ONERROR(sserr);
   UNSET_ONERROR(cerr);
   UNSET_ONERROR(serr);
