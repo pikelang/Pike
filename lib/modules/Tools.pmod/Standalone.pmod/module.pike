@@ -1,10 +1,10 @@
 // -*- Pike -*-
 
-// $Id: module.pike,v 1.19 2003/10/30 18:51:11 bill Exp $
+// $Id: module.pike,v 1.20 2003/10/31 11:39:50 grubba Exp $
 
 #pike __REAL_VERSION__
 
-constant version = ("$Revision: 1.19 $"/" ")[1];
+constant version = ("$Revision: 1.20 $"/" ")[1];
 constant description = "Pike module installer.";
 
 // Source directory
@@ -144,7 +144,7 @@ void do_make(array(string) cmd)
       "TMP_BINDIR="+bin_path,
       "SRCDIR="+fix("$src"),
       "TMP_MODULE_BASE=.",
-      "PIKE_EXTERNAL_MODULE=1",
+      "PIKE_EXTERNAL_MODULE=pike_external_module",
       "SYSTEM_MODULE_PATH=" + system_module_path,
       "LOCAL_MODULE_PATH=" + lmp,
       "RUNPIKE="+run_pike,
