@@ -1,5 +1,5 @@
 /*
- * $Id: acconfig.h,v 1.13 1999/04/20 15:28:28 grubba Exp $
+ * $Id: acconfig.h,v 1.14 1999/06/23 19:08:01 grubba Exp $
  */
 
 #ifndef FILE_MACHINE_H
@@ -10,6 +10,9 @@
 
 /* Define this if you have a FreeBSD-style (7 args) sendfile(). */
 #undef HAVE_FREEBSD_SENDFILE
+
+/* Define this if you have a HP/UX-style (6 args) sendfile(). */
+#undef HAVE_HPUX_SENDFILE
 
 /* Define this if you have a struct iovec */
 #undef HAVE_STRUCT_IOVEC
