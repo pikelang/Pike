@@ -40,7 +40,7 @@ bignum rsa_pad(string message, int type, mixed|void random)
   len = size - 3 - strlen(message);
   /*  write(sprintf("%d, %d, %d, %s", len, size, strlen(message), message)); */
   if (len < 8)
-    throw( ({ "Crypto.rsa->rsa_pad: To large block.\n",
+    throw( ({ "Crypto.rsa->rsa_pad: Too large block.\n",
 		backtrace() }) );
 
   if (random)
