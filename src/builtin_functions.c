@@ -4,7 +4,7 @@
 ||| See the files COPYING and DISCLAIMER for more information.
 \*/
 #include "global.h"
-RCSID("$Id: builtin_functions.c,v 1.27 1997/02/19 05:06:42 hubbe Exp $");
+RCSID("$Id: builtin_functions.c,v 1.28 1997/02/24 22:06:20 hubbe Exp $");
 #include "interpret.h"
 #include "svalue.h"
 #include "macros.h"
@@ -301,8 +301,9 @@ void f_backtrace(INT32 args)
 
     if(f->current_object && f->current_object->prog)
     {
-      ITEM(a)[frames].u.array=i=allocate_array_no_init(3,0);
+      ITEM(a)[frames].u.array=i=allocate_array_no_init(3+f->num_args,0);
       ITEM(a)[frames].type=T_ARRAY;
+      assign_svalues_no_free(ITEM(i)+3, f->locals, f->num_args);
       ITEM(i)[2].type=T_FUNCTION;
       ITEM(i)[2].subtype=f->fun;
       ITEM(i)[2].u.object=f->current_object;
@@ -328,7 +329,6 @@ void f_backtrace(INT32 args)
 	ITEM(i)[0].subtype=NUMBER_NUMBER;
 	ITEM(i)[0].type=T_INT;
       }
-      i->type_field = BIT_FUNCTION | BIT_INT | BIT_STRING;
     }else{
       ITEM(a)[frames].type=T_INT;
       ITEM(a)[frames].u.integer=0;
@@ -1203,7 +1203,7 @@ void f_sort(INT32 args)
 {
   INT32 e,*order;
 
-  if(args < 0)
+  if(args < 1)
     fatal("Too few arguments to sort().\n");
 
   for(e=0;e<args;e++)
