@@ -139,7 +139,7 @@ void got_notify(string from,string type,
       case "473": // failed to join
 	 if ((c=channels[lower_case(message||"")]))
 	 {
-	    c->not_failed_to_join();
+	    c->not_failed_to_join(@extra);
 	    return;
 	 }
 	 break;
@@ -188,6 +188,7 @@ void got_notify(string from,string type,
 	 break;
 
       case "474": // "cannot join channel"
+	werror("%O\n",extra);
 	 if ((c=channels[lower_case(message||"")]))
 	 {
 	    if (c->not_join_fail) c->not_join_fail(extra*" ");
@@ -309,6 +310,19 @@ void got_notify(string from,string type,
 	 nick2person[to]=originator;
 	 if (err) throw(err);
 	 return;
+
+      case "INVITE":
+	 if ((c=channels[lower_case(message||"")]))
+	 {
+	    c->not_invite(originator,@extra);
+	    return;
+	 }
+	 if (!options->notice_invite) break;
+	 options->notice_invite(originator,message,@extra);
+	 return;
+
+      default:
+	 werror("got unknown message: %O, %O, %O, %O\n",from,type,to,message);
    }
 //    werror("got notify: %O, %O, %O, %O\n",from,type,to,message);
    if (options->generic_notify)

@@ -29,5 +29,6 @@ class Channel
    void	not_part(Person who,string message,Person executor);
    void	not_mode(Person who,string mode);
    void	not_failed_to_join();
+   void not_invite(Person who);
 }
 
