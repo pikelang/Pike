@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: misc.c,v 1.15 2004/06/30 09:17:24 grubba Exp $
+|| $Id: misc.c,v 1.16 2004/07/24 18:46:49 nilsson Exp $
 */
 
 #include "global.h"
@@ -2036,6 +2036,7 @@ static const struct {
   { "maccyr", map_macintosh_cyr, 128, 255 },                          /* :: mac-cyr */
   { "macintosh", map_macintosh, 128, 255 },                           /* :: macintosh */
   { "macintoshcyr", map_macintosh_cyr, 128, 255 },                    /* :: macintosh-cyr */
+  { "macroman", map_macintosh, 128, 255 },                            /* :: macroman */
   { "msansi", map_windows_1252, 128, 255 },                           /* :: ms-ansi */
   { "naplps", map_ANSI_X3_110_1983, 33, 255 },                        /* :: naplps */
   { "ncnc001081", map_NC_NC00_10_81, 36, 127 },                       /* :: nc_nc00-10:81 */
