@@ -1,6 +1,6 @@
 #pike __REAL_VERSION__
 
-/* $Id: sslfile.pike,v 1.54 2003/02/17 17:49:19 grubba Exp $
+/* $Id: sslfile.pike,v 1.55 2003/03/08 23:01:37 nilsson Exp $
  *
  */
 
@@ -47,6 +47,7 @@ void die(int status)
 #ifdef SSL3_DEBUG
   werror("SSL.sslfile->die: is_closed = %d\n", is_closed);
 #endif
+
   if (status < 0)
   {
     /* Other end closed without sending a close_notify alert */
@@ -55,6 +56,7 @@ void die(int status)
     werror("SSL.sslfile: Killed\n");
 #endif
   }
+
   is_closed = 1;
   if (socket)
   {
@@ -77,21 +79,20 @@ void die(int status)
 private int queue_write()
 {
   int|string data = to_write();
+
 #ifdef SSL3_DEBUG_TRANSPORT
   werror("SSL.sslfile->queue_write: '%O'\n", data);
-#else
-#ifdef SSL3_DEBUG
-  werror("SSL.sslfile->queue_write: '%O'\n", stringp(data)?(string)sizeof(data):data);
+#elif defined(SSL3_DEBUG)
+  werror("SSL.sslfile->queue_write: '%O'\n",
+	 stringp(data)?(string)sizeof(data):data);
 #endif
-#endif
+
   if (stringp(data))
     write_buffer += data;
 #ifdef SSL3_DEBUG_TRANSPORT
   werror("SSL.sslfile->queue_write: buffer = '%O'\n", write_buffer);
-#else
-#ifdef SSL3_DEBUG
+#elif defined(SSL3_DEBUG)
   werror("SSL.sslfile->queue_write: buffer = %O\n", sizeof(write_buffer));
-#endif
 #endif
 
   if(!blocking) {
@@ -319,8 +320,10 @@ private void write_blocking() {
 private void ssl_read_callback(mixed id, string s)
 {
 #ifdef SSL3_DEBUG
-  werror("SSL.sslfile->ssl_read_callback, connected=%d, handshake_finished=%d\n", connected, handshake_finished);
+  werror("SSL.sslfile->ssl_read_callback, connected=%d, "
+	 "handshake_finished=%d\n", connected, handshake_finished);
 #endif
+
   string|int data = got_data(s);
   if (stringp(data))
   {
