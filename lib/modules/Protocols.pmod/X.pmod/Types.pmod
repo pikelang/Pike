@@ -423,8 +423,11 @@ class Window
 {
   inherit Drawable;
   int currentInputMask;
+
   function FreeRequest = lambda(){}; // FIXME!!
-  mapping(string:array(function)) event_callbacks = ([ ]);
+
+  /* Keys are event names, values are arrays of ({ priority, function }) */
+  mapping(string:array(array)) event_callbacks = ([ ]);
 
   int alt_gr, num_lock, shift, control, caps_lock;
   int meta, alt, super, hyper;
@@ -610,7 +613,7 @@ class Window
   }
 
   object CreateWindow(int x, int y, int width, int height,
-		      int border_width, mapping attributes,
+		      int border_width, mapping|void attributes,
 		      object|void visual, int|void d,
 		      int|void c_class)
   {
@@ -625,6 +628,9 @@ class Window
     }    
 
     // object w = Window(display, req->wid);
+    // werror(sprintf("CreateWindowRequest: %s\n",
+    // 		   Crypto.string_to_hex(req->to_string())));
+    
     display->send_request(req);
     object w = new(display, req->wid, visual, this_object());
     w->depth = d||depth||this_object()->rootDepth;
@@ -671,6 +677,9 @@ class Window
     object req = Requests.ConfigureWindow();
     req->window = id;
     req->attributes = m;
+
+//     werror(sprintf("ConfigureRequest: %s\n",
+//		   Crypto.string_to_hex(req->to_string())));
     return req;
   }
 
@@ -689,10 +698,12 @@ class Window
     Configure((["StackMode":1]));
   }
 
-  void set_event_callback(string type, function f)
+  /* Keep callbacks sorted by decreasing priority */
+  void set_event_callback(string type, function f, int|void priority)
   {
-    event_callbacks[type] = (event_callbacks[type] || ({ }) )
-      + ({ f });
+    event_callbacks[type] =
+      reverse(sort((event_callbacks[type] || ({ }) )
+		   + ({ ({ priority, f }) }) ));
   }
   
   object SelectInput_req()
