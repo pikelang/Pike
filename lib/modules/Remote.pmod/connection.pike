@@ -249,6 +249,7 @@ int request_size = 0;
 
 void provide_result(int refno, mixed result)
 {
+    finished_calls[ refno ] = result;
 //   if (functionp(pending_calls[refno]))
 //   {
 //     DEBUGMSG("calling completion function for request "+refno+"\n");
@@ -256,7 +257,6 @@ void provide_result(int refno, mixed result)
 //   }
 //   else
 //   {
-    finished_calls[refno] = result;
 //     m_delete(pending_calls, refno);
 //   }
 }
@@ -308,7 +308,7 @@ void do_call (array data)
 	break;
 
       case CTX_CALL_ASYNC: // an asynchronous call
-	mixed e = catch { f(@args); };
+	e = catch { f(@args); };
 	if (e) {
 	  catch (e[1] = e[1][sizeof(backtrace())-1..]);
 	  return_error(refno, e);
