@@ -1,5 +1,5 @@
 /*
- * $Id: acconfig.h,v 1.30 1998/08/06 23:35:30 grubba Exp $
+ * $Id: acconfig.h,v 1.31 1998/08/31 12:45:51 grubba Exp $
  */
 #ifndef MACHINE_H
 #define MACHINE_H
@@ -179,6 +179,9 @@
 
 /* Define this if your pthreads have pthread_condattr_default */
 #undef HAVE_PTHREAD_CONDATTR_DEFAULT
+
+/* Define this if you need to use &pthread_condattr_default in cond_init() */
+#undef HAVE_PTHREAD_CONDATTR_DEFAULT_AIX
 
 /* Define if you have the pthread_attr_setstacksize function.  */
 #undef HAVE_PTHREAD_ATTR_SETSTACKSIZE
