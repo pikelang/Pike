@@ -223,7 +223,7 @@ int main(int argc, string *argv)
   string include_prefix;
   string man_prefix;
   string lnk;
-
+  string old_exec_prefix;
   foreach(argv[1..], string foo)
     if(sscanf(foo,"%s=%s",string var, string value)==2)
       vars[var]=value;
@@ -237,9 +237,10 @@ int main(int argc, string *argv)
     man_prefix=vars->man_prefix;
   }else{
 
-    if(!(lnk=vars->pike_name) || !strlen(lnk))
+    if(!(lnk=vars->pike_name) || !strlen(lnk)) {
       lnk=combine_path(vars->exec_prefix,"pike");
-
+      old_exec_prefix=vars->exec_prefix; // to make the directory for pike link
+    }
     prefix=combine_path("/",getcwd(),prefix,"pike",replace(version()-"Pike v"," release ","."));
     exec_prefix=combine_path(prefix);
     lib_prefix=combine_path(prefix,"lib");
@@ -341,7 +342,7 @@ int main(int argc, string *argv)
 	exit(1);
       }
     }
-    
+    mkdirhier(old_exec_prefix);
     symlink(pike,lnk);
   }
 #endif
