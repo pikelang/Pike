@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: apply_low.h,v 1.11 2002/11/09 17:03:53 grubba Exp $
+|| $Id: apply_low.h,v 1.12 2002/11/21 11:37:51 grubba Exp $
 */
 
     {
@@ -203,6 +203,7 @@
 	{
 	  struct object *tmp;
 	  check_threads_etc();
+	  Pike_fp->num_args=args;
 	  tmp=parent_clone_object(s->u.program,
 				  o,
 				  fun,
