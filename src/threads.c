@@ -1,5 +1,5 @@
 #include "global.h"
-RCSID("$Id: threads.c,v 1.25 1997/08/31 22:24:00 per Exp $");
+RCSID("$Id: threads.c,v 1.26 1997/09/01 00:59:33 per Exp $");
 
 int num_threads = 1;
 int threads_disabled = 0;
@@ -14,12 +14,11 @@ int threads_disabled = 0;
 #include "constants.h"
 #include "program.h"
 
-#include <errno.h>
 
 struct object *thread_id;
 static struct callback *threads_evaluator_callback=0;
 
-MUTEX_T interpreter_lock;
+MUTEX_T interpreter_lock = PTHREAD_MUTEX_INITIALIZER;
 struct program *mutex_key = 0;
 struct program *thread_id_prog = 0;
 #ifdef POSIX_THREADS
@@ -43,21 +42,15 @@ static void check_threads(struct callback *cb, void *arg, void * arg2)
 
 void *new_thread_func(void * data)
 {
-#ifdef MASSIVE_DEBUG
-  static int dbt;
-#endif
+/*  static int dbt;*/
   struct thread_starter arg = *(struct thread_starter *)data;
   JMP_BUF back;
   INT32 tmp;
 
-#ifdef MASSIVE_DEBUG
- fprintf(stderr, "Thread create[%d:%p]...",dbt++,data);
-#endif
+/*  fprintf(stderr, "Thread create[%d]...",dbt++);*/
   if((tmp=mt_lock( & interpreter_lock)))
     fatal("Failed to lock interpreter, errno %d\n",tmp);
-#ifdef MASSIVE_DEBUG
-  fprintf(stderr,"Created[%d:%p]...",dbt,data);
-#endif
+/*  fprintf(stderr,"Created[%d]...",dbt);*/
   init_interpreter();
 
   thread_id=arg.id;
@@ -67,10 +60,6 @@ void *new_thread_func(void * data)
     ONERROR tmp;
     SET_ONERROR(tmp,exit_on_error,"Error in handle_error in master object!");
     assign_svalue_no_free(sp++, & throw_value);
-    free((char *)data); /* Moved by per, to avoid some bugs.... */
-#ifdef MASSIVE_DEBUG
-  fprintf(stderr,"Error [%d:%p]\n",dbt,data);
-#endif
     APPLY_MASTER("handle_error", 1);
     pop_stack();
     UNSET_ONERROR(tmp);
@@ -79,13 +68,10 @@ void *new_thread_func(void * data)
     push_array_items(arg.args);
     arg.args=0;
     f_call_function(args);
-#ifdef MASSIVE_DEBUG
-  fprintf(stderr,"Called [%d:%p]\n",dbt,data);
-#endif
     pop_stack(); /* Discard the return value. /Per */
-    free((char *)data); /* Moved by per, to avoid some bugs.... */
   }
 
+  free((char *)data); /* Moved by per, to avoid some bugs.... */
   UNSETJMP(back);
 
   destruct(thread_id);
@@ -100,9 +86,7 @@ void *new_thread_func(void * data)
     remove_callback(threads_evaluator_callback);
     threads_evaluator_callback=0;
   }
-#ifdef MASSIVE_DEBUG
-  fprintf(stderr,"Done[%d:%p]\n",dbt--,data);
-#endif
+/*  fprintf(stderr,"Done[%d]\n",dbt--);*/
   mt_unlock(& interpreter_lock);
   th_exit(0);
   /* NOT_REACHED, but removes a warning */
@@ -175,22 +159,18 @@ void f_this_thread(INT32 args)
 
 struct mutex_storage
 {
-#ifdef SOLARIS
-  sema_t sema;
-#else
   COND_T condition;
-#endif
   struct object *key;
 };
 
 struct key_storage
 {
   struct mutex_storage *mut;
-  int initialized;
   struct object *owner;
+  int initialized;
 };
 
-static MUTEX_T mutex_kluge;
+static MUTEX_T mutex_kluge = PTHREAD_MUTEX_INITIALIZER;
 
 #define OB2KEY(X) ((struct key_storage *)((X)->storage))
 
@@ -201,25 +181,24 @@ void f_mutex_lock(INT32 args)
 
   pop_n_elems(args);
   m=THIS_MUTEX;
+
   if(m->key && OB2KEY(m->key)->owner == thread_id)
+  {
+    push_int(0);
+    return;
     error("Recursive mutex locks!\n");
+  }
+
   o=clone_object(mutex_key,0);
-#ifdef SOLARIS
-  THREADS_ALLOW();
-  // Might be interrupted by signals.
-  while((sema_wait( &m->sema )) && (errno==EAGAIN));
-  THREADS_DISALLOW();
-  OB2KEY(o)->mut=m;
-  m->key=o;
-#else
-  THREADS_ALLOW();
   mt_lock(& mutex_kluge);
+  THREADS_ALLOW();
   while(m->key) co_wait(& m->condition, & mutex_kluge);
+  OB2KEY(o)->mut=m;
+  OB2KEY(o)->owner=thread_id;
+  m->key=o;
+  
   mt_unlock(&mutex_kluge);
   THREADS_DISALLOW();
-  OB2KEY(o)->mut=m;
-  m->key=o;
-#endif
   push_object(o);
 }
 
@@ -232,14 +211,22 @@ void f_mutex_trylock(INT32 args)
 
   o=clone_object(mutex_key,0);
   m=THIS_MUTEX;
+
   if(m->key && OB2KEY(m->key)->owner == thread_id)
     error("Recursive mutex locks!\n");
+
+  mt_lock(& mutex_kluge);
+  THREADS_ALLOW();
   if(!m->key)
   {
     OB2KEY(o)->mut=m;
+    OB2KEY(o)->owner=thread_id;
     m->key=o;
     i=1;
   }
+  mt_unlock(&mutex_kluge);
+  THREADS_DISALLOW();
+  
   if(i)
   {
     push_object(o);
@@ -252,58 +239,40 @@ void f_mutex_trylock(INT32 args)
 
 void init_mutex_obj(struct object *o)
 {
-#ifdef SOLARIS
-  sema_init(& THIS_MUTEX->sema, 1, USYNC_THREAD, NULL );
-#else
   co_init(& THIS_MUTEX->condition);
-#endif
   THIS_MUTEX->key=0;
 }
 
 void exit_mutex_obj(struct object *o)
 {
   if(THIS_MUTEX->key) destruct(THIS_MUTEX->key);
-#ifdef SOLARIS
-  sema_destroy( & THIS_MUTEX->sema );
-#else
   co_destroy(& THIS_MUTEX->condition);
-#endif
 }
 
 #define THIS_KEY ((struct key_storage *)(fp->current_storage))
 void init_mutex_key_obj(struct object *o)
 {
   THIS_KEY->mut=0;
+  THIS_KEY->owner=0;
   THIS_KEY->initialized=1;
-  THIS_KEY->owner=thread_id;
 }
 
 void exit_mutex_key_obj(struct object *o)
 {
+  mt_lock(& mutex_kluge);
   if(THIS_KEY->mut)
   {
 #ifdef DEBUG
     if(THIS_KEY->mut->key != o)
       fatal("Mutex unlock from wrong key %p != %p!\n",THIS_KEY->mut->key,o);
 #endif
-
-#ifdef SOLARIS
-    sema_post( &THIS_KEY->mut->sema );
     THIS_KEY->mut->key=0;
-#else
-    mt_lock(& mutex_kluge);
-#endif
-    THIS_KEY->mut->key=0;
-#ifndef SOLARIS
-    co_signal(& THIS_KEY->mut->condition);
-#endif
-    THIS_KEY->mut=0;
     THIS_KEY->owner=0;
+    co_signal(& THIS_KEY->mut->condition);
+    THIS_KEY->mut=0;
     THIS_KEY->initialized=0;
   }
-#ifndef SOLARIS
   mt_unlock(& mutex_kluge);
-#endif
 }
 
 #define THIS_COND ((COND_T *)(fp->current_storage))
@@ -328,23 +297,18 @@ void f_cond_wait(INT32 args)
     if(key->prog != mutex_key)
       error("Bad argument 1 to condition->wait()\n");
     
+    mt_lock(&mutex_kluge);
     mut=OB2KEY(key)->mut;
     THREADS_ALLOW();
-#ifdef SOLARIS
-    mut->key=0;
-    sema_post( &mut->sema );
-    /* Wait and allow mutex operations */
-    co_wait(c,0);
-    while((sema_wait( &mut->sema )) && (errno==EAGAIN));
-    mut->key=key;
-#else
-    mt_lock(&mutex_kluge);
+
     /* Unlock mutex */
     mut->key=0;
     OB2KEY(key)->mut=0;
     co_signal(& mut->condition);
+
     /* Wait and allow mutex operations */
     co_wait(c,&mutex_kluge);
+
     if(OB2KEY(key)->initialized)
     {
       /* Lock mutex */
@@ -353,7 +317,6 @@ void f_cond_wait(INT32 args)
       OB2KEY(key)->mut=mut;
     }
     mt_unlock(&mutex_kluge);
-#endif
     THREADS_DISALLOW();
     pop_stack();
   } else {
