@@ -2,6 +2,7 @@
 
 // Source directory
 string srcdir;
+string pike="¤pike¤";
 string prefix="¤prefix¤";
 string lib_prefix="¤lib_prefix¤";
 string share_prefix="¤share_prefix¤";
@@ -95,10 +96,15 @@ int main(int argc, string *argv)
     ({"make",Getopt.NO_ARG,({"--make"}) }),
     ({"auto",Getopt.NO_ARG,({"--auto"}) }),
     ({"source",Getopt.HAS_ARG,({"--source"}) }),
+    ({"query",Getopt.HAS_ARG,({"--query"}) }),
     )),array opt)
     {
       switch(opt[0])
       {
+	case "query":
+	  write("%s\n",this_object()[opt[1]]);
+	  exit(0);
+
 	case "fixate":
 	  string file=Stdio.read_file(opt[1]);
 	  break;

@@ -1,5 +1,5 @@
 #
-# $Id: Makefile.in,v 1.120 1998/09/29 16:51:03 grubba Exp $
+# $Id: Makefile.in,v 1.121 1998/10/22 09:12:25 hubbe Exp $
 #
 
 # This line is needed on some machines.
@@ -202,6 +202,7 @@ interpret.o: $(SRCDIR)/interpret.c
 
 force :
 
+
 # install
 install: pike hilfe pike-module aclocal
 	@echo
@@ -294,6 +295,7 @@ install: pike hilfe pike-module aclocal
 	    if [ -f "$(share_prefix)/$$f" ]; then \
 	      mv -f "$(share_prefix)/$$f" "$(share_prefix)/$$f.old"; \
 	    else : ; fi; \
+	    rm -f "$(share_prefix)/$$f.o" >/dev/null 2>/dev/null ; \
 	    if [ -f "$(lib_prefix)/$$f" ]; then \
               if test "x$(lib_prefix)" != "x$(share_prefix)"; then \
 	        mv -f "$(lib_prefix)/$$f" "$(lib_prefix)/$$f.now_in_share.old"; \
@@ -312,6 +314,7 @@ install: pike hilfe pike-module aclocal
 	    if [ -f "$(lib_prefix)/$$f" ]; then \
 	      mv -f "$(lib_prefix)/$$f" "$(lib_prefix)/$$f.old"; \
 	    else : ; fi; \
+	    rm -f "$(lib_prefix)/$$f.o" >/dev/null 2>/dev/null ; \
 	    cp "$(TMP_LIBDIR)/$$f" "$(lib_prefix)/$$f" || exit 1; \
 	    chmod a+r "$(lib_prefix)/$$f"; \
 	    chmod u+w "$(lib_prefix)/$$f"; \
@@ -333,6 +336,14 @@ install: pike hilfe pike-module aclocal
 	    fi ; \
 	  done ; \
 	else : ; fi
+
+optimize:
+	$(exec_prefix)/pike -m ./dumpmaster.pike $(lib_prefix)/master.pike
+	( \
+	  find $(lib_prefix)/modules -type f \( -name '*.pmod' -o -name '*.pike' \) -print  ; \
+	  find $(share_prefix)/modules -type f \( -name '*.pmod' -o -name '*.pike' \) -print \
+	) | \
+	while read file ; do $(exec_prefix)/pike ./dumpmodule.pike $$file ; done
 
 # tidy up a bit
 tidy:
