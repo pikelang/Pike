@@ -1,4 +1,4 @@
-AC_REVISION("$Id: configure.in,v 1.327 1999/10/25 06:29:12 per Exp $")
+AC_REVISION("$Id: configure.in,v 1.328 1999/10/30 23:23:43 hubbe Exp $")
 AC_INIT(interpret.c)
 AC_CONFIG_HEADER(machine.h)
 
@@ -440,7 +440,7 @@ AC_ARG_WITH(oob,	 [  --with-oob             enable out-of-band data handling],[A
 AC_ARG_WITH(thread-trace,[  --with-trace-threads   enable individual tracing of threads],[AC_DEFINE(TRACE_THREADS)],[])
 AC_ARG_WITH(compiler-trace,[  --with-compiler-trace  enable tracing of the compiler],[AC_DEFINE(YYDEBUG)],[])
 AC_ARG_WITH(security,    [  --with-security        enable internal pike security system],[AC_DEFINE(PIKE_SECURITY)],[])
-AC_ARG_WITH(bignums,     [  --with-bignums         enable internal conversion to bignums],[],[])
+AC_ARG_WITH(bignums,     [  --with-bignums         enable internal conversion to bignums],[],[with_bignums=yes])
 
 if test "x$with_bignums" = xyes; then
   AC_DEFINE(AUTO_BIGNUM)

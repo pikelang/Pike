@@ -1,4 +1,4 @@
-test_true([["$Id: testsuite.in,v 1.214 1999/10/30 13:18:50 noring Exp $"]])
+test_true([["$Id: testsuite.in,v 1.215 1999/10/30 23:23:59 hubbe Exp $"]])
 
 cond([[all_constants()->_verify_internals]],
 [[
@@ -1415,6 +1415,7 @@ cond([[ sizeof( cpp("__AUTO_BIGNUM__")/"__AUTO_BIGNUM__" ) == 1 ]],
   // - Multiplication.
   test_eq("6442450941", [[ (string)(0x7fffffff * 3) ]])
   test_eq("-6442450941", [[ (string)(0x7fffffff * -3) ]])
+  test_eq(-2147483648*-1,2147483648)
 
   // Division.
   test_eq("1073741824", [[ (string)((int)"2147483648" / 2) ]])
