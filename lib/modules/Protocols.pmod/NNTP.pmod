@@ -4,41 +4,50 @@
 
 class protocol
 {
-  inherit Stdio.FILE : news;
+  inherit Stdio.FILE : sock;
 
+  string prot="NEWS";
   string rest;
 
+//! reads the server result code for last request
+//!  used internally by command().
   int readreturncode()
   {
-    int space, code;
+    int space, code, r;
+    rest=0;
+
     do {
       space=' ';
-      string tmp=news::gets();
+      string tmp=sock::gets();
       if(!tmp) return 0;
-      sscanf(tmp,"%d%c%s",code,space,rest);
+      sscanf(tmp,"%d%c%s",code,space,r);
+      rest+=r;
     } while(space == '-');
     return code;
   }
 
+//! reads the message from the server as an array of lines
   array(string) read_body_lines()
   {
     array(string) ret=({});
     string s;
-    while(s = news::gets())
+    while(s = sock::gets())
     {
       if(s=="." || s==".\r") return ret;
       sscanf(s,".%s",s);
       ret+=({s});
     }
-    error("NNTP: connection closed by news server.\n");
+    error(prot + ": connection closed by server.\n");
   }
 
+//! reads the message from the server
   string readreturnbody()
   {
     array(string) tmp=read_body_lines();
     return tmp*"\n"+"\n";
   }
 
+//! send the body of a message to the server.
   void writebody(string s)
   {
     s=replace(s,"\r","");
@@ -48,24 +57,39 @@ class protocol
 	  line="."+line+"\r\n";
 	else
 	  line=line+"\r\n";
-	if(news::write(line) != sizeof(line))
-	  error("NNTP: Failed to write body.\n");
+	if(sock::write(line) != sizeof(line))
+	  error(prot + ": Failed to write body.\n");
       }
-    news::write(".\r\n");
+    sock::write(".\r\n");
   }
 
+//! send a command to the server
+//! @returns
+//!   the result code sent by the server
   int command(string cmd)
   {
-    news::write(cmd+"\r\n");
+    sock::write(cmd+"\r\n");
     return readreturncode();
   }
 
+//! gets the result message supplied by the server for the last response
+string get_response_message()
+{
+  return rest;
+}
+
+//! send a command and require an ok response (200 series).
+//! throws an error if the command result was not success.
   int failsafe_command(string cmd)
   {
     if(command(cmd)/100 != 2)
-      error("NEWS "+cmd+" failed.\n");
+      error(prot + " "+cmd+" failed.\n");
   }
 
+//! send a command that should return a message body.
+//!
+//! @returns 
+//!  the message body
   string do_cmd_with_body(string cmd)
   {
     failsafe_command(cmd);
@@ -74,9 +98,11 @@ class protocol
 
 };
 
+//! an NNTP client
 class client
 {
   inherit protocol;
+  ::prot="NNTP";
 
   class Group
   {
