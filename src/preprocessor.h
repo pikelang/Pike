@@ -1,5 +1,5 @@
 /*
- * $Id: preprocessor.h,v 1.15 1999/11/18 04:14:49 hubbe Exp $
+ * $Id: preprocessor.h,v 1.16 1999/12/28 02:21:54 grubba Exp $
  *
  * Preprocessor template.
  * Based on cpp.c 1.45
@@ -321,7 +321,7 @@ static INT32 calcC(struct cpp *this,WCHAR *data,INT32 len,INT32 pos)
     pos=calc1(this,data,len,pos+1);
     FINDTOK();
     if(!GOBBLE(')'))
-      error("Missing ')'\n");
+      cpp_error(this, "Missing ')'");
     break;
     
   case '0':
@@ -361,7 +361,7 @@ static INT32 calcC(struct cpp *this,WCHAR *data,INT32 len,INT32 pos)
     READCHAR(tmp);
     pos++;
     if(!GOBBLE('\''))
-      error("Missing end quote in character constant.\n");
+      cpp_error(this, "Missing end quote in character constant.");
     push_int(tmp);
     break;
   }
@@ -379,10 +379,10 @@ static INT32 calcC(struct cpp *this,WCHAR *data,INT32 len,INT32 pos)
     fprintf(stderr, "Bad char %c (%d)\n", data[pos], data[pos]);
 #ifdef PIKE_DEBUG
     if(WC_ISIDCHAR(data[pos]))
-      error("Syntax error in #if (should not happen)\n");
+      cpp_error(this, "Syntax error in #if (should not happen).");
 #endif
 
-    error("Syntax error in #if.\n");
+    cpp_error(this, "Syntax error in #if.");
   }
   
 
@@ -396,7 +396,7 @@ static INT32 calcC(struct cpp *this,WCHAR *data,INT32 len,INT32 pos)
 
     FINDTOK();
     if(!GOBBLE(']'))
-      error("Missing ']'");
+      cpp_error(this, "Missing ']'.");
   }
   /* DUMPPOS("after calcC"); */
   return pos;
@@ -713,7 +713,7 @@ static INT32 calc1(struct cpp *this, WCHAR *data, INT32 len, INT32 pos)
   {
     pos=calc1(this,data,len,pos);
     if(!GOBBLE(':'))
-      error("Colon expected");
+      cpp_error(this, "Colon expected.");
     pos=calc1(this,data,len,pos);
 
     check_destructed(sp-3);
@@ -820,7 +820,7 @@ static INT32 lower_cpp(struct cpp *this,
 	   data[pos+3]=='<'  &&
 	   data[pos+4]=='<'  &&
 	   data[pos+5]=='<')
-	  cpp_error(this, "CVS conflict detected");
+	  cpp_error(this, "CVS conflict detected.");
 	
       case '!': case '@': case '$': case '%': case '^': case '&':
       case '*': case '(': case ')': case '-': case '=': case '+':
@@ -1416,7 +1416,7 @@ static INT32 lower_cpp(struct cpp *this,
 	  SKIPSPACE();
 
 	  if(!WC_ISIDCHAR(data[pos]))
-	    cpp_error(this, "#ifdef what?\n");
+	    cpp_error(this, "#ifdef what?");
 
 	  namestart=pos;
 	  while(WC_ISIDCHAR(data[pos])) pos++;
@@ -1472,7 +1472,7 @@ static INT32 lower_cpp(struct cpp *this,
       if(WGOBBLE2(endif_))
       {
 	if(!(flags & CPP_EXPECT_ENDIF))
-	  cpp_error(this, "Unmatched #endif");
+	  cpp_error(this, "Unmatched #endif.");
 
 	return pos;
       }
@@ -1480,7 +1480,7 @@ static INT32 lower_cpp(struct cpp *this,
       if(WGOBBLE2(else_))
 	{
 	  if(!(flags & CPP_EXPECT_ELSE))
-	    cpp_error(this, "Unmatched #else");
+	    cpp_error(this, "Unmatched #else.");
 
 	  flags&=~CPP_EXPECT_ELSE;
 	  flags|=CPP_EXPECT_ENDIF;
@@ -1496,7 +1496,7 @@ static INT32 lower_cpp(struct cpp *this,
       if(WGOBBLE2(elif_) || WGOBBLE2(elseif_))
       {
 	if(!(flags & CPP_EXPECT_ELSE))
-	  cpp_error(this, "Unmatched #elif");
+	  cpp_error(this, "Unmatched #elif.");
 	
 	flags|=CPP_EXPECT_ENDIF;
 	
@@ -1859,7 +1859,7 @@ static INT32 lower_cpp(struct cpp *this,
 
 	if (flags & (CPP_EXPECT_ENDIF | CPP_EXPECT_ELSE)) {
 	  /* Only allowed at the top-level */
-	  cpp_error(this, "#charset directive inside #if/#endif.\n");
+	  cpp_error(this, "#charset directive inside #if/#endif.");
 	  /* Skip to end of line */
 	  while (data[pos] && data[pos] != '\n') {
 	    pos++;
@@ -1942,7 +1942,7 @@ static INT32 lower_cpp(struct cpp *this,
   }
 
   if(flags & CPP_EXPECT_ENDIF)
-    error("End of file while searching for #endif\n");
+    cpp_error(this, "End of file while searching for #endif.");
 
   return pos;
 }
