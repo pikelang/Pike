@@ -96,7 +96,7 @@
 */
 
 #include "global.h"
-RCSID("$Id: sprintf.c,v 1.18 1998/04/28 07:50:03 hubbe Exp $");
+RCSID("$Id: sprintf.c,v 1.19 1998/05/06 01:04:36 hubbe Exp $");
 #include "error.h"
 #include "array.h"
 #include "svalue.h"
@@ -643,7 +643,8 @@ static string low_pike_sprintf(char *format,
 	    s=sp;
 	    if(q)
 	    {
-	      ref_push_array(q->array);
+	      q->array->refs++;
+	      push_array_items(q->array);
 	    }else{
 	      array_index_no_free(sp,w,tmp);
 	      sp++;

@@ -56,11 +56,12 @@ test_eq(sprintf("test \0"),"test \0")
 test_eq(sprintf("%~*n","f",5),"fffff")
 test_eq(sprintf("%'\000'*n",5),"\000\000\000\000\000")
 
-test_true([[sprintf("%{%{%s%}\n%}",({({"hej"}),({"hop"})}))]])
-test_true([[sprintf("%{%{%s%}\n%}",({({"hej"}),({"hop"})}))]])
-test_true([[sprintf("%{%{%s%}\n%}",({({"hej"}),({"hop"})}))]])
-test_true([[sprintf("%{%{%s%}\n%}",({({"hej"}),({"hop"})}))]])
-test_true([[sprintf("%{%{%s%}\n%}",({({"hej"}),({"hop"})}))]])
+test_true([[sprintf("%{%{%s%}\n%}",({({({"hej"})}),({({"hop"})})}))]])
+test_true([[sprintf("%{%{%s%}\n%}",({({({"hej"})}),({({"hop"})})}))]])
+test_true([[sprintf("%{%{%s%}\n%}",({({({"hej"})}),({({"hop"})})}))]])
+test_true([[sprintf("%{%{%s%}\n%}",({({({"hej"})}),({({"hop"})})}))]])
+
+test_eq([[sprintf("%{%d %d %d\n%}",({ ({1,2,3}), ({4,5,6}) }) )]],"1 2 3\n4 5 6\n")
 
 dnl . : and ; hasn't been tested
 dnl ^, @ and _ hasn't been tested yet
