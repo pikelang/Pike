@@ -1,9 +1,9 @@
-/* $Id: image.c,v 1.76 1998/01/16 22:09:11 grubba Exp $ */
+/* $Id: image.c,v 1.77 1998/01/21 20:02:24 hubbe Exp $ */
 
 /*
 **! module Image
 **! note
-**!	$Id: image.c,v 1.76 1998/01/16 22:09:11 grubba Exp $
+**!	$Id: image.c,v 1.77 1998/01/21 20:02:24 hubbe Exp $
 **! class image
 **!
 **!	The main object of the <ref>Image</ref> module, this object
@@ -82,7 +82,7 @@
 
 #include "stralloc.h"
 #include "global.h"
-RCSID("$Id: image.c,v 1.76 1998/01/16 22:09:11 grubba Exp $");
+RCSID("$Id: image.c,v 1.77 1998/01/21 20:02:24 hubbe Exp $");
 #include "pike_macros.h"
 #include "object.h"
 #include "constants.h"
@@ -2765,18 +2765,18 @@ void image_read_lsb_grey(INT32 args)
 
 #define RGB_TYPE "int|void,int|void,int|void,int|void"
 
-void init_font_programs(void);
-void exit_font(void);
-void init_colortable_programs(void);
-void exit_colortable(void);
-void init_image_gif(void);
-void exit_image_gif(void);
-void init_image_pnm(void);
-void exit_image_pnm(void);
-void init_image_x(void);
-void exit_image_x(void);
-void init_image_png(void);
-void exit_image_png(void);
+extern void init_font_programs(void);
+extern void exit_font(void);
+extern void init_colortable_programs(void);
+extern void exit_colortable(void);
+extern void init_image_gif(void);
+extern void exit_image_gif(void);
+extern void init_image_pnm(void);
+extern void exit_image_pnm(void);
+extern void init_image_x(void);
+extern void exit_image_x(void);
+extern void init_image_png(void);
+extern void exit_image_png(void);
 
 static struct pike_string *magic_JPEG;
 
