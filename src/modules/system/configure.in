@@ -1,0 +1,44 @@
+AC_INIT(system.c)
+AC_CONFIG_HEADER(system_machine.h)
+
+AC_PROG_CC
+AC_C_CROSS
+AC_PROG_RANLIB
+AC_SUBST(RANLIB)
+AC_SUBST_FILE(dependencies)
+dependencies=$srcdir/dependencies
+AC_SUBST_FILE(module_makefile)
+module_makefile=$srcdir/../module_makefile
+
+AC_CHECK_LIB(socket, socket)
+AC_CHECK_LIB(nsl, gethostbyname)
+
+AC_HAVE_HEADERS(sys/types.h errno.h unistd.h pwd.h sys/conf.h sys/socket.h netinet/in.h arpa/inet.h netdb.h stdarg.h varargs.h sys/utsname.h)
+
+AC_HAVE_FUNCS(link symlink readlink initgroups seteuid setresuid geteuid getpgrp getppid fchroot uname gethostname gethostbyname)
+
+AC_MSG_CHECKING(for h_addr_list)
+AC_CACHE_VAL(pike_cv_struct_has_h_addr_list,
+[
+AC_TRY_LINK([
+#include <sys/types.h>
+#include <sys/socket.h>
+#include <netinet/in.h>
+#include <arpa/inet.h>
+#include <netdb.h>
+],[
+struct hostent foo;
+foo.h_addr_list[0];
+],pike_cv_struct_has_h_addr_list=yes,pike_cv_struct_has_h_addr_list=no)
+])
+ 
+if test "$pike_cv_struct_has_h_addr_list" = yes; then
+  AC_MSG_RESULT(yes)
+  AC_DEFINE(HAVE_H_ADDR_LIST)
+else
+  AC_MSG_RESULT(no)
+fi
+
+AC_OUTPUT(Makefile,echo FOO >stamp-h )
+
+

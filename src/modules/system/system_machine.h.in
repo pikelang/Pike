@@ -1,0 +1,100 @@
+/*
+ * $Id: system_machine.h.in,v 1.1 1997/01/21 20:55:04 grubba Exp $
+ *
+ * System dependant definitions for the system module for Pike
+ *
+ * Henrik Grubbström 1997-01-20
+ */
+
+#ifndef SYSTEM_MACHINE_H
+#define SYSTEM_MACHINE_H
+
+/*
+ * System headerfiles
+ */
+
+/* Define if you have <sys/types.h> header file */
+#undef HAVE_SYS_TYPES_H
+
+/* Define if you have <errno.h> header file */
+#undef HAVE_ERRNO_H
+
+/* Define if you have <unistd.h> header file */
+#undef HAVE_UNISTD_H
+
+/* Define if you have <pwd.h> header file */
+#undef HAVE_PWD_H
+
+/* Define if you have <sys/conf.h> header file */
+#undef HAVE_SYS_CONF_H
+
+/* Define if you have <netinet/in.h> header file */
+#undef HAVE_NETINET_IN_H
+
+/* Define if you have <sys/socket.h> header file */
+#undef HAVE_SYS_SOCKET_H
+
+/* Define if you have <arpa/inet.h> header file */
+#undef HAVE_ARPA_INET_H
+
+/* Define if you have <netdb.h> header file */
+#undef HAVE_NETDB_H
+
+/* Define if you have <stdarg.h> header file */
+#undef HAVE_STDARG_H
+
+/* Define if you have <varargs.h> header file */
+#undef HAVE_VARARGS_H
+
+/* Define if you have <sys/utsname.h> header file */
+#undef HAVE_SYS_UTSNAME_H
+
+/*
+ * System calls
+ */
+
+/* Define if you have link() */
+#undef HAVE_LINK
+
+/* Define if you have symlink() */
+#undef HAVE_SYMLINK
+
+/* Define if you have readlink() */
+#undef HAVE_READLINK
+
+/* Define if you have initgroups() */
+#undef HAVE_INITGROUPS
+
+/* Define if you have seteuid() */
+#undef HAVE_SETEUID
+
+/* Define if you have setresuid() */
+#undef HAVE_SETRESUID
+
+/* Define if you have geteuid() */
+#undef HAVE_GETEUID
+
+/* Define if you have getprgp() */
+#undef HAVE_GETPGRP
+
+/* Define if you have getppid() */
+#undef HAVE_GETPPID
+
+/* Define if you have fchroot() */
+#undef HAVE_FCHROOT
+
+/* Define if you have uname() */
+#undef HAVE_UNAME
+
+/* Define if you have gethostname() */
+#undef HAVE_GETHOSTNAME
+
+/* Define if you have gethostbyname() */
+#undef HAVE_GETHOSTBYNAME
+
+/* Define if you have h_addr_list in the hostent struct */
+#undef HAVE_H_ADDR_LIST
+
+#endif /* SYSTEM_MACHINE_H */
+
+
