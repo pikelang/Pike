@@ -6,7 +6,7 @@
 /**/
 #define NO_PIKE_SHORTHAND
 #include "global.h"
-RCSID("$Id: file.c,v 1.224 2001/09/27 18:14:02 hubbe Exp $");
+RCSID("$Id: file.c,v 1.225 2001/10/28 18:05:31 nilsson Exp $");
 #include "fdlib.h"
 #include "interpret.h"
 #include "svalue.h"
@@ -1457,16 +1457,7 @@ static void file_close(INT32 args)
   push_int(flags);
 }
 
-/*! @decl int open(string filename, string mode)
- *! @decl int open(string filename, string mode, int access)
- *! @decl int open(int fd, string mode)
- *!
- *! Open a file or fd.
- *!
- *! If @[access] is not specified, it will default to @tt{00666@}.
- *!
- *! @seealso
- *!   @[close()]
+/* No autodoc here. Collides with the documentation in Stdio.pmod/module.pmod
  */
 static void file_open(INT32 args)
 {
@@ -1850,9 +1841,7 @@ static void file_stat(INT32 args)
   }
 }
 
-/*! @decl int errno()
- *!
- *! Return the errno for the latest failed file operation.
+/* No autodoc here. Collides with the documentation in Stdio.pmod/module.pmod
  */
 static void file_errno(INT32 args)
 {
@@ -1873,12 +1862,7 @@ static void file_mode(INT32 args)
   push_int(THIS->open_mode);
 }
 
-/*! @decl void set_nonblocking()
- *!
- *! Sets this file to nonblocking operation.
- *!
- *! @seealso
- *!   @[set_blocking()]
+/* No autodoc here. Collides with the documentation in Stdio.pmod/module.pmod
  */
 static void file_set_nonblocking(INT32 args)
 {
@@ -2490,7 +2474,7 @@ static void file_dup2(INT32 args)
   push_int(1);
 }
 
-/*! @decl Stdio.File dup()
+/* No autodoc here. Collides with the documentation in Stdio.pmod/module.pmod
  */
 static void file_dup(INT32 args)
 {
