@@ -1,5 +1,5 @@
 /*
- * $Id: passwords.c,v 1.32 2002/03/01 22:18:48 agehall%shadowbyte.com Exp $
+ * $Id: passwords.c,v 1.33 2002/03/02 12:07:53 agehall%shadowbyte.com Exp $
  *
  * Password handling for Pike.
  *
@@ -22,7 +22,7 @@
 #include "system_machine.h"
 #include "system.h"
 
-RCSID("$Id: passwords.c,v 1.32 2002/03/01 22:18:48 agehall%shadowbyte.com Exp $");
+RCSID("$Id: passwords.c,v 1.33 2002/03/02 12:07:53 agehall%shadowbyte.com Exp $");
 
 #include "module_support.h"
 #include "interpret.h"
@@ -220,7 +220,8 @@ void push_grent(struct group *ent)
 #ifdef HAVE_GETGRGID
 /*! @decl array(int|string|array(string)) getgrgid(int gid)
  *!
- *!   Get the group entry for the group with the id @tt{gid@} from /etc/groups file.
+ *!   Get the group entry for the group with the id @tt{gid@} using the systemfunction
+ *!   @tt{getgrid(3)@}.
  *!
  *! @param gid
  *!   The id of the group
@@ -262,7 +263,8 @@ void f_getgrgid(INT32 args)
 
 #ifdef HAVE_GETGRNAM
 /*! @decl array(int|string|array(string)) getgrnam(string str)
- *!   Get the group entry for the group with the name @tt{str@} from /etc/groups file.
+ *!   Get the group entry for the group with the name @tt{str@} using the
+ *!   systemfunction @tt{getgrnam(3)@}.
  *!
  *! @param str
  *!   The name of the group
@@ -305,7 +307,7 @@ void f_getgrnam(INT32 args)
 #ifdef HAVE_GETPWNAM
 /*! @decl array(int|string) getpwnam(string str)
  *!
- *!   Get the user entry for login @tt{str@} from /etc/passwd.
+ *!   Get the user entry for login @tt{str@} using the systemfunction @tt{getpwnam(3)@}.
  *!
  *! @param str
  *!   The login name of the user whos userrecord is requested.
@@ -356,7 +358,7 @@ void f_getpwnam(INT32 args)
 #ifdef HAVE_GETPWUID
 /*! @decl array(int|string) getpwuid(int uid)
  *!
- *!   Get the user entry for UID @tt{uid@} from /etc/passwd.
+ *!   Get the user entry for UID @tt{uid@} using the systemfunction @tt{getpwuid(3)@}.
  *!
  *! @param uid
  *!   The uid of the user whos userrecord is requested.
@@ -407,7 +409,8 @@ void f_getpwuid(INT32 args)
 #ifdef HAVE_SETPWENT
 /*! @decl int setpwent()
  *!
- *!   Resets the @tt{getpwent()@} function to the first entry in /etc/passwd
+ *!   Resets the @tt{getpwent()@} function to the first entry in the passwd source
+ *!   using the systemfunction @tt{setpwent(3)@}.
  *!
  *! @returns
  *!   Always @tt{0@} (zero)
@@ -433,7 +436,8 @@ void f_setpwent(INT32 args)
 #ifdef HAVE_ENDPWENT
 /*! @decl int endpwent()
  *!
- *!   Closes the /etc/passwd file.
+ *!   Closes the passwd source opened by @tt{getpwent()@} function using the
+ *!   systemfunction @tt{endpwent(3)@}.
  *!
  *! @returns
  *!   Always @tt{0@} (zero)
@@ -459,8 +463,8 @@ void f_endpwent(INT32 args)
 #ifdef HAVE_GETPWENT
 /*! @decl array(int|string) getpwent()
  *!
- *!   When first called, the @tt{getpwent()@} function opens the /etc/passwd database
- *!   and returns the first record.
+ *!   When first called, the @tt{getpwent()@} function opens the passwd source
+ *!   and returns the first record using the systemfunction @tt{getpwent(3)@}.
  *!   For each following call, it returns the next record until EOF.
  *!
  *!   Call @tt{endpwent()@} when done using @tt{getpwent()@}.
@@ -612,8 +616,8 @@ void f_endgrent(INT32 args)
 /*! @decl array(int|string|array(string)) getgrent()
  *!
  *!   Get a group entry from /etc/groups file.
- *!   @tt{getgrent()@} interates thru the /etc/groups file and returns
- *!   one entry from the file per call.
+ *!   @tt{getgrent()@} interates thru the groups source and returns
+ *!   one entry per call using the systemfunction @tt{getgrent(3)@}.
  *!
  *!   Always call @tt{endgrent()@} when done using @tt{getgrent()@}!
  *!
@@ -658,9 +662,13 @@ void f_getgrent(INT32 args)
 
 /*! @decl array(array(int|string|array(string))) get_all_groups()
  *!
- *!   Returns an array of arrays with all groups in the /etc/groups file.
+ *!   Returns an array of arrays with all groups in the system groups source.
  *!   Each element in the returned array has the same structure as in
  *!   @tt{getgrent()@} function.
+ *!
+ *! @note
+ *!   The groups source is system dependant. Refer to your system manuals for information
+ *!   about how to set the source.
  *!
  *! @returns
  *!   @array
