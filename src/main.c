@@ -4,7 +4,7 @@
 ||| See the files COPYING and DISCLAIMER for more information.
 \*/
 #include "global.h"
-RCSID("$Id: main.c,v 1.53 1998/05/25 10:38:45 hubbe Exp $");
+RCSID("$Id: main.c,v 1.54 1998/05/25 19:34:11 grubba Exp $");
 #include "fdlib.h"
 #include "backend.h"
 #include "module.h"
@@ -317,9 +317,9 @@ int dbm_main(int argc, char **argv)
   
   init_shared_string_table();
   init_interpreter();
+  init_types();
   init_cpp();
   init_lex();
-  init_types();
 
   init_modules();
   master();
