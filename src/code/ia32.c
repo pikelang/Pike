@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: ia32.c,v 1.34 2003/07/31 14:28:51 tomas Exp $
+|| $Id: ia32.c,v 1.35 2003/08/06 18:08:46 mast Exp $
 */
 
 /*
@@ -550,26 +550,6 @@ static void ia32_mark(void)
   MOV_REG_TO_ABSADDR (mark_sp_reg, Pike_interpreter.mark_stack_pointer);
 }
 
-INT32 ins_f_jump(unsigned int b)
-{
-  INT32 ret;
-  if(b != F_BRANCH) return -1;
-  add_to_program(0xe9);
-  ret=DO_NOT_WARN( (INT32) PIKE_PC );
-  PUSH_INT(0);
-  return ret;
-}
-
-void update_f_jump(INT32 offset, INT32 to_offset)
-{
-  upd_pointer(offset, to_offset - offset - 4);
-}
-
-INT32 read_f_jump(INT32 offset)
-{
-  return read_pointer(offset) + offset + 4;
-}
-
 static void ia32_push_int(INT32 x)
 {
   struct svalue tmp;
@@ -714,7 +694,6 @@ void ins_f_byte(unsigned int b)
 #ifdef PIKE_DEBUG
   if (d_flag < 3)
 #endif
-  /* This is not very pretty */
   switch(b)
   {
     case F_MARK2 - F_OFFSET:
@@ -772,6 +751,14 @@ void ins_f_byte(unsigned int b)
 #endif /* !DEBUG_MALLOC */
 
   ia32_call_c_function(addr);
+
+#ifdef OPCODE_RETURN_JUMPADDR
+  if (instrs[b].flags & I_JUMP) {
+    /* This is the code that JUMP_EPILOGUE_SIZE compensates for. */
+    add_to_program (0xff);	/* jmp *%eax */
+    add_to_program (0xe0);
+  }
+#endif
 }
 
 void ins_f_byte_with_arg(unsigned int a,unsigned INT32 b)
@@ -901,6 +888,71 @@ void ins_f_byte_with_2_args(unsigned int a,
   update_arg1(b);
   update_arg2(c);
   ins_f_byte(a);
+}
+
+static INT32 do_ins_jump (unsigned int op)
+{
+  INT32 ret = -1;
+
+  if(op == F_BRANCH) {
+    ins_debug_instr_prologue (op, 0, 0);
+    add_to_program(0xe9);
+    ret=DO_NOT_WARN( (INT32) PIKE_PC );
+    PUSH_INT(0);
+  }
+
+#ifdef OPCODE_INLINE_BRANCH
+  else {
+    ia32_call_c_function (instrs[op - F_OFFSET].address);
+    add_to_program (0x85);	/* test %eax, %eax */
+    add_to_program (0xc0);
+#if 0
+    /* Slows down Intel PIII by 7%, speeds up Athlon XP by 22%. :P */
+    if (op == F_LOOP || op == F_FOREACH)
+      add_to_program (0x3e);	/* Branch taken hint. */
+#endif
+    add_to_program (0x0f);	/* jnz rel32 */
+    add_to_program (0x85);
+    ret = DO_NOT_WARN ((INT32) PIKE_PC);
+    PUSH_INT (0);
+  }
+#endif
+
+  return ret;
+}
+
+INT32 ia32_ins_f_jump (unsigned int op)
+{
+  if (!(instrs[op - F_OFFSET].flags & I_BRANCH)) return -1;
+  maybe_update_pc();
+  return do_ins_jump (op);
+}
+
+INT32 ia32_ins_f_jump_with_arg (unsigned int op, unsigned INT32 a)
+{
+  if (!(instrs[op - F_OFFSET].flags & I_BRANCH)) return -1;
+  maybe_update_pc();
+  update_arg1 (a);
+  return do_ins_jump (op);
+}
+
+INT32 ia32_ins_f_jump_with_two_args (unsigned int op, unsigned INT32 a, unsigned INT32 b)
+{
+  if (!(instrs[op - F_OFFSET].flags & I_BRANCH)) return -1;
+  maybe_update_pc();
+  update_arg1 (a);
+  update_arg2 (b);
+  return do_ins_jump (op);
+}
+
+void ia32_update_f_jump(INT32 offset, INT32 to_offset)
+{
+  upd_pointer(offset, to_offset - offset - 4);
+}
+
+INT32 ia32_read_f_jump(INT32 offset)
+{
+  return read_pointer(offset) + offset + 4;
 }
 
 #define addstr(s, l) low_my_binary_strcat((s), (l), buf)

@@ -2,14 +2,13 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: ia32.h,v 1.21 2003/07/31 14:28:51 tomas Exp $
+|| $Id: ia32.h,v 1.22 2003/08/06 18:08:46 mast Exp $
 */
 
 /* #define ALIGN_PIKE_JUMPS 8 */
 
-#define LOW_GET_JUMP()	EXTRACT_INT(PROG_COUNTER)
-#define LOW_SKIPJUMP()	(SET_PROG_COUNTER(PROG_COUNTER + sizeof(INT32)))
-
+#define OPCODE_INLINE_BRANCH
+#define OPCODE_RETURN_JUMPADDR
 
 #ifdef _M_IX86
 
@@ -19,9 +18,28 @@
 
 #else  /* _M_IX86 */
 
+#ifdef OPCODE_RETURN_JUMPADDR
+/* Don't need an lvalue in this case. */
+#define PROG_COUNTER ((unsigned char *)__builtin_return_address(0))
+#else
 #define PROG_COUNTER (((unsigned char **)__builtin_frame_address(0))[1])
+#endif
 
 #endif
+
+#ifdef OPCODE_RETURN_JUMPADDR
+/* Adjust for the machine code inserted after the call for I_JUMP opcodes. */
+#define JUMP_EPILOGUE_SIZE 2
+#define JUMP_SET_TO_PC_AT_NEXT(PC) \
+  ((PC) = PROG_COUNTER + JUMP_EPILOGUE_SIZE)
+#else
+#define JUMP_EPILOGUE_SIZE 0
+#endif
+
+#define LOW_GET_JUMP()							\
+  EXTRACT_INT(PROG_COUNTER + JUMP_EPILOGUE_SIZE)
+#define LOW_SKIPJUMP()							\
+  (SET_PROG_COUNTER(PROG_COUNTER + JUMP_EPILOGUE_SIZE + sizeof(INT32)))
 
 
 #define ins_pointer(PTR)	ins_int((PTR), (void (*)(char))add_to_program)
@@ -77,13 +95,18 @@ void ia32_decode_program(struct program *p);
 #define ENCODE_PROGRAM(P, BUF)	ia32_encode_program(P, BUF)
 #define DECODE_PROGRAM(P)	ia32_decode_program(p)
 
-INT32 ins_f_jump(unsigned int b);
-void update_f_jump(INT32 offset, INT32 to_offset);
-INT32 read_f_jump(INT32 offset);
+INT32 ia32_ins_f_jump(unsigned int op);
+INT32 ia32_ins_f_jump_with_arg(unsigned int op, unsigned INT32 a);
+INT32 ia32_ins_f_jump_with_two_args(unsigned int op,
+				    unsigned INT32 a, unsigned INT32 b);
+void ia32_update_f_jump(INT32 offset, INT32 to_offset);
+INT32 ia32_read_f_jump(INT32 offset);
 
-#define INS_F_JUMP ins_f_jump
-#define UPDATE_F_JUMP update_f_jump
-#define READ_F_JUMP read_f_jump
+#define INS_F_JUMP ia32_ins_f_jump
+#define INS_F_JUMP_WITH_ARG ia32_ins_f_jump_with_arg
+#define INS_F_JUMP_WITH_TWO_ARGS ia32_ins_f_jump_with_two_args
+#define UPDATE_F_JUMP ia32_update_f_jump
+#define READ_F_JUMP ia32_read_f_jump
 
 void ia32_flush_code_generator(void);
 #define FLUSH_CODE_GENERATOR_STATE ia32_flush_code_generator
