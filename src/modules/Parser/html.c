@@ -174,6 +174,7 @@ static void recalculate_argq(struct parser_html_storage *this)
 	 if (this->look_for_start[j]==this->argq_start[i]) goto found_start;
       this->look_for_start[n++]=this->argq_start[i];
 found_start:
+      ;
    }
    this->num_look_for_start=n;
 
@@ -188,6 +189,7 @@ found_start:
 		  goto found_end;
 	    this->look_for_end[k][n++]=this->argq_start[i];
    found_end:
+	    ;
 	 }
       if (this->lazy_end_arg_quote)
 	 this->look_for_end[k][n++]=this->tag_end;
