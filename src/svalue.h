@@ -5,7 +5,7 @@
 \*/
 
 /*
- * $Id: svalue.h,v 1.42 1999/12/10 22:55:53 grubba Exp $
+ * $Id: svalue.h,v 1.43 1999/12/10 23:47:00 grubba Exp $
  */
 #ifndef SVALUE_H
 #define SVALUE_H
@@ -87,8 +87,8 @@ struct svalue
 #define PIKE_T_PROGRAM 5
 #define PIKE_T_STRING 6
 #define PIKE_T_TYPE 7		/* Not supported yet */
-#define PIKE_T_FLOAT 8
-#define PIKE_T_INT 9
+#define PIKE_T_INT 8
+#define PIKE_T_FLOAT 9
 
 #define PIKE_T_ZERO  14	/* Can return 0, but nothing else */
 #define T_UNFINISHED 15	/* Reserved for the garbage-collector */
@@ -136,14 +136,14 @@ struct svalue
 #define tStr "\006"
 #define tString "\006"
 #define tType "\007"
-#define tFlt "\010"
-#define tFloat "\010"
-#define tInt "\011\200\000\000\000\177\377\377\377"
-#define tInt0 "\011\000\000\000\000\000\000\000\000"
-#define tInt1 "\011\000\000\000\001\000\000\000\001"
-#define tInt01 "\011\000\000\000\000\000\000\000\001"
-#define tIntPos "\011\000\000\000\000\177\377\377\377"
-#define tByte "\011\000\000\000\000\000\000\000\377"
+#define tFlt "\011"
+#define tFloat "\011"
+#define tInt "\010\200\000\000\000\177\377\377\377"
+#define tInt0 "\010\000\000\000\000\000\000\000\000"
+#define tInt1 "\010\000\000\000\001\000\000\000\001"
+#define tInt01 "\010\000\000\000\000\000\000\000\001"
+#define tIntPos "\010\000\000\000\000\177\377\377\377"
+#define tByte "\010\000\000\000\000\000\000\000\377"
 
 #define tZero "\016"
 #define tVoid "\020"
@@ -205,7 +205,7 @@ struct svalue
 /* Max type with ref count */
 #define MAX_REF_TYPE PIKE_T_TYPE
 /* Max type handled by svalue primitives */
-#define MAX_TYPE PIKE_T_INT
+#define MAX_TYPE PIKE_T_FLOAT
 
 #define NUMBER_NUMBER 0
 #define NUMBER_UNDEFINED 1
