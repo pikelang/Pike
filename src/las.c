@@ -21,6 +21,7 @@
 #include "docode.h"
 #include "main.h"
 #include "memory.h"
+#include "operators.h"
 
 #define LASDEBUG
 
@@ -1064,22 +1065,6 @@ void fix_type_field(node *n)
     n->type = get_type_of_svalue(& n->u.sval);
     break;
 
-    /* Not yet checked, but we know what they should return */
-  case F_NOT:
-  case F_LT:
-  case F_LE:
-  case F_EQ:
-  case F_NE:
-  case F_GT:
-  case F_GE:
-  case F_MOD:
-  case F_XOR:
-  case F_LSH:
-  case F_RSH:
-  case F_COMPL:
-    copy_shared_string(n->type,int_type_string);
-    break;
-
   case F_ARG_LIST:
     if(!CAR(n) || CAR(n)->type==void_type_string)
     {
@@ -1347,12 +1332,24 @@ static void optimize(node *n)
       }
 
       last=&(CDDR(n));
-      tmp1=last?*last:(node *)NULL;
+      tmp1=*last;
+
+      while(tmp1 && 
+	    tmp1->token == F_CAST &&
+	    tmp1->type == void_type_string)
+      {
+	last=&CAR(tmp1);
+	tmp1=*last;
+      }
+
       if(tmp1 && (tmp1->token==F_INC ||
 		  tmp1->token==F_POST_INC ||
 		  tmp1->token==F_DEC ||
 		  tmp1->token==F_POST_DEC))
       {
+	node *opnode, **arg1, **arg2;
+	int oper;
+
 	/* does it increment or decrement ? */
 	if(tmp1->token==F_INC || tmp1->token==F_POST_INC)
 	  inc=1;
@@ -1361,61 +1358,85 @@ static void optimize(node *n)
 
 	/* for(; x op y; z ++) p; */
 
-	if(CAR(n)->token!=F_GT &&
-	   CAR(n)->token!=F_GE &&
-	   CAR(n)->token!=F_LE &&
-	   CAR(n)->token!=F_LT &&
-	   CAR(n)->token!=F_NE)
-	  break;
+	opnode=CAR(n);
 
-	if(!node_is_eq(CAAR(n),CAR(tmp1)) || /* x == z */
-	   depend_p(CDAR(n),CDAR(n)) ||	/* does y depend on y? */
-	   depend_p(CDAR(n),CAAR(n)) ||	/* does y depend on x? */
-	   depend_p(CDAR(n),CADR(n))) /* does y depend on p? */
+	if(opnode->token == F_APPLY &&
+	   CAR(opnode) &&
+	   CAR(opnode)->token == F_CONSTANT &&
+	   CAR(opnode)->u.sval.type == T_FUNCTION &&
+	   CAR(opnode)->u.sval.subtype == -1)
+	{
+	  if(CAR(opnode)->u.sval.u.efun->function == f_gt)
+	    oper=F_GT;
+	  else if(CAR(opnode)->u.sval.u.efun->function == f_ge)
+	    oper=F_GE;
+	  else if(CAR(opnode)->u.sval.u.efun->function == f_lt)
+	    oper=F_LT;
+	  else if(CAR(opnode)->u.sval.u.efun->function == f_le)
+	    oper=F_LE;
+	  else if(CAR(opnode)->u.sval.u.efun->function == f_ne)
+	    oper=F_NE;
+	  else
+	    break;
+	}else{
+	  break;
+	}
+
+	if(count_args(CDR(opnode)) != 2) break;
+	arg1=my_get_arg(&CDR(opnode), 0);
+	arg2=my_get_arg(&CDR(opnode), 1);
+
+	/* it was not on the form for(; x op y; z++) p; */
+	if(!node_is_eq(*arg1,CAR(tmp1)) || /* x == z */
+	   depend_p(*arg2,*arg2) ||	/* does y depend on y? */
+	   depend_p(*arg2,*arg1) ||	/* does y depend on x? */
+	   depend_p(*arg2,CADR(n))) /* does y depend on p? */
 	{
 	  /* it was not on the form for(; x op y; x++) p; */
-	  if(!node_is_eq(CADR(n),CAR(tmp1)) || /* y == z */
-	     depend_p(CAAR(n),CDAR(n)) || /* does x depend on y? */
-	     depend_p(CAAR(n),CAAR(n)) || /* does x depend on x? */
-	     depend_p(CAAR(n),CADR(n)) /* does x depend on p? */
+	  if(!node_is_eq(*arg2,CAR(tmp1)) || /* y == z */
+	     depend_p(*arg1,*arg2) || /* does x depend on y? */
+	     depend_p(*arg1,*arg1) || /* does x depend on x? */
+	     depend_p(*arg1,CADR(n)) /* does x depend on p? */
 	     )
 	  {
 	    /* it was not on the form for(; x op y; y++) p; */
 	    break;
 	  }else{
+	    node **tmparg;
 	    /* for(; x op y; y++) p; -> for(; y op^-1 x; y++) p; */
 
-	    switch(CAR(n)->token)
+	    switch(oper)
 	    {
-	    case F_LT: CAR(n)->token=F_GT; break;
-	    case F_LE: CAR(n)->token=F_GE; break;
-	    case F_GT: CAR(n)->token=F_LT; break;
-	    case F_GE: CAR(n)->token=F_LE; break;
+	    case F_LT: oper=F_GT; break;
+	    case F_LE: oper=F_GE; break;
+	    case F_GT: oper=F_LT; break;
+	    case F_GE: oper=F_LE; break;
 	    }
-	    tmp2=CAAR(n);
-	    CAAR(n)=CDAR(n);
-	    CDAR(n)=tmp2;
+	    
+	    tmparg=arg1;
+	    arg1=arg2;
+	    arg2=tmparg;
 	  }
 	}
 	if(inc)
 	{
-	  if(CAR(n)->token==F_LE)
-	    tmp3=mkopernode("`+",CDAR(n),mkintnode(1));
-	  else if(CAR(n)->token==F_LT)
-	    tmp3=CDAR(n);
+	  if(oper==F_LE)
+	    tmp3=mkopernode("`+",*arg2,mkintnode(1));
+	  else if(oper==F_LT)
+	    tmp3=*arg2;
 	  else
 	    break;
 	}else{
-	  if(CAR(n)->token==F_GE)
-	    tmp3=mknode(F_SUBTRACT,CDAR(n),mkintnode(1));
-	  else if(CAR(n)->token==F_GT)
-	    tmp3=CDAR(n);
+	  if(oper==F_GE)
+	    tmp3=mkopernode("`-",*arg2,mkintnode(1));
+	  else if(oper==F_GT)
+	    tmp3=*arg2;
 	  else
 	    break;
 	}
 
 	*last=0;
-	if(CAR(n)->token==F_NE)
+	if(oper==F_NE)
 	{
 	  if(inc)
 	    token=F_INC_NEQ_LOOP;
@@ -1427,8 +1448,8 @@ static void optimize(node *n)
 	  else
 	    token=F_DEC_LOOP;
 	}
-	tmp2=mknode(token,mknode(F_VAL_LVAL,tmp3,CAAR(n)),CADR(n));
-	CAAR(n) = CADR(n) = CDAR(n) = CDDR(n)=0;
+	tmp2=mknode(token,mknode(F_VAL_LVAL,tmp3,*arg1),CADR(n));
+	*arg1 = *arg2 = CADR(n) = CDDR(n)=0;
 
 	if(inc)
 	{
@@ -1436,6 +1457,7 @@ static void optimize(node *n)
 	}else{
 	  tmp1->token=F_INC;
 	}
+
 	tmp1=mknode(F_ARG_LIST,mkcastnode(void_type_string,tmp1),tmp2);
 	goto use_tmp1;
       }
