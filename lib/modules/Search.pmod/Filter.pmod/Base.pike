@@ -1,7 +1,7 @@
 // This file is part of Roxen Search
 // Copyright © 2001 Roxen IS. All rights reserved.
 //
-// $Id: Base.pike,v 1.9 2001/08/01 15:52:24 js Exp $
+// $Id: Base.pike,v 1.10 2001/08/08 15:08:09 noring Exp $
 
 //! The MIME content types this class can filter.
 constant contenttypes = ({ });
@@ -35,7 +35,25 @@ class Output
 Output filter(Standards.URI uri, string|Stdio.File data,
 	      string content_type, mixed ... more);
 
+private string tmp_unique = sprintf("%d.%d", time(), getpid());
+private int tmp_sequence = 0;
 string tmp_filename()
 {
-  return sprintf("../var/tmp/search.tmp.%d.%d",random(0x7fffffff),getpid());
+  return sprintf("../var/tmp/search.tmp.%s.%d", tmp_unique, tmp_sequence++);
+}
+
+string my_popen(array(string) args)
+  // A smarter version of Process.popen: No need to quote arguments.
+{    
+  Stdio.File pipe0 = Stdio.File();
+  Stdio.File pipe1 = pipe0->pipe(Stdio.PROP_IPC);
+  if(!pipe1)
+    if(!pipe1) error("my_popen failed (couldn't create pipe).\n");
+  Process.create_process(args, ([ "env":getenv(), "stdout":pipe1 ]));
+  pipe1->close();
+  string result = pipe0->read();
+  if(!result)
+    error("my_popen failed with error "+pipe0->errno()+".\n");
+  pipe0->close();
+  return result;
 }
