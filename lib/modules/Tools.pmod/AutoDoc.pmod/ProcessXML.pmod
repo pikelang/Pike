@@ -9,7 +9,8 @@ static inherit "module.pmod";
 
 #define DEB werror("###%s:%d\n", __FILE__, __LINE__);
 static private void processError(string message, mixed ... args) {
-  throw (AutoDocError(0, "ProcessXML", sprintf(message, @args)));
+  throw ( ({ AutoDocError(0, "ProcessXML", sprintf(message, @args)),
+	     backtrace() }) );
 }
 
 //========================================================================
