@@ -1,4 +1,4 @@
-/* $Id: block_alloc.h,v 1.4 1998/03/28 13:38:09 grubba Exp $ */
+/* $Id: block_alloc.h,v 1.5 2000/03/02 21:24:43 hubbe Exp $ */
 #define PRE_INIT_BLOCK(X)
 #define INIT_BLOCK(X)
 #define EXIT_BLOCK(X)
@@ -43,7 +43,7 @@ struct DATA *PIKE_CONCAT(alloc_,DATA)(void)							\
   return tmp;											\
 }												\
 												\
-inline void PIKE_CONCAT(free_,DATA)(struct DATA *d)						\
+void PIKE_CONCAT(free_,DATA)(struct DATA *d)						\
 {												\
   EXIT_BLOCK(d);										\
   d->next=PIKE_CONCAT3(free_,DATA,s);								\

@@ -15,7 +15,7 @@
 
 #include <ctype.h>
 
-RCSID("$Id: stralloc.c,v 1.53 1999/06/30 23:43:47 hubbe Exp $");
+RCSID("$Id: stralloc.c,v 1.54 2000/03/02 21:25:11 hubbe Exp $");
 
 #define BEGIN_HASH_SIZE 997
 #define MAX_AVG_LINK_LENGTH 3
@@ -152,7 +152,7 @@ int generic_compare_strings(const void *a,int alen, int asize,
   if(alen != blen) return 0;
   if(asize==bsize)
   {
-    return !MEMCPY(a,b,alen<<asize);
+    return !MEMCMP(a,b,alen<<asize);
   }else{
     INT32 pos;
     for(pos=0;pos< alen ;pos++)
