@@ -1,5 +1,5 @@
 #include "global.h"
-RCSID("$Id: png.c,v 1.25 1999/05/30 20:12:17 mirar Exp $");
+RCSID("$Id: png.c,v 1.26 1999/08/27 12:50:27 mirar Exp $");
 
 #include "image_machine.h"
 
@@ -950,7 +950,7 @@ static struct png_interlace adam7[8]=
   {0,2,1,2},
   {1,2,0,1} };
 
-static void image_png__decode(INT32 args)
+static void img_png_decode(INT32 args,int header_only)
 {
    struct array *a;
    struct mapping *m;
@@ -1093,6 +1093,8 @@ static void image_png__decode(INT32 args)
 
          case 0x49444154: /* IDAT */
 	    /* compressed image data. push, n++ */
+	    if (header_only) break;
+
 	    if (ihdr.compression!=0)
 	       error("Image.PNG._decode: unknown compression (%d)\n",
 		     ihdr.compression);
@@ -1186,6 +1188,8 @@ static void image_png__decode(INT32 args)
 	    break;
       }
    }
+
+   if (header_only)  goto header_stuff;
 
    /* on stack: mapping   n×string */
 
@@ -1352,6 +1356,8 @@ static void image_png__decode(INT32 args)
       mapping_insert(m,sp-2,sp-1);
       pop_n_elems(2);
    }
+
+header_stuff:
 
    ref_push_string(param_type);
    push_int(ihdr.type);
@@ -1599,6 +1605,16 @@ static void image_png_encode(INT32 args)
    sp++;
 }
 
+static void image_png__decode(INT32 args)
+{
+   img_png_decode(args,0);
+}
+
+static void image_png_decode_header(INT32 args)
+{
+   img_png_decode(args,1);
+}
+
 /*
 **! method object decode(string data)
 **! method object decode(string data, mapping options)
@@ -1711,6 +1727,10 @@ void init_image_png(void)
 		   OPT_TRY_OPTIMIZE);
       add_function("__decode",image_png___decode,
 		   "function(string:array)",
+		   OPT_TRY_OPTIMIZE);
+
+      add_function("decode_header",image_png_decode_header,
+		   "function(string:mapping)",
 		   OPT_TRY_OPTIMIZE);
 
       if (gz_deflate)
