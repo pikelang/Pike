@@ -5,7 +5,7 @@
 \*/
 
 /*
- * $Id: interpret.h,v 1.20 1998/03/28 15:13:43 grubba Exp $
+ * $Id: interpret.h,v 1.21 1998/06/06 03:25:37 hubbe Exp $
  */
 #ifndef INTERPRET_H
 #define INTERPRET_H
@@ -21,6 +21,7 @@ struct frame
   unsigned char *pc;
   struct frame *parent_frame;
   struct svalue *locals;
+  struct svalue *expendible;
   INT32 args;
   struct object *current_object;
   struct inherit context;

@@ -4,7 +4,7 @@
 ||| See the files COPYING and DISCLAIMER for more information.
 \*/
 #include "global.h"
-RCSID("$Id: interpret.c,v 1.86 1998/06/01 20:49:33 grubba Exp $");
+RCSID("$Id: interpret.c,v 1.87 1998/06/06 03:25:36 hubbe Exp $");
 #include "interpret.h"
 #include "object.h"
 #include "program.h"
@@ -1373,7 +1373,7 @@ static int eval_instruction(unsigned char *pc)
       CASE(F_APPLY_AND_RETURN);
       {
 	INT32 args=sp - *--mark_sp;
-	if(fp->locals >= sp-args)
+	if(fp->expendible >= sp-args)
 	{
 	  MEMMOVE(sp-args+1,sp-args,args*sizeof(struct svalue));
 	  sp++;
@@ -1387,7 +1387,7 @@ static int eval_instruction(unsigned char *pc)
       CASE(F_CALL_LFUN_AND_RETURN);
       {
 	INT32 args=sp - *--mark_sp;
-	if(fp->locals >= sp-args)
+	if(fp->expendible >= sp-args)
 	{
 	  MEMMOVE(sp-args+1,sp-args,args*sizeof(struct svalue));
 	  sp++;
@@ -1924,6 +1924,7 @@ void mega_apply(enum apply_type type, INT32 args, void *arg1, void *arg2)
 #endif
   
       new_frame.locals = sp - args;
+      new_frame.expendible = new_frame.locals;
       new_frame.args = args;
       new_frame.fun = fun;
       new_frame.current_storage = o->storage+new_frame.context.storage_offset;
@@ -2093,17 +2094,20 @@ void mega_apply(enum apply_type type, INT32 args, void *arg1, void *arg2)
 static int o_catch(unsigned char *pc)
 {
   JMP_BUF tmp;
+  struct svalue *expendible=fp->expendible;
   if(SETJMP(tmp))
   {
     *sp=throw_value;
     throw_value.type=T_INT;
     sp++;
     UNSETJMP(tmp);
+    fp->expendible=expendible;
     return 0;
   }else{
     int x=eval_instruction(pc);
     if(x!=-1) mega_apply(APPLY_STACK, x, 0,0);
     UNSETJMP(tmp);
+    fp->expendible=expendible;
     return 1;
   }
 }
@@ -2123,6 +2127,7 @@ int apply_low_safe_and_stupid(struct object *o, INT32 offset)
   new_frame.current_object = o;
   new_frame.context=o->prog->inherits[0];
   new_frame.locals = evaluator_stack;
+  new_frame.expendible=new_frame.locals;
   new_frame.args = 0;
   new_frame.num_args=0;
   new_frame.num_locals=0;
