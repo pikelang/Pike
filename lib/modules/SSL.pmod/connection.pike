@@ -1,5 +1,5 @@
 //
-// $Id: connection.pike,v 1.28 2003/03/12 09:58:18 agehall Exp $
+// $Id: connection.pike,v 1.29 2003/10/24 18:24:31 mast Exp $
 
 #pike __REAL_VERSION__
 
@@ -32,14 +32,14 @@ inherit ADT.Queue : alert;
 inherit ADT.Queue : urgent;
 inherit ADT.Queue : application;
 
-void create(int is_server)
+void create(int is_server, void|SSL.context ctx)
 {
   alert::create();
   urgent::create();
   application::create();
   current_read_state = SSL.state(this_object());
   current_write_state = SSL.state(this_object());
-  handshake::create(is_server);
+  handshake::create(is_server, ctx);
 }
 
 //! Called with alert object, sequence number of bad packet,
@@ -108,8 +108,9 @@ void send_packet(object packet, int|void priority)
     werror("SSL.connection->send_packet() called from:\n"
 	   "%s\n", describe_backtrace(backtrace()));
 #endif
-  werror("SSL.connection->send_packet: type %d, %d, '%O'\n",
-	 packet->content_type, priority,  packet->fragment[..5]);
+  werror(sprintf("SSL.connection->send_packet: type %d, desc %d, pri %d, %O\n",
+		 packet->content_type, packet->description, priority,
+		 packet->fragment[..5]));
 #endif
   switch (priority)
   {
