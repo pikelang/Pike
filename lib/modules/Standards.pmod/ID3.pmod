@@ -1,6 +1,6 @@
 // ID3.pmod
 //
-//  $Id: ID3.pmod,v 1.16 2003/12/14 23:45:40 nilsson Exp $
+//  $Id: ID3.pmod,v 1.17 2004/02/14 10:21:27 mirar Exp $
 //
 
 #pike __REAL_VERSION__
@@ -831,8 +831,6 @@ class FrameDatav1 {
   }
 
   string get_string() {
-    if(id == "track" || id == "genre")
-      return (string)frame_data[0];
     return frame_data;
   }
 
