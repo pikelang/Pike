@@ -230,9 +230,9 @@ void exit_main()
   void cleanup_program();
 
   automatic_fatal="uLPC is exiting: ";
+  cleanup_objects();
   exit_signals();
   exit_lex();
-  cleanup_objects();
   cleanup_interpret();
   cleanup_added_efuns();
   free_all_call_outs();
