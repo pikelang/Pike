@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: rusage.c,v 1.29 2003/02/08 17:38:59 mast Exp $
+|| $Id: rusage.c,v 1.30 2003/02/08 22:45:39 mast Exp $
 */
 
 #include "global.h"
@@ -17,7 +17,7 @@
 #include <errno.h>
 #include "pike_rusage.h"
 
-RCSID("$Id: rusage.c,v 1.29 2003/02/08 17:38:59 mast Exp $");
+RCSID("$Id: rusage.c,v 1.30 2003/02/08 22:45:39 mast Exp $");
 
 #ifdef HAVE_SYS_TIMES_H
 #include <sys/times.h>
@@ -82,6 +82,9 @@ int pike_get_rusage(pike_rusage_t rusage_values)
 #else /* __NT__ */
 #ifdef GETRUSAGE_THROUGH_PROCFS
 #include <sys/procfs.h>
+#ifndef CONFIGURE_TEST
+#include "fdlib.h"
+#endif
 
 static INLINE long get_time_int(timestruc_t * val)
 {
@@ -89,6 +92,23 @@ static INLINE long get_time_int(timestruc_t * val)
 }
 
 int proc_fd = -1;
+
+static int open_proc_fd()
+{
+  do {
+    char proc_name[30];
+    sprintf(proc_name, "/proc/%05ld", (long)getpid());
+    proc_fd = open(proc_name, O_RDONLY);
+    if(proc_fd >= 0) break;
+    if(errno != EINTR) return 0;
+  } while(proc_fd < 0)
+
+#ifndef CONFIGURE_TEST
+  set_close_on_exec(proc_fd, 1);
+#endif
+
+  return 1;
+}
 
 int pike_get_rusage(pike_rusage_t rusage_values)
 {
@@ -98,18 +118,7 @@ int pike_get_rusage(pike_rusage_t rusage_values)
 #endif
   MEMSET(rusage_values, 0, sizeof(pike_rusage_t));
 
-  while(proc_fd < 0)
-  {
-    char proc_name[30];
-
-    sprintf(proc_name, "/proc/%05ld", (long)getpid());
-    proc_fd = open(proc_name, O_RDONLY);
-    if(proc_fd >= 0) break;
-    if(errno != EINTR) return 0;
-  }
-
-  set_close_on_exec(proc_fd, 1);
-
+  if (proc_fd < 0 && !open_proc_fd()) return 0;
   while(ioctl(proc_fd, PIOCUSAGE, &pru) < 0)
   {
     if(errno == EINTR)
@@ -294,25 +303,11 @@ cpu_time_t get_cpu_time (void)
 
 #elif defined (GETRUSAGE_THROUGH_PROCFS)
 
-/* Note: This code is untested; haven't got access to any system where
- * this old ioctl method still works. */
-
 cpu_time_t get_cpu_time (void)
 {
   prstatus_t  prs;
 
-  while(proc_fd < 0)
-  {
-    char proc_name[30];
-
-    sprintf(proc_name, "/proc/%05ld", (long)getpid());
-    proc_fd = open(proc_name, O_RDONLY);
-    if(proc_fd >= 0) break;
-    if(errno != EINTR) return 0;
-  }
-
-  set_close_on_exec(proc_fd, 1);
-
+  if (proc_fd < 0 && !open_proc_fd()) return 0;
   while(ioctl(proc_fd, PIOCSTATUS, &prs) < 0)
   {
     if(errno == EINTR)
