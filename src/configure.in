@@ -1,4 +1,4 @@
-AC_REVISION("$Id: configure.in,v 1.627 2002/09/24 14:59:57 grubba Exp $")
+AC_REVISION("$Id: configure.in,v 1.628 2002/09/24 19:50:11 grubba Exp $")
 AC_INIT(interpret.c)
 AC_CONFIG_HEADER(machine.h)
 
@@ -5918,30 +5918,6 @@ AC_SUBST(EXTRA_MODULE_REQUIREMENTS)
 AC_SUBST(noopt_retry)
 
 pike_cv_prog_CC="${CC}"
-
-#############################################################################
-
-# Autoconf 2.50 and later stupidity...
-if test "0`echo 'if(AC_ACVERSION >= 2.50)1'|bc`" = "01"; then
-  AC_MSG_WARN(cleaning the environment from autoconf 2.5x pollution)
-
-  unset ac_cv_env_build_alias_set
-  unset ac_cv_env_build_alias_value
-  unset ac_cv_env_host_alias_set
-  unset ac_cv_env_host_alias_value
-  unset ac_cv_env_target_alias_set
-  unset ac_cv_env_target_alias_value
-  unset ac_cv_env_CC_set
-  unset ac_cv_env_CC_value
-  unset ac_cv_env_CFLAGS_set
-  unset ac_cv_env_CFLAGS_value
-  unset ac_cv_env_LDFLAGS_set
-  unset ac_cv_env_LDFLAGS_value
-  unset ac_cv_env_CPPFLAGS_set
-  unset ac_cv_env_CPPFLAGS_value
-  unset ac_cv_env_CPP_set
-  unset ac_cv_env_CPP_value
-fi
 
 #############################################################################
 
