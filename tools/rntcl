@@ -445,7 +445,21 @@ int main(int argc, string *argv)
 	exit(1);
       }
       rm(wantfile);
-      hardlink(wantfile+"bj", wantfile);
+      if (catch {
+	hardlink(wantfile+"bj", wantfile);
+      }) {
+	string s = Stdio.read_bytes(wantfile+"bj");
+	if (!s) {
+	  werror("RNTCL: Failed to read output file (%s).\n",
+		 wantfile+"bj");
+	  exit(1);
+	}
+	if (Stdio.write_file(wantfile, s) != sizeof(s)) {
+	  werror("RNTCL: Failed to write all of output file (%s).\n",
+		 wantfile);
+	  exit(1);
+	}
+      }
     }
     if(!paranoia_stat(wantfile))
     {
