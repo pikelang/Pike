@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: signal_handler.c,v 1.266 2003/05/09 22:57:16 mast Exp $
+|| $Id: signal_handler.c,v 1.267 2003/05/10 17:21:15 grubba Exp $
 */
 
 #include "global.h"
@@ -26,7 +26,7 @@
 #include "main.h"
 #include <signal.h>
 
-RCSID("$Id: signal_handler.c,v 1.266 2003/05/09 22:57:16 mast Exp $");
+RCSID("$Id: signal_handler.c,v 1.267 2003/05/10 17:21:15 grubba Exp $");
 
 #ifdef HAVE_PASSWD_H
 # include <passwd.h>
@@ -847,7 +847,7 @@ static int signum(char *name)
   return -1;
 }
 
-/*! @decl void signal(int sig, function(int:void) callback)
+/*! @decl void signal(int sig, function(int|void:void) callback)
  *! @decl void signal(int sig)
  *!
  *! Trap signals.
@@ -4619,7 +4619,8 @@ void init_signals(void)
   ADD_EFUN("set_priority",f_set_priority,tFunc(tStr tOr(tInt,tVoid),tInt),
            OPT_SIDE_EFFECT);
   
-  ADD_EFUN("signal",f_signal,tFunc(tInt tOr(tVoid,tFunc(tInt,tVoid)),tMix),
+  ADD_EFUN("signal",f_signal,
+	   tFunc(tInt tOr(tVoid,tFunc(tOr(tVoid,tInt),tVoid)),tMix),
 	   OPT_SIDE_EFFECT);
 
 #ifdef HAVE_KILL
