@@ -1,7 +1,3 @@
-#if !efun(version)
-string version() { return "Pike 0.4pl2"; }
-#endif 
-
 #define UNDEFINED (([])[0])
 string describe_backtrace(mixed *trace);
 
@@ -55,32 +51,42 @@ mapping (string:program) programs=(["/master":object_program(this_object())]);
 
 #define capitalize(X) (upper_case((X)[..0])+(X)[1..])
 
-static program findprog(string pname)
+static program low_findprog(string pname, string ext)
 {
   program ret;
-  
-  if(ret=programs[pname]) return ret;
-  
-  if(file_stat(pname))
+  string fname=pname+ext;
+  if(ret=programs[fname]) return ret;
+  if(file_stat(fname))
   {
-    ret=compile_file(pname);
-  }
-  else if(file_stat(pname+".pike"))
-  {
-    ret=compile_file(pname+".pike");
-  }
-#if constant(load_module)
-  else if(file_stat(pname+".so"))
-  {
-    ret=load_module(pname+".so");
-  }
-#endif
-  if(ret)
-  {
-    programs[pname]=ret;
-    return ret;
+    switch(ext)
+    {
+    case "":
+    case ".pike":
+      ret=compile_file(fname);
+      break;
+    case ".so":
+      ret=load_module(fname);
+    }
+    return programs[fname]=ret;
   }else{
     return UNDEFINED;
+  }
+}
+
+static program findprog(string pname, string ext)
+{
+  switch(ext)
+  {
+  case ".pike":
+  case ".so":
+    return low_findprog(pname,ext);
+
+  default:
+    pname+=ext;
+    return
+      low_findprog(pname,"") ||
+      low_findprog(pname,".pike") ||
+      low_findprog(pname,".so");
   }
 }
 
@@ -91,13 +97,18 @@ static program findprog(string pname)
  */
 program cast_to_program(string pname, string current_file)
 {
-  if(pname[sizeof(pname)-3..sizeof(pname)]==".pike")
-    pname=pname[0..sizeof(pname)-4];
-
+  string ext;
+  if(sscanf(reverse(pname),"%s.%s",ext,pname))
+  {
+    ext="."+reverse(ext);
+    pname=reverse(pname);
+  }else{
+    ext="";
+  }
   if(pname[0]=='/')
   {
     pname=combine_path("/",pname);
-    return findprog(pname);
+    return findprog(pname,ext);
   }else{
     string cwd;
     if(current_file)
@@ -108,11 +119,15 @@ program cast_to_program(string pname, string current_file)
       cwd=getcwd();
     }
 
+    if(program ret=findprog(combine_path(cwd,pname),ext))
+      return ret;
+
+
     foreach(pike_include_path, string path)
-      if(program ret=findprog(combine_path(path,pname)))
+      if(program ret=findprog(combine_path(path,pname),ext))
 	return ret;
 
-    return findprog(combine_path(cwd,pname));
+    return 0;
   }
 }
 
@@ -149,6 +164,7 @@ void create()
   add_constant("strlen",sizeof);
   add_constant("new",new);
   add_constant("clone",new);
+  add_constant("UNDEFINED",UNDEFINED);
 
   random_seed(time() + (getpid() * 0x11111111));
 }
