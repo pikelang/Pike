@@ -1,0 +1,33 @@
+<chapter title="Pike Test Suite">
+
+  <p><fixme>The goals of the test suite and an overview of it</fixme></p>
+
+<section title="Running Tests">
+
+  <p><fixme>Different ways of running the testsuite (all tests, some tests,
+  different build dirs, test suite flags</fixme></p>
+
+</section>
+
+<section title="Writing new tests">
+
+  <subsection title="test_any" />
+  <subsection title="test_any_equal" />
+  <subsection title="test_eq" />
+  <subsection title="test_equal" />
+  <subsection title="test_do" />
+  <subsection title="test_true" />
+  <subsection title="test_false" />
+  <subsection title="test_compile" />
+  <subsection title="test_compile_any" />
+  <subsection title="test_compile_error" />
+  <subsection title="test_compile_error_low" />
+  <subsection title="test_eval_error" />
+  <subsection title="test_define_program" />
+  <subsection title="test_program" />
+  <subsection title="cond" />
+  <subsection title="ifefun" />
+
+</section>
+
+</chapter>
