@@ -82,7 +82,7 @@ array(string) gen_func(string name, string ty)
 {
   string res="", got="", prot, vdec, vret, fu=name;
   array novec, args=({}), argt=({});
-  int r234;
+  int r234, argt_cut=-1;
   string rtypes;
 
   switch(ty[0]) {
@@ -137,6 +137,7 @@ array(string) gen_func(string name, string ty)
       }
       array plusfix = special_234(mi, mx, ty[i+1..]);
       res += "  struct zvalue4 zv4;\n";
+      argt_cut = sizeof(argt);
       argt += plusfix[0];
       res += "\n  int r234=check_234_args(\""+name+"\", args-"+(i-1)+", "+
 	mi+", "+mx+", "+plusfix[1]+", "+plusfix[2]+", &zv4);\n";
@@ -153,6 +154,7 @@ array(string) gen_func(string name, string ty)
       array eqfix = special_234(sizeof(ty[i+1..]), sizeof(ty[i+1..]),
 				ty[i+1..]);
       res += "  struct zvalue4 zv4;\n";
+      argt_cut = sizeof(argt);
       argt += eqfix[0];
       res += "\n  check_234_args(\""+name+"\", args-"+(i-1)+", "+
 	sizeof(ty[i+1..])+", "+sizeof(ty[i+1..])+", "+eqfix[1]+", "+
@@ -166,6 +168,7 @@ array(string) gen_func(string name, string ty)
     case '@':
       array atfix = special_234(1, 1, ty[i+1..]);
       res += "  union zvalue16 zv16;\n";
+      argt_cut = sizeof(argt);
       argt += atfix[0];
       res += "\n  int r1n=check_1n_args(\""+name+"\", args-"+(i-1)+", "+
 	atfix[1]+", "+atfix[2]+", &zv16);\n";
@@ -179,6 +182,17 @@ array(string) gen_func(string name, string ty)
     }
   
   prot = (argt*",")+prot;
+
+  if(sizeof(argt))
+    res += "\n  check_all_args(\""+name+"\", args, "+
+      ((Array.map((argt_cut<0?argt:argt[..argt_cut-1]),
+		  lambda(string t) {
+		    return Array.map(t/"|",
+				     lambda(string t) {
+				       return "BIT_"+upper_case(t);
+				     })*"|";
+		  }))+
+       (r234?({"BIT_MANY|BIT_MIXED"}):({}))+({"0"}))*", "+");\n";
 
   if(sizeof(got))
     res += "\n"+got+"\n";
