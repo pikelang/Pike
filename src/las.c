@@ -5,7 +5,7 @@
 \*/
 /**/
 #include "global.h"
-RCSID("$Id: las.c,v 1.156 1999/12/30 21:57:28 grubba Exp $");
+RCSID("$Id: las.c,v 1.157 1999/12/30 22:20:56 grubba Exp $");
 
 #include "language.h"
 #include "interpret.h"
@@ -3700,14 +3700,16 @@ static node *eval(node *n)
       pop_stack();
       return n;
     }
-    if (n->token != F_SOFT_CAST) {
-      new = mksvaluenode(sp-1);
-    } else {
+    if (n->token == F_SOFT_CAST) {
       new = mksoftcastnode(n->type, mksvaluenode(sp-1));
-    }
-    if (n->type && (!new->type || pike_types_le(n->type,new->type))) {
-      if (new->type) free_string(new->type);
-      copy_shared_string(new->type,n->type);
+    } else {
+      new = mksvaluenode(sp-1);
+      if (n->type && (!new->type || ((n->type != new->type) &&
+				     pike_types_le(n->type,new->type)))) {
+	if (new->type)
+	  free_string(new->type);
+	copy_shared_string(new->type,n->type);
+      }
     }
     free_node(n);
     n = new;
