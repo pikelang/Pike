@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: svalue.c,v 1.157 2003/02/03 16:38:14 grubba Exp $
+|| $Id: svalue.c,v 1.158 2003/02/10 20:33:39 mast Exp $
 */
 
 #include "global.h"
@@ -66,7 +66,7 @@ static int pike_isnan(double x)
 #endif /* HAVE__ISNAN */
 #endif /* HAVE_ISNAN */
 
-RCSID("$Id: svalue.c,v 1.157 2003/02/03 16:38:14 grubba Exp $");
+RCSID("$Id: svalue.c,v 1.158 2003/02/10 20:33:39 mast Exp $");
 
 struct svalue dest_ob_zero = {
   T_INT, 0,
@@ -390,15 +390,14 @@ PMOD_EXPORT void assign_to_short_svalue(union anything *u,
 
   if(s->type == type)
   {
-    INT32 *tmp;
     switch(type)
     {
       case T_INT: u->integer=s->u.integer; break;
       case T_FLOAT: u->float_number=s->u.float_number; break;
       default:
 	if(u->refs && --*(u->refs) <= 0) really_free_short_svalue(u,type);
-	u->refs = tmp = s->u.refs;
-	tmp[0]++;
+	u->refs = s->u.refs;
+	add_ref(u->dummy);
     }
   }else if(type<=MAX_REF_TYPE && UNSAFE_IS_ZERO(s)){
     if(u->refs && --*(u->refs) <= 0) really_free_short_svalue(u,type);
@@ -419,14 +418,13 @@ PMOD_EXPORT void assign_to_short_svalue_no_free(union anything *u,
 
   if(s->type == type)
   {
-    INT32 *tmp;
     switch(type)
     {
       case T_INT: u->integer=s->u.integer; break;
       case T_FLOAT: u->float_number=s->u.float_number; break;
       default:
-	u->refs = tmp = s->u.refs;
-	tmp[0]++;
+	u->refs = s->u.refs;
+	add_ref(u->dummy);
     }
   }else if(type<=MAX_REF_TYPE && UNSAFE_IS_ZERO(s)){
     u->refs=0;
