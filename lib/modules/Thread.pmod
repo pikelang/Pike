@@ -247,6 +247,10 @@ optional class Queue {
 
 optional class Farm
 {
+  static Mutex mutex = Mutex();
+  static Condition ft_cond = Condition();
+  static Queue job_queue = Queue();
+
   class Result
   {
     int ready;
@@ -265,7 +269,9 @@ optional class Farm
 
     mixed `()()
     {
-      while(!ready)     ft_cond->wait();
+      object key = mutex->lock();
+      while(!ready)     ft_cond->wait(key);
+      key = 0;
       if( ready < 0 )   throw( value );
       return value;
     }
@@ -309,6 +315,7 @@ optional class Farm
 
   static class Handler
   {
+    Mutex job_mutex = Mutex();
     Condition cond = Condition();
     array(object|array(function|array)) job;
     object thread;
@@ -321,10 +328,11 @@ optional class Farm
     void handler()
     {
       array(object|array(function|array)) q;
+      object key = job_mutex->lock();
+      ready = 1;
       while( 1 )
       {
-        ready = 1;
-        cond->wait();
+        cond->wait(key);
         if( q = job )
         {
           mixed res, err;
@@ -357,8 +365,10 @@ optional class Farm
     void run( array(function|array) what, object|void resobj )
     {
       while(!ready) sleep(0.1);
+      object key = job_mutex->lock();
       job = ({ resobj, what });
       cond->signal();
+      key = 0;
     }
 
     string debug_status()
@@ -395,10 +405,6 @@ optional class Farm
     }
   }
 
-  static Mutex mutex = Mutex();
-  static Condition ft_cond = Condition();
-  static Queue job_queue = Queue();
-
   static array(Handler) threads = ({});
   static array(Handler) free_threads = ({});
   static int max_num_threads = 20;
@@ -413,9 +419,7 @@ optional class Farm
         threads += ({ Handler() });
         free_threads += ({ threads[-1] });
       } else {
-        lock = 0;
-        ft_cond->wait( );
-        mutex->lock();
+        ft_cond->wait(mutex);
       }
     }
     object(Handler) t = free_threads[0];
@@ -490,9 +494,8 @@ optional class Farm
       object key = mutex->lock();
       while( sizeof( free_threads ) )
         free_threads[0]->cond->signal();
-      key = 0;
       if( sizeof( threads ) > max_num_threads)
-        ft_cond->wait();
+        ft_cond->wait(key);
     }
     ft_cond->broadcast( );
     return omnt;
