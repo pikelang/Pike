@@ -1,5 +1,5 @@
 // Table.pmod by Fredrik Noring, 1998
-// $Id: Table.pmod,v 1.21 2001/05/10 13:09:52 grubba Exp $
+// $Id: Table.pmod,v 1.22 2001/10/28 17:56:38 nilsson Exp $
 
 #pike __REAL_VERSION__
 #define TABLE_ERR(msg) throw(({ "(Table) "+msg+"\n", backtrace() }))
@@ -206,7 +206,7 @@ class table {
     return copy(t, fields, types);
   }
 
-  //! This method calls the function @[f()] for each column each time a
+  //! This method calls the function @[f] for each column each time a
   //! non uniqe row will be joined. The table will be grouped by the
   //! columns not listed. The result will be returned as a new table object.
   object group(mapping(int|string:function)|function f, mixed ... args)
@@ -258,7 +258,7 @@ class table {
     return group(m);
   }
 
-  //! This method calls the function @[f()] for all rows in the table.
+  //! This method calls the function @[f] for all rows in the table.
   //! The value returned will replace the values in the columns given
   //! as argument to map. If the function returns an array, several
   //! columns will be replaced. Otherwise the first column will be

@@ -29,7 +29,7 @@ optional constant all_threads = predef::all_threads;
 
 
 
-//! @[Thread.Fifo] implements a fixed length first-in, first-out queue.
+//! @[Fifo] implements a fixed length first-in, first-out queue.
 //! A fifo is a queue of values and is often used as a stream of data
 //! between two threads.
 //!
@@ -37,7 +37,7 @@ optional constant all_threads = predef::all_threads;
 //! Fifos are only available on systems with threads support.
 //!
 //! @seealso
-//! @[Thread.Queue]
+//!   @[Queue]
 //!
 optional class Fifo {
   inherit Condition : r_cond;
@@ -51,7 +51,7 @@ optional class Fifo {
   //! This function returns the number of elements currently in the fifo.
   //!
   //! @seealso
-  //! @[read()], @[write()]
+  //!   @[read()], @[write()]
   //!
   int size() {  return num; }
 
@@ -61,7 +61,7 @@ optional class Fifo {
   //! thread writes a value to the fifo.
   //!
   //! @seealso
-  //! @[write()], @[read_array()]
+  //!   @[write()], @[read_array()]
   //!
   mixed read()
   {
@@ -89,7 +89,7 @@ optional class Fifo {
   //! some other thread writes a value to the fifo.
   //!
   //! @seealso
-  //! @[write()], @[read()]
+  //!   @[write()], @[read()]
   //!
   array read_array()
   {
@@ -121,7 +121,7 @@ optional class Fifo {
   //! available.
   //!
   //! @seealso
-  //! @[read()]
+  //!   @[read()]
   //!
   void write(mixed value)
   {
@@ -164,8 +164,8 @@ optional class Fifo {
   }
 };
 
-//! @[Thread.Queue] implements a queue, or a pipeline. The main difference
-//! between @[Thread.Queue] and @[Thread.Fifo] is that @[Thread.Queue]
+//! @[Queue] implements a queue, or a pipeline. The main difference
+//! between @[Queue] and @[Fifo] is that @[Queue]
 //! will never block in write(), only allocate more memory.
 //!
 //! @note
@@ -173,7 +173,7 @@ optional class Fifo {
 //! thread support.
 //!
 //! @seealso
-//! @[Thread.Fifo]
+//!   @[Fifo]
 //!
 optional class Queue {
   inherit Condition : r_cond;
@@ -185,7 +185,7 @@ optional class Queue {
   //! This function returns the number of elements currently in the queue.
   //!
   //! @seealso
-  //! @[read()], @[write()]
+  //!   @[read()], @[write()]
   //!
   int size() {  return w_ptr - r_ptr;  }
 
@@ -195,7 +195,7 @@ optional class Queue {
   //! thread writes a value to the queue.
   //!
   //! @seealso
-  //! @[write()]
+  //!   @[write()]
   //!
   mixed read()
   {
@@ -213,7 +213,7 @@ optional class Queue {
   //! room for it.
   //!
   //! @seealso
-  //! @[read()]
+  //!   @[read()]
   //!
   void write(mixed value)
   {

@@ -26,7 +26,7 @@ constant enumerate = predef::enumerate;
 //! only one element, that element will be returned.
 //!
 //! @seealso
-//! @[Array.rreduce()]
+//!   @[rreduce()]
 //!
 mixed reduce(function fun, array arr, mixed|void zero)
 {
@@ -44,7 +44,7 @@ mixed reduce(function fun, array arr, mixed|void zero)
 //! only one element, that element will be returned.
 //!
 //! @seealso
-//! @[Array.reduce()]
+//!   @[reduce()]
 //!
 mixed rreduce(function fun, array arr, mixed|void zero)
 {
@@ -58,7 +58,7 @@ mixed rreduce(function fun, array arr, mixed|void zero)
 //! @[shuffle()] gives back the same elements, but in random order.
 //!
 //! @seealso
-//! @[Array.permute()]
+//!   @[permute()]
 //!
 array shuffle(array arr)
 {
@@ -81,7 +81,7 @@ array shuffle(array arr)
 //! If no call returns true, -1 is returned.
 //!
 //! @seealso
-//! @[Array.sum_arrays()], @[map()]
+//!   @[sum()], @[map()]
 //!
 int search_array(array arr, mixed fun, mixed ... args)
 {
@@ -598,7 +598,6 @@ array arrayify(void|array|mixed x)
    return ({ x });
 }
 
- 
 //! Sort with care of numerical sort for OID values:
 //! "1.2.1" before "1.11.1"
 int oid_sort_func(string a0,string b0)
