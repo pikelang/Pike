@@ -5,7 +5,7 @@
 \*/
 #include <math.h>
 #include "global.h"
-RCSID("$Id: operators.c,v 1.29 1998/03/04 22:19:45 hubbe Exp $");
+RCSID("$Id: operators.c,v 1.30 1998/04/10 15:24:05 grubba Exp $");
 #include "interpret.h"
 #include "svalue.h"
 #include "multiset.h"
@@ -32,7 +32,7 @@ void ID(INT32 args)				\
   switch(args)					\
   {						\
     case 0: case 1:				\
-      error("Too few arguments to %s\n",NAME);	\
+      ERROR(NAME, "Too few arguments\n", sp, args); \
     case 2:					\
       i=FUN (sp-2,sp-1);			\
       pop_n_elems(2);				\
@@ -62,9 +62,9 @@ COMPARISON(f_ge,"`>=",!is_lt)
 
 #define CALL_OPERATOR(OP, args) \
  if(!sp[-args].u.object->prog) \
-   error("Operator %s called in destructed object.\n",lfun_names[OP]); \
+   ERROR(lfun_names[OP], "Called in destructed object.\n", sp, args); \
  if(FIND_LFUN(sp[-args].u.object->prog,OP) == -1) \
-   error("No operator %s in object.\n",lfun_names[OP]); \
+   ERROR(lfun_names[OP], "Operator not in object.\n", sp, args); \
  apply_lfun(sp[-args].u.object, OP, args-1); \
  free_svalue(sp-2); \
  sp[-2]=sp[-1]; \
@@ -84,7 +84,7 @@ void f_add(INT32 args)
   default:
     if(!args)
     {
-      error("Too few arguments to `+()\n");
+      ERROR("`+", "Too few arguments\n", sp, args);
     }else{
       if(types & BIT_OBJECT)
       {
@@ -130,9 +130,9 @@ void f_add(INT32 args)
     {
       case T_PROGRAM:
       case T_FUNCTION:
-	error("Bad argument 1 to summation\n");
+	ERROR("`+", "Bad argument 1\n", sp, args);
     }
-    error("Incompatible types to sum() or +\n");
+    ERROR("`+", "Incompatible types\n", sp, args);
     return; /* compiler hint */
 
   case BIT_STRING:
@@ -436,7 +436,7 @@ void o_subtract(void)
   {
     if(call_lfun(LFUN_SUBTRACT, LFUN_RSUBTRACT))
       return;
-    error("Subtract on different types.\n");
+    ERROR("`-", "Subtract on different types.\n", sp, 2);
   }
 
   switch(sp[-2].type)
@@ -499,7 +499,7 @@ void o_subtract(void)
   }
 
   default:
-    error("Bad argument 1 to subtraction.\n");
+    ERROR("`-", "Bad argument 1.\n", sp, 2);
   }
 }
 
@@ -507,7 +507,7 @@ void f_minus(INT32 args)
 {
   switch(args)
   {
-    case 0: error("Too few arguments to `-\n");
+    case 0: ERROR("`-", "Too few arguments.\n", sp, 0);
     case 1: o_negate(); break;
     case 2: o_subtract(); break;
     default:
@@ -550,7 +550,7 @@ void o_and(void)
     if(call_lfun(LFUN_AND, LFUN_RAND))
       return;
 
-    error("Bitwise and on different types.\n");
+    ERROR("`&", "Bitwise and on different types.\n", sp, 2);
   }
 
   switch(sp[-2].type)
@@ -597,7 +597,7 @@ void o_and(void)
 
     len = sp[-2].u.string->len;
     if (len != sp[-1].u.string->len)
-      error("Bitwise AND on strings of different lengths.\n");
+      ERROR("`&", "Bitwise AND on strings of different lengths.\n", sp, 2);
     s = begin_shared_string(len);
     for (i=0; i<len; i++)
       s->str[i] = sp[-2].u.string->str[i] & sp[-1].u.string->str[i];
@@ -606,7 +606,7 @@ void o_and(void)
     return;
   }
   default:
-    error("Bitwise and on illegal type.\n");
+    ERROR("`&", "Bitwise and on illegal type.\n", sp, 2);
   }
 }
 
@@ -652,7 +652,7 @@ void f_and(INT32 args)
 {
   switch(args)
   {
-  case 0: error("Too few arguments to `&\n");
+  case 0: ERROR("`&", "Too few arguments.\n", sp, 0);
   case 1: return;
   case 2: o_and(); return;
   default:
@@ -690,7 +690,7 @@ void o_or(void)
     if(call_lfun(LFUN_OR, LFUN_ROR))
       return;
 
-    error("Bitwise or on different types.\n");
+    ERROR("`|", "Bitwise or on different types.\n", sp, 2);
   }
 
   switch(sp[-2].type)
@@ -738,7 +738,7 @@ void o_or(void)
 
     len = sp[-2].u.string->len;
     if (len != sp[-1].u.string->len)
-      error("Bitwise OR on strings of different lengths.\n");
+      ERROR("`|", "Bitwise OR on strings of different lengths.\n", sp, 2);
     s = begin_shared_string(len);
     for (i=0; i<len; i++)
       s->str[i] = sp[-2].u.string->str[i] | sp[-1].u.string->str[i];
@@ -748,7 +748,7 @@ void o_or(void)
   }
 
   default:
-    error("Bitwise or on illegal type.\n");
+    ERROR("`|", "Bitwise or on illegal type.\n", sp, 2);
   }
 }
 
@@ -756,7 +756,7 @@ void f_or(INT32 args)
 {
   switch(args)
   {
-  case 0: error("Too few arguments to `|\n");
+  case 0: ERRROR("`|", "Too few arguments.\n", sp, 0);
   case 1: return;
   case 2: o_or(); return;
   default:
@@ -794,7 +794,7 @@ void o_xor(void)
   {
     if(call_lfun(LFUN_XOR, LFUN_RXOR))
       return;
-    error("Bitwise xor on different types.\n");
+    ERROR("`^", "Bitwise XOR on different types.\n", sp, 2);
   }
 
   switch(sp[-2].type)
@@ -842,7 +842,7 @@ void o_xor(void)
 
     len = sp[-2].u.string->len;
     if (len != sp[-1].u.string->len)
-      error("Bitwise XOR on strings of different lengths.\n");
+      ERROR("`^", "Bitwise XOR on strings of different lengths.\n", sp, 2);
     s = begin_shared_string(len);
     for (i=0; i<len; i++)
       s->str[i] = sp[-2].u.string->str[i] ^ sp[-1].u.string->str[i];
@@ -852,7 +852,7 @@ void o_xor(void)
   }
 
   default:
-    error("Bitwise xor on illegal type.\n");
+    ERROR("`^", "Bitwise XOR on illegal type.\n", sp, 2);
   }
 }
 
@@ -860,7 +860,7 @@ void f_xor(INT32 args)
 {
   switch(args)
   {
-  case 0: error("Too few arguments to `^\n");
+  case 0: ERROR("`^", "Too few arguments.\n", sp, 0);
   case 1: return;
   case 2: o_xor(); return;
   default:
@@ -899,8 +899,8 @@ void o_lsh(void)
       return;
 
     if(sp[-2].type != T_INT)
-      error("Bad argument 1 to <<\n");
-    error("Bad argument 2 to <<\n");
+      ERROR("`<<", "Bad argument 1.\n", sp, 2);
+    ERROR("`<<", "Bad argument 2.\n", sp, 2);
   }
   sp--;
   sp[-1].u.integer = sp[-1].u.integer << sp->u.integer;
@@ -909,7 +909,7 @@ void o_lsh(void)
 void f_lsh(INT32 args)
 {
   if(args != 2)
-    error("Bad number of args to `<<\n");
+    ERROR("`<<", "Bad number of args.\n", sp, args);
   o_lsh();
 }
 
@@ -931,8 +931,8 @@ void o_rsh(void)
     if(call_lfun(LFUN_RSH, LFUN_RRSH))
       return;
     if(sp[-2].type != T_INT)
-      error("Bad argument 1 to >>\n");
-    error("Bad argument 2 to >>\n");
+      ERROR("`>>", "Bad argument 1.\n", sp, 2);
+    ERROR("`>>", "Bad argument 2.\n", sp, 2);
   }
   sp--;
   sp[-1].u.integer = sp[-1].u.integer >> sp->u.integer;
@@ -941,7 +941,7 @@ void o_rsh(void)
 void f_rsh(INT32 args)
 {
   if(args != 2)
-    error("Bad number of args to `>>\n");
+    ERROR("`>>", "Bad number of args.\n", sp, args);
   o_rsh();
 }
 
@@ -968,7 +968,7 @@ void o_multiply(void)
 	struct svalue *pos;
 	INT32 e;
 	if(sp[-1].u.integer < 0)
-	  error("Cannot multiply array by negative number.\n");
+	  ERROR("`*", "Cannot multiply array by negative number.\n", sp, 2);
 	ret=allocate_array(sp[-2].u.array->size * sp[-1].u.integer);
 	pos=ret->item;
 	for(e=0;e<sp[-1].u.integer;e++,pos+=sp[-2].u.array->size)
@@ -987,7 +987,7 @@ void o_multiply(void)
 	char *pos;
 	INT32 e;
 	if(sp[-1].u.integer < 0)
-	  error("Cannot multiply string by negative number.\n");
+	  ERROR("`*", "Cannot multiply string by negative number.\n", sp, 2);
 	ret=begin_shared_string(sp[-2].u.string->len * sp[-1].u.integer);
 	pos=ret->str;
 	for(e=0;e<sp[-1].u.integer;e++,pos+=sp[-2].u.string->len)
@@ -1044,7 +1044,7 @@ void o_multiply(void)
     if(call_lfun(LFUN_MULTIPLY, LFUN_RMULTIPLY))
       return;
 
-    error("Bad arguments to multiply.\n");
+    ERROR("`*", "Bad arguments.\n", sp, 2);
   }
 }
 
@@ -1052,7 +1052,7 @@ void f_multiply(INT32 args)
 {
   switch(args)
   {
-  case 0: error("Too few arguments to `*\n");
+  case 0: ERROR("`*", "Too few arguments.\n", sp, 0);
   case 1: return;
   case 2: o_multiply(); return;
   default:
@@ -1100,7 +1100,7 @@ void o_divide(void)
 
 	len=sp[-1].u.integer;
 	if(!len)
-	  error("Division by zero.\n");
+	  ERROR("`/", "Division by zero.\n", sp, 2);
 
 	if(len<0)
 	{
@@ -1131,7 +1131,7 @@ void o_divide(void)
 
 	len=sp[-1].u.float_number;
 	if(len==0.0)
-	  error("Division by zero.\n");
+	  ERROR("`/", "Division by zero.\n", sp, 2);
 
 	if(len<0)
 	{
@@ -1186,7 +1186,7 @@ void o_divide(void)
 
 	len=sp[-1].u.integer;
 	if(!len)
-	  error("Division by zero.\n");
+	  ERROR("`/", "Division by zero.\n", sp, 2);
 
 	if(len<0)
 	{
@@ -1219,7 +1219,7 @@ void o_divide(void)
 
 	len=sp[-1].u.float_number;
 	if(len==0.0)
-	  error("Division by zero.\n");
+	  ERROR("`/", "Division by zero.\n", sp, 2);
 
 	if(len<0)
 	{
@@ -1265,7 +1265,7 @@ void o_divide(void)
       }
     }
       
-    error("Division on different types.\n");
+    ERROR("`/", "Division on different types.\n", sp, 2);
   }
 
   switch(sp[-2].type)
@@ -1296,7 +1296,7 @@ void o_divide(void)
 
   case T_FLOAT:
     if(sp[-1].u.float_number == 0.0)
-      error("Division by zero.\n");
+      ERROR("`/", "Division by zero.\n", sp, 2);
     sp--;
     sp[-1].u.float_number /= sp[0].u.float_number;
     return;
@@ -1305,7 +1305,7 @@ void o_divide(void)
   {
     INT32 tmp;
     if (sp[-1].u.integer == 0)
-      error("Division by zero\n");
+      ERROR("`/", "Division by zero\n", sp, 2);
     sp--;
 
     tmp=sp[-1].u.integer/sp[0].u.integer;
@@ -1319,7 +1319,7 @@ void o_divide(void)
   }
     
   default:
-    error("Bad argument 1 to divide.\n");
+    ERROR("`/", "Bad argument 1.\n", sp, 2);
   }
 }
 
@@ -1328,7 +1328,7 @@ void f_divide(INT32 args)
   switch(args)
   {
     case 0: 
-    case 1: error("Too few arguments to `/\n");
+    case 1: ERROR("`/", "Too few arguments to `/\n", sp, args);
     case 2: o_divide(); break;
     default:
     {
@@ -1371,7 +1371,7 @@ void o_mod(void)
 	struct pike_string *s=sp[-2].u.string;
 	INT32 tmp,base;
 	if(!sp[-1].u.integer)
-	  error("Modulo by zero.\n");
+	  ERROR("`%", "Modulo by zero.\n", sp, 2);
 
 	tmp=sp[-1].u.integer;
 	if(tmp<0)
@@ -1394,7 +1394,7 @@ void o_mod(void)
 	struct array *a=sp[-2].u.array;
 	INT32 tmp,base;
 	if(!sp[-1].u.integer)
-	  error("Modulo by zero.\n");
+	  ERROR("`%", "Modulo by zero.\n", sp, 2);
 
 	tmp=sp[-1].u.integer;
 	if(tmp<0)
@@ -1413,7 +1413,7 @@ void o_mod(void)
       }
     }
 
-    error("Modulo on different types.\n");
+    ERROR("`%", "Modulo on different types.\n", sp, 2);
   }
 
   switch(sp[-2].type)
@@ -1426,7 +1426,7 @@ void o_mod(void)
   {
     FLOAT_TYPE foo;
     if(sp[-1].u.float_number == 0.0)
-      error("Modulo by zero.\n");
+      ERROR("`%", "Modulo by zero.\n", sp, 2);
     sp--;
     foo=sp[-1].u.float_number / sp[0].u.float_number;
     foo=sp[-1].u.float_number - sp[0].u.float_number * floor(foo);
@@ -1434,7 +1434,7 @@ void o_mod(void)
     return;
   }
   case T_INT:
-    if (sp[-1].u.integer == 0) error("Modulo by zero.\n");
+    if (sp[-1].u.integer == 0) ERROR("`%", "Modulo by zero.\n", sp, 2);
     sp--;
     if(sp[-1].u.integer>=0)
     {
@@ -1455,14 +1455,14 @@ void o_mod(void)
     return;
 
   default:
-    error("Bad argument 1 to modulo.\n");
+    ERROR("`%", "Bad argument 1.\n", sp, 2);
   }
 }
 
 void f_mod(INT32 args)
 {
   if(args != 2)
-    error("Bad number of args to `%%\n");
+    ERROR("`%", "Bad number of args\n", sp, args);
   o_mod();
 }
 
@@ -1506,7 +1506,7 @@ void o_not(void)
 
 void f_not(INT32 args)
 {
-  if(args != 1) error("Bad number of args to `!\n");
+  if(args != 1) ERROR("`!", "Bad number of args.\n", sp, args);
   o_not();
 }
 
@@ -1552,13 +1552,13 @@ void o_compl(void)
   }
 
   default:
-    error("Bad argument to ~\n");
+    ERROR("`~", "Bad argument.\n", sp, 1);
   }
 }
 
 void f_compl(INT32 args)
 {
-  if(args != 1) error("Bad number of args to `~\n");
+  if(args != 1) ERROR("`~", "Bad number of args.\n", sp, args);
   o_compl();
 }
 
@@ -1590,7 +1590,7 @@ void o_negate(void)
     return;
 
   default: 
-    error("Bad argument to unary minus\n");
+    ERROR("`-", "Bad argument to unary minus.\n", sp, 1);
   }
 }
 
@@ -1605,10 +1605,10 @@ void o_range(void)
   }
 
   if(sp[-2].type != T_INT)
-    error("Bad argument 1 to [ .. ]\n");
+    ERROR("`[]", "Bad argument 2 to [ .. ]\n", sp, 3);
 
   if(sp[-1].type != T_INT)
-    error("Bad argument 2 to [ .. ]\n");
+    ERROR("`[]", "Bad argument 3 to [ .. ]\n", sp, 3);
 
   from=sp[-2].u.integer;
   if(from<0) from=0;
@@ -1656,7 +1656,7 @@ void o_range(void)
   }
     
   default:
-    error("[ .. ] on non-scalar type.\n");
+    ERROR("`[]", "[ .. ] on non-scalar type.\n", sp, 3);
   }
 }
 
@@ -1666,7 +1666,7 @@ void f_index(INT32 args)
   {
   case 0:
   case 1:
-    error("Too few arguments to `[]\n");
+    ERROR("`[]", "Too few arguments.\n", sp, args);
     break;
   case 2:
     if(sp[-1].type==T_STRING) sp[-1].subtype=0;
@@ -1676,7 +1676,7 @@ void f_index(INT32 args)
     o_range();
     break;
   default:
-    error("Too many arguments to `[]\n");
+    ERROR("`[]", "Too many arguments.\n", sp, args);
   }
 }
 
@@ -1686,7 +1686,7 @@ void f_arrow(INT32 args)
   {
   case 0:
   case 1:
-    error("Too few arguments to `->\n");
+    ERROR("`->", "Too few arguments.\n", sp, args);
     break;
   case 2:
     if(sp[-1].type==T_STRING)
@@ -1694,7 +1694,7 @@ void f_arrow(INT32 args)
     o_index();
     break;
   default:
-    error("Too many arguments to `->\n");
+    ERROR("`->", "Too many arguments.\n", sp, args);
   }
 }
 
@@ -1702,7 +1702,7 @@ void f_sizeof(INT32 args)
 {
   INT32 tmp;
   if(args<1)
-    error("Too few arguments to sizeof()\n");
+    ERROR("sizeof", "Too few arguments.\n", sp, args);
 
   tmp=pike_sizeof(sp-args);
 
