@@ -44,8 +44,8 @@ class Call(string method_name, array params)
 
   string _sprintf()
   {
-    return sprintf("Protocols.XMLRPC.Call(%O, %d params)",
-		   method_name, sizeof(params));
+    return sprintf("Protocols.XMLRPC.Call(%O, %d param%s)",
+		   method_name, sizeof(params), sizeof(params) == 1 ? "" : "s");
   }
 }
 
@@ -76,7 +76,7 @@ class Fault(int fault_code, string fault_string)
 Call decode_call(string xml_input)
 {
   array r = decode(xml_input, call_dtd);
-  return Call(r[0], r[1..]);
+  return Call(r[0], r[1]);
 }
 
 //! Decodes a XML-RPC representation of a response and returns an
@@ -203,6 +203,8 @@ static mixed decode(string xml_input, string dtd_input)
 			     case "int":
 			     case "boolean":
 			       return (int)(data*"") || magic_zero;
+			     case "double":
+			       return (float)(data*"");
 			     case "string":
 			     case "name":
 			     case "methodName":
@@ -248,30 +250,30 @@ static string encode(int|float|string|mapping|array value)
   else if(stringp(value))
     r += "<string>"+xml_encode_string(value)+"</string>";
   else if(floatp(value))
-    r += sprintf("<double>%g</double>", value);
+    r += sprintf("<double>%.8f</double>", value);
   else if(mappingp(value))
   {
     r += "\n<struct>";
     foreach(indices(value), string name)
       r += "<member>"
 	   "<name>"+xml_encode_string(name)+"</name>"
-	   "<value>"+encode(value[name])+"</value>"
+	   +encode(value[name])+
 	   "</member>\n";
-    r += "<struct>\n";
+    r += "</struct>\n";
   }
   else if(arrayp(value))
   {
     r += "\n<array>\n<data>\n";
     foreach(indices(value), string name)
-      r += "<value>"+encode(value[name])+"</value>\n";
-    r += "</data>\n<array>\n";
+      r += encode(value[name]);
+    r += "</data>\n</array>\n";
   }
   else
     error("Cannot encode %O.\n", value);
   return r+"</value>\n";
 }
 
-static string encode_params(array(mixed) params)
+static string encode_params(array params)
 {
   string r = "<params>\n";
   foreach(params, mixed param)
