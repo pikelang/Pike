@@ -1,9 +1,9 @@
-/* $Id: image.c,v 1.63 1997/11/20 22:31:19 mirar Exp $ */
+/* $Id: image.c,v 1.64 1997/11/23 03:29:35 per Exp $ */
 
 /*
 **! module Image
 **! note
-**!	$Id: image.c,v 1.63 1997/11/20 22:31:19 mirar Exp $
+**!	$Id: image.c,v 1.64 1997/11/23 03:29:35 per Exp $
 **! class image
 **!
 **!	The main object of the <ref>Image</ref> module, this object
@@ -82,7 +82,7 @@
 
 #include "stralloc.h"
 #include "global.h"
-RCSID("$Id: image.c,v 1.63 1997/11/20 22:31:19 mirar Exp $");
+RCSID("$Id: image.c,v 1.64 1997/11/23 03:29:35 per Exp $");
 #include "pike_macros.h"
 #include "object.h"
 #include "constants.h"
@@ -105,7 +105,7 @@ extern struct program *image_colortable_program;
 
 #define min(a,b) ((a)<(b)?(a):(b))
 #define max(a,b) ((a)<(b)?(b):(a))
-#define testrange(x) max(min((x),255),0)
+#define testrange(x) max(min(((int)x),255),0)
 
 #define sq(x) ((x)*(x))
 
@@ -177,7 +177,7 @@ static void exit_image_struct(struct object *obj)
     (dest).g=apply_alpha((dest).g,(src).g,alpha), \
     (dest).b=apply_alpha((dest).b,(src).b,alpha))
 
-#define pixel(_img,x,y) ((_img)->img[(x)+(y)*(_img)->xsize])
+#define pixel(_img,x,y) ((_img)->img[((int)(x))+((int)(y))*(int)(_img)->xsize])
 
 #define setpixel(x,y) \
    (THIS->alpha? \
@@ -185,8 +185,8 @@ static void exit_image_struct(struct object *obj)
     ((pixel(THIS,x,y)=THIS->rgb),0))
 
 #define setpixel_test(x,y) \
-   (((x)<0||(y)<0||(x)>=THIS->xsize||(y)>=THIS->ysize)? \
-    0:(setpixel(x,y),0))
+   ((((int)x)<0||((int)y)<0||((int)x)>=(int)THIS->xsize||((int)y)>=(int)THIS->ysize)? \
+    0:(setpixel((int)x,(int)y),0))
 
 static INLINE void getrgb(struct image *img,
 			  INT32 args_start,INT32 args,char *name)
@@ -247,7 +247,7 @@ static INLINE void img_line(INT32 x1,INT32 y1,INT32 x2,INT32 y2)
    {
       if (y1>y2) y1^=y2,y2^=y1,y1^=y2,
                  x1^=x2,x2^=x1,x1^=x2;
-      pixelstep=((x2-x1)*1024)/(y2-y1);
+      pixelstep=(int)((x2-x1)*1024)/(int)(y2-y1);
       pos=x1*1024;
       for (;y1<=y2;y1++)
       {
@@ -1167,6 +1167,69 @@ static INLINE void
 **!	</pre>
 **!	Default alpha channel value is 0 (opaque).
 */
+INLINE static void 
+image_tuned_box_leftright(const rgba_group left, const rgba_group right, 
+			  rgb_group *dest, 
+			  const int length,  const int xsize,  const int height)
+{
+  int x, y=height, w;
+  rgb_group *from = dest;
+  for(x=0; x<length; x++)
+  {
+    (dest+x)->r = (((long)left.r)*(length-x)+((long)right.r)*(x))/length;
+    (dest+x)->g = (((long)left.g)*(length-x)+((long)right.g)*(x))/length;
+    (dest+x)->b = (((long)left.b)*(length-x)+((long)right.b)*(x))/length;
+  }
+  while(--y)  MEMCPY((dest+=xsize), from, length*sizeof(rgb_group)); 
+}
+
+
+
+INLINE static void 
+image_tuned_box_topbottom(const rgba_group left, const rgba_group right,
+			  rgb_group *dest, 
+			  const int length, const int xsize, const int height)
+{
+  int x,y;
+  rgb_group color, *from, old;
+  if(length > 128)
+  {
+    for(y=0; y<height; y++)
+    {
+      color.r = (((long)left.r)*(height-y)+((long)right.r)*(y))/height;
+      color.g = (((long)left.g)*(height-y)+((long)right.g)*(y))/height;
+      color.b = (((long)left.b)*(height-y)+((long)right.b)*(y))/height;
+      if(y && old.r == color.r && old.g == color.g && old.b == color.b)
+      {
+	MEMCPY(dest,dest-xsize,length*sizeof(rgb_group));
+	dest+=xsize;
+      } else {
+	for(x=0; x<64; x++) *(dest++) = color;
+	from = (dest-=64);
+	for(;x<length-64;x+=64) MEMCPY((dest+=64), from, 64*sizeof(rgb_group));
+	for(;x<length; x++) *(dest++) = color;
+	dest += xsize-length;
+	old = color;
+      }
+    }
+  } else {
+    for(y=0; y<height; y++)
+    {
+      color.r = (((long)left.r)*(height-y)+((long)right.r)*(y))/height;
+      color.g = (((long)left.g)*(height-y)+((long)right.g)*(y))/height;
+      color.b = (((long)left.b)*(height-y)+((long)right.b)*(y))/height;
+      if(y && old.r == color.r && old.g == color.g && old.b == color.b)
+      {
+	MEMCPY(dest,dest-xsize,length*sizeof(rgb_group));
+	dest+=xsize;
+      } else {
+	for(x=0; x<length; x++) *(dest++) = color;
+	dest += xsize-length;
+	old = color;
+      }
+    }
+  }
+}
 
 void image_tuned_box(INT32 args)
 {
@@ -1198,6 +1261,9 @@ void image_tuned_box(INT32 args)
    get_rgba_group_from_array_index(&bottomleft,sp[4-args].u.array,2);
    get_rgba_group_from_array_index(&bottomright,sp[4-args].u.array,3);
 
+#define color_equal(A,B) ((A.r == B.r) && (A.g == B.g) && (A.b == B.b) && (A.alpha == B.alpha))
+
+
    if (x1>x2) x1^=x2,x2^=x1,x1^=x2,
               sum=topleft,topleft=topright,topright=sum,
               sum=bottomleft,bottomleft=bottomright,bottomright=sum;
@@ -1205,9 +1271,9 @@ void image_tuned_box(INT32 args)
               sum=topleft,topleft=bottomleft,bottomleft=sum,
               sum=topright,topright=bottomright,bottomright=sum;
    if (x2<0||y2<0||x1>=THIS->xsize||y1>=THIS->ysize) return;
-
    xw=x2-x1;
    yw=y2-y1;
+   if(xw == 0 || yw == 0) return;
 
    dxw = 1.0/(float)xw;
    dyw = 1.0/(float)yw;
@@ -1215,6 +1281,24 @@ void image_tuned_box(INT32 args)
    this=THIS;
    THREADS_ALLOW();
 
+   if (! (topleft.alpha||topright.alpha||bottomleft.alpha||bottomright.alpha))
+     if(color_equal(topleft,bottomleft) && 
+	color_equal(topright, bottomright))
+     {
+       image_tuned_box_leftright(topleft, bottomright, 
+				 this->img+x1+this->xsize*y1, 
+				 xw, this->xsize, yw);
+       return;
+     } 
+     else if(color_equal(topleft,topright) && color_equal(bottomleft,bottomright))
+     {
+       image_tuned_box_topbottom(topleft, bottomleft, 
+				 this->img+x1+this->xsize*y1, 
+				 xw, this->xsize, yw);
+       return;
+     }
+
+ 
    for (x=max(0,-x1); x<=xw && x+x1<this->xsize; x++)
    {
 #define tune_factor(a,aw) (1.0-((float)(a)*(aw)))
