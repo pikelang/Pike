@@ -2,7 +2,7 @@
 
 import ".";
 
-object raw;
+Raw raw;
 string pass=MIME.encode_base64(Crypto.randomness.reasonably_random()->read(6));
 
 mapping options;
@@ -52,12 +52,19 @@ void create(string _server,void|mapping _options)
    call_out(da_ping,options->ping_interval || 60);
 }
 
+void close()
+{
+   if (raw->con) raw->con->close();
+   destruct(raw);
+   raw=0;
+}
+
 string expecting_pong;
 
 void da_ping()
 {
-   call_out(da_ping,options->ping_interval || 60);
-   call_out(no_ping_reply,options->ping_timeout || 60); // timeout
+   call_out(da_ping,options->ping_interval || 120);
+   call_out(no_ping_reply,options->ping_timeout || 120); // timeout
    cmd->ping(expecting_pong=
 	     options->host+" "+Array.shuffle("pike""IRC""client"/"")*"");
 }
@@ -97,12 +104,12 @@ void got_command(string what,string ... args)
 	    options->error_notify(@args);
 	 return;
    }
-   werror("got command: %O, %O\n",what,args);
+//     werror("got command: %O, %O\n",what,args);
 }
 
 void got_notify(string from,string type,
 		void|string to,void|string message,
-		void|string extra,void|string extra2)
+		string ...extra)
 {
    object c;
    if (options->system_notify && glob("2??",type))
@@ -138,19 +145,61 @@ void got_notify(string from,string type,
 	 break;
 
       case "353": // names list
-	 if (extra && (c=channels[lower_case(extra||"")]))
+	 if (sizeof(extra) && (c=channels[lower_case(extra[0]||"")]) &&
+	     c->not_names)
 	 {
-	    c->not_names(map(extra2/" "-({""}),
+	    c->not_names(map(extra[1]/" "-({""}),
 			     lambda(string name)
 			     {
 				string a,b,c;
-				sscanf(name,"%[@]%s%[+]",
+				sscanf(name,"%[+@%]%s%[+@%]",
 				       a,b,c);
-				return ({person(b),a+c});
+				Person p=person(b);
+				p->channels[lower_case(extra[0])]=1;
+				return ({p,a+c});
 			     }));
 	    return;
 	 }
 	 break;
+      case "366": // "end of names list"
+	 break;
+
+      case "352": // who list
+	 if (sizeof(extra)>2 && 
+	     message && (c=channels[lower_case(message||"")]))
+	 {
+	    Person p=person(extra[3],extra[0]+"@"+extra[1]);
+	    p->server=extra[2];
+	    p->realname=extra[6..]*" ";
+	    p->channels[lower_case(message)]=1;
+	    if (c->not_who) c->not_who(p,extra[4]);
+	    return;
+	 }
+	 break;
+      case "315": // "end of who list"
+	 break;
+
+      case "482": // "you're not channel operator"
+	 if ((c=channels[lower_case(message||"")]))
+	 {
+	    if (c->not_not_oper) c->not_not_oper();
+	    return;
+	 }
+	 break;
+	 
+
+      case "401": // no such nick
+	 werror("%O\n",({from,type,to,message,extra}));
+	 break;
+
+      case "367": // mode b line
+	 if ((c=channels[lower_case(message||"")]))
+	 {
+	    if (c->not_mode_b) c->not_mode_b(to,extra*" ");
+	    return;
+	 }
+	 break;
+	 
 
 	 /* --- */
 
@@ -166,12 +215,13 @@ void got_notify(string from,string type,
 	 if ((c=channels[lower_case(to||"")]))
 	 {
 	    // who, mode, by
-	    c->not_mode(extra?person(extra):originator,message,originator);
+	    c->not_mode(extra[0]?person(extra[0]):originator,message+( ({""})+extra)*" ",originator);
 	    return;
 	 }
 	 break;
 
       case "JOIN":
+//  	 werror("me=%O\n",me);
 	 if ((c=channels[lower_case(to||"")]))
 	 {
 	    c->not_join(originator);
@@ -180,6 +230,7 @@ void got_notify(string from,string type,
 	 break;
 
       case "PART":
+	 originator->channels[lower_case(to)]=0;
 	 if ((c=channels[lower_case(to||"")]))
 	 {
 	    // who, why, by
@@ -189,10 +240,11 @@ void got_notify(string from,string type,
 	 break;
 
       case "KICK":
+	 person(message)->channels[lower_case(extra[0])]=0;
 	 if ((c=channels[lower_case(to||"")]))
 	 {
 	    // who, why, by
-	    c->not_part(person(message),extra,originator);
+	    c->not_part(person(message),extra[0],originator);
 	    return;
 	 }
 	 break;
@@ -219,16 +271,27 @@ void got_notify(string from,string type,
 	 options->privmsg_notify(originator,message,to);
 	 return;
 
+      case "NOTICE":
+	 if ((c=channels[lower_case(to||"")]))
+	 {
+	    c->not_message(originator,message);
+	    return;
+	 }
+	 if (!options->notice_notify) break;
+	 options->notice_notify(originator,message,to);
+	 return;
+
       case "NICK":
-//  	 werror("%s is known as %s (aka %s)\n",
-//  		originator->nick,
-//  		to,
-//  		((array)originator->aka)*",");
+	 werror("%s is known as %s (aka %s)\n",
+		originator->nick,
+		to,
+		((array)originator->aka)*",");
 	 mixed err=0;
 	 originator->aka[originator->nick]=1;
 	 originator->aka[to]=1;
 	 if (options->nick_notify)
 	    err=catch { options->nick_notify(originator,to); };
+	 m_delete(nick2person,originator->nick);
 	 originator->nick=to;
 	 nick2person[to]=originator;
 	 if (err) throw(err);
@@ -236,7 +299,7 @@ void got_notify(string from,string type,
    }
 //    werror("got notify: %O, %O, %O, %O\n",from,type,to,message);
    if (options->generic_notify)
-      options->generic_notify(from,type,to,message,extra);
+      options->generic_notify(from,type,to,message,extra[0]);
 }
 
 object cmd=class
@@ -334,57 +397,62 @@ void send_message(string|array to,string msg)
    cmd->privmsg( (arrayp(to)?to*",":to), msg);
 }
 
-// ----- channel
-
-class Channel
-{
-   string name;
-
-   void	not_message(string who,string message);
-   void	not_join(string who);
-   void	not_part(string who,string message,string executor);
-   void	not_mode(string who,string mode);
-   void	not_failed_to_join();
-}
-
 // ----- persons
 
 class Person
 {
-   string nick; // Mirar
-   string user; // mirar
-   string ip;   // mistel.idonex.se
-   int last_action; // time_t
-   multiset aka=(<>);
+   inherit .Person;
 
    void say(string message)
    {
       cmd->privmsg(nick,message);
    }
 
-   void me(string what)
+   void notice(string message)
+   {
+      cmd->notice(nick,message);
+   }
+
+   void action(string what)
    {
       say("\1ACTION "+what+"\1");
+   }
+
+   string _sprintf(int t)
+   {
+      switch (t)
+      {
+	 case 'O':
+	    return sprintf("Person(%s!%s@%s%s)",
+			   nick,user||"?",ip||"?",
+			   (realname!="?")?"("+realname+")":"");
+	 default:
+	    return 0;
+      }
    }
 }
 
 mapping nick2person=([]);
-object me;
+Person me;
 
 Person person(string who,void|string ip)
 {
    Person p;
 
-   if ( ! (p=nick2person[who]) )
+   if ( ! (p=nick2person[lower_case(who)]) )
    {
       p=Person();
       p->nick=who;
-      nick2person[who]=p;
+      nick2person[lower_case(who)]=p;
+//        werror("new person: %O\n",p);
+   }
+   else if (lower_case(p->nick)!=lower_case(who))
+   {
+      werror("nick mismatch: %O was %O\n",who,p->nick);
+      p->nick=who;
    }
    if (ip && !p->ip)
       sscanf(ip,"%*[~]%s@%s",p->user,p->ip);
-
-//    werror("%O is %O %O %O\n",who,p->nick,p->user,p->ip);
 
    return p;
 }

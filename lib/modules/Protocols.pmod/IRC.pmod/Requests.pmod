@@ -6,7 +6,7 @@ NICK Mirar^
 USER mirar mistel.idonex.se irc.starchat.net :Mirar is testing
 */
 
-string __cvs_id="$Id: Requests.pmod,v 1.3 2000/09/28 03:39:01 hubbe Exp $";
+string __cvs_id="$Id: Requests.pmod,v 1.4 2000/11/12 23:41:50 mirar Exp $";
 
 import ".";
 
@@ -17,12 +17,14 @@ class Request
    
    void async(object con,mixed ...args)
    {
-      con->transmit_async(cmd,encode(args),got_answer);
+      con->transmit_noreply(cmd,encode(args));
+      if (callback) call_out(callback,0,1);
    }
 
-   mixed sync(object con,mixed ...args)
-   {
-      return decode_answer(con->transmit(cmd,encode(args)));
+   int(1..1) sync(object con,mixed ...args)
+   { 
+      con->transmit_noreply(cmd,encode(args));
+      return 1;
    }
 
    void got_answer(mixed s)
@@ -46,18 +48,6 @@ class NoReply
 inherit Protocols.IRC.Requests.Request;
 
 string cmd=\"%cmd%\";
-
-void async(object con,mixed ...args)
-{
-    con->transmit_noreply(cmd,encode(args));
-    if (callback) call_out(callback,0,1);
-}
-
-int(1..1) sync(object con,mixed ...args)
-{ 
-   con->transmit_noreply(cmd,encode(args));
-   return 1;
-}
 
 string encode(array args)
 {
@@ -110,6 +100,34 @@ object user=NoReply("USER","string","string","string","text");
 object pong=NoReply("PONG","text");
 object ping=NoReply("PING","text");
 object privmsg=NoReply("PRIVMSG","string","text");
+object notice=NoReply("NOTICE","string","text");
 object join=NoReply("JOIN","string");
 object names=NoReply("NAMES","string");
+object who=NoReply("WHO","string");
+object kick=NoReply("KICK","string","string","text");
+
+class mode
+{
+   inherit Request;
+
+   string cmd="MODE";
+
+   string encode(array args)
+   {
+      switch (sizeof(args))
+      {
+         case 2:  
+            return sprintf("%s %s",@args);
+         case 3:  
+            return sprintf("%s %s :%s",@args);
+         default:
+            error("illegal number of args to MODE");
+      }
+   }
+
+   mixed decode_answer(string s)
+   {
+      return 1;
+   }
+};
 
