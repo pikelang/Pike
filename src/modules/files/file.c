@@ -6,7 +6,7 @@
 #define READ_BUFFER 8192
 
 #include "global.h"
-RCSID("$Id: file.c,v 1.77 1998/03/02 11:20:07 hubbe Exp $");
+RCSID("$Id: file.c,v 1.78 1998/03/20 22:33:16 hubbe Exp $");
 #include "fdlib.h"
 #include "interpret.h"
 #include "svalue.h"
@@ -146,6 +146,14 @@ static int close_fd(int fd)
     files[fd].write_callback.type=T_INT;
     files[fd].close_callback.type=T_INT;
     files[fd].open_mode = 0;
+
+#ifdef HAVE_FD_FLOCK
+    if(files[fd].key)
+    {
+      destruct(files[fd].key);
+      files[fd].key=0;
+    }
+#endif
 
     while(1)
     {
@@ -1706,6 +1714,141 @@ void create_proxy_pipe(struct object *o, int for_reading)
 
 #endif
 
+#ifdef HAVE_FD_FLOCK
+
+static struct program * file_lock_key_program;
+
+struct file_lock_key_storage
+{
+  int fd;
+#ifdef _REENTRANT
+  struct object *owner;
+#endif
+};
+
+
+#define OB2KEY(O) ((struct file_lock_key_storage *)((O)->storage))
+
+static void low_file_lock(INT32 args, int flags)
+{
+  int ret,fd=FD;
+  struct object *o;
+
+  if(FD==-1)
+    error("File->lock(): File is not open.\n");
+
+  if(!args || IS_ZERO(sp-args))
+  {
+    if(THIS->key
+#ifdef _REENTRANT
+       && OB2KEY(THIS->key)->owner == thread_id
+#endif
+      )
+    {
+      error("Recursive file locks!\n");
+    }
+  }
+
+  o=clone_object(file_lock_key_program,0);
+  THREADS_ALLOW();
+  ret=fd_flock(fd, flags);
+  THREADS_DISALLOW();
+
+  if(ret<0)
+  {
+    free_object(o);
+    ERRNO=errno;
+    pop_n_elems(args);
+    push_int(0);
+  }else{
+    THIS->key=o;
+    OB2KEY(o)->fd=fd;
+    pop_n_elems(args);
+    push_object(o);
+  }
+}
+
+static void file_lock(INT32 args)
+{
+  low_file_lock(args,fd_LOCK_EX);
+}
+
+static void file_trylock(INT32 args)
+{
+  low_file_lock(args,fd_LOCK_EX | fd_LOCK_NB);
+}
+
+#define THIS_KEY ((struct file_lock_key_storage *)(fp->current_storage))
+static void init_file_lock_key(struct object *o)
+{
+  THIS_KEY->fd=-1;
+#ifdef _REENTRANT
+  THIS_KEY->owner=thread_id;
+  thread_id->refs++;
+#endif
+}
+
+static void exit_file_lock_key(struct object *o)
+{
+  if(THIS_KEY->fd != -1)
+  {
+    int fd=THIS_KEY->fd;
+    int err;
+#ifdef DEBUG
+    if(files[fd].key != o)
+      fatal("File lock key is wrong!\n");
+#endif
+
+    THREADS_ALLOW();
+    do
+    {
+      err=fd_flock(fd, fd_LOCK_UN);
+    }while(err<0 && errno==EINTR);
+    THREADS_DISALLOW();
+
+#ifdef _REENTRANT
+    if(THIS_KEY->owner)
+    {
+      free_object(THIS_KEY->owner);
+      THIS_KEY->owner=0;
+    }
+#endif
+    files[fd].key=0;
+    THIS_KEY->fd=-1;
+  }
+}
+
+static void init_file_locking(void)
+{
+  INT32 off;
+  start_new_program();
+  off=add_storage(sizeof(struct file_lock_key_storage));
+#ifdef _REENTRANT
+  map_variable("_owner","object",0,
+	       off + OFFSETOF(file_lock_key_storage, owner),
+	       T_OBJECT);
+#endif
+  set_init_callback(init_file_lock_key);
+  set_exit_callback(exit_file_lock_key);
+  file_lock_key_program=end_program();
+  file_lock_key_program->flags |= PROGRAM_DESTRUCT_IMMEDIATE;
+  add_function("lock",file_lock,"function(void|int:object)",0);
+  add_function("trylock",file_trylock,"function(void|int:object)",0);
+}
+static void exit_file_locking(void)
+{
+  if(file_lock_key_program)
+  {
+    free_program(file_lock_key_program);
+    file_lock_key_program=0;
+  }
+}
+#else
+#define init_file_locking()
+#define exit_file_locking()
+#endif /* HAVE_FD_FLOCK */
+
+
 void pike_module_exit(void)
 {
   if(file_program)
@@ -1713,6 +1856,7 @@ void pike_module_exit(void)
     free_program(file_program);
     file_program=0;
   }
+  exit_file_locking();
 }
 
 void mark_ids(struct callback *foo, void *bar, void *gazonk)
@@ -1824,6 +1968,7 @@ void pike_module_init(void)
 #ifdef _REENTRANT
   add_function("proxy",file_proxy,"function(object:void)",0);
 #endif
+  init_file_locking();
   set_init_callback(init_file_struct);
   set_exit_callback(exit_file_struct);
   set_gc_mark_callback(gc_mark_file_struct);

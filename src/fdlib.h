@@ -27,7 +27,10 @@
 #define fd_BUFFERED           8
 #define fd_BIDIRECTIONAL     16
 
+
 #ifdef HAVE_WINSOCK_H
+
+#define HAVE_FD_FLOCK
 
 
 #define FILE_CAPABILITIES (fd_INTERPROCESSABLE)
@@ -73,6 +76,7 @@ int fd_close(FD fd);
 long fd_write(FD fd, void *buf, long len);
 long fd_read(FD fd, void *to, long len);
 long fd_lseek(FD fd, long pos, int where);
+int fd_flock(FD fd, int oper);
 int fd_fstat(FD fd, struct stat *s);
 int fd_select(int fds, FD_SET *a, FD_SET *b, FD_SET *c, struct timeval *t);
 int fd_ioctl(FD fd, int cmd, void *data);
@@ -139,6 +143,11 @@ void fd_waitor_set_customer(struct fd_waitor *x, FD customer, int flags);
 #define FD_FILE -2
 #define FD_NO_MORE_FREE -1
 
+
+#define fd_LOCK_SH 1
+#define fd_LOCK_EX 2
+#define fd_LOCK_UN 4
+#define fd_LOCK_NB 8
 
 typedef struct my_fd_set_s
 {
@@ -240,6 +249,16 @@ typedef int FD;
 #define fd_FD_SET FD_SET
 #define fd_FD_ISSET FD_ISSET
 #define fd_FD_ZERO FD_ZERO
+
+#define fd_flock flock
+#define fd_LOCK_SH LOCK_SH
+#define fd_LOCK_EX LOCK_EX
+#define fd_LOCK_UN LOCK_UN
+#define fd_LOCK_NB LOCK_NB
+
+#ifdef HAVE_FLOCK
+#define HAVE_FD_FLOCK
+#endif
 
 #define fd_shutdown_read 0
 #define fd_shutdown_write 1

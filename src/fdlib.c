@@ -465,6 +465,56 @@ long fd_lseek(FD fd, long pos, int where)
   return ret;
 }
 
+int fd_flock(FD fd, int oper)
+{
+  long ret;
+  mt_lock(&fd_mutex);
+  if(fd_type[fd]!=FD_FILE)
+  {
+    mt_unlock(&fd_mutex);
+    errno=ENOTSUPP;
+    return -1;
+  }
+  ret=da_handle[fd];
+  mt_unlock(&fd_mutex);
+
+  if(oper & fd_LOCK_UN)
+  {
+    ret=UnlockFile((HANDLE)ret,
+		   0,
+		   0,
+		   0xffffffff,
+		   0xffffffff);
+  }else{
+    DWORD flags;
+    OVERLAPPED tmp;
+    MEMSET(&tmp, 0, sizeof(tmp));
+    tmp.Offset=0;
+    tmp.OffsetHigh=0;
+
+    if(oper & fd_LOCK_EX)
+      flags|=LOCKFILE_EXCLUSIVE_LOCK;
+
+    if(oper & fd_LOCK_UN)
+      flags|=LOCKFILE_FAIL_IMMEDIATELY;
+
+    ret=LockFileEx((HANDLE)ret,
+		   flags,
+		   0,
+		   0xffffffff,
+		   0xffffffff,
+		   &tmp);
+  }
+  if(ret<0)
+  {
+    errno=GetLastError();
+    return -1;
+  }
+  
+  return 0;
+}
+
+
 static long convert_filetime_to_time_t(FILETIME tmp)
 {
   double t;

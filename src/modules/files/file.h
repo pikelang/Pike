@@ -31,6 +31,9 @@ struct my_file
   struct svalue read_callback;
   struct svalue write_callback;
   struct svalue close_callback;
+#ifdef HAVE_FD_FLOCK
+  struct object *key;
+#endif
 };
 
 extern void get_inet_addr(struct sockaddr_in *addr,char *name);

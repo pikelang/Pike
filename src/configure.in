@@ -1,4 +1,4 @@
-AC_REVISION("$Id: configure.in,v 1.166 1998/03/10 03:14:52 per Exp $")
+AC_REVISION("$Id: configure.in,v 1.167 1998/03/20 22:32:37 hubbe Exp $")
 AC_INIT(interpret.c)
 AC_CONFIG_HEADER(machine.h)
 
@@ -989,11 +989,12 @@ AC_CHECK_FUNCS( \
  alarm \
  fork \
  fork1 \
+ flock \
  setuid getuid seteuid geteuid \
  setgid getgid setegid getegid \
  getpwent getpwnam getpwuid \
  getgrent getgrnam \
- initgroups setgroups
+ initgroups setgroups \
 )
 
 if test x$pike_cv_sys_os = xWindows_NT ; then
