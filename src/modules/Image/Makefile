@@ -1,4 +1,4 @@
-# $Id: Makefile,v 1.13 1999/01/24 01:14:18 mirar Exp $
+# $Id: Makefile,v 1.14 1999/03/19 11:11:28 hubbe Exp $
 
 DOCFILES = doc-header \
    image.c \
@@ -26,8 +26,9 @@ DOCFILES = doc-header \
    operator.c \
    orient.c \
    pattern.c \
-   pnm.c \
+   pnm_compat.c \
    polyfill.c \
+   search.c \
    togif.c \
    x.c \
    colors.c \
