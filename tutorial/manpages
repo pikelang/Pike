@@ -56,12 +56,12 @@ string make_manpage(string base, SGML data, string ind, string fbase)
 	       case "link":
 	       case "i": 
 	       case "emboss":
-		  res+="\f2"+make_manpage(base,tag->data,ind,fbase)+"\f0";
+		  res+="\\f2"+make_manpage(base,tag->data,ind,fbase)+"\\f0";
 		  continue;
 
 	       case "b": 
 	       case "strong":
-		  res+="\f3"+make_manpage(base,tag->data,ind,fbase)+"\f0";
+		  res+="\\f3"+make_manpage(base,tag->data,ind,fbase)+"\\f0";
 		  continue;
 
 	       case "pre":
