@@ -21,7 +21,7 @@ CompileScript: <<
 make
 <<
 InstallScript: <<
-make installt
+make install
 <<
 DocFiles: AUTHORS COPYING ChangeLog README NEWS TOD
 License: GPL/LGPL
