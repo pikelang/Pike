@@ -326,7 +326,7 @@ class Month
    {
       return 
 	 (object_program(x)==object_program(this) &&
-	  (x->y==y && x->m<m) || (x->y<y));
+	  (x->y==y && m<x->m) || (y<x->y));
    }
 
    int `==(object x)
@@ -343,7 +343,7 @@ class Month
    {
       return 
 	 (object_program(x)==object_program(this) &&
-	  (x->y==y && x->m>m) || (x->y>y));
+	  (x->y==y && m>x->m) || (y>x->y));
    }
 
    object `+(int n)
@@ -476,7 +476,7 @@ class Week
    {
       return 
 	 (object_program(x)==object_program(this) &&
-	  (x->y==y && x->w<w) || (x->y<y));
+	  (x->y==y && w<x->w) || (y<x->y));
    }
 
    int `==(object x)
@@ -492,7 +492,7 @@ class Week
    {
       return 
 	 (object_program(x)==object_program(this) &&
-	  (x->y==y && x->w>w) || (x->y>y));
+	  (x->y==y && w>x->w) || (y>x->y));
    }
 
    object `+(int n)
@@ -675,8 +675,8 @@ class Day
    {
       return 
 	 (object_program(x)==object_program(this) &&
-	  (x->y==y && x->d<d) || (x->y<y)) ||
-	 (x->julian_day()<julian_day());
+	  (x->y==y && d<x->d) || (y<x->y)) ||
+	 (julian_day()<x->julian_day());
    }
 
    int `==(object x)
@@ -693,8 +693,8 @@ class Day
    {
       return 
 	 (object_program(x)==object_program(this) &&
-	  (x->y==y && x->d>d) || (x->y>y)) ||
-	 (x->julian_day()>julian_day());
+	  (x->y==y && d>x->d) || (y>x->y)) ||
+	 (julian_day()>x->julian_day());
    }
 
    object `+(int n)
@@ -876,7 +876,7 @@ class Hour
    {
       return 
 	 (object_program(x)==object_program(this) &&
-	  (x->d==d && x->h<h) || (x->d<d));
+	  (x->d==d && h<x->h) || (d<x->d));
    }
 
    int `==(object x)
@@ -892,7 +892,7 @@ class Hour
    {
       return 
 	 (object_program(x)==object_program(this) &&
-	  (x->d==d && x->h>h) || (x->d>d));
+	  (x->d==d && h>x->h) || (d>x->d));
    }
 
    object `+(int n)
@@ -1059,7 +1059,7 @@ class Minute
    {
       return 
 	 (object_program(x)==object_program(this) &&
-	  (x->h==h && x->m<m) || (x->h<h));
+	  (x->h==h && m<x->m) || (h<x->h));
    }
 
    int `==(object x)
@@ -1075,7 +1075,7 @@ class Minute
    {
       return 
 	 (object_program(x)==object_program(this) &&
-	  (x->h==h && x->m>m) || (x->h>h));
+	  (x->h==h && m>x->m) || (h>x->h));
    }
 
    object `+(int n)
@@ -1266,7 +1266,7 @@ class Second
    {
       return 
 	 (object_program(x)==object_program(this) &&
-	  (x->m==m && x->s<s) || (x->m<m));
+	  (x->m==m && s<x->s) || (m<x->m));
    }
 
    int `==(object x)
@@ -1282,7 +1282,7 @@ class Second
    {
       return 
 	 (object_program(x)==object_program(this) &&
-	  (x->m==m && x->s>s) || (x->m>m));
+	  (x->m==m && s>x->s) || (m>x->m));
    }
 
    object `+(int n)
