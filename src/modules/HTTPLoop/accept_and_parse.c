@@ -789,6 +789,9 @@ void pike_module_exit()
 #include "static_strings.h"
 #undef STRING
 
+  free_program(c_request_program);
+  free_program(aap_log_object_program);
+  free_program(accept_loop_program);
 #endif /* _REENTRANT */
 }
 
