@@ -5,7 +5,7 @@
 \*/
 /**/
 #include "global.h"
-RCSID("$Id: object.c,v 1.99 2000/04/08 02:01:09 hubbe Exp $");
+RCSID("$Id: object.c,v 1.100 2000/04/17 19:46:07 mast Exp $");
 #include "object.h"
 #include "dynamic_buffer.h"
 #include "interpret.h"
@@ -1264,15 +1264,12 @@ void gc_free_all_unreferenced_objects(void)
 {
   struct object *o,*next;
 
-  for(o=first_object;o;o=next)
+  for(o=first_object;o;o=o->next)
   {
     if(gc_do_free(o))
     {
       add_ref(o);
       call_destroy(o,0);
-      SET_NEXT_AND_FREE(o,free_object);
-    }else{
-      next=o->next;
     }
   }
 
@@ -1280,8 +1277,7 @@ void gc_free_all_unreferenced_objects(void)
   {
     if(gc_do_free(o))
     {
-      add_ref(o);
-      destruct(o);
+      low_destruct(o,1);
       SET_NEXT_AND_FREE(o,free_object);
     }else{
       next=o->next;
