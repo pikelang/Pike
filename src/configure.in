@@ -1,4 +1,4 @@
-AC_REVISION("$Id: configure.in,v 1.298 1999/05/30 22:09:41 grubba Exp $")
+AC_REVISION("$Id: configure.in,v 1.299 1999/06/19 19:54:24 hubbe Exp $")
 AC_INIT(interpret.c)
 AC_CONFIG_HEADER(machine.h)
 
@@ -156,8 +156,8 @@ if ls -1tr "$SMARTLINK${ac_exeext}" "$srcdir/smartlink.$ac_ext" 2>/dev/null | he
 else
   AC_MSG_RESULT(no)
 
-  if echo foo "$CC" | grep rntcc >/dev/null; then
-    echo Warning: rntcc detected. Using the smartlink /bin/sh script.
+  if echo foo "$CC" | egrep rntc. >/dev/null; then
+    echo Warning: rntcc/rntcl detected. Using the smartlink /bin/sh script.
     SMARTLINK="$BINDIR/smartlink"
   else
     rm -f "$SMARTLINK"
@@ -1082,7 +1082,8 @@ locale.h sys/resource.h sys/select.h sys/mman.h setjmp.h limits.h pthread.h \
 thread.h dlfcn.h dld.h dl.h sys/times.h sched.h sys/procfs.h sys/param.h \
 winsock.h sys/ioct.h sys/socket.h malloc.h netinet/in.h sys/wait.h winbase.h \
 grp.h pwd.h passwd.h group.h winsock2.h signal.h sys/file.h poll.h sys/poll.h \
-socket.h ieeefp.h fp_class.h floatingpoint.h  sys/priocntl.h sched.h )
+socket.h ieeefp.h fp_class.h floatingpoint.h  sys/priocntl.h sched.h \
+windows.h )
 
 AC_CHECK_SIZEOF(char *,4)
 AC_CHECK_SIZEOF(long,4)
@@ -1104,7 +1105,7 @@ AC_CHECK_LIB(m, floor)
 AC_CHECK_LIB(socket, socket)
 
 if test x$pike_cv_sys_os = xWindows_NT ; then
-  LIBS="-lkernel32  $LIBS"
+  LIBS="-lkernel32 -lws2_32 -ladvapi32 $LIBS"
 fi
 
 AC_CHECK_LIB(nsl, gethostbyname)
@@ -1984,6 +1985,17 @@ int main()
       if(ldexp(x,p) != x*pow(2.0, (double)p))
 	exit(1);
     exit(0);
+}])
+
+########################################################################
+MY_CHECK_FUNCTION(rint,
+[
+#include <math.h>
+int main()
+{
+  if(rint(0.1) != 0.0 ||
+     rint(0.6) != 1.0) exit(1);
+  exit(0);
 }])
 
 ########################################################################
@@ -3107,7 +3119,11 @@ esac
 
 case "x$pike_cv_sys_os" in
   xSolaris | xAIX)
-    AC_DEFINE(USE_WAIT_THREAD)
+   if grep _REENTRANT confdefs.h >/dev/null 2>&1; then
+     AC_DEFINE(USE_WAIT_THREAD)
+   else
+     AC_DEFINE(USE_SIGCHILD)
+   fi
   ;;
 
   xWindows_NT)
