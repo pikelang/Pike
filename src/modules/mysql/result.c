@@ -1,5 +1,5 @@
 /*
- * $Id: result.c,v 1.5 1997/01/05 22:10:45 grubba Exp $
+ * $Id: result.c,v 1.6 1997/01/08 01:49:27 grubba Exp $
  *
  * mysql query result
  *
@@ -12,9 +12,14 @@
  */
 
 /* From the mysql-dist */
-#ifndef MYSQL_MYSQL_H
-#define MYSQL_MYSQL_H
+/* Workaround for versions prior to 3.20.0 not beeing protected for
+ * multiple inclusion.
+ */
+#ifndef _mysql_h
 #include <mysql.h>
+#ifndef _mysql_h
+#define _mysql_h
+#endif
 #endif
 
 /* dynamic_buffer.h contains a conflicting typedef for string
@@ -24,6 +29,7 @@
 typedef struct dynamic_buffer_s dynamic_buffer;
 
 /* From the Pike-dist */
+#include <global.h>
 #include <svalue.h>
 #include <mapping.h>
 #include <object.h>
@@ -33,6 +39,7 @@ typedef struct dynamic_buffer_s dynamic_buffer;
 #include <error.h>
 #include <builtin_functions.h>
 #include <las.h>
+#include <threads.h>
 
 /* Local includes */
 #include "precompiled_mysql.h"
@@ -51,6 +58,8 @@ typedef struct dynamic_buffer_s dynamic_buffer;
 /*
  * Globals
  */
+
+RCSID("$Id: result.c,v 1.6 1997/01/08 01:49:27 grubba Exp $");
 
 struct program *mysql_result_program = NULL;
 
@@ -227,10 +236,15 @@ static void f_eof(INT32 args)
 static void f_fetch_field(INT32 args)
 {
   MYSQL_FIELD *field;
+  MYSQL_RES *res = PIKE_MYSQL_RES->result;
 
   pop_n_elems(args);
 
-  field = mysql_fetch_field(PIKE_MYSQL_RES->result);
+  THREADS_ALLOW();
+
+  field = mysql_fetch_field(res);
+
+  THREADS_DISALLOW();
 
   parse_field(field);
 }

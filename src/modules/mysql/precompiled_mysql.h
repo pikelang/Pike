@@ -1,5 +1,5 @@
 /*
- * $Id: precompiled_mysql.h,v 1.1 1996/12/28 18:51:41 grubba Exp $
+ * $Id: precompiled_mysql.h,v 1.2 1997/01/08 01:49:26 grubba Exp $
  *
  * SQL database connectivity for Pike
  *
@@ -14,9 +14,14 @@
  */
 
 /* From the mysql-dist */
-#ifndef MYSQL_MYSQL_H
-#define MYSQL_MYSQL_H
+/* Workaround for versions prior to 3.20.0 not beeing protected for
+ * multiple inclusion.
+ */
+#ifndef _mysql_h
 #include <mysql.h>
+#ifndef _mysql_h
+#define _mysql_h
+#endif
 #endif
 
 /* From the Pike-dist */
