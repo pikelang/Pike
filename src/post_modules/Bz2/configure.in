@@ -1,4 +1,4 @@
-# $Id: configure.in,v 1.5 2003/01/25 15:20:34 grubba Exp $
+# $Id: configure.in,v 1.6 2003/01/25 17:08:58 grubba Exp $
 AC_INIT(libbzip2mod.cmod)
 AC_CONFIG_HEADER(libbzip2mod_config.h)
 AC_ARG_WITH(bz2,     [  --without-bz2       Disable Bz2],[],[with_bz2=yes])
@@ -16,7 +16,8 @@ if test x$with_bz2 = xyes ; then
   AC_CHECK_LIB(bz2, bzCompressInit)
   AC_CHECK_LIB(bz2, BZ2_bzCompressInit)
 
-  if test "x$ac_cv_lib_bz2_BZ2_bzCompressInit" = xyes -o "x$ac_cv_lib_bz2_bzCompressInit" = xyes; then
+  if test "x$ac_cv_lib_bz2_BZ2_bzCompressInit" = xyes \
+       -o "x$ac_cv_lib_bz2_bzCompressInit" = xyes; then
 
     # if BZ2_bzCompressInit exists,
     # it should be used instead of bzCompressInit.
@@ -24,8 +25,23 @@ if test x$with_bz2 = xyes ; then
 
     AC_CHECK_HEADERS(bzlib.h string.h strings.h)
     if test $ac_cv_header_bzlib_h = yes ; then
-       PIKE_FEATURE(Bz2,[yes (using libbz2)])
-       AC_DEFINE(HAVE_BZ2LIB)
+      PIKE_FEATURE(Bz2,[yes (using libbz2)])
+      AC_DEFINE(HAVE_BZ2LIB)
+
+      AC_MSG_CHECKING([if a bz_stream has the field total_out.])
+      AC_CACHE_VAL([pike_cv_bz_stream_total_out],[
+	AC_TRY_COMPILE([
+#include <bzlib.h>
+	],[
+	  extern bz_stream *s;
+	  s->total_out = 0;
+	],[ pike_cv_bz_stream_total_out="yes"
+	],[ pike_cv_bz_stream_total_out="no" ])
+      ])
+      AC_MSG_RESULT($pike_cv_bz_stream_total_out)
+      if test "x$pike_cv_bz_stream_total_out" = xyes; then
+	AC_DEFINE(HAVE_BZ_STREAM_TOTAL_OUT)
+      fi
     else
        PIKE_FEATURE(Bz2,[no (got libbz2 but missing bzlib.h)])
     fi

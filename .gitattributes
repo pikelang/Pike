@@ -776,6 +776,7 @@ testfont binary
 /src/port.c foreign_ident
 /src/port.h foreign_ident
 /src/post_modules/Bz2/Makefile.in foreign_ident
+/src/post_modules/Bz2/acconfig.h foreign_ident
 /src/post_modules/Bz2/configure.in foreign_ident
 /src/post_modules/Bz2/libbzip2mod.cmod foreign_ident
 /src/post_modules/GL/Makefile foreign_ident
