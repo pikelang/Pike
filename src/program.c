@@ -5,7 +5,7 @@
 \*/
 /**/
 #include "global.h"
-RCSID("$Id: program.c,v 1.139 1999/09/14 20:17:16 hubbe Exp $");
+RCSID("$Id: program.c,v 1.140 1999/09/16 00:03:22 hubbe Exp $");
 #include "program.h"
 #include "object.h"
 #include "dynamic_buffer.h"
@@ -829,6 +829,10 @@ void check_program(struct program *p)
 {
   INT32 size,e;
   unsigned INT32 checksum;
+  int variable_positions[1024];
+
+  for(e=0;e<NELEM(variable_positions);e++)
+    variable_positions[e]=-1;
 
   if(p->id > current_program_id)
     fatal("Program id is out of sync! (p->id=%d, current_program_id=%d)\n",p->id,current_program_id);
@@ -877,7 +881,7 @@ void check_program(struct program *p)
 
     if(IDENTIFIER_IS_VARIABLE(p->identifiers[e].identifier_flags))
     {
-      if(p->identifiers[e].func.offset &
+      if( (p->identifiers[e].func.offset + OFFSETOF(object,storage)) &
 	 (alignof_variable(p->identifiers[e].run_time_type)-1))
       {
 	fatal("Variable %s offset is not properly aligned (%d).\n",p->identifiers[e].name->str,p->identifiers[e].func.offset);
@@ -887,6 +891,7 @@ void check_program(struct program *p)
 
   for(e=0;e<(int)p->num_identifier_references;e++)
   {
+    struct identifier *i;
     if(p->identifier_references[e].inherit_offset > p->num_inherits)
       fatal("Inherit offset is wrong!\n");
 
@@ -901,6 +906,32 @@ void check_program(struct program *p)
     if(p->identifier_references[e].identifier_offset >
        p->inherits[p->identifier_references[e].inherit_offset].prog->num_identifiers)
       fatal("Identifier offset is wrong!\n");
+
+    i=ID_FROM_INT(p, e);
+
+    if( !(i->identifier_flags & (IDENTIFIER_FUNCTION | IDENTIFIER_CONSTANT)))
+    {
+      int q, num;
+      /* Variable */
+      int offset = INHERIT_FROM_INT(p, e)->storage_offset+i->func.offset;
+      num=i->run_time_type==T_MIXED?sizeof(struct svalue):sizeof(union anything);
+      for(q=0;q<num;q++)
+      {
+	if(offset+q >= NELEM(variable_positions)) break;
+
+	if(variable_positions[offset+q] != -1)
+	{
+	  if(ID_FROM_INT(p,variable_positions[offset+q])->run_time_type !=
+	     i->run_time_type)
+	  {
+	    fatal("Variable '%s' and '%s' overlap\n",
+		  ID_FROM_INT(p,variable_positions[offset+q])->name->str,
+		  i->name->str);
+	  }
+	}
+	variable_positions[offset+q]=e;
+      }
+    }
   }
 
   for(e=0;e<(int)p->num_identifier_index;e++)
