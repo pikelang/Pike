@@ -1,6 +1,6 @@
 #! /usr/bin/env pike
 
-/* $Id: test_pike.pike,v 1.93 2004/03/06 01:31:10 nilsson Exp $ */
+/* $Id: test_pike.pike,v 1.94 2004/04/22 14:15:23 grubba Exp $ */
 
 #if !constant(_verify_internals)
 #define _verify_internals()
@@ -748,7 +748,9 @@ int main(int argc, array(string) argv)
 	      ( computed_line && computed_line!=o->__cpp_line))
 	    {
 	      werror(pad_on_error + fname + " Line numbering failed.\n");
-	      print_code(test + linetester);
+	      print_code(to_compile);
+	      werror("   Preprocessed:\n");
+	      print_code(cpp(to_compile, fname));
 	      werror("   CPP lines: %d\n",o->__cpp_line);
 	      werror("   RTL lines: %d\n",o->__rtl_line);
 	      if(computed_line)
