@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: gc.c,v 1.192 2003/01/09 15:21:26 grubba Exp $
+|| $Id: gc.c,v 1.193 2003/01/11 01:30:21 mast Exp $
 */
 
 #include "global.h"
@@ -31,17 +31,26 @@ struct callback *gc_evaluator_callback=0;
 
 #include "block_alloc.h"
 
-RCSID("$Id: gc.c,v 1.192 2003/01/09 15:21:26 grubba Exp $");
+RCSID("$Id: gc.c,v 1.193 2003/01/11 01:30:21 mast Exp $");
 
 /* Run garbage collect approximately every time
  * 20 percent of all arrays, objects and programs is
  * garbage.
  */
-
 #define GC_CONST 20
+
+/* Use a decaying average where the slowness factor approximately
+ * corresponds to the average over the last ten gc rounds.
+ * (0.9 == 1 - 1/10) */
+#define MULTIPLIER 0.9
+
+/* The above are used to calculate the threshold on the number of
+ * allocations since the last gc round before another is scheduled.
+ * Put a cap on that threshold to avoid very small and large
+ * intervals. */
 #define MIN_ALLOC_THRESHOLD 1000
 #define MAX_ALLOC_THRESHOLD 10000000
-#define MULTIPLIER 0.9
+
 #define GC_LINK_CHUNK_SIZE 64
 
 /* The gc will free all things with no external references that isn't
@@ -2426,9 +2435,10 @@ static void warn_bad_cycles()
   CALL_AND_UNSET_ONERROR(tmp);
 }
 
-int do_gc(void)
+size_t do_gc(void)
 {
   double tmp;
+  size_t num_objs, allocs, freed;
   ptrdiff_t objs, pre_kill_objs;
   double multiplier;
 #ifdef PIKE_DEBUG
@@ -2478,12 +2488,19 @@ int do_gc(void)
 #endif
 
   last_gc=TIME(0);
+  num_objs = num_objects;
+  allocs = num_allocs;
+  num_allocs = 0;
 
-  multiplier=pow(MULTIPLIER, (double) num_allocs / (double) alloc_threshold);
-  objects_alloced*=multiplier;
-  objects_alloced += (double) num_allocs;
-  
-  objects_freed*=multiplier;
+  /* If we're at an automatic and timely gc then allocs ==
+   * alloc_threshold and we're using MULTIPLIER in the decaying
+   * average calculation. Otherwise this is either an explicit call
+   * (allocs < alloc_threshold) or the gc has been delayed past its
+   * due time (allocs > alloc_threshold), and in those cases we adjust
+   * the multiplier to appropriately weight this last instance. */
+  multiplier=pow(MULTIPLIER, (double) allocs / (double) alloc_threshold);
+
+  objects_alloced = objects_alloced * multiplier + allocs * (1.0 - multiplier);
 
   /* Thread switches, object alloc/free and any reference changes are
    * disallowed now. */
@@ -2695,25 +2712,26 @@ int do_gc(void)
   /* Now we free the unused stuff. The extra refs to gc_internal_*
    * added above are removed just before the calls so we'll get the
    * correct relative positions in them. */
+  freed = 0;
   if (gc_internal_array != &weak_empty_array) {
     FREE_AND_GET_REFERENCED(gc_internal_array, struct array, free_array);
-    gc_free_all_unreferenced_arrays();
+    freed += 1 + gc_free_all_unreferenced_arrays();
   }
   if (gc_internal_multiset) {
     FREE_AND_GET_REFERENCED(gc_internal_multiset, struct multiset, free_multiset);
-    gc_free_all_unreferenced_multisets();
+    freed += 1 + gc_free_all_unreferenced_multisets();
   }
   if (gc_internal_mapping) {
     FREE_AND_GET_REFERENCED(gc_internal_mapping, struct mapping, free_mapping);
-    gc_free_all_unreferenced_mappings();
+    freed += 1 + gc_free_all_unreferenced_mappings();
   }
   if (gc_internal_program) {
     FREE_AND_GET_REFERENCED(gc_internal_program, struct program, free_program);
-    gc_free_all_unreferenced_programs();
+    freed += 1 + gc_free_all_unreferenced_programs();
   }
   if (gc_internal_object) {
     FREE_AND_GET_REFERENCED(gc_internal_object, struct object, free_object);
-    gc_free_all_unreferenced_objects();
+    freed += 1 + gc_free_all_unreferenced_objects();
   }
 
   /* We might occasionally get things to gc_delayed_free that the free
@@ -2779,6 +2797,7 @@ int do_gc(void)
     destruct(o);
     free_object(o);
     gc_free_extra_ref(o);
+    freed++;
 #ifdef PIKE_DEBUG
     destroy_count++;
 #endif
@@ -2818,28 +2837,38 @@ int do_gc(void)
   Pike_in_gc=0;
   exit_gc();
 
-  /* It's possible that more things got allocated in the kill pass
-   * than were freed. The count before that is a better measurement
-   * then. */
-  if (pre_kill_objs < num_objects) objs -= pre_kill_objs;
-  else objs -= num_objects;
+  /* At this point, freed contains the number of things that were
+   * without external references during the check and mark passes. In
+   * the process of freeing them, destroy functions might have been
+   * called which means anything might have happened. Therefore we use
+   * that figure instead of the difference between the number of
+   * allocated things to measure the amount of garbage. */
 
-  objects_freed += (double) objs;
+  objects_freed = objects_freed * multiplier + freed * (1.0 - multiplier);
 
-  tmp=(double)num_objects;
-  tmp=tmp * GC_CONST/100.0 * (objects_alloced+1.0) / (objects_freed+1.0);
+  /* Calculate the new threshold by adjusting the average threshold
+   * (objects_alloced) with the ratio between the wanted garbage at
+   * the next gc (GC_CONST/100.0 * num_objs) and the actual average
+   * garbage (objects_freed). (Where the +1.0's come from I don't
+   * know. Perhaps they're to avoid division by zero. /mast) */
+  tmp = (objects_alloced+1.0) * (GC_CONST/100.0 * num_objs) / (objects_freed+1.0);
 
-  if(alloc_threshold + num_allocs <= tmp)
-    tmp = (double)(alloc_threshold + num_allocs);
+#if 0
+  /* Afaics this was to limit the growth of the threshold to avoid
+   * that a single sudden allocation spike causes a very long gc
+   * interval the next time. Now when the bug in the decaying average
+   * calculation is fixed there should be no risk for that, at least
+   * not any case when this would help. /mast */
+  if(alloc_threshold + allocs < tmp)
+    tmp = (double)(alloc_threshold + allocs);
+#endif
 
   if(tmp < MIN_ALLOC_THRESHOLD)
     tmp = (double)MIN_ALLOC_THRESHOLD;
-  if(tmp > MAX_ALLOC_THRESHOLD)
+  else if(tmp > MAX_ALLOC_THRESHOLD)
     tmp = (double)MAX_ALLOC_THRESHOLD;
 
   alloc_threshold = (ptrdiff_t)tmp;
-  
-  num_allocs=0;
 
 #ifdef PIKE_DEBUG
   UNSET_ONERROR (uwp);
@@ -2848,11 +2877,11 @@ int do_gc(void)
 #ifdef HAVE_GETHRTIME
     fprintf(stderr,
 	    "done (freed %"PRINTPTRDIFFT"d of %"PRINTPTRDIFFT"d things), %ld ms.\n",
-	    objs, objs + num_objects, (long)((gethrtime() - gcstarttime)/1000000));
+	    freed, num_objs, (long)((gethrtime() - gcstarttime)/1000000));
 #else
     fprintf(stderr,
 	    "done (freed %"PRINTPTRDIFFT"d of %"PRINTPTRDIFFT"d things)\n",
-	    objs, objs + num_objects);
+	    freed, num_objs);
 #endif
   }
   if (max_gc_frames > max_tot_gc_frames) max_tot_gc_frames = max_gc_frames;
@@ -2866,7 +2895,7 @@ int do_gc(void)
   if(d_flag > 3) ADD_GC_CALLBACK();
 #endif
 
-  return objs;
+  return freed;
 }
 
 /*! @decl mapping(string:int|float) gc_status()
