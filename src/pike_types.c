@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: pike_types.c,v 1.243 2005/02/05 20:54:25 grubba Exp $
+|| $Id: pike_types.c,v 1.244 2005/02/07 14:01:31 grubba Exp $
 */
 
 #include "global.h"
@@ -369,7 +369,7 @@ static inline struct pike_type *debug_mk_type(unsigned INT32 type,
 	(car->type == T_STRING) &&
 	(cdr->type == T_FUNCTION) &&
 	(cdr->car->type == T_STRING) &&
-	(cdr->cdr->type == T_MULTI) &&
+	(cdr->cdr->type == T_MANY) &&
 	(cdr->cdr->car->type == T_VOID) &&
 	(cdr->cdr->cdr->type == T_STRING)) {
       /* Attempt to detect why we get a core-dump on OSF/1
