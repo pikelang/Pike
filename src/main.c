@@ -2,11 +2,11 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: main.c,v 1.192 2004/03/15 22:47:15 mast Exp $
+|| $Id: main.c,v 1.193 2004/03/16 14:10:05 mast Exp $
 */
 
 #include "global.h"
-RCSID("$Id: main.c,v 1.192 2004/03/15 22:47:15 mast Exp $");
+RCSID("$Id: main.c,v 1.193 2004/03/16 14:10:05 mast Exp $");
 #include "fdlib.h"
 #include "backend.h"
 #include "module.h"
@@ -903,6 +903,12 @@ void low_init_main(void)
 void exit_main(void)
 {
 #ifdef DO_PIKE_CLEANUP
+#ifdef DEBUG_MALLOC
+  gc_keep_markers = verbose_debug_exit;
+  if (verbose_debug_exit)
+    fprintf(stderr,"Exited normally, counting bytes.\n");
+#endif
+
   /* Destruct all remaining objects before modules are shut down, so
    * that they don't get calls to object exit callbacks after their
    * module exit callback. The downside is that the leak report below
@@ -960,21 +966,11 @@ void low_exit_main(void)
   free_svalue(& throw_value);
   throw_value.type=T_INT;
 
-  {
-#ifdef DEBUG_MALLOC
-    gc_keep_markers = verbose_debug_exit;
-#endif
-    while(1) {
-      int tmp=num_objects;
-      do_gc(NULL, 1);
-      if(num_objects >= tmp) break;
-    }
-  }
+  do_gc(NULL, 1);
 
 #ifdef DEBUG_MALLOC
   if(verbose_debug_exit)
   {
-    fprintf(stderr,"Exited normally, counting bytes.\n");
 
 #ifdef _REENTRANT
     if(count_pike_threads()>1)
@@ -987,31 +983,41 @@ void low_exit_main(void)
 
     search_all_memheaders_for_references();
 
-#define REPORT_LINKED_LIST_LEAKS(TYPE, START, T_TYPE, NAME) do {	\
+#define STATIC_ARRAYS {&empty_array, &weak_empty_array, &weak_shrink_empty_array}
+
+#define REPORT_LINKED_LIST_LEAKS(TYPE, START, STATICS, T_TYPE, NAME) do { \
       size_t num = 0;							\
       struct TYPE *x;							\
       for (x = START; x; x = x->next) {					\
 	struct marker *m = find_marker (x);				\
-	num++;								\
 	if (!m) {							\
 	  fprintf (stderr, "Didn't find gc marker as expected for:\n");	\
 	  describe_something (x, T_TYPE, 2, 2, 0, NULL);		\
 	}								\
-	else if (m->refs != x->refs) {					\
-	  fprintf (stderr, NAME " got %d unaccounted references:\n",	\
-		   x->refs - m->refs);					\
-	  describe_something (x, T_TYPE, 2, 2, 0, NULL);		\
+	else {								\
+	  int is_static = 0;						\
+	  static const struct TYPE *statics[] = STATICS;		\
+	  ptrdiff_t i; /* Use signed type to avoid warnings from gcc. */ \
+	  for (i = 0; i < (ptrdiff_t) NELEM (statics); i++)		\
+	    if (x == statics[i])					\
+	      is_static = 1;						\
+	  if (x->refs != m->refs + is_static) {				\
+	    num++;							\
+	    fprintf (stderr, NAME " got %d unaccounted references:\n",	\
+		     x->refs - m->refs);				\
+	    describe_something (x, T_TYPE, 2, 2, 0, NULL);		\
+	  }								\
 	}								\
       }									\
       if (num)								\
 	fprintf (stderr, NAME "s left: %"PRINTSIZET"d\n", num);		\
     } while (0)
 
-    REPORT_LINKED_LIST_LEAKS (array, first_array, T_ARRAY, "Array");
-    REPORT_LINKED_LIST_LEAKS (multiset, first_multiset, T_MULTISET, "Multiset");
-    REPORT_LINKED_LIST_LEAKS (mapping, first_mapping, T_MAPPING, "Mapping");
-    REPORT_LINKED_LIST_LEAKS (program, first_program, T_PROGRAM, "Program");
-    REPORT_LINKED_LIST_LEAKS (object, first_object, T_OBJECT, "Object");
+    REPORT_LINKED_LIST_LEAKS (array, first_array, STATIC_ARRAYS, T_ARRAY, "Array");
+    REPORT_LINKED_LIST_LEAKS (multiset, first_multiset, {}, T_MULTISET, "Multiset");
+    REPORT_LINKED_LIST_LEAKS (mapping, first_mapping, {}, T_MAPPING, "Mapping");
+    REPORT_LINKED_LIST_LEAKS (program, first_program, {}, T_PROGRAM, "Program");
+    REPORT_LINKED_LIST_LEAKS (object, first_object, {}, T_OBJECT, "Object");
 
 #undef REPORT_LINKED_LIST_LEAKS
 
@@ -1019,21 +1025,29 @@ void low_exit_main(void)
      * another gc so that we don't report the blocks again in the low
      * level dmalloc reports. */
 
-#define ZAP_LINKED_LIST_LEAKS(TYPE, START) do {				\
+#define ZAP_LINKED_LIST_LEAKS(TYPE, START, STATICS) do {		\
       struct TYPE *x;							\
       for (x = START; x; x = x->next) {					\
 	struct marker *m = find_marker (x);				\
-	if (m)								\
-	  while (x->refs > m->refs)					\
+	if (m) {							\
+	  int is_static = 0;						\
+	  static const struct TYPE *statics[] = STATICS;		\
+	  ptrdiff_t i; /* Use signed type to avoid warnings from gcc. */ \
+	  for (i = 0; i < (ptrdiff_t) NELEM (statics); i++)		\
+	    if (x == statics[i])					\
+	      is_static = 1;						\
+	  while (x->refs > m->refs + is_static)				\
 	    PIKE_CONCAT(free_, TYPE) (x);				\
+	}								\
+      PIKE_CONCAT (zap_next_, TYPE):;					\
       }									\
     } while (0)
 
-    ZAP_LINKED_LIST_LEAKS (array, first_array);
-    ZAP_LINKED_LIST_LEAKS (multiset, first_multiset);
-    ZAP_LINKED_LIST_LEAKS (mapping, first_mapping);
-    ZAP_LINKED_LIST_LEAKS (program, first_program);
-    ZAP_LINKED_LIST_LEAKS (object, first_object);
+    ZAP_LINKED_LIST_LEAKS (array, first_array, STATIC_ARRAYS);
+    ZAP_LINKED_LIST_LEAKS (multiset, first_multiset, {});
+    ZAP_LINKED_LIST_LEAKS (mapping, first_mapping, {});
+    ZAP_LINKED_LIST_LEAKS (program, first_program, {});
+    ZAP_LINKED_LIST_LEAKS (object, first_object, {});
 
 #undef ZAP_LINKED_LIST_LEAKS
 
