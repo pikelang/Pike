@@ -1,4 +1,4 @@
-// $Id: Readline.pike,v 1.3 1999/03/17 23:35:40 marcus Exp $
+// $Id: Readline.pike,v 1.4 1999/03/17 23:46:20 marcus Exp $
 
 class OutputController
 {
@@ -172,6 +172,11 @@ class OutputController
       xpos = 0;
     }
     outfd->write(term->put("cd")||(partial?"":"\f"));
+  }
+
+  void beep()
+  {
+    outfd->write(term->put("bl")||"");
   }
 
   void create(object|void _outfd, object|string|void _term)
