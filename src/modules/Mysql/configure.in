@@ -1,5 +1,5 @@
 #
-# $Id: configure.in,v 1.8 1998/10/20 20:29:08 grubba Exp $
+# $Id: configure.in,v 1.9 1999/02/07 22:36:50 grubba Exp $
 #
 # Configure script for the mysql-module
 #
@@ -34,8 +34,18 @@ if test x$with_mysql = xno; then
 else
   AC_MSG_CHECKING(for Mysql lib-directory)
 
+  libdirs="/usr/local/lib/mysql /usr/local/mysql/lib/mysql /usr/gnu/lib/mysql /usr/lib/mysql /lib/mysql /usr/local/mysql/lib /usr/local/mysql/mach-lib-thread no"
+  incdirs="/usr/local/include/mysql /usr/local/mysql/include/mysql /usr/gnu/include/mysql /usr/include/mysql /include/mysql /usr/local/mysql/include no"
+
+  if test x$with_mysql = xyes; then :; else
+    # Mysql installation directory specified.
+
+    libdirs="$with_mysql/lib/mysql $with_mysql/lib $libdirs"
+    incdirs="$with_mysql/include/mysql $with_mysql/include $incdirs"
+  fi
+
   AC_CACHE_VAL(pike_cv_mysql_lib_dir, [
-    for pike_cv_mysql_lib_dir in /usr/local/lib/mysql /usr/local/mysql/lib/mysql /usr/gnu/lib/mysql /usr/lib/mysql /lib/mysql /usr/local/mysql/lib /usr/local/mysql/mach-lib-thread no; do
+    for pike_cv_mysql_lib_dir in $libdirs; do
       if test -d $pike_cv_mysql_lib_dir/.; then
         break
       else
@@ -54,7 +64,7 @@ else
   AC_MSG_CHECKING(for Mysql include-directory)
 
   AC_CACHE_VAL(pike_cv_mysql_include_dir, [
-    for pike_cv_mysql_include_dir in /usr/local/include/mysql /usr/local/mysql/include/mysql /usr/gnu/include/mysql /usr/include/mysql /include/mysql /usr/local/mysql/include no; do
+    for pike_cv_mysql_include_dir in $incdirs; do
       if test -d $pike_cv_mysql_include_dir/.; then
         break
       else
