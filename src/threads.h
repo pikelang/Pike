@@ -7,24 +7,36 @@
 
 #ifdef _REENTRANT
 
+/*
+ * Decide which type of threads to use
+ *
+ * UNIX_THREADS : Unix international threads
+ * POSIX_THREADS : POSIX standard threads
+ * SGI_SPROC_THREADS : SGI sproc() based threads
+ */
+
+#ifdef _UNIX_THREADS
 #ifdef HAVE_THREAD_H
 #define UNIX_THREADS
 #include <thread.h>
 #undef HAVE_PTHREAD_H
 #undef HAVE_THREAD_H
 #endif
+#endif /* _UNIX_THREADS */
 
+#ifdef _MIT_POSIX_THREADS
 #ifdef HAVE_PTHREAD_H
 #define POSIX_THREADS
 #include <pthread.h>
 #undef HAVE_PTHREAD_H
 #endif
+#endif /* _MIT_POSIX_THREADS */
 
-#ifdef SPROC_THREADS
+#ifdef _SGI_SPROC_THREADS
 /* Not supported yet */
-#undef SPROC_THREADS
+#undef SGI_SPROC_THREADS
 #undef HAVE_SPROC
-#endif /* SPROC_THREADS */
+#endif /* _SGI_SPROC_THREADS */
 
 
 extern int num_threads;
@@ -108,7 +120,7 @@ extern struct object *thread_id;
 
 #endif /* UNIX_THREADS */
 
-#ifdef SPROC_THREADS
+#ifdef SGI_SPROC_THREADS
 
 /*
  * Not fully supported yet
@@ -133,7 +145,7 @@ extern struct object *thread_id;
  * No cond_vars yet
  */
 
-#endif /* SPROC_THREADS */
+#endif /* SGI_SPROC_THREADS */
 
 extern MUTEX_T interpreter_lock;
 
