@@ -23,7 +23,7 @@
 #include "stuff.h"
 #include "bignum.h"
 
-RCSID("$Id: array.c,v 1.117 2001/09/11 05:37:26 hubbe Exp $");
+RCSID("$Id: array.c,v 1.118 2001/09/24 14:21:10 grubba Exp $");
 
 PMOD_EXPORT struct array empty_array=
 {
@@ -353,7 +353,7 @@ PMOD_EXPORT struct array *resize_array(struct array *a, INT32 size)
       struct array *ret;
       ret=low_allocate_array(size, (size>>1) + 4);
       MEMCPY(ITEM(ret),ITEM(a),sizeof(struct svalue)*a->size);
-      ret->type_field = a->type_field | BIT_INT;
+      ret->type_field = DO_NOT_WARN((TYPE_FIELD)(a->type_field | BIT_INT));
       a->size=0;
       free_array(a);
       return ret;
@@ -683,7 +683,7 @@ INT32 *get_order(struct array *v, cmpfun fun)
 
 INLINE int set_svalue_cmpfun(const struct svalue *a, const struct svalue *b)
 {
-  INT32 def,fun;
+  INT32 def;
   if(a->type == b->type)
   {
     switch(a->type)
@@ -2079,7 +2079,6 @@ static void gc_check_array(struct array *a)
 
 void gc_mark_array_as_referenced(struct array *a)
 {
-  int e;
   if(gc_mark(a)) {
 #ifdef PIKE_DEBUG
     if (a == &empty_array || a == &weak_empty_array || a == &weak_shrink_empty_array)
@@ -2148,7 +2147,6 @@ void gc_mark_array_as_referenced(struct array *a)
 void real_gc_cycle_check_array(struct array *a, int weak)
 {
   GC_CYCLE_ENTER(a, weak) {
-    int e;
 #ifdef PIKE_DEBUG
     if (a == &empty_array || a == &weak_empty_array || a == &weak_shrink_empty_array)
       fatal("Trying to gc cycle check some *_empty_array.\n");

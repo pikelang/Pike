@@ -10,7 +10,7 @@
 #include "pike_error.h"
 #include "fdlib.h"
 
-RCSID("$Id: fd_control.c,v 1.36 2001/01/21 20:40:38 grubba Exp $");
+RCSID("$Id: fd_control.c,v 1.37 2001/09/24 14:30:42 grubba Exp $");
 
 #else /* TESTING */
 
@@ -169,7 +169,7 @@ static void grow_fds_to_close(void)
 
 void do_close_on_exec(void)
 {
-  int i,ret;
+  int i;
   for(i=0; i < num_fds_to_close; i++) {
     while( fd_close(fds_to_close[i]) <0 && errno==EINTR) ;
   }

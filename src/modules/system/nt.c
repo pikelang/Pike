@@ -1,5 +1,5 @@
 /*
- * $Id: nt.c,v 1.44 2001/09/19 12:41:22 grubba Exp $
+ * $Id: nt.c,v 1.45 2001/09/24 14:11:24 grubba Exp $
  *
  * NT system calls for Pike
  *
@@ -1207,7 +1207,7 @@ void f_NetUserEnum(INT32 args)
   DWORD level=0;
   DWORD filter=0;
   LPWSTR server=NULL;
-  INT32 pos=0,e;
+  INT32 pos=0;
   struct array *a=0;
   DWORD resume=0;
   NET_API_STATUS ret;
@@ -1243,7 +1243,7 @@ void f_NetUserEnum(INT32 args)
 
   do
   {
-    DWORD read=0, total=0;
+    DWORD read=0, total=0, e;
     LPBYTE buf=0,ptr;
 
     THREADS_ALLOW();
@@ -1322,7 +1322,7 @@ void f_NetGroupEnum(INT32 args)
   char *to_free1=NULL, *tmp_server=NULL;
   DWORD level=0;
   LPWSTR server=NULL;
-  INT32 pos=0,e;
+  INT32 pos=0;
   struct array *a=0;
   DWORD resume=0;
   NET_API_STATUS ret;
@@ -1347,7 +1347,7 @@ void f_NetGroupEnum(INT32 args)
 
   do
   {
-    DWORD read=0, total=0;
+    DWORD read=0, total=0, e;
     LPBYTE buf=0,ptr;
 
     THREADS_ALLOW();
@@ -1424,7 +1424,7 @@ void f_NetLocalGroupEnum(INT32 args)
   char *to_free1=NULL, *tmp_server=NULL;
   DWORD level=0;
   LPWSTR server=NULL;
-  INT32 pos=0,e;
+  INT32 pos=0;
   struct array *a=0;
   DWORD resume=0;
   NET_API_STATUS ret;
@@ -1449,7 +1449,7 @@ void f_NetLocalGroupEnum(INT32 args)
 
   do
   {
-    DWORD read=0, total=0;
+    DWORD read=0, total=0, e;
     LPBYTE buf=0,ptr;
 
     THREADS_ALLOW();
@@ -1525,13 +1525,13 @@ void f_NetLocalGroupEnum(INT32 args)
  */
 void f_NetUserGetGroups(INT32 args)
 {
-  char *to_free1=NULL, *to_free2=NULL, *tmp_server=NULL, *tmp_user;
+  char *to_free1=NULL, *to_free2=NULL, *tmp_server=NULL;
   DWORD level=0;
   LPWSTR server=NULL;
   LPWSTR user=NULL;
-  INT32 pos=0,e;
+  INT32 pos=0;
   struct array *a=0;
-  DWORD read=0, total=0;
+  DWORD read=0, total=0, e;
   NET_API_STATUS ret;
   LPBYTE buf=0,ptr;
 
@@ -1636,14 +1636,14 @@ void f_NetUserGetGroups(INT32 args)
  */
 void f_NetUserGetLocalGroups(INT32 args)
 {
-  char *to_free1=NULL, *to_free2=NULL, *tmp_server=NULL, *tmp_user;
+  char *to_free1=NULL, *to_free2=NULL, *tmp_server=NULL;
   DWORD level=0;
   DWORD flags=0;
   LPWSTR server=NULL;
   LPWSTR user=NULL;
-  INT32 pos=0,e;
+  INT32 pos=0;
   struct array *a=0;
-  DWORD read=0, total=0;
+  DWORD read=0, total=0, e;
   NET_API_STATUS ret;
   LPBYTE buf=0,ptr;
 
@@ -1752,7 +1752,7 @@ void f_NetGroupGetUsers(INT32 args)
   DWORD level=0;
   LPWSTR server=NULL;
   LPWSTR group=NULL;
-  INT32 pos=0,e;
+  INT32 pos=0;
   struct array *a=0;
   DWORD resume=0;
 
@@ -1779,7 +1779,7 @@ void f_NetGroupGetUsers(INT32 args)
 
   while(1)
   {
-    DWORD read=0, total=0;
+    DWORD read=0, total=0, e;
     NET_API_STATUS ret;
     LPBYTE buf=0,ptr;
 
@@ -1869,7 +1869,7 @@ void f_NetLocalGroupGetMembers(INT32 args)
   DWORD level=0;
   LPWSTR server=NULL;
   LPWSTR group=NULL;
-  INT32 pos=0,e;
+  INT32 pos=0;
   struct array *a=0;
   DWORD resume=0;
 
@@ -1896,7 +1896,7 @@ void f_NetLocalGroupGetMembers(INT32 args)
 
   while(1)
   {
-    DWORD read=0, total=0;
+    DWORD read=0, total=0, e;
     NET_API_STATUS ret;
     LPBYTE buf=0,ptr;
 
@@ -1978,7 +1978,6 @@ void f_NetGetDCName(INT32 args)
 {
   char *to_free1=NULL,*to_free2=NULL;
   BYTE *tmp=0;
-  DWORD level;
   LPWSTR server, domain;
   NET_API_STATUS ret;
 
@@ -2048,7 +2047,6 @@ void f_NetGetAnyDCName(INT32 args)
 {
   char *to_free1=NULL,*to_free2=NULL;
   BYTE *tmp=0;
-  DWORD level;
   LPWSTR server, domain;
   NET_API_STATUS ret;
 
@@ -2285,7 +2283,6 @@ static int sizeof_wkstauser_info(int level)
  */
 static void f_NetSessionEnum(INT32 args)
 {
-  INT32 pos=0,e;
   LPWSTR server, client, user;
   DWORD level;
   DWORD resume = 0;
@@ -2315,7 +2312,7 @@ static void f_NetSessionEnum(INT32 args)
   
   while(1)
   {
-    DWORD read=0, total=0;
+    DWORD read=0, total=0, e, pos = 0;
     NET_API_STATUS ret;
     LPBYTE buf=0,ptr;
 
@@ -2379,7 +2376,6 @@ static void f_NetSessionEnum(INT32 args)
  */
 static void f_NetWkstaUserEnum(INT32 args)
 {
-  INT32 pos=0,e;
   LPWSTR server;
   DWORD level;
   DWORD resume = 0;
@@ -2398,7 +2394,7 @@ static void f_NetWkstaUserEnum(INT32 args)
   
   while(1)
   {
-    DWORD read=0, total=0;
+    DWORD read=0, total=0, e, pos = 0;
     NET_API_STATUS ret;
     LPBYTE buf=0,ptr;
 
@@ -2647,8 +2643,8 @@ static struct array *encode_acl(PACL acl)
   ACL_SIZE_INFORMATION tmp;
   if(GetAclInformation(acl, &tmp, sizeof(tmp), AclSizeInformation))
   {
-    int e;
-    check_stack(tmp.AceCount + 4);
+    unsigned int e;
+    check_stack(((ptrdiff_t)(tmp.AceCount + 4)));
     for(e=0;e<tmp.AceCount;e++)
     {
       void *ace;

@@ -5,7 +5,7 @@
 \*/
 /**/
 #include "global.h"
-RCSID("$Id: mapping.c,v 1.136 2001/09/06 21:22:00 hubbe Exp $");
+RCSID("$Id: mapping.c,v 1.137 2001/09/24 14:44:47 grubba Exp $");
 #include "main.h"
 #include "object.h"
 #include "mapping.h"
@@ -47,7 +47,6 @@ static struct mapping *gc_mark_mapping_pos = 0;
 
 #undef EXIT_BLOCK
 #define EXIT_BLOCK(m)	do{						\
-  INT32 e;								\
 DO_IF_DEBUG(								\
   if(m->refs)								\
     fatal("really free mapping on mapping with nonzero refs.\n");	\
@@ -153,7 +152,6 @@ static void init_mapping(struct mapping *m,
 			 INT16 flags)
 {
   struct mapping_data *md;
-  char *tmp;
   ptrdiff_t e;
   INT32 hashsize;
 
@@ -269,7 +267,6 @@ static void mapping_rehash_backwards_evil(struct mapping_data *md,
 					  struct keypair *from)
 {
   unsigned INT32 h;
-  struct keypair *tmp;
   struct keypair *k;
 
   if(!from) return;
@@ -305,7 +302,6 @@ static void mapping_rehash_backwards_good(struct mapping_data *md,
 					  struct keypair *from)
 {
   unsigned INT32 h;
-  struct keypair *tmp;
   struct keypair *k;
 
   if(!from) return;
@@ -1352,7 +1348,7 @@ PMOD_EXPORT struct mapping *copy_mapping(struct mapping *m)
 
 PMOD_EXPORT struct mapping *merge_mappings(struct mapping *a, struct mapping *b, INT32 op)
 {
-  ONERROR r1,r2,r3,r4,r5;
+  ONERROR r1,r2,r3,r4;
   struct array *ai, *av;
   struct array *bi, *bv;
   struct array *ci, *cv;
@@ -1634,7 +1630,6 @@ void describe_mapping(struct mapping *m,struct processing *p,int indent)
   JMP_BUF catch;
   ONERROR err;
   INT32 e,d;
-  struct keypair *k;
   char buf[40];
 
 #ifdef PIKE_DEBUG
@@ -1724,9 +1719,6 @@ void describe_mapping(struct mapping *m,struct processing *p,int indent)
 
 node *make_node_from_mapping(struct mapping *m)
 {
-  struct keypair *k;
-  INT32 e;
-
 #ifdef PIKE_DEBUG
   if(m->data->refs <=0)
     fatal("Zero refs in mapping->data\n");
@@ -1774,7 +1766,6 @@ node *make_node_from_mapping(struct mapping *m)
 PMOD_EXPORT void f_aggregate_mapping(INT32 args)
 {
   INT32 e;
-  struct keypair *k;
   struct mapping *m;
 
   if(args & 1)

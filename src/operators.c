@@ -6,7 +6,7 @@
 /**/
 #include "global.h"
 #include <math.h>
-RCSID("$Id: operators.c,v 1.139 2001/07/27 20:40:15 nilsson Exp $");
+RCSID("$Id: operators.c,v 1.140 2001/09/24 15:02:13 grubba Exp $");
 #include "interpret.h"
 #include "svalue.h"
 #include "multiset.h"
@@ -713,7 +713,6 @@ static node *optimize_eq(node *n)
 static node *optimize_not(node *n)
 {
   node **first_arg, **more_args;
-  int e;
 
   if(count_args(CDR(n))==1)
   {
@@ -1327,7 +1326,6 @@ PMOD_EXPORT void o_and(void)
  */
 static void r_speedup(INT32 args, void (*func)(void))
 {
-  int num;
   struct svalue tmp;
   ONERROR err;
 
@@ -2734,8 +2732,10 @@ PMOD_EXPORT void o_mod(void)
     if(sp[-1].u.float_number == 0.0)
       OP_MODULO_BY_ZERO_ERROR("`%");
     sp--;
-    foo=sp[-1].u.float_number / sp[0].u.float_number;
-    foo=sp[-1].u.float_number - sp[0].u.float_number * floor(foo);
+    foo = DO_NOT_WARN((FLOAT_TYPE)(sp[-1].u.float_number /
+				   sp[0].u.float_number));
+    foo = DO_NOT_WARN((FLOAT_TYPE)(sp[-1].u.float_number -
+				   sp[0].u.float_number * floor(foo)));
     sp[-1].u.float_number=foo;
     return;
   }
@@ -3450,7 +3450,6 @@ static node *optimize_sizeof(node *n)
 
 static int generate_sizeof(node *n)
 {
-  node **arg;
   if(count_args(CDR(n)) != 1) return 0;
   if(do_docode(CDR(n),DO_NOT_COPY) != 1)
     fatal("Count args was wrong in sizeof().\n");

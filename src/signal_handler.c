@@ -25,7 +25,7 @@
 #include "main.h"
 #include <signal.h>
 
-RCSID("$Id: signal_handler.c,v 1.201 2001/09/22 12:08:09 grubba Exp $");
+RCSID("$Id: signal_handler.c,v 1.202 2001/09/24 14:39:30 grubba Exp $");
 
 #ifdef HAVE_PASSWD_H
 # include <passwd.h>
@@ -3455,7 +3455,6 @@ static void f_kill(INT32 args)
 
   case T_OBJECT:
   {
-    INT32 pid;
     struct pid_status *p;
     if((p=(struct pid_status *)get_storage(sp[-args].u.object,
 					  pid_status_program)))

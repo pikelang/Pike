@@ -5,7 +5,7 @@
 \*/
 /**/
 #include "global.h"
-RCSID("$Id: backend.cmod,v 1.19 2001/09/06 21:21:21 hubbe Exp $");
+RCSID("$Id: backend.cmod,v 1.20 2001/09/24 14:22:32 grubba Exp $");
 #include "fdlib.h"
 #include "backend.h"
 #include <errno.h>
@@ -1443,8 +1443,7 @@ PIKECLASS Backend
 				    int num_arg,
 				    struct svalue *argp)
    {
-     int e,c;
-     call_out *new,**p,**pos;
+     call_out *new,;
      struct array *args;
      size_t hval;
      
@@ -1636,7 +1635,6 @@ PIKECLASS Backend
 
    void backend_do_call_outs(struct Backend_struct *me)
      {
-       call_out *c;
        int args;
        struct timeval tmp,tmp2;
        backend_verify_call_outs(me);

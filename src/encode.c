@@ -25,7 +25,7 @@
 #include "version.h"
 #include "bignum.h"
 
-RCSID("$Id: encode.c,v 1.128 2001/09/09 05:19:36 hubbe Exp $");
+RCSID("$Id: encode.c,v 1.129 2001/09/24 14:25:54 grubba Exp $");
 
 /* #define ENCODE_DEBUG */
 
@@ -944,7 +944,6 @@ static void encode_value2(struct svalue *val, struct encode_data *data)
 	Pike_error("Error in master()->nameof(), same type returned.\n");
       if(Pike_sp[-1].type == T_INT && Pike_sp[-1].subtype == NUMBER_UNDEFINED)
       {
-	INT32 e;
 	struct program *p=val->u.program;
 	if( (p->flags & PROGRAM_HAS_C_METHODS) || p->event_handler )
 	{
@@ -1478,7 +1477,9 @@ static void low_decode_type(struct decode_data *data)
   SET_ONERROR(err1, restore_type_stack, Pike_compiler->type_stackp);
   SET_ONERROR(err2, restore_type_mark, Pike_compiler->pike_type_mark_stackp);
 
+#ifndef USE_PIKE_TYPE
 one_more_type:
+#endif /* !USE_PIKE_TYPE */
   tmp = GETC();
   switch(tmp)
   {
@@ -1609,7 +1610,6 @@ one_more_type:
 
     case T_OBJECT:
     {
-      INT32 x;
       int flag = GETC();
 
       decode_value2(data);
@@ -1765,15 +1765,15 @@ static void decode_value2(struct decode_data *data)
 	{
 	  case Pike_FP_SNAN: /* Signal Not A Number */
 	  case Pike_FP_QNAN: /* Quiet Not A Number */
-	    push_float(MAKE_NAN());
+	    push_float(DO_NOT_WARN((FLOAT_TYPE)MAKE_NAN()));
 	    break;
 		       
 	  case Pike_FP_NINF: /* Negative infinity */
-	    push_float(MAKE_INF(-1));
+	    push_float(DO_NOT_WARN((FLOAT_TYPE)MAKE_INF(-1)));
 	    break;
 
 	  case Pike_FP_PINF: /* Positive infinity */
-	    push_float(MAKE_INF(1));
+	    push_float(DO_NOT_WARN((FLOAT_TYPE)MAKE_INF(1)));
 	    break;
 
 	  case Pike_FP_NZERO: /* Negative Zero */
@@ -1781,13 +1781,13 @@ static void decode_value2(struct decode_data *data)
 	    break;
 
 	  default:
-	    push_float(LDEXP(res, num));
+	    push_float(DO_NOT_WARN((FLOAT_TYPE)LDEXP(res, num)));
 	    break;
 	}
 	break;
       }
 
-      push_float(LDEXP(res, num));
+      push_float(DO_NOT_WARN((FLOAT_TYPE)LDEXP(res, num)));
       break;
     }
 

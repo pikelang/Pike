@@ -212,7 +212,6 @@ void NameN(init_memsearch)(
   ptrdiff_t needlelen,
   ptrdiff_t max_haystacklen)
 {
-  enum methods m;
   switch(needlelen)
   {
     case 0:

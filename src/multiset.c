@@ -17,7 +17,7 @@
 #include "gc.h"
 #include "security.h"
 
-RCSID("$Id: multiset.c,v 1.37 2001/07/01 20:02:44 mast Exp $");
+RCSID("$Id: multiset.c,v 1.38 2001/09/24 14:38:52 grubba Exp $");
 
 struct multiset *first_multiset;
 
@@ -100,17 +100,16 @@ PMOD_EXPORT void do_free_multiset(struct multiset *l)
 
 PMOD_EXPORT void order_multiset(struct multiset *l)
 {
-  INT32 *order;
-  int flags;
   if(l->ind->size < 2) return;
 
   BEGIN();
 
 #if 0
-
-  order = get_set_order(ind);
-  ind = order_array(ind, order);
-  free((char *)order);
+  {
+    INT32 *order = get_set_order(ind);
+    ind = order_array(ind, order);
+    free((char *)order);
+  }
 #else
   {
     extern void set_sort_svalues(struct svalue *, struct svalue *);

@@ -30,7 +30,7 @@ struct callback *gc_evaluator_callback=0;
 
 #include "block_alloc.h"
 
-RCSID("$Id: gc.c,v 1.176 2001/09/11 05:42:59 hubbe Exp $");
+RCSID("$Id: gc.c,v 1.177 2001/09/24 14:36:51 grubba Exp $");
 
 /* Run garbage collect approximately every time
  * 20 percent of all arrays, objects and programs is
@@ -1920,7 +1920,6 @@ int gc_cycle_push(void *x, struct marker *m, int weak)
     else {
       /* We'll get here eventually in the normal recursion. Pop off
        * the remaining live recurse frames for the last thing. */
-      int flags;
       CYCLE_DEBUG_MSG(m, "gc_cycle_push, no live recurse");
       last->flags &= ~GC_LIVE_RECURSE;
       while (1) {
@@ -2339,11 +2338,6 @@ int do_gc(void)
   double tmp;
   ptrdiff_t objs, pre_kill_objs;
   double multiplier;
-  struct array *a;
-  struct multiset *l;
-  struct mapping *m;
-  struct program *p;
-  struct object *o;
 #ifdef PIKE_DEBUG
 #ifdef HAVE_GETHRTIME
   hrtime_t gcstarttime = 0;
@@ -2823,11 +2817,11 @@ void f__gc_status(INT32 args)
   size++;
 
   push_constant_text("objects_alloced");
-  push_int64(objects_alloced);
+  push_int64(DO_NOT_WARN((INT64)objects_alloced));
   size++;
 
   push_constant_text("objects_freed");
-  push_int64(objects_freed);
+  push_int64(DO_NOT_WARN((INT64)objects_freed));
   size++;
 
   push_constant_text("last_gc");
@@ -2835,7 +2829,8 @@ void f__gc_status(INT32 args)
   size++;
 
   push_constant_text("projected_garbage");
-  push_float(objects_freed * (double) num_allocs / (double) alloc_threshold);
+  push_float(DO_NOT_WARN((FLOAT_TYPE)(objects_freed * (double) num_allocs /
+				      (double) alloc_threshold)));
   size++;
 
   f_aggregate_mapping(size * 2);

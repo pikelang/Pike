@@ -5,7 +5,7 @@
 \*/
 /**/
 #include "global.h"
-RCSID("$Id: interpret.c,v 1.248 2001/09/13 15:58:18 hubbe Exp $");
+RCSID("$Id: interpret.c,v 1.249 2001/09/24 14:14:46 grubba Exp $");
 #include "interpret.h"
 #include "object.h"
 #include "program.h"
@@ -185,12 +185,14 @@ PMOD_EXPORT void init_interpreter(void)
   Pike_interpreter.mark_stack=MMALLOC(Pike_stack_size, struct svalue *);
   if((char *)MAP_FAILED == (char *)Pike_interpreter.evaluator_stack) Pike_interpreter.evaluator_stack=0;
   if((char *)MAP_FAILED == (char *)Pike_interpreter.mark_stack) Pike_interpreter.mark_stack=0;
+
+use_malloc:
+
 #else
   Pike_interpreter.evaluator_stack=0;
   Pike_interpreter.mark_stack=0;
 #endif
 
-use_malloc:
   if(!Pike_interpreter.evaluator_stack)
   {
     Pike_interpreter.evaluator_stack=(struct svalue *)xalloc(Pike_stack_size*sizeof(struct svalue));

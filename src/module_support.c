@@ -9,7 +9,7 @@
 #include "object.h"
 #include "opcodes.h"
 
-RCSID("$Id: module_support.c,v 1.40 2001/02/20 13:02:11 grubba Exp $");
+RCSID("$Id: module_support.c,v 1.41 2001/09/24 14:46:46 grubba Exp $");
 
 /* Checks that args_to_check arguments are OK.
  * Returns 1 if everything worked ok, zero otherwise.
@@ -38,7 +38,7 @@ static int va_check_args(struct svalue *s,
 
     if (!((1UL << s[res->argno].type) & res->expected))
     {
-      res->got=s[res->argno].type;
+      res->got = DO_NOT_WARN((unsigned char)s[res->argno].type);
       res->error_type = ERR_BAD_ARG;
       return 0;
     }
@@ -77,7 +77,6 @@ PMOD_EXPORT void check_all_args(const char *fnname, int args, ... )
 {
   va_list arglist;
   struct expect_result tmp;
-  int argno;
 
   va_start(arglist, args);
   va_check_args(sp - args, args, &tmp, arglist);
@@ -94,7 +93,7 @@ PMOD_EXPORT void check_all_args(const char *fnname, int args, ... )
   case ERR_BAD_ARG:
   {
     char buf[1000];
-    int e,d;
+    int e;
     buf[0]=0;
     for(e=0;e<16;e++)
     {

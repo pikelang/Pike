@@ -3,7 +3,7 @@
 #include "pike_error.h"
 #include <math.h>
 
-RCSID("$Id: fdlib.c,v 1.49 2001/09/18 22:59:56 hubbe Exp $");
+RCSID("$Id: fdlib.c,v 1.50 2001/09/24 14:18:52 grubba Exp $");
 
 #ifdef HAVE_WINSOCK_H
 
@@ -639,7 +639,6 @@ PMOD_EXPORT ptrdiff_t debug_fd_lseek(FD fd, ptrdiff_t pos, int where)
 
 PMOD_EXPORT int debug_fd_ftruncate(FD fd, ptrdiff_t len)
 {
-  ptrdiff_t ret;
   HANDLE h;
   LONG oldfp_lo, oldfp_hi;
 

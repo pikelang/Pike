@@ -1,5 +1,5 @@
 /*
- * $Id: lexer.h,v 1.33 2001/06/30 02:02:42 mast Exp $
+ * $Id: lexer.h,v 1.34 2001/09/24 14:37:34 grubba Exp $
  *
  * Lexical analyzer template.
  * Based on lex.c 1.62
@@ -326,7 +326,6 @@ static int low_yylex(YYSTYPE *yylval)
 
     if((c>'9') && lex_isidchar(c))
     {
-      struct pike_string *s;
       lex.pos -= (1<<SHIFT);
       READBUF(lex_isidchar(C));
 
@@ -517,8 +516,6 @@ static int low_yylex(YYSTYPE *yylval)
 
       switch(len>0?INDEX_CHARP(buf, 0, SHIFT):0)
       {
-	char *p;
-	
       case 'l':
 	if(!ISWORD("line")) goto badhash;
 	SKIPSPACE();

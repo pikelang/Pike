@@ -27,7 +27,7 @@
 #include "bignum.h"
 #include "operators.h"
 
-RCSID("$Id: opcodes.c,v 1.115 2001/07/31 19:31:21 marcus Exp $");
+RCSID("$Id: opcodes.c,v 1.116 2001/09/24 14:58:05 grubba Exp $");
 
 void index_no_free(struct svalue *to,struct svalue *what,struct svalue *ind)
 {
@@ -379,8 +379,6 @@ void o_cast_to_string(void)
 
 void o_cast(struct pike_type *type, INT32 run_time_type)
 {
-  INT32 i;
-
   if(run_time_type != sp[-1].type)
   {
     if(run_time_type == T_MIXED)
@@ -501,8 +499,10 @@ void o_cast(struct pike_type *type, INT32 run_time_type)
 	    break;
 	    
 	  case T_STRING:
-	    f=STRTOD_PCHARP(MKPCHARP(sp[-1].u.string->str,
-				     sp[-1].u.string->size_shift),0);
+	    f =
+	      (FLOAT_TYPE)STRTOD_PCHARP(MKPCHARP(sp[-1].u.string->str,
+						 sp[-1].u.string->size_shift),
+					0);
 	    free_string(sp[-1].u.string);
 	    break;
 	    
@@ -622,7 +622,7 @@ void o_cast(struct pike_type *type, INT32 run_time_type)
 	{
 	  ref_push_array(a);
 	}else{
-	  INT32 e,i;
+	  INT32 e;
 #ifdef PIKE_DEBUG
 	  struct svalue *save_sp=sp+1;
 #endif
@@ -667,7 +667,7 @@ void o_cast(struct pike_type *type, INT32 run_time_type)
 	{
 	  ref_push_multiset(m);
 	}else{
-	  INT32 e,i;
+	  INT32 e;
 	  struct array *a;
 #ifdef PIKE_DEBUG
 	  struct svalue *save_sp=sp+1;
@@ -720,7 +720,7 @@ void o_cast(struct pike_type *type, INT32 run_time_type)
 	{
 	  ref_push_mapping(m);
 	}else{
-	  INT32 e,i;
+	  INT32 e;
 	  struct keypair *k;
 #ifdef PIKE_DEBUG
 	  struct svalue *save_sp=sp+1;
@@ -1128,7 +1128,6 @@ static INT32 PIKE_CONCAT4(very_low_sscanf_,INPUT_SHIFT,_,MATCH_SHIFT)(	 \
   ptrdiff_t cnt, eye, e, field_length = 0;				 \
   int no_assign = 0, minus_flag = 0;					 \
   struct sscanf_set set;						 \
-  struct svalue *argp;							 \
 									 \
 									 \
   set.a = 0;								 \
@@ -1257,7 +1256,9 @@ static INT32 PIKE_CONCAT4(very_low_sscanf_,INPUT_SHIFT,_,MATCH_SHIFT)(	 \
 									 \
 	case 'c':							 \
         {								 \
+CHAROPT2(								 \
           int e;							 \
+)									 \
 	  sval.type=T_INT;						 \
 	  sval.subtype=NUMBER_NUMBER;					 \
           if(field_length == -1)					 \
@@ -1293,7 +1294,6 @@ CHAROPT2(								 \
 									 \
 	     while(--field_length >= 0)					 \
 	     {								 \
-	       int lshfun, orfun;					 \
 	       x = input[eye];						 \
 									 \
                DO_IF_BIGNUM(						 \
@@ -1397,8 +1397,9 @@ CHAROPT2(								 \
 	    chars_matched[0]=eye;					 \
 	    return matches;						 \
 	  }								 \
-	  sval.u.float_number=STRTOD_PCHARP(MKPCHARP(input+eye,		 \
-						     INPUT_SHIFT),&t2);	 \
+	  sval.u.float_number =						 \
+	    (FLOAT_TYPE)STRTOD_PCHARP(MKPCHARP(input+eye,		 \
+					       INPUT_SHIFT),&t2);	 \
 	  t = (PIKE_CONCAT(p_wchar, INPUT_SHIFT) *)(t2.ptr);		 \
 	  if(input + eye == t)						 \
 	  {								 \
