@@ -783,7 +783,7 @@ int(0..1) any( array a, function(mixed, mixed ...:mixed) predicate,
 
 //! Splits an array in two, according to an arbitration function
 //! @[arbiter]. The elements in @[a] who return non-zero for the
-//! expression @[arbiter]( @[a][@i{i@}], @[extra_args] ) end up in
+//! expression @[arbiter]( @[a][@i{i@}], @@@[extra_args] ) end up in
 //! the first sub-array, the others in the second. The order is
 //! preserved from the original array.
 //! @example
