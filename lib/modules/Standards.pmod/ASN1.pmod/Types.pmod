@@ -1,5 +1,5 @@
 //
-// $Id: Types.pmod,v 1.34 2004/02/23 11:10:34 nilsson Exp $
+// $Id: Types.pmod,v 1.35 2004/02/29 02:58:54 nilsson Exp $
 //
 
 //! Encodes various asn.1 objects according to the Distinguished
@@ -14,7 +14,7 @@
 #if 0
 #define WERROR werror
 #else
-#define WERROR(x)
+#define WERROR(x ...)
 #endif
 
 
@@ -133,7 +133,7 @@ class Object
 
   string build_der(string contents) {
     string data = encode_tag() + encode_length(sizeof(contents)) + contents;
-    WERROR(sprintf("build_der: %O\n", data));
+    WERROR("build_der: %O\n", data);
     return data;
   }
 
@@ -155,7 +155,7 @@ class Object
   }
 
   void create(mixed ...args) {
-    WERROR(sprintf("asn1_object[%s]->create\n", type_name));
+    WERROR("asn1_object[%s]->create\n", type_name);
     if (sizeof(args))
       init(@args);
   }
@@ -172,25 +172,24 @@ class Compound
   array(Object) elements = ({ });
 
   this_program init(array args) {
-    WERROR(sprintf("asn1_compound[%s]->init(%O)\n", type_name, args));
+    WERROR("asn1_compound[%s]->init(%O)\n", type_name, args);
     foreach(args, mixed o)
       if (!objectp(o))
 	error( "Non-object argument!\n" );
     elements = [array(Object)]args;
-    WERROR(sprintf("asn1_compound: %O\n", elements));
+    WERROR("asn1_compound: %O\n", elements);
     return this;
   }
 
   this_program begin_decode_constructed(string raw) {
-    WERROR(sprintf("asn1_compound[%s]->begin_decode_constructed\n",
-		   type_name));
+    WERROR("asn1_compound[%s]->begin_decode_constructed\n", type_name);
     record_der_contents(raw);
     return this;
   }
 
   this_program decode_constructed_element(int i, object e) {
-    WERROR(sprintf("asn1_compound[%s]->decode_constructed_element(%O)\n",
-		   type_name, e));
+    WERROR("asn1_compound[%s]->decode_constructed_element(%O)\n",
+	   type_name, e);
     if (i != sizeof(elements))
       error("Unexpected index!\n");
     elements += ({ e });
@@ -209,8 +208,8 @@ class Compound
 
 #ifdef COMPATIBILITY
   string debug_string() {
-    WERROR(sprintf("asn1_compound[%s]->debug_string(), elements = %O\n",
-		   type_name, elements));
+    WERROR("asn1_compound[%s]->debug_string(), elements = %O\n",
+	   type_name, elements);
     return _sprintf('O');
   }
 #endif
@@ -245,8 +244,7 @@ class String
 
 #ifdef COMPATIBILITY
   string debug_string() {
-    WERROR(sprintf("asn1_string[%s]->debug_string(), value = %O\n",
-		   type_name, value));
+    WERROR("asn1_string[%s]->debug_string(), value = %O\n", type_name, value);
     return _sprintf('O');
   }
 #endif
@@ -306,7 +304,7 @@ class Integer
 
   this_object init(int|object n) {
     value = Gmp.mpz(n);
-    WERROR(sprintf("i = %s\n", value->digits()));
+    WERROR("i = %s\n", value->digits());
     return this;
   }
 
@@ -571,10 +569,9 @@ class Sequence
   constant type_name = "SEQUENCE";
 
   string der_encode() {
-    WERROR(sprintf("ASN1.Sequence: elements = '%O\n",
-		   elements));
+    WERROR("ASN1.Sequence: elements = '%O\n", elements);
     array(string) a = elements->get_der();
-    WERROR(sprintf("ASN1.Sequence: der_encode(elements) = '%O\n", a));
+    WERROR("ASN1.Sequence: der_encode(elements) = '%O\n", a);
     return build_der(`+("", @ a));
   }
 }
@@ -600,10 +597,9 @@ class Set
   }
 
   string der_encode() {
-    WERROR(sprintf("asn1_set->der: elements = '%O\n",
-		   elements));
+    WERROR("asn1_set->der: elements = '%O\n", elements);
     array(string) a = elements->get_der();
-    WERROR(sprintf("asn1_set->der: der_encode(elements) = '%O\n", a));
+    WERROR("asn1_set->der: der_encode(elements) = '%O\n", a);
     return build_der(`+("", @[array(string)]
 			Array.sort_array(a, compare_octet_strings)));
   }
@@ -1163,8 +1159,7 @@ class MetaExplicit
     }
 
     string der_encode() {
-      WERROR(sprintf("asn1_explicit->der: contents = '%O\n",
-		     contents));
+      WERROR("asn1_explicit->der: contents = '%O\n", contents);
       return build_der(contents->get_der());
     }
 
