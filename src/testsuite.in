@@ -1,4 +1,4 @@
-test_true([["$Id: testsuite.in,v 1.483 2002/02/14 15:24:34 grubba Exp $"]]);
+test_true([["$Id: testsuite.in,v 1.484 2002/02/26 18:18:15 mast Exp $"]]);
 
 cond([[all_constants()->_verify_internals]],
 [[
@@ -35,6 +35,11 @@ test_eq(8, 0b1000);
 test_eq(-8, -0b1000);
 test_eq(16, 0b10000);
 test_eq(-16, -0b10000);
+
+test_any([[
+  int f (int i) {i = 0; return i;};
+  return f (1);
+]],0)
 
 test_any([[
 class X
