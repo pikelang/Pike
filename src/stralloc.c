@@ -26,7 +26,33 @@
 #define HUGE HUGE_VAL
 #endif /*!HUGE*/
 
-RCSID("$Id: stralloc.c,v 1.120 2001/03/29 20:23:32 grubba Exp $");
+RCSID("$Id: stralloc.c,v 1.121 2001/03/30 09:09:09 hubbe Exp $");
+
+#if PIKE_RUN_UNLOCKED
+static PIKE_MUTEX_T *bucket_locks;
+
+#define LOCK_BUCKET(HVAL) do { 					\
+  size_t hval__=(HVAL);						\
+  PIKE_MUTEX_T *bucket_lock;					\
+  while(1)							\
+  {								\
+    bucket_lock=bucket_locks + (hval__ % htable_size);		\
+    mt_lock(bucket_lock);					\
+    if(bucket_lock == bucket_locks + (hval__ % htable_size))	\
+      break;							\
+    mt_unlock(bucket_lock);					\
+  }								\
+}while(0)
+
+#define UNLOCK_BUCKET(HVAL) do {			\
+  size_t hval__=(HVAL);					\
+  mt_unlock(bucket_locks + ( hval__ % htable_size ));	\
+}while(0)
+
+#else
+#define LOCK_BUCKET(HVAL)
+#define UNLOCK_BUCKET(HVAL)
+#endif
 
 #define BEGIN_HASH_SIZE 997
 #define MAX_AVG_LINK_LENGTH 3
@@ -252,6 +278,7 @@ static void locate_problem(int (*isproblem)(struct pike_string *))
 
   for(e=0;e<htable_size;e++)
   {
+    LOCK_BUCKET(e);
     for(s=base_table[e];s;s=s->next)
     {
       if(isproblem(s))
@@ -263,6 +290,7 @@ static void locate_problem(int (*isproblem)(struct pike_string *))
 	DM(add_marks_to_memhdr(no,s));
       }
     }
+    UNLOCK_BUCKET(e);
   }
 
   DM(fprintf(stderr,"Plausible problem location(s):\n"));
@@ -300,7 +328,9 @@ static INLINE struct pike_string *internal_findstring(const char *s,
 #ifndef HASH_PREFIX
   unsigned int depth=0;
 #endif
-  size_t h=hval % htable_size;
+  size_t h;
+  LOCK_BUCKET(hval);
+  h=hval % htable_size;
   for(base = prev = base_table + h;( curr=*prev ); prev=&curr->next)
   {
 #ifdef PIKE_DEBUG
@@ -322,6 +352,7 @@ static INLINE struct pike_string *internal_findstring(const char *s,
       *prev = curr->next;
       curr->next = *base;
       *base = curr;
+      UNLOCK_BUCKET(hval);
       return curr;		/* pointer to string */
     }
 #ifndef HASH_PREFIX
@@ -339,6 +370,7 @@ static INLINE struct pike_string *internal_findstring(const char *s,
       need_more_hash_prefix--;
   }
 #endif
+  UNLOCK_BUCKET(hval);
   return 0; /* not found */
 }
 
@@ -394,15 +426,50 @@ static void rehash_string_backwards(struct pike_string *s)
   base_table[h]=s;
 }
 
-static void rehash(void)
+static void stralloc_rehash(void)
 {
   int h,old;
   struct pike_string **old_base;
 
+#ifdef PIKE_RUN_UNLOCKED
+  int new_htable_size;
+  PIKE_MUTEX_T *old_locks;
+  PIKE_MUTEX_T *new_locks;
+
+  old=htable_size;
+  old_base=base_table;
+
+  LOCK_BUCKET(0);
+  if(old != htable_size)
+  {
+    /* Someone got here before us */
+    UNLOCK_BUCKET(0);
+    return;
+  }
+
+  new_htable_size=hashprimes[++hashprimes_entry];
+
+  /* Now that we have bucket zero, the hash table
+   * cannot change, go ahead and lock ALL buckets.
+   * NOTE: bucket zero is already locked
+   */
+  for(h=1;h<old;h++) LOCK_BUCKET(h);
+  new_locks=(PIKE_MUTEX_T *)xalloc(sizeof(PIKE_MUTEX_T)*new_htable_size);
+  for(h=0;h<new_htable_size;h++)
+  {
+    mt_init(new_locks + h);
+    mt_lock(new_locks + h);
+  }
+  old_locks=bucket_locks;
+  bucket_locks=new_locks;
+  htable_size=new_htable_size;
+#else
   old=htable_size;
   old_base=base_table;
 
   htable_size=hashprimes[++hashprimes_entry];
+#endif
+
   base_table=(struct pike_string **)xalloc(sizeof(struct pike_string *)*htable_size);
   MEMSET((char *)base_table,0,sizeof(struct pike_string *)*htable_size);
 
@@ -411,6 +478,24 @@ static void rehash(void)
 
   if(old_base)
     free((char *)old_base);
+
+#ifdef PIKE_RUN_UNLOCKED
+  for(h=0;h<old;h++) mt_unlock(old_locks + h);
+  for(h=0;h<htable_size;h++) mt_unlock(new_locks + h);
+
+
+  /* This loop tries to make sure that nobody is still waiting
+   * for the old locks. I'm not sure if it actually works 100% of
+   * the time though... /Hubbe
+   */
+  for(h=0;h<old;h++)
+  {
+    mt_lock(old_locks + h);
+    mt_unlock(old_locks + h);
+    mt_destroy(old_locks+h);
+  }
+  free((char *)old_locks);
+#endif
 }
 
 /* Allocation of strings */
@@ -494,14 +579,17 @@ PMOD_EXPORT struct pike_string *debug_begin_shared_string(size_t len)
 static void link_pike_string(struct pike_string *s, size_t hval)
 {
   size_t h;
+  LOCK_BUCKET(hval);
   h=hval % htable_size;
   s->refs = 0;
   s->next = base_table[h];
   base_table[h] = s;
   s->hval=hval;
   num_strings++;
+  UNLOCK_BUCKET(hval);
+
   if(num_strings > MAX_AVG_LINK_LENGTH * htable_size)
-    rehash();
+    stralloc_rehash();
 
 #ifndef HASH_PREFIX
   /* These heuruistics might require tuning! /Hubbe */
@@ -801,13 +889,16 @@ PMOD_EXPORT struct pike_string *debug_make_shared_string2(const p_wchar2 *str)
 
 PMOD_EXPORT void unlink_pike_string(struct pike_string *s)
 {
-  size_t h = s->hval % htable_size;
+  size_t h;
+  LOCK_BUCKET(s->hval);
+  h= s->hval % htable_size;
   propagate_shared_string(s,h);
   base_table[h]=s->next;
 #ifdef PIKE_DEBUG
   s->next=(struct pike_string *)(ptrdiff_t)-1;
 #endif
   num_strings--;
+  UNLOCK_BUCKET(s->hval);
 }
 
 PMOD_EXPORT void do_free_string(struct pike_string *s)
@@ -882,6 +973,7 @@ struct pike_string *add_string_status(int verbose)
     struct pike_string *p;
     for(e=0;e<htable_size;e++)
     {
+      LOCK_BUCKET(e);
       for(p=base_table[e];p;p=p->next)
       {
 	num_distinct_strings++;
@@ -889,7 +981,7 @@ struct pike_string *add_string_status(int verbose)
 	allocd_strings+=p->refs;
 	allocd_bytes+=p->refs*DO_ALIGN(p->len+3,sizeof(void *));
       }
-
+      UNLOCK_BUCKET(e);
     }
     overhead_bytes=(sizeof(struct pike_string)-1)*num_distinct_strings;
     my_strcat("\nShared string hash table:\n");
@@ -945,6 +1037,7 @@ PMOD_EXPORT void verify_shared_strings_tables(void)
   for(e=0;e<htable_size;e++)
   {
     h=0;
+    LOCK_BUCKET(e);
     for(s=base_table[e];s;s=s->next)
     {
       num++;
@@ -982,6 +1075,7 @@ PMOD_EXPORT void verify_shared_strings_tables(void)
 	h=0;
       }
     }
+    UNLOCK_BUCKET(e);
   }
   if(num != num_strings)
     fatal("Num strings is wrong %d!=%d\n",num,num_strings);
@@ -994,8 +1088,16 @@ PMOD_EXPORT int safe_debug_findstring(struct pike_string *foo)
   for(e=0;e<htable_size;e++)
   {
     struct pike_string *p;
+    LOCK_BUCKET(e);
     for(p=base_table[e];p;p=p->next)
-      if(p==foo) return 1;
+    {
+      if(p==foo)
+      {
+	UNLOCK_BUCKET(e);
+	return 1;
+      }
+    }
+    UNLOCK_BUCKET(e);
   }
   return 0;
 }
@@ -1016,6 +1118,7 @@ PMOD_EXPORT struct pike_string *debug_findstring(const struct pike_string *foo)
 	    (long)foo->len,
 	    foo->str);
 
+    LOCK_BUCKET(foo->hval);
     fprintf(stderr,"------ %p %ld\n",
 	    base_table[foo->hval %htable_size],
 	    foo->hval);
@@ -1027,9 +1130,11 @@ PMOD_EXPORT struct pike_string *debug_findstring(const struct pike_string *foo)
 	fprintf(stderr,"%p->",tmp2);
     }
     fprintf(stderr,"0\n");
+    UNLOCK_BUCKET(foo->hval);
 
     for(e=0;e<htable_size;e++)
     {
+      LOCK_BUCKET(e);
       for(tmp2=base_table[e];tmp2;tmp2=tmp2->next)
       {
 	if(tmp2 == tmp)
@@ -1037,6 +1142,7 @@ PMOD_EXPORT struct pike_string *debug_findstring(const struct pike_string *foo)
 		  (long)e,
 		  (long)(foo->hval % htable_size));
       }
+      UNLOCK_BUCKET(e);
     }
   }
 #endif
@@ -1086,8 +1192,12 @@ void dump_stralloc_strings(void)
   unsigned INT32 e;
   struct pike_string *p;
   for(e=0;e<htable_size;e++)
+  {
+    LOCK_BUCKET(e);
     for(p=base_table[e];p;p=p->next)
       debug_dump_pike_string(p, 70);
+    UNLOCK_BUCKET(e);
+  }
 }
 
 #endif
@@ -1650,9 +1760,6 @@ PMOD_EXPORT struct pike_string *string_replace(struct pike_string *str,
 /*** init/exit memory ***/
 void init_shared_string_table(void)
 {
-#ifdef PIKE_RUN_UNLOCKED
-  mt_init(&stralloc_mutex);
-#endif
   init_short_pike_string0_blocks();
   init_short_pike_string1_blocks();
   init_short_pike_string2_blocks();
@@ -1660,6 +1767,13 @@ void init_shared_string_table(void)
   htable_size=hashprimes[hashprimes_entry];
   base_table=(struct pike_string **)xalloc(sizeof(struct pike_string *)*htable_size);
   MEMSET((char *)base_table,0,sizeof(struct pike_string *)*htable_size);
+#ifdef PIKE_RUN_UNLOCKED
+  {
+    int h;
+    bucket_locks=(PIKE_MUTEX_T *)xalloc(sizeof(PIKE_MUTEX_T)*htable_size);
+    for(h=0;h<htable_size;h++) mt_init(bucket_locks + h);
+  }
+#endif
 }
 
 #ifdef DEBUG_MALLOC
@@ -1695,6 +1809,7 @@ void cleanup_shared_string_table(void)
 
   for(e=0;e<htable_size;e++)
   {
+    LOCK_BUCKET(e);
     for(s=base_table[e];s;s=next)
     {
       next=s->next;
@@ -1705,6 +1820,7 @@ void cleanup_shared_string_table(void)
 #endif
     }
     base_table[e]=0;
+    UNLOCK_BUCKET(e);
   }
   free((char *)base_table);
   base_table=0;
@@ -1729,11 +1845,13 @@ void count_memory_in_strings(INT32 *num, INT32 *size)
   for(e=0;e<htable_size;e++)
   {
     struct pike_string *p;
+    LOCK_BUCKET(e);
     for(p=base_table[e];p;p=p->next)
     {
       num_++;
       size_+=sizeof(struct pike_string)+(p->len<<p->size_shift);
     }
+    UNLOCK_BUCKET(e);
   }
 #ifdef PIKE_DEBUG
   if(num_strings != num_)
