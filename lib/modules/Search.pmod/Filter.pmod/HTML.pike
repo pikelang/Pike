@@ -200,7 +200,19 @@ class Filter
   }
 }
 
-
+constant num =
+  mkmapping( map(Array.enumerate(255),
+		 lambda(int in){ return "&#"+in+";"; }),
+	     map(Array.enumerate(255),
+		 lambda(int in){ return sprintf("%c", in); }) ) +
+  mkmapping( map(Array.enumerate(255),
+		 lambda(int in){ return sprintf("&#x%x;", in); }),
+	     map(Array.enumerate(255),
+		 lambda(int in){ return sprintf("%c", in); }) ) +
+  mkmapping( map(Array.enumerate(255),
+		 lambda(int in){ return sprintf("&#x%X;", in); }),
+	     map(Array.enumerate(255),
+		 lambda(int in){ return sprtinf("%c", in); }) );
 
 constant iso88591
 =([ "&nbsp;":   " ",
@@ -463,8 +475,8 @@ constant greek
 ]);
 
 constant replace_entities = indices( iso88591 )+indices( international )+
-  indices( symbols )+indices( greek )+
-  ({"&lt;","&gt;","&amp;","&quot;","&apos;","&#x22;","&#34;","&#39;","&#0;"});
+  indices( symbols )+indices( greek )+indices( num )+
+  ({"&lt;","&gt;","&amp;","&quot;","&apos;"});
 
 constant replace_values = values( iso88591 )+values( international )+
-  values( symbols )+values( greek )+({"<",">","&","\"","\'","\"","\"","\'","\000"});
+  values( symbols )+values( greek )+values( num )+({"<",">","&","\"","\'"});
