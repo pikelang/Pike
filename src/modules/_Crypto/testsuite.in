@@ -251,3 +251,9 @@ test_eq([[Crypto.hmac(xCrypto.sha)("Jefe")("what do ya want for nothing?")]],
 	[[xCrypto.hex_to_string("effcdf6ae5eb2fa2d27416d5f184df9c259a7c79")]])
 test_eq([[Crypto.hmac(xCrypto.sha)("\252" * 16)("\335" * 50)]],
 	[[xCrypto.hex_to_string("d730594d167e35d5956fd8003d0db3d3f46dc7bb")]])
+
+// CRYPT_MD5
+test_eq([[xCrypto.crypt_md5("Hello","sl5hO7j4")]],
+	[["$1$sl5hO7j4$glLmY.ttmi1hWK8ucIrig."]])
+test_eq([[xCrypto.crypt_md5("Hello","$1$sl5hO7j4$glLmY.ttmi1hWK8ucIrig.")]],
+	[["$1$sl5hO7j4$glLmY.ttmi1hWK8ucIrig."]])

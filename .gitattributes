@@ -461,6 +461,7 @@ testfont binary
 /src/modules/_Crypto/lib/cast.c foreign_ident
 /src/modules/_Crypto/lib/cast_sboxes.h foreign_ident
 /src/modules/_Crypto/lib/configure.in foreign_ident
+/src/modules/_Crypto/lib/crypt_md5.c foreign_ident
 /src/modules/_Crypto/lib/desCode.h foreign_ident
 /src/modules/_Crypto/lib/desKerb.c foreign_ident
 /src/modules/_Crypto/lib/desQuick.c foreign_ident
