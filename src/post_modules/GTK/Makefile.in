@@ -44,6 +44,11 @@ compile0:
 compile1:
 	$(RUNPIKE) $(SRCDIR)/new_build_pgtk.pike --source='$(SRCDIR)/source/'\
                    $(SRCDIR)/output/few.pike
+	@if [ "x@VPATH_KLUDGE@" = "xyes" ]; then \
+	  for f in `cat files_to_compile | sed -e 's/\.o/\.c/g'`; do \
+	    test -f "$$f" || ln -s "$(srcdir)/$$f" "$$f"; \
+	  done; \
+	else :; fi
 	@$(MAKE) OBJS="`cat files_to_compile`" \
                CFLAGS="`echo $(CFLAGS) | sed -e 's/-g//g' -e 's/-W[^ ]*//g'`" \
                   all

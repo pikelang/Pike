@@ -1,4 +1,4 @@
-# $Id: configure.in,v 1.8 2002/03/06 17:53:47 grubba Exp $
+# $Id: configure.in,v 1.9 2002/12/14 20:22:25 grubba Exp $
 AC_INIT(top.c)
 AC_CONFIG_HEADER(config.h)
 
@@ -58,6 +58,13 @@ else
     AC_DEFINE_UNQUOTED(HAVE_LIBGLUT)
     LIBS="-lglut $LIBS"
     AUTO=auto.o
+
+    if test "x$pike_cv_make_supports_VPATH" = "xno"; then
+      if test -L auto.c.in; then
+        AC_MSG_WARN([Enabling VPATH symlink kludge])
+        test -L auto.c || ln -s $(srcdir)/auto.c auto.c
+      else :; fi
+    else :; fi
   else
     AC_MSG_RESULT(no)
     AUTO=""

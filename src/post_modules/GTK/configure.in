@@ -779,6 +779,14 @@ if test "x$WITH_GTK" = x1 ; then
   CFLAGS="$oCFLAGS"
 
   fi
+
+ VPATH_KLUDGE=no
+ if test "x$pike_cv_make_supports_VPATH" = "xno"; then
+   AC_MSG_WARN([Enabling VPATH symlink kludge])
+   VPATH_KLUDGE=yes
+ else :; fi
+ export VPATH_KLUDGE
+ AC_SUBST(VPATH_KLUDGE)
 else
   WITH_GTK=0
 fi

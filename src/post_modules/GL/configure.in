@@ -1,4 +1,4 @@
-# $Id: configure.in,v 1.13 2001/01/04 14:36:13 marcus Exp $
+# $Id: configure.in,v 1.14 2002/12/14 20:20:52 grubba Exp $
 AC_INIT(top.c)
 AC_CONFIG_HEADER(config.h)
 
@@ -106,7 +106,13 @@ else
       AC_DEFINE(HAVE_GL)
       AUTO_OBJS="auto.o"
     fi
-    
+
+    if test "x$pike_cv_make_supports_VPATH" = "xno"; then
+      if test -L auto.c.in; then
+        AC_MSG_WARN([Enabling VPATH symlink kludge])
+        test -L auto.c || ln -s $(srcdir)/auto.c auto.c
+      else :; fi
+    else :; fi
   fi
 
 fi
