@@ -9,7 +9,7 @@
 #include "pike_macros.h"
 #include "gc.h"
 
-RCSID("$Id: pike_memory.c,v 1.28 1998/11/22 11:03:09 hubbe Exp $");
+RCSID("$Id: pike_memory.c,v 1.29 1999/03/22 22:07:35 hubbe Exp $");
 
 /* strdup() is used by several modules, so let's provide it */
 #ifndef HAVE_STRDUP
@@ -222,7 +222,8 @@ unsigned INT32 hashstr(const unsigned char *str,INT32 maxn)
 {
   unsigned INT32 ret,c;
   
-  ret=str++[0];
+  if(!(ret=str++[0]))
+    return ret;
   for(; maxn>=0; maxn--)
   {
     c=str++[0];
