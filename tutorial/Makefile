@@ -52,9 +52,23 @@ tutorial_onepage.html: .DUMMY  $(SRCFILES)
 tutorial.tex: .DUMMY $(SRCFILES)
 	$(pike) ./wmmltohtml2 tutorial.wmml latex tutorial
 
+# latex has to be run twice to work with labels and stuff
+# but there are no labels yet...
 tutorial.dvi: tutorial.tex
 	-@rm tutorial.aux
 	latex tutorial.tex
+
+tutorial.ps: tutorial.dvi
+	dvips -Z tutorial.dvi
+
+tutorial.ps.gz: tutorial.ps
+	gzip -9 <tutorial.ps >tutorial.ps.gz
+
+tutorial.ps.bz: tutorial.ps
+	bzip -9 <tutorial.ps >tutorial.ps.gz
+
+tutorial.pdf: tutorial.tex
+	pdflatex tutorial.tex
 
 tut.html: .DUMMY $(SRCFILES)
 	$(pike) ./wmmltohtml2 tutorial.wmml sitebuilder tut
