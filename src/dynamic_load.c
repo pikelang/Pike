@@ -8,7 +8,7 @@
 #  include "pike_macros.h"
 #  include "main.h"
 
-RCSID("$Id: dynamic_load.c,v 1.35 1999/04/15 04:08:13 hubbe Exp $");
+RCSID("$Id: dynamic_load.c,v 1.36 1999/04/25 21:07:16 grubba Exp $");
 
 #endif /* !TESTING */
 
@@ -225,6 +225,23 @@ struct module_list
 
 struct module_list *dynamic_module_list = 0;
 
+#ifdef NO_CAST_TO_FUN
+/* Function pointers can't be casted to scalar pointers according to
+ * ISO-C (probably to support true Harward achitecture machines).
+ */
+static modfun CAST_TO_FUN(void *ptr)
+{
+  union {
+    void *ptr;
+    modfun fun;
+  } u;
+  u.ptr = ptr;
+  return u.fun;
+}
+#else /* !NO_CAST_TO_FUN */
+#define CAST_TO_FUN(X)	((modfun)X)
+#endif /* NO_CAST_TO_FUN */
+
 void f_load_module(INT32 args)
 {
   void *module;
@@ -252,13 +269,13 @@ void f_load_module(INT32 args)
     }
   }
 
-  init=(modfun)dlsym(module, "pike_module_init");
+  init = CAST_TO_FUN(dlsym(module, "pike_module_init"));
   if (!init) {
-    init=(modfun)dlsym(module, "_pike_module_init");
+    init = CAST_TO_FUN(dlsym(module, "_pike_module_init"));
   }
-  exit=(modfun)dlsym(module, "pike_module_exit");
+  exit = CAST_TO_FUN(dlsym(module, "pike_module_exit"));
   if (!exit) {
-    exit=(modfun)dlsym(module, "_pike_module_exit");
+    exit = CAST_TO_FUN(dlsym(module, "_pike_module_exit"));
   }
 
   if(!init || !exit)
