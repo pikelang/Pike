@@ -1,3 +1,9 @@
+Mon Sep 23 01:20:00 1996  Fredrik Hubinette  <hubbe@morpheus.infovav.se>
+
+	* mapping.c: bug for destructed objects fixed
+	* builtin_functions.c (f_crypt): workaround for sun CC included
+	* v0.1 released
+
 Thu Sep 19 14:25:07 1996  Fredrik Hubinette  <hubbe@jolt.infovav.se.>
 
 	* all_efuns renamed to all_constants
