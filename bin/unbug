@@ -22,6 +22,7 @@
  *   (Add your own wishes here)
  */
 
+#include <profiling.h>
 
 #ifndef DEBUG
 #define DEBUG 0
@@ -643,7 +644,7 @@ class Gdb
 	string tmp=out->read(10000,1);
 	if(!tmp)
 	{
-	werror("Failed to read from GDB:\n");
+	  werror("Failed to read from GDB:\n");
 	  sleep(8699999);
 //	  exit(0);
 	}
@@ -690,7 +691,7 @@ class Gdb
     pid=Process.create_process( ({"gdb"}),
 				(["setsid":1,
 				  "stdin":tmp1,
-				 "stdout":tmp2]));
+				  "stdout":tmp2]));
     cmd("set prompt "+prompt);
     cmd("set width 0");
     cmd("set print elements 0");
@@ -832,10 +833,10 @@ class Gdb
       {
 	s=s[1..];
 //	werror("decode_string(%O)\n",s);
-	string ret="";
+	String.Buffer ret = String.Buffer(sizeof(s));
 	while(sscanf(s,"%[^\"\\]%c%s",string safe, int c, s)==3)
 	{
-	  ret+=safe;
+	  ret->add(safe);
 	  switch(c)
 	  {
 	    case '\\':
@@ -858,16 +859,15 @@ class Gdb
 		default:
 		  werror("Unknown string coding: %d (%c)\n",s[0],s[0]);
 	      }
-	      ret+=sprintf("%c",c);
+	      ret->putchar(c);
 	      break;
 		  
 	    case '"': /* end of string */
-	      return ret;
+	      return (string)ret;
 	  }
 	}
 
 	werror("Failed to decode string!\n");
-//	return compile_string("string s="+s+";")()->s;
       }
 
     mixed parse_return_value(array data)
@@ -894,7 +894,10 @@ class Gdb
 	    return parse_return_value(data[..sizeof(data)-2]);
 
 	  case '"': /* string */
-	    return decode_string( (string) (data[-1]) );
+	    PROF_BEGIN("decode_string");
+	    string strret = decode_string( (string) (data[-1]) );
+	    PROF_END("decode_string");
+	    return strret;
 	    
 	  case '0': /* Hex */
 	  case '1' .. '9':
@@ -996,23 +999,22 @@ class Gdb
 
   Handle mkhandle(mixed ... parts)
     {
-      string expr="";
+      string|String.Buffer expr = String.Buffer();
       foreach(parts, mixed part)
 	{
 	  switch(sprintf("%t",part))
 	  {
-	    case "string": expr+=part; break;
-	    case "int":    expr+=sprintf(" %d ",part); break;
-	    case "float":  expr+=sprintf(" %20f ",part); break;
+	    case "string": expr->add(part); break;
+	    case "int":    expr->add(" ",(string)part," "); break;
+	    case "float":  expr->add(" ",(string)part," "); break;
 	    case "object":
 	      if(part->__varno<0)
-	      {
-		expr+=sprintf("(%s)",part->__expr);
-	      }else{
-		expr+=sprintf("$%d ",part->__varno);
-	      }
+		expr->add("(", part->__expr, ")");
+	      else
+		expr->add("$", (string)(part->__varno), " ");
 	  }
 	}
+      expr = (string)expr;
 #if DEBUG>5
       werror("mkhandle(%O)\n",expr);
 #endif
@@ -2862,21 +2864,27 @@ class Debug
 
       case "globals":
 	object to;
+	PROF_BEGIN("cmd globals");
 	if(sizeof(foo)>1)
 	{
 	  to=eval(foo[1..]*" ");
 	}else{
+	  if(!current_frame)
+	    return "No current frame to find global variables from.\n";
 	  to=current_frame->this_object();
 	}
 
 	foreach(to->_globals(), string name)
 	  write("%s = %O\n",name, to[name]);
+	PROF_END("cmd globals");
 	return "";
 
 
       case "breakpoint":
       case "break":
       {
+	if(String.trim_all_whites(foo[1..]*"")=="")
+	  return "No breakpoint given.\n";
 	Breakpoint bp=set_breakpoint(foo[1..]*" ");
 	return sprintf("%s\n",bp);
       }
@@ -2891,6 +2899,12 @@ class Debug
 	      write("%O\n",bp);
 	    return "";
 	    break;
+	  case "profiling":
+#define werror write
+	  PROF_RESULT();
+	  return "";
+#undef werror
+	  break;
 	  }
 	write("info breakpoints  : show breakpoints\n");
 	return "";
@@ -2951,8 +2965,8 @@ class Debug
 	write("info breakpoints  : show breakpoints\n");
 	write("enable B          : enable breakpoint B\n");
 	write("disable B         : disable breakpoint B\n");
-	write("quit/q            : Exit unbug\n");
-	write("gdb <gdb command> : Run a GDB command\n");
+	write("quit/q            : exit unbug\n");
+	write("gdb <gdb command> : run a GDB command\n");
 	write("help/h/?          : show this text\n");
 	return "";
 
@@ -2999,7 +3013,7 @@ class Debug
 	"; do sleep 2; done";
       array(string) fnord;
       if(getenv("STY")) fnord=({/*"screen",*/"/bin/sh","-c",c });
-      if(getenv("DISPLAY")) fnord=({"xterm","-e","/bin/sh","-c",c });
+      else if(getenv("DISPLAY")) fnord=({"xterm","-e","/bin/sh","-c",c });
       object error_redirect = Stdio.File()->pipe(Stdio.PROP_IPC);
       terminal=Process.create_process(fnord, (["setsid":1,
 					       "stderr":error_redirect]) );
@@ -3036,7 +3050,7 @@ string find_in_path(string cmd)
 
 int main(int argc, array(string) argv)
 {
-  write(#"UNBUG $Id: unbug,v 1.14 2003/12/08 06:14:29 nilsson Exp $
+  write(#"UNBUG $Id: unbug,v 1.15 2003/12/14 20:35:25 nilsson Exp $
 Copyright 2001-2002, Roxen Internet Software AB.
 Copyright 2002-2003, Department of Computer and Information Science,
                      Linköping University
