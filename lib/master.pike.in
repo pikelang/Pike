@@ -1,4 +1,4 @@
-/* $Id: master.pike.in,v 1.62 1999/10/15 23:13:49 hubbe Exp $
+/* $Id: master.pike.in,v 1.63 1999/10/16 04:03:16 hubbe Exp $
  * 
  * Master-file for Pike.
  *
@@ -1116,6 +1116,7 @@ string read_include(string f)
 }
 
 int clipped=0;
+int canclip=0;
 
 // FIXME
 string stupid_describe(mixed m, int maxlen)
@@ -1127,6 +1128,7 @@ string stupid_describe(mixed m, int maxlen)
       return (string)m;
       
     case "string":
+      canclip++;
       if(sizeof(m) < maxlen)
       {
 	string t = sprintf("%O", m);
@@ -1150,6 +1152,7 @@ string stupid_describe(mixed m, int maxlen)
 	clipped++;
 	return "array["+sizeof(m)+"]";
       }
+      canclip++;
       return "({" + stupid_describe_comma_list(m,maxlen-2) +"})";
       
     case "mapping":
@@ -1189,34 +1192,41 @@ string stupid_describe_comma_list(array x, int maxlen)
 
   int clip=min(maxlen/2,sizeof(x));
   int len=maxlen;
+  int done=0;
+
+//  int loopcount=0;
 
   while(1)
   {
-//    werror("len=%d\n",len);
+//    if(loopcount>10000) werror("len=%d\n",len);
     array(string) z=allocate(clip);
     array(int) isclipped=allocate(clip);
+    array(int) clippable=allocate(clip);
     for(int e=0;e<clip;e++)
     {
       clipped=0;
+      canclip=0;
       z[e]=stupid_describe(x[e],len);
       isclipped[e]=clipped;
+      clippable[e]=canclip;
     }
 
     while(1)
     {
-//      werror("clip=%d maxlen=%d\n",clip,maxlen);
+//      if(loopcount>10000)  werror("clip=%d maxlen=%d\n",clip,maxlen);
       string ret = z[..clip-1]*",";
-//      werror("sizeof(ret)=%d z=%O isclipped=%O\n",sizeof(ret),z[..clip-1],isclipped[..clip-1]);
-      if(sizeof(ret)<=maxlen+1)
+//      if(loopcount>10000)  werror("sizeof(ret)=%d z=%O isclipped=%O done=%d\n",sizeof(ret),z[..clip-1],isclipped[..clip-1],done);
+      if(done || sizeof(ret)<=maxlen+1)
       {
 	int tmp=sizeof(x)-clip-1;
-//	werror("CLIPPED::::: %O\n",isclipped);
+//	if(loopcount>10000) werror("CLIPPED::::: %O\n",isclipped);
 	clipped=`+(0,@isclipped);
 	if(tmp>=0)
 	{
 	  clipped++;
 	  ret+=",,,"+tmp;
 	}
+	canclip++;
 	return ret;
       }
 
@@ -1225,15 +1235,17 @@ string stupid_describe_comma_list(array x, int maxlen)
       int clipsuggest;
       while(1)
       {
+//	if(loopcount++ > 20000) return "";
+//	if(!(loopcount & 0xfff)) werror("GNORK\n");
 	int smallsize=0;
 	int num_large=0;
 	clipsuggest=0;
 
 	for(int e=0;e<clip;e++)
 	  {
-//	    werror("sizeof(z[%d])=%d  len=%d\n",e,sizeof(z[e]),len);
+//	    if(loopcount>10000) werror("sizeof(z[%d])=%d  len=%d\n",e,sizeof(z[e]),len);
 
-	    if(sizeof(z[e])>=last_newlen || isclipped[e])
+	    if((sizeof(z[e])>=last_newlen || isclipped[e]) && clippable[e])
 	      num_large++;
 	    else
 	      smallsize+=sizeof(z[e]);
@@ -1241,23 +1253,24 @@ string stupid_describe_comma_list(array x, int maxlen)
 	    if(num_large * 15 + smallsize < maxlen) clipsuggest=e+1;
 	  }
 	
-//	werror("num_large=%d  maxlen=%d  smallsize=%d clippsuggest=%d\n",num_large,maxlen,smallsize,clipsuggest);
+//	if(loopcount>10000) werror("num_large=%d  maxlen=%d  smallsize=%d clippsuggest=%d\n",num_large,maxlen,smallsize,clipsuggest);
 	newlen=num_large ? (maxlen-smallsize)/num_large : 0;
 	
-//	werror("newlen=%d\n",newlen);
+//	if(loopcount>10000) werror("newlen=%d\n",newlen);
 
 	if(newlen<8 || newlen >= last_newlen) break;
 	last_newlen=newlen;
-//	werror("len decreased, retrying.\n");
+//	if(loopcount>10000) werror("len decreased, retrying.\n");
       }
 
       if(newlen < 8 && clip)
       {
 	clip-= (clip/4) || 1;
 	if(clip > clipsuggest) clip=clipsuggest;
-//	werror("clip decreased, retrying.\n");
+//	if(loopcount>10000) werror("clip decreased, retrying.\n");
       }else{
 	len=newlen;
+	done++;
 	break;
       }
     }
