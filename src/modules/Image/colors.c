@@ -1,7 +1,7 @@
 /*
 **! module Image
 **! note
-**!	$Id: colors.c,v 1.32 2000/07/28 07:12:44 hubbe Exp $
+**!	$Id: colors.c,v 1.33 2000/08/09 17:39:19 grubba Exp $
 **! submodule Color
 **!
 **!	This module keeps names and easy handling 
@@ -179,7 +179,7 @@
 
 #include "global.h"
 
-RCSID("$Id: colors.c,v 1.32 2000/07/28 07:12:44 hubbe Exp $");
+RCSID("$Id: colors.c,v 1.33 2000/08/09 17:39:19 grubba Exp $");
 
 #include "image_machine.h"
 
@@ -455,9 +455,9 @@ static void image_color_greylevel(INT32 args)
 
 static void image_color_hsvf(INT32 args)
 {
-   float max, min;
-   float r,g,b, delta;
-   float h, s, v;
+   double max, min;
+   double r,g,b, delta;
+   double h, s, v;
 
    pop_n_elems(args);
 
@@ -500,7 +500,7 @@ static void image_color_hsvf(INT32 args)
 
 static void image_color_hsv(INT32 args)
 {
-   float h,s,v;
+   double h,s,v;
    image_color_hsvf(args);
    h=sp[-1].u.array->item[0].u.float_number;
    s=sp[-1].u.array->item[1].u.float_number;
@@ -515,8 +515,8 @@ static void image_color_hsv(INT32 args)
 
 static void image_color_cmyk(INT32 args)
 {
-   float c,m,y,k;
-   float r,g,b;
+   double c,m,y,k;
+   double r,g,b;
    pop_n_elems(args);
 
    r=COLORL_TO_FLOAT(THIS->rgbl.r);
@@ -1195,7 +1195,7 @@ static void image_get_color(INT32 args)
       {
 	 /* #rgb, #rrggbb, #rrrgggbbb, etc */
 	 
-	 unsigned long i=sp[-1].u.string->len-1,j,k,rgb[3];
+	 size_t i = sp[-1].u.string->len-1, j, k, rgb[3];
 	 unsigned char *src=(unsigned char *)sp[-1].u.string->str+1;
 	 if (!(i%3))
 	 {
@@ -1290,7 +1290,7 @@ static void image_get_color(INT32 args)
 	 if (sp[-1].u.string->len>(INT32)strlen(callables[n]) &&
 	     memcmp(sp[-1].u.string->str,callables[n],strlen(callables[n]))==0)
 	 {
-	    push_int(strlen(callables[n]));
+	    push_int(DO_NOT_WARN(strlen(callables[n])));
 	    push_int(1000000);
 	    f_index(3);
 	    image_get_color(1);
@@ -1310,8 +1310,8 @@ static void image_get_color(INT32 args)
 	 if (sp[-1].type==T_ARRAY &&
 	     sp[-1].u.array->size==1)
 	 {
-	    float f;
-	    f=sp[-1].u.array->item[0].u.float_number;
+	    double f;	/* FIXME: What is f used for? */
+	    f = sp[-1].u.array->item[0].u.float_number;
 	    pop_stack();
 	    sp--;
 	       
@@ -1468,8 +1468,8 @@ static void image_make_rgb_color(INT32 args)
 
 static void image_make_hsv_color(INT32 args)
 {
-   float h,s,v;
-   float r=0,g=0,b=0; /* to avoid warning */
+   double h,s,v;
+   double r=0,g=0,b=0; /* to avoid warning */
 
    if (args && sp[-args].type==T_INT)
    {
@@ -1483,9 +1483,9 @@ static void image_make_hsv_color(INT32 args)
       if (si<0) si=0; else if (si>COLORMAX) si=COLORMAX;
       if (vi<0) vi=0; else if (vi>COLORMAX) vi=COLORMAX;
    
-      h = (hi/((float)COLORMAX))*(360.0/60.0);
-      s = si/((float)COLORMAX);
-      v = vi/((float)COLORMAX);
+      h = (hi/((double)COLORMAX))*(360.0/60.0);
+      s = si/((double)COLORMAX);
+      v = vi/((double)COLORMAX);
    }
    else
    {

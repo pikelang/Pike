@@ -1,9 +1,9 @@
-/* $Id: orient.c,v 1.15 2000/07/28 07:12:44 hubbe Exp $ */
+/* $Id: orient.c,v 1.16 2000/08/09 17:32:57 grubba Exp $ */
 
 /*
 **! module Image
 **! note
-**!	$Id: orient.c,v 1.15 2000/07/28 07:12:44 hubbe Exp $
+**!	$Id: orient.c,v 1.16 2000/08/09 17:32:57 grubba Exp $
 **! class Image
 */
 
@@ -159,7 +159,7 @@ void image_orient(INT32 args)
   struct image *img[5],*this,*img1;
   int n;
   rgb_group *d,*s1,*s2,*s3,*s0;
-  float mag;
+  double mag;
   int i, w, h;
 
   if (!THIS->img) { error("Called Image.Image object is not initialized\n");;  return; }
@@ -235,10 +235,10 @@ CHRONO("begin hsv...");
   while (n--)
   {
      /* Första färg, sista mörkhet */
-     float j=(s0->r+s0->g+s0->b-s2->r-s2->g-s2->b)/3.0; 
+     double j=(s0->r+s0->g+s0->b-s2->r-s2->g-s2->b)/3.0; 
                 /* riktning - - riktning | */
 
-     float h=(s1->r+s1->g+s1->b-s3->r-s3->g-s3->b)/3.0;
+     double h=(s1->r+s1->g+s1->b-s3->r-s3->g-s3->b)/3.0;
                 /* riktning \ - riktning / */
 
      int z,w;
