@@ -1,5 +1,5 @@
 #
-# $Id: Makefile.in,v 1.162 1999/11/08 20:51:12 grubba Exp $
+# $Id: Makefile.in,v 1.163 1999/11/08 22:07:25 grubba Exp $
 #
 
 # This line is needed on some machines.
@@ -192,9 +192,7 @@ compiler-warnings : clean
 	@echo '--------------'
 
 tpike: $(OBJ) $(TOBJ) modules/linker_options
-	-@if [ -f pike.old ] ; then rm -f pike.old || : ; else : ; fi
-	-@if [ -f pike.old.exe ] ; then rm -f pike.old.exe || : ; else : ; fi
-	-@if [ -f pike ] ; then mv pike pike.old || : ; else : ; fi
+	-@rm -f tpike || :
 	$(LD) $(LDFLAGS) $(OBJ) $(TOBJ) `cat modules/linker_options` $(LIBS) -o tpike
 
 pike: $(OBJ) $(POBJ) modules/linker_options
