@@ -1,7 +1,7 @@
 // This file is part of Roxen Search
 // Copyright © 2001 Roxen IS. All rights reserved.
 //
-// $Id: Utils.pmod,v 1.11 2001/07/05 23:21:22 nilsson Exp $
+// $Id: Utils.pmod,v 1.12 2001/07/11 20:10:09 js Exp $
 
 public array(string) tokenize_and_normalize( string what )
 //! This can be optimized quite significantly when compared to
@@ -124,6 +124,7 @@ class Logger {
     41 : "Unknown language code \"%s\".",
     42 : "Crawler exited normally.",
     43 : "Cleared search database.",
+    44 : "Sitebuilder commit triggered indexing of %s.",
 
     50 : "Crawler did not get any connection from the process.",
     51 : "Crawler-to-filter bufferdid not get any connection from the process.",
