@@ -1,4 +1,4 @@
-# $Id: Makefile.in,v 1.27 1999/03/12 01:12:04 hubbe Exp $
+# $Id: Makefile.in,v 1.28 1999/04/10 02:31:33 mirar Exp $
 
 @SET_MAKE@
 
@@ -30,7 +30,7 @@ $MODULES: force
 modules: $(MODULES)
 	@for a in $(MODULES) ; do \
 	  echo Making $$a; \
-	  ( cd $$a; \
+	  ( cd $$a || exit $$?; \
 	    rm remake >/dev/null 2>&1 || : ; \
 	    $(MAKE) $(MAKE_FLAGS) MODNAME=$$a || \
 	      ( test -f remake && $(MAKE) $(MAKE_FLAGS) MODNAME=$$a ) \
