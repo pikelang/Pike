@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: image_tiff.c,v 1.42 2004/09/19 00:50:42 nilsson Exp $
+|| $Id: image_tiff.c,v 1.43 2004/10/07 22:49:58 nilsson Exp $
 */
 
 #include "global.h"
@@ -16,7 +16,6 @@
  */
 
 #ifdef HAVE_WORKING_LIBTIFF
-RCSID("$Id: image_tiff.c,v 1.42 2004/09/19 00:50:42 nilsson Exp $");
 
 #include "global.h"
 #include "machine.h"

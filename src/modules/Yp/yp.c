@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: yp.c,v 1.31 2004/06/29 12:06:42 nilsson Exp $
+|| $Id: yp.c,v 1.32 2004/10/07 22:49:58 nilsson Exp $
 */
 
 #include "global.h"
@@ -36,8 +36,6 @@
 
 
 #define sp Pike_sp
-
-RCSID("$Id: yp.c,v 1.31 2004/06/29 12:06:42 nilsson Exp $");
 
 #ifdef HAVE_YPERR_STRING
 #define YPERROR(e) do{ if(err) Pike_error("%s\n", yperr_string(e)); }while(0)

@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: pgresult.c,v 1.29 2003/12/22 14:01:29 grubba Exp $
+|| $Id: pgresult.c,v 1.30 2004/10/07 22:49:58 nilsson Exp $
 */
 
 /*
@@ -83,8 +83,6 @@
 #elif defined(HAVE_CATALOG_PG_TYPE_H)
 #include <catalog/pg_type.h>
 #endif
-
-RCSID("$Id: pgresult.c,v 1.29 2003/12/22 14:01:29 grubba Exp $");
 
 #ifdef _REENTRANT
 # ifdef PQ_THREADSAFE

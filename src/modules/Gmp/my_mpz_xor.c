@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: my_mpz_xor.c,v 1.8 2003/03/26 15:27:54 mast Exp $
+|| $Id: my_mpz_xor.c,v 1.9 2004/10/07 22:49:56 nilsson Exp $
 */
 
 /*
@@ -10,9 +10,6 @@
  */
 
 #include "global.h"
-
-RCSID("$Id: my_mpz_xor.c,v 1.8 2003/03/26 15:27:54 mast Exp $");
-
 #include "gmp_machine.h"
 
 #ifndef HAVE_MPZ_XOR

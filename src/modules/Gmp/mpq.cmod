@@ -2,11 +2,10 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: mpq.cmod,v 1.24 2004/03/23 18:56:40 nilsson Exp $
+|| $Id: mpq.cmod,v 1.25 2004/10/07 22:49:56 nilsson Exp $
 */
 
 #include "global.h"
-RCSID("$Id: mpq.cmod,v 1.24 2004/03/23 18:56:40 nilsson Exp $");
 #include "gmp_machine.h"
 
 #if defined(HAVE_GMP2_GMP_H) && defined(HAVE_LIBGMP2)

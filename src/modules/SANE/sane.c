@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: sane.c,v 1.19 2004/02/03 10:14:21 nilsson Exp $
+|| $Id: sane.c,v 1.20 2004/10/07 22:49:58 nilsson Exp $
 */
 
 #include "config.h"
@@ -38,8 +38,6 @@
 
 
 #define sp Pike_sp
-
-RCSID("$Id: sane.c,v 1.19 2004/02/03 10:14:21 nilsson Exp $");
 
 /*! @module SANE
  *!

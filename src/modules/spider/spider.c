@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: spider.c,v 1.127 2004/09/19 00:51:13 nilsson Exp $
+|| $Id: spider.c,v 1.128 2004/10/07 22:49:58 nilsson Exp $
 */
 
 #include "global.h"
@@ -50,8 +50,6 @@
 #include "threads.h"
 #include "operators.h"
 #include "pike_security.h"
-
-RCSID("$Id: spider.c,v 1.127 2004/09/19 00:51:13 nilsson Exp $");
 
 #ifdef HAVE_PWD_H
 #include <pwd.h>

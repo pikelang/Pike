@@ -2,13 +2,12 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: parser.c,v 1.19 2003/12/09 08:10:25 nilsson Exp $
+|| $Id: parser.c,v 1.20 2004/10/07 22:49:58 nilsson Exp $
 */
 
 #include "global.h"
 #include "stralloc.h"
 #include "global.h"
-RCSID("$Id: parser.c,v 1.19 2003/12/09 08:10:25 nilsson Exp $");
 #include "pike_macros.h"
 #include "interpret.h"
 #include "program.h"

@@ -2,14 +2,12 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: xbm.c,v 1.23 2004/03/06 00:07:00 nilsson Exp $
+|| $Id: xbm.c,v 1.24 2004/10/07 22:49:57 nilsson Exp $
 */
 
 #define NO_PIKE_SHORTHAND
 
 #include "global.h"
-RCSID("$Id: xbm.c,v 1.23 2004/03/06 00:07:00 nilsson Exp $");
-
 #include "image_machine.h"
 
 #include "interpret.h"

@@ -2,12 +2,10 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: xcf.c,v 1.50 2004/08/11 08:29:29 per Exp $
+|| $Id: xcf.c,v 1.51 2004/10/07 22:49:57 nilsson Exp $
 */
 
 #include "global.h"
-RCSID("$Id: xcf.c,v 1.50 2004/08/11 08:29:29 per Exp $");
-
 #include "image_machine.h"
 
 #include "pike_macros.h"

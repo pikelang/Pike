@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: tga.c,v 1.37 2004/08/11 08:28:47 per Exp $
+|| $Id: tga.c,v 1.38 2004/10/07 22:49:57 nilsson Exp $
 */
 
 /*
@@ -60,10 +60,6 @@
 
 #include "image.h"
 #include "colortable.h"
-
-
-
-RCSID("$Id: tga.c,v 1.37 2004/08/11 08:28:47 per Exp $");
 
 #define ROUNDUP_DIVIDE(n,d) (((n) + (d - 1)) / (d))
 

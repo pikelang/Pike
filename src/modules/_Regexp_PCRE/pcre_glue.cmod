@@ -2,12 +2,11 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: pcre_glue.cmod,v 1.17 2004/06/27 05:40:22 mirar Exp $
+|| $Id: pcre_glue.cmod,v 1.18 2004/10/07 22:49:58 nilsson Exp $
 || (original author: mirar)
 */
 
 #include "global.h"
-RCSID("$Id: pcre_glue.cmod,v 1.17 2004/06/27 05:40:22 mirar Exp $");
 #include "pcre_machine.h"
 
 #include "pike_macros.h"

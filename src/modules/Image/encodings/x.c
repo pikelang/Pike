@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: x.c,v 1.47 2004/09/18 23:00:25 nilsson Exp $
+|| $Id: x.c,v 1.48 2004/10/07 22:49:57 nilsson Exp $
 */
 
 /*
@@ -37,7 +37,6 @@
 #include <winsock.h>
 #endif
 
-RCSID("$Id: x.c,v 1.47 2004/09/18 23:00:25 nilsson Exp $");
 #include "pike_macros.h"
 #include "object.h"
 #include "interpret.h"

@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: mysql.c,v 1.86 2004/07/14 18:22:33 grubba Exp $
+|| $Id: mysql.c,v 1.87 2004/10/07 22:49:57 nilsson Exp $
 */
 
 /*
@@ -96,8 +96,6 @@
 /*
  * Globals
  */
-
-RCSID("$Id: mysql.c,v 1.86 2004/07/14 18:22:33 grubba Exp $");
 
 /*! @module Mysql
  *!

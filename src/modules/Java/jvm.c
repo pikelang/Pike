@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: jvm.c,v 1.69 2004/04/17 16:51:28 marcus Exp $
+|| $Id: jvm.c,v 1.70 2004/10/07 22:49:57 nilsson Exp $
 */
 
 /*
@@ -22,7 +22,6 @@
 #endif /* HAVE_CONFIG_H */
 
 #include "global.h"
-RCSID("$Id: jvm.c,v 1.69 2004/04/17 16:51:28 marcus Exp $");
 #include "program.h"
 #include "interpret.h"
 #include "stralloc.h"

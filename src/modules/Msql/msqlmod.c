@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: msqlmod.c,v 1.25 2003/04/07 17:23:48 nilsson Exp $
+|| $Id: msqlmod.c,v 1.26 2004/10/07 22:49:57 nilsson Exp $
 */
 
 /* All this code is pretty useless if we don't have a msql library...*/
@@ -33,7 +33,6 @@
 #include "operators.h"
 #include "multiset.h"
 
-RCSID("$Id: msqlmod.c,v 1.25 2003/04/07 17:23:48 nilsson Exp $");
 #include "version.h"
 
 #ifdef _REENTRANT

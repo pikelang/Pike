@@ -2,12 +2,10 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: pcx.c,v 1.22 2004/05/19 00:08:01 nilsson Exp $
+|| $Id: pcx.c,v 1.23 2004/10/07 22:49:57 nilsson Exp $
 */
 
 #include "global.h"
-RCSID("$Id: pcx.c,v 1.22 2004/05/19 00:08:01 nilsson Exp $");
-
 #include "image_machine.h"
 
 #include "object.h"

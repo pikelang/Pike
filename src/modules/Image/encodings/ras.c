@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: ras.c,v 1.22 2004/08/11 08:28:25 per Exp $
+|| $Id: ras.c,v 1.23 2004/10/07 22:49:57 nilsson Exp $
 */
 
 /*
@@ -17,7 +17,6 @@
 #include "global.h"
 
 #include "stralloc.h"
-RCSID("$Id: ras.c,v 1.22 2004/08/11 08:28:25 per Exp $");
 #include "object.h"
 #include "interpret.h"
 #include "svalue.h"

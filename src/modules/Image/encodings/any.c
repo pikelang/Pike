@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: any.c,v 1.29 2004/03/06 00:06:59 nilsson Exp $
+|| $Id: any.c,v 1.30 2004/10/07 22:49:57 nilsson Exp $
 */
 
 /*
@@ -25,7 +25,6 @@
 #include <math.h>
 #include <ctype.h>
 
-RCSID("$Id: any.c,v 1.29 2004/03/06 00:06:59 nilsson Exp $");
 #include "operators.h"
 #include "builtin_functions.h"
 #include "interpret.h"

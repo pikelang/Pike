@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: mime.c,v 1.38 2004/06/29 12:07:29 nilsson Exp $
+|| $Id: mime.c,v 1.39 2004/10/07 22:49:57 nilsson Exp $
 */
 
 /*
@@ -15,7 +15,6 @@
 
 #include "config.h"
 
-RCSID("$Id: mime.c,v 1.38 2004/06/29 12:07:29 nilsson Exp $");
 #include "module.h"
 #include "stralloc.h"
 #include "pike_macros.h"

@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: image.c,v 1.218 2004/10/07 21:46:27 nilsson Exp $
+|| $Id: image.c,v 1.219 2004/10/07 22:49:56 nilsson Exp $
 */
 
 /*
@@ -103,7 +103,6 @@
 
 #include "stralloc.h"
 #include "global.h"
-RCSID("$Id: image.c,v 1.218 2004/10/07 21:46:27 nilsson Exp $");
 #include "pike_macros.h"
 #include "object.h"
 #include "interpret.h"

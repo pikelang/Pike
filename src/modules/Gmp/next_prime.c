@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: next_prime.c,v 1.12 2002/10/11 01:39:40 nilsson Exp $
+|| $Id: next_prime.c,v 1.13 2004/10/07 22:49:56 nilsson Exp $
 */
 
 /*
@@ -14,9 +14,6 @@
  */
 
 #include "global.h"
-
-RCSID("$Id: next_prime.c,v 1.12 2002/10/11 01:39:40 nilsson Exp $");
-
 #include "gmp_machine.h"
 
 #if defined(HAVE_GMP2_GMP_H) && defined(HAVE_LIBGMP2)

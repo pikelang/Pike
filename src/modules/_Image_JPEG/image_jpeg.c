@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: image_jpeg.c,v 1.68 2004/09/19 00:11:31 nilsson Exp $
+|| $Id: image_jpeg.c,v 1.69 2004/10/07 22:49:58 nilsson Exp $
 */
 
 #include "global.h"
@@ -59,7 +59,6 @@
 #ifdef HAVE_STDLIB_H
 #undef HAVE_STDLIB_H
 #endif
-RCSID("$Id: image_jpeg.c,v 1.68 2004/09/19 00:11:31 nilsson Exp $");
 
 /* jpeglib defines EXTERN for some reason.
  * This is not good, since it confuses compilation.h.

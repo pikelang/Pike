@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: oracle.c,v 1.83 2004/08/31 18:15:09 grubba Exp $
+|| $Id: oracle.c,v 1.84 2004/10/07 22:49:58 nilsson Exp $
 */
 
 /*
@@ -52,9 +52,6 @@
 #endif /* HAVE_OCI_H */
 
 #include <math.h>
-
-RCSID("$Id: oracle.c,v 1.83 2004/08/31 18:15:09 grubba Exp $");
-
 
 /* User-changable defines: */
 

@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: glue.c,v 1.36 2004/04/14 11:52:12 grubba Exp $
+|| $Id: glue.c,v 1.37 2004/10/07 22:49:58 nilsson Exp $
 */
 
 #include "global.h"
@@ -21,8 +21,6 @@
 #include "threads.h"
 #include "module_support.h"
 #include "builtin_functions.h"
-
-RCSID("$Id: glue.c,v 1.36 2004/04/14 11:52:12 grubba Exp $");
 
 #include "pike_regexp.h"
 

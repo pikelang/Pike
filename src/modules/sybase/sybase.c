@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: sybase.c,v 1.13 2003/08/18 11:29:59 mast Exp $
+|| $Id: sybase.c,v 1.14 2004/10/07 22:49:58 nilsson Exp $
 */
 
 /*
@@ -29,8 +29,6 @@
 
 #include "sybase_config.h"
 #include "global.h"
-
-RCSID("$Id: sybase.c,v 1.13 2003/08/18 11:29:59 mast Exp $");
 
 #ifdef HAVE_SYBASE
 

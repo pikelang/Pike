@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: gettext.c,v 1.22 2003/12/12 17:42:49 nilsson Exp $
+|| $Id: gettext.c,v 1.23 2004/10/07 22:49:56 nilsson Exp $
 */
 
 #include "global.h"
@@ -28,8 +28,6 @@
 
 
 #define sp Pike_sp
-
-RCSID("$Id: gettext.c,v 1.22 2003/12/12 17:42:49 nilsson Exp $");
 
 /*! @module Locale
  */
