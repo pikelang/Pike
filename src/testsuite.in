@@ -1,5 +1,5 @@
 dnl -*- Pike -*-
-test_true([["$Id: testsuite.in,v 1.269 2000/02/05 12:36:03 grubba Exp $"]]);
+test_true([["$Id: testsuite.in,v 1.270 2000/02/06 02:27:45 hubbe Exp $"]]);
 
 cond([[all_constants()->_verify_internals]],
 [[
@@ -3899,7 +3899,7 @@ test_any_equal([[
   a += ({search (m, "bar", a[-1])});
   a += ({search (m, "bar", a[-1])});
   return sort (a);
-]], ({0, "foo", "gnu"}))
+]], sort(({0, "foo", "gnu"})))
 
 // test large searches (find string, size, pattern)
 define(test_search,[[
