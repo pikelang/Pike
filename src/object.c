@@ -2,11 +2,11 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: object.c,v 1.217 2003/01/11 03:06:54 mast Exp $
+|| $Id: object.c,v 1.218 2003/02/01 15:43:51 mast Exp $
 */
 
 #include "global.h"
-RCSID("$Id: object.c,v 1.217 2003/01/11 03:06:54 mast Exp $");
+RCSID("$Id: object.c,v 1.218 2003/02/01 15:43:51 mast Exp $");
 #include "object.h"
 #include "dynamic_buffer.h"
 #include "interpret.h"
@@ -1656,7 +1656,6 @@ static inline void gc_check_object(struct object *o)
   }
 }
 
-#ifdef PIKE_DEBUG
 unsigned gc_touch_all_objects(void)
 {
   unsigned n = 0;
@@ -1672,7 +1671,6 @@ unsigned gc_touch_all_objects(void)
   for (o = objects_to_destruct; o; o = o->next) n++;
   return n;
 }
-#endif
 
 void gc_check_all_objects(void)
 {

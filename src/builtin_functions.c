@@ -2,11 +2,11 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: builtin_functions.c,v 1.465 2003/01/28 13:18:18 mast Exp $
+|| $Id: builtin_functions.c,v 1.466 2003/02/01 15:43:50 mast Exp $
 */
 
 #include "global.h"
-RCSID("$Id: builtin_functions.c,v 1.465 2003/01/28 13:18:18 mast Exp $");
+RCSID("$Id: builtin_functions.c,v 1.466 2003/02/01 15:43:50 mast Exp $");
 #include "interpret.h"
 #include "svalue.h"
 #include "pike_macros.h"
@@ -3769,8 +3769,6 @@ PMOD_EXPORT void f_rows(INT32 args)
   push_array(a);
 }
 
-
-#ifdef PIKE_DEBUG
 /*! @decl void verify_internals()
  *! @belongs Debug
  *!
@@ -3781,8 +3779,8 @@ PMOD_EXPORT void f_rows(INT32 args)
  *!   It is only used for debugging.
  *!
  *! @note
- *!   This function is only available if the Pike runtime has been compiled
- *!   with RTL debug.
+ *!   This function does a more thorough check if the Pike runtime has
+ *!   been compiled with RTL debug.
  */
 PMOD_EXPORT void f__verify_internals(INT32 args)
 {
@@ -3790,10 +3788,16 @@ PMOD_EXPORT void f__verify_internals(INT32 args)
   CHECK_SECURITY_OR_ERROR(SECURITY_BIT_SECURITY,
 			  ("_verify_internals: permission denied.\n"));
   d_flag=0x7fffffff;
-  do_debug();			/* Runs gc too since d_flag > 3. */
+#ifdef PIKE_DEBUG
+  do_debug();			/* Calls do_gc() since d_flag > 3. */
+#else
+  do_gc();
+#endif
   d_flag=tmp;
   pop_n_elems(args);
 }
+
+#ifdef PIKE_DEBUG
 
 /*! @decl int debug(int(0..) level)
  *! @belongs Debug
@@ -7885,11 +7889,11 @@ void init_builtin_efuns(void)
 	       tFunc(tOr(tObj,tMapping),tInt)),OPT_TRY_OPTIMIZE);
 #endif
 
-#ifdef PIKE_DEBUG
-  
 /* function(:void) */
   ADD_EFUN("_verify_internals",f__verify_internals,
 	   tFunc(tNone,tVoid),OPT_SIDE_EFFECT|OPT_EXTERNAL_DEPEND);
+
+#ifdef PIKE_DEBUG
   
 /* function(int:int) */
   ADD_EFUN("_debug",f__debug,

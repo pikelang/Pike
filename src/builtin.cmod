@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: builtin.cmod,v 1.112 2003/01/31 01:59:49 mast Exp $
+|| $Id: builtin.cmod,v 1.113 2003/02/01 15:43:50 mast Exp $
 */
 
 #include "global.h"
@@ -318,45 +318,88 @@ PIKEFUN multiset(1) mkmultiset(array(1=mixed) a)
   RETURN mkmultiset(a);
 }
 
-/*! @decl int trace(int trace_level, void|int all_threads)
+/*! @decl int trace(int level, void|string facility, void|int all_threads)
  *!
- *! This function changes the debug trace level.
+ *! This function changes the trace level for the subsystem identified
+ *! by @[facility] to @[level]. If @[facility] is zero or left out, it
+ *! changes the global trace level which affects all subsystems.
  *!
- *! Trace level 1 or higher means that calls to Pike functions are
- *! printed to stderr, level 2 or higher means calls to builtin functions
- *! are printed, 3 means every opcode interpreted is printed, 4 means
- *! arguments to these opcodes are printed as well.
+ *! Enabling tracing causes messages to be printed to stderr. A higher
+ *! trace level includes the output from all lower levels. The lowest
+ *! level is zero which disables all trace messages.
  *!
  *! See the @tt{-t@} command-line option for more information.
  *!
- *! @param trace_level
- *!   The new trace level.
+ *! @param level
+ *!   If @[facility] is specified then there is typically only one
+ *!   trace level for it, i.e. it's an on-or-off toggle. The global
+ *!   trace levels, when @[facility] isn't specified, are:
+ *!
+ *!   @int
+ *!   @item 1
+ *!  	Trace calls to Pike functions and garbage collector runs.
+ *!   @item 2
+ *!  	Trace calls to builtin functions.
+ *!   @item 3
+ *!  	Trace every interpreted opcode.
+ *!   @item 4
+ *!  	Also trace the opcode arguments.
+ *!   @endint
+ *!
+ *! @param facility
+ *!   Valid facilities are:
+ *!
+ *!   @string
+ *!   @item "gc"
+ *!     Trace the start and end of each run of the garbage collector.
+ *!     The setting is never thread local.
+ *!   @endstring
  *!
  *! @param all_threads
- *!   The trace level is set in all threads if this is nonzero.
- *!   Otherwise only the trace level in the current thread is
- *!   affected. Setting it in all threads can be useful to track down
- *!   deadlock bugs etc.
+ *!   Trace levels are normally thread local, so changes affect only
+ *!   the current thread. To change the level in all threads, pass a
+ *!   nonzero value in this argument.
  *!
  *! @returns
- *!   The old level in the current thread is returned.
+ *!   The old trace level in the current thread is returned.
  */
-PIKEFUN int trace(int t, void|int all_threads)
+PIKEFUN int trace(int level, void|string facility, void|int all_threads)
   efun;
   optflags OPT_SIDE_EFFECT;
 {
-  pop_n_elems(args);
-  push_int(Pike_interpreter.trace_level);
-#ifdef PIKE_THREADS
-  if (!all_threads || UNSAFE_IS_ZERO (all_threads))
-    Pike_interpreter.trace_level=t;
-  else {
-    struct thread_state *s;
-    FOR_EACH_THREAD(s, s->state.trace_level = t);
+  INT32 old_level;
+  if (facility) {
+    struct pike_string *gc_str;
+    if (facility->type != T_STRING)
+      SIMPLE_BAD_ARG_ERROR("trace", 2, "void|string");
+    MAKE_CONSTANT_SHARED_STRING(gc_str, "gc");
+    if (facility->u.string == gc_str) {
+      free_string(gc_str);
+      old_level = gc_trace;
+      gc_trace = level;
+    }
+    else {
+      free_string(gc_str);
+      bad_arg_error("trace", Pike_sp-args, args, 2,
+		   "trace facility identifier", Pike_sp-args+1,
+                   "Bad argument 2 to trace(). Unknown trace facility.");
+    }
   }
+  else {
+    old_level = Pike_interpreter.trace_level;
+    gc_trace = level;
+#ifdef PIKE_THREADS
+    if (!all_threads || UNSAFE_IS_ZERO (all_threads))
+      Pike_interpreter.trace_level = level;
+    else {
+      struct thread_state *s;
+      FOR_EACH_THREAD(s, s->state.trace_level = level);
+    }
 #else
-  Pike_interpreter.trace_level=t;
+    Pike_interpreter.trace_level = level;
 #endif
+  }
+  RETURN old_level;
 }
 
 /*! @decl mapping(string:float) gc_parameters (void|mapping(string:mixed) params)

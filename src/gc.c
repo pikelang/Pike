@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: gc.c,v 1.198 2003/01/15 21:41:28 mast Exp $
+|| $Id: gc.c,v 1.199 2003/02/01 15:43:50 mast Exp $
 */
 
 #include "global.h"
@@ -32,7 +32,7 @@ struct callback *gc_evaluator_callback=0;
 
 #include "block_alloc.h"
 
-RCSID("$Id: gc.c,v 1.198 2003/01/15 21:41:28 mast Exp $");
+RCSID("$Id: gc.c,v 1.199 2003/02/01 15:43:50 mast Exp $");
 
 int gc_enabled = 1;
 
@@ -105,6 +105,7 @@ PMOD_EXPORT int Pike_in_gc = 0;
 int gc_generation = 0;
 struct pike_queue gc_mark_queue;
 time_t last_gc;
+int gc_trace = 0, gc_debug = 0;
 
 struct gc_frame
 {
@@ -314,7 +315,6 @@ static void *found_in=0;
 static int found_in_type=0;
 void *gc_svalue_location=0;
 char *fatal_after_gc=0;
-int gc_debug = 0;
 
 #define DESCRIBE_MEM 1
 #define DESCRIBE_NO_REFS 2
@@ -618,6 +618,8 @@ static void describe_marker(struct marker *m)
     fprintf(stderr, "no marker\n");
 }
 
+#endif /* PIKE_DEBUG */
+
 void debug_gc_fatal(void *a, int flags, const char *fmt, ...)
 {
   struct marker *m;
@@ -631,6 +633,7 @@ void debug_gc_fatal(void *a, int flags, const char *fmt, ...)
 
   va_end(args);
 
+#ifdef PIKE_DEBUG
   if (a) {
     /* Temporarily jumping out of gc to avoid being catched in debug
      * checks in describe(). */
@@ -653,8 +656,11 @@ void debug_gc_fatal(void *a, int flags, const char *fmt, ...)
   if (flags & 2)
     fatal_after_gc = "Fatal in garbage collector.\n";
   else
+#endif
     debug_fatal("Fatal in garbage collector.\n");
 }
+
+#ifdef PIKE_DEBUG
 
 static void gdb_gc_stop_here(void *a, int weak)
 {
@@ -1108,26 +1114,36 @@ void gc_watch(void *a)
     fprintf(stderr, "## Already watching thing %p.\n", a);
 }
 
+#endif /* PIKE_DEBUG */
+
 void debug_gc_touch(void *a)
 {
   struct marker *m;
 
+#ifdef PIKE_DEBUG
   if (gc_is_watching && (m = find_marker(a)) && m->flags & GC_WATCHED) {
     /* This is useful to set breakpoints on. */
     fprintf(stderr, "## Watched thing %p found in "
 	    "gc_touch() in pass %d.\n", a, Pike_in_gc);
   }
+#endif
 
   if (!a) Pike_fatal("Got null pointer.\n");
 
   switch (Pike_in_gc) {
     case GC_PASS_PRETOUCH:
       m = find_marker(a);
-      if (m && !(m->flags & (GC_PRETOUCHED|GC_WATCHED)))
+      if (m && !(m->flags & (GC_PRETOUCHED
+#ifdef PIKE_DEBUG
+			     |GC_WATCHED
+#endif
+			    )))
 	gc_fatal(a, 1, "Thing got an existing but untouched marker.\n");
       m = get_marker(a);
       m->flags |= GC_PRETOUCHED;
+#ifdef PIKE_DEBUG
       m->saved_refs = *(INT32 *) a;
+#endif
       break;
 
     case GC_PASS_MIDDLETOUCH: {
@@ -1137,6 +1153,7 @@ void debug_gc_touch(void *a)
 	gc_fatal(a, 1, "Found a thing without marker.\n");
       else if (!(m->flags & GC_PRETOUCHED))
 	gc_fatal(a, 1, "Thing got an existing but untouched marker.\n");
+#ifdef PIKE_DEBUG
       extra_ref = (m->flags & GC_GOT_EXTRA_REF) == GC_GOT_EXTRA_REF;
       if (m->saved_refs + extra_ref < *(INT32 *) a)
 	if (m->flags & GC_WEAK_FREED)
@@ -1144,8 +1161,10 @@ void debug_gc_touch(void *a)
 		   "or it has gotten more references since gc start.\n");
 	else
 	  gc_fatal(a, 1, "Thing has gotten more references since gc start.\n");
-      else if (m->weak_refs > m->saved_refs)
-	gc_fatal(a, 0, "A thing got more weak references than references.\n");
+      else
+	if (m->weak_refs > m->saved_refs)
+	  gc_fatal(a, 0, "A thing got more weak references than references.\n");
+#endif
       m->flags |= GC_MIDDLETOUCHED;
       break;
     }
@@ -1161,6 +1180,7 @@ void debug_gc_touch(void *a)
 	else if (m->flags & GC_LIVE_RECURSE ||
 		 (m->frame && m->frame->frameflags & (GC_WEAK_REF|GC_STRONG_REF)))
 	  gc_fatal(a, 2, "Thing still got flag from recurse list.\n");
+#ifdef PIKE_DEBUG
 	else if (m->flags & GC_MARKED)
 	  return;
 	else if (!(m->flags & GC_NOT_REFERENCED) || m->flags & GC_XREFERENCED)
@@ -1186,6 +1206,7 @@ void debug_gc_touch(void *a)
 	  else
 	    gc_fatal(a, 3, "A thing to garb is still around.\n");
 	}
+#endif
       }
       break;
 
@@ -1193,6 +1214,8 @@ void debug_gc_touch(void *a)
       Pike_fatal("debug_gc_touch() used in invalid gc pass.\n");
   }
 }
+
+#ifdef PIKE_DEBUG
 
 static INLINE struct marker *gc_check_debug(void *a, int weak)
 {
@@ -2427,9 +2450,6 @@ size_t do_gc(void *ignored, int explicit_call)
   cpu_time_t gc_start_time;
   ptrdiff_t objs, pre_kill_objs;
 #ifdef PIKE_DEBUG
-#ifdef HAVE_GETHRTIME
-  hrtime_t gcstarttime = 0;
-#endif
   unsigned destroy_count, obj_count;
   ONERROR uwp;
 #endif
@@ -2454,8 +2474,8 @@ size_t do_gc(void *ignored, int explicit_call)
   gc_generation++;
   Pike_in_gc=GC_PASS_PREPARE;
   gc_start_time = get_cpu_time();
-#ifdef PIKE_DEBUG
   gc_debug = d_flag;
+#ifdef PIKE_DEBUG
   SET_ONERROR(uwp, fatal_on_error, "Shouldn't get an exception inside the gc.\n");
   if (gc_is_watching)
     fprintf(stderr, "## Doing gc while watching for %d things.\n", gc_is_watching);
@@ -2472,7 +2492,7 @@ size_t do_gc(void *ignored, int explicit_call)
   objs=num_objects;
   last_cycle = 0;
 
-  if(GC_VERBOSE_DO(1 ||) Pike_interpreter.trace_level) {
+  if(GC_VERBOSE_DO(1 ||) gc_trace) {
     fprintf(stderr,"Garbage collecting ... ");
     GC_VERBOSE_DO(fprintf(stderr, "\n"));
   }
@@ -2492,6 +2512,7 @@ size_t do_gc(void *ignored, int explicit_call)
 #ifdef PIKE_DEBUG
   delayed_freed = weak_freed = checked = marked = cycle_checked = live_ref = 0;
   live_rec = frame_rot = 0;
+#endif
   if (gc_debug) {
     unsigned n;
     Pike_in_gc = GC_PASS_PRETOUCH;
@@ -2500,12 +2521,13 @@ size_t do_gc(void *ignored, int explicit_call)
     n += gc_touch_all_mappings();
     n += gc_touch_all_programs();
     n += gc_touch_all_objects();
+#ifdef PIKE_DEBUG
     gc_touch_all_strings();
+#endif
     if (n != (unsigned) num_objects)
       Pike_fatal("Object count wrong before gc; expected %d, got %d.\n", num_objects, n);
     GC_VERBOSE_DO(fprintf(stderr, "| pretouch: %u things\n", n));
   }
-#endif
 
   Pike_in_gc=GC_PASS_CHECK;
   gc_ext_weak_refs = 0;
@@ -2639,7 +2661,6 @@ size_t do_gc(void *ignored, int explicit_call)
 	      delayed_freed - obj_count));
   }
 
-#ifdef PIKE_DEBUG
   if (gc_debug) {
     unsigned n;
     size_t i;
@@ -2650,11 +2671,14 @@ size_t do_gc(void *ignored, int explicit_call)
     n += gc_touch_all_mappings();
     n += gc_touch_all_programs();
     n += gc_touch_all_objects();
+#ifdef PIKE_DEBUG
     gc_touch_all_strings();
+#endif
     if (n != (unsigned) num_objects)
       Pike_fatal("Object count wrong in gc; expected %d, got %d.\n", num_objects, n);
     get_marker(rec_list.data)->flags |= GC_MIDDLETOUCHED;
 #if 0 /* Temporarily disabled - Hubbe */
+#ifdef PIKE_DEBUG
 #ifdef DEBUG_MALLOC
     PTR_HASH_LOOP(marker, i, m)
       if (!(m->flags & (GC_MIDDLETOUCHED|GC_WEAK_FREED)) &&
@@ -2671,9 +2695,9 @@ size_t do_gc(void *ignored, int explicit_call)
       }
 #endif
 #endif
+#endif
     GC_VERBOSE_DO(fprintf(stderr, "| middletouch\n"));
   }
-#endif
 
   /* Thread switches, object alloc/free and reference changes are
    * allowed again now. */
@@ -2780,7 +2804,6 @@ size_t do_gc(void *ignored, int explicit_call)
   GC_VERBOSE_DO(fprintf(stderr, "| destruct: %d things really freed\n",
 			obj_count - num_objects));
 
-#ifdef PIKE_DEBUG
   if (gc_debug) {
     unsigned n;
     Pike_in_gc=GC_PASS_POSTTOUCH;
@@ -2794,6 +2817,7 @@ size_t do_gc(void *ignored, int explicit_call)
       Pike_fatal("Object count wrong after gc; expected %d, got %d.\n", num_objects, n);
     GC_VERBOSE_DO(fprintf(stderr, "| posttouch: %u things\n", n));
   }
+#ifdef PIKE_DEBUG
   if (gc_extra_refs)
     Pike_fatal("Lost track of %d extra refs to things in gc.\n", gc_extra_refs);
   if(fatal_after_gc) Pike_fatal("%s", fatal_after_gc);
@@ -2880,7 +2904,7 @@ size_t do_gc(void *ignored, int explicit_call)
 
     alloc_threshold = (ptrdiff_t)new_threshold;
 
-    if(GC_VERBOSE_DO(1 ||) Pike_interpreter.trace_level)
+    if(GC_VERBOSE_DO(1 ||) gc_trace)
     {
       if (last_gc_time)
 	fprintf(stderr, "done (%"PRINTSIZET"d of %"PRINTSIZET"d "

@@ -2,11 +2,11 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: program.c,v 1.476 2003/01/31 01:50:53 mast Exp $
+|| $Id: program.c,v 1.477 2003/02/01 15:43:51 mast Exp $
 */
 
 #include "global.h"
-RCSID("$Id: program.c,v 1.476 2003/01/31 01:50:53 mast Exp $");
+RCSID("$Id: program.c,v 1.477 2003/02/01 15:43:51 mast Exp $");
 #include "program.h"
 #include "object.h"
 #include "dynamic_buffer.h"
@@ -6548,7 +6548,6 @@ static void gc_check_program(struct program *p)
 #endif
 }
 
-#ifdef PIKE_DEBUG
 unsigned gc_touch_all_programs(void)
 {
   unsigned n = 0;
@@ -6564,7 +6563,6 @@ unsigned gc_touch_all_programs(void)
   }
   return n;
 }
-#endif
 
 void gc_check_all_programs(void)
 {

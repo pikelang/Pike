@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: array.c,v 1.136 2003/01/14 05:23:09 nilsson Exp $
+|| $Id: array.c,v 1.137 2003/02/01 15:43:50 mast Exp $
 */
 
 #include "global.h"
@@ -25,7 +25,7 @@
 #include "bignum.h"
 #include "cyclic.h"
 
-RCSID("$Id: array.c,v 1.136 2003/01/14 05:23:09 nilsson Exp $");
+RCSID("$Id: array.c,v 1.137 2003/02/01 15:43:50 mast Exp $");
 
 PMOD_EXPORT struct array empty_array=
 {
@@ -2176,7 +2176,6 @@ void real_gc_cycle_check_array(struct array *a, int weak)
   } GC_CYCLE_LEAVE;
 }
 
-#ifdef PIKE_DEBUG
 unsigned gc_touch_all_arrays(void)
 {
   unsigned n = 0;
@@ -2190,7 +2189,6 @@ unsigned gc_touch_all_arrays(void)
   } while (a != &empty_array);
   return n;
 }
-#endif
 
 void gc_check_all_arrays(void)
 {
