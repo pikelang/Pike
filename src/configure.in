@@ -1,4 +1,4 @@
-AC_REVISION("$Id: configure.in,v 1.676 2003/01/16 21:02:49 neotron Exp $")
+AC_REVISION("$Id: configure.in,v 1.677 2003/01/16 21:07:18 neotron Exp $")
 AC_INIT(interpret.c)
 AC_CONFIG_HEADER(machine.h)
 
@@ -701,6 +701,10 @@ case "$pike_cv_sys_os" in
    ;;
 esac
 
+# Strip smartlink from $CC
+REALCC="`echo $CC|sed -e 's/.*smartlink //'`"
+
+
 # FIXME: Add proper tests
 AC_MSG_CHECKING([for ld.so run path method])
 AC_CACHE_VAL(pike_cv_ld_so_run_path_method, [
@@ -783,9 +787,6 @@ case "$pike_cv_run_path_method" in
   ;;
 esac
 
-
-# Strip smartlink from $CC
-REALCC="`echo $CC|sed -e 's/.*smartlink //'`"
 
 # Fix a smartlink
 SMARTLINK="$BUILDDIR/smartlink"
