@@ -2,12 +2,12 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: threads.c,v 1.221 2003/09/24 00:20:49 mast Exp $
+|| $Id: threads.c,v 1.222 2003/10/06 13:01:37 mast Exp $
 */
 
 #ifndef CONFIGURE_TEST
 #include "global.h"
-RCSID("$Id: threads.c,v 1.221 2003/09/24 00:20:49 mast Exp $");
+RCSID("$Id: threads.c,v 1.222 2003/10/06 13:01:37 mast Exp $");
 
 PMOD_EXPORT int num_threads = 1;
 PMOD_EXPORT int threads_disabled = 0;
@@ -732,12 +732,21 @@ TH_RETURN_TYPE new_thread_func(void *data)
     /* The sete?id calls will clear the dumpable state that we might
      * have set with system.dumpable. */
     int current = prctl(PR_GET_DUMPABLE);
+#ifdef PIKE_DEBUG
+    if (current == -1)
+      fprintf (stderr, "%s:%d: Unexpected error from prctl(2). errno=%d\n",
+	       __FILE__, __LINE__, errno);
+#endif
 #endif
     setegid(arg.egid);
     seteuid(arg.euid);
 #if defined(HAVE_PRCTL) && defined(PR_SET_DUMPABLE)
-    if (prctl(PR_SET_DUMPABLE, current) == -1)
-      Pike_fatal ("Didn't expect prctl to go wrong. errno=%d\n", errno);
+    if (current != -1 && prctl(PR_SET_DUMPABLE, current) == -1) {
+#if defined(PIKE_DEBUG)
+      fprintf (stderr, "%s:%d: Unexpected error from prctl(2). errno=%d\n",
+	       __FILE__, __LINE__, errno);
+#endif
+    }
 #endif
   }
 #endif /* HAVE_BROKEN_LINUX_THREAD_EUID */
