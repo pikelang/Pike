@@ -2,7 +2,7 @@
  * A generic cache front-end
  * by Francesco Chemolli <kinkie@roxen.com>
  *
- * $Id: cache.pike,v 1.9 2002/03/09 18:07:45 nilsson Exp $
+ * $Id: cache.pike,v 1.10 2002/11/26 12:33:02 grubba Exp $
  *
  */
 
@@ -119,7 +119,7 @@ void store(string key, mixed value, void|int max_life,
 
 //! Forcibly removes some key.
 //! If the 'hard' parameter is supplied and true, deleted objects will also
-//! have their @[lfun::destruct] method called upon removal by some
+//! have their @[lfun::destroy] method called upon removal by some
 //! backends (i.e. memory)
 void delete(string key, void|int(0..1)hard) {
   if (!stringp(key)) key=(string)key; // paranoia
