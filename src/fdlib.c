@@ -3,7 +3,7 @@
 #include "error.h"
 #include <math.h>
 
-RCSID("$Id: fdlib.c,v 1.45 2000/09/01 16:06:18 grubba Exp $");
+RCSID("$Id: fdlib.c,v 1.46 2000/09/01 20:48:34 grubba Exp $");
 
 #ifdef HAVE_WINSOCK_H
 
@@ -17,7 +17,7 @@ HANDLE da_handle[MAX_OPEN_FILEDESCRIPTORS];
 int fd_type[MAX_OPEN_FILEDESCRIPTORS];
 int first_free_handle;
 
-#define FD_DEBUG
+/* #define FD_DEBUG */
 
 #ifdef FD_DEBUG
 #define FDDEBUG(X) X
