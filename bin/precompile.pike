@@ -108,7 +108,7 @@ int parse_type(array t, int p)
       }
       break;
     }
-    switch( (string) t[p])
+    switch( arrayp(t[p]) ? "" : (string) t[p])
     {
       case "|":
       case "&":
@@ -142,8 +142,6 @@ string trim(string s)
 
 /*
  * make a C identifier representation of 'n'
- * This is a 1:1 mapping, but there is no function
- * to demangle the identifier as of yet.
  */
 string cquote(string n)
 {
@@ -155,7 +153,7 @@ string cquote(string n)
       default: ret+=sprintf("%s_%02X",safe,c); break;
       case '+':	ret+=sprintf("%s_add",safe); break;
       case '`': ret+=sprintf("%s_backtick",safe);  break;
-      case '_': ret+=sprintf("%s__",safe); break;
+      case '_': ret+=sprintf("%s_",safe); break;
       case '=': ret+=sprintf("%s_eq",safe); break;
     }
   }
@@ -795,14 +793,14 @@ mapping parse_attributes(array attr)
       {
 	case 0: break;
 	case 1:
-	  attributes[attr[0]->text]=1;
+	  attributes[(string)attr[0]]=1;
 	  break;
 	default:
 	  array tmp=attr[1..];
 	  if(sizeof(tmp) == 1 && arrayp(tmp[0]) && tmp[0][0]=="(")
 	    tmp=tmp[0][1..sizeof(tmp[0])-2];
 	  
-	  attributes[attr[0]->text]=merge(tmp);
+	  attributes[(string)attr[0]]=merge(tmp);
       }
     }
   return attributes;
@@ -832,7 +830,7 @@ array IFDEF(string define,
     }
   }
   ret+=no || ({});
-  ret+=({"\n#endif\n"});
+  ret+=({sprintf("\n#endif /* %s */\n",define)});
   return ret;
 }
 
@@ -873,14 +871,18 @@ class ParseBlock
 	    break;
 	array proto=func[..p-1];
 	array body=func[p];
-	string name=proto[-1]->text;
+	array rest=func[p+1..];
+	string name=(string)proto[-1];
 	mapping attributes=parse_attributes(proto[p+2..]);
 
 	ParseBlock subclass = ParseBlock(body[1..sizeof(body)-2],name);
+	string program_var =mkname(name,"program");
 
 	string define=mkname("class",name,"defined");
 
 	ret+=DEFINE(define);
+	ret+=({sprintf("struct program *%s=0;\n",program_var)});
+	ret+=subclass->declarations;
 	ret+=subclass->code;
 
 	addfuncs+=
@@ -889,12 +891,23 @@ class ParseBlock
 		IFDEF("THIS_"+upper_case(name),
 		      ({ sprintf("\n  %s_storage_offset=ADD_STORAGE(struct %s_struct);\n",name,name) }) )+
 		subclass->addfuncs+
-		({sprintf("  end_class(%O,%s);\n",name, attributes->flags||"0")}));
-
+		({
+		  sprintf("  %s=end_program();\n",program_var),
+		  sprintf("  add_program_constant(%O,%s,%s);\n",
+			  name,
+			  program_var,
+			  attributes->flags || "0"),
+		    })
+	    );
 	exitfuncs+=
 	  IFDEF(define,
-		subclass->declarations+
-		subclass->exitfuncs);
+		subclass->exitfuncs+
+	    ({
+	      sprintf("  if(%s) {\n    free_program(%s);\n    %s=0;\n  }\n",
+		      program_var,program_var,program_var),
+	      }));
+
+	ret+=rest;
       }
 
 
@@ -909,30 +922,26 @@ class ParseBlock
 	mixed name=var[pos-1];
 	PikeType type=PikeType(var[..pos-2]);
 	array rest=var[pos+1..];
+	string define=mkname("var",name,base,"defined");
     
 //    werror("type: %O\n",type);
 
-	thestruct+=({
-	  sprintf("\n#ifdef var_%s_%s_defined\n",name,base),
-	    sprintf("  %s %s;\n",type->c_storage_type(),name),
-	    "\n#endif\n",
-	    });
-	addfuncs+=({
-	  sprintf("\n#ifdef var_%s_%s_defined\n",name,base),
-	    sprintf("  map_variable(%O,%O,%s_storage_offset + OFFSETOF(%s_struct, %s), T_%s)",
-		    name,
-		    type->output_pike_type(0),
-		    base,
-		    base,
-		    name,
-		    type->type_number()),
-	    "\n#endif\n",
-	    });
-	ret+=
-	  ({
-	    sprintf("\n#define var_%s_%s_defined\n",name,base),
-	      })+
-	  rest;
+	thestruct+=
+	  IFDEF(define,
+		({ sprintf("  %s %s;\n",type->c_storage_type(),name) }));
+	addfuncs+=
+	  IFDEF(define,
+		({
+		  sprintf("  map_variable(%O,%O,%s_storage_offset + OFFSETOF(%s_struct, %s), T_%s)",
+			  name,
+			  type->output_pike_type(0),
+			  base,
+			  base,
+			  name,
+			  type->type_number()),
+		    }));
+	ret+=DEFINE(define);
+	ret+=rest;
       }
 
       x=ret/({"CVAR"});
@@ -943,20 +952,45 @@ class ParseBlock
 	int pos=search(var,PC.Token(";",0),);
 	int npos=pos-1;
 	while(arrayp(var[pos])) pos--;
-	mixed name=var[npos];
+	mixed name=(string)var[npos];
+
+	string define=mkname("var",name,base,"defined");
     
-	thestruct+=({
-	  sprintf("\n#ifdef var_%s_%s_defined\n",name,base),
-	    })+var[..pos-1]+({
-	      ";\n#endif\n",
-		});
-	ret+=
-	  ({
-	    sprintf("#define var_%s_%s_defined\n",name,base),
-	      })+
-	  var[pos+1..];
+	thestruct+=IFDEF(define,var[..pos-1]+({";"}));
+	ret+=DEFINE(define);
+	ret+=var[pos+1..];
       }
 
+
+      
+      ret=(ret/({"INIT"}))*({PC.Token("PIKE_INTERNAL"),PC.Token("init")});
+      ret=(ret/({"EXIT"}))*({PC.Token("PIKE_INTERNAL"),PC.Token("exit")});
+
+      x=ret/({"PIKE_INTERNAL"});
+      ret=x[0];
+      for(int f=1;f<sizeof(x);f++)
+      {
+	array func=x[f];
+	int p;
+	for(p=0;p<sizeof(func);p++)
+	  if(arrayp(func[p]) && func[p][0]=="{")
+	    break;
+
+	array body=func[p];
+	array rest=func[p+1..];
+//	werror("%O\n",func);
+	string name=(string)func[0];
+	string funcname=mkname(name,base,"struct");
+	string define=mkname("internal",name,base,"defined");
+	ret+=DEFINE(define);
+	ret+=({ PC.Token(sprintf("void %s(struct object *thisobj)\n",funcname)) });
+	ret+=body;
+	ret+=rest;
+	addfuncs+=IFDEF(define,
+			({ PC.Token(sprintf("  set_%s_callback(%s);\n",name,funcname)) }));
+      }
+
+      
 
       x=ret/({"PIKEFUN"});
       ret=x[0];
@@ -964,28 +998,36 @@ class ParseBlock
 
       if(sizeof(thestruct))
       {
-//    werror("%O\n",thestruct);
+	string structname = base+"_struct";
+	string this=sprintf("((struct %s *)(Pike_interpreter.frame_pointer->current_storage))",structname);
+
+	/* FIXME:
+	 * Add runtime debug to these defines...
+	 * Add defines for parents when possible
+	 */
 	ret+=
+	  DEFINE("THIS",this)+   // FIXME: we should 'pop' this define later
+	  DEFINE("THIS_"+upper_case(base),this)+
+	  DEFINE("OBJ2_"+upper_case(base)+"(o)",
+		 sprintf("((struct %s *)(o->storage+%s_storage_offset))",
+			 structname, base))+
+	  DEFINE("GET_"+upper_case(base)+"_STORAGE",
+		 sprintf("((struct %s *)(o->storage+%s_storage_offset)",
+			 structname, base))+
 	  ({
-	    /* FIXME:
-	     * Add runtime debug to these defines...
-	     */
-	    sprintf("\n"),
-	      sprintf("#undef THIS\n"), // FIXME: must remember previous def
-	      sprintf("#define THIS ((struct %s_struct *)(Pike_interpreter.frame_pointer->current_storage))\n",base),
-	      sprintf("#define THIS_%s ((struct %s_struct *)(Pike_interpreter.frame_pointer->current_storage))\n",upper_case(base),base),
-	      sprintf("static int %s_storage_offset;\n",base),
-	      sprintf("struct %s_struct {\n",base),
+	    sprintf("static int %s_storage_offset;\n",base),
+	      sprintf("struct %s {\n",structname),
 	      })+thestruct+({
 		"};\n",
 		  });
       }
+      ret+=declarations;
+      declarations=({});
 
 #else
       x=ret/({"PIKEFUN"});
       ret=x[0];
 #endif
-
 
       for(int f=1;f<sizeof(x);f++)
       {
@@ -1002,7 +1044,7 @@ class ParseBlock
 	p=parse_type(proto,0);
 	PikeType rettype=PikeType(proto[..p-1]);
 
-	string name=proto[p]->text;
+	string name=(string)proto[p];
 	array args_tmp=proto[p+1];
 
 	mapping attributes=parse_attributes(proto[p+2..]);
