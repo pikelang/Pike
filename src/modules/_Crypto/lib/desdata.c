@@ -11,7 +11,7 @@
 #include	"desCode.h"
 
 #include "RCSID.h"
-RCSID2(desdata_cRcs, "$Id: desdata.c,v 1.3 1997/03/15 04:52:21 nisse Exp $");
+RCSID2(desdata_cRcs, "$Id: desdata.c,v 1.4 1997/03/22 20:40:16 grubba Exp $");
 
 /* list of weak and semi-weak keys
 
@@ -55,12 +55,13 @@ int sorder[] = {
 	7, 5, 3, 1, 6, 4, 2, 0,
 };
 
+int printf(const char *, ...);
+
 int
 main(int argc, char **argv)
 {
 	unsigned INT32 d, i, j, k, l, m, n, s;
 	char b[256], ksr[56];
-	extern printf();
 
 	switch ( argv[1][0] ) {
 
