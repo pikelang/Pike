@@ -1,2 +1,8 @@
 #! /bin/sh
-exec /usr/bin/env pike
+if [ "$1" = "--help" ] ; then
+  # The -x hilfe tool allows us to run hilfe commands seperated by #
+  # as newline character.
+  exec /usr/bin/env pike -x hilfe help
+else
+  exec /usr/bin/env pike
+fi
