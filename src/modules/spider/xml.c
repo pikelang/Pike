@@ -19,6 +19,10 @@
 #include "opcodes.h"
 #include "block_alloc.h"
 
+/* FIXME:
+ * recursive parsing will lock make the parser lock or
+ * use up all memory and then crash...
+ */
 
 /* #define VERBOSE_XMLDEBUG */
 
@@ -36,10 +40,6 @@ BLOCK_ALLOC(xmlinput, 64);
 struct xmldata
 {
   struct xmlinput input;
-
-  PCHARP datap;
-  INT32 len;
-  INT32 pos;
 
   struct svalue *func;
   struct svalue *extra_args;
@@ -633,6 +633,27 @@ static INLINE int isHexChar(INT32 c)
   }
 }
 
+#define ISWRAP(X)				\
+void PIKE_CONCAT(f_,X) (INT32 args)		\
+{						\
+  INT_TYPE i;					\
+  get_all_args(#X, args, "%i", &i);		\
+  pop_n_elems(args);				\
+  push_int( X (i) );				\
+}
+
+
+ISWRAP(isBaseChar)
+ISWRAP(isIdeographic)
+ISWRAP(isLetter)
+ISWRAP(isCombiningChar)
+ISWRAP(isDigit)
+ISWRAP(isExtender)
+ISWRAP(isSpace)
+ISWRAP(isNameChar)
+ISWRAP(isFirstNameChar)
+ISWRAP(isHexChar)
+
 #ifdef VERBOSE_XMLDEBUG
 #define IF_XMLDEBUG(X) X
 #else
@@ -668,8 +689,9 @@ static INLINE int isHexChar(INT32 c)
  IF_XMLDEBUG(fprintf(stderr,"ptr=%p len=%d pos=%d to_free=%p\n",data->input.datap.ptr,data->input.len,data->input.pos,data->input.to_free)); \
 } while(0)
 
-static inline void xmlread(int z,struct xmldata *data, int line)
+static inline int xmlread(int z,struct xmldata *data, int line)
 {
+  int popped=0;
   data->input.pos+=z;
   IF_XMLDEBUG(fprintf(stderr,"Step(%d) (at %d) to %d/%d '%c%c%c%c'\n",
 		      z,
@@ -682,7 +704,8 @@ static inline void xmlread(int z,struct xmldata *data, int line)
 		      SAFE_PEEK(3)));
   data->input.len-=z;
   INC_PCHARP(data->input.datap, z);
-  while(data->input.next && XMLEOF()) POP();
+  while(data->input.next && XMLEOF()) { POP(); popped++; }
+  return popped;
 }  
 
 #define READ(X) xmlread((X),data,__LINE__)
@@ -693,6 +716,7 @@ static inline void xmlread(int z,struct xmldata *data, int line)
 #define SIMPLE_READNAME() simple_readname(data)
 #define SIMPLE_READNMTOKEN() simple_readnmtoken(data)
 
+static int low_parse_dtd(struct xmldata *data);
 static void free_xmldata(struct xmldata *data);
 static void simple_readname(struct xmldata *);
 static void simple_read_system_literal(struct xmldata *);
@@ -703,18 +727,6 @@ static int low_parse_xml(struct xmldata *data,
 static void xmlerror(char *desc, struct xmldata *data);
 
 #define XMLERROR(desc) xmlerror(desc,data)
-
-#define XMLERROR2(desc,NAME) do {		\
-    struct svalue * save_sp=sp;			\
-    push_constant_text("error");		\
-    push_string(NAME); 				\
-    push_int(0); /* no attributes */            \
-    push_text(desc);				\
-    SYS();					\
-    if(save_sp == sp)				\
-      error("%s\n",desc);			\
-    READ(1);					\
-  }while(0)
 
 #define VOIDIFY(X) do { struct svalue *save_sp=sp; 	\
        X;						\
@@ -752,12 +764,12 @@ static int gobble(struct xmldata *data, char *s)
 	  POKE(X, PEEK(0));				\
 	  READ(1);					\
 	}else{						\
-	  VOIDIFY( XMLERROR("Name expected") );		\
+	  XMLERROR("Name expected");		\
 	}						\
 	while(!XMLEOF() && isNameChar(PEEK(0)))		\
 	{						\
 	  POKE(X, PEEK(0));				\
-	  READ(1);					\
+	  if(READ(1)) break; 				\
 	}						\
       }while(0)
 
@@ -859,14 +871,14 @@ static int gobble(struct xmldata *data, char *s)
 	  SIMPLE_READNAME();						 \
           IF_XMLDEBUG(fprintf(stderr,"Found entity: %s\n",sp[-1].u.string->str)); \
 	  if(PEEK(0)!=';')						 \
-	    XMLERROR("Missing ';' after entity reference.");		 \
+            XMLERROR("Missing ';' after entity reference.");	 \
 	  READ(1);							 \
 	  /* lookup entry in mapping and parse it recursively */	 \
 	  /* Generate error if entity is not defined */			 \
 	  f_index(2);							 \
           if(IS_ZERO(sp-1))						 \
 	  {								 \
-	    XMLERROR("No such entity.");				 \
+	    XMLERROR("No such entity.");			 \
 	    pop_stack();						 \
 	  }else{							 \
 	    if(sp[-1].type!=T_STRING)					 \
@@ -900,7 +912,7 @@ static int gobble(struct xmldata *data, char *s)
 	READ(1); /* Assume '%'  */					 \
 	  if(!THIS->entities)						 \
           {								 \
-            XMLERROR("XML->__entities is not a mapping");		 \
+            XMLERROR("XML->__entities is not a mapping");	 \
 	    f_aggregate_mapping(0);					 \
 	  }else{							 \
 	    ref_push_mapping(THIS->entities);				 \
@@ -921,7 +933,7 @@ static int gobble(struct xmldata *data, char *s)
 	  }else{							 \
 	    if(sp[-1].type!=T_STRING)					 \
 	    {								 \
-	      XMLERROR("XML->__entities value is not a string!");	 \
+	      XMLERROR("XML->__entities value is not a string!"); \
 	    }else{							 \
 	      struct pike_string *s=sp[-1].u.string;			 \
 	      struct xmldata my_tmp=*data;			      	 \
@@ -973,22 +985,21 @@ static int gobble(struct xmldata *data, char *s)
           default:					\
             IF_XMLDEBUG(READ(0));                       \
             XMLERROR("Unquoted attribute value.");	\
-            push_constant_text("");			\
         }						\
       }while(0)
 
 
-#define READ_ATTVALUE2(X) do {			\
+#define READ_ENTITYVALUE(X) do {			\
         SKIPSPACE();				\
         switch(PEEK(0))				\
         {					\
           case '\'':				\
             READ(1);				\
-            read_attvalue2(data,&X,'\'');	\
+            read_entityvalue(data,&X,'\'');	\
             break;				\
           case '\"':				\
             READ(1);				\
-            read_attvalue2(data,&X,'\"');	\
+            read_entityvalue(data,&X,'\"');	\
             break;				\
           case '%':					\
             IF_XMLDEBUG(READ(0));                       \
@@ -1007,7 +1018,7 @@ static int gobble(struct xmldata *data, char *s)
 
 
 #define READ_COMMENT() do { BEGIN_STRING(com);			\
-    while(!(PEEK(0)=='-' && PEEK(1)=='-' && PEEK(2)=='>'))	\
+    while(!XMLEOF() && !(PEEK(0)=='-' && PEEK(1)=='-' && PEEK(2)=='>'))\
     {								\
       POKE(com, PEEK(0));					\
       READ(1);							\
@@ -1047,17 +1058,14 @@ static int gobble(struct xmldata *data, char *s)
 
 static void xmlerror(char *desc, struct xmldata *data)
 {
-  IF_XMLDEBUG(struct svalue * save_sp=sp);
-  abort();
+  struct svalue * save_sp=sp;
+
   push_constant_text("error");
   push_int(0); /* no name */
   push_int(0); /* no attributes */
   push_text(desc);
   SYS();
-  IF_XMLDEBUG(
-    if(save_sp == sp)
-    error("%s\n",desc);
-    )
+  pop_n_elems(sp-save_sp);
   READ(1);
 }
 
@@ -1181,7 +1189,7 @@ static void read_pubid(struct xmldata *data,
   }
 }
 
-static void read_attvalue2(struct xmldata *data,
+static void read_entityvalue(struct xmldata *data,
 			   struct string_builder *X,
 			   p_wchar2 Y)
 {
@@ -1203,20 +1211,22 @@ static void read_attvalue2(struct xmldata *data,
 	
 
       case '%':
-	READ_PEREFERENCE((*X), read_attvalue2(&my_tmp, X, 0));
+	READ_PEREFERENCE((*X), read_entityvalue(&my_tmp, X, 0));
 	break;
-	
+
       case 0x0d: if(PEEK(1)==0x0a) READ(1);
+#if 0
       case 0x20:
       case 0x0a:
       case 0x09:
 	POKE(*X, 0x20);
 	READ(1);
 	break;
+#endif
 	
 #if 0
       case '&':
-	READ_REFERENCE((*X), read_attvalue2(&my_tmp, X, 0));
+	READ_REFERENCE((*X), read_entityvalue(&my_tmp, X, 0));
 	break;
 #else
       case '&':
@@ -1335,6 +1345,27 @@ static void simple_read_attributes(struct xmldata *data,
   }
 }
 
+static void parse_optional_xmldecl(struct xmldata *data)
+{
+  if(GOBBLE("<?xml"))
+  {
+    push_constant_text("<?xml");
+    READ(6);
+    push_int(0);
+    push_mapping(allocate_mapping(10)); /* Attributes */
+    
+    SIMPLE_READ_ATTRIBUTES(0);
+    
+    if(PEEK(0) != '?' && PEEK(1)!='>')
+      XMLERROR("Missing ?> at end of <?xml.");
+    READ(2);
+	      
+    push_int(0); /* No data */
+    SYS();
+  }
+}
+
+
 void read_choice_seq_or_name(struct xmldata *data, int maybe_pcdata)
 {
 #ifdef PIKE_DEBUG
@@ -1353,11 +1384,11 @@ void read_choice_seq_or_name(struct xmldata *data, int maybe_pcdata)
     if(PEEK(0) == '#')
     {
       if(!maybe_pcdata)
-	VOIDIFY( XMLERROR("Found '#' (#PCDATA ?) in the wrong place.") );
+	XMLERROR("Found '#' (#PCDATA ?) in the wrong place.");
 
       if(!GOBBLE("#PCDATA"))
       {
-	VOIDIFY( XMLERROR("Expected #PCDATA, found something else") );
+	XMLERROR("Expected #PCDATA, found something else");
 	READ(1);
       }
       num=1;
@@ -1365,13 +1396,14 @@ void read_choice_seq_or_name(struct xmldata *data, int maybe_pcdata)
       SKIPSPACE();
       while(PEEK(0) == '|')
       {
+	READ(1);
 	num++;
 	SKIPSPACE();
 	SIMPLE_READNAME();
 	SKIPSPACE();
       }
       if(!GOBBLE(")"))
-	VOIDIFY( XMLERROR("Expected \")\" at the end of #PCDATA") );
+	XMLERROR("Expected \")\" at the end of #PCDATA");
       if(GOBBLE("*"))
       {
 	push_constant_text("*");
@@ -1392,7 +1424,7 @@ void read_choice_seq_or_name(struct xmldata *data, int maybe_pcdata)
 	switch(PEEK(0))
 	{
 	  case 0:
-	    VOIDIFY(XMLERROR("End of xml while readin ELEMENT declaration."));
+	    XMLERROR("End of xml while readin ELEMENT declaration.");
 	    
 	  case ')':
 	    READ(1);
@@ -1400,7 +1432,7 @@ void read_choice_seq_or_name(struct xmldata *data, int maybe_pcdata)
 	    if(num == 1)
 	    {
 	      /* We could be nice about this....     Naaahhh :)  /Hubbe */
-	      VOIDIFY(XMLERROR("Choice or sequence list with only one entry.\n"));
+	      XMLERROR("Choice or sequence list with only one entry.\n");
 	    }
 	    else
 #endif
@@ -1424,7 +1456,7 @@ void read_choice_seq_or_name(struct xmldata *data, int maybe_pcdata)
 	      seq=PEEK(0);
 	    }else{
 	      if(seq != PEEK(0))
-		VOIDIFY(XMLERROR("choice in sequence list!"));
+		XMLERROR("choice in sequence list!");
 	    }
 	    READ(1);
 	    continue;
@@ -1435,13 +1467,13 @@ void read_choice_seq_or_name(struct xmldata *data, int maybe_pcdata)
 	      seq=PEEK(0);
 	    }else{
 	      if(seq != PEEK(0))
-		VOIDIFY(XMLERROR("comma in choice list!"));
+		XMLERROR("comma in choice list!");
 	    }
 	    READ(1);
 	    continue;
 	    
 	  default:
-	    VOIDIFY(XMLERROR("Expected | or ,"));
+	    XMLERROR("Expected | or ,");
 	  READ(1);
 	}
 	break;
@@ -1536,16 +1568,10 @@ static int really_low_parse_dtd(struct xmldata *data)
 		break;
 
 	      case 'E': /* ELEMENT or ENTITY */
-		if(PEEK(3)=='N' &&
-		   PEEK(4)=='T' &&
-		   PEEK(5)=='I' &&
-		   PEEK(6)=='T' &&
-		   PEEK(7)=='Y' &&
-		   isSpace(PEEK(8)))
+		if(GOBBLE("<!ENTITY"))
 		{
 		  int may_have_ndata=0;
 		  int attributes=0;
-		  READ(9);
 		  SKIPSPACE_NO_SMEG();
 
 		  push_constant_text("<!ENTITY");
@@ -1571,7 +1597,7 @@ static int really_low_parse_dtd(struct xmldata *data)
 		    case '"':
 		      push_int(0); /* no attributes */
 		      BEGIN_STRING(value);
-		      READ_ATTVALUE2(value);
+		      READ_ENTITYVALUE(value);
 		      END_STRING(value);
 		      if(THIS->entities)
 		      {
@@ -1633,7 +1659,7 @@ static int really_low_parse_dtd(struct xmldata *data)
 			{
 			  if(!may_have_ndata)
 			  {
-			    VOIDIFY(XMLERROR("This entity is not allowed to have an NDATA keyword."));
+			    XMLERROR("This entity is not allowed to have an NDATA keyword.");
 			  }
 			  
 			  attributes++;
@@ -1662,15 +1688,8 @@ static int really_low_parse_dtd(struct xmldata *data)
 		  break;
 
 		}
-		if(PEEK(3)=='L' &&
-		   PEEK(4)=='E' &&
-		   PEEK(5)=='M' &&
-		   PEEK(6)=='E' &&
-		   PEEK(7)=='N' &&
-		   PEEK(8)=='T' &&
-		   isSpace(PEEK(9)))
+		if(GOBBLE("<!ELEMENT"))
 		{
-		  READ(10);
 		  push_constant_text("<!ELEMENT");
 		  SKIPSPACE();
 		  SIMPLE_READNAME();
@@ -1714,16 +1733,9 @@ static int really_low_parse_dtd(struct xmldata *data)
 
 		goto unknown_entry_in_dtd;
 
-	      case 'A': /* ATTLIST */
-		if(PEEK(3)=='T' &&
-		   PEEK(4)=='T' &&
-		   PEEK(5)=='L' &&
-		   PEEK(6)=='I' &&
-		   PEEK(7)=='S' &&
-		   PEEK(8)=='T' &&
-		   isSpace(PEEK(9)))
+	      case 'A':
+		if(GOBBLE("<!ATTLIST"))
 		{
-		  READ(10);
 		  SKIPSPACE();
 		  push_constant_text("<!ATTLIST");
 		  SIMPLE_READNAME();
@@ -1968,24 +1980,106 @@ static int really_low_parse_dtd(struct xmldata *data)
 		goto unknown_entry_in_dtd;
 
 	      case 'N': /* NOTATION */
-	    ignored_dtd_entry:
-		push_constant_text("<!");
-		READ(2);
-		SIMPLE_READNAME();
+		if(GOBBLE("<!NOTATION"))
+		{
+		  int n=0;
+		  push_constant_text("<!NOTATION");
+		  SKIPSPACE();
+		  SIMPLE_READNAME();
+		  SKIPSPACE();
+		  switch(PEEK(0))
+		  {
+		    case 'P':
+		      if(GOBBLE("PUBLIC"))
+		      {
+			push_constant_text("PUBLIC");
+			SIMPLE_READ_PUBIDLITERAL();
+			n++;
+			SKIPSPACE();
+			if(PEEK(0) != '>')
+			{
+			read_system:
+			  
+			  push_constant_text("SYSTEM");
+			  SIMPLE_READ_SYSTEMLITERAL();
+			  n++;
+			}
+			f_aggregate_mapping(n*2);
+			break;
+			
+		      }
+		      
+		    case 'S':
+		      if(GOBBLE("SYSTEM")) goto read_system;
+
+		      XMLERROR("Expected PUBLIC or SYSTEM, found something else.");
+		      push_int(0);
+		  }
+		  SKIPSPACE();
+		  if(PEEK(0)!='>')
+		    XMLERROR("Missing '>' in <!NOTATION.");
+		  READ(1);
+		  push_int(0); /* no data */
+		  SYS();
+		  break;
+		}
+
+		goto unknown_entry_in_dtd;
+
+	      case '[': /* Conditional section */
+		READ(3);
 		SKIPSPACE();
+		if(GOBBLE("IGNORE"))
+		{
+		  int parlev=1;
+		  BEGIN_STRING(foo);
+		  push_constant_text("<![IGNORE[");
+		  push_int(0);
+		  push_int(0);
+		  while(1)
+		  {
+		    if(XMLEOF())
+		    {
+		      XMLERROR("Expected to find ']]>', found EOF.");
+		      break;
+		    }
+		    if(PEEK(0) == '<' && PEEK(1)=='!' && PEEK(2)=='[')
+		      parlev++;
+		    else if(PEEK(0) == ']' && PEEK(1)==']' && PEEK(2)=='>')
+		      if(!--parlev) break;
 
-		/* FIXME, DTD's are IGNORED! */
+		    POKE(foo, PEEK(0));
+		    READ(1);
+		  }
+		  END_STRING(foo);
+		  READ(3);
+		  SYS();
+		  break;
+		}
+		if(GOBBLE("INCLUDE"))
+		{
+		  push_constant_text("<![INCLUDE[");
+		  push_int(0);
+		  push_int(0);
+		  SKIPSPACE();
+		  if(PEEK(0)!='[')
+		    XMLERROR("Missing '[' in <![INCLUDE.");
+		  READ(1);
+		  
+		  low_parse_dtd(data);
+
+		  if(PEEK(0) != ']' || PEEK(1)!= ']' || PEEK(2)!='>')
+		    XMLERROR("Missing ]]> in INCLUDE tag.");
+		  READ(3);
+		  SYS();
+		  break;
+		}
+		XMLERROR("Expected INCLUDE or IGNORE in conditional section.");
 		SKIPTO('>');
-
-		if(PEEK(0) != '>')
-		  XMLERROR("Missing '>' in DTD");
 		READ(1);
-
-		push_int(0); /* No attributes */
-		push_int(0); /* No data - yet */
-		SYS();
 		break;
 
+		/* Fall through */
 	      default:
 	    unknown_entry_in_dtd:
 		XMLERROR("Unknown entry in DTD.");
@@ -2059,6 +2153,7 @@ static int low_parse_dtd(struct xmldata *data)
   /* There is now one value on the stack */
   return done;
 }  
+
 static struct pike_string *very_low_parse_xml(struct xmldata *data,
 					      struct pike_string *end,
 					      int toplevel,
@@ -2139,7 +2234,7 @@ static struct pike_string *very_low_parse_xml(struct xmldata *data,
 	      push_int(0); /* No attributes */
 	      SKIPSPACE();
 	      BEGIN_STRING(foo);
-	      while(!(PEEK(0)=='?' && PEEK(1)=='>'))
+	      while(!XMLEOF() && !(PEEK(0)=='?' && PEEK(1)=='>'))
 	      {
 		if(PEEK(0)=='\r')
 		{
@@ -2390,6 +2485,7 @@ static int low_parse_xml(struct xmldata *data,
 {
   struct svalue *save_sp=sp;
   BEGIN_STRING(text);
+  parse_optional_xmldecl(data);
   end=very_low_parse_xml(data,end,toplevel,&text,0);
   INTERMISSION(text);
   END_STRING(text);
@@ -2454,27 +2550,59 @@ static void free_xmldata(struct xmldata *data)
   }
 }
 
-static void parse_dtd(INT32 args)
+static void define_entity_raw(INT32 args)
+{
+  check_all_args("XML->define_entity_raw",args,BIT_STRING, BIT_STRING,0);
+  if(!THIS->entities)
+  {
+    f_aggregate_mapping(2);
+    THIS->entities=sp[-1].u.mapping;
+    sp--;
+  }else{
+    mapping_insert(THIS->entities, sp-2, sp-1);
+  }
+}
+
+static void define_entity(INT32 args)
 {
   struct svalue tmp;
   struct pike_string *s;
   struct xmldata data;
   ONERROR e;
 
-  s=sp[-args].u.string;
-  if(args<2)
-    error("Too few arguments to XML->parse()\n");
+  check_all_args("XML->define_entity",args,BIT_STRING, BIT_STRING | BIT_MIXED | BIT_MANY,0);
+  s=sp[1-args].u.string;
 
-#if 0
-  if(!s->size_shift)
-  {
-    if(STR0(s)[0]==0xfe && STR1(s)[0]==0xff)
-    {
-      /* String is UTF8, convert to unicode here */
-      
-    }
-  }
-#endif
+  data.input.datap=MKPCHARP_STR(s);
+  data.input.next=0;
+  data.input.len=s->len;
+  data.input.pos=0;
+  data.input.to_free=0;
+  data.func=sp+2-args;
+  data.extra_args=sp+3-args;
+  data.num_extra_args=args-3;
+  data.extra_arg_types=-1; /* FIXME */
+  data.allow_pesmeg_everywhere=0;
+    
+  SET_ONERROR(e,free_xmldata, &data);
+  parse_optional_xmldecl(&data);
+  CALL_AND_UNSET_ONERROR(e);
+  s=make_shared_binary_pcharp(data.input.datap, data.input.len);
+  pop_n_elems(args - 1);
+  push_string(s);
+  define_entity_raw(2);
+}
+
+static void parse_dtd(INT32 args)
+{
+  struct svalue tmp;
+  struct pike_string *s;
+  struct xmldata data;
+  ONERROR e;
+  
+  check_all_args("XML->parse_dtd",args,BIT_STRING, BIT_MIXED, BIT_MIXED | BIT_MANY, 0);
+  s=sp[-args].u.string;
+
   data.input.datap=MKPCHARP_STR(s);
   data.input.next=0;
   data.input.len=s->len;
@@ -2487,8 +2615,9 @@ static void parse_dtd(INT32 args)
   data.allow_pesmeg_everywhere=1;
     
   SET_ONERROR(e,free_xmldata, &data);
+  parse_optional_xmldecl(&data);
   low_parse_dtd(&data);
-  UNSET_ONERROR(e);
+  CALL_AND_UNSET_ONERROR(e);
   tmp=*--sp;
   pop_n_elems(args);
   *sp++=tmp;
@@ -2659,10 +2788,22 @@ void init_xml(void)
   ADD_FUNCTION("autoconvert",autoconvert,tFunc(tStr,tStr),0);
   add_function("parse",parse_xml,PARSETYPE,0);
   add_function("parse_dtd",parse_dtd,PARSETYPE,0);
-/*  ADD_FUNCTION("define_entity",define_entity,tFunc(tStr tStr,tVoid),0); */
+  ADD_FUNCTION("define_entity_raw",define_entity,tFunc(tStr tStr,tVoid),0);
+  ADD_FUNCTION("define_entity",define_entity,tFuncV(tStr tStr tMix,tMix,tVoid),0);
   /* function(:void) */
   ADD_FUNCTION("create",create,tFunc(tNone,tVoid),0);
   end_class("XML",0);
+
+  ADD_FUNCTION("isbasechar",f_isBaseChar,tFunc(tInt,tInt),0);
+  ADD_FUNCTION("isidographic",f_isIdeographic,tFunc(tInt,tInt),0);
+  ADD_FUNCTION("isiletter",f_isLetter,tFunc(tInt,tInt),0);
+  ADD_FUNCTION("iscombiningchar",f_isCombiningChar,tFunc(tInt,tInt),0);
+  ADD_FUNCTION("isdigit",f_isDigit,tFunc(tInt,tInt),0);
+  ADD_FUNCTION("isextender",f_isExtender,tFunc(tInt,tInt),0);
+  ADD_FUNCTION("isspace",f_isSpace,tFunc(tInt,tInt),0);
+  ADD_FUNCTION("isnamechar",f_isNameChar,tFunc(tInt,tInt),0);
+  ADD_FUNCTION("isfirstnamechar",f_isFirstNameChar,tFunc(tInt,tInt),0);
+  ADD_FUNCTION("ishexchar",f_isHexChar,tFunc(tInt,tInt),0);
 }
 
 
