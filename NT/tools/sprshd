@@ -1,4 +1,5 @@
 #!/usr/local/bin/pike
+/* -*- Pike -*- */
 
 inherit Stdio.Port;
 
@@ -273,7 +274,13 @@ void handle_incoming_connection(object(Stdio.File) io)
 	}
 	
 	io->write(sprintf("%4c",0));
-	io->write(sprintf("%4c",p->wait()));
+	int code;
+	if (catch { code = p->wait(); }) {
+	  // wait() failed.
+	  io->write(sprintf("%4c", -1));
+	} else {
+	  io->write(sprintf("%4c", code));
+	}
       }else{
 	werror("dir=%s\n",dir);
 	werror(master()->describe_backtrace(err));
