@@ -25,7 +25,7 @@
 #include "version.h"
 #include "bignum.h"
 
-RCSID("$Id: encode.c,v 1.54 2000/02/16 03:58:16 per Exp $");
+RCSID("$Id: encode.c,v 1.55 2000/03/26 01:55:11 mast Exp $");
 
 /* #define ENCODE_DEBUG */
 
@@ -103,6 +103,7 @@ double LDEXP(double x, int exp)
 
 struct encode_data
 {
+  int canonic;
   struct object *codec;
   struct svalue counter;
   struct mapping *encoded;
@@ -360,7 +361,9 @@ static void encode_value2(struct svalue *val, struct encode_data *data)
       break;
 
     case T_TYPE:
-      error("Encoding of the type type not supported yet!");
+      if (data->canonic)
+	error("Canonical encoding of the type type not supported.\n");
+      error("Encoding of the type type not supported yet!\n");
       break;
 
     case T_FLOAT:
@@ -404,6 +407,22 @@ static void encode_value2(struct svalue *val, struct encode_data *data)
       ref_push_mapping(val->u.mapping);
       f_values(1);
 
+      if (data->canonic) {
+	INT32 *order;
+	if (val->u.mapping->data->ind_types & ~(BIT_BASIC & ~BIT_TYPE)) {
+	  mapping_fix_type_field(val->u.mapping);
+	  if (val->u.mapping->data->ind_types & ~(BIT_BASIC & ~BIT_TYPE))
+	    /* This doesn't let bignums through. That's necessary as
+	     * long as they aren't handled deterministically by the
+	     * sort function. */
+	    error("Canonical encoding requires basic types in indices.\n");
+	}
+	order = get_switch_order(sp[-2].u.array);
+	order_array(sp[-2].u.array, order);
+	order_array(sp[-1].u.array, order);
+	free((char *) order);
+      }
+
       code_entry(TAG_MAPPING, sp[-2].u.array->size,data);
       for(i=0; i<sp[-2].u.array->size; i++)
       {
@@ -415,8 +434,28 @@ static void encode_value2(struct svalue *val, struct encode_data *data)
 
     case T_MULTISET:
       code_entry(TAG_MULTISET, val->u.multiset->ind->size,data);
-      for(i=0; i<val->u.multiset->ind->size; i++)
-	encode_value2(ITEM(val->u.multiset->ind)+i, data);
+      if (data->canonic) {
+	INT32 *order;
+	if (val->u.multiset->ind->type_field & ~(BIT_BASIC & ~BIT_TYPE)) {
+	  array_fix_type_field(val->u.multiset->ind);
+	  if (val->u.multiset->ind->type_field & ~(BIT_BASIC & ~BIT_TYPE))
+	    /* This doesn't let bignums through. That's necessary as
+	     * long as they aren't handled deterministically by the
+	     * sort function. */
+	    error("Canonical encoding requires basic types in indices.\n");
+	}
+	check_stack(1);
+	ref_push_array(val->u.multiset->ind);
+	order = get_switch_order(sp[-1].u.array);
+	order_array(sp[-1].u.array, order);
+	free((char *) order);
+	for (i = 0; i < sp[-1].u.array->size; i++)
+	  encode_value2(ITEM(sp[-1].u.array)+i, data);
+	pop_stack();
+      }
+      else
+	for(i=0; i<val->u.multiset->ind->size; i++)
+	  encode_value2(ITEM(val->u.multiset->ind)+i, data);
       break;
 
     case T_OBJECT:
@@ -442,6 +481,8 @@ static void encode_value2(struct svalue *val, struct encode_data *data)
       }
 #endif
 
+      if (data->canonic)
+	error("Canonical encoding of objects not supported.\n");
       push_svalue(val);
       apply(data->codec, "nameof", 1);
       switch(sp[-1].type)
@@ -472,6 +513,8 @@ static void encode_value2(struct svalue *val, struct encode_data *data)
       break;
 
     case T_FUNCTION:
+      if (data->canonic)
+	error("Canonical encoding of functions not supported.\n");
       check_stack(1);
       push_svalue(val);
       apply(data->codec,"nameof", 1);
@@ -518,6 +561,8 @@ static void encode_value2(struct svalue *val, struct encode_data *data)
     case T_PROGRAM:
     {
       int d;
+      if (data->canonic)
+	error("Canonical encoding of programs not supported.\n");
       check_stack(1);
       push_svalue(val);
       apply(data->codec,"nameof", 1);
@@ -627,6 +672,38 @@ void f_encode_value(INT32 args)
   check_all_args("encode_value", args, BIT_MIXED, BIT_VOID | BIT_OBJECT, 0);
 
   initialize_buf(&data->buf);
+  data->canonic = 0;
+  data->encoded=allocate_mapping(128);
+  data->counter.type=T_INT;
+  data->counter.u.integer=COUNTER_START;
+  if(args > 1)
+  {
+    data->codec=sp[1-args].u.object;
+  }else{
+    data->codec=get_master();
+  }
+
+  SET_ONERROR(tmp, free_encode_data, data);
+  addstr("\266ke0", 4);
+  encode_value2(sp-args, data);
+  UNSET_ONERROR(tmp);
+
+  free_mapping(data->encoded);
+
+  pop_n_elems(args);
+  push_string(low_free_buf(&data->buf));
+}
+
+void f_encode_value_canonic(INT32 args)
+{
+  ONERROR tmp;
+  struct encode_data d, *data;
+  data=&d;
+  
+  check_all_args("encode_value_canonic", args, BIT_MIXED, BIT_VOID | BIT_OBJECT, 0);
+
+  initialize_buf(&data->buf);
+  data->canonic = 1;
   data->encoded=allocate_mapping(128);
   data->counter.type=T_INT;
   data->counter.u.integer=COUNTER_START;
