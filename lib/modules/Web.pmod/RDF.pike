@@ -1,4 +1,4 @@
-// $Id: RDF.pike,v 1.29 2004/01/11 00:39:34 nilsson Exp $
+// $Id: RDF.pike,v 1.30 2004/01/16 04:28:56 nilsson Exp $
 
 #pike __REAL_VERSION__
 
@@ -7,6 +7,7 @@
 
 constant rdf_ns = "http://www.w3.org/1999/02/22-rdf-syntax-ns#";
 
+// These should be in some generic namespace module. Perhaps.
 constant default_ns = ([
   "http://www.w3.org/2002/07/owl#" : "owl",
   "http://www.w3.org/2000/01/rdf-schema#" : "rdfs",
@@ -171,6 +172,11 @@ class URIResource {
     if(!obj) error("Could not produce qname.\n");
     if(!nns || nns==ns) return obj;
     return namespaces[nns]+":"+obj;
+  }
+
+  //! Returns the namespace this resource URI references to.
+  string get_namespace() {
+    return uri_parts(id)[0];
   }
 
   string get_n_triple_name() {
@@ -390,6 +396,24 @@ array(array(Resource)) find_statements(Resource|int(0..0) subj,
   foreach(statements; Resource pred; ADT.Relation.Binary rel)
     ret += find_subj_obj(subj, pred, obj, rel);
   return ret;
+}
+
+//! Returns @expr{1@} if resource @[r] is used as a subject, otherwise
+//! @expr{0@}.
+int(0..1) is_subject(Resource r) {
+  return !!sizeof(find_statements(r,0,0));
+}
+
+//! Returns @expr{1@} if resource @[r] is used as a predicate,
+//! otherwise @expr{0@}.
+int(0..1) is_predicate(Resource r) {
+  return !!sizeof(find_statements(0,r,0));
+}
+
+//! Returns @expr{1@} if resource @[r] is used as an object, otherwise
+//! @expr{0@}.
+int(0..1) is_object(Resource r) {
+  return !!sizeof(find_statements(0,0,r));
 }
 
 
@@ -783,39 +807,49 @@ static void fix_namespaces() {
   dirty_namespaces = 0;
 }
 
+static class XML {
 
-static void add_xml_Description(String.Buffer buf,
-				 mapping(Resource:array(Resource)) rel) {
-  if(sizeof(rel)>1) buf->add("\n");
-  foreach(rel; Resource left; array(Resource) rights) {
-    foreach(rights, Resource right) {
-      buf->add("<", left->get_qname());
-      if(right->is_literal_resource)
-	buf->add(">", right->get_xml(), "</", left->get_qname(), ">");
-      else
-	buf->add(" rdf:resource=\"", right->get_uri(), "\"/>");
-      if(sizeof(rel)>1) buf->add("\n");
-    }
-  }
-}
-
-//! Serialize the RDF domain as an XML string.
-string get_xml() {
   String.Buffer buf = String.Buffer();
+  mapping subjects = get_subject_map();
+  mapping ns = ([]);
+  int ind;
 
-  multiset delayed = (<>);
+  void add_ns(Resource r) {
+    string s=r->get_namespace();
+    ns[s] = namespaces[s];
+  }
 
-  foreach(get_subject_map(); Resource n;
-	  mapping(Resource:array(Resource)) rel) {
-    if( !n->is_literal_resource && !n->is_uri_resource ) {
-      delayed[n] = 1;
-      continue;
+  void low_add_Description( mapping(Resource:array(Resource)) rel ) {
+    ind++;
+    if(sizeof(rel)>1) buf->add("\n");
+    foreach(rel; Resource left; array(Resource) rights) {
+      add_ns(left);
+      foreach(rights, Resource right) {
+	if(ind) buf->add("  "*ind);
+	buf->add("<", left->get_qname());
+	if(right->is_literal_resource)
+	  buf->add(">", right->get_xml(), "</", left->get_qname(), ">\n");
+	else if(right->is_uri_resource)
+	  buf->add(" rdf:resource='", right->get_uri(), "'/>\n");
+	else {
+	  buf->add(">\n");
+	  werror("%O\n", left);
+	  ind++;
+	  add_Description(right, m_delete(subjects, right)||([]));
+	  ind--;
+	  if(ind) buf->add("  "*ind);
+	  buf->add("</", left->get_qname(), ">\n");
+	}
+	if(sizeof(rel)>1) buf->add("\n");
+      }
     }
-    delayed[n] = 0;
-    if( !n->is_uri_resource ) {
-      werror("%O\n", n);
-      error("Can't serialize non-uri resources in subject position.\n");
-    }
+    ind--;
+  }
+
+  void add_Description(Resource n,
+		       mapping(Resource:array(Resource)) rel) {
+    if(n->is_literal_resource)
+      error("Can not serialize literal resource as subject.\n");
 
     // Can we make a <foo></foo> instead of
     // <Description><rdf:type rdf:resource="foo"/></Description>
@@ -825,29 +859,67 @@ string get_xml() {
 	rel[rdf_type] = rel[rdf_type][1..];
       else
 	m_delete(rel, rdf_type);
-      buf->add("<", c->get_qname(), " about=\"", n->get_uri(), "\">");
-      add_xml_Description(buf, rel);
-      buf->add("</", c->get_qname(), ">\n\n");
+      if(ind) buf->add("  "*ind);
+      add_ns(c);
+      buf->add("<", c->get_qname(), " rdf:about='", n->get_uri(), "'>");
+      low_add_Description(rel);
+      if(ind) buf->add("  "*ind);
+      buf->add("</", c->get_qname(), ">\n");
     }
     else {
-      buf->add("<Description about=\"", n->get_uri(), "\">");
-      add_xml_Description(buf, rel);
-      buf->add("</Description>\n\n");
+      if(ind) buf->add("  "*ind);
+      if(n->is_uri_resource)
+	buf->add("<rdf:Description rdf:about='", n->get_uri(), "'>\n");
+      else
+	buf->add("<rdf:Description>\n");
+      low_add_Description(rel);
+      if(ind) buf->add("  "*ind);
+      buf->add("</rdf:Description>\n");
     }
+    if(!ind) buf->add("\n");
   }
 
-  if(sizeof(delayed)) error("Meesa think somoethink wrong.\n");
+  string render() {
 
-  String.Buffer ret = String.Buffer();
-  ret->add("<?xml version=\"1.0\"?>\n"
-	   "<rdf:RDF\nxmlns=\"" + common_ns +"\"\n"
-	   "rdf:xmlns=\"" +rdf_ns + "\"\n");
-  foreach(namespaces; string url; string name)
-    ret->add("xmlns:", name, "=\"", url, "\"\n");
-  ret->add(">\n");
-  ret->add( (string)buf );
-  ret->add("</rdf:RDF>\n");
-  return (string)ret;
+    // First all root resources.
+    foreach(subjects; Resource n;
+	    mapping(Resource:array(Resource)) rel) {
+      if(is_object(n) || is_predicate(n)) continue;
+      m_delete(subjects, n);
+      add_Description(n, rel);
+    }
+
+    // Then all named resources.
+    foreach(subjects; Resource n;
+	    mapping(Resource:array(Resource)) rel) {
+      if(!n->is_uri_resource) continue;
+      m_delete(subjects, n);
+      add_Description(n, rel);
+    }
+
+    // Cyclic/unreferenced unnamed resources and literals.
+    if(sizeof(subjects))
+      error("Unserialized resources left.\n");
+
+    String.Buffer ret = String.Buffer();
+    ret->add("<?xml version='1.0'?>\n"
+	     "<rdf:RDF\nxmlns='" + common_ns +"'\n"
+	     "xmlns:rdf='" +rdf_ns + "'\n");
+    foreach(ns; string url; string name) {
+      if(url==common_ns) continue;
+      ret->add("xmlns:", name, "='", url, "'\n");
+    }
+    ret->add(">\n");
+    ret->add( (string)buf );
+    ret->add("</rdf:RDF>\n");
+
+    return (string)ret;
+  }
+}
+
+//! Serialize the RDF domain as an XML string.
+string get_xml() {
+  return XML()->render();
 }
 
 
@@ -856,20 +928,19 @@ string get_xml() {
 //
 
 //! Returns the number of statements in the RDF domain.
-int _sizeof() {
+static int _sizeof() {
   if(!sizeof(statements)) return 0;
   return `+( @sizeof(values(statements)[*]) );
 }
 
-//!
-string _sprintf(int t) {
+static string _sprintf(int t) {
   return t=='O' && sprintf("%O(%d)", this_program, _sizeof());
 }
 
 //! @decl Web.RDF `|(Web.RDF x)
 //! Modifies the current object to create a union of the current object
 //! and the object @[x].
-this_program `|(mixed data) {
+static this_program `|(mixed data) {
   if(sprintf("%t", data)!="object" ||
      !functionp(data->find_statements))
     error("Can only or an RDF object with another RDF object.\n");
