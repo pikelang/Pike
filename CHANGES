@@ -445,7 +445,7 @@ o Standards.IDNA
     Internet Engineering Task Force (IETF), RFC 3490. Your most likely
     application of this will be the encoding and decoding of punycode:
 
-      Standards.IDNA.Punycode.decode("rksmrgs-5wao1o");
+      Standards.IDNA.zone_to_unicode("www.xn--rksmrgs-5wao1o.org"); 
 
 
 o Thread
