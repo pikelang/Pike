@@ -3,7 +3,7 @@
 #include "global.h"
 #include "stralloc.h"
 #include "global.h"
-RCSID("$Id: whitefish.c,v 1.14 2001/05/25 14:29:14 per Exp $");
+RCSID("$Id: whitefish.c,v 1.15 2001/05/25 15:00:04 js Exp $");
 #include "pike_macros.h"
 #include "interpret.h"
 #include "program.h"
@@ -51,7 +51,7 @@ static void handle_hit( Blob **blobs,
 			int nblobs,
 			struct object *res,
 			int docid,
-			double *field_c[68],
+			double *field_c[66],
 			double *prox_c[8] )
 {
   int i, j, k, end = 0;
@@ -59,7 +59,7 @@ static void handle_hit( Blob **blobs,
   unsigned char *nhits = malloc( nblobs );
   unsigned char *pos = malloc( nblobs );
 
-  int matrix[68][8];
+  int matrix[66][8];
 
   MEMSET(hits, 0, nblobs * sizeof(Hit) );
   MEMSET(pos, 0, nblobs );
@@ -93,7 +93,7 @@ static void handle_hit( Blob **blobs,
   {
     double accum = 0.0, fc, pc;
     int accum_i;
-    for( i = 0; i<68; i++ )
+    for( i = 0; i<66; i++ )
       if( (fc = *field_c[i]) != 0.0 )
 	for( j = 0; j<8; j++ )
 	  if( (pc = *prox_c[j]) != 0.0 )
@@ -110,7 +110,7 @@ static void handle_hit( Blob **blobs,
 
 static struct object *low_do_query_merge( Blob **blobs,
 					  int nblobs,
-					  double field_c[68],
+					  double field_c[66],
 					  double prox_c[8] )
 {
   struct object *res = wf_resultset_new();
@@ -172,12 +172,11 @@ static struct object *low_do_query_merge( Blob **blobs,
 				
 
 static void f_do_query_merge( INT32 args )
-/*! @decl ResultSet do_query_merge( array(int) musthave,          @
+/*! @decl ResultSet do_query_merge( array(int) words,          @
  *!                          array(int) field_coefficients,       @
  *!                          array(int) proximity_coefficients,   @
- *!                          function(int:string) blobfeeder,     @
- *!			     int field)
- *!       @[musthave]
+ *!                          function(int:string) blobfeeder)   
+ *!       @[words]
  *!       
  *!          Arrays of word ids. Note that the order is significant
  *!          for the ranking.
@@ -185,16 +184,14 @@ static void f_do_query_merge( INT32 args )
  *!       @[field_coefficients]
  *!
  *!       An array of ranking coefficients for the different fields. 
- *!       In the range of [0x0000-0xffff]. The array (always) has 68
+ *!       In the range of [0x0000-0xffff]. The array (always) has 66
  *!       elements:
  *!
  *!	  Index        Coefficient for field
  *!	  -----        ---------------------
- *!	  0..63        Special field 0..63
- *!	  64           Large body text
- *!	  65           Medium body text
- *!	  66           Small body text
- *!	  67           Anchor
+ *!	  0            body
+ *!	  1            anchor
+ *!	  2..65        Special field 0..63
  *!
  *!       @[proximity_coefficients]
  *!
@@ -222,7 +219,7 @@ static void f_do_query_merge( INT32 args )
  */
 {
   double proximity_coefficients[8];
-  double field_coefficients[68];
+  double field_coefficients[66];
   int numblobs, i;
   Blob **blobs;
 
@@ -231,11 +228,11 @@ static void f_do_query_merge( INT32 args )
   struct array *_words, *_field, *_prox;
 
   /* 1: Get all arguments. */
-  get_all_args( "do_query_merge", args, "%a%a%a%O",
+  get_all_args( "do_query_merge", args, "%a%a%a%*",
 		&_words, &_field, &_prox, &cb);
 
-  if( _field->size != 68 )
-    Pike_error("Illegal size of field_coefficients array (expected 68)\n" );
+  if( _field->size != 66 )
+    Pike_error("Illegal size of field_coefficients array (expected 66)\n" );
   if( _prox->size != 8 )
     Pike_error("Illegal size of proximity_coefficients array (expected 8)\n" );
 
@@ -256,7 +253,7 @@ static void f_do_query_merge( INT32 args )
   for( i = 0; i<8; i++ )
     proximity_coefficients[i] = (double)_prox->item[i].u.integer/65535.0;
 
-  for( i = 0; i<68; i++ )
+  for( i = 0; i<66; i++ )
     field_coefficients[i] = (double)_field->item[i].u.integer/65535.0;
 
   res = low_do_query_merge(blobs,numblobs,
