@@ -267,7 +267,7 @@ function this_function()
   return backtrace()[-2][2];
 }
 
-varargs mixed *sort_array2(array foo,function cmp, mixed ... args)
+varargs mixed *sort_array(array foo,function cmp, mixed ... args)
 {
   array bar,tmp;
   int len,start;

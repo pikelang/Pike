@@ -167,11 +167,11 @@ void _main(string *argv, string *env)
   if(i >=0) exit(i);
 }
 
-int inhibit_compile_errors;
+mixed inhibit_compile_errors;
 
-void set_inhibit_compile_errors(int i)
+void set_inhibit_compile_errors(mixed f)
 {
-  inhibit_compile_errors=i;
+  inhibit_compile_errors=f;
 }
 
 /*
@@ -183,7 +183,13 @@ void set_inhibit_compile_errors(int i)
 void compile_error(string file,int line,string err)
 {
   if(!inhibit_compile_errors)
+  {
     perror(sprintf("%s:%d:%s\n",file,line,err));
+  }
+  else if(functionp(inhibit_compile_errors))
+  {
+    inhibit_compile_errors(file,line,err);
+  }
 }
 
 /* This function is called whenever an #include directive is encountered
