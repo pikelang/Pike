@@ -236,7 +236,7 @@ static int signalling=0;
 
 static void unset_signalling(void *notused) { signalling=0; }
 
-void check_signals()
+void check_signals(struct callback *foo, void *bar, void *gazonk)
 {
   ONERROR ebuf;
 #ifdef DEBUG

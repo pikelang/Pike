@@ -4,7 +4,7 @@
 ||| See the files COPYING and DISCLAIMER for more information.
 \*/
 #include "global.h"
-RCSID("$Id: lex.c,v 1.8 1996/11/28 03:07:14 hubbe Exp $");
+RCSID("$Id: lex.c,v 1.9 1996/12/06 04:26:57 hubbe Exp $");
 #include "language.h"
 #include "array.h"
 #include "lex.h"
@@ -557,7 +557,7 @@ static struct inputstate *memory_inputstate(INT32 size)
   struct inputstate *i;
   if(!size) size=10000;
   i=new_inputstate();
-  i->data=xalloc(size);
+  i->data=(unsigned char *)xalloc(size);
   i->buflen=size;
   i->pos=size;
   i->ungetstr=memory_ungetstr;
@@ -597,7 +597,7 @@ static struct inputstate *prot_memory_inputstate(char *data,INT32 len)
 {
   struct inputstate *i;
   i=new_inputstate();
-  i->data=data;
+  i->data=(unsigned char *)data;
   i->buflen=len;
   i->dont_free_data=1;
   i->pos=0;
@@ -619,7 +619,7 @@ static int file_getc()
     got=read(istate->fd, buf, READAHEAD);
     if(got > 0)
     {
-      default_ungetstr(buf, got);
+      default_ungetstr((char *)buf, got);
       return istate->my_getc();
     }
     else if(got==0 || errno != EINTR)

@@ -4,7 +4,7 @@
 ||| See the files COPYING and DISCLAIMER for more information.
 \*/
 #include "global.h"
-RCSID("$Id: interpret.c,v 1.16 1996/12/05 03:23:48 per Exp $");
+RCSID("$Id: interpret.c,v 1.17 1996/12/06 04:26:56 hubbe Exp $");
 #include "interpret.h"
 #include "object.h"
 #include "program.h"
@@ -901,7 +901,7 @@ static void eval_instruction(unsigned char *pc)
     do_return:
 #if defined(DEBUG) && defined(GC2)
       if(d_flag > 2) do_gc();
-      check_signals();
+      check_threads_etc();
 #endif
 
       /* fall through */

@@ -17,9 +17,16 @@
 #define NO_FIX_MALLOC
 #endif
 
+#ifndef STRUCT_PROGRAM_DECLARED
+#define STRUCT_PROGRAM_DECLARED
 struct program;
+#endif
+
 struct function;
+#ifndef STRUCT_SVALUE_DECLARED
+#define STRUCT_SVALUE_DECLARED
 struct svalue;
+#endif
 struct sockaddr;
 struct object;
 struct array;

@@ -9,6 +9,9 @@
 
 #define STRINGS_ARE_SHARED
 
+#ifndef STRUCT_PIKE_STRING_DECLARED
+#define STRUCT_PIKE_STRING_DECLARED
+#endif
 struct pike_string
 {
   SIZE_T refs;

@@ -6,7 +6,7 @@
 #define READ_BUFFER 16384
 
 #include "global.h"
-RCSID("$Id: file.c,v 1.16 1996/12/04 08:18:14 per Exp $");
+RCSID("$Id: file.c,v 1.17 1996/12/06 04:27:44 hubbe Exp $");
 #include "types.h"
 #include "interpret.h"
 #include "svalue.h"
@@ -252,7 +252,7 @@ static struct pike_string *do_read(int fd,
       i=read(fd, str->str+bytes_read, r);
       THREADS_DISALLOW();
 
-      check_signals();
+      check_signals(0,0,0);
 
       if(i>0)
       {

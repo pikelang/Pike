@@ -52,10 +52,11 @@
     }						\
   } while(0)
 
-#ifndef HAVE_STRUCT_TIMEVAL
 #ifndef STRUCT_TIMEVAL_DECLARED
 #define STRUCT_TIMEVAL_DECLARED
 #endif
+
+#ifndef HAVE_STRUCT_TIMEVAL
 struct timeval
 {
   long tv_sec;
