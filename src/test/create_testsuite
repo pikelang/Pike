@@ -856,6 +856,11 @@ test_any(while(1) if(1) break; return 1,1)
 test_any(int e; for(e=0;e<10;e++) break; return e,0)
 test_any(int e; for(e=0;e<10;e++) continue; return e,10)
 test_any(int e;string t=""; for(e=0;e<10;e++) t+=e; return t,"0123456789")
+test_any(int e;string t=""; for(e=0;e<=10;e++) t+=e; return t,"012345678910")
+test_any(int e;string t=""; for(e=9;e>0;e--) t+=e; return t,"987654321")
+test_any(int e;string t=""; for(e=9;e>=0;e--) t+=e; return t,"9876543210")
+test_any(int e;string t=""; for(e=9;e!=0;e--) t+=e;  return t,"987654321")
+test_any(int e;string t=""; for(e=2;e!=10;e++) t+=e; return t,"23456789")
 test_any(int e;string t=""; for(e=0;e>-10;e--) t+=e; return t,"0-1-2-3-4-5-6-7-8-9")
 
 // foreach
@@ -1889,7 +1894,7 @@ test_search3($1,($1[1..0x7fffffff]))
 
 test_search4("SUNE")
 test_search4("-------------------+")
-test_search4("+-------------------")
+test_search4("å-------------------")
 test_search4(sprintf("%'argel-bargel glop-glyf?'2000n"))
 
 // - sizeof
