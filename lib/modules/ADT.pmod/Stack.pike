@@ -1,6 +1,6 @@
 #pike __REAL_VERSION__
 
-// $Id: Stack.pike,v 1.8 2002/06/14 00:56:33 nilsson Exp $
+// $Id: Stack.pike,v 1.9 2002/11/29 00:30:03 nilsson Exp $
 
 //! This class implements a simple stack. Instead of adding and removing
 //! elements to an array, and thus making it vary in size for every push
@@ -131,7 +131,5 @@ this_program `+(this_program s) {
 }
 
 string _sprintf(int t) {
-  if(t=='t') return "ADT.Stack";
-  if(t=='O') return sprintf("ADT.Stack%O", _values());
-  error("Can't display ADT.Stack as %c.", t);
+  return t=='O' && sprintf("%O%O", this_program, _values());
 }

@@ -244,7 +244,6 @@ class NSNode {
   }
 
   string _sprintf(int t) {
-    if(t=='t') return "NSNode";
     if(t=='O') {
       mapping nt = ([ XML_ROOT:"ROOT",
 		      XML_ELEMENT:"ELEMENT",
@@ -256,10 +255,11 @@ class NSNode {
 		      XML_ATTR:"ATTR" ]);
       string n = get_any_name();
       if(!n || !sizeof(n))
-	return sprintf("NSNode(%s)", nt[get_node_type()] || "UNKNOWN");
-      return sprintf("NSNode(%s,%O)", nt[get_node_type()] || "UNKNOWN", n);
+	return sprintf("%O(%s)", this_program,
+		       nt[get_node_type()] || "UNKNOWN");
+      return sprintf("%O(%s,%O)", this_program,
+		     nt[get_node_type()] || "UNKNOWN", n);
     }
-    error("Can't show object as %c.\n", t);
   }
 }
 

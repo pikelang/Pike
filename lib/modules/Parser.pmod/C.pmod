@@ -4,7 +4,7 @@
 //
 // #pike __REAL_VERSION__
 //
-// $Id: C.pmod,v 1.31 2002/09/22 18:13:52 nilsson Exp $
+// $Id: C.pmod,v 1.32 2002/11/29 00:38:32 nilsson Exp $
 
 mapping(string:string) global_groupings=(["{":"}","(":")","[":"]"]);
 
@@ -238,7 +238,7 @@ class Token
 	case 's':
 	  return text;
 	case 'O':
-	  return sprintf("Token(%O,%O,%d)",text,file,line);
+	  return sprintf("%O(%O,%O,%d)",this_program,text,file,line);
       }
     }
 

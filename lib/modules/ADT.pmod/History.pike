@@ -1,6 +1,6 @@
 #pike __REAL_VERSION__
 
-// $Id: History.pike,v 1.6 2002/10/19 14:21:12 nilsson Exp $
+// $Id: History.pike,v 1.7 2002/11/29 00:28:44 nilsson Exp $
 
 //! A history is a stack where you can only push entries. When the stack has
 //! reached a certain size the oldest entries are removed on every push.
@@ -171,7 +171,5 @@ array _values() {
 }
 
 string _sprintf(int t) {
-  if(t=='O') return "ADT.History("+size+"/"+maxsize+")";
-  if(t=='t') return "ADT.History";
-  error("Can't print History object as '%c'.\n", t);
+  return t=='O' && sprintf("%O(%d/%d)", this_program, size, maxsize);
 }

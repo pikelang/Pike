@@ -1,4 +1,4 @@
-// $Id: Binary.pike,v 1.4 2002/09/12 14:24:49 stensson Exp $
+// $Id: Binary.pike,v 1.5 2002/11/29 00:28:24 nilsson Exp $
 // An abstract data type for binary relations.
 
 private mapping val   = ([]);
@@ -231,10 +231,7 @@ array find_shortest_path(mixed from, mixed to, void|multiset avoiding)
 
 string _sprintf(int mode)
 {
-  if (mode == 'O')
-    return sprintf("ADT.Relation.Binary(%O)", id);
-  else
-    return "ADT.Relation.Binary";
+  return mode=='O' && sprintf("%O(%O)", this_program, id);
 }
 
 //! Return the ID value which was given as first argument to create().

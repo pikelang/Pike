@@ -384,9 +384,7 @@ class Country
 
    string _sprintf(int t)
    {
-      if (t=='O')
-	 return "Country("+name+")";
-      return 0;
+     return t=='O' && sprintf("%O(%s)", this_program, name);
    }
 
 }

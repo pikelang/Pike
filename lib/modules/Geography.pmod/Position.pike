@@ -529,10 +529,5 @@ int `>(object pos)
 //!
 string _sprintf(int|void t)
 {
-  switch(t)
-  {
-    case 't': return "Geography.Position";
-    case 'O': return "Position("+latitude()+", "+longitude()+")";
-  }
-  return 0;
+  return t=='O' && sprintf("%O(%s, %s)", latitude(), longitude());
 }

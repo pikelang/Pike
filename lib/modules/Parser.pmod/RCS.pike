@@ -1,6 +1,6 @@
 #pike __REAL_VERSION__
 
-// $Id: RCS.pike,v 1.26 2002/11/26 21:04:41 grubba Exp $
+// $Id: RCS.pike,v 1.27 2002/11/29 00:52:48 nilsson Exp $
 
 //! A RCS file parser that eats a RCS *,v file and presents nice pike
 //! data structures of its contents.
@@ -75,10 +75,8 @@ mapping(string:string) branches;
 
 string _sprintf(int type)
 {
-  if(type=='t')
-    return "RCS";
-  return sprintf("RCS(/* %d revisions */)",
-		 revisions && sizeof(revisions));
+  return type=='O' && sprintf("%O(/* %d revisions */)", this_program,
+			      revisions && sizeof(revisions));
 }
 
 //! Data for all revisions of the file. The indices of the mapping are

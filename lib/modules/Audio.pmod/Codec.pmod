@@ -4,7 +4,7 @@
 
   creator: Honza Petrous, hop@unibase.cz
 
-  $Id: Codec.pmod,v 1.7 2002/11/26 12:30:59 grubba Exp $
+  $Id: Codec.pmod,v 1.8 2002/11/29 00:30:59 nilsson Exp $
 
  */
 
@@ -117,10 +117,7 @@ class decoder {
   }
 
   static mixed _sprintf(int|void type) {
-    if(type == 't')
-      return "Audio.Codec";
-
-    return sprintf("Audio.Codec /* %O */", codec);
+    return type=='O' && sprintf("Audio.Codec(/* %O */)", codec);
   }
 
 }

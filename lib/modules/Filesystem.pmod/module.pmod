@@ -153,9 +153,9 @@ class Stat
 		   path?fullpath:name);
   }
 
-  string _sprintf()
+  string _sprintf(int t)
   {
-    return sprintf("Stat(/* %s */)", lsprint(1));
+    return t=='O' && sprintf("Stat(/* %s */)", lsprint(1));
   }
 }
 

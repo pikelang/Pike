@@ -71,7 +71,7 @@ static private class Element {
   
   string _sprintf(int mode, mapping options)
   {
-    return mode=='O' && "Element(\""+name+"\")";
+    return mode=='O' && sprintf("%O(%O)", this_program, name);
   }
 
   int accept_element(string name)

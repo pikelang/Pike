@@ -58,7 +58,8 @@ class DOMException(int code) {
 
   static string _sprintf(int mode, mapping options)
   {
-    return mode == 'O' && "DOMException(" + (symbolic[code]||code) + ")";
+    return mode == 'O' && sprintf("%O(%s)", this_program,
+				  (string)(symbolic[code]||code) );
   }
 
 };
@@ -1003,8 +1004,8 @@ class ParseException
   static string _sprintf(int mode, mapping options)
   {
     return mode == 'O' &&
-      sprintf("DOM.ParseException(%O /* %O char %d */)",
-	      message, sysid, loc);
+      sprintf("%O(%O /* %O char %d */)",
+	      this_program, message, sysid, loc);
   }
 
   static void create(string _message, string|void _sysid, string|void _pubid,

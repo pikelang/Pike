@@ -86,10 +86,10 @@ static class LanguageListObject( array(string) languages )
 {
   int timestamp  = time(1);
 
-  static string _sprintf()
+  static string _sprintf(int t)
   {
-    return sprintf("LanguageListObject(timestamp: %d, %O)",
-		   timestamp, languages);
+    return t=='O' && sprintf("%O(timestamp: %d, %O)", this_program,
+			     timestamp, languages);
   }
 }
 
@@ -196,10 +196,11 @@ class LocaleObject
     return size;
   }
 
-  static string _sprintf()
+  static string _sprintf(int t)
   {
-    return sprintf("LocaleObject(timestamp: %d, bindings: %d, functions: %d)",
-		   timestamp, sizeof(bindings), sizeof(functions) );
+    return t=='O' && sprintf("%O(timestamp: %d, bindings: %d, functions: %d)",
+			     this_program, timestamp, sizeof(bindings),
+			     sizeof(functions) );
   }
 }
 
@@ -487,9 +488,7 @@ class DeferredLocale( static string project,
       case 's':
 	return lookup();
       case 'O':
-	return sprintf("DeferredLocale(%O)", lookup());
-      default:
-	error(sprintf("Illegal formatting char '%c'\n", c));
+	return sprintf("%O(%O)", this_program, lookup());
     }
   }
 

@@ -4,7 +4,7 @@
 //
 // Author: Honza Petrous, hop@unibase.cz
 //
-// $Id: module.pmod,v 1.4 2002/09/17 12:40:18 hop Exp $
+// $Id: module.pmod,v 1.5 2002/11/29 00:30:37 nilsson Exp $
 
 //#define AUDIO_FORMAT_DEBUG
 #ifdef AUDIO_FORMAT_DEBUG
@@ -90,7 +90,8 @@ class ANY {
   }
 
   string _sprintf(int|void ctype) {
-      sprintf("Audio.Format.Any(\"%O\",%O)", buffer->fd, nochk);
+      return ctype=='O' &&
+	sprintf("%O(\"%O\",%O)", this_program, buffer->fd, nochk);
   }
 
   //!

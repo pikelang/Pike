@@ -88,9 +88,9 @@ static void create(void|string directory,  // default: cwd
   wd = directory;
 }
 
-static string _sprintf()
+static string _sprintf(int t)
 {
-  return sprintf("Filesystem.System(/* root=%O, wd=%O */)", root, wd);
+  return t=='O' && sprintf("%O(/* root=%O, wd=%O */)", this_program, root, wd);
 }
 
 Filesystem.Base cd(string directory)
