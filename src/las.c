@@ -5,7 +5,7 @@
 \*/
 /**/
 #include "global.h"
-RCSID("$Id: las.c,v 1.123 1999/11/21 01:47:41 grubba Exp $");
+RCSID("$Id: las.c,v 1.124 1999/11/21 15:23:42 grubba Exp $");
 
 #include "language.h"
 #include "interpret.h"
@@ -2146,6 +2146,19 @@ void fix_type_field(node *n)
     n->type = or_pike_types(CADR(n)->type, CDDR(n)->type);
     break;
 
+  case F_AND_EQ:
+  case F_OR_EQ:
+  case F_XOR_EQ:
+  case F_LSH_EQ:
+  case F_RSH_EQ:
+  case F_ADD_EQ:
+  case F_SUB_EQ:
+  case F_MULT_EQ:
+  case F_MOD_EQ:
+  case F_DIV_EQ:
+    /* FIXME: Go via var = OP(var, expr); to restrict the type further?
+     * type = typeof(OP(var, expr)) AND typeof(var);
+     */
   case F_RANGE:
   case F_INC:
   case F_DEC:
@@ -2251,17 +2264,6 @@ void fix_type_field(node *n)
     MAKE_CONSTANT_SHARED_STRING(n->type, tInt0);
     break;
 
-  case F_AND_EQ:
-  case F_OR_EQ:
-  case F_XOR_EQ:
-  case F_LSH_EQ:
-  case F_RSH_EQ:
-  case F_ADD_EQ:
-  case F_SUB_EQ:
-  case F_MULT_EQ:
-  case F_MOD_EQ:
-  case F_DIV_EQ:
-    /* FIXME: Go via var = OP(var, expr); to get the type? */
     /* FALL_THROUGH */
   case F_MAGIC_INDEX:
   case F_MAGIC_SET_INDEX:
