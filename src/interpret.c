@@ -2,11 +2,11 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: interpret.c,v 1.312 2003/08/02 01:08:03 mast Exp $
+|| $Id: interpret.c,v 1.313 2003/08/03 00:55:34 mast Exp $
 */
 
 #include "global.h"
-RCSID("$Id: interpret.c,v 1.312 2003/08/02 01:08:03 mast Exp $");
+RCSID("$Id: interpret.c,v 1.313 2003/08/03 00:55:34 mast Exp $");
 #include "interpret.h"
 #include "object.h"
 #include "program.h"
@@ -515,92 +515,104 @@ void my_describe_inherit_structure(struct program *p)
 #define TRACE(X)
 #endif
 
+static struct inherit dummy_inherit
+#ifdef PIKE_DEBUG
+  = {-4711, -4711, -4711, -4711, (size_t) -4711, -4711, NULL, NULL, NULL}
+#endif
+;
+
 PMOD_EXPORT void find_external_context(struct external_variable_context *loc,
 				       int depth)
 {
-  struct program *p;
+  struct program *p = loc->o->prog;
 
   TRACE((4, "-find_external_context(%d, inherit=%ld)\n", depth,
 	 DO_NOT_WARN((long)(loc->o->prog ? loc->inherit - loc->o->prog->inherits : 0))));
 
+#ifdef PIKE_DEBUG
   if(!loc->o)
-    Pike_error("Current object is destructed\n");
+    Pike_fatal("No object\n");
+#endif
 
   while(--depth>=0)
   {
+    struct inherit *inh = loc->inherit;
+
+    if (!p)
+      Pike_error("Attempting to access parent of destructed object.\n");
+
 #ifdef PIKE_DEBUG  
-    if(Pike_interpreter.trace_level>8 && loc->o->prog)
-      my_describe_inherit_structure(loc->o->prog);
+    if(Pike_interpreter.trace_level>8)
+      my_describe_inherit_structure(p);
 #endif
 
     TRACE((4,"-   i->parent_offset=%d i->parent_identifier=%d\n",
-	   loc->inherit->parent_offset,
-	   loc->inherit->parent_identifier));
+	   inh->parent_offset,
+	   inh->parent_identifier));
 
-      TRACE((4,"-   o->parent_identifier=%d inherit->identifier_level=%d\n",
-	     loc->o->prog &&
-	     (loc->o->prog->flags & PROGRAM_USES_PARENT) ?
-	     PARENT_INFO(loc->o)->parent_identifier : -1,
-	   loc->inherit->identifier_level));
+    TRACE((4,"-   o->parent_identifier=%d inherit->identifier_level=%d\n",
+	   (p->flags & PROGRAM_USES_PARENT) ?
+	   PARENT_INFO(loc->o)->parent_identifier : -1,
+	   inh->identifier_level));
 
-    switch(loc->inherit->parent_offset)
+    switch(inh->parent_offset)
     {
       default:
 	{
-	  struct external_variable_context tmp=*loc;
+	  int my_level = inh->inherit_level;
 #ifdef PIKE_DEBUG
-	  if(!loc->inherit->inherit_level)
+	  if(!my_level)
 	    Pike_fatal("Gahhh! inherit level zero in wrong place!\n");
 #endif
-	  while(tmp.inherit->inherit_level >= loc->inherit->inherit_level)
+	  while(loc->inherit->inherit_level >= my_level)
 	  {
-	    TRACE((5,"-   inherit-- (%d >= %d)\n",tmp.inherit->inherit_level, loc->inherit->inherit_level));
-	    tmp.inherit--;
+	    TRACE((5,"-   inherit-- (%d >= %d)\n",loc->inherit->inherit_level, my_level));
+	    loc->inherit--;
 	  }
 
-	  find_external_context(&tmp,
-				loc->inherit->parent_offset);
-	  loc->o=tmp.o;
+	  find_external_context(loc, inh->parent_offset);
 	  loc->parent_identifier =
-	    loc->inherit->parent_identifier+
-	    tmp.inherit->identifier_level;
+	    inh->parent_identifier +
+	    loc->inherit->identifier_level;
 	}
 	break;
 
       case INHERIT_PARENT:
 	TRACE((5,"-   Following inherit->parent\n"));
-	loc->parent_identifier=loc->inherit->parent_identifier;
-	loc->o=loc->inherit->parent;
+	loc->parent_identifier=inh->parent_identifier;
+	loc->o=inh->parent;
 	break;
 
       case OBJECT_PARENT:
 	TRACE((5,"-   Following o->parent\n"));
-	if(((p=loc->o->prog) ||
-	    (p=get_program_for_object_being_destructed(loc->o))) &&
-	   (p->flags & PROGRAM_USES_PARENT))
-	{
-	  loc->parent_identifier=LOW_PARENT_INFO(loc->o,p)->parent_identifier;
-	  loc->o=LOW_PARENT_INFO(loc->o,p)->parent;
-	}else{
-	  loc->o=0;
-	  loc->parent_identifier=-1;
-	}
+
+#ifdef PIKE_DEBUG
+	/* Can this happen legitimately? Well, someone will hopefully
+	 * let me know in that case. /mast */
+	if (!(p->flags & PROGRAM_USES_PARENT))
+	  Pike_fatal ("Attempting to access parent of object without parent pointer.\n");
+#endif
+
+	loc->parent_identifier=LOW_PARENT_INFO(loc->o,p)->parent_identifier;
+	loc->o=LOW_PARENT_INFO(loc->o,p)->parent;
 	break;
     }
-    
-    if(!loc->o)
-      Pike_error("Parent was lost during cloning.\n");
-    
-    if(!(p=loc->o->prog))
-      Pike_error("Attempting to access parent of destructed object.\n");
-    
+
+#ifdef PIKE_DEBUG
+    /* I don't think this should happen either. The gc doesn't zap the
+     * pointer even if the object is destructed, at least. /mast */
+    if (!loc->o) Pike_fatal ("No parent object.\n");
+#endif
+
+    p = loc->o->prog;
+
 #ifdef DEBUG_MALLOC
     if (loc->o->refs == 0x55555555) {
       fprintf(stderr, "The object %p has been zapped!\n", loc->o);
       describe(p);
       Pike_fatal("Object zapping detected.\n");
     }
-    if (p->refs == 0x55555555) {
+    if (p && p->refs == 0x55555555) {
       fprintf(stderr, "The program %p has been zapped!\n", p);
       describe(p);
       fprintf(stderr, "Which taken from the object %p\n", loc->o);
@@ -611,25 +623,26 @@ PMOD_EXPORT void find_external_context(struct external_variable_context *loc,
     
 #ifdef PIKE_DEBUG
     if(loc->parent_identifier < 0 ||
-       loc->parent_identifier > p->num_identifier_references)
+       (p && loc->parent_identifier > p->num_identifier_references))
       Pike_fatal("Identifier out of range, loc->parent_identifer=%d!\n",
-	    loc->parent_identifier);
+		 loc->parent_identifier);
 #endif
 
-    loc->inherit=INHERIT_FROM_INT(p, loc->parent_identifier);
-
-#ifdef PIKE_DEBUG  
-    if(Pike_interpreter.trace_level>28)
-      my_describe_inherit_structure(p);
-#endif
+    if (p)
+      loc->inherit=INHERIT_FROM_INT(p, loc->parent_identifier);
+    else
+      /* Return a valid pointer to a dummy inherit for the convenience
+       * of the caller. Identifier offsets will be bogus but it'll
+       * never get to that since the object is destructed. */
+      loc->inherit = &dummy_inherit;
 
     TRACE((5,"-   Parent identifier = %d (%s), inherit # = %ld\n",
 	   loc->parent_identifier,
-	   ID_FROM_INT(p, loc->parent_identifier)->name->str,
-	   DO_NOT_WARN((long)(loc->inherit - p->inherits))));
+	   p ? ID_FROM_INT(p, loc->parent_identifier)->name->str : "N/A",
+	   p ? DO_NOT_WARN((long)(loc->inherit - p->inherits)) : -1));
     
 #ifdef DEBUG_MALLOC
-    if (loc->inherit->storage_offset == 0x55555555) {
+    if (p && loc->inherit->storage_offset == 0x55555555) {
       fprintf(stderr, "The inherit %p has been zapped!\n", loc->inherit);
       debug_malloc_dump_references(loc->inherit,0,2,0);
       fprintf(stderr, "It was extracted from the program %p %d\n", p, loc->parent_identifier);
@@ -643,7 +656,7 @@ PMOD_EXPORT void find_external_context(struct external_variable_context *loc,
 
   TRACE((4,"--find_external_context: parent_id=%d (%s)\n",
 	 loc->parent_identifier,
-	 ID_FROM_INT(loc->o->prog,loc->parent_identifier)->name->str
+	 p ? ID_FROM_INT(p,loc->parent_identifier)->name->str : "N/A"
 	 ));
 }
 
@@ -2185,10 +2198,9 @@ PMOD_EXPORT void apply_external(int depth, int fun, INT32 args)
   struct external_variable_context loc;
 
   loc.o = Pike_fp->current_object;
-  if (!loc.o->prog)
-    Pike_error("Cannot access parent of destructed object.\n");
   loc.parent_identifier = Pike_fp->fun;
-  loc.inherit = INHERIT_FROM_INT(loc.o->prog, Pike_fp->fun);
+  if (loc.o->prog)
+    loc.inherit = INHERIT_FROM_INT(loc.o->prog, loc.parent_identifier);
 
   find_external_context(&loc, depth);
 
