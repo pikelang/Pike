@@ -1,6 +1,6 @@
 /* IMAP.requests
  *
- * $Id: requests.pmod,v 1.81 1999/03/29 00:34:50 grubba Exp $
+ * $Id: requests.pmod,v 1.82 1999/03/29 15:15:17 grubba Exp $
  */
 
 import .types;
@@ -283,7 +283,7 @@ class lsub
 	foreach(mailboxes, array a)
 	  send("*", "LSUB", @a);
       
-      send(tag, "OK");
+      send(tag, "OK", "LSUB done");
       return ([ "action" : "finished" ]);
     }
 }
