@@ -1,5 +1,5 @@
 /*
- * $Id: join-autodoc.pike,v 1.6 2001/07/16 20:33:26 grubba Exp $
+ * $Id: join-autodoc.pike,v 1.7 2001/07/26 17:43:32 nilsson Exp $
  *
  * AutoDoc mk II join script.
  *
@@ -10,6 +10,8 @@
 
 int main(int argc, array(string) argv)
 {
+  int post_process = has_value(argv, "--post-process");
+  argv -= ({ "--post-process" });
   int files = sizeof( argv )-2;
   string save_to = argv[1];
   werror("Joining %d file%s...\n", files, (files==1?"":"s"));
@@ -58,6 +60,12 @@ int main(int argc, array(string) argv)
       fail = 1;
     }
   }
+
+  if(post_process) {
+    werror("Post processing manual file.\n");
+    Tools.AutoDoc.ProcessXML.postProcess(dest);
+  }
+
   if (!fail) {
     werror("\rWriting %s...\n", save_to);
     Stdio.write_file(save_to, dest->html_of_node());
