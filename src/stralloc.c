@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: stralloc.c,v 1.153 2003/03/14 15:50:47 grubba Exp $
+|| $Id: stralloc.c,v 1.154 2003/03/17 16:44:23 grubba Exp $
 */
 
 #include "global.h"
@@ -24,7 +24,7 @@
 #include <ctype.h>
 #include <math.h>
 
-RCSID("$Id: stralloc.c,v 1.153 2003/03/14 15:50:47 grubba Exp $");
+RCSID("$Id: stralloc.c,v 1.154 2003/03/17 16:44:23 grubba Exp $");
 
 /* #define STRALLOC_USE_PRIMES */
 
@@ -42,6 +42,15 @@ unsigned INT32 htable_mask;
 
 #endif
 
+#if (SIZEOF_LONG == 4) && defined(_LP64)
+/* Kludge for gcc and the system header files not using the same model... */
+#undef LONG_MIN
+#undef LONG_MAX
+#undef ULONG_MAX
+#define LONG_MIN	INT_MIN
+#define LONG_MAX	INT_MAX
+#define ULONG_MAX	UINT_MAX
+#endif
 
 #if PIKE_RUN_UNLOCKED
 /* Make this bigger when we get lightweight threads */
@@ -2223,13 +2232,13 @@ PMOD_EXPORT long STRTOL_PCHARP(PCHARP str, PCHARP *ptr, int base)
     c = EXTRACT_PCHARP(str);		/* skip over leading "0x" or "0X" */
   }
 
+  mul_limit = ((unsigned long)LONG_MAX)/base;
+  add_limit = (int) (LONG_MAX % base);
   if (neg) {
-    mul_limit = (unsigned long) LONG_MIN / base;
-    add_limit = (int) ((unsigned long) LONG_MIN % base);
-  }
-  else {
-    mul_limit = LONG_MAX / base;
-    add_limit = (int) (LONG_MAX % base);
+    if (++add_limit == base) {
+      add_limit = 0;
+      mul_limit++;
+    }
   }
 
   val=DIGIT(c);
@@ -2238,9 +2247,9 @@ PMOD_EXPORT long STRTOL_PCHARP(PCHARP str, PCHARP *ptr, int base)
     INC_PCHARP(str,1);
     c=EXTRACT_PCHARP(str);
     if(!(WIDE_ISALNUM(c)  && (xx=DIGIT(c)) < base)) break;
-    if (val > mul_limit || (val == mul_limit && xx > add_limit))
+    if (val > mul_limit || (val == mul_limit && xx > add_limit)) {
       overflow = 1;
-    else
+    } else
       val = base * val + xx;
   }
 
@@ -2251,9 +2260,7 @@ PMOD_EXPORT long STRTOL_PCHARP(PCHARP str, PCHARP *ptr, int base)
   }
   else {
     if (neg)
-      return val > (unsigned long) LONG_MAX ?
-	-(long) (val - (unsigned long) LONG_MAX) - LONG_MAX :
-	-(long) val;
+      return (long)(~val + 1);
     else
       return (long) val;
   }

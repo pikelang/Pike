@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: port.c,v 1.65 2003/02/26 22:42:29 mast Exp $
+|| $Id: port.c,v 1.66 2003/03/17 16:44:23 grubba Exp $
 */
 
 /*
@@ -27,10 +27,20 @@
 #include <float.h>
 #include <string.h>
 
-RCSID("$Id: port.c,v 1.65 2003/02/26 22:42:29 mast Exp $");
+RCSID("$Id: port.c,v 1.66 2003/03/17 16:44:23 grubba Exp $");
 
 #ifdef sun
 time_t time PROT((time_t *));
+#endif
+
+#if (SIZEOF_LONG == 4) && defined(_LP64)
+/* Kludge for gcc and the system header files not using the same model... */
+#undef LONG_MIN
+#undef LONG_MAX
+#undef ULONG_MAX
+#define LONG_MIN	INT_MIN
+#define LONG_MAX	INT_MAX
+#define ULONG_MAX	UINT_MAX
 #endif
 
 #ifndef HAVE_GETTIMEOFDAY
@@ -180,13 +190,14 @@ long STRTOL(const char *str,char **ptr,int base)
       (str[1] == 'x' || str[1] == 'X'))
     c = *(str += 2);		/* skip over leading "0x" or "0X" */
 
+  mul_limit = LONG_MAX / base;
+  add_limit = (int) (LONG_MAX % base);
+  
   if (neg) {
-    mul_limit = (unsigned long) LONG_MIN / base;
-    add_limit = (int) ((unsigned long) LONG_MIN % base);
-  }
-  else {
-    mul_limit = LONG_MAX / base;
-    add_limit = (int) (LONG_MAX % base);
+    if (++add_limit == base) {
+      mul_limit++;
+      add_limit = 0;
+    }
   }
 
   for (val = DIGIT(c); isalnum(c = *++str) && (xx = DIGIT(c)) < base; ) {
@@ -204,9 +215,7 @@ long STRTOL(const char *str,char **ptr,int base)
   }
   else {
     if (neg)
-      return val > (unsigned long) LONG_MAX ?
-	-(long) (val - (unsigned long) LONG_MAX) - LONG_MAX :
-	-(long) val;
+      return (long)(~val + 1);
     else
       return (long) val;
   }
