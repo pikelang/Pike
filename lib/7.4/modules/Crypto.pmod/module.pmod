@@ -34,17 +34,11 @@ string des_parity(string s) {
 
 // These haven't been modified.
 #if 1
-constant arcfour = Crypto.arcfour;
-constant cbc = Crypto.cbc;
-constant des = Crypto.des;
 constant des_cbc = Crypto.des_cbc;
-constant des3 = Crypto.des3;
 constant des3_cbc = Crypto.des3_cbc;
 constant dsa = Crypto.dsa;
 constant hmac = Crypto.hmac;
-constant idea = Crypto.idea;
 constant idea_cbc = Crypto.idea_cbc;
-constant pipe = Crypto.pipe;
 constant randomness = Crypto.randomness;
 constant rsa = Crypto.rsa;
 #endif
