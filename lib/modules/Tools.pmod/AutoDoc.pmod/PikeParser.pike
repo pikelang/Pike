@@ -572,9 +572,9 @@ static private array(string) tokenize(string s) {
 
 // create(string, filename)
 
-static void create(string s, void|string filename) {
+static void create(string s, void|string filename, void|int line) {
   currentfile = filename || "";
-  currentline = 1;
+  currentline = line ? line : 1;
   tokens = tokenize(s);
   tokenPtr = 0;
 }

@@ -258,8 +258,8 @@ Node rootModuleFromDir(string directory) {
 
 static Node findNode(Node root, array(string) ref) {
   Node n = root;
-  // predef:: is just an anchor to the root
-  if (sizeof(ref) && ref[0] == "predef")
+  // top:: is just an anchor to the root
+  if (sizeof(ref) && ref[0] == "top::")
     ref = ref[1..];
   if (!sizeof(ref))
     return root;
@@ -303,7 +303,7 @@ static void recurseAppears(Node root, Node current) {
       t->newName = a[-1];
     }
     else if (string belongsRef = attr["belongs"]) {
-      array(string) a = splitRef(attrRef);
+      array(string) a = splitRef(belongsRef);
       t->belongsRef = a;
     }
     t->n = current;
@@ -364,7 +364,7 @@ static array(string) splitRef(string ref) {
   array(string) a = Parser.Pike.split(ref);
   string scope = "";
   array result = ({});
-  if (sizeof(a) && (a[0] == "lfun" || a[0] == "predef")) {
+  if (sizeof(a) && (a[0] == "lfun" || a[0] == "predef" || a[0] == "top")) {
     scope += a[0];
     a = a[1..];
   }
@@ -391,6 +391,16 @@ static array(string) splitRef(string ref) {
   }
 }
 
+static string mergeRef(array(string) ref) {
+  string s = "";
+  if (sizeof(ref) && search(ref[0], "::") >= 0) {
+    s = ref[0];
+    ref = ref[1..];
+  }
+  s += ref * ".";
+  return s;
+}
+
 static class Scope(string|void type, string|void name) {
   multiset(string) idents = (<>);
 }
@@ -409,14 +419,14 @@ static class ScopeStack {
   mapping resolveRef(string ref) {
     //werror("[[[[ resolving %O\n", ref);
     array(string) idents = splitRef(ref);
-    //werror("[[[[ firstIdent == %O\n", firstIdent);
     if (!sizeof(idents))
       ref = "";
-    else if (idents[0] == "predef")
-      // predef:: is an anchor to the root.
-      ref = idents[1..] * ".";
     else {
-      ref = idents * ".";
+      if (idents[0] == "top::")
+        // top:: is an anchor to the root.
+        ref = mergeRef(idents[1..]);
+      else
+        ref = mergeRef(idents);
       string firstIdent = idents[0];
       for(int i = 0; ; ++i) {
         Scope s = scopeArr[i];
