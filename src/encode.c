@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: encode.c,v 1.183 2004/05/11 19:50:40 grubba Exp $
+|| $Id: encode.c,v 1.184 2004/05/11 20:33:53 grubba Exp $
 */
 
 #include "global.h"
@@ -32,7 +32,7 @@
 #include "opcodes.h"
 #include "peep.h"
 
-RCSID("$Id: encode.c,v 1.183 2004/05/11 19:50:40 grubba Exp $");
+RCSID("$Id: encode.c,v 1.184 2004/05/11 20:33:53 grubba Exp $");
 
 /* #define ENCODE_DEBUG */
 
@@ -2211,7 +2211,7 @@ static DECLSPEC(noreturn) void decode_error (struct svalue *decoding,
 #ifdef HAVE_VSNPRINTF
   vsnprintf (buf, sizeof (buf), msg, args);
 #else /* !HAVE_VSNPRINTF */
-  VSPRINTF(buf, fmt, args);
+  VSPRINTF(buf, msg, args);
 #endif /* HAVE_VSNPRINTF */
   va_end (args);
 
