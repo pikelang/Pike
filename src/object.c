@@ -2,11 +2,11 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: object.c,v 1.241 2003/07/21 23:41:34 mast Exp $
+|| $Id: object.c,v 1.242 2003/07/22 12:46:09 grubba Exp $
 */
 
 #include "global.h"
-RCSID("$Id: object.c,v 1.241 2003/07/21 23:41:34 mast Exp $");
+RCSID("$Id: object.c,v 1.242 2003/07/22 12:46:09 grubba Exp $");
 #include "object.h"
 #include "dynamic_buffer.h"
 #include "interpret.h"
@@ -446,7 +446,6 @@ struct object *decode_value_clone_object(struct svalue *prog)
   return o;
 }
 
-/* FIXME: use open/read/close instead */
 static struct pike_string *low_read_file(char *file)
 {
   struct pike_string *s;
