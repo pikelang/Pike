@@ -1,4 +1,4 @@
-// $Id: Readline.pike,v 1.8 1999/03/23 20:48:36 marcus Exp $
+// $Id: Readline.pike,v 1.9 1999/04/02 09:57:59 neotron Exp $
 
 class OutputController
 {
@@ -545,7 +545,7 @@ class InputController
 
 class DefaultEditKeys
 {
-
+  static private multiset word_break_chars = mkmultiset("\t \n\r/*?_-.[]~&;\!#$%^(){}<>"/"");
   static object _readline;
 
   void self_insert_command(string str)
@@ -618,6 +618,50 @@ class DefaultEditKeys
     _readline->insert(reverse(c), p-1);
   }
 
+  int forward_find_word()
+  {
+    int p, n;
+    string line = _readline->gettext();
+    for(p = _readline->getcursorpos(); p < sizeof(line); p++) {
+      if(word_break_chars[ line[p..p] ]) {
+	if(n) break;
+      } else n = 1;
+    }
+    return p;
+  }
+
+  int backward_find_word()
+  {
+    int p = _readline->getcursorpos() , n;
+    string line = _readline->gettext();
+    if(p >= strlen(line)) p = strlen(line) - 1;
+    for(; p >= 0; p--) {
+      if(word_break_chars[ line[p..p] ]) {
+	if(n) break;
+      } else n = 1;
+    }
+    return p;
+  }
+  
+  void forward_word()
+  {
+    _readline->setcursorpos(forward_find_word());
+  }
+
+  void backward_word()
+  {
+    _readline->setcursorpos(backward_find_word());
+  }
+
+  void forward_delete_word()
+  {
+    _readline->delete(_readline->getcursorpos(), forward_find_word());
+  }
+  void backward_delete_word()
+  {
+    _readline->delete(backward_find_word()+1, _readline->getcursorpos());
+  }
+
   void kill_line()
   {
     _readline->delete(_readline->getcursorpos(), strlen(_readline->gettext()));
@@ -663,7 +707,15 @@ class DefaultEditKeys
     ({ "\\!ku", up_history }),
     ({ "\\!kd", down_history }),
     ({ "\\!kr", forward_char }),
-    ({ "\\!kl", backward_char })
+    ({ "\\!kl", backward_char }),
+    ({ "^[D", forward_delete_word }),
+    ({ "^[^H", backward_delete_word }),
+    ({ "^[^?", backward_delete_word }),
+    ({ "^[d", forward_delete_word }),
+    ({ "^[F", forward_word }),
+    ({ "^[B", backward_word }),
+    ({ "^[f", forward_word }),
+    ({ "^[b", backward_word }),
   });
 
   static void set_default_bindings()
