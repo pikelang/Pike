@@ -12418,124 +12418,109 @@ generally speaking have one %&lt;modifiers&gt;&lt;operator&gt; (examples:
 </table>
 </man_description>
 <man_example>
-Pike v0.1 Running Hilfe v1.2 (Incremental Pike Front end)<br>
-&gt; int screen_width=70;<br>
-Result: 70<br>
-&gt; mixed sample;<br>
-&gt; write(sprintf("fish: %c\n", 65));<br>
-fish: A<br>
-Result: 0<br>
-&gt; write(sprintf("Hello green friends\n"));<br>
-Hello green friends<br>
-Result: 0<br>
-&gt; write(sprintf("num: %d\n", 10));<br>
-num: 10<br>
-Result: 0<br>
-&gt; write(sprintf("num: %+10d\n", 10));<br>
-num:        +10<br>
-Result: 0<br>
-&gt; write(sprintf("num: %010d\n", 5*2));<br>
-num: 0000000010<br>
-Result: 0<br>
-&gt; write(sprintf("num: %|10d\n", 20/2));<br>
-num:     10    <br>
-Result: 0<br>
-&gt; write(sprintf("%|*s\n",screen_width,"THE NOT END"));<br>
-<dl><dt><dd>THE NOT END                              <br>
-</dl>Result: 0<br>
-&gt; write(sprintf("%|=*s\n",screen_width, "fun with penguins\n"));<br>
-<dl><dt><dd>fun with penguins                           <br>
-</dl>Result: 0<br>
-&gt; write(sprintf("%-=*O\n",screen_width,({ "fish", 9, "gumbies", 2 })));<br>
-({ /* 4 elements */                                                   <br>
-<dl><dt><dd>"fish",                                                           <br>
-9,                                                                <br>
-"gumbies",                                                        <br>
-2                                                                 <br>
-</dl>})                                                                    <br>
-Result: 0<br>
-&gt; write(sprintf("%-=*s\n", screen_width,<br>
-<dl><dt><dd>"This will wordwrap the specified string within the "+<br>
-"specified field size, this is useful say, if you let "+<br>
-"users specify their screen size, then the room "+<br>
-"descriptions will automagically word-wrap as appropriate.\n"+<br>
-"slosh-n's will of course force a new-line when needed.\n"));<br>
-</dl>This will wordwrap the specified string within the specified field    <br>
-size, this is useful say, if you let users specify their screen size, <br>
-then the room descriptions will automagically word-wrap as            <br>
-appropriate.                                                          <br>
-slosh-n's will of course force a new-line when needed.                <br>
-Result: 0<br>
-&gt; write(sprintf("%-=*s %-=*s\n", screen_width/2,<br>
-<dl><dt><dd>"Two columns next to each other (any number of columns will "+<br>
-"of course work) independently word-wrapped, can be useful.",<br>
-screen_width/2-1,<br>
-"The - is to specify justification, this is in adherence "+<br>
-"to std sprintf which defaults to right-justification, "+<br>
-"this version also supports center and right justification."));<br>
-</dl>Two columns next to each other (any The - is to specify justification,<br>
-number of columns will of course    this is in adherence to std      <br>
-work) independently word-wrapped,   sprintf which defaults to         <br>
-can be useful.                      right-justification, this version <br>
-<dl><dt><dd>also supports center and right    <br>
-justification.                    <br>
-</dl>Result: 0<br>
-&gt;  write(sprintf("%-$*s\n", screen_width,<br>
-<dl><dt><dd>"Given a\nlist of\nslosh-n\nseparated\n'words',\nthis option\n"+<br>
-"creates a\ntable out\nof them\nthe number of\ncolumns\n"+<br>
-"be forced\nby specifying a\nprecision.\nThe most obvious\n"+<br>
-"use is for\nformatted\nls output."));<br>
-</dl>Given a          list of          slosh-n          <br>
-separated        'words',         this option      <br>
-creates a        table out        of them          <br>
-the number of    columns          be forced        <br>
-by specifying a  precision.       The most obvious <br>
-use is for       formatted        ls output.       <br>
-Result: 0<br>
-&gt;  write(sprintf("%-#*s\n", screen_width,<br>
-<dl><dt><dd>"Given a\nlist of\nslosh-n\nseparated\n'words',\nthis option\n"+<br>
-"creates a\ntable out\nof them\nthe number of\ncolumns\n"+<br>
-"be forced\nby specifying a\nprecision.\nThe most obvious\n"+<br>
-"use is for\nformatted\nls output."));<br>
-</dl>Given a          creates a        by specifying a  <br>
-list of          table out        precision.       <br>
-slosh-n          of them          The most obvious <br>
-separated        the number of    use is for       <br>
-'words',         columns          formatted        <br>
-this option      be forced        ls output.       <br>
-Result: 0<br>
-&gt; sample = ({ "first column: bing", "second column: womble" });<br>
-Result: ({ /* 2 elements */<br>
-<dl><dt><dd>"first column: bing",<br>
-"second column: womble"<br>
-</dl>})<br>
-&gt; write(sprintf("%-=*s\n%-=@*s\n", screen_width,<br>
-<dl><dt><dd>"Another bizarre option is the @ operator, it applies the "+<br>
-"format string it is in to each element of the array:",<br>
-screen_width/sizeof(sample),<br>
-sample));<br>
-</dl>Another bizarre option is the @ operator, it applies the format string<br>
-it is in to each element of the array:                                <br>
-first column: bing                 second column: womble              <br>
-Result: 0<br>
-&gt; write(sprintf("Better use these instead: %{gurksallad: %s\n%}\n",<br>
-<dl><dt><dd>sample));<br>
-</dl>Better use these instead: gurksallad: first column: bing<br>
-gurksallad: second column: womble<br>
-<br>
-Result: 0<br>
-&gt; write(sprintf("Of course all the simple printf options "+<br>
-<dl><dt><dd>"are supported:\n %s: %d %x %o %c\n",<br>
-"65 as decimal, hex, octal and a char",<br>
-65, 65, 65, 65));<br>
-</dl>Of course all the simple printf options are supported:<br>
-<dl><dt><dd>65 as decimal, hex, octal and a char: 65 41 101 A<br>
-</dl>Result: 0<br>
-&gt; write(sprintf("%|*s\n",screen_width, "THE END"));<br>
-<dl><dt><dd>THE END                                <br>
-</dl>Result: 0<br>
-&gt; quit<br>
-Exiting.<br>
+<pre>
+<i>Pike v0.7 release 1 running Hilfe v2.0 (Incremental Pike Frontend)
+> int screen_width=70;
+Result: 70
+> mixed sample;
+> write(sprintf("fish: %c\n", 65));</i>
+fish: A
+<i>Result: 8
+> write(sprintf("num: %d\n", 10));</i>
+num: 10
+<i>Result: 8
+> write(sprintf("num: %+10d\n", 10));</i>
+num:        +10
+<i>Result: 16
+> write(sprintf("num: %010d\n", 5*2));</i>
+num: 0000000010
+<i>Result: 16
+> write(sprintf("num: %|10d\n", 20/2));</i>
+num:     10    
+<i>Result: 16
+> write(sprintf("%|*s\n",screen_width,"THE NOT END"));</i>
+                             THE NOT END                              
+<i>Result: 71
+> write(sprintf("%|=*s\n",screen_width, "fun with penguins\n"));</i>
+                          fun with penguins                           
+<i>Result: 71
+> write(sprintf("%-=*O\n",screen_width,({ "fish", 9, "gumbies", 2 })));</i>
+({ /* 4 elements */                                                   
+    "fish",                                                           
+    9,                                                                
+    "gumbies",                                                        
+    2                                                                 
+})                                                                    
+<i>Result: 426
+> write(sprintf("%-=*s\n", screen_width,
+  "This will wordwrap the specified string within the "+
+  "specified field size, this is useful say, if you let "+
+  "users specify their screen size, then the room "+
+  "descriptions will automagically word-wrap as appropriate.\n"+
+  "slosh-n's will of course force a new-line when needed.\n"));</i>
+This will wordwrap the specified string within the specified field    
+size, this is useful say, if you let users specify their screen size, 
+then the room descriptions will automagically word-wrap as            
+appropriate.                                                          
+slosh-n's will of course force a new-line when needed.                
+<i>Result: 355
+> write(sprintf("%-=*s %-=*s\n", screen_width/2,
+  "Two columns next to each other (any number of columns will "+
+  "of course work) independently word-wrapped, can be useful.",
+  screen_width/2-1,
+  "The - is to specify justification, this is in adherence "+
+  "to std sprintf which defaults to right-justification, "+
+  "this version also supports center and right justification.")); </i>
+Two columns next to each other (any The - is to specify justification,
+number of columns will of course    this is in adherence to std       
+work) independently word-wrapped,   sprintf which defaults to         
+can be useful.                      right-justification, this version 
+                                    also supports center and right    
+                                    justification.                    
+<i>Result: 426
+> write(sprintf("%-$*s\n", screen_width,
+  "Given a\nlist of\nslosh-n\nseparated\n'words',\nthis option\n"+
+  "creates a\ntable out\nof them\nthe number of\ncolumns\n"+
+  "be forced\nby specifying a\nprecision.\nThe most obvious\n"+
+  "use is for\nformatted\nls output."));</i>
+Given a          list of          slosh-n          
+separated        'words',         this option      
+creates a        table out        of them          
+the number of    columns          be forced        
+by specifying a  precision.       The most obvious 
+use is for       formatted        ls output.       
+<i>Result: 312
+> sample = ({"bing","womble","wuff","gul"}); 
+Result: ({ /* 4 elements */
+    "bing",
+    "womble",
+    "wuff",
+    "gul"
+})
+> write(sprintf("This will apply the format strings between the\n"
+  "procent-braces to all elements in the array:\n"
+  "%{gurksallad: %s\n%}",
+  sample));</i>
+This will apply the format strings between the
+procent-braces to all elements in the array:
+gurksallad: bing
+gurksallad: womble
+gurksallad: wuff
+gurksallad: gul
+<i>Result: 162
+> write(sprintf("Of course all the simple printf options "+
+  "are supported:\n %s: %d %x %o %c\n",
+  "65 as decimal, hex, octal and a char",
+  65, 65, 65, 65));</i>
+Of course all the simple printf options are supported:
+ 65 as decimal, hex, octal and a char: 65 41 101 A
+<i>Result: 106
+> write(sprintf("%|*s\n",screen_width, "THE END"));</i>
+                               THE END                                
+<i>Result: 71
+> quit
+Exiting.</i>
+</pre>
 </man_example>
 <man_see>
 sscanf
@@ -12766,9 +12751,9 @@ process in useconds micro seconds.
 <p>In any event any previously set alarm is canceled.
 </man_description>
 <man_returns>
-ualarm returns the number of microseconds seconds  remaining<br>
-<dl><dt><dd>until any previously  scheduled  alarm  was  due to be delivered, or<br>
-</dl>zero if there was no previously scheduled alarm.
+ualarm returns the number of microseconds seconds  remaining
+until any previously  scheduled  alarm  was  due to be delivered, or
+zero if there was no previously scheduled alarm.
 </man_returns>
 <man_see>
 signal
