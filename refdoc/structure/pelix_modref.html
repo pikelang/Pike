@@ -95,17 +95,6 @@ td         { font-family: arial, helvetica, sans-serif; font-size: 13px; }
   </tr>
 </table>
 
-<table width="1%" border="0" cellspacing="0" cellpadding="0">
-  <tr>
-    <td bgcolor="white">
-      <img src="/R" width="63" height="18" alt="" border="0" />
-    </td>
-    <td><gtext bgcolor='white' xspacing='8' font='franklin gothic bookoblique' move='0,-2'
-	notrans='t' black='black' fgcolor='#0768b2' hspace='5' scale='0.36'
-        >Module reference for $version$, $date$</gtext></td>
-  </tr>
-</table>
-
 <br clear="all"/>
 
 <table width="100%" border="0" cellspacing="3" cellpadding="0">
@@ -115,25 +104,26 @@ td         { font-family: arial, helvetica, sans-serif; font-size: 13px; }
     </td>
 
     <td width="1%" align="left" valign="top" bgcolor="#f0f0f0">
-      <table width="100%" border="0" cellspacing="0" cellpadding="4">
-        <td>$navbar$</td><td>&nbsp;</td>
-      </table>
+      $navbar$
     </td>
 
     <td width="1%">
       <img src="/R" width="15" height="1" alt="" border="0"/>
     </td>
-    <td width="1%" align="left" valign="top">
-      <table width="100%" border="0" cellspacing="3" cellpadding="0">
-        <tr><td><h1>$title$</h1></td></tr>
-        <tr><td>$contents$</td></tr>
-        <tr><td><img src="/R" alt="" width="400" height="1"/></td></tr>
-      </table>
+    <td width=100% align="left" valign="top">
+        <h1>$title$</h1>
+        $contents$
     </td>
 
     <td width="99%">
       <img src="/R" width="1" height="1" alt=""/>
     </td>
+  </tr>
+</table>
+
+<table width="100%" border="0" cellspacing="0" cellpadding="0">
+  <tr>
+    <td align=right><font size=-1><i>Module reference for $version$, $date$</i></font></td>
   </tr>
 </table>
 </body>

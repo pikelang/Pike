@@ -250,7 +250,17 @@ string parse_class(Node n, void|int noheader) {
       render_class_path(n) + n->get_attributes()->name +
       "</font></b></font></td></tr></table><br />\n"
       "</dt><dd>";
+
+
+  if(n->get_first_element("inherit")) {
+    ret += "Inherits<ul>";
+    foreach(n->get_elements("inherit"), Node c)
+      ret += "<li>" + quote(c->get_first_element("classname")[0]->get_text()) + "</li>\n";
+    ret += "</ul>\n";
+  }
+
   Node c = n->get_first_element("doc");
+
   if(c)
     ret += "<dl>" + parse_doc(c) + "</dl>";
 
@@ -258,13 +268,6 @@ string parse_class(Node n, void|int noheader) {
   if(sizeof(n->get_elements("doc"))>1)
     error( "More than one doc element in class node.\n" );
 #endif
-
-  if(n->get_first_element("inherit")) {
-    ret += "<h3>Inherits</h3><ul>";
-    foreach(n->get_elements("inherit"), Node c)
-      ret += "<li>" + quote(c->get_first_element("classname")[0]->get_text()) + "</li>\n";
-    ret += "</ul>\n";
-  }
 
   ret += parse_children(n, "docgroup", parse_docgroup);
   ret += parse_children(n, "class", parse_class, noheader);
@@ -647,7 +650,7 @@ string parse_type(Node n, void|string debug) {
 
   case "object":
     if(n->count_children())
-      ret += "<font color='#005080'>object(" + n[0]->get_text() + ")</font>";
+      ret += "<font color='#005080'>" + n[0]->get_text() + "</font>";
     else
       ret += "<font color='#202020'>object</font>";
     break;
@@ -744,7 +747,8 @@ string parse_type(Node n, void|string debug) {
   return ret;
 }
 
-string render_class_path(Node n) {
+string render_class_path(Node n,int|void class_only)
+{
   array a = reverse(n->get_ancestors(0));
   array b = a->get_any_name();
   int root;
@@ -760,7 +764,10 @@ string render_class_path(Node n) {
   if(n->get_any_name()=="class" || n->get_any_name()=="module")
     return ret + ".";
   if(n->get_parent()->get_parent()->get_any_name()=="class")
-    return ret + "()->";
+    if( !class_only )
+      return ""; //ret + "()->";
+    else
+      return ret;
   if(n->get_parent()->get_parent()->get_any_name()=="module")
     return ret + ".";
 
@@ -798,12 +805,26 @@ string parse_not_doc(Node n) {
 	continue;
 	// error( "No returntype element in method element.\n" );
 #endif
-      ret += "<tt>" + parse_type(get_first_element(c->get_first_element("returntype"))); // Check for more children
-      ret += " ";
-      ret += render_class_path(c);
-      ret += "<b><font color='#000066'>" + c->get_attributes()->name + "</font>(</b>";
-      ret += parse_not_doc( c->get_first_element("arguments") );
-      ret += "<b>)</b></tt>";
+      switch( c->get_attributes()->name )
+      {
+	case "create":
+	  ret += "<tt>" + parse_type(get_first_element(c->get_first_element("returntype"))); // Check for more children
+	  ret += " ";
+	  ret += render_class_path(c,1)+"<b>(</b>";
+	  ret += parse_not_doc( c->get_first_element("arguments") );
+	  ret += "<b>)</b></tt>";
+	  break;
+	case "delete":
+	  break;
+	default:
+	  ret += "<tt>" + parse_type(get_first_element(c->get_first_element("returntype"))); // Check for more children
+	  ret += " ";
+	  ret += render_class_path(c);
+	  ret += "<b><font color='#000066'>" + c->get_attributes()->name + "</font>(</b>";
+	  ret += parse_not_doc( c->get_first_element("arguments") );
+	  ret += "<b>)</b></tt>";
+	  break;
+      }
       break;
 
     case "argument":
