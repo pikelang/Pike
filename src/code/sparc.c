@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: sparc.c,v 1.22 2002/11/07 17:19:51 grubba Exp $
+|| $Id: sparc.c,v 1.23 2002/11/07 17:27:25 grubba Exp $
 */
 
 /*
@@ -376,6 +376,15 @@ const unsigned INT32 sparc_flush_instruction_cache[] = {
   0x80100000|(SPARC_REG_O0<<25),
 };
 
+static void sparc_disass_rd_reg(int reg_no)
+{
+  switch(reg_no & 0x1f) {
+  case SPARC_RD_REG_CCR:	fprintf(stderr, "%%ccr"); break;
+  case SPARC_RD_REG_PC:		fprintf(stderr, "%%pc"); break;
+  default:	fprintf(stderr, "%%sr(%d)", reg_no & 0x1f); break;
+  }
+}
+
 static void sparc_disass_reg(int reg_no)
 {
   fprintf(stderr, "%%%c%1x", "goli"[(reg_no>>3)&3], reg_no & 7);
@@ -441,6 +450,7 @@ void sparc_disassemble_code(void *addr, size_t bytes)
 	  case SPARC_OP3_SLL:	mnemonic = "sll"; break;
 	  case SPARC_OP3_SRL:	mnemonic = "srl"; break;
 	  case SPARC_OP3_SRA:	mnemonic = "sra"; break;
+	  case SPARC_OP3_RD:	mnemonic = "rd"; break;
 	  case SPARC_OP3_SAVE:	mnemonic = "save"; break;
 	  default:
 	    sprintf(buf, "op3(0x%02x)", op3);
@@ -449,13 +459,18 @@ void sparc_disassemble_code(void *addr, size_t bytes)
 	  }
 	  fprintf(stderr, "%s ", mnemonic);
 	}
-	sparc_disass_reg(opcode>>14);
-	fprintf(stderr, ", ");
-	if (opcode & 0x00002000) {
-	  fprintf(stderr, "0x%04x, ", opcode & 0x1fff);
-	} else {
-	  sparc_disass_reg(opcode);
+	if (op3 == SPARC_OP3_RD) {
+	  sparc_disass_rd_reg(opcode>>14);
 	  fprintf(stderr, ", ");
+	} else {
+	  sparc_disass_reg(opcode>>14);
+	  fprintf(stderr, ", ");
+	  if (opcode & 0x00002000) {
+	    fprintf(stderr, "0x%04x, ", opcode & 0x1fff);
+	  } else {
+	    sparc_disass_reg(opcode);
+	    fprintf(stderr, ", ");
+	  }
 	}
 	sparc_disass_reg(opcode >> 25);
 	fprintf(stderr, "\n");
