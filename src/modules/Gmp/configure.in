@@ -1,4 +1,4 @@
-# $Id: configure.in,v 1.35 2003/03/28 15:49:01 mast Exp $
+# $Id: configure.in,v 1.36 2003/03/28 17:57:02 mast Exp $
 AC_INIT(mpz_glue.c)
 AC_CONFIG_HEADER(gmp_machine.h)
 AC_ARG_WITH(gmp,     [  --with(out)-gmp        Support bignums],[],[with_gmp=yes])
@@ -184,6 +184,15 @@ define(CHECK_GMP_FUNC,
   AC_MSG_CHECKING([for $1])
   AC_CACHE_VAL([pike_cv_have_gmp_$1], [
     AC_TRY_LINK([
+/* Kludge for some compilers only defining __STDC__ in strict mode,
+ * which leads to <gmp.h> using the wrong token concat method.
+ */
+#if !defined(__STDC__) && defined(HAVE_ANSI_CONCAT) && defined(PIKE_MPN_PREFIX)
+#define PIKE_LOW_MPN_CONCAT(x,y)	x##y
+#define PIKE_MPN_CONCAT(x,y)	PIKE_LOW_MPN_CONCAT(x,y)
+#define __MPN(x)	PIKE_MPN_CONCAT(PIKE_MPN_PREFIX,x)
+#endif /* !__STDC__ && HAVE_ANSI_CONCAT && PIKE_MPN_PREFIX */
+
 #ifdef HAVE_GMP2_GMP_H
 #include <gmp2/gmp.h>
 #elif defined (HAVE_GMP_H)
@@ -223,6 +232,15 @@ with the option --without-bignums instead.
   AC_CACHE_VAL([pike_cv_sizeof_mp_limb_t], [
     rm -f confdefs.out.2 2>/dev/null
     AC_TRY_RUN([
+/* Kludge for some compilers only defining __STDC__ in strict mode,
+ * which leads to <gmp.h> using the wrong token concat method.
+ */
+#if !defined(__STDC__) && defined(HAVE_ANSI_CONCAT) && defined(PIKE_MPN_PREFIX)
+#define PIKE_LOW_MPN_CONCAT(x,y)	x##y
+#define PIKE_MPN_CONCAT(x,y)	PIKE_LOW_MPN_CONCAT(x,y)
+#define __MPN(x)	PIKE_MPN_CONCAT(PIKE_MPN_PREFIX,x)
+#endif /* !__STDC__ && HAVE_ANSI_CONCAT && PIKE_MPN_PREFIX */
+
 #ifdef HAVE_GMP2_GMP_H
 #include <gmp2/gmp.h>
 #elif defined (HAVE_GMP_H)
