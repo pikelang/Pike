@@ -5,7 +5,7 @@
 \*/
 
 #include "global.h"
-RCSID("$Id: file.c,v 1.103 1998/05/27 20:55:35 grubba Exp $");
+RCSID("$Id: file.c,v 1.104 1998/05/28 04:25:05 hubbe Exp $");
 #include "fdlib.h"
 #include "interpret.h"
 #include "svalue.h"
@@ -2023,8 +2023,9 @@ static void file_lock(INT32 args)
   low_file_lock(args,fd_LOCK_EX);
 }
 
-// If (fd_LOCK_EX | fd_LOCK_NB) is used with lockf, the result will be
-// F_TEST, which only tests for the existance of a lock on the file.
+/* If (fd_LOCK_EX | fd_LOCK_NB) is used with lockf, the result will be
+ * F_TEST, which only tests for the existance of a lock on the file.
+ */
 #ifdef HAVE_FD_FLOCK
 static void file_trylock(INT32 args)
 {
