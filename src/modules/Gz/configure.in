@@ -1,9 +1,11 @@
-# $Id: configure.in,v 1.19 2000/10/02 16:22:20 jonasw Exp $
+# $Id: configure.in,v 1.20 2001/02/13 13:02:05 mirar Exp $
 AC_INIT(zlibmod.c)
 AC_CONFIG_HEADER(zlib_machine.h)
 AC_ARG_WITH(zlib,     [  --with(out)-zlib       Support gzip compression],[],[with_zlib=yes])
 
 AC_MODULE_INIT()
+
+PIKE_FEATURE_WITHOUT(Gz,Gz.................)
 
 define([AC_CHECK_GZ],
 [
@@ -26,6 +28,7 @@ define([AC_CHECK_GZ],
   LIBS="$OLDLIBS"
 
   if test "x$pike_cv_working_$1" = xyes; then
+    PIKE_FEATURE(Gz,Gz.................yes (lib$1))
     AC_MSG_RESULT(yes)
     AC_DEFINE(HAVE_LIBZ)
     if test "$pike_cv_sys_os" != "Darwin"; then
@@ -48,6 +51,7 @@ if test "$pike_cv_sys_os" = "Darwin"; then
 fi
 
 if test x$with_zlib = xyes ; then
+  PIKE_FEATURE_NODEP(Gz,Gz.................)
   AC_CHECK_HEADERS(zlib.h)
   if test $ac_cv_header_zlib_h = yes ; then
     AC_MSG_CHECKING([if libz.h is new enough])
@@ -57,6 +61,7 @@ if test x$with_zlib = xyes ; then
 int foo = (int)(Z_NO_COMPRESSION | Z_VERSION_ERROR);
     ],[ AC_MSG_RESULT(yes) ],[ AC_MSG_RESULT(no); ac_cv_header_zlib_h=no ])
 
+    PIKE_FEATURE(Gz,Gz.................no (zlib is too old))
     if test $ac_cv_header_zlib_h = yes ; then
       if test x$pike_cv_sys_os = xIRIX ; then
         # The libz.so supplied with IRIX 6.3 needs these obscure symbols

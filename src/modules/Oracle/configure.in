@@ -1,5 +1,5 @@
 #
-# $Id: configure.in,v 1.29 2000/11/10 13:04:26 grubba Exp $
+# $Id: configure.in,v 1.30 2001/02/13 13:02:06 mirar Exp $
 #
 # Configure script for the oracle module
 #
@@ -13,7 +13,11 @@ ORACLE_LIBS=""
 
 AC_ARG_WITH(oracle,  [  --without-oracle       no support for the Oracle databases],[],[with_oracle=yes])
 
+PIKE_FEATURE_WITHOUT(Oracle,Oracle.............)
+
 if test x$with_oracle = xyes; then
+
+  PIKE_FEATURE_NODEP(Oracle,Oracle.............)
 
   AC_MSG_CHECKING(if this is HP-UX)
   if test "x$pike_cv_sys_os" = "xHP-UX"; then
@@ -231,9 +235,11 @@ if test x$with_oracle = xyes; then
     if test x$pike_cv_working_oracle = xyes ; then
       AC_DEFINE(HAVE_ORACLE)
       LDFLAGS="$EXTRALDFLAGS $LDFLAGS"
+      PIKE_FEATURE_OK(Oracle,Oracle.............)
     else
       ORACLE_LIBS=""
       LIBS="$OLDLIBS"
+      PIKE_FEATURE(Oracle,Oracle.............no (doesn't work))
     fi
   fi
 

@@ -1,4 +1,4 @@
-AC_REVISION("$Id: configure.in,v 1.473 2001/02/05 11:24:15 mirar Exp $")
+AC_REVISION("$Id: configure.in,v 1.474 2001/02/13 13:02:05 mirar Exp $")
 AC_INIT(interpret.c)
 AC_CONFIG_HEADER(machine.h)
 
@@ -5109,5 +5109,43 @@ AC_SUBST(ac_configure_args)
 AC_SUBST(dmmsrc)
 
 AC_OUTPUT(Makefile modules/static_module_makefile  post_modules/static_module_makefile:modules/static_module_makefile.in modules/dynamic_module_makefile:$dmmsrc post_modules/dynamic_module_makefile:$dmmsrc precompile.sh,[echo foo >stamp-h ; chmod +x precompile.sh])
+
+# NOTE: M4 uses [] as quotes.
+
+PIKE_VERSION="$(sed -n -e 's/^.*PIKE_MAJOR_VERSION[[ \t]]*\([[^ \t]]*\)/\1/p' <$srcdir/version.h).$(sed -n -e 's/^.*PIKE_MINOR_VERSION[[ \t]]*\([[^ \t]]*\)/\1/p' <$srcdir/version.h).$(sed -n -e 's/^.*PIKE_BUILD_VERSION[[ \t]]*\([[^ \t]]*\)/\1/p' <$srcdir/version.h)"
+PIKE_VERSION_LONG="Pike v$(sed -n -e 's/^.*PIKE_MAJOR_VERSION[[ \t]]*\([[^ \t]]*\)/\1/p' <$srcdir/version.h).$(sed -n -e 's/^.*PIKE_MINOR_VERSION[[ \t]]*\([[^ \t]]*\)/\1/p' <$srcdir/version.h) release $(sed -n -e 's/^.*PIKE_BUILD_VERSION[[ \t]]*\([[^ \t]]*\)/\1/p' <$srcdir/version.h)"
+
+rm config.info 2>/dev/null
+
+echo "=========================================================" >>config.info
+
+echo "$PIKE_VERSION_LONG configuration summary" >>config.info
+
+echo >>config.info
+echo "install information:" >>config.info
+echo "prefix........$prefix" >>config.info
+echo "pike binary...$prefix/bin/pike" >>config.info
+echo "pike library..$prefix/lib/${PIKE_VERSION}/" >>config.info
+
+echo >>config.info
+echo "build information:" >>config.info
+echo "source path...$srcdir" >>config.info
+echo "cpp...........$CPP" >>config.info
+echo "cc............$CC" >>config.info
+echo "ld............$LD" >>config.info
+echo "pike..........$PIKE" >>config.info
+echo "install.......$INSTALL" >>config.info
+
+echo >>config.info
+echo "features:" >>config.info
+echo "dynamic loading....$pike_cv_sys_dynamic_loading" >>config.info
+
+ls -1 pike_*.feature 2>/dev/null | xargs cat | sort >>config.info 
+ls -1 post-modules/*/pike_*.feature modules/*/pike_*.feature 2>/dev/null |  xargs cat | sort >>config.info
+
+echo "=========================================================" >>config.info
+
+cat config.info
+
 
 
