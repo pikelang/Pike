@@ -15,6 +15,7 @@ hsort_template.h
 interpret_protos.h
 interpret_protos.h_src
 isort_template.h
+iterators.c
 language.c
 language.h
 language.h_src
