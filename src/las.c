@@ -5,7 +5,7 @@
 \*/
 /**/
 #include "global.h"
-RCSID("$Id: las.c,v 1.181 2000/07/07 01:48:40 hubbe Exp $");
+RCSID("$Id: las.c,v 1.182 2000/07/10 20:57:56 grubba Exp $");
 
 #include "language.h"
 #include "interpret.h"
@@ -72,13 +72,25 @@ int cdr_is_node(node *n)
   case F_TRAMPOLINE:
   case F_CONSTANT:
   case F_LOCAL:
-  case F_CAST:
-  case F_SOFT_CAST:
     return 0;
 
   default:
     return !!_CDR(n);
   }
+}
+
+int node_is_leaf(node *n)
+{
+  switch(n->token)
+  {
+  case F_EXTERNAL:
+  case F_IDENTIFIER:
+  case F_TRAMPOLINE:
+  case F_CONSTANT:
+  case F_LOCAL:
+    return 1;
+  }
+  return 0;
 }
 
 #ifdef PIKE_DEBUG
@@ -89,9 +101,7 @@ void check_tree(node *n, int depth)
   if(n->token==USHRT_MAX)
     fatal("Free node in tree.\n");
 
-#ifdef SHARED_NODES
   check_node_hash(n);
-#endif /* SHARED_NODES */
 
   if(d_flag<2) return;
 
@@ -372,7 +382,7 @@ void free_all_nodes(void)
 	    if(!tmp)
 	    {
 	      tmp=tmp2->x+e;
-#if defined(PIKE_DEBUG)
+#ifdef PIKE_DEBUG
 	      if(!cumulative_parse_error)
 	      {
 		fprintf(stderr,"Free node at %p, (%s:%d) (token=%d).\n",
@@ -939,13 +949,7 @@ node *debug_mkcastnode(struct pike_string *type,node *n)
   res->tree_info |= n->tree_info;
 
   _CAR(res) = n;
-#ifdef SHARED_NODES
-  _CDR(res) = (node *)type;
-#else /* !SHARED_NODES */
-#ifdef __CHECKER__
-  _CDR(res) = 0;
-#endif
-#endif /* SHARED_NODES */
+  _CDR(res) = mktypenode(type);
 
   n->parent = res;
 
@@ -995,18 +999,12 @@ node *debug_mksoftcastnode(struct pike_string *type,node *n)
 
   res = mkemptynode();
   res->token = F_SOFT_CAST;
-  copy_shared_string(res->type,type);
+  copy_shared_string(res->type, type);
 
   res->tree_info |= n->tree_info;
 
   _CAR(res) = n;
-#ifdef SHARED_NODES
-  _CDR(res) = (node *)type;
-#else /* !SHARED_NODES */
-#ifdef __CHECKER__
-  _CDR(res) = 0;
-#endif
-#endif /* SHARED_NODES */
+  _CDR(res) = mktypenode(type);
 
   n->parent = res;
 
@@ -1184,8 +1182,11 @@ node *index_node(node *n, char *node_name, struct pike_string *id)
   if(SETJMP(tmp))
   {
     ONERROR tmp;
+    struct svalue s;
+
     SET_ONERROR(tmp,exit_on_error,"Error in handle_error in master object!");
-    assign_svalue_no_free(Pike_sp++, & throw_value);
+    assign_svalue_no_free(Pike_sp++, &throw_value);
+    assign_svalue_no_free(&s, &throw_value);
     APPLY_MASTER("handle_error", 1);
     pop_stack();
     UNSET_ONERROR(tmp);
@@ -1195,7 +1196,18 @@ node *index_node(node *n, char *node_name, struct pike_string *id)
     } else {
       yyerror("Couldn't index module.");
     }
-    push_int(0);
+    if ((s.type == T_ARRAY) && s.u.array->size &&
+	(s.u.array->item[0].type == T_STRING)) {
+      /* Old-style backtrace */
+      my_yyerror("Error: '%s'.", s.u.array->item[0].u.string->str);
+    } else if (s.type == T_OBJECT) {
+      struct generic_error_struct *ge;
+      if ((ge = (struct generic_error_struct *)
+	   get_storage(s.u.object, generic_error_program))) {
+	my_yyerror("Error: '%s'.", ge->desc->str);
+      }
+    }
+    free_svalue(&s);
   }else{
     resolv_constant(n);
     switch(Pike_sp[-1].type)
@@ -2357,6 +2369,21 @@ void fix_type_field(node *n)
 	  break;
 	}
 	break;
+
+      case F_EXTERNAL:
+	{
+	  int level = CAR(n)->u.integer.a;
+	  int id_no = CAR(n)->u.integer.b;
+	  struct program *p = parent_compilation(level);
+	  name="external symbol";
+	  if (p) {
+	    struct identifier *id = ID_FROM_INT(p, id_no);
+	    if (id && id->name) {
+	      name = id->name->str;
+	    }
+	  }
+	}
+	break;
 	  
       default:
 	name="unknown function";
@@ -2375,6 +2402,8 @@ void fix_type_field(node *n)
       }
       
       yytype_error(NULL, f, s, 0);
+
+      /* print_tree(n); */
 
       free_string(s);
     }
@@ -2486,11 +2515,18 @@ void fix_type_field(node *n)
 		 (CAR(n)->type != CDR(n)->type)) {
 	/* The type should be the same for both CAR & CDR. */
 	if (!pike_types_le(CDR(n)->type, CAR(n)->type)) {
-	  yytype_error("Type mismatch in case range.",
-		       CAR(n)->type, CDR(n)->type, YYTE_IS_WARNING);
+	  /* Note that zero should be handled as int(0..0) here. */
+	  if (!(CAR(n)->type == zero_type_string) ||
+	      !(pike_types_le(CDR(n)->type, int_type_string))) {
+	    yytype_error("Type mismatch in case range.",
+			 CAR(n)->type, CDR(n)->type, YYTE_IS_WARNING);
+	  }
 	} else if (!pike_types_le(CAR(n)->type, CDR(n)->type)) {
-	  yytype_error("Type mismatch in case range.",
-		       CDR(n)->type, CAR(n)->type, YYTE_IS_WARNING);
+	  if (!(CDR(n)->type == zero_type_string) ||
+	      !(pike_types_le(CAR(n)->type, int_type_string))) {
+	    yytype_error("Type mismatch in case range.",
+			 CDR(n)->type, CAR(n)->type, YYTE_IS_WARNING);
+	  }
 	}
       }
     }
