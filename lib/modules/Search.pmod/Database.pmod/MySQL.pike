@@ -1,14 +1,14 @@
 // SQL blob based database
 // Copyright © 2000,2001 Roxen IS.
 //
-// $Id: MySQL.pike,v 1.20 2001/05/29 12:25:28 js Exp $
+// $Id: MySQL.pike,v 1.21 2001/05/31 00:59:26 js Exp $
 
-// inherit Search.Database.Base;
+inherit Search.Database.Base;
 
 // Creates the SQL tables we need.
 
 //#define DEBUG
-void create_tables()
+void recreate_tables()
 {
   catch(db->query("drop table uri"));
   catch(db->query("drop table document"));
@@ -18,11 +18,9 @@ void create_tables()
   
   db->query(
 #"create table uri      (id          int unsigned primary key auto_increment not null,
-                         uri_first   varchar(235) not null,
-                         uri_rest    text not null,
+                         uri         text not null,
                          uri_md5     char(16) not null,
-                         UNIQUE(uri_md5),
-                         INDEX index_uri_first (uri_first(235)))"
+                         UNIQUE(uri_md5))"
 			 );
 
   db->query(
@@ -86,29 +84,24 @@ int hash_word(string word)
   return c;
 }
 
-array(string) split_uri(string in)
-{
-  return ({ in[..218], in[219..] });
-}
 
-
-int find_or_create_uri_id(string uri)
+int get_uri_id(string uri)
 {
   string s=sprintf("select id from uri where uri_md5='%s'", db->quote(to_md5(uri)));
   array a=db->query(s);
   if(sizeof(a))
     return (int)a[0]->id;
 
-  s=sprintf("insert into uri (uri_first,uri_rest,uri_md5) "
-	    "values ('%s','%s','%s')",
-	    @map(split_uri(uri), db->quote), db->quote(to_md5(uri)));
+  db->query("insert into uri (uri,uri_md5) "
+	    "values (%s,%s)",
+	    uri, to_md5(uri));
   db->query(s);
   return db->master_sql->insert_id();
 }
 
-int find_or_create_document_id(string uri, void|string language_code)
+int get_document_id(string uri, void|string language_code)
 {
-  int uri_id=find_or_create_uri_id(uri);
+  int uri_id=get_uri_id(uri);
   
   string s=sprintf("select id from document where "
 		   "uri_id='%d'", uri_id);
@@ -129,7 +122,7 @@ int find_or_create_document_id(string uri, void|string language_code)
 }
 
 mapping field_cache = ([]);
-int find_or_create_field_id(string field)
+int get_field_id(string field, void|int do_not_create)
 {
   if(field=="body")      return 0;
   if(field=="anchor")    return 1;
@@ -143,6 +136,10 @@ int find_or_create_field_id(string field)
     return (int)a[0]->id+1;
   }
 
+  if(do_not_create)
+    return 0;
+
+  // FIXME: Write a custom id allocation algorithm
   s=sprintf("insert into field (name) values ('%s')", db->quote(field));
   db->query(s);
   return db->master_sql->insert_id()+1;
@@ -158,8 +155,8 @@ void insert_words(Standards.URI|string uri, void|string language,
 {
   if(!sizeof(words))  return;
 
-  int doc_id   = find_or_create_document_id((string)uri, language);
-  int field_id = find_or_create_field_id(field);
+  int doc_id   = get_document_id((string)uri, language);
+  int field_id = get_field_id(field);
 
   blobs->add_words_hash( doc_id, words, field_id, link_hash );
 
