@@ -99,16 +99,29 @@ GDK.Region union(GDK.Region victim)
 {
   struct object *o;
   void *v;
+#ifndef HAVE_GTK_20
   GdkRegion *r;
+#endif
   get_all_args( "union", args, "%o", &o );
   if( (v = get_gdkobject(o, rectangle )) )
+#ifndef HAVE_GTK_20
     r = gdk_region_union_with_rect( (GdkRegion *)THIS->obj, v);
+#else
+    gdk_region_union_with_rect( (GdkRegion *)THIS->obj, v);
+#endif
   else if( (v=get_gdkobject(o, region )) )
+#ifndef HAVE_GTK_20
     r = gdk_regions_union( (GdkRegion *)THIS->obj, v);
+#else
+    gdk_region_union( (GdkRegion *)THIS->obj, v);
+#endif
   else
     Pike_error("Bad argument to union: Not Region or Rectangle\n");
+#ifndef HAVE_GTK_20
   return_gdkregion( args, r );
-  return;
+#else
+  RETURN_THIS();
+#endif
 }
 
 GDK.Region intersect(GDK.Region victim)
@@ -117,15 +130,24 @@ GDK.Region intersect(GDK.Region victim)
 {
   struct object *o;
   void *v;
+#ifndef HAVE_GTK_20
   GdkRegion *r;
+#endif
   get_all_args( "intersect", args, "%o", &o );
   if( (v=get_gdkobject(o, region )) ) {
+#ifndef HAVE_GTK_20
     r = gdk_regions_union( (GdkRegion *)THIS->obj, v);
+#else
+    gdk_region_union( (GdkRegion *)THIS->obj, v);
+#endif
   } else {
     Pike_error("Bad argument to intersect: Not a GDK.Region object\n");
   }
+#ifndef HAVE_GTK_20
   return_gdkregion( args, r );
-  return;
+#else
+  RETURN_THIS();
+#endif
 }
 
 GDK.Region subtract(GDK.Region victim)
@@ -134,15 +156,24 @@ GDK.Region subtract(GDK.Region victim)
 {
   struct object *o;
   void *v;
+#ifndef HAVE_GTK_20
   GdkRegion *r;
+#endif
   get_all_args( "subtract", args, "%o", &o );
   if( (v=get_gdkobject(o, region )) ) {
+#ifndef HAVE_GTK_20
     r = gdk_regions_subtract( (GdkRegion *)THIS->obj, v);
+#else
+    gdk_region_subtract( (GdkRegion *)THIS->obj, v);
+#endif
   } else {
     Pike_error("Bad argument to subtract: Not a GDK.Region object\n");
   }
+#ifndef HAVE_GTK_20
   return_gdkregion( args, r );
-  return;
+#else
+  RETURN_THIS();
+#endif
 }
 
 GDK.Region xor(GDK.Region victim)
@@ -151,14 +182,23 @@ GDK.Region xor(GDK.Region victim)
 {
   struct object *o;
   void *v;
+#ifndef HAVE_GTK_20
   GdkRegion *r;
+#endif
   get_all_args( "xor", args, "%o", &o );
   if( (v=get_gdkobject(o, region )) ) {
+#ifndef HAVE_GTK_20
     r = gdk_regions_xor( (GdkRegion *)THIS->obj, v);
+#else
+    gdk_region_xor( (GdkRegion *)THIS->obj, v);
+#endif
   } else {
     Pike_error("Bad argument to xor: Not a GDK.Region object\n");
   }
+#ifndef HAVE_GTK_20
   return_gdkregion( args, r );
-  return;
+#else
+  RETURN_THIS();
+#endif
 }
 
