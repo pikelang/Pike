@@ -1,7 +1,7 @@
 #pike __REAL_VERSION__
 #pragma strict_types
 
-/* $Id: handshake.pike,v 1.48 2004/06/05 17:21:15 nilsson Exp $
+/* $Id: handshake.pike,v 1.49 2004/07/01 13:00:14 grubba Exp $
  *
  */
 
@@ -678,6 +678,7 @@ int(-1..1) handle_handshake(int type, string data, string raw)
 	}
 	  || (version[0] != 3) || (version[1] > 1) || (cipher_len & 1))
 	{
+	  if (version[1] > 1) version[1] = 1;
 	  send_packet(Alert(ALERT_fatal, ALERT_unexpected_message, version[1],
 			    "SSL.session->handle_handshake: unexpected message\n",
 			    backtrace()));
@@ -753,12 +754,13 @@ int(-1..1) handle_handshake(int type, string data, string raw)
 	  id_len = input->get_uint(2);
 	  ch_len = input->get_uint(2);
 	} || (ci_len % 3) || !ci_len || (id_len) || (ch_len < 16)
-	|| (version[0] != 3))
+	    || (version[0] != 3) || (version[1] > 1))
 	{
 #ifdef SSL3_DEBUG
 	  werror("SSL.handshake: Error decoding SSL2 handshake:\n"
-		 "%s\n", describe_backtrace(err));
+		 "%s\n", err?describe_backtrace(err):"");
 #endif /* SSL3_DEBUG */
+	  if (version[1] > 1) version[1] = 1;
 	  send_packet(Alert(ALERT_fatal, ALERT_unexpected_message, version[1],
 		      "SSL.session->handle_handshake: unexpected message\n",
 		      backtrace()));
@@ -1013,11 +1015,13 @@ int(-1..1) handle_handshake(int type, string data, string raw)
       cipher_suite = input->get_uint(2);
       compression_method = input->get_uint(1);
 
-      if( !has_value(context->preferred_suites, cipher_suite)
-	 || !has_value(context->preferred_compressors, compression_method))
+      if( !has_value(context->preferred_suites, cipher_suite) ||
+	  !has_value(context->preferred_compressors, compression_method) ||
+	  (version[0] != 3) || (version[1] > 1))
       {
 	// The server tried to trick us to use some other cipher suite
 	// or compression method than we wanted
+	if (version[1] > 1) version[1] = 1;
 	send_packet(Alert(ALERT_fatal, ALERT_handshake_failure, version[1],
 			  "SSL.session->handle_handshake: handshake failure\n",
 			  backtrace()));
