@@ -1,0 +1,13 @@
+NAME
+	stdout - Standard output
+
+SYNTAX EXAMPLE
+	#include <stdio.h>
+
+	stdout->gets()
+
+DESCRIPTION
+	Stdout is a clone of /precompiled/file connected to the standard output.
+
+SEE ALSO
+	/precompiled/file, write

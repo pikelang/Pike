@@ -1,0 +1,18 @@
+NAME
+	read_bytes - read a number of lines into a string from file
+
+SYNTAX
+	#include <stdio.h>
+
+	string read_file(string file, int start, int len);
+
+DESCRIPTION
+	Read 'len' lines from the file 'file' after skipping 'start' lines
+	and return those lines as a string. If start and len are omitted
+	the whole file is read.
+
+KEYWORDS
+	file
+
+SEE ALSO
+	read_bytes, write_file

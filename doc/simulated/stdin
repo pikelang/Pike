@@ -1,0 +1,13 @@
+NAME
+	stdin - Standard input
+
+SYNTAX EXAMPLE
+	#include <stdio.h>
+
+	stdin->gets()
+
+DESCRIPTION
+	Stdin is a clone of /precompiled/FILE connected to the standard input.
+
+SEE ALSO
+	/precompiled/FILE

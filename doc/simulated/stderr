@@ -1,0 +1,14 @@
+NAME
+	stderr - Standard error stream
+
+SYNTAX EXAMPLE
+	#include <stdio.h>
+
+	stderr->gets()
+
+DESCRIPTION
+	Stderr is a clone of /precompiled/file connected to the standard
+	error stream.
+
+SEE ALSO
+	/precompiled/file, werror
