@@ -31,7 +31,6 @@ array(array(string)) announce_list=({});
 //!
 //! piece_size is default 262144 and is the piece size, the pieces
 //! sha1's are calculated on. This should probably be 2^n.
-
 void create(void|string _base,
 	    void|int _piece_size)
 {
