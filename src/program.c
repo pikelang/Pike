@@ -5,7 +5,7 @@
 \*/
 /**/
 #include "global.h"
-RCSID("$Id: program.c,v 1.128 1999/07/01 18:59:39 grubba Exp $");
+RCSID("$Id: program.c,v 1.129 1999/07/01 19:01:44 grubba Exp $");
 #include "program.h"
 #include "object.h"
 #include "dynamic_buffer.h"
@@ -1968,7 +1968,7 @@ int really_low_find_shared_string_identifier(struct pike_string *name,
 #ifdef PIKE_DEBUG
   if (!prog) {
     fatal("really_low_find_shared_string_identifier(\"%s\", NULL, %d)\n"
-	  "prog is NULL!\n", name-str, see_static);
+	  "prog is NULL!\n", name->str, see_static);
   }
 #endif /* PIKE_DEBUG */
 
