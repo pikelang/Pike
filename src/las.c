@@ -2,11 +2,11 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: las.c,v 1.303 2002/10/11 01:39:32 nilsson Exp $
+|| $Id: las.c,v 1.304 2002/10/16 15:20:53 grubba Exp $
 */
 
 #include "global.h"
-RCSID("$Id: las.c,v 1.303 2002/10/11 01:39:32 nilsson Exp $");
+RCSID("$Id: las.c,v 1.304 2002/10/16 15:20:53 grubba Exp $");
 
 #include "language.h"
 #include "interpret.h"
@@ -5332,6 +5332,7 @@ ptrdiff_t eval_low(node *n)
 				 
     if(apply_low_safe_and_stupid(Pike_compiler->fake_object, jump))
     {
+#if 0
       /* Generate error message */
       if(!Pike_compiler->catch_level)
       {
@@ -5339,7 +5340,8 @@ ptrdiff_t eval_low(node *n)
 	throw_value.type = T_INT;
 	yyerror("Error evaluating constant.\n");
 	push_svalue(&thrown);
-	low_safe_apply_handler("compile_exception", error_handler, compat_handler, 1);
+	low_safe_apply_handler("compile_exception",
+			       error_handler, compat_handler, 1);
 	if (SAFE_IS_ZERO(Pike_sp-1)) yy_describe_exception(&thrown);
 	pop_stack();
 	free_svalue(&thrown);
@@ -5348,6 +5350,13 @@ ptrdiff_t eval_low(node *n)
 	free_svalue(&throw_value);
 	throw_value.type = T_INT;
       }
+#else /* !0 */
+      free_svalue(&throw_value);
+      throw_value.type = T_INT;
+      /* Assume the node will throw errors at runtime too. */
+      n->tree_info |= OPT_SIDE_EFFECT;
+      n->node_info |= OPT_SIDE_EFFECT;
+#endif /* 0 */
     }else{
       if(foo.yes)
 	pop_n_elems(Pike_sp-save_sp);
