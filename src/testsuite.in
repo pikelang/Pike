@@ -1,5 +1,5 @@
 START_MARKER
-test_true([["$Id: testsuite.in,v 1.751 2005/01/17 15:36:32 grubba Exp $"]]);
+test_true([["$Id: testsuite.in,v 1.752 2005/02/18 13:54:04 grubba Exp $"]]);
 
 // This triggered a bug only if run sufficiently early.
 test_compile_any([[#pike 7.2]])
@@ -365,6 +365,11 @@ test_eq([[
     return Locale.Charset.decoder("utf-8")->feed(s)->drain();
   }))
 ]], [[ "function(string : string)" ]])
+
+// Test implicit lambda.
+test_eq([[
+  `()(){ return 1; }
+]], 1)
 
 // Argument checking
 
