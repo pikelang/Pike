@@ -4,7 +4,7 @@
 
 //! Polish language locale by Piotr Klaban.
 
-// $Id: pol.pike,v 1.2 2002/03/20 16:39:57 nilsson Exp $
+// $Id: pol.pike,v 1.3 2002/04/18 13:45:22 nilsson Exp $
 
 inherit "abstract";
 
@@ -105,7 +105,7 @@ string number(int num)
    case 20: return "dwadzie¶cia";
    case 30: return "trzydzie¶ci";
    case 40: return "czterdzie¶ci";
-   case 60: case 70: case 80: case 90:
+   case 50: case 60: case 70: case 80: case 90:
      return number(num/10)+"dziesi±t";
    case 21..29: case 31..39:
    case 51..59: case 61..69: case 71..79:
