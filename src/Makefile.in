@@ -1,5 +1,5 @@
 #
-# $Id: Makefile.in,v 1.241 2001/01/23 22:24:53 mast Exp $
+# $Id: Makefile.in,v 1.242 2001/01/26 02:04:47 mast Exp $
 #
 
 # This line is needed on some machines.
@@ -94,8 +94,9 @@ AR=@AR@
 LD=@LD@
 LDFLAGS=@LDFLAGS@ @LINKFORSHARED@ $(EXTRALDFLAGS)
 
-RUNPIKE=$(TMP_BUILDDIR)/pike -DNOT_INSTALLED -m$(TMP_BUILDDIR)/master.pike $(PIKEOPTS)
-USE_TPIKE=$(TMP_BUILDDIR)/tpike -DNOT_INSTALLED -m$(TMP_BUILDDIR)/master.pike $(PIKEOPTS)
+DEFAULT_RUNPIKE=$(TMP_BUILDDIR)/pike -DNOT_INSTALLED -m$(TMP_BUILDDIR)/master.pike $(PIKEOPTS)
+RUNPIKE=$(DEFAULT_RUNPIKE)
+USE_TPIKE=$(TMP_BUILDDIR)/precompile.sh
 USE_PIKE=@PIKE@ $(PIKEOPTS)
 RUNTPIKE=$(@RUNTPIKE@)
 
@@ -173,30 +174,13 @@ POBJ = las.o builtin_functions.o peep.o
 # User callable targets
 #
 
-
-# Ouch.
-# It turns out that we really do need to do it this way.
-#
-# First compile pike to generate the lower_case() support, since that
-# is needed by the post_module.
-#
-# Then relink pike once more, since the post modules might be
-# static modules, and thus have to be linked into pike.
-# 
-# No rest for the wicked.
-all: module_objects hilfe master.pike
-	$(MAKE) $(MAKE_FLAGS) $(MAKE_PARALLEL) pike
-	@rm -f dummy_engine >/dev/null 2>&1; echo "" >dummy_engine && \
-	  if cmp $(SRCDIR)/peep_engine.c dummy_engine >/dev/null 2>&1; then \
-	    echo "Warning: No peep_engine." >&2; \
-	  else :; fi; \
-	  rm -f dummy_engine >/dev/null 2>&1
-#	$(MAKE) $(MAKE_FLAGS) $(MAKE_PARALLEL) new_peep_engine
-	$(MAKE) $(MAKE_FLAGS) $(MAKE_PARALLEL) pike
-	$(MAKE) $(MAKE_FLAGS) "MAKE_PARALLEL=$(MAKE_PARALLEL)" post_modules
+# Since post_modules might be static, we must remake pike after them
+# to make sure they are linked in.
+all: module_objects hilfe
+	$(MAKE) $(MAKE_FLAGS) $(MAKE_PARALLEL) post_modules
 	$(MAKE) $(MAKE_FLAGS) $(MAKE_PARALLEL) pike
 
-post_modules: force
+post_modules: pike
 	@( cd post_modules ; rm remake >/dev/null 2>&1 || : ; \
 	   $(MAKE) $(MAKE_PARALLEL) $(MAKE_FLAGS) || \
 	     ( test -f remake && $(MAKE) $(MAKE_PARALLEL) $(MAKE_FLAGS) ) ) || exit $$?
@@ -225,8 +209,15 @@ tpike-real: $(OBJ) $(TOBJ) modules/linker_options
 
 # Only want tpike to exist when using $(RUNTPIKE); we don't want to
 # require it actually being up-to-date.
-$(TMP_BUILDDIR)/tpike:
-	$(MAKE) $(MAKE_FLAGS) $(MAKE_PARALLEL) tpike-real
+#
+# If RUNPIKE has been overridden we don't bother to build tpike. The
+# precompile.sh script will then fall back to use RUNPIKE when it
+# doesn't find tpike, and we assume that RUNPIKE doesn't point to a
+# pike from the stone age.
+$(TMP_BUILDDIR)/tpike: precompile.sh-stamp
+	@if test "x$(RUNPIKE)" = "x$(DEFAULT_RUNPIKE)"; then \
+	  $(MAKE) $(MAKE_FLAGS) $(MAKE_PARALLEL) tpike-real; \
+	else :; fi
 
 # Make $(POBJ)s with a recursive make instead of depending on them.
 # This way, we make sure that all other objects shared with tpike are
@@ -290,9 +281,10 @@ hilfe: $(TMP_BINDIR)/hilfe Makefile
 	  -DPMOD_PROTO=PMOD_PROTO "$<" >"$@"
 
 .c.protos:
-	./precompile.sh fake_dynamic_load.pike "$@" --cpp --protos \
+	./precompile.sh fake_dynamic_load.pike >"$@" --cpp --protos \
 	  $(CPP) $(PREFLAGS) -DPMOD_EXPORT=PMOD_EXPORT \
-	    -DPMOD_PROTO=PMOD_PROTO -DPIKE_PRECOMPILER=1 "$<"
+	    -DPMOD_PROTO=PMOD_PROTO -DPIKE_PRECOMPILER=1 "$<" || \
+	  { rm "$@"; exit 1; }
 
 .h.pph:
 	$(CPP) $(PREFLAGS) -DPMOD_EXPORT=PMOD_EXPORT \
@@ -329,7 +321,7 @@ hilfe: $(TMP_BINDIR)/hilfe Makefile
 # -Hubbe
 #
 .cmod.c:
-	./precompile.sh precompile.pike "$@" "$<"
+	./precompile.sh precompile.pike >"$@" "$<" || { rm "$@"; exit 1; }
 
 # This rule is used for some header files that are generated from the
 # source, to avoid excessive rebuilding when the source change in ways
@@ -501,16 +493,18 @@ aclocal: $(SRCDIR)/aclocal.m4
 	echo >aclocal "define(PIKE_INCLUDE_PATH,$(prefix)/include/pike)"
 	cat >>aclocal $(SRCDIR)/aclocal.m4
 
+# We touch the files that depend on language.h_src and
+# interpret_protos.h_src to ensure that the .h_src.h rule doesn't have
+# anything to do in the dist.
+source: $(SRCDIR)/peep_engine.c $(SRCDIR)/case_info.h $(SRCDIR)/treeopt.h $(SRCDIR)/language.c $(SRCDIR)/language.h $(SRCDIR)/interpret_protos.h depend
+	touch $(SRCDIR)/language.c $(SRCDIR)/language.h $(SRCDIR)/interpret_protos.h
+
 # make export archive (requires compiled Pike)
 # Do not compile in source tree if you want to use this!
 # Beware that export archive this includes bison/yacc/byacc source
 # and thus has to follow the rules stated in that code.
 
-# We touch the files that depend on language.h_src and
-# interpret_protos.h_src to ensure that the .h_src.h rule doesn't have
-# anything to do in the dist.
-full_export: new_peep_engine $(SRCDIR)/language.c $(SRCDIR)/language.h $(SRCDIR)/interpret_protos.h depend
-	touch $(SRCDIR)/language.c $(SRCDIR)/language.h $(SRCDIR)/interpret_protos.h
+full_export: source
 	chmod +x $(SRCDIR)/install-sh
 	$(RUNPIKE) $(TMP_BINDIR)/export.pike --srcdir="$(SRCDIR)" 
 
@@ -536,27 +530,26 @@ bin_export: aclocal
 	  ;; \
 	esac
 
-
-new_peep_engine:
-	$(RUNPIKE) $(TMP_BINDIR)/mkpeep.pike $(SRCDIR)/peep.in >$(SRCDIR)/peep_engine.c
-	$(RUNPIKE) $(TMP_BINDIR)/make_ci.pike <$(SRCDIR)/UnicodeData.txt >$(SRCDIR)/case_info.h
+#new_peep_engine:
+#	$(RUNPIKE) $(TMP_BINDIR)/mkpeep.pike $(SRCDIR)/peep.in >$(SRCDIR)/peep_engine.c
+#	$(RUNPIKE) $(TMP_BINDIR)/make_ci.pike <$(SRCDIR)/UnicodeData.txt >$(SRCDIR)/case_info.h
 
 $(SRCDIR)/peep_engine.c: $(TMP_BUILDDIR)/tpike $(SRCDIR)/peep.in $(TMP_BINDIR)/mkpeep.pike
-	$(RUNTPIKE) $(TMP_BINDIR)/mkpeep.pike $(SRCDIR)/peep.in >$(SRCDIR)/peep_engine.c || ( mv $(TMP_BUILDDIR)/tpike  $(TMP_BUILDDIR)/tpike.bug ; exit 1 )
+	$(RUNTPIKE) mkpeep.pike $(SRCDIR)/peep.in >$(SRCDIR)/peep_engine.c || ( rm $(SRCDIR)/peep_engine.c ; exit 1 )
 
 peep.o: $(SRCDIR)/peep_engine.c
 
 peep_t.o: peep.c
 
 $(SRCDIR)/case_info.h: $(TMP_BUILDDIR)/tpike $(SRCDIR)/UnicodeData.txt $(TMP_BINDIR)/make_ci.pike
-	$(RUNTPIKE) $(TMP_BINDIR)/make_ci.pike <$(SRCDIR)/UnicodeData.txt >$(SRCDIR)/case_info.h || ( mv $(TMP_BUILDDIR)/tpike  $(TMP_BUILDDIR)/tpike.bug ; exit 1 )
+	$(RUNTPIKE) make_ci.pike <$(SRCDIR)/UnicodeData.txt >$(SRCDIR)/case_info.h || ( rm $(SRCDIR)/case_info.h ; exit 1 )
 
 builtin_functions.o: $(SRCDIR)/case_info.h
 
 builtin_functions_t.o: builtin_functions.c
 
 $(SRCDIR)/treeopt.h: $(TMP_BUILDDIR)/tpike $(SRCDIR)/treeopt.in $(TMP_BINDIR)/mktreeopt.pike
-	$(RUNTPIKE) $(TMP_BINDIR)/mktreeopt.pike $(SRCDIR)/treeopt.in || ( mv $(TMP_BUILDDIR)/tpike  $(TMP_BUILDDIR)/tpike.bug ; exit 1 )
+	$(RUNTPIKE) mktreeopt.pike $(SRCDIR)/treeopt.in || ( rm $(SRCDIR)/treeopt.h ; exit 1 )
 
 las.o: $(SRCDIR)/treeopt.h
 
@@ -585,9 +578,21 @@ stamp-tpike-predep: $(SRCDIR)/peep.in $(TMP_BINDIR)/mkpeep.pike peep.c $(SRCDIR)
 # make dependencies
 depend: $(DEPEND)
 	gcc -MM -MG $(PREFLAGS) $(SRCDIR)/*.c | $(TMP_BINDIR)/fixdepends.sh $(SRCDIR)
-	( cd modules && $(MAKE) $(MAKE_FLAGS) depend )
-	( cd post_modules && $(MAKE) $(MAKE_FLAGS) depend )
-	$(SRCDIR)/configure @ac_configure_args@
+	-@(while :; do \
+	  echo foo > cfl.$@; test "`echo cfl.*`" = cfl.$@ && break; \
+	  rm cfl.$@; echo "Waiting to run config.status serially:" cfl.*; sleep 1; \
+	  arb=37; while test $$arb != 0; do arb=`expr $$arb - 1`; done; \
+	done;)
+	CONFIG_FILES=Makefile CONFIG_HEADERS="" ./config.status || \
+	  (EXITCODE=$$?; rm cfl.$@; exit $$EXITCODE)
+	-@rm cfl.$@
+	@for d in modules post_modules; do \
+	  ( cd modules && { \
+	    rm -f remake; \
+	    $(MAKE) $(MAKE_FLAGS) depend || \
+	      { test -f remake && $(MAKE) $(MAKE_FLAGS) depend; }; \
+	  }); \
+	done
 
 # Documentation...
 
@@ -654,7 +659,7 @@ modules/linker_options: modules-stamp
 module.o:  modules/modlist_headers.h modules/modlist.h
 
 $(SRCDIR)/interpret_protos.h_src: $(SRCDIR)/interpret_functions.h
-	egrep '^OPCODE' <$(SRCDIR)/interpret_functions.h >$(SRCDIR)/interpret_protos.h_src
+	egrep '^OPCODE' <$(SRCDIR)/interpret_functions.h >$(SRCDIR)/interpret_protos.h_src || { rm $(SRCDIR)/interpret_protos.h_src; exit 1; }
 
 lex.o: $(SRCDIR)/lex.c $(SRCDIR)/interpret_protos.h
 
@@ -826,7 +831,7 @@ HFILES=						\
 $(HFILES): precompile.sh-stamp
 
 import-stamp: $(HFILES) precompile.sh-stamp
-	@./precompile.sh fake_dynamic_load.pike import_functions.tmp $(HFILES)
+	@./precompile.sh fake_dynamic_load.pike >import_functions.tmp $(HFILES)
 	@cmp import_functions.tmp import_functions.h >/dev/null || mv import_functions.tmp import_functions.h
 	@echo hej >import-stamp
 
