@@ -1,3 +1,5 @@
+#define VERSION "Pike v0.4pl1"
+
 string describe_backtrace(mixed *trace);
 
 string pike_library_path;
@@ -101,8 +103,6 @@ void handle_error(mixed *trace)
   werror(describe_backtrace(trace));
 }
 
-
-
 object new(mixed prog, mixed ... args)
 {
   return ((program)prog)(@args);
@@ -115,7 +115,7 @@ void create()
   /* make ourselves known */
   add_constant("master",lambda() { return this_object(); });
   add_constant("describe_backtrace",describe_backtrace);
-  add_constant("version",lambda() { return "Pike v0.4"; });
+  add_constant("version",lambda() { return VERSION; });
   add_constant("mkmultiset",lambda(mixed *a) { return aggregate_multiset(@a); });
   add_constant("strlen",sizeof);
   add_constant("new",new);
@@ -167,6 +167,12 @@ object cast_to_object(string oname)
 }
 
 
+mixed resolv(string identifier, string file)
+{
+  /* Module system goes here */
+  throw(sprintf("'%s' is undefined.",identifier));
+}
+
 /* This function is called when all the driver is done with all setup
  * of modules, efuns, tables etc. etc. and is ready to start executing
  * _real_ programs. It receives the arguments not meant for the driver
@@ -177,6 +183,7 @@ void _main(string *argv, string *env)
 {
   int i;
   object script;
+  object tmp;
   string a,b;
   string *q;
 
@@ -190,7 +197,22 @@ void _main(string *argv, string *env)
   q=a/"/";
   pike_library_path = q[0..sizeof(q)-2] * "/";
 
-//  clone(compile_file(pike_library_path+"/simulate.pike"));
+  tmp=new(pike_library_path+"/include/getopt.pre.pike");
+  if(tmp->find_option(argv,"v","version"))
+  {
+    werror(VERSION " Copyright (C) 1994-1997 Fredrik Hübinette\n");
+    werror("Pike comes with ABSOLUTELY NO WARRANTY; This is free software and you are\n");
+    werror("welcome to redistribute it under certain conditions; Read the files\n");
+    werror("COPYING and DISCLAIMER in the Pike distribution for more details.\n");
+    exit(0);
+  }
+  destruct(tmp);
+  
+  for(i=1;i<sizeof(argv);i++)
+    if(sizeof(argv[i]) && argv[i][0]!='-')
+      break;
+
+  argv=argv[i..];
 
   if(!sizeof(argv))
   {
