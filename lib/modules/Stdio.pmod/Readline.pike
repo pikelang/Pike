@@ -1,4 +1,4 @@
-// $Id: Readline.pike,v 1.57 2004/11/02 20:19:59 mast Exp $
+// $Id: Readline.pike,v 1.58 2004/11/02 20:43:46 mast Exp $
 #pike __REAL_VERSION__
 
 //!
@@ -1048,6 +1048,8 @@ class DefaultEditKeys
     ({ "^[[B", down_history }),
     ({ "^[[C", forward_char }),
     ({ "^[[D", backward_char }),
+    ({ "^[^[[C", forward_word }),
+    ({ "^[^[[D", backward_word }),
     ({ "^[C", capitalize_word }),
     ({ "^[c", capitalize_word }),
     ({ "^[U", upcase_word }),
@@ -1090,6 +1092,8 @@ class DefaultEditKeys
     ({ "\\!kd", down_history }),
     ({ "\\!kr", forward_char }),
     ({ "\\!kl", backward_char }),
+    ({ "^[\\!kr", forward_word }),
+    ({ "^[\\!kl", backward_word }),
     ({ "\\!kD", delete_char }),
     ({ "\\!kb", backward_delete_char }),
     ({ "^[\\!kD", kill_word }),
@@ -1103,6 +1107,8 @@ class DefaultEditKeys
     ({ "\\!kcud1", down_history }),
     ({ "\\!kcuf1", forward_char }),
     ({ "\\!kcub1", backward_char }),
+    ({ "^[\\!kcuf1", forward_word }),
+    ({ "^[\\!kcub1", backward_word }),
     ({ "\\!kdch1", delete_char }),
     ({ "\\!kbs", backward_delete_char }),
     ({ "^[\\!kdch1", kill_word }),
