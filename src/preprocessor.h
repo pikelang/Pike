@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: preprocessor.h,v 1.60 2003/11/14 00:15:06 mast Exp $
+|| $Id: preprocessor.h,v 1.61 2003/11/14 04:52:35 mast Exp $
 */
 
 /*
@@ -1411,17 +1411,10 @@ static ptrdiff_t lower_cpp(struct cpp *this,
 	  {
 	    struct pike_string *new_file;
 
-	    /* FIXME: Ought to use safe_apply_handler()... */
-	    if(this->compat_handler)
-	    {
-	      safe_apply(this->compat_handler,"handle_include",3);
-	    }else{
-	      SAFE_APPLY_MASTER("handle_include",3);
-	    }
-	  
-	    if(Pike_sp[-1].type != PIKE_T_STRING)
-	    {
-	      cpp_error(this, "Couldn't include file.");
+	    if (!safe_apply_handler ("handle_include",
+				     this->handler, this->compat_handler,
+				     3, BIT_STRING)) {
+	      cpp_handle_exception (this, "Couldn't include file.");
 	      pop_n_elems(Pike_sp-save_sp);
 	      break;
 	    }
@@ -1432,18 +1425,11 @@ static ptrdiff_t lower_cpp(struct cpp *this,
 	    assign_svalue_no_free(Pike_sp,Pike_sp-1);
 	    Pike_sp++;
 	    dmalloc_touch_svalue(Pike_sp-1);
-	    
-	    /* FIXME: Ought to use safe_apply_handler()... */
-	    if(this->compat_handler)
-	    {
-	      safe_apply(this->compat_handler,"read_include",1);
-	    }else{
-	      SAFE_APPLY_MASTER("read_include",1);
-	    }
-	    
-	    if(Pike_sp[-1].type != PIKE_T_STRING)
-	    {
-	      cpp_error(this, "Couldn't read include file.");
+
+	    if (!safe_apply_handler ("read_include",
+				     this->handler, this->compat_handler,
+				     1, BIT_STRING)) {
+	      cpp_handle_exception (this, "Couldn't read include file.");
 	      pop_n_elems(Pike_sp-save_sp);
 	      break;
 	    }
@@ -1471,15 +1457,17 @@ static ptrdiff_t lower_cpp(struct cpp *this,
 	      }else{
 		/* #include */
 		if (auto_convert) {
-		  struct pike_string *new_str = recode_string(Pike_sp[-1].u.string);
+		  struct pike_string *new_str =
+		    recode_string(this, Pike_sp[-1].u.string);
 		  free_string(Pike_sp[-1].u.string);
 		  Pike_sp[-1].u.string = new_str;
 		} else if (charset) {
 		  ref_push_string(charset);
-		  SAFE_APPLY_MASTER("decode_charset", 2);
-		  if (Pike_sp[-1].type != PIKE_T_STRING) {
-		    cpp_error(this,
-			      "Charset decoding failed for included file.");
+		  if (!safe_apply_handler ("decode_charset",
+					   this->handler, this->compat_handler,
+					   2, BIT_STRING)) {
+		    cpp_handle_exception (this,
+					  "Charset decoding failed for included file.");
 		    pop_n_elems(Pike_sp - save_sp);
 		    break;
 		  }
@@ -2082,11 +2070,9 @@ static ptrdiff_t lower_cpp(struct cpp *this,
 	  MEMCPY(s->str, data + p, pos - p);
 	  push_string(end_shared_string(s));
 
-	  SAFE_APPLY_MASTER("decode_charset", 2);
-
-	  if (Pike_sp[-1].type != PIKE_T_STRING) {
-	    pop_stack();
-	    cpp_error(this, "Unknown charset.");
+	  if (!safe_apply_handler ("decode_charset", this->handler, this->compat_handler,
+				   2, BIT_STRING)) {
+	    cpp_handle_exception (this, NULL);
 	  } else {
 	    low_cpp(this, Pike_sp[-1].u.string->str, Pike_sp[-1].u.string->len,
 		    Pike_sp[-1].u.string->size_shift, flags,

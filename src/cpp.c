@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: cpp.c,v 1.126 2003/11/14 00:41:26 mast Exp $
+|| $Id: cpp.c,v 1.127 2003/11/14 04:52:35 mast Exp $
 */
 
 #include "global.h"
@@ -172,8 +172,10 @@ void cpp_handle_exception(struct cpp *this, const char *cpp_error_fmt, ...)
   if (SAFE_IS_ZERO(sp-1)) {
     /* FIXME: Doesn't handle wide string error messages. */
     struct pike_string *s = format_exception_for_error_msg (&thrown);
-    if (!s->size_shift) cpp_error (this, s->str);
-    free_string (s);
+    if (s) {
+      if (!s->size_shift) cpp_error (this, s->str);
+      free_string (s);
+    }
   }
 
   pop_stack();
@@ -849,7 +851,7 @@ while(1)					\
   break;					\
   }while(1)
 
-static struct pike_string *recode_string(struct pike_string *data)
+static struct pike_string *recode_string(struct cpp *this, struct pike_string *data)
 {
   /* Observations:
    *
@@ -981,13 +983,18 @@ static struct pike_string *recode_string(struct pike_string *data)
 
     push_constant_text("ebcdic-us");
 
-    SAFE_APPLY_MASTER("decode_charset", 2);
-
-    /* Various consistency checks. */
-    if ((sp[-1].type != T_STRING) || (sp[-1].u.string->size_shift) ||
-	(((size_t)sp[-1].u.string->len) < CONSTANT_STRLEN("#charset")) ||
-	(sp[-1].u.string->str[0] != '#')) {
-      pop_stack();
+    if (safe_apply_handler ("decode_charset", this->handler, this->compat_handler,
+			    2, BIT_STRING)) {
+      /* Various consistency checks. */
+      if ((sp[-1].u.string->size_shift) ||
+	  (((size_t)sp[-1].u.string->len) < CONSTANT_STRLEN("#charset")) ||
+	  (sp[-1].u.string->str[0] != '#')) {
+	pop_stack();
+	return data;
+      }
+    }
+    else {
+      cpp_handle_exception (this, "Error decoding with charset 'ebcdic-us'");
       return data;
     }
 
@@ -1044,16 +1051,17 @@ static struct pike_string *recode_string(struct pike_string *data)
     MEMCPY(new_str->str, p, len);
 
     pop_stack();
-    push_string(end_shared_string(new_str));
+    ref_push_string(end_shared_string(new_str));
 		
     /* Decode the string */
 
-    SAFE_APPLY_MASTER("decode_charset", 2);
-
-    if (sp[-1].type != T_STRING) {
-      pop_stack();
+    if (!safe_apply_handler ("decode_charset", this->handler, this->compat_handler,
+			     2, BIT_STRING)) {
+      cpp_handle_exception (this, "Error decoding with charset '%s'", new_str->str);
+      free_string (new_str);
       return data;
     }
+    free_string (new_str);
 
     /* Accept the new string */
 
@@ -1708,10 +1716,12 @@ void f_cpp(INT32 args)
 	charset = sp[2 - args].u.string;
 	push_string(data);
 	ref_push_string(charset);
-	SAFE_APPLY_MASTER("decode_charset", 2);
-	if (sp[-1].type != T_STRING) {
+	if (!safe_apply_handler ("decode_charset", this.handler, this.compat_handler,
+				 2, BIT_STRING)) {
 	  free_string(this.current_file);
-	  Pike_error("Unknown charset\n");
+	  cpp_handle_exception (&this, "Error decoding with charset '%s'",
+				charset->str);
+	  Pike_error("Unknown charset.\n");
 	}
 	data = sp[-1].u.string;
 	sp--;
@@ -1801,7 +1811,7 @@ void f_cpp(INT32 args)
 
   if (auto_convert && (!data->size_shift) && (data->len > 1)) {
     /* Try to determine if we need to recode the string */
-    struct pike_string *new_data = recode_string(data);
+    struct pike_string *new_data = recode_string(&this, data);
     free_string(data);
     data = new_data;
   }
