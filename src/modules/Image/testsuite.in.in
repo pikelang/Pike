@@ -278,7 +278,7 @@
       fail("didn't get two colors (black and white): "+((array(string))c)*", ");
    if ((z[0]!=Image.Color.black || z[1]!=Image.Color.white) &&
        (z[1]!=Image.Color.black || z[0]!=Image.Color.white))
-      fail("didn't get black and white: "+((array(string))c)*", ");
+      fail("didn't get black and white: "+((array(string))z)*", ");
    ok();
 
 #test colortable - black/white normal
@@ -287,10 +287,10 @@
    img=c*img;
    array z=(array)Image.Colortable(img);
    if (sizeof(z)!=2) 
-      fail("didn't get two colors (black and white): "+((array(string))c)*", ");
-   if ((z[0]!=Image.Color.black || z[1]!=Image.Color.white) &&
+      fail("didn't get two colors (black and white): "+((array(string))z)*", ");
+   if ((z[0]!=Image.Color.black || z1]!=Image.Color.white) &&
        (z[1]!=Image.Color.black || z[0]!=Image.Color.white))
-      fail("didn't get black and white: "+((array(string))c)*", ");
+      fail("didn't get black and white: "+((array(string))z)*", ");
    ok();
 
 #test colortable - black/white floyd-steinberg
@@ -300,10 +300,10 @@
    img=c*img;
    array z=(array)Image.Colortable(img);
    if (sizeof(z)!=2) 
-      fail("didn't get two colors (black and white): "+((array(string))c)*", ");
+      fail("didn't get two colors (black and white): "+((array(string))z)*", ");
    if ((z[0]!=Image.Color.black || z[1]!=Image.Color.white) &&
        (z[1]!=Image.Color.black || z[0]!=Image.Color.white))
-      fail("didn't get black and white: "+((array(string))c)*", ");
+      fail("didn't get black and white: "+((array(string))z)*", ");
    ok();
 
 #test colortable - black/white ordered
@@ -313,10 +313,10 @@
    img=c*img;
    array z=(array)Image.Colortable(img);
    if (sizeof(z)!=2) 
-      fail("didn't get two colors (black and white): "+((array(string))c)*", ");
+      fail("didn't get two colors (black and white): "+((array(string))z)*", ");
    if ((z[0]!=Image.Color.black || z[1]!=Image.Color.white) &&
        (z[1]!=Image.Color.black || z[0]!=Image.Color.white))
-      fail("didn't get black and white: "+((array(string))c)*", ");
+      fail("didn't get black and white: "+((array(string))z)*", ");
    ok();
 
 #test colortable - standard

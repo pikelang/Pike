@@ -478,7 +478,7 @@ if (sizeof(z)!=2)
 do { werror("failure; Image.image/Image.Colortable/colortable - black/white init & cast: "+( "didn't get two colors (black and white): "+((array(string))c)*", " )+"\n"); return 0; } while (0);
 if ((z[0]!=Image.Color.black || z[1]!=Image.Color.white) &&
 (z[1]!=Image.Color.black || z[0]!=Image.Color.white))
-do { werror("failure; Image.image/Image.Colortable/colortable - black/white init & cast: "+( "didn't get black and white: "+((array(string))c)*", " )+"\n"); return 0; } while (0);
+do { werror("failure; Image.image/Image.Colortable/colortable - black/white init & cast: "+( "didn't get black and white: "+((array(string))z)*", " )+"\n"); return 0; } while (0);
 return 1;
 
 }
@@ -496,10 +496,10 @@ object c=Image.Colortable(({Image.Color.white,Image.Color.black}));
 img=c*img;
 array z=(array)Image.Colortable(img);
 if (sizeof(z)!=2) 
-do { werror("failure; Image.image/Image.Colortable/colortable - black/white normal: "+( "didn't get two colors (black and white): "+((array(string))c)*", " )+"\n"); return 0; } while (0);
-if ((z[0]!=Image.Color.black || z[1]!=Image.Color.white) &&
+do { werror("failure; Image.image/Image.Colortable/colortable - black/white normal: "+( "didn't get two colors (black and white): "+((array(string))z)*", " )+"\n"); return 0; } while (0);
+if ((z[0]!=Image.Color.black || z1]!=Image.Color.white) &&
 (z[1]!=Image.Color.black || z[0]!=Image.Color.white))
-do { werror("failure; Image.image/Image.Colortable/colortable - black/white normal: "+( "didn't get black and white: "+((array(string))c)*", " )+"\n"); return 0; } while (0);
+do { werror("failure; Image.image/Image.Colortable/colortable - black/white normal: "+( "didn't get black and white: "+((array(string))z)*", " )+"\n"); return 0; } while (0);
 return 1;
 
 }
@@ -518,10 +518,10 @@ c->floyd_steinberg();
 img=c*img;
 array z=(array)Image.Colortable(img);
 if (sizeof(z)!=2) 
-do { werror("failure; Image.image/Image.Colortable/colortable - black/white floyd-steinberg: "+( "didn't get two colors (black and white): "+((array(string))c)*", " )+"\n"); return 0; } while (0);
+do { werror("failure; Image.image/Image.Colortable/colortable - black/white floyd-steinberg: "+( "didn't get two colors (black and white): "+((array(string))z)*", " )+"\n"); return 0; } while (0);
 if ((z[0]!=Image.Color.black || z[1]!=Image.Color.white) &&
 (z[1]!=Image.Color.black || z[0]!=Image.Color.white))
-do { werror("failure; Image.image/Image.Colortable/colortable - black/white floyd-steinberg: "+( "didn't get black and white: "+((array(string))c)*", " )+"\n"); return 0; } while (0);
+do { werror("failure; Image.image/Image.Colortable/colortable - black/white floyd-steinberg: "+( "didn't get black and white: "+((array(string))z)*", " )+"\n"); return 0; } while (0);
 return 1;
 
 }
@@ -540,10 +540,10 @@ c->ordered();
 img=c*img;
 array z=(array)Image.Colortable(img);
 if (sizeof(z)!=2) 
-do { werror("failure; Image.image/Image.Colortable/colortable - black/white ordered: "+( "didn't get two colors (black and white): "+((array(string))c)*", " )+"\n"); return 0; } while (0);
+do { werror("failure; Image.image/Image.Colortable/colortable - black/white ordered: "+( "didn't get two colors (black and white): "+((array(string))z)*", " )+"\n"); return 0; } while (0);
 if ((z[0]!=Image.Color.black || z[1]!=Image.Color.white) &&
 (z[1]!=Image.Color.black || z[0]!=Image.Color.white))
-do { werror("failure; Image.image/Image.Colortable/colortable - black/white ordered: "+( "didn't get black and white: "+((array(string))c)*", " )+"\n"); return 0; } while (0);
+do { werror("failure; Image.image/Image.Colortable/colortable - black/white ordered: "+( "didn't get black and white: "+((array(string))z)*", " )+"\n"); return 0; } while (0);
 return 1;
 
 }
