@@ -1,7 +1,7 @@
 #pike __REAL_VERSION__
 
 /*
- * $Id: Tree.pmod,v 1.15 2002/03/09 18:25:37 nilsson Exp $
+ * $Id: Tree.pmod,v 1.16 2002/03/25 22:34:54 nilsson Exp $
  *
  */
 
@@ -35,7 +35,6 @@ constant XML_ATTR     = 0x0080;    //  Attribute nodes are created on demand
 //!
 constant XML_NODE     = (XML_ROOT | XML_ELEMENT | XML_TEXT |
                        XML_PI | XML_COMMENT | XML_ATTR);
-
 #define STOP_WALK  -1
 #define  XML_ROOT     0x0001
 #define  XML_ELEMENT  0x0002
@@ -77,8 +76,8 @@ void throw_error(mixed ...args)
 //!
 class AbstractNode {
   //  Private member variables
-  /*private*/ AbstractNode           mParent = 0;
-  /*private*/ array(AbstractNode)    mChildren = ({ });
+  /* static */ AbstractNode           mParent = 0;
+  /* static */ array(AbstractNode)    mChildren = ({ });
   
   //  Public methods
 
@@ -413,14 +412,17 @@ class Node {
   inherit AbstractNode;
 
   //  Member variables for this node type
-  private int            mNodeType;
-  private string         mTagName;
+  static int            mNodeType;
+  static string         mTagName;
 //   private int            mTagCode;
-  private mapping        mAttributes;
-  private array(Node) mAttrNodes;   //  created on demand
-  private string         mText;
-  private int            mDocOrder;
+  static mapping        mAttributes;
+  static array(Node) mAttrNodes;   //  created on demand
+  static string         mText;
+  static int            mDocOrder;
 
+  //! Clones the node, optionally connected to parts of the tree.
+  //! If direction is -1 the cloned nodes parent will be set, if
+  //! direction is 1 the clone nodes childen will be set.
   Node clone(void|int(-1..1) direction) {
     Node n = Node(get_node_type(), get_tag_name(),
 		  get_attributes(), get_text());
@@ -560,7 +562,7 @@ class Node {
   //! Creates an XML representation of the nodes sub tree.
   string render_xml()
   {
-    string  data = "";
+    string data = "";
 	
     walk_preorder_2(
 		    lambda(Node n) {
@@ -574,8 +576,8 @@ class Node {
 			data += "<" + n->get_tag_name();
 			if (mapping attr = n->get_attributes()) {
                           foreach(indices(attr), string a)
-                            data += " " + a + "='"
-                              + attribute_quote(attr[a]) + "'";
+                            data += " " + a + "='" +
+			      attribute_quote(attr[a]) + "'";
 			}
 			if (n->count_children())
 			  data += ">";
@@ -591,7 +593,7 @@ class Node {
 			    data += "</" + n->get_tag_name() + ">";
 		    });
 	
-    return (data);
+    return data;
   }
   
   //  Override AbstractNode::`[]
