@@ -113,6 +113,22 @@ static private int tokenPtr = 0;
 static private array(Token) tokens;
 constant WITH_NL = 1;
 
+string lookAhead(int offset, int | void with_newlines) {
+  if (with_newlines)
+    return tokens[min(tokenPtr + offset, sizeof(tokens) - 1)]->text;
+  int i = tokenPtr;
+  for (;;) {
+    while (tokens[i]->text == "\n")
+      ++i;
+    if (offset <= 0)
+      return tokens[i]->text;
+    --offset;
+    ++i;
+    if (i >= sizeof(tokens))
+      return EOF;
+  }
+}
+
 string peekToken(int | void with_newlines) {
   int at = tokenPtr;
 
@@ -182,12 +198,13 @@ string eat(multiset(string) | string token) {
 
 // Also ::ident, scope::ident
 string eatIdentifier(void|int allowScopePrefix) {
-  string scope = scopeModules[peekToken()] ? readToken() : "";
+  SHOW(({lookAhead(0),lookAhead(1),lookAhead(2)}));
+  string scope = scopeModules[lookAhead(0)] && lookAhead(1) == "::"
+    ? readToken()
+    : "";
   string colons = peekToken() == "::" ? readToken() : "";
   //  werror("scope == %O ,colons == %O\n", scope, colons);
 
-  if (!colons)
-    scope = "";
   if (strlen(scope + colons) && !allowScopePrefix)
     parseError("scope prefix not allowed");
   string s = peekToken();

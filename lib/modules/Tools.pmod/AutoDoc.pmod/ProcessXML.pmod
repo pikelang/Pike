@@ -440,7 +440,6 @@ static class ScopeStack {
   void addName(string sym) { scopeArr[0]->idents[sym] = 1; }
 
   mapping resolveRef(string ref) {
-    //werror("[[[[ resolving %O\n", ref);
     array(string) idents = splitRef(ref);
     int not_param = has_suffix(ref, "()");
     if (!sizeof(idents))
@@ -495,6 +494,7 @@ static void fixupRefs(ScopeStack scopes, Node node) {
           mapping m = n->get_attributes();
           if (m["resolved"])
             return;
+          //string ref = n->value_of_node();
           //werror("いい resolving reference %O\n", ref);
           //foreach (scopes->scopeArr, Scope s)
           //  werror("いい    %O\n", s ? s->name : "NULL");
