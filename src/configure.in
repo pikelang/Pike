@@ -1,4 +1,4 @@
-AC_REVISION("$Id: configure.in,v 1.371 2000/05/02 13:42:46 grubba Exp $")
+AC_REVISION("$Id: configure.in,v 1.372 2000/05/05 01:56:43 hubbe Exp $")
 AC_INIT(interpret.c)
 AC_CONFIG_HEADER(machine.h)
 
@@ -555,9 +555,12 @@ AC_ARG_WITH(perl,        [  --with-perl            enable the embedded Perl modu
 if test "x$with_bignums" = xyes; then
   AC_DEFINE(AUTO_BIGNUM)
   if test "x$with_gmp" = xno; then
-     AC_MSG_ERROR([Cannot compile --with-bignums without the GMP library
-Either install GMP on your system or run configure with
-the option --without-bignums.
+    AC_MSG_ERROR([Cannot compile --with-bignums without the GMP library
+It is highly recommended that you install a working GMP
+library on your system as that will add features to Pike
+required by many applications.  (Such as Roxen) However,
+if you know that you do not need GMP, you may re-run configure
+with the option --without-bignums instead.
 ])
   else :; fi
 else :; fi

@@ -1,4 +1,4 @@
-# $Id: configure.in,v 1.11 2000/04/25 15:07:13 marcus Exp $
+# $Id: configure.in,v 1.12 2000/05/05 01:56:50 hubbe Exp $
 AC_INIT(mpz_glue.c)
 AC_CONFIG_HEADER(gmp_machine.h)
 AC_ARG_WITH(gmp,     [  --with(out)-gmp        Support bignums],[],[with_gmp=yes])
@@ -97,8 +97,11 @@ if test x$with_gmp = xyes ; then
     AC_CHECK_GMP(gmp,gmp.h,[
       if test "x$with_bignums" = xyes ; then
         AC_MSG_ERROR([Cannot compile --with-bignums without the GMP library
-Either install GMP on your system or run configure with
-the option --without-bignums.
+It is highly recommended that you install a working GMP
+library on your system as that will add features to Pike
+required by many applications.  (Such as Roxen) However,
+if you know that you do not need GMP, you may re-run configure
+with the option --without-bignums instead.
 ])
       fi
     ])
