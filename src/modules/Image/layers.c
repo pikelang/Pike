@@ -1,7 +1,7 @@
 /*
 **! module Image
 **! note
-**!	$Id: layers.c,v 1.14 1999/05/30 20:11:58 mirar Exp $
+**!	$Id: layers.c,v 1.15 1999/06/03 17:20:13 mirar Exp $
 **! class Layer
 */
 
@@ -9,7 +9,7 @@
 
 #include <math.h> /* floor */
 
-RCSID("$Id: layers.c,v 1.14 1999/05/30 20:11:58 mirar Exp $");
+RCSID("$Id: layers.c,v 1.15 1999/06/03 17:20:13 mirar Exp $");
 
 #include "image_machine.h"
 
@@ -31,14 +31,12 @@ RCSID("$Id: layers.c,v 1.14 1999/05/30 20:11:58 mirar Exp $");
 #include "image.h"
 
 extern struct program *image_program;
-struct program *image_layer_program;
+extern struct program *image_layer_program;
+extern struct program *image_colortable_program;
 
 static struct mapping *colors=NULL;
 static struct object *colortable=NULL;
 static struct array *colornames=NULL;
-
-struct program *image_layer_program=NULL;
-extern struct program *image_colortable_program;
 
 static const rgb_group black={0,0,0};
 static const rgb_group white={COLORMAX,COLORMAX,COLORMAX};

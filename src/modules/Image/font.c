@@ -1,4 +1,4 @@
-/* $Id: font.c,v 1.50 1999/05/30 20:11:56 mirar Exp $ */
+/* $Id: font.c,v 1.51 1999/06/03 17:20:11 mirar Exp $ */
 #include "global.h"
 
 #define SPACE_CHAR 'i'
@@ -9,7 +9,7 @@ extern unsigned char * image_default_font;
 /*
 **! module Image
 **! note
-**!	$Id: font.c,v 1.50 1999/05/30 20:11:56 mirar Exp $
+**!	$Id: font.c,v 1.51 1999/06/03 17:20:11 mirar Exp $
 **! class Font
 **!
 **! note
@@ -184,7 +184,7 @@ Kerningtable types:
 
 #include "dmalloc.h"
 
-static struct program *font_program;
+extern struct program *font_program;
 extern struct program *image_program;
 
 #undef THIS
