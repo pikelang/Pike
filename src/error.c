@@ -22,7 +22,7 @@
 #include "threads.h"
 #include "gc.h"
 
-RCSID("$Id: error.c,v 1.88 2002/09/21 16:29:43 mast Exp $");
+RCSID("$Id: error.c,v 1.89 2002/09/24 13:08:09 mast Exp $");
 
 #undef ATTRIBUTE
 #define ATTRIBUTE(X)
@@ -210,7 +210,10 @@ void DECLSPEC(noreturn) va_error(const char *fmt, va_list args) ATTRIBUTE((noret
   if(!Pike_interpreter.recoveries)
   {
 #ifdef PIKE_DEBUG
-    dump_backlog();
+    if (d_flag) {
+      fprintf(stderr,"No error recovery context!\n%s",buf);
+      dump_backlog();
+    }
 #endif
 
     fprintf(stderr,"No error recovery context!\n%s",buf);
@@ -242,7 +245,10 @@ PMOD_EXPORT DECLSPEC(noreturn) void new_error(const char *name, const char *text
   if(!Pike_interpreter.recoveries)
   {
 #ifdef PIKE_DEBUG
-    dump_backlog();
+    if (d_flag) {
+      fprintf(stderr,"No error recovery context!\n%s():%s",name,text);
+      dump_backlog();
+    }
 #endif
 
     fprintf(stderr,"No error recovery context!\n%s():%s",name,text);
@@ -294,9 +300,11 @@ PMOD_EXPORT void exit_on_error(const void *msg)
    */
   Pike_inhibit_errors = 1;
 
-  fprintf(stderr,"%s\n",(char *)msg);
 #ifdef PIKE_DEBUG
-  dump_backlog();
+  if (d_flag) {
+    fprintf(stderr,"%s\n",(char *)msg);
+    dump_backlog();
+  }
 #endif
   fprintf(stderr,"%s\n",(char *)msg);
 #ifdef PIKE_DEBUG
@@ -333,7 +341,10 @@ PMOD_EXPORT void fatal_on_error(const void *msg)
   if (throw_severity == THROW_EXIT) return;
 
 #ifdef PIKE_DEBUG
-  dump_backlog();
+  if (d_flag) {
+    fprintf(stderr,"%s\n",(char *)msg);
+    dump_backlog();
+  }
 #endif
   fprintf(stderr,"%s\n",(char *)msg);
   do_abort();
@@ -363,10 +374,11 @@ PMOD_EXPORT DECLSPEC(noreturn) void debug_fatal(const char *fmt, ...) ATTRIBUTE(
   }
 
   in_fatal = 1;
-#if 0
 #ifdef PIKE_DEBUG
-  dump_backlog();
-#endif
+  if (d_flag) {
+    (void)VFPRINTF(stderr, fmt, args);
+    dump_backlog();
+  }
 #endif
 
   if(Pike_in_gc)
