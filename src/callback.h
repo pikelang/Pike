@@ -8,16 +8,20 @@
 
 #include "array.h"
 
+struct callback;
+
+typedef void (*callback_func)(struct callback *, void *);
+
 /* Prototypes begin here */
-struct callback_list;
+struct callback;
 struct callback_block;
-void call_callback_list(struct callback_list **ptr);
-struct callback_list *add_to_callback_list(struct callback_list **ptr,
-					   callback call,
-					   void *arg);
-void *remove_callback(struct callback_list *l);
-void free_callback_list(struct callback_list **ptr);
-void call_and_free_callback_list(struct callback_list **ptr);
+void call_callback(struct callback **ptr);
+struct callback *add_to_callback(struct callback **ptr,
+				 callback_func call,
+				 void *arg,
+				 callback_func free_func);
+void *remove_callback(struct callback *l);
+void free_callback(struct callback **ptr);
 /* Prototypes end here */
 
 #endif
