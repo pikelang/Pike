@@ -88,6 +88,8 @@ void init_readlinemod_efuns(void)
 
 static void f_readline(INT32 args)
 {
+  char *prompt;
+  int plen;
   char line[BLOCK];
   char *r;
   int tmp;
@@ -98,20 +100,25 @@ static void f_readline(INT32 args)
   if(sp[-args].type != T_STRING)
     error("Bad argument 1 to readline()\n");
 
-  fwrite(sp[-args].u.string->str,1,sp[-args].u.string->len,stdout);
-  fflush(stdout);
+  prompt = sp[-args].u.string->str;
+  plen = sp[-args].u.string->len;
 
-  pop_n_elems(args);
   THREADS_ALLOW();
-  r=fgets(line,BLOCK,stdin);
+
+  write(1, prompt, plen);
+  r=fgets(line,BLOCK,stdin);	/* Should probably get rid of this one */
+  line[BLOCK-1] = '\0';		/* Always NUL-terminated */
+
   THREADS_DISALLOW();
 
-  if(r)
+  pop_n_elems(args);
+
+  if (r)
   {
     INT32 len;
-    if(len=strlen(line))
+    if ((len=strlen(line)))
     {
-      if(line[len-1]=='\n')
+      if (line[len-1]=='\n')
       {
 	push_string(make_shared_binary_string(line,len-1));
 	return;
