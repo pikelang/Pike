@@ -1,4 +1,4 @@
-/* $Id: font.c,v 1.37 1998/05/04 16:28:08 mirar Exp $ */
+/* $Id: font.c,v 1.38 1998/05/04 16:28:40 mirar Exp $ */
 #include "global.h"
 #include <config.h>
 
@@ -7,7 +7,7 @@
 /*
 **! module Image
 **! note
-**!	$Id: font.c,v 1.37 1998/05/04 16:28:08 mirar Exp $
+**!	$Id: font.c,v 1.38 1998/05/04 16:28:40 mirar Exp $
 **! class font
 **!
 **! note
@@ -772,7 +772,7 @@ void init_font_programs(void)
    add_function("load",font_load,
                 "function(string:object|int)",0);
 
-   add_function("create",font_load,
+   add_function("create",font_create,
                 "function(void|string:void)",0);
 
    add_function("write",font_write,
