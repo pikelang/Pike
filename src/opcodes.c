@@ -26,7 +26,7 @@
 #include "bignum.h"
 #include "operators.h"
 
-RCSID("$Id: opcodes.c,v 1.91 2000/11/01 23:32:32 grubba Exp $");
+RCSID("$Id: opcodes.c,v 1.92 2000/11/12 10:18:49 sigge Exp $");
 
 void index_no_free(struct svalue *to,struct svalue *what,struct svalue *ind)
 {
@@ -51,8 +51,11 @@ void index_no_free(struct svalue *to,struct svalue *what,struct svalue *ind)
 	if (val) {
 	  error("Indexing the integer %d with an unknown method.\n", val);
 	} else {
-	  error("Indexing the NULL value.\n");
-	}
+          if(ind->type == T_STRING)
+            error("Indexing the NULL value with \"%s\".\n", ind->u.string->str);
+          else
+            error("Indexing the NULL value.\n");
+       }
       }
     }
     break;
