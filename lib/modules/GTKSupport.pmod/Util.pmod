@@ -15,7 +15,7 @@ array(int) invert_color(array color )
 }
 
 
-mapping low_decode_image(string data, mixed tocolor)
+mapping low_decode_image(string data, mixed|void tocolor)
 {
   Image.image i, a;
   string format;
@@ -380,7 +380,7 @@ class signal_handling
         }
     }
   
-    void create(function f, mixed a)
+    void create(function f, mixed|void a)
     {
       tocall = f;
       arg = a;
@@ -390,7 +390,7 @@ class signal_handling
   mapping signals = ([]);
   mapping r_signals = ([]);
 
-  mixed signal_connect( string signal, function tocall, mixed arg )
+  mixed signal_connect( string signal, function tocall, mixed|void arg )
   {
     object ret;
     if(signals[signal])
