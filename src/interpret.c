@@ -2,11 +2,11 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: interpret.c,v 1.348 2004/04/06 13:00:42 nilsson Exp $
+|| $Id: interpret.c,v 1.349 2004/05/20 20:13:38 grubba Exp $
 */
 
 #include "global.h"
-RCSID("$Id: interpret.c,v 1.348 2004/04/06 13:00:42 nilsson Exp $");
+RCSID("$Id: interpret.c,v 1.349 2004/05/20 20:13:38 grubba Exp $");
 #include "interpret.h"
 #include "object.h"
 #include "program.h"
@@ -262,10 +262,8 @@ use_malloc:
   }
 #endif
 #ifdef PROFILING
-#ifdef HAVE_GETHRTIME
-  Pike_interpreter.time_base = gethrtime();
-  Pike_interpreter.accounted_time =0;
-#endif
+  Pike_interpreter.unlocked_time = 0;
+  Pike_interpreter.accounted_time = 0;
 #endif
 #if defined(HAVE_COMPUTED_GOTO) || defined(PIKE_USE_MACHINE_CODE)
   {
@@ -1797,26 +1795,6 @@ int low_mega_apply(enum apply_type type, INT32 args, void *arg1, void *arg2)
 
 
 
-#define low_return_profiling()
-
-#ifdef PROFILING
-#ifdef HAVE_GETHRTIME
-#undef low_return_profiling
-#define low_return_profiling() do {					      \
-  struct identifier *function;						      \
-  long long time_passed, time_in_children, self_time;			      \
-  time_in_children=Pike_interpreter.accounted_time-Pike_fp->children_base;    \
-  time_passed = gethrtime()-Pike_interpreter.time_base - Pike_fp->start_time; \
-  self_time=time_passed - time_in_children;				      \
-  Pike_interpreter.accounted_time+=self_time;				      \
-  function = Pike_fp->context.prog->identifiers + Pike_fp->ident;	      \
-  function->total_time=Pike_fp->self_time_base + (INT32)(time_passed /1000);  \
-  function->self_time+=(INT32)( self_time /1000);			      \
-}while(0)
-#endif
-#endif
-
-
 #define basic_low_return(save_sp)			\
   DO_IF_DEBUG(						\
     if(Pike_mark_sp < Pike_fp->save_mark_sp)		\
@@ -1932,12 +1910,43 @@ void unlink_previous_frame(void)
   /* Unlink the top frame temporarily. */
   Pike_interpreter.frame_pointer=prev;
 
+#ifdef PROFILING
+  {
+    /* We must update the profiling info of the previous frame
+     * to account for that the current frame has gone away.
+     */
+    cpu_time_t total_time =
+      get_cpu_time() - (Pike_interpreter.unlocked_time + current->start_time);
+    cpu_time_t child_time =
+      Pike_interpreter.accounted_time - current->children_base;
+    struct identifier *function =
+      current->context.prog->identifiers + current->ident;
+    function->total_time += total_time;
+    total_time -= child_time;
+    function->self_time += total_time;
+    Pike_interpreter.accounted_time += total_time;
+#ifdef PROFILING_DEBUG
+    fprintf(stderr, "%p: Unlinking previous frame.\n"
+	    "Previous: %" PRINT_CPU_TIME " %" PRINT_CPU_TIME "\n"
+	    "Current:  %" PRINT_CPU_TIME " %" PRINT_CPU_TIME "\n",
+	    Pike_interpreter.thread_state,
+	    prev->start_time, prev->children_base,
+	    current->start_time, current->children_base);
+#endif /* PROFILING_DEBUG */
+  }
+#endif /* PROFILING */
+
   /* Unlink the frame. */
   POP_PIKE_FRAME();
 
   /* Hook our frame again. */
   current->next=Pike_interpreter.frame_pointer;
   Pike_interpreter.frame_pointer=current;
+
+#ifdef PROFILING
+  current->children_base = Pike_interpreter.accounted_time;
+  current->start_time = get_cpu_time() - Pike_interpreter.unlocked_time;
+#endif /* PROFILING */
 
 #if 0
   /* FIXME: This code is questionable, and the Pike_sp

@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: apply_low.h,v 1.27 2004/04/03 21:53:48 mast Exp $
+|| $Id: apply_low.h,v 1.28 2004/05/20 20:13:38 grubba Exp $
 */
 
     {
@@ -91,11 +91,8 @@
       /* init a new evaluation pike_frame */
       new_frame=alloc_pike_frame();
 #ifdef PROFILING
-#ifdef HAVE_GETHRTIME
       new_frame->children_base = Pike_interpreter.accounted_time;
-      new_frame->start_time = gethrtime() - Pike_interpreter.time_base;
-
-#endif
+      new_frame->start_time = get_cpu_time() - Pike_interpreter.unlocked_time;
 
       /* This is mostly for profiling, but
        * could also be used to find out the name of a function
@@ -105,6 +102,12 @@
        * put it here until someone needs it. -Hubbe
        */
       new_frame->ident = ref->identifier_offset;
+      DO_IF_PROFILING_DEBUG({
+	  fprintf(stderr, "%p{: Push at %" PRINT_CPU_TIME
+		  " %" PRINT_CPU_TIME "\n",
+		  Pike_interpreter.thread_state, new_frame->start_time,
+		  new_frame->children_base);
+	});
 #endif
       debug_malloc_touch(new_frame);
 
@@ -198,9 +201,7 @@
       }
       
 #ifdef PROFILING
-#ifdef HAVE_GETHRTIME
       new_frame->self_time_base=function->total_time;
-#endif
 #endif
 
       switch(function->identifier_flags & IDENTIFIER_TYPE_MASK)
@@ -351,19 +352,6 @@
 	Pike_fatal("Unknown identifier type.\n");
 #endif
       }
-#ifdef PROFILING
-#ifdef HAVE_GETHRTIME
-  {
-    long long time_passed, time_in_children, self_time;
-    time_in_children=  Pike_interpreter.accounted_time - Pike_fp->children_base;
-    time_passed = gethrtime() - Pike_interpreter.time_base - Pike_fp->start_time;
-    self_time=time_passed - time_in_children;
-    Pike_interpreter.accounted_time+=self_time;
-    function->total_time=Pike_fp->self_time_base + (INT32)(time_passed /1000);
-    function->self_time+=(INT32)( self_time /1000);
-  }
-#endif
-#endif
 
 #if 0
 #ifdef PIKE_DEBUG

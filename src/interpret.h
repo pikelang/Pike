@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: interpret.h,v 1.151 2004/05/01 16:46:19 marcus Exp $
+|| $Id: interpret.h,v 1.152 2004/05/20 20:13:38 grubba Exp $
 */
 
 #ifndef INTERPRET_H
@@ -12,6 +12,7 @@
 #include "program.h"
 #include "pike_error.h"
 #include "object.h"
+#include "pike_rusage.h"
 
 struct Pike_interpreter {
   /* Swapped variables */
@@ -33,10 +34,8 @@ struct Pike_interpreter {
   int c_stack_margin;
 
 #ifdef PROFILING
-#ifdef HAVE_GETHRTIME
-  long long accounted_time;
-  long long time_base;
-#endif
+  cpu_time_t accounted_time;	/* Time spent and accounted for so far. */
+  cpu_time_t unlocked_time;	/* Time spent unlocked so far. */
   char *stack_bottom;
 #endif
 
@@ -76,10 +75,10 @@ struct pike_frame
   struct object *current_object;
 
   DO_IF_SECURITY(struct object *current_creds;)
-#if defined(PROFILING) && defined(HAVE_GETHRTIME)
-  long long children_base;
-  long long start_time;
-  INT32 self_time_base;
+#if defined(PROFILING)
+  cpu_time_t children_base;	/* Accounted time when the frame started. */
+  cpu_time_t start_time;	/* Adjusted time when thr frame started. */
+  cpu_time_t self_time_base;	/* ??? */
 #endif
   struct inherit context;
   char *current_storage;
@@ -467,6 +466,60 @@ PMOD_EXPORT extern const char msg_pop_neg[];
 #define POP_PIKE_FRAME() do {						\
   struct pike_frame *_fp_ = Pike_fp;					\
   struct pike_frame *tmp_=_fp_->next;					\
+  DO_IF_PROFILING({							\
+      /* Time spent in this frame + children. */			\
+      cpu_time_t time_passed =						\
+	get_cpu_time() - Pike_interpreter.unlocked_time;		\
+      /* Time spent in children to this frame. */			\
+      cpu_time_t time_in_children;					\
+      /* Time spent in just this frame. */				\
+      cpu_time_t self_time;						\
+      struct identifier *function;					\
+      DO_IF_PROFILING_DEBUG({						\
+	  fprintf(stderr, "%p}: Pop got %" PRINT_CPU_TIME		\
+		  " (%" PRINT_CPU_TIME ")"				\
+		  " %" PRINT_CPU_TIME " (%" PRINT_CPU_TIME ")\n",	\
+		  Pike_interpreter.thread_state, time_passed,		\
+		  _fp_->start_time, Pike_interpreter.accounted_time,	\
+		  _fp_->children_base);					\
+	});								\
+      time_passed -= _fp_->start_time;					\
+      DO_IF_DEBUG(if (time_passed < 0) {				\
+		    Pike_fatal("Negative time_passed: %" PRINT_CPU_TIME	\
+			       " now: %" PRINT_CPU_TIME			\
+			       " unlocked_time: %" PRINT_CPU_TIME	\
+			       " start_time: %" PRINT_CPU_TIME		\
+			       "\n", time_passed, get_cpu_time(),	\
+			       Pike_interpreter.unlocked_time,		\
+			       _fp_->start_time);			\
+		  });							\
+      time_in_children =						\
+	Pike_interpreter.accounted_time - _fp_->children_base;		\
+      DO_IF_DEBUG(if (time_in_children < 0) {				\
+		    Pike_fatal("Negative time_in_children: %"		\
+			       PRINT_CPU_TIME				\
+			       " accounted_time: %" PRINT_CPU_TIME	\
+			       " children_base: %" PRINT_CPU_TIME	\
+			       "\n", time_in_children,			\
+			       Pike_interpreter.accounted_time,		\
+			       _fp_->children_base);			\
+		  });							\
+      self_time = time_passed - time_in_children;			\
+      DO_IF_DEBUG(if (self_time < 0) {					\
+		    Pike_fatal("Negative self_time: %" PRINT_CPU_TIME	\
+			       " time_passed: %" PRINT_CPU_TIME		\
+			       " time_in_children: %" PRINT_CPU_TIME	\
+			       "\n", self_time, time_passed,		\
+			       time_in_children);			\
+		  });							\
+      Pike_interpreter.accounted_time += self_time;			\
+      /* FIXME: Can context.prog be NULL? */				\
+      function = _fp_->context.prog->identifiers + _fp_->ident;		\
+      /* function->total_time =						\
+	 Pike_fp->self_time_base + time_passed; */			\
+      function->total_time += time_passed;				\
+      function->self_time += self_time;					\
+    });									\
   if(!sub_ref(_fp_))							\
   {									\
     really_free_pike_frame(_fp_);					\

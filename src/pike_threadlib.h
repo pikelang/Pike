@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: pike_threadlib.h,v 1.53 2004/04/03 18:24:24 mast Exp $
+|| $Id: pike_threadlib.h,v 1.54 2004/05/20 20:13:38 grubba Exp $
 */
 
 #ifndef PIKE_THREADLIB_H
@@ -18,6 +18,7 @@
 #ifndef CONFIGURE_TEST
 #include "machine.h"
 #include "main.h"
+#include "pike_rusage.h"
 #endif
 
 /* Needed for the sigset_t typedef, which is needed for
@@ -592,8 +593,18 @@ PMOD_EXPORT extern THREAD_T threads_disabled_thread;
 #define SWAP_OUT_THREAD(_tmp) do {					\
     struct thread_state *_th_state = (_tmp);				\
     _th_state->state=Pike_interpreter;					\
+    DO_IF_PROFILING({							\
+	if (!_th_state->swapped) {					\
+	  cpu_time_t now = get_cpu_time();				\
+	  DO_IF_PROFILING_DEBUG({					\
+	      fprintf(stderr, "%p: Swap out at: %" PRINT_CPU_TIME	\
+		      " unlocked: %" PRINT_CPU_TIME "\n",		\
+		      _th_state, now, _th_state->state.unlocked_time);	\
+	    });								\
+	  _th_state->state.unlocked_time -= now;			\
+	}								\
+      });								\
     _th_state->swapped=1;						\
-    DO_IF_PROFILING( _th_state->time_base += gethrtime() );		\
     DO_IF_DEBUG (							\
       /* Yo! Yo run now, yo DIE! Hear! */				\
       Pike_sp = (struct svalue *) (ptrdiff_t) -1;			\
@@ -615,10 +626,27 @@ PMOD_EXPORT extern const char msg_thr_swapped_over[];
 		    Pike_interpreter.thread_state ?			\
 		    (unsigned int) Pike_interpreter.thread_state->id : 0); \
     );									\
+    DO_IF_PROFILING({							\
+	if (_th_state->swapped) {					\
+	  cpu_time_t now = get_cpu_time();				\
+	  DO_IF_DEBUG({							\
+	      DO_IF_PROFILING_DEBUG({					\
+		  fprintf(stderr, "%p: Swap in at: %" PRINT_CPU_TIME	\
+			  " unlocked: %" PRINT_CPU_TIME "\n",		\
+			  _th_state, now, _th_state->state.unlocked_time); \
+		});							\
+	      if (now < -Pike_interpreter.unlocked_time) {		\
+		Pike_fatal("Time at swap in is before time at swap out."\
+			   " %" PRINT_CPU_TIME " < %" PRINT_CPU_TIME	\
+			   "\n", now, -Pike_interpreter.unlocked_time);	\
+	      }								\
+	    });								\
+	  _th_state->state.unlocked_time += now;			\
+	}								\
+      });								\
     _th_state->swapped=0;						\
     Pike_interpreter=_th_state->state;					\
     DO_IF_USE_CLOCK_FOR_SLICES (thread_start_clock = 0);		\
-    DO_IF_PROFILING(  Pike_interpreter.time_base -=  gethrtime());	\
   } while(0)
 
 #define SWAP_OUT_CURRENT_THREAD() \

@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: program.h,v 1.202 2004/04/18 02:16:06 mast Exp $
+|| $Id: program.h,v 1.203 2004/05/20 20:13:38 grubba Exp $
 */
 
 #ifndef PROGRAM_H
@@ -15,6 +15,7 @@
 #include "svalue.h"
 #include "time_stuff.h"
 #include "program_id.h"
+#include "pike_rusage.h"
 #include "block_alloc_h.h"
 
 /* Needed to support dynamic loading on NT */
@@ -231,9 +232,9 @@ struct identifier
   unsigned INT8 run_time_type;		/* PIKE_T_??? */
   unsigned INT16 opt_flags;		/* OPT_??? */
 #ifdef PROFILING
-  unsigned INT32 num_calls;
-  unsigned INT32 total_time;
-  unsigned INT32 self_time;
+  unsigned INT32 num_calls;		/* Total number of calls. */
+  cpu_time_t total_time;		/* Total time with children. */
+  cpu_time_t self_time;			/* Total time excluding children. */
 #endif /* PROFILING */
   union idptr func;
 };

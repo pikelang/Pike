@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: threads.h,v 1.127 2003/03/31 17:44:27 grubba Exp $
+|| $Id: threads.h,v 1.128 2004/05/20 20:13:38 grubba Exp $
 */
 
 #ifndef THREADS_H
@@ -48,13 +48,6 @@ struct thread_state {
   struct mapping *thread_local;
   struct thread_state *hashlink, **backlink;
   struct svalue result;
-#ifdef PROFILING
-#if SIZEOF_LONG_LONG - 0 != 0
-  long long time_base;
-#else
-  long time_base;
-#endif
-#endif /* PROFILING */
 #if CPU_TIME_IS_THREAD_LOCAL == PIKE_YES
   cpu_time_t auto_gc_time;
 #endif

@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: global.h,v 1.98 2004/05/11 08:48:16 grubba Exp $
+|| $Id: global.h,v 1.99 2004/05/20 20:13:38 grubba Exp $
 */
 
 #ifndef GLOBAL_H
@@ -507,11 +507,19 @@ char *crypt(const char *, const char *);
 
 /* Used in more than one place, better put it here */
 
-#if defined(PROFILING) && defined(HAVE_GETHRTIME)
+#if defined(PROFILING)
 #define DO_IF_PROFILING(X) X
 #else
 #define DO_IF_PROFILING(X)
 #endif
+
+/* #define PROFILING_DEBUG */
+
+#ifdef PROFILING_DEBUG
+#define DO_IF_PROFILING_DEBUG(X)	X
+#else /* !PROFILING_DEBUG */
+#define DO_IF_PROFILING_DEBUG(X)
+#endif /* PROFILING_DEBUG */
 
 
 
