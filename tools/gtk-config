@@ -1,0 +1,28 @@
+#!/bin/sh
+
+. $NTTOOLS
+
+for a in "$@"
+do
+  case "$a" in
+    --version)
+      echo "1.3.0"
+      exit 0
+    ;;
+
+    --cflags)
+      echo ""
+      exit 0
+    ;;
+
+    --libs)
+      echo "-lgtk -lgdk -lgmodule -lglib"
+      exit 0
+    ;;
+
+    *)
+      echo "Unknown option $a"
+      exit 1
+    ;;
+   esac
+done

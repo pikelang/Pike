@@ -1,0 +1,5 @@
+#!/bin/sh
+
+# no glade support on NT...
+
+exec /bin/false
