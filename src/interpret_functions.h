@@ -1,5 +1,5 @@
 /*
- * $Id: interpret_functions.h,v 1.27 2000/07/29 06:31:06 hubbe Exp $
+ * $Id: interpret_functions.h,v 1.28 2000/08/07 16:12:39 grubba Exp $
  *
  * Opcode definitions for the interpreter.
  */
@@ -985,7 +985,7 @@ BREAK;
 
       CASE(F_APPLY_AND_RETURN);
       {
-	INT32 args=Pike_sp - *--Pike_mark_sp;
+	INT32 args = DO_NOT_WARN(Pike_sp - *--Pike_mark_sp);
 /*	fprintf(stderr,"%p >= %p\n",Pike_fp->expendible,Pike_sp-args); */
 	if(Pike_fp->expendible >= Pike_sp-args)
 	{
@@ -1001,7 +1001,7 @@ BREAK;
 
 OPCODE1(F_CALL_LFUN_AND_RETURN,"call lfun & return")
 {
-  INT32 args=Pike_sp - *--Pike_mark_sp;
+  INT32 args = DO_NOT_WARN(Pike_sp - *--Pike_mark_sp);
 
   if(Pike_fp->expendible >= Pike_sp-args)
   {
@@ -1467,13 +1467,13 @@ BREAK;
 OPCODE1(F_CALL_LFUN,"call lfun")
   apply_low(Pike_fp->current_object,
 	    arg1+Pike_fp->context.identifier_level,
-	    Pike_sp - *--Pike_mark_sp);
+	    DO_NOT_WARN(Pike_sp - *--Pike_mark_sp));
 BREAK;
 
 OPCODE1(F_CALL_LFUN_AND_POP,"call lfun & pop")
   apply_low(Pike_fp->current_object,
             arg1+Pike_fp->context.identifier_level,
-            Pike_sp - *--Pike_mark_sp);
+            DO_NOT_WARN(Pike_sp - *--Pike_mark_sp));
   pop_stack();
 BREAK;
 
@@ -1487,34 +1487,38 @@ OPCODE1(F_MARK_APPLY_POP,"mark, apply & pop")
 BREAK;
 
     CASE(F_APPLY);
-      strict_apply_svalue(Pike_fp->context.prog->constants + GET_ARG(), Pike_sp - *--Pike_mark_sp );
+      strict_apply_svalue(Pike_fp->context.prog->constants + GET_ARG(),
+			  DO_NOT_WARN(Pike_sp - *--Pike_mark_sp ));
       break;
 
     CASE(F_APPLY_AND_POP);
-      strict_apply_svalue(Pike_fp->context.prog->constants + GET_ARG(), Pike_sp - *--Pike_mark_sp );
+      strict_apply_svalue(Pike_fp->context.prog->constants + GET_ARG(),
+			  DO_NOT_WARN(Pike_sp - *--Pike_mark_sp ));
       pop_stack();
       break;
 
     CASE(F_CALL_FUNCTION);
-    mega_apply(APPLY_STACK,Pike_sp - *--Pike_mark_sp,0,0);
-    break;
+      mega_apply(APPLY_STACK,Pike_sp - *--Pike_mark_sp,0,0);
+      break;
 
     CASE(F_CALL_FUNCTION_AND_RETURN);
     {
-      INT32 args=Pike_sp - *--Pike_mark_sp;
+      INT32 args = DO_NOT_WARN(Pike_sp - *--Pike_mark_sp);
       if(!args)
 	PIKE_ERROR("`()", "Too few arguments.\n", Pike_sp, 0);
       switch(Pike_sp[-args].type)
       {
 	case PIKE_T_INT:
 	  if (!Pike_sp[-args].u.integer) {
-	    PIKE_ERROR("`()", "Attempt to call the NULL-value\n", Pike_sp, args);
+	    PIKE_ERROR("`()", "Attempt to call the NULL-value\n",
+		       Pike_sp, args);
 	  }
 	case PIKE_T_STRING:
 	case PIKE_T_FLOAT:
 	case PIKE_T_MAPPING:
 	case PIKE_T_MULTISET:
-	  PIKE_ERROR("`()", "Attempt to call a non-function value.\n", Pike_sp, args);
+	  PIKE_ERROR("`()", "Attempt to call a non-function value.\n",
+		     Pike_sp, args);
       }
       return args;
     }
@@ -1523,7 +1527,8 @@ BREAK;
 /* Assume that the number of arguments is correct */
 OPCODE0_JUMP(F_RECUR,"recur")
 {
-  int x,num_locals,args;
+  int x;
+  INT32 num_locals, args;
   char *addr;
   struct svalue *expendible=Pike_fp->expendible;
   struct svalue *locals=Pike_fp->locals;
@@ -1533,16 +1538,17 @@ OPCODE0_JUMP(F_RECUR,"recur")
   check_c_stack(8192);
   check_stack(256);
 
-  save_sp=Pike_fp->expendible=Pike_fp->locals=*--Pike_mark_sp;
-  args=Pike_sp-Pike_fp->locals;
-  save_mark_sp=Pike_mark_sp;
+  save_sp = Pike_fp->expendible = Pike_fp->locals = *--Pike_mark_sp;
+  args = DO_NOT_WARN(Pike_sp - Pike_fp->locals);
+  save_mark_sp = Pike_mark_sp;
 
   addr=pc+EXTRACT_INT(pc);
   num_locals=EXTRACT_UCHAR(addr-2);
 
 #ifdef PIKE_DEBUG
   if(args != EXTRACT_UCHAR(addr-1))
-    fatal("Wrong number of arguments in F_RECUR %d!=%d\n",args,EXTRACT_UCHAR(addr-1));
+    fatal("Wrong number of arguments in F_RECUR %d!=%d\n",
+	  args, EXTRACT_UCHAR(addr-1));
 #endif
 
   clear_svalues(Pike_sp, num_locals - args);
@@ -1574,7 +1580,8 @@ BREAK
 /* Assume that the number of arguments is correct */
 OPCODE1_JUMP(F_COND_RECUR,"recur if not overloaded")
 {
-  int x,num_locals,args;
+  int x;
+  INT32 num_locals,args;
   char *addr;
 
   struct svalue *expendible=Pike_fp->expendible;
@@ -1590,16 +1597,16 @@ OPCODE1_JUMP(F_COND_RECUR,"recur if not overloaded")
   {
     apply_low(Pike_fp->current_object,
 	      arg1+Pike_fp->context.identifier_level,
-	      Pike_sp - *--Pike_mark_sp);
+	      DO_NOT_WARN(Pike_sp - *--Pike_mark_sp));
     pc+=sizeof(INT32);
   }else{
     fast_check_threads_etc(6);
     check_c_stack(8192);
     check_stack(256);
     
-    save_sp=Pike_fp->expendible=Pike_fp->locals=*--Pike_mark_sp;
-    args=Pike_sp-Pike_fp->locals;
-    save_mark_sp=Pike_mark_sp;
+    save_sp = Pike_fp->expendible = Pike_fp->locals = *--Pike_mark_sp;
+    args = DO_NOT_WARN(Pike_sp - Pike_fp->locals);
+    save_mark_sp = Pike_mark_sp;
     
     addr=pc+EXTRACT_INT(pc);
     num_locals=EXTRACT_UCHAR(addr-2);
@@ -1640,9 +1647,10 @@ BREAK
 /* FIXME: adjust Pike_mark_sp */
 OPCODE0_JUMP(F_TAIL_RECUR,"tail recursion")
 {
-  int x,num_locals;
+  int x;
+  INT32 num_locals;
   char *addr;
-  int args=Pike_sp - *--Pike_mark_sp;
+  int args = DO_NOT_WARN(Pike_sp - *--Pike_mark_sp);
 
   fast_check_threads_etc(6);
 
@@ -1652,7 +1660,8 @@ OPCODE0_JUMP(F_TAIL_RECUR,"tail recursion")
 
 #ifdef PIKE_DEBUG
   if(args != EXTRACT_UCHAR(addr-1))
-    fatal("Wrong number of arguments in F_TAIL_RECUR %d != %d\n",args,EXTRACT_UCHAR(addr-1));
+    fatal("Wrong number of arguments in F_TAIL_RECUR %d != %d\n",
+	  args, EXTRACT_UCHAR(addr-1));
 #endif
 
   if(Pike_sp-args != Pike_fp->locals)
