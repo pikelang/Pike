@@ -6,7 +6,7 @@
 // Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 // for more information.
 //
-// $Id: master.pike.in,v 1.370 2004/12/27 15:49:09 grubba Exp $
+// $Id: master.pike.in,v 1.371 2005/01/26 21:00:19 mast Exp $
 
 #pike __REAL_VERSION__
 //#pragma strict_types
@@ -3403,7 +3403,7 @@ string describe_function (function f)
 //! @seealso
 //! @[backtrace()], @[describe_error()], @[catch()], @[throw()]
 //!
-string describe_backtrace(array|object trace, void|int linewidth)
+string describe_backtrace(mixed trace, void|int linewidth)
 {
   int e;
   string ret;
