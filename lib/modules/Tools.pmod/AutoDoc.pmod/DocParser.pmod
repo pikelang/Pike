@@ -124,6 +124,7 @@ mapping(string : function(string, string : string)
   "deprecated" : deprArgHandler,
   "section" : sectionArgHandler,
   "type" : typeArgHandler,
+  "value" : valueArgHandler,
 ]);
 
 static string memberArgHandler(string keyword, string arg) {
@@ -214,6 +215,17 @@ static string typeArgHandler(string keyword, string arg) {
   //  werror("%%%%%% got type == %O\n", t->xml());
   parser->eat(EOF);
   return xmltag("type", t->xml());
+}
+
+static string valueArgHandler(string keyword, string arg) {
+  //  werror("This is the @type arg handler ");
+  .PikeParser parser = .PikeParser(arg);
+  //  werror("&&& %O\n", arg);
+  string s = parser->parseLiteral() || parser->parseIdents();
+  if (!s)
+    parseError("@value: expected indentifier or literal constant, got %O", arg);
+  parser->eat(EOF);
+  return xmltag("value", xmlquote(s));
 }
 
 static mapping(string : string) standardArgHandler(string keyword, string arg)
