@@ -1,0 +1,35 @@
+AC_INIT(image_png.c)
+AC_CONFIG_HEADER(config.h)
+AC_ARG_WITH(zlib,     [  --with(out)-zlib       Support gzip compression],[],[with_zlib=yes])
+
+sinclude(../module_configure.in)
+
+if test x$with_zlib = xyes ; then
+  AC_CHECK_HEADERS(zlib.h)
+  if test $ac_cv_header_zlib_h = yes ; then
+    AC_MSG_CHECKING([if libz.h is new enough])
+    AC_TRY_LINK([
+#include <zlib.h>
+    ],[
+int foo = (int)(Z_NO_COMPRESSION | Z_VERSION_ERROR);
+    ],[ AC_MSG_RESULT(yes) ],[ AC_MSG_RESULT(no); ac_cv_header_zlib_h=no ])
+    if test $ac_cv_header_zlib_h = yes ; then
+      if test x$pike_cv_sys_os = xIRIX ; then
+        # The libz.so supplied with IRIX 6.3 needs these obscure symbols
+        # C++? It also differs which library which contains them.
+        AC_CHECK_LIB(Csup, __vtbl__9type_info)
+        AC_CHECK_LIB(C, __vtbl__9type_info)
+	AC_CHECK_LIB(Csup, __T_9__nothrow)
+	AC_HAVE_FUNCS(__vtbl__9type_info)
+	AC_HAVE_FUNCS(__T_9__nothrow)
+      fi
+      AC_CHECK_LIB(z, compress, [
+        AC_DEFINE(HAVE_LIBZ) 
+        LIBS="${LIBS-} -lz"
+      ] ,
+      AC_CHECK_LIB(gz, compress))
+    fi
+  fi
+fi
+
+AC_OUTPUT(Makefile,echo FOO >stamp-h )

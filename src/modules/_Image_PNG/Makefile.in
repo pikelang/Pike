@@ -1,0 +1,7 @@
+SRCDIR=@srcdir@
+VPATH=@srcdir@:@srcdir@/../..:../..
+OBJS=image_png.o
+MODULE_LDFLAGS=@LDFLAGS@ @LIBS@
+
+@dynamic_module_makefile@
+@dependencies@
