@@ -1414,6 +1414,10 @@ class ParseBlock
     {
       array(array|PC.Token) ret=x;
 
+      // FIXME: Consider generating code in the order it appears in
+      //        the source file.
+      //	/grubba 2004-12-10
+
       // NOTE:
       //   Inherits must come before sub classes, since
       //   otherwise the subclasses can't look in
