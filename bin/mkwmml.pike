@@ -1,4 +1,4 @@
-/* $Id: mkwmml.pike,v 1.13 1999/04/12 14:37:51 mirar Exp $ */
+/* $Id: mkwmml.pike,v 1.14 1999/04/17 15:34:16 grubba Exp $ */
 
 import Stdio;
 import Array;
@@ -180,7 +180,7 @@ string synopsis_to_html(string s,mapping huh)
    if (sscanf(s,"%s%*[ \t]%s(%s",type,name,arg)!=4)
    {
       sscanf(s,"%s(%s",name,arg),type="";
-      werror(huh->_line+": suspicios method %O\n",(s/"(")[0]);
+      werror(sprintf(huh->_line+": suspicios method %O\n",(s/"(")[0]));
    }
    if (arg[..1]==")(") name+="()",arg=arg[2..];
 
