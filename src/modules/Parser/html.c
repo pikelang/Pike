@@ -1144,6 +1144,49 @@ static void html_add_entities(INT32 args)
 }
 
 /*
+**! method mapping clear_tags()
+**! method mapping clear_containers()
+**! method mapping clear_entities()
+**! method mapping clear_quote_tags()
+**!	Removes all registered definitions in the different
+**!	categories.
+**!
+**! see also: add_tag, add_tags, add_container, add_containers, add_entity, add_entities
+*/
+
+static void html_clear_tags (INT32 args)
+{
+  pop_n_elems(args);
+  free_mapping (THIS->maptag);
+  THIS->maptag = allocate_mapping (32);
+  ref_push_object (THISOBJ);
+}
+
+static void html_clear_containers (INT32 args)
+{
+  pop_n_elems(args);
+  free_mapping (THIS->mapcont);
+  THIS->mapcont = allocate_mapping (32);
+  ref_push_object (THISOBJ);
+}
+
+static void html_clear_entities (INT32 args)
+{
+  pop_n_elems(args);
+  free_mapping (THIS->mapentity);
+  THIS->mapentity = allocate_mapping (32);
+  ref_push_object (THISOBJ);
+}
+
+static void html_clear_quote_tags (INT32 args)
+{
+  pop_n_elems(args);
+  free_mapping (THIS->mapqtag);
+  THIS->mapqtag = allocate_mapping (32);
+  ref_push_object (THISOBJ);
+}
+
+/*
 **! method mapping tags()
 **! method mapping containers()
 **! method mapping entities()
@@ -4922,6 +4965,15 @@ void init_parser_html(void)
 		tFunc(tMap(tStr,tTodo( tTagargs tStr )),tObjImpl_PARSER_HTML),0);
    ADD_FUNCTION("add_entities",html_add_entities,
 		tFunc(tMap(tStr,tTodo( "" )),tObjImpl_PARSER_HTML),0);
+
+   ADD_FUNCTION("clear_tags",html_clear_tags,
+		tFunc(tNone,tObjImpl_PARSER_HTML),0);
+   ADD_FUNCTION("clear_containers",html_clear_containers,
+		tFunc(tNone,tObjImpl_PARSER_HTML),0);
+   ADD_FUNCTION("clear_entities",html_clear_entities,
+		tFunc(tNone,tObjImpl_PARSER_HTML),0);
+   ADD_FUNCTION("clear_quote_tags",html_clear_quote_tags,
+		tFunc(tNone,tObjImpl_PARSER_HTML),0);
 
    ADD_FUNCTION("tags",html_tags,
 		tFunc(tNone,tMap(tStr,tTodo( tTagargs ))),0);
