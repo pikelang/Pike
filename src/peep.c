@@ -15,7 +15,7 @@
 #include "bignum.h"
 #include "opcodes.h"
 
-RCSID("$Id: peep.c,v 1.36 2000/08/17 19:15:59 grubba Exp $");
+RCSID("$Id: peep.c,v 1.37 2000/09/22 12:54:10 grubba Exp $");
 
 struct p_instr_s
 {
@@ -171,20 +171,20 @@ static void ins_f_byte_with_arg(unsigned int a,unsigned INT32 b)
     if( b < 256*256)
     {
       ins_f_byte(F_PREFIX_CHARX256);
-      add_to_program(b>>8);
+      add_to_program((unsigned char)(b>>8));
     }else if(b < 256*256*256) {
       ins_f_byte(F_PREFIX_WORDX256);
-      add_to_program(b>>16);
-      add_to_program(b>>8);
+      add_to_program((unsigned char)(b>>16));
+      add_to_program((unsigned char)(b>>8));
     }else{
       ins_f_byte(F_PREFIX_24BITX256);
-      add_to_program(b>>24);
-      add_to_program(b>>16);
-      add_to_program(b>>8);
+      add_to_program((unsigned char)(b>>24));
+      add_to_program((unsigned char)(b>>16));
+      add_to_program((unsigned char)(b>>8));
     }
   }
   ins_f_byte(a);
-  add_to_program(b);
+  add_to_program((unsigned char)b);
 }
 
 static void ins_f_byte_with_2_args(unsigned int a,
@@ -203,20 +203,20 @@ static void ins_f_byte_with_2_args(unsigned int a,
     if( b < 256*256)
     {
       ins_f_byte(F_PREFIX2_CHARX256);
-      add_to_program(b>>8);
+      add_to_program((unsigned char)(b>>8));
     }else if(b < 256*256*256) {
       ins_f_byte(F_PREFIX2_WORDX256);
-      add_to_program(b>>16);
-      add_to_program(b>>8);
+      add_to_program((unsigned char)(b>>16));
+      add_to_program((unsigned char)(b>>8));
     }else{
       ins_f_byte(F_PREFIX2_24BITX256);
-      add_to_program(b>>24);
-      add_to_program(b>>16);
-      add_to_program(b>>8);
+      add_to_program((unsigned char)(b>>24));
+      add_to_program((unsigned char)(b>>16));
+      add_to_program((unsigned char)(b>>8));
     }
   }
   ins_f_byte_with_arg(a,c);
-  add_to_program(b);
+  add_to_program((unsigned char)b);
 }
 
 void assemble(void)
@@ -331,7 +331,7 @@ void assemble(void)
       break;
 
     case F_BYTE:
-      add_to_program(c->arg);
+      add_to_program((unsigned char)(c->arg));
       break;
 
     case F_DATA:
