@@ -102,8 +102,8 @@ text expansion with arguments, but it is often very useful to make a
 cleaner looking code and to write less.</p>
 
 <example>
-#define VAR(X) id-&gt:misc-&gt;variable[X]
-#define ROL(X,Y) (((X)&lt;&lt;(Y))&7+((X)&gt;&gt;(8-(Y))))
+#define VAR(X) id-&gt;:misc-&gt;variable[X]
+#define ROL(X,Y) (((X)&lt;&lt;(Y))&amp;7+((X)&gt;&gt;(8-(Y))))
 #define PLACEHOLDER(X) void X(mixed ... args) { \
   error("Method " #X " is not implemented yet.\n"); }
 #define ERROR(X,Y ...) werror("MyClass" X "\n", Y)
