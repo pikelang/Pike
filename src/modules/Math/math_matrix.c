@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: math_matrix.c,v 1.36 2002/10/21 17:06:16 marcus Exp $
+|| $Id: math_matrix.c,v 1.37 2004/03/02 15:43:35 nilsson Exp $
 */
 
 #include "global.h"
@@ -28,24 +28,12 @@
 
 #include "bignum.h"
 
-/*
-**! module Math
-**! class Matrix
-**! class FMatrix
-**! class LMatrix
-**! class IMatrix
-**! class SMatrix
-**!
-**!	These classes hold Matrix capabilites,
-**!	and support a range of matrix operations.
-**!
-**!	Matrix only handles double precision floating point values
-**!	FMatrix only handles single precision floating point values
-**!	LMatrix only handles integers (64 bit)
-**!	IMatrix only handles integers (32 bit)
-**!	SMatrix only handles integers (16 bit)
-**!	
-*/
+/*! @module Math
+ */
+
+/*! @class Matrix
+ *! Matrix representation with double precision floating point values.
+ */
 
 static struct pike_string *s_array;
 static struct pike_string *s__clr;
@@ -132,131 +120,138 @@ extern struct program *math_lmatrix_program;
 #undef FTYPE
 #undef PTYPE
 
-/*
-**! method void create(array(array(int|float)) 2d_matrix)
-**! method void create(array(int|float) 1d_matrix)
-**! method void create(int n,int m)
-**! method void create(int n,int m,string type)
-**! method void create(int n,int m,float|int init)
-**! method void create("identity",int size)
-**! method void create("rotate",int size,float rads,Matrix axis)
-**! method void create("rotate",int size,float rads,float x,float y,float z)
-**!
-**!	This method initializes the matrix.
-**!	It is illegal to create and hold an empty matrix.
-**!	
-**!	The normal operation is to create the matrix object
-**!	with a double array, like
-**!	<tt>Math.Matrix( ({({1,2}),({3,4})}) )</tt>.
-**!	
-**!	Another use is to create a special type of matrix,
-**!	and this is told as third argument.
-**!
-**!	Currently there are only the "identity" type, 
-**!	which gives a matrix of zeroes except in the diagonal,
-**!	where the number one (1.0) is. This is the default,
-**!	too.
-**!
-**!	The third use is to give all indices in the 
-**!	matrix the same value, for instance zero or 42.
-**!
-**!	The forth use is some special matrixes. First the
-**!	square identity matrix again, then the rotation
-**!	matrix. 
-*/
+/*! @decl void create(array(array(int|float)) matrix_2d)
+ *! @decl void create(array(int|float) matrix_1d)
+ *!  Initializes the matrix as a 1D or 2D matrix, e.g.
+ *!  @expr{Math.Matrix( ({({1,2}),({3,4})}) )@}.
+ */
+
+/*! @decl void create(int n,int m)
+ *! @decl void create(int n,int m,string type)
+ *! @decl void create(int n,int m,float|int init)
+ *! Initializes the matrix as to be a @[n]*@[m] matrix with @[init] in
+ *! every value. If no third argument is given, or the third argument
+ *! is @expr{"identity"@}, the matrix will be initialized with all
+ *! zeroes except for the diagonal which will be @expr{1@}.
+ */
+
+/*! @decl void create(string type,int size)
+ *! When @[type] is @expr{"identity"@} the matrix is initializes as a
+ *! square identity matrix.
+ */
+
+/*! @decl void create(string type,int size,float rads,Matrix axis)
+ *! @decl void create(string type,int size,float rads,float x,float y,float z)
+ *!
+ *! When @[type] is @expr{"rotate"@} the matrix is initialized as a
+ *! rotation matrix.
+ */
 
 /* ---------------------------------------------------------------- */
 
-/*
-**! method array(array) cast(string to_what)
-**! method array(array) cast(string to_what)
-**! 	This is to be able to get the matrix values.
-**!	<tt>(array)</tt> gives back a double array of floats.
-**!	<tt>m->vect()</tt> gives back an array of floats.
-*/
+/*! @decl array(array) cast(string to_what)
+ *! @decl array(array) cast(string to_what)
+ *!
+ *! It is possible to cast the matrix to an array and get back a
+ *! double array of floats with the matrix values.
+ *! @seealso
+ *!   @[vect]
+ */
 
-/*
-**! method array vect()
-**!     Return all the elements of the matrix as an array of numbers
-*/
+/*! @decl array vect()
+ *! Return all the elements of the matrix as an array of numbers
+ */
 
+/*! @decl Matrix transpose()
+ *! Returns the transpose of the matrix as a new object.
+ */
 
+/*! @decl float norm()
+ *! @decl float norm2()
+ *! @decl Matrix normv()
+ *! 	Norm of the matrix, and the square of the norm
+ *!	of the matrix. (The later method is because you
+ *!	may skip a square root sometimes.)
+ *!
+ *!	This equals |A| or sqrt( A@sub{0@}@sup{2@} +
+ *!	A@sub{1@}@sup{2@} + ... + A@sub{n@}@sup{2@} ).
+ *!
+ *!	It is only usable with 1xn or nx1 matrices.
+ *!
+ *!	@expr{m->normv()@} is equal to @expr{m*(1.0/m->norm())@},
+ *!	with the exception that the zero vector will still be
+ *!	the zero vector (no error).
+ */
 
-/*
-**! method Matrix transpose()
-**! 	Transpose of the matrix as a new object.
-*/
+/*! @decl Matrix `+(object with)
+ *! @decl Matrix ``+(object with)
+ *! @decl Matrix add(object with)
+ *! 	Add this matrix to another matrix. A new matrix is returned.
+ *!	The matrices must have the same size.
+ *!
+ *! @decl Matrix `-()
+ *! @decl Matrix `-(object with)
+ *! @decl Matrix ``-(object with)
+ *! @decl Matrix sub(object with)
+ *!	Subtracts this matrix from another. A new matrix is returned.
+ *!	@expr{-m@} is equal to @expr{-1*m@}.
+ */
 
+/*! @decl Matrix sum()
+ *!	Produces the sum of all the elements in the matrix.
+ */
 
-/*
-**! method float norm()
-**! method float norm2()
-**! method Matrix normv()
-**! 	Norm of the matrix, and the square of the norm
-**!	of the matrix. (The later method is because you
-**!	may skip a square root sometimes.)
-**!
-**!	This equals |A| or sqrt( A<sub>0</sub><sup>2</sup> +
-**!	A<sub>1</sub><sup>2</sup> + ... + A<sub>n</sub><sup>2</sup> ).
-**!
-**!	It is only usable with 1xn or nx1 matrices.
-**!
-**!	m->normv() is equal to m*(1.0/m->norm()),
-**!	with the exception that the zero vector will still be
-**!	the zero vector (no error).
-*/
+/*! @decl Matrix max()
+ *! @decl Matrix min()
+ *! Produces the maximum or minimum value of all the elements in the
+ *! matrix.
+ */
 
+/*! @decl Matrix `*(object with)
+ *! @decl Matrix ``*(object with)
+ *! @decl Matrix mult(object with)
+ *!	Matrix multiplication.
+ */
 
-/*
-**! method Matrix `+(object with)
-**! method Matrix ``+(object with)
-**! method Matrix add(object with)
-**! 	Add this matrix to another matrix. A new matrix is returned.
-**!	The matrices must have the same size.
-**!
-**! method Matrix `-()
-**! method Matrix `-(object with)
-**! method Matrix ``-(object with)
-**! method Matrix sub(object with)
-**!	Subtracts this matrix from another. A new matrix is returned.
-**!	-<i>m</i> is equal to -1*<i>m</i>.
-*/
-
-
-/* 
-**! method Matrix sum()
-**!	Produces the sum of all the elements in the matrix.
-*/
-
-/* 
-**! method Matrix max()
-**! method Matrix min()
-**!	Produces the maximum or minimum value 
-**!	of all the elements in the matrix.
-*/
-
-/*
-**! method Matrix `*(object with)
-**! method Matrix ``*(object with)
-**! method Matrix mult(object with)
-**!	Matrix multiplication.
-*/
-/*
-**! method Matrix cross(object with)
-**! method Matrix `×(object with)
-**! method Matrix ``×(object with)
-**!	Matrix cross-multiplication.
-*/
+/*! @decl Matrix cross(object with)
+ *!	Matrix cross-multiplication.
+ */
 
 
-/*
-**! method float dot_product(object with)
-**! method float `·(object with)
-**! method float ``·(object with)
-**!	Matrix dot product.
-*/
+/*! @decl float dot_product(object with)
+ *!	Matrix dot product.
+ */
 
-/*
-**! method Matrix convolve(object with)
-**!	Convolve called matrix with the argument.
-*/
+/*! @decl Matrix convolve(object with)
+ *!	Convolve called matrix with the argument.
+ */
+
+/*! @endclass
+ */
+
+/*! @class FMatrix
+ *! @inherit Matrix
+ *! Matrix representation with single precision floating point values.
+ *! @endclass
+ */
+
+/*! @class LMatrix
+ *! @inherit Matrix
+ *! Matrix representation with 64 bit integer values.
+ *! @endclass
+ */
+
+/*! @class IMatrix
+ *! @inherit Matrix
+ *! Matrix representation with 32 bit integer values.
+ *! @endclass
+ */
+
+/*! @class SMatrix
+ *! @inherit Matrix
+ *! Matrix representation with 16 bit integer values.
+ *! @endclass
+ */
+
+/*! @endmodule
+ */
