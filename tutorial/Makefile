@@ -8,7 +8,8 @@ all:
 low_all: tutorial.html tutorial_onepage.html
 
 MADEFILES=Image.wmml Mysql.wmml ProtocolsLysKOM.wmml \
-	ProtocolsHTTP.wmml Parser.wmml Calendar.wmml
+	ProtocolsHTTP.wmml Parser.wmml Calendar.wmml \
+
 SRCFILES=tutorial.wmml $(MADEFILES)
 
 pike=pike
@@ -48,6 +49,13 @@ tutorial.html: .DUMMY $(SRCFILES)
 tutorial_onepage.html: .DUMMY  $(SRCFILES)
 	$(pike) ./wmmltohtml2 tutorial.wmml html_onepage tutorial_onepage
 
+tutorial.tex: .DUMMY $(SRCFILES)
+	$(pike) ./wmmltohtml2 tutorial.wmml latex tutorial
+
+tutorial.dvi: tutorial.tex
+	-@rm tutorial.aux
+	latex tutorial.tex
+
 tut.html: .DUMMY $(SRCFILES)
 	$(pike) ./wmmltohtml2 tutorial.wmml sitebuilder tut
 
@@ -64,7 +72,9 @@ the_image_module.html: Image.wmml the_image_module.wmml
 	$(pike) ./wmmltohtml2 the_image_module.wmml mirar_html the_image_module
 
 clean:
-	-rm -f *.html *.md illustration_cache illustration*.gif $(MADEFILES)
+	-rm -f *.html *.md illustration_cache illustration*.gif $(MADEFILES) 
+	-rm -f tutorial.dvi tutorial.tex tutorial.aux illustration*.eps
+	-rm -f tutorial.log
 
 rebuild:
 	-rm -f $(MADEFILES)

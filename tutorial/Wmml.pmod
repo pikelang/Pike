@@ -26,6 +26,10 @@ class Trace
 }
 
 
+
+// This function verifies SGML data
+// FIXME: check for superflous tags in <table>
+// FIXME: put a cap on the <section> depth
 static private int verify_any(SGML data,
 			      Trace in,
 			      string input,
@@ -135,6 +139,18 @@ static private int verify_any(SGML data,
 
 	    break;
 
+	 case "image":
+	   if(!x->params->src &&
+	      !x->params->gif &&
+	      !x->params->xfig &&
+	      !x->params->jpeg &&
+	      !x->params->eps)
+	   {
+	     werror("Image without source near "+x->location()+"\n");
+	     werror(in->dump());
+	     i=0;
+	   }
+
 	 case "insert_added_appendices":
 	 case "ex_indent":
 	 case "ex_br":
@@ -146,7 +162,7 @@ static private int verify_any(SGML data,
 	 case "hr":
 	 case "br":
 	 case "img":
-	 case "image":
+	      
 	 case "table-of-contents":
 	 case "index":
 	    if(x->data)
@@ -175,6 +191,10 @@ int verify(SGML data, string input, string input_name)
   return verify_any(data,Trace(0,0), input, input_name);
 }
 
+
+// Generate an index
+// Might not be required for all output formats
+//
 INDEX_DATA collect_index(SGML data, void|INDEX_DATA index,void|mapping taken)
 {
   if(!index) index=([]);
@@ -267,6 +287,8 @@ INDEX group_index_by_character(INDEX i)
   return m;
 }
 
+
+// Rerserver dowrds in Pike
 string * reserved_pike =
 ({
   "array","break","case","catch","continue","default","do","else","float",
@@ -276,6 +298,8 @@ string * reserved_pike =
   "varargs","void","while"
 });
 
+
+// Reserved words in C
 string *reserved_c =
 ({
   "break","case","continue","default","do","else","float","double",
@@ -284,6 +308,9 @@ string *reserved_c =
   "void","while"
 });
 
+
+// Parce C/C++/Pike/Java and highlight
+//
 object(Tag) parse_pike_code(string x,
 	 int pos,
 	 mapping(string:string) reserved_type)
@@ -409,6 +436,8 @@ object(Tag) parse_pike_code(string x,
   return Tag("example",([]),pos,ret);
 }
 
+// All data that will be sent to the
+// output generator.
 class Wmml
 {
   SGML metadata;
@@ -417,6 +446,8 @@ class Wmml
   SGML data;
 };
 
+// Enumerators are used to give numbers to chapters,
+// sections and appendixes
 class Enumerator
 {
   string *base;
@@ -897,6 +928,8 @@ void save_image_cache();
 
 int gifnum;
 mapping gifcache=([]);
+mapping jpgcache=([]);
+mapping epscache=([]);
 mapping srccache=([]);
 
 string mkgif(mixed o,void|object alpha)
@@ -931,13 +964,42 @@ string mkgif(mixed o,void|object alpha)
   return gifname;
 }
 
+string mkeps(mixed o,float dpi)
+{
+  string g=Image.PS.encode(o, (["dpi":dpi]) );
+
+  int key=hash(g);
+
+  foreach(epscache[key]||({}),string file)
+    {
+      if(Stdio.read_file(file)==g)
+      {
+	werror("Cache hit in mkeps: "+file+"\n");
+	return file;
+      }
+    }
+
+  gifnum++;
+  string epsname="illustration"+gifnum+".eps";
+  rm(epsname);
+  werror("Writing "+epsname+".\n");
+  Stdio.write_file(epsname,g);
+
+  if(epscache[key])
+    epscache[key]+=({epsname});
+  else
+    epscache[key]=({epsname});
+
+  return epsname;
+}
+
 string mkjpeg(mixed o,void|int quality)
 {
    string g=Image.JPEG.encode(o,(["quality":quality||100]));
 
    int key=hash(g);
 
-   foreach(gifcache[key]||({}),string file)
+   foreach(jpgcache[key]||({}),string file)
    {
       if(Stdio.read_file(file)==g)
       {
@@ -952,25 +1014,28 @@ string mkjpeg(mixed o,void|int quality)
    werror("Writing "+gifname+".\n");
    Stdio.write_file(gifname,g);
 
-   if(gifcache[key])
-      gifcache[key]+=({gifname});
+   if(jpgcache[key])
+      jpgcache[key]+=({gifname});
    else
-      gifcache[key]=({gifname});
+      jpgcache[key]=({gifname});
 
    return gifname;
 }
 
-
-object render_illustration(string pike_code, mapping params, float dpi)
+//
+// Execute a small pice of pike code to generate an illustration. 
+// 
+object render_illustration(string pike_code, mapping params, float wanted_dpi)
 {
   werror("Rendering ");
   if (params->__from__) werror("["+params->__from__+"] ");
   string src=params->src;
   object img=Image.image();
 
-  if(params->dpi) dpi=(float)params->dpi;
-  if(params->scale) dpi/=(float)params->scale;
-  float scale=75.0/dpi;
+  float actual_dpi=75.0;
+  if(params->dpi) actual_dpi=(float)params->dpi;
+  if(params->scale) wanted_dpi*=(float)params->scale;
+  float scale=wanted_dpi/actual_dpi;
 
   if(params->src) 
      img=srccache[params->src]||
@@ -1002,7 +1067,7 @@ string illustration_to_gif(TAG data, float dpi)
 {
   mapping params=data->params;
   string pike_code=data->data[0];
-  string key=mkkey(params,pike_code,dpi);
+  string key=mkkey(params,pike_code,dpi,"gif");
 
   string ret=illustration_cache[key];
   if(!ret)
@@ -1023,6 +1088,35 @@ string illustration_to_gif(TAG data, float dpi)
     }
   }
   return ret;
+}
+
+
+string illustration_to_eps(TAG data, float dpi)
+{
+  mapping params=data->params;
+  string pike_code=data->data[0];
+  string key=mkkey(params,pike_code,dpi,"eps");
+
+  string ret=illustration_cache[key];
+  if(!ret)
+  {
+    mixed err=catch 
+    {
+       ret=mkeps(render_illustration(pike_code,params, dpi), dpi);
+       illustration_cache[key]=ret;
+       save_image_cache();
+    };
+    if (err)
+    {
+	werror("error while compiling and running\n"+pike_code+"\n");
+	if (params->__from__) 
+	   werror("from "+params->__from__+":\n");
+	werror(master()->describe_backtrace(err)+"\n");
+	return "error.eps";
+    }
+  }
+  return ret;
+  
 }
 
 array execute_contents(Tag tag)
@@ -1111,7 +1205,8 @@ array execute_contents(Tag tag)
 	 werror("from "+tag->params->__from__+"\n");
 
       array dat=data/"\n";
-      werror("%O\n",err[1]);
+//	master()->describe_error(err);
+//      werror("%O\n",err[1]);
       foreach (reverse(err[1]),array y)
 	 if (y[0]=="inline wmml generating code" &&
 	     y[1]<10000) 
@@ -1131,6 +1226,7 @@ array execute_contents(Tag tag)
 }
 
 
+// FIXME: handle EPS input
 string image_to_gif(TAG data, float dpi)
 {
   mapping params=data->params;
@@ -1144,7 +1240,7 @@ string image_to_gif(TAG data, float dpi)
   if(params->xfig)
     params->src=params->xfig+".fig";
 
-  string key=mkkey(params,dpi);
+  string key=mkkey(params,dpi,"gif");
 
   string ret=illustration_cache[key];
   if(!ret)
@@ -1162,7 +1258,7 @@ string image_to_gif(TAG data, float dpi)
       werror("Converting ");
       Process.system("/bin/sh -c 'fig2dev -L ps "+params->src+" ___tmp.ps;echo showpage >>___tmp.ps'");
       Process.system("/bin/sh -c 'gs -q -sDEVICE=pbmraw -r225 -g2500x2500 -sOutputFile=___tmp.ppm ___tmp.ps </dev/null >/dev/null'");
-      object o=Image.PNM.decode(Stdio.read_file("___tmp.ppm"))->autocrop()->scale(1.0/3)->rotate(-90);
+      object o=Image.PNM.decode(Stdio.read_file("___tmp.ppm"))->autocrop()->scale(1.0/3); //->rotate(-90);
       o=Image.image(o->xsize()+40, o->ysize()+40, 255,255,255)->paste(o,20,20);
       rm("___tmp.ps");
       rm("___tmp.ppm");
@@ -1180,6 +1276,54 @@ string image_to_gif(TAG data, float dpi)
   return ret;
 }
 
+// FIXME: move all graphics stuff into a separate module
+string image_to_eps(TAG data, float dpi)
+{
+  mapping params=data->params;
+
+  if(params->eps)
+    return params->eps;
+
+  if(params->jpeg)
+    params->src=params->jpeg;
+
+  if(params->gif)
+    params->src=params->gif;
+
+  if(params->xfig)
+    params->src=params->xfig+".fig";
+
+  string key=mkkey(params,dpi,"eps");
+
+  string ret=illustration_cache[key];
+  if(!ret)
+  {
+    if(!params->src)
+    {
+      throw( ({"Image without source near "+data->location()+".\n",
+		 backtrace() }) );
+    }
+    string ext=reverse(params->src);
+    sscanf(ext,"%s.",ext);
+    switch(reverse(ext))
+    {
+    case "fig":
+      werror("Converting ");
+      ret="illustration"+ (++gifnum) +".eps";
+      Process.create_process( ({"fig2dev","-L","ps","-m","0.6666666666",params->src,ret }))->wait();
+      break;
+
+    default:
+      ret=mkeps(render_illustration("return src",params,dpi),dpi);
+      break;
+    }
+
+    illustration_cache[key]=ret;
+    save_image_cache();
+  }
+  return ret;
+}
+
 void save_image_cache()
 {
   rm("illustration_cache");
@@ -1187,6 +1331,8 @@ void save_image_cache()
 		   encode_value(([
 		     "gifnum":gifnum,
 		     "gifcache":gifcache,
+		     "jpgcache":gifcache,
+		     "epscache":gifcache,
 		     "illustration_cache":illustration_cache,
 		     ])));
 }
@@ -1198,6 +1344,8 @@ void create()
     mixed x=decode_value(Stdio.read_file("illustration_cache"));
     gifnum=x->gifnum;
     gifcache=x->gifcache;
+    jpgcache=x->jpgcache;
+    epscache=x->epscache;
     illustration_cache=x->illustration_cache;
   }
 }

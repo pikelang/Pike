@@ -578,10 +578,11 @@ SGML convert(SGML data)
 	    break;
 	
 	 case "ex_identifier":
-	 case "ex_commend":
+	 case "ex_comment":
 	    ret+=convert(data->data);
 	    continue;
 	 case "ex_string":
+	   // FIXME: this doesn't work
 	    ret+=convert(replace(data->data," "," "));
 	    continue;
 	
