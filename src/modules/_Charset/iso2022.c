@@ -3,7 +3,7 @@
 #endif /* HAVE_CONFIG_H */
 
 #include "global.h"
-RCSID("$Id: iso2022.c,v 1.13 1999/07/28 21:34:34 marcus Exp $");
+RCSID("$Id: iso2022.c,v 1.14 1999/10/11 18:16:21 marcus Exp $");
 #include "program.h"
 #include "interpret.h"
 #include "stralloc.h"
@@ -438,6 +438,9 @@ static void eat_enc_string(struct pike_string *str, struct iso2022enc_stor *s,
 	  c = *(p_wchar2 *)p;
 	  p += sizeof(p_wchar2);
 	}
+#ifdef OPTIMIZE_ISO2022
+	/* This optimization breaks on some 2022 decoders,
+	   such as the one in Netscape...  :-P */
 	if(c<0x21 || c==0x7f) {
 	  if(c=='\r' || c=='\n') {
 	    if(s->g[0].mode != MODE_94 || s->g[0].index != 0x12) {
@@ -456,7 +459,9 @@ static void eat_enc_string(struct pike_string *str, struct iso2022enc_stor *s,
 	    }
 	  }
 	  string_builder_putchar(&s->strbuild,c);
-	} else if(c<0x7f) {
+	} else
+#endif
+	if(c<0x7f) {
 	  if(s->g[0].mode != MODE_94 || s->g[0].index != 0x12) {
 	    string_builder_strcat(&s->strbuild, "\033(B");
 	    s->g[0].transl = map_ANSI_X3_4_1968;
@@ -574,7 +579,9 @@ static void eat_enc_string(struct pike_string *str, struct iso2022enc_stor *s,
 		if(*ttt>=0x100 && *ttt!=0xfffd)
 		  rmap[*ttt-0x100]=((ch+33)<<8)|(ch2+33);
 	      if(rmap[c-0x100]) {
-		string_builder_strcat(&s->strbuild, "\033$(");
+		/* Argh.  This should really be `\033$(', but that won't work with
+		   Netscape (yet again)... */
+		string_builder_strcat(&s->strbuild, "\033$");
 		string_builder_putchar(&s->strbuild, 48+index);
 		string_builder_putchar(&s->strbuild, rmap[c-0x100]>>8);
 		string_builder_putchar(&s->strbuild, rmap[c-0x100]&0xff);
