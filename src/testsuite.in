@@ -1,5 +1,5 @@
 dnl -*- Pike -*-
-test_true([["$Id: testsuite.in,v 1.275 2000/02/10 03:27:54 mast Exp $"]]);
+test_true([["$Id: testsuite.in,v 1.276 2000/02/11 19:26:54 hubbe Exp $"]]);
 
 cond([[all_constants()->_verify_internals]],
 [[
@@ -451,16 +451,17 @@ test_compile_error_low([[
 
 ]])
 
-test_do([[
-  class A {
-    constant i = 5;
-  };
-  class B {
-    inherit A;
-    int i = 17;
-  };
-  B();
-]])
+dnl Come back when we decide that this should be possible
+dnl test_do([[
+dnl  class A {
+dnl    constant i = 5;
+dnl  };
+dnl  class B {
+dnl    inherit A;
+dnl    int i = 17;
+dnl  };
+dnl  B();
+dnl ]])
 
 
 test_any([[
@@ -1074,18 +1075,19 @@ test_any_equal([[
   return o->a;
 ]], ({1,2}))
 
-test_any_equal([[
-  class A {
-    array a = ({1});
-    void `->= (string var, mixed val) {::`->= (var, val); a += ({17});}
-  };
-  class B {
-    inherit A;
-  };
-  object o = B();
-  o->a += ({2});
-  return o->a;
-]], ({1,2,17}))
+dnl dnl Undefined behaviour, don't do this - Hubbe
+dnl test_any_equal([[
+dnl   class A {
+dnl    array a = ({1});
+dnl    void `->= (string var, mixed val) {::`->= (var, val); a += ({17});}
+dnl  };
+dnl  class B {
+dnl    inherit A;
+dnl  };
+dnl  object o = B();
+dnl  o->a += ({2});
+dnl  return o->a;
+dnl ]], ({1,2,17}))
 
 cond(0,[[
 dnl This test is not really right, since ::`->= is defined to look up
