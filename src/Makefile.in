@@ -1,5 +1,5 @@
 #
-# $Id: Makefile.in,v 1.94 1998/05/28 04:24:18 hubbe Exp $
+# $Id: Makefile.in,v 1.95 1998/05/29 21:02:00 grubba Exp $
 #
 
 # This line is needed on some machines.
@@ -489,6 +489,9 @@ Makefile: $(SRCDIR)/Makefile.in $(SRCDIR)/dependencies config.status
 	@exit 1
 
 $(SRCDIR)/machine.h.in: $(SRCDIR)/stamp-h.in
+	@if test -f $(SRCDIR)/machine.h.in; then :; else \
+	  rm $(SRCDIR)/stamp-h; $(MAKE) $(SRCDIR)/stamp-h.in; \
+	fi
 $(SRCDIR)/stamp-h.in: $(SRCDIR)/configure.in $(SRCDIR)/acconfig.h
 	cd $(SRCDIR) && autoheader
 	echo foo > $(SRCDIR)/stamp-h.in
@@ -497,7 +500,7 @@ machine.h: stamp-h
 	@if test -f machine.h; then :; else \
 	  rm stamp-h; $(MAKE) stamp-h; \
 	fi
-stamp-h: $(SRCDIR)/machine.h.in config.status
+stamp-h: $(SRCDIR)/stamp-h.in $(SRCDIR)/machine.h.in config.status
 	CONFIG_FILES="" CONFIG_HEADERS=machine.h ./config.status
 
 testsuite: $(SRCDIR)/testsuite.in
