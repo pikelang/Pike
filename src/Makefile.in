@@ -1,5 +1,5 @@
 #
-# $Id: Makefile.in,v 1.283 2002/01/28 17:43:18 mast Exp $
+# $Id: Makefile.in,v 1.284 2002/02/03 22:37:47 nilsson Exp $
 #
 
 # This line is needed on some machines.
@@ -566,6 +566,10 @@ source: depend
 # Do not compile in source tree if you want to use this!
 # Beware that export archive this includes bison/yacc/byacc source
 # and thus has to follow the rules stated in that code.
+
+small_export: source
+	chmod +x $(SRCDIR)/install-sh
+	$(RUNPIKE) $(TMP_BINDIR)/export.pike --srcdir="$(SRCDIR)" --notag
 
 full_export: source
 	chmod +x $(SRCDIR)/install-sh
