@@ -4,7 +4,7 @@
 ||| See the files COPYING and DISCLAIMER for more information.
 \*/
 #include "global.h"
-RCSID("$Id: interpret.c,v 1.57 1998/03/05 13:19:39 grubba Exp $");
+RCSID("$Id: interpret.c,v 1.58 1998/03/05 13:23:53 grubba Exp $");
 #include "interpret.h"
 #include "object.h"
 #include "program.h"
@@ -270,7 +270,7 @@ void assign_lvalue(struct svalue *lval,struct svalue *from)
     
   case T_VOID:
     error("Indexing a void.\n");	  /* Grubba */
-    return(0);
+    break;
 
   default:
    if(IS_ZERO(lval))
