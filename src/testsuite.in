@@ -1,4 +1,4 @@
-test_true([["$Id: testsuite.in,v 1.412 2001/05/17 23:49:07 hubbe Exp $"]]);
+test_true([["$Id: testsuite.in,v 1.413 2001/05/19 08:30:02 mirar Exp $"]]);
 
 cond([[all_constants()->_verify_internals]],
 [[
@@ -770,6 +770,10 @@ cond([[all_constants()->_debug]],
 test_do(_static_modules())
 test_compile_any([[import Stdio; class x { string y() { read_file("foo"); } }]])
 
+dnl ----------------------------------------------------------------
+dnl scopes and stuff
+dnl ----------------------------------------------------------------
+
 dnl
 dnl Undocumented but important behaviour...
 dnl
@@ -804,6 +808,42 @@ class Gnu
 }
 
 ]])
+
+test_any([[
+ Stdio.write_file("testsuite_test.pmod",
+	#"
+// this crashes Pike /Mirar 2001-05-19
+// I haven't been able to minimize it futher,
+// and it needs to be in a separate module.
+
+mapping es=0;
+
+string efoo(string e)
+{
+   if (!es)
+   {
+      mapping res=([]);
+
+      string l;
+
+      if (sscanf(l,\"%s%s\",string ext,string type)==4 &&
+	  ext!=\"\" && ext[0]!=\"#\") // note the type error
+	 res[ext]=type;
+
+      es=res;
+   }
+}	
+	");
+
+ // turn this on when the bug is found
+ // master()->set_inhibit_compile_errors(lambda(){});
+
+ catch {
+ compile_string("import \".\";\n"
+                "int foo() { testsuite_test.efoo; }\n");
+ };
+ return 0;
+]],0);
 
 test_compile_any([[int log() { return 17; } class Greta { int hanna() { return log(); } }]])
 test_compile_any([[int kajsa(int a,int b) { return 17; } class Jenny { int kajsa() { return 17; } class Greta { int hanna() { return kajsa(); } } }]])
@@ -1081,7 +1121,6 @@ test_any([[
  return sizeof( Program.all_inherits(D) - ({A,B,C}) );
 ]],0)
 
-
 test_program([[
 
 int errors;
@@ -1204,6 +1243,8 @@ int a()
 }
 
 ]])
+
+
 
 
 test_true([[Program.implements( class { int x; string y; void foo(int x) {} },
