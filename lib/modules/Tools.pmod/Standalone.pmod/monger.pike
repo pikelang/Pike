@@ -1,10 +1,10 @@
 // -*- Pike -*-
 
-// $Id: monger.pike,v 1.1 2004/04/20 21:38:46 bill Exp $
+// $Id: monger.pike,v 1.2 2004/04/20 22:14:26 nilsson Exp $
 
 #pike __REAL_VERSION__
 
-constant version = ("$Revision: 1.1 $"/" ")[1];
+constant version = ("$Revision: 1.2 $"/" ")[1];
 constant description = "Monger: the Pike module manger.";
 
 string repository = "http://modules.gotpike.org:8000/xmlrpc/index.pike";
@@ -28,6 +28,8 @@ int main(int argc, array(string) argv)
     run_pike += " -m"+master()->_master_file_name;
   putenv("RUNPIKE", run_pike);
 
+  if(argc==1) return do_help();
+
   array opts = Getopt.find_all_options(argv,aggregate(
     ({"list",Getopt.NO_ARG,({"--list"}) }),
     ({"download",Getopt.NO_ARG,({"--download"}) }),
@@ -41,11 +43,9 @@ int main(int argc, array(string) argv)
   argv=Getopt.get_args(argv);
 
   if(sizeof(argv)>2) 
-  {
-    werror("Too many extra arguments!\n"); 
-    exit(1);
-  }
-  else if(sizeof(argv)>1) argument = argv[1];
+    exit(1, "Too many extra arguments!\n");
+  else if(sizeof(argv)>1)
+    argument = argv[1];
 
   foreach(opts,array opt)
   {
@@ -77,23 +77,16 @@ int main(int argc, array(string) argv)
         if(argument)
           do_download(argument, my_version||UNDEFINED);
         else
-        {
-          werror("download error: module name must be specified\n");
-          exit(1);
-        }
+          exit(1, "download error: module name must be specified\n");
         break;
       case "query":
         if(argument)
           do_query(argument, my_version||UNDEFINED);
         else
-        {
-          werror("query error: module name must be specified\n");
-          exit(1);
-        }
+          exit(1, "query error: module name must be specified\n");
         break;
       case "help":
-        do_help();
-        return 0;
+        return do_help();
         break;
     }
   }
@@ -101,7 +94,7 @@ int main(int argc, array(string) argv)
  return 0;
 }
 
-void do_help()
+int(0..0) do_help()
 {
   write(
 #       "This is Monger, the manager for Fresh Pike.
@@ -118,6 +111,7 @@ Usage: pike -x monger [options] modulename
 --download           download the module modulename
 --version=ver        work with the specified version of the module
 ");
+  return 0;
 }
 
 
@@ -164,10 +158,7 @@ void do_query(string name, string|void version)
     qv=v;
   }
   else
-  {
-    werror("No version of this module is recommended for this Pike.\n");
-    exit(1);
-  }
+    exit(1, "No version of this module is recommended for this Pike.\n");
 
   mapping vi = x->get_module_version_info((int)module_id, qv);
 
@@ -218,11 +209,8 @@ void do_download(string name, string|void version)
     dv=v;
   }
   else
-  {
-    werror("download error: no recommended version to download.\n"
-      "use --force --version=ver to force download of a particular version.\n"); 
-    exit(1);
-  }
+    exit(1, "download error: no recommended version to download.\n"
+	 "use --force --version=ver to force download of a particular version.\n");
 
   mapping vi = x->get_module_version_info((int)module_id, dv);
 
@@ -231,10 +219,7 @@ void do_download(string name, string|void version)
     write("beginning download of version %s...\n", dv);
     array rq = Protocols.HTTP.get_url_nice(vi->download);
     if(!rq) 
-    {
-      werror("download error: unable to access download url\n");
-      exit(1);
-    }
+      exit(1, "download error: unable to access download url\n");
     else
     {
       Stdio.write_file(vi->filename, rq[1]);
@@ -242,10 +227,7 @@ void do_download(string name, string|void version)
     }
   }
   else 
-  {
-    werror("download error: no download available for this module version.\n");
-    exit(1);
-  }
+    exit(1, "download error: no download available for this module version.\n");
 }
 
 void do_list(string|void name)
@@ -298,8 +280,8 @@ class xmlrpc_handler
         r = c[n](@args);
       else
         r = c[n]();
-      if(objectp(r)) // we have an error, so throw it.
-        throw(({r->fault_string, backtrace()[2..]}));
+      if(objectp(r)) // we have an error. exit.
+        exit(1, r->fault_string);
       else return r[0];
     }
 
