@@ -1,6 +1,6 @@
 #pike __REAL_VERSION__
 
-// $Id: Query.pike,v 1.47 2002/11/29 01:09:27 nilsson Exp $
+// $Id: Query.pike,v 1.48 2003/07/30 16:28:56 anders Exp $
 
 //!	Open and execute an HTTP query.
 
@@ -340,12 +340,17 @@ string headers_encode(mapping h)
 //!
 mapping hostname_cache=([]);
 
-//!	Set this to an array of Protocols.DNS.async_clients,
-//!	if you wish to limit the number of outstanding DNS
-//!	requests. Example:
-//!	   @code{async_dns = allocate(20, Protocols.DNS.async_client)();@}
-//!
-array async_dns=0;
+//	Set this to an array of Protocols.DNS.async_clients,
+//	if you wish to limit the number of outstanding DNS
+//	requests. Example:
+//	   @code{async_dns = allocate(20, Protocols.DNS.async_client)();@}
+//
+// The number of outstanding requests is not limited anyway. The number
+// of open ports on the other hand could be limited by using this
+// array, but the ports are now limited anyway because we're using a
+// single global async client.
+//
+// array async_dns=0;
 
 void dns_lookup_callback(string name,string ip,function callback,
 			 mixed ...extra)
@@ -371,12 +376,7 @@ void dns_lookup_async(string hostname,function callback,mixed ...extra)
       return;
    }
 
-   if (!async_dns)
-      Protocols.DNS.async_client()
-	 ->host_to_ip(hostname,dns_lookup_callback,callback,@extra);
-   else
-      async_dns[random(sizeof(async_dns))]->
-	 host_to_ip(hostname,dns_lookup_callback,callback,@extra);
+   Protocols.DNS.async_host_to_ip(hostname,dns_lookup_callback,callback,@extra);
 }
 
 string dns_lookup(string hostname)
