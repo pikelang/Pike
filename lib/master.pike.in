@@ -6,7 +6,7 @@
 // Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 // for more information.
 //
-// $Id: master.pike.in,v 1.308 2003/10/30 22:19:26 bill Exp $
+// $Id: master.pike.in,v 1.309 2003/11/12 15:45:57 grubba Exp $
 
 #pike __REAL_VERSION__
 
@@ -945,7 +945,7 @@ string include_prefix;
 
 /* Note that create is called before add_precompiled_program
  */
-void create()
+static void create()
 {
   object o = this_object();
 
@@ -1393,9 +1393,9 @@ class joinnode
     return as=='O' && sprintf("master()->joinnode(%O)",joined_modules);
   }
 
-  void create(array(object|mapping) _joined_modules,
-	      object|void _compilation_handler,
-	      joinnode|void _fallback_module)
+  static void create(array(object|mapping) _joined_modules,
+		     object|void _compilation_handler,
+		     joinnode|void _fallback_module)
   {
     joined_modules = _joined_modules;
     compilation_handler = _compilation_handler;
@@ -1411,6 +1411,7 @@ class joinnode
     if (sizeof(joined_modules) &&
 	joined_modules[0] == node) return;
     joined_modules = ({ node }) + (joined_modules - ({ node }));
+    // FIXME: Propagate!
   }
 
   void rem_path(string path)
@@ -1422,6 +1423,8 @@ class joinnode
 				!node->is_resolv_dirnode ||
 				(node->dirname != path);
 			    });
+    // FIXME: What about the cache?
+    // FIXME: Propagate!
   }
 
   static mixed ind(string index)
@@ -1736,7 +1739,7 @@ class CompatResolver
   //! The complete program search path
   array(string) pike_program_path=({});
 
-  mapping(string:string) predefines = ([]);
+  mapping(string:string) predefines = master()->initial_predefines;
   string ver;
 
   //! If we fail to resolv, try the fallback.
@@ -1749,7 +1752,7 @@ class CompatResolver
   //! casted into a "%d.%d" string, e.g. a version object.
   //!
   //! It can also optionally be initialized with a fallback resolver.
-  void create(mixed version, CompatResolver|void fallback_resolver)
+  static void create(mixed version, CompatResolver|void fallback_resolver)
   {
     resolv_debug("CompatResolver(%O, %O)\n", version, fallback_resolver);
     ver=(string)version;
@@ -3729,7 +3732,7 @@ class Encoder
     DEC_RETURN (([function]x->_encode)());
   }
 
-  void create (void|mixed encoded)
+  static void create (void|mixed encoded)
   //! Creates an encoder instance. If @[encoded] is specified, it's
   //! encoded instead of being reverse resolved to a name. That's
   //! necessary to encode programs.
@@ -3929,7 +3932,7 @@ class Codec
   inherit Encoder;
   inherit Decoder;
 
-  void create (void|mixed encoded)
+  static void create (void|mixed encoded)
   //! The optional argument is the thing to encode; it's passed on to
   //! @[Encoder].
   {
@@ -3951,7 +3954,7 @@ class Version
 
   //! @decl void create(int major, int minor)
   //! Set the version in the object.
-  void create(int maj, int min)
+  static void create(int maj, int min)
   {
     if(maj==-1) maj = __REAL_MAJOR__;
     if(min==-1) min = __REAL_MINOR__;
