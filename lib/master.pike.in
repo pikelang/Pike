@@ -1,4 +1,4 @@
-/* $Id: master.pike.in,v 1.18 1998/04/23 18:35:55 marcus Exp $
+/* $Id: master.pike.in,v 1.19 1998/04/24 18:18:49 hubbe Exp $
  * 
  * Master-file for Pike.
  *
@@ -11,6 +11,9 @@ int is_absolute_path(string p)
   p=replace(p,"\\","/");
   if(sscanf(p,"%[a-zA-Z]:",string s) && sizeof(s)==1)
     return 1;
+#define IS_ABSOLUTE_PATH is_absolute_path
+#else
+#define IS_ABSOLUTE_PATH(X) ((X)[0]=='/')
 #endif
   return p[0]=='/';
 }
@@ -19,22 +22,26 @@ string *explode_path(string p)
 {
 #ifdef __NT__
   p=replace(p,"\\","/");
+#define EXPLODE_PATH(X) (replace((X),"\\","/")/"/")
+#else
+#define EXPLODE_PATH(X) ((X)/"/")
 #endif
   return p/"/";
 }
 
 string dirname(string x)
 {
-  string *tmp=explode_path(x);
+  string *tmp=EXPLODE_PATH(x);
   return tmp[..sizeof(tmp)-2]*"/";
 }
 
 string basename(string x)
 {
-  string *tmp=explode_path(x);
+  string *tmp=EXPLODE_PATH(x);
   return tmp[-1];
 }
-
+#define DIRNAME dirname
+#define BASENAME(X) (EXPLODE_PATH(X)[-1])
 
 #define GETCWD_CACHE
 #define FILE_STAT_CACHE
@@ -77,7 +84,7 @@ string getcwd()
 
 string combine_path_with_cwd(string path)
 {
-  return combine_path(is_absolute_path(path)?"/":getcwd(),path);
+  return combine_path(IS_ABSOLUTE_PATH(path)?"/":getcwd(),path);
 }
 
 #ifdef FILE_STAT_CACHE
@@ -91,8 +98,8 @@ mixed *master_file_stat(string x)
 {
   string file, dir=combine_path_with_cwd(x);
 
-  file=basename(dir);
-  dir=dirname(dir);
+  file=BASENAME(dir);
+  dir=DIRNAME(dir);
 
   multiset(string) d;
   if(time() > invalidate_time)
@@ -186,13 +193,20 @@ static program low_findprog(string pname, string ext)
   array s;
   string fname=pname+ext;
   if(ret=programs[fname]) return ret;
-  if( (s=master_file_stat(fname)) 
-      && s[1]>=0 )
+  if( (s=master_file_stat(fname))  && s[1]>=0 )
   {
     switch(ext)
     {
     case "":
     case ".pike":
+      if( (s=master_file_stat(fname+".o"))  && s[1]>=0 )
+      {
+	mixed err=catch {
+	  return decode_value(_static_modules.files()->Fd(fname+".o","r")->read(),Codec());
+	};
+	if(want_warnings)
+	  werror("Failed to decode %s.o\n",fname);
+      }
       if ( mixed e=catch { ret=compile_file(fname); } )
       {
 	if(arrayp(e) &&
@@ -244,7 +258,7 @@ program cast_to_program(string pname, string current_file)
 {
   string ext;
   string nname;
-  array(string) tmp=explode_path(pname);
+  array(string) tmp=EXPLODE_PATH(pname);
 
   if(sscanf(reverse(tmp[-1]),"%s.%s",ext, nname))
   {
@@ -254,7 +268,7 @@ program cast_to_program(string pname, string current_file)
   }else{
     ext="";
   }
-  if(is_absolute_path(pname))
+  if(IS_ABSOLUTE_PATH(pname))
   {
     pname=combine_path("/",pname);
     return findprog(pname,ext);
@@ -262,7 +276,7 @@ program cast_to_program(string pname, string current_file)
     string cwd;
     if(current_file)
     {
-      cwd=dirname(current_file);
+      cwd=DIRNAME(current_file);
     }else{
       cwd=getcwd();
     }
@@ -449,7 +463,7 @@ mixed handle_import(string what, string|void current_file)
   string *tmp,path;
   if(current_file)
   {
-    tmp=explode_path(current_file);
+    tmp=EXPLODE_PATH(current_file);
     tmp[-1]=what;
     path=combine_path_with_cwd( tmp*"/");
   }
@@ -498,8 +512,6 @@ void _main(string *orig_argv, string *env)
   add_constant("putenv",putenv);
 
   add_constant("write",_static_modules.files()->_stdout->write);
-
-  add_program_path(getcwd()); // Rather important /Per
 
   // add path for architecture-shared files
   add_include_path("¤share_prefix¤/include");
@@ -623,6 +635,7 @@ void _main(string *orig_argv, string *env)
     argv=argv[1..];
   }
 
+  argv[0]=combine_path_with_cwd(argv[0]);
   program tmp=(program)argv[0];
 
   if(!tmp)
@@ -656,7 +669,7 @@ void set_inhibit_compile_errors(mixed f)
 
 string trim_file_name(string s)
 {
-  if(getenv("SHORT_PIKE_ERRORS")) return basename(s);
+  if(getenv("SHORT_PIKE_ERRORS")) return BASENAME(s);
   return s;
 }
 
@@ -708,7 +721,7 @@ string handle_include(string f,
 
   if(local_include)
   {
-    tmp=explode_path(current_file);
+    tmp=EXPLODE_PATH(current_file);
     tmp[-1]=f;
     path=combine_path_with_cwd(tmp*"/");
   }
@@ -767,7 +780,7 @@ string describe_program(program p)
   if(s=search(programs,p))
   {
     if(sscanf(reverse(s),"%s.%s",string ext,string rest) && ext=="domp")
-      return explode_path(reverse(rest))[-1];
+      return EXPLODE_PATH(reverse(rest))[-1];
     return s;
   }
 
@@ -856,4 +869,64 @@ string describe_backtrace(mixed *trace)
   }
 
   return ret;
+}
+
+
+class Codec
+{
+  mapping f=all_constants();
+
+  string nameof(mixed x)
+    {
+      if(mixed tmp=search(f,x))
+	return "efun:"+tmp;
+      
+      switch(sprintf("%t",x))
+      {
+	case "program":
+	  if(mixed tmp=search(programs,x))
+	    return tmp;
+
+	  if(mixed tmp=search(values(_static_modules), x))
+	    return "_static_modules."+(indices(_static_modules)[tmp]);
+	  break;
+	  
+	case "object":
+	  if(mixed tmp=search(objects,x))
+	    if(tmp=search(programs,tmp))
+	      return tmp;
+	  break;
+      }
+      return ([])[0];
+    } 
+  
+  function functionof(string x)
+    {
+      if(sscanf(x,"efun:%s",x)) return f[x];
+      return 0;
+    }
+  
+  object objectof(string x)
+    {
+      if(sscanf(x,"efun:%s",x)) return f[x];
+      return (object)x;
+    }
+  
+  program programof(string x)
+    {
+      if(sscanf(x,"efun:%s",x)) return f[x];
+
+      return (program)x;
+    }
+  
+  mixed encode_object(object x)
+    {
+      error("Cannot encode objects yet.\n");
+    }
+  
+  
+  mixed decode_object(object x)
+  {
+    error("Cannot encode objects yet.\n");
+  }
 }
