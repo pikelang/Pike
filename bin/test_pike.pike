@@ -1,6 +1,6 @@
 #! /usr/bin/env pike
 
-/* $Id: test_pike.pike,v 1.97 2004/04/23 15:47:59 grubba Exp $ */
+/* $Id: test_pike.pike,v 1.98 2004/04/23 16:05:26 grubba Exp $ */
 
 #if !constant(_verify_internals)
 #define _verify_internals()
@@ -1006,18 +1006,12 @@ int main(int argc, array(string) argv)
   add_constant("__signal_watchdog");
   add_constant("RUNPIKE");
 
-#ifdef WATCHDOG_SIGNAL
-  if(use_watchdog)
+#if defined(WATCHDOG_SIGNAL) || defined(WATCHDOG_PIPE)
+  if(watchdog)
   {
-    watchdog->kill(signum("SIGKILL"));
-    watchdog->wait();
-  }
-#endif
-
 #ifdef WATCHDOG_PIPE
-  if(use_watchdog)
-  {
     destruct(watchdog_pipe);
+#endif
     catch { watchdog->kill(signum("SIGKILL")); };
     watchdog->wait();
   }
