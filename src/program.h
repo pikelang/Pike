@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: program.h,v 1.176 2003/08/18 15:11:38 mast Exp $
+|| $Id: program.h,v 1.177 2003/10/20 13:14:28 mast Exp $
 */
 
 #ifndef PROGRAM_H
@@ -600,8 +600,7 @@ PMOD_EXPORT struct pike_string *low_get_program_line(struct program *prog,
 						     INT32 *linep);
 PMOD_EXPORT struct pike_string *get_program_line(struct program *prog,
 						 INT32 *linep);
-char *debug_get_program_line(struct program *prog,
-		       INT32 *linep);
+char *debug_get_line(PIKE_OPCODE_T *pc, struct program *prog, INT32 *linep);
 PMOD_EXPORT struct pike_string *low_get_line(PIKE_OPCODE_T *pc,
 					     struct program *prog, INT32 *linep);
 PMOD_EXPORT struct pike_string *get_line(PIKE_OPCODE_T *pc,

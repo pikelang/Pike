@@ -2,11 +2,11 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: program.c,v 1.481 2003/10/10 00:37:24 mast Exp $
+|| $Id: program.c,v 1.482 2003/10/20 13:14:28 mast Exp $
 */
 
 #include "global.h"
-RCSID("$Id: program.c,v 1.481 2003/10/10 00:37:24 mast Exp $");
+RCSID("$Id: program.c,v 1.482 2003/10/20 13:14:28 mast Exp $");
 #include "program.h"
 #include "object.h"
 #include "dynamic_buffer.h"
@@ -4982,15 +4982,13 @@ PMOD_EXPORT struct pike_string *get_program_line(struct program *prog,
 }
 
 #ifdef PIKE_DEBUG
-/* Same as get_program_line but only used for debugging,
- * returns a char* 
- * This is important because this function may be called
- * after the shared string table has expired.
+/* Same as get_line but only used for debugging, returns a char* which
+ * might be to a static buffer. This is important because this
+ * function may be called in places where we can't handle shared
+ * strings. If pc is NULL the program line is returned.
  */
-char *debug_get_program_line(struct program *prog,
-			     INT32 *linep)
+char *debug_get_line(PIKE_OPCODE_T *pc, struct program *prog, INT32 *linep)
 {
-  char *cnt;
   size_t len = 0;
   INT32 shift = 0;
   char *file = NULL;
@@ -5000,17 +4998,46 @@ char *debug_get_program_line(struct program *prog,
   if (!prog->linenumbers)
     return "stub";
 
-  cnt = prog->linenumbers;
-  if (cnt < prog->linenumbers + prog->num_linenumbers) {
-    if (*cnt == 127) {
-      cnt++;
-      len = get_small_number(&cnt);
-      shift = *cnt;
-      file = ++cnt;
-      cnt += len<<shift;
+  if (pc) {
+    ptrdiff_t offset;
+    if (!prog->program)
+      return "stub";
+    offset = pc - prog->program;
+    if ((offset < (ptrdiff_t)prog->num_program) && (offset >= 0)) {
+      char *base, *cnt = prog->linenumbers;
+      INT32 off,line,pid;
+
+      while(cnt < prog->linenumbers + prog->num_linenumbers)
+      {
+	if(*cnt == 127)
+	{
+	  cnt++;
+	  len = get_small_number(&cnt);
+	  shift = *cnt;
+	  file = ++cnt;
+	  cnt += len<<shift;
+	}
+	off+=get_small_number(&cnt);
+	if(off > offset) break;
+	line+=get_small_number(&cnt);
+      }
+      linep[0]=line;
     }
-    get_small_number(&cnt);	/* Ignore the offset */
-    *linep = get_small_number(&cnt);
+  }
+
+  else {			/* Get program line. */
+    char *cnt = prog->linenumbers;
+    if (cnt < prog->linenumbers + prog->num_linenumbers) {
+      if (*cnt == 127) {
+	cnt++;
+	len = get_small_number(&cnt);
+	shift = *cnt;
+	file = ++cnt;
+	cnt += len<<shift;
+      }
+      get_small_number(&cnt);	/* Ignore the offset */
+      *linep = get_small_number(&cnt);
+    }
   }
 
   if (file) {
@@ -5023,7 +5050,7 @@ char *debug_get_program_line(struct program *prog,
       {
 	if(EXTRACT_PCHARP(from) > 255)
 	{
-	  sprintf(buffer+ptr,"\\0x%x",EXTRACT_PCHARP(from));
+	  sprintf(buffer+ptr,"\\u%04X",EXTRACT_PCHARP(from));
 	  ptr+=strlen(buffer+ptr);
 	}else{
 	  buffer[ptr++]=EXTRACT_PCHARP(from);
@@ -5041,10 +5068,10 @@ char *debug_get_program_line(struct program *prog,
 }
 
 /* Variant for convenient use from a debugger. */
-void gdb_program_line (struct program *prog)
+void gdb_line (PIKE_OPCODE_T *pc, struct program *prog)
 {
   INT32 line;
-  char *file = debug_get_program_line (prog, &line);
+  char *file = debug_get_line (pc, prog, &line);
   fprintf (stderr, "%s:%d\n", file, line);
 }
 #endif
