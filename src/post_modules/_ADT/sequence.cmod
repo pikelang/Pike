@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: sequence.cmod,v 1.10 2003/05/27 11:51:16 peta Exp $
+|| $Id: sequence.cmod,v 1.11 2003/05/28 12:57:10 jhs Exp $
 */
 
 #include "global.h"
@@ -506,7 +506,7 @@ PIKECLASS Sequence
   
   /*! @decl void create(array|int arg)
    *!   Creates a new @[Sequence] around the array arg or a new
-   *!   @[Sequence] with thesize of arg.
+   *!   @[Sequence] with the size of arg.
    */
 
   PIKEFUN void create(array|int arg) 
@@ -898,7 +898,7 @@ PIKECLASS Sequence
       }
       else
       {
-	SIMPLE_BAD_ARG_ERROR("`-",1,"ADT.Sequence.SequenceIterator");
+	SIMPLE_BAD_ARG_ERROR("distance",1,"ADT.Sequence.SequenceIterator");
       }
     }
     
