@@ -1,4 +1,4 @@
-// $Id: module.pmod.in,v 1.9 2003/04/14 17:10:57 marcus Exp $
+// $Id: module.pmod.in,v 1.10 2003/04/15 13:39:31 marcus Exp $
 #pike __REAL_VERSION__
 
 inherit @module@;
@@ -99,6 +99,7 @@ class _file {
       }
     }
     file_pos = 0;
+    crc = crc32("");
     if(objectp(file))
       f = file;
     else {
@@ -150,6 +151,7 @@ class _file {
     string res = read_buf[..len-1];
     read_buf = read_buf[len..];
     file_pos += sizeof(res);
+    crc = crc32(res, crc);
     return res;
   }
 
@@ -158,7 +160,7 @@ class _file {
   //!  the number of bytes written to the file.
   int write(string data)
   {
-    if(!def) { def = deflate(-level, strategy); crc = crc32(""); }
+    if(!def) def = deflate(-level, strategy);
     string comp = def->deflate(data, NO_FLUSH);
     if(f->write(comp) != sizeof(comp))
       return 0;
@@ -203,6 +205,7 @@ class _file {
 	return -1;
       file_pos = 0;
       read_buf = "";
+      crc = crc32("");
       while(pos > 0) {
 	string r = read(pos>16384? 16384:pos);
 	if(!sizeof(r))
@@ -245,7 +248,7 @@ class _file {
   int setparams(int level, int strategy)
   {
     if(def) {
-      string s = def->deflate("", FINISH);
+      string s = def->deflate("", SYNC_FLUSH);
       if(sizeof(s) && f->write(s) != sizeof(s))
 	return 0;
       def = 0;
