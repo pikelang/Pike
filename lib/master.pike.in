@@ -6,7 +6,7 @@
 // Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 // for more information.
 //
-// $Id: master.pike.in,v 1.280 2003/05/28 15:21:07 jhs Exp $
+// $Id: master.pike.in,v 1.281 2003/05/28 16:48:54 jhs Exp $
 
 #pike __REAL_VERSION__
 
@@ -1859,6 +1859,7 @@ void _main(array(string) orig_argv, array(string) env)
 #ifdef PIKE_AUTORELOAD
       case "autoreload":
 	autoreload_on++;
+	break;
 #endif
 
       case "debug_without":
