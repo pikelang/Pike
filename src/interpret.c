@@ -4,7 +4,7 @@
 ||| See the files COPYING and DISCLAIMER for more information.
 \*/
 #include "global.h"
-RCSID("$Id: interpret.c,v 1.94 1998/08/10 23:33:29 hubbe Exp $");
+RCSID("$Id: interpret.c,v 1.95 1998/10/16 02:44:36 hubbe Exp $");
 #include "interpret.h"
 #include "object.h"
 #include "program.h"
@@ -1276,7 +1276,7 @@ static int eval_instruction(unsigned char *pc)
       break;
 
       CASE(F_BRANCH_AND_POP_WHEN_NON_ZERO);
-      if(!IS_ZERO(sp-1))
+      if(IS_ZERO(sp-1))
       {
 	pc+=sizeof(INT32);
       }else{
