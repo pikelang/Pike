@@ -1539,7 +1539,7 @@ class ParseBlock
 		});
 	  }
 
-	  if(max_args != -1) {
+	  if(max_args != 0x7ffffff && max_args != -1) {
 	    ret+=({
 	      PC.Token(sprintf("if(args > %d) wrong_number_of_args_error(%O,args,%d);\n",
 			       max_args,
@@ -1737,8 +1737,7 @@ class ParseBlock
 			       attributes->name || name,
 			       funcname,
 			       type->output_c_type(),
-			       (attributes->efun ? attributes->optflags : 
-				attributes->flags )|| "0" ,
+			       (attributes->optflags)|| "0" ,
 			       ),proto[0]->line),
 		}));
 	} else {
