@@ -4,7 +4,7 @@
 // Incremental Pike Evaluator
 //
 
-constant cvs_version = ("$Id: Hilfe.pmod,v 1.66 2002/04/16 00:59:05 nilsson Exp $");
+constant cvs_version = ("$Id: Hilfe.pmod,v 1.67 2002/04/16 17:16:06 nilsson Exp $");
 constant hilfe_todo = #"List of known Hilfe bugs/room for improvements:
 
 - Hilfe can not handle sscanf statements like
@@ -657,10 +657,10 @@ private class Expression {
     return tokens*"";
   }
 
-  //! Returns at which position the type declaration that
-  //! begins at position @[position] ends. A return value of
-  //! -1 means that the token or tokens from @[position]
-  //! can not be a type declaration.
+  // Returns at which position the type declaration that
+  // begins at position @[position] ends. A return value of
+  // -1 means that the token or tokens from @[position]
+  // can not be a type declaration.
   int(-1..) endoftype(int(-1..) position) {
     if( (< "int", "float", "string",
            "array", "mapping", "multiset",
