@@ -179,10 +179,13 @@ string convert_type(array s)
       if(sizeof(s)<2) return "tMultiset";
       return "tSet("+convert_type(s[1][1..sizeof(s[1])-2])+")";
     case "mapping": 
+    {
       if(sizeof(s)<2) return "tMapping";
+      mixed tmp=s[1][1..sizeof(s[1])-2];
       return "tMap("+
-	convert_type((s[1]/({":"}))[0])+","+
-	  convert_type((s[1]/({":"}))[1])+")";
+	convert_type((tmp/({":"}))[0])+","+
+	  convert_type((tmp/({":"}))[1])+")";
+    }
     case "object": 
       return "tObj";
 
@@ -192,6 +195,9 @@ string convert_type(array s)
       return "tFunc";
     case "mixed": 
       return "tMix";
+
+    default:
+      return sprintf("ERR%O",s);
   }
 }
 
@@ -322,16 +328,20 @@ int main(int argc, array(string) argv)
 
     ret+=({
       sprintf("\n#line %d %O\n",rettype[0]->line,file),
-      sprintf("void f_%s(INT32 args)\n{\n",name),
+      sprintf("void f_%s(INT32 args) {\n",name),
     });
 
     args=map(args,parse_arg);
 
     foreach(args, mapping arg)
-      ret+=({  sprintf("%s%s;\n",arg->ctype, arg->name) });
+      ret+=({
+//	sprintf("\n#line %d %O\n",rettype[0]->line,file),
+	sprintf("%s %s;\n",arg->ctype, arg->name)
+      });
 
 
     addfuncs+=({
+      sprintf("\n#line %d %O\n",rettype[0]->line,file),
       sprintf("  %s(%O,f_%s,tFunc(%s,%s),%s);\n",
 	      attributes->efun ? "ADD_EFUN" : "ADD_FUNCTION",
 	      name,
@@ -348,6 +358,7 @@ int main(int argc, array(string) argv)
 
     argnum=0;
     ret+=({
+//      sprintf("\n#line %d %O\n",rettype[0]->line,file),
       sprintf("if(args != %d) wrong_number_of_args_error(%O,args,%d);\n",
 	      sizeof(args),
 	      name,
@@ -357,6 +368,7 @@ int main(int argc, array(string) argv)
     int sp=-sizeof(args);
     foreach(args, mapping arg)
       {
+//	ret+=({ sprintf("\n#line %d %O\n",rettype[0]->line,file), });
 	if(arg->basetype != "mixed")
 	{
 	  ret+=({
@@ -373,7 +385,7 @@ int main(int argc, array(string) argv)
 	{
 	  case "int":
 	    ret+=({
-	      sprintf("%s=sp[%d].integer;\n",
+	      sprintf("%s=sp[%d].u.integer;\n",
 		      arg->name,
 		      sp)
 	    });
@@ -381,7 +393,7 @@ int main(int argc, array(string) argv)
 
 	  case "float":
 	    ret+=({
-	      sprintf("%s=sp[%d].float_number;\n",
+	      sprintf("%s=sp[%d].u.float_number;\n",
 		      arg->name,
 		      sp)
 	    });

@@ -19,6 +19,7 @@
 #include "module_support.h"
 #include "cyclic.h"
 #include "bignum.h"
+#include "main.h"
 
 
 PIKEFUN array column(array tmp, mixed val)
@@ -69,6 +70,34 @@ PIKEFUN multiset(1) mkmultiset(array(1=mixed) a)
   RETURN mkmultiset(a);
 }
 
+PIKEFUN int trace(int t)
+  efun;
+  optflags OPT_SIDE_EFFECT;
+{
+  pop_n_elems(args);
+  push_int(t_flag);
+  t_flag=t;
+}
+
+PIKEFUN string ctime(int x)
+  efun;
+  optflags OPT_TRY_OPTIMIZE;
+{
+  time_t i=(time_t)x;
+  RETURN make_shared_string(ctime(&i));
+}
+
+PIKEFUN mapping(1:2) mkmapping(array(1=mixed) a, array(2=mixed) b)
+  efun;
+  optflags OPT_TRY_OPTIMIZE;
+{
+  if(a->size != b->size)
+    bad_arg_error("mkmapping", sp-args, args, 2, "array", sp+1-args,
+		  "mkmapping called on arrays of different sizes (%d != %d)\n",
+		  a->size, b->size);
+
+  RETURN mkmapping(a,b);
+}
 
 void init_builtin(void)
 {

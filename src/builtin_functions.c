@@ -5,7 +5,7 @@
 \*/
 /**/
 #include "global.h"
-RCSID("$Id: builtin_functions.c,v 1.276 2000/05/25 02:18:35 hubbe Exp $");
+RCSID("$Id: builtin_functions.c,v 1.277 2000/05/25 05:18:52 hubbe Exp $");
 #include "interpret.h"
 #include "svalue.h"
 #include "pike_macros.h"
@@ -80,16 +80,6 @@ void debug_f_aggregate(INT32 args)
   push_array(a); /* beware, macro */
 }
 
-void f_trace(INT32 args)
-{
-  extern int t_flag;
-  INT_TYPE t;
-
-  get_all_args("trace", args, "%i", &t);
-  pop_n_elems(args);
-  push_int(t_flag);
-  t_flag = t;
-}
 
 void f_hash(INT32 args)
 {
@@ -145,16 +135,6 @@ void f_copy_value(INT32 args)
   free_svalue(sp-1);
   sp[-1]=sp[0];
   dmalloc_touch_svalue(sp-1);
-}
-
-void f_ctime(INT32 args)
-{
-  time_t i;
-  INT_TYPE x;
-  get_all_args("ctime",args,"%i",&x);
-  i=(time_t)x;
-  pop_n_elems(args);
-  push_string(make_shared_string(ctime(&i)));
 }
 
 struct case_info {
@@ -2365,21 +2345,6 @@ void f_compile(INT32 args)
 #endif
   pop_n_elems(args);
   push_program(p);
-}
-
-void f_mkmapping(INT32 args)
-{
-  struct mapping *m;
-  struct array *a,*b;
-  get_all_args("mkmapping",args,"%a%a",&a,&b);
-  if(a->size != b->size)
-    bad_arg_error("mkmapping", sp-args, args, 2, "array", sp+1-args,
-		  "mkmapping called on arrays of different sizes (%d != %d)\n",
-		  a->size, b->size);
-
-  m=mkmapping(sp[-args].u.array, sp[1-args].u.array);
-  pop_n_elems(args);
-  push_mapping(m);
 }
 
 #define SETFLAG(FLAGS,FLAG,ONOFF) \
@@ -5776,9 +5741,6 @@ void init_builtin_efuns(void)
   ADD_EFUN("crypt",f_crypt,
 	   tOr(tFunc(tStr,tStr),tFunc(tStr tStr,tInt)),OPT_EXTERNAL_DEPEND);
   
-/* function(int:string) */
-  ADD_EFUN("ctime",f_ctime,tFunc(tInt,tStr),OPT_TRY_OPTIMIZE);
-  
 /* function(object|void:void) */
   ADD_EFUN("destruct",f_destruct,tFunc(tOr(tObj,tVoid),tVoid),OPT_SIDE_EFFECT);
   
@@ -5842,12 +5804,6 @@ void init_builtin_efuns(void)
 /* function(mixed:int) */
   ADD_EFUN("mappingp",f_mappingp,tFunc(tMix,tInt),OPT_TRY_OPTIMIZE);
   
-/* function(array(1=mixed),array(2=mixed):mapping(1:2)) */
-  ADD_EFUN("mkmapping",f_mkmapping,
-	   tFunc(tArr(tSetvar(1,tMix)) tArr(tSetvar(2,tMix)),
-		 tMap(tVar(1),tVar(2))),OPT_TRY_OPTIMIZE);
-
-
 /* function(1=mixed,int:1) */
   ADD_EFUN("set_weak_flag",f_set_weak_flag,
 	   tFunc(tSetvar(1,tMix) tInt,tVar(1)),OPT_SIDE_EFFECT);
@@ -5993,8 +5949,6 @@ void init_builtin_efuns(void)
 	       tFunc(tInt2Plus,tFlt)),
 	   OPT_EXTERNAL_DEPEND);
   
-/* function(int:int) */
-  ADD_EFUN("trace",f_trace,tFunc(tInt,tInt),OPT_SIDE_EFFECT);
   /* function(array(0=mixed):array(0)) */
   ADD_FUNCTION("transpose",f_transpose,
 	       tFunc(tArr(tSetvar(0,tMix)),tArr(tVar(0))), 0);
