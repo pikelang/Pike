@@ -2,11 +2,11 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: _xpm.c,v 1.29 2003/10/14 09:09:40 grubba Exp $
+|| $Id: _xpm.c,v 1.30 2003/10/17 01:13:27 nilsson Exp $
 */
 
 #include "global.h"
-RCSID("$Id: _xpm.c,v 1.29 2003/10/14 09:09:40 grubba Exp $");
+RCSID("$Id: _xpm.c,v 1.30 2003/10/17 01:13:27 nilsson Exp $");
 
 #include "image_machine.h"
 
@@ -249,12 +249,12 @@ unsigned short extract_short( unsigned char *b )
  *!   Raw picture information.
  *!
  *!   @array pixels
- *!     @item 0
+ *!     @elem string 0
  *!       Size information on the format
  *!         (@expr{sprintf("%d %d %d %d", h, w, ncolors, bpn)@}).
- *!     @item 1..ncolors
+ *!     @elem string 1..ncolors
  *!       Same as @[colors].
- *!     @item ncolors+1..ncolors+h
+ *!     @elem string ncolors_plus_one..ncolors_plus_h
  *!       Line information. Strings of length @[bpn]*w with encoded
  *!       pixels for each line.
  *!   @endarray
