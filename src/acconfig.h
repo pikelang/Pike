@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: acconfig.h,v 1.116 2003/02/11 20:03:41 mast Exp $
+|| $Id: acconfig.h,v 1.117 2003/02/14 19:53:25 mast Exp $
 */
 
 #ifndef MACHINE_H
@@ -492,6 +492,9 @@
 
 /* set this to the modifier type string to print ptrdiff_t, like "" or "l" */
 #undef PRINTPTRDIFFT
+
+/* set this to the modifier type string to print INT64 if that type exists */
+#undef PRINTINT64
 
 /* set this to the modifier type string to print INT_TYPE, like "" or "ll" */
 #undef PRINTPIKEINT

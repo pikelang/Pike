@@ -1,4 +1,4 @@
-AC_REVISION("$Id: configure.in,v 1.689 2003/02/12 00:02:28 mast Exp $")
+AC_REVISION("$Id: configure.in,v 1.690 2003/02/14 19:53:25 mast Exp $")
 AC_INIT(interpret.c)
 AC_CONFIG_HEADER(machine.h)
 
@@ -5718,6 +5718,10 @@ MY_AC_CHECK_PRINTF_INT_TYPE(ptrdiff_t,
 MY_AC_CHECK_PRINTF_INT_TYPE(INT_TYPE,
 			    "" "l" "ll" "L", "",
 			    PRINTPIKEINT,
+			    [%${res}d, %${res}x])
+MY_AC_CHECK_PRINTF_INT_TYPE(INT64,
+			    "" "l" "ll" "L", "l",
+			    PRINTINT64,
 			    [%${res}d, %${res}x])
 MY_AC_CHECK_PRINTF_FLOAT_TYPE(FLOAT_TYPE,
 			      "" "l" "L" "ll", "",
