@@ -5,7 +5,7 @@
 \*/
 /**/
 #include "global.h"
-RCSID("$Id: las.c,v 1.101 1999/11/11 15:55:36 grubba Exp $");
+RCSID("$Id: las.c,v 1.102 1999/11/11 19:43:11 grubba Exp $");
 
 #include "language.h"
 #include "interpret.h"
@@ -719,7 +719,7 @@ node *mkidentifiernode(int i)
   res->tree_info=res->node_info;
 
 #ifdef __CHECKER__
-  CDR(res) = 0;
+  _CDR(res) = 0;
 #endif
   res->u.id.number = i;
 #ifdef SHARED_NODES
