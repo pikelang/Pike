@@ -8,7 +8,7 @@
 #define WERROR(x)
 #endif
 
-import asn1.encode;
+import Standards.ASN1.Encode;
 
 /* Create a DER-coded RSAPrivateKey structure */
 string rsa_private_key(object rsa)
@@ -25,7 +25,7 @@ string rsa_private_key(object rsa)
 object parse_private_key(string key)
 {
   WERROR(sprintf("rsa->parse_private_key: '%s'\n", key));
-  array a = asn1.decode(key)->get_asn1();
+  array a = Standards.ASN1.decode(key)->get_asn1();
 
   WERROR(sprintf("rsa->parse_private_key: asn1 = %O\n", a));
   if (!a
@@ -49,7 +49,3 @@ object build_rsa_public_key(object rsa)
     asn1_bitstring(asn1_sequence(
       asn1_integer(rsa->n), asn1_integer(rsa->e))->der()));
 }
-
-  
-		       
-    

@@ -3,26 +3,26 @@
  * Handlig of Certifikate Signing Requests (PKCS-10)
  */
 
-import asn1.encode;
+import Standards.ASN1.Encode;
 
-class Attributes
+class CSR_Attributes
 {
-  inherit certificate.attribute_set;
+  inherit Certificate.Attributes;
   constant cls = 2;
   constant tag = 0;
 }
 
-object build_csr(object rsafoo, object name,
-		 mapping(string:object) attributes)
+object build_csr(object rsa, object name,
+		 mapping(string:array(object)) attributes)
 {
   object info = asn1_sequence(asn1_integer(0), name,
-			      rsa.build_rsa_public_key(rsafoo),
-			      Attributes(identifiers.attribute_ids,
+			      RSA.build_rsa_public_key(rsa),
+			      CSR_Attributes(Identifiers.attribute_ids,
 					 attributes));
   return asn1_sequence(info,
 		       asn1_sequence(
-			 identifiers.rsa_md5_id, asn1_null()),
-		       asn1_bitstring(rsafoo->sign(info->der(), Crypto.md5)
+			 Identifiers.rsa_md5_id, asn1_null()),
+		       asn1_bitstring(rsa->sign(info->der(), Crypto.md5)
 			 ->digits(256)));
 }
 

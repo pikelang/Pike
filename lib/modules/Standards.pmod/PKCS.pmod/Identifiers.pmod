@@ -61,7 +61,7 @@
       2.5.4.53 - id-at-deltaRevocationList
 */
 
-import asn1.encode;
+import Standards.ASN1.Encode;
 
 object pkcs_id = asn1_identifier(1, 2, 840, 113549, 1);
 object pkcs_1_id = pkcs_id->append(1);
@@ -80,7 +80,9 @@ mapping name_ids =
   "commonName" : attributeType_id->append(3),        /* printable string */
   "countryName" : attributeType_id->append(6),       /* printable string */
   "localityName" : attributeType_id->append(7),      /* printable string */
-  "organizationName" : attributeType_id->append(10)  /* printable string */
+  "stateOrProvinceName" : attributeType_id->append(8), /* printable string */
+  "organizationName" : attributeType_id->append(10), /* printable string */
+  "organizationUnitName" : attributeType_id->append(11)  /* printable string */
    ]);
 
 mapping attribute_ids =
@@ -94,5 +96,5 @@ mapping attribute_ids =
   "challengePassword" : pkcs_9_id->append(7),       /* Printable | T61
 						       | Universal */
   "unstructuredAddress" : pkcs_9_id->append(8),     /* Printable | T61 */
-  "extendedCertificateAttributes" : pkcs_9_id->append(0) /* Attributes */
+  "extendedCertificateAttributes" : pkcs_9_id->append(9) /* Attributes */
    ]);
