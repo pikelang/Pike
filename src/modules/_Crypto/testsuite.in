@@ -344,7 +344,9 @@ test_eq(Crypto.des()->query_key_length(),8)
 test_eq(
 #pike 7.4
 Crypto.aes()->query_key_length(),32)
-test_eq(Crypto.AES()->key_size(),32)
+cond([[ Crypto["AES"] ]],[[
+  test_eq(Crypto.AES()->key_size(),32)
+]])
 test_eq(Crypto.idea()->query_key_length(),16)
 test_eq(Crypto.cast()->query_key_length(),16)
 test_eq(Crypto.arcfour()->query_key_length(),1)
@@ -357,7 +359,9 @@ test_eq(Crypto.des()->query_block_size(),8)
 test_eq(
 #pike 7.4
 Crypto.aes()->query_block_size(),16)
-test_eq(Crypto.AES()->block_size(),16)
+cond([[ Crypto["AES"] ]],[[
+  test_eq(Crypto.AES()->block_size(),16)
+]])
 test_eq(Crypto.idea()->query_block_size(),8)
 test_eq(Crypto.cast()->query_block_size(),8)
 test_eq(Crypto.arcfour()->query_block_size,0)
