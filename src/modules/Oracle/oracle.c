@@ -1,5 +1,5 @@
 /*
- * $Id: oracle.c,v 1.57 2001/06/11 19:48:41 grubba Exp $
+ * $Id: oracle.c,v 1.58 2001/09/12 23:13:49 hubbe Exp $
  *
  * Pike interface to Oracle databases.
  *
@@ -53,7 +53,7 @@
 
 #include <math.h>
 
-RCSID("$Id: oracle.c,v 1.57 2001/06/11 19:48:41 grubba Exp $");
+RCSID("$Id: oracle.c,v 1.58 2001/09/12 23:13:49 hubbe Exp $");
 
 
 /* User-changable defines: */
@@ -2054,10 +2054,10 @@ void pike_module_init(void)
 	/* function(:int|array(string|int)) */
 	ADD_FUNCTION("fetch_row", f_fetch_row,tFunc(tNone,tOr(tInt,tArr(tOr(tStr,tInt)))), ID_PUBLIC);
 	
-	MY_END_CLASS(big_typed_query);
 #ifdef PROGRAM_USES_PARENT
-	big_typed_query_program->flags|=PROGRAM_USES_PARENT;
+	Pike_compiler->new_program->flags|=PROGRAM_USES_PARENT;
 #endif
+	MY_END_CLASS(big_typed_query);
 	big_typed_query_program->flags|=PROGRAM_DESTRUCT_IMMEDIATE;
       }
       
@@ -2077,10 +2077,10 @@ void pike_module_init(void)
 	MY_END_CLASS(dbresultinfo);
       }
 
-      MY_END_CLASS(compile_query);
 #ifdef PROGRAM_USES_PARENT
-      compile_query_program->flags|=PROGRAM_USES_PARENT;
+	Pike_compiler->new_program->flags|=PROGRAM_USES_PARENT;
 #endif
+      MY_END_CLASS(compile_query);
     }
 
     ADD_FUNCTION("create", f_oracle_create,tFunc(tOr(tStr,tVoid) tComma tOr(tStr,tVoid) tComma tOr(tStr,tVoid) tComma tOr(tStr,tVoid),tVoid), ID_PUBLIC);
