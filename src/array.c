@@ -23,7 +23,7 @@
 #include "stuff.h"
 #include "bignum.h"
 
-RCSID("$Id: array.c,v 1.112 2001/06/11 18:03:23 mast Exp $");
+RCSID("$Id: array.c,v 1.113 2001/06/26 12:42:48 grubba Exp $");
 
 PMOD_EXPORT struct array empty_array=
 {
@@ -580,6 +580,12 @@ PMOD_EXPORT struct array *friendly_slice_array(struct array *v,
 PMOD_EXPORT struct array *copy_array(struct array *v)
 {
   struct array *a;
+
+  if (!v->size) {
+    /* Empty array. */
+    add_ref(&empty_array);
+    return &empty_array;
+  }
 
   a=allocate_array_no_init(v->size, 0);
   a->type_field = v->type_field;
