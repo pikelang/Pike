@@ -1458,7 +1458,7 @@ Also, these functions operates on floats:
 <dt><tt>float exp(float <i>x</i>)</tt>
 <dd>This function computes <b>e</b> raised to the power of <i>x</i>.
 
-<dt><tt>float pow(float <i>x</i>, float <i>y</i>)</tt>
+<dt><tt>float pow(float|int <i>x</i>, float|int <i>y</i>)</tt>
 <dd>This function computes <i>x</i> raised to the power of <i>y</i>.
 
 <dt><tt>float sqrt(float <i>x</i>)</tt>
@@ -12535,7 +12535,7 @@ intp, programp, floatp, stringp, arrayp, mappingp, multisetp, functionp
 
 <function name=pow title="raise a number to the power of another">
 <man_syntax>
-float pow(float <I>n</I>, float <I>x</I>);
+float pow(float|int <I>n</I>, float|int <I>x</I>);
 </man_syntax>
 <man_description>
 Return <i>n</i> raised to the power of <i>x</i>.
