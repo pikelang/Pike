@@ -3,7 +3,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: dumpmodule.pike,v 1.37 2003/02/21 18:49:25 marcus Exp $
+|| $Id: dumpmodule.pike,v 1.38 2004/03/19 14:28:03 grubba Exp $
 */
 
 int quiet = 1, report_failed = 0, recursive = 0, update = 0;
@@ -262,8 +262,8 @@ do_dump: {
       {
 	string s;
 	if ((err = catch {
-	    s=encode_value(p, Codec());
-	    p=decode_value(s,master()->Codec());
+	    s=encode_value(p, master()->Encoder());
+	    p=decode_value(s, master()->Decoder());
 	  }))
 	  logmsg_long(describe_backtrace(err));
 
