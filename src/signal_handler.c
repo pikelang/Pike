@@ -22,7 +22,7 @@
 #include "builtin_functions.h"
 #include <signal.h>
 
-RCSID("$Id: signal_handler.c,v 1.50 1998/04/21 14:19:34 grubba Exp $");
+RCSID("$Id: signal_handler.c,v 1.51 1998/04/21 16:09:42 grubba Exp $");
 
 #ifdef HAVE_PASSWD_H
 # include <passwd.h>
@@ -69,6 +69,11 @@ RCSID("$Id: signal_handler.c,v 1.50 1998/04/21 14:19:34 grubba Exp $");
 #define WAIT_BUFFER 4096
 
 /* #define PROC_DEBUG */
+
+/* Added so we are able to patch older versions of Pike. */
+#ifndef add_ref
+#define add_ref(X)	((X)->refs++)
+#endif /* add_ref */
 
 extern int fd_from_object(struct object *o);
 
