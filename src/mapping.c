@@ -5,7 +5,7 @@
 \*/
 /**/
 #include "global.h"
-RCSID("$Id: mapping.c,v 1.66 2000/02/15 02:41:18 grubba Exp $");
+RCSID("$Id: mapping.c,v 1.67 2000/03/07 18:32:49 grubba Exp $");
 #include "main.h"
 #include "object.h"
 #include "mapping.h"
@@ -1833,6 +1833,13 @@ void gc_check_all_mappings(void)
 
   for(m=first_mapping;m;m=m->next)
   {
+#ifdef DEBUG_MALLOC
+    if (((int)m->data) == 0x55555555) {
+      fprintf(stderr, "** Zapped mapping in list of active mappings!\n");
+      describe_something(m, T_MAPPING, 1);
+      fatal("Zapped mapping in list of active mappings!\n");
+    }
+#endif /* DEBUG_MALLOC */
     if((m->data->ind_types | m->data->val_types) & BIT_COMPLEX)
     {
       if(gc_check(m->data)) continue;
