@@ -1,5 +1,5 @@
 /*
- * $Id: extract_autodoc.pike,v 1.38 2003/08/24 21:00:35 nilsson Exp $
+ * $Id: extract_autodoc.pike,v 1.39 2003/12/03 21:50:56 bill Exp $
  *
  * AutoDoc mk II extraction script.
  *
@@ -55,7 +55,7 @@ int main(int n, array(string) args) {
       werror("Usage:\n"
 	     "\tpike -x extract_autodoc [-q] --srcdir=<srcdir> \n"
 	     "\t     [--imgsrcdir=<imgsrcdir>] [--builddir=<builddir>]\n"
-	     "\t     [--imgdir=<imgdir>] [--root=<module>]\n");
+	     "\t     [--imgdir=<imgdir>] [--root=<module>] [file1 [... filen]]\n");
       return 0;
     }
 
@@ -165,14 +165,14 @@ string extract(string filename, string imgdest,
   if(!has_value(name_sans_suffix, "."))
     error("No suffix in file %O.\n", name_sans_suffix);
   suffix = ((name_sans_suffix/"/")[-1]/".")[-1];
-  if( !(< "c", "pike", "pmod", >)[suffix] )
+  if( !(< "c", "cmod", "pike", "pmod", >)[suffix] )
     error("Unknown filetype %O.\n", suffix);
   name_sans_suffix =
     name_sans_suffix[..sizeof(name_sans_suffix)-(sizeof(suffix)+2)];
 
   string result;
   mixed err = catch {
-    if( suffix == "c" )
+    if( suffix == "c" || suffix == "cmod")
       result = Tools.AutoDoc.ProcessXML.extractXML(filename,0,0,0,root);
     else {
       string type = ([ "pike":"class", "pmod":"module", ])[suffix];
