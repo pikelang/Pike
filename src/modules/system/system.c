@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: system.c,v 1.151 2003/05/12 11:46:07 grubba Exp $
+|| $Id: system.c,v 1.152 2003/06/02 20:47:10 nilsson Exp $
 */
 
 /*
@@ -20,7 +20,7 @@
 #include "system_machine.h"
 #include "system.h"
 
-RCSID("$Id: system.c,v 1.151 2003/05/12 11:46:07 grubba Exp $");
+RCSID("$Id: system.c,v 1.152 2003/06/02 20:47:10 nilsson Exp $");
 
 #ifdef HAVE_WINDOWS_H
 #include <windows.h>
@@ -1484,7 +1484,7 @@ int my_isipnr(char *s)
 
 int my_isipv6nr(char *s)
 {
-  int i = 0;
+  int i;
   int field = 0;
   int compressed = 0;
   int is_hex = 0;
@@ -2108,6 +2108,29 @@ static void make_rlimit_strings(void)
 #ifdef HAVE_GETRLIMIT
 /*! @decl array(int) getrlimit(string resource)
  *!
+ *! @param resource
+ *! @string
+ *!   @value cpu
+ *!   @value fsize
+ *!   @value data
+ *!   @value stack
+ *!   @value core
+ *!   @value rss
+ *!   @value nproc
+ *!   @value nofile
+ *!   @value memlock
+ *!   @value as
+ *!   @value vmem
+ *! @endstring
+ *!
+ *! @returns
+ *! @array
+ *!   @elem int 0
+ *!     rl_cur
+ *!   @elem int 1
+ *!     rl_max
+ *! @endarray
+ *!
  *! @fixme
  *!   Document this function.
  */
@@ -2487,7 +2510,6 @@ void f_system_setitimer(INT32 args)
 void f_system_getitimer(INT32 args)
 {
    INT_TYPE what;
-   int res;
    struct itimerval otimer;
 
    otimer.it_value.tv_usec=0;
