@@ -1,6 +1,6 @@
 /* -*- Pike -*-
  *	
- * $Id: master.pike.in,v 1.120 2000/05/24 01:21:33 hubbe Exp $
+ * $Id: master.pike.in,v 1.121 2000/06/04 18:23:10 kinkie Exp $
  * 
  * Master-file for Pike.
  *
@@ -910,6 +910,13 @@ mixed resolv(string identifier, string|void current_file)
 string _pike_file_name;
 string _master_file_name;
 
+//flag. Gets set to 1 if we're in async-mode (script->main() returned <0)
+private int _async=0;
+
+int asyncp() {
+  return _async;
+}
+
 /* This function is called when all the driver is done with all setup
  * of modules, efuns, tables etc. etc. and is ready to start executing
  * _real_ programs. It receives the arguments not meant for the driver
@@ -1153,6 +1160,7 @@ void _main(array(string) orig_argv, array(string) env)
   if(trace) predef::trace(trace);
   i=script->main(sizeof(argv),argv,env);
   if(i >=0) exit(i);
+  _async=1;
 }
 
 #if constant(thread_local)
