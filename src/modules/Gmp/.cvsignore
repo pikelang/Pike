@@ -11,5 +11,7 @@ modlist_headers
 modlist_segment
 module_testsuite
 prime_table
+prime_table_no
+prime_tbale_yes
 prime_table.out
 stamp-h
