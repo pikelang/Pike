@@ -2,11 +2,11 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: mpz_glue.c,v 1.140 2003/04/02 21:20:19 mast Exp $
+|| $Id: mpz_glue.c,v 1.141 2003/04/02 23:53:14 mast Exp $
 */
 
 #include "global.h"
-RCSID("$Id: mpz_glue.c,v 1.140 2003/04/02 21:20:19 mast Exp $");
+RCSID("$Id: mpz_glue.c,v 1.141 2003/04/02 23:53:14 mast Exp $");
 #include "gmp_machine.h"
 #include "module.h"
 
@@ -158,8 +158,8 @@ static void gmp_push_int64 (INT64 i)
 #endif	/* !HAVE_MPZ_IMPORT */
 
       if (neg) mpz_neg (mpz, mpz);
-#endif	/* SIZEOF_LONG < SIZEOF_INT64 */
     }
+#endif	/* SIZEOF_LONG < SIZEOF_INT64 */
   }
 }
 
