@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: roxen.c,v 1.37 2004/01/27 10:54:06 grubba Exp $
+|| $Id: roxen.c,v 1.38 2004/01/27 10:59:15 grubba Exp $
 */
 
 #define NO_PIKE_SHORTHAND
@@ -360,7 +360,7 @@ static void f_http_decode_string(INT32 args)
    newstr = begin_wide_shared_string(Pike_sp[-args].u.string->len - adjust_len,
 				     size_shift);
    if (size_shift) {
-     p_wchar1 dest = STR1(newstr);
+     p_wchar1 *dest = STR1(newstr);
 
      for (proc=0; bar<end; dest++)
        if (*bar=='%') {
