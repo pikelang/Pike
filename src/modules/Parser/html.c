@@ -103,10 +103,22 @@ struct parser_html_storage
    int nargq;
 #define MAX_ARGQ 8
    p_wchar2 argq_start[MAX_ARGQ],argq_stop[MAX_ARGQ];
+   p_wchar2 arg_eq; /* = as in foo=bar */
+
+   p_wchar2 *ws;
+   int n_ws;
 
    /* pre-calculated */
-   /* end of tag or start of arg quote */
-   p_wchar2 look_for_start[MAX_ARGQ+2];
+   /* whitespace + end argument ('=' and '>') */
+   p_wchar2 *ws_or_endarg; 
+   int n_ws_or_endarg;
+
+   /* whitespace + end argument ('=' and '>') + start quote*/
+   p_wchar2 *ws_or_endarg_or_quote; 
+   int n_ws_or_endarg_or_quote;
+
+   /* end of tag, arg_eq or start of arg quote */
+   p_wchar2 look_for_start[MAX_ARGQ+3];
    int num_look_for_start;
 
    /* end(s) of _this_ arg quote */
@@ -122,9 +134,6 @@ struct parser_html_storage
 #define THISOBJ (fp->current_object)
 
 static struct pike_string *empty_string;
-
-static p_wchar2 whitespace[]={' ','\n','\r','\t','\v'};
-static p_wchar2 ws_or_endarg[]={' ','\n','\r','\t','\v','>','='};
 
 /****** init & exit *********************************/
 
@@ -187,7 +196,8 @@ static void recalculate_argq(struct parser_html_storage *this)
 
    /* prepare look for start of argument quote or end of tag */
    this->look_for_start[0]=this->tag_end;
-   n=1;
+   this->look_for_start[1]=this->arg_eq;
+   n=2;
    for (i=0; i<this->nargq; i++)
    {
       for (j=0; j<n; j++)
@@ -216,10 +226,37 @@ found_start:
 
       this->num_look_for_end[k]=n;
    }
+
+   if (THIS->ws_or_endarg) 
+   {
+      free(THIS->ws_or_endarg);
+      THIS->ws_or_endarg=NULL;
+   }
+   THIS->ws_or_endarg=(p_wchar2*)xalloc(sizeof(p_wchar2)*THIS->n_ws);
+   fprintf(stderr,"got: %p\n",THIS->ws_or_endarg);
+   MEMCPY(THIS->ws_or_endarg+2,THIS->ws,THIS->n_ws*sizeof(p_wchar2));
+   THIS->ws_or_endarg[0]=THIS->arg_eq;
+   THIS->ws_or_endarg[1]=THIS->tag_end;
+   THIS->n_ws_or_endarg=THIS->n_ws+2;
+
+   if (THIS->ws_or_endarg_or_quote) 
+   {
+      free(THIS->ws_or_endarg_or_quote);
+      THIS->ws_or_endarg_or_quote=NULL;
+   }
+   THIS->ws_or_endarg_or_quote=
+      (p_wchar2*)xalloc(sizeof(p_wchar2)*(THIS->n_ws+THIS->nargq));
+   MEMCPY(THIS->ws_or_endarg_or_quote,THIS->ws_or_endarg,
+	  THIS->n_ws_or_endarg*sizeof(p_wchar2));
+   MEMCPY(THIS->ws_or_endarg_or_quote
+	  +THIS->n_ws_or_endarg*sizeof(p_wchar2),
+	  THIS->argq_start,THIS->nargq);
 }
 
 static void init_html_struct(struct object *o)
 {
+   static p_wchar2 whitespace[]={' ','\n','\r','\t','\v'};
+
    DEBUG((stderr,"init_html_struct %p\n",THIS));
 
    /* default set */
@@ -232,10 +269,14 @@ static void init_html_struct(struct object *o)
    THIS->argq_stop[0]='\"';
    THIS->argq_start[1]='\'';
    THIS->argq_stop[1]='\'';
+   THIS->arg_eq='=';
+   
+   /* allocated stuff */
+   THIS->ws=NULL;
+   THIS->ws_or_endarg=NULL;
+   THIS->ws_or_endarg_or_quote=NULL;
 
    THIS->lazy_end_arg_quote=0;
-
-   recalculate_argq(THIS);
 
    /* initialize feed */
    THIS->feed=NULL;
@@ -250,6 +291,13 @@ static void init_html_struct(struct object *o)
 
    /* settings */
    THIS->max_stack_depth=MAX_FEED_STACK_DEPTH;
+
+   /* this may now throw */
+   THIS->ws=(p_wchar2*)xalloc(sizeof(whitespace));
+   MEMCPY(THIS->ws,whitespace,sizeof(whitespace));
+   THIS->n_ws=NELEM(whitespace);
+
+   recalculate_argq(THIS);
 }
 
 static void exit_html_struct(struct object *o)
@@ -262,6 +310,10 @@ static void exit_html_struct(struct object *o)
    free_svalue(&(THIS->callback__data));
    free_svalue(&(THIS->callback__entity));
    free(THIS->stack);
+
+   if (THIS->ws) free(THIS->ws);
+   if (THIS->ws_or_endarg) free(THIS->ws_or_endarg);
+   if (THIS->ws_or_endarg_or_quote) free(THIS->ws_or_endarg_or_quote);
 }
 
 /****** setup callbacks *****************************/
@@ -658,6 +710,67 @@ found:
    return 1;
 }
 
+static int scan_forward_arg(struct parser_html_storage *this,
+			    struct piece *feed,
+			    int c,
+			    struct piece **destp,
+			    int *d_p)
+{
+   p_wchar2 ch;
+   int res,i;
+
+   DEBUG((stderr,"scan for end of arg: %p:%d\n",feed,c));
+   
+   for (;;)
+   {
+      /* we are here: */
+      /* < f'o'"o" = bar > */
+      /*   ^     ->        */
+      /*      this is the end */
+
+      /* scan for start of argument quote or end of tag */
+
+      res=scan_forward(feed,c,destp,d_p,
+		       this->ws_or_endarg_or_quote,
+		       this->n_ws_or_endarg_or_quote);
+      if (!res) 
+      {
+	 DEBUG((stderr,"scan for end of arg: forced end at %p:%d\n",
+		destp[0],*d_p));
+	 return 1; /* end of tag... */
+      }
+
+      ch=index_shared_string(destp[0]->s,*d_p);
+      if (ch==this->tag_end || ch==this->arg_eq)
+      {
+	 DEBUG((stderr,"scan for end of arg: end at %p:%d\n",destp[0],*d_p));
+	 return 1; /* end of arg here */
+      }
+
+      /* scan for (possible) end(s) of this argument quote */
+
+      for (i=0; i<this->nargq; i++)
+	 if (ch==this->argq_start[i]) break;
+      if (i==this->nargq) /* it was whitespace */
+      {
+	 DEBUG((stderr,"scan for end of arg: end at %p:%d (whitespace)\n",
+		destp[0],*d_p));
+	 return 1; /* end of arg due to whitespace */
+      }
+      res=scan_forward(*destp,d_p[0]+1,destp,d_p,
+		       this->look_for_end[i],this->num_look_for_end[i]);
+      if (!res)
+	 {
+	    DEBUG((stderr,"scan for end of arg: forced end at %p:%d\n",
+		   feed,c));
+	    return 1; /* end of tag... */
+	 }
+
+      feed=*destp;
+      c=d_p[0]+1;
+   }
+}
+
 static int scan_for_end_of_tag(struct parser_html_storage *this,
 			       struct piece *feed,
 			       int c,
@@ -700,6 +813,13 @@ static int scan_for_end_of_tag(struct parser_html_storage *this,
       {
 	 DEBUG((stderr,"scan for end of tag: end at %p:%d\n",destp[0],*d_p));
 	 return 1; /* end of tag here */
+      }
+      else if (ch==this->arg_eq)
+      {
+	 DEBUG((stderr,"scan for end of tag: arg_eq at %p:%d\n",destp[0],*d_p));
+	 feed=*destp;
+	 c=d_p[0]+1;
+	 continue;
       }
 
       /* scan for (possible) end(s) of this argument quote */
@@ -1278,10 +1398,11 @@ static void html_tag_name(INT32 args)
 
    /* scan start of tag name */
    scan_forward(THIS->start,THIS->cstart,&s1,&c1,
-		whitespace,-(int)(sizeof(whitespace)/sizeof(whitespace[0])));
+		THIS->ws,-THIS->n_ws);
    /* scan end of tag name */
    scan_forward(s1,c1,&s2,&c2,
-		ws_or_endarg,sizeof(ws_or_endarg)/sizeof(ws_or_endarg[0]));
+		THIS->ws_or_endarg,
+		THIS->n_ws_or_endarg);
    
    DEBUG((stderr,"tag_name %p:%d .. %p:%d\n",s1,c1,s2,c2));
 
@@ -1292,8 +1413,74 @@ static void html_tag_name(INT32 args)
 
 static void html_tag_args(INT32 args)
 {
+   struct piece *s1=NULL,*s2=NULL;
+   int c1=0,c2=0;
+   p_wchar2 ch;
+   int n=0;
+
+   /* get rid of arguments */
    pop_n_elems(args);
-   f_aggregate_mapping(0);
+
+   /* scan past tag name */
+   scan_forward(THIS->start,THIS->cstart,&s1,&c1,
+		THIS->ws,-THIS->n_ws);
+   scan_forward(s1,c1,&s2,&c2,
+		THIS->ws_or_endarg,
+		THIS->n_ws_or_endarg);
+
+   for (;;)
+   {
+      /*  foo=bar   =bar   > */
+      /*^ ^         ^      ^  this is what we want */
+      /*| here we are */
+
+      /* skip whitespace */
+      scan_forward(s2,c2,&s1,&c1,THIS->ws,-THIS->n_ws);
+
+      /* end of tag? */
+      ch=index_shared_string(s1->s,c1);
+      if (ch==THIS->tag_end) /* end */
+	 break;
+
+new_arg:
+
+      /* scan this argument name */
+      scan_forward_arg(THIS,s1,c1,&s2,&c2);
+      /* push it */
+      n++;
+      push_feed_range(s1,c1,s2,c2);
+
+      /* scan for '=', '>' or next argument */
+      /* skip whitespace */
+      scan_forward(s2,c2,&s1,&c1,THIS->ws,-THIS->n_ws);
+      ch=index_shared_string(s1->s,c1);
+      if (ch==THIS->tag_end) /* end */
+      {
+	 stack_dup(); /* arg => arg=arg */
+	 break;
+      }
+      if (ch!=THIS->arg_eq) /* end of _this_ argument */
+      {
+	 stack_dup(); /* arg => arg=arg */
+	 goto new_arg;
+      }
+      
+      /* left: case of '=' */
+      c1++; /* skip it */
+      
+      /* skip whitespace */
+      scan_forward(s1,c1,&s2,&c2,THIS->ws,-THIS->n_ws);
+
+      /* scan the argument value */
+      scan_forward_arg(THIS,s2,c2,&s1,&c2);
+      push_feed_range(s2,c2,s1,c1);
+      
+      s1=s2;
+      c1=s2;
+      /* next argument in the loop */
+   }
+
+   f_aggregate_mapping(n*2);
 }
 
 /** debug *******************************************/
@@ -1392,18 +1579,6 @@ void html__inspect(INT32 args)
    n++;
 
    f_aggregate_mapping(n*2);
-}
-
-/** calculate ***************************************/
-
-void html_parse_get_tag(INT32 args)
-{
-   struct piece feed;
-   check_all_args("parse_get_tag",args,BIT_STRING,0);
-   feed.s=sp[-args].u.string;
-   feed.next=NULL;
-   parse_get_tag(feed);
-   stack_pop_n_elems_keep_top(args);
 }
 
 /****** module init *********************************/
@@ -1514,8 +1689,8 @@ class Parse_HTML
    void _set_entity_callback(function to_call);
 
    // just useful
-   mapping parse_get_tag(string tag);
-   mapping parse_get_args(string tag);
+   string parse_get_tag_name(string tag);
+   mapping parse_get_tag_args(string tag);
 
    // entity quote
    void set_entity_quote(string start,string end); // "&",";"
