@@ -25,7 +25,7 @@
 #include "file_machine.h"
 #include "file.h"
 
-RCSID("$Id: efuns.c,v 1.103 2001/06/29 14:59:55 grubba Exp $");
+RCSID("$Id: efuns.c,v 1.104 2001/06/30 23:20:12 grubba Exp $");
 
 #ifdef HAVE_SYS_TYPES_H
 #include <sys/types.h>
@@ -127,7 +127,52 @@ struct array *encode_stat(struct stat *s)
   return a;
 }
 
-/*! @decl File.Stat file_stat(string path, void|int(0..1) symlink)
+/*! @module Stdio
+ */
+/*! @class Stat
+ *!
+ *!   This object is used to repreaent file ststus information
+ *!   from eg @[file_stat()].
+ *!
+ *!   It contains the following items usually found in a C @tt{struct stat@}:
+ *!   @tt{dev@}, @tt{ino@}, @tt{mode@}, @tt{nlink@}, @tt{uid@}, @tt{gid@},
+ *!   @tt{rdev@}, @tt{size@}, @tt{atime@}, @tt{mtime@} and @tt{ctime@}.
+ *!
+ *!   It also contains some items that correspond to the C @tt{IS*@} macros:
+ *!   @tt{islnk@}, @tt{isreg@}, @tt{isdir@}, @tt{ischr@}, @tt{isblk@},
+ *!   @tt{isfifo@} and @tt{issock@}.
+ *!
+ *!   And then two that are Pike-specific:
+ *!   @dl
+ *!     @item type
+ *!       The type encoded as a string.
+ *!     @item mode_string
+ *!       The file mode encoded as a string in @tt{ls -l@} style.
+ *!   @enddl
+ *!
+ *!   Additionally, the object may casted to @tt{array@} (in which case
+ *!   a 'traditional' LPC stat-array will result), but it's also possible
+ *!   to index the object directly with integers, which then will correspond
+ *!   to the array.
+ *!
+ *!   The indices are:
+ *!   @array
+ *!     @item 0 int mode
+ *!     @item 1 int size
+ *!        Size of the file, or -2=directory, -3=symlink and -4=device.
+ *!     @item 2 int atime
+ *!     @item 3 int mtime
+ *!     @item 4 int ctime
+ *!     @item 5 int uid
+ *!     @item 6 int gid
+ *!   @endarray
+ */
+/*! @endclass
+ */
+/*! @endmodule
+ */
+
+/*! @decl Stdio.Stat file_stat(string path, void|int(0..1) symlink)
  *!
  *! Stat a file.
  *!
@@ -140,8 +185,6 @@ struct array *encode_stat(struct stat *s)
  *!   Otherwise an object describing the properties of @[path] will be
  *!   returned.
  *!
- *! FIXME: Describe the File.Stat class.
- *!
  *! @note
  *!   In Pike 7.0 and earlier this function returned an array with 7 elements.
  *!   The old behaviour can be simulated with the following function:
@@ -153,7 +196,7 @@ struct array *encode_stat(struct stat *s)
  *!         }@}
  *!
  *! @seealso
- *!   @[Stdio.File->stat()]
+ *!   @[Stdio.Stat], @[Stdio.File->stat()]
  */
 void f_file_stat(INT32 args)
 {
