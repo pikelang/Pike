@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: image_tiff.c,v 1.37 2003/07/27 13:30:09 grubba Exp $
+|| $Id: image_tiff.c,v 1.38 2003/12/01 20:19:58 nilsson Exp $
 */
 
 #include "global.h"
@@ -15,7 +15,7 @@
 */
 
 #ifdef HAVE_LIBTIFF
-RCSID("$Id: image_tiff.c,v 1.37 2003/07/27 13:30:09 grubba Exp $");
+RCSID("$Id: image_tiff.c,v 1.38 2003/12/01 20:19:58 nilsson Exp $");
 
 #include "global.h"
 #include "machine.h"
@@ -907,18 +907,17 @@ PIKE_MODULE_INIT
 {
 #ifdef HAVE_LIBTIFF
 #ifdef DYNAMIC_MODULE
-   push_string(make_shared_string("Image")); push_int(0);
-   SAFE_APPLY_MASTER("resolv",2);
+   push_text("Image");
+   SAFE_APPLY_MASTER("resolv",1);
    if (sp[-1].type==T_OBJECT) 
    {
-     push_string(make_shared_string("image"));
+     stack_dup();
+     push_text("Image");
      f_index(2);
      image_program=program_from_svalue(sp-1);
      pop_stack();
 
-     push_string(make_shared_string("Image")); push_int(0);
-     SAFE_APPLY_MASTER("resolv",2);
-     push_string(make_shared_string("colortable"));
+     push_text("Colortable");
      f_index(2);
      image_colortable_program=program_from_svalue(sp-1);
      pop_stack();
