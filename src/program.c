@@ -5,7 +5,7 @@
 \*/
 /**/
 #include "global.h"
-RCSID("$Id: program.c,v 1.305 2001/09/28 23:36:09 hubbe Exp $");
+RCSID("$Id: program.c,v 1.306 2001/10/02 07:20:33 hubbe Exp $");
 #include "program.h"
 #include "object.h"
 #include "dynamic_buffer.h"
@@ -2500,10 +2500,11 @@ PMOD_EXPORT int add_constant(struct pike_string *name,
     if(IDENTIFIERP(n)->id_flags & ID_NOMASK)
       my_yyerror("Illegal to redefine 'nomask' identifier \"%s\"", name->str);
 
-    if(IDENTIFIER_IS_VARIABLE(ID_FROM_INT(Pike_compiler->new_program,
+    if(!TEST_COMPAT(7,0) &&
+       IDENTIFIER_IS_VARIABLE(ID_FROM_INT(Pike_compiler->new_program,
 					  n)->identifier_flags))
     {
-      my_yyerror("Illegal to redefine variable \"%s\" as constant.\n",
+      my_yyerror("Illegal to redefine variable \"%s\" as constant.",
 		 name->str);
     }
 
