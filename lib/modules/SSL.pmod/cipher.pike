@@ -1,4 +1,4 @@
-/* $Id: cipher.pike,v 1.9 1999/03/03 14:11:39 nisse Exp $
+/* $Id: cipher.pike,v 1.10 1999/03/09 14:36:55 nisse Exp $
  *
  */
 
@@ -12,6 +12,7 @@ class CipherSpec {
   int hash_size;
   int key_material;
   int iv_size;
+  function sign;
 }
 
 #if 0
@@ -128,46 +129,42 @@ class des3
   }
 }
 
-class rsa_auth
+object rsa_sign(object context, string cookie, object struct)
 {
+  /* Exactly how is the signature process defined? */
+  
+  string params = cookie + struct->contents();
+  string digest = Crypto.md5()->update(params)->digest()
+    + Crypto.sha()->update(params)->digest();    
+      
+  object s = context->rsa->raw_sign(digest);
+#ifdef SSL3_DEBUG
+  werror(sprintf("  Digest: '%O'\n"
+		 "  Signature: '%O'\n",
+		 digest, s->digits(256)));
+#endif
+  
+  struct->put_bignum(s);
+  return struct;
 }
 
-class dh_exchange
+object dsa_sign(object context, string cookie, object struct)
 {
-  /* Public parameters */
-  object p;
-  object g;
-  object our; /* Our value */
-  object other; /* Other party's value */
-  object secret; /* our =  g ^ secret mod p */
+  string s = context->dsa->sign_ssl(cookie + struct->contents());
+  struct->put_var_string(s, 1);
 
-  object set_parameters(object p_, object g_)
-    {
-      p = p_; g = g_;
-      return this_object();
-    }
+  return struct;
+}
 
-  object set_secret(object s)
-    {
-      secret = s;
-      our = g->powm(secret, p);
-      return this_object;
-    }
-
-  object set_other(object o)
-    {
-      other = o;
-      return this_object();
-    }
-
-  object get_shared()
-    {
-      return other->powm(secret, p);
-    }
+object anon_sign(object context, string cookie, object struct)
+{
+  return struct;
 }
 
 class dh_parameters
 {
+  object p, g, order;
+
   /* Default prime and generator, taken from the ssh2 spec:
    *
    * "This group was taken from the ISAKMP/Oakley specification, and was
@@ -181,14 +178,53 @@ class dh_parameters
 
   /* p = 2^1024 - 2^960 - 1 + 2^64 * floor( 2^894 Pi + 129093 ) */
   
-  object p = Gmp.mpz("FFFFFFFF FFFFFFFF C90FDAA2 2168C234 C4C6628B 80DC1CD1"
-		     "29024E08 8A67CC74 020BBEA6 3B139B22 514A0879 8E3404DD"
-		     "EF9519B3 CD3A431B 302B0A6D F25F1437 4FE1356D 6D51C245"
-		     "E485B576 625E7EC6 F44C42E9 A637ED6B 0BFF5CB6 F406B7ED"
-		     "EE386BFB 5A899FA5 AE9F2411 7C4B1FE6 49286651 ECE65381"
-		     "FFFFFFFF FFFFFFFF", 16);
+  object orm96()
+    {
+      p = Gmp.mpz("FFFFFFFF FFFFFFFF C90FDAA2 2168C234 C4C6628B 80DC1CD1"
+		  "29024E08 8A67CC74 020BBEA6 3B139B22 514A0879 8E3404DD"
+		  "EF9519B3 CD3A431B 302B0A6D F25F1437 4FE1356D 6D51C245"
+		  "E485B576 625E7EC6 F44C42E9 A637ED6B 0BFF5CB6 F406B7ED"
+		  "EE386BFB 5A899FA5 AE9F2411 7C4B1FE6 49286651 ECE65381"
+		  "FFFFFFFF FFFFFFFF", 16);
+      order = (p-1) / 2;
+      
+      g = Gmp.mpz(2);
+    }
+}
+
+class dh_key_exchange
+{
+  /* Public parameters */
+  object parameters;
+
+  object our; /* Our value */
+  object other; /* Other party's value */
+  object secret; /* our =  g ^ secret mod p */
+
+  void create(object p)
+    {
+      parameters = p;
+    }
+
+  object new_secret(function random)
+    {
+      secret = Gmp.mpz(random( (parameters->order->size() + 10 / 8)), 256)
+	% (parameters->order - 1) + 1;
+
+      our = parameters->g->powm(secret, parameters->p);
+      return this_object();
+    }
   
-  object g = Gmp.mpz(2);
+  object set_other(object o)
+    {
+      other = o;
+      return this_object();
+    }
+
+  object get_shared()
+    {
+      return other->powm(secret, parameters->p);
+    }
 }
 
 /* Return array of auth_method, cipher_spec */
@@ -203,6 +239,22 @@ array lookup(int suite)
 
   ke_method = algorithms[0];
 
+  switch(ke_method)
+  {
+  case KE_rsa:
+  case KE_dhe_rsa:
+    res->sign = rsa_sign;
+    break;
+  case KE_dhe_dss:
+    res->sign = dsa_sign;
+    break;
+  case KE_dh_anon:
+    res->sign = anon_sign;
+    break;
+  default:
+    throw( ({ "SSL.cipher.pike: Internal error.\n", backtrace() }) );
+  }
+  
   switch(algorithms[1])
   {
   case CIPHER_rc4:
@@ -233,6 +285,13 @@ array lookup(int suite)
     res->key_material = 24;
     res->iv_size = 8;
     break;
+  case CIPHER_des40:
+    res->bulk_cipher_algorithm = des;
+    res->cipher_type = CIPHER_block;
+    res->is_exportable = 1;
+    res->key_material = 8;
+    res->iv_size = 8;
+    break;    
   case CIPHER_idea:
     res->bulk_cipher_algorithm = Crypto.idea_cbc;
     res->cipher_type = CIPHER_block;
@@ -271,5 +330,3 @@ array lookup(int suite)
 
   return ({ ke_method, res });
 }
-
-  
