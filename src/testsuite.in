@@ -1,4 +1,4 @@
-test_true([["$Id: testsuite.in,v 1.209 1999/10/26 17:52:50 noring Exp $"]])
+test_true([["$Id: testsuite.in,v 1.210 1999/10/26 20:49:43 noring Exp $"]])
 
 cond([[all_constants()->_verify_internals]],
 [[
@@ -1444,6 +1444,8 @@ cond([[ sizeof( cpp("__AUTO_BIGNUM__")/"__AUTO_BIGNUM__" ) == 1 ]],
 
   test_equal(471100000000000000000000000000000000000000000000042,
              (int)(mixed)471100000000000000000000000000000000000000000000042)
+  test_eq(6745697846498645967,
+          [[ Gmp.mpz("6745697846498645967")->cast_to_int(); ]])
 ]])
 
 cond([[ sizeof( cpp("__AUTO_BIGNUM__")/"__AUTO_BIGNUM__" ) == 1 ]],
