@@ -1,5 +1,5 @@
 // Compatibility namespace
-// $Id: __default.pmod,v 1.6 2003/03/30 14:55:18 grubba Exp $
+// $Id: __default.pmod,v 1.7 2003/04/02 20:04:30 nilsson Exp $
 
 #pike 7.5
 
@@ -118,6 +118,23 @@ mapping(string:mixed) all_constants()
 #if constant(Pipe._pipe_debug)
   ret->_pipe_debug = Pipe._pipe_debug;
 #endif /* constant(Pipe._pipe_debug) */
+#if constant(System.getpwent)
+  ret->getpwent = System.getpwent;
+#endif
+#if constant(System.endpwent)
+  ret->endpwent = System.endpwent;
+#endif
+#if constant(System.setpwent)
+  ret->setpwent = System.setpwent;
+#endif
+#if constant(System.getgrent)
+  ret->getgrent = System.getgrent;
+#endif
+#if constant(System.endgrent)
+  ret->endgrent = System.endgrent;
+#endif
+#if constant(System.getgrent)
+  ret->setgrent = System.getgrent;
+#endif
   return ret;
 }
-
