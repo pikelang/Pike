@@ -21,7 +21,7 @@ class Layer
 int foo;
 Layer decode_layer(mapping layer, mapping i)
 {
-  int stt = gethrtime();
+//   int stt = gethrtime();
   Layer l = Layer();
   int use_cmap;
   l->opacity = layer->opacity;
@@ -33,7 +33,7 @@ Layer decode_layer(mapping layer, mapping i)
   l->mode = layer->mode;
   l->flags = layer->flags;
   l->name = layer->name;
-
+ 
   l->mask_width = layer->mask_right-layer->mask_left;
   l->mask_height = layer->mask_bottom-layer->mask_top;
   l->mask_xoffset = layer->mask_left;
@@ -68,7 +68,7 @@ Layer decode_layer(mapping layer, mapping i)
        }
        if( mode )
        {
-         int st = gethrtime();
+//          int st = gethrtime();
          if( !sizeof(lays) )
            lays += ({ 
              Image.Layer(___decode_image_channel(l->width,
@@ -82,13 +82,13 @@ Layer decode_layer(mapping layer, mapping i)
              "mode":mode, 
 	   ]) )
            }));
-         werror(mode+" took %4.5f seconds\n", (gethrtime()-st)/1000000.0 );
+//          werror(mode+" took %4.5f seconds\n", (gethrtime()-st)/1000000.0 );
          c->data = 0;
        }
      }
-     int st = gethrtime();
+//      int st = gethrtime();
      l->image = Image.lay( lays )->image();
-     werror("combine took %4.5f seconds\n", (gethrtime()-st)/1000000.0 );
+//      werror("combine took %4.5f seconds\n", (gethrtime()-st)/1000000.0 );
      break;
     case CMYK:
      inverted = 1;
@@ -103,14 +103,14 @@ Layer decode_layer(mapping layer, mapping i)
      use_cmap = 1;
      break;
    default:
-     werror("Unsupported layer format mode (for now), using greyscale\n");
+     werror("Unsupported layer format mode ("+i->mode+"), using greyscale\n");
    case Greyscale:
      colors = ({
        255,255,255
      })*24;
      break;
   }
-  int st = gethrtime();
+//   int st = gethrtime();
   foreach(layer->channels, mapping c)
   {
     object tmp;
@@ -163,8 +163,8 @@ Layer decode_layer(mapping layer, mapping i)
     }
     c->data = 0;
   }
-  werror("alpha/mask took %4.5f seconds\n", (gethrtime()-st)/1000000.0 );
-  werror("TOTAL took %4.5f seconds\n\n", (gethrtime()-stt)/1000000.0 );
+//   werror("alpha/mask took %4.5f seconds\n", (gethrtime()-st)/1000000.0 );
+//   werror("TOTAL took %4.5f seconds\n\n", (gethrtime()-stt)/1000000.0 );
   return l;
 }
 
@@ -231,15 +231,14 @@ string translate_mode( string mode )
 
 
    default:
-     werror("WARNING: PSD: Unsupported mode: "+mode+"\n");
-     werror("Skipping layer\n");
+     werror("WARNING: PSD: Unsupported mode: "+mode+". Skipping layer\n");
+//      werror("Skipping layer\n");
      return 0;
   }
 }
 
 array decode_layers( string|mapping what, mapping|void opts )
 {
-
   if(!opts) opts = ([]);
 
   if(!mappingp( what ) )
@@ -269,8 +268,14 @@ array decode_layers( string|mapping what, mapping|void opts )
     }
   }
   array layers;
+  Image.Layer lay;
   if( lopts->image )
-    layers = ({ Image.Layer( lopts ) });
+  {
+    layers = ({ (lay=Image.Layer( lopts )) });
+    lay->set_misc_value( "visible", 1 );
+    lay->set_misc_value( "name",    "Background" );
+    lay->set_misc_value( "image_guides", what->resources->guides );
+  }
   else
     layers = ({});
 
@@ -280,10 +285,11 @@ array decode_layers( string|mapping what, mapping|void opts )
     {
       if( string m = translate_mode( l->mode ) )
       {
-	Image.Layer lay = Image.Layer( l->image, l->alpha, m );
+	lay = Image.Layer( l->image, l->alpha, m );
 
         lay->set_misc_value( "visible", !(l->flags & LAYER_FLAG_INVISIBLE) );
         lay->set_misc_value( "name",      l->name );
+        lay->set_misc_value( "image_guides", what->resources->guides );
 
 	l->image = 0; l->alpha = 0;
 	if( l->opacity != 255 )
@@ -298,7 +304,6 @@ array decode_layers( string|mapping what, mapping|void opts )
 
 mapping _decode( string|mapping what, mapping|void opts )
 {
-// mixed e = catch{
   mapping data;
   if(!opts) opts = ([]);
   if(mappingp(what))
@@ -317,6 +322,19 @@ mapping _decode( string|mapping what, mapping|void opts )
     "image":img,
     "alpha":alpha,
   ]);
-// };
-//  werror(describe_backtrace(e));
+}
+
+Image.Image decode( string|mapping what, mapping|void opts )
+{
+  mapping data;
+  if(!opts) opts = ([]);
+  if(mappingp(what))
+    data = what;
+  else 
+    data = __decode( what );
+  what=0;
+
+  Image.Layer res = Image.lay(decode_layers( data, opts ),
+                              0,0,data->width,data->height );
+  return res->image();
 }

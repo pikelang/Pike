@@ -1,5 +1,5 @@
 #include "global.h"
-RCSID("$Id: psd.c,v 1.23 2000/11/16 18:26:20 per Exp $");
+RCSID("$Id: psd.c,v 1.24 2000/11/21 10:38:11 per Exp $");
 
 #include "image_machine.h"
 
@@ -66,7 +66,7 @@ struct buffer
   unsigned char *str;
 };
 
-static unsigned int read_uint( struct buffer *from )
+static unsigned int psd_read_uint( struct buffer *from )
 {
   unsigned int res;
   if(from->len < 4)
@@ -79,10 +79,10 @@ static unsigned int read_uint( struct buffer *from )
 
 static int psd_read_int( struct buffer *from )
 {
-  return (int)read_uint( from );
+  return (int)psd_read_uint( from );
 }
 
-static unsigned short read_ushort( struct buffer *from )
+static unsigned short psd_read_ushort( struct buffer *from )
 {
   unsigned short res;
   if(from->len < 2)
@@ -93,12 +93,12 @@ static unsigned short read_ushort( struct buffer *from )
   return res;
 }
 
-static int read_short( struct buffer *from )
+static int psd_read_short( struct buffer *from )
 {
-  return (short)read_ushort( from );
+  return (short)psd_read_ushort( from );
 }
 
-static unsigned char read_uchar( struct buffer *from )
+static unsigned char psd_read_uchar( struct buffer *from )
 {
   unsigned char res = 0;
   if(from->len)
@@ -110,13 +110,13 @@ static unsigned char read_uchar( struct buffer *from )
   return res;
 }
 
-static int read_char( struct buffer *from )
+static int psd_read_char( struct buffer *from )
 {
-  return (char)read_uchar( from );
+  return (char)psd_read_uchar( from );
 }
 
 
-static char *read_data( struct buffer * from, size_t len )
+static char *psd_read_data( struct buffer * from, size_t len )
 {
   char *res;
   if( from->len < len )
@@ -128,24 +128,24 @@ static char *read_data( struct buffer * from, size_t len )
   return res;
 }
 
-static struct buffer read_string( struct buffer *data )
+static struct buffer psd_read_string( struct buffer *data )
 {
   struct buffer res;
   res.len = psd_read_int( data );
-  res.str = (unsigned char *)read_data( data, res.len );
+  res.str = (unsigned char *)psd_read_data( data, res.len );
   if(res.len > 0) res.len--; /* len includes ending \0 */
   if(!res.str)
     error("String read failed\n");
   return res;
 }
 
-static struct buffer read_pstring( struct buffer *data )
+static struct buffer psd_read_pstring( struct buffer *data )
 {
   struct buffer res;
-  res.len = read_uchar( data );
-  res.str = (unsigned char *)read_data( data, res.len );
+  res.len = psd_read_uchar( data );
+  res.str = (unsigned char *)psd_read_data( data, res.len );
   if(!res.str)
-    error("String read failed\n");
+    error("PString read failed\n");
   return res;
 }
 
@@ -225,7 +225,7 @@ static void decode_layers_and_masks( struct psd_image *dst,
     return;
 
   exp_offset = src->len-psd_read_int( src ); /* size of layer region */
-  count = read_short( src );
+  count = psd_read_short( src );
   
   if( count < 0 )
   {
@@ -246,41 +246,41 @@ static void decode_layers_and_masks( struct psd_image *dst,
     layer->left = psd_read_int( src );
     layer->bottom = psd_read_int( src );
     layer->right = psd_read_int( src );
-    layer->num_channels = read_short( src );
+    layer->num_channels = psd_read_short( src );
     for(cnt=0; cnt<layer->num_channels; cnt++)
     {
-      layer->channel_info[cnt].id = read_ushort(src);
-      layer->channel_info[cnt].data.len = read_uint(src);
+      layer->channel_info[cnt].id = psd_read_ushort(src);
+      layer->channel_info[cnt].data.len = psd_read_uint(src);
     }
-    read_uint( src ); /* '8BIM' */
+    psd_read_uint( src ); /* '8BIM' */
     layer->mode.len = 4;
-    layer->mode.str = (unsigned char *)read_data( src, 4 );
-    layer->opacity = read_uchar( src );
-    layer->clipping = read_uchar( src );
-    layer->flags = read_uchar( src );
-    read_uchar( src );
-    layer->extra_data = read_string( src );
+    layer->mode.str = (unsigned char *)psd_read_data( src, 4 );
+    layer->opacity = psd_read_uchar( src );
+    layer->clipping = psd_read_uchar( src );
+    layer->flags = psd_read_uchar( src );
+    psd_read_uchar( src );
+    layer->extra_data = psd_read_string( src );
     layer->extra_data.len++;
     if(layer->extra_data.len)
     {
       struct buffer tmp = layer->extra_data;
       struct buffer tmp2;
-      tmp2 = read_string( &tmp );
+      tmp2 = psd_read_string( &tmp );
       if( tmp2.len )
       {
         layer->mask_top    = psd_read_int( &tmp2 );
         layer->mask_left   = psd_read_int( &tmp2 );
         layer->mask_bottom = psd_read_int( &tmp2 );
         layer->mask_right  = psd_read_int( &tmp2 );
-        layer->mask_default_color = read_uchar( &tmp2 );
-/*         layer->mask_flags = read_uchar( &tmp2 ); */
+        layer->mask_default_color = psd_read_uchar( &tmp2 );
+/*         layer->mask_flags = psd_read_uchar( &tmp2 ); */
       }
-      tmp2 = read_string( &tmp );
+      tmp2 = psd_read_string( &tmp );
       if( tmp2.len )
       {
 	/* ranges (?) */
       }
-      layer->name = read_pstring( &tmp );
+      layer->name = psd_read_pstring( &tmp );
     }
   }
   while(layer->next)
@@ -292,7 +292,7 @@ static void decode_layers_and_masks( struct psd_image *dst,
     for(i=0; i<layer->num_channels; i++)
     {
       layer->channel_info[i].data.str=
-        (unsigned char *)read_data(src,layer->channel_info[i].data.len);
+        (unsigned char *)psd_read_data(src,layer->channel_info[i].data.len);
     }
     layer = layer->prev;
   }
@@ -308,7 +308,7 @@ packbitsdecode(struct buffer src,
 
   while( nbytes--  )
   {
-    n = read_uchar( &src );
+    n = psd_read_uchar( &src );
     if(n >= 128)
       n -= 256;
     if (n > 0)
@@ -318,7 +318,7 @@ packbitsdecode(struct buffer src,
       {
         if(dst.len)
         {
-          *(dst.str++) = read_uchar( &src );
+          *(dst.str++) = psd_read_uchar( &src );
           dst.len--;
         } else
           return src;
@@ -328,7 +328,7 @@ packbitsdecode(struct buffer src,
     } else {
       unsigned char val;
       n = -n+1;
-      val = read_uchar( &src );
+      val = psd_read_uchar( &src );
       while(n--)
       {
         if(dst.len)
@@ -529,15 +529,15 @@ static struct psd_image low_psd_decode( struct buffer *b )
   ONERROR err;
   MEMSET(&i, 0, sizeof(i));
   SET_ONERROR( err, free_image, &i );
-  i.num_channels = read_ushort( b );
-  i.rows = read_uint( b );
-  i.columns = read_uint( b ); 
-  i.depth = read_ushort( b );
-  i.mode = read_ushort( b );
-  i.color_data = read_string( b );
-  i.resource_data = read_string( b );
-  i.layer_data = read_string( b );
-  i.compression = read_short( b );
+  i.num_channels = psd_read_ushort( b );
+  i.rows = psd_read_uint( b );
+  i.columns = psd_read_uint( b ); 
+  i.depth = psd_read_ushort( b );
+  i.mode = psd_read_ushort( b );
+  i.color_data = psd_read_string( b );
+  i.resource_data = psd_read_string( b ); i.resource_data.len++;
+  i.layer_data = psd_read_string( b );    /*i.layer_data.len++;*/
+  i.compression = psd_read_short( b );
   i.image_data = *b;
   decode_layers_and_masks( &i, &i.layer_data );
   UNSET_ONERROR( err );
@@ -584,6 +584,7 @@ void push_layer( struct layer  *l)
 }
 
 
+static void decode_resources( struct buffer *b );
 void push_psd_image( struct psd_image *i )
 {
   struct svalue *osp = sp, *tsp;
@@ -595,7 +596,8 @@ void push_psd_image( struct psd_image *i )
   ref_push_string( s_depth ); push_int( i->compression );
   ref_push_string( s_mode ); push_int( i->mode );
   ref_push_string( s_color_data ); push_buffer( &i->color_data );
-  ref_push_string( s_resource_data ); push_buffer( &i->resource_data );
+/*   ref_push_string( s_resource_data ); push_buffer( &i->resource_data ); */
+  ref_push_string( s_resources ); decode_resources( &i->resource_data );
   ref_push_string( s_image_data ); push_buffer( &i->image_data );
   ref_push_string( s_layers );
   l = i->first_layer;
@@ -607,6 +609,97 @@ void push_psd_image( struct psd_image *i )
   }
   f_aggregate(DO_NOT_WARN(sp - tsp));
   f_aggregate_mapping(DO_NOT_WARN(sp - osp));
+}
+
+static void decode_resources( struct buffer *b )
+{
+  struct svalue *osp = Pike_sp;
+
+  while( b->len > 11 )
+  {
+    char  *signature = psd_read_data( b, 4 );
+
+    int id;
+    struct buffer data;
+    struct buffer name;
+    if( signature[0] != '8' ||  signature[1] != 'B' ||
+        signature[2] != 'I' ||  signature[3] != 'M' )
+      break;
+
+    id = psd_read_short( b );
+    name = psd_read_pstring( b );
+    if( !(name.len & 1) ) psd_read_uchar( b );
+    data = psd_read_string( b );
+    data.len++;
+/*     fprintf( stderr, "id: %d; namelen=%d; size=%d\n", */
+/* 	     id, name.len, data.len ); */
+
+    if( data.len & 1 ) psd_read_uchar( b );
+
+    switch( id )
+    {
+      case 0x03f0: /* caption */
+	{
+	  struct buffer b = psd_read_pstring( &data );
+	  push_constant_text( "caption" );
+	  push_buffer( &b );
+	}
+	break;
+
+      case 0x0400: /* layer state info */
+	push_constant_text( "active_layer" );
+	push_int( psd_read_short( &data ) );
+	break;
+      case 0x0408: /* guides */
+	push_constant_text( "guides" );
+	{
+	  int i,num_guides;
+	  short magic1, magic2, magic3, magic4, magic5, magic6; // from gimp.
+	  magic1 = psd_read_short( &data ); magic2 = psd_read_short( &data );
+	  magic3 = psd_read_short( &data ); magic4 = psd_read_short( &data );
+	  magic5 = psd_read_short( &data ); magic6 = psd_read_short( &data );
+	  num_guides = psd_read_int( &data );
+
+	  if( data.len != (unsigned)(num_guides * 5) )
+	  {
+	    f_aggregate( 0 );
+	    break;
+	  }
+	  for (i=0; i<num_guides; i++)
+	  {
+	    int p = psd_read_int( &data );
+	    int h = psd_read_uchar( &data );
+	    if( h )
+	      p = (int)((((double)p) * (magic4>>8)) / ((double)(magic4&255)));
+	    else
+	      p = (int)((((double)p) * (magic6>>8)) / ((double)(magic6&255)));
+	    push_constant_text( "pos" );      push_int( p );
+	    push_constant_text( "vertical" ); push_int( !h );
+	    f_aggregate_mapping( 4 );
+	  }
+	  f_aggregate( num_guides );
+	}
+	break;
+      case 0x03ed: /* res. info. */
+	push_constant_text( "resinfo" );
+
+	push_constant_text( "hres" );       push_int(psd_read_int( &data ) );
+	push_constant_text( "hres_unit" );  push_int(psd_read_short( &data ) );
+	push_constant_text( "width_unit" ); push_int(psd_read_short( &data ) );
+
+	push_constant_text( "vres" );       push_int(psd_read_int( &data ) );
+	push_constant_text( "vres_unit" );  push_int(psd_read_short( &data ) );
+	push_constant_text( "height_unit" );push_int(psd_read_short( &data ) );
+
+	f_aggregate_mapping( 12 );
+	break;
+      default:
+	push_int( id );
+	push_buffer( &data );
+	break;
+    }
+  }
+  f_aggregate_mapping( sp-osp );
 }
 
 static void image_f_psd___decode( INT32 args )
