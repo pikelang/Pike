@@ -513,6 +513,8 @@ static void html__set_entity_callback(INT32 args)
 **!	It will receive the rest of the array as extra arguments. If
 **!	extra arguments are given by <ref>set_extra</ref>(), they will
 **!	appear after the ones in this array.
+**!	<li><b>zero</b>. If there is a tag/container/entity with the
+**!	given name in the parser, it's removed.
 **!	</ul>
 **!
 **!     The callback function can return:
@@ -546,8 +548,10 @@ static void html_add_tag(INT32 args)
       pop_stack();
       DEBUG((stderr,"COPY\n"));
    }
-   mapping_insert(THIS->maptag,sp-2,sp-1);
-   
+   if (IS_ZERO(sp-1))
+     map_delete(THIS->maptag,sp-2);
+   else
+     mapping_insert(THIS->maptag,sp-2,sp-1);
    pop_n_elems(args);
    ref_push_object(THISOBJ);
 }
@@ -561,7 +565,10 @@ static void html_add_container(INT32 args)
       THIS->mapcont=copy_mapping(THIS->mapcont);
       pop_stack();
    }
-   mapping_insert(THIS->mapcont,sp-2,sp-1);
+   if (IS_ZERO(sp-1))
+     map_delete(THIS->mapcont,sp-2);
+   else
+     mapping_insert(THIS->mapcont,sp-2,sp-1);
    pop_n_elems(args);
    ref_push_object(THISOBJ);
 }
@@ -575,7 +582,10 @@ static void html_add_entity(INT32 args)
       THIS->mapentity=copy_mapping(THIS->mapentity);
       pop_stack();
    }
-   mapping_insert(THIS->mapentity,sp-2,sp-1);
+   if (IS_ZERO(sp-1))
+     map_delete(THIS->mapentity,sp-2);
+   else
+     mapping_insert(THIS->mapentity,sp-2,sp-1);
    pop_n_elems(args);
    ref_push_object(THISOBJ);
 }
@@ -2864,7 +2874,7 @@ static void html_mixed_mode(INT32 args)
 
 #define tCbret tOr3(tInt0,tStr,tArr(tMixed))
 #define tCbfunc(X) tOr(tFunc(tNone,tCbret),tFunc(tObj X,tCbret))
-#define tTodo(X) tOr3(tStr,tCbfunc(X),tArr(tCbfunc(X)))
+#define tTodo(X) tOr4(tInt0,tStr,tCbfunc(X),tArr(tCbfunc(X)))
 #define tTagargs tMap(tStr,tStr)
 
 void init_parser_html(void)
