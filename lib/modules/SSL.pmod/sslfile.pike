@@ -1,6 +1,6 @@
 #pike __REAL_VERSION__
 
-/* $Id: sslfile.pike,v 1.84 2005/01/26 20:09:27 mast Exp $
+/* $Id: sslfile.pike,v 1.85 2005/01/26 20:34:10 mast Exp $
  */
 
 #if constant(SSL.Cipher.CipherAlgorithm)
@@ -117,16 +117,19 @@ static int got_extra_read_call_out;
 // it when switching back. 0 otherwise.
 
 // This macro is used in all user called functions that can report I/O
-// errors, both at the beginning and after ssl_write_callback calls.
-#define FIX_ERRNOS(ERROR_RETURN) do {					\
+// errors, both at the beginning and after
+// ssl_(read|write|close)_callback calls.
+#define FIX_ERRNOS(ERROR, NO_ERROR) do {				\
     if (cb_errno) {							\
       /* Got a stored error from a previous callback that has failed. */ \
       local_errno = cb_errno;						\
       cb_errno = 0;							\
-      {ERROR_RETURN;}							\
+      {ERROR;}								\
     }									\
-    else								\
+    else {								\
       local_errno = 0;							\
+      {NO_ERROR;}							\
+    }									\
   } while (0)
 
 #define CALLBACK_MODE							\
@@ -284,17 +287,17 @@ static THREAD_T op_thread;
 	float|int(0..0) action =					\
 	  local_backend (NONBLOCKING_MODE ? 0.0 : 0);			\
 									\
-	FIX_ERRNOS (							\
-	  SSL3_DEBUG_MSG ("%s local backend ended with error\n",	\
-			  NONBLOCKING_MODE ? "Nonblocking" : "Blocking"); \
-	  if (stream) {							\
-	    stream->set_backend (real_backend);				\
-	    stream->set_id (1);						\
-	    update_internal_state();					\
-	  }								\
-	  {ERROR_CODE;}							\
-	  break run_maybe_blocking;					\
-	);								\
+	FIX_ERRNOS ({							\
+	    SSL3_DEBUG_MSG ("%s local backend ended with error\n",	\
+			    NONBLOCKING_MODE ? "Nonblocking" : "Blocking"); \
+	    if (stream) {						\
+	      stream->set_backend (real_backend);			\
+	      stream->set_id (1);					\
+	      update_internal_state();					\
+	    }								\
+	    {ERROR_CODE;}						\
+	    break run_maybe_blocking;					\
+	  }, 0);							\
 									\
 	if (!stream) {							\
 	  SSL3_DEBUG_MSG ("%s local backend ended after clean close\n",	\
@@ -313,8 +316,8 @@ static THREAD_T op_thread;
 	  break;							\
 	}								\
 									\
-	SSL3_DEBUG_MORE_MSG ("Reentering %s backend\n",			\
-			     NONBLOCKING_MODE ? "nonblocking" : "blocking"); \
+	SSL3_DEBUG_MSG ("Reentering %s backend\n",			\
+			NONBLOCKING_MODE ? "nonblocking" : "blocking");	\
       }									\
 									\
       stream->set_backend (real_backend);				\
@@ -427,11 +430,12 @@ int close (void|string how, void|int clean_close)
     }
     close_state = clean_close ? CLEAN_CLOSE : NORMAL_CLOSE;
 
-    FIX_ERRNOS (
-      SSL3_DEBUG_MSG ("SSL.sslfile->close: Propagating old callback error\n");
-      // Errors are thrown from close().
-      error ("Failed to close SSL connection: %s\n", strerror (local_errno));
-    );
+    FIX_ERRNOS ({
+	// Get here if a close callback calls close after an error.
+	SSL3_DEBUG_MSG ("SSL.sslfile->close: Shutdown after error\n");
+	shutdown();
+	RETURN (0);
+      }, 0);
 
     if (!stream)
       if (conn_closing == 3) {
@@ -566,11 +570,11 @@ string read (void|int length, void|int(0..1) not_all)
     // Only signal an error after an explicit close() call.
     if (close_state > 0) error ("Not open.\n");
 
-    FIX_ERRNOS (
-      SSL3_DEBUG_MSG ("SSL.sslfile->read: Propagating old callback error: %s\n",
-		      strerror (local_errno));
-      RETURN (0);
-    );
+    FIX_ERRNOS ({
+	SSL3_DEBUG_MSG ("SSL.sslfile->read: Propagating old callback error: %s\n",
+			strerror (local_errno));
+	RETURN (0);
+      }, 0);
 
     if (got_extra_read_call_out) {
       // The queued read callback call is superseded now.
@@ -624,11 +628,11 @@ int write (string|array(string) data, mixed... args)
     // Only signal an error after an explicit close() call.
     if (close_state > 0) error ("Not open.\n");
 
-    FIX_ERRNOS (
-      SSL3_DEBUG_MSG ("SSL.sslfile->write: Propagating old callback error: %s\n",
-		      strerror (local_errno));
-      RETURN (-1);
-    );
+    FIX_ERRNOS ({
+	SSL3_DEBUG_MSG ("SSL.sslfile->write: Propagating old callback error: %s\n",
+			strerror (local_errno));
+	RETURN (-1);
+      }, 0);
 
     if (SSL_HANDSHAKING) {
       SSL3_DEBUG_MSG ("SSL.sslfile->write: "
@@ -717,11 +721,12 @@ int renegotiate()
     // Only signal an error after an explicit close() call.
     if (close_state > 0) error ("Not open.\n");
 
-    FIX_ERRNOS (
-      SSL3_DEBUG_MSG ("SSL.sslfile->renegotiate: Propagating old callback error: %s\n",
-		      strerror (local_errno));
-      RETURN (0);
-    );
+    FIX_ERRNOS ({
+	SSL3_DEBUG_MSG ("SSL.sslfile->renegotiate: "
+			"Propagating old callback error: %s\n",
+			strerror (local_errno));
+	RETURN (0);
+      }, 0);
 
     if (!stream) {
       SSL3_DEBUG_MSG ("SSL.sslfile->renegotiate: "
@@ -1176,11 +1181,26 @@ static int call_read_callback()
       SSL3_DEBUG_MSG ("call_read_callback: Calling read callback %O "
 		      "with %d bytes (%d still in buffer)\n",
 		      read_callback, sizeof (received), sizeof (read_buffer));
+      // Never called if there's an error - no need to propagate cb_errno.
       RESTORE;
       return read_callback (callback_id, received);
     }
   } LEAVE;
   return 0;
+}
+
+private int call_close_callback()
+{
+  // errno() should return the error in the close callback - need to
+  // propagate it here.
+  FIX_ERRNOS (
+    SSL3_DEBUG_MSG ("call_close_callback: Calling close callback %O (error %d)\n",
+		    close_callback, cb_errno),
+    SSL3_DEBUG_MSG ("call_close_callback: Calling close callback %O (read eof)\n",
+		    close_callback)
+  );
+  close_state = CLOSE_CB_CALLED;
+  return close_callback (callback_id);
 }
 
 static int ssl_read_callback (int called_from_real_backend, string input)
@@ -1267,11 +1287,8 @@ static int ssl_read_callback (int called_from_real_backend, string input)
 	update_internal_state();
 
 	if (called_from_real_backend && close_callback && !close_state) {
-	  SSL3_DEBUG_MSG ("ssl_read_callback: Calling close callback %O\n",
-			  close_callback);
-	  close_state = CLOSE_CB_CALLED;
 	  RESTORE;
-	  return close_callback (callback_id);
+	  return call_close_callback();
 	}
       }
 
@@ -1289,10 +1306,8 @@ static int ssl_read_callback (int called_from_real_backend, string input)
 
       if (close_callback && !close_state) {
 	// Call the close callback to report the error.
-	close_state = CLOSE_CB_CALLED;
 	RESTORE;
-	close_callback (callback_id);
-	return -1;
+	return call_close_callback();
       }
 
       shutdown();
@@ -1339,7 +1354,7 @@ static int ssl_write_callback (int called_from_real_backend)
 	   ) {
 	  SSL3_DEBUG_MSG ("ssl_write_callback: Write failed: %s\n",
 			  strerror (stream->errno()));
-	  local_errno = cb_errno = stream->errno();
+	  cb_errno = stream->errno();
 
 	  // Make sure the local backend exits after this, so that the
 	  // error isn't clobbered by later I/O.
@@ -1397,7 +1412,7 @@ static int ssl_write_callback (int called_from_real_backend)
 	  SSL3_DEBUG_MSG ("ssl_write_callback: "
 			  "Connection closed abruptly remotely - "
 			  "simulating System.EPIPE\n");
-	  local_errno = cb_errno = System.EPIPE;
+	  cb_errno = System.EPIPE;
 	  ret = -1;
 	  shutdown();
 	  break write_to_stream;
@@ -1407,11 +1422,16 @@ static int ssl_write_callback (int called_from_real_backend)
 
     if (called_from_real_backend && write_callback && !SSL_INTERNAL_TALK)
     {
-      SSL3_DEBUG_MSG ("ssl_write_callback: Calling write callback %O\n",
-		      write_callback);
+      // errno() should return the error in the write callback - need
+      // to propagate it here.
+      FIX_ERRNOS (
+	SSL3_DEBUG_MSG ("ssl_write_callback: Calling write callback %O (error %d)\n",
+			write_callback, cb_errno),
+	SSL3_DEBUG_MSG ("ssl_write_callback: Calling write callback %O\n",
+			write_callback)
+      );
       RESTORE;
-      int res = write_callback (callback_id);
-      return ret == -1 ? -1 : res;
+      return write_callback (callback_id);
     }
   } LEAVE;
   return ret;
@@ -1446,9 +1466,7 @@ static int ssl_close_callback (int called_from_real_backend)
     if (close_callback && !close_state) {
       // Call the close callback to report the error.
       RESTORE;
-      close_state = CLOSE_CB_CALLED;
-      close_callback (callback_id);
-      return -1;
+      return call_close_callback();
     }
 
     shutdown();
