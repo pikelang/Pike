@@ -3700,7 +3700,7 @@ etc. would be quite pointless. Luckily enough, Pike provides you with an
 object oriented interface to files, pipes and TCP sockets. All I/O functions
 and classes are collected in the module <tt>Stdio</tt>.
 
-<section title="Stdio.File">
+<section title="File management - Stdio.File">
 <class name=File>
 This is the basic I/O object, it provides socket communication as well
 as file access. It does not buffer reads and writes or provide line-by-line
@@ -4262,7 +4262,7 @@ int main(int argc, array(string) argv)
 </section>
 
 
-<section title="Stdio.FILE">
+<section title="Buffered file management - Stdio.FILE">
 <class name=FILE>
 Stdio.FILE is a buffered version of Stdio.File, it inherits Stdio.File and
 has most of the functionality of Stdio.File. However, it has an input buffer
@@ -4325,7 +4325,7 @@ a string containing one character.
 <anchor name=Stdio.stdin>
 <anchor name=Stdio.stdout>
 <anchor name=Stdio.stderr>
-<section title="Standard streams">
+<section title="Standard streams - Stdio.stdin, stdout and stderr">
 Any UNIX program has three files open from the beginning. These are called
 standard input, standard output and standard error stream. These streams
 are available from Pike as well. They are called <tt>Stdio.stdin</tt>,
@@ -4352,9 +4352,131 @@ of just <tt>write</tt> because they are the same function.
 </anchor>
 </anchor>
 
+<section title="Listening to sockets - Stdio.Port">
+<class name=Port>
+Stdio.File can handle connections to any TCP socket, but it can not listen
+to a local TCP port. For this purpose there is a special class called
+<tt>Stdio.Port</tt>. <tt>Stdio.Port</tt> cannot read or write any data, but
+it can accept connections which will be returned as clones of Stdio.File.
+These are the methods available in <tt>Stdio.Port</tt>:
 
 
-<section title="Stdio.UDP">
+
+<method name=bind title="open socket and bind it to a port">
+<man_syntax>
+int bind(int <I>port</I>);<br>
+int bind(int <I>port</I>,function <I>accept_callback</I>);<br>
+int bind(int <I>port</I>,function <I>accept_callback</I>, string <I>IP</I>);<br>
+</man_syntax>
+<man_description>
+Bind opens a sockets and binds it to port number on the local machine.
+If the second argument is present, the socket is set to nonblocking
+and the callback function is called whenever something connects to
+the socket. The callback will receive the id for this port as argument.
+Bind returns 1 on success, and zero on failure.
+<p>
+If the optional argument <i>IP</i> is given, bind will try to bind to
+this IP name (or number).
+</man_description>
+<man_see>Stdio.Port-&gt;accept</man_see>
+</method>
+
+
+
+<method name=listen_fd title="listen to an already open port">
+<man_syntax>
+int listen_fd(int <I>fd</I>);<br>
+int listen_fd(int <I>fd</I>,function <I>accept_callback</I>);<br>
+</man_syntax>
+<man_description>
+This function does the same as Stdio.Port-&gt;bind, except that instead
+of creating a new socket and bind it to a port, it expects that
+the file descriptor <i>fd</i> is an already open port.
+</man_description>
+<man_note>
+This function is only for the advanced user, and is generally used
+when sockets are passed to Pike at exec time.
+</man_note>
+<man_see>Stdio.Port-&gt;bind, Stdio.Port-&gt;accept</man_see>
+</method>
+
+
+<method name=create title="create and/or setup a port">
+<man_syntax>
+object(Stdio.Port) Stdio.Port("stdin")<br>
+object(Stdio.Port) Stdio.Port("stdin",function <i>accept_callback</i>)<br>
+object(Stdio.Port) Stdio.Port("stdin",function <i>accept_callback</i>)<br>
+object(Stdio.Port) Stdio.Port(int <i>port</i>)<br>
+object(Stdio.Port) Stdio.Port(int <i>port</i>,function <i>accept_callback</i>)<br>
+object(Stdio.Port) Stdio.Port(int <i>port</i>,function <i>accept_callback</i>, string <i>ip</i>)<br>
+</man_syntax>
+<man_description>
+When create is called with <tt>"stdin"</tt> as argument, a socket is created
+out of the file descriptor 0. This is only useful if that actually
+is a socket to begin with. When create is called with an int as first
+argument, it does the same as bind() would do with the same arguments.
+The second and third argument has the same function as in the bind()
+call.
+</man_description>
+<man_see>clone, Stdio.Port-&gt;bind</man_see>
+</method>
+
+
+
+<method name=set_id title="set the id of a port">
+<man_syntax>
+void set_id(mixed <I>id</I>);<br>
+</man_syntax>
+<man_description>
+This function sets the id used for accept_callback by this port.
+The default id is this_object().
+</man_description>
+<man_see>Stdio.Port-&gt;query_id</man_see>
+</method>
+
+
+<method name=query_id title="Return the id for this port.">
+<man_syntax>
+mixed query_id();<br>
+</man_syntax>
+<man_description>
+This function returns the id for this port. The id is normally the
+first argument to accept_callback.
+</man_description>
+<man_see>Stdio.Port-&gt;set_id</man_see>
+</method>
+
+
+<method name=errno title="return the last error">
+<man_syntax>
+int errno();<br>
+</man_syntax>
+<man_description>
+If the last call done on this port failed, errno will return an
+integer describing what went wrong. Refer to your Unix manual for
+further information.
+</man_description>
+<man_see>Stdio.Port-&gt;errno</man_see>
+</method>
+
+
+<method name=accept title="accept a connection">
+<man_syntax>
+object accept();<br>
+</man_syntax>
+<man_description>
+This function completes a connection made from a remote machine to
+this port. It returns a two-way stream in the form of a copy of
+Stdio.File. The new file is by default set to blocking.
+</man_description>
+<man_see>Stdio.File</man_see>
+</method>
+
+</class>
+</section title="Stdio.Port">
+
+
+<section title="UDP socket and message management - Stdio.UDP">
 <class name="UDP">
 <man_syntax>
 Stdio.UDP();
@@ -4482,7 +4604,7 @@ Stdio.File
 
 
 
-<section title="Stdio.Terminfo">
+<section title="Terminal management - Stdio.Terminfo">
 <module name="Terminfo">
 <function name=Stdio.Terminfo.getFallbackTerm title="get fallback terminal">
 <man_syntax>
@@ -4588,7 +4710,7 @@ Terminfo terminal description object.
 </module>
 </section>
 
-<section title="Stdio.Readline">
+<section title="Simple input-by-prompt - Stdio.Readline">
 <class name="Readline">
 
 
@@ -4824,129 +4946,6 @@ Append the string <i>str</i> onto the file <i>file</i>. Returns number of bytes 
 <man_see>Stdio.read_bytes</man_see>
 </function>
 
-</section>
-
-<section title="Listening to sockets">
-<class name=Port>
-Stdio.File can handle connections to any TCP socket, but it can not listen
-to a local TCP port. For this purpose there is a special class called
-<tt>Stdio.Port</tt>. <tt>Stdio.Port</tt> cannot read or write any data, but
-it can accept connections which will be returned as clones of Stdio.File.
-These are the methods available in <tt>Stdio.Port</tt>:
-
-
-
-<method name=bind title="open socket and bind it to a port">
-<man_syntax>
-int bind(int <I>port</I>);<br>
-int bind(int <I>port</I>,function <I>accept_callback</I>);<br>
-int bind(int <I>port</I>,function <I>accept_callback</I>, string <I>IP</I>);<br>
-</man_syntax>
-<man_description>
-Bind opens a sockets and binds it to port number on the local machine.
-If the second argument is present, the socket is set to nonblocking
-and the callback function is called whenever something connects to
-the socket. The callback will receive the id for this port as argument.
-Bind returns 1 on success, and zero on failure.
-<p>
-If the optional argument <i>IP</i> is given, bind will try to bind to
-this IP name (or number).
-</man_description>
-<man_see>Stdio.Port-&gt;accept</man_see>
-</method>
-
-
-
-<method name=listen_fd title="listen to an already open port">
-<man_syntax>
-int listen_fd(int <I>fd</I>);<br>
-int listen_fd(int <I>fd</I>,function <I>accept_callback</I>);<br>
-</man_syntax>
-<man_description>
-This function does the same as Stdio.Port-&gt;bind, except that instead
-of creating a new socket and bind it to a port, it expects that
-the file descriptor <i>fd</i> is an already open port.
-</man_description>
-<man_note>
-This function is only for the advanced user, and is generally used
-when sockets are passed to Pike at exec time.
-</man_note>
-<man_see>Stdio.Port-&gt;bind, Stdio.Port-&gt;accept</man_see>
-</method>
-
-
-<method name=create title="create and/or setup a port">
-<man_syntax>
-object(Stdio.Port) Stdio.Port("stdin")<br>
-object(Stdio.Port) Stdio.Port("stdin",function <i>accept_callback</i>)<br>
-object(Stdio.Port) Stdio.Port("stdin",function <i>accept_callback</i>)<br>
-object(Stdio.Port) Stdio.Port(int <i>port</i>)<br>
-object(Stdio.Port) Stdio.Port(int <i>port</i>,function <i>accept_callback</i>)<br>
-object(Stdio.Port) Stdio.Port(int <i>port</i>,function <i>accept_callback</i>, string <i>ip</i>)<br>
-</man_syntax>
-<man_description>
-When create is called with <tt>"stdin"</tt> as argument, a socket is created
-out of the file descriptor 0. This is only useful if that actually
-is a socket to begin with. When create is called with an int as first
-argument, it does the same as bind() would do with the same arguments.
-The second and third argument has the same function as in the bind()
-call.
-</man_description>
-<man_see>clone, Stdio.Port-&gt;bind</man_see>
-</method>
-
-
-
-<method name=set_id title="set the id of a port">
-<man_syntax>
-void set_id(mixed <I>id</I>);<br>
-</man_syntax>
-<man_description>
-This function sets the id used for accept_callback by this port.
-The default id is this_object().
-</man_description>
-<man_see>Stdio.Port-&gt;query_id</man_see>
-</method>
-
-
-<method name=query_id title="Return the id for this port.">
-<man_syntax>
-mixed query_id();<br>
-</man_syntax>
-<man_description>
-This function returns the id for this port. The id is normally the
-first argument to accept_callback.
-</man_description>
-<man_see>Stdio.Port-&gt;set_id</man_see>
-</method>
-
-
-<method name=errno title="return the last error">
-<man_syntax>
-int errno();<br>
-</man_syntax>
-<man_description>
-If the last call done on this port failed, errno will return an
-integer describing what went wrong. Refer to your Unix manual for
-further information.
-</man_description>
-<man_see>Stdio.Port-&gt;errno</man_see>
-</method>
-
-
-<method name=accept title="accept a connection">
-<man_syntax>
-object accept();<br>
-</man_syntax>
-<man_description>
-This function completes a connection made from a remote machine to
-this port. It returns a two-way stream in the form of a copy of
-Stdio.File. The new file is by default set to blocking.
-</man_description>
-<man_see>Stdio.File</man_see>
-</method>
-
-</class>
 </section>
 
 <section title="A more complex example - a simple WWW server">
