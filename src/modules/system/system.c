@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: system.c,v 1.162 2003/10/16 15:43:48 grubba Exp $
+|| $Id: system.c,v 1.163 2003/10/17 15:40:35 mast Exp $
 */
 
 /*
@@ -20,7 +20,7 @@
 #include "system_machine.h"
 #include "system.h"
 
-RCSID("$Id: system.c,v 1.162 2003/10/16 15:43:48 grubba Exp $");
+RCSID("$Id: system.c,v 1.163 2003/10/17 15:40:35 mast Exp $");
 
 #ifdef HAVE_WINDOWS_H
 #include <windows.h>
@@ -2681,8 +2681,7 @@ static void f_get_netinfo_property(INT32 args)
   
   get_all_args("get_netinfo_property", args, "%s%s%s",
 	       &domain_str, &path_str, &prop_str);
-  pop_n_elems(args);
-  
+
   /* open domain */
   num_replies = 0;
   res = ni_open(NULL, domain_str, &dom);
@@ -2709,6 +2708,7 @@ static void f_get_netinfo_property(INT32 args)
     f_aggregate(num_replies);
   else
     push_int(0);
+  stack_pop_n_elems_keep_top (args);
 }
 #endif
 
