@@ -2,12 +2,12 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: freetype.c,v 1.16 2003/01/17 16:15:17 marcus Exp $
+|| $Id: freetype.c,v 1.17 2003/02/08 18:20:19 grubba Exp $
 */
 
 #include "config.h"
 #include "global.h"
-RCSID("$Id: freetype.c,v 1.16 2003/01/17 16:15:17 marcus Exp $");
+RCSID("$Id: freetype.c,v 1.17 2003/02/08 18:20:19 grubba Exp $");
 #include "module.h"
 #include "pike_error.h"
 
@@ -257,13 +257,27 @@ static void image_ft_face_create( INT32 args )
   else if( er )
     Pike_error( "Failed to open the font file %s\n", sp[-args].u.string->str );
   for(enc_no=0; enc_no<TFACE->num_charmaps; enc_no++) {
-    enc_score = 0;
     switch(TFACE->charmaps[enc_no]->encoding) {
     case ft_encoding_symbol: enc_score = -1; break;
     case ft_encoding_unicode: enc_score = 2; break;
 #if HAVE_DECL_FT_ENCODING_LATIN_1
     case ft_encoding_latin_1: enc_score = 1; break;
 #endif
+#if 0
+      /* FIXME: Should we rate any of these? */
+    case ft_encoding_none:
+    case ft_encoding_latin_2:
+    case ft_encoding_sjis:
+    case ft_encoding_gb2312:
+    case ft_encoding_big5:
+    case ft_encoding_wansung:
+    case ft_encoding_johab:
+    case ft_encoding_adobe_standard:
+    case ft_encoding_adobe_expert:
+    case ft_encoding_adobe_custom:
+    case ft_encoding_apple_roman:
+#endif
+    default: enc_score = 0; break;
     }
     if(enc_score > best_enc_score) {
       best_enc_score = enc_score;
