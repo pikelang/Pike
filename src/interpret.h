@@ -5,7 +5,7 @@
 \*/
 
 /*
- * $Id: interpret.h,v 1.78 2001/03/04 19:27:18 mirar Exp $
+ * $Id: interpret.h,v 1.79 2001/03/09 02:27:57 hubbe Exp $
  */
 #ifndef INTERPRET_H
 #define INTERPRET_H
@@ -169,6 +169,10 @@ PMOD_EXPORT const char *Pike_check_c_stack_errmsg;
 
 #define stack_dup() push_svalue(Pike_sp-1)
 #define stack_swap() do { struct svalue _=Pike_sp[-1]; Pike_sp[-1]=Pike_sp[-2]; Pike_sp[-2]=_; } while(0)
+
+
+#define stack_pop_to_no_free(X) (*(X)=*--Pike_sp)
+#define stack_pop_to(X) do { struct svalue *_=(X); free_svalue(_); stack_pop_to_no_free(_); }while(0)
 
 /* This pops a number of arguments from the stack but keeps the top
  * element on top. Used for popping the arguments while keeping the

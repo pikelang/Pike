@@ -5,7 +5,7 @@
 \*/
 
 /*
- * $Id: svalue.h,v 1.78 2001/03/05 21:32:53 grubba Exp $
+ * $Id: svalue.h,v 1.79 2001/03/09 02:27:57 hubbe Exp $
  */
 #ifndef SVALUE_H
 #define SVALUE_H
@@ -322,6 +322,7 @@ static inline union anything *dmalloc_check_union(union anything *u,int type, ch
 
 #endif
 
+#define swap_svalues(X,Y) do { struct svalue *_a=(X),*_b=(Y),_tmp; _tmp=*_a; *_a=*_b; *_b=_tmp; }while(0)
 #define free_svalue(X) do { struct svalue *_s=(X); check_type(_s->type); check_refs(_s); if(_s->type<=MAX_REF_TYPE) { debug_malloc_touch(_s->u.refs); if(--*(_s->u.refs) <=0) { really_free_svalue(_s); } DO_IF_DMALLOC(_s->u.refs=(void *)-1;)  }}while(0)
 #define free_short_svalue(X,T) do { union anything *_s=(X); TYPE_T _t=(T); check_type(_t); check_refs2(_s,_t); if(_t<=MAX_REF_TYPE && _s->refs) if(--*(_s->refs) <= 0) { really_free_short_svalue(_s,_t); } DO_IF_DMALLOC(_s->refs=(void *)-1;) }while(0)
 #define add_ref_svalue(X) do { struct svalue *_tmp=(X); check_type(_tmp->type); check_refs(_tmp); if(_tmp->type <= MAX_REF_TYPE) { debug_malloc_touch(_tmp->u.refs); _tmp->u.refs[0]++; } }while(0)
