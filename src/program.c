@@ -5,7 +5,7 @@
 \*/
 /**/
 #include "global.h"
-RCSID("$Id: program.c,v 1.265 2000/08/24 04:04:42 hubbe Exp $");
+RCSID("$Id: program.c,v 1.266 2000/08/24 13:58:24 grubba Exp $");
 #include "program.h"
 #include "object.h"
 #include "dynamic_buffer.h"
@@ -1853,19 +1853,19 @@ static void really_low_inherit(struct program *p,
 		tmp.inherit=in2;
 		tmp.parent_identifier=pid;
 		find_external_context(&tmp, in->parent_offset);
-		par=tmp.o;
-		pid=tmp.parent_identifier;
+		par = tmp.o;
+		pid = tmp.parent_identifier;
 	      }
 	      break;
 
 	      case -17:
-		pid=in->parent_identifier;
-		par=in->parent;
+		pid = in->parent_identifier;
+		par = in->parent;
 		break;
 
 	      case -18:
-		par=par->parent_identifier;
-		par=par->parent;
+		pid = par->parent_identifier;
+		par = par->parent;
 	    }
 	  }
 
