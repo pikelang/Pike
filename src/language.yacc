@@ -171,7 +171,7 @@
 /* This is the grammar definition of Pike. */
 
 #include "global.h"
-RCSID("$Id: language.yacc,v 1.81 1998/04/17 03:18:09 grubba Exp $");
+RCSID("$Id: language.yacc,v 1.82 1998/04/17 17:13:37 hubbe Exp $");
 #ifdef HAVE_MEMORY_H
 #include <memory.h>
 #endif
@@ -940,6 +940,7 @@ new_local_name: optional_stars F_IDENTIFIER
 
 new_local_name2: F_IDENTIFIER
   {
+    add_ref($<n>0->u.sval.u.string);
     add_local_name($1->u.sval.u.string, $<n>0->u.sval.u.string);
     $$=mknode(F_ASSIGN,mkintnode(0),mklocalnode(islocal($1->u.sval.u.string)));
     free_node($1);
@@ -947,6 +948,7 @@ new_local_name2: F_IDENTIFIER
   | bad_identifier { $$=mkintnode(0); }
   | F_IDENTIFIER '=' safe_expr0
   {
+    add_ref($<n>0->u.sval.u.string);
     add_local_name($1->u.sval.u.string, $<n>0->u.sval.u.string);
     $$=mknode(F_ASSIGN,$3, mklocalnode(islocal($1->u.sval.u.string)));
     free_node($1);
@@ -1849,6 +1851,7 @@ void yyerror(char *str)
 }
 
 /* argument must be a shared string */
+/* Note that this function eats a reference to 'type' */
 void add_local_name(struct pike_string *str,
 		    struct pike_string *type)
 {
