@@ -214,8 +214,7 @@ docs:
 	mkdir docs
 
 html_docs: docs
-	$(RUNULPC) $(TMP_BINDIR)/htmlify_docs docs $(TMP_DOCDIR) `echo $(SRCDIR)/modules/*/doc` ; done`
-
+	$(RUNULPC) $(TMP_BINDIR)/htmlify_docs docs $(TMP_DOCDIR) `echo $(SRCDIR)/modules/*/doc`
 #
 # uLPC internal targets
 #
