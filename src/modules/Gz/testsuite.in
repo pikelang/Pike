@@ -1,4 +1,4 @@
-// $Id: testsuite.in,v 1.11 2000/04/14 16:40:00 hubbe Exp $
+// $Id: testsuite.in,v 1.12 2001/02/07 11:45:59 noring Exp $
 
 cond([[ master()->resolv("Gz")->deflate ]],
 [[
@@ -30,3 +30,5 @@ cond([[  master()->resolv("Gz")->deflate && master()->resolv("Crypto") && master
     dotest(Crypto.randomness.pike_random()->read(524288))
     dotest(Crypto.randomness.pike_random()->read(8388608))
 ]])
+
+test_false(Process.system(RUNPIKE+" SRCDIR/buffertest.pike"))
