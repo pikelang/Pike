@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: signal_handler.c,v 1.242 2003/03/01 13:51:43 grubba Exp $
+|| $Id: signal_handler.c,v 1.243 2003/03/01 16:33:34 grubba Exp $
 */
 
 #include "global.h"
@@ -26,7 +26,7 @@
 #include "main.h"
 #include <signal.h>
 
-RCSID("$Id: signal_handler.c,v 1.242 2003/03/01 13:51:43 grubba Exp $");
+RCSID("$Id: signal_handler.c,v 1.243 2003/03/01 16:33:34 grubba Exp $");
 
 #ifdef HAVE_PASSWD_H
 # include <passwd.h>
@@ -145,7 +145,17 @@ RCSID("$Id: signal_handler.c,v 1.242 2003/03/01 13:51:43 grubba Exp $");
 
 #ifdef HAVE_PTRACE
 /* BSDs have different names for these constants...
+ *
+ * And Solaris 2.x doesn't name them at all...
  */
+#ifndef PTRACE_TRACEME
+#ifdef PT_TRACE_ME
+#define PTRACE_TRACEME	PT_TRACE_ME
+#else
+#define PTRACE_TRACEME	0
+#endif
+#endif
+
 #ifndef PTRACE_CONT
 #ifdef PT_CONTINUE
 #define PTRACE_CONT	PT_CONTINUE
@@ -154,11 +164,11 @@ RCSID("$Id: signal_handler.c,v 1.242 2003/03/01 13:51:43 grubba Exp $");
 #endif
 #endif
 
-#ifndef PTRACE_TRACEME
-#ifdef PT_TRACE_ME
-#define PTRACE_TRACEME	PT_TRACE_ME
+#ifndef PTRACE_KILL
+#ifdef PT_KILL
+#define PTRACE_KILL	PT_KILL
 #else
-#define PTRACE_TRACEME	0
+#define PTRACE_KILL	8
 #endif
 #endif
 
@@ -1246,11 +1256,8 @@ static TH_RETURN_TYPE wait_thread(void *data)
  *! system process, with methods for various process housekeeping.
  */
 
-/*! @decl int wait(int(0..1)|void wait_for_stopped)
+/*! @decl int wait()
  *!   Waits for the process to end.
- *!
- *! @param wait_for_stopped
- *!   If non-zero, wait for the process to stop running.
  *!
  *! @returns
  *!   @int
@@ -1258,9 +1265,10 @@ static TH_RETURN_TYPE wait_thread(void *data)
  *!       The exit code of the process.
  *!     @value -1
  *!       The process was killed by a signal.
- *!     @value -2
- *!       The process was stopped by a non-lethal signal.
  *!   @endint
+ *!
+ *! @seelalso
+ *!   @[TraceProcess()->wait()]
  */
 static void f_pid_status_wait(INT32 args)
 {
@@ -1268,7 +1276,8 @@ static void f_pid_status_wait(INT32 args)
   if(THIS->pid == -1)
     Pike_error("This process object has no process associated with it.\n");
 
-  wait_for_stopped = args && !UNSAFE_IS_ZERO(Pike_sp-args);
+  /* NB: This function also implements TraceProcess()->wait(). */
+  wait_for_stopped = THIS->flags & PROCESS_FLAG_TRACED;
 
   pop_n_elems(args);
 
@@ -1532,20 +1541,70 @@ static void f_pid_status_set_priority(INT32 args)
 }
 
 
+/*! @endclass
+ */
+
 #ifdef HAVE_PTRACE
-/*! @decl void continue(int|void signal)
+
+/*! @class TraceProcess
+ *!
+ *!   Class that enables tracing of processes.
+ *!
+ *!   The new process will be started in stopped state.
+ *!   Use @[cont()] to let it start executing.
+ *!
+ *! @note
+ *!   This class currently only exists on systems that
+ *!   implement @tt{ptrace()@}.
+ */
+
+/*! @decl inherit create_process
+ */
+
+/* NB: The code below can use THIS only because
+ *     pid_status_program is inherited first.
+ */
+
+static void init_trace_process(struct object *o)
+{
+  THIS->flags |= PROCESS_FLAG_TRACED;
+}
+
+static void exit_trace_process(struct object *o)
+{
+  /* FIXME: Detach the process? */
+}
+
+/*! @decl int wait()
+ *!   Waits for the process to stop.
+ *!
+ *! @returns
+ *!   @int
+ *!     @value 0..
+ *!       The exit code of the process.
+ *!     @value -1
+ *!       The process was killed by a signal.
+ *!     @value -2
+ *!       The process has stopped.
+ *!   @endint
+ *!
+ *! @seealso
+ *!   @[create_process::wait()]
+ */
+
+/*! @decl void cont(int|void signal)
  *!   Allow a traced process to continue.
  *!
  *! @param signal
  *!   Deliver this signal to the process.
  *!
  *! @note
- *!   This function is only useful for traced processes.
+ *!   This function may only be called for stopped processes.
  *!
- *!   This function currently only exists on systems that
- *!   implement @tt{ptrace()@}.
+ *! @seealso
+ *!   @[wait()]
  */
-static void f_pid_status_continue(INT32 args)
+static void f_trace_process_cont(INT32 args)
 {
   int cont_signal = 0;
 #ifdef PIKE_SECURITY
@@ -1554,10 +1613,6 @@ static void f_pid_status_continue(INT32 args)
 #endif
   if(THIS->pid == -1)
     Pike_error("This process object has no process associated with it.\n");
-
-  if (!(THIS->flags & PROCESS_FLAG_TRACED)) {
-    Pike_error("This process is not being traced.\n");
-  }
 
   if (THIS->state != PROCESS_STOPPED) {
     if (THIS->state == PROCESS_RUNNING) {
@@ -1581,10 +1636,45 @@ static void f_pid_status_continue(INT32 args)
   pop_n_elems(args);
   push_int(0);
 }
-#endif /* HAVE_PTRACE */
+
+/*! @decl void exit()
+ *!   Cause the traced process to exit.
+ *!
+ *! @note
+ *!   This function may only be called for stopped processes.
+ *!
+ *! @seealso
+ *!   @[cont()], @[wait()]
+ */
+static void f_trace_process_exit(INT32 args)
+{
+#ifdef PIKE_SECURITY
+  if(!CHECK_SECURITY(SECURITY_BIT_SECURITY))
+    Pike_error("pid_status_wait: permission denied.\n");
+#endif
+  if(THIS->pid == -1)
+    Pike_error("This process object has no process associated with it.\n");
+
+  if (THIS->state != PROCESS_STOPPED) {
+    if (THIS->state == PROCESS_EXITED) {
+      Pike_error("Process already exited.\n");
+    }
+    Pike_error("Process not stopped\n");
+  }
+
+  if (ptrace(PTRACE_KILL, THIS->pid, NULL, 0) == -1) {
+    int err = errno;
+    /* FIXME: Better diagnostics. */
+    Pike_error("Failed to exit process. errno:%d\n", err);
+  }
+  pop_n_elems(args);
+  push_int(0);  
+}
 
 /*! @endclass
  */
+
+#endif /* HAVE_PTRACE */
 
 /*! @endmodule
  */
@@ -2164,10 +2254,6 @@ static void internal_add_limit( struct perishables *storage,
  *!  this parameter is used, the gid and groups of the new process
  *!  will be inherited from the current process rather than changed to
  *!  the approperiate values for that uid.
- *!
- *! @member int(0..1) "trace"
- *!  This parameter starts the child process in trace mode.
- *!  See @[trace()].
  *!
  *! @member string "priority"
  *!  This sets the priority of the new process, see
@@ -2912,12 +2998,15 @@ void f_create_process(INT32 args)
 	if(!SAFE_IS_ZERO(tmp))
 	  do_initgroups=0;
 
-      if((tmp=simple_mapping_string_lookup(optional, "trace")))
-	if(!SAFE_IS_ZERO(tmp))
-	  do_trace=1;
-
       if((tmp=simple_mapping_string_lookup(optional, "keep_signals")))
 	keep_signals = !SAFE_IS_ZERO(tmp);
+    }
+
+    if (THIS->flags & PROCESS_FLAG_TRACED) {
+      /* We're inherited from TraceProcess.
+       * Start the process in trace mode.
+       */
+      do_trace = 1;
     }
 
 #ifdef HAVE_SETGROUPS
@@ -3147,7 +3236,6 @@ void f_create_process(INT32 args)
 
       THIS->pid = pid;
       THIS->state = PROCESS_RUNNING;
-      THIS->flags = do_trace?PROCESS_FLAG_TRACED:0;
       ref_push_object(Pike_fp->current_object);
       push_int(pid);
       mapping_insert(pid_mapping, Pike_sp-1, Pike_sp-2);
@@ -3270,7 +3358,7 @@ void f_create_process(INT32 args)
           Pike_error("Process.create_process(): failed to set controlling TTY. errno:%d\n", buf[1]);
 	  break;
 	case PROCE_PTRACE:
-          Pike_error("Process.create_process(): failed to enter trace mode. errno:%d\n", buf[1]);
+          Pike_error("Process.TraceProcess(): failed to enter trace mode. errno:%d\n", buf[1]);
 	  break;
 	case PROCE_EXEC:
 	  switch(buf[1]) {
@@ -4294,14 +4382,9 @@ void init_signals(void)
   /* function(string:int) */
   ADD_FUNCTION("set_priority",f_pid_status_set_priority,tFunc(tStr,tInt),0);
   /* function(int(0..1)|void:int) */
-  ADD_FUNCTION("wait",f_pid_status_wait,tFunc(tOr(tInt01,tVoid),tInt),0);
+  ADD_FUNCTION("wait",f_pid_status_wait,tFunc(tNone,tInt),0);
   /* function(:int) */
   ADD_FUNCTION("status",f_pid_status_status,tFunc(tNone,tInt),0);
-#ifdef HAVE_PTRACE
-  /* function(int|void:void) */
-  ADD_FUNCTION("continue",f_pid_status_continue,
-	       tFunc(tOr(tVoid,tInt),tVoid),0);
-#endif /* HAVE_PTRACE */
   /* function(:int) */
   ADD_FUNCTION("last_signal", f_pid_status_last_signal,tFunc(tNone,tInt),0);
   /* function(:int) */
@@ -4312,9 +4395,30 @@ void init_signals(void)
 #endif /* HAVE_KILL */
   /* function(array(string),void|mapping(string:mixed):object) */
   ADD_FUNCTION("create",f_create_process,tFunc(tArr(tStr) tOr(tVoid,tMap(tStr,tMix)),tObj),0);
+
   pid_status_program=end_program();
   add_program_constant("create_process",pid_status_program,0);
 
+#ifdef HAVE_PTRACE
+  start_new_program();
+  /* NOTE: This inherit MUST be first! */
+  low_inherit(pid_status_program, NULL, -1, 0, 0, NULL);
+  set_init_callback(init_trace_process);
+  set_exit_callback(exit_trace_process);
+
+  /* NOTE: Several of the functions inherited from pid_status_program
+   *       change behaviour if PROCESS_FLAG_TRACED is set.
+   */
+
+  /* function(int|void:void) */
+  ADD_FUNCTION("cont",f_trace_process_cont,
+	       tFunc(tOr(tVoid,tInt),tVoid), 0);
+  /* function(:void) */
+  ADD_FUNCTION("exit", f_trace_process_exit,
+	       tFunc(tNone, tVoid), 0);
+
+  end_class("TraceProcess", 0);
+#endif /* HAVE_PTRACE */
   
 /* function(string,int|void:int) */
   ADD_EFUN("set_priority",f_set_priority,tFunc(tStr tOr(tInt,tVoid),tInt),

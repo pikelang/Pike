@@ -2,6 +2,10 @@
 
 constant create_process = __builtin.create_process;
 
+#if constant(__builtin.TraceProcess)
+constant TraceProcess = __builtin.TraceProcess;
+#endif
+
 //! Slightly polished version of @[create_process].
 //! @seealso
 //!   @[create_process]
