@@ -15,6 +15,11 @@ string implode_nicely(string *foo, string|void and)
   }
 }
 
+string capitalize(string s)
+{
+  return upper_case(s[0..0])+s[1..sizeof(s)];
+}
+
 string strmult(string str, int num)
 {
 #if 1

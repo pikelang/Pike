@@ -1,7 +1,5 @@
 #define list multiset
 #define perror(X) werror(X)
 #define efun predef
-import simulate;
-import stdio;
-import array_functions;
-import process;
+#define regexp(X,Y) filter((X),regexp(Y)->match)
+import Simulate;

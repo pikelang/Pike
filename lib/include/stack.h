@@ -1,1 +1,1 @@
-import fifo;
+import Fifo;

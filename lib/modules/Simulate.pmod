@@ -1,6 +1,7 @@
-import array_functions;
-import stdio;
-import string_functions;
+inherit Array;
+inherit Stdio;
+inherit String;
+inherit Process;
 
 #define error(X) throw( ({ (X), backtrace()[0..sizeof(backtrace())-2] }) )
 
@@ -32,10 +33,6 @@ function this_function()
   return backtrace()[-2][2];
 }
 
-string capitalize(string s)
-{
-  return upper_case(s[0..0])+s[1..sizeof(s)];
-}
 
 function get_function(object o, string a)
 {
