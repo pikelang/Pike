@@ -1,4 +1,4 @@
-# $Id: configure.in,v 1.50 2001/05/24 20:58:55 mirar Exp $
+# $Id: configure.in,v 1.51 2001/05/24 21:19:41 mirar Exp $
 AC_INIT(system.c)
 AC_CONFIG_HEADER(system_machine.h)
 
@@ -62,7 +62,8 @@ AC_HAVE_FUNCS(syslog link symlink readlink resolvepath chown \
         getpwnam_r getpwent_r getpwuid_r \
         getspnam_r innetgr utime sleep usleep nanosleep \
         getrlimit setrlimit  \
-        setitimer getitimer mmap munmap)
+        setitimer getitimer mmap munmap \
+	gettimeofday settimeofday)
 
 
 if test "x$ac_cv_func_setpgrp" = "xyes"; then

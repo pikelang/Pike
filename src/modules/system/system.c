@@ -1,5 +1,5 @@
 /*
- * $Id: system.c,v 1.111 2001/05/24 20:58:56 mirar Exp $
+ * $Id: system.c,v 1.112 2001/05/24 21:19:41 mirar Exp $
  *
  * System-call module for Pike
  *
@@ -15,7 +15,7 @@
 #include "system_machine.h"
 #include "system.h"
 
-RCSID("$Id: system.c,v 1.111 2001/05/24 20:58:56 mirar Exp $");
+RCSID("$Id: system.c,v 1.112 2001/05/24 21:19:41 mirar Exp $");
 #ifdef HAVE_WINSOCK_H
 #include <winsock.h>
 #endif
@@ -2330,6 +2330,7 @@ static void f_get_netinfo_property(INT32 args)
 }
 #endif
 
+
 #ifdef HAVE_RDTSC
 
 /*! @decl int rdtsc()
@@ -2357,6 +2358,47 @@ static void f_rdtsc(INT32 args)
 }
 
 #endif
+
+
+#ifdef HAVE_GETTIMEOFDAY
+
+#ifndef HAVE_STRUCT_TIMEVAL
+struct timeval
+{
+  long tv_sec;
+  long tv_usec;
+};
+#endif
+
+/*! @decl array(int) gettimeoday()
+ *! calls gettimeofday(); the result is an array of
+ *! seconds, microseconds, and possible tz_minuteswes, tz_dstttime
+ *! as given by the gettimeofday(2) system call 
+ *! (read the man page).
+ */
+
+static void f_gettimeofday(INT32 args)
+{
+   struct timeval tv;
+#ifdef GETTIMEOFDAY_TAKES_TWO_ARGS
+   struct timezone tz;
+#endif
+   pop_n_elems(args);
+   if (gettimeofday(&tv,&tz))
+      Pike_error("gettimeofday: gettimeofday failed, errno=%d\n",errno);
+   push_int(tv.tv_sec);
+   push_int(tv.tv_usec);
+#ifdef GETTIMEOFDAY_TAKES_TWO_ARGS
+   push_int(tz.tz_minuteswest);
+   push_int(tz.tz_dsttime);
+   f_aggregate(4);
+#else
+   f_aggregate(2);
+#endif
+}
+
+#endif
+
 
 /*! @endmodule
  */
@@ -2655,6 +2697,10 @@ void pike_module_init(void)
 #ifdef HAVE_RDTSC
   ADD_FUNCTION("rdtsc",f_rdtsc,
 	       tFunc(tNone,tInt),0);
+#endif
+#ifdef HAVE_GETTIMEOFDAY
+  ADD_FUNCTION("gettimeofday",f_gettimeofday,
+	       tFunc(tNone,tArr(tInt)),0);
 #endif
 
 #ifdef HAVE_NETINFO_NI_H
