@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: apply_low.h,v 1.25 2003/11/09 01:10:13 mast Exp $
+|| $Id: apply_low.h,v 1.26 2003/12/10 13:06:58 jonasw Exp $
 */
 
     {
@@ -295,6 +295,10 @@
 	 */
 
 	num_locals = READ_INCR_BYTE(pc);
+
+	if(function->identifier_flags & IDENTIFIER_SCOPE_USED)
+	  new_frame->expendible+=num_locals;
+	
 	num_args = READ_INCR_BYTE(pc);
 
 #ifdef PIKE_DEBUG
@@ -304,9 +308,6 @@
 		num_locals, num_args);
 #endif
 
-	if(function->identifier_flags & IDENTIFIER_SCOPE_USED)
-	  new_frame->expendible+=num_locals;
-	
 	
 	if(function->identifier_flags & IDENTIFIER_VARARGS)
 	{
