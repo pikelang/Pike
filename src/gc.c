@@ -15,6 +15,7 @@ struct callback *gc_evaluator_callback=0;
 #include "mapping.h"
 #include "object.h"
 #include "program.h"
+#include "stralloc.h"
 
 #include "gc.h"
 #include "main.h"
@@ -36,6 +37,15 @@ INT32 alloc_threshold = MIN_ALLOC_THRESHOLD;
 
 static double objects_alloced;
 static double objects_freed;
+
+struct callback_list gc_callbacks;
+
+struct callback *add_gc_callback(callback_func call,
+				 void *arg,
+				 callback_func free_func)
+{
+  return add_to_callback(&gc_callbacks, call, arg, free_func);
+}
 
 #define GC_REFERENCED 1
 
@@ -104,7 +114,7 @@ static void gdb_gc_stop_here(void *a)
 }
 #endif
 
-void gc_check(void *a)
+INT32 gc_check(void *a)
 {
 #ifdef DEBUG
   if(check_for)
@@ -113,10 +123,10 @@ void gc_check(void *a)
     {
       gdb_gc_stop_here(a);
     }
-    return;
+    return 0;
   }
 #endif
-  getmark(a)->refs++;
+  return getmark(a)->refs++;
 }
 
 int gc_is_referenced(void *a)
@@ -133,6 +143,7 @@ int gc_is_referenced(void *a)
     gc_check_all_mappings();
     gc_check_all_programs();
     gc_check_all_objects();
+    call_callback(& gc_callbacks, (void *)0);
 
     check_for=0;
     fatal("Ref counts are totally wrong!!!\n");
@@ -235,7 +246,9 @@ void do_gc()
    * num_objects/4, this will assure that no re-hashing is needed.
    */
   hashsize=my_log2(num_objects);
-  hashsize-=2;
+
+  if(!d_flag) hashsize-=2;
+
   if(hashsize<0) hashsize=0;
   hashsize=hashprimes[hashsize];
   hash=(struct marker **)xalloc(sizeof(struct marker **)*hashsize);
@@ -247,12 +260,16 @@ void do_gc()
   gc_check_all_mappings();
   gc_check_all_programs();
   gc_check_all_objects();
+  call_callback(& gc_callbacks, (void *)0);
 
   gc_mark_all_arrays();
   gc_mark_all_multisets();
   gc_mark_all_mappings();
   gc_mark_all_programs();
   gc_mark_all_objects();
+
+  if(d_flag)
+    gc_mark_all_strings();
 
   gc_free_all_unreferenced_arrays();
   gc_free_all_unreferenced_multisets();

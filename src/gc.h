@@ -28,9 +28,12 @@ extern struct callback_list evaluator_callbacks;
 #endif
 
 /* Prototypes begin here */
+struct callback *add_gc_callback(callback_func call,
+				 void *arg,
+				 callback_func free_func);
 struct marker;
 struct marker_chunk;
-void gc_check(void *a);
+INT32 gc_check(void *a);
 int gc_is_referenced(void *a);
 int gc_mark(void *a);
 int gc_do_free(void *a);
