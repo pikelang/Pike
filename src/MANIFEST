@@ -78,7 +78,7 @@ Tools
     type using an arbitrary compare test.
 
   global.h
-    Initially included in just about every file. Contains macros for
+    Included initially in just about every file. Contains macros for
     the chosen Pike integer and float types, and various other basic
     macros.
 
@@ -159,11 +159,15 @@ Compiler
 
   lex.c
   lex.h
-    Wrap together the lexer. For mysterious reasons, they also contain
-    basic opcode table stuff.
+    Wrap together the lexer.
 
   lexer.h
     The actual lexer. Included by lex.c for different string widths.
+
+  opcodes.c
+  opcodes.h
+    Opcode lookup tables and primitives for them. The opcode enums
+    also double as token ids in many cases.
 
   peep.c
   peep.h
@@ -343,15 +347,9 @@ Core runtime support
     (i.e. those not handled in the master), initialization and
     cleanup.
 
-  opcodes.c
-  opcodes.h
-    Contain the opcode enum but nothing else regarding opcodes (see
-    lex.* instead). Instead we find the cast operator support here,
-    along with the sscanf implementation.
-
   operators.c
   operators.h
-    Implement the runtime behavior for all operators except cast.
+    Implement the runtime behavior for the operators.
 
   pike_int_types.h
     Macros for choosing C compiler integer types for INT64, INT32,
@@ -373,6 +371,10 @@ Core runtime support
   signal_handler.c
   signal_handler.h
     Signal and process support.
+
+  sscanf.c
+  sscanf.h
+    Implement the sscanf special function.
 
   svalue.c
   svalue.h
