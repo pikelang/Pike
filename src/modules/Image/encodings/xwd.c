@@ -1,9 +1,9 @@
-/* $Id: xwd.c,v 1.12 1999/05/23 17:47:04 mirar Exp $ */
+/* $Id: xwd.c,v 1.13 2000/01/11 01:42:36 mast Exp $ */
 
 /*
 **! module Image
 **! note
-**!	$Id: xwd.c,v 1.12 1999/05/23 17:47:04 mirar Exp $
+**!	$Id: xwd.c,v 1.13 2000/01/11 01:42:36 mast Exp $
 **! submodule XWD
 **!
 **!	This submodule keeps the XWD (X Windows Dump) 
@@ -25,7 +25,7 @@
 #include <ctype.h>
 
 #include "stralloc.h"
-RCSID("$Id: xwd.c,v 1.12 1999/05/23 17:47:04 mirar Exp $");
+RCSID("$Id: xwd.c,v 1.13 2000/01/11 01:42:36 mast Exp $");
 #include "pike_macros.h"
 #include "object.h"
 #include "constants.h"
@@ -126,12 +126,13 @@ void img_xwd__decode(INT32 args,int header_only,int skipcmap)
 
    int n=0;
 
+   ONERROR uwp;
+
    if (args<1 ||
        sp[-args].type!=T_STRING)
-      error("Image.PNM._decode(): Illegal arguments\n");
+      error("Image.XWD._decode(): Illegal arguments\n");
    
-   add_ref(s=sp[-args].u.string);
-   pop_n_elems(args);
+   s=sp[-args].u.string;
 
    /* header_size = SIZEOF(XWDheader) + length of null-terminated
     * window name. */
@@ -147,7 +148,12 @@ void img_xwd__decode(INT32 args,int header_only,int skipcmap)
 
    if (header.file_version!=7)
       error("Image.XWD._decode: don't understand any other file format then 7\n");
-   header.pixmap_format=CARD32n(s,2);    
+
+   add_ref(s);
+   pop_n_elems(args);
+   SET_ONERROR(uwp,do_free_string,s);
+
+   header.pixmap_format=CARD32n(s,2);
    header.pixmap_depth=CARD32n(s,3);     
    header.pixmap_width=CARD32n(s,4);     
    header.pixmap_height=CARD32n(s,5);    
@@ -356,9 +362,11 @@ void img_xwd__decode(INT32 args,int header_only,int skipcmap)
       }
    }
 
+   free_string(s);
+
    f_aggregate_mapping(n*2);
 
-   free_string(s);
+   UNSET_ONERROR(uwp);
 }
 
 void image_xwd__decode(INT32 args)
