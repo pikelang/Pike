@@ -385,17 +385,6 @@ static int eval_instruction(PIKE_OPCODE_T *pc)
       NULL_LABEL(F_PREFIX2_WORDX256),
       NULL_LABEL(F_PREFIX2_24BITX256),
 
-      LABEL(F_INDEX),
-      LABEL(F_POS_INT_INDEX),
-      LABEL(F_NEG_INT_INDEX),
-
-      LABEL(F_RETURN),
-      LABEL(F_DUMB_RETURN),
-      LABEL(F_RETURN_0),
-      LABEL(F_RETURN_1),
-      LABEL(F_RETURN_LOCAL),
-      LABEL(F_RETURN_IF_TRUE),
-
 #include "interpret_protos.h"
     };
 
@@ -422,17 +411,6 @@ static int eval_instruction(PIKE_OPCODE_T *pc)
       NULL_LABEL(F_PREFIX2_CHARX256),
       NULL_LABEL(F_PREFIX2_WORDX256),
       NULL_LABEL(F_PREFIX2_24BITX256),
-
-      LABEL(F_INDEX),
-      LABEL(F_POS_INT_INDEX),
-      LABEL(F_NEG_INT_INDEX),
-
-      LABEL(F_RETURN),
-      LABEL(F_DUMB_RETURN),
-      LABEL(F_RETURN_0),
-      LABEL(F_RETURN_1),
-      LABEL(F_RETURN_LOCAL),
-      LABEL(F_RETURN_IF_TRUE),
 
 #include "interpret_protos.h"
     };
