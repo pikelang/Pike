@@ -1,12 +1,11 @@
 /*
- * $Id: tree-split-autodoc.pike,v 1.28 2002/11/26 13:19:27 grubba Exp $
+ * $Id: tree-split-autodoc.pike,v 1.29 2002/11/26 14:24:18 grubba Exp $
  *
  */
 
 inherit "make_html.pike";
 
 mapping (string:Node) refs   = ([ ]);
-mapping (string:int)  consts = ([ ]);
 
 string extra_prefix = "";
 string image_prefix()
@@ -36,11 +35,11 @@ string cquote(string n)
   return ret;
 }
 
-string create_reference(string from, string to) {
-      return "<font face='courier'><a href='" +
-	"../"*max(sizeof(from/"/") - 2, 0) +
-	map(to/".", cquote)*"/" + ".html'>" + to +
-	"</a></font>";
+string create_reference(string from, string to, string text) {
+  return "<font face='courier'><a href='" +
+    "../"*max(sizeof(from/"/") - 2, 0) +
+    map(to/".", cquote)*"/" + ".html'>" + text +
+    "</a></font>";
 }
 
 multiset missing = (< "foreach", "catch", "throw", "sscanf", "gauge", "typeof" >);
@@ -70,12 +69,6 @@ class Node
     PROFILE();
     data = get_parser()->finish( _data )->read();
     ENDPROFILE("Parsing");
-
-    if (_name == "`&amp;") {
-      werror("%s\n------------------\n",
-	     describe_backtrace(({"Node: Encoded name\n", backtrace()})));
-      
-    }
 
     string path = replace(make_class_path(), "()->", ".");
     if(has_suffix(path, "()"))
@@ -181,22 +174,27 @@ class Node
 
       case "constant":
       case "variable":
-	string path = make_class_path();
+	string path = replace(make_class_path(), "()->", ".");
 	if(sizeof(path)) path += ".";
 	if(!m["homogen-name"]) {
 	  Parser.HTML()->add_tags
 	    ( ([ "constant":
 		 lambda(Parser.HTML p, mapping m, string c) {
-		   consts[path + Parser.parse_html_entities(m->name)] = 1;
+		   string name = Parser.parse_html_entities(m->name);
+		   refs[path + name] =
+		     Node( "constant", name, "", this_object());
 		 },
 		 "variable":
 		 lambda(Parser.HTML p, mapping m, string c) {
-		   consts[path + Parser.parse_html_entities(m->name)] = 1;
+		   string name = Parser.parse_html_entities(m->name);
+		   refs[path + name] =
+		     Node( "variable", name, "", this_object());
 		 }
 	    ]) )->finish(c);
 	}
 	else
-	  consts[path + m["homogen-name"]] = 1;
+	  refs[path + m["homogen-name"]] =
+	    Node( m["homogen-type"], m["homogen-name"], "", this_object());
 	break;
 
       }
@@ -274,21 +272,26 @@ class Node
       return "<font face='courier'>" + _reference + "</font>";
 
     if (resolved) {
-      //resolved = cquote(resolved);
+      Node res_obj;
 
-      if(refs[resolved])
-	return create_reference(make_filename(), resolved);
+      if(res_obj = refs[resolved]) {
+	while(res_obj && (<"constant","variable">)[res_obj->type]) {
+	  res_obj = res_obj->parent;
+	}
+	if (!res_obj) {
+	  werror("Found no page to link to for reference %O (%O)\n",
+		 _reference, resolved);
+	  return sprintf("<font face='courier'>" + _reference + "</font>");
+	}
+	// FIXME: Assert that the reference is correct?
+	return create_reference(make_filename(),
+				replace(res_obj->make_class_path(),
+					"()->", "."),
+				_reference);
+      }
 
       if (!zero_type(refs[resolved])) {
 	werror("Reference %O (%O) is %O!\n",
-	       _reference, resolved, refs[resolved]);
-      }
-
-      if(consts[resolved])
-	return "<font face='courier'>" + _reference + "</font>";
-
-      if (!zero_type(consts[resolved])) {
-	werror("Constant %O (%O) is %O!\n",
 	       _reference, resolved, refs[resolved]);
       }
     }
@@ -617,8 +620,7 @@ int main(int argc, array(string) argv)
   foreach(sort(indices(profiling)), string f)
     werror("%s: %.1f\n", f, profiling[f]/1000000.0);
   werror("%d unresolved references.\n", unresolved);
-  werror("%d documented functions/classes/modules.\n", sizeof(refs));
-  werror("%d documented constants/variables.\n", sizeof(consts));
-
+  werror("%d documented constants/variables/functions/classes/modules.\n",
+	 sizeof(refs));
   return 0;
 }
