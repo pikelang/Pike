@@ -6,7 +6,7 @@
 #define READ_BUFFER 8192
 
 #include "global.h"
-RCSID("$Id: file.c,v 1.74 1998/02/05 03:02:49 hubbe Exp $");
+RCSID("$Id: file.c,v 1.75 1998/02/11 00:54:35 hubbe Exp $");
 #include "fdlib.h"
 #include "interpret.h"
 #include "svalue.h"
@@ -43,8 +43,8 @@ RCSID("$Id: file.c,v 1.74 1998/02/05 03:02:49 hubbe Exp $");
 #  include <sys/socket.h>
 #endif
 
-#ifdef HAVE_WINSOCK2_H
-#  include <winsock2.h>
+#ifdef HAVE_WINSOCK_H
+#  include <winsock.h>
 #ifndef EWOULDBLOCK
 #define EWOULDBLOCK WSAEWOULDBLOCK
 #endif
@@ -825,6 +825,12 @@ static void file_set_nonblocking(INT32 args)
   if(!(files[FD].open_mode & fd_CAN_NONBLOCK))
     error("That file does not support nonblocking operation.\n");
 
+  if(set_nonblocking(FD,1))
+  {
+    ERRNO=errno;
+    error("Stdio.File->set_nonbloblocking() failed.\n");
+  }
+
   switch(args)
   {
   default: pop_n_elems(args-3);
@@ -833,7 +839,6 @@ static void file_set_nonblocking(INT32 args)
   case 1: file_set_read_callback(1);
   case 0: break;
   }
-  set_nonblocking(FD,1);
   THIS->open_mode |= FILE_NONBLOCKING;
 }
 

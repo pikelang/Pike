@@ -35,8 +35,8 @@
 #include <sys/socket.h>
 #endif
 
-#ifdef HAVE_WINSOCK2_H
-#include <winsock2.h>
+#ifdef HAVE_WINSOCK_H
+#include <winsock.h>
 #endif
 
 #ifdef HAVE_SYS_STREAM_H
@@ -119,6 +119,7 @@ static void port_accept_callback(int fd,void *data)
     fatal("Port is in blocking mode in port accept callback!!!\n");
 #endif
 #endif
+
   assign_svalue_no_free(sp++, &f->id);
   apply_svalue(& f->accept_callback, 1);
   pop_stack();
