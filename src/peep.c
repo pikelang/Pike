@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: peep.c,v 1.88 2003/08/31 22:44:14 nilsson Exp $
+|| $Id: peep.c,v 1.89 2003/09/26 13:20:49 grubba Exp $
 */
 
 #include "global.h"
@@ -26,7 +26,7 @@
 #include "interpret.h"
 #include "pikecode.h"
 
-RCSID("$Id: peep.c,v 1.88 2003/08/31 22:44:14 nilsson Exp $");
+RCSID("$Id: peep.c,v 1.89 2003/09/26 13:20:49 grubba Exp $");
 
 static void asm_opt(void);
 
@@ -149,12 +149,13 @@ void update_arg(int instr,INT32 arg)
 
 void assemble(void)
 {
-  INT32 max_label,tmp;
+  INT32 max_label=-1,tmp;
   INT32 *labels, *jumps, *uses;
   ptrdiff_t e, length;
   p_instr *c;
   int reoptimize=!(debug_options & NO_PEEP_OPTIMIZING);
 #ifdef PIKE_DEBUG
+  INT32 max_pointer=-1;
   int synch_depth = 0;
   size_t fun_start = Pike_compiler->new_program->num_program;
 #endif
@@ -163,9 +164,9 @@ void assemble(void)
   length=instrbuf.s.len / sizeof(p_instr);
 
 #ifdef PIKE_DEBUG
-  for (e = 0; e < length; e++) {
-    if((a_flag > 1 && store_linenumbers) || a_flag > 2)
-    {
+  if((a_flag > 1 && store_linenumbers) || a_flag > 2)
+  {
+    for (e = 0; e < length; e++) {
       if (c[e].opcode == F_POP_SYNCH_MARK) synch_depth--;
       fprintf(stderr, "~~~%4d %4lx %*s", c[e].line,
 	      DO_NOT_WARN((unsigned long)e), synch_depth, "");
@@ -173,14 +174,50 @@ void assemble(void)
       fprintf(stderr,"\n");
       if (c[e].opcode == F_SYNCH_MARK) synch_depth++;
     }
+    if (synch_depth) {
+      Pike_fatal("Unbalanced sync_mark/pop_sync_mark: %d\n", synch_depth);
+    }
   }
 #endif
 
-  max_label=-1;
-  for(e=0;e<length;e++,c++)
-    if(c->opcode == F_LABEL)
+  for(e=0;e<length;e++,c++) {
+    if(c->opcode == F_LABEL) {
       if(c->arg > max_label)
 	max_label = c->arg;
+    }
+#ifdef PIKE_DEBUG
+    else if (instrs[c->opcode - F_OFFSET].flags & I_POINTER) {
+      if (c->arg > max_pointer)
+	max_pointer = c->arg;
+    }
+#endif /* PIKE_DEBUG */
+  }
+
+#ifdef PIKE_DEBUG
+  if (max_pointer > max_label) {
+    fprintf(stderr,
+	    "Reference to undefined label %d > %d\n"
+	    "Bad instructions are marked with '***':\n",
+	    max_pointer, max_label);
+    c=(p_instr *)instrbuf.s.str;
+    for(e=0;e<length;e++,c++) {
+      if (c->opcode == F_POP_SYNCH_MARK) synch_depth--;
+      fprintf(stderr, " * %4d %4lx ",
+	      c->line, DO_NOT_WARN((unsigned long)e));
+      dump_instr(c);
+      if ((instrs[c->opcode - F_OFFSET].flags & I_POINTER) &&
+	  (c->arg > max_label)) {
+	fprintf(stderr, " ***\n");
+      } else {
+	fprintf(stderr, "\n");
+      }
+      if (c->opcode == F_SYNCH_MARK) synch_depth++;
+    }
+    
+    Pike_fatal("Reference to undefined label %d > %d\n",
+	       max_pointer, max_label);
+  }
+#endif /* PIKE_DEBUG */
 
   labels=(INT32 *)xalloc(sizeof(INT32) * (max_label+2));
   jumps=(INT32 *)xalloc(sizeof(INT32) * (max_label+2));
