@@ -128,6 +128,7 @@
 
 /* Define this if you want the SGI sproc taste of threads */
 #undef _SGI_SPROC_THREADS
+#undef _SGI_MP_SOURCE
 
 @BOTTOM@
 
