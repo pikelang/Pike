@@ -1,0 +1,53 @@
+#
+# $Id: configure.in,v 1.1 2002/05/10 21:51:51 per Exp $
+#
+AC_INIT(svg.c)
+
+AC_ARG_WITH(svg,[  --with(out)-svg       Support SVG via librsvg (from gnome2) (Image.SVG)],[],[with_svg=yes])
+
+AC_MODULE_INIT()
+AC_CONFIG_HEADER(config.h)
+
+PIKE_FEATURE_WITHOUT(Image.SVG)
+
+AC_SUBST(SVG_CFLAGS)
+AC_SUBST(SVG_LIBS)
+
+if test x$with_svg = xyes ; then
+  PIKE_FEATURE_NODEP(Image.SVG)
+
+  MY_AC_PATH_PROG(PKG_CONFIG, pkg-config, no)
+  if pkg-config librsvg-2.0 2>/dev/null ; then
+    SVG_CFLAGS="`pkg-config librsvg-2.0 --cflags`"
+    SVG_LIBS="`pkg-config librsvg-2.0 --libs`"
+    AC_MSG_CHECKING(if librsvg actually works)
+
+    OLDCPPFLAGS="$CPPFLAGS"
+    OLDLIBS="$LIBS"
+    CPPFLAGS="$SVG_CFLAGS $CPPFLAGS"
+    LIBS="$SVG_LIBS $LIBS"
+
+    AC_TRY_LINK([
+#include <librsvg/rsvg.h> 
+], 
+[
+  RsvgHandle *handle;
+  handle = rsvg_handle_new();
+], 
+[svg_ok=yes], 
+[svg_ok=no])
+    if test yes = "$svg_ok" ; then
+      AC_MSG_RESULT(yes)
+      AC_DEFINE(HAVE_SVG)
+      PIKE_FEATURE_OK(Image.SVG)
+    else
+      AC_MSG_RESULT(no)
+      SVG_CFLAGS=""
+      SVG_LIBS=""
+      CPPFLAGS="$OLDCPPFLAGS"
+      LIBS="$OLDLIBS"
+    fi
+  fi
+fi
+
+AC_OUTPUT(Makefile,echo FOO >stamp-h )
