@@ -5,7 +5,7 @@
 \*/
 
 /*
- * $Id: error.h,v 1.23 1998/07/16 23:09:39 hubbe Exp $
+ * $Id: error.h,v 1.24 1998/07/17 12:33:52 grubba Exp $
  */
 #ifndef ERROR_H
 #define ERROR_H
@@ -120,7 +120,16 @@ extern int throw_severity;
     } \
     recoveries->onerror=(X).previous; \
   } while(0)
-#else
+
+#define ASSERT_ONERROR(X) \
+  do{ \
+    if (!recoveries) break; \
+    if (recoveries->onerror != &X) { \
+      fatal("%s:%d ASSERT_ONERROR(%p) failed\n", \
+            __FILE__, __LINE__, &(X)); \
+    } \
+  }while(0)
+#else /* !DEBUG */
 #define SET_ONERROR(X,Y,Z) \
   do{ \
      if(!recoveries) break; \
@@ -131,7 +140,9 @@ extern int throw_severity;
   }while(0)
 
 #define UNSET_ONERROR(X) recoveries && (recoveries->onerror=X.previous)
-#endif
+
+#define ASSERT_ONERROR(X)
+#endif /* DEBUG */
 
 #if defined(DEBUG) && 0
 /* Works, but probably not interresting for most people
