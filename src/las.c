@@ -4,7 +4,7 @@
 ||| See the files COPYING and DISCLAIMER for more information.
 \*/
 #include "global.h"
-RCSID("$Id: las.c,v 1.38 1997/09/29 01:38:53 hubbe Exp $");
+RCSID("$Id: las.c,v 1.39 1997/10/05 03:39:25 grubba Exp $");
 
 #include "language.h"
 #include "interpret.h"
@@ -1241,7 +1241,7 @@ void fix_type_field(node *n)
 	
       case F_CONSTANT:
       default:
-	name="function call";
+	name="`() (function call)";
       }
 
       if(max_correct_args == count_arguments(s))
