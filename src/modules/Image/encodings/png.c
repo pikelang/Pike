@@ -2,11 +2,11 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: png.c,v 1.48 2003/01/06 00:56:53 nilsson Exp $
+|| $Id: png.c,v 1.49 2003/01/09 16:47:02 grubba Exp $
 */
 
 #include "global.h"
-RCSID("$Id: png.c,v 1.48 2003/01/06 00:56:53 nilsson Exp $");
+RCSID("$Id: png.c,v 1.49 2003/01/09 16:47:02 grubba Exp $");
 
 #include "image_machine.h"
 
@@ -290,7 +290,14 @@ static void image_png___decode(INT32 args)
  *! @decl mapping _decode(string|array data, mapping options)
  *!   Decode a PNG image file.
  *!
- *! @result
+ *! @param options
+ *!    @mapping
+ *!      @member string|array|Image.Colortable "colortable"
+ *!        A replacement color table to be used instead of the one
+ *!        in the PNG file, if any.
+ *!    @endmapping
+ *!
+ *! @returns
  *!   @mapping
  *!     @member Image.Image "image"
  *!       The decoded image.
@@ -316,13 +323,6 @@ static void image_png___decode(INT32 args)
  *!     @member Image.Image "alpha"
  *!       The alpha channel, if any.
  *!   @endmapping
- *!
- *! @param options
- *!    @mapping
- *!      @member string|array|Image.Colortable "colortable"
- *!        A replacement color table to be used instead of the one
- *!        in the PNG file, if any.
- *!    @endmapping
  *!
  *! @throws
  *!   Throws an error if the image data is erroneous.
