@@ -289,7 +289,16 @@ static void pmird_create(INT32 args)
    /* options here */
 
 LOCK(this);
-   TRY(mird_open(this->db));
+   do 
+   { 
+      MIRD_RES res; 
+      if ( (res=mird_open(this->db)) ) 
+      {
+	 mird_free_structure(this->db);
+	 this->db=NULL;
+	 pmird_exception(res); 
+      }
+   } while (0);
 UNLOCK(this);
 
    pop_n_elems(args);
