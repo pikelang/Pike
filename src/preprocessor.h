@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: preprocessor.h,v 1.78 2004/11/02 00:38:46 mast Exp $
+|| $Id: preprocessor.h,v 1.79 2004/11/02 00:46:44 mast Exp $
 */
 
 /*
@@ -405,8 +405,8 @@ static ptrdiff_t calcC(struct cpp *this, WCHAR *data, ptrdiff_t len,
 
   case '\'':
   {
-    int tmp;
-    READCHAR(tmp);
+    int tmp = data[++pos];
+    if (tmp == '\\') READCHAR(tmp);
     pos++;
     if(!GOBBLE('\''))
       cpp_error(this, "Missing end quote in character constant.");
