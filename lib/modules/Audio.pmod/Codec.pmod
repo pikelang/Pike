@@ -4,7 +4,7 @@
 
   creator: Honza Petrous, hop@unibase.cz
 
-  $Id: Codec.pmod,v 1.5 2002/09/13 13:37:52 hop Exp $
+  $Id: Codec.pmod,v 1.6 2002/09/15 00:24:45 manual Exp $
 
  */
 
@@ -25,7 +25,7 @@
 //! Decoder object.
 //!
 //! @note
-//!  It needs @{_Ffmpeg.ffmpeg@} module for real work.
+//!  It needs @[_Ffmpeg.ffmpeg] module for real work.
 class decoder {
 
   /*private*/ object codec;
@@ -78,11 +78,11 @@ class decoder {
 
   //! Set codec type from file
   //!
-  //! It uses @{Audio.Format.ANY}'s method get_map()
+  //! It uses @[Audio.Format.ANY]'s method get_map()
   //! to determine which codec should be used.
   //!
   //! @param file
-  //!   The object @{Audio.Format.ANY}.
+  //!   The object @[Audio.Format.ANY].
   object from_file(Audio.Format.ANY file) {
     string ctype;
 
@@ -100,7 +100,7 @@ class decoder {
 
   //! Decodes audio data
   //!
-  //! @ param partial
+  //! @param partial
   //!   Only one frame will be decoded per call.
   //!
   //! @returns

@@ -4,7 +4,7 @@
 //
 // Author: Honza Petrous, hop@unibase.cz
 //
-// $Id: module.pmod,v 1.2 2002/09/13 13:50:01 hop Exp $
+// $Id: module.pmod,v 1.3 2002/09/15 00:24:45 manual Exp $
 
 //#define AUDIO_FORMAT_DEBUG
 #ifdef AUDIO_FORMAT_DEBUG
@@ -15,6 +15,7 @@
 
 //! Audio data format handling
 
+//!
 class ANY {
 
   object buffer;
@@ -98,8 +99,6 @@ class ANY {
 	"seek": -1
     ]);
   }
-
-
 }
 
 // Internal module for invisible file/string source support
