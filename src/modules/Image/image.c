@@ -1,9 +1,9 @@
-/* $Id: image.c,v 1.155 1999/08/27 12:50:45 mirar Exp $ */
+/* $Id: image.c,v 1.156 1999/11/25 17:06:28 mast Exp $ */
 
 /*
 **! module Image
 **! note
-**!	$Id: image.c,v 1.155 1999/08/27 12:50:45 mirar Exp $
+**!	$Id: image.c,v 1.156 1999/11/25 17:06:28 mast Exp $
 **! class Image
 **!
 **!	The main object of the <ref>Image</ref> module, this object
@@ -97,7 +97,7 @@
 
 #include "stralloc.h"
 #include "global.h"
-RCSID("$Id: image.c,v 1.155 1999/08/27 12:50:45 mirar Exp $");
+RCSID("$Id: image.c,v 1.156 1999/11/25 17:06:28 mast Exp $");
 #include "pike_macros.h"
 #include "object.h"
 #include "constants.h"
@@ -3979,9 +3979,9 @@ void init_image_image(void)
 		tOr(tFunc(tOr(tInt,tVoid) tOr(tInt,tVoid) tRGB,tVoid),
 		    tFuncV(tInt tInt tString,tMixed,tVoid)),0);
    ADD_FUNCTION("clone",image_clone,
-		tFunc(tInt tInt tRGB,tObj),0);
+		tFunc(tOr(tInt,tVoid) tOr(tInt,tVoid) tRGB,tObj),0);
    ADD_FUNCTION("new",image_clone, /* alias */
-		tFunc(tInt tInt tRGB,tObj),0);
+		tFunc(tOr(tInt,tVoid) tOr(tInt,tVoid) tRGB,tObj),0);
    ADD_FUNCTION("clear",image_clear,
 		tFunc(tRGB,tObj),0);
 
