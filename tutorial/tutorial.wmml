@@ -6136,7 +6136,7 @@ might not be available in your Pike depending on whether the gdbm library
 was available on your system when Pike was compiled.
 
 <hr noshade size=1>
-<method name=Gdbm.create title="open database">
+<method name=Gdbm.gdbm->create title="open database">
 <man_syntax>
 int create();<br>
 int create(string <I>file</I>);<br>
@@ -6168,7 +6168,7 @@ can be left in an unusable state if Pike is terminated abnormally.
 
 <hr noshade size=1>
 
-<method name=Gdbm.close title="close database">
+<method name=Gdbm.gdbm->close title="close database">
 <man_syntax>
 void close();<br>
 </man_syntax>
@@ -6179,9 +6179,9 @@ This closes the database.
 
 <hr noshade size=1>
 
-<method name=Gdbm.store title="store a value in the database">
+<method name=Gdbm.gdbm->store title="store a value in the database">
 <man_syntax>
-int Gdbm.store(string <I>key</I>, string <I>data</I>);<br>
+int store(string <I>key</I>, string <I>data</I>);<br>
 </man_syntax>
 <man_description>
 Associate the contents of <i>data</i> with the key <i>key</i>. If the key <i>key</i>
@@ -6193,7 +6193,7 @@ the database was not open for writing.
 
 <hr noshade size=1>
 
-<method name=Gdbm.fetch title="fetch a value from the database">
+<method name=Gdbm.gdbm->fetch title="fetch a value from the database">
 <man_syntax>
 string fetch(string <I>key</I>);<br>
 </man_syntax>
@@ -6205,7 +6205,7 @@ If there was no such key in the database, zero is returned.
 
 <hr noshade size=1>
 
-<method name=Gdbm.delete title="delete a value from the database">
+<method name=Gdbm.gdbm->delete title="delete a value from the database">
 <man_syntax>
 int delete(string <I>key</I>);<br>
 </man_syntax>
@@ -6217,7 +6217,7 @@ if the key does not exist.
 
 <hr noshade size=1>
 
-<method name=Gdbm.firstkey title="get first key in database">
+<method name=Gdbm.gdbm->firstkey title="get first key in database">
 <man_syntax>
 string firstkey();<br>
 </man_syntax>
@@ -6229,7 +6229,7 @@ database.
 
 <hr noshade size=1>
 
-<method name=Gdbm.nextkey title="get next key in database">
+<method name=Gdbm.gdbm->nextkey title="get next key in database">
 <man_syntax>
 string nextkey(string <I>key</I>);<br>
 </man_syntax>
@@ -6247,7 +6247,7 @@ for(key=gdbm-&gt;firstkey(); k; k=gdbm-&gt;nextkey(k))<br>
 
 <hr noshade size=1>
 
-<method name=Gdbm.reorganize title="reorganize database">
+<method name=Gdbm.gdbm->reorganize title="reorganize database">
 <man_syntax>
 int reorganize();<br>
 </man_syntax>
@@ -6261,7 +6261,7 @@ can take a LOT of time to run.
 
 <hr noshade size=1>
 
-<method name=Gdbm.sync title="synchronize database">
+<method name=Gdbm.gdbm->sync title="synchronize database">
 <man_syntax>
 void sync();<br>
 </man_syntax>
