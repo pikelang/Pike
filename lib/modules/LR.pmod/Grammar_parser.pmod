@@ -1,7 +1,7 @@
 #!/usr/local/bin/pike
 
 /*
- * $Id: Grammar_parser.pmod,v 1.7 1999/12/27 18:42:16 grubba Exp $
+ * $Id: Grammar_parser.pmod,v 1.8 2000/03/30 21:19:17 grubba Exp $
  *
  * Generates a parser from a textual specification.
  *
@@ -10,7 +10,7 @@
 
 //.
 //. File:	Grammar_parser.pmod
-//. RCSID:	$Id: Grammar_parser.pmod,v 1.7 1999/12/27 18:42:16 grubba Exp $
+//. RCSID:	$Id: Grammar_parser.pmod,v 1.8 2000/03/30 21:19:17 grubba Exp $
 //. Author:	Henrik grubbström (grubba@infovav.se)
 //.
 //. Synopsis:	Generates an LR parser from a textual specification.
@@ -387,7 +387,7 @@ int|object(parser) make_parser_from_file(string fname, object|void m)
 /*
  * Syntax-checks and compiles the grammar files
  */
-int main(int argc, string *argv)
+int main(int argc, array(string) argv)
 {
   if (argc == 1) {
     werror(sprintf("Usage:\n\t%s <files>\n", argv[0]));

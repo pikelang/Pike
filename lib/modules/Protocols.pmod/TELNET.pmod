@@ -1,5 +1,5 @@
 //
-// $Id: TELNET.pmod,v 1.8 1999/08/25 17:38:01 grubba Exp $
+// $Id: TELNET.pmod,v 1.9 2000/03/30 21:21:46 grubba Exp $
 //
 // The TELNET protocol as described by RFC 764 and others.
 //
@@ -499,7 +499,7 @@ class protocol
       {
 	throw(err);
       }else{
-	if(!this_object()) return;
+	if(!this_object()) return 0;
 	throw(err);
       }
     }
@@ -839,7 +839,7 @@ class LineMode
 		   ({"\r\n", "\n", "\r", "\r\0"}),
 		   ({"\r",   "\r", "\r", "\r",}));
       line_buffer+=data;
-      string *tmp=line_buffer/"\r";
+      array(string) tmp=line_buffer/"\r";
       line_buffer=tmp[-1];
       for(int e=0;e<sizeof(tmp)-1;e++) read_cb(id,tmp[e]+"\n");
     }
@@ -888,7 +888,7 @@ class Readline
 		     ({"\r\n","\r\n","\r","\r\0"}),
 		     ({"\r",  "\r",  "\r","\r",}));
 	line_buffer+=data;
-	string *tmp=line_buffer/"\r";
+	array(string) tmp=line_buffer/"\r";
 	line_buffer=tmp[-1];
 	for(int e=0;e<sizeof(tmp)-1;e++)
 	{

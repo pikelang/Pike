@@ -1,7 +1,7 @@
 #!/usr/local/bin/pike
 
 /*
- * $Id: lr.pike,v 1.2 1998/04/22 19:48:45 grubba Exp $
+ * $Id: lr.pike,v 1.3 2000/03/30 21:18:53 grubba Exp $
  *
  * An LR(1) Parser in Pike
  *
@@ -181,7 +181,7 @@ class scan {
 
 object(scan) scanner = scan();
 
-int main(int argc, string *argv)
+int main(int argc, array(string) argv)
 {
   mixed result;
 

@@ -1,10 +1,10 @@
-// $Id: Terminfo.pmod,v 1.7 1999/11/18 04:08:22 hubbe Exp $
+// $Id: Terminfo.pmod,v 1.8 2000/03/30 21:21:10 grubba Exp $
 
 
 #if constant(thread_create)
 #define LOCK object m_key = mutex->lock()
 #define UNLOCK destruct(m_key)
-#define MUTEX static private object mutex = Thread.Mutex();
+#define MUTEX static private object(Thread.Mutex) mutex = Thread.Mutex();
 #else
 #define LOCK
 #define UNLOCK
@@ -36,24 +36,24 @@ static private class TermMachine {
 
   int tgetnum(string id)
   {
-    return intp(map[id]) && map[id];
+    return intp(map[id]) && [int]map[id];
   }
   
   string tgetstr(string id)
   {
-    return stringp(map[id]) && map[id];
+    return stringp(map[id]) && [string]map[id];
   }
 
   string tparam(string f, mixed ... args)
   {
-    array fmt=f/"%";
+    array(string) fmt=f/"%";
     string res=fmt[0];
     string tmp;
     int z;
     mapping var=([]);
     array args0=args;
     
-#define POP (z=args[0],args=args[1..],z)
+#define POP (z=[int]args[0],args=args[1..],z)
 #define PUSH(x) (args=({x})+args)
     
     while ( (fmt=fmt[1..])!=({}) )
@@ -147,7 +147,7 @@ class Termcap {
   inherit TermMachine;
 
   array(string) aliases;
-  object parent;
+  static object(Termcap) parent;
 
   string tputs(string s)
   {
@@ -244,7 +244,7 @@ class Termcap {
     return clears;
   }
 
-  void create(string cap, object|void tcdb, int|void maxrecurse)
+  void create(string cap, object(TermcapDB)|void tcdb, int|void maxrecurse)
   {
     int i=0;
     while((i=search(cap, "\\\n", i))>=0) {
@@ -328,7 +328,7 @@ class Terminfo {
     return Array.map(s/2, reverse)*"";
   }
 
-  static private int load_cap(object f, int|void bug_compat)
+  static private int load_cap(object(Stdio.File) f, int|void bug_compat)
   {
     int magic, sname, nbool, nnum, nstr, sstr;
 
@@ -347,7 +347,8 @@ class Terminfo {
       map = mkmapping(boolnames[..sizeof(bools)-1], bools);
     }
     {
-      array(int) nums = array_sscanf(swab(f->read(nnum*2)), "%2c"*nnum);
+      array(int) nums = [array(int)]
+	array_sscanf(swab(f->read(nnum*2)), "%2c"*nnum);
       if (sizeof(nums)>sizeof(numnames))
 	nums = nums[..sizeof(numnames)-1];
       mapping(string:int) tmp = mkmapping(numnames[..sizeof(nums)-1], nums);
@@ -386,7 +387,7 @@ class Terminfo {
 
   void create(string filename)
   {
-    object f = Stdio.File();
+    object(Stdio.File) f = Stdio.File();
     if (!f->open(filename, "r"))
 	error("Terminfo: unable to open terminfo file \"%s\"\n", filename);
     int r = load_cap(f);
@@ -403,13 +404,13 @@ class TermcapDB {
   static private inherit Stdio.File;
 
   static private string buf="";
-  static private mapping(string:int|object) cache=([]);
+  static private mapping(string:int|object(Termcap)) cache=([]);
   static private int complete_index=0;
 
   void create(string|void filename)
   {
     if (!filename) {
-      string tce = getenv("TERMCAP");
+      string tce = [string]getenv("TERMCAP");
       if (tce && strlen(tce) && tce[0]=='/')
 	filename = tce;
       else
@@ -517,13 +518,14 @@ class TermcapDB {
     return sort(indices(cache));
   }
 
-  array(object) _values()
+  array(object(Termcap)) _values()
   {
     array(object|int) res = ({});
     mapping(int:string) extra = ([]);
     LOCK;
     if (complete_index)
       res = Array.map(sort(indices(cache)),
+		      [function(string,mapping(int:string):object(Termcap))]
 		      lambda(string name, mapping(int:string) extra) {
 			if (!objectp(cache[name]) && !extra[cache[name]])
 			  extra[cache[name]] = readat(cache[name]);
@@ -549,12 +551,14 @@ class TermcapDB {
       complete_index = 1;
     }
     UNLOCK;
-    return Array.map(res, lambda(int|object x, mapping(int:object) y) {
-			    return objectp(x)? x : y[x];
-			  },
-		     mkmapping(indices(extra),
-			       Array.map(values(extra),
-					 Termcap, this_object())));
+    return [array(object(Termcap))]
+      Array.map(res,
+		lambda(int|object(Termcap) x, mapping(int:object(Termcap)) y) {
+		  return objectp(x)? x : y[x];
+		},
+		mkmapping(indices(extra),
+			  Array.map(values(extra),
+				    Termcap, this_object())));
   }
 
   static private string read_next(string find) // quick search
@@ -590,9 +594,9 @@ class TermcapDB {
     }
   }
 
-  object load(string term, int|void maxrecurse)
+  object(Termcap) load(string term, int|void maxrecurse)
   {
-    int|string|object cap;
+    int|string|object(Termcap) cap;
 
     LOCK;
     if (zero_type(cache[term]))
@@ -617,14 +621,14 @@ class TermcapDB {
       {
 	LOCK;
 	foreach(names, string name)
-	  cache[name] = cap;
+	  cache[name] = [object(Termcap)]cap;
 	UNLOCK;
       }
     }
-    return objectp(cap) && cap;
+    return objectp(cap) && [object(Termcap)]cap;
   }
 
-  object `[](string name)
+  object(Termcap) `[](string name)
   {
     return load(name);
   }
@@ -636,7 +640,7 @@ class TerminfoDB {
   MUTEX
 
   static private string dir;
-  static private mapping(string:object) cache = ([]);
+  static private mapping(string:object(Terminfo)) cache = ([]);
   static private int complete_index=0;
 
   void create(string|void dirname)
@@ -685,15 +689,16 @@ class TerminfoDB {
   array(object) _values()
   {
     return Array.map(_indices(),
-		    lambda(string name) {
-		      return cache[name] ||
-			Terminfo(dir+name[..0]+"/"+name);
-		    });
+		     [function(string:object(Terminfo))]
+		     lambda(string name) {
+		       return cache[name] ||
+			 Terminfo(dir+name[..0]+"/"+name);
+		     });
   }
 
-  object load(string term)
+  object(Terminfo) load(string term)
   {
-    object ti;
+    object(Terminfo) ti;
 
     if (!strlen(term))
       return 0;
@@ -709,52 +714,53 @@ class TerminfoDB {
     return ti;
   }
 
-  object `[](string name)
+  object(Terminfo) `[](string name)
   {
     return load(name);
   }
-
 }
 
-static private object defterm, deftermcap, defterminfo;
+static private object(Termcap) defterm;
+static private object(TermcapDB) deftermcap;
+static private object(TerminfoDB) defterminfo;
 
-object defaultTermcapDB()
+object(TermcapDB) defaultTermcapDB()
 {
-  object tcdb;
+  object(TermcapDB) tcdb;
   LOCK;
   catch { tcdb = deftermcap || (deftermcap = TermcapDB()); };
   UNLOCK;
   return tcdb;
 }
 
-object defaultTerminfoDB()
+object(TerminfoDB) defaultTerminfoDB()
 {
-  object tidb;
+  object(TerminfoDB) tidb;
   LOCK;
   catch { tidb = defterminfo || (defterminfo = TerminfoDB()); };
   UNLOCK;
   return tidb;
 }
 
-object getTermcap(string term)
+object(Termcap) getTermcap(string term)
 {
-  object tcdb = defaultTermcapDB();
+  object(TermcapDB) tcdb = defaultTermcapDB();
   return tcdb && tcdb[term];
 }
 
-object getTerminfo(string term)
+object(Terminfo) getTerminfo(string term)
 {
-  object tidb = defaultTerminfoDB();
+  object(TerminfoDB) tidb = defaultTerminfoDB();
   return tidb && tidb[term];
 }
 
-object getTerm(string|void term)
+object(Termcap) getTerm(string|void term)
 {
   if (!term) {
-    object t = defterm;
+    object(Termcap) t = defterm;
     if (!t)
     {
-      string tc = getenv("TERMCAP");
+      string tc = [string]getenv("TERMCAP");
       t = (tc && sizeof(tc) && tc[0]!='/'?
 	   Termcap(tc) : getTerm(getenv("TERM")||"dumb"));
       LOCK;
@@ -767,7 +773,7 @@ object getTerm(string|void term)
   return getTerminfo(term) || getTermcap(term) || getFallbackTerm(term);
 }
 
-static object getFallbackTerm(string term)
+static object(Termcap) getFallbackTerm(string term)
 {
   return (term=="dumb"? Termcap("dumb:\\\n\t:am:co#80:do=^J:") :
 	  getTerm("dumb"));
