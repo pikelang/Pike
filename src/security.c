@@ -148,7 +148,7 @@ void init_pike_security(void)
   set_init_callback(init_creds_object);
   set_exit_callback(exit_creds_object);
   set_gc_check_callback(creds_gc_check);
-  set_gc_check_callback(creds_gc_mark);
+  set_gc_mark_callback(creds_gc_mark);
   creds_program=end_program();
 
   add_efun("set_current_creds",f_set_current_creds,"function(object:void)",OPT_SIDE_EFFECT);
