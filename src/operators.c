@@ -6,7 +6,7 @@
 /**/
 #include "global.h"
 #include <math.h>
-RCSID("$Id: operators.c,v 1.75 1999/12/13 20:44:15 grubba Exp $");
+RCSID("$Id: operators.c,v 1.76 1999/12/15 00:48:18 grubba Exp $");
 #include "interpret.h"
 #include "svalue.h"
 #include "multiset.h"
@@ -761,9 +761,41 @@ void o_and(void)
 {
   if(sp[-1].type != sp[-2].type)
   {
-    if(call_lfun(LFUN_AND, LFUN_RAND))
+    if(call_lfun(LFUN_AND, LFUN_RAND)) {
       return;
-    {
+    } else if (((sp[-1].type == T_TYPE) || (sp[-1].type == T_PROGRAM) ||
+		(sp[-1].type == T_FUNCTION)) &&
+	       ((sp[-2].type == T_TYPE) || (sp[-2].type == T_PROGRAM) ||
+		(sp[-2].type == T_FUNCTION))) {
+      if (sp[-2].type != T_TYPE) {
+	struct program *p = program_from_svalue(sp - 2);
+	if (!p) {
+	  int args = 2;
+	  SIMPLE_BAD_ARG_ERROR("`&", 1, "type");
+	}
+	type_stack_mark();
+	push_type_int(p->id);
+	push_type(0);
+	push_type(T_OBJECT);
+	free_svalue(sp - 2);
+	sp[-2].u.string = pop_unfinished_type();
+	sp[-2].type = T_TYPE;
+      }
+      if (sp[-1].type != T_TYPE) {
+	struct program *p = program_from_svalue(sp - 1);
+	if (!p) {
+	  int args = 2;
+	  SIMPLE_BAD_ARG_ERROR("`&", 2, "type");
+	}
+	type_stack_mark();
+	push_type_int(p->id);
+	push_type(0);
+	push_type(T_OBJECT);
+	free_svalue(sp - 1);
+	sp[-1].u.string = pop_unfinished_type();
+	sp[-1].type = T_TYPE;
+      }
+    } else {
       int args = 2;
       SIMPLE_BAD_ARG_ERROR("`&", 2, get_name_of_type(sp[-2].type));
     }
@@ -814,6 +846,46 @@ void o_and(void)
     pop_n_elems(2);
     push_string(t);
     sp[-1].type = T_STRING;
+    return;
+  }
+
+  case T_FUNCTION:
+  case T_PROGRAM:
+  {
+    struct program *p;
+    struct pike_string *a;
+    struct pike_string *b;
+    struct pike_string *t;
+
+    p = program_from_svalue(sp - 2);
+    if (!p) {
+      int args = 2;
+      SIMPLE_BAD_ARG_ERROR("`&", 1, "type");
+    }    
+    type_stack_mark();
+    push_type_int(p->id);
+    push_type(0);
+    push_type(T_OBJECT);
+    a = pop_unfinished_type();
+
+    p = program_from_svalue(sp - 1);
+    if (!p) {
+      int args = 2;
+      SIMPLE_BAD_ARG_ERROR("`&", 2, "type");
+    }    
+    type_stack_mark();
+    push_type_int(p->id);
+    push_type(0);
+    push_type(T_OBJECT);
+    b = pop_unfinished_type();
+
+    t = and_pike_types(a, b);
+
+    pop_n_elems(2);
+    push_string(t);
+    sp[-1].type = T_TYPE;
+    free_string(a);
+    free_string(b);
     return;
   }
 
@@ -958,10 +1030,41 @@ void o_or(void)
 {
   if(sp[-1].type != sp[-2].type)
   {
-    if(call_lfun(LFUN_OR, LFUN_ROR))
+    if(call_lfun(LFUN_OR, LFUN_ROR)) {
       return;
-
-    {
+    } else if (((sp[-1].type == T_TYPE) || (sp[-1].type == T_PROGRAM) ||
+		(sp[-1].type == T_FUNCTION)) &&
+	       ((sp[-2].type == T_TYPE) || (sp[-2].type == T_PROGRAM) ||
+		(sp[-2].type == T_FUNCTION))) {
+      if (sp[-2].type != T_TYPE) {
+	struct program *p = program_from_svalue(sp - 2);
+	if (!p) {
+	  int args = 2;
+	  SIMPLE_BAD_ARG_ERROR("`|", 1, "type");
+	}
+	type_stack_mark();
+	push_type_int(p->id);
+	push_type(0);
+	push_type(T_OBJECT);
+	free_svalue(sp - 2);
+	sp[-2].u.string = pop_unfinished_type();
+	sp[-2].type = T_TYPE;
+      }
+      if (sp[-1].type != T_TYPE) {
+	struct program *p = program_from_svalue(sp - 1);
+	if (!p) {
+	  int args = 2;
+	  SIMPLE_BAD_ARG_ERROR("`|", 2, "type");
+	}
+	type_stack_mark();
+	push_type_int(p->id);
+	push_type(0);
+	push_type(T_OBJECT);
+	free_svalue(sp - 1);
+	sp[-1].u.string = pop_unfinished_type();
+	sp[-1].type = T_TYPE;
+      }
+    } else {
       int args = 2;
       SIMPLE_BAD_ARG_ERROR("`|", 2, get_name_of_type(sp[-2].type));
     }
@@ -1015,6 +1118,46 @@ void o_or(void)
     return;
   }
 
+  case T_FUNCTION:
+  case T_PROGRAM:
+  {
+    struct program *p;
+    struct pike_string *a;
+    struct pike_string *b;
+    struct pike_string *t;
+
+    p = program_from_svalue(sp - 2);
+    if (!p) {
+      int args = 2;
+      SIMPLE_BAD_ARG_ERROR("`|", 1, "type");
+    }
+    type_stack_mark();
+    push_type_int(p->id);
+    push_type(0);
+    push_type(T_OBJECT);
+    a = pop_unfinished_type();
+
+    p = program_from_svalue(sp - 1);
+    if (!p) {
+      int args = 2;
+      SIMPLE_BAD_ARG_ERROR("`|", 2, "type");
+    }
+    type_stack_mark();
+    push_type_int(p->id);
+    push_type(0);
+    push_type(T_OBJECT);
+    b = pop_unfinished_type();
+
+    t = or_pike_types(a, b, 0);
+
+    pop_n_elems(2);
+    push_string(t);
+    sp[-1].type = T_TYPE;
+    free_string(a);
+    free_string(b);
+    return;
+  }
+
   STRING_BITOP(|,"OR")
 
   default:
@@ -1062,9 +1205,41 @@ void o_xor(void)
 {
   if(sp[-1].type != sp[-2].type)
   {
-    if(call_lfun(LFUN_XOR, LFUN_RXOR))
+    if(call_lfun(LFUN_XOR, LFUN_RXOR)) {
       return;
-    {
+    } else if (((sp[-1].type == T_TYPE) || (sp[-1].type == T_PROGRAM) ||
+		(sp[-1].type == T_FUNCTION)) &&
+	       ((sp[-2].type == T_TYPE) || (sp[-2].type == T_PROGRAM) ||
+		(sp[-2].type == T_FUNCTION))) {
+      if (sp[-2].type != T_TYPE) {
+	struct program *p = program_from_svalue(sp - 2);
+	if (!p) {
+	  int args = 2;
+	  SIMPLE_BAD_ARG_ERROR("`^", 1, "type");
+	}
+	type_stack_mark();
+	push_type_int(p->id);
+	push_type(0);
+	push_type(T_OBJECT);
+	free_svalue(sp - 2);
+	sp[-2].u.string = pop_unfinished_type();
+	sp[-2].type = T_TYPE;
+      }
+      if (sp[-1].type != T_TYPE) {
+	struct program *p = program_from_svalue(sp - 1);
+	if (!p) {
+	  int args = 2;
+	  SIMPLE_BAD_ARG_ERROR("`^", 2, "type");
+	}
+	type_stack_mark();
+	push_type_int(p->id);
+	push_type(0);
+	push_type(T_OBJECT);
+	free_svalue(sp - 1);
+	sp[-1].u.string = pop_unfinished_type();
+	sp[-1].type = T_TYPE;
+      }
+    } else {
       int args = 2;
       SIMPLE_BAD_ARG_ERROR("`^", 2, get_name_of_type(sp[-2].type));
     }
@@ -1108,6 +1283,41 @@ void o_xor(void)
     return;
   }
 
+  case T_FUNCTION:
+  case T_PROGRAM:
+  {
+    struct program *p;
+
+    p = program_from_svalue(sp - 1);
+    if (!p) {
+      int args = 2;
+      SIMPLE_BAD_ARG_ERROR("`^", 2, "type");
+    }
+    type_stack_mark();
+    push_type_int(sp[-1].u.program->id);
+    push_type(0);
+    push_type(T_OBJECT);
+    pop_stack();
+    push_string(pop_unfinished_type());
+    sp[-1].type = T_TYPE;
+
+    stack_swap();
+
+    p = program_from_svalue(sp - 1);
+    if (!p) {
+      int args = 2;
+      stack_swap();
+      SIMPLE_BAD_ARG_ERROR("`^", 1, "type");
+    }
+    type_stack_mark();
+    push_type_int(sp[-1].u.program->id);
+    push_type(0);
+    push_type(T_OBJECT);
+    pop_stack();
+    push_string(pop_unfinished_type());
+    sp[-1].type = T_TYPE;
+  }
+  /* FALL_THROUGH */
   case T_TYPE:
   {
     /* a ^ b  ==  (a&~b)|(~a&b) */
@@ -1871,11 +2081,34 @@ void o_compl(void)
 
   case T_TYPE:
     type_stack_mark();
-    push_unfinished_type(sp[-1].u.string->str);
-    push_type(T_NOT);
+    if (EXTRACT_UCHAR(sp[-1].u.string->str) == T_NOT) {
+      push_unfinished_type(sp[-1].u.string->str + 1);
+    } else {
+      push_unfinished_type(sp[-1].u.string->str);
+      push_type(T_NOT);
+    }
     pop_stack();
     push_string(pop_unfinished_type());
     sp[-1].type = T_TYPE;
+    break;
+
+  case T_FUNCTION:
+  case T_PROGRAM:
+    {
+      /* !object(p) */
+      struct program *p = program_from_svalue(sp - 1);
+      if (!p) {
+	PIKE_ERROR("`~", "Bad argument.\n", sp, 1);
+      }
+      type_stack_mark();
+      push_type_int(p->id);
+      push_type(0);
+      push_type(T_OBJECT);
+      push_type(T_NOT);
+      pop_stack();
+      push_string(pop_unfinished_type());
+      sp[-1].type = T_TYPE;
+    }
     break;
 
   case T_STRING:
@@ -2215,7 +2448,7 @@ void init_operators(void)
   add_efun2("`!",f_not,"function(mixed:int(0..1))",OPT_TRY_OPTIMIZE,
 	    optimize_not,generate_not);
 
-#define CMP_TYPE "!function(!(object|mixed)...:mixed)&function(mixed...:int(0..1))|function(int|float...:int(0..1))|function(string...:int(0..1))|function(type,type,type...:int(0..1))"
+#define CMP_TYPE "!function(!(object|mixed)...:mixed)&function(mixed...:int(0..1))|function(int|float...:int(0..1))|function(string...:int(0..1))|function(type|program,type|program,type|program...:int(0..1))"
   add_efun2("`<", f_lt,CMP_TYPE,OPT_TRY_OPTIMIZE,0,generate_comparison);
   add_efun2("`<=",f_le,CMP_TYPE,OPT_TRY_OPTIMIZE,0,generate_comparison);
   add_efun2("`>", f_gt,CMP_TYPE,OPT_TRY_OPTIMIZE,0,generate_comparison);
@@ -2249,7 +2482,7 @@ void init_operators(void)
 		 tFuncV(tStr,tStr,tStr)),
 	    OPT_TRY_OPTIMIZE,0,generate_minus);
 
-#define LOG_TYPE "function(mixed,object...:mixed)|function(object,mixed...:mixed)|function(int...:int)|function(mapping(0=mixed:1=mixed)...:mapping(0:1))|function(multiset(2=mixed)...:multiset(2))|function(array(3=mixed)...:array(3))|function(string...:string)|function(type,type...:type)"
+#define LOG_TYPE "function(mixed,object...:mixed)|function(object,mixed...:mixed)|function(int...:int)|function(mapping(0=mixed:1=mixed)...:mapping(0:1))|function(multiset(2=mixed)...:multiset(2))|function(array(3=mixed)...:array(3))|function(string...:string)|function(type|program,type|program...:type)"
 
   add_efun2("`&",f_and,LOG_TYPE,OPT_TRY_OPTIMIZE,optimize_binary,generate_and);
 
@@ -2304,7 +2537,7 @@ void init_operators(void)
 		 tFunc(tInt,tInt),
 		 tFunc(tFlt,tFlt),
 		 tFunc(tStr,tStr),
-		 tFunc(tType,tType)),
+		 tFunc(tOr(tType,tProgram),tType)),
 	    OPT_TRY_OPTIMIZE,0,generate_compl);
   /* function(string|multiset|array|mapping|object:int) */
   ADD_EFUN2("sizeof", f_sizeof,tFunc(tOr5(tStr,tMultiset,tArray,tMapping,tObj),tInt),0,0,generate_sizeof);
