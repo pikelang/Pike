@@ -1,0 +1,64 @@
+#!/bin/sh
+
+LINKER="$1"
+shift
+RPATH=""
+LDOPTS=""
+
+#set -x
+
+while test "$#" != 0; do
+  case $1 in
+    -R*)
+     if test x$1 = x-R ; then
+       tmp="$2"
+       shift
+     else
+       tmp=`echo $1 | sed -e 's/^-R//g'`
+     fi
+     RPATH="$RPATH:$tmp"
+    ;;
+    *)
+    LDOPTS="$LDOPTS $1"
+  esac
+  shift
+done
+
+RPATH="$RPATH:${LD_LIBRARY_PATH-}"
+
+OLDIFS="$IFS"
+IFS=:
+set -- $RPATH
+IFS="$OLDIFS"
+
+while test x$1 = x -a x$# != x0; do
+  shift
+done
+
+if test x$# != x0 ; then
+
+  done="::$1:"
+  RPATH="$1"
+  shift
+
+  while test x$# != x0 ;
+  do
+    case $done in
+      *:$1:*) ;;
+      *)
+       RPATH="$RPATH:$1"
+       done="$done$1:"
+      ;;
+    esac
+    shift
+  done
+
+  if test -f /usr/bin/uname && x`/usr/bin/uname` = xSunOS ; then
+    LDOPTS="$LDOPTS -R$RPATH"
+  else
+    LD_LIBRARY_PATH="$LDOPTS"
+    export LD_LIBRARY_PATH
+  fi
+fi
+
+exec $LINKER $LDOPTS

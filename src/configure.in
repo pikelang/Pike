@@ -1,4 +1,4 @@
-AC_REVISION("$Id: configure.in,v 1.57 1997/02/20 00:04:59 hubbe Exp $")
+AC_REVISION("$Id: configure.in,v 1.58 1997/02/27 07:53:27 hubbe Exp $")
 AC_INIT(interpret.c)
 AC_CONFIG_HEADER(machine.h)
 
@@ -33,7 +33,7 @@ done
 
 if test ! -z "$ac_cv_prog_CC" -a ! -z "$CC" -a "$CC" != "$ac_cv_prog_CC"
 then
-  AC_MSG_WARN(CC is different than last time Pike was compiled, will not use cache
+  AC_MSG_WARN(CC is different than last time Pike was compiled,
 It is probably best to delete ./config.cache before proceeding)
 fi
 
@@ -41,6 +41,28 @@ fi
 AC_PROG_CC
 AC_ISC_POSIX
 AC_MINIX
+
+#############################################################################
+
+LIBDIR=`(cd $srcdir/../lib ; pwd)`
+BINDIR=`(cd $srcdir/../bin ; pwd)`
+DOCDIR=`(cd $srcdir/../doc ; pwd)`
+BUILDDIR=`pwd`
+AC_SUBST(LIBDIR)
+AC_SUBST(BINDIR)
+AC_SUBST(BUILDDIR)
+AC_SUBST(DOCDIR)
+
+case $CC in
+ *smartlink*) ;;
+ *)
+   CC="$BINDIR/smartlink $CC"
+   ac_cv_prog_CC="$CC"
+ ;;
+esac
+
+#############################################################################
+
 
 
 AC_ARG_WITH(dynamic_modules,   [  --without-dynamic-modules        link modules statically],[],[with_dynamic_modules=yes])
@@ -188,53 +210,10 @@ else
 fi
 
 if test $pike_cv_sys_os = "Solaris" ; then
-AC_DEFINE(SOLARIS)
-
-AC_MSG_CHECKING(if ld accepts setting the run-time path with -R)
-AC_CACHE_VAL(pike_cv_ld_accepts_r,
-[
-  OLD_LDFLAGS="$LDFLAGS"
-  pike_cv_ld_accepts_r=yes
-  
-  for test_path in . .. /lib /usr/lib .:.. /lib:/usr/lib; do
-    if test x${GCC-} = xyes ; then
-      #
-      # On Linux -R apparently causes gcc to warn, but it doesn't fail,
-      # so we force the -R option to the linker.
-      #
-      LDFLAGS="$OLD_LDFLAGS -Xlinker -R$test_path"
-      AC_TRY_COMPILE([],[],[],[ pike_cv_ld_accepts_r=no; break ])
-    else
-      :
-    fi
-
-    LDFLAGS="$OLD_LDFLAGS -R$test_path"
-    AC_TRY_COMPILE([],[],[],[ pike_cv_ld_accepts_r=no; break ])
-  done
-  LDFLAGS="$OLD_LDFLAGS"
-])
-AC_MSG_RESULT($pike_cv_ld_accepts_r)
-
-if test x$pike_cv_ld_accepts_r = xyes ; then
-  SET_RUN_PATH='`cat modules/lib_dirs`'
-else
-  :
-fi
+  AC_DEFINE(SOLARIS)
 fi
 
-#
-# If no cppflags or ldflags where given we try to guess some..
-#
-# This doesn't work since we have to test if the linker accepts
-# -R first... :( /Hubbe
-#
-# Since I just added a test for -R above, maybe it's time to enable
-# this code again. /grubba
-#
-if test -f modules/master_lib_dirs; then
-  rm modules/master_lib_dirs
-else : ; fi
-if test -d modules/. ; then : ; else
+if test ! -d modules/. ; then
   mkdir modules
 fi
 if test $cppflags_is_set$ldflags_is_set = nono -a x${C_INCLUDE_PATH-} = x ; then
@@ -242,8 +221,7 @@ if test $cppflags_is_set$ldflags_is_set = nono -a x${C_INCLUDE_PATH-} = x ; then
   do
     if test -d "$d/lib" ; then
       echo Adding $d/lib to the library-path
-      LDFLAGS="${LDFLAGS} -L$d/lib"
-      echo $d/lib >>modules/master_lib_dirs
+      LDFLAGS="${LDFLAGS} -R$d/lib -L$d/lib"
     else
       :
     fi
@@ -1369,6 +1347,10 @@ LIBDIR=`(cd $srcdir/../lib ; pwd)`
 BINDIR=`(cd $srcdir/../bin ; pwd)`
 DOCDIR=`(cd $srcdir/../doc ; pwd)`
 BUILDDIR=`pwd`
+AC_SUBST(LIBDIR)
+AC_SUBST(BINDIR)
+AC_SUBST(BUILDDIR)
+AC_SUBST(DOCDIR)
 
 export LDFLAGS CPPFLAGS LIBS
 
@@ -1387,12 +1369,7 @@ AC_SUBST(WARN)
 AC_SUBST(OPTIMIZE)
 AC_SUBST(EXTRA_OBJS)
 AC_SUBST(RANLIB)
-AC_SUBST(LIBDIR)
-AC_SUBST(BINDIR)
-AC_SUBST(BUILDDIR)
-AC_SUBST(DOCDIR)
 AC_SUBST(DEBUGDEF)
-AC_SUBST(SET_RUN_PATH)
 
 if test x$ac_cv_func_dlopen$ac_cv_func_dld_link = xnono ; then
   with_dynamic_modules=no
