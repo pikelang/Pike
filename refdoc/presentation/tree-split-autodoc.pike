@@ -1,5 +1,5 @@
 /*
- * $Id: tree-split-autodoc.pike,v 1.27 2002/11/26 13:08:05 grubba Exp $
+ * $Id: tree-split-autodoc.pike,v 1.28 2002/11/26 13:19:27 grubba Exp $
  *
  */
 
@@ -122,13 +122,13 @@ class Node
 	parser->finish();
 	d = make_faked_wrapper(d);
 
-	foreach(children, Node c)
+	foreach(children; int i; Node c)
 	  if(c->name==n) {
 	    if(d) {
 	      c->data = d;
 	      d = 0;
 	    }
-	    else destruct(c);
+	    else children[i] = 0;
 	  }
 	children -= ({ 0 });
       }
@@ -279,8 +279,18 @@ class Node
       if(refs[resolved])
 	return create_reference(make_filename(), resolved);
 
+      if (!zero_type(refs[resolved])) {
+	werror("Reference %O (%O) is %O!\n",
+	       _reference, resolved, refs[resolved]);
+      }
+
       if(consts[resolved])
 	return "<font face='courier'>" + _reference + "</font>";
+
+      if (!zero_type(consts[resolved])) {
+	werror("Constant %O (%O) is %O!\n",
+	       _reference, resolved, refs[resolved]);
+      }
     }
 
     if(!missing[vars->resolved] && !has_prefix(_reference, "lfun::"))
