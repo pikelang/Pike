@@ -1,0 +1,56 @@
+// $Id: testsuite.in,v 1.2 1998/07/18 13:40:50 grubba Exp $
+
+
+// system.c:
+
+// RegGetValue		__NT__
+// cp			__NT__
+// chmod
+// chown		HAVE_CHOWN
+// chroot		HAVE_CHROOT
+// cleargroups		HAVE_SETGROUPS
+// getegid		HAVE_GETEUID
+// geteuid		HAVE_GETEUID
+// getgid		HAVE_GETGID
+// getgroups		HAVE_GETGROUPS
+// gethostbyaddr	GETHOST_DECLARE
+// gethostbyname	GETHOST_DECLARE
+// gethostname		HAVE_GETHOSTNAME || HAVE_UNAME
+// getpgrp		HAVE_GETPGRP
+// getpid
+// getppid		HAVE_GETPPID
+// getuid		HAVE_GETUID
+// hardlink		HAVE_LINK
+// initgroups		HAVE_INITGROUPS
+// readlink		HAVE_READLINK
+// setegid		HAVE_SETEGID || HAVE_SETRESGID
+// seteuid		HAVE_SETEUID || HAVE_SETRESUID
+// setgid		HAVE_SETGID
+// setgroups		HAVE_SETGROUPS
+// setuid		HAVE_SETUID
+// symlink		HAVE_SYMLINK
+// uname		HAVE_UNAME
+
+
+// passwords.c:
+
+// endgrent		HAVE_ENDGRENT
+// endpwent		HAVE_ENDPWENT
+// get_all_groups	HAVE_GETGRENT
+// get_all_users	HAVE_GETPWENT
+// get_groups_for_user	HAVE_GETPWENT
+// getgrent		HAVE_GETGRENT
+// getgrgid		HAVE_GETGRGID
+// getgrnam		HAVE_GETGRNAM
+// getpwent		HAVE_GETPWENT
+// getpwnam		HAVE_GETPWNAM
+// getpwuid		HAVE_GETPWUID
+// setgrent		HAVE_SETGRENT
+// setpwent		HAVE_SETPWENT
+
+
+// syslog.c:
+
+// closelog		HAVE_SYSLOG
+// openlog		HAVE_SYSLOG
+// syslog		HAVE_SYSLOG
