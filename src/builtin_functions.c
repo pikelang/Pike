@@ -4,7 +4,7 @@
 ||| See the files COPYING and DISCLAIMER for more information.
 \*/
 #include "global.h"
-RCSID("$Id: builtin_functions.c,v 1.46 1997/10/03 02:25:35 hubbe Exp $");
+RCSID("$Id: builtin_functions.c,v 1.47 1997/10/07 11:53:01 hubbe Exp $");
 #include "interpret.h"
 #include "svalue.h"
 #include "pike_macros.h"
@@ -1765,6 +1765,28 @@ static void f_get_prof_info(INT32 args)
 }
 #endif /* PROFILING */
 
+void f_object_variablep(INT32 args)
+{
+  struct object *o;
+  struct pike_string *s;
+  int ret;
+
+  get_all_args("variablep",args,"%o%S",&o, &s);
+
+  if(!o->prog)
+    error("variablep() called on destructed object.\n");
+
+  ret=find_shared_string_identifier(s,o->prog);
+  if(ret!=-1)
+  {
+    ret=IDENTIFIER_IS_VARIABLE(ID_FROM_INT(o->prog, ret)->identifier_flags);
+  }else{
+    ret=0;
+  }
+  pop_n_elems(args);
+  push_int(!!ret);
+}
+
 void init_builtin_efuns(void)
 {
   init_operators();
@@ -1860,5 +1882,6 @@ void init_builtin_efuns(void)
 
   add_efun("encode_value", f_encode_value, "function(mixed:string)", OPT_TRY_OPTIMIZE);
   add_efun("decode_value", f_decode_value, "function(string:mixed)", OPT_TRY_OPTIMIZE);
+  add_efun("object_variablep", f_object_variablep, "function(object,string:int)", OPT_EXTERNAL_DEPEND);
 }
 
