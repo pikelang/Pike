@@ -9,6 +9,7 @@
 /dependencies
 /language.c
 /language.h
+/y.output
 /lib
 /machine.h
 /machine.h.in
