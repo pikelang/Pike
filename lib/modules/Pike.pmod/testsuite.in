@@ -1,0 +1,100 @@
+
+dnl --- Security
+
+cond([[ __builtin.security ]],[[
+test_true([[
+#pike 7.4
+functionp(call_with_creds)]])
+test_true([[
+#pike 7.4
+functionp(get_current_creds)]])
+test_true([[
+#pike 7.4
+functionp(get_object_creds)]])
+
+test_do([[ rm("security"); ]])
+test_do([[
+  object c = Pike.Security.Creds(class{}(), Pike.Security.BIT_SECURITY, 0);
+  Pike.Security.call_with_creds(c, lambda() {
+    Stdio.File("security", "cwt"); });
+  Pike.Security.call_with_creds(c, rm, "security");
+]])
+test_eval_error([[
+  object c = Pike.Security.Creds(class{}(), 0, 0);
+  Pike.Security.call_with_creds(c, lambda() {
+    Stdio.File("security", "cwt"); });
+]])
+test_eval_error([[
+  object c = Pike.Security.Creds(class{}(), 0, 0);
+  Pike.Security.call_with_creds(c, rm, "security");
+]])
+test_eval_error([[
+  object u = class {
+    int valid_open() { return 0; } }();
+  object c = Pike.Security.Creds(u, Pike.Security.BIT_CONDITIONAL_IO, 0);
+  Pike.Security.call_with_creds(c, lambda() {
+    Stdio.File("security", "cwt"); });
+]])
+test_eval_error([[
+  object u = class {
+    int valid_open() { return 1; } }();
+  object c = Pike.Security.Creds(u, Pike.Security.BIT_CONDITIONAL_IO, 0);
+  Pike.Security.call_with_creds(c, lambda() {
+    Stdio.File("security", "cwt")->write("x"); });
+]])
+test_eval_error([[
+  object u = class {
+    int valid_open() { return 3; } }();
+  object c = Pike.Security.Creds(u, Pike.Security.BIT_CONDITIONAL_IO, 0);
+  Pike.Security.call_with_creds(c, lambda() {
+    Stdio.File("security", "cwt"); });
+]])
+test_any([[
+  object u = class {
+    int valid_open() { return 2; } }();
+  object c = Pike.Security.Creds(u, Pike.Security.BIT_CONDITIONAL_IO, 0);
+  Pike.Security.call_with_creds(c, lambda() {
+    Stdio.File("security", "cwt"); });
+  return rm("security");
+]],1)
+test_false( file_stat("security") )
+test_do( rm("security") )
+
+define(test_call_0,[[
+  test_any([[
+#if constant($1)
+    array err = catch {
+      Pike.Security.call_with_creds(Pike.Security.Creds(class{}(),0,0),$1);
+    };
+    return has_suffix(err[0], "permission denied.\n");
+#else
+    return 1;
+#endif
+  ]], 1)
+]])
+
+test_call_0(add_constant)
+test_call_0(exit)
+test_call_0(_exit)
+test_call_0(next_object)
+test_call_0(_next)
+test_call_0(_prev)
+test_call_0(_verify_internals)
+test_call_0(_debug)
+test_call_0(_optimizer_debug)
+test_call_0(_assembler_debug)
+test_call_0(_compiler_trace)
+test_call_0(replace_master)
+test_call_0(_reset_dmalloc)
+test_call_0(_locate_references)
+test_call_0(_describe)
+test_call_0(_gc_set_watch)
+test_call_0(_dump_backlog)
+
+test_call_0(signal)
+test_call_0(fork)
+test_call_0(kill)
+test_call_0(alarm)
+test_call_0(ualarm)
+
+]])
