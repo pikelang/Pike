@@ -13,9 +13,11 @@ dumpmodule.log
 hilfe
 hsort_template.h
 interpret_protos.h
+interpret_protos.h.src
 isort_template.h
 language.c
 language.h
+language.h.src
 lib
 machine.h
 machine.h.in
