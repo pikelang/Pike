@@ -48,12 +48,12 @@ GDK.DragContext drop_reply( int ok, int time );
 //!
 
 int get_action( );
-//! One of @[GDK_ACTION_MOVE], @[GDK_ACTION_PRIVATE], @[GDK_ACTION_COPY], @[GDK_ACTION_ASK], @[GDK_ACTION_LINK] and @[GDK_ACTION_DEFAULT];
+//! One of @[GDK_ACTION_ASK], @[GDK_ACTION_COPY], @[GDK_ACTION_DEFAULT], @[GDK_ACTION_LINK], @[GDK_ACTION_MOVE] and @[GDK_ACTION_PRIVATE];
 //!
 //!
 
 int get_actions( );
-//! A bitwise or of one or more of @[GDK_ACTION_MOVE], @[GDK_ACTION_PRIVATE], @[GDK_ACTION_COPY], @[GDK_ACTION_ASK], @[GDK_ACTION_LINK] and @[GDK_ACTION_DEFAULT];
+//! A bitwise or of one or more of @[GDK_ACTION_ASK], @[GDK_ACTION_COPY], @[GDK_ACTION_DEFAULT], @[GDK_ACTION_LINK], @[GDK_ACTION_MOVE] and @[GDK_ACTION_PRIVATE];
 //!
 //!
 
@@ -63,7 +63,7 @@ int get_is_source( );
 //!
 
 int get_protocol( );
-//! One of @[GDK_DRAG_PROTO_XDND], @[GDK_DRAG_PROTO_ROOTWIN] and @[GDK_DRAG_PROTO_MOTIF]
+//! One of @[GDK_DRAG_PROTO_MOTIF], @[GDK_DRAG_PROTO_ROOTWIN] and @[GDK_DRAG_PROTO_XDND]
 //!
 //!
 
@@ -78,6 +78,6 @@ int get_start_time( );
 //!
 
 int get_suggested_action( );
-//! One of @[GDK_ACTION_MOVE], @[GDK_ACTION_PRIVATE], @[GDK_ACTION_COPY], @[GDK_ACTION_ASK], @[GDK_ACTION_LINK] and @[GDK_ACTION_DEFAULT];
+//! One of @[GDK_ACTION_ASK], @[GDK_ACTION_COPY], @[GDK_ACTION_DEFAULT], @[GDK_ACTION_LINK], @[GDK_ACTION_MOVE] and @[GDK_ACTION_PRIVATE];
 //!
 //!

@@ -7,7 +7,7 @@
 inherit GDK.Drawable;
 
 GDK.Window change_property( GDK.Atom property, GDK.Atom type, int mode, string data );
-//! mode is one of @[GDK_PROP_MODE_PREPEND], @[GDK_PROP_MODE_APPEND] and @[GDK_PROP_MODE_REPLACE]
+//! mode is one of @[GDK_PROP_MODE_APPEND], @[GDK_PROP_MODE_PREPEND] and @[GDK_PROP_MODE_REPLACE]
 //!
 //!
 
