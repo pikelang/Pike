@@ -1,10 +1,11 @@
-# all: tutorial.html
+all: tutorial.html tutorial_onepage.html
+
 # lenna.gif lenna-mirrorx.gif lenna-mirrory.gif lenna-rotate.gif lenna-skewx.gif lenna-skewy.gif
 
-all:
+tutorial.html: tutorial.wmml
 	./wmmltohtml2 <tutorial.wmml html tutorial
 
-tutorial_onepage.html:
+tutorial_onepage.html: tutorial.wmml
 	./wmmltohtml2 <tutorial.wmml html_onepage tutorial_onepage
 
 # tutorial.html: tutorial.wmml wmml_to_html
