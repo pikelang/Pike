@@ -1,7 +1,7 @@
 /* cipher.cmod -*- c -*- */
 
 #include "global.h"
-RCSID("$Id: cipher.cmod,v 1.20 2003/11/27 02:21:24 nilsson Exp $");
+RCSID("$Id: cipher.cmod,v 1.21 2003/11/28 01:17:32 nilsson Exp $");
 #include "interpret.h"
 #include "svalue.h"
 
@@ -140,6 +140,19 @@ PIKECLASS CipherInfo
 #define GET_INFO(o) \
 ((struct CipherInfo_struct *) get_storage((o), CipherInfo_program))
 
+/* Generate a random string of length @[size] on top of the stack. */
+static void low_make_key(INT32 size)
+{
+  push_text("Crypto.Random");
+  SAFE_APPLY_MASTER("resolv",1);
+  if(Pike_sp[-1].type!=T_OBJECT)
+    Pike_error("Failed to resolv Crypto.Random.\n");
+  push_int(size);
+  apply(Pike_sp[-2].u.object, "random_string", 1);
+  stack_swap();
+  pop_stack();
+}
+
 /*! @class CipherState
  *!
  *! Base class for hashing contexts.
@@ -197,6 +210,19 @@ PIKECLASS CipherState
       push_object(this_object());
     }
 
+  PIKEFUN string make_key()
+  {
+    struct CipherInfo_struct *info = GET_INFO(Pike_fp->current_object);
+    assert(info);
+
+    low_make_key(info->meta->key_size);
+
+    /* FIXME: There should be a check for weak keys so this never throws. */
+    stack_dup();
+    f_CipherState_set_encrypt_key(1);
+    pop_stack();
+  }
+
   /*! @decl string crypt(string data)
    *!
    *! Encrypts or decrypts data, using the current key.
@@ -207,7 +233,6 @@ PIKECLASS CipherState
    *! @returns
    *!   The encrypted or decrypted data.
    */
-
   PIKEFUN string crypt (string data)
     {
       struct CipherInfo_struct *info = GET_INFO(Pike_fp->current_object);
@@ -589,6 +614,26 @@ PIKECLASS DES_State
       assert(state);
       state->ctx = &THIS->des;
     }
+
+  PIKEFUN string make_key()
+  {
+    struct CipherInfo_struct *info = GET_INFO(Pike_fp->current_object);
+    struct CipherState_struct *state
+	= (struct CipherState_struct *) get_storage(Pike_fp->current_object,
+						    CipherState_program);
+    assert(info);
+    assert(state);
+
+    low_make_key(info->meta->key_size);
+    f_DES_Info_fix_parity(1);
+
+    /* FIXME: There should be a check for weak keys so this never throws. */
+    info->meta->set_encrypt_key(state->ctx, Pike_sp[-1].u.string->len,
+				Pike_sp[-1].u.string->str, 0);
+
+    state->crypt = info->meta->encrypt;
+    state->key_size = Pike_sp[-1].u.string->len;
+  }
 }
 /*! @endclass DES_State */
 
@@ -645,6 +690,45 @@ PIKECLASS DES3_Info
       if (CipherInfo && !CipherInfo->meta)
 	CipherInfo->meta = &pike_des3;
     }
+
+#ifdef WORK_IN_PROGRESS
+  /*! @decl string fix_parity(string key)
+   *! Sets the last bit in every byte in @[key] to reflect the parity.
+   *! If a 21 byte key is used, it will be expanded into 24
+   *! bytes. If a key longer than 24 characters is used, it will
+   *! be truncated to 24 characters.
+   */
+  PIKEFUN string fix_parity(string key)
+  {
+    int i;
+    struct array *arr;
+    struct svalue *s;
+
+    if(key->len < 24 && key->len != 21)
+      Pike_error("Key must be 21 or >=24 characters.\n");
+
+    /* Split the string */
+    if(key->len==21)
+      push_int(7);
+    else
+      push_int(8);
+    f_divide(2);
+    arr = Pike_sp[-1].u.array;
+    add_ref(arr);
+    pop_stack();
+
+    /* fix_parity for every subkey */
+    for(i=0; i<3; i++) {
+      array_index(s, arr, i);
+      push_svalue(s);
+      f_DES_Info_fix_parity(1);
+    }
+    free(arr);
+
+    /* Join the subkeys */
+    f_add(3);
+  }
+#endif
 }
 
 /*! @endclass DES3_Info */
@@ -668,6 +752,28 @@ PIKECLASS DES3_State
       assert(state);
       state->ctx = &THIS->des3;
     }
+
+#ifdef WORK_IN_PROGRESS
+  PIKEFUN string make_key()
+  {
+    struct CipherInfo_struct *info = GET_INFO(Pike_fp->current_object);
+    struct CipherState_struct *state
+	= (struct CipherState_struct *) get_storage(Pike_fp->current_object,
+						    CipherState_program);
+    assert(info);
+    assert(state);
+
+    low_make_key(info->meta->key_size);
+    f_DES3_Info_fix_parity(1);
+
+    /* FIXME: There should be a check for weak keys so this never throws. */
+    info->meta->set_encrypt_key(state->ctx, Pike_sp[-1].u.string->len,
+				Pike_sp[-1].u.string->str, 0);
+
+    state->crypt = info->meta->encrypt;
+    state->key_size = Pike_sp[-1].u.string->len;
+  }
+#endif
 }
 /*! @endclass DES3_State */
 
