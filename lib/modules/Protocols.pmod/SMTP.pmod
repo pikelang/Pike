@@ -152,6 +152,12 @@ class client
 
   //! Sends an e-mail. Wrapper function that uses @[send_message].
   //!
+  //! @note
+  //!   Some important headers are set to:
+  //!   @tt{"Content-Type: text/plain; charset=iso-8859-1"@} and 
+  //!   @tt{"Content-Transfer-Encoding: 8bit"@}. @tt{"Date:"@} header
+  //!   isn't used at all.
+  //!
   //! @throws
   //!   If the mail server returns any other return code than
   //!   200-399 an exception will be thrown.
