@@ -42,10 +42,12 @@ class FILE {
     /* Public functions. */
     string gets()
     {
-      int p;
-      while((p=search(b, "\n", bpos)) == -1)
-	if(!get_data())
-	  return 0;
+      int p,tmp=bpos;
+      while((p=search(b, "\n", tmp)) == -1)
+      {
+	tmp=strlen(b);
+	if(!get_data()) return 0;
+      }
       return extract(p-bpos, 1);
     }
 
@@ -212,4 +214,15 @@ void perror(string s)
 #else
   stderr->write(s+": errno: "+predef::errno()+"\n");
 #endif
+}
+
+mixed `[](string index)
+{
+  mixed x=`->(this_object(),index);
+  if(x) return x;
+  switch(index)
+  {
+  case "readline": return master()->resolv("readline");
+  default: return ([])[0];
+  }
 }
