@@ -25,7 +25,7 @@
 #define HUGE HUGE_VAL
 #endif /*!HUGE*/
 
-RCSID("$Id: stralloc.c,v 1.93 2000/08/10 17:57:04 grubba Exp $");
+RCSID("$Id: stralloc.c,v 1.94 2000/08/10 18:00:09 grubba Exp $");
 
 #define BEGIN_HASH_SIZE 997
 #define MAX_AVG_LINK_LENGTH 3
@@ -1594,12 +1594,13 @@ PMOD_EXPORT void init_string_builder(struct string_builder *s, int mag)
   s->known_shift=0;
 }
 
-static void string_build_mkspace(struct string_builder *s, int chars, int mag)
+static void string_build_mkspace(struct string_builder *s,
+				 ptrdiff_t chars, int mag)
 {
   if(mag > s->s->size_shift)
   {
     struct pike_string *n;
-    int l=s->s->len+chars+s->malloced;
+    ptrdiff_t l = s->s->len + chars + s->malloced;
     n=begin_wide_shared_string(l,mag);
     pike_string_cpy(MKPCHARP_STR(n),s->s);
     n->len=s->s->len;
@@ -1609,7 +1610,7 @@ static void string_build_mkspace(struct string_builder *s, int chars, int mag)
   }
   else if(s->s->len+chars > s->malloced)
   {
-    int newlen=MAXIMUM(s->malloced*2,s->s->len+chars);
+    ptrdiff_t newlen = MAXIMUM(s->malloced*2, s->s->len + chars);
 
     s->s=(struct pike_string *)realloc((char *)s->s,
 				       sizeof(struct pike_string)+
@@ -1620,13 +1621,13 @@ static void string_build_mkspace(struct string_builder *s, int chars, int mag)
   }
 }
 
-PMOD_EXPORT void *string_builder_allocate(struct string_builder *s, int chars, int mag)
+PMOD_EXPORT void *string_builder_allocate(struct string_builder *s, ptrdiff_t chars, int mag)
 {
   void *ret;
-  string_build_mkspace(s,chars,mag);
+  string_build_mkspace(s, chars, mag);
   if(chars<0) s->known_shift=0;
-  ret=s->s->str + (s->s->len<<s->s->size_shift);
-  s->s->len+=chars;
+  ret = s->s->str + (s->s->len<<s->s->size_shift);
+  s->s->len += chars;
   return ret;
 }
 

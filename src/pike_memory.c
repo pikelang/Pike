@@ -10,7 +10,7 @@
 #include "pike_macros.h"
 #include "gc.h"
 
-RCSID("$Id: pike_memory.c,v 1.74 2000/08/10 14:41:20 grubba Exp $");
+RCSID("$Id: pike_memory.c,v 1.75 2000/08/10 18:02:55 grubba Exp $");
 
 /* strdup() is used by several modules, so let's provide it */
 #ifndef HAVE_STRDUP
@@ -289,8 +289,8 @@ size_t simple_hashmem(const unsigned char *str, ptrdiff_t len, ptrdiff_t maxn)
  */
 void init_memsearch(struct mem_searcher *s,
 		    char *needle,
-		    SIZE_T needlelen,
-		    SIZE_T max_haystacklen)
+		    size_t needlelen,
+		    size_t max_haystacklen)
 {
   s->needle=needle;
   s->needlelen=needlelen;
@@ -373,7 +373,7 @@ void init_memsearch(struct mem_searcher *s,
 
 char *memory_search(struct mem_searcher *s,
 		    char *haystack,
-		    SIZE_T haystacklen)
+		    size_t haystacklen)
 {
   if(s->needlelen > haystacklen) return 0;
 
@@ -390,7 +390,7 @@ char *memory_search(struct mem_searcher *s,
   case memchr_and_memcmp:
     {
       char *end,c,*needle;
-      SIZE_T needlelen;
+      size_t needlelen;
       
       needle=s->needle;
       needlelen=s->needlelen;
@@ -445,9 +445,9 @@ char *memory_search(struct mem_searcher *s,
 
 void init_generic_memsearcher(struct generic_mem_searcher *s,
 			      void *needle,
-			      SIZE_T needlelen,
+			      size_t needlelen,
 			      char needle_shift,
-			      SIZE_T estimated_haystack,
+			      size_t estimated_haystack,
 			      char haystack_shift)
 {
   s->needle_shift=needle_shift;
@@ -489,7 +489,7 @@ void init_generic_memsearcher(struct generic_mem_searcher *s,
 
 void *generic_memory_search(struct generic_mem_searcher *s,
 			    void *haystack,
-			    SIZE_T haystacklen,
+			    size_t haystacklen,
 			    char haystack_shift)
 {
   if(s->needle_shift==0 && s->haystack_shift==0)
@@ -531,7 +531,7 @@ void *generic_memory_search(struct generic_mem_searcher *s,
 	{								  \
 	  PIKE_CONCAT(p_wchar,X) *end,*hay;				  \
 	  PIKE_CONCAT(p_wchar,Y) *needle;				  \
-	  SIZE_T needlelen;						  \
+	  size_t needlelen;						  \
 	  								  \
 	  needle=(PIKE_CONCAT(p_wchar,Y) *)s->data.other.needle;	  \
 	  hay=(PIKE_CONCAT(p_wchar,X) *)haystack;			  \
@@ -574,9 +574,9 @@ void *generic_memory_search(struct generic_mem_searcher *s,
 		    
 
 PMOD_EXPORT char *my_memmem(char *needle,
-		SIZE_T needlelen,
+		size_t needlelen,
 		char *haystack,
-		SIZE_T haystacklen)
+		size_t haystacklen)
 {
   struct mem_searcher tmp;
   init_memsearch(&tmp, needle, needlelen, haystacklen);
