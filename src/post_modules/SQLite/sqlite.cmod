@@ -6,6 +6,7 @@
 #include "config.h"
 #include "object.h"
 #include "builtin_functions.h"
+#include "mapping.h"
 
 #ifdef HAVE_SQLITE3_H
 
@@ -141,7 +142,7 @@ PIKECLASS SQLite
 		 tail);
 
     res=fast_clone_object(ResObj_program);
-    store = GET_RESOBJ_STORAGE(res);
+    store = OBJ2_RESOBJ(res);
     store->db = THIS->db;
     store->stmt = stmt;
     apply_low(res, f_ResObj_create_fun_num, 0);
