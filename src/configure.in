@@ -1,4 +1,4 @@
-AC_REVISION("$Id: configure.in,v 1.206 1998/06/16 00:32:04 grubba Exp $")
+AC_REVISION("$Id: configure.in,v 1.207 1998/06/17 14:01:20 grubba Exp $")
 AC_INIT(interpret.c)
 AC_CONFIG_HEADER(machine.h)
 
@@ -804,12 +804,14 @@ int main()
 
 int main(int argc, char **argv)
 {
-  /* FreeBSD before 226001 and 300000 - 300003 have broken threads. */
+  /* FreeBSD before 226001 and 300000 - 300002 have broken threads.
+   * Some instances of 300003 may have broken threads too.
+   */
   if (__FreeBSD_version < 226001)
     return(1);
   if (__FreeBSD_version < 300000)
     return(0);
-  if (__FreeBSD_version < 300004)
+  if (__FreeBSD_version < 300003)
     return(1);
   return(0);
 }
