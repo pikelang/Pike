@@ -20,13 +20,32 @@ static private void processError(string message, mixed ... args) {
 // From source file to XML
 //========================================================================
 
+// Wrap child in the proper modules and namespace.
 static object makeWrapper(array(string) modules, object|void child)
 {
-  foreach(reverse(modules) + ({ "" }), string n) {
-    object m = .PikeObjects.Module();
-    m->name = n;
-    if (child)
+  object m;
+  if (child->objtype != "autodoc") {
+    if (child->objtype != "namespace") {
+      string namespace = "predef";	// Default namespace.
+      if (sizeof(modules) && has_suffix(modules[0], "::")) {
+	// The parent module list starts with a namespace.
+	namespace = modules[0][..sizeof(modules[0])-3];
+	modules = modules[1..];
+      }
+      foreach(reverse(modules), string n) {
+	m = .PikeObjects.Module();
+	m->name = n;
+	if (child)
+	  m->AddChild(child);
+	child = m;
+      }
+      m = .PikeObjects.NameSpace();
+      m->name = namespace;
       m->AddChild(child);
+      child = m;
+    }
+    m = .PikeObjects.AutoDoc();
+    m->AddChild(child);
     child = m;
   }
   return child;
@@ -119,7 +138,19 @@ string moveImages(string docXMLFile,
   int counter = 0;
   array(int) docgroupcounters = ({}); // docgroup on top level is impossible
   string cwd = getcwd();
-  Node n = parse_input(docXMLFile)[0];
+  Node n;
+  mixed err = catch {
+    n = parse_input(docXMLFile)[0];
+  };
+  if (err) {
+    int offset;
+    if (sscanf(err[0], "%*s[Offset: %d]", offset) == 2) {
+      werror("XMLError: %O#%O\n",
+	     docXMLFile[offset-20..offset-1],
+	     docXMLFile[offset..offset+20]);
+    }
+    throw(err);
+  }
   n->walk_preorder_2(
     lambda(Node n) {
       if (n->get_node_type() == XML_ELEMENT) {
@@ -214,6 +245,8 @@ string moveImages(string docXMLFile,
 // BUILDING OF THE BIG TREE
 //========================================================================
 
+static int isAutoDoc(Node node) { return node->get_any_name() == "autodoc"; }
+static int isNameSpace(Node node) { return node->get_any_name() == "namespace"; }
 static int isClass(Node node) { return node->get_any_name() == "class"; }
 static int isModule(Node node) { return node->get_any_name() == "module"; }
 static int isDoc(Node node) { return node->get_any_name() == "doc"; }
@@ -225,26 +258,28 @@ static string getName(Node node) { return node->get_attributes()["name"]; }
 //!   Used to merge the results of extractions of different Pike and C files.
 //! @param source
 //! @param dest
-//!   The nodes @[source] and @[dest] are @tt{<class>@} or @tt{<module>@}
-//!   nodes that are identical in the sense that they represent the same
-//!   module or class. Typically they both represent the top module.
+//!   The nodes @[source] and @[dest] are @tt{<class>@}, @tt{<module>@},
+//!   @tt{<namespace>@} or @tt{<autodoc>@} nodes that are identical in
+//!   the sense that they represent the same module, class or namespace.
+//!   Typically they both represent @tt{<autodoc>@} nodes.
 //! @note
 //!   After calling this method, any @tt{<class>@} or @tt{<module>@} nodes
-//!   that have been marked with @@appears or @@belongs, are still in their
+//!   that have been marked with @@appears or @@belongs, are still in the
 //!   wrong place in the tree, so @[handleAppears] must be called on the
-//!   whole documentation tree has been merged.
+//!   whole documentation tree once it has been fully merged.
 void mergeTrees(Node dest, Node source) {
   mapping(string : Node) dest_children = ([]);
   int dest_has_doc = 0;
 
   foreach(dest->get_children(), Node node)
-    if (isClass(node) || isModule(node))
+    if (isNameSpace(node) || isClass(node) || isModule(node))
       dest_children[getName(node)] = node;
     else if (isDoc(node))
       dest_has_doc = 1;
 
   foreach(source->get_children(), Node node)
     switch(node->get_any_name()) {
+      case "namespace":
       case "class":
       case "module":
         {
@@ -253,7 +288,8 @@ void mergeTrees(Node dest, Node source) {
         if (n) {
           if (node->get_any_name() != n->get_any_name())
             processError("entity '" + name +
-                         "' used both as a class and a module");
+                         "' used both as a " + node->get_anu_name() +
+			 " and a " + n->get_anu_name());
           mergeTrees(n, node);
         }
         else
@@ -266,7 +302,10 @@ void mergeTrees(Node dest, Node source) {
         break;
       case "doc":
         if (dest_has_doc) {
-          if (isClass(dest))
+	  if (isNameSpace(dest))
+            processError("duplicate documentation for namespace " +
+			 getName(dest));
+          else if (isClass(dest))
             processError("duplicate documentation for class " + getName(dest));
           else if (isModule(dest))
             processError("duplicate documentation for module " +
@@ -289,7 +328,7 @@ static void reportError(string filename, mixed ... args) {
 
 static Node findNode(Node root, array(string) ref) {
   Node n = root;
-  // top:: is just an anchor to the root
+  // top:: is an anchor to the root of the current namespace.
   if (sizeof(ref) && ref[0] == "top::")
     ref = ref[1..];
   if (!sizeof(ref))
@@ -299,7 +338,7 @@ static Node findNode(Node root, array(string) ref) {
     Node found = 0;
     foreach (children, Node child) {
       string tag = child->get_any_name();
-      if (tag == "module" || tag == "class") {
+      if (tag == "namespace" || tag == "module" || tag == "class") {
         string name = child->get_attributes()["name"];
         if (name && name == ref[0]) {
           found = child;
