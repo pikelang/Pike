@@ -912,6 +912,8 @@ test_any([[{
 // parse_tag_args
 test_equal(Parser.HTML()->parse_tag_args("<"), ([]));
 test_equal(Parser.HTML()->parse_tag_args(">"), ([]));
+test_equal(Parser.HTML()->parse_tag_args("br"), (["br": "br"]));
+test_equal(Parser.HTML()->parse_tag_args("<br>"), (["br": "br"]));
 test_equal(Parser.HTML()->parse_tag_args("<br/>"), (["br/": "br/"]));
 
 // Misc
