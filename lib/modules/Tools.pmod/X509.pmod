@@ -1,13 +1,13 @@
 #pike __REAL_VERSION__
 
 /* 
- * $Id: X509.pmod,v 1.17 2003/01/20 17:44:01 nilsson Exp $
+ * $Id: X509.pmod,v 1.18 2003/01/26 17:23:54 nilsson Exp $
  *
  * Some random functions for creating RFC-2459 style X.509 certificates.
  *
  */
 
-#if constant(Standards.ASN1.Types.asn1_sequence)
+#if constant(Standards.ASN1.Types.Sequence)
 
 import Standards.ASN1.Types;
 import Standards.PKCS;
@@ -19,25 +19,35 @@ import Standards.PKCS;
 #define X509_WERR
 #endif
 
-object make_time(int t)
+//! Creates a @[Standards.ASN1.Types.UTC] object from the posix
+//! time @[t].
+UTC make_time(int t)
 {
   Calendar.Second second = Calendar.Second(t)->set_timezone("UTC");
 
   if (second->year_no() >= 2050)
-    error( "Tools.X509.make_time: "
-	   "Times later than 2049 not supported yet\n" );
+    error( "Times later than 2049 not supported yet\n" );
 
-  return asn1_utc(sprintf("%02d%02d%02d%02d%02d%02dZ",
-			  second->year_no() % 100,
-			  second->month_no(),
-			  second->month_day(),
-			  second->hour_no(),
-			  second->minute_no(),
-			  second->second_no()));
+  return UTC(sprintf("%02d%02d%02d%02d%02d%02dZ",
+		     second->year_no() % 100,
+		     second->month_no(),
+		     second->month_day(),
+		     second->hour_no(),
+		     second->minute_no(),
+		     second->second_no()));
 }
 
-/* Returns a mapping similar to that returned by gmtime */
-mapping parse_time(object asn1)
+//! Returns a mapping similar to that returned by gmtime
+//! @returns
+//!   @mapping
+//!     @member int "year"
+//!     @member int "mon"
+//!     @member int "mday"
+//!     @member int "hour"
+//!     @member int "min"
+//!     @member int "sec"
+//!   @endmapping
+mapping(string:int) parse_time(UTC asn1)
 {
   if ((asn1->type_name != "UTCTime")
       || (sizeof(asn1->value) != 13))
@@ -75,7 +85,9 @@ mapping parse_time(object asn1)
   return m;
 }
 
-int time_compare(mapping t1, mapping t2)
+//! Comparision function between two "date" mappings of the
+//! kind that @[parse_time] returns.
+int(-1..1) time_compare(mapping(string:int) t1, mapping(string:int) t2)
 {
   foreach( ({ "year", "mon", "mday", "hour", "min", "sec" }), string name)
     if (t1[name] < t2[name])
@@ -85,153 +97,147 @@ int time_compare(mapping t1, mapping t2)
   return 0;
 }
 
-	 
-object extension_sequence = meta_explicit(2, 3);
-object version_integer = meta_explicit(2, 0);
 
-object rsa_md2_algorithm = asn1_sequence( ({ Identifiers.rsa_md2_id,
-					     asn1_null() }) );
+MetaExplicit extension_sequence = MetaExplicit(2, 3);
+MetaExplicit version_integer = MetaExplicit(2, 0);
 
-object rsa_md5_algorithm = asn1_sequence( ({ Identifiers.rsa_md5_id,
-					     asn1_null() }) );
+Sequence rsa_md2_algorithm = Sequence( ({ Identifiers.rsa_md2_id, Null() }) );
 
-object rsa_sha1_algorithm = asn1_sequence( ({ Identifiers.rsa_sha1_id,
-					      asn1_null() }) );
+Sequence rsa_md5_algorithm = Sequence( ({ Identifiers.rsa_md5_id, Null() }) );
 
+Sequence rsa_sha1_algorithm = Sequence( ({ Identifiers.rsa_sha1_id,
+					   Null() }) );
 
-object make_tbs(object issuer, object algorithm,
+//!
+Sequence make_tbs(object issuer, object algorithm,
 		object subject, object keyinfo,
 		object serial, int ttl,
 		array extensions)
 {
   int now = time();
-  object validity = asn1_sequence( ({ make_time(now),
-				      make_time(now + ttl) }) );
+  Sequence validity = Sequence( ({ make_time(now), make_time(now + ttl) }) );
 
   return (extensions
-	  ? asn1_sequence( ({ version_integer(asn1_integer(2)), /* Version 3 */
-			      serial,
-			      algorithm,
-			      issuer,
-			      validity,
-			      subject,
-			      keyinfo,
-			      extension_sequence(extensions) }) )
-	  : asn1_sequence( ({ serial,
-			      algorithm,
-			      issuer,
-			      validity,
-			      subject,
-			      keyinfo }) ));
+	  ? Sequence( ({ version_integer(Integer(2)), /* Version 3 */
+			 serial,
+			 algorithm,
+			 issuer,
+			 validity,
+			 subject,
+			 keyinfo,
+			 extension_sequence(extensions) }) )
+	  : Sequence( ({ serial,
+			 algorithm,
+			 issuer,
+			 validity,
+			 subject,
+			 keyinfo }) ));
 }
 
+//!
 string make_selfsigned_dsa_certificate(object dsa, int ttl, array name,
 				       array|void extensions)
 {
-  object serial = asn1_integer(1); /* Hard coded serial number */
+  Integer serial = Integer(1); /* Hard coded serial number */
   int now = time();
-  object validity = asn1_sequence( ({ make_time(now),
-				      make_time(now + ttl) }) );
+  Sequence validity = Sequence( ({ make_time(now), make_time(now + ttl) }) );
 
-  object signature_algorithm = asn1_sequence( ({ Identifiers.dsa_sha_id }) );
+  Sequence signature_algorithm = Sequence( ({ Identifiers.dsa_sha_id }) );
   
-  object keyinfo = asn1_sequence(
+  Sequence keyinfo = Sequence(
     ({ /* Use an identifier with parameters */
        DSA.algorithm_identifier(dsa),
-       asn1_bit_string(DSA.public_key(dsa)) }) );
+       BitString(DSA.public_key(dsa)) }) );
 
-  object dn = Certificate.build_distinguished_name(@name);
+  Sequence dn = Certificate.build_distinguished_name(@name);
   
-  object tbs = make_tbs(dn, signature_algorithm,
-			dn, keyinfo,
-			serial, ttl, extensions);
+  Sequence tbs = make_tbs(dn, signature_algorithm,
+			  dn, keyinfo,
+			  serial, ttl, extensions);
   
-  return asn1_sequence(
+  return Sequence(
     ({ tbs,
        signature_algorithm,
-       asn1_bit_string(dsa
-		       ->sign_ssl(tbs->get_der())) }))->get_der();
+       BitString(dsa->sign_ssl(tbs->get_der())) }))->get_der();
 }
 
+//!
 string rsa_sign_digest(object rsa, object digest_id, string digest)
 {
-  object digest_info = asn1_sequence( ({ asn1_sequence( ({ digest_id,
-							   asn1_null() }) ),
-					 asn1_octet_string(digest) }) );
+  Sequence digest_info = Sequence( ({ Sequence( ({ digest_id, Null() }) ),
+				      OctetString(digest) }) );
   return rsa->raw_sign(digest_info->get_der())->digits(256);
 }
 
+//!
 int rsa_verify_digest(object rsa, object digest_id, string digest, string s)
 {
-  object digest_info = asn1_sequence( ({ asn1_sequence( ({ digest_id,
-							   asn1_null() }) ),
-					 asn1_octet_string(digest) }) );
-
+  Sequence digest_info = Sequence( ({ Sequence( ({ digest_id, Null() }) ),
+					 OctetString(digest) }) );
   return rsa->raw_verify(digest_info->get_der(), Gmp.mpz(s, 256));
 }
 
+//!
 string make_selfsigned_rsa_certificate(object rsa, int ttl, array name,
 				       array|void extensions)
 {
-  object serial = asn1_integer(1); /* Hard coded serial number */
+  Integer serial = Integer(1); /* Hard coded serial number */
 
   int now = time();
-  object validity = asn1_sequence( ({ make_time(now),
-				      make_time(now + ttl) }) );
+  Sequence validity = Sequence( ({ make_time(now), make_time(now + ttl) }) );
 
-  object signature_algorithm = asn1_sequence( ({ Identifiers.rsa_sha1_id,
-					         asn1_null() }) );
+  Sequence signature_algorithm = Sequence( ({ Identifiers.rsa_sha1_id,
+					      Null() }) );
 
-  object keyinfo = asn1_sequence(
-    ({ asn1_sequence( ({ Identifiers.rsa_id,
-			 asn1_null() }) ),
-       asn1_bit_string(RSA.public_key(rsa)) }) );
+  Sequence keyinfo = Sequence(
+    ({ Sequence( ({ Identifiers.rsa_id, Null() }) ),
+       BitString(RSA.public_key(rsa)) }) );
 
-  object dn = Certificate.build_distinguished_name(@name);
+  Sequence dn = Certificate.build_distinguished_name(@name);
   
-  object tbs = make_tbs(dn, rsa_sha1_algorithm,
-			dn, keyinfo,
-			serial, ttl, extensions);
+  Sequence tbs = make_tbs(dn, rsa_sha1_algorithm,
+			  dn, keyinfo,
+			  serial, ttl, extensions);
   
-  return asn1_sequence(
+  return Sequence(
     ({ tbs,
        rsa_sha1_algorithm,
-       asn1_bit_string(rsa_sign_digest(rsa, Identifiers.sha1_id,
-				       Crypto.sha()->update(tbs->get_der())
-				       ->digest())) }) )->get_der();
+       BitString(rsa_sign_digest(rsa, Identifiers.sha1_id,
+				 Crypto.sha()->update(tbs->get_der())
+				 ->digest())) }) )->get_der();
 }
 
+//!
 class rsa_verifier
 {
   object rsa;
 
   constant type = "rsa";
 
+  //!
   object init(string key)
-    {
-      rsa = RSA.parse_public_key(key);
-      return rsa && this_object();
-    }
+  {
+    rsa = RSA.parse_public_key(key);
+    return rsa && this_object();
+  }
 
+  //!
   int verify(object algorithm, string msg, string signature)
-    {
-      {
-	if (algorithm->get_der() == rsa_md5_algorithm->get_der())
-	  return rsa_verify_digest(rsa, Identifiers.md5_id,
-				   Crypto.md5()->update(msg)->digest(),
-				   signature);
-	else if (algorithm->get_der() == rsa_sha1_algorithm->get_der())
-	  return rsa_verify_digest(rsa, Identifiers.sha1_id,
-				   Crypto.sha()->update(msg)->digest(),
-				   signature);
-	else if (algorithm->get_der() == rsa_md2_algorithm->get_der())
-	  return rsa_verify_digest(rsa, Identifiers.md2_id,
-				   Crypto.md2()->update(msg)->digest(),
-				   signature);
-	else
-	  return 0;
-      }
-    }
+  {
+    if (algorithm->get_der() == rsa_md5_algorithm->get_der())
+      return rsa_verify_digest(rsa, Identifiers.md5_id,
+			       Crypto.md5()->update(msg)->digest(),
+			       signature);
+    if (algorithm->get_der() == rsa_sha1_algorithm->get_der())
+      return rsa_verify_digest(rsa, Identifiers.sha1_id,
+			       Crypto.sha()->update(msg)->digest(),
+			       signature);
+    if (algorithm->get_der() == rsa_md2_algorithm->get_der())
+      return rsa_verify_digest(rsa, Identifiers.md2_id,
+			       Crypto.md2()->update(msg)->digest(),
+			       signature);
+    return 0;
+  }
 }
 
 #if 0
@@ -249,7 +255,8 @@ class dsa_verifier
 }
 #endif
 
-object make_verifier(object keyinfo)
+//!
+rsa_verifier make_verifier(object keyinfo)
 {
   if ( (keyinfo->type_name != "SEQUENCE")
        || (sizeof(keyinfo->elements) != 2)
@@ -264,19 +271,21 @@ object make_verifier(object keyinfo)
   {
     if ( (sizeof(keyinfo->elements[0]->elements) != 2)
 	 || (keyinfo->elements[0]->elements[1]->get_der()
-	     != asn1_null()->get_der()))
+	     != Null()->get_der()))
       return 0;
     
     return rsa_verifier()->init(keyinfo->elements[1]->value);
   }
-  else if (keyinfo->elements[0]->elements[0]->get_der()
-	   == Identifiers.dsa_sha_id->get_der())
+
+  if(keyinfo->elements[0]->elements[0]->get_der()
+      == Identifiers.dsa_sha_id->get_der())
   {
     /* FIXME: Not implemented */
     return 0;
   }
 }
 
+//!
 class TBSCertificate
 {
   string der;
@@ -296,125 +305,126 @@ class TBSCertificate
   object subject_id;
   object extensions;
 
-  object init(object asn1)
+  this_program init(Object asn1)
+  {
+    der = asn1->get_der();
+    if (asn1->type_name != "SEQUENCE")
+      return 0;
+
+    array a = asn1->elements;
+    X509_WERR("TBSCertificate: sizeof(a) = %d\n", sizeof(a));
+      
+    if (sizeof(a) < 6)
+      return 0;
+
+    if (sizeof(a) > 6)
     {
-      der = asn1->get_der();
-      if (asn1->type_name != "SEQUENCE")
+      /* The optional version field must be present */
+      if (!a[0]->constructed
+	  || (a[0]->get_combined_tag() != make_combined_tag(2, 0))
+	  || (sizeof(a[0]->elements) != 1)
+	  || (a[0]->elements[0]->type_name != "INTEGER"))
 	return 0;
 
-      array a = asn1->elements;
-      X509_WERR("TBSCertificate: sizeof(a) = %d\n", sizeof(a));
+      version = (int) a[0]->elements[0]->value + 1;
+      if ( (version < 2) || (version > 3))
+	return 0;
+      a = a[1..];
+    } else
+      version = 1;
+
+    X509_WERR("TBSCertificate: version = %d\n", version);
+    if (a[0]->type_name != "INTEGER")
+      return 0;
+    serial = a[0]->value;
+
+    X509_WERR("TBSCertificate: serial = %s\n", (string) serial);
       
-      if (sizeof(a) < 6)
-	return 0;
+    if ((a[1]->type_name != "SEQUENCE")
+	|| !sizeof(a[1]->elements )
+	|| (a[1]->elements[0]->type_name != "OBJECT IDENTIFIER"))
+      return 0;
 
-      if (sizeof(a) > 6)
-      {
-	/* The optional version field must be present */
-	if (!a[0]->constructed
-	    || (a[0]->get_combined_tag() != make_combined_tag(2, 0))
-	    || (sizeof(a[0]->elements) != 1)
-	    || (a[0]->elements[0]->type_name != "INTEGER"))
-	  return 0;
+    algorithm = a[1];
 
-	version = (int) a[0]->elements[0]->value + 1;
-	if ( (version < 2) || (version > 3))
-	  return 0;
-	a = a[1..];
-      } else
-	version = 1;
+    X509_WERR("TBSCertificate: algorithm = %s\n", algorithm->debug_string());
 
-      X509_WERR("TBSCertificate: version = %d\n", version);
-      if (a[0]->type_name != "INTEGER")
-	return 0;
-      serial = a[0]->value;
+    if (a[2]->type_name != "SEQUENCE")
+      return 0;
+    issuer = a[2];
 
-      X509_WERR("TBSCertificate: serial = %s\n", (string) serial);
+    X509_WERR("TBSCertificate: issuer = %s\n", issuer->debug_string());
+
+    if ((a[3]->type_name != "SEQUENCE")
+	|| (sizeof(a[3]->elements) != 2))
+      return 0;
+
+    array validity = a[3]->elements;
+
+    not_before = parse_time(validity[0]);
+    if (!not_before)
+      return 0;
       
-      if ((a[1]->type_name != "SEQUENCE")
-	  || !sizeof(a[1]->elements )
-	  || (a[1]->elements[0]->type_name != "OBJECT IDENTIFIER"))
-	return 0;
+    X509_WERR("TBSCertificate: not_before = %O\n", not_before);
 
-      algorithm = a[1];
+    not_after = parse_time(validity[1]);
+    if (!not_after)
+      return 0;
 
-      X509_WERR("TBSCertificate: algorithm = %s\n", algorithm->debug_string());
+    X509_WERR("TBSCertificate: not_after = %O\n", not_after);
 
-      if (a[2]->type_name != "SEQUENCE")
-	return 0;
-      issuer = a[2];
+    if (a[4]->type_name != "SEQUENCE")
+      return 0;
+    subject = a[4];
 
-      X509_WERR("TBSCertificate: issuer = %s\n", issuer->debug_string());
-
-      if ((a[3]->type_name != "SEQUENCE")
-	  || (sizeof(a[3]->elements) != 2))
-	return 0;
-
-      array validity = a[3]->elements;
-
-      not_before = parse_time(validity[0]);
-      if (!not_before)
-	return 0;
+    X509_WERR("TBSCertificate: keyinfo = %s\n", a[5]->debug_string());
       
-      X509_WERR("TBSCertificate: not_before = %O\n", not_before);
+    public_key = make_verifier(a[5]);
 
-      not_after = parse_time(validity[1]);
-      if (!not_after)
-	return 0;
+    if (!public_key)
+      return 0;
 
-      X509_WERR("TBSCertificate: not_after = %O\n", not_after);
+    X509_WERR("TBSCertificate: parsed public key. type = %s\n",
+	      public_key->type);
 
-      if (a[4]->type_name != "SEQUENCE")
-	return 0;
-      subject = a[4];
+    int i = 6;
+    if (i == sizeof(a))
+      return this_object();
 
-      X509_WERR("TBSCertificate: keyinfo = %s\n", a[5]->debug_string());
-      
-      public_key = make_verifier(a[5]);
+    if (version < 2)
+      return 0;
 
-      if (!public_key)
-	return 0;
-
-      X509_WERR("TBSCertificate: parsed public key. type = %s\n",
-		public_key->type);
-
-      int i = 6;
+    if (! a[i]->constructed
+	&& (a[i]->combined_tag == make_combined_tag(2, 1)))
+    {
+      issuer_id = BitString()->decode_primitive(a[i]->raw);
+      i++;
       if (i == sizeof(a))
 	return this_object();
-
-      if (version < 2)
-	return 0;
-
-      if (! a[i]->constructed
-	  && (a[i]->combined_tag == make_combined_tag(2, 1)))
-      {
-	issuer_id = asn1_bit_string()->decode_primitive(a[i]->raw);
-	i++;
-	if (i == sizeof(a))
-	  return this_object();
-      }
-      if (! a[i]->constructed
-	  && (a[i]->combined_tag == make_combined_tag(2, 2)))
-      {
-	subject_id = asn1_bit_string()->decode_primitive(a[i]->raw);
-	i++;
-	if (i == sizeof(a))
-	  return this_object();
-      }
-      if (a[i]->constructed
-	  && (a[i]->combined_tag == make_combined_tag(2, 3)))
-      {
-	extensions = a[i];
-	i++;
-	if (i == sizeof(a))
-	  return this_object();
-      }
-      /* Too many fields */
-      return 0;
     }
-}      
+    if (! a[i]->constructed
+	&& (a[i]->combined_tag == make_combined_tag(2, 2)))
+    {
+      subject_id = BitString()->decode_primitive(a[i]->raw);
+      i++;
+      if (i == sizeof(a))
+	return this_object();
+    }
+    if (a[i]->constructed
+	&& (a[i]->combined_tag == make_combined_tag(2, 3)))
+    {
+      extensions = a[i];
+      i++;
+      if (i == sizeof(a))
+	return this_object();
+    }
+    /* Too many fields */
+    return 0;
+  }
+}
 
-object decode_certificate(string|object cert)
+//!
+TBSCertificate decode_certificate(string|object cert)
 {
   if (stringp (cert)) cert = Standards.ASN1.Decode.simple_der_decode(cert);
 
@@ -429,7 +439,7 @@ object decode_certificate(string|object cert)
       || cert->elements[2]->unused)
     return 0;
 
-  object(TBSCertificate) tbs = TBSCertificate()->init(cert->elements[0]);
+  TBSCertificate tbs = TBSCertificate()->init(cert->elements[0]);
 
   if (!tbs || (cert->elements[1]->get_der() != tbs->algorithm->get_der()))
     return 0;
@@ -437,19 +447,19 @@ object decode_certificate(string|object cert)
   return tbs;
 }
 
-/* Decodes a certificate, checks the signature. Returns the
- * TBSCertificate structure, or 0 if decoding or verification failes.
- *
- * Authorities is a mapping from (DER-encoded) names to a verifiers. */
-
-/* NOTE: This function allows self-signed certificates, and it doesn't
- * check that names or extensions make sense. */
-
-object verify_certificate(string s, mapping authorities)
+//! Decodes a certificate, checks the signature. Returns the
+//! TBSCertificate structure, or 0 if decoding or verification failes.
+//!
+//! Authorities is a mapping from (DER-encoded) names to a verifiers.
+//!
+//! @note
+//!   This function allows self-signed certificates, and it doesn't
+//!   check that names or extensions make sense.
+TBSCertificate verify_certificate(string s, mapping authorities)
 {
   object cert = Standards.ASN1.Decode.simple_der_decode(s);
 
-  object(TBSCertificate) tbs = decode_certificate(cert);
+  TBSCertificate tbs = decode_certificate(cert);
   if (!tbs) return 0;
 
   object v;
@@ -469,17 +479,21 @@ object verify_certificate(string s, mapping authorities)
     && tbs;
 }
 
-/* Decodes a certificate chain, checks the signatures. Returns a mapping
- * with the following contents, depending on the verification of the
- * certificate chain:
- *
- * ([ "self_signed" : non-zero if the certificate is self-signed,
- *    "verified"    : non-zero if the certificate is verified,
- *    "authority"   : DER-encoded name of the authority that verified the chain,
- * ])
- *
- * authorities is a mapping from (DER-encoded) names to verifiers. */
-
+//! Decodes a certificate chain, checks the signatures. Returns a mapping
+//! with the following contents, depending on the verification of the
+//! certificate chain:
+//!
+//! @mapping
+//!   @member int(0..1) "self_signed"
+//!     Non-zero if the certificate is self-signed.
+//!   @member int(0..1) "verified"
+//!     Non-zero if the certificate is verified.
+//!   @member string "authority"
+//!     DER-encoded name of the authority that verified the chain.
+//! @endmapping
+//!
+//! @param authorities
+//!   A mapping from (DER-encoded) names to verifiers.
 mapping verify_certificate_chain(array(string) cert_chain, mapping authorities)
 {
   mapping m = ([ ]);
