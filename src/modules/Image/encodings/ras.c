@@ -1,9 +1,9 @@
-/* $Id: ras.c,v 1.2 1999/10/22 14:27:16 marcus Exp $ */
+/* $Id: ras.c,v 1.3 1999/10/22 17:16:28 marcus Exp $ */
 
 /*
 **! module Image
 **! note
-**!	$Id: ras.c,v 1.2 1999/10/22 14:27:16 marcus Exp $
+**!	$Id: ras.c,v 1.3 1999/10/22 17:16:28 marcus Exp $
 **! submodule RAS
 **!
 **!	This submodule keep the RAS encode/decode capabilities
@@ -14,7 +14,7 @@
 #include "global.h"
 
 #include "stralloc.h"
-RCSID("$Id: ras.c,v 1.2 1999/10/22 14:27:16 marcus Exp $");
+RCSID("$Id: ras.c,v 1.3 1999/10/22 17:16:28 marcus Exp $");
 #include "pike_macros.h"
 #include "object.h"
 #include "constants.h"
@@ -84,6 +84,28 @@ static void decode_ras_header(struct rasterfile *rs, unsigned char *p)
   }
 }
 
+static INT32 unpack_rle(unsigned char *src, INT32 srclen,
+			unsigned char *dst, INT32 dstlen)
+{
+  unsigned char *dst0 = dst;
+  while(srclen>0 && dstlen>0)
+    if((*dst++ = *src++) == 0x80 &&
+       --srclen && *src++!=0 && --srclen) {
+      int n = src[-1];
+      int c = *src++;
+      --dst;
+      while(n-->=0 && dstlen>0) {
+	*dst++ = c;
+	--dstlen;
+      }
+      --srclen;
+    } else {
+      --srclen;
+      --dstlen;
+    }
+  return dst-dst0;
+}
+
 void img_ras_decode(INT32 args)
 {
    struct pike_string *str;
@@ -91,7 +113,7 @@ void img_ras_decode(INT32 args)
    struct object *o, *ctab=NULL;
    struct image *img;
    rgb_group *rgb;
-   unsigned char *src;
+   unsigned char *src, *tmpdata=NULL;
    INT32 len, x, y;
    unsigned int numcolors = 0;
    struct nct_flat_entry *entries;
@@ -168,13 +190,6 @@ void img_ras_decode(INT32 args)
 
    }
 
-   if(rs.ras_type == RT_BYTE_ENCODED) {
-     /* FIXME */
-     if(ctab != NULL)
-       free_object(ctab);
-     error("Image.RAS.decode: RT_BYTE_ENCODED unimplemented\n");
-   }
-
    if(rs.ras_length)
      if(rs.ras_length > len) {
        /* Better to proceed and make a partly black image? */
@@ -183,6 +198,24 @@ void img_ras_decode(INT32 args)
        error("Image.RAS.decode: image data truncated\n");
      } else
        len = rs.ras_length;
+
+   if(rs.ras_type == RT_BYTE_ENCODED) {
+     INT32 img_sz;
+     switch(rs.ras_depth) {
+      case 1:
+	img_sz = ((rs.ras_width+15)>>4)*2*rs.ras_height;
+	break;
+      case 8:
+	img_sz = ((rs.ras_width+1)&~1)*rs.ras_height;
+	break;
+      case 24:
+	img_sz = ((rs.ras_width+1)&~1)*3*rs.ras_height;
+	break;
+     }
+     tmpdata = (unsigned char *)xalloc(img_sz);
+     len = unpack_rle(src, len, tmpdata, img_sz);
+     src = tmpdata;
+   }
 
    push_int(rs.ras_width);
    push_int(rs.ras_height);
@@ -204,6 +237,8 @@ void img_ras_decode(INT32 args)
 	for(x=0; x<rs.ras_width; x++) {
 	  if(len<3) {
 	    /* Better to proceed and make a partly black image? */
+	    if(tmpdata != NULL)
+	      free((char *)tmpdata);
 	    if(ctab != NULL)
 	      free_object(ctab);
 	    free_object(o);
@@ -224,6 +259,8 @@ void img_ras_decode(INT32 args)
 	for(x=0; x<rs.ras_width; x++) {
 	  if(len<1) {
 	    /* Better to proceed and make a partly black image? */
+	    if(tmpdata != NULL)
+	      free((char *)tmpdata);
 	    if(ctab != NULL)
 	      free_object(ctab);
 	    free_object(o);
@@ -249,6 +286,8 @@ void img_ras_decode(INT32 args)
 	    if(!bits) {
 	      if(len<2) {
 		/* Better to proceed and make a partly black image? */
+		if(tmpdata != NULL)
+		  free((char *)tmpdata);
 		if(ctab != NULL)
 		  free_object(ctab);
 		free_object(o);
@@ -281,6 +320,8 @@ void img_ras_decode(INT32 args)
 	break;
      }
 
+   if(tmpdata != NULL)
+     free((char *)tmpdata);
    if(ctab != NULL)
      free_object(ctab);
    pop_n_elems(args);
@@ -320,6 +361,39 @@ static void encode_ras_header(struct rasterfile *rs, unsigned char *p)
   }
 }
 
+static INT32 pack_rle(unsigned char *src, INT32 srclen,
+		      unsigned char *dst, INT32 dstlen)
+{
+  unsigned char *dst0 = dst;
+  while(srclen>0 && dstlen>0) {
+    int run;
+    for(run=1; run<srclen && src[run]==*src && run<256; run++);
+    if(run>3 || *src==0x80)
+      if(run==1 && *src==0x80) {
+	if(dstlen<2) break;
+	*dst++ = 0x80;
+	*dst++ = 0x00;
+	dstlen -= 2;
+	src++;
+	--srclen;
+      } else {
+	if(dstlen<3) break;
+	*dst++ = 0x80;
+	*dst++ = run-1;
+	*dst++ = *src;
+	dstlen -= 3;
+	src += run;
+	srclen -= run;
+      }
+    else {
+	*dst++ = *src++;
+	--srclen;
+	--dstlen;
+      }
+  }
+  return dst-dst0;
+}
+
 static void image_ras_encode(INT32 args)
 {
   struct object *imgo;
@@ -330,7 +404,7 @@ static void image_ras_encode(INT32 args)
   struct rasterfile rs;
   struct nct_dither dith;
   rgb_group *rgb;
-  INT32 x, y;
+  INT32 x, y, llen;
   unsigned char *dst;
   void (*ctfunc)(rgb_group *, unsigned char *, int,
 		 struct neo_colortable *, struct nct_dither *, int) = NULL;
@@ -409,16 +483,18 @@ static void image_ras_encode(INT32 args)
 
   switch(rs.ras_depth) {
    case 1:
-     rs.ras_length = ((img->xsize+15)>>4)*2*img->ysize;
+     llen = ((img->xsize+15)>>4)*2;
      break;
    case 8:
-     rs.ras_length = ((img->xsize+1)&~1)*img->ysize;
+     llen = ((img->xsize+1)&~1);
      break;
    case 24:
-     rs.ras_length = ((img->xsize+1)&~1)*3*img->ysize;
+     llen = ((img->xsize+1)&~1)*3;
      break;
   }
   
+  rs.ras_length = llen*img->ysize;
+
   res2 = begin_shared_string(rs.ras_length);
   dst = (unsigned char *)STR0(res2);
   for(y=0; y<img->ysize; y++)
@@ -455,11 +531,35 @@ static void image_ras_encode(INT32 args)
   if(ct != NULL)
     image_colortable_free_dither(&dith);
 
+  {
+    unsigned char *pkdata = (unsigned char *)xalloc(rs.ras_length+16);
+    unsigned char *pk = pkdata, *src = STR0(res2);
+    INT32 pklen = 0, pkleft = rs.ras_length+16;
+    for(y=0; y<img->ysize; y++) {
+      INT32 n = pack_rle(src, llen, pk, pkleft);
+      src += llen;
+      pk += n;
+      pkleft -= n;
+      if((pklen += n)>rs.ras_length)
+	break;
+    }
+      
+    if(pklen<rs.ras_length) {
+      free((char *)res2);
+      res2 = make_shared_binary_string(pkdata, pklen);
+      rs.ras_length = pklen;
+      rs.ras_type = RT_BYTE_ENCODED;
+    } else
+      res2 = end_shared_string(res2);
+
+    free(pkdata);
+  }
+
   res = begin_shared_string(32);
   encode_ras_header(&rs, STR0(res));
   push_string(end_shared_string(res));
   stack_swap();
-  push_string(end_shared_string(res2));
+  push_string(res2);
   f_add(3);
   res = (--sp)->u.string;
   pop_n_elems(args);
