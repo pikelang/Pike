@@ -1,5 +1,5 @@
 /* -*- c -*-
- * $Id: builtin.cmod,v 1.51 2001/07/01 13:12:46 grubba Exp $
+ * $Id: builtin.cmod,v 1.52 2001/07/01 15:39:16 grubba Exp $
  */
 
 #include "global.h"
@@ -1302,9 +1302,20 @@ PIKECLASS multi_string_replace
     return DO_NOT_WARN((int)my_quick_strcmp(a->ind, b->ind));
   }
 
-  PIKEFUN void create(array(string) from, array(string) to)
+  PIKEFUN void create(array(string)|void from_, array(string)|void to_)
   {
     int i;
+    struct array *from;
+    struct array *to;
+    if (!args) {
+      push_int(0);
+      return;
+    }
+    if (!from_ || !to_) {
+      Pike_error("Bad number of arguments to create().\n");
+    }
+    from = from_->u.array;
+    to = to_->u.array;
     if (from->size != to->size) {
       Pike_error("Replace must have equal-sized from and to arrays.\n");
     }
@@ -1354,6 +1365,8 @@ PIKECLASS multi_string_replace
       if ((x >= 0) && (x < 256))
 	THIS->set_end[x] = i+1;
     }
+    pop_n_elems(args);
+    push_int(0);
   }
 
   static int find_longest_prefix(char *str,
