@@ -22,10 +22,10 @@ class File
     return ::open(file,mode,bits);
   }
 
-  int open_socket()
+  int open_socket(int|void port, string|void address)
   {
     _fd=Fd();
-    return ::open_socket();
+    return ::open_socket(port, address);
   }
 
   int connect(string host, int port)
