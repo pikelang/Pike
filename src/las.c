@@ -5,7 +5,7 @@
 \*/
 /**/
 #include "global.h"
-RCSID("$Id: las.c,v 1.184 2000/07/11 11:31:46 grubba Exp $");
+RCSID("$Id: las.c,v 1.185 2000/07/12 01:20:21 hubbe Exp $");
 
 #include "language.h"
 #include "interpret.h"
@@ -102,6 +102,34 @@ void check_tree(node *n, int depth)
     fatal("Free node in tree.\n");
 
   check_node_hash(n);
+
+  switch(n->token)
+  {
+    case F_EXTERNAL:
+      if(n->type)
+      {
+	int level = n->u.integer.a;
+	int id_no = n->u.integer.b;
+	struct program *p = parent_compilation(level);
+	if (p) {
+	  struct identifier *id = ID_FROM_INT(p, id_no);
+	  if (id) {
+#ifdef PIKE_DEBUG
+	    if(id->type != n->type)
+	    {
+	      printf("Type of external node is not matching it's identifier.\nid->type: ");
+	      simple_describe_type(id->type);
+	      printf("\nn->type : ");
+	      simple_describe_type(n->type);
+	      printf("\n");
+
+	      fatal("Type of external node is not matching it's identifier.\n");
+	    }
+#endif
+	  }
+	}
+      }
+  }
 
   if(d_flag<2) return;
 
@@ -349,8 +377,15 @@ static node *freeze_node(node *orig)
 
 #else /* !SHARED_NODES */
 
-#define freeze_node(X)	(X)
+#ifdef PIKE_DEBUG
+static node *freeze_node(node *orig)
+{
+  check_tree(orig);
+  return orig;
+}
+#endif
 
+#define freeze_node(X) (X)
 #endif /* SHARED_NODES */
 
 void free_all_nodes(void)
@@ -687,9 +722,9 @@ node *debug_mknode(short token, node *a, node *b)
     verify_shared_strings_tables();
 #endif
 
+  check_tree(res,0);
   if(!Pike_compiler->num_parse_error && Pike_compiler->compiler_pass==2)
   {
-    check_tree(res,0);
     optimize(res);
     check_tree(res,0);
   }
@@ -897,6 +932,13 @@ node *debug_mkexternalnode(int level,
 {
   node *res = mkemptynode();
   res->token = F_EXTERNAL;
+#ifdef PIKE_DEBUG
+  if(d_flag)
+  {
+    check_string(id->type);
+    check_string(id->name);
+  }
+#endif
 
   /* Kludge */
   id = ID_FROM_INT(parent_compilation(level), i);
@@ -2385,6 +2427,18 @@ void fix_type_field(node *n)
 	    struct identifier *id = ID_FROM_INT(p, id_no);
 	    if (id && id->name) {
 	      name = id->name->str;
+#ifdef PIKE_DEBUG
+	      if(id->type != f)
+	      {
+		printf("Type of external node is not matching it's identifier.\nid->type: ");
+		simple_describe_type(id->type);
+		printf("\nf       : ");
+		simple_describe_type(f);
+		printf("\n");
+
+		fatal("Type of external node is not matching it's identifier.\n");
+	      }
+#endif
 	    }
 	  }
 	}
