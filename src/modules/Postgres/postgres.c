@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: postgres.c,v 1.30 2002/11/18 12:29:49 nilsson Exp $
+|| $Id: postgres.c,v 1.31 2003/04/28 09:51:01 grubba Exp $
 */
 
 /*
@@ -35,9 +35,13 @@
 #include "module_support.h"
 #include "operators.h"
 
-#ifdef HAVE_POSTGRES_FE_H
+#ifdef HAVE_SERVER_POSTGRES_FE_H
+#include <server/postgres_fe.h>
+#elif defined(HAVE_POSTGRES_FE_H)
 #include <postgres_fe.h>
-#elif defined(HAVE_POSTGRES_H) /* !HAVE_POSTGRES_FE_H */
+#elif defined(HAVE_SERVER_POSTGRES_H)
+#include <server/postgres.h>
+#elif defined(HAVE_POSTGRES_H)
 #include <postgres.h>
 #endif /* HAVE_POSTGRES_FE_H */
 #include <libpq-fe.h>
@@ -75,7 +79,7 @@ static void pgdebug (char * a, ...) {}
 
 struct program * postgres_program;
 
-RCSID("$Id: postgres.c,v 1.30 2002/11/18 12:29:49 nilsson Exp $");
+RCSID("$Id: postgres.c,v 1.31 2003/04/28 09:51:01 grubba Exp $");
 
 static void set_error (char * newerror)
 {

@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: acconfig.h,v 1.1 2003/01/09 16:08:29 marcus Exp $
+|| $Id: acconfig.h,v 1.2 2003/04/28 09:50:33 grubba Exp $
 */
 
 #undef STDC_HEADERS
@@ -22,6 +22,12 @@
 #endif
 
 /* End of autoconfigurable section */
-#if defined (HAVE_LIBPQ) && (defined(HAVE_POSTGRES_H) || defined(HAVE_POSTGRES_FE_H) || defined(HAVE_PG72)) && defined (HAVE_LIBPQ_FE_H)
+#if defined(HAVE_LIBPQ) && \
+    (defined(HAVE_POSTGRES_H) || \
+     defined(HAVE_POSTGRES_FE_H) || \
+     defined(HAVE_SERVER_POSTGRES_H) || \
+     defined(HAVE_SERVER_POSTGRES_FE_H) || \
+     defined(HAVE_PG72)) && \
+    defined(HAVE_LIBPQ_FE_H)
 #define HAVE_POSTGRES
 #endif
