@@ -179,7 +179,7 @@
 /* This is the grammar definition of Pike. */
 
 #include "global.h"
-RCSID("$Id: language.yacc,v 1.99 1998/07/31 21:51:31 hubbe Exp $");
+RCSID("$Id: language.yacc,v 1.100 1998/08/01 13:19:17 grubba Exp $");
 #ifdef HAVE_MEMORY_H
 #include <memory.h>
 #endif
@@ -953,6 +953,11 @@ new_name: optional_stars F_IDENTIFIER
   {
     free_node($2);
   }
+  | optional_stars F_IDENTIFIER '=' F_LEX_EOF
+  {
+    yyerror("Unexpected end of file in variable definition.");
+    free_node($2);
+  }
   | optional_stars bad_identifier '=' expr0
   {
     free_node($4);
@@ -984,6 +989,13 @@ new_local_name: optional_stars F_IDENTIFIER
   }
   | optional_stars F_IDENTIFIER '=' error
   {
+    free_node($2);
+    /* No yyerok here since we aren't done yet. */
+    $$=0;
+  }
+  | optional_stars F_IDENTIFIER '=' F_LEX_EOF
+  {
+    yyerror("Unexpected end of file in local variable definition.");
     free_node($2);
     /* No yyerok here since we aren't done yet. */
     $$=0;
@@ -1158,6 +1170,10 @@ lambda: F_LAMBDA
 
 failsafe_program: '{' program end_block
                 | error { yyerrok; }
+                | F_LEX_EOF
+                {
+		  yyerror("End of file where program definition expected.");
+		}
                 ;
 
 class: modifiers F_CLASS optional_identifier
