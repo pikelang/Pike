@@ -4,7 +4,7 @@
 ||| See the files COPYING and DISCLAIMER for more information.
 \*/
 #include "global.h"
-RCSID("$Id: zlibmod.c,v 1.15 1997/10/26 17:22:43 grubba Exp $");
+RCSID("$Id: zlibmod.c,v 1.16 1997/11/11 03:12:04 grubba Exp $");
 
 #include "zlib_machine.h"
 
@@ -36,7 +36,7 @@ struct zipper
 #endif /* _REENTRANT */
 };
 
-#define BUF 16384
+#define BUF 32768
 
 #define THIS ((struct zipper *)(fp->current_storage))
 
