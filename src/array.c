@@ -1279,8 +1279,8 @@ struct array *explode(struct pike_string *str,
       if(ret->size == ret->malloced_size)
       {
 	e=ret->size;
-	ret=resize_array(ret, ret->size * 2);
-	ret->size=0;
+	ret=resize_array(ret, e * 2);
+	ret->size=e;
       }
 
       ITEM(ret)[ret->size].u.string=make_shared_binary_string(s, tmp-s);
@@ -1291,7 +1291,11 @@ struct array *explode(struct pike_string *str,
     }
 
     if(ret->size == ret->malloced_size)
-      ret=resize_array(ret, ret->size * 2);
+    {
+      e=ret->size;
+      ret=resize_array(ret, e * 2);
+      ret->size=e;
+    }
 
     ITEM(ret)[ret->size].u.string=make_shared_binary_string(s, end-s);
     ITEM(ret)[ret->size].type=T_STRING;
