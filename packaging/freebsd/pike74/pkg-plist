@@ -1,7 +1,9 @@
 bin/pike
 bin/hilfe
 pike/%%PORTVERSION%%/bin/pike
+pike/%%PORTVERSION%%/bin/pike.syms
 pike/%%PORTVERSION%%/bin/hilfe
+pike/%%PORTVERSION%%/bin/rsif
 pike/%%PORTVERSION%%/lib/modules/Parser.pmod/XML.pmod/Validating.pike
 pike/%%PORTVERSION%%/lib/modules/Parser.pmod/XML.pmod/Simple.pike
 pike/%%PORTVERSION%%/lib/modules/Parser.pmod/XML.pmod/DOM.pmod
@@ -353,6 +355,28 @@ pike/%%PORTVERSION%%/lib/7.0/modules/Colors.pmod
 pike/%%PORTVERSION%%/lib/7.0/modules/Simulate.pmod
 pike/%%PORTVERSION%%/lib/7.0/modules/Stack.pmod
 pike/%%PORTVERSION%%/lib/7.0/modules/__default.pmod
+pike/%%PORTVERSION%%/lib/7.2/modules/.autodoc
+pike/%%PORTVERSION%%/lib/7.2/modules/LR.pmod/priority.pike.o
+pike/%%PORTVERSION%%/lib/7.2/modules/LR.pmod/priority.pike
+pike/%%PORTVERSION%%/lib/7.2/modules/LR.pmod/rule.pike.o
+pike/%%PORTVERSION%%/lib/7.2/modules/LR.pmod/rule.pike
+pike/%%PORTVERSION%%/lib/7.2/modules/LR.pmod/scanner.pike.o
+pike/%%PORTVERSION%%/lib/7.2/modules/LR.pmod/scanner.pike
+pike/%%PORTVERSION%%/lib/7.2/modules/LR.pmod/item.pike
+pike/%%PORTVERSION%%/lib/7.2/modules/LR.pmod/lr.pike
+pike/%%PORTVERSION%%/lib/7.2/modules/LR.pmod/parser.pike
+pike/%%PORTVERSION%%/lib/7.2/modules/LR.pmod/Grammar_parser.pmod
+pike/%%PORTVERSION%%/lib/7.2/modules/Thread.pmod.o
+pike/%%PORTVERSION%%/lib/7.2/modules/Thread.pmod
+pike/%%PORTVERSION%%/lib/7.2/modules/String.pmod.o
+pike/%%PORTVERSION%%/lib/7.2/modules/String.pmod
+pike/%%PORTVERSION%%/lib/7.2/modules/Gmp.pmod.o
+pike/%%PORTVERSION%%/lib/7.2/modules/Gmp.pmod
+pike/%%PORTVERSION%%/lib/7.2/modules/Protocols.pmod/LDAP.pmod/client.pike
+pike/%%PORTVERSION%%/lib/7.2/modules/__default.pmod.o
+pike/%%PORTVERSION%%/lib/7.2/modules/__default.pmod
+pike/%%PORTVERSION%%/lib/7.2/modules/system.pmod.o
+pike/%%PORTVERSION%%/lib/7.2/modules/system.pmod
 pike/%%PORTVERSION%%/lib/tools/pike.el
 pike/%%PORTVERSION%%/lib/master.pike
 pike/%%PORTVERSION%%/lib/master.pike.o
@@ -441,6 +465,8 @@ pike/%%PORTVERSION%%/man/man1/pike.1
 @dirrm pike/%%PORTVERSION%%/lib/7.0/include
 @unexec rm -rf %D/pike/%%PORTVERSION%%/lib/7.0/modules
 @dirrm pike/%%PORTVERSION%%/lib/7.0
+@unexec rm -rf %D/pike/%%PORTVERSION%%/lib/7.2/modules
+@dirrm pike/%%PORTVERSION%%/lib/7.2
 @dirrm pike/%%PORTVERSION%%/lib/tools
 @unexec rm -rf %D/pike/%%PORTVERSION%%/include/pike
 @dirrm pike/%%PORTVERSION%%/include
