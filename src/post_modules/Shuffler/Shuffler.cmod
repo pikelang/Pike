@@ -2,12 +2,12 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: Shuffler.cmod,v 1.30 2004/08/25 23:04:24 vida Exp $
+|| $Id: Shuffler.cmod,v 1.31 2004/08/27 02:24:28 nilsson Exp $
 */
 
 #include "global.h"
 #include "stralloc.h"
-RCSID("$Id: Shuffler.cmod,v 1.30 2004/08/25 23:04:24 vida Exp $");
+RCSID("$Id: Shuffler.cmod,v 1.31 2004/08/27 02:24:28 nilsson Exp $");
 #include "pike_macros.h"
 #include "interpret.h"
 #include "threads.h"
@@ -125,8 +125,9 @@ PIKECLASS Shuffle
       safe_apply( t->file_obj, "set_write_callback", 1 );
       pop_stack();
     }
-    else
+    else {
       SHUFFLE_DEBUG1("EEP: No destination! Cannot set callbacks\n",t);
+    }
   }
   
   static void __remove_callbacks( struct Shuffle_struct *t )
@@ -140,8 +141,9 @@ PIKECLASS Shuffle
       safe_apply( t->file_obj, "set_write_callback", 1 );
       pop_stack();
     }
-    else
+    else {
       SHUFFLE_DEBUG1("EEP: No destination! Cannot remove callbacks\n",t);
+    }
   }
 
   static int got_shuffler_event(struct fd_callback_box*box, int event) {
