@@ -1,7 +1,7 @@
 // This file is part of Pike. For copyright information see COPYRIGHT.
 // Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 // for more information.
-// $Id: peep.in,v 1.76 2004/11/27 22:48:11 mast Exp $
+// $Id: peep.in,v 1.77 2004/12/19 16:41:06 grubba Exp $
 
 NOP :
 POP_N_ELEMS (0) : 
@@ -594,3 +594,5 @@ CONST_1 ASSIGN_GLOBAL COMPL : CONST_1 ASSIGN_GLOBAL_AND_POP($2a) CONST0
 CONST0 COMPL : CONST_1
 CONST0 ASSIGN_LOCAL COMPL : CLEAR_LOCAL($2a) CONST_1
 CONST0 ASSIGN_GLOBAL COMPL : CONST0 ASSIGN_GLOBAL_AND_POP($2a) CONST_1
+
+THIS [!$1a && !$1b]: THIS_OBJECT(0)
