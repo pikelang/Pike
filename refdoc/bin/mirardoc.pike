@@ -1,4 +1,4 @@
-/* $Id: mirardoc.pike,v 1.6 2001/11/13 17:50:40 nilsson Exp $ */
+/* $Id: mirardoc.pike,v 1.7 2002/01/18 05:32:48 nilsson Exp $ */
 
 string IMAGE_DIR = "../src_images/";
 string makepic1;
@@ -1026,9 +1026,13 @@ void create() {
   string make() {
     object|string o=render();
     if(objectp(o))
+#if constant(Image.PNG.encode)
       o=Image.PNG.encode(o);
-
     Stdio.write_file(fn, o);
+#else
+      cp(\"" + IMAGE_DIR + #"\", fn);
+#endif
+
     werror(\"Wrote %s.\\n\", fn);
     return \"<image>\"+fn+\"</image>\";
   }
@@ -1058,14 +1062,23 @@ void create() {
 
   string illustration(string|Image.Image img, mapping extra, void|string suffix) {
     string fn = prefix + \".\" + (img_counter++) + (suffix||\".png\");
-    if(!stringp(img)) img = Image.PNG.encode(img);
+    if(!stringp(img))
+#if constant(Image.PNG.encode)
+      img = Image.PNG.encode(img);
     Stdio.write_file(fn, img);
+#else
+      cp(\"" + IMAGE_DIR + #"\", fn);
+#endif
     werror(\"Wrote %s from execute.\\n\", fn);
     return \"<image>\"+fn+\"</image>\";
   }
 
   string illustration_jpeg(Image.Image img, mapping extra) {
+#if constant(Image.JPEG.encode)
     return illustration(Image.JPEG.encode(img, extra), extra, \".jpeg\");
+#else
+    return illustration(img, extra);
+#endif
   }
 
   string mktag(string name, void|mapping args, void|string c) {
