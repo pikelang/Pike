@@ -5,7 +5,7 @@
 \*/
 /**/
 #include "global.h"
-RCSID("$Id: backend.c,v 1.51 2000/06/29 16:52:25 grubba Exp $");
+RCSID("$Id: backend.c,v 1.52 2000/07/11 19:04:06 neotron Exp $");
 #include "fdlib.h"
 #include "backend.h"
 #include <errno.h>
@@ -27,8 +27,12 @@ RCSID("$Id: backend.c,v 1.51 2000/06/29 16:52:25 grubba Exp $");
 
 #ifdef HAVE_SYS_SELECT_H
 #include <sys/select.h>
+#else
+/* BeOS socket (select etc) stuff */
+#ifdef HAVE_NET_SOCKET_H
+#include <net/socket.h>
 #endif
-
+#endif
 #include <sys/stat.h>
 
 #define SELECT_READ 1
