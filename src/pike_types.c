@@ -2,11 +2,11 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: pike_types.c,v 1.202 2002/11/28 19:11:43 mast Exp $
+|| $Id: pike_types.c,v 1.203 2003/01/16 00:44:13 mast Exp $
 */
 
 #include "global.h"
-RCSID("$Id: pike_types.c,v 1.202 2002/11/28 19:11:43 mast Exp $");
+RCSID("$Id: pike_types.c,v 1.203 2003/01/16 00:44:13 mast Exp $");
 #include <ctype.h>
 #include "svalue.h"
 #include "pike_types.h"
@@ -554,7 +554,7 @@ void debug_push_assign_type(int marker)
   marker -= '0';
 #ifdef PIKE_DEBUG 
   if ((marker < 0) || (marker > 9)) {
-    Pike_fatal("Bad assign marker: %ld\n", marker);
+    Pike_fatal("Bad assign marker: %d\n", marker);
   }
 #endif /* PIKE_DEBUG */
 
