@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: program.c,v 1.573 2004/10/30 11:38:27 mast Exp $
+|| $Id: program.c,v 1.574 2004/10/30 15:57:19 nilsson Exp $
 */
 
 #include "global.h"
@@ -2408,6 +2408,11 @@ static void exit_program_struct(struct program *p)
     }
 
   DOUBLEUNLINK(first_program, p);
+
+  if(p->facet_group)
+  {
+    free_object(p->facet_group);
+  }
 
   if(p->flags & PROGRAM_OPTIMIZED)
   {
