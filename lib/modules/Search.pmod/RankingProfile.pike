@@ -2,24 +2,31 @@ array(int) field_ranking;
 array(int) proximity_ranking;
 int cutoff;
 
-void create(void|Search.Database.Base db, void|mapping(string:int) _field_ranking)
+void create(void|int _cutoff, void|array(int) _proximity_ranking,
+	    void|Search.Database.Base db, void|mapping(string:int) _field_ranking)
 {
   field_ranking=allocate(66);
-  field_ranking[0]=17;
-  field_ranking[2]=147;
+
+  // Set cutoff to a value > 0.
+  cutoff = _cutoff || 8;
 
   proximity_ranking=allocate(8);
-  for(int i=0; i<8; i++)
-    proximity_ranking[i]=8-i;
+  if(_proximity_ranking)
+    proximity_ranking = _proximity_ranking;
+  else
+    for(int i=0; i<8; i++)
+      proximity_ranking[i]=8-i;
 
-  int field_id;
   if(_field_ranking)
   {
-    for(int i=0; i<66; i++)
-      field_ranking[i]=0;
+    int field_id;
     foreach(indices(_field_ranking), string field)
       if(field_id=db->get_field_id(field, 1))
 	field_ranking[field_id]=_field_ranking[field];
+  }
+  else {
+    field_ranking[0]=17;
+    field_ranking[2]=147;
   }
 }
 
