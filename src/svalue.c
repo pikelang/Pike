@@ -3,6 +3,7 @@
 ||| Pike is distributed as GPL (General Public License)
 ||| See the files COPYING and DISCLAIMER for more information.
 \*/
+/**/
 #include "global.h"
 #include "main.h"
 #include "svalue.h"
@@ -450,6 +451,7 @@ int is_eq(struct svalue *a, struct svalue *b)
   switch(a->type)
   {
   case T_OBJECT:
+    if (a->u.object == b->u.object) return 1;
     if(a->u.object->prog->lfuns[LFUN_EQ] != -1)
       goto a_is_obj;
 
