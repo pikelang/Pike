@@ -62,7 +62,7 @@ void destroy() { close(); }
 //! The port accept callback
 static void new_connection()
 {
-   SSL.SSLFile fd=port->accept();
+   SSL.sslfile fd=port->accept();
    Request r=request_program();
    r->attach_fd(fd,this,callback);
 }
