@@ -849,7 +849,6 @@ testfont binary
 /src/rusage.c foreign_ident
 /src/rusage.h foreign_ident
 /src/security.c foreign_ident
-/src/security.h foreign_ident
 /src/signal_handler.c foreign_ident
 /src/signal_handler.h foreign_ident
 /src/smartlink.c foreign_ident
