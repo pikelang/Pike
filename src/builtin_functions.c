@@ -4,7 +4,7 @@
 ||| See the files COPYING and DISCLAIMER for more information.
 \*/
 #include "global.h"
-RCSID("$Id: builtin_functions.c,v 1.79 1998/03/09 23:23:53 grubba Exp $");
+RCSID("$Id: builtin_functions.c,v 1.80 1998/03/12 21:43:40 per Exp $");
 #include "interpret.h"
 #include "svalue.h"
 #include "pike_macros.h"
@@ -2292,7 +2292,10 @@ void f_gethrvtime(INT32 args)
 void f_gethrtime(INT32 args)
 {
   pop_n_elems(args);
-  push_int((INT32)(gethrtime()/1000)); 
+  if(args)
+    push_int((INT32)(gethrtime())); 
+  else
+    push_int((INT32)(gethrtime()/1000)); 
 }
 #else
 void f_gethrtime(INT32 args)
@@ -2300,7 +2303,10 @@ void f_gethrtime(INT32 args)
   struct timeval tv;
   pop_n_elems(args);
   GETTIMEOFDAY(&tv);
-  push_int((INT32)((tv.tv_sec *1000000) + tv.tv_usec));
+  if(args)
+    push_int((INT32)((tv.tv_sec *1000000) + tv.tv_usec)*1000);
+  else
+    push_int((INT32)((tv.tv_sec *1000000) + tv.tv_usec));
 }
 #endif /* HAVE_GETHRVTIME */
 
@@ -2368,7 +2374,7 @@ void init_builtin_efuns(void)
 {
   init_operators();
 
-  add_efun("gethrtime", f_gethrtime,"function(void:int)", OPT_EXTERNAL_DEPEND);
+  add_efun("gethrtime", f_gethrtime,"function(int|void:int)", OPT_EXTERNAL_DEPEND);
 
 #ifdef HAVE_GETHRVTIME
   add_efun("gethrvtime",f_gethrvtime,"function(void:int)",OPT_EXTERNAL_DEPEND);
