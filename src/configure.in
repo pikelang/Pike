@@ -1,4 +1,4 @@
-AC_REVISION("$Id: configure.in,v 1.507 2001/03/23 01:05:41 grubba Exp $")
+AC_REVISION("$Id: configure.in,v 1.508 2001/03/23 03:14:39 hubbe Exp $")
 AC_INIT(interpret.c)
 AC_CONFIG_HEADER(machine.h)
 
@@ -877,6 +877,8 @@ AC_ARG_WITH(compiler-trace,[  --with-compiler-trace  enable tracing of the compi
 AC_ARG_WITH(security,    [  --with-security        enable internal pike security system],[AC_DEFINE(PIKE_SECURITY)],[])
 AC_ARG_WITH(bignums,     [  --without-bignums      disable internal conversion to bignums],[],[with_bignums=yes])
 AC_ARG_WITH(shared-nodes,[  --without-shared-nodes disable the SHARED_NODES mode of the optimizer],[],[with_shared_nodes=yes])
+
+AC_ARG_WITH(shared-nodes,[  --without-lock         Enable experimental code for multicpu machines.],[ AC_DEFINE(PIKE_RUN_UNLOCKED) ],[])
 
 # This makes configure default to --without-Perl
 # Remove this when the Perl module stops crashing and hanging. -Hubbe

@@ -5,7 +5,7 @@
 \*/
 
 /*
- * $Id: multiset.h,v 1.16 2000/12/16 05:24:41 marcus Exp $
+ * $Id: multiset.h,v 1.17 2001/03/23 03:14:40 hubbe Exp $
  */
 #ifndef MULTISET_H
 #define MULTISET_H
@@ -25,7 +25,7 @@ struct multiset
 extern struct multiset *first_multiset;
 extern struct multiset *gc_internal_multiset;
 
-#define free_multiset(L) do{ struct multiset *l_=(L); debug_malloc_touch(l_); if(!--l_->refs) really_free_multiset(l_); }while(0)
+#define free_multiset(L) do{ struct multiset *l_=(L); debug_malloc_touch(l_); if(!sub_ref(l_)) really_free_multiset(l_); }while(0)
 
 #define l_sizeof(L) ((L)->ind->size)
 

@@ -5,7 +5,7 @@
 \*/
 
 /*
- * $Id: global.h,v 1.58 2001/03/04 15:27:53 mirar Exp $
+ * $Id: global.h,v 1.59 2001/03/23 03:14:40 hubbe Exp $
  */
 #ifndef GLOBAL_H
 #define GLOBAL_H
@@ -377,7 +377,7 @@ static inline long PTRDIFF_T_TO_LONG(ptrdiff_t x)
 
 #include "port.h"
 #include "dmalloc.h"
-
+#include "pike_cpulib.h"
 
 #ifdef BUFSIZ
 #define PROT_STDIO(x) PROT(x)

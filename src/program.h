@@ -5,7 +5,7 @@
 \*/
 
 /*
- * $Id: program.h,v 1.120 2001/03/20 02:45:51 hubbe Exp $
+ * $Id: program.h,v 1.121 2001/03/23 03:14:41 hubbe Exp $
  */
 #ifndef PROGRAM_H
 #define PROGRAM_H
@@ -315,7 +315,7 @@ struct program
 
 #define FIND_LFUN(P,N) ( dmalloc_touch(struct program *,(P))->flags & PROGRAM_FIXED?((P)->lfuns[(N)]):low_find_lfun((P), (N)) )
 
-#define free_program(p) do{ struct program *_=(p); debug_malloc_touch(_); if(!--_->refs) really_free_program(_); }while(0)
+#define free_program(p) do{ struct program *_=(p); debug_malloc_touch(_); if(!sub_ref(_)) really_free_program(_); }while(0)
 
 
 extern struct object *error_handler;

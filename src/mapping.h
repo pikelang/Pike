@@ -5,7 +5,7 @@
 \*/
 
 /*
- * $Id: mapping.h,v 1.34 2000/12/16 05:45:44 marcus Exp $
+ * $Id: mapping.h,v 1.35 2001/03/23 03:14:40 hubbe Exp $
  */
 #ifndef MAPPING_H
 #define MAPPING_H
@@ -70,7 +70,7 @@ extern struct mapping *gc_internal_mapping;
 #define MAPPING_LOOP(m) \
   for((e=0) DO_IF_DMALLOC( ?0:(debug_malloc_touch(m),debug_malloc_touch(m->data))) ;e<m->data->hashsize;e++) for(k=m->data->hash[e];k;k=k->next)
 
-#define free_mapping(M) do{ struct mapping *m_=(M); debug_malloc_touch(m_); if(!--m_->refs) really_free_mapping(m_); }while(0)
+#define free_mapping(M) do{ struct mapping *m_=(M); debug_malloc_touch(m_); if(!sub_ref(m_)) really_free_mapping(m_); }while(0)
 
 #define free_mapping_data(M) do{ \
  struct mapping_data *md_=(M); \
