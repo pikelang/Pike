@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: stralloc.c,v 1.148 2002/10/11 01:39:38 nilsson Exp $
+|| $Id: stralloc.c,v 1.149 2002/11/28 19:11:43 mast Exp $
 */
 
 #include "global.h"
@@ -28,7 +28,7 @@
 #define HUGE HUGE_VAL
 #endif /*!HUGE*/
 
-RCSID("$Id: stralloc.c,v 1.148 2002/10/11 01:39:38 nilsson Exp $");
+RCSID("$Id: stralloc.c,v 1.149 2002/11/28 19:11:43 mast Exp $");
 
 /* #define STRALLOC_USE_PRIMES */
 
@@ -1862,11 +1862,11 @@ void cleanup_shared_string_table(void)
   base_table=0;
   num_strings=0;
 
-#ifdef DEBUG_MALLOC
+#ifdef DO_PIKE_CLEANUP
   free_all_short_pike_string0_blocks();
   free_all_short_pike_string1_blocks();
   free_all_short_pike_string2_blocks();
-#endif /* DEBUG_MALLOC */
+#endif /* DO_PIKE_CLEANUP */
 }
 
 void count_memory_in_strings(INT32 *num, INT32 *size)

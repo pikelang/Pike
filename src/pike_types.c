@@ -2,11 +2,11 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: pike_types.c,v 1.201 2002/11/22 13:46:56 grubba Exp $
+|| $Id: pike_types.c,v 1.202 2002/11/28 19:11:43 mast Exp $
 */
 
 #include "global.h"
-RCSID("$Id: pike_types.c,v 1.201 2002/11/22 13:46:56 grubba Exp $");
+RCSID("$Id: pike_types.c,v 1.202 2002/11/28 19:11:43 mast Exp $");
 #include <ctype.h>
 #include "svalue.h"
 #include "pike_types.h"
@@ -4817,7 +4817,7 @@ void cleanup_pike_type_table(void)
   }
   /* Don't do this, it messes up stuff... */
   /* pike_type_hash_size = 0; */
-#ifdef DEBUG_MALLOC
+#ifdef DO_PIKE_CLEANUP
   free_all_pike_type_blocks();
-#endif /* DEBUG_MALLOC */
+#endif /* DO_PIKE_CLEANUP */
 }
