@@ -5,7 +5,7 @@
 \*/
 /**/
 #include "global.h"
-RCSID("$Id: program.c,v 1.340 2001/07/01 22:29:40 mast Exp $");
+RCSID("$Id: program.c,v 1.341 2001/07/01 22:48:34 grubba Exp $");
 #include "program.h"
 #include "object.h"
 #include "dynamic_buffer.h"
@@ -915,17 +915,55 @@ struct program *id_to_program(INT32 id)
     if(p->id==id)
       return p;
 
-  if(id)
+  for(p=first_program;p;p=p->next)
+  {
+    if(id==p->id)
     {
-      for(p=first_program;p;p=p->next)
-	{
-	  if(id==p->id)
-	    {
-	      id_to_program_cache[h]=p;
-	      return p;
-	    }
-	}
+      id_to_program_cache[h]=p;
+      return p;
     }
+  }
+
+  if ((id > 0) && (id < PROG_DYNAMIC_ID_START)) {
+    /* Reserved id. Attempt to load the proper dynamic module
+     * to resolv the id.
+     */
+    char *module = NULL;
+
+    switch(id) {
+    case PROG_PARSER_HTML_ID:
+      module = "Parser._parser";
+      break;
+    case PROG_GMP_MPZ_ID:
+      module = "Gmp";
+      break;
+    case PROG_MODULE_MIME_ID:
+      module = "___MIME";
+      break;
+    default:
+      if ((id >= 100) && (id <= 300)) {
+	module = "Image";
+      } else if ((id >= 1000) && (id <= 2000)) {
+	module = "GTK";
+      }
+      break;
+    }
+    if (module) {
+      push_text(module);
+      SAFE_APPLY_MASTER("resolv", 1);
+      pop_stack();
+
+      /* Try again... */
+      for(p=first_program;p;p=p->next)
+      {
+	if(id==p->id)
+	{
+	  id_to_program_cache[h]=p;
+	  return p;
+	}
+      }
+    }
+  }
   return 0;
 }
 
