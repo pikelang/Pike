@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: dlopen.c,v 1.39 2002/10/24 15:50:24 grubba Exp $
+|| $Id: dlopen.c,v 1.40 2002/10/24 21:20:03 grubba Exp $
 */
 
 #include <global.h>
@@ -189,7 +189,7 @@ size_t STRNLEN(char *s, size_t maxlen)
 
 #else /* PIKE_CONCAT */
 
-RCSID("$Id: dlopen.c,v 1.39 2002/10/24 15:50:24 grubba Exp $");
+RCSID("$Id: dlopen.c,v 1.40 2002/10/24 21:20:03 grubba Exp $");
 
 #endif
 
@@ -732,7 +732,7 @@ union PEAOUT {
     INT32 data_directory[16][2];
   } pe32plus;
 };
-#define PEAOUT_GET(p,e) ((p).pe32.magic==0x20b? (p).pe32plus.e : (p).pe32.e)
+#define PEAOUT_GET(P,E) ((P).pe32.aout.magic==0x20b? (P).pe32plus.E : (P).pe32.E)
 
 
 struct DLTempData
@@ -754,7 +754,7 @@ struct DLObjectTempData
   char *stringtable;
   struct COFFsection *sections;
 
-  struct PEAOUT *peaout;
+  union PEAOUT *peaout;
 
   /* temporary storage */
   char **symbol_addresses;
@@ -939,7 +939,7 @@ static int dl_load_coff_files(struct DLHandle *ret,
 					   data->coff->sizeof_optheader);
 
     if(data->coff->sizeof_optheader)
-      data->peaout=(struct PEAOUT *)(data->coff + 1);
+      data->peaout=(union PEAOUT *)(data->coff + 1);
     else
       data->peaout = NULL;
 
@@ -1866,7 +1866,7 @@ static void init_dlopen(void)
 
     if(data->coff->sizeof_optheader) {
 
-      data->peaout=(struct PEAOUT *)(data->coff + 1);
+      data->peaout=(union PEAOUT *)(data->coff + 1);
 
       global_imagebase = PEAOUT_GET(*data->peaout, image_base);
 
@@ -1910,14 +1910,14 @@ static void init_dlopen(void)
       {
 	name=data->stringtable + SYMBOLS(s).name.ptr[1];
 	if(name[0]=='?') continue; /* C++ garbled */
-	len=strlen(name);
+	len = DO_NOT_WARN((int)strlen(name));
 #ifdef DLDEBUG
 	fprintf(stderr,"Sym[%04d] %s : ",s,name);
 #endif
       }else{
 	name=SYMBOLS(s).name.text;
 	if(name[0]=='?') continue; /* C++ garbled */
-	len=STRNLEN(name,8);
+	len = DO_NOT_WARN((int)STRNLEN(name,8));
 #ifdef DLDEBUG
 	fprintf(stderr,"Sym[%04d] %c%c%c%c%c%c%c%c = ",s,
 		name[0],
