@@ -1,5 +1,5 @@
 /*
- * $Id: extract_autodoc.pike,v 1.35 2003/04/10 15:24:58 grubba Exp $
+ * $Id: extract_autodoc.pike,v 1.36 2003/04/10 15:42:54 grubba Exp $
  *
  * AutoDoc mk II extraction script.
  *
@@ -15,7 +15,7 @@ int verbosity = 2;
 
 int main(int n, array(string) args) {
 
-  string srcdir, builddir;
+  string srcdir, builddir = "./";
 
   foreach(Getopt.find_all_options(args, ({
     ({ "srcdir",     Getopt.HAS_ARG,      "--srcdir" }),
