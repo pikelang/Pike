@@ -1,6 +1,6 @@
 ### Calendar module
 ### Event definition file
-### $Id: regional,v 1.15 2001/06/11 11:19:01 jhs Exp $
+### $Id: regional,v 1.16 2003/02/11 15:17:24 mirar Exp $
 
 ### =====================================================================
 ###
@@ -166,6 +166,7 @@ Region "christianity"
   Event "c/ash wednesday"                   - "Ash wednesday"                  Easter -46
   Event "c/annunciation"                    - "Annunciation"                   Fixed Mar 25
   Event "c/palm sunday"                     - "Palm Sunday"                    Easter -7
+  Event "c/holy wednesday"                  - "Holy Wednesday"                 Easter -4
   Event "c/holy thursday"                   - "Holy Thursday"                  Easter -3
   Event "c/maundy thursday"                 - "Maundy Thursday"                Easter -3
   Event "c/good friday"                     - "Good Friday"                    Easter -2
@@ -281,10 +282,11 @@ Region "mormonism"
 
 # islam
 Region "islamic"
-  Event "al fitr"  h "Id al Fitr (End of Ramadan)"          Islamic_Fixed Schawwâl 1
-  Event "al adha"  h "Eid al Adha (Feast of the Sacrifice)" Islamic_Fixed Dhu'l-Hiddja 9
-  Event "new year" - "Islamic New Year"                     Islamic_Fixed Muharram 1
-  Event "mouloud"  - "Mouloud (Birth of the Prophet)"       Islamic_Fixed Rebîu'l-awwal 12
+  Event "islamic/al fitr"  h "Id al Fitr (End of Ramadan)"          Islamic_Fixed Schawwâl 1
+  Event "islamic/al adha"  h "Eid al Adha (Feast of the Sacrifice)" Islamic_Fixed Dhu'l-Hiddja 9
+  Event "islamic/new year" - "Islamic New Year"                     Islamic_Fixed Muharram 1
+  Event "islamic/mouloud"  - "Mouloud (Birth of the Prophet)"       Islamic_Fixed Rebîu'l-awwal 12
+  Event "islamic/al miraj" - "Leilat al-Meiraj (Ascension of the Prophet)"	Islamic_Fixed Redjeb 27
 
 # ====================================================================================================
 
@@ -833,6 +835,7 @@ Region "ca"
   Event "ca/thanksgiving"                  h   "Thanksgiving Day"                        WDRel Oct Mon 2nd
   Event "ca/daylight saving time ends"     h   "Daylight Saving Time ends"               WDRel Oct Sun last
   Add   "halloween"                        h # "Hallowe'en"                              (31-Oct 2000)
+# WWII remembrance, 11th hour of the 11th day of the 11th month...
   Event "ca/remembrance"                   h   "Remembrance Day"                         Fixed Nov 11
   Add   "c/christmas"                      h # "Christmas"                               (25-Dec 2000)
   Add   "c/boxing"                         h # "Boxing Day"                              (26-Dec 2000)
@@ -851,7 +854,7 @@ Region "cv"
   Event "cv/independence"         h   "Independence Day"      Fixed Jul  5
   Add   "c/assumption"            h # "Assumption Day"        (15-Aug 2000)
   Event "cv/national"             h   "National Day"          Fixed Sep 12
-  Event "cv/all saint"            h   "All Saint's Day"       Fixed Nov  1
+  Event "cv/all saints"            h   "All Saint's Day"       Fixed Nov  1
   Add   "c/christmas"             h # "Christmas"             (25-Dec 2000)
 
 
@@ -936,7 +939,7 @@ Region "cl"
   Event "cl/independence"              h   "Independence Day"                               Fixed Sep 18 2 days
   Event "cl/armed force"               h   "Armed Forces Day"                               Fixed Sep 19
   Event "cl/day of the race"           h   "Day of the Race"                                Fixed Oct 12
-  Event "cl/all saint"                 h   "All Saint's Day"                                Fixed Nov  1
+  Event "cl/all saints"                 h   "All Saint's Day"                                Fixed Nov  1
   Add   "c/immaculate conception"      h # "Immaculate Conception"                          (8-Dec 2000)
   Add   "c/christmas"                  h # "Christmas"                                      (25-Dec 2000)
 
@@ -1082,7 +1085,7 @@ Region "hr"
   Event "hr/antifascist struggle commemoration" h   "Antifascist Struggle Commemoration Day" Fixed Jun 22
   Event "hr/homeland thanksgiving"              h   "Homeland Thanksgiving Day"              Fixed Aug  5
   Add   "c/assumption"                          h # "Assumption Day"                         (15-Aug 2000)
-  Event "hr/all saint"                          h   "All Saint's Day"                        Fixed Nov  1
+  Event "hr/all saints"                          h   "All Saint's Day"                        Fixed Nov  1
   Add   "c/christmas"                           h # "Christmas"                              (25-Dec 2000)
   Event "hr/second of christmas"                h   "Second day of Christmas"                Fixed Dec 26
 
@@ -1163,7 +1166,7 @@ Region "cyprus/turkey"
   Add   "tr/independence"                        - # "Independence Day"                          Fixed Oct 29
   Add   "islamic/al fitr"                        h # "Id al Fitr (End of Ramadan)"               (8-Jan 2000)
   Add   "islamic/al adha"                        h # "Eid al-Adha (Feast of the Sacrifice)"      (16-Mar 2000)
-  Event "cy/proclamation of t r northern cyprus" h   "Proclamation of \"                         T. R. Northern Cyprus\"" Fixed Nov 15
+  Event "cy/proclamation of t r northern cyprus" h   "Proclamation of T. R. Northern Cyprus" Fixed Nov 15
 
 
 # czech republic
@@ -1392,7 +1395,7 @@ Region "et"
   Add   "orthodox/easter"                   h # "Orthodox Easter"
   Add   "labor"                             h # "Labor Day"                                                      (1-May 2000)
   Event "et/overthrow of the dergue regime" h   "Overthrow of the Dergue Regime"                                 Fixed May 28
-  Event "et/mouloud"                        h   ¢Mouloud (Birth of the Prophet)"  Islamic_Fixed Rebîu'l-awwal 12
+  Event "et/mouloud"                        h   "Mouloud (Birth of the Prophet)"  Islamic_Fixed Rebîu'l-awwal 12
   Event "et/ethiopian new year"             h   "Ethiopian New Year (Enqutatash)"                                Coptic_Fixed Tout 1
   Event "et/true cros"                      h   "True Cross Day (Meskal)"                                        Coptic_Fixed Tout 18
   Event "et/genna"                          -   "Genna"                                                          Fixed Jan  7
@@ -1427,16 +1430,16 @@ Region "fo"
   Add   "c/easter monday"         h # "Easter Monday"               (24-Apr 2000)
   Event "fo/flag"                 h   "Flag Day"                    Fixed Apr 25
   Event "fo/common prayer"        h   "Common Prayer Day"           Easter +26
-  Event "fo/nordoyastevna"        h   "Norðoyastevna"               WDRel May wee 4th
+  Event "fo/nordoyastevna"        h   "Norðoyastevna"               WDRel May Wed 4th
   Add   "c/ascension"             h # "Ascension"                   (1-Jun 2000)
   Event "fo/constitution"         h   "Constitution Day"            Fixed Jun  5
-  Event "fo/eystanstevna"         h   "Eystanstevna"                WDRel Jun wee 2nd
+  Event "fo/eystanstevna"         h   "Eystanstevna"                WDRel Jun Wed 2nd
   Event "fo/whit sunday"          h   "Whit Sunday (Pentecost)"     Easter +49
   Event "fo/whit monday"          h   "Whit Monday"                 Easter +50
-  Event "fo/joansoka"             h   "Jóansøka"                    WDRel Jun wee 4th
-  Event "fo/varmakeldustevna"     h   "Varmakeldustevna"            WDRel Jul wee 1st
+  Event "fo/joansoka"             h   "Jóansøka"                    WDRel Jun Wed 4th
+  Event "fo/varmakeldustevna"     h   "Varmakeldustevna"            WDRel Jul Wed 1st
   Event "fo/olavsoka eve"         h   "Olavsoka Eve"                Fixed Jul 28
-  Event "fo/vestanstevna"         h   "Vestanstevna"                WDRel Jul wee 4th
+  Event "fo/vestanstevna"         h   "Vestanstevna"                WDRel Jul Wed 4th
   Event "fo/olavsoka"             h   "Olavsoka Day (National Day)" Fixed Jul 29
   Add   "c/christmas eve"         h # "Christmas Eve"               (24-Dec 2000)
   Event "fo/christma"             h   "Christmas Day"               Fixed Dec 25
@@ -1475,7 +1478,7 @@ Region "fi"
   Add   "c/easter"                h # "Easter"                (25-Apr 2000)
   Add   "c/easter monday"         h # "Easter Monday"         (24-Apr 2000)
   Event "fi/may eve"              h   "May Day Eve"           Fixed Apr 30
-  ADd   "may day"                 h   "May Day"               Fixed May  1
+  Add   "may day"                 h   "May Day"               Fixed May  1
   Add   "mothers"                 h # "Mother's Day"          (14-May 2000)
   Event "fi/snellman"             -   "Snellman Day"          Fixed May 12
   Event "fi/flag of the army"     -   "Flag Day of the Army"  Fixed May 19
@@ -1484,7 +1487,7 @@ Region "fi"
   Add   "c/pentecost"             h # "Pentecost"             (12-Jun 2000)
   Event "fi/midsummers eve"       -   "Midsummer's Eve"       WDRel Jun 24 Fri +0
   Event "fi/midsummer"            -   "Midsummer's Day"       WDRel Jun 25 Sat +0
-  Event "fi/all saint"            h   "All Saint's Day"       Fixed Nov  1
+  Event "fi/all saints"            h   "All Saint's Day"       Fixed Nov  1
   Event "fi/alexis kivi"          -   "Alexis Kivi Day"       Fixed Oct 10
   Event "fi/father"               h   "Father's Day"          WDRel Nov Sun 2nd
 # independence 1917
@@ -1518,7 +1521,7 @@ Region "fr"
   Event "fr/edgar degas birthday"    h   "Edgar Degas' Birthday"   Fixed Jul 19
   Add   "c/assumption"               h # "Assumption Day"          (15-Aug 2000)
   Event "fr/fete nationale"          -   "Fête Nationale"          Fixed Sep 22
-  Add   "c/all saint"                h # "All Saint's Day"         Fixed Nov  1
+  Add   "c/all saints"                h # "All Saint's Day"         Fixed Nov  1
   Add   "c/all souls"                - # "All Souls Day"           Fixed Nov  2
   Add   "armistice"                  h # "Armistice Day"           (11-Nov 2000)
   Add   "c/christmas"                h # "Christmas"               (25-Dec 2000)
@@ -1542,7 +1545,7 @@ Region "gf"
   Add   "c/pentecost"                - # "Pentecost"               Easter +49
   Add   "c/assumption"               h # "Assumption Day"          (15-Aug 2000)
   Event "gf/cayenne festival"        h   "Cayenne Festival"        Fixed Oct 15
-  Add   "c/all saint"                h # "All Saint's Day"         Fixed Nov  1
+  Add   "c/all saints"                h # "All Saint's Day"         Fixed Nov  1
   Add   "c/all souls"                - # "All Souls Day"           Fixed Nov  2
   Event "gf/remembrance"             h   "Remembrance Day"         Fixed Nov 11
   Add   "c/christmas"                h # "Christmas"               (25-Dec 2000)
@@ -1564,7 +1567,7 @@ Region "pf"
   Add   "c/assumption"                    h # "Assumption"                   (15-Aug 2000)
   Event "pf/internal autonomy"            h   "Internal Autonomy Day"        Fixed Sep  8
   Event "pf/stone fishing ceremony"       h   "Stone Fishing Ceremony"       Fixed Oct  1
-  Event "pf/all saint"                    h   "All Saint's Day"              Fixed Nov  1
+  Event "pf/all saints"                    h   "All Saint's Day"              Fixed Nov  1
   Add   "armistice"                       h # "Armistice Day"                (11-Nov 2000)
   Event "pf/tiare tahitis"                h   "Tiare Tahiti Days"            WDRel Dec Mon 1st
   Add   "c/christmas"                     h # "Christmas"                    (25-Dec 2000)
@@ -1592,7 +1595,7 @@ Region "ga"
   Event "ga/mouloud"              h   "Mouloud (Birth of the Prophet)" Islamic_Fixed Rebîu'l-awwal 12
   Add   "c/assumption"            h # "Assumption Day"                 (15-Aug 2000)
   Event "ga/independence"         h   "Independence Day"               Fixed Aug 16
-  Event "ga/all saint"            h   "All Saint's Day"                Fixed Nov  1
+  Event "ga/all saints"            h   "All Saint's Day"                Fixed Nov  1
   Add   "c/christmas"             h # "Christmas"                      (25-Dec 2000)
 
 #--------------------------------------------------------------
@@ -1653,7 +1656,7 @@ Region "de"
   Add   "unity"                     h # "Unity Day (National)"       Fixed Oct  3
   Event "de/foundation"             -   "Foundation Day"             Fixed Oct  7
   Event "de/reformation"            h   "Reformation Day"            Fixed Oct 31
-  Event "de/all saint"              h   "All Saint's Day"            Fixed Nov  1
+  Event "de/all saints"              h   "All Saint's Day"            Fixed Nov  1
   Event "de/berlin wall opening"    h   "Berlin Wall Opening Day"    Fixed Nov  9
   Event "de/national of mourning"   h   "National Day of Mourning"   Fixed Nov 14
   Event "de/day of repentance"      -   "Day of Repentance"          Fixed Nov 18
@@ -1785,7 +1788,7 @@ Region "gp"
   Event "gp/bastille"             h   "Bastille Day"                        Fixed Jul 14
   Event "gp/schoelcher"           h   "Victor Schoelcher Day"               Fixed Jul 21
   Add   "c/assumption"            h # "Assumption Day"                      (15-Aug 2000)
-  Add   "c/all saint"             h # "All Saint's Day"       Fixed Nov  1
+  Add   "c/all saints"             h # "All Saint's Day"       Fixed Nov  1
   Add   "c/all souls"             - # "All Souls Day"                       Fixed Nov  2
   Add   "armistice"               h # "Armistice Day"                       (11-Nov 2000)
   Add   "c/christmas"             h # "Christmas"                           (25-Dec 2000)
@@ -1825,7 +1828,7 @@ Region "gt"
   Add   "c/assumption"            h # "Assumption Day"        (15-Aug 2000)
   Event "gt/independence"         h   "Independence Day"      Fixed Sep 15
   Event "gt/revolution"           h   "Revolution Day"        Fixed Oct 20
-  Event "gt/all saint"            h   "All Saint's Day"       Fixed Nov  1
+  Event "gt/all saints"            h   "All Saint's Day"       Fixed Nov  1
   Add   "c/christmas eve"         h # "Christmas Eve"         (24-Dec 2000)
   Add   "c/christmas"             h # "Christmas"             (25-Dec 2000)
   Add   "new years eve"           h # "New Year's Eve"        (31-Dec 2000)
@@ -1848,7 +1851,7 @@ Region "gn"
   Event "gn/anniversary of the womens revolt" h   "Anniversary of the Women's Revolt"  Fixed Aug 27
   Event "gn/referendum"                       h   "Referendum Day"                     Fixed Sep 28
   Event "gn/republic"                         h   "Republic Day"                       Fixed Oct  2
-  Event "gn/all saint"                        h   "All Saint's Day"                    Fixed Nov  1
+  Event "gn/all saints"                        h   "All Saint's Day"                    Fixed Nov  1
   Event "gn/day of 1970 invasion"             h   "Day of 1970 Invasion"               Fixed Nov 22
   Event "gn/human right"                      h   "Human Rights Day"                   Fixed Dec 10
   Add   "c/christmas"                         h # "Christmas"                          (25-Dec 2000)
@@ -1966,7 +1969,7 @@ Region "hu"
 #--------------------------------------------------------------
 Region "is"
   Add   "new year"                h # "New Year's Day"        (1-Jan 2000)
-  Event "iceland/first of summer" h # "First Day of Summer"   WDRel Apr 19 Thu +1 incl
+  Event "iceland/first of summer" h   "First Day of Summer"   WDRel Apr 19 Thu +1 incl
   Add   "c/holy thursday"         h # "Holy Thursday"         (20-Apr 2000)
   Add   "c/good friday"           h # "Good Friday"           (21-Apr 2000)
   Add   "c/easter"                h # "Easter Sunday"         (23-Apr 2000)
@@ -2040,7 +2043,7 @@ Region "ir"
 # Iran Birth of Imam Reza 10-Mar still researching
   Event "ir/id al adha"           h   "Id al Adha (Feast of the Sacrifice)" Islamic_Fixed Dhu'l-Hiddja 9
   Event "ir/petroleum"            h   "Petroleum Day"                       Fixed Mar 20
-  Event "ir/noruz"                h   "Noruz"                               Fixed 25  Mar 21
+  Event "ir/noruz"                h   "Noruz"                               Fixed Mar 25
   Event "ir/republic"             h   "Republic Day"                        Fixed Apr  1
   Event "ir/national picnic"      h   "Sizdah-bedar / National Picnic Day"  Fixed Apr  2
   Event "ir/muharram"             h   "Muharram (Islamic New Year)"         Islamic_Fixed Muharram 1
@@ -2098,7 +2101,7 @@ Region "ie"
   Event "ie/day of the virgin mary"  h "Day of the Virgin Mary"               Fixed Aug 15
 # Ireland Feast of Tailiu 17-Jul still researching
   Event "ie/august holiday"        h "August Holiday"                         WDRel Aug Mon 1st
-  Event "ie/all saint"             h "All Saints Day"                         Fixed Nov  1
+  Event "ie/all saints"             h "All Saints Day"                         Fixed Nov  1
 # Event "ie/october holiday"       h "October Holiday"                        Ireland October Holiday 23-Oct 22-Oct 21-Oct 20-Oct 18-Oct Last Monday in October (??)
   Add   "c/christmas"                   h # "Christmas" (25-Dec 2000)
   Add   "saints/stephen"                h # "St. Stephen's Day" (26-Dec 2000)
@@ -2162,7 +2165,7 @@ Region "it"
   Add   "c/assumption"                   h # "Assumption Day"               (15-Aug 2000)
   Event "it/saints/januariu"             h   "St. Januarius Day"            Fixed Sep 19
   Event "it/saints/petroniu"             h   "St. Petronius Day"            Fixed Oct  4
-  Event "it/all saint"                   h   "All Saint's Day"              Fixed Nov  1
+  Event "it/all saints"                   h   "All Saint's Day"              Fixed Nov  1
   Event "it/national unity"              h   "National Unity Day"           WDRel Nov Sun 1st
   Event "it/saints/nicholas"             h   "St. Nicholas' Day"            Fixed Dec  6
   Event "it/saints/ambrose"              h   "St. Ambrose Day"              Fixed Dec  7
@@ -2185,7 +2188,7 @@ Region "ci"
   Add   "c/pentecost monday"                   h # "Pentecost Monday"                       (12-Jun 2000)
   Event "ci/independence"                      h   "Independence Day"                       Fixed Aug  7
   Add   "c/assumption"                         h # "Assumption Day"                         (15-Aug 2000)
-  Event "ci/all saint"                         h   "All Saint's Day"                        Fixed Nov  1
+  Event "ci/all saints"                         h   "All Saint's Day"                        Fixed Nov  1
   Event "ci/peace"                             h   "Peace Day"                              Fixed Nov 15
   Event "ci/felix houphouetboigny remembrance" h   "Felix Houphouet-Boigny Remembrance Day" Fixed Dec  7
   Event "ci/national"                          h   "National Day"                           Fixed Dec  7
@@ -2218,7 +2221,7 @@ Region "jp"
   Event "jp/bean-throwing festival"          -        "Bean-Throwing Festival"            Fixed Feb  4
   Event "jp/martyr"                          -        "Martyr Day"                        Fixed Feb  5
   Event "jp/national foundation"             -        "National Foundation Day"           Fixed Feb 11
-  Event "jp/empire¢                    -   " Empire   Day"                   Fixed Feb 11
+  Event "jp/empire"                          -        "Empire Day"                   Fixed Feb 11
   Event "jp/gion matsuri"                    -        "Gion Matsuri"                      Fixed Feb 16  9 days
   Event "jp/hina matsuri"                    -        "Hina Matsuri"                      Fixed Mar  3
   Event "jp/kambutsue"                       -        "Kambutsue"                         Fixed Apr  8
