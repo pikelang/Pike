@@ -57,7 +57,12 @@ int main(int argc, string *argv)
   string dirname=replace(version()," ","-");
 #if constant(uname)
   mixed u=uname();
-  dirname+="-"+u->sysname+"-"+u->release+"-"+u->machine;
+  if(u->sysname=="AIX")
+    dirname+="-"+u->sysname+"-"+u->version+"."+u->release;
+  else
+    dirname+="-"+u->sysname+"-"+u->release+"-"+u->machine;
+
+  dirname=replace(dirname,"/","-");
 #endif
 
   Process.system("rm -rf "+dirname);
