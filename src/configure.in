@@ -1,4 +1,4 @@
-AC_REVISION("$Id: configure.in,v 1.818 2004/03/12 14:06:56 grubba Exp $")
+AC_REVISION("$Id: configure.in,v 1.819 2004/03/15 16:09:12 grubba Exp $")
 AC_INIT(interpret.c)
 AC_CONFIG_HEADER(machine.h)
 
@@ -197,12 +197,19 @@ AC_ARG_WITH(ldflags, MY_DESCR([--with-ldflags=ldflags],
 	    [ LDFLAGS="$with_ldflags $LDFLAGS" ])
 
 # Force use of thread libs LIBS
-AC_ARG_WITH(named-thread-libs,MY_DESCR([--with-named-thread-lib=lib],
-			               [specify named thread libraries
-					instead of those automatically found
-					by configure]),
-	    [ with_named_thread=$withval ],
-	    [ with_named_thread=no ])
+AC_ARG_WITH(thread-library,
+	    MY_DESCR([--with-thread-library=lib],
+		     [Use a specific thread library]),
+	    [
+	      case "x$withval" in
+	        x-*)
+		  with_thread_library="$withval"
+		;;
+		*)
+		  with_thread_library="-l$withval"
+		;;
+	      esac
+	    ], [ with_thread_library=no ])
 
 for ac_site_file in $CONFIG_SITE; do
   if test -r "$ac_site_file"; then
@@ -2863,6 +2870,11 @@ else
 
   # Test for POSIX threads
 
+  if test "x$with_thread_library" != "xno"; then
+    AC_MSG_CHECKING([for thread library])
+    AC_MSG_RESULT([$with_thread_library (--with-thread-library)])
+    LIBS="${OLDLIBS} $with_thread_library"
+  else
   case "x$pike_cv_sys_os" in
     xOSF1*)
 #      LIBS="${OLDLIBS} -lpthread -lmach -lexc -lc"
@@ -2913,66 +2925,19 @@ int main(int argc, char **argv)
         AC_MSG_RESULT(no)
       else
         AC_MSG_RESULT(yes)
-        using_threads="yes (freebsd)"
 
         AC_PATH_PROG(PTHREAD_CONFIG,${ac_tool_prefix}pthread-config,no)
         if test "x$PTHREAD_CONFIG" = xno ; then
-	  if test "$with_named_thread" = "no"; then
-          	AC_SYS_COMPILER_FLAG(-pthread, pthread, CFLAGS, LIBS="$LIBS -lc_r")
-          	LD_FALLBACK_FLAGS="${LD_FALLBACK_FLAGS-} -lc_r"
-	  else
-		echo "Using --with-named-thread=$with_named_thread"
-		LIBS="$LIBS $with_named_thread"
-		LDFLAGS="$LDFLAGS $with_named_thread"
-	  fi
-          AC_MSG_CHECKING(Initial stack limit)
-          AC_CACHE_VAL(pike_cv_initial_stack_size,[
-          AC_TRY_RUN([
-#include <stdio.h>
-
-static int depth=0;
-FILE *f;
-
-void save_depth(void);
-
-void use_stack(void *page)
-{
-  void *X[8190];
-  X[0]=page;
-  save_depth();
-  use_stack(&X);
-}
-
-void save_depth(void)
-{
-  depth+=sizeof(void *)*8192;
-  fprintf(f,"%d\n",depth);
-  fflush(f);
-  if(depth>0x80000000) exit(0);
-}
-
-int main(int argc)
-{
-  f=fopen("confdefs.out.2","w"); /* weird filename to circumvent configure weirdness */
-  save_depth();
-  use_stack(0);
-}
-],
-pike_cv_initial_stack_size='',
-while read x; do pike_cv_initial_stack_size=$x ; done <confdefs.out.2)
-rm confdefs.out.2 >/dev/null 2>/dev/null || :
-])
-          if test x$pike_cv_initial_stack_size = x ; then
-             AC_MSG_RESULT(unlimited)
-          else
-             AC_MSG_RESULT($pike_cv_initial_stack_size)
-             AC_DEFINE_UNQUOTED(Pike_INITIAL_STACK_SIZE,$pike_cv_initial_stack_size)
-          fi
-
+	  # FIXME: Might want to look at OS version:
+	  #   500000 <= version < 500016: -pthread
+	  #   500016 <= version < 502102: -lc_r
+	  #   502102 <= version         : -lpthread
+          AC_SYS_COMPILER_FLAG(-pthread, pthread, CFLAGS, LIBS="$LIBS -lc_r")
+          LD_FALLBACK_FLAGS="${LD_FALLBACK_FLAGS-} -lc_r"
         else
-          CFLAGS="$CFLAGS `${ac_tool_prefix}pthread-config --cflags`"
-          LIBS="$LIBS `${ac_tool_prefix}pthread-config --libs`"
-          LDFLAGS="$CFLAGS `${ac_tool_prefix}pthread-config --ldflags`"
+          CFLAGS="$CFLAGS `${PTHREAD_CONFIG} --cflags`"
+          LIBS="${OLDLIBS} `${PTHREAD_CONFIG} --libs`"
+          LDFLAGS="$CFLAGS `${PTHREAD_CONFIG} --ldflags`"
         fi
       fi
     ;;
@@ -2998,6 +2963,7 @@ rm confdefs.out.2 >/dev/null 2>/dev/null || :
       LIBS="${OLDLIBS} -lpthread"
     ;;
   esac
+  fi
 
   AC_CHECK_FUNCS(pthread_init pthread_mutexattr_init pthread_kill)
 
@@ -3354,6 +3320,55 @@ fi
 
 if test "x$pike_cv_thread_t_type" = "xpointer"; then
   AC_DEFINE(PIKE_THREAD_T_IS_POINTER)
+fi
+
+if test "x$pike_cv_sys_os" = "xWindows_NT" ; then :; else
+  AC_MSG_CHECKING(Initial stack limit)
+  AC_CACHE_VAL(pike_cv_initial_stack_size,[
+    AC_TRY_RUN([
+#include <stdio.h>
+
+      static int depth=0;
+      FILE *f;
+
+      void save_depth(void);
+
+      void use_stack(void *page)
+      {
+        void *X[8190];
+        X[0]=page;
+        save_depth();
+        use_stack(&X);
+      }
+
+      void save_depth(void)
+      {
+        depth+=sizeof(void *)*8192;
+        fprintf(f,"%d\n",depth);
+        fflush(f);
+        if(depth>0x80000000) exit(0);
+      }
+
+      int main(int argc)
+      {
+        f=fopen("confdefs.out.2", "w");
+	/* weird filename to circumvent configure weirdness */
+        save_depth();
+        use_stack(0);
+      }
+    ], [pike_cv_initial_stack_size=''], [
+      while read x; do
+        pike_cv_initial_stack_size=$x ;
+      done <confdefs.out.2
+    ])
+    rm confdefs.out.2 >/dev/null 2>/dev/null || :
+  ])
+  if test x$pike_cv_initial_stack_size = x ; then
+    AC_MSG_RESULT(unlimited)
+  else
+    AC_MSG_RESULT($pike_cv_initial_stack_size)
+    AC_DEFINE_UNQUOTED(Pike_INITIAL_STACK_SIZE,$pike_cv_initial_stack_size)
+  fi
 fi
 
 ########################################################################
