@@ -4,7 +4,7 @@
 // Incremental Pike Evaluator
 //
 
-constant cvs_version = ("$Id: Hilfe.pmod,v 1.72 2002/04/26 18:54:08 nilsson Exp $");
+constant cvs_version = ("$Id: Hilfe.pmod,v 1.73 2002/05/08 00:56:38 nilsson Exp $");
 constant hilfe_todo = #"List of known Hilfe bugs/room for improvements:
 
 - Hilfe can not handle sscanf statements like
@@ -495,11 +495,10 @@ private class CommandStartStop {
   }
 
   string doc(string what, string with) {
+    if(what=="start") return subsystems->doc(1);
+    if(what=="stop") return subsystems->doc(0);
+    return "Buhu";
     switch(what){
-    case "start": return "start backend [once]\n\tstart the backend thread. If \"once\" is "
-		    "specified execution\n\twill end at first exception. Can be restarted "
-		    "with \"start backend\".\n";
-    case "stop":  return "stop backend\n\tstop the backend thread.\n";
     }
   }
 
@@ -529,6 +528,12 @@ private class SubSysBackend {
   int(0..1) is_running;
   int(0..1) once;
 
+  constant startdoc = "backend [once]\n\tStarts the backend thread. If \"once\" is "
+  "specified execution\n\twill end at first exception. Can be restarted "
+  "with \"start backend\".\n";
+
+  constant stopdoc = "backend\n\tstop the backend thread.\n";
+
   void create(){
     is_running=0;
   }
@@ -549,19 +554,83 @@ private class SubSysBackend {
   private void backend_loop(function write_err, int(0..1) once){
     is_running=1;
     mixed err;
-    do{
-      err=catch{
+    do {
+      err = catch {
 	while(1)
 	  Pike.DefaultBackend(3600.0);
       };
       if(err)
 	write_err(describe_backtrace(err));
-     }while(!once && err);
+    } while(!once && err);
     if(once && err)
       write_err("Backend done.\r\n");
     is_running=0;
   }
 
+}
+
+private class SubSysLogger {
+
+  constant startdoc = "logging [<filename>]\n"
+  "\tLogs all input and output to a log file. If no file name is \n"
+  "\tspecified logging will be prepended to hilfe.log in the current\n"
+  "\twork directory.\n";
+
+  constant stopdoc = "logging\n\tTurns off logging to file.\n";
+  int(0..1) running;
+
+  static class Logger {
+
+    Stdio.File logfile;
+    object e;
+    constant is_logger = 1;
+
+    void create(Evaluator _e, Stdio.File _logfile) {
+      e = _e;
+      logfile = _logfile;
+      e->add_input_hook(this_object());
+      running = 1;
+    }
+
+    void destroy() {
+      e && e->remove_input_hook(this_object());
+      running = 0;
+    }
+
+    int(0..) `() (string in) {
+      if(!running) return 0;
+      if(catch( logfile->write(in) )) {
+	e->remove_writer(this_object());
+	e->safe_write("Error writing to log file. Terminating logger.\n");
+      }
+    }
+
+  }
+
+  void start(Evaluator e, array(string) words) {
+    string fn = sizeof(words)>1 ? words[1] : "hilfe.log";
+    Stdio.File logfile = Stdio.File( fn, "wac" );
+    if(!logfile) {
+      e->safe_write("Hilfe Error: Could not open log file %O.\n", fn);
+      return;
+    }
+    e->safe_write("Logging to log file %O.\n", fn);
+    e->add_writer( Logger(e, logfile) );
+    e->safe_write("Hilfe logger activated "+ctime(time()));
+  }
+
+  void stop(Evaluator e, void|array(string) words) {
+    running = 0;
+    if(arrayp(e->write)) {
+      foreach(e->write, mixed w)
+	if(objectp(w) && w->is_logger)
+	  e->remove_writer(w);
+    }
+    else if(objectp(e->writer) && e->writer->is_logger)
+      destruct(e->writer);
+  }
+
+  int(0..1) runningp() { return running; }
 }
 
 //
@@ -576,12 +645,22 @@ private class SubSystems {
   void create (){
     // Register the subsystems here.
     subsystems=([
-      "backend":SubSysBackend()
+      "backend":SubSysBackend(),
+      "logging":SubSysLogger(),
     ]);
   }
 
   array(string) list() {
     return indices(subsystems);
+  }
+
+  string doc(int(0..1) startp) {
+    array(string) res = ({});
+    string what = (startp?"startdoc":"stopdoc");
+    foreach(sort(indices(subsystems)), string name)
+      res += ({ (startp?" start ":" stop ") +
+	replace(subsystems[name][what], "\t", "    ") });
+    return res*"\n";
   }
 
   void start(Evaluator e, string what, array(string) words){
@@ -590,11 +669,11 @@ private class SubSystems {
       if(!subsystems[what]->runningp())
 	subsystems[what]->start(e, words);
       else
-	e->safe_write(sprintf("%s is already running.\n", what));
+	e->safe_write("%s is already running.\n", what);
 
     }
     else
-      e->safe_write("No such subsystem.\n");
+      e->safe_write("No such subsystem (%O).\n", what);
   }
 
   void stop(Evaluator e, string what, array(string) words){
@@ -603,10 +682,10 @@ private class SubSystems {
       if(subsystems[what]->runningp())
 	subsystems[what]->stop(e,words);
       else
-	e->safe_write(sprintf("%s is not running.\n",what));
+	e->safe_write("%s is not running.\n", what);
     }
     else
-      e->safe_write("No such subsystem.\n");
+      e->safe_write("No such subsystem (%O).\n", what);
   }
 }
 
@@ -972,7 +1051,7 @@ class Evaluator {
   //! built in ones (dump, exit, help, new, quit), so it is possible to
   //! replace or remove them. The name of a command should be 10
   //! characters or less.
-  mapping(string:Command) commands = ([]);
+  mapping(string:Command|program) commands = ([]);
 
   //! Keeps the state, e.g. multiline input in process etc.
   ParserState state = ParserState();
@@ -1002,12 +1081,31 @@ class Evaluator {
   HilfeHistory history = HilfeHistory(10);
 
   //! The function to use when writing to the user.
-  function(string, mixed ... : int(0..)) write;
+  array|object|function(string : int(0..)) write;
 
+  //! Adds another output function.
+  void add_writer(object|function(string : int(0..)) new) {
+    if(arrayp(write))
+      write += ({ new });
+    else if (write)
+      write = ({ write, new });
+    else
+      write = new;
+  }
+
+  //! Removes an output function
+  void remove_writer(object|function old) {
+    if(arrayp(write))
+      write -= ({ old });
+    else
+      write = 0;
+  }
+
+  //! An output method that shouldn't crash.
   int(0..) safe_write(string in, mixed ... args) {
     if(!write) return 0;
     mixed err = catch {
-      return write(in, @args);
+      return write(sprintf(in, @args));
     };
     catch {
       write("HilfeError: Error while outputting data.\n");
@@ -1017,6 +1115,24 @@ class Evaluator {
     werror("HilfeError: Error while outputting data.\n");
     return 0;
   }
+
+  static array input_hooks = ({});
+
+  //! Adds a function to the input hook, making
+  //! all user data be fed into the function.
+  //! @seealso
+  //!  @[remove_input_hook]
+  void add_input_hook(function|object new) {
+    input_hooks += ({ new });
+  }
+
+  //! Removes a function from the input hook.
+  //! @seealso
+  //!  @[add_input_hook]
+  void remove_input_hook(function|object old) {
+    input_hooks -= ({ old });
+  }
+
 
   //!
   void create()
@@ -1039,7 +1155,7 @@ class Evaluator {
   void print_version()
   {
     safe_write(version()+
-	      " running Hilfe v3.3 (Incremental Pike Frontend)\n");
+	      " running Hilfe v3.4 (Incremental Pike Frontend)\n");
   }
 
   //! Clears the current state, history and removes all locally
@@ -1063,6 +1179,8 @@ class Evaluator {
   //! just calls add_buffer.
   void add_input_line(string s)
   {
+    input_hooks(s+"\n");
+
     if(s==".")
     {
       state->flush();
