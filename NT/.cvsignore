@@ -11,3 +11,17 @@ machine.h
 modules
 pike
 stamp-h
+test
+test.c
+test.mk
+test.mk1
+test.tgt
+test.wpj
+test2.c
+test3.c
+test3.i
+test3.lb1
+test3.lib
+test3.mk1
+test3.tgt
+test4.c

@@ -2,11 +2,11 @@
 
 NTHOST=kheleyr
 NTDRIVE='j:'
-NTCC=wcl386
 PATH=`pwd`/tools:$PATH
 CC=rntcc
+NTTOOLS=`pwd`/tools/lib
 
-export NTHOST NTDRIVE NTCC CC PATH
+export NTHOST NTDRIVE NTCC CC PATH NTTOOLS
 
 if [ "$#" != 0 ]; then
   exec $@
