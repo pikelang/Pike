@@ -135,13 +135,14 @@
  *!       Character. If a fieldsize has been specified this will output
  *!       the low-order bytes of the integer in network byte order.
  *!     @value 'f'
- *!       Float.
+ *!       Float. (Locale dependent formatting.)
  *!     @value 'g'
  *!       Heuristically chosen representation of float.
+ *!       (Locale dependent formatting.)
  *!     @value 'G'
  *!       Like @tt{%g@}, but uses uppercase @tt{E@} for exponent.
  *!     @value 'e'
- *!       Exponential notation float.
+ *!       Exponential notation float. (Locale dependent output.)
  *!     @value 'E'
  *!       Like @tt{%e@}, but uses uppercase @tt{E@} for exponent.
  *!     @value 'F'
@@ -150,7 +151,10 @@
  *!     @value 's'
  *!       String.
  *!     @value 'O'
- *!       Any value (debug style).
+ *!       Any value, debug style. Do not rely on the exact formatting;
+ *!       how the result looks can vary depending on locale, phase of
+ *!       the moon or anything else the _sprintf method implementor
+ *!       wanted for debugging.
  *!     @value 'n'
  *!       No operation (ignore the argument).
  *!     @value 't'
@@ -281,7 +285,7 @@
  *!   @[lfun::_sprintf()]
  */
 #include "global.h"
-RCSID("$Id: sprintf.c,v 1.93 2002/08/15 14:50:27 marcus Exp $");
+RCSID("$Id: sprintf.c,v 1.94 2002/09/23 16:01:50 jhs Exp $");
 #include "pike_error.h"
 #include "array.h"
 #include "svalue.h"
