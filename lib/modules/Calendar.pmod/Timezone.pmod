@@ -297,7 +297,7 @@ Ruleset.Timezone make_new_timezone(Ruleset.Timezone z,int plusminus)
    else
       s=sprintf("%+d",plusminus/3600);
 
-   return Timezone_Encapsule(z,s,plusminus);
+   return Timezone_Encapsule(z,s,-plusminus);
 }
 
 static private constant _military_tz=
