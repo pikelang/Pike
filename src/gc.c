@@ -29,7 +29,7 @@ struct callback *gc_evaluator_callback=0;
 
 #include "block_alloc.h"
 
-RCSID("$Id: gc.c,v 1.72 2000/04/19 21:25:33 mast Exp $");
+RCSID("$Id: gc.c,v 1.73 2000/04/19 21:49:27 mast Exp $");
 
 /* Run garbage collect approximate every time we have
  * 20 percent of all arrays, objects and programs is
@@ -872,13 +872,14 @@ void do_gc(void)
   if(Pike_in_gc) return;
   Pike_in_gc=1;
 
+  /* Make sure there will be no callback to this while we're in the gc. */
+  destruct_objects_to_destruct();
+
   if(gc_evaluator_callback)
   {
     remove_callback(gc_evaluator_callback);
     gc_evaluator_callback=0;
   }
-
-  remove_objects_to_destruct_callback();
 
   tmp2=num_objects;
 

@@ -5,7 +5,7 @@
 \*/
 /**/
 #include "global.h"
-RCSID("$Id: object.c,v 1.114 2000/04/19 21:25:33 mast Exp $");
+RCSID("$Id: object.c,v 1.115 2000/04/19 21:49:27 mast Exp $");
 #include "object.h"
 #include "dynamic_buffer.h"
 #include "interpret.h"
@@ -551,15 +551,6 @@ void destruct(struct object *o)
 static struct object *objects_to_destruct = 0;
 static struct callback *destruct_object_evaluator_callback =0;
 
-void remove_objects_to_destruct_callback(void)
-{
-  if(destruct_object_evaluator_callback)
-  {
-    remove_callback(destruct_object_evaluator_callback);
-    destruct_object_evaluator_callback=0;
-  }
-}
-
 /* This function destructs the objects that are scheduled to be
  * destructed by really_free_object. It links the object back into the
  * list of objects first. Adds a reference, destructs it and then frees it.
@@ -590,7 +581,11 @@ void destruct_objects_to_destruct(void)
     free_object(o);
   }
 
-  remove_objects_to_destruct_callback();
+  if(destruct_object_evaluator_callback)
+  {
+    remove_callback(destruct_object_evaluator_callback);
+    destruct_object_evaluator_callback=0;
+  }
 }
 
 
