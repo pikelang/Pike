@@ -5,7 +5,7 @@
 \*/
 /**/
 #include "global.h"
-RCSID("$Id: docode.c,v 1.108 2001/02/25 17:40:19 hubbe Exp $");
+RCSID("$Id: docode.c,v 1.109 2001/03/09 17:13:29 grubba Exp $");
 #include "las.h"
 #include "program.h"
 #include "pike_types.h"
@@ -254,23 +254,23 @@ void do_pop(int x)
   current_stack_depth -= x;
 }
 
-void do_pop_mark()
+void do_pop_mark(void)
 {
   emit0(F_POP_MARK);
 }
 
-void do_pop_to_mark()
+void do_pop_to_mark(void)
 {
   emit0(F_POP_TO_MARK);
 }
 
-void do_cleanup_synch_mark()
+void do_cleanup_synch_mark(void)
 {
   if (d_flag > 2)
     emit0(F_CLEANUP_SYNCH_MARK);
 }
 
-void do_escape_catch()
+void do_escape_catch(void)
 {
   emit0(F_ESCAPE_CATCH);
 }
