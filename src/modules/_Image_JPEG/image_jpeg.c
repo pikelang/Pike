@@ -1,5 +1,5 @@
 /*
- * $Id: image_jpeg.c,v 1.43 2001/05/19 07:22:50 mirar Exp $
+ * $Id: image_jpeg.c,v 1.44 2001/07/21 11:59:37 mirar Exp $
  */
 
 #include "global.h"
@@ -37,7 +37,7 @@
 #ifdef HAVE_STDLIB_H
 #undef HAVE_STDLIB_H
 #endif
-RCSID("$Id: image_jpeg.c,v 1.43 2001/05/19 07:22:50 mirar Exp $");
+RCSID("$Id: image_jpeg.c,v 1.44 2001/07/21 11:59:37 mirar Exp $");
 
 /* For some reason EXTERN can be defined here.
  * This is not good, since it confuses compilation.h.
@@ -671,9 +671,12 @@ static void image_jpeg_encode(INT32 args)
    }
 
    jpeg_start_compress(&cinfo, TRUE);
-   
-   parameter_comment(sp+1-args,param_comment,&cinfo);
-   parameter_marker(sp+1-args,param_marker,&cinfo);
+
+   if (args>1)
+   {
+      parameter_comment(sp+1-args,param_comment,&cinfo);
+      parameter_marker(sp+1-args,param_marker,&cinfo);
+   }
 
    y=img->ysize;
    s=img->img;
