@@ -1,4 +1,4 @@
-AC_REVISION("$Id: configure.in,v 1.401 2000/08/20 17:15:05 grubba Exp $")
+AC_REVISION("$Id: configure.in,v 1.402 2000/08/21 12:57:50 grubba Exp $")
 AC_INIT(interpret.c)
 AC_CONFIG_HEADER(machine.h)
 
@@ -2332,12 +2332,9 @@ MY_CHECK_FUNCTION(fork,
 #ifdef HAVE_UNISTD_H
 #include <unistd.h>
 #endif
-
-int main()
-{
+], [
   exit(fork()==-1);
-}
-]);
+])
 ########################################################################
 MY_CHECK_FUNCTION(fpsetmask,
 [
@@ -2349,13 +2346,10 @@ MY_CHECK_FUNCTION(fpsetmask,
 #ifdef HAVE_IEEEFP_H
 #include <ieeefp.h>
 #endif
-
-int main()
-{
+], [
   fpsetmask(0);
   exit(0);
-}
-]);
+])
 ########################################################################
 MY_CHECK_FUNCTION(fpsetround,
 [
@@ -2371,31 +2365,25 @@ MY_CHECK_FUNCTION(fpsetround,
 #ifndef FP_RN
 #define FP_RN 0
 #endif /* FP_RN */
-
-int main()
-{
+], [
   fpsetround(FP_RN);
   exit(0);
-}
-]);
+])
 ########################################################################
 
 MY_CHECK_FUNCTION(dlopen,
 [
 #include <dlfcn.h>
-int main()
-{
+], [
   dlopen(0, 0);
   exit(0);
-}])
-
+])
 ########################################################################
 
 MY_CHECK_FUNCTION(ldexp,
 [
 #include <math.h>
-int main()
-{
+], [
   double x;
   int p;
 
@@ -2404,7 +2392,7 @@ int main()
       if(ldexp(x,p) != x*pow(2.0, (double)p))
 	exit(1);
     exit(0);
-}])
+])
 
 ########################################################################
 MY_CHECK_FUNCTION(rint,
@@ -2417,8 +2405,7 @@ MY_CHECK_FUNCTION(rint,
 #ifdef HAVE_IEEEFP_H
 #include <ieeefp.h>
 #endif /* HAVE_IEEEFP_H */
-int main()
-{
+], [
 #ifdef HAVE_FPSETROUND
   /* Round to nearest */
 #ifndef FP_RN
@@ -2429,15 +2416,14 @@ int main()
   if(rint(0.1) != 0.0 ||
      rint(0.6) != 1.0) exit(1);
   exit(0);
-}])
+])
 
 ########################################################################
 
 MY_CHECK_FUNCTION(frexp,
 [
 #include <math.h>
-int main()
-{
+], [
   double x,y;
   int p,e;
 
@@ -2451,20 +2437,17 @@ int main()
     if(e!=p) exit(2);
   }
   exit(0);
-}])
+])
 
 #############################################################################
 MY_CHECK_FUNCTION(GetSystemTimeAsFileTime,
 [
 #include <windows.h>
 #include <winbase.h>
-
-int main()
-{
+], [
   FILETIME f;
   GetSystemTimeAsFileTime(&f);
   exit(0);
-}
 ])
 #############################################################################
 MY_CHECK_FUNCTION(gethostname,
@@ -2475,21 +2458,17 @@ MY_CHECK_FUNCTION(gethostname,
 #ifdef HAVE_WINSOCK_H
 #include <winsock.h>
 #endif
-
-int main(int argc, char **argv)
-{
+], [
   char buffer[10000];
   char *x=gethostname(buffer,sizeof(buffer));
   exit(0);
-}
 ])
 #############################################################################
 MY_CHECK_FUNCTION(strcoll,
 [
 #include <string.h>
 #include <locale.h>
-int main()
-{
+], [
   setlocale(LC_CTYPE, "ISO-8859-1");
   exit(strcoll("abc", "def") >= 0 ||
        strcoll("ABC", "DEF") >= 0 ||
@@ -2497,7 +2476,6 @@ int main()
        strcoll("ABCD", "ABC") <= 0 ||
        strcoll("*^#", "*^#") != 0 ||
        strcoll("123", "456") >= 0);
-}
 ])
 
 ########################################################################
@@ -2509,8 +2487,7 @@ char *a="foo bar gazonk";
 char *b="foo";
 char *c="bar";
 char *d="gazonk";
-int main()
-{
+], [
   if(((char *)memmem(b,strlen(b),a,strlen(a)))!=a ||
      ((char *)memmem(c,strlen(c),a,strlen(a)))!=(a+4) ||
      ((char *)memmem(d,strlen(d),a,strlen(a)))!=(a+8) ||
@@ -2518,7 +2495,6 @@ int main()
      memmem(d,strlen(d)+1,a,strlen(a))!=0)
     exit(1);
   exit(0);
-}
 ])
 
 ########################################################################
@@ -2528,13 +2504,11 @@ MY_CHECK_FUNCTION(memcpy,
 #include <string.h>
 char *a="foo bar gazonk";
 char foo[23];
-int main()
-{
+], [
   memcpy(foo, a, strlen(a)+1);
   memcpy(foo, a+4, 3);
   if(strcmp(foo,"bar bar gazonk")) exit(1);
   exit(0);
-}
 ])
 
 ########################################################################
@@ -2543,14 +2517,12 @@ MY_CHECK_FUNCTION(memset,
 [
 #include <string.h>
 char foo[23];
-int main()
-{
+], [
   memset(foo, 0, 11);
   memset(foo, 'a', 10);
   memset(foo, 'b', 5);
   if(strcmp(foo,"bbbbbaaaaa")) exit(1);
   exit(0);
-}
 ])
 
 ########################################################################
@@ -2559,8 +2531,7 @@ MY_CHECK_FUNCTION(memmove,
 [
 #include <string.h>
 char buf[100];
-int main()
-{
+], [
   strcpy(buf,"foo bar gazonk elefantsnabel.");
   if(strcmp(buf,"foo bar gazonk elefantsnabel.")) exit(1);
   memmove(buf,buf+1,7);
@@ -2570,7 +2541,6 @@ int main()
   memmove(buf+1,buf,11);
   if(strcmp(buf,"ooo bar  gaznk elefantsnabel.")) exit(1);
   exit(0);
-}
 ])
 
 ########################################################################
@@ -2578,11 +2548,9 @@ int main()
 MY_CHECK_FUNCTION(isspace,
 [
 #include <ctype.h>
-int main()
-{
+], [
   if(isspace(' ')) exit(0);
   exit(1);
-}
 ])
 
 #############################################################################
