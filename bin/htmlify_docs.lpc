@@ -708,7 +708,7 @@ void traversedir(string path)
 
     if(file_size(tmp)==-2)
     {
-      traversedir(tmp,fun);
+      traversedir(tmp);
     }else{
       scanfiles(tmp,file);
     }
@@ -718,6 +718,7 @@ void traversedir(string path)
 void dodocs(string path, int module)
 {
   cd(path);
+  perror("Doing "+path+"\n");
   if(!module)
   {
     docdir="";
@@ -744,6 +745,8 @@ int main(int argc, string *argv)
     exit(0);
   }
 
+//  perror(sprintf("argv = %O\n",argv));
+
   megamagic::create("^(.*)&lt;([a-z_0-9]+)&gt;(.*)$");
   lastident::create("^(.*[^<>a-z_0-9])([a-z_0-9]+)([^<>a-z_0-9]*)$");
 
@@ -757,6 +760,8 @@ int main(int argc, string *argv)
 
   for(e=1;e<sizeof(argv);e++)
     argv[e]=combine_path(getcwd(),argv[e]);
+
+  new_path=argv[1];
 
   write("Scanning pages for links and keywords.\n");
   writepages=0;
