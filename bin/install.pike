@@ -1180,8 +1180,7 @@ void do_install()
 
     // Ugly way to detect NT installation
     string pike_bin_file=combine_path(vars->TMP_BUILDDIR,"pike");
-    if(Stdio.file_size(pike_bin_file) < 10000 &&
-       file_stat(pike_bin_file+".exe"))
+    if(file_stat(pike_bin_file+".exe"))
     {
       pike_bin_file+=".exe";
       pike+=".exe";
@@ -1200,9 +1199,8 @@ void do_install()
 	if (!istty()) {
 	  werror("Finalizing of %O failed!\n", pike_bin_file);
 	  werror("Not found in %s.\n%O\n", getcwd(), get_dir("."));
-	  werror("BUILDDIR: %O\nsize: %O\nexe-stat: %O\n",
-		 vars->TMP_BUILDDIR, Stdio.file_size(pike_bin_file),
-		 file_stat(pike_bin_file+".exe"));
+	  werror("BUILDDIR: %O\nexe-stat: %O\n",
+		 vars->TMP_BUILDDIR, file_stat(pike_bin_file+".exe"));
 	}
 	exit(1);
       }
