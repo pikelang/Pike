@@ -1,5 +1,5 @@
 #
-# $Id: Makefile.in,v 1.248 2001/02/23 14:34:34 grubba Exp $
+# $Id: Makefile.in,v 1.249 2001/02/23 22:54:32 grubba Exp $
 #
 
 # This line is needed on some machines.
@@ -701,6 +701,8 @@ $(SRCDIR)/mapping_stuff.c: $(SRCDIR)/mapping_stuff.cmod precompile.sh-stamp $(TM
 
 # UnixWare make needs help to find the source file...
 builtin.o: $(SRCDIR)/builtin.c
+
+mapping_stuff.o: $(SRCDIR)/mapping_stuff.c
 
 # Internal testing target
 run_yacc: $(SRCDIR)/language.c
