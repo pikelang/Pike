@@ -1,4 +1,4 @@
-AC_REVISION("$Id: configure.in,v 1.387 2000/07/28 17:16:54 hubbe Exp $")
+AC_REVISION("$Id: configure.in,v 1.388 2000/08/01 22:40:28 grubba Exp $")
 AC_INIT(interpret.c)
 AC_CONFIG_HEADER(machine.h)
 
@@ -55,6 +55,9 @@ pike_cv_prog_CC_save="$CC"
 AC_PROG_CC
 AC_ISC_POSIX
 AC_PROG_CPP
+
+CROSS="ac_cv_prog_cc_cross"
+AC_SUBST(CROSS)
 
 #############################################################################
 
@@ -701,7 +704,7 @@ if test $cflags_is_set = no; then
   AC_SYS_COMPILER_FLAG(-Ysystem, ysystem, CPPFLAGS)
 
   # Use lenient ANSI compliance...
-  AC_SYS_COMPILER_FLAG(-Xa, xa, CFLAGS)
+  #AC_SYS_COMPILER_FLAG(-Xa, xa, CFLAGS)
 
   # Find out where libtdf.a is hidden.
   AC_MSG_CHECKING(for machine dependant library directory)
