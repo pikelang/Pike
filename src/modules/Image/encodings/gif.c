@@ -1,9 +1,9 @@
-/* $Id: gif.c,v 1.56 2000/08/11 18:19:45 grubba Exp $ */
+/* $Id: gif.c,v 1.57 2000/08/14 14:20:29 grubba Exp $ */
 
 /*
 **! module Image
 **! note
-**!	$Id: gif.c,v 1.56 2000/08/11 18:19:45 grubba Exp $
+**!	$Id: gif.c,v 1.57 2000/08/14 14:20:29 grubba Exp $
 **! submodule GIF
 **!
 **!	This submodule keep the GIF encode/decode capabilities
@@ -31,7 +31,7 @@
 #include <ctype.h>
 
 #include "stralloc.h"
-RCSID("$Id: gif.c,v 1.56 2000/08/11 18:19:45 grubba Exp $");
+RCSID("$Id: gif.c,v 1.57 2000/08/14 14:20:29 grubba Exp $");
 #include "pike_macros.h"
 #include "object.h"
 #include "constants.h"
@@ -673,7 +673,7 @@ void image_gif_render_block(INT32 args)
    struct neo_colortable *nct=NULL;
    ptrdiff_t numcolors;
    int localpalette,xpos,ypos;
-   int alphaidx=-1;
+   ptrdiff_t alphaidx=-1;
    rgb_group alphacolor;
    int alphaentry=0;
    int transparency;
@@ -1116,7 +1116,7 @@ void _image_gif_encode(INT32 args,int fs)
       image_gif_header_block(3);
    else if (trans==1)
    {
-      push_int(tridx); 
+      push_int64(tridx); 
       push_int(0);
       push_int(0);
       push_int(0);
@@ -1127,7 +1127,7 @@ void _image_gif_encode(INT32 args,int fs)
    }
    else
    {
-      push_int(tridx); 
+      push_int64(tridx); 
       image_gif_header_block(4);
    }
 
@@ -1152,7 +1152,7 @@ void _image_gif_encode(INT32 args,int fs)
       else
       {
 	 push_int(0);
-	 push_int(tridx);
+	 push_int64(tridx);
 	 image_gif_render_block(7);
       }
 

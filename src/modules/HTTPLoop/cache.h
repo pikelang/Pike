@@ -1,5 +1,5 @@
-struct cache_entry *aap_cache_lookup(char *s, int len, 
-				 char *h, int hlen,
+struct cache_entry *aap_cache_lookup(char *s, ptrdiff_t len, 
+				 char *h, ptrdiff_t hlen,
 				 struct cache *c, int nl, 
 				 struct cache_entry **p, 
 				 int *hv);

@@ -1,5 +1,5 @@
 /*
- * $Id: requestobject.c,v 1.12 2000/08/10 09:51:53 per Exp $
+ * $Id: requestobject.c,v 1.13 2000/08/14 14:19:12 grubba Exp $
  */
 
 #include "global.h"
@@ -379,7 +379,7 @@ static void parse_headers(void)
 {
   struct svalue *tmp;
   struct mapping *headers = THIS->done_headers;
-  int os=0,i,j,l=THIS->request->res.body_start-THIS->request->res.header_start;
+  ptrdiff_t os=0, i, j, l = THIS->request->res.body_start-THIS->request->res.header_start;
   unsigned char *in=
     (unsigned char*)THIS->request->res.data + THIS->request->res.header_start;
 
@@ -689,8 +689,8 @@ struct send_args
   struct args *to;
   int from_fd;
   struct pike_string *data;
-  int len;
-  int sent;
+  ptrdiff_t len;
+  ptrdiff_t sent;
   char buffer[BUFFER];
 };
 
@@ -896,7 +896,7 @@ void actually_send(struct send_args *a)
 
   while(a->len)
   {
-    int nread, written=0;
+    ptrdiff_t nread, written=0;
     nread = fd_read(a->from_fd, a->buffer, MY_MIN(BUFFER,a->len));
 #ifdef AAP_DEBUG
   fprintf(stderr, "writing %d bytes... \n", nread);

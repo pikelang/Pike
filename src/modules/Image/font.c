@@ -1,4 +1,4 @@
-/* $Id: font.c,v 1.62 2000/08/11 18:42:54 grubba Exp $ */
+/* $Id: font.c,v 1.63 2000/08/14 14:26:37 grubba Exp $ */
 #include "global.h"
 
 #define SPACE_CHAR 'i'
@@ -9,7 +9,7 @@ extern unsigned char * image_default_font;
 /*
 **! module Image
 **! note
-**!	$Id: font.c,v 1.62 2000/08/11 18:42:54 grubba Exp $
+**!	$Id: font.c,v 1.63 2000/08/14 14:26:37 grubba Exp $
 **! class Font
 **!
 **! note
@@ -250,7 +250,7 @@ static void exit_font_struct(struct object *obj)
 
 /***************** internals ***********************************/
 
-static INLINE int char_space(struct font *this, INT32 c)
+static INLINE ptrdiff_t char_space(struct font *this, INT32 c)
 {
   if(c==0x20)
     return DOUBLE_TO_INT((double)(this->height*this->xspacing_scale)/4.5);
@@ -268,7 +268,7 @@ static INLINE int char_width(struct font *this, INT32 c)
 #ifndef HAVE_MMAP
 static INLINE int my_read(int from, void *t, size_t towrite)
 {
-  int res;
+  ptrdiff_t res;
   while((res = fd_read(from, t, towrite)) < 0)
   {
     switch(errno)
@@ -676,7 +676,8 @@ void font_write(INT32 args)
 	    if(char_width(this,c))
 	      write_char(this->charinfo+c,
 			 (img->img+xsize)+
-			 (img->xsize*(int)(j*this->height*this->yspacing_scale)),
+			 (img->xsize*DOUBLE_TO_INT(j*this->height*
+						   this->yspacing_scale)),
 			 img->xsize,
 			 this->height);
 	    xsize += char_space(this, c);
@@ -695,7 +696,8 @@ void font_write(INT32 args)
 	    if(char_width(this,c))
 	      write_char(this->charinfo+c,
 			 (img->img+xsize)+
-			 (img->xsize*(int)(j*this->height*this->yspacing_scale)),
+			 (img->xsize*DOUBLE_TO_INT(j*this->height*
+						   this->yspacing_scale)),
 			 img->xsize,
 			 this->height);
 	    xsize += char_space(this, c);
@@ -714,7 +716,8 @@ void font_write(INT32 args)
 	    if(char_width(this,c))
 	      write_char(this->charinfo+c,
 			 (img->img+xsize)+
-			 (img->xsize*(int)(j*this->height*this->yspacing_scale)),
+			 (img->xsize*DOUBLE_TO_INT(j*this->height*
+						   this->yspacing_scale)),
 			 img->xsize,
 			 this->height);
 	    xsize += char_space(this, c);
@@ -825,7 +828,7 @@ void font_text_extents(INT32 args)
 
   pop_n_elems(args);
   push_int(maxwidth2);
-  push_int(args * THIS->height * THIS->yspacing_scale);
+  push_int64(args * THIS->height * THIS->yspacing_scale);
   f_aggregate(2);
 }
 

@@ -63,7 +63,7 @@ ptrdiff_t aap_swrite(int to, char *buf, size_t towrite)
 
 int aap_get_header(struct args *req, char *header, int operation, void *res)
 {
-  int os=0;
+  ptrdiff_t os=0;
   ptrdiff_t i, hl=strlen(header), l=req->res.body_start-req->res.header_start;
   char *in = req->res.data + req->res.header_start;
   for(i=0; i<l; i++)

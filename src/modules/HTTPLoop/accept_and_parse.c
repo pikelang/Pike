@@ -264,7 +264,7 @@ static int parse(struct args *arg)
 			      arg->res.host, arg->res.host_len,
 			      arg->cache,0, NULL, NULL)) && ce->data)
 	{
-	  int len = WRITE(arg->fd, ce->data->str, ce->data->len);
+	  ptrdiff_t len = WRITE(arg->fd, ce->data->str, ce->data->len);
 	  LOG(len, arg, atoi(ce->data->str+MY_MIN(ce->data->len, 9))); 
 	  simple_aap_free_cache_entry( arg->cache, ce );
 	  /* if keepalive... */
@@ -287,7 +287,7 @@ static int parse(struct args *arg)
 void aap_handle_connection(struct args *arg)
 {
   char *buffer, *p, *tmp;
-  int pos, buffer_len;
+  ptrdiff_t pos, buffer_len;
 #ifdef HAVE_TIMEOUTS
   int *timeout = NULL;
 #endif

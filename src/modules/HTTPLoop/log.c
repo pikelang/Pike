@@ -49,7 +49,7 @@ void free_log_entry( struct log_entry *le )
   aap_free( le );
 }
 
-struct log_entry *new_log_entry( int extra )
+struct log_entry *new_log_entry(ptrdiff_t extra)
 {
   num_log_entries++;
   return aap_malloc( sizeof( struct log_entry )+extra );
@@ -196,7 +196,7 @@ void f_aap_log_as_commonlog_to_file(INT32 args)
       }
 
     fprintf(foo, 
-    "%d.%d.%d.%d - %s [%02d/%s/%d:%02d:%02d:%02d +0000] \"%s\" %d %d\n",
+    "%d.%d.%d.%d - %s [%02d/%s/%d:%02d:%02d:%02d +0000] \"%s\" %d %ld\n",
 	    ((unsigned char *)&le->from.sin_addr)[ 0 ],
 	    ((unsigned char *)&le->from.sin_addr)[ 1 ],
 	    ((unsigned char *)&le->from.sin_addr)[ 2 ],
@@ -206,7 +206,7 @@ void f_aap_log_as_commonlog_to_file(INT32 args)
 	    tm.tm_hour, tm.tm_min, tm.tm_sec, /* date */
 	    le->raw.str, /* request line */
 	    le->reply, /* reply code */
-	    le->sent_bytes); /* bytes transfered */
+	    DO_NOT_WARN((long)le->sent_bytes)); /* bytes transfered */
     free_log_entry( le );
     n++;
     le = l;

@@ -1,9 +1,9 @@
-/* $Id: x.c,v 1.30 2000/08/11 18:21:29 grubba Exp $ */
+/* $Id: x.c,v 1.31 2000/08/14 14:21:45 grubba Exp $ */
 
 /*
 **! module Image
 **! note
-**!	$Id: x.c,v 1.30 2000/08/11 18:21:29 grubba Exp $
+**!	$Id: x.c,v 1.31 2000/08/14 14:21:45 grubba Exp $
 **! submodule X
 **!
 **!	This submodule handles encoding and decoding of
@@ -29,7 +29,7 @@
 #include <winsock.h>
 #endif
 
-RCSID("$Id: x.c,v 1.30 2000/08/11 18:21:29 grubba Exp $");
+RCSID("$Id: x.c,v 1.31 2000/08/14 14:21:45 grubba Exp $");
 #include "pike_macros.h"
 #include "object.h"
 #include "constants.h"
@@ -291,7 +291,7 @@ static void image_x_encode_truecolor(INT32 args)
 
       while (y--)
       {
-	 INT32 bp;
+	 ptrdiff_t bp;
 
 	 x=img->xsize;
 	 while (x--) /* write bits from this line */

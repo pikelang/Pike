@@ -131,15 +131,15 @@ void aap_enqueue_string_to_free( struct pike_string *s )
   mt_unlock( &tofree_mutex );
 }
 
-static int cache_hash(char *s, int len)
+static size_t cache_hash(char *s, ptrdiff_t len)
 {
-  unsigned int res = len * 9471111;
+  size_t res = len * 9471111;
   while(len--) { res=res<<1 ^ ((res&(~0x7ffffff))>>31); res ^= s[len]; }
   return (res % CACHE_HTABLE_SIZE)/2;
 } /*                              ^^ OBS! */
 
 static void really_free_cache_entry(struct cache  *c, struct cache_entry *e,
-				    struct cache_entry *prev, int b)
+				    struct cache_entry *prev, size_t b)
 {
 #ifdef DEBUG
   extern int d_flag;
@@ -184,7 +184,7 @@ void simple_aap_free_cache_entry(struct cache *c, struct cache_entry *e)
   if(!--e->refs)
   {
     struct cache_entry *t, *p=0;
-    int hv = cache_hash(e->url, e->url_len)+cache_hash(e->host,e->host_len);
+    size_t hv = cache_hash(e->url, e->url_len)+cache_hash(e->host,e->host_len);
     t = c->htable[ hv ];
     while(t)
     {
@@ -233,11 +233,12 @@ void aap_cache_insert(struct cache_entry *ce, struct cache *c)
   }
 }
 
-struct cache_entry *aap_cache_lookup(char *s, int len,char *ho, int hlen, 
+struct cache_entry *aap_cache_lookup(char *s, ptrdiff_t len,
+				     char *ho, ptrdiff_t hlen, 
 				     struct cache *c, int nolock,
-				     struct cache_entry **p, int *hv)
+				     struct cache_entry **p, size_t *hv)
 {
-  int h = cache_hash(s, len) + cache_hash(ho,hlen);
+  size_t h = cache_hash(s, len) + cache_hash(ho,hlen);
   struct cache_entry *e, *prev=NULL;
 
   if( hv ) *hv = h;

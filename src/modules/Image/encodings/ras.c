@@ -1,9 +1,9 @@
-/* $Id: ras.c,v 1.10 2000/08/11 18:37:32 grubba Exp $ */
+/* $Id: ras.c,v 1.11 2000/08/14 14:24:04 grubba Exp $ */
 
 /*
 **! module Image
 **! note
-**!	$Id: ras.c,v 1.10 2000/08/11 18:37:32 grubba Exp $
+**!	$Id: ras.c,v 1.11 2000/08/14 14:24:04 grubba Exp $
 **! submodule RAS
 **!
 **!	This submodule keep the RAS encode/decode capabilities
@@ -14,7 +14,7 @@
 #include "global.h"
 
 #include "stralloc.h"
-RCSID("$Id: ras.c,v 1.10 2000/08/11 18:37:32 grubba Exp $");
+RCSID("$Id: ras.c,v 1.11 2000/08/14 14:24:04 grubba Exp $");
 #include "pike_macros.h"
 #include "object.h"
 #include "constants.h"
@@ -457,7 +457,7 @@ static void image_ras_encode(INT32 args)
     unsigned char *tmp;
     rs.ras_depth = 8;
     rs.ras_maptype = RMT_EQUAL_RGB;
-    rs.ras_maplength = n*3;
+    rs.ras_maplength = DO_NOT_WARN((INT32)n*3);
     cts = begin_shared_string(rs.ras_maplength+(rs.ras_maplength&1));
     if(rs.ras_maplength & 1) {
       STR0(cts)[rs.ras_maplength] = '\0';
