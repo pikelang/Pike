@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: combine_path.h,v 1.11 2002/10/11 01:39:30 nilsson Exp $
+|| $Id: combine_path.h,v 1.12 2003/06/11 23:02:07 nilsson Exp $
 */
 
 /*
@@ -59,8 +59,7 @@ static void APPEND_PATH(struct string_builder *s,
 			size_t len)
 {
   size_t from=0;
-  int tmp;
-  int abs=0;
+  int tmp, abs;
 
   /* First, check if path is absolute, 
    * if so ignore anything already in 's'

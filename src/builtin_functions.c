@@ -2,11 +2,11 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: builtin_functions.c,v 1.494 2003/06/03 18:45:51 mast Exp $
+|| $Id: builtin_functions.c,v 1.495 2003/06/11 23:01:48 nilsson Exp $
 */
 
 #include "global.h"
-RCSID("$Id: builtin_functions.c,v 1.494 2003/06/03 18:45:51 mast Exp $");
+RCSID("$Id: builtin_functions.c,v 1.495 2003/06/11 23:01:48 nilsson Exp $");
 #include "interpret.h"
 #include "svalue.h"
 #include "pike_macros.h"
@@ -1930,7 +1930,6 @@ static int generate_this_object(node *n)
   int level;
 
   if (CDR (n)) {
-    struct program_state *state = Pike_compiler;
     if (CDR (n)->token != F_CONSTANT)
       /* Not a constant expression. Make a call to f_this_object. */
       return 0;
@@ -4343,7 +4342,6 @@ static ptrdiff_t low_parse_format(p_wchar0 *s, ptrdiff_t slen)
 {
   ptrdiff_t i;
   ptrdiff_t offset = 0;
-  int num_percent_percent = 0;
   struct svalue *old_sp = Pike_sp;
 
   for (i=offset; i < slen; i++) {
@@ -4520,7 +4518,6 @@ PMOD_EXPORT void f_glob(INT32 args)
 {
   INT32 i,matches;
   struct array *a;
-  struct svalue tmp;
   struct pike_string *glob;
 
   if(args < 2)
@@ -4776,7 +4773,7 @@ static struct array *longest_ordered_sequence(struct array *a)
 {
   int *stack;
   int *links;
-  int i, top=0, l=0, ltop=-1;
+  int i, top=0, ltop=-1;
   struct array *res;
   ONERROR tmp;
   ONERROR tmp2;
@@ -5092,7 +5089,7 @@ static INLINE int diff_ponder_array(int x,
  */
 static struct array *diff_longest_sequence(struct array *cmptbl, int blen)
 {
-   int i,j,top=0,lsize=0;
+   int i,j,top=0;
    struct array *a;
    struct diff_magic_link_pool *pools=NULL;
    struct diff_magic_link *dml;
@@ -5313,15 +5310,13 @@ static struct array *diff_longest_sequence(struct array *cmptbl, int blen)
 static struct array *diff_dyn_longest_sequence(struct array *cmptbl, int blen)
 {
   struct array *res = NULL;
-  struct diff_magic_link_head *table = NULL;
+  struct diff_magic_link_head *table;
   struct diff_magic_link_pool *dml_pool = NULL;
   struct diff_magic_link *dml;
   unsigned int sz = (unsigned int)cmptbl->size;
   unsigned int i;
   unsigned int off1 = 0;
   unsigned int off2 = blen + 1;
-  unsigned int l1 = 0;
-  unsigned int l2 = 0;
 
   table = calloc(sizeof(struct diff_magic_link_head)*2, off2);
   if (!table) {
@@ -6465,7 +6460,6 @@ PMOD_EXPORT void f_transpose(INT32 args)
   struct array *in;
   struct array *outinner;
   INT32 sizeininner=0,sizein=0;
-  INT32 inner=0;
   INT32 j,i;
   TYPE_FIELD type=0;
 #ifdef PIKE_DEBUG

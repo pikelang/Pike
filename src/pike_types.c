@@ -2,11 +2,11 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: pike_types.c,v 1.215 2003/06/06 14:32:03 grubba Exp $
+|| $Id: pike_types.c,v 1.216 2003/06/11 23:02:55 nilsson Exp $
 */
 
 #include "global.h"
-RCSID("$Id: pike_types.c,v 1.215 2003/06/06 14:32:03 grubba Exp $");
+RCSID("$Id: pike_types.c,v 1.216 2003/06/11 23:02:55 nilsson Exp $");
 #include <ctype.h>
 #include "svalue.h"
 #include "pike_types.h"
@@ -938,7 +938,6 @@ static void internal_parse_typeA(const char **_s)
   
   while(ISSPACE(**s)) ++*s;
 
-  len=0;
   for(len=0;isidchar(EXTRACT_UCHAR(s[0]+len));len++)
   {
     if(len>=sizeof(buf)) {

@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: peep.c,v 1.85 2003/04/02 19:18:49 nilsson Exp $
+|| $Id: peep.c,v 1.86 2003/06/11 23:02:31 nilsson Exp $
 */
 
 #include "global.h"
@@ -26,12 +26,13 @@
 #include "interpret.h"
 #include "pikecode.h"
 
-RCSID("$Id: peep.c,v 1.85 2003/04/02 19:18:49 nilsson Exp $");
+RCSID("$Id: peep.c,v 1.86 2003/06/11 23:02:31 nilsson Exp $");
 
 static void asm_opt(void);
 
 dynamic_buffer instrbuf;
 
+#ifdef PIKE_DEBUG
 static int hasarg(int opcode)
 {
   return instrs[opcode-F_OFFSET].flags & I_HASARG;
@@ -42,7 +43,6 @@ static int hasarg2(int opcode)
   return instrs[opcode-F_OFFSET].flags & I_HASARG2;
 }
 
-#ifdef PIKE_DEBUG
 static void dump_instr(p_instr *p)
 {
   if(!p) return;
@@ -288,7 +288,6 @@ void assemble(void)
   FLUSH_CODE_GENERATOR_STATE();
   for(e=0;e<length;e++)
   {
-    int linenumbers_stored=0;
 #ifdef PIKE_DEBUG
     if (c != (((p_instr *)instrbuf.s.str)+e)) {
       Pike_fatal("Instruction loop deviates. 0x%04x != 0x%04x\n",
