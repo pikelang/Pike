@@ -5569,6 +5569,39 @@ Array.diff, Array.diff_compare_table, String.fuzzymatch
 
 <hr noshade size=1>
 
+
+
+<function name=Array.everynth title="return every n:th element of an array">
+<man_syntax>
+array(mixed) Array.everynth(array(mixed) arr1, void|int nth, void|int start);
+</man_syntax>
+<man_description>
+
+This function returns an array with every n:th element of an other
+array. If nth is zero, every second element is returned. 
+
+</man_description>
+<man_example>
+&gt; Array.everynth(({"1","2","3","4","5","6"}),2,1);<br>
+<pre>
+Result: ({ /* 3 elements */
+    "2",
+    "4",
+    "6"
+})
+</pre>
+
+</man_example>
+<man_note>
+This function is only available in Pike 0.6.? and later.
+</man_note>
+<man_see>
+Array.splice, `/
+</man_see>
+</function>
+
+<hr noshade size=1>
+
 <function name=Array.filter title="filter an array or mapping through a function">
 <man_syntax>
 array filter(array <I>arr</I>,function <I>fun</I>,mixed ... <I>args</I>);<br>
@@ -5603,6 +5636,7 @@ This function returns an array of the indices in the longest
 ordered sequence of elements in the array.
 </man_description>
 <man_example>
+<pre>
 &gt; array a = ({ 1,2,3,4,2,3,5,6 });
 Result: ({ /* 8 elements */
     1,
@@ -5632,6 +5666,7 @@ Result: ({ /* 6 elements */
     5,
     6
 })
+</pre>
 </man_example>
 <man_note>
 This function is only available in Pike 0.6 and later.
@@ -5666,23 +5701,6 @@ Array.sum_arrays, Array.filter
 </function>
 
 <hr noshade size=1>
-
-<function name=Array.shuffle title="Random-shuffle an array">
-<man_syntax>
-array shuffle(array in);
-</man_syntax>
-<man_description>
-<tt>shuffle</tt> gives back the same elements, but by random order.
-</man_description>
-<man_example>
-Array.shuffle( ({"this","is","an","ordered","array"}) )
-  -> ({"is","ordered","array","this","an"})    
-</man_example>
-<man_see>
-Array.permute
-</man_see>
-</function>
-
 <function name=Array.permute title="Give a specified permutation of an array">
 <man_syntax>
 array permute(array in,int number);
@@ -5701,6 +5719,7 @@ Array.permute( ({ 1,2,3 }), 3)  -> ({1,3,2})
 Array.shuffle
 </man_see>
 </function>
+
 <hr noshade size=1>
 
 <function name=Array.search_array title="search for something in an array">
@@ -5720,6 +5739,71 @@ Array.sum_arrays, Array.filter
 </function>
 
 <hr noshade size=1>
+
+<function name=Array.shuffle title="Random-shuffle an array">
+<man_syntax>
+array shuffle(array in);
+</man_syntax>
+<man_description>
+<tt>shuffle</tt> gives back the same elements, but by random order.
+</man_description>
+<man_example>
+Array.shuffle( ({"this","is","an","ordered","array"}) )
+  -> ({"is","ordered","array","this","an"})    
+</man_example>
+<man_see>
+Array.permute
+</man_see>
+</function>
+
+<hr noshade size=1>
+
+
+<function name=Array.splice title="splice two or more arrays">
+<man_syntax>
+array(mixed) Array.splice(array(mixed) arr1, array(mixed) arr2, array(mixed) ...);
+</man_syntax>
+<man_description>
+This function splice two or more arrays together. This means that
+the the array becomes an array of the first element in the first
+given array, the first argument in next array and so on for all
+arrays. Then the second elements are added.
+</man_description>
+<man_example>
+&gt; Array.splice(({1,2,3}),({"1","2","3"}),({"a","b","c"}));<br>
+<pre>
+Result: ({ /* 9 elements */
+    1,
+    "1",
+    "a",
+    2,
+    "2",
+    "b",
+    3,
+    "3",
+    "c"
+})
+&gt; Array.splice(({1,2,3}),({"1","2","3"}),({"a","b"}));
+Result: ({ /* 9 elements */
+    1,
+    "1",
+    "a",
+    2,
+    "2",
+    "b",
+})
+</pre>
+</man_example>
+<man_note>
+This function is only available in Pike 0.6.? and later.
+</man_note>
+<man_see>
+`/, `*, `+, `-, Array.everynth
+</man_see>
+</function>
+
+<hr noshade size=1>
+
 
 <function name=Array.sum_arrays title="map any number of arrays over a function">
 <man_syntax>
