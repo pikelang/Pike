@@ -4,14 +4,18 @@
 ||| See the files COPYING and DISCLAIMER for more information.
 \*/
 #include "global.h"
-RCSID("$Id: mpz_glue.c,v 1.26 1998/03/04 22:09:55 hubbe Exp $");
+RCSID("$Id: mpz_glue.c,v 1.27 1998/07/11 18:35:23 grubba Exp $");
 #include "gmp_machine.h"
 
-#if !defined(HAVE_LIBGMP)
-#undef HAVE_GMP_H
-#endif
+#if defined(HAVE_GMP2_GMP_H) && defined(HAVE_LIBGMP2)
+#define USE_GMP2
+#else /* !HAVE_GMP2_GMP_H || !HAVE_LIBGMP2 */
+#if defined(HAVE_GMP_H) && defined(HAVE_LIBGMP)
+#define USE_GMP
+#endif /* HAVE_GMP_H && HAVE_LIBGMP */
+#endif /* HAVE_GMP2_GMP_H && HAVE_LIBGMP2 */
 
-#ifdef HAVE_GMP_H
+#if defined(USE_GMP) || defined(USE_GMP2)
 
 #include "interpret.h"
 #include "svalue.h"
@@ -27,11 +31,17 @@ RCSID("$Id: mpz_glue.c,v 1.26 1998/03/04 22:09:55 hubbe Exp $");
 #include "opcodes.h"
 #include "module_support.h"
 
+#ifdef USE_GMP2
+#include <gmp2/gmp.h>
+#else /* !USE_GMP2 */
 #include <gmp.h>
+#endif /* USE_GMP2 */
+
 #include "my_gmp.h"
 
 #include <limits.h>
 
+#undef THIS
 #define THIS ((MP_INT *)(fp->current_storage))
 #define OBTOMPZ(o) ((MP_INT *)(o->storage))
 
@@ -165,11 +175,14 @@ static struct pike_string *low_get_digits(MP_INT *mpz, int base)
   }
   else if (base == 256)
   {
-    INT32 i;
+    unsigned INT32 i;
+#if 0
     mpz_t tmp;
-    
+#endif
+
     if (mpz_sgn(mpz) < 0)
       error("only non-negative numbers can be converted to base 256.\n");
+#if 0
     len = (mpz_sizeinbase(mpz, 2) + 7) / 8;
     s = begin_shared_string(len);
     mpz_init_set(tmp, mpz);
@@ -180,6 +193,34 @@ static struct pike_string *low_get_digits(MP_INT *mpz, int base)
       mpz_fdiv_q_2exp(tmp, tmp, 8);
     }
     mpz_clear(tmp);
+#endif
+
+    /* lets optimize this /Mirar & Per */
+
+    /* len = mpz->_mp_size*sizeof(mp_limb_t); */
+    /* This function should not return any leading zeros. /Nisse */
+    len = (mpz_sizeinbase(mpz, 2) + 7) / 8;
+    s = begin_shared_string(len);
+
+    if (!mpz->_mp_size)
+    {
+      /* Zero is a special case. There are no limbs at all, but
+       * the size is still 1 bit, and one digit should be produced. */
+      if (len != 1)
+	fatal("mpz->low_get_digits: strange mpz state!\n");
+      s->str[0] = 0;
+    } else {
+      mp_limb_t *src = mpz->_mp_d;
+      unsigned char *dst = (unsigned char *)s->str+s->len;
+
+      while (len > 0)
+      {
+	mp_limb_t x=*(src++);
+	for (i=0; i<sizeof(mp_limb_t); i++)
+	  *(--dst)=x&0xff,x>>=8;
+	len-=sizeof(mp_limb_t);
+      }
+    }
     s = end_shared_string(s);
   }
   else
@@ -245,73 +286,85 @@ static void mpzmod_size(INT32 args)
 
 static void mpzmod_cast(INT32 args)
 {
+  struct pike_string *s;
+
   if(args < 1)
     error("mpz->cast() called without arguments.\n");
   if(sp[-args].type != T_STRING)
     error("Bad argument 1 to mpz->cast().\n");
 
-  switch(sp[-args].u.string->str[0])
+  s = sp[-args].u.string;
+  add_ref(s);
+
+  pop_n_elems(args);
+
+  switch(s->str[0])
   {
   case 'i':
-    if(!strcmp(sp[-args].u.string->str, "int"))
+    if(!strcmp(s->str, "int"))
     {
-      mpzmod_get_int(args);
+      free_string(s);
+      mpzmod_get_int(0);
       return;
     }
     break;
 
   case 's':
-    if(!strcmp(sp[-args].u.string->str, "string"))
+    if(!strcmp(s->str, "string"))
     {
-      mpzmod_get_string(args);
+      free_string(s);
+      mpzmod_get_string(0);
       return;
     }
     break;
 
   case 'f':
-    if(!strcmp(sp[-args].u.string->str, "float"))
+    if(!strcmp(s->str, "float"))
     {
-      mpzmod_get_float(args);
+      free_string(s);
+      mpzmod_get_float(0);
       return;
     }
     break;
 
   case 'o':
-    if(!strcmp(sp[-args].u.string->str, "object"))
+    if(!strcmp(s->str, "object"))
     {
-      pop_n_elems(args);
       push_object(this_object());
     }
     break;
 
   case 'm':
-    if(!strcmp(sp[-args].u.string->str, "mixed"))
+    if(!strcmp(s->str, "mixed"))
     {
-      pop_n_elems(args);
       push_object(this_object());
     }
     break;
     
   }
 
-  error("mpz->cast() to other type than string, int or float.\n");
+  push_string(s);	/* To get it freed when error() pops the stack. */
+
+  error("mpz->cast() to \"%s\" is other type than string, int or float.\n",
+	s->str);
 }
 
-/* Converts an svalue, located on the stack, to an mpz object */
-#if defined(__GNUC__) && defined(DEBUG_MALLOC)
-#define get_mpz(X,Y) ({ check_svalue(X); debug_get_mpz((X), (Y)); })
+#ifdef DEBUG_MALLOC
+#define get_mpz(X,Y) \
+ (debug_get_mpz((X),(Y)),( (X)->type==T_OBJECT? debug_malloc_touch((X)->u.object) :0 ),debug_get_mpz((X),(Y)))
 #else
-#define get_mpz(X,Y) debug_get_mpz((X), (Y))
+#define get_mpz debug_get_mpz 
 #endif
 
+/* Converts an svalue, located on the stack, to an mpz object */
 static MP_INT *debug_get_mpz(struct svalue *s, int throw_error)
 {
-#define ERROR(x) if (throw_error) error(x)
+#define MPZ_ERROR(x) if (throw_error) error(x)
   struct object *o;
   switch(s->type)
   {
   default:
-    ERROR("Wrong type of object, cannot convert to mpz.\n");
+    MPZ_ERROR("Wrong type of object, cannot convert to mpz.\n");
     return 0;
 
   case T_INT:
@@ -321,7 +374,6 @@ static MP_INT *debug_get_mpz(struct svalue *s, int throw_error)
   case T_ARRAY:
 #endif
     o=clone_object(mpzmod_program,0);
-    debug_malloc_touch(o);
     get_new_mpz(OBTOMPZ(o), s);
     free_svalue(s);
     s->u.object=o;
@@ -331,7 +383,7 @@ static MP_INT *debug_get_mpz(struct svalue *s, int throw_error)
   case T_OBJECT:
     if(s->u.object->prog != mpzmod_program)
       {
-	ERROR("Wrong type of object, cannot convert to mpz.\n");
+	MPZ_ERROR("Wrong type of object, cannot convert to mpz.\n");
 	return 0;
       }
     return (MP_INT *)s->u.object->storage;
@@ -833,14 +885,14 @@ static void exit_mpz_glue(struct object *o)
 
 void pike_module_exit(void)
 {
-#ifdef HAVE_GMP_H
+#if defined(USE_GMP) || defined(USE_GMP2)
   free_program(mpzmod_program);
 #endif
 }
 
 void pike_module_init(void)
 {
-#ifdef HAVE_GMP_H
+#if defined(USE_GMP) || defined(USE_GMP2)
   start_new_program();
   add_storage(sizeof(MP_INT));
   

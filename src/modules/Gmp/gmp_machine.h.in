@@ -1,5 +1,12 @@
+/* $Id: gmp_machine.h.in,v 1.2 1998/07/11 18:35:22 grubba Exp $ */
 #ifndef GMP_MACHINE_H
 #define GMP_MACHINE_H
+
+/* Define this if you have <gmp2/gmp.h> */
+#undef HAVE_GMP2_GMP_H
+
+/* Define this if you have -lgmp2 */
+#undef HAVE_LIBGMP2
 
 /* Define this if you have <gmp.h> */
 #undef HAVE_GMP_H

@@ -1,4 +1,4 @@
-/* next_prime.c
+/* $Id: next_prime.c,v 1.6 1998/07/11 18:35:26 grubba Exp $
  *
  * Prime number test using trial division for small primes and then
  * Miller-Rabin, as suggested in Schneier's Applied Cryptography.
@@ -9,17 +9,27 @@
 
 #include "global.h"
 
+RCSID("$Id: next_prime.c,v 1.6 1998/07/11 18:35:26 grubba Exp $");
+
 #include "gmp_machine.h"
 
-#if !defined(HAVE_LIBGMP)
-#undef HAVE_GMP_H
-#endif
+#if defined(HAVE_GMP2_GMP_H) && defined(HAVE_LIBGMP2)
+#define USE_GMP2
+#else /* !HAVE_GMP2_GMP_H || !HAVE_LIBGMP2 */
+#if defined(HAVE_GMP_H) && defined(HAVE_LIBGMP)
+#define USE_GMP
+#endif /* HAVE_GMP_H && HAVE_LIBGMP */
+#endif /* HAVE_GMP2_GMP_H && HAVE_LIBGMP2 */
 
-
-#ifdef HAVE_GMP_H
+#if defined(USE_GMP) || defined(USE_GMP2)
 
 #include <limits.h>
+
+#ifdef USE_GMP2
+#include <gmp2/gmp.h>
+#else /* !USE_GMP2 */
 #include <gmp.h>
+#endif /* USE_GMP2 */
 
 #include "my_gmp.h"
 

@@ -1,3 +1,4 @@
+# $Id: Makefile.in,v 1.8 1998/07/11 18:35:19 grubba Exp $
 SRCDIR=@srcdir@
 VPATH=@srcdir@:@srcdir@/../..:../..
 MODULE_LDFLAGS=@LDFLAGS@ @LIBS@

@@ -1,4 +1,4 @@
-/* prime_table.c
+/* $Id: prime_table.c,v 1.3 1998/07/11 18:35:27 grubba Exp $
  *
  * Generates a table of small odd primes.
  */

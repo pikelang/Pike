@@ -1,3 +1,4 @@
+# $Id: configure.in,v 1.2 1998/07/11 18:35:20 grubba Exp $
 AC_INIT(mpz_glue.c)
 AC_CONFIG_HEADER(gmp_machine.h)
 AC_ARG_WITH(gmp,     [  --with(out)-gmp        Support bignums],[],[with_gmp=yes])
@@ -5,9 +6,16 @@ AC_ARG_WITH(gmp,     [  --with(out)-gmp        Support bignums],[],[with_gmp=yes
 sinclude(../module_configure.in)
 
 if test x$with_gmp = xyes ; then
-  AC_CHECK_HEADERS(gmp.h)
-  if test $ac_cv_header_gmp_h = yes ; then
-    AC_CHECK_LIB(gmp, mpz_set_d)
+  AC_CHECK_HEADERS(gmp2/gmp.h)
+  AC_CHECK_LIB(gmp2, mpz_set_d)
+  if test "$ac_cv_header_gmp2_gmp_h$ac_cv_lib_gmp2_mpz_set_d" = "yesyes";
+  then
+    echo Using gmp2.
+  else
+    AC_CHECK_HEADERS(gmp.h)
+    if test $ac_cv_header_gmp_h = yes ; then
+      AC_CHECK_LIB(gmp, mpz_set_d)
+    fi
   fi
 fi
 
