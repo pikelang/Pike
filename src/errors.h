@@ -74,6 +74,7 @@ DECLARE_ERROR(generic, EMPTY ,
   ERR_FUNC("`[]",f_error_index,tFunc(tString,tMixed),0)
   ERR_FUNC("describe",f_error_describe,tFunc(tVoid,tString),0)
   ERR_FUNC("backtrace",f_error_backtrace,tFunc(tVoid,tArr(tMixed)),0)
+  ERR_FUNC("_sprintf",f_error__sprintf,tFunc(tNone,tString),0)
 )
 
 #define GENERIC_ERROR_THIS ((struct generic_error_struct *)CURRENT_STORAGE)
@@ -108,6 +109,8 @@ DECLARE_ERROR(permission,
 )
 
 DECLARE_ERROR(cpp, ERR_INHERIT(generic), EMPTY)
+
+DECLARE_ERROR(compilation, ERR_INHERIT(generic), EMPTY)
 
 #undef DECLARE_ERROR
 #undef ERR_INHERIT
