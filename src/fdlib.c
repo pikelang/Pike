@@ -3,7 +3,7 @@
 #include "error.h"
 #include <math.h>
 
-RCSID("$Id: fdlib.c,v 1.33 2000/06/26 13:52:36 mast Exp $");
+RCSID("$Id: fdlib.c,v 1.34 2000/06/27 15:12:32 grubba Exp $");
 
 #ifdef HAVE_WINSOCK_H
 
@@ -372,7 +372,7 @@ SOCKFUN2(getsockname,struct sockaddr *,int *)
 SOCKFUN2(getpeername,struct sockaddr *,int *)
 SOCKFUN5(recvfrom,void *,int,int,struct sockaddr *,int*)
 SOCKFUN3(send,void *,int,int)
-SOCKFUN5(sendto,void *,int,int,struct sockaddr *,int*)
+SOCKFUN5(sendto,void *,int,int,struct sockaddr *,unsigned int)
 SOCKFUN1(shutdown, int)
 SOCKFUN1(listen, int)
 
