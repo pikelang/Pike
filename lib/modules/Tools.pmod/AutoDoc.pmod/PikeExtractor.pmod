@@ -181,7 +181,8 @@ static private class Extractor {
   }
 
   // parseAdjacentDecls consumes the "\n" that may follow the last decl
-  static array(PikeObject) parseAdjacentDecls(Class|Module c) {
+  static array(array(PikeObject)|int(0..1)) parseAdjacentDecls(Class|Module c)
+  {
     array(PikeObject) res = ({ });
     for (;;) {
       // To get the correct line# :
@@ -236,11 +237,14 @@ static private class Extractor {
         obj->position = obj->position || pos;
 
       res += arrayp(p) ? p : ({ p });   // int x,y;  =>  array of PikeObject
-      if (parser->peekToken(WITH_NL) == "\n")   // we allow ONE "\n" inbetween
+      int(0..1) terminating_nl;
+      if (parser->peekToken(WITH_NL) == "\n") { // we allow ONE "\n" inbetween
+	terminating_nl = 1;
         parser->readToken(WITH_NL);
+      }
       string s = parser->peekToken(WITH_NL);
       if (isDelimiter(s) || isDocComment(s))
-        return res;
+        return ({ res, terminating_nl });
     }
   }
   // parseClassBody does the main work and scans the stream looking for:
@@ -261,6 +265,7 @@ static private class Extractor {
     for (;;) {
       Documentation doc = 0;
       array(PikeObject) decls = ({ });
+      int(0..1) got_nl;
 
       int docsMark = parser->getReadDocComments();
 
@@ -277,20 +282,22 @@ static private class Extractor {
         doc = readAdjacentDocLines();    // read the doc comment lines
         s = parser->peekToken(WITH_NL);
         if (!isDelimiter(s)) {           // and decls that may follow
-          decls = parseAdjacentDecls(c);
+          [decls, got_nl] = parseAdjacentDecls(c);
           s = parser->peekToken(WITH_NL);
           if (isDocComment(s))
             extractorError("doc + decl + doc  is forbidden!");
         }
       }
       else {
-        decls = parseAdjacentDecls(c);
+        [decls, got_nl] = parseAdjacentDecls(c);
         s = parser->peekToken(WITH_NL);
         if (isDocComment(s))
           doc = readAdjacentDocLines();
-        s = parser->peekToken(WITH_NL);
-        if ( !isDelimiter(s) )
-          extractorError("decl + doc + decl  is forbidden!");
+	if (got_nl) {
+	  s = parser->peekToken(WITH_NL);
+	  if ( !isDelimiter(s) )
+	    extractorError("decl + doc + decl  is forbidden!");
+	}
       }
 
       foreach (decls, PikeObject obj)
