@@ -9,6 +9,11 @@ o rsif
     flag -r or --recursive. Example:
       pike -x rsif -r 7.4 7.6
 
+o The automatic garbage collection strategy is configurable
+    The garbage collector can be configured to take both the amount of
+    garbage and the cpu time spent in the gc into account. See the
+    function Pike.gc_parameters.
+
 
 Language additions:
 -------------------
