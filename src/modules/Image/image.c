@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: image.c,v 1.215 2004/05/19 00:10:10 nilsson Exp $
+|| $Id: image.c,v 1.216 2004/07/08 15:30:12 marcus Exp $
 */
 
 /*
@@ -72,7 +72,9 @@
 **!	<ref>outline</ref>
 **!	<ref>select_from</ref>, 
 **!	<ref>rgb_to_hsv</ref>,
-**!	<ref>hsv_to_rgb</ref>,<br>
+**!	<ref>hsv_to_rgb</ref>,
+**!	<ref>rgb_to_yuv</ref>,
+**!	<ref>yuv_to_rgb</ref>,<br>
 **!
 **!	<ref>average</ref>,
 **!	<ref>max</ref>,
@@ -101,7 +103,7 @@
 
 #include "stralloc.h"
 #include "global.h"
-RCSID("$Id: image.c,v 1.215 2004/05/19 00:10:10 nilsson Exp $");
+RCSID("$Id: image.c,v 1.216 2004/07/08 15:30:12 marcus Exp $");
 #include "pike_macros.h"
 #include "object.h"
 #include "interpret.h"
@@ -2678,6 +2680,186 @@ void image_rgb_to_hsv(INT32 args)
 
 
 /*
+**! method object rgb_to_yuv()
+**! method object yuv_to_rgb()
+**!    Converts RGB data to YUV (YCrCb) data, or the other way around.
+**!    When converting to YUV, the resulting data is stored like this:
+**!     pixel.r = v (cr); pixel.g = y; pixel.b = u (cb);
+**!
+**!    When converting to RGB, the input data is asumed to be placed in
+**!    the pixels as above.
+**!
+**!	<table><tr valign=center>
+**!	<td><illustration> return lena(); </illustration></td>
+**!	<td><illustration> return lena()->yuv_to_rgb(); </illustration></td>
+**!	<td><illustration> return lena()->rgb_to_yuv(); </illustration></td>
+**!	</tr><tr valign=center>
+**!	<td>original</td>
+**!	<td>->yuv_to_rgb();</td>
+**!	<td>->rgb_to_yuv();</td>
+**!	</tr><tr valign=center>
+**!	<td><illustration>
+**!     return Image.image(67,67)->tuned_box(0,0, 67,67,
+**!                      ({ ({ 255,255,128 }), ({ 0,255,128 }),
+**!                         ({ 255,255,255 }), ({ 0,255,255 })}));
+**!	</illustration></td>
+**!	<td><illustration>
+**!     return Image.image(67,67)->tuned_box(0,0, 67,67,
+**!                      ({ ({ 255,255,128 }), ({ 0,255,128 }),
+**!                         ({ 255,255,255 }), ({ 0,255,255 })}))
+**!          ->yuv_to_rgb();
+**!	</illustration></td>
+**!	<td><illustration>
+**!     return Image.image(67,67)->tuned_box(0,0, 67,67,
+**!                      ({ ({ 255,255,128 }), ({ 0,255,128 }),
+**!                         ({ 255,255,255 }), ({ 0,255,255 })}))
+**!          ->rgb_to_yuv();
+**!	</illustration></td>
+**!	</tr><tr valign=center>
+**!	<td>tuned box (below)</td>
+**!	<td>the rainbow (below)</td>
+**!	<td>same, but rgb_to_yuv()</td>
+**!	</tr></table>
+**!
+**!
+**!    RGB to YUB calculation (this follows CCIR.601):
+**!    <pre>
+**!    in = input pixel
+**!    out = destination pixel
+**!    Ey = 0.299*in.r+0.587*in.g+0.114*in.b
+**!    Ecr = 0.713*(in.r - Ey) = 0.500*in.r-0.419*in.g-0.081*in.b
+**!    Ecb = 0.564*(in.b - Ey) = -0.169*in.r-0.331*in.g+0.500*in.b
+**!    out.r=0.875*Ecr+128
+**!    out.g=0.86*Ey+16
+**!    out.b=0.875*Ecb+128
+**!    </pre>
+**!
+**!     Example: Nice rainbow.
+**!     <pre>
+**!     object i = Image.Image(200,200);
+**!     i = i->tuned_box(0,0, 200,200,
+**!                      ({ ({ 255,255,128 }), ({ 0,255,128 }),
+**!                         ({ 255,255,255 }), ({ 0,255,255 })}))
+**!          ->yuv_to_rgb();
+**!	</pre>
+**! returns the new image object
+*/
+
+#define CLAMP(v,l,h) ((v)<(l)? (l) : ((v)>(h)? (h) : (v)))
+
+#define DENORM_Y(y) ((((y)*220)/256)+16)
+#define DENORM_C(c) ((((c)*112)/128)+128)
+
+#define NORM_Y(y) ((((y)-16)*256)/220)
+#define NORM_C(c) ((((c)-128)*128)/112)
+
+void image_yuv_to_rgb(INT32 args)
+{
+   INT32 i;
+   rgb_group *s,*d;
+   struct object *o;
+   struct image *img;
+   char *err = NULL;
+   if (!THIS->img) Pike_error("Called Image.Image object is not initialized\n");;
+
+   o=clone_object(image_program,0);
+   img=(struct image*)o->storage;
+   *img=*THIS;
+
+   if (!(img->img=malloc(sizeof(rgb_group)*THIS->xsize*THIS->ysize+1)))
+   {
+      free_object(o);
+      SIMPLE_OUT_OF_MEMORY_ERROR("yuv_to_rgb",
+				 sizeof(rgb_group)*THIS->xsize*THIS->ysize+1);
+   }
+
+   d=img->img;
+   s=THIS->img;
+
+   THREADS_ALLOW();
+   i=img->xsize*img->ysize;
+   while (i--)
+   {
+     double y,cr,cb;
+     int r,g,b;
+
+     y = NORM_Y((double)s->g);
+     cr = NORM_C((double)s->r);
+     cb = NORM_C((double)s->b);
+
+     r = y+1.402*cr;
+     g = y-0.714*cr-0.344*cb;
+     b = y+1.772*cb;
+
+     d->r = CLAMP(r, 0, 255);
+     d->g = CLAMP(g, 0, 255);
+     d->b = CLAMP(b, 0, 255);
+     s++; d++;
+   }
+exit_loop:
+   ;	/* Needed to keep some compilers happy. */
+   THREADS_DISALLOW();
+
+   if (err) {
+     Pike_error("%s\n", err);
+   }
+
+   pop_n_elems(args);
+   push_object(o);
+}
+
+void image_rgb_to_yuv(INT32 args)
+{
+   INT32 i;
+   rgb_group *s,*d;
+   struct object *o;
+   struct image *img;
+   if (!THIS->img)
+     Pike_error("Called Image.Image object is not initialized\n");
+
+   o=clone_object(image_program,0);
+   img=(struct image*)o->storage;
+   *img=*THIS;
+
+   if (!(img->img=malloc(sizeof(rgb_group)*THIS->xsize*THIS->ysize+1)))
+   {
+      free_object(o);
+      SIMPLE_OUT_OF_MEMORY_ERROR("rgb_to_yuv",
+				 sizeof(rgb_group)*THIS->xsize*THIS->ysize+1);
+   }
+
+   d=img->img;
+   s=THIS->img;
+
+   THREADS_ALLOW();
+   i=img->xsize*img->ysize;
+   while (i--)
+   {
+     int y,cr,cb;
+
+     y = DENORM_Y(0.299*s->r+0.587*s->g+0.114*s->b);
+     cr = DENORM_C(0.500*s->r-0.419*s->g-0.081*s->b);
+     cb = DENORM_C(-0.169*s->r-0.331*s->g+0.500*s->b);
+
+     d->g = CLAMP(y, 16, 235);
+     d->r = CLAMP(cr, 16, 239);
+     d->b = CLAMP(cb, 16, 239);
+     s++; d++;
+   }
+   THREADS_DISALLOW();
+
+   pop_n_elems(args);
+   push_object(o);
+}
+
+#undef NORM_Y
+#undef NORM_C
+#undef DENORM_Y
+#undef DENORM_C
+#undef CLAMP
+
+
+/*
 **! method object distancesq()
 **! method object distancesq(int r,int g,int b)
 **!    Makes an grey-scale image, for alpha-channel use.
@@ -4625,6 +4807,10 @@ void init_image_image(void)
    ADD_FUNCTION("rgb_to_hsv",image_rgb_to_hsv,
 		tFunc(tVoid,tObj),0);
    ADD_FUNCTION("hsv_to_rgb",image_hsv_to_rgb,
+		tFunc(tVoid,tObj),0);
+   ADD_FUNCTION("rgb_to_yuv",image_rgb_to_yuv,
+		tFunc(tVoid,tObj),0);
+   ADD_FUNCTION("yuv_to_rgb",image_yuv_to_rgb,
 		tFunc(tVoid,tObj),0);
 
    ADD_FUNCTION("select_from",image_select_from,
