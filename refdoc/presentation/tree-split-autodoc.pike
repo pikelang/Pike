@@ -1,5 +1,5 @@
 /*
- * $Id: tree-split-autodoc.pike,v 1.43 2002/12/21 18:16:21 grubba Exp $
+ * $Id: tree-split-autodoc.pike,v 1.44 2002/12/21 18:20:33 grubba Exp $
  *
  */
 
@@ -48,6 +48,7 @@ string create_reference(string from, string to, string text) {
     // Get rid of trailing "".
     a = a[0..0];
   }
+  a[0] += "::";
   return "<font face='courier'><a href='" +
     "../"*max(sizeof(from/"/") - 2, 0) + map(a, cquote)*"/" + ".html'>" +
     text +
