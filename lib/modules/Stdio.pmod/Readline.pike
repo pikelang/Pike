@@ -1,4 +1,4 @@
-// $Id: Readline.pike,v 1.13 1999/04/25 15:48:41 marcus Exp $
+// $Id: Readline.pike,v 1.14 1999/04/26 13:03:01 grubba Exp $
 
 class OutputController
 {
@@ -545,7 +545,7 @@ class InputController
 
 class DefaultEditKeys
 {
-  static private multiset word_break_chars = mkmultiset("\t \n\r/*?_-.[]~&;\!#$%^(){}<>\""/"");
+  static private multiset word_break_chars = mkmultiset("\t \n\r/*?_-.[]~&;\!#$%^(){}<>\"'`"/"");
   static object _readline;
 
   void self_insert_command(string str)
