@@ -2,12 +2,12 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: operators.c,v 1.180 2003/11/10 01:19:51 mast Exp $
+|| $Id: operators.c,v 1.181 2003/11/10 01:42:32 mast Exp $
 */
 
 #include "global.h"
 #include <math.h>
-RCSID("$Id: operators.c,v 1.180 2003/11/10 01:19:51 mast Exp $");
+RCSID("$Id: operators.c,v 1.181 2003/11/10 01:42:32 mast Exp $");
 #include "interpret.h"
 #include "svalue.h"
 #include "multiset.h"
@@ -62,13 +62,18 @@ PMOD_EXPORT void ID(INT32 args)				\
 
 /*! @decl int(0..1) `!=(mixed arg1, mixed arg2, mixed ... extras)
  *!
- *!   Inequality operator.
+ *!   Inequality test.
+ *!
+ *!   Every expression with the @expr{!=@} operator becomes a call to
+ *!   this function, i.e. @expr{a!=b@} is the same as
+ *!   @expr{predef::`!=(a,b)@}.
+ *!
+ *!   This is the inverse of @[`==()]; see that function for further
+ *!   details.
  *!
  *! @returns
- *!   Returns @expr{0@} (zero) if all the arguments are equal, and
- *!   @expr{1@} otherwise.
- *!
- *!   This is the inverse of @[`==()].
+ *!   Returns @expr{1@} if the test is successful, @expr{0@}
+ *!   otherwise.
  *!
  *! @seealso
  *!   @[`==()]
@@ -82,24 +87,73 @@ PMOD_EXPORT void f_ne(INT32 args)
 
 /*! @decl int(0..1) `==(mixed arg1, mixed arg2, mixed ... extras)
  *!
- *!   Equality operator.
+ *!   Equality test.
+ *!
+ *!   Every expression with the @expr{==@} operator becomes a call to
+ *!   this function, i.e. @expr{a==b@} is the same as
+ *!   @expr{predef::`==(a,b)@}.
+ *!
+ *!   If more than two arguments are given, each argument is compared
+ *!   with the following one as described below, and the test is
+ *!   successful iff all comparisons are successful.
+ *!
+ *!   If the first argument is an object with an @[lfun::`==()], that
+ *!   function is called with the second as argument, and the test is
+ *!   successful iff its result is nonzero (according to @[`!]).
+ *!
+ *!   Otherwise, if the second argument is an object with an
+ *!   @[lfun::`==()], that function is called with the first as
+ *!   argument, and the test is successful iff its result is nonzero
+ *!   (according to @[`!]).
+ *!
+ *!   Otherwise, if the arguments are of different types, the test is
+ *!   unsuccessful. Function pointers to programs are automatically
+ *!   converted to program pointers if necessary, though.
+ *!
+ *!   Otherwise the test depends on the type of the arguments:
+ *!   @mixed
+ *!     @type int
+ *!       Successful iff the two integers are numerically equal.
+ *!     @type float
+ *!       Successful iff the two floats are numerically equal or if
+ *!       both are NaN.
+ *!     @type string
+ *!       Successful iff the two strings are identical, character for
+ *!       character. (Since all strings are kept unique, this is
+ *!       actually a test whether the arguments point to the same
+ *!       string, and it therefore run in constant time.)
+ *!     @type array|mapping|multiset|object|function|program|type
+ *!       Successful iff the two arguments point to the same instance.
+ *!   @endmixed
  *!
  *! @returns
- *!   Returns @expr{1@} if all the arguments are equal, and
- *!   @expr{0@} (zero) otherwise.
+ *!   Returns @expr{1@} if the test is successful, @expr{0@}
+ *!   otherwise.
+ *!
+ *! @note
+ *!   Floats and integers are not automatically converted to test
+ *!   against each other, so e.g. @expr{0==0.0@} is false.
+ *!
+ *! @note
+ *!   Programs are not automatically converted to types to be compared
+ *!   type-wise.
  *!
  *! @seealso
- *!   @[`!=()]
+ *!   @[`!()], @[`!=()]
  */
 COMPARISON(f_eq,"`==", is_eq)
 
 /*! @decl int(0..1) `<(mixed arg1, mixed arg2, mixed ... extras)
  *!
- *!   Less than operator.
+ *!   Less than test.
+ *!
+ *!   Every expression with the @expr{<@} operator becomes a call to
+ *!   this function, i.e. @expr{a<b@} is the same as
+ *!   @expr{predef::`<(a,b)@}.
  *!
  *! @returns
- *!   Returns @expr{1@} if the arguments are strictly increasing, and
- *!   @expr{0@} (zero) otherwise.
+ *!   Returns @expr{1@} if the test is successful, @expr{0@}
+ *!   otherwise.
  *!
  *! @seealso
  *!   @[`<=()], @[`>()], @[`>=()]
@@ -108,7 +162,11 @@ COMPARISON(f_lt,"`<" , is_lt)
 
 /*! @decl int(0..1) `<=(mixed arg1, mixed arg2, mixed ... extras)
  *!
- *!   Less or equal operator.
+ *!   Less than or equal test.
+ *!
+ *!   Every expression with the @expr{<=@} operator becomes a call to
+ *!   this function, i.e. @expr{a<=b@} is the same as
+ *!   @expr{predef::`<=(a,b)@}.
  *!
  *! @returns
  *!   Returns @expr{1@} if the arguments are not strictly decreasing, and
@@ -123,7 +181,11 @@ COMPARISON(f_le,"`<=",!is_gt)
 
 /*! @decl int(0..1) `>(mixed arg1, mixed arg2, mixed ... extras)
  *!
- *!   Greater than operator.
+ *!   Greater than test.
+ *!
+ *!   Every expression with the @expr{>@} operator becomes a call to
+ *!   this function, i.e. @expr{a>b@} is the same as
+ *!   @expr{predef::`>(a,b)@}.
  *!
  *! @returns
  *!   Returns @expr{1@} if the arguments are strictly decreasing, and
@@ -136,7 +198,11 @@ COMPARISON(f_gt,"`>" , is_gt)
 
 /*! @decl int(0..1) `>=(mixed arg1, mixed arg2, mixed ... extras)
  *!
- *! Greater or equal operator.
+ *!   Greater than or equal test.
+ *!
+ *!   Every expression with the @expr{>=@} operator becomes a call to
+ *!   this function, i.e. @expr{a>=b@} is the same as
+ *!   @expr{predef::`>=(a,b)@}.
  *!
  *! @returns
  *!   Returns @expr{1@} if the arguments are not strictly increasing, and
@@ -167,58 +233,72 @@ COMPARISON(f_ge,"`>=",!is_lt)
 
 /*! @decl mixed `+(mixed arg1)
  *! @decl mixed `+(object arg1, mixed ... extras)
- *! @decl string `+(string arg1, string|int|float arg2)
- *! @decl string `+(int|float arg1, string arg2)
+ *! @decl mixed `+(mixed arg1, mixed arg2, mixed ... extras)
  *! @decl int `+(int arg1, int arg2)
  *! @decl float `+(float arg1, int|float arg2)
  *! @decl float `+(int|float arg1, float arg2)
+ *! @decl string `+(int|float arg1, string arg2)
+ *! @decl string `+(string arg1, string|int|float arg2)
  *! @decl array `+(array arg1, array arg2)
  *! @decl mapping `+(mapping arg1, mapping arg2)
  *! @decl multiset `+(multiset arg1, multiset arg2)
- *! @decl mixed `+(mixed arg1, mixed arg2, mixed ... extras)
  *!
- *!   Addition operator.
+ *!   Addition/concatenation.
+ *!
+ *!   Every expression with the @expr{+@} operator becomes a call to
+ *!   this function, i.e. @expr{a+b@} is the same as
+ *!   @expr{predef::`+(a,b)@}. Longer @expr{+@} expressions are
+ *!   normally optimized to one call, so e.g. @expr{a+b+c@} becomes
+ *!   @expr{predef::`+(a,b,c)@}.
  *!
  *! @returns
- *!   If there's only a single argument, that argument will be returned.
+ *!   If there's a single argument, that argument is returned.
  *!
  *!   If @[arg1] is an object with only one reference and an
- *!   @[lfun::`+=()], that function will be called with the rest of
- *!   the arguments, and its result is returned.
+ *!   @[lfun::`+=()], that function is called with the rest of the
+ *!   arguments, and its result is returned.
  *!
  *!   Otherwise, if @[arg1] is an object with an @[lfun::`+()], that
- *!   function will be called with the rest of the arguments, and its
+ *!   function is called with the rest of the arguments, and its
  *!   result is returned.
  *!
- *!   Otherwise if any of the other arguments is an object that has
- *!   an @[lfun::``+()] the first such function will be called
- *!   with the arguments leading up to it, and @[`+()] is then called
+ *!   Otherwise, if any of the other arguments is an object that has
+ *!   an @[lfun::``+()], the first such function is called with the
+ *!   arguments leading up to it, and @[`+()] is then called
  *!   recursively with the result and the rest of the arguments.
  *!
- *!   If there are two arguments the result will be:
- *!   @mixed arg1
- *!   	@type string
- *!   	  @[arg2] will be converted to a string, and the result the
- *!   	  strings concatenated.
- *!   	@type int|float
- *!   	  @mixed arg2
- *!   	    @type string
- *!   	      @[arg1] will be converted to string, and the result the
- *!   	      strings concatenated.
- *!   	    @type int|float
- *!   	      The result will be @expr{@[arg1] + @[arg2]@}, and will
- *!   	      be a float if either @[arg1] or @[arg2] is a float.
- *!   	  @endmixed
- *!   	@type array
- *!   	  The arrays will be concatenated.
- *!   	@type mapping
- *!   	  The mappings will be joined.
- *!   	@type multiset
- *!   	  The multisets will be added.
- *!   @endmixed
+ *!   Otherwise, if there are more than two arguments the result is:
+ *!   @expr{`+(`+(@[arg1], @[arg2]), @@@[extras])@}
  *!
- *!   Otherwise if there are more than 2 arguments the result will be:
- *!     @expr{`+(`+(@[arg1], @[arg2]), @@@[extras])@}
+ *!   Otherwise the result depends on the argument types:
+ *!   @mixed arg1
+ *!     @type int|float
+ *!       @mixed arg2
+ *!         @type int|float
+ *!           The result is @expr{@[arg1] + @[arg2]@}, and is a float
+ *!           if either @[arg1] or @[arg2] is a float.
+ *!         @type string
+ *!           @[arg1] is converted to string which is concatenated
+ *!           with @[arg2].
+ *!       @endmixed
+ *!     @type string
+ *!       @[arg2] is converted to a string, and the result is
+ *!       concatenated to the end of @[arg1].
+ *!     @type array
+ *!       The result is @[arg2] concatenated to the end of @[arg1].
+ *!     @type mapping
+ *!       The result is like @[arg1] but extended with the entries
+ *!       from @[arg2]. If the same index (according to @[hash_value]
+ *!       and @[`==]) occur in both, the value from @[arg2] is used.
+ *!     @type multiset
+ *!       The result is like @[arg1] but extended with the entries
+ *!       from @[arg2]. Subsequences with orderwise equal indices
+ *!       (i.e. where @[`<] returns false) are concatenated into the
+ *!       result with the subsequence from @[arg1] before the one from
+ *!       @[arg2].
+ *!   @endmixed
+ *!   The function is not destructive on the arguments - the result is
+ *!   always a new instance.
  *!
  *! @note
  *!   In Pike 7.0 and earlier the addition order was unspecified.
@@ -1071,55 +1151,60 @@ PMOD_EXPORT void o_subtract(void)
 }
 
 /*! @decl mixed `-(mixed arg1)
- *! @decl mixed `-(object arg1, mixed arg2)
- *! @decl mixed `-(mixed arg1, mixed arg2)
- *! @decl mapping `-(mapping arg1, array arg2)
- *! @decl mapping `-(mapping arg1, multiset arg2)
- *! @decl mapping `-(mapping arg1, mapping arg2)
- *! @decl array `-(array arg1, array arg2)
- *! @decl multiset `-(multiset arg1, multiset arg2)
- *! @decl float `-(float arg1, int|float arg2)
- *! @decl float `-(int arg1, float arg2)
- *! @decl int `-(int arg1, int arg2)
- *! @decl string `-(string arg1, string arg2)
  *! @decl mixed `-(mixed arg1, mixed arg2, mixed ... extras)
+ *! @decl mixed `-(object arg1, mixed arg2)
+ *! @decl mixed `-(mixed arg1, object arg2)
+ *! @decl int `-(int arg1, int arg2)
+ *! @decl float `-(float arg1, int|float arg2)
+ *! @decl float `-(int|float arg1, float arg2)
+ *! @decl string `-(string arg1, string arg2)
+ *! @decl array `-(array arg1, array arg2)
+ *! @decl mapping `-(mapping arg1, array arg2)
+ *! @decl mapping `-(mapping arg1, mapping arg2)
+ *! @decl mapping `-(mapping arg1, multiset arg2)
+ *! @decl multiset `-(multiset arg1, multiset arg2)
  *!
- *!   Negation/subtraction operator.
+ *!   Negation/subtraction/set difference.
+ *!
+ *!   Every expression with the @expr{-@} operator becomes a call to
+ *!   this function, i.e. @expr{-a@} is the same as
+ *!   @expr{predef::`-(a)@} and @expr{a-b@} is the same as
+ *!   @expr{predef::`-(a,b)@}. Longer @expr{-@} expressions are
+ *!   normally optimized to one call, so e.g. @expr{a-b-c@} becomes
+ *!   @expr{predef::`-(a,b,c)@}.
  *!
  *! @returns
- *!   If there's only a single argument, that argument will be returned
- *!   negated. If @[arg1] was an object, @expr{@[arg1]::`-()@} will be called
- *!   without arguments.
+ *!   If there's a single argument, that argument is returned negated.
+ *!   If @[arg1] is an object with an @[lfun::`-()], that function is
+ *!   called without arguments, and its result is returned.
  *!
- *!   If there are more than two arguments the result will be:
+ *!   If there are more than two arguments the result is:
  *!   @expr{`-(`-(@[arg1], @[arg2]), @@@[extras])@}.
  *!
- *!   If @[arg1] is an object that overloads @expr{`-()@}, that function will
- *!   be called with @[arg2] as the single argument.
+ *!   Otherwise, if @[arg1] is an object with an @[lfun::`-()], that
+ *!   function is called with @[arg2] as argument, and its result is
+ *!   returned.
  *!
- *!   If @[arg2] is an object that overloads @expr{``-()@}, that function will
- *!   be called with @[arg1] as the single argument.
+ *!   Otherwise, if @[arg2] is an object with an @[lfun::``-()], that
+ *!   function is called with @[arg1] as argument, and its result is
+ *!   returned.
  *!
- *!   Otherwise the result will be as follows:
+ *!   Otherwise the result depends on the argument types:
  *!   @mixed arg1
- *!   	@type mapping
- *!   	  @mixed arg2
- *!   	    @type array
- *!   	      The result will be @[arg1] with all occurrances of
- *!   	      @[arg2] removed.
- *!   	    @type multiset|mapping
- *!   	      The result will be @[arg1] with all occurrences of
- *!   	      @expr{@[indices](@[arg2])@} removed.
- *!   	  @endmixed
- *!   	@type array|multiset
- *!   	  The result will be the elements of @[arg1] that are not in @[arg2].
- *!   	@type float|int
- *!   	  The result will be @expr{@[arg1] - @[arg2]@}, and will be a float
- *!   	  if either @[arg1] or @[arg2] is a float.
+ *!   	@type int|float
+ *!   	  The result is @expr{@[arg1] - @[arg2]@}, and is a float if
+ *!   	  either @[arg1] or @[arg2] is a float.
  *!   	@type string
- *!   	  Result will be the string @[arg1] with all occurrances of the
- *!   	  substring @[arg2] removed.
+ *!   	  The result is @[arg1] with all nonoverlapping occurrences of
+ *!   	  the substring @[arg2] removed. In cases with two overlapping
+ *!   	  occurrences, the leftmost is removed.
+ *!   	@type array|mapping|multiset
+ *!   	  The result is like @[arg1] but without the elements/indices
+ *!   	  that match any in @[arg2] (according to @[`==] and, in the
+ *!   	  case of mappings, @[hash_value]).
  *!   @endmixed
+ *!   The function is not destructive on the arguments - the result is
+ *!   always a new instance.
  *!
  *! @note
  *!   In Pike 7.0 and earlier the subtraction order was unspecified.
@@ -1447,47 +1532,55 @@ static void speedup(INT32 args, void (*func)(void))
 }
 
 /*! @decl mixed `&(mixed arg1)
+ *! @decl mixed `&(mixed arg1, mixed arg2, mixed ... extras)
  *! @decl mixed `&(object arg1, mixed arg2)
  *! @decl mixed `&(mixed arg1, object arg2)
  *! @decl int `&(int arg1, int arg2)
- *! @decl array `&(array arg1, array arg2)
- *! @decl multiset `&(multiset arg1, multiset arg2)
- *! @decl mapping `&(mapping arg1, mapping arg2)
  *! @decl string `&(string arg1, string arg2)
- *! @decl type `&(type|program arg1, type|program arg2)
+ *! @decl array `&(array arg1, array arg2)
+ *! @decl mapping `&(mapping arg1, mapping arg2)
  *! @decl mapping `&(mapping arg1, array arg2)
- *! @decl mapping `&(array arg1, mapping arg2)
  *! @decl mapping `&(mapping arg1, multiset arg2)
- *! @decl mapping `&(multiset arg1, mapping arg2)
- *! @decl mixed `&(mixed arg1, mixed arg2, mixed ... extras)
+ *! @decl multiset `&(multiset arg1, multiset arg2)
+ *! @decl type `&(type|program arg1, type|program arg2)
  *!
- *!   Bitwise and/intersection operator.
+ *!   Bitwise and/intersection.
+ *!
+ *!   Every expression with the @expr{&@} operator becomes a call to
+ *!   this function, i.e. @expr{a&b@} is the same as
+ *!   @expr{predef::`&(a,b)@}.
  *!
  *! @returns
- *!   If there's a single argument, that argument will be returned.
+ *!   If there's a single argument, that argument is returned.
  *!
- *!   If there are more than two arguments, the result will be:
+ *!   If there are more than two arguments the result is:
  *!   @expr{`&(`&(@[arg1], @[arg2]), @@@[extras])@}.
  *!
- *!   If @[arg1] is an object that has an @[lfun::`&()], that function
- *!   will be called with @[arg2] as the single argument.
- *! 
- *!   If @[arg2] is an object that has an @[lfun::``&()], that function
- *!   will be called with @[arg1] as the single argument.
+ *!   Otherwise, if @[arg1] is an object with an @[lfun::`&()], that
+ *!   function is called with @[arg2] as argument, and its result is
+ *!   returned.
  *!
- *!   Otherwise the result will be as follows:
+ *!   Otherwise, if @[arg2] is an object with an @[lfun::``&()], that
+ *!   function is called with @[arg1] as argument, and its result is
+ *!   returned.
+ *!
+ *!   Otherwise the result depends on the argument types:
  *!   @mixed arg1
  *!   	@type int
- *!   	  The result will be the bitwise and of @[arg1] and @[arg2].
- *!   	@type array|multiset|mapping
- *!   	  The result will be the elements of @[arg1] and @[arg2] that
- *!   	  occurr in both.
- *!   	@type type|program
- *!   	  The result will be the type intersection of @[arg1] and @[arg2].
+ *!   	  Bitwise and of @[arg1] and @[arg2].
  *!   	@type string
- *!   	  The result will be the string where the elements of @[arg1]
- *!   	  and @[arg2] have been pairwise bitwise anded.
+ *!   	  The result is a string where each character is the bitwise
+ *!   	  and of the characters in the same position in @[arg1] and
+ *!   	  @[arg2]. The arguments must be strings of the same length.
+ *!   	@type array|mapping|multiset
+ *!   	  The result is like @[arg1] but only with the
+ *!   	  elements/indices that match any in @[arg2] (according to
+ *!   	  @[`==] and, in the case of mappings, @[hash_value]).
+ *!   	@type type|program
+ *!   	  Type intersection of @[arg1] and @[arg2].
  *!   @endmixed
+ *!   The function is not destructive on the arguments - the result is
+ *!   always a new instance.
  *!
  *! @seealso
  *!   @[`|()], @[lfun::`&()], @[lfun::``&()]
@@ -1657,43 +1750,70 @@ PMOD_EXPORT void o_or(void)
 }
 
 /*! @decl mixed `|(mixed arg1)
+ *! @decl mixed `|(mixed arg1, mixed arg2, mixed ... extras)
  *! @decl mixed `|(object arg1, mixed arg2)
  *! @decl mixed `|(mixed arg1, object arg2)
  *! @decl int `|(int arg1, int arg2)
+ *! @decl string `|(string arg1, string arg2)
+ *! @decl array `|(array arg1, array arg2)
  *! @decl mapping `|(mapping arg1, mapping arg2)
  *! @decl multiset `|(multiset arg1, multiset arg2)
- *! @decl array `|(array arg1, array arg2)
- *! @decl string `|(string arg1, string arg2)
  *! @decl type `|(program|type arg1, program|type arg2)
- *! @decl mixed `|(mixed arg1, mixed arg2, mixed ... extras)
  *!
- *!   Bitwise or/join operator.
+ *!   Bitwise or/union.
+ *!
+ *!   Every expression with the @expr{|@} operator becomes a call to
+ *!   this function, i.e. @expr{a|b@} is the same as
+ *!   @expr{predef::`|(a,b)@}.
  *!
  *! @returns
- *!   If there's a single argument, that argument will be returned.
+ *!   If there's a single argument, that argument is returned.
  *!
- *!   If there are more than two arguments, the result will be:
+ *!   If there are more than two arguments, the result is:
  *!   @expr{`|(`|(@[arg1], @[arg2]), @@@[extras])@}.
  *!
- *!   If @[arg1] is an object that has an @[lfun::`|()], that function
- *!   will be called with @[arg2] as the single argument.
- *! 
- *!   If @[arg2] is an object that has an @[lfun::``|()], that function
- *!   will be called with @[arg1] as the single argument.
+ *!   Otherwise, if @[arg1] is an object with an @[lfun::`|()], that
+ *!   function is called with @[arg2] as argument, and its result is
+ *!   returned.
  *!
- *!   Otherwise the result will be as follows:
+ *!   Otherwise, if @[arg2] is an object with an @[lfun::``|()], that
+ *!   function is called with @[arg1] as argument, and its result is
+ *!   returned.
+ *!
+ *!   Otherwise the result depends on the argument types:
  *!   @mixed arg1
- *!   	@type int
- *!   	  The result will be the binary or of @[arg1] and @[arg2].
- *!   	@type mapping|multiset
- *!   	  The result will be the join of @[arg1] and @[arg2].
- *!   	@type array
- *!   	  The result will be the concatenation of @[arg1] and @[arg2].
- *!   	@type string
- *!   	  The result will be the pairwise bitwose or of @[arg1] and @[arg2].
- *!   	@type type|program
- *!   	  The result will be the type join of @[arg1] and @[arg2].
+ *!     @type int
+ *!       Bitwise or of @[arg1] and @[arg2].
+ *!     @type string
+ *!       The result is a string where each character is the bitwise
+ *!       or of the characters in the same position in @[arg1] and
+ *!       @[arg2]. The arguments must be strings of the same length.
+ *!     @type array
+ *!       The result is an array with the elements in @[arg1]
+ *!       concatenated with those in @[arg2] that doesn't occur in
+ *!       @[arg1] (according to @[`==]). The order between the
+ *!       elements that come from the same argument is kept.
+ *!
+ *!       Every element in @[arg1] is only matched once against an
+ *!       element in @[arg2], so if @[arg2] contains several elements
+ *!       that are equal to each other and are more than their
+ *!       counterparts in @[arg1], the rightmost remaining elements in
+ *!       @[arg2] are kept.
+ *!     @type mapping
+ *!       The result is like @[arg1] but extended with the entries
+ *!       from @[arg2]. If the same index (according to @[hash_value]
+ *!       and @[`==]) occur in both, the value from @[arg2] is used.
+ *!     @type multiset
+ *!       The result is like @[arg1] but extended with the entries in
+ *!       @[arg2] that doesn't already occur in @[arg1] (according to
+ *!       @[`==]). Subsequences with orderwise equal entries (i.e.
+ *!       where @[`<] returns false) are handled just like the array
+ *!       case above.
+ *!     @type type|program
+ *!       Type union of @[arg1] and @[arg2].
  *!   @endmixed
+ *!   The function is not destructive on the arguments - the result is
+ *!   always a new instance.
  *!
  *! @seealso
  *!   @[`&()], @[lfun::`|()], @[lfun::``|()]
@@ -1866,43 +1986,72 @@ PMOD_EXPORT void o_xor(void)
 }
 
 /*! @decl mixed `^(mixed arg1)
+ *! @decl mixed `^(mixed arg1, mixed arg2, mixed ... extras)
  *! @decl mixed `^(object arg1, mixed arg2)
  *! @decl mixed `^(mixed arg1, object arg2)
  *! @decl int `^(int arg1, int arg2)
+ *! @decl string `^(string arg1, string arg2)
+ *! @decl array `^(array arg1, array arg2)
  *! @decl mapping `^(mapping arg1, mapping arg2)
  *! @decl multiset `^(multiset arg1, multiset arg2)
- *! @decl array `^(array arg1, array arg2)
- *! @decl string `^(string arg1, string arg2)
  *! @decl type `^(program|type arg1, program|type arg2)
- *! @decl mixed `^(mixed arg1, mixed arg2, mixed ... extras)
  *!
- *!   Exclusive or operator.
+ *!   Exclusive or.
+ *!
+ *!   Every expression with the @expr{^@} operator becomes a call to
+ *!   this function, i.e. @expr{a^b@} is the same as
+ *!   @expr{predef::`^(a,b)@}.
  *!
  *! @returns
- *!   If there's a single argument, that argument will be returned.
+ *!   If there's a single argument, that argument is returned.
  *!
- *!   If there are more than two arguments, the result will be:
+ *!   If there are more than two arguments, the result is:
  *!   @expr{`^(`^(@[arg1], @[arg2]), @@@[extras])@}.
  *!
- *!   If @[arg1] is an object that has an @[lfun::`^()], that function
- *!   will be called with @[arg2] as the single argument.
- *! 
- *!   If @[arg2] is an object that has an @[lfun::``^()], that function
- *!   will be called with @[arg1] as the single argument.
+ *!   Otherwise, if @[arg1] is an object with an @[lfun::`^()], that
+ *!   function is called with @[arg2] as argument, and its result is
+ *!   returned.
  *!
- *!   Otherwise the result will be as follows:
+ *!   Otherwise, if @[arg2] is an object with an @[lfun::``^()], that
+ *!   function is called with @[arg1] as argument, and its result is
+ *!   returned.
+ *!
+ *!   Otherwise the result depends on the argument types:
  *!   @mixed arg1
- *!   	@type int
- *!   	  The result will be the bitwise xor of @[arg1] and @[arg2].
- *!   	@type mapping|multiset|array
- *!   	  The result will be the elements of @[arg1] and @[arg2] that
- *!   	  only occurr in one of them.
- *!   	@type string
- *!   	  The result will be the pairwise bitwise xor of @[arg1] and @[arg2].
- *!   	@type type|program
- *!   	  The result will be the result of
+ *!     @type int
+ *!       Bitwise exclusive or of @[arg1] and @[arg2].
+ *!     @type string
+ *!       The result is a string where each character is the bitwise
+ *!       exclusive or of the characters in the same position in
+ *!       @[arg1] and @[arg2]. The arguments must be strings of the
+ *!       same length.
+ *!     @type array
+ *!       The result is an array with the elements in @[arg1] that
+ *!       doesn't occur in @[arg2] concatenated with those in @[arg2]
+ *!       that doesn't occur in @[arg1] (according to @[`==]). The
+ *!       order between the elements that come from the same argument
+ *!       is kept.
+ *!
+ *!       Every element is only matched once against an element in the
+ *!       other array, so if one contains several elements that are
+ *!       equal to each other and are more than their counterparts in
+ *!       the other array, the rightmost remaining elements are kept.
+ *!     @type mapping
+ *!       The result is like @[arg1] but with the entries from @[arg1]
+ *!       and @[arg2] whose indices are different between them
+ *!       (according to @[hash_value] and @[`==]).
+ *!     @type multiset
+ *!       The result is like @[arg1] but with the entries from @[arg1]
+ *!       and @[arg2] that are different between them (according to
+ *!       @[hash_value] and @[`==]). Subsequences with orderwise equal
+ *!       entries (i.e. where @[`<] returns false) are handled just
+ *!       like the array case above.
+ *!     @type type|program
+ *!   	  The result is a type computed like this:
  *!   	  @expr{(@[arg1]&~@[arg2])|(~@[arg1]&@[arg2])@}.
  *!   @endmixed
+ *!   The function is not destructive on the arguments - the result is
+ *!   always a new instance.
  *!
  *! @seealso
  *!   @[`&()], @[`|()], @[lfun::`^()], @[lfun::``^()]
@@ -1979,7 +2128,11 @@ PMOD_EXPORT void o_lsh(void)
  *! @decl mixed `<<(object arg1, int|object arg2)
  *! @decl mixed `<<(int arg1, object arg2)
  *!
- *!   Left shift operator.
+ *!   Left shift.
+ *!
+ *!   Every expression with the @expr{<<@} operator becomes a call to
+ *!   this function, i.e. @expr{a<<b@} is the same as
+ *!   @expr{predef::`<<(a,b)@}.
  *!
  *!   If @[arg1] is an object that implements @[lfun::`<<()], that
  *!   function will be called with @[arg2] as the single argument.
@@ -2054,7 +2207,11 @@ PMOD_EXPORT void o_rsh(void)
  *! @decl mixed `>>(object arg1, int|object arg2)
  *! @decl mixed `>>(int arg1, object arg2)
  *!
- *!   Right shift operator.
+ *!   Right shift.
+ *!
+ *!   Every expression with the @expr{>>@} operator becomes a call to
+ *!   this function, i.e. @expr{a>>b@} is the same as
+ *!   @expr{predef::`>>(a,b)@}.
  *!
  *!   If @[arg1] is an object that implements @[lfun::`>>()], that
  *!   function will be called with @[arg2] as the single argument.
@@ -2287,10 +2444,16 @@ PMOD_EXPORT void o_multiply(void)
  *! @decl int `*(int arg1, int arg2)
  *! @decl mixed `*(mixed arg1, mixed arg2, mixed ... extras)
  *!
- *!   Multiplication operator.
+ *!   Multiplication/repetition/implosion.
+ *!
+ *!   Every expression with the @expr{*@} operator becomes a call to
+ *!   this function, i.e. @expr{a*b@} is the same as
+ *!   @expr{predef::`*(a,b)@}. Longer @expr{*@} expressions are
+ *!   normally optimized to one call, so e.g. @expr{a*b*c@} becomes
+ *!   @expr{predef::`*(a,b,c)@}.
  *!
  *! @returns
- *!   If there's only a single argument, that argument will be returned.
+ *!   If there's a single argument, that argument will be returned.
  *!
  *!   If the first argument is an object that implements @[lfun::`*()],
  *!   that function will be called with the rest of the arguments.
@@ -2640,7 +2803,11 @@ PMOD_EXPORT void o_divide(void)
  *! @decl int `/(int arg1, int arg2)
  *! @decl mixed `/(mixed arg1, mixed arg2, mixed ... extras)
  *!
- *!   Division operator.
+ *!   Division/split.
+ *!
+ *!   Every expression with the @expr{/@} operator becomes a call to
+ *!   this function, i.e. @expr{a/b@} is the same as
+ *!   @expr{predef::`/(a,b)@}.
  *!
  *! @returns
  *!   If there are more than two arguments, the result will be
@@ -2839,7 +3006,11 @@ PMOD_EXPORT void o_mod(void)
  *! @decl float `%(int arg1, float arg2)
  *! @decl int `%(int arg1, int arg2)
  *!
- *!   Modulo operator.
+ *!   Modulo.
+ *!
+ *!   Every expression with the @expr{%@} operator becomes a call to
+ *!   this function, i.e. @expr{a%b@} is the same as
+ *!   @expr{predef::`%(a,b)@}.
  *!
  *! @returns
  *!   If @[arg1] is an object that implements @[lfun::`%()] then
@@ -2933,7 +3104,16 @@ PMOD_EXPORT void o_not(void)
  *! @decl int(1..1) `!(int(0..0) arg)
  *! @decl int(0..0) `!(mixed arg)
  *!
- *!   Negation operator.
+ *!   Logical not.
+ *!
+ *!   Every expression with the @expr{!@} operator becomes a call to
+ *!   this function, i.e. @expr{!a@} is the same as
+ *!   @expr{predef::`!(a)@}.
+ *!
+ *!   It's also used when necessary to test truth on objects, i.e. in
+ *!   a statement @expr{if (o) ...@} where @expr{o@} is an object, the
+ *!   test becomes the equivalent of @expr{!!o@} so that any
+ *!   @[lfun::`!()] the object might have gets called.
  *!
  *! @returns
  *!   If @[arg] is an object that implements @[lfun::`!()], that function
@@ -2943,6 +3123,9 @@ PMOD_EXPORT void o_not(void)
  *!   destructed object, @expr{1@} will be returned.
  *!
  *!   Otherwise @expr{0@} (zero) will be returned.
+ *!
+ *! @note
+ *!   No float is considered false, not even @expr{0.0@}.
  *!
  *! @seealso
  *!   @[`==()], @[`!=()], @[lfun::`!()]
@@ -3041,7 +3224,11 @@ PMOD_EXPORT void o_compl(void)
  *! @decl type `~(type|program arg)
  *! @decl string `~(string arg)
  *!
- *!   Complement operator.
+ *!   Complement/inversion.
+ *!
+ *!   Every expression with the @expr{~@} operator becomes a call to
+ *!   this function, i.e. @expr{~a@} is the same as
+ *!   @expr{predef::`~(a)@}.
  *!
  *! @returns
  *!   The result will be as follows:
@@ -3193,7 +3380,16 @@ PMOD_EXPORT void o_range(void)
  *! @decl string `[](string arg, int start, int end)
  *! @decl array `[](array arg, int start, int end)
  *!
- *!   Index and range operator.
+ *!   Index/subrange.
+ *!
+ *!   Every non-lvalue expression with the @expr{[]@} operator becomes
+ *!   a call to this function, i.e. @expr{a[i]@} is the same as
+ *!   @expr{predef::`[](a,i)@} and @expr{a[i..j]@} is the same as
+ *!   @expr{predef::`[](a,i,j)@}. If the lower limit @expr{i@} is left
+ *!   out, @expr{0@} is passed to the function. If the upper limit
+ *!   @expr{j@} is left out, @[Int.NATIVE_MAX] is passed to the
+ *!   function, but that might be changed to an even larger number in
+ *!   the future.
  *!
  *! @returns
  *!   If @[arg] is an object that implements @[lfun::`[]()], that function
@@ -3233,8 +3429,13 @@ PMOD_EXPORT void o_range(void)
  *!   	  in @[arg] will be returned.
  *!   @endmixed
  *!
+ *! @note
+ *!   An indexing expression in an lvalue context, i.e. where the
+ *!   index is being assigned a new value, uses @[`[]=] instead of
+ *!   this function.
+ *!
  *! @seealso
- *!   @[`->()], @[lfun::`[]()]
+ *!   @[`->()], @[lfun::`[]()], @[`[]=]
  */
 PMOD_EXPORT void f_index(INT32 args)
 {
@@ -3263,10 +3464,15 @@ PMOD_EXPORT void f_index(INT32 args)
  *! @decl int(0..1) `->(multiset arg, string index)
  *! @decl mixed `->(program arg, string index)
  *!
- *!   Arrow index operator.
+ *!   Arrow index.
  *!
- *!   This function behaves much like @[`[]()], just that the index is always
- *!   a string.
+ *!   Every non-lvalue expression with the @expr{->@} operator becomes
+ *!   a call to this function. @expr{a->b@} is the same as
+ *!   @expr{predef::`^(a,"b")@} where @expr{"b"@} is the symbol
+ *!   @expr{b@} in string form.
+ *!
+ *!   This function behaves like @[`[]], except that the index is
+ *!   passed literally as a string instead of being evaluated.
  *!
  *! @returns
  *!   If @[arg] is an object that implements @[lfun::`->()], that function
@@ -3293,8 +3499,18 @@ PMOD_EXPORT void f_index(INT32 args)
  *!   	  looked up in @[arg].
  *!   @endmixed
  *!
+ *! @note
+ *!   In an expression @expr{a->b@}, the symbol @expr{b@} can be any
+ *!   token that matches the identifier syntax - keywords are
+ *!   disregarded in that context.
+ *!
+ *! @note
+ *!   An arrow indexing expression in an lvalue context, i.e. where
+ *!   the index is being assigned a new value, uses @[`->=] instead of
+ *!   this function.
+ *!
  *! @seealso
- *!   @[`[]()], @[lfun::`->()], @[::`->()]
+ *!   @[`[]()], @[lfun::`->()], @[::`->()], @[`->=]
  */
 PMOD_EXPORT void f_arrow(INT32 args)
 {
@@ -3320,7 +3536,11 @@ PMOD_EXPORT void f_arrow(INT32 args)
  *! @decl mixed `[]=(mapping arg, mixed index, mixed val)
  *! @decl int(0..1) `[]=(multiset arg, mixed index, int(0..1) val)
  *!
- *!   Index assign operator.
+ *!   Index assignment.
+ *!
+ *!   Every lvalue expression with the @expr{[]@} operator becomes a
+ *!   call to this function, i.e. @expr{a[b]=c@} is the same as
+ *!   @expr{predef::`[]=(a,b,c)@}.
  *!
  *!   If @[arg] is an object that implements @[lfun::`[]=()], that function
  *!   will be called with @[index] and @[val] as the arguments.
@@ -3340,8 +3560,13 @@ PMOD_EXPORT void f_arrow(INT32 args)
  *! @returns
  *!   @[val] will be returned.
  *!
+ *! @note
+ *!   An indexing expression in a non-lvalue context, i.e. where the
+ *!   index is being queried instead of assigned, uses @[`[]] instead
+ *!   of this function.
+ *!
  *! @seealso
- *!   @[`->=()], @[lfun::`[]=()]
+ *!   @[`->=()], @[lfun::`[]=()], @[`[]]
  */
 PMOD_EXPORT void f_index_assign(INT32 args)
 {
@@ -3366,10 +3591,15 @@ PMOD_EXPORT void f_index_assign(INT32 args)
  *! @decl mixed `->=(mapping arg, string index, mixed val)
  *! @decl int(0..1) `->=(multiset arg, string index, int(0..1) val)
  *!
- *!   Arrow assign operator.
+ *!   Arrow index assignment.
  *!
- *!   This function behaves much like @[`[]=()], just that the index is always
- *!   a string.
+ *!   Every lvalue expression with the @expr{->@} operator becomes a
+ *!   call to this function, i.e. @expr{a->b=c@} is the same as
+ *!   @expr{predef::`->=(a,"b",c)@} where @expr{"b"@} is the symbol
+ *!   @expr{b@} in string form.
+ *!
+ *!   This function behaves like @[`[]=], except that the index is
+ *!   passed literally as a string instead of being evaluated.
  *!
  *!   If @[arg] is an object that implements @[lfun::`->=()], that function
  *!   will be called with @[index] and @[val] as the arguments.
@@ -3389,8 +3619,18 @@ PMOD_EXPORT void f_index_assign(INT32 args)
  *! @returns
  *!   @[val] will be returned.
  *!
+ *! @note
+ *!   In an expression @expr{a->b=c@}, the symbol @expr{b@} can be any
+ *!   token that matches the identifier syntax - keywords are
+ *!   disregarded in that context.
+ *!
+ *! @note
+ *!   An arrow indexing expression in a non-lvalue context, i.e. where
+ *!   the index is being queried instead of assigned, uses @[`->]
+ *!   instead of this function.
+ *!
  *! @seealso
- *!   @[`[]=()], @[lfun::`->=()]
+ *!   @[`[]=()], @[lfun::`->=()], @[`->]
  */
 PMOD_EXPORT void f_arrow_assign(INT32 args)
 {
@@ -3417,7 +3657,7 @@ PMOD_EXPORT void f_arrow_assign(INT32 args)
  *! @decl int sizeof(multiset arg)
  *! @decl int sizeof(object arg)
  *! 
- *!   Sizeof operator.
+ *!   Size query.
  *!
  *! @returns
  *!   The result will be as follows:

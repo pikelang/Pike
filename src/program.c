@@ -2,11 +2,11 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: program.c,v 1.531 2003/11/10 01:35:45 mast Exp $
+|| $Id: program.c,v 1.532 2003/11/10 01:42:33 mast Exp $
 */
 
 #include "global.h"
-RCSID("$Id: program.c,v 1.531 2003/11/10 01:35:45 mast Exp $");
+RCSID("$Id: program.c,v 1.532 2003/11/10 01:42:33 mast Exp $");
 #include "program.h"
 #include "object.h"
 #include "dynamic_buffer.h"
@@ -231,7 +231,7 @@ static char *raw_lfun_types[] = {
  *!     @[__hash()]
  *!
  *!   @item
- *!     Binary assymetric operator overloading.
+ *!     Binary asymmetric operator overloading.
  *!
  *!     @[`+()], @[``+()],
  *!     @[`-()], @[``-()],
@@ -245,7 +245,7 @@ static char *raw_lfun_types[] = {
  *!     @[`%()], @[``%()]
  *!
  *!   @item
- *!     Binary symetric operator overloading.
+ *!     Binary symmetric operator overloading.
  *!
  *!     The optimizer will make assumptions about the relations
  *!     between these functions.
@@ -268,7 +268,7 @@ static char *raw_lfun_types[] = {
  *! @note
  *!   Although these functions are called from outside the object
  *!   they exist in, they will still be used even if they are
- *!   declared @expr{static@}. It is infact recommended to declare
+ *!   declared @expr{static@}. It is in fact recommended to declare
  *!   them @expr{static@}, since that will hinder them being used
  *!   for other purposes.
  *!
@@ -278,14 +278,19 @@ static char *raw_lfun_types[] = {
 
 /*! @decl void lfun::__INIT()
  *!
- *!   Global variable initialization.
- *!   
- *!   This function is called just before @[lfun::create()] when
- *!   an object is instanciated.
+ *!   Inherit and variable initialization.
+ *!
+ *!   This function is generated automatically by the compiler. It's
+ *!   called just before @[lfun::create()] when an object is
+ *!   instantiated.
+ *!
+ *!   It first calls any @expr{__INIT@} functions in inherited classes
+ *!   (regardless of modifiers on the inherits). It then executes all
+ *!   the variable initialization expressions in this class, in the
+ *!   order they occur.
  *!
  *! @note
- *!   This function is generated automatically by the compiler,
- *!   and can not be overloaded.
+ *!   This function can not be overloaded or blocked from executing.
  *!
  *! @seealso
  *!   @[lfun::create()]
@@ -297,7 +302,7 @@ static char *raw_lfun_types[] = {
  *!   
  *!   This function is called right after @[lfun::__INIT()].
  *!   
- *!   @[args] will be the arguments passed when the program was called.
+ *!   @[args] are the arguments passed when the program was called.
  *!
  *! @note
  *!   In Pike 7.2 and later this function can be created implicitly
@@ -307,8 +312,8 @@ static char *raw_lfun_types[] = {
  *!   int bar;
  *! }
  *! @endcode
- *!   In the above case an implicit @[lfun::create()] will be created,
- *!   and it will be equvivalent to:
+ *!   In the above case an implicit @[lfun::create()] is created, and
+ *!   it's equvivalent to:
  *! @code
  *! class Foo {
  *!   int foo;
@@ -328,13 +333,88 @@ static char *raw_lfun_types[] = {
  *!
  *!   Object destruction callback.
  *!   
- *!   This function is called by @[predef::destruct()] right before
- *!   it will zero all the object variables, and destroy the object.
+ *!   This function is called by @[predef::destruct()] right before it
+ *!   zeroes all the object variables and destroys the object.
  *!
  *! @note
- *!   Note that it will also be called on implicit destruct, eg
- *!   when there are no more references to the object, or when
- *!   the garbage-collector decides to destruct the object.
+ *!   Note that it's also called on implicit destruct, i.e. when there
+ *!   are no more references to the object, or when the garbage
+ *!   collector decides to destruct it.
+ *!
+ *! @note
+ *! Regarding destruction order during garbage collection:
+ *! 
+ *! If an object is destructed by the garbage collector, it's part of
+ *! a reference cycle with other things but with no external
+ *! references. If there are other objects with @expr{destroy@}
+ *! functions in the same cycle, it becomes a problem which to call
+ *! first.
+ *!
+ *! E.g. if this object has a variable with another object which
+ *! (directly or indirectly) points back to this one, you might find
+ *! that the other object already has been destructed and the variable
+ *! thus contains zero.
+ *! 
+ *! The garbage collector tries to minimize such problems by defining
+ *! an order as far as possible:
+ *! 
+ *! @ul
+ *! @item
+ *!   If an object A contains an @[lfun::destroy] and an object B does
+ *!   not, then A is destructed before B.
+ *! @item
+ *!   If A references B single way, then A is destructed before B.
+ *! @item
+ *!   If A and B are in a cycle, and there is a reference somewhere
+ *!   from B to A that is weaker than any reference from A to B, then
+ *!   A is destructed before B.
+ *! @item
+ *!   Weak references (e.g. set with @[set_weak_flag]) are considered
+ *!   weaker than normal references, and both are considered weaker
+ *!   than strong references.
+ *! @item
+ *!   Strong references are those from objects to the objects of their
+ *!   lexically surrounding classes. There can never be a cycle
+ *!   consisting only of strong references. (This means the gc never
+ *!   destructs a parent object before all children have been
+ *!   destructed.)
+ *! @endul
+ *! 
+ *! An example with well defined destruct order due to strong
+ *! references:
+ *!
+ *! @code
+ *! class Super {
+ *!   class Sub {
+ *!     static void destroy() {
+ *!       if (!Super::this)
+ *!         error ("My parent has been destructed!\n");
+ *!     }
+ *!   }
+ *!   Sub sub = Sub();
+ *!   static void destroy() {
+ *!     if (!sub)
+ *!       werror ("sub already destructed.\n");
+ *!   }
+ *! }
+ *! @endcode
+ *!
+ *! The garbage collector ensures that these objects are destructed in
+ *! an order so that @expr{werror@} in @expr{Super@} is called and not
+ *! @expr{error@} in @expr{Sub@}.
+ *!
+ *! @note
+ *! When the garbage collector calls @[lfun::destroy], all accessible
+ *! non-objects and objects without @expr{destroy@} functions are
+ *! still intact. They are not freed if the @expr{destroy@} function
+ *! adds external references to them. However, all objects with
+ *! @[lfun::destroy] in the cycle are already scheduled for
+ *! destruction and are thus be destroyed even if external references
+ *! are added to them.
+ *!
+ *! @note
+ *! The garbage collector had completely random destruct order in
+ *! versions prior to 7.2.
  *!
  *! @seealso
  *!   @[lfun::create()], @[predef::destruct()]
@@ -342,7 +422,16 @@ static char *raw_lfun_types[] = {
 
 /*! @decl mixed lfun::`+(zero arg, zero ... rest)
  *!
- *!   Left associative addition operator callback.
+ *!   Left side addition/concatenation callback.
+ *!
+ *!   This is used by @[predef::`+]. It's called with any arguments
+ *!   that follow this object in the argument list of the call to
+ *!   @[predef::`+]. The returned value should be a new instance that
+ *!   represents the addition/concatenation between this object and
+ *!   the arguments in the order they are given.
+ *!
+ *! @note
+ *!   It's assumed that this function is side-effect free.
  *!
  *! @seealso
  *!   @[lfun::``+()], @[lfun::`+=()], @[predef::`+()]
@@ -350,20 +439,24 @@ static char *raw_lfun_types[] = {
 
 /*! @decl this_program lfun::`+=(zero arg, zero ... rest)
  *!
- *!   Left associative addition operator callback that destructively
- *!   assigns the result of the addition to this object. It should
- *!   always return this object.
+ *!   Destructive addition/concatenation callback.
+ *!
+ *!   This is used by @[predef::`+]. It's called with any arguments
+ *!   that follow this object in the argument list of the call to
+ *!   @[predef::`+]. It should update this object to represent the
+ *!   addition/concatenation between it and the arguments in the order
+ *!   they are given. It should always return this object.
  *!
  *! @note
  *!   This function should only be implemented if @[lfun::`+()] also
  *!   is. It should only work as a more optimized alternative to that
  *!   one, for the case when it's safe to change the object
- *!   destructively.
+ *!   destructively and use it directly as the result.
  *!
  *! @note
  *!   This function is not an lfun for the @expr{+=@} operator. It's
- *!   only the safety to do a destructive change that decides whether
- *!   this function or @[lfun::`+()] will be called; both the
+ *!   only whether or not it's safe to do a destructive change that
+ *!   decides if this function or @[lfun::`+()] is called; both the
  *!   @expr{+@} operator and the @expr{+=@} operator can call either
  *!   one.
  *!
@@ -373,79 +466,249 @@ static char *raw_lfun_types[] = {
 
 /*! @decl mixed lfun::``+(zero arg, zero ... rest)
  *!
- *!   Left associative subtraction operator callback.
+ *!   Right side addition/concatenation callback.
+ *!
+ *!   This is used by @[predef::`+]. It's called with any arguments
+ *!   that precedes this object in the argument list of the call to
+ *!   @[predef::`+]. The returned value should be a new instance that
+ *!   represents the addition/concatenation between the arguments in
+ *!   the order they are given and this object.
+ *!
+ *! @note
+ *!   It's assumed that this function is side-effect free.
+ *!
+ *! @seealso
+ *!   @[lfun::`+()], @[predef::`+()]
+ */
+
+/*! @decl mixed lfun::`-(void|zero arg)
+ *!
+ *!   Negation and left side subtraction/set difference callback.
+ *!
+ *!   This is used by @[predef::`-]. When called without an argument
+ *!   the result should be a new instance that represents the negation
+ *!   of this object, otherwise the result should be a new instance
+ *!   that represents the difference between this object and @[arg].
+ *!
+ *! @note
+ *!   It's assumed that this function is side-effect free.
  *!
  *! @seealso
  *!   @[lfun::``-()], @[predef::`-()]
  */
 
+/*! @decl mixed lfun::``-(zero arg)
+ *!
+ *!   Right side subtraction/set difference callback.
+ *!
+ *!   This is used by @[predef::`-]. The result should be a new
+ *!   instance that represents the difference between @[arg] and this
+ *!   object.
+ *!
+ *! @note
+ *!   It's assumed that this function is side-effect free.
+ *!
+ *! @seealso
+ *!   @[lfun::`-()], @[predef::`-()]
+ */
+
 /*! @decl mixed lfun::`&(zero ... args)
  *!
- *!   Left associative and operator callback.
+ *!   Left side bitwise and/intersection callback.
+ *!
+ *! @note
+ *!   It's assumed that this function is side-effect free.
  *!
  *! @seealso
  *!   @[lfun::``&()], @[predef::`&()]
  */
 
+/*! @decl mixed lfun::``&(zero ... args)
+ *!
+ *!   Right side bitwise and/intersection callback.
+ *!
+ *! @note
+ *!   It's assumed that this function is side-effect free.
+ *!
+ *! @seealso
+ *!   @[lfun::`&()], @[predef::`&()]
+ */
+
 /*! @decl mixed lfun::`|(zero ... args)
  *!
- *!   Left associative or operator callback.
+ *!   Left side bitwise or/union callback.
+ *!
+ *! @note
+ *!   It's assumed that this function is side-effect free.
  *!
  *! @seealso
  *!   @[lfun::``|()], @[predef::`|()]
  */
 
+/*! @decl mixed lfun::``|(zero ... args)
+ *!
+ *!   Right side bitwise or/union callback.
+ *!
+ *! @note
+ *!   It's assumed that this function is side-effect free.
+ *!
+ *! @seealso
+ *!   @[lfun::`|()], @[predef::`|()]
+ */
+
 /*! @decl mixed lfun::`^(zero ... args)
  *!
- *!   Left associative exclusive or operator callback.
+ *!   Left side exclusive or callback.
+ *!
+ *! @note
+ *!   It's assumed that this function is side-effect free.
  *!
  *! @seealso
  *!   @[lfun::``^()], @[predef::`^()]
  */
 
+/*! @decl mixed lfun::``^(zero ... args)
+ *!
+ *!   Right side exclusive or callback.
+ *!
+ *! @note
+ *!   It's assumed that this function is side-effect free.
+ *!
+ *! @seealso
+ *!   @[lfun::`^()], @[predef::`^()]
+ */
+
 /*! @decl mixed lfun::`<<(zero arg)
  *!
- *!   Left associative left shift operator callback.
+ *!   Left side left shift callback.
+ *!
+ *! @note
+ *!   It's assumed that this function is side-effect free.
  *!
  *! @seealso
  *!   @[lfun::``<<()], @[predef::`<<()]
  */
 
+/*! @decl mixed lfun::``<<(zero arg)
+ *!
+ *!   Right side left shift callback.
+ *!
+ *! @note
+ *!   It's assumed that this function is side-effect free.
+ *!
+ *! @seealso
+ *!   @[lfun::`<<()], @[predef::`<<()]
+ */
+
 /*! @decl mixed lfun::`>>(zero arg)
  *!
- *!   Left associative right shift operator callback.
+ *!   Left side right shift callback.
+ *!
+ *! @note
+ *!   It's assumed that this function is side-effect free.
  *!
  *! @seealso
  *!   @[lfun::``>>()], @[predef::`>>()]
  */
 
+/*! @decl mixed lfun::``>>(zero arg)
+ *!
+ *!   Right side right shift callback.
+ *!
+ *! @note
+ *!   It's assumed that this function is side-effect free.
+ *!
+ *! @seealso
+ *!   @[lfun::`>>()], @[predef::`>>()]
+ */
+
 /*! @decl mixed lfun::`*(zero ... args)
  *!
- *!   Left associative multiplication operator callback.
+ *!   Left side multiplication/repetition/implosion callback.
+ *!
+ *! @note
+ *!   It's assumed that this function is side-effect free.
  *!
  *! @seealso
  *!   @[lfun::``*()], @[predef::`*()]
  */
 
+/*! @decl mixed lfun::``*(zero ... args)
+ *!
+ *!   Right side multiplication/repetition/implosion callback.
+ *!
+ *! @note
+ *!   It's assumed that this function is side-effect free.
+ *!
+ *! @seealso
+ *!   @[lfun::`*()], @[predef::`*()]
+ */
+
 /*! @decl mixed lfun::`/(zero ... args)
  *!
- *!   Left associative division operator callback.
+ *!   Left side division/split callback.
+ *!
+ *! @note
+ *!   It's assumed that this function is side-effect free.
  *!
  *! @seealso
  *!   @[lfun::``/()], @[predef::`/()]
  */
 
+/*! @decl mixed lfun::``/(zero ... args)
+ *!
+ *!   Right side division/split callback.
+ *!
+ *! @note
+ *!   It's assumed that this function is side-effect free.
+ *!
+ *! @seealso
+ *!   @[lfun::`/()], @[predef::`/()]
+ */
+
 /*! @decl mixed lfun::`%(zero ... args)
  *!
- *!   Left associative modulo operator callback.
+ *!   Left side modulo callback.
+ *!
+ *! @note
+ *!   It's assumed that this function is side-effect free.
  *!
  *! @seealso
  *!   @[lfun::``%()], @[predef::`%()]
  */
 
+/*! @decl mixed lfun::``%(zero ... args)
+ *!
+ *!   Right side modulo callback.
+ *!
+ *! @note
+ *!   It's assumed that this function is side-effect free.
+ *!
+ *! @seealso
+ *!   @[lfun::`%()], @[predef::`%()]
+ */
+
+/*! @decl int lfun::`!()
+ *!
+ *!   Logical not callback.
+ *!
+ *! @returns
+ *!   Returns non-zero if the object should be evaluated as false,
+ *!   and @expr{0@} (zero) otherwise.
+ *!
+ *! @note
+ *!   It's assumed that this function is side-effect free.
+ *!
+ *! @seealso
+ *!   @[predef::`!()]
+ */
+
 /*! @decl mixed lfun::`~()
  *!
- *!   Inversion operator callback.
+ *!   Complement/inversion callback.
+ *!
+ *! @note
+ *!   It's assumed that this function is side-effect free.
  *!
  *! @seealso
  *!   @[predef::`~()]
@@ -453,7 +716,7 @@ static char *raw_lfun_types[] = {
 
 /*! @decl int(0..1) lfun::`==(mixed arg)
  *!
- *!   Equality operator callback.
+ *!   Equality test callback.
  *!
  *! @note
  *!   If this is implemented it might be necessary to implement
@@ -462,13 +725,19 @@ static char *raw_lfun_types[] = {
  *!   function. Various other functions that use hashing also might
  *!   not work correctly, e.g. @[Array.uniq].
  *!
+ *! @note
+ *!   It's assumed that this function is side-effect free.
+ *!
  *! @seealso
  *!   @[predef::`==()], @[lfun::__hash]
  */
 
 /*! @decl int(0..1) lfun::`<(mixed arg)
  *!
- *!   Less than operator callback.
+ *!   Less than test callback.
+ *!
+ *! @note
+ *!   It's assumed that this function is side-effect free.
  *!
  *! @seealso
  *!   @[predef::`<()]
@@ -476,7 +745,10 @@ static char *raw_lfun_types[] = {
 
 /*! @decl int(0..1) lfun::`>(mixed arg)
  *!
- *!   Greater than operator callback.
+ *!   Greater than test callback.
+ *!
+ *! @note
+ *!   It's assumed that this function is side-effect free.
  *!
  *! @seealso
  *!   @[predef::`>()]
@@ -496,13 +768,16 @@ static char *raw_lfun_types[] = {
  *!   The function @[predef::hash] does not return hash values that
  *!   are compatible with this one.
  *!
+ *! @note
+ *!   It's assumed that this function is side-effect free.
+ *!
  *! @seealso
  *!   @[lfun::`==]
  */
 
 /*! @decl mixed lfun::cast(string requested_type)
  *!
- *!   Cast operator callback.
+ *!   Value cast callback.
  *!
  *! @param requested_type
  *!   Type to cast to.
@@ -521,23 +796,17 @@ static char *raw_lfun_types[] = {
  *! @note
  *!   If the returned value is not deemed to be of the requested type
  *!   a runtime error may be thrown.
- */
-
-/*! @decl int lfun::`!()
  *!
- *!   Not operator callback.
- *!
- *! @returns
- *!   Returns non-zero if the object should be evaluated as false,
- *!   and @expr{0@} (zero) otherwise.
- *!
- *! @seealso
- *!   @[predef::`!()]
+ *! @note
+ *!   It's assumed that this function is side-effect free.
  */
 
 /*! @decl mixed lfun::`[](zero arg1, zero|void arg2)
  *!
- *!   Index/range operator callback.
+ *!   Index/subrange callback.
+ *!
+ *! @note
+ *!   It's assumed that this function is side-effect free.
  *!
  *! @seealso
  *!   @[predef::`[]()]
@@ -545,7 +814,7 @@ static char *raw_lfun_types[] = {
 
 /*! @decl mixed lfun::`[]=(zero arg1, zero arg2)
  *!
- *!   Index assignment operator callback.
+ *!   Index assignment callback.
  *!
  *! @seealso
  *!   @[predef::`[]=()], @[lfun::`->=()]
@@ -553,7 +822,10 @@ static char *raw_lfun_types[] = {
 
 /*! @decl mixed lfun::`->(string arg)
  *!
- *!   Arrow index operator callback.
+ *!   Arrow index callback.
+ *!
+ *! @note
+ *!   It's assumed that this function is side-effect free.
  *!
  *! @seealso
  *!   @[predef::`->()]
@@ -561,7 +833,7 @@ static char *raw_lfun_types[] = {
 
 /*! @decl mixed lfun::`->=(string arg1, zero arg2)
  *!
- *!   Arrow index assign operator callback.
+ *!   Arrow index assignment callback.
  *!
  *! @seealso
  *!   @[predef::`->=()], @[lfun::`[]=()]
@@ -569,7 +841,7 @@ static char *raw_lfun_types[] = {
 
 /*! @decl int lfun::_sizeof()
  *!
- *!   Sizeof operator callback.
+ *!   Size query callback.
  *!
  *!   Called by @[sizeof()] to determine the number of elements
  *!   in an object. If this function is not present, the number
@@ -578,16 +850,22 @@ static char *raw_lfun_types[] = {
  *! @returns
  *!   Expected to return the number of valid indices in the object.
  *!
+ *! @note
+ *!   It's assumed that this function is side-effect free.
+ *!
  *! @seealso
  *!   @[predef::sizeof()]
  */
 
 /*! @decl array lfun::_indices()
  *!
- *!   Indices operator callback.
+ *!   List indices callback.
  *!
  *! @returns
  *!   Expected to return an array with the valid indices in the object.
+ *!
+ *! @note
+ *!   It's assumed that this function is side-effect free.
  *!
  *! @seealso
  *!   @[predef::indices()], @[lfun::_values()]
@@ -595,11 +873,14 @@ static char *raw_lfun_types[] = {
 
 /*! @decl array lfun::_values()
  *!
- *!   Values operator callback.
+ *!   List values callback.
  *!
  *! @returns
  *!   Expected to return an array with the values corresponding to
  *!   the indices returned by @[lfun::_indices()].
+ *!
+ *! @note
+ *!   It's assumed that this function is side-effect free.
  *!
  *! @seealso
  *!   @[predef::values()], @[lfun::_indices()]
@@ -607,98 +888,10 @@ static char *raw_lfun_types[] = {
 
 /*! @decl mixed lfun::`()(zero ... args)
  *!
- *!   Function call operator callback.
+ *!   Apply callback.
  *!
  *! @seealso
  *!   @[predef::`()]
- */
-
-/*! @decl mixed lfun::``+(zero ... args)
- *!
- *!   Right associative addition operator callback.
- *!
- *! @seealso
- *!   @[lfun::`+()], @[predef::`+()]
- */
-
-/*! @decl mixed lfun::``-(zero ... args)
- *!
- *!   Right associative subtraction operator callback.
- *!
- *! @seealso
- *!   @[lfun::`-()], @[predef::`-()]
- */
-
-/*! @decl mixed lfun::``&(zero ... args)
- *!
- *!   Right associative and operator callback.
- *!
- *! @seealso
- *!   @[lfun::`&()], @[predef::`&()]
- */
-
-/*! @decl mixed lfun::``|(zero ... args)
- *!
- *!   Right associative or operator callback.
- *!
- *! @seealso
- *!   @[lfun::`|()], @[predef::`|()]
- */
-
-/*! @decl mixed lfun::``^(zero ... args)
- *!
- *!   Right associative exclusive or operator callback.
- *!
- *! @seealso
- *!   @[lfun::`^()], @[predef::`^()]
- */
-
-/*! @decl mixed lfun::``<<(zero arg)
- *!
- *!   Right associative left shift operator callback.
- *!
- *! @seealso
- *!   @[lfun::`<<()], @[predef::`<<()]
- */
-
-/*! @decl mixed lfun::``>>(zero arg)
- *!
- *!   Right associative right shift operator callback.
- *!
- *! @seealso
- *!   @[lfun::`>>()], @[predef::`>>()]
- */
-
-/*! @decl mixed lfun::``*(zero ... args)
- *!
- *!   Right associative multiplication operator callback.
- *!
- *! @seealso
- *!   @[lfun::`*()], @[predef::`*()]
- */
-
-/*! @decl mixed lfun::``/(zero ... args)
- *!
- *!   Right associative division operator callback.
- *!
- *! @seealso
- *!   @[lfun::`/()], @[predef::`/()]
- */
-
-/*! @decl mixed lfun::``%(zero ... args)
- *!
- *!   Right associative modulo operator callback.
- *!
- *! @seealso
- *!   @[lfun::`%()], @[predef::`%()]
- */
-
-/*! @decl mixed lfun::`+=(zero arg)
- *!
- *!   Self increment operator callback.
- *!
- *! @seealso
- *!   @[predef::`+()], @[lfun::`+()]
  */
 
 /*! @decl int(0..1) lfun::_is_type(string basic_type)
@@ -741,6 +934,9 @@ static char *raw_lfun_types[] = {
  *! @note
  *!   The argument is currently a string with the name
  *!   of the type, but might in the future be a value of the type type.
+ *!
+ *! @note
+ *!   It's assumed that this function is side-effect free.
  */
 
 /*! @decl string lfun::_sprintf(int conversion_type, @
@@ -815,13 +1011,27 @@ static char *raw_lfun_types[] = {
  *!       single precision, @tt{%8F@} gives double precision.)
  *!   @endint
  *!
+ *! @note
+ *!   This function might be called at odd times, e.g. before
+ *!   @[lfun::create] has been called or when an error has occurred.
+ *!   The reason is typically that it gets called when a backtrace is
+ *!   being formatted to report an error. It should therefore be very
+ *!   robust and not make any assumptions about its own internal
+ *!   state, at least not when @[conversion_type] is @expr{'O'@}.
+ *!
+ *! @note
+ *!   It's assumed that this function is side-effect free.
+ *!
  *! @seealso
  *!    @[predef::sprintf()]
  */
 
 /*! @decl int lfun::_equal(mixed arg)
  *!
- *!   Equal callback.
+ *!   Recursive equality callback.
+ *!
+ *! @note
+ *!   It's assumed that this function is side-effect free.
  *!
  *! @seealso
  *!   @[predef::equal()], @[lfun::`==()]
@@ -829,7 +1039,7 @@ static char *raw_lfun_types[] = {
 
 /*! @decl mixed lfun::_m_delete(mixed arg)
  *!
- *!   Mapping delete callback.
+ *!   Delete index callback.
  *!
  *! @seealso
  *!   @[predef::m_delete()]
@@ -837,9 +1047,14 @@ static char *raw_lfun_types[] = {
 
 /*! @decl Iterator lfun::_get_iterator()
  *!
- *!   Iterator creation callback. The returned @[Iterator] instance
- *!   works as a cursor that references a specific item contained (in
- *!   some arbitrary sense) in this one.
+ *!   Iterator creation callback.
+ *!
+ *!   The returned @[Iterator] instance works as a cursor that
+ *!   references a specific item contained (in some arbitrary sense)
+ *!   in this one.
+ *!
+ *! @note
+ *!   It's assumed that this function is side-effect free.
  *!
  *! @seealso
  *!   @[Iterator], @[get_iterator], @[predef::foreach()]
