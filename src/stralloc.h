@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: stralloc.h,v 1.74 2003/04/07 15:28:47 mast Exp $
+|| $Id: stralloc.h,v 1.75 2003/04/11 02:37:28 mast Exp $
 */
 
 #ifndef STRALLOC_H
@@ -82,7 +82,7 @@ PMOD_EXPORT struct pike_string *debug_findstring(const struct pike_string *foo);
 
 #ifdef PIKE_DEBUG
 #define SUBTRACT_PCHARP(X,Y)    ((X).shift!=(Y).shift?(Pike_fatal("Subtracting different size charp!\n")),0:LOW_SUBTRACT_PCHARP((X),(Y)))
-#define COMPARE_PCHARP(X,CMP,Y) ((X).shift!=(Y).shift?(Pike_fatal("Subtracting different size charp!\n")),0:LOW_COMPARE_PCHARP((X),CMP,(Y)))
+#define COMPARE_PCHARP(X,CMP,Y) ((X).shift!=(Y).shift?(Pike_fatal("Comparing different size charp!\n")),0:LOW_COMPARE_PCHARP((X),CMP,(Y)))
 #else
 #define SUBTRACT_PCHARP(X,Y) LOW_SUBTRACT_PCHARP((X),(Y))
 #define COMPARE_PCHARP(X,CMP,Y) LOW_COMPARE_PCHARP((X),CMP,(Y))
