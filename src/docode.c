@@ -5,7 +5,7 @@
 \*/
 /**/
 #include "global.h"
-RCSID("$Id: docode.c,v 1.130 2001/08/16 03:27:35 hubbe Exp $");
+RCSID("$Id: docode.c,v 1.131 2001/08/31 06:54:06 hubbe Exp $");
 #include "las.h"
 #include "program.h"
 #include "pike_types.h"
@@ -1206,16 +1206,12 @@ static int do_docode2(node *n, INT16 flags)
       
       return 1;
     }
-    else if(CAR(n)->token == F_IDENTIFIER &&
-	    IDENTIFIER_IS_FUNCTION(ID_FROM_INT(Pike_compiler->new_program,
-					       CAR(n)->u.id.number)->identifier_flags))
+    else if(CAR(n)->token == F_IDENTIFIER)
     {
       return do_lfun_call(CAR(n)->u.id.number,CDR(n));
     }
     else if(CAR(n)->token == F_EXTERNAL &&
-	    CAR(n)->u.integer.a == Pike_compiler->new_program->id &&
-	    IDENTIFIER_IS_FUNCTION(ID_FROM_INT(Pike_compiler->new_program,
-					       CAR(n)->u.integer.b)->identifier_flags))
+	    CAR(n)->u.integer.a == Pike_compiler->new_program->id)
     {
       return do_lfun_call(CAR(n)->u.integer.b,CDR(n));
     }
