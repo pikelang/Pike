@@ -136,7 +136,7 @@ class NSNode {
     return ::add_child(c);
   }
 
-  //! @decl remove_child(NSNode child)
+  //! @decl void remove_child(NSNode child)
   //! The remove_child is a not updated to take care of name
   //! space issues. To properly remove all the parents name spaces
   //! from the chid, call @[remove_node] in the child.
