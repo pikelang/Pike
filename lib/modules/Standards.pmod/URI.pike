@@ -4,7 +4,7 @@
 //! absolute form, as defined in RFC 2396
 
 // Implemented by Johan Sundström and Johan Schön.
-// $Id: URI.pike,v 1.13 2002/09/21 15:08:30 mast Exp $
+// $Id: URI.pike,v 1.14 2002/12/11 22:18:02 anders Exp $
 
 #pragma strict_types
 
@@ -365,6 +365,11 @@ string|mapping cast(string to)
 			   "raw_uri", "base_uri",  });
       return mkmapping(i, rows(this_object(), i));
   }
+}
+
+string get_path_query()
+{
+  return (path||"") + (query ? "?" + query : "");
 }
 
 string _sprintf(int how, mapping|void args)
