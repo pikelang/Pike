@@ -1,5 +1,4 @@
 #pike __REAL_VERSION__
-#pragma strict_type
 
 //! Returns the parity of the integer @[value]. If the
 //! parity is odd 1 is returned. If it is even 0 is
