@@ -184,7 +184,7 @@
 /* This is the grammar definition of Pike. */
 
 #include "global.h"
-RCSID("$Id: language.yacc,v 1.139 1999/12/09 20:22:15 grubba Exp $");
+RCSID("$Id: language.yacc,v 1.140 1999/12/09 22:53:35 grubba Exp $");
 #ifdef HAVE_MEMORY_H
 #include <memory.h>
 #endif
@@ -576,7 +576,9 @@ block_or_semi: block
   {
     $$ = check_node_hash(mknode(F_COMMA_EXPR,$1,mknode(F_RETURN,mkintnode(0),0)));
   }
-  | ';' { $$ = NULL;}
+  | ';' { $$ = NULL; }
+  | F_LEX_EOF { yyerror("Expected ';'."); $$ = NULL; }
+  | error { $$ = NULL; }
   ;
 
 
@@ -591,7 +593,27 @@ type_or_error: simple_type
     free_node($1);
   }
   ;
-  
+
+close_paren_or_missing: ')'
+  | /* empty */
+  {
+    yyerror("Missing ')'.");
+  }
+  ;
+
+close_brace_or_missing: '}'
+  | /* empty */
+  {
+    yyerror("Missing '}'.");
+  }
+  ;
+
+close_bracket_or_missing: ']'
+  | /* empty */
+  {
+    yyerror("Missing ']'.");
+  }
+  ;
 
 def: modifiers type_or_error optional_stars F_IDENTIFIER 
   {
@@ -607,7 +629,7 @@ def: modifiers type_or_error optional_stars F_IDENTIFIER
 			 compiler_frame->previous->current_type);
     }
   }
-  '(' arguments ')'
+  '(' arguments close_paren_or_missing
   {
     int e;
     /* construct the function type */
@@ -748,15 +770,7 @@ new_arg_name: type7 optional_dot_dot_dot optional_identifier
   }
   ;
 
-func_args: '(' arguments ')' { $$=$2; }
-         | '(' error ')' { $$=0; yyerrok; }
-         | '(' error F_LEX_EOF
-         {
-	   $$=0; yyerror("Missing ')'.");
-	   yyerror("Unexpected end of file.");
-	 }
-         | '(' error ';' { $$=0; yyerror("Missing ')'."); }
-         | '(' error '}' { $$=0; yyerror("Missing ')'."); }
+func_args: '(' arguments close_paren_or_missing { $$=$2; }
          | error { $$=0; yyerrok; }
          ;
 
@@ -766,8 +780,11 @@ arguments: /* empty */ optional_comma { $$=0; }
 
 arguments2: new_arg_name { $$ = 1; }
   | arguments2 ',' new_arg_name { $$ = $1 + 1; }
-  | arguments2 ',' error
-  | arguments2 error
+  | arguments2 ':' new_arg_name
+  {
+    yyerror("Unexpected ':' in argument list.");
+    $$ = $1 + 1;
+  }
   ;
 
 modifier: F_NO_MASK    { $$ = ID_NOMASK; }
@@ -1530,6 +1547,18 @@ case: F_CASE safe_comma_expr expected_colon
   ;
 
 expected_colon: ':'
+  | ';'
+  {
+    yyerror("Missing ':'.");
+  }
+  | '{'
+  {
+    yyerror("Missing ':'.");
+  }
+  | '}'
+  {
+    yyerror("Missing ':'.");
+  }
   | F_LEX_EOF
   {
     yyerror("Missing ':'.");
@@ -1739,12 +1768,17 @@ expr4: string
   | expr4 '[' error '}' { $$=$1; yyerror("Missing ']'."); }
   | expr4 '[' error ')' { $$=$1; yyerror("Missing ']'."); }
   | '(' comma_expr2 ')' { $$=$2; }
-  | '(' '{' expr_list '}' ')'
+  | '(' '{' expr_list close_brace_or_missing ')'
     { $$=mkefuncallnode("aggregate",$3); }
-  | '(' '[' m_expr_list ']' ')'
+  | '(' '[' m_expr_list close_bracket_or_missing ')'
     { $$=mkefuncallnode("aggregate_mapping",$3); }
   | F_MULTISET_START expr_list F_MULTISET_END
     { $$=mkefuncallnode("aggregate_multiset",$2); }
+  | F_MULTISET_START expr_list ')'
+    {
+      yyerror("Missing '>'.");
+      $$=mkefuncallnode("aggregate_multiset",$2);
+    }
   | '(' error ')' { $$=0; yyerrok; }
   | '(' error F_LEX_EOF
   {
@@ -1753,6 +1787,18 @@ expr4: string
   }
   | '(' error ';' { $$=0; yyerror("Missing ')'."); }
   | '(' error '}' { $$=0; yyerror("Missing ')'."); }
+  | F_MULTISET_START error F_MULTISET_END { $$=0; yyerrok; }
+  | F_MULTISET_START error ')' {
+    yyerror("Missing '>'.");
+    $$=0; yyerrok;
+  }
+  | F_MULTISET_START error F_LEX_EOF
+  {
+    $$=0; yyerror("Missing '>)'.");
+    yyerror("Unexpected end of file.");
+  }
+  | F_MULTISET_START error ';' { $$=0; yyerror("Missing '>)'."); }
+  | F_MULTISET_START error '}' { $$=0; yyerror("Missing '>)'."); }
   | expr4 F_ARROW F_IDENTIFIER
   {
     $$=mknode(F_ARROW,$1,$3);
@@ -1978,6 +2024,7 @@ catch_arg: '(' comma_expr ')'  { $$=$2; }
   | '(' error '}' { $$=0; yyerror("Missing ')'."); }
   | '(' error ';' { $$=0; yyerror("Missing ')'."); }
   | block
+  | error { $$=0; yerror("Bad expression for catch."); }
   ; 
 
 catch: F_CATCH
