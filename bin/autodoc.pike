@@ -1,5 +1,5 @@
 /*
- * $Id: autodoc.pike,v 1.16 2001/07/19 21:15:09 nilsson Exp $
+ * $Id: autodoc.pike,v 1.17 2001/07/27 14:43:18 nilsson Exp $
  *
  * AutoDoc mk II extraction script.
  *
@@ -51,9 +51,6 @@ int main(int argc, array(string) argv)
 	  if (has_suffix(path, ".c") || has_suffix(path, ".h")) {
 	    info = Tools.AutoDoc.CExtractor.extract(raw, path);
 	    module_path_fixed = 1;
-	  } else if (has_suffix(path, ".cmod")) {
-	    name = segments[-1][..sizeof(segments[-1])-6];
-	    info = Tools.AutoDoc.PikeExtractor.extractModule(raw, path, name);
 	  } else if (has_suffix(path, ".pmod")) {
 	    if (segments[-1] == "module.pmod") {
 	      // Handling of Foo.pmod/module.pmod.
@@ -87,6 +84,14 @@ int main(int argc, array(string) argv)
 	    }
 	    raw = replace(raw, "@module@", sprintf("%O", "___"+name));
 	    info = Tools.AutoDoc.PikeExtractor.extractModule(raw, path, name);
+	  } else if (segments[-1] == "master.pike.in") {
+	    module_path_fixed = 1;
+	    info = Tools.AutoDoc.PikeExtractor.extractClass(raw, path, "/master");
+	    Tools.AutoDoc.PikeObjects.Module m =
+	      Tools.AutoDoc.PikeObjects.Module();
+	    m->children = ({ info });
+	    m->name = "";
+	    info = m;
 	  } else {
 	    werror("Unknown filetype %O\n", path);
 	    exit(1);
@@ -132,6 +137,8 @@ int main(int argc, array(string) argv)
     };
     if (err) {
       if (arrayp(err) && _typeof(err[0]) <= Tools.AutoDoc.AutoDocError)
+        werror("%O\n", err[0]);
+      else if (objectp(err) && _typeof(err) <= Tools.AutoDoc.AutoDocError)
         werror("%O\n", err);
       else
 	throw(err);
