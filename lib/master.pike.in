@@ -1,4 +1,4 @@
-/* $Id: master.pike.in,v 1.39 1999/02/26 01:08:52 grubba Exp $
+/* $Id: master.pike.in,v 1.40 1999/02/26 01:11:13 grubba Exp $
  * 
  * Master-file for Pike.
  *
@@ -76,7 +76,7 @@ program compile_string(string data, void|string name)
 
 program compile_file(string file)
 {
-  return compile(cpp(_static_modules.files()->Fd(file,"r")->read(),file));
+  return compile(cpp(_static_modules.files()->Fd(file,"r")->read(),file, 1));
 }
 
 
