@@ -1,5 +1,5 @@
 #include <config.h>
-/* $Id: quant.c,v 1.5 1997/03/10 22:11:14 grubba Exp $ */
+/* $Id: quant.c,v 1.6 1997/03/18 16:00:48 mirar Exp $ */
 
 /*
 
@@ -76,6 +76,7 @@ static void chrono(char *x)
 typedef struct
 {
   rgb_group rgb;
+  unsigned short index;
   unsigned long count;
   unsigned long next;
 } rgb_entry;
@@ -502,9 +503,15 @@ fprintf(stderr,"space: %d,%d,%d-%d,%d,%d  ",
    {
       int r,g,b;
       if (len>1)
+      {
 	 ct->clut[idx]=get_tbl_point(tbl+start,len);
+	 ct->index[idx]=tbl[start].index;
+      }
       else
+      {
 	 ct->clut[idx]=tbl[start].rgb;
+	 ct->index[idx]=tbl[start].index;
+      }
 
 #ifdef QUANT_DEBUG
       fprintf(stderr,"-> end node [%d,%d,%d] - [%d,%d,%d] => %d,%d,%d\n",
@@ -526,7 +533,8 @@ static struct colortable *colortable_allocate(int numcol)
    MEMSET(ct,0,sizeof(struct colortable)+
 	       sizeof(rgb_group)*numcol);
    ct->numcol=numcol;
-   ct->rgb_node=malloc(sizeof(unsigned long)*numcol*4);
+   ct->rgb_node=malloc(sizeof(unsigned long)*numcol*2);
+   ct->index=malloc(sizeof(unsigned short)*numcol);
    MEMSET(ct->rgb_node,0,
 	  sizeof(unsigned long)*numcol*4);
    return ct;
@@ -714,6 +722,7 @@ struct colortable *colortable_from_array(struct array *arr,char *from)
       array_index(&s2,s.u.array,2);
       if (s2.type!=T_INT) tbl->tbl[i].rgb.b=0; else tbl->tbl[i].rgb.b=s2.u.integer;
       tbl->tbl[i].count=1;
+      tbl->tbl[i].index=i;
    }
    free_svalue(&s);
    free_svalue(&s2);
@@ -926,5 +935,6 @@ void colortable_free(struct colortable *ct)
 {
    int r,g,b;
    free((char *)ct->rgb_node);
+   free((char *)ct->index);
    free((char *)ct);
 }

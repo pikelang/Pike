@@ -1,4 +1,4 @@
-/* $Id: image.h,v 1.1 1997/02/11 08:35:43 hubbe Exp $ */
+/* $Id: image.h,v 1.2 1997/03/18 16:00:44 mirar Exp $ */
 
 #define MAX_NUMCOL 32768
 
@@ -44,7 +44,7 @@ struct colortable
       rgb_group index;
       int value;
    } cache[QUANT_SELECT_CACHE];
-   unsigned long *rgb_node;
+   unsigned long *rgb_node; /* numcol*2 entries */
 /*   bit
      31..30          29..22   21..0
      0=color         split    value
@@ -53,8 +53,9 @@ struct colortable
      3=split blue             value   value+1
      It will fail for more than 2097152 colors. Sorry... *grin*
  */
+   unsigned short *index; /* numcol entries */
    rgb_group clut[1];
-};  /* rgb_node follows, 2*numcol */
+}; 
 
 
 /* colortable declarations - from quant */

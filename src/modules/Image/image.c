@@ -1,4 +1,4 @@
-/* $Id: image.c,v 1.5 1997/03/18 12:21:01 per Exp $ */
+/* $Id: image.c,v 1.6 1997/03/18 16:00:40 mirar Exp $ */
 
 #include "global.h"
 
@@ -7,7 +7,7 @@
 
 #include "stralloc.h"
 #include "global.h"
-RCSID("$Id: image.c,v 1.5 1997/03/18 12:21:01 per Exp $");
+RCSID("$Id: image.c,v 1.6 1997/03/18 16:00:40 mirar Exp $");
 #include "types.h"
 #include "pike_macros.h"
 #include "object.h"
@@ -1628,7 +1628,7 @@ void image_cast(INT32 args)
 					*sizeof(rgb_group)));
 }
 
-void image_to_8bit_string(INT32 args)
+void image_to8bit(INT32 args)
 {
   struct colortable *ct;
   struct pike_string *res = begin_shared_string((THIS->xsize*THIS->ysize));
@@ -1638,10 +1638,12 @@ void image_to_8bit_string(INT32 args)
 
   if(!res) error("Out of memory\n");
 
+  if (args!=1)
+     error("Illegal number of arguments to image->to8bit(COLORTABLE);\n");
   if(sp[-args].type != T_ARRAY)
-    error("Wrong type to image->to8bit(COLORTABLE);\n");
+     error("Wrong type to image->to8bit(COLORTABLE);\n");
 
-  ct=colortable_from_array(sp[-args].u.array,"image->to_8bit_string()\n");
+  ct=colortable_from_array(sp[-args].u.array,"image->to8bit()\n");
 
   i=THIS->xsize*THIS->ysize;
   s=THIS->img;
@@ -1650,7 +1652,8 @@ void image_to_8bit_string(INT32 args)
   THREADS_ALLOW();
   while (i--)
   {
-    *d=colortable_rgb_nearest(ct,*s);
+     int x;
+    *d=ct->index[x=colortable_rgb_nearest(ct,*s)];
     d++; *s++;
   }
   THREADS_DISALLOW();
@@ -1676,10 +1679,6 @@ void pike_module_init()
 
    start_new_program();
    add_storage(sizeof(struct image));
-
-   add_function("cast",image_cast, "function(string:string)",0);
-   add_function("to8bit",image_to_8bit_string,
-		"function(array(array(int)):string)",0);
 
    add_function("create",image_create,
 		"function(int|void,int|void,"RGB_TYPE":void)",0);
@@ -1715,6 +1714,11 @@ void pike_module_init()
 		"function(:string)",0);
    add_function("gif_netscape_loop",image_gif_netscape_loop,
 		"function(:string)",0);
+
+   add_function("cast",image_cast, "function(string:string)",0);
+   add_function("to8bit",image_to8bit,
+		"function(array(array(int)):string)",0);
+
 
    add_function("copy",image_copy,
 		"function(void|int,void|int,void|int,void|int,"RGB_TYPE":object)",0);
