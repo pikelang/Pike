@@ -2,7 +2,7 @@
 
 // Incremental Pike Evaluator
 //
-// $Id: Hilfe.pmod,v 1.31 2002/02/24 16:51:06 nilsson Exp $
+// $Id: Hilfe.pmod,v 1.32 2002/02/26 16:13:35 nilsson Exp $
 
 constant hilfe_todo = #"List of known Hilfe bugs/room for improvements:
 
@@ -809,11 +809,24 @@ class Evaluator {
   //
   //
 
+  private int(0..1) hilfe_error(mixed err) {
+    if(!err) return 1;
+    mixed err2 = catch {
+      if(arrayp(err) && sizeof(err)==2 && stringp(err[0]))
+	write(describe_backtrace(err));
+      else
+	write("Hilfe Error: Unknown format of thrown error (not backtrace).\n");
+    };
+    if(err2)
+      write("Hilfe Error: Error while printing backtrace.\n");
+    return 0;
+  }
+
   private void add_hilfe_constant(string code, string var) {
     if(object o = hilfe_compile("constant " + code +
 				";\nmixed ___HilfeWrapper() { return " +
 				var + "; }\n", var)) {
-      constants[var] = o->___HilfeWrapper();
+      hilfe_error( catch( constants[var] = o->___HilfeWrapper() ) );
     }
   }
 
@@ -824,11 +837,14 @@ class Evaluator {
       old_value = m_delete(variables, var);
       existed = 1;
     }
-    if(object o = hilfe_compile("class ___HilfeWrapper {\n" +
-				type + " " + code +
-				";\nmixed ___HilfeWrapper() { return " +
-				var + "; }\n}\n", var)) {
-      variables[var] = o->___HilfeWrapper()->___HilfeWrapper();
+
+    object o = hilfe_compile("class ___HilfeWrapper {\n" +
+			     type + " " + code +
+			     ";\nmixed ___HilfeWrapper() { return " +
+			     var + "; }\n}\n", var);
+
+    if(	o && hilfe_error( catch( variables[var] =
+				 o->___HilfeWrapper()->___HilfeWrapper() ) ) ) {
       types[var] = type;
     }
     else if(existed)
@@ -844,10 +860,12 @@ class Evaluator {
       existed = 1;
     }
 
-    if(object o = hilfe_compile(type + " " + code +
-				";\nmixed ___HilfeWrapper() { return " +
-				var + "; }\n", var)) {
-      vtype[var] = o->___HilfeWrapper();
+    object o = hilfe_compile(type + " " + code +
+			     ";\nmixed ___HilfeWrapper() { return " +
+			     var + "; }\n", var);
+
+    if(	o && hilfe_error( catch( vtype[var] = o->___HilfeWrapper() ) ) ) {
+      ;
     }
     else if(existed)
       vtype[var] = old_value;
