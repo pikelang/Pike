@@ -26,7 +26,7 @@
 #define HUGE HUGE_VAL
 #endif /*!HUGE*/
 
-RCSID("$Id: stralloc.c,v 1.118 2001/03/28 10:02:43 hubbe Exp $");
+RCSID("$Id: stralloc.c,v 1.119 2001/03/29 01:12:38 hubbe Exp $");
 
 #define BEGIN_HASH_SIZE 997
 #define MAX_AVG_LINK_LENGTH 3
@@ -40,19 +40,19 @@ static unsigned int need_more_hash_prefix=0;
 unsigned INT32 htable_size=0;
 static unsigned int hashprimes_entry=0;
 static struct pike_string **base_table=0;
-static size_t full_hash_value;
 unsigned INT32 num_strings=0;
 
 /*** Main string hash function ***/
 
-
 #define StrHash(s,len) low_do_hash(s,len,0)
 
-static INLINE size_t low_do_hash(const void *s, ptrdiff_t len__,
+static INLINE size_t low_do_hash(const void *s,
+				 ptrdiff_t len__,
 				 int size_shift)
 {
-  DO_HASHMEM(full_hash_value, s, len__<<size_shift, HASH_PREFIX<<size_shift);
-  return full_hash_value % htable_size;
+  size_t h;
+  DO_HASHMEM(h, s, len__<<size_shift, HASH_PREFIX<<size_shift);
+  return h;
 }
 
 static INLINE size_t do_hash(struct pike_string *s)
@@ -278,7 +278,7 @@ static int has_zero_refs(struct pike_string *s)
 }
 static int wrong_hash(struct pike_string *s)
 {
-  return (s->hval % htable_size) != do_hash(s);
+  return s->hval != do_hash(s);
 }
 static int improper_zero_termination(struct pike_string *s)
 {
@@ -294,13 +294,13 @@ static int improper_zero_termination(struct pike_string *s)
 static INLINE struct pike_string *internal_findstring(const char *s,
 						      ptrdiff_t len,
 						      int size_shift,
-						      ptrdiff_t h)
+						      ptrdiff_t hval)
 {
   struct pike_string *curr,**prev, **base;
 #ifndef HASH_PREFIX
   unsigned int depth=0;
 #endif
-
+  size_t h=hval % htable_size;
   for(base = prev = base_table + h;( curr=*prev ); prev=&curr->next)
   {
 #ifdef PIKE_DEBUG
@@ -313,7 +313,7 @@ static INLINE struct pike_string *internal_findstring(const char *s,
 #endif
     debug_malloc_touch(curr);
 
-    if (full_hash_value == curr->hval &&
+    if (hval == curr->hval &&
 	len==curr->len &&
 	size_shift==curr->size_shift &&
 	( curr->str == s ||
@@ -491,12 +491,14 @@ PMOD_EXPORT struct pike_string *debug_begin_shared_string(size_t len)
   return t;
 }
 
-static void link_pike_string(struct pike_string *s, size_t h)
+static void link_pike_string(struct pike_string *s, size_t hval)
 {
+  size_t h;
+  h=hval % htable_size;
   s->refs = 0;
   s->next = base_table[h];
   base_table[h] = s;
-  s->hval=full_hash_value;
+  s->hval=hval;
   num_strings++;
   if(num_strings > MAX_AVG_LINK_LENGTH * htable_size)
     rehash();
@@ -508,8 +510,7 @@ static void link_pike_string(struct pike_string *s, size_t h)
     /* This could in theory have a pretty ugly complexity */
     /* /Hubbe
      */
-    size_t save_full_hash_value = full_hash_value;
-    
+
     need_more_hash_prefix=0;
     HASH_PREFIX=HASH_PREFIX*2;
 /*    fprintf(stderr,"Doubling HASH_PREFIX to %d and rehashing\n",HASH_PREFIX); */
@@ -524,14 +525,13 @@ static void link_pike_string(struct pike_string *s, size_t h)
 	struct pike_string *tmp2=tmp; /* First unlink */
 	tmp=tmp2->next;
 
-	h2=do_hash(tmp2);	      /* compute new hash value */
-	tmp2->hval=full_hash_value;
+	tmp2->hval=do_hash(tmp2); /* compute new hash value */
+	h2=tmp2->hval % htable_size;
 
 	tmp2->next=base_table[h2];    /* and re-hash */
 	base_table[h2]=tmp2;
       }
     }
-    full_hash_value = save_full_hash_value;
   }
 #endif
 }
@@ -917,8 +917,7 @@ struct pike_string *add_string_status(int verbose)
 
 PMOD_EXPORT void check_string(struct pike_string *s)
 {
-  do_hash(s);
-  if(full_hash_value != s->hval)
+  if(do_hash(s) != s->hval)
   {
     locate_problem(wrong_hash);
     fatal("Hash value changed?\n");
@@ -937,7 +936,6 @@ PMOD_EXPORT void check_string(struct pike_string *s)
 PMOD_EXPORT void verify_shared_strings_tables(void)
 {
   unsigned INT32 e, h, num=0;
-  size_t orig_full_hash = full_hash_value;
   struct pike_string *s;
 
   for(e=0;e<htable_size;e++)
@@ -962,15 +960,15 @@ PMOD_EXPORT void verify_shared_strings_tables(void)
 	fatal("Shared string didn't end with a zero.\n");
       }
 
-      if(do_hash(s) != e)
+      if(do_hash(s) != s->hval)
+	fatal("Shared string hashed to other number.\n");
+
+      if((s->hval % htable_size) != e)
       {
 	locate_problem(wrong_hash);
 	fatal("Shared string hashed to wrong place.\n");
       }
 
-      if(s->hval != full_hash_value)
-	fatal("Shared string hashed to other number.\n");
-	
       if(h>10000)
       {
 	struct pike_string *s2;
@@ -983,7 +981,6 @@ PMOD_EXPORT void verify_shared_strings_tables(void)
   }
   if(num != num_strings)
     fatal("Num strings is wrong %d!=%d\n",num,num_strings);
-  full_hash_value = orig_full_hash;
 }
 
 PMOD_EXPORT int safe_debug_findstring(struct pike_string *foo)
@@ -1014,10 +1011,10 @@ PMOD_EXPORT struct pike_string *debug_findstring(const struct pike_string *foo)
 	    (long)foo->hval,
 	    (long)foo->len,
 	    foo->str);
-    StrHash(foo->str,foo->len);
+
     fprintf(stderr,"------ %p %ld\n",
 	    base_table[foo->hval %htable_size],
-	    (long)full_hash_value);
+	    foo->hval);
     for(tmp2=base_table[foo->hval % htable_size];tmp2;tmp2=tmp2->next)
     {
       if(tmp2 == tmp)
@@ -1649,6 +1646,9 @@ PMOD_EXPORT struct pike_string *string_replace(struct pike_string *str,
 /*** init/exit memory ***/
 void init_shared_string_table(void)
 {
+#ifdef PIKE_RUN_UNLOCKED
+  mt_init(&stralloc_mutex);
+#endif
   init_short_pike_string0_blocks();
   init_short_pike_string1_blocks();
   init_short_pike_string2_blocks();
