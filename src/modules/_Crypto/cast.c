@@ -1,5 +1,5 @@
 /*
- * $Id: cast.c,v 1.2 1997/11/16 22:25:39 nisse Exp $
+ * $Id: cast.c,v 1.3 1998/01/21 22:48:26 grubba Exp $
  *
  * CAST crypto module for Pike
  *
@@ -94,7 +94,8 @@ static void set_key(INT32 args)
        || (sp[-1].u.string->len > CAST_MAX_KEYSIZE))
     error("Invalid key length to cast->set_key()\n");
 
-  cast_setkey(&(THIS->key), sp[-1].u.string->str, sp[-1].u.string->len);
+  cast_setkey(&(THIS->key), (unsigned char *)sp[-1].u.string->str,
+	      sp[-1].u.string->len);
   
   pop_n_elems(args);
   push_object(this_object());
