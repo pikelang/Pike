@@ -1,10 +1,11 @@
 /* cipher.cmod -*- c -*- */
 
 #include "global.h"
-RCSID("$Id: cipher.cmod,v 1.24 2003/11/29 18:50:39 nilsson Exp $");
+RCSID("$Id: cipher.cmod,v 1.25 2003/12/06 16:17:17 nilsson Exp $");
 #include "interpret.h"
 #include "svalue.h"
 #include "array.h"
+#include "operators.h"
 
 /* For this_object() */
 #include "object.h"
@@ -585,7 +586,7 @@ PIKECLASS DES_Info
       buf[7] = (key->str[6]&127)<<1;
     }
     else
-      memcpy(buf, key->str, 8);
+      MEMCPY(buf, key->str, 8);
 
     des_fix_parity(8, buf, buf);
     RETURN make_shared_binary_string(buf, 8);
@@ -636,9 +637,11 @@ PIKECLASS DES_State
 }
 /*! @endclass DES_State */
 
+void f_DES3_Info_fix_parity(INT32);
+
 static void
 pike_des3_set_key(void *c,
-		  ptrdiff_t length, const char *key,
+		  ptrdiff_t length, char *key,
 		  int force)
 {
   struct des3_ctx *ctx = (struct des3_ctx *) c;
