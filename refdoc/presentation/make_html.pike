@@ -425,9 +425,18 @@ string parse_text(Node n) {
     case "array":
       ret += build_box(c, "group", "elem",
 		       lambda(Node n) {
+			 string index ="";
+			 if(n->get_first_element("index"))
+			   index = parse_text(n->get_first_element("index"));
+			 else {
+			   if(n->get_first_element("minindex"))
+			     index = parse_text(n->get_first_element("minindex"));
+			   index += "..";
+			   if(n->get_first_element("maxindex"))
+			     index += parse_text(n->get_first_element("maxindex"));
+			 }
 			 return parse_type(get_first_element(n->get_first_element("type"))) +
-			   " <font color='green'>" + parse_text(n->get_first_element("index")) +
-			   "</font>"; }, "Array" );
+			   " <font color='green'>" + index + "</font>"; }, "Array" );
       break;
 
     case "int":
