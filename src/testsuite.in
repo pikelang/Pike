@@ -1,4 +1,4 @@
-test_true([["$Id: testsuite.in,v 1.511 2002/05/09 20:49:18 nilsson Exp $"]]);
+test_true([["$Id: testsuite.in,v 1.512 2002/05/10 22:20:57 mast Exp $"]]);
 
 cond([[all_constants()->_verify_internals]],
 [[
@@ -1116,6 +1116,13 @@ test_program([[// [bug 3060]
       }
     return ok == 2;
   }
+]])
+
+dnl Note: This line number error tend to go away with more debug.
+test_program([[
+  int x = 0;
+  int y = [int] backtrace()[-1][1];
+  int a() {return y == 3;}
 ]])
 
 dnl ----------------------------------------------------------------
