@@ -1,5 +1,5 @@
 #
-# $Id: Makefile.in,v 1.251 2001/03/12 10:51:28 hubbe Exp $
+# $Id: Makefile.in,v 1.252 2001/03/12 18:33:14 grubba Exp $
 #
 
 # This line is needed on some machines.
@@ -705,6 +705,8 @@ $(SRCDIR)/backend.c: $(SRCDIR)/backend.cmod precompile.sh-stamp $(TMP_BINDIR)/pr
 builtin.o: $(SRCDIR)/builtin.c
 
 iterators.o: $(SRCDIR)/iterators.c
+
+backend.o: $(SRCDIR)/backend.c
 
 # Internal testing target
 run_yacc: $(SRCDIR)/language.c
