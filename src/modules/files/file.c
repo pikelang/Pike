@@ -2,12 +2,12 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: file.c,v 1.261 2004/11/16 14:48:20 mast Exp $
+|| $Id: file.c,v 1.262 2005/02/04 16:31:40 grubba Exp $
 */
 
 #define NO_PIKE_SHORTHAND
 #include "global.h"
-RCSID("$Id: file.c,v 1.261 2004/11/16 14:48:20 mast Exp $");
+RCSID("$Id: file.c,v 1.262 2005/02/04 16:31:40 grubba Exp $");
 #include "fdlib.h"
 #include "interpret.h"
 #include "svalue.h"
@@ -2463,6 +2463,9 @@ int socketpair_ultra(int family, int type, int protocol, int sv[2])
 
     switch(errno)
     {
+#if defined(WSAEWOULDBLOCK) && (WSAEWOULDBLOCK != EAGAIN)
+      case WSAEWOULDBLOCK:
+#endif /* WSAEWOULDBLOCK */
       case EAGAIN: break;
 
       case EADDRINUSE:
