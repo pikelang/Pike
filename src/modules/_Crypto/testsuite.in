@@ -24,7 +24,9 @@ Crypto.sha)]])
 test_true([[
 #pike 7.4
 programp(Crypto.rijndael)]])
-test_true([[programp(Crypto.des)]])
+test_true([[
+#pike 7.4
+programp(Crypto.des)]])
 test_true([[programp(Crypto.idea)]])
 test_true([[
 #pike 7.4
@@ -34,7 +36,12 @@ test_true([[
 programp(Crypto.arcfour)]])
 
 // Functions
-test_true([[functionp(Crypto.des_parity)]])
+test_eq(
+#pike 7.4
+Crypto.des_parity("\xff"*8), "\xfe"*8)
+test_eq(
+#pike 7.4
+Crypto.des_parity("12345678"), "12244778")
 test_true([[
 #pike 7.4
 functionp(Crypto.hex_to_string)]])
@@ -43,23 +50,27 @@ test_true([[
 functionp(Crypto.string_to_hex)]])
 
 // Pike programs
-test_true([[programp(Crypto.des3)]])
+test_true([[
+#pike 7.4
+programp(Crypto.des3)]])
 test_true([[programp(Crypto.des3_cbc)]])
 test_true([[programp(Crypto.des_cbc)]])
 test_true([[programp(Crypto.idea_cbc)]])
 test_true([[programp(Crypto.rsa)]])
 
 // invert
-test_eq(
+test_eq([[
 #pike 7.4
-Crypto.invert()->crypt_block(""), "" )
-test_eq(
+Crypto.invert()->crypt_block("")]],[[""]])
+test_eq([[
 #pike 7.4
-Crypto.invert()->crypt_block("\0\xffpqrstx"),
-         "\xff\0\x8f\x8e\x8d\x8c\x8b\x87" )
+Crypto.invert()->crypt_block("\0\xffpqrstx")]],
+         [["\xff\0\x8f\x8e\x8d\x8c\x8b\x87"]])
 
 // DES
-test_true([[objectp(Crypto.des())]])
+test_true([[
+#pike 7.4
+objectp(Crypto.des())]])
 test_eq([[
 #pike 7.4
 Crypto.string_to_hex(Crypto.des()->set_encrypt_key(Crypto.hex_to_string("0101010101010180"))
@@ -406,7 +417,9 @@ test_eq([[Crypto.crypt_md5("Hello","$1$sl5hO7j4$glLmY.ttmi1hWK8ucIrig.")]],
 test_eq(
 #pike 7.4
 Crypto.invert()->name(),"INVERT")
-test_eq(Crypto.des()->name(),"DES")
+test_eq(
+#pike 7.4
+Crypto.des()->name(),"DES")
 test_eq(
 #pike 7.4
 Crypto.rijndael()->name(),"RIJNDAEL")
@@ -437,7 +450,9 @@ Crypto.sha()->name(),"SHA")
 test_eq(
 #pike 7.4
 Crypto.invert()->query_key_length(),0)
-test_eq(Crypto.des()->query_key_length(),8)
+test_eq(
+#pike 7.4
+Crypto.des()->query_key_length(),8)
 test_eq(
 #pike 7.4
 Crypto.aes()->query_key_length(),32)
@@ -457,7 +472,9 @@ Crypto.arcfour()->query_key_length(),1)
 test_eq(
 #pike 7.4
 Crypto.invert()->query_block_size(),8)
-test_eq(Crypto.des()->query_block_size(),8)
+test_eq(
+#pike 7.4
+Crypto.des()->query_block_size(),8)
 test_eq(
 #pike 7.4
 Crypto.aes()->query_block_size(),16)
