@@ -1,4 +1,4 @@
-test_true([["$Id: testsuite.in,v 1.323 2000/08/24 04:04:42 hubbe Exp $"]]);
+test_true([["$Id: testsuite.in,v 1.324 2000/08/27 13:50:37 grubba Exp $"]]);
 
 cond([[all_constants()->_verify_internals]],
 [[
@@ -6053,3 +6053,24 @@ class Fnord
 };
 return Fnord()->Zboink()->t() + Fnord()->Zboink()->z();
 ]],4711 * 4)
+
+test_any([[
+  class Foo
+  {
+    string s = "a";
+
+    int|string foo()
+    {
+      int i;
+      for (; i < strlen(s); i++) {
+        if (!strlen(s) && i) {
+          return "Optimizer error!";
+        }
+        s = "";
+        i = 0;
+      }
+      return 0;
+    }
+  };
+  return Foo()->foo();
+]], 0)
