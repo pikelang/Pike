@@ -7,7 +7,30 @@ constant Thread=__builtin.thread_id;
 // It's now possible to write Thread Thread( ... );
 //
 // This makes the interface look somewhat more thought-through.
+
+// Unfortunately that is completely and utterly wrong. The loads of
+// optional modifiers in this file is a telltale sign that the module
+// Thread, which contains tools to use with threads, and
+// Thread.Thread, which represent a specific thread, are two
+// completely different things. That being the case, it's hardly wise
+// to give them the same name.
 //
+// An example where this stunt breaks down is when this module is
+// inherited: If the type name for a thread object is Thread then it's
+// reasonable to believe that you can inherit Thread to make a custom
+// thread class with some extra context. But not only do you get loads
+// of stuff with that inherit which are meaningless to have in a
+// thread instance (mutexes, queues, etc), you also get a nonworking
+// thread since the create function is overridden here to avoid a
+// thread being created when this module is created.
+//
+// Using Thread as a type name for thread objects is strongly
+// discouraged. I.e. use "Thread.Thread t = Thread.Thread()" and _not_
+// "Thread t = Thread()". It's likely that this abomination is cleaned
+// up eventually.
+//
+// /mast
+
 inherit Thread;
 
 // We don't want to create a thread of the module...
