@@ -25,7 +25,7 @@
 #include "version.h"
 #include "bignum.h"
 
-RCSID("$Id: encode.c,v 1.117 2001/07/22 22:00:53 grubba Exp $");
+RCSID("$Id: encode.c,v 1.118 2001/07/23 12:38:42 grubba Exp $");
 
 /* #define ENCODE_DEBUG */
 
@@ -913,6 +913,8 @@ static void encode_value2(struct svalue *val, struct encode_data *data)
 #define FOO(X,Y,Z) \
 	code_number( p->PIKE_CONCAT(num_,Z), data);
 #include "program_areas.h"
+
+	code_number(PIKE_BYTECODE_METHOD, data);
 
 #ifdef ENCODE_PROGRAM
 #ifdef PIKE_DEBUG
@@ -2070,6 +2072,15 @@ static void decode_value2(struct decode_data *data)
 	  p->total_size=size + sizeof(struct program);
 
 	  p->flags |= PROGRAM_OPTIMIZED;
+
+	  {
+	    INT32 bytecode_method = 0;
+	    decode_number(bytecode_method, data);
+	    if (bytecode_method != PIKE_BYTECODE_METHOD) {
+	      Pike_error("Unsupported bytecode method: %d. Expected %d\n",
+			 bytecode_method, PIKE_BYTECODE_METHOD);
+	    }
+	  }
 
 	  getdata2(p->program, p->num_program);
 #ifdef PIKE_USE_MACHINE_CODE
