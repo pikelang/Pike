@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: svalue.h,v 1.130 2004/06/02 00:11:26 nilsson Exp $
+|| $Id: svalue.h,v 1.131 2004/06/23 14:29:40 nilsson Exp $
 */
 
 #ifndef SVALUE_H
@@ -504,7 +504,7 @@ static INLINE union anything *dmalloc_check_union(union anything *u,int type, ch
     PIKE_MEM_WO(*_from);						\
   } while (0)
 
-extern struct svalue dest_ob_zero;
+extern const struct svalue dest_ob_zero;
 
 #define free_mixed_svalues(X,Y) do {		\
   struct svalue *s_=(X);			\

@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: svalue.c,v 1.194 2004/05/28 16:08:24 grubba Exp $
+|| $Id: svalue.c,v 1.195 2004/06/23 14:29:40 nilsson Exp $
 */
 
 #include "global.h"
@@ -30,9 +30,9 @@
 
 #define sp Pike_sp
 
-RCSID("$Id: svalue.c,v 1.194 2004/05/28 16:08:24 grubba Exp $");
+RCSID("$Id: svalue.c,v 1.195 2004/06/23 14:29:40 nilsson Exp $");
 
-struct svalue dest_ob_zero = {
+const struct svalue dest_ob_zero = {
   T_INT, 0,
 #ifdef HAVE_UNION_INIT
   {0}, /* Only to avoid warnings. */
