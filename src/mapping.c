@@ -411,15 +411,8 @@ void mapping_search_no_free(struct svalue *to,
 
 #ifdef DEBUG
 
-void check_mapping(struct mapping *m,int pass)
+void check_mapping(struct mapping *m)
 {
-  if(pass)
-  {
-    if(checked((void *)m,0) != m->refs)
-      fatal("Mapping has wrong number of refs.\n");
-    return;
-  }
-
   if(m->refs <=0)
     fatal("Mapping has zero refs.\n");
 
@@ -434,17 +427,12 @@ void check_mapping(struct mapping *m,int pass)
     if(first_mapping != m)
       fatal("Mapping ->prev == 0 but first_mapping != mapping.\n");
   }
-  checked((void *)m->ind,1);
-  checked((void *)m->val,1);
 }
 
-void check_all_mappings(int pass)
+void check_all_mappings()
 {
   struct mapping *m;
   for(m=first_mapping;m;m=m->next)
-    check_mapping(m,pass);
-
-  if(!pass)
-    checked((void *)first_mapping,1);
+    check_mapping(m);
 }
 #endif

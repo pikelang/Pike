@@ -117,12 +117,11 @@ struct array *reverse_array(struct array *a);
 void array_replace(struct array *a,
 		   struct svalue *from,
 		   struct svalue *to);
-void array_gc_clear_mark();
-void array_gc_mark(struct array *a);
-void array_gc_sweep();
-void array_gc_sweep2();
-void check_array(struct array *a, int pass);
-void check_all_arrays(int pass);
+void check_array(struct array *a);
+void check_all_arrays();
+void gc_check_array(struct array *a);
+void gc_check_all_arrays();
+void gc_clear_array_marks();
 /* Prototypes end here */
 
 

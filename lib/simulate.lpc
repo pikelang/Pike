@@ -5,27 +5,9 @@ inherit "/precompiled/regexp";
 
 string current_file, current_mode;
 
-static int open(string file, string how)
-{
-  if(file == current_file && how == current_mode)
-  {
-    seek(0);
-    return 1;
-  }else{
-    if(file::open(file,how))
-    {
-      current_file=file;
-      current_mode=how;
-      return 1;
-    }else{
-      current_file=current_mode=0;
-      return 0;
-    }
-  }
-}
-
 string read_bytes(string filename,void|int start,void|int len)
 {
+  string ret;
   if(!open(filename,"r"))
     error("Couldn't open file "+filename+".\n");
   
@@ -37,16 +19,20 @@ string read_bytes(string filename,void|int start,void|int len)
   case 3:
     seek(start);
   }
-  return read(len);
+  ret=read(len);
+  close();
+  return ret;
 }
 
 int write_file(string filename,string what)
 {
-  if(!open(filename,"wc"))
+  int ret;
+  if(!open(filename,"awc"))
     error("Couldn't open file "+filename+".\n");
   
-  seek(-1);
-  return write(what);
+  ret=write(what);
+  close();
+  return ret;
 }
 
 mixed *map_array(mixed *arr, mixed fun, mixed ... args)

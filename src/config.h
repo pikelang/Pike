@@ -32,6 +32,11 @@
  * Define the size of the cache that is used for method lookup.
  */
 #define FIND_FUNCTION_HASHSIZE 4711
+
+/*
+ * Undefine this to disable garabge collection
+ */
+#define GC2
    
 
 /*

@@ -26,7 +26,7 @@ callback query_read_callback(int fd);
 callback query_write_callback(int fd);
 void *query_read_callback_data(int fd);
 void *query_write_callback_data(int fd);
-void do_debug(int check_refs);
+void do_debug();
 void backend();
 int write_to_stderr(char *a, INT32 len);
 /* Prototypes end here */

@@ -30,11 +30,9 @@ void check_string(struct lpc_string *s)
 
   if(s->str[s->len])
     fatal("Shared string is not zero terminated properly.\n");
-
-  checked((void *)s,1);
 }
 
-void verify_shared_strings_tables(int pass)
+void verify_shared_strings_tables()
 {
   unsigned int e, h;
   struct lpc_string *s;
@@ -44,14 +42,6 @@ void verify_shared_strings_tables(int pass)
     h=0;
     for(s=base_table[e];s;s=s->next)
     {
-      if(pass)
-      {
-	if(checked((void *)s,0)!=s->refs)
-	{
-	  fatal("Shared string has wrong number of refs '%s'.\n",s->str);
-	}
-	continue;
-      }
       h++;
       if(s->len < 0)
 	fatal("Shared string shorter than zero bytes.\n");

@@ -22,6 +22,7 @@
 #include "fsort.h"
 #include "call_out.h"
 #include "callback.h"
+#include "gc.h"
 #ifdef HAVE_SYS_TIME_H
 #include <sys/time.h>
 #endif
@@ -1210,6 +1211,15 @@ void f_sleep(INT32 args)
   }
 }
 
+void f_gc(INT32 args)
+{
+  INT32 tmp;
+  pop_n_elems(args);
+  tmp=num_objects;
+  do_gc();
+  push_int(tmp - num_objects);
+}
+
 #ifdef TYPEP
 #undef TYPEP
 #endif
@@ -1296,6 +1306,7 @@ void init_builtin_efuns()
   add_efun("upper_case",f_upper_case,"function(string:string)",0);
   add_efun("values",f_values,"function(string|list:int*)|function(array|mapping|object:mixed*)",0);
   add_efun("zero_type",f_zero_type,"function(int:int)",0);
+  add_efun("gc",f_gc,"function(:int)",OPT_SIDE_EFFECT);
 }
 
 

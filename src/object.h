@@ -14,7 +14,9 @@
 struct object
 {
   INT32 refs;                    /* Reference count, must be first. */
+#ifdef GC2
   INT16 flags;
+#endif
   struct program *prog;
   struct object *next;
   struct object *prev;
@@ -55,11 +57,14 @@ union anything *object_low_get_item_ptr(struct object *o,
 union anything *object_get_item_ptr(struct object *o,
 				    struct svalue *index,
 				    TYPE_T type);
-void verify_all_objects(int pass);
+void verify_all_objects();
 int object_equal_p(struct object *a, struct object *b, struct processing *p);
 void cleanup_objects();
 struct array *object_indices(struct object *o);
 struct array *object_values(struct object *o);
+void gc_check_object(struct object *o);
+void gc_check_all_objects();
+void gc_clear_object_marks();
 /* Prototypes end here */
 
 #endif /* OBJECT_H */

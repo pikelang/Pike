@@ -53,5 +53,7 @@ void mapping_search_no_free(struct svalue *to,
 			    struct mapping *m,
 			    struct svalue *look_for,
 			    struct svalue *start);
+void check_mapping(struct mapping *m);
+void check_all_mappings();
 /* Prototypes end here */
 #endif

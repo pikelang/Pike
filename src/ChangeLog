@@ -1,3 +1,8 @@
+Sat Feb 24 04:12:52 1996  Fredrik Hubinette  <hubbe@tymin.signum.se>
+
+	* program.c, array.c, object.c, gc.c: 
+	  Added routines to remove cyclic structures.
+
 Sat Feb 17 23:05:24 1996  Fredrik Hubinette  <hubbe@sparky.signum.se>
 
 	* sprintf: added support for %2c

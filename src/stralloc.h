@@ -33,7 +33,7 @@ struct lpc_string *debug_findstring(const struct lpc_string *foo);
 
 /* Prototypes begin here */
 void check_string(struct lpc_string *s);
-void verify_shared_strings_tables(int pass);
+void verify_shared_strings_tables();
 struct lpc_string *findstring(const char *foo);
 struct lpc_string *debug_findstring(const struct lpc_string *foo);
 struct lpc_string *begin_shared_string(int len);

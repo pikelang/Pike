@@ -639,11 +639,6 @@ void check_short_svalue(union anything *u,TYPE_T type)
   check_refs2(u,type);
   if(!u->refs) return;
 
-  if(type <= MAX_REF_TYPE)
-  {
-    checked((void *) u->refs,1);
-  }
-
   switch(type)
   {
   case T_STRING:
@@ -660,3 +655,56 @@ void check_svalue(struct svalue *s)
 }
 
 #endif
+
+#ifdef GC2
+void gc_check_svalues(struct svalue *s, int num)
+{
+  INT32 e;
+  for(e=0;e<num;e++,s++)
+  {
+    switch(s->type)
+    {
+    case T_ARRAY: gc_check_array(s->u.array); break;
+    case T_LIST:
+      gc_check_array(s->u.list->ind);
+      break;
+    case T_MAPPING:
+      gc_check_array(s->u.mapping->ind);
+      gc_check_array(s->u.mapping->val);
+      break;
+    case T_OBJECT:
+      if(s->u.object->prog)
+      {
+	gc_check_object(s->u.object);
+      }else{
+	free_svalue(s);
+      }
+      break;
+    case T_PROGRAM: gc_check_program(s->u.program); break;
+    }
+  }
+}
+
+void gc_check_short_svalue(union anything *u, TYPE_T type)
+{
+  if(!u->refs) return;
+  switch(type)
+  {
+  case T_ARRAY: gc_check_array(u->array); break;
+  case T_LIST: gc_check_array(u->list->ind); break;
+  case T_MAPPING:
+    gc_check_array(u->mapping->ind);
+    gc_check_array(u->mapping->val);
+    break;
+  case T_OBJECT:
+    if(u->object->prog)
+    {
+      gc_check_object(u->object);
+    }else{
+      free_short_svalue(u,T_OBJECT);
+    }
+    break;
+  case T_PROGRAM: gc_check_program(u->program); break;
+  }
+}
+#endif /* GC2 */

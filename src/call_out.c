@@ -308,12 +308,6 @@ time_t get_next_call_out()
 #ifdef DEBUG
 void verify_all_call_outs()
 {
-  int e;
   verify_call_outs();
-  for(e=0;e<num_pending_calls;e++)
-  {
-    checked((void *)pending_calls[e]->caller,1);
-    checked((void *)pending_calls[e]->args,1);
-  }
 }
 #endif

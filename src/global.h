@@ -66,10 +66,6 @@ char *alloca ();
 #include <memory.h>
 #endif
 
-#ifdef DEBUG
-#include "debug.h"
-#endif
-
 #if defined(__GNUC__) && !defined(DEBUG) && !defined(lint)
 #define INLINE inline
 #else

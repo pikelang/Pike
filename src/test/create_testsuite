@@ -63,6 +63,8 @@ test_compile([[while(0)if(0)continue;else;]])
 test_program([[int b=1,c; int a() { c=b+2; return c==3; }]])
 test_true([[ ("foobar"/"o") & ({ "foo" }) ]])
 test_any([[ array a="foo bar"/" "; return sizeof(a & ({"foo"}))]],1)
+test_true(intp(gc()));
+test_any([[ gc(); array a=({0}); a[0]=a; a=0; return gc() > 0; ]],1);
 
 test_eq("\377"[0],255)
 test_do(add_efun("foo",clone(class {int i;})))

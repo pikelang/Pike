@@ -16,6 +16,7 @@
 #include "fsort.h"
 #include "builtin_efuns.h"
 #include "memory.h"
+#include "gc.h"
 
 struct array empty_array=
 {
@@ -46,10 +47,13 @@ struct array *allocate_array_no_init(INT32 size,INT32 extra_space)
     return &empty_array;
   }
 
+  GC_ALLOC();
+
   v=(struct array *)malloc(sizeof(struct array)+
 			   (size+extra_space-1)*sizeof(struct svalue));
   if(!v)
     error("Couldn't allocate array, out of memory.\n");
+  
 
   /* for now, we don't know what will go in here */
   v->type_field=BIT_MIXED;
@@ -94,6 +98,8 @@ static void array_free_no_free(struct array *v)
   v->next->prev=prev;
 
   free((char *)v);
+
+  GC_FREE();
 }
 
 /*
@@ -1245,101 +1251,10 @@ void array_replace(struct array *a,
   while((i=array_search(a,from,i+1)) >= 0) array_set_index(a,i,to);
 }
 
-#ifdef GC
-
-void array_gc_clear_mark()
-{
-  struct array *a;
-  a=&empty_array;
-  do
-  {
-    a->flags &=~ ARRAY_FLAG_MARK;
-    check_array(a, pass);
-
-    a=a->next;
-
 #ifdef DEBUG
-    if(!a) fatal("Null pointer in array list.\n");
-#endif
-  } while (a != & empty_array);
-}
-
-void array_gc_mark(struct array *a)
+void check_array(struct array *a)
 {
   INT32 e;
-  if(a->flags & ARRAY_FLAG_MARK) return;
-  a->flags |= ARRAY_FLAG_MARK;
-
-  if(!(a->type_field & ~(BIT_STRING|BIT_INT|BIT_FLOAT)))
-    return 0;
-
-  for(e=0;e<a->size;e++) svalue_gc_sweep(ITEM(a) + e);
-}
-
-void array_gc_sweep()
-{
-  struct array *a, *next;
-
-  a=&empty_array;
-  do
-  {
-    a->refs++;
-
-    if(!(a->flags & ARRAY_FLAG_MARK))
-    {
-      free_svalues(ITEM(a), a->size, a->type_field);
-      a->size=0; /* Don't free them again */
-    }
-    
-    next=a->next;
-    free_array(a);
-
-    a=next;
-#ifdef DEBUG
-    if(!a) fatal("Null pointer in array list.\n");
-#endif
-  } while (a != & empty_array);
-}
-
-
-#ifdef DEBUG
-void array_gc_sweep2()
-{
-  struct array *a;
-  if(!d_flag) return;
-
-  a=&empty_array;
-  do
-  {
-    if(!(a->flags & ARRAY_FLAG_MARK))
-      fatal("Array ref count incorrect!\n");
-
-    a=a->next
-    
-#ifdef DEBUG
-    if(!a) fatal("Null pointer in array list.\n");
-#endif
-  } while (a != & empty_array);
-}
-#endif /* DEBUG */
-#endif /* GC */
-
-
-#ifdef DEBUG
-void check_array(struct array *a, int pass)
-{
-  INT32 e;
-  if(pass)
-  {
-    e=checked((void *)a,0);
-    if(e!=a->refs)
-    {
-      simple_describe_array(a);
-      fatal("Above array has wrong number of references. (%ld != %ld)\n",
-	    (long)e,(long)a->refs);
-    }
-    return;
-  }
 
   if(a->next->prev != a)
     fatal("Array check: a->next->prev != a\n");
@@ -1359,24 +1274,88 @@ void check_array(struct array *a, int pass)
   }
 }
 
-void check_all_arrays(int pass)
+void check_all_arrays()
 {
   struct array *a;
 
   a=&empty_array;
   do
   {
-    check_array(a, pass);
+    check_array(a);
 
     a=a->next;
     if(!a)
       fatal("Null pointer in array list.\n");
   } while (a != & empty_array);
-
-  if(!pass)
-  {
-    checked((void *)&empty_array,1);
-  }
 }
 #endif /* DEBUG */
+
+#ifdef GC2
+
+void gc_check_array(struct array *a)
+{
+  if(a == gc_ptr) gc_refs++;
+  if(a->flags & GC_MARK) return;
+  a->flags |= GC_MARK;
+  if(!(a->type_field & BIT_COMPLEX)) return;
+  gc_check_svalues(ITEM(a), a->size);
+}
+
+
+void gc_check_all_arrays()
+{
+  struct array *a,*n;
+
+  a=&empty_array;
+  do
+  {
+    if(!(a->flags & GC_MARK) && a->type_field & BIT_COMPLEX)
+    {
+      gc_ptr=a;
+      gc_refs=0;
+      
+      gc_check_array(a);
+      
+      a->refs++;
+      
+      if(gc_refs == a->refs)
+      {
+	/* This structure contains as many references to itself as
+	 * it has referenes, which means that it is circular and
+	 * should be destroyed, so please go away.
+	 */
+	
+	free_svalues(ITEM(a), a->size, a->type_field);
+	
+	a->size=0;
+	
+      }
+      
+      if(!(n=a->next))
+	fatal("Null pointer in array list.\n");
+      
+      free_array(a);
+      a=n;
+    }else{
+      a=a->next;
+    }
+  } while (a != & empty_array);
+}
+
+void gc_clear_array_marks()
+{
+  struct array *a;
+
+  a=&empty_array;
+  do
+  {
+    a->flags &=~ GC_MARK;
+    a=a->next;
+
+  } while (a != & empty_array);
+}
+
+
+
+#endif /* GC2 */
 

@@ -15,6 +15,7 @@
 #include "error.h"
 #include "main.h"
 #include "array.h"
+#include "gc.h"
 
 struct object *master_object = 0;
 struct object *first_object;
@@ -33,6 +34,8 @@ struct object *clone(struct program *p, int args)
   int e;
   struct object *o;
   struct frame frame;
+
+  GC_ALLOC();
 
   o=(struct object *)xalloc(sizeof(struct object)-1+p->storage_needed);
 
@@ -231,6 +234,8 @@ void really_free_object(struct object *o)
   if(o->next) o->next->prev=o->prev;
   
   free((char *)o);
+
+  GC_FREE();
 }
 
 void object_index_no_free(struct svalue *to,
@@ -463,22 +468,13 @@ union anything *object_get_item_ptr(struct object *o,
 }
 
 #ifdef DEBUG
-void verify_all_objects(int pass)
+void verify_all_objects()
 {
   struct object *o;
   struct frame frame;
 
   for(o=first_object;o;o=o->next)
   {
-    if(pass)
-    {
-      if(checked((void *)o, 0) != o->refs)
-      {
-	fatal("Object has wrong number of refs.\n");
-      }
-      continue;
-    }
-
     if(o->next && o->next->prev !=o)
       fatal("Object check: o->next->prev != o\n");
 
@@ -537,9 +533,6 @@ void verify_all_objects(int pass)
 	frame.context=o->prog->inherits[e];
 	frame.context.prog->refs++;
 	frame.current_storage=o->storage+frame.context.storage_offset;
-
-	if(frame.context.prog->checkrefs)
-	  frame.context.prog->checkrefs(frame.current_storage,o,pass);
       }
 
       free_object(frame.current_object);
@@ -647,19 +640,14 @@ struct array *object_values(struct object *o)
   return a;
 }
 
-#ifdef GC
-void object_gc_clear_mark()
-{
-  struct object *o;
-  for(o=first_object;o;o=o->next)
-    o->flags &=~ OBJECT_FLAG_MARK;
-}
+#ifdef GC2
 
-void object_gc_mark(struct object *o)
+void gc_check_object(struct object *o)
 {
   INT32 e;
-  if(o->flags & OBJECT_FLAG_MARK) return;
-  a->flags |= OBJECT_FLAG_MARK;
+  if(o == gc_ptr) gc_refs++;
+  if(o->flags & GC_MARK) return;
+  o->flags |= GC_MARK;
 
   if(!o->prog) return;
 
@@ -673,36 +661,41 @@ void object_gc_mark(struct object *o)
 
     if(i->run_time_type == T_MIXED)
     {
-      svalue_gc_sweep((struct svalue *)LOW_GET_GLOBAL(o,e,i));
+      gc_check_svalues((struct svalue *)LOW_GET_GLOBAL(o,e,i),1);
     }else{
-      short_svalue_gc_sweep((struct svalue *)LOW_GET_GLOBAL(o,e,i),
+      gc_check_short_svalue((struct svalue *)LOW_GET_GLOBAL(o,e,i),
 			    i->run_time_type);
     }
   }
 }
 
-void object_gc_sweep()
+void gc_check_all_objects()
 {
   struct object *o, *next;
   for(o=first_object;o;o=next)
   {
-    o->refs++;
-    if(!(o->flags & OBJECT_FLAG_MARK)) destruct(o);
-    next=o->next;
-    free_object(o);
+    if(!(o->flags & GC_MARK))
+    {
+      gc_ptr=o;
+      gc_refs=0;
+      
+      o->refs++;
+      
+      if(gc_refs == o->refs) destruct(o);
+      
+      next=o->next;
+      free_object(o);
+    }else{
+      next=o->next;
+    }
   }
 }
 
-#ifdef DEBUG
-void object_gc_sweep2()
+void gc_clear_object_marks()
 {
   struct object *o;
-  if(!d_flag) return;
 
-
-  for(o=first_object;o;o=o->next)
-    if(!(o->flags & OBJECT_FLAG_MARK)) 
-      fatal("Object ref count incorrect.\n");
+  for(o=first_object;o;o=o->next) o->flags &=~ GC_MARK;
 }
-#endif /* DEBUG */
-#endif /* GC */
+
+#endif /* GC2 */

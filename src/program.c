@@ -19,6 +19,7 @@
 #include "interpret.h"
 #include "hashtable.h"
 #include "main.h"
+#include "gc.h"
 #include <stdio.h>
 #include <fcntl.h>
 
@@ -156,6 +157,8 @@ void really_free_program(struct program *p)
     p->next->prev=p->prev;
 
   free((char *)p);
+
+  GC_FREE();
 }
 
 #ifdef DEBUG
@@ -214,18 +217,10 @@ void toss_current_program()
 }
 
 #ifdef DEBUG
-void check_program(struct program *p, int pass)
+void check_program(struct program *p)
 {
   INT32 size,e;
   unsigned INT32 checksum;
-
-  if(pass)
-  {
-    if(checked((void *)p,0) != p->refs)
-      fatal("Program has wrong number of references.\n");
-
-    return;
-  }
 
   if(p->refs <=0)
     fatal("Program has zero refs.\n");
@@ -333,10 +328,7 @@ void check_program(struct program *p, int pass)
   {
     if(p->inherits[e].storage_offset < 0)
       fatal("Inherit->storage_offset is wrong.\n");
-
-    checked((void *)p->inherits[e].prog,1);
   }
-  checked((void *)p,-1); /* One too many were added above */
 }
 #endif
 
@@ -466,7 +458,7 @@ struct program *end_program()
     first_program=prog;
 
 #ifdef DEBUG
-    check_program(prog,0);
+    check_program(prog);
     if(l_flag)
       dump_program_desc(prog);
 #endif
@@ -1190,11 +1182,14 @@ struct program *compile_file(struct lpc_string *file_name)
 {
   int fd;
   struct program *p;
-  
+
   fd=open(file_name->str,O_RDONLY);
   if(fd < 0)
     error("Couldn't open file '%s'.\n",file_name->str);
 
+
+  GC_ALLOC();
+  
 
 #define FILE_STATE
 #define PUSH
@@ -1225,6 +1220,8 @@ struct program *compile_string(struct lpc_string *prog,
 #define PUSH
 #include "compilation.h"
 #undef PUSH
+
+  GC_ALLOC();
 
   start_new_string(prog->str,prog->len,name);
   start_new_program();
@@ -1281,23 +1278,11 @@ void add_function(char *name,void (*cfun)(INT32),char *type,INT16 flags)
 }
 
 #ifdef DEBUG
-void check_all_programs(int pass)
+void check_all_programs()
 {
   struct program *p;
   for(p=first_program;p;p=p->next)
-    check_program(p,pass);
-
-#ifdef FIND_FUNCTION_HASHSIZE
-  if(!pass)
-  {
-    int e;
-    for(e=0;e<FIND_FUNCTION_HASHSIZE;e++)
-    {
-      if(cache[e].name)
-	checked((void *)cache[e].name,1);
-    }
-  }
-#endif
+    check_program(p);
 }
 #endif
 
@@ -1315,3 +1300,47 @@ void cleanup_program()
   }
 #endif
 }
+
+#ifdef GC2
+
+void gc_check_program(struct program *p)
+{
+  if(p==gc_ptr) gc_refs++;
+  if(p->flags & GC_MARK) return;
+  p->flags |= GC_MARK;
+  gc_check_svalues(p->constants, p->num_constants);
+}
+
+void gc_check_all_programs()
+{
+  struct program *p, *next;
+  for(p=first_program;p;p=next)
+  {
+    if(!(p->flags & GC_MARK))
+    {
+      gc_ptr=p;
+      gc_refs=0;
+
+      gc_check_program(p);
+      
+      p->refs++;
+      
+      if(gc_refs == p->refs)
+	free_svalues(p->constants, p->num_constants, -1);
+      
+      next=p->next;
+      free_program(p);
+    }else{
+      next=p->next;
+    }
+  }
+}
+
+void gc_clear_program_marks()
+{
+  struct program *p;
+
+  for(p=first_program;p;p=p->next) p->flags &=~ GC_MARK;
+}
+
+#endif /* GC2 */

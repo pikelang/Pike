@@ -111,7 +111,6 @@ struct program
   void (*init)(char *,struct object *);
   void (*exit)(char *,struct object *);
 #ifdef DEBUG
-  void (*checkrefs)(char *,struct object *,int pass);
   unsigned INT32 checksum;
 #endif
 
@@ -145,7 +144,7 @@ void start_new_program();
 void really_free_program(struct program *p);
 void dump_program_desc(struct program *p);
 void toss_current_program();
-void check_program(struct program *p, int pass);
+void check_program(struct program *p);
 struct program *end_program();
 SIZE_T add_storage(SIZE_T size);
 void set_init_callback(void (*init)(char *,struct object *));
@@ -181,8 +180,11 @@ struct program *compile_string(struct lpc_string *prog,
 			       struct lpc_string *name);
 struct program *end_c_program(char *name);
 void add_function(char *name,void (*cfun)(INT32),char *type,INT16 flags);
-void check_all_programs(int pass);
+void check_all_programs();
 void cleanup_program();
+void gc_check_program(struct program *p);
+void gc_check_all_programs();
+void gc_clear_program_marks();
 /* Prototypes end here */
 
 

@@ -157,40 +157,22 @@ void *query_write_callback_data(int fd)
 }
 
 #ifdef DEBUG
-void do_debug(int check_refs)
+void do_debug()
 {
-  extern void check_all_arrays(int);
-  extern void check_all_mappings(int);
-  extern void check_all_programs(int);
-  extern void check_all_objects(int);
-  extern void verify_shared_strings_tables(int);
-  extern void slow_check_stack(int);
+  extern void check_all_arrays();
+  extern void check_all_mappings();
+  extern void check_all_programs();
+  extern void check_all_objects();
+  extern void verify_shared_strings_tables();
+  extern void slow_check_stack();
 
-#if 0
-  if(d_flag>1)
-    init_checked();
-#endif
-
-  slow_check_stack(0);
-  check_all_arrays(0);
-  check_all_mappings(0);
-  check_all_programs(0);
-  verify_all_objects(0);
-  verify_shared_strings_tables(0);
+  slow_check_stack();
+  check_all_arrays();
+  check_all_mappings();
+  check_all_programs();
+  verify_all_objects();
+  verify_shared_strings_tables();
   verify_all_call_outs();
-
-#if 0
-  if(d_flag>1)
-  {
-    check_all_arrays(1);
-    check_all_mappings(1);
-    check_all_programs(1);
-    verify_all_objects(1);
-    verify_shared_strings_tables(1);
-    exit_checked();
-  }
-#endif
-
 }
 #endif
 
@@ -263,7 +245,7 @@ void backend()
     alloca(0);			/* Do garbage collect */
 #ifdef DEBUG
     if(d_flag > 1)
-      do_debug(1);
+      do_debug();
 #endif
   }
 

@@ -19,9 +19,9 @@ depend:
 
 #Dependencies begin here, DO NOT REMOVE THIS LINE!!!!
 glue.o: glue.c \
-  global.h machine.h \
+  global.h \
+  machine.h \
   config.h \
-  debug.h \
   port.h \
   interpret.h \
   program.h \
@@ -33,9 +33,9 @@ glue.o: glue.c \
   object.h \
   macros.h
 regexp.o: regexp.c \
-  global.h machine.h \
+  global.h \
+  machine.h \
   config.h \
-  debug.h \
   port.h \
   regexp.h \
   error.h \

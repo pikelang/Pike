@@ -19,9 +19,9 @@ depend:
 
 #Dependencies begin here, DO NOT REMOVE THIS LINE!!!!
 sprintf.o: sprintf.c \
-  global.h machine.h \
+  global.h \
+  machine.h \
   config.h \
-  debug.h \
   port.h \
   error.h \
   svalue.h \

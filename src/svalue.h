@@ -75,6 +75,9 @@ struct svalue
 
 #define BIT_NOTHING 0
 #define BIT_MIXED 0xffff
+#define BIT_BASIC (BIT_INT|BIT_FLOAT|BIT_STRING)
+#define BIT_COMPLEX (BIT_ARRAY|BIT_LIST|BIT_OBJECT|BIT_PROGRAM|BIT_MAPPING)
+
 /* Max type with ref count */
 #define MAX_REF_TYPE T_STRING
 /* Max type handled by svalue primitives */
