@@ -368,10 +368,16 @@ int main(int argc, string *argv)
       interactive=Stdio.Readline();
       if(!vars->prefix)
 	prefix=interactive->edit(prefix,"Install prefix: ");
+      if(!sizeof(prefix) || prefix[0] != '/')
+	prefix = combine_path(getcwd(), "../", prefix);
       
       if(!vars->pike_name)
 	vars->pike_name=interactive->edit(
-	  combine_path(vars->exec_prefix || combine_path(prefix, "bin"),"pike"), "Pike binary name: ");
+	  combine_path(vars->exec_prefix || combine_path(prefix, "bin"),
+		       "pike"), "Pike binary name: ");
+      if(!sizeof(vars->pike_name) || vars->pike_name[0] != '/')
+	vars->pike_name = combine_path(getcwd(), "../", vars->pike_name);
+      
       destruct(interactive);
       install_type="--new-style";
 //      trace(2);
