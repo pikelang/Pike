@@ -1,4 +1,5 @@
 #define Node Parser.XML.Tree.Node
+#define XML_COMMENT Parser.XML.Tree.XML_COMMENT
 #define XML_ELEMENT Parser.XML.Tree.XML_ELEMENT
 #define XML_TEXT Parser.XML.Tree.XML_TEXT
 #define DEBUG
@@ -369,8 +370,8 @@ string parse_text(Node n, void|String.Buffer ret) {
       continue;
     }
 
-    //    if(c->get_node_type()==XML_COMMENT)
-    //      continue;
+    if(c->get_node_type()==XML_COMMENT)
+      continue;
 
 #ifdef DEBUG
     if(c->get_node_type()!=XML_ELEMENT) {
