@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: svalue.c,v 1.192 2004/04/06 15:37:56 nilsson Exp $
+|| $Id: svalue.c,v 1.193 2004/04/17 23:22:50 mast Exp $
 */
 
 #include "global.h"
@@ -30,7 +30,7 @@
 
 #define sp Pike_sp
 
-RCSID("$Id: svalue.c,v 1.192 2004/04/06 15:37:56 nilsson Exp $");
+RCSID("$Id: svalue.c,v 1.193 2004/04/17 23:22:50 mast Exp $");
 
 struct svalue dest_ob_zero = {
   T_INT, 0,
@@ -1624,9 +1624,11 @@ PMOD_EXPORT void print_svalue_compact (FILE *out, const struct svalue *s)
       break;
     case T_STRING:
       if (s->u.string->len > 80) {
-	push_string (string_slice (s->u.string, 0, 80));
-	print_svalue (out, Pike_sp - 1);
-	pop_stack();
+	struct svalue sval;
+	sval.type = T_STRING;
+	sval.u.string = string_slice (s->u.string, 0, 80);
+	print_svalue (out, &sval);
+	free_string (sval.u.string);
 	fprintf (out, "... (%d chars more)", s->u.string->len - 80);
 	break;
       }
