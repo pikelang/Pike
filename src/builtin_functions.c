@@ -2,11 +2,11 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: builtin_functions.c,v 1.502 2003/08/05 19:11:00 nilsson Exp $
+|| $Id: builtin_functions.c,v 1.503 2003/08/20 15:53:26 jhs Exp $
 */
 
 #include "global.h"
-RCSID("$Id: builtin_functions.c,v 1.502 2003/08/05 19:11:00 nilsson Exp $");
+RCSID("$Id: builtin_functions.c,v 1.503 2003/08/20 15:53:26 jhs Exp $");
 #include "interpret.h"
 #include "svalue.h"
 #include "pike_macros.h"
@@ -6449,6 +6449,9 @@ void f_everynth(INT32 args)
 }
 
 /*! @decl array(array) transpose(array(array) matrix)
+ *! Takes an array of equally sized arrays (essentially a matrix of size M*N)
+ *! and returns the transposed (N*M) version of it, where rows and columns
+ *! are exchanged for one another.
  */
 PMOD_EXPORT void f_transpose(INT32 args)
 {
