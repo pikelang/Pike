@@ -1,4 +1,4 @@
-# $Id: configure.in,v 1.9 2004/02/06 15:07:53 nisse Exp $
+# $Id: configure.in,v 1.10 2004/02/06 15:55:01 nisse Exp $
 AC_INIT(nettle.cmod)
 AC_CONFIG_HEADER(nettle_config.h)
 
@@ -6,21 +6,17 @@ AC_SET_MAKE
 
 AC_MODULE_INIT()
 
-AC_CHECK_LIB(nettle, nettle_md5_init,
-	     have_nettle=yes,
-	     have_nettle=no,
-	     -lgmp)
+AC_CHECK_LIB(nettle, nettle_md5_init,,, -lgmp)
 
-if test x$have_nettle=xno ; then
-  AC_CHECK_LIB(nettle, md5_init,
-	       have_nettle=yes,,
-	       -lgmp)
+if text x$ac_cv_lib_nettle_nettle_md5_init = xno ; then
+  AC_CHECK_LIB(nettle, md5_init,,, -lgmp)
 fi
 
-if test x$have_nettle=xyes ; then
-   AC_DEFINE([HAVE_LIBNETTLE], 1, [Nettle library available])
+if test x$ac_cv_lib_nettle_nettle_md5_init = xyes ; then
    PIKE_FEATURE_OK(Nettle)
-else
+elif x$ac_cv_lib_nettle_md5_init = xyes ; then
+   PIKE_FEATURE_OK(Nettle)
+else	   
    AC_MSG_WARN([The nettle library not found.
 No crypto functions will be available.]) 
    PIKE_FEATURE_NODEP(Nettle)
