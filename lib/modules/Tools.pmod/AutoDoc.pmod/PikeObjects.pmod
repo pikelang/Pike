@@ -352,7 +352,9 @@ class _Class_or_Module {
 
   int containsDoc() { return documentation != 0 || sizeof(docGroups) > 0; }
 
-  void AddInherit(PikeObject p) { inherits += ({ p }); }
+  void AddInherit(PikeObject p) {
+    inherits += ({ p });
+  }
   void AddChild(_Class_or_Module c) { children += ({ c }); }
 
   PikeObject findChild(string name) {
@@ -424,10 +426,6 @@ class _Class_or_Module {
 class Class {
   inherit _Class_or_Module;
   constant objtype = "class";
-
-  array(Type) createArgTypes;
-  array(string) createArgNames;
-  array(array(string)) createArgModifiers;
 }
 
 class Module {
