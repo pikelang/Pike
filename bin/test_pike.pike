@@ -1,6 +1,6 @@
 #!/usr/local/bin/pike
 
-/* $Id: test_pike.pike,v 1.50 2000/07/26 16:56:42 nilsson Exp $ */
+/* $Id: test_pike.pike,v 1.51 2000/07/28 00:35:50 nilsson Exp $ */
 
 import Stdio;
 
@@ -346,6 +346,7 @@ int main(int argc, array(string) argv)
       tests=tests[0..sizeof(tests)-2];
       
       werror("Doing tests in %s (%d tests)\n",argv[f],sizeof(tests));
+      int qmade, qskipped, qmadep, qskipp;
       
 	for(e=start;e<sizeof(tests);e++)
 	{
@@ -408,7 +409,20 @@ int main(int argc, array(string) argv)
 	  {
 	    if(!verbose)
 	      werror("%6d\r",e+1);
-	  }else if(!quiet) {
+	  }else if(quiet){
+	    if(skip) {
+	      if(qmade) werror(" Made %d test%s.\n", qmade, qmade==1?"":"s");
+	      qmade=0;
+	      qskipp=1;
+	      qskipped++;
+	    }
+	    else {
+	      if(qskipped) werror(" Skipped %d test%s.\n", qskipped, qskipped==1?"":"s");
+	      qskipped=0;
+	      qmadep=1;
+	      qmade++;
+	    }
+	  }else{
 	    /* Use + instead of . so that sendmail and
 	     * cron will not cut us off... :(
 	     */
@@ -662,12 +676,18 @@ int main(int argc, array(string) argv)
 	  if(!--end) break;
 	
 	  a=b=0;
-      }
+	}
 
 	if(istty())
 	{
 	  werror("             \r");
-	}else if(!quiet) {
+	}else if(quiet){
+	  if(!qskipp && !qmadep);
+	  else if(!qskipp) werror("Made all tests\n");
+	  else if(!qmadep) werror("Skipped all tests\n");
+	  else if(qmade) werror(" Made %d test%s.\n", qmade, qmade==1?"":"s");
+	  else if(qskipped) werror(" Skipped %d test%s.\n", qskipped, qskipped==1?"":"s");
+	}else{
 	  werror("\n");
 	}
     }
