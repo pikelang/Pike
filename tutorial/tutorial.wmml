@@ -5938,7 +5938,7 @@ lower_case, upper_case
 
 
 
-<function name=String.common_prefix title="find the longest common prefix">
+<function name=String.common_prefix title="find the longest common beginning">
 <man_syntax>
 string common_prefix(array(string) strs);
 </man_syntax>
