@@ -1,5 +1,5 @@
 /*
- * $Id: nt.c,v 1.45 2001/09/24 14:11:24 grubba Exp $
+ * $Id: nt.c,v 1.46 2001/10/04 14:21:24 nilsson Exp $
  *
  * NT system calls for Pike
  *
@@ -1183,8 +1183,6 @@ void f_NetUserGetInfo(INT32 args)
  *!     @value 20
  *!   @endint
  *!
- *! @param filter
- *!
  *! @returns
  *!   Returns an array on success. Throws errors on failure.
  *!
@@ -2261,12 +2259,6 @@ static int sizeof_wkstauser_info(int level)
  *!
  *!   Get session information.
  *!
- *! @param server
- *!
- *! @param client
- *!
- *! @param user
- *!
  *! @param level
  *!   One of
  *!   @int
@@ -2360,8 +2352,6 @@ static void f_NetSessionEnum(INT32 args)
 /* End netsessionenum */
 
 /*! @decl array(mixed) NetWkstaUserEnum(string|int(0..0) server, int level)
- *!
- *! @param server
  *!
  *! @param level
  *!   One of
