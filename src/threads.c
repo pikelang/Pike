@@ -1,5 +1,5 @@
 #include "global.h"
-RCSID("$Id: threads.c,v 1.109 2000/02/06 19:19:07 mast Exp $");
+RCSID("$Id: threads.c,v 1.110 2000/02/10 18:03:29 hubbe Exp $");
 
 int num_threads = 1;
 int threads_disabled = 0;
@@ -766,6 +766,7 @@ void f_mutex_lock(INT32 args)
 
 	pop_n_elems(args);
 	push_int(0);
+	return;
       }
     case 1:
       break;
