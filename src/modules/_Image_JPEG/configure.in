@@ -1,5 +1,5 @@
 #
-# $Id: configure.in,v 1.15 2002/10/07 11:24:37 kiwi Exp $
+# $Id: configure.in,v 1.16 2002/10/07 11:55:39 kiwi Exp $
 #
 AC_INIT(image_jpeg.c)
 AC_CONFIG_HEADER(config.h)
@@ -56,7 +56,7 @@ int main(int argc, char **argv)
       ])
     ])
     AC_MSG_RESULT($pike_cv_jpeg_height_in_blocks)
-    if test "x$pike_cv_jpeg_height_in_blocks" = "yes"; then
+    if test "x$pike_cv_jpeg_height_in_blocks" = "xyes"; then
       AC_DEFINE(HAVE_JPEG_HEIGHT_IN_BLOCKS)
     else :; fi
   fi
