@@ -24,19 +24,24 @@
   </xsl:template>
 
   <xsl:template match="/module">
-    <head><title>"Testing the templates"</title></head>
+    <html><head><title>Pike Reference Manual</title></head>
     <body bgcolor="{$background}">
+    <h1>Pike Reference Manual - BETA</h1>
+    <p><date type="iso" date="date" /></p>
       <xsl:apply-templates select="docgroup"/>
       <xsl:apply-templates select="module"/>
       <xsl:apply-templates select="class"/>
-    </body>
+    </body></html>
   </xsl:template>
 
   <xsl:template match="module[@name != '']">
     <dl><dt>
-        <font size="+2">M</font><font size="+0">ODULE <b><tt><xsl:value-of select="@name"/></tt></b></font>
+        <table width="100%" cellpadding="3" cellspacing="0" border="0"><tr>
+        <td bgcolor="#EEEEEE">
+           <font size="+3">&nbsp; MODULE <b><xsl:value-of select="@name"/></b></font>
+        </td></tr></table><br />
       </dt><dd>
-        <xsl:apply-templates select="./doc"/>
+        <dl><xsl:apply-templates select="./doc"/></dl>
         <xsl:for-each select="docgroup">
           <xsl:apply-templates select="."/>
         </xsl:for-each>
@@ -52,16 +57,18 @@
 
   <xsl:template match="class">
     <dl>
-      <dt><font size="+2">C</font><font size="+0">LASS <b><tt>
+      <dt><table width="100%" cellpadding="3" cellspacing="0" border="0"><tr>
+        <td bgcolor="#EEEEEE">
+        <font size="+3">&nbsp; CLASS <b>
             <font color="{$program-name}">
               <xsl:for-each select="ancestor::*[@name != '']"
                 ><xsl:value-of select="@name"
                 />.</xsl:for-each><xsl:value-of select="@name"/>
-            </font>
-        </tt></b></font>
+        </font></b></font>
+        </td></tr></table><br />
       </dt>
       <dd>
-        <xsl:apply-templates select="doc"/>
+        <dl><xsl:apply-templates select="doc"/></dl>
         <xsl:if test="inherit">
           <h3>Inherits:</h3>
           <ul><xsl:apply-templates select="inherit"/></ul>
@@ -104,18 +111,19 @@
   </xsl:template>
 
   <xsl:template match="docgroup">
-    <hr clear="all"/>
+    <hr clear="all" noshade="noshade" size="1"/>
     <dl>
       <dt>
-        <font size="+1">
         <xsl:choose>
           <xsl:when test="@homogen-type">
+            <font face="Helvetica">
             <xsl:value-of select="translate(substring(@homogen-type,1,1),'cmvi','CMVI')"/>
             <xsl:value-of select="substring(@homogen-type,2)"/>
+            </font>
             <xsl:choose>
               <xsl:when test="@homogen-name">
 		<!-- FIXME: Should have the module path here. -->
-                <tt><b><xsl:value-of select="concat(' ', concat(@belongs, @homogen-name))"/></b></tt>
+                <font size="+1"><b><xsl:value-of select="concat(' ', concat(@belongs, @homogen-name))"/></b></font>
               </xsl:when>
               <xsl:when test="count(./*[name() != 'doc']) > 1">s
               </xsl:when>
@@ -123,7 +131,6 @@
           </xsl:when>
           <xsl:otherwise>syntax</xsl:otherwise>
         </xsl:choose>
-        </font>
       </dt>
       <dd><p><xsl:apply-templates select="*[name() != 'doc']"/></p></dd>
       <xsl:apply-templates select="doc"/>
@@ -256,12 +263,14 @@
       </font>)</xsl:if>
   </xsl:template>
 
+  <xsl:template match="p" mode="type"></xsl:template>
+
   <!-- DOC -->
 
   <xsl:template match="doc">
     <xsl:if test="text">
-      <dt>Description</dt>
-      <dd><xsl:apply-templates select="text" mode="doc"/></dd>
+      <dt><font face="Helvetica">Description</font></dt>
+      <xsl:apply-templates select="text" mode="doc"/>
     </xsl:if>
     <xsl:apply-templates select="group" mode="doc"/>
   </xsl:template>
@@ -272,27 +281,27 @@
   </xsl:template>
 
   <xsl:template match="param" mode="doc">
-    <dt>Parameter <tt>
+    <dt><font face="Helvetica">Parameter <tt>
         <font color="{$param-name}"><xsl:value-of select="@name"/></font>
-    </tt></dt><dd></dd>
+    </tt></font></dt><dd></dd>
   </xsl:template>
 
   <xsl:template match="seealso" mode="doc">
-    <dt>See also</dt>    
+    <dt><font face="Helvetica">See also</font></dt>    
   </xsl:template>
 
   <xsl:template match="*" mode="doc">
     <xsl:if test="parent::*[name() = 'group']">
-      <dt>
+      <dt><font face="Helvetica">
 	<xsl:value-of select="translate(substring(name(),1,1),'abcdefghijklmnopqrstuvwxyz','ABCDEFGHIJKLMNOPQRSTUVWXYZ')"/>
         <xsl:value-of select="substring(name(),2)"/>
-      </dt>
+      </font></dt>
       <xsl:apply-templates mode="doc"/>
     </xsl:if>
   </xsl:template>
 
   <xsl:template match="text" mode="doc">
-    <dd><font size="-1"><xsl:apply-templates mode="text"/></font></dd>
+    <dd><font face="Helvetica"><xsl:apply-templates mode="text"/></font></dd>
   </xsl:template>
 
   <!-- TEXT -->
@@ -338,6 +347,7 @@
           <dt>
             <tt>
               <xsl:apply-templates select="type" mode="type"/>
+              <xsl:text> </xsl:text>
               <font color="{$literal}"><xsl:value-of select="index"/></font>
             </tt>
           </dt><dd></dd>
@@ -377,15 +387,19 @@
   </xsl:template>
 
   <xsl:template match="ref" mode="text">
-    <font color="red">
-      <tt><xsl:value-of select="."/></tt>
-    </font>
+      <font face="courier" size="-1"><xsl:value-of select="."/></font>
   </xsl:template>
 
-  <xsl:template match="i|p|b|tt|pre|code" mode="text">
+  <xsl:template match="i|p|b|tt" mode="text">
     <xsl:copy select=".">
       <xsl:apply-templates mode="text"/>
     </xsl:copy>
+  </xsl:template>
+
+  <xsl:template match="pre|code" mode="text">
+    <font face="courier"><xsl:copy select=".">
+      <xsl:apply-templates mode="text"/>
+    </xsl:copy></font>
   </xsl:template>
 
   <xsl:template match="text()" mode="text">
