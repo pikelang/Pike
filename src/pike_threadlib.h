@@ -1,5 +1,5 @@
 /*
- * $Id: pike_threadlib.h,v 1.3 2001/08/30 23:09:09 mast Exp $
+ * $Id: pike_threadlib.h,v 1.4 2001/09/05 01:42:13 hubbe Exp $
  */
 #ifndef PIKE_THREADLIB_H
 #define PIKE_THREADLIB_H
@@ -422,15 +422,38 @@ PMOD_EXPORT extern int t_flag;
  * there is an attempt to use the global variables in an unsafe
  * environment.
  */
+
+
+#ifdef __GCC__
+#ifdef __i386__
+
+/* This is a rather drastic measure since it
+ * obliterates backtraces, oh well, gcc doesn't work
+ * very well sometimes anyways... -Hubbe
+ */
+#define HIDE_PC								\
+  ;void *pc_=(((unsigned char **)__builtin_frame_address(0))[1]);	\
+  (((unsigned char **)__builtin_frame_address(0))[1])=0
+#define REVEAL_PC \
+  (((unsigned char **)__builtin_frame_address(0))[1])=pc_;
+#endif
+#endif
+
+#ifndef HIDE_PC
+#define HIDE_PC
+#define REVEAL_PC
+#endif
+
 #define HIDE_GLOBAL_VARIABLES() do { \
    int Pike_interpreter =0; \
    int pop_n_elems = 0; \
-   int push_sp_mark = 0, pop_sp_mark = 0, threads_disabled = 1
+   int push_sp_mark = 0, pop_sp_mark = 0, threads_disabled = 1 \
+   HIDE_PC
 
 /* Note that the semi-colon below is needed to add an empty statement
  * in case there is a label before the macro.
  */
-#define REVEAL_GLOBAL_VARIABLES() ; } while(0)
+#define REVEAL_GLOBAL_VARIABLES() ; REVEAL_PC } while(0)
 #else /* PIKE_DEBUG */
 #define HIDE_GLOBAL_VARIABLES()
 #define REVEAL_GLOBAL_VARIABLES()
