@@ -19,7 +19,7 @@ constant defined = __builtin.function_defined;
 //!  Whatever the supplied function @[f] returns.
 //!
 //! @example
-//!   @code{
+//! @code
 //!   class Product(string name, string version)
 //!   {
 //!     string _sprintf()
@@ -34,7 +34,7 @@ constant defined = __builtin.function_defined;
 //!	 Product(pike/7.1.11),
 //!	 Product(whitefish/0.1)
 //!   })
-//!   @}
+//! @endcode
 mixed splice_call(array args, function f, mixed|void ... extra)
 {
   return f(@args, @extra);
