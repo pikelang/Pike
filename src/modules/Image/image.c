@@ -1,4 +1,4 @@
-/* $Id: image.c,v 1.15 1997/03/21 16:56:20 per Exp $ */
+/* $Id: image.c,v 1.16 1997/03/23 14:31:57 mirar Exp $ */
 
 #include "global.h"
 
@@ -7,7 +7,7 @@
 
 #include "stralloc.h"
 #include "global.h"
-RCSID("$Id: image.c,v 1.15 1997/03/21 16:56:20 per Exp $");
+RCSID("$Id: image.c,v 1.16 1997/03/23 14:31:57 mirar Exp $");
 #include "types.h"
 #include "pike_macros.h"
 #include "object.h"
@@ -1077,7 +1077,7 @@ void image_distancesq(INT32 args)
 
    if (!THIS->img) error("no image\n");
 
-   getrgb(THIS,0,args,"image->threshold()");
+   getrgb(THIS,0,args,"image->distancesq()");
 
    o=clone_object(image_program,0);
    img=(struct image*)o->storage;
@@ -1682,6 +1682,8 @@ void pike_module_init()
 		"function(array(array(int)):string)",0);
    add_function("to8bit_rgbcube",image_to8bit_rgbcube,
 		"function(int,int,int,void|string:string)",0);
+   add_function("tobitmap",image_tobitmap,
+		"function(:string)",0);
    add_function("to8bit_rgbcube_rdither",image_to8bit_rgbcube_rdither,
 		"function(int,int,int,void|string:string)",0);
 

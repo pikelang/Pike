@@ -1,4 +1,4 @@
-/* $Id: blit.c,v 1.3 1997/03/20 07:56:02 mirar Exp $ */
+/* $Id: blit.c,v 1.4 1997/03/23 14:31:52 mirar Exp $ */
 #include "global.h"
 
 #include <math.h>
@@ -507,8 +507,8 @@ void image_add_layers(INT32 args)
       x2=sp[2-args].u.integer;
       y2=sp[3-args].u.integer;
 
-      if (x2>x1) x2^=x1,x1^=x2,x2^=x1;
-      if (y2>y1) y2^=y1,y1^=y2,y2^=y1;
+      if (x2<x1) x2^=x1,x1^=x2,x2^=x1;
+      if (y2<y1) y2^=y1,y1^=y2,y2^=y1;
 
       if (x2>THIS->xsize-1 ||
           y2>THIS->ysize-1 ||

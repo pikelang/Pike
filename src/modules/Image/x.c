@@ -1,4 +1,4 @@
-/* $Id: x.c,v 1.4 1997/03/22 21:01:00 grubba Exp $ */
+/* $Id: x.c,v 1.5 1997/03/23 14:32:04 mirar Exp $ */
 
 #include "global.h"
 
@@ -7,7 +7,7 @@
 
 #include "stralloc.h"
 #include "global.h"
-RCSID("$Id: x.c,v 1.4 1997/03/22 21:01:00 grubba Exp $");
+RCSID("$Id: x.c,v 1.5 1997/03/23 14:32:04 mirar Exp $");
 #include "types.h"
 #include "pike_macros.h"
 #include "object.h"
@@ -338,4 +338,44 @@ void image_to8bit_rgbcube_rdither(INT32 args)
   push_string(end_shared_string(res));
 }
 
+void image_tobitmap(INT32 args)
+{
+   int xs;
+   int i,j,left,bit,dbits;
+   struct pike_string *res;
+   unsigned char *d;
+   rgb_group *s;
+
+   pop_n_elems(args);
+   if (!THIS->img) error("No image.\n");
+
+   xs=(THIS->xsize+7)>>3;
+
+   res=begin_shared_string(xs*THIS->ysize);
+   d=(unsigned char *)res->str;
+
+   s=THIS->img;
+
+   j=THIS->ysize;
+   while (j--)
+   {
+      i=THIS->xsize;
+      while (i)
+      {
+	 left=8;
+	 bit=1;
+	 dbits=0;
+	 while (left-- && i)
+	 {
+	    if (s->r||s->g||s->b) dbits|=bit;
+	    bit<<=1;
+	    s++;
+	    i--;
+	 }
+	 *(d++)=(unsigned char)dbits;
+      }
+   }
+
+   push_string(end_shared_string(res));
+}
 
