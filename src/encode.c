@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: encode.c,v 1.212 2004/05/11 19:49:35 grubba Exp $
+|| $Id: encode.c,v 1.213 2004/05/12 08:13:30 grubba Exp $
 */
 
 #include "global.h"
@@ -31,7 +31,7 @@
 #include "opcodes.h"
 #include "peep.h"
 
-RCSID("$Id: encode.c,v 1.212 2004/05/11 19:49:35 grubba Exp $");
+RCSID("$Id: encode.c,v 1.213 2004/05/12 08:13:30 grubba Exp $");
 
 /* #define ENCODE_DEBUG */
 
@@ -4019,9 +4019,11 @@ static void decode_value2(struct decode_data *data)
 	  if (PIKE_CONCAT(local_num_, NAME) != p->PIKE_CONCAT(num_,NAME)) { \
 	    ref_push_program (p);					\
 	    decode_error(Pike_sp - 1, NULL,				\
-			 "Value mismatch for num_" TOSTR(NAME) ": %d != %d\n", \
+			 "Value mismatch for num_" TOSTR(NAME) ": "	\
+			 "%d != %d (bytecode method: %d)\n",		\
 			 PIKE_CONCAT(local_num_, NAME),			\
-			 p->PIKE_CONCAT(num_, NAME));			\
+			 p->PIKE_CONCAT(num_, NAME),			\
+			 bytecode_method);				\
           }
 #include "program_areas.h"
 
