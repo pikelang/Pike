@@ -1011,23 +1011,110 @@ void do_default_sprintf( int args, int offset, int len )
 	  docs[progname+last_function] += "\n"+line;
       }
     }
+    else if(sscanf(line, "array %s %s[%s];", string type, line, string size ) )
+    {
+      string ptype;
+      int and, star;
+      type = String.trim_whites( type );
+      and = sscanf( type, "&%s", type ) || sscanf(line,"&%s",line);
+      star = sscanf( type, "*%s", type ) || sscanf(line,"*%s",line);;
+      line = String.trim_whites( line );
+      size = String.trim_whites( size );
+      size = replace( size, "this", 
+                      castname("GTK_"+upper_case( progname ))+"( THIS->obj )");
+      switch( type )
+      {
+       case "int":    ptype = "int";   break;
+       case "float":  ptype = "float";   break;
+       case "double": ptype = "float";  break;
+       case "string": ptype = "string"; break;
+       default:       ptype = "object"; break;
+      }
+      signal_doc = 0;
+      last_function="get_"+line;
+      NUMBER_FUNCTION();
+      struct[progname]["get_"+line] = "\"function(void:array("+ptype+"))\"";
+      true_types[progname+last_function] = ({ "array("+type+")", "" });
+      
+      emit("/* "+oline+" */\n");
+      emit_proto("void pgtk_"+progname+"_get_"+line+"(int args)\n");
+      emit("{\n");
+      emit("  int n;\n");
+      emit("  my_pop_n_elems(args);\n");
+      emit(" for( n = 0; n<"+size+"; n++ )\n");
+      if( ptype != "object" )
+      {
+        emit("   push_"+(ptype=="string"?"text":ptype)+"( "+
+             (and?"&":"")+(star?"*":"")+
+             "("+castname("GTK_"+upper_case( progname ))+
+             "( THIS->obj )->"+line+"[n]));\n");
+      } else {
+        if( sscanf( type, "GDK.%s", type ) )
+          emit("    push_gdkobject( "+
+               (and?"&":"")+(star?"*":"")+
+               "("+castname("GTK_"+upper_case( progname ))+
+               "( THIS->obj )->"+line+"[n]), "+type+");\n" );
+        else
+        {
+          sscanf( type, "GTK.%s", type );
+          type = lower_case( type );
+          emit("    push_gtkobjectclass( "+
+               (and?"&":"")+(star?"*":"")+
+               "("+castname("GTK_"+upper_case( progname ))+
+               "( THIS->obj )->"+line+"[n]), pgtk_"+type+"_program);\n" );
+        }
+      }
+      emit("  f_aggregate( "+size+" );\n");
+      emit("}\n");
+    }
     else if(sscanf(line, "member %s %s;", string type, line ) )
     {
+      string ptype;
+      int and, star;
       signal_doc=0;
       line = String.trim_whites( line );
       type = String.trim_whites( type );
+      and = sscanf( type, "&%s", type ) || sscanf(line,"&%s",line);
+      star = sscanf( type, "*%s", type ) || sscanf(line,"*%s",line);;
       last_function="get_"+line;
+      switch( type )
+      {
+       case "int":    ptype = "int";   break;
+       case "float":  ptype = "float";   break;
+       case "double": ptype = "float";  break;
+       case "string": ptype = "string"; break;
+       default:       ptype = "object"; break;
+      }
       NUMBER_FUNCTION();
-      struct[progname]["get_"+line] = "\"function(void:"+type+")\"";
-      true_types[progname+"get_"+line] = ({ type, "" });
+      struct[progname][last_function] = "\"function(void:"+ptype+")\"";
+      true_types[progname+last_function] = ({ type, "" });
 
       emit("/* "+oline+" */\n");
       emit_proto("void pgtk_"+progname+"_get_"+line+"(int args)\n");
       emit("{\n");
       emit("  my_pop_n_elems(args);\n");
-      emit("  push_"+(type=="string"?"text":type)+"( "+
-           castname("GTK_"+upper_case( progname ))
-           +"( THIS->obj )->"+line+");\n");
+      if( ptype != "object" )
+      {
+        emit(" push_"+(ptype=="string"?"text":ptype)+"( "+
+             (and?"&":"")+(star?"*":"")+
+             "("+castname("GTK_"+upper_case( progname ))+
+             "( THIS->obj )->"+line+"));\n");
+      } else {
+        if( sscanf( type, "GDK.%s", type ) )
+          emit("  push_gdkobject( "+
+               (and?"&":"")+(star?"*":"")+
+               "("+castname("GTK_"+upper_case( progname ))+
+               "( THIS->obj )->"+line+"), "+type+");\n" );
+        else
+        {
+          sscanf( type, "GTK.%s", type );
+          type = lower_case( type );
+          emit("  push_gtkobjectclass( "+
+               (and?"&":"")+(star?"*":"")+
+               "("+castname("GTK_"+upper_case( progname ))+
+               "( THIS->obj )->"+line+"), pgtk_"+type+"_program);\n" );
+        }
+      }
       emit("}\n");
     }
     else if(sscanf(line, "setmember %s %s;", string type, line))
