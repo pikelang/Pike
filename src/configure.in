@@ -1,4 +1,4 @@
-AC_REVISION("$Id: configure.in,v 1.123 1997/09/26 01:27:44 hubbe Exp $")
+AC_REVISION("$Id: configure.in,v 1.124 1997/09/29 00:54:29 hubbe Exp $")
 AC_INIT(interpret.c)
 AC_CONFIG_HEADER(machine.h)
 
@@ -1570,8 +1570,12 @@ if test -z "$LDSHARED"
 then
 	case "$pike_cv_sys_os" in
 	AIX*)
-	 # LDSHARED="ld_so_aix \$(CC)"
-	 LDSHARED="ld -G -bnogc -bnox"
+         if test "$GCC" = yes ; then
+           LDSHARED="ld -G -bexpall"
+         else
+           # Dynamic linking turned off for AIX-cc
+           LDSHARED="ld"
+         fi
 	;;
 	IRIX*) LDSHARED="ld -shared";;
 	SunOS*) LDSHARED="ld";;
@@ -1583,7 +1587,7 @@ then
 	DYNIX/ptx*) LDSHARED="ld -G";;
 	next) LDSHARED='$(CC) $(CFLAGS) -nostdlib -r';;
 	Linux*) LDSHARED="gcc -shared";;
-       GNU*) LDSHARED="ld -Bshareable";;
+        GNU*) LDSHARED="ld -Bshareable";;
 	FreeBSD*) LDSHARED="ld -Bshareable";;
 	NetBSD) LDSHARED="ld -Bshareable";;
 	OpenBSD*) LDSHARED="ld -Bshareable";;
@@ -1619,19 +1623,19 @@ if test -z "$LINKFORSHARED"
 then
   if test "$GCC" = yes ; then
     case $pike_cv_sys_os in
-#	AIX*)	LINKFORSHARED="-Wl,-bE:pike.exp";;
+	AIX*)	LINKFORSHARED="-Wl,-bexpall -Wl,-brtl";;
 	hp*|HP*) LINKFORSHARED="-Wl,-E";;
 	Linux*) LINKFORSHARED="-rdynamic";;
-       GNU*) LINKFORSHARED="-rdynamic";;
+        GNU*) LINKFORSHARED="-rdynamic";;
 	next) LINKFORSHARED="-u libsys_s";;
 	SCO_SV*) LINKFORSHARED="-fpic -Wl,-Bexport";;
     esac
   else
     case $pike_cv_sys_os in
-#	AIX*)	LINKFORSHARED="-Wl,-bE:pike.exp ";;
+	AIX*)	LINKFORSHARED="-Wl,-bexpall -Wl,-brtl";;
 	hp*|HP*) LINKFORSHARED="-Wl,-E";;
 	Linux*) LINKFORSHARED="-rdynamic";;
-       GNU*) LINKFORSHARED="-rdynamic";;
+        GNU*) LINKFORSHARED="-rdynamic";;
 	next) LINKFORSHARED="-u libsys_s";;
 	SCO_SV*) LINKFORSHARED="-Bdynamic -dy -Wl,-Bexport";;
     esac
