@@ -17,7 +17,7 @@ class Fifo {
       object key=lock::lock();
       while(!num) r_cond::wait(key);
       tmp=buffer[ptr++];
-      r_ptr%=sizeof(buffer);
+      ptr%=sizeof(buffer);
       num--;
       w_cond::signal();
       return tmp;
