@@ -7,7 +7,7 @@
       if(fun<0)
       {
 	pop_n_elems(Pike_sp-save_sp);
-	push_int(0);
+	push_undefined();
 	return 0;
       }
 
