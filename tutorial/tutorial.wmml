@@ -5436,22 +5436,16 @@ Please note that these functions are available globally, you do not
 need to <tt>import System</tt> to use these functions.
 
 <hr noshade size=1>
-<anchor name=chroot>
-<dl>
-<dt><encaps>NAME</encaps><dd>
-<tt>chroot</tt> - change the root directory
-<p>
-<dt><encaps>SYNTAX</encaps><dd>
-<tt>int chroot(string <I>newroot</I>);<br>
-or<br>
+<method name=chroot title="change the root directory">
+<man_syntax>
+int chroot(string <I>newroot</I>);<br>
 int chroot(object(File) <I>obj</I>);<br>
-</tt>
-<p>
-<dt><encaps>DESCRIPTION</encaps><dd>
+</man_syntax>
+<man_description>
 Changes the root directory for this process to the indicated
 directory.
-<p>
-<dt><encaps>NOTA BENE</encaps><dd>
+</man_description>
+<man_note>
 Since this function modifies the directory structure as seen from
 Pike, you have to modify the environment variables PIKE_MODULE_PATH
 and PIKE_INCLUDE_PATH to compensate for the new root-directory.
@@ -5459,165 +5453,127 @@ and PIKE_INCLUDE_PATH to compensate for the new root-directory.
 system call.
 The second variant only works on systems that also have
 the fchroot(2) system call.
+</man_note>
+</method>
 
-<p>
-</dl>
-
-</anchor>
 <hr noshade size=1>
-<anchor name=getegid>
-<dl>
-<dt><encaps>NAME</encaps><dd>
-<tt>getegid</tt> - get the effective group ID
-<p>
-<dt><encaps>SYNTAX</encaps><dd>
-<tt>int getegid();<br>
-</tt>
-<p>
-<dt><encaps>DESCRIPTION</encaps><dd>
+
+<method name=getegid title="get the effective group ID">
+<man_syntax>
+int getegid();<br>
+</man_syntax>
+<man_description>
 Get the effective group ID.
-<p>
-<dt><encaps>SEE ALSO</encaps><dd>
-<link to=setuid>setuid</link>, <link to=getuid>getuid</link>, <link to=setgid>setgid</link>, <link to=getgid>getgid</link>, <link to=seteuid>seteuid</link>, <link to=geteuid>geteuid</link> and <link to=setegid>setegid</link>
-<p>
-</dl>
+</man_description>
+<man_see>
+setuid, getuid, setgid, getgid, seteuid, geteuid, setegid
+</man_see>
+</method>
 
-</anchor>
 <hr noshade size=1>
-<anchor name=geteuid>
-<dl>
-<dt><encaps>NAME</encaps><dd>
-<tt>geteuid</tt> - get the effective user ID
-<p>
-<dt><encaps>SYNTAX</encaps><dd>
-<tt>int geteuid();<br>
-</tt>
-<p>
-<dt><encaps>DESCRIPTION</encaps><dd>
+
+<method name=geteuid title="get the effective user ID">
+<man_syntax>
+int geteuid();<br>
+</man_syntax>
+<man_description>
 Get the effective user ID.
-<p>
-<dt><encaps>SEE ALSO</encaps><dd>
-<link to=setuid>setuid</link>, <link to=getuid>getuid</link>, <link to=setgid>setgid</link>, <link to=getgid>getgid</link>, <link to=seteuid>seteuid</link>, <link to=setegid>setegid</link> and <link to=getegid>getegid</link>
-<p>
-</dl>
+</man_description>
+<man_see>
+setuid, getuid, setgid, getgid, seteuid, setegid, getegid
+</man_see>
+</method>
 
-</anchor>
 <hr noshade size=1>
-<anchor name=getgid>
-<dl>
-<dt><encaps>NAME</encaps><dd>
-<tt>getgid</tt> - get the group ID
-<p>
-<dt><encaps>SYNTAX</encaps><dd>
-<tt>int getgid();<br>
-</tt>
-<p>
-<dt><encaps>DESCRIPTION</encaps><dd>
+
+<method name=getgid title="get the group ID">
+<man_syntax>
+int getgid();<br>
+</man_syntax>
+<man_description>
 Get the real group ID.
-<p>
-<dt><encaps>SEE ALSO</encaps><dd>
-<link to=setuid>setuid</link>, <link to=getuid>getuid</link>, <link to=setgid>setgid</link>, <link to=seteuid>seteuid</link>, <link to=geteuid>geteuid</link>, <link to=setegid>setegid</link> and <link to=getegid>getegid</link>
-<p>
-</dl>
+</man_description>
+<man_see>
+setuid, getuid, setgid, seteuid, geteuid, setegid, getegid
+</man_see>
+</method>
 
-</anchor>
 <hr noshade size=1>
-<anchor name=gethostbyaddr>
-<dl>
-<dt><encaps>NAME</encaps><dd>
-<tt>gethostbyaddr</tt> - gets information about a host given its address
-<p>
-<dt><encaps>SYNTAX</encaps><dd>
-<tt>array gethostbyaddr(string <I>addr</I>);<br>
-</tt>
-<p>
-<dt><encaps>DESCRIPTION</encaps><dd>
+
+<method name=gethostbyaddr title="gets information about a host given its address">
+<man_syntax>
+array gethostbyaddr(string <I>addr</I>);<br>
+</man_syntax>
+<man_description>
 Returns an array with information about the specified IP address.
 <p>The returned array contains the same information as that returned
 by gethostbyname().
-<p>
-<dt><encaps>NOTA BENE</encaps><dd>
+</man_description>
+<man_note>
 This function only exists on systems that have the gethostbyaddr(2)
 or similar system call.
-<p>
-<dt><encaps>SEE ALSO</encaps><dd>
-<link to=gethostbyname>gethostbyname</link>
-<p>
-</dl>
+</man_note>
+<man_see>
+gethostbyname
+</man_see>
+</method>
 
-</anchor>
 <hr noshade size=1>
-<anchor name=gethostbyname>
-<dl>
-<dt><encaps>NAME</encaps><dd>
-<tt>gethostbyname</tt> - gets information about a host given its name
-<p>
-<dt><encaps>SYNTAX</encaps><dd>
-<tt>array gethostbyname(string <I>hostname</I>);<br>
-</tt>
-<p>
-<dt><encaps>DESCRIPTION</encaps><dd>
+
+<method name=gethostbyname title="gets information about a host given its name">
+<man_syntax>
+array gethostbyname(string <I>hostname</I>);<br>
+</man_syntax>
+<man_description>
 Returns an array with information about the specified host.
 <p>The array contains three elements:
 <p>The first element is the hostname.
 <p>The second element is an array(string) of IP numbers for the host.
 <p>The third element is an array(string) of aliases for the host.
-<p>
-<dt><encaps>NOTA BENE</encaps><dd>
+</man_description>
+<man_note>
 This function only exists on systems that have the gethostbyname(2)
 or similar system call.
-<p>
-<dt><encaps>SEE ALSO</encaps><dd>
-<link to=gethostbyaddr>gethostbyaddr</link>
-<p>
-</dl>
+</man_note>
+<man_see>
+gethostbyaddr
+</man_see>
+</method>
 
-</anchor>
 <hr noshade size=1>
-<anchor name=gethostname>
-<dl>
-<dt><encaps>NAME</encaps><dd>
-<tt>gethostname</tt> - get the name of this host
-<p>
-<dt><encaps>SYNTAX</encaps><dd>
-<tt>string gethostname();<br>
-</tt>
-<p>
-<dt><encaps>DESCRIPTION</encaps><dd>
+
+<method name=gethostname title="get the name of this host">
+<man_syntax>
+string gethostname();<br>
+</man_syntax>
+<man_description>
 Returns a string with the name of the host.
-<p>
-<dt><encaps>NOTA BENE</encaps><dd>
+</man_description>
+<man_note>
 This function only exists on systems that have the gethostname(2)
 or uname(2) system calls.
+</man_note>
+</method>
 
-<p>
-</dl>
-
-</anchor>
 <hr noshade size=1>
-<anchor name=getpgrp>
-<dl>
-<dt><encaps>NAME</encaps><dd>
-<tt>getpgrp</tt> - get the process group ID
-<p>
-<dt><encaps>SYNTAX</encaps><dd>
-<tt>int getpgrp();<br>
-or<br>
+
+<method name=getpgrp title="get the process group ID">
+<man_syntax>
+int getpgrp();<br>
 int getpgrp(int <I>pid</I>);<br>
-</tt>
-<p>
-<dt><encaps>DESCRIPTION</encaps><dd>
+</man_syntax>
+<man_description>
 With no arguments or with <i>pid</i> equal to zero, returns the process
 group ID of this process.
 <p>If <i>pid</i> is specified, returns the process group ID of that process.
-<p>
-<dt><encaps>SEE ALSO</encaps><dd>
-<link to=getpid>getpid</link> and <link to=getppid>getppid</link>
-<p>
-</dl>
+</man_description>
+<man_see>
+getpid, getppid
+</man_see>
+</method>
 
-</anchor>
 <hr noshade size=1>
+
 <anchor name=getpid>
 <dl>
 <dt><encaps>NAME</encaps><dd>
