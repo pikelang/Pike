@@ -1,9 +1,9 @@
-$Id: README-CVS,v 1.22 2003/09/27 14:00:08 bill Exp $
+$Id: README-CVS,v 1.23 2003/11/05 02:15:55 nilsson Exp $
 
 
 HOW TO BUILD PIKE FROM CVS
 
-If you like to live at the bleeding edge you can download pike from CVS
+If you like to live at the bleeding edge you can download Pike from CVS
 with all the latest additions from the developers.  There are two
 major branches in the archive, the latest stable branch and latest
 development branch.  Stable versions have an even minor version number,
@@ -18,7 +18,7 @@ NOTE: If you plan on building Pike from CVS, you must have a compatible
 version of Autoconf installed. Autoconf version 2.13 and 2.52 are known to 
 work. Versions 2.53 through at least 2.57 are known to not work.
 
-There are a few simple steps to get pike from cvs:
+There are a few simple steps to get Pike from cvs:
 
 1. Get a recent version of cvs.
 
@@ -40,7 +40,7 @@ bison and gcc (to generate the dependency files; another compiler can
 be used to do the actual compilation).
 
 The top-level makefile (in this directory, not the src directory) has
-all the magic you need to build pike directly from CVS.  Just type
+all the magic you need to build Pike directly from CVS.  Just type
 'make'.  It is preferable to build from the toplevel since it avoids
 contaminating the source tree with object files and other generated
 files.
@@ -51,11 +51,11 @@ install             Compile and install in default location.
 install_interactive Interactive install.
 tinstall            Test install, i.e. install in build directory.
 verify              Do a test install and run the testsuite with the
-                    installed pike.
-just_verify         Run the testsuite directly with the pike binary in
+                    installed Pike.
+just_verify         Run the testsuite directly with the Pike binary in
                     the build tree.
-run_hilfe           Run hilfe without installing pike.
-pike                Build only the pike core, do not recurse into the
+run_hilfe           Run hilfe without installing Pike.
+pike                Build only the Pike core, do not recurse into the
                     module directories.
 documentation       Build the reference documentation from the
                     source.  See the refdoc subdirectory.
@@ -65,18 +65,18 @@ depend              Build the files that tracks dependencies between
                     change, but not if you only intend to use the
                     build tree once.  It's not run by default.
 source              Prepare the source tree for compilation without
-                    the need for a preexisting installed pike.
+                    the need for a preexisting installed Pike.
 force_autoconfig    Force a build of the configure scripts.  This is
                     useful e.g. if a new module directory is added in
                     the CVS.
 force_configure     Force configure to be run (recursively).  If
-                    you've installed a new library and want pike to
+                    you've installed a new library and want Pike to
                     detect it, then the simplest way is to remove
                     config.cache in the build directory (or perhaps
                     just delete the relevant variables in it) and then
                     use this target.
 dump_modules        Dump the Pike modules directly in the build tree.
-                    That makes pike load faster if it's run directly
+                    That makes Pike load faster if it's run directly
                     from there, e.g. through the bin/pike script (see
                     below).  These dumped modules are not used for
                     anything else.  After this has been run once, any
@@ -137,10 +137,10 @@ Some options for the configure script are:
 --without-dynamic-modules compile statically, no dynamic loading
                           used (makes the binary larger)
 --without-mysql           compile without mysql support
---with-profiling          enables profiling pike code but slows
+--with-profiling          enables profiling Pike code but slows
                           down interpreter a little
 --with-poll               use poll instead of select
---with-dmalloc            compile with memory tracking, makes pike
+--with-dmalloc            compile with memory tracking, makes Pike
                           very slow, use for debugging only.
 --with-security           enable internal object security system
 
@@ -169,26 +169,26 @@ Instructions if you want to do the build more manually:
    from machine.h.in.  If you don't use an absolute path the debug
    information will be all warped...
 
-4. Run 'make depend'
-   This updates all the Makefile.in files in the source dir to contain
-   the correct dependencies.
-
-5. If needed, edit config.h and Makefile to suit your purposes.  We
+4. If needed, edit config.h and Makefile to suit your purposes.  We
    have tried to make it so that you don't have to change config.h or
    Makefile at all.  If you need to do what you consider 'unnecessary
    changes' then mail us and we'll try to fit it into configure.  If
    possible, use gnu make, gcc, gnu sed and bison.
 
-6. Run 'make'
-   This builds pike.
+5. Run 'make'
+   This builds Pike.
 
-7. Optionally, run 'make verify' to check that the compiled driver
+6. Optionally, run 'make verify' to check that the compiled driver
    works as it should (might be a good idea).  This will take a little
    time and use quite a lot of memory, because the test program is
    quite large.  If everything works out fine no extra messages are
    written.
 
-8. If you want to install Pike, type 'make install'.
+7) If you want to install Pike, write 'make install'.  This will put
+   your Pike in <prefix>/pike/<version>/. This way, you can install
+   many Pike versions in parallell on the system if you want to.  To
+   put it below <prefix> directly, as other packages usually do, run
+   'make INSTALLARGS="--traditional" install' instead.
 
 After doing this, DO NOT commit the generated files.  They are placed
 in .cvsignore files so you shouldn't have to bother with them.
@@ -197,6 +197,8 @@ in .cvsignore files so you shouldn't have to bother with them.
 IF IT DOESN'T WORK
 
  o Try again.
+
+ o Try running 'make depend'.
 
  o Your sh might be too buggy to run ./configure (this is the case on
    A/UX).  Try using bash, zsh or possibly ksh.  To use bash, first
@@ -237,7 +239,7 @@ include as much as you can muster of the following:
   o The Pike version.  (Try pike --version or look in src/version.h)
   o What kind of system hardware/software you use (OS, compiler, etc.)
   o The piece of code that crashes or bugs, preferably in a very
-    small pike-script with the bug isolated.  Please send a complete
+    small Pike-script with the bug isolated.  Please send a complete
     running example of something that causes the bug.
   o A description of what it is that bugs and when.
   o If you know how, then also give us a backtrace and dump of vital

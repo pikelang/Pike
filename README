@@ -48,10 +48,10 @@ yourself, try the Old instructions:
    --without-dynamic-modules compile statically, no dynamic loading
                              used (makes binary larger)
    --without-mysql           compile without mysql support
-   --with-profiling          enables profiling pike code but slows
+   --with-profiling          enables profiling Pike code but slows
                              down interpreter a little
    --with-poll               use poll instead of select
-   --with-dmalloc            compile with memory tracking, makes pike
+   --with-dmalloc            compile with memory tracking, makes Pike
                              very slow, use for debugging only
    --without-copt            compile without -O2
    --without-bignums         disable support for large integers
@@ -69,14 +69,14 @@ yourself, try the Old instructions:
    modules.  If the configure script doesn't find them, Pike will
    still compile, but without those modules.
 
-4) If needed, edit config.h and Makefile to suit your purposes.  I've
+4) If needed, edit config.h and Makefile to suit your purposes.  We've
    tried to make it so that you don't have to change config.h or
    Makefile at all.  If you need to do what you consider 'unnecessary
    changes' then mail us and we'll try to fit it into configure.  If
    possible, use gnu make, gcc, gnu sed and bison
 
 5) Run 'make'
-   This builds pike.
+   This builds Pike.
 
 6) Optionally, run 'make verify' to check that the compiled driver
    works as it should (might be a good idea).  This will take a little
@@ -85,9 +85,9 @@ yourself, try the Old instructions:
    written. You will need GNU m4 for this stage to generate the test
    case files.
 
-8) If you want to install Pike, write 'make install'.  This will put
-   your pike in <prefix>/pike/<version>/. This way, you can install
-   many pike versions in parallell on the system if you want to.  To
+7) If you want to install Pike, write 'make install'.  This will put
+   your Pike in <prefix>/pike/<version>/. This way, you can install
+   many Pike versions in parallell on the system if you want to.  To
    put it below <prefix> directly, as other packages usually do, run
    'make INSTALLARGS="--traditional" install' instead.
 
@@ -147,7 +147,7 @@ FreeBSD 3.x: Symptoms are similar to IRIX, but the problem has
 
 Linux: Not all linux variations have 100% working threads, in fact
       most libc5 systems do not work very well with threads.  Threads
-      support is enabled by default on Linux, but I recommend running
+      support is enabled by default on Linux, but we recommend running
       'make verify' after compilation.  This will (hopefully) tell you
       if your threads are not working.
 
@@ -165,7 +165,7 @@ muster of the following:
     src/version.h)
   o What kind of system hardware/software you use (OS, compiler, etc.)
   o The piece of code that crashes or bugs, preferably in a very
-    small pike-script with the bug isolated.  Please send a complete
+    small Pike-script with the bug isolated.  Please send a complete
     running example of something that makes the interpreter bug.
   o A description of what it is that bugs and when.
   o If you know how, then also give us a backtrace and dump of vital
