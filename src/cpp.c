@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: cpp.c,v 1.144 2004/06/30 09:34:33 grubba Exp $
+|| $Id: cpp.c,v 1.145 2004/07/01 21:42:08 nilsson Exp $
 */
 
 #include "global.h"
@@ -29,9 +29,6 @@
 #include <ctype.h>
 
 #define sp Pike_sp
-
-#undef ATTRIBUTE
-#define ATTRIBUTE(X)
 
 #define CPP_NO_OUTPUT 1		/* Inside false section of #if/#else */
 #define CPP_EXPECT_ELSE 2	/* Expect #else/#elif/#elseif. */
@@ -154,7 +151,6 @@ static void cpp_error_vsprintf (struct cpp *this, const char *fmt,
 }
 
 static void cpp_error_sprintf(struct cpp *this, const char *fmt, ...)
-  ATTRIBUTE((format(printf,2,3)))
 {
   va_list args;
   va_start(args,fmt);
@@ -164,7 +160,6 @@ static void cpp_error_sprintf(struct cpp *this, const char *fmt, ...)
 
 static void cpp_handle_exception(struct cpp *this,
 				 const char *cpp_error_fmt, ...)
-  ATTRIBUTE((format(printf,2,3)))
 {
   struct svalue thrown;
   move_svalue (&thrown, &throw_value);
@@ -193,7 +188,6 @@ static void cpp_handle_exception(struct cpp *this,
 }
 
 static void cpp_warning(struct cpp *this, const char *cpp_warn_fmt, ...)
-     ATTRIBUTE((format(printf,2,3)))
 {
   char msg[8192];
   va_list args;
@@ -1681,7 +1675,6 @@ void f_cpp(INT32 args)
   this.current_line=1;
   this.compile_errors=0;
   this.defines=0;
-  this.warn_if_constant_throws=0;
 
   this.data = data;
   add_ref(data);
@@ -1727,8 +1720,11 @@ void f_cpp(INT32 args)
 
   if(args > 5)
     cpp_change_compat(&this, compat_major, compat_minor);
+
   if(args > 6)
     this.warn_if_constant_throws = wicit;
+  else
+    this.warn_if_constant_throws=0;
 
   if (use_initial_predefs)
     /* Typically compiling the master here. */
