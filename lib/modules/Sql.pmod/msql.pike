@@ -1,5 +1,6 @@
 // Msql module support stuff, (C) 1997 Francesco Chemolli <kinkie@kame.usr.dsi.unimi.it>
 
+#if constant(Msql.msql)
 inherit Msql.msql;
 
 //in c it's too hard, we're better off doing it in pike
@@ -11,3 +12,9 @@ mapping(string:mapping(string:mixed)) list_fields(string table, string|void wild
 	return mkmapping(a,Array.map(a,lambda(string s, mapping m) 
 			{return m[s];},result));
 }
+#else /* !constant(Msql.msql) */
+void create()
+{
+  destruct();
+}
+#endif /* constant(Msql.msql) */
