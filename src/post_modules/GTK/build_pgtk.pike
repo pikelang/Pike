@@ -1285,9 +1285,18 @@ void do_default_sprintf( int args, int offset, int len )
     string flop = replace(upper_case(w),
 			  ({ "GDK_", "GDK" }),
 			  ({ "GDK", "GDK_" }));
-    type_switch += "#ifdef GTK_TYPE_"+flop+"\n"
+  if (search(upper_case(w), "GNOME") > -1) {
+      // comes in as GNOME_XXX_XXX
+      // should be GNOME_TYPE_XXX_XXX
+      string flop = replace(upper_case(w),"GNOME_", "GNOME_TYPE_");
+      type_switch += "#ifdef "+flop+"\n"
+                "  if(PGTK_CHECK_TYPE(widget, "+flop+")) "
+                "return pgtk_"+w+"_program;\n#endif\n"; 
+      } else {
+       type_switch += "#ifdef GTK_TYPE_"+flop+"\n"
                 "  if(PGTK_CHECK_TYPE(widget, GTK_TYPE_"+flop+")) "
                 "return pgtk_"+w+"_program;\n#endif\n";
+    }
     emit_nl("}\n");
   }
   emit_nl( default_sprintf );
