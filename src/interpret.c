@@ -5,7 +5,7 @@
 \*/
 /**/
 #include "global.h"
-RCSID("$Id: interpret.c,v 1.135 2000/01/22 22:13:08 grubba Exp $");
+RCSID("$Id: interpret.c,v 1.136 2000/02/15 02:39:01 grubba Exp $");
 #include "interpret.h"
 #include "object.h"
 #include "program.h"
@@ -396,7 +396,7 @@ void print_return_value(void)
       s[TRACE_LEN]=0;
       s[TRACE_LEN-1]='.';
       s[TRACE_LEN-2]='.';
-      s[TRACE_LEN-2]='.';
+      s[TRACE_LEN-3]='.';
     }
     fprintf(stderr,"-    value: %s\n",s);
     free(s);
