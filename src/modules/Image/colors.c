@@ -1,7 +1,7 @@
 /*
 **! module Image
 **! note
-**!	$Id: colors.c,v 1.17 1999/05/23 17:46:38 mirar Exp $
+**!	$Id: colors.c,v 1.18 1999/05/24 12:09:35 mirar Exp $
 **! submodule Color
 **!
 **!	This module keeps names and easy handling 
@@ -97,7 +97,7 @@
 #include "global.h"
 #include <config.h>
 
-RCSID("$Id: colors.c,v 1.17 1999/05/23 17:46:38 mirar Exp $");
+RCSID("$Id: colors.c,v 1.18 1999/05/24 12:09:35 mirar Exp $");
 
 #include "config.h"
 
@@ -946,7 +946,7 @@ int image_color_svalue(struct svalue *v,rgb_group *rgb)
       if (sp[-1].type==T_OBJECT)
       {
 	 struct color_struct *cs=(struct color_struct*)
-	    get_storage(v->u.object,image_color_program);
+	    get_storage(sp[-1].u.object,image_color_program);
 	 *rgb=cs->rgb;
 	 pop_stack();
 	 return 1;
@@ -995,116 +995,118 @@ static void image_get_color(INT32 args)
    if (!colors)
       make_colors();
 
-   mapping_index_no_free(&s,colors,sp-1);
-   if (s.type==T_INT)
+   if (sp[-1].type==T_STRING)
    {
-      object_index_no_free2(&s,THISOBJ,sp-1);
-      if (s.type!=T_INT)
+      mapping_index_no_free(&s,colors,sp-1);
+      if (s.type==T_OBJECT)
       {
 	 pop_stack();
 	 *(sp++)=s;
 	 return;
       }
+      else
+	 free_svalue(&s);
+   }
 
-      if (sp[-1].type==T_STRING &&
-	  sp[-1].u.string->size_shift==0)
+   if (sp[-1].type==T_STRING &&
+       sp[-1].u.string->size_shift==0)
+   {
+      if (sp[-1].u.string->len>=4 &&
+	  sp[-1].u.string->str[0]=='#')
       {
-	 if (sp[-1].u.string->len>=4 &&
-	     sp[-1].u.string->str[0]=='#')
-	 {
-	    /* #rgb, #rrggbb, #rrrgggbbb, etc */
+	 /* #rgb, #rrggbb, #rrrgggbbb, etc */
 	 
-	    unsigned long i=sp[-1].u.string->len-1,j,k,rgb[3];
-	    unsigned char *src=sp[-1].u.string->str+1;
-	    if (!(i%3))
+	 unsigned long i=sp[-1].u.string->len-1,j,k,rgb[3];
+	 unsigned char *src=sp[-1].u.string->str+1;
+	 if (!(i%3))
+	 {
+	    i/=3;
+	    for (j=0; j<3; j++)
 	    {
-	       i/=3;
-	       for (j=0; j<3; j++)
+	       unsigned INT32 z=0;
+	       for (k=0; k<i; k++)
 	       {
-		  unsigned INT32 z=0;
-		  for (k=0; k<i; k++)
+		  if (HEXTONUM(*src)==-1)
 		  {
-		     if (HEXTONUM(*src)==-1)
-		     {
-			pop_stack();
-			push_int(0);
-			sp[-1].subtype=NUMBER_UNDEFINED;
-			return;
-		     }
-		     z=z*16+HEXTONUM(*src),src++;
+		     pop_stack();
+		     push_int(0);
+		     sp[-1].subtype=NUMBER_UNDEFINED;
+		     return;
 		  }
-		  switch (i)
-		  {
-		     case 1: z=(z*0x11111111)>>(32-COLORLBITS); break;
-		     case 2: z=(z*0x01010101)>>(32-COLORLBITS); break;
-		     case 3: z=(z*0x00100100+(z>>8))>>(32-COLORLBITS); break;
-
-		     case 4:
-		     case 5: 
-		     case 6: 
-		     case 7: 
-		     case 8:
-			if (i*4<COLORLBITS)
-			   z=(z<<(COLORLBITS-i*4))+(z>>(i*8-COLORLBITS));
-			else
-			   z=z>>(i*4-COLORLBITS);
-			break;
-		  }
-		  rgb[j]=z;
+		  z=z*16+HEXTONUM(*src),src++;
 	       }
-	       pop_n_elems(args);
-	       _image_make_rgbl_color((INT32)rgb[0],
-				      (INT32)rgb[1],
-				      (INT32)rgb[2]);
-	       return;
+	       switch (i)
+	       {
+		  case 1: z=(z*0x11111111)>>(32-COLORLBITS); break;
+		  case 2: z=(z*0x01010101)>>(32-COLORLBITS); break;
+		  case 3: z=(z*0x00100100+(z>>8))>>(32-COLORLBITS); break;
+
+		  case 4:
+		  case 5: 
+		  case 6: 
+		  case 7: 
+		  case 8:
+		     if (i*4<COLORLBITS)
+			z=(z<<(COLORLBITS-i*4))+(z>>(i*8-COLORLBITS));
+		     else
+			z=z>>(i*4-COLORLBITS);
+		     break;
+	       }
+	       rgb[j]=z;
 	    }
+	    pop_n_elems(args);
+	    _image_make_rgbl_color((INT32)rgb[0],
+				   (INT32)rgb[1],
+				   (INT32)rgb[2]);
+	    return;
 	 }
-	 if (sp[-1].u.string->len>=4 &&
-	     sp[-1].u.string->str[0]=='@')
+      }
+      if (sp[-1].u.string->len>=4 &&
+	  sp[-1].u.string->str[0]=='@')
+      {
+	 /* @h,s,v; h=0..359, s,v=0..100 */
+	 stack_dup();
+	 push_text("@%f,%f,%f\n");
+	 f_sscanf(2);
+	 if (sp[-1].type==T_ARRAY &&
+	     sp[-1].u.array->size==3)
 	 {
-	    /* @h,s,v; h=0..359, s,v=0..100 */
-	    stack_dup();
-	    push_text("@%f,%f,%f\n");
-	    f_sscanf(2);
-	    if (sp[-1].type==T_ARRAY &&
-		sp[-1].u.array->size==3)
-	    {
-	       float h,s,v;
-	       stack_swap();
-	       pop_stack();
-	       sp--;
-	       push_array_items(sp->u.array);
-	       get_all_args("Image.Color()",3,"%f%f%f",&h,&s,&v);
-	       pop_n_elems(3);
-	       push_int((INT32)(h/360.0*256.0));
-	       push_int((INT32)(s/100.0*255.4));
-	       push_int((INT32)(v/100.0*255.4));
-	       image_make_hsv_color(3);
-	       return;
-	    }
+	    float h,s,v;
+	    stack_swap();
 	    pop_stack();
+	    sp--;
+	    push_array_items(sp->u.array);
+	    get_all_args("Image.Color()",3,"%f%f%f",&h,&s,&v);
+	    pop_n_elems(3);
+	    push_int((INT32)(h/360.0*256.0));
+	    push_int((INT32)(s/100.0*255.4));
+	    push_int((INT32)(v/100.0*255.4));
+	    image_make_hsv_color(3);
+	    return;
 	 }
-	 if (sp[-1].u.string->len>=4 &&
-	     sp[-1].u.string->str[0]=='%')
+	 pop_stack();
+      }
+      if (sp[-1].u.string->len>=4 &&
+	  sp[-1].u.string->str[0]=='%')
+      {
+	 /* @c,m,y,k; 0..100 */
+	 stack_dup();
+	 push_text("%%%f,%f,%f,%f\n");
+	 f_sscanf(2);
+	 if (sp[-1].type==T_ARRAY &&
+	     sp[-1].u.array->size==4)
 	 {
-	    /* @c,m,y,k; 0..100 */
-	    stack_dup();
-	    push_text("%%%f,%f,%f,%f\n");
-	    f_sscanf(2);
-	    if (sp[-1].type==T_ARRAY &&
-		sp[-1].u.array->size==4)
-	    {
-	       stack_swap();
-	       pop_stack();
-	       sp--;
-	       push_array_items(sp->u.array);
-	       image_make_cmyk_color(4);
-	       return;
-	    }
+	    stack_swap();
 	    pop_stack();
+	    sp--;
+	    push_array_items(sp->u.array);
+	    image_make_cmyk_color(4);
+	    return;
 	 }
-	 for (n=0; (size_t)n<sizeof(callables)/sizeof(callables[0]); n++)
-	    if (sp[-1].u.string->len>(INT32)strlen(callables[n]) &&
+	 pop_stack();
+      }
+      for (n=0; (size_t)n<sizeof(callables)/sizeof(callables[0]); n++)
+	 if (sp[-1].u.string->len>(INT32)strlen(callables[n]) &&
 	     memcmp(sp[-1].u.string->str,callables[n],strlen(callables[n]))==0)
 	 {
 	    push_int(strlen(callables[n]));
@@ -1117,37 +1119,33 @@ static void image_get_color(INT32 args)
 	    pop_stack();
 	    return;
 	 }
-	 if (sp[-1].u.string->len>=4 &&
-	     sp[-1].u.string->str[0]=='g')
+      if (sp[-1].u.string->len>=4 &&
+	  sp[-1].u.string->str[0]=='g')
+      {
+	 /* greyx; x=0..99 */
+	 stack_dup();
+	 push_text("grey%f\n");
+	 f_sscanf(2);
+	 if (sp[-1].type==T_ARRAY &&
+	     sp[-1].u.array->size==1)
 	 {
-	    /* greyx; x=0..99 */
-	    stack_dup();
-	    push_text("grey%f\n");
-	    f_sscanf(2);
-	    if (sp[-1].type==T_ARRAY &&
-		sp[-1].u.array->size==1)
-	    {
-	       float f;
-	       f=sp[-1].u.array->item[0].u.float_number;
-	       pop_stack();
-	       sp--;
-	       
-	       return;
-	    }
+	    float f;
+	    f=sp[-1].u.array->item[0].u.float_number;
 	    pop_stack();
+	    sp--;
+	       
+	    return;
 	 }
+	 pop_stack();
       }
-
-      /* try other stuff here */
-
-      pop_stack();
-      push_int(0);
-      sp[-1].subtype=NUMBER_UNDEFINED;
-      return;
    }
 
+   /* try other stuff here */
+
    pop_stack();
-   *(sp++)=s;
+   push_int(0);
+   sp[-1].subtype=NUMBER_UNDEFINED;
+   return;
 }
 
 static void image_guess_color(INT32 args)
@@ -1175,6 +1173,19 @@ static void image_guess_color(INT32 args)
    f_add(2);
 
    image_get_color(1);
+}
+
+static void image_colors_index(INT32 args)
+{
+   struct svalue s;
+   object_index_no_free2(&s,THISOBJ,sp-1);
+   if (s.type!=T_INT)
+   {
+      pop_stack();
+      *(sp++)=s;
+      return;
+   }
+   image_get_color(args);
 }
 
 static void image_make_color(INT32 args)
@@ -1476,8 +1487,10 @@ void init_image_colors(void)
 
    /* this is the Image.Color stuff */
    
-   ADD_FUNCTION("`[]",image_get_color,tFunc(tStr,tObj),0);
-   ADD_FUNCTION("`()",image_make_color,tFuncV(,tOr(tStr,tInt),tObj),0);
+   ADD_FUNCTION("`[]",image_colors_index,tFunc(tStr,tObj),0);
+   ADD_FUNCTION("`()",image_make_color,
+		tOr(tFunc(tStr,tObj),
+		    tFunc(tInt tInt tInt,tObj)),0);
    ADD_FUNCTION("rgb",image_make_rgb_color,tFunc(tInt tInt tInt,tObj),0);
    ADD_FUNCTION("hsv",image_make_hsv_color,
 		tOr(tFunc(tInt tInt tInt,tObj),
