@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: xml.c,v 1.61 2003/01/26 16:11:27 mirar Exp $
+|| $Id: xml.c,v 1.62 2003/03/11 15:00:07 grubba Exp $
 */
 
 #include "global.h"
@@ -724,9 +724,10 @@ static void simple_read_pubid_literal(struct xmldata *);
 static int low_parse_xml(struct xmldata *data,
 			 struct pike_string *end,
 			 int toplevel);
-static void xmlerror(char *desc, struct xmldata *data);
+static void xmlerror(char *desc, struct xmldata *data,
+		     struct pike_string *tag_name);
 
-#define XMLERROR(desc) xmlerror(desc,data)
+#define XMLERROR(desc) xmlerror(desc,data,NULL)
 
 #define VOIDIFY(X) do { struct svalue *save_sp=sp; 	\
        X;						\
@@ -764,7 +765,7 @@ static int gobble(struct xmldata *data, char *s)
 	  POKE(X, PEEK(0));				\
 	  READ(1);					\
 	}else{						\
-	  XMLERROR("Name expected");		\
+	  XMLERROR("Name expected");			\
 	}						\
 	while(!XMLEOF() && isNameChar(PEEK(0)))		\
 	{						\
@@ -782,7 +783,7 @@ static int gobble(struct xmldata *data, char *s)
 	  POKE(X, PEEK(0));				\
 	  READ(1);					\
 	}else{						\
-	  XMLERROR("Name expected");		\
+	  XMLERROR("Name expected");			\
 	}						\
 	while(!XMLEOF() && isNameChar(PEEK(0)))		\
 	{						\
@@ -1123,10 +1124,15 @@ static void sys(struct xmldata *data)
 
 #define SYS() sys(data)
 
-static void xmlerror(char *desc, struct xmldata *data)
+static void xmlerror(char *desc, struct xmldata *data,
+		     struct pike_string *tag_name)
 {
   push_constant_text("error");
-  push_int(0); /* no name */
+  if (tag_name) {
+    ref_push_string(tag_name);	/* Name of tag that triggered the error. */
+  } else {
+    push_int(0); /* no name */
+  }
   push_int(0); /* no attributes */
   push_text(desc);
   low_sys(data);
@@ -1561,7 +1567,7 @@ void read_choice_seq_or_name(struct xmldata *data, int maybe_pcdata)
 	switch(PEEK(0))
 	{
 	  case 0:
-	    XMLERROR("End of xml while readin ELEMENT declaration.");
+	    XMLERROR("End of xml while reading ELEMENT declaration.");
 	    
 	  default:
 	    XMLERROR("Expected | or ,");
@@ -2554,12 +2560,12 @@ static struct pike_string *very_low_parse_xml(struct xmldata *data,
 	    SIMPLE_READNAME();
 	    SKIPSPACE();
 	    if(PEEK(0)!='>')
-	      XMLERROR("Missing > in end tag.");
+	      xmlerror("Missing > in end tag.", data, sp[-1].u.string);
 	    else
 	      READ(1);
 	    if(end!=sp[-1].u.string)
 	    {
-	      XMLERROR("Unmatched end tag.");
+	      xmlerror("Unmatched end tag.", data, sp[-1].u.string);
 	    }else{
 	      end=0;
 	    }
@@ -2601,10 +2607,17 @@ static struct pike_string *very_low_parse_xml(struct xmldata *data,
 	      SIMPLE_READ_ATTRIBUTES(m);
 	    }
 
+	    /* At this point the stack contains the following:
+	     *
+	     * sp[-3]: ">".
+	     * sp[-2]: tag_name.
+	     * sp[-1]: attributes.
+	     */
+
 	    switch(PEEK(0))
 	    {
 	      default:
-		XMLERROR("Failed to find end of tag.");
+		xmlerror("Failed to find end of tag.", data, sp[-2].u.string);
 		pop_n_elems(3);
 		break;
 
@@ -2624,14 +2637,15 @@ static struct pike_string *very_low_parse_xml(struct xmldata *data,
 		}
 
 		if(low_parse_xml(data, sp[-2].u.string,0))
-		  XMLERROR("Unmatched tag.");
+		  xmlerror("Unmatched tag.", data, sp[-2].u.string);
 		SYS();
 		break;
 
 	      case '/':
 		READ(1);
 		if(PEEK(0)!='>')
-		  XMLERROR("Missing '>' in empty tag.");
+		  xmlerror("Missing '>' in empty tag.", data,
+			   sp[-2].u.string);
 		READ(1);
 		/* Self-contained tag */
 		free_string(sp[-3].u.string);
@@ -2878,6 +2892,7 @@ static void autoconvert(INT32 args)
 	pop_stack();
 	push_string(end_shared_string(t));
       }
+      /* FALL_THROUGH */
 	
       case 0xfeff: /* UTF-16, big-endian */
 	IF_XMLDEBUG(fprintf(stderr,"UTF-16, big endian detected.\n"));
