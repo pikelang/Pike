@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: signal_handler.c,v 1.240 2003/03/19 14:22:46 grubba Exp $
+|| $Id: signal_handler.c,v 1.241 2003/12/10 13:02:42 jonasw Exp $
 */
 
 #include "global.h"
@@ -26,7 +26,7 @@
 #include "main.h"
 #include <signal.h>
 
-RCSID("$Id: signal_handler.c,v 1.240 2003/03/19 14:22:46 grubba Exp $");
+RCSID("$Id: signal_handler.c,v 1.241 2003/12/10 13:02:42 jonasw Exp $");
 
 #ifdef HAVE_PASSWD_H
 # include <passwd.h>
@@ -69,6 +69,10 @@ RCSID("$Id: signal_handler.c,v 1.240 2003/03/19 14:22:46 grubba Exp $");
 
 #ifdef HAVE_FCNTL_H
 #include <fcntl.h>
+#endif
+
+#ifdef HAVE_SYS_IOCTL_H
+#include <sys/ioctl.h>
 #endif
 
 #ifdef HAVE_ERRNO_H
