@@ -1,12 +1,12 @@
 /*
- * $Id: image_ttf.c,v 1.7 1998/11/11 16:20:28 per Exp $
+ * $Id: image_ttf.c,v 1.8 1999/02/01 03:11:30 per Exp $
  */
 
 #include "config.h"
 
 
 #include "global.h"
-RCSID("$Id: image_ttf.c,v 1.7 1998/11/11 16:20:28 per Exp $");
+RCSID("$Id: image_ttf.c,v 1.8 1999/02/01 03:11:30 per Exp $");
 
 #ifdef HAVE_LIBTTF
 #include <freetype.h>
@@ -628,7 +628,7 @@ static void ttf_instance_setc(struct image_ttf_face_struct *face_s,
    if ((res=TT_Get_Face_Properties(face_s->face,&prop)))
       my_tt_error(where,"TT_Get_Face_Properties",res);
 
-   resol=50; /* should be 72, but glyphs fit using this value */
+   resol=58; /* should be 72, but glyphs fit using this value */
       /*
          (int)((72*(prop.horizontal->Ascender+
 		    prop.horizontal->Descender)/
@@ -668,7 +668,9 @@ static void ttf_instance_setc(struct image_ttf_face_struct *face_s,
    face_i->baseline=
       (int)(((float)(towhat/64.0)*prop.horizontal->Ascender)/
 	    (prop.horizontal->Ascender-prop.horizontal->Descender));
+
    face_i->height=towhat/64;
+
    face_i->trans=
       (32+(int)(64*((towhat/64.0)*prop.horizontal->Ascender)/
 		(prop.horizontal->Ascender-prop.horizontal->Descender)))&~63;
@@ -1169,8 +1171,8 @@ static void image_ttf_faceinstance_write(INT32 args)
 
 	    if ((res=TT_Get_Glyph_Pixmap(glyph,
 					 &rastermap,
-					 -metrics.bbox.xMin+
-					 pos%64,
+					 -metrics.bbox.xMin
+                                         /*+pos%64*/,
 					 face_i->height*64-
 					 face_i->trans)))
 	       { errs="TT_Get_Glyph_Pixmap: "; break; }
