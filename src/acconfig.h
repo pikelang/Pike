@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: acconfig.h,v 1.137 2004/03/10 17:10:22 grubba Exp $
+|| $Id: acconfig.h,v 1.138 2004/03/12 14:06:57 grubba Exp $
 */
 
 #ifndef MACHINE_H
@@ -327,8 +327,11 @@
 /* You have cl-type __declspec? */
 #undef HAVE_DECLSPEC
 
-/* Do your compiler grock 'volatile' */
+/* Does your compiler grock 'volatile' */
 #define VOLATILE volatile
+
+/* Define to empty if your compiler doesn't support C99's restrict keyword. */
+#undef restrict
 
 /* Define this if your compiler doesn't allow cast of void * to function pointer */
 #undef NO_CAST_TO_FUN

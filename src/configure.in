@@ -1,4 +1,4 @@
-AC_REVISION("$Id: configure.in,v 1.817 2004/03/12 11:52:42 grubba Exp $")
+AC_REVISION("$Id: configure.in,v 1.818 2004/03/12 14:06:56 grubba Exp $")
 AC_INIT(interpret.c)
 AC_CONFIG_HEADER(machine.h)
 
@@ -2493,6 +2493,17 @@ const int foo(int bar) { return bar; }
   else
     :
   fi
+fi
+
+AC_MSG_CHECKING([if restrict keyword is available (C99)])
+AC_CACHE_VAL(pike_cv_keyword_restrict, [
+  AC_TRY_COMPILE([
+extern int foo(void *bar[restrict], void *restrict baz);
+  ], [], [ pike_cv_keyword_restrict="yes" ], [ pike_cv_keyword_restrict="no" ])
+])
+AC_MSG_RESULT($pike_cv_keyword_restrict)
+if test "x$pike_cv_keyword_restrict" = "xno"; then
+  AC_DEFINE(restrict, [ /* Not supported */ ])
 fi
 
 AC_C_CHAR_UNSIGNED
