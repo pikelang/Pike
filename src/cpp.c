@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: cpp.c,v 1.149 2004/11/02 00:38:46 mast Exp $
+|| $Id: cpp.c,v 1.150 2004/11/05 20:57:34 nilsson Exp $
 */
 
 #include "global.h"
@@ -114,7 +114,7 @@ struct cpp
   int compat_major;
   int compat_minor;
   struct pike_string *data;
-  int warn_if_constant_throws;
+  int picky_cpp;
 };
 
 struct define *defined_macro =0;
@@ -446,7 +446,7 @@ static int do_safe_index_call(struct cpp *this, struct pike_string *s)
       free_svalue (&throw_value);
       throw_value.type = T_INT;
     }
-    else if(this->warn_if_constant_throws) {
+    else if(this->picky_cpp) {
       cpp_warning (this, "Error indexing module with %S.", s);
     }
     res = 0;
@@ -547,7 +547,7 @@ void cpp_func_constant(struct cpp *this, INT32 args)
 	free_svalue(&throw_value);
 	throw_value.type = T_INT;
 	res = 0;
-      } else if(this->warn_if_constant_throws) {
+      } else if(this->picky_cpp) {
 	cpp_warning (this, "Error resolving %S.", str);
 	res = 0;
       }
@@ -1586,7 +1586,7 @@ static void insert_current_major(struct cpp *this,
 /*! @decl string cpp(string data, string|void current_file, @
  *!                  int|string|void charset, object|void handler, @
  *!                  void|int compat_major, void|int compat_minor, @
- *!                  void|int warn_if_constant_throws)
+ *!                  void|int picky_cpp)
  *!
  *! Run a string through the preprocessor.
  *!
@@ -1637,7 +1637,7 @@ void f_cpp(INT32 args)
 
   struct object *handler = 0;
 
-  int compat_major, compat_minor, wicit;
+  int compat_major, compat_minor, picky_cpp;
 
   ONERROR err;
 #ifdef PIKE_DEBUG
@@ -1646,7 +1646,7 @@ void f_cpp(INT32 args)
 
   get_all_args("cpp", args, "%t.%T%*%O%d%d%d", &data, &current_file,
 	       &charset_sv, &handler, &compat_major, &compat_minor,
-	       &wicit);
+	       &picky_cpp);
 
   this.current_line=1;
   this.compile_errors=0;
@@ -1698,9 +1698,9 @@ void f_cpp(INT32 args)
     cpp_change_compat(&this, compat_major, compat_minor);
 
   if(args > 6)
-    this.warn_if_constant_throws = wicit;
+    this.picky_cpp = picky_cpp;
   else
-    this.warn_if_constant_throws=0;
+    this.picky_cpp = 0;
 
   if (use_initial_predefs)
     /* Typically compiling the master here. */
