@@ -369,7 +369,8 @@ static private class Extractor {
         foreach (decls, PikeObject obj)
           if (obj->objtype == "class" &&
 	      ([object(Class)]obj)->containsDoc())
-            extractorError("undocumented class contains doc comments");
+            extractorError("undocumented class %O contains doc comments",
+			   obj->name);
 
       // Objects added by @decl replace the true objects:
       if (sizeof(docDecls)) {
