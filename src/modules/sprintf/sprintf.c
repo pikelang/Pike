@@ -103,7 +103,7 @@
 */
 
 #include "global.h"
-RCSID("$Id: sprintf.c,v 1.66 2000/07/18 19:59:27 grubba Exp $");
+RCSID("$Id: sprintf.c,v 1.67 2000/08/08 19:20:51 grubba Exp $");
 #include "error.h"
 #include "array.h"
 #include "svalue.h"
@@ -144,7 +144,7 @@ struct format_info
   char *fi_free_string;
   struct pike_string *to_free_string;
   PCHARP b;
-  int len;
+  ptrdiff_t len;
   int width;
   int precision;
   PCHARP pad_string;
@@ -801,9 +801,9 @@ INLINE static int do_one(struct format_stack *fs,
 static void low_pike_sprintf(struct format_stack *fs,
 			     struct string_builder *r,
 			     PCHARP format,
-			     int format_len,
+			     ptrdiff_t format_len,
 			     struct svalue *argp,
-			     int num_arg,
+			     ptrdiff_t num_arg,
 			     int nosnurkel)
 {
   int argument=0;
@@ -1153,7 +1153,7 @@ static void low_pike_sprintf(struct format_stack *fs,
 	if(base)
 	{
 	  char *p = x;
-	  int l;
+	  ptrdiff_t l;
 
 	  if(mask_size || val>=0)
 	  {
@@ -1207,7 +1207,7 @@ static void low_pike_sprintf(struct format_stack *fs,
 	x=(char *)xalloc(100+MAXIMUM(fs->fsp->precision,3));
 	fs->fsp->b=MKPCHARP(x,0);
 	sprintf(buffer,"%%*.*%c",EXTRACT_PCHARP(a));
-	GET_FLOAT(tf);
+	DO_NOT_WARN(GET_FLOAT(tf));
 
 	if(fs->fsp->precision<0) {
 	  double m=pow(10.0, (double)fs->fsp->precision);
@@ -1255,7 +1255,7 @@ static void low_pike_sprintf(struct format_stack *fs,
 	x=(char *)alloca(l);
 	fs->fsp->b=MKPCHARP(x,0);
 	fs->fsp->len=l;
-	GET_FLOAT(tf);
+	DO_NOT_WARN(GET_FLOAT(tf));
 	switch(l) {
 	case 4:
 #ifdef FLOAT_IS_IEEE_BIG
