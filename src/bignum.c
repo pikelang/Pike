@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: bignum.c,v 1.27 2002/10/11 01:39:28 nilsson Exp $
+|| $Id: bignum.c,v 1.28 2003/01/11 01:52:55 mast Exp $
 */
 
 #include "global.h"
@@ -27,39 +27,33 @@ struct svalue auto_bignum_program = {
 PMOD_EXPORT int gmp_library_loaded=0;
 int gmp_library_resolving=0;
 
-static void resolve_auto_bignum_program(void)
+void init_auto_bignum(void)
 {
-  if(auto_bignum_program.type == T_INT)
-  {
-    if(gmp_library_resolving)
-      Pike_fatal("Recursive GMP resolving!\n");
+  if(gmp_library_resolving)
+    Pike_fatal("Recursive GMP resolving!\n");
 
-    gmp_library_resolving=1;
-    push_text("Gmp.bignum");
-    SAFE_APPLY_MASTER("resolv", 1);
+  gmp_library_resolving=1;
+  push_text("Gmp.bignum");
+  SAFE_APPLY_MASTER("resolv", 1);
     
-    if(sp[-1].type != T_FUNCTION && sp[-1].type != T_PROGRAM)
-      Pike_error("Failed to resolv Gmp.mpz!\n");
+  if(sp[-1].type != T_FUNCTION && sp[-1].type != T_PROGRAM)
+    Pike_error("Failed to resolv Gmp.mpz!\n");
     
-    auto_bignum_program=sp[-1];
-    sp--;
-    dmalloc_touch_svalue(sp);
-    gmp_library_resolving=0;
-  }
+  auto_bignum_program=sp[-1];
+  sp--;
+  dmalloc_touch_svalue(sp);
+  gmp_library_resolving=0;
 }
 
 PMOD_EXPORT struct program *get_auto_bignum_program(void)
 {
-  resolve_auto_bignum_program();
   return program_from_function(&auto_bignum_program);
 }
 
 PMOD_EXPORT struct program *get_auto_bignum_program_or_zero(void)
 {
-  if(!gmp_library_loaded ||
-     gmp_library_resolving  ||
-     !master_object) return 0;
-  resolve_auto_bignum_program();
+  if (auto_bignum_program.type == T_INT)
+    return 0;
   return program_from_function(&auto_bignum_program);
 }
 
@@ -71,7 +65,6 @@ void exit_auto_bignum(void)
 
 PMOD_EXPORT void convert_stack_top_to_bignum(void)
 {
-  resolve_auto_bignum_program();
   apply_svalue(&auto_bignum_program, 1);
 
   if(sp[-1].type != T_OBJECT)
@@ -80,7 +73,6 @@ PMOD_EXPORT void convert_stack_top_to_bignum(void)
 
 PMOD_EXPORT void convert_stack_top_with_base_to_bignum(void)
 {
-  resolve_auto_bignum_program();
   apply_svalue(&auto_bignum_program, 2);
 
   if(sp[-1].type != T_OBJECT)
@@ -95,12 +87,9 @@ int is_bignum_object(struct object *o)
    * /Hubbe
    */
 
-  if(!gmp_library_loaded ||
-     gmp_library_resolving ||
-     !master_object)
+  if (auto_bignum_program.type == T_INT)
     return 0; /* not possible */
  
-  resolve_auto_bignum_program();
   return o->prog == program_from_svalue(&auto_bignum_program);
 }
 
@@ -159,8 +148,6 @@ PMOD_EXPORT void push_int64(INT64 i)
       i = -i;
       neg = 1;
     }
-
-    resolve_auto_bignum_program();
 
 #if PIKE_BYTEORDER == 1234
     {

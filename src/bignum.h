@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: bignum.h,v 1.17 2002/12/17 09:17:29 grubba Exp $
+|| $Id: bignum.h,v 1.18 2003/01/11 01:52:55 mast Exp $
 */
 
 #include "global.h"
@@ -49,6 +49,7 @@ extern int gmp_library_loaded;
 /* Prototypes begin here */
 struct program *get_auto_bignum_program(void);
 struct program *get_auto_bignum_program_or_zero(void);
+void init_auto_bignum(void);
 void exit_auto_bignum(void);
 void convert_stack_top_to_bignum(void);
 void convert_stack_top_with_base_to_bignum(void);

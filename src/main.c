@@ -2,11 +2,11 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: main.c,v 1.163 2003/01/09 18:06:26 grubba Exp $
+|| $Id: main.c,v 1.164 2003/01/11 01:52:55 mast Exp $
 */
 
 #include "global.h"
-RCSID("$Id: main.c,v 1.163 2003/01/09 18:06:26 grubba Exp $");
+RCSID("$Id: main.c,v 1.164 2003/01/11 01:52:55 mast Exp $");
 #include "fdlib.h"
 #include "backend.h"
 #include "module.h"
@@ -704,6 +704,10 @@ int dbm_main(int argc, char **argv)
     master();
     call_callback(& post_master_callbacks, 0);
     free_callback_list(& post_master_callbacks);
+
+#ifdef AUTO_BIGNUM
+    init_auto_bignum();
+#endif
 
     TRACE((stderr, "Call master->_main()...\n"));
 
