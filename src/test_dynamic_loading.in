@@ -4,12 +4,18 @@ dnl This is a M4|sh script
 changequote([[,]])
 define([[TESTNUM]],0)
 
+failed=0
+successful=0
+total=0
+
 define([[Tlow_test]],[[
   define([[TESTNUM]],incr(TESTNUM))
   echo "======= test TESTNUM ======="
   $1
+  total=`expr $total + 1`
   if ./dynloadtest ; then
     echo "Test TESTNUM ok!"
+    successful=`expr $successful + 1`
   else
     echo "Test TESTNUM failed!"
     for c in MODC
@@ -20,6 +26,7 @@ define([[Tlow_test]],[[
     done
     echo "Archiving test files as dynload_[[]]TESTNUM[[]].tar"
     tar cvf dynload_[[]]TESTNUM[[]].tar dynload*.{c,h,o,so}
+    failed=`expr $failed + 1`
   fi
 ]])dnl
 
@@ -215,3 +222,25 @@ EXPORT int foo()
 
 
 TTest( [[ EXPORT int foo() { return neg_func(-4) * 4.0 + 1.5 != dubbel; } ]] )
+
+
+
+TTest( [[
+#include <stdio.h>
+
+FILE *f;
+
+EXPORT int foo()
+{
+  f=fopen("dynloadtest.c","rb");
+  if(!f) exit(7);
+  if(fseek(f,10,SEEK_SET))
+    exit(9);
+  return 0;
+}
+]] )
+
+
+
+
+echo "Successful tests: $successful   Failed tests: $failed   Total: $total"
