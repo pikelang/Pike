@@ -6,6 +6,39 @@
 function resolve_reference; 
 string image_path = "images/";
 
+mapping lay = ([
+ "docgroup" : "\n\n<hr clear='all' />\n<dl>",
+ "_docgroup" : "</dl>\n",
+ "dochead" : "<dt>",
+ "_dochead" : "</dt>\n",
+ "ndochead" : "<dd><p>",
+ "_ndochead" : "</p></dd>\n",
+
+ "dochead" : "\n<dt><font face='Helvetica'>",
+ "_dochead" : "</font><dt>\n",
+ "typehead" : "\n<dt><font face='Helvetica'>",
+ "_typehead" : "</font><dt>\n",
+ "docbody" : "<dd><font face='Helvetica'>",
+ "_docbody" : "</font></dd>",
+ "fixmehead" : "<dt><font face='Helvetica' color='red'>",
+ "_fixmehead" : "</font></dt>\n",
+ "fixmebody" : "<dd><font face='Heletica' color='red'>",
+ "_fixmebody" : "</font></dd>",
+
+ "parameter" : "<tt><font color='#8000F0'>",
+ "_parameter" : "</font></tt>",
+ "example" : "<dd><pre>",
+ "_example" : "</pre></dd>",
+
+ "pre" : "<font face='courier'><pre>",
+ "_pre" : "</pre></font>",
+ "code" : "<font face='courier'><pre><code>",
+ "_code" : "</code></pre></font>",
+ "expr" : "<font face='courier'><code>",
+ "_expr" : "</code></font>",
+
+]);
+
 string image_prefix()
 {
   return image_path;
@@ -335,18 +368,15 @@ string parse_text(Node n) {
       break;
 
     case "pre":
-      ret += "<font face='courier'><pre>" + parse_text(c) + "</pre></font>";
+      ret += lay->pre + parse_text(c) + lay->_pre;
       break;
 
     case "code":
-      ret += "<font face='courier'><pre><code>" + parse_text(c) +
-	"</code></pre></font>";
+      ret += lay->code + parse_text(c) + lay->_code;
       break;
 
     case "expr":
-      ret += "<font face='courier'><code>" +
-	replace(parse_text(c), " ", "&nbsp;") +
-	"</code></font>";
+      ret += lay->expr + replace(parse_text(c), " ", "&nbsp;") + lay->_expr;
       break;
 
     case "ref":
@@ -510,44 +540,40 @@ string parse_doc(Node n, void|int no_text) {
 
   Node c = n->get_first_element("text");
   if(c)
-    ret += "<dt><font face='Helvetica'>Description</font><dt>\n"
-      "<dd><font face='Helvetica'>" + parse_text(c) + "</font></dd>";
+    ret += lay->dochead + "Description" + lay->_dochead +
+      lay->docbody + parse_text(c) + lay->_docbody;
 
   foreach(n->get_elements("group"), Node c) {
     string name = c->get_first_element()->get_any_name();
     switch(name) {
     case "param":
       foreach(c->get_elements("param"), Node d)
-	ret += "<dt><font face='Helvetica'>Parameter <tt><font color='#8000F0'>" +
-	  quote(d->get_attributes()->name) + "</font></tt></font></dt><dd></dd>";
-      ret += "<dd><font face='Helvetica'>" + parse_text(c->get_first_element("text")) +
-	"</font></dd>";
+	ret += lay->dochead + "Parameter " + lay->parameter +
+	  quote(d->get_attributes()->name) + lay->_parameter + lay->_dochead + "<dd></dd>";
+      ret += lay->docbody + parse_text(c->get_first_element("text")) + lay->_docbody;
       break;
 
     case "seealso":
-      ret += "<dt><font face='Helvetica'>See also</font></dt>\n"
-	"<dd><font face='Helvetica'>" + parse_text(c->get_first_element("text")) +
-	"</font></dd>";
+      ret += lay->dochead + "See also" + lay->_dochead +
+	lay->docbody + parse_text(c->get_first_element("text")) + lay->_docbody;
       break;
 
     case "fixme":
-      ret += "<dt><font face='Helvetica' color='red'>FIXME</font></dt>\n"
-	"<dd><font face='Helvetica' color='red'>" + parse_text(c->get_first_element("text")) +
-	"</font></dd>";
+      ret += lay->fixmehead + "FIXME" + lay->_fixmehead +
+	lay->fixmebody + parse_text(c->get_first_element("text")) + lay->_fixmebody;
       break;
 
     case "bugs":
     case "note":
     case "returns":
     case "throws":
-      ret += "<dt><font face='Helvetica'>" + String.capitalize(name) +"</font></dt>\n"
-	"<dd><font face='Helvetica'>" + parse_text(c->get_first_element("text")) +
-	"</font></dd>";
+      ret += lay->dochead + String.capitalize(name) + lay->_dochead +
+	lay->docbody + parse_text(c->get_first_element("text")) + lay->_docbody;
       break;
 
     case "example":
-      ret += "<dt><font face='Helvetica'>Example</font></dt>\n"
-	"<dd><pre>" + parse_text(c->get_first_element("text")) + "</pre></dd>";
+      ret += lay->dochead + "Example" + lay->_dochead +
+	lay->example + parse_text(c->get_first_element("text")) + lay->_example;
       break;
 
     default:
@@ -781,31 +807,34 @@ int foo;
 
 string parse_docgroup(Node n) {
   mapping m = n->get_attributes();
-  string ret = "\n\n<hr clear='all' />\n<dl><dt>";
+  string ret = lay->docgroup;
 
-  //  werror("%O\n", m["homogen-name"]);
-  if(m["homogen-type"]) {
-    string type = "<font face='Helvetica'>" + quote(String.capitalize(m["homogen-type"])) + "</font>\n";
-    if(m["homogen-name"])
-      ret += type + "<font size='+1'><b>" + quote((m->belongs?m->belongs+" ":"") + m["homogen-name"]) +
-	"</b></font>\n";
+  if(lay->typehead) {
+    ret += lay->typehead;
+    if(m["homogen-type"]) {
+      string type = "<font face='Helvetica'>" + quote(String.capitalize(m["homogen-type"])) + "</font>\n";
+      if(m["homogen-name"])
+	ret += type + "<font size='+1'><b>" + quote((m->belongs?m->belongs+" ":"") + m["homogen-name"]) +
+	  "</b></font>\n";
+      else
+	foreach(Array.uniq(n->get_elements("method")->get_attributes()->name), string name)
+	  ret += type + "<font size='+1'><b>" + name + "</b></font><br />\n";
+    }
     else
-      foreach(Array.uniq(n->get_elements("method")->get_attributes()->name), string name)
-	ret += type + "<font size='+1'><b>" + name + "</b></font><br />\n";
+      ret += "syntax";
+    ret += lay->_typehead;
   }
-  else
-    ret += "syntax";
 
-  ret += "</dt>\n<dd><p>";
+  ret += lay->ndochead;
 
   ret += parse_not_doc(n);
 
-  ret += "</p></dd>\n";
+  ret += lay->_ndochead;
 
   foreach(n->get_elements("doc"), Node c)
     ret += parse_doc(c);
 
-  return ret + "</dl>\n";
+  return ret + lay->_docgroup;
 }
 
 string parse_children(Node n, string tag, function cb, mixed ... args) {
