@@ -1,4 +1,4 @@
-test_true([["$Id: testsuite.in,v 1.89 1998/04/11 00:21:03 grubba Exp $"]])
+test_true([["$Id: testsuite.in,v 1.90 1998/04/14 15:08:53 hedda Exp $"]])
 test_eq(1e1,10.0)
 test_eq(1E1,10.0)
 test_eq(1e+1,10.0)
@@ -1976,3 +1976,27 @@ test_true(Process.create_process)
 test_false([[Process.system(RUNPIKE +" -e 'exit(0)'")]])
 test_true([[Process.system(RUNPIKE+" -e 'exit(1)'")]])
 test_eq([[Process.popen(RUNPIKE+" -e 'write(\"test\");'")]],"test")
+
+
+
+
+test_equal(Array.splice(({7,8,99}),({"h","h",99})),
+	({7,"h",8,"h",99,99}))
+test_equal(Array.splice(({7,8}),({"h","h",99})),
+	({7,"h",8,"h"}))
+test_equal(Array.splice(({7,8,99}),({"h","h",99}),({"g",({"fg"}),97})),
+	({7,"h","g",8,"h",({"fg"}),99,99,97}))
+test_equal(Array.splice(({7,"foo"})),
+	({7,"foo"}))
+test_equal(Array.splice(),
+	({}))
+test_equal(Array.splice(({})),
+	({}))
+
+test_equal(Array.everynth("0123456789"/""),
+  ({ "0", "2", "4", "6", "8"}))
+test_equal(Array.everynth("0123456789"/"",3),
+  ({ "0", "3", "6", "9"}))
+test_equal(Array.everynth("0123456789"/"",3,4),
+  ({ "4", "7"}))
+
