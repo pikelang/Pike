@@ -1,4 +1,4 @@
-test_true([["$Id: testsuite.in,v 1.516 2002/05/12 00:31:42 mast Exp $"]]);
+test_true([["$Id: testsuite.in,v 1.517 2002/05/12 01:29:35 mast Exp $"]]);
 
 cond([[all_constants()->_verify_internals]],
 [[
@@ -2477,20 +2477,38 @@ test_do([[
   };
 ]])
 
-test_do([[
-  // bug 3006, generalized version
+test_program([[
+  // Another variant of [bug 3006].
   class X {
-    constant foo = a;
-    constant a = b;
-    constant b = c;
-    constant c = d;
-    constant d = Foo;
+    constant foo = Foo;
     class Foo {}
-    void bar()
-    {
-      foo f = Foo();
-    }
-  };
+  }
+  int a() {return programp (X.foo);}
+]])
+
+cond(0,[[
+  test_program([[
+    // This shows a case when on-demand resolving is required.
+    class X {
+      constant foo = a + 1;
+      constant a = b + 1;
+      constant b = c + 1;
+      constant c = d + 1;
+      constant d = 1;
+    };
+    int a() {return X.foo == 5;}
+  ]])
+  test_program([[
+    // Reference case for the test above.
+    class X {
+      constant d = 1;
+      constant c = d + 1;
+      constant b = c + 1;
+      constant a = b + 1;
+      constant foo = a + 1;
+    };
+    int a() {return X.foo == 5;}
+  ]])
 ]])
 
 test_any([[
