@@ -273,8 +273,9 @@ static string getName(Node node) { return node->get_attributes()["name"]; }
 //! @note
 //!   After calling this method, any @tt{<class>@} or @tt{<module>@} nodes
 //!   that have been marked with @@appears or @@belongs, are still in the
-//!   wrong place in the tree, so @[handleAppears] must be called on the
-//!   whole documentation tree once it has been fully merged.
+//!   wrong place in the tree, so @[handleAppears()] (or @[postProcess()])
+//!   must be called on the whole documentation tree to relocate them once
+//!   the tree has been fully merged.
 void mergeTrees(Node dest, Node source) {
   mapping(string : Node) dest_children = ([]);
   int dest_has_doc = 0;
@@ -826,13 +827,22 @@ void cleanUndocumented(Node tree) {
   tree->walk_preorder( check_node );
 }
 
-// Call this method after the extraction and merge of the tree.
-void postProcess(Node tree) {
+//! Perform the last steps on a completed documentation tree.
+//!
+//! @param root
+//!   Root @tt{<autodoc>@} node of the completed documentation tree.
+//!
+//! Calls @[handleAppears()], @[cleanUndocumented()] and @[resolveRefs()]
+//! in turn.
+//!
+//! @seealso
+//!   @[handleAppears()], @[cleanUndocumented()], @[resolveRefs()]
+void postProcess(Node root) {
   //  werror("handleAppears\n%s%O\n", ctime(time()), Debug.pp_memory_usage());
-  handleAppears(tree);
+  handleAppears(root);
   //  werror("cleanUndocumented\n%s%O\n", ctime(time()), Debug.pp_memory_usage());
-  cleanUndocumented(tree);
+  cleanUndocumented(root);
   //  werror("resolveRefs\n%s%O\n", ctime(time()), Debug.pp_memory_usage());
-  resolveRefs(tree);
+  resolveRefs(root);
   //  werror("done postProcess\n%s%O\n", ctime(time()), Debug.pp_memory_usage());
 }
