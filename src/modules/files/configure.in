@@ -1,4 +1,4 @@
-# $Id: configure.in,v 1.73 2000/03/21 23:27:14 grubba Exp $
+# $Id: configure.in,v 1.74 2000/04/11 20:59:36 grubba Exp $
 AC_INIT(file.c)
 AC_CONFIG_HEADER(file_machine.h)
 
@@ -64,9 +64,15 @@ if test "$ac_cv_func_sendfile" = "yes"; then
       # Probably FreeBSD-style, but we need to check that
       # we indeed have a prototype...
       AC_TRY_COMPILE([
+#ifdef HAVE_SYS_TYPES_H
 #include <sys/types.h>
+#endif /* HAVE_SYS_TYPES_H */
+#ifdef HAVE_SYS_SOCKET_H
 #include <sys/socket.h>
+#endif /* HAVE_SYS_SOCKET_H */
+#ifdef HAVE_SYS_UIO_H
 #include <sys/uio.h>
+#endif /* HAVE_SYS_UIO_H */
       ], [
         /* This should fail on FreeBSD and HPUX.
          * If it succeeds, we don't have a prototype,
