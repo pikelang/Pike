@@ -1,4 +1,4 @@
-AC_REVISION("$Id: configure.in,v 1.367 2000/04/28 05:42:24 hubbe Exp $")
+AC_REVISION("$Id: configure.in,v 1.368 2000/05/01 16:27:34 grubba Exp $")
 AC_INIT(interpret.c)
 AC_CONFIG_HEADER(machine.h)
 
@@ -819,6 +819,30 @@ if test $cflags_is_set = no; then
     if test x$with_rtldebug = xyes ; then
       AC_SYS_COMPILER_FLAG(-trapuw,trapuw,WARN)
     fi
+  ])
+
+  # Windows NT
+  DO_IF_OS(Windows_NT,
+  [
+    # FIXME: The test below probably doesn't work.
+    if test "x$CC" = "xecl"; then
+      # Some options used by ecl (Intel's IA64 compiler).
+
+      # We want threads, and link libc statically.
+      AC_SYS_COMPILER_FLAG(-MT,MT,LDFLAGS)
+
+      # Interprocedural optimizations.
+      AC_SYS_COMPILER_FLAG(-Qip,Qip,OPTIMIZE)
+
+      # More warnings.
+      AC_SYS_COMPILER_FLAG(-W4,W3,WARN)
+
+      if test x$with_rtldebug = xywes ; then
+        # Initialize auto variables to 0xcc.
+	# (Only if optimizations are turned off with -Od).
+        AC_SYS_COMPILER_FLAG(-GZ,GZ,WARN)
+      fi
+    else :; fi
   ])
 
 dnl
