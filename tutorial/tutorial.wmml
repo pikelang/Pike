@@ -1314,7 +1314,7 @@ Also, these functions operates on floats:
 </section>
 
 <section title="string">
-A <tt>string</tt> can be seen as an array of values from 0 to 2^32.
+A <tt>string</tt> can be seen as an array of values from 0 to 2³²-1.
 Usually a string contains text such as a word, a sentence, a page or
 even a whole book. But it can also contain parts of a binary file,
 compressed data or other binary data. Strings in Pike are <b>shared</b>,
@@ -1345,16 +1345,17 @@ As you can see, any sequence of characters within double quotes is a string.
 The backslash character is used to escape characters that are not allowed or
 impossible to type. As you can see, <tt>\t</tt> is the sequence to produce
 a tab character, <tt>\\</tt> is used when you want one backslash and
-<tt>\"</tt> is used when you want a double quote to be a part of the string
-instead of ending it. Also, <tt>\<i>XXX</i></tt> where <i>XXX</i> is an
+<tt>\"</tt> is used when you want a double quote (<tt>"</tt>) to be a part
+of the string instead of ending it.
+Also, <tt>\<i>XXX</i></tt> where <i>XXX</i> is an
 octal number from 0 to 37777777777 or <tt>\x<i>XX</i></tt> where <i>XX</i>
 is 0 to ffffffff lets you write any character you want in the
 string, even null characters. From version 0.6.105, you may also use
-<tt>\d<i>XXX</i></tt> where <i>XXX</i> is 0 to 2^32. If you write two constant
+<tt>\d<i>XXX</i></tt> where <i>XXX</i> is 0 to 2³²-1. If you write two constant
 strings after each other, they will be concatenated into one string.
 <p>
 You might be surprised to see that individual characters can have values
-up to 2^32 and wonder how much memory that use. Do not worry, Pike
+up to 2³²-1 and wonder how much memory that use. Do not worry, Pike
 automatically decides the proper amount of memory for a string, so all
 strings with character values in the range 0-255 will be stored with
 one byte per character. You should also beware that not all functions
@@ -1391,7 +1392,7 @@ All the comparison operators plus the operators listed here can be used on strin
      <tt>"foobarfoogazonk" - "foo"</tt> results in <tt>"bargazonk"</tt>.
 <dt> Indexing
 <dd> Indexing will let you get the ASCII value of any character in a string.
-     The first character is index zero.
+     The first index is zero.
 <dt> Range
 <dd> The range operator will let you copy any part of the string into a
      new string. Example: <tt>"foobar"[2..4]</tt> will return <tt>"oba"</tt>.
@@ -2744,8 +2745,8 @@ the relative priority of all the operators in descending order:
 <table border=1 halign=center>
 <tr><th>Operators</th></tr>
 <tr><td><center><tt>(a) a() a[b] a-&gt;b a[b..c] ({}) ([]) (&lt;&gt;)</tt></center></td></tr>
-<tr><td><center><tt>a++ a--</tt></center></td></tr>
 <tr><td><center><tt>!a ~a (type)a ++a --a</tt></center></td></tr>
+<tr><td><center><tt>a++ a--</tt></center></td></tr>
 <tr><td><center><tt>a*b a/b a%b</tt></center></td></tr>
 <tr><td><center><tt>a+b a-b</tt></center></td></tr>
 <tr><td><center><tt>a&gt;&gt;b a&lt;&lt;b</tt></center></td></tr>
@@ -3582,7 +3583,32 @@ exactly one row or packet at a time.
 <p>
 If no arguments are given, read will read to the end of the file/stream.
 </man_description>
-<man_see>Stdio.File-&gt;write</man_see>
+<man_see>Stdio.File-&gt;read_oob,Stdio.File-&gt;write</man_see>
+</method>
+
+
+<method name=read_oob title="read out-of-band data from a stream">
+<man_syntax>
+string read_oob(int <I>nbytes</I>);<br>
+string read_oob(int <I>nbytes</I>, int <I>notall</I>);<br>
+string read_oob();<br>
+</man_syntax>
+<man_description>
+Tries to read <i>nbytes</i> bytes of out-of-band data from the stream,
+and returns it as a string. If something goes wrong, zero is returned.
+<p>
+If a one is given as a second argument to <tt>read_oob()</tt>, only
+as many bytes of out-of-band data as is currently available will be
+returned.
+<p>
+If no arguments are given, <tt>read_oob</tt> will read to the end of
+the stream.
+</man_description>
+<man_note>
+This function is only available if the option '--with-oob' was specified
+when Pike was compiled.
+</man_note>
+<man_see>Stdio.File-&gt;read,Stdio.File-&gt;write_oob</man_see>
 </method>
 
 
@@ -3591,11 +3617,28 @@ If no arguments are given, read will read to the end of the file/stream.
 int write(string <I>data</I>);<br>
 </man_syntax>
 <man_description>
-Write data to file or stream and return how many bytes that was
+Write data to file or stream and return how many bytes that were
 actually written. -1 is returned if something went wrong and no
-bytes had been written.
+bytes were written.
 </man_description>
-<man_see>Stdio.File-&gt;read</man_see>
+<man_see>Stdio.File-&gt;read,Stdio.File-&gt;write_oob</man_see>
+</method>
+
+
+<method name=write_oob title="write out-of-band data to a stream">
+<man_syntax>
+int write_oob(string <I>data</I>);<br>
+</man_syntax>
+<man_description>
+Writes out-of-band data to a stream and returns how many bytes that were
+actually written. -1 is returned if something went wrong and no
+bytes were written.
+</man_description>
+<man_note>
+This function is only available if the option '--with-oob' was specified
+when Pike was compiled.
+</man_note>
+<man_see>Stdio.File-&gt;read,Stdio.File-&gt;write_oob</man_see>
 </method>
 
 
@@ -3663,6 +3706,7 @@ transfer speed when it does.
 </method>
 
 
+<-- FIXME: Update to out-of-band data -->
 <method name=set_nonblocking title="make stream nonblocking">
 <man_syntax>
 void set_nonblocking(function read_callback,<br>
@@ -6775,7 +6819,7 @@ main() function, the second is a string with the short form of
 your option. The short form must be only one character long.
 The 'longform' is an alternative and maybe more readable way to
 give the same option. If you give "foo" as longform your program
-will accept --foo as argument. The envvar argument specifies what
+will accept '--foo' as argument. The envvar argument specifies what
 environment variable can be used to specify the same option. The
 envvar option exists to make it easier to customize program usage.
 The 'def' has two functions: It specifies that the option takes an
@@ -10930,6 +10974,29 @@ no such directory exists.
 </man_description>
 <man_see>
 mkdir, cd
+</man_see>
+</function>
+
+<HR NEWPAGE>
+
+<function name=get_profiling_info title="get profiling information">
+<man_syntax>
+array(int|mapping(string:array(int))) get_profiling_info(program <I>prog</I>);
+</man_syntax>
+<man_description>
+Returns an array with two elements, the first of which is the number of
+times the program <tt>prog</tt> has been cloned.<br>
+The second element is a <tt>mapping(string:array(int))</tt> from function
+name to an <tt>array(int)</tt> with two elements. The first element of
+this array is the number of times the function has been called, while
+the second element is the total time (in milliseconds) spent in the
+function so far.
+</man_description>
+<man_note>
+This function is only available if Pike was compiled with the option
+<tt>--with-profiling</tt>.
+</man_note>
+<man_see>
 </man_see>
 </function>
 
