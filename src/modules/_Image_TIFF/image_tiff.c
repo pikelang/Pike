@@ -7,7 +7,7 @@
 */
 
 #ifdef HAVE_LIBTIFF
-RCSID("$Id: image_tiff.c,v 1.18 2000/08/25 16:16:38 grubba Exp $");
+RCSID("$Id: image_tiff.c,v 1.19 2000/08/25 16:31:00 grubba Exp $");
 
 #include "global.h"
 #include "machine.h"
@@ -254,31 +254,32 @@ void low_image_tiff_encode( struct buffer *buf,
 
 
 
-  TIFFSetField(tif, TIFFTAG_IMAGEWIDTH, i->xsize);
-  TIFFSetField(tif, TIFFTAG_IMAGELENGTH, i->ysize);
-  TIFFSetField(tif, TIFFTAG_BITSPERSAMPLE, 8);
-  TIFFSetField(tif, TIFFTAG_ORIENTATION, ORIENTATION_TOPLEFT);
-  TIFFSetField(tif, TIFFTAG_COMPRESSION, opts->compression);
+  TIFFSetField(tif, TIFFTAG_IMAGEWIDTH, (uint32)i->xsize);
+  TIFFSetField(tif, TIFFTAG_IMAGELENGTH, (uint32)i->ysize);
+  TIFFSetField(tif, TIFFTAG_BITSPERSAMPLE, (uint16)8);
+  TIFFSetField(tif, TIFFTAG_ORIENTATION, (uint16)ORIENTATION_TOPLEFT);
+  TIFFSetField(tif, TIFFTAG_COMPRESSION, (uint16)opts->compression);
   if(opts->compression == COMPRESSION_LZW)
-    TIFFSetField (tif, TIFFTAG_PREDICTOR, 2);
+    TIFFSetField (tif, TIFFTAG_PREDICTOR, (uint16)2);
   if(as)
   {
-    unsigned short val[1];
+    uint16 val[1];
     val[0] = EXTRASAMPLE_ASSOCALPHA;
-    TIFFSetField (tif, TIFFTAG_EXTRASAMPLES, 1, val);
+    TIFFSetField (tif, TIFFTAG_EXTRASAMPLES, (uint16)1, val);
   }
-  TIFFSetField(tif, TIFFTAG_PHOTOMETRIC, PHOTOMETRIC_RGB);
-  TIFFSetField(tif, TIFFTAG_FILLORDER, FILLORDER_MSB2LSB);
+  TIFFSetField(tif, TIFFTAG_PHOTOMETRIC, (uint16)PHOTOMETRIC_RGB);
+  TIFFSetField(tif, TIFFTAG_FILLORDER, (uint16)FILLORDER_MSB2LSB);
   if(opts->name)
-    TIFFSetField(tif, TIFFTAG_DOCUMENTNAME, opts->name);
-  TIFFSetField(tif, TIFFTAG_SAMPLESPERPIXEL, spp);
-  TIFFSetField(tif, TIFFTAG_ROWSPERSTRIP, MAXIMUM(8192/i->xsize/spp,1));
-  TIFFSetField(tif, TIFFTAG_PLANARCONFIG, PLANARCONFIG_CONTIG);
-  TIFFSetField(tif, TIFFTAG_RESOLUTIONUNIT, RESUNIT_INCH);
-  TIFFSetField(tif, TIFFTAG_XRESOLUTION, opts->xdpy);
-  TIFFSetField(tif, TIFFTAG_YRESOLUTION, opts->ydpy);
+    TIFFSetField(tif, TIFFTAG_DOCUMENTNAME, (char *)opts->name);
+  TIFFSetField(tif, TIFFTAG_SAMPLESPERPIXEL, (uint16)spp);
+  TIFFSetField(tif, TIFFTAG_ROWSPERSTRIP,
+	       (uint32)MAXIMUM(8192/i->xsize/spp,1));
+  TIFFSetField(tif, TIFFTAG_PLANARCONFIG, (uint16)PLANARCONFIG_CONTIG);
+  TIFFSetField(tif, TIFFTAG_RESOLUTIONUNIT, (uint16)RESUNIT_INCH);
+  TIFFSetField(tif, TIFFTAG_XRESOLUTION, (float)opts->xdpy);
+  TIFFSetField(tif, TIFFTAG_YRESOLUTION, (float)opts->ydpy);
   if(opts->comment)
-    TIFFSetField(tif, TIFFTAG_IMAGEDESCRIPTION, opts->comment);
+    TIFFSetField(tif, TIFFTAG_IMAGEDESCRIPTION, (char *)opts->comment);
 
   buffer = xalloc( spp * i->xsize  );
   for (y = 0; y < i->ysize; y++)
@@ -323,8 +324,8 @@ void low_image_tiff_decode( struct buffer *buf,
                             int image_only)
 {
   TIFF *tif;
-  unsigned int w, h, i;
-  uint32 *raster,  *s;
+  unsigned int i;
+  uint32 w, h, *raster,  *s;
   rgb_group *di, *da=NULL;
   tif = TIFFClientOpen("memoryfile", "r", buf,
 		       read_buffer, write_buffer,
