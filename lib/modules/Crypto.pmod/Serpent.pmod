@@ -6,8 +6,12 @@
 //! use it with anything but the maximum key size, smaller keys are
 //! just padded to larger ones.
 
+#if constant(Nettle.Serpent_Info)
+
 // NOTE: Depends on the order of INIT invocations.
 inherit Nettle.Serpent_Info;
 inherit .Cipher;
 
 .CipherState `()() { return Nettle.Serpent_State(); }
+
+#endif

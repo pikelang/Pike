@@ -1,7 +1,9 @@
 //
-// $Id: PGP.pmod,v 1.2 2003/12/02 00:28:30 nilsson Exp $
+// $Id: PGP.pmod,v 1.3 2003/12/03 08:30:43 nilsson Exp $
 
 #pike __REAL_VERSION__
+
+#if constant(Crypto.SHA)
 
 //! Decodes a PGP public key.
 //! @returns
@@ -210,3 +212,5 @@ static int verify_signature(string text, string sig, string pubkey)
   };
   return 0;
 }
+
+#endif

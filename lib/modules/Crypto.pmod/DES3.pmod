@@ -1,7 +1,7 @@
 #pike __REAL_VERSION__
 
-//! The inadequate key size of DES has already been mentioned. One way
-//! to increase the key size is to pipe together several DES boxes
+//! The inadequate key size of @[DES] has already been mentioned. One
+//! way to increase the key size is to pipe together several DES boxes
 //! with independent keys. It turns out that using two DES ciphers is
 //! not as secure as one might think, even if the key size of the
 //! combination is a respectable 112 bits.
@@ -29,8 +29,12 @@
 //! secure, i.e. there are no known attacks significantly better than
 //! brute force.
 
+#if constant(Nettle.DES3_Info)
+
 // NOTE: Depends on the order of INIT invocations.
 inherit Nettle.DES3_Info;
 inherit .Cipher;
 
 .CipherState `()() { return Nettle.DES3_State(); }
+
+#endif

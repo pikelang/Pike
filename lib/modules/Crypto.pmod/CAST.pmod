@@ -4,8 +4,12 @@
 //! bit (8 octets) block size, and a variable key size of up to 128
 //! bits.
 
+#if constant(Nettle.CAST128_Info)
+
 // NOTE: Depends on the order of INIT invocations.
 inherit Nettle.CAST128_Info;
 inherit .Cipher;
 
 .CipherState `()() { return Nettle.CAST128_State(); }
+
+#endif

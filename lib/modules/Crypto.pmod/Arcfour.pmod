@@ -9,8 +9,12 @@
 //! and you want to use Arcfour, always hash the key before feeding it
 //! to Arcfour.
 
+#if constant(Nettle.ARCFOUR_Info)
+
 // NOTE: Depends on the order of INIT invocations.
 inherit Nettle.ARCFOUR_Info;
 inherit .Cipher;
 
 .CipherState `()() { return Nettle.ARCFOUR_State(); }
+
+#endif
