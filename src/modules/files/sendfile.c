@@ -1,5 +1,5 @@
 /*
- * $Id: sendfile.c,v 1.33 2000/01/27 15:35:22 grubba Exp $
+ * $Id: sendfile.c,v 1.34 2000/03/13 16:01:38 grubba Exp $
  *
  * Sends headers + from_fd[off..off+len-1] + trailers to to_fd asyncronously.
  *
@@ -324,12 +324,14 @@ void low_do_sendfile(struct pike_sendfile *this)
     }
 
 #ifdef HAVE_FREEBSD_SENDFILE
-    res = sendfile(this->from_fd, this->to_fd, len, this->offset,
+    res = sendfile(this->from_fd, this->to_fd, this->offset, len,
 		   &hdtr, &sent, 0);
 #else /* !HAVE_FREEBSD_SENDFILE */
     res = sendfile(this->to_fd, this->from_fd, this->offset, len,
 		   hdtr, 0);
 #endif /* HAVE_FREEBSD_SENDFILE */
+
+    SF_DFPRINTF((stderr, "sendfile: sendfile() returned %d\n", res));
 
     if (res < 0) {
       switch(errno) {
@@ -466,8 +468,8 @@ void low_do_sendfile(struct pike_sendfile *this)
     {
       int buflen;
       int len = this->len;
-      if ((len > BUF_SIZE) || (len < 0)) {
-	len = BUF_SIZE;
+      if ((len > this->buf_size) || (len < 0)) {
+	len = this->buf_size;
       }
       while ((buflen = fd_read(this->from_fd, this->buffer, len)) > 0) {
 	char *buf = this->buffer;
@@ -485,8 +487,8 @@ void low_do_sendfile(struct pike_sendfile *this)
 	  this->sent += wrlen;
 	}
 	len = this->len;
-	if ((len > BUF_SIZE) || (len < 0)) {
-	  len = BUF_SIZE;
+	if ((len > this->buf_size) || (len < 0)) {
+	  len = this->buf_size;
 	}
       }
     }
@@ -855,6 +857,7 @@ static void sf_create(INT32 args)
     } else {
       sf.buffer = (char *)xalloc(BUF_SIZE);
     }
+    sf.buf_size = BUF_SIZE;
   }
 
   {
