@@ -1,5 +1,5 @@
 #
-# $Id: configure.in,v 1.1 2002/09/09 20:10:15 hop Exp $
+# $Id: configure.in,v 1.2 2003/09/22 20:30:54 mirar Exp $
 #
 AC_INIT(dvb.c)
 AC_CONFIG_HEADER(config.h)
@@ -26,12 +26,21 @@ if test x$with_dvb = xyes ; then
     CPPFLAGS="-I$pike_dvb_include_dir $CPPFLAGS"
   fi
 
+dnl linux 2.6 has dvb/version.h but not linux/dvb/sec.h,
+dnl which dvb.c needs; this should probably be updated
+dnl some better way: FIXME!!1!¡ /Mirar
+
   dnl Checking for version 2+ API
   AC_CHECK_HEADERS(linux/dvb/version.h,
-      [ PIKE_FEATURE(DVB,[yes]) ])
+      [ 
+        AC_CHECK_HEADERS(linux/dvb/sec.h,
+	      [PIKE_FEATURE(DVB,[yes (version 2 api)])],
+	      [PIKE_FEATURE(DVB,[no (missing linux/dvb/sec.h - version 3 api?)]) ])
+      ])
+
 	  
   AC_CHECK_HEADERS(ost/frontend.h,
-      [ PIKE_FEATURE(DVB,[yes]) ])
+      [ PIKE_FEATURE(DVB,[yes (version 1 api)]) ])
 
 
 fi

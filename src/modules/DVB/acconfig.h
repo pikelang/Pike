@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: acconfig.h,v 1.3 2002/10/11 01:39:39 nilsson Exp $
+|| $Id: acconfig.h,v 1.4 2003/09/22 20:30:54 mirar Exp $
 */
 
 /*
@@ -22,7 +22,9 @@
 #undef HAVE_DVB
 
 #ifdef HAVE_LINUX_DVB_VERSION_H
-  #define HAVE_DVB	20
+  #ifdef HAVE_LINUX_DVB_SEC_H
+   #define HAVE_DVB	20
+  #endif
 #else
   #ifdef HAVE_OST_FRONTEND_H
     #define HAVE_DVB	9
