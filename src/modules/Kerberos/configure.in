@@ -1,4 +1,4 @@
-# $Id: configure.in,v 1.1 2004/05/13 08:57:07 grubba Exp $
+# $Id: configure.in,v 1.2 2004/05/13 12:44:47 grubba Exp $
 #
 # Support for Kerberos
 #
@@ -12,7 +12,7 @@ AC_ARG_WITH(krb5,     [  --with(out)-krb5       Support for Kerberos 5],[],[with
 
 AC_MODULE_INIT()
 
-PIKE_FEATURE_OK(Math.)
+PIKE_FEATURE_WITHOUT(Kerberos)
 
 AC_C_CHAR_UNSIGNED
 
