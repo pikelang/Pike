@@ -2,12 +2,12 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: Shuffler.cmod,v 1.28 2004/04/04 14:06:28 nilsson Exp $
+|| $Id: Shuffler.cmod,v 1.29 2004/04/04 15:03:37 grubba Exp $
 */
 
 #include "global.h"
 #include "stralloc.h"
-RCSID("$Id: Shuffler.cmod,v 1.28 2004/04/04 14:06:28 nilsson Exp $");
+RCSID("$Id: Shuffler.cmod,v 1.29 2004/04/04 15:03:37 grubba Exp $");
 #include "pike_macros.h"
 #include "interpret.h"
 #include "threads.h"
@@ -115,7 +115,7 @@ PIKECLASS Shuffle
   static void __set_callbacks( struct Shuffle_struct *t )
   {
     SHUFFLE_DEBUG2("__set_calllbacks(%s)\n", t,(t->fd>0?"C":"Pike") );
-    if( t->fd > 0 )
+    if( t->fd >= 0 )
       set_write_callback( t->fd, (void *)_send_more, t );
     else if( t->file_obj && t->file_obj->prog )
     {
@@ -133,8 +133,8 @@ PIKECLASS Shuffle
   
   static void __remove_callbacks( struct Shuffle_struct *t )
   {
-    SHUFFLE_DEBUG2("__remove_calllbacks(%s)\n", t,(t->fd>0?"C":"Pike") );
-    if( t->fd > 0 )
+    SHUFFLE_DEBUG2("__remove_calllbacks(%s)\n", t, (t->fd>=0?"C":"Pike") );
+    if( t->fd >= 0 )
       set_write_callback( t->fd, 0,0 );
     else if( t->file_obj && t->file_obj->prog )
     {
@@ -222,7 +222,7 @@ PIKECLASS Shuffle
   EXIT
   {
     SHUFFLE_DEBUG1("exit()\n", THIS );
-    THIS->fd = 0;
+    THIS->fd = -1;
     if( THIS->file_obj )
     {
       free_object( THIS->file_obj );
@@ -454,7 +454,7 @@ PIKECLASS Shuffle
     SHUFFLE_DEBUG2("__send_more_callback(): sending(%d)\n", t,
 		  MINIMUM(amount,t->leftovers.len));
     sent = -1;
-    if( t->fd > 0 )
+    if( t->fd >= 0 )
     {
       THREADS_ALLOW();
       sent = fd_write( t->fd, t->leftovers.data+t->leftovers.off,
@@ -553,14 +553,14 @@ PIKECLASS Shuffle
     }
 
     if (find_identifier("query_fd", fd->prog) < 0)
-      THIS->fd = 0;
+      THIS->fd = -1;
     else {
       safe_apply( fd, "query_fd", 0 );
       THIS->fd = Pike_sp[-1].u.integer;
       pop_stack();
     }
 
-    if( THIS->fd > 0 )
+    if( THIS->fd >= 0 )
     {
       set_nonblocking( THIS->fd, 1 );
       set_read_callback( THIS->fd, 0, 0 );
@@ -577,7 +577,7 @@ PIKECLASS Shuffle
       pop_stack();
     }
 
-    if( (THIS->fd > 0) && (backend->type == PIKE_T_OBJECT) )
+    if( (THIS->fd >= 0) && (backend->type == PIKE_T_OBJECT) )
     {
       ref_push_object( THIS->file_obj );
       safe_apply( backend->u.object, "add_file", 1 );
