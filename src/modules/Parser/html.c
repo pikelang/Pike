@@ -1196,25 +1196,30 @@ static void html_clear_quote_tags (INT32 args)
 **!
 **!	Note that when matching is done case insensitively, all names
 **!	will be returned in lowercase.
+**!
+**!	Implementation note: With the exception of quote_tags(), these
+**!	run in constant time since they return copy-on-write mappings.
+**!	However, quote_tags() allocates a new mapping and thus runs in
+**!	linear time.
 **! see also: add_tag, add_tags, add_container, add_containers, add_entity, add_entities
 */
 
 static void html_tags(INT32 args)
 {
    pop_n_elems(args);
-   ref_push_mapping(THIS->maptag);
+   ref_push_mapping(copy_mapping(THIS->maptag)); /* deferred copy */
 }
 
 static void html_containers(INT32 args)
 {
    pop_n_elems(args);
-   ref_push_mapping(THIS->mapcont);
+   ref_push_mapping(copy_mapping(THIS->mapcont)); /* deferred copy */
 }
 
 static void html_entities(INT32 args)
 {
    pop_n_elems(args);
-   ref_push_mapping(THIS->mapentity);
+   ref_push_mapping(copy_mapping(THIS->mapentity)); /* deferred copy */
 }
 
 static void html_quote_tags(INT32 args)
