@@ -758,7 +758,7 @@ static void create()
 {
   program jvm = this_object()->jvm;
   if(jvm)
-    machine = jvm();
+    machine = jvm(getenv("CLASSPATH"));
   if(machine)
     pkg = package("", (["jvm":machine]));
 }
