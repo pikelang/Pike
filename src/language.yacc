@@ -184,7 +184,7 @@
 /* This is the grammar definition of Pike. */
 
 #include "global.h"
-RCSID("$Id: language.yacc,v 1.140 1999/12/09 22:53:35 grubba Exp $");
+RCSID("$Id: language.yacc,v 1.141 1999/12/09 23:24:58 grubba Exp $");
 #ifdef HAVE_MEMORY_H
 #include <memory.h>
 #endif
@@ -2024,7 +2024,7 @@ catch_arg: '(' comma_expr ')'  { $$=$2; }
   | '(' error '}' { $$=0; yyerror("Missing ')'."); }
   | '(' error ';' { $$=0; yyerror("Missing ')'."); }
   | block
-  | error { $$=0; yerror("Bad expression for catch."); }
+  | error { $$=0; yyerror("Bad expression for catch."); }
   ; 
 
 catch: F_CATCH
