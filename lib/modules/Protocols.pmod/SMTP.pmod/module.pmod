@@ -273,7 +273,7 @@ class Connection {
        cmd || "unknown command!" + "\r\n";
      catch(fd->write(errmsg));
      log(errmsg);
-     close_cb(1);
+     shutdown_fd();
    }
    
    static void outcode(int code)
@@ -606,7 +606,7 @@ class Connection {
    {
      fd->write("221 " + replace(replycodes[221], "<host>", localhost)
 	       + "\r\n");
-     close_cb(1);
+     shutdown_fd();
    }
    
    static int launch_functions(string line)
@@ -698,6 +698,24 @@ class Connection {
      fd->set_write_callback(0);
    }
 
+   static void shutdown_fd()
+   {
+     remove_call_out(handle_timeout);
+#if constant(thread_create)
+     object lock = Thread.Mutex()->lock();
+#endif
+     catch {
+       fd->set_read_callback  (0);
+       fd->set_write_callback (0);
+       fd->set_close_callback (0);
+       fd->close();
+       destruct(fd);
+     };
+#if constant(thread_create)
+     destruct(lock);
+#endif
+   }
+   
    static void close_cb(int i_close_the_stream)
    {
      if(!i_close_the_stream)
@@ -707,8 +725,7 @@ class Connection {
          errmsg += sequence[-1];
        log(errmsg);
      }
-     catch (fd->close());
-     remove_call_out(handle_timeout);
+     shutdown_fd();
    }
 
    void create(object _fd, array(string) _domains, function _cb_mailfrom,
@@ -727,19 +744,24 @@ class Connection {
      {
        fd->write("421 " + replace(replycodes[421], "<host>", localhost)
 		 + "\r\n");
-       close_cb(1);
+       shutdown_fd();
        return;
      }
      if(!localaddr)
      {
        fd->write("421 " + replace(replycodes[421], "<host>", localhost)
 		 + "\r\n");
-       close_cb(1);
+       shutdown_fd();
        return;
      }
      //log("connection from %s to %s:%d", remoteaddr, localaddr, localport);
      fd->set_nonblocking(read_cb, write_cb, close_cb);
      call_out(handle_timeout, 300, "'First connexion'");
+   }
+
+   void destroy()
+   {
+     shutdown_fd();
    }
 
 };
