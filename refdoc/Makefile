@@ -1,12 +1,13 @@
 #
 # Main Makefile for extracting AutoDoc mk II to XML
 #
-# $Id: Makefile,v 1.56 2003/09/27 12:58:46 kiwi Exp $
+# $Id: Makefile,v 1.57 2003/11/04 21:34:15 bill Exp $
 #
 # Henrik Grubbström 2001-02-02
 #
 
 BUILDDIR=
+DESTDIR=
 PIKE=pike
 
 all: modref traditional
@@ -27,11 +28,11 @@ low_modref:
 	@cp structure/modref.css modref/style.css
 	@$(PIKE) presentation/tree-split-autodoc.pike \
 	  $(BUILDDIR)/modref.xml structure/modref.html modref predef
-	@mkdir modref/images
-	cp $(BUILDDIR)/doc_build/images/* modref/images
+	@mkdir $(DESTDIR)modref/images
+	cp $(BUILDDIR)/doc_build/images/* $(DESTDIR)modref/images
 	@for file in pike_logo.gif next.gif prev.gif unit.gif \
           pike_line_left.gif pike_line_middle.gif pike_line_right.gif ; do \
-	  cp src_images/$$file modref/images/ ; done
+	  cp src_images/$$file $(DESTDIR)modref/images/ ; done
 
 pelix_modref: $(BUILDDIR)/modref.xml structure/pelix_modref.html \
 	        presentation/make_html.pike presentation/tree-split-autodoc.pike
@@ -68,7 +69,7 @@ traditional: traditional_manual $(BUILDDIR)/traditional.xml presentation/make_ht
 	@$(MAKE) PIKE="$(PIKE)" BUILDDIR="$(BUILDDIR)" low_traditional
 
 low_traditional:
-	cp $(BUILDDIR)/doc_build/images/* traditional_manual/images/
+	cp $(BUILDDIR)/doc_build/images/* $(DESTDIR)traditional_manual/images/
 	@$(PIKE) presentation/make_html.pike --img=images/ $(BUILDDIR)/traditional.xml
 
 # Sub targets used by the above targets.
