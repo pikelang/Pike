@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: file_functions.h,v 1.25 2003/09/12 12:04:29 marcus Exp $
+|| $Id: file_functions.h,v 1.26 2004/08/18 14:14:26 mast Exp $
 */
 
 FILE_FUNC("open",file_open,"function(string,string,void|int:int)")
@@ -46,6 +46,7 @@ FILE_FUNC("open",file_open,"function(string,string,void|int:int)")
 
   FILE_FUNC("set_blocking",file_set_blocking,"function(:void)")
 
+  FILE_FUNC ("is_open", file_is_open, "function(:int)");
   FILE_FUNC("query_fd",file_query_fd,"function(:int)")
 
   FILE_FUNC("dup2",file_dup2,"function(object:int)")

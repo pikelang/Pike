@@ -2,12 +2,12 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: file.c,v 1.258 2003/10/15 18:27:17 grubba Exp $
+|| $Id: file.c,v 1.259 2004/08/18 14:14:26 mast Exp $
 */
 
 #define NO_PIKE_SHORTHAND
 #include "global.h"
-RCSID("$Id: file.c,v 1.258 2003/10/15 18:27:17 grubba Exp $");
+RCSID("$Id: file.c,v 1.259 2004/08/18 14:14:26 mast Exp $");
 #include "fdlib.h"
 #include "interpret.h"
 #include "svalue.h"
@@ -2144,6 +2144,21 @@ static void file_set_close_on_exec(INT32 args)
     my_set_close_on_exec(FD,1);
   }
   pop_n_elems(args-1);
+}
+
+/*! @decl int is_open()
+ *!
+ *! Returns true if the file is open.
+ *!
+ *! @note
+ *! Most methods can't be called for a file descriptor that isn't
+ *! open. Notable exceptions @[errno], @[mode], and the set and query
+ *! functions for callbacks and backend.
+ */
+static void file_is_open (INT32 args)
+{
+  pop_n_elems (args);
+  push_int (FD >= 0);
 }
 
 /*! @decl int query_fd()
