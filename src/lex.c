@@ -2,18 +2,23 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: lex.c,v 1.119 2004/09/18 20:50:51 nilsson Exp $
+|| $Id: lex.c,v 1.120 2004/11/01 01:33:30 mast Exp $
 */
 
 #include "global.h"
 #include "lex.h"
 #include "stuff.h"
+#include "bignum.h"
 
 #include <ctype.h>
 
 #define LEXDEBUG 0
 
 struct lex lex;
+
+/* Must do like this since at least gcc is a little too keen on
+ * optimizing INT_TYPE_MUL_OVERFLOW otherwise. */
+static unsigned INT32 eight = 8, sixteen = 16, ten = 10;
 
 /* Make lexers for shifts 0, 1 and 2. */
 

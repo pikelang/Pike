@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: lexer.h,v 1.51 2004/10/30 11:38:27 mast Exp $
+|| $Id: lexer.h,v 1.52 2004/11/01 01:33:30 mast Exp $
 */
 
 /*
@@ -28,9 +28,12 @@
 
 #if (SHIFT == 0)
 
+#define WCHAR p_wchar0
+
 #define LOOK() EXTRACT_UCHAR(lex.pos)
 #define GETC() EXTRACT_UCHAR(lex.pos++)
 #define SKIP() lex.pos++
+#define SKIPN(N) (lex.pos += (N))
 
 #define READBUF(X) do {				\
   register int C;				\
@@ -47,6 +50,7 @@
  * Function renaming
  */
 
+#define parse_esc_seq parse_esc_seq0
 #define yylex yylex0
 #define low_yylex low_yylex0
 #define lex_atoi atoi
@@ -58,6 +62,7 @@
 
 #define LOOK() INDEX_CHARP(lex.pos,0,SHIFT)
 #define SKIP() (lex.pos += (1<<SHIFT))
+#define SKIPN(N) (lex.pos += ((N)<<SHIFT))
 #define GETC() (SKIP(),INDEX_CHARP(lex.pos-(1<<SHIFT),0,SHIFT))
 
 #define READBUF(X) do {				\
@@ -72,10 +77,13 @@
 
 #define ISWORD(X) ((len == strlen(X)) && low_isword(buf, X, strlen(X)))
 
-/* Function renaming */
 #if (SHIFT == 1)
 
+#define WCHAR p_wchar1
+
+/* Function renaming */
 #define low_isword low_isword1
+#define parse_esc_seq parse_esc_seq1
 #define char_const char_const1
 #define readstring readstring1
 #define yylex yylex1
@@ -86,7 +94,11 @@
 
 #else /* SHIFT != 1 */
 
+#define WCHAR p_wchar2
+
+/* Function renaming */
 #define low_isword low_isword2
+#define parse_esc_seq parse_esc_seq2
 #define char_const char_const2
 #define readstring readstring2
 #define yylex yylex2
@@ -162,77 +174,174 @@ static double lex_strtod(char *buf, char **end)
  *   \t			tab (HT)
  *   \v			vertical-tab (VT)
  *   \x[0-9a-fA-F]*	hexadecimal escape
+ *   \u+[0-9a-fA-F]{4,4} 16 bit unicode style escape
+ *   \U+[0-9a-fA-F]{8,8} 32 bit unicode style escape
+ *
+ * If there are more than one u or U in the unicode style escapes, one
+ * is removed and the escape remains otherwise intact.
  */
+
+int parse_esc_seq (WCHAR *buf, int *chr, ptrdiff_t *len)
+/* buf is assumed to be after the backslash. Return codes:
+ * 0: All ok. The char's in *chr, consumed length in *len.
+ * 1: Found a literal \r at *buf.
+ * 2: Found a literal \n at *buf.
+ * 3: Found a literal \0 at *buf.
+ * 4: Too large octal escape. *len is gobbled to the end of it all.
+ * 5: Too large hexadecimal escape. *len is gobbled to the end of it all.
+ * 6: Too large decimal escape. *len is gobbled to the end of it all.
+ * 7: Not 4 digits in \u escape. *len is up to the last found digit.
+ * 8: Not 8 digits in \U escape. *len is up to the last found digit. */
+{
+  ptrdiff_t l = 1;
+  unsigned INT32 c;
+
+  switch ((c = *buf))
+  {
+    case '\r': return 1;
+    case '\n': return 2;
+    case 0: return 3;
+
+    case 'a': c = 7; break;	/* BEL */
+    case 'b': c = 8; break;	/* BS */
+    case 't': c = 9; break;	/* HT */
+    case 'n': c = 10; break;	/* LF */
+    case 'v': c = 11; break;	/* VT */
+    case 'f': c = 12; break;	/* FF */
+    case 'r': c = 13; break;	/* CR */
+    case 'e': c = 27; break;	/* ESC */
+
+    case '0': case '1': case '2': case '3':
+    case '4': case '5': case '6': case '7': {
+      int of = 0;
+      c-='0';
+      for (l = 1; buf[l] >= '0' && buf[l] <= '8'; l++) {
+	if (!of) of = INT_TYPE_MUL_OVERFLOW (c, eight);
+	c = 8 * c + buf[l] - '0';
+      }
+      if (of) {*len = l; return 4;}
+      break;
+    }
+      
+    case 'x': {
+      int of = 0;
+      c=0;
+      for (l = 1;; l++) {
+	switch (buf[l]) {
+	  case '0': case '1': case '2': case '3': case '4':
+	  case '5': case '6': case '7': case '8': case '9':
+	    if (!of) of = INT_TYPE_MUL_OVERFLOW (c, sixteen);
+	    c = 16 * c + buf[l] - '0';
+	    continue;
+	  case 'a': case 'b': case 'c': case 'd': case 'e': case 'f':
+	    if (!of) of = INT_TYPE_MUL_OVERFLOW (c, sixteen);
+	    c = 16 * c + buf[l] - 'a' + 10;
+	    continue;
+	  case 'A': case 'B': case 'C': case 'D': case 'E': case 'F':
+	    if (!of) of = INT_TYPE_MUL_OVERFLOW (c, sixteen);
+	    c = 16 * c + buf[l] - 'A' + 10;
+	    continue;
+	}
+	break;
+      }
+      if (of) {*len = l; return 5;}
+      break;
+    }
+
+    case 'd': {
+      int of = 0;
+      c=0;
+      for (l = 1;; l++) {
+	switch (buf[l]) {
+	  case '0': case '1': case '2': case '3': case '4':
+	  case '5': case '6': case '7': case '8': case '9':
+	    if (!of) of = INT_TYPE_MUL_OVERFLOW (c, ten);
+	    c = 10 * c + buf[l] - '0';
+	    continue;
+	}
+	break;
+      }
+      if (of) {*len = l; return 6;}
+      break;
+    }
+
+    case 'u':
+    case 'U': {
+      /* FIXME: Do we need compat goo to turn this off? */
+      int of = 0, stop, quoted = 0, longq;
+      l = 1;
+      if (c == 'u') {
+	while (buf[l] == 'u') quoted = 1, l++;
+	stop = l + 4;
+	longq = 0;
+      }
+      else {
+	while (buf[l] == 'U') quoted = 1, l++;
+	stop = l + 8;
+	longq = 1;
+      }
+      c = 0;
+      for (; l < stop; l++)
+	switch (buf[l]) {
+	  case '0': case '1': case '2': case '3': case '4':
+	  case '5': case '6': case '7': case '8': case '9':
+	    c = 16 * c + buf[l] - '0';
+	    break;
+	  case 'a': case 'b': case 'c': case 'd': case 'e': case 'f':
+	    c = 16 * c + buf[l] - 'a' + 10;
+	    break;
+	  case 'A': case 'B': case 'C': case 'D': case 'E': case 'F':
+	    c = 16 * c + buf[l] - 'A' + 10;
+	    break;
+	  default:
+	    *len = l;
+	    return longq ? 8 : 7;
+	}
+      if (quoted) {
+	/* Convert the "\u" or "\U" to "\", thereby shaving off a "u"
+	 * or "U" from the escape sequence. */
+	l = 1;
+	c = '\\';
+      }
+      break;
+    }
+  }
+
+  *len = l;
+  *chr = c;
+  return 0;
+}
+
 static int char_const(void)
 {
   int c;
-  switch(c=GETC())
-  {
+  ptrdiff_t l;
+  switch (parse_esc_seq ((WCHAR *)lex.pos, &c, &l)) {
     case 0:
-      lex.pos -= (1<<SHIFT);
-      yyerror("Unexpected end of file\n");
-      return 0;
-      
-    case '0': case '1': case '2': case '3':
-    case '4': case '5': case '6': case '7':
-      c-='0';
-      while(LOOK()>='0' && LOOK()<='8')
-	c=c*8+(GETC()-'0');
-      return c;
-      
-    case 'a': return 7;		/* BEL */
-    case 'b': return 8;		/* BS */
-    case 't': return 9;		/* HT */
-    case 'n': return 10;	/* LF */
-    case 'v': return 11;	/* VT */
-    case 'f': return 12;	/* FF */
-    case 'r': return 13;	/* CR */
-    case 'e': return 27;	/* ESC */
-      
-    case '\n':
+      break;
+    case 1:
+      SKIP();
+      return '\r';
+    case 2:
+      SKIP();
       lex.current_line++;
       return '\n';
-      
-    case 'x':
-      c=0;
-      while(1)
-      {
-	switch(LOOK())
-	{
-	  case '0': case '1': case '2': case '3':
-	  case '4': case '5': case '6': case '7':
-	  case '8': case '9':
-	    c=c*16+GETC()-'0';
-	    continue;
-	    
-	  case 'a': case 'b': case 'c': case 'd': case 'e': case 'f':
-	    c=c*16+GETC()-'a'+10;
-	    continue;
-	    
-	  case 'A': case 'B': case 'C': case 'D': case 'E': case 'F':
-	    c=c*16+GETC()-'A'+10;
-	    continue;
-	}
-	break;
-      }
+    case 3:
+      yyerror("Unexpected end of file.");
+      lex.pos -= (1<<SHIFT);
+      return 0;
+    case 4: case 5: case 6:
+      yywarning ("Too large character value in escape.");
+      c = (int) MAX_UINT32;
       break;
-
-    case 'd':
-      c=0;
-      while(1)
-      {
-	switch(LOOK())
-	{
-	  case '0': case '1': case '2': case '3':
-	  case '4': case '5': case '6': case '7':
-	  case '8': case '9':
-	    c=c*10+GETC()-'0';
-	    continue;
-	}
-	break;
-      }
-      break;
+    case 7:
+      yywarning ("Too few hex digits in \\u escape.");
+      return '\\';
+    case 8:
+      yywarning ("Too few hex digits in \\U escape.");
+      return '\\';
   }
+  SKIPN (l);
   return c;
 }
 
@@ -966,9 +1075,11 @@ static int low_yylex(YYSTYPE *yylval)
  * Clear the defines for the next pass
  */
 
+#undef WCHAR
 #undef LOOK
 #undef GETC
 #undef SKIP
+#undef SKIPN
 #undef GOBBLE
 #undef SKIPSPACE
 #undef SKIPWHITE
@@ -978,6 +1089,7 @@ static int low_yylex(YYSTYPE *yylval)
 #undef ISWORD
 
 #undef low_isword
+#undef parse_esc_seq
 #undef char_const
 #undef readstring
 #undef yylex
