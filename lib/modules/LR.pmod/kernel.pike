@@ -1,5 +1,5 @@
 /*
- * $Id: kernel.pike,v 1.2 1997/03/30 17:28:22 grubba Exp $
+ * $Id: kernel.pike,v 1.3 1998/11/12 01:31:24 grubba Exp $
  *
  * Implements a LR(1) state;
  *
@@ -8,7 +8,7 @@
 
 //.
 //. File:	kernel.pike
-//. RCSID:	$Id: kernel.pike,v 1.2 1997/03/30 17:28:22 grubba Exp $
+//. RCSID:	$Id: kernel.pike,v 1.3 1998/11/12 01:31:24 grubba Exp $
 //. Author:	Henrik Grubbström
 //.
 //. Synopsis:	Implements an LR(1) state.
@@ -39,6 +39,10 @@ mapping(int : multiset(object(item))) symbol_items = ([]);
 //.   object(rule)	REDUCE according to this rule on this symbol.
 mapping(int|string : object /* (kernel) */|object(rule)) action = ([]);
 
+//. + kernel_hash
+//.   Hash value used by equalp
+string kernel_hash;
+
 /*
  * Functions
  */
@@ -61,6 +65,17 @@ void add_item(object(item) i)
       symbol_items[symbol] = (< i >);
     }
   }
+  kernel_hash = 0;
+}
+
+//. - make_kernel_hash
+//.   Computes the kernel hash.
+void make_kernel_hash()
+{
+  if (!kernel_hash) {
+    items->make_item_hash();
+    kernel_hash = sort(items->item_hash) * ":";
+  }
 }
 
 //. - equalp
@@ -73,6 +88,15 @@ int equalp(object /* (kernel) */ state)
   if (sizeof(state->items) != sizeof(items)) {
     return(0);
   }
+
+  if (!kernel_hash) {
+    make_kernel_hash();
+  }
+  if (!state->kernel_hash) {
+    state->make_kernel_hash();
+  }
+  return(kernel_hash == state->kernel_hash);
+
 
   /* Could probably make it test only kernel items */
 

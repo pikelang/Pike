@@ -1,5 +1,5 @@
 /*
- * $Id: rule.pike,v 1.2 1997/03/30 17:28:28 grubba Exp $
+ * $Id: rule.pike,v 1.3 1998/11/12 01:31:26 grubba Exp $
  *
  * A BNF-rule.
  *
@@ -8,7 +8,7 @@
 
 //.
 //. File:	rule.pike
-//. RCSID:	$Id: rule.pike,v 1.2 1997/03/30 17:28:28 grubba Exp $
+//. RCSID:	$Id: rule.pike,v 1.3 1998/11/12 01:31:26 grubba Exp $
 //. Author:	Henrik Grubbström (grubba@infovav.se)
 //.
 //. Synopsis:	Implements a BNF rule.
@@ -25,9 +25,11 @@
 //. + nonterminal
 //.   Non-terminal this rule reduces to.
 int nonterminal;
+
 //. + symbols
 //.   The actual rule
 array(string|int) symbols;
+
 //. + action
 //.   Action to do when reducing this rule.
 //.   function - call this function.
@@ -43,6 +45,7 @@ function|string action;
 //. + has_tokens
 //.   This rule contains tokens
 int has_tokens = 0;
+
 //. + num_nonnullables
 //.   This rule has this many non-nullable symbols at the moment.
 int num_nonnullables = 0;
@@ -55,6 +58,19 @@ multiset(string) prefix_tokens = (<>);
 //. + number
 //.   Sequence number of this rule (used for conflict resolving)
 int number = 0;
+
+//. + rule_hash
+//.   Hash value used to compare rules.
+string rule_hash;
+
+//. - make_rule_hash
+//.   Compute the rule_hash.
+void make_rule_hash()
+{
+  if (!rule_hash) {
+    rule_hash = sprintf("%O:%O:%O", nonterminal, symbols, action);
+  }
+}
 
 /*
  * Functions
@@ -83,7 +99,7 @@ int number = 0;
 //.   function - Call this function.
 //.   string - Call this function by name in the object given to the parser.
 //.   The function is called with arguments corresponding to the values of
-//.   the elements of the rule. The return value of the function will be
+//.   the elements of the rule. The return value of the function will become
 //.   the value of this non-terminal. The default rule is to return the first
 //.   argument.
 void create(int nt, array(string|int) r, function|string|void a)

@@ -1,5 +1,5 @@
 /*
- * $Id: item.pike,v 1.2 1997/03/30 17:28:20 grubba Exp $
+ * $Id: item.pike,v 1.3 1998/11/12 01:31:21 grubba Exp $
  *
  * An LR(0) item
  *
@@ -8,7 +8,7 @@
 
 //.
 //. File:	item.pike
-//. RCSID:	$Id: item.pike,v 1.2 1997/03/30 17:28:20 grubba Exp $
+//. RCSID:	$Id: item.pike,v 1.3 1998/11/12 01:31:21 grubba Exp $
 //. Author:	Henrik Grubbström (grubba@infovav.se)
 //.
 //. Synopsis:	An LR(0) item
@@ -51,3 +51,17 @@ multiset(object /* (item) */ ) relation = (<>);
 //. + counter
 //.   Depth counter (used when compiling).
 int counter = 0;
+
+//. + item_hash
+//.   Hash used to compare items.
+string item_hash;
+
+//. - make_item_hash
+//.   Calculate the item hash.
+void make_item_hash()
+{
+  r->make_rule_hash();
+  if (!item_hash) {
+    item_hash = r->rule_hash + "·" + offset;
+  }
+}
