@@ -1,4 +1,4 @@
-AC_REVISION("$Id: configure.in,v 1.464 2001/01/25 22:47:35 grubba Exp $")
+AC_REVISION("$Id: configure.in,v 1.465 2001/01/25 22:54:12 grubba Exp $")
 AC_INIT(interpret.c)
 AC_CONFIG_HEADER(machine.h)
 
@@ -673,7 +673,7 @@ string:
               exit 1
 	    fi
 
-	    if "$cc1.patched --help >/dev/null 2>&1"; then :; else
+	    if "$cc1.patched" --help >/dev/null 2>&1; then :; else
 	      AC_MSG_RESULT(no -- the patched binary does not seem to work)
 	      exit 1
 	    fi
