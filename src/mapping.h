@@ -5,7 +5,7 @@
 \*/
 
 /*
- * $Id: mapping.h,v 1.15 1999/10/20 01:44:40 hubbe Exp $
+ * $Id: mapping.h,v 1.16 1999/11/12 07:34:32 hubbe Exp $
  */
 #ifndef MAPPING_H
 #define MAPPING_H
@@ -36,6 +36,7 @@ struct mapping
 
 extern struct mapping *first_mapping;
 
+#define map_delete(m,key) map_delete_no_free(m, key, 0)
 #define m_sizeof(m) ((m)->size)
 #define m_ind_types(m) ((m)->ind_types)
 #define m_val_types(m) ((m)->val_types)
@@ -53,8 +54,9 @@ void mapping_insert(struct mapping *m,
 union anything *mapping_get_item_ptr(struct mapping *m,
 				     struct svalue *key,
 				     TYPE_T t);
-void map_delete(struct mapping *m,
-		struct svalue *key);
+void map_delete_no_free(struct mapping *m,
+			struct svalue *key,
+			struct svalue *to);
 void check_mapping_for_destruct(struct mapping *m);
 struct svalue *low_mapping_lookup(struct mapping *m,
 				  struct svalue *key);
@@ -63,6 +65,9 @@ struct svalue *low_mapping_string_lookup(struct mapping *m,
 void mapping_string_insert(struct mapping *m,
 			   struct pike_string *p,
 			   struct svalue *val);
+void mapping_string_insert_string(struct mapping *m,
+				  struct pike_string *p,
+				  struct pike_string *val);
 struct svalue *simple_mapping_string_lookup(struct mapping *m,
 					    char *p);
 struct svalue *mapping_mapping_lookup(struct mapping *m,

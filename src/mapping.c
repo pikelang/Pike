@@ -5,7 +5,7 @@
 \*/
 /**/
 #include "global.h"
-RCSID("$Id: mapping.c,v 1.45 1999/10/30 06:13:19 mast Exp $");
+RCSID("$Id: mapping.c,v 1.46 1999/11/12 07:34:31 hubbe Exp $");
 #include "main.h"
 #include "object.h"
 #include "mapping.h"
@@ -373,8 +373,9 @@ union anything *mapping_get_item_ptr(struct mapping *m,
   return & ( k->val.u );
 }
 
-void map_delete(struct mapping *m,
-		struct svalue *key)
+void map_delete_no_free(struct mapping *m,
+			struct svalue *key,
+			struct svalue *to)
 {
   unsigned INT32 h;
   struct keypair *k, **prev;
@@ -389,7 +390,10 @@ void map_delete(struct mapping *m,
     {
       *prev=k->next;
       free_svalue(& k->ind);
-      free_svalue(& k->val);
+      if(to)
+	to[0]=k->val;
+      else
+	free_svalue(& k->val);
       k->next=m->free_list;
       m->free_list=k;
       m->size--;
@@ -402,6 +406,12 @@ void map_delete(struct mapping *m,
 #endif
       return;
     }
+  }
+  if(to)
+  {
+    to->type=T_INT;
+    to->subtype=NUMBER_UNDEFINED;
+    to->u.integer=0;
   }
 }
 
@@ -502,6 +512,16 @@ void mapping_string_insert(struct mapping *m,
   tmp.type=T_STRING;
   tmp.u.string=p;
   mapping_insert(m, &tmp, val);
+}
+
+void mapping_string_insert_string(struct mapping *m,
+				  struct pike_string *p,
+				  struct pike_string *val)
+{
+  struct svalue tmp;
+  tmp.type=T_STRING;
+  tmp.u.string=val;
+  mapping_string_insert(m, p, &tmp);
 }
 
 struct svalue *simple_mapping_string_lookup(struct mapping *m,
