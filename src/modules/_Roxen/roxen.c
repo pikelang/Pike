@@ -93,6 +93,12 @@ static void f_buf_create( INT32 args )
     str->initial = INITIAL_BUF_LEN;
 }
 
+static void f_buf_nullfun( INT32 args )
+{
+  pop_n_elems( args );
+  push_int( 0 );
+}
+
 static void f_buf_add( INT32 args )
 /*! @method void add(string data)
  *!   Adds @[data] to the buffer
@@ -471,6 +477,7 @@ void pike_module_init()
   start_new_program();
   ADD_STORAGE( struct buffer_str  );
   pike_add_function( "add", f_buf_add, "function(string:int)",0 );
+  pike_add_function( "nullfun", f_buf_nullfun, "function(string:int)",0 );
   pike_add_function( "get", f_buf_get, "function(void:string)", 0 );
   pike_add_function( "create", f_buf_create, "function(int|void:void)", 0 );
   set_init_callback( f_buf_init );
