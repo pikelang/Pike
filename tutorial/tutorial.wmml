@@ -9148,79 +9148,59 @@ time
 
 <HR NEWPAGE>
 
-<anchor name=decode_value>
-<dl>
-<dt><encaps>NAME</encaps><dd>
-<tt>decode_value</tt> - code a value into a string
-<p>
-<dt><encaps>SYNTAX</encaps><dd>
-<tt>mixed decode_value(string <I>coded_value</I>);<br>
-</tt>
-<p>
-<dt><encaps>DESCRIPTION</encaps><dd>
+<function name=decode_value title="code a value into a string">
+<man_syntax>
+mixed decode_value(string <I>coded_value</I>);
+</man_syntax>
+<man_description>
 This function takes a string created with encode_value() and converts
 it back to the value that was coded. 
-<p>
-<dt><encaps>SEE ALSO</encaps><dd>
-<link to=encode_value>encode_value</link>
-<p>
-</dl>
-</anchor>
+</man_description>
+<man_see>
+encode_value
+</man_see>
+</function>
 
 <HR NEWPAGE>
-<anchor name=describe_backtrace>
-<dl>
-<dt><encaps>NAME</encaps><dd>
-<tt>describe_backtrace</tt> - make a backtrace readable
-<p>
-<dt><encaps>SYNTAX</encaps><dd>
-<tt>string describe_backtrace(mixed **<I>backtrace</I>);<br>
-</tt>
-<p>
-<dt><encaps>DESCRIPTION</encaps><dd>
+
+<function name=describe_backtrace title="make a backtrace readable">
+<man_syntax>
+string describe_backtrace(mixed **<I>backtrace</I>);
+</man_syntax>
+<man_description>
 Describe backtrace returns a string containing a readable message
 that describes where the backtrace was made. The argument 'backtrace'
 should normally be the return value from a call to backtrace()
-<p>
-<dt><encaps>SEE ALSO</encaps><dd>
-<link to=backtrace>backtrace</link>
-<p>
-</dl>
-</anchor>
+</man_description>
+<man_see>
+backtrace
+</man_see>
+</function>
 
 <HR NEWPAGE>
-<anchor name=destruct>
-<dl>
-<dt><encaps>NAME</encaps><dd>
-<tt>destruct</tt> - destruct an object
-<p>
-<dt><encaps>SYNTAX</encaps><dd>
-<tt>void destruct(object <I>o</I>);<br>
-</tt>
-<p>
-<dt><encaps>DESCRIPTION</encaps><dd>
+
+<function name=destruct title="destruct an object">
+<man_syntax>
+void destruct(object <I>o</I>);
+</man_syntax>
+<man_description>
 Destruct marks an object as destructed, all pointers and function
 pointers to this object will become zero. The destructed object will
 be freed from memory as soon as possible. This will also call
 o-&gt;destroy.
-<p>
-<dt><encaps>SEE ALSO</encaps><dd>
-<link to=clone>clone</link>
-<p>
-</dl>
-</anchor>
+</man_description>
+<man_see>
+clone
+</man_see>
+</function>
 
 <HR NEWPAGE>
-<anchor name=encode_value>
-<dl>
-<dt><encaps>NAME</encaps><dd>
-<tt>encode_value</tt> - code a value into a string
-<p>
-<dt><encaps>SYNTAX</encaps><dd>
-<tt>string encode_value(mixed <I>value</I>);<br>
-</tt>
-<p>
-<dt><encaps>DESCRIPTION</encaps><dd>
+
+<function name=encode_value title="code a value into a string">
+<man_syntax>
+string encode_value(mixed <I>value</I>);
+</man_syntax>
+<man_description>
 This function takes a value, and converts it to a string. This string
 can then be saved, sent to another Pike process, packed or used in
 any way you like. When you want your value back you simply send this
@@ -9229,71 +9209,59 @@ string to decode_value() and it will return the value you encoded.
 Almost any value can be coded, mappings, floats, arrays, circular
 structures etc. At present, objects, programs and functions cannot be
 saved in this way. This is being worked on.
-<p>
-<dt><encaps>SEE ALSO</encaps><dd>
-<link to=encode_value>decode_value</link> and <link to=sprintf>sprintf</link>
-<p>
-</dl>
-</anchor>
+</man_description>
+<man_see>
+decode_value, sprintf
+</man_see>
+</function>
 
 <HR NEWPAGE>
-<anchor name=equal>
-<dl>
-<dt><encaps>NAME</encaps><dd>
-<tt>equal</tt> - check if two values are equal or not
-<p>
-<dt><encaps>SYNTAX</encaps><dd>
-<tt>int equal(mixed <I>a</I>, mixed <I>b</I>);<br>
-</tt>
-<p>
-<dt><encaps>DESCRIPTION</encaps><dd>
+
+<function name=equal title="check if two values are equal or not">
+<man_syntax>
+int equal(mixed <I>a</I>, mixed <I>b</I>);
+</man_syntax>
+<man_description>
 This function checks if the values a and b are equal. For all types but
 arrays, multisets and mappings, this operation is the same as doing a == b.
 For arrays, mappings and multisets however, their contents are checked
 recursively, and if all their contents are the same and in the same
 place, they are considered equal.
-<p>
-<dt><encaps>EXAMPLES</encaps><dd>
-<tt>&gt; ({ 1 }) == ({ 1 });<br>
+</man_description>
+<man_example>
+&gt; ({ 1 }) == ({ 1 });<br>
 Result: 0<br>
 &gt; equal( ({ 1 }), ({ 1 }) );<br>
 Result: 1<br>
 &gt; <br>
-</tt>
-<p>
-<dt><encaps>SEE ALSO</encaps><dd>
-<link to=copy_value>copy_value</link>
-<p>
-</dl>
-</anchor>
+</man_example>
+<man_see>
+copy_value
+</man_see>
+</function>
 
 <HR NEWPAGE>
-<anchor name=errno>
-<dl>
-<dt><encaps>NAME</encaps><dd>
-<tt>errno</tt> - return system error number
-<p>
-<dt><encaps>SYNTAX</encaps><dd>
-<tt>int errno();<br>
-</tt>
-<p>
-<dt><encaps>DESCRIPTION</encaps><dd>
+
+<function name=errno title="return system error number">
+<man_syntax>
+int errno();
+</man_syntax>
+<man_description>
 This function returns the system error from the last file operation.
 Note that you should normally use the function errno in the file
 object instead.
-<p>
-<dt><encaps>SEE ALSO</encaps><dd>
-<link to=errno>errno</link>
-<p>
-</dl>
-</anchor>
+</man_description>
+<man_see>
+Stdio.File-&gt;errno, strerror
+</man_see>
+</function>
 
 <HR NEWPAGE>
+
 <function name=exece>
 <man_syntax>
 int exece(string <I>file</I>, array(string) <I>args</I>);<br>
-or<br>
-int exece(string <I>file</I>, array(string) <I>args</I>, mapping(string:string) <I>env</I>);<br>
+int exece(string <I>file</I>, array(string) <I>args</I>, mapping(string:string) <I>env</I>);
 </man_syntax>
 <man_description>
 This function transforms the Pike process into a process running
@@ -9309,17 +9277,17 @@ fork() if you wish to execute a program and still run the Pike
 driver.
 </man_note>
 <man_example>
-<tt>exece("/bin/ls", ({"-l"}));<br>
+exece("/bin/ls", ({"-l"}));<br>
 exece("/bin/sh", ({"-c", "echo $HOME"}), (["HOME":"/not/home"]));<br>
-</tt>
 </man_example>
 <man_see>fork, Stdio.File-&gt;pipe</man_see>
 </function>
 
 <HR NEWPAGE>
+
 <function name=exit fullpath title="exit Pike interpreter">
 <man_syntax>
-void exit(int <I>returncode</I>);<br>
+void exit(int <I>returncode</I>);
 </man_syntax>
 <man_description>
 This function exits the whole Pike program with the return code
@@ -9330,34 +9298,31 @@ more information about return codes.
 </function>
 
 <HR NEWPAGE>
-<anchor name=exp>
-<dl>
-<dt><encaps>NAME</encaps><dd>
-<tt>exp</tt> - Natural exponent
-<p>
-<dt><encaps>SYNTAX</encaps><dd>
-<tt>float exp(float <I>f</I>);<br>
-</tt>
-<p>
-<dt><encaps>DESCRIPTION</encaps><dd>
+
+<function name=exp title="natural exponent">
+<man_syntax>
+float exp(float <I>f</I>);
+</man_syntax>
+<man_description>
 Return the natural exponent of <i>f</i>.
-<p>
-<dt><encaps>SEE ALSO</encaps><dd>
-<link to=pow>pow</link> and <link to=log>log</link>
-<p>
-</dl>
-</anchor>
+</man_description>
+<man_see>
+pow, log
+</man_see>
+</function>
 
 <HR NEWPAGE>
+
 <function name=file_stat title="stat a file" fullpath>
 <man_syntax>
 int *file_stat(string <I>file</I>);<br>
 int *file_stat(string <I>file</I>, <I>1</I>);<br>
-int *file-&gt;stat();<br>
+int *file-&gt;stat();
 </man_syntax>
 <man_description>
 file_stat returns an array of integers describing some properties<br>
 about the file. Currently file_stat returns 7 entries:<br>
+<tt>
 ({<br>
 <dl><dt><dd><table border=0 cellpadding=0 cellspacing=0>
 <tr valign=top><td> mode, </td><td> /* file mode, protection bits etc. etc. */ </td></tr>
@@ -9369,6 +9334,7 @@ about the file. Currently file_stat returns 7 entries:<br>
 <tr valign=top><td> gid    </td><td> /* The group this file belongs to */ </td></tr>
 </table>
 </dl>})<br>
+</tt>
 If you give 1 as a second argument, file_stat does not follow links.<br>
 You can never get -3 as size if you don't give a second argument.<br>
 
@@ -9378,18 +9344,13 @@ You can never get -3 as size if you don't give a second argument.<br>
 </function>
 
 <HR NEWPAGE>
-<anchor name=find_call_out>
-<dl>
-<dt><encaps>NAME</encaps><dd>
-<tt>find_call_out</tt> - find a call out in the queue
-<p>
-<dt><encaps>SYNTAX</encaps><dd>
-<tt>int find_call_out(function <I>f</I>);<br>
-or<br>
-int find_call_out(mixed <I>id</I>);<br>
-</tt>
-<p>
-<dt><encaps>DESCRIPTION</encaps><dd>
+
+<function name=find_call_out title="find a call out in the queue">
+<man_syntax>
+int find_call_out(function <I>f</I>);<br>
+int find_call_out(mixed <I>id</I>);
+</man_syntax>
+<man_description>
 This function searches the call out queue. If given a function as
 argument, it looks for the first call out scheduled to that function.
 The argument can also be a call out id as returned by call_out, in
@@ -9397,146 +9358,114 @@ which case that call_out will be found. (Unless it has already been
 called.) find_call_out will then return how many seconds remains
 before that call will be executed. If no call is found,
 zero_type(find_call_out(f)) will return 1.
-<p>
-<dt><encaps>SEE ALSO</encaps><dd>
-<link to=call_out>call_out</link>, <link to=remove_call_out>remove_call_out</link> and <link to=call_out_info>call_out_info</link>
-<p>
-</dl>
-</anchor>
+</man_description>
+<man_see>
+call_out, remove_call_out, call_out_info
+</man_see>
+</function>
 
 <HR NEWPAGE>
-<anchor name=floatp>
-<dl>
-<dt><encaps>NAME</encaps><dd>
-<tt>floatp</tt> - is the argument a float?
-<p>
-<dt><encaps>SYNTAX</encaps><dd>
-<tt>int floatp(mixed <I>arg</I>);<br>
-</tt>
-<p>
-<dt><encaps>DESCRIPTION</encaps><dd>
+
+<function name=floatp title="is the argument a float?">
+<man_syntax>
+int floatp(mixed <I>arg</I>);
+</man_syntax>
+<man_description>
 Returns 1 if <i>arg</i> is a float, zero otherwise.
-<p>
-<dt><encaps>SEE ALSO</encaps><dd>
-<link to=intp>intp</link>, <link to=programp>programp</link>, <link to=arrayp>arrayp</link>, <link to=stringp>stringp</link>, <link to=objectp>objectp</link>, <link to=mappingp>mappingp</link>, <link to=multisetp>multisetp</link> and <link to=functionp>functionp</link>
-<p>
-</dl>
-</anchor>
+</man_description>
+<man_see>
+intp, programp, arrayp, stringp, objectp, mappingp, multisetp, functionp
+</man_see>
+</function>
 
 <HR NEWPAGE>
-<anchor name=floor>
-<dl>
-<dt><encaps>NAME</encaps><dd>
-<tt>floor</tt> - Truncate a number downward
-<p>
-<dt><encaps>SYNTAX</encaps><dd>
-<tt>float floor(float <I>f</I>);<br>
-</tt>
-<p>
-<dt><encaps>DESCRIPTION</encaps><dd>
+
+<function name=floor title="truncate a number downward">
+<man_syntax>
+float floor(float <I>f</I>);
+</man_syntax>
+<man_description>
 Return the closest integer value lower or equal to <i>f</i>.
 Note that floor() does <strong>not</strong> return an int, merely an integer value stored in a float.
-<p>
-<dt><encaps>SEE ALSO</encaps><dd>
-<link to=ceil>ceil</link>
-<p>
-</dl>
-</anchor>
+</man_description>
+<man_see>
+ceil
+</man_see>
+</function>
 
 <HR NEWPAGE>
-<anchor name=fork>
-<dl>
-<dt><encaps>NAME</encaps><dd>
-<tt>fork</tt> - fork the process in two
-<p>
-<dt><encaps>SYNTAX</encaps><dd>
-<tt>int fork();<br>
-</tt>
-<p>
-<dt><encaps>DESCRIPTION</encaps><dd>
+
+<function name=fork title="fork the process in two">
+<man_syntax>
+int fork();
+</man_syntax>
+<man_description>
 Fork splits the process in two, and for the parent it returns the
 pid of the child. Refer to your Unix manual for further details.
-<p>
-<dt><encaps>NOTA BENE</encaps><dd>
+</man_description>
+<man_note>
 This function cause endless bugs if used without proper care.
 <p>
-<dt><encaps>SEE ALSO</encaps><dd>
-<link to=Process.exec>Process.exec</link> and <link to=Stdio.File.pipe>Stdio.File-&gt;pipe</link>
-<p>
-</dl>
-</anchor>
+Some operating systems have problems if this function is used together
+with threads.
+</man_note>
+<man_see>
+Process.exec, Stdio.File-&gt;pipe
+</man_see>
+</function>
 
 <HR NEWPAGE>
-<anchor name=function_name>
-<dl>
-<dt><encaps>NAME</encaps><dd>
-<tt>function_name</tt> - return the name of a function, if known
-<p>
-<dt><encaps>SYNTAX</encaps><dd>
-<tt>string function_name(function <I>f</I>);<br>
-</tt>
-<p>
-<dt><encaps>DESCRIPTION</encaps><dd>
+
+<function name=function_name title="return the name of a function, if known">
+<man_syntax>
+string function_name(function <I>f</I>);
+</man_syntax>
+<man_description>
 This function returns the name of the function <i>f</i>. If the function is
 a pre-defined function in the driver, zero will be returned.
-<p>
-<dt><encaps>SEE ALSO</encaps><dd>
-<link to=function_object>function_object</link> and <link to=Simulate.get_function>Simulate.get_function</link>
-<p>
-</dl>
-</anchor>
+</man_description>
+<man_see>
+function_object, Simulate.get_function
+</man_see>
+</function>
 
 <HR NEWPAGE>
-<anchor name=function_object>
-<dl>
-<dt><encaps>NAME</encaps><dd>
-<tt>function_object</tt> - return what object a function is in
-<p>
-<dt><encaps>SYNTAX</encaps><dd>
-<tt>object function_object(function <I>f</I>);<br>
-</tt>
-<p>
-<dt><encaps>DESCRIPTION</encaps><dd>
+
+<function name=function_object title="return what object a function is in">
+<man_syntax>
+object function_object(function <I>f</I>);
+</man_syntax>
+<man_description>
 Function_object will return the object the function <i>f</i> is in. If the
 function is a predefined function from the driver, zero will be
 returned.
-<p>
-<dt><encaps>SEE ALSO</encaps><dd>
-<link to=function_name>function_name</link> and <link to=Simulate.get_function>Simulate.get_function</link>
-<p>
-</dl>
-</anchor>
+</man_description>
+<man_see>
+function_name, Simulate.get_function
+</man_see>
+</function>
 
 <HR NEWPAGE>
-<anchor name=functionp>
-<dl>
-<dt><encaps>NAME</encaps><dd>
-<tt>functionp</tt> - is the argument a function?
-<p>
-<dt><encaps>SYNTAX</encaps><dd>
-<tt>int functionp(mixed <I>arg</I>);<br>
-</tt>
-<p>
-<dt><encaps>DESCRIPTION</encaps><dd>
+
+<function name=functionp title="is the argument a function?">
+<man_syntax>
+int functionp(mixed <I>arg</I>);
+</man_syntax>
+<man_description>
 Returns 1 if <i>arg</i> is a function, zero otherwise.
-<p>
-<dt><encaps>SEE ALSO</encaps><dd>
-<link to=intp>intp</link>, <link to=programp>programp</link>, <link to=arrayp>arrayp</link>, <link to=stringp>stringp</link>, <link to=objectp>objectp</link>, <link to=mappingp>mappingp</link>, <link to=multisetp>multisetp</link> and <link to=floatp>floatp</link>
-<p>
-</dl>
-</anchor>
+</man_description>
+<man_see>
+intp, programp, arrayp, stringp, objectp, mappingp, multisetp, floatp
+</man_see>
+</function>
 
 <HR NEWPAGE>
-<anchor name=gc>
-<dl>
-<dt><encaps>NAME</encaps><dd>
-<tt>gc</tt> - do garbage collection
-<p>
-<dt><encaps>SYNTAX</encaps><dd>
-<tt>int gc();<br>
-</tt>
-<p>
-<dt><encaps>DESCRIPTION</encaps><dd>
+
+<function name=gc title="do garbage collection">
+<man_syntax>
+int gc();
+</man_syntax>
+<man_description>
 This function checks all the memory for cyclic structures such
 as arrays containing themselves and frees them if appropriate.
 It also frees up destructed objects. It then returns how many
@@ -9545,90 +9474,70 @@ Normally there is no need to call this function since Pike will
 call it by itself every now and then. (Pike will try to predict
 when 20% of all arrays/object/programs in memory is 'garbage'
 and call this routine then.)
-
-</dl>
-</anchor>
+</man_description>
+</function>
 
 <HR NEWPAGE>
-<anchor name=get_dir>
-<dl>
-<dt><encaps>NAME</encaps><dd>
-<tt>get_dir</tt> - read a directory
-<p>
-<dt><encaps>SYNTAX</encaps><dd>
-<tt>array(string) get_dir(string <I>dirname</I>);<br>
-</tt>
-<p>
-<dt><encaps>DESCRIPTION</encaps><dd>
+
+<function name=get_dir title="read a directory">
+<man_syntax>
+array(string) get_dir(string <I>dirname</I>);
+</man_syntax>
+<man_description>
 Returns an array of all filenames in the directory <i>dirname</i>, or zero if
 no such directory exists.
-<p>
-<dt><encaps>SEE ALSO</encaps><dd>
-<link to=mkdir>mkdir</link> and <link to=cd>cd</link>
-<p>
-</dl>
-</anchor>
+</man_description>
+<man_see>
+mkdir, cd
+</man_see>
+</function>
 
 <HR NEWPAGE>
-<anchor name=getcwd>
-<dl>
-<dt><encaps>NAME</encaps><dd>
-<tt>getcwd</tt> - return current working directory
-<p>
-<dt><encaps>SYNTAX</encaps><dd>
-<tt>string getcwd();<br>
-</tt>
-<p>
-<dt><encaps>DESCRIPTION</encaps><dd>
+
+<function name=getcwd title="return current working directory">
+<man_syntax>
+string getcwd();
+</man_syntax>
+<man_description>
 getcwd returns the current working directory.
-<p>
-<dt><encaps>SEE ALSO</encaps><dd>
-<link to=cd>cd</link>
-<p>
-</dl>
-</anchor>
+</man_description>
+<man_see>
+cd
+</man_see>
+</function>
 
 <HR NEWPAGE>
-<anchor name=getenv>
-<dl>
-<dt><encaps>NAME</encaps><dd>
-<tt>getenv</tt> - get an environment variable
-<p>
-<dt><encaps>SYNTAX</encaps><dd>
-<tt>string getenv(string <I>varname</I>);<br>
-</tt>
-<p>
-<dt><encaps>DESCRIPTION</encaps><dd>
+
+<function name=getenv title="get an environment variable">
+<man_syntax>
+string getenv(string <I>varname</I>);
+</man_syntax>
+<man_description>
 Returns the value of the environment variable with the name <i>varname</i>,
 if no such environment variable exists, zero is returned.
-<p>
-<dt><encaps>NOTA BENE</encaps><dd>
-This function is provided by master.pike
-<p>
-</dl>
-</anchor>
+</man_description>
+<man_note>
+This function is provided by master.pike.
+</man_note>
+</function>
 
 <HR NEWPAGE>
-<anchor name=getpid>
-<dl>
-<dt><encaps>NAME</encaps><dd>
-<tt>getpid</tt> - get the process id of this process
-<p>
-<dt><encaps>SYNTAX</encaps><dd>
-<tt>int getpid();<br>
-</tt>
-<p>
-<dt><encaps>DESCRIPTION</encaps><dd>
+
+<function name=getpid title="get the process id of this process">
+<man_syntax>
+int getpid();
+</man_syntax>
+<man_description>
 This returns the pid of this process. Useful for sending
 signals to yourself.
-<p>
-<dt><encaps>SEE ALSO</encaps><dd>
-<link to=kill>kill</link>, <link to=fork>fork</link> and <link to=signal>signal</link>
-<p>
-</dl>
-</anchor>
+</man_description>
+<man_see>
+kill, fork, signal
+</man_see>
+</function>
 
 <HR NEWPAGE>
+
 <function name=glob title="match strings against globs" fullpath>
 <man_syntax>
 int glob(string <I>glob</I>, string <I>str</I>);
@@ -9646,77 +9555,57 @@ second argument, an array containing all matching strings is returned.
 </function>
 
 <HR NEWPAGE>
-<anchor name=hash>
-<dl>
-<dt><encaps>NAME</encaps><dd>
-<tt>hash</tt> - hash a string
-<p>
-<dt><encaps>SYNTAX</encaps><dd>
-<tt>int hash(string <I>s</I>);<br>
-or<br>
-int hash(string <I>s</I>, int <I>max</I>);<br>
-</tt>
-<p>
-<dt><encaps>DESCRIPTION</encaps><dd>
+
+<function name=hash title="hash a string">
+<man_syntax>
+int hash(string <I>s</I>);<br>
+int hash(string <I>s</I>, int <I>max</I>);
+</man_syntax>
+<man_description>
 This function will return an int derived from the string s. The same
 string will always hash to the same value. If a second argument
 is given, the result will be &gt;= 0 and lesser than that argument.
-<p>
-</dl>
-</anchor>
+</man_description>
+</function>
 
 <HR NEWPAGE>
-<anchor name=indices>
-<dl>
-<dt><encaps>NAME</encaps><dd>
-<tt>indices</tt> - return an array of all index possible for a value
-<p>
-<dt><encaps>SYNTAX</encaps><dd>
-<tt>mixed *indices(string|array|mapping|multiset|object <I>foo</I>);<br>
-</tt>
-<p>
-<dt><encaps>DESCRIPTION</encaps><dd>
+
+<function name=indices title="return an array of all index possible for a value">
+<man_syntax>
+mixed *indices(string|array|mapping|multiset|object <I>foo</I>);
+</man_syntax>
+<man_description>
 <tt>indices</tt> returns an array of all values you can use as index when
 indexing <i>foo</i>. For strings and arrays this is simply an array of the
 ascending numbers. For mappings and multisets, the array may contain any
 kind of value. For objects, the result is an array of strings.
-<p>
-<dt><encaps>SEE ALSO</encaps><dd>
-<link to=values>values</link>
-<p>
-</dl>
-</anchor>
+</man_description>
+<man_see>
+values
+</man_see>
+</function>
 
 <HR NEWPAGE>
-<anchor name=intp>
-<dl>
-<dt><encaps>NAME</encaps><dd>
-<tt>intp</tt> - is the argument an int?
-<p>
-<dt><encaps>SYNTAX</encaps><dd>
-<tt>array intp(mixed <I>arg</I>);<br>
-</tt>
-<p>
-<dt><encaps>DESCRIPTION</encaps><dd>
+
+<function name=intp title="is the argument an int?">
+<man_syntax>
+array intp(mixed <I>arg</I>);
+</man_syntax>
+<man_description>
 Returns 1 if <i>arg</i> is an int, zero otherwise.
-<p>
-<dt><encaps>SEE ALSO</encaps><dd>
-<link to=arrayp>arrayp</link>, <link to=programp>programp</link>, <link to=floatp>floatp</link>, <link to=stringp>stringp</link>, <link to=objectp>objectp</link>, <link to=mappingp>mappingp</link>, <link to=multisetp>multisetp</link> and <link to=functionp>functionp</link>
-<p>
-</dl>
-</anchor>
+</man_description>
+<man_see>
+arrayp, programp, floatp, stringp, objectp, mappingp, multisetp, functionp
+</man_see>
+</function>
 
 <HR NEWPAGE>
-<anchor name=kill>
-<dl>
-<dt><encaps>NAME</encaps><dd>
-<tt>kill</tt> - send signal to other process
-<p>
-<dt><encaps>SYNTAX</encaps><dd>
-<tt>int kill(int pid, int signal)<br>
-</tt>
-<p>
-<dt><encaps>DESCRIPTION</encaps><dd>
+
+<function name=kill title="send signal to other process">
+<man_syntax>
+int kill(int pid, int signal);
+</man_syntax>
+<man_description>
 Kill sends a signal to another process. If something goes wrong
 -1 is returned, 0 otherwise.
 <p>Some signals and their supposed purpose:
@@ -9750,24 +9639,19 @@ Kill sends a signal to another process. If something goes wrong
 
 <p>Note that you have to use signame to translate the name of a signal
 to its number.
-<p>
-<dt><encaps>SEE ALSO</encaps><dd>
-<link to=signal>signal</link>, <link to=signum>signum</link>, <link to=signame>signame</link> and <link to=fork>fork</link>
-<p>
-</dl>
-</anchor>
+</man_description>
+<man_see>
+signal, signum, signame, fork
+</man_see>
+</function>
 
 <HR NEWPAGE>
-<anchor name=load_module>
-<dl>
-<dt><encaps>NAME</encaps><dd>
-<tt>load_module</tt> - load a binary module
-<p>
-<dt><encaps>SYNTAX</encaps><dd>
-<tt>int load_module(string <I>module_name</I>);<br>
-</tt>
-<p>
-<dt><encaps>DESCRIPTION</encaps><dd>
+
+<function name=load_module title="load a binary module">
+<man_syntax>
+int load_module(string <I>module_name</I>);
+</man_syntax>
+<man_description>
 This function loads a module written in C or some other language
 into Pike. The module is initialized and any programs or constants
 defined will immediately be available.
@@ -9778,26 +9662,20 @@ functions _must_ be available in the module.
 <p>Please see the source and any examples available at
 ftp://www.idonex.se/pub/pike for more information on how to
 write modules for Pike in C.
-<p>
-<dt><encaps>BUGS</encaps><dd>
+</man_description>
+<man_bugs>
 Please use "./name.so" instead of just "foo.so" for the module
 name. If you use just "foo.se" the module will not be found.
-
-<p>
-</dl>
-</anchor>
+</man_bugs>
+</function>
 
 <HR NEWPAGE>
-<anchor name=localtime>
-<dl>
-<dt><encaps>NAME</encaps><dd>
-<tt>localtime</tt> - break down time() into intelligible components
-<p>
-<dt><encaps>SYNTAX</encaps><dd>
-<tt>mapping(string:int) localtime(int <I>time</I>);<br>
-</tt>
-<p>
-<dt><encaps>DESCRIPTION</encaps><dd>
+
+<function name=localtime title="break down time() into intelligible components">
+<man_syntax>
+mapping(string:int) localtime(int <I>time</I>);
+</man_syntax>
+<man_description>
 Given a time represented as second since 1970, as returned by the
 function time(), this function returns a mapping with the following
 components:
@@ -9813,195 +9691,146 @@ components:
 <tr valign=top><td> isdst    </td><td> is daylight saving time </td><td> 0/1 </td></tr>
 <tr valign=top><td> timezone </td><td> difference between local time and UTC </td></tr>
 </table>
-
-<p>
-<dt><encaps>NOTA BENE</encaps><dd>
+</man_description>
+<man_note>
 The 'timezone' might not be available on all platforms.
-<p>
-<dt><encaps>SEE ALSO</encaps><dd>
-<link to=time>time</link>
-<p>
-</dl>
-</anchor>
+</man_note>
+<man_see>
+time
+</man_see>
+</function>
 
 <HR NEWPAGE>
-<anchor name=log>
-<dl>
-<dt><encaps>NAME</encaps><dd>
-<tt>log</tt> - Natural logarithm
-<p>
-<dt><encaps>SYNTAX</encaps><dd>
-<tt>float log(float <I>f</I>);<br>
-</tt>
-<p>
-<dt><encaps>DESCRIPTION</encaps><dd>
+
+<function name=log title="natural logarithm">
+<man_syntax>
+float log(float <I>f</I>);
+</man_syntax>
+<man_description>
 Return the natural logarithm of <i>f</i>.
-<p>
-<dt><encaps>SEE ALSO</encaps><dd>
-<link to=pow>pow</link> and <link to=exp>exp</link>
-<p>
-</dl>
-</anchor>
+</man_description>
+<man_see>
+pow, exp
+</man_see>
+</function>
 
 <HR NEWPAGE>
-<anchor name=lower_case>
-<dl>
-<dt><encaps>NAME</encaps><dd>
-<tt>lower_case</tt> - convert a string to lower case
-<p>
-<dt><encaps>SYNTAX</encaps><dd>
-<tt>string lower_case(string <I>s</I>);<br>
-</tt>
-<p>
-<dt><encaps>DESCRIPTION</encaps><dd>
+
+<function name=lower_case title="convert a string to lower case">
+<man_syntax>
+string lower_case(string <I>s</I>);
+</man_syntax>
+<man_description>
 Returns a string with all capital letters converted to lower case.
-<p>
-<dt><encaps>SEE ALSO</encaps><dd>
-<link to=upper_case>upper_case</link>
-<p>
-</dl>
-</anchor>
+</man_description>
+<man_see>
+upper_case
+</man_see>
+</function>
 
 <HR NEWPAGE>
-<anchor name=m_delete>
-<dl>
-<dt><encaps>NAME</encaps><dd>
-<tt>m_delete</tt> - remove an index from a mapping
-<p>
-<dt><encaps>SYNTAX</encaps><dd>
-<tt>mapping m_delete(mapping <I>map</I>, mixed <I>index</I>);<br>
-</tt>
-<p>
-<dt><encaps>DESCRIPTION</encaps><dd>
+
+<function name=m_delete title="remove an index from a mapping">
+<man_syntax>
+mapping m_delete(mapping <I>map</I>, mixed <I>index</I>);
+</man_syntax>
+<man_description>
 Removes the entry with index <i>index</i> from mapping <i>map</i> destructively.
 Returns the changed mapping. If the mapping does not have an
 entry with index <i>index</i>, nothing is done.
 Note that m_delete changes map destructively and only returns
 the mapping for compatibility reasons.
-<p>
-<dt><encaps>SEE ALSO</encaps><dd>
-<link to=mappingp>mappingp</link>
-<p>
-</dl>
-</anchor>
+</man_description>
+<man_see>
+mappingp
+</man_see>
+</function>
 
 <HR NEWPAGE>
-<anchor name=mappingp>
-<dl>
-<dt><encaps>NAME</encaps><dd>
-<tt>mappingp</tt> - is the argument a mapping?
-<p>
-<dt><encaps>SYNTAX</encaps><dd>
-<tt>int mappingp(mixed <I>arg</I>);<br>
-</tt>
-<p>
-<dt><encaps>DESCRIPTION</encaps><dd>
+
+<function name=mappingp title="is the argument a mapping?">
+<man_syntax>
+int mappingp(mixed <I>arg</I>);
+</man_syntax>
+<man_description>
 Returns 1 if <i>arg</i> is a mapping, zero otherwise.
-<p>
-<dt><encaps>SEE ALSO</encaps><dd>
-<link to=intp>intp</link>, <link to=programp>programp</link>, <link to=arrayp>arrayp</link>, <link to=stringp>stringp</link>, <link to=objectp>objectp</link>, <link to=multisetp>multisetp</link>, <link to=floatp>floatp</link> and <link to=functionp>functionp</link>
-<p>
-</dl>
-</anchor>
+</man_description>
+<man_see>
+intp, programp, arrayp, stringp, objectp, multisetp, floatp, functionp
+</man_see>
+</function>
 
 <HR NEWPAGE>
-<anchor name=master>
-<dl>
-<dt><encaps>NAME</encaps><dd>
-<tt>master</tt> - return the master object
-<p>
-<dt><encaps>SYNTAX</encaps><dd>
-<tt>object master();<br>
-</tt>
-<p>
-<dt><encaps>DESCRIPTION</encaps><dd>
+
+<function name=master title="return the master object">
+<man_syntax>
+object master();
+</man_syntax>
+<man_description>
 Master is added by the master object to make it easier to access it.
-<p>
-</dl>
-</anchor>
+</man_description>
+</function>
 
 <HR NEWPAGE>
-<anchor name=mkdir>
-<dl>
-<dt><encaps>NAME</encaps><dd>
-<tt>mkdir</tt> - make directory
-<p>
-<dt><encaps>SYNTAX</encaps><dd>
-<tt>int mkdir(string <I>dirname</I>);<br>
-</tt>
-<p>
-<dt><encaps>DESCRIPTION</encaps><dd>
+
+<function name=mkdir title="make directory">
+<man_syntax>
+int mkdir(string <I>dirname</I>);
+</man_syntax>
+<man_description>
 Create a directory, return zero if it fails and nonzero if it successful.
-<p>
-<dt><encaps>SEE ALSO</encaps><dd>
-<link to=rm>rm</link> and <link to=cd>cd</link>
-<p>
-</dl>
-</anchor>
-
+</man_description>
+<man_see>
+rm, cd
+</man_see>
+</function>
 
 <HR NEWPAGE>
-<anchor name=mkmapping>
-<dl>
-<dt><encaps>NAME</encaps><dd>
-<tt>mkmapping</tt> - make a mapping from two arrays
-<p>
-<dt><encaps>SYNTAX</encaps><dd>
-<tt>mapping mkmapping(mixed *<I>ind</I>, mixed *<I>val</I>);<br>
-</tt>
-<p>
-<dt><encaps>DESCRIPTION</encaps><dd>
+
+<function name=mkmapping title="make a mapping from two arrays">
+<man_syntax>
+mapping mkmapping(mixed *<I>ind</I>, mixed *<I>val</I>);
+</man_syntax>
+<man_description>
 Makes a mapping ind[x]:val[x], 0&lt;=x&lt;sizeof(ind).
 <i>ind</i> and <i>val</i> must have the same size.
 This is the inverse operation of <tt>indices</tt> and <tt>values</tt>.
-<p>
-<dt><encaps>SEE ALSO</encaps><dd>
-<link to=indices>indices</link> and <link to=values>values</link>
-<p>
-</dl>
-</anchor>
+</man_description>
+<man_see>
+indices, values
+</man_see>
+</function>
 
 <HR NEWPAGE>
-<anchor name=mkmultiset>
-<dl>
-<dt><encaps>NAME</encaps><dd>
-<tt>mkmultiset</tt> - make a multiset
-<p>
-<dt><encaps>SYNTAX</encaps><dd>
-<tt>multiset mkmultiset(mixed *a)<br>
-</tt>
-<p>
-<dt><encaps>DESCRIPTION</encaps><dd>
+
+<function name=mkmultiset title="make a multiset">
+<man_syntax>
+multiset mkmultiset(mixed *a);
+</man_syntax>
+<man_description>
 This function creates a multiset from an array.
-<p>
-<dt><encaps>EXAMPLE</encaps><dd>
-<tt>&gt; mkmultiset( ({1,2,3}) );<br>
+</man_description>
+<man_example>
+&gt; mkmultiset( ({1,2,3}) );<br>
 Result: (&lt; /* 3 elements */<br>
 <dl><dt><dd>1,<br>
 2,<br>
 3<br>
 </dl>&gt;)<br>
-</tt>
-<p>
-<dt><encaps>SEE ALSO</encaps><dd>
-<link to=aggregate_multiset>aggregate_multiset</link>
-<p>
-</dl>
-</anchor>
-
+</man_example>
+<man_see>
+aggregate_multiset
+</man_see>
+</function>
 
 <HR NEWPAGE>
-<anchor name=mktime>
-<dl>
-<dt><encaps>NAME</encaps><dd>
-<tt>mktime</tt> - convert date and time to seconds
-<p>
-<dt><encaps>SYNTAX</encaps><dd>
-<tt>int mktime(mapping tm)</tt><br>
-or<br>
-<tt>int mktime(int sec, int min, int hour, int mday, int mon, int year, int isdst, int tz)</tt><br>
-<p>
-<dt><encaps>DESCRIPTION</encaps><dd>
+
+<function name=mktime title="convert date and time to seconds">
+<man_syntax>
+int mktime(mapping tm)<br>
+int mktime(int sec, int min, int hour, int mday, int mon, int year, int isdst, int tz)
+</man_syntax>
+<man_description>
 This function converts information about date and time into an integer which
 contains the number of seconds since the beginning of 1970. You can either
 call this function with a mapping containing the following elements:
@@ -10020,253 +9849,190 @@ call this function with a mapping containing the following elements:
 </center>
 <p>
 Or you can just send them all on one line as the second syntax suggests.
-<p>
-<dt><encaps>SEE ALSO</encaps><dd>
-<link to=time>time</link>
-<p>
-</dl>
-</anchor>
+</man_description>
+<man_see>
+time, ctime, localtime
+</man_see>
+</function>
 
 <HR NEWPAGE>
-<anchor name=multisetp>
-<dl>
-<dt><encaps>NAME</encaps><dd>
-<tt>multisetp</tt> - is the argument a multiset?
-<p>
-<dt><encaps>SYNTAX</encaps><dd>
-<tt>int multisetp(mixed <I>arg</I>);<br>
-</tt>
-<p>
-<dt><encaps>DESCRIPTION</encaps><dd>
+
+<function name=multisetp title="is the argument a multiset?">
+<man_syntax>
+int multisetp(mixed <I>arg</I>);
+</man_syntax>
+<man_description>
 Returns 1 if <i>arg</i> is a multiset, zero otherwise.
-<p>
-<dt><encaps>SEE ALSO</encaps><dd>
-<link to=intp>intp</link>, <link to=programp>programp</link>, <link to=arrayp>arrayp</link>, <link to=stringp>stringp</link>, <link to=objectp>objectp</link>, <link to=mappingp>mappingp</link>, <link to=floatp>floatp</link> and <link to=functionp>functionp</link>
-<p>
-</dl>
-</anchor>
+</man_description>
+<man_see>
+intp, programp, arrayp, stringp, objectp, mappingp, floatp, functionp
+</man_see>
+</function>
 
 <HR NEWPAGE>
-<anchor name=mv>
-<dl>
-<dt><encaps>NAME</encaps><dd>
-<tt>mv</tt> - move a file (may handle directories as well)
-<p>
-<dt><encaps>SYNTAX</encaps><dd>
-<tt>int mv(string <I>from</I>,string <I>to</I>);<br>
-</tt>
-<p>
-<dt><encaps>DESCRIPTION</encaps><dd>
+
+<function name=mv title="move a file (may handle directories as well)">
+<man_syntax>
+int mv(string <I>from</I>,string <I>to</I>);
+</man_syntax>
+<man_description>
 Rename or move a file between directories. If the destination
 file already exists, it will be overwritten. Returns 1 on success,
 0 otherwise.
-<p>
-<dt><encaps>SEE ALSO</encaps><dd>
-<link to=rm>rm</link>
-<p>
-</dl>
-</anchor>
+</man_description>
+<man_see>
+rm
+</man_see>
+</function>
 
 <HR NEWPAGE>
-<anchor name=next_object>
-<dl>
-<dt><encaps>NAME</encaps><dd>
-<tt>next_object</tt> - get next object
-<p>
-<dt><encaps>SYNTAX</encaps><dd>
-<tt>object next_object(object <I>o</I>);<br>
-or<br>
-object next_object();<br>
-</tt>
-<p>
-<dt><encaps>DESCRIPTION</encaps><dd>
+
+<function name=next_object title="get next object">
+<man_syntax>
+object next_object(object <I>o</I>);<br>
+object next_object();
+</man_syntax>
+<man_description>
 All objects are stored in a linked list, next_object() returns the
 first object in this list, and next_object(o) the next object in the
 list after o.
-<p>
-<dt><encaps>EXAMPLES</encaps><dd>
-<tt>/* This example calls shutting_down() in all cloned objects */<br>
+</man_description>
+<man_example>
+/* This example calls shutting_down() in all cloned objects */<br>
 object o;<br>
 for(o=next_object();o;o=next_object(o))<br>
 <dl><dt><dd>o-&gt;shutting_down();<br>
-</dl></tt>
-<p>
-<dt><encaps>SEE ALSO</encaps><dd>
-<link to=clone>clone</link> and <link to=destruct>destruct</link>
-<p>
 </dl>
-</anchor>
+</man_example>
+<man_see>
+clone, destruct
+</man_see>
+</function>
 
 <HR NEWPAGE>
-<anchor name=object_program>
-<dl>
-<dt><encaps>NAME</encaps><dd>
-<tt>object_program</tt> - get the program associated with the object
-<p>
-<dt><encaps>SYNTAX</encaps><dd>
-<tt>program object_program(object <I>o</I>);<br>
-</tt>
-<p>
-<dt><encaps>DESCRIPTION</encaps><dd>
+
+<function name=object_program title="get the program associated with the object">
+<man_syntax>
+program object_program(object <I>o</I>);
+</man_syntax>
+<man_description>
 This function returns the program from which <i>o</i> was cloned.
 If <i>o</i> is not an object or has been destructed <i>o</i> zero is returned.
-<p>
-<dt><encaps>SEE ALSO</encaps><dd>
-<link to=clone>clone</link>
-<p>
-</dl>
-</anchor>
+</man_description>
+<man_see>
+clone, new
+</man_see>
+</function>
 
 <HR NEWPAGE>
-<anchor name=objectp>
-<dl>
-<dt><encaps>NAME</encaps><dd>
-<tt>objectp</tt> - is the argument an object?
-<p>
-<dt><encaps>SYNTAX</encaps><dd>
-<tt>int objectp(mixed <I>arg</I>);<br>
-</tt>
-<p>
-<dt><encaps>DESCRIPTION</encaps><dd>
+
+<function name=objectp title="the argument an object?">
+<man_syntax>
+int objectp(mixed <I>arg</I>);
+</man_syntax>
+<man_description>
 Returns 1 if <i>arg</i> is an object, zero otherwise.
-<p>
-<dt><encaps>SEE ALSO</encaps><dd>
-<link to=intp>intp</link>, <link to=programp>programp</link>, <link to=floatp>floatp</link>, <link to=stringp>stringp</link>, <link to=arrayp>arrayp</link>, <link to=mappingp>mappingp</link>, <link to=multisetp>multisetp</link> and <link to=functionp>functionp</link>
-<p>
-</dl>
-</anchor>
-
+</man_description>
+<man_see>
+intp, programp, floatp, stringp, arrayp, mappingp, multisetp, functionp
+</man_see>
+</function>
 
 <HR NEWPAGE>
-<anchor name=pow>
-<dl>
-<dt><encaps>NAME</encaps><dd>
-<tt>pow</tt> - Raise a number to the power of another.
-<p>
-<dt><encaps>SYNTAX</encaps><dd>
-<tt>float pow(float <I>n</I>, float <I>x</I>);<br>
-</tt>
-<p>
-<dt><encaps>DESCRIPTION</encaps><dd>
+
+<function name=pow title="raise a number to the power of another">
+<man_syntax>
+float pow(float <I>n</I>, float <I>x</I>);
+</man_syntax>
+<man_description>
 Return <i>n</i> raised to the power of <i>x</i>.
-<p>
-<dt><encaps>SEE ALSO</encaps><dd>
-<link to=exp>exp</link> and <link to=log>log</link>
-<p>
-</dl>
-</anchor>
+</man_description>
+<man_see>
+exp, log
+</man_see>
+</function>
 
 <HR NEWPAGE>
-<anchor name=programp>
-<dl>
-<dt><encaps>NAME</encaps><dd>
-<tt>programp</tt> - is the argument a program?
-<p>
-<dt><encaps>SYNTAX</encaps><dd>
-<tt>int programp(mixed <I>arg</I>);<br>
-</tt>
-<p>
-<dt><encaps>DESCRIPTION</encaps><dd>
+
+<function name=programp title="is the argument a program?">
+<man_syntax>
+int programp(mixed <I>arg</I>);
+</man_syntax>
+<man_description>
 Returns 1 if <i>arg</i> is a program, zero otherwise.
-<p>
-<dt><encaps>SEE ALSO</encaps><dd>
-<link to=intp>intp</link>, <link to=multisetp>multisetp</link>, <link to=arrayp>arrayp</link>, <link to=stringp>stringp</link>, <link to=objectp>objectp</link>, <link to=mappingp>mappingp</link>, <link to=floatp>floatp</link> and <link to=functionp>functionp</link>
-<p>
-</dl>
-</anchor>
+</man_description>
+<man_see>
+intp, multisetp, arrayp, stringp, objectp, mappingp, floatp, functionp
+</man_see>
+</function>
 
 <HR NEWPAGE>
-<anchor name=putenv>
-<dl>
-<dt><encaps>NAME</encaps><dd>
-<tt>putenv</tt> - put environment variable
-<p>
-<dt><encaps>SYNTAX</encaps><dd>
-<tt>void putenv(string <I>varname</I>, string <I>value</I>);<br>
-</tt>
-<p>
-<dt><encaps>DESCRIPTION</encaps><dd>
+
+<function name=putenv title="put environment variable">
+<man_syntax>
+void putenv(string <I>varname</I>, string <I>value</I>);
+</man_syntax>
+<man_description>
 This function sets the environment variable <i>varname</i> to <i>value</i>.
-<p>
-<dt><encaps>SEE ALSO</encaps><dd>
-<link to=getenv>getenv</link> and <link to=exece>exece</link>
-<p>
-</dl>
-</anchor>
+</man_description>
+<man_see>
+getenv, exece
+</man_see>
+</function>
 
 <HR NEWPAGE>
-<anchor name=query_host_name>
-<dl>
-<dt><encaps>NAME</encaps><dd>
-<tt>query_host_name</tt> - return the name of the host we are running on
-<p>
-<dt><encaps>SYNTAX</encaps><dd>
-<tt>string query_host_name();<br>
-</tt>
-<p>
-<dt><encaps>DESCRIPTION</encaps><dd>
+
+<function name=query_host_name title="return the name of the host we are running on">
+<man_syntax>
+string query_host_name();
+</man_syntax>
+<man_description>
 This function returns the name of the machine the interpreter is
 running on. This is the same thing that the command <tt>hostname</tt>
 prints.
-
-<p>
-</dl>
-</anchor>
+</man_description>
+</function>
 
 <HR NEWPAGE>
-<anchor name=query_num_arg>
-<dl>
-<dt><encaps>NAME</encaps><dd>
-<tt>query_num_arg</tt> - find out how many arguments were given
-<p>
-<dt><encaps>SYNTAX</encaps><dd>
-<tt>int query_num_arg();<br>
-</tt>
-<p>
-<dt><encaps>DESCRIPTION</encaps><dd>
+
+<function name=query_num_arg title="find out how many arguments were given">
+<man_syntax>
+int query_num_arg();
+</man_syntax>
+<man_description>
 <tt>query_num_arg</tt> returns the number of arguments given when this
 function was called. This is only useful for varargs functions.
-<p>
-<dt><encaps>SEE ALSO</encaps><dd>
-<link to=call_function>call_function</link>
-<p>
-</dl>
-</anchor>
+</man_description>
+<man_see>
+call_function
+</man_see>
+</function>
 
 <HR NEWPAGE>
-<anchor name=random>
-<dl>
-<dt><encaps>NAME</encaps><dd>
-<tt>random</tt> - return a random number
-<p>
-<dt><encaps>SYNTAX</encaps><dd>
-<tt>int random(int <I>max</I>);<br>
-</tt>
-<p>
-<dt><encaps>DESCRIPTION</encaps><dd>
+
+<function name=random title="return a random number">
+<man_syntax>
+int random(int <I>max</I>);
+</man_syntax>
+<man_description>
 This function returns a random number in the range 0 - max-1.
-<p>
-<dt><encaps>SEE ALSO</encaps><dd>
-<link to=random_seed>random_seed</link>
-<p>
-</dl>
-</anchor>
+</man_description>
+<man_see>
+random_seed
+</man_see>
+</function>
 
 <HR NEWPAGE>
-<anchor name=random_seed>
-<dl>
-<dt><encaps>NAME</encaps><dd>
-<tt>random_seed</tt> - seed random generator
-<p>
-<dt><encaps>SYNTAX</encaps><dd>
-<tt>void random_seed(int <I>seed</I>);<br>
-</tt>
-<p>
-<dt><encaps>DESCRIPTION</encaps><dd>
+
+<function name=random_seed title="seed random generator">
+<man_syntax>
+void random_seed(int <I>seed</I>);
+</man_syntax>
+<man_description>
 This function sets the initial value for the random generator.
-<p>
-<dt><encaps>EXAMPLE</encaps><dd>
-<tt>Pike v1.0E-13 Running Hilfe v1.2 (Hubbe's Incremental Pike Front-End)<br>
+</man_description>
+<man_example>
+Pike v1.0E-13 Running Hilfe v1.2 (Hubbe's Incremental Pike Front-End)<br>
 &gt; random_seed(17);<br>
 Result: 0<br>
 &gt; random(1000);<br>
@@ -10284,118 +10050,88 @@ Result: 178<br>
 &gt; random(1000);<br>
 Result: 94<br>
 &gt;<br>
-</tt>
-<p>
-<dt><encaps>SEE ALSO</encaps><dd>
-<link to=random>random</link>
-<p>
-</dl>
-</anchor>
+</man_example>
+<man_see>
+random
+</man_see>
+</function>
 
 <HR NEWPAGE>
-<anchor name=remove_call_out>
-<dl>
-<dt><encaps>NAME</encaps><dd>
-<tt>remove_call_out</tt> - remove a call out from the call out queue
-<p>
-<dt><encaps>SYNTAX</encaps><dd>
-<tt>int remove_call_out(function <I>f</I>);<br>
-or<br>
-int remove_call_out(function <I>id</I>);<br>
-</tt>
-<p>
-<dt><encaps>DESCRIPTION</encaps><dd>
+
+<function name=remove_call_out title="remove a call out from the call out queue">
+<man_syntax>
+int remove_call_out(function <I>f</I>);<br>
+int remove_call_out(function <I>id</I>);
+</man_syntax>
+<man_description>
 This function finds the first call to the function <i>f</i> in the call
 out queue and removes it. The time left to that call out will be
 returned. If no call out was found, zero_type(remove_call_out(f))
 will return 1. You can also give a call out id as argument. (as
 returned by call_out)
-<p>
-<dt><encaps>SEE ALSO</encaps><dd>
-<link to=call_out_info>call_out_info</link>, <link to=call_out>call_out</link> and <link to=find_call_out>find_call_out</link>
-<p>
-</dl>
-</anchor>
+</man_description>
+<man_see>
+call_out_info, call_out, find_call_out
+</man_see>
+</function>
 
 <HR NEWPAGE>
-<anchor name=remove_include_path>
-<dl>
-<dt><encaps>NAME</encaps><dd>
-<tt>remove_include_path</tt> - remove a directory to search for include files
-<p>
-<dt><encaps>SYNTAX</encaps><dd>
-<tt>void remove_include_path(string <I>path</I>);<br>
-</tt>
-<p>
-<dt><encaps>DESCRIPTION</encaps><dd>
+
+<function name=remove_include_path title="remove a directory to search for include files">
+<man_syntax>
+void remove_include_path(string <I>path</I>);
+</man_syntax>
+<man_description>
 This function removes a directory from the list of directories to search
 for include files. It is the opposite of add_include_path.
-<p>
-<dt><encaps>SEE ALSO</encaps><dd>
-<link to=add_include_path>add_include_path</link> and <link to=include>#include</link>
-<p>
-</dl>
-</anchor>
+</man_description>
+<man_see>
+add_include_path, #include
+</man_see>
+</function>
 
 <HR NEWPAGE>
-<anchor name=remove_module_path>
-<dl>
-<dt><encaps>NAME</encaps><dd>
-<tt>remove_module_path</tt> - remove a directory to search for modules
-<p>
-<dt><encaps>SYNTAX</encaps><dd>
-<tt>void remove_module_path(string <I>path</I>);<br>
-</tt>
-<p>
-<dt><encaps>DESCRIPTION</encaps><dd>
+
+<function name=remove_module_path title="remove a directory to search for modules">
+<man_syntax>
+void remove_module_path(string <I>path</I>);
+</man_syntax>
+<man_description>
 This function removes a directory from the list of directories to search
 for modules. It is the opposite of add_module_path. For more information
 about modules, see <ref to=modules>.
-<p>
-<dt><encaps>SEE ALSO</encaps><dd>
-<link to=add_module_path>add_module_path</link>
-<p>
-</dl>
-</anchor>
+</man_description>
+<man_see>
+add_module_path
+</man_see>
+</function>
 
 <HR NEWPAGE>
-<anchor name=remove_program_path>
-<dl>
-<dt><encaps>NAME</encaps><dd>
-<tt>remove_program_path</tt> - remove a directory to search for modules
-<p>
-<dt><encaps>SYNTAX</encaps><dd>
-<tt>void remove_program_path(string <I>path</I>);<br>
-</tt>
-<p>
-<dt><encaps>DESCRIPTION</encaps><dd>
+
+<function name=remove_program_path title="remove a directory to search for modules">
+<man_syntax>
+void remove_program_path(string <I>path</I>);
+</man_syntax>
+<man_description>
 This function removes a directory from the list of directories to search
 for program. It is the opposite of add_program_path. For more information
 about programs, see <ref to=programs>.
-<p>
-<dt><encaps>SEE ALSO</encaps><dd>
-<link to=add_program_path>add_program_path</link>
-<p>
-</dl>
-</anchor>
+</man_description>
+<man_see>
+add_program_path
+</man_see>
+</function>
 
 <HR NEWPAGE>
-<anchor name=replace>
-<dl>
-<dt><encaps>NAME</encaps><dd>
-<tt>replace</tt> - generic replace function
-<p>
-<dt><encaps>SYNTAX</encaps><dd>
-<tt>string replace(string <I>s</I>, string <I>from</I>, string <I>to</I>);<br>
-or<br>
+
+<function name=replace title="generic replace function">
+<man_syntax>
+string replace(string <I>s</I>, string <I>from</I>, string <I>to</I>);<br>
 string replace(string <I>s</I>, array(string) <I>from</I>, array(string) <I>to</I>);<br>
-or<br>
 array replace(array <I>a</I>, mixed <I>from</I>, mixed <I>to</I>);<br>
-or<br>
-mapping replace(mapping <I>a</I>, mixed <I>from</I>, mixed <I>to</I>);<br>
-</tt>
-<p>
-<dt><encaps>DESCRIPTION</encaps><dd>
+mapping replace(mapping <I>a</I>, mixed <I>from</I>, mixed <I>to</I>);
+</man_syntax>
+<man_description>
 This function can do several kinds replacement operations, the
 different syntaxes do different things as follow:
 <p>string replace(string s, string from, string to);
@@ -10416,110 +10152,83 @@ from[1] is replaced by to[1] and so on...<br>
 a are searched for values equal to from, which are replaced by<br>
 to destructively.<br>
 </dl>
-<p>
-</dl>
-</anchor>
+</man_description>
+</function>
 
 <HR NEWPAGE>
-<anchor name=replace_master>
-<dl>
-<dt><encaps>NAME</encaps><dd>
-<tt>replace_master</tt> - replace the master object
-<p>
-<dt><encaps>SYNTAX</encaps><dd>
-<tt>void replace_master(object <I>o</I>);<br>
-</tt>
-<p>
-<dt><encaps>DESCRIPTION</encaps><dd>
+
+<function name=replace_master title="replace the master object">
+<man_syntax>
+void replace_master(object <I>o</I>);
+</man_syntax>
+<man_description>
 This function replaces the master object with the argument you specify.
 This will let you control many aspects of how Pike works, but beware that
 master.pike may be required to fill certain functions, so it is probably
 a good idea to have your master inherit the original master and only
 re-define certain functions.
 <!-- FIX ME, tell how to inherit the master -->
-</dl>
-</anchor>
+</man_description>
+</function>
 
 <HR NEWPAGE>
-<anchor name=reverse>
-<dl>
-<dt><encaps>NAME</encaps><dd>
-<tt>reverse</tt> - reverse a string, array or int
-<p>
-<dt><encaps>SYNTAX</encaps><dd>
-<tt>string reverse(string <I>s</I>);<br>
-or<br>
+
+<function name=reverse title="reverse a string, array or int">
+<man_syntax>
+string reverse(string <I>s</I>);<br>
 array reverse(array <I>a</I>);<br>
-or<br>
-int reverse(int <I>i</I>);<br>
-</tt>
-<p>
-<dt><encaps>DESCRIPTION</encaps><dd>
+int reverse(int <I>i</I>);
+</man_syntax>
+<man_description>
 This function reverses a string, char by char, an array, value
 by value or an int, bit by bit and returns the result. Reversing
 strings can be particularly useful for parsing difficult syntaxes
 which require scanning backwards.
-<p>
-<dt><encaps>SEE ALSO</encaps><dd>
-<link to=sscanf>sscanf</link>
-<p>
-</dl>
-</anchor>
-
+</man_description>
+<man_see>
+sscanf
+</man_see>
+</function>
 
 <HR NEWPAGE>
-<anchor name=rm>
-<dl>
-<dt><encaps>NAME</encaps><dd>
-<tt>rm</tt> - remove file or directory
-<p>
-<dt><encaps>SYNTAX</encaps><dd>
-<tt>int rm(string <I>f</I>);<br>
-</tt>
-<p>
-<dt><encaps>DESCRIPTION</encaps><dd>
+
+<function name=rm title="remove file or directory">
+<man_syntax>
+int rm(string <I>f</I>);
+</man_syntax>
+<man_description>
 Remove a file or directory, return 0 if it fails. Nonzero otherwise.
-<p>
-<dt><encaps>SEE ALSO</encaps><dd>
-<link to=mkdir>mkdir</link>
-<p>
-</dl>
-</anchor>
+</man_description>
+<man_see>
+mkdir
+</man_see>
+</function>
 
 <HR NEWPAGE>
-<anchor name=rows>
-<dl>
-<dt><encaps>NAME</encaps><dd>
-<tt>rows</tt> - select a set of rows from an array
-<p>
-<dt><encaps>SYNTAX</encaps><dd>
-<tt>array rows(mixed data, mixed *index)<br>
-</tt>
-<p>
-<dt><encaps>DESCRIPTION</encaps><dd>
+
+<function name=rows title="select a set of rows from an array">
+<man_syntax>
+array rows(mixed data, mixed *index);
+</man_syntax>
+<man_description>
 This function is exactly equivalent to:
 <p>map_array(index,lambda(mixed x,mixed y) { return y[x]; },data)
 <p>Except of course it is a lot shorter and faster.
 That is, it indexes data on every index in the array index and
 returns an array with the results.
-<p>
-<dt><encaps>SEE ALSO</encaps><dd>
-<link to=column>column</link>
-<p>
-</dl>
-</anchor>
+</man_description>
+<man_see>
+column
+</man_see>
+</function>
 
 <HR NEWPAGE>
-<anchor name=rusage>
-<dl>
-<dt><encaps>NAME</encaps><dd>
-<tt>rusage</tt> - return resource usage
-<p>
-<dt><encaps>SYNTAX</encaps><dd>
-<tt>int *rusage();<br>
-</tt>
-<p>
-<dt><encaps>DESCRIPTION</encaps><dd>
+
+<function name=rusage title="return resource usage">
+<man_syntax>
+int *rusage();
+</man_syntax>
+<man_description>
 This function returns an array of ints describing how much resources
 the interpreter process has used so far. This array will have at least
 29 elements, of which those values not available on this system will
@@ -10555,21 +10264,19 @@ be zero. The elements are as follows:
 28: stksize
 <p>Don't ask me to explain these values, read your system manuals for
 more information. (Note that all values may not be present though)
-<p>
-<dt><encaps>SEE ALSO</encaps><dd>
-<link to=time>time</link>
-<p>
-</dl>
-</anchor>
+</man_description>
+<man_see>
+time
+</man_see>
+</function>
 
 <HR NEWPAGE>
+
 <function name=search title="search for a value in a string or array">
 <man_syntax>
 int search(string <I>haystack</I>, string <I>needle</I>, [ int <I>start</I> ]);<br>
-or<br>
 int search(mixed *<I>haystack</I>, mixed <I>needle</I>, [ int <I>start</I> ]);<br>
-or<br>
-mixed search(mapping <I>haystack</I>, mixed <I>needle</I>, [ mixed <I>start</I> ]);<br>
+mixed search(mapping <I>haystack</I>, mixed <I>needle</I>, [ mixed <I>start</I> ]);
 </man_syntax>
 <man_description>
 Search for <i>needle</i> in <i>haystack</i>. Return the position of <i>needle</i> in
@@ -10584,22 +10291,19 @@ connected to the data <i>needle</i>. That is, it tries to lookup the mapping
 backwards. If <i>needle</i> isn't present in the mapping, zero is returned,
 and zero_type() will return 1 for this zero.
 </man_description>
-<man_see>indices, values, zero_type</man_see>
+<man_see>
+indices, values, zero_type
+</man_see>
 </function>
 
 <HR NEWPAGE>
-<anchor name=signal>
-<dl>
-<dt><encaps>NAME</encaps><dd>
-<tt>signal</tt> - trap signals
-<p>
-<dt><encaps>SYNTAX</encaps><dd>
-<tt>void signal(int <I>sig</I>, function(int:void) <I>callback</I>);<br>
-or<br>
-void signal(int <I>sig</I>);<br>
-</tt>
-<p>
-<dt><encaps>DESCRIPTION</encaps><dd>
+
+<function name=signal title="trap signals">
+<man_syntax>
+void signal(int <I>sig</I>, function(int:void) <I>callback</I>);<br>
+void signal(int <I>sig</I>);
+</man_syntax>
+<man_description>
 This function allows you to trap a signal and have a function called
 when the process receives a signal. Although it IS possible to trap
 SIGBUS, SIGSEGV etc. I advice you not to. Pike should not receive any
@@ -10610,130 +10314,98 @@ See the document for the function 'kill' for a list of signals.
 <p>If no second argument is given, the signal handler for that signal
 is restored to the default handler.
 <p>If the second argument is zero, the signal will be completely ignored.
-<p>
-<dt><encaps>SEE ALSO</encaps><dd>
-<link to=kill>kill</link>, <link to=signame>signame</link> and <link to=signum>signum</link>
-<p>
-</dl>
-</anchor>
+</man_description>
+<man_see>
+kill, signame, signum
+</man_see>
+</function>
 
 <HR NEWPAGE>
-<anchor name=signame>
-<dl>
-<dt><encaps>NAME</encaps><dd>
-<tt>signame</tt> - get the name of a signal
-<p>
-<dt><encaps>SYNTAX</encaps><dd>
-<tt>string signame(int <I>sig</I>);<br>
-</tt>
-<p>
-<dt><encaps>DESCRIPTION</encaps><dd>
+
+<function name=signame title="get the name of a signal">
+<man_syntax>
+string signame(int <I>sig</I>);
+</man_syntax>
+<man_description>
 Returns a string describing the signal.
-<p>
-<dt><encaps>EXAMPLE</encaps><dd>
-<tt>&gt; signame(9);<br>
+</man_description>
+<man_example>
+&gt; signame(9);<br>
 Result: SIGKILL<br>
-</tt>
-<p>
-<dt><encaps>SEE ALSO</encaps><dd>
-<link to=kill>kill</link>, <link to=signum>signum</link> and <link to=signal>signal</link>
-<p>
-</dl>
-</anchor>
+</man_example>
+<man_see>
+kill, signum, signal
+</man_see>
+</function>
 
 <HR NEWPAGE>
-<anchor name=signum>
-<dl>
-<dt><encaps>NAME</encaps><dd>
-<tt>signum</tt> - get a signal number given a descriptive string
-<p>
-<dt><encaps>SYNTAX</encaps><dd>
-<tt>int signum(string <I>sig</I>);<br>
-</tt>
-<p>
-<dt><encaps>DESCRIPTION</encaps><dd>
+
+<function name=signum title="get a signal number given a descriptive string">
+<man_syntax>
+int signum(string <I>sig</I>);
+</man_syntax>
+<man_description>
 This function is the opposite of signame.
-<p>
-<dt><encaps>EXAMPLE</encaps><dd>
-<tt>&gt; signum("SIGKILL");<br>
+</man_description>
+<man_example>
+&gt; signum("SIGKILL");<br>
 Result: 9<br>
-</tt>
-<p>
-<dt><encaps>SEE ALSO</encaps><dd>
-<link to=signame>signame</link>, <link to=kill>kill</link> and <link to=signal>signal</link>
-<p>
-</dl>
-</anchor>
+</man_example>
+<man_see>
+signame, kill, signal
+</man_see>
+</function>
 
 <HR NEWPAGE>
-<anchor name=sin>
-<dl>
-<dt><encaps>NAME</encaps><dd>
-<tt>sin</tt> - Trigonometrical sine
-<p>
-<dt><encaps>SYNTAX</encaps><dd>
-<tt>float sin(float <I>f</I>);<br>
-</tt>
-<p>
-<dt><encaps>DESCRIPTION</encaps><dd>
+
+<function name=sin title="trigonometrical sine">
+<man_syntax>
+float sin(float <I>f</I>);
+</man_syntax>
+<man_description>
 Returns the sinus value for <i>f</i>.
-<p>
-<dt><encaps>SEE ALSO</encaps><dd>
-<link to=asin>asin</link> and <link to=cos>cos</link>
-<p>
-</dl>
-</anchor>
+</man_description>
+<man_see>
+asin, cos
+</man_see>
+</function>
 
 <HR NEWPAGE>
-<anchor name=sizeof>
-<dl>
-<dt><encaps>NAME</encaps><dd>
-<tt>sizeof</tt> - return the size of an array, string, multiset or mapping
-<p>
-<dt><encaps>SYNTAX</encaps><dd>
-<tt>int sizeof(string|multiset|mapping|array|object <I>a</I>);<br>
-</tt>
-<p>
-<dt><encaps>DESCRIPTION</encaps><dd>
+
+<function name=sizeof title="return the size of an array, string, multiset or mapping">
+<man_syntax>
+int sizeof(string|multiset|mapping|array|object <I>a</I>);
+</man_syntax>
+<man_description>
 This function returns the number of indexes available in the argument
 given to it. It replaces older functions like strlen, m_sizeof and
 size.
-<p>
-</dl>
-</anchor>
+</man_description>
+</function>
 
 <HR NEWPAGE>
-<anchor name=sleep>
-<dl>
-<dt><encaps>NAME</encaps><dd>
-<tt>sleep</tt> - let interpreter doze off for a while
-<p>
-<dt><encaps>SYNTAX</encaps><dd>
-<tt>void sleep(int <I>s</I>);<br>
-</tt>
-<p>
-<dt><encaps>DESCRIPTION</encaps><dd>
+
+<function name=sleep title="let interpreter doze off for a while">
+<man_syntax>
+void sleep(int <I>s</I>);
+</man_syntax>
+<man_description>
 This function makes the program stop for s seconds. Only signal
 handlers can interrupt the sleep. Other callbacks are not called
 during sleep.
-<p>
-<dt><encaps>SEE ALSO</encaps><dd>
-<link to=signal>signal</link>
-<p>
-</dl>
-</anchor>
+</man_description>
+<man_see>
+signal
+</man_see>
+</function>
 
 <HR NEWPAGE>
-<anchor name=sort>
-<dl>
-<dt><encaps>NAME</encaps><dd>
-<tt>sort</tt> - sort an array destructively
-<p>
-<dt><encaps>SYNTAX</encaps><dd>
-<tt>mixed *sort(array(mixed) <I>index</I>, array(mixed) ... <I>data</I>);<br>
-</tt>
-<p>
-<dt><encaps>DESCRIPTION</encaps><dd>
+
+<function name=sort title="sort an array destructively">
+<man_syntax>
+mixed *sort(array(mixed) <I>index</I>, array(mixed) ... <I>data</I>);
+</man_syntax>
+<man_description>
 This function sorts the array 'index' destructively. That means
 that the array itself is changed and returned, no copy is created.
 If extra arguments are given, they are supposed to be arrays of the
@@ -10743,14 +10415,14 @@ will be moved to position 0 in all the other arrays as well.
 <p>Sort can sort strings, integers and floats in ascending order.
 Arrays will be sorted first on the first element of each array.
 <p>Sort returns its first argument.
-<p>
-<dt><encaps>SEE ALSO</encaps><dd>
-<link to=reverse>reverse</link>
-<p>
-</dl>
-</anchor>
+</man_description>
+<man_see>
+reverse
+</man_see>
+</function>
 
 <HR NEWPAGE>
+
 <function name=sprintf title="print the result from sprintf">
 <man_syntax>
 string sprintf(string <I>format</I>,mixed <I>arg</I>,....);
@@ -10931,180 +10603,133 @@ sscanf
 </function>
 
 <HR NEWPAGE>
-<anchor name=sqrt>
-<dl>
-<dt><encaps>NAME</encaps><dd>
-<tt>sqrt</tt> - Square root
-<p>
-<dt><encaps>SYNTAX</encaps><dd>
-<tt>float sqrt(float <I>f</I>);<br>
-or<br>
-int sqrt(int <I>i</I>);<br>
-</tt>
-<p>
-<dt><encaps>DESCRIPTION</encaps><dd>
+
+<function name=sqrt title="square root">
+<man_syntax>
+float sqrt(float <I>f</I>);<br>
+int sqrt(int <I>i</I>);
+</man_syntax>
+<man_description>
 Returns the square root of <i>f</i>, or in the second case, the square root
 truncated to the closest lower integer.
-<p>
-<dt><encaps>SEE ALSO</encaps><dd>
-<link to=pow>pow</link>, <link to=log>log</link>, <link to=exp>exp</link> and <link to=floor>floor</link>
-<p>
-</dl>
-</anchor>
+</man_description>
+<man_see>
+pow, log, exp, floor
+</man_see>
+</function>
 
 <HR NEWPAGE>
-<anchor name=strerror>
-<dl>
-<dt><encaps>NAME</encaps><dd>
-<tt>strerror</tt> - return a string describing an error
-<p>
-<dt><encaps>SYNTAX</encaps><dd>
-<tt>string strerror(int <I>errno</I>);<br>
-</tt>
-<p>
-<dt><encaps>DESCRIPTION</encaps><dd>
+
+<function name=strerror title="return a string describing an error">
+<man_syntax>
+string strerror(int <I>errno</I>);
+</man_syntax>
+<man_description>
 This function returns a description of an error code. The error
 code is usually obtained from the file-&gt;errno() call.
-<p>
-<dt><encaps>NOTA BENE</encaps><dd>
+</man_description>
+<man_note>
 This function may not be available on all platforms.
-<p>
-</dl>
-</anchor>
+</man_note>
+</function>
 
 <HR NEWPAGE>
-<anchor name=stringp>
-<dl>
-<dt><encaps>NAME</encaps><dd>
-<tt>stringp</tt> - is the argument a string?
-<p>
-<dt><encaps>SYNTAX</encaps><dd>
-<tt>int stringp(mixed <I>arg</I>);<br>
-</tt>
-<p>
-<dt><encaps>DESCRIPTION</encaps><dd>
+
+<function name=stringp title="is the argument a string?">
+<man_syntax>
+int stringp(mixed <I>arg</I>);
+</man_syntax>
+<man_description>
 Returns 1 if <i>arg</i> is a string, zero otherwise.
-<p>
-<dt><encaps>SEE ALSO</encaps><dd>
-<link to=intp>intp</link>, <link to=multisetp>multisetp</link>, <link to=arrayp>arrayp</link>, <link to=programp>programp</link>, <link to=objectp>objectp</link>, <link to=mappingp>mappingp</link>, <link to=floatp>floatp</link> and <link to=functionp>functionp</link>
-<p>
-</dl>
-</anchor>
+</man_description>
+<man_see>
+intp, multisetp, arrayp, programp, objectp, mappingp, floatp, functionp
+</man_see>
+</function>
 
 <HR NEWPAGE>
-<anchor name=strlen>
-<dl>
-<dt><encaps>NAME</encaps><dd>
-<tt>strlen</tt> - Return the length of a string
-<p>
-<dt><encaps>SYNTAX</encaps><dd>
-<tt>int strlen(string <I>s</I>);<br>
-</tt>
-<p>
-<dt><encaps>DESCRIPTION</encaps><dd>
+
+<function name=strlen title="return the length of a string">
+<man_syntax>
+int strlen(string <I>s</I>);
+</man_syntax>
+<man_description>
 This function is equal to sizeof.
-<p>
-<dt><encaps>SEE ALSO</encaps><dd>
-<link to=sizeof>sizeof</link>
-<p>
-</dl>
-</anchor>
-
+</man_description>
+<man_see>
+sizeof
+</man_see>
+</function>
 
 <HR NEWPAGE>
-<anchor name=tan>
-<dl>
-<dt><encaps>NAME</encaps><dd>
-<tt>tan</tt> - Trigonometrical tangent
-<p>
-<dt><encaps>SYNTAX</encaps><dd>
-<tt>float tan(float <I>f</I>);<br>
-</tt>
-<p>
-<dt><encaps>DESCRIPTION</encaps><dd>
+
+<function name=tan title="trigonometrical tangent">
+<man_syntax>
+float tan(float <I>f</I>);
+</man_syntax>
+<man_description>
 Returns the tangent value for <i>f</i>.
-<p>
-<dt><encaps>SEE ALSO</encaps><dd>
-<link to=atan>atan</link>, <link to=sin>sin</link> and <link to=cos>cos</link>
-<p>
-</dl>
-</anchor>
+</man_description>
+<man_see>
+atan, sin, cos
+</man_see>
+</function>
 
 <HR NEWPAGE>
-<anchor name=this_object>
-<dl>
-<dt><encaps>NAME</encaps><dd>
-<tt>this_object</tt> - return the object we are evaluating in currently
-<p>
-<dt><encaps>SYNTAX</encaps><dd>
-<tt>object this_object();<br>
-</tt>
-<p>
-<dt><encaps>DESCRIPTION</encaps><dd>
+
+<function name=this_object title="return the object we are evaluating in currently">
+<man_syntax>
+object this_object();
+</man_syntax>
+<man_description>
 This function returns the object we are currently evaluating in.
-<p>
-</dl>
-</anchor>
+</man_description>
+</function>
 
 <HR NEWPAGE>
-<anchor name=throw>
-<dl>
-<dt><encaps>NAME</encaps><dd>
-<tt>throw</tt> - throw a value to catch or global error handling
-<p>
-<dt><encaps>SYNTAX</encaps><dd>
-<tt>void throw(mixed <I>value</I>);<br>
-</tt>
-<p>
-<dt><encaps>DESCRIPTION</encaps><dd>
+
+<function name=throw title="throw a value to catch or global error handling">
+<man_syntax>
+void throw(mixed <I>value</I>);
+</man_syntax>
+<man_description>
 This function throws a value to a waiting catch. If no catch is
 waiting global error handling will send the value to handle_error
 in the master object. If you throw an array with where the first
 index contains an error message and the second index is a backtrace,
 (the output from backtrace() that is) then it will be treated exactly
 like a real error by overlying functions.
-<p>
-<dt><encaps>SEE ALSO</encaps><dd>
-<link to=catch>catch</link>
-<p>
-</dl>
-</anchor>
+</man_description>
+<man_see>
+catch
+</man_see>
+</function>
 
 <HR NEWPAGE>
-<anchor name=time>
-<dl>
-<dt><encaps>NAME</encaps><dd>
-<tt>time</tt> - return the current time
-<p>
-<dt><encaps>SYNTAX</encaps><dd>
-<tt>int time();<br>
-or<br>
-int time(1);<br>
-</tt>
-<p>
-<dt><encaps>DESCRIPTION</encaps><dd>
+
+<function name=time title="return the current time">
+<man_syntax>
+int time();<br>
+int time(1);
+</man_syntax>
+<man_description>
 This function returns the number of seconds since 1 Jan 1970.
 The function ctime() converts this integer to a readable string.
 <p>The second syntax does not call the system call time() as often,
 but is only updated in the backed. (when Pike code isn't running)
-<p>
-<dt><encaps>SEE ALSO</encaps><dd>
-<link to=time>time</link>
-<p>
-</dl>
-</anchor>
+</man_description>
+<man_see>
+time
+</man_see>
+</function>
 
 <HR NEWPAGE>
-<anchor name=trace>
-<dl>
-<dt><encaps>NAME</encaps><dd>
-<tt>trace</tt> - change debug trace level
-<p>
-<dt><encaps>SYNTAX</encaps><dd>
-<tt>int trace(int <I>t</I>);<br>
-</tt>
-<p>
-<dt><encaps>DESCRIPTION</encaps><dd>
+
+<function name=trace title="change debug trace level">
+<man_syntax>
+int trace(int <I>t</I>);
+</man_syntax>
+<man_description>
 This function affects the debug trace level. (also set by the -t
 command line option) The old level is returned. Trace level 1 or
 higher means that calls to Pike functions are printed to stderr,
@@ -11112,161 +10737,122 @@ level 2 or higher means calls to builtin functions are printed, 3
 means every opcode interpreted is printed, 4 means arguments to
 these opcodes are printed as well. See the command lines options
 for more information
-<p>
-</dl>
-</anchor>
+</man_description>
+</function>
 
 <HR NEWPAGE>
-<anchor name=typeof>
-<dl>
-<dt><encaps>NAME</encaps><dd>
-<tt>typeof</tt> - check return type of expression
-<p>
-<dt><encaps>SYNTAX</encaps><dd>
-<tt>typeof ( expression )<br>
-</tt>
-<p>
-<dt><encaps>DESCRIPTION</encaps><dd>
+
+<function name=typeof title="check return type of expression">
+<man_syntax>
+typeof ( expression );
+</man_syntax>
+<man_description>
 This is a not really a function even if it looks like it, it returns
 a human readable (almost) representation of the type that the
 expression would return without actually evaluating it.
 The representation is in the form of a string.
-<p>
-<dt><encaps>EXAMPLE</encaps><dd>
-<tt>&gt; typeof(`sizeof);<br>
+</man_description>
+<man_example>
+&gt; typeof(`sizeof);<br>
 Result: function(object | mapping | array | multiset | string : int)<br>
 &gt; typeof(sizeof(({})));<br>
 Result: int<br>
 &gt; <br>
-</tt>
-<p>
-</dl>
-</anchor>
+</man_example>
+</function>
 
 <HR NEWPAGE>
-<anchor name=ualarm>
-<dl>
-<dt><encaps>NAME</encaps><dd>
-<tt>ualarm</tt> - set an alarm clock for delivery of a signal
-<p>
-<dt><encaps>SYNTAX</encaps><dd>
-<tt>int ualarm(int <I>useconds</I>);<br>
-</tt>
-<p>
-<dt><encaps>DESCRIPTION</encaps><dd>
+
+<function name=ualarm title="set an alarm clock for delivery of a signal">
+<man_syntax>
+int ualarm(int <I>useconds</I>);
+</man_syntax>
+<man_description>
 ualarm arranges for a SIGALRM signal to be delivered to the
 process in useconds micro seconds.
 <p>If useconds is zero, no new alarm is scheduled.
 <p>In any event any previously set alarm is canceled.
-<p>
-<dt><encaps>RETURN VALUE</encaps><dd>
+</man_description>
+<man_returns>
 ualarm returns the number of microseconds seconds  remaining<br>
 <dl><dt><dd>until any previously  scheduled  alarm  was  due to be delivered, or<br>
-</dl>zero if there was no previously scheduled alarm.<br>
-
-<p>
-<dt><encaps>SEE ALSO</encaps><dd>
-<link to=signal>signal</link>
-<p>
-</dl>
-</anchor>
+</dl>zero if there was no previously scheduled alarm.
+</man_returns>
+<man_see>
+signal
+</man_see>
+</function>
 
 <HR NEWPAGE>
-<anchor name=upper_case>
-<dl>
-<dt><encaps>NAME</encaps><dd>
-<tt>upper_case</tt> - convert a string to upper case
-<p>
-<dt><encaps>SYNTAX</encaps><dd>
-<tt>string upper_case(string <I>s</I>);<br>
-</tt>
-<p>
-<dt><encaps>DESCRIPTION</encaps><dd>
+
+<function name=upper_case title="convert a string to upper case">
+<man_syntax>
+string upper_case(string <I>s</I>);
+</man_syntax>
+<man_description>
 Returns a copy of the string <i>s</i> with all lower case character converted
 to upper case character.
-<p>
-<dt><encaps>SEE ALSO</encaps><dd>
-<link to=lower_case>lower_case</link>
-<p>
-</dl>
-</anchor>
+</man_description>
+<man_see>
+lower_case
+</man_see>
+</function>
 
 <HR NEWPAGE>
-<anchor name=values>
-<dl>
-<dt><encaps>NAME</encaps><dd>
-<tt>values</tt> - return an array of all possible values from indexing
-<p>
-<dt><encaps>SYNTAX</encaps><dd>
-<tt>mixed *values(string|multiset|mapping|array|object <I>foo</I>);<br>
-</tt>
-<p>
-<dt><encaps>DESCRIPTION</encaps><dd>
+
+<function name=values title="return an array of all possible values from indexing">
+<man_syntax>
+mixed *values(string|multiset|mapping|array|object <I>foo</I>);
+</man_syntax>
+<man_description>
 Values return an array of all values you can get when indexing the
 value foo. For strings, an array of int with the ascii values of the
 characters in the string is returned. For a multiset, an array filled with
 ones is return. For mappings, objects and arrays, the returned array
 may contain any kind of value.
-<p>
-<dt><encaps>SEE ALSO</encaps><dd>
-<link to=indices>indices</link>
-<p>
-</dl>
-</anchor>
+</man_description>
+<man_see>
+indices
+</man_see>
+</function>
 
 <HR NEWPAGE>
-<anchor name=version>
-<dl>
-<dt><encaps>NAME</encaps><dd>
-<tt>version</tt> - return version info
-<p>
-<dt><encaps>SYNTAX</encaps><dd>
-<tt>string version();<br>
-</tt>
-<p>
-<dt><encaps>DESCRIPTION</encaps><dd>
+
+<function name=version title="return version info">
+<man_syntax>
+string version();
+</man_syntax>
+<man_description>
 This function returns a brief information about the Pike version.
-<p>
-<dt><encaps>EXAMPLE</encaps><dd>
-<tt>&gt; version();<br>
+</man_description>
+<man_example>
+&gt; version();<br>
 Result: Pike v0.3<br>
-<br>
-</tt>
-<p>
-</dl>
-</anchor>
+</man_example>
+</function>
 
 <HR NEWPAGE>
-<anchor name=write>
-<dl>
-<dt><encaps>NAME</encaps><dd>
-<tt>write</tt> - write text to stdout
-<p>
-<dt><encaps>SYNTAX</encaps><dd>
-<tt>int write(string <I>text</I>);<br>
-</tt>
-<p>
-<dt><encaps>DESCRIPTION</encaps><dd>
+
+<function name=write title="write text to stdout">
+<man_syntax>
+int write(string <I>text</I>);
+</man_syntax>
+<man_description>
 Added by the master, it directly calls write in a
 <link to=Stdio.stdout>Stdio.stdout</link>.
-<p>
-<dt><encaps>SEE ALSO</encaps><dd>
-<link to=Stdio.werror>Stdio.werror</link>
-<p>
-</dl>
-</anchor>
+</man_description>
+<man_see>
+Stdio.werror
+</man_see>
+</function>
 
 <HR NEWPAGE>
-<anchor name=zero_type>
-<dl>
-<dt><encaps>NAME</encaps><dd>
-<tt>zero_type</tt> - return the type of zero
-<p>
-<dt><encaps>SYNTAX</encaps><dd>
-<tt>int zero_type(mixed <I>a</I>);<br>
-</tt>
-<p>
-<dt><encaps>DESCRIPTION</encaps><dd>
+
+<function name=zero_type title="return the type of zero">
+<man_syntax>
+int zero_type(mixed <I>a</I>);
+</man_syntax>
+<man_description>
 There are many types of zeros out there, or at least there are two.
 One is returned by normal functions, and one returned by mapping
 lookups and find_call_out() when what you looked for wasn't there.
@@ -11277,12 +10863,12 @@ no such call_out could be found. If the argument to zero_type is a
 destructed object or a function in a destructed object, 2 will be
 returned. Otherwise zero_type will return zero.
 <p>If the argument is not an int, zero will be returned.
-<p>
-<dt><encaps>SEE ALSO</encaps><dd>
-<link to=find_call_out>find_call_out</link>
-<p>
-</dl>
-</anchor>
+</man_description>
+<man_see>
+find_call_out
+</man_see>
+</function>
+
 </chapter>
 
 <!--
