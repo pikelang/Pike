@@ -4,7 +4,7 @@
 ||| See the files COPYING and DISCLAIMER for more information.
 \*/
 #include "global.h"
-RCSID("$Id: builtin_functions.c,v 1.85 1998/03/18 20:26:28 per Exp $");
+RCSID("$Id: builtin_functions.c,v 1.86 1998/03/20 03:40:50 per Exp $");
 #include "interpret.h"
 #include "svalue.h"
 #include "pike_macros.h"
@@ -83,7 +83,7 @@ void f_hash(INT32 args)
   if(sp[-args].type != T_STRING)
     error("Bad argument 1 to hash()\n");
   i=hashstr((unsigned char *)sp[-args].u.string->str,100);
-
+  
   if(args > 1)
   {
     if(sp[1-args].type != T_INT)
@@ -2403,15 +2403,7 @@ static void f_get_prof_info(INT32 args)
   if (!args) {
     error("get_profiling_info(): Too few arguments\n");
   }
-  if (sp[-args].type == T_FUNCTION 
-      && sp[-args].subtype != FUNCTION_BUILTIN) {
-    prog = sp[-args].u.object->prog;
-  } else if (sp[-args].type == T_OBJECT) {
-    prog = sp[-args].u.object->prog;
-  } else if (sp[-args].type == T_PROGRAM) {
-    prog = sp[-args].u.program;
-  }
-
+  prog = program_from_svalue(sp-args);
   if(!prog) error("get_profiling_info(): Bad argument 1\n");
 
   prog->refs++;
