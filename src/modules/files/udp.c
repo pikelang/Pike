@@ -1,5 +1,5 @@
 /*
- * $Id: udp.c,v 1.29 2002/02/05 19:08:59 mast Exp $
+ * $Id: udp.c,v 1.30 2002/05/06 16:21:18 hop%unibase.cz Exp $
  */
 
 #define NO_PIKE_SHORTHAND
@@ -7,7 +7,7 @@
 
 #include "file_machine.h"
 
-RCSID("$Id: udp.c,v 1.29 2002/02/05 19:08:59 mast Exp $");
+RCSID("$Id: udp.c,v 1.30 2002/05/06 16:21:18 hop%unibase.cz Exp $");
 #include "fdlib.h"
 #include "interpret.h"
 #include "svalue.h"
@@ -153,9 +153,9 @@ struct udp_storage {
 
 extern void get_inet_addr(struct sockaddr_in *addr,char *name);
 
-/*! @decl object bind(int a, void|string b)
- *! @fixme
- *! Document this function.
+/*! @decl object bind(int port, void|string address)
+ *!
+ *! Assignes local port and local address.
  */
 static void udp_bind(INT32 args)
 {
@@ -275,8 +275,8 @@ void udp_enable_broadcast(INT32 args)
 }
 
 /*! @decl int wait(int|float timeout)
- *! @fixme
- *! Document this function.
+ *!
+ *! Check for data and wait max. @[timeout].
  */
 void udp_wait(INT32 args)
 {
@@ -449,9 +449,13 @@ void udp_read(INT32 args)
   f_aggregate_mapping( 6 );
 }
 
-/*! @decl int send(string a, int b, string c, void|int d)
- *! @fixme
- *! Document this function.
+/*! @decl int send(string to, int port, string message, void|int flags)
+ *!
+ *! Send data to a UDP socket. The recepient address will be @[to]
+ *! and port will be @[port].
+ *!
+ *! Writes @[message] and returns the number of bytes that were
+ *! actually written.
  */
 void udp_sendto(INT32 args)
 {
@@ -484,6 +488,9 @@ void udp_sendto(INT32 args)
   else if(args != 3)
     Pike_error("Illegal number of arguments to udp->sendto(string to"
 	       ", int port, string message, void|int flags)\n");
+
+  if( Pike_sp[2-args].type!=PIKE_T_STRING ) 
+    Pike_error("Illegal type of argument to sendto, got non-string message.\n");
 
   if( Pike_sp[-args].type==PIKE_T_STRING ) 
     get_inet_addr(&to, Pike_sp[-args].u.string->str);
