@@ -30,5 +30,5 @@ verbose_verify: module_testsuite
 gdb_verify: module_testsuite
 	@echo >.gdbinit handle SIGUSR1 nostop noprint pass
 	@echo >>.gdbinit run -m @srcdir@/../../../lib/master.pike $(PIKEOPTS) @srcdir@/../../../bin/test_pike.pike module_testsuite -v -v -f
-	gdb ./pike
+	gdb ../../pike
 	@rm .gdbinit
