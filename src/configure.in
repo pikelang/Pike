@@ -1,4 +1,4 @@
-AC_REVISION("$Id: configure.in,v 1.598 2002/08/15 10:41:23 grubba Exp $")
+AC_REVISION("$Id: configure.in,v 1.599 2002/08/16 14:14:09 grubba Exp $")
 AC_INIT(interpret.c)
 AC_CONFIG_HEADER(machine.h)
 
@@ -160,19 +160,23 @@ AC_DEFUN(AC_SYS_COMPILER_FLAG,
     ])
     CFLAGS="[$]OLD_CFLAGS"
     ac_link="[$]old_ac_link"
-    if grep 'unrecognized option' <conftezt.out.2 >/dev/null; then
+    if grep -i 'unrecognized option' <conftezt.out.2 >/dev/null; then
       pike_cv_option_$2=no
-    else
+    elif grep -i 'unknown option' <conftezt.out.2 >/dev/null; then
+      # cc/HPUX says the following regarding -q64:
+      #
+      # cc: warning 422: Unknown option "6" ignored.
+      # cc: warning 422: Unknown option "4" ignored.
+      pike_cv_option_$2=no
+    elif grep -i 'optimizer bugs' <conftezt.out.2 >/dev/null; then
       # gcc/FreeBSD-4.6/alpha says the following regarding -O2:
       #
       # cc1: warning: 
       # ***
       # ***     The -O2 flag TRIGGERS KNOWN OPTIMIZER BUGS ON THIS PLATFORM
       # ***
-      if grep -i 'optimizer bugs' <conftezt.out.2 >/dev/null; then
-        pike_cv_option_$2=no
-      else :; fi
-    fi
+      pike_cv_option_$2=no
+    else :; fi
     rm conftezt.out.2
   ])
   
