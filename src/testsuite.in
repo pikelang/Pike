@@ -1,4 +1,4 @@
-stest_true([["$Id: testsuite.in,v 1.116 1998/06/24 04:56:46 hubbe Exp $"]])
+stest_true([["$Id: testsuite.in,v 1.117 1998/07/15 23:35:14 hubbe Exp $"]])
 cond([[all_constants()->_verify_internals]],
 [[
   test_do(_verify_internals())
@@ -2304,6 +2304,8 @@ test_any([[ master()->set_inhibit_compile_errors(lambda(){});mixed res = catch{c
 
 // - time
 test_true(intp(time()))
+test_true(intp(time(1)))
+test_true(floatp(time(2)))
 
 // - trace
 test_do(trace(0))
