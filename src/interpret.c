@@ -25,17 +25,41 @@
 #include "lpc_signal.h"
 
 #define TRACE_LEN (100 + t_flag * 10)
-struct svalue evaluator_stack[EVALUATOR_STACK_SIZE];
-struct svalue *mark_stack[EVALUATOR_STACK_SIZE];
-struct frame *fp; /* frame pointer */
+
 
 /* sp points to first unused value on stack
  * (much simpler than letting it point at the last used value.)
  */
-struct svalue *sp=evaluator_stack;
+struct svalue *sp;
 
 /* mark stack, used to store markers into the normal stack */
-struct svalue **mark_sp=mark_stack;
+struct svalue **mark_sp;
+
+struct frame *fp; /* frame pointer */
+
+struct svalue evaluator_stack[EVALUATOR_STACK_SIZE];
+struct svalue *mark_stack[EVALUATOR_STACK_SIZE];
+
+void init_interpreter()
+{
+  sp=evaluator_stack;
+  mark_sp=mark_stack;
+}
+
+void exit_interpreter() {}
+
+void check_stack(INT32 size)
+{
+  if(sp - evaluator_stack + size >= EVALUATOR_STACK_SIZE)
+    error("Stack overflow.\n");
+}
+
+void check_mark_stack(INT32 size)
+{
+  if(mark_sp - mark_stack + size >= EVALUATOR_STACK_SIZE)
+    error("Stack overflow.\n");
+}
+
 
 static void eval_instruction(unsigned char *pc);
 
@@ -191,7 +215,7 @@ void print_return_value()
 void pop_n_elems(INT32 x)
 {
 #ifdef DEBUG
-  if(sp - &(evaluator_stack[0]) < x)
+  if(sp - evaluator_stack < x)
     fatal("Popping out of stack.\n");
 
   if(x < 0) fatal("Popping negative number of args....\n");
@@ -363,6 +387,9 @@ static void eval_instruction(unsigned char *pc)
 
     if(sp<evaluator_stack || mark_sp < mark_stack || fp->locals>sp)
       fatal("Stack error.\n");
+
+    if(sp > evaluator_stack+EVALUATOR_STACK_SIZE)
+      fatal("Stack error (overflow).\n");
 
     if(fp->fun>=0 && fp->current_object->prog &&
 	fp->locals+fp->num_locals > sp)
@@ -691,7 +718,6 @@ static void eval_instruction(unsigned char *pc)
       break;
 
       CASE(F_BRANCH_WHEN_ZERO);
-      check_destructed(sp-1);
       if(!IS_ZERO(sp-1))
       {
 	pc+=sizeof(INT32);
@@ -703,7 +729,6 @@ static void eval_instruction(unsigned char *pc)
       break;
       
       CASE(F_BRANCH_WHEN_NON_ZERO);
-      check_destructed(sp-1);
       if(IS_ZERO(sp-1))
       {
 	pc+=sizeof(INT32);
@@ -722,7 +747,6 @@ static void eval_instruction(unsigned char *pc)
       CJUMP(F_BRANCH_WHEN_GE,!is_lt);
 
       CASE(F_LAND);
-      check_destructed(sp-1);
       if(!IS_ZERO(sp-1))
       {
 	pc+=sizeof(INT32);
@@ -734,7 +758,6 @@ static void eval_instruction(unsigned char *pc)
       break;
 
       CASE(F_LOR);
-      check_destructed(sp-1);
       if(IS_ZERO(sp-1))
       {
 	pc+=sizeof(INT32);
@@ -812,14 +835,11 @@ static void eval_instruction(unsigned char *pc)
       {
 	sp[-1].u.float_number =- sp[-1].u.float_number;
       }else{
-	error("Bad argument to unary minus.\n");
+	o_negate();
       }
       break;
 
-      CASE(F_COMPL);
-      if(sp[-1].type != T_INT) error("Bad argument to ~.\n");
-      sp[-1].u.integer = ~ sp[-1].u.integer;
-      break;
+      CASE(F_COMPL); o_compl(); break;
 
       CASE(F_NOT);
       switch(sp[-1].type)
@@ -830,12 +850,15 @@ static void eval_instruction(unsigned char *pc)
 
       case T_FUNCTION:
       case T_OBJECT:
-	check_destructed(sp-1);
-	if(sp[-1].type == T_INT)
+	if(IS_ZERO(sp-1))
 	{
-	  sp[-1].u.integer=1;
-	  break;
+	  pop_stack();
+	  push_int(1);
+	}else{
+	  pop_stack();
+	  push_int(0);
 	}
+	break;
 
       default:
 	free_svalue(sp-1);
@@ -845,17 +868,25 @@ static void eval_instruction(unsigned char *pc)
       break;
 
       CASE(F_LSH);
-      if(sp[-2].type != T_INT) error("Bad argument 1 to <<\n");
-      if(sp[-1].type != T_INT) error("Bad argument 2 to <<\n");
-      sp--;
-      sp[-1].u.integer = sp[-1].u.integer << sp->u.integer;
+      if(sp[-2].type != T_INT)
+      {
+	o_lsh();
+      }else{
+	if(sp[-1].type != T_INT) error("Bad argument 2 to <<\n");
+	sp--;
+	sp[-1].u.integer = sp[-1].u.integer << sp->u.integer;
+      }
       break;
 
       CASE(F_RSH);
-      if(sp[-2].type != T_INT) error("Bad argument 1 to >>\n");
-      if(sp[-1].type != T_INT) error("Bad argument 2 to >>\n");
-      sp--;
-      sp[-1].u.integer = sp[-1].u.integer >> sp->u.integer;
+      if(sp[-2].type != T_INT)
+      {
+	o_rsh();
+      }else{
+	if(sp[-1].type != T_INT) error("Bad argument 2 to >>\n");
+	sp--;
+	sp[-1].u.integer = sp[-1].u.integer >> sp->u.integer;
+      }
       break;
 
       COMPARISMENT(F_EQ, is_eq(sp-2,sp-1));
@@ -889,11 +920,12 @@ static void eval_instruction(unsigned char *pc)
 
       CASE(F_RANGE); o_range(); break;
       CASE(F_COPY_VALUE);
-      copy_svalues_recursively_no_free(sp,sp-1,1,0);
-      sp++;
-      free_svalue(sp-2);
-      sp[-2]=sp[-1];
-      sp--;
+      {
+	struct svalue tmp;
+	copy_svalues_recursively_no_free(&tmp,sp-1,1,0);
+	free_svalue(sp-1);
+	sp[-1]=tmp;
+      }
       break;
 
       CASE(F_SSCANF); f_sscanf(GET_ARG()); break;
@@ -964,7 +996,6 @@ void apply_low(struct object *o, int fun, int args)
   struct frame new_frame;
   struct identifier *function;
 
-  check_signals();
   if(fun<0)
   {
     pop_n_elems(args);
@@ -972,8 +1003,9 @@ void apply_low(struct object *o, int fun, int args)
     return;
   }
 
-  if(evaluator_stack+EVALUATOR_STACK_SIZE-sp < 256)
-    error("Stack overflow.\n");
+  check_signals();
+  check_stack(256);
+  check_mark_stack(256);
 
   p=o->prog;
   if(!p)
@@ -1172,13 +1204,12 @@ void safe_apply_low(struct object *o,int fun,int args)
     sp->type = T_INT;
     sp++;
   }else{
-    struct svalue *expected_sp;
-    expected_sp=sp+1;
+    INT32 expected_stack = sp - evaluator_stack + 1;
     sp+=args;
     apply_low(o,fun,args);
-    if(sp > expected_sp)
-      pop_n_elems(sp-expected_sp);
-    if(sp < expected_sp)
+    if(sp - evaluator_stack > expected_stack)
+      pop_n_elems(sp - evaluator_stack - expected_stack);
+    if(sp - evaluator_stack < expected_stack)
     {
       sp->u.integer = 0;
       sp->subtype=NUMBER_NUMBER;
@@ -1198,37 +1229,28 @@ void safe_apply(struct object *o, char *fun ,INT32 args)
   safe_apply_low(o, find_identifier(fun, o->prog), args);
 }
 
+void apply_lfun(struct object *o, int fun, int args)
+{
+#ifdef DEBUG
+  if(fun < 0 || fun >= NUM_LFUNS)
+    fatal("Apply lfun on illegal value!\n");
+#endif
+  if(!o->prog)
+    error("Apply on destructed object.\n");
+
+  apply_low(o, o->prog->lfuns[fun], args);
+}
+
 void apply_shared(struct object *o,
 		  struct lpc_string *fun,
 		  int args)
 {
-  int fun_number;
-  fun_number = find_shared_string_identifier(fun, o->prog);
-  if(fun_number < 0)
-  {
-    pop_n_elems(args);
-    sp++;
-    sp->u.integer=0;
-    sp->type=T_INT;
-  }else{
-    apply_low(o, fun_number, args);
-  }
+  apply_low(o, find_shared_string_identifier(fun, o->prog), args);
 }
 
 void apply(struct object *o, char *fun, int args)
 {
-  int fun_number;
-
-  fun_number = find_identifier(fun, o->prog);
-  if(fun_number < 0)
-  {
-    pop_n_elems(args);
-    sp->u.integer=0;
-    sp->type=T_INT;
-    sp++;
-  }else{
-    apply_low(o, fun_number, args);
-  }
+  apply_low(o, find_identifier(fun, o->prog), args);
 }
 
 void strict_apply_svalue(struct svalue *s, INT32 args)
@@ -1333,18 +1355,20 @@ void apply_svalue(struct svalue *s, INT32 args)
     pop_n_elems(args);
     push_int(0);
   }else{
-    struct svalue *expected_sp=sp-args+1;
+    INT32 expected_stack=sp-args+1 - evaluator_stack;
+
     strict_apply_svalue(s,args);
-    if(sp > expected_sp)
+    if(sp > (expected_stack + evaluator_stack))
     {
-      pop_n_elems(sp-expected_sp);
+      pop_n_elems(sp-(expected_stack + evaluator_stack));
     }
-    else if(sp < expected_sp)
+    else if(sp < (expected_stack + evaluator_stack))
     {
       push_int(0);
     }
 #ifdef DEBUG
-    if(sp < expected_sp) fatal("Stack underflow!\n");
+    if(sp < (expected_stack + evaluator_stack))
+      fatal("Stack underflow!\n");
 #endif
   }
 }
@@ -1355,15 +1379,15 @@ void slow_check_stack()
   struct svalue *s,**m;
   struct frame *f;
 
-  check_stack();
+  debug_check_stack();
 
   if(sp > &(evaluator_stack[EVALUATOR_STACK_SIZE]))
     fatal("Stack overflow\n");
 
-  if(mark_sp < mark_stack)
-    fatal("Mark stack underflow.\n");
-
   if(mark_sp > &(mark_stack[EVALUATOR_STACK_SIZE]))
+    fatal("Mark stack overflow.\n");
+
+  if(mark_sp < mark_stack)
     fatal("Mark stack underflow.\n");
 
   for(s=evaluator_stack;s<sp;s++) check_svalue(s);

@@ -26,11 +26,12 @@ struct frame
 };
 
 #ifdef DEBUG
-#define check_stack() do{if(sp<evaluator_stack)fatal("Stack error.\n");}while(0)
+#define debug_check_stack() do{if(sp<evaluator_stack)fatal("Stack error.\n");}while(0)
 #else
-#define check_stack() 
+#define debug_check_stack() 
 #endif
-#define pop_stack() do{ free_svalue(--sp); check_stack(); }while(0)
+
+#define pop_stack() do{ free_svalue(--sp); debug_check_stack(); }while(0)
 #define push_program(P) sp->u.program=(P),sp++->type=T_PROGRAM
 #define push_int(I) sp->u.integer=(I),sp->type=T_INT,sp++->subtype=NUMBER_NUMBER
 #define push_mapping(M) sp->u.mapping=(M),sp++->type=T_MAPPING
@@ -66,9 +67,14 @@ do{ \
 }while(0)
 
 /* Prototypes begin here */
+void init_interpreter();
+void exit_interpreter();
+void check_stack(INT32 size);
+void check_mark_stack(INT32 size);
 void lvalue_to_svalue_no_free(struct svalue *to,struct svalue *lval);
 void assign_lvalue(struct svalue *lval,struct svalue *from);
 union anything *get_pointer_if_this_type(struct svalue *lval, TYPE_T t);
+void print_return_value();
 void pop_n_elems(INT32 x);
 void reset_evaluator();
 void f_catch(unsigned char *pc);
@@ -91,6 +97,7 @@ void cleanup_interpret();
 extern struct svalue *sp;
 extern struct svalue **mark_sp;
 extern struct svalue evaluator_stack[EVALUATOR_STACK_SIZE];
+extern struct svalue *mark_stack[EVALUATOR_STACK_SIZE];
 extern struct frame *fp; /* frame pointer */
 #endif
 
