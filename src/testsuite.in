@@ -1,4 +1,4 @@
-test_true([["$Id: testsuite.in,v 1.598 2003/02/12 22:57:54 mast Exp $"]]);
+test_true([["$Id: testsuite.in,v 1.599 2003/02/13 00:11:19 mast Exp $"]]);
 
 // This triggered a bug only if run sufficiently early.
 test_compile_any([[#pike 7.2]])
@@ -3952,8 +3952,6 @@ test_any([[{
 
   test_true(intp(gc()));
   test_any([[ array a=({0}); a[0]=a; gc(); a=0; return gc() > 0; ]],1);
-  test_any([[object o=class c {object o;}(); o->o=o; gc(); o=0; return gc() > 0; ]],1);
-  test_any([[object o=class c {object o;}(); o->o=o; gc(); o=0; return gc() > 0; ]],1);
   test_any([[mapping m=([]); m[m]=m; gc(); m=0; return gc() > 0; ]],1);
   test_any([[multiset m=(<>); m[m]=1; gc(); m=0; return gc() > 0; ]],1);
   test_any([[{
@@ -3971,6 +3969,39 @@ test_any([[{
     _debug (dlevel);
     return gc() > 0;
   }]], 1);
+
+test_any([[
+  object o = class {function f; void foo() {}}();
+  o->f = o->foo;
+  gc();
+  o = 0;
+  return gc();
+]], 0)
+test_any([[
+  object o = class {object o;}();
+  o->o = o;
+  gc();
+  o = 0;
+  return gc();
+]], 0)
+test_any([[
+  class X {function f; void foo() {}};
+  object o1 = X(), o2 = X();
+  o1->f = o2->foo;
+  o2->f = o1->foo;
+  gc();
+  o1 = o2 = 0;
+  return gc();
+]], 2)
+test_any([[
+  class X {object o;};
+  object o1 = X(), o2 = X();
+  o1->o = o2;
+  o2->o = o1;
+  gc();
+  o1 = o2 = 0;
+  return gc();
+]], 2)
 
   test_any([[gc();
       int q=lambda() { mixed foo; foo=lambda() { return foo; }; return 1; }();
@@ -4137,9 +4168,9 @@ test_any([[{
 
   test_any_equal([[{
     object o = class Live {
-      object o;
+      array g;
       array a = ({17});
-      void create() {o = this_object();}
+      void create() {g = ({this_object()});}
       void destroy() {all_constants()->kablutt = a;}
     }();
     o = 0;
@@ -4148,9 +4179,9 @@ test_any([[{
   }]], ({17}));
   test_any([[{
     object o = class Live {
-      object o;
+      array g;
       array a = set_weak_flag (({({17})}), 1);
-      void create() {o = this_object();}
+      void create() {g = ({this_object()});}
       void destroy() {
 	if (!equal (a, ({({17})})))
 	  error ("Contents in weak array zapped: %O.\n", a);
@@ -4161,9 +4192,9 @@ test_any([[{
   }]], 1);
   test_any_equal([[{
     object o = class Live {
-      object o;
+      array g;
       array a = set_weak_flag (({({17})}), 1);
-      void create() {o = this_object();}
+      void create() {g = ({this_object()});}
       void destroy() {all_constants()->blatinka = a;}
     }();
     o = 0;
@@ -4233,7 +4264,7 @@ test_do(add_constant("blatinka");)
 
   test_any([[{
     class Foo {
-      Foo f = this_object();
+      array(Foo) f = ({this_object()});
       multiset(Foo) g = set_weak_flag((<this_object()>), 1);
     };
     multiset(Foo) x = set_weak_flag ((<Foo()>), 1);
@@ -4242,7 +4273,7 @@ test_do(add_constant("blatinka");)
   }]], 1);
   test_any([[{
     class Foo {
-      Foo f = this_object();
+      array(Foo) f = ({this_object()});
       multiset(Foo) g = set_weak_flag((<this_object()>), 1);
       void destroy() {add_constant("beltbent_oblivion", 1);}
     };
@@ -4283,7 +4314,7 @@ test_do(add_constant("blatinka");)
   test_any([[{
     class Live {
       array a;
-      object o = this_object();
+      array g = ({this_object()});
       void create()
       {
 	a = set_weak_flag (({0}), 1);
