@@ -6,7 +6,7 @@
 // Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 // for more information.
 //
-// $Id: master.pike.in,v 1.358 2004/07/14 12:53:55 grubba Exp $
+// $Id: master.pike.in,v 1.359 2004/07/14 14:00:44 grubba Exp $
 
 #pike __REAL_VERSION__
 //#pragma strict_types
@@ -1130,6 +1130,10 @@ static void create()
   include_prefix = "¤include_prefix¤";
 #endif
   system_module_path=pike_module_path;
+  if (master()) {
+    // getenv() and putenv() will get confused if we don't do this.
+    environment = master()->environment || environment;
+  }
 }
 
 
