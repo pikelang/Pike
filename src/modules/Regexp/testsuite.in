@@ -1,4 +1,4 @@
-// $Id: testsuite.in,v 1.4 1999/11/22 16:46:15 noring Exp $
+// $Id: testsuite.in,v 1.5 1999/11/23 13:40:59 noring Exp $
 
 // - Here we try the Regexp module
 test_true([[objectp(Regexp("foo"))]])
@@ -35,6 +35,10 @@ test_eq([[Regexp("^a|b$")->match("b")]],1)
 test_equal([[Regexp("^(a*)[^a]*$")->split("aaabbb")]],({"aaa"}))
 
 // Regexp->replace
+test_equal([[ Regexp(".*")->replace("abrakadabra", "·") ]], "·")
+test_equal([[ Regexp("^ab")->replace("abrakadabra", "·") ]], "·rakadabra")
+test_equal([[ Regexp("(a)")->replace("abrakadabra", "·") ]], "·br·k·d·br·")
+test_equal([[ Regexp(".*")->replace("abrakadabra", "·") ]], "·")
 test_equal([[ Regexp("k|br")->replace("abrakadabra", "·") ]], "a·a·ada·a")
 test_equal([[ Regexp("k|br")->replace("abrakadabra",
               lambda(string s) { return "["+upper_case(s)+"]"; }) ]],
