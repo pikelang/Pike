@@ -1,4 +1,4 @@
-# $Id: configure.in,v 1.44 2004/09/27 08:47:26 grubba Exp $
+# $Id: configure.in,v 1.45 2005/03/17 15:49:43 grubba Exp $
 AC_INIT(mpz_glue.c)
 AC_CONFIG_HEADER(gmp_machine.h)
 AC_ARG_WITH(gmp,     [  --with(out)-gmp        Support bignums],[],[with_gmp=yes])
@@ -172,7 +172,17 @@ int main()
     else
       AC_MSG_RESULT(no)
     fi
-  ])
+  ],,[
+/* Kludge for some compilers only defining __STDC__ in strict mode,
+ * which leads to <gmp.h> using the wrong token concat method.
+ */
+#if !defined(__STDC__) && defined(HAVE_ANSI_CONCAT) && defined(PIKE_MPN_PREFIX)
+#define PIKE_LOW_MPN_CONCAT(x,y)	x##y
+#define PIKE_MPN_CONCAT(x,y)		PIKE_LOW_MPN_CONCAT(x,y)
+#define __MPN(x)			PIKE_MPN_CONCAT(PIKE_MPN_PREFIX,x)
+#endif /* !__STDC__ && HAVE_ANSI_CONCAT && PIKE_MPN_PREFIX */
+#include <stdio.h>
+])
 
   if test "x$done" = "xno"; then
     $3
@@ -217,19 +227,8 @@ if test x$with_gmp = xyes ; then
   AC_CHECK_GMP(gmp2, gmp2/gmp.h, [
     AC_CHECK_GMP(gmp, gmp.h)
   ])
-  if test "$ac_cv_header_gmp2_gmp_h" = "no" \
-       -a "$ac_cv_header_gmp_h" = "no"; then
-    PIKE_ENABLE_BUNDLE(gmp, [
-      ac_cv_header_gmp2_gmp_h
-      ac_cv_header_gmp_h
-    ], [Cannot compile --with-bignums without the GMP library
-It is highly recommended that you install a working GMP
-library on your system as that will add features to Pike
-required by many applications.  (Such as Roxen) However,
-if you know that you do not need GMP, you may re-run configure
-with the option --without-bignums instead.
-    ])
-  else
+  if test "$ac_cv_header_gmp2_gmp_h:$pike_cv_working_gmp2" = "yes:yes" \
+       -o "$ac_cv_header_gmp_h:$pike_cv_working_gmp" = "yes:yes"; then
   CHECK_GMP_FUNC(mpz_popcount, [mpz_t a; mpz_popcount(a)])
   CHECK_GMP_FUNC(mpz_xor, [mpz_t a, b, c; mpz_xor(a, b, c)])
   CHECK_GMP_FUNC(mpz_import, [mpz_t a; mpz_import(a, 1, 1, 1, 0, 0, 0)])
@@ -260,7 +259,7 @@ int main()
   mpz_t mpz;
   mpz_init (mpz);
   mpz_set_si (mpz, -1);
-  /* mpz_getlimbn in e.g. gmp 2.0 doesn't understand that negative numbers
+  /* mpz_getlimbn in e.g. gmp 2.0 does not understand that negative numbers
    * have negative size fields. */
   return mpz_getlimbn (mpz, 0) == 0;
 }],
@@ -303,6 +302,19 @@ int main()
   if test "$pike_cv_mpz_set_si_works" = yes; then
     AC_DEFINE(MPZ_SET_SI_WORKS)
   fi
+  else
+    PIKE_ENABLE_BUNDLE(gmp, [
+      ac_cv_header_gmp2_gmp_h
+      ac_cv_header_gmp_h
+      pike_cv_working_gmp
+      pike_cv_working_gmp2
+    ], [Cannot compile --with-bignums without the GMP library
+It is highly recommended that you install a working GMP
+library on your system as that will add features to Pike
+required by many applications.  (Such as Roxen) However,
+if you know that you do not need GMP, you may re-run configure
+with the option --without-bignums instead.
+    ])
   fi
 fi
 
