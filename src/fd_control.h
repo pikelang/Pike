@@ -5,7 +5,7 @@
 \*/
 
 /*
- * $Id: fd_control.h,v 1.4 1998/06/08 12:48:26 grubba Exp $
+ * $Id: fd_control.h,v 1.5 2000/05/20 18:58:29 grubba Exp $
  */
 #ifndef FD_CONTROL_H
 #define FD_CONTROL_H
@@ -17,6 +17,7 @@ int set_close_on_exec(int fd, int which);
 
 #ifdef HAVE_BROKEN_F_SETFD
 void do_close_on_exec(void);
+void cleanup_close_on_exec(void);
 #endif /* HAVE_BROKEN_F_SETFD */
 /* Prototypes end here */
 
