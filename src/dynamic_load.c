@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: dynamic_load.c,v 1.68 2003/12/10 12:26:40 grubba Exp $
+|| $Id: dynamic_load.c,v 1.69 2003/12/10 12:30:43 grubba Exp $
 */
 
 #ifdef TESTING
@@ -24,7 +24,7 @@
 #  include "language.h"
 #  include "lex.h"
 
-RCSID("$Id: dynamic_load.c,v 1.68 2003/12/10 12:26:40 grubba Exp $");
+RCSID("$Id: dynamic_load.c,v 1.69 2003/12/10 12:30:43 grubba Exp $");
 
 #else /* TESTING */
 
@@ -271,7 +271,7 @@ static char *dlerror(void)
 
 static void *dlsym(void *module, char *function)
 {
-  NSSymbol *symbol = NSLookupSymbolInModule(module, function);
+  NSSymbol symbol = NSLookupSymbolInModule(module, function);
   return symbol?NSAddressOfSymbol(symbol):NULL;
 }
 
