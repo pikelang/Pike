@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: peep.h,v 1.13 2002/11/01 16:59:07 grubba Exp $
+|| $Id: peep.h,v 1.14 2003/12/02 13:49:58 grubba Exp $
 */
 
 #ifndef PEEP_H
@@ -37,7 +37,7 @@ ptrdiff_t insert_opcode1(unsigned int f,
 ptrdiff_t insert_opcode0(int f,int current_line,
 			 struct pike_string *current_file);
 void update_arg(int instr,INT32 arg);
-void assemble(void);
+INT32 assemble(int store_linenumbers);
 /* Prototypes end here */
 
 #endif

@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: ia32.c,v 1.27 2003/03/28 01:56:29 mast Exp $
+|| $Id: ia32.c,v 1.28 2003/12/02 13:49:59 grubba Exp $
 */
 
 /*
@@ -450,10 +450,6 @@ static void ins_debug_instr_prologue (PIKE_INSTR_T instr, INT32 arg1, INT32 arg2
 void ins_f_byte(unsigned int b)
 {
   void *addr;
-#ifdef PIKE_DEBUG
-  if(store_linenumbers && b<F_MAX_OPCODE)
-    ADD_COMPILED(b);
-#endif /* PIKE_DEBUG */
 
   b-=F_OFFSET;
 #ifdef PIKE_DEBUG

@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: sparc.c,v 1.33 2002/11/11 16:14:26 grubba Exp $
+|| $Id: sparc.c,v 1.34 2003/12/02 13:49:59 grubba Exp $
 */
 
 /*
@@ -536,11 +536,6 @@ static void low_ins_call(void *addr, int delay_ok)
 static void low_ins_f_byte(unsigned int b, int delay_ok)
 {
   void *addr;
-
-#ifdef PIKE_DEBUG
-  if(store_linenumbers && b<F_MAX_OPCODE)
-    ADD_COMPILED(b);
-#endif /* PIKE_DEBUG */
 
   b-=F_OFFSET;
 #ifdef PIKE_DEBUG

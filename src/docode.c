@@ -2,11 +2,11 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: docode.c,v 1.166 2003/09/19 14:04:48 grubba Exp $
+|| $Id: docode.c,v 1.167 2003/12/02 13:49:58 grubba Exp $
 */
 
 #include "global.h"
-RCSID("$Id: docode.c,v 1.166 2003/09/19 14:04:48 grubba Exp $");
+RCSID("$Id: docode.c,v 1.167 2003/12/02 13:49:58 grubba Exp $");
 #include "las.h"
 #include "program.h"
 #include "pike_types.h"
@@ -184,7 +184,6 @@ INT32 read_int(int offset)
   return EXTRACT_INT(Pike_compiler->new_program->program+offset);
 }
 
-int store_linenumbers=1;
 static int label_no=0;
 
 int alloc_label(void) { return ++label_no; }
@@ -2248,7 +2247,7 @@ static int do_docode2(node *n, INT16 flags)
 
 INT32 do_code_block(node *n)
 {
-  INT32 ret;
+  INT32 entry_point;
 #ifdef PIKE_DEBUG
   if (current_stack_depth != -4711) Pike_fatal("Reentrance in do_code_block().\n");
   current_stack_depth = 0;
@@ -2257,12 +2256,6 @@ INT32 do_code_block(node *n)
   init_bytecode();
   label_no=1;
 
-#ifdef ALIGN_PIKE_FUNCTION_BEGINNINGS
-  while( ( (((INT32) PIKE_PC)+2) & (ALIGN_PIKE_JUMPS-1)))
-    ins_byte(0);
-#endif
-
-  ret=PIKE_PC;
   /* NOTE: This is no ordinary label... */
   low_insert_label(0);
   emit1(F_BYTE,Pike_compiler->compiler_frame->max_number_of_locals);
@@ -2300,17 +2293,17 @@ INT32 do_code_block(node *n)
     emit0(F_START_FUNCTION);
     DO_CODE_BLOCK(n);
   }
-  assemble();
+  entry_point = assemble(1);
 
 #ifdef PIKE_DEBUG
   current_stack_depth = -4711;
 #endif
-  return ret;
+  return entry_point;
 }
 
-int docode(node *n)
+INT32 docode(node *n)
 {
-  int tmp;
+  INT32 entry_point;
   int label_no_save = label_no;
   dynamic_buffer instrbuf_save = instrbuf;
   int stack_depth_save = current_stack_depth;
@@ -2324,13 +2317,16 @@ int docode(node *n)
   top_statement_label_dummy.cleanups = 0;	/* please F_PUSH_ARRAY. */
   init_bytecode();
 
-  tmp=do_docode(n,0);
-  assemble();
+  insert_opcode0(F_ENTRY, n->line_number, n->current_file);
+  /* FIXME: Should we check that do_docode() returns 1? */
+  do_docode(n,0);
+  insert_opcode0(F_DUMB_RETURN, n->line_number, n->current_file);
+  entry_point = assemble(0);		/* Don't store linenumbers. */
 
   instrbuf=instrbuf_save;
   label_no = label_no_save;
   current_stack_depth = stack_depth_save;
   current_label = label_save;
   top_statement_label_dummy.cleanups = top_cleanups_save;
-  return tmp;
+  return entry_point;
 }

@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: peep.c,v 1.86 2003/10/10 01:18:25 mast Exp $
+|| $Id: peep.c,v 1.87 2003/12/02 13:49:58 grubba Exp $
 */
 
 #include "global.h"
@@ -26,12 +26,13 @@
 #include "interpret.h"
 #include "pikecode.h"
 
-RCSID("$Id: peep.c,v 1.86 2003/10/10 01:18:25 mast Exp $");
+RCSID("$Id: peep.c,v 1.87 2003/12/02 13:49:58 grubba Exp $");
 
 static void asm_opt(void);
 
 dynamic_buffer instrbuf;
 
+#ifdef PIKE_DEBUG
 static int hasarg(int opcode)
 {
   return instrs[opcode-F_OFFSET].flags & I_HASARG;
@@ -42,7 +43,6 @@ static int hasarg2(int opcode)
   return instrs[opcode-F_OFFSET].flags & I_HASARG2;
 }
 
-#ifdef PIKE_DEBUG
 static void dump_instr(p_instr *p)
 {
   if(!p) return;
@@ -147,15 +147,19 @@ void update_arg(int instr,INT32 arg)
 
 /**** Bytecode Generator *****/
 
-void assemble(void)
+INT32 assemble(int store_linenumbers)
 {
+  INT32 entry_point;
   INT32 max_label=-1,tmp;
   INT32 *labels, *jumps, *uses;
   ptrdiff_t e, length;
   p_instr *c;
   int reoptimize=!(debug_options & NO_PEEP_OPTIMIZING);
+#ifdef PIKE_PORTABLE_BYTECODE
+  struct pike_string *tripples = NULL;
+#endif /* PIKE_PORTABLE_BYTECODE */
 #ifdef PIKE_DEBUG
-  int max_pointer=-1;
+  INT32 max_pointer=-1;
   int synch_depth = 0;
   size_t fun_start = Pike_compiler->new_program->num_program;
 #endif
@@ -180,6 +184,71 @@ void assemble(void)
     }
   }
 #endif
+
+#ifdef PIKE_PORTABLE_BYTECODE
+  /* No need to do this for constant evaluations. */
+  if (store_linenumbers) {
+    p_wchar2 *current_tripple;
+    struct pike_string *previous_file = NULL;
+    int previous_line = 0;
+    ptrdiff_t num_linedirectives = 0;
+
+    /* Count the number of F_FILENAME/F_LINE pseudo-ops we need to add. */
+    for (e=0; e < length; e++) {
+      if (c[e].file != previous_file) {
+	previous_file = c[e].file;
+	num_linedirectives++;
+      }
+      if (c[e].line != previous_line) {
+	previous_line = c[e].line;
+	num_linedirectives++;
+      }
+    }
+
+    /* fprintf(stderr, "length:%d directives:%d\n",
+     *         length, num_linedirectives);
+     */
+      
+    if (!(tripples = begin_wide_shared_string(3*(length+num_linedirectives),
+					      2))) {
+      Pike_fatal("Failed to allocate wide string of length %d 3*(%d + %d).\n",
+		 3*(length+num_linedirectives), length, num_linedirectives);
+    }
+    previous_file = NULL;
+    previous_line = 0;
+    current_tripple = STR2(tripples);
+    for (e = 0; e < length; e++) {
+      if (c[e].file != previous_file) {
+	current_tripple[0] = F_FILENAME;
+	current_tripple[1] = store_prog_string(c[e].file);
+	current_tripple[2] = 0;
+	current_tripple += 3;
+	previous_file = c[e].file;
+      }
+      if (c[e].line != previous_line) {
+	current_tripple[0] = F_LINE;
+	current_tripple[1] = c[e].line;
+	current_tripple[2] = 0;
+	current_tripple += 3;
+	previous_line = c[e].line;
+      }
+      current_tripple[0] = c[e].opcode;
+      current_tripple[1] = c[e].arg;
+      current_tripple[2] = c[e].arg2;
+      current_tripple += 3;
+    }
+#ifdef PIKE_DEBUG
+    if (current_tripple != STR2(tripples) + 3*(length + num_linedirectives)) {
+      Pike_fatal("Tripple length mismatch %d != %d 3*(%d + %d)\n",
+		 current_tripple - STR2(tripples),
+		 3*(length + num_linedirectives),
+		 length, num_linedirectives);
+    }
+#endif /* PIKE_DEBUG */
+    tripples = end_shared_string(tripples);
+  }
+  
+#endif /* PIKE_PORTABLE_BYTECODE */
 
   for(e=0;e<length;e++,c++) {
     if(c->opcode == F_LABEL) {
@@ -220,9 +289,9 @@ void assemble(void)
   }
 #endif /* PIKE_DEBUG */
 
-  labels=(INT32 *)xalloc(sizeof(INT32) * (max_label+2));
-  jumps=(INT32 *)xalloc(sizeof(INT32) * (max_label+2));
-  uses=(INT32 *)xalloc(sizeof(INT32) * (max_label+2));
+  labels=(INT32 *)xalloc(sizeof(INT32) * 3 * (max_label+2));
+  jumps = labels + max_label + 2;
+  uses = jumps + max_label + 2;
 
   while(reoptimize)
   {
@@ -322,19 +391,35 @@ void assemble(void)
 #endif /* 1 */
   }
 
+  /* Time to create the actual bytecode. */
+
   c=(p_instr *)instrbuf.s.str;
   length=instrbuf.s.len / sizeof(p_instr);
 
   for(e=0;e<=max_label;e++) labels[e]=jumps[e]=-1;
   
-  c=(p_instr *)instrbuf.s.str;
+#ifdef ALIGN_PIKE_FUNCTION_BEGINNINGS
+  while( ( (((INT32) PIKE_PC)+2) & (ALIGN_PIKE_JUMPS-1)))
+    ins_byte(0);
+#endif
+
+#ifdef PIKE_PORTABLE_BYTECODE
+  if (store_linenumbers) {
+    ins_data(store_prog_string(tripples));
+    free_string(tripples);
+  } else {
+    ins_data(NULL);
+  }
+#endif /* PIKE_PORTABLE_BYTECODE */
+
+  entry_point = PIKE_PC;
+
 #ifdef PIKE_DEBUG
   synch_depth = 0;
 #endif
   FLUSH_CODE_GENERATOR_STATE();
   for(e=0;e<length;e++)
   {
-    int linenumbers_stored=0;
 #ifdef PIKE_DEBUG
     if (c != (((p_instr *)instrbuf.s.str)+e)) {
       Pike_fatal("Instruction loop deviates. 0x%04x != 0x%04x\n",
@@ -351,8 +436,13 @@ void assemble(void)
     }
 #endif
 
-    if(store_linenumbers)
+    if(store_linenumbers) {
       store_linenumber(c->line, c->file);
+#ifdef PIKE_DEBUG
+      if (c->opcode < F_MAX_OPCODE)
+	ADD_COMPILED(c->opcode);
+#endif /* PIKE_DEBUG */
+    }
 
     switch(c->opcode)
     {
@@ -418,7 +508,7 @@ void assemble(void)
       {
       case I_ISJUMP:
 #ifdef INS_F_JUMP
-	tmp=INS_F_JUMP(c->opcode);
+	tmp=INS_F_JUMP(c->opcode, (labels[c->arg] != -1));
 	if(tmp != -1)
 	{
 	  UPDATE_F_JUMP(tmp, jumps[c->arg]);
@@ -440,7 +530,8 @@ void assemble(void)
 
       case I_ISJUMPARGS:
 #ifdef INS_F_JUMP_WITH_TWO_ARGS
-	tmp = INS_F_JUMP_WITH_TWO_ARGS(c->opcode, c->arg, c->arg2);
+	tmp = INS_F_JUMP_WITH_TWO_ARGS(c->opcode, c->arg, c->arg2,
+				       (labels[c[1].arg] != -1));
 	if(tmp != -1)
 	{
 #ifdef ADJUST_PIKE_PC
@@ -475,7 +566,7 @@ void assemble(void)
 
       case I_ISJUMPARG:
 #ifdef INS_F_JUMP_WITH_ARG
-	tmp = INS_F_JUMP_WITH_ARG(c->opcode, c->arg);
+	tmp = INS_F_JUMP_WITH_ARG(c->opcode, c->arg, (labels[c[1].arg] != -1));
 	if(tmp != -1)
 	{
 #ifdef ADJUST_PIKE_PC
@@ -600,8 +691,6 @@ void assemble(void)
   }
 
   free((char *)labels);
-  free((char *)jumps);
-  free((char *)uses);
 
 #ifdef PIKE_DEBUG
   if (a_flag > 6) {
@@ -620,6 +709,8 @@ void assemble(void)
 #endif /* PIKE_DEBUG */
 
   exit_bytecode();
+
+  return entry_point;
 }
 
 /**** Peephole optimizer ****/

@@ -2,11 +2,11 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: las.c,v 1.321 2003/08/18 15:11:38 mast Exp $
+|| $Id: las.c,v 1.322 2003/12/02 13:49:58 grubba Exp $
 */
 
 #include "global.h"
-RCSID("$Id: las.c,v 1.321 2003/08/18 15:11:38 mast Exp $");
+RCSID("$Id: las.c,v 1.322 2003/12/02 13:49:58 grubba Exp $");
 
 #include "language.h"
 #include "interpret.h"
@@ -5330,6 +5330,7 @@ static void check_evaluation_time(struct callback *cb,void *tmp,void *ignored)
 ptrdiff_t eval_low(node *n,int print_error)
 {
   unsigned INT16 num_strings, num_constants;
+  unsigned INT32 num_program;
   size_t jump;
   struct svalue *save_sp = Pike_sp;
   ptrdiff_t ret;
@@ -5349,20 +5350,12 @@ ptrdiff_t eval_low(node *n,int print_error)
 
   num_strings=Pike_compiler->new_program->num_strings;
   num_constants=Pike_compiler->new_program->num_constants;
+  num_program=Pike_compiler->new_program->num_program;
 #ifdef PIKE_USE_MACHINE_CODE
   num_relocations = Pike_compiler->new_program->num_relocations;
 #endif /* PIKE_USE_MACHINE_CODE */
 
-  jump = PIKE_PC;
-
-#ifdef INS_ENTRY
-  INS_ENTRY();
-#endif /* INS_ENTRY */
-
-  store_linenumbers=0;
-  docode(dmalloc_touch(node *, n));
-  ins_f_byte(F_DUMB_RETURN);
-  store_linenumbers=1;
+  jump = docode(dmalloc_touch(node *, n));
 
   ret=-1;
   if(!Pike_compiler->num_parse_error)
@@ -5443,13 +5436,14 @@ ptrdiff_t eval_low(node *n,int print_error)
 
 #ifdef VALGRIND_DISCARD_TRANSLATIONS
   /* We won't use this machine code any more... */
-  VALGRIND_DISCARD_TRANSLATIONS(Pike_compiler->new_program->program + jump,
+  VALGRIND_DISCARD_TRANSLATIONS(Pike_compiler->new_program->program +
+				num_program,
 				(Pike_compiler->new_program->
-				 num_program - jump)*sizeof(PIKE_OPCODE_T));
+				 num_program - num_program)*sizeof(PIKE_OPCODE_T));
 #endif /* VALGRIND_DISCARD_TRANSLATIONS */
 #endif /* PIKE_USE_MACHINE_CODE */
 
-  Pike_compiler->new_program->num_program=jump;
+  Pike_compiler->new_program->num_program=num_program;
 
   return ret;
 }

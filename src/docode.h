@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: docode.h,v 1.17 2002/10/11 01:39:30 nilsson Exp $
+|| $Id: docode.h,v 1.18 2003/12/02 13:49:58 grubba Exp $
 */
 
 #ifndef DOCODE_H
@@ -16,8 +16,6 @@
 #define DO_NOT_COPY_TOPLEVEL 32
 
 #define WANT_LVALUE (DO_LVALUE | DO_INDIRECT)
-
-extern int store_linenumbers;
 
 #define emit0(X)     insert_opcode0((X),lex.current_line, lex.current_file)
 #define emit1(X,Y)   insert_opcode1((X),(Y),lex.current_line, lex.current_file)
