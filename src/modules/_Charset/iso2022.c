@@ -3,7 +3,7 @@
 #endif /* HAVE_CONFIG_H */
 
 #include "global.h"
-RCSID("$Id: iso2022.c,v 1.10 1999/06/19 20:25:52 hubbe Exp $");
+RCSID("$Id: iso2022.c,v 1.11 1999/07/27 22:19:12 marcus Exp $");
 #include "program.h"
 #include "interpret.h"
 #include "stralloc.h"
@@ -360,6 +360,7 @@ static void eat_enc_string(struct pike_string *str, struct iso2022enc_stor *s,
   extern UNICHAR map_ANSI_X3_4_1968[];
   extern UNICHAR map_ISO_8859_1_1987[];
   INT32 l = str->len;
+  int s1 = 0;
 
   switch(str->size_shift) {
   case 0:
@@ -404,10 +405,20 @@ static void eat_enc_string(struct pike_string *str, struct iso2022enc_stor *s,
     }
     break;
   case 1:
+    s1++;
+  case 2:
     {
-      p_wchar1 c, *p = STR1(str);
-      while(l--)
-	if((c=*p++)<0x21 || c==0x7f) {
+      char *p = str->str;
+      p_wchar2 c;
+      while(l--) {
+	if(s1) {
+	  c = *(p_wchar1 *)p;
+	  p += sizeof(p_wchar1);
+	} else {
+	  c = *(p_wchar2 *)p;
+	  p += sizeof(p_wchar2);
+	}
+	if(c<0x21 || c==0x7f) {
 	  if(c=='\r' || c=='\n') {
 	    if(s->g[0].mode != MODE_94 || s->g[0].index != 0x12) {
 	      s->g[0].transl = NULL;
@@ -479,15 +490,7 @@ static void eat_enc_string(struct pike_string *str, struct iso2022enc_stor *s,
 	  if(ttab == NULL)
 	    REPLACE_CHAR(c);
 	}
-    }
-    break;
-  case 2:
-    {
-      /* Quick exit, no characters beyond 0xffe6 are supported anyway :) */
-      if(repcb == NULL && rep == NULL)
-	error("Character unsupported by encoding.\n");
-
-      error("Not implemented.\n");
+      }
     }
     break;
   default:
