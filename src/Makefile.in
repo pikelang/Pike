@@ -1,5 +1,5 @@
 #
-# $Id: Makefile.in,v 1.87 1998/05/04 13:51:55 js Exp $
+# $Id: Makefile.in,v 1.88 1998/05/05 21:01:35 grubba Exp $
 #
 
 # This line is needed on some machines.
@@ -83,6 +83,7 @@ MAKE_FLAGS = $(MOST_MAKE_FLAGS) "OTHERFLAGS=$(OTHERFLAGS)"
 #
 OBJ= \
  language.o \
+ interpret.o \
  constants.o \
  cpp.o \
  fdlib.o \
@@ -177,7 +178,7 @@ hilfe: $(TMP_BINDIR)/hilfe Makefile
 
 # Several optimizers have problems with interpret.c
 # First try compiling with optimization and if that doesn't work, without.
-interpret.o:
+interpret.o: interpret.c
 	$(CC) $(CFLAGS) -c interpret.c -o interpret.o || NO_ULIMIT=yes $(CC) $(PREFLAGS) $(NOOPTFLAGS) -c interpret.c -o interpret.o 
 
 force :
