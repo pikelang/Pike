@@ -587,7 +587,7 @@ int __hash()
 //!
 int `==(object pos)
 {
-   return (pos->lat==lat && pos->long==long);
+   return (objectp(pos) && pos->lat==lat && pos->long==long);
 }
 
 //!
@@ -621,3 +621,7 @@ float euclidian_distance(this_program p)
 			  `-,ECEF(),p->ECEF()),
 		       lambda(float f) { return f*f; })));
 }
+
+// encoder
+array(float) _encode() { return ({lat,long,alt}); }
+void _decode(array(float) v) { create(@v); }
