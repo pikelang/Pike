@@ -5,7 +5,7 @@
 \*/
 
 /*
- * $Id: cpp.c,v 1.74 2000/08/10 15:02:07 grubba Exp $
+ * $Id: cpp.c,v 1.75 2000/09/04 22:33:19 grubba Exp $
  */
 #include "global.h"
 #include "stralloc.h"
@@ -893,7 +893,7 @@ static void check_defined(struct cpp *this,
 			  struct define_argument *args,
 			  struct string_builder *tmp)
 {
-  struct pike_string *s;
+  struct pike_string *s = NULL;
   switch(args[0].arg.shift) {
   case 0:
     s=binary_findstring((char *)args[0].arg.ptr, args[0].len);
@@ -921,7 +921,7 @@ static void dumpdef(struct cpp *this,
 		    struct define_argument *args,
 		    struct string_builder *tmp)
 {
-  struct pike_string *s;
+  struct pike_string *s = NULL;
   struct define *d;
 
   switch(args[0].arg.shift) {
