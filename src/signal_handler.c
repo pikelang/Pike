@@ -366,7 +366,7 @@ static RETSIGTYPE receive_signal(int signum)
     if(pid>0)
     {
       int tmp2=firstwait+1;
-      if(tmp2 == WAIT_BUFFER) tmp=0;
+      if(tmp2 == WAIT_BUFFER) tmp2=0;
       if(tmp2 != lastwait)
       {
 	wait_buf[tmp2].pid=pid;

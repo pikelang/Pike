@@ -1,5 +1,6 @@
 Fri Mar 20 14:31:15 1998  Fredrik Hubinette  <hubbe@cytocin.hubbe.net>
 
+	* signal_handler.c (receive_signal): Process hangning bug fixed
 	* new function: _exit
 	* Stdio.File->(try)lock added for file locking, not available
 	  on all systems
