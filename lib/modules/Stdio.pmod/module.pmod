@@ -1,4 +1,4 @@
-// $Id: module.pmod,v 1.155 2002/09/20 13:13:14 marcus Exp $
+// $Id: module.pmod,v 1.156 2002/09/27 11:51:01 jhs Exp $
 #pike __REAL_VERSION__
 
 inherit files;
@@ -1798,8 +1798,8 @@ string|int(0..0) expand_symlinks(string path)
       else
 	unwound = basename(path);
       path = dirname(path);
-      if(path=="")
-	return root + unwound;
+      if(path=="/")
+	return unwound;
     }
   }
   return 0;
