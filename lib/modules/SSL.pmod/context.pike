@@ -1,6 +1,6 @@
 #pike __REAL_VERSION__
 
-/* $Id: context.pike,v 1.16 2002/11/25 05:51:05 nilsson Exp $
+/* $Id: context.pike,v 1.17 2003/10/24 18:17:10 mast Exp $
  *
  * Keeps track of global data for an SSL server,
  * such as preferred encryption algorithms and session cache.
@@ -109,7 +109,7 @@ void forget_old_sessions()
   array pair;
   while ( (pair = active_sessions->peek())
 	  && (pair[0] < t))
-    session_cache[active_sessions->get()[1]] = 0;
+    m_delete (session_cache, active_sessions->get()[1]);
 }
 
 //! Lookup a session identifier in the cache. Returns the
@@ -152,7 +152,7 @@ void purge_session(object s)
   werror(sprintf("SSL.context->purge_session: %O\n", s->identity || ""));
 #endif
   if (s->identity)
-    session_cache[s->identity] = 0;
+    m_delete (session_cache, s->identity);
   /* There's no need to remove the id from the active_sessions queue */
 }
 
