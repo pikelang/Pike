@@ -5,7 +5,7 @@
 \*/
 /**/
 #include "global.h"
-RCSID("$Id: mapping.c,v 1.98 2000/08/11 13:20:44 grubba Exp $");
+RCSID("$Id: mapping.c,v 1.99 2000/09/03 23:18:46 mast Exp $");
 #include "main.h"
 #include "object.h"
 #include "mapping.h"
@@ -110,7 +110,7 @@ static void check_mapping_type_fields(struct mapping *m)
 }
 #endif
 
-static struct mapping_data empty_data = { 1, 1, 0,0,0,0,0 };
+static struct mapping_data empty_data = { 1, 1, 0,0,0,0,0,0 };
 
 /* This function allocates the hash table and svalue space for a mapping
  * struct. The size is the max number of indices that can fit in the
@@ -125,6 +125,8 @@ static void init_mapping(struct mapping *m, INT32 size)
 
   debug_malloc_touch(m);
 #ifdef PIKE_DEBUG
+  if (Pike_in_gc > GC_PASS_PREPARE && Pike_in_gc < GC_PASS_ZAP_WEAK)
+    fatal("Can't allocate a new mapping_data inside gc.\n");
   if(size < 0) fatal("init_mapping with negative value.\n");
 #endif
   if(size)
@@ -153,6 +155,7 @@ static void init_mapping(struct mapping *m, INT32 size)
     md->free_list[e-1].val.type=T_INT;
     md->ind_types = 0;
     md->val_types = 0;
+    md->flags = 0;
     md->size = 0;
     md->refs=0;
     md->valrefs=0;
@@ -163,7 +166,7 @@ static void init_mapping(struct mapping *m, INT32 size)
   }
   add_ref(md);
   m->data=md;
-#ifdef PIKE_DEBUG
+#ifdef MAPPING_SIZE_DEBUG
   m->debug_size = md->size;
 #endif
 }
@@ -182,7 +185,6 @@ PMOD_EXPORT struct mapping *debug_allocate_mapping(int size)
   init_mapping(m,size);
 
   m->refs = 1;
-  m->flags = 0;
 
   DOUBLELINK(first_mapping, m);
 
@@ -330,7 +332,8 @@ static struct mapping *rehash(struct mapping *m, int new_size)
 #ifdef PIKE_DEBUG
   if(m->data->size != tmp)
     fatal("Rehash failed, size not same any more.\n");
-
+#endif
+#ifdef MAPPING_SIZE_DEBUG
   m->debug_size = m->data->size;
 #endif
 
@@ -354,6 +357,11 @@ struct mapping_data *copy_mapping_data(struct mapping_data *md)
   ptrdiff_t size, off;
   struct mapping_data *nmd;
   struct keypair *keypairs;
+
+#ifdef PIKE_DEBUG
+  if (Pike_in_gc > GC_PASS_PREPARE && Pike_in_gc < GC_PASS_ZAP_WEAK)
+    fatal("Can't allocate a new mapping_data inside gc.\n");
+#endif
 
   debug_malloc_touch(md);
 
@@ -391,6 +399,8 @@ struct mapping_data *copy_mapping_data(struct mapping_data *md)
 
   return nmd;
 }
+
+#define MAPPING_DATA_IN_USE(MD) ((MD)->refs != (MD)->hardlinks + 1)
 
 #define LOW_FIND(FUN, KEY, FOUND, NOT_FOUND) do {		\
   md=m->data;                                                   \
@@ -540,6 +550,17 @@ PMOD_EXPORT void mapping_fix_type_field(struct mapping *m)
   m->data->ind_types = ind_types;
 }
 
+PMOD_EXPORT void mapping_set_flags(struct mapping *m, int flags)
+{
+  struct mapping_data *md = m->data;
+  if (md->refs > 1) {
+    struct keypair *k, *prev;
+    COPYMAP2();
+  }
+  md->flags = flags;
+}
+
+
 /* This function inserts key:val into the mapping m.
  * Same as doing m[key]=val; in pike.
  */
@@ -631,7 +652,7 @@ PMOD_EXPORT void low_mapping_insert(struct mapping *m,
   assign_svalue_no_free(& k->val, val);
   k->hval = h2;
   md->size++;
-#ifdef PIKE_DEBUG
+#ifdef MAPPING_SIZE_DEBUG
   if(m->data ==md)
     m->debug_size++;
 #endif
@@ -742,7 +763,7 @@ PMOD_EXPORT union anything *mapping_get_item_ptr(struct mapping *m,
   md->ind_types |= 1 << key->type;
   md->val_types |= BIT_INT;
   md->size++;
-#ifdef PIKE_DEBUG
+#ifdef MAPPING_SIZE_DEBUG
   if(m->data ==md)
     m->debug_size++;
 #endif
@@ -818,7 +839,7 @@ PMOD_EXPORT void map_delete_no_free(struct mapping *m,
   k->next=md->free_list;
   md->free_list=k;
   md->size--;
-#ifdef PIKE_DEBUG
+#ifdef MAPPING_SIZE_DEBUG
   if(m->data ==md)
     m->debug_size--;
 #endif
@@ -835,6 +856,50 @@ PMOD_EXPORT void map_delete_no_free(struct mapping *m,
   return;
 }
 
+static void low_check_mapping_for_destruct(
+  struct mapping_data *md, int e, struct keypair **prev,
+  TYPE_FIELD ind_types, TYPE_FIELD val_types)
+{
+  struct keypair *k;
+
+#ifdef PIKE_DEBUG
+  if (MAPPING_DATA_IN_USE(md)) fatal("The mapping data is busy.\n");
+#endif
+  debug_malloc_touch(md);
+
+  if (prev) {
+    k = *prev;
+    goto jump_in;
+  }
+
+  for(e=0;e<md->hashsize;e++)
+  {
+    for(prev= md->hash + e;(k=*prev);)
+    {
+    jump_in:
+      check_destructed(& k->val);
+	
+      if((k->ind.type == T_OBJECT || k->ind.type == T_FUNCTION) &&
+	 !k->ind.u.object->prog)
+      {
+	*prev=k->next;
+	free_svalue(& k->ind);
+	free_svalue(& k->val);
+	k->next=md->free_list;
+	md->free_list=k;
+	md->size--;
+      }else{
+	val_types |= 1 << k->val.type;
+	ind_types |= 1 << k->ind.type;
+	prev=&k->next;
+      }
+    }
+  }
+
+  md->val_types = val_types;
+  md->ind_types = ind_types;
+}
+
 PMOD_EXPORT void check_mapping_for_destruct(struct mapping *m)
 {
   INT32 e;
@@ -847,9 +912,6 @@ PMOD_EXPORT void check_mapping_for_destruct(struct mapping *m)
     fatal("Zero refs in mapping->data\n");
   if(d_flag>1)  check_mapping(m);
   debug_malloc_touch(m);
-  if (Pike_in_gc > GC_PASS_PREPARE && Pike_in_gc < GC_PASS_ZAP_WEAK &&
-      Pike_in_gc != GC_PASS_MARK)
-    fatal("check_mapping_for_destruct called in wrong pass inside gc.\n");
 #endif
 
   /* no is_eq -> no locking */
@@ -864,47 +926,63 @@ PMOD_EXPORT void check_mapping_for_destruct(struct mapping *m)
     {
       for(prev= md->hash + e;(k=*prev);)
       {
-	check_destructed(& k->val);
-	
 	if((k->ind.type == T_OBJECT || k->ind.type == T_FUNCTION) &&
 	   !k->ind.u.object->prog)
 	{
-	  debug_malloc_touch(md);
-	  debug_malloc_touch(m);
-	  PREPARE_FOR_INDEX_CHANGE2();
-	  *prev=k->next;
-	  free_svalue(& k->ind);
-	  free_svalue(& k->val);
-	  k->next=md->free_list;
-	  md->free_list=k;
-	  md->size--;
-#ifdef PIKE_DEBUG
-	  if(m->data ==md)
-	  {
-	    m->debug_size++;
-	    debug_malloc_touch(m);
-	  }
+#ifdef MAPPING_SIZE_DEBUG
+	  size_t old_size = md->size;
 #endif
+	  debug_malloc_touch(m);
 	  debug_malloc_touch(md);
+	  PREPARE_FOR_INDEX_CHANGE2();
+	  low_check_mapping_for_destruct (md, e, prev, ind_types, val_types);
+#ifdef MAPPING_SIZE_DEBUG
+	  m->debug_size -= old_size - md->size;
+#endif
+	  goto done;
 	}else{
+	  check_destructed(& k->val);
 	  val_types |= 1 << k->val.type;
 	  ind_types |= 1 << k->ind.type;
 	  prev=&k->next;
 	}
       }
     }
+
+  done:
     if(MAP_SLOTS(md->size) < md->hashsize * MIN_LINK_LENGTH)
     {
       debug_malloc_touch(m);
       rehash(m, MAP_SLOTS(md->size));
     }
 
-    md->val_types = val_types;
-    md->ind_types = ind_types;
 #ifdef PIKE_DEBUG
-  if(d_flag>1)  check_mapping(m);
+    if(d_flag>1)  check_mapping(m);
 #endif
   }
+}
+
+/* This one doesn't copy the mapping data before writing it. Instead
+ * it does nothing at all if the mapping data is busy. */
+static void stealth_check_mapping_for_destruct(struct mapping *m)
+{
+  struct mapping_data *md=m->data;
+
+  if (MAPPING_DATA_IN_USE(md)) {
+    TYPE_FIELD val_types = 0;
+    INT32 e;
+    struct keypair *k;
+    md->val_types |= BIT_INT;
+    NEW_MAPPING_LOOP(md) {
+      check_destructed(&k->val);
+      val_types |= 1 << k->val.type;
+    }
+    md->val_types = val_types;
+  }
+
+  else
+    if((md->ind_types | md->val_types) & (BIT_OBJECT | BIT_FUNCTION))
+      low_check_mapping_for_destruct (md, 0, 0, 0, 0);
 }
 
 PMOD_EXPORT struct svalue *low_mapping_lookup(struct mapping *m,
@@ -1220,7 +1298,7 @@ PMOD_EXPORT struct mapping *copy_mapping(struct mapping *m)
   debug_malloc_touch(n->data);
   free_mapping_data(n->data);
   n->data=m->data;
-#ifdef PIKE_DEBUG
+#ifdef MAPPING_SIZE_DEBUG
   n->debug_size=n->data->size;
 #endif
   n->data->refs++;
@@ -1404,6 +1482,10 @@ PMOD_EXPORT int mapping_equal_p(struct mapping *a, struct mapping *b, struct pro
 #endif
 
   if(a==b) return 1;
+
+  check_mapping_for_destruct(a);
+  check_mapping_for_destruct(b);
+
   if(m_sizeof(a) != m_sizeof(b)) return 0;
 
   curr.pointer_a = a;
@@ -1413,9 +1495,6 @@ PMOD_EXPORT int mapping_equal_p(struct mapping *a, struct mapping *b, struct pro
   for( ;p ;p=p->next)
     if(p->pointer_a == (void *)a && p->pointer_b == (void *)b)
       return 1;
-
-  check_mapping_for_destruct(a);
-  check_mapping_for_destruct(b);
 
   md=a->data;
   md->valrefs++;
@@ -1603,7 +1682,6 @@ PMOD_EXPORT struct mapping *copy_mapping_recursively(struct mapping *m,
     return copy_mapping(m);
 
   ret=allocate_mapping(MAP_SLOTS(m->data->size));
-  ret->flags=m->flags;
   doing.pointer_b=ret;
 
   check_stack(2);
@@ -1729,6 +1807,7 @@ void check_mapping(struct mapping *m)
   if(m->next && m->next->prev != m)
     fatal("Mapping ->next->prev != mapping.\n");
 
+#ifdef MAPPING_SIZE_DEBUG
   if(m->debug_size != md->size)
   {
     if(Pike_in_gc)
@@ -1743,6 +1822,7 @@ void check_mapping(struct mapping *m)
     describe(md);
     fatal("Mapping zapping detected (%d != %d)!\n",m->debug_size,md->size);
   }
+#endif
 
   if(m->prev)
   {
@@ -1830,8 +1910,9 @@ static void gc_recurse_weak_mapping(struct mapping *m,
   struct mapping_data *md=m->data;
 
 #ifdef PIKE_DEBUG
-  if(!(m->flags & MAPPING_FLAG_WEAK))
+  if(!(md->flags & MAPPING_FLAG_WEAK))
     fatal("Mapping is not weak.\n");
+  if (MAPPING_DATA_IN_USE(md)) fatal("Mapping data is busy.\n");
 #endif
 
   /* no locking required (no is_eq) */
@@ -1842,14 +1923,13 @@ static void gc_recurse_weak_mapping(struct mapping *m,
       int i, v;
       if((i = recurse_fn(&k->ind, 1)) | (v = recurse_fn(&k->val, 1)))
       {
-	PREPARE_FOR_INDEX_CHANGE();
 	*prev=k->next;
 	if (!i) free_svalue(&k->ind);
 	if (!v) free_svalue(&k->val);
 	k->next=md->free_list;
 	md->free_list=k;
 	md->size--;
-#ifdef PIKE_DEBUG
+#ifdef MAPPING_SIZE_DEBUG
 	if(m->data ==md)
 	  m->debug_size--;
 #endif
@@ -1862,26 +1942,19 @@ static void gc_recurse_weak_mapping(struct mapping *m,
   }
   md->val_types = val_types;
   md->ind_types = ind_types;
-
-  if(MAP_SLOTS(md->size) < md->hashsize * MIN_LINK_LENGTH)
-  {
-    debug_malloc_touch(m);
-    rehash(m, MAP_SLOTS(md->size));
-  }
 }
 
 void gc_mark_mapping_as_referenced(struct mapping *m)
 {
-  INT32 e;
-  struct keypair *k;
-
 #ifdef PIKE_DEBUG
   if(m->data->refs <=0)
     fatal("Zero refs in mapping->data\n");
 #endif
 
   if(gc_mark(m)) {
-    check_mapping_for_destruct(m);
+    struct mapping_data *md = m->data;
+
+    stealth_check_mapping_for_destruct(m);
     if (m == gc_mark_mapping_pos)
       gc_mark_mapping_pos = m->next;
     if (m == gc_internal_mapping)
@@ -1891,22 +1964,30 @@ void gc_mark_mapping_as_referenced(struct mapping *m)
       DOUBLELINK(first_mapping, m); /* Linked in first. */
     }
 
-    if(gc_mark(m->data) &&
-       ((m->data->ind_types | m->data->val_types) & BIT_COMPLEX))
+    if(gc_mark(md) && ((md->ind_types | md->val_types) & BIT_COMPLEX))
     {
-      if (m->flags & MAPPING_FLAG_WEAK)
-	gc_recurse_weak_mapping(m, gc_mark_weak_svalues);
-      else
-	NEW_MAPPING_LOOP(m->data)
-	{
-	  if (gc_mark_svalues(&k->ind, 1) ||
+      INT32 e;
+      struct keypair *k;
+
+      if (MAPPING_DATA_IN_USE(md)) {
+	/* Must leave destructed indices intact if the mapping data is busy. */
+	NEW_MAPPING_LOOP(md)
+	  if ((!IS_DESTRUCTED(&k->ind) && gc_mark_svalues(&k->ind, 1)) |
 	      gc_mark_svalues(&k->val, 1)) {
 #ifdef PIKE_DEBUG
-	    fatal("Looks like check_mapping_for_destruct "
-		  "didn't do its job properly.\n");
+	    fatal("Didn't expect an svalue zapping now.\n");
 #endif
 	  }
-	}
+      }
+      else if (md->flags & MAPPING_FLAG_WEAK)
+	gc_recurse_weak_mapping(m, gc_mark_weak_svalues);
+      else
+	NEW_MAPPING_LOOP(md)
+	  if (gc_mark_svalues(&k->ind, 1) | gc_mark_svalues(&k->val, 1)) {
+#ifdef PIKE_DEBUG
+	    fatal("stealth_check_mapping_for_destruct didn't do its job properly.\n");
+#endif
+	  }
     }
   }
 }
@@ -1914,66 +1995,64 @@ void gc_mark_mapping_as_referenced(struct mapping *m)
 void real_gc_cycle_check_mapping(struct mapping *m, int weak)
 {
   GC_CYCLE_ENTER(m, weak) {
+    struct mapping_data *md = m->data;
+
 #ifdef PIKE_DEBUG
-    if(m->data->refs <=0)
+    if(md->refs <=0)
       fatal("Zero refs in mapping->data\n");
 #endif
 
-    if((m->data->ind_types | m->data->val_types) & BIT_COMPLEX)
+    if((md->ind_types | md->val_types) & BIT_COMPLEX)
     {
       INT32 e;
       struct keypair *k;
 
-      if (m->flags & MAPPING_FLAG_WEAK)
-	gc_recurse_weak_mapping(m, gc_cycle_check_weak_svalues);
-      else
-	NEW_MAPPING_LOOP(m->data)
-	{
-	  if (gc_cycle_check_svalues(&k->ind, 1) ||
+      if (MAPPING_DATA_IN_USE(md)) {
+	/* Must leave destructed indices intact if the mapping data is busy. */
+	NEW_MAPPING_LOOP(md)
+	  if ((!IS_DESTRUCTED(&k->ind) && gc_cycle_check_svalues(&k->ind, 1)) |
 	      gc_cycle_check_svalues(&k->val, 1)) {
 #ifdef PIKE_DEBUG
-	    fatal("Looks like check_mapping_for_destruct "
-		  "didn't do its job properly.\n");
+	    fatal("Didn't expect an svalue zapping now.\n");
 #endif
 	  }
-	}
+      }
+      else if (md->flags & MAPPING_FLAG_WEAK)
+	gc_recurse_weak_mapping(m, gc_cycle_check_weak_svalues);
+      else
+	NEW_MAPPING_LOOP(md)
+	  if (gc_cycle_check_svalues(&k->ind, 1) | gc_cycle_check_svalues(&k->val, 1)) {
+#ifdef PIKE_DEBUG
+	    fatal("stealth_check_mapping_for_destruct didn't do its job properly.\n");
+#endif
+	  }
     }
   } GC_CYCLE_LEAVE;
 }
 
 static void gc_check_mapping(struct mapping *m)
 {
-  INT32 e;
-  struct keypair *k;
+  struct mapping_data *md = m->data;
 
-  if((m->data->ind_types | m->data->val_types) & BIT_COMPLEX)
+  if((md->ind_types | md->val_types) & BIT_COMPLEX)
   {
-    if(debug_gc_check(m->data, T_MAPPING, m)) return;
+    INT32 e;
+    struct keypair *k;
 
-    if (m->flags & MAPPING_FLAG_WEAK) {
-      MAPPING_LOOP(m)
+    if(debug_gc_check(md, T_MAPPING, m)) return;
+
+    if (md->flags & MAPPING_FLAG_WEAK && !MAPPING_DATA_IN_USE(md)) {
+      /* Disregard the weak flag if the mapping data is busy; we must
+       * leave it untouched in that case anyway. */
+      NEW_MAPPING_LOOP(md)
       {
-	/* We do not want to count this key:index pair if
-	 * the index is a destructed object or function
-	 */
-	if(((1 << k->ind.type) & (BIT_OBJECT | BIT_FUNCTION)) &&
-	   !(k->ind.u.object->prog))
-	  continue;
-
 	debug_gc_check_weak_svalues(&k->ind, 1, T_MAPPING, m);
 	debug_gc_check_weak_svalues(&k->val, 1, T_MAPPING, m);
       }
     }
     else {
-      MAPPING_LOOP(m)
+      NEW_MAPPING_LOOP(md)
       {
-	/* We do not want to count this key:index pair if
-	 * the index is a destructed object or function
-	 */
-	if(((1 << k->ind.type) & (BIT_OBJECT | BIT_FUNCTION)) &&
-	   !(k->ind.u.object->prog))
-	  continue;
-
 	debug_gc_check_svalues(&k->ind, 1, T_MAPPING, m);
 	debug_gc_check_svalues(&k->val, 1, T_MAPPING, m);
       }
@@ -1990,6 +2069,7 @@ unsigned gc_touch_all_mappings(void)
     fatal("Error in mapping link list.\n");
   for (m = first_mapping; m; m = m->next) {
     debug_gc_touch(m);
+    debug_gc_touch(m->data);
     n++;
     if (m->next && m->next->prev != m)
       fatal("Error in mapping link list.\n");
@@ -2030,7 +2110,7 @@ void gc_mark_all_mappings(void)
     else
       /* Done in gc_mark_mapping_as_referenced() otherwise (and it has
        * to be done there). */
-      check_mapping_for_destruct(m);
+      stealth_check_mapping_for_destruct(m);
   }
 }
 
@@ -2072,7 +2152,7 @@ void gc_free_all_unreferenced_mappings(void)
       m->data->refs++;
 
       unlink_mapping_data(md);
-#ifdef PIKE_DEBUG
+#ifdef MAPPING_SIZE_DEBUG
       m->debug_size=0;
 #endif
       gc_free_extra_ref(m);
@@ -2100,13 +2180,13 @@ void simple_describe_mapping(struct mapping *m)
 
 void debug_dump_mapping(struct mapping *m)
 {
-  fprintf(stderr, "Refs=%d, flags=0x%x, next=%p, prev=%p",
-	  m->refs, m->flags, m->next, m->prev);
+  fprintf(stderr, "Refs=%d, next=%p, prev=%p",
+	  m->refs, m->next, m->prev);
   if (((ptrdiff_t)m->data) & 3) {
     fprintf(stderr, ", data=%p (unaligned)\n", m->data);
   } else {
-    fprintf(stderr, ", size=%d, hashsize=%d\n",
-	    m->data->size, m->data->hashsize);
+    fprintf(stderr, ", flags=0x%x, size=%d, hashsize=%d\n",
+	    m->data->flags, m->data->size, m->data->hashsize);
     fprintf(stderr, "Indices type field = ");
     debug_dump_type_field(m->data->ind_types);
     fprintf(stderr, "\n");
@@ -2147,7 +2227,7 @@ void zap_all_mappings(void)
       }
     }
     md->size=0;
-#ifdef PIKE_DEBUG
+#ifdef MAPPING_SIZE_DEBUG
     if(m->data ==md)
       m->debug_size=0;
 #endif
