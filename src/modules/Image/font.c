@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: font.c,v 1.76 2002/11/08 22:31:46 anders Exp $
+|| $Id: font.c,v 1.77 2002/11/29 19:47:05 jhs Exp $
 */
 
 #include "global.h"
@@ -20,16 +20,16 @@ extern unsigned char * image_default_font;
  *!
  *! Short technical documentation on a font file:
  *! This object adds the text-drawing and -creation
- *! capabilities of the <ref>Image</ref> module.
+ *! capabilities of the @[Image] module.
  *!
  *! For simple usage, see @[write] and @[load].
  *!
  *! @note
  *!   @pre{
- *!	       struct file_head 
+ *!	       struct file_head
  *!	       {
- *!		  unsigned INT32 cookie;   - 0x464f4e54 
- *!		  unsigned INT32 version;  - 1 
+ *!		  unsigned INT32 cookie;   - 0x464f4e54
+ *!		  unsigned INT32 version;  - 1
  *!		  unsigned INT32 chars;    - number of chars
  *!		  unsigned INT32 height;   - height of font
  *!		  unsigned INT32 baseline; - font baseline
