@@ -1,5 +1,5 @@
 #
-# $Id: Makefile.in,v 1.65 1998/03/28 13:39:52 grubba Exp $
+# $Id: Makefile.in,v 1.66 1998/04/02 14:00:11 mirar Exp $
 #
 
 # This line is needed on some machines.
@@ -208,9 +208,9 @@ install:
 	@if [ -f ./hilfe ]; then \
 	  echo ; echo "Installing hilfe..."; \
 	  if cmp "$(exec_prefix)/hilfe" $(TMP_BINDIR)/hilfe >/dev/null 2>&1 ; \
-	  then
+	  then \
 	    echo "$(exec_prefix)/hilfe already installed." ; \
-	  else
+	  else \
 	    if [ -f $(exec_prefix)/hilfe ]; then \
 	      mv $(exec_prefix)/hilfe $(exec_prefix)/hilfe.old || exit 1; \
 	    else : ; fi; \
