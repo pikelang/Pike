@@ -26,7 +26,7 @@
 #define HUGE HUGE_VAL
 #endif /*!HUGE*/
 
-RCSID("$Id: stralloc.c,v 1.126 2001/06/05 10:12:56 hubbe Exp $");
+RCSID("$Id: stralloc.c,v 1.127 2001/06/29 16:49:30 grubba Exp $");
 
 #if PIKE_RUN_UNLOCKED
 /* Make this bigger when we get lightweight threads */
@@ -1894,6 +1894,7 @@ PMOD_EXPORT void init_string_builder(struct string_builder *s, int mag)
   s->malloced=256;
   s->s=begin_wide_shared_string(256,mag);
   s->s->len=0;
+  s->s->str[0] = 0;
   s->known_shift=0;
 }
 
@@ -1902,6 +1903,7 @@ PMOD_EXPORT void init_string_builder_alloc(struct string_builder *s, ptrdiff_t l
   s->malloced=length;
   s->s=begin_wide_shared_string(length,mag);
   s->s->len=0;
+  s->s->str[0] = 0;
   s->known_shift=0;
 }
 
