@@ -56,13 +56,14 @@ struct pike_creds
  {									\
    if(Pike_interpreter.frame_pointer->current_creds)			\
      free_object(Pike_interpreter.frame_pointer->current_creds);	\
-   add_ref(Pike_interpreter.frame_pointer->current_creds=		\
-	   CHECK_VALID_UID(_o));					\
+   Pike_interpreter.frame_pointer->current_creds = CHECK_VALID_UID(_o);	\
  }else{									\
    if(Pike_interpreter.current_creds)					\
      free_object(Pike_interpreter.current_creds);			\
-   add_ref(Pike_interpreter.current_creds=CHECK_VALID_UID(_o));	\
+   Pike_interpreter.current_creds = CHECK_VALID_UID(_o);		\
  }									\
+ if (_o)								\
+   add_ref(_o);								\
 }while(0)
 
 #define INITIALIZE_PROT(X) \
