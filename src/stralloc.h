@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: stralloc.h,v 1.87 2004/11/08 10:30:03 grubba Exp $
+|| $Id: stralloc.h,v 1.88 2004/11/11 15:59:58 grubba Exp $
 */
 
 #ifndef STRALLOC_H
@@ -52,6 +52,16 @@ struct string_builder
 #define APPEND_UPPER_CASE	16	/* Use upper case hex. */
 #define APPEND_ZERO_PAD		32	/* Zero pad. */
 #define APPEND_LEFT		64	/* Left align. */
+
+#if SIZEOF_CHAR_P == SIZEOF_INT
+#define APPEND_WIDTH_PTR	0
+#elif SIZEOF_CHAR_P == SIZEOF_LONG
+#define APPEND_WIDTH_PTR	APPEND_WIDTH_LONG
+#elif SIZEOF_CHAR_P == SIZEOF_LONG_LONG
+#define APPEND_WIDTH_PTR	APPEND_WIDTH_LONG_LONG
+#else
+#error "Unknown way to read pointer-wide integers."
+#endif
 
 #ifdef PIKE_DEBUG
 PMOD_EXPORT struct pike_string *debug_findstring(const struct pike_string *foo);
