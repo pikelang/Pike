@@ -7,7 +7,7 @@
  * Created by Martin Stjernholm 2001-05-07
  */
 
-RCSID("$Id: multiset.c,v 1.42 2001/12/10 02:36:14 mast Exp $");
+RCSID("$Id: multiset.c,v 1.43 2001/12/10 02:45:12 mast Exp $");
 
 #include "builtin_functions.h"
 #include "gc.h"
@@ -2638,7 +2638,6 @@ struct array *multiset_range_indices (struct multiset *l,
   }
   else add_ref (indices = &empty_array);
 
-  array_check_type_field (indices);
   return indices;
 }
 
@@ -5163,7 +5162,7 @@ void test_multiset (void)
 #include "gc.h"
 #include "security.h"
 
-RCSID("$Id: multiset.c,v 1.42 2001/12/10 02:36:14 mast Exp $");
+RCSID("$Id: multiset.c,v 1.43 2001/12/10 02:45:12 mast Exp $");
 
 struct multiset *first_multiset;
 
