@@ -4,7 +4,7 @@
 ||| See the files COPYING and DISCLAIMER for more information.
 \*/
 #include "global.h"
-RCSID("$Id: mpz_glue.c,v 1.25 1998/01/26 20:01:17 hubbe Exp $");
+RCSID("$Id: mpz_glue.c,v 1.26 1998/01/30 12:39:52 mirar Exp $");
 #include "gmp_machine.h"
 
 #if !defined(HAVE_LIBGMP)
@@ -166,10 +166,16 @@ static struct pike_string *low_get_digits(MP_INT *mpz, int base)
   else if (base == 256)
   {
     INT32 i;
+#if 0
     mpz_t tmp;
+#endif
+    mp_limb_t *src;
+    unsigned char *dst;
+
     
     if (mpz_sgn(mpz) < 0)
       error("only non-negative numbers can be converted to base 256.\n");
+#if 0
     len = (mpz_sizeinbase(mpz, 2) + 7) / 8;
     s = begin_shared_string(len);
     mpz_init_set(tmp, mpz);
@@ -180,6 +186,23 @@ static struct pike_string *low_get_digits(MP_INT *mpz, int base)
       mpz_fdiv_q_2exp(tmp, tmp, 8);
     }
     mpz_clear(tmp);
+#endif
+
+    /* lets optimize this /Mirar & Per */
+
+    len = mpz->_mp_size*sizeof(mp_limb_t);
+    s = begin_shared_string(len);
+
+    src=mpz->_mp_d;
+    dst=s->str+s->len;
+    while (len)
+    {
+       mp_limb_t x=*(src++);
+       for (i=0; i<sizeof(mp_limb_t); i++)
+	  *(--dst)=x&0xff,x>>=8;
+       len-=sizeof(mp_limb_t);
+    }
+
     s = end_shared_string(s);
   }
   else
