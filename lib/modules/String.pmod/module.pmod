@@ -1,8 +1,6 @@
 #pike __REAL_VERSION__
 #pragma strict_types
 
-#define BEGIN 32
-
 constant Buffer = __builtin.Buffer;
 
 constant count=__builtin.string_count;
@@ -55,28 +53,6 @@ string sillycaps(string str)
   return Array.map(str/" ",capitalize)*" ";
 }
 
-//! This function multiplies @[str] by @[num]. The return value is the same
-//! as appending @[str] to an empty string @[num] times.
-//!
-//! @note
-//! This function is obsolete, since this functionality has been incorporated
-//! into @[`*()].
-//!
-//! @seealso
-//! @[`*()]
-//!
-string strmult(string str, int num)
-{
-#if 1
-  num*=strlen(str);
-  while(strlen(str) < num) str+=str;
-  return str[0..num-1];
-#endif
-#if 0
-  return sprintf("%~n",str,strlen(str)*num);
-#endif
-}
-
 /*
  * string common_prefix(array(string) strs)
  * {
@@ -115,46 +91,6 @@ string common_prefix(array(string) strs)
 
   return strs0[0..n-1];
 }
-
-// Deprecated. Use String.Buffer instead.
-class String_buffer
-{
-  array(string) buffer=allocate(BEGIN);
-  int ptr=0;
-
-  static void fix()
-    {
-      string tmp=buffer*"";
-      buffer=allocate(strlen(tmp)/128+BEGIN);
-      buffer[0]=tmp;
-      ptr=1;
-    }
-
-  string get_buffer()
-    {
-      if(ptr != 1) fix();
-      return buffer[0];
-    }
-
-  void append(string s)
-    {
-      if(ptr==sizeof(buffer)) fix();
-      buffer[ptr++]=s;
-    }
-
-  mixed cast(string to)
-    {
-      if(to=="string") return get_buffer();
-      return 0;
-    }
-
-  void flush()
-    {
-      buffer=allocate(BEGIN);
-      ptr=0;
-    }
-};
-
 
 // Do a fuzzy matching between two different strings and return a
 // "similarity index". The higher, the closer the strings match.
@@ -220,7 +156,9 @@ int(0..100) fuzzymatch(string a, string b)
 //! Returns the soundex value of @[word] according to
 //! the original Soundex algorithm, patented by Margaret O´Dell
 //! and Robert C. Russel in 1918. The method is based on the phonetic
-//! classification of sounds by how they are made.
+//! classification of sounds by how they are made. It was only intended
+//! for hashing of english surnames, and even at that it isn't that
+//! much of a help.
 string soundex(string word) {
   word = upper_case(word);
   string first = word[0..0];
@@ -233,16 +171,19 @@ string soundex(string word) {
 			  "M":"5", "N":"5",
 			  "R":"6" ]) );
   word = replace(word, ({"11", "22", "33", "44", "55", "66" }),
-		 ({"", "", "", "", "", "", }));
+		 ({"1", "2", "3", "4", "5", "6", }));
   word+="000";
   return first + word[..2];
 }
 
 //! Converts the provided integer to a roman integer (i.e. a string).
+//! @throws
+//!   Throws an error if @[m] is outside the range 0 to 10000.
 string int2roman(int m)
 {
   string res="";
-  if (m>10000000||m<0) return "que";
+  if (m>10000||m<0)
+    error("Can not represent values outside the range 0 to 10000.\n");
   while (m>999) { res+="M"; m-=1000; }
   if (m>899) { res+="CM"; m-=900; }
   else if (m>499) { res+="D"; m-=500; }
@@ -267,14 +208,17 @@ static constant prefix = ({ "bytes", "kb", "Mb", "Gb", "Tb", "Pb", "Eb", "Zb", "
 //! but we have chosen to keep the old notation for a while.
 //! The function knows about the quantifiers kilo, mega, giga,
 //! tera, peta, exa, zetta and yotta.
+//! @throws
+//!   Throws an error is @[size] is less than zero.
 string int2size( int size )
 {
-  if(size<0) return "--------";
+  if(size<0) error("Size less than zero.\n");
+  if(size==1) return "1 byte";
   float s = (float)size;
   size=0;
 
-  if(s<1025.0) return (int)s+" bytes";
-  while( s > 1024.0 && size<sizeof(prefix)-1)
+  if(s<1024.0) return (int)s+" bytes";
+  while( s >= 1024.0 && size<sizeof(prefix)-1)
   {
     s /= 1024.0;
     size ++;
