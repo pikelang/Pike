@@ -112,7 +112,7 @@
 /* This is the grammar definition of Pike. */
 
 #include "global.h"
-RCSID("$Id: language.yacc,v 1.237 2002/12/02 18:08:30 grubba Exp $");
+RCSID("$Id: language.yacc,v 1.238 2002/12/10 18:53:11 mast Exp $");
 #ifdef HAVE_MEMORY_H
 #include <memory.h>
 #endif
@@ -3255,7 +3255,7 @@ low_idents: TOK_IDENTIFIER
 	else
 	{
 	  if (Pike_compiler->compiler_pass == 2) {
-	    yywarning("No such inherit ::%s.", $2->u.sval.u.string->str);
+	    yywarning("Undefined identifier ::%s.", $2->u.sval.u.string->str);
 	  }
 	  $$=mkintnode(0);
 	}
