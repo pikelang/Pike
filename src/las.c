@@ -4,7 +4,7 @@
 ||| See the files COPYING and DISCLAIMER for more information.
 \*/
 #include "global.h"
-RCSID("$Id: las.c,v 1.45 1998/01/26 19:59:54 hubbe Exp $");
+RCSID("$Id: las.c,v 1.46 1998/01/27 20:51:56 hubbe Exp $");
 
 #include "language.h"
 #include "interpret.h"
@@ -610,7 +610,7 @@ void resolv_constant(node *n)
     
     if(IDENTIFIER_IS_CONSTANT(i->identifier_flags))
     {
-      push_svalue(PROG_FROM_INT(new_program, numid)->constants +
+      push_svalue(PROG_FROM_INT(p, numid)->constants +
 		  i->func.offset);
     }else{
       yyerror("Identifier is not a constant");
