@@ -1,6 +1,6 @@
 #pike __REAL_VERSION__
 
-//  $Id: Session.pike,v 1.21 2000/09/28 03:39:04 hubbe Exp $
+//  $Id: Session.pike,v 1.22 2000/11/11 03:07:54 jhs Exp $
 //! module Protocols
 //! submodule LysKOM
 //! class Session
@@ -1021,6 +1021,8 @@ object logout()
 //!	<elem name=foot_to type="Text|array(Text)">what text(s) is footnoted</elem>
 //!	<elem></elem>
 //!	<elem name=anonymous type="int(0..1)">send text anonymously</elem>
+//!	<elem></elem>
+//!	<elem name=aux_items type="array(AuxItemInput)">AuxItems you want to set for the text *</elem>
 //!	</data_description>
 //!
 //! note:
@@ -1040,14 +1042,14 @@ object|void create_text(string subject,string body,
    if (!options) options=([]);
 
    return _create_text(text,misc,
-		       options->aux_info,
+		       options->aux_items,
 		       options->anonymous,
 		       callback,@extra);
 }
 
 object|void _create_text(string textstring,
 			 MiscInfo misc,
-			 void|object aux_info,
+			 void|array(ProtocolTypes.AuxItemInput) aux_items,
 			 int anonymous,
 			 void|function callback,
 			 void|mixed ...extra)
@@ -1059,24 +1061,24 @@ object|void _create_text(string textstring,
    else
       call="create_text";
 
-   if (aux_info)
-      error("unimplemented\n");
-
-//    if (protlevel<10)
-     call+="_old";
+   array args = ({ textstring, misc->encode() });
+   if(protlevel<10)
+     call += "_old";
+   else
+     args += ({ aux_items || ({}) });
 
    if (callback)
    {
       con["async_cb_"+call]
 	 (lambda(int|object res)
 	  {
-	     if (objectp(res)) return res;
+	     if(objectp(res)) return res;
 	     callback(text(res),@extra);
-	  },textstring,misc->encode());
+	  }, @args);
       return;
    }
 
-   res=con[call](textstring,misc->encode());
+   res = con[call](@args);
 
    if (objectp(res)) return res;
    return text(res);
