@@ -1,14 +1,14 @@
-# $Id: configure.in,v 1.4 1999/01/01 01:03:31 hubbe Exp $
+# $Id: configure.in,v 1.5 1999/01/07 13:39:27 hubbe Exp $
 AC_INIT(perlmod.c)
 AC_CONFIG_HEADER(perl_machine.h)
 
 AC_MODULE_INIT()
 
+AC_CHECK_PROGS(perl, perl perl5, x)
+
 AC_CACHE_VAL(pike_cv_perlmod_have_perl,
 [
 pike_cv_perlmod_have_perl=no
-
-AC_CHECK_PROGS(perl, perl perl5, x)
 
 objs=
 
@@ -58,6 +58,10 @@ fi
 
 if test "x$pike_cv_perlmod_have_perl" = xyes ; then
   extra_objs='perlxsi.o'
+  if test "x$PERL_CCFLAGS" = x ; then
+    PERL_LDFLAGS=`perl -MExtUtils::Embed -e ldopts`
+    PERL_CCFLAGS=`perl -MExtUtils::Embed -e ccopts`
+  fi
   AC_DEFINE(HAVE_PERL)
   AC_MSG_RESULT(yes)
 else
