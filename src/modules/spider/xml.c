@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: xml.c,v 1.56 2002/11/27 13:32:15 grubba Exp $
+|| $Id: xml.c,v 1.57 2002/12/17 18:06:34 nilsson Exp $
 */
 
 #include "global.h"
@@ -939,8 +939,8 @@ static int gobble(struct xmldata *data, char *s)
 	  debug_malloc_touch(s);					 \
 	  sp--;								 \
 	  IF_XMLDEBUG(fprintf(stderr,"Entity expands to: %s\n",s->str)); \
-	  SET_ONERROR(tmp2, free_xmldata, &my_tmp);			 \
 	  check_stack(10);						 \
+	  SET_ONERROR(tmp2, free_xmldata, &my_tmp);			 \
 	  my_tmp.input.to_free=s;					 \
 	  my_tmp.input.datap=MKPCHARP_STR(s);				 \
 	  my_tmp.input.len=s->len;					 \
@@ -950,8 +950,7 @@ static int gobble(struct xmldata *data, char *s)
 	  PARSE_RECURSIVELY;						 \
 	  if(THIS->entities)						 \
 	    mapping_string_insert_string(THIS->entities, name, s);	 \
-	  UNSET_ONERROR(tmp2);						 \
-	  free_string(s);						 \
+	  CALL_AND_UNSET_ONERROR(tmp2);					 \
 	}								 \
       }while(0);							 \
       CALL_AND_UNSET_ONERROR(tmp4);					 \
