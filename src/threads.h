@@ -1,5 +1,5 @@
 /*
- * $Id: threads.h,v 1.50 1998/08/24 20:58:41 marcus Exp $
+ * $Id: threads.h,v 1.51 1998/08/26 18:43:49 marcus Exp $
  */
 #ifndef THREADS_H
 #define THREADS_H
@@ -482,6 +482,7 @@ void thread_table_delete(struct object *o);
 struct thread_state *thread_state_for_id(THREAD_T tid);
 struct object *thread_for_id(THREAD_T tid);
 void f_all_threads(INT32 args);
+void f_thread_local(INT32 args);
 
 void low_init_threads_disable(void);
 void init_threads_disable(struct object *o);
