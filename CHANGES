@@ -258,6 +258,7 @@ o Audio.Codec and Audio.Codec
 o Calendar.verify
 
 o Crypto.MD4
+    Hash used for NT Lanmanager passwords.
     
 o Crypto.crypt_md5
 
