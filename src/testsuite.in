@@ -1,4 +1,4 @@
-test_true([["$Id: testsuite.in,v 1.610 2003/02/28 19:44:37 grubba Exp $"]]);
+test_true([["$Id: testsuite.in,v 1.611 2003/03/01 14:24:25 nilsson Exp $"]]);
 
 // This triggered a bug only if run sufficiently early.
 test_compile_any([[#pike 7.2]])
@@ -7571,7 +7571,9 @@ test_do(add_constant("PROG"))
 // - encode_value_canonic
 // - endgrent
 // - endpwent
+
 // - enumerate
+// Tested in lib
 
 // - equal
 // equal is already tested by this script
@@ -7618,12 +7620,79 @@ test_eq(function_name(function_object),0)
 // - functionp
 // Tested in foop
 
+// - gc
+// gc is already tested above
+
 // - get_all_groups
+ifefun(get_all_groups,[[
+  test_true(arrayp(get_all_groups()))
+  test_any([[
+    foreach(get_all_groups(), array group)
+      foreach(group; int pos; array(string)|int|string value)
+        switch(pos) {
+          case 0: case 1:
+            if(!stringp(value)) return 0;
+            break;
+          case 2:
+            if(!intp(value)) return 0;
+            break;
+          case 3:
+            if(!arrayp(value)) return 0;
+            foreach(value, string user)
+              if(!stringp(user)) return 0;
+            break;
+        }
+    return 1;
+  ]], 1)
+]])
+
 // - get_all_users
+ifefun(get_all_users,[[
+  test_true(arrayp(get_all_users()))
+  test_any([[
+    foreach(get_all_users(), array user)
+      foreach(user; int pos; int|string value)
+        switch(pos) {
+          case 0: case 1: case 4: case 5: case 6:
+            if(!stringp(value)) return 0;
+            break;
+          case 2: case 3:
+            if(!intp(value)) return 0;
+            break;
+        }
+    return 1;
+  ]], 1)
+]])
+
 // - get_dir
+test_do(Stdio.recursive_rm("get_dir_test"))
+test_do(mkdir("get_dir_test"))
+test_equal(get_dir("get_dir_test"),({}))
+test_do(Stdio.write_file("get_dir_test/x", "x"));
+test_equal(get_dir("get_dir_test"),({"x"}))
+test_do(Stdio.recursive_rm("get_dir_test"))
+
 // - get_groups_for_user
 // - get_weak_flag
+
 // - getcwd
+test_true(stringp(getcwd()))
+test_true(sizeof(getcwd()))
+test_do(Stdio.recursive_rm("getcwd_test"))
+test_do(mkdir("getcwd_test"))
+test_any([[
+  string a = getcwd();
+  cd("getcwd_test");
+  string b = getcwd();
+  cd("..");
+#ifdef __NT__
+  return a==getcwd() && b==a+"\\getcwd_test";
+#else
+  return a==getcwd() && b==a+"/getcwd_test";
+#endif
+]], 1)
+test_do(Stdio.recursive_rm("getcwd_test"))
+
 // - getegid
 // - getenv
 // - geteuid
@@ -7634,7 +7703,10 @@ test_eq(function_name(function_object),0)
 // - getgroups
 // - gethostbyaddr
 // - gethostbyname
+
 // - gethostname
+test_true(stringp(gethostname()))
+test_true(sizeof(gethostname()))
 
 // - gethrtime
 // See time
@@ -7646,8 +7718,18 @@ test_eq(function_name(function_object),0)
 // - getpwent
 // - getpwnam
 // - getpwuid
+
 // - getsid
+ifefun(getsid,[[
+  test_true(intp(getsid()))
+  test_true(getsid()==getsid())
+]])
+
 // - getuid
+ifefun(getuid,[[
+  test_true(intp(getuid()))
+  test_true(getuid()==getuid())
+]])
 
 // - glob
 test_false(glob("","a"))
@@ -7694,7 +7776,20 @@ test_has_index([[ class {}() ]],"foo",0)
 test_has_index([[ (class{array _indices(){return({"a","b"});}})() ]],"b",1)
 
 // - has_prefix
+test_true(has_prefix("abc","a"))
+test_false(has_prefix("abc","b"))
+test_true(has_prefix("abc",""))
+test_true(has_prefix("",""))
+test_false(has_prefix("","abc"))
+test_true(has_prefix("\666abc","\666a"))
+
 // - has_suffix
+test_true(has_suffix("cba","a"))
+test_false(has_suffix("cba","b"))
+test_true(has_suffix("abc",""))
+test_true(has_suffix("",""))
+test_false(has_suffix("","abc"))
+test_true(has_suffix("cba\666","a\666"))
 
 // - has_value
 define(test_has_value,[[test_true([[mixed foo=$1; return has_value(foo,$2)==$3;]])]])
@@ -7713,15 +7808,27 @@ test_has_value([[ class {}() ]],"foo",0)
 test_has_value([[ (class{array _values(){return({"a","b"});}})() ]],"b",1)
 
 // - hash
-test_true(intp(hash("foo")))
-test_true(intp(hash("foo",10)))
-test_true(hash("foo",10)<10)
-test_true(hash("bar",10)<10)
-test_true(hash("gazonk",10)<10)
-test_eq(hash("foobargazonk"),hash("foobargazonk"))
-test_false(hash(""))
+test_eq(hash("foo"),2091538203)
+test_eq(hash("foo",10),3)
+test_eq(hash("bar"),2091518428)
+test_eq(hash("bar",10),8)
+test_eq(hash("b\666arqwerty1234"),1858424874)
+test_eq(hash(""),0)
 
 // - hash_7_0
+define(test_hash,[[
+  test_eq(hash_7_0($1),$2)
+  test_any([[
+#pike 7.0
+return hash($1);
+]],$2)
+]])
+test_hash("foo",27734)
+test_hash([["foo",10]],4)
+test_hash("bar",26689)
+test_hash([["bar",10]],9)
+test_hash("b\666arqwerty1234",1858424874)
+test_hash("",0)
 
 // - indices
 test_equal(indices("foo"),({0,1,2}))
