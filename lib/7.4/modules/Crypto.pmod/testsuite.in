@@ -85,6 +85,63 @@ test_eq([[
 Crypto.invert()->crypt_block("\0\xffpqrstx")]],
          [["\xff\0\x8f\x8e\x8d\x8c\x8b\x87"]])
 
+// RSA
+test_do( add_constant("RSA", Crypto.rsa()) )
+test_do( RSA->generate_key(1024) )
+test_equal( RSA->raw_sign("hej"), RSA->raw_sign("hej") )
+test_true( RSA->raw_verify("tjo", RSA->raw_sign("tjo")) )
+test_equal( RSA->get_n(), RSA->get_n() )
+test_true( functionp(RSA->get_n()->gcdext2) )
+test_equal( RSA->get_e(), RSA->get_e() )
+test_true( functionp(RSA->get_e()->gcdext2) )
+test_equal( RSA->get_d(), RSA->get_d() )
+test_true( functionp(RSA->get_d()->gcdext2) )
+test_equal( RSA->get_p(), RSA->get_p() )
+test_true( functionp(RSA->get_p()->gcdext2) )
+test_equal( RSA->get_q(), RSA->get_q() )
+test_true( functionp(RSA->get_q()->gcdext2) )
+test_equal( RSA->cooked_get_n(), RSA->get_n()->digits(256) )
+test_equal( RSA->cooked_get_e(), RSA->get_e()->digits(256) )
+test_equal( RSA->cooked_get_d(), RSA->get_d()->digits(256) )
+test_equal( RSA->cooked_get_p(), RSA->get_p()->digits(256) )
+test_equal( RSA->cooked_get_q(), RSA->get_q()->digits(256) )
+test_do( add_constant("RSB", Crypto.rsa()) )
+test_do( RSB->set_private_key(RSA->get_d(),
+         ({ RSA->get_p(), RSA->get_q() }) ) )
+test_equal( RSA->get_d(), RSB->get_d() )
+test_equal( RSA->get_p(), RSB->get_p() )
+test_equal( RSA->get_q(), RSB->get_q() )
+test_true([[
+#pike 7.4
+RSA->verify("hej", Crypto.md5, RSB->sign("hej", Crypto.md5)) ]])
+test_false([[
+#pike 7.4
+RSA->verify("hoj", Crypto.md5, RSB->sign("hej", Crypto.md5)) ]])
+test_true( RSA->sha_verify("hej", RSB->sha_sign("hej")) )
+test_false( RSA->sha_verify("hoj", RSB->sha_sign("hej")) )
+test_true( RSA->md5_verify("hej", RSB->md5_sign("hej")) )
+test_false( RSA->md5_verify("hoj", RSB->md5_sign("hej")) )
+test_do( add_constant("RSA") )
+test_do( add_constant("RSB") )
+
+test_do( add_constant("RSA", Crypto.rsa()) )
+test_true( RSA->set_public_key(
+  0x838b848334d4f2151d25971e655eed8a0905cb5b81ba9047db2bf3b56765b058fa9af2ad89a2726233fc8917e52e8966db4bae5d426207f98ab50e1467accb2d,
+  65537) )
+test_true( RSA->set_private_key(
+  0x3f8a1cafe3cd1841ea9a45ac80faa172937921094a587b68ba0d38e2ded6d79ef1a5b8d9605278ddc61616f12fbb9dc6dbdea50f9dc4a51f6a8ed30ada7c9301,
+  ({ 0xae01268cb370af44cb05e9618ea6681dae1186bd746d3aa6122b8bf6c2290619,
+     0xc1884f35667fb5ea3e8e7cfa052bb34894c2970b3da6a0650182fe514b23c835 })) )
+test_eq( RSA->query_blocksize(), 61 )
+test_true( RSA->raw_verify("flärpzprutt",RSA->raw_sign("flärpzprutt")) )
+test_false( RSA->raw_verify("flärpzputt",RSA->raw_sign("flärpzprutt")) )
+test_true( RSA->decrypt(RSA->encrypt("flärpzprutt")) )
+test_eq( RSA->rsa_size(), 512 )
+test_true( RSA->public_key_equal(RSA) )
+test_false( RSA->public_key_equal(Crypto.rsa()->generate_key(512)) )
+test_do( add_constant("RSA") )
+
+
 // DES
 test_true([[
 #pike 7.4
@@ -595,4 +652,4 @@ test_any([[
     ct = aes_cbc->crypt_block(ct);
   }
   return String.string2hex(ct);
-]], [[ "FACA37E0B0C85373DF706E73F7C9AF86" ]])
+]], [[ "faca37e0b0c85373df706e73f7c9af86" ]])
