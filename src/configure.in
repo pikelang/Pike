@@ -1,4 +1,4 @@
-AC_REVISION("$Id: configure.in,v 1.124 1997/09/29 00:54:29 hubbe Exp $")
+AC_REVISION("$Id: configure.in,v 1.125 1997/10/02 22:06:44 grubba Exp $")
 AC_INIT(interpret.c)
 AC_CONFIG_HEADER(machine.h)
 
@@ -625,6 +625,8 @@ int main()
       ;;
     esac
 
+    AC_CHECK_FUNCS(pthread_init)
+
     AC_CACHE_VAL(pike_cv_posix_threads, [
       AC_TRY_RUN([
 #define _REENTRANT
@@ -641,6 +643,9 @@ pthread_t gazonk;
 int main()
 {
   void *sune;
+#ifdef HAVE_PTHREAD_INIT
+  pthread_init();
+#endif /* HAVE_PTHREAD_INIT */
   pthread_mutexattr_init(&attr);
   pthread_mutex_init(&tmp, &attr);
   pthread_mutex_lock(&tmp);
