@@ -1,10 +1,10 @@
 // -*- Pike -*-
 
-// $Id: module.pike,v 1.22 2003/11/06 01:15:45 nilsson Exp $
+// $Id: module.pike,v 1.23 2003/11/07 22:47:25 bill Exp $
 
 #pike __REAL_VERSION__
 
-constant version = ("$Revision: 1.22 $"/" ")[1];
+constant version = ("$Revision: 1.23 $"/" ")[1];
 constant description = "Pike module installer.";
 
 // Source directory
@@ -129,11 +129,15 @@ void do_make(array(string) cmd)
 {
   int tmp1;
   string lmp;
+  string full_srcdir;
 
   if(search(cmd, "testsuite")!=-1)
     lmp="./plib/modules";
   else
     lmp = local_module_path;
+  
+  if(srcdir !=".") full_srcdir=srcdir + "/";
+  else full_srcdir=getcwd() + "/";
 
   // we should try to find the core autodoc file
   if(file_stat(combine_path(system_module_path, "../../doc/src/core_autodoc.xml")))
@@ -158,10 +162,11 @@ void do_make(array(string) cmd)
 #endif
       "TMP_BINDIR="+bin_path,
       "SRCDIR="+fix("$src"),
+      "FULL_SRCDIR=" + full_srcdir,
       "TMP_MODULE_BASE=.",
       "PIKE_EXTERNAL_MODULE=pike_external_module",
       "CORE_AUTODOC_PATH=" + combine_path(system_doc_path, "src/core_autodoc.xml"),
-      "SYSTEM_DOC_PATH=" + system_doc_path,
+      "SYSTEM_DOC_PATH=" + system_doc_path + "/",
       "SYSTEM_MODULE_PATH=" + system_module_path,
       "LOCAL_MODULE_PATH=" + lmp,
       "RUNPIKE="+run_pike,
