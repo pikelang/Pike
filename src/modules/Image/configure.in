@@ -1,4 +1,4 @@
-# $Id: configure.in,v 1.21 2002/08/25 13:00:14 grubba Exp $
+# $Id: configure.in,v 1.22 2002/08/26 09:57:28 grubba Exp $
 AC_INIT(image.c)
 AC_CONFIG_HEADER(image_machine.h)
 
@@ -61,31 +61,6 @@ if test "x$pike_cv_lib_m_fabs" = "xyes"; then
   LIBS="-lm $LIBS"
 else
   AC_MSG_RESULT(no)
-
-  # Perform this test by hand since MacOS X ld fails linking otherwise:
-  # ld: image.o has external relocation entries in non-writable section (__TEXT,__text) for symbols:
-  # restFP
-  # saveFP
-  AC_MSG_CHECKING([for saveFP in -lm])
-  AC_CACHE_VAL(pike_cv_lib_m_saveFP,
-  [
-    OLDLIBS="$LIBS"
-    LIBS="-lm $LIBS"
-    AC_TRY_LINK(
-    [
-  void saveFP(void);
-    ],[
-      saveFP();
-    ],[pike_cv_lib_m_saveFP=yes],[pike_cv_lib_m_saveFP=no])
-    LIBS="$OLDLIBS"
-  ])
-  if test "x$pike_cv_lib_m_saveFP" = "xyes"; then
-    AC_MSG_RESULT(yes)
-    AC_DEFINE(HAVE_LIBM)
-    LIBS="-lm $LIBS"
-  else
-    AC_MSG_RESULT(no)
-  fi
 fi
 
 if test x"$pike_cv_sys_os" = xWindows_NT ; then
