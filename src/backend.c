@@ -4,7 +4,7 @@
 ||| See the files COPYING and DISCLAIMER for more information.
 \*/
 #include "global.h"
-RCSID("$Id: backend.c,v 1.26 1998/04/06 04:15:12 hubbe Exp $");
+RCSID("$Id: backend.c,v 1.27 1998/04/06 17:27:55 grubba Exp $");
 #include "fdlib.h"
 #include "backend.h"
 #include <errno.h>
@@ -66,9 +66,6 @@ struct pollfd *active_poll_fds = NULL;
 int active_poll_fd_size = 0;
 int active_num_in_poll = 0;
 
-/*
- * This code probably uses realloc a bit too much...
- */
 void POLL_FD_SET(int fd, short add)
 {
   int i;
@@ -79,7 +76,7 @@ void POLL_FD_SET(int fd, short add)
       return;
     }
   num_in_poll++;
-  if (num_in_poll >= poll_fd_size) {
+  if (num_in_poll > poll_fd_size) {
     poll_fd_size += num_in_poll;	/* Usually a doubling */
     if (!(poll_fds = realloc(poll_fds, sizeof(struct pollfd)*poll_fd_size))) {
       fatal("Out of memory in backend::POLL_FD_SET()\n"
@@ -130,7 +127,7 @@ void switch_poll_set()
   poll_fds = tmp;
   poll_fd_size = sz;
 
-  if (num_in_poll >= poll_fd_size) {
+  if (num_in_poll > poll_fd_size) {
     poll_fd_size += num_in_poll;	/* Usually a doubling */
     if (!(poll_fds = realloc(poll_fds, sizeof(struct pollfd)*poll_fd_size))) {
       fatal("Out of memory in backend::switch_poll_set()\n"
@@ -190,6 +187,24 @@ void init_backend(void)
   /* Don't keep these on exec! */
   set_close_on_exec(wakeup_pipe[0], 1);
   set_close_on_exec(wakeup_pipe[1], 1);
+}
+
+void cleanup_backend(void)
+{
+#ifdef HAVE_POLL
+  if (poll_fds) {
+    free(poll_fds);
+    poll_fds = NULL;
+    poll_fd_size = 0;
+    num_in_poll = 0;
+  }
+  if (active_poll_fds) {
+    free(active_poll_fds);
+    active_poll_fds = NULL;
+    active_poll_fd_size = 0;
+    active_num_in_poll = 0;
+  }
+#endif /* HAVE_POLL */
 }
 
 void set_read_callback(int fd,file_callback cb,void *data)
