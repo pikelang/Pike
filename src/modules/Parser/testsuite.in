@@ -124,7 +124,7 @@ test_any([[
 ]], "x [ <t a='> -- ] {<t a=} -->");
 
 // Current context functions
-test_any([[
+test_any([[{
   object p = Parser.HTML();
   p->lazy_entity_end (1);
   p->add_tag (
@@ -147,8 +147,10 @@ test_any([[
 	   return ({"Q(", p->current(), "|", p->tag_name(), "|",
 		    (string) p->tag_content(), ")"});
 	 }, "p");
-  return p->finish ("<t a=&e; <t>> <q <\"' &e; p> &e<c x=y -- >x</c> &e; ")->read();
-]], "T(<t a=&e; <t>>|t|0) Q(<q <\"' &e; p>|q| <\"' &e; ) &eC(<c x=y -- >x</c>|c|x) E(&e;|e|0) ");
+  return p->finish ("<t a=&e; <t>> <q <\"' &e; p> "
+		    "&e<c x=y -- >x</c> &e; <x &e; q=&e;>")->read();
+}]], ("T(<t a=&e; <t>>|t|0) Q(<q <\"' &e; p>|q| <\"' &e; ) "
+      "&eC(<c x=y -- >x</c>|c|x) E(&e;|e|0) <x &e; q=E(&e;|e|0)>"));
 
 // Argument quoting
 test_any([[
@@ -340,18 +342,20 @@ test_any([[{
 			 });
   p->add_entity ("e", lambda (object p) {
 			if (e++ < 3) {p->write_out ((string) e); throw (e);}
-			return ({"|", (string) e});
+			array res = ({"|", (string) e});
+			e = 0;
+			return res;
 		      });
   p->add_quote_tag ("q", lambda (object p, string s) {
 			   if (q++ < 3) {p->write_out ((string) q); throw (q);}
 			   return ({"|", (string) q});
 			 },
 		    "q");
-  if (catch (p->finish ("<t> <c> <t> &e; </c> &e; <q &e; q>")))
+  if (catch (p->finish ("<t> <c> <t> &e; </c> &e; <q &e; q> <x a=&e; &e;>")))
     for (int i; i < 20; i++)
       if (!catch (p->finish())) break;
   return p->read();
-}]], "123|4 123|4 123|4 123|4")
+}]], "123|4 123|4 123|4 123|4 123<x a=|4 &e;>")
 
 // Mixed mode
 test_any([[
@@ -470,7 +474,18 @@ test_any([[
   p->_set_entity_callback (lambda (object p, string s) {return ({"[",s,"]"});});
   p->_set_data_callback (lambda (object p, string s) {return ({"{",s,"}"});});
   return p->finish ("&abc|&abc<>&abc;")->read();
-]], "{&abc|}{&abc<>}[&abc;]{}");
+]], "{&abc|}{&abc}<>[&abc;]{}");
+test_any([[{
+  object p = Parser.HTML();
+  p->add_entity ("e", "x");
+  return p->finish("&e")->read();
+}]], "&e");
+test_any([[{
+  object p = Parser.HTML();
+  p->lazy_entity_end (1);
+  p->add_entity ("e", "x");
+  return p->finish("&e")->read();
+}]], "&e");
 
 // Recursive parsing in tags
 test_any([[
