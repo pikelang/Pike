@@ -575,6 +575,44 @@ class cSPANISH
    }
 }
 
+// portugese; don't know other then the holidays
+// source: Sérgio Araújo <sergio@projecto-oasis.cx>
+
+class cPORTUGESE
+{
+   inherit _ymd_base;
+
+//     static private constant month_names=
+//     ({"enero","febrero","marzo","abril","mayo","junio",
+//       "julio","agosto","setiembre","octubre","noviembre","diciembre"});
+
+//     static private constant week_day_names=
+//     ({"lunes","martes","miércoles","jueves",
+//       "viernes","sábado","domingo"});
+
+// contains argentina for now
+   static mapping events_translate=
+   ([
+      "New Year's Day":"Ano Novo",
+      "Sexta-Feira Santa":"Sexta-Feira Santa",
+      "Liberty Day":"Dia da Liberdade",
+      "Labor Day":"Dia do Trabalhador",
+      "Portugal Day":"Dia de Portugal",
+      "Corpus Christi":"Corpo de Deus",
+      "Assumption Day":"Assunção",
+      "Republic Day":"Implantação da República",
+      "All Saints Day":"Todos-os-Santos",
+      "Restoration of the Independence":"Restauração da Independência",
+      "Immaculate Conception":"Imaculada Conceição",
+      "Christmas":"Natal"
+   ]);
+
+//     void create()
+//     {
+//        SETUPSTUFF;
+//     }
+}
+
 // Hungarian
 // Csongor Fagyal <concept@conceptonline.hu>
 

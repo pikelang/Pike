@@ -1,6 +1,6 @@
 ### Calendar module
 ### Event definition file
-### $Id: regional,v 1.4 2000/09/07 19:23:29 mirar Exp $
+### $Id: regional,v 1.5 2000/09/17 19:15:44 mirar Exp $
 
 ### =====================================================================
 ###
@@ -2762,21 +2762,25 @@ Region "ph"
   Add   "new years eve"           - # "New Year's Eve"                     Fixed Dec 31
 
 
+// source: Sérgio Araújo <sergio@projecto-oasis.cx>
+
 # portugal
 Region "pt"
-  Add   "new year"                           - # "New Year's Day"                  Fixed Jan  1
+  Add   "new year"                           h # "New Year's Day"                  Fixed Jan  1
   Add   "c/good friday"                      - # "Good Friday"                     Easter -2
-  Event "pt/liberty"                         -   "Liberty Day"                     Fixed Apr 25
-  Add   "labor"                              - # "Labor Day"                       Fixed May  1
+  Event "pt/santa"                           h   "Sexta-Feira Santa"               Fixed Apr 21
+  Event "pt/liberty"                         h   "Liberty Day"                     Fixed Apr 25
+  Add   "labor"                              h # "Labor Day"                       Fixed May  1
   Event "pt/camões memorial"                 -   "Camões Memorial Day"             Fixed Jun 10
-  Event "pt/portugal"                        -   "Portugal Day"                    Fixed Jun 10
-  Add   "c/corpus christi"                   - # "Corpus Christi"                  Easter +60
-  Add   "c/assumption"                       - # "Assumption Day"                  Fixed Aug 15
-  Event "pt/republic"                        -   "Republic Day"                    Fixed Oct  5
-  Add   "c/all saints"                       - # "All Saints Day"                  Fixed Nov  1
+  Event "pt/portugal"                        h   "Portugal Day"                    Fixed Jun 10
+  Add   "c/corpus christi"                   h # "Corpus Christi"                  Easter +60
+  Add   "c/assumption"                       h # "Assumption Day"                  Fixed Aug 15
+  Event "pt/republic"                        h   "Republic Day"                    Fixed Oct  5
+  Add   "c/all saints"                       h # "All Saints Day"                  Fixed Nov  1
   Event "pt/day of the dead"                 -   "Day of the Dead"                 Fixed Nov  2
-  Event "pt/restoration of the independence" -   "Restoration of the Independence" Fixed Dec  1
+  Event "pt/restoration of the independence" h   "Restoration of the Independence" Fixed Dec  1
   Add   "c/immaculate conception"            - # "Immaculate Conception"           Fixed Dec  8
+  Add   "c/christmas"                        h
 
 
 # puerto rico
