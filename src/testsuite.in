@@ -1,4 +1,4 @@
-test_true([["$Id: testsuite.in,v 1.574 2002/12/01 01:33:31 nilsson Exp $"]]);
+test_true([["$Id: testsuite.in,v 1.575 2002/12/03 17:57:45 marcus Exp $"]]);
 
 // This triggered a bug only if run sufficiently early.
 test_compile_any([[#pike 7.2]])
@@ -9288,7 +9288,7 @@ cond([[all_constants()->_verify_internals]],
 test_program([[
 int ok=1;
 
-void test_resolv(string file, int base_size)
+void test_resolv(string file, int base_size, object|void handler)
 {
   __signal_watchdog();
   string prg = replace( file[base_size+1..sizeof(file)-6],
@@ -9296,13 +9296,13 @@ void test_resolv(string file, int base_size)
   if(prg[sizeof(prg)-7..]==".module")
     prg = prg[..sizeof(prg)-8];
   // werror("Resolving %O...\n", prg);
-  if( catch( master()->resolv(prg) ) ) {
+  if( catch( (handler||master())->resolv(prg) ) ) {
     werror("test: failed to peek at %O\n", prg);
     ok=0;
   }
 }
 
-void test_dir(string dir, int|void base_size)
+void test_dir(string dir, int|void base_size, object|void handler)
 {
   // werror("Testing directory %O...\n", dir);
   if(!base_size) base_size=sizeof(dir);
@@ -9332,8 +9332,8 @@ void test_dir(string dir, int|void base_size)
     if(!stat) continue;
     if(stat[1]==-2 && has_suffix(file, ".pmod"))
     {
-      test_resolv(file, base_size);
-      test_dir(file, base_size);
+      test_resolv(file, base_size, handler);
+      test_dir(file, base_size, handler);
     }
     else if(stat[1]>=0){
       // werror("Testing file %O\n", file);
@@ -9348,7 +9348,7 @@ void test_dir(string dir, int|void base_size)
           continue;
         }
 #endif
-	test_resolv(file, base_size);
+	test_resolv(file, base_size, handler);
       }
     }
   }
@@ -9356,6 +9356,10 @@ void test_dir(string dir, int|void base_size)
 int a()
 {
   Array.map(master()->pike_module_path,test_dir);
+  foreach(({"0.6","7.0","7.2"}),string ver) {
+    object handler = master()->get_compilation_handler(@(array(int))(ver/"."));
+    Array.map(handler->pike_module_path,test_dir,0,handler);
+  }
   return ok;
 }
 ]])
