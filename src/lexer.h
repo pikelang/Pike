@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: lexer.h,v 1.54 2004/11/06 15:49:05 grubba Exp $
+|| $Id: lexer.h,v 1.55 2004/11/14 22:23:02 mast Exp $
 */
 
 /*
@@ -268,6 +268,7 @@ int parse_esc_seq (WCHAR *buf, int *chr, ptrdiff_t *len)
     case 'u':
     case 'U': {
       /* FIXME: Do we need compat goo to turn this off? */
+      /* Note: Code dup in gobble_identifier in preprocessor.h. */
       int stop, quoted = 0, longq;
       l = 1;
       if (c == 'u') {
