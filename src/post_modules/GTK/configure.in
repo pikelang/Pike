@@ -555,7 +555,7 @@ if test "x$WITH_GTK" = x1 ; then
  # End of gnome dependent stuff.
  fi
  
- AC_CHECK_LIB(gtkdatabox, main,,,`gtk-config --libs`)
+ AC_CHECK_LIB(gtkdatabox, main,,,`$ac_cv_path_GTK_CONFIG --libs`)
  AC_CHECK_HEADERS(gtkdatabox.h)
  
  AC_SUBST(pgtk_have_gtkdatabox)
@@ -644,7 +644,7 @@ if test "x$WITH_GTK" = x1 ; then
  pgtk_has_glarea=noglarea
 
  if test "x$have_GL" = "xyes" ; then
-  AC_CHECK_LIB(gtkgl, main,,,`gtk-config --libs` $GL_LIBS)
+  AC_CHECK_LIB(gtkgl, main,,,`$ac_cv_path_GTK_CONFIG --libs` $GL_LIBS)
   if test x$ac_cv_lib_gtkgl_main = xyes ; then
     pgtk_has_glarea=glarea
     PIKE_FEATURE_OK(GTK.GlArea)
