@@ -5,6 +5,40 @@ class _Tar  // filesystem
    object fd;
    string filename;
 
+   class ReadFile
+   {
+     inherit Stdio.File;
+
+     static private int start, pos, len;
+
+     int seek(int p)
+     {
+       if(p<0)
+	 if((p += len)<0)
+	   p = 0;
+       if(p>=len)
+	 p=len-1;
+       return ::seek((pos = p)+start);
+     }
+
+     string read(int|void n)
+     {
+       if(!query_num_arg() || n>len-pos)
+	 n = len-pos;
+       pos += n;
+       return ::read(n);
+     }
+
+     void create(int p, int l)
+     {
+       assign(fd->dup());
+       start = p;
+       len = l;
+       seek(0);
+     }
+
+   }
+
    class Record
    {
       inherit Filesystem.Stat;
@@ -78,6 +112,14 @@ class _Tar  // filesystem
 		     '7':0 // contigous
 	 ])[linkflag] || "reg" );
       }
+
+      object open(string mode)
+      {
+	if(mode!="r")
+	  throw(({"Can only read right now.\n", backtrace()}));
+	return ReadFile(pos, size);
+      }
+
    };
 
    array entries=({});
@@ -104,10 +146,11 @@ class _Tar  // filesystem
       filename_to_entry[what]=r;
    }
 
-   void create(Stdio.File fd,string filename,object parent)
+   void create(Stdio.File _fd,string filename,object parent)
    {
       // read all entries
     
+      fd = _fd;
       int pos=0; // fd is at position 0 here
       for (;;)
       {
@@ -203,7 +246,9 @@ class _TarFS
 
    Stdio.File open(string filename,string mode)
    {
-
+     filename=combine_path(wd,filename);
+     return tar->filename_to_entry[root+filename] &&
+       tar->filename_to_entry[root+filename]->open(mode);
    }
 
    int access(string filename,string mode)
