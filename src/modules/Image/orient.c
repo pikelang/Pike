@@ -1,9 +1,9 @@
-/* $Id: orient.c,v 1.5 1998/03/11 20:44:50 mirar Exp $ */
+/* $Id: orient.c,v 1.6 1998/03/20 03:47:31 hubbe Exp $ */
 
 /*
 **! module Image
 **! note
-**!	$Id: orient.c,v 1.5 1998/03/11 20:44:50 mirar Exp $
+**!	$Id: orient.c,v 1.6 1998/03/20 03:47:31 hubbe Exp $
 **! class image
 */
 
@@ -39,7 +39,7 @@ extern struct program *image_program;
 static const double c0=0.70710678118654752440;
 static const double my_PI=3.14159265358979323846;
 
-#if 1
+#if 0
 #include <sys/resource.h>
 #define CHRONO(X) chrono(X);
 
