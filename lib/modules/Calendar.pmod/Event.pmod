@@ -220,14 +220,34 @@ class Nameday
 //! module Calendar
 //! submodule Event
 //! subclass Namedays
-//!	This contains a ruleset about namedays. It 
-//!	is a virtual base class.
+//!	This contains a ruleset about namedays. 
 //! inherits Event
 
 class Namedays
 {
    inherit Event;
    constant is_namedays=1;
+
+   int leapdayshift;
+   int first_year=-1;
+   int last_year=-1;
+
+   array namelist;
+   mapping lookup;
+
+   void create(string _id,string _name,
+	       array(array(string)) _names,
+	       mapping(string:int|array(int)) _lookup,
+	       void|int start,void|int stop,void|int _leapdayshift)
+   {
+      id=_id;
+      name=_name;
+      namelist=_names;
+      first_year=start||-1;
+      last_year=stop||-1;
+      leapdayshift=_leapdayshift||2000;
+      lookup=_lookup;
+   }
 
 //! method array(string) names(TimeRange t)
 //!	Gives back an array of names that occur during
@@ -251,9 +271,11 @@ class Namedays
       function(mixed...:TimeRange) day=t->calendar()->Day;
       Ruleset rules=t->ruleset();
       [int y,int yjd,int leap]=gregorian_yjd(jd);
+      if (first_year!=-1 && y<first_year)
+	 [y,yjd,leap]=gregorian_year(first_year),jd=yjd;
+      if (last_year!=-1 && y>last_year) return res;
       int ld;
-      array(string) names=namedays_year(y);
-      if (y<2000) ld=55-1; // 24 feb
+      if (y<leapdayshift) ld=55-1; // 24 feb
       else ld=60-1;        // 29 feb
 
       for (;;)
@@ -264,77 +286,24 @@ class Namedays
 	 if (jd>=yjd+365+leap)  // next year
 	 {
 	    [y,yjd,leap]=gregorian_yjd(jd);
-	    names=namedays_year(y);
-	    if (y<2000) ld=55-1; // 24 feb
+	    if (last_year!=-1 && y>last_year) return res;
+	    if (y<leapdayshift) ld=55-1; // 24 feb
 	    else ld=60-1;        // 29 feb
 	 }
 
-	 if (!names) 
-	 {
-	    jd=yjd+365+leap; // next year, please
+	 array(string) n;
+	 int d=jd-yjd;
+	 if (leap)
+	 { 
+	    if (d<ld) n=namelist[d];
+	    else if (d>ld) n=namelist[d-1];
+	    else n=namelist[-1];
 	 }
 	 else
-	 {
-	    string n;
-	    int d=jd-yjd;
-	    if (leap)
-	    { 
-	       if (d<ld) n=names[d];
-	       else if (d>ld) n=names[d-1];
-	       else n=names[-1];
-	    }
-	    else
-	       n=names[d];
+	    n=namelist[d];
 
-	    if (n) res[td]=n/",";
-	    jd++;
-	 }
-      }
-   }
-   
-//! method TimeRange next_name(TimeRange from,string name,int inclusive)
-//! method TimeRange previous_name(TimeRange from,string name,int inclusive)
-//!	Gives back the next or previous day where the name
-//!	occurs, inclusive the start of the given timerange if
-//!	that flag is non-zero.
-
-//! method array(string) namedays_year(int y)
-//!	Static virtual function that should give back the array
-//!	of namedays that year, or zero if there
-//!	are no named days for that year.
-//!
-//!	The array is arranged as day 1..365
-//!	a non-leap year, followed by the leap day.
-//!	If a day doesn't contain names, it should be zero,
-//!	not a string. If a day has more then one name,
-//!	it should be separated by a comma (in the string!).
-
-   static array(string) namedays_year(int y);
-
-//! method int nameday_lookup(int y,string name)
-//!	Static virtual function that gives back the
-//!	day (1..) of the year for the given name -
-//!	if the year is a non-leap year (!), -1
-//!	if the name is on the leap day, or zero if
-//!	the name doesn't exist that year.
-
-   static int nameday_lookup(int y,string s);
-
-//! method mapping make_lookup(array(string) names)
-//!	Help function to make a lookup mapping
-//!	of the names feeded to it.
-//! note:
-//!	This function is <tt>static</tt>.
-
-   static mapping make_lookup(array(string) a)
-   {
-      mapping m=([]);
-      int i;
-      foreach (a,string z)
-      {
-	 if (i++==365) i=-1; // leap day last
-	 if (z) foreach (z/",",string s)
-	    m[lower_case(s)]=i;
+	 if (n) res[td]=n;
+	 jd++;
       }
    }
 
@@ -353,19 +322,59 @@ class Namedays
 
 //! method TimeRange previous(TimeRange from,void|int(0..1) including)
 //! method TimeRange next(TimeRange from,void|int(0..1) including)
-//! known bugs:
-//!	Just returns the argument converted to a day.
+
+   static TimeRange _find(TimeRange t,int including,int direction)
+   {
+      int jd=(int)t->julian_day();
+
+      jd+=direction*!including;
+
+      [int y,int yjd,int leap]=gregorian_yjd(jd);
+      int ld;
+      if (y<leapdayshift) ld=55-1; // 24 feb
+      else ld=60-1;        // 29 feb
+
+      if (direction==-1 && last_year!=-1 && y>last_year) 
+	 [y,yjd,leap]=gregorian_year(last_year+1),jd=yjd-1;
+      if (direction==1 && first_year!=-1 && y<first_year)
+	 [y,yjd,leap]=gregorian_year(first_year),jd=yjd;
+
+      for (;;)
+      {
+	 if (jd>=yjd+365+leap || jd<yjd)  // year shift
+	 {
+	    [y,yjd,leap]=gregorian_yjd(jd);
+	    if (y<leapdayshift) ld=55-1; // 24 feb
+	    else ld=60-1;        // 29 feb
+	    if (last_year!=-1 && y>last_year) return ([])[0];
+	    if (first_year!=-1 && y<first_year) return ([])[0];
+	 }
+
+	 array(string) n;
+	 int d=jd-yjd;
+	 if (leap)
+	 { 
+	    if (d<ld) n=namelist[d];
+	    else if (d>ld) n=namelist[d-1];
+	    else n=namelist[-1];
+	 }
+	 else
+	    n=namelist[d];
+
+	 if (n) return t->calendar()->Day("julian_r",jd,t->ruleset());
+
+	 jd+=direction;
+      }
+   }
 
    TimeRange next(TimeRange from,void|int(0..1) including)
    {
-      return from->calendar()
-	 ->Day("julian_r",(int)(from->julian_day()),from->ruleset());
+      return _find(from,including,1);
    }
 
    TimeRange previous(TimeRange from,void|int(0..1) including)
    {
-      return from->calendar()
-	 ->Day("julian_r",(int)(from->julian_day()),from->ruleset());
+      return _find(from,including,-1);
    }
 
    string _sprintf(int t)
@@ -377,8 +386,104 @@ class Namedays
    {
       return "Namedays";
    }
+
+   SuperEvent|SuperNamedays|Namedays 
+      `|(SuperEvent|Namedays|SuperNamedays e,
+	 mixed ...extra)
+   {
+      object(SuperEvent)|object(SuperNamedays)|object(Namedays) res;
+      if (e->is_nameday_wrapper && e->id==id && id!="?") 
+	 res=SuperNamedays(e->namedays|({this_object()}),e->id);
+      else
+      {
+	 array a=({e})|({this_object()});
+	 if (!sizeof(a)) res=this_object();
+	 else if (e->is_namedays && e->id==id) res=SuperNamedays(a,id);
+	 else res=SuperEvent(a);
+      }
+      if (sizeof(extra)) return predef::`|(res,@extra);
+      return res;
+   }
 }
 
+class SuperNamedays
+{
+   inherit Event;
+   constant is_namedays_wrapper=1;
+
+// presumed non-overlapping namedays
+   array(Nameday) namedayss;
+   string id;
+   
+   void create(array(Nameday) _namedays,string _id)
+   {
+      name=id=_id;
+      namedayss=_namedays;
+   }
+
+   string _sprintf(int t)
+   {
+      return t=='O'?sprintf("SuperNamedays(%s [%d])",id,sizeof(namedayss)):0;
+   }
+
+   string describe()
+   {
+      return "Namedays";
+   }
+
+   array(TimeRange) scan(TimeRange in)
+   {
+      return indices(namedays(in));
+   }
+
+   mapping(TimeRange:Event) scan_events(TimeRange in)
+   {
+      return predef::`|(@map(namedayss,"scan_events",in));
+   }
+
+   TimeRange next(TimeRange from,void|int(0..1) including)
+   {
+      array(TimeRange) a=map(namedayss,"next",from,including)-({0});
+      switch (sizeof(a))
+      {
+	 case 0: return ([])[0];
+	 case 1: return a[0];
+	 default: return min(@a);
+      }
+   }
+
+   TimeRange previous(TimeRange from,void|int(0..1) including)
+   {
+      array(TimeRange) a=map(namedayss,"previous",from,including)-({0});
+      switch (sizeof(a))
+      {
+	 case 0: return ([])[0];
+	 case 1: return a[0];
+	 default: return max(@a);
+      }
+   }
+
+   mapping(TimeRange:array(string)) namedays(TimeRange t)
+   {
+      return predef::`|(@map(namedayss,"namedays",t));
+   }
+
+   array(string) names(TimeRange t)
+   {
+      return predef::`|(@map(namedayss,"names",t));
+   }
+
+   SuperEvent|SuperNamedays|Namedays 
+      `|(SuperEvent|Namedays|SuperNamedays e,
+	 mixed ...extra)
+   {
+      if (e->is_namedays_wrapper)
+	 return `|(this_object(),@e->namedayss,@extra);
+      if (e->is_namedays && e->id==id)
+	 return SuperNamedays(namedayss|({e}),id);
+      return predef::`|(e,this_object(),@extra);
+   }
+}
 
 // ----------------------------------------------------------------
 // simple Gregorian date events
@@ -1002,9 +1107,9 @@ class SuperEvent
    array(Event) other_events=({});
 
 
-/*static*/ void create(array(Event) _events,
-		       void|mapping(Event:multiset(string)) _flags,
-		       void|string _id)
+   static void create(array(Event) _events,
+		      void|mapping(Event:multiset(string)) _flags,
+		      void|string _id)
    {
       if (_id) id=_id;
 

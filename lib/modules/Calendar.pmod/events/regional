@@ -1,6 +1,6 @@
 ### Calendar module
 ### Event definition file
-### $Id: regional,v 1.6 2000/09/18 08:31:03 mirar Exp $
+### $Id: regional,v 1.7 2000/09/30 09:49:53 mirar Exp $
 
 ### =====================================================================
 ###
@@ -1924,7 +1924,7 @@ Region "hk"
 # ----------------------------------------------------------------
 
 Region "hu"
-# Event   Add   "namedays/hungary"              - # "Sweden"                       Unknown  0 days
+  Event   Add   "namedays/hu"             
   Event "hu/constitution"         h   "Constitution Day"      Fixed Aug 20
   Event "hu/revolution1848"       h   "1848 Revolution Day"   Fixed Mar 15
   Add   "c/easter"                h # "Easter"                Easter +0
@@ -3232,7 +3232,7 @@ Region "se"
   Add   "c/christmas eve"             -  # "Christmas Eve"            Fixed Dec 24
   Add   "new years eve"               -  # "New Year's Eve"           Fixed Dec 31
 
-  Add   "namedays/sweden"             #  # # # # # # #
+  Add   "namedays/se"                 #  # # # # # # #
   Add   "sunday"                      h  # "Sun"                      Weekday ---
 
 

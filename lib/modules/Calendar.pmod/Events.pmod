@@ -92,23 +92,28 @@ Event.Event make_event(string source)
 	    return e;
 	 }
    // WDRel May 17 Fri +17 excl
+	 days=a=0;
 	 if (sscanf(rule,
-		    "WDRel%*[ \t]%s%*[ \t]%d%*[ \t]%s%*[ \t]"
-		    "%s%*[ \t]%d%[ \t]%s%[ \t]%d days",
-		    mn,md,wd,n,a,days)>=7 && a=="excl" &&
+		    "WDRel%*[ \t]%[A-z]%*[ \t]%d%*[ \t]%s%*[ \t]"
+		    "%d%*[ \t]%[a-z]%*[ \t]%d days",
+		    mn,md,wd,n,a,days)>=9 && a && a!="" &&
 	     (m=month2n[mn]) && wd2n[wd])
 	 {
+	    if (!(<"incl","excl">)[a])
+	       error("Events: rule error; expected incl or excl, not %O"
+		     ":\n%O\n",a,source);
+
 	    m=(m%12)+1;
 	    Event.Event e=
 	       Event.Monthday_Weekday_Relative(
-		  id,s,md,month2n[mn],wd2n[wd],n,1);
+		  id,s,md,month2n[mn],wd2n[wd],n,a!="excl");
 	    e->nd=days;
 	    return e;
 	 }
    // WDRel May 17 Fri +17
 	 if (sscanf(rule,
-		    "WDRel%*[ \t]%s%*[ \t]%d%*[ \t]%s%*[ \t]"
-		    "%d%[ \t]%d days",
+		    "WDRel%*[ \t]%[A-z]%*[ \t]%d%*[ \t]%[^ \t]%*[ \t]"
+		    "%d%*[ \t]%d days",
 		    mn,md,wd,n,days)>=7 && 
 	     (m=month2n[mn]) && wd2n[wd])
 	 {
@@ -147,9 +152,105 @@ Event.Event make_event(string source)
    }
 }
 
-Event.Event find_namedays(string s)
+constant nd_m_yd=(["jan":0,"feb":31,"mar":59,"apr":90,
+		"may":120,"jun":151,"jul":181,"aug":212,
+		"sep":243,"oct":273,"nov":304,"dec":334]);
+constant nd_m_nd=(["jan":31,"feb":28,"mar":31,"apr":30,
+		"may":31,"jun":30,"jul":31,"aug":31,
+		"sep":30,"oct":31,"nov":30,"dec":31]);
+
+Event.Namedays new_namedays_object(string id,string name,
+			   int start,int stop,int leapdayshift,
+			   array(array(string)) names)
 {
-   return Event.NullEvent(s,"?");
+   return Event.Namedays(id,name,names,0,
+			 start,stop,leapdayshift);
+}
+
+mapping made_namedays=([]);
+
+string read_all_namedays()
+{
+   return Stdio.read_bytes(
+      combine_path(__FILE__,"../events/namedays"));
+}
+
+Event.Namedays find_namedays(string region)
+{
+   string id="namedays/"+region;
+   object res;
+   if ( (res=made_namedays[region]) ) 
+      return res;
+   string all=read_all_namedays();
+
+   int i=search(all,"\nRegion \""+region+"\"");
+   if (i==-1) return ([])[0]; // not found
+
+   int i2=search(all,"\nRegion",i+1);
+   if (i2==-1) i2=strlen(all)-1;
+
+   array(array(string)) names=0;
+   int start=-1,stop=-1;
+   int leapdayshift=2000;
+
+   foreach (all[i..i2]/"\n",string line)
+   {
+      string w="",s;
+      sscanf(line,"%*[ \t]%[^ \t]%*[ \t]%s",w,s);
+#if 1
+      switch (w=lower_case(w))
+      {
+	 case "":
+	 case "region": // ignore
+	    break;
+	 case "leapdayshift":
+	    sscanf(s,"%d",leapdayshift);
+	    break;
+	 case "period":
+	    if (names) 
+	       if (res) 
+		  res|=new_namedays_object(region,id,
+					   start,stop,leapdayshift,names);
+	       else
+		  res=new_namedays_object(region,id,
+					  start,stop,leapdayshift,names);
+	    names=0;
+
+	    sscanf(s,"%[0-9]-%[0-9]",string sstart,string sstop);
+	    if (sstart=="") start=-1,stop=(int)sstop;
+	    else if (sstop=="") start=(int)sstart,stop=-1;
+	    else start=(int)sstart,stop=(int)sstop;
+	    break;
+	 case "jan": case "feb": case "mar": case "apr":
+	 case "may": case "jun": case "jul": case "aug":
+	 case "sep": case "oct": case "nov": case "dec":
+  	    if (!names) names=allocate(366);
+
+	    sscanf(s,"%d%*[ ]%{%*[, ]%[^,]%}",int mday,array name);
+#if 1
+	    if (mday<1 || mday>nd_m_nd[w])
+	       error("Nameday date doesn't exists:\n%O\n",line);
+#endif
+	    names[nd_m_yd[w]+mday-1]=`+(@name);
+	    break;
+	 case "leapday":
+	    sscanf(s,"%{%*[, ]%[^,]%}",name);
+	    names[365]=`+(@name);
+	    break;
+	 default:
+	    if (w[0]=='#') break;
+	    error("Unknown namedays definition statement:\n%O\n",line);
+      }
+#endif
+   }
+   if (names) 
+      if (res) 
+	 res|=new_namedays_object(region,id||"?",
+				  start,stop,leapdayshift,names);
+      else
+	 res=new_namedays_object(region,id||"?",start,stop,leapdayshift,names);
+   
+   return res;
 }
 
 Event.Event find_event(string s)

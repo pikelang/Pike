@@ -5,6 +5,7 @@
 # ----------------------------------------------------------------
 
 Region "se"
+ Leapdayshift 2000 # 29 feb 2000 is the leap day, 24 feb before that
  Period 1900-1985
    Jan  2 Svea
    Jan  3 Alfred
@@ -276,7 +277,7 @@ Region "se"
    Sep 28 Lennart
    Sep 29 Mikael
    Sep 30 Helge
-   Oct  1 r
+   Oct  1 Ragnar
    Oct  2 Ludvig
    Oct  3 Evald
    Oct  4 Frans
@@ -723,7 +724,7 @@ Region "se"
    Dec 26 Stefan, Staffan, Stefanie
    Dec 27 Johannes, Hannes, Johan
    Dec 29 Abel, Abbe
-   Dec 39 Set, Viva, Vivari
+   Dec 30 Set, Viva, Vivari
    Dec 31 Sylvester, Sylve, Sylvi
  Period 1993-
    Jan  2 Svea, Sverker
@@ -1096,6 +1097,7 @@ Region "se"
 # ----------------------------------------------------------------
 
 Region "hu"
+  Leapdayshift 2000
    Jan  1 Fruzsina
    Jan  2 Ábel
    Jan  3 Genovéna, Benjámin
@@ -1463,6 +1465,8 @@ Region "hu"
    Dec 31 Szilveszter
 
 Region "saints"
+  Leapdayshift 1900 # ?
+  Rules Saints
 #  Jan  1 Mary
    Jan  2 St. Gregory Nazianzen
    Jan  3 St. Genevieve
