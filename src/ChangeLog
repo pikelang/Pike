@@ -1,3 +1,8 @@
+Wed Feb 11 04:31:44 1998  Niels Möller  <nisse@idonex.se>
+
+	* modules/Gmp/mpz_glue.c (low_get_digits): Fixed handling of base
+	256. This function should not return any leading zeros.
+
 Wed Jan 21 11:37:44 1998  Fredrik Hubinette  <hubbe@cytocin.hubbe.net>
 
 	* objects can now access variables in their parents
