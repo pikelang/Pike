@@ -5,7 +5,7 @@
 \*/
 /**/
 #include "global.h"
-RCSID("$Id: program.c,v 1.307 2001/03/28 17:58:06 grubba Exp $");
+RCSID("$Id: program.c,v 1.308 2001/04/01 15:40:21 grubba Exp $");
 #include "program.h"
 #include "object.h"
 #include "dynamic_buffer.h"
@@ -1310,8 +1310,8 @@ void low_start_new_program(struct program *p,
   Pike_compiler->num_parse_error=0;
 
   push_compiler_frame(0);
-  copy_type(Pike_compiler->compiler_frame->current_return_type,
-	    void_type_string);
+  copy_pike_type(Pike_compiler->compiler_frame->current_return_type,
+		 void_type_string);
 
   debug_malloc_touch(Pike_compiler->fake_object);
   debug_malloc_touch(Pike_compiler->fake_object->storage);
@@ -2564,7 +2564,7 @@ int low_define_variable(struct pike_string *name,
 #endif
 
   copy_shared_string(dummy.name, name);
-  copy_type(dummy.type, type);
+  copy_pike_type(dummy.type, type);
   dummy.identifier_flags = 0;
   dummy.run_time_type=run_time_type;
   dummy.func.offset=offset - Pike_compiler->new_program->inherits[0].storage_offset;
@@ -2677,7 +2677,7 @@ int define_variable(struct pike_string *name,
       struct identifier *id;
       id=ID_FROM_INT(Pike_compiler->new_program,n);
       free_type(id->type);
-      copy_type(id->type, type);
+      copy_pike_type(id->type, type);
       return n;
     }
   }
@@ -2869,7 +2869,7 @@ PMOD_EXPORT int add_constant(struct pike_string *name,
     dummy.func.offset=store_constant(c, 0, 0);
   }
   else {
-    copy_type(dummy.type, mixed_type_string);
+    copy_pike_type(dummy.type, mixed_type_string);
     dummy.run_time_type=T_MIXED;
     dummy.func.offset=-1;
   }
@@ -3136,7 +3136,7 @@ INT32 define_function(struct pike_string *name,
       funp->opt_flags &= opt_flags;
 
       free_type(funp->type);
-      copy_type(funp->type, type);
+      copy_pike_type(funp->type, type);
     }else{
 
       if((ref.id_flags & ID_NOMASK)
@@ -3156,7 +3156,7 @@ INT32 define_function(struct pike_string *name,
 
       /* Otherwise we make a new definition */
       copy_shared_string(fun.name, name);
-      copy_type(fun.type, type);
+      copy_pike_type(fun.type, type);
 
       fun.run_time_type=T_FUNCTION;
 
@@ -3226,7 +3226,7 @@ make_a_new_def:
   /* define a new function */
 
   copy_shared_string(fun.name, name);
-  copy_type(fun.type, type);
+  copy_pike_type(fun.type, type);
 
   fun.identifier_flags=function_flags;
   fun.run_time_type=T_FUNCTION;

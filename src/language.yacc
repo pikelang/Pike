@@ -112,7 +112,7 @@
 /* This is the grammar definition of Pike. */
 
 #include "global.h"
-RCSID("$Id: language.yacc,v 1.241 2001/04/01 15:14:06 grubba Exp $");
+RCSID("$Id: language.yacc,v 1.242 2001/04/01 15:40:23 grubba Exp $");
 #ifdef HAVE_MEMORY_H
 #include <memory.h>
 #endif
@@ -556,7 +556,8 @@ type_or_error: simple_type
 #endif /* PIKE_DEBUG */
     if(Pike_compiler->compiler_frame->current_type)
       free_type(Pike_compiler->compiler_frame->current_type); 
-    copy_type(Pike_compiler->compiler_frame->current_type, $1->u.sval.u.type);
+    copy_pike_type(Pike_compiler->compiler_frame->current_type,
+		   $1->u.sval.u.type);
     free_node($1);
   }
   ;
@@ -596,10 +597,10 @@ push_compiler_frame0: /* empty */
        !Pike_compiler->compiler_frame->previous->current_type)
     {
       yyerror("Internal compiler fault.");
-      copy_type(Pike_compiler->compiler_frame->current_type,
+      copy_pike_type(Pike_compiler->compiler_frame->current_type,
 		mixed_type_string);
     }else{
-      copy_type(Pike_compiler->compiler_frame->current_type,
+      copy_pike_type(Pike_compiler->compiler_frame->current_type,
 		Pike_compiler->compiler_frame->previous->current_type);
     }
   }
@@ -696,7 +697,7 @@ def: modifiers type_or_error optional_stars TOK_IDENTIFIER push_compiler_frame0
 		    Pike_compiler->compiler_pass, $4->u.sval.u.string->str);
 
 	    free_type(s);
-	    copy_type(s, id->type);
+	    copy_pike_type(s, id->type);
 
 	    fprintf(stderr, "Resulting type:\n");
 #ifdef PIKE_DEBUG
@@ -788,7 +789,7 @@ def: modifiers type_or_error optional_stars TOK_IDENTIFIER push_compiler_frame0
 		 * mksoftcastnode().
 		 */
 		free_type(local_node->type);
-		copy_type(local_node->type, mixed_type_string);
+		copy_pike_type(local_node->type, mixed_type_string);
 
 		check_args =
 		  mknode(F_COMMA_EXPR, check_args,
@@ -1780,8 +1781,8 @@ lambda: TOK_LAMBDA push_compiler_frame1
     debug_malloc_touch(Pike_compiler->compiler_frame->current_return_type);
     if(Pike_compiler->compiler_frame->current_return_type)
       free_type(Pike_compiler->compiler_frame->current_return_type);
-    copy_type(Pike_compiler->compiler_frame->current_return_type,
-	      any_type_string);
+    copy_pike_type(Pike_compiler->compiler_frame->current_return_type,
+		   any_type_string);
   }
   func_args
   {
@@ -1871,8 +1872,8 @@ local_function: TOK_IDENTIFIER push_compiler_frame1 func_args
     debug_malloc_touch(Pike_compiler->compiler_frame->current_return_type);
     if(Pike_compiler->compiler_frame->current_return_type)
       free_type(Pike_compiler->compiler_frame->current_return_type);
-    copy_type(Pike_compiler->compiler_frame->current_return_type,
-	      $<n>0->u.sval.u.type);
+    copy_pike_type(Pike_compiler->compiler_frame->current_return_type,
+		   $<n>0->u.sval.u.type);
 
 
     /***/
@@ -2232,7 +2233,7 @@ optional_create_arguments: /* empty */ { $$ = 0; }
 	   * mksoftcastnode().
 	   */
 	  free_type(local_node->type);
-	  copy_type(local_node->type, mixed_type_string);
+	  copy_pike_type(local_node->type, mixed_type_string);
 	  
 	  local_node = mksoftcastnode(Pike_compiler->compiler_frame->
 				      variable[e].type, local_node);
@@ -2900,8 +2901,8 @@ optional_block: ';' /* EMPTY */ { $$=0; }
     debug_malloc_touch(Pike_compiler->compiler_frame->current_return_type);
     if(Pike_compiler->compiler_frame->current_return_type)
       free_type(Pike_compiler->compiler_frame->current_return_type);
-    copy_type(Pike_compiler->compiler_frame->current_return_type,
-	      any_type_string);
+    copy_pike_type(Pike_compiler->compiler_frame->current_return_type,
+		   any_type_string);
 
     /* block code */
     $<number>1=Pike_compiler->num_used_modules;
@@ -3718,7 +3719,7 @@ int low_add_local_name(struct compiler_frame *frame,
 		  "(converted to type zero).");
       }
       free_type(type);
-      copy_type(type, zero_type_string);
+      copy_pike_type(type, zero_type_string);
     }
     frame->variable[frame->current_number_of_locals].type = type;
     frame->variable[frame->current_number_of_locals].name = str;

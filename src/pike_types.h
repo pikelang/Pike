@@ -5,7 +5,7 @@
 \*/
 
 /*
- * $Id: pike_types.h,v 1.70 2001/03/31 01:12:48 grubba Exp $
+ * $Id: pike_types.h,v 1.71 2001/04/01 15:40:22 grubba Exp $
  */
 #ifndef PIKE_TYPES_H
 #define PIKE_TYPES_H
@@ -40,9 +40,9 @@ struct pike_type
 
 void debug_free_type(struct pike_type *t);
 #ifdef DEBUG_MALLOC
-#define copy_type(D, S) add_ref((struct pike_type *)debug_malloc_pass(D = (S)))
+#define copy_pike_type(D, S) add_ref((struct pike_type *)debug_malloc_pass(D = (S)))
 #else /* !DEBUG_MALLOC */
-#define copy_type(D, S)	add_ref(D = (S))
+#define copy_pike_type(D, S)	add_ref(D = (S))
 #endif /* DEBUG_MALLOC */
 #define CONSTTYPE(X) make_pike_type(X)
 
@@ -68,7 +68,7 @@ extern struct pike_type **pike_type_mark_stack[PIKE_TYPE_STACK_SIZE/4];
  * to avoid circularities with svalue.h and this file.
  */
 #define free_type(T)	free_string(T)
-#define copy_type(D, S)	copy_shared_string(D, S)
+#define copy_pike_type(D, S)	copy_shared_string(D, S)
 #define check_type_string	debug_check_type_string
 
 #define CONSTTYPE(X) make_shared_binary_string(X,CONSTANT_STRLEN(X))
@@ -177,7 +177,7 @@ extern struct pike_type_location *all_pike_type_locations;
       type_.next = all_pike_type_locations;	\
       all_pike_type_locations = &type_;		\
     }						\
-    copy_type((T), type_.t);			\
+    copy_pike_type((T), type_.t);		\
   } while(0)
 #else /* !DEBUG_MALLOC */
 #define MAKE_CONSTANT_TYPE(T, X) do {	\
@@ -185,7 +185,7 @@ extern struct pike_type_location *all_pike_type_locations;
     if (!type_) {			\
       type_ = CONSTTYPE(X);		\
     }					\
-    copy_type((T), type_);		\
+    copy_pike_type((T), type_);		\
   } while(0)
 #endif /* DEBUG_MALLOC */
 #else /* !USE_PIKE_TYPE */

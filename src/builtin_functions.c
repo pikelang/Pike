@@ -5,7 +5,7 @@
 \*/
 /**/
 #include "global.h"
-RCSID("$Id: builtin_functions.c,v 1.356 2001/03/28 15:07:38 grubba Exp $");
+RCSID("$Id: builtin_functions.c,v 1.357 2001/04/01 15:40:23 grubba Exp $");
 #include "interpret.h"
 #include "svalue.h"
 #include "pike_macros.h"
@@ -2602,7 +2602,7 @@ static node *fix_aggregate_mapping_type(node *n)
 	  }
 #endif /* PIKE_DEBUG */
 	} else {
-	  copy_type(types[argno], arg->type);
+	  copy_pike_type(types[argno], arg->type);
 	}
 	argno = !argno;
 	/* Handle the special case where CAR & CDR are the same.
@@ -2840,7 +2840,7 @@ node *fix_object_program_type(node *n)
   struct pike_type *new_type = NULL;
 
   if (!n->type) {
-    copy_type(n->type, program_type_string);
+    copy_pike_type(n->type, program_type_string);
   }
   if (!(nn = CDR(n))) return NULL;
   if ((nn->token == F_ARG_LIST) && (!(nn = CAR(nn)))) return NULL;

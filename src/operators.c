@@ -6,7 +6,7 @@
 /**/
 #include "global.h"
 #include <math.h>
-RCSID("$Id: operators.c,v 1.133 2001/03/28 15:07:39 grubba Exp $");
+RCSID("$Id: operators.c,v 1.134 2001/04/01 15:40:22 grubba Exp $");
 #include "interpret.h"
 #include "svalue.h"
 #include "multiset.h"
@@ -1731,8 +1731,8 @@ PMOD_EXPORT void o_xor(void)
     /* a ^ b  ==  (a&~b)|(~a&b) */
     struct pike_type *a;
     struct pike_type *b;
-    copy_type(a, sp[-2].u.type);
-    copy_type(b, sp[-1].u.type);
+    copy_pike_type(a, sp[-2].u.type);
+    copy_pike_type(b, sp[-1].u.type);
     o_compl();		/* ~b */
     o_and();		/* a&~b */
     push_type_value(a);

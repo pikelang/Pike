@@ -5,7 +5,7 @@
 \*/
 /**/
 #include "global.h"
-RCSID("$Id: pike_types.c,v 1.176 2001/03/31 16:07:39 grubba Exp $");
+RCSID("$Id: pike_types.c,v 1.177 2001/04/01 15:40:21 grubba Exp $");
 #include <ctype.h>
 #include "svalue.h"
 #include "pike_types.h"
@@ -578,7 +578,7 @@ void debug_push_type_name(struct pike_string *name)
 
 void debug_push_finished_type(struct pike_type *t)
 {
-  copy_type(*(++Pike_compiler->type_stackp), t);
+  copy_pike_type(*(++Pike_compiler->type_stackp), t);
 
   TYPE_STACK_DEBUG("push_finished_type");
 }
@@ -3437,7 +3437,7 @@ struct pike_type *index_type(struct pike_type *type,
   clear_markers();
   t = low_index_type(type, index_type, n);
   if(!t) {
-    copy_type(t, mixed_type_string);
+    copy_pike_type(t, mixed_type_string);
   }
   return t;
 }
@@ -3465,7 +3465,7 @@ static struct pike_type *low_array_value_type(struct pike_type *arr_t)
   if (arr_t->type != T_ARRAY)
     return res;
 
-  copy_type(sub_t, arr_t->car);
+  copy_pike_type(sub_t, arr_t->car);
 
   if (res) {
     struct pike_type *new = or_pike_types(res, sub_t, 1);
@@ -3480,7 +3480,7 @@ struct pike_type *array_value_type(struct pike_type *array_type)
 {
   struct pike_type *t = low_array_value_type(array_type);
   if (!t) {
-    copy_type(t, mixed_type_string);
+    copy_pike_type(t, mixed_type_string);
   }
   return t;
 }
@@ -3560,7 +3560,7 @@ static struct pike_type *debug_low_key_type(struct pike_type *t, node *n)
 
   case T_MAPPING:
   case T_MULTISET:
-    copy_type(t, t->car);
+    copy_pike_type(t, t->car);
     return t;
   }
 }
@@ -3571,7 +3571,7 @@ struct pike_type *key_type(struct pike_type *type, node *n)
   clear_markers();
   t = low_key_type(type,n);
   if(!t) {
-    copy_type(t, mixed_type_string);
+    copy_pike_type(t, mixed_type_string);
   }
   return t;
 }
@@ -3836,7 +3836,7 @@ struct pike_type *new_check_call(node *fun, int *argno,
 	/* Not strict arg */
       }
     }
-    copy_type(tmp_type, type->cdr);
+    copy_pike_type(tmp_type, type->cdr);
     free_type(type);
     type = tmp_type;
     (*argno)++;
@@ -3925,16 +3925,16 @@ struct pike_type *get_type_of_svalue(struct svalue *s)
   case T_FUNCTION:
     if(s->subtype == FUNCTION_BUILTIN)
     {
-      copy_type(ret, s->u.efun->type);
+      copy_pike_type(ret, s->u.efun->type);
     }else{
       struct program *p;
 
       p=s->u.object->prog;
       if(!p)
       {
-	copy_type(ret, zero_type_string);
+	copy_pike_type(ret, zero_type_string);
       }else{
-	copy_type(ret, ID_FROM_INT(p,s->subtype)->type);
+	copy_pike_type(ret, ID_FROM_INT(p,s->subtype)->type);
       }
     }
     return ret;
@@ -3954,7 +3954,7 @@ struct pike_type *get_type_of_svalue(struct svalue *s)
       int i;
 
       /* FIXME: Circular structures? */
-      copy_type(arg_type, zero_type_string);
+      copy_pike_type(arg_type, zero_type_string);
       for (i = 0; i < a->size; i++) {
 	struct pike_type *tmp1 = get_type_of_svalue(a->item+i);
 	struct pike_type *tmp2 = or_pike_types(arg_type, tmp1, 1);
@@ -3964,9 +3964,9 @@ struct pike_type *get_type_of_svalue(struct svalue *s)
       }
 #else /* !0 */
       if (a->size)
-	copy_type(arg_type, mixed_type_string);
+	copy_pike_type(arg_type, mixed_type_string);
       else
-	copy_type(arg_type, zero_type_string);
+	copy_pike_type(arg_type, zero_type_string);
 #endif /* 0 */
       type_stack_mark();
       push_finished_type(arg_type);
@@ -4018,7 +4018,7 @@ struct pike_type *get_type_of_svalue(struct svalue *s)
       push_int_type(s->u.integer, s->u.integer);
       return pop_unfinished_type();
     }else{
-      copy_type(ret, zero_type_string);
+      copy_pike_type(ret, zero_type_string);
       return ret;
     }
 
@@ -7628,16 +7628,16 @@ struct pike_type *get_type_of_svalue(struct svalue *s)
   case T_FUNCTION:
     if(s->subtype == FUNCTION_BUILTIN)
     {
-      copy_type(ret, s->u.efun->type);
+      copy_pike_type(ret, s->u.efun->type);
     }else{
       struct program *p;
 
       p=s->u.object->prog;
       if(!p)
       {
-	copy_type(ret, zero_type_string);
+	copy_pike_type(ret, zero_type_string);
       }else{
-	copy_type(ret, ID_FROM_INT(p,s->subtype)->type);
+	copy_pike_type(ret, ID_FROM_INT(p,s->subtype)->type);
       }
     }
     return ret;
@@ -7667,9 +7667,9 @@ struct pike_type *get_type_of_svalue(struct svalue *s)
       }
 #else /* !0 */
       if (a->size)
-	copy_type(arg_type, mixed_type_string);
+	copy_pike_type(arg_type, mixed_type_string);
       else
-	copy_type(arg_type, zero_type_string);
+	copy_pike_type(arg_type, zero_type_string);
 #endif /* 0 */
       type_stack_mark();
       push_finished_type(arg_type);
@@ -7723,7 +7723,7 @@ struct pike_type *get_type_of_svalue(struct svalue *s)
       push_int_type(s->u.integer, s->u.integer);
       return pop_unfinished_type();
     }else{
-      copy_type(ret, zero_type_string);
+      copy_pike_type(ret, zero_type_string);
     }
     return ret;
 

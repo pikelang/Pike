@@ -5,7 +5,7 @@
 \*/
 /**/
 #include "global.h"
-RCSID("$Id: las.c,v 1.248 2001/03/28 17:59:36 grubba Exp $");
+RCSID("$Id: las.c,v 1.249 2001/04/01 15:40:23 grubba Exp $");
 
 #include "language.h"
 #include "interpret.h"
@@ -304,7 +304,7 @@ struct pike_type *find_return_type(node *n)
   if (n->token == F_RETURN) {
     if (CAR(n)) {
       if (CAR(n)->type) {
-	copy_type(a, CAR(n)->type);
+	copy_pike_type(a, CAR(n)->type);
       } else {
 #ifdef PIKE_DEBUG
 	if (l_flag > 2) {
@@ -312,10 +312,10 @@ struct pike_type *find_return_type(node *n)
 	  print_tree(n);
 	}
 #endif /* PIKE_DEBUG */
-	copy_type(a, mixed_type_string);
+	copy_pike_type(a, mixed_type_string);
       }
     } else {
-      copy_type(a, zero_type_string);
+      copy_pike_type(a, zero_type_string);
     }
     return a;
   }
@@ -395,14 +395,15 @@ static void add_node(node *n)
   while(probe) {
     if (probe == n) 
     {
-      fprintf(stderr, "add_node(%p == %p): Node already added!\n", probe, n);
+      fprintf(stderr, "add_node(%p == %p): Node already added!\n",
+	      (void *)probe, (void *)n);
       fprintf( stderr, "   %ld <-> %ld\n",
 	       DO_NOT_WARN((long)hval),
 	       DO_NOT_WARN((long)(n->hash % node_hash.size)) );
       probe = node_hash.table[hval];
       while( probe )
       {
-        fprintf(stderr, "    %p\n", probe);
+        fprintf(stderr, "    %p\n", (void *)probe);
         probe = probe->next;
       }
       fatal( "Node already added!\n" );
@@ -480,11 +481,11 @@ static node *freeze_node(node *orig)
 	  /* Use the new type if it's stricter. */
 	  if (pike_types_le(orig->type, n->type)) {
 	    free_type(n->type);
-	    copy_type(n->type, orig->type);
+	    copy_pike_type(n->type, orig->type);
 	  }
 	} else {
 	  /* This probably doesn't happen, but... */
-	  copy_type(n->type, orig->type);
+	  copy_pike_type(n->type, orig->type);
 	}
       }
       if (!found) {
@@ -563,7 +564,7 @@ void free_all_nodes(void)
 	      if(!cumulative_parse_error)
 	      {
 		fprintf(stderr,"Free node at %p, (%s:%d) (token=%d).\n",
-			tmp, tmp->current_file->str, tmp->line_number,
+			(void *)tmp, tmp->current_file->str, tmp->line_number,
 			tmp->token);
 
 		debug_malloc_dump_references(tmp,0,2,0);
@@ -802,7 +803,7 @@ node *debug_check_node_hash(node *n)
 #if defined(PIKE_DEBUG) && defined(SHARED_NODES)
   if (n && !(n->tree_info & (OPT_DEFROSTED|OPT_NOT_SHARED)) && (n->hash != hash_node(n))) {
     fprintf(stderr,"Bad node hash at %p, (%s:%d) (token=%d).\n",
-	    n, n->current_file->str, n->line_number,
+	    (void *)n, n->current_file->str, n->line_number,
 	    n->token);
     debug_malloc_dump_references(n,0,0,0);
     print_tree(n);
@@ -927,7 +928,7 @@ node *debug_mknode(short token, node *a, node *b)
     break;
 
   case F_POP_VALUE:
-    copy_type(res->type, void_type_string);
+    copy_pike_type(res->type, void_type_string);
     
     if(a) res->tree_info |= a->tree_info;
     if(b) res->tree_info |= b->tree_info;
@@ -1061,7 +1062,7 @@ node *debug_mkstrnode(struct pike_string *str)
 {
   node *res = mkemptynode();
   res->token = F_CONSTANT;
-  copy_type(res->type, string_type_string);
+  copy_pike_type(res->type, string_type_string);
   res->node_info = 0;
   res->u.sval.type = T_STRING;
 #ifdef __CHECKER__
@@ -1107,7 +1108,7 @@ node *debug_mkfloatnode(FLOAT_TYPE foo)
 {
   node *res = mkemptynode();
   res->token = F_CONSTANT;
-  copy_type(res->type, float_type_string);
+  copy_pike_type(res->type, float_type_string);
   res->u.sval.type = T_FLOAT;
 #ifdef __CHECKER__
   res->u.sval.subtype = 0;
@@ -1165,7 +1166,7 @@ node *debug_mklocalnode(int var, int depth)
 
   f=Pike_compiler->compiler_frame;
   for(e=0;e<depth;e++) f=f->previous;
-  copy_type(res->type, f->variable[var].type);
+  copy_pike_type(res->type, f->variable[var].type);
 
   res->node_info = OPT_NOT_CONST | OPT_NOT_SHARED;
   res->tree_info = res->node_info;
@@ -1228,7 +1229,7 @@ node *debug_mktrampolinenode(int i)
 {
   node *res = mkemptynode();
   res->token = F_TRAMPOLINE;
-  copy_type(res->type, ID_FROM_INT(Pike_compiler->new_program, i)->type);
+  copy_pike_type(res->type, ID_FROM_INT(Pike_compiler->new_program, i)->type);
 
   /* FIXME */
   if(IDENTIFIER_IS_CONSTANT(ID_FROM_INT(Pike_compiler->new_program, i)->identifier_flags))
@@ -1268,7 +1269,7 @@ node *debug_mkexternalnode(struct program *parent_prog, int i)
   }
 #endif
 
-  copy_type(res->type, id->type);
+  copy_pike_type(res->type, id->type);
 
   /* FIXME */
   if(IDENTIFIER_IS_CONSTANT(id->identifier_flags))
@@ -1328,7 +1329,7 @@ node *debug_mkcastnode(struct pike_type *type, node *n)
 
   res = mkemptynode();
   res->token = F_CAST;
-  copy_type(res->type, type);
+  copy_pike_type(res->type, type);
 
   if(match_types(object_type_string, type) ||
      match_types(program_type_string, type))
@@ -1387,7 +1388,7 @@ node *debug_mksoftcastnode(struct pike_type *type, node *n)
 
   res = mkemptynode();
   res->token = F_SOFT_CAST;
-  copy_type(res->type, type);
+  copy_pike_type(res->type, type);
 
   res->tree_info |= n->tree_info;
 
@@ -1804,9 +1805,10 @@ node *debug_mktypenode(struct pike_type *t)
 {
   node *res = mkemptynode();
   res->token = F_CONSTANT;
-  copy_type(res->u.sval.u.type, t);
+  copy_pike_type(res->u.sval.u.type, t);
   res->u.sval.type = T_TYPE;
-  copy_type(res->type, type_type_string);
+  /* FIXME: Should be type(val) */
+  copy_pike_type(res->type, type_type_string);
   return freeze_node(res);
 }
 
@@ -1917,7 +1919,7 @@ node *copy_node(node *n)
     b=mknewintnode(0);
     if(b->type) free_type(b->type);
     *b=*n;
-    copy_type(b->type, n->type);
+    copy_pike_type(b->type, n->type);
     return b;
 
   default:
@@ -1947,7 +1949,7 @@ node *copy_node(node *n)
       b=mknode(n->token, CAR(n), CDR(n));
     }
     if(n->type)
-      copy_type(b->type, n->type);
+      copy_pike_type(b->type, n->type);
     else
       b->type=0;
 
@@ -2012,7 +2014,7 @@ node *defrost_node(node *n)
     b=mknewintnode(0);
     if(b->type) free_type(b->type);
     *b=*n;
-    copy_type(b->type, n->type);
+    copy_pike_type(b->type, n->type);
     return b;
 
   default:
@@ -2023,7 +2025,7 @@ node *defrost_node(node *n)
     if(cdr_is_node(n)) _CDR(b)=copy_node(CDR(n));
 
     if(n->type)
-      copy_type(b->type, n->type);
+      copy_pike_type(b->type, n->type);
     else
       b->type=0;
 
@@ -2035,7 +2037,7 @@ node *defrost_node(node *n)
     _CAR(b)=copy_node(CAR(n));
     _CDR(b)=copy_node(CDR(n));
     if(n->type)
-      copy_type(b->type, n->type);
+      copy_pike_type(b->type, n->type);
     else
       b->type=0;
     break;
@@ -3156,24 +3158,24 @@ void fix_type_field(node *n)
     /* FALL_THROUGH */
   case F_CAST:
     /* Type-field is correct by definition. */
-    copy_type(n->type, old_type);
+    copy_pike_type(n->type, old_type);
     break;
 
   case F_LAND:
   case F_LOR:
     if (!CAR(n) || CAR(n)->type == void_type_string) {
       yyerror("Conditional uses void expression.");
-      copy_type(n->type, mixed_type_string);
+      copy_pike_type(n->type, mixed_type_string);
       break;
     }
     if(!match_types(CAR(n)->type, mixed_type_string))
       yyerror("Bad conditional expression.");
 
     if (!CDR(n) || CDR(n)->type == void_type_string)
-      copy_type(n->type, void_type_string);
+      copy_pike_type(n->type, void_type_string);
     else if(n->token == F_LAND || CAR(n)->type == CDR(n)->type)
     {
-      copy_type(n->type, CDR(n)->type);
+      copy_pike_type(n->type, CDR(n)->type);
     }else{
       n->type = or_pike_types(CAR(n)->type, CDR(n)->type, 0);
     }
@@ -3182,7 +3184,7 @@ void fix_type_field(node *n)
   case F_ASSIGN:
     if (!CAR(n) || (CAR(n)->type == void_type_string)) {
       my_yyerror("Assigning a void expression.");
-      copy_type(n->type, void_type_string);
+      copy_pike_type(n->type, void_type_string);
       break;
     } else if(CAR(n) && CDR(n)) {
       /* Ensure that the type-fields are up to date. */
@@ -3219,7 +3221,7 @@ void fix_type_field(node *n)
     if (!CAR(n) || (CAR(n)->type == void_type_string)) {
       my_yyerror("Indexing a void expression.");
       /* The optimizer converts this to an expression returning 0. */
-      copy_type(n->type, zero_type_string);
+      copy_pike_type(n->type, zero_type_string);
     } else {
       type_a=CAR(n)->type;
       type_b=CDR(n)->type;
@@ -3243,7 +3245,7 @@ void fix_type_field(node *n)
 
       args = 0;
 
-      copy_type(f, CAR(n)->type);
+      copy_pike_type(f, CAR(n)->type);
 
       f = new_check_call(CAR(n), &args, f, CDR(n));
 
@@ -3374,7 +3376,7 @@ void fix_type_field(node *n)
 	if(TEST_COMPAT(0,6))
 	{
 	  free_type(s);
-	  copy_type(n->type, mixed_type_string);
+	  copy_pike_type(n->type, mixed_type_string);
 	  break;
 	}
 	my_yyerror("Too many arguments to %s.",name);
@@ -3394,7 +3396,7 @@ void fix_type_field(node *n)
       free_type(s);
 #endif /* USE_PIKE_TYPE && NEW_ARG_CHECK */
     }
-    copy_type(n->type, mixed_type_string);
+    copy_pike_type(n->type, mixed_type_string);
     break;
 
   case '?':
@@ -3407,13 +3409,13 @@ void fix_type_field(node *n)
        CADR(n)->type == void_type_string ||
        CDDR(n)->type == void_type_string)
     {
-      copy_type(n->type, void_type_string);
+      copy_pike_type(n->type, void_type_string);
       break;
     }
     
     if(CADR(n)->type == CDDR(n)->type)
     {
-      copy_type(n->type, CADR(n)->type);
+      copy_pike_type(n->type, CADR(n)->type);
       break;
     }
 
@@ -3478,7 +3480,7 @@ void fix_type_field(node *n)
       if (!(op_node = find_module_identifier(op_string, 0))) {
 	my_yyerror("Internally used efun undefined for token %d: %s()",
 		   n->token, op_string->str);
-	copy_type(n->type, mixed_type_string);
+	copy_pike_type(n->type, mixed_type_string);
 	free_string(op_string);
 	break;
       }
@@ -3516,7 +3518,7 @@ void fix_type_field(node *n)
       free_type(call_type);
       free_string(op_string);
     }
-    copy_type(n->type, mixed_type_string);
+    copy_pike_type(n->type, mixed_type_string);
     break;
   case F_RANGE:
   case F_INC:
@@ -3526,9 +3528,9 @@ void fix_type_field(node *n)
     if (CAR(n)) {
       /* The expression gets the type from the variable. */
       /* FIXME: Ought to strip non-applicable subtypes from the type. */
-      copy_type(n->type, CAR(n)->type);
+      copy_pike_type(n->type, CAR(n)->type);
     } else {
-      copy_type(n->type, mixed_type_string);
+      copy_pike_type(n->type, mixed_type_string);
     }
     break;
 
@@ -3540,7 +3542,7 @@ void fix_type_field(node *n)
 	sub_node(n);
 #endif /* SHARED_NODES */
 	_CAR(n) = mkintnode(0);
-	copy_type(n->type, CAR(n)->type);
+	copy_pike_type(n->type, CAR(n)->type);
 #ifdef SHARED_NODES
 	if (!(n->tree_info & OPT_NOT_SHARED)) {
 	  n->hash = hash_node(n);
@@ -3576,7 +3578,7 @@ void fix_type_field(node *n)
 	}
       }
     }
-    copy_type(n->type, void_type_string);
+    copy_pike_type(n->type, void_type_string);
     break;
 
   case F_CASE:
@@ -3617,7 +3619,7 @@ void fix_type_field(node *n)
   case F_BREAK:
   case F_DEFAULT:
   case F_POP_VALUE:
-    copy_type(n->type, void_type_string);
+    copy_pike_type(n->type, void_type_string);
     break;
 
   case F_DO:
@@ -3625,7 +3627,7 @@ void fix_type_field(node *n)
       yyerror("do - while(): Conditional expression is void.");
     } else if(!match_types(CDR(n)->type, mixed_type_string))
       yyerror("Bad conditional expression do - while().");
-    copy_type(n->type, void_type_string);
+    copy_pike_type(n->type, void_type_string);
     break;
     
   case F_FOR:
@@ -3633,7 +3635,7 @@ void fix_type_field(node *n)
       yyerror("for(): Conditional expression is void.");
     } else if(!match_types(CAR(n)->type, mixed_type_string))
       yyerror("Bad conditional expression for().");
-    copy_type(n->type, void_type_string);
+    copy_pike_type(n->type, void_type_string);
     break;
 
   case F_SWITCH:
@@ -3641,7 +3643,7 @@ void fix_type_field(node *n)
       yyerror("switch(): Conditional expression is void.");
     } else if(!match_types(CAR(n)->type, mixed_type_string))
       yyerror("Bad switch expression.");
-    copy_type(n->type, void_type_string);
+    copy_pike_type(n->type, void_type_string);
     break;
 
   case F_CONSTANT:
@@ -3786,7 +3788,7 @@ void fix_type_field(node *n)
       }
     }
   foreach_type_check_done:
-    copy_type(n->type, void_type_string);
+    copy_pike_type(n->type, void_type_string);
     break;
 
   case F_SSCANF:
@@ -3818,7 +3820,7 @@ void fix_type_field(node *n)
     break;
 
   case F_UNDEFINED:
-    copy_type(n->type, zero_type_string);
+    copy_pike_type(n->type, zero_type_string);
     break;
 
   case F_ARG_LIST:
@@ -3831,24 +3833,24 @@ void fix_type_field(node *n)
     if(!CAR(n) || CAR(n)->type==void_type_string)
     {
       if(CDR(n))
-	copy_type(n->type, CDR(n)->type);
+	copy_pike_type(n->type, CDR(n)->type);
       else
-	copy_type(n->type, void_type_string);
+	copy_pike_type(n->type, void_type_string);
       break;
     }
 
     if(!CDR(n) || CDR(n)->type == void_type_string)
     {
       if(CAR(n))
-	copy_type(n->type, CAR(n)->type);
+	copy_pike_type(n->type, CAR(n)->type);
       else
-	copy_type(n->type, void_type_string);
+	copy_pike_type(n->type, void_type_string);
       break;
     }
     if (n->token == F_ARG_LIST) {
       n->type = or_pike_types(CAR(n)->type, CDR(n)->type, 0);
     } else {
-      copy_type(n->type, CDR(n)->type);
+      copy_pike_type(n->type, CDR(n)->type);
     }
     break;
 
@@ -3866,7 +3868,7 @@ void fix_type_field(node *n)
   case F_CATCH:
     /* FALL_THROUGH */
   default:
-    copy_type(n->type, mixed_type_string);
+    copy_pike_type(n->type, mixed_type_string);
   }
 
   if (n->type != old_type) {
@@ -5031,7 +5033,7 @@ static node *eval(node *n)
 				     pike_types_le(n->type,new->type)))) {
 	if (new->type)
 	  free_type(new->type);
-	copy_type(new->type, n->type);
+	copy_pike_type(new->type, n->type);
       }
     }
     free_node(n);
