@@ -5,7 +5,7 @@
 \*/
 /**/
 #include "global.h"
-RCSID("$Id: interpret.c,v 1.173 2000/11/20 01:20:24 mast Exp $");
+RCSID("$Id: interpret.c,v 1.174 2000/11/20 01:59:20 mast Exp $");
 #include "interpret.h"
 #include "object.h"
 #include "program.h"
@@ -61,7 +61,7 @@ RCSID("$Id: interpret.c,v 1.173 2000/11/20 01:20:24 mast Exp $");
 /* Keep some margin on the stack space checks. They're lifted when
  * handle_error runs to give it some room. */
 #define SVALUE_STACK_MARGIN 100	/* Tested in 7.1: 40 was enough, 30 wasn't. */
-#define C_STACK_MARGIN 2000	/* Tested in 7.1: 1500 was enough, 1400 wasn't. */
+#define C_STACK_MARGIN 8000	/* Tested in 7.1: 3000 was enough, 2600 wasn't. */
 
 
 #ifdef PIKE_DEBUG
