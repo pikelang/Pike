@@ -5,6 +5,14 @@ class elem {
   mixed value;
   
   void create(int a, mixed b) { pri=a; value=b; }
+
+  void set_pri(int p)
+    {
+      pri=p;
+      adjust(this_object());
+    }
+
+  int get_pri() { return pri; }
   
   int `<(object o) { return pri<o->pri; }
   int `>(object o) { return pri>o->pri; }
