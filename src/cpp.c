@@ -5,7 +5,7 @@
 \*/
 
 /*
- * $Id: cpp.c,v 1.27 1998/05/07 19:52:23 grubba Exp $
+ * $Id: cpp.c,v 1.28 1998/08/12 05:19:30 hubbe Exp $
  */
 #include "global.h"
 #include "dynamic_buffer.h"
@@ -1013,6 +1013,7 @@ static INT32 low_cpp(struct cpp *this,
 	      save_current_file=this->current_file;
 	      save_current_line=this->current_line;
 	      copy_shared_string(this->current_file,new_file);
+	      this->current_line=1;
 	      
 	      low_my_binary_strcat("# 1 ",4,&this->buf);
 	      PUSH_STRING(new_file->str,new_file->len, & this->buf);
