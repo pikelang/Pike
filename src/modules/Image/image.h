@@ -1,7 +1,7 @@
 /*
 **! module Image
 **! note
-**!	$Id: image.h,v 1.26 1999/04/10 02:02:08 mirar Exp $
+**!	$Id: image.h,v 1.27 1999/04/16 17:45:09 mirar Exp $
 */
 
 #ifdef PIKE_IMAGE_IMAGE_H
@@ -76,6 +76,8 @@ struct color_struct
    rgbl_group rgbl;
    struct pike_string *name;
 };
+
+#define tColor tOr3(tArr(tInt),tString,tObj)
 
 /* COMPAT: encoding of a gif - from togif */
 

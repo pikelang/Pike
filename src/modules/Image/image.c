@@ -1,9 +1,9 @@
-/* $Id: image.c,v 1.130 1999/04/15 18:30:45 grubba Exp $ */
+/* $Id: image.c,v 1.131 1999/04/16 17:45:06 mirar Exp $ */
 
 /*
 **! module Image
 **! note
-**!	$Id: image.c,v 1.130 1999/04/15 18:30:45 grubba Exp $
+**!	$Id: image.c,v 1.131 1999/04/16 17:45:06 mirar Exp $
 **! class Image
 **!
 **!	The main object of the <ref>Image</ref> module, this object
@@ -36,8 +36,7 @@
 **!	<ref>`&lt;</ref>,
 **!	<ref>`|</ref>
 **!
-**!	pasting images, layers: <br>
-**!	<ref>add_layers</ref>, 
+**!	pasting images: <br>
 **!	<ref>paste</ref>,
 **!	<ref>paste_alpha</ref>,
 **!	<ref>paste_alpha_color</ref>,
@@ -85,7 +84,8 @@
 **!	<ref>turbulence</ref>,
 **!	<ref>test</ref>,
 **!	<ref>tuned_box</ref>,
-**!	<ref>gradients</ref>
+**!	<ref>gradients</ref>,
+**!	<ref>random</ref>
 **!
 **! see also: Image, Image.Font, Image.Colortable, Image.X
 */
@@ -97,7 +97,7 @@
 
 #include "stralloc.h"
 #include "global.h"
-RCSID("$Id: image.c,v 1.130 1999/04/15 18:30:45 grubba Exp $");
+RCSID("$Id: image.c,v 1.131 1999/04/16 17:45:06 mirar Exp $");
 #include "pike_macros.h"
 #include "object.h"
 #include "constants.h"
@@ -3513,6 +3513,8 @@ extern void init_colortable_programs(void);
 extern void exit_colortable(void);
 extern void init_image_colors(void);
 extern void exit_image_colors(void);
+extern void init_image_layers(void);
+extern void exit_image_layers(void);
 
 /* encoders */
 
@@ -3677,8 +3679,6 @@ void pike_module_init(void)
    start_new_program();
    ADD_STORAGE(struct image);
 
-#define tColor tOr3(tArr(tInt),tString,tObj)
-
    add_function("create",image_create,
 		"function(int|void,int|void,"RGB_TYPE":void)",0);
    add_function("clone",image_clone,
@@ -3755,9 +3755,6 @@ void pike_module_init(void)
    ADD_FUNCTION("paste_alpha_color",image_paste_alpha_color,
 		tFunc(tObj tOr(tVoid,tInt) tOr(tVoid,tInt) 
 		      tOr(tVoid,tInt) tOr(tInt,tVoid) tOr(tInt,tVoid),tObj),0);
-
-   ADD_FUNCTION("add_layers",image_add_layers,
-		tFuncV(,tOr3(tInt,tArray,tVoid),tObj),0);
 
    ADD_FUNCTION("setcolor",image_setcolor,
 		tFunc(tInt tInt tInt,tObj),0);
@@ -4023,6 +4020,8 @@ void pike_module_init(void)
    IMAGE_CHECK_STACK();
    init_image_avs();
    IMAGE_CHECK_STACK();
+   init_image_layers();
+   IMAGE_CHECK_STACK();
 }
 
 void pike_module_exit(void) 
@@ -4050,6 +4049,7 @@ void pike_module_exit(void)
    exit_image_psd();
    exit_image_hrz();
    exit_image_avs();
+   exit_image_layers();
    if (png_object) 
    {
       free_object(png_object);
