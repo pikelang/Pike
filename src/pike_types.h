@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: pike_types.h,v 1.84 2003/01/26 11:09:01 mirar Exp $
+|| $Id: pike_types.h,v 1.85 2003/02/04 18:17:33 mast Exp $
 */
 
 #ifndef PIKE_TYPES_H
@@ -100,9 +100,7 @@ struct node_s
   size_t hash;
   struct node_s *next;
 #endif /* SHARED_NODES */
-#ifdef PIKE_DEBUG
   struct pike_string *current_file;
-#endif
   struct pike_type *type;
   struct pike_string *name;
   struct node_s *parent;

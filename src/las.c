@@ -2,11 +2,11 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: las.c,v 1.322 2003/01/26 11:09:00 mirar Exp $
+|| $Id: las.c,v 1.323 2003/02/04 18:17:33 mast Exp $
 */
 
 #include "global.h"
-RCSID("$Id: las.c,v 1.322 2003/01/26 11:09:00 mirar Exp $");
+RCSID("$Id: las.c,v 1.323 2003/02/04 18:17:33 mast Exp $");
 
 #include "language.h"
 #include "interpret.h"
@@ -527,7 +527,6 @@ static node *freeze_node(node *orig)
       }
       /* Propagate the line-number information. */
       n->line_number = orig->line_number;
-#ifdef PIKE_DEBUG
       if (orig->current_file) {
 	if (n->current_file) {
 	  free_string(n->current_file);
@@ -535,7 +534,6 @@ static node *freeze_node(node *orig)
 	n->current_file = orig->current_file;
 	orig->current_file = NULL;
       }
-#endif /* PIKE_DEBUG */
       free_node(dmalloc_touch(node *, orig));
       n->refs++;
       return check_node_hash(dmalloc_touch(node *, n));
@@ -773,9 +771,7 @@ void debug_free_node(node *n)
 
       if(dead->type) free_type(dead->type);
       if(dead->name) free_string(dead->name);
-#ifdef PIKE_DEBUG
       if(dead->current_file) free_string(dead->current_file);
-#endif
       dead->token=USHRT_MAX;
       really_free_node_s(dead);
     }
@@ -792,9 +788,7 @@ void debug_free_node(node *n)
       n = n->parent;
       if(dead->type) free_type(dead->type);
       if(dead->name) free_string(dead->name);
-#ifdef PIKE_DEBUG
       if(dead->current_file) free_string(dead->current_file);
-#endif
       dead->token=USHRT_MAX;
       really_free_node_s(dead);
 
@@ -823,9 +817,7 @@ void debug_free_node(node *n)
 
     if(n->type) free_type(n->type);
     if(n->name) free_string(n->name);
-#ifdef PIKE_DEBUG
     if(n->current_file) free_string(n->current_file);
-#endif
 
     n->token=USHRT_MAX;
     really_free_node_s(n);
@@ -864,9 +856,7 @@ static node *debug_mkemptynode(void)
 
   res->token=0;
   res->line_number=lex.current_line;
-#ifdef PIKE_DEBUG
   copy_shared_string(res->current_file, lex.current_file);
-#endif
   res->type=0;
   res->name=0;
   res->node_info=0;
@@ -5108,10 +5098,8 @@ static void optimize(node *n)
 #ifndef IN_TPIKE
   node *tmp1, *tmp2, *tmp3;
 #endif /* !IN_TPIKE */
-  INT32 save_line = lex.current_line;
-#ifdef PIKE_DEBUG
   struct pike_string *save_file = lex.current_file;
-#endif /* PIKE_DEBUG */
+  INT32 save_line = lex.current_line;
 
   do
   {
@@ -5156,9 +5144,7 @@ static void optimize(node *n)
 #endif /* SHARED_NODES && !IN_TPIKE */
 
     lex.current_line = n->line_number;
-#ifdef PIKE_DEBUG
     lex.current_file = n->current_file;
-#endif /* PIKE_DEBUG */
 
 #ifdef SHARED_NODES
     if (n->tree_info & OPT_NOT_SHARED) {
@@ -5325,9 +5311,7 @@ static void optimize(node *n)
   }while(n);
 
   lex.current_line = save_line;
-#ifdef PIKE_DEBUG
   lex.current_file = save_file;
-#endif /* PIKE_DEBUG */
 }
 
 void optimize_node(node *n)
