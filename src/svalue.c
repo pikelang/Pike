@@ -62,7 +62,7 @@ static int pike_isnan(double x)
 #endif /* HAVE__ISNAN */
 #endif /* HAVE_ISNAN */
 
-RCSID("$Id: svalue.c,v 1.130 2001/12/16 03:38:20 mast Exp $");
+RCSID("$Id: svalue.c,v 1.131 2001/12/16 18:49:20 mast Exp $");
 
 struct svalue dest_ob_zero = {
   T_INT, 0,
@@ -1209,7 +1209,7 @@ PMOD_EXPORT void describe_svalue(const struct svalue *s,int indent,struct proces
       {
 	int fun=FIND_LFUN(s->u.object->prog, LFUN__SPRINTF);
 	debug_malloc_touch(s->u.object->prog);
-	if(fun != -1 && Pike_interpreter.evaluator_stack)
+	if(fun != -1 && Pike_interpreter.evaluator_stack && !Pike_in_gc)
 	{
 	  /* We require some tricky coding to make this work
 	   * with tracing...
@@ -1301,7 +1301,7 @@ PMOD_EXPORT void describe_svalue(const struct svalue *s,int indent,struct proces
 	  /* This provides useful info sometimes, but there is code
 	   * that looks for the plain "object" string to resort to
 	   * other fallbacks. */
-	  if ((file = get_program_line(s->u.object->prog, &line))) {
+	  if (!Pike_in_gc && (file = get_program_line(s->u.object->prog, &line))) {
 	    my_strcat("object(");
 	    my_strcat(file->str);
 	    free_string(file);
@@ -1327,7 +1327,7 @@ PMOD_EXPORT void describe_svalue(const struct svalue *s,int indent,struct proces
       /* This provides useful info sometimes, but there is code that
        * looks for the plain "program" string to resort to other
        * fallbacks. */
-      if ((file = get_program_line(s->u.program, &line))) {
+      if (!Pike_in_gc && (file = get_program_line(s->u.program, &line))) {
 	my_strcat("program(");
 	my_strcat(file->str);
 	free_string(file);
