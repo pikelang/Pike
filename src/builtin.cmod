@@ -199,7 +199,7 @@ PIKEFUN int get_weak_flag(mixed m)
   efun;
   optflags OPT_EXTERNAL_DEPEND;
 {
-  int flag;
+  int flag = 0;
   switch (m->type) {
     case T_ARRAY:
       flag = !!(m->u.array->flags & ARRAY_WEAK_FLAG);

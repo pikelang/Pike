@@ -5,7 +5,7 @@
 \*/
 /**/
 #include "global.h"
-RCSID("$Id: mapping.c,v 1.109 2000/10/09 23:58:49 hubbe Exp $");
+RCSID("$Id: mapping.c,v 1.110 2000/11/01 23:30:36 grubba Exp $");
 #include "main.h"
 #include "object.h"
 #include "mapping.h"
@@ -1377,8 +1377,8 @@ PMOD_EXPORT struct mapping *merge_mapping_array_ordered(struct mapping *a,
 					    struct array *b, INT32 op)
 {
   struct array *ai, *av;
-  struct array *ci, *cv;
-  INT32 *zipper;
+  struct array *ci = NULL, *cv = NULL;
+  INT32 *zipper = NULL;
   struct mapping *m;
 
   ai=mapping_indices(a);
