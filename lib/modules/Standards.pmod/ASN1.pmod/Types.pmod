@@ -1,12 +1,12 @@
 //
-// $Id: Types.pmod,v 1.32 2004/02/22 20:24:07 nilsson Exp $
+// $Id: Types.pmod,v 1.33 2004/02/22 22:56:04 nilsson Exp $
 //
 
 //! Encodes various asn.1 objects according to the Distinguished
 //! Encoding Rules (DER)
 
 #pike __REAL_VERSION__
-// #pragma strict_types
+#pragma strict_types
 #define COMPATIBILITY
 
 #if constant(Gmp.mpz)
@@ -176,7 +176,7 @@ class Compound
     foreach(args, mixed o)
       if (!objectp(o))
 	error( "Non-object argument!\n" );
-    elements = [array(object)]args;
+    elements = [array(Object)]args;
     WERROR(sprintf("asn1_compound: %O\n", elements));
     return this;
   }
@@ -315,7 +315,9 @@ class Integer
 
     if (value < 0)
     {
-      Gmp.mpz n = value + pow(256, (- value)->size(256));
+      Gmp.mpz n = [object(Gmp.mpz)](value +
+				   pow(256, ([object(Gmp.mpz)](- value))->
+				       size(256)));
       s = n->digits(256);
       if (!(s[0] & 0x80))
 	s = "\377" + s;
@@ -413,14 +415,16 @@ class BitString
   static string _sprintf(int t) {
     int size = sizeof(value)*8-unused;
     return t=='O' && sprintf("%O(%d %0"+size+"s)", this_program, size,
-			     (Gmp.mpz(value, 256) >> unused)->digits(2));
+			     ([object(Gmp.mpz)](Gmp.mpz(value, 256) >> unused))
+			     ->digits(2));
   }
 
 #ifdef COMPATIBILITY
   string debug_string() {
     return sprintf("BIT STRING (%d) %s",
 		   sizeof(value) * 8 - unused,
-		   (Gmp.mpz(value, 256) >> unused)->digits(2));
+		   ([object(Gmp.mpz)](Gmp.mpz(value, 256) >> unused))
+		   ->digits(2));
   }
 #endif
 }
@@ -522,7 +526,7 @@ class Identifier
   int `==(mixed other) {
     return (objectp(other) &&
 	    (this_program == object_program(other)) &&
-	    equal(id, [object]other->id));
+	    equal(id, ([object(Identifier)]other)->id));
   }
 }
 
@@ -600,7 +604,8 @@ class Set
 		   elements));
     array(string) a = elements->get_der();
     WERROR(sprintf("asn1_set->der: der_encode(elements) = '%O\n", a));
-    return build_der(`+("", @Array.sort_array(a, compare_octet_strings)));
+    return build_der(`+("", @[array(string)]
+			Array.sort_array(a, compare_octet_strings)));
   }
 }
 
@@ -1188,8 +1193,7 @@ class MetaExplicit
 
 #ifdef COMPATIBILITY
     string debug_string() {
-      return type_name + "[" + (int) real_tag + "]"
-	+ contents->debug_string();
+      return type_name + "[" + (int) real_tag + "]";
     }
 #endif
   }
