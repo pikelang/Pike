@@ -2794,7 +2794,8 @@ static newstate find_end_of_container(struct parser_html_storage *this,
 	continue;
       }
 
-      if (c3 < s3->s->len && index_shared_string (s3->s,c3) == this->tag_start) {
+      if (tagname->u.string->len > sp[-1].u.string->len &&
+	  c3 < s3->s->len && index_shared_string (s3->s,c3) == this->tag_start) {
 	struct pike_string *cmp =
 	  string_slice (tagname->u.string, 0, sp[-1].u.string->len);
 	if (cmp == sp[-1].u.string) {

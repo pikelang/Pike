@@ -533,6 +533,12 @@ test_any([[{
   p->_set_tag_callback (lambda (object p, string s) {return ({"[",s,"]"});});
   return p->finish ("<t </bar>/>xab")->read();
 }]],"[<t </bar>/>]xab");
+test_any([[{
+  object p = Parser.HTML();
+  p->match_tag (0);
+  p->add_container ("foo", "");
+  return p->finish ("<foo></foobar</foo>")->read();
+}]], "");
 
 // Redefinition during parsing
 test_any([[
