@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: pike_threadlib.h,v 1.24 2003/01/05 14:29:54 grubba Exp $
+|| $Id: pike_threadlib.h,v 1.25 2003/01/08 19:32:08 mast Exp $
 */
 
 #ifndef PIKE_THREADLIB_H
@@ -354,6 +354,26 @@ PMOD_EXPORT extern PIKE_MUTEX_T interpreter_lock;
 
 PMOD_EXPORT extern COND_T live_threads_change;		/* Used by _disable_threads */
 PMOD_EXPORT extern COND_T threads_disabled_change;		/* Used by _disable_threads */
+
+#define THREAD_TABLE_SIZE 127  /* Totally arbitrary prime */
+
+extern PIKE_MUTEX_T thread_table_lock;
+extern struct thread_state *thread_table_chains[THREAD_TABLE_SIZE];
+extern int num_pike_threads;
+
+/* Note: thread_table_lock is held while the code is run. */
+#define FOR_EACH_THREAD(TSTATE, CODE)					\
+  do {									\
+    INT32 __tt_idx__;							\
+    mt_lock( & thread_table_lock );					\
+    for(__tt_idx__=0; __tt_idx__<THREAD_TABLE_SIZE; __tt_idx__++)	\
+      for(TSTATE=thread_table_chains[__tt_idx__];			\
+	  TSTATE;							\
+	  TSTATE=TSTATE->hashlink) {					\
+	CODE;								\
+      }									\
+    mt_unlock( & thread_table_lock );					\
+  } while (0)
 
 #if !defined(HAVE_GETHRTIME) && defined(HAVE_CLOCK)
 #ifdef HAVE_TIME_H

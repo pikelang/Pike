@@ -2,11 +2,11 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: threads.c,v 1.194 2003/01/05 01:00:08 nilsson Exp $
+|| $Id: threads.c,v 1.195 2003/01/08 19:32:08 mast Exp $
 */
 
 #include "global.h"
-RCSID("$Id: threads.c,v 1.194 2003/01/05 01:00:08 nilsson Exp $");
+RCSID("$Id: threads.c,v 1.195 2003/01/08 19:32:08 mast Exp $");
 
 PMOD_EXPORT int num_threads = 1;
 PMOD_EXPORT int threads_disabled = 0;
@@ -408,10 +408,8 @@ void exit_interleave_mutex(IMUTEX_T *im)
 
 /* Thread hashtable */
 
-#define THREAD_TABLE_SIZE 127  /* Totally arbitrary prime */
-
-static struct thread_state *thread_table_chains[THREAD_TABLE_SIZE];
-static int num_pike_threads=0;
+struct thread_state *thread_table_chains[THREAD_TABLE_SIZE];
+int num_pike_threads=0;
 
 void thread_table_init(void)
 {
@@ -575,21 +573,17 @@ PMOD_EXPORT void f_all_threads(INT32 args)
   /* Return an unordered array containing all threads that was running
      at the time this function was invoked */
 
-  INT32 x;
   struct svalue *oldsp;
   struct thread_state *s;
 
   pop_n_elems(args);
   oldsp = Pike_sp;
-  mt_lock( & thread_table_lock );
-  for(x=0; x<THREAD_TABLE_SIZE; x++)
-    for(s=thread_table_chains[x]; s; s=s->hashlink) {
+  FOR_EACH_THREAD (s, {
       struct object *o = THREADSTATE2OBJ(s);
       if (o) {
 	ref_push_object(o);
       }
-    }
-  mt_unlock( & thread_table_lock );
+    });
   f_aggregate(DO_NOT_WARN(Pike_sp - oldsp));
 }
 
@@ -727,11 +721,7 @@ TH_RETURN_TYPE new_thread_func(void * data)
     }
 #endif
 
-#ifdef THREAD_TRACE
-  {
-    t_flag = default_t_flag;
-  }
-#endif /* THREAD_TRACE */
+  t_flag = default_t_flag;
 
   THREADS_FPRINTF(0, (stderr,"THREAD %08x INITED\n",(unsigned int)Pike_interpreter.thread_id));
 
@@ -1628,18 +1618,13 @@ void gc_check_thread_local (struct object *o)
     key.type = T_INT;
     key.subtype = NUMBER_NUMBER;
 
-    /* Hmm, should this be used here? We know we always got the
-     * interpreter lock. */
-    /* mt_lock( & thread_table_lock ); */
-    for(x=0; x<THREAD_TABLE_SIZE; x++)
-      for(s=thread_table_chains[x]; s; s=s->hashlink) {
+    FOR_EACH_THREAD (s, {
 	if (s->thread_local &&
 	    (val = low_mapping_lookup(s->thread_local, &key)))
 	  debug_gc_check_svalues2(val, 1, T_OBJECT, o,
 				  " as thread local value in Thread.Local object"
 				  " (indirect ref)");
-      }
-    /* mt_unlock( & thread_table_lock ); */
+      });
   }
 }
 #endif
