@@ -2,13 +2,13 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: image_ttf.c,v 1.49 2003/03/12 09:23:36 agehall Exp $
+|| $Id: image_ttf.c,v 1.50 2003/12/01 20:21:48 nilsson Exp $
 */
 
 #include "config.h"
 
 #include "global.h"
-RCSID("$Id: image_ttf.c,v 1.49 2003/03/12 09:23:36 agehall Exp $");
+RCSID("$Id: image_ttf.c,v 1.50 2003/12/01 20:21:48 nilsson Exp $");
 #include "module.h"
 
 #ifdef HAVE_LIBTTF
@@ -1283,16 +1283,11 @@ PIKE_MODULE_INIT
    TT_Init_Kerning_Extension( engine );
 
 #ifdef DYNAMIC_MODULE
-   push_string(make_shared_string("Image"));
-   push_int(0);
-   SAFE_APPLY_MASTER("resolv",2);
-   if (sp[-1].type==T_OBJECT)
-   {
-      push_string(make_shared_string("image"));
-      f_index(2);
+   push_text("Image.Image");
+   SAFE_APPLY_MASTER("resolv",1);
+   if (sp[-1].type==T_PROGRAM)
       image_program=program_from_svalue(sp-1);
-   }
-   pop_n_elems(1);
+   pop_stack();
 #endif /* DYNAMIC_MODULE */
 
    if (image_program)
