@@ -2978,6 +2978,7 @@ static void init_xml_struct(struct object *o)
 void init_xml(void)
 {
   ptrdiff_t off;
+  init_xmlinput_blocks();
   start_new_program();
   off = ADD_STORAGE(struct xmlobj);
   map_variable("__entities", "mapping", ID_STATIC|ID_PRIVATE,

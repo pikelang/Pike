@@ -5,7 +5,7 @@
 \*/
 /**/
 #include "global.h"
-RCSID("$Id: mapping.c,v 1.118 2001/02/22 19:18:08 hubbe Exp $");
+RCSID("$Id: mapping.c,v 1.119 2001/03/28 10:02:41 hubbe Exp $");
 #include "main.h"
 #include "object.h"
 #include "mapping.h"
@@ -48,7 +48,7 @@ static struct mapping *gc_mark_mapping_pos = 0;
    
 
 #undef EXIT_BLOCK
-#define EXIT_BLOCK(m)							\
+#define EXIT_BLOCK(m)	do{						\
   INT32 e;								\
 DO_IF_DEBUG(								\
   if(m->refs)								\
@@ -61,7 +61,8 @@ DO_IF_DEBUG(								\
 									\
   DOUBLEUNLINK(first_mapping, m);					\
 									\
-  GC_FREE(m);
+  GC_FREE(m);                                                           \
+}while(0)
 
 
 #undef COUNT_OTHER

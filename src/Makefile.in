@@ -1,5 +1,5 @@
 #
-# $Id: Makefile.in,v 1.252 2001/03/12 18:33:14 grubba Exp $
+# $Id: Makefile.in,v 1.253 2001/03/28 10:02:40 hubbe Exp $
 #
 
 # This line is needed on some machines.
@@ -108,6 +108,7 @@ OBJ= \
  language.o \
  security.o \
  bignum.o \
+ pike_cpulib.o \
  interpret.o \
  constants.o \
  cpp.o \

@@ -5,7 +5,7 @@
 \*/
 
 /*
- * $Id: svalue.h,v 1.83 2001/03/23 22:58:15 hubbe Exp $
+ * $Id: svalue.h,v 1.84 2001/03/28 10:02:44 hubbe Exp $
  */
 #ifndef SVALUE_H
 #define SVALUE_H
@@ -272,10 +272,10 @@ do{ \
 
 
 #ifdef PIKE_RUN_UNLOCKED
-#define add_ref(X) pike_atomic_add_ref(&(X)->refs)
-#define sub_ref(X) pike_atomic_sub_ref(&(X)->refs)
+#define add_ref(X) pike_atomic_inc32(&(X)->refs)
+#define sub_ref(X) pike_atomic_dec_and_test32(&(X)->refs)
 #else
-#define add_ref(X) ((X)->refs++)
+#define add_ref(X) (void)((X)->refs++)
 #define sub_ref(X) (--(X)->refs)
 #endif
 
@@ -323,8 +323,8 @@ static inline union anything *dmalloc_check_union(union anything *u,int type, ch
 #undef sub_ref
 
 #ifdef PIKE_RUN_UNLOCKED
-#define add_ref(X) pike_atomic_add_ref((INT32 *)debug_malloc_pass( &((X)->refs)))
-#define sub_ref(X) pike_atomic_sub_ref((INT32 *)debug_malloc_pass( &((X)->refs)))
+#define add_ref(X) pike_atomic_inc32((INT32 *)debug_malloc_pass( &((X)->refs)))
+#define sub_ref(X) pike_atomic_dec_and_test32((INT32 *)debug_malloc_pass( &((X)->refs)))
 #else
 #define add_ref(X) (((INT32 *)debug_malloc_pass( &((X)->refs)))[0]++)
 #define sub_ref(X) (--((INT32 *)debug_malloc_pass( &((X)->refs)))[0])
@@ -346,15 +346,66 @@ static inline union anything *dmalloc_check_union(union anything *u,int type, ch
 #define dmalloc_check_svalue(S,L) (S)
 #define dmalloc_check_union(U,T,L) (U)
 
-
 #endif
 
-#define swap_svalues(X,Y) do { struct svalue *_a=(X),*_b=(Y),_tmp; _tmp=*_a; *_a=*_b; *_b=_tmp; }while(0)
-#define free_svalue(X) do { struct svalue *_s=(X); check_type(_s->type); check_refs(_s); if(_s->type<=MAX_REF_TYPE) { debug_malloc_touch(_s->u.refs); if(sub_ref(_s->u.dummy) <=0) { really_free_svalue(_s); } DO_IF_DMALLOC(_s->u.refs=(void *)-1;)  }}while(0)
-#define free_short_svalue(X,T) do { union anything *_s=(X); TYPE_T _t=(T); check_type(_t); check_refs2(_s,_t); if(_t<=MAX_REF_TYPE && _s->refs) if(sub_ref(_s->dummy) <= 0) { really_free_short_svalue(_s,_t); } DO_IF_DMALLOC(_s->refs=(void *)-1;) }while(0)
-#define add_ref_svalue(X) do { struct svalue *_tmp=(X); check_type(_tmp->type); check_refs(_tmp); if(_tmp->type <= MAX_REF_TYPE) { add_ref(_tmp->u.dummy); } }while(0)
-#define assign_svalue_no_free(X,Y) do { struct svalue _tmp, *_to=(X), *_from=(Y); check_type(_from->type); check_refs(_from);  *_to=_tmp=*_from; if(_tmp.type <= MAX_REF_TYPE) { add_ref(_tmp.u.dummy); } }while(0)
-#define assign_svalue(X,Y) do { struct svalue *_to2=(X), *_from2=(Y); if (_to2 != _from2) { free_svalue(_to2); assign_svalue_no_free(_to2, _from2); }  }while(0)
+
+/* This define
+ * should check that the svalue address (X) is on the local stack,
+ * the processor stack or in a locked memory object
+ *
+ * Or, it could just try to make sure it's not in an unlocked memory
+ * object...
+ */
+#define assert_svalue_locked(X)
+
+
+#define swap_svalues_unlocked(X,Y)  do {		\
+  struct svalue *_a=(X),*_b=(Y),_tmp;			\
+  assert_svalue_locked(_a); assert_svalue_locked(_b);	\
+  _tmp=*_a; *_a=*_b; *_b=_tmp;				\
+}while(0)
+
+#define free_svalue_unlocked(X) do {				\
+  struct svalue *_s=(X);					\
+  assert_svalue_locked(_s);					\
+  check_type(_s->type); check_refs(_s);				\
+  if(_s->type<=MAX_REF_TYPE) {					\
+    debug_malloc_touch(_s->u.refs);				\
+    if(sub_ref(_s->u.dummy) <=0) { really_free_svalue(_s); }	\
+    DO_IF_DMALLOC(_s->u.refs=(void *)-1;)			\
+  }								\
+}while(0)
+
+#define free_short_svalue_unlocked(X,T) do {				\
+  union anything *_s=(X); TYPE_T _t=(T);				\
+  check_type(_t); check_refs2(_s,_t);					\
+  assert_svalue_locked(_s);						\
+  if(_t<=MAX_REF_TYPE && _s->refs) {					\
+    if(sub_ref(_s->dummy) <= 0) really_free_short_svalue(_s,_t);	\
+     DO_IF_DMALLOC(_s->refs=(void *)-1;)				\
+  }									\
+}while(0)
+
+#define add_ref_svalue_unlocked(X) do {				\
+  struct svalue *_tmp=(X);					\
+  check_type(_tmp->type); check_refs(_tmp);			\
+  if(_tmp->type <= MAX_REF_TYPE) add_ref(_tmp->u.dummy);	\
+}while(0)
+
+#define assign_svalue_no_free_unlocked(X,Y) do {	\
+  struct svalue _tmp, *_to=(X), *_from=(Y);		\
+  check_type(_from->type); check_refs(_from);		\
+  *_to=_tmp=*_from;					\
+  if(_tmp.type <= MAX_REF_TYPE) add_ref(_tmp.u.dummy);	\
+}while(0)
+
+#define assign_svalue_unlocked(X,Y) do {	\
+  struct svalue *_to2=(X), *_from2=(Y);		\
+  if (_to2 != _from2) {				\
+    free_svalue(_to2);				\
+     assign_svalue_no_free(_to2, _from2);	\
+  }						\
+}while(0)
 
 extern struct svalue dest_ob_zero;
 
@@ -463,6 +514,113 @@ PMOD_EXPORT INT32 pike_sizeof(struct svalue *s);
 #define T_MIXED    PIKE_T_MIXED
 
 #endif /* !NO_PIKE_SHORTHAND */
+
+#ifdef PIKE_RUN_UNLOCKED
+
+#include "pike_error.h"
+
+/*#define swap_svalues swap_svalues*/
+/*#define free_svalue free_svalue_unlocked*/
+/*#define free_short_svalue free_short_svalue_unlocked */
+/*#define add_ref_svalue add_ref_svalue_unlocked*/
+
+/*
+ * These don't work right now - Hubbe
+ */
+#define assign_svalue_no_free assign_svalue_no_free_unlocked
+#define assign_svalue assign_svalue_unlocked
+
+/* FIXME:
+ * These routines assumes that pointers are 32 bit
+ * and svalues 64 bit!!!!! - Hubbe
+ */
+
+#ifndef swap_svalues 
+#define swap_svalues swap_svalues_unlocked
+#endif
+
+#ifndef free_svalue
+static inline void free_svalue(struct svalue *s)
+{
+  INT64 tmp;
+  struct svalue zero;
+  zero.type=PIKE_T_INT;
+  tmp=pike_atomic_swap64((INT64 *)s, *(INT64 *)&zero);
+  free_svalue_unlocked((struct svalue *)&tmp);
+}
+#endif
+
+#ifndef free_short_svalue
+static inline void free_short_svalue(union anything *s, INT16 t)
+{
+  if(t <= MAX_REF_TYPE)
+  {
+    INT32 tmp;
+    tmp=pike_atomic_swap32((INT32 *)s, 0);
+    free_short_svalue_unlocked((union anything *)&tmp, t);
+  }
+}
+#endif
+
+#ifndef add_ref_svalue
+static inline void add_ref_svalue(struct svalue *s)
+{
+  INT64 sv;
+  sv=pike_atomic_get64((INT64 *)s);
+  add_ref_svalue_unlocked((struct svalue *)&sv);
+}
+#endif
+
+#ifndef assign_svalue_no_free
+void assign_svalue_no_free(struct svalue *to, struct svalue *from)
+{
+  INT64 tmp, sv;
+  sv=pike_atomic_get64((INT64 *)from);
+#ifdef PIKE_DEBUG
+  if(sv != *(INT64*)from)
+  {
+    fprintf(stderr,"pike_atomic_get64() is broken %llx != %llx (%08x%08x)!\n",
+	    sv,
+	    *(INT64*)from,
+	    ((INT32*)from)[1], ((INT32*)from)[0]);
+    abort();
+  }
+#endif
+  add_ref_svalue_unlocked((struct svalue *)&sv);
+  pike_atomic_set64((INT64 *)to, sv);
+#ifdef PIKE_DEBUG
+  if(*(INT64*)to != *(INT64*)from)
+  {
+    fprintf(stderr,"pike_atomic_set64() is broken!\n");
+    abort();
+  }
+#endif
+}
+#endif
+
+#ifndef assign_svalue
+static inline void assign_svalue(struct svalue *to, struct svalue *from)
+{
+  INT64 tmp, sv;
+  if(to != from)
+  {
+    sv=pike_atomic_get64((INT64 *)from);
+    add_ref_svalue_unlocked((struct svalue *)&sv);
+    tmp=pike_atomic_swap64((INT64 *)to, sv);
+    free_svalue_unlocked((struct svalue *)&tmp);
+  }
+}
+#endif
+
+#else /* FOO_PIKE_RUN_UNLOCKED */
+#define swap_svalues swap_svalues
+#define free_svalue free_svalue_unlocked
+#define free_short_svalue free_short_svalue_unlocked 
+#define add_ref_svalue add_ref_svalue_unlocked
+#define assign_svalue_no_free assign_svalue_no_free_unlocked
+#define assign_svalue assign_svalue_unlocked
+#endif /* FOO_PIKE_RUN_UNLOCKED */
+
 
 
 #endif /* !SVALUE_H */

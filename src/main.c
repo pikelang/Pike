@@ -5,7 +5,7 @@
 \*/
 /**/
 #include "global.h"
-RCSID("$Id: main.c,v 1.118 2001/03/25 20:44:06 grubba Exp $");
+RCSID("$Id: main.c,v 1.119 2001/03/28 10:02:41 hubbe Exp $");
 #include "fdlib.h"
 #include "backend.h"
 #include "module.h"
@@ -156,6 +156,8 @@ int dbm_main(int argc, char **argv)
   setbuf(stderr, NULL);
 #endif /* HAVE_SETBUF */
 #endif /* HAVE_SETVBUF */
+  
+  init_pike_cpulib();
 
 #ifdef TRY_USE_MMX
   try_use_mmx=mmx_ok();
@@ -168,6 +170,23 @@ int dbm_main(int argc, char **argv)
   ARGV=argv;
 
   fd_init();
+  {
+    extern void init_mapping_blocks(void);
+    extern void init_callable_blocks(void);
+    extern void init_gc_frame_blocks(void);
+    extern void init_pike_frame_blocks(void);
+    extern void init_node_s_blocks(void);
+    extern void init_object_blocks(void);
+    extern void init_callback_blocks(void);
+
+    init_mapping_blocks();
+    init_callable_blocks();
+    init_gc_frame_blocks();
+    init_pike_frame_blocks();
+    init_node_s_blocks();
+    init_object_blocks();
+    init_callback_blocks();
+  }
 
 #ifdef SHARED_NODES
   node_hash.table = malloc(sizeof(node *)*32831);

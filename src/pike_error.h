@@ -5,10 +5,10 @@
 \*/
 
 /*
- * $Id: pike_error.h,v 1.10 2001/03/07 12:15:27 grubba Exp $
+ * $Id: pike_error.h,v 1.11 2001/03/28 10:02:42 hubbe Exp $
  */
-#ifndef ERROR_H
-#define ERROR_H
+#ifndef PIKE_ERROR_H
+#define PIKE_ERROR_H
 
 #include "machine.h"
 
@@ -18,6 +18,18 @@
 #endif
 
 #include <stdarg.h>
+
+#if 1
+#define fatal \
+ (fprintf(stderr,"%s:%d: Fatal error:\n",__FILE__,__LINE__),debug_fatal)
+#else
+/* This is useful when debugging assembler code sometimes... -Hubbe */
+#define fatal \
+ (fprintf(stderr,"%s: Fatal error:\n",__FILE__ ":" DEFINETOSTR(__LINE__) ),debug_fatal)
+#endif
+
+PMOD_EXPORT DECLSPEC(noreturn) void debug_fatal(const char *fmt, ...) ATTRIBUTE((noreturn,format (printf, 1, 2)));
+
 
 #include "svalue.h"
 
@@ -229,15 +241,6 @@ void init_error(void);
 void cleanup_error(void);
 /* Prototypes end here */
 
-#if 1
-#define fatal \
- (fprintf(stderr,"%s:%d: Fatal error:\n",__FILE__,__LINE__),debug_fatal)
-#else
-/* This is useful when debugging assembler code sometimes... -Hubbe */
-#define fatal \
- (fprintf(stderr,"%s: Fatal error:\n",__FILE__ ":" DEFINETOSTR(__LINE__) ),debug_fatal)
-#endif
-
 /* Some useful error macros. */
 
 
@@ -302,4 +305,4 @@ void cleanup_error(void);
 #define ERR_EXT_DECLARE
 #include "errors.h"
 
-#endif
+#endif /* PIKE_ERROR_H */

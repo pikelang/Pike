@@ -1,4 +1,4 @@
-/* $Id: html.c,v 1.131 2001/03/17 20:43:46 grubba Exp $ */
+/* $Id: html.c,v 1.132 2001/03/28 10:02:44 hubbe Exp $ */
 
 #include "global.h"
 #include "config.h"
@@ -5165,6 +5165,8 @@ static void html_ignore_comments(INT32 args)
 void init_parser_html(void)
 {
    size_t offset;
+   init_piece_blocks();
+   init_out_piece_blocks();
 
    empty_string = make_shared_binary_string("", 0);
 

@@ -30,7 +30,7 @@ struct callback *gc_evaluator_callback=0;
 
 #include "block_alloc.h"
 
-RCSID("$Id: gc.c,v 1.147 2001/03/22 02:21:15 hubbe Exp $");
+RCSID("$Id: gc.c,v 1.148 2001/03/28 10:02:41 hubbe Exp $");
 
 /* Run garbage collect approximately every time
  * 20 percent of all arrays, objects and programs is
@@ -962,7 +962,8 @@ PMOD_EXPORT INT32 real_gc_check(void *a)
   m = get_marker(a);
 #endif
 
-  ret = add_ref(m);
+  ret=m->refs;
+  add_ref(m);
   if (m->refs >= *(INT32 *) a)
     m->flags |= GC_NOT_REFERENCED;
   return ret;
@@ -990,7 +991,8 @@ INT32 real_gc_check_weak(void *a)
   if (m->weak_refs >= *(INT32 *) a)
     m->weak_refs = -1;
 
-  ret = add_ref(m);
+  ret=m->refs;
+  add_ref(m);
   if (m->refs >= *(INT32 *) a)
     m->flags |= GC_NOT_REFERENCED;
   return ret;

@@ -6,6 +6,7 @@
 /**/
 #define NO_PIKE_SHORTHAND
 #include "global.h"
+#include "svalue.h"
 #include "pike_macros.h"
 #include "pike_error.h"
 #include "interpret.h"
@@ -21,7 +22,7 @@
 #include "threads.h"
 #include "gc.h"
 
-RCSID("$Id: error.c,v 1.70 2001/03/04 19:27:17 mirar Exp $");
+RCSID("$Id: error.c,v 1.71 2001/03/28 10:02:40 hubbe Exp $");
 
 #undef ATTRIBUTE
 #define ATTRIBUTE(X)

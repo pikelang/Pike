@@ -26,7 +26,7 @@
 #define HUGE HUGE_VAL
 #endif /*!HUGE*/
 
-RCSID("$Id: stralloc.c,v 1.117 2001/03/17 21:01:35 grubba Exp $");
+RCSID("$Id: stralloc.c,v 1.118 2001/03/28 10:02:43 hubbe Exp $");
 
 #define BEGIN_HASH_SIZE 997
 #define MAX_AVG_LINK_LENGTH 3
@@ -1649,6 +1649,9 @@ PMOD_EXPORT struct pike_string *string_replace(struct pike_string *str,
 /*** init/exit memory ***/
 void init_shared_string_table(void)
 {
+  init_short_pike_string0_blocks();
+  init_short_pike_string1_blocks();
+  init_short_pike_string2_blocks();
   for(hashprimes_entry=0;hashprimes[hashprimes_entry]<BEGIN_HASH_SIZE;hashprimes_entry++);
   htable_size=hashprimes[hashprimes_entry];
   base_table=(struct pike_string **)xalloc(sizeof(struct pike_string *)*htable_size);

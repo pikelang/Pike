@@ -1,7 +1,7 @@
-#include "global.h"
-RCSID("$Id: xbm.c,v 1.13 2000/12/05 21:08:27 per Exp $");
-
 #define NO_PIKE_SHORTHAND
+
+#include "global.h"
+RCSID("$Id: xbm.c,v 1.14 2001/03/28 10:02:44 hubbe Exp $");
 
 #include "image_machine.h"
 

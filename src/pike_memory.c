@@ -10,7 +10,7 @@
 #include "pike_macros.h"
 #include "gc.h"
 
-RCSID("$Id: pike_memory.c,v 1.102 2001/03/22 02:21:16 hubbe Exp $");
+RCSID("$Id: pike_memory.c,v 1.103 2001/03/28 10:02:43 hubbe Exp $");
 
 /* strdup() is used by several modules, so let's provide it */
 #ifndef HAVE_STRDUP
@@ -2031,6 +2031,9 @@ static void initialize_dmalloc(void)
 #ifdef DMALLOC_REMEMBER_LAST_LOCATION
     th_key_create(&dmalloc_last_seen_location, 0);
 #endif
+    init_memloc_blocks();
+    init_memory_map_blocks();
+    init_memory_map_entry_blocks();
     init_memhdr_hash();
 
     for(e=0;e<(long)NELEM(rndbuf);e++) rndbuf[e]= (rand() % 511) | 1;
