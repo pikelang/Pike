@@ -4,7 +4,7 @@
 ||| See the files COPYING and DISCLAIMER for more information.
 \*/
 #include "global.h"
-RCSID("$Id: backend.c,v 1.28 1998/04/29 00:32:40 grubba Exp $");
+RCSID("$Id: backend.c,v 1.29 1998/04/29 19:51:34 grubba Exp $");
 #include "fdlib.h"
 #include "backend.h"
 #include <errno.h>
@@ -615,6 +615,9 @@ void backend(void)
 
     if(i>=0)
     {
+#ifdef DEBUG
+      int num_active = i;
+#endif /* DEBUG */
 #ifndef HAVE_POLL
       /* FIXME: OOB? */
       for(i=0; i<max_fd+1; i++)
@@ -629,18 +632,27 @@ void backend(void)
       for(i=0; i<active_num_in_poll; i++)
       {
 	int fd = active_poll_fds[i].fd;
+#ifdef DEBUG
+	int handled = 0;
+#endif /* DEBUG */
 	if(active_poll_fds[i].revents & POLLNVAL)
 	{
 	  int j;
 	  for(j=0;j<num_in_poll;j++)
 	    if(poll_fds[j].fd == fd) /* It's still there... */
-	      fatal("Bad filedescriptor %d to select().\n", fd);
+	      fatal("Bad filedescriptor %d to poll().\n", fd);
+#ifdef DEBUG
+	  handled = 1;
+#endif /* DEBUG */
 	}
 
 #ifdef WITH_OOB
 	if ((active_poll_fds[i].revents & POLLRDBAND) &&
 	    read_oob_callback[fd]) {
 	  (*(read_oob_callback[fd]))(fd, read_oob_callback_data[fd]);
+#ifdef DEBUG
+	  handled = 1;
+#endif /* DEBUG */
 	}
 #endif /* WITH_OOB */
 
@@ -650,19 +662,47 @@ void backend(void)
 
 	if((active_poll_fds[i].revents & POLLRDNORM)&& read_callback[fd]) {
 	  (*(read_callback[fd]))(fd,read_callback_data[fd]);
+#ifdef DEBUG
+	  handled = 1;
+#endif /* DEBUG */
 	}
 
 #ifdef WITH_OOB
 	if ((active_poll_fds[i].revents & POLLWRBAND) &&
 	    write_oob_callback[fd]) {
 	  (*(write_oob_callback[fd]))(fd, write_oob_callback_data[fd]);
+#ifdef DEBUG
+	  handled = 1;
+#endif /* DEBUG */
 	}
 #endif /* WITH_OOB */
 
 	if((active_poll_fds[i].revents & POLLOUT)&& write_callback[fd]) {
 	  (*(write_callback[fd]))(fd,write_callback_data[fd]);
+#ifdef DEBUG
+	  handled = 1;
+#endif /* DEBUG */
+	}
+#ifdef DEBUG
+	num_active -= handled;
+	if (!handled && active_poll_fds[i].revents) {
+	  fprintf(stderr, "BACKEND: fd %d has revents 0x%08x, "
+		  "but hasn't been handled.\n", active_poll_fds[i].fd,
+		  active_poll_fds[i].revents);
+	}
+#endif /* DEBUG */
+      }
+#ifdef DEBUG
+      if (num_active) {
+	fprintf(stderr, "BACKEND: %d more active fds than were handled.\n",
+		num_active);
+	for(i=0; i<active_num_in_poll; i++) {
+	  fprintf(stderr, "BACKEND: fd %d, events 0x%08x, revents 0x%08x\n",
+		  active_poll_fds[i].fd, active_poll_fds[i].events,
+		  active_poll_fds[i].revents);
 	}
       }
+#endif /* DEBUG */
 #endif
     }else{
       switch(errno)
