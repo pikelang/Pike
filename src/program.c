@@ -5,7 +5,7 @@
 \*/
 /**/
 #include "global.h"
-RCSID("$Id: program.c,v 1.196 1999/12/31 15:40:47 grubba Exp $");
+RCSID("$Id: program.c,v 1.197 2000/01/02 23:40:25 mast Exp $");
 #include "program.h"
 #include "object.h"
 #include "dynamic_buffer.h"
@@ -613,8 +613,7 @@ struct program *low_allocate_program(void)
  * Start building a new program
  */
 void low_start_new_program(struct program *p,
-			   struct pike_string *name,
-			   int flags)
+			   struct pike_string *name)
 {
   int e,id=0;
 
@@ -652,10 +651,9 @@ void low_start_new_program(struct program *p,
 
   if(name)
   {
-    struct svalue s;
-    s.type=T_PROGRAM;
-    s.u.program=p;
-    id=add_constant(name, &s, flags);
+    id=isidentifier(name);
+    if (e == 2 && id < 0)
+      fatal("Program constant disappeared in second pass.\n");
   }
 
   init_type_stack();
@@ -782,7 +780,7 @@ void debug_start_new_program(PROGRAM_LINE_ARGS)
 	     "th(%ld) start_new_program(): threads_disabled:%d, compilation_depth:%d\n",
 	     (long)th_self(),threads_disabled, compilation_depth));
 
-  low_start_new_program(0,0,0);
+  low_start_new_program(0,0);
 #ifdef PIKE_DEBUG
   {
     struct pike_string *s=make_shared_string(file);
@@ -2968,7 +2966,7 @@ struct program *compile(struct pike_string *prog, struct object *handler)
     lex.pragmas = 0;
   }
 
-  low_start_new_program(0,0,0);
+  low_start_new_program(0,0);
 
   initialize_buf(&used_modules);
   {
@@ -3008,7 +3006,7 @@ struct program *compile(struct pike_string *prog, struct object *handler)
 
   if(p)
   {
-    low_start_new_program(p,0,0);
+    low_start_new_program(p,0);
     free_program(p);
     p=0;
     compiler_pass=2;
