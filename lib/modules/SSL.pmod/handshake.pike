@@ -1,6 +1,6 @@
 #pike __REAL_VERSION__
 
-/* $Id: handshake.pike,v 1.34 2003/08/07 14:27:02 nilsson Exp $
+/* $Id: handshake.pike,v 1.35 2003/10/24 18:22:52 mast Exp $
  *
  */
 
@@ -130,7 +130,7 @@ object server_hello_packet()
 
   string data = struct->pop_data();
 #ifdef SSL3_DEBUG
-  werror("SSL.handshake: Server hello: '%O'\n", data);
+  werror("SSL.handshake: Server hello: %O\n", data);
 #endif
   return handshake_packet(HANDSHAKE_server_hello, data);
 }
@@ -156,7 +156,7 @@ SSL.packet client_hello()
   string data = struct->pop_data();
 
 #ifdef SSL3_DEBUG
-  werror("SSL.handshake: Client hello: '%O'\n", data);
+  werror("SSL.handshake: Client hello: %O\n", data);
 #endif
 
   return handshake_packet(HANDSHAKE_client_hello, data);
@@ -411,7 +411,7 @@ string server_derive_master_secret(string data)
    {
      /* Decrypt the premaster_secret */
 #ifdef SSL3_DEBUG
-     werror("encrypted premaster_secret: '%O'\n", data);
+     werror("encrypted premaster_secret: %O\n", data);
 #endif
      if(version[1] == 1) {
        if(sizeof(data)-2 != data[0]*256+data[1]) {
@@ -423,7 +423,7 @@ string server_derive_master_secret(string data)
 
      premaster_secret = (temp_key || context->rsa)->decrypt(data);
 #ifdef SSL3_DEBUG
-     werror("premaster_secret: '%O'\n", premaster_secret);
+     werror("premaster_secret: %O\n", premaster_secret);
 #endif
      if (!premaster_secret
 	 || (sizeof(premaster_secret) != 48)
@@ -469,7 +469,7 @@ string server_derive_master_secret(string data)
   }
   
 #ifdef SSL3_DEBUG
-  werror("master: '%O'\n", res);
+  werror("master: %O\n", res);
 #endif
   return res;
 }
@@ -496,7 +496,7 @@ string client_derive_master_secret(string premaster_secret)
   }
   
 #ifdef SSL3_DEBUG
-  werror("bahmaster: '%O'\n", res);
+  werror("bahmaster: %O\n", res);
 #endif
   return res;
 }
@@ -1099,12 +1099,12 @@ int(-1..1) handle_handshake(int type, string data, string raw)
     }
   }
 #ifdef SSL3_DEBUG
-//  werror("SSL.handshake: messages = '%O'\n", handshake_messages);
+//  werror("SSL.handshake: messages = %O\n", handshake_messages);
 #endif
   return 0;
 }
 
-void create(int is_server)
+void create(int is_server, void|SSL.context ctx)
 {
 
 #ifdef SSL3_PROFILING
@@ -1112,6 +1112,7 @@ void create(int is_server)
   Stdio.stdout.write("New...\n");
 #endif 
   version=({0,0});
+  context = ctx;
   auth_level = context->auth_level;
   if (is_server)
     handshake_state = STATE_server_wait_for_hello;
