@@ -1,5 +1,5 @@
 /* -*- c -*-
- * $Id: builtin.cmod,v 1.29 2002/10/03 17:23:28 mast Exp $
+ * $Id: builtin.cmod,v 1.30 2002/11/27 09:41:24 grubba Exp $
  */
 
 #include "global.h"
@@ -499,6 +499,12 @@ PIKECLASS Buffer
   {
     struct Buffer_struct *str = THIS;
     int j;
+
+    for (j=0; j < args; j++) {
+      if (Pike_sp[j-args].type != T_STRING) {
+	Pike_error("add(): Bad argument %d (expected string).", j+1);
+      }
+    }
 
     if (!str->str.s && args) {
       int sum = 0;
