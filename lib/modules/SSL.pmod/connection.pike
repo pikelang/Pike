@@ -1,4 +1,4 @@
-/* $Id: connection.pike,v 1.7 1997/11/19 22:36:40 grubba Exp $
+/* $Id: connection.pike,v 1.8 1998/05/20 23:13:52 grubba Exp $
  *
  * SSL packet layer
  */
@@ -66,7 +66,14 @@ object recv_packet(string data)
   if (stringp(res))
   { /* Finished a packet */
     left_over = res;
-    return current_read_state->decrypt_packet(packet);
+    if (current_read_state) {
+      return current_read_state->decrypt_packet(packet);
+    } else {
+#ifdef SSL3_DEBUG
+      werror(sprintf("SSL.connection->recv_packet(): current_read_state is zero!\n"));
+#endif /* SSL3_DEBUG */
+      return 0;
+    }
   }
   else /* Partial packet read, or error */
     left_over = 0;
