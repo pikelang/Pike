@@ -5,7 +5,7 @@
 \*/
 /**/
 #include "global.h"
-RCSID("$Id: main.c,v 1.98 2000/08/21 21:37:42 grubba Exp $");
+RCSID("$Id: main.c,v 1.99 2000/08/22 17:28:22 grubba Exp $");
 #include "fdlib.h"
 #include "backend.h"
 #include "module.h"
@@ -645,6 +645,8 @@ void low_exit_main(void)
   free_svalue(& throw_value);
   throw_value.type=T_INT;
   do_gc();
+
+  cleanup_gc();
 
 #if defined(PIKE_DEBUG) && defined(DEBUG_MALLOC)
   if(verbose_debug_exit)
