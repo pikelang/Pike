@@ -5,7 +5,7 @@
 \*/
 
 /*
- * $Id: svalue.h,v 1.98 2001/11/10 19:43:52 mast Exp $
+ * $Id: svalue.h,v 1.99 2001/12/10 01:16:25 mast Exp $
  */
 #ifndef SVALUE_H
 #define SVALUE_H
@@ -71,6 +71,7 @@ union anything
   FLOAT_TYPE float_number;
   struct svalue *lval;   /* only used on stack */
   union anything *short_lval;   /* only used on stack */
+  void *ptr;
 };
 
 #ifndef STRUCT_SVALUE_DECLARED
@@ -122,6 +123,7 @@ struct svalue
 #define T_STORAGE 10000
 #define T_MAPPING_DATA 10001
 #define T_PIKE_FRAME 10002
+#define T_MULTISET_DATA 10003
 
 #define tArr(VAL) "\000" VAL
 #define tArray tArr(tMix)
