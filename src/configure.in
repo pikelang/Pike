@@ -1,4 +1,4 @@
-AC_REVISION("$Id: configure.in,v 1.50 1997/01/28 02:51:10 hubbe Exp $")
+AC_REVISION("$Id: configure.in,v 1.51 1997/01/29 00:09:02 hubbe Exp $")
 AC_INIT(interpret.c)
 AC_CONFIG_HEADER(machine.h)
 
@@ -756,71 +756,6 @@ MY_CHECK_HEADERS(popen,stdio.h unistd.h)
 MY_CHECK_HEADERS(getenv,unistd.h stdlib.h)
 MY_CHECK_HEADERS(gethostname,unistd.h)
 
-
-AC_MSG_CHECKING(return type of free)
-AC_CACHE_VAL(pike_cv_sys_free_return,
-[AC_TRY_COMPILE([
-#ifdef HAVE_STDLIB_H
-#include <stdlib.h>
-#endif
-
-#ifdef HAVE_UNISTD_H
-#include <unistd.h>
-#endif
-
-#if !defined(STDC_HEADERS) && defined(HAVE_MEMORY_H)
-#include <memory.h>
-#endif
-char foo;
-
-],
-[
-  foo=free(malloc(2))[0];
-],
-  pike_cv_sys_free_return='char *'
-,
-  pike_cv_sys_free_return='void'
-)])
-
-if test "$pike_cv_sys_free_return" = void; then
-  AC_DEFINE(FREE_RETURNS_VOID)
-  AC_MSG_RESULT([void]);
-else
-  AC_MSG_RESULT([not void])
-fi
-
-AC_MSG_CHECKING([void* or char* from malloc])
-AC_CACHE_VAL(pike_cv_sys_malloc_return,
-[
-AC_TRY_COMPILE([
-#include <sys/types.h>
-
-#ifdef HAVE_STDLIB_H
-#include <stdlib.h>
-#endif
-
-#ifdef HAVE_UNISTD_H
-#include <unistd.h>
-#endif
-
-#if !defined(STDC_HEADERS) && defined(HAVE_MEMORY_H)
-#include <memory.h>
-#endif
-
-char foo;
-],
-[
-  foo=malloc(2)[0];
-],
-  pike_cv_sys_malloc_return="char *"
-,
-  pike_cv_sys_malloc_return="void *"
-)])
-
-AC_MSG_RESULT($pike_cv_sys_malloc_return)
-AC_DEFINE_UNQUOTED(POINTER,$pike_cv_sys_malloc_return)
-
-
 AC_ALLOCA
 
 AC_C_CONST
@@ -852,6 +787,37 @@ case "$LIBOBJS" in
 esac
 
 OLD_LIBOBJS="${LIBOBJS}"
+
+########################################################################
+AC_MSG_CHECKING(stack direction)
+AC_CACHE_VAL(pike_cv_hardware_stack_direction,
+[
+AC_TRY_RUN([
+static int find_stack_direction ()
+{
+  static char	*addr = NULL;
+  char dummy;
+  if (addr == NULL)
+  {
+      addr = &dummy;
+      return find_stack_direction();
+  }
+  else
+  {
+    if (&dummy > addr) return 1; else return -1;
+  }
+}
+
+int main() { exit( find_stack_direction() < 0); }
+],pike_cv_hardware_stack_direction=up,pike_cv_hardware_stack_direction=down)
+])
+
+AC_MSG_RESULT($pike_cv_hardware_stack_direction)
+if test x$pike_cv_hardware_stack_direction = up ; then
+  AC_DEFINE(STACK_DIRECTION, 1)
+else
+  AC_DEFINE(STACK_DIRECTION, -1)
+fi
 
 ########################################################################
 
@@ -1202,7 +1168,7 @@ AC_TRY_LINK([
 
 if test "$pike_cv_have_func_isspace" = yes; then
   AC_MSG_RESULT(yes)
-  AC_DEFINE(HAVE_FUNC_ISSPACE)
+  AC_DEFINE(HAVE_ISSPACE)
 else
   AC_MSG_RESULT(no)
 fi
