@@ -2553,6 +2553,11 @@ static int low_parse_xml(struct xmldata *data,
   return !!end;
 }
 
+/*! @module spider
+ */
+
+/*! @decl array parse_xml(string xml, function cb)
+ */
 static void parse_xml(INT32 args)
 {
   struct svalue tmp;
@@ -2560,9 +2565,13 @@ static void parse_xml(INT32 args)
   struct xmldata data;
   ONERROR e;
 
-  s=sp[-args].u.string;
   if(args<2)
     Pike_error("Too few arguments to XML->parse()\n");
+
+  if (sp[-args].type != PIKE_T_STRING) {
+    Pike_error("Bad argument 1 to XML->parse()\n");
+  }
+  s=sp[-args].u.string;
 
 #if 0
   if(!s->size_shift)
@@ -2604,6 +2613,11 @@ static void free_xmldata(struct xmldata *data)
   }
 }
 
+/*! @class XML
+ */
+
+/*! @decl void define_entity_raw(string entity, string raw)
+ */
 static void define_entity_raw(INT32 args)
 {
   check_all_args("XML->define_entity_raw",args,BIT_STRING, BIT_STRING,0);
@@ -2613,10 +2627,14 @@ static void define_entity_raw(INT32 args)
     THIS->entities=sp[-1].u.mapping;
     sp--;
   }else{
+    /* FIXME: This looks broken. Shouldn't the stack be adjusted? */
     mapping_insert(THIS->entities, sp-2, sp-1);
   }
 }
 
+/*! @decl void define_entity(string entity, string raw, @
+ *!                          function cb, mixed ... extras)
+ */
 static void define_entity(INT32 args)
 {
   struct svalue tmp;
@@ -2647,6 +2665,8 @@ static void define_entity(INT32 args)
   define_entity_raw(2);
 }
 
+/*! @decl void allow_rxml_entities(int(0..1) yes_no)
+ */
 static void allow_rxml_entities(INT32 args)
 {
   check_all_args("XML->allow_rxml_entities", args, BIT_INT, 0);
@@ -2655,6 +2675,8 @@ static void allow_rxml_entities(INT32 args)
   push_int(0);
 }
 
+/*! @decl mixed parse_dtd(string dtd, function cb, mixed ... extras)
+ */
 static void parse_dtd(INT32 args)
 {
   struct svalue tmp;
@@ -2686,6 +2708,8 @@ static void parse_dtd(INT32 args)
   *sp++=tmp;
 }
 
+/*! @decl string autoconvert(string xml)
+ */
 static void autoconvert(INT32 args)
 {
   INT32 e;
@@ -2811,6 +2835,12 @@ static void init_xml_struct(struct object *o)
   sp--;
   dmalloc_touch_svalue(sp);
 }
+
+/*! @endclass
+ */
+
+/*! @endmodule
+ */
 
 void init_xml(void)
 {

@@ -43,7 +43,7 @@
 #include "threads.h"
 #include "operators.h"
 
-RCSID("$Id: spider.c,v 1.101 2000/12/01 08:10:37 hubbe Exp $");
+RCSID("$Id: spider.c,v 1.102 2001/02/14 14:46:18 grubba Exp $");
 
 #ifdef HAVE_PWD_H
 #include <pwd.h>
@@ -103,6 +103,12 @@ void do_html_parse_lines(struct pike_string *ss,
 			 struct array *extra_args,
 			 int line);
 
+/*! @module spider
+ */
+
+/*! @decl array(mapping(string:int)|int) @
+ *!                     parse_accessed_database(string database)
+ */
 void f_parse_accessed_database(INT32 args)
 {
   ptrdiff_t cnum = 0, i;
@@ -157,6 +163,11 @@ void f_parse_accessed_database(INT32 args)
   f_aggregate(2);
 }
 
+/*! @decl string parse_html(string html, @
+ *!                         mapping(string:function(string, mapping(string:string), mixed ...:string|array)) tag_callbacks, @
+ *!                         mapping(string:function(string, mapping(string:string), string, mixed ...:string|array)) container_callbacks, @
+ *!                         mixed ... extras)
+ */
 void f_parse_html(INT32 args)
 {
   struct pike_string *ss;
@@ -207,6 +218,11 @@ void f_parse_html(INT32 args)
 }
 
 
+/*! @decl string parse_html(string html, @
+ *!                         mapping(string:function(string, mapping(string:string), int, mixed ...:string|array)) tag_callbacks, @
+ *!                         mapping(string:function(string, mapping(string:string), string, int, mixed ...:string|array)) container_callbacks, @
+ *!                         mixed ... extras)
+ */
 void f_parse_html_lines(INT32 args)
 {
   struct pike_string *ss;
@@ -260,6 +276,8 @@ void f_parse_html_lines(INT32 args)
 char start_quote_character = '\000';
 char end_quote_character = '\000';
 
+/*! @decl void set_end_quote(int quote)
+ */
 void f_set_end_quote(INT32 args)
 {
   if(args < 1 || sp[-1].type != T_INT)
@@ -267,6 +285,8 @@ void f_set_end_quote(INT32 args)
   end_quote_character = sp[-1].u.integer;
 }
 
+/*! @decl void set_start_quote(int quote)
+ */
 void f_set_start_quote(INT32 args)
 {
   if(args < 1 || sp[-1].type != T_INT)
@@ -915,6 +935,8 @@ void do_html_parse_lines(struct pike_string *ss,
   }
 }
 
+/*! @decl array(int) get_all_active_fds()
+ */
 void f_get_all_active_fd(INT32 args)
 {
   int i,fds,q, ne;
@@ -940,6 +962,8 @@ void f_get_all_active_fd(INT32 args)
   f_aggregate(fds);
 }
 
+/*! @decl string fd_info(int fd)
+ */
 void f_fd_info(INT32 args)
 {
   static char buf[256];
@@ -984,6 +1008,8 @@ static void program_name(struct program *p)
   f_add( 3 );
 }
 
+/*! @decl string _low_program_name(program prog)
+ */
 void f__low_program_name( INT32 args )
 {
   struct program *p;
@@ -993,6 +1019,8 @@ void f__low_program_name( INT32 args )
   pop_stack();
 }
 
+/*! @decl array(array(string|int)) _dump_obj_table()
+ */
 void f__dump_obj_table(INT32 args)
 {
   struct object *o;
@@ -1017,6 +1045,8 @@ void f__dump_obj_table(INT32 args)
 #define MIN(A,B) ((A)<(B)?(A):(B))
 #endif
 
+/*! @endmodule
+ */
 
 void pike_module_init(void)
 {
