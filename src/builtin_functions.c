@@ -4,7 +4,7 @@
 ||| See the files COPYING and DISCLAIMER for more information.
 \*/
 #include "global.h"
-RCSID("$Id: builtin_functions.c,v 1.29 1997/02/24 23:34:30 hubbe Exp $");
+RCSID("$Id: builtin_functions.c,v 1.30 1997/03/01 03:29:46 hubbe Exp $");
 #include "interpret.h"
 #include "svalue.h"
 #include "macros.h"
@@ -613,6 +613,10 @@ void f_exit(INT32 args)
 
   if(sp[-args].type != T_INT)
     error("Bad argument 1 to exit.\n");
+
+#ifdef _REENTRANT
+  if(num_threads) exit(i);
+#endif
 
   SET_ONERROR(tmp,exit_on_error,"Error in handle_error in master object!");
 
