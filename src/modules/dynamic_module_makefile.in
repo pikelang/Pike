@@ -33,7 +33,7 @@ Makefile: $(SRCDIR)/Makefile.in $(SRCDIR)/dependencies
 	@exit 1
 
 module.so: $(OBJS)  $(MODULE_ARCHIVES)
-	$(TMP_BINDIR)/smartlink "@LDSHARED@" -o module.@SO@ $(OBJS) $(MODULE_ARCHIVES) $(MODULE_LDFLAGS)
+	$(TMP_BINDIR)/smartlink "@LDSHARED@" -o module.@SO@ $(OBJS) $(MODULE_ARCHIVES) $(MODULE_LDFLAGS) -lc
 	if test @SO@ != so ; then mv module.@SO@ module.so ; fi
 
 clean:
