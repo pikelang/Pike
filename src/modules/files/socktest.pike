@@ -1,6 +1,6 @@
 #!/usr/local/bin/pike
 
-/* $Id: socktest.pike,v 1.24 2003/10/06 15:05:49 grubba Exp $ */
+/* $Id: socktest.pike,v 1.25 2003/10/06 15:07:39 grubba Exp $ */
 
 
 import Stdio;
@@ -376,8 +376,10 @@ void finish()
 	werror("Testing "+(tests*2)+" sockets. ");
 	for(int e=0;e<tests;e++) stdtest();
 	stdtest();
-#endif /* 0 */
 	break;
+#endif /* 0 */
+	_tests = 27;
+	/* FALL_THROUGH */
 
       case 27..48:
 	tests=_tests-25;
