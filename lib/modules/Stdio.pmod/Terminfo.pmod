@@ -1,4 +1,4 @@
-// $Id: Terminfo.pmod,v 1.1 1999/03/13 01:12:37 marcus Exp $
+// $Id: Terminfo.pmod,v 1.2 1999/03/17 23:17:42 marcus Exp $
 
 
 #if constant(thread_create)
@@ -334,7 +334,7 @@ class Terminfo {
       return 0;
     aliases = (f->read(sname)-"\0")/"|";
     {
-      array(int) bools = values(f->read(nbool+(nbool&1))[..nbool-1]);
+      array(int) bools = values(f->read(nbool/*+(nbool&1)*/)/*[..nbool-1]*/);
       if (sizeof(bools)>sizeof(boolnames))
 	bools = bools[..sizeof(boolnames)-1];
       map = mkmapping(boolnames[..sizeof(bools)-1], bools);
@@ -752,5 +752,11 @@ object getTerm(string|void term)
     }
     return t;
   }
-  return getTerminfo(term) || getTermcap(term);
+  return getTerminfo(term) || getTermcap(term) || getFallbackTerm(term);
+}
+
+static object getFallbackTerm(string term)
+{
+  return (term=="dumb"? Termcap("dumb:\\\n\t:am:co#80:do=^J:") :
+	  getTerm("dumb"));
 }
