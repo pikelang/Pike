@@ -292,11 +292,15 @@ int extract_word(char *s, int i, int len)
   {
     switch(s[i])
     {
-    case '>':
+    case '-':  
+      if(!endquote) 
+	break;
+
     case ' ':
     case '\t':
     case '\n':
     case '\r':
+    case '>':
     case '=':
       if(!inquote)
 	goto done;
