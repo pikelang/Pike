@@ -1,4 +1,4 @@
-test_true([["$Id: testsuite.in,v 1.547 2002/10/12 12:09:35 grubba Exp $"]]);
+test_true([["$Id: testsuite.in,v 1.548 2002/10/12 13:14:44 nilsson Exp $"]]);
 
 // This triggered a bug only if run sufficiently early.
 test_compile_any([[#pike 7.2]])
@@ -478,12 +478,6 @@ test_any( [[
 // bug [2861] ------------------------------------------------------------
 // http://community/crunch/show_bug.cgi?id=2861
 return mktime(0,0,0,1,0,70,0,0);
-]], 0)
-
-test_any( [[
-// bug [2845] ------------------------------------------------------------
-// http://community/crunch/show_bug.cgi?id=2845
-return !catch{ String.Buffer()->add("x",0); };
 ]], 0)
 
 test_any( [[
@@ -3527,24 +3521,6 @@ cond([[0]],
   test_eq(Getopt.find_option(({"","--","--p","bar"}),"p","foo",0,0),0)
 
   test_equal(Getopt.get_args(({"",0,0,"sune","--","-foo"})),({"","sune","-foo"}))
-
-  test_true(
-#pike 7.2
-objectp(clone(String.String_buffer)))
-  test_do(
-#pike 7.2
-clone(String.String_buffer)->append("foo"))
-  test_do(
-#pike 7.2
-add_constant("Flurp",clone(String.String_buffer)))
-  test_do(Flurp->append("test"))
-  test_do(Flurp->append("test"))
-  test_eq((string)Flurp,"testtest")
-  test_do(add_constant("Flurp"))
-
-  test_eq(
-#pike 7.2
-String.strmult("foo",4),"foofoofoofoo")
 
 // m_delete
 test_any_equal([[ mapping m=([1:1]); m_delete(m,0); return m; ]],[[ ([1:1]) ]])
@@ -6708,66 +6684,6 @@ test_any([[
   return ret;
 ]],315)
 
-// String.SplitIterator
-test_any([[
-  object it = String.SplitIterator("  foobar gazonk  gurka baz  ", ' ');
-  array res = ({});
-  foreach(it; int i; string part) {
-    res += ({ part });
-  }
-  return equal(res, "  foobar gazonk  gurka baz  "/" ");
-]], 1)
-test_any([[
-  object it = String.SplitIterator("  foobar gazonk  gurka baz  ", ' ');
-  return sizeof(it);
-]], [[
-  sizeof("  foobar gazonk  gurka baz  "/" ");
-]])
-test_any([[
-  object it = String.SplitIterator("foobar gazonk  gurka baz", ' ');
-  array res = ({});
-  foreach(it; int i; string part) {
-    res += ({ part });
-  }
-  return equal(res, "foobar gazonk  gurka baz"/" ");
-]], 1)
-test_any([[
-  object it = String.SplitIterator("foobar gazonk  gurka baz", ' ');
-  return sizeof(it);
-]], [[
-  sizeof("foobar gazonk  gurka baz"/" ");
-]])
-test_any([[
-  object it = String.SplitIterator("  foobar gazonk  gurka baz  ", ' ', 1);
-  array res = ({});
-  foreach(it; int i; string part) {
-    res += ({ part });
-  }
-  return equal(res, "foobar gazonk gurka baz"/" ");
-]], 1)
-test_any([[
-  object it = String.SplitIterator("  foobar gazonk  gurka baz  ", ' ', 1);
-  return sizeof(it);
-]], [[
-  sizeof("foobar gazonk gurka baz"/" ");
-]])
-test_any([[
-  object it = String.SplitIterator("foobar gazonk  gurka baz", ' ', 1);
-  array res = ({});
-  foreach(it; int i; string part) {
-    res += ({ part });
-  }
-  return equal(res, "foobar gazonk gurka baz"/" ");
-]], 1)
-test_any([[
-  object it = String.SplitIterator("foobar gazonk  gurka baz", ' ', 1);
-  return sizeof(it);
-]], [[
-  sizeof("foobar gazonk gurka baz"/" ");
-]])
-
-
-
 // do-while
 test_any(int e;string t=""; e=0; do{ t+=e; }while(++e<6); return t,"012345";)
 
@@ -7812,18 +7728,6 @@ test_eq(1,call_function(a))
 test_eq(1,call_function(lambda(int a){ return a; },1))
 test_eq(1,call_function(intp,1))
 
-// - String.capitalize
-test_eq(String.capitalize("fubar"),"Fubar")
-test_eq(String.capitalize("FooBar"),"FooBar")
-test_eq(String.capitalize("-"),"-")
-
-// - String.common_prefix
-test_eq(String.common_prefix(({ "soliloquise" })), "soliloquise")
-test_eq(String.common_prefix(({ "muzzle", "muzzy" })), "muzz")
-test_eq(String.common_prefix(({ "labyrinth", "diatom" })), "")
-test_eq(String.common_prefix(({ "abc", "abc", "abc" })), "abc")
-test_eq(String.common_prefix(({})), "")
-
 // - clone
 // clone is already tested a lot by this script
 test_true(objectp(clone(compile_string("int foo() { return 17; }"))))
@@ -8199,25 +8103,6 @@ test_equal(Array.sort_array(indices(([7:3,8:9,99:12]))),({7,8,99}))
 test_equal(Array.sort_array(indices((<7,8,99>))),({7,8,99}))
 test_equal(mkmultiset(indices(class{constant a="a"; constant b="b";}())),
 	   (<"a","b">))
-
-// - int2char
-test_equal(int2char(0), "\0")
-test_equal(int2char(65), "A")
-test_equal(int2char(256), "\400")
-test_equal(int2char(65536), "\200000")
-
-// - int2hex
-test_equal(int2hex(0), "0")
-test_equal(int2hex(1), "1")
-test_equal(int2hex(-1), "-1")
-test_equal(int2hex(15), "f")
-test_equal(int2hex(-15), "-f")
-test_equal(int2hex(16), "10")
-test_equal(int2hex(-16), "-10")
-test_equal(int2hex(-0x80000000), "-80000000")
-test_equal(int2hex(0x80000000-1), "7fffffff")
-test_equal(int2hex(-0x800000000), "-800000000")
-test_equal(int2hex(0x800000000-1), "7ffffffff")
 
 // - Array.longest_ordered_sequence
 test_equal(Array.longest_ordered_sequence("dfgaokäpojghadjjioijrgxcvb"/""),
@@ -8711,24 +8596,6 @@ test_eval_error(return utf8_to_string("\370\277\207\270a"));
 test_eval_error(return utf8_to_string("\367\207\270a"));
 test_eval_error(return utf8_to_string("\347\270a"));
 test_eval_error(return utf8_to_string("\303a"));
-
-// - String.trim_whites, String.trim_all_whites
-test_eq(String.trim_whites (" \t\0 \t"), "\0")
-test_eq(String.trim_whites (" \t\400 \t"), "\400")
-test_eq(String.trim_whites (" \t\200000 \t"), "\200000")
-test_eq(String.trim_whites ("\0"), "\0")
-test_eq(String.trim_whites ("\400"), "\400")
-test_eq(String.trim_whites ("\200000"), "\200000")
-test_eq(String.trim_whites (" \t "), "")
-test_eq(String.trim_whites (""), "")
-test_eq(String.trim_all_whites (" \t\n\r\0 \t\n\r"), "\0")
-test_eq(String.trim_all_whites (" \t\n\r\400 \t\n\r"), "\400")
-test_eq(String.trim_all_whites (" \t\n\r\200000 \t\n\r"), "\200000")
-test_eq(String.trim_all_whites ("\0"), "\0")
-test_eq(String.trim_all_whites ("\400"), "\400")
-test_eq(String.trim_all_whites ("\200000"), "\200000")
-test_eq(String.trim_all_whites (" \t\n\r "), "")
-test_eq(String.trim_all_whites (""), "")
 
 // - sum
 test_eq(`+(1,1),2)
