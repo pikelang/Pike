@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: encode.c,v 1.174 2004/05/11 12:14:12 grubba Exp $
+|| $Id: encode.c,v 1.175 2004/05/11 12:45:00 grubba Exp $
 */
 
 #include "global.h"
@@ -32,7 +32,7 @@
 #include "opcodes.h"
 #include "peep.h"
 
-RCSID("$Id: encode.c,v 1.174 2004/05/11 12:14:12 grubba Exp $");
+RCSID("$Id: encode.c,v 1.175 2004/05/11 12:45:00 grubba Exp $");
 
 /* #define ENCODE_DEBUG */
 
@@ -1761,7 +1761,7 @@ static int my_extract_char(struct decode_data *data)
     DECODE("decode_entry");					\
     if((what & TAG_MASK) != (X))				\
       Pike_error("Failed to decode, wrong bits (%d).\n", what & TAG_MASK); \
-   (Y)=num;							\
+    (Y)=num;							\
   } while(0);
 
 #define getdata2(S,L) do {						\
@@ -3135,6 +3135,41 @@ static void decode_value2(struct decode_data *data)
 			 "Failed to decode program by ID. Expected integer, got: ");
 	  }
 	  break;
+
+	case 5: {		/* Forward reference for new-style encoding. */
+	  struct program *p = low_allocate_program();
+
+	  push_program (p);
+	  EDB(2,
+	      fprintf (stderr, "%*sInited an embryo for a delay encoded program "
+		       "to <%d>: ",
+		       data->depth, "", tmp.u.integer);
+	      print_svalue (stderr, Pike_sp - 1);
+	      fputc ('\n', stderr););
+
+#if 0
+	  /* Is this necessary? In that case, how do we pass an
+	   * adequate context to __register_new_program so that it
+	   * knows which program is being decoded? */
+	  if (data->codec) {
+	    ref_push_program (p);
+	    apply (data->codec, "__register_new_program", 1);
+	      
+	    /* Returns a placeholder. */
+	    if (Pike_sp[-1].type == T_OBJECT) {
+	      if (Pike_sp[-1].u.object->prog != null_program)
+		Pike_error ("Placeholder object is not a null_program clone.\n");
+	    }
+	    else if (Pike_sp[-1].type != T_INT ||
+		     Pike_sp[-1].u.integer)
+	      Pike_error ("Expected placeholder object or zero "
+			  "from __register_new_program.\n");
+	    pop_stack();
+	  }
+#endif
+
+	  break;
+	}
 
 	case 4:			/* New-style encoding. */
 	{
