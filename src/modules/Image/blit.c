@@ -1,10 +1,10 @@
-/* $Id: blit.c,v 1.37 1999/06/18 19:19:14 mirar Exp $ */
+/* $Id: blit.c,v 1.38 2000/04/13 17:52:33 grubba Exp $ */
 #include "global.h"
 
 /*
 **! module Image
 **! note
-**!	$Id: blit.c,v 1.37 1999/06/18 19:19:14 mirar Exp $
+**!	$Id: blit.c,v 1.38 2000/04/13 17:52:33 grubba Exp $
 **! class Image
 */
 
@@ -155,23 +155,26 @@ void img_box_nocheck(INT32 x1,INT32 y1,INT32 x2,INT32 y2)
    end=this->img+x2+y2*this->xsize+1;
 
    THREADS_ALLOW();
-   if(!this->alpha)
-   {
-     if(!mod)
-       img_clear(foo,rgb,end-foo);
-     else {
-       int length = x2-x1+1, xs=this->xsize, y=y2-y1+1;
-       rgb_group *from = foo;
-       if(!length) return;
-       for(x=0; x<length; x++)  *(foo+x) = rgb;
-       while(--y)  MEMCPY((foo+=xs), from, length*sizeof(rgb_group)); 
+   do {
+     if(!this->alpha)
+     {
+       if(!mod)
+	 img_clear(foo,rgb,end-foo);
+       else {
+	 int length = x2-x1+1, xs=this->xsize, y=y2-y1+1;
+	 rgb_group *from = foo;
+	 if(!length)
+	   break;	/* Break to the while(0). */
+	 for(x=0; x<length; x++)  *(foo+x) = rgb;
+	 while(--y)  MEMCPY((foo+=xs), from, length*sizeof(rgb_group)); 
+       }
+     } 
+     else 
+     {
+       for (; foo<=end; foo+=mod) for (x=x1; x<=x2; x++,foo++) 
+	 set_rgb_group_alpha(*foo,rgb,this->alpha);
      }
-   } 
-   else 
-   {
-     for (; foo<=end; foo+=mod) for (x=x1; x<=x2; x++,foo++) 
-       set_rgb_group_alpha(*foo,rgb,this->alpha);
-   }
+   } while(0);
    THREADS_DISALLOW();
 }
 
