@@ -5,7 +5,7 @@
 \*/
 /**/
 #include "global.h"
-RCSID("$Id: pike_types.c,v 1.71 1999/11/23 23:28:18 hubbe Exp $");
+RCSID("$Id: pike_types.c,v 1.72 1999/11/24 21:44:02 hubbe Exp $");
 #include <ctype.h>
 #include "svalue.h"
 #include "pike_types.h"
@@ -24,6 +24,8 @@ RCSID("$Id: pike_types.c,v 1.71 1999/11/23 23:28:18 hubbe Exp $");
 #include "lex.h"
 #include "pike_memory.h"
 #include "bignum.h"
+
+/* #define PIKE_TYPE_DEBUG */
 
 int max_correct_args;
 
@@ -261,10 +263,14 @@ static void push_unfinished_type_with_markers(char *s, struct pike_string **am)
 	{
 	  push_finished_type_backwards(am[c-'0']);
 	}else{
-	  push_type(T_MIXED);
+	  push_type(T_ZERO);
 	}
 	break;
 #endif
+      case T_ASSIGN:
+	push_type(c);
+	push_type(EXTRACT_UCHAR(s+ ++e));
+	break;
 
       case T_INT:
 	push_type(c);
@@ -951,6 +957,10 @@ static void very_low_or_pike_types(char *to_push, char *not_push)
     very_low_or_pike_types(to_push, not_push);
     to_push+=type_length(to_push);
   }
+  /* FIXME:
+   * this might use the 'le' operator
+   */
+
   if(!low_find_exact_type_match(to_push, not_push, T_OR))
   {
     push_unfinished_type(to_push);
@@ -1226,11 +1236,61 @@ static struct pike_string *low_object_lfun_type(char *t, short lfun)
 #define NO_MAX_ARGS 4
 #define NO_SHORTCUTS 8
 
+
+#ifdef PIKE_TYPE_DEBUG
+static int indent=0;
+#endif
+
 /*
  * match two type strings, return zero if they don't match, and return
  * the part of 'a' that _did_ match if it did.
  */
 static char *low_match_types(char *a,char *b, int flags)
+#ifdef PIKE_TYPE_DEBUG
+{
+  int e;
+  char *s;
+  char *low_match_types2(char *a,char *b, int flags);
+
+  init_buf();
+  for(e=0;e<indent;e++) my_strcat("  ");
+  my_strcat("low_match_types(");
+  low_describe_type(a);
+  if(type_length(a) + type_length(b) > 10)
+  {
+    my_strcat(",\n");
+    for(e=0;e<indent;e++) my_strcat("  ");
+    my_strcat("                ");
+    low_describe_type(b);
+  }else{
+    my_strcat(", ");
+    low_describe_type(b);
+  }
+  my_strcat(");\n");
+  fprintf(stderr,"%s",(s=simple_free_buf()));
+  free(s);
+  indent++;
+
+  a=low_match_types2(a,b,flags);
+
+  indent--;
+  init_buf();
+  for(e=0;e<indent;e++) my_strcat("  ");
+  my_strcat("= ");
+  if(a)
+    low_describe_type(a);
+  else
+    my_strcat("NULL");
+  my_strcat("\n");
+  fprintf(stderr,"%s",(s=simple_free_buf()));
+  free(s);
+
+  return a;
+}
+
+static char *low_match_types2(char *a,char *b, int flags)
+#endif
+
 {
   int correct_args;
   char *ret;
@@ -1268,10 +1328,36 @@ static char *low_match_types(char *a,char *b, int flags)
       if(ret && EXTRACT_UCHAR(b)!=T_VOID)
       {
 	int m=EXTRACT_UCHAR(a+1)-'0';
+	struct pike_string *tmp;
 	type_stack_mark();
-	low_or_pike_types(a_markers[m] ? a_markers[m]->str : 0,b);
+	push_unfinished_type_with_markers(b, b_markers);
+	tmp=pop_unfinished_type();
+
+	type_stack_mark();
+	medium_or_pike_types(a_markers[m], tmp);
 	if(a_markers[m]) free_string(a_markers[m]);
+	free_string(tmp);
 	a_markers[m]=pop_unfinished_type();
+
+#ifdef PIKE_TYPE_DEBUG
+	{
+	  char *s;
+	  int e;
+	  init_buf();
+	  for(e=0;e<indent;e++) my_strcat("  ");
+	  my_strcat("a_markers[");
+	  my_putchar(m+'0');
+	  my_strcat("]=");
+	  low_describe_type(a_markers[m]->str);
+	  my_strcat("\n");
+	  fprintf(stderr,"%s",(s=simple_free_buf()));
+	  free(s);
+	}
+#endif
+#ifdef PIKE_DEBUG
+	if(a_markers[m]->str[0] == m+'0')
+	  fatal("Cyclic type!\n");
+#endif
       }
       return ret;
 
@@ -1280,7 +1366,16 @@ static char *low_match_types(char *a,char *b, int flags)
     {
       int m=EXTRACT_UCHAR(a)-'0';
       if(a_markers[m])
+      {
+#ifdef PIKE_DEBUG
+	if(a_markers[m]->str[0] == EXTRACT_UCHAR(a))
+	  fatal("Cyclic type!\n");
+	if(EXTRACT_UCHAR(a_markers[m]->str) == T_OR &&
+	  a_markers[m]->str[1] == EXTRACT_UCHAR(a))
+	  fatal("Cyclic type!\n");
+#endif
 	return low_match_types(a_markers[m]->str, b, flags);
+      }
       else
 	return low_match_types(mixed_type_string->str, b, flags);
     }
@@ -1318,10 +1413,35 @@ static char *low_match_types(char *a,char *b, int flags)
       if(ret && EXTRACT_UCHAR(a)!=T_VOID)
       {
 	int m=EXTRACT_UCHAR(b+1)-'0';
+	struct pike_string *tmp;
 	type_stack_mark();
-	low_or_pike_types(b_markers[m] ? b_markers[m]->str : 0,a);
+	push_unfinished_type_with_markers(a, a_markers);
+	tmp=pop_unfinished_type();
+
+	type_stack_mark();
+	medium_or_pike_types(b_markers[m], tmp);
 	if(b_markers[m]) free_string(b_markers[m]);
+	free_string(tmp);
 	b_markers[m]=pop_unfinished_type();
+#ifdef PIKE_TYPE_DEBUG
+	{
+	  char *s;
+	  int e;
+	  init_buf();
+	  for(e=0;e<indent;e++) my_strcat("  ");
+	  my_strcat("b_markers[");
+	  my_putchar(m+'0');
+	  my_strcat("]=");
+	  low_describe_type(b_markers[m]->str);
+	  my_strcat("\n");
+	  fprintf(stderr,"%s",(s=simple_free_buf()));
+	  free(s);
+	}
+#endif
+#ifdef PIKE_DEBUG
+	if(b_markers[m]->str[0] == m+'0')
+	  fatal("Cyclic type!\n");
+#endif
       }
       return ret;
 
@@ -1330,19 +1450,69 @@ static char *low_match_types(char *a,char *b, int flags)
     {
       int m=EXTRACT_UCHAR(b)-'0';
       if(b_markers[m])
+      {
+#ifdef PIKE_DEBUG
+	if(b_markers[m]->str[0] == EXTRACT_UCHAR(b))
+	  fatal("Cyclic type!\n");
+#endif
 	return low_match_types(a, b_markers[m]->str, flags);
+      }
       else
 	return low_match_types(a, mixed_type_string->str, flags);
     }
   }
 
   /* 'mixed' matches anything */
-  if(EXTRACT_UCHAR(b) == T_MIXED && !(flags & B_EXACT)) return a;
-  if(EXTRACT_UCHAR(a) == T_ZERO && !(flags & A_EXACT) &&
-     EXTRACT_UCHAR(b) != T_VOID) return a;
-  if(EXTRACT_UCHAR(a) == T_MIXED && !(flags & A_EXACT)) return a;
-  if(EXTRACT_UCHAR(b) == T_ZERO && !(flags & B_EXACT) &&
-     EXTRACT_UCHAR(a) != T_VOID) return a;
+
+  if((EXTRACT_UCHAR(a) == T_ZERO && !(flags & A_EXACT) &&
+      EXTRACT_UCHAR(b) != T_VOID) ||
+     (EXTRACT_UCHAR(a) == T_MIXED && !(flags & A_EXACT)))
+  {
+#if 1
+    switch(EXTRACT_UCHAR(b))
+    {
+      /* These types can contain sub-types */
+      case T_ARRAY:
+	low_match_types(array_type_string->str,b , flags);
+	break;
+      case T_MAPPING:
+	low_match_types(mapping_type_string->str,b, flags);
+	break;
+      case T_FUNCTION:
+	low_match_types(function_type_string->str,b, flags);
+	break;
+      case T_MULTISET:
+	low_match_types(multiset_type_string->str,b, flags);
+	break;
+    }
+#endif
+    return a;
+  }
+
+  if((EXTRACT_UCHAR(b) == T_MIXED && !(flags & B_EXACT)) ||
+     (EXTRACT_UCHAR(b) == T_ZERO && !(flags & B_EXACT) &&
+      EXTRACT_UCHAR(a) != T_VOID))
+  {
+#if 1
+    switch(EXTRACT_UCHAR(a))
+    {
+      /* These types can contain sub-types */
+      case T_ARRAY:
+	low_match_types(a , array_type_string->str, flags);
+	break;
+      case T_MAPPING:
+	low_match_types(a , mapping_type_string->str, flags);
+	break;
+      case T_FUNCTION:
+	low_match_types(a , function_type_string->str, flags);
+	break;
+      case T_MULTISET:
+	low_match_types(a , multiset_type_string->str, flags);
+	break;
+    }
+#endif
+    return a;
+  }
 
 
   /* Special cases (tm) */
@@ -1543,10 +1713,31 @@ static int low_pike_types_le(char *a,char *b)
     if(ret && EXTRACT_UCHAR(b)!=T_VOID)
     {
       int m=EXTRACT_UCHAR(a+1)-'0';
+      struct pike_string *tmp;
       type_stack_mark();
-      low_or_pike_types(a_markers[m] ? a_markers[m]->str : 0,b);
+      push_unfinished_type_with_markers(b, b_markers);
+      tmp=pop_unfinished_type();
+
+      type_stack_mark();
+      medium_or_pike_types(a_markers[m], tmp);
       if(a_markers[m]) free_string(a_markers[m]);
+      free_string(tmp);
       a_markers[m]=pop_unfinished_type();
+#ifdef PIKE_TYPE_DEBUG
+      {
+	char *s;
+	int e;
+	init_buf();
+	for(e=0;e<indent;e++) my_strcat("  ");
+	my_strcat("a_markers[");
+	my_putchar(m+'0');
+	my_strcat("]=");
+	low_describe_type(a_markers[m]->str);
+	my_strcat("\n");
+	fprintf(stderr,"%s",(s=simple_free_buf()));
+	free(s);
+      }
+#endif
     }
     return ret;
 
@@ -1587,10 +1778,31 @@ static int low_pike_types_le(char *a,char *b)
     if(ret && EXTRACT_UCHAR(a)!=T_VOID)
     {
       int m=EXTRACT_UCHAR(b+1)-'0';
+      struct pike_string *tmp;
       type_stack_mark();
-      low_or_pike_types(b_markers[m] ? b_markers[m]->str : 0,a);
+      push_unfinished_type_with_markers(a, a_markers);
+      tmp=pop_unfinished_type();
+      
+      type_stack_mark();
+      medium_or_pike_types(b_markers[m], tmp);
       if(b_markers[m]) free_string(b_markers[m]);
+      free_string(tmp);
       b_markers[m]=pop_unfinished_type();
+#ifdef PIKE_TYPE_DEBUG
+      {
+	char *s;
+	int e;
+	init_buf();
+	for(e=0;e<indent;e++) my_strcat("  ");
+	my_strcat("b_markers[");
+	my_putchar(m+'0');
+	my_strcat("]=");
+	low_describe_type(b_markers[m]->str);
+	my_strcat("\n");
+	fprintf(stderr,"%s",(s=simple_free_buf()));
+	free(s);
+      }
+#endif
     }
     return ret;
 
@@ -1992,7 +2204,10 @@ static struct pike_string *debug_low_index_type(char *t, node *n)
     return make_shared_binary_string(t, type_length(t));
 
   case T_ARRAY:
-    if(n && low_match_types(string_type_string->str,CDR(n)->type->str,0))
+    if(n &&
+       (CDR(n)->token == F_CONSTANT ?
+       CDR(n)->u.sval.type == T_STRING :
+       low_match_types(string_type_string->str,CDR(n)->type->str,0)))
     {
       struct pike_string *a=low_index_type(t,n);
       if(!a)
