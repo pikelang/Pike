@@ -285,7 +285,10 @@ class client {
       nameservers = ({ get_tcpip_param("NameServer") });
       domains=get_tcpip_param("SearchList") / " "- ({""});
 #else
-      string resolv_conf = Stdio.read_file("/etc/resolv.conf");
+      string resolv_conf;
+      foreach(({"/etc/resolv.conf", "/amitcp/db/resolv.conf"}), string resolv_loc)
+        if ((resolv_conf = Stdio.read_file(resolv_loc)))
+	  break;
 
       if (!resolv_conf) {
 	throw(({ "Protocols.DNS.client(): No /etc/resolv.conf!\n",
