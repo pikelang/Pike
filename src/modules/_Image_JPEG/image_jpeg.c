@@ -1,5 +1,5 @@
 /*
- * $Id: image_jpeg.c,v 1.47 2002/05/11 18:17:13 nilsson Exp $
+ * $Id: image_jpeg.c,v 1.48 2002/07/05 09:54:50 per Exp $
  */
 
 #include "global.h"
@@ -37,7 +37,7 @@
 #ifdef HAVE_STDLIB_H
 #undef HAVE_STDLIB_H
 #endif
-RCSID("$Id: image_jpeg.c,v 1.47 2002/05/11 18:17:13 nilsson Exp $");
+RCSID("$Id: image_jpeg.c,v 1.48 2002/07/05 09:54:50 per Exp $");
 
 /* For some reason EXTERN can be defined here.
  * This is not good, since it confuses compilation.h.
@@ -984,6 +984,13 @@ static void img_jpeg_decode(INT32 args,int mode)
 	 else
 	    pop_stack();
       }
+   }
+
+   while (mds.first_marker)
+   {
+     struct my_marker *mm=mds.first_marker;
+     mds.first_marker=mm->next;
+     free(mm);
    }
 
    if (mode!=IMG_DECODE_HEADER)
