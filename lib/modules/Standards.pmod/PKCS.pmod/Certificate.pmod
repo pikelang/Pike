@@ -1,4 +1,4 @@
-// $Id: Certificate.pmod,v 1.15 2004/01/26 21:50:06 bill Exp $
+// $Id: Certificate.pmod,v 1.16 2004/01/26 23:12:08 nilsson Exp $
 
 //! Handle PKCS-6 and PKCS-10 certificates and certificate requests.
 
@@ -171,31 +171,33 @@ Sequence build_distinguished_name(mapping(string:object) ... args)
 //! @param cert
 //! A string containing an X509 certificate.
 //!
-//! Note that the certificate normally must be decoded using @[MIME.decode_base64].
+//! Note that the certificate normally must be decoded using
+//! @[MIME.decode_base64].
 //!
 //! @returns
-//!  an Standards.ASN1.Sequence object containing the certificate issuer 
+//!  An Standards.ASN1.Sequence object containing the certificate issuer
 //!  Distinguished Name (DN).
 Sequence get_certificate_issuer(string cert)
 {
   return Standards.ASN1.Decode.simple_der_decode(cert)->elements[0]->elements[3];
 }
 
-//! converts an RDN (relative distinguished name) Seqeunce object to a human readable string 
-//! in X500 format.
+//! Converts an RDN (relative distinguished name) Seqeunce object to a
+//! human readable string in X500 format.
 //!
 //! @param cert
 //! A string containing an X509 certificate.
 //!
-//! Note that the certificate normally must be decoded using @[MIME.decode_base64].
+//! Note that the certificate normally must be decoded using
+//! @[MIME.decode_base64].
 //!
 //! @returns
-//!  Astring containing the certificate issuer 
+//!  A string containing the certificate issuer
 //!  Distinguished Name (DN) in human readable X500 format.
 //!
 //! @note
-//!  We don't currently handle attributes with multiple values, not all attribute types are
-//!  understood.
+//!  We don't currently handle attributes with multiple values, not
+//!  all attribute types are understood.
 string get_dn_string(Sequence dnsequence)
 {
   string dn="";
@@ -235,10 +237,11 @@ string get_dn_string(Sequence dnsequence)
 //! @param cert
 //! A string containing an X509 certificate.
 //!
-//! Note that the certificate normally must be decoded using @[MIME.decode_base64].
+//! Note that the certificate normally must be decoded using
+//! @[MIME.decode_base64].
 //!
 //! @returns
-//!  an Standards.ASN1.Sequence object containing the certificate subject 
+//!  An Standards.ASN1.Sequence object containing the certificate subject
 //!  Distinguished Name (DN).
 Sequence get_certificate_subject(string cert)
 {
