@@ -1,5 +1,5 @@
 /*
- * $Id: preprocessor.h,v 1.20 2000/02/29 03:17:13 hubbe Exp $
+ * $Id: preprocessor.h,v 1.21 2000/03/10 20:08:08 hubbe Exp $
  *
  * Preprocessor template.
  * Based on cpp.c 1.45
@@ -1915,6 +1915,7 @@ static INT32 lower_cpp(struct cpp *this,
     case 'p': /* pragma */
       {
 	static WCHAR pragma_[] = { 'p', 'r', 'a', 'g', 'm', 'a' };
+	static WCHAR pike_[] = { 'p', 'i', 'k', 'e' };
 
 	if(WGOBBLE2(pragma_))
 	{
@@ -1922,6 +1923,12 @@ static INT32 lower_cpp(struct cpp *this,
 	    STRCAT("#pragma", 7);
 	  else
 	    FIND_EOL();
+	  break;
+	}
+	if(WGOBBLE2(pike_))
+	{
+	  /* FIXME */
+	  FIND_EOL();
 	  break;
 	}
       }
