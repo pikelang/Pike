@@ -5,7 +5,7 @@
 \*/
 /**/
 #include "global.h"
-RCSID("$Id: interpret.c,v 1.266 2002/09/14 03:32:45 mast Exp $");
+RCSID("$Id: interpret.c,v 1.267 2002/09/21 18:17:03 mast Exp $");
 #include "interpret.h"
 #include "object.h"
 #include "program.h"
@@ -1607,8 +1607,8 @@ PMOD_EXPORT int low_unsafe_apply_handler(const char *fun,
 	     (i = find_identifier(fun, compat->prog)) != -1) {
     apply_low(compat, i, args);
   } else {
-    struct object *master_obj = master();
-    if ((i = find_identifier(fun, master_obj->prog)) != -1)
+    struct object *master_obj = get_master();
+    if (master_obj && (i = find_identifier(fun, master_obj->prog)) != -1)
       apply_low(master_obj, i, args);
     else {
       pop_n_elems(args);
@@ -1669,19 +1669,21 @@ PMOD_EXPORT int safe_apply_handler(const char *fun,
     Pike_sp += args;
 
     if (low_unsafe_apply_handler (fun, handler, compat, args) &&
-	rettypes &&
-	!(((1 << Pike_sp[-1].type) & rettypes) ||
-	  ((rettypes & BIT_ZERO) &&
-	   Pike_sp[-1].type == T_INT &&
-	   Pike_sp[-1].u.integer == 0))) {
-      push_constant_text("Invalid return value from %s: %O\n");
-      push_text(fun);
-      push_svalue(Pike_sp - 3);
-      f_sprintf(3);
-      if (!Pike_sp[-1].u.string->size_shift)
-	Pike_error("%s", Pike_sp[-1].u.string->str);
-      else
-	Pike_error("Invalid return value from %s\n", fun);
+	rettypes && !((1 << Pike_sp[-1].type) & rettypes)) {
+      if ((rettypes & BIT_ZERO) && SAFE_IS_ZERO (Pike_sp - 1)) {
+	pop_stack();
+	push_int(0);
+      }
+      else {
+	push_constant_text("Invalid return value from %s: %O\n");
+	push_text(fun);
+	push_svalue(Pike_sp - 3);
+	f_sprintf(3);
+	if (!Pike_sp[-1].u.string->size_shift)
+	  Pike_error("%s", Pike_sp[-1].u.string->str);
+	else
+	  Pike_error("Invalid return value from %s\n", fun);
+      }
     }
 
     ret = 1;
