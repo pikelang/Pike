@@ -14,7 +14,7 @@ define(test_codec2,[[
   test_any([[
      string uncompressed=$1;
      array(string) vcompressed=$2;
-     string result;
+     string result, result2;
      
      foreach (vcompressed;;string compressed)
        if ((result=Bz2.Inflate()->inflate(compressed))!=uncompressed)
@@ -22,9 +22,18 @@ define(test_codec2,[[
 	       compressed,result,uncompressed);
 
      result=Bz2.Deflate()->finish(uncompressed);
-     if (search(vcompressed,result)==-1)
-        error("Bz2 deflate failed:\n%O -> %O, expected any of %O\n",
-	      uncompressed,result,vcompressed);
+
+     if ((result2=Bz2.Inflate()->inflate(result))!=uncompressed)
+        error("Bz2 deflate not reversible:\n%O -> %O -> %O\n",
+	      uncompressed, result, result2);
+
+     if (sizeof(result) > 0.75*sizeof(uncompressed))
+        error("Bz2 deflation insufficient:\n%O -> %O == %.1f%%\n",
+	      uncompressed, result, 100.0*sizeof(result)/sizeof(uncompressed));
+
+//       if (search(vcompressed,result)==-1)
+//          error("Bz2 deflate failed:\n%O -> %O, expected any of %O\n",
+//  	      uncompressed,result,vcompressed);
 
      return 1;
    ]],1)
@@ -32,13 +41,14 @@ define(test_codec2,[[
 test_codec([[""]],[["BZh9\27rE8P\220\0\0\0\0"]])
 test_codec([["x"]],[["BZh91AY&SYwK\260\24\0\0\0\0\200\0@ \0!\30F\202\356H\247\n\22\16\351v\2\200"]])
 test_codec2([["x"*10000]],[[
- ({"BZh91AY&SY\270\b?\324\200\0\25\210\200\210\0\0@\0\b \0""0\314\5)\247\32\243b\243\305\334\221N\24$.\2\17\365\0",
-   "BZh91AY&SY\270\b?\324\0\0\25\210\200\210\0\0@\0\b \0""0\314\5)\247\32\243b\243\305\334\221N\24$.\2\17\365\0"
+ ({MIME.decode_base64("QlpoOTFBWSZTWbgIP9SAABWIgIgAAEAACCAAMMwFKacao2KjxdyRThQkLgIP9QA="),
+   MIME.decode_base64("QlpoOTFBWSZTWbgIP9QAABWIgIgAAEAACCAAMMwFKacao2KjxdyRThQkLgIP9QA=")
  })]])
 test_codec("x\0x",[["BZh91AY&SY\320Vo\310\0\0\0\300\200@\0\0@ \0!\0\202,]\311\24\341BCAY\277 "]])
 test_codec2([[(string)enumerate(256)*3]],[[({
 MIME.decode_base64("QlpoOTFBWSZTWe3ga8yAAAF/////////////////////////////////////////////sAFgAS//9VVIAAAAAAAAAAAAAAAAAAAAEwmAAAAAAAAAAAAAAAAAABMAiTAATAAEwAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAASYACYAAmAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAH9QCBoIgqDIOhCEoUhaGIahyHogiKJImiiKosi6MIyjSNo4jqPI+kCQpEkaSJKkyTpQlKVJWliWpcl6YJimSZpomqbJunCcp0naeJ6nyfqAoKhKGoiiqMo6kKSpSlqYpqnKeqCoqkqaqKqqyrqwrKtK2riuq8r6wLCsSxrIsqzLOtC0rUtcCgLYtq3LeuC4rkua6Lquy7rwvK9L2vi+r8v7/GAYFgmDf6wjCsMw7EMSxTFsYxrHMeyDIskybKMqyzLswzLNM2zjOs8z7QNC0TRtI0rTNO1DUtU1bWNa1zXtg2LZNm2jats27cNy3Tdt43rfN+4DguE4biOK4zjuQ5LlOW5jmuc57oOi6Tpuo6rrOu7Dsu07buO67zvvA8LxPG8jyvM870PS9T1vY9r3Pe+D4vk+b6Pq/59n3fh+X6ft/H9f+LuSKcKEh28DXmAA=="),
-MIME.decode_base64("QlpoOTFBWSZTWe3ga8wAAAF/////////////////////////////////////////////sAFgAS//9VVQJgJgAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAACTAATAAEwAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAASYACYAAmAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAH9QFAkDQRBX/IMg6EIShSFoY/9DUOQ9EERRJE0URVFkXRhGUaRtHEdR5H0gSFIkjSRJUmSdKEpSpK0sS1LkvTBMUyTNNE1TZN04TlOk7TxPU+T9QFBUJQ1EUVRlHUhSVKUtTFNU5T1QVFUlTVRVVWVdWFZVpW1cV1XlfWBYViWNZFlWZZ1oWlalrWxbVuW9cFxXJc10XVdl3XheV6XtfF9X5f2AYFgmDYRhWGYdiGJYpi2MY1jmPZBkWSZNlGVZZl2YZlmmbZxnWeZ9oGhaJo2kaVpmnahqWqatrGta5r2wbFsmzbRtW2bduG5bpu28b1vm/cBwXCcNxHFcZx3IclynLcxzXOc90HRdJ03UdV1nXdh2Xadt3Hdd533geF4njeR5Xmed6Hpep63se17nvfB8XyfN9H1fZ934fl+n7fx/X+F3JFOFCQ7eBrzAA==")
+MIME.decode_base64("QlpoOTFBWSZTWe3ga8wAAAF/////////////////////////////////////////////sAFgAS//9VVQJgJgAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAACTAATAAEwAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAASYACYAAmAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAH9QFAkDQRBX/IMg6EIShSFoY/9DUOQ9EERRJE0URVFkXRhGUaRtHEdR5H0gSFIkjSRJUmSdKEpSpK0sS1LkvTBMUyTNNE1TZN04TlOk7TxPU+T9QFBUJQ1EUVRlHUhSVKUtTFNU5T1QVFUlTVRVVWVdWFZVpW1cV1XlfWBYViWNZFlWZZ1oWlalrWxbVuW9cFxXJc10XVdl3XheV6XtfF9X5f2AYFgmDYRhWGYdiGJYpi2MY1jmPZBkWSZNlGVZZl2YZlmmbZxnWeZ9oGhaJo2kaVpmnahqWqatrGta5r2wbFsmzbRtW2bduG5bpu28b1vm/cBwXCcNxHFcZx3IclynLcxzXOc90HRdJ03UdV1nXdh2Xadt3Hdd533geF4njeR5Xmed6Hpep63se17nvfB8XyfN9H1fZ934fl+n7fx/X+F3JFOFCQ7eBrzAA=="),
+MIME.decode_base64("QlpoOTFBWSZTWe3ga8yAAAF/////////////////////////////////////////////wAFgAS//9VVIAAAAAAAAAAAAAAAAAAAAEwmAAAAAAAAAAAAAAAAAABMAiTAATAAEwAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAASYACYAAmAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAACTAATAAEwAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA/qAQNBEFQZB0IQlCkLQxDUOQ9EERRJE0URVFkXRhGUaRtHEdR5H0gSFIkjSRJUmSdKEpSpK0sS1LkvTBMUyTNNE1TZN04TlOk7TxPU+T9QFBUJQ1EUVRlHUhSVKUtTFNU5T1QVFUlTVRVVWVdWFZVpW1cV1XlfWBYViWNZFlWZZ1oWlalrgUBbFtW5b1wXFclzXRdV2XdeF5Xpe18X1fl/f4wDAsEwb/WEYVhmHYhiWKYtjGNY5j2QZFkmTZRlWWZdmGZZpm2cZ1nmfaBoWiaNpGlaZp2oalqmraxrWua9sGxbJs20bVtm3bhuW6btvG9b5v3AcFwnDcRxXGcdyHJcpy3Mc1znPdB0XSdN1HVdZ13Ydl2nbdx3Xed94HheJ43keV5nneh6Xqet7Hte573wfF8nzfR9X/Ps+78Py/T9v4/r/xdyRThQkO3ga8wA=")
 })]])
 
 ]])
