@@ -1,5 +1,5 @@
 #
-# $Id: Makefile.in,v 1.360 2003/10/08 20:30:55 mast Exp $
+# $Id: Makefile.in,v 1.361 2003/10/09 11:38:37 grubba Exp $
 #
 
 # This line is needed on some machines.
@@ -906,8 +906,11 @@ precompile.sh: $(SRCDIR)/precompile.sh.in ./config.status
 #
 # The date stamp used to be 0103000070, but that seems to confuse some
 # recent OS's, that haven't heard of the 70's...
+#
+# Note that gnu touch is stupid, and warns about the syntax; thus the
+# redirect of stderr.
 precompile.sh-stamp: precompile.sh
-	@touch -t 198501010000.00 precompile.sh-stamp
+	@touch 0101010185 precompile.sh-stamp 2>/dev/null
 
 $(SRCDIR)/machine.h.in: $(SRCDIR)/stamp-h.in
 	@if test -f $(SRCDIR)/machine.h.in; then :; else \
