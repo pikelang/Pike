@@ -25,7 +25,7 @@
 #include "version.h"
 #include "bignum.h"
 
-RCSID("$Id: encode.c,v 1.127 2001/08/15 12:00:47 mirar Exp $");
+RCSID("$Id: encode.c,v 1.128 2001/09/09 05:19:36 hubbe Exp $");
 
 /* #define ENCODE_DEBUG */
 
@@ -2640,7 +2640,6 @@ static INT32 my_decode(struct pike_string *tmp,
   data->next = current_decode;
 #ifdef PIKE_THREADS
   data->thread_id = Pike_interpreter.thread_id;
-  add_ref(Pike_interpreter.thread_id);
 #endif
 #ifdef ENCODE_DEBUG
   data->debug = debug;
@@ -2654,6 +2653,10 @@ static INT32 my_decode(struct pike_string *tmp,
      GETC() != 'e' ||
      GETC() != '0')
     return 0;
+
+#ifdef PIKE_THREADS
+  add_ref(Pike_interpreter.thread_id);
+#endif
 
   data->decoded=allocate_mapping(128);
 
