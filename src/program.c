@@ -2,11 +2,11 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: program.c,v 1.491 2004/08/13 13:05:41 grubba Exp $
+|| $Id: program.c,v 1.492 2004/09/27 15:12:03 grubba Exp $
 */
 
 #include "global.h"
-RCSID("$Id: program.c,v 1.491 2004/08/13 13:05:41 grubba Exp $");
+RCSID("$Id: program.c,v 1.492 2004/09/27 15:12:03 grubba Exp $");
 #include "program.h"
 #include "object.h"
 #include "dynamic_buffer.h"
@@ -2585,6 +2585,8 @@ struct program *end_first_pass(int finish)
 
   exit_type_stack();
 
+  free_all_nodes();
+
   CDFPRINTF((stderr,
 	     "th(%ld) %p end_first_pass(%d): "
 	     "threads_disabled:%d, compilation_depth:%d\n",
@@ -2594,8 +2596,6 @@ struct program *end_first_pass(int finish)
   compilation_depth--;
 
   exit_threads_disable(NULL);
-
-  free_all_nodes();
 
   return prog;
 }
