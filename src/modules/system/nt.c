@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: nt.c,v 1.56 2003/06/23 12:27:44 tomas Exp $
+|| $Id: nt.c,v 1.57 2003/06/26 12:41:46 grubba Exp $
 */
 
 /*
@@ -25,6 +25,11 @@
 #define SECURITY_WIN32
 #define SEC_SUCCESS(Status) ((Status) >= 0)
 #include <sspi.h>
+
+/* These are defined by winerror.h in recent SDKs. */
+#ifndef SEC_E_INSUFFICIENT_MEMORY
+#include <issperr.h>
+#endif
 
 /*
  * Get some wrappers for functions not implemented in old versions
