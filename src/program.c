@@ -1083,7 +1083,7 @@ static void insert_small_number(int a,int area)
   }	
 }
 
-void store_linenumber(INT32 current_line, struct lpc_string *current_string)
+void store_linenumber(INT32 current_line, struct lpc_string *current_file)
 {
   if(last_line!=current_line || last_file != current_file)
   {
