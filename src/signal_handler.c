@@ -25,7 +25,7 @@
 #include "main.h"
 #include <signal.h>
 
-RCSID("$Id: signal_handler.c,v 1.161 2000/01/14 02:44:14 grubba Exp $");
+RCSID("$Id: signal_handler.c,v 1.162 2000/01/16 05:20:09 hubbe Exp $");
 
 #ifdef HAVE_PASSWD_H
 # include <passwd.h>
@@ -894,7 +894,7 @@ static RETSIGTYPE receive_sigchild(int signum)
 
 #define PROCESS_UNKNOWN -1
 #define PROCESS_RUNNING 0
-#define PROCESS_EXITED 2
+#define PROCESS_EXITED 1
 
 #undef THIS
 #define THIS ((struct pid_status *)fp->current_storage)
@@ -3312,7 +3312,7 @@ void init_signals(void)
   ADD_EFUN("ualarm",f_ualarm,tFunc(tInt,tInt),OPT_SIDE_EFFECT);
 #endif
 
-  ADD_EFUN("atexit",f_atexit,tFuncV(tNone ,tMix,tVoid),OPT_SIDE_EFFECT);
+  ADD_EFUN("atexit",f_atexit,tFunc(tMix,tVoid),OPT_SIDE_EFFECT);
 }
 
 void exit_signals(void)
