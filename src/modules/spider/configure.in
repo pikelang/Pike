@@ -8,13 +8,13 @@ AC_CHECK_LIB(socket, socket)
 AC_CHECK_LIB(nsl, gethostbyname)
 
 AC_HAVE_HEADERS(arpa/inet.h sys/socketvar.h \
-	netinet/in.h sys/mman.h sys/utsname.h netdb.h sys/socket.h pwd.h\
-        shadow.h sync.h sys/sockio.h sys/conf.h stropts.h\
+	netinet/in.h sys/mman.h sys/utsname.h netdb.h sys/socket.h \
+        sync.h sys/sockio.h sys/conf.h stropts.h \
 	sys/uio.h linux/mman.h)
 
 AC_FUNC_MMAP
 
-AC_HAVE_FUNCS(perror strdup getpwnam getspnam sendmsg getpwent setpwent endpwent)
+AC_HAVE_FUNCS(perror strdup sendmsg)
 
 AC_CHECK_TYPE(time_t, long)
 

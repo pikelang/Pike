@@ -15,10 +15,11 @@ AC_CHECK_LIB(nsl, gethostbyname)
 
 AC_HAVE_HEADERS(syslog.h sys/syslog.h sys/types.h errno.h unistd.h pwd.h \
 	sys/conf.h sys/socket.h netinet/in.h arpa/inet.h netdb.h stdarg.h \
-	sys/utsname.h)
+	sys/utsname.h pwd.h passwd.h shadow.h)
 
 AC_HAVE_FUNCS(syslog link symlink readlink \
 	initgroups seteuid setresuid geteuid getpgrp getpgid getppid \
+	getpwnam getspnam getpwent setpwent endpwent \
 	fchroot uname gethostname gethostbyname)
 
 

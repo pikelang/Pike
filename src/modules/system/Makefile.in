@@ -1,6 +1,6 @@
 SRCDIR=@srcdir@
 VPATH=@srcdir@:@srcdir@/../..:../..
-FILES=system.o syslog.o
+FILES=system.o syslog.o passwords.o
 
 all: system.a
 

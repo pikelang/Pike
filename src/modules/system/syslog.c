@@ -1,5 +1,5 @@
 /*
- * $Id: syslog.c,v 1.1 1997/01/28 18:34:52 grubba Exp $
+ * $Id: syslog.c,v 1.2 1997/01/28 22:40:07 grubba Exp $
  *
  * Access to syslog from Pike.
  *
@@ -11,12 +11,18 @@
  */
 
 #include "system_machine.h"
+#include "system.h"
 
 #include <global.h>
 
 #ifdef HAVE_SYSLOG
 
-RCSID("$Id: syslog.c,v 1.1 1997/01/28 18:34:52 grubba Exp $");
+RCSID("$Id: syslog.c,v 1.2 1997/01/28 22:40:07 grubba Exp $");
+
+#include <interpret.h>
+#include <svalue.h>
+#include <stralloc.h>
+#include <threads.h>
 
 #ifdef HAVE_SYSLOG_H
 #include <syslog.h>
