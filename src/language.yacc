@@ -183,7 +183,7 @@
 /* This is the grammar definition of Pike. */
 
 #include "global.h"
-RCSID("$Id: language.yacc,v 1.130 1999/11/05 23:21:27 grubba Exp $");
+RCSID("$Id: language.yacc,v 1.131 1999/11/12 18:21:11 grubba Exp $");
 #ifdef HAVE_MEMORY_H
 #include <memory.h>
 #endif
@@ -571,7 +571,7 @@ constant: modifiers F_CONSTANT constant_list ';' {}
 
 block_or_semi: block
   {
-    $$ = mknode(F_COMMA_EXPR,$1,mknode(F_RETURN,mkintnode(0),0));
+    $$ = check_node_hash(mknode(F_COMMA_EXPR,$1,mknode(F_RETURN,mkintnode(0),0)));
   }
   | ';' { $$ = NULL;}
   ;
@@ -579,6 +579,9 @@ block_or_semi: block
 
 type_or_error: simple_type
   {
+#ifdef PIKE_DEBUG
+    check_type_string(check_node_hash($1)->u.sval.u.string);
+#endif /* PIKE_DEBUG */
     if(compiler_frame->current_type)
       free_string(compiler_frame->current_type); 
     copy_shared_string(compiler_frame->current_type,$1->u.sval.u.string);
@@ -639,11 +642,11 @@ def: modifiers type_or_error optional_stars F_IDENTIFIER
 
     if(compiler_pass==1)
     {
-      $<number>5=define_function($4->u.sval.u.string,
-		      $<n>$->u.sval.u.string,
-		      $1,
-		      IDENTIFIER_PIKE_FUNCTION,
-		      0);
+      $<number>5=define_function(check_node_hash($4)->u.sval.u.string,
+				 check_node_hash($<n>$)->u.sval.u.string,
+				 $1,
+				 IDENTIFIER_PIKE_FUNCTION,
+				 0);
     }
   }
   block_or_semi
@@ -661,7 +664,8 @@ def: modifiers type_or_error optional_stars F_IDENTIFIER
 	  }
       }
 
-      f=dooptcode($4->u.sval.u.string, $10, $<n>9->u.sval.u.string, $1);
+      f=dooptcode(check_node_hash($4)->u.sval.u.string, check_node_hash($10),
+		  check_node_hash($<n>9)->u.sval.u.string, $1);
 #ifdef PIKE_DEBUG
       if(recoveries && sp-evaluator_stack < recoveries->sp)
 	fatal("Stack error (underflow)\n");
@@ -803,6 +807,12 @@ simple_type: type4
   {
     struct pike_string *s=compiler_pop_type();
     $$=mkstrnode(s);
+#ifdef PIKE_DEBUG
+    if ($$->u.sval.u.string != s) {
+      fatal("mkstrnode(%p:\"%s\") created node with %p:\"%s\"\n",
+	    s, s->str, $$->u.sval.u.string, $$->u.sval.u.string->str);
+    }
+#endif /* PIKE_DEBUG */
     free_string(s);
   }
   ;
@@ -811,6 +821,12 @@ simple_type2: type2
   {
     struct pike_string *s=compiler_pop_type();
     $$=mkstrnode(s);
+#ifdef PIKE_DEBUG
+    if ($$->u.sval.u.string != s) {
+      fatal("mkstrnode(%p:\"%s\") created node with %p:\"%s\"\n",
+	    s, s->str, $$->u.sval.u.string, $$->u.sval.u.string->str);
+    }
+#endif /* PIKE_DEBUG */
     free_string(s);
   }
   ;
@@ -819,6 +835,12 @@ simple_identifier_type: identifier_type
   {
     struct pike_string *s=compiler_pop_type();
     $$=mkstrnode(s);
+#ifdef PIKE_DEBUG
+    if ($$->u.sval.u.string != s) {
+      fatal("mkstrnode(%p:\"%s\") created node with %p:\"%s\"\n",
+	    s, s->str, $$->u.sval.u.string, $$->u.sval.u.string->str);
+    }
+#endif /* PIKE_DEBUG */
     free_string(s);
   }
   ;
@@ -1052,7 +1074,7 @@ new_local_name: optional_stars F_IDENTIFIER
     push_finished_type($<n>0->u.sval.u.string);
     while($1--) push_type(T_ARRAY);
     add_local_name($2->u.sval.u.string, compiler_pop_type());
-    $$=mknode(F_ASSIGN,mkintnode(0),mklocalnode(islocal($2->u.sval.u.string),0));
+    $$=mknode(F_ASSIGN,mknewintnode(0),mklocalnode(islocal($2->u.sval.u.string),0));
     free_node($2);
   }
   | optional_stars bad_identifier { $$=0; }
@@ -1088,10 +1110,10 @@ new_local_name2: F_IDENTIFIER
   {
     add_ref($<n>0->u.sval.u.string);
     add_local_name($1->u.sval.u.string, $<n>0->u.sval.u.string);
-    $$=mknode(F_ASSIGN,mkintnode(0),mklocalnode(islocal($1->u.sval.u.string),0));
+    $$=mknode(F_ASSIGN,mknewintnode(0),mklocalnode(islocal($1->u.sval.u.string),0));
     free_node($1);
   }
-  | bad_identifier { $$=mkintnode(0); }
+  | bad_identifier { $$=0; }
   | F_IDENTIFIER '=' safe_expr0
   {
     add_ref($<n>0->u.sval.u.string);
@@ -1243,9 +1265,11 @@ lambda: F_LAMBDA
 		type,
 		ID_PRIVATE | ID_INLINE);
 
-    $$=mkidentifiernode(f);
-    if(compiler_frame->lexical_scope == 2)
-      $$->token=F_TRAMPOLINE;
+    if(compiler_frame->lexical_scope == 2) {
+      $$ = mktrampolinenode(f);
+    } else {
+      $$ = mkidentifiernode(f);
+    }
     free_string(name);
     free_string(type);
     pop_compiler_frame();
@@ -1370,8 +1394,8 @@ safe_lvalue: lvalue
   ;
 
 safe_expr0: expr0
-  | F_LEX_EOF { yyerror("Unexpected end of file."); $$=mkintnode(0); }
-  | error { $$=mkintnode(0); }
+  | F_LEX_EOF { yyerror("Unexpected end of file."); $$=0; }
+  | error { $$=0; }
   ;
 
 foreach: F_FOREACH
@@ -1510,7 +1534,7 @@ optional_comma_expr: { $$=0; }
   ;
 
 safe_comma_expr: comma_expr
-  | error { $$=mkintnode(0); }
+  | error { $$=0; }
   ;
 
 comma_expr: comma_expr2
@@ -1687,14 +1711,14 @@ expr4: string
     { $$=mkefuncallnode("aggregate_mapping",$3); }
   | F_MULTISET_START expr_list F_MULTISET_END
     { $$=mkefuncallnode("aggregate_multiset",$2); }
-  | '(' error ')' { $$=mkintnode(0); yyerrok; }
+  | '(' error ')' { $$=0; yyerrok; }
   | '(' error F_LEX_EOF
   {
-    $$=mkintnode(0); yyerror("Missing ')'.");
+    $$=0; yyerror("Missing ')'.");
     yyerror("Unexpected end of file.");
   }
-  | '(' error ';' { $$=mkintnode(0); yyerror("Missing ')'."); }
-  | '(' error '}' { $$=mkintnode(0); yyerror("Missing ')'."); }
+  | '(' error ';' { $$=0; yyerror("Missing ')'."); }
+  | '(' error '}' { $$=0; yyerror("Missing ')'."); }
   | expr4 F_ARROW F_IDENTIFIER
   {
     $$=mknode(F_ARROW,$1,$3);
@@ -1759,7 +1783,7 @@ low_idents: F_IDENTIFIER
 	  $$=mknode(F_UNDEFINED,0,0);
 	}
       }else{
-	$$=mkintnode(0);
+	$$=mknewintnode(0);
       }
     }
     free_node($1);
@@ -1784,7 +1808,7 @@ low_idents: F_IDENTIFIER
   }
   | F_PREDEF F_COLON_COLON bad_identifier
   {
-    $$=mkintnode(0);
+    $$=0;
   }
   | F_IDENTIFIER F_COLON_COLON F_IDENTIFIER
   {
@@ -1799,7 +1823,7 @@ low_idents: F_IDENTIFIER
       my_yyerror("Undefined identifier %s::%s", 
 		 $1->u.sval.u.string->str,
 		 $3->u.sval.u.string->str);
-      $$=mkintnode(0);
+      $$=0;
     }
 
     free_node($1);
@@ -1832,16 +1856,16 @@ low_idents: F_IDENTIFIER
 	if(ISCONSTSTR($2->u.sval.u.string,"`->") ||
 	   ISCONSTSTR($2->u.sval.u.string,"`[]") )
 	{
-	  $$=mknode(F_MAGIC_INDEX,mkintnode(0),mkintnode(0));
+	  $$=mknode(F_MAGIC_INDEX,mknewintnode(0),mknewintnode(0));
 	}
 	else if(ISCONSTSTR($2->u.sval.u.string,"`->=") ||
 		ISCONSTSTR($2->u.sval.u.string,"`[]=") )
 	{
-	  $$=mknode(F_MAGIC_SET_INDEX,mkintnode(0),mkintnode(0));
+	  $$=mknode(F_MAGIC_SET_INDEX,mknewintnode(0),mknewintnode(0));
 	}
 	else
 	{
-	  $$=mkintnode(0);
+	  $$=mknewintnode(0);
 	}
     }else{
       if($$->token==F_ARG_LIST) $$=mkefuncallnode("aggregate",$$);
@@ -1850,18 +1874,18 @@ low_idents: F_IDENTIFIER
   }
   | F_COLON_COLON bad_identifier
   {
-    $$=mkintnode(0);
+    $$=0;
   }
   ;
 
-comma_expr_or_zero: /* empty */ { $$=mkintnode(0); }
+comma_expr_or_zero: /* empty */ { $$=mknewintnode(0); }
   | comma_expr
-  | F_LEX_EOF { yyerror("Unexpected end of file."); $$=mkintnode(0); }
+  | F_LEX_EOF { yyerror("Unexpected end of file."); $$=0; }
   ;
 
-comma_expr_or_maxint: /* empty */ { $$=mkintnode(0x7fffffff); }
+comma_expr_or_maxint: /* empty */ { $$=mknewintnode(0x7fffffff); }
   | comma_expr
-  | F_LEX_EOF { yyerror("Unexpected end of file."); $$=mkintnode(0x7fffffff); }
+  | F_LEX_EOF { yyerror("Unexpected end of file."); $$=mknewintnode(0x7fffffff); }
   ;
 
 gauge: F_GAUGE catch_arg
@@ -1900,25 +1924,25 @@ typeof: F_TYPEOF '(' expr0 ')'
     free_string(s);
     free_node(tmp);
   } 
-  | F_TYPEOF '(' error ')' { $$=mkintnode(0); yyerrok; }
-  | F_TYPEOF '(' error '}' { $$=mkintnode(0); yyerror("Missing ')'."); }
+  | F_TYPEOF '(' error ')' { $$=0; yyerrok; }
+  | F_TYPEOF '(' error '}' { $$=0; yyerror("Missing ')'."); }
   | F_TYPEOF '(' error F_LEX_EOF
   {
-    $$=mkintnode(0); yyerror("Missing ')'.");
+    $$=0; yyerror("Missing ')'.");
     yyerror("Unexpected end of file.");
   }
-  | F_TYPEOF '(' error ';' { $$=mkintnode(0); yyerror("Missing ')'."); }
+  | F_TYPEOF '(' error ';' { $$=0; yyerror("Missing ')'."); }
   ;
  
 catch_arg: '(' comma_expr ')'  { $$=$2; }
-  | '(' error ')' { $$=mkintnode(0); yyerrok; }
+  | '(' error ')' { $$=0; yyerrok; }
   | '(' error F_LEX_EOF
   {
-    $$=mkintnode(0); yyerror("Missing ')'.");
+    $$=0; yyerror("Missing ')'.");
     yyerror("Unexpected end of file.");
   }
-  | '(' error '}' { $$=mkintnode(0); yyerror("Missing ')'."); }
-  | '(' error ';' { $$=mkintnode(0); yyerror("Missing ')'."); }
+  | '(' error '}' { $$=0; yyerror("Missing ')'."); }
+  | '(' error ';' { $$=0; yyerror("Missing ')'."); }
   | block
   ; 
 
@@ -1939,14 +1963,14 @@ sscanf: F_SSCANF '(' expr0 ',' expr0 lvalue_list ')'
   }
   | F_SSCANF '(' expr0 ',' expr0 error ')'
   {
-    $$=mkintnode(0);
+    $$=0;
     free_node($3);
     free_node($5);
     yyerrok;
   }
   | F_SSCANF '(' expr0 ',' expr0 error F_LEX_EOF
   {
-    $$=mkintnode(0);
+    $$=0;
     free_node($3);
     free_node($5);
     yyerror("Missing ')'.");
@@ -1954,51 +1978,51 @@ sscanf: F_SSCANF '(' expr0 ',' expr0 lvalue_list ')'
   }
   | F_SSCANF '(' expr0 ',' expr0 error '}'
   {
-    $$=mkintnode(0);
+    $$=0;
     free_node($3);
     free_node($5);
     yyerror("Missing ')'.");
   }
   | F_SSCANF '(' expr0 ',' expr0 error ';'
   {
-    $$=mkintnode(0);
+    $$=0;
     free_node($3);
     free_node($5);
     yyerror("Missing ')'.");
   }
   | F_SSCANF '(' expr0 error ')'
   {
-    $$=mkintnode(0);
+    $$=0;
     free_node($3);
     yyerrok;
   }
   | F_SSCANF '(' expr0 error F_LEX_EOF
   {
-    $$=mkintnode(0);
+    $$=0;
     free_node($3);
     yyerror("Missing ')'.");
     yyerror("Unexpected end of file.");
   }
   | F_SSCANF '(' expr0 error '}'
   {
-    $$=mkintnode(0);
+    $$=0;
     free_node($3);
     yyerror("Missing ')'.");
   }
   | F_SSCANF '(' expr0 error ';'
   {
-    $$=mkintnode(0);
+    $$=0;
     free_node($3);
     yyerror("Missing ')'.");
   }
-  | F_SSCANF '(' error ')' { $$=mkintnode(0); yyerrok; }
+  | F_SSCANF '(' error ')' { $$=0; yyerrok; }
   | F_SSCANF '(' error F_LEX_EOF
   {
-    $$=mkintnode(0); yyerror("Missing ')'.");
+    $$=0; yyerror("Missing ')'.");
     yyerror("Unexpected end of file.");
   }
-  | F_SSCANF '(' error '}' { $$=mkintnode(0); yyerror("Missing ')'."); }
-  | F_SSCANF '(' error ';' { $$=mkintnode(0); yyerror("Missing ')'."); }
+  | F_SSCANF '(' error '}' { $$=0; yyerror("Missing ')'."); }
+  | F_SSCANF '(' error ';' { $$=0; yyerror("Missing ')'."); }
   ;
 
 lvalue: expr4
@@ -2010,7 +2034,7 @@ lvalue: expr4
     free_node($2);
   }
   | bad_lvalue
-  { $$=mkintnode(0); }
+  { $$=mknewintnode(0); }
   ;
 low_lvalue_list: lvalue lvalue_list { $$=mknode(F_LVALUE_LIST,$1,$2); }
   ;
@@ -2188,6 +2212,9 @@ void add_local_name(struct pike_string *str,
   {
     yyerror("Too many local variables.");
   }else {
+#ifdef PIKE_DEBUG
+    check_type_string(type);
+#endif /* PIKE_DEBUG */
     compiler_frame->variable[compiler_frame->current_number_of_locals].type = type;
     compiler_frame->variable[compiler_frame->current_number_of_locals].name = str;
     compiler_frame->current_number_of_locals++;
