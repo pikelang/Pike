@@ -1,3 +1,5 @@
+/* $Id: html.c,v 1.126 2001/02/02 23:34:24 mast Exp $ */
+
 #include "global.h"
 #include "config.h"
 
@@ -15,6 +17,7 @@
 #include "mapping.h"
 #include "stralloc.h"
 #include "program_id.h"
+#include "block_alloc.h"
 #include <ctype.h>
 
 #include "parser.h"
@@ -72,11 +75,25 @@ struct piece
    struct piece *next;
 };
 
+#undef INIT_BLOCK
+#define INIT_BLOCK(p) p->next = NULL;
+#undef EXIT_BLOCK
+#define EXIT_BLOCK(p) free_string (p->s);
+
+BLOCK_ALLOC (piece, 53);
+
 struct out_piece
 {
    struct svalue v;
    struct out_piece *next;
 };
+
+#undef INIT_BLOCK
+#define INIT_BLOCK(p) p->next = NULL;
+#undef EXIT_BLOCK
+#define EXIT_BLOCK(p) free_svalue (&p->v);
+
+BLOCK_ALLOC (out_piece, 211);
 
 struct feed_stack
 {
@@ -355,8 +372,7 @@ void reset_feed(struct parser_html_storage *this)
    {
       struct piece *f=this->feed;
       this->feed=f->next;
-      free_string(f->s);
-      free(f);
+      really_free_piece (f);
    }
    this->feed_end=NULL;
 
@@ -366,8 +382,7 @@ void reset_feed(struct parser_html_storage *this)
    {
       struct out_piece *f=this->out;
       this->out=f->next;
-      free_svalue(&f->v);
-      free(f);
+      really_free_out_piece (f);
    }
    if (this->out_max_shift > 0) this->out_max_shift = 0;
    this->out_length = 0;
@@ -379,8 +394,7 @@ void reset_feed(struct parser_html_storage *this)
    {
       struct out_piece *f=this->cond_out;
       this->cond_out=f->next;
-      free_svalue(&f->v);
-      free(f);
+      really_free_out_piece (f);
    }
 
    /* free stack */
@@ -393,8 +407,7 @@ void reset_feed(struct parser_html_storage *this)
 	{
 	  struct piece *f=st->local_feed;
 	  st->local_feed=f->next;
-	  free_string(f->s);
-	  free(f);
+	  really_free_piece (f);
 	}
       this->stack=st->prev;
       free(st);
@@ -600,8 +613,7 @@ static void save_subparse_state (struct parser_html_storage *this,
   save->out_max_shift = this->out_max_shift;
   save->out_length = this->out_length;
   if (!this->cond_out) {
-    struct out_piece *ph = malloc (sizeof (struct out_piece));
-    if (!ph) Pike_error ("Parser.HTML: Out of memory.\n");
+    struct out_piece *ph = alloc_out_piece();
     ph->v.type = T_INT;
     ph->next = NULL;
     this->cond_out = this->cond_out_end = ph;
@@ -618,15 +630,14 @@ static void finalize_subparse_state (struct subparse_save *save)
     while (save->feed != cur) {
       struct piece *p = save->feed;
       save->feed = p->next;
-      free_string (p->s);
-      free (p);
+      really_free_piece (p);
     }
   }
 
   if (save->cond_out) {		/* Got a parent subparse save. */
     save->cond_out_end->next = this->cond_out->next;
     this->cond_out->next = save->cond_out->next;
-    free (save->cond_out);	/* Remove the placeholder. */
+    really_free_out_piece (save->cond_out); /* Remove the placeholder. */
   }
   else {			/* Append the cond queue to the real one. */
     if (this->out)
@@ -634,8 +645,7 @@ static void finalize_subparse_state (struct subparse_save *save)
     else
       this->out = this->cond_out->next;
     this->out_end = this->cond_out_end;
-    free (this->cond_out);	/* Remove the placeholder. */
-    this->cond_out = NULL;
+    really_free_out_piece (this->cond_out); /* Remove the placeholder. */
   }
   this->out_max_shift = MAXIMUM (this->out_max_shift, save->out_max_shift);
   this->out_length += save->out_length;
@@ -643,12 +653,12 @@ static void finalize_subparse_state (struct subparse_save *save)
   free_object (save->thisobj);
 
 #ifdef DEBUG
-  save->this = NULL;
-  save->thisobj = NULL;
-  save->st = NULL;
-  save->feed = NULL;
-  save->cond_out = NULL;
-  save->cond_out_end = NULL;
+  save->this = (struct parser_html_storage *)(ptrdiff_t) -1;
+  save->thisobj = (struct object *)(ptrdiff_t) -1;
+  save->st = (struct feed_stack *)(ptrdiff_t) -1;
+  save->feed = (struct piece *)(ptrdiff_t) -1;
+  save->cond_out = (struct out_piece *)(ptrdiff_t) -1;
+  save->cond_out_end = (struct out_piece *)(ptrdiff_t) -1;
 #endif
 }
 
@@ -670,8 +680,7 @@ static void unwind_subparse_state (struct subparse_save *save)
       while (st->local_feed) {
 	struct piece *feed = st->local_feed;
 	st->local_feed = feed->next;
-	free_string (feed->s);
-	free (feed);
+	really_free_piece (feed);
       }
       this->stack = st->prev;
       free (st);
@@ -681,8 +690,7 @@ static void unwind_subparse_state (struct subparse_save *save)
     while (this->cond_out) {
       struct out_piece *f=this->cond_out;
       this->cond_out=f->next;
-      free_svalue(&f->v);
-      free(f);
+      really_free_out_piece (f);
     }
     this->cond_out = save->cond_out;
     this->cond_out_end = save->cond_out_end;
@@ -698,16 +706,14 @@ static void unwind_subparse_state (struct subparse_save *save)
       while (save->feed) {
 	struct piece *p = save->feed;
 	save->feed = p->next;
-	free_string (p->s);
-	free (p);
+	really_free_piece (p);
       }
 
     /* Free the saved cond out queue. */
     while (save->cond_out) {
       struct out_piece *f=save->cond_out;
       save->cond_out=f->next;
-      free_svalue(&f->v);
-      free(f);
+      really_free_out_piece (f);
     }
   }
 
@@ -1272,9 +1278,7 @@ static void put_out_feed(struct parser_html_storage *this,
      fatal ("Putting a non-string into output queue in non-mixed mode.\n");
 #endif
 
-   f=malloc(sizeof(struct out_piece));
-   if (!f)
-      Pike_error("Parser.HTML(): out of memory\n");
+   f = alloc_out_piece();
    assign_svalue_no_free(&f->v,v);
 
    f->next=NULL;
@@ -1524,10 +1528,8 @@ static void skip_feed_range(struct feed_stack *st,
       }
       skip_piece_range(&(st->pos),head,c_head,head->s->len);
       *headp=head->next;
-      if (st->free_feed) {
-	free_string(head->s);
-	free(head);
-      }
+      if (st->free_feed)
+	really_free_piece (head);
       head=*headp;
       c_head=0;
    }
@@ -2255,16 +2257,10 @@ static int quote_tag_lookup (struct parser_html_storage *this,
 static INLINE void add_local_feed (struct parser_html_storage *this,
 				   struct pike_string *str)
 {
-  struct feed_stack *new = malloc(sizeof(struct feed_stack));
-  if (!new)
-    Pike_error("out of memory\n");
+  struct piece *p = alloc_piece();
+  struct feed_stack *new = (struct feed_stack *) xalloc(sizeof(struct feed_stack));
 
-  new->local_feed=malloc(sizeof(struct piece));
-  if (!new->local_feed)
-  {
-    free(new);
-    Pike_error("out of memory\n");
-  }
+  new->local_feed = p;
 
   copy_shared_string(new->local_feed->s,str);
   new->local_feed->next=NULL;
@@ -3762,12 +3758,8 @@ static void low_feed(struct pike_string *ps)
 
    if (!ps->len) return;
 
-   f=malloc(sizeof(struct piece));
-   if (!f)
-      Pike_error("feed: out of memory\n");
+   f = alloc_piece();
    copy_shared_string(f->s,ps);
-
-   f->next=NULL;
 
    if (THIS->feed_end==NULL)
    {
@@ -3796,7 +3788,7 @@ static void low_feed(struct pike_string *ps)
 **!	no data is feeded, but the parser is run.
 **!
 **!	<p>If the string argument is followed by a 0,
-**!	<tt>-&gt;feed(s,1);</tt>, the string is feeded,
+**!	<tt>-&gt;feed(s,0);</tt>, the string is feeded,
 **!	but the parser isn't run.
 **!
 **! returns the called object
@@ -3917,11 +3909,9 @@ static void html_read(INT32 args)
 	 struct out_piece *z = THIS->out;
 	 type_field |= 1 << z->v.type;
 	 ITEM(res)[i] = z->v;
-#ifdef PIKE_DEBUG
 	 z->v.type = T_INT;
-#endif
 	 THIS->out = THIS->out->next;
-	 free(z);
+	 really_free_out_piece (z);
       }
       res->type_field = type_field;
       push_array (res);
@@ -3951,9 +3941,8 @@ static void html_read(INT32 args)
 	 l+=THIS->out->v.u.string->len;
 	 string_builder_shared_strcat (&buf, THIS->out->v.u.string);
 	 z=THIS->out;
-	 free_string(z->v.u.string);
 	 THIS->out=z->next;
-	 free(z);
+	 really_free_out_piece (z);
        }
        push_string (finish_string_builder (&buf));
      }
@@ -3962,8 +3951,9 @@ static void html_read(INT32 args)
        if (THIS->out->v.u.string->len == n) {
 	 struct out_piece *z = THIS->out;
 	 push_string (z->v.u.string);
+	 z->v.type = T_INT;
 	 THIS->out = z->next;
-	 free (z);
+	 really_free_out_piece (z);
        }
        else {			/* THIS->out->v.u.string->len > n */
 	 struct pike_string *ps;
@@ -5300,6 +5290,8 @@ void init_parser_html(void)
 void exit_parser_html()
 {
    free_string(empty_string);
+   free_all_piece_blocks();
+   free_all_out_piece_blocks();
 }
 
 /*
