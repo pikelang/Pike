@@ -1,5 +1,5 @@
 /*
- * $Id: nt.c,v 1.37 2003/06/23 12:27:27 tomas Exp $
+ * $Id: nt.c,v 1.38 2004/03/09 15:48:06 grubba Exp $
  *
  * NT system calls for Pike
  *
@@ -20,6 +20,11 @@
 #define SECURITY_WIN32
 #define SEC_SUCCESS(Status) ((Status) >= 0)
 #include <sspi.h>
+
+/* These are defined by winerror.h in recent SDKs. */
+#ifndef SEC_E_INSUFFICIENT_MEMORY
+#include <issperr.h>
+#endif
 
 /*
  * Get some wrappers for functions not implemented in old versions
