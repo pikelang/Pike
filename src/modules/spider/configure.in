@@ -19,7 +19,8 @@ AC_HAVE_HEADERS(syslog.h sys/syslog.h arpa/inet.h sys/socketvar.h \
 AC_HAVE_FUNCS(syslog perror getppid getpgrp strdup\
 	gethostname geteuid fchroot seteuid setresuid \
         uname gethostbyname getpwnam getspnam initgroups \
-	mutex_unlock mmap sendmsg getpwent setpwent endpwent)
+	mutex_unlock mmap sendmsg getpwent setpwent endpwent \
+	pthread_mutexattr_setpshared)
 
 AC_CHECK_TYPE(time_t, long)
 
