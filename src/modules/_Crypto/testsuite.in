@@ -82,8 +82,12 @@ cond( [[ master()->resolv("Gmp")->mpz ]],
 // RIJNDAEL
 
 test_true([[objectp(Crypto.rijndael()) && objectp(Crypto.aes())]])
-test_false(Process.system(RUNPIKE+" SRCDIR/rijndaeltest.pike --quick"))
-
+test_tests(
+  array(int) a() {
+    string r = Process.popen(RUNPIKE+" \"SRCDIR/rijndaeltest.pike\" --quick");
+    return (array(int))(r/" ");
+  }
+  )
 ]])
 
 
