@@ -1,6 +1,6 @@
 #pike __REAL_VERSION__
 
-//  $Id: Session.pike,v 1.29 2002/01/16 01:47:25 nilsson Exp $
+//  $Id: Session.pike,v 1.30 2002/01/16 23:21:47 nilsson Exp $
 
 import ".";
 
@@ -453,6 +453,8 @@ constant itemname_to_tag = ([ "content-type":		1,
 			      "mx-envelope-sender":	10103,
 			      "mx-mime-file-name":	10104, ]);
 
+//! @fixme
+//!   Undocumented
 class AuxItemInput
 {
   inherit ProtocolTypes.AuxItemInput;
@@ -475,6 +477,8 @@ class AuxItemInput
   }
 }
 
+//! @fixme
+//!   Undocumented
 class AuxItems
 {
   string _sprintf()
@@ -522,6 +526,7 @@ class AuxItems
   mixed `->(string what) { return `[](what); }
 }
 
+//! All variables in this class is read only.
 //! @fixme
 //!   Undocumented
 class Text
@@ -682,8 +687,8 @@ class Text
   }
 }
 
-
-object text(int no)
+//! Returns the text @[no].
+Text text(int no)
 {
   if(_text[no])
     return _text[no];
@@ -693,19 +698,36 @@ object text(int no)
   return (_text[no]=Text(no));
 }
 
+//! All variables in this class is read only.
 class Membership
 {
   int              person;
   int              newtype;
+
+  //!
   object           last_time_read;
+
+  //!
   int(0..255)      priority;
+
+  //!
   int              last_text_read;
+
+  //!
   array(int)       read_texts;
+
   int(0..65535)    added_by;   // new
+
+  //!
   object           added_at;   // new
+
+  //!
   multiset(string) type;       // new
+
+  //!
   int              position;   // new
 
+  //!
   object conf;
 
   object err;
@@ -736,12 +758,14 @@ class Membership
 
   //  FETCHER(unread,ProtocolTypes.TextMapping,_unread,local_to_global,@({conf->no,1,255}))
 
+  //!
   int number_unread()
   {
     return (conf->no_of_texts+conf->first_local_no-1)
       -last_text_read -sizeof(read_texts);
   }
 
+  //!
   void query_read_texts()
   {
 //     werror("query_read_texts()\n");
@@ -749,6 +773,8 @@ class Membership
     setup(con->query_read_texts(person,conf->no));
 //     werror("read_texts: %O\n",read_texts);
   }
+
+  //! @decl array(object) unread_texts()
 
   array(object) get_unread_texts_blocking()
   {
@@ -796,7 +822,6 @@ class Membership
     return map( sort(values(unread_numbers)), text );
   }
 
-
   mixed `[](string what)
   {
     switch (what)
@@ -837,9 +862,11 @@ class Membership
 }
 
 
+//!
 class Person
 {
-   int no;
+  //!
+  int no;
 
    object conf;
 
@@ -856,11 +883,42 @@ class Person
 
    //! @endignore
 
+  //! @decl void create(int no)
    void create(int _no)
    {
       no=_no;
       conf=conference(no);
    }
+
+  //! @decl mixed prefetch_stat
+  //! @decl mixed prefetch_conf
+  //! @decl mixed prefetch_membership
+  //! @fixme
+  //!   Undocumented
+
+  //! @decl object error
+  //! @decl Text user_area
+  //! @decl mixed username
+  //! @decl mixed privileges
+  //! @decl mixed flags
+  //! @decl mixed last_login
+  //! @decl mixed total_time_present
+  //! @decl mixed sessions
+  //! @decl mixed created_lines
+  //! @decl mixed created_bytes
+  //! @decl mixed read_texts
+  //! @decl mixed no_of_text_fetches
+  //! @decl mixed created_persons
+  //! @decl mixed created_confs
+  //! @decl mixed first_created_local_no
+  //! @decl mixed no_of_created_texts
+  //! @decl mixed no_of_marks
+  //! @decl mixed no_of_confs
+  //! @decl mixed unread
+  //! @decl int(0..0) clear_membership
+  //! @decl mixed membership
+  //! @fixme
+  //!   Undocumented
 
    mixed `[](string what)
    {
@@ -882,7 +940,7 @@ class Person
 	 case "user_area":
 	    waitfor_stat();
 	    return text(_person->user_area);
-         case "username":
+	 case "username":
 	 case "privileges":
 	 case "flags":
 	 case "last_login":
@@ -940,11 +998,13 @@ class Person
   }
 }
 
-object person(int no)
+//! Returns the person @[no].
+Person person(int no)
 {
    return _person[no] || (_person[no]=Person(no));
 }
 
+//!
 class Conference
 {
   int no;
@@ -961,6 +1021,7 @@ class Conference
 
   //! @endignore
 
+  //! @decl void create(int no)
   void create(int _no)
   {
     no=_no;
@@ -1029,13 +1090,14 @@ class Conference
   }
 }
 
-object conference(int no)
+//! Returns conference number @[no].
+Conference conference(int no)
 {
    return _conference[no] || (_conference[no]=Conference(no));
 }
 
-//!	Runs a LysKOM completion on the given string,
-//!	returning an array of confzinfos of the match.
+//! Runs a LysKOM completion on the given string,
+//! returning an array of confzinfos of the match.
 array(ProtocolTypes.ConfZInfo) try_complete_person(string orig)
 {
    return con->lookup_z_name(orig,1,0);
@@ -1054,7 +1116,7 @@ object login(int user_no,string password,
    return this_object();
 }
 
-//!	Create a person, which will be logged in.
+//! Create a person, which will be logged in.
 //! returns the new person object
 object create_person(string name,string password)
 {
@@ -1063,7 +1125,7 @@ object create_person(string name,string password)
    return user=person(con->create_person_old(name,password));
 }
 
-//!	Logouts from the server.
+//! Logouts from the server.
 //! returns the called object
 object logout()
 {
@@ -1181,6 +1243,7 @@ object|void send_message(string textstring, mapping options)
   return text(res);
 }
 
+//!
 void register_async_message_callback(function(int,int,string:void) cb)
 {
   con->con->add_async_callback("async-send-message", cb);
