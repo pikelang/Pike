@@ -1,5 +1,5 @@
 /*
- * $Id: oracle.c,v 1.45 2000/09/29 19:00:55 hubbe Exp $
+ * $Id: oracle.c,v 1.46 2000/10/01 08:52:11 hubbe Exp $
  *
  * Pike interface to Oracle databases.
  *
@@ -47,7 +47,7 @@
 #include <oci.h>
 #include <math.h>
 
-RCSID("$Id: oracle.c,v 1.45 2000/09/29 19:00:55 hubbe Exp $");
+RCSID("$Id: oracle.c,v 1.46 2000/10/01 08:52:11 hubbe Exp $");
 
 
 #define BLOB_FETCH_CHUNK 16384
@@ -189,6 +189,8 @@ void *parent_storage(int depth)
   struct program *p;
   struct object *o;
   INT32 i;
+  if(!depth) return fp->current_storage;
+  depth--;
 
   inherit=&Pike_fp->context;
   o=Pike_fp->current_object;
@@ -256,7 +258,7 @@ void *parent_storage(int depth)
 #ifdef PIKE_DEBUG
 void *check_storage(void *storage, unsigned long magic, char *prog)
 {
-  if( magic != *((unsigned long *)storage))
+  if( storage && magic != *((unsigned long *)storage))
   {
     fprintf(stderr, "Wrong magic number! expected a %s\n",prog);
     fprintf(stderr, "Expected %lx, got %lx\n",magic,*((unsigned long *)storage));
@@ -270,10 +272,10 @@ void *check_storage(void *storage, unsigned long magic, char *prog)
 
 #define STORAGE(O) ((O)->storage + (O)->prog->inherits[0].storage_offset)
 #define THIS_DBCON ((struct dbcon *)check_storage(CURRENT_STORAGE,0xdbc04711UL,"dbcon"))
-#define THIS_QUERY_DBCON ((struct dbcon *)check_storage(parent_storage(0),0xdbc04711UL,"dbcon"))
-#define THIS_RESULT_DBCON ((struct dbcon *)check_storage(parent_storage(1),0xdbc04711UL,"dbcon"))
+#define THIS_QUERY_DBCON ((struct dbcon *)check_storage(parent_storage(1),0xdbc04711UL,"dbcon"))
+#define THIS_RESULT_DBCON ((struct dbcon *)check_storage(parent_storage(2),0xdbc04711UL,"dbcon"))
 #define THIS_QUERY ((struct dbquery *)check_storage(CURRENT_STORAGE,0xdb994711UL,"dbquery"))
-#define THIS_RESULT_QUERY ((struct dbquery *)check_storage(parent_storage(0),0xdb994711UL,"dbquery"))
+#define THIS_RESULT_QUERY ((struct dbquery *)check_storage(parent_storage(1),0xdb994711UL,"dbquery"))
 #define THIS_RESULT ((struct dbresult *)check_storage(CURRENT_STORAGE,0xdbe04711UL,"dbresult"))
 #define THIS_RESULTINFO ((struct dbresultinfo *)check_storage(CURRENT_STORAGE,0xdbe14711UL,"dbresultinfo"))
 #define THIS_DBDATE ((struct dbdate *)check_storage(CURRENT_STORAGE,0xdbda4711UL,"dbdate"))
