@@ -12,22 +12,67 @@ constant TraceProcess = __builtin.TraceProcess;
 class Process
 {
   inherit __builtin.create_process;
+  static function(Process:void) read_cb;
+  static function(Process:void) timeout_cb;
 
   //! @param args
   //!   Either a command line array, as the command_args
   //!   argument to @[create_process], or a string that
   //!   will be splitted into a command line array by
   //!   calling @[split_quoted_string].
+  //! @param m
+  //!   In addition to the modifiers that @[create_process] accepts,
+  //!   this object also accepts
+  //!   @mapping
+  //!     @member function(Process:void) "read_callback"
+  //!       This callback is called when there is data to be read
+  //!       from the process.
+  //!     @member function(Process:void) "timeout_callback"
+  //!       This callback is called if the process times out.
+  //!     @member int "timeout"
+  //!       The time it takes for the process to time out. Default is
+  //!       15 seconds.
+  //!   @endmapping
   //! @seealso
   //!   @[create_process], @[split_quoted_string]
-  void create( string|array(string) args, void|mapping(string:mixed) m )
+  static void create( string|array(string) args, void|mapping(string:mixed) m )
   {
     if( stringp( args ) )
       args = split_quoted_string( [string]args );
+
     if( m )
-      ::create( [array(string)]args, m );
+      ::create( [array(string)]args, [mapping(string:mixed)]m );
     else
       ::create( [array(string)]args );
+
+    if(read_cb=m->read_callback)
+      call_out(watcher, 0.1);
+
+    if( (timeout_cb=m->timeout_callback) || m->timeout )
+      call_out(killer, m->timeout||15);
+  }
+
+  static void destroy() {
+    remove_call_out(watcher);
+    remove_call_out(killer);
+  }
+
+  static void watcher() {
+    // It was another sigchld, but not one from our process.
+    if(::status()==0)
+      call_out(watcher, 0.1);
+    else {
+      remove_call_out(killer);
+      if(read_cb) read_cb(this);
+    }
+  }
+
+  static void killer() {
+    remove_call_out(watcher);
+#if constant(kill)
+    ::kill(signum("SIGKILL"));
+#endif
+    if(timeout_cb) timeout_cb(this);
   }
 }
 
