@@ -5,7 +5,7 @@
 \*/
 /**/
 #include "global.h"
-RCSID("$Id: pike_types.c,v 1.65 1999/11/20 22:52:26 grubba Exp $");
+RCSID("$Id: pike_types.c,v 1.66 1999/11/21 18:04:16 grubba Exp $");
 #include <ctype.h>
 #include "svalue.h"
 #include "pike_types.h"
@@ -1013,6 +1013,88 @@ static void very_low_and_pike_types(char *to_push, char *not_push)
   }
 }
 
+static void even_lower_and_pike_types(char *t1, char *t2)
+{
+  while(EXTRACT_UCHAR(t2) == T_OR)
+  {
+    t2++;
+    even_lower_and_pike_types(t1, t2);
+    t2 += type_length(t2);
+  }
+  if (EXTRACT_UCHAR(t1) == EXTRACT_UCHAR(t2)) {
+    if (EXTRACT_UCHAR(t1) == T_INT) {
+      INT32 i1,i2;
+      INT32 upper_bound,lower_bound;
+      i1=extract_type_int(t1+1+sizeof(INT32));
+      i2=extract_type_int(t2+1+sizeof(INT32));
+      upper_bound = MINIMUM(i1,i2);
+
+      i1=extract_type_int(t1+1);
+      i2=extract_type_int(t2+1);
+      lower_bound = MAXIMUM(i1,i2);
+
+      if (upper_bound >= lower_bound) {
+	push_type_int(upper_bound);
+	push_type_int(lower_bound);
+	push_type(T_INT);
+	push_type(T_OR);
+      }
+    } else {
+      push_unfinished_type(t1);
+      push_type(T_OR);
+    }
+  }
+}
+
+static int lower_and_pike_types(char *t1, char *t2)
+{
+  int is_complex = 0;
+  while(EXTRACT_UCHAR(t1)==T_OR)
+  {
+    t1++;
+    is_complex |= lower_and_pike_types(t1, t2);
+    t1 += type_length(t1);
+  }
+  switch(EXTRACT_UCHAR(t1)) {
+  case T_VOID:
+    break;
+  case T_STRING:
+  case T_FLOAT:
+  case T_INT:
+    even_lower_and_pike_types(t1, t2);
+    break;
+  default:
+    return 1;
+  }
+  return is_complex;
+}
+
+static int low_and_push_complex_pike_type(char *type)
+{
+  int is_complex = 0;
+  while(EXTRACT_UCHAR(type) == T_OR)
+  {
+    type++;
+    is_complex |= low_and_push_complex_pike_type(type);
+    type += type_length(type);
+  }
+  switch(EXTRACT_UCHAR(type)) {
+  case T_VOID:
+  case T_STRING:
+  case T_FLOAT:
+  case T_INT:
+    /* Simple type. Already handled. */
+    break;
+  default:
+    push_unfinished_type(type);
+    if (is_complex) {
+      push_type(T_OR);
+    }
+    return 1;
+  }
+  return is_complex;
+}
+
 static void low_and_pike_types(char *t1, char *t2)
 {
   if(!t1)
@@ -1033,6 +1115,10 @@ static void low_and_pike_types(char *t1, char *t2)
   else if(EXTRACT_UCHAR(t2)==T_MIXED)
   {
     push_unfinished_type(t1);
+  }
+  else if(EXTRACT_UCHAR(t1)==T_VOID || EXTRACT_UCHAR(t2)==T_VOID)
+  {
+    push_type(T_VOID);
   }
   else if(EXTRACT_UCHAR(t1)==T_INT && EXTRACT_UCHAR(t2)==T_INT)
   {
@@ -1056,10 +1142,26 @@ static void low_and_pike_types(char *t1, char *t2)
       push_type(T_VOID);
     }
   }
-  else
+  else if((EXTRACT_UCHAR(t1)==T_STRING && EXTRACT_UCHAR(t2)==T_STRING) ||
+	  (EXTRACT_UCHAR(t1)==T_FLOAT && EXTRACT_UCHAR(t2)==T_FLOAT))
   {
     push_unfinished_type(t1);
-    very_low_and_pike_types(t2,t1);
+  }
+  else
+  {
+    push_type(T_VOID);
+
+    if (lower_and_pike_types(t1, t2)) {
+      /* t1 contains complex types. */
+      if (low_and_push_complex_pike_type(t2)) {
+	/* t2 also contains complex types. */
+	low_and_push_complex_pike_type(t1);
+	push_type(T_AND);
+	push_type(T_OR);
+      }
+    }
+    /*     push_unfinished_type(t1); */
+    /*     very_low_and_pike_types(t2,t1); */
   }
 }
 
