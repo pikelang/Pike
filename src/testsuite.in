@@ -1,4 +1,4 @@
-test_true([["$Id: testsuite.in,v 1.326 2000/09/03 23:22:16 mast Exp $"]]);
+test_true([["$Id: testsuite.in,v 1.327 2000/09/09 12:38:14 mirar Exp $"]]);
 
 cond([[all_constants()->_verify_internals]],
 [[
@@ -5493,6 +5493,15 @@ test_program(inherit test2; inherit test; mixed a() { setw(20); setb(22); return
 test_eval_error(return clone(class c{int i;void foo(){ destruct(this_object());i=0;return i;}})->foo())
 
 // Pike modules
+
+// Calendar
+// just check if it compiles for now
+test_true(Calendar)
+test_true(Calendar.II)
+test_true(Calendar.Day)
+test_true(Calendar.Day())
+test_true(Calendar.Events)
+test_true(Calendar.Stardate)
 
 // LR
 test_true(LR.parser)
