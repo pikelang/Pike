@@ -51,7 +51,6 @@ class Indexer(Variable wa_var, void|function get_sb_workarea_view_url, Configura
     Standards.URI sb_url;
     if(url->scheme=="sitebuilder" || url->scheme=="intrawise")
     {
-      werror("userpass: %O\n", userpass);
       if(userpass && conf)
         headers["Authorization"]=sprintf("Basic %s", MIME.encode_base64(userpass));
       headers["Request-Metadata"]="";
