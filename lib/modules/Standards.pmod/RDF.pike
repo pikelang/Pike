@@ -1,4 +1,4 @@
-// $Id: RDF.pike,v 1.6 2002/10/29 03:24:46 nilsson Exp $
+// $Id: RDF.pike,v 1.7 2002/10/30 01:07:03 nilsson Exp $
 
 //! Represents an RDF domain which can contain any number of complete
 //! statements.
@@ -105,11 +105,55 @@ void add_statement(Resource subj, Resource pred, Resource obj) {
   rel->add(subj, obj);
 }
 
-//! Returns an RDF node with the given URI as identifier,
+//! Returns an RDF resource with the given URI as identifier,
 //! or zero.
-Resource get_node(string uri) {
+Resource get_resource(string uri) {
   if(uris[uri]) return uris[uri];
   return 0;
+}
+
+//! Returns an array with the statements that matches the given
+//! subject @[subj], predicate @[pred] and object @[obj]. Any
+//! and all of the resources may be zero to disregard from matching
+//! that part of the statement, i.e. find_statements(0,0,0) returns
+//! all statements in the domain.
+//!
+//! @returns
+//!   An array with arrays of three elements.
+//!   @array
+//!     @elem Resource 0
+//!       The subject of the statement
+//!     @elem Resource 1
+//!       The predicate of the statement
+//!     @elem Resource 2
+//!       The object of the statement
+//!   @endarray
+array(array(Resource)) find_statements(Resource|int(0..0) subj,
+				       Resource|int(0..0) pred,
+				       Resource|int(0..0) obj) {
+
+  array(array(Resource)) find_subj_obj(Resource subj, Resource pred,
+				       Resource obj, ADT.Relation.Binary rel) {
+    if(subj && obj) {
+      if(rel(subj,obj)) return ({ ({ subj, pred, obj }) });
+      return ({});
+    }
+
+    array ret = ({});
+    foreach(rel; Resource left; Resource right) {
+      if(subj && subj!=left) continue;
+      if(obj && obj!=right) continue;
+      ret += ({ ({ left, pred, right }) });
+    }
+    return ret;
+  };
+
+  if(pred)
+    return find_subj_obj(subj, pred, obj, statements[pred]);
+  array ret = ({});
+  foreach(statements; Resource pred; ADT.Relation.Binary rel)
+    ret += find_subj_obj(subj, pred, obj, rel);
+  return ret;
 }
 
 
@@ -260,6 +304,7 @@ int parse_n_triples(string in) {
 //!   Doesn't correctly decode backslashes that has been
 //!   encoded with with \u- or \U-notation.
 string decode_n_triple_string(string in) {
+
   string build = "";
   while( sscanf(in, "%s\\u%4x%s", string a, int b, in)==3 )
     build += a + sprintf("%c", b);
@@ -329,6 +374,6 @@ int _sizeof() {
 
 string _sprintf(int t) {
   if(t=='t') return "RDF";
-  if(t=='O') return "RDF(" + sizeof(statements) + ")";
+  if(t=='O') return "RDF(" + _sizeof() + ")";
   error("Can not represent RDF as %c.\n", t);
 }
