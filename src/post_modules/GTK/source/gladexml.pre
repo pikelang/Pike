@@ -15,7 +15,7 @@ class GTK.GladeXML;
 #include "builtin_functions.h"
 #include <glade/glade.h>
 
-RCSID("$Id: gladexml.pre,v 1.13 2002/12/01 22:47:57 nilsson Exp $");
+RCSID("$Id: gladexml.pre,v 1.14 2003/01/18 06:56:15 neotron Exp $");
 
 /* This function is used by signal_autoconnect to handle signal
    connection Basically it uses a mapping and data from the stack to
@@ -23,13 +23,13 @@ RCSID("$Id: gladexml.pre,v 1.13 2002/12/01 22:47:57 nilsson Exp $");
    PiGTK.
 
  */
-static void pgtk__signal_connect(const gchar *handler_name,
-                                 GtkObject *obj,
-                                 const gchar *signal_name,
-                                 const gchar *signal_data,
-                                 GtkObject *connect_object,
-                                 gboolean after,
-                                 gpointer args)
+ static void pgtk__low_signal_connect(const gchar *handler_name,
+				      GtkObject *obj,
+				      const gchar *signal_name,
+				      const gchar *signal_data,
+				      GtkObject *connect_object,
+				      gboolean after,
+				      gpointer args, int new_interface)
 {
   struct mapping *callbacks;
   struct svalue *data;
@@ -61,7 +61,7 @@ static void pgtk__signal_connect(const gchar *handler_name,
   b = (void *)xalloc(sizeof(struct signal_data));
   assign_svalue_no_free( &b->cb, cb);
   assign_svalue_no_free( &b->args, data);
-
+  b->new_interface = new_interface;
   signal_id = gtk_signal_lookup (signal_name, GTK_OBJECT_TYPE (obj));
   if(!signal_id)
   {
@@ -78,6 +78,28 @@ static void pgtk__signal_connect(const gchar *handler_name,
 			       (void *)pgtk_free_signal_data, FALSE, after);
 }
 
+static void pgtk__signal_connect_new(const gchar *handler_name,
+				     GtkObject *obj,
+				     const gchar *signal_name,
+				     const gchar *signal_data,
+				     GtkObject *connect_object,
+				     gboolean after,
+				     gpointer args) {
+  pgtk__low_signal_connect(handler_name, obj, signal_name, signal_data,
+			   connect_object, after, args, 1);
+}
+ 
+static void pgtk__signal_connect(const gchar *handler_name,
+                                 GtkObject *obj,
+                                 const gchar *signal_name,
+                                 const gchar *signal_data,
+                                 GtkObject *connect_object,
+                                 gboolean after,
+                                 gpointer args)
+{
+  pgtk__low_signal_connect(handler_name, obj, signal_name, signal_data,
+			   connect_object, after, args, 0);
+}
 
 static void glade_verify_setup()
 {
@@ -301,7 +323,7 @@ void signal_autoconnect(mapping(string:function) callbacks, mixed data)
 //! Try to connect functions to all signals in the interface. The
 //! mapping should consist of handler name : function pairs. The
 //! data argument will be saved and sent as the first argument to all
-//! callback functions.
+//! callback functions. 
 {
   GladeXML *xml;
   if(args != 2 || Pike_sp[-args].type != PIKE_T_MAPPING)
@@ -310,5 +332,35 @@ void signal_autoconnect(mapping(string:function) callbacks, mixed data)
     Pike_error("GladeXML->get_widget_by_long_name(): No widgets are loaded.\n");
   xml = (GladeXML *)THIS->obj;
   glade_xml_signal_autoconnect_full(xml, pgtk__signal_connect, &args);
+  RETURN_THIS();
+}
+
+void signal_autoconnect_new(mapping(string:function) callbacks, mixed data)
+//! Try to connect functions to all signals in the interface. The
+//! mapping should consist of handler name : function pairs. 
+//! <p>This function differs from the signal_connect function in how it
+//! calls the callback function.
+//!
+//! </p>
+//!
+//! <p>
+//! The old interface:
+//! <pre>
+//!   void signal_handler( mixed data, GTK.Object object,
+//!                        mixed ... signal_arguments )
+//! </pre>
+//! The new interface:
+//! <pre>
+//!   void signal_handler( mixed ... signal_arguments,
+//!                        mixed data, GTK.Object object )
+//! </pre>
+{
+  GladeXML *xml;
+  if(args != 2 || Pike_sp[-args].type != PIKE_T_MAPPING)
+    Pike_error("GTK.GladeXML->signal_autoconnect: Invalid arguments, expected (mapping,mixed)\n");
+  if(!THIS->obj)
+    Pike_error("GladeXML->get_widget_by_long_name(): No widgets are loaded.\n");
+  xml = (GladeXML *)THIS->obj;
+  glade_xml_signal_autoconnect_full(xml, pgtk__signal_connect_new, &args);
   RETURN_THIS();
 }
