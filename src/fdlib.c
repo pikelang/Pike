@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: fdlib.c,v 1.61 2003/05/02 18:29:29 grubba Exp $
+|| $Id: fdlib.c,v 1.62 2003/05/04 14:36:39 nilsson Exp $
 */
 
 #include "global.h"
@@ -10,7 +10,7 @@
 #include "pike_error.h"
 #include <math.h>
 
-RCSID("$Id: fdlib.c,v 1.61 2003/05/02 18:29:29 grubba Exp $");
+RCSID("$Id: fdlib.c,v 1.62 2003/05/04 14:36:39 nilsson Exp $");
 
 #ifdef HAVE_WINSOCK_H
 
@@ -975,7 +975,6 @@ static long convert_filetime_to_time_t(FILETIME tmp)
 
 PMOD_EXPORT int debug_fd_fstat(FD fd, PIKE_STAT_T *s)
 {
-  DWORD x;
   FILETIME c,a,m;
 
   mt_lock(&fd_mutex);
