@@ -2,11 +2,11 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: backend.cmod,v 1.63 2003/10/28 17:35:47 mast Exp $
+|| $Id: backend.cmod,v 1.64 2003/10/28 20:41:10 mast Exp $
 */
 
 #include "global.h"
-RCSID("$Id: backend.cmod,v 1.63 2003/10/28 17:35:47 mast Exp $");
+RCSID("$Id: backend.cmod,v 1.64 2003/10/28 20:41:10 mast Exp $");
 #include "fdlib.h"
 #include "backend.h"
 #include <errno.h>
@@ -1159,7 +1159,7 @@ PIKECLASS Backend
 	  }
 	  
 	  if (me->active_set.poll_fds[i].revents & POLLRDBAND) {
-	    IF_PD(fprintf(stderr, "BACKEND[%d]: POLLRDBAND\n", me->id));
+	    IF_PD(fprintf(stderr, "BACKEND[%d]: POLLRDBAND on %d\n", me->id, fd));
 	    if (me->fds[fd].read_oob.callback)
 	    {
 	      IF_PD(fprintf(stderr, "BACKEND[%d]: read_oob_callback(%d, %p)\n",
@@ -1176,20 +1176,23 @@ PIKECLASS Backend
 	     (me->active_set.poll_fds[i].revents & POLLERR))
 	  {
 	    /* Closed or error */
-#ifdef PIKE_DEBUG
 	    if (me->active_set.poll_fds[i].revents & POLLERR) {
-	      /* Docs are very hazy on when this happens.. */
-	      int ret;
-	      PIKE_STAT_T tmp;
-	      do {
-		ret = fd_fstat (fd, &tmp);
-	      } while (ret < 0 && errno == EINTR);
-	      fprintf(stderr, "Got POLLERR on fd %d. "
-		      "A stat on it returns %d, errno %d\n",
-		      fd, ret, errno);
-	    }
+	      int err;
+	      ACCEPT_SIZE_T len = sizeof (err);
+	      if (!getsockopt (fd, SOL_SOCKET, SO_ERROR, &err, &len)) {
+		IF_PD (fprintf (stderr, "BACKEND[%d]: POLLERR on %d, error=%d\n",
+				me->id, fd, err));
+		errno = err;
+	      }
+#ifdef PIKE_DEBUG
+	      else
+		fprintf(stderr, "Got POLLERR on non-socket fd %d (getsockopt errno=%d)\n",
+			fd, errno);
 #endif /* PIKE_DEBUG */
-	    IF_PD(fprintf(stderr, "BACKEND[%d]: POLLHUP | POLLERR\n", me->id));
+	    }
+	    else {
+	      IF_PD(fprintf(stderr, "BACKEND[%d]: POLLHUP on %d\n", me->id, fd));
+	    }
 	    /* We don't want to keep this fd anymore. */
 	    MY_FD_CLR(&me->set, fd, ~0);
 	    if (me->fds[fd].read.callback) {
@@ -1210,7 +1213,7 @@ PIKECLASS Backend
 	  
 	  if(me->active_set.poll_fds[i].revents & (POLLRDNORM|POLLIN))
 	  {
-	    IF_PD(fprintf(stderr, "BACKEND[%d]: POLLRDNORM|POLLIN\n", me->id));
+	    IF_PD(fprintf(stderr, "BACKEND[%d]: POLLRDNORM|POLLIN on %d\n", me->id, fd));
 	    if (me->fds[fd].read.callback) {
 	      IF_PD(fprintf(stderr, "BACKEND[%d]: read_callback(%d, %p)\n",
 			    me->id, fd, me->fds[fd].read.data));
@@ -1225,7 +1228,7 @@ PIKECLASS Backend
 	  }
 	  
 	  if (me->active_set.poll_fds[i].revents & POLLWRBAND) {
-	    IF_PD(fprintf(stderr, "BACKEND[%d]: POLLWRBAND\n", me->id));
+	    IF_PD(fprintf(stderr, "BACKEND[%d]: POLLWRBAND on %d\n", me->id, fd));
 	    if (me->fds[fd].write_oob.callback) {
 	      IF_PD(fprintf(stderr, "BACKEND[%d]: write_oob_callback(%d, %p)\n",
 			    me->id, fd, me->fds[fd].write_oob.data));
@@ -1238,7 +1241,7 @@ PIKECLASS Backend
 	  }
 	  
 	  if(me->active_set.poll_fds[i].revents & POLLOUT) {
-	    IF_PD(fprintf(stderr, "BACKEND[%d]: POLLOUT\n", me->id));
+	    IF_PD(fprintf(stderr, "BACKEND[%d]: POLLOUT on %d\n", me->id, fd));
 	    if (me->fds[fd].write.callback) {
 	      IF_PD(fprintf(stderr, "BACKEND[%d]: write_callback(%d, %p)\n",
 			    me->id, fd, me->fds[fd].write.data));
