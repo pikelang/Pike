@@ -2,13 +2,42 @@
 
 #pragma strict_types
 
-// $Id: mkpeep.pike,v 1.32 2003/04/01 00:52:02 nilsson Exp $
+// $Id: mkpeep.pike,v 1.33 2003/04/07 02:16:25 nilsson Exp $
 
 #define SKIPWHITE(X) sscanf(X, "%*[ \t\n]%s", X)
 
 void err(string e, mixed ... a) {
   werror(e, @a);
   exit(1);
+}
+
+array(string) linebreak(array(string) tokens, int width) {
+  array(string) out = ({});
+  string line = "";
+  foreach(tokens, string token)
+    if(sizeof(line)+sizeof(token)<=width)
+      line += token;
+    else {
+      out += ({ line });
+      SKIPWHITE(token);
+      line = token;
+    }
+  if(line!="")
+    out += ({ line });
+  return out;
+}
+
+void make_multiline(string prefix, array(string)|string tokens,
+		    string suffix) {
+  if(stringp(tokens))
+    tokens = ((tokens/" ")/1)*({" "});
+  tokens += ({ suffix });
+  tokens = linebreak([array(string)]tokens, 80-sizeof(prefix));
+  foreach(tokens; int r; string line)
+    if(!r)
+      write("%s%s\n", prefix, line);
+    else
+      write("%*n%s\n", sizeof(prefix), line);
 }
 
 // Find the matching parenthesis
@@ -196,6 +225,10 @@ class Rule {
 
     from = nt;
   }
+
+  string _sprintf(int t) {
+    return t=='O' ? ("Rule("+line+")") : 0;
+  }
 }
 
 // Replace $[0-9]+(o|a|b) with something a C compiler can understand.
@@ -292,22 +325,19 @@ void dump(array(Rule) data, int ind)
     write("%*n}\n", ind);
   }
 
-  /* Take care of whatever is left */
+  // Take care of whatever is left
   if(sizeof(data))
   {
     foreach(data, Rule d)
     {
-      write("%*n/* %s */\n", ind, d->line);
+      make_multiline(" "*ind+"/* ", d->line, " */");
 
       if(sizeof(d->from))
-      {
-	string test;
-	test=treat(d->from*" && ");
-	write("%*nif(%s)\n", ind, test);
-      }
+	make_multiline(" "*ind+"if(", treat(d->from*" && "), ")");
+
       write("%*n{\n", ind);
-      ind+=2;
-      write("%*ndo_optimization(%d,\n", ind, d->opcodes);
+      ind += 2;
+      array(string) opargs = ({ d->opcodes+", " });
 
       for(int i=0; i<sizeof(d->to); i++)
       {
@@ -319,17 +349,13 @@ void dump(array(Rule) data, int ind)
 	  args=explode_comma_expr(tmp[1..sizeof(tmp)-2]);
 	  i++;
 	}
-	write("%*n                %d,%s,%{(%s), %}\n",
-	      ind,
-	      sizeof(args)+1,
-	      fcode,
-	      Array.map(args,treat));
-
+	opargs += ({ sizeof(args)+1+", ", fcode+", " });
+	opargs += map(args,treat)[*]+", ";
       }
-      write("%*n                0);\n",ind);
+      make_multiline(" "*ind+"do_optimization(", opargs, "0);");
 
       write("%*ncontinue;\n", ind);
-      ind-=2;
+      ind -= 2;
       write("%*n}\n", ind, test);
     }
   }
