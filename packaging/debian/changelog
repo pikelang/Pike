@@ -1,3 +1,9 @@
+pike7.4 (7.4.21-1) unstable; urgency=low
+
+  * Latest upstream version.
+
+ -- Marek Habersack <grendel@debian.org>  Fri,  4 Apr 2003 18:22:38 +0200
+
 pike7.4 (7.4.17-2) unstable; urgency=low
 
   * Latest update.
