@@ -1,0 +1,5 @@
+[attr]binary -text -crlf -diff -ident
+* binary
+*.gitattributes !binary !crlf text !eol ident
+*.gitignore !binary !crlf text !eol ident
+*.in !binary !crlf text !eol ident

@@ -1,0 +1,77 @@
+
+dnl Image.ANY
+
+test_do( add_constant("TESTDIR", M4_TESTDIR); )
+
+define(almost_eq,[[
+  test_true( ($1)>($2-2) && ($1)<($2+2) )
+]])
+
+define(test_iany,[[
+ifelse($2,,[[
+  test_eval_error([[
+    Image.ANY._decode(Stdio.read_file(combine_path(TESTDIR,glob("$1*",get_dir(TESTDIR))[0])));
+  ]])
+]],[[
+  test_do([[
+    add_constant("IMG",
+      Image.ANY._decode(Stdio.read_file(combine_path(TESTDIR,glob("$1*",get_dir(TESTDIR))[0]))));
+  ]])
+  test_eq( IMG->type, $2 )
+  test_eq( IMG->image->xsize(), 1 )
+  test_eq( IMG->image->ysize(), 1 )
+  almost_eq( IMG->image->getpixel(0,0)[0], 127 )
+  almost_eq( IMG->image->getpixel(0,0)[1], 63 )
+  almost_eq( IMG->image->getpixel(0,0)[2], 31 )
+  test_do( add_constant("IMG"); )
+]])]])
+
+test_iany(01,"image/jpeg")
+test_iany(02,"image/jpeg")
+test_iany(03,"image/jpeg")
+test_iany(04,"image/jpeg")
+test_iany(05,"image/jpeg")
+test_iany(06,"image/jpeg")
+test_iany(07,"application/x-photoshop")
+test_iany(08,"application/x-photoshop")
+test_iany(09,"image/x-MS-bmp")
+test_iany(10)
+test_iany(11,"image/x-MS-bmp")
+test_iany(12)
+test_iany(13,"image/gif")
+test_iany(14,"image/gif")
+test_iany(15,"image/gif")
+test_iany(16,"image/gif")
+test_iany(17,"image/gif")
+test_iany(18,"image/gif")
+test_iany(19,"image/gif")
+test_iany(20,"image/gif")
+test_iany(21)
+test_iany(23)
+test_iany(24,"image/x-pcx")
+test_iany(25)
+test_iany(26)
+test_iany(27)
+test_iany(28)
+test_iany(29)
+test_iany(30)
+test_iany(31)
+test_iany(32)
+test_iany(33)
+test_iany(34,"image/png")
+test_iany(35,"image/png")
+test_iany(36)
+test_iany(37)
+test_iany(38)
+test_iany(39)
+test_iany(40)
+test_iany(41)
+test_iany(42)
+test_iany(43)
+test_iany(44)
+test_iany(45)
+test_iany(46)
+test_iany(47)
+test_iany(48)
+
+test_do( add_constant("TESTDIR") )
