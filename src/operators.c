@@ -5,7 +5,7 @@
 \*/
 #include "global.h"
 #include <math.h>
-RCSID("$Id: operators.c,v 1.39 1998/07/31 20:15:11 grubba Exp $");
+RCSID("$Id: operators.c,v 1.40 1998/09/18 21:34:28 hubbe Exp $");
 #include "interpret.h"
 #include "svalue.h"
 #include "multiset.h"
@@ -682,35 +682,60 @@ void o_and(void)
  * first, then recursively doing the same on the
  * results until only one value remains.
  */
+static void r_speedup(INT32 args, void (*func)(void))
+{
+  int num;
+  struct svalue tmp;
+  ONERROR err;
+
+  switch(args)
+  {
+    case 3: func();
+    case 2: func();
+    case 1: return;
+
+    default:
+      r_speedup((args+1)>>1,func);
+      tmp=*--sp;
+      SET_ONERROR(err,do_free_svalue,&tmp);
+      r_speedup(args>>1,func);
+      UNSET_ONERROR(err);
+      sp++[0]=tmp;
+      func();
+  }
+}
 static void speedup(INT32 args, void (*func)(void))
 {
   switch(sp[-args].type)
   {
-  case T_MAPPING:
-  case T_ARRAY:
-  case T_MULTISET:
-  {
-    int e=-1;
-    while(args > 1)
+    case T_ARRAY:
+    case T_MULTISET:
     {
-      struct svalue tmp;
-      func();
-      args--;
-      e++;
-      if(e - args >= -1)
+      int e=-1;
+      while(args > 1)
       {
-	e=0;
-      }else{
-	tmp=sp[e-args];
-	sp[e-args]=sp[-1];
-	sp[-1]=tmp;
+	struct svalue tmp;
+	func();
+	args--;
+	e++;
+	if(e - args >= -1)
+	{
+	  e=0;
+	}else{
+	  tmp=sp[e-args];
+	  sp[e-args]=sp[-1];
+	  sp[-1]=tmp;
+	}
       }
+      return;
     }
-    return;
-  }
+    
+    case T_MAPPING:
+      r_speedup(args,func);
+      return;
 
-  default:
-    while(--args > 0) func();
+    default:
+      while(--args > 0) func();
   }
 }
 
