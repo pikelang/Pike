@@ -1,3 +1,8 @@
+Mon Mar 17 14:14:34 1997  Fredrik Hubinette  <hubbe@cytocin.hubbe.net>
+
+	* peep.c (insopt): line numbering info bug fixed
+	* rusage.c: sys/times.h now included if existant
+
 Sun Mar 16 18:33:18 1997  Fredrik Hubinette  <hubbe@cytocin.hubbe.net>
 
 	* Getopt: fixed a major bug in get_all_options()
