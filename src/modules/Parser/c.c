@@ -1,6 +1,6 @@
-/*! array(array(string),string) split( string x )
- *! Returns an array with C-level tokens and the remainder (a partial
- *! token), if any.
+/* array(array(string),string) split( string x )
+ * Returns an array with C-level tokens and the remainder (a partial
+ * token), if any.
  */
 #include "global.h"
 #include "config.h"
