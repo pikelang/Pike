@@ -1,4 +1,5 @@
 
+#define MAX_NUMCOL 32768
 #define QUANT_MAP_BITS 4
 #define QUANT_MAP_SKIP_BITS (8-(QUANT_MAP_BITS))
 #define QUANT_MAP_THIS(X) ((X)>>QUANT_MAP_SKIP_BITS)
@@ -31,11 +32,26 @@ struct image
 
 struct colortable
 {
-   rgb_group clut[256];
+   int numcol;
    struct map_entry
    {
       unsigned char cl;
       unsigned char used; 
       struct map_entry *next;
    } map[QUANT_MAP_REAL][QUANT_MAP_REAL][QUANT_MAP_REAL];
+   rgb_group clut[1];
 };
+
+
+/* colortable declarations - from quant */
+
+struct colortable *colortable_quant(struct image *img,int numcol);
+int colortable_rgb(struct colortable *ct,rgb_group rgb);
+void colortable_free(struct colortable *ct);
+
+/* encoding of a gif - from togif */
+
+struct pike_string *
+   image_encode_gif(struct image *img,struct colortable *ct,
+		    rgb_group *transparent);
+

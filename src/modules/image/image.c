@@ -31,12 +31,6 @@ static INT32 circle_sin_table[CIRCLE_STEPS];
 #define circle_sin_mul(x,y) ((circle_sin(x)*(y))/4096)
 #define circle_cos_mul(x,y) ((circle_cos(x)*(y))/4096)
 
-/* colortable declarations - from quant */
-
-struct colortable *colortable_quant(struct image *img);
-int colortable_rgb(struct colortable *ct,rgb_group rgb);
-void colortable_free(struct colortable *ct);
-
 /***************** init & exit *********************************/
 
 static void init_image_struct(struct object *o)
@@ -696,10 +690,6 @@ void image_toppm(INT32 args)
    free_string(b);
 }
 
-struct pike_string *
-   image_encode_gif(struct image *img,struct colortable *ct,
-		    rgb_group *transparent);
-
 void image_togif(INT32 args)
 {
    char buf[80];
@@ -715,7 +705,7 @@ void image_togif(INT32 args)
 
    pop_n_elems(args);
    if (!THIS->img) { error("no image\n");  return; }
-   ct=colortable_quant(THIS);
+   ct=colortable_quant(THIS,256);
    push_string( image_encode_gif( THIS,ct, transparent) );
    colortable_free(ct);
 }
@@ -1669,11 +1659,20 @@ static void image_quant(INT32 args)
    struct colortable *ct;
    long i;
    rgb_group *rgb;
+   int colors;
 
    if (!THIS->img) error("no image\n");
+   if (args>=1)
+      if (sp[-args].type==T_INT) 
+	 colors=sp[-args].u.integer;
+      else
+	 error("Illegal argument to image->quant()\n");
+   else
+      colors=256;
+      
    pop_n_elems(args);
 
-   ct=colortable_quant(THIS);
+   ct=colortable_quant(THIS,colors);
 
    i=THIS->xsize*THIS->ysize;
    rgb=THIS->img;

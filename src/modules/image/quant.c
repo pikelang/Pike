@@ -6,104 +6,111 @@
 #endif
 
 #include "types.h"
-#include "image.h"
 #include "error.h"
 #include "global.h"
 
+#include "image.h"
+
+/*
+#define QUANT_DEBUG
+#define QUANT_CHRONO
+*/
 
 /**********************************************************************/
 
-/*#define QUANT_DEBUG*/
+#ifdef QUANT_CHRONO
+#include <sys/resource.h>
+#define CHRONO(X) chrono(X)
+
+void chrono(char *x)
+{
+   struct rusage r;
+   getrusage(RUSAGE_SELF,&r);
+   fprintf(stderr,"%s: %ld.%06ld %ld.%06ld %ld.%06ld\n",x,
+	   r.ru_utime.tv_sec,r.ru_utime.tv_usec,
+	   r.ru_stime.tv_sec,r.ru_stime.tv_usec,
+	   r.ru_stime.tv_sec+r.ru_utime.tv_sec,
+	   r.ru_stime.tv_usec+r.ru_utime.tv_usec);
+}
+#else
+#define CHRONO(X)
+#endif
+
+/**********************************************************************/
 
 typedef struct
 {
   rgb_group rgb;
-  int count;
+  unsigned long count;
+  unsigned long next;
 } rgb_entry;
 
 typedef struct
 {
-  int len, entries;
+  unsigned long len;
   rgb_entry tbl[1];
 } rgb_hashtbl;
 
 typedef struct colortable coltab;
 
-static int hash(rgb_entry *entry, int len)
+#define hash(rgb,l) (((rgb).r*127+(rgb).g*997+(rgb).b*2111)&(l-1))
+#define same_col(rgb1,rgb2) \
+     (((rgb1).r==(rgb2).r) && ((rgb1).g==(rgb2).g) && ((rgb1).b==(rgb2).b))
+
+
+static INLINE int hash_enter(rgb_entry *rgbe,rgb_entry *end,
+			      int len,rgb_group rgb)
 {
-   return abs((23*entry->rgb.r + 21*entry->rgb.g + 17*entry->rgb.b)  % len);
-}
+   register rgb_entry *re;
 
-static int same_col(rgb_entry *entry1, rgb_entry *entry2)
-{
-   return ((entry1->rgb.r == entry2->rgb.r) &&
-	   (entry1->rgb.g == entry2->rgb.g) &&
-	   (entry1->rgb.b == entry2->rgb.b));
-}
+   re=rgbe+hash(rgb,len);
+/*   fprintf(stderr,"%d\n",hash(rgb,len));*/
 
+   while (re->count && !same_col(re->rgb,rgb))
+      if (++re==end) re=rgbe;
 
-static void hash_enter(rgb_hashtbl *tbl, rgb_entry *entry)
-{
-   int i = hash(entry, tbl->len);
-   int inc = 1;
-
-#if 0
-/*    fprintf(stderr,"%d.", entry->count); */
-/*  fprintf(stderr,"hash_enter: %3d.%3d.%3d count = %d, hash = %d ",
-	  entry->rgb.r, entry->rgb.b, entry->rgb.b, entry->count, i);*/
-#endif
-
-   while (tbl->tbl[i].count &&
-	  (entry->count || !same_col(entry, &tbl->tbl[i])))
+   if (!re->count)  /* allocate it */
    {
-#ifdef QUANT_DEBUG
-   fprintf(stderr,".");
-#endif
-      i = (i + inc++) % tbl->len;
+      re->rgb=rgb; 
+      re->count=1; 
+      return 1; 
    }
 
-   if (tbl->tbl[i].count == 0)
-   {
-#if 0
-      fprintf(stderr,"new");
-#endif
-      tbl->tbl[i] = *entry;
-      if (tbl->tbl[i].count == 0)
-	 tbl->tbl[i].count = 1;
-      tbl->entries++;
-   } else
-      tbl->tbl[i].count++;
-
-#if 0
-   fprintf(stderr," (%d,%d)\n", tbl->tbl[i].count, tbl->entries);
-#endif
+   re->count++;
+   return 0;
 }
 
-static rgb_hashtbl *img_rehash(rgb_hashtbl *old, int newsize)
+static rgb_hashtbl *img_rehash(rgb_hashtbl *old, unsigned long newsize)
 {
-  int i;
-  rgb_hashtbl *new = malloc(sizeof(rgb_hashtbl) + 
-			    sizeof(rgb_entry) * ( newsize - 1 ) );
-  MEMSET(new->tbl, 0, sizeof(rgb_entry) * newsize );
+   unsigned long i;
+   rgb_hashtbl *new = malloc(sizeof(rgb_hashtbl) + 
+			     sizeof(rgb_entry) * newsize  );
+   MEMSET(new->tbl, 0, sizeof(rgb_entry) * newsize );
   
-  if (!new) error("Out of memory\n");
+   if (!new) error("Out of memory\n");
 #ifdef QUANT_DEBUG
-  fprintf(stderr,"img_rehash: old size = %d, new size = %d\n",
-	  (old ? old->len : 0), newsize);
+   fprintf(stderr,"img_rehash: old size = %lu, new size = %lu\n",
+	   (old ? old->len : 0), newsize);
 #endif
   
-  new->len = newsize;
-  new->entries = 0;
-  if (old)
-  {
-     for (i=0;i<old->len;i++)
-     {
-	if (old->tbl[i].count > 0)
-	   hash_enter(new,&old->tbl[i]);
-     }
-     free(old);
-  }
-  return new;
+   new->len = newsize;
+   if (old)
+   {
+      for (i=0;i<old->len;i++)
+	 if (old->tbl[i].count)
+	 {
+	    register rgb_entry *re;
+
+	    re=new->tbl+hash(old->tbl[i].rgb,newsize);
+
+	    while (re->count)
+	       if (++re==new->tbl+newsize) re=new->tbl;
+
+	    *re=old->tbl[i];
+	 }
+      free(old);
+   }
+   return new;
 }
 
 static int cmp_red(rgb_entry *e1, rgb_entry *e2)
@@ -123,29 +130,109 @@ static int cmp_blue(rgb_entry *e1, rgb_entry *e2)
 
 static int get_tbl_median(rgb_entry *tbl,int len)
 {
-   return len/2;
+   int a=0,x=0;
+   rgb_entry *m,*n;
+
+   len--;
+   m=tbl; n=tbl+len-1;
+   while (m<n)
+   {
+#if 0
+      fprintf(stderr,"pos %3d,%3d sum %3d low=%3d,%3d,%3dc%3d high=%3d,%3d,%3dc%3d\n",
+	      x,len,a,
+	      tbl[x].rgb.r,tbl[x].rgb.g,tbl[x].rgb.b,tbl[x].count, 
+	      tbl[len].rgb.r,tbl[len].rgb.g,tbl[len].rgb.b,tbl[len].count); 
+#endif
+      if (a>0) a-=m++->count; 
+      else a+=n--->count;
+   }
+   return m-tbl;
 }
 
 static rgb_group get_tbl_point(rgb_entry *tbl,int len)
 {
-   return tbl[len/2].rgb;
+   unsigned long r=0,g=0,b=0,n=0;
+   int x;
+   rgb_group rgb;
+   for (x=0; x<len; x++)
+   {
+      r+=((unsigned long)tbl[x].rgb.r)*tbl[x].count,
+      g+=((unsigned long)tbl[x].rgb.g)*tbl[x].count,
+      b+=((unsigned long)tbl[x].rgb.b)*tbl[x].count;
+      n+=tbl[x].count;
+#ifdef QUANT_DEBUG
+   fprintf(stderr,"(%d,%d,%d)*%lu; ",
+	   tbl[x].rgb.r,
+	   tbl[x].rgb.g,
+	   tbl[x].rgb.b,
+	   tbl[x].count);
+#endif
+   }
+   rgb.r=(unsigned char)(r/n);
+   rgb.g=(unsigned char)(g/n);
+   rgb.b=(unsigned char)(b/n);
+#ifdef QUANT_DEBUG
+   fprintf(stderr,"-> (%lu,%lu,%lu)/%lu = %d,%d,%d\n",
+	   r,g,b,n,
+	   rgb.r,rgb.g,rgb.b);
+#endif
+   return rgb;
 }
 
-static void sort_tbl(rgb_hashtbl *ht, int start, int len,
-		     int level, int idx, coltab *ct,
-		     rgb_group lower,rgb_group upper)
+#define MAKE_BINSORT(C,NAME) \
+   void NAME(rgb_entry *e, unsigned long len) \
+   { \
+      unsigned long pos[256];\
+      unsigned long i,j,k;\
+   \
+      rgb_entry *e2;\
+      e2=(rgb_entry*)xalloc(sizeof(rgb_entry)*len);\
+   \
+      for (i=0; i<256; i++) pos[i]=~0;\
+      \
+      for (i=0; i<len; i++)\
+      {\
+         e[i].next=pos[j=e[i].rgb.C];\
+         pos[j]=i;\
+      }\
+   \
+      for (i=j=0; i<256; i++)\
+      {\
+         k=pos[i];\
+         while (k!=(unsigned long)~0)\
+         {\
+   	 e2[j++]=e[k];\
+   	 k=e[k].next;\
+         }\
+      }\
+      MEMCPY(e,e2,len*sizeof(rgb_entry));\
+      free(e2);\
+   }
+
+MAKE_BINSORT(r,binsort_red)
+MAKE_BINSORT(g,binsort_green)
+MAKE_BINSORT(b,binsort_blue)
+
+
+static void sort_tbl(rgb_hashtbl *ht, 
+		     unsigned long start, unsigned long len,
+		     int level, unsigned long idx,
+		     unsigned long gap, int ldir,
+		     coltab *ct, rgb_group lower,rgb_group upper)
 {
    rgb_entry *tbl = ht->tbl;
 
+   int (*sortfun)(const void *, const void *);
+   unsigned long x,y;
+   int dir=0;
 
 #ifdef QUANT_DEBUG
 
-   int x,y;
-
-   fprintf(stderr,"%*ssort_tbl: level %d  start = %d  len=%d, idx = %d",
+   fprintf(stderr,"%*ssort_tbl: level %d  start = %lu "
+	          " len=%lu, idx = %lu, gap = %lu",
 	   level, "",
-	   level, start, len, idx);
-   fprintf(stderr,"%*s\n%d,%d,%d-%d,%d,%d ",level,"",
+	   level, start, len, idx, gap);
+   fprintf(stderr,"\n%*s%d,%d,%d-%d,%d,%d ",level,"",
 	   lower.r,lower.g,lower.b,upper.r,upper.g,upper.b);
 
    fprintf(stderr,"[%d,%d,%d] - [%d,%d,%d]\n",
@@ -157,51 +244,106 @@ static void sort_tbl(rgb_hashtbl *ht, int start, int len,
 	      QUANT_MAP_THIS(upper.b));
 
 #endif
-   
-   switch (level%3)
+
+   if (len>1)
    {
-      case 0: qsort(tbl+start, len, sizeof(rgb_entry),
-		    (int (*)(const void *, const void *))cmp_red); break;
-      case 1: qsort(tbl+start, len, sizeof(rgb_entry),
-		    (int (*)(const void *, const void *))cmp_green); break;
-      case 2: qsort(tbl+start, len, sizeof(rgb_entry),
-		    (int (*)(const void *, const void *))cmp_blue); break;
+   /* check which direction has the most span */
+   /* we make it easy for us, only three directions: r,g,b */
+
+      rgb_group min,max;
+
+      max.r=min.r=tbl[start].rgb.r;
+      max.g=min.g=tbl[start].rgb.g;
+      max.b=min.b=tbl[start].rgb.b;
+
+      for (x=1; x<=len; x++)
+      {
+	 if (min.r>tbl[x].rgb.r) min.r=tbl[x].rgb.r;
+	 if (min.g>tbl[x].rgb.g) min.g=tbl[x].rgb.g;
+	 if (min.b>tbl[x].rgb.b) min.b=tbl[x].rgb.b;
+	 if (max.r<tbl[x].rgb.r) max.r=tbl[x].rgb.r;
+	 if (max.g<tbl[x].rgb.g) max.g=tbl[x].rgb.g;
+	 if (max.b<tbl[x].rgb.b) max.b=tbl[x].rgb.b;
+      }
+      if (max.r-min.r>max.g-min.g) /* r>g */
+	 if (max.r-min.r>max.b-min.b) /* r>g, r>b */
+	    dir=0;
+         else /* r>g, b>r */
+	    dir=2;
+      else
+	 if (max.g-min.g>max.b-min.b) /* g>r, g>b */
+	    dir=1;
+         else /* g>r, b>g */
+	    dir=2;
+      
+#ifdef QUANT_DEBUG
+      fprintf(stderr," dir=%d ",dir);
+#endif
+      if (dir!=ldir)
+	 switch (dir)
+	 {
+	    case 0: binsort_red(tbl+start,len); break;
+	    case 1: binsort_green(tbl+start,len); break;
+	    case 2: binsort_blue(tbl+start,len); break;
+	 }
+
+#ifdef QUANT_DEBUG
+      fprintf(stderr,"low: %d,%d,%d high: %d,%d,%d\n",
+	      tbl[start].rgb.r,
+	      tbl[start].rgb.g,
+	      tbl[start].rgb.b,
+	      tbl[start+len-1].rgb.r,
+	      tbl[start+len-1].rgb.g,
+	      tbl[start+len-1].rgb.b);
+#endif
+
    }
 
-   if (level < 8)
+   if (len>1 && gap>1)
    {
-      int pos;
+      unsigned long pos,g1,g2;
       rgb_group less,more,rgb;
-#ifdef QUANT_DEBUG
-      fprintf(stderr, "\n");
-#endif		
+
       pos=get_tbl_median(tbl+start,len);
       rgb=tbl[start+pos].rgb;
+
+#ifdef QUANT_DEBUG
+      fprintf(stderr, " pos=%lu len=%lu\n",pos,len);
+#endif		
 
       less=upper;
       more=lower;
 
-      switch (level%3)
+      switch (dir)
       {
 	 case 0: more.r=rgb.r+1; less.r=rgb.r;break;
 	 case 1: more.g=rgb.g+1; less.g=rgb.g;break;
 	 case 2: more.b=rgb.b+1; less.b=rgb.b;break;
       }
-      
-      sort_tbl(ht,start,pos,
-	       level+1,idx,ct,
-	       lower,less);
 
-      sort_tbl(ht,start+pos,len-pos,
-	       level+1,idx+(128>>level),ct,
-	       more,upper);
+      g1=gap>>1;
+      if (pos+1<g1) g1=pos+1;
+      g2=gap-g1;
+
+      sort_tbl(ht,start,pos+1,
+	       level+1,idx,g1,dir,
+	       ct,lower,less);
+
+      if (gap>1)
+	 sort_tbl(ht,start+pos+1,len-pos-1,
+		  level+1,idx+g1,g2,dir,
+		  ct,more,upper);
    }
-   else
+   else 
    {
       int r,g,b;
-      ct->clut[idx]=get_tbl_point(tbl+start,len);
+      if (len>1)
+	 ct->clut[idx]=get_tbl_point(tbl+start,len);
+      else
+	 ct->clut[idx]=tbl[start].rgb;
+
 #ifdef QUANT_DEBUG
-      fprintf(stderr,"\n [%d,%d,%d] - [%d,%d,%d] %d\n",
+      fprintf(stderr,"\n [%d,%d,%d] - [%d,%d,%d] %u\n",
 	      lower.r, lower.g, lower.b, upper.r, upper.g, upper.b,
 	      (upper.r-lower.r+1)*(upper.g-lower.g+1)*(upper.b-lower.b+1));
       fprintf(stderr,"[%d,%d,%d] - [%d,%d,%d]\n",
@@ -212,14 +354,24 @@ static void sort_tbl(rgb_hashtbl *ht, int start, int len,
 	      QUANT_MAP_THIS(upper.g), 
 	      QUANT_MAP_THIS(upper.b));
 #endif      
+
+#ifdef QUANT_DEBUG
+#ifndef QUANT_DEBUG_DEEP
+      fprintf(stderr,"[%d,%d,%d]-[%d,%d,%d] = %lu (%d,%d,%d)\n",
+   QUANT_MAP_THIS(lower.r), QUANT_MAP_THIS(lower.g), QUANT_MAP_THIS(lower.b),
+   QUANT_MAP_THIS(upper.r), QUANT_MAP_THIS(upper.g), QUANT_MAP_THIS(upper.b),
+	      idx, ct->clut[idx].r,ct->clut[idx].g,ct->clut[idx].b);
+#endif
+#endif
+
       for(r = QUANT_MAP_THIS(lower.r); r <= QUANT_MAP_THIS(upper.r); r++)
-      {
 	 for(g = QUANT_MAP_THIS(lower.g); g <= QUANT_MAP_THIS(upper.g); g++)
-	 {
 	    for(b = QUANT_MAP_THIS(lower.b); b <= QUANT_MAP_THIS(upper.b); b++)
 	    {
-#ifdef QUANT_DEBUG
-	       fprintf(stderr,"[%d,%d,%d] = %d (%d,%d,%d)\n",r,g,b,idx,ct->clut[idx].r,ct->clut[idx].g,ct->clut[idx].b);
+#ifdef QUANT_DEBUG_DEEP
+	       fprintf(stderr,"%*s[%d,%d,%d] = %lu (%d,%d,%d)\n",level,"",
+		       r,g,b,idx,
+		       ct->clut[idx].r,ct->clut[idx].g,ct->clut[idx].b);
 #endif
 	       if (ct->map[r][g][b].used)
 	       {
@@ -237,13 +389,11 @@ static void sort_tbl(rgb_hashtbl *ht, int start, int len,
 		  ct->map[r][g][b].cl=idx;
 	       }
 	    }
-	 }
-      }
    }
 }
 
 
-struct colortable *colortable_quant(struct image *img)
+struct colortable *colortable_quant(struct image *img,int numcol)
 {
   rgb_hashtbl *tbl;
   INT32 i,j;
@@ -251,56 +401,99 @@ struct colortable *colortable_quant(struct image *img)
   rgb_entry entry;
   coltab *ct;
   rgb_group black,white;
+  rgb_group *p;
+  INT32 entries=0;
 
 #ifdef QUANT_DEBUG
   fprintf(stderr,"img_quant called\n");
 #endif
+  CHRONO("quant");
 
-  ct = malloc(sizeof(coltab));
+  if (numcol<2) numcol=2;
+  if (numcol>MAX_NUMCOL) numcol=MAX_NUMCOL; 
 
+  ct = malloc(sizeof(struct colortable)+sizeof(rgb_group)*numcol);
   if (!ct) error("Out of memory.\n");
+  ct->numcol=numcol;
 
-  MEMSET(ct,0,sizeof(coltab));
+  MEMSET(ct,0,sizeof(struct colortable)+sizeof(rgb_group)*numcol);
 
-  tbl = img_rehash(NULL, 8192 /*(img->xsize*img->ysize) / 6*/);
-  for (i=0;i<sz;i++)
+#ifdef QUANT_DEBUG
+  fprintf(stderr,"Moving colors into hashtable\n");
+#endif
+  CHRONO("hash init");
+
+  tbl = img_rehash(NULL, 8192);
+
+  if (1)
   {
-    entry.rgb = img->img[i];
-    entry.count = 0;
-    hash_enter(tbl, &entry);
-    if (tbl->entries > tbl->len * 3 / 4)
-      tbl = img_rehash(tbl, tbl->len * 2);
-  }
+     p=img->img;
+     i=sz;
+     do
+     {
+	register rgb_entry *rgbe,*end;
+	int len,trig;
 
+#ifdef QUANT_DEBUG
+	fprintf(stderr,"hash: %d pixels left...\n",i);
+#endif
+	CHRONO("hash...");
+	
+	len=tbl->len;
+	trig=(len*2)/10; /* 20% full => rehash bigger */
+	end=(rgbe=tbl->tbl)+tbl->len;
+     
+	while (i--)
+	   if ( (entries+=hash_enter(rgbe,end,len,*(p++))) > trig )
+	   {
+#ifdef QUANT_DEBUG
+	      fprintf(stderr,"rehash: 20%% = %d / %d...\n",entries,len);
+#endif
+	      CHRONO("rehash...");
+	      tbl=img_rehash(tbl,len<<2); /* multiple size by 4 */
+	      break;
+	   }
+     }
+     while (i>=0);
+  }
+     
   /* Compact the hash table */
+  CHRONO("compact");
 
 #ifdef QUANT_DEBUG
   fprintf(stderr,"Compacting\n");
 #endif
   i = tbl->len - 1;
   j = 0;
-  while (i > tbl->entries)
+  while (i > entries)
   {
-    while ((i >= tbl->entries) && tbl->tbl[i].count == 0) i--;
-    while ((j <  tbl->entries) && tbl->tbl[j].count != 0) j++;
+    while ((i >= entries) && tbl->tbl[i].count == 0) i--;
+    while ((j <  entries) && tbl->tbl[j].count != 0) j++;
     if (j<i)
     {
       tbl->tbl[j] = tbl->tbl[i];
       tbl->tbl[i].count = 0;
     }
   }
-  tbl->len = tbl->entries;
 
   white.r=white.g=white.b=255;
   black.r=black.g=black.b=0;
 
-  sort_tbl(tbl, 0, tbl->len, 0, 0, ct, black, white);
-
 #ifdef QUANT_DEBUG
-  fprintf(stderr,"img_quant done, %d colors found\n", tbl->entries);
+  fprintf(stderr,"%d colors found, sorting and quantizing...\n",j);
 #endif
 
+  CHRONO("sort");
+  if (j<numcol) ct->numcol=numcol=j;
+  sort_tbl(tbl, 0, j, 0, 0, numcol, -1, ct, black, white);
+
+#ifdef QUANT_DEBUG
+  fprintf(stderr,"img_quant done, %d colors selected\n", numcol);
+#endif
+  CHRONO("done");
+
   free(tbl);
+  CHRONO("really done");
   return ct;
 }
 
@@ -310,26 +503,33 @@ struct colortable *colortable_quant(struct image *img)
 
 int colortable_rgb(struct colortable *ct,rgb_group rgb)
 {
-   struct map_entry *me;
-   int mindistance,best;
+   struct map_entry *me,**eme;
+   int mindistance,best=0;
    me=&(ct->map[QUANT_MAP_THIS(rgb.r)]
 	       [QUANT_MAP_THIS(rgb.g)]
                [QUANT_MAP_THIS(rgb.b)]);
-#ifdef QUANT_DEBUG
-   fprintf(stderr,"%d,%d,%d -> %d %d %d: ",rgb.r,rgb.g,rgb.b,
+#ifdef QUANT_DEBUG_RGB
+   fprintf(stderr,"%d,%d,%d -> %lu %lu %lu: ",rgb.r,rgb.g,rgb.b,
    QUANT_MAP_THIS(rgb.r),
    QUANT_MAP_THIS(rgb.g),
    QUANT_MAP_THIS(rgb.b));
-   fprintf(stderr,"%lx %d,%d,%d %d ",me,ct->clut[me->cl].r,ct->clut[me->cl].g,ct->clut[me->cl].b,me->cl);
+   fprintf(stderr,"%lx %d,%d,%d %lu ",me,ct->clut[me->cl].r,ct->clut[me->cl].g,ct->clut[me->cl].b,me->cl);
    if (!me->used) { fprintf(stderr,"unused "); }
 #endif
-   if (!me->next) return me->cl; 
+   if (!me->next) 
+   {
+#ifdef QUANT_DEBUG_RGB
+      fprintf(stderr," -> %lu: %d,%d,%d\n",best,
+	      ct->clut[best].r,ct->clut[best].g,ct->clut[best].b);
+#endif
+      return me->cl; 
+   }
    mindistance=DISTANCE(rgb,ct->clut[me->cl]);
    best=me->cl;
    while ( (me=me->next) && mindistance)
    {
       int d;
-#ifdef QUANT_DEBUG
+#ifdef QUANT_DEBUG_RGB
 fprintf(stderr,"%lx %d,%d,%d ",me,ct->clut[me->cl].r,ct->clut[me->cl].g,ct->clut[me->cl].b);
 #endif
       d=DISTANCE(rgb,ct->clut[me->cl]);
@@ -339,8 +539,10 @@ fprintf(stderr,"%lx %d,%d,%d ",me,ct->clut[me->cl].r,ct->clut[me->cl].g,ct->clut
 	 best=me->cl;
       }
    }
-#ifdef QUANT_DEBUG
-fprintf(stderr,"%lx\n",me);
+#ifdef QUANT_DEBUG_RGB
+fprintf(stderr,"%lx ",me);
+fprintf(stderr," -> %lu: %d,%d,%d\n",best,
+	ct->clut[best].r,ct->clut[best].g,ct->clut[best].b);
 #endif
    return best;
 }
