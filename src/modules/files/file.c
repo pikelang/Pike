@@ -2,12 +2,12 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: file.c,v 1.315 2004/04/05 21:54:50 mast Exp $
+|| $Id: file.c,v 1.316 2004/04/06 09:44:14 grubba Exp $
 */
 
 #define NO_PIKE_SHORTHAND
 #include "global.h"
-RCSID("$Id: file.c,v 1.315 2004/04/05 21:54:50 mast Exp $");
+RCSID("$Id: file.c,v 1.316 2004/04/06 09:44:14 grubba Exp $");
 #include "fdlib.h"
 #include "pike_netlib.h"
 #include "interpret.h"
@@ -2284,10 +2284,14 @@ struct object *file_make_object_from_fd(int fd, int mode, int guess)
   struct my_file *f = (struct my_file *) o->storage;
   call_c_initializers(o);
   f->box.fd=fd;
-  f->open_mode=mode | fd_query_properties(fd, guess);
+  if (fd >= 0) {
+    f->open_mode=mode | fd_query_properties(fd, guess);
 #ifdef PIKE_DEBUG
-  debug_check_fd_not_in_use (fd);
+    debug_check_fd_not_in_use (fd);
 #endif
+  } else {
+    f->open_mode = 0;
+  }
   return o;
 }
 
@@ -3760,6 +3764,11 @@ void PIKE_CONCAT(Y,_ref) (INT32 args) {				\
 
 #include "file_functions.h"
 
+static void file___init_ref(struct object *o)
+{
+  REF = file_make_object_from_fd(-1, 0, 0);
+}
+
 /* Avoid loss of precision warnings. */
 #ifdef __ECL
 static inline long TO_LONG(ptrdiff_t x)
@@ -3890,6 +3899,7 @@ PIKE_MODULE_INIT
   START_NEW_PROGRAM_ID (STDIO_FD_REF);
   ADD_STORAGE(struct object *);
   map_variable("_fd","object",0,0,PIKE_T_OBJECT);
+  set_init_callback(file___init_ref);
 
 #define FILE_FUNC(X,Y,Z) ADD_FUNCTION(X,PIKE_CONCAT(Y,_ref),Z,0)
 #define FILE_OBJ tObjImpl_STDIO_FD_REF
