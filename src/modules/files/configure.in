@@ -1,4 +1,4 @@
-# $Id: configure.in,v 1.89 2003/05/16 10:22:03 grubba Exp $
+# $Id: configure.in,v 1.90 2003/05/16 12:59:54 marcus Exp $
 AC_INIT(file.c)
 AC_CONFIG_HEADER(file_machine.h)
 
@@ -1157,7 +1157,7 @@ if test yes = "$ac_cv_func_grantpt"; then
     AC_CACHE_VAL(pike_cv_pt_chmod_path, [
       pike_cv_pt_chmod_path=no
       for i in $pt_chmod_dirs; do
-	for j in pt_chmod cghpt; do
+	for j in pt_chmod chgpt; do
           if test -x ${i}/${j}; then
             pike_cv_pt_chmod_path="${i}/${j}"
 	    break
