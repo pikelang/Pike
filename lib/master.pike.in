@@ -1,4 +1,4 @@
-/* $Id: master.pike.in,v 1.9 1998/04/16 02:13:09 hubbe Exp $
+/* $Id: master.pike.in,v 1.10 1998/04/17 21:29:11 mirar Exp $
  *
  * Master-file for Pike.
  *
@@ -508,19 +508,23 @@ void _main(string *orig_argv, string *env)
 
   _master_file_name=backtrace()[-1][0];
   q=explode_path(_master_file_name);
+
+  // add path for architecture-shared files
+  add_include_path("¤data_prefix¤/pike/include");
+  add_module_path("¤data_prefix¤/pike/modules");
+
+  // add path for architecture-dependant files
+  add_include_path("¤lib_prefix¤/include");
+  add_module_path("¤lib_prefix¤/modules");
+
+  // add path for wherever the master is now
+  add_include_path(pike_library_path+"/include");
+  add_module_path(pike_library_path+"/modules");
+
   pike_library_path = combine_path_with_cwd(q[0..sizeof(q)-2] * "/");
 
   add_include_path(pike_library_path+"/include");
   add_module_path(pike_library_path+"/modules");
-
-  a = replace(pike_library_path+"/", "/lib/", "/share/");
-  if (a != pike_library_path+"/") {
-    array st;
-    if ((st = file_stat(a)) && (sizeof(st)) && (st[1] == -2)) {
-      add_include_path(a+"/include");
-      add_module_path(a+"/modules");
-    }
-  }
 
   add_program_path(getcwd());
   add_module_path(getcwd());

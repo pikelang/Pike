@@ -1,5 +1,5 @@
 #
-# $Id: Makefile.in,v 1.75 1998/04/16 01:25:30 hubbe Exp $
+# $Id: Makefile.in,v 1.76 1998/04/17 21:15:02 mirar Exp $
 #
 
 # This line is needed on some machines.
@@ -25,7 +25,7 @@ TMP_LIBDIR = $(TMP_BUILDDIR)/lib
 prefix = @prefix@
 exec_prefix = $(prefix)/bin
 lib_prefix = $(prefix)/lib/pike
-share_prefix = $(prefix)/share/pike
+share_prefix = @datadir@
 
 #
 # use bison please, yacc isn't good enough.
