@@ -103,6 +103,11 @@ CONDITION()__file__:__line__: test TESTNO, expected result: [[\$1]]
 SEPARATOR
 divert(-1)dnl]])
 
+define(START_MARKER,[[divert(0)START
+divert(-1)]])
+define(END_MARKER,[[divert(0)END
+divert(-1)]])
+
 define(test_any, [[DOTEST(EQ,dnl
 mixed a() { [[\$1]]; }
 mixed b() { return [[\$2]]; })]])
