@@ -2,11 +2,11 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: builtin_functions.c,v 1.528 2004/02/02 20:45:19 grubba Exp $
+|| $Id: builtin_functions.c,v 1.529 2004/02/03 09:07:40 grubba Exp $
 */
 
 #include "global.h"
-RCSID("$Id: builtin_functions.c,v 1.528 2004/02/02 20:45:19 grubba Exp $");
+RCSID("$Id: builtin_functions.c,v 1.529 2004/02/03 09:07:40 grubba Exp $");
 #include "interpret.h"
 #include "svalue.h"
 #include "pike_macros.h"
@@ -4426,7 +4426,7 @@ static time_t my_timegm(struct tm *target_tm)
   while((diff_ts = my_tm_diff(target_tm, current_tm = gmtime(&current_ts)))) {
     current_ts += diff_ts;
     loop_cnt++;
-    fprintf(stderr, "Loop [%d]: %d, %d\n", loop_cnt, current_ts, diff_ts);
+    /* fprintf(stderr, "Loop [%d]: %d, %d\n", loop_cnt, current_ts, diff_ts); */
     if (loop_cnt > 20) {
       /* Infinite loop? */
       return -1;
