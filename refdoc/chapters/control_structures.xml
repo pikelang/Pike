@@ -284,7 +284,7 @@ while(1)
 </example>
 
 <p>When you want to break out of more than the innermost loop, you can tell
-break what loop to break free of using lables, as in:</p>
+<tt>break</tt> what loop to break free of using lables, as in:</p>
 
 <example>
 array arr1, arr2;
