@@ -1,5 +1,5 @@
 // -*- Pike -*-
-// $Id: manpages,v 1.24 1999/04/17 17:18:24 grubba Exp $
+// $Id: manpages,v 1.25 1999/11/30 02:03:09 grubba Exp $
 
 #include "types.h"
 
@@ -304,3 +304,12 @@ void output(string base, WMML data)
    mandesc->close();
 }
 
+Sgml.Tag|string illustration(object o, mapping|void options)
+{
+  return "";
+}
+
+Sgml.Tag|string illustration_jpeg(object o, mapping|void options)
+{
+  return "";
+}
