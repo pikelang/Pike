@@ -1,16 +1,21 @@
 /*
- * $Id: top.c,v 1.8 1999/07/24 23:57:17 marcus Exp $
+ * $Id: top.c,v 1.9 1999/08/07 20:52:24 marcus Exp $
  *
  */
 
+#ifdef HAVE_GL
+
 #include <GL/gl.h>
 #include <GL/glx.h>
+
+#endif /* HAVE_GL */
+
 
 #include "global.h"
 
 #include "config.h"
 
-RCSID("$Id: top.c,v 1.8 1999/07/24 23:57:17 marcus Exp $");
+RCSID("$Id: top.c,v 1.9 1999/08/07 20:52:24 marcus Exp $");
 #include "stralloc.h"
 #include "pike_macros.h"
 #include "object.h"
@@ -20,6 +25,7 @@ RCSID("$Id: top.c,v 1.8 1999/07/24 23:57:17 marcus Exp $");
 #include "module_support.h"
 #include "error.h"
 
+#ifdef HAVE_GL
 
 static void f_glGet(INT32 args)
 {
@@ -350,15 +356,19 @@ static void f_glGet(INT32 args)
   }
 }
 
+#endif /* HAVE_GL */
+
 
 void pike_module_init( void )
 {
+#ifdef HAVE_GL
   extern void GL_add_auto_funcs(void);
 
   add_function_constant("glGet", f_glGet,
 			"function(int:int|float|array(int)|array(float))",
 			OPT_SIDE_EFFECT);
   GL_add_auto_funcs();
+#endif /* HAVE_GL */
 }
 
 

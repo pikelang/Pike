@@ -1,8 +1,16 @@
-# $Id: configure.in,v 1.3 1999/07/18 15:05:13 marcus Exp $
+# $Id: configure.in,v 1.4 1999/08/07 20:52:24 marcus Exp $
 AC_INIT(top.c)
 AC_CONFIG_HEADER(config.h)
 
 AC_MODULE_INIT()
+
+AC_ARG_WITH(GL,  [  --without-GL       no support for GL],[],[with_GL=yes])
+
+AUTO_OBJS=""
+
+if test x$with_GL = xno; then
+  :
+else
 
 AC_PATH_XTRA()
 
@@ -14,6 +22,7 @@ AC_CHECK_LIB(MesaGL, glOrtho, AC_DEFINE_UNQUOTED(HAVE_LIBMESAGL),,[$X_LIBS $X_PR
 
 if test x"$with_lib_GL" = "xyes" -a x"$ac_cv_lib_GL_glOrtho" = xyes; then
   LIBS="-lGL $LIBS"
+  AC_DEFINE(HAVE_GL)
 elif test x"$with_lib_MesaGL" = "xyes" -a x"$ac_cv_lib_MesaGL_glOrtho" = xyes; then
   LIBS="-lMesaGL $LIBS"
 elif test x"$ac_cv_lib_GL_glOrtho" = xyes; then
@@ -24,4 +33,10 @@ else
   AC_MSG_ERROR([You need GL or MesaGL libraries])
 fi
 
+AC_DEFINE(HAVE_GL)
+AUTO_OBJS="auto.o"
+
+fi
+
+AC_SUBST(AUTO_OBJS)
 AC_OUTPUT(Makefile,echo FOO >stamp-h )
