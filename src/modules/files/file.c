@@ -49,7 +49,7 @@
 #define FD (*(int*)(fp->current_storage))
 #define THIS (files + FD)
 
-static struct file files[MAX_OPEN_FILEDESCRIPTORS];
+static struct my_file files[MAX_OPEN_FILEDESCRIPTORS];
 static struct program *file_program;
 
 static void file_read_callback(int fd, void *data);
@@ -1155,7 +1155,7 @@ void init_files_programs()
   init_fd(2, FILE_WRITE);
 
   start_new_program();
-  add_storage(sizeof(struct file));
+  add_storage(sizeof(int));
 
   add_function("open",file_open,"function(string,string:int)",0);
   add_function("close",file_close,"function(string|void:void)",0);
