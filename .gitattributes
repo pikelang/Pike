@@ -102,6 +102,7 @@ testfont binary
 /lib/modules/Sql.pmod/sql.pike foreign_ident
 /lib/modules/Sql.pmod/sql_result.pike foreign_ident
 /lib/modules/Sql.pmod/sql_util.pmod foreign_ident
+/lib/modules/Sql.pmod/sybase.pike foreign_ident
 /lib/modules/Stdio.pmod foreign_ident
 /lib/modules/Stdio.pmod/Readline.pike foreign_ident
 /lib/modules/Stdio.pmod/Terminfo.pmod foreign_ident
