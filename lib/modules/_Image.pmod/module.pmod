@@ -1,5 +1,5 @@
 //! module Image
-//! $Id: module.pmod,v 1.3 1999/12/21 16:45:53 per Exp $
+//! $Id: module.pmod,v 1.4 1999/12/21 23:47:31 per Exp $
 
 //! method object(Image.Image) load()
 //! method object(Image.Image) load(object file)
@@ -87,6 +87,7 @@ mapping _decode( string data, mixed|void tocolor )
     "format":format,
     "alpha":a,
     "img":i,
+    "image":i,
   ]);
 
 }
