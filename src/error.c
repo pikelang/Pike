@@ -11,6 +11,8 @@
 #include "builtin_functions.h"
 #include "array.h"
 #include "object.h"
+#include "main.h"
+#include "builtin_functions.h"
 
 #undef ATTRIBUTE
 #define ATTRIBUTE(X)
@@ -161,7 +163,17 @@ void debug_fatal(char *fmt, ...) ATTRIBUTE((noreturn,format (printf, 1, 2)))
 #endif
 
   (void)VFPRINTF(stderr, fmt, args);
-  /* Insert dump routine call here */
+
+  fprintf(stderr,"Attempting to dump backlog (may fail).\n");
+
+  d_flag=t_flag=0;
+  push_text("Fatal error");
+  f_backtrace(0);
+  f_aggregate(2);
+  APPLY_MASTER("describe_backtrace",1);
+  if(sp[-1].type==T_STRING)
+    write_to_stderr(sp[-1].u.string->str, sp[-1].u.string->len);
+
   fflush(stderr);
   abort();
 }
