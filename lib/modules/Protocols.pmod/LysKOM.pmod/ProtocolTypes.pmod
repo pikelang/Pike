@@ -102,7 +102,22 @@ class TextNumberPair
    }
 }
 
-mixed LocalToGlobalBlock(array what) { werror("LysKOM: LocalToGlobalBlock unimplemented\n"); exit(-1); };
+class LocalToGlobalBlock
+{
+  int densep;
+  array(TextNumberPair) sparse;
+  object /*TextList*/ dense;
+
+  void create(string|array ...args)
+  {
+    densep=(int)args[0];
+    if(densep)
+      dense=TextList(@args[1..]);
+    else
+      sparse=Array.map(args[2..]/2,               // ARRAY Text-Number-Pair
+		       lambda(array z) { return TextNumberPair(@z); });
+  }
+}
 
 class TextMapping
 {
@@ -116,7 +131,7 @@ class TextMapping
       range_begin=(int)args[0];                    // Local-Text-No
       range_end=(int)args[1];                      // Local-Text-No
       later_texts_exists=(int)args[2];             // BOOL
-      block=LocalToGlobalBlock(args[3]);           // Local-To-Global-Block
+      block=LocalToGlobalBlock(@args[3..6]);       // Local-To-Global-Block
    }
 
    array encode()
