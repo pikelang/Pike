@@ -218,10 +218,10 @@ PIKECLASS SQLite
 	    case 1:
 	    case 2:
 	      ref_push_string(s);
-	      f_string_to_unicode(1);
+	      f_string_to_utf8(1);
 	      s = Pike_sp[-1].u.string;
-	      ERR( sqlite3_bind_text16(stmt, idx, s->str, s->len,
-				       SQLITE_TRANSIENT) );
+	      ERR( sqlite3_bind_text(stmt, idx, s->str, s->len,
+				     SQLITE_TRANSIENT) );
 	      pop_stack();
 	      break;
 #ifdef PIKE_DEBUG
