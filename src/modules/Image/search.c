@@ -458,7 +458,7 @@ static INLINE rgb_group _pixel_apply_max(struct image *img,
    rgb_group res;
    int i,j,bx,by,xp,yp;
    int sumr,sumg,sumb,r,g,b;
-   float qdiv=1.0/div;
+   double qdiv=1.0/div;
 
   /* NOTE:
    *	This code MUST be MT-SAFE!
@@ -582,9 +582,12 @@ j++;
 #ifdef MATRIX_DEBUG
 	 fprintf(stderr,"->%d,%d,%d\n",r/sumr,g/sumg,b/sumb);
 #endif
-	 r=default_rgb.r+(int)(r*qr+0.5); dp->r=testrange(r);
-	 g=default_rgb.g+(int)(g*qg+0.5); dp->g=testrange(g);
-	 b=default_rgb.b+(int)(b*qb+0.5); dp->b=testrange(b);
+	 r = default_rgb.r+DOUBLE_TO_INT(r*qr+0.5);
+	 dp->r = DOUBLE_TO_COLORTYPE(testrange(r));
+	 g = default_rgb.g+DOUBLE_TO_INT(g*qg+0.5);
+	 dp->g = DOUBLE_TO_COLORTYPE(testrange(g));
+	 b = default_rgb.b+DOUBLE_TO_INT(b*qb+0.5);
+	 dp->b = DOUBLE_TO_COLORTYPE(testrange(b));
 	 dp++;
       }
    }

@@ -34,7 +34,7 @@ void INAME(INT32 args)
   int xs,ys, y, x; /* for this & img */
   int nxs,nys, ny, nx; /* for neddle */
   int foo=0;
-  float scale;
+  double scale;
   int needle_average=0;
   int needle_size=0;
   
@@ -47,9 +47,9 @@ void INAME(INT32 args)
   else 
     {
       if (sp[-args].type==T_INT) 
-	scale=sp[-args].u.integer;
+	scale = (double)sp[-args].u.integer;
       else if (sp[-args].type==T_FLOAT)
-	scale=sp[-args].u.float_number;
+	scale = sp[-args].u.float_number;
       else
 	error("Illegal argument 1 to image->"NAME"\n");
 
@@ -172,7 +172,7 @@ THREADS_ALLOW();
       else\
       {\
 	NORMCODE;\
-	tempavr=(int)(((float)tempavr)/(3*needle_size)); \
+	tempavr = DOUBLE_TO_INT(((double)tempavr)/(3*needle_size)); \
 	for(ny=0; ny<nys; ny++) \
 	  for(nx=0; nx<nxs; nx++)  \
 	  { \
@@ -185,7 +185,7 @@ THREADS_ALLOW();
 	      (MAXIMUM(CERTI1 B1, CERTI1 B1) * PIXEL_VALUE_DISTANCE(b)); \
 	  } \
 	imgi[i+(nys/2)*xs+(nxs/2)].r=\
-          (int)(255.99/(1.0+((((float)scale) * SCALE_MODIFY((float)sum))))); \
+          DOUBLE_TO_INT(255.99/(1.0+((((double)scale) * SCALE_MODIFY((double)sum))))); \
       }\
    }
 

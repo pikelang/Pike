@@ -1,7 +1,7 @@
 /*
 **! module Image
 **! note
-**!	$Id: colors.c,v 1.33 2000/08/09 17:39:19 grubba Exp $
+**!	$Id: colors.c,v 1.34 2000/08/09 17:42:13 grubba Exp $
 **! submodule Color
 **!
 **!	This module keeps names and easy handling 
@@ -179,7 +179,7 @@
 
 #include "global.h"
 
-RCSID("$Id: colors.c,v 1.33 2000/08/09 17:39:19 grubba Exp $");
+RCSID("$Id: colors.c,v 1.34 2000/08/09 17:42:13 grubba Exp $");
 
 #include "image_machine.h"
 
@@ -226,7 +226,7 @@ static struct pike_string *no_name;
 
 /* forward */
 static void _image_make_rgbl_color(INT32 r,INT32 g,INT32 b); 
-static void _image_make_rgbf_color(float r,float g,float b);
+static void _image_make_rgbf_color(double r, double g, double b);
 static void image_make_hsv_color(INT32 args); 
 static void image_make_cmyk_color(INT32 args);
 static void image_make_color(INT32 args);
@@ -1431,7 +1431,7 @@ static void _image_make_rgbl_color(INT32 r,INT32 g,INT32 b)
    RGBL_TO_RGB(cs->rgb,cs->rgbl);
 }
 
-static void _image_make_rgbf_color(float r,float g,float b)
+static void _image_make_rgbf_color(double r, double g, double b)
 {
 #define FOO(X) FLOAT_TO_COLORL((X)<0.0?0.0:(X)>1.0?1.0:(X))
    _image_make_rgbl_color(FOO(r),FOO(g),FOO(b));
@@ -1506,7 +1506,7 @@ static void image_make_hsv_color(INT32 args)
 #define p (v * (1 - s))
 #define q (v * (1 - (s * f)))
 #define t (v * (1 - (s * (1 -f))))
-      switch((int)i)
+      switch(DOUBLE_TO_INT(i))
       {
          case 6: /* 360 degrees. Same as 0.. */
 	 case 0: r = v;	 g = t;	 b = p;	 break;
@@ -1515,7 +1515,8 @@ static void image_make_hsv_color(INT32 args)
 	 case 3: r = p;	 g = q;	 b = v;	 break;
 	 case 4: r = t;	 g = p;	 b = v;	 break;
 	 case 5: r = v;	 g = p;	 b = q;	 break;
-	 default: error("internal error (hue=%d <= hsv[%f,%f,%f])\n",(int)i,h,s,v);
+	 default: error("internal error (hue=%d <= hsv[%f,%f,%f])\n",
+			DOUBLE_TO_INT(i), h, s, v);
       }
    }
 #undef i
