@@ -25,7 +25,7 @@
 #include "main.h"
 #include <signal.h>
 
-RCSID("$Id: signal_handler.c,v 1.171 2000/06/26 17:32:48 mast Exp $");
+RCSID("$Id: signal_handler.c,v 1.172 2000/07/11 17:52:16 neotron Exp $");
 
 #ifdef HAVE_PASSWD_H
 # include <passwd.h>
@@ -1401,13 +1401,14 @@ static void free_perishables(struct perishables *storage)
 
   if(storage->env) free( storage->env );
   if(storage->argv) free( storage->argv );
+#ifdef HAVE_SETRLIMIT
   while(storage->limits) 
   {
     struct plimit *n = storage->limits->next;
     free( storage->limits );
     storage->limits = n;
   }
-
+#endif
 #ifdef HAVE_SETGROUPS
   if(storage->wanted_gids) free(storage->wanted_gids);
   if(storage->wanted_gids_array) free_array(storage->wanted_gids_array);
@@ -2554,6 +2555,7 @@ void f_create_process(INT32 args)
 	  error("Process.create_process(): setgid(%d) failed. errno:%d\n",
 		buf[2], buf[1]);
 	  break;
+#ifdef HAVE_SETGROUPS
 	case PROCE_SETGROUPS:
 	  if (buf[1] == EINVAL) {
 	    error("Process.create_process(): setgroups() failed with EINVAL.\n"
@@ -2563,6 +2565,7 @@ void f_create_process(INT32 args)
 	  error("Process.create_process(): setgroups() failed. errno:%d\n",
 		buf[1]);
 	  break;
+#endif
 	case PROCE_GETPWUID:
 	  error("Process.create_process(): getpwuid(%d) failed. errno:%d\n",
 		buf[2], buf[1]);
