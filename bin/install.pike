@@ -10,6 +10,15 @@
 // #define GENERATE_WIX_ACTIONS
 // #define WIX_DEBUG
 
+constant pike_upgrade_guid = "FCBB6B90-1608-4A7C-926C-69BBAB366326";
+
+string version_str = sprintf("%d.%d.%d",
+			     __REAL_MAJOR__,
+			     __REAL_MINOR__,
+			     __REAL_BUILD__);
+string version_guid = Standards.UUID.make_version3(pike_upgrade_guid,
+						   version_str)->str();
+
 int last_len;
 int redump_all;
 string pike;
@@ -18,7 +27,7 @@ array(string) files_to_not_delete=({});
 array(string) to_dump=({});
 array(string) to_export=({});
 Directory root = Directory("SourceDir",
-			   Standards.UUID.new(),//UUID(pike_upgrade_guid)->encode(),
+			   Standards.UUID.UUID(version_guid)->encode(),
 			   "PIKE_TARGETDIR");
 
 
@@ -35,8 +44,6 @@ int installed_files;
 // the nt scripts depends on this value
 // (incidentally defined elsewhere in the C code too)
 #define MASTER_COOKIE __master_cookie
-
-constant pike_upgrade_guid = "FCBB6B90-1608-4A7C-926C-69BBAB366326";
 
 int istty_cache;
 int istty()
@@ -890,6 +897,17 @@ int install_file(string from,
   return ret;
 }
 
+void create_file(string dest, string content)
+{
+  status("Creating", dest);
+  if (compare_to_file(content, dest)) {
+    status("Creating", dest, "Already created");
+    return;
+  }
+  Stdio.write_file(dest, content);
+  status("Creating", dest, "done");
+}
+
 string stripslash(string s)
 {
   while(sizeof(s)>1 && s[-1]=='/') s=s[..sizeof(s)-2];
@@ -1032,7 +1050,7 @@ constant tmpdir="~piketmp";
 void do_export()
 {
   if (export == 2) {
-    status("Creating", /*export_base_name*/"Pike"+"_module.wxs");
+    status("Creating", "Pike_module.wxs");
 
     // Minimize the number of src directives.
     root->set_sources();
@@ -1042,15 +1060,11 @@ void do_export()
 
     // Generate the XML directory tree.
     WixNode xml_root =
-      Standards.XML.Wix.get_module_xml(root, "Pike",
-				       sprintf("%d.%d.%d",
-						      __REAL_MAJOR__,
-						      __REAL_MINOR__,
-						      __REAL_BUILD__),
-				       "IDA", "Pike dist",
-				       0, "Merge with this");
+      Standards.XML.Wix.get_module_xml(root, "Pike", version_str,
+				       "IDA", "Pike dist", version_guid,
+				       "Merge with this");
 
-    Stdio.write_file(/*export_base_name*/"Pike"+"_module.wxs", xml_root->render_xml());
+    create_file("Pike_module.wxs", xml_root->render_xml());
 
 #ifdef GENERATE_WIX_UI
     // Generate the UserInterface
