@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: main.c,v 1.210 2004/09/27 21:37:23 mast Exp $
+|| $Id: main.c,v 1.211 2004/09/30 11:57:53 mast Exp $
 */
 
 #include "global.h"
@@ -1049,6 +1049,7 @@ void low_exit_main(void)
 		     x->refs - (m->refs + is_static));			\
 	    print_short_svalue (stderr, (union anything *) &x, T_TYPE);	\
 	    fputc ('\n', stderr);					\
+	    DO_IF_DMALLOC (debug_malloc_dump_references (x, 0, 1, 0));	\
 	  }								\
 	}								\
       }									\
@@ -1067,19 +1068,23 @@ void low_exit_main(void)
      * level dmalloc reports. */
 
 #define ZAP_LINKED_LIST_LEAKS(TYPE, START, STATICS) do {		\
-      struct TYPE *x;							\
-      for (x = START; x; x = x->next) {					\
+      struct TYPE *x, *next;						\
+      for (x = START; x; x = next) {					\
 	struct marker *m = find_marker (x);				\
+	next = x->next;							\
 	if (m) {							\
 	  int is_static = 0;						\
 	  static const struct TYPE *statics[] = STATICS;		\
 	  ptrdiff_t i; /* Use signed type to avoid warnings from gcc. */ \
+	  INT32 refs;							\
 	  for (i = 0; i < (ptrdiff_t) NELEM (statics); i++)		\
 	    if (x == statics[i])					\
 	      is_static = 1;						\
-	  while (x->refs > m->refs + is_static) {			\
+	  refs = x->refs;						\
+	  while (refs > m->refs + is_static) {				\
 	    DO_IF_DEBUG (m->flags |= GC_CLEANUP_FREED);			\
 	    PIKE_CONCAT(free_, TYPE) (x);				\
+	    refs--;							\
 	  }								\
 	}								\
       }									\
