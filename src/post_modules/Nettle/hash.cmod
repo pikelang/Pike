@@ -1,7 +1,7 @@
 /* hash.cmod -*- c -*- */
 
 #include "global.h"
-RCSID("$Id: hash.cmod,v 1.9 2003/07/29 04:10:12 nilsson Exp $");
+RCSID("$Id: hash.cmod,v 1.10 2003/08/01 19:26:28 nilsson Exp $");
 #include "interpret.h"
 #include "svalue.h"
 
@@ -16,6 +16,9 @@ RCSID("$Id: hash.cmod,v 1.9 2003/07/29 04:10:12 nilsson Exp $");
 #include "nettle.h"
 
 #include <nettle/md5.h>
+#ifdef HAVE_MD4_UPDATE
+#include <nettle/md4.h>
+#endif
 #include <nettle/sha.h>
 #include <nettle/nettle-meta.h>
 
@@ -241,6 +244,62 @@ PIKECLASS MD5_State
     }
 }
 /*! @endclass MD5_State */
+
+#ifdef HAVE_MD4_UPDATE
+
+/*! @class MD4_Info
+ *!
+ *! Internal mixin class, intended to be multiply inherited
+ *! together with HashInfo. */
+
+PIKECLASS MD4_Info
+{
+  INIT
+    {
+      struct HashInfo_struct *HashInfo
+	= (struct HashInfo_struct *) get_storage(Pike_fp->current_object,
+						 HashInfo_program);
+
+      werror("MD4_Info->INIT\n");
+      
+      if (HashInfo && !HashInfo->meta)
+	HashInfo->meta = &nettle_md4;
+      else {
+	/* Can't call Pike_error here. 
+	 * Pike_error("Can't initialize this object.\n"); */
+	werror("MD4_Info->INIT failed\n");
+      }
+    }
+}
+
+/*! @endclass MD4_Info */
+
+/*! @class MD4_State
+ *!
+ *! State for MD4 hashing.
+ */
+PIKECLASS MD4_State
+{
+  INHERIT MD4_Info;
+  INHERIT HashState;
+  CVAR struct md4_ctx md4;
+
+  INIT
+    {
+      struct HashState_struct *instance
+	= (struct HashState_struct *) get_storage(Pike_fp->current_object,
+						  HashState_program);
+      werror("MD4_State->INIT\n");
+
+      assert(instance);
+
+      md5_init(&THIS->md4);
+      instance->ctx = &THIS->md4;
+    }
+}
+/*! @endclass MD4_State */
+
+#endif /* HAVE_MD4_UPDATE */
 
 /*! @class SHA1_Info
  *!
