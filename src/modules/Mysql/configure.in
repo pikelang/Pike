@@ -1,5 +1,5 @@
 #
-# $Id: configure.in,v 1.44 2004/04/12 16:24:24 grubba Exp $
+# $Id: configure.in,v 1.45 2004/05/01 18:07:49 grubba Exp $
 #
 # Configure script for the mysql-module
 #
@@ -87,6 +87,12 @@ else
   # Header file
 
   AC_CHECK_HEADERS(winsock.h winsock2.h mysql.h mysql/mysql.h errmsg.h mysql/errmsg.h)
+
+  if test x$ac_cv_header_mysql_h$ac_cv_header_mysql_mysql_h = xnono; then
+    # Required headerfile missing.
+    PIKE_FEATURE_NODEP(Mysql)
+    pike_cv_mysql="no"
+  fi
 
   # Defines within headerfile
 define([AC_CHECK_MYSQL_OPTIONS],
