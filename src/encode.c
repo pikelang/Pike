@@ -25,7 +25,7 @@
 #include "version.h"
 #include "bignum.h"
 
-RCSID("$Id: encode.c,v 1.71 2000/09/11 18:39:01 grubba Exp $");
+RCSID("$Id: encode.c,v 1.72 2000/09/15 17:03:39 grubba Exp $");
 
 /* #define ENCODE_DEBUG */
 
@@ -1121,7 +1121,7 @@ static void decode_value2(struct decode_data *data)
 
     case TAG_FLOAT:
     {
-      double res; // = (double)num;
+      double res;
 
       EDB(fprintf(stderr, "Decoding float... numh:0x%08x, num:0x%08x\n",
 		  numh, num));
