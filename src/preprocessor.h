@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: preprocessor.h,v 1.64 2004/04/22 15:43:51 grubba Exp $
+|| $Id: preprocessor.h,v 1.65 2004/06/13 18:00:15 grubba Exp $
 */
 
 /*
@@ -1562,24 +1562,26 @@ static ptrdiff_t lower_cpp(struct cpp *this,
 	
 	string_builder_putchar(&tmp, 0);
 	tmp.s->len--;
-	
-	switch(tmp.s->size_shift) {
-	case 0:
-	  calc_0(this, (p_wchar0 *)tmp.s->str, tmp.s->len, 0);
-	  break;
-	case 1:
-	  calc_1(this, (p_wchar1 *)tmp.s->str, tmp.s->len, 0);
-	  break;
-	case 2:
-	  calc_2(this, (p_wchar2 *)tmp.s->str, tmp.s->len, 0);
-	  break;
-	default:
-	  Pike_fatal("cpp(): Bad shift: %d\n", tmp.s->size_shift);
-	  break;
+
+	if (!(nflags & CPP_REALLY_NO_OUTPUT)) {
+	  switch(tmp.s->size_shift) {
+	  case 0:
+	    calc_0(this, (p_wchar0 *)tmp.s->str, tmp.s->len, 0);
+	    break;
+	  case 1:
+	    calc_1(this, (p_wchar1 *)tmp.s->str, tmp.s->len, 0);
+	    break;
+	  case 2:
+	    calc_2(this, (p_wchar2 *)tmp.s->str, tmp.s->len, 0);
+	    break;
+	  default:
+	    Pike_fatal("cpp(): Bad shift: %d\n", tmp.s->size_shift);
+	    break;
+	  }
+	  if(SAFE_IS_ZERO(Pike_sp-1)) nflags|=CPP_NO_OUTPUT;
+	  pop_stack();
 	}
 	free_string_builder(&tmp);
-	if(SAFE_IS_ZERO(Pike_sp-1)) nflags|=CPP_NO_OUTPUT;
-	pop_stack();
 	pos += lower_cpp(this, data+pos, len-pos, nflags,
 			 auto_convert, charset);
 	break;
