@@ -1,4 +1,4 @@
-dnl $Id: aclocal.m4,v 1.59 2003/02/14 14:11:54 marcus Exp $
+dnl $Id: aclocal.m4,v 1.60 2003/02/14 19:52:00 mast Exp $
 
 dnl Some compatibility with Autoconf 2.50+. Not complete.
 dnl newer Autoconf calls substr m4_substr
@@ -263,7 +263,7 @@ define(PIKE_FEATURE_OK,[
 
 define([AC_LOW_MODULE_INIT],
 [
-# $Id: aclocal.m4,v 1.59 2003/02/14 14:11:54 marcus Exp $
+# $Id: aclocal.m4,v 1.60 2003/02/14 19:52:00 mast Exp $
 
 MY_AC_PROG_CC
 
@@ -506,12 +506,21 @@ dnl MY_AC_CHECK_PRINTF_INT_TYPE(type, alternatives, default, define, result mess
 define(MY_AC_CHECK_PRINTF_INT_TYPE, [
   AC_MSG_CHECKING(how to printf $1)
   AC_CACHE_VAL(pike_cv_printf_$1, [
-    found=no
-    for mod in $2 ; do
-      AC_TRY_RUN([
+    AC_TRY_COMPILE([
+#define CONFIGURE_TEST
+#include "global.h"
+    ], [
+$1 tmp;
+    ], [
+      found=no
+      for mod in $2 ; do
+	AC_TRY_RUN([
 #include <stddef.h>
 #include <stdio.h>
-#include "confdefs.h"
+
+#define CONFIGURE_TEST
+#include "global.h"
+
 int main() {
   char buf[32];
   if ((($1)4711) > (($1)-4711)) {
@@ -542,27 +551,40 @@ int main() {
     }
   }
 }], [pike_cv_printf_$1="${mod}"; found=yes])
-      test ${found} = yes && break
-    done
-    test ${found} = no && pike_cv_printf_$1=unknown
+	test ${found} = yes && break
+      done
+      test ${found} = no && pike_cv_printf_$1=unknown
+    ], [
+      pike_cv_printf_$1=nonexistent
+    ])
   ])
-  if test x"${pike_cv_printf_$1}" = xunknown ; then
-    res=$3
-    AC_MSG_RESULT([none found, defaulting to $5])
+  if test x"${pike_cv_printf_$1}" = xnonexistent; then
+    AC_MSG_RESULT([type does not exist])
   else
-    res="${pike_cv_printf_$1}"
-    AC_MSG_RESULT([$5])
+    if test x"${pike_cv_printf_$1}" = xunknown ; then
+      res=$3
+      AC_MSG_RESULT([none found, defaulting to $5])
+    else
+      res="${pike_cv_printf_$1}"
+      AC_MSG_RESULT([$5])
+    fi
+    AC_DEFINE_UNQUOTED($4, "${res}")
   fi
-  AC_DEFINE_UNQUOTED($4, "${res}")
 ])
 
 dnl MY_AC_CHECK_PRINTF_FLOAT_TYPE(type, alternatives, default, define, result message)
 define(MY_AC_CHECK_PRINTF_FLOAT_TYPE, [
   AC_MSG_CHECKING(how to printf $1)
   AC_CACHE_VAL(pike_cv_printf_$1, [
-    found=no
-    for mod in $2 ; do
-      AC_TRY_RUN([
+    AC_TRY_COMPILE([
+#define CONFIGURE_TEST
+#include "global.h"
+    ], [
+$1 tmp;
+    ], [
+      found=no
+      for mod in $2 ; do
+	AC_TRY_RUN([
 #include <stddef.h>
 #include <stdio.h>
 #include "confdefs.h"
@@ -571,18 +593,25 @@ int main() {
   sprintf(buf, "%${mod}4.1f,%d",($1)17.0,17);
   return !!strcmp("17.0,17",buf);
 }], [pike_cv_printf_$1="${mod}"; found=yes])
-      test ${found} = yes && break
-    done
-    test ${found} = no && pike_cv_printf_$1=unknown
+	test ${found} = yes && break
+      done
+      test ${found} = no && pike_cv_printf_$1=unknown
+    ], [
+      pike_cv_printf_$1=nonexistent
+    ])
   ])
-  if test x"${pike_cv_printf_$1}" = xunknown ; then
-    res=$3
-    AC_MSG_RESULT([none found, defaulting to $5])
+  if test x"${pike_cv_printf_$1}" = xnonexistent; then
+    AC_MSG_RESULT([type does not exist])
   else
-    res="${pike_cv_printf_$1}"
-    AC_MSG_RESULT([$5])
+    if test x"${pike_cv_printf_$1}" = xunknown ; then
+      res=$3
+      AC_MSG_RESULT([none found, defaulting to $5])
+    else
+      res="${pike_cv_printf_$1}"
+      AC_MSG_RESULT([$5])
+    fi
+    AC_DEFINE_UNQUOTED($4, "${res}")
   fi
-  AC_DEFINE_UNQUOTED($4, "${res}")
 ])
 
 dnl PIKE_MSG_WARN(message) 
