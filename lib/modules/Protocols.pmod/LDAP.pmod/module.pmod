@@ -1,4 +1,4 @@
-// $Id: module.pmod,v 1.14 2005/04/06 14:55:59 mast Exp $
+// $Id: module.pmod,v 1.15 2005/04/06 14:56:57 mast Exp $
 
 #include "ldap_globals.h"
 
@@ -447,6 +447,9 @@ constant SYNTAX_UTC_TIME = "1.3.6.1.4.1.1466.115.121.1.53"; // RFC 2252, 6.31
 constant SYNTAX_LDAP_SYNTAX_DESCR = "1.3.6.1.4.1.1466.115.121.1.54"; // RFC 2252, 6.32
 constant SYNTAX_DIT_STRUCTURE_RULE_DESCR = "1.3.6.1.4.1.1466.115.121.1.17"; // RFC 2252, 6.33
 //! LDAP syntax: Standard syntaxes from RFC 2252.
+
+constant SYNTAX_CASE_EXACT_STRING = SYNTAX_DIRECTORY_STR;
+//! @expr{"caseExactString"@} is an alias used in e.g. RFC 2079.
 
 constant SYNTAX_DELIVERY_METHOD = "1.3.6.1.4.1.1466.115.121.1.14"; // RFC 2256, 6.1
 constant SYNTAX_ENHANCED_GUIDE = "1.3.6.1.4.1.1466.115.121.1.21"; // RFC 2256, 6.2
@@ -1007,6 +1010,13 @@ constant ATD_dmdName = ([ // RFC 2256, 5.55
   "oid": "2.5.4.54",
   "NAME": ({"dmdName"}),
   "SUP": "name",
+]);
+
+constant ATD_labeledURI = ([ // RFC 2079
+  "oid": "1.3.6.1.4.1.250.1.57",
+  "NAME": ({"labeledURI"}),
+  "EQUALITY": "caseExactMatch",
+  "syntax_oid": SYNTAX_CASE_EXACT_STRING,
 ]);
 
 constant ATD_supportedFeatures = ([ // RFC 3674, 2
