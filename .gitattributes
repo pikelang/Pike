@@ -381,6 +381,7 @@ testfont binary
 /src/modules/_Crypto/lib/sha.c foreign_ident
 /src/modules/_Crypto/md5.c foreign_ident
 /src/modules/_Crypto/md5.pike foreign_ident
+/src/modules/_Crypto/nt.c foreign_ident
 /src/modules/_Crypto/pipe.c foreign_ident
 /src/modules/_Crypto/rc4.c foreign_ident
 /src/modules/_Crypto/sha.c foreign_ident

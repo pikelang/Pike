@@ -1,4 +1,4 @@
-/* $Id: randomness.pmod,v 1.13 1999/11/25 23:10:52 grubba Exp $
+/* $Id: randomness.pmod,v 1.14 1999/12/01 22:37:22 marcus Exp $
  */
 
 //! module Crypto
@@ -41,6 +41,22 @@ PRIVATE object global_rc4;
 //	Executes several programs to generate some entropy from their output.
 PRIVATE string some_entropy()
 {
+#ifdef __NT__
+  object ctx = Crypto.nt.CryptAcquireContext(0, 0, Crypto.nt.PROV_RSA_FULL,
+					     Crypto.nt.CRYPT_VERIFYCONTEXT
+					     /*|Crypto.nt.CRYPT_SILENT*/);
+  if(!ctx)
+    throw(({ "Crypto.random: couldn't create crypto context\n", backtrace()}));
+
+  string res = ctx->CryptGenRandom(8192);
+
+  if(!res)
+    throw(({ "Crypto.random: couldn't generate randomness\n", backtrace()}));
+
+  destruct(ctx);
+
+  return res;
+#else /* !__NT__ */
   string res;
   object parent_pipe, child_pipe;
   mapping env=getenv()+([]);
@@ -50,13 +66,8 @@ PRIVATE string some_entropy()
   if (!child_pipe)
     throw( ({ "Crypto.random->popen: couldn't create pipe\n", backtrace() }) );
 
-
-#ifndef __NT__
   object null=Stdio.File("/dev/null","rw");
   env["PATH"]=PATH;
-#else
-  object null=Stdio.File("nul:","rw");
-#endif
   
   foreach(SYSTEM_COMMANDS, string cmd)
     {
@@ -72,6 +83,7 @@ PRIVATE string some_entropy()
   destruct(child_pipe);
   
   return parent_pipe->read();
+#endif
 }
 
 
