@@ -1,4 +1,4 @@
-// $Id: Terminfo.pmod,v 1.19 2003/12/10 14:36:14 grubba Exp $
+// $Id: Terminfo.pmod,v 1.20 2005/01/07 10:37:46 grubba Exp $
 #pike __REAL_VERSION__
 
 
@@ -423,11 +423,19 @@ class TermcapDB {
       string tce = [string]getenv("TERMCAP");
       if (tce && sizeof(tce) && tce[0]=='/')
 	filename = tce;
+      else if ((getenv("OSTYPE") == "msys") &&
+	       (filename = getenv("SHELL"))) {
+	// MinGW
+	// Usually something like "C:/msys/1.0/bin/sh"
+	// Termcap is in "C:/msys/1.0/etc/termcap"
+	filename = combine_path(filename, "../../etc/termcap");
+      }
       else
 	filename = "/etc/termcap";
     }
-    if (!::open(filename, "r"))
+    if (!::open(filename, "r")) {
       error("failed to open termcap file %O\n", filename);
+    }
   }
 
   static private void rewind(int|void pos)
