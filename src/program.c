@@ -5,7 +5,7 @@
 \*/
 /**/
 #include "global.h"
-RCSID("$Id: program.c,v 1.164 1999/10/22 16:04:04 grubba Exp $");
+RCSID("$Id: program.c,v 1.165 1999/10/24 05:56:35 hubbe Exp $");
 #include "program.h"
 #include "object.h"
 #include "dynamic_buffer.h"
@@ -102,6 +102,7 @@ char *lfun_names[] = {
   "`+=",
   "_is_type",
   "_sprintf",
+  "_equal",
 };
 
 struct program *first_program = 0;
@@ -816,8 +817,8 @@ int sizeof_variable(int run_time_type)
   {
     case T_FUNCTION:
     case T_MIXED: return sizeof(struct svalue);
-    case T_INT: return sizeof(INT_TYPE);
     case T_FLOAT: return sizeof(FLOAT_TYPE);
+    case T_INT: return sizeof(INT_TYPE);
     default: return sizeof(char *);
   }
 }
@@ -828,8 +829,8 @@ static int alignof_variable(int run_time_type)
   {
     case T_FUNCTION:
     case T_MIXED: return ALIGNOF(struct svalue);
-    case T_INT: return ALIGNOF(INT_TYPE);
     case T_FLOAT: return ALIGNOF(FLOAT_TYPE);
+    case T_INT: return ALIGNOF(INT_TYPE);
     default: return ALIGNOF(char *);
   }
 }
@@ -1742,6 +1743,9 @@ int define_variable(struct pike_string *name,
 
   switch(run_time_type)
   {
+#ifdef AUTO_BIGNUM
+    case T_INT:
+#endif
     case T_FUNCTION:
     case T_PROGRAM:
       run_time_type = T_MIXED;

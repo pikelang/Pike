@@ -13,7 +13,7 @@
 #include "dmalloc.h"
 #include "stuff.h"
 
-RCSID("$Id: peep.c,v 1.25 1998/11/22 11:03:07 hubbe Exp $");
+RCSID("$Id: peep.c,v 1.26 1999/10/24 05:56:34 hubbe Exp $");
 
 struct p_instr_s
 {
@@ -236,7 +236,7 @@ void assemble(void)
   for(e=0;e<length;e++)
   {
 #ifdef PIKE_DEBUG
-    if(a_flag > 2 && store_linenumbers)
+    if((a_flag > 2 && store_linenumbers) || a_flag > 3)
     {
       if(hasarg(c->opcode))
 	fprintf(stderr,"===%3d %4x %s(%d)\n",c->line,PC,get_token_name(c->opcode),c->arg);

@@ -5,7 +5,7 @@
 \*/
 /**/
 #include "global.h"
-RCSID("$Id: interpret.c,v 1.130 1999/10/23 00:26:56 noring Exp $");
+RCSID("$Id: interpret.c,v 1.131 1999/10/24 05:56:31 hubbe Exp $");
 #include "interpret.h"
 #include "object.h"
 #include "program.h"
@@ -423,24 +423,30 @@ pop_n_elems(2); \
 push_int(instr); \
 break
 
-#define LOOP(ID, OP1, OP2, OP3, OP4)				\
+#ifdef AUTO_BIGNUM
+#define AUTO_BIGNUM_LOOP_TEST(X,Y) INT_TYPE_ADD_OVERFLOW(X,Y)
+#else
+#define AUTO_BIGNUM_LOOP_TEST(X,Y) 0
+#endif
+
+#define LOOP(ID, INC, OP2, OP4)					\
 CASE(ID)							\
 {								\
   union anything *i=get_pointer_if_this_type(sp-2, T_INT);	\
-  if(i)								\
+  if(i && !AUTO_BIGNUM_LOOP_TEST(i->integer,INC))		\
   {								\
-    OP1 ( i->integer );						\
+    i->integer += INC;						\
     if(i->integer OP2 sp[-3].u.integer)				\
     {								\
       pc+=EXTRACT_INT(pc);					\
       fast_check_threads_etc(8);				\
     }else{							\
       pc+=sizeof(INT32);					\
-    }								\
+    }                                                           \
   }else{							\
-    lvalue_to_svalue_no_free(sp-2,sp); sp++;			\
-    push_int(1);						\
-    OP3;							\
+    lvalue_to_svalue_no_free(sp,sp-2); sp++;			\
+    push_int(INC);						\
+    f_add(2);							\
     assign_lvalue(sp-3,sp-1);					\
     if(OP4 ( sp-1, sp-4 ))					\
     {								\

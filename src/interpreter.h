@@ -609,40 +609,46 @@ static int eval_instruction(unsigned char *pc)
       CASE(F_INC);
       {
 	union anything *u=get_pointer_if_this_type(sp-2, T_INT);
-	if(u)
+	if(u
+#ifdef AUTO_BIGNUM
+	   && !INT_TYPE_ADD_OVERFLOW(u->integer, 1)
+#endif
+	  )
 	{
-	  /* FIXME: Bignum. */
 	  instr=++ u->integer;
 	  pop_n_elems(2);
 	  push_int(u->integer);
-	}else{
-	  lvalue_to_svalue_no_free(sp, sp-2); sp++;
-	  push_int(1);
-	  f_add(2);
-	  assign_lvalue(sp-3, sp-1);
-	  assign_svalue(sp-3, sp-1);
-	  pop_n_elems(2);
+	  break;
 	}
+	lvalue_to_svalue_no_free(sp, sp-2); sp++;
+	push_int(1);
+	f_add(2);
+	assign_lvalue(sp-3, sp-1);
+	assign_svalue(sp-3, sp-1);
+	pop_n_elems(2);
 	break;
       }
 
       CASE(F_DEC);
       {
 	union anything *u=get_pointer_if_this_type(sp-2, T_INT);
-	if(u)
+	if(u
+#ifdef AUTO_BIGNUM
+	   && !INT_TYPE_SUB_OVERFLOW(u->integer, 1)
+#endif
+	  )
 	{
-	  /* FIXME: Bignum. */
 	  instr=-- u->integer;
 	  pop_n_elems(2);
 	  push_int(u->integer);
-	}else{
-	  lvalue_to_svalue_no_free(sp, sp-2); sp++;
-	  push_int(1);
-	  o_subtract();
-	  assign_lvalue(sp-3, sp-1);
-	  assign_svalue(sp-3, sp-1);
-	  pop_n_elems(2);
+	  break;
 	}
+	lvalue_to_svalue_no_free(sp, sp-2); sp++;
+	push_int(1);
+	o_subtract();
+	assign_lvalue(sp-3, sp-1);
+	assign_svalue(sp-3, sp-1);
+	pop_n_elems(2);
 	break;
       }
 
@@ -667,60 +673,69 @@ static int eval_instruction(unsigned char *pc)
       CASE(F_INC_AND_POP);
       {
 	union anything *u=get_pointer_if_this_type(sp-2, T_INT);
-	if(u)
+	if(u
+#ifdef AUTO_BIGNUM
+	   && !INT_TYPE_ADD_OVERFLOW(u->integer, 1)
+#endif
+	  )
 	{
-	  /* FIXME: Bignum. */
 	  instr=++ u->integer;
 	  pop_n_elems(2);
-	}else{
-	  lvalue_to_svalue_no_free(sp, sp-2); sp++;
-	  push_int(1);
-	  f_add(2);
-	  assign_lvalue(sp-3, sp-1);
-	  pop_n_elems(3);
+	  break;
 	}
+	lvalue_to_svalue_no_free(sp, sp-2); sp++;
+	push_int(1);
+	f_add(2);
+	assign_lvalue(sp-3, sp-1);
+	pop_n_elems(3);
 	break;
       }
 
       CASE(F_POST_INC);
       {
 	union anything *u=get_pointer_if_this_type(sp-2, T_INT);
-	if(u)
+	if(u
+#ifdef AUTO_BIGNUM
+	   && !INT_TYPE_ADD_OVERFLOW(u->integer, 1)
+#endif
+	  )
 	{
-	  /* FIXME: Bignum. */
 	  instr=u->integer ++;
 	  pop_n_elems(2);
 	  push_int(instr);
-	}else{
-	  lvalue_to_svalue_no_free(sp, sp-2); sp++;
-	  assign_svalue_no_free(sp,sp-1); sp++;
-	  push_int(1);
-	  f_add(2);
-	  assign_lvalue(sp-4, sp-1);
-	  assign_svalue(sp-4, sp-2);
-	  pop_n_elems(3);
+	  break;
 	}
+	lvalue_to_svalue_no_free(sp, sp-2); sp++;
+	assign_svalue_no_free(sp,sp-1); sp++;
+	push_int(1);
+	f_add(2);
+	assign_lvalue(sp-4, sp-1);
+	assign_svalue(sp-4, sp-2);
+	pop_n_elems(3);
 	break;
       }
 
       CASE(F_POST_DEC);
       {
 	union anything *u=get_pointer_if_this_type(sp-2, T_INT);
-	if(u)
+	if(u
+#ifdef AUTO_BIGNUM
+	   && !INT_TYPE_SUB_OVERFLOW(u->integer, 1)
+#endif
+	  )
 	{
-	  /* FIXME: Bignum. */
 	  instr=u->integer --;
 	  pop_n_elems(2);
 	  push_int(instr);
-	}else{
-	  lvalue_to_svalue_no_free(sp, sp-2); sp++;
-	  assign_svalue_no_free(sp,sp-1); sp++;
-	  push_int(1);
-	  o_subtract();
-	  assign_lvalue(sp-4, sp-1);
-	  assign_svalue(sp-4, sp-2);
-	  pop_n_elems(3);
+	  break;
 	}
+	lvalue_to_svalue_no_free(sp, sp-2); sp++;
+	assign_svalue_no_free(sp,sp-1); sp++;
+	push_int(1);
+	o_subtract();
+	assign_lvalue(sp-4, sp-1);
+	assign_svalue(sp-4, sp-2);
+	pop_n_elems(3);
 	break;
       }
 
@@ -971,10 +986,10 @@ static int eval_instruction(unsigned char *pc)
       }
 
       /* FIXME: Does this need bignum tests? */
-      LOOP(F_INC_LOOP, ++, <, f_add(2), is_lt);
-      LOOP(F_DEC_LOOP, --, >, o_subtract(), is_gt);
-      LOOP(F_INC_NEQ_LOOP, ++, !=, f_add(2), !is_eq);
-      LOOP(F_DEC_NEQ_LOOP, --, !=, o_subtract(), !is_eq);
+      LOOP(F_INC_LOOP, 1, <, is_lt);
+      LOOP(F_DEC_LOOP, -1, >, is_gt);
+      LOOP(F_INC_NEQ_LOOP, 1, !=, !is_eq);
+      LOOP(F_DEC_NEQ_LOOP, -1, !=, !is_eq);
 
       CASE(F_FOREACH) /* array, lvalue, X, i */
       {

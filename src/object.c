@@ -5,7 +5,7 @@
 \*/
 /**/
 #include "global.h"
-RCSID("$Id: object.c,v 1.85 1999/10/22 02:35:55 hubbe Exp $");
+RCSID("$Id: object.c,v 1.86 1999/10/24 05:56:33 hubbe Exp $");
 #include "object.h"
 #include "dynamic_buffer.h"
 #include "interpret.h"
@@ -975,14 +975,17 @@ int object_equal_p(struct object *a, struct object *b, struct processing *p)
     if(p->pointer_a == (void *)a && p->pointer_b == (void *)b)
       return 1;
 
-
-  if(a->prog)
+  if(a->prog && b->prog && a->prog==b->prog)
   {
     int e;
+
+    if(a->prog->flags & PROGRAM_HAS_C_METHODS) return 0;
+
     for(e=0;e<(int)a->prog->num_identifier_references;e++)
     {
       struct identifier *i;
       i=ID_FROM_INT(a->prog, e);
+
       if(!IDENTIFIER_IS_VARIABLE(i->identifier_flags))
 	continue;
 
@@ -1002,7 +1005,7 @@ int object_equal_p(struct object *a, struct object *b, struct processing *p)
     }
   }
 
-  return 1;
+  return 0;
 }
 
 void cleanup_objects(void)

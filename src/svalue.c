@@ -23,7 +23,7 @@
 #include "queue.h"
 #include "bignum.h"
 
-RCSID("$Id: svalue.c,v 1.49 1999/10/21 21:34:36 hubbe Exp $");
+RCSID("$Id: svalue.c,v 1.50 1999/10/24 05:56:37 hubbe Exp $");
 
 struct svalue dest_ob_zero = { T_INT, 0 };
 
@@ -582,6 +582,42 @@ int low_is_equal(struct svalue *a,
   check_type(b->type);
   check_refs(a);
   check_refs(b);
+
+  if(a->type == T_OBJECT && a->u.object->prog)
+  {
+    int f=FIND_LFUN(a->u.object->prog, LFUN__EQUAL);
+    if(f != -1)
+    {
+      push_svalue(b);
+      apply_lfun(a->u.object, f, 1);
+      if(IS_ZERO(sp-1)) 
+      {
+	pop_stack();
+	return 0;
+      }else{
+	pop_stack();
+	return 1;
+      }
+    }
+  }
+
+  if(b->type == T_OBJECT && b->u.object->prog)
+  {
+    int f=FIND_LFUN(b->u.object->prog, LFUN__EQUAL);
+    if(f != -1)
+    {
+      push_svalue(a);
+      apply_lfun(b->u.object, f, 1);
+      if(IS_ZERO(sp-1)) 
+      {
+	pop_stack();
+	return 0;
+      }else{
+	pop_stack();
+	return 1;
+      }
+    }
+  }
 
   if(is_eq(a,b)) return 1;
 
