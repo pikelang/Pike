@@ -113,7 +113,7 @@
 /* This is the grammar definition of Pike. */
 
 #include "global.h"
-RCSID("$Id: language.yacc,v 1.289 2002/08/15 14:49:22 marcus Exp $");
+RCSID("$Id: language.yacc,v 1.290 2002/08/17 22:58:15 mast Exp $");
 #ifdef HAVE_MEMORY_H
 #include <memory.h>
 #endif
@@ -1084,6 +1084,7 @@ magic_identifiers3:
   | TOK_SSCANF     { $$ = "sscanf"; }
   | TOK_SWITCH     { $$ = "switch"; }
   | TOK_TYPEOF     { $$ = "typeof"; }
+  | TOK_GLOBAL     { $$ = "global"; }
   ;
 
 magic_identifiers: magic_identifiers1 | magic_identifiers2 | magic_identifiers3 ;
