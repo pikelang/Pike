@@ -2826,15 +2826,6 @@ PIKECLASS Backend
 #endif /* USE_KQUEUE */
 	  }
 
-	  if(CHECK_EVENT(ACTIVE_POLLSET[i], MY_POLLOUT)) {
-	    /* FIXME: Consider utilizing ACTIVE_POLLSET[i].data in
-	     *        the kqueue case.
-	     */
-#ifdef PIKE_DEBUG
-	    handled = 1;
-#endif /* PIKE_DEBUG */
-	  }
-
 #ifdef PIKE_DEBUG
 	  num_active -= handled;
 	  if (!handled && GET_EVENTS(ACTIVE_POLLSET[i])) {
