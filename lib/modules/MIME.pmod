@@ -1,5 +1,5 @@
 /*
- * $Id: MIME.pmod,v 1.3 1997/03/26 21:11:07 grubba Exp $
+ * $Id: MIME.pmod,v 1.4 1997/05/05 12:33:11 marcus Exp $
  *
  * RFC1521 functionality for Pike
  *
@@ -34,13 +34,14 @@ class support {
     }
   }
   
-  string encode( string data, string encoding, void|string filename )
+  string encode( string data, string encoding, void|string filename,
+		 void|int stripcrlf )
   {
     switch (lower_case( encoding || "binary" )) {
     case "base64":
-      return encode_base64( data );
+      return (stripcrlf? encode_base64( data )-"\r\n" : encode_base64( data ));
     case "quoted-printable":
-      return encode_qp( data );
+      return (stripcrlf? encode_qp( data )-"\r\n" : encode_qp( data ));
     case "x-uue":
       return encode_uue( data, filename );
     case "7bit":
@@ -92,7 +93,7 @@ class support {
       throw (({ "invalid rfc1522 encoding "+encoding+"\n", backtrace() }));
     }  
     return "=?"+word[1]+"?"+encoding[0..0]+"?"+
-      replace( encode( word[0], encoding ),
+      replace( encode( word[0], encoding, 0, 1 ),
 	       ({ "?", "_" }), ({ "=3F", "=5F" }))+"?=";
   }
 
