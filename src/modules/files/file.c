@@ -5,7 +5,7 @@
 \*/
 /**/
 #include "global.h"
-RCSID("$Id: file.c,v 1.148 1999/04/19 15:06:38 grubba Exp $");
+RCSID("$Id: file.c,v 1.149 1999/04/20 15:50:54 grubba Exp $");
 #include "fdlib.h"
 #include "interpret.h"
 #include "svalue.h"
@@ -1216,6 +1216,10 @@ static void file_close(INT32 args)
     flags=FILE_READ | FILE_WRITE;
   }
 
+  if (THIS->flags & FILE_LOCK_FD) {
+    error("close() has been temporarily disabled on this file.\n");
+  }
+
   if((THIS->open_mode & ~flags & (FILE_READ|FILE_WRITE)) && flags)
   {
     if(!(THIS->open_mode & fd_CAN_SHUTDOWN))
@@ -1848,7 +1852,7 @@ static void init_file_struct(struct object *o)
 
 static void exit_file_struct(struct object *o)
 {
-  if(!(THIS->flags & FILE_NO_CLOSE_ON_DESTRUCT))
+  if(!(THIS->flags & (FILE_NO_CLOSE_ON_DESTRUCT | FILE_LOCK_FD)))
     just_close_fd();
   free_fd_stuff();
 
@@ -1937,6 +1941,10 @@ static void file_dup2(INT32 args)
 
   if(fd->fd < 0)
     error("File given to dup2 not open.\n");
+
+  if (fd->flags & FILE_LOCK_FD) {
+    error("File has been temporarily locked from closing.\n");
+  }
 
   if(fd_dup2(FD,fd->fd) < 0)
   {
@@ -2487,6 +2495,8 @@ static void exit_file_locking(void)
 
 void pike_module_exit(void)
 {
+  exit_sendfile();
+
   if(file_program)
   {
     free_program(file_program);
@@ -2602,6 +2612,8 @@ void pike_module_init(void)
 
   port_setup_program();
 
+  init_sendfile();
+
   add_integer_constant("PROP_IPC",fd_INTERPROCESSABLE,0);
   add_integer_constant("PROP_NONBLOCK",fd_CAN_NONBLOCK,0);
   add_integer_constant("PROP_SHUTDOWN",fd_CAN_SHUTDOWN,0);
@@ -2610,6 +2622,7 @@ void pike_module_init(void)
 #ifdef WITH_OOB
   add_integer_constant("__HAVE_OOB__",1,0);
 #endif
+
 #ifdef PIKE_DEBUG
   add_to_callback(&do_debug_callbacks,
 		  check_static_file_data,
