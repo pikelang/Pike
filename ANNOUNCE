@@ -1,52 +1,4 @@
-Pike 0.6 BETA
-
-Pike 0.6 BETA is now available for public beta testing, though
-unfortunately it is not quite complete. Due to Swedish export
-restrictions we are unable to supply the cryptographic toolkit and the
-full library of algorithms.
-
-Pike version 0.6 BETA does not come with a manual yet, there is a manual
-for Pike 0.5, which will be updated to cover all new features in 0.6 as
-soon as possible. There are many changes from Pike 0.5 to Pike 0.6, but
-here are some of the most important ones you should be aware of:
-
-	o The compiler is now two-pass, which means that you can access
-	  variables and functions declared later in the source without
-	  having to use prototypes. The two-pass compiler also makes
-	  it possible to use the name of a class from inside itself.
-
-	o It is now possible to access variables and functions in the
-	  'parent' class. This greatly simplifies coding in many
-	  situations.
-
-	o The process handling has been changed to being object-
-	  oriented. For this purpose, a new function has been created:
-	  Process.create_process. The returned object can be used
-	  as an argument to kill, and has methods which will report
-	  the status of the child process.
-
-	o Similar to process handling, threads have been changed to use
-	  an object-oriented approach.
-
-	o The 'varargs' keyword has been removed.
-
-	o You can now 'import "dirname"'.
-
-	o The module system has been modified so that the current
-	  directory is no longer searched for modules. To use a module
-	  in the current directory, you must either use 'import "."'
-	  or specify the module as '.module' instead of just 'module'.
-
-	o Lots of bugs have been fixed. :)
-
-	o Implicit blocks have been implemented around if, switch, for,
-	  do-while and foreach, this means that the scope of variables
-	  such as 'x' in 'if(string x)' ends after the if construct.
-
-	o popen, system and spawn in the Process module have been changed
-	  to *NOT* execute /bin/sh on the given string. This is to ensure
-	  compatibility with Win32 systems.
-
+Pike 7.1 developer version
 
 While still young, Pike matured over the last few years, and
 development is now co-ordinated by a team at Idonex AB. Pike is still
@@ -89,13 +41,12 @@ A list of pros and cons with Pike follows:
 	  At present the following platforms are supported:
 	  
 	     Solaris 2.5 & 2.6 (Sun SPARC & Intel x86) 
-             Digital UNIX 4.0 
-             AIX 4.2.1
+             Tru64
+             AIX 4.3
              IRIX 6.3 
-             SCO UnixWare 
-             FreeBSD 2.2.2 
+             FreeBSD 4.0
              HP-UX 10.20 
-             Linux Red Hat 4.2 (Intel x86) 
+             Linux Red Hat 4.2, 5.2, 6.1 and others (Intel x86) 
 
         + Powerful, Flexible and Efficient Data Types
         + Automatic Memory Management
