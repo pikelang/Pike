@@ -1,5 +1,5 @@
 /*
- * $Id: nt.c,v 1.15 1999/05/17 22:50:37 marcus Exp $
+ * $Id: nt.c,v 1.16 1999/08/29 15:34:11 js Exp $
  *
  * NT system calls for Pike
  *
@@ -27,6 +27,7 @@
 #include <windows.h>
 #include <winbase.h>
 #include <lm.h>
+#include <accctrl.h>
 
 static void f_cp(INT32 args)
 {
@@ -118,7 +119,114 @@ typedef DWORD WINAPI (*getlengthsidtype)(PSID);
 
 static logonusertype logonuser;
 static getlengthsidtype getlengthsid;
+
+#define LINKFUNC(RET,NAME,TYPE) \
+  typedef RET (WINAPI * PIKE_CONCAT(NAME,type)) TYPE ; \
+  static PIKE_CONCAT(NAME,type) NAME
+
+LINKFUNC(BOOL,equalsid, (PSID,PSID) );
+LINKFUNC(BOOL,lookupaccountname,
+         (LPCTSTR,LPCTSTR,PSID,LPDWORD,LPTSTR,LPDWORD,PSID_NAME_USE) );
+LINKFUNC(BOOL,lookupaccountsid,
+         (LPCTSTR,PSID,LPTSTR,LPDWORD,LPTSTR,LPDWORD,PSID_NAME_USE) );
+LINKFUNC(BOOL,setnamedsecurityinfo,
+         (LPTSTR,SE_OBJECT_TYPE,SECURITY_INFORMATION,PSID,PSID,PACL,PACL) );
+LINKFUNC(DWORD,getnamedsecurityinfo,
+         (LPTSTR,SE_OBJECT_TYPE,SECURITY_INFORMATION,PSID*,PSID*,PACL*,PACL*,PSECURITY_DESCRIPTOR) );
+
+LINKFUNC(BOOL,initializeacl, (PACL,DWORD,DWORD) );
+LINKFUNC(BOOL,addaccessallowedace, (PACL,DWORD,DWORD,PSID) );
+LINKFUNC(BOOL,addaccessdeniedace, (PACL,DWORD,DWORD,PSID) );
+LINKFUNC(BOOL,addauditaccessace, (PACL,DWORD,DWORD,PSID,BOOL,BOOL) );
+
 HINSTANCE advapilib;
+
+#define THIS_PSID (*(PSID *)fp->current_storage)
+static struct program *sid_program;
+static void init_sid(struct object *o)
+{
+  THIS_PSID=0;
+}
+
+static void exit_sid(struct object *o)
+{
+  if(THIS_PSID)
+  {
+    free((char *)THIS_PSID);
+    THIS_PSID=0;
+  }
+}
+
+static void f_sid_eq(INT32 args)
+{
+  check_all_args("system.SID->`==",args,BIT_MIXED,0);
+  if(sp[-1].type == T_OBJECT)
+  {
+    PSID *tmp=(PSID *)get_storage(sp[-1].u.object,sid_program);
+    if(tmp)
+    {
+      if( (!THIS_PSID && !*tmp) ||
+	  (THIS_PSID && *tmp && equalsid(THIS_PSID, *tmp) ))
+      {
+	pop_stack();
+	push_int(1);
+	return;
+      }
+    }
+  }
+  pop_stack();
+  push_int(0);
+}
+
+static void f_sid_account(INT32 args)
+{
+  char foo[1];
+  DWORD namelen=0;
+  DWORD domainlen=0;
+  char *sys=0;
+  SID_NAME_USE type;
+
+  check_all_args("SID->account",args,BIT_STRING|BIT_VOID, 0);
+  if(args) sys=sp[-1].u.string->str;
+  
+  if(!THIS_PSID) error("SID->account on uninitialized SID.\n");
+  lookupaccountsid(sys,
+		   THIS_PSID,
+		   foo,
+		   &namelen,
+		   foo,
+		   &domainlen,
+		   &type);
+
+  
+  if(namelen && domainlen)
+  {
+    struct pike_string *dom=begin_shared_string(domainlen-1);
+    struct pike_string *name=begin_shared_string(namelen-1);
+    
+    if(lookupaccountsid(sys,
+			 THIS_PSID,
+			 STR0(name),
+			 &namelen,
+			 STR0(dom),
+			 &domainlen,
+			 &type))
+    {
+      push_string(end_shared_string(name));
+      push_string(end_shared_string(dom));
+      push_int(type);
+      f_aggregate(3);
+      return;
+    }
+    free((char *)dom);
+    free((char *)name);
+  }
+  errno=GetLastError();
+  pop_n_elems(args);
+  push_array(allocate_array(3));
+  
+}
+
 
 void f_LogonUser(INT32 args)
 {
@@ -1218,11 +1326,395 @@ void f_NetLocalGroupGetMembers(INT32 args)
   if(to_free2) free(to_free2);
 }
 
-void init_nt_system_calls(void)
+static void f_GetFileAttributes(INT32 args)
 {
-  add_function("cp",f_cp,"function(string,string:int)", 0);
+  char *file;
+  DWORD ret;
+  get_all_args("GetFileAttributes",args,"%s",&file);
+  ret=GetFileAttributes( (LPCTSTR) file);
+  pop_stack();
+  errno=GetLastError();
+  push_int(ret);
+}
+
+static void f_SetFileAttributes(INT32 args)
+{
+  char *file;
+  INT32 attr,ret;
+  DWORD tmp;
+  get_all_args("SetFileAttributes",args,"%s%d",&file,&attr);
+  tmp=attr;
+  ret=SetFileAttributes( (LPCTSTR) file, tmp);
+  pop_stack();
+  errno=GetLastError();
+  push_int(ret);
+}
+
+static void f_LookupAccountName(INT32 args)
+{
+  LPCTSTR sys=0;
+  LPCTSTR acc;
+  DWORD sidlen, domainlen;
+  SID_NAME_USE tmp;
+  char buffer[1];
+
+  check_all_args("LookupAccountName",args,BIT_INT|BIT_STRING, BIT_STRING,0);
+  if(sp[-args].type == T_STRING)
+  {
+    if(sp[-args].u.string->size_shift != 0)
+       error("LookupAccountName: System name is wide string.\n");
+    sys=STR0(sp[-args].u.string);
+  }
+  if(sp[1-args].u.string->size_shift != 0)
+    error("LookupAccountName: Account name is wide string.\n");
+
+  acc=STR0(sp[1-args].u.string);
+  
+  sidlen=0;
+  domainlen=0;
+
+  /* Find size required */
+  lookupaccountname(sys,
+		    acc,
+		    (PSID)buffer,
+		    &sidlen,
+		    (LPTSTR)buffer,
+		    &domainlen,
+		    &tmp);
+
+  if(sidlen && domainlen)
+  {
+    PSID sid=(PSID)xalloc(sidlen);
+    struct pike_string *dom=begin_shared_string(domainlen-1);
+
+    if(lookupaccountname(sys,
+			 acc,
+			 sid,
+			 &sidlen,
+			 (LPTSTR)(STR0(dom)),
+			 &domainlen,
+			 &tmp))
+    {
+      struct object *o;
+      pop_n_elems(args);
+      o=low_clone(sid_program);
+      (*(PSID *)(o->storage))=sid;
+      push_object(o);
+      push_string(end_shared_string(dom));
+      push_int(tmp);
+      f_aggregate(3);
+      return;
+    }
+    free((char *)dom);
+    free((char *)sid);
+  }
+  errno=GetLastError();
+  pop_n_elems(args);
+  push_array(allocate_array(3));
+}
+
+
+static struct array *encode_acl(PACL acl)
+{
+  ACL_SIZE_INFORMATION tmp;
+  if(GetAclInformation(acl, &tmp, sizeof(tmp), AclSizeInformation))
+  {
+    int e;
+    check_stack(tmp.AceCount + 4);
+    for(e=0;e<tmp.AceCount;e++)
+    {
+      void *ace;
+      if(!GetAce(acl, e, &ace)) break;
+      switch(((ACE_HEADER *)ace)->AceType)
+      {
+	case ACCESS_ALLOWED_ACE_TYPE:
+	  push_constant_text("allow");
+	  push_int(((ACE_HEADER *)ace)->AceFlags);
+	  push_int( ((ACCESS_ALLOWED_ACE *)ace)->Mask );
+	  SAFE_PUSH_SID( & ((ACCESS_ALLOWED_ACE *)ace)->SidStart );
+	  f_aggregate(4);
+	  break;
+
+	case ACCESS_DENIED_ACE_TYPE:
+	  push_constant_text("deny");
+	  push_int(((ACE_HEADER *)ace)->AceFlags);
+	  push_int( ((ACCESS_DENIED_ACE *)ace)->Mask );
+	  SAFE_PUSH_SID( & ((ACCESS_DENIED_ACE *)ace)->SidStart );
+	  f_aggregate(4);
+	  break;
+
+	case SYSTEM_AUDIT_ACE_TYPE:
+	  push_constant_text("audit");
+	  push_int(((ACE_HEADER *)ace)->AceFlags);
+	  push_int( ((SYSTEM_AUDIT_ACE *)ace)->Mask );
+	  SAFE_PUSH_SID( & ((SYSTEM_AUDIT_ACE *)ace)->SidStart );
+	  f_aggregate(4);
+	  break;
+
+	default:
+	  push_constant_text("unknown");
+	  f_aggregate(1);
+	  break;
+
+      }
+    }
+    return aggregate_array(e);
+  }
+  return 0;
+}
+
+static PACL decode_acl(struct array *arr)
+{
+  PACL ret;
+  int a;
+  int size=sizeof(ACL);
+  char *str;
+  PSID *sid;
+
+  for(a=0;a<arr->size;a++)
+  {
+    if(arr->item[a].type != T_ARRAY)
+      error("Index %d in ACL is not an array.\n",a);
+
+    if(arr->item[a].u.array->size != 4)
+      error("Index %d in ACL is not of size 4.\n",a);
+
+    if(arr->item[a].u.array->item[0].type != T_STRING)
+      error("ACE[%d][%d] is not a string.\n",a,0);
+
+    if(arr->item[a].u.array->item[1].type != T_INT)
+      error("ACE[%d][%d] is not an integer.\n",a,1);
+
+    if(arr->item[a].u.array->item[2].type != T_INT)
+      error("ACE[%d][%d] is not an integer.\n",a,2);
+
+    if(arr->item[a].u.array->item[3].type != T_OBJECT)
+      error("ACE[%d][%d] is not a SID class.\n",a,3);
+
+    sid=(PSID *)get_storage(arr->item[a].u.array->item[3].u.object,sid_program);
+    if(!sid || !*sid)
+      error("ACE[%d][%d] is not a SID class.\n",a,3);
+
+    str=arr->item[a].u.array->item[0].u.string->str;
+    switch( ( str[0] << 8 ) + str[1] )
+    {
+      case ( 'a' << 8 ) + 'c': size += sizeof(ACCESS_ALLOWED_ACE); break;
+      case ( 'd' << 8 ) + 'e': size += sizeof(ACCESS_DENIED_ACE); break;
+      case ( 'a' << 8 ) + 'u': size += sizeof(SYSTEM_AUDIT_ACE); break;
+      default:
+	error("ACE[%d][0] is not a known ACE type.\n");
+    }
+    size += getlengthsid( *sid ) - sizeof(DWORD);
+  }
+
+  ret=(PACL)xalloc( size );
+
+  if(!initializeacl(ret, size, ACL_REVISION))
+    error("InitializeAcl failed!\n");
+
+  for(a=0;a<arr->size;a++)
+  {
+    str=arr->item[a].u.array->item[0].u.string->str;
+    sid=(PSID *)get_storage(arr->item[a].u.array->item[3].u.object,sid_program);
+
+    switch( ( str[0] << 8 ) + str[1] )
+    {
+      case ( 'a' << 8 ) + 'c':
+	if(!addaccessallowedace(ret, ACL_REVISION, 
+				arr->item[a].u.array->item[2].u.integer,
+				sid))
+	  error("AddAccessAllowedAce failed!\n");
+	break;
+
+      case ( 'd' << 8 ) + 'e':
+	if(!addaccessdeniedace(ret, ACL_REVISION, 
+			       arr->item[a].u.array->item[2].u.integer,
+			       sid))
+	  error("AddAccessDeniedAce failed!\n");
+	break;
+
+      case ( 'a' << 8 ) + 'u':
+	/* FIXME, what to do with the last two arguments ?? */
+	if(!addauditaccessace(ret, ACL_REVISION, 
+			      arr->item[a].u.array->item[2].u.integer,
+			      sid,1,1))
+	  error("AddAuditAccessAce failed!\n");
+	break;
+    }
+  }
+  return ret;
+}
+
+/*
+ * Note, this function does not use errno!!
+ * (Time to learn how to autodoc... /Hubbe)
+ */
+static void f_SetNamedSecurityInfo(INT32 args)
+{
+  struct svalue *sval;
+  char *name;
+  struct mapping *m;
+  SECURITY_INFORMATION flags=0;
+  PSID owner=0;
+  PSID group=0;
+  PACL dacl=0;
+  PACL sacl=0;
+  DWORD ret;
+  SE_OBJECT_TYPE type=SE_FILE_OBJECT;
+
+  get_all_args("SetNamedSecurityInfo",args,"%s%m",&name,&m);
+
+  if((sval=simple_mapping_string_lookup(m, "type")))
+  {
+    if(sval->type != T_INT)
+      error("Bad 'type' in SetNamedSecurityInfo.\n");
+    type=sval->u.integer;
+  }
+
+  if((sval=simple_mapping_string_lookup(m,"owner")))
+  {
+    if(sval->type != T_OBJECT ||
+       !get_storage(sval->u.object, sid_program))
+      error("Bad 'owner' in SetNamedSecurityInfo.\n");
+    owner=*(PSID *)get_storage(sval->u.object, sid_program);
+    flags |= OWNER_SECURITY_INFORMATION;
+  }
+
+  if((sval=simple_mapping_string_lookup(m,"group")))
+  {
+    if(sval->type != T_OBJECT ||
+       !get_storage(sval->u.object, sid_program))
+      error("Bad 'group' in SetNamedSecurityInfo.\n");
+    group=*(PSID *)get_storage(sval->u.object, sid_program);
+    flags |= GROUP_SECURITY_INFORMATION;
+  }
+
+  if((sval=simple_mapping_string_lookup(m,"dacl")))
+  {
+    if(sval->type != T_ARRAY)
+      error("Bad 'dacl' in SetNamedSecurityInfo.\n");
+    dacl=decode_acl(sval->u.array);
+    flags |= DACL_SECURITY_INFORMATION;
+  }
+
+  if((sval=simple_mapping_string_lookup(m,"sacl")))
+  {
+    if(sval->type != T_ARRAY)
+      error("Bad 'sacl' in SetNamedSecurityInfo.\n");
+    sacl=decode_acl(sval->u.array);
+    flags |= SACL_SECURITY_INFORMATION;
+  }
+      
+  /* FIXME, add dacl and sacl!!!! */
+
+  ret=setnamedsecurityinfo(name,
+			   type,
+			   flags,
+			   owner,
+			   group,
+			   dacl,
+			   sacl);
+  pop_n_elems(args);
+  push_int(ret);
+}
+
+static void f_GetNamedSecurityInfo(INT32 args)
+{
+  PSID owner=0, group=0;
+  PACL dacl=0, sacl=0;
+  PSECURITY_DESCRIPTOR desc=0;
+  DWORD ret;
+  SECURITY_INFORMATION flags=
+    OWNER_SECURITY_INFORMATION |
+    GROUP_SECURITY_INFORMATION |
+    DACL_SECURITY_INFORMATION;
+
+  SE_OBJECT_TYPE type = SE_FILE_OBJECT;
+  check_all_args("GetSecurityInfo",args,BIT_STRING, BIT_VOID|BIT_INT, BIT_VOID|BIT_INT, 0);
+
+  switch(args)
+  {
+    default: flags=sp[2-args].u.integer;
+    case 2: type=sp[1-args].u.integer;
+    case 1: break;
+  }
+
+  if(!(ret=getnamedsecurityinfo(sp[-args].u.string->str,
+				type,
+				flags,
+				&owner,
+				&group,
+				&dacl,
+				&sacl,
+				&desc)))
+  {
+    int tmp=0;
+    pop_n_elems(args);
+
+    if(owner)
+    {
+      push_constant_text("owner");
+      SAFE_PUSH_SID(owner);
+      tmp++;
+    }
+    if(group)
+    {
+      push_constant_text("group");
+      SAFE_PUSH_SID(group);
+      tmp++;
+    }
+    if(sacl)
+    {
+      push_constant_text("sacl");
+      push_array( encode_acl( sacl ));
+      tmp++;
+    }
+    if(dacl)
+    {
+      push_constant_text("dacl");
+      push_array( encode_acl( dacl ));
+      tmp++;
+    }
+    f_aggregate_mapping(tmp * 2);
+  }else{
+    pop_n_elems(args);
+    push_int(0);
+    errno=ret; /* magic */
+  }
+  if(desc) LocalFree(desc);
+}
+
 #define ADD_GLOBAL_INTEGER_CONSTANT(X,Y) \
    push_int((long)(Y)); low_add_constant(X,sp-1); pop_stack();
+#define SIMPCONST(X) \
+      add_integer_constant(#X,X,0);
+
+void init_nt_system_calls(void)
+{
+  add_function("GetFileAttributes",f_GetFileAttributes,"function(string:int)", 0);
+  add_function("SetFileAttributes",f_SetFileAttributes,"function(string,int:int)", 0);
+  
+  SIMPCONST(FILE_ATTRIBUTE_ARCHIVE);
+  SIMPCONST(FILE_ATTRIBUTE_HIDDEN);
+  SIMPCONST(FILE_ATTRIBUTE_NORMAL);
+  SIMPCONST(FILE_ATTRIBUTE_OFFLINE);
+  SIMPCONST(FILE_ATTRIBUTE_READONLY);
+  SIMPCONST(FILE_ATTRIBUTE_SYSTEM);
+  SIMPCONST(FILE_ATTRIBUTE_TEMPORARY);
+
+  SIMPCONST(FILE_ATTRIBUTE_COMPRESSED);
+  SIMPCONST(FILE_ATTRIBUTE_DIRECTORY);
+#ifdef FILE_ATTRIBUTE_ENCRYPTED
+  SIMPCONST(FILE_ATTRIBUTE_ENCRYPTED);
+#endif
+#ifdef FILE_ATTRIBUTE_REPARSE_POINT
+  SIMPCONST(FILE_ATTRIBUTE_REPARSE_POINT);
+#endif
+#ifdef FILE_ATTRIBUTE_SPARSE_FILE
+  SIMPCONST(FILE_ATTRIBUTE_SPARSE_FILE);
+#endif
+
+  add_function("cp",f_cp,"function(string,string:int)", 0);
 
   ADD_GLOBAL_INTEGER_CONSTANT("HKEY_LOCAL_MACHINE",HKEY_LOCAL_MACHINE);
   ADD_GLOBAL_INTEGER_CONSTANT("HKEY_CURRENT_USER",HKEY_CURRENT_USER);
@@ -1257,10 +1749,57 @@ void init_nt_system_calls(void)
       add_program_constant("UserToken",token_program,0);
       token_program->flags |= PROGRAM_DESTRUCT_IMMEDIATE;
     }
+    if(proc=GetProcAddress(advapilib, "LookupAccountNameA"))
+      lookupaccountname=(lookupaccountnametype)proc;
+
+    if(proc=GetProcAddress(advapilib, "LookupAccountSidA"))
+      lookupaccountsid=(lookupaccountsidtype)proc;
+
+    if(proc=GetProcAddress(advapilib, "SetNamedSecurityInfoA"))
+      setnamedsecurityinfo=(setnamedsecurityinfotype)proc;
+
+    if(proc=GetProcAddress(advapilib, "GetNamedSecurityInfoA"))
+      getnamedsecurityinfo=(getnamedsecurityinfotype)proc;
+
+    if(proc=GetProcAddress(advapilib, "EqualSid"))
+      equalsid=(equalsidtype)proc;
+
+    if(proc=GetProcAddress(advapilib, "InitializeAcl"))
+      initializeacl=(initializeacltype)proc;
+
+    if(proc=GetProcAddress(advapilib, "AddAccessAllowedAce"))
+      addaccessallowedace=(addaccessallowedacetype)proc;
+
+    if(proc=GetProcAddress(advapilib, "AddAccessDeniedAce"))
+      addaccessdeniedace=(addaccessdeniedacetype)proc;
+
+    if(proc=GetProcAddress(advapilib, "AddAuditAccessAce"))
+      addauditaccessace=(addauditaccessacetype)proc;
 
     if(proc=GetProcAddress(advapilib, "GetLengthSid"))
-    {
       getlengthsid=(getlengthsidtype)proc;
+
+    if(lookupaccountname &&
+       equalsid &&
+       getlengthsid)
+    {
+      start_new_program();
+      set_init_callback(init_sid);
+      set_init_callback(exit_sid);
+      add_storage(sizeof(PSID));  /* FIXME */
+      add_function("`==",f_sid_eq,"function(mixed:int)",0);
+      add_function("account",f_sid_account,"function(:array(string|int))",0);
+      add_program_constant("SID",sid_program=end_program(),0);
+
+      add_function("LookupAccountName",f_LookupAccountName,
+		   "function(string,string:array)",0);
+
+      add_function("SetNamedSecurityInfo",f_SetNamedSecurityInfo,
+		   "function(string,mapping(string:mixed):array)",0);
+      add_function("GetNamedSecurityInfo",f_GetNamedSecurityInfo,
+		   "function(string,void|int:mapping)",0);
+
+      /* FIXME: add ACE constants */
     }
   }
 
@@ -1389,6 +1928,14 @@ void exit_nt_system_calls(void)
       advapilib=0;
       logonuser=0;
       getlengthsid=0;
+      initializeacl=0;
+      addaccessallowedace=0;
+      addaccessdeniedace=0;
+      addauditaccessace=0;
+      getnamedsecurityinfo=0;
+      setnamedsecurityinfo=0;
+      lookupaccountname=0;
+      equalsid=0;
     }
   }
   if(netapilib)
