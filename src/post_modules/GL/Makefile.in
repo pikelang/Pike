@@ -1,4 +1,4 @@
-# $Id: Makefile.in,v 1.12 2003/06/12 20:54:56 mast Exp $
+# $Id: Makefile.in,v 1.13 2004/03/25 19:47:29 grubba Exp $
 @make_variables@
 VPATH=@srcdir@
 OBJS=top.o @AUTO_OBJS@
@@ -13,10 +13,10 @@ override:
 
 @dynamic_module_makefile@
 
-$(SRCDIR)/auto.c : $(SRCDIR)/auto.c.in $(SRCDIR)/features.pike $(SRCDIR)/constants.pike $(SRCDIR)/gen.pike
-	$(RUNPIKE) $(SRCDIR)/gen.pike < $(SRCDIR)/auto.c.in > $(SRCDIR)/auto.c
+auto.c : $(SRCDIR)/auto.c.in $(SRCDIR)/features.pike $(SRCDIR)/constants.pike $(SRCDIR)/gen.pike
+	$(RUNPIKE) $(SRCDIR)/gen.pike < $(SRCDIR)/auto.c.in > auto.c
 
 # Compatibility with stupid makes..
-auto.o: $(SRCDIR)/auto.c
+auto.o: auto.c
 
 @dependencies@
