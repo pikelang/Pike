@@ -604,11 +604,14 @@ class StdinHilfe
     catch {
       if(string home=getenv("HOME")||getenv("USERPROFILE"))
       {
-	if(object f=Stdio.File(home+"/.hilfe_history","wc"))
+	rm(home+"/.hilfe_history~");
+	if(object f=Stdio.File(home+"/.hilfe_history~","wct"))
 	{
-	  f->write(sprintf("array history=%O;",readline->get_history()->encode()));
+	  f->write(readline->get_history()->encode());
 	  f->close();
 	}
+	rm(home+"/.hilfe_history");
+	mv(home+"/.hilfe_history~",home+"/.hilfe_history");
       }
     };
   }
@@ -640,8 +643,8 @@ class StdinHilfe
       {
 	if(object f=Stdio.File(home+"/.hilfe_history","r"))
 	{
-	  string s=f->read();
-	  catch(hist=compile_string(s)()->history);
+	  string s=f->read()||"";
+	  hist=s/"\n";
 	  readline->enable_history(hist);
 	}
       }

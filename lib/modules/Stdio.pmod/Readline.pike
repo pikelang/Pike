@@ -1,4 +1,4 @@
-// $Id: Readline.pike,v 1.28 1999/10/21 14:37:15 marcus Exp $
+// $Id: Readline.pike,v 1.29 1999/10/26 15:50:10 js Exp $
 
 class OutputController
 {
@@ -1014,9 +1014,9 @@ class History
   static private mapping(int:string) historykeep=([]);
   static private int minhistory, maxhistory, historynum;
 
-  array(string) encode()
+  string encode()
   {
-    return historylist;
+    return historylist*"\n";
   }
   
   int get_history_num()
