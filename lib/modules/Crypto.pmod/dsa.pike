@@ -15,6 +15,12 @@ bignum x; /* Private key */
 
 function random;
 
+Gmp.mpz get_p() { return p; }
+Gmp.mpz get_q() { return q; }
+Gmp.mpz get_g() { return g; }
+Gmp.mpz get_y() { return y; }
+Gmp.mpz get_x() { return x; }
+
 object set_public_key(bignum p_, bignum q_, bignum g_, bignum y_)
 {
   p = p_; q = q_; g = g_; y = y_;
@@ -36,6 +42,12 @@ object set_private_key(bignum secret)
 {
   x = secret;
   return this_object();
+}
+
+object set_random(function r)
+{
+  random = r;
+  return this;
 }
 
 object use_random(function r)
