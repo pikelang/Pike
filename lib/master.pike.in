@@ -6,7 +6,7 @@
 // Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 // for more information.
 //
-// $Id: master.pike.in,v 1.302 2003/09/19 10:14:56 grubba Exp $
+// $Id: master.pike.in,v 1.303 2003/09/19 13:24:02 grubba Exp $
 
 #pike __REAL_VERSION__
 
@@ -1054,13 +1054,13 @@ class dirnode
 
   static string base_from_filename(string fname)
   {
-    fname = FIX_CASE(fname);
-    if (has_prefix(fname, ".#")) return 0;
-    if (has_suffix(fname, ".pike") ||
-	has_suffix(fname, ".pmod")) {
+    string low_name = FIX_CASE(fname);
+    if (has_prefix(low_name, ".#")) return 0;
+    if (has_suffix(low_name, ".pike") ||
+	has_suffix(low_name, ".pmod")) {
       return fname[..sizeof(fname)-6];
     }
-    if (has_suffix(fname, ".so")) {
+    if (has_suffix(low_name, ".so")) {
       return fname[..sizeof(fname)-4];
     }
     return 0;
@@ -1083,8 +1083,9 @@ class dirnode
     dirname=d;
     compilation_handler=h;
     fc[dirname]=this_object();
-    if(has_suffix(FIX_CASE(dirname),".pmod"))
+    if(has_suffix(FIX_CASE(dirname),".pmod")) {
       fc[dirname[..sizeof(dirname)-6]]=this_object();
+    }
     array(string) files = sort(get_dir(d)||({}));
     if (!sizeof(d)) return;
     array(string) bases = map(files, base_from_filename);
