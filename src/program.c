@@ -5,7 +5,7 @@
 \*/
 /**/
 #include "global.h"
-RCSID("$Id: program.c,v 1.149 1999/09/16 05:14:31 hubbe Exp $");
+RCSID("$Id: program.c,v 1.150 1999/09/16 20:30:34 hubbe Exp $");
 #include "program.h"
 #include "object.h"
 #include "dynamic_buffer.h"
@@ -1080,6 +1080,9 @@ SIZE_T low_add_storage(SIZE_T size, SIZE_T alignment, int modulo_orig)
 {
   long offset;
   int modulo;
+
+  if(!size) return new_program->storage_needed;
+
 #ifdef PIKE_DEBUG
   if(alignment <=0 || (alignment & (alignment-1)) || alignment > 256)
     fatal("Alignment must be 1,2,4,8,16,32,64,128 or 256 not %d\n",alignment);

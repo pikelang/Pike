@@ -24,7 +24,7 @@
 #include "stuff.h"
 #include "version.h"
 
-RCSID("$Id: encode.c,v 1.33 1999/09/15 07:15:17 hubbe Exp $");
+RCSID("$Id: encode.c,v 1.34 1999/09/16 20:30:33 hubbe Exp $");
 
 #ifdef _AIX
 #include <net/nh.h>
@@ -448,7 +448,7 @@ static void encode_value2(struct svalue *val, struct encode_data *data)
 	  
 	for(d=0;d<p->num_strings;d++) adddata(p->strings[d]);
 
-	for(d=1;d<p->num_inherits;d++)
+	for(d=0;d<p->num_inherits;d++)
 	{
 	  code_number(p->inherits[d].inherit_level,data);
 	  code_number(p->inherits[d].identifier_level,data);
@@ -1025,10 +1025,11 @@ static void decode_value2(struct decode_data *data)
 	  debug_malloc_touch(dat);
 
 	  data->pickyness++;
-	  p->inherits[0].prog=p;
+/*	  p->inherits[0].prog=p;
 	  p->inherits[0].parent_offset=1;
+*/
 
-	  for(d=1;d<p->num_inherits;d++)
+	  for(d=0;d<p->num_inherits;d++)
 	  {
 	    decode_number(p->inherits[d].inherit_level,data);
 	    decode_number(p->inherits[d].identifier_level,data);

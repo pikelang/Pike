@@ -5,7 +5,7 @@
 \*/
 
 /*
- * $Id: program.h,v 1.57 1999/09/15 07:15:20 hubbe Exp $
+ * $Id: program.h,v 1.58 1999/09/16 20:30:36 hubbe Exp $
  */
 #ifndef PROGRAM_H
 #define PROGRAM_H
@@ -209,6 +209,10 @@ struct program
   struct object *prot;
 #endif
   INT32 id;             /* used to identify program in caches */
+  /* storage_needed - storage needed in object struct
+   * the first inherit[0].storage_offset bytes are not used and are
+   * subtracted when inheriting.
+   */
   INT32 storage_needed; /* storage needed in the object struct */
   INT16 flags;          /* PROGRAM_* */
   unsigned INT8 alignment_needed;
