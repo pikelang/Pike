@@ -1,5 +1,5 @@
 #
-# $Id: Makefile.in,v 1.168 1999/11/24 06:11:32 mast Exp $
+# $Id: Makefile.in,v 1.169 1999/11/24 19:01:18 grubba Exp $
 #
 
 # This line is needed on some machines.
@@ -204,7 +204,9 @@ tpike:
 # up-to-date first. So if the $(POBJ)s, which depend on tpike, trigs
 # the recursive make of tpike-real above, that one will never start to
 # make the $(OBJ)s concurrently with this one.
-pike: $(OBJ) modules/linker_options
+# The force is needed, since otherwise pike won't be rebuilt if
+# only $(POBJ) needs to be rebuilt.
+pike: $(OBJ) modules/linker_options force
 	$(MAKE) $(MAKE_FLAGS) $(MAKE_PARALLEL) $(POBJ)
 	-@if [ -f pike.old ] ; then rm -f pike.old || : ; else : ; fi
 	-@if [ -f pike.old.exe ] ; then rm -f pike.old.exe || : ; else : ; fi
