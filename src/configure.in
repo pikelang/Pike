@@ -1,4 +1,4 @@
-AC_REVISION("$Id: configure.in,v 1.232 1998/08/31 12:44:21 grubba Exp $")
+AC_REVISION("$Id: configure.in,v 1.233 1998/09/01 16:59:18 hubbe Exp $")
 AC_INIT(interpret.c)
 AC_CONFIG_HEADER(machine.h)
 
@@ -1175,6 +1175,11 @@ AC_CACHE_VAL(pike_cv_accept_size_t, [
 #endif
 #ifdef HAVE_SYS_SOCKET_H
 #include <sys/socket.h>
+#endif
+
+/* NT */
+#ifdef HAVE_WINSOCK_H
+#include <winsock.h>
 #endif
 
 /* Here's the actual test: */
