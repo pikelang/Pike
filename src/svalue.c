@@ -21,7 +21,7 @@
 #include <ctype.h>
 #include "queue.h"
 
-RCSID("$Id: svalue.c,v 1.41 2001/06/06 08:17:15 hubbe Exp $");
+RCSID("$Id: svalue.c,v 1.42 2001/07/04 12:00:29 grubba Exp $");
 
 struct svalue dest_ob_zero = { T_INT, 0 };
 
@@ -430,6 +430,7 @@ int svalue_is_true(struct svalue *s)
     return 0;
 
   case T_FUNCTION:
+    if (s->subtype == FUNCTION_BUILTIN) return 1;
     if(!s->u.object->prog) return 0;
     return 1;
 
