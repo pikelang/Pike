@@ -4,7 +4,7 @@
 ||| See the files COPYING and DISCLAIMER for more information.
 \*/
 #include "global.h"
-RCSID("$Id: mpz_glue.c,v 1.1 1997/02/11 08:08:40 hubbe Exp $");
+RCSID("$Id: mpz_glue.c,v 1.2 1997/02/27 11:54:00 hubbe Exp $");
 #include "gmp_machine.h"
 #include "types.h"
 
@@ -25,7 +25,6 @@ RCSID("$Id: mpz_glue.c,v 1.1 1997/02/11 08:08:40 hubbe Exp $");
 #include "pike_types.h"
 
 #include <gmp.h>
-#include <assert.h>
 
 #define THIS ((MP_INT *)(fp->current_storage))
 #define OBTOMPZ(o) ((MP_INT *)(o->storage))
@@ -174,7 +173,6 @@ static struct pike_string *low_get_digits(MP_INT *mpz, int base)
       s->str[i] = mpz_get_ui(tmp) & 0xff;
       mpz_tdiv_q_2exp(tmp, tmp, 8);
     }
-    assert(mpz_sgn(tmp) == 0);
     mpz_clear(tmp);
     s = end_shared_string(s);
   }
