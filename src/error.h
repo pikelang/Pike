@@ -5,7 +5,7 @@
 \*/
 
 /*
- * $Id: error.h,v 1.15 1998/04/10 15:22:38 grubba Exp $
+ * $Id: error.h,v 1.16 1998/04/11 13:19:14 grubba Exp $
  */
 #ifndef ERROR_H
 #define ERROR_H
@@ -79,7 +79,10 @@ extern int throw_severity;
 #define UNSET_ONERROR(X) recoveries && (recoveries->onerror=X.previous)
 #endif
 
-#ifdef DEBUG
+#if defined(DEBUG) && 0
+/* Works, but probably not interresting for most people
+ *	/grubba 1998-04-11
+ */
 #define ERROR(NAME, TEXT, SP, ARGS)	new_error(NAME, TEXT, SP, ARGS, __FILE__, __LINE__);
 #else
 #define ERROR(NAME, TEXT, SP, ARGS)	new_error(NAME, TEXT, SP, ARGS, NULL, 0);
