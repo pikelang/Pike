@@ -33,8 +33,10 @@
 #define LFUN_NOT 19
 #define LFUN_INDEX 20
 #define LFUN_ASSIGN_INDEX 21
+#define LFUN_ARROW 22
+#define LFUN_ASSIGN_ARROW 23
 
-#define NUM_LFUNS 22
+#define NUM_LFUNS 24
 
 extern char *lfun_names[];
 

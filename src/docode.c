@@ -4,7 +4,7 @@
 ||| See the files COPYING and DISCLAIMER for more information.
 \*/
 #include "global.h"
-RCSID("$Id: docode.c,v 1.6 1996/12/04 00:27:10 hubbe Exp $");
+RCSID("$Id: docode.c,v 1.7 1997/01/16 05:00:43 hubbe Exp $");
 #include "las.h"
 #include "program.h"
 #include "language.h"
@@ -267,6 +267,7 @@ static int do_docode2(node *n,int flags)
     case F_GLOBAL:
     case F_IDENTIFIER:
     case F_INDEX:
+    case F_ARROW:
     case F_ARG_LIST:
       break;
     }
@@ -926,12 +927,34 @@ static int do_docode2(node *n,int flags)
   case F_LVALUE_LIST:
     return do_docode(CAR(n),DO_LVALUE)+do_docode(CDR(n),DO_LVALUE);
 
+  case F_ARROW:
+    if(CDR(n)->token != F_CONSTANT || CDR(n)->u.sval.type!=T_STRING)
+      fatal("Bugg in F_ARROW, index not string.");
+    if(flags & DO_LVALUE)
+    {
+      /* FIXME!!!! */
+      tmp1=do_docode(CAR(n), 0);
+      emit(F_ARROW_STRING, store_prog_string(CDR(n)->u.sval.u.string));
+      return 2;
+    }else{
+      tmp1=do_docode(CAR(n), DO_NOT_COPY);
+      emit(F_ARROW, store_prog_string(CDR(n)->u.sval.u.string));
+      if(!(flags & DO_NOT_COPY))
+      {
+	while(n && (n->token==F_INDEX || n->token==F_ARROW)) n=CAR(n);
+	if(n->token==F_CONSTANT && !(n->node_info & OPT_EXTERNAL_DEPEND))
+	  emit2(F_COPY_VALUE);
+      }
+    }
+    return tmp1;
+
   case F_INDEX:
     if(flags & DO_LVALUE)
     {
       tmp1=do_docode(CAR(n), 0);
       if(do_docode(CDR(n),0) != 1)
 	fatal("Internal compiler error, please report this (1).");
+      if(CDR(n)->token != F_CONSTANT) emit2(F_CLEAR_STRING_SUBTYPE);
       return 2;
     }else{
       tmp1=do_docode(CAR(n), DO_NOT_COPY);
@@ -940,7 +963,7 @@ static int do_docode2(node *n,int flags)
       emit2(F_INDEX);
       if(!(flags & DO_NOT_COPY))
       {
-	while(n && n->token==F_INDEX) n=CAR(n);
+	while(n && (n->token==F_INDEX || n->token==F_ARROW)) n=CAR(n);
 	if(n->token==F_CONSTANT && !(n->node_info & OPT_EXTERNAL_DEPEND))
 	  emit2(F_COPY_VALUE);
       }

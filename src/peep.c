@@ -54,6 +54,8 @@ static int hasarg(int opcode)
 
   case F_LFUN:
   case F_STRING:
+  case F_ARROW:
+  case F_ARROW_STRING:
   case F_STRING_INDEX:
   case F_LOCAL_INDEX:
   case F_POS_INT_INDEX:

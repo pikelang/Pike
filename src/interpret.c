@@ -4,7 +4,7 @@
 ||| See the files COPYING and DISCLAIMER for more information.
 \*/
 #include "global.h"
-RCSID("$Id: interpret.c,v 1.18 1996/12/06 08:30:16 per Exp $");
+RCSID("$Id: interpret.c,v 1.19 1997/01/16 05:00:44 hubbe Exp $");
 #include "interpret.h"
 #include "object.h"
 #include "program.h"
@@ -558,6 +558,15 @@ static void eval_instruction(unsigned char *pc)
       CASE(F_STRING);
       copy_shared_string(sp->u.string,fp->context.prog->strings[GET_ARG()]);
       sp->type=T_STRING;
+      sp->subtype=0;
+      sp++;
+      print_return_value();
+      break;
+
+      CASE(F_ARROW_STRING);
+      copy_shared_string(sp->u.string,fp->context.prog->strings[GET_ARG()]);
+      sp->type=T_STRING;
+      sp->subtype=1; /* Magic */
       sp++;
       print_return_value();
       break;
@@ -784,6 +793,10 @@ static void eval_instruction(unsigned char *pc)
       CASE(F_MARK2); *(mark_sp++)=sp;
       CASE(F_MARK); *(mark_sp++)=sp; break;
 
+      CASE(F_CLEAR_STRING_SUBTYPE);
+      if(sp[-1].type==T_STRING) sp[-1].subtype=0;
+      break;
+
       /* Jumps */
       CASE(F_BRANCH);
       DOJUMP();
@@ -1007,6 +1020,7 @@ static void eval_instruction(unsigned char *pc)
       print_return_value();
       goto do_index;
 
+      CASE(F_ARROW);
       CASE(F_STRING_INDEX);
       copy_shared_string(sp->u.string,fp->context.prog->strings[GET_ARG()]);
       sp->type=T_STRING;
@@ -1333,15 +1347,20 @@ void safe_apply_low(struct object *o,int fun,int args)
   JMP_BUF recovery;
 
   sp-=args;
+  free_svalue(& throw_value);
+  throw_value.type=T_INT;
   if(SETJMP(recovery))
   {
-    ONERROR tmp;
-    SET_ONERROR(tmp,exit_on_error,"Error in handle_error in master object!");
-    assign_svalue_no_free(sp++, & throw_value);
-    APPLY_MASTER("handle_error", 1);
-    pop_stack();
-    UNSET_ONERROR(tmp);
-
+    if(throw_value.type == T_ARRAY)
+    {
+      ONERROR tmp;
+      SET_ONERROR(tmp,exit_on_error,"Error in handle_error in master object!");
+      assign_svalue_no_free(sp++, & throw_value);
+      APPLY_MASTER("handle_error", 1);
+      pop_stack();
+      UNSET_ONERROR(tmp);
+    }
+      
     sp->u.integer = 0;
     sp->subtype=NUMBER_NUMBER;
     sp->type = T_INT;

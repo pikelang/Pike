@@ -22,7 +22,7 @@
 %token F_INC_LOOP F_DEC_LOOP
 %token F_INC_NEQ_LOOP F_DEC_NEQ_LOOP
 
-%token F_INDEX F_INDIRECT F_STRING_INDEX F_LOCAL_INDEX
+%token F_INDEX F_ARROW F_INDIRECT F_STRING_INDEX F_LOCAL_INDEX
 %token F_POS_INT_INDEX F_NEG_INT_INDEX
 %token F_LTOSVAL F_LTOSVAL2
 %token F_PUSH_ARRAY 
@@ -33,8 +33,8 @@
  */
 %token F_LFUN F_GLOBAL F_LOCAL
 %token F_GLOBAL_LVALUE F_LOCAL_LVALUE
-%token F_CLEAR_LOCAL
-%token F_CONSTANT F_FLOAT F_STRING
+%token F_CLEAR_LOCAL F_CLEAR_STRING_SUBTYPE
+%token F_CONSTANT F_FLOAT F_STRING F_ARROW_STRING
 %token F_NUMBER F_NEG_NUMBER F_CONST_1 F_CONST0 F_CONST1 F_BIGNUM
 /*
  * These are the predefined functions that can be accessed from Pike.
@@ -74,7 +74,6 @@
 %token F_APPLY
 %token F_ARG_LIST
 %token F_ARRAY_ID
-%token F_ARROW
 %token F_BREAK
 %token F_CASE
 %token F_CLASS
@@ -156,7 +155,7 @@
 /* This is the grammar definition of Pike. */
 
 #include "global.h"
-RCSID("$Id: language.yacc,v 1.16 1996/12/11 00:48:38 neotron Exp $");
+RCSID("$Id: language.yacc,v 1.17 1997/01/16 05:00:44 hubbe Exp $");
 #ifdef HAVE_MEMORY_H
 #include <memory.h>
 #endif
@@ -1143,7 +1142,7 @@ expr4: string
     { $$=mkefuncallnode("aggregate_multiset",$2); }
   | expr4 F_ARROW F_IDENTIFIER
   {
-    $$=mknode(F_INDEX,$1,mkstrnode($3));
+    $$=mknode(F_ARROW,$1,mkstrnode($3));
     free_string($3);
   }
   ;
@@ -1158,10 +1157,27 @@ idents: F_IDENTIFIER
     }else if((i=isidentifier($1))>=0){
       $$=mkidentifiernode(i);
     }else if((f=lookup_efun($1))){
-	 $$=mkconstantsvaluenode(&f->function);
+      $$=mkconstantsvaluenode(&f->function);
     }else{
-	 my_yyerror("'%s' undefined.",$1->str);
-      $$=0;
+	$$=0;
+      if( get_master() )
+      {
+	reference_shared_string($1);
+	push_string($1);
+	reference_shared_string(current_file);
+	push_string(current_file);
+	SAFE_APPLY_MASTER("resolv", 2);
+	
+	if(throw_value.type == T_STRING)
+	{
+	  my_yyerror("%s",throw_value.u.string->str);
+	}else{
+	  $$=mkconstantsvaluenode(sp-1);
+	  pop_stack();
+	}
+      }else{
+	my_yyerror("'%s' undefined.", $1->str);
+      }
     }
     free_string($1);
   }
@@ -1171,10 +1187,10 @@ idents: F_IDENTIFIER
     f=lookup_efun($3);
     if(!f)
     {
-	 my_yyerror("Unknown efun: %s.",$3->str);
-	 $$=mkintnode(0);
+      my_yyerror("Unknown efun: %s.",$3->str);
+      $$=mkintnode(0);
     }else{
-	 $$=mksvaluenode(&f->function);
+      $$=mksvaluenode(&f->function);
     }
     free_string($3);
   }
@@ -1188,10 +1204,10 @@ idents: F_IDENTIFIER
     idp=fake_program.identifier_references+f;
     if (f<0 || ID_FROM_PTR(&fake_program,idp)->func.offset == -1)
     {
-	 my_yyerror("Undefined identifier %s::%s", $1->str,$3->str);
-	 $$=mkintnode(0);
+      my_yyerror("Undefined identifier %s::%s", $1->str,$3->str);
+      $$=mkintnode(0);
     } else {
-	 $$=mkidentifiernode(f);
+      $$=mkidentifiernode(f);
     }
 
     free_string($1);

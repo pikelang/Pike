@@ -4,7 +4,7 @@
 ||| See the files COPYING and DISCLAIMER for more information.
 \*/
 #include "global.h"
-RCSID("$Id: lex.c,v 1.9 1996/12/06 04:26:57 hubbe Exp $");
+RCSID("$Id: lex.c,v 1.10 1997/01/16 05:00:46 hubbe Exp $");
 #include "language.h"
 #include "array.h"
 #include "lex.h"
@@ -1587,7 +1587,6 @@ static int do_lex2(int literal, YYSTYPE *yylval)
       switch(GETC())
       {
       case '+': tmp="`+"; break;
-      case '-': tmp="`-"; break;
       case '/': tmp="`/"; break;
       case '%': tmp="`%"; break;
       case '*': tmp="`*"; break;
@@ -1595,6 +1594,16 @@ static int do_lex2(int literal, YYSTYPE *yylval)
       case '|': tmp="`|"; break;
       case '^': tmp="`^"; break;
       case '~': tmp="`~"; break;
+      case '-':
+	if(GOBBLE('>'))
+	{
+	  tmp="`->";
+	  if(GOBBLE('=')) tmp="`->=";
+	}else{
+	  tmp="`-";
+	}
+	break;
+
       case '[':
 	if(GOBBLE(']'))
 	{

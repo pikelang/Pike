@@ -4,7 +4,7 @@
 ||| See the files COPYING and DISCLAIMER for more information.
 \*/
 #include "global.h"
-RCSID("$Id: object.c,v 1.7 1996/12/05 01:29:45 hubbe Exp $");
+RCSID("$Id: object.c,v 1.8 1997/01/16 05:00:46 hubbe Exp $");
 #include "object.h"
 #include "dynamic_buffer.h"
 #include "interpret.h"
@@ -349,7 +349,7 @@ void low_object_index_no_free(struct svalue *to,
   }
 }
 
-void object_index_no_free(struct svalue *to,
+void object_index_no_free2(struct svalue *to,
 			  struct object *o,
 			  struct svalue *index)
 {
@@ -376,27 +376,30 @@ void object_index_no_free(struct svalue *to,
   }
 }
 
+#define ARROW_INDEX_P(X) ((X)->type==T_STRING && (X)->subtype)
 
-void object_index_no_free2(struct svalue *to,
+void object_index_no_free(struct svalue *to,
 			   struct object *o,
 			   struct svalue *index)
 {
   struct program *p;
+  int lfun;
 
   if(!o || !(p=o->prog))
   {
     error("Lookup in destructed object.\n");
     return; /* make gcc happy */
   }
+  lfun=ARROW_INDEX_P(index) ? LFUN_ARROW : LFUN_INDEX;
 
-  if(p->lfuns[LFUN_INDEX] != -1)
+  if(p->lfuns[lfun] != -1)
   {
     push_svalue(index);
-    apply_lfun(o,LFUN_INDEX,1);
+    apply_lfun(o,lfun,1);
     to=sp;
     sp--;
   } else {
-    object_index_no_free(to,o,index);
+    object_index_no_free2(to,o,index);
   }
 }
 
@@ -435,7 +438,7 @@ static void object_low_set_index(struct object *o,
   }
 }
 
-void object_set_index(struct object *o,
+void object_set_index2(struct object *o,
 		      struct svalue *index,
 		      struct svalue *from)
 {
@@ -460,11 +463,12 @@ void object_set_index(struct object *o,
   }
 }
 
-void object_set_index2(struct object *o,
+void object_set_index(struct object *o,
 		       struct svalue *index,
 		       struct svalue *from)
 {
   struct program *p;
+  int lfun;
 
   if(!o || !(p=o->prog))
   {
@@ -472,14 +476,16 @@ void object_set_index2(struct object *o,
     return; /* make gcc happy */
   }
 
-  if(p->lfuns[LFUN_ASSIGN_INDEX] != -1)
+  lfun=ARROW_INDEX_P(index) ? LFUN_ASSIGN_ARROW : LFUN_ASSIGN_INDEX;
+
+  if(p->lfuns[lfun] != -1)
   {
     push_svalue(index);
     push_svalue(from);
-    apply_lfun(o,LFUN_ASSIGN_INDEX,2);
+    apply_lfun(o,lfun,2);
     pop_stack();
   } else {
-    object_set_index(o,index,from);
+    object_set_index2(o,index,from);
   }
 }
 
@@ -530,11 +536,12 @@ union anything *object_get_item_ptr(struct object *o,
     return 0; /* make gcc happy */
   }
 
+  f=ARROW_INDEX_P(index) ? LFUN_ASSIGN_ARROW : LFUN_ASSIGN_INDEX;
+  if(p->lfuns[f] != -1)
+    error("Cannot do incremental operations on overloaded index (yet).\n");
+
   if(index->type != T_STRING)
     error("Lookup on non-string value.\n");
-
-  if(p->lfuns[LFUN_ASSIGN_INDEX] != -1)
-    error("Cannot do incremental operations on overloaded index (yet).\n");
 
   f=find_shared_string_identifier(index->u.string, p);
   if(f < 0)
