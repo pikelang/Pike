@@ -1,12 +1,12 @@
 /*
- * $Id: image_ttf.c,v 1.4 1998/11/02 04:43:04 per Exp $
+ * $Id: image_ttf.c,v 1.5 1998/11/02 05:10:57 per Exp $
  */
 
 #include "config.h"
 
 
 #include "global.h"
-RCSID("$Id: image_ttf.c,v 1.4 1998/11/02 04:43:04 per Exp $");
+RCSID("$Id: image_ttf.c,v 1.5 1998/11/02 05:10:57 per Exp $");
 
 #ifdef HAVE_LIBTTF
 #include <freetype.h>
@@ -1162,7 +1162,8 @@ static void image_ttf_faceinstance_write(INT32 args)
 
 	    if ((res=TT_Get_Glyph_Pixmap(glyph,
 					 &rastermap,
-					 -metrics.bbox.xMin,
+					 -metrics.bbox.xMin+
+					 pos&63,
 					 face_i->height*64-
 					 face_i->trans)))
 	       { errs="TT_Get_Glyph_Pixmap: "; break; }
