@@ -1,5 +1,5 @@
 #
-# $Id: dynamic_module_makefile.in,v 1.46 1999/03/03 02:39:26 hubbe Exp $
+# $Id: dynamic_module_makefile.in,v 1.47 1999/03/06 06:00:24 hubbe Exp $
 #
 
 
@@ -7,6 +7,9 @@ CC=@CC@
 CPP=@CPP@
 AR=@AR@
 LIBGCC=@LIBGCC@
+REAL_LDFLAGS="@LDFLAGS@"
+REAL_CFLAGS="@CFLAGS@"
+REAL_CPPFLAGS="@CPPFLAGS@"
 
 PIKE_SRC_DIR=$(SRCDIR)/../..
 BUILD_BASE=../..
@@ -39,7 +42,7 @@ modlist_segment: Makefile
 	echo "" >modlist_segment
 
 Makefile: $(MODULE_BASE)/dynamic_module_makefile $(SRCDIR)/Makefile.in $(SRCDIR)/dependencies config.status
-	CONFIG_FILES=Makefile CONFIG_HEADERS="" ./config.status
+	CFLAGS="$(REAL_CFLAGS)" LDFLAGS="$(REAL_LDFLAGS)" CPPFLAGS="$(REAL_CPPFLAGS)" CONFIG_FILES=Makefile CONFIG_HEADERS="" ./config.status
 	touch remake
 	@echo "Run make again"
 	@exit 1
@@ -54,7 +57,7 @@ config.status: $(SRCDIR)/configure
 	./config.status --recheck
 
 module.so: $(OBJS)  $(MODULE_ARCHIVES)
-	$(TMP_BINDIR)/smartlink "@LDSHARED@" -o module.@SO@ $(OBJS) $(MODULE_ARCHIVES) $(MODULE_LDFLAGS) $(LIBGCC) -lc $(LIBGCC)
+	$(TMP_BINDIR)/smartlink "@LDSHARED@" $(LDFLAGS) -o module.@SO@ $(OBJS) $(MODULE_ARCHIVES) $(MODULE_LDFLAGS) $(LIBGCC) -lc $(LIBGCC)
 	if test @SO@ != so ; then mv module.@SO@ module.so ; else :; fi
 
 clean:

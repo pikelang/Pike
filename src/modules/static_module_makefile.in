@@ -1,5 +1,5 @@
 #
-# $Id: static_module_makefile.in,v 1.41 1999/03/03 02:39:27 hubbe Exp $
+# $Id: static_module_makefile.in,v 1.42 1999/03/06 06:00:26 hubbe Exp $
 #
 
 
@@ -9,6 +9,10 @@ AR=@AR@
 PIKE_SRC_DIR=$(SRCDIR)/../..
 BUILD_BASE=../..
 MODULE_BASE=..
+
+REAL_LDFLAGS="@LDFLAGS@"
+REAL_CFLAGS="@CFLAGS@"
+REAL_CPPFLAGS="@CPPFLAGS@"
 
 PREFLAGS=-I. -I$(SRCDIR) -I$(SRCDIR)/../.. -I../.. -I. -Dpike_module_init=pike_module_$(MODNAME)_init -Dpike_module_exit=pike_module_$(MODNAME)_exit $(MODULE_CPPFLAGS) $(DEFINES) 
 CFLAGS=$(PREFLAGS) $(OTHERFLAGS) $(MODULE_CFLAGS)
@@ -47,7 +51,7 @@ modlist_segment: Makefile
 	echo >modlist_segment " ,{ \"$(MODNAME)\", pike_module_$(MODNAME)_init, pike_module_$(MODNAME)_exit } "
 
 Makefile: ../static_module_makefile $(SRCDIR)/Makefile.in $(SRCDIR)/dependencies config.status
-	CONFIG_FILES=Makefile CONFIG_HEADERS="" ./config.status
+	CFLAGS="$(REAL_CFLAGS)" LDFLAGS="$(REAL_LDFLAGS)" CPPFLAGS="$(REAL_CPPFLAGS)" CONFIG_FILES=Makefile CONFIG_HEADERS="" ./config.status
 	touch remake
 	@echo "Run make again"
 	@exit 1
