@@ -1,5 +1,5 @@
 /*
- * $Id: Ports.pmod,v 1.3 1999/11/04 13:57:34 grubba Exp $
+ * $Id: Ports.pmod,v 1.4 2000/01/26 16:57:38 grubba Exp $
  *
  * IP port assignments
  *
@@ -995,6 +995,7 @@ constant tcp = ([
   "ddm-byte":         448,	//    DDM-BYTE
   "as-servermap":     449,	//    AS Server Mapper
   "tserver":          450,	//    TServer
+  "ssmtp":	      465,	//    SMTP over SSL
   "exec":             512,	//    remote process execution;
   "login":            513,	//    remote login a la telnet;
   "cmd":              514,	//    like exec, but automatic
@@ -1033,6 +1034,7 @@ constant tcp = ([
   "npmp-local":       610,	//    npmp-local
   "npmp-gui":         611,	//    npmp-gui
   "ginad":            634,	//    ginad
+  "ldaps":	      636,	//    LDAP over SSL
   "mdqs":             666,	//
   "doom":             666,	//    doom Id Software
   "doom":             666,	//    doom Id Software
@@ -1073,6 +1075,8 @@ constant tcp = ([
   "concert":          786,	//       Concert
   "mdbs_daemon":      800,	//
   "device":           801,	//
+  "simap":	      993,	//   IMAP over SSL
+  "spop3":	      995,	//   POP-3 over SSL
   "xtreelic":         996,	//        Central Point Software
   "maitrd":           997,	//
   "busboy":           998,	//
