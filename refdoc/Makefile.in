@@ -1,7 +1,7 @@
 #
 # Sub Makefile for extracting AutoDoc mk II to XML
 #
-# $Id: Makefile.in,v 1.18 2001/09/17 23:21:27 nilsson Exp $
+# $Id: Makefile.in,v 1.19 2001/10/23 21:26:13 nilsson Exp $
 #
 # Henrik Grubbström 2001-02-02
 #
@@ -24,27 +24,27 @@ extract: xml recurse
 
 .c.xml: $(ROOT)/bin/extract.pike $(ROOT)/bin/mirardoc.pike
 	@rm -f "$@.new" 2>/dev/null || /bin/true
-	@$(PIKE) $(ROOT)/bin/extract.pike "$<" $(ROOT)/manual/images >"$@.new" && \
+	@$(PIKE) $(ROOT)/bin/extract.pike "$<" $(BUILDROOT)/images >"$@.new" && \
 	  mv -f "$@.new" "$@"
 
 .pike.xml: $(ROOT)/bin/extract.pike $(ROOT)/bin/mirardoc.pike
 	@rm -f "$@.new" 2>/dev/null || /bin/true
-	@$(PIKE) $(ROOT)/bin/extract.pike "$<" $(ROOT)/manual/images >"$@.new" && \
+	@$(PIKE) $(ROOT)/bin/extract.pike "$<" $(BUILDROOT)/images >"$@.new" && \
 	  mv -f "$@.new" "$@"
 
 .pike.in.xml: $(ROOT)/bin/extract.pike $(ROOT)/bin/mirardoc.pike
 	@rm -f "$@.new" 2>/dev/null || /bin/true
-	@$(PIKE) $(ROOT)/bin/extract.pike "$<" $(ROOT)/manual/images >"$@.new" && \
+	@$(PIKE) $(ROOT)/bin/extract.pike "$<" $(BUILDROOT)/images >"$@.new" && \
 	  mv -f "$@.new" "$@"
 
 .pmod.xml: $(ROOT)/bin/extract.pike $(ROOT)/bin/mirardoc.pike
 	@rm -f "$@.new" 2>/dev/null || /bin/true
-	@$(PIKE) $(ROOT)/bin/extract.pike "$<" $(ROOT)/manual/images >"$@.new" && \
+	@$(PIKE) $(ROOT)/bin/extract.pike "$<" $(BUILDROOT)/images >"$@.new" && \
 	  mv -f "$@.new" "$@"
 
 .pmod.in.xml: $(ROOT)/bin/extract.pike $(ROOT)/bin/mirardoc.pike
 	@rm -f "$@.new" 2>/dev/null || /bin/true
-	@$(PIKE) $(ROOT)/bin/extract.pike "$<" $(ROOT)/manual/images >"$@.new" && \
+	@$(PIKE) $(ROOT)/bin/extract.pike "$<" $(BUILDROOT)/images >"$@.new" && \
 	  mv -f "$@.new" "$@"
 
 xml:

@@ -1,7 +1,7 @@
 #
 # Main Makefile for extracting AutoDoc mk II to XML
 #
-# $Id: Makefile,v 1.28 2001/10/17 04:27:54 nilsson Exp $
+# $Id: Makefile,v 1.29 2001/10/23 21:25:55 nilsson Exp $
 #
 # Henrik Grubbström 2001-02-02
 #
@@ -10,7 +10,7 @@ PIKE=pike
 
 all: html traditional
 
-tree-split: join _tree-split
+tree-split: build/autodoc.xml _tree-split
 
 _tree-split:
 	rm -rf manual-tree-split || /bin/true
@@ -18,18 +18,18 @@ _tree-split:
 	  manual.xml tree-split-template.html manual-tree-split
 	@cp tree-split-style.css manual-tree-split/style.css
 	@test -d manual-tree-split/images || mkdir manual-tree-split/images
-	cp manual/images/* manual-tree-split/images
+	cp build/images/* manual-tree-split/images
 	@cp src_images/next.gif src_images/prev.gif manual-tree-split/images
 
 html: html_manual manual.xml
-	cp manual/images/* html_manual/images/
+	cp build/images/* html_manual/images/
 	@$(PIKE) presentation/make_html.pike --img=images/ manual.xml
 
 traditional: traditional_manual traditional.xml
-	cp manual/images/* traditional_manual/images/
+	cp build/images/* traditional_manual/images/
 	@$(PIKE) presentation/make_html.pike --img=images/ traditional.xml
 
-join: recursive_join
+build/autodoc.xml: recursive_join
 	@$(MAKE) PIKE="$(PIKE)" XMLFILES="`echo build/*/*.xml not_extracted/*.xml`" \
 	  autodoc.xml
 
@@ -41,18 +41,18 @@ images: extract
 	@cp ../src/post_modules/GTK/refdoc/images/*.png \
 	  build/src/post_modules/GTK/refdoc/images
 
-extract: build/src/Makefile build/lib/Makefile manual/images
+extract: build/src/Makefile build/lib/Makefile build/images
 	@(cd build/src && $(MAKE) PIKE="$(PIKE)" extract)
 	@(cd build/lib && $(MAKE) PIKE="$(PIKE)" extract)
 
-manual.xml: join structure/onepage.xml bin/assembler.pike
-	@$(PIKE) bin/assembler.pike structure/onepage.xml autodoc.xml > manual.xml
+manual.xml: build/autodoc.xml structure/onepage.xml bin/assembler.pike
+	@$(PIKE) bin/assembler.pike structure/onepage.xml build/autodoc.xml > manual.xml
 
-traditional.xml: structure/traditional.xml bin/assembler.pike
-	@$(PIKE) bin/assembler.pike structure/traditional.xml autodoc.xml > traditional.xml
+traditional.xml: build/autodoc.xml structure/traditional.xml bin/assembler.pike
+	@$(PIKE) bin/assembler.pike structure/traditional.xml build/autodoc.xml > traditional.xml
 
 autodoc.xml: $(XMLFILES) bin/join.pike
-	@$(PIKE) bin/join.pike --post-process autodoc.xml $(XMLFILES)
+	@$(PIKE) bin/join.pike --post-process build/autodoc.xml $(XMLFILES)
 
 build/src/Makefile: Makefile.in build/src
 	@sed -e "s#@SRCDIR@#../../../src#" \
@@ -74,14 +74,14 @@ build/src: build
 build/lib: build
 	@test -d build/lib || mkdir build/lib
 
+build/images: build
+	@test -d build/images || mkdir build/images
+
 build:
 	@test -d build || mkdir build
 
 manual:
 	@test -d manual || mkdir manual
-
-manual/images: manual
-	@test -d manual/images || mkdir manual/images
 
 html_manual:
 	@test -d html_manual || mkdir html_manual
@@ -98,7 +98,6 @@ clean:
 
 spotless: clean
 	@rm -f manual.xml || /bin/true
-	@rm -f autodoc.xml || /bin/true
 	@rm -f traditional.xml || /bin/true
 	@rm -rf manual || /bin/true
 	@rm -rf html_manual || /bin/true
