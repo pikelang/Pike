@@ -316,7 +316,7 @@ PIKEFUN mixed m_delete(object|mapping map, mixed index)
     *sp=s;
     sp++;
   }
-  else if (map->type == T_OBJECT)
+  else if (map->type == T_OBJECT && map->u.object->prog)
   {
     int id = FIND_LFUN(map->u.object->prog, LFUN__M_DELETE);
 
