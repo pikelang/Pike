@@ -1,4 +1,4 @@
-# $Id: Makefile.in,v 1.1 2001/06/21 03:13:24 per Exp $
+# $Id: Makefile.in,v 1.2 2001/06/21 12:40:22 grubba Exp $
 @make_variables@
 VPATH=@srcdir@:@srcdir@/../..:../..
 OBJS=unicode_module.o normalize.o split.o buffer.o
@@ -8,18 +8,18 @@ CONFIG_HEADERS=@CONFIG_HEADERS@
 
 UNICODEDATA=../../UnicodeData.txt
 
-$(SRCDIR)/unicode_module.c: $(SRCDIR)/unicode_module.cmod
-	$(RUNPIKE) $(TMP_BINDIR)/precompile.pike >"$@" "$<" || { rm "$@"; exit 1; }
+$(SRCDIR)/unicode_module.c: $(SRCDIR)/unicode_module.cmod $(TMP_BINDIR)/precompile.pike
+	$(RUNPIKE) $(TMP_BINDIR)/precompile.pike >"$@" "$(SRCDIR)/unicode_module.cmod" || { rm "$@"; exit 1; }
 
-$(SRCDIR)/decompositions.h: $(SRCDIR)/make_decompose.pike
+$(SRCDIR)/decompositions.h: $(SRCDIR)/make_decompose.pike $(SRCDIR)/$(UNICODEDATA)
 	 $(RUNPIKE) $(SRCDIR)/make_decompose.pike 		\
                     < $(SRCDIR)/$(UNICODEDATA) > "$@" || { rm "$@"; exit 1; }
 
-$(SRCDIR)/canonicals.h: $(SRCDIR)/make_canonicals.pike
+$(SRCDIR)/canonicals.h: $(SRCDIR)/make_canonicals.pike $(SRCDIR)/$(UNICODEDATA)
 	 $(RUNPIKE) $(SRCDIR)/make_canonicals.pike 		\
                     < $(SRCDIR)/$(UNICODEDATA) > "$@" || { rm "$@"; exit 1; }
 
-$(SRCDIR)/wordbits.h: $(SRCDIR)/make_wordbits.pike
+$(SRCDIR)/wordbits.h: $(SRCDIR)/make_wordbits.pike $(SRCDIR)/$(UNICODEDATA)
 	 $(RUNPIKE) $(SRCDIR)/make_wordbits.pike 		\
                     < $(SRCDIR)/$(UNICODEDATA) > "$@" || { rm "$@"; exit 1; }
 
