@@ -146,7 +146,7 @@ class struct {
     return s;
   }
 
-  //! Reads an array of integers as written by @[put_fix_unit_array]
+  //! Reads an array of integers as written by @[put_fix_uint_array]
   //! from the buffer.
   array(mixed) get_fix_uint_array(int item_size, int size)
   {
@@ -156,7 +156,7 @@ class struct {
     return res;
   }
 
-  //! Reads an array of integers as written by @[put_var_unit_array]
+  //! Reads an array of integers as written by @[put_var_uint_array]
   //! from the buffer.
   array(mixed) get_var_uint_array(int item_size, int len)
   {
