@@ -162,7 +162,7 @@ void f_mkdir(INT32 args)
   push_int(i);
 }
 
-#undef HAVE_REDDIR_R
+#undef HAVE_READDIR_R
 #if defined(HAVE_SOLARIS_READDIR_R) || defined(HAVE_SOLARIS_HPUX_R) || \
     defined(HAVE_POSIX_R)
 #define HAVE_READDIR_R
@@ -349,6 +349,7 @@ void f_getcwd(INT32 args)
 
 void f_fork(INT32 args)
 {
+  do_set_close_on_exec();
   pop_n_elems(args);
 #if defined(HAVE_FORK1) && defined(_REENTRANT)
   push_int(fork1());
@@ -438,9 +439,11 @@ void f_exece(INT32 args)
     env=environ;
   }
 
-  set_close_on_exec(0,0);
-  set_close_on_exec(1,0);
-  set_close_on_exec(2,0);
+  my_set_close_on_exec(0,0);
+  my_set_close_on_exec(1,0);
+  my_set_close_on_exec(2,0);
+
+  do_set_close_on_exec();
 
   execve(argv[0],argv,env);
 

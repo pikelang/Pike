@@ -191,7 +191,7 @@ static void port_bind(INT32 args)
     return;
   }
 
-  set_close_on_exec(fd,1);
+  my_set_close_on_exec(fd,1);
 
   MEMSET((char *)&addr,0,sizeof(struct sockaddr_in));
 
@@ -298,10 +298,7 @@ static void port_accept(INT32 args)
     return;
   }
 
-  tmp=1;
-  setsockopt(fd,SOL_SOCKET, SO_KEEPALIVE, (char *)&tmp, sizeof(tmp));
-
-  set_close_on_exec(fd,1);
+  my_set_close_on_exec(fd,1);
   o=file_make_object_from_fd(fd,FILE_READ | FILE_WRITE);
   
   pop_n_elems(args);
