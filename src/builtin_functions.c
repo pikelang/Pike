@@ -4,7 +4,7 @@
 ||| See the files COPYING and DISCLAIMER for more information.
 \*/
 #include "global.h"
-RCSID("$Id: builtin_functions.c,v 1.51 1997/11/02 19:21:32 grubba Exp $");
+RCSID("$Id: builtin_functions.c,v 1.52 1997/11/02 19:27:27 grubba Exp $");
 #include "interpret.h"
 #include "svalue.h"
 #include "pike_macros.h"
@@ -1727,24 +1727,22 @@ void f_master(INT32 args)
 }
 
 #ifdef HAVE_GETHRVTIME
+#if __STDC__ - 0 == 0 && !defined(_NO_LONGLONG)
 #include <sys/time.h>
 
 void f_gethrvtime(INT32 args)
 {
-  hrtime_t t;
   pop_n_elems(args);
-  t = gethrvtime();
-  push_int((INT32)((*((long long *)&t))/1000));
+  push_int((INT32)(gethrvtime())/1000));
 }
 
 void f_gethrtime(INT32 args)
 {
-  hrtime_t t;
   pop_n_elems(args);
-  t = gethrtime();
-  push_int((INT32)((*((long long *)&t))/1000)); 
+  push_int((INT32)(gethrtime())/1000)); 
 }
-#endif
+#endif /* __STDC__ == 0 && !defined(_NO_LONGLONG) */
+#endif /* HAVE_GETHRVTIME */
 
 #ifdef PROFILING
 static void f_get_prof_info(INT32 args)
@@ -1811,8 +1809,10 @@ void init_builtin_efuns(void)
   init_operators();
 
 #ifdef HAVE_GETHRVTIME
+#if __STDC__ - 0 == 0 && !defined(_NO_LONGLONG)
   add_efun("gethrvtime",f_gethrvtime,"function(void:int)",OPT_EXTERNAL_DEPEND);
   add_efun("gethrtime", f_gethrtime,"function(void:int)", OPT_EXTERNAL_DEPEND);
+#endif /* __STDC__ - 0 == 0 && !defined(_NO_LONGLONG) */
 #endif
   
 #ifdef PROFILING
