@@ -1870,8 +1870,7 @@ static void check_constant(struct cpp *this,
     res=1;
     low_my_binary_strcat(" 1 ", 3,tmp);
   }else if(get_master()) {
-    this->current_file->refs++;
-    push_string(this->current_file);
+    ref_push_string(this->current_file);
     SAFE_APPLY_MASTER("resolv",2);
 
     res=(throw_value.type!=T_STRING) &&
@@ -1924,7 +1923,7 @@ static int do_safe_index_call(struct pike_string *s)
   if (SETJMP(recovery)) {
     res = 0;
   } else {
-    push_string(s);
+    ref_push_string(s);
     f_index(2);
     
     res=!(IS_ZERO(sp-1) && sp[-1].subtype == NUMBER_UNDEFINED);
