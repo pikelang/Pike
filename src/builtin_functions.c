@@ -5,7 +5,7 @@
 \*/
 /**/
 #include "global.h"
-RCSID("$Id: builtin_functions.c,v 1.371 2001/06/05 00:01:40 mast Exp $");
+RCSID("$Id: builtin_functions.c,v 1.372 2001/06/05 10:11:52 hubbe Exp $");
 #include "interpret.h"
 #include "svalue.h"
 #include "pike_macros.h"
@@ -472,38 +472,6 @@ PMOD_EXPORT void f_upper_case(INT32 args)
     free_string(Pike_sp[-1].u.string);
     Pike_sp[-1].u.string = end_shared_string(ret);
   }
-}
-
-/*! @decl int random(int max)
- *!
- *!   This function returns a random number in the range 0 - @[max]-1.
- *!
- *! @seealso
- *!   @[random_seed()]
- */
-PMOD_EXPORT void f_random(INT32 args)
-{
-  INT_TYPE i;
-
-  if(args && (Pike_sp[-args].type == T_OBJECT))
-  {
-    pop_n_elems(args-1);
-    apply(Pike_sp[-1].u.object,"_random",0);
-    stack_swap();
-    pop_stack();
-    return;
-  }
-
-  get_all_args("random",args,"%i",&i);
-
-  if(i <= 0)
-  {
-    i = 0;
-  }else{
-    i = my_rand() % i;
-  }
-  pop_n_elems(args);
-  push_int(i);
 }
 
 /*! @decl string random_string(int len)
@@ -7828,10 +7796,6 @@ void init_builtin_efuns(void)
 /* function(:int) */
   ADD_EFUN("query_num_arg",f_query_num_arg,
 	   tFunc(tNone,tInt),OPT_EXTERNAL_DEPEND);
-  
-/* function(int:int) */
-  ADD_EFUN("random",f_random,
-	   tFunc(tInt,tInt),OPT_EXTERNAL_DEPEND);
   
 /* function(int:void) */
   ADD_EFUN("random_seed",f_random_seed,

@@ -1,5 +1,5 @@
 /* -*- c -*-
- * $Id: builtin.cmod,v 1.30 2001/06/05 00:03:57 mast Exp $
+ * $Id: builtin.cmod,v 1.31 2001/06/05 10:11:52 hubbe Exp $
  */
 
 #include "global.h"
@@ -554,6 +554,115 @@ PIKEFUN object|program function_object(object|program|function func)
   push_int(0);
 }
 
+
+
+/*! @decl int random(int max)
+ *!
+ *!   This function returns a random number in the range 0 - @[max]-1.
+ *!
+ *! @seealso
+ *!   @[random_seed()]
+ */
+PIKEFUN mixed random(mixed arg)
+  efun;
+  optflags OPT_TRY_OPTIMIZE|OPT_EXTERNAL_DEPEND;
+  type function(int:int)|function(object:mixed)|function(array(1=mixed):1)|function(mapping(2=mixed:3=mixed):array(2|3))|function(multiset(4=mixed):4)|function(float:float);
+{
+  switch(arg->type)
+  {
+    case T_OBJECT:
+      pop_n_elems(args-1);
+      apply(Pike_sp[-1].u.object,"_random",0);
+      stack_swap();
+      pop_stack();
+      return;
+      
+    case T_INT:
+    {
+      INT_TYPE i=arg->u.integer;
+      pop_n_elems(args);
+      if(i <= 0)
+      {
+	push_int(0);
+      }else{
+	push_int( my_rand() % i);
+      }
+      return;
+    }
+
+    case T_FLOAT:
+    {
+      FLOAT_TYPE f=arg->u.float_number;
+      pop_n_elems(args);
+      if(f<=0.0)
+      {
+	push_float(0.0);
+      }else{
+#define N 1048576
+	push_float(f * (my_rand()%N/((float)N)) +
+		   f * (my_rand()%N/( ((float)N) * ((float)N) )));
+		   
+      }
+      return;
+    }
+
+    case T_ARRAY:
+    {
+      struct array *a=arg->u.array;
+      if(!a->size)
+	SIMPLE_BAD_ARG_ERROR("random", 1, "array with elements in it");
+      push_svalue(a->item + (my_rand() % a->size));
+      stack_swap();
+      pop_stack();
+      return;
+    }
+
+    case T_MULTISET:
+    {
+      struct multiset *m=arg->u.multiset;
+      if(!m->ind->size)
+	SIMPLE_BAD_ARG_ERROR("random", 1, "multiset with elements in it");
+      push_svalue(m->ind->item + (my_rand() % m->ind->size));
+      stack_swap();
+      pop_stack();
+      return;
+    }
+
+    case T_MAPPING:
+    {
+      struct mapping *m=arg->u.mapping;
+      struct mapping_data *md=m->data;
+      size_t bucket, count;
+      struct keypair *k;
+
+      if(!m_sizeof(m))
+	SIMPLE_BAD_ARG_ERROR("random", 1, "mapping with elements in it");
+
+      /* Find a random, nonempty bucket */
+      bucket=my_rand() % md->hashsize;
+      while(! md->hash[bucket] )
+	if(++bucket > (size_t)md->hashsize)
+	  bucket=0;
+      
+      /* Count entries in bucket */
+      count=0;
+      for(k=md->hash[bucket];k;k=k->next) count++;
+
+      /* Select a random entry in this bucket */
+      count = my_rand() % count;
+      k=md->hash[bucket];
+      while(count-- > 0) k=k->next;
+
+      /* Push result and return */
+      push_svalue(&k->ind);
+      push_svalue(&k->val);
+      f_aggregate(2);
+      stack_swap();
+      pop_stack();
+      return;
+    }
+  }
+}
 
 
 void init_builtin(void)
