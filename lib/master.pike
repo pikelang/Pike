@@ -29,8 +29,7 @@ void add_precompiled_program(string name, program p)
 
   if(sscanf(name, "/precompiled/%s", name)) {
     string const="";
-    name /= "/";
-    foreach(reverse(name), string s) {
+    foreach(reverse(name/"/"), string s) {
       const = capitalize(s) + const;
       add_constant(const, p);
     }
