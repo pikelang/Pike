@@ -1240,13 +1240,18 @@ UNLOCK(this->pmird);
 **!	it's not recommended doing a "read(0x7fffffff)".
 */
 
-static void pmts_read(INT32 args)
+#define SCAN_MAP 0
+#define SCAN_TUPELS 1
+#define SCAN_INDICES 2
+#define SCAN_VALUES 3
+
+static void _pmts_read(INT32 args,int do_what)
 {
    struct pmts_storage *this=THIS;
 
    INT_TYPE n;
    MIRD_RES res=NULL;
-   mird_size_t i;
+   mird_size_t i,nn;
 
    get_all_args("read",args,"%+",&n);
 
@@ -1297,29 +1302,65 @@ UNLOCK(this->pmird);
    {
       for (i=0; i<this->msr->n; i++)
       {
-	 push_int((INT_TYPE)(this->msr->tupel[i].key));
-	 push_string(make_shared_binary_string(
-	    this->msr->tupel[i].value,
-	    this->msr->tupel[i].value_len));
+	 if (do_what!=SCAN_VALUES)
+	    push_int((INT_TYPE)(this->msr->tupel[i].key));
+	 if (do_what!=SCAN_INDICES)
+	    push_string(make_shared_binary_string(
+	       this->msr->tupel[i].value,
+	       this->msr->tupel[i].value_len));
+	 if (do_what==SCAN_TUPELS)
+	    f_aggregate(2);
       }
-      f_aggregate_mapping(this->msr->n*2);
+      nn=this->msr->n;
    }
    else if (this->mssr)
    {
       for (i=0; i<this->mssr->n; i++)
       {
-	 push_string(make_shared_binary_string(
-	    this->mssr->tupel[i].key,
-	    this->mssr->tupel[i].key_len));
-	 push_string(make_shared_binary_string(
-	    this->mssr->tupel[i].value,
-	    this->mssr->tupel[i].value_len));
+	 if (do_what!=SCAN_VALUES)
+	    push_string(make_shared_binary_string(
+	       this->mssr->tupel[i].key,
+	       this->mssr->tupel[i].key_len));
+	 if (do_what!=SCAN_INDICES)
+	    push_string(make_shared_binary_string(
+	       this->mssr->tupel[i].value,
+	       this->mssr->tupel[i].value_len));
+	 if (do_what==SCAN_TUPELS)
+	    f_aggregate(2);
       }
-      f_aggregate_mapping(this->mssr->n*2);
+      nn=this->mssr->n;
    }
    else /* eod */
+   {
       push_int(0);
+      return;
+   }
+   if (do_what==SCAN_MAP)
+      f_aggregate_mapping(nn*2);
+   else
+      f_aggregate(nn);
 }
+
+static void pmts_read(INT32 args)
+{
+   return _pmts_read(args,SCAN_MAP);
+}
+
+static void pmts_read_tupels(INT32 args)
+{
+   return _pmts_read(args,SCAN_TUPELS);
+}
+
+static void pmts_read_indices(INT32 args)
+{
+   return _pmts_read(args,SCAN_INDICES);
+}
+
+static void pmts_read_values(INT32 args)
+{
+   return _pmts_read(args,SCAN_VALUES);
+}
+
 
 /*
 **! method int next_key()
@@ -1435,6 +1476,12 @@ void pike_module_init(void)
 
    ADD_FUNCTION("create",pmts_create,tFunc(tObj tInt,tVoid),0);
    ADD_FUNCTION("read",pmts_read,tFunc(tIntPos,tMap(tOr(tInt,tStr),tStr)),0);
+   ADD_FUNCTION("read_tupels",pmts_read_tupels,
+		tFunc(tIntPos,tArr(tArr(tOr(tInt,tStr)))),0);
+   ADD_FUNCTION("read_indices",pmts_read_indices,
+		tFunc(tIntPos,tArr(tOr(tInt,tStr))),0);
+   ADD_FUNCTION("read_values",pmts_read_values,
+		tFunc(tIntPos,tArr(tStr)),0);
    ADD_FUNCTION("next_key",pmts_next_key,tFunc(tNone,tInt),0);
 
    mird_scanner_program=end_program();
