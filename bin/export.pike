@@ -1,6 +1,6 @@
 #!/usr/local/bin/pike
 
-/* $Id: export.pike,v 1.10 1997/11/20 19:28:22 hubbe Exp $ */
+/* $Id: export.pike,v 1.11 1997/11/30 05:41:30 hubbe Exp $ */
 
 #include <simulate.h>
 
@@ -94,7 +94,7 @@ int main(int argc, string *argv)
 
   system("ln -s pike "+vpath);
 
-  files=sum(({ vpath+"/README" }),
+  files=sum(({ vpath+"/README", vpath+"/ANNOUNCE" }),
 	    get_files(vpath+"/src"),
 	    get_files(vpath+"/lib"),
 	    get_files(vpath+"/bin"));
