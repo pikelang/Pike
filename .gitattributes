@@ -8,6 +8,7 @@ testfont binary
 # Files containing CVS ids follow.
 # Remove the corresponding line before committing
 # changes to these files.
+/lib/include/sql.pre.pike foreign_ident
 /src/backend.c foreign_ident
 /src/builtin_functions.c foreign_ident
 /src/configure.in foreign_ident
