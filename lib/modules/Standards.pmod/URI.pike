@@ -2,7 +2,7 @@
 //! absolute form, as defined in RFC 2396
 
 // Implemented by Johan Sundström and Johan Schön.
-// $Id: URI.pike,v 1.10 2002/01/15 22:34:47 nilsson Exp $
+// $Id: URI.pike,v 1.11 2002/03/17 18:10:34 nilsson Exp $
 
 #pragma strict_types
 
@@ -39,7 +39,6 @@ object(this_program) base_uri;
 // properties with respect to that change.
 string raw_uri;
 
-#define error(S) throw( ({ (S), backtrace() }) )
 #ifdef STANDARDS_URI_DEBUG
 #define DEBUG(X, Y ...) werror("Standards.URI: "+X+"\n", Y)
 #else

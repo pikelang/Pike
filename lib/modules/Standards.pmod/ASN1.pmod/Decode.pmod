@@ -4,8 +4,6 @@
 
 #pike __REAL_VERSION__
 
-#define error(msg) throw( ({ msg, backtrace() }) )
-
 /* Decodes a DER object. DATA is an instance of ADT.struct, and types
  * is a mapping from tag numbers to classes.
  *
