@@ -1,5 +1,5 @@
 /*
- * $Id: udp.c,v 1.30 2002/05/06 16:21:18 hop%unibase.cz Exp $
+ * $Id: udp.c,v 1.31 2002/05/06 19:23:21 hop%unibase.cz Exp $
  */
 
 #define NO_PIKE_SHORTHAND
@@ -7,7 +7,7 @@
 
 #include "file_machine.h"
 
-RCSID("$Id: udp.c,v 1.30 2002/05/06 16:21:18 hop%unibase.cz Exp $");
+RCSID("$Id: udp.c,v 1.31 2002/05/06 19:23:21 hop%unibase.cz Exp $");
 #include "fdlib.h"
 #include "interpret.h"
 #include "svalue.h"
@@ -276,7 +276,7 @@ void udp_enable_broadcast(INT32 args)
 
 /*! @decl int wait(int|float timeout)
  *!
- *! Check for data and wait max. @[timeout].
+ *! Check for data and wait max. @[timeout] seconds.
  */
 void udp_wait(INT32 args)
 {
