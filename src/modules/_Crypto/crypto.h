@@ -1,5 +1,5 @@
 /*
- * $Id: crypto.h,v 1.2 1997/11/16 22:25:42 nisse Exp $
+ * $Id: crypto.h,v 1.3 1999/08/13 16:40:33 marcus Exp $
  *
  * Prototypes for some functions.
  *
@@ -27,4 +27,5 @@ extern void pike_cbc_init(void);
 extern void pike_cbc_exit(void);
 extern void pike_pipe_init(void);
 extern void pike_pipe_exit(void);
-
+extern void pike_nt_init(void);
+extern void pike_nt_exit(void);

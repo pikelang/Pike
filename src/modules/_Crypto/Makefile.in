@@ -1,4 +1,4 @@
-# $Id: Makefile.in,v 1.17 1998/07/19 22:54:34 grubba Exp $
+# $Id: Makefile.in,v 1.18 1999/08/13 16:40:31 marcus Exp $
 SRCDIR=@srcdir@
 VPATH=@srcdir@:@srcdir@/../..:../..
 
@@ -6,7 +6,7 @@ VPATH=@srcdir@:@srcdir@/../..:../..
 MASS_DESTRUCTION_OBJS = idea.o des.o cast.o rc4.o 
 # END NATIONAL SECURITY
 
-OBJS= $(MASS_DESTRUCTION_OBJS) crypto.o invert.o sha.o md5.o pipe.o cbc.o
+OBJS= $(MASS_DESTRUCTION_OBJS) crypto.o invert.o sha.o md5.o pipe.o cbc.o nt.o
 
 MODULE_ARCHIVES=lib/algorithms.a
 MODULE_SUBDIRS=lib
