@@ -4,11 +4,11 @@
 
 //! Polish language locale by Piotr Klaban.
 
-// $Id: pol.pmod,v 1.1 2002/10/01 10:57:57 nilsson Exp $
+// $Id: pol.pmod,v 1.2 2002/11/24 15:34:17 marcus Exp $
 
 inherit "abstract";
 
-constant name = ""; // FIXME
+constant name = "polski";
 constant english_name = "polish";
 constant iso_639_1 = "pl";
 constant iso_639_2 = "pol";
@@ -17,6 +17,29 @@ constant iso_639_2B = "pol";
 constant aliases = ({ "pl", "po", "pol", "polish" });
 
 constant required_charset = "iso-8859-2";
+
+constant languages=([
+  "cat":"kataloñski",
+  "ces":"czeski",
+  "nld":"holenderski",
+  "fin":"fiñski",
+  "fra":"francuski",
+  "deu":"niemiecki",
+  "eng":"angielski",
+  "spa":"hiszpañski",
+  "hrv":"chorwacki",
+  "hun":"wêgierski",
+  "ita":"w³oski",
+  "jpn":"japoñski",
+  "mri":"maoryjski",
+  "nor":"norweski",
+  "pol":"polski",
+  "por":"portugalski",
+  "rus":"rosyjski",
+  "slk":"s³owacki",
+  "srp":"serbski",
+  "swe":"szwedzki"
+]);
 
 constant months = ({
   "Styczeñ", "Luty", "Marzec", "Kwiecieñ", "Maj",
