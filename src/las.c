@@ -5,7 +5,7 @@
 \*/
 /**/
 #include "global.h"
-RCSID("$Id: las.c,v 1.79 1999/05/01 17:25:49 grubba Exp $");
+RCSID("$Id: las.c,v 1.80 1999/05/01 17:53:00 grubba Exp $");
 
 #include "language.h"
 #include "interpret.h"
@@ -792,6 +792,7 @@ node *index_node(node *n, char *node_name, struct pike_string *id)
 	  } else {
 	    f_index(2);
 	  }
+	  UNSETJMP(recovery);
 	}
       
 	if(sp[-1].type == T_INT &&
