@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: interpret_functions.h,v 1.143 2003/03/25 15:40:42 marcus Exp $
+|| $Id: interpret_functions.h,v 1.144 2003/04/03 14:56:26 grubba Exp $
 */
 
 /*
@@ -1721,7 +1721,7 @@ OPCODE1_ALIAS(F_SSCANF, "sscanf", 0, o_sscanf);
 #define MKAPPLY(OP,OPCODE,NAME,TYPE,  ARG2, ARG3)			   \
 OP(PIKE_CONCAT(F_,OPCODE),NAME, I_PC_AT_NEXT, {				   \
 Pike_fp->pc=PROG_COUNTER;						   \
-if(low_mega_apply(TYPE,0,DO_NOT_WARN((INT32)(Pike_sp - *--Pike_mark_sp)),  \
+if(low_mega_apply(TYPE,DO_NOT_WARN((INT32)(Pike_sp - *--Pike_mark_sp)),    \
 		  ARG2, ARG3))						   \
 {									   \
   Pike_fp->flags |= PIKE_FRAME_RETURN_INTERNAL;				   \
@@ -1731,7 +1731,7 @@ if(low_mega_apply(TYPE,0,DO_NOT_WARN((INT32)(Pike_sp - *--Pike_mark_sp)),  \
 									   \
 OP(PIKE_CONCAT3(F_,OPCODE,_AND_POP),NAME " & pop", I_PC_AT_NEXT, {	   \
   Pike_fp->pc=PROG_COUNTER;						   \
-  if(low_mega_apply(TYPE, 0, DO_NOT_WARN((INT32)(Pike_sp - *--Pike_mark_sp)), \
+  if(low_mega_apply(TYPE, DO_NOT_WARN((INT32)(Pike_sp - *--Pike_mark_sp)), \
 		    ARG2, ARG3))					   \
   {									   \
     Pike_fp->flags |= PIKE_FRAME_RETURN_INTERNAL | PIKE_FRAME_RETURN_POP;  \
@@ -1743,7 +1743,7 @@ OP(PIKE_CONCAT3(F_,OPCODE,_AND_POP),NAME " & pop", I_PC_AT_NEXT, {	   \
 									   \
 PIKE_CONCAT(OP,_RETURN)(PIKE_CONCAT3(F_,OPCODE,_AND_RETURN),		   \
 			NAME " & return", 0, {				   \
-  if(low_mega_apply(TYPE,0,DO_NOT_WARN((INT32)(Pike_sp - *--Pike_mark_sp)),  \
+  if(low_mega_apply(TYPE,DO_NOT_WARN((INT32)(Pike_sp - *--Pike_mark_sp)),  \
 		    ARG2,ARG3))						   \
   {									   \
     PIKE_OPCODE_T *addr = Pike_fp->pc;					   \
@@ -1762,7 +1762,7 @@ MKAPPLY(OP,OPCODE,NAME,TYPE,  ARG2, ARG3)			           \
 									   \
 OP(PIKE_CONCAT(F_MARK_,OPCODE),"mark, " NAME, I_PC_AT_NEXT, {		   \
   Pike_fp->pc=PROG_COUNTER;						   \
-  if(low_mega_apply(TYPE,0, 0,						   \
+  if(low_mega_apply(TYPE, 0,						   \
 		    ARG2, ARG3))					   \
   {									   \
     Pike_fp->flags |= PIKE_FRAME_RETURN_INTERNAL;			   \
@@ -1772,7 +1772,7 @@ OP(PIKE_CONCAT(F_MARK_,OPCODE),"mark, " NAME, I_PC_AT_NEXT, {		   \
 									   \
 OP(PIKE_CONCAT3(F_MARK_,OPCODE,_AND_POP),"mark, " NAME " & pop", I_PC_AT_NEXT, { \
   Pike_fp->pc=PROG_COUNTER;						   \
-  if(low_mega_apply(TYPE, 0, 0,						   \
+  if(low_mega_apply(TYPE, 0,						   \
 		    ARG2, ARG3))					   \
   {									   \
     Pike_fp->flags |= PIKE_FRAME_RETURN_INTERNAL | PIKE_FRAME_RETURN_POP;  \
@@ -1784,7 +1784,7 @@ OP(PIKE_CONCAT3(F_MARK_,OPCODE,_AND_POP),"mark, " NAME " & pop", I_PC_AT_NEXT, {
 									   \
 PIKE_CONCAT(OP,_RETURN)(PIKE_CONCAT3(F_MARK_,OPCODE,_AND_RETURN),	   \
 			"mark, " NAME " & return", 0, {			   \
-  if(low_mega_apply(TYPE,0, 0,						   \
+  if(low_mega_apply(TYPE, 0,						   \
 		    ARG2,ARG3))						   \
   {									   \
     PIKE_OPCODE_T *addr = Pike_fp->pc;					   \
@@ -1823,7 +1823,7 @@ OPCODE1(F_CALL_OTHER,"call other", I_PC_AT_NEXT, {
 					  p);
 	if(fun >= 0)
 	{
-	  if(low_mega_apply(APPLY_LOW, 0, args-1, o, (void *)(ptrdiff_t)fun))
+	  if(low_mega_apply(APPLY_LOW, args-1, o, (void *)(ptrdiff_t)fun))
 	  {
 	    Pike_fp->save_sp--;
 	    Pike_fp->flags |= PIKE_FRAME_RETURN_INTERNAL;
@@ -1849,7 +1849,7 @@ OPCODE1(F_CALL_OTHER,"call other", I_PC_AT_NEXT, {
     *s=tmp2;
     print_return_value();
 
-    if(low_mega_apply(APPLY_STACK, 0, args, 0, 0))
+    if(low_mega_apply(APPLY_STACK, args, 0, 0))
     {
       Pike_fp->flags |= PIKE_FRAME_RETURN_INTERNAL;
       DO_JUMP_TO(Pike_fp->pc);
@@ -1875,7 +1875,7 @@ OPCODE1(F_CALL_OTHER_AND_POP,"call other & pop", I_PC_AT_NEXT, {
 					  p);
 	if(fun >= 0)
 	{
-	  if(low_mega_apply(APPLY_LOW, 0, args-1, o, (void *)(ptrdiff_t)fun))
+	  if(low_mega_apply(APPLY_LOW, args-1, o, (void *)(ptrdiff_t)fun))
 	  {
 	    Pike_fp->save_sp--;
 	    Pike_fp->flags |=
@@ -1903,7 +1903,7 @@ OPCODE1(F_CALL_OTHER_AND_POP,"call other & pop", I_PC_AT_NEXT, {
     *s=tmp2;
     print_return_value();
 
-    if(low_mega_apply(APPLY_STACK, 0, args, 0, 0))
+    if(low_mega_apply(APPLY_STACK, args, 0, 0))
     {
       Pike_fp->flags |= PIKE_FRAME_RETURN_INTERNAL | PIKE_FRAME_RETURN_POP;
       DO_JUMP_TO(Pike_fp->pc);
@@ -1928,7 +1928,7 @@ OPCODE1(F_CALL_OTHER_AND_RETURN,"call other & return", 0, {
 					  p);
 	if(fun >= 0)
 	{
-	  if(low_mega_apply(APPLY_LOW, 0, args-1, o, (void *)(ptrdiff_t)fun))
+	  if(low_mega_apply(APPLY_LOW, args-1, o, (void *)(ptrdiff_t)fun))
 	  {
 	    PIKE_OPCODE_T *addr = Pike_fp->pc;
 	    Pike_fp->save_sp--;
@@ -1956,7 +1956,7 @@ OPCODE1(F_CALL_OTHER_AND_RETURN,"call other & return", 0, {
     *s=tmp2;
     print_return_value();
 
-    if(low_mega_apply(APPLY_STACK, 0, args, 0, 0))
+    if(low_mega_apply(APPLY_STACK, args, 0, 0))
     {
       PIKE_OPCODE_T *addr = Pike_fp->pc;
       DO_IF_DEBUG(Pike_fp->next->pc=0);
@@ -2137,7 +2137,7 @@ OPCODE1_JUMP(F_COND_RECUR, "recur if not overloaded", I_PC_AT_NEXT, {
     ptrdiff_t num_locals = READ_INCR_BYTE(faddr);	/* ignored */
     ptrdiff_t args = READ_INCR_BYTE(faddr);
 
-    if(low_mega_apply(APPLY_LOW, 0,
+    if(low_mega_apply(APPLY_LOW,
 		      args,
 		      Pike_fp->current_object,
 		      (void *)(ptrdiff_t)(arg1+
