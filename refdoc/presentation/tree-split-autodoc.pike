@@ -1,5 +1,5 @@
 /*
- * $Id: tree-split-autodoc.pike,v 1.50 2003/03/26 15:51:56 nilsson Exp $
+ * $Id: tree-split-autodoc.pike,v 1.51 2003/03/26 16:57:36 nilsson Exp $
  *
  */
 
@@ -148,15 +148,9 @@ class Node
   }
 
   static string parse_node(Parser.HTML p, mapping m, string c) {
-    if(m->name) {
-      if (p->tag_name() == "namespace") {
-	this_object()["module_children"] +=
-	({ Node( "namespace", m->name, c, this_object() ) });
-      } else {
-	this_object()[p->tag_name()+"_children"] +=
-	({ Node( p->tag_name(), m->name, c, this_object() ) });
-      }
-    }
+    if(!m->name) error("Unnamed %O %O\n", p->tag_name(), m);
+    this_object()[p->tag_name()+"_children"] +=
+      ({ Node( p->tag_name(), m->name, c, this_object() ) });
     return "";
   }
 
@@ -244,7 +238,6 @@ class Node
     parser->xml_tag_syntax(3);
 
     parser->add_container("docgroup", my_parse_docgroup);
-    parser->add_container("namespace", parse_node);
     parser->add_container("module", parse_node);
     parser->add_container("class",  parse_node);
     parser->add_container("enum",  parse_node);
@@ -418,7 +411,8 @@ class Node
   {
     if(!sizeof(children)) return "";
 
-    string res = "<tr><td nowrap='nowrap'><br /><b>"+what+"</b></td></tr>\n";
+    String.Buffer res = String.Buffer();
+    res->add("<tr><td nowrap='nowrap'><br /><b>", what, "</b></td></tr>\n");
 
     foreach(children, Node node)
     {
@@ -426,19 +420,20 @@ class Node
       if(node->type=="method")
 	my_name+="()";
       else if (node->type == "namespace") {
-	my_name+="::";
+	my_name="<b>"+my_name+"::</b>";
       }
       else 
 	my_name="<b>"+my_name+"</b>";
 
-      res += "<tr><td nowrap='nowrap'>&nbsp;";
+      res->add("<tr><td nowrap='nowrap'>&nbsp;");
       if(node==this_object())
-	res += my_name;
+	res->add( my_name );
       else
-	res += sprintf("<a href='%s'>%s</a>", make_link(node), my_name);
-      res += "</td></tr>\n";
+	res->add( "<a href='", make_link(node), "'>", my_name, "</a>" );
+      res->add("</td></tr>\n");
     }
-    return res;
+
+    return (string)res;
   }
 
   string make_hier_list(Node node)
@@ -452,7 +447,7 @@ class Node
       res += make_hier_list(node->parent);
 
       string my_class_path =
-	(node->type=="autodoc")?"[Top]":node->make_class_path();
+	(node->is_TopNode)?"[Top]":node->make_class_path();
 
       if(node == this_object())
 	res += sprintf("<b>%s</b><br />\n",
@@ -477,8 +472,10 @@ class Node
 
     res += make_navbar_really_low(root->class_children, "Classes");
 
-    if(root->is_TopNode)
+    if(root->is_TopNode) {
       res += make_navbar_really_low(root->appendix_children, "Appendices");
+      res += make_navbar_really_low(root->namespace_children, "Namespaces");
+    }
     else {
       res += make_navbar_really_low(root->enum_children, "Enums");
       res += make_navbar_really_low(root->method_children, "Methods");
@@ -515,7 +512,6 @@ class Node
 
   Node find_prev_node()
   {
-    PROFILE();
     array(Node) siblings = find_siblings();
     int index = search( siblings, this_object() );
 
@@ -529,13 +525,11 @@ class Node
     while(sizeof(tmp->find_children()))
       tmp = tmp->find_children()[-1];
 
-    ENDPROFILE("find_prev_node");
     return tmp;
   }
 
   Node find_next_node(void|int dont_descend)
   {
-    PROFILE();
     if(!dont_descend && sizeof(find_children()))
       return find_children()[0];
 
@@ -547,7 +541,6 @@ class Node
       tmp = parent->find_next_node(1);
     else
       tmp = siblings[index+1];
-    ENDPROFILE("find_next_node");
     return tmp;
   }
 
@@ -623,6 +616,7 @@ class TopNode {
 
   constant is_TopNode = 1;
   array(Node) appendix_children = ({ });
+  array(Node) namespace_children = ({ });
 
   void create(string _data) {
     Parser.HTML parser = Parser.HTML();
@@ -635,9 +629,9 @@ class TopNode {
     _data = parser->finish(_data)->read();
     ::create("autodoc", "", _data);
     sort(appendix_children->name, appendix_children);
-    foreach(module_children, Node x)
+    foreach(namespace_children, Node x)
       if(x->type=="namespace" && x->name==default_namespace) {
-	module_children -= ({ x });
+	//	namespace_children -= ({ x });
 	class_children += x->class_children;
 	module_children += x->module_children;
 	enum_children += x->enum_children;
@@ -649,6 +643,7 @@ class TopNode {
   Parser.HTML get_parser() {
     Parser.HTML parser = ::get_parser();
     parser->add_container("appendix", parse_node);
+    parser->add_container("namespace", parse_node);
     return parser;
   }
 
@@ -700,6 +695,7 @@ class TopNode {
 
   void make_html(string template, string path) {
     appendix_children->make_html(template, path);
+    namespace_children->make_html(template, path);
     ::make_html(template, path);
   }
 }
