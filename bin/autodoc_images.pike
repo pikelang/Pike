@@ -1,5 +1,3 @@
-
-// #define DEBUG
 string copy_to = "manual/images";
 
 void parse_directory(string directory) {
@@ -15,20 +13,24 @@ void parse_directory(string directory) {
       continue;
     if(file=="sub_manual.xml")
       continue;
-    string x;
+    string x,y;
+    y = Stdio.read_file(directory+file);
 #ifdef DEBUG
     array err = catch {
       x = Tools.AutoDoc.ProcessXML.moveImages
-	(Stdio.read_file(directory+file), directory, copy_to);
+	(y, directory, copy_to);
     };
-    if(!err)
-      Stdio.write_file(directory+file, x);
+    if(!err) {
+      if(x!=y)
+	Stdio.write_file(directory+file, x);
+    }
     else
       werror(describe_backtrace(err));
 #else
     x = Tools.AutoDoc.ProcessXML.moveImages
       (Stdio.read_file(directory+file), directory, copy_to);
-    Stdio.write_file(directory+file, x);
+    if(x!=y)
+      Stdio.write_file(directory+file, x);
 #endif
   }
 }
