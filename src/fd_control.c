@@ -3,17 +3,17 @@
 ||| Pike is distributed as GPL (General Public License)
 ||| See the files COPYING and DISCLAIMER for more information.
 \*/
-#include <sys/types.h>
-#include <sys/ioctl.h>
-#include <sys/socket.h>
-#include "fd_control.h"
-
 #ifndef TESTING
 #include "global.h"
 #include "error.h"
 #else
 #undef DEBUG
 #endif
+
+#include <sys/types.h>
+#include <sys/ioctl.h>
+#include <sys/socket.h>
+#include "fd_control.h"
 
 #ifdef HAVE_FCNTL_H
 #include <fcntl.h>
