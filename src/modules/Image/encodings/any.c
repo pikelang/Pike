@@ -1,9 +1,9 @@
-/* $Id: any.c,v 1.2 1999/02/24 03:33:34 mirar Exp $ */
+/* $Id: any.c,v 1.3 1999/03/04 03:00:40 grubba Exp $ */
 
 /*
 **! module Image
 **! note
-**!	$Id: any.c,v 1.2 1999/02/24 03:33:34 mirar Exp $
+**!	$Id: any.c,v 1.3 1999/03/04 03:00:40 grubba Exp $
 **! submodule ANY
 **!
 **!	This method calls the other decoding methods
@@ -23,8 +23,10 @@
 #include <ctype.h>
 
 #include "stralloc.h"
-RCSID("$Id: any.c,v 1.2 1999/02/24 03:33:34 mirar Exp $");
+RCSID("$Id: any.c,v 1.3 1999/03/04 03:00:40 grubba Exp $");
 #include "pike_macros.h"
+#include "operators.h"
+#include "builtin_functions.h"
 #include "object.h"
 #include "constants.h"
 #include "interpret.h"
