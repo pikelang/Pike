@@ -1,4 +1,4 @@
-AC_REVISION("$Id: configure.in,v 1.780 2004/02/27 14:33:04 grubba Exp $")
+AC_REVISION("$Id: configure.in,v 1.781 2004/02/27 15:04:16 grubba Exp $")
 AC_INIT(interpret.c)
 AC_CONFIG_HEADER(machine.h)
 
@@ -6926,7 +6926,7 @@ $bundle_info])
 
 	    echo "Configuring bundle $bundle_source_dir in `pwd`..."
 
-	    "$bundle_source_dir/configure" --prefix="$pike_bundle_prefix" \
+	    ${CONFIG_SHELL-/bin/sh} "$bundle_source_dir/configure" --prefix="$pike_bundle_prefix" \
 	      --disable-shared || exit 1
 	    if test -f "Makefile"; then :; else
 	      echo "Makefile not found in `pwd`."
@@ -6967,11 +6967,8 @@ Rerunning configure with the bundles `echo $bundles` enabled.
 
 
 EOF
-    if "x$CONFIG_SHELL" = "x"; then
-      CONFIG_SHELL=/bin/sh
-    fi
-    echo $CONFIG_SHELL "$srcdir/configure" $ac_configure_args --without-bundles
-    eval exec $CONFIG_SHELL "$srcdir/configure" $ac_configure_args --without-bundles
+    echo ${CONFIG_SHELL-/bin/sh} "$srcdir/configure" $ac_configure_args --without-bundles
+    eval exec ${CONFIG_SHELL-/bin/sh} "$srcdir/configure" $ac_configure_args --without-bundles
     exit 17
   fi
 fi
