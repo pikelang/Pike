@@ -22,7 +22,7 @@
 #include "builtin_functions.h"
 #include <signal.h>
 
-RCSID("$Id: signal_handler.c,v 1.65 1998/05/19 15:55:59 grubba Exp $");
+RCSID("$Id: signal_handler.c,v 1.66 1998/05/19 21:10:29 hubbe Exp $");
 
 #ifdef HAVE_PASSWD_H
 # include <passwd.h>
@@ -68,6 +68,12 @@ RCSID("$Id: signal_handler.c,v 1.65 1998/05/19 15:55:59 grubba Exp $");
 #define SIGNAL_BUFFER 16384
 #define WAIT_BUFFER 4096
 
+#ifdef HAVE_UNION_WAIT
+#define WAITSTATUSTYPE union wait
+#else
+#define WAITSTATUSTYPE int
+#endif
+
 #ifndef WEXITSTATUS
 #ifdef HAVE_UNION_WAIT
 #define WEXITSTATUS(x) ((x).w_retcode)
@@ -94,7 +100,7 @@ static struct callback *signal_evaluator_callback =0;
 #ifndef __NT__
 struct wait_data {
   pid_t pid;
-  int status;
+  WAITSTATUSTYPE status;
 };
 
 static struct wait_data wait_buf[WAIT_BUFFER];
@@ -378,12 +384,8 @@ static RETSIGTYPE receive_signal(int signum)
   if(signum==SIGCHLD)
   {
     pid_t pid;
-#ifdef HAVE_UNION_WAIT
-    /* OLD BSD's used this. */
-    union wait status;
-#else /* !HAVE_UNION_WAIT */
-    int status;
-#endif /* HAVE_UNION_WAIT */
+    WAITSTATUSTYPE status;
+
   try_reap_again:
     /* We carefully reap what we saw */
 #ifdef HAVE_WAITPID
@@ -474,7 +476,7 @@ static void exit_pid_status(struct object *o)
 
 #ifndef __NT__
 static void report_child(int pid,
-			 int status)
+			 WAITSTATUSTYPE status)
 {
 
   if(pid_mapping)
@@ -542,7 +544,8 @@ static void f_pid_status_wait(INT32 args)
     int err=0;
     while(THIS->state == PROCESS_RUNNING)
     {
-      int pid, status;
+      int pid;
+      WAITSTATUSTYPE status;
       pid=THIS->pid;
 
       if(err)
