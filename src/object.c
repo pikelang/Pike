@@ -5,7 +5,7 @@
 \*/
 /**/
 #include "global.h"
-RCSID("$Id: object.c,v 1.156 2001/01/17 10:13:52 hubbe Exp $");
+RCSID("$Id: object.c,v 1.157 2001/01/17 14:01:28 mast Exp $");
 #include "object.h"
 #include "dynamic_buffer.h"
 #include "interpret.h"
@@ -1298,6 +1298,8 @@ PMOD_EXPORT void gc_mark_object_as_referenced(struct object *o)
 
 PMOD_EXPORT void real_gc_cycle_check_object(struct object *o, int weak)
 {
+  if(o->next == o) return; /* Fake object used by compiler */
+
   GC_CYCLE_ENTER_OBJECT(o, weak) {
     int e;
     struct program *p = o->prog;
