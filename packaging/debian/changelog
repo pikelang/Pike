@@ -1,3 +1,9 @@
+pike7.4 (7.4.21-5) unstable; urgency=low
+
+  * First version with the pike-* virtual packages.
+
+ -- Marek Habersack <grendel@debian.org>  Wed, 21 May 2003 04:06:24 +0200
+
 pike7.4 (7.4.21-4) unstable; urgency=low
 
   * Upload to force the recompile with correct dependencies on some

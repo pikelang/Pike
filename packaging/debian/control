@@ -2,7 +2,7 @@ Source: pike7.4
 Section: interpreters
 Priority: optional
 Maintainer: Marek Habersack <grendel@debian.org>
-Standards-Version: 3.5.9
+Standards-Version: 3.5.10
 Build-Depends: debhelper (>> 4.0.0), libgdbmg1-dev, libgmp3-dev, libz-dev, libjpeg-dev, libttf-dev, libmysqlclient10-dev, libreadline-dev, perl5, bison, glutg3-dev, libgnome-dev, xlibmesa-gl-dev, xlibmesa-glu-dev, libgnorba-dev, libxpm4-dev, libglib1.2-dev, libglade0-dev, libxml2-dev, libgtkxmhtml-dev, libfreetype6-dev, libdockapp-dev, autoconf2.13, automake, libiodbc2-dev, libsane-dev, postgresql-dev, librsvg2-dev, libsdl-mixer1.2-dev, libsdl1.2-dev, libperl-dev, sharutils, libpng2-dev, orbit, libtiff3g-dev, libungif4-dev, gdk-imlib1-dev, bc
 Build-Conflicts: libutahglx-dev
 
@@ -186,3 +186,76 @@ Description: Meta package for Pike 7.4
  with support for graphics formats like SVG, JPG, PNG, GIF, XCF and many
  others,  database connectivity, advanced cryptography, XML/HTML parsers
  and others. To learn more about pike, please visit http://pike.ida.liu.se/
+
+Package: pike
+Architecture: any
+Depends: pike7.4 (=${Source-Version})
+Replaces: pike (<= 0.6.131-12)
+Suggests: pike7.4-doc
+Description: upgrade helper package for pike 
+ This package exists for two reasons. First is to smoothly
+ upgrade from the old 0.6 packages to the new ones. Second is
+ to suggest the installation of the latest Pike version.
+
+Package: pike-mysql
+Architecture: any
+Depends: pike7.4 (=${Source-Version}), pike7.4-mysql (=${Source-Version})
+Replaces: pike-mysql (<= 0.6.131-12)
+Description: upgrade helper package pike-mysql
+ This package exists for two reasons. First is to smoothly
+ upgrade from the old 0.6 packages to the new ones. Second is
+ to suggest the installation of the latest Pike version.
+
+Package: pike-pg
+Architecture: any
+Depends: pike7.4 (=${Source-Version}), pike7.4-pg (=${Source-Version})
+Replaces: pike-pg (<= 0.6.131-12)
+Description: upgrade helper package pike-pg
+ This package exists for two reasons. First is to smoothly
+ upgrade from the old 0.6 packages to the new ones. Second is
+ to suggest the installation of the latest Pike version.
+
+Package: pike-image
+Architecture: any
+Depends: pike7.4 (=${Source-Version}), pike7.4-image (=${Source-Version})
+Replaces: pike-image (<= 0.6.131-12)
+Description: upgrade helper package pike-image
+ This package exists for two reasons. First is to smoothly
+ upgrade from the old 0.6 packages to the new ones. Second is
+ to suggest the installation of the latest Pike version.
+
+Package: pike-gdbm
+Architecture: any
+Depends: pike7.4 (=${Source-Version}), pike7.4-gdbm (=${Source-Version})
+Replaces: pike-gdbm (<= 0.6.131-12)
+Description: upgrade helper package pike-gdbm
+ This package exists for two reasons. First is to smoothly
+ upgrade from the old 0.6 packages to the new ones. Second is
+ to suggest the installation of the latest Pike version.
+
+Package: pike-gz
+Architecture: any
+Depends: pike7.4 (=${Source-Version}), pike7.4-gz (=${Source-Version})
+Replaces: pike-gz (<= 0.6.131-12)
+Description: upgrade helper package pike-gz
+ This package exists for two reasons. First is to smoothly
+ upgrade from the old 0.6 packages to the new ones. Second is
+ to suggest the installation of the latest Pike version.
+
+Package: pike-gmp
+Architecture: any
+Depends: pike7.4 (=${Source-Version}), pike7.4-core (=${Source-Version})
+Replaces: pike-gmp (<= 0.6.131-12)
+Description: upgrade helper package pike-gmp
+ This package exists for two reasons. First is to smoothly
+ upgrade from the old 0.6 packages to the new ones. Second is
+ to suggest the installation of the latest Pike version.
+
+Package: pike-perl
+Architecture: any
+Depends: pike7.4 (=${Source-Version}), pike7.4-perl (=${Source-Version})
+Replaces: pike-perl (<= 0.6.131-12)
+Description: upgrade helper package pike-perl
+ This package exists for two reasons. First is to smoothly
+ upgrade from the old 0.6 packages to the new ones. Second is
+ to suggest the installation of the latest Pike version.
