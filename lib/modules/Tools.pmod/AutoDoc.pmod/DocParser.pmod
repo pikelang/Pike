@@ -633,8 +633,15 @@ static class DocParserClass {
         string keyword = token->keyword;
         single = single || (token->type == SINGLEKEYWORD && keyword);
         multiset(string) allow = allowedChildren[container];
-        if (!allow || !allow[keyword])
-          parseError("@" + keyword + " is not allowed inside @" + container);
+        if (!allow || !allow[keyword]) {
+          string e = sprintf("@%s is not allowed inside @%s",
+                             keyword, container);
+          if (allow)
+            e += sprintf(" (allowed children are:%{ @%s%})", indices(allow));
+          else
+            e += " (no children are allowed)";
+          parseError(e);
+        }
 
         multiset(string) allowGroup = allowGrouping[keyword] || ([]);
         foreach (keywords, string k)
