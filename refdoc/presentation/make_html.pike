@@ -44,7 +44,10 @@ string parse_module(Node n) {
   if(c)
     ret += "<dl>" + parse_doc(c) + "</dl>";
 
-  // Check for more than one doc.
+#ifdef DEBUG
+  if(sizeof(get_tags(n, "doc"))>1)
+    throw( ({ "More than one doc element in module node.\n", backtrace() }) );
+#endif
 
   ret += parse_children(n, "docgroup", parse_docgroup);
   ret += parse_children(n, "class", parse_class);
@@ -65,13 +68,16 @@ string parse_class(Node n) {
   if(c)
     ret += "<dl>" + parse_doc(c) + "</dl>";
 
-  // Check for more than one doc.
+#ifdef DEBUG
+  if(sizeof(get_tags(n, "doc"))>1)
+    throw( ({ "More than one doc element in class node.\n", backtrace() }) );
+#endif
 
   if(get_tag(n, "inherit")) {
     ret += "<h3>Inherits</h3><ul>";
     foreach(n->get_children(), Node c)
-      if(c->get_node_type==XML_ELEMENT && n->get_any_name()=="inherit")
-	ret += "<li>" + quote(c->get_attributes()->classname) + "</li>\n";
+      if(c->get_node_type()==XML_ELEMENT && c->get_any_name()=="inherit")
+	ret += "<li>" + quote(get_tag(c, "classname")[0]->get_text()) + "</li>\n";
     ret += "</ul>\n";
   }
 
@@ -191,7 +197,6 @@ string parse_text(Node n) {
 
     case "section":
     case "url":
-    case "wbr":
       // Found...
       break;
 
@@ -301,7 +306,7 @@ string parse_type(Node n, void|string debug) {
 
   case "object":
     if(n->count_children())
-      ret += "<font color='#005080'>" + n[0]->get_text() + "</font>";
+      ret += "<font color='#005080'>object(" + n[0]->get_text() + ")</font>";
     else
       ret += "<font color='#202020'>object</font>";
     break;
@@ -384,7 +389,7 @@ string render_class_path(Node n) {
   if(sizeof(a)<4) return "";
   string ret = a[2..sizeof(a)-2]->get_attributes()->name * ".";
   if(n->get_parent()->get_parent()->get_any_name()=="class")
-    return ret + "->";
+    return ret + "()->";
   if(n->get_parent()->get_parent()->get_any_name()=="module")
     return ret + ".";
 #ifdef DEBUG
@@ -419,7 +424,7 @@ string parse_not_doc(Node n) {
       ret += "<tt>" + parse_type(get_first_element(get_tag(c, "returntype"))); // Check for more children
       ret += " ";
       ret += render_class_path(c);
-      ret += "<b><font color='#0000EE'>" + c->get_attributes()->name + "</font>(</b>";
+      ret += "<b><font color='#0000E0'>" + c->get_attributes()->name + "</font>(</b>";
       ret += parse_not_doc( get_tag(c, "arguments") );
       ret += "<b>)</b></tt>";
       break;
@@ -459,6 +464,7 @@ string parse_not_doc(Node n) {
 
     case "typedef":
     case "inherit":
+      ret += "<font color='red'>Missing content (" + c->get_any_name() + ")</font>";
       // Not implemented yet.
       break;
 
@@ -543,7 +549,7 @@ int main(int num, array args) {
 
   // We are only interested in what's in the
   // module container.
-  werror("Parsing file...\n");
+  werror("Parsing %O...\n", args[-1]);
   write(start_parsing( Parser.XML.Tree.parse_input(file)[0] ));
   werror("Took %.1f seconds.\n", (gethrtime()-t)/1000000.0);
 
