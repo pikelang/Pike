@@ -1,5 +1,5 @@
 #
-# $Id: pike_verify.supp,v 1.2 2003/10/16 01:24:49 nilsson Exp $
+# $Id: pike_verify.supp,v 1.3 2004/08/10 13:27:45 nilsson Exp $
 # Suppression file for valgrind errors outside of Pike triggered
 # by the Pike test suite.
 #
@@ -32,4 +32,34 @@
    fun:gdbm_open
    fun:gdbm_reorganize
    fun:gdbmmod_reorganize
+}
+
+
+# libc-2.3.2 suppressions
+
+{
+   <insert a suppression name here>
+   Memcheck:Cond
+   obj:/lib/ld-2.3.2.so
+   fun:_dl_relocate_object
+   obj:/lib/i686/libc-2.3.2.so
+   fun:_dl_catch_error
+}
+
+{
+   <insert a suppression name here>
+   Memcheck:Cond
+   fun:_dl_relocate_object
+   obj:/lib/i686/libc-2.3.2.so
+   fun:_dl_catch_error
+   fun:_dl_open
+}
+
+{
+   <insert a suppression name here>
+   Memcheck:Value4
+   fun:_IO_vfprintf
+   obj:/lib/i686/libc-2.3.2.so
+   fun:_IO_vfprintf
+   fun:debug_fatal
 }
