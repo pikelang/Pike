@@ -1,4 +1,4 @@
-AC_REVISION("$Id: configure.in,v 1.183 1998/05/15 18:46:12 grubba Exp $")
+AC_REVISION("$Id: configure.in,v 1.184 1998/05/17 20:37:12 grubba Exp $")
 AC_INIT(interpret.c)
 AC_CONFIG_HEADER(machine.h)
 
@@ -1441,6 +1441,23 @@ AC_TRY_COMPILE([
 AC_MSG_RESULT($pike_cv_declare_environ)
 if test "x$pike_cv_declare_environ" = xyes ; then
   AC_DEFINE(DECLARE_ENVIRON)
+fi
+
+#############################################################################
+
+AC_MSG_CHECKING([for union wait (old BSD convention)])
+AC_CACHE_VAL(pike_cv_union_wait, [ AC_TRY_COMPILE([
+#ifdef HAVE_SYS_WAIT_H
+#include <sys/wait.h>
+], [
+  union wait status;
+  exit(0);
+], pike_cv_union_wait=yes, pike_cv_union_wait=no)
+])
+
+AC_MSG_RESULT($pike_cv_union_wait)
+if test "x$pike_cv_union_wait" = "xyes" ; then
+  AC_DEFINE(HAVE_UNION_WAIT)
 fi
 
 #############################################################################
