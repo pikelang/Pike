@@ -5,7 +5,7 @@
 \*/
 /**/
 #include "global.h"
-RCSID("$Id: iterators.cmod,v 1.6 2001/05/17 18:31:18 grubba Exp $");
+RCSID("$Id: iterators.cmod,v 1.7 2001/05/17 19:12:09 grubba Exp $");
 #include "main.h"
 #include "object.h"
 #include "mapping.h"
@@ -536,9 +536,9 @@ PIKECLASS string_split_iterator
       ssi->offset = end+1;
       ssi->current = Pike_sp[-1].u.string;
       Pike_sp--;
-      if ((!THIS->flags) && (ssi->offset > ssi->buffer->len)) {
-	free_string(THIS->buffer);
-	THIS->buffer = 0;
+      if (ssi->offset > ssi->buffer->len) {
+	free_string(ssi->buffer);
+	ssi->buffer = 0;
       }
     }
   
