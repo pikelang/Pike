@@ -4,7 +4,7 @@
 ||| See the files COPYING and DISCLAIMER for more information.
 \*/
 #include "global.h"
-RCSID("$Id: main.c,v 1.55 1998/07/10 15:52:03 grubba Exp $");
+RCSID("$Id: main.c,v 1.56 1998/07/27 21:57:11 hubbe Exp $");
 #include "fdlib.h"
 #include "backend.h"
 #include "module.h"
@@ -85,6 +85,31 @@ struct callback *add_exit_callback(callback_func call,
   return add_to_callback(&exit_callbacks, call, arg, free_func);
 }
 
+#ifdef __NT__
+static void get_master_key(long cat)
+{
+  HKEY k;
+  char buffer[4096];
+  DWORD len=sizeof(buffer)-1,type=REG_SZ;
+  long ret;
+  if(RegOpenKeyEx(cat,
+		  (LPCTSTR)"SOFTWARE\\Idonex\\Pike\\0.6",
+		  0,KEY_READ,&k)==ERROR_SUCCESS)
+  {
+    if(RegQueryValueEx(k,
+		       "PIKE_MASTER",
+		       0,
+		       &type,
+		       buffer,
+		       &len)==ERROR_SUCCESS)
+    {
+      master_file=strdup(buffer);
+    }
+    RegCloseKey(k);
+  }
+}
+#endif /* __NT__ */
+
 int dbm_main(int argc, char **argv)
 {
   JMP_BUF back;
@@ -119,34 +144,12 @@ int dbm_main(int argc, char **argv)
   init_backend();
   master_file = 0;
 #if __NT__
-  if(!master_file)
-  {
-    HKEY k;
-    char buffer[4096];
-    DWORD len=sizeof(buffer)-1,type=REG_SZ;
-    long ret;
-    if(RegOpenKeyEx(HKEY_CURRENT_USER,
-		     (LPCTSTR)"SOFTWARE\\Idonex\\Pike\\0.6",
-		     0,KEY_READ,&k)==ERROR_SUCCESS ||
-       RegOpenKeyEx(HKEY_LOCAL_MACHINE,
-		    (LPCTSTR)"SOFTWARE\\Idonex\\Pike\\0.6",
-		    0,KEY_READ,&k)==ERROR_SUCCESS)
-    {
-      if(RegQueryValueEx(k,
-			 "PIKE_MASTER",
-			 0,
-			 &type,
-			 buffer,
-			 &len)==ERROR_SUCCESS)
-      {
-	master_file=strdup(buffer);
-      }
-      RegCloseKey(k);
-    }
-  }
+  if(!master_file) get_master_key(HKEY_CURRENT_USER);
+  if(!master_file) get_master_key(HKEY_LOCAL_MACHINE);
 #endif
 #ifdef HAVE_GETENV
-  master_file = getenv("PIKE_MASTER");
+  if(getenv("PIKE_MASTER"))
+    master_file = getenv("PIKE_MASTER");
 #endif
 
   if(!master_file) master_file = DEFAULT_MASTER;
