@@ -2,13 +2,13 @@
 
 #define ERR(msg) throw(({ msg+"\n", backtrace() }));
 
-void main(int argc, array argv)
+int main(int argc, array argv)
 {
   .module.db("test.db", "wct")->purge();
   object db = .module.db("test.db", "wct");
   object table = db["Aces"];
 
-  // Test transactions
+  // Test transactions.
   table["Blixt"] = "Gordon";
   object transaction = table->transaction();
 
@@ -37,6 +37,7 @@ void main(int argc, array argv)
   if(table["Buck"] != "Rogers")
     ERR("Table diff #9!");
 
+  // Test multiple commands.
   mapping m = ([]);
   for(int i = 0; i < 10; i++) {
     string s = (string)(i%3);
@@ -60,7 +61,9 @@ void main(int argc, array argv)
     }
   }
 
+  // Remove test database.
   db->purge();
 
-  write("Yabu test program says A OK.\n");
+  write("Yabu test program says everything is A OK.\n");
+  return 1;
 }
