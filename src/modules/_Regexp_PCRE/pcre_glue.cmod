@@ -2,12 +2,12 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: pcre_glue.cmod,v 1.9 2003/09/30 23:42:25 nilsson Exp $
+|| $Id: pcre_glue.cmod,v 1.10 2003/10/01 10:39:09 mirar Exp $
 || (original author: mirar)
 */
 
 #include "global.h"
-RCSID("$Id: pcre_glue.cmod,v 1.9 2003/09/30 23:42:25 nilsson Exp $");
+RCSID("$Id: pcre_glue.cmod,v 1.10 2003/10/01 10:39:09 mirar Exp $");
 #include "pcre_machine.h"
 
 #include "pike_macros.h"
@@ -380,7 +380,7 @@ PIKEFUN array(string) split_subject(string subject,array(int) previous_result)
    int sz=previous_result->size/2;
    struct array *res;
 
-   for (j=0; i<sz*2; i++)
+   for (i=0; i<sz*2; i++)
       if (ITEM(previous_result)[i].type!=T_INT)
 	 SIMPLE_BAD_ARG_ERROR("split_subjects",2,"array(int)");
 
@@ -457,13 +457,19 @@ PIKE_MODULE_INIT
  *!
  */
 
+/* we need a constant that *isn't there* if we don't have UTF8 support */
+   {
+      int outcome;
+      if (pcre_config(PCRE_CONFIG_UTF8,&outcome)==0 && outcome)
+         add_integer_constant("UTF8_SUPPORTED",1,0);
+   }
+
 #define FIGURE_BUILD_TIME_OPTION(X)					\
    do									\
    {									\
       int outcome;							\
-      if (pcre_config(PCRE_CONFIG_##X,&outcome)!=0)			\
-	 error("error while calling pcre_config("#X")\n");		\
-      add_integer_constant("buildconfig_"#X,outcome,0);			\
+      if (pcre_config(PCRE_CONFIG_##X,&outcome)==0)			\
+         add_integer_constant("buildconfig_"#X,outcome,0);		\
    }									\
    while (0)
 

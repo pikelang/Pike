@@ -1,5 +1,5 @@
 // -*- Pike -*-
-// $Id: module.pmod.in,v 1.2 2003/09/30 23:42:57 nilsson Exp $
+// $Id: module.pmod.in,v 1.3 2003/10/01 10:39:09 mirar Exp $
 // original author: mirar
 
 #pike __REAL_VERSION__
@@ -236,7 +236,7 @@ class Studied
    }
 }
 
-#if constant(@module@.buildconfig_UTF8)
+#if constant(@module@.UTF8_SUPPORTED)
 #define PCRE_GOT_WIDESTRINGS
 
 //! Wrapper class around Plain, that will allow widestring
