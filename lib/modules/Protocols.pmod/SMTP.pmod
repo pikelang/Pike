@@ -110,4 +110,9 @@ class client
 					     "content-transfer-encoding":
 					       "8bit"])));
   }
+
+  array(int|string) verify(string addr)
+  {
+    return ({command("VRFY "+addr),rest});
+  }
 }
