@@ -13,7 +13,7 @@
 
 
 #ifdef HAVE_LIBTIFF
-RCSID("$Id: image_tiff.c,v 1.3 1999/04/09 23:20:07 per Exp $");
+RCSID("$Id: image_tiff.c,v 1.4 1999/04/10 03:16:03 per Exp $");
 
 #include "global.h"
 #include "machine.h"
@@ -354,6 +354,7 @@ void low_image_tiff_decode( struct buffer *buf,
   sp--;
   if(!image_only)
   {
+#ifdef HAVE_TIFFIOP_H
     char *tmp;
     TIFFDirectory *td = &tif->tif_dir;
     if (TIFFFieldSet(tif,FIELD_RESOLUTION)) 
@@ -555,6 +556,7 @@ void low_image_tiff_decode( struct buffer *buf,
       }
       f_aggregate(td->td_samplesperpixel);
     }
+#endif
 #endif
   }
   TIFFClose(tif);
