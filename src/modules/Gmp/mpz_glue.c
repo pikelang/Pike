@@ -4,7 +4,7 @@
 ||| See the files COPYING and DISCLAIMER for more information.
 \*/
 #include "global.h"
-RCSID("$Id: mpz_glue.c,v 1.69 1999/11/30 07:41:24 hubbe Exp $");
+RCSID("$Id: mpz_glue.c,v 1.70 1999/12/15 19:42:44 hubbe Exp $");
 #include "gmp_machine.h"
 
 #if defined(HAVE_GMP2_GMP_H) && defined(HAVE_LIBGMP2)
@@ -675,12 +675,52 @@ static void return_temporary(INT32 args)
 }
 #endif
 
+#ifdef AUTO_BIGNUM
 
-#define BINFUN2(name, fun)						\
+#define DO_IF_AUTO_BIGNUM(X) X
+double double_from_sval(struct svalue *s)
+{
+  switch(s->type)
+  {
+    case T_INT: return (double)s->u.integer;
+    case T_FLOAT: return (double)s->u.float_number;
+    case T_OBJECT: 
+      if(s->u.object->prog == mpzmod_program ||
+	 s->u.object->prog == bignum_program)
+	return mpz_get_d(OBTOMPZ(s->u.object));
+    default:
+      error("Bad argument, expected a number of some sort.\n");
+  }
+}
+
+#else
+#define DO_IF_AUTO_BIGNUM(X)
+#endif
+
+
+#define BINFUN2(name, fun, OP)						\
 static void name(INT32 args)						\
 {									\
   INT32 e;								\
   struct object *res;							\
+  DO_IF_AUTO_BIGNUM(                                                    \
+  if(THIS_PROGRAM == bignum_program)					\
+  {									\
+    double ret;								\
+    for(e=0; e<args; e++)						\
+    {									\
+      if(sp[e-args].type == T_FLOAT)					\
+      {									\
+	ret=mpz_get_d(THIS);						\
+	for(e=0; e<args; e++)						\
+	  ret PIKE_CONCAT(OP,=) double_from_sval(sp-args);		\
+									\
+	pop_n_elems(args);						\
+	push_float( ret );						\
+	return;								\
+      }									\
+    }									\
+  } )									\
   for(e=0; e<args; e++)							\
    if(sp[e-args].type != T_INT || sp[e-args].u.integer<=0)		\
     get_mpz(sp+e-args, 1);						\
@@ -691,7 +731,7 @@ static void name(INT32 args)						\
       fun(OBTOMPZ(res), OBTOMPZ(res), OBTOMPZ(sp[e-args].u.object));	\
     else								\
       PIKE_CONCAT(fun,_ui)(OBTOMPZ(res), OBTOMPZ(res),			\
-                           sp[e-args].u.integer);        		\
+                           sp[e-args].u.integer);			\
 									\
   pop_n_elems(args);							\
   PUSH_REDUCED(res);							\
@@ -700,6 +740,24 @@ static void name(INT32 args)						\
 static void PIKE_CONCAT(name,_eq)(INT32 args)				\
 {									\
   INT32 e;								\
+  DO_IF_AUTO_BIGNUM(                                                    \
+  if(THIS_PROGRAM == bignum_program)					\
+  {									\
+    double ret;								\
+    for(e=0; e<args; e++)						\
+    {									\
+      if(sp[e-args].type == T_FLOAT)					\
+      {									\
+	ret=mpz_get_d(THIS);						\
+	for(e=0; e<args; e++)						\
+	  ret PIKE_CONCAT(OP,=) double_from_sval(sp-args);		\
+									\
+	pop_n_elems(args);						\
+	push_float( ret );						\
+	return;								\
+      }									\
+    }									\
+  } )									\
   for(e=0; e<args; e++)							\
    if(sp[e-args].type != T_INT || sp[e-args].u.integer<=0)		\
     get_mpz(sp+e-args, 1);						\
@@ -707,15 +765,33 @@ static void PIKE_CONCAT(name,_eq)(INT32 args)				\
     if(sp[e-args].type != T_INT)					\
       fun(THIS, THIS, OBTOMPZ(sp[e-args].u.object));			\
     else								\
-      PIKE_CONCAT(fun,_ui)(THIS,THIS, sp[e-args].u.integer);      	\
+      PIKE_CONCAT(fun,_ui)(THIS,THIS, sp[e-args].u.integer);		\
   add_ref(fp->current_object);						\
   PUSH_REDUCED(fp->current_object);					\
 }
 
-BINFUN2(mpzmod_add,mpz_add)
-BINFUN2(mpzmod_mul,mpz_mul)
-BINFUN2(mpzmod_gcd,mpz_gcd)
+BINFUN2(mpzmod_add,mpz_add,+)
+BINFUN2(mpzmod_mul,mpz_mul,*)
 
+
+static void mpzmod_gcd(INT32 args)
+{
+  INT32 e;
+  struct object *res;
+  for(e=0; e<args; e++)
+   if(sp[e-args].type != T_INT || sp[e-args].u.integer<=0)
+    get_mpz(sp+e-args, 1);
+  res = fast_clone_object(THIS_PROGRAM, 0);
+  mpz_set(OBTOMPZ(res), THIS);
+  for(e=0;e<args;e++)
+    if(sp[e-args].type != T_INT)
+     mpz_gcd(OBTOMPZ(res), OBTOMPZ(res), OBTOMPZ(sp[e-args].u.object));
+    else
+      mpz_gcd_ui(OBTOMPZ(res), OBTOMPZ(res),sp[e-args].u.integer);
+
+  pop_n_elems(args);
+  PUSH_REDUCED(res);
+}
 
 static void mpzmod_sub(INT32 args)
 {
@@ -1326,7 +1402,6 @@ void pike_module_exit(void)
 	       tFunc(tOr(tInt,tVoid) tOr(tInt,tVoid),tMpz_ret), 0);	\
   									\
   ADD_FUNCTION("gcd",mpzmod_gcd, tMpz_binop_type, 0);			\
-  ADD_FUNCTION("gcd_eq",mpzmod_gcd_eq, tMpz_binop_type, 0);		\
   ADD_FUNCTION("gcdext",mpzmod_gcdext,tFunc(tMpz_arg,tArr(tMpz_ret)),0);\
   ADD_FUNCTION("gcdext2",mpzmod_gcdext2,tFunc(tMpz_arg,tArr(tMpz_ret)),0);\
   ADD_FUNCTION("invert", mpzmod_invert,tFunc(tMpz_arg,tMpz_ret),0);	\
