@@ -4,7 +4,7 @@
 ||| See the files COPYING and DISCLAIMER for more information.
 \*/
 #include "global.h"
-RCSID("$Id: builtin_functions.c,v 1.104 1998/05/06 00:37:09 hubbe Exp $");
+RCSID("$Id: builtin_functions.c,v 1.105 1998/05/07 23:51:00 hubbe Exp $");
 #include "interpret.h"
 #include "svalue.h"
 #include "pike_macros.h"
@@ -1490,7 +1490,7 @@ void f_localtime(INT32 args)
 #ifdef HAVE_MKTIME
 static void f_mktime (INT32 args)
 {
-  INT32 sec, min, hour, mday, mon, year, isdst, tz;
+  INT32 sec, min, hour, mday, mon, year, isdst;
   struct tm date;
   struct svalue s;
   struct svalue * r;
@@ -1518,29 +1518,37 @@ static void f_mktime (INT32 args)
     args=8;
   }
 
-  get_all_args("mktime",args, "%i%i%i%i%i%i%i",
-	       &sec, &min, &hour, &mday, &mon, &year, &isdst, &tz);
+  get_all_args("mktime",args, "%i%i%i%i%i%i",
+	       &sec, &min, &hour, &mday, &mon, &year);
 
-  
+  MEMSET(&date, 0, sizeof(date));
   date.tm_sec=sec;
   date.tm_min=min;
   date.tm_hour=hour;
   date.tm_mday=mday;
   date.tm_mon=mon;
   date.tm_year=year;
-  date.tm_isdst=isdst;
+  if(sp[6-args].subtype == NUMBER_NUMBER)
+  {
+    date.tm_isdst=sp[6-args].u.integer;
+  }else{
+    date.tm_isdst=-1;
+  }
 
 #if STRUCT_TM_HAS_GMTOFF
-  date.tm_gmtoff=tz;
+  if(sp[7-args].subtype == NUMBER_NUMBER)
+  {
+    date.tm_gmtoff=sp[7-args].u.intger;
+  }else{
+    time_t tmp=0;
+    data.tm_gmtoff=localtime(&t).tm_gmtoff;
+  }
   retval=mktime(&date);
 #else
 #ifdef HAVE_EXTERNAL_TIMEZONE
-  if(sp[8-args].subtype == NUMBER_NUMBER)
+  if(sp[7-args].subtype == NUMBER_NUMBER)
   {
-    int save_timezone=timezone;
-    timezone=tz;
-    retval=mktime(&date);
-    timezone=save_timezone;
+    retval=mktime(&date) + sp[7-args].u.integer - timezone;
   }else{
     retval=mktime(&date);
   }
@@ -2770,7 +2778,7 @@ void init_builtin_efuns(void)
 #endif
 
 #ifdef HAVE_MKTIME
-  add_efun("mktime",f_mktime,"function(int,int,int,int,int,int,int,int:int)|function(object|mapping:int)",OPT_TRY_OPTIMIZE);
+  add_efun("mktime",f_mktime,"function(int,int,int,int,int,int,int,void|int:int)|function(object|mapping:int)",OPT_TRY_OPTIMIZE);
 #endif
 
 #ifdef DEBUG
