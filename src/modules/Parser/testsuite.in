@@ -913,3 +913,10 @@ test_any([[{
   p->ignore_tags (1);
   return p->clone()->finish("<t &e;><&e;><c>&e;</c><t>")->read();
 }]], "<t E><E><c>E</c><t>");
+test_any([[{
+  return
+    Parser.HTML()->
+    add_quote_tag("?", lambda() {}, "?")->
+    feed("<? ? >")->
+    finish()->read();
+}]], "<? ? >");
