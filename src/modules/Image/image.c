@@ -1,4 +1,4 @@
-/* $Id: image.c,v 1.10 1997/03/18 18:17:44 mirar Exp $ */
+/* $Id: image.c,v 1.11 1997/03/18 19:51:56 grubba Exp $ */
 
 #include "global.h"
 
@@ -7,7 +7,7 @@
 
 #include "stralloc.h"
 #include "global.h"
-RCSID("$Id: image.c,v 1.10 1997/03/18 18:17:44 mirar Exp $");
+RCSID("$Id: image.c,v 1.11 1997/03/18 19:51:56 grubba Exp $");
 #include "types.h"
 #include "pike_macros.h"
 #include "object.h"
@@ -1767,9 +1767,9 @@ static void image_tozbgr(INT32 args)
    while (i--)
    {
       *(d++)=0;
-      *(d++)=s.b;
-      *(d++)=s.g;
-      *(d++)=s.r;
+      *(d++)=s->b;
+      *(d++)=s->g;
+      *(d++)=s->r;
       s++;
    }
    THREADS_DISALLOW();
