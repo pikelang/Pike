@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: threads.h,v 1.128 2004/05/20 20:13:38 grubba Exp $
+|| $Id: threads.h,v 1.129 2004/08/12 12:37:35 grubba Exp $
 */
 
 #ifndef THREADS_H
@@ -28,6 +28,10 @@ extern PIKE_MUTEX_T interleave_lock;
 #define THREAD_RUNNING 0
 #define THREAD_EXITED 1
 
+/* Thread flags */
+#define THREAD_FLAG_TERM	1	/* Pending termination. */
+#define THREAD_FLAG_INTR	2	/* Pending interrupt. */
+
 /* Debug flags */
 #define THREAD_DEBUG_LOOSE  1	/* Thread is not bound to the interpreter. */
 
@@ -40,9 +44,7 @@ struct thread_state {
 #else
   char status;
 #endif
-#ifdef PIKE_DEBUG
-  char debug_flags;
-#endif
+  unsigned short flags;
   COND_T status_change;
   THREAD_T id;
   struct mapping *thread_local;
@@ -50,6 +52,9 @@ struct thread_state {
   struct svalue result;
 #if CPU_TIME_IS_THREAD_LOCAL == PIKE_YES
   cpu_time_t auto_gc_time;
+#endif
+#ifdef PIKE_DEBUG
+  char debug_flags;
 #endif
 };
 
