@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: encode.c,v 1.194 2003/08/03 01:09:54 mast Exp $
+|| $Id: encode.c,v 1.195 2003/08/04 16:14:21 mast Exp $
 */
 
 #include "global.h"
@@ -27,7 +27,7 @@
 #include "bignum.h"
 #include "pikecode.h"
 
-RCSID("$Id: encode.c,v 1.194 2003/08/03 01:09:54 mast Exp $");
+RCSID("$Id: encode.c,v 1.195 2003/08/04 16:14:21 mast Exp $");
 
 /* #define ENCODE_DEBUG */
 
@@ -2135,11 +2135,7 @@ static DECLSPEC(noreturn) void decode_error (struct svalue *decoding,
   char buf[4096];
   va_list args;
   va_start (args, msg);
-#ifdef HAVE_VSNPRINTF
-  vsnprintf(buf, 4090, msg, args);
-#else /* !HAVE_VSNPRINTF */
-  VSPRINTF(buf, msg, args);
-#endif /* HAVE_VSNPRINTF */
+  VSNPRINTF (buf, sizeof (buf), msg, args);
   va_end (args);
 
   if (decoding) {

@@ -2,11 +2,11 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: interpret.c,v 1.315 2003/08/04 15:17:28 mast Exp $
+|| $Id: interpret.c,v 1.316 2003/08/04 16:14:21 mast Exp $
 */
 
 #include "global.h"
-RCSID("$Id: interpret.c,v 1.315 2003/08/04 15:17:28 mast Exp $");
+RCSID("$Id: interpret.c,v 1.316 2003/08/04 16:14:21 mast Exp $");
 #include "interpret.h"
 #include "object.h"
 #include "program.h"
@@ -2025,16 +2025,10 @@ PMOD_EXPORT void safe_apply(struct object *o, const char *fun ,INT32 args)
     safe_apply_low2(o, id, args, 1);
   else {
     char buf[4096];
-#ifdef HAVE_VSNPRINTF
-    vsnprintf(buf, 4090, "Cannot call unknown function \"%s\".\n", fun);
-#else
-    VSPRINTF(buf, "Cannot call unknown function \"%s\".\n", fun);
-#endif
-    if ((size_t) strlen (buf) >= (size_t) sizeof (buf))
-      Pike_fatal ("Buffer overflow in safe_apply()\n");
+    VSNPRINTF(buf, sizeof (buf), "Cannot call unknown function \"%s\".\n", fun);
     push_error (buf);
     free_svalue (&throw_value);
-    move_svalue (throw_value, --Pike_sp);
+    move_svalue (&throw_value, --Pike_sp);
     call_handle_error();
     push_int (0);
   }
