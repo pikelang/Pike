@@ -158,7 +158,7 @@ static int eval_instruction(unsigned char *pc)
       break;
 
       CASE(F_CONSTANT);
-      assign_svalue_no_free(sp++,fp->context.prog->constants+GET_ARG());
+      assign_svalue_no_free(sp++,& fp->context.prog->constants[GET_ARG()].sval);
       print_return_value();
       break;
 
@@ -933,7 +933,7 @@ static int eval_instruction(unsigned char *pc)
       {
 	INT32 tmp;
 	tmp=switch_lookup(fp->context.prog->
-			  constants[GET_ARG()].u.array,sp-1);
+			  constants[GET_ARG()].sval.u.array,sp-1);
 	pc=(unsigned char *)DO_ALIGN(pc,sizeof(INT32));
 	pc+=(tmp>=0 ? 1+tmp*2 : 2*~tmp) * sizeof(INT32);
 	if(*(INT32*)pc < 0) fast_check_threads_etc(7);
@@ -979,7 +979,7 @@ static int eval_instruction(unsigned char *pc)
 	  sp[-args-1].type=T_INT;
 	}
 	/* We sabotage the stack here */
-	assign_svalue(sp-args-1,fp->context.prog->constants+GET_ARG());
+	assign_svalue(sp-args-1,&fp->context.prog->constants[GET_ARG()].sval);
 	return args+1;
       }
 

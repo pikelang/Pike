@@ -5,7 +5,7 @@
 \*/
 /**/
 #include "global.h"
-RCSID("$Id: program.c,v 1.150 1999/09/16 20:30:34 hubbe Exp $");
+RCSID("$Id: program.c,v 1.151 1999/09/18 09:21:26 hubbe Exp $");
 #include "program.h"
 #include "object.h"
 #include "dynamic_buffer.h"
@@ -687,7 +687,8 @@ void really_free_program(struct program *p)
   }
 
   if(p->constants)
-    free_svalues(p->constants, p->num_constants, BIT_MIXED);
+    for(e=0;e<p->num_constants;e++)
+      free_svalue(& p->constants[e].sval);
 
   if(p->inherits)
     for(e=0; e<p->num_inherits; e++)
@@ -863,7 +864,10 @@ void check_program(struct program *p)
     fatal("Too many identifier index entries in program!\n");
 
   for(e=0;e<(int)p->num_constants;e++)
-    check_svalue(p->constants + e);
+  {
+    check_svalue(& p->constants[e].sval);
+    if(p->constants[e].name) check_string(p->constants[e].name);
+  }
 
   for(e=0;e<(int)p->num_strings;e++)
     check_string(p->strings[e]);
@@ -1102,11 +1106,11 @@ SIZE_T low_add_storage(SIZE_T size, SIZE_T alignment, int modulo_orig)
     fatal("add_storage failed horribly!\n");
 
   if( (offset + OFFSETOF(object,storage) - modulo_orig ) % alignment )
-    fatal("add_storage failed horribly(2) %d %d %d %d!\n",
-	  offset,
-	  OFFSETOF(object,storage),
-	  modulo_orig,
-	  alignment
+    fatal("add_storage failed horribly(2) %ld %ld %ld %ld!\n",
+	  (long)offset,
+	  (long)OFFSETOF(object,storage),
+	  (long)modulo_orig,
+	  (long)alignment
 	  );
     
 #endif
@@ -1508,7 +1512,8 @@ void compiler_do_inherit(node *n,
     
       if(IDENTIFIER_IS_CONSTANT(i->identifier_flags))
       {
-	struct svalue *s=PROG_FROM_INT(p, numid)->constants + i->func.offset;
+	struct svalue *s=&PROG_FROM_INT(p, numid)->
+	  constants[i->func.offset].sval;
 	if(s->type != T_PROGRAM)
 	{
 	  do_inherit(s,flags,name);
@@ -1760,8 +1765,8 @@ int add_constant(struct pike_string *name,
       if(id->func.offset>=0)
       {
 	struct pike_string *s;
-	struct svalue *c=PROG_FROM_INT(new_program,n)->constants+
-	  id->func.offset;
+	struct svalue *c=&PROG_FROM_INT(new_program,n)->
+	  constants[id->func.offset].sval;
 	s=get_type_of_svalue(c);
 	free_string(id->type);
 	id->type=s;
@@ -1785,7 +1790,7 @@ int add_constant(struct pike_string *name,
   dummy.identifier_flags = IDENTIFIER_CONSTANT;
   dummy.run_time_type=c->type;
   
-  dummy.func.offset=store_constant(c, 0);
+  dummy.func.offset=store_constant(c, 0, 0);
 
   ref.id_flags=flags;
   ref.identifier_offset=new_program->num_identifiers;
@@ -2255,19 +2260,24 @@ int store_prog_string(struct pike_string *str)
   return i;
 }
 
-int store_constant(struct svalue *foo, int equal)
+int store_constant(struct svalue *foo,
+		   int equal,
+		   struct pike_string *constant_name)
 {
-  struct svalue tmp;
+  struct program_constant tmp;
   unsigned int e;
 
   for(e=0;e<new_program->num_constants;e++)
   {
-    struct svalue *s=new_program->constants + e;
-    if(equal ? is_equal(s,foo) : is_eq(s,foo))
+    struct program_constant *c= new_program->constants+e;
+    if((equal ? is_equal(& c->sval,foo) : is_eq(& c->sval,foo)) &&
+       c->name == constant_name)
       return e;
   }
 
-  assign_svalue_no_free(&tmp,foo);
+  assign_svalue_no_free(&tmp.sval,foo);
+  if((tmp.name=constant_name)) add_ref(constant_name);
+
   add_to_constants(tmp);
   return e;
 }
@@ -2312,7 +2322,7 @@ struct array *program_values(struct program *p)
     id = ID_FROM_INT(p, e);
     if (IDENTIFIER_IS_CONSTANT(id->identifier_flags)) {
       struct program *p2 = PROG_FROM_INT(p, e);
-      push_svalue(p2->constants + id->func.offset);
+      push_svalue( & p2->constants[id->func.offset].sval);
       n++;
     }
   }
@@ -2354,7 +2364,7 @@ void program_index_no_free(struct svalue *to, struct program *p,
 #endif
     if (IDENTIFIER_IS_CONSTANT(id->identifier_flags)) {
       struct program *p2 = PROG_FROM_INT(p, e);
-      assign_svalue_no_free(to, (p2->constants + id->func.offset));
+      assign_svalue_no_free(to, ( & p2->constants[id->func.offset].sval));
       return;
     } else {
       if (s->len < 1024) {
@@ -2853,7 +2863,8 @@ void gc_mark_program_as_referenced(struct program *p)
   if(gc_mark(p))
   {
     int e;
-    gc_mark_svalues(p->constants, p->num_constants);
+    for(e=0;e<p->num_constants;e++)
+      gc_mark_svalues(& p->constants[e].sval, 1);
 
     for(e=0;e<p->num_inherits;e++)
     {
@@ -2873,7 +2884,8 @@ void gc_check_all_programs(void)
   for(p=first_program;p;p=p->next)
   {
     int e;
-    debug_gc_check_svalues(p->constants, p->num_constants, T_PROGRAM, p);
+    for(e=0;e<p->num_constants;e++)
+      debug_gc_check_svalues(& p->constants[e].sval, 1, T_PROGRAM, p);
 
     for(e=0;e<p->num_inherits;e++)
     {
@@ -2931,7 +2943,9 @@ void gc_free_all_unreferenced_programs(void)
     {
       int e;
       add_ref(p);
-      free_svalues(p->constants, p->num_constants, -1);
+      for(e=0;e<p->num_constants;e++)
+	free_svalue(& p->constants[e].sval);
+
       for(e=0;e<p->num_inherits;e++)
       {
 	if(p->inherits[e].parent)
@@ -3068,7 +3082,7 @@ struct program *low_program_from_function(struct program *p,
   struct identifier *id=ID_FROM_INT(p, i);
   if(!IDENTIFIER_IS_CONSTANT(id->identifier_flags)) return 0;
   if(id->func.offset==-1) return 0;
-  f=PROG_FROM_INT(p,i)->constants + id->func.offset;
+  f=& PROG_FROM_INT(p,i)->constants[id->func.offset].sval;
   if(f->type!=T_PROGRAM) return 0;
   return f->u.program;
 }

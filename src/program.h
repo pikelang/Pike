@@ -5,7 +5,7 @@
 \*/
 
 /*
- * $Id: program.h,v 1.58 1999/09/16 20:30:36 hubbe Exp $
+ * $Id: program.h,v 1.59 1999/09/18 09:21:28 hubbe Exp $
  */
 #ifndef PROGRAM_H
 #define PROGRAM_H
@@ -138,6 +138,12 @@ struct identifier
   union idptr func;
 };
 
+struct program_constant
+{
+  struct svalue sval;
+  struct pike_string *name;
+};
+
 /*
  * in the bytecode, a function starts with:
  * char num_args
@@ -173,6 +179,13 @@ struct inherit
   struct program *prog;
   struct pike_string *name;
 };
+
+struct pike_trampoline
+{
+  struct pike_frame *frame;
+  INT32 func;
+};
+
 
 /* program parts have been realloced into one block */
 #define PROGRAM_OPTIMIZED 1
@@ -253,13 +266,6 @@ struct program
 #define FIND_LFUN(P,N) ( dmalloc_touch(struct program *,(P))->flags & PROGRAM_FIXED?((P)->lfuns[(N)]):find_identifier(lfun_names[(N)],(P)) )
 
 #define free_program(p) do{ struct program *_=(p); debug_malloc_touch(_); if(!--_->refs) really_free_program(_); }while(0)
-
-
-struct pike_trampoline
-{
-  struct pike_frame *frame;
-  INT32 func;
-};
 
 
 extern struct object *fake_object;
@@ -391,7 +397,7 @@ int find_shared_string_identifier(struct pike_string *name,
 				  struct program *prog);
 int find_identifier(char *name,struct program *prog);
 int store_prog_string(struct pike_string *str);
-int store_constant(struct svalue *foo, int equal);
+int store_constant(struct svalue *foo, int equal, struct pike_string *name);
 struct array *program_indices(struct program *p);
 struct array *program_values(struct program *p);
 void program_index_no_free(struct svalue *to, struct program *p,

@@ -5,7 +5,7 @@
 \*/
 
 /*
- * $Id: pike_types.h,v 1.20 1999/06/03 01:39:37 hubbe Exp $
+ * $Id: pike_types.h,v 1.21 1999/09/18 09:21:25 hubbe Exp $
  */
 #ifndef PIKE_TYPES_H
 #define PIKE_TYPES_H
@@ -22,6 +22,7 @@ struct node_s
   struct pike_string *current_file;
 #endif
   struct pike_string *type;
+  struct pike_string *name;
   struct node_s *parent;
   union 
   {

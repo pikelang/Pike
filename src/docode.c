@@ -4,7 +4,7 @@
 ||| See the files COPYING and DISCLAIMER for more information.
 \*/
 #include "global.h"
-RCSID("$Id: docode.c,v 1.50 1999/09/16 23:56:09 hubbe Exp $");
+RCSID("$Id: docode.c,v 1.51 1999/09/18 09:21:17 hubbe Exp $");
 #include "las.h"
 #include "program.h"
 #include "language.h"
@@ -710,7 +710,8 @@ static int do_docode2(node *n,int flags)
 	    emit2(F_MARK);
 	    do_docode(CDR(n),0);
 	    tmp1=store_constant(& CAR(n)->u.sval,
-				!(CAR(n)->tree_info & OPT_EXTERNAL_DEPEND));
+				!(CAR(n)->tree_info & OPT_EXTERNAL_DEPEND),
+				CAR(n)->name);
 	    emit(F_APPLY,tmp1);
 	  }
 	  if(n->type == void_type_string)
@@ -731,7 +732,8 @@ static int do_docode2(node *n,int flags)
       emit2(F_MARK);
       do_docode(CDR(n),0);
       tmp1=store_constant(& CAR(n)->u.sval,
-			  !(CAR(n)->tree_info & OPT_EXTERNAL_DEPEND));
+			  !(CAR(n)->tree_info & OPT_EXTERNAL_DEPEND),
+			  CAR(n)->name);
       emit(F_APPLY,tmp1);
       
       return 1;
@@ -767,7 +769,8 @@ static int do_docode2(node *n,int flags)
 	{
 	  emit2(F_CALL_FUNCTION);
 	}else{
-	  tmp1=store_constant(& foo->u.sval, 1);
+	  /* We might want to put "predef::"+foo->name here /Hubbe */
+	  tmp1=store_constant(& foo->u.sval, 1, foo->name);
 	  emit(F_APPLY, tmp1);
 	}
       }
@@ -872,7 +875,7 @@ static int do_docode2(node *n,int flags)
     for(e=1; e<cases*2+2; e++)
       update_arg(jumptable[e], current_switch_jumptable[e]);
 
-    update_arg(tmp1, store_constant(sp-1,1));
+    update_arg(tmp1, store_constant(sp-1,1,0));
 
     pop_stack();
     free((char *)jumptable);
@@ -1138,14 +1141,18 @@ static int do_docode2(node *n,int flags)
 #endif
 
     default:
-      tmp1=store_constant(&(n->u.sval),!(n->tree_info & OPT_EXTERNAL_DEPEND));
+      tmp1=store_constant(&(n->u.sval),
+			  !(n->tree_info & OPT_EXTERNAL_DEPEND),
+			  n->name);
       emit(F_CONSTANT,tmp1);
       return 1;
 
     case T_ARRAY:
     case T_MAPPING:
     case T_MULTISET:
-      tmp1=store_constant(&(n->u.sval),!(n->tree_info & OPT_EXTERNAL_DEPEND));
+      tmp1=store_constant(&(n->u.sval),
+			  !(n->tree_info & OPT_EXTERNAL_DEPEND),
+			  n->name);
       emit(F_CONSTANT,tmp1);
       
       /* copy now or later ? */

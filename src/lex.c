@@ -5,7 +5,7 @@
 \*/
 /**/
 #include "global.h"
-RCSID("$Id: lex.c,v 1.65 1999/08/03 00:45:13 hubbe Exp $");
+RCSID("$Id: lex.c,v 1.66 1999/09/18 09:21:22 hubbe Exp $");
 #include "language.h"
 #include "array.h"
 #include "lex.h"
@@ -285,11 +285,11 @@ char *low_get_f_name(int n,struct program *p)
   }else if(n >= F_MAX_OPCODE) {
     if(p &&
        (int)p->num_constants > (int)(n-F_MAX_OPCODE) &&
-       p->constants[n-F_MAX_OPCODE].type==T_FUNCTION &&
-       (p->constants[n-F_MAX_OPCODE].subtype == FUNCTION_BUILTIN) &&
-       p->constants[n-F_MAX_OPCODE].u.efun)
+       p->constants[n-F_MAX_OPCODE].sval.type==T_FUNCTION &&
+       (p->constants[n-F_MAX_OPCODE].sval.subtype == FUNCTION_BUILTIN) &&
+       p->constants[n-F_MAX_OPCODE].sval.u.efun)
     {
-      return p->constants[n-F_MAX_OPCODE].u.efun->name->str;
+      return p->constants[n-F_MAX_OPCODE].sval.u.efun->name->str;
     }else{
       sprintf(buf, "Call efun %d", n - F_MAX_OPCODE);
       return buf;
@@ -309,11 +309,11 @@ char *get_f_name(int n)
   }else if(n >= F_MAX_OPCODE) {
     if(fp && fp->context.prog &&
        (int)fp->context.prog->num_constants > (int)(n-F_MAX_OPCODE) &&
-       fp->context.prog->constants[n-F_MAX_OPCODE].type==T_FUNCTION &&
-       fp->context.prog->constants[n-F_MAX_OPCODE].subtype == FUNCTION_BUILTIN &&
-       fp->context.prog->constants[n-F_MAX_OPCODE].u.efun)
+       fp->context.prog->constants[n-F_MAX_OPCODE].sval.type==T_FUNCTION &&
+       fp->context.prog->constants[n-F_MAX_OPCODE].sval.subtype == FUNCTION_BUILTIN &&
+       fp->context.prog->constants[n-F_MAX_OPCODE].sval.u.efun)
     {
-      return fp->context.prog->constants[n-F_MAX_OPCODE].u.efun->name->str;
+      return fp->context.prog->constants[n-F_MAX_OPCODE].sval.u.efun->name->str;
     }else{
       sprintf(buf, "Call efun %d", n - F_MAX_OPCODE);
       return buf;

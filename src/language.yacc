@@ -182,7 +182,7 @@
 /* This is the grammar definition of Pike. */
 
 #include "global.h"
-RCSID("$Id: language.yacc,v 1.122 1999/08/20 05:08:24 hubbe Exp $");
+RCSID("$Id: language.yacc,v 1.123 1999/09/18 09:21:20 hubbe Exp $");
 #ifdef HAVE_MEMORY_H
 #include <memory.h>
 #endif
@@ -423,6 +423,7 @@ low_program_ref: string_constant
 		 $1->u.sval.u.string->str);
     free_node($1);
     $$=mksvaluenode(sp-1);
+    add_ref( $$->name=sp[-2].u.string );
     pop_stack();
   }
   | idents

@@ -5,7 +5,7 @@
 \*/
 /**/
 #include "global.h"
-RCSID("$Id: object.c,v 1.81 1999/09/16 05:14:33 hubbe Exp $");
+RCSID("$Id: object.c,v 1.82 1999/09/18 09:21:23 hubbe Exp $");
 #include "object.h"
 #include "dynamic_buffer.h"
 #include "interpret.h"
@@ -596,7 +596,7 @@ void low_object_index_no_free(struct svalue *to,
   case IDENTIFIER_CONSTANT:
     {
       struct svalue *s;
-      s=PROG_FROM_INT(p,f)->constants + i->func.offset;
+      s=& PROG_FROM_INT(p,f)->constants[i->func.offset].sval;
       if(s->type==T_PROGRAM)
       {
 	to->type=T_FUNCTION;

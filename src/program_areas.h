@@ -1,4 +1,4 @@
-/* $Id: program_areas.h,v 1.5 1998/04/24 00:32:10 hubbe Exp $ */
+/* $Id: program_areas.h,v 1.6 1999/09/18 09:21:29 hubbe Exp $ */
 /* Who needs templates anyway? / Hubbe */
 
 /* Program *must* be first! */
@@ -10,6 +10,6 @@ FOO(unsigned INT16,struct reference,identifier_references)
 FOO(unsigned INT16,struct pike_string *,strings)
 FOO(unsigned INT16,struct inherit,inherits)
 FOO(unsigned INT16,struct identifier,identifiers)
-FOO(unsigned INT16,struct svalue, constants)
+FOO(unsigned INT16,struct program_constant, constants)
 #undef FOO
 
