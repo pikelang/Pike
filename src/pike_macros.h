@@ -5,7 +5,7 @@
 \*/
 
 /*
- * $Id: pike_macros.h,v 1.21 2000/10/10 00:00:28 hubbe Exp $
+ * $Id: pike_macros.h,v 1.22 2000/12/14 07:22:31 mast Exp $
  */
 #ifndef MACROS_H
 #define MACROS_H
@@ -72,6 +72,28 @@
   }						\
   free_item(p);					\
 }while(0)
+
+/* This variant never leaves p pointing at a deallocated block, as the
+ * one above can do. I.e. it frees a ref to the item p points at, and
+ * sets p to the same or next item with references, or sets it to
+ * zero. */
+#define FREE_AND_GET_REFERENCED(p, item_type, free_item) do {		\
+  item_type *next;							\
+  while (1) {								\
+    if (p->refs > 1) {							\
+      free_item(p);							\
+      break;								\
+    }									\
+    if (!(next = p->next)) {						\
+      free_item(p);							\
+      p = 0;								\
+      break;								\
+    }									\
+    add_ref(next);							\
+    free_item(p);							\
+    p = next;								\
+  }									\
+} while (0)
 
 #define DOUBLELINK(first_object, o) do {	\
   o->next=first_object;				\
