@@ -28,8 +28,9 @@ DESCRIPTION
 	.n	set precision
 	:n	set field size & precision
 	;n	Set column width
-	*	if n is a * then next argument is used
+	*	if n is a * then next argument is used for precision/field size
 	'X'	Set a pad string. ' cannot be a part of the pad_string (yet)
+	~	Get pad string from argument list.
 	<	Use same arg again
 	^	repeat this on every line produced
 	@	do this format for each entry in argument array
