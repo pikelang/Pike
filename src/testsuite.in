@@ -1,4 +1,4 @@
-test_true([["$Id: testsuite.in,v 1.299 2001/01/19 15:19:52 mast Exp $"]]);
+test_true([["$Id: testsuite.in,v 1.300 2001/02/25 18:06:55 hubbe Exp $"]]);
 
 cond([[all_constants()->_verify_internals]],
 [[
@@ -35,6 +35,15 @@ test_eq(16, 0b10000);
 test_eq(-16, -0b10000);
 
 test_eval_error([[mixed x; return mkmapping(x,x)]]);
+
+test_any([[
+  array tmp=({});
+  tmp=({([])})+tmp;
+  tmp->foo=7;
+  tmp=({([])})+tmp;
+  return sizeof(tmp[0]);
+]], 0)
+
 
 test_any([[int a=0xffffffff; return a+17]], 0x100000010);
 test_any([[int a=0xffffffff; return a-17]], 0xffffffee);
