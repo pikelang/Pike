@@ -29,7 +29,7 @@
 #include <floatingpoint.h>
 #endif
 
-RCSID("$Id: math.c,v 1.40 2001/09/30 10:40:08 hubbe Exp $");
+RCSID("$Id: math.c,v 1.41 2001/11/18 02:57:10 nilsson Exp $");
 
 #ifndef M_PI
 #define M_PI 3.1415926535897932384626433832795080
@@ -257,6 +257,7 @@ void f_sqrt(INT32 args)
 /*! @decl float log(float f)
  *!
  *! Return the natural logarithm of @[f].
+ *! @code{exp( log(x) ) == x@} for x > 0.
  *!
  *! @seealso
  *!   @[pow()], @[exp()]
@@ -275,6 +276,7 @@ void f_log(INT32 args)
 /*! @decl float exp(float f)
  *!
  *! Return the natural exponential of @[f].
+ *! @code{log( exp( x ) ) == x@} as long as exp(x) doesn't overflow an int.
  *!
  *! @seealso
  *!   @[pow()], @[log()]
