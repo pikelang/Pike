@@ -2,7 +2,7 @@
 
 inherit Array;
 
-/* break too strict type handling...  :) */
+//! Much simplified type compared to later versions of map.
 array map(array x, int|string|function fun, mixed ... args)
 {
   return Array.map(x,fun,@args);
