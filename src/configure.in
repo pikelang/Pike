@@ -1,4 +1,4 @@
-AC_REVISION("$Id: configure.in,v 1.332 1999/11/23 07:07:02 hubbe Exp $")
+AC_REVISION("$Id: configure.in,v 1.333 1999/11/24 21:40:32 hubbe Exp $")
 AC_INIT(interpret.c)
 AC_CONFIG_HEADER(machine.h)
 
@@ -406,6 +406,7 @@ AC_ARG_WITH(gmp,         [  --without-gmp          no Support bignums])
 AC_ARG_WITH(debug,       [  --without-debug        disable run debugging],[],[with_debug=])
 AC_ARG_WITH(rtldebug,    [  --without-rtldebug     disable run time self tests],[],[with_rtldebug=])
 AC_ARG_WITH(cdebug,      [  --without-cdebug       disable -g],[],[with_cdebug=])
+AC_ARG_WITH(cdebug,      [  --without-copt         disable -O2],[],[with_copt=])
 AC_ARG_WITH(threads,     [  --without-threads      no threads support],[],[with_threads=yes])
 AC_ARG_WITH(zlib,        [  --without-zlib         no gz compression support],[],[with_zlib=yes])
 AC_ARG_WITH(ssleay,      [  --without-ssleay       no support for the secure socket protocol],[],[with_ssleay=yes])
@@ -3285,7 +3286,10 @@ case "x$pike_cv_sys_os" in
   ;;
 esac
 
-
+#############################################################################
+if test "x$with_copt" = xno ; then
+  OPTIMIZE=
+fi
 #############################################################################
 
 echo
