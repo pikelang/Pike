@@ -16,3 +16,6 @@ prime_table_no
 prime_tbale_yes
 remake
 stamp-h
+*.compiled
+mpf.c
+mpq.c
