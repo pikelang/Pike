@@ -43,7 +43,7 @@ EBCDIC and the rest of the file in any other charset stated in the
 
 </section>
 
-<section title="Whitespace Normalization">
+<section title="Code Normalization">
 
 <p>The preprocessor collapses all consecutive white space characters
 except for newlines single space characters. All // and /**/ comments
@@ -144,32 +144,30 @@ allowed to put spaces after the hash character to create indentation
 in code.</p>
 
 <subsection title="#!">
-<p>All lines beginning with #! will be regarded as comments, to enable
-shell integration. It is recommended that Pike applications begin with
-the line "#! /bin/env pike" for maximum cross platform
-compatibility.</p>
+<p>All lines beginning with <tt>#!</tt> will be regarded as comments,
+to enable shell integration. It is recommended that Pike applications
+begin with the line <tt>"#! /usr/bin/env pike"</tt> for maximum cross
+platform compatibility.</p>
 </subsection>
 
-<subsection title="#&lt;integer&gt;">
-<p>A hash character followed by a number will make the preprocessor
-line counter set this number as the line number for the current line
-and adjust the following lines accordingly. All error messages from
-Pike will use these line numbers. Optionally the number may be
-followed by a file name, e.g. <tt>#1
-"/home/pike/program.pike.in"</tt>. Then this filename will be used
-instead of the current file for error messages.</p>
-</subsection>
-
-<subsection title="#line">
-<p>Works just as the #&lt;integer&gt; preprocessor directive above.</p>
+<subsection title="#&lt;integer&gt; and #line">
+<p>A hash character followed by a number or by the string
+<tt>"line"</tt> and a number will make the preprocessor line counter
+set this number as the line number for the next line and adjust the
+following lines accordingly. All error messages from Pike will use
+these line numbers. Optionally the number may be followed by a file
+name, e.g. <tt>#1 "/home/pike/program.pike.in"</tt>. Then this
+filename will be used instead of the current file for error
+messages.</p>
 </subsection>
 
 <subsection title='#""'>
-<p>If a string literal is opened with #" newlines in the string will
-end up in the string literal, instead of triggering a "neline in
-string" error. Newlines will be converted to \n characters if the
-newlines in the file is something else. This preprocessor directive
-may appear anywhere a string may appear.</p>
+<p>If a string literal is opened with <tt>#"</tt> newlines in the
+string will end up in the string literal, instead of triggering a
+<tt>"newline in string"</tt> error. Newlines will be converted to
+<tt>\n</tt> characters if the newlines in the file is something else.
+This preprocessor directive may appear anywhere a string may
+appear.</p>
 </subsection>
 
 <subsection title="#string">
@@ -181,43 +179,125 @@ do_something(#string "the_file.wks");
 </example>
 </subsection>
 
+<subsection title="#include">
+<p><tt>#include</tt> may be used to insert the contents of another
+file into the processed file at the place of the include directive.
+Files can be referenced either by absolute or relative path from the
+source file by using double quotes, or searched for in the include
+paths. To include a file with absolute or relative path, use double
+quotes, e.g. <tt>#include "constants.pike"</tt> or <tt>#include
+"../debug.h"</tt>. To include from the include paths, use less than
+and greater than, e.g. <tt>#include &lt;profiling.h&gt;</tt>.</p>
+</subsection>
+
+<subsection title="#if">
+<p>The <tt>#if</tt> directive can evaluate simple expressions and, if
+the expression is evaluated to true, "activate" the code block that
+follows. The code block ends when an <tt>#endif</tt>, <tt>#else</tt>,
+<tt>#elseif</tt> or <tt>#elif</tt> block is encountered on the same
+nesting depth.</p>
+
+<p>The <tt>#if</tt> expressions may include defines, integer, string
+and float constants, ?:, || and &amp;&amp; operations, ~, ^, !, | and
+&amp; operations, &lt;, &gt;, &lt;=, &gt;=, == and != operations, +,
+-, *, /, &lt;&lt; and &gt;&gt; operations and paranthesis. Strings may
+also be indexed with the [] index operator. Finally there are three
+special "functions" available in <tt>#if</tt> expressions; defined,
+efun and constant. Define returns true if the symbol given as argument
+is defined. <tt>#if defined(MY_DEF)</tt> is equal to <tt>#ifdef
+MY_DEF</tt>. Efun returns true if its argument is an efun and constant
+returns true if its argument can be resolved into a constant.</p>
+</subsection>
+
+<subsection title="#ifdef">
+<p><tt>#ifdef</tt> works as <tt>#if</tt>, but instead of evaluating
+its arguments it just checks if the first symbol is a defined define
+or marcro.</p>
+</subsection>
+
+<subsection title="#ifndef">
+<p>Works as an inverted <tt>#ifndef</tt>; it only "activated" the
+following block if the symbol is not defined.</p>
+</subsection>
+
+<subsection title="#endif">
+<p>Ends a block opened by <tt>#if</tt>, <tt>#ifdef</tt>, <tt>#ifndef</tt>,
+<tt>#else</tt>, <tt>#elseif</tt> or <tt>#elif</tt>.</p>
+<example>
+#if DEBUG
+do_debug_stuff();
+#endif /* DEBUG */
+</example>
+</subsection>
+
+<subsection title="#else">
+<p>This directive is used to divide the current code block into another
+code block with inverse activation.</p>
+<example>
+#ifdef FAST_ALGORITHM
+do_fast_algorithm();
+#elif defined(EXPERIMENTAL_ALGORITHM)
+do_experimental_algorithm();
+#else
+do_default_algorithm();
+#endif
+</example>
+</subsection>
+
+<subsection title="#elseif and #elif">
+<p><tt>#elseif</tt> and <tt>#elif</tt> works as <tt>elseif</tt> in the
+<tt>#if</tt>/<tt>#ifdef</tt>/<tt>#ifndef</tt> context.</p>
+</subsection>
+
+<subsection title="#undefine and #undef">
+<p><tt>#undefine</tt> and <tt>#undefine</tt> undefines the symbol
+given as argument.</p>
+<example>
+// Strip debug
+#define werror(X ...) lambda(X){}
+#include "/home/someone/experimental/stuff.h"
+#undef werror
+</example>
+</subsection>
+
+<subsection title="#error">
+<p>Throws an error during preprocessing.</p>
+<example>
+#ifdef __NT__
+#error "This program can not run on MS Windows."
+#endif
+</example>
+</subsection>
+
+<subsection title="#charset">
+<p>Tells the preprocessor which charset the file is encoded with. The
+Locale.Charset module is called with this string to decode the
+file.</p>
+</subsection>
+
+<subsection title="#pike">
+<p>Tells the compiler which version of Pike it should emulate.</p>
+<example>
+#pike 7.2
+</example>
+</subsection>
+
+<subsection title="#pragma all_inline">
+</subsection>
+
+<subsection title="#pragma all_nomask">
+</subsection>
+
+<subsection title="#pragma strict_types">
+</subsection>
+
+<subsection title="#pragma save_parent and #pragma dont_save_parent">
+</subsection>
 
 </section>
-
 
 <section title="Predefined defines">
   <insert-move entity="cpp::"/>
 </section>
-
-<!--
-
-#if
-  defined(X)
-  efun(X)
-  constant(X)
-
-#include
- " "
- < >
-#ifdef
-#ifndef
-#endif
-#else
-#elseif
-#elif
-#error
-#undef
-#undefine
-#charset
-#pragma
-  all_inline
-  all_nomask
-  strict_types
-  save_parent
-  dont_save_parent
-#pike
-
-
--->
 
 </chapter>
