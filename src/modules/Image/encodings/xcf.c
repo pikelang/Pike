@@ -1,5 +1,5 @@
 #include "global.h"
-RCSID("$Id: xcf.c,v 1.26 2000/10/19 13:28:10 grubba Exp $");
+RCSID("$Id: xcf.c,v 1.27 2000/10/19 13:37:52 grubba Exp $");
 
 #include "image_machine.h"
 
@@ -59,8 +59,8 @@ struct buffer
 struct substring
 {
   struct pike_string *s;
-  int offset;
-  int len;
+  ptrdiff_t offset;
+  ptrdiff_t len;
 };
 
 static struct program *substring_program;

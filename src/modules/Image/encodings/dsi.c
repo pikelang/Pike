@@ -1,7 +1,7 @@
 /* Dream SNES Image file */
 
 #include "global.h"
-RCSID("$Id: dsi.c,v 1.1 2000/10/08 22:39:32 per Exp $");
+RCSID("$Id: dsi.c,v 1.2 2000/10/19 13:40:02 grubba Exp $");
 
 #include "image_machine.h"
 
@@ -37,22 +37,24 @@ void f__decode( INT32 args )
 {
   int xs, ys, x, y;
   unsigned char *data, *dp;
-  unsigned int len;
+  size_t len;
   struct object *i, *a;
   struct image *ip, *ap;
   rgb_group black = {0,0,0};
   if( sp[-args].type != T_STRING )
     error("Illegal argument 1 to Image.DSI._decode\n");
   data = (unsigned char *)sp[-args].u.string->str;
-  len = (unsigned int )sp[-args].u.string->len;
+  len = (size_t)sp[-args].u.string->len;
 
   if( len < 10 ) error("Data too short\n");
 
   xs = data[0] | (data[1]<<8) | (data[2]<<16) | (data[3]<<24);
   ys = data[4] | (data[5]<<8) | (data[6]<<16) | (data[7]<<24);
 
-  if( (xs * ys * 2) != (int)(len-8) )
-    error("Not a DSI %d * %d + 8 != %d\n", xs,ys, len);
+  if( (xs * ys * 2) != (ptrdiff_t)(len-8) )
+    error("Not a DSI %d * %d + 8 != %ld\n",
+	  xs, ys,
+	  DO_NOT_WARN((long)len));
 
   push_int( xs );
   push_int( ys );
