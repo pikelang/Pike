@@ -1,3 +1,7 @@
+Sat Feb 17 23:05:24 1996  Fredrik Hubinette  <hubbe@sparky.signum.se>
+
+	* sprintf: added support for %2c
+
 Sun Feb 11 01:04:38 1996  Fredrik Hubinette  <hubbe@sparky.signum.se>
 
 	* export.lpc: now updates configure files if needed
