@@ -101,6 +101,7 @@ testfont binary
 /src/modules/files/file.c foreign_ident
 /src/modules/spider/dumudp.c foreign_ident
 /src/modules/sprintf/sprintf.c foreign_ident
+/src/modules/system/acconfig.h foreign_ident
 /src/modules/system/passwords.c foreign_ident
 /src/modules/system/syslog.c foreign_ident
 /src/modules/system/system.c foreign_ident
