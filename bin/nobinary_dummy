@@ -33,6 +33,7 @@ case "$1" in
 	  ;;
 	-[ILRDUx])
 	  shift
+	  ;;
 	-*)
 	  ;;
 	*)
