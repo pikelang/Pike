@@ -119,7 +119,6 @@ mapping func_cat = ([
   glEvalMesh
   glFeedbackBuffer
   glGenTextures
-  glGet
   glGetClipPlane
   glGetLight
   glGetMap
@@ -137,11 +136,13 @@ mapping func_cat = ([
   glIndexPointer
   glInterleavedArrays
   glLoadMatrix
-  glMap
+  glMap1
+  glMap2
   glMapGrid
   glMultMatrix
   glNormalPointer
   glPixelMap
+  glPixelTransfer
   glPolygonStipple
   glPrioritizeTextures
   glReadPixels
@@ -151,8 +152,5 @@ mapping func_cat = ([
   glTexImage1D
   glTexSubImage1D
   glVertexPoint
-
-  glPixelStore
-  glPixelTransfer
 
 */
