@@ -85,10 +85,10 @@ void myproxy(object pi, object io, int channel)
 {
   while(1)
   {
-    string s=pi->read(1000,1);
+    string s=pi->read(1000,1); // Don't read more than 2<<24 :)
     if(!s || !strlen(s)) break;
     object key=outlock->lock();
-    io->write(sprintf("%c%3c%s",channel,strlen(s),channel,s));
+    io->write(sprintf("%c%3c%s",channel,strlen(s),s));
     destruct(key);
   }
 }
@@ -109,8 +109,9 @@ void handle_incoming_connection(object(Stdio.File) io)
   object pe=Stdio.File();
 #ifdef NO_IPC
   object p2=pi->pipe();
-  object p23=pi->pipe();
+  object pe2=pe->pipe();
 #else
+  object p2=pi->pipe(Stdio.PROP_IPC);
   object pe2=pe->pipe(Stdio.PROP_IPC);
 #endif
   string dir=cmd[0];
