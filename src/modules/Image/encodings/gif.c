@@ -1,9 +1,9 @@
-/* $Id: gif.c,v 1.14 1997/11/07 16:37:55 mirar Exp $ */
+/* $Id: gif.c,v 1.15 1997/11/09 18:40:54 mirar Exp $ */
 
 /*
 **! module Image
 **! note
-**!	$Id: gif.c,v 1.14 1997/11/07 16:37:55 mirar Exp $
+**!	$Id: gif.c,v 1.15 1997/11/09 18:40:54 mirar Exp $
 **! submodule GIF
 **!
 **!	This submodule keep the GIF encode/decode capabilities
@@ -31,7 +31,7 @@
 
 #include "stralloc.h"
 #include "global.h"
-RCSID("$Id: gif.c,v 1.14 1997/11/07 16:37:55 mirar Exp $");
+RCSID("$Id: gif.c,v 1.15 1997/11/09 18:40:54 mirar Exp $");
 #include "pike_macros.h"
 #include "object.h"
 #include "constants.h"
@@ -740,6 +740,7 @@ CHRONO("gif render_block begin");
 	       alphaidx=sp[n-args].u.integer;
 	       alpha=0;
 	       alphaentry=0;
+	       transparency=1;
 	       if (alphaidx!=-1 && numcolors<=alphaidx)
 		  error("Image.GIF.render_block(): illegal index to transparent color\n");
 	       n=6;

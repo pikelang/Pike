@@ -1,9 +1,9 @@
-/* $Id: image.c,v 1.54 1997/11/07 23:58:21 grubba Exp $ */
+/* $Id: image.c,v 1.55 1997/11/09 18:40:52 mirar Exp $ */
 
 /*
 **! module Image
 **! note
-**!	$Id: image.c,v 1.54 1997/11/07 23:58:21 grubba Exp $
+**!	$Id: image.c,v 1.55 1997/11/09 18:40:52 mirar Exp $
 **! class image
 **!
 **!	The main object of the <ref>Image</ref> module, this object
@@ -84,7 +84,7 @@
 
 #include "stralloc.h"
 #include "global.h"
-RCSID("$Id: image.c,v 1.54 1997/11/07 23:58:21 grubba Exp $");
+RCSID("$Id: image.c,v 1.55 1997/11/09 18:40:52 mirar Exp $");
 #include "pike_macros.h"
 #include "object.h"
 #include "constants.h"
@@ -2428,6 +2428,18 @@ void image_modify_by_intensity(INT32 args)
 **! method object map_fs(array(array(int)) colors)
 **! method array select_colors(int num)
 **!	Compatibility functions. Do not use!
+**!
+**!	Replacement examples:
+**!
+**!	Old code:
+**!	<pre>img=map_fs(img->select_colors(200));</pre>
+**!	New code:
+**!	<pre>img=Image.colortable(img,200)->floyd_steinberg()->map(img);</pre>
+**!
+**!	Old code:
+**!	<pre>img=map_closest(img->select_colors(17)+({({255,255,255}),({0,0,0})}));</pre>
+**!	New code:
+**!	<pre>img=Image.colortable(img,19,({({255,255,255}),({0,0,0})}))->map(img);</pre>
 */
 
 void image_map_compat(INT32 args) /* compat function */
@@ -2463,6 +2475,7 @@ void image_map_compat(INT32 args) /* compat function */
 void image_select_colors(INT32 args)
 {
    int colors;
+   struct object *o;
 
    if (args<1
       || sp[-args].type!=T_INT)
@@ -2474,7 +2487,10 @@ void image_select_colors(INT32 args)
    push_object(THISOBJ); THISOBJ->refs++;
    push_int(colors);
 
-   push_object(clone_object(image_colortable_program,2));
+   o=clone_object(image_colortable_program,2);
+   image_colortable_cast_to_array((struct neo_colortable*)
+				  get_storage(o,image_colortable_program));
+   free_object(o);
 }
 
 /*
