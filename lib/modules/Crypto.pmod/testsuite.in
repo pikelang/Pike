@@ -1,4 +1,4 @@
-// $Id: testsuite.in,v 1.29 2004/02/06 20:55:21 nilsson Exp $
+// $Id: testsuite.in,v 1.30 2004/02/07 04:09:27 nilsson Exp $
 
 // Nettle.Yarrow
 
@@ -314,12 +314,6 @@ test_do( add_constant("C") )
 dnl
 dnl  _Crypto tests
 dnl
-
-// Pike programs
-test_true([[programp(Crypto.des3_cbc)]])
-test_true([[programp(Crypto.des_cbc)]])
-test_true([[programp(Crypto.idea_cbc)]])
-test_true([[programp(Crypto.rsa)]])
 
 // DES
 test_eq(
