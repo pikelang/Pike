@@ -12,8 +12,12 @@ find . -type d -print|egrep -v '/(CVS)|(RCS)$'| while read dir; do
   fi
 
   if [ -f $dir/configure.in ]; then
-    echo "Running autoconf in $dir"
-    ( cd $dir ; autoconf )
+    if grep AC_INIT $dir/configure.in >/dev/null; then
+      echo "Running autoconf in $dir"
+      ( cd $dir ; autoconf )
+    else
+      echo "$dir seems to use Cygnus-configure."
+    fi
   fi
 
   if [ -f $dir/Makefile.in -a ! -f $dir/dependencies ] && egrep @dependencies@ $dir/Makefile.in >/dev/null; then
