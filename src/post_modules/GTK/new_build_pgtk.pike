@@ -1672,7 +1672,7 @@ void main(int argc, array argv)
     }
   }
   werror("Parsing input files...     ");
-  int t1 = gauge {
+  float t1 = gauge {
   foreach( glob( "*.pre",get_dir( source_dir )), string f)
     parse_pre_file( source_dir + f );
   };
@@ -1701,7 +1701,7 @@ void main(int argc, array argv)
   if( err )
     exit(1);
   werror("Outputting result files...\n");
-  int t2 = gauge {
+  float t2 = gauge {
     array files =
           output_plugin->output( classes, constants, global_pre );
     if( files )
