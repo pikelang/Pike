@@ -1,6 +1,6 @@
 #!/bin/sh
 
-# $Id: .build_lobotomized_crypto,v 1.7 1998/03/28 14:32:16 grubba Exp $
+# $Id: .build_lobotomized_crypto,v 1.8 2001/02/14 21:20:42 mirar Exp $
 
 if [ ! -f cbc.c ]; then
     echo ".build_lobotomized_crypto should be run in pike/src/modules/_Crypto"
@@ -32,7 +32,8 @@ for d in . include lib; do
 done
 
 echo "Censoring sensitive files"
-for f in crypto.c Makefile.in lib/Makefile.in testsuite.in ; do
+# configure* catches configure.in and maybe configure too /Mirar
+for f in configure* crypto.c Makefile.in lib/Makefile.in testsuite.in ; do
     echo $f
     sed '/BEGIN NATIONAL SECURITY/,/END NATIONAL SECURITY/d' \
     < $f > .temporary_file

@@ -20,7 +20,11 @@ AC_ARG_WITH(java-lib-dir,
 	[  --with-java-lib-dir=dir    look for JRE libs in dir],
 	[pike_java_user_lib_directory=$withval])
 
+PIKE_FEATURE_WITHOUT(Java)
+
 if test "x$with_java" = xyes -a "x$enable_binary" != xno; then
+
+  PIKE_FEATURE_NODEP(Java)
 
   AC_MSG_CHECKING(which operating system we're using)
   AC_CACHE_VAL(pike_cv_java_sysos, [
@@ -287,6 +291,8 @@ if test "x$with_java" = xyes -a "x$enable_binary" != xno; then
     :
   fi
 
+  PIKE_FEATURE(Java,[no (no known JVM found)])
+
   if test "$pike_cv_java" = yes; then
     AC_MSG_CHECKING(if the JVM really works)
     AC_CACHE_VAL(pike_cv_java_working, [
@@ -376,8 +382,10 @@ static HINSTANCE jvmdll = NULL;
       ], [pike_cv_java_working=yes], [pike_cv_java_working=no])
     ])
     AC_MSG_RESULT($pike_cv_java_working)
+    PIKE_FEATURE(Java,[yes ($JAVA_LIBS)])
     if test "$pike_cv_java_working" = no; then
       pike_cv_java=no;
+      PIKE_FEATURE(Java,[no (JVM doesn't work)])
     fi
   else
     :
@@ -432,6 +440,7 @@ fi
 
 if test x"$pike_cv_sys_os" = xWindows_NT ; then
   JAVA_LIBS="-lkernel32 -lws2_32 -ladvapi32 $JAVA_LIBS"
+  PIKE_FEATURE(Java,[yes ($JAVA_LIBS)])
 fi
 
 

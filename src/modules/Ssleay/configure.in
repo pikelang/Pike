@@ -1,4 +1,4 @@
-# $Id: configure.in,v 1.5 1998/09/20 08:32:36 hubbe Exp $
+# $Id: configure.in,v 1.6 2001/02/14 21:20:41 mirar Exp $
 AC_INIT(ssleay.c)
 
 AC_CONFIG_HEADER(config.h)
@@ -7,7 +7,11 @@ AC_MODULE_INIT()
 
 AC_ARG_WITH(ssleay,  [  --with-ssleay       enable the ssleay-module],[],[with_ssleay=no])
 
+PIKE_FEATURE_WITHOUT(Ssleay)
+
 if test x$with_ssleay = xyes; then
+  PIKE_FEATURE_NODEP(Ssleay)
+
   OLD_LDFLAGS=$LDFLAGS
   OLD_CPPFLAGS=$CPPFLAGS
   OLD_LIBS=$LIBS
@@ -51,6 +55,7 @@ if test x$with_ssleay = xyes; then
 
     if test x$pike_cv_ssleay = xyes; then
       AC_DEFINE(HAVE_SSLEAY)
+      PIKE_FEATURE_OK(Ssleay)
     else
       # Restore variables, so we don't link with unnessesary libs
 

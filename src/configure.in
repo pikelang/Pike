@@ -1,4 +1,4 @@
-AC_REVISION("$Id: configure.in,v 1.481 2001/02/14 20:44:49 mirar Exp $")
+AC_REVISION("$Id: configure.in,v 1.482 2001/02/14 21:20:40 mirar Exp $")
 AC_INIT(interpret.c)
 AC_CONFIG_HEADER(machine.h)
 
@@ -1837,7 +1837,10 @@ fi
 
 ########################################################################
 
+using_threads="no (forced)"
+
 if test x$with_threads = xyes ; then
+  using_threads="no (no known threads found)"
   OLDLIBS="$LIBS"
   OLDCFLAGS="$CFLAGS"
 
@@ -1849,6 +1852,7 @@ if test "x$pike_cv_sys_os" = "xWindows_NT" ; then
   AC_DEFINE(_UNIX_THREADS)
   AC_DEFINE(NT_THREADS)
   AC_DEFINE(PIKE_THREADS)
+  using_threads="yes (nt)"
 
 else
 
@@ -1899,6 +1903,7 @@ int main(int argc, char **argv)
         AC_MSG_RESULT(no)
       else
         AC_MSG_RESULT(yes)
+        using_threads="yes (freebsd)"
 
         AC_PATH_PROG(PTHREAD_CONFIG,pthread-config,no)
         if test "x$PTHREAD_CONFIG" = xno ; then
@@ -2053,6 +2058,7 @@ pthread_t gazonk;
     AC_DEFINE(_THREAD_SAFE)
     AC_DEFINE(_MIT_POSIX_THREADS,1)
     AC_DEFINE(PIKE_THREADS)
+    using_threads="yes (posix)"
 
 ##########################################################################
 
@@ -2260,6 +2266,7 @@ int main()
       AC_DEFINE(_THREAD_SAFE)
       AC_DEFINE(_UNIX_THREADS)
       AC_DEFINE(PIKE_THREADS)
+      using_threads="yes (unix)"
     else
       AC_MSG_RESULT(no)
       LIBS="$OLDLIBS"
@@ -2278,6 +2285,7 @@ int main()
       #   AC_DEFINE(_THREAD_SAFE)
       #   AC_DEFINE(_SGI_SPROC_THREADS)
       #   AC_DEFINE(_SGI_MP_SOURCE)
+      #   using_threads="yes (sgi)"
       # else
       #   AC_MSG_RESULT(no)
       #   :
@@ -5128,7 +5136,6 @@ sed <conftest.cpp >conftypes.txt '1,/^--$/d'
 
 rm config.info 2>/dev/null
 
-
 echo "=========================================================" >>config.info
 
 echo "$PIKE_VERSION_LONG configuration summary" >>config.info
@@ -5142,8 +5149,8 @@ echo "pike library.. $prefix/lib/${PIKE_VERSION}/" >>config.info
 echo >>config.info
 echo "build information:" >>config.info
 echo "system........ $UNAME`echo $pike_cv_libgcc_filename | sed -n -e 's+^.*gcc-lib/\([[^/]]*\)/.*$+ (\1)+p'`" >>config.info
-uname -a && echo "   `uname -a`" >>config.info
-hostname && echo "hostname...... `hostname`" >>config.info
+uname -a >/dev/null 2>/dev/null && echo "   `uname -a`" >>config.info
+hostname >/dev/null 2>/dev/null && echo "hostname...... `hostname`" >>config.info
 echo "user.......... `whoami 2>/dev/null || echo '?'`" >>config.info
 echo >>config.info
 echo "source path... $srcdir" >>config.info
@@ -5151,6 +5158,8 @@ echo "build path.... $BUILDDIR" >>config.info
 echo "cpp........... $CPP" >>config.info
 echo "cc............ $CC" >>config.info
 echo "ld............ $LD" >>config.info
+echo "cc shared..... $CCSHARED" >>config.info
+echo "ld shared..... $LINKFORSHARED" >>config.info
 echo "pike.......... $PIKE" >>config.info
 echo "install....... $INSTALL" >>config.info
 echo "shared object. .$SO" >>config.info
@@ -5160,6 +5169,19 @@ echo "optimize...... $OPTIMIZE" >>config.info
 echo >>config.info
 echo "features:" >>config.info
 echo "PAD_FEATURE([dynamic loading])$pike_cv_sys_dynamic_loading" >>config.info
+echo "PAD_FEATURE([threads])$using_threads" >>config.info
+if test "x$with_debug" = x; then
+  with_debug=no
+fi
+if test "x$with_rtldebug" = x; then
+  with_rtldebug=no
+fi
+if test "x$with_dmalloc" = x; then
+  with_dmalloc=no
+fi
+echo "PAD_FEATURE([debug])$with_debug" >>config.info
+echo "PAD_FEATURE([dmalloc])$with_dmalloc" >>config.info
+echo "PAD_FEATURE([rtldebug])$with_rtldebug" >>config.info
 
 AC_TRY_RUN([
 #include "global.h"
@@ -5202,6 +5224,8 @@ int main()
 }
 ],[],[],[])
 rm conftypes.txt 2>/dev/null
+
+echo >>config.info
 
 ls -1 pike_*.feature 2>/dev/null | xargs cat | sort >>config.info 
 ls -1 post_modules/*/pike_*.feature modules/*/pike_*.feature 2>/dev/null |  xargs cat | sort >>config.info

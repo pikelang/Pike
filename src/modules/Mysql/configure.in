@@ -1,5 +1,5 @@
 #
-# $Id: configure.in,v 1.25 2001/02/07 12:24:24 grubba Exp $
+# $Id: configure.in,v 1.26 2001/02/14 21:20:41 mirar Exp $
 #
 # Configure script for the mysql-module
 #
@@ -21,6 +21,8 @@ AC_INIT(mysql.c)
 AC_CONFIG_HEADER(config.h)
 
 AC_MODULE_INIT()
+
+PIKE_FEATURE_WITHOUT(Mysql)
 
 OLD_LIBS=$LIBS
 OLD_LDFLAGS=$LDFLAGS
@@ -48,6 +50,8 @@ AC_ARG_WITH(root,   [  --with-root=path      specify a cross-compilation root-di
 if test x$with_mysql = xno; then
   :
 else
+  PIKE_FEATURE_NODEP(Mysql)
+
   AC_MSG_CHECKING(for Mysql lib-directory)
 
   libdirs="$with_root/usr/local/lib/mysql $with_root/usr/local/mysql/lib/mysql $with_root/opt/lib/mysql $with_root/opt/mysql/lib/mysql $with_root/usr/gnu/lib/mysql $with_root/usr/lib/mysql $with_root/lib/mysql $with_root/usr/local/mysql/lib $with_root/usr/local/mysql/mach-lib-thread no"
@@ -206,6 +210,7 @@ LIBS="$ac_save_LIBS"
 ])
 
 if test "x$ac_cv_pike_lib_$1_mysql_connect" = xyes ; then
+  PIKE_FEATURE(Mysql,[yes (lib$1)])
   AC_MSG_RESULT(yes)
   $2
 else
@@ -225,7 +230,10 @@ fi
       AC_CHECK_SQLLIB(mysql, [
 	LIBS="-lmysql $LIBS"
 	MYSQL_LIBS="-lmysql ${MYSQL_LIBS}"
-      ], [ pike_cv_mysql="no" ])
+      ], [ 
+        PIKE_FEATURE_NODEP(Mysql)
+	pike_cv_mysql="no" 
+	])
     ])
   ])
 

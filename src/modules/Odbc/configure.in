@@ -1,5 +1,5 @@
 #
-# $Id: configure.in,v 1.23 2000/09/14 17:43:52 grubba Exp $
+# $Id: configure.in,v 1.24 2001/02/14 21:20:41 mirar Exp $
 #
 # Configure script for the odbc-module
 #
@@ -19,7 +19,11 @@ OLD_CPPFLAGS=$CPPFLAGS
 
 AC_ARG_WITH(odbc,  [  --without-odbc       no support for ODBC databases],[],[with_odbc=yes])
 
+PIKE_FEATURE_WITHOUT(Odbc)
+
 if test x$with_odbc = xyes; then
+  PIKE_FEATURE_NODEP(Odbc)
+
   if test "x$pike_cv_sys_os" = "xWindows_NT" ; then
     AC_CHECK_HEADERS(windows.h sql.h sqlext.h)
 
@@ -27,6 +31,7 @@ if test x$with_odbc = xyes; then
       AC_DEFINE(HAVE_ODBC)
       LIBS="-lodbc32 $LIBS"
       pike_cv_odbc=yes
+
       cat <<EOF
 
 ODBC support enabled.
@@ -206,6 +211,8 @@ EOF
   fi
 
   if test "x$pike_cv_odbc" = "xyes"; then
+
+    PIKE_FEATURE_OK(Odbc)
 
     define(PIKE_CHECK_ODBC_TYPEDEF, [
       AC_CHECKING(if the typedef $1 exists.)

@@ -1,4 +1,4 @@
-# $Id: configure.in,v 1.12 2001/01/26 02:19:51 mast Exp $
+# $Id: configure.in,v 1.13 2001/02/14 21:20:42 mirar Exp $
 AC_INIT(crypto.c)
 AC_CONFIG_HEADER(config.h)
 
@@ -9,6 +9,11 @@ AC_CONFIG_SUBDIRS(lib)
 AC_MODULE_INIT()
 
 AC_ARG_WITH(rsaref,     [  --with-rsaref[=path]      Support for RSAREF],[],[])
+
+PIKE_FEATURE(Crypto,[yes (lobotomized)])
+# BEGIN NATIONAL SECURITY 
+PIKE_FEATURE_OK(Crypto)
+# END NATIONAL SECURITY
 
 if test x$with_rsaref = x ; then
   :
@@ -46,6 +51,8 @@ else
   LDFLAGS="$LDFLAGS -L$pike_cv_rsa_dir/lib -R$pike_cv_rsa_dir/lib"
 
   AC_CHECK_LIB(cryptoci, b_rsa_public_key_type)
+
+  PIKE_FEATURE(Crypto,[yes (with rsaref)])
 fi
 fi
 
