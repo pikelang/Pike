@@ -32,7 +32,7 @@
 #include <ieeefp.h>
 #endif
 
-RCSID("$Id: svalue.c,v 1.99 2001/03/04 19:27:19 mirar Exp $");
+RCSID("$Id: svalue.c,v 1.100 2001/03/29 19:37:53 grubba Exp $");
 
 struct svalue dest_ob_zero = { T_INT, 0 };
 
@@ -126,7 +126,9 @@ PMOD_EXPORT void really_free_svalue(struct svalue *s)
     
   case T_TYPE:
 #ifdef USE_PIKE_TYPE
-    really_free_pike_type(s->u.type);
+    /* Add back the reference, and call the normal free_type(). */
+    add_ref(s->u.type);
+    free_type(s->u.type);
 #ifdef PIKE_DEBUG
     s->type = 99;
 #endif /* PIKE_DEBUG */
