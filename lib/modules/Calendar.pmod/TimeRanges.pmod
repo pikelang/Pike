@@ -1199,12 +1199,12 @@ static class NullTimeRange
 
    int(0..1) `==(TimeRange with)
    {
-      return with==this_object();
+      return with->is_nulltimerange;
    }
 
    int(0..1) equals(TimeRange with)
    {
-      return with==this_object();
+      return with->is_nulltimerange;
    }
 
    TimeRange `&(TimeRange with, mixed ...extra)
