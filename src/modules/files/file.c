@@ -6,7 +6,7 @@
 #define READ_BUFFER 8192
 
 #include "global.h"
-RCSID("$Id: file.c,v 1.43 1997/06/24 10:43:06 hubbe Exp $");
+RCSID("$Id: file.c,v 1.44 1997/06/24 19:26:15 nisse Exp $");
 #include "interpret.h"
 #include "svalue.h"
 #include "stralloc.h"
@@ -442,7 +442,7 @@ static void file_write(INT32 args)
     THREADS_DISALLOW();
 
 #ifdef _REENTRANT
-    if(FD<0) error("File destructed while in file->write.\");
+    if(FD<0) error("File destructed while in file->write.\n");
 #endif
 
     if(i<0)
