@@ -1,5 +1,5 @@
 /*
- * $Id: oracle.c,v 1.59 2002/02/07 16:55:19 stewa Exp $
+ * $Id: oracle.c,v 1.60 2002/10/03 15:55:52 mast Exp $
  *
  * Pike interface to Oracle databases.
  *
@@ -53,7 +53,7 @@
 
 #include <math.h>
 
-RCSID("$Id: oracle.c,v 1.59 2002/02/07 16:55:19 stewa Exp $");
+RCSID("$Id: oracle.c,v 1.60 2002/10/03 15:55:52 mast Exp $");
 
 
 #define BLOB_FETCH_CHUNK 16384
@@ -1947,6 +1947,7 @@ static void dbdate_create(INT32 args)
     case T_INT:
       t=Pike_sp[-1].u.integer;
       tm=localtime(&t);
+      if (!tm) Pike_error ("localtime() failed to convert %ld\n", (long) t);
       OCIDateSetDate(&THIS_DBDATE->date, tm->tm_year, tm->tm_mon, tm->tm_mday);
       OCIDateSetTime(&THIS_DBDATE->date, tm->tm_hour, tm->tm_min, tm->tm_sec);
       break;

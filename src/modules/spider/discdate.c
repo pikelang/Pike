@@ -26,7 +26,7 @@
 /* This must be included last! */
 #include "module_magic.h"
 
-RCSID("$Id: discdate.c,v 1.8 2000/12/01 08:10:37 hubbe Exp $");
+RCSID("$Id: discdate.c,v 1.9 2002/10/03 15:55:53 mast Exp $");
 
 struct disc_time
 {
@@ -53,6 +53,7 @@ void f_discdate(INT32 argc)
     struct tm *eris;
     t=sp[-argc].u.integer;
     eris=localtime(&t);
+    if (!eris) Pike_error ("localtime() failed to convert %ld\n", (long) t);
     bob=eris->tm_yday;		/* days since Jan 1. */
     raw=eris->tm_year;		/* years since 1980 */
     hastur=convert(bob,raw);
