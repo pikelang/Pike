@@ -23,7 +23,7 @@
 #include "builtin_functions.h"
 #include <signal.h>
 
-RCSID("$Id: signal_handler.c,v 1.103 1999/02/01 02:58:13 per Exp $");
+RCSID("$Id: signal_handler.c,v 1.104 1999/02/01 03:25:04 per Exp $");
 
 #ifdef HAVE_PASSWD_H
 # include <passwd.h>
@@ -884,6 +884,16 @@ extern int pike_make_pipe(int *);
 
 #endif /* !__NT__ && !__amigaos__ */
 
+#ifdef HAVE___PRIOCNTL
+#undef PC
+# include <sys/priocntl.h>
+# include <sys/rtpriocntl.h>
+# include <sys/tspriocntl.h>
+#else
+# ifdef HAVE_SCHED_SETSCHEDULER
+#  include <sched.h>
+# endif
+#endif
 
 static int set_priority( int pid, char *to )
 {
