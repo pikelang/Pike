@@ -36,7 +36,33 @@
 #include <float.h>
 #endif /* HAVE_FLOAT_H */
 
-RCSID("$Id: svalue.c,v 1.105 2001/06/12 14:23:57 grubba Exp $");
+/* isnan()...
+ */
+#ifdef HAVE_ISNAN
+#if defined(HAVE__ISNAN) && defined(__NT__)
+/* On NT only _isnan() has a prototype.
+ * isnan() is the standardized name, so use that
+ * on all other platforms.
+ */
+#define PIKE_ISNAN(X)	_isnan(X)
+#else /* !(HAVE__ISNAN && __NT__) */
+#define PIKE_ISNAN(X)	isnan(X)
+#endif /* HAVE__ISNAN && __NT__ */
+#else /* !HAVE_ISNAN */
+#ifdef HAVE__ISNAN
+#define PIKE_ISNAN(X)	_isnan(X)
+#else /* !HAVE__ISNAN */
+/* Fallback function */
+static int pike_isnan(double x)
+{
+  return ((x == 0.0) == (x < 0.0)) &&
+    ((x == 0.0) == (x > 0.0));
+}
+#define PIKE_ISNAN(X)	pike_isnan(X)
+#endif /* HAVE__ISNAN */
+#endif /* HAVE_ISNAN */
+
+RCSID("$Id: svalue.c,v 1.106 2001/06/12 19:17:45 grubba Exp $");
 
 struct svalue dest_ob_zero = { T_INT, 0 };
 
@@ -650,12 +676,9 @@ PMOD_EXPORT int is_eq(const struct svalue *a, const struct svalue *b)
     return (a->subtype == b->subtype && a->u.object == b->u.object);
       
   case T_FLOAT:
-#ifdef HAVE__ISNAN
-    /* Kludge for Win32... */
-    if (_isnan(a->u.float_number) != _isnan(b->u.float_number)) {
+    if (PIKE_ISNAN(a->u.float_number) != PIKE_ISNAN(b->u.float_number)) {
       return 0;
     }
-#endif /* HAVE__ISNAN */
     return a->u.float_number == b->u.float_number;
 
   default:
@@ -910,14 +933,12 @@ PMOD_EXPORT int is_lt(const struct svalue *a, const struct svalue *b)
     return my_strcmp(a->u.string, b->u.string) < 0;
 
   case T_FLOAT:
-#ifdef HAVE__ISNAN
-    if (_isnan(a->u.float_number) || _isnan(b->u.float_number)) {
-      return 0;
-    }
-#endif  /* HAVE__ISNAN */
 #ifdef HAVE_ISLESS
     return isless(a->u.float_number, b->u.float_number);
 #else
+    if (PIKE_ISNAN(a->u.float_number) || PIKE_ISNAN(b->u.float_number)) {
+      return 0;
+    }
     return a->u.float_number < b->u.float_number;
 #endif
 
