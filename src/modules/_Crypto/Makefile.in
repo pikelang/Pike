@@ -2,7 +2,7 @@ SRCDIR=@srcdir@
 VPATH=@srcdir@:@srcdir@/../..:../..
 OBJS=crypto.o idea.o des.o rc4.o sha.o pipe.o cbc.o lib/algorithms.a
 
-CPPFLAGS= -I$(SRCDIR)/include -DPIKE
+MODULE_CPPFLAGS= -I$(SRCDIR)/include -DPIKE
 
 @dynamic_module_makefile@
 
