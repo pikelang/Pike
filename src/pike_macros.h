@@ -5,7 +5,7 @@
 \*/
 
 /*
- * $Id: pike_macros.h,v 1.15 2000/04/15 05:05:28 hubbe Exp $
+ * $Id: pike_macros.h,v 1.16 2000/06/27 15:19:33 grubba Exp $
  */
 #ifndef MACROS_H
 #define MACROS_H
@@ -62,15 +62,15 @@
 #define DO_ALIGN(X,Y) (((long)(X)+((Y)-1)) & -(Y))
 #define CONSTANT_STRLEN(X) (sizeof(X) - sizeof(""))
 
-#define SET_NEXT_AND_FREE(p,free_program) do{	\
+#define SET_NEXT_AND_FREE(p,free_item) do{	\
   next=p->next;					\
   while(p->refs == 1 && (next=p->next))		\
   {						\
     add_ref(next);				\
-    free_program(p);				\
+    free_item(p);				\
     p=next;					\
   }						\
-  free_program(p);				\
+  free_item(p);					\
 }while(0)
 
 #define DOUBLELINK(first_object, o) do {	\
