@@ -1,5 +1,5 @@
 /*
- * $Id: image_jpeg.c,v 1.53 2002/10/06 11:44:35 norrby Exp $
+ * $Id: image_jpeg.c,v 1.54 2002/10/07 21:18:17 norrby Exp $
  */
 
 #include "global.h"
@@ -39,7 +39,7 @@
 #ifdef HAVE_STDLIB_H
 #undef HAVE_STDLIB_H
 #endif
-RCSID("$Id: image_jpeg.c,v 1.53 2002/10/06 11:44:35 norrby Exp $");
+RCSID("$Id: image_jpeg.c,v 1.54 2002/10/07 21:18:17 norrby Exp $");
 
 /* jpeglib defines EXTERN for some reason.
  * This is not good, since it confuses compilation.h.
@@ -451,7 +451,7 @@ static int parameter_comment(struct svalue *map,struct pike_string *what,
 		 " expected 8 bit string\n");
 
    jpeg_write_marker(cinfo, JPEG_COM, 
-		     v->u.string->str, 
+		     v->u.string->str,
 		     v->u.string->len); 
 
    return 1;
@@ -500,10 +500,52 @@ static void my_term_source(struct jpeg_decompress_struct *cinfo)
    /* nop */
 }
 
+static int marker_exists_in_args(INT32 args, int which)
+{
+   struct svalue *map=sp+1-args;
+   struct svalue *v=NULL;
+   struct mapping *m=NULL;
+   INT32 e;
+   struct keypair *k;
+   v=low_mapping_string_lookup(map->u.mapping, param_comment);
+   if (which==JPEG_COM && v) {
+     return (v->type==T_STRING && !v->u.string->size_shift);
+   } else {
+     v=low_mapping_string_lookup(map->u.mapping, param_marker);
+     if (v && v->type==T_MAPPING) m=v->u.mapping;
+     if (m) {
+       MAPPING_LOOP(m)
+	 {
+	   if (k->ind.type==T_INT && k->val.type==T_STRING
+	       && k->ind.u.integer==which && !k->val.u.string->size_shift) {
+	     return 1;
+	   }
+	 }
+     }
+   }
+   return 0;
+}
+
+static void my_copy_jpeg_markers(INT32 args, 
+				 struct my_decompress_struct *mds,
+				 j_compress_ptr cinfo)
+{
+    while (mds->first_marker) {
+	struct my_marker *mm=mds->first_marker;
+	if (args < 2 || !marker_exists_in_args(args, mm->id)) {
+	  jpeg_write_marker(cinfo, mm->id,
+			    mm->data,
+			    mm->len); 
+	}
+	mds->first_marker=mm->next;
+	free(mm);
+    }
+}
+
 static void init_src(struct pike_string *raw_img,
 		     struct jpeg_error_mgr *errmgr,
 		     struct my_source_mgr *srcmgr,
-		     struct my_decompress_struct *mds)
+                     struct my_decompress_struct *mds)
 {
    int n=0,m;
 
@@ -544,7 +586,7 @@ static void init_src(struct pike_string *raw_img,
    jpeg_set_marker_processor(&mds->cinfo, JPEG_APP0+15, my_jpeg_marker_parser);
 
    mds->cinfo.src=(struct jpeg_source_mgr*)srcmgr;
-   jcopy_markers_setup(&mds->cinfo, JCOPYOPT_ALL);
+   /*jcopy_markers_setup(&mds->cinfo, JCOPYOPT_ALL);*/
    jpeg_read_header(&mds->cinfo,TRUE);
 }
 
@@ -624,8 +666,6 @@ void set_jpeg_transform_options(INT32 args, jpeg_transform_info *options)
  *!     Lossless image transformation. Has only effect when supplying a
  *!     JPEG file as indata.
  *!     @int
- *!       @value NONE
- *!         No operation
  *!       @value FLIP_H
  *!         Flip image horizontally
  *!       @value FLIP_V
@@ -737,7 +777,8 @@ static void image_jpeg_encode(INT32 args)
 						      src_coef_arrays,
 						      &transformoption);
        jpeg_write_coefficients(&cinfo, dst_coef_arrays);
-       jcopy_markers_execute(&mds.cinfo, &cinfo, JCOPYOPT_ALL);
+       my_copy_jpeg_markers(args, &mds, &cinfo);
+       /*jcopy_markers_execute(&mds.cinfo, &cinfo, JCOPYOPT_ALL);*/
        jtransform_execute_transformation(&mds.cinfo, &cinfo,
 					 src_coef_arrays,
 					 &transformoption);
@@ -1208,8 +1249,8 @@ static void img_jpeg_decode(INT32 args,int mode)
       }
 
       jpeg_finish_decompress(&mds.cinfo);
-      jpeg_destroy_decompress(&mds.cinfo);
    }
+   jpeg_destroy_decompress(&mds.cinfo);
 
    if (mode==IMG_DECODE_IMAGE)
    {
@@ -1327,9 +1368,6 @@ void image_jpeg_quant_tables(INT32 args)
  */
 
 /*! @decl constant FLIP_V
- */
-
-/*! @decl constant NONE
  */
 
 /*! @decl constant ROT_90
