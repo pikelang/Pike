@@ -1,5 +1,5 @@
 /*
- * $Id: preprocessor.h,v 1.42 2001/06/07 20:16:26 grubba Exp $
+ * $Id: preprocessor.h,v 1.43 2001/07/02 20:09:18 mast Exp $
  *
  * Preprocessor template.
  * Based on cpp.c 1.45
@@ -764,6 +764,8 @@ static ptrdiff_t calc(struct cpp *this, WCHAR *data, ptrdiff_t len,
     }else{
       cpp_error(this, "Nonstandard error format.");
     }
+    free_svalue(&throw_value);
+    throw_value.type = T_INT;
     FIND_EOL();
     push_int(0);
   }else{

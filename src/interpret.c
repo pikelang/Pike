@@ -5,7 +5,7 @@
 \*/
 /**/
 #include "global.h"
-RCSID("$Id: interpret.c,v 1.211 2001/07/02 04:09:48 hubbe Exp $");
+RCSID("$Id: interpret.c,v 1.212 2001/07/02 20:09:17 mast Exp $");
 #include "interpret.h"
 #include "object.h"
 #include "program.h"
@@ -1619,7 +1619,7 @@ PMOD_EXPORT int apply_low_safe_and_stupid(struct object *o, INT32 offset)
   return ret;
 }
 
-PMOD_EXPORT void safe_apply_low(struct object *o,int fun,int args)
+PMOD_EXPORT void safe_apply_low2(struct object *o,int fun,int args, int handle_errors)
 {
   JMP_BUF recovery;
 
@@ -1628,8 +1628,7 @@ PMOD_EXPORT void safe_apply_low(struct object *o,int fun,int args)
   throw_value.type=T_INT;
   if(SETJMP(recovery))
   {
-    if(throw_value.type != T_INT)
-      call_handle_error();
+    if(handle_errors) call_handle_error();
     Pike_sp->u.integer = 0;
     Pike_sp->subtype=NUMBER_NUMBER;
     Pike_sp->type = T_INT;
@@ -1651,13 +1650,17 @@ PMOD_EXPORT void safe_apply_low(struct object *o,int fun,int args)
   UNSETJMP(recovery);
 }
 
+PMOD_EXPORT void safe_apply_low(struct object *o,int fun,int args)
+{
+  safe_apply_low2(o, fun, args, 1);
+}
 
 PMOD_EXPORT void safe_apply(struct object *o, char *fun ,INT32 args)
 {
 #ifdef PIKE_DEBUG
   if(!o->prog) fatal("Apply safe on destructed object.\n");
 #endif
-  safe_apply_low(o, find_identifier(fun, o->prog), args);
+  safe_apply_low2(o, find_identifier(fun, o->prog), args, 1);
 }
 
 PMOD_EXPORT void safe_apply_handler(const char *fun,
@@ -1666,16 +1669,22 @@ PMOD_EXPORT void safe_apply_handler(const char *fun,
 				    INT32 args)
 {
   int i;
+  free_svalue(&throw_value);
+  throw_value.type = T_INT;
   if (handler && handler->prog &&
       (i = find_identifier(fun, handler->prog)) != -1) {
-    safe_apply_low(handler, i, args);
+    safe_apply_low2(handler, i, args, 0);
   } else if (compat && compat->prog &&
 	     (i = find_identifier(fun, compat->prog)) != -1) {
-    safe_apply_low(compat, i, args);
+    safe_apply_low2(compat, i, args, 0);
   } else {
     struct object *master_obj = master();
     i = find_identifier(fun, master_obj->prog);
-    safe_apply_low(master_obj, i, args);
+    safe_apply_low2(master_obj, i, args, 0);
+  }
+  if (throw_value.type != T_STRING && throw_value.type != T_INT) {
+    free_svalue(&throw_value);
+    throw_value.type = T_INT;
   }
 }
 

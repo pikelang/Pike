@@ -5,7 +5,7 @@
 \*/
 /**/
 #include "global.h"
-RCSID("$Id: builtin_functions.c,v 1.389 2001/07/02 07:02:44 hubbe Exp $");
+RCSID("$Id: builtin_functions.c,v 1.390 2001/07/02 20:09:16 mast Exp $");
 #include "interpret.h"
 #include "svalue.h"
 #include "pike_macros.h"
@@ -3140,6 +3140,8 @@ node *optimize_replace(node *n)
 	if (SETJMP(tmp)) {
 	  yywarning("Optimizer failure in replace().");
 	  pop_n_elems(Pike_sp - save_sp);
+	  free_svalue(&throw_value);
+	  throw_value.type = T_INT;
 	} else {
 	  extern struct program *multi_string_replace_program;
 	  INT16 lfun;

@@ -5,7 +5,7 @@
 \*/
 
 /*
- * $Id: pike_error.h,v 1.11 2001/03/28 10:02:42 hubbe Exp $
+ * $Id: pike_error.h,v 1.12 2001/07/02 20:09:18 mast Exp $
  */
 #ifndef PIKE_ERROR_H
 #define PIKE_ERROR_H
@@ -294,7 +294,11 @@ void cleanup_error(void);
 #define exception_endtry \
             else \
                 __exception_rethrow = 1; \
-            if(!__is_exception) \
+            if(__is_exception) { \
+		free_svalue(&throw_value); \
+		throw_value.type = T_INT; \
+	    } \
+	    else \
                 UNSETJMP(exception); \
             if(__exception_rethrow) \
                 rethrow; \

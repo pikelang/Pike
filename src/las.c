@@ -5,7 +5,7 @@
 \*/
 /**/
 #include "global.h"
-RCSID("$Id: las.c,v 1.254 2001/06/23 21:52:09 hubbe Exp $");
+RCSID("$Id: las.c,v 1.255 2001/07/02 20:09:17 mast Exp $");
 
 #include "language.h"
 #include "interpret.h"
@@ -1752,6 +1752,8 @@ node *index_node(node *n, char *node_name, struct pike_string *id)
 	     *
 	     * FIXME: Report the error thrown.
 	     */
+	    free_svalue(&throw_value);
+	    throw_value.type = T_INT;
 	    if (Pike_sp > save_sp) {
 	      pop_n_elems(Pike_sp - save_sp);
 	    } else if (Pike_sp != save_sp) {
@@ -4998,6 +5000,8 @@ ptrdiff_t eval_low(node *n)
 	  yyerror("Nonstandard error format.");
 	}
       }
+      free_svalue(&throw_value);
+      throw_value.type = T_INT;
     }else{
       if(foo.yes)
 	pop_n_elems(Pike_sp-save_sp);
