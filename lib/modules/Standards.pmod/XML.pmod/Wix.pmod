@@ -1,4 +1,4 @@
-// $Id: Wix.pmod,v 1.6 2004/11/02 15:00:11 grubba Exp $
+// $Id: Wix.pmod,v 1.7 2004/11/03 13:25:30 grubba Exp $
 //
 // 2004-11-01 Henrik Grubbström
 
@@ -83,6 +83,29 @@ class RegistryEntry
   }
 }
 
+class Merge
+{
+  string source;
+  string id;
+
+  static void create(string source, string id)
+  {
+    Merge::source = source;
+    Merge::id = id;
+  }
+
+  WixNode gen_xml()
+  {
+    mapping(string:string) attrs = ([
+      "Id":id,
+      "src":source,
+      "Language":"1033",
+      "DiskId":"1",
+    ]);
+    return WixNode("Merge", attrs);
+  }
+}
+
 class Directory
 {
   string name;
@@ -94,7 +117,7 @@ class Directory
   mapping(string:int) sub_sources = ([]);
   mapping(string:File) files = ([]);
   mapping(string:RegistryEntry) other_entries = ([]);
-  mapping(string:Directory) sub_dirs = ([]);
+  mapping(string:Directory|Merge) sub_dirs = ([]);
 
   static void create(string name, string parent_guid,
 		     string|void id, string|void short_name)
@@ -175,14 +198,26 @@ class Directory
     }
   }
 
-  Directory low_add_path(array(string) path)
+  Directory low_add_path(array(string) path, string|void dir_id)
   {
     Directory d = this_object();
-    foreach(path, string dir) {
+    foreach(path; int i; string dir) {
       if (dir == ".") continue;
       d = (d->sub_dirs[dir] ||
 	   (d = d->sub_dirs[dir] =
-	    Directory(dir, d->guid->encode(), 0, d->gen_8dot3(dir))));
+	    Directory(dir, d->guid->encode(),
+		      (i==sizeof(path)-1) && dir_id,
+		      d->gen_8dot3(dir))));
+    }
+    if (dir_id) {
+      while ((d->id != dir_id) && d->sub_dirs["."]) {
+	d = d->sub_dirs["."];
+      }
+      if (d->id != dir_id) {
+	multiset(string) shorts = d->short_names;
+	d = d->sub_dirs["."] = Directory(".", d->guid->encode(), dir_id, ".");
+	d->short_names = short_names;
+      }
     }
     return d;
   }
@@ -198,6 +233,13 @@ class Directory
     if (has_suffix(src, "/"+dest)) {
       sub_sources[combine_path(src, "..")]++;
     }
+  }
+
+  void merge_module(string dest, string module, string id,
+		    string|void dir_id)
+  {
+    Directory d = low_add_path(dest/"/", dir_id);
+    d->sub_dirs["/"+module] = Merge(module, id);
   }
 
   void recurse_install_directory(string dest, string src)
