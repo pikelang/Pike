@@ -1,4 +1,4 @@
-test_true([["$Id: testsuite.in,v 1.329 2000/09/15 00:31:43 mast Exp $"]]);
+test_true([["$Id: testsuite.in,v 1.330 2000/09/15 01:07:38 mast Exp $"]]);
 
 cond([[all_constants()->_verify_internals]],
 [[
@@ -4717,8 +4717,9 @@ do_test_copy_value( ([]) )
 do_test_copy_value( (<>) )
 do_test_copy_value( (< ([]), ({1}) ,"" , 1.0 >) )
 test_true(get_weak_flag(copy_value(set_weak_flag(({17}), 1))))
-test_true(get_weak_flag(copy_value(set_weak_flag(([17:17]), 1))))
 test_true(get_weak_flag(copy_value(set_weak_flag((<17>), 1))))
+test_true(get_weak_flag(copy_value(set_weak_flag(([17:17]), 1))))
+test_true(get_weak_flag(copy_value(set_weak_flag(([17:({17})]), 1))))
 
 // - crypt
 test_true(stringp(crypt("hej")))
