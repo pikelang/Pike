@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: opcodes.h,v 1.39 2004/03/12 21:56:52 mast Exp $
+|| $Id: opcodes.h,v 1.40 2004/09/18 20:18:20 per Exp $
 */
 
 #ifndef OPCODES_H
@@ -16,9 +16,9 @@
 
 struct keyword
 {
-  char *word;
-  int token;
-  int flags;
+  const char *word;
+  const int token;
+  const int flags;
 #ifdef PIKE_USE_MACHINE_CODE
   void *address;
 #endif
@@ -93,7 +93,7 @@ struct instr
   long compiles;
 #endif
   int flags;
-  char *name;
+  const char *name;
 #ifdef PIKE_USE_MACHINE_CODE
   void *address;
 #endif
@@ -281,14 +281,14 @@ enum Pike_opcodes
 #undef OPCODE1_ALIAS
 #undef OPCODE2_ALIAS
 
-char *low_get_f_name(int n,struct program *p);
-char *get_f_name(int n);
+const char *low_get_f_name(int n,struct program *p);
+const char *get_f_name(int n);
 #ifdef HAVE_COMPUTED_GOTO
-char *get_opcode_name(PIKE_INSTR_T n);
+const char *get_opcode_name(PIKE_INSTR_T n);
 #else /* !HAVE_COMPUTED_GOTO */
 #define get_opcode_name(n) get_f_name(n + F_OFFSET)
 #endif /* HAVE_COMPUTED_GOTO */
-char *get_token_name(int n);
+const char *get_token_name(int n);
 void init_opcodes(void);
 void exit_opcodes(void);
 

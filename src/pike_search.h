@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: pike_search.h,v 1.8 2004/03/07 22:55:49 nilsson Exp $
+|| $Id: pike_search.h,v 1.9 2004/09/18 20:19:15 per Exp $
 */
 
 #ifndef PIKE_SEARCH_H
@@ -64,7 +64,7 @@ struct SearchMojtVtable
 
 typedef struct SearchMojt
 {
-  struct SearchMojtVtable *vtab;
+  const struct SearchMojtVtable *vtab;
   void *data;
 } SearchMojt;
 

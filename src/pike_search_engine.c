@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: pike_search_engine.c,v 1.11 2003/04/23 13:43:08 jhs Exp $
+|| $Id: pike_search_engine.c,v 1.12 2004/09/18 20:19:41 per Exp $
 */
 
 /*
@@ -42,7 +42,7 @@ PCHARP PxC3(NAME,NSHIFT,N)(void *s,	\
   return haystack;	/* NOT_REACHED */	\
 }						\
 						\
-static struct SearchMojtVtable PxC3(NAME,NSHIFT,_vtable) = {	\
+static const struct SearchMojtVtable PxC3(NAME,NSHIFT,_vtable) = {	\
   (SearchMojtFunc0)PxC3(NAME,NSHIFT,0),		\
   (SearchMojtFunc1)PxC3(NAME,NSHIFT,1),			\
   (SearchMojtFunc2)PxC3(NAME,NSHIFT,2),			\
