@@ -1,5 +1,5 @@
 #include "global.h"
-RCSID("$Id: image_xface.c,v 1.6 1999/02/10 21:53:05 hubbe Exp $");
+RCSID("$Id: image_xface.c,v 1.7 1999/08/06 22:16:15 hubbe Exp $");
 
 #include "config.h"
 
@@ -8,6 +8,17 @@ RCSID("$Id: image_xface.c,v 1.6 1999/02/10 21:53:05 hubbe Exp $");
 #endif
 
 #ifdef HAVE_GMP_H
+
+#ifndef __MPN
+#ifdef HAVE_ANSI_CONCAT
+#define __MPN(x) __mpn_##x
+#else
+#define __MPN(x) __mpn_/**/x
+#endif
+#endif
+
+#undef _PROTO
+#define _PROTO(x) x
 
 #include <gmp.h>
 
