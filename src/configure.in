@@ -1,4 +1,4 @@
-AC_REVISION("$Id: configure.in,v 1.478 2001/02/14 17:12:18 mirar Exp $")
+AC_REVISION("$Id: configure.in,v 1.479 2001/02/14 18:17:12 mirar Exp $")
 AC_INIT(interpret.c)
 AC_CONFIG_HEADER(machine.h)
 
@@ -5143,7 +5143,7 @@ echo >>config.info
 echo "build information:" >>config.info
 echo "system........ $UNAME$(echo $pike_cv_libgcc_filename | sed -n -e 's+^.*gcc-lib/\([[^/]]*\)/.*$+ (\1)+p')" >>config.info
 uname -a && echo "   $(uname -a)" >>config.info
-echo "host.......... $ac_hostname" >>config.info
+hostname && echo "hostname...... $(hostname)" >>config.info
 echo "user.......... $(whoami 2>/dev/null || echo '?')" >>config.info
 echo >>config.info
 echo "source path... $srcdir" >>config.info
