@@ -8,32 +8,45 @@ array(Standards.URI) index_document(Search.Database.MySQL db,
   if(!filter)
     error("No indexer for content type "+content_type);
 
-//   int h = gethrtime();
-
+  int h = gethrtime();
   Search.Filter.Base.Output filteroutput=
     filter->filter(uri, data, content_type);
+  int ms = (gethrtime()-h);
+  werror("filter  : %5dms (%4.1fMb/s)\n", ms/1000,
+	 (strlen(data)/1024.0/1024.0)/(ms/1000000.0) );
 
-//   werror("filter: %dms\n", (gethrtime()-h)/1000 );
-
+  h = gethrtime();
   db->remove_document( uri, language );
+  werror("remove  : %5dms\n", (gethrtime()-h)/1000 );
   // Tokenize and normalize all the non-anchor fields
 
   foreach(indices(filteroutput->fields), string field)
   {
     if( strlen(filteroutput->fields[field] ) )
     {
-//       h = gethrtime();
-      string q =Search.Utils.normalize(filteroutput->fields[field]);
-//       werror("normalize: %dms\n", (gethrtime()-h)/1000 );
-    
-//       h = gethrtime();
-      array words = Search.Utils.tokenize(q);
-//       werror("tokenize: %dms\n", (gethrtime()-h)/1000 );
-      db->insert_words(uri, language, field, words);
+      h = gethrtime();
+      array words=Search.Utils.tokenize(
+	Search.Utils.normalize(filteroutput->fields[field]));
+      if( field == "body" )
+      {
+      ms = (gethrtime()-h);
+      werror("tokenize: %5dms (%4.1fMb/s)\n", ms/1000,
+	     (strlen(filteroutput->fields[field])/1024.0/1024.0)
+	     /(ms/1000000.0) );
+      }      
+      h = gethrtime();
+      db->insert_words(uri, language, field,words );
+      if( field == "body" )
+      {
+	ms = (gethrtime()-h);
+	werror("insert  : %5dms (%4.1fMb/s)\n", ms/1000,
+	       (strlen(filteroutput->fields[field])/1024.0/1024.0)
+	       /(ms/1000000.0) );
+      }
     }
   }
-
   // Tokenize any anchor fields
+  h = gethrtime();
   int source_hash=hash((string)uri)&0xf;
   foreach(indices(filteroutput->uri_anchors || ({ })), string link_uri)
   {

@@ -1,7 +1,7 @@
 // SQL blob based database
 // Copyright © 2000,2001 Roxen IS.
 //
-// $Id: MySQL.pike,v 1.18 2001/05/26 14:11:35 per Exp $
+// $Id: MySQL.pike,v 1.19 2001/05/26 14:59:01 per Exp $
 
 // inherit Search.Database.Base;
 
@@ -148,7 +148,6 @@ int find_or_create_field_id(string field)
   return db->master_sql->insert_id()+1;
 }
 
-
 _WhiteFish.Blobs blobs = _WhiteFish.Blobs();
 
 #define MAXMEM 20*1024*1024
@@ -157,30 +156,15 @@ _WhiteFish.Blobs blobs = _WhiteFish.Blobs();
 void insert_words(Standards.URI|string uri, void|string language,
 		  string field, array(string) words, void|int link_hash)
 {
-  if(!sizeof(words))
-    return;
-
-//   werror("\nfield: %O  num words: %d\n",field,sizeof(words));
-
-  int h = gethrtime();
+  if(!sizeof(words))  return;
 
   int doc_id   = find_or_create_document_id((string)uri, language);
   int field_id = find_or_create_field_id(field);
 
-//   werror("find doc & field: %dms\n", (gethrtime()-h)/1000 );
-
-  h = gethrtime();
   blobs->add_words_hash( doc_id, words, field_id, link_hash );
-//   werror("add_words: %dms\n", (gethrtime()-h)/1000 );
 
-  h = gethrtime();
-  int memsize=blobs->memsize();
-//   werror("memsize: %dms ", (gethrtime()-h)/1000 );
-//   werror("%.1fM\n", memsize/1024.0/1024.0);
-  
-  if(memsize > MAXMEM)
+  if(blobs->memsize() > MAXMEM)
     sync();
-//   werror("\n\n");
 }
 
 int docs;
@@ -190,10 +174,11 @@ void remove_document(string|Standards.URI uri, string language)
 }
 
 
-int sync()
+void sync_thread( _WhiteFish.Blobs blobs, int docs )
 {
   int s = time();
   int q;
+  Sql.Sql db = Sql.Sql( host );
   werror("----------- sync() %4d docs --------------\n", docs);
   do
   {
@@ -207,9 +192,21 @@ int sync()
     db->query("insert into word_hit (word_id,first_doc_id,hits) "
 	      "values (%d,%d,%s)", i, w, d );
   } while( 1 );
+  werror("----------- sync() done %3ds %5dw -------\n", time()-s,q);
+}
+
+object old_thread;
+int sync()
+{
+#if constant(thread_create)
+  if( old_thread )
+    old_thread->wait();
+  old_thread = thread_create( sync_thread, blobs, docs );
+#else
+  sync_thread( blobs, docs );
+#endif
   blobs = _WhiteFish.Blobs();
   docs = 0;
-  werror("----------- sync() done %3ds %5dw -------\n", time()-s,q);
 }
 
 string get_blob(int word_id, int num)
