@@ -22,7 +22,7 @@
 #include <fcntl.h>
 
 #include "global.h"
-RCSID("$Id: pipe.c,v 1.13 1997/10/05 17:31:47 grubba Exp $");
+RCSID("$Id: pipe.c,v 1.14 1997/10/10 18:59:47 grubba Exp $");
 
 #include "threads.h"
 #include "stralloc.h"
@@ -374,7 +374,8 @@ static INLINE struct pike_string* gimme_some_data(unsigned long pos)
 {
    struct buffer *b;
    long len;
-   struct pipe * this = THIS;
+   struct pipe *this = THIS;
+
    /* We have a file cache, read from it */
    if (this->fd!=-1)
    {
@@ -384,11 +385,11 @@ static INLINE struct pike_string* gimme_some_data(unsigned long pos)
       len=this->pos-pos;
       if (len>READ_BUFFER_SIZE) len=READ_BUFFER_SIZE;
       THREADS_ALLOW();
-      lseek(this->fd,pos,0); /* SEEK_SET */
+      lseek(this->fd, pos, 0); /* SEEK_SET */
       THREADS_DISALLOW();
       do {
 	THREADS_ALLOW();
-	len = read(this->fd,buffer,len);
+	len = read(this->fd, buffer, len);
 	THREADS_DISALLOW();
 	if (len < 0) {
 	  if (errno != EINTR) {
@@ -437,23 +438,25 @@ static INLINE struct pike_string* gimme_some_data(unsigned long pos)
    {
      if (this->firstinput)
      {
-       struct pike_string *tmp;
-
 #if defined(HAVE_MMAP) && defined(HAVE_MUNMAP)
        if (this->firstinput->type==I_MMAP)
        {
+	 char *src;
+	 struct pike_string *tmp;
+
 	 if (pos >= this->firstinput->len + this->pos) /* end of mmap */
 	 {
-	   this->pos+=this->firstinput->len;
+	   this->pos += this->firstinput->len;
 	   input_finish();
 	   continue;
 	 }
-	 len=this->firstinput->len+this->pos-pos;
+	 len = this->firstinput->len + this->pos - pos;
 	 if (len > READ_BUFFER_SIZE) len=READ_BUFFER_SIZE;
 	 tmp = begin_shared_string( len );
+	 src = this->firstinput->u.mmap + pos - this->pos;
 /* This thread_allow/deny is at the cost of one extra memory copy */
 	 THREADS_ALLOW();
-	 MEMCPY(tmp->str, this->firstinput->u.mmap+pos-this->pos, len);
+	 MEMCPY(tmp->str, src, len);
 	 THREADS_DISALLOW();
 	 return end_shared_string(tmp);
        }
