@@ -1,5 +1,5 @@
 //
-// $Id: PGP.pmod,v 1.9 2004/02/07 19:40:41 nilsson Exp $
+// $Id: PGP.pmod,v 1.10 2004/03/01 19:10:58 nilsson Exp $
 
 //! PGP stuff. See RFC 2440.
 
@@ -134,8 +134,10 @@ static mapping decode_compressed(string s) {
   case 2:
     // ZLIB
     error("Don't know how to decompress ZLIB.\n");
+#if 0
     // Perhaps like this?
     return decode( Gz.inflate()->inflate(s) );
+#endif
   default:
     return ([ "type":type, "data":s ]);
   }
