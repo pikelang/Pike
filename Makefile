@@ -1,5 +1,5 @@
 #
-# $Id: Makefile,v 1.95 2002/09/20 13:25:54 marcus Exp $
+# $Id: Makefile,v 1.96 2002/09/26 13:54:03 grubba Exp $
 #
 # Meta Makefile
 #
@@ -286,7 +286,7 @@ xenofarm:
 	  build/xenofarm/_core.txt ";"
 	-cp "$(BUILDDIR)/dumpmodule.log" build/xenofarm/dumplog.txt
 	-cp buildid.txt build/xenofarm/
-	cd build/xenofarm && tar cf - *.txt > ../../xenofarm_result.tar
+	cd build/xenofarm && tar cf - . > ../../xenofarm_result.tar
 	gzip -f9 xenofarm_result.tar
 
 xenofarm_low:
