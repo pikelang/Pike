@@ -5,7 +5,7 @@
 \*/
 
 /*
- * $Id: interpret.h,v 1.83 2001/05/14 06:31:12 hubbe Exp $
+ * $Id: interpret.h,v 1.84 2001/05/16 23:35:52 hubbe Exp $
  */
 #ifndef INTERPRET_H
 #define INTERPRET_H
@@ -38,6 +38,7 @@ struct Pike_interpreter {
   long long accounted_time;
   long long time_base;
 #endif
+  char *stack_bottom;
 #endif
 
 #ifdef THREAD_TRACE

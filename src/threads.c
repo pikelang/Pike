@@ -1,5 +1,5 @@
 #include "global.h"
-RCSID("$Id: threads.c,v 1.155 2001/02/27 01:18:20 mast Exp $");
+RCSID("$Id: threads.c,v 1.156 2001/05/16 23:35:52 hubbe Exp $");
 
 PMOD_EXPORT int num_threads = 1;
 PMOD_EXPORT int threads_disabled = 0;
@@ -637,6 +637,9 @@ TH_RETURN_TYPE new_thread_func(void * data)
   SWAP_IN_THREAD(OBJ2THREAD(arg.id)); /* Init struct */
   init_interpreter();
   Pike_interpreter.thread_id=arg.id;
+#ifdef PROFILING
+  Pike_interpreter.stack_bottom=((char *)&data);
+#endif
   Pike_interpreter.stack_top=((char *)&data)+ (thread_stack_size-16384) * STACK_DIRECTION;
   Pike_interpreter.recoveries = NULL;
   SWAP_OUT_THREAD(OBJ2THREAD(Pike_interpreter.thread_id)); /* Init struct */
