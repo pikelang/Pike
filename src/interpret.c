@@ -2,11 +2,11 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: interpret.c,v 1.337 2003/11/09 01:10:13 mast Exp $
+|| $Id: interpret.c,v 1.338 2003/11/14 00:47:09 mast Exp $
 */
 
 #include "global.h"
-RCSID("$Id: interpret.c,v 1.337 2003/11/09 01:10:13 mast Exp $");
+RCSID("$Id: interpret.c,v 1.338 2003/11/14 00:47:09 mast Exp $");
 #include "interpret.h"
 #include "object.h"
 #include "program.h"
@@ -31,10 +31,11 @@ RCSID("$Id: interpret.c,v 1.337 2003/11/09 01:10:13 mast Exp $");
 #include "callback.h"
 #include "fd_control.h"
 #include "security.h"
-#include "block_alloc.h"
 #include "bignum.h"
 #include "pike_types.h"
 #include "pikecode.h"
+
+#include "block_alloc.h"
 
 #include <fcntl.h>
 #include <errno.h>
