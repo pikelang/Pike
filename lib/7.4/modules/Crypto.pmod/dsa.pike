@@ -1,6 +1,8 @@
 
 #pike __REAL_VERSION__
 
+//! @deprecated Crypto.DSA
+
 #if constant(Gmp.mpz)
 
 #define bignum object(Gmp.mpz)

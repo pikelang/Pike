@@ -1,6 +1,8 @@
 
 #pike 7.5
 
+//! @deprecated Crypto.HMAC
+
 inherit Crypto.HMAC;
 
 static class Wrapper {

@@ -1,5 +1,7 @@
 #pike 7.5
 
+//! @deprecated Crypto.Arcfour
+
 #if constant(Nettle.ARCFOUR_State)
 inherit Nettle.ARCFOUR_State;
 

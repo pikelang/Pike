@@ -1,5 +1,7 @@
 #pike 7.5
 
+//! @deprecated Crypto.CAST
+
 #if constant(Nettle.CAST128_State)
 inherit Nettle.CAST128_State;
 

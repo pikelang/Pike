@@ -1,5 +1,7 @@
 #pike 7.5
 
+//! @deprecated Crypto.DES
+
 #if constant(Nettle.DES_State)
 inherit Nettle.DES_State;
 

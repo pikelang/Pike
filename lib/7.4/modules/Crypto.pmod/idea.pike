@@ -1,5 +1,7 @@
 #pike 7.5
 
+//! @deprecated Crypto.IDEA
+
 #if constant(Nettle.IDEA_State)
 inherit Nettle.IDEA_State;
 

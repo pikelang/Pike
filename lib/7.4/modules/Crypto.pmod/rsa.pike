@@ -1,6 +1,8 @@
 
 #pike 7.5
 
+//! @deprecated Crypto.RSA
+
 inherit Crypto.RSA;
 
 Gmp.mpz sign(string m, program|object h) {

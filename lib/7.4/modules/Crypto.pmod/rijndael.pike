@@ -1,5 +1,7 @@
 #pike 7.5
 
+//! @deprecated Crypto.AES
+
 #if constant(Nettle.AES_State)
 inherit Nettle.AES_State;
 

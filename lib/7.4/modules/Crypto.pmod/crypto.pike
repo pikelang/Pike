@@ -1,5 +1,7 @@
 #pike 7.5
 
+//! @deprecated Crypto.Buffer
+
 #if constant(Nettle.Proxy)
 inherit Nettle.Proxy;
 

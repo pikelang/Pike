@@ -1,5 +1,7 @@
 #pike 7.5
 
+//! @deprecated Crypto.MD4
+
 #if constant(Nettle.MD4_State)
 inherit Nettle.MD4_State;
 
