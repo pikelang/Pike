@@ -52,6 +52,7 @@ class Queue {
       object key=lock::lock();
       while(!size()) r_cond::wait(key);
       tmp=buffer[r_ptr++];
+      key=0;
       return tmp;
     }
   
@@ -67,6 +68,7 @@ class Queue {
       }
       buffer[w_ptr]=v;
       w_ptr++;
+      key=0; // Must free this one _before_ the signal...
       r_cond::signal();
     }
 };
