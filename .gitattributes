@@ -393,6 +393,7 @@ testfont binary
 /src/modules/_Crypto/include/crypto_types.h foreign_ident
 /src/modules/_Crypto/include/des.h foreign_ident
 /src/modules/_Crypto/include/idea.h foreign_ident
+/src/modules/_Crypto/include/md2.h foreign_ident
 /src/modules/_Crypto/include/md5.h foreign_ident
 /src/modules/_Crypto/include/rc4.h foreign_ident
 /src/modules/_Crypto/include/sha.h foreign_ident
@@ -413,9 +414,11 @@ testfont binary
 /src/modules/_Crypto/lib/desinfo.h foreign_ident
 /src/modules/_Crypto/lib/idea.c foreign_ident
 /src/modules/_Crypto/lib/install-sh foreign_ident
+/src/modules/_Crypto/lib/md2.c foreign_ident
 /src/modules/_Crypto/lib/md5.c foreign_ident
 /src/modules/_Crypto/lib/rc4.c foreign_ident
 /src/modules/_Crypto/lib/sha.c foreign_ident
+/src/modules/_Crypto/md2.c foreign_ident
 /src/modules/_Crypto/md5.c foreign_ident
 /src/modules/_Crypto/md5.pike foreign_ident
 /src/modules/_Crypto/nt.c foreign_ident

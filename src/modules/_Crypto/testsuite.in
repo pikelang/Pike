@@ -15,6 +15,7 @@ test_do(add_constant("xCrypto",_Crypto))
 test_true([[programp(xCrypto.cbc)]])
 test_true([[programp(xCrypto.crypto)]])
 test_true([[programp(xCrypto.invert)]])
+test_true([[programp(xCrypto.md2)]])
 test_true([[programp(xCrypto.md5)]])
 test_true([[programp(xCrypto.pipe)]])
 test_true([[programp(xCrypto.sha)]])
@@ -196,6 +197,24 @@ test_eq([[xCrypto.md5()->update("1234567890123456789012345678901234567890"
 			       "1234567890123456789012345678901234567890")->digest()]],
 	[[xCrypto.hex_to_string("57edf4a22be3c955ac49da2e2107b67a")]])
   
+// MD2
+test_true([[objectp(xCrypto.md2())]])
+test_eq([[xCrypto.md2()->update("")->digest()]],
+	[[xCrypto.hex_to_string("8350e5a3e24c153df2275c9f80692773")]])
+test_eq([[xCrypto.md2()->update("a")->digest()]],
+	[[xCrypto.hex_to_string("32ec01ec4a6dac72c0ab96fb34c0b5d1")]])
+test_eq([[xCrypto.md2()->update("abc")->digest()]],
+	[[xCrypto.hex_to_string("da853b0d3f88d99b30283a69e6ded6bb")]])
+test_eq([[xCrypto.md2()->update("message digest")->digest()]],
+	[[xCrypto.hex_to_string("ab4f496bfb2a530b219ff33031fe06b0")]])
+test_eq([[xCrypto.md2()->update("abcdefghijklmnopqrstuvwxyz")->digest()]],
+	[[xCrypto.hex_to_string("4e8ddff3650292ab5a4108c3aa47940b")]])
+test_eq([[xCrypto.md2()->update("ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789")->digest()]],
+	[[xCrypto.hex_to_string("da33def2a42df13975352846c30338cd")]])
+test_eq([[xCrypto.md2()->update("1234567890123456789012345678901234567890"
+				"1234567890123456789012345678901234567890")->digest()]],
+	[[xCrypto.hex_to_string("d5976f79d83d3a0dc9806c3c66f3efd8")]])
+
 // SHA
 test_true([[objectp(xCrypto.sha())]])
 test_eq([[xCrypto.sha()->update("abc")->digest()]],
