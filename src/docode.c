@@ -5,7 +5,7 @@
 \*/
 /**/
 #include "global.h"
-RCSID("$Id: docode.c,v 1.116 2001/06/11 18:50:52 grubba Exp $");
+RCSID("$Id: docode.c,v 1.117 2001/06/13 21:53:25 grubba Exp $");
 #include "las.h"
 #include "program.h"
 #include "pike_types.h"
@@ -1197,13 +1197,51 @@ static int do_docode2(node *n, INT16 flags)
 
   case F_ARG_LIST:
   case F_COMMA_EXPR:
-    tmp1 = 0;
-    /* Avoid a bit of recursion by looping... */
-    do {
+    {
+      node *root = n;
+      node *parent = n->parent;
+
+      /* Avoid a bit of recursion by traversing the graph... */
+      n->parent = NULL;
+      tmp1 = 0;
+    next_car:
+      while (CAR(n) && 
+	     ((CAR(n)->token == F_ARG_LIST) ||
+	      (CAR(n)->token == F_COMMA_EXPR))) {
+	CAR(n)->parent = n;
+	n = CAR(n);
+      }
+      /* CAR(n) is not F_ARG_LIST or F_COMMA_EXPR */
       tmp1 += do_docode(CAR(n), (INT16)(flags & ~WANT_LVALUE));
-    } while ((n = CDR(n)) &&
-	     ((n->token == F_ARG_LIST) || (n->token == F_COMMA_EXPR)));
-    tmp1 += do_docode(n, flags);
+      
+      do {
+	if (CDR(n)) {
+	  if ((CDR(n)->token == F_ARG_LIST) ||
+	      (CDR(n)->token == F_COMMA_EXPR)) {
+	    /* Note: Parent points to the closest preceding CAR node
+	     *       on the way to the root.
+	     */
+	    CDR(n)->parent = n->parent;
+	    n = CDR(n);
+	    goto next_car;
+	  }
+	  /* CDR(n) is not F_ARG_LIST or F_COMMA_EXPR */
+	  if (n->parent) {
+	    tmp1 += do_docode(CDR(n), (INT16)(flags & ~WANT_LVALUE));
+	  } else {
+	    tmp1 += do_docode(CDR(n), flags);
+	  }
+	}
+	/* Retrace */
+	/* Note: n->parent is always a visited CAR node on the
+	 *       way to the root.
+	 */
+	n = n->parent;
+      } while (n);
+
+      /* Restore root->parent. */
+      root->parent = parent;
+    }
     return DO_NOT_WARN((INT32)tmp1);
 
 
