@@ -89,15 +89,12 @@ testfont binary
 /src/modules/Image/illustration.pike foreign_ident
 /src/modules/Image/image.c foreign_ident
 /src/modules/Image/image.h foreign_ident
-/src/modules/Image/lzw.c foreign_ident
-/src/modules/Image/lzw.h foreign_ident
 /src/modules/Image/matrix.c foreign_ident
 /src/modules/Image/mkwmml.pike foreign_ident
 /src/modules/Image/operator.c foreign_ident
 /src/modules/Image/pattern.c foreign_ident
 /src/modules/Image/pnm.c foreign_ident
 /src/modules/Image/polyfill.c foreign_ident
-/src/modules/Image/quant.c foreign_ident
 /src/modules/Image/togif.c foreign_ident
 /src/modules/Image/x.c foreign_ident
 /src/modules/MIME/mime.c foreign_ident
