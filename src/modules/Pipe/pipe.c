@@ -30,7 +30,7 @@
 
 #include <fcntl.h>
 
-RCSID("$Id: pipe.c,v 1.42 2000/08/19 11:18:12 grubba Exp $");
+RCSID("$Id: pipe.c,v 1.43 2000/08/28 22:13:09 hubbe Exp $");
 
 #include "threads.h"
 #include "stralloc.h"
@@ -220,6 +220,8 @@ static INLINE struct input *new_input(void)
 /* Free an input struct and all that it stands for */
 static INLINE void free_input(struct input *i)
 {
+  debug_malloc_touch(i);
+
   ninputs--;
   switch (i->type)
   {
@@ -299,6 +301,8 @@ static INLINE int append_buffer(struct pike_string *s)
    /* 1=buffer full */
 {
    struct buffer *b;
+
+   debug_malloc_touch(s);
 
    if(THIS->fd!= -1)
    {
@@ -576,6 +580,8 @@ static INLINE void output_finish(struct object *obj)
   struct output *o, *oi;
   struct object *obji;
 
+  debug_malloc_touch(obj);
+
   o=(struct output *)(obj->storage);
 
   if (o->obj)
@@ -629,6 +635,8 @@ static INLINE void output_try_write_some(struct object *obj)
   size_t len;
   INT_TYPE ret;
   
+   debug_malloc_touch(obj);
+
   out=(struct output*)(obj->storage);
 
 #ifdef INSISTANT_WRITE   
@@ -944,7 +952,7 @@ static void pipe_output(INT32 args)
   else
     o->pos=THIS->pos;
 
-  ref_push_object(obj);
+  push_object(obj); /* Ok, David, this is probably correct, but I dare you to explain why :) */
   apply(o->obj,"set_id",1);
   pop_stack();
 
@@ -1032,6 +1040,7 @@ static void pipe_write_output_callback(INT32 args)
    if(sp[-args].u.object->prog != output_program)
      error("Illegal argument to pipe->write_output_callback\n");
 
+   debug_malloc_touch(sp[-args].u.object);
    output_try_write_some(sp[-args].u.object);
    pop_n_elems(args-1);
 }
@@ -1133,6 +1142,9 @@ void close_and_free_everything(struct object *thisobj,struct pipe *p)
    struct input *i;
    struct output *o;
    struct object *obj;
+
+   debug_malloc_touch(thisobj);
+   debug_malloc_touch(p);
    
    if(p->done){
      return;
@@ -1195,6 +1207,8 @@ void close_and_free_everything(struct object *thisobj,struct pipe *p)
 
 static void init_pipe_struct(struct object *o)
 {
+   debug_malloc_touch(o);
+
    THIS->firstbuffer=THIS->lastbuffer=NULL;
    THIS->firstinput=THIS->lastinput=NULL;
    THIS->firstoutput=NULL;
@@ -1220,7 +1234,9 @@ static void exit_output_struct(struct object *obj)
 {
   struct output *o;
   
+   debug_malloc_touch(obj);
   o=(struct output *)(Pike_fp->current_storage);
+
   if (o->obj)
   {
     if(o->obj->prog)
@@ -1249,6 +1265,7 @@ static void exit_output_struct(struct object *obj)
 static void init_output_struct(struct object *ob)
 {
   struct output *o;
+  debug_malloc_touch(ob);
   o=(struct output *)(Pike_fp->current_storage);
   o->obj=0;
 }
