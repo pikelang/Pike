@@ -32,7 +32,7 @@
 #include <ieeefp.h>
 #endif
 
-RCSID("$Id: svalue.c,v 1.103 2001/06/04 23:59:09 mast Exp $");
+RCSID("$Id: svalue.c,v 1.104 2001/06/06 08:12:53 hubbe Exp $");
 
 struct svalue dest_ob_zero = { T_INT, 0 };
 
@@ -756,7 +756,7 @@ PMOD_EXPORT int low_short_is_equal(const union anything *a,
     sa.u.integer=0;
   }
 
-  if((sb.u.refs=a->refs))
+  if((sb.u.refs=b->refs))
   {
     sb.type=type;
   }else{
