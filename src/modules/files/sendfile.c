@@ -1,5 +1,5 @@
 /*
- * $Id: sendfile.c,v 1.50 2000/12/01 08:10:36 hubbe Exp $
+ * $Id: sendfile.c,v 1.51 2000/12/02 14:18:07 grubba Exp $
  *
  * Sends headers + from_fd[off..off+len-1] + trailers to to_fd asyncronously.
  *
@@ -68,7 +68,7 @@
 #endif /* HAVE_SYS_MMAN_H */
 #endif
 
-/* #define SF_DEBUG */
+#define SF_DEBUG
 
 #ifdef SF_DEBUG
 #define SF_DFPRINTF(X)	fprintf X
@@ -154,24 +154,31 @@ static void exit_pike_sendfile(struct object *o)
 
   if (THIS->iovs) {
     free(THIS->iovs);
+    THIS->iovs = NULL;
   }
   if (THIS->buffer) {
     free(THIS->buffer);
+    THIS->buffer = NULL;
   }
   if (THIS->headers) {
     free_array(THIS->headers);
+    THIS->headers = NULL;
   }
   if (THIS->trailers) {
     free_array(THIS->trailers);
+    THIS->trailers = NULL;
   }
   if (THIS->from_file) {
     free_object(THIS->from_file);
+    THIS->from_file = NULL;
   }
   if (THIS->to_file) {
     free_object(THIS->to_file);
+    THIS->to_file = NULL;
   }
   if (THIS->args) {
     free_array(THIS->args);
+    THIS->args = NULL;
   }
   if (THIS->self) {
     /* This can occur if Pike exits before the backend has started. */
@@ -183,9 +190,9 @@ static void exit_pike_sendfile(struct object *o)
    * But we do it anyway for paranoia reasons.
    * /grubba 1999-10-14
    */
-   free_svalue(&(THIS->callback));
-   THIS->callback.type = T_INT;
-   THIS->callback.u.integer = 0;
+  free_svalue(&(THIS->callback));
+  THIS->callback.type = T_INT;
+  THIS->callback.u.integer = 0;
 }
 
 /*
@@ -266,8 +273,9 @@ static ptrdiff_t send_iov(int fd, struct iovec *iov, int iovcnt)
   {
     int cnt;
     for(cnt = 0; cnt < iovcnt; cnt++) {
-      SF_DFPRINTF((stderr, "sendfile: %4d: iov_base: %p, iov_len: %d\n",
-		   cnt, iov[cnt].iov_base, iov[cnt].iov_len));
+      SF_DFPRINTF((stderr, "sendfile: %4d: iov_base: %p, iov_len: %ld\n",
+		   cnt, iov[cnt].iov_base,
+		   DO_NOT_WARN((long)iov[cnt].iov_len)));
     }
   }
 #endif /* SF_DEBUG */
