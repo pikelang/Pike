@@ -5,7 +5,7 @@
 \*/
 /**/
 #include "global.h"
-RCSID("$Id: object.c,v 1.75 1999/08/18 00:26:39 hubbe Exp $");
+RCSID("$Id: object.c,v 1.76 1999/08/30 06:22:44 hubbe Exp $");
 #include "object.h"
 #include "dynamic_buffer.h"
 #include "interpret.h"
@@ -27,6 +27,7 @@ RCSID("$Id: object.c,v 1.75 1999/08/18 00:26:39 hubbe Exp $");
 #include "module_support.h"
 #include "block_alloc.h"
 #include "fdlib.h"
+#include "mapping.h"
 
 #ifdef HAVE_SYS_TYPES_H
 #include <sys/types.h>
