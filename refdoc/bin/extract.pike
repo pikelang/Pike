@@ -1,5 +1,5 @@
 /*
- * $Id: extract.pike,v 1.10 2002/02/24 23:22:06 nilsson Exp $
+ * $Id: extract.pike,v 1.11 2002/02/24 23:25:01 nilsson Exp $
  *
  * AutoDoc mk II extraction script.
  *
@@ -73,7 +73,7 @@ void recurse(string srcdir, string builddir) {
 
 string extract(string filename, string imgdest, int(0..1) rootless, string builddir) {
 
-  werror("Extracting file %O...", filename);
+  werror("Extracting file %O...\n", filename);
   string file = Stdio.read_file(filename);
 
   int i;
