@@ -1,0 +1,2182 @@
+#include "global.h"
+#include "stralloc.h"
+RCSID("$Id: SDL.cmod,v 1.1 2002/06/23 19:11:30 neotron Exp $");
+#include "pike_macros.h"
+#include "interpret.h"
+#include "program.h"
+#include "program_id.h"
+#include "object.h"
+#include "operators.h"
+#include "fdlib.h"
+#include "fd_control.h"
+#include "backend.h"
+#include "module_support.h"
+#include "array.h"
+#include "builtin_functions.h"
+#include "mapping.h"
+
+/* must be included last */
+#include "module_magic.h"
+
+#include "sdl_config.h"
+
+#ifdef HAVE_SDL
+
+/*! @module SDL
+ *!
+ *! SDL or Simple DirectMedia Layer is a cross-platform multimedia
+ *! library designed to provide fast access to the graphics
+ *! framebuffer, audio device, input and other devices. This module
+ *! implements a wrapper for SDL and other relevant libraries like
+ *! SDL_mixer. The interface is similar to the C one, but using
+ *! generally accepted Pike syntax.
+ *! 
+ *! This means that classes are used when appropriate and that method
+ *! names use all lowercase letters with words separated by _. For
+ *! example SDL_SetVideoMode is named SDL.set_video_mode. Also note
+ *! that unless otherwise noted, errors result in an error being
+ *! thrown rather than returning -1 or 0, as commonly done in SDL methods.
+ */
+
+
+/* To be able to access image functionality */
+#include  "modules/Image/image.h" 
+struct svalue _image_program = {
+  T_INT, 0,
+#ifdef HAVE_UNION_INIT
+  {0}, /* Only to avoid warnings. */
+#endif
+};
+struct svalue _image_color_program = {
+  T_INT, 0,
+#ifdef HAVE_UNION_INIT
+  {0}, /* Only to avoid warnings. */
+#endif
+};
+
+struct program *image_program;
+struct program *image_color_program;
+
+
+static struct object *image_make_rgb_color(INT32 r,INT32 g,INT32 b)
+{
+   struct color_struct *cs;
+   struct object *color;
+   if (r<0) r=0; else if (r>COLORMAX) r=COLORMAX;
+   if (g<0) g=0; else if (g>COLORMAX) g=COLORMAX;
+   if (b<0) b=0; else if (b>COLORMAX) b=COLORMAX;
+
+   color = clone_object(image_color_program,0);
+
+   cs=(struct color_struct*)
+      get_storage(color, image_color_program);
+
+   cs->rgb.r=(COLORTYPE)r;
+   cs->rgb.g=(COLORTYPE)g;
+   cs->rgb.b=(COLORTYPE)b;
+   RGB_TO_RGBL(cs->rgbl,cs->rgb);
+   return color;
+}
+
+
+/* SDL needs this defined in it its own way */
+#undef DECLSPEC
+#include <SDL.h>
+#include "constants.h"
+
+#ifdef HAVE_SDL_MIXER
+# ifdef HAVE_SDL_SDL_MIXER_H
+#  include <SDL/SDL_mixer.h>
+# elif defined(HAVE_SDL_MIXER_H)
+#  include <SDL_mixer.h>
+# endif
+#endif
+
+#define THIS_OBJ Pike_interpreter.frame_pointer->current_object
+#define RET_THIS() do { pop_n_elems(args); ref_push_object(THIS_OBJ); return; } while(0)
+
+/* Fall back to a normal index on this object, in case
+ * someone inherited us. */
+ #define OBJ_INDEX() do { \
+      struct svalue res; \
+      object_index_no_free2 (&res, Pike_fp->current_object, Pike_sp-1); \
+      pop_stack(); \
+      *Pike_sp++ = res; \
+    } while(0) \
+
+
+#define CHECK_CLASS(o, name, arg)\
+  if(o->prog != PIKE_CONCAT(name, _program)) { \
+    Pike_error("Invalid class for argument %d\n", arg); \
+  }
+
+
+/*! @decl void init(int flags)
+ *!
+ *! Initializes SDL.  This should be called before all other SDL
+ *! functions.
+ *!
+ *! @param flags
+ *!  The flags parameter specifies what part(s) of SDL to
+ *!  initialize. It can be one of many of the following ORed together.
+ *! 
+ *! @dl
+ *!   @item SDL.INIT_TIMER
+ *!    Initializes the timer subsystem.
+ *! 
+ *!   @item SDL.INIT_AUDIO
+ *!    Initializes the audio subsystem.
+ *! 
+ *!   @item SDL.INIT_VIDEO
+ *!    Initializes the video subsystem.
+ *! 
+ *!   @item SDL.INIT_CDROM
+ *!    Initializes the cdrom subsystem.
+ *! 
+ *!   @item SDL.INIT_JOYSTICK
+ *!    Initializes the joystick subsystem.
+ *! 
+ *!   @item SDL.INIT_EVERYTHING
+ *!    Initialize all of the above.
+ *! 
+ *!   @item SDL.INIT_NOPARACHUTE
+ *!    Prevents SDL from catching fatal signals.
+ *! 
+ *!   @item SDL.INIT_EVENTTHREAD
+ *!    Run event polling in a separate thread. Not always supported.
+ *! @enddl
+ *!
+ *! @seealso
+ *!   @[SDL.quit()], @[SDL.init_sub_system()], @[SDL.quit_sub_system()]
+ *!
+ */
+PIKEFUN void init(int flags) {
+  if( SDL_Init(flags) == -1) {
+    Pike_error("SDL Initialization failed: %s\n", SDL_GetError());
+  }
+}
+
+/*! @decl void|string get_error()
+ *!
+ *! Get the last internal SDL error.
+ *! @returns
+ *!   The error string, or Zero if there was no error.
+ */
+PIKEFUN void|string get_error() {
+  const char *err = SDL_GetError();
+  pop_n_elems(args);
+  if(err != NULL) {
+    push_text(err);
+  } else {
+    push_int(0);
+  }
+}
+
+/*! @decl void init_sub_system(int flags)
+ *! 
+ *! After SDL has been initialized with @[init()] you may initialize
+ *! uninitialized subsystems with this method.
+ *! 
+ *! @param flags
+ *!  The same as what is used in @[SDL.init()].
+ */
+PIKEFUN int init_sub_system(int flags) {
+  RETURN SDL_InitSubSystem(flags);
+}
+
+/*! @decl void init_sub_system(int flags)
+ *! 
+ *! After SDL has been initialized with @[SDL.init()] you may initialize
+ *! uninitialized subsystems with this method.
+ *! 
+ *! @param  flags
+ *! a bitwise OR'd combination of the subsystems
+ *! you wish to check (see @[SDL.init()] for a list of subsystem flags).
+ *! @seealso
+ *!  @[SDL.init()],  @[SDL.quit()], @[SDL.quit_sub_system()]
+ */
+PIKEFUN void quit_sub_system(int flags) {
+  SDL_QuitSubSystem(flags);
+}
+
+/*! @decl int was_init(int flags)
+ *! This method allows you to see which SDL subsytems have been
+ *! initialized.
+ *! @param  flags
+ *! a bitwise OR'd combination of the subsystems
+ *! you wish to check (see @[SDL.init()] for a list of subsystem flags).
+ *! @returns
+ *!  a bitwised OR'd combination of the initialized subsystems
+ *! @seealso
+ *!  @[SDL.init()], @[SDL.init_sub_system()]
+ *!
+ */
+PIKEFUN int was_init(int flags) {
+  RETURN SDL_WasInit(flags);
+}
+
+/*! @decl void quit()
+ *! Shuts down all SDL subsystems and frees the resources allocated to
+ *! them. This should always be called before you exit.
+ *! @note
+ *! You can use the @[atexit()] method to ensure that this method is always
+ *! called when Pike exits normally. 
+ *! @seealso
+ *!  @[SDL.init()],  @[SDL.init_sub_system()], @[SDL.quit_sub_system()]
+ */ 
+PIKEFUN void quit() {
+printf("SDL Quit\n");
+  SDL_Quit();
+}
+
+
+/*! @decl int enable_unicode(int enable)
+ *!
+ *! Enables/Disables UNICODE keyboard translation.
+ *!
+ *! If you wish to translate a keysym to it's printable
+ *! representation, you need to enable UNICODE translation using this
+ *! function and then look in the @b{unicode@} member of the
+ *! @[SDL.Keysym] class. This value will be zero for keysyms that do
+ *! not have a printable representation.  UNICODE translation is
+ *! disabled by default as the conversion can cause a slight
+ *! overhead.
+ *! 
+ *! @param enable
+ *!   A value of 1 enables Unicode translation, 0 disables it and -1
+ *!   leaves it unchanged (useful for querying the current translation
+ *!   mode). 
+ *! 
+ *! @returns
+ *!   The previous translation mode (1 enabled, 0 disabled). If
+ *!   @b{enable@} is -1, the return value is the current translation
+ *!   mode.
+ *!   
+ *! @seealso
+ *!   
+ *!   @[SDL.Keysym]
+ */
+PIKEFUN int enable_unicode(int enable) {
+  RETURN SDL_EnableUNICODE(enable);
+}
+
+
+/*! @decl int get_mod_state()
+ *!
+ *! Returns the current state of the modifier keys (CTRL, ALT, etc.).
+ *! 
+ *! @returns
+ *! The return value can be an OR'd combination of the following:
+ *! SDL.KMOD_NONE, SDL.KMOD_LSHIFT, SDL.KMOD_RSHIFT, SDL.KMOD_LCTRL,
+ *! SDL.KMOD_RCTRL, SDL.KMOD_LALT, SDL.KMOD_RALT, SDL.KMOD_LMETA,
+ *! SDL.KMOD_RMETA, SDL.KMOD_NUM, SDL.KMOD_CAPS, and
+ *! SDL.KMOD_MODE. For convenience the following are also defined:
+ *! SDL.KMOD_CTRL, SDL.KMOD_SHIFT, SDL.KMOD_ALT and SDL.KMOD_META
+ *!   
+ *! @seealso
+ *!   
+ *!   @[SDL.get_key_state()]
+ */
+PIKEFUN int get_mod_state() {
+  RETURN SDL_GetModState();
+}
+
+/*! @decl int get_key_state()
+ *! 
+ *! Gets a snapshot of the current keyboard state. The current state
+ *! is return as a string. The string is indexed by the SDL.K_* symbols. A
+ *! value of 1 means the key is pressed and a value of 0 means its
+ *! not. 
+ *! 
+ *! @note
+ *!  @[SDL.pump_events()] to update the state array.
+ *! 
+ */
+
+PIKEFUN string get_key_state() {
+  int numkeys;
+  char *state = SDL_GetKeyState(&numkeys);
+  push_string(make_shared_binary_string(state, numkeys));
+}
+
+/*! @class Rect
+ *! 
+ *! Used in SDL to define a rectangular area. It is sometimes also used
+ *! to specify only points or sizes (i.e only one of the position and
+ *! dimension is used). 
+ *! @decl int x
+ *! @decl int y
+ *!   Position of the upper-left corner of the rectangle.
+ *! @decl int w
+ *! @decl int h
+ *!   The width and height of the rectangle.
+ */
+PIKECLASS Rect {
+  CVAR SDL_Rect rect;
+  
+  
+  INIT {
+    THIS->rect.x = THIS->rect.y = 0;
+    THIS->rect.w = THIS->rect.h = 0;
+  }
+  
+  PIKEFUN mixed `->(string key) {
+    struct pike_string *x, *y, *w, *h;
+    MAKE_CONSTANT_SHARED_STRING( x, "x" );     
+    MAKE_CONSTANT_SHARED_STRING( y, "y" );     
+    MAKE_CONSTANT_SHARED_STRING( w, "w" );     
+    MAKE_CONSTANT_SHARED_STRING( h, "h" );     
+    if(key == x) {
+      pop_stack(); push_int(THIS->rect.x); 
+    } else if(key == y) {
+      pop_stack(); push_int(THIS->rect.y); 
+    } else if(key == w) {
+      pop_stack(); push_int(THIS->rect.w); 
+    } else if(key == h) {
+      pop_stack(); push_int(THIS->rect.h); 
+    } else { 
+      OBJ_INDEX();
+    }
+  }
+    
+  PIKEFUN int `->=(string key, int value) {
+    struct pike_string *x, *y, *w, *h;
+    MAKE_CONSTANT_SHARED_STRING( x, "x" );     
+    MAKE_CONSTANT_SHARED_STRING( y, "y" );     
+    MAKE_CONSTANT_SHARED_STRING( w, "w" );     
+    MAKE_CONSTANT_SHARED_STRING( h, "h" );     
+    if(key == x) {
+      THIS->rect.x = value;
+    } else if(key == y) {
+      THIS->rect.y = value;
+    } else if(key == w) {
+      THIS->rect.w = value;
+    } else if(key == h) {
+      THIS->rect.h = value;
+    } else { 
+      Pike_error("Trying to set invalid value.\n");
+    }
+    RETURN value; /* Return what we got in */
+  }
+    
+  PIKEFUN mixed `[](string key) {
+    f_Rect_cq__backtick_2D_3E(args);
+  }
+
+  PIKEFUN mixed `[]=(string key, int value) {
+    f_Rect_cq__backtick_2D_3E_eq(args);
+  }
+  
+  PIKEFUN mixed cast( string type )
+  {
+    struct pike_string *array_t;
+    struct pike_string *mapping_t;
+    MAKE_CONSTANT_SHARED_STRING( array_t, "array" ); 
+    MAKE_CONSTANT_SHARED_STRING( mapping_t, "mapping" ); 
+
+    if( type == array_t )
+    {
+      pop_n_elems( args );
+      push_int(THIS->rect.x);
+      push_int(THIS->rect.y);
+      push_int(THIS->rect.w); 
+      push_int(THIS->rect.h);
+      f_aggregate(4);
+      return;
+    } else if( type == mapping_t ) {
+      pop_n_elems( args );
+      push_text("x");
+      push_int(THIS->rect.x);
+      push_text("y");
+      push_int(THIS->rect.y);
+      push_text("w");
+      push_int(THIS->rect.w);
+      push_text("h");
+      push_int(THIS->rect.h);
+      f_aggregate_mapping(8);
+      return;
+    }
+
+    Pike_error("Cannot cast to %s\n", type->str );
+  }
+}
+/*! @endclass Rect */
+
+/*! @class Keysym
+ *! The Keysym class is used to report key presses and releases. It's
+ *! available from the @[SDL.Event] class for keyboard events.
+ *! 
+ *! The scancode field should generally be left alone - it is the
+ *! hardware dependent scancode returned by the keyboard. The sym
+ *! field is extremely useful. It is the SDL-defined value of the key. 
+ *! This field is very useful when you are checking for certain key presses.
+ *! 
+ *! mod stores the current state of the keyboard modifiers as
+ *! explained in @[SDL.get_mod_state()]. The unicode field is only used
+ *! when UNICODE translation is enabled with @[SDL.enable_unicode()]. If
+ *! unicode is non-zero then this a the UNICODE character
+ *! corresponding to the keypress. If the high 9 bits of the character
+ *! are 0, then this maps to the equivalent ASCII character.
+ *! 
+ *! @note
+ *!   UNICODE translation does have a slight overhead so don't
+ *!   enable it unless its needed.
+ *! 
+ *! @decl int scancode
+ *!  Hardware specific scancode
+ *! @decl int sym
+ *!  SDL virtual keysym
+ *! @decl int mod
+ *!  Current key modifiers
+ *! @decl int unicode
+ *!  Translated character
+ */
+
+PIKECLASS Keysym {
+  CVAR SDL_keysym keysym;
+
+  PIKEFUN mixed `->(string key) {                              
+    struct pike_string *mod;
+    struct pike_string *scancode;
+    struct pike_string *sym;
+    struct pike_string *unicode;
+    MAKE_CONSTANT_SHARED_STRING(mod, "mod");
+    MAKE_CONSTANT_SHARED_STRING(scancode, "scancode");
+    MAKE_CONSTANT_SHARED_STRING(sym, "sym");
+    MAKE_CONSTANT_SHARED_STRING(unicode, "unicode");
+    if(key == mod) {
+      pop_stack(); push_int(THIS->keysym.mod);
+    } else if(key == scancode) {
+      pop_stack(); push_int(THIS->keysym.scancode);
+    } else if(key == sym) {
+      pop_stack(); push_int(THIS->keysym.sym);
+    } else if(key == unicode) {
+      pop_stack(); push_int(THIS->keysym.unicode);
+    } else {
+      OBJ_INDEX();
+    }
+  }
+  PIKEFUN mixed `[](string key) {
+    f_Keysym_cq__backtick_2D_3E(args);
+  }
+}
+
+/*! @endclass Keysym */  
+
+#define CHECK_INIT() if(THIS->fmt == NULL) { Pike_error("PixelFormat unitialized!\n"); }
+
+/*! @class PixelFormat
+ *! This describes the format of the pixel data stored at the pixels field
+ *! of a @[SDL.Surface]. Every surface stores a PixelFormat in the format
+ *! field.
+ *! @decl int bits_per_pixel
+ *!   The number of bits used to represent each pixel in a
+ *!   surface. Usually 8, 16, 24 or 32.
+ *! @decl int bytes_per_pixel
+ *!   The number of bytes used to represent each pixel in a
+ *!   surface. Usually one to four.
+ *! @decl int rmask
+ *! @decl int gmask
+ *! @decl int bmask
+ *! @decl int amask
+ *!  Binary mask used to retrieve individual color values.
+ *! @decl int rloss
+ *! @decl int gloss
+ *! @decl int bloss
+ *! @decl int aloss
+ *!  Precision loss of each color component.
+ *! @decl int rshift
+ *! @decl int gshift
+ *! @decl int bshift
+ *! @decl int ashift
+ *!  Binary left shift of each color component in the pixel value.
+ *! @decl int colorkey
+ *!  Pixel value of transparent pixels.
+ *! @decl int alpha
+ *!  Overall surface alpha value.
+ */
+
+PIKECLASS PixelFormat {
+  /* THIS->fmt is never freed by ys since the it's always a pointer to that
+     of a Surface class */
+  CVAR SDL_PixelFormat *fmt;
+  
+  INIT {
+    THIS->fmt = NULL; 
+  }
+  /* FIXME: SDL_Palette *palette; */
+  PIKEFUN mixed `->(string key) {
+    struct pike_string *aloss;
+    struct pike_string *alpha;
+    struct pike_string *amask;
+    struct pike_string *ashift;
+    struct pike_string *bits_per_pixel;
+    struct pike_string *bloss;
+    struct pike_string *bmask;
+    struct pike_string *bshift;
+    struct pike_string *bytes_per_pixel;
+    struct pike_string *colorkey;
+    struct pike_string *gloss;
+    struct pike_string *gmask;
+    struct pike_string *gshift;
+    struct pike_string *rloss;
+    struct pike_string *rmask;
+    struct pike_string *rshift;
+    CHECK_INIT(); /* Make sure this is inited */
+    MAKE_CONSTANT_SHARED_STRING(aloss, "aloss");
+    MAKE_CONSTANT_SHARED_STRING(alpha, "alpha");
+    MAKE_CONSTANT_SHARED_STRING(amask, "amask");
+    MAKE_CONSTANT_SHARED_STRING(ashift, "ashift");
+    MAKE_CONSTANT_SHARED_STRING(bits_per_pixel, "bits_per_pixel");
+    MAKE_CONSTANT_SHARED_STRING(bloss, "bloss");
+    MAKE_CONSTANT_SHARED_STRING(bmask, "bmask");
+    MAKE_CONSTANT_SHARED_STRING(bshift, "bshift");
+    MAKE_CONSTANT_SHARED_STRING(bytes_per_pixel, "bytes_per_pixel");
+    MAKE_CONSTANT_SHARED_STRING(colorkey, "colorkey");
+    MAKE_CONSTANT_SHARED_STRING(gloss, "gloss");
+    MAKE_CONSTANT_SHARED_STRING(gmask, "gmask");
+    MAKE_CONSTANT_SHARED_STRING(gshift, "gshift");
+    MAKE_CONSTANT_SHARED_STRING(rloss, "rloss");
+    MAKE_CONSTANT_SHARED_STRING(rmask, "rmask");
+    MAKE_CONSTANT_SHARED_STRING(rshift, "rshift");
+    if(key == aloss) {
+      pop_stack(); push_int(THIS->fmt->Aloss);
+    } else if(key == alpha) {
+      pop_stack(); push_int(THIS->fmt->alpha);
+    } else if(key == amask) {
+      pop_stack(); push_int(THIS->fmt->Amask);
+    } else if(key == ashift) {
+      pop_stack(); push_int(THIS->fmt->Ashift);
+    } else if(key == bits_per_pixel) {
+      pop_stack(); push_int(THIS->fmt->BitsPerPixel);
+    } else if(key == bloss) {
+      pop_stack(); push_int(THIS->fmt->Bloss);
+    } else if(key == bmask) {
+      pop_stack(); push_int(THIS->fmt->Bmask);
+    } else if(key == bshift) {
+      pop_stack(); push_int(THIS->fmt->Bshift);
+    } else if(key == bytes_per_pixel) {
+      pop_stack(); push_int(THIS->fmt->BytesPerPixel);
+    } else if(key == colorkey) {
+      pop_stack(); push_int(THIS->fmt->colorkey);
+    } else if(key == gloss) {
+      pop_stack(); push_int(THIS->fmt->Gloss);
+    } else if(key == gmask) {
+      pop_stack(); push_int(THIS->fmt->Gmask);
+    } else if(key == gshift) {
+      pop_stack(); push_int(THIS->fmt->Gshift);
+    } else if(key == rloss) {
+      pop_stack(); push_int(THIS->fmt->Rloss);
+    } else if(key == rmask) {
+      pop_stack(); push_int(THIS->fmt->Rmask);
+    } else if(key == rshift) {
+      pop_stack(); push_int(THIS->fmt->Rshift);
+    } else {
+      OBJ_INDEX();
+    }
+  }
+
+  PIKEFUN mixed `[](string key) {
+    f_PixelFormat_cq__backtick_2D_3E(args);
+  }
+
+  /*! @decl array(int) losses()
+   *!  Convenience method returning the RGBA precision loss as an array.
+   */
+  PIKEFUN array(int) losses() {
+    push_int(THIS->fmt->Rloss);
+    push_int(THIS->fmt->Gloss);
+    push_int(THIS->fmt->Bloss);
+    push_int(THIS->fmt->Aloss);
+    f_aggregate(4);
+  }
+
+  /*! @decl array(int) masks()
+   *!  Convenience method returning the RGBA masks as an array.
+   */
+  PIKEFUN array(int) masks() {
+    push_int(THIS->fmt->Rmask);
+    push_int(THIS->fmt->Gmask);
+    push_int(THIS->fmt->Bmask);
+    push_int(THIS->fmt->Amask);
+    f_aggregate(4);
+  }
+
+  /*! @decl array(int) shifts()
+   *!  Convenience method returning the RGBA shifts as an array.
+   */
+  PIKEFUN array(int) shifts() {
+    push_int(THIS->fmt->Rshift);
+    push_int(THIS->fmt->Gshift);
+    push_int(THIS->fmt->Bshift);
+    push_int(THIS->fmt->Ashift);
+    f_aggregate(4);
+  }
+  
+  /*! @decl int map_rgb(int r, int g, int b)
+   *! @decl int map_rgb(Image.Color.Color color)
+   *! 
+   *! Maps the RGB color value to the specified pixel format and
+   *! returns the pixel value as an integer.
+   *!
+   *! If the format has a palette (8-bit) the index of the closest
+   *! matching color in the palette will be returned.
+   *!
+   *! If the pixel format has an alpha component it will be
+   *! returned as all 1 bits (fully opaque).
+   *!
+   *! @param r
+   *! @param g
+   *! @param b
+   *! 
+   *! The red, green and blue components specified as an integer
+   *! between 0 and 255.
+   *!
+   *! @param color
+   *! The color as represented by an @[Image.Color.Color] object.
+   *! @returns
+   *! A pixel value best approximating the given RGB color value for a
+   *! given pixel format.
+   *!
+   *! @seealso
+   *!   @[map_rgba()], @[get_rgb()], @[get_rgba()]
+   */
+  PIKEFUN int map_rgb(int r, int g, int b) {
+    RETURN SDL_MapRGB(THIS->fmt, r, g, b);
+  }
+
+  PIKEFUN int map_rgb(object color) {
+    struct color_struct *cs;
+    CHECK_CLASS(color, image_color, 1);
+    cs = ((struct color_struct *)(color->storage));
+    RETURN SDL_MapRGB(THIS->fmt, cs->rgb.r, cs->rgb.g, cs->rgb.b);
+  }
+
+  /*! @decl int map_rgba(int r, int g, int b, int a)
+   *! @decl int map_rgba(Image.Color.Color color, int a)
+   *!
+   *! Maps the RGBA color value to the specified pixel format and
+   *! returns the pixel value as an integer.
+   *!
+   *! If the format has a palette (8-bit) the index of the closest
+   *! matching color in the palette will be returned.
+   *!
+   *! If the pixel format has an alpha component it will be
+   *! returned as all 1 bits (fully opaque).
+   *!
+   *! @param r
+   *! @param g
+   *! @param b
+   *! @param a
+   *! 
+   *! The red, green and blue components specified as an integer
+   *! between 0 and 255.
+   *!
+   *! @param color
+   *! The color as represented by an @[Image.Color.Color] object.
+   *! 
+   *! @returns
+   *! A pixel value best approximating the given RGB color value for a
+   *! given pixel format. 
+   *! 
+   *! @seealso
+   *!   @[map_rgb()], @[get_rgb()], @[get_rgba()]
+   */
+  PIKEFUN int map_rgba(int r, int g, int b, int a) {
+    RETURN SDL_MapRGBA(THIS->fmt, r, g, b, a);
+  }
+
+  PIKEFUN int map_rgba(object color, int a) {
+    struct color_struct *cs;
+    CHECK_CLASS(color, image_color, 1);
+    cs = ((struct color_struct *)(color->storage));
+    RETURN SDL_MapRGBA(THIS->fmt, cs->rgb.r, cs->rgb.g, cs->rgb.b, a);
+  }
+
+  /*! @decl Image.Color.Color get_rgb(int pixel)
+   *! 
+   *! Get RGB component values from a pixel stored in this pixel format.
+   *!
+   *! @param pixel
+   *!   A pixel retrieved from a surface with this pixel format or a color
+   *!   previously mapped with @[map_rgb()] or @[map_rgba()].
+   *! @returns
+   *!  A @[Image.Color.Color] object with the RGB components of the pixel.
+   *! 
+   *! @seealso
+   *!   @[map_rgb()], @[map_rgba()], @[get_rgba()]
+   */
+  PIKEFUN object get_rgb(int pixel) {
+    Uint8 r, g, b;
+    SDL_GetRGB((Uint32)pixel, THIS->fmt, &r, &g, &b);
+    RETURN image_make_rgb_color(r, g, b);
+  }
+
+  /*! @decl mapping(string:Image.Color.Color|int) get_rgba(int pixel)
+   *! 
+   *! Get RGB component values from a pixel stored in this pixel format.
+   *!
+   *! @param pixel
+   *!   A pixel retrieved from a surface with this pixel format or a color
+   *!   previously mapped with @[map_rgb()] or @[map_rgba()].
+   *! @returns
+   *!  A mapping containing with the RGBA components of the pixel as described below.
+   *! @mapping
+   *!   @member Image.Color.Color color
+   *!     The RGB color value of the pixel.
+   *!   @member int alpha
+   *!     The alpha value of the pixel in the range 0-255.
+   *! @endmapping
+   *! @seealso
+   *!   @[map_rgb()], @[map_rgba()], @[get_rgb()]
+   */
+  PIKEFUN mapping(string:object|int) get_rgba(int pixel) {
+    Uint8 r, g, b, a;
+    SDL_GetRGBA((Uint32)pixel, THIS->fmt, &r, &g, &b, &a);
+    pop_n_elems(args);
+    push_text("color");
+    push_object(image_make_rgb_color(r, g, b));
+    push_text("alpha");
+    push_int(a);
+    f_aggregate_mapping(4);
+  }  
+}
+/*! @endclass PixelFormat */
+#undef CHECK_INIT
+
+
+#define CHECK_INIT() if(THIS->vidinfo == NULL) { Pike_error("VideoInfo unitialized!\n"); }
+
+/*! @class VideoInfo
+ *! This (read-only) class is returned by @[SDL.get_video_info()]. It
+ *! contains information on either the 'best' available mode (if
+ *! called before @[SDL.set_video_mode()]) or the current video mode.
+ *!
+ #! @decl int hw_available
+ #!   Is it possible to create hardware surfaces?
+ #! @decl int wm_available
+ #!   Is there a window manager available
+ #! @decl int blit_hw
+ #!   Are hardware to hardware blits accelerated?
+ *! @decl int blit_hw_cc
+ *!   Are hardware to hardware colorkey blits accelerated?
+ *! @decl int blit_hw_a
+ *!   Are hardware to hardware alpha blits accelerated?
+ *! @decl int blit_sw
+ *!   Are software to hardware blits accelerated?
+ *! @decl int blit_sw_cc
+ *!   Are software to hardware colorkey blits accelerated?
+ *! @decl int blit_sw_a
+ *!   Are software to hardware alpha blits accelerated?
+ *! @decl int blit_fill
+ *!   Are color fills accelerated?
+ *! @decl int video_mem
+ *!   Total amount of video memory in KB.
+ *! @decl SDL.PixelFormat format
+ *!   Pixel format of the video device.
+ */
+PIKECLASS VideoInfo {
+  /* THIS->vidinfo is never freed by us since SDL manages that */
+  CVAR const SDL_VideoInfo *vidinfo;
+  
+  INIT {
+    THIS->vidinfo = NULL; 
+  }
+  PIKEFUN mixed `->(string key) {
+    struct pike_string *blit_fill;
+    struct pike_string *blit_hw;
+    struct pike_string *blit_hw_a;
+    struct pike_string *blit_hw_cc;
+    struct pike_string *blit_sw;
+    struct pike_string *blit_sw_a;
+    struct pike_string *blit_sw_cc;
+    struct pike_string *hw_available;
+    struct pike_string *video_mem;
+    struct pike_string *wm_available;
+    struct pike_string *vfmt;
+    CHECK_INIT(); /* Make sure this is inited */
+    MAKE_CONSTANT_SHARED_STRING(blit_fill, "blit_fill");
+    MAKE_CONSTANT_SHARED_STRING(blit_hw, "blit_hw");
+    MAKE_CONSTANT_SHARED_STRING(blit_hw_a, "blit_hw_a");
+    MAKE_CONSTANT_SHARED_STRING(blit_hw_cc, "blit_hw_cc");
+    MAKE_CONSTANT_SHARED_STRING(blit_sw, "blit_sw");
+    MAKE_CONSTANT_SHARED_STRING(blit_sw_a, "blit_sw_a");
+    MAKE_CONSTANT_SHARED_STRING(blit_sw_cc, "blit_sw_cc");
+    MAKE_CONSTANT_SHARED_STRING(hw_available, "hw_available");
+    MAKE_CONSTANT_SHARED_STRING(video_mem, "video_mem");
+    MAKE_CONSTANT_SHARED_STRING(wm_available, "wm_available");
+    MAKE_CONSTANT_SHARED_STRING(vfmt, "format");
+    if(key == blit_fill) {
+      pop_stack(); push_int(THIS->vidinfo->blit_fill);
+    } else if(key == blit_hw) {
+      pop_stack(); push_int(THIS->vidinfo->blit_hw);
+    } else if(key == blit_hw_a) {
+      pop_stack(); push_int(THIS->vidinfo->blit_hw_A);
+    } else if(key == blit_hw_cc) {
+      pop_stack(); push_int(THIS->vidinfo->blit_hw_CC);
+    } else if(key == blit_sw) {
+      pop_stack(); push_int(THIS->vidinfo->blit_sw);
+    } else if(key == blit_sw_a) {
+      pop_stack(); push_int(THIS->vidinfo->blit_sw_A);
+    } else if(key == blit_sw_cc) {
+      pop_stack(); push_int(THIS->vidinfo->blit_sw_CC);
+    } else if(key == hw_available) {
+      pop_stack(); push_int(THIS->vidinfo->hw_available);
+    } else if(key == video_mem) {
+      pop_stack(); push_int(THIS->vidinfo->video_mem);
+    } else if(key == wm_available) {
+      pop_stack(); push_int(THIS->vidinfo->wm_available);
+    }  else if(key == vfmt) {
+      struct object *fmt;
+      CHECK_INIT();
+      fmt = clone_object( PixelFormat_program, 0 );
+      OBJ2_PIXELFORMAT(fmt)->fmt = THIS->vidinfo->vfmt;
+      push_object(fmt);
+    } else {
+      OBJ_INDEX();
+    }
+  }
+  PIKEFUN mixed `[](string key) {
+    f_VideoInfo_cq__backtick_2D_3E(args);
+  }
+}
+/*! @endclass VideoInfo */
+#undef CHECK_INIT
+
+#define CHECK_INIT() if(THIS->_s == NULL) { Pike_error("Surface unitialized!\n"); }
+/*! @class Surface
+ *!
+ *! Surface's represent areas of "graphical" memory, memory that can
+ *! be drawn to.  The video framebuffer is returned as a
+ *! @[SDL.Surface] by @[SDL.set_video_mode()] and
+ *! @[SDL.get_video_surface()].
+
+ *! @decl int w
+ *! @decl int h
+ *!   The width and height of the surface in pixels.
+ *! @decl SDL.Rect clip_rect
+ *!  This is the clipping rectangle as set by @[set_clip_rect()].
+ *! @decl int flags
+ *!   The following are supported in the flags field.
+ *!   @dl
+ *!     @item SDL.SWSURFACE
+ *!       Surface is stored in system memory
+ *!     @item SDL.HWSURFACE
+ *!       Surface is stored in video memory
+ *!     @item SDL.ASYNCBLIT
+ *!       Surface uses asynchronous blits if possible.
+ *!     @item SDL.ANYFORMAT
+ *!       Allows any pixel-format (Display  surface).
+ *!     @item SDL.HWPALETTE
+ *!       Surface has exclusive palette.
+ *!     @item SDL.DOUBLEBUF
+ *!       Surface is double buffered (Display surface).
+ *!     @item SDL.FULLSCREEN
+ *!       Surface is full screen (Display  Sur face).
+ *!     @item SDL.OPENGL
+ *!       Surface has an OpenGL context (Display Surface).
+ *!     @item SDL.OPENGLBLIT
+ *!       Surface supports OpenGL blitting (Display Surface).
+ *!     @item SDL.RESIZABLE
+ *!       Surface is resizable (Display Surface).
+ *!     @item SDL.HWACCEL
+ *!       Surface blit uses hardware acceleration.
+ *!     @item SDL.SRCCOLORKEY
+ *!       Surface use colorkey blitting.
+ *!     @item SDL.RLEACCEL
+ *!       Colorkey  blitting is accelerated with RLE.
+ *!     @item SDL.SRCALPHA
+ *!       Surface blit uses alpha blending.
+ *!     @item SDL.PREALLOC
+ *!       Surface uses preallocated memory.
+ *!   @enddl
+ *! 
+ *! @decl SDL.PixelFormat format
+ *!   The pixel format of this surface.
+ */
+PIKECLASS Surface {
+  CVAR SDL_Surface *_s;
+
+  INIT {
+    THIS->_s = NULL;
+  }
+  
+  EXIT {
+    if(THIS->_s) {
+      SDL_FreeSurface(THIS->_s);
+      THIS->_s = NULL;
+    }
+  }
+
+  /* Query methods (struct vars) */
+  PIKEFUN mixed `->(string key) {                      
+    struct pike_string *flags;
+    struct pike_string *h;
+/*  struct pike_string *pitch;*/
+    struct pike_string *w;
+    struct pike_string *clip_rect;
+    struct pike_string *format;
+    struct pike_string *init;
+    struct pike_string *set_image;
+    MAKE_CONSTANT_SHARED_STRING(flags, "flags");
+    MAKE_CONSTANT_SHARED_STRING(h, "h");
+/*    MAKE_CONSTANT_SHARED_STRING(pitch, "pitch");*/
+    MAKE_CONSTANT_SHARED_STRING(w, "w");
+    MAKE_CONSTANT_SHARED_STRING(clip_rect, "clip_rect");
+    MAKE_CONSTANT_SHARED_STRING(format, "format");
+    MAKE_CONSTANT_SHARED_STRING(init, "init");
+    MAKE_CONSTANT_SHARED_STRING(set_image, "set_image");
+
+    if(key == init || key == set_image) {
+      // These actually (re)initialize the module and do not
+      // a previously initialized module. 
+      OBJ_INDEX();
+      return;
+    }
+    CHECK_INIT(); /* Make sure this is inited */
+    if(key == flags) {
+      pop_stack(); push_int(THIS->_s->flags);
+    } else if(key == h) {
+      pop_stack(); push_int(THIS->_s->h);
+/*    } else if(key == pitch) {
+      pop_stack(); push_int(THIS->_s->pitch); */
+    } else if(key == w) {
+      pop_stack(); push_int(THIS->_s->w);
+    } else if(key == clip_rect) {
+      struct object *rect;
+      rect = clone_object( Rect_program, 0 );
+      OBJ2_RECT(rect)->rect = THIS->_s->clip_rect;
+      pop_stack(); push_object(rect);
+    } else if(key == format) {
+      struct object *fmt;
+      fmt = clone_object( PixelFormat_program, 0 );
+      OBJ2_PIXELFORMAT(fmt)->fmt = THIS->_s->format;
+      pop_stack(); push_object(fmt);
+    } else {
+      OBJ_INDEX();
+    }
+  }
+  PIKEFUN mixed `[](string key) {
+    f_Surface_cq__backtick_2D_3E( args );
+  }
+  
+  /*! @decl int lock()
+   *! This methods locks the surface to allow direct access to the pixels using the
+   *! @[get_pixel()] and @[set_pixel()] methods. Note that all surfaces don't require
+   *! locking. In those cases, this method is does nothing. When you are done
+   *! accessing the surface, you should unlock it using @[unlock()].
+   *!
+   *! @note
+   *!   Calling this method multiple times means that you need to call
+   *!   unlock an equal number of times for the surface to become unlocked.
+   *! @returns
+   *!   1 for success or 0 if the surface couldn't be locked.
+   *! @seealso
+   *!  @[unlock()]
+   */
+  PIKEFUN int lock() {
+    CHECK_INIT();
+    if ( SDL_MUSTLOCK(THIS->_s) ) {
+      RETURN SDL_LockSurface(THIS->_s) != -1;
+    }
+    RETURN 1; 
+  }
+  
+  /*! @decl void unlock()
+   *! Surfaces that were previously locked using @[lock()] must be
+   *! unlocked with @[unlock()].  Surfaces should be unlocked as soon
+   *! as possible.
+   *! @seealso
+   *!  @[lock()]
+   */
+  PIKEFUN void unlock() {
+    CHECK_INIT();
+    if ( SDL_MUSTLOCK(THIS->_s) ) {
+      SDL_UnlockSurface(THIS->_s);
+    }
+  }
+
+  /*! @decl SDL.Surface init(int flags, int width, int height, int depth, @
+   *!                        int Rmask, int Gmask, int Bmask, int Amask)
+   *! This (re)initializes this surface using the specified
+   *! parameters.  Any previously allocated data will be freed. 
+   *! If @b{depth@} is 8 bits an empty palette is allocated for the surface,
+   *! otherwise a 'packed-pixel' @[SDL.PixelFormat] is created using
+   *! the @b{[RGBA]mask@}'s provided. @b{width@} and @b{height@} specifies
+   *! the desired size of the image. The @b{flags@} specifies the type of
+   *! surface that should be created. It is an OR'd combination of the
+   *! following possible values:
+   *! 
+   *! @dl
+   *!   @item SDL.SWSURFACE
+   *!     SDL will create the surface in system memory. This improves
+   *!     the performance of pixel level access, however you may not
+   *!     be able to take advantage of some types of hardware
+   *!     blitting.
+   *!
+   *!   @item SDL.HWSURFACE
+   *!     SDL will attempt to create the surface in video memory. This
+   *!     will allow SDL to take advantage of Video->Video blits
+   *!     (which are often accelerated).
+   *!
+   *!   @item SDL.SRCCOLORKEY
+   *!     
+   *!     This flag turns on colourkeying for blits from this
+   *!     surface. If SDL.HWSURFACE is also specified and colourkeyed
+   *!     blits are hardware-accelerated, then SDL will attempt to
+   *!     place the surface in video memory. Use @[set_color_key()] to
+   *!     set or clear this flag after surface creation.
+   *!
+   *!   @item SDL.SRCALPHA
+   *!     This flag turns on alpha-blending for blits from this
+   *!     surface. If SDL.HWSURFACE is also specified and alpha
+   *!     blending blits are hardware-accelerated, then the surface
+   *!     will be placed in video memory if possible.  Use
+   *!     @[set_alpha()] to set or clear this flag after surface
+   *!     creation.
+   *! @enddl
+   *! 
+   *! @note
+   *!   If an alpha-channel is specified (that is, if Amask is
+   *!   nonzero), then the SDL.SRCALPHA flag is automatically set. You
+   *!   may remove this flag by calling @[set_alpha()] after surface
+   *!   creation.
+   *! @returns
+   *!  A reference to itself.
+   *! @note
+   *!  If this method fails, the surface will become uninitialized.
+   *! @seealso
+   *!  @[set_image()]
+   */
+  PIKEFUN object init(int flags, int width, int height, int depth, 
+		      int Rmask, int Gmask, int Bmask, int Amask) {
+    if(THIS->_s) {
+      SDL_FreeSurface(THIS->_s);
+    }
+    THIS->_s = SDL_CreateRGBSurface(flags, width, height, depth, 
+				    Rmask, Gmask, Bmask, Amask);
+    if(THIS->_s == NULL) {
+      Pike_error("Failed to create SDL surface: %s\n", SDL_GetError());
+    } else {
+      RET_THIS();
+    }
+  }
+
+  /*!  @decl SDL.Surface set_image(Image.Image image, int|void flags)
+   *!  @decl SDL.Surface set_image(Image.Image image, Image.Image alpha, int|void flags) 
+   *! This (re)initializes this surface from the @[Image.Image] in
+   *! @b{image@}. Any previously allocated data will be freed.
+   *! If initialization is successful, this surface will use RGBA8888
+   *! format. For good blitting performance, it should be converted to
+   *! the display format using @[display_format()].
+   *! 
+   *! @param image
+   *!  The source image.
+   *! @param alpha
+   *!   Optional alpha channel. In Pike, the alpha channel can have
+   *!   different alpha values for red, green and blue. Since SDL
+   *!   doesn't support this, only the alpha value of the red color is
+   *!   used in the conversion. When this calling convention is used,
+   *!   the surface alpha value of @b{image@} is ignored.
+   *! @param flags
+   *! 
+   *! When present this specifies the type of surface that should be
+   *! created. It is an OR'd combination of the following possible
+   *! values:
+   *! 
+   *! @dl
+   *!   @item SDL.SWSURFACE
+   *!     SDL will create the surface in system memory. This improves
+   *!     the performance of pixel level access, however you may not
+   *!     be able to take advantage of some types of hardware
+   *!     blitting.
+   *!
+   *!   @item SDL.HWSURFACE
+   *!     SDL will attempt to create the surface in video memory. This
+   *!     will allow SDL to take advantage of Video->Video blits
+   *!     (which are often accelerated).
+   *!
+   *!   @item SDL.SRCCOLORKEY
+   *!     
+   *!     This flag turns on colourkeying for blits from this
+   *!     surface. If SDL.HWSURFACE is also specified and colourkeyed
+   *!     blits are hardware-accelerated, then SDL will attempt to
+   *!     place the surface in video memory. Use @[set_color_key()] to
+   *!     set or clear this flag after surface creation.
+   *!
+   *!   @item SDL.SRCALPHA
+   *!     This flag turns on alpha-blending for blits from this
+   *!     surface. If SDL.HWSURFACE is also specified and alpha
+   *!     blending blits are hardware-accelerated, then the surface
+   *!     will be placed in video memory if possible. Note that if
+   *!     this surface has an alpha value specified, this flag is
+   *!     enabled automatically. Use @[set_alpha()] to modify this
+   *!     flag at a later point.
+   *! @enddl
+   *! @note
+   *!  If this method fails, the surface will become uninitialized.
+   *! @returns
+   *!  A reference to itself.
+   *! @seealso
+   *!  @[init()]
+   */
+  PIKEFUN object set_image(object image, int|void _flags) {
+    int flags = 0;
+    int x, y;
+    struct image *i;
+    Uint32 *dest;
+    rgb_group rgb;
+    if(THIS->_s != NULL) {
+      SDL_FreeSurface(THIS->_s);
+    }
+    //    if(image_program != NULL) {
+    CHECK_CLASS(image, image, 1);
+    //    }
+    if(_flags) {
+      if(_flags->type != PIKE_T_INT) {
+	SIMPLE_BAD_ARG_ERROR("set_image",2,"int|void");
+      }
+      flags = _flags->u.integer;
+    }
+    i = ((struct image *)(image->storage));
+    if(i->alpha) {
+      flags &= SDL_SRCALPHA;
+    }
+    THIS->_s =
+      SDL_CreateRGBSurface(flags, i->xsize, i->ysize, 32,
+			   0xff000000, 0x00ff0000, 0x0000ff00,  0x000000ff);
+    if(!THIS->_s) {
+      Pike_error("Failed to create SDL surface: %s\n", SDL_GetError());
+    }
+    SDL_LockSurface(THIS->_s);
+    dest = THIS->_s->pixels;
+
+#define pixel(_img,x,y) ((_img)->img[((int)(x))+((int)(y))*(int)(_img)->xsize])
+    for(y = 0; y < i->ysize; y++) {
+      int off = y*THIS->_s->pitch/4;
+      for(x = 0; x < i->xsize; x++) {
+	rgb = pixel(i, x, y);
+	*((Uint32 *)dest + off + x) = 
+	  (rgb.r << 24) + (rgb.g << 16) + (rgb.b << 8) + (255 - i->alpha);
+      }
+    }
+#undef pixel
+    SDL_UnlockSurface(THIS->_s);
+    RET_THIS();
+  }
+
+  PIKEFUN object set_image(object image, object alpha, int|void _flags) {
+    int flags = 0;
+    int x, y;
+    struct image *i, *a;
+    Uint32 *dest;
+    rgb_group rgb, argb;
+    if(THIS->_s != NULL) {
+      SDL_FreeSurface(THIS->_s);
+    }
+
+    CHECK_CLASS(image, image, 1);
+    CHECK_CLASS(alpha, image, 2);
+
+    if(_flags) {
+      if(_flags->type != PIKE_T_INT) {
+	SIMPLE_BAD_ARG_ERROR("set_image",3,"int|void");
+      }
+      flags = _flags->u.integer;
+    }
+    i = ((struct image *)(image->storage));
+    a = ((struct image *)(alpha->storage));
+    
+    THIS->_s =
+      SDL_CreateRGBSurface(flags, i->xsize, i->ysize, 32,
+			   0xff000000, 0x00ff0000, 0x0000ff00,  0x000000ff);
+    if(!THIS->_s) {
+      Pike_error("Failed to create SDL surface: %s\n", SDL_GetError());
+    }
+    SDL_LockSurface(THIS->_s);
+    dest = THIS->_s->pixels;
+
+#define pixel(_img,x,y) ((_img)->img[((int)(x))+((int)(y))*(int)(_img)->xsize])
+    for(y = 0; y < i->ysize; y++) {
+      int off = y*THIS->_s->pitch/4;
+      for(x = 0; x < i->xsize; x++) {
+	rgb = pixel(i, x, y);
+	argb = pixel(a, x, y);
+	*((Uint32 *)dest + off + x) = 
+	  (rgb.r << 24) + (rgb.g << 16) + (rgb.b << 8) + (255 - argb.r);
+      }
+    }
+#undef pixel
+    SDL_UnlockSurface(THIS->_s);
+    RET_THIS();
+  }
+
+  /*! @decl SDL.Surface display_format()
+   *!
+   *! This function takes a surface and copies it to a new  surface
+   *! of  the  pixel format and colors of the video framebuffer,
+   *! suitable for fast blitting onto the  display  surface. It calls
+   *! @[convert_surface()]. 
+   *! 
+   *! If you want to take advantage of hardware colorkey or alpha blit
+   *! acceleration, you should set the colorkey and / or alpha value
+   *! before calling this function.
+   *! 
+   *! If you want an alpha channel, see @[display_format_alpha()].
+   *!
+   *! @returns
+   *!   The new surface. An error is thrown if the conversion fails.
+   */
+  PIKEFUN object display_format() {
+    SDL_Surface *tmp;
+    CHECK_INIT();
+    tmp = SDL_DisplayFormat(THIS->_s);
+    if(tmp) {
+      struct object *new_surface = clone_object( Surface_program, 0 );
+      OBJ2_SURFACE(new_surface)->_s = tmp;
+      RETURN new_surface;
+    } else {
+      Pike_error("Failed to create SDL surface: %s\n", SDL_GetError());
+    }      
+  }
+
+  /*! @decl SDL.Surface display_format_alpha()
+   *!
+   *! This function takes a surface and copies it to a new  surface
+   *! of  the  pixel format and colors of the video framebuffer,
+   *! suitable for fast blitting onto the  display  surface. It calls
+   *! @[convert_surface()]. 
+   *! 
+   *! If you want to take advantage of hardware colorkey or alpha blit
+   *! acceleration, you should set the colorkey and / or alpha value
+   *! before calling this function.
+   *! 
+   *! This function can be used to convert a colourkey to an alpha
+   *! channel, if the SDL.SRCCOLORKEY flag is set on the surface. The
+   *! generated surface will then be transparent (alpha=0) where the
+   *! pixels match the colourkey, and opaque (alpha=255) elsewhere.
+   *!
+   *! @returns
+   *!   The new surface. An error is thrown if the conversion fails.
+   */
+   PIKEFUN object display_format_alpha() {
+    SDL_Surface *tmp;
+    CHECK_INIT();
+    tmp = SDL_DisplayFormatAlpha(THIS->_s);
+    if(tmp) {
+      struct object *new_surface = clone_object( Surface_program, 0 );
+      OBJ2_SURFACE(new_surface)->_s = tmp;
+      RETURN new_surface;
+    } else {
+      Pike_error("Failed to create SDL surface: %s\n", SDL_GetError());
+    }
+  }
+
+  PIKEFUN object blit(object dst, object|void _srcrect, object|void _dstrect) {
+    SDL_Rect *srcrect = NULL, *dstrect = NULL;
+    CHECK_CLASS(dst, Surface, 1);
+    if(_srcrect) {
+      if( _srcrect->type != PIKE_T_OBJECT ) {
+	SIMPLE_BAD_ARG_ERROR("blit_surface",2,"SDL.Rect|zero");
+      }
+      CHECK_CLASS(_srcrect->u.object, Rect, 2);
+      srcrect = &(OBJ2_RECT(_srcrect->u.object)->rect);
+    }
+    if(_dstrect) {
+      if( _dstrect->type != PIKE_T_OBJECT ) {
+	SIMPLE_BAD_ARG_ERROR("blit_surface",3,"SDL.Rect|void");
+      }
+      CHECK_CLASS(_dstrect->u.object, Rect, 3);
+      dstrect = &(OBJ2_RECT(_dstrect->u.object)->rect);
+    }
+    
+    SDL_BlitSurface(THIS->_s, srcrect,
+		    OBJ2_SURFACE(dst)->_s, dstrect);
+    RET_THIS();
+  }
+
+  PIKEFUN object fill_rect(int color, object dstrect) {
+    CHECK_INIT();
+    CHECK_CLASS(dstrect, Rect, 2);
+    SDL_FillRect(THIS->_s,&(OBJ2_RECT(dstrect)->rect), (Uint32)color);
+    RET_THIS();
+  }
+  
+  PIKEFUN object fill(int color) {
+    CHECK_INIT();
+    SDL_FillRect(THIS->_s, NULL, (Uint32)color);
+    RET_THIS();
+  }
+
+  PIKEFUN object set_color_key(int flag, int key)  {
+    CHECK_INIT();
+    SDL_SetColorKey(THIS->_s, flag, key);
+    RET_THIS();
+  }
+
+  PIKEFUN object set_alpha(int flag, int alpha)  {
+    CHECK_INIT();
+    SDL_SetAlpha(THIS->_s, flag, alpha);
+    RET_THIS();
+  }
+
+  PIKEFUN object set_clip_rect(object rect)  {
+    CHECK_INIT();
+    CHECK_CLASS(rect, Rect, 1);
+    SDL_SetClipRect(THIS->_s, &OBJ2_RECT(rect)->rect);
+    RET_THIS();
+  }
+
+  PIKEFUN object convert_surface(object fmt, int flags) {
+    struct object *new_surface;
+    SDL_Surface *tmp;
+    CHECK_INIT();
+    CHECK_CLASS(fmt, PixelFormat, 1);
+    
+    tmp = SDL_ConvertSurface(THIS->_s, OBJ2_PIXELFORMAT(fmt)->fmt, flags);
+    pop_n_elems(args);
+    if(!tmp) {
+      Pike_error("Failed to convert surface: %s\n", SDL_GetError());
+    }
+    new_surface = clone_object( Surface_program, 0 );
+    OBJ2_SURFACE(new_surface)->_s = tmp;
+    push_object(new_surface);
+  }
+}
+/*! @endclass Surface */
+#undef CHECK_INIT
+
+/* SDL Video Method */
+
+PIKEFUN int video_mode_ok(int width, int height, int bpp, int flags) {
+  RETURN SDL_VideoModeOK(width, height, bpp, flags);
+}
+
+
+PIKEFUN int flip(object screen) {
+  SDL_Surface *vs = NULL;    
+  CHECK_CLASS(screen, Surface, 1);
+  vs = OBJ2_SURFACE(screen)->_s;
+  RETURN SDL_Flip(vs);
+}
+
+/*PIKEFUN void SDL_UpdateRects(object|void screen, int numrects, array rects);*/
+
+PIKEFUN void update_rect(int x, int y, int w, int h, object|void screen) {
+  SDL_Surface *vs;
+  if(!screen) {
+    vs = SDL_GetVideoSurface();
+  } else {
+    if( screen->type == PIKE_T_OBJECT ) {
+      CHECK_CLASS(screen->u.object, Surface, 5);
+      vs = OBJ2_SURFACE(screen->u.object)->_s;
+    } else {
+      SIMPLE_BAD_ARG_ERROR("SDL.update_rect",5,"SDL.Surface");      
+    }      
+  }
+  SDL_UpdateRect(vs, x, y, w, h);
+}
+
+PIKEFUN int set_gamma(float red, float green, float blue) {
+  RETURN SDL_SetGamma(red, green, blue);
+}
+
+PIKEFUN void|object get_video_surface()
+{
+  SDL_Surface *screen = SDL_GetVideoSurface();
+  if(screen != NULL) {
+    struct object *surface = clone_object( Surface_program, 0 );
+    /* to avoid freeing when the new Surface class is destroyed */
+    screen->refcount ++; 
+    OBJ2_SURFACE(surface)->_s = screen;
+    push_object(surface);
+    return;
+  }
+  push_int(0);
+}
+
+PIKEFUN void|object get_video_info()
+{
+  const SDL_VideoInfo *vidinfo = SDL_GetVideoInfo();
+  if(vidinfo != NULL) {
+    struct object *viptr = clone_object( VideoInfo_program, 0 );
+    /* to avoid freeing when the new Surface class is destroyed */
+    OBJ2_VIDEOINFO(viptr)->vidinfo = vidinfo;
+    push_object(viptr);
+    return;
+  }
+  push_int(0);
+}
+
+PIKEFUN object set_video_mode(int width, int height, int bpp, int flags)
+{
+  SDL_Surface *screen;
+  if(width <= 0 || height <= 0) { /* To avoid core dump in SDL */
+    SDL_SetError("Tried to open window with width and/or height smaller than 1.");
+  } else { 
+    SDL_Surface *screen = NULL;
+    switch(bpp) { /* Switch to avoid coredump in SDL */
+    case 0: case 8: case 16: case 24: case 32:  
+      screen = SDL_SetVideoMode(width, height, bpp, flags);
+      if(screen != NULL) {
+	struct object *surface = clone_object( Surface_program, 0 );
+	/* to avoid freeing when the new Surface class is destroyed, since
+	 * it's a reference to the screen surface, which SDL handles.
+	 */
+	screen->refcount ++; 
+	OBJ2_SURFACE(surface)->_s = screen;
+	pop_n_elems(args);
+	push_object(surface);
+	return;
+      }
+      break;
+    default:
+      SDL_SetError("Invalid bpp, expected 8, 16, 24 or 32.");
+    }
+  }
+  Pike_error("Failed to set video mode: %s\n", SDL_GetError());
+}
+
+PIKEFUN int blit_surface(object src, object dst,
+			 object|void _srcrect,
+			 object|void _dstrect) {
+  SDL_Rect *srcrect = NULL, *dstrect = NULL;
+  CHECK_CLASS(src, Surface, 1);
+  CHECK_CLASS(dst, Surface, 2);
+  if(_srcrect) {
+    if( _srcrect->type != PIKE_T_OBJECT ) {
+      SIMPLE_BAD_ARG_ERROR("blit_surface",3,"SDL.Rect|zero");
+    }
+    CHECK_CLASS(_srcrect->u.object, Rect, 3);
+    srcrect = &(OBJ2_RECT(_srcrect->u.object)->rect);
+  }
+  if(_dstrect) {
+    if( _dstrect->type != PIKE_T_OBJECT ) {
+      SIMPLE_BAD_ARG_ERROR("blit_surface",4,"SDL.Rect|void");
+    }
+    CHECK_CLASS(_dstrect->u.object, Rect, 4);
+    dstrect = &(OBJ2_RECT(_dstrect->u.object)->rect);
+  }
+      
+  RETURN SDL_BlitSurface(OBJ2_SURFACE(src)->_s, srcrect,
+			 OBJ2_SURFACE(dst)->_s, dstrect);
+}
+
+PIKEFUN void|string video_driver_name() {
+  char tmp[256];
+  tmp[0] = 0;
+  SDL_VideoDriverName(tmp, 255);
+  if(!*tmp) {
+    push_int(0);
+    return;
+  }
+  push_text(tmp);
+}
+  
+PIKEFUN void set_caption(string title, string icon) {
+  SDL_WM_SetCaption(title->str, icon->str);
+}
+
+PIKEFUN array(string) get_caption() {
+  char *title, *icon;
+  SDL_WM_GetCaption(&title, &icon);
+  pop_n_elems(args);
+  push_text(title == NULL ? "" : title);
+  push_text(icon == NULL ? "" : icon);
+  f_aggregate(2);
+}
+
+PIKEFUN int iconify_window() {
+  RETURN SDL_WM_IconifyWindow();
+}
+
+PIKEFUN int toggle_fullscreen(void|object screen) {
+  SDL_Surface *vs = 0;
+  if(!screen) {
+    vs = SDL_GetVideoSurface();
+  } else {
+    if( screen->type == PIKE_T_OBJECT ) {
+      CHECK_CLASS(screen->u.object, Surface, 1);
+      vs = OBJ2_SURFACE(screen->u.object)->_s;
+    }
+  }
+  if(!vs) { RETURN -1; }
+  RETURN SDL_WM_ToggleFullScreen(vs);
+}
+
+PIKEFUN int grab_input(int mode) {
+  RETURN SDL_WM_GrabInput(mode);
+}
+
+/* Joystick related functionality */
+
+#define CHECK_INIT() if(THIS->joystick == NULL) { Pike_error("Joystick unitialized!\n"); }
+PIKECLASS Joystick {
+  CVAR SDL_Joystick *joystick;
+  INIT {
+    THIS->joystick = NULL;
+  }
+
+  EXIT {
+    if(THIS->joystick != NULL) {
+      SDL_JoystickClose(THIS->joystick);
+      THIS->joystick = NULL;
+    }
+  }
+  
+  PIKEFUN void create(int device_index) {
+    THIS->joystick = SDL_JoystickOpen(device_index);
+    if(!THIS->joystick) {
+      Pike_error("Failed to open joystick %d: %s\n", device_index,
+		 SDL_GetError());
+    }
+  }
+
+  PIKEFUN int index() {
+    CHECK_INIT();
+    RETURN SDL_JoystickIndex(THIS->joystick);
+  }
+  
+  PIKEFUN int num_axes() {
+    CHECK_INIT();
+    RETURN SDL_JoystickNumAxes(THIS->joystick);
+  }
+
+  PIKEFUN int num_balls() {
+    CHECK_INIT();
+    RETURN SDL_JoystickNumBalls(THIS->joystick);
+  }
+
+  PIKEFUN int num_hats() {
+    CHECK_INIT();
+    RETURN SDL_JoystickNumHats(THIS->joystick);
+  }
+
+  PIKEFUN int num_buttons() {
+    CHECK_INIT();
+    RETURN SDL_JoystickNumButtons(THIS->joystick);
+  }
+
+  PIKEFUN float get_axis(int axis) {
+    int axis_value;
+    CHECK_INIT();
+    axis_value = SDL_JoystickGetAxis(THIS->joystick, axis);
+    RETURN (FLOAT_TYPE)axis_value / (FLOAT_TYPE)32768;
+  }
+  
+  PIKEFUN int get_hat(int hat) {
+    CHECK_INIT();
+    RETURN SDL_JoystickGetHat(THIS->joystick, hat);
+  }
+  
+  PIKEFUN array(int) get_ball(int ball) {
+    int dx, dy;
+    CHECK_INIT();
+    SDL_JoystickGetBall(THIS->joystick, ball, &dx, &dy);
+    pop_n_elems(args);
+    push_int(dx);
+    push_int(dy);
+    f_aggregate(2);
+  }
+
+  PIKEFUN int get_button(int button) {
+    CHECK_INIT();
+    RETURN SDL_JoystickGetButton(THIS->joystick, button);
+  }
+
+  PIKEFUN string name(int device_index) {
+    const char *name;
+    CHECK_INIT();
+    name = SDL_JoystickName(SDL_JoystickIndex(THIS->joystick));
+    pop_n_elems(args);
+    if(name == NULL) {
+      push_int(0);
+    } else {
+      push_text(name);
+    }
+  }
+}
+#undef CHECK_INIT
+
+PIKEFUN int num_joysticks() {
+  RETURN SDL_NumJoysticks();
+}
+
+PIKEFUN string joystick_name(int device_index) {
+  const char *name = SDL_JoystickName(device_index);
+  pop_n_elems(args);
+  if(name == NULL) {
+    push_int(0);
+  } else {
+    push_text(name);
+  }
+}
+
+PIKEFUN int joystick_opened(int device_index) {
+  RETURN SDL_JoystickOpened(device_index);
+}
+
+PIKEFUN void joystick_update() {
+  SDL_JoystickUpdate();
+}
+
+PIKEFUN int joystick_event_state(int state) {
+  RETURN SDL_JoystickEventState(state);
+}
+
+/* CD Related methods */
+
+PIKECLASS CDTrack {
+  CVAR SDL_CDtrack track;
+  INIT {
+    THIS->track.id     = 0;
+    THIS->track.type   = 0;
+    THIS->track.length = 0;
+    THIS->track.offset = 0;
+  }
+  PIKEFUN mixed `->(string key) {
+    struct pike_string *id;
+    struct pike_string *length;
+    struct pike_string *offset;
+    struct pike_string *type;
+    MAKE_CONSTANT_SHARED_STRING(id, "id");
+    MAKE_CONSTANT_SHARED_STRING(length, "length");
+    MAKE_CONSTANT_SHARED_STRING(offset, "offset");
+    MAKE_CONSTANT_SHARED_STRING(type, "type");
+    if(key == id) {
+      pop_stack(); push_int(THIS->track.id);
+    } else if(key == length) {
+      pop_stack(); push_int(THIS->track.length);
+    } else if(key == offset) {
+      pop_stack(); push_int(THIS->track.offset);
+    } else if(key == type) {
+      pop_stack(); push_int(THIS->track.type);
+    } else {
+      OBJ_INDEX();
+    }
+  }
+  PIKEFUN mixed `[](string key) {
+    f_CDTrack_cq__backtick_2D_3E(args);
+  }
+
+}
+
+#define CHECK_INIT() if(THIS->cd == NULL) { Pike_error("CD unitialized!\n"); }
+PIKECLASS CD {
+  CVAR SDL_CD *cd;
+  INIT {
+    THIS->cd = NULL;
+  }
+  EXIT {
+    if(THIS->cd) {
+      SDL_CDClose(THIS->cd);
+      THIS->cd = NULL;
+    };
+  }
+  
+  PIKEFUN void create(int drive) {
+    THIS->cd = SDL_CDOpen(drive);
+    if(!THIS->cd) {
+      Pike_error("Failed to open CD %d: %s\n", drive, SDL_GetError());
+    }
+  }
+  
+  
+  PIKEFUN mixed `->(string key) {
+    struct pike_string *current_frame;
+    struct pike_string *current_track;
+    struct pike_string *id;
+    struct pike_string *numtracks;
+    CHECK_INIT(); /* Make sure this is inited */
+    MAKE_CONSTANT_SHARED_STRING(current_frame, "current_frame");
+    MAKE_CONSTANT_SHARED_STRING(current_track, "current_track");
+    MAKE_CONSTANT_SHARED_STRING(id, "id");
+    MAKE_CONSTANT_SHARED_STRING(numtracks, "numtracks");
+    if(key == current_frame) {
+      pop_stack(); push_int(THIS->cd->cur_frame);
+    } else if(key == current_track) {
+      pop_stack(); push_int(THIS->cd->cur_track);
+    } else if(key == id) {
+      pop_stack(); push_int(THIS->cd->id);
+    } else if(key == numtracks) {
+      pop_stack(); push_int(THIS->cd->numtracks);
+    } else {
+      OBJ_INDEX();
+    }
+  }    
+
+  PIKEFUN mixed `[](string key) {
+    ref_push_object(Pike_fp->current_object);
+    stack_swap();
+    f_arrow(2); 
+  }
+    
+  PIKEFUN object track(int track) {
+    struct object *trackobj;
+    if(track >= THIS->cd->numtracks || track < 0) {
+      Pike_error("Track ID out of range.\n");
+    }
+    trackobj = clone_object( CDTrack_program, 0 );
+    OBJ2_CDTRACK(trackobj)->track = THIS->cd->track[track];
+    RETURN trackobj;
+  }
+    
+  PIKEFUN int status() {
+    RETURN SDL_CDStatus(THIS->cd);
+  }
+
+  PIKEFUN int play(int start, int length) {
+    RETURN SDL_CDPlay(THIS->cd, start, length);
+  }
+  PIKEFUN int play_tracks(int start_track, int start_frame,
+			  int ntracks, int nframes) {
+    RETURN SDL_CDPlayTracks(THIS->cd, start_track, start_frame,
+			    ntracks, nframes);
+  }
+    
+  PIKEFUN int pause() {
+    RETURN SDL_CDPause(THIS->cd);
+  }
+    
+  PIKEFUN int resume() {
+    RETURN SDL_CDResume(THIS->cd);
+  }
+
+  PIKEFUN int stop() {
+    RETURN SDL_CDStop(THIS->cd);
+  }
+
+  PIKEFUN int eject() {
+    RETURN SDL_CDEject(THIS->cd);
+  }
+}
+#undef CHECK_INIT
+
+PIKEFUN int cd_num_drives() {
+  RETURN SDL_CDNumDrives();
+}
+
+PIKEFUN string|void cd_name(int drive) {
+  const char *name = SDL_CDName(drive);
+  pop_n_elems(args);
+  if(name != NULL) {
+    push_text(name);
+  } else {
+    push_int(0);
+  }
+}
+
+#ifdef HAVE_SDL_MIXER
+/* This section contains all audio code, and it requires the SDL_mixer
+ * library.
+ */
+
+PIKECLASS Music {
+  CVAR Mix_Music *music;
+
+  INIT {
+    THIS->music = NULL;
+  }
+  EXIT {
+    if(THIS->music != NULL) {
+      Mix_FreeMusic(THIS->music);
+      THIS->music = NULL;
+    }
+  }
+
+  PIKEFUN void create(string fname) {
+    if(THIS->music) {
+      // Since you can manually call this...
+      Mix_FreeMusic(THIS->music); 
+    }
+    THIS->music = Mix_LoadMUS(fname->str);
+    if(THIS->music == NULL) {
+      Pike_error("Failed to load %s: %s\n",
+		 fname->str, SDL_GetError());
+    }
+  }
+
+  PIKEFUN object pause() {
+    Mix_PauseMusic();
+    RET_THIS();
+  }
+  PIKEFUN object halt() {
+    Mix_HaltMusic();
+    RET_THIS();
+  }
+  PIKEFUN object resume() {
+    Mix_ResumeMusic();
+    RET_THIS();
+  }
+  PIKEFUN object rewind() {
+    Mix_RewindMusic();
+    RET_THIS();
+  }
+  /* Status queries */
+  PIKEFUN int paused() {
+    RETURN Mix_PausedMusic();
+  }
+  PIKEFUN int playing() {
+    RETURN Mix_PlayingMusic();
+  }
+  PIKEFUN int fading() {
+    RETURN Mix_FadingMusic();
+  }
+
+  PIKEFUN object play(int|void _loops) {
+    int loops = -1;
+    if(_loops) {
+      if(_loops->type == PIKE_T_INT) {
+	loops = _loops->u.integer;
+      } else {
+	SIMPLE_BAD_ARG_ERROR("Music.play", 1, "void|int");
+      }
+    }
+    Mix_PlayMusic(THIS->music, loops);
+    RET_THIS();
+  }
+
+  PIKEFUN object fade_in(int ms, int|void _loops) {
+    int loops = -1;
+    if(_loops) {
+      if(_loops->type == PIKE_T_INT) {
+	loops = _loops->u.integer;
+      } else {
+	SIMPLE_BAD_ARG_ERROR("Music.fade_in", 2, "void|int");
+      }
+    }
+    Mix_FadeInMusic(THIS->music, loops, ms);
+    RET_THIS();
+  }
+
+  PIKEFUN object fade_out(int ms) {
+    Mix_FadeOutMusic(ms);
+    RET_THIS();
+  }
+  
+  PIKEFUN float set_volume(float vol) {
+    if(vol > 1.0)       { vol = 1.0; }
+    else if(vol < 0.0)  { vol = 0.0; }
+    RETURN (FLOAT_TYPE)Mix_VolumeMusic((int)(128 * vol)) / 128.0;
+  }
+
+  PIKEFUN float volume() {
+    RETURN (FLOAT_TYPE)Mix_VolumeMusic(-1) / 128.0;
+  }
+}
+
+PIKEFUN void open_audio(int frequency, int format, int channels, int bufsize) {
+  SDL_InitSubSystem(SDL_INIT_AUDIO); /* Just in case */
+  if(Mix_OpenAudio(frequency, format, channels, bufsize) == -1) {
+    Pike_error("Failed to open audio: %s\n", SDL_GetError());
+  }
+}
+
+/* HAVE_SDL_MIXER */
+#endif
+
+
+/* SDL_event handling */
+PIKECLASS Event {
+  CVAR SDL_Event event;
+
+  INIT {
+    THIS->event.type = SDL_NOEVENT;
+  }
+
+  PIKEFUN int get() {
+    RETURN SDL_PollEvent(&THIS->event);
+  }
+  
+  PIKEFUN int poll() {
+    RETURN SDL_PollEvent(NULL);
+  }
+
+  PIKEFUN mixed `[](string key) {
+    ref_push_object(Pike_fp->current_object);
+    stack_swap();
+    f_arrow(2); 
+  }
+
+  PIKEFUN mixed `->(string key) {
+    struct pike_string *axis;
+    struct pike_string *ball;
+    struct pike_string *button;
+    struct pike_string *code;
+    struct pike_string *gain;
+    struct pike_string *h;
+    struct pike_string *hat;
+    struct pike_string *keysym;
+    struct pike_string *state;
+    struct pike_string *type;
+    struct pike_string *value;
+    struct pike_string *w;
+    struct pike_string *which;
+    struct pike_string *x;
+    struct pike_string *xrel;
+    struct pike_string *y;
+    struct pike_string *yrel;
+
+    MAKE_CONSTANT_SHARED_STRING(axis, "axis");
+    MAKE_CONSTANT_SHARED_STRING(ball, "ball");
+    MAKE_CONSTANT_SHARED_STRING(button, "button");
+    MAKE_CONSTANT_SHARED_STRING(code, "code");
+    MAKE_CONSTANT_SHARED_STRING(gain, "gain");
+    MAKE_CONSTANT_SHARED_STRING(h, "h");
+    MAKE_CONSTANT_SHARED_STRING(hat, "hat");
+    MAKE_CONSTANT_SHARED_STRING(keysym, "keysym");
+    MAKE_CONSTANT_SHARED_STRING(state, "state");
+    MAKE_CONSTANT_SHARED_STRING(type, "type");
+    MAKE_CONSTANT_SHARED_STRING(value, "value");
+    MAKE_CONSTANT_SHARED_STRING(w, "w");
+    MAKE_CONSTANT_SHARED_STRING(which, "which");
+    MAKE_CONSTANT_SHARED_STRING(x, "x");
+    MAKE_CONSTANT_SHARED_STRING(xrel, "xrel");
+    MAKE_CONSTANT_SHARED_STRING(y, "y");
+    MAKE_CONSTANT_SHARED_STRING(yrel, "yrel");
+
+    if(key == axis) {
+      switch(THIS->event.type) {
+      case SDL_JOYAXISMOTION:
+        pop_stack(); push_int(THIS->event.jaxis.axis); return;
+      default:
+        Pike_error("Event->axis is not valid for this event type. \n");
+      }
+    }
+
+    if(key == ball) {
+      switch(THIS->event.type) {
+      case SDL_JOYBALLMOTION:
+        pop_stack(); push_int(THIS->event.jball.ball); return;
+      default:
+        Pike_error("Event->ball is not valid for this event type. \n");
+      }
+    }
+
+    if(key == button) {
+      switch(THIS->event.type) {
+      case SDL_JOYBUTTONDOWN:
+      case SDL_JOYBUTTONUP:
+        pop_stack(); push_int(THIS->event.jbutton.button); return;
+      case SDL_MOUSEBUTTONDOWN:
+      case SDL_MOUSEBUTTONUP:
+        pop_stack(); push_int(THIS->event.button.button); return;
+      default:
+        Pike_error("Event->button is not valid for this event type. \n");
+      }
+    }
+
+    if(key == code) {
+      switch(THIS->event.type) {
+      case SDL_USEREVENT:
+        pop_stack(); push_int(THIS->event.user.code); return;
+      default:
+        Pike_error("Event->code is not valid for this event type. \n");
+      }
+    }
+
+    if(key == gain) {
+      switch(THIS->event.type) {
+      case SDL_ACTIVEEVENT:
+        pop_stack(); push_int(THIS->event.active.gain); return;
+      default:
+        Pike_error("Event->gain is not valid for this event type. \n");
+      }
+    }
+
+    if(key == h) {
+      switch(THIS->event.type) {
+      case SDL_VIDEORESIZE:
+        pop_stack(); push_int(THIS->event.resize.h); return;
+      default:
+        Pike_error("Event->h is not valid for this event type. \n");
+      }
+    }
+
+    if(key == hat) {
+      switch(THIS->event.type) {
+      case SDL_JOYHATMOTION:
+        pop_stack(); push_int(THIS->event.jhat.hat); return;
+      default:
+        Pike_error("Event->hat is not valid for this event type. \n");
+      }
+    }
+    if(key == keysym) {
+      struct object *keysym_obj;
+      switch(THIS->event.type) {
+      case SDL_KEYDOWN:
+      case SDL_KEYUP: 
+	pop_stack();
+	keysym_obj = clone_object(Keysym_program, 0);
+	OBJ2_KEYSYM(keysym_obj)->keysym = THIS->event.key.keysym;
+	push_object(keysym_obj);
+	return;
+      default:
+        Pike_error("Event->keysym is not valid for this event type. \n");
+      }
+    }
+    if(key == state) {
+      switch(THIS->event.type) {
+      case SDL_ACTIVEEVENT:
+        pop_stack(); push_int(THIS->event.active.state); return;
+      case SDL_JOYBUTTONDOWN:
+      case SDL_JOYBUTTONUP:
+        pop_stack(); push_int(THIS->event.jbutton.state); return;
+      case SDL_KEYDOWN:
+      case SDL_KEYUP:
+        pop_stack(); push_int(THIS->event.key.state); return;
+      case SDL_MOUSEBUTTONDOWN:
+      case SDL_MOUSEBUTTONUP:
+        pop_stack(); push_int(THIS->event.button.state); return;
+      case SDL_MOUSEMOTION:
+        pop_stack(); push_int(THIS->event.motion.state); return;
+      default:
+        Pike_error("Event->state is not valid for this event type. \n");
+      }
+    }
+
+    if(key == type) {
+      pop_stack(); push_int(THIS->event.type); return;
+    }
+
+    if(key == value) {
+      switch(THIS->event.type) {
+      case SDL_JOYAXISMOTION:
+        pop_stack(); push_int(THIS->event.jaxis.value); return;
+      case SDL_JOYHATMOTION:
+        pop_stack(); push_int(THIS->event.jhat.value); return;
+      default:
+        Pike_error("Event->value is not valid for this event type. \n");
+      }
+    }
+
+    if(key == w) {
+      switch(THIS->event.type) {
+      case SDL_VIDEORESIZE:
+        pop_stack(); push_int(THIS->event.resize.w); return;
+      default:
+        Pike_error("Event->w is not valid for this event type. \n");
+      }
+    }
+
+    if(key == which) {
+      switch(THIS->event.type) {
+      case SDL_JOYAXISMOTION:
+        pop_stack(); push_int(THIS->event.jaxis.which); return;
+      case SDL_JOYBALLMOTION:
+        pop_stack(); push_int(THIS->event.jball.which); return;
+      case SDL_JOYBUTTONDOWN:
+      case SDL_JOYBUTTONUP:
+        pop_stack(); push_int(THIS->event.jbutton.which); return;
+      case SDL_JOYHATMOTION:
+        pop_stack(); push_int(THIS->event.jhat.which); return;
+      case SDL_KEYDOWN:
+      case SDL_KEYUP:
+        pop_stack(); push_int(THIS->event.key.which); return;
+      case SDL_MOUSEBUTTONDOWN:
+      case SDL_MOUSEBUTTONUP:
+        pop_stack(); push_int(THIS->event.button.which); return;
+      case SDL_MOUSEMOTION:
+        pop_stack(); push_int(THIS->event.motion.which); return;
+      default:
+        Pike_error("Event->which is not valid for this event type. \n");
+      }
+    }
+
+    if(key == x) {
+      switch(THIS->event.type) {
+      case SDL_MOUSEBUTTONDOWN:
+      case SDL_MOUSEBUTTONUP:
+        pop_stack(); push_int(THIS->event.button.x); return;
+      case SDL_MOUSEMOTION:
+        pop_stack(); push_int(THIS->event.motion.x); return;
+      default:
+        Pike_error("Event->x is not valid for this event type. \n");
+      }
+    }
+
+    if(key == xrel) {
+      switch(THIS->event.type) {
+      case SDL_JOYBALLMOTION:
+        pop_stack(); push_int(THIS->event.jball.xrel); return;
+      case SDL_MOUSEMOTION:
+        pop_stack(); push_int(THIS->event.motion.xrel); return;
+      default:
+        Pike_error("Event->xrel is not valid for this event type. \n");
+      }
+    }
+
+    if(key == y) {
+      switch(THIS->event.type) {
+      case SDL_MOUSEBUTTONDOWN:
+      case SDL_MOUSEBUTTONUP:
+        pop_stack(); push_int(THIS->event.button.y); return;
+      case SDL_MOUSEMOTION:
+        pop_stack(); push_int(THIS->event.motion.y); return;
+      default:
+        Pike_error("Event->y is not valid for this event type. \n");
+      }
+    }
+
+    if(key == yrel) {
+      switch(THIS->event.type) {
+      case SDL_JOYBALLMOTION:
+        pop_stack(); push_int(THIS->event.jball.yrel); return;
+      case SDL_MOUSEMOTION:
+        pop_stack(); push_int(THIS->event.motion.yrel); return;
+      default:
+        Pike_error("Event->yrel is not valid for this event type. \n");
+      }
+    }
+    OBJ_INDEX();
+  }
+}
+/* Pike initialization modules below */
+
+void pike_module_init()
+{
+  INIT;
+  
+  init_sdl_constants();
+   
+ push_text("Image.Image");
+  SAFE_APPLY_MASTER("resolv", 1);
+
+  if(Pike_sp[-1].type == T_PROGRAM) {
+    _image_program = Pike_sp[-1];
+    image_program = program_from_svalue(&_image_program);
+  } else {
+    image_program = NULL;
+  }
+  Pike_sp--;
+
+  push_text("Image.Color.Color");
+  SAFE_APPLY_MASTER("resolv", 1);
+  
+  if(Pike_sp[-1].type == T_PROGRAM) {
+    _image_color_program = Pike_sp[-1];
+    image_color_program = program_from_svalue(&_image_color_program);
+  } else {
+    image_color_program = NULL;
+  }
+  Pike_sp--;
+}
+
+void pike_module_exit()
+{
+  EXIT;
+  free_svalue(&_image_program);
+  _image_program.type = PIKE_T_INT;
+  SDL_Quit();
+}
+
+
+/*! @endmodule SDL */
+
+#else /* HAVE_SDL */
+
+void pike_module_init() {
+}
+void pike_module_exit() {
+}
+#endif /* HAVE_SDL */

@@ -1,0 +1,9 @@
+# $Id: Makefile.in,v 1.1 2002/06/23 19:11:30 neotron Exp $
+@make_variables@
+VPATH=@srcdir@:@srcdir@/../..:../..
+MODNAME=SDL
+OBJS=SDL.o
+MODULE_LDFLAGS=@LDFLAGS@ @LIBS@
+CONFIG_HEADERS=@CONFIG_HEADERS@
+
+@dynamic_module_makefile@
