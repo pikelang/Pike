@@ -1,4 +1,4 @@
-AC_REVISION("$Id: configure.in,v 1.234 1998/09/01 18:06:33 grubba Exp $")
+AC_REVISION("$Id: configure.in,v 1.235 1998/09/01 18:09:42 grubba Exp $")
 AC_INIT(interpret.c)
 AC_CONFIG_HEADER(machine.h)
 
@@ -1467,7 +1467,7 @@ int main() { exit( find_stack_direction(0) + 1); }
 ])
 
 AC_MSG_RESULT($pike_cv_hardware_stack_direction)
-if test x$pike_cv_hardware_stack_direction = up ; then
+if test "x$pike_cv_hardware_stack_direction" = "xup" ; then
   AC_DEFINE(STACK_DIRECTION, 1)
 else
   AC_DEFINE(STACK_DIRECTION, -1)
