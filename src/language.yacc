@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: language.yacc,v 1.353 2004/12/30 13:41:08 grubba Exp $
+|| $Id: language.yacc,v 1.354 2005/01/27 09:17:38 grubba Exp $
 */
 
 %pure_parser
@@ -3281,7 +3281,13 @@ expr4: string
   | expr4 open_bracket_with_line_info error ')'
     {$$=$1; yyerror("Missing ']'."); free_node ($2);}
   | open_paren_with_line_info comma_expr2 ')'
-    {$$=$2; COPY_LINE_NUMBER_INFO($$, $1); free_node ($1);}
+    {
+      $$=$2;
+      if ($$) {
+	COPY_LINE_NUMBER_INFO($$, $1);
+      }
+      free_node ($1);
+    }
   | open_paren_with_line_info '{' expr_list close_brace_or_missing ')'
     {
       $$=mkefuncallnode("aggregate",$3);
