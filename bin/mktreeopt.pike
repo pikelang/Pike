@@ -1,5 +1,5 @@
 /*
- * $Id: mktreeopt.pike,v 1.1 1999/11/07 23:56:05 grubba Exp $
+ * $Id: mktreeopt.pike,v 1.2 1999/11/08 00:04:55 grubba Exp $
  *
  * Generates tree-transformation code from a specification.
  *
@@ -96,19 +96,21 @@ class node
       s += "[" + e + "]";
     }
     if (!(< "*", "-" >)[token]) {
-      s += "(";
-      if (car) {
-	s += car->_sprintf();
-      } else {
-	s += "-";
+      if (car || cdr) {
+	s += "(";
+	if (car) {
+	  s += car->_sprintf();
+	} else {
+	  s += "*";
+	}
+	s += ", ";
+	if (cdr) {
+	  s += cdr->_sprintf();
+	} else {
+	  s += "*";
+	}
+	s += ")";
       }
-      s += ", ";
-      if (cdr) {
-	s += cdr->_sprintf();
-      } else {
-	s += "-";
-      }
-      s += ")";
     }
     return s;
   }
