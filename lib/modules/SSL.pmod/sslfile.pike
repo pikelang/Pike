@@ -1,4 +1,4 @@
-/* $Id: sslfile.pike,v 1.19 1999/10/08 13:15:19 grubba Exp $
+/* $Id: sslfile.pike,v 1.20 1999/10/10 16:53:57 grubba Exp $
  *
  */
 
@@ -39,7 +39,9 @@ void die(int status)
 #endif
   }
   is_closed = 1;
-  socket->close();
+  if (socket) {
+    socket->close();
+  }
 }
 
 /* Return 0 if the connection is still alive,
