@@ -15,7 +15,7 @@
 #  include "main.h"
 #  include "constants.h"
 
-RCSID("$Id: dynamic_load.c,v 1.56 2001/09/18 22:59:56 hubbe Exp $");
+RCSID("$Id: dynamic_load.c,v 1.57 2001/11/26 14:54:07 grubba Exp $");
 
 #else /* TESTING */
 
@@ -485,7 +485,10 @@ void free_dynamic_load(void)
 int main()
 {
   void *module,*fun;
-  dlinit();
+  if (!dlinit()) {
+    fprintf(stderr, "dlinit() failed.\n");
+    exit(1);
+  }
   module=dlopen("./myconftest.so",RTLD_NOW);
   if(!module)
   {
