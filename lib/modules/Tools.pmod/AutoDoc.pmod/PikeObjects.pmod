@@ -246,17 +246,15 @@ class DocGroup {
 
 class PikeObject {
   array(string) modifiers = ({ });
-  string name = 0;
-
-  string objtype = 0;
+  string name;
+  constant objtype = "pikeobject";
 
   SourcePosition position;
-  string appears = 0;
-  string belongs = 0;
+  string appears;
+  string belongs;
 
-  Documentation squeezedInDoc = 0;
+  Documentation squeezedInDoc;
 
-  static void create(string t) { objtype = t; }
   static string standardTags() {
     string s = "";
     if (position)
@@ -289,9 +287,9 @@ class PikeObject {
 
 class Inherit {
   inherit PikeObject;
+  constant objtype = "inherit";
 
   string classname;
-  static void create() { ::create("inherit"); }
   string xml() {
     return standardStart() +
       standardTags() +
@@ -305,7 +303,7 @@ class Inherit {
 
 class Import {
   inherit PikeObject;
-  static void create() { ::create("import"); }
+  constant objtype = "import";
 }
 
 class _Class_or_Module {
@@ -389,17 +387,16 @@ class _Class_or_Module {
 
 class Class {
   inherit _Class_or_Module;
+  constant objtype = "class";
 
   array(Type) createArgTypes;
   array(string) createArgNames;
   array(array(string)) createArgModifiers;
-
-  static void create() { ::create("class"); }
 }
 
 class Module {
   inherit _Class_or_Module;
-  static void create() { ::create("module"); }
+  constant objtype = "module";
 }
 
 // A modifier range, e.g.:
@@ -410,7 +407,7 @@ class Module {
 // }
 class Modifier {
   inherit _Class_or_Module;
-  static void create() { ::create("modifier"); }
+  constant objtype = "modifier";
 }
 
 class Method {
@@ -418,7 +415,7 @@ class Method {
   array(string) argnames;
   array(Type) argtypes;
   Type returntype;
-  static void create() { ::create("method"); }
+  constant objtype = "method";
   string xml() {
     string s = standardTags() + "\n";
     string args = "";
@@ -445,7 +442,7 @@ class Method {
 
 class Constant {
   inherit PikeObject;
-  static void create() { ::create("constant"); }
+  constant objtype = "constant";
   Type typedefType = 0;   // if it is a typedef
   string xml() {
     return standardStart() + standardTags()
@@ -459,7 +456,7 @@ class Constant {
 
 class Typedef {
   inherit PikeObject;
-  static void create() { ::create("typedef"); }
+  constant objtype = "typedef";
   Type type = 0;
   string xml() {
     return standardStart() + standardTags()
@@ -474,7 +471,7 @@ class Typedef {
 // The values inside enum Foo { ... }
 class EnumConstant {
   inherit PikeObject;
-  static void create() { ::create("constant"); }
+  constant objtype = "constant";
   string xml() {
     mapping m = ([]) + standardAttributes();
     return opentag(objtype, m) + standardTags()
@@ -488,12 +485,12 @@ class EnumConstant {
 // The enum container
 class Enum {
   inherit PikeObject;
+  constant objtype = "enum";
 
   // mimic the class { ... } behaviour
   Documentation documentation;
 
   array(DocGroup) children = ({ });
-  static void create() { ::create("enum"); }
   void addChild(DocGroup c) { children += ({ c }); }
   string xml() {
 
@@ -587,8 +584,8 @@ class Enum {
 
 class Variable {
   inherit PikeObject;
+  constant objtype = "variable";
   Type type;
-  static void create() { :: create("variable"); }
   string xml() {
     return standardStart() +
       standardTags() +
