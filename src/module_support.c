@@ -6,7 +6,7 @@
 #include "pike_types.h"
 #include "error.h"
 
-RCSID("$Id: module_support.c,v 1.29 1999/11/11 11:32:43 hubbe Exp $");
+RCSID("$Id: module_support.c,v 1.30 1999/11/16 16:42:10 grubba Exp $");
 
 /* Checks that args_to_check arguments are OK.
  * Returns 1 if everything worked ok, zero otherwise.
@@ -169,8 +169,8 @@ int va_get_args(struct svalue *s,
         *va_arg(ap, int *)=(int)s->u.float_number;
       else 
       {
-        push_svalue( s );
         push_text( "int" );
+        push_svalue( s );
         f_cast( );
         *va_arg(ap, int *)=sp[-1].u.integer;
         pop_stack();
@@ -183,8 +183,8 @@ int va_get_args(struct svalue *s,
         *va_arg(ap, INT_TYPE *)=(int)s->u.float_number;
       else 
       {
-        push_svalue( s );
         push_text( "int" );
+        push_svalue( s );
         f_cast( );
         *va_arg(ap, INT_TYPE *)=sp[-1].u.integer;
         pop_stack();
@@ -227,8 +227,8 @@ int va_get_args(struct svalue *s,
 	 *va_arg(ap, float *)=(float)s->u.integer;
       else 
       {
-        push_svalue( s );
         push_text( "float" );
+        push_svalue( s );
         f_cast( );
         *va_arg(ap, float *)=sp[-1].u.float_number;
         pop_stack();
