@@ -1,4 +1,4 @@
-test_true([["$Id: testsuite.in,v 1.354 2000/12/14 07:38:31 mast Exp $"]]);
+test_true([["$Id: testsuite.in,v 1.355 2000/12/29 12:48:50 grubba Exp $"]]);
 
 cond([[all_constants()->_verify_internals]],
 [[
@@ -6030,11 +6030,13 @@ void test_dir(string dir, int|void base_size)
   {
     switch(s)
     {
+      case "frontbase.pike":
       case "msql.pike":
       case "mysql.pike":
       case "odbc.pike":
       case "oracle.pike":
       case "postgres.pike":
+      case "sybase.pike":
         continue; // These modules cannot be tested properly by this test
     }
     string file=combine_path(dir,s);
