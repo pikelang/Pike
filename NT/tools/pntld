@@ -1,6 +1,12 @@
 #!/usr/local/bin/pike
 
-/* Partial linker for COFF files, written by Fredrik Hubinette 2000 */
+// Partial linker for COFF files, written by Fredrik Hubinette 2000
+// 
+// Things left to do:
+//   Merge sections
+//   Test if resulting files work with cl.exe
+//   Support line number information
+//   Support 64 bit architechtures
 
 class Reloc
 {
@@ -35,6 +41,8 @@ class Symbol
 mapping(string:Symbol) global_symbols=([]);
 array(Section) global_sections=({});
 array(string) global_directives=({});
+array(string) libpath=({});
+array(string) libraries=({});
 
 class Linker
 {
@@ -637,27 +645,73 @@ class dumpfile
 
   void dumpArchive(int pos)
     {
+      string name;
+      int num;
+      int longnames;
       while(pos < strlen(data))
       {
-	string name=range(pos,16);
+	num++;
 	int size = (int) range(pos+48,10);
-
+	name=range(pos,16);
+	if(name[0]=='/')
+	{
+	  if(num == 3)
+	  {
+	    longnames=pos+60;
+	  }
+	  else if(longnames && sscanf(name,"/%d",int longnamenum))
+	  {
+	    name=nulltermstring(longnames + longnamenum);
+	  }
+	}else{
+	  if(sscanf(reverse(name),"%*s/%s",name))
+	    name=reverse(name);
+	}
 #ifdef DEBUG
 	write("\n");
 	write("# name: %s\n",name);
-	write("# date: %s\n",ctime( (int) range(pos+16,12) ) );
+	write("# date: %s",ctime( (int) range(pos+16,12) ) );
 	write("# uid : %s\n",range(pos+28,6));
 	write("# gid : %s\n",range(pos+34,6));
 	write("# mode: %s\n",range(pos+40,8));
 	write("# size: %s\n",range(pos+48,10));
 #endif
-
 	if(name[0]!='/')
-	  dumpfile(data, pos+60,0,name);
-
+	{
+	  dumpfile(data, pos+60, 0, name);
+	}
 	pos+=60;
 	pos+=(size+1)&~1;
       }
+    }
+
+  void dumpImportLib()
+    {
+      string name= ( filename/"/" )[-1];
+#if 0
+      sscanf(range(0,20),
+	     "%-2c%-2c%-2c%-2c%-4c%-4c%-2c%-2c",
+	     int sig1,
+	     int sig2,
+	     int version,
+	     int machine,
+	     int timestamp,
+	     int size_of_data,
+	     int ordinal,
+	     int type);
+      write("Sig1      : %x\n",sig1);
+      write("Sig2      : %x\n",sig2);
+      write("version   : %x\n",version);
+      write("Machine   : %x\n", machine);
+      write("Time      : %s",ctime(timestamp));
+      write("Ordinal   : %x\n",ordinal);
+      write("Type:     : %x\n",type);
+      write("Name      : %s\n",nulltermstring(20));
+
+     write("Importing library: %O\n",name);
+#endif
+  
+      global_directives|=({ "-LIB:"+name });
     }
 
   void create(string d, void|int p, void|int len, void|string f)
@@ -674,21 +728,24 @@ class dumpfile
 #endif
 	dumpArchive(8);
       }else{
-	if(len >=0x40 && !dumpPE(i4(0x3c)))
+	if(i2(0) == 0 && i2(2) == 0xffff)
 	{
+	  dumpImportLib();
+	}else{
 	  dumpCOFF(0);
-	}   
+	}
       }
     }
 }
 
 int main(int argc, array(string) argv)
 {
+  int err;
   int strip=0;
   string output="a.out";
 //  werror("%O\n",argv);
   werror("Pike Win32 partial linker.\n"
-	 "$Id: pntld,v 1.1 2000/12/23 07:19:49 hubbe Exp $\n"
+	 "$Id: pntld,v 1.2 2000/12/27 07:55:09 hubbe Exp $\n"
 	 "Written by Fredrik Hubinette 2000\n");
 
   foreach(Getopt.find_all_options(argv,aggregate(
@@ -704,8 +761,11 @@ int main(int argc, array(string) argv)
       {
 	case "S": strip++; break;
 	  
-	case "R":
 	case "L":
+	  libpath|=({opt[1]});
+	  break;
+
+	case "R":
 	  global_directives|=({ "-?rpath:"+opt[1] });
 	  break;
 
@@ -714,17 +774,56 @@ int main(int argc, array(string) argv)
 	  {
 	    case "c": case "m": break;
 	    default:
-	      /* FIXME:
-	       * search for *.lib files and link them 'statically'
-	       * if found.
-	       */
-	      global_directives|=({ "-lib:"+opt[1] });
+	      libraries|=({opt[1]});
 	  }
 	  break;
 	  
 	case "output":
 	  output=opt[1];
 	  break;
+      }
+    }
+
+  if(getenv("NTLD_LIBRARY_PATH"))
+    libpath|=getenv("NTLD_LIBRARY_PATH")/":";
+
+  if(getenv("NTLD_RUN_PATH"))
+    foreach(getenv("NTLD_RUN_PATH")/":",string p)
+      global_directives|=({"-?rpath:"+p});
+
+  libpath|=({"."});
+
+  foreach(libraries, string lib)
+    {
+      int found;
+      foreach(libpath, string path)
+	{
+	  string filename=combine_path(path,lib+".lib");
+#ifdef DEBUG
+	  werror("Looking for %s\n",filename);
+#endif
+	  if(string file=Stdio.read_file(filename))
+	  {
+	    dumpfile(file, 0, 0, filename);
+	    found=1;
+	    break;
+	  }
+
+	  filename=combine_path(path,upper_case(lib+".lib"));
+#ifdef DEBUG
+	  werror("Looking for %s\n",filename);
+#endif
+	  if(string file=Stdio.read_file(filename))
+	  {
+	    dumpfile(file, 0, 0, filename);
+	    found=1;
+	    break;
+	  }
+	}
+      if(!found)
+      {
+	werror("Failed to find library: %s\n",lib);
+	err++;
       }
     }
 
@@ -753,9 +852,10 @@ int main(int argc, array(string) argv)
     global_sections= ({s}) + global_sections;
   }
 
+  if(err) exit(err);
   rm(output);
   Stdio.write_file(output,
 		   Linker()->out(global_sections,
 				 values(global_symbols)));
-  exit(0);
+  exit(err);
 }

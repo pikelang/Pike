@@ -20,13 +20,21 @@
 #include <sys/stat.h>
 #include <assert.h>
 
+/* Todo:
+ *  Make image debugable if possible
+ *  Support Win64
+ *  Separate RWX, RW and R memory sections.
+ */
 
-#define DLDEBUG 1
+/* #define DLDEBUG 1 */
 #define DL_VERBOSE 1
 
+
 #ifdef DLDEBUG
+#define FLUSH() do{ fflush(stderr); Sleep(500); }while(0)
 #define DO_IF_DLDEBUG(X) X
 #else
+#define FLUSH()
 #define DO_IF_DLDEBUG(X)
 #endif
 
@@ -67,7 +75,7 @@ size_t STRNLEN(char *s, size_t maxlen)
 
 #else /* PIKE_CONCAT */
 
-RCSID("$Id: dlopen.c,v 1.2 2000/12/23 16:18:14 grubba Exp $");
+RCSID("$Id: dlopen.c,v 1.3 2000/12/27 07:55:09 hubbe Exp $");
 
 #endif
 
@@ -94,6 +102,7 @@ static struct Htable *alloc_htable(size_t size)
   struct Htable *ret;
 #ifdef DLDEBUG
   fprintf(stderr,"alloc_htable(%d)\n",size);
+  FLUSH();
 #endif
   ret=(struct Htable *)malloc(sizeof(struct Htable) +
 			      sizeof(void *)*(size-1));
@@ -248,6 +257,9 @@ static void htable_free(struct Htable *h, void(*hfree)(void *))
 static int filesize(char *filename)
 {
   struct stat st;
+#ifdef DLDEBUG
+  fprintf(stderr,"filesize(%s)\n",filename);
+#endif
   if(stat(filename, &st)<0) return -1;
   return st.st_size;
 }
@@ -291,6 +303,8 @@ static char *read_file(char *name, size_t *len)
   while(fd_close(fd) < 0 && errno==EINTR);
 #ifdef DLDEBUG
   fprintf(stderr,"Done reading\n");
+  fflush(stderr);
+  Sleep(500);
 #endif
   return buffer;
 }
@@ -347,12 +361,18 @@ static int append_dlllist(struct DLLList **l,
 			  char *name)
 {
   struct DLLList *n;
-  HINSTANCE tmp=LoadLibrary(name);
+  HINSTANCE tmp;
+#ifdef DLDEBUG
+  fprintf(stderr,"append_dlllist(%s)\n",name);
+  FLUSH();
+#endif
+  tmp=LoadLibrary(name);
   if(!tmp) return 0;
   n=(struct DLLList *)malloc(sizeof(struct DLLList));
   n->dll=tmp;
 #ifdef DLDEBUG
   fprintf(stderr,"append_dlllist(%s)->%p\n",name,n->dll);
+  FLUSH();
 #endif
   n->next=0;
   while( *l ) l= & (*l)->next;
@@ -506,7 +526,9 @@ static void *low_dlsym(struct DLHandle *handle,
   }
 #ifdef DL_VERBOSE
   if(!ptr)
+  {
     fprintf(stderr,"Failed to find identifier %s\n",tmp);
+  }
 #endif
   return ptr;
 }
@@ -535,6 +557,7 @@ static parse_link_info(struct DLHandle *ret,
     fprintf(stderr,"DLINFO(%d): ",len);
     for(z=0;z<len;z++) fprintf(stderr,"%c",info[z]);
     fprintf(stderr,"\n");
+    FLUSH();
   }
 #endif
 
@@ -545,6 +568,7 @@ static parse_link_info(struct DLHandle *ret,
 
 #ifdef DLDEBUG    
     fprintf(stderr,"Parse link info ptr=%d\n",ptr,l);
+    FLUSH();
 #endif
 
     end=MEMCHR(info+ptr,' ',len-ptr);
@@ -554,7 +578,17 @@ static parse_link_info(struct DLHandle *ret,
       l=len-ptr;
 
 #ifdef DLDEBUG    
-    fprintf(stderr,"Parse link info ptr=%d len=%d\n",ptr,l);
+    fprintf(stderr,"Parse link info ptr=%d len=%d '%c%c%c%c%c%c%c%c'\n",
+	    ptr,l,
+	    info[x],
+	    info[x+1],
+	    info[x+2],
+	    info[x+3],
+	    info[x+4],
+	    info[x+5],
+	    info[x+6],
+	    info[x+7]);
+    FLUSH();
 #endif
 
     if(info[x] == '-')
@@ -564,13 +598,31 @@ static parse_link_info(struct DLHandle *ret,
       if(!memcmp(info+x,"lib:",4) || !memcmp(info+x,"LIB:",4))
       {
 	x+=4;
-	memcpy(buffer,info+x,l-x);
-	buffer[l-x]=0;
+#ifdef DLDEBUG    
+	fprintf(stderr,"Found lib: ptr=%d len=%d '%c%c%c%c%c%c%c%c'\n",
+		x,
+		l-(x-ptr),
+		info[x],
+		info[x+1],
+		info[x+2],
+		info[x+3],
+		info[x+4],
+		info[x+5],
+		info[x+6],
+		info[x+7]);
+	FLUSH();
+#endif
+	memcpy(buffer,info+x,l-(x-ptr));
+	buffer[l-(x-ptr)]=0;
 	append_dlllist(&ret->dlls, buffer);
       }
     }
     ptr+=l+1;
   }
+#ifdef DLDEBUG    
+  fprintf(stderr,"Parse link info done.\n");
+  FLUSH();
+#endif
 }
 
 static int dl_load_coff_files(struct DLHandle *ret,
@@ -586,6 +638,7 @@ static int dl_load_coff_files(struct DLHandle *ret,
 
 #ifdef DLDEBUG
   fprintf(stderr,"dl_load_coff_files(%p,%p,%d)\n",ret,tmp,num);
+  FLUSH();
 #endif
 
   if(!num) return 0;
@@ -689,6 +742,7 @@ static int dl_load_coff_files(struct DLHandle *ret,
 
 #ifdef DLDEBUG
   fprintf(stderr,"DL: moving code\n");
+  FLUSH();
 #endif
 
   /* Copy code into executable memory */
@@ -797,6 +851,7 @@ static int dl_load_coff_files(struct DLHandle *ret,
 
 #ifdef DLDEBUG
   fprintf(stderr,"DL: resolving\n");
+  FLUSH();
 #endif
 
   /* Do resolve and relocations */
@@ -893,21 +948,17 @@ static int dl_load_coff_files(struct DLHandle *ret,
 
 	    /* We may need to support more types here */
 	  case COFFReloc_type_dir32:
-	    if(SYMBOLS(sym).type >> 4 == 2)
+	    if( (SYMBOLS(sym).type >> 4) == 2 && !SYMBOLS(sym).secnum)
 	    {
-	      /* Indirect function pointer (#&$#*&#$ */
-	      ((char **)loc)[0]=(char *)(data->symbol_addresses + sym);
 #ifdef DLDEBUG
-	    fprintf(stderr,"DL: reloc indirect: loc %p = %p, *%p = %p + %d\n",
-		    loc,ptr,
-		    *(char **)loc,data->symbol_addresses,sym);
+	      fprintf(stderr,"DL: Indirect *%p = %d secnum=%d!!!\n", loc, *(INT32 *)loc,SYMBOLS(sym).secnum);
 #endif
-	    }else{
-	      ((INT32 *)loc)[0]+=(INT32)ptr;
+	      ptr=(char *)(data->symbol_addresses + sym);
+	    }
+	    ((INT32 *)loc)[0]+=(INT32)ptr;
 #ifdef DLDEBUG
 	    fprintf(stderr,"DL: reloc absolute: loc %p = %p\n", loc,ptr);
 #endif
-	    }
 	       
 	    break;
 
@@ -948,6 +999,7 @@ static int dl_loadarchive(struct DLHandle *ret,
 
 #ifdef DLDEBUG
   fprintf(stderr,"dl_loadarchive\n");
+  FLUSH();
 #endif
 
   /* Count how many object files there are in the loop */
@@ -991,6 +1043,7 @@ static int dl_loadcoff(struct DLHandle *ret,
 
 #ifdef DLDEBUG
   fprintf(stderr,"dl_loadcoff\n");
+  FLUSH();
 #endif
 
   tmp.buflen=data->buflen;
@@ -1012,6 +1065,7 @@ static int dl_load_file(struct DLHandle *ret,
   INT32 tmp;
 #ifdef DLDEBUG
   fprintf(stderr,"dl_load_file\n");
+  FLUSH();
 #endif
 
   if(data->buflen > 8 && ! memcmp(data->buffer,"!<arch>\n",8))
@@ -1033,12 +1087,11 @@ struct DLHandle *dlopen(char *name, int flags)
   int retcode;
   tmpdata.flags=flags;
 
-  if(!global_symbols) init_dlopen();
-
 #ifdef DLDEBUG
   fprintf(stderr,"dlopen(%s,%d)\n",name,flags);
 #endif
-  abort();
+
+  if(!global_symbols) init_dlopen();
 
   for(ret=first;ret;ret=ret->next)
   {
@@ -1065,7 +1118,6 @@ struct DLHandle *dlopen(char *name, int flags)
     dlclose(ret);
     return 0;
   }
-
   
   retcode=dl_load_file(ret, &tmpdata);
   free(tmpdata.buffer);
@@ -1244,6 +1296,10 @@ static void init_dlopen(void)
     EXPORT(abort);
     EXPORT(rand);
     EXPORT(srand);
+    EXPORT(getc);
+    EXPORT(ungetc);
+    EXPORT(printf);
+    EXPORT(perror);
   }
 
 #ifdef DLDEBUG

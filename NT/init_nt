@@ -64,6 +64,16 @@ path=$MSVC\\bin;
 include=$MSVC\\Include;$local\\include
 lib=$MSVC\\Lib;$local\\lib
 "
+
+      # This variable is used by pntld to find
+      # the libraries (*.lib) on the UNIX system.
+      #
+      # If your library directory is not available on the unix system you
+      # will need to make a copy. -Hubbe
+      #
+      NTLD_LIBRARY_PATH='/net/cytocin/winshare/vc98/Lib:/net/cytocin/winshare/local/lib'
+
+      export NTLD_LIBRARY_PATH
       export REMOTE_VARIABLES
     else
       echo "We are not Hubbe."
