@@ -1,5 +1,5 @@
 /*
- * $Id: parser.pike,v 1.24 2000/09/28 03:38:44 hubbe Exp $
+ * $Id: parser.pike,v 1.25 2000/12/01 19:55:47 js Exp $
  *
  * A BNF-grammar in Pike.
  * Compiles to a LALR(1) state-machine.
@@ -11,7 +11,7 @@
 
 //.
 //. File:	parser.pike
-//. RCSID:	$Id: parser.pike,v 1.24 2000/09/28 03:38:44 hubbe Exp $
+//. RCSID:	$Id: parser.pike,v 1.25 2000/12/01 19:55:47 js Exp $
 //. Author:	Henrik Grubbström (grubba@infovav.se)
 //.
 //. Synopsis:	LALR(1) parser and compiler.
@@ -518,7 +518,7 @@ void add_rule(object(rule) r)
 
   /* Then see if it is nullable */
   if (!r->has_tokens) {
-    object(Stack.stack) new_nullables = Stack.stack(1024);
+    object(ADT.Stack) new_nullables = ADT.Stack(1024);
 
     foreach (r->symbols, symbol) {
       if (nullable[symbol]) {
@@ -666,7 +666,7 @@ static private object(kernel) first_state()
 //.   In the queue-part are the states that remain to be compiled.
 object(state_queue) s_q;
 
-static private object(Stack.stack) item_stack;
+static private object(ADT.Stack) item_stack;
 
 static private void traverse_items(object(item) i,
 				   function(int:void) conflict_func)
@@ -721,7 +721,7 @@ static private void shift_conflict(int empty)
 
 static private void handle_shift_conflicts()
 {
-  item_stack = Stack.stack(131072);
+  item_stack = ADT.Stack(131072);
 
   /* Initialize the counter */
   for (int index = 0; index < s_q->tail; index++) {
@@ -752,7 +752,7 @@ static private void follow_conflict(int empty)
 
 static private void handle_follow_conflicts()
 {
-  item_stack = Stack.stack(131072);
+  item_stack = ADT.Stack(131072);
 
   /* Initialize the counter */
   for (int index = 0; index < s_q->tail; index++) {
@@ -1454,8 +1454,8 @@ int compile()
 mixed parse(object|function(void:string|array(string|mixed)) scanner,
 	    void|object action_object)
 {
-  object(Stack.stack) value_stack = Stack.stack(4096);
-  object(Stack.stack) state_stack = Stack.stack(4096);
+  object(ADT.Stack) value_stack = ADT.Stack(4096);
+  object(ADT.Stack) state_stack = ADT.Stack(4096);
   object(kernel) state = start_state;
 
   string input;

@@ -3,7 +3,7 @@
 #pike __REAL_VERSION__
 
 /*
- * $Id: Grammar_parser.pmod,v 1.10 2000/09/28 03:38:44 hubbe Exp $
+ * $Id: Grammar_parser.pmod,v 1.11 2000/12/01 19:55:47 js Exp $
  *
  * Generates a parser from a textual specification.
  *
@@ -12,7 +12,7 @@
 
 //.
 //. File:	Grammar_parser.pmod
-//. RCSID:	$Id: Grammar_parser.pmod,v 1.10 2000/09/28 03:38:44 hubbe Exp $
+//. RCSID:	$Id: Grammar_parser.pmod,v 1.11 2000/12/01 19:55:47 js Exp $
 //. Author:	Henrik grubbström (grubba@infovav.se)
 //.
 //. Synopsis:	Generates an LR parser from a textual specification.
@@ -179,7 +179,7 @@ static private array(string) nonterminals = ({
   "priority",
 });
 
-static private object(Stack.stack) id_stack = Stack.stack();
+static private object(ADT.Stack) id_stack = ADT.Stack();
 
 static private mapping(string:int) nonterminal_lookup = ([]);
 
@@ -342,7 +342,7 @@ object(parser) make_parser(string str, object|void m)
 
   g->set_symbol_to_string(symbol_to_string);
 
-  id_stack = Stack.stack();
+  id_stack = ADT.Stack();
 
   nonterminal_lookup = ([]);
 
