@@ -4,7 +4,7 @@
 ||| See the files COPYING and DISCLAIMER for more information.
 \*/
 #include "global.h"
-RCSID("$Id: main.c,v 1.42 1998/02/27 08:39:20 hubbe Exp $");
+RCSID("$Id: main.c,v 1.43 1998/03/22 06:20:44 hubbe Exp $");
 #include "fdlib.h"
 #include "backend.h"
 #include "module.h"
@@ -277,7 +277,7 @@ int dbm_main(int argc, char **argv)
   init_modules();
   master();
   call_callback(& post_master_callbacks, 0);
-  free_callback(& post_master_callbacks);
+  free_callback_list(& post_master_callbacks);
   
   if(SETJMP(back))
   {
@@ -331,7 +331,7 @@ int dbm_main(int argc, char **argv)
 void do_exit(int num) ATTRIBUTE((noreturn))
 {
   call_callback(&exit_callbacks, (void *)0);
-  free_callback(&exit_callbacks);
+  free_callback_list(&exit_callbacks);
 
   exit_modules();
 
