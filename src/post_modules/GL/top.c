@@ -1,5 +1,5 @@
 /*
- * $Id: top.c,v 1.5 1999/07/23 23:28:38 marcus Exp $
+ * $Id: top.c,v 1.6 1999/07/24 17:54:12 marcus Exp $
  *
  */
 
@@ -10,13 +10,14 @@
 
 #include "config.h"
 
-RCSID("$Id: top.c,v 1.5 1999/07/23 23:28:38 marcus Exp $");
+RCSID("$Id: top.c,v 1.6 1999/07/24 17:54:12 marcus Exp $");
 #include "stralloc.h"
 #include "pike_macros.h"
 #include "object.h"
 #include "program.h"
 #include "interpret.h"
 #include "builtin_functions.h"
+#include "module_support.h"
 #include "error.h"
 
 
@@ -215,14 +216,6 @@ static void f_glGet(INT32 args)
   case GL_MAX_PROJECTION_STACK_DEPTH:
   case GL_MAX_TEXTURE_SIZE:
   case GL_MAX_TEXTURE_STACK_DEPTH:
-  case GL_MAX_LIGHTS:
-  case GL_MAX_LIST_NESTING:
-  case GL_MAX_MODELVIEW_STACK_DEPTH:
-  case GL_MAX_NAME_STACK_DEPTH:
-  case GL_MAX_PIXEL_MAP_TABLE:
-  case GL_MAX_PROJECTION_STACK_DEPTH:
-  case GL_MAX_TEXTURE_SIZE:
-  case GL_MAX_TEXTURE_STACK_DEPTH:
   case GL_MAX_VIEWPORT_DIMS:
   case GL_MODELVIEW_MATRIX:
   case GL_MODELVIEW_STACK_DEPTH:
@@ -286,9 +279,9 @@ static void f_glGet(INT32 args)
   case GL_STEREO:
   case GL_SUBPIXEL_BITS:
   case GL_TEXTURE_1D:
-  case GL_TEXTURE_1D_BINDING:
+    /*  case GL_TEXTURE_1D_BINDING: */
   case GL_TEXTURE_2D:
-  case GL_TEXTURE_2D_BINDING:
+    /*  case GL_TEXTURE_2D_BINDING: */
   case GL_TEXTURE_COORD_ARRAY:
   case GL_TEXTURE_COORD_ARRAY_SIZE:
   case GL_TEXTURE_COORD_ARRAY_STRIDE:
