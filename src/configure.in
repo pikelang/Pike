@@ -1,4 +1,4 @@
-AC_REVISION("$Id: configure.in,v 1.452 2001/01/13 12:06:18 mirar Exp $")
+AC_REVISION("$Id: configure.in,v 1.453 2001/01/19 00:06:58 hubbe Exp $")
 AC_INIT(interpret.c)
 AC_CONFIG_HEADER(machine.h)
 
@@ -670,7 +670,7 @@ AC_ARG_WITH(pg,          [  --with-pg              Use the gcc -pg option],
 AC_ARG_WITH(poll,        [  --with-poll            use poll instead of select],[],[
   # Neither --with-poll nor --without-poll was specified
   case "$pike_cv_sys_os" in
-    Solaris|HP-UX|OSF1|IRIX)
+    Solaris|HP-UX|OSF1|IRIX|Linux)
       AC_MSG_WARN([Defaulting to --with-poll since the OS is $pike_cv_sys_os.])
       with_poll=yes
     ;;
@@ -4341,6 +4341,19 @@ esac
 #############################################################################
 if test "x$with_copt" = xno ; then
   OPTIMIZE=
+
+dnl The unused code below can be used to implement a good/bad-list
+dnl to determine when to zap the -O2 for buggy gccs...
+dnl
+dnl  else
+dnl
+dnl  if test "x$GCC" = xyes; then
+dnl    BAD=unknown
+dnl    case `gcc -v 2>&1` in
+dnl      */i?86-*/2.95.3/*19991030*) BAD=no ;;
+dnl    esac
+dnl  fi
+
 fi
 
 #############################################################################
