@@ -31,6 +31,7 @@ testfont binary
 /bin/extract.pike foreign_ident
 /bin/feature_list foreign_ident
 /bin/httpd.pike foreign_ident
+/bin/join-autodoc.pike foreign_ident
 /bin/make_ci.pike foreign_ident
 /bin/mkpeep.pike foreign_ident
 /bin/mktreeopt.pike foreign_ident
