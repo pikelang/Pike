@@ -5,7 +5,7 @@
 \*/
 /**/
 #include "global.h"
-RCSID("$Id: las.c,v 1.270 2001/09/29 11:31:40 hubbe Exp $");
+RCSID("$Id: las.c,v 1.271 2001/10/05 01:30:13 hubbe Exp $");
 
 #include "language.h"
 #include "interpret.h"
@@ -1734,7 +1734,6 @@ node *recursive_add_call_arg(node *n, node *arg)
   return n;
 }
 
-
 node *index_node(node *n, char *node_name, struct pike_string *id)
 {
   node *ret;
@@ -1789,6 +1788,29 @@ node *index_node(node *n, char *node_name, struct pike_string *id)
       push_int(0);
       break;
 
+    case T_OBJECT:
+    case T_PROGRAM:
+#if 1
+      if(!(Pike_compiler->new_program->flags & PROGRAM_PASS_1_DONE))
+      {
+	struct program *p;
+	if(Pike_sp[-1].type == T_OBJECT)
+	  p=Pike_sp[-1].u.object->prog;
+	else
+	  p=Pike_sp[-1].u.program;
+	
+	if(p && !(p->flags & PROGRAM_PASS_1_DONE))
+	{
+	  if(report_compiler_dependency(p))
+	  {
+	    pop_stack();
+	    ref_push_object(placeholder_object);
+	    break;
+	  }
+	}
+      }
+#endif
+
     default:
     {
       ptrdiff_t c;
@@ -1831,19 +1853,26 @@ node *index_node(node *n, char *node_name, struct pike_string *id)
 	   !Pike_sp[-1].u.integer &&
 	   Pike_sp[-1].subtype==NUMBER_UNDEFINED)
 	{
-	  if (node_name) {
-	    my_yyerror("Index '%s' not present in module '%s'.",
-		       id->str, node_name);
-	  } else {
-	    my_yyerror("Index '%s' not present in module.", id->str);
-	  }
-
-	  if (thrown.type != PIKE_T_UNKNOWN) {
-	    push_svalue(&thrown);
-	    low_safe_apply_handler("compile_exception", error_handler, compat_handler, 1);
-	    if (IS_ZERO(sp-1)) yy_describe_exception(&thrown);
+	  if(Pike_compiler->new_program->flags & PROGRAM_PASS_1_DONE)
+	  {
+	    if (node_name) {
+	      my_yyerror("Index '%s' not present in module '%s'.",
+			 id->str, node_name);
+	    } else {
+	      my_yyerror("Index '%s' not present in module.", id->str);
+	    }
+	    
+	    if (thrown.type != PIKE_T_UNKNOWN) {
+	      push_svalue(&thrown);
+	      low_safe_apply_handler("compile_exception", error_handler, compat_handler, 1);
+	      if (IS_ZERO(sp-1)) yy_describe_exception(&thrown);
+	      pop_stack();
+	      free_svalue(&thrown);
+	    }
+	  }else{
+	    /* Hope it's there in pass 2 */
 	    pop_stack();
-	    free_svalue(&thrown);
+	    ref_push_object(placeholder_object);
 	  }
 	}
       }

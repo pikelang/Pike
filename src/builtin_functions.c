@@ -5,7 +5,7 @@
 \*/
 /**/
 #include "global.h"
-RCSID("$Id: builtin_functions.c,v 1.407 2001/09/27 20:28:28 hubbe Exp $");
+RCSID("$Id: builtin_functions.c,v 1.408 2001/10/05 01:30:11 hubbe Exp $");
 #include "interpret.h"
 #include "svalue.h"
 #include "pike_macros.h"
@@ -1060,17 +1060,18 @@ PMOD_EXPORT void f_zero_type(INT32 args)
   if(args < 1)
     SIMPLE_TOO_FEW_ARGS_ERROR("zero_type",1);
 
-  if(Pike_sp[-args].type != T_INT)
-  {
-    pop_n_elems(args);
-    push_int(0);
-  }
-  else if((Pike_sp[-args].type==T_OBJECT || Pike_sp[-args].type==T_FUNCTION)
-	   && !Pike_sp[-args].u.object->prog)
+  if((Pike_sp[-args].type==T_OBJECT || Pike_sp[-args].type==T_FUNCTION)
+     && !Pike_sp[-args].u.object->prog)
   {
     pop_n_elems(args);
     push_int(NUMBER_DESTRUCTED);
   }
+  else if(Pike_sp[-args].type != T_INT)
+  {
+    pop_n_elems(args);
+    push_int(0);
+  }
+  else
   {
     pop_n_elems(args-1);
     Pike_sp[-1].u.integer=Pike_sp[-1].subtype;
@@ -3140,10 +3141,6 @@ PMOD_EXPORT void f_compile(INT32 args)
 
   p = compile(Pike_sp[-args].u.string, o, major, minor, p, placeholder);
 
-#ifdef PIKE_DEBUG
-  if(!(p->flags & PROGRAM_FINISHED))
-    fatal("Got unfinished program from internal compile().\n");
-#endif
   pop_n_elems(args);
   push_program(p);
 }

@@ -5,7 +5,7 @@
 \*/
 
 /*
- * $Id: program.h,v 1.144 2001/09/10 20:47:35 hubbe Exp $
+ * $Id: program.h,v 1.145 2001/10/05 01:30:14 hubbe Exp $
  */
 #ifndef PROGRAM_H
 #define PROGRAM_H
@@ -345,6 +345,8 @@ extern struct object *compat_handler;
 extern struct program *first_program;
 extern struct program *pike_trampoline_program;
 extern struct program *gc_internal_program;
+extern struct program *placeholder_program;
+extern struct object *placeholder_object;
 
 extern int compilation_depth;
 
@@ -380,7 +382,6 @@ void low_start_new_program(struct program *p,
 			   int flags,
 			   int *idp);
 PMOD_EXPORT void debug_start_new_program(PROGRAM_LINE_ARGS);
-PMOD_EXPORT void really_free_program(struct program *p);
 void dump_program_desc(struct program *p);
 int sizeof_variable(int run_time_type);
 void check_program(struct program *p);
@@ -393,7 +394,7 @@ PMOD_EXPORT void set_exit_callback(void (*exit)(struct object *));
 PMOD_EXPORT void set_gc_recurse_callback(void (*m)(struct object *));
 PMOD_EXPORT void set_gc_check_callback(void (*m)(struct object *));
 void pike_set_prog_event_callback(void (*cb)(int));
-void pike_set_prog_optimize_callback(struct node_s *(*opt)(struct node_s *));
+void pike_set_prog_optimize_callback(node *(*opt)(node *));
 int low_reference_inherited_identifier(struct program_state *q,
 				       int e,
 				       struct pike_string *name,
@@ -440,35 +441,34 @@ int define_variable(struct pike_string *name,
 		    struct pike_type *type,
 		    INT32 flags);
 PMOD_EXPORT int simple_add_variable(char *name,
-				    char *type,
-				    INT32 flags);
+			char *type,
+			INT32 flags);
 PMOD_EXPORT int add_constant(struct pike_string *name,
-			     struct svalue *c,
-			     INT32 flags);
+		 struct svalue *c,
+		 INT32 flags);
 PMOD_EXPORT int simple_add_constant(char *name,
-				    struct svalue *c,
-				    INT32 flags);
+			struct svalue *c,
+			INT32 flags);
 PMOD_EXPORT int add_integer_constant(char *name,
-				     INT32 i,
-				     INT32 flags);
+			 INT32 i,
+			 INT32 flags);
 PMOD_EXPORT int quick_add_integer_constant(char *name,
-					   int name_length,
-					   INT32 i,
-					   INT32 flags);
+			       int name_length,
+			       INT32 i,
+			       INT32 flags);
 PMOD_EXPORT int add_float_constant(char *name,
-				   double f,
-				   INT32 flags);
+			 double f,
+			 INT32 flags);
 PMOD_EXPORT int add_string_constant(char *name,
-				    char *str,
-				    INT32 flags);
+			char *str,
+			INT32 flags);
 PMOD_EXPORT int add_program_constant(char *name,
-				     struct program *p,
-				     INT32 flags);
+			 struct program *p,
+			 INT32 flags);
 PMOD_EXPORT int add_object_constant(char *name,
-				    struct object *o,
-				    INT32 flags);
-PMOD_EXPORT int add_function_constant(char *name, void (*cfun)(INT32),
-				      char * type, INT16 flags);
+			struct object *o,
+			INT32 flags);
+PMOD_EXPORT int add_function_constant(char *name, void (*cfun)(INT32), char * type, INT16 flags);
 PMOD_EXPORT int debug_end_class(char *name, ptrdiff_t namelen, INT32 flags);
 INT32 define_function(struct pike_string *name,
 		      struct pike_type *type,
@@ -498,21 +498,22 @@ void program_index_no_free(struct svalue *to, struct program *p,
 int get_small_number(char **q);
 void start_line_numbering(void);
 void store_linenumber(INT32 current_line, struct pike_string *current_file);
-char *debug_get_program_line(struct program *prog,
-			     INT32 *linep);
 PMOD_EXPORT struct pike_string *get_program_line(struct program *prog,
 						 INT32 *linep);
+char *debug_get_program_line(struct program *prog,
+		       INT32 *linep);
 PMOD_EXPORT struct pike_string *get_line(PIKE_OPCODE_T *pc,
-					 struct program *prog,
-					 INT32 *linep);
+					 struct program *prog, INT32 *linep);
 void my_yyerror(char *fmt,...)  ATTRIBUTE((format(printf,1,2)));
 void yy_describe_exception(struct svalue *thrown);
-struct program *compile(struct pike_string *prog,
-			struct object *handler,
-			int major,
-			int minor,
-			struct program *target,
-			struct object *placeholder);
+struct compilation;
+void run_pass2(struct compilation *c);
+struct program *compile(struct pike_string *aprog,
+			struct object *ahandler,
+			int amajor, int aminor,
+			struct program *atarget,
+			struct object *aplaceholder);
+int report_compiler_dependency(struct program *p);
 PMOD_EXPORT int pike_add_function2(char *name, void (*cfun)(INT32),
 				   char *type, unsigned INT8 flags,
 				   unsigned INT16 opt_flags);
@@ -524,6 +525,7 @@ PMOD_EXPORT int quick_add_function(char *name,
 				   unsigned INT8 flags,
 				   unsigned INT16 opt_flags);
 void check_all_programs(void);
+void placeholder_index(INT32 args);
 void init_program(void);
 void cleanup_program(void);
 void gc_mark_program_as_referenced(struct program *p);
@@ -534,8 +536,8 @@ void gc_mark_all_programs(void);
 void gc_cycle_check_all_programs(void);
 void gc_zap_ext_weak_refs_in_programs(void);
 void gc_free_all_unreferenced_programs(void);
-void count_memory_in_programs(INT32 *num_, INT32 *size_);
 void push_compiler_frame(int lexical_scope);
+void low_pop_local_variables(int level);
 void pop_local_variables(int level);
 void pop_compiler_frame(void);
 ptrdiff_t low_get_storage(struct program *o, struct program *p);
@@ -555,6 +557,9 @@ PMOD_EXPORT void *parent_storage(int depth);
 PMOD_EXPORT void change_compiler_compatibility(int major, int minor);
 void make_program_executable(struct program *p);
 /* Prototypes end here */
+
+void really_free_program(struct program *);
+void count_memory_in_programs(INT32*,INT32*);
 
 #ifndef PIKE_USE_MACHINE_CODE
 #define make_program_executable(X)

@@ -5,7 +5,7 @@
 \*/
 /**/
 #include "global.h"
-RCSID("$Id: object.c,v 1.185 2001/09/24 14:47:53 grubba Exp $");
+RCSID("$Id: object.c,v 1.186 2001/10/05 01:30:13 hubbe Exp $");
 #include "object.h"
 #include "dynamic_buffer.h"
 #include "interpret.h"
@@ -909,12 +909,14 @@ PMOD_EXPORT void low_object_index_no_free(struct svalue *to,
   switch(i->identifier_flags & (IDENTIFIER_FUNCTION | IDENTIFIER_CONSTANT))
   {
   case IDENTIFIER_PIKE_FUNCTION:
+#if 0
     if (i->func.offset == -1) {	/* prototype */
       to->type=T_INT;
       to->subtype=NUMBER_UNDEFINED;
       to->u.integer=0;
       break;
     }
+#endif
   case IDENTIFIER_FUNCTION:
   case IDENTIFIER_C_FUNCTION:
     to->type=T_FUNCTION;
@@ -1030,7 +1032,7 @@ PMOD_EXPORT void object_index_no_free(struct svalue *to,
 			   struct svalue *index)
 {
   struct program *p = NULL;
-  int lfun;
+  int lfun,l;
 
   if(!o || !(p=o->prog))
   {
@@ -1039,7 +1041,23 @@ PMOD_EXPORT void object_index_no_free(struct svalue *to,
   }
   lfun=ARROW_INDEX_P(index) ? LFUN_ARROW : LFUN_INDEX;
 
-  if(FIND_LFUN(p, lfun) != -1)
+  if(p->flags & PROGRAM_FIXED)
+  {
+    l=p->lfuns[lfun];
+  }else{
+    if(!(p->flags & PROGRAM_PASS_1_DONE))
+    {
+      if(report_compiler_dependency(p))
+      {
+/*	fprintf(stderr,"PLACEHOLDER DEPLOYED\n"); */
+	add_ref(to->u.object=placeholder_object);
+	to->type=T_OBJECT;
+	return;
+      }
+    }
+    l=low_find_lfun(p, lfun);
+  }
+  if(l != -1)
   {
     push_svalue(index);
     apply_lfun(o,lfun,1);

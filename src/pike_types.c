@@ -5,7 +5,7 @@
 \*/
 /**/
 #include "global.h"
-RCSID("$Id: pike_types.c,v 1.181 2001/08/20 18:08:50 mast Exp $");
+RCSID("$Id: pike_types.c,v 1.182 2001/10/05 01:30:13 hubbe Exp $");
 #include <ctype.h>
 #include "svalue.h"
 #include "pike_types.h"
@@ -29,7 +29,7 @@ RCSID("$Id: pike_types.c,v 1.181 2001/08/20 18:08:50 mast Exp $");
 #include "block_alloc.h"
 
 #ifdef PIKE_DEBUG
-#define PIKE_TYPE_DEBUG
+/* #define PIKE_TYPE_DEBUG */
 #endif /* PIKE_DEBUG */
 
 /*

@@ -1,6 +1,6 @@
 /* -*- Pike -*-
  *	
- * $Id: master.pike.in,v 1.169 2001/09/02 01:36:13 marcus Exp $
+ * $Id: master.pike.in,v 1.170 2001/10/05 01:30:11 hubbe Exp $
  * 
  * Master-file for Pike.
  *
@@ -477,7 +477,7 @@ static program low_findprog(string pname,
 	      AUTORELOAD_CHECK_FILE(oname);
 	      return programs[fname] =
 		decode_value(master_read_file(oname),
-			     Codec());
+			     Codec(fname,mkobj));
 	    };
 	    if (handler) {
 	      handler->compile_warning(oname, 0,
@@ -530,6 +530,16 @@ static program low_findprog(string pname,
     return programs[fname]=ret;
   }
   return 0;
+}
+
+//
+// This function is called by the compiler
+// when a delayed compilation error occurs
+//
+void unregister(program p)
+{
+  if(string fname=search(programs,p))
+    m_delete(programs, fname);
 }
 
 static program findprog(string pname,
@@ -787,37 +797,78 @@ object cast_to_object(string oname, string current_file)
   return 0;
 }
 
-class dirnode(string dirname, object|void handler)
+class dirnode
 {
+  string dirname;
+  object|void handler;
   constant is_resolv_dirnode = 1;
   mixed module=module_checker();
   mapping(string:mixed) cache=([]);
   array(string) files;
 
+  void create(string d, object|void h)
+    {
+      dirname=d;
+      handler=h;
+      fc[dirname]=this_object();
+      if(dirname[sizeof(dirname)-5..]==".pmod")
+	fc[dirname[..sizeof(dirname)-6]]=this_object();
+#ifdef MODULE_TRACE
+      werror("%*ndirnode(%O,%O);\n",sizeof(backtrace())-1,dirname,h);
+//      werror(describe_backtrace( ({"HERE\n",backtrace()})));
+#endif
+    }
+
   class module_checker
   {
     int `!()
     {
-      module=0;
+#ifdef MODULE_TRACE
+      werror("%*ndirnode(%O)->module_checker()->`!()\n",sizeof(backtrace()),dirname);
+#endif
       if(module=findmodule(dirname+"/module", handler))
+      {
 	if(mixed tmp=module->_module_value)
 	  module=tmp;
+
+	/* This allows for `[] to have side effects first time
+	 * it is called. (Specifically, the Calendar module uses
+	 * this
+	 */
+	cache=([]);
+	_cache_full=0;
+      }
       return !module;
     }
 
-    mixed `[](string index) { if(module) return module[index]; }
+    mixed `[](string index)
+      { 
+#ifdef MODULE_TRACE
+	werror("%*ndirnode(%O)->module_checker()[%O]\n",sizeof(backtrace()),dirname,index);
+#endif
+	if(module) return module[index];
+      }
     array(string) _indices() { if(module) return indices(module); }
     array _values() { if(module) return values(module); }
   }
 
   static mixed ind(string index)
   {
+#ifdef MODULE_TRACE
+    werror("%*nDirnode(%O) ind[%O] -> ???\n",sizeof(backtrace()),dirname,index);
+#endif
     if(module) 
     {
+#ifdef MODULE_TRACE
+      werror("%*nDirnode(%O) module[%O] -> ???\n",sizeof(backtrace()),dirname,index);
+#endif
       object o;
+//      _describe(module);
       if(!zero_type(o=module[index]))
       {
-//	werror("Dirnode(%O) module[%O] -> %O\n",dirname,index, o);
+#ifdef MODULE_TRACE
+	werror("%*nDirnode(%O) module[%O] -> %O\n",sizeof(backtrace()),dirname,index, o);
+#endif
 	return o;
       }
     }
@@ -854,16 +905,25 @@ class dirnode(string dirname, object|void handler)
   mixed `[](string index)
   {
     mixed ret;
-//      werror("Dirnode(%O) cache[%O] ?????\n",dirname,index);
-      if(!zero_type(ret=cache[index]))
+#ifdef MODULE_TRACE
+    werror("%*nDirnode(%O) cache[%O] ?????\n",sizeof(backtrace()),dirname,index);
+#endif
+    if(!zero_type(ret=cache[index]))
     {
-//      werror("Dirnode(%O) cache[%O] -> %O\n",dirname,index, ret);
+#ifdef MODULE_TRACE
+      werror("%*nDirnode(%O) cache[%O] -> %O\n",sizeof(backtrace()),dirname,index, ret);
+#endif
       // The check below is to (hopefully) avoid calling any function
       // in ret (like `! or `==) in case it's an object.
       if(!intp (ret) || ret) return ret;
       return UNDEFINED;
     }
-    return cache[index]=ind(index);
+    ret=ind(index);
+
+    // Kluge!
+    if(ret == __placeholder_object) return ret;
+
+    return cache[index]=ret;
   }
 
   static int _cache_full;
@@ -1026,6 +1086,9 @@ mapping(string:mixed) fc=([]);
 object findmodule(string fullname, object|void handler)
 {
   object o;
+#ifdef MODULE_TRACE
+  werror("%*nfindmodule(%O)\n",sizeof(backtrace()),fullname);
+#endif
   if(!zero_type(o=fc[fullname]))
   {
 //    werror("fc[%O] -> %O\n",fullname, o);
@@ -1035,7 +1098,7 @@ object findmodule(string fullname, object|void handler)
   if(Stat stat=master_file_stat(fakeroot(fullname+".pmod")))
   {
     if(stat[1]==-2)
-      return fc[fullname]=dirnode(fullname+".pmod", handler);
+      return dirnode(fullname+".pmod", handler);
   }
 
   if(o = low_cast_to_object(fullname+".pmod", "/.", handler))
@@ -1062,7 +1125,8 @@ mixed handle_import(string what, string|void current_file, object|void handler)
   if (handler) {
     return dirnode(path, handler);
   }
-  return fc[path]=dirnode(path);
+  if(fc[path]) return fc[path];
+  return dirnode(path);
 }
 
 
@@ -1204,6 +1268,7 @@ class CompatResolver
   mixed resolv_base(string identifier, string|void current_file,
 		    object|void current_handler)
     {
+//      werror("Resolv_base(%O)\n",identifier);
       array(mixed) tmp = ({});
       string dir=current_file ? dirname(current_file) : "/";
 
@@ -1245,6 +1310,8 @@ class CompatResolver
   mixed resolv(string identifier, string|void current_file,
 	       object|void current_handler)
     {
+//      werror("Resolv(%O)\n",identifier);
+
       // FIXME: Support having the cache in the handler?
       if( no_resolv[ identifier ] )
 	return UNDEFINED;
@@ -1257,8 +1324,12 @@ class CompatResolver
 
       mixed ret;
       string id=identifier+":"+(current_file ? dirname(current_file) : "-");
-      if( !zero_type (ret = resolv_cache[id]) )
-	return ret == ZERO_TYPE ? UNDEFINED : resolv_cache[id];
+      if( zero_type (ret = resolv_cache[id]) != 1 )
+      {
+//	werror("Resolv cached(%O) => %O (%d)\n",id,resolv_cache[id],zero_type(resolv_cache[id]));
+	return ret == ZERO_TYPE ? UNDEFINED : ret;
+      }
+
       array(string) tmp=identifier/".";
       ret=resolv_base(tmp[0], current_file, current_handler);
       foreach(tmp[1..],string index) ret=ret[index];
@@ -2386,6 +2457,34 @@ string describe_error (mixed trace)
 
 class Codec
 {
+  string fname;
+  int mkobj;
+  program prog_to_mkobj;
+  void create(void|string f,void|int m)
+    {
+      fname=f;
+      mkobj=m;
+    }
+
+  void __register_new_program(program p)
+    {
+      if(fname)
+      {
+	programs[fname]=prog_to_mkobj=p;
+	fname=0;
+      }
+    }
+
+
+  void __register_new_object(program p)
+    {
+      if(prog_to_mkobj == p)
+      {
+	objects[p]=p();
+	prog_to_mkobj=0;
+      }
+    }
+
   mapping f=all_constants();
 
   string nameof(mixed x)

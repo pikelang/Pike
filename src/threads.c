@@ -1,5 +1,5 @@
 #include "global.h"
-RCSID("$Id: threads.c,v 1.168 2001/09/25 14:17:47 grubba Exp $");
+RCSID("$Id: threads.c,v 1.169 2001/10/05 01:30:14 hubbe Exp $");
 
 PMOD_EXPORT int num_threads = 1;
 PMOD_EXPORT int threads_disabled = 0;
@@ -922,7 +922,7 @@ void f_mutex_lock(INT32 args)
   /* Needs to be cloned here, since create()
    * might use threads.
    */
-  o=clone_object(mutex_key,0);
+  o=fast_clone_object(mutex_key,0);
 
   DO_IF_DEBUG( if(thread_for_id(th_self()) != Pike_interpreter.thread_id)
 	       fatal("thread_for_id() (or Pike_interpreter.thread_id) failed! %p != %p\n",thread_for_id(th_self()),Pike_interpreter.thread_id) ; )

@@ -5,7 +5,7 @@
 \*/
 /**/
 #include "global.h"
-RCSID("$Id: program.c,v 1.380 2001/10/02 09:08:19 hubbe Exp $");
+RCSID("$Id: program.c,v 1.381 2001/10/05 01:30:14 hubbe Exp $");
 #include "program.h"
 #include "object.h"
 #include "dynamic_buffer.h"
@@ -2001,7 +2001,6 @@ struct program *end_first_pass(int finish)
 #endif
 
     Pike_compiler->new_program->flags |= PROGRAM_PASS_1_DONE;
-
 
     if(finish)
     {
@@ -4419,134 +4418,219 @@ void yy_describe_exception(struct svalue *thrown)
   }
 }
 
-struct program *compile(struct pike_string *prog,
-			struct object *handler,/* error handler */
-			int major, int minor,
-			struct program *target,
-			struct object *placeholder)
-{
+extern void yyparse(void);
+
 #ifdef PIKE_DEBUG
-  ONERROR tmp;
+#define do_yyparse() do {				\
+  struct svalue *save_sp=Pike_sp;			\
+  yyparse();  /* Parse da program */			\
+  if(save_sp != Pike_sp)				\
+    fatal("yyparse() left droppings on the stack!\n");	\
+}while(0)
+#else
+#define do_yyparse() yyparse()
 #endif
+
+struct compilation
+{
+  struct pike_string *prog;
+  struct object *handler;
+  int major, minor;
+  struct program *target;
+  struct object *placeholder;
+  
   struct program *p;
   struct lex save_lex;
-  int save_depth=compilation_depth;
+  int save_depth;
   int saved_threads_disabled;
-  struct object *saved_handler = error_handler;
-  struct object *saved_compat_handler = compat_handler;
-  dynamic_buffer used_modules_save = used_modules;
-  INT32 num_used_modules_save = Pike_compiler->num_used_modules;
-  extern void yyparse(void);
-  struct mapping *resolve_cache_save = resolve_cache;
+  struct object *saved_handler;
+  struct object *saved_compat_handler;
+  dynamic_buffer used_modules_save;
+  INT32 num_used_modules_save;
+  struct mapping *resolve_cache_save;
+
+  struct svalue default_module;
+
+  struct compilation *dependants;
+  struct compilation *next_dependant;
+};
+
+static void free_compilation(struct compilation *c)
+{
+  debug_malloc_touch(c);
+  free_string(c->prog);
+  if(c->handler) free_object(c->handler);
+  if(c->target) free_program(c->target);
+  if(c->placeholder) free_object(c->placeholder);
+  free_svalue(& c->default_module);
+  free((char *)c);
+}
+
+static void run_init(struct compilation *c)
+{
+  debug_malloc_touch(c);
+  c->save_depth=compilation_depth;
+  compilation_depth=-1;
+
+  c->saved_handler = error_handler;
+  if((error_handler = c->handler))
+    add_ref(error_handler);
+
+  c->saved_compat_handler = compat_handler;
+  compat_handler=0;
+
+  c->used_modules_save = used_modules;
+  c->num_used_modules_save = Pike_compiler->num_used_modules;
+  Pike_compiler->num_used_modules=0;
+
+  c->resolve_cache_save = resolve_cache;
   resolve_cache = 0;
+
+  c->save_lex=lex;
+
+  lex.current_line=1;
+  lex.current_file=make_shared_string("-");
+
+  if (runtime_options & RUNTIME_STRICT_TYPES)
+  {
+    lex.pragmas = ID_STRICT_TYPES;
+  } else {
+    lex.pragmas = 0;
+  }
+
+  lex.end = c->prog->str + (c->prog->len << c->prog->size_shift);
+
+  switch(c->prog->size_shift)
+  {
+    case 0: lex.current_lexer = yylex0; break;
+    case 1: lex.current_lexer = yylex1; break;
+    case 2: lex.current_lexer = yylex2; break;
+    default:
+      fatal("Program has bad shift %d!\n", c->prog->size_shift);
+      break;
+  }
+
+  lex.pos=c->prog->str;
+}
+
+static void run_init2(struct compilation *c)
+{
+  debug_malloc_touch(c);
+  Pike_compiler->compiler = c;
+
+  initialize_buf(&used_modules);
+  use_module(& c->default_module);
+
+  Pike_compiler->compat_major=PIKE_MAJOR_VERSION;
+  Pike_compiler->compat_minor=PIKE_MINOR_VERSION;
+
+  if(c->major>=0)
+    change_compiler_compatibility(c->major, c->minor);
+}
+
+static void run_exit(struct compilation *c)
+{
+  debug_malloc_touch(c);
+  toss_buffer(&used_modules);
+  used_modules = c->used_modules_save;
+
+#ifdef PIKE_DEBUG
+  if(Pike_compiler->num_used_modules)
+    fatal("Failed to pop modules properly.\n");
+#endif
+  Pike_compiler->num_used_modules = c->num_used_modules_save ;
+
+#ifdef PIKE_DEBUG
+  if (compilation_depth != -1) {
+    fprintf(stderr, "compile(): compilation_depth is %d\n",
+	    compilation_depth);
+  }
+#endif /* PIKE_DEBUG */
+  compilation_depth=c->save_depth;
+
+#ifdef PIKE_DEBUG
+  if (resolve_cache)
+    free_mapping(resolve_cache);
+#endif
+  resolve_cache = c->resolve_cache_save;
+
+  if (error_handler) free_object(error_handler);
+  error_handler = c->saved_handler;
+
+  if (compat_handler)  free_object(compat_handler);
+  compat_handler = c->saved_compat_handler;
+
+  free_string(lex.current_file);
+  lex=c->save_lex;
+}
+
+static void zap_placeholder(struct compilation *c)
+{
+  /* fprintf(stderr, "Destructing placeholder.\n"); */
+  if (c->placeholder->storage) {
+    yyerror("Placeholder already has storage!");
+    /* fprintf(stderr, "Placeholder already has storage!\n"
+       "placeholder: %p, storage: %p, prog: %p, p: %p\n",
+       placeholder, placeholder->storage, placeholder->prog, p); */
+    debug_malloc_touch(c->placeholder);
+    destruct(c->placeholder);
+  } else {
+    /* FIXME: Is this correct? */
+    /* It would probably be nicer if it was possible to just call
+     * destruct on the object, but this works too. -Hubbe
+     */
+    free_program(c->placeholder->prog);
+    c->placeholder->prog = NULL;
+    debug_malloc_touch(c->placeholder);
+  }
+  free_object(c->placeholder);
+  c->placeholder=0;
+}
+
+static int run_pass1(struct compilation *c)
+{
+  int ret=0;
+
+  debug_malloc_touch(c);
+  run_init(c);
 
   CDFPRINTF((stderr, "th(%ld) compile() starting compilation_depth=%d\n",
 	     (long)th_self(),compilation_depth));
 
-  if(placeholder && placeholder->prog != null_program)
+  if(c->placeholder && c->placeholder->prog != null_program)
     Pike_error("Placeholder object is not a null_program clone!\n");
 
-  if(target && !(target->flags & PROGRAM_VIRGIN))
+  if(c->target && !(c->target->flags & PROGRAM_VIRGIN))
     Pike_error("Placeholder program is not virgin!\n");
-
-  low_init_threads_disable();
-  saved_threads_disabled = threads_disabled;
 
   CDFPRINTF((stderr,
 	     "th(%ld) compile() Start: threads_disabled:%d, compilation_depth:%d\n",
 	     (long)th_self(), threads_disabled, compilation_depth));
 
 
-#ifdef PIKE_DEBUG
-  SET_ONERROR(tmp, fatal_on_error,"Compiler exited with longjump!\n");
-#endif
+  low_start_new_program(c->target,0,0,0);
+  Pike_compiler->compiler_pass=1;
+  run_init2(c);
 
-  error_handler = handler;
-  compat_handler=0;
-  
-  if(error_handler)
+  if(c->placeholder)
   {
-    add_ref(error_handler);
-    safe_apply(error_handler,"get_default_module",0);
-    if(IS_ZERO(Pike_sp-1))
-    {
-      pop_stack();
-      ref_push_mapping(get_builtin_constants());
-    }
-  }else{
-    ref_push_mapping(get_builtin_constants());
-  }
-
-  Pike_compiler->num_used_modules=0;
-
-  save_lex=lex;
-
-  lex.end = prog->str + (prog->len << prog->size_shift);
-
-  switch(prog->size_shift) {
-  case 0:
-    lex.current_lexer = yylex0;
-    break;
-  case 1:
-    lex.current_lexer = yylex1;
-    break;
-  case 2:
-    lex.current_lexer = yylex2;
-    break;
-  default:
-    fatal("Program has bad shift %d!\n", prog->size_shift);
-    break;
-  }
-
-  lex.current_line=1;
-  lex.current_file=make_shared_string("-");
-  if (runtime_options & RUNTIME_STRICT_TYPES) {
-    lex.pragmas = ID_STRICT_TYPES;
-  } else {
-    lex.pragmas = 0;
-  }
-
-  compilation_depth=-1;
-  low_start_new_program(target,0,0,0);
-
-  initialize_buf(&used_modules);
-  use_module(Pike_sp-1);
-
-  if(placeholder)
-  {
-    if(placeholder->prog != null_program)
+    if(c->placeholder->prog != null_program)
     {
       yyerror("Placeholder argument is not a null_program clone!");
-      placeholder=0;
+      c->placeholder=0;
+      debug_malloc_touch(c->placeholder);
     }else{
-      free_program(placeholder->prog);
-      add_ref(placeholder->prog=Pike_compiler->new_program);
+      free_program(c->placeholder->prog);
+      add_ref(c->placeholder->prog=Pike_compiler->new_program);
+      debug_malloc_touch(c->placeholder);
     }
   }
 
-/*  start_line_numbering(); */
-
-  Pike_compiler->compat_major=PIKE_MAJOR_VERSION;
-  Pike_compiler->compat_minor=PIKE_MINOR_VERSION;
-  Pike_compiler->compiler_pass=1;
-  lex.pos=prog->str;
-
-  if(major>=0)
-    change_compiler_compatibility(major, minor);
 
   CDFPRINTF((stderr, "th(%ld)   compile(): First pass\n",
 	     (long)th_self()));
 
-#ifdef PIKE_DEBUG
-  {
-    struct svalue *save_sp=Pike_sp;
-    yyparse();  /* Parse da program */
-    if(save_sp != Pike_sp)
-      fatal("yyparse() left droppings on the stack!\n");
-  }
-#else  
-  yyparse();  /* Parse da program */
-#endif
+  do_yyparse();  /* Parse da program */
 
   if (!Pike_compiler->new_program->num_linenumbers) {
     /* The lexer didn't write an initial entry. */
@@ -4560,163 +4644,229 @@ struct program *compile(struct pike_string *prog,
   CDFPRINTF((stderr, "th(%ld)   compile(): First pass done\n",
 	     (long)th_self()));
 
-  p=end_first_pass(0);
-
-  if(placeholder)
+  if(Pike_compiler->depends_on)
   {
-    if(!p || (placeholder->storage))
+    ret++;
+    c->next_dependant=Pike_compiler->depends_on->compiler->dependants;
+    Pike_compiler->depends_on->compiler->dependants=c;
+#if 0
+    fprintf(stderr,"We (%p) should link ourself to %p\n",
+	    c,
+	    Pike_compiler->depends_on->compiler);
+#endif
+  }
+
+  c->p=end_first_pass(0);
+
+  run_exit(c);
+
+  if(c->placeholder)
+  {
+    if(!c->p || (c->placeholder->storage))
     {
-      /* fprintf(stderr, "Destructing placeholder.\n"); */
-      if (placeholder->storage) {
-	yyerror("Placeholder already has storage!");
-	/* fprintf(stderr, "Placeholder already has storage!\n"
-	   "placeholder: %p, storage: %p, prog: %p, p: %p\n",
-	   placeholder, placeholder->storage, placeholder->prog, p); */
-	debug_malloc_touch(placeholder);
-	destruct(placeholder);
-      } else {
-	/* FIXME: Is this correct? */
-	/* It would probably be nicer if it was possible to just call
-	 * destruct on the object, but this works too. -Hubbe
-	 */
-	free_program(placeholder->prog);
-	placeholder->prog = NULL;
-      }
-      placeholder=0;
+      zap_placeholder(c);
     } else {
-      placeholder->storage=p->storage_needed ?
-	(char *)xalloc(p->storage_needed) :
+      c->placeholder->storage=c->p->storage_needed ?
+	(char *)xalloc(c->p->storage_needed) :
 	(char *)0;
-      call_c_initializers(placeholder);
+      call_c_initializers(c->placeholder);
     }
   }
 
-#ifdef PIKE_DEBUG
-  if (compilation_depth != -1) {
-    fprintf(stderr, "compile(): compilation_depth is %d at end of pass 1.\n",
-	    compilation_depth);
-  }
-#endif /* PIKE_DEBUG */
+  return ret;
+}
 
-  if(p)
-  {
-    low_start_new_program(p,0,0,0);
-    free_program(p);
-    p=0;
-    Pike_compiler->compiler_pass=2;
-    lex.pos=prog->str;
-    lex.current_line=1;
-    free_string(lex.current_file);
-    lex.current_file=make_shared_string("-");
+void run_pass2(struct compilation *c)
+{
+  debug_malloc_touch(c);
+  run_init(c);
+  low_start_new_program(c->p,0,0,0);
+  free_program(c->p);
+  c->p=0;
+  Pike_compiler->compiler_pass=2;
+  run_init2(c);
+  
+  CDFPRINTF((stderr, "th(%ld)   compile(): Second pass\n",
+	     (long)th_self()));
+  
+  do_yyparse();  /* Parse da program */
+  
+  CDFPRINTF((stderr, "th(%ld)   compile(): Second pass done\n",
+	     (long)th_self()));
+  
+  c->p=end_program();
+  run_exit(c);
+}
 
-    use_module(Pike_sp-1);
-
-    if(major>=0)
-      change_compiler_compatibility(major, minor);
-
-    CDFPRINTF((stderr, "th(%ld)   compile(): Second pass\n",
-	       (long)th_self()));
-
-#ifdef PIKE_DEBUG
-    {
-      struct svalue *save_sp=Pike_sp;
-      yyparse();  /* Parse da program */
-      if(save_sp != Pike_sp)
-	fatal("yyparse() left droppings on the stack!\n");
-    }
-#else  
-    yyparse();  /* Parse da program */
-#endif
-
-    CDFPRINTF((stderr, "th(%ld)   compile(): Second pass done\n",
-	       (long)th_self()));
-
-    p=end_program();
-
-#ifdef PIKE_DEBUG
-    if (compilation_depth != -1) {
-      fprintf(stderr, "compile(): compilation_depth is %d at end of pass 2.\n",
-	      compilation_depth);
-    }
-#endif /* PIKE_DEBUG */
-  }
-
-#ifdef PIKE_DEBUG
-  if (threads_disabled != saved_threads_disabled) {
+static void run_cleanup(struct compilation *c, int delayed)
+{
+  debug_malloc_touch(c);
+#if 0 /* FIXME */
+  if (threads_disabled != c->saved_threads_disabled) {
     fatal("compile(): threads_disabled:%d saved_threads_disabled:%d\n",
-	  threads_disabled, saved_threads_disabled);
+	  threads_disabled, c->saved_threads_disabled);
   }
 #endif /* PIKE_DEBUG */
 
-  free_string(lex.current_file);
-  lex=save_lex;
-
-/*  unuse_modules(1); */
-#ifdef PIKE_DEBUG
-  if(Pike_compiler->num_used_modules)
-    fatal("Failed to pop modules properly.\n");
-#endif
-
-  toss_buffer(&used_modules);
-  compilation_depth=save_depth;
-  used_modules = used_modules_save;
-  Pike_compiler->num_used_modules = num_used_modules_save ;
-  if (error_handler) {
-    free_object(error_handler);
-  }
-  error_handler = saved_handler;
-  if (compat_handler) {
-    free_object(compat_handler);
-  }
-  compat_handler = saved_compat_handler;
-#ifdef PIKE_DEBUG
-  if (resolve_cache) fatal("resolve_cache not freed at end of compilation.\n");
-#endif
-  resolve_cache = resolve_cache_save;
-
-/*  threads_disabled = saved_threads_disabled + 1;   /Hubbe: UGGA! */
+  exit_threads_disable(NULL);
 
   CDFPRINTF((stderr,
 	     "th(%ld) compile() Leave: threads_disabled:%d, compilation_depth:%d\n",
 	     (long)th_self(),threads_disabled, compilation_depth));
+  if (!c->p)
+  {
+    /* fprintf(stderr, "Destructing placeholder.\n"); */
+    if(c->placeholder)
+      zap_placeholder(c);
 
-  exit_threads_disable(NULL);
+    if(delayed && c->target)
+    {
+      /* We have to notify the master object that
+       * a previous compile() actually failed, even
+       * if we did not know it at the time
+       */
+      push_program(c->target);
+      SAFE_APPLY_MASTER("unregister",1);
+    }
+  }
+  else
+  {
+    if (c->placeholder)
+    {
+      JMP_BUF rec;
+      /* Initialize the placeholder. */
+      if(SETJMP(rec))
+      {
+	dmalloc_touch_svalue(&throw_value);
+	call_handle_error();
+	zap_placeholder(c);
+      }else{
+	call_pike_initializers(c->placeholder,0);
+      }
+      UNSETJMP(rec);
+    }
+  }
+}
+
+struct program *compile(struct pike_string *aprog,
+			struct object *ahandler,/* error handler */
+			int amajor, int aminor,
+			struct program *atarget,
+			struct object *aplaceholder)
+{
+  int delay;
+  struct program *ret;
+#ifdef PIKE_DEBUG
+  ONERROR tmp;
+#endif
+  struct compilation *c=ALLOC_STRUCT(compilation);
+
+  debug_malloc_touch(c);
+  add_ref(c->prog=aprog);
+  if((c->handler=ahandler)) add_ref(ahandler);
+  c->major=amajor;
+  c->minor=aminor;
+  if((c->target=atarget)) add_ref(atarget);
+  if((c->placeholder=aplaceholder)) add_ref(aplaceholder);
+  c->default_module.type=T_INT;
+  c->dependants=0;
+  c->next_dependant=0;
+
+  if(c->handler)
+  {
+    safe_apply(c->handler,"get_default_module",0);
+    if(IS_ZERO(Pike_sp-1))
+    {
+      pop_stack();
+      ref_push_mapping(get_builtin_constants());
+    }
+  }else{
+    ref_push_mapping(get_builtin_constants());
+  }
+  free_svalue(& c->default_module);
+  c->default_module=Pike_sp[-1];
+  Pike_sp--;
 
 #ifdef PIKE_DEBUG
+  SET_ONERROR(tmp, fatal_on_error,"Compiler exited with longjump!\n");
+#endif
+
+  low_init_threads_disable();
+  c->saved_threads_disabled = threads_disabled;
+
+  
+  delay=run_pass1(c) && c->p;
+
+  while(c->dependants)
+  {
+    struct compilation *cc=c->dependants;
+
+#ifdef PIKE_DEBUG
+    if(c == cc)
+      fatal("Depending on myself???\n");
+#endif
+
+    c->dependants=cc->next_dependant;
+    cc->next_dependant=0;
+    debug_malloc_touch(cc);
+
+    if(cc->p) run_pass2(cc);
+    run_cleanup(cc,1);
+
+    debug_malloc_touch(cc);
+
+#ifdef PIKE_DEBUG
+    if(cc->dependants)
+      fatal("Que???\n");
+#endif
+
+    free_compilation(cc);
+  }
+
+#ifdef PIKE_DEBUG
+  /* FIXME */
   UNSET_ONERROR(tmp);
 #endif
-  pop_stack(); /* pop the 'default' module */
 
-  if (!p) {
-    /* fprintf(stderr, "Destructing placeholder.\n"); */
-    if(placeholder)
+  if(delay)
+  {
+    /* finish later */
+    return c->p;
+  }else{
+    /* finish now */
+    if(c->p) run_pass2(c);
+    debug_malloc_touch(c);
+    run_cleanup(c,0);
+    
+    ret=c->p;
+
+    debug_malloc_touch(c);
+    free_compilation(c);
+    if(!ret)
+      throw_error_object(low_clone(compilation_error_program), 0, 0, 0,
+			 "Compilation failed.\n");
+    return ret;
+  }
+}
+
+int report_compiler_dependency(struct program *p)
+{
+  if(Pike_compiler && Pike_compiler->new_program && 
+     !(Pike_compiler->new_program->flags & PROGRAM_PASS_1_DONE))
+  {
+    struct program_state *c;
+    c=Pike_compiler->depends_on;
+    if(!c) c=Pike_compiler->previous;
+    for(;c;c=c->previous)
     {
-      if (placeholder->storage) {
-	/* fprintf(stderr, "Placeholder already has storage!\n"
-	   "placeholder: %p, storage: %p, prog: %p, p: %p\n",
-	   placeholder, placeholder->storage, placeholder->prog, p); */
-	debug_malloc_touch(placeholder);
-	destruct(placeholder);
-      } else {
-	/* FIXME: Is this correct? */
-	/* It would probably be nicer if it was possible to just call
-	 * destruct on the object, but this works too. -Hubbe
-	 */
-	free_program(placeholder->prog);
-	placeholder->prog = NULL;
+      if(c->new_program == p)
+      {
+	Pike_compiler->depends_on=c;
+	return 1; /* dependency registred */
       }
-      placeholder=0;
     }
-
-    throw_error_object(low_clone(compilation_error_program), 0, 0, 0,
-		       "Compilation failed.\n");
   }
-
-  if (placeholder) {
-    /* Initialize the placeholder. */
-    call_pike_initializers(placeholder,0);
-  }
-  return p;
+  return 0; /* dependency not registred */
 }
 
 PMOD_EXPORT int pike_add_function2(char *name, void (*cfun)(INT32),
@@ -4902,6 +5052,19 @@ static void gc_recurse_trampoline(struct object *o)
 }
 
 
+/* This placeholder should is used
+ * in the first compiler pass to take the place
+ * of unknown things
+ */
+struct program *placeholder_program;
+struct object *placeholder_object;
+
+void placeholder_index(INT32 args)
+{
+  pop_n_elems(args);
+  ref_push_object(Pike_fp->current_object);
+}
+
 void init_program(void)
 {
   int i;
@@ -4909,7 +5072,6 @@ void init_program(void)
   struct svalue val;
   struct svalue id;
   init_program_blocks();
-
 
   MAKE_CONSTANT_SHARED_STRING(this_program_string,"this_program");
 
@@ -4952,6 +5114,20 @@ void init_program(void)
     low_add_constant("__null_program",&s);
     debug_malloc_touch(null_program);
   }
+
+  {
+    struct svalue s;
+    start_new_program();
+    add_function("`()",placeholder_index,"function(mixed...:object)",0);
+    add_function("`[]",placeholder_index,"function(mixed:object)",0);
+    placeholder_program=end_program();
+    placeholder_object=fast_clone_object(placeholder_program,0);
+
+    s.type=T_OBJECT;
+    s.u.object=placeholder_object;
+    low_add_constant("__placeholder_object",&s);
+    debug_malloc_touch(placeholder_object);
+  }
 }
 
 void cleanup_program(void)
@@ -4993,6 +5169,18 @@ void cleanup_program(void)
   {
     free_program(null_program);
     null_program=0;
+  }
+
+  if(placeholder_object)
+  {
+    free_object(placeholder_object);
+    placeholder_object=0;
+  }
+
+  if(placeholder_program)
+  {
+    free_program(placeholder_program);
+    placeholder_program=0;
   }
 #endif
 }

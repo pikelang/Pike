@@ -5,7 +5,7 @@
 \*/
 /**/
 #include "global.h"
-RCSID("$Id: interpret.c,v 1.249 2001/09/24 14:14:46 grubba Exp $");
+RCSID("$Id: interpret.c,v 1.250 2001/10/05 01:30:12 hubbe Exp $");
 #include "interpret.h"
 #include "object.h"
 #include "program.h"
@@ -1456,6 +1456,7 @@ PMOD_EXPORT void f_call_function(INT32 args)
 
 PMOD_EXPORT void call_handle_error(void)
 {
+  dmalloc_touch_svalue(&throw_value);
   if (Pike_interpreter.svalue_stack_margin) {
     ONERROR tmp;
     int old_t_flag = t_flag;

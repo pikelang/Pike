@@ -5,7 +5,7 @@
 \*/
 
 /*
- * $Id: global.h,v 1.64 2001/08/30 23:09:57 mast Exp $
+ * $Id: global.h,v 1.65 2001/10/05 01:30:12 hubbe Exp $
  */
 #ifndef GLOBAL_H
 #define GLOBAL_H
@@ -232,9 +232,11 @@ void *alloca();
 
 #ifndef WITH_DOUBLE_PRECISION_SVALUE
 #define FLOAT_TYPE float
+#define SIZEOF_FLOAT_TYPE SIZEOF_FLOAT
 #else
 #ifdef WITH_LONG_DOUBLE_PRECISION_SVALUE
 #define FLOAT_TYPE long double
+#define SIZEOF_FLOAT_TYPE SIZEOF_LONG_DOUBLE
 #else
 #define FLOAT_TYPE double
 #endif /* long double */
@@ -242,15 +244,19 @@ void *alloca();
 
 #ifdef WITH_LONG_INT
 #define INT_TYPE long
+#define SIZEOF_INT_TYPE SIZEOF_LONG
 #else
 #ifdef WITH_LONG_LONG_INT
 #define INT_TYPE long long
+#define SIZEOF_INT_TYPE SIZEOF_LONG_LONG
 #else
 #ifdef WITH_SHORT_INT
 #define INT_TYPE short
+#define SIZEOF_INT_TYPE SIZEOF_SHORT
 #else
 #ifdef WITH_INT_INT
 #define INT_TYPE int
+#define SIZEOF_INT_TYPE SIZEOF_INT
 #else
 #if (SIZEOF_CHAR_P > 4) && 0
 /* This isn't a good idea on architectures where
@@ -261,6 +267,7 @@ void *alloca();
 #define INT_TYPE LONGEST
 #else /* !(sizeof(char *) > 4) */
 #define INT_TYPE INT32
+#define SIZEOF_INT_TYPE 4
 #endif /* sizeof(char *) > 4 */
 #endif /* WITH_INT_INT */
 #endif /* WITH_SHORT_INT */
