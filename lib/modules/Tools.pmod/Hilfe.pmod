@@ -545,13 +545,20 @@ class StdinHilfe
     {
       write=predef::write;
       ::create();
+      object(Stdio.Readline) readline = Stdio.Readline();
+      readline->enable_history(512);
 
-      while(string s=Stdio.Readline.readline(strlen(input) ? ">> " : "> "))
+      for(;;)
       {
+	readline->set_prompt(strlen(input) ? ">> " : "> ");
+	string s=readline->read();
+	if(!s)
+	  break;
 	signal(signum("SIGINT"),signal_trap);
 	add_input_line(s+"\n");
 	signal(signum("SIGINT"));
       }
+      destruct(readline);
       write("Terminal closed.\n");
     }
 }
