@@ -1,5 +1,5 @@
 #
-# $Id: Makefile.in,v 1.231 2001/01/13 01:19:05 mast Exp $
+# $Id: Makefile.in,v 1.232 2001/01/18 14:42:33 grubba Exp $
 #
 
 # This line is needed on some machines.
@@ -178,7 +178,10 @@ POBJ = las.o builtin_functions.o peep.o
 # Ouch.
 # It turns out that we really do need to do it this way.
 #
-# First compile pike, to generate the peep engine, and more
+# Ensure that we have a precompile.sh, so that we don't need to
+# have dependencies on it.
+#
+# Then compile the first pike, to generate the peep engine, and more
 # importantly, the lower_case() support, since that is needed by the
 # post_module.
 #
@@ -187,6 +190,7 @@ POBJ = las.o builtin_functions.o peep.o
 # 
 # No rest for the wicked.
 all: module_objects hilfe master.pike
+	@$(MAKE) precompile.sh
 	$(MAKE) $(MAKE_FLAGS) $(MAKE_PARALLEL) pike
 	@rm -f dummy_engine >/dev/null 2>&1; echo "" >dummy_engine && \
 	  if cmp $(SRCDIR)/peep_engine.c dummy_engine >/dev/null 2>&1; then \
@@ -658,7 +662,7 @@ $(SRCDIR)/language.c: $(SRCDIR)/language.h_src
 #
 # This rule makes sure that builtin.c is created in the source dir.
 #
-$(SRCDIR)/builtin.c: $(SRCDIR)/builtin.cmod ./precompile.sh $(TMP_BINDIR)/precompile.pike
+$(SRCDIR)/builtin.c: $(SRCDIR)/builtin.cmod $(TMP_BINDIR)/precompile.pike
 
 # Internal testing target
 run_yacc: $(SRCDIR)/language.c
