@@ -1,4 +1,4 @@
-// $Id: module.pmod,v 1.164 2003/03/19 15:21:29 mast Exp $
+// $Id: module.pmod,v 1.165 2003/07/30 16:05:20 mast Exp $
 #pike __REAL_VERSION__
 
 inherit files;
@@ -2492,8 +2492,7 @@ class UDP
   this_program set_read_callback(function f,mixed ...ext)
   {
     extra=ext;
-    callback=f;
-    _set_read_callback(_read_callback);
+    _set_read_callback((callback = f) && _read_callback);
     return this_object();
   }
    
