@@ -12,6 +12,14 @@ inherit "latex";
 
 string extention=".pdftex";
 
+string packages=
+#"\\usepackage{isolatin1}
+\\usepackage{latexsym}  % For $\Box$
+\\usepackage{amsmath}
+\\usepackage{longtable}
+\\usepackage[pdftex]{graphicx}
+";
+
 string convert_gfx(TAG tag)
 {
   string file;
@@ -21,7 +29,7 @@ string convert_gfx(TAG tag)
 			  300.0,
 			  tag->data && Sgml.get_text(tag->data));
   
-  if(!file) return "\\{Large Error}\n";
+  if(!file) return "\\{Large Error, no file}\n";
 
   switch( (file/".")[-1] )
   {
@@ -32,9 +40,10 @@ string convert_gfx(TAG tag)
       return "\\includegraphics{"+file+"}";
 
     default:
-      return "\\Huge{error}";
+      return "\\{Huge error, wrong extention}";
 
     case "png":
+    case "jpg":
 //      return "\\epsfbox{"+file+"}";
       
       return sprintf("\\pdfimageresolution=%d\n\\includegraphics{%s}",
@@ -59,12 +68,8 @@ string package(string x)
 \\pdfoutput=1
 \\relax
 \\documentclass[twoside,a4paper]{book}
-\\usepackage{isolatin1}
-\\usepackage{latexsym}  % For $\Box$
-\\usepackage{amsmath}
-\\usepackage{longtable}
-\\usepackage[pdftex]{graphicx}
-\\begin{document}
+"+packages+
+#"\\begin{document}
 \\author{wmml2pdflatex}
 \\setlength{\\unitlength}{1mm}
 

@@ -95,7 +95,7 @@ the_image_module.html: Image.wmml the_image_module.wmml
 clean:
 	-rm -f *.html *.md illustration_cache gfx/* $(MADEFILES) 
 	-rm -f tutorial.dvi tutorial.tex tutorial.aux
-	-rm -f tutorial.log tutorial.toc
+	-rm -f tutorial.log tutorial.toc latex_wcache
 
 rebuild:
 	-rm -f $(MADEFILES)
