@@ -16,7 +16,12 @@ esac
 
 if test x"$1" = x--gdb; then
   shift
-  echo set args -m$BUILDDIR/master.pike $@ > .gdbinit
+  args="set args '-m$BUILDDIR/master.pike'"
+  for arg do
+    arg=`echo $arg | sed -e s/\'/\'\"\'\"\'/g`
+    args="$args '$arg'"
+  done
+  echo $args > .gdbinit
   gdb "$BUILDDIR/pike"
   rm .gdbinit
 else
