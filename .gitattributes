@@ -53,6 +53,9 @@ testfont binary
 /lib/7.2/modules/Thread.pmod foreign_ident
 /lib/7.2/modules/__default.pmod foreign_ident
 /lib/7.2/modules/system.pmod foreign_ident
+/lib/7.4/modules/Crypto.pmod/des3_cbc.pike foreign_ident
+/lib/7.4/modules/Crypto.pmod/des_cbc.pike foreign_ident
+/lib/7.4/modules/Crypto.pmod/idea_cbc.pike foreign_ident
 /lib/7.4/modules/Crypto.pmod/invert.pike foreign_ident
 /lib/7.4/modules/Crypto.pmod/randomness.pmod foreign_ident
 /lib/7.4/modules/Regexp.pmod foreign_ident
