@@ -2,11 +2,11 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: program.c,v 1.500 2003/04/18 15:42:08 mast Exp $
+|| $Id: program.c,v 1.501 2003/04/27 23:06:15 mast Exp $
 */
 
 #include "global.h"
-RCSID("$Id: program.c,v 1.500 2003/04/18 15:42:08 mast Exp $");
+RCSID("$Id: program.c,v 1.501 2003/04/27 23:06:15 mast Exp $");
 #include "program.h"
 #include "object.h"
 #include "dynamic_buffer.h"
@@ -451,8 +451,15 @@ static char *raw_lfun_types[] = {
  *!
  *!   Equality operator callback.
  *!
+ *! @note
+ *!   If this is implemented it might be necessary to implement
+ *!   @[lfun::__hash] too. Otherwise mappings might hold several
+ *!   objects as indices which are duplicates according to this
+ *!   function. Various other functions that use hashing also might
+ *!   not work correctly, e.g. @[Array.uniq].
+ *!
  *! @seealso
- *!   @[predef::`==()]
+ *!   @[predef::`==()], @[lfun::__hash]
  */
 
 /*! @decl int(0..1) lfun::`<(mixed arg)
@@ -476,7 +483,17 @@ static char *raw_lfun_types[] = {
  *!   Hashing callback.
  *!
  *!   This function gets called by various mapping operations when the
- *!   object is used as index in a mapping.
+ *!   object is used as index in a mapping. It should return an
+ *!   integer that corresponds to the object in such a way that all
+ *!   values which @[lfun::`==] considers equal to the object gets the
+ *!   same hash value.
+ *!
+ *! @note
+ *!   The function @[predef::hash] does not return hash values that
+ *!   are compatible with this one.
+ *!
+ *! @seealso
+ *!   @[lfun::`==]
  */
 
 /*! @decl mixed lfun::cast(string requested_type)
