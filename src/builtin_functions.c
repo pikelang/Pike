@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: builtin_functions.c,v 1.590 2005/02/18 14:56:06 grubba Exp $
+|| $Id: builtin_functions.c,v 1.591 2005/02/18 19:35:25 grubba Exp $
 */
 
 #include "global.h"
@@ -8623,16 +8623,20 @@ void init_builtin_efuns(void)
 	    OPT_TRY_OPTIMIZE, fix_map_node_info, 0);
   
   ADD_EFUN2("filter", f_filter,
-	    tOr3(tFuncV(tSetvar(1,tOr4(tArray,tMapping,tMultiset,tString)),
 #if 1
+	    tOr3(tFuncV(tSetvar(1,tOr4(tArray,tMapping,tMultiset,tString)),
 			tMixed,
-#else
-			tOr5(tFuncV(tMix, tMix, tAnd(tInt01,tNot(tVoid))),
-			     tArray, tMapping, tMultiset, tString),
-#endif /* 1 */
 			tVar(1)),
 		 tFuncV(tOr(tPrg(tObj),tFunction),tMixed,tMap(tString,tMix)),
 		 tFuncV(tObj,tMix,tMix) ) ,
+#else
+	    tOr3(tFuncV(tSetvar(1,tOr4(tArray,tMapping,tMultiset,tString)),
+			tOr5(tFuncV(tMix, tMix, tAnd(tInt01,tNot(tVoid))),
+			     tArray, tMapping, tMultiset, tString),
+			tVar(1)),
+		 tFuncV(tOr(tPrg(tObj),tFunction),tMixed,tMap(tString,tMix)),
+		 tFuncV(tObj,tMix,tMix) ) ,
+#endif /* 1 */
 	    OPT_TRY_OPTIMIZE, fix_map_node_info, 0);
 
   ADD_EFUN("enumerate",f_enumerate,
