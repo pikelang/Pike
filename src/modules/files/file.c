@@ -6,7 +6,7 @@
 /**/
 #define NO_PIKE_SHORTHAND
 #include "global.h"
-RCSID("$Id: file.c,v 1.237 2002/06/27 13:52:41 nilsson Exp $");
+RCSID("$Id: file.c,v 1.238 2002/06/27 14:22:28 nilsson Exp $");
 #include "fdlib.h"
 #include "interpret.h"
 #include "svalue.h"
@@ -3208,7 +3208,7 @@ static void exit_file_lock_key(struct object *o)
 /*! @decl array(int) get_all_active_fds()
  *! Returns the id of all the active file descriptors.
  */
-void f_get_all_active_fd(INT32 args)
+static void f_get_all_active_fd(INT32 args)
 {
   int i,fds,ne;
   struct stat foo;
