@@ -1,5 +1,5 @@
 /* -*- c -*-
- * $Id: builtin.cmod,v 1.62 2001/08/14 22:21:16 nilsson Exp $
+ * $Id: builtin.cmod,v 1.63 2001/08/15 09:26:02 hubbe Exp $
  */
 
 #include "global.h"
@@ -131,6 +131,76 @@ PIKEFUN string int2char(int|object x)
     string_builder_putchar(&tmp, c);
     RETURN finish_string_builder(&tmp);
   }
+}
+
+/*! @decl string int2hex(int x)
+ *!
+ *! Same as sprintf("%x",x);
+ *!
+ *! @seealso
+ *! @[sprintf()]
+ */
+PIKEFUN string int2hex(int|object x)
+  efun;
+  optflags OPT_TRY_OPTIMIZE;
+{
+  INT_TYPE c;
+  unsigned long n;
+  int len;
+  struct pike_string *s;
+
+  if(x->type == T_OBJECT && x->u.object->prog)
+  {
+    ptrdiff_t fun=FIND_LFUN(x->u.object->prog, LFUN__SPRINTF);
+    if(fun != -1)
+    {
+      push_int('x');
+      f_aggregate_mapping(0);
+      apply_low(x->u.object, fun, 2);
+      if(Pike_sp[-1].type == T_STRING)
+      {
+	stack_swap();
+	pop_stack();
+	return;
+      }
+      Pike_error("Non-string returned from _sprintf()\n");
+    }
+  }
+  if(x->type != T_INT)
+    Pike_error("Bad argument 1 to int2hex.\n");
+
+  c=x->u.integer;
+
+  len=1;
+  if(c<0) {
+    len++;
+    n=-c;
+  }else{
+    n=c;
+  }
+  while(n>65536) { n>>=16; len+=4; }
+  while(n>16) { n>>=4; len++; }
+  
+  s=begin_shared_string(len);
+  c=x->u.integer;
+  if(!c)
+  {
+    s->str[0]='0';
+  }else{
+    if(c<0)
+    {
+      s->str[0]='-';
+      n=-c;
+    }else{
+      n=c;
+    }
+    while(n)
+    {
+      s->str[--len]="0123456789abcdef"[n&0xf];
+      n>>=4;
+    }
+  }
+  RETURN end_shared_string(s);
 }
 
 /*! @decl array column(array data, mixed index)

@@ -103,7 +103,7 @@
 */
 
 #include "global.h"
-RCSID("$Id: sprintf.c,v 1.80 2001/07/19 07:10:05 mast Exp $");
+RCSID("$Id: sprintf.c,v 1.81 2001/08/15 09:26:02 hubbe Exp $");
 #include "pike_error.h"
 #include "array.h"
 #include "svalue.h"
@@ -1519,6 +1519,12 @@ static node *optimize_sprintf(node *n)
       case 't':
 	ADD_NODE_REF2(*arg1,
 		      ret = mkefuncallnode("basetype",*arg1);
+	  );
+	return ret;
+
+      case 'x':
+	ADD_NODE_REF2(*arg1,
+		      ret = mkefuncallnode("int2hex",*arg1);
 	  );
 	return ret;
 
