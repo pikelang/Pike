@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: dvb.c,v 1.14 2002/11/08 12:06:19 hop Exp $
+|| $Id: dvb.c,v 1.15 2002/11/09 14:07:55 grubba Exp $
 */
 
 /*
@@ -199,7 +199,7 @@ char *mk_devname(int devno, char *basename) {
 
   if((devname = malloc(sizeof(basename)+4)) == NULL)
       return NULL;
-  sprintf(devname, "%s%d", basename, devno); //FIXME: uncorrect for v2.0+ !!
+  sprintf(devname, "%s%d", basename, devno); /* FIXME: uncorrect for v2.0+ !! */
   return devname;
 }
 
@@ -250,7 +250,7 @@ static void f_create(INT32 args) {
   fefd = open (devname, O_RDWR | O_NONBLOCK);
   if (fefd < 0) {
       DVB->cardn = -1;
-      //free(devname);
+      /* free(devname); */
       Pike_error("Opening frontend '%s' failed.\n", devname);
   }
   DVB->fefd = fefd;
@@ -506,7 +506,7 @@ static void f_zap(INT32 args) {
   if((devname = mk_devname(DVB->cardn, SECDEVICE)) == NULL)
       Pike_error("Internal error: can't malloc buffer.\n");
   secfd = open (devname, O_RDWR);
-  //free(devname);
+  /* free(devname); */
   if (secfd == -1) {
       Pike_error ("opening SEC device failed\n");
   }
@@ -556,11 +556,11 @@ static void f_get_pids(INT32 args) {
     if((devname = mk_devname(DVB->cardn, DEMUXDEVICE)) == NULL)
         Pike_error("Internal error: can't malloc buffer.\n");
     dmx = open (devname, O_RDWR | O_NONBLOCK);
-    //free(devname);
+    /* free(devname); */
     if (dmx < 0)
       Pike_error("Opening demux failed.\n");
   } else
-    // FIXME: for which PMT ?
+    /* FIXME: for which PMT ? */
     dmx = DVB->stream->fd;
   /* get the current PID settings */
   THREADS_ALLOW();
@@ -737,7 +737,7 @@ static int read_t(int fd,unsigned char *buffer,int length,int cks)
 
     if (cks && crc32(buffer+1,n) != 0)
     {
-      fprintf(stderr,"crc error\n"); //FIXME: ???
+      fprintf(stderr,"crc error\n"); /* FIXME: ??? */
       continue;
     }
 
@@ -769,7 +769,7 @@ static void f_parse_pat(INT32 args) {
   if((devname = mk_devname(DVB->cardn, DEMUXDEVICE)) == NULL)
      Pike_error("Internal error: can't malloc buffer.\n");
   dmx = open (devname, O_RDWR | O_NONBLOCK);
-  //free(devname);
+  /* free(devname); */
   if (dmx < 0) {
     snprintf (DVB->low_errmsg, MAX_ERR_LEN, "DMX SET SECTION FILTER.\n");
     push_int(0);
@@ -883,7 +883,7 @@ static void ParseCADescriptor (dvb_stream_data *st, unsigned char *data,
       e->ecm_pid = ((data[2] & 0x1f) << 8) | data[3];
       e->next = st->ecminfo;
       st->ecminfo = e;
-//      printf("Found irdeto\n");
+/*      printf("Found irdeto\n"); */
       break;
     case NAGRA_CA_SYSTEM:
       e = malloc(sizeof(struct ECMINFO));
@@ -894,7 +894,7 @@ static void ParseCADescriptor (dvb_stream_data *st, unsigned char *data,
       e->ecm_pid = ((data[2] & 0x1f) << 8) | data[3];
       e->next = st->ecminfo;
       st->ecminfo = e;
-//fprintf(stderr,"Found nagra\n");
+/* fprintf(stderr,"Found nagra\n"); */
       break;
   }
 #ifdef DVB_DEBUG
@@ -933,7 +933,7 @@ static void f_parse_pmt(INT32 args)
   if((devname = mk_devname(DVB->cardn, DEMUXDEVICE)) == NULL)
      Pike_error("Internal error: can't malloc buffer.\n");
   dmx = open (devname, O_RDWR | O_NONBLOCK);
-  //free(devname);
+  /* free(devname); */
   if (dmx < 0) {
     snprintf (DVB->low_errmsg, MAX_ERR_LEN, "DMX SET SECTION FILTER.\n");
     push_int(0);
@@ -973,7 +973,7 @@ static void f_parse_pmt(INT32 args)
 
   if (pnr != program_number)
   {
-//fprintf(stderr, "Can't find PMT entry\n");
+/* fprintf(stderr, "Can't find PMT entry\n"); */
     push_int(0);
     return;
   }
@@ -1231,7 +1231,7 @@ static void f_stream_create(INT32 args) {
   if((devname = mk_devname(DVB->cardn, DEMUXDEVICE)) == NULL)
      Pike_error("Internal error: can't malloc buffer.\n");
   fd = open (devname, O_RDWR /*| O_NONBLOCK*/);
-  //free(devname);
+  /* free(devname); */
   if (fd < 0) {
       Pike_error("Opening DEMUX failed.\n");
   }
@@ -1262,7 +1262,7 @@ static void f_stream_create(INT32 args) {
   DVBStream->pkt.payload = pktdata;
   DVBStream->pkt.payload_len = 0;
   /*DVB->pesfcb[ix] = NULL;*/
-  //fcntl(DVBStream->fd, F_SETFL, O_NONBLOCK);
+  /*fcntl(DVBStream->fd, F_SETFL, O_NONBLOCK);*/
 #if 0
   push_int(1);
 #else
@@ -1330,7 +1330,7 @@ static void f_stream_read(INT32 args) {
     e = errno; /* check_threads_etc may effect errno */
     THREADS_DISALLOW();
 
-    //check_threads_etc();
+    /* check_threads_etc(); */
 
     if (ret > 0) {
       ret += DVBStream->pkt.payload_len;
@@ -1355,7 +1355,7 @@ static void f_stream_read(INT32 args) {
     bufptr = buf;
     while((cnt = dvb_pes2es(bufptr,ret,&DVBStream->pkt, 0xC0)) > 0) {
 #ifdef DVB_DEBUG
-      //printf("DEB: dvb: PID(%d): cnt=%d (ix: %d): pkt.len=%d (skipped: %d)\n", DVBStream->pid, cnt, ix, DVBStream->pkt.payload_len, DVBStream->pkt.skipped);
+      /* printf("DEB: dvb: PID(%d): cnt=%d (ix: %d): pkt.len=%d (skipped: %d)\n", DVBStream->pid, cnt, ix, DVBStream->pkt.payload_len, DVBStream->pkt.skipped); */
       if(DVBStream->pkt.skipped)
         printf("PID(%d): skipped: %d\n", DVBStream->pid, DVBStream->pkt.skipped);
 #endif
@@ -1424,7 +1424,7 @@ static void f_audio_create(INT32 args) {
   if((devname = mk_devname(devno, AUDIODEVICE)) == NULL)
      Pike_error("Internal error: can't malloc buffer.\n");
   DVBAudio->fd = open( devname, O_RDWR );
-  //free(devname);
+  /* free(devname); */
   if (DVBAudio->fd < 0) {
       DVB->cardn = -1;
       Pike_error("Opening audio device failed.\n");
@@ -1689,7 +1689,7 @@ PIKE_MODULE_INIT {
     add_function("create", f_create, "function(int|void:void)", 0);
     add_function("_sprintf", f__sprintf, "function(int,mapping|void:mixed)", 0);
     add_function("tune", f_zap, "function(int,int,int|string,int,mapping|void:int)", 0);
-  //add_function("set_pids", f_set_pids, "function(string,mixed:int)", 0);
+  /* add_function("set_pids", f_set_pids, "function(string,mixed:int)", 0); */
     add_function("get_pids", f_get_pids, "function(:mapping|int)", 0);
     add_function("analyze_pat", f_parse_pat, "function(:mapping|int)", 0);
     add_function("analyze_pmt", f_parse_pmt, "function(int,int:array|int)", 0);

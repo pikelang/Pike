@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: dvb.h,v 1.5 2002/11/08 12:06:19 hop Exp $
+|| $Id: dvb.h,v 1.6 2002/11/09 14:07:55 grubba Exp $
 */
 
 #ifndef DVB_H
@@ -33,11 +33,11 @@
 #define ISO13522_STREAM  0xF3
 #define PROG_STREAM_DIR  0xFF
 
-//pts_dts flags 
+/* pts_dts flags */
 #define PTS_ONLY         0x80
 #define PTS_DTS          0xC0
 
-//flags2
+/* flags2 */
 #define PTS_DTS_FLAGS    0xC0
 #define ESCR_FLAG        0x20
 #define ES_RATE_FLAG     0x10
