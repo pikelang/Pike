@@ -556,6 +556,8 @@ class PikeType
 
 	case 's':
 	  return output_pike_type(0);
+        case 't':
+	  return "object";
       }
     }
 
@@ -1554,11 +1556,13 @@ class ParseBlock
 
 	int min_args=sizeof(args);
 	int max_args=sizeof(args);
+	int repeat_arg = -1;
 
 	if(last_argument_repeats)
 	{
 	  min_args--;
 	  max_args=0x7fffffff;
+	  repeat_arg = min_args;
 	}
 
 	while(min_args>0 && args[min_args-1]->may_be_void())
@@ -1597,7 +1601,7 @@ class ParseBlock
 		});
 	  }
 
-	  if(max_args != 0x7ffffff && max_args != -1) {
+	  if(max_args != 0x7fffffff && max_args != -1) {
 	    ret+=({
 	      PC.Token(sprintf("if(args > %d) wrong_number_of_args_error(%O,args,%d);\n",
 			       max_args,
@@ -1607,6 +1611,8 @@ class ParseBlock
 	  }
 	}
 
+	string check_argbase = argbase;
+
 	foreach(args, Argument arg)
 	  {
 	    if(arg->may_be_void() && "mixed" != (string)arg->basetype())
@@ -1614,6 +1620,15 @@ class ParseBlock
 	      ret+=({
 		PC.Token(sprintf("if(args > %s) ",argnum)),
 		  });
+	    }
+	    if (argnum == repeat_arg) {
+	      // Begin the argcnt loop.
+	      ret += ({ PC.Token(sprintf("{\n"
+					 "  INT32 argcnt;\n"
+					 "  for (argcnt=0; argcnt < %s-%d; argcnt++) {\n",
+					 num_arguments, argnum),
+				 arg->line()) });
+	      check_argbase = "+argcnt"+argbase;
 	    }
 	    if(arg->is_c_type() && arg->basetype() == "string")
 	    {
@@ -1623,8 +1638,8 @@ class ParseBlock
 	       */
 	      ret+=({
 		PC.Token(sprintf("if(sp[%d%s].type != PIKE_T_STRING || sp[%d%s].ustring -> width)",
-				 argnum,argbase,
-				 argnum,argbase,
+				 argnum,check_argbase,
+				 argnum,check_argbase,
 				 upper_case(arg->basetype())),arg->line())
 		  });
 	    }else
@@ -1634,7 +1649,7 @@ class ParseBlock
 		default:
 		  ret+=({
 		    PC.Token(sprintf("if(Pike_sp[%d%s].type != PIKE_T_%s)",
-				     argnum,argbase,
+				     argnum,check_argbase,
 				     upper_case(arg->basetype())),arg->line())
 		      });
 		  break;
@@ -1642,7 +1657,8 @@ class ParseBlock
 		case "program":
 		  ret+=({
 		    PC.Token(sprintf("if(!( %s=program_from_svalue(sp%+d%s)))",
-				     arg->name(),argnum,argbase),arg->line())
+				     arg->name(),argnum,check_argbase),
+			     arg->line())
 		      });
 		  break;
 
@@ -1652,13 +1668,19 @@ class ParseBlock
 	    {
 	      default:
 		ret+=({
-		  PC.Token(sprintf(" SIMPLE_BAD_ARG_ERROR(%O,%d,%O);\n",
+		  PC.Token(sprintf(" SIMPLE_BAD_ARG_ERROR(%O,%d%s,%O);\n",
 				   attributes->errname || attributes->name || name,
 				   argnum+1,
+				   (argnum == repeat_arg)?"+argcnt":"",
 				   arg->typename()),arg->line()),
 		    });
 
 	      case "mixed":
+	    }
+
+	    if (argnum == repeat_arg) {
+	      // End the argcnt loop.
+	      ret += ({ PC.Token("  }\n}\n", arg->line()) });
 	    }
 
 	    if(arg->may_be_void())
