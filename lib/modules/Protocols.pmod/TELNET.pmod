@@ -1,5 +1,5 @@
 //
-// $Id: TELNET.pmod,v 1.19 2003/01/20 17:44:00 nilsson Exp $
+// $Id: TELNET.pmod,v 1.20 2003/03/12 09:09:39 agehall Exp $
 //
 // The TELNET protocol as described by RFC 764 and others.
 //
@@ -481,7 +481,7 @@ class protocol
   }
   
 
-  //! Indicates wether we are in synch-mode or not.
+  //! Indicates whether we are in synch-mode or not.
   static int synch = 0;
 
   static mixed call_callback(mixed what, mixed ... args)

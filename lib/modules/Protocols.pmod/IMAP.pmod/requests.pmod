@@ -1,6 +1,6 @@
 /* IMAP.requests
  *
- * $Id: requests.pmod,v 1.90 2002/03/09 18:58:30 nilsson Exp $
+ * $Id: requests.pmod,v 1.91 2003/03/12 09:09:39 agehall Exp $
  */
 
 #pike __REAL_VERSION__
@@ -587,7 +587,7 @@ class fetch
       // RFC 2060, Section 6.4.8:
       //   However, server implementations MUST implicitly include the UID
       //   message data item as part of any FETCH response caused by a UID
-      //   command, regardless of wether a UID was specified as a message
+      //   command, regardless of whether a UID was specified as a message
       //   data item to the FETCH.
       int add_uid = 1;
       foreach(fetch_attrs, mapping(string:mixed) attr) {
