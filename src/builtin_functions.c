@@ -4,7 +4,7 @@
 ||| See the files COPYING and DISCLAIMER for more information.
 \*/
 #include "global.h"
-RCSID("$Id: builtin_functions.c,v 1.105 1998/05/07 23:51:00 hubbe Exp $");
+RCSID("$Id: builtin_functions.c,v 1.106 1998/05/13 07:41:16 hubbe Exp $");
 #include "interpret.h"
 #include "svalue.h"
 #include "pike_macros.h"
@@ -2438,7 +2438,7 @@ void f_replace_master(INT32 args)
 void f_master(INT32 args)
 {
   pop_n_elems(args);
-  ref_push_object(master_object);
+  ref_push_object(master());
 }
 
 #ifdef HAVE_GETHRVTIME
