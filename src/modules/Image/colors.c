@@ -1,7 +1,7 @@
 /*
 **! module Image
 **! note
-**!	$Id: colors.c,v 1.49 2001/04/14 09:44:22 hubbe Exp $
+**!	$Id: colors.c,v 1.50 2001/07/01 21:53:37 mast Exp $
 **! submodule Color
 **!
 **!	This module keeps names and easy handling 
@@ -179,7 +179,7 @@
 
 #include "global.h"
 
-RCSID("$Id: colors.c,v 1.49 2001/04/14 09:44:22 hubbe Exp $");
+RCSID("$Id: colors.c,v 1.50 2001/07/01 21:53:37 mast Exp $");
 
 #include "image_machine.h"
 
@@ -346,7 +346,12 @@ void _img_nct_map_to_flat_cubicles(rgb_group *s,
 static void try_find_name(struct color_struct *this)
 {
    rgb_group d;
-   static struct nct_dither dith = { NCTD_NONE,NULL,NULL,NULL,NULL,-1 };
+   static struct nct_dither dith = {
+     NCTD_NONE,NULL,NULL,NULL,NULL,-1,
+#ifdef HAVE_UNION_INIT
+     {{NULL,NULL,0.0,0.0,0.0,0.0,0,0}},	/* Only to avoid warnings. */
+#endif
+   };
 
    if (!colors)
       make_colors();
