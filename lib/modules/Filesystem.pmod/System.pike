@@ -278,9 +278,7 @@ array find(void|function(Filesystem.Stat:int) mask, mixed ... extra)
 
   foreach(r, Filesystem.Base dir)
   {
-    if(!mask)
-      res += ({ dir });
-    else if(mask(dir, @extra))
+    if(!mask || mask(dir, @extra))
       res += ({ dir });
 
     if(dir->name=="." || dir->name=="..")
