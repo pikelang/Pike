@@ -798,8 +798,10 @@ void streamed_parser_parse( INT32 args )
 	break;
       }
       break;
-      
+#if 0
      default:
+      /*  Make HPCC happy */
+#endif
     }
   if (sp_tag_save)
     while (sp_tag_save <= sp)

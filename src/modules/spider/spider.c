@@ -1546,6 +1546,9 @@ void f_alarm(INT32 args)
 }
 #endif
 
+void f_decode_value(INT32 args);
+void f_encode_value(INT32 args);
+
 void init_spider_efuns(void) 
 {
 #ifndef DEBUG
@@ -1564,6 +1567,12 @@ void init_spider_efuns(void)
   add_efun("_free_lock", f_freelock, "function(int:int)", OPT_SIDE_EFFECT);
   add_efun("_new_lock", f_newlock, "function(int:int)", OPT_SIDE_EFFECT);
 #endif
+
+  add_efun("encode_value", f_encode_value, "function(mixed:string)", 
+	   OPT_TRY_OPTIMIZE);
+
+  add_efun("decode_value", f_decode_value, "function(string:mixed)",
+	   OPT_TRY_OPTIMIZE);
 
   add_efun("http_decode_string",f_http_decode_string,"function(string:string)",
 	   OPT_TRY_OPTIMIZE);
