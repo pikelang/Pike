@@ -6,7 +6,7 @@
 /**/
 #define NO_PIKE_SHORTHAND
 #include "global.h"
-RCSID("$Id: file.c,v 1.215 2001/12/05 16:07:11 js Exp $");
+RCSID("$Id: file.c,v 1.216 2002/12/09 13:16:05 grubba Exp $");
 #include "fdlib.h"
 #include "interpret.h"
 #include "svalue.h"
@@ -1020,7 +1020,7 @@ static void file_write(INT32 args)
 #ifdef _REENTRANT
 	if (FD<0) {
 	  free(iovbase);
-	  Pike_error("File destructed while in file->write.\n");
+	  Pike_error("File closed/destructed while in file->write.\n");
 	}
 #endif
 	if(i<0)
@@ -1105,7 +1105,7 @@ static void file_write(INT32 args)
     check_signals(0,0,0);
 
 #ifdef _REENTRANT
-    if(FD<0) Pike_error("File destructed while in file->write.\n");
+    if(FD<0) Pike_error("File closed/destructed while in file->write.\n");
 #endif
 
     if(i<0)
@@ -2026,13 +2026,13 @@ static void file_pipe(INT32 args)
 
   if ((i<0) || (inout[0] < 0) || (inout[1] < 0))
   {
+    ERRNO=errno;
     if (inout[0] >= 0) {
       fd_close(inout[0]);
     }
     if (inout[1] >= 0) {
       fd_close(inout[1]);
     }
-    ERRNO=errno;
     push_int(0);
   }
   else
