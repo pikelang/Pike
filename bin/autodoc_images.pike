@@ -3,10 +3,10 @@ string copy_to = "manual/images";
 
 void parse_file(string file) {
 
-  if(file=="sub_manual.xml")
-      return;
-
   string dir = getcwd()+"/"+dirname(file)+"/";
+
+  if(has_suffix(file,"sub_manual.xml"))
+      return;
 
   string x,y;
   y = Stdio.read_file(file);
