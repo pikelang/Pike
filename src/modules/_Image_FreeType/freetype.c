@@ -2,12 +2,12 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: freetype.c,v 1.21 2004/04/19 23:03:01 nilsson Exp $
+|| $Id: freetype.c,v 1.22 2004/06/21 14:44:08 anders Exp $
 */
 
 #include "config.h"
 #include "global.h"
-RCSID("$Id: freetype.c,v 1.21 2004/04/19 23:03:01 nilsson Exp $");
+RCSID("$Id: freetype.c,v 1.22 2004/06/21 14:44:08 anders Exp $");
 #include "module.h"
 #include "pike_error.h"
 
@@ -58,6 +58,39 @@ struct face
 };
 
 #define TFACE   ((struct face*)Pike_fp->current_storage)->face
+
+#undef __FTERRORS_H__
+#define FT_ERROR_START_LIST				\
+  struct image_ft_error_lookup {			\
+    const char *sym;					\
+    FT_Error code;					\
+    const char *msg;					\
+  } image_ft_error_lookup[] = {
+#define FT_ERRORDEF(SYM, VAL, MSG) { TOSTR(SYM), VAL, MSG },
+#define FT_ERROR_END_LIST			\
+  { NULL, 0, NULL },				\
+    };
+#ifdef FT_ERRORS_H
+#include FT_ERRORS_H
+#else
+#include <freetype/fterrors.h>
+#endif
+
+static void image_ft_error(const char *msg, FT_Error errcode)
+{
+  const char *errmsg = NULL;
+  if (errcode) {
+    struct image_ft_error_lookup *entry;
+    for (entry = image_ft_error_lookup; entry->sym; entry++) {
+      if (entry->code == errcode) {
+	errmsg = entry->msg;
+	break;
+      }
+    }
+  }
+  if (!errmsg) Pike_error("%s\n", msg);
+  Pike_error("%s: %s\n", msg, errmsg);
+}
 
 /*! @module Image */
 
@@ -149,9 +182,10 @@ static void image_ft_face_get_kerning( INT32 args )
 static void image_ft_face_attach_file( INT32 args )
 {
   char *path;
+  FT_Error errcode;
   get_all_args( "attach_file", args, "%s", &path );
-  if( FT_Attach_File( TFACE, path ) )
-    Pike_error("Failed to attach file\n");
+  if ((errcode = FT_Attach_File( TFACE, path )))
+    image_ft_error("Failed to attach file", errcode);
   pop_n_elems( args );
   push_int( 0 );
 }
@@ -161,14 +195,15 @@ static void image_ft_face_attach_file( INT32 args )
 static void image_ft_face_set_size( INT32 args )
 {
   int w, h;
+  FT_Error errcode;
   if( (args != 2) || (sp[-args].type != sp[1-args].type)
       || (sp[-args].type != T_INT) )
     Pike_error("Illegal arguments to set_size\n");
   w = sp[-2].u.integer;
   h = sp[-1].u.integer;
 
-  if( FT_Set_Pixel_Sizes( TFACE, w, h ) )
-    Pike_error("Failed to set size\n");
+  if((errcode = FT_Set_Pixel_Sizes( TFACE, w, h )))
+    image_ft_error("Failed to set size", errcode);
   pop_n_elems( 2 );
   ref_push_object( fp->current_object );
 }
@@ -196,7 +231,7 @@ static void image_ft_face_list_encodings( INT32 args )
  */
 static void image_ft_face_select_encoding( INT32 args )
 {
-  FT_Encoding e;
+  FT_Encoding e = 0;
   FT_Error er;
   if( args != 1 || (sp[-args].type != PIKE_T_INT &&
 		    sp[-args].type != PIKE_T_STRING) )
@@ -212,7 +247,7 @@ static void image_ft_face_select_encoding( INT32 args )
   pop_n_elems( args );
   er = FT_Select_Charmap(TFACE, e);
   if( er )
-    Pike_error( "Character encoding not available in this font\n" );
+    image_ft_error("Character encoding not available in this font", er);
 }
 
 /*! @decl mapping info()
