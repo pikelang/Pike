@@ -5,7 +5,7 @@
 \*/
 /**/
 #include "global.h"
-RCSID("$Id: program.c,v 1.156 1999/09/28 23:19:55 hubbe Exp $");
+RCSID("$Id: program.c,v 1.157 1999/09/28 23:49:54 grubba Exp $");
 #include "program.h"
 #include "object.h"
 #include "dynamic_buffer.h"
@@ -1120,6 +1120,9 @@ SIZE_T low_add_storage(SIZE_T size, SIZE_T alignment, int modulo_orig)
      * This can also be written as STORAGE_NEEDED(o->prog)
      * STORAGE_NEEDED() is defined in program.h.
      * /Hubbe 1999-09-29
+     *
+     * Oops, seems I read the test below the wrong way around.
+     *	/grubba 1999-09-29
      */
     new_program->inherits[0].storage_offset=offset;
   }
