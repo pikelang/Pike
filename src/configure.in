@@ -1,4 +1,4 @@
-AC_REVISION("$Id: configure.in,v 1.244 1998/09/29 20:11:26 grubba Exp $")
+AC_REVISION("$Id: configure.in,v 1.245 1998/09/29 20:13:26 grubba Exp $")
 AC_INIT(interpret.c)
 AC_CONFIG_HEADER(machine.h)
 
@@ -184,8 +184,8 @@ AC_ARG_WITH(poll,        [  --with-poll            use poll instead of select],[
   # Neither --with-poll nor --without-poll was specified
   case "$pike_cv_sys_os" in
     Solaris|AIX|HP-UX|OSF1|IRIX)
-      AC_MSG_WARN([Defaulting to --with-poll since OS is $pike_cv_sys_os.])
-      with_poll=yes;
+      AC_MSG_WARN([Defaulting to --with-poll since the OS is $pike_cv_sys_os.])
+      with_poll=yes
     ;;
   esac
 ])
