@@ -177,11 +177,10 @@ add garbage collect
 
 addera generisk callback
 
-set_socket_nonblocking adderar ingen referens till objektet...
-
 assert (kolla typer explicit)
 generalisera foreach()
 constant
 'type wish'
 rewrite sort_array
 
+document file::set_nonblocking better (prototype callbacks etc.)
