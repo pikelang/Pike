@@ -1,48 +1,11 @@
 #include <process.h>
 #include <array.h>
+#include <stdio.h>
+#include <string.h>
 
 #define error(X) throw( ({ (X), backtrace()[0..sizeof(backtrace())-2] }) )
 
-inherit "/precompiled/file";
 inherit "/precompiled/regexp";
-
-string read_bytes(string filename,void|int start,void|int len)
-{
-  string ret;
-  if(!open(filename,"r"))
-    error("Couldn't open file "+filename+".\n");
-  
-  switch(query_num_arg())
-  {
-  case 1:
-  case 2:
-    len=0x7fffffff;
-  case 3:
-    seek(start);
-  }
-  ret=read(len);
-  close();
-  return ret;
-}
-
-int write_file(string filename,string what)
-{
-  int ret;
-  if(!open(filename,"awc"))
-    error("Couldn't open file "+filename+".\n");
-  
-  ret=write(what);
-  close();
-  return ret;
-}
-
-int file_size(string s)
-{
-  int *stat;
-  stat=file_stat(s);
-  if(!stat) return -1;
-  return stat[1]; 
-}
 
 varargs int member_array(mixed needle,mixed *haystack,int start)
 {
@@ -96,7 +59,6 @@ void create()
   add_constant("PI",3.1415926535897932384626433832795080);
   add_constant("capitalize",capitalize);
   add_constant("explode",`/);
-  add_constant("file_size",file_size);
   add_constant("all_efuns",all_constants);
 
   add_constant("filter_array",filter);
@@ -109,12 +71,10 @@ void create()
   add_constant("m_values",values);
   add_constant("member_array",member_array);
   add_constant("previous_object",previous_object);
-  add_constant("read_bytes",read_bytes);
   add_constant("regexp",regexp);
   add_constant("strstr",search);
   add_constant("sum",`+);
   add_constant("this_function",this_function);
-  add_constant("write_file",write_file);
   add_constant("add_efun",add_constant);
 
   add_constant("l_sizeof",sizeof);
