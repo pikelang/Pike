@@ -1,5 +1,5 @@
 /*
- * $Id: passwords.c,v 1.16 1998/07/09 21:03:22 grubba Exp $
+ * $Id: passwords.c,v 1.17 1998/07/10 15:52:10 grubba Exp $
  *
  * Password handling for Pike.
  *
@@ -22,7 +22,7 @@
 #include "system_machine.h"
 #include "system.h"
 
-RCSID("$Id: passwords.c,v 1.16 1998/07/09 21:03:22 grubba Exp $");
+RCSID("$Id: passwords.c,v 1.17 1998/07/10 15:52:10 grubba Exp $");
 
 #include "module_support.h"
 #include "interpret.h"
@@ -53,7 +53,7 @@ RCSID("$Id: passwords.c,v 1.16 1998/07/09 21:03:22 grubba Exp $");
  * Emulation
  */
 
-DEFINE_MUTEX(password_protection_mutex);
+DEFINE_IMUTEX(password_protection_mutex);
 
 #ifdef HAVE_GETPWENT
 #ifndef HAVE_GETPWNAM
@@ -120,9 +120,9 @@ void push_pwent(struct passwd *ent)
   if(!strcmp(ent->pw_passwd, "x"))
   {
     struct spwd *foo;
-    THREADS_ALLOW_UID();
+    THREADS_ALLOW();
     foo = getspnam(ent->pw_name);
-    THREADS_DISALLOW_UID();
+    THREADS_DISALLOW();
     if(foo)
       push_text(foo->sp_pwdp);
     else
@@ -171,13 +171,16 @@ void f_getgrgid(INT32 args)
   int gid;
   struct group *foo;
   get_all_args("getgrgid", args, "%d", &gid);
+
+  LOCK_IMUTEX(&password_protection_mutex);
+
   THREADS_ALLOW_UID();
-  mt_lock(&password_protection_mutex);
   foo = getgrgid( gid );
   THREADS_DISALLOW_UID();
   pop_n_elems( args );
   push_grent( foo );
-  mt_unlock(&password_protection_mutex);
+
+  UNLOCK_IMUTEX(&password_protection_mutex);
 }
 #endif /* HAVE_GETGRGID */
 
@@ -188,13 +191,16 @@ void f_getgrnam(INT32 args)
   char *str;
   struct group *foo;
   get_all_args("getgrnam", args, "%s", &str);
+
+  LOCK_IMUTEX(&password_protection_mutex);
+
   THREADS_ALLOW_UID();
-  mt_lock(&password_protection_mutex);
   foo = getgrnam( str );
   THREADS_DISALLOW_UID();
   pop_n_elems( args );
   push_grent( foo );
-  mt_unlock(&password_protection_mutex);
+
+  UNLOCK_IMUTEX(&password_protection_mutex);
 }
 #endif /* HAVE_GETGRNAM */
 
@@ -207,14 +213,16 @@ void f_getpwnam(INT32 args)
 
   get_all_args("getpwnam", args, "%s", &str);
 
+  LOCK_IMUTEX(&password_protection_mutex);
+
   THREADS_ALLOW_UID();
-  mt_lock(&password_protection_mutex);
   foo = getpwnam(str);
   THREADS_DISALLOW_UID();
 
   pop_n_elems(args);
   push_pwent(foo);
-  mt_unlock(&password_protection_mutex);
+
+  UNLOCK_IMUTEX(&password_protection_mutex);
 }
 #endif /* HAVE_GETPWNAM */
 
@@ -227,14 +235,16 @@ void f_getpwuid(INT32 args)
   
   get_all_args("getpwuid", args, "%i", &uid);
 
+  LOCK_IMUTEX(&password_protection_mutex);
+
   THREADS_ALLOW_UID();
-  mt_lock(&password_protection_mutex);
   foo = getpwuid(uid);
   THREADS_DISALLOW_UID();
 
   pop_n_elems(args);
   push_pwent(foo);
-  mt_unlock(&password_protection_mutex);
+
+  UNLOCK_IMUTEX(&password_protection_mutex);
 }
 #endif /* HAVE_GETPWUID */
 
@@ -242,13 +252,15 @@ void f_getpwuid(INT32 args)
 /* int setpwent() */
 void f_setpwent(INT32 args)
 {
+  LOCK_IMUTEX(&password_protection_mutex);
+
   THREADS_ALLOW_UID();
-  mt_lock(&password_protection_mutex);
   setpwent();
-  mt_unlock(&password_protection_mutex);
   THREADS_DISALLOW_UID();
   pop_n_elems(args);
   push_int(0);
+
+  UNLOCK_IMUTEX(&password_protection_mutex);
 }
 #endif /* HAVE_SETPWENT */
  
@@ -256,13 +268,15 @@ void f_setpwent(INT32 args)
 /* int endpwent() */
 void f_endpwent(INT32 args)
 {
+  LOCK_IMUTEX(&password_protection_mutex);
+
   THREADS_ALLOW_UID();
-  mt_lock(&password_protection_mutex);
   endpwent();
-  mt_unlock(&password_protection_mutex);
   THREADS_DISALLOW_UID();
   pop_n_elems(args);
   push_int(0);
+
+  UNLOCK_IMUTEX(&password_protection_mutex);
 }
 #endif /* HAVE_ENDPWENT */
 
@@ -272,8 +286,10 @@ void f_getpwent(INT32 args)
 {
   struct passwd *foo;
   pop_n_elems(args);
+
+  LOCK_IMUTEX(&password_protection_mutex);
+
   THREADS_ALLOW_UID();
-  mt_lock(&password_protection_mutex);
   foo = getpwent();
   THREADS_DISALLOW_UID();
   if(!foo)
@@ -283,7 +299,8 @@ void f_getpwent(INT32 args)
     return;
   }
   push_pwent(foo);
-  mt_unlock(&password_protection_mutex);
+
+  UNLOCK_IMUTEX(&password_protection_mutex);
 }
 
 void f_get_all_users(INT32 args)
@@ -293,12 +310,7 @@ void f_get_all_users(INT32 args)
   pop_n_elems(args);
   a = low_allocate_array(0, 10);
 
-  /* NOTE: We need THREADS_ALLOW_UID()/THREADS_DISALLOW_UID() here
-   * to avoid deadlocks.
-   */
-  THREADS_ALLOW_UID();
-  mt_lock(&password_protection_mutex);
-  THREADS_DISALLOW_UID();
+  LOCK_IMUTEX(&password_protection_mutex);
 
   setpwent();
   while(1)
@@ -318,7 +330,7 @@ void f_get_all_users(INT32 args)
   }
   endpwent();
 
-  mt_unlock(&password_protection_mutex);
+  UNLOCK_IMUTEX(&password_protection_mutex);
 
   push_array(a);
 }
@@ -329,11 +341,14 @@ void f_get_all_users(INT32 args)
 /* int setgrent() */
 void f_setgrent(INT32 args)
 {
+  LOCK_IMUTEX(&password_protection_mutex);
+
   THREADS_ALLOW_UID();
-  mt_lock(&password_protection_mutex);
   setgrent();
-  mt_unlock(&password_protection_mutex);
   THREADS_DISALLOW_UID();
+
+  UNLOCK_IMUTEX(&password_protection_mutex);
+
   pop_n_elems(args);
   push_int(0);
 }
@@ -343,11 +358,14 @@ void f_setgrent(INT32 args)
 /* int endgrent() */
 void f_endgrent(INT32 args)
 {
+  LOCK_IMUTEX(&password_protection_mutex);
+
   THREADS_ALLOW_UID();
-  mt_lock(&password_protection_mutex);
   endgrent();
-  mt_unlock(&password_protection_mutex);
   THREADS_DISALLOW_UID();
+
+  UNLOCK_IMUTEX(&password_protection_mutex);
+
   pop_n_elems(args);
   push_int(0);
 }
@@ -359,8 +377,10 @@ void f_getgrent(INT32 args)
 {
   struct group *foo;
   pop_n_elems(args);
+
+  LOCK_IMUTEX(&password_protection_mutex);
+
   THREADS_ALLOW_UID();
-  mt_lock(&password_protection_mutex);
   foo = getgrent();
   THREADS_DISALLOW_UID();
   if(!foo)
@@ -369,7 +389,8 @@ void f_getgrent(INT32 args)
     return;
   }
   push_grent(foo);
-  mt_unlock(&password_protection_mutex);
+
+  UNLOCK_IMUTEX(&password_protection_mutex);
 }
 
 void f_get_all_groups(INT32 args)
@@ -380,12 +401,7 @@ void f_get_all_groups(INT32 args)
 
   a = low_allocate_array(0, 10);
 
-  /* NOTE: We need THREADS_ALLOW_UID()/THREADS_DISALLOW_UID() here
-   * to avoid deadlocks.
-   */
-  THREADS_ALLOW_UID();
-  mt_lock(&password_protection_mutex);
-  THREADS_DISALLOW_UID();
+  LOCK_IMUTEX(&password_protection_mutex);
 
   setgrent();
   while(1)
@@ -404,7 +420,7 @@ void f_get_all_groups(INT32 args)
   }
   endgrent();
 
-  mt_unlock(&password_protection_mutex);
+  UNLOCK_IMUTEX(&password_protection_mutex);
 
   push_array(a);
 }
@@ -425,8 +441,10 @@ void f_get_groups_for_user(INT32 arg)
   if(sp[-1].type == T_INT)
   {
     int uid=sp[-1].u.integer;
+
+    LOCK_IMUTEX(&password_protection_mutex);
+
     THREADS_ALLOW_UID();
-    mt_lock(&password_protection_mutex);
     pw=getpwuid(uid);
     THREADS_DISALLOW_UID();
 
@@ -435,8 +453,10 @@ void f_get_groups_for_user(INT32 arg)
     user=sp[-1].u.string->str;
   }else{
     user=sp[-1].u.string->str;
+
+    LOCK_IMUTEX(&password_protection_mutex);
+
     THREADS_ALLOW_UID();
-    mt_lock(&password_protection_mutex);
     pw=getpwnam(user);
     THREADS_DISALLOW_UID();
   }
@@ -479,7 +499,9 @@ void f_get_groups_for_user(INT32 arg)
     pop_stack();
   }
   endgrent();
-  mt_unlock(&password_protection_mutex);
+
+  UNLOCK_IMUTEX(&password_protection_mutex);
+ 
   pop_stack();
   push_array(a);
 }
@@ -488,6 +510,8 @@ void f_get_groups_for_user(INT32 arg)
 
 void init_passwd(void)
 {
+  init_interleave_mutex(&password_protection_mutex);
+
   /*
    * From passwords.c
    */

@@ -1,5 +1,5 @@
 /*
- * $Id: threads.h,v 1.44 1998/07/05 13:48:58 grubba Exp $
+ * $Id: threads.h,v 1.45 1998/07/10 15:52:08 grubba Exp $
  */
 #ifndef THREADS_H
 #define THREADS_H
@@ -231,6 +231,37 @@ extern COND_T threads_disabled_change;		/* Used by _disable_threads */
 struct svalue;
 struct frame;
 
+extern MUTEX_T interleave_lock;
+
+struct interleave_mutex
+{
+  struct interleave_mutex *next;
+  struct interleave_mutex *prev;
+  MUTEX_T lock;
+};
+
+#define IMUTEX_T struct interleave_mutex
+
+#define DEFINE_IMUTEX(name) IMUTEX_T name
+
+/* If threads are disabled, we already hold the lock. */
+#define LOCK_IMUTEX(im) do { \
+    if (!threads_disabled) { \
+      THREADS_FPRINTF(0, (stderr, "Locking IMutex 0x%08p...\n", (im))); \
+      THREADS_ALLOW(); \
+      mt_lock(&((im)->lock)); \
+      THREADS_DISALLOW(); \
+    } \
+  } while(0)
+
+/* If threads are disabled, the lock will be released later. */
+#define UNLOCK_IMUTEX(im) do { \
+    if (!threads_disabled) { \
+      THREADS_FPRINTF(0, (stderr, "Unlocking IMutex 0x%08p...\n", (im))); \
+      mt_unlock(&((im)->lock)); \
+    } \
+  } while(0)
+
 #define THREAD_NOT_STARTED -1
 #define THREAD_RUNNING 0
 #define THREAD_EXITED 1
@@ -272,12 +303,15 @@ struct thread_state {
 #endif
 
 /* Define to get a debug-trace of some of the threads operations. */
-/* #define VERBOSE_THREADS_DEBUG */
+/* #define VERBOSE_THREADS_DEBUG	0 */ /* Some debug */
+/* #define VERBOSE_THREADS_DEBUG	1 */ /* Lots of debug */
 
 #ifndef VERBOSE_THREADS_DEBUG
-#define THREADS_FPRINTF(X)
+#define THREADS_FPRINTF(L,X)
 #else
-#define THREADS_FPRINTF(X)	fprintf X
+#define THREADS_FPRINTF(L,X)	do { \
+    if ((VERBOSE_THREADS_DEBUG + 0) >= (L)) fprintf X; \
+  } while(0)
 #endif /* VERBOSE_THREADS_DEBUG */
 
 #ifdef THREAD_TRACE
@@ -320,12 +354,12 @@ struct thread_state {
   do {\
      struct thread_state *_tmp=(struct thread_state *)thread_id->storage; \
      SWAP_OUT_THREAD(_tmp); \
-     THREADS_FPRINTF((stderr, "SWAP_OUT_CURRENT_THREAD() %s:%d t:%08x\n", \
-			__FILE__, __LINE__, (unsigned int)_tmp->thread_id)) \
+     THREADS_FPRINTF(1, (stderr, "SWAP_OUT_CURRENT_THREAD() %s:%d t:%08x\n", \
+			 __FILE__, __LINE__, (unsigned int)_tmp->thread_id)) \
 
 #define SWAP_IN_CURRENT_THREAD() \
-   THREADS_FPRINTF((stderr, "SWAP_IN_CURRENT_THREAD() %s:%d ... t:%08x\n", \
-		    __FILE__, __LINE__, (unsigned int)_tmp->thread_id)); \
+   THREADS_FPRINTF(1, (stderr, "SWAP_IN_CURRENT_THREAD() %s:%d ... t:%08x\n", \
+		       __FILE__, __LINE__, (unsigned int)_tmp->thread_id)); \
    SWAP_IN_THREAD(_tmp);\
  } while(0)
 
@@ -341,7 +375,7 @@ struct thread_state {
    int recoveries = 0, thread_id = 0; \
    int error = 0, xalloc = 0, low_my_putchar = 0, low_my_binary_strcat = 0; \
    int low_make_buf_space = 0, pop_n_elems = 0; \
-   int push_sp_mark = 0, pop_sp_mark = 0
+   int push_sp_mark = 0, pop_sp_mark = 0, threads_disabled = 1
 
 /* Note that the semi-colon below is needed to add an empty statement
  * in case there is a label before the macro.
@@ -357,9 +391,9 @@ struct thread_state {
      struct thread_state *_tmp=(struct thread_state *)thread_id->storage; \
      if(num_threads > 1 && !threads_disabled) { \
        SWAP_OUT_THREAD(_tmp); \
-       THREADS_FPRINTF((stderr, "THREADS_ALLOW() %s:%d t:%08x(#%d)\n", \
-			__FILE__, __LINE__, \
-			(unsigned int)_tmp->thread_id, live_threads)); \
+       THREADS_FPRINTF(1, (stderr, "THREADS_ALLOW() %s:%d t:%08x(#%d)\n", \
+			   __FILE__, __LINE__, \
+			   (unsigned int)_tmp->thread_id, live_threads)); \
        mt_unlock(& interpreter_lock); \
      } else {} \
      HIDE_GLOBAL_VARIABLES()
@@ -368,11 +402,12 @@ struct thread_state {
      REVEAL_GLOBAL_VARIABLES(); \
      if(_tmp->swapped) { \
        mt_lock(& interpreter_lock); \
-       THREADS_FPRINTF((stderr, "THREADS_DISALLOW() %s:%d t:%08x(#%d)\n", \
-			__FILE__, __LINE__, \
-                        (unsigned int)_tmp->thread_id, live_threads)); \
+       THREADS_FPRINTF(1, (stderr, "THREADS_DISALLOW() %s:%d t:%08x(#%d)\n", \
+			   __FILE__, __LINE__, \
+                           (unsigned int)_tmp->thread_id, live_threads)); \
        while (threads_disabled) { \
-         THREADS_FPRINTF((stderr, "THREADS_DISALLOW(): Threads disabled\n")); \
+         THREADS_FPRINTF(1, (stderr, \
+                             "THREADS_DISALLOW(): Threads disabled\n")); \
          co_wait(&threads_disabled_change, &interpreter_lock); \
        } \
        SWAP_IN_THREAD(_tmp);\
@@ -384,9 +419,9 @@ struct thread_state {
      if(num_threads > 1 && !threads_disabled) { \
        SWAP_OUT_THREAD(_tmp_uid); \
        live_threads++; \
-       THREADS_FPRINTF((stderr, "THREADS_ALLOW_UID() %s:%d t:%08x(#%d)\n", \
-			__FILE__, __LINE__, \
-			(unsigned int)_tmp_uid->thread_id, live_threads)); \
+       THREADS_FPRINTF(1, (stderr, "THREADS_ALLOW_UID() %s:%d t:%08x(#%d)\n", \
+			   __FILE__, __LINE__, \
+			   (unsigned int)_tmp_uid->thread_id, live_threads)); \
        mt_unlock(& interpreter_lock); \
      } else {} \
      HIDE_GLOBAL_VARIABLES()
@@ -396,12 +431,13 @@ struct thread_state {
      if(_tmp_uid->swapped) { \
        mt_lock(& interpreter_lock); \
        live_threads--; \
-       THREADS_FPRINTF((stderr, "THREADS_DISALLOW_UID() %s:%d t:%08x(#%d)\n", \
-			__FILE__, __LINE__, \
-                        (unsigned int)_tmp_uid->thread_id, live_threads)); \
+       THREADS_FPRINTF(1, (stderr, \
+                           "THREADS_DISALLOW_UID() %s:%d t:%08x(#%d)\n", \
+			   __FILE__, __LINE__, \
+                           (unsigned int)_tmp_uid->thread_id, live_threads)); \
        co_broadcast(&live_threads_change); \
        while (threads_disabled) { \
-         THREADS_FPRINTF((stderr, "THREADS_DISALLOW_UID(): Wait...\n")); \
+         THREADS_FPRINTF(1, (stderr, "THREADS_DISALLOW_UID(): Wait...\n")); \
          co_wait(&threads_disabled_change, &interpreter_lock); \
        } \
        SWAP_IN_THREAD(_tmp_uid);\
@@ -433,6 +469,7 @@ void init_thread_obj(struct object *o);
 void exit_thread_obj(struct object *o);
 void th_farm(void (*fun)(void *), void *);
 void th_init(void);
+void low_th_init(void);
 void th_cleanup(void);
 void thread_table_insert(struct object *o);
 void thread_table_delete(struct object *o);
@@ -443,11 +480,18 @@ void f_all_threads(INT32 args);
 void init_threads_disable(struct object *o);
 void exit_threads_disable(struct object *o);
 
+void init_interleave_mutex(IMUTEX_T *im);
+void exit_interleave_mutex(IMUTEX_T *im);
+
 /* Prototypes end here */
 
 #else
 #define th_setconcurrency(X)
 #define DEFINE_MUTEX(X)
+#define DEFINE_IMUTEX(X)
+#define init_interleave_mutex(X)
+#define LOCK_IMUTEX(X)
+#define UNLOCK_IMUTEX(X)
 #define mt_init(X)
 #define mt_lock(X)
 #define mt_unlock(X)
@@ -459,6 +503,7 @@ void exit_threads_disable(struct object *o);
 #define HIDE_GLOBAL_VARIABLES()
 #define REVEAL_GLOBAL_VARIABLES()
 #define th_init()
+#define low_th_init()
 #define th_cleanup()
 #define th_init_programs()
 #define th_self() ((void*)0)

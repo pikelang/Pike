@@ -4,7 +4,7 @@
 ||| See the files COPYING and DISCLAIMER for more information.
 \*/
 #include "global.h"
-RCSID("$Id: program.c,v 1.95 1998/06/24 04:56:46 hubbe Exp $");
+RCSID("$Id: program.c,v 1.96 1998/07/10 15:52:04 grubba Exp $");
 #include "program.h"
 #include "object.h"
 #include "dynamic_buffer.h"
@@ -507,7 +507,8 @@ void low_start_new_program(struct program *p,
 {
   int e,id=0;
 
-  threads_disabled++;
+  init_threads_disable(NULL);
+
   compilation_depth++;
 
   /* fprintf(stderr, "low_start_new_program(): compilation_depth:%d\n", compilation_depth); */
@@ -945,8 +946,8 @@ struct program *end_first_pass(int finish)
 
 
   compilation_depth--;
-  if(!--threads_disabled)
-    co_broadcast(&threads_disabled_change);
+
+  exit_threads_disable(NULL);
 
   /* fprintf(stderr, "end_first_pass(): compilation_depth:%d\n", compilation_depth); */
 
@@ -2307,10 +2308,10 @@ struct program *compile(struct pike_string *prog)
 	  threads_disabled, saved_threads_disabled);
   }
 #endif /* DEBUG */
-  threads_disabled = saved_threads_disabled;
+  threads_disabled = saved_threads_disabled + 1;
   /* fprintf(stderr, "compile() Leave: threads_disabled:%d, compilation_depth:%d\n", threads_disabled, compilation_depth); */
-  if(!threads_disabled)
-    co_broadcast(&threads_disabled_change);
+
+  exit_threads_disable(NULL);
 
   free_string(lex.current_file);
   lex=save_lex;

@@ -1,5 +1,5 @@
 #include "global.h"
-RCSID("$Id: threads.c,v 1.74 1998/07/09 21:50:37 grubba Exp $");
+RCSID("$Id: threads.c,v 1.75 1998/07/10 15:52:06 grubba Exp $");
 
 int num_threads = 1;
 int threads_disabled = 0;
@@ -142,7 +142,7 @@ struct object *thread_id;
 static struct callback *threads_evaluator_callback=0;
 int thread_id_result_variable;
 
-MUTEX_T interpreter_lock, thread_table_lock;
+MUTEX_T interpreter_lock, thread_table_lock, interleave_lock;
 struct program *mutex_key = 0;
 struct program *thread_id_prog = 0;
 #ifdef POSIX_THREADS
@@ -156,13 +156,86 @@ struct thread_starter
   struct array *args;
 };
 
+static volatile IMUTEX_T *interleave_list = NULL;
+
+void init_threads_disable(struct object *o)
+{
+  /* Serious black magic to avoid dead-locks */
+
+  if (!threads_disabled) {
+    THREADS_FPRINTF(0, (stderr, "init_threads_disable(): Locking IM's...\n"));
+
+    if (thread_id) {
+      IMUTEX_T *im;
+
+      THREADS_ALLOW();
+
+      /* Keep this the entire session. */
+      mt_lock(&interleave_lock);
+
+      im = (IMUTEX_T *)interleave_list;
+
+      while(im) {
+	mt_lock(&(im->lock));
+
+	im = im->next;
+      }
+
+      THREADS_DISALLOW();
+    } else {
+      IMUTEX_T *im;
+
+      /* Keep this the entire session. */
+      mt_lock(&interleave_lock);
+
+      im = (IMUTEX_T *)interleave_list;
+
+      while(im) {
+	mt_lock(&(im->lock));
+
+	im = im->next;
+      }
+    }
+
+    THREADS_FPRINTF(0,
+		    (stderr, "init_threads_disable(): Disabling threads.\n"));
+
+    threads_disabled = 1;
+  } else {
+    threads_disabled++;
+  }
+
+  THREADS_FPRINTF(0, (stderr, "init_threads_disable(): threads_disabled:%d\n",
+		      threads_disabled));
+  while (live_threads) {
+    THREADS_FPRINTF(0,
+		    (stderr,
+		     "_disable_threads(): Waiting for %d threads to finish\n",
+		     live_threads));
+    co_wait(&live_threads_change, &interpreter_lock);
+  }
+}
+
 void exit_threads_disable(struct object *o)
 {
-  THREADS_FPRINTF((stderr, "exit_threads_disable(): threads_disabled:%d\n",
-		   threads_disabled));
+  THREADS_FPRINTF(0, (stderr, "exit_threads_disable(): threads_disabled:%d\n",
+		      threads_disabled));
   if(threads_disabled) {
     if(!--threads_disabled) {
-      THREADS_FPRINTF((stderr, "_exit_threads_disable(): Wake up!\n"));
+      IMUTEX_T *im = (IMUTEX_T *)interleave_list;
+
+      /* Order shouldn't matter for unlock, so no need to do it backwards. */
+      while(im) {
+	THREADS_FPRINTF(0,
+			(stderr,
+			 "exit_threads_disable(): Unlocking IM 0x%08p\n", im));
+	mt_unlock(&(im->lock));
+	im = im->next;
+      }
+
+      mt_unlock(&interleave_lock);
+
+      THREADS_FPRINTF(0, (stderr, "_exit_threads_disable(): Wake up!\n"));
       co_broadcast(&threads_disabled_change);
     }
 #ifdef DEBUG
@@ -172,32 +245,51 @@ void exit_threads_disable(struct object *o)
   }
 }
 
-void init_threads_disable(struct object *o)
+void init_interleave_mutex(IMUTEX_T *im)
 {
-  /* Serious black magic to avoid dead-locks */
+  mt_init(&(im->lock));
 
-  if (!threads_disabled) {
-    extern MUTEX_T password_protection_mutex;
+  THREADS_FPRINTF(0, (stderr,
+		      "init_interleave_mutex(): init_threads_disable()\n"));
 
-    THREADS_ALLOW_UID();
-    mt_lock(&password_protection_mutex);
-    THREADS_DISALLOW_UID();
+  init_threads_disable(NULL);
 
-    threads_disabled = 1;
+  THREADS_FPRINTF(0, (stderr,
+		      "init_interleave_mutex(): Locking IM 0x%08p\n", im));
 
-    mt_unlock(&password_protection_mutex);
+  /* Lock it so that it can be unlocked by exit_threads_disable() */
+  mt_lock(&(im->lock));
+
+  im->next = (IMUTEX_T *)interleave_list;
+  if (interleave_list) {
+    interleave_list->prev = im;
+  }
+  interleave_list = im;
+  im->prev = NULL;
+
+  THREADS_FPRINTF(0, (stderr,
+		      "init_interleave_mutex(): exit_threads_disable()\n"));
+
+  exit_threads_disable(NULL);
+}
+
+void exit_interleave_mutex(IMUTEX_T *im)
+{
+  init_threads_disable(NULL);
+
+  if (im->prev) {
+    im->prev->next = im->next;
   } else {
-    threads_disabled++;
+    interleave_list = im->next;
+  }
+  if (im->next) {
+    im->next->prev = im->prev;
   }
 
-  THREADS_FPRINTF((stderr, "init_threads_disable(): threads_disabled:%d\n",
-		   threads_disabled));
-  while (live_threads) {
-    THREADS_FPRINTF((stderr,
-		     "_disable_threads(): Waiting for %d threads to finish\n",
-		     live_threads));
-    co_wait(&live_threads_change, &interpreter_lock);
-  }
+  /* Just to be nice... */
+  mt_unlock(&(im->lock));
+
+  exit_threads_disable(NULL);
 }
 
 /* Thread hashtable */
@@ -329,8 +421,8 @@ void *new_thread_func(void * data)
   JMP_BUF back;
   INT32 tmp;
 
-  THREADS_FPRINTF((stderr,"THREADS_DISALLOW() Thread %08x created...\n",
-		   (unsigned int)arg.id));
+  THREADS_FPRINTF(0, (stderr,"THREADS_DISALLOW() Thread %08x created...\n",
+		      (unsigned int)arg.id));
   
   if((tmp=mt_lock( & interpreter_lock)))
     fatal("Failed to lock interpreter, errno %d\n",tmp);
@@ -344,7 +436,7 @@ void *new_thread_func(void * data)
   }
 #endif /* THREAD_TRACE */
 
-  THREADS_FPRINTF((stderr,"THREAD %08x INITED\n",(unsigned int)thread_id));
+  THREADS_FPRINTF(0, (stderr,"THREAD %08x INITED\n",(unsigned int)thread_id));
   if(SETJMP(back))
   {
     if(throw_severity < THROW_EXIT)
@@ -380,8 +472,8 @@ void *new_thread_func(void * data)
   free((char *)data); /* Moved by per, to avoid some bugs.... */
   UNSETJMP(back);
 
-  THREADS_FPRINTF((stderr,"THREADS_ALLOW() Thread %08x done\n",
-		   (unsigned int)thread_id));
+  THREADS_FPRINTF(0, (stderr,"THREADS_ALLOW() Thread %08x done\n",
+		      (unsigned int)thread_id));
 
   thread_table_delete(thread_id);
   free_object(thread_id);
@@ -428,7 +520,8 @@ void f_thread_create(INT32 args)
 						 check_threads, 0,0);
     }
     ref_push_object(arg->id);
-    THREADS_FPRINTF((stderr,"THREAD_CREATE -> t:%08x\n",(unsigned int)arg->id));
+    THREADS_FPRINTF(0, (stderr, "THREAD_CREATE -> t:%08x\n",
+			(unsigned int)arg->id));
   } else {
     free_object(arg->id);
     free_array(arg->args);
@@ -493,7 +586,8 @@ void f_mutex_lock(INT32 args)
   {
     if(m->key && OB2KEY(m->key)->owner == thread_id)
     {
-      THREADS_FPRINTF((stderr, "Recursive LOCK k:%08x, m:%08x(%08x), t:%08x\n",
+      THREADS_FPRINTF(0,
+		      (stderr, "Recursive LOCK k:%08x, m:%08x(%08x), t:%08x\n",
 		       (unsigned int)OB2KEY(m->key),
 		       (unsigned int)m,
 		       (unsigned int)OB2KEY(m->key)->mut,
@@ -508,7 +602,7 @@ void f_mutex_lock(INT32 args)
     SWAP_OUT_CURRENT_THREAD();
     do
     {
-      THREADS_FPRINTF((stderr,"WAITING TO LOCK m:%08x\n",(unsigned int)m));
+      THREADS_FPRINTF(1, (stderr,"WAITING TO LOCK m:%08x\n",(unsigned int)m));
       co_wait(& m->condition, & interpreter_lock);
     }while(m->key);
     SWAP_IN_CURRENT_THREAD();
@@ -516,11 +610,11 @@ void f_mutex_lock(INT32 args)
   m->key=o;
   OB2KEY(o)->mut=m;
 
-  THREADS_FPRINTF((stderr, "LOCK k:%08x, m:%08x(%08x), t:%08x\n",
-		   (unsigned int)OB2KEY(o),
-		   (unsigned int)m,
-		   (unsigned int)OB2KEY(m->key)->mut,
-		   (unsigned int)thread_id));
+  THREADS_FPRINTF(1, (stderr, "LOCK k:%08x, m:%08x(%08x), t:%08x\n",
+		      (unsigned int)OB2KEY(o),
+		      (unsigned int)m,
+		      (unsigned int)OB2KEY(m->key)->mut,
+		      (unsigned int)thread_id));
   pop_n_elems(args);
   push_object(o);
 }
@@ -573,7 +667,8 @@ void init_mutex_obj(struct object *o)
 
 void exit_mutex_obj(struct object *o)
 {
-  THREADS_FPRINTF((stderr,"DESTROYING MUTEX m:%08x\n",(unsigned int)THIS_MUTEX));
+  THREADS_FPRINTF(1, (stderr, "DESTROYING MUTEX m:%08x\n",
+		      (unsigned int)THIS_MUTEX));
   if(THIS_MUTEX->key) destruct(THIS_MUTEX->key);
   THIS_MUTEX->key=0;
   co_destroy(& THIS_MUTEX->condition);
@@ -582,8 +677,8 @@ void exit_mutex_obj(struct object *o)
 #define THIS_KEY ((struct key_storage *)(fp->current_storage))
 void init_mutex_key_obj(struct object *o)
 {
-  THREADS_FPRINTF((stderr, "KEY k:%08x, o:%08x\n",
-		   (unsigned int)THIS_KEY, (unsigned int)thread_id));
+  THREADS_FPRINTF(1, (stderr, "KEY k:%08x, o:%08x\n",
+		      (unsigned int)THIS_KEY, (unsigned int)thread_id));
   THIS_KEY->mut=0;
   add_ref(THIS_KEY->owner=thread_id);
   THIS_KEY->initialized=1;
@@ -591,11 +686,11 @@ void init_mutex_key_obj(struct object *o)
 
 void exit_mutex_key_obj(struct object *o)
 {
-  THREADS_FPRINTF((stderr, "UNLOCK k:%08x m:(%08x) t:%08x o:%08x\n",
-		   (unsigned int)THIS_KEY,
-		   (unsigned int)THIS_KEY->mut,
-		   (unsigned int)thread_id,
-		   (unsigned int)THIS_KEY->owner));
+  THREADS_FPRINTF(1, (stderr, "UNLOCK k:%08x m:(%08x) t:%08x o:%08x\n",
+		      (unsigned int)THIS_KEY,
+		      (unsigned int)THIS_KEY->mut,
+		      (unsigned int)thread_id,
+		      (unsigned int)THIS_KEY->owner));
   if(THIS_KEY->mut)
   {
     struct mutex_storage *mut = THIS_KEY->mut;
@@ -741,17 +836,14 @@ static void thread_was_marked(struct object *o)
 }
 #endif
 
-void th_init(void)
+void low_th_init(void)
 {
-  struct program *tmp;
-  INT32 mutex_key_offset;
-
 #ifdef SGI_SPROC_THREADS
 #error /* Need to specify a filename */
   us_cookie = usinit("");
 #endif /* SGI_SPROC_THREADS */
 
-  THREADS_FPRINTF((stderr, "THREADS_DISALLOW() Initializing threads.\n"));
+  THREADS_FPRINTF(0, (stderr, "THREADS_DISALLOW() Initializing threads.\n"));
 
 #ifdef POSIX_THREADS
 #ifdef HAVE_PTHREAD_INIT
@@ -762,6 +854,7 @@ void th_init(void)
   mt_init( & interpreter_lock);
   mt_lock( & interpreter_lock);
   mt_init( & thread_table_lock);
+  mt_init( & interleave_lock);
   co_init( & live_threads_change);
   co_init( & threads_disabled_change);
   thread_table_init();
@@ -779,7 +872,13 @@ void th_init(void)
   pthread_attr_setdetachstate(&small_pattr, PTHREAD_CREATE_DETACHED);
 
 #endif
-  
+}
+
+void th_init(void)
+{
+  struct program *tmp;
+  INT32 mutex_key_offset;
+
   add_efun("thread_create",f_thread_create,"function(mixed ...:object)",
            OPT_SIDE_EFFECT);
 #ifdef UNIX_THREADS
