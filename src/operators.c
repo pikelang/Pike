@@ -5,7 +5,7 @@
 \*/
 #include <math.h>
 #include "global.h"
-RCSID("$Id: operators.c,v 1.18 1997/09/29 00:57:54 hubbe Exp $");
+RCSID("$Id: operators.c,v 1.19 1997/10/10 20:19:58 hubbe Exp $");
 #include "interpret.h"
 #include "svalue.h"
 #include "multiset.h"
@@ -1219,7 +1219,7 @@ void o_range(void)
 
   if(sp[-3].type==T_OBJECT)
   {
-    CALL_OPERATOR(LFUN_INDEX, 2);
+    CALL_OPERATOR(LFUN_INDEX, 3);
     return;
   }
 
