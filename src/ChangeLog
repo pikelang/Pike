@@ -1,3 +1,9 @@
+Sat Mar 21 19:20:54 1998  Fredrik Hubinette  <hubbe@cytocin.hubbe.net>
+
+	* DEBUG_MALLOC now does bound checking
+	* werror() and Stdio.File()->write() does automatic sprintf()
+	  formatting if called with more than one arg.
+
 Fri Mar 20 14:31:15 1998  Fredrik Hubinette  <hubbe@cytocin.hubbe.net>
 
 	* signal_handler.c (receive_signal): Process hangning bug fixed
