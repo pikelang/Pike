@@ -192,6 +192,8 @@ Event.Namedays find_namedays(string region)
    array(array(string)) names=0;
    int start=-1,stop=-1;
    int leapdayshift=2000;
+   string charset="iso-8859-1";
+   function(string:string) decoder=0;
 
    foreach (all[i..i2]/"\n",string line)
    {
@@ -205,6 +207,14 @@ Event.Namedays find_namedays(string region)
 	    break;
 	 case "leapdayshift":
 	    sscanf(s,"%d",leapdayshift);
+	    break;
+	 case "charset":
+	    sscanf(s,"%s",charset);
+	    object dec=Locale.Charset.decoder(charset);
+	    decoder=lambda(string s)
+		    {
+		       return dec->feed(s)->drain();
+		    };
 	    break;
 	 case "period":
 	    if (names) 
@@ -232,7 +242,11 @@ Event.Namedays find_namedays(string region)
 	       error("Nameday date doesn't exists:\n%O\n",line);
 #endif
 	    if (sizeof(name))
-	       names[nd_m_yd[w]+mday-1]=`+(@name);
+	    {
+	       name=`+(@name);
+	       if (decoder) name=map(name,decoder);
+	       names[nd_m_yd[w]+mday-1]=name;
+	    }
 	    break;
 	 case "leapday":
 	    sscanf(s,"%{%*[, ]%[^,]%}",name);
