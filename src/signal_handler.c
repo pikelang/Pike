@@ -22,7 +22,7 @@
 #include "builtin_functions.h"
 #include <signal.h>
 
-RCSID("$Id: signal_handler.c,v 1.55 1998/04/24 18:20:59 hubbe Exp $");
+RCSID("$Id: signal_handler.c,v 1.56 1998/04/29 22:20:15 hubbe Exp $");
 
 #ifdef HAVE_PASSWD_H
 # include <passwd.h>
@@ -359,6 +359,7 @@ static RETSIGTYPE receive_signal(int signum)
   {
     pid_t pid;
     int status;
+  try_reap_again:
     /* We carefully reap what we saw */
 #ifdef HAVE_WAITPID
     pid=waitpid(-1,& status,WNOHANG);
@@ -383,6 +384,7 @@ static RETSIGTYPE receive_signal(int signum)
 	wait_buf[tmp2].pid=pid;
 	wait_buf[tmp2].status=status;
 	firstwait=tmp2;
+	goto try_reap_again;
       }
     }
   }
