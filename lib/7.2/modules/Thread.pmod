@@ -1,7 +1,7 @@
 #pike 7.3
 
 //
-// $Id: Thread.pmod,v 1.1 2002/09/30 18:45:20 grubba Exp $
+// $Id: Thread.pmod,v 1.2 2002/12/03 21:16:35 nilsson Exp $
 //
 // Pike 7.2 backward compatibility layer.
 //
@@ -19,6 +19,6 @@ class Condition
       m = Mutex();
       m->lock();
     }
-    ::wait();
+    ::wait(m);
   }
 }
