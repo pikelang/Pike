@@ -2,11 +2,11 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: object.c,v 1.236 2003/04/28 00:32:43 mast Exp $
+|| $Id: object.c,v 1.237 2003/06/03 18:00:07 mast Exp $
 */
 
 #include "global.h"
-RCSID("$Id: object.c,v 1.236 2003/04/28 00:32:43 mast Exp $");
+RCSID("$Id: object.c,v 1.237 2003/06/03 18:00:07 mast Exp $");
 #include "object.h"
 #include "dynamic_buffer.h"
 #include "interpret.h"
@@ -415,7 +415,7 @@ struct object *decode_value_clone_object(struct svalue *prog)
   ONERROR tmp;
   INT32 parent_identifier;
   struct program *p=program_from_svalue(prog);
-  if(!p) Pike_error("Failed to decode program!\n");
+  if(!p) return NULL;
 
   o=low_clone(p);
   SET_ONERROR(tmp, do_free_object, o);
