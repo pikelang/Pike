@@ -241,6 +241,7 @@ int main(int argc, string *argv)
 //    dumpmodules(combine_path(getenv("lib_prefix"),"modules"));
   if(sizeof(to_dump))
   {
+    foreach(to_dump, string mod) rm(mod+".o");
     Process.create_process( ({pike,combine_path(getenv("SRCDIR"),"dumpmodule.pike")}) + to_dump)->wait();
   }
 
