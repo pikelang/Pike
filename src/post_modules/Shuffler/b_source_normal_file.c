@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: b_source_normal_file.c,v 1.12 2004/08/25 23:04:24 vida Exp $
+|| $Id: b_source_normal_file.c,v 1.13 2004/08/28 09:30:08 vida Exp $
 */
 
 #include "global.h"
@@ -34,10 +34,10 @@ struct fd_source
   struct object *obj;
   char buffer[CHUNK];
   int fd;
-  size_t len;
+  off_t len;
 };
 
-static struct data get_data( struct source *_s, ptrdiff_t len )
+static struct data get_data( struct source *_s, off_t len )
 {
   struct fd_source *s = (struct fd_source *)_s;
   struct data res;
@@ -47,10 +47,10 @@ static struct data get_data( struct source *_s, ptrdiff_t len )
   res.do_free = 0;
   res.off = 0;
   res.data = s->buffer;
-  
-  if( len > (ptrdiff_t)s->len )
+
+  if( len > s->len )
   {
-    len = (ptrdiff_t)s->len;
+    len = s->len;
     s->s.eof = 1;
   }
   THREADS_ALLOW();
@@ -61,7 +61,7 @@ static struct data get_data( struct source *_s, ptrdiff_t len )
 
   res.len = rr;
 
-  if( rr < len )
+  if( rr<0 || (unsigned)rr < len )
     s->s.eof = 1;
   return res;
 }
