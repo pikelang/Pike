@@ -8,9 +8,11 @@ need_to_make_depend=no
 find . -type d -print|egrep -v '/(CVS)|(RCS)$'| while read dir; do
 
   if [ -f $dir/Makefile.am ]; then
-    # aclocal needs to be run before autoconf
-    echo "Running aclocal in $dir"
-    (cd $dir ; aclocal)
+    if [ -f $dir/configure.in ]; then
+      # aclocal needs to be run before autoconf
+      echo "Running aclocal in $dir"
+      (cd $dir ; aclocal)
+    fi
     echo "Running automake in $dir"
     (cd $dir ; automake)
   fi
