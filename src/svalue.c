@@ -23,7 +23,7 @@
 #include "queue.h"
 #include "bignum.h"
 
-RCSID("$Id: svalue.c,v 1.61 2000/01/27 23:12:08 hubbe Exp $");
+RCSID("$Id: svalue.c,v 1.62 2000/02/03 19:09:13 grubba Exp $");
 
 struct svalue dest_ob_zero = { T_INT, 0 };
 
@@ -1003,7 +1003,7 @@ void describe_svalue(struct svalue *s,int indent,struct processing *p)
 	    switch(str->size_shift)
 	    {
 	      case 0:
-		my_binary_strcat(STR0(str), str->len);
+		my_binary_strcat((char *)STR0(str), str->len);
 		break;
 
 	      case 1:

@@ -6,7 +6,7 @@
 /**/
 #include "global.h"
 #include <math.h>
-RCSID("$Id: operators.c,v 1.84 1999/12/29 17:55:05 grubba Exp $");
+RCSID("$Id: operators.c,v 1.85 2000/02/03 19:09:12 grubba Exp $");
 #include "interpret.h"
 #include "svalue.h"
 #include "multiset.h"
@@ -254,11 +254,13 @@ void f_add(INT32 args)
 	    break;
 
 	  case 1:
-	    convert_0_to_1((p_wchar1 *)buf.ptr,buffer,strlen(buffer));
+	    convert_0_to_1((p_wchar1 *)buf.ptr,(p_wchar0 *)buffer,
+			   strlen(buffer));
 	    break;
 
 	  case 2:
-	    convert_0_to_2((p_wchar2 *)buf.ptr,buffer,strlen(buffer));
+	    convert_0_to_2((p_wchar2 *)buf.ptr,(p_wchar0 *)buffer,
+			   strlen(buffer));
 	    break;
 
 	}

@@ -2,8 +2,8 @@
 #include "config.h"
 #endif /* HAVE_CONFIG_H */
 
-#include "global.h"
-RCSID("$Id: charsetmod.c,v 1.17 1999/09/25 20:07:30 grubba Exp $");
+#include "../../global.h"
+RCSID("$Id: charsetmod.c,v 1.18 2000/02/03 19:02:59 grubba Exp $");
 #include "program.h"
 #include "interpret.h"
 #include "stralloc.h"
@@ -196,7 +196,7 @@ static void f_std_feed(INT32 args, INT32 (*func)(const p_wchar0 *, INT32 n,
   l = func(STR0(str), str->len, s);
 
   if(l>0)
-    s->retain = make_shared_binary_string(STR0(str)+str->len-l, l);
+    s->retain = make_shared_binary_string((char *)STR0(str)+str->len-l, l);
 
   if(tmpstr != NULL)
     free_string(tmpstr);
@@ -491,7 +491,7 @@ static void f_rfc1345(INT32 args)
   }
 
   if(str->size_shift==0 &&
-     (tabl = misc_charset_lookup(STR0(str), &lo, &hi))!=NULL) {
+     (tabl = misc_charset_lookup((char *)STR0(str), &lo, &hi))!=NULL) {
 
     if(args>1 && sp[1-args].type == T_INT && sp[1-args].u.integer != 0) {
       struct std8e_stor *s8;

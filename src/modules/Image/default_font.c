@@ -1,6 +1,6 @@
 #include "global.h"
 
-unsigned char *image_default_font =
+unsigned char *image_default_font = (unsigned char *)
    "FONT\0\0\0\1\0\0\1\0\0\0\0\13\0\0\0\t\0\0"
    "\4\24\0\0\4 \0\0\4,\0\0\4""8\0\0\4D"
    "\0\0\4P\0\0\4\\\0\0\4h\0\0\4t\0\0\4\200\0\0"

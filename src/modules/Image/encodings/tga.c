@@ -1,6 +1,6 @@
 
 /*
- * $Id: tga.c,v 1.8 1999/06/19 20:24:59 hubbe Exp $
+ * $Id: tga.c,v 1.9 2000/02/03 19:01:29 grubba Exp $
  *
  *  Targa codec for pike. Based on the tga plugin for gimp.
  *
@@ -77,7 +77,7 @@
 #include "image.h"
 #include "colortable.h"
 
-RCSID("$Id: tga.c,v 1.8 1999/06/19 20:24:59 hubbe Exp $");
+RCSID("$Id: tga.c,v 1.9 2000/02/03 19:01:29 grubba Exp $");
 
 #ifndef MIN
 # define MIN(X,Y) ((X)<(Y)?(X):(Y))
@@ -743,7 +743,7 @@ static struct buffer save_tga(struct image *img, struct image *alpha,
     free(obuf.str);
     error("Internal error: Out of space in buffer.\n");
   }
-  if (std_fwrite (SAVE_ID_STRING, hdr.idLength, 1, fp) != 1)
+  if (std_fwrite ((void *)SAVE_ID_STRING, hdr.idLength, 1, fp) != 1)
   {
     free(obuf.str);
     error("Internal error: Out of space in buffer.\n");
@@ -793,7 +793,8 @@ static struct buffer save_tga(struct image *img, struct image *alpha,
           *(p++) = (is++)->r;
         }
     }
-    if ((*myfwrite) (data, pixsize,datalen/pixsize, fp) != datalen/pixsize)
+    if ((*myfwrite)((void *)data, pixsize,datalen/pixsize, fp) !=
+	datalen/pixsize)
     {
       free(data);
       free(obuf.str);

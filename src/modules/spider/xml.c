@@ -35,7 +35,7 @@ struct xmlinput
   struct pike_string *to_free;
 };
 
-BLOCK_ALLOC(xmlinput, 64);
+BLOCK_ALLOC(xmlinput, 64)
 
 struct xmldata
 {

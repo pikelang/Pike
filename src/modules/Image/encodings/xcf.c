@@ -1,5 +1,5 @@
 #include "global.h"
-RCSID("$Id: xcf.c,v 1.11 1999/08/16 18:10:23 grubba Exp $");
+RCSID("$Id: xcf.c,v 1.12 2000/02/03 19:01:29 grubba Exp $");
 
 #include "image_machine.h"
 
@@ -36,7 +36,7 @@ extern struct program *image_program;
 #define TILE_WIDTH 64
 #define TILE_HEIGHT 64
 
-#define STRING(X) static struct pike_string *s_##X;
+#define STRING(X) static struct pike_string *s_##X
 #include "xcf_constant_strings.h"
 #undef STRING
 
@@ -164,7 +164,7 @@ static char *read_data( struct buffer * from, unsigned int len )
   char *res;
   if( from->len < len )
     error("Not enough space for %ud bytes\n", len);
-  res = from->str;
+  res = (char *)from->str;
   from->str += len;
   from->len -= len;
   return res;
@@ -174,7 +174,7 @@ static struct buffer read_string( struct buffer *data )
 {
   struct buffer res;
   res.len = read_int( data );
-  res.str = read_data( data, res.len );
+  res.str = (unsigned char *)read_data( data, res.len );
   if(res.len > 0) res.len--; /* len includes ending \0 */
   if(!res.str)
     error("String read failed\n");
@@ -192,10 +192,10 @@ static struct property read_property( struct buffer * data )
     read_uint(data); /* bogus 'len'... */
     foo = read_uint( data );
     res.data.len = foo*3;
-    res.data.str = read_data( data,foo*3 );
+    res.data.str = (unsigned char *)read_data( data,foo*3 );
   } else {
     res.data.len = read_uint( data );
-    res.data.str = read_data( data,res.data.len );
+    res.data.str = (unsigned char *)read_data( data,res.data.len );
   }
   res.next = NULL;
   return res;
@@ -561,7 +561,7 @@ static struct gimp_image read_image( struct buffer * data )
        data->str[3] == 'p' &&
        data->str[4] == ' '))
   {
-    if(strlen(data->str) == 13)
+    if(strlen((char *)data->str) == 13)
       error("This is not an xcf file (%s)\n", data->str);
     else
       error("This is not an xcf file\n");
@@ -621,7 +621,7 @@ static struct gimp_image read_image( struct buffer * data )
 
 static void push_buffer( struct buffer *b )
 {
-  push_string( make_shared_binary_string( b->str, b->len ) );
+  push_string( make_shared_binary_string( (char *)b->str, b->len ) );
 }
 
 static void push_properties( struct property *p )
@@ -756,7 +756,7 @@ static void image_xcf____decode( INT32 args )
   if(args > 1)
     error("Too many arguments to Image.XCF.___decode()\n");
 
-  b.str = s->str; b.len = s->len;
+  b.str = (unsigned char *)s->str; b.len = s->len;
   res = read_image( &b );
   SET_ONERROR( err, free_image, &res );
   push_image( &res );
@@ -789,9 +789,9 @@ void image_xcf_f__rle_decode( INT32 args )
   get_all_args( "_rle_decode", args, "%S%d%d%d", &t, &bpp, &xsize, &ysize);
 
   s.len = t->len;
-  s.str = t->str;
-  od.len = xsize*ysize*bpp;
-  od.str = xalloc( xsize*ysize*bpp ); /* Max and only size, really */
+  s.str = (unsigned char *)t->str;
+  od.len = xsize*ysize*bpp;  /* Max and only size, really */
+  od.str = (unsigned char *)xalloc( xsize*ysize*bpp );
   d = od;
   for(i=0; i<bpp; i++)
   {
@@ -841,7 +841,7 @@ void image_xcf_f__rle_decode( INT32 args )
     /* fprintf(stderr, "%d bytes of source data used out of %d bytes\n" */
     /*         "%d bytes decoded data generated\n",  */
     /*         t->len-s.len,t->len,od.len); */
-  push_string(make_shared_binary_string(od.str,od.len));
+  push_string(make_shared_binary_string((char *)od.str,od.len));
   free(od.str);
 }
 
@@ -1157,7 +1157,7 @@ void image_xcf_f__decode_tiles( INT32 args )
       error("Too small tile, was %d bytes, I really need %d\n",
             tile->len, eheight*ewidth * bpp);
     
-    s = tile->str;
+    s = (unsigned char *)tile->str;
  
     check_signals(); /* Allow ^C */
 
@@ -1308,7 +1308,7 @@ void init_image_xcf()
   add_integer_constant( "INDEXED_GIMAGE", INDEXED_GIMAGE, 0 );
   add_integer_constant( "INDEXEDA_GIMAGE", INDEXEDA_GIMAGE, 0 );
 
-#define STRING(X) s_##X = make_shared_binary_string(#X,sizeof( #X )-sizeof(""));
+#define STRING(X) s_##X = make_shared_binary_string(#X,sizeof( #X )-sizeof(""))
 #include "xcf_constant_strings.h"
 #undef STRING
 }

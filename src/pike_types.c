@@ -5,7 +5,7 @@
 \*/
 /**/
 #include "global.h"
-RCSID("$Id: pike_types.c,v 1.120 2000/01/27 23:18:25 hubbe Exp $");
+RCSID("$Id: pike_types.c,v 1.121 2000/02/03 19:09:13 grubba Exp $");
 #include <ctype.h>
 #include "svalue.h"
 #include "pike_types.h"
@@ -408,7 +408,7 @@ static void internal_parse_typeA(char **_s)
 	  INT32 min,max;
 	  ++*s;
 	  while(ISSPACE(**s)) ++*s;
-	  min=STRTOL(*s,(char **)s,0);
+	  min=STRTOL((char *)*s,(char **)s,0);
 	  while(ISSPACE(**s)) ++*s;
 	  if(s[0][0]=='.' && s[0][1]=='.')
 	    s[0]+=2;
@@ -416,7 +416,7 @@ static void internal_parse_typeA(char **_s)
 	    error("Missing .. in integer type.\n");
 	  
 	  while(ISSPACE(**s)) ++*s;
-	  max=STRTOL(*s,(char **)s,0);
+	  max=STRTOL((char *)*s,(char **)s,0);
 	  while(ISSPACE(**s)) ++*s;
 
 	  if(**s != ')') error("Missing ')' in integer range.\n");

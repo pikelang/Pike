@@ -1,5 +1,5 @@
 /*
- * $Id: lexer.h,v 1.14 1999/12/30 14:46:07 grubba Exp $
+ * $Id: lexer.h,v 1.15 2000/02/03 19:09:12 grubba Exp $
  *
  * Lexical analyzer template.
  * Based on lex.c 1.62
@@ -122,7 +122,7 @@ static long lex_strtol(char *buf, char **end, int base)
   PCHARP foo;
   long ret;
   ret=STRTOL_PCHARP(MKPCHARP(buf,SHIFT),&foo,base);
-  if(end) end[0]=foo.ptr;
+  if(end) end[0]=(char *)foo.ptr;
   return ret;
 }
 
@@ -131,7 +131,7 @@ static double lex_strtod(char *buf, char **end)
   PCHARP foo;
   double ret;
   ret=STRTOD_PCHARP(MKPCHARP(buf,SHIFT),&foo);
-  if(end) end[0]=foo.ptr;
+  if(end) end[0]=(char *)foo.ptr;
   return ret;
 }
 

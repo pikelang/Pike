@@ -5,7 +5,7 @@
 \*/
 /**/
 #include "global.h"
-RCSID("$Id: builtin_functions.c,v 1.234 2000/02/02 00:38:27 hubbe Exp $");
+RCSID("$Id: builtin_functions.c,v 1.235 2000/02/03 19:09:12 grubba Exp $");
 #include "interpret.h"
 #include "svalue.h"
 #include "pike_macros.h"
@@ -1312,7 +1312,7 @@ static void f_parse_pike_type( INT32 args )
   if( sp[-1].type != T_STRING ||
       sp[-1].u.string->size_shift )
     error( "__parse_type requires a 8bit string as its first argument\n" );
-  res = parse_type( STR0(sp[-1].u.string) );
+  res = parse_type( (char *)STR0(sp[-1].u.string) );
   pop_stack();
   push_string( res );
 }

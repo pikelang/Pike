@@ -1,5 +1,5 @@
 /*
- * $Id: rsa.c,v 1.9 2000/02/03 11:41:06 grubba Exp $
+ * $Id: rsa.c,v 1.10 2000/02/03 19:03:37 grubba Exp $
  *
  * Glue to RSA BSAFE's RSA implementation.
  *
@@ -28,7 +28,7 @@
 
 #include <bsafe.h>
 
-RCSID("$Id: rsa.c,v 1.9 2000/02/03 11:41:06 grubba Exp $");
+RCSID("$Id: rsa.c,v 1.10 2000/02/03 19:03:37 grubba Exp $");
 
 struct pike_rsa_data
 {
@@ -394,9 +394,9 @@ static void f_decrypt(INT32 args)
   if (THIS->flags & P_RSA_PRIVATE_KEY_NOT_SET) {
     A_RSA_KEY rsa_private_key;
 
-    rsa_private_key.modulus.data = THIS->n->str;
+    rsa_private_key.modulus.data = (POINTER)THIS->n->str;
     rsa_private_key.modulus.len = THIS->n->len;
-    rsa_private_key.exponent.data = THIS->d->str;
+    rsa_private_key.exponent.data = (POINTER)THIS->d->str;
     rsa_private_key.exponent.len = THIS->d->len;
 
     if ((err = B_SetKeyInfo(THIS->private_key, KI_RSAPublic,
@@ -411,12 +411,13 @@ static void f_decrypt(INT32 args)
     error("Failed to initialize decrypter: %04x\n", err);
   }
 
-  buffer = xalloc(s->len+1);
+  buffer = (unsigned char *)xalloc(s->len+1);
   buffer[s->len] = 0;	/* Ensure NUL-termination. */
 
   len = 0;
   if ((err = B_DecryptUpdate(THIS->cipher, buffer, &len, s->len,
-			     s->str, s->len, (B_ALGORITHM_OBJ)NULL_PTR,
+			     (POINTER)s->str, s->len,
+			     (B_ALGORITHM_OBJ)NULL_PTR,
 			     (A_SURRENDER_CTX *)NULL_PTR))) {
     free(buffer);
     error("decrypt failed: %04x\n", err);
@@ -450,7 +451,7 @@ static void f_decrypt(INT32 args)
 
   /* FIXME: Enforce i being 1? */
   if ((buffer[i] != 2) ||
-      ((i += strlen(buffer + i)) < 9) || (len != THIS->n->len)) {
+      ((i += strlen((char *)buffer + i)) < 9) || (len != THIS->n->len)) {
 #ifdef PIKE_RSA_DEBUG
     fprintf(stderr, "Decrypt failed: i:%d, len:%d, n->len:%d, buffer[0]:%d\n",
 	    i, len, THIS->n->len, buffer[0]);
@@ -466,7 +467,7 @@ static void f_decrypt(INT32 args)
   }
 
   pop_n_elems(args);
-  push_string(make_shared_binary_string(buffer + i + 1, len - i - 1));
+  push_string(make_shared_binary_string((char *)buffer + i + 1, len - i - 1));
 
   free(buffer);
 }

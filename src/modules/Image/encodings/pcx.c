@@ -1,5 +1,5 @@
 #include "global.h"
-RCSID("$Id: pcx.c,v 1.8 1999/05/30 20:12:14 mirar Exp $");
+RCSID("$Id: pcx.c,v 1.9 2000/02/03 19:01:29 grubba Exp $");
 
 #include "image_machine.h"
 
@@ -59,10 +59,10 @@ struct pcx_header /* All fields are in ~NBO */
 
 unsigned char *get_chunk( struct buffer *b, unsigned int len )
 {
-  char *db;
+  unsigned char *db;
   if(b->len < len)
     return 0;
-  db = b->str;
+  db = (unsigned char *)b->str;
   b->str+=len;
   b->len-=len;
   return db;
@@ -125,7 +125,7 @@ void get_rle_decoded_from_data( unsigned char *dest, struct buffer * source,
 static void load_rgb_pcx( struct pcx_header *hdr, struct buffer *b, 
                           rgb_group *dest )
 {
-  unsigned char *line = xalloc( hdr->bytesperline*hdr->planes );
+  unsigned char *line = (unsigned char *)xalloc(hdr->bytesperline*hdr->planes);
   struct rle_state state;
   int width, height;
   int x, y;
@@ -153,7 +153,7 @@ static void load_rgb_pcx( struct pcx_header *hdr, struct buffer *b,
 static void load_mono_pcx( struct pcx_header *hdr, struct buffer *b,
                            rgb_group *dest)
 {
-  unsigned char *line = xalloc( hdr->bytesperline*hdr->planes );
+  unsigned char *line = (unsigned char *)xalloc(hdr->bytesperline*hdr->planes);
   struct rle_state state;
   int width, height;
   int x, y;
@@ -180,7 +180,7 @@ static void load_mono_pcx( struct pcx_header *hdr, struct buffer *b,
 static void load_planar_palette_pcx( struct pcx_header *hdr, struct buffer *b,
                                      rgb_group *dest)
 {
-  unsigned char *line = xalloc( hdr->bytesperline*hdr->planes );
+  unsigned char *line = (unsigned char *)xalloc(hdr->bytesperline*hdr->planes);
   struct rle_state state;
   rgb_group * palette = (rgb_group *)hdr->palette;
   int width, height;
@@ -211,7 +211,7 @@ static void load_planar_palette_pcx( struct pcx_header *hdr, struct buffer *b,
 static void load_palette_pcx( struct pcx_header *hdr, struct buffer *b,
                              rgb_group *dest)
 {
-  unsigned char *line = xalloc( hdr->bytesperline*hdr->planes );
+  unsigned char *line = (unsigned char *)xalloc(hdr->bytesperline*hdr->planes);
   struct rle_state state;
   /* It's at the end of the 'file' */
   rgb_group * palette = (rgb_group *)(b->str+b->len-(256*3)); 
@@ -429,7 +429,7 @@ static struct pike_string *encode_pcx_24( struct pcx_header *pcx_header,
   s = data->img;
   for(y=0; y<data->ysize; y++)
   {
-    unsigned char *line = buffer+y*data->xsize*3;
+    unsigned char *line = (unsigned char *)buffer+y*data->xsize*3;
     for(x=0; x<data->xsize; x++)
     {
       line[x] = s->r;
@@ -465,9 +465,9 @@ static struct pike_string *encode_pcx_8( struct pcx_header *pcx_header,
 
 
   buffer = malloc(data->xsize*data->ysize);
-  image_colortable_index_8bit_image( opts->colortable,
-                                     data->img, buffer, data->xsize*data->ysize,
-                                     data->xsize );
+  image_colortable_index_8bit_image( opts->colortable, data->img,
+				     (unsigned char *)buffer,
+				     data->xsize*data->ysize, data->xsize );
   push_string(make_shared_binary_string(buffer,data->xsize*data->ysize));
   free(buffer);
 
@@ -477,7 +477,7 @@ static struct pike_string *encode_pcx_8( struct pcx_header *pcx_header,
   {
     char data[256*3+1];
     MEMSET(data, 0x0c, 256*3+1);
-    image_colortable_write_rgb(opts->colortable, data+1);
+    image_colortable_write_rgb(opts->colortable, (unsigned char *)data+1);
     push_string(make_shared_binary_string(data,256*3+1));
   }
 

@@ -1,9 +1,9 @@
-/* $Id: ilbm.c,v 1.12 1999/09/25 23:29:53 grubba Exp $ */
+/* $Id: ilbm.c,v 1.13 2000/02/03 19:01:29 grubba Exp $ */
 
 /*
 **! module Image
 **! note
-**!	$Id: ilbm.c,v 1.12 1999/09/25 23:29:53 grubba Exp $
+**!	$Id: ilbm.c,v 1.13 2000/02/03 19:01:29 grubba Exp $
 **! submodule ILBM
 **!
 **!	This submodule keep the ILBM encode/decode capabilities
@@ -14,7 +14,7 @@
 #include "global.h"
 
 #include "stralloc.h"
-RCSID("$Id: ilbm.c,v 1.12 1999/09/25 23:29:53 grubba Exp $");
+RCSID("$Id: ilbm.c,v 1.13 2000/02/03 19:01:29 grubba Exp $");
 #include "pike_macros.h"
 #include "object.h"
 #include "constants.h"
@@ -293,7 +293,7 @@ static void parse_body(struct BMHD *bmhd, unsigned char *body, INT32 blen,
     body += suse;
     if((blen -= suse)<0)
       break;
-    planar2chunky(line, rbyt, bmhd->nPlanes, bmhd->w, cptr=cline);
+    planar2chunky(line, rbyt, bmhd->nPlanes, bmhd->w, (INT32 *)(cptr=cline));
     if(alpha != NULL)
       switch(bmhd->masking) {
       case mskNone:
@@ -617,7 +617,7 @@ static struct pike_string *make_bmhd(struct BMHD *bmhd)
   bdat[16] = (bmhd->pageWidth>>8); bdat[17] = bmhd->pageWidth&0xff;
   bdat[18] = (bmhd->pageHeight>>8); bdat[19] = bmhd->pageHeight&0xff;
 
-  return make_shared_binary_string(bdat, 20);
+  return make_shared_binary_string((char *)bdat, 20);
 }
 
 static void packByteRun1(unsigned char *src, int srclen, int depth,
@@ -631,7 +631,7 @@ static void packByteRun1(unsigned char *src, int srclen, int depth,
 	  if(c+2<left && src[c] == src[c+1] && src[c] == src[c+2])
 	    break;
 	string_builder_putchar(dest, c-1);
-	string_builder_binary_strcat(dest, src, c);
+	string_builder_binary_strcat(dest, (char *)src, c);
       } else {
 	for(c=2; c<128 && c<left && src[c]==src[0]; c++);
 	string_builder_putchar(dest, (1-c)&0xff);
@@ -723,7 +723,7 @@ static struct pike_string *make_body(struct BMHD *bmhd,
     if(bmhd->compression == cmpByteRun1)
       packByteRun1(line, rbyt, eplanes, &bldr);
     else
-      string_builder_binary_strcat(&bldr, line, rbyt*eplanes);
+      string_builder_binary_strcat(&bldr, (char *)line, rbyt*eplanes);
   }
   if(ctable != NULL)
     image_colortable_free_dither(&dith);

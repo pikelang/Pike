@@ -19,7 +19,7 @@
 #include "file_machine.h"
 #include "file.h"
 
-RCSID("$Id: socket.c,v 1.46 2000/01/30 20:58:18 per Exp $");
+RCSID("$Id: socket.c,v 1.47 2000/02/03 19:05:37 grubba Exp $");
 
 #ifdef HAVE_SYS_TYPE_H
 #include <sys/types.h>
@@ -433,7 +433,7 @@ void port_setup_program(void)
 
 int fd_from_portobject( struct object *p )
 {
-  struct port *po = get_storage( p, port_program );
+  struct port *po = (struct port *)get_storage( p, port_program );
   if(!po) return -1;
   return po->fd;
 }

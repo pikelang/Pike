@@ -1,9 +1,9 @@
-/* $Id: ras.c,v 1.4 1999/11/19 15:36:57 grubba Exp $ */
+/* $Id: ras.c,v 1.5 2000/02/03 19:01:29 grubba Exp $ */
 
 /*
 **! module Image
 **! note
-**!	$Id: ras.c,v 1.4 1999/11/19 15:36:57 grubba Exp $
+**!	$Id: ras.c,v 1.5 2000/02/03 19:01:29 grubba Exp $
 **! submodule RAS
 **!
 **!	This submodule keep the RAS encode/decode capabilities
@@ -14,7 +14,7 @@
 #include "global.h"
 
 #include "stralloc.h"
-RCSID("$Id: ras.c,v 1.4 1999/11/19 15:36:57 grubba Exp $");
+RCSID("$Id: ras.c,v 1.5 2000/02/03 19:01:29 grubba Exp $");
 #include "pike_macros.h"
 #include "object.h"
 #include "constants.h"
@@ -547,7 +547,7 @@ static void image_ras_encode(INT32 args)
       
     if(pklen<rs.ras_length) {
       free((char *)res2);
-      res2 = make_shared_binary_string(pkdata, pklen);
+      res2 = make_shared_binary_string((char *)pkdata, pklen);
       rs.ras_length = pklen;
       rs.ras_type = RT_BYTE_ENCODED;
     } else

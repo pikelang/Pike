@@ -1,9 +1,9 @@
-/* $Id: iff.c,v 1.3 1999/05/10 23:03:44 mirar Exp $ */
+/* $Id: iff.c,v 1.4 2000/02/03 19:01:29 grubba Exp $ */
 
 #include "global.h"
 
 #include "stralloc.h"
-RCSID("$Id: iff.c,v 1.3 1999/05/10 23:03:44 mirar Exp $");
+RCSID("$Id: iff.c,v 1.4 2000/02/03 19:01:29 grubba Exp $");
 #include "pike_macros.h"
 #include "object.h"
 #include "constants.h"
@@ -42,8 +42,8 @@ static INT32 low_parse_iff(unsigned char *data, INT32 len, unsigned char *hdr,
       pos += l+8;
     }
   } else {
-    push_string(make_shared_binary_string(hdr, 4));
-    push_string(make_shared_binary_string(data, clen));
+    push_string(make_shared_binary_string((char *)hdr, 4));
+    push_string(make_shared_binary_string((char *)data, clen));
     mapping_insert(m, sp-2, sp-1);
     pop_n_elems(2);
     if(!memcmp(hdr, stopchunk, 4))
@@ -61,7 +61,7 @@ void parse_iff(char *id, unsigned char *data, INT32 len,
   if(memcmp(id, data+8, 4))
     error("FORM is not %s\n", id);
 
-  low_parse_iff(data+12, len-12, data, m, stopchunk);
+  low_parse_iff(data+12, len-12, data, m, (unsigned char *)stopchunk);
 }
 
 static struct pike_string *low_make_iff(struct svalue *s)
@@ -81,7 +81,7 @@ static struct pike_string *low_make_iff(struct svalue *s)
   lenb[1] = (len & 0x00ff0000)>>16;
   lenb[2] = (len & 0x0000ff00)>>8;
   lenb[3] = (len & 0x000000ff);
-  push_string(make_shared_binary_string(lenb, 4));
+  push_string(make_shared_binary_string((char *)lenb, 4));
   stack_swap();
   if(len&1) {
     push_string(make_shared_binary_string("\0", 1));

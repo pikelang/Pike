@@ -5,7 +5,7 @@
 \*/
 /**/
 #include "global.h"
-RCSID("$Id: las.c,v 1.159 2000/01/04 00:58:07 grubba Exp $");
+RCSID("$Id: las.c,v 1.160 2000/02/03 19:09:12 grubba Exp $");
 
 #include "language.h"
 #include "interpret.h"
@@ -245,7 +245,7 @@ struct pike_string *find_return_type(node *n)
 #undef BLOCK_ALLOC_NEXT
 #define BLOCK_ALLOC_NEXT u.node.a
 
-BLOCK_ALLOC(node_s, NODES);
+BLOCK_ALLOC(node_s, NODES)
 
 #undef BLOCK_ALLOC_NEXT
 #define BLOCK_ALLOC_NEXT next
@@ -1120,7 +1120,7 @@ void resolv_class(node *n)
 	f_object_program(1);
       }
       break;
-      
+
     default:
       if (compiler_pass!=1)
 	yyerror("Illegal program identifier");

@@ -1,5 +1,5 @@
 #include "global.h"
-RCSID("$Id: psd.c,v 1.13 1999/09/06 10:52:19 grubba Exp $");
+RCSID("$Id: psd.c,v 1.14 2000/02/03 19:01:29 grubba Exp $");
 
 #include "image_machine.h"
 
@@ -38,7 +38,7 @@ extern struct program *image_program;
 **!
 */
 
-#define STRING(X) static struct pike_string *PIKE_CONCAT(s_, X);
+#define STRING(X) static struct pike_string *PIKE_CONCAT(s_, X)
 #include "psd_constant_strings.h"
 #undef STRING
 
@@ -104,7 +104,7 @@ static char *read_data( struct buffer * from, unsigned int len )
   char *res;
   if( from->len < len )
     error("Not enough space for %u bytes\n", len);
-  res = from->str;
+  res = (char *)from->str;
   from->str += len;
   from->len -= len;
   return res;
@@ -114,7 +114,7 @@ static struct buffer read_string( struct buffer *data )
 {
   struct buffer res;
   res.len = read_int( data );
-  res.str = read_data( data, res.len );
+  res.str = (unsigned char *)read_data( data, res.len );
   if(res.len > 0) res.len--; /* len includes ending \0 */
   if(!res.str)
     error("String read failed\n");
@@ -225,7 +225,7 @@ static void decode_layers_and_masks( struct psd_image *dst,
     }
     read_uint( src ); /* '8BIM' */
     layer->mode.len = 4;
-    layer->mode.str = read_data( src, 4 );
+    layer->mode.str = (unsigned char *)read_data( src, 4 );
     layer->opacity = read_uchar( src );
     layer->clipping = read_uchar( src );
     layer->flags = read_uchar( src );
@@ -256,7 +256,7 @@ static void decode_layers_and_masks( struct psd_image *dst,
     for(i=0; i<layer->num_channels; i++)
     {
       layer->channel_info[i].data.str=
-        read_data(src,layer->channel_info[i].data.len);
+        (unsigned char *)read_data(src,layer->channel_info[i].data.len);
     }
     layer = layer->prev;
   }
@@ -325,14 +325,14 @@ static void f_decode_packbits_encoded(INT32 args)
   {
     nelems *= sp[-args+3].u.integer;
     compression = sp[-args+4].u.integer;
-    b.str = src->str;
+    b.str = (unsigned char *)src->str;
     b.len = src->len;
     pop_n_elems(4);
   } else if(args == 3) {
     if( src->str[0] )
       error("Impossible compression (%d)!\n", (src->str[0]<<8|src->str[1]) );
     compression = src->str[1];
-    b.str = src->str+2;
+    b.str = (unsigned char *)src->str+2;
     b.len = src->len-2;
     pop_n_elems(2);
   }
@@ -345,14 +345,14 @@ static void f_decode_packbits_encoded(INT32 args)
   {
    case 1:
      dest = begin_shared_string( width * nelems );
-     d.str = dest->str; d.len = width*nelems;
+     d.str = (unsigned char *)dest->str; d.len = width*nelems;
 /*      while(nelems--) */
      /*ob =*/ 
      packbitsdecode( ob, d, width*nelems );
      push_string( end_shared_string( dest ) );
      break;
    case 0:
-     push_string( make_shared_binary_string(b.str,b.len));
+     push_string( make_shared_binary_string((char *)b.str,b.len));
      break;
    default:
      error("Impossible compression (%d)!\n", src->str[1]);
@@ -381,7 +381,7 @@ static void f_decode_image_channel( INT32 args )
   pop_stack();
   if(s->len < w*h)
     error("Not enough data in string for this channel\n");
-  source = s->str;
+  source = (unsigned char *)s->str;
   push_int( w ); push_int( h );
   io = clone_object( image_program, 2 );
   dst = ((struct image *)get_storage(io,image_program))->img;
@@ -417,10 +417,10 @@ static void f_decode_image_data( INT32 args )
   pop_stack();
   if(s->len < w*h*d)
     error("Not enough data in string for this channel\n");
-  source = s->str;
-  source2 = s->str+w*h;
-  source3 = s->str+w*h*2;
-  source4 = s->str+w*h*3;
+  source = (unsigned char *)s->str;
+  source2 = source+w*h;
+  source3 = source+w*h*2;
+  source4 = source+w*h*3;
   push_int( w ); push_int( h );
   io = clone_object( image_program, 2 );
   dst = ((struct image *)get_storage(io,image_program))->img;
@@ -504,7 +504,7 @@ static struct psd_image low_psd_decode( struct buffer *b )
 
 void push_buffer( struct buffer *b )
 {
-  push_string( make_shared_binary_string( b->str, b->len ) );
+  push_string( make_shared_binary_string( (char *)b->str, b->len ) );
 }
 
 void push_layer( struct layer  *l)
@@ -579,7 +579,7 @@ static void image_f_psd___decode( INT32 args )
     error("This is not a Photoshop PSD file (invalid version)\n");
     
   b.len = s->len-12;
-  b.str = s->str+12;
+  b.str = (unsigned char *)s->str+12;
   {
     ONERROR onerr;
     struct psd_image i = low_psd_decode( &b );

@@ -1,7 +1,7 @@
 /*
 **! module Image
 **! note
-**!	$Id: colors.c,v 1.29 1999/12/06 21:06:46 mirar Exp $
+**!	$Id: colors.c,v 1.30 2000/02/03 19:02:22 grubba Exp $
 **! submodule Color
 **!
 **!	This module keeps names and easy handling 
@@ -179,7 +179,7 @@
 
 #include "global.h"
 
-RCSID("$Id: colors.c,v 1.29 1999/12/06 21:06:46 mirar Exp $");
+RCSID("$Id: colors.c,v 1.30 2000/02/03 19:02:22 grubba Exp $");
 
 #include "image_machine.h"
 
@@ -281,6 +281,7 @@ static void make_colors(void)
    f_aggregate_mapping(n*2);
    colors=sp[-1].u.mapping;
    sp--;
+   dmalloc_touch_svalue(sp);
 
    for (i=0;i<n;i++)
    {
@@ -307,6 +308,7 @@ static void make_colors(void)
 
    colornames=sp[-1].u.array;
    sp--;
+   dmalloc_touch_svalue(sp);
 }
 
 #ifdef THIS
@@ -989,6 +991,7 @@ static void image_color_light(INT32 args)
    pop_n_elems(args);
    image_color_hsvf(0);
    sp--;
+   dmalloc_touch_svalue(sp);
    push_array_items(sp->u.array); /* frees */
    sp[-1].u.float_number+=+0.2;
    if (sp[-1].u.float_number>=1.0)
@@ -1002,6 +1005,7 @@ static void image_color_dark(INT32 args)
    pop_n_elems(args);
    image_color_hsvf(0);
    sp--;
+   dmalloc_touch_svalue(sp);
    push_array_items(sp->u.array); /* frees */
    sp[-1].u.float_number-=0.2;
    if (sp[-1].u.float_number<0.0)
@@ -1014,6 +1018,7 @@ static void image_color_neon(INT32 args)
    pop_n_elems(args);
    image_color_hsvf(0);
    sp--;
+   dmalloc_touch_svalue(sp);
    push_array_items(sp->u.array); /* frees */
 
    if (sp[-1].u.float_number==0.0 ||
@@ -1038,6 +1043,7 @@ static void image_color_dull(INT32 args)
 
    image_color_hsvf(0);
    sp--;
+   dmalloc_touch_svalue(sp);
    push_array_items(sp->u.array); /* frees */
 
    if (sp[-2].u.float_number==0.0)
@@ -1057,6 +1063,7 @@ static void image_color_bright(INT32 args)
    pop_n_elems(args);
    image_color_hsvf(0);
    sp--;
+   dmalloc_touch_svalue(sp);
    push_array_items(sp->u.array); /* frees */
 
    if (sp[-2].u.float_number==0.0)
@@ -1186,7 +1193,7 @@ static void image_get_color(INT32 args)
 	 /* #rgb, #rrggbb, #rrrgggbbb, etc */
 	 
 	 unsigned long i=sp[-1].u.string->len-1,j,k,rgb[3];
-	 unsigned char *src=sp[-1].u.string->str+1;
+	 unsigned char *src=(unsigned char *)sp[-1].u.string->str+1;
 	 if (!(i%3))
 	 {
 	    i/=3;
@@ -1244,6 +1251,7 @@ static void image_get_color(INT32 args)
 	    stack_swap();
 	    pop_stack();
 	    sp--;
+	    dmalloc_touch_svalue(sp);
 	    push_array_items(sp->u.array);
 	    get_all_args("Image.Color()",3,"%f%f%f",&h,&s,&v);
 	    pop_n_elems(3);
@@ -1268,6 +1276,7 @@ static void image_get_color(INT32 args)
 	    stack_swap();
 	    pop_stack();
 	    sp--;
+	    dmalloc_touch_svalue(sp);
 	    push_array_items(sp->u.array);
 	    image_make_cmyk_color(4);
 	    return;

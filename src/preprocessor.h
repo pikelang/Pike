@@ -1,5 +1,5 @@
 /*
- * $Id: preprocessor.h,v 1.16 1999/12/28 02:21:54 grubba Exp $
+ * $Id: preprocessor.h,v 1.17 2000/02/03 19:09:13 grubba Exp $
  *
  * Preprocessor template.
  * Based on cpp.c 1.45
@@ -29,7 +29,7 @@
 #define lower_cpp		lower_cpp0
 #define find_end_parenthesis	find_end_parenthesis0
 #define PUSH_STRING		PUSH_STRING0
-#define WC_BINARY_FINDSTRING	binary_findstring
+#define WC_BINARY_FINDSTRING(X, Y)	binary_findstring((char *)X, Y)
 
 #define calc	calc_0
 #define calc1	calc1_0
@@ -1229,7 +1229,8 @@ static INT32 lower_cpp(struct cpp *this,
 		  pos++;
 		}
 #if (SHIFT == 0)
-		push_string(make_shared_binary_string(data+tmp, pos-tmp));
+		push_string(make_shared_binary_string((char *)data+tmp,
+						      pos-tmp));
 #else /* SHIFT != 0 */
 #if (SHIFT == 1)
 		push_string(make_shared_binary_string1(data+tmp, pos-tmp));
@@ -1547,7 +1548,7 @@ static INT32 lower_cpp(struct cpp *this,
 	  if(OUTP())
 	  {
 #if (SHIFT == 0)
-	    push_string(make_shared_binary_string(data+foo, pos-foo));
+	    push_string(make_shared_binary_string((char *)data+foo, pos-foo));
 #else /* SHIFT != 0 */
 #if (SHIFT == 1)
 	    push_string(make_shared_binary_string1(data+foo, pos-foo));
@@ -1615,7 +1616,8 @@ static INT32 lower_cpp(struct cpp *this,
 		  check_stack(1);
 
 #if (SHIFT == 0)
-		  push_string(make_shared_binary_string(data+tmp2, pos-tmp2));
+		  push_string(make_shared_binary_string((char *)data+tmp2,
+							pos-tmp2));
 #else /* SHIFT != 0 */
 #if (SHIFT == 1)
 		  push_string(make_shared_binary_string1(data+tmp2, pos-tmp2));
@@ -1766,7 +1768,7 @@ static INT32 lower_cpp(struct cpp *this,
 
 #if (SHIFT == 0)
 	    def=alloc_empty_define(
-		  make_shared_binary_string(data+namestart,
+		  make_shared_binary_string((char *)data+namestart,
 					    nameend-namestart),
 		  (sp-partbase)/2);
 #else /* SHIFT != 0 */

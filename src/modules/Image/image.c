@@ -1,9 +1,9 @@
-/* $Id: image.c,v 1.157 1999/11/26 00:29:04 per Exp $ */
+/* $Id: image.c,v 1.158 2000/02/03 19:02:22 grubba Exp $ */
 
 /*
 **! module Image
 **! note
-**!	$Id: image.c,v 1.157 1999/11/26 00:29:04 per Exp $
+**!	$Id: image.c,v 1.158 2000/02/03 19:02:22 grubba Exp $
 **! class Image
 **!
 **!	The main object of the <ref>Image</ref> module, this object
@@ -97,7 +97,7 @@
 
 #include "stralloc.h"
 #include "global.h"
-RCSID("$Id: image.c,v 1.157 1999/11/26 00:29:04 per Exp $");
+RCSID("$Id: image.c,v 1.158 2000/02/03 19:02:22 grubba Exp $");
 #include "pike_macros.h"
 #include "object.h"
 #include "constants.h"
@@ -583,7 +583,7 @@ void img_read_get_channel(int arg,char *name,INT32 args,
 		  "string is %d characters, expected %d\n",
 		  arg+1,name,sp[arg-args-1].u.string->len,
 		  THIS->xsize*THIS->ysize);
-	 *s=sp[arg-args-1].u.string->str;
+	 *s=(unsigned char *)sp[arg-args-1].u.string->str;
 	 *m=1;
 	 break;
       case T_OBJECT:
@@ -1727,7 +1727,7 @@ image_tuned_box_topbottom(const rgba_group left, const rgba_group right,
   }
 }
 
-void image_tuned_box(INT32 args)
+static void image_tuned_box(INT32 args)
 {
   INT32 x1,y1,x2,y2,xw,yw,x,y;
   rgba_group topleft,topright,bottomleft,bottomright,sum;
@@ -2078,7 +2078,7 @@ static void image_gradients(INT32 args)
 **! see also: gradients, tuned_box
 */
 
-void image_test(INT32 args)
+static void image_test(INT32 args)
 {
    int i;
 

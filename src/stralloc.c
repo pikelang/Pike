@@ -25,7 +25,7 @@
 #define HUGE HUGE_VAL
 #endif /*!HUGE*/
 
-RCSID("$Id: stralloc.c,v 1.77 1999/11/24 13:53:44 noring Exp $");
+RCSID("$Id: stralloc.c,v 1.78 2000/02/03 19:09:13 grubba Exp $");
 
 #define BEGIN_HASH_SIZE 997
 #define MAX_AVG_LINK_LENGTH 3
@@ -588,7 +588,7 @@ struct pike_string * debug_make_shared_binary_pcharp(const PCHARP str,int len)
   switch(str.shift)
   {
     case 0:
-      return make_shared_binary_string((p_wchar0 *)(str.ptr),  len);
+      return make_shared_binary_string((char *)(str.ptr),  len);
     case 1:
       return make_shared_binary_string1((p_wchar1 *)(str.ptr),  len);
     case 2:
@@ -1188,14 +1188,14 @@ struct pike_string *modify_shared_string(struct pike_string *a,
     {
       case TWO_SIZES(1,0):
 	b=begin_wide_shared_string(a->len,1);
-	convert_0_to_1(STR1(b),a->str,a->len);
+	convert_0_to_1(STR1(b),(p_wchar0 *)a->str,a->len);
 	STR1(b)[index]=c;
 	free_string(a);
 	return end_shared_string(b);
 
       case TWO_SIZES(2,0):
 	b=begin_wide_shared_string(a->len,2);
-	convert_0_to_2(STR2(b),a->str,a->len);
+	convert_0_to_2(STR2(b),(p_wchar0 *)a->str,a->len);
 	STR2(b)[index]=c;
 	free_string(a);
 	return end_shared_string(b);
@@ -1237,7 +1237,7 @@ struct pike_string *modify_shared_string(struct pike_string *a,
 	  break;
 	
 	b=begin_shared_string(a->len);
-	convert_1_to_0(b->str,STR1(a),a->len);
+	convert_1_to_0((p_wchar0 *)b->str,STR1(a),a->len);
 	b->str[index]=c;
 	free_string(a);
 	return end_shared_string(b);
@@ -1254,14 +1254,14 @@ struct pike_string *modify_shared_string(struct pike_string *a,
 	{
 	  case 0:
 	    b=begin_shared_string(a->len);
-	    convert_2_to_0(b->str,STR2(a),a->len);
+	    convert_2_to_0((p_wchar0 *)b->str,STR2(a),a->len);
 	    b->str[index]=c;
 	    free_string(a);
 	    return end_shared_string(b);
 
 	  case 1:
 	    b=begin_wide_shared_string(a->len,1);
-	    convert_2_to_1((unsigned INT16 *)b->str,STR2(a),a->len);
+	    convert_2_to_1((p_wchar1 *)b->str,STR2(a),a->len);
 	    STR1(b)[index]=c;
 	    free_string(a);
 	    return end_shared_string(b);
@@ -1377,7 +1377,7 @@ struct pike_string *string_slice(struct pike_string *s,
   switch(s->size_shift)
   {
     case 0:
-      return make_shared_binary_string(STR0(s)+start,len);
+      return make_shared_binary_string((char *)STR0(s)+start,len);
 
     case 1:
       return make_shared_binary_string1(STR1(s)+start,len);
@@ -1636,9 +1636,9 @@ void string_builder_binary_strcat(struct string_builder *s, char *str, INT32 len
   string_build_mkspace(s,len,0);
   switch(s->s->size_shift)
   {
-    case 0: convert_0_to_0(STR0(s->s)+s->s->len,str,len); break;
-    case 1: convert_0_to_1(STR1(s->s)+s->s->len,str,len); break;
-    case 2: convert_0_to_2(STR2(s->s)+s->s->len,str,len); break;
+    case 0: convert_0_to_0(STR0(s->s)+s->s->len,(p_wchar0 *)str,len); break;
+    case 1: convert_0_to_1(STR1(s->s)+s->s->len,(p_wchar0 *)str,len); break;
+    case 2: convert_0_to_2(STR2(s->s)+s->s->len,(p_wchar0 *)str,len); break;
     default:
       fatal("Illegal magnitude!\n");
   }

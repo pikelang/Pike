@@ -8,7 +8,7 @@
 #endif
 
 #include "stralloc.h"
-RCSID("$Id: avs.c,v 1.7 1999/05/30 20:12:06 mirar Exp $");
+RCSID("$Id: avs.c,v 1.8 2000/02/03 19:01:29 grubba Exp $");
 #include "pike_macros.h"
 #include "object.h"
 #include "constants.h"
@@ -54,7 +54,7 @@ void image_avs_f__decode(INT32 args)
   unsigned char *q;
   get_all_args( "decode", args, "%S", &s);
   
-  q = s->str;
+  q = (unsigned char *)s->str;
   w = q[0]<<24 | q[1]<<16 | q[2]<<8 | q[3];
   h = q[4]<<24 | q[5]<<16 | q[6]<<8 | q[7];
 
