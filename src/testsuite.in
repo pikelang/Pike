@@ -1,4 +1,4 @@
-test_true([["$Id: testsuite.in,v 1.670 2003/08/20 19:41:07 mast Exp $"]]);
+test_true([["$Id: testsuite.in,v 1.671 2003/08/26 17:34:32 grubba Exp $"]]);
 
 // This triggered a bug only if run sufficiently early.
 test_compile_any([[#pike 7.2]])
@@ -6645,6 +6645,7 @@ test_true([[(array(array))([1:2]) ]])
 test_true([[(array(array))([1:2,3:4]) ]])
 test_true([[(array(array))([1:2,3:4,5:6]) ]])
 test_equal( [[ (multiset) ({1})]], [[ (< 1 >) ]] )
+test_equal( [[ (multiset(string)) ({1})]], [[ (< "1" >) ]] )
 test_eval_error([[return (mapping)""]])
 test_equal([[ (mapping)({({1,2}),({3,4})})]], [[([1:2,3:4]) ]])
 test_equal([[ ({({1,2})})]], [[(array)([1:2]) ]])
