@@ -65,7 +65,7 @@ string|int(0..1) crypt_md5(string password, void|string salt) {
     sscanf(salt, "%s$", salt);
   }
   else
-    salt = MIME.encode_base64(.Random.random_string(8));
+    salt = MIME->encode_base64(.Random.random_string(8));
   return "$1$"+salt+"$"+Nettle.crypt_md5(password, salt);
 }
 
