@@ -1,9 +1,9 @@
-/* $Id: operator.c,v 1.39 2002/05/11 00:27:03 nilsson Exp $ */
+/* $Id: operator.c,v 1.40 2002/05/16 09:53:58 grubba Exp $ */
 
 /*
 **! module Image
 **! note
-**!	$Id: operator.c,v 1.39 2002/05/11 00:27:03 nilsson Exp $
+**!	$Id: operator.c,v 1.40 2002/05/16 09:53:58 grubba Exp $
 **! class Image
 */
 
@@ -824,9 +824,9 @@ void image_average(INT32 args)
    }
    THREADS_DISALLOW();
 
-   push_float(sumy.r/(float)THIS->ysize);
-   push_float(sumy.g/(float)THIS->ysize);
-   push_float(sumy.b/(float)THIS->ysize);
+   push_float(DO_NOT_WARN((FLOAT_TYPE)(sumy.r/(float)THIS->ysize)));
+   push_float(DO_NOT_WARN((FLOAT_TYPE)(sumy.g/(float)THIS->ysize)));
+   push_float(DO_NOT_WARN((FLOAT_TYPE)(sumy.b/(float)THIS->ysize)));
 
    f_aggregate(3);
 }
@@ -863,9 +863,9 @@ void image_sumf(INT32 args)
    }
    THREADS_DISALLOW();
 
-   push_float(sumy.r);
-   push_float(sumy.g);
-   push_float(sumy.b);
+   push_float(DO_NOT_WARN((FLOAT_TYPE)sumy.r));
+   push_float(DO_NOT_WARN((FLOAT_TYPE)sumy.g));
+   push_float(DO_NOT_WARN((FLOAT_TYPE)sumy.b));
 
    f_aggregate(3);
 }
