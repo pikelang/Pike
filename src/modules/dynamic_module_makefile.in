@@ -1,5 +1,5 @@
 #
-# $Id: dynamic_module_makefile.in,v 1.112 2003/10/30 23:17:25 bill Exp $
+# $Id: dynamic_module_makefile.in,v 1.113 2003/12/21 20:19:37 bill Exp $
 #
 
 LIBGCC=@LIBGCC@
@@ -38,7 +38,9 @@ $(MODULE_TARGET): module.so
 	@if test "x$(OBJS)" = "x" ; then \
 	  exit 0; \
 	fi; \
-	$(TMP_BINDIR)/install_module module.so $(MODULE_TARGET)
+	if test "x$(PIKE_EXTERNAL_MODULE)" = "x" ; then \
+	  $(TMP_BINDIR)/install_module module.so $(MODULE_TARGET) ; \
+	fi
 
 module.so: $(OBJS)  $(MODULE_ARCHIVES)
 	@if test "x$(OBJS)" = "x" ; then \
