@@ -4,7 +4,7 @@
 ||| See the files COPYING and DISCLAIMER for more information.
 \*/
 #include "global.h"
-RCSID("$Id: program.c,v 1.21 1997/02/18 05:13:35 hubbe Exp $");
+RCSID("$Id: program.c,v 1.22 1997/02/19 05:07:18 hubbe Exp $");
 #include "program.h"
 #include "object.h"
 #include "dynamic_buffer.h"
@@ -89,6 +89,8 @@ static INT32 last_pc = 0;
 static struct pike_string *last_file = 0;
 dynamic_buffer inherit_names;
 dynamic_buffer used_modules;
+
+void free_all_local_names(void);
 
 void use_module(struct svalue *s)
 {
@@ -1464,7 +1466,6 @@ void my_yyerror(char *fmt,...)
  */
 void compile()
 {
-  void free_all_local_names();
   int yyparse();
 
   start_line_numbering();
