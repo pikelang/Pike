@@ -1,11 +1,21 @@
 /*
- * $Id: mysqls.pike,v 1.2 2003/04/26 17:44:45 agehall Exp $
+ * $Id: mysqls.pike,v 1.3 2003/04/27 12:57:34 grubba Exp $
  *
  * Glue for the Mysql-module using SSL
  */
 
-//! Implements the glue needed to access MySQL databases using SSL from the generic
-//! SQL module.
+//! Implements SQL-urls for
+//!   @tt{mysqls://[user[:password]@@][hostname][:port][/database]@}
+//!
+//! Sets the connection to SSL-mode, and sets the default configuration
+//! file to @expr{"/etc/my.cnf"@}.
+//!
+//! @fixme
+//!   Ought to have load a suitable default configuration file for Win32 too.
+//!
+//! @note
+//!   This connection method only exists if the Mysql-module has been
+//!   compiled with SSL-support.
 
 #pike __REAL_VERSION__
 
@@ -17,18 +27,16 @@ void create(string host,
 	    string db,
 	    string user,
 	    string password,
-	    mapping(string:mixed) options) {
+	    mapping(string:mixed)|void options)
+{
+  if (!mappingp(options))
+    options = ([ ]);
 
-  mapping opts = ([ ]);
-  if (mappingp(options))
-    opts = options;
+  options->connect_options |= CLIENT_SSL;
 
-  if (!(opts->connect_options & Mysql.mysql.CLIENT_SSL))
-      opts->connect_options += Mysql.mysql.CLIENT_SSL;
+  if (!options->mysql_config_file)
+    options->mysql_config_file = "/etc/my.cnf";
 
-  if (!opts->mysql_config_file)
-    opts->mysql_config_file = "/etc/my.cnf";
-
-  ::create(host||"", db||"", user||"", password||"", opts);
+  ::create(host||"", db||"", user||"", password||"", options);
 }
 #endif
