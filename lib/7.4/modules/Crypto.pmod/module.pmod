@@ -31,15 +31,3 @@ string des_parity(string s) {
   }
   return s;
 }
-
-// These haven't been modified.
-#if 0
-constant des_cbc = Crypto.des_cbc;
-constant des3_cbc = Crypto.des3_cbc;
-constant dsa = Crypto.dsa;
-constant hmac = Crypto.hmac;
-constant idea_cbc = Crypto.idea_cbc;
-constant randomness = Crypto.randomness;
-constant rsa = Crypto.rsa;
-#endif
-
