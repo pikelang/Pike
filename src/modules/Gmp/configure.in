@@ -1,4 +1,4 @@
-# $Id: configure.in,v 1.21 2001/01/27 03:58:45 mast Exp $
+# $Id: configure.in,v 1.22 2001/01/27 04:35:00 mast Exp $
 AC_INIT(mpz_glue.c)
 AC_CONFIG_HEADER(gmp_machine.h)
 AC_ARG_WITH(gmp,     [  --with(out)-gmp        Support bignums],[],[with_gmp=yes])
@@ -51,9 +51,7 @@ esac
 define([AC_CHECK_GMP],
 [
   done=no
-  AC_CHECK_HEADER($2,[
-    ac_safe=`echo "$ac_hdr" | sed 'y%./+-%__p_%'`
-    eval "ac_cv_header_$ac_safe=yes"
+  ORIG_CHECK_HEADERS($2,[
 
     # This test is needed since the __MPN macro
     # is broken on many versions of gmp, since
