@@ -5,7 +5,7 @@
 \*/
 
 /*
- * $Id: interpret.h,v 1.87 2001/06/08 16:25:48 grubba Exp $
+ * $Id: interpret.h,v 1.88 2001/06/08 21:31:15 grubba Exp $
  */
 #ifndef INTERPRET_H
 #define INTERPRET_H
@@ -268,6 +268,33 @@ do{ \
   } \
   safe_apply_low(master_ob, fun_, ARGS); \
 }while(0)
+
+#define SAFE_APPLY_HANDLER(FUN, HANDLER, COMPAT, ARGS) do {	\
+    static int h_fun_=-1, h_id_=0;				\
+    static int c_fun_=-1, c_fun_id_=0;				\
+    struct object *h_=(HANDLER), *c_=(COMPAT);			\
+    if (h_) {							\
+      if (h_->prog->id != h_id_) {				\
+	h_fun_ = find_identifier(fun, h_->prog);		\
+	h_id_ = h_->prog->id;					\
+      }								\
+      if (h_fun_ != -1) {					\
+	safe_apply_low(h_, h_fun_, ARGS);			\
+	break;							\
+      }								\
+    }								\
+    if (c_) {							\
+      if (c_->prog->id != c_id_) {				\
+	c_fun_ = find_identifier(fun, c_->prog);		\
+	c_id_ = c_->prog->id;					\
+      }								\
+      if (c_fun_ != -1) {					\
+	safe_apply_low(c_, c_fun_, ARGS);			\
+	break;							\
+      }								\
+    }								\
+    SAFE_APPLY_MASTER(FUN, ARGS);				\
+  } while(0)
 
 #define check_threads_etc() \
   call_callback(& evaluator_callbacks, (void *)0)
