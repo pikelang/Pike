@@ -2,12 +2,12 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: Shuffler.cmod,v 1.27 2004/03/20 12:49:29 grubba Exp $
+|| $Id: Shuffler.cmod,v 1.28 2004/04/04 14:06:28 nilsson Exp $
 */
 
 #include "global.h"
 #include "stralloc.h"
-RCSID("$Id: Shuffler.cmod,v 1.27 2004/03/20 12:49:29 grubba Exp $");
+RCSID("$Id: Shuffler.cmod,v 1.28 2004/04/04 14:06:28 nilsson Exp $");
 #include "pike_macros.h"
 #include "interpret.h"
 #include "threads.h"
@@ -153,6 +153,7 @@ PIKECLASS Shuffle
    *! Calling this function overrides the @[Shuffler] global throttler.
    *! 
   */
+    optflags OPT_SIDE_EFFECT;
   {
     SHUFFLE_DEBUG2("set_throttler(%p)\n", THIS, t );
     if( THIS->throttler )
@@ -168,6 +169,7 @@ PIKECLASS Shuffle
    *! Returns the amount of data that has been sent so far.
    *! 
   */
+    optflags OPT_TRY_OPTIMIZE;
   {
     SHUFFLE_DEBUG2("sent_data() --> %d\n", THIS, THIS->sent );
     RETURN THIS->sent;
@@ -186,6 +188,7 @@ PIKECLASS Shuffle
    *!   @[USER_ABORT]
    *!   
   */
+    optflags OPT_TRY_OPTIMIZE;
   {
     SHUFFLE_DEBUG2("state() --> %d\n", THIS, THIS->state );
     RETURN THIS->state;
@@ -365,6 +368,7 @@ PIKECLASS Shuffle
     *! sources have been processed, or if an error occurs.
     *! 
     */
+    optflags OPT_SIDE_EFFECT;
   {
     SHUFFLE_DEBUG2("set_done_callback(%p)\n", THIS, cb->u.object );
     assign_svalue( &THIS->done_callback,cb);
@@ -377,6 +381,7 @@ PIKECLASS Shuffle
     *! @[Throttler()->give_back].
     *! 
     */
+    optflags OPT_SIDE_EFFECT;
   {
     SHUFFLE_DEBUG2("set_request_arg(%p)\n", THIS, arg->u.object );
     assign_svalue( &THIS->request_arg, arg );
@@ -499,7 +504,10 @@ PIKECLASS Shuffle
       _give_back( t, amount-sent );
   }
 
+  /*! @decl void send_more_callback( int amount )
+   */
   PIKEFUN void send_more_callback( int amount )
+    optflags OPT_SIDE_EFFECT;
   {
     SHUFFLE_DEBUG2("send_more_callback(%d)\n", THIS,amount );
     if( THIS->state == RUNNING )
@@ -511,12 +519,18 @@ PIKECLASS Shuffle
       _give_back( THIS, amount );
   }
 
+  /*! @decl void write_callback( mixed|void x )
+   */
   PIKEFUN void write_callback( mixed|void x )
+    optflags OPT_SIDE_EFFECT;
   {
     SHUFFLE_DEBUG1("write_callback()\n", THIS );
     _send_more( 0,THIS );
   }
   
+  /*! @decl void create(object fd, object shuffler, mixed throttler,@
+   *!                   mixed backend)
+   */
   PIKEFUN void create( object fd,
 		       object shuffler,
 		       mixed throttler,
@@ -538,8 +552,13 @@ PIKECLASS Shuffle
       add_ref(THIS->throttler);
     }
 
-    safe_apply( fd, "query_fd", 0 );
-    THIS->fd = Pike_sp[-1].u.integer;
+    if (find_identifier("query_fd", fd->prog) < 0)
+      THIS->fd = 0;
+    else {
+      safe_apply( fd, "query_fd", 0 );
+      THIS->fd = Pike_sp[-1].u.integer;
+      pop_stack();
+    }
 
     if( THIS->fd > 0 )
     {
@@ -573,6 +592,7 @@ PIKECLASS Shuffle
     *! Start sending data from the sources.
     *! 
     */
+    optflags OPT_SIDE_EFFECT;
   {
     if( !THIS->file_obj )
       Pike_error("Cannot start, no destination.\n");
@@ -586,6 +606,7 @@ PIKECLASS Shuffle
     *! Temporarily pause all data transmission
     *! 
     */
+    optflags OPT_SIDE_EFFECT;
   {
     THIS->state = PAUSED;
     SHUFFLE_DEBUG1("pause()\n", THIS );
@@ -597,6 +618,7 @@ PIKECLASS Shuffle
     *! Stop all data transmission, and then call the done callback
     *! 
     */
+    optflags OPT_SIDE_EFFECT;
   {
     SHUFFLE_DEBUG1("stop()\n", THIS );
     _all_done( THIS, 2 );
@@ -627,6 +649,7 @@ PIKECLASS Shuffle
     *!     (set_read_callback and set_close_callback).
     *! @enddl
     */
+    optflags OPT_SIDE_EFFECT;
   {
     INT64 rstart=0, rlength=-1;
     struct source *res;
