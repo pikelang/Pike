@@ -2796,19 +2796,18 @@ static newstate do_try_feed(struct parser_html_storage *this,
 	 }
 	 else cdst+=entity_close;
 
-
 	 dmalloc_touch_svalue(&(this->callback__entity));
 
 	 if (this->callback__entity.type!=T_INT && !ignore_tag_cb)
 	 {
 	    DEBUG((stderr,"%*d calling _entity callback %p:%d..%p:%d\n",
 		   this->stack_count,this->stack_count,
-		   *feed,st->c+1,dst,cdst));
+		   *feed,st->c,dst,cdst));
 
 	    /* low-level entity call */
 	    do_callback(this,thisobj,
 			&(this->callback__entity),
-			*feed,st->c+1,dst,cdst,
+			*feed,st->c,dst,cdst,
 			TYPE_ENTITY);
 
 	    if ((res=handle_result(this,st,
