@@ -2,12 +2,12 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: threads.c,v 1.212 2003/03/17 09:17:02 grubba Exp $
+|| $Id: threads.c,v 1.213 2003/04/01 19:12:09 mast Exp $
 */
 
 #ifndef CONFIGURE_TEST
 #include "global.h"
-RCSID("$Id: threads.c,v 1.212 2003/03/17 09:17:02 grubba Exp $");
+RCSID("$Id: threads.c,v 1.213 2003/04/01 19:12:09 mast Exp $");
 
 PMOD_EXPORT int num_threads = 1;
 PMOD_EXPORT int threads_disabled = 0;
@@ -109,11 +109,6 @@ int low_nt_create_thread(unsigned Pike_stack_size,
     return 1;
   }
 }
-
-
-#ifdef PIKE_DEBUG
-PMOD_EXPORT HANDLE CheckValidHandle(HANDLE h);
-#endif
 
 #endif
 
