@@ -1,5 +1,5 @@
 /*
- * $Id: autodoc.pike,v 1.3 2001/02/02 21:10:03 grubba Exp $
+ * $Id: autodoc.pike,v 1.4 2001/02/06 14:23:14 grubba Exp $
  *
  * AutoDoc mk II extraction script.
  *
@@ -45,8 +45,15 @@ int main(int argc, array(string) argv)
       if (intp(err[1])) {
 	werror(sprintf("%s:%d: %s\n", path, err[1], (string)err[0]));
       }
+      else if (objectp(err[1])) {
+	werror(sprintf("%s:%d..%d:\n"
+		       "\t%s\n",
+		       path, err[1]->firstline, err[1]->lastline,
+		       (string)err[0]));
+      }
       else
 	throw(err);
+      exit(1);
     }
   }
 }
