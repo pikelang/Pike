@@ -1,5 +1,5 @@
 /*
- * $Id: sendfile.c,v 1.6 1999/04/20 15:50:33 grubba Exp $
+ * $Id: sendfile.c,v 1.7 1999/04/20 15:52:39 grubba Exp $
  *
  * Sends headers + from_fd[off..off+len-1] + trailers to to_fd asyncronously.
  *
@@ -32,7 +32,9 @@
 #include <sys/types.h>
 #endif /* HAVE_SYS_TYPES_H */
 
+#ifdef HAVE_UNISTD_H
 #include <unistd.h>
+#endif /* HAVE_UNISTD_H */
 
 #include <sys/stat.h>
 
