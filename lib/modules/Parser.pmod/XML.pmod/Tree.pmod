@@ -1,7 +1,7 @@
 #pike __REAL_VERSION__
 
 /*
- * $Id: Tree.pmod,v 1.21 2002/11/29 00:50:27 nilsson Exp $
+ * $Id: Tree.pmod,v 1.22 2002/11/29 16:22:26 grubba Exp $
  *
  */
 
@@ -641,10 +641,22 @@ class Node {
       low_render_xml(data, n, textq, attrq);
     }
 
-    if (n->get_node_type() == XML_ELEMENT)
-      if (sizeof(children))
+    if (n->get_node_type() == XML_ELEMENT) {
+      if (n->count_children() != sizeof(children)) {
+	werror("Strange children count: %d: %O\n"
+	       "  children:%O\n"
+	       "  mChildren:%O\n"
+	       "Need to run walk_preorder()?\n",
+	       n->count_children(),
+	       n,
+	       children,
+	       n->mChildren);
+      }
+
+      if (n->count_children)
 	if (strlen(n->get_tag_name()))
 	  data->add("</", n->get_tag_name(), ">");
+    }
   }
 
   //! Creates an XML representation of the node sub tree. If the
