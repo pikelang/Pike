@@ -5,8 +5,9 @@
 #include "stralloc.h"
 #include "pike_types.h"
 #include "error.h"
+#include "opcodes.h"
 
-RCSID("$Id: module_support.c,v 1.33 1999/12/11 10:08:59 mast Exp $");
+RCSID("$Id: module_support.c,v 1.34 2001/02/20 13:32:21 grubba Exp $");
 
 /* Checks that args_to_check arguments are OK.
  * Returns 1 if everything worked ok, zero otherwise.
@@ -143,7 +144,6 @@ int va_get_args(struct svalue *s,
 		va_list ap)
 {
   int ret=0;
-  extern void f_cast();
 
   while(*fmt)
   {
@@ -174,7 +174,7 @@ int va_get_args(struct svalue *s,
         *va_arg(ap, int *)=(int)s->u.float_number;
       else 
       {
-        push_text( "int" );
+        ref_push_string(int_type_string);
         push_svalue( s );
         f_cast( );
         *va_arg(ap, int *)=sp[-1].u.integer;
@@ -188,7 +188,7 @@ int va_get_args(struct svalue *s,
         *va_arg(ap, INT_TYPE *)=(int)s->u.float_number;
       else 
       {
-        push_text( "int" );
+        ref_push_string(int_type_string);
         push_svalue( s );
         f_cast( );
         *va_arg(ap, INT_TYPE *)=sp[-1].u.integer;
@@ -232,7 +232,7 @@ int va_get_args(struct svalue *s,
 	 *va_arg(ap, FLOAT_TYPE *)=(float)s->u.integer;
       else 
       {
-        push_text( "float" );
+        ref_push_string(float_type_string);
         push_svalue( s );
         f_cast( );
         *va_arg(ap, FLOAT_TYPE *)=sp[-1].u.float_number;
