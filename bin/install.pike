@@ -467,9 +467,15 @@ void do_export()
   foreach(Array.transpose(  ({ to_export, translated_names }) ), [ string file, string file_name ])
     {
       status("Adding",file);
-      string f=Stdio.read_file(file);
-      p->write("f%4c%s%4c",strlen(file_name),file_name,strlen(f));
-      p->write(f);
+      if (string f=Stdio.read_file(file)) {
+	p->write("f%4c%s%4c",strlen(file_name),file_name,strlen(f));
+	p->write(f);
+      } else {
+	//  Huh? File could not be found.
+	werror("-------------------\n"
+	       "Warning: Could not add file: %s. File not found!\n"
+	       "-------------------\n", file);
+      }
     }
 
   /* FIXME, support $INSTALL_SCRIPT (or similar) */
