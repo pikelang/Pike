@@ -312,7 +312,8 @@ static int generate_comparison(node *n)
 {
   if(count_args(CDR(n))==2)
   {
-    do_docode(CDR(n),DO_NOT_COPY);
+    if(do_docode(CDR(n),DO_NOT_COPY) != 2)
+      fatal("Count args was wrong in generate_comparison.\n");
 
     if(CAR(n)->u.sval.u.efun->function == f_eq)
       emit2(F_EQ);
@@ -1128,6 +1129,28 @@ void o_range()
   }
 }
 
+void f_sizeof(INT32 args)
+{
+  INT32 tmp;
+  if(args<1)
+    error("Too few arguments to sizeof()\n");
+
+  tmp=lpc_sizeof(sp-args);
+
+  pop_n_elems(args);
+  push_int(tmp);
+}
+
+static int generate_sizeof(node *n)
+{
+  node **arg;
+  if(count_args(CDR(n)) != 1) return 0;
+  if(do_docode(CDR(n),DO_NOT_COPY) != 1)
+    fatal("Count args was wrong in sizeof().\n");
+  emit2(F_SIZEOF);
+  return 1;
+}
+
 void init_operators()
 {
   add_efun2("`==",f_eq,"function(mixed,mixed:int)",OPT_TRY_OPTIMIZE,0,generate_comparison);
@@ -1165,4 +1188,5 @@ void init_operators()
   add_efun2("`%",f_mod,"function(object,mixed:mixed)|function(int,int:int)|!function(int,int:mixed)&function(int|float,int|float:float)",OPT_TRY_OPTIMIZE,0,generate_mod);
 
   add_efun2("`~",f_compl,"function(object:mixed)|function(int:int)|function(float:float)",OPT_TRY_OPTIMIZE,0,generate_compl);
+  add_efun2("sizeof", f_sizeof, "function(string|list|array|mapping|object:int)",0,0,generate_sizeof);
 }
