@@ -1,4 +1,4 @@
-/* $Id: master.pike.in,v 1.69 1999/11/19 00:30:59 grubba Exp $
+/* $Id: master.pike.in,v 1.70 1999/11/23 06:34:55 per Exp $
  * 
  * Master-file for Pike.
  *
@@ -766,12 +766,15 @@ mixed resolv_base(string identifier, string|void current_file)
   return UNDEFINED;
 }
 
+mapping resolv_cache = set_weak_flag( ([]), 1 );
 mixed resolv(string identifier, string|void current_file)
 {
+  if( resolv_cache[identifier+current_file] )
+    return resolv_cache[identifier+current_file];
   array(string) tmp=identifier/".";
   mixed ret=resolv_base(tmp[0]);
   foreach(tmp[1..],string index) ret=ret[index];
-  return ret;
+  return resolv_cache[identifier+current_file]=ret;
 }
 
 // These are useful if you want to start other Pike processes
