@@ -1,5 +1,5 @@
 #include "global.h"
-RCSID("$Id: threads.c,v 1.116 2000/03/30 04:39:17 hubbe Exp $");
+RCSID("$Id: threads.c,v 1.117 2000/04/11 23:27:27 hubbe Exp $");
 
 int num_threads = 1;
 int threads_disabled = 0;
@@ -501,6 +501,7 @@ struct object *thread_for_id(THREAD_T tid)
      by incrementing refcount though. */
 }
 
+
 void f_all_threads(INT32 args)
 {
   /* Return an unordered array containing all threads that was running
@@ -521,6 +522,47 @@ void f_all_threads(INT32 args)
   mt_unlock( & thread_table_lock );
   f_aggregate(sp-oldsp);
 }
+
+#ifdef PIKE_DEBUG
+static void gc_check_thread_stacks(struct callback *foo, void *bar, void *gazonk)
+{
+  INT32 x;
+  struct thread_state *s;
+
+  mt_lock( & thread_table_lock );
+  for(x=0; x<THREAD_TABLE_SIZE; x++)
+  {
+    for(s=thread_table_chains[x]; s; s=s->hashlink)
+    {
+      struct pike_frame *f;
+      /* We avoid checking the 'current' thread
+       * as that is handled by interpret.c
+       * This aids compatibility with nonthreaded systems.
+       * -Hubbe
+       */
+      debug_malloc_touch(THREADSTATE2OBJ(s));
+      if(s->swapped)
+      {
+
+	debug_malloc_touch(s->evaluator_stack);
+	debug_gc_xmark_svalues(s->evaluator_stack,
+			       s->sp - s->evaluator_stack-1,
+			       "interpreter stack");
+	
+	for(f=s->fp;f;f=f->next)
+	{
+	  debug_malloc_touch(f);
+	  if(f->context.parent)
+	    gc_external_mark(f->context.parent);
+	  gc_external_mark(f->current_object);
+	  gc_external_mark(f->context.prog);
+	}
+      }
+    }
+  }
+  mt_unlock( & thread_table_lock );
+}
+#endif
 
 int count_pike_threads(void)
 {
@@ -545,8 +587,6 @@ static void check_threads(struct callback *cb, void *arg, void * arg2)
   if(thread_for_id(th_self()) != thread_id)
     fatal("thread_for_id() (or thread_id) failed!\n")
 #endif
-
-
 }
 
 TH_RETURN_TYPE new_thread_func(void * data)
@@ -1273,6 +1313,7 @@ void th_init(void)
   set_init_callback(init_thread_obj);
   set_exit_callback(exit_thread_obj);
   thread_id_prog=new_program;
+  thread_id_prog->flags |= PROGRAM_NO_EXPLICIT_DESTRUCT;
   add_ref(thread_id_prog);
   end_class("thread_id", 0);
 
@@ -1304,12 +1345,25 @@ void th_init(void)
   OBJ2THREAD(thread_id)->swapped=0;
   OBJ2THREAD(thread_id)->id=th_self();
   thread_table_insert(thread_id);
+
+#ifdef PIKE_DEBUG
+  {
+    static struct callback *spcb;
+    if(!spcb)
+    {
+      spcb=add_gc_callback(gc_check_thread_stacks,0,0);
+      dmalloc_accept_leak(spcb);
+    }
+  }
+#endif
+
 }
 
 void th_cleanup(void)
 {
   if(thread_id)
   {
+    thread_table_delete(thread_id);
     destruct(thread_id);
     free_object(thread_id);
     thread_id=0;
