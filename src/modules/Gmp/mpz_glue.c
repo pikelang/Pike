@@ -2,11 +2,11 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: mpz_glue.c,v 1.148 2003/05/19 19:02:17 mast Exp $
+|| $Id: mpz_glue.c,v 1.149 2003/05/19 19:23:41 mast Exp $
 */
 
 #include "global.h"
-RCSID("$Id: mpz_glue.c,v 1.148 2003/05/19 19:02:17 mast Exp $");
+RCSID("$Id: mpz_glue.c,v 1.149 2003/05/19 19:23:41 mast Exp $");
 #include "gmp_machine.h"
 #include "module.h"
 
@@ -66,27 +66,6 @@ struct program *mpzmod_program;
 struct program *bignum_program;
 #endif
 
-#if !defined(HAVE_MPZ_IMPORT) && !defined(NO_MPZ_SET_SI_KLUDGE)
-/* Old gmp libraries have a broken implementation of mpz_set_si(),
- * which handles -0x80000000 incorrectly
- * (it results in -0xffffffff80000000)...
- *
- * FIXME: Should have a configure test for this.
- * 	/grubba 2003-05-17
- */
-#define PIKE_MPZ_SET_SI(MPZ_VAL, VALUE)	do {		\
-    long val_ = (VALUE);				\
-    if (val_ < 0) {					\
-      mpz_set_ui((MPZ_VAL), (unsigned long) -val_);	\
-      mpz_neg((MPZ_VAL), (MPZ_VAL));			\
-    } else {						\
-      mpz_set_ui((MPZ_VAL), (unsigned long) val_);	\
-    }							\
-  } while(0)
-#else /* HAVE_MPZ_IMPORT || NO_MPZ_SET_SI_KLUDGE */
-#define PIKE_MPZ_SET_SI(MPZ_VAL, VALUE)	mpz_set_si((MPZ_VAL), (VALUE))
-#endif /* !HAVE_MPZ_IMPORT || !NO_MPZ_SET_SI_KLUDGE */
-
 #ifdef AUTO_BIGNUM
 static mpz_t mpz_int_type_min;
 
@@ -95,6 +74,8 @@ void mpzmod_reduce(struct object *o)
   MP_INT *mpz = OBTOMPZ (o);
   int neg = mpz_sgn (mpz) < 0;
   INT_TYPE res = 0;
+
+  /* Note: Similar code in gmp_int64_from_bignum. */
 
   /* Get the index of the highest limb that has bits within the range
    * of the INT_TYPE. */
@@ -106,14 +87,14 @@ void mpzmod_reduce(struct object *o)
      */
 #if INT_TYPE_BITS == GMP_NUMB_BITS
     /* NOTE: Overflow is not possible. */
-    res = mpz_getlimbn (mpz, 0) & GMP_NUMB_MASK;
+    res = MPZ_GETLIMBN (mpz, 0) & GMP_NUMB_MASK;
 #elif INT_TYPE_BITS < GMP_NUMB_BITS
-    mp_limb_t val = mpz_getlimbn (mpz, 0) & GMP_NUMB_MASK;
+    mp_limb_t val = MPZ_GETLIMBN (mpz, 0) & GMP_NUMB_MASK;
     if (val >= (mp_limb_t) 1 << INT_TYPE_BITS) goto overflow;
     res = val;
 #else
     for (;; pos--) {
-      res |= mpz_getlimbn (mpz, pos) & GMP_NUMB_MASK;
+      res |= MPZ_GETLIMBN (mpz, pos) & GMP_NUMB_MASK;
       if (pos == 0) break;
       if (res >= (INT_TYPE) 1 << (INT_TYPE_BITS - GMP_NUMB_BITS)) goto overflow;
       res <<= GMP_NUMB_BITS;
@@ -197,6 +178,8 @@ static int gmp_int64_from_bignum (INT64 *i, struct object *bignum)
   int neg = mpz_sgn (mpz) < 0;
   INT64 res = 0;
 
+  /* Note: Similar code in mpzmod_reduce. */
+
   /* Get the index of the highest limb that have bits within the range
    * of the INT64. */
   size_t pos = (INT64_BITS + GMP_NUMB_BITS - 1) / GMP_NUMB_BITS - 1;
@@ -207,14 +190,14 @@ static int gmp_int64_from_bignum (INT64 *i, struct object *bignum)
 
   if (mpz_size (mpz) <= pos + 1) {
 #if INT64_BITS == GMP_NUMB_BITS
-    res = mpz_getlimbn (mpz, 0) & GMP_NUMB_MASK;
+    res = MPZ_GETLIMBN (mpz, 0) & GMP_NUMB_MASK;
 #elif INT64_BITS < GMP_NUMB_BITS
-    mp_limb_t val = mpz_getlimbn (mpz, 0) & GMP_NUMB_MASK;
+    mp_limb_t val = MPZ_GETLIMBN (mpz, 0) & GMP_NUMB_MASK;
     if (val >= (mp_limb_t) 1 << INT64_BITS) goto overflow;
     res = val;
 #else
     for (;; pos--) {
-      res |= mpz_getlimbn (mpz, pos) & GMP_NUMB_MASK;
+      res |= MPZ_GETLIMBN (mpz, pos) & GMP_NUMB_MASK;
       if (pos == 0) break;
       if (res >= (INT64) 1 << (INT64_BITS - GMP_NUMB_BITS)) goto overflow;
       res <<= GMP_NUMB_BITS;
@@ -566,7 +549,7 @@ struct pike_string *low_get_mpz_digits(MP_INT *mpz, int base)
 
       while (len > 0)
       {
-	mp_limb_t x = mpz_getlimbn (mpz, pos++);
+	mp_limb_t x = MPZ_GETLIMBN (mpz, pos++);
 	for (i=0; i<sizeof(mp_limb_t); i++)
 	{
 	  *(--dst) = DO_NOT_WARN((unsigned char)(x & 0xff));
@@ -775,7 +758,7 @@ static void mpzmod__sprintf(INT32 args)
 #error Cannot cope with GMP using nail bits.
 #endif
 
-      mp_limb_t x = (length-->0? mpz_getlimbn(n, pos++) : 0);
+      mp_limb_t x = (length-->0? MPZ_GETLIMBN(n, pos++) : 0);
 
       if (!flag_left)
 	 for(i = 0; i < (INT_TYPE)sizeof(mp_limb_t); i++)
