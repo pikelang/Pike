@@ -1,4 +1,4 @@
-/* $Id: font.c,v 1.63 2000/08/14 14:26:37 grubba Exp $ */
+/* $Id: font.c,v 1.64 2000/08/14 14:27:05 grubba Exp $ */
 #include "global.h"
 
 #define SPACE_CHAR 'i'
@@ -9,7 +9,7 @@ extern unsigned char * image_default_font;
 /*
 **! module Image
 **! note
-**!	$Id: font.c,v 1.63 2000/08/14 14:26:37 grubba Exp $
+**!	$Id: font.c,v 1.64 2000/08/14 14:27:05 grubba Exp $
 **! class Font
 **!
 **! note
@@ -184,6 +184,8 @@ Kerningtable types:
 #include "dmalloc.h"
 
 #include "fdlib.h"
+
+#include "bignum.h"
 
 /* This must be included last! */
 #include "module_magic.h"
