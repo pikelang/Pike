@@ -1,7 +1,10 @@
-/* $Id: master.pike,v 1.50 1997/09/16 00:30:15 hubbe Exp $
+/* $Id: master.pike,v 1.51 1997/10/02 04:33:27 hubbe Exp $
  *
  * Master-file for Pike.
  */
+
+#define GETCWD_CACHE
+#define FILE_STAT_CACHE
 
 #define UNDEFINED (([])[0])
 #define error(X) throw( ({ (X), backtrace()[0..sizeof(backtrace())-2] }) )
@@ -15,10 +18,53 @@ string *pike_include_path=({});
 string *pike_module_path=({});
 string *pike_program_path=({});
 
+#ifdef GETCWD_CACHE
+string current_path;
+int cd(string s)
+{
+  current_path=0;
+  return predef::cd(s);
+}
+
+string getcwd()
+{
+  return current_path || (current_path=predef::getcwd());
+}
+#endif
+
 string combine_path_with_cwd(string path)
 {
   return combine_path(path[0]=='/'?"/":getcwd(),path);
 }
+
+#ifdef FILE_STAT_CACHE
+mapping(string:multiset(string)) dir_cache = ([]);
+
+mixed *file_stat(string x)
+{
+  string file, dir=reverse(combine_path_with_cwd(x));
+  if(sscanf(dir,"%*[/]%s/%s", file, dir)!=3)
+    file=x;
+
+  file=reverse(file);
+  dir=reverse(dir);
+
+  multiset(string) d;
+  if(zero_type(d=dir_cache[dir]))
+  {
+    if(string *tmp=get_dir(dir))
+    {
+      d=dir_cache[dir]=aggregate_multiset(@tmp);
+    }else{
+      dir_cache[dir]=0;
+    }
+  }
+  
+  if(d && !d[file]) return 0;
+
+  return predef::file_stat(x);
+}
+#endif
 
 mapping (string:string) environment=([]);
 
@@ -208,6 +254,11 @@ void create()
   add_constant("clone",new);
   add_constant("UNDEFINED",UNDEFINED);
 
+#ifdef GETCWD_CACHE
+  add_constant("cd",cd);
+  add_constant("getcwd",getcwd);
+#endif
+
   random_seed(time() + (getpid() * 0x11111111));
 }
 
@@ -254,19 +305,23 @@ class dirnode
 {
   string dirname;
   object tm;
+  mixed module;
   mapping cache=([]);
+
   void create(string name, object the_master)
   {
     dirname=name;
     tm=the_master;
+
+    if(mixed module=tm->findmodule(dirname+"/module"))
+      if(mixed tmp=module->_module_value)
+	module=tmp;
   }
+
   object|program ind(string index)
   {
-    if(mixed o=tm->findmodule(dirname+"/module"))
-    {
-      if(mixed tmp=o->_module_value) o=tmp;
-      if(o=o[index]) return o;
-    }
+    if(module) if(object o=module[index]) return o;
+
     index = dirname+"/"+index;
     if(object o=tm->findmodule(index))
     {
