@@ -1,18 +1,18 @@
-dnl $Id: configure.in,v 1.5 1999/08/27 19:15:21 noring Exp $
+dnl $Id: configure.in,v 1.6 2001/03/02 14:04:14 grubba Exp $
 dnl (C) 1997 Francesco Chemolli <kinkie@kame.usr.dsi.unimi.it>
 
 AC_INIT(msqlmod.c)
 AC_CONFIG_HEADER(msql_config.h)
+
+AC_MODULE_INIT()
 
 AC_ARG_WITH(msql,    [  --with(out)-msql      mSQL Database engine support ],[]
 ,[with_msql=yes])
 
 echo "Configuring msql module, (C) 1996,1997 Francesco Chemolli <kinkie@kame.usr.dsi.unimi.it>"
 
-AC_MODULE_INIT()
-
 dnl set up "reasonable" search paths
-pike_msql_reasonable_prefixes="/usr/local /usr /opt"
+pike_msql_reasonable_prefixes="$with_root/usr/local $with_root/usr $with_root/opt"
 pike_msql_reasonable_directories="Minerva Hughes minerva hughes msql Msql msql2 Msql2 /"
 pike_msql_extra_include_directories="$HOME/include"
 pike_msql_extra_lib_directories="$HOME/lib"
