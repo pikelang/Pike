@@ -37,6 +37,8 @@ object get_url(string url,void|mapping query_variables, void|mapping request_hea
    string prot="http",host;
    int port=80;
    string query;
+   if(!request_headers)
+     request_headers = ([]);
 
    sscanf(url,"%[^:/]://%[^:/]:%d/%s",prot,host,port,query) == 4 ||
       (port=80,sscanf(url,"%[^:/]://%[^:/]/%s",prot,host,query)) == 3 ||
@@ -84,6 +86,8 @@ object post_url(string url,mapping query_variables, void|mapping request_headers
    string prot="http",host;
    int port=80;
    string query;
+   if(!request_headers)
+     request_headers = ([]);
 
    sscanf(url,"%[^:/]://%[^:/]:%d/%s",prot,host,port,query) == 4 ||
       (port=80,sscanf(url,"%[^:/]://%[^:/]/%s",prot,host,query)) == 3 ||
