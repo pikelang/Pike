@@ -2,12 +2,12 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: SDL.cmod,v 1.7 2002/10/21 17:06:54 marcus Exp $
+|| $Id: SDL.cmod,v 1.8 2002/11/25 19:57:37 neotron Exp $
 */
 
 #include "global.h"
 #include "stralloc.h"
-RCSID("$Id: SDL.cmod,v 1.7 2002/10/21 17:06:54 marcus Exp $");
+RCSID("$Id: SDL.cmod,v 1.8 2002/11/25 19:57:37 neotron Exp $");
 #include "pike_macros.h"
 #include "interpret.h"
 #include "program.h"
@@ -900,9 +900,101 @@ PIKECLASS VideoInfo {
  */
 PIKECLASS Surface {
   CVAR SDL_Surface *_s;
+  CVAR void (*fast_set_pixel)(Uint16 x, Uint16 y, Uint32 pixel);
+  
+
+  static void fast_set_pixel1(Uint16 x, Uint16 y, Uint32 pixel) {
+    SDL_Surface *screen = THIS->_s;
+    *((Uint8 *)screen->pixels + y * screen->pitch + x) = pixel;
+  }
+  static void fast_set_pixel2(Uint16 x, Uint16 y, Uint32 pixel) {
+    SDL_Surface *screen = THIS->_s;
+    *((Uint16 *)screen->pixels +  y * (screen->pitch>>1) + x) = pixel;
+  }
+  static void fast_set_pixel3(Uint16 x, Uint16 y, Uint32 pixel) { 
+    SDL_Surface *screen = THIS->_s;
+    Uint8 *pix = (Uint8 *)screen->pixels + y * screen->pitch + x * 3; 
+    if(SDL_BYTEORDER == SDL_BIG_ENDIAN) { 
+      pix[2] = pixel & 0xff; 
+      pix[1] = (pixel >> 8) & 0xff; 
+      pix[0] = (pixel >> 16) & 0xff; 
+    } else { 
+      pix[0] = pixel; 
+      pix[1] = (pixel >> 8) & 0xff; 
+      pix[2] = (pixel >> 16) & 0xff; 
+    } 
+  } 
+  static void fast_set_pixel4(Uint16 x, Uint16 y, Uint32 pixel) {
+    SDL_Surface *screen = THIS->_s;
+    *((Uint32 *)screen->pixels + y * (screen->pitch>>2) + x) = pixel;
+  }
+  static void (*get_fast_set_pixel(int bpp))(Uint16 x, Uint16 y, Uint32 pixel) {
+    switch(bpp) {
+    case 1: return &fast_set_pixel1; 
+    case 2: return &fast_set_pixel2; 
+    case 3: return &fast_set_pixel3; 
+    case 4: return &fast_set_pixel4; 
+    }
+  }
+  /*! @decl int get_pixel(int x, int y)
+   *! Get the value of the specified pixel. The surface needs to be
+   *! locked before this method can be used.
+   *! @note
+   *!   This method DOES NOT check to see if the pixels are within the
+   *!   boundary of the surface for performance reasons!
+   *! @returns
+   *!   The value of the specified pixel.
+   *! @seealso
+   *!  @[set_pixel()], @[unlock()], @[lock()]
+   */
+  PIKEFUN int get_pixel(int x, int y)
+  {
+    CHECK_INIT();
+    if(THIS->fast_set_pixel) {
+      SDL_Surface *surface = THIS->_s;
+      int bpp = surface->format->BytesPerPixel;
+      Uint8 *p = (Uint8 *)surface->pixels + y * surface->pitch + x * bpp;
+      
+      switch(bpp) {
+      case 1:  RETURN *p;
+      case 2:  RETURN *(Uint16 *)p;
+      case 3:
+	if(SDL_BYTEORDER == SDL_BIG_ENDIAN) {
+	  RETURN p[0] << 16 | p[1] << 8 | p[2];
+	} else {
+	  RETURN p[0] | p[1] << 8 | p[2] << 16;
+	}
+      case 4:  RETURN *(Uint32 *)p;
+      default: RETURN 0;       /* shouldn't happen, but avoids warnings */
+      }
+    } else {
+      Pike_error("Surface must be locked before you can set or get pixels.\n");
+    }      
+  }
+
+  /*! @decl int set_pixel(int x, int y, int pixel)
+   *! Set the value of the specified pixel. The surface needs to be
+   *! locked before this method can be used.
+   *! @note
+   *!   This method DOES NOT check to see if the pixels are within the
+   *!   boundary of the surface for performance reasons!
+   *! @returns
+   *!   A reference to the surface itself.
+   *! @seealso
+   *!  @[get_pixel()], @[unlock()], @[lock()]
+   */
+  PIKEFUN object set_pixel(int x, int y, int pixel) {
+    CHECK_INIT();
+    if(THIS->fast_set_pixel) {
+      THIS->fast_set_pixel(x, y, pixel);
+      RET_THIS();
+    }
+    Pike_error("Surface must be locked before you can set or get pixels.\n");
+  }
 
   INIT {
     THIS->_s = NULL;
+    THIS->fast_set_pixel = NULL;
   }
   
   EXIT {
@@ -910,6 +1002,7 @@ PIKECLASS Surface {
       SDL_FreeSurface(THIS->_s);
       THIS->_s = NULL;
     }
+    THIS->fast_set_pixel = NULL;
   }
 
   /* Query methods (struct vars) */
@@ -966,9 +1059,9 @@ PIKECLASS Surface {
   
   /*! @decl int lock()
    *! This methods locks the surface to allow direct access to the pixels using the
-   *! @[get_pixel()] and @[set_pixel()] methods. Note that all surfaces don't require
-   *! locking. In those cases, this method is does nothing. When you are done
-   *! accessing the surface, you should unlock it using @[unlock()].
+   *! @[get_pixel()] and @[set_pixel()] methods. Note that although all surfaces in SDL don't require
+   *! locking, you still need to call this method to enable the set/get pixel
+   *! methods. You should unlock the surface when you're doing modifying it.
    *!
    *! @note
    *!   Calling this method multiple times means that you need to call
@@ -976,14 +1069,18 @@ PIKECLASS Surface {
    *! @returns
    *!   1 for success or 0 if the surface couldn't be locked.
    *! @seealso
-   *!  @[unlock()]
+   *!  @[unlock()], @[set_pixel()], @[get_pixel()]
    */
   PIKEFUN int lock() {
     CHECK_INIT();
+    int locked = 1;
     if ( SDL_MUSTLOCK(THIS->_s) ) {
-      RETURN SDL_LockSurface(THIS->_s) != -1;
+      locked = SDL_LockSurface(THIS->_s) != -1;
     }
-    RETURN 1; 
+    if(locked) {
+      THIS->fast_set_pixel = get_fast_set_pixel(THIS->_s->format->BytesPerPixel);
+    }
+    RETURN locked;
   }
   
   /*! @decl void unlock()
@@ -995,6 +1092,7 @@ PIKECLASS Surface {
    */
   PIKEFUN void unlock() {
     CHECK_INIT();
+    THIS->fast_set_pixel = NULL;
     if ( SDL_MUSTLOCK(THIS->_s) ) {
       SDL_UnlockSurface(THIS->_s);
     }
@@ -1346,6 +1444,7 @@ PIKECLASS Surface {
     OBJ2_SURFACE(new_surface)->_s = tmp;
     push_object(new_surface);
   }
+
 }
 /*! @endclass Surface */
 #undef CHECK_INIT
@@ -1357,10 +1456,18 @@ PIKEFUN int video_mode_ok(int width, int height, int bpp, int flags) {
 }
 
 
-PIKEFUN int flip(object screen) {
+PIKEFUN int flip(object|void screen) {
   SDL_Surface *vs = NULL;    
-  CHECK_CLASS(screen, Surface, 1);
-  vs = OBJ2_SURFACE(screen)->_s;
+  if(!screen) {
+    vs = SDL_GetVideoSurface();
+  } else {
+    if( screen->type == PIKE_T_OBJECT ) {
+      CHECK_CLASS(screen->u.object, Surface, 5);
+      vs = OBJ2_SURFACE(screen->u.object)->_s;
+    } else {
+      SIMPLE_BAD_ARG_ERROR("SDL.flip",5,"SDL.Surface");      
+    }      
+  }
   RETURN SDL_Flip(vs);
 }
 
