@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: cpp.c,v 1.156 2004/11/14 22:20:16 mast Exp $
+|| $Id: cpp.c,v 1.157 2004/12/22 18:46:15 grubba Exp $
 */
 
 #include "global.h"
@@ -413,6 +413,10 @@ void cpp_change_compat(struct cpp *this, int major, int minor)
   SAFE_APPLY_MASTER("get_compilation_handler",2);
   if(sp[-1].type == T_OBJECT)
   {
+    if (sp[-1].subtype) {
+      cpp_error(this,
+		"#pike: Subtyped compilation handlers are not supported yet.");
+    }
     this->compat_handler=sp[-1].u.object;
     dmalloc_touch_svalue(Pike_sp-1);
     sp--;

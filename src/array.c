@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: array.c,v 1.177 2004/10/21 17:29:21 nilsson Exp $
+|| $Id: array.c,v 1.178 2004/12/22 18:46:14 grubba Exp $
 */
 
 #include "global.h"
@@ -806,12 +806,14 @@ INT32 *get_order(struct array *v, cmpfun fun)
 /* Returns 2 if no relation is established through lfun calls. */
 static INLINE int lfun_cmp (const struct svalue *a, const struct svalue *b)
 {
+  struct program *p;
   int fun;
 
-  if (a->type == T_OBJECT && a->u.object->prog) {
-    if ((fun = FIND_LFUN(a->u.object->prog,LFUN_LT)) != -1) {
+  if (a->type == T_OBJECT && (p = a->u.object->prog)) {
+    if ((fun = FIND_LFUN(p->inherits[a->subtype].prog, LFUN_LT)) != -1) {
       push_svalue(b);
-      apply_low (a->u.object, fun, 1);
+      apply_low(a->u.object,
+		fun + p->inherits[a->subtype].identifier_level, 1);
       if(!UNSAFE_IS_ZERO(Pike_sp-1))
       {
 	pop_stack();
@@ -820,9 +822,10 @@ static INLINE int lfun_cmp (const struct svalue *a, const struct svalue *b)
       pop_stack();
     }
 
-    if ((fun = FIND_LFUN(a->u.object->prog,LFUN_GT)) != -1) {
+    if ((fun = FIND_LFUN(p->inherits[a->subtype].prog, LFUN_GT)) != -1) {
       push_svalue(b);
-      apply_low (a->u.object, fun, 1);
+      apply_low(a->u.object,
+		fun + p->inherits[a->subtype].identifier_level, 1);
       if(!UNSAFE_IS_ZERO(Pike_sp-1))
       {
 	pop_stack();
@@ -831,9 +834,10 @@ static INLINE int lfun_cmp (const struct svalue *a, const struct svalue *b)
       pop_stack();
     }
 
-    if ((fun = FIND_LFUN(a->u.object->prog,LFUN_EQ)) != -1) {
+    if ((fun = FIND_LFUN(p->inherits[a->subtype].prog, LFUN_EQ)) != -1) {
       push_svalue(b);
-      apply_low (a->u.object, fun, 1);
+      apply_low(a->u.object,
+		fun + p->inherits[a->subtype].identifier_level, 1);
       if (!UNSAFE_IS_ZERO(Pike_sp-1)) {
 	pop_stack();
 	return 0;
@@ -842,10 +846,11 @@ static INLINE int lfun_cmp (const struct svalue *a, const struct svalue *b)
     }
   }
 
-  if(b->type == T_OBJECT && b->u.object->prog) {
-    if ((fun = FIND_LFUN(b->u.object->prog,LFUN_LT)) != -1) {
+  if(b->type == T_OBJECT && (p = b->u.object->prog)) {
+    if ((fun = FIND_LFUN(p->inherits[b->subtype].prog, LFUN_LT)) != -1) {
       push_svalue(a);
-      apply_low (b->u.object, fun, 1);
+      apply_low(b->u.object,
+		fun + p->inherits[b->subtype].identifier_level, 1);
       if(!UNSAFE_IS_ZERO(Pike_sp-1))
       {
 	pop_stack();
@@ -854,9 +859,10 @@ static INLINE int lfun_cmp (const struct svalue *a, const struct svalue *b)
       pop_stack();
     }
 
-    if ((fun = FIND_LFUN(b->u.object->prog,LFUN_GT)) != -1) {
+    if ((fun = FIND_LFUN(p->inherits[b->subtype].prog, LFUN_GT)) != -1) {
       push_svalue(a);
-      apply_low (b->u.object, fun, 1);
+      apply_low(b->u.object,
+		fun + p->inherits[b->subtype].identifier_level, 1);
       if(!UNSAFE_IS_ZERO(Pike_sp-1))
       {
 	pop_stack();
@@ -865,9 +871,10 @@ static INLINE int lfun_cmp (const struct svalue *a, const struct svalue *b)
       pop_stack();
     }
 
-    if ((fun = FIND_LFUN(b->u.object->prog,LFUN_EQ)) != -1) {
+    if ((fun = FIND_LFUN(p->inherits[b->subtype].prog, LFUN_EQ)) != -1) {
       push_svalue(a);
-      apply_low (b->u.object, fun, 1);
+      apply_low(b->u.object,
+		fun + p->inherits[b->subtype].identifier_level, 1);
       if (!UNSAFE_IS_ZERO(Pike_sp-1)) {
 	pop_stack();
 	return 0;
@@ -908,7 +915,9 @@ INLINE int set_svalue_cmpfun(const struct svalue *a, const struct svalue *b)
 	return 0;
 
       case T_OBJECT:
-	if(a->u.object == b->u.object) return 0;
+	if((a->u.object == b->u.object) && (a->subtype == b->subtype)) {
+	  return 0;
+	}
 	break;
     }
   }
@@ -922,6 +931,9 @@ INLINE int set_svalue_cmpfun(const struct svalue *a, const struct svalue *b)
   if (a->type != T_OBJECT)
     Pike_fatal ("Expected objects when both types are the same.\n");
 #endif
+
+  /* FIXME: Take subtype into account! */
+
   if(a->u.object->prog == b->u.object->prog) {
     if (a->u.object->prog) {
       if(a->u.object < b->u.object) {
@@ -1026,7 +1038,9 @@ static int alpha_svalue_cmpfun(const struct svalue *a, const struct svalue *b)
 	}
 
       case T_OBJECT:
-	if(a->u.object == b->u.object) return 0;
+	if((a->u.object == b->u.object) && (a->subtype == b->subtype)) {
+	  return 0;
+	}
 	break;
 	
       default:
@@ -1894,12 +1908,12 @@ node *make_node_from_array(struct array *a)
 	
       case BIT_STRING:
       case BIT_PROGRAM:
-      case BIT_OBJECT:
 	for(e=1; e<a->size; e++)
 	  if(ITEM(a)[e].u.refs != ITEM(a)[0].u.refs)
 	    break;
 	break;
 	
+      case BIT_OBJECT:
       case BIT_FUNCTION:
 	for(e=1; e<a->size; e++)
 	  if(ITEM(a)[e].u.object != ITEM(a)[0].u.object ||

@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: interpret.c,v 1.359 2004/11/12 13:13:30 grubba Exp $
+|| $Id: interpret.c,v 1.360 2004/12/22 18:46:15 grubba Exp $
 */
 
 #include "global.h"
@@ -349,6 +349,7 @@ void lvalue_to_svalue_no_free(struct svalue *to,struct svalue *lval)
       break;
 
     case T_OBJECT:
+      /* FIXME: Object subtypes! */
       if (lval[1].type == T_OBJ_INDEX)
 	low_object_index_no_free (to, lval->u.object, lval[1].u.identifier);
       else
@@ -417,6 +418,7 @@ PMOD_EXPORT void assign_lvalue(struct svalue *lval,struct svalue *from)
     break;
 
   case T_OBJECT:
+    /* FIXME: Object subtypes! */
     if (lval[1].type == T_OBJ_INDEX)
       object_low_set_index (lval->u.object, lval[1].u.identifier, from);
     else
@@ -465,6 +467,7 @@ union anything *get_pointer_if_this_type(struct svalue *lval, TYPE_T t)
       return 0;
 
     case T_OBJECT:
+      /* FIXME: What about object subtypes? */
       return object_get_item_ptr(lval->u.object,lval+1,t);
       
     case T_ARRAY:
@@ -1751,6 +1754,7 @@ int low_mega_apply(enum apply_type type, INT32 args, void *arg1, void *arg2)
       break;
 
     case T_OBJECT:
+      /* FIXME: Object subtypes! */
       o=s->u.object;
       if(o->prog == pike_trampoline_program)
       {

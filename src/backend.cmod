@@ -1478,6 +1478,7 @@ PIKECLASS Backend
 	 if(CALL(e)->caller)
 	 {
 	   ITEM(v)[1].type=T_OBJECT;
+	   ITEM(v)[1].subtype = 0;
 	   add_ref(ITEM(v)[1].u.object=CALL(e)->caller);
 	   v->type_field = BIT_INT|BIT_OBJECT;
 	 }else{

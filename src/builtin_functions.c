@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: builtin_functions.c,v 1.583 2004/12/22 12:45:37 grubba Exp $
+|| $Id: builtin_functions.c,v 1.584 2004/12/22 18:46:15 grubba Exp $
 */
 
 #include "global.h"
@@ -856,53 +856,65 @@ PMOD_EXPORT void f_search(INT32 args)
     return;
 
   case T_OBJECT:
-    if (Pike_sp[-args].u.object->prog) {
-      struct object *o = Pike_sp[-args].u.object;
-      struct program *p = o->prog;
-      /* NOTE: Fake lfun! */
-      int id = low_find_lfun(p, LFUN__SEARCH);
-      int next, ind;
+    {
+      struct program *p;
+      if ((p = (Pike_sp[-args].u.object->prog))) {
+	struct object *o = Pike_sp[-args].u.object;
+	int id_level = p->inherits[Pike_sp[-args].subtype].identifier_level;
+	int id;
+	int next, ind;
+	p = p->inherits[Pike_sp[-args].subtype].prog;
 
-      /* First try lfun::_search(). */
-      if (id >= 0) {
-	apply_low(o, id, args-1);
-	stack_pop_n_elems_keep_top(1);
-	return;
-      }
-
-      /* Check if we have an iterator. */
-      if (((id = find_identifier("value", p)) >= 0) &&
-	  ((next = find_identifier("next", p)) >= 0) &&
-	  ((ind = find_identifier("index", p)) >= 0)) {
-	/* We have an iterator. */
-
-	/* Set the start position if needed. */
-	if (args > 2) {
-	  apply(o, "set_index", args-2);
-	  pop_stack();
+	/* NOTE: Fake lfun! */
+	id = low_find_lfun(p, LFUN__SEARCH);
+	/* First try lfun::_search(). */
+	if (id >= 0) {
+	  apply_low(o, id + id_level, args-1);
+	  stack_pop_n_elems_keep_top(1);
+	  return;
 	}
 
-	/* At this point we have two values on the stack. */
+	/* Check if we have an iterator. */
+	if (((id = find_identifier("value", p)) >= 0) &&
+	    ((next = find_identifier("next", p)) >= 0) &&
+	    ((ind = find_identifier("index", p)) >= 0)) {
+	  /* We have an iterator. */
 
-	while(1) {
-	  apply_low(o, id, 0);
-	  if (is_eq(Pike_sp-2, Pike_sp-1)) {
-	    /* Found. */
-	    apply_low(o, ind, 0);
-	    stack_pop_n_elems_keep_top(3);
-	    return;
+	  id += id_level;
+	  next += id_level;
+	  ind += id_level;
+
+	  /* Set the start position if needed. */
+	  if (args > 2) {
+	    int fun = find_identifier("set_index", p);
+	    if (fun < 0)
+	      Pike_error ("Cannot call unknown function \"%s\".\n", fun);
+	    apply_low(o, fun + id_level, args-2);
+	    pop_stack();
 	  }
-	  apply_low(o, next, 0);
-	  if (UNSAFE_IS_ZERO(Pike_sp-1)) {
-	    /* Not found. */
-	    pop_n_elems(4);
-	    /* FIXME: Should probably indicate not found in some other way.
-	     *        On the other hand, the iterator should be false now.
-	     */
-	    push_undefined();	
-	    return;
+
+	  /* At this point we have two values on the stack. */
+
+	  while(1) {
+	    apply_low(o, id, 0);
+	    if (is_eq(Pike_sp-2, Pike_sp-1)) {
+	      /* Found. */
+	      apply_low(o, ind, 0);
+	      stack_pop_n_elems_keep_top(3);
+	      return;
+	    }
+	    apply_low(o, next, 0);
+	    if (UNSAFE_IS_ZERO(Pike_sp-1)) {
+	      /* Not found. */
+	      pop_n_elems(4);
+	      /* FIXME: Should probably indicate not found in some other way.
+	       *        On the other hand, the iterator should be false now.
+	       */
+	      push_undefined();	
+	      return;
+	    }
+	    pop_n_elems(2);
 	  }
-	  pop_n_elems(2);
 	}
       }
     }
@@ -1193,7 +1205,7 @@ PMOD_EXPORT void f_has_value(INT32 args)
     case T_OBJECT:
       /* FIXME: It's very sad that we always have to do linear search
 	 with `values' in case of objects. The problem is that we cannot
-	 use `search' directly since it's undefined weather it returns
+	 use `search' directly since it's undefined whether it returns
 	 -1 (array) or 0 (mapping) during e.g. some data type emulation.
 	 
 	 Maybe we should use object->_has_value(value) provided that
@@ -2424,6 +2436,7 @@ PMOD_EXPORT void f_indices(INT32 args)
     break;
 
   case T_OBJECT:
+    /* FIXME: Object subtype! */
     a=object_indices(Pike_sp[-args].u.object);
     break;
 
@@ -2722,6 +2735,7 @@ PMOD_EXPORT void f_values(INT32 args)
     break;
 
   case T_OBJECT:
+    /* FIXME: Object subtype! */
     a=object_values(Pike_sp[-args].u.object);
     break;
 
@@ -2830,6 +2844,9 @@ PMOD_EXPORT void f_object_program(INT32 args)
     if(p)
     {
       p = p->inherits[Pike_sp[-args].subtype].prog;
+      /* FIXME: Does the following actually work for
+       *        the object subtype case?
+       */
       if((p->flags & PROGRAM_USES_PARENT) && 
 	 PARENT_INFO(o)->parent &&
 	 PARENT_INFO(o)->parent->prog)
@@ -3414,8 +3431,13 @@ PMOD_EXPORT void f_compile(INT32 args)
     case 3:
       SIMPLE_BAD_ARG_ERROR("compile", 4, "int");
     default:
-      if(Pike_sp[5-args].type == T_OBJECT)
+      if(Pike_sp[5-args].type == T_OBJECT) {
+	if (Pike_sp[5-args].subtype) {
+	  Pike_error("compile: "
+		     "Subtyped placeholder objects are not supported yet.\n");
+	}
 	placeholder=Pike_sp[5-args].u.object;
+      }
 
     case 5:
       if(Pike_sp[4-args].type == T_PROGRAM)
@@ -3426,8 +3448,13 @@ PMOD_EXPORT void f_compile(INT32 args)
       minor=Pike_sp[3-args].u.integer;
       
     case 2:
-      if(Pike_sp[1-args].type == T_OBJECT)
+      if(Pike_sp[1-args].type == T_OBJECT) {
+	if (Pike_sp[5-args].subtype) {
+	  Pike_error("compile: "
+		     "Subtyped handler objects are not supported yet.\n");
+	}
 	o=Pike_sp[1-args].u.object;
+      }
       
     case 0: case 1: break;
   }
@@ -3571,11 +3598,16 @@ PMOD_EXPORT void f_callablep(INT32 args)
       res = 1;
       break;
     case T_OBJECT:
-      if( Pike_sp[-args].u.object->prog &&
-	  FIND_LFUN( Pike_sp[-args].u.object->prog, LFUN_CALL ) != -1 )
-	res = 1;
+      {
+	struct program *p;
+	if((p = Pike_sp[-args].u.object->prog) &&
+	   FIND_LFUN(p->inherits[Pike_sp[-args].subtype].prog,
+		     LFUN_CALL ) != -1)
+	  res = 1;
+      }
       break;
     case T_ARRAY:
+      /* FIXME: What about the recursive case? */
       array_fix_type_field(Pike_sp[-args].u.array);
       if( (Pike_sp[-args].u.array->type_field==BIT_CALLABLE) ||
 	  !Pike_sp[-args].u.array->type_field) {
@@ -3871,27 +3903,32 @@ void f_gc(INT32 args)
 #endif
 
 
-#define TYPEP(ID,NAME,TYPE,TYPE_NAME)				\
-PMOD_EXPORT void ID(INT32 args)						\
-{								\
-  int t;							\
-  if(args<1)							\
-    SIMPLE_TOO_FEW_ARGS_ERROR(NAME, 1);				\
-  if(Pike_sp[-args].type == T_OBJECT && Pike_sp[-args].u.object->prog)	\
-  {								\
-    int fun=FIND_LFUN(Pike_sp[-args].u.object->prog,LFUN__IS_TYPE);	\
-    if(fun != -1)						\
-    {								\
-      push_constant_text(TYPE_NAME);				\
-      apply_low(Pike_sp[-args-1].u.object,fun,1);			\
-      stack_unlink(args);					\
-      return;							\
-    }								\
-  }								\
-  t=Pike_sp[-args].type == TYPE;					\
-  pop_n_elems(args);						\
-  push_int(t);							\
-}
+#define TYPEP(ID,NAME,TYPE,TYPE_NAME)					\
+  PMOD_EXPORT void ID(INT32 args)					\
+  {									\
+    int t;								\
+    struct program *p;							\
+    if (args<1)								\
+      SIMPLE_TOO_FEW_ARGS_ERROR(NAME, 1);				\
+    if (Pike_sp[-args].type == T_OBJECT &&				\
+	(p = Pike_sp[-args].u.object->prog))				\
+    {									\
+      int fun = FIND_LFUN(p->inherits[Pike_sp[-args].subtype].prog,	\
+			  LFUN__IS_TYPE);				\
+      if (fun != -1)							\
+      {									\
+	int id_level =							\
+	  p->inherits[Pike_sp[-args].subtype].identifier_level;		\
+	push_constant_text(TYPE_NAME);					\
+	apply_low(Pike_sp[-args-1].u.object, fun + id_level, 1);	\
+	stack_unlink(args);						\
+	return;								\
+      }									\
+    }									\
+    t = Pike_sp[-args].type == TYPE;					\
+    pop_n_elems(args);							\
+    push_int(t);							\
+  }
 
 
 /*! @decl int programp(mixed arg)
@@ -6422,9 +6459,13 @@ PMOD_EXPORT void f_replace_master(INT32 args)
     SIMPLE_TOO_FEW_ARGS_ERROR("replace_master", 1);
   if(Pike_sp[-args].type != T_OBJECT)
     SIMPLE_BAD_ARG_ERROR("replace_master", 1, "object");
- if(!Pike_sp[-args].u.object->prog)
+  if(!Pike_sp[-args].u.object->prog)
     bad_arg_error("replace_master", Pike_sp-args, args, 1, "object", Pike_sp-args,
 		  "Called with destructed object.\n");
+
+  if (Pike_sp[-args].subtype)
+    bad_arg_error("replace_master", Pike_sp-args, args, 1, "object", Pike_sp-args,
+		  "Subtyped master objects are not supported yet.\n");
     
   free_object(master_object);
   master_object=Pike_sp[-args].u.object;
@@ -7195,6 +7236,7 @@ PMOD_EXPORT void f_map(INT32 args)
 	    pop_stack();
 
 	    push_constant_text("array");
+	    /* FIXME: Object subtype! */
 	    safe_apply(mysp[-3].u.object,"cast",1);
 	    if (Pike_sp[-1].type==T_ARRAY)
 	    {
@@ -7207,6 +7249,7 @@ PMOD_EXPORT void f_map(INT32 args)
 	    pop_stack();
 
 	    push_constant_text("mapping");
+	    /* FIXME: Object subtype! */
 	    safe_apply(mysp[-3].u.object,"cast",1);
 	    if (Pike_sp[-1].type==T_MAPPING)
 	    {
@@ -7219,6 +7262,7 @@ PMOD_EXPORT void f_map(INT32 args)
 	    pop_stack();
 
 	    push_constant_text("multiset");
+	    /* FIXME: Object subtype! */
 	    safe_apply(mysp[-3].u.object,"cast",1);
 	    if (Pike_sp[-1].type==T_MULTISET)
 	    {
@@ -7623,6 +7667,7 @@ PMOD_EXPORT void f_filter(INT32 args)
 	    pop_stack();
 
 	    push_constant_text("array");
+	    /* FIXME: Object subtype! */
 	    safe_apply(mysp[-3].u.object,"cast",1);
 	    if (Pike_sp[-1].type==T_ARRAY)
 	    {
@@ -7635,6 +7680,7 @@ PMOD_EXPORT void f_filter(INT32 args)
 	    pop_stack();
 
 	    push_constant_text("mapping");
+	    /* FIXME: Object subtype! */
 	    safe_apply(mysp[-3].u.object,"cast",1);
 	    if (Pike_sp[-1].type==T_MAPPING)
 	    {
@@ -7647,6 +7693,7 @@ PMOD_EXPORT void f_filter(INT32 args)
 	    pop_stack();
 
 	    push_constant_text("multiset");
+	    /* FIXME: Object subtype! */
 	    safe_apply(mysp[-3].u.object,"cast",1);
 	    if (Pike_sp[-1].type==T_MULTISET)
 	    {

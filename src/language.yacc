@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: language.yacc,v 1.351 2004/11/06 07:05:41 nilsson Exp $
+|| $Id: language.yacc,v 1.352 2004/12/22 18:46:15 grubba Exp $
 */
 
 %pure_parser
@@ -441,6 +441,7 @@ facet: TOK_FACET TOK_IDENTIFIER ':' idents ';'
       else {
 	resolv_constant($4);
 	if (Pike_sp[-1].type == T_OBJECT) {
+	  /* FIXME: Object subtypes! */
 	  o = Pike_sp[-1].u.object;
 	  ref_push_string($2->u.sval.u.string);
 	  push_int(Pike_compiler->new_program->id);
@@ -1313,16 +1314,17 @@ identifier_type: idents
       struct program *p = NULL;
 
       if (Pike_sp[-1].type == T_OBJECT) {
-	if(!Pike_sp[-1].u.object->prog)
+	if(!(p = Pike_sp[-1].u.object->prog))
 	{
 	  pop_stack();
 	  push_int(0);
 	  yyerror("Destructed object used as program identifier.");
 	}else{
-	  int f=FIND_LFUN(Pike_sp[-1].u.object->prog,LFUN_CALL);
+	  int f = FIND_LFUN(p->inherits[Pike_sp[-1].subtype].prog, LFUN_CALL);
 	  if(f!=-1)
 	  {
-	    Pike_sp[-1].subtype=f;
+	    Pike_sp[-1].subtype =
+	      f + p->inherits[Pike_sp[-1].subtype].identifier_level;
 	    Pike_sp[-1].type=T_FUNCTION;
 	  }else{
 	    extern void f_object_program(INT32);
