@@ -7,7 +7,7 @@
 #  include "stralloc.h"
 #  include "pike_macros.h"
 
-RCSID("$Id: dynamic_load.c,v 1.27 1998/05/15 18:38:49 grubba Exp $");
+RCSID("$Id: dynamic_load.c,v 1.28 1998/05/15 19:01:05 grubba Exp $");
 
 #endif
 
@@ -189,7 +189,7 @@ void f_load_module(INT32 args)
   {
     dlclose(module);
 
-    if (sizeof(module_name) < 1024) {
+    if (strlen(module_name) < 1024) {
       error("Failed to initialize dynamic module \"%s\".\n", module_name);
     } else {
       error("Failed to initialize dynamic module.\n");
