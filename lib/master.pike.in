@@ -6,7 +6,7 @@
 // Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 // for more information.
 //
-// $Id: master.pike.in,v 1.212 2002/07/29 14:34:04 nilsson Exp $
+// $Id: master.pike.in,v 1.213 2002/08/09 14:23:07 nilsson Exp $
 
 #pike __REAL_VERSION__
 
@@ -1600,7 +1600,7 @@ void _main(array(string) orig_argv, array(string) env)
       }		
     }
 
-  void _error(string a, mixed ... args) {
+  void _error(string a, void|mixed ... b) {
     werror(a, @b);
     exit(1);
   };
@@ -1875,7 +1875,7 @@ void _main(array(string) orig_argv, array(string) env)
 #endif
 
   if(!script->main)
-    _error("Error: "+argv[0]+" has no main().\n");
+    _error("Error: %s has no main().\n", argv[0]);
 
   if(trace) predef::trace(trace);
   i=script->main(sizeof(argv),argv,env);
