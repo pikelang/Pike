@@ -561,7 +561,7 @@ static class DocParserClass {
     }
     if (sizeof(tagstack))
       parseError("@" + tagstack[0] + "{ without matching @}");
-    res = String.trim_all_whites(res);
+    res = String.trim_all_whites(res-"<p></p>");
     if(!sizeof(res)) return "\n";
     return "<p>" + res + "</p>\n";
   }
