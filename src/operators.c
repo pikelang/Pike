@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: operators.c,v 1.199 2004/11/12 13:20:15 grubba Exp $
+|| $Id: operators.c,v 1.200 2004/11/26 14:17:04 nilsson Exp $
 */
 
 #include "global.h"
@@ -4493,24 +4493,24 @@ PMOD_EXPORT void o_range2 (int bound_types)
  *!       indices in array-like fashion:
  *!
  *!       @dl
- *!         @item `[..] (a, i, Pike.INDEX_FROM_BEG, j, Pike.INDEX_FROM_BEG)
+ *!         @item @{`[..] (a, i, Pike.INDEX_FROM_BEG, j, Pike.INDEX_FROM_BEG)@}
  *!           Calls @expr{a->`[] (i, j)@}
- *!         @item `[..] (a, i, Pike.INDEX_FROM_BEG, j, Pike.INDEX_FROM_END)
+ *!         @item @{`[..] (a, i, Pike.INDEX_FROM_BEG, j, Pike.INDEX_FROM_END)@}
  *!           Calls @expr{a->`[] (i, a->_sizeof()-1-j)@}
- *!         @item `[..] (a, i, Pike.INDEX_FROM_BEG, 0, Pike.OPEN_BOUND)
+ *!         @item @{`[..] (a, i, Pike.INDEX_FROM_BEG, 0, Pike.OPEN_BOUND)@}
  *!           Calls @expr{a->`[] (i, @[Int.NATIVE_MAX])@}
- *!         @item `[..] (a, i, Pike.INDEX_FROM_END, j, Pike.INDEX_FROM_BEG)
+ *!         @item @{`[..] (a, i, Pike.INDEX_FROM_END, j, Pike.INDEX_FROM_BEG)@}
  *!           Calls @expr{a->`[] (a->_sizeof()-1-i, j)@}
- *!         @item `[..] (a, i, Pike.INDEX_FROM_END, j, Pike.INDEX_FROM_END)
+ *!         @item @{`[..] (a, i, Pike.INDEX_FROM_END, j, Pike.INDEX_FROM_END)@}
  *!           Calls @expr{a->`[] (a->_sizeof()-1-i, a->_sizeof()-1-j)@},
  *!           except that @expr{a->_sizeof()@} is called only once.
- *!         @item `[..] (a, i, Pike.INDEX_FROM_END, 0, Pike.OPEN_BOUND)
+ *!         @item @{`[..] (a, i, Pike.INDEX_FROM_END, 0, Pike.OPEN_BOUND)@}
  *!           Calls @expr{a->`[] (a->_sizeof()-1-i, @[Int.NATIVE_MAX])@}
- *!         @item `[..] (a, 0, Pike.OPEN_BOUND, j, Pike.INDEX_FROM_BEG)
+ *!         @item @{`[..] (a, 0, Pike.OPEN_BOUND, j, Pike.INDEX_FROM_BEG)@}
  *!           Calls @expr{a->`[] (0, j)@}
- *!         @item `[..] (a, 0, Pike.OPEN_BOUND, j, Pike.INDEX_FROM_END)
+ *!         @item @{`[..] (a, 0, Pike.OPEN_BOUND, j, Pike.INDEX_FROM_END)@}
  *!           Calls @expr{a->`[] (0, a->_sizeof()-1-j)@}
- *!         @item `[..] (a, 0, Pike.OPEN_BOUND, 0, Pike.OPEN_BOUND)
+ *!         @item @{`[..] (a, 0, Pike.OPEN_BOUND, 0, Pike.OPEN_BOUND)@}
  *!           Calls @expr{a->`[] (0, @[Int.NATIVE_MAX])@}
  *!       @enddl
  *!
