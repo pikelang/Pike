@@ -1,4 +1,4 @@
-AC_REVISION("$Id: configure.in,v 1.289 1999/05/27 11:49:18 grubba Exp $")
+AC_REVISION("$Id: configure.in,v 1.290 1999/05/27 18:33:12 grubba Exp $")
 AC_INIT(interpret.c)
 AC_CONFIG_HEADER(machine.h)
 
@@ -277,8 +277,9 @@ AC_ARG_WITH(poll,        [  --with-poll            use poll instead of select],[
       if test "`uname -r`" -ge 2 -a "`uname -v`" -ge 4 ; then
         with_poll=yes
       else if test "`uname -v`" -gt 4 ; then
-        with_poll=yes
-      else :; fi
+          with_poll=yes
+        else :; fi
+      fi
       if test "$with_poll" = "yes" ; then
         AC_MSG_WARN([Defaulting to --with-poll since the OS AIX 4.2 or later.])
       else :; fi
