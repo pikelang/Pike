@@ -1284,9 +1284,14 @@ static INT32 low_cpp(struct cpp *this,
 
 	  while(isidchar(data[pos])) pos++;
 
+	  /* #undef some_long_identifier
+	   *        ^                   ^
+	   *        tmp               pos
+	   */
+
 	  if(OUTP())
 	  {
-	    if((s=binary_findstring(data+pos, pos-tmp)))
+	    if((s=binary_findstring(data+tmp, pos-tmp)))
 	      undefine(this,s);
 	  }
 
