@@ -1,4 +1,4 @@
-AC_REVISION("$Id: configure.in,v 1.516 2001/04/17 14:13:41 grubba Exp $")
+AC_REVISION("$Id: configure.in,v 1.517 2001/04/20 13:55:26 grubba Exp $")
 AC_INIT(interpret.c)
 AC_CONFIG_HEADER(machine.h)
 
@@ -3378,6 +3378,9 @@ MY_CHECK_FUNCTION(memset,
 #ifdef HAVE_SYS_TYPES_H
 #include <sys/types.h>
 #endif /* HAVE_SYS_TYPES_H */
+#ifdef HAVE_STDLIB_H
+#include <stdlib.h>
+#endif /* HAVE_STDLIB_H */
 #include <stdio.h>
 #include <string.h>
 char foo[23];
