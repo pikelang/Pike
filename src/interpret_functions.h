@@ -1,5 +1,5 @@
 /*
- * $Id: interpret_functions.h,v 1.31 2000/08/24 04:04:41 hubbe Exp $
+ * $Id: interpret_functions.h,v 1.32 2000/09/25 23:41:33 hubbe Exp $
  *
  * Opcode definitions for the interpreter.
  */
@@ -1423,7 +1423,7 @@ BREAK;
     {
       INT32 args = DO_NOT_WARN(Pike_sp - *--Pike_mark_sp);
       if(!args)
-	PIKE_ERROR("`()", "Too few arguments.\n", Pike_sp, 0);
+	PIKE_ERROR("`()", "Too few arguments (call&return).\n", Pike_sp, 0);
       switch(Pike_sp[-args].type)
       {
 	case PIKE_T_INT:

@@ -5,7 +5,7 @@
 \*/
 /**/
 #include "global.h"
-RCSID("$Id: interpret.c,v 1.170 2000/09/08 16:17:56 grubba Exp $");
+RCSID("$Id: interpret.c,v 1.171 2000/09/25 23:41:33 hubbe Exp $");
 #include "interpret.h"
 #include "object.h"
 #include "program.h"
@@ -902,7 +902,7 @@ PMOD_EXPORT void mega_apply2(enum apply_type type, INT32 args, void *arg1, void 
   case APPLY_STACK:
   apply_stack:
     if(!args)
-      PIKE_ERROR("`()", "Too few arguments.\n", Pike_sp, 0);
+      PIKE_ERROR("`()", "Too few arguments (apply stack).\n", Pike_sp, 0);
     args--;
     if(Pike_sp-save_sp-args > (args<<2) + 32)
     {
