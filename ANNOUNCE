@@ -1,4 +1,4 @@
-Pike 7.1 developer version
+Pike 7.3 developer version
 
 While still young, Pike matured over the last few years, and
 development is co-ordinated by a team at Roxen Internet Software AB.
@@ -42,11 +42,11 @@ A list of pros and cons with Pike follows:
 	  
 	     Solaris 2.5.1 & up (Sun SPARC & Intel x86) 
              Tru64
-             AIX 4.3
+             AIX 4.3, 5L
              IRIX 6.5
              FreeBSD 4.0
-             HP-UX 10.20 
-             Linux Red Hat 4.2, 5.2, 6.1 and others (Intel x86) 
+             HP-UX 11.00 
+             Linux Red Hat 4.2, 5.2, 6.1, 7.1 and others (Intel x86)
 
         + Powerful, Flexible and Efficient Data Types
         + Automatic Memory Management
