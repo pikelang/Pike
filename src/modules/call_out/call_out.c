@@ -71,7 +71,7 @@ static void verify_call_outs()
 
 
 /* start a new call out, return 1 for success */
-static int new_call_out(int num_arg,struct svalue *argp)
+static struct array * new_call_out(int num_arg,struct svalue *argp)
 {
   int e,c;
   call_out *new,**p,**pos;
@@ -161,7 +161,8 @@ static int new_call_out(int num_arg,struct svalue *argp)
   num_pending_calls++;
 
   verify_call_outs();
-  return 1;
+
+  return new->args;
 }
 
 static struct callback *call_out_backend_callback=0;
@@ -170,6 +171,7 @@ void do_call_outs(struct callback *ignored, void *ignored_too, void *arg);
 void f_call_out(INT32 args)
 {
   struct svalue tmp;
+  struct array *v;
   if(args<2)
     error("Too few arguments to call_out.\n");
 
@@ -181,7 +183,9 @@ void f_call_out(INT32 args)
   sp[-args]=sp[1-args];
   sp[1-args]=tmp;
 
-  new_call_out(args,sp-args);
+  v=new_call_out(args,sp-args);
+  v->refs++;
+  push_array(v);
 
   /* We do not add this callback until we actually have
    * call outs to take care of.
@@ -250,11 +254,16 @@ void do_call_outs(struct callback *ignored, void *ignored_too, void *arg)
 static int find_call_out(struct svalue *fun)
 {
   int e;
+
+  if(fun->type == T_ARRAY)
+    for(e=0;e<num_pending_calls;e++)
+      if(pending_calls[e]->args == fun->u.array)
+	return e;
+
   for(e=0;e<num_pending_calls;e++)
-  {
     if(is_eq(fun, ITEM(pending_calls[e]->args)))
       return e;
-  }
+
   return -1;
 }
 
@@ -370,10 +379,10 @@ void verify_all_call_outs()
 
 void init_call_out_efuns(void)
 {
-  add_efun("call_out",f_call_out,"function(function,float|int,mixed...:void)",OPT_SIDE_EFFECT);
+  add_efun("call_out",f_call_out,"function(function,float|int,mixed...:mixed)",OPT_SIDE_EFFECT);
   add_efun("call_out_info",f_call_out_info,"function(:array*)",OPT_EXTERNAL_DEPEND);
-  add_efun("find_call_out",f_find_call_out,"function(function:int)",OPT_EXTERNAL_DEPEND);
-  add_efun("remove_call_out",f_remove_call_out,"function(function:int)",OPT_SIDE_EFFECT);
+  add_efun("find_call_out",f_find_call_out,"function(mixed:int)",OPT_EXTERNAL_DEPEND);
+  add_efun("remove_call_out",f_remove_call_out,"function(mixed:int)",OPT_SIDE_EFFECT);
 }
 
 void init_call_out_programs(void) {}
