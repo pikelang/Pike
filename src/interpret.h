@@ -5,7 +5,7 @@
 \*/
 
 /*
- * $Id: interpret.h,v 1.47 2000/07/07 00:59:21 hubbe Exp $
+ * $Id: interpret.h,v 1.48 2000/07/07 01:19:04 hubbe Exp $
  */
 #ifndef INTERPRET_H
 #define INTERPRET_H
@@ -18,7 +18,7 @@ struct Pike_interpreter {
   /* Swapped variables */
   struct svalue *stack_pointer;
   struct svalue *evaluator_stack;
-  struct svalue **mark_sp;
+  struct svalue **mark_stack_pointer;
   struct svalue **mark_stack;
   struct pike_frame *frame_pointer;
   int evaluator_stack_malloced;
@@ -248,7 +248,7 @@ extern struct Pike_interpreter Pike_interpreter;
 
 #define Pike_sp Pike_interpreter.stack_pointer
 #define Pike_fp Pike_interpreter.frame_pointer
-#define Pike_mark_sp Pike_interpreter.mark_sp
+#define Pike_mark_sp Pike_interpreter.mark_stack_pointer
 #ifdef PIKE_THREADS
 #define Pike_thread_id Pike_interpreter.thread_id
 #endif
@@ -259,6 +259,7 @@ extern struct Pike_interpreter Pike_interpreter;
 #define stack_size Pike_stack_size
 #define sp Pike_sp
 #define fp Pike_fp
+#define mark_sp Pike_mark_sp
 
 #endif /* !NO_PIKE_SHORTHAND */
 

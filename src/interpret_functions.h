@@ -1,5 +1,5 @@
 /*
- * $Id: interpret_functions.h,v 1.24 2000/06/20 23:31:25 hubbe Exp $
+ * $Id: interpret_functions.h,v 1.25 2000/07/07 01:24:14 hubbe Exp $
  *
  * Opcode definitions for the interpreter.
  */
@@ -787,7 +787,7 @@ OPCODE0(F_MARK,"mark")
   *(Pike_mark_sp++)=Pike_sp;
 BREAK;
 
-OPCODE1(F_MARK_X, "mark sp-X")
+OPCODE1(F_MARK_X, "mark Pike_sp-X")
   *(Pike_mark_sp++)=Pike_sp-arg1;
 BREAK;
 
@@ -998,7 +998,7 @@ BREAK;
 
 OPCODE1(F_CALL_LFUN_AND_RETURN,"call lfun & return")
 {
-  INT32 args=sp - *--Pike_mark_sp;
+  INT32 args=Pike_sp - *--Pike_mark_sp;
 
   if(Pike_fp->expendible >= Pike_sp-args)
   {
@@ -1025,7 +1025,7 @@ BREAK
       CASE(F_RETURN_LOCAL);
       instr=GET_ARG();
 #if defined(PIKE_DEBUG) && defined(GC2)
-      /* special case! mark_stack may be invalid at the time we
+      /* special case! Pike_interpreter.mark_stack may be invalid at the time we
        * call return -1, so we must call the callbacks here to
        * prevent false alarms! /Hubbe
        */
@@ -1139,24 +1139,24 @@ OPCODE0(F_ADD, "+")
 BREAK;
 
 OPCODE0(F_ADD_INTS, "int+int")
-  if(sp[-1].type == T_INT && sp[-2].type == T_INT 
+  if(Pike_sp[-1].type == T_INT && Pike_sp[-2].type == T_INT 
 #ifdef AUTO_BIGNUM
-      && (!INT_TYPE_ADD_OVERFLOW(sp[-1].u.integer, sp[-2].u.integer))
+      && (!INT_TYPE_ADD_OVERFLOW(Pike_sp[-1].u.integer, Pike_sp[-2].u.integer))
 #endif
     )
   {
-    sp[-2].u.integer+=sp[-1].u.integer;
-    sp--;
+    Pike_sp[-2].u.integer+=Pike_sp[-1].u.integer;
+    Pike_sp--;
   }else{
     f_add(2);
   }
 BREAK;
 
 OPCODE0(F_ADD_FLOATS, "float+float")
-  if(sp[-1].type == T_FLOAT && sp[-2].type == T_FLOAT)
+  if(Pike_sp[-1].type == T_FLOAT && Pike_sp[-2].type == T_FLOAT)
   {
-    sp[-2].u.float_number+=sp[-1].u.float_number;
-    sp--;
+    Pike_sp[-2].u.float_number+=Pike_sp[-1].u.float_number;
+    Pike_sp--;
   }else{
     f_add(2);
   }
@@ -1191,13 +1191,13 @@ OPCODE0(F_MOD, "%")
 BREAK;
 
 OPCODE1(F_ADD_INT, "add integer")
-  if(sp[-1].type == T_INT
+  if(Pike_sp[-1].type == T_INT
 #ifdef AUTO_BIGNUM
-      && (!INT_TYPE_ADD_OVERFLOW(sp[-1].u.integer, arg1))
+      && (!INT_TYPE_ADD_OVERFLOW(Pike_sp[-1].u.integer, arg1))
 #endif
      )
   {
-    sp[-1].u.integer+=arg1;
+    Pike_sp[-1].u.integer+=arg1;
   }else{
     push_int(arg1);
     f_add(2);
@@ -1205,13 +1205,13 @@ OPCODE1(F_ADD_INT, "add integer")
 BREAK;
 
 OPCODE1(F_ADD_NEG_INT, "add -integer")
-  if(sp[-1].type == T_INT
+  if(Pike_sp[-1].type == T_INT
 #ifdef AUTO_BIGNUM
-      && (!INT_TYPE_ADD_OVERFLOW(sp[-1].u.integer, -arg1))
+      && (!INT_TYPE_ADD_OVERFLOW(Pike_sp[-1].u.integer, -arg1))
 #endif
      )
   {
-    sp[-1].u.integer-=arg1;
+    Pike_sp[-1].u.integer-=arg1;
   }else{
     push_int(-arg1);
     f_add(2);
@@ -1522,17 +1522,17 @@ OPCODE0_JUMP(F_RECUR,"recur")
 {
   int x,num_locals,args;
   char *addr;
-  struct svalue *expendible=fp->expendible;
-  struct svalue *locals=fp->locals;
+  struct svalue *expendible=Pike_fp->expendible;
+  struct svalue *locals=Pike_fp->locals;
   struct svalue *save_sp, **save_mark_sp;
 
   fast_check_threads_etc(6);
   check_c_stack(8192);
   check_stack(256);
 
-  save_sp=fp->expendible=fp->locals=*--Pike_mark_sp;
-  args=sp-fp->locals;
-  save_mark_sp=mark_sp;
+  save_sp=Pike_fp->expendible=Pike_fp->locals=*--Pike_mark_sp;
+  args=Pike_sp-Pike_fp->locals;
+  save_mark_sp=Pike_mark_sp;
 
   addr=pc+EXTRACT_INT(pc);
   num_locals=EXTRACT_UCHAR(addr-2);
@@ -1542,28 +1542,28 @@ OPCODE0_JUMP(F_RECUR,"recur")
     fatal("Wrong number of arguments in F_RECUR %d!=%d\n",args,EXTRACT_UCHAR(addr-1));
 #endif
 
-  clear_svalues(sp, num_locals - args);
-  sp += num_locals - args;
+  clear_svalues(Pike_sp, num_locals - args);
+  Pike_sp += num_locals - args;
 
   x=eval_instruction(addr);
 #ifdef PIKE_DEBUG
-  if(mark_sp < save_mark_sp)
-    fatal("mark sp underflow in F_RECUR.\n");
+  if(Pike_mark_sp < save_mark_sp)
+    fatal("mark Pike_sp underflow in F_RECUR.\n");
 #endif
-  mark_sp=save_mark_sp;
+  Pike_mark_sp=save_mark_sp;
   if(x!=-1) mega_apply(APPLY_STACK, x, 0,0);
   pc+=sizeof(INT32);
-  if(save_sp+1 < sp)
+  if(save_sp+1 < Pike_sp)
   {
-    assign_svalue(save_sp,sp-1);
-    pop_n_elems(sp-save_sp-1);
+    assign_svalue(save_sp,Pike_sp-1);
+    pop_n_elems(Pike_sp-save_sp-1);
   }
-  fp->expendible=expendible;
-  fp->locals=locals;
+  Pike_fp->expendible=expendible;
+  Pike_fp->locals=locals;
   print_return_value();
 #ifdef PIKE_DEBUG
-  if(sp != save_sp+1)
-    fatal("Stack whack in F_RECUR sp=%p, expected=%p\n",sp,save_sp+1);
+  if(Pike_sp != save_sp+1)
+    fatal("Stack whack in F_RECUR Pike_sp=%p, expected=%p\n",Pike_sp,save_sp+1);
 #endif
 }
 BREAK
@@ -1574,8 +1574,8 @@ OPCODE1_JUMP(F_COND_RECUR,"recur if not overloaded")
   int x,num_locals,args;
   char *addr;
 
-  struct svalue *expendible=fp->expendible;
-  struct svalue *locals=fp->locals;
+  struct svalue *expendible=Pike_fp->expendible;
+  struct svalue *locals=Pike_fp->locals;
   struct svalue *save_sp, **save_mark_sp;
 
   /* FIXME:
@@ -1583,7 +1583,7 @@ OPCODE1_JUMP(F_COND_RECUR,"recur if not overloaded")
    * overloaded or not. Currently it only tests if
    * this context is inherited or not.
    */
-  if(fp->current_object->prog != fp->context.prog)
+  if(Pike_fp->current_object->prog != Pike_fp->context.prog)
   {
     apply_low(Pike_fp->current_object,
 	      arg1+Pike_fp->context.identifier_level,
@@ -1594,9 +1594,9 @@ OPCODE1_JUMP(F_COND_RECUR,"recur if not overloaded")
     check_c_stack(8192);
     check_stack(256);
     
-    save_sp=fp->expendible=fp->locals=*--Pike_mark_sp;
-    args=sp-fp->locals;
-    save_mark_sp=mark_sp;
+    save_sp=Pike_fp->expendible=Pike_fp->locals=*--Pike_mark_sp;
+    args=Pike_sp-Pike_fp->locals;
+    save_mark_sp=Pike_mark_sp;
     
     addr=pc+EXTRACT_INT(pc);
     num_locals=EXTRACT_UCHAR(addr-2);
@@ -1606,40 +1606,40 @@ OPCODE1_JUMP(F_COND_RECUR,"recur if not overloaded")
       fatal("Wrong number of arguments in F_RECUR %d!=%d\n",args,EXTRACT_UCHAR(addr-1));
 #endif
     
-    clear_svalues(sp, num_locals - args);
-    sp += num_locals - args;
+    clear_svalues(Pike_sp, num_locals - args);
+    Pike_sp += num_locals - args;
     
     x=eval_instruction(addr);
 #ifdef PIKE_DEBUG
-  if(mark_sp < save_mark_sp)
-    fatal("mark sp underflow in F_RECUR.\n");
+  if(Pike_mark_sp < save_mark_sp)
+    fatal("mark Pike_sp underflow in F_RECUR.\n");
 #endif
-    mark_sp=save_mark_sp;
+    Pike_mark_sp=save_mark_sp;
     if(x!=-1) mega_apply(APPLY_STACK, x, 0,0);
     pc+=sizeof(INT32);
-    if(save_sp+1 < sp)
+    if(save_sp+1 < Pike_sp)
     {
-      assign_svalue(save_sp,sp-1);
-      pop_n_elems(sp-save_sp-1);
+      assign_svalue(save_sp,Pike_sp-1);
+      pop_n_elems(Pike_sp-save_sp-1);
     }
-    fp->expendible=expendible;
-    fp->locals=locals;
+    Pike_fp->expendible=expendible;
+    Pike_fp->locals=locals;
     print_return_value();
 #ifdef PIKE_DEBUG
-    if(sp != save_sp+1)
-      fatal("Stack whack in F_RECUR sp=%p, expected=%p\n",sp,save_sp+1);
+    if(Pike_sp != save_sp+1)
+      fatal("Stack whack in F_RECUR Pike_sp=%p, expected=%p\n",Pike_sp,save_sp+1);
 #endif
   }
 }
 BREAK
 
 /* Assume that the number of arguments is correct */
-/* FIXME: adjust mark_sp */
+/* FIXME: adjust Pike_mark_sp */
 OPCODE0_JUMP(F_TAIL_RECUR,"tail recursion")
 {
   int x,num_locals;
   char *addr;
-  int args=sp - *--mark_sp;
+  int args=Pike_sp - *--Pike_mark_sp;
 
   fast_check_threads_etc(6);
 
@@ -1652,17 +1652,17 @@ OPCODE0_JUMP(F_TAIL_RECUR,"tail recursion")
     fatal("Wrong number of arguments in F_TAIL_RECUR %d != %d\n",args,EXTRACT_UCHAR(addr-1));
 #endif
 
-  if(sp-args != fp->locals)
+  if(Pike_sp-args != Pike_fp->locals)
   {
-    assign_svalues(fp->locals, sp-args, args, BIT_MIXED);
-    pop_n_elems(sp - (fp->locals + args));
+    assign_svalues(Pike_fp->locals, Pike_sp-args, args, BIT_MIXED);
+    pop_n_elems(Pike_sp - (Pike_fp->locals + args));
   }
 
-  clear_svalues(sp, num_locals - args);
-  sp += num_locals - args;
+  clear_svalues(Pike_sp, num_locals - args);
+  Pike_sp += num_locals - args;
 
 #ifdef PIKE_DEBUG
-  if(sp != fp->locals + fp->num_locals)
+  if(Pike_sp != Pike_fp->locals + Pike_fp->num_locals)
     fatal("Sp whacked!\n");
 #endif
 
