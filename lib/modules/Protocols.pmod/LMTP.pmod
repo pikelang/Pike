@@ -1,5 +1,5 @@
 //
-// $Id: LMTP.pmod,v 1.9 2004/05/17 08:38:53 vida Exp $
+// $Id: LMTP.pmod,v 1.10 2004/06/02 12:13:24 kiwi Exp $
 //
 
 #pike __REAL_VERSION__
@@ -103,7 +103,7 @@ class Server {
    //!  This function is called for each recipient in the "rcpt to" command
    //!  after the client sends the "data" command
    //!  It must have the following synopsis:
-   //!  int|array cb_data(object mime, string sender, string recipients,@
+   //!  int|array cb_data(object mime, string sender, array(string) recipients,@
    //!  void|string rawdata)
    //!  object mime : the mime data object
    //!  string sender : sender of the mail (from the mailfrom command)
@@ -114,7 +114,7 @@ class Server {
    //!   to display. Note that to comply with LMTP protocol you must output a
    //!   code each time this function is called.
    //! @example
-   //!  Here is an example of silly program that does nothing except outputting
+   //!  Here is an example of silly program that does nothing except outputing
    //!  informations to stdout.
    //! int cb_mailfrom(string mail)
    //! {
@@ -127,10 +127,10 @@ class Server {
    //!   return 250;
    //! }
    //! 
-   //! int cb_data(object mime, string sender, string recipient)
+   //! int cb_data(object mime, string sender, array(string) recipients)
    //! {
    //!   write(sprintf("smtpd: mailfrom=%s, to=%s, headers=%O\ndata=%s\n", 
-   //!   sender, recipient, mime->headers, mime->getdata()));
+   //!   sender, recipients * ", ", mime->headers, mime->getdata()));
    //!   // check the data and deliver the mail here
    //!   if(mime->body_parts)
    //!   {
