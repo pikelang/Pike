@@ -563,8 +563,10 @@ static INT32 low_cpp(struct cpp *this,
 	    
 	    for(arg=0;arg<d->args;arg++)
 	    {
+	      if(arg && data[pos]==',') pos++;
 	      SKIPWHITE();
 	      arguments[arg].arg=data + pos;
+
 	      if(data[pos]==')')
 	      {
 		cpp_error(this,"Too few arguments to macro.");
@@ -598,8 +600,8 @@ static INT32 low_cpp(struct cpp *this,
 		  pos=find_end_parenthesis(this, data, len, pos);
 		  continue;
 		  
-		case ')': pos--;
-		case ',': 
+		case ')': 
+		case ',': pos--;
 		  break;
 		}
 		break;
