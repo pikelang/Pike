@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: apply_low.h,v 1.14 2003/01/09 15:21:26 grubba Exp $
+|| $Id: apply_low.h,v 1.15 2003/02/24 21:50:46 mast Exp $
 */
 
     {
@@ -173,6 +173,7 @@
 #endif
   
       if(function->func.offset == -1) {
+	new_frame->num_args = args;
 	generic_error(NULL, Pike_sp, args,
 		      "Calling undefined function.\n");
       }
