@@ -1,5 +1,5 @@
 /*
- * $Id: oracle.c,v 1.44 2000/07/28 07:14:04 hubbe Exp $
+ * $Id: oracle.c,v 1.45 2000/09/29 19:00:55 hubbe Exp $
  *
  * Pike interface to Oracle databases.
  *
@@ -32,9 +32,12 @@
 #include "builtin_functions.h"
 #include "opcodes.h"
 #include "pike_macros.h"
+#include "version.h"
 
+#if (PIKE_MAJOR_VERSION - 0 > 7) || (PIKE_MAJOR_VERSION - 0 == 7 && PIKE_MINOR_VERSION - 0 >= 1)
 /* must be included last */
 #include "module_magic.h"
+#endif
 
 #ifdef HAVE_ORACLE
 
@@ -44,7 +47,7 @@
 #include <oci.h>
 #include <math.h>
 
-RCSID("$Id: oracle.c,v 1.44 2000/07/28 07:14:04 hubbe Exp $");
+RCSID("$Id: oracle.c,v 1.45 2000/09/29 19:00:55 hubbe Exp $");
 
 
 #define BLOB_FETCH_CHUNK 16384
@@ -147,6 +150,19 @@ DEFINE_MUTEX(oracle_serialization_mutex);
 
 #endif
 
+#ifndef Pike_thread_id
+#define Pike_thread_id thread_id
+#endif
+
+#ifndef Pike_sp
+#define Pike_sp sp
+#define Pike_fp fp
+#endif
+
+#ifndef CHECK_INTERPRETER_LOCK
+#define CHECK_INTERPRETER_LOCK()
+#endif
+
 
 #ifndef CURRENT_STORAGE
 #define CURRENT_STORAGE (Pike_fp->current_storage)
@@ -165,7 +181,7 @@ DEFINE_MUTEX(oracle_serialization_mutex);
 /* This define only exists in Pike 7.1.x, if it isn't defined
  * we have to provide this function ourselves -Hubbe
  */
-#ifndef IDENTIFIER_SCOPE_USED
+#if PIKE_MAJOR_VERSION - 0 < 7
 
 void *parent_storage(int depth)
 {
