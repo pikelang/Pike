@@ -1,5 +1,5 @@
 #include "global.h"
-RCSID("$Id: xcf.c,v 1.4 1999/04/12 01:53:42 per Exp $");
+RCSID("$Id: xcf.c,v 1.5 1999/04/12 11:41:16 mirar Exp $");
 
 #include "config.h"
 
@@ -898,7 +898,7 @@ void image_xcf_f__rle_decode( INT32 args )
 **!
 **!     <pre>Returned structure reference 
 **!    
-**!    class GimpImage
+**!    !class GimpImage
 **!    {
 **!      int width;
 **!      int height;
@@ -921,7 +921,7 @@ void image_xcf_f__rle_decode( INT32 args )
 **!      Channel selection;
 **!    }
 **!    
-**!    class Layer
+**!    !class Layer
 **!    {
 **!      string name;
 **!      int opacity;
@@ -936,7 +936,7 @@ void image_xcf_f__rle_decode( INT32 args )
 **!      Hierarchy image;
 **!    }
 **!    
-**!    class Channel
+**!    !class Channel
 **!    {
 **!      string name;
 **!      int width;
@@ -950,7 +950,7 @@ void image_xcf_f__rle_decode( INT32 args )
 **!      array (Parasite) parasites;
 **!    }
 **!    
-**!    class Hierarchy
+**!    !class Hierarchy
 **!    {
 **!      Image.image img;
 **!      Image.image alpha;
@@ -959,20 +959,21 @@ void image_xcf_f__rle_decode( INT32 args )
 **!      int bpp;
 **!    }
 **!    
-**!    class Parasite
+**!    !class Parasite
 **!    {
 **!      string name;
 **!      int flags;
 **!      string data;
 **!    }
 **!    
-**!    class Guide
+**!    
+**!    !class Guide
 **!    {
 **!      int pos;
 **!      int vertical;
 **!    }
 **!    
-**!    class Path
+**!    !class Path
 **!    {
 **!      string name;
 **!      int ptype;
@@ -983,7 +984,7 @@ void image_xcf_f__rle_decode( INT32 args )
 **!      array (PathPoint) points = ({});
 **!    }
 **!    
-**!    class PathPoint
+**!    !class PathPoint
 **!    {
 **!      int type;
 **!      float x;

@@ -1,9 +1,9 @@
-/* $Id: bmp.c,v 1.2 1999/04/11 12:55:13 mirar Exp $ */
+/* $Id: bmp.c,v 1.3 1999/04/12 11:41:13 mirar Exp $ */
 
 /*
 **! module Image
 **! note
-**!	$Id: bmp.c,v 1.2 1999/04/11 12:55:13 mirar Exp $
+**!	$Id: bmp.c,v 1.3 1999/04/12 11:41:13 mirar Exp $
 **! submodule BMP
 **!
 **!	This submodule keeps the BMP (Windows Bitmap)
@@ -14,14 +14,6 @@
 **!	Simple encoding:<br>
 **!	<ref>encode</ref>
 **!
-**!	Advanced encoding:<br>
-**!	<ref>encode_P1</ref>, <br>
-**!	<ref>encode_P2</ref>, <br>
-**!	<ref>encode_P3</ref>, <br>
-**!	<ref>encode_P4</ref>, <br>
-**!	<ref>encode_P5</ref>, <br>
-**!	<ref>encode_P6</ref>
-**!
 **! see also: Image, Image.image, Image.colortable
 */
 #include "global.h"
@@ -30,7 +22,7 @@
 #include <ctype.h>
 
 #include "stralloc.h"
-RCSID("$Id: bmp.c,v 1.2 1999/04/11 12:55:13 mirar Exp $");
+RCSID("$Id: bmp.c,v 1.3 1999/04/12 11:41:13 mirar Exp $");
 #include "pike_macros.h"
 #include "object.h"
 #include "constants.h"
@@ -420,12 +412,15 @@ void i_img_bmp__decode(INT32 args,int header_only)
    img=(struct image*)get_storage(o,image_program);
    n++;
 
-   if (comp)
-      error("Image.BMP.decode: can't handle compressed BMP\n");
+   if (comp > 2)
+      error("Image.BMP.decode: illegal compression: %d\n",comp);
 
    switch (bpp)
    {
       case 24:
+	 if (comp)
+	    error("Image.BMP.decode: can't handle compressed 24bpp BMP\n");
+
 	 j=(len)/3;
 	 y=img->ysize;
 	 while (j && y--)
@@ -443,6 +438,9 @@ void i_img_bmp__decode(INT32 args,int header_only)
 	 }
 	 break;
       case 8:
+	 if (comp)
+	    error("Image.BMP.decode: can't handle compressed 8bpp BMP\n");
+
 	 skip=4-(img->xsize&3);
 	 j=len;
 	 y=img->ysize;
@@ -457,23 +455,36 @@ void i_img_bmp__decode(INT32 args,int header_only)
 	 }
 	 break;
       case 4:
-	 skip=3-((img->xsize/2)&3);
-	 j=len;
-	 y=img->ysize;
-	 while (j && y--)
+	 if (comp == 1)
+	    error("Image.BMP.decode: can't handle RLE4 compressed 4bpp BMP\n");
+
+	 if (comp == 2) /* RLE4 */
 	 {
-	    d=img->img+img->xsize*y;
-	    i=img->xsize;
-	    while (i && j--)
+	    
+	 }
+	 else
+	 {
+	    skip=3-((img->xsize/2)&3);
+	    j=len;
+	    y=img->ysize;
+	    while (j && y--)
 	    {
-	       if (i) *(d++)=nct->u.flat.entries[(s[0]>>4)&15].color,i--;
-	       if (i) *(d++)=nct->u.flat.entries[s[0]&15].color,i--;
-	       s++;
+	       d=img->img+img->xsize*y;
+	       i=img->xsize;
+	       while (i && j--)
+	       {
+		  if (i) *(d++)=nct->u.flat.entries[(s[0]>>4)&15].color,i--;
+		  if (i) *(d++)=nct->u.flat.entries[s[0]&15].color,i--;
+		  s++;
+	       }
+	       if (j>=skip) { j-=skip; s+=skip; }
 	    }
-	    if (j>=skip) { j-=skip; s+=skip; }
 	 }
 	 break;
       case 1:
+	 if (comp)
+	    error("Image.BMP.decode: can't handle compressed 1bpp BMP\n");
+
 	 skip=3-((img->xsize/8)&3);
 	 j=len;
 	 y=img->ysize;
@@ -535,7 +546,7 @@ void init_image_bmp(void)
 		"function(object,void|object:string)",0);
    add_function("_decode",img_bmp__decode,
 		"function(string:mapping)",0);
-   add_function("ddecode",img_bmp_decode,
+   add_function("decode",img_bmp_decode,
 		"function(string:object)",0);
    add_function("decode_header",img_bmp_decode_header,
 		"function(string:mapping)",0);

@@ -88,7 +88,7 @@ static void chrono(char *x)
 **!     in the orginal image.
 **! 
 **! returns the new image object
-**! see also: match_phase
+**  see also: match_phase
 **! bugs
 **!	0 should not be set as explained above.
 **! note
@@ -381,6 +381,7 @@ void image_make_ascii(INT32 args)
   /*
 **!     <pre>      |      /    -    \
 **!          hue=  0     64   128  192  (=red in an hsv image)
+**!	</pre>
   */
   
   THREADS_DISALLOW();

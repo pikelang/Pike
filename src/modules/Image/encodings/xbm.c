@@ -1,5 +1,5 @@
 #include "global.h"
-RCSID("$Id: xbm.c,v 1.1 1999/04/06 06:23:57 per Exp $");
+RCSID("$Id: xbm.c,v 1.2 1999/04/12 11:41:14 mirar Exp $");
 
 #include "config.h"
 
@@ -238,6 +238,7 @@ static void image_xbm_decode( INT32 args )
 **!           "bg":({bgcolor}),    // Background color. Default white
 **!           "invert":1,          // Invert the mask
 **!         ])
+**!	</pre>
 **!
 **! note
 **!	Throws upon error in data.
@@ -377,6 +378,7 @@ static void image_xbm__decode( INT32 args )
 **!	normal options:
 **!	    "name":"xbm_image_name"
 **!		The name of the XBM. Defaults to 'image'
+**!	</pre>
 */
 
 static struct pike_string *param_name;
