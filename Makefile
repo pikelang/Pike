@@ -1,5 +1,5 @@
 #
-# $Id: Makefile,v 1.141 2004/05/01 13:36:32 mast Exp $
+# $Id: Makefile,v 1.142 2004/05/01 14:20:36 mast Exp $
 #
 # Meta Makefile
 #
@@ -8,8 +8,10 @@
 CONFIGUREARGS=
 
 # Set this to any generic make options you'd otherwise would have to
-# pass on the command line.
-#MAKEFLAGS=-j2 --no-print-directory
+# pass on the command line. (Using the magic MAKEFLAGS variable
+# directly here might not work all the time due to the $(DO_MAKE)
+# recursion.)
+#MAKE_FLAGS=-j2 --no-print-directory
 
 # Set to a flag for parallelizing make, e.g. -j2. It's given to make
 # at the level where it's most effective. (Don't use when the make
@@ -28,13 +30,15 @@ MAKE_CMD=`if [ "x$(MAKE)" = "x" ]; then echo "$${MAKE-make}"; else echo "$(MAKE)
 
 # Used internally in this file to start a submake to expand
 # $(BUILDDIR), $(MAKE_CMD) etc.
-DO_MAKE=MAKE="$(MAKE_CMD)" export MAKE && "$${MAKE}" "MAKE=$${MAKE}" "CONFIGUREARGS=$(CONFIGUREARGS)" "BUILDDIR=$(BUILDDIR)"
+DO_MAKE=MAKE="$(MAKE_CMD)" export MAKE && \
+  "$${MAKE}" $(MAKE_FLAGS) "MAKE=$${MAKE}" \
+  "CONFIGUREARGS=$(CONFIGUREARGS)" "BUILDDIR=$(BUILDDIR)"
 
 # Used to avoid make compatibility problems.
 BIN_TRUE=":"
 
-all: bin/pike compile
-	-@$(BIN_TRUE)
+all: bin/pike
+	$(DO_MAKE) compile
 
 force:
 	-@$(BIN_TRUE)
@@ -131,6 +135,7 @@ configure: src/configure builddir
 	  fi; \
 	} || exit $$?
 
+# This target should always be executed indirectly through a $(DO_MAKE).
 compile: configure
 	@builddir="$(BUILDDIR)"; \
 	cd "$$builddir" && { \
@@ -360,7 +365,7 @@ docspotless:
 
 depend:
 	@if test -d build; then \
-	  $(MAKE) "MAKE=$(MAKE)" "MAKE_PARALLEL=$(MAKE_PARALLEL)" _depend; \
+	  $(DO_MAKE) _depend; \
 	else \
 	  echo You never need to do \"make depend\" before the first build, ; \
 	  echo and doing \"make depend\" in a Pike dist will actually break ; \
@@ -369,10 +374,13 @@ depend:
 
 _depend: configure
 	-@cd "$(BUILDDIR)" && \
-	$(DO_MAKE) "MAKE_PARALLEL=$(MAKE_PARALLEL)" depend || { \
+	$${MAKE} "MAKE=$${MAKE}" "MAKE_PARALLEL=$(MAKE_PARALLEL)" depend || { \
 	  res=$$?; \
-	  if test -f remake; then $(DO_MAKE) "MAKE_PARALLEL=$(MAKE_PARALLEL)" depend; \
-	  else exit $$res; fi; \
+	  if test -f remake; then \
+	    $${MAKE} "MAKE=$${MAKE}" "MAKE_PARALLEL=$(MAKE_PARALLEL)" depend; \
+	  else \
+	    exit $$res; \
+	  fi; \
 	} || exit $$?
 
 #! Creates tags files src/TAGS (C-level methods) and lib/modules/TAGS
