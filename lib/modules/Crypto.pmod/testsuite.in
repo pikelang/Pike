@@ -1,4 +1,4 @@
-dnl $Id: testsuite.in,v 1.2 2003/03/20 16:50:11 nisse Exp $
+dnl $Id: testsuite.in,v 1.3 2003/03/23 22:44:32 nilsson Exp $
 
 dnl Crypto.randomness
 
@@ -20,6 +20,60 @@ cond ([[ Crypto->MD5 ]], [[
 	  String.hex2string("acbd18db4cc2f85cedef654fccc4a4d8"))
 ]])
 
+
+dnl Crypto.rsa
+
+test_do( add_constant("RSA", Crypto.rsa()) )
+test_do( RSA->generate_key(1024) )
+test_equal( RSA->raw_sign("hej"), RSA->raw_sign("hej") )
+test_equal( RSA->get_n(), RSA->get_n() )
+test_true( functionp(RSA->get_n()->gcdext2) )
+test_equal( RSA->get_e(), RSA->get_e() )
+test_true( functionp(RSA->get_e()->gcdext2) )
+test_equal( RSA->get_d(), RSA->get_d() )
+test_true( functionp(RSA->get_d()->gcdext2) )
+test_equal( RSA->get_p(), RSA->get_p() )
+test_true( functionp(RSA->get_p()->gcdext2) )
+test_equal( RSA->get_q(), RSA->get_q() )
+test_true( functionp(RSA->get_q()->gcdext2) )
+test_equal( RSA->cooked_get_n(), RSA->get_n()->digits(256) )
+test_equal( RSA->cooked_get_e(), RSA->get_e()->digits(256) )
+test_equal( RSA->cooked_get_d(), RSA->get_d()->digits(256) )
+test_equal( RSA->cooked_get_p(), RSA->get_p()->digits(256) )
+test_equal( RSA->cooked_get_q(), RSA->get_q()->digits(256) )
+test_do( add_constant("RSB", Crypto.rsa()) )
+test_do( RSB->set_private_key(RSA->get_d(),
+         ({ RSA->get_p(), RSA->get_q() }) ) )
+test_equal( RSA->get_d(), RSB->get_d() )
+test_equal( RSA->get_p(), RSB->get_p() )
+test_equal( RSA->get_q(), RSB->get_q() )
+test_true( RSA->verify("hej", Crypto.md5, RSB->sign("hej", Crypto.md5)) )
+test_false( RSA->verify("hoj", Crypto.md5, RSB->sign("hej", Crypto.md5)) )
+test_true( RSA->sha_verify("hej", RSB->sha_sign("hej")) )
+test_false( RSA->sha_verify("hoj", RSB->sha_sign("hej")) )
+test_true( RSA->md5_verify("hej", RSB->md5_sign("hej")) )
+test_false( RSA->md5_verify("hoj", RSB->md5_sign("hej")) )
+test_do( add_constant("RSA") )
+test_do( add_constant("RSB") )
+
+test_do( add_constant("RSA", Crypto.rsa()) )
+test_true( RSA->set_public_key(
+  0x838b848334d4f2151d25971e655eed8a0905cb5b81ba9047db2bf3b56765b058fa9af2ad89a2726233fc8917e52e8966db4bae5d426207f98ab50e1467accb2d,
+  65537) )
+test_true( RSA->set_private_key(
+  0x3f8a1cafe3cd1841ea9a45ac80faa172937921094a587b68ba0d38e2ded6d79ef1a5b8d9605278ddc61616f12fbb9dc6dbdea50f9dc4a51f6a8ed30ada7c9301,
+  ({ 0xae01268cb370af44cb05e9618ea6681dae1186bd746d3aa6122b8bf6c2290619,
+     0xc1884f35667fb5ea3e8e7cfa052bb34894c2970b3da6a0650182fe514b23c835 })) )
+test_eq( RSA->query_blocksize(), 61 )
+test_true( RSA->raw_verify("flärpzprutt",RSA->raw_sign("flärpzprutt")) )
+test_false( RSA->raw_verify("flärpzputt",RSA->raw_sign("flärpzprutt")) )
+test_true( RSA->decrypt(RSA->encrypt("flärpzprutt")) )
+test_eq( RSA->rsa_size(), 512 )
+test_true( RSA->public_key_equal(RSA) )
+test_false( RSA->public_key_equal(Crypto.rsa()->generate_key(512)) )
+test_do( add_constant("RSA") )
+
+
 dnl Crypto.substitution
 
 test_do( add_constant("C", Crypto.substitution()) )
@@ -29,8 +83,8 @@ test_do( C->set_rot_key() )
 test_eq( C->encode("Pelle"), "Cryyr" )
 test_eq( C->decode("Cryyr"), "Pelle" )
 dnl --- Jay Kominek ROT13 conformance test
-test_eq( C->encode("ABCDEFGHIJKLMNOPQRSTUVWXYZ"), "NOPQRSTUVWXYZABCDEFGHIJKLM" )
-test_eq( C->encode("abcdefghijklmnopqrstuvwxyz"), "nopqrstuvwxyzabcdefghijklm" )
+test_eq( C->encode("ABCDEFGHIJKLMNOPQRSTUVWXYZ"),"NOPQRSTUVWXYZABCDEFGHIJKLM" )
+test_eq( C->encode("abcdefghijklmnopqrstuvwxyz"),"nopqrstuvwxyzabcdefghijklm" )
 test_eq( C->encode("0123456789-= "), "0123456789-= " )
 test_eq( C->encode("!@#$%^&*()_+"), "!@#$%^&*()_+" )
 test_eq( C->encode("[]{};':\",./<>?"),[[ "[]{};':\",./<>?" ]])
