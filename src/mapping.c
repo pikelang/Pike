@@ -2,11 +2,11 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: mapping.c,v 1.158 2003/01/09 15:21:26 grubba Exp $
+|| $Id: mapping.c,v 1.159 2003/01/10 12:49:03 grubba Exp $
 */
 
 #include "global.h"
-RCSID("$Id: mapping.c,v 1.158 2003/01/09 15:21:26 grubba Exp $");
+RCSID("$Id: mapping.c,v 1.159 2003/01/10 12:49:03 grubba Exp $");
 #include "main.h"
 #include "object.h"
 #include "mapping.h"
@@ -42,7 +42,7 @@ static struct mapping *gc_mark_mapping_pos = 0;
 
 
 #define MAPPING_DATA_SIZE(HSIZE, KEYPAIRS) \
-   (ptrdiff_t)( MD_KEYPAIRS(0, HSIZE) + KEYPAIRS )
+   (((char *)(MD_KEYPAIRS(0, HSIZE) + KEYPAIRS))-(char *)0)
    
    
 
