@@ -1,6 +1,6 @@
 /* -*- Pike -*-
  *	
- * $Id: master.pike.in,v 1.190 2002/02/14 01:44:52 nilsson Exp $
+ * $Id: master.pike.in,v 1.191 2002/02/14 15:23:32 grubba Exp $
  * 
  * Master-file for Pike.
  *
@@ -161,7 +161,6 @@ string basename(string x)
 #define GETCWD_CACHE
 #define FILE_STAT_CACHE
 
-#define UNDEFINED (([])[0])
 #define error(X) throw( ({ (X), backtrace()/*[0..sizeof(backtrace())-2]*/ }) )
 
 //!
@@ -759,7 +758,6 @@ void create()
   }
 
   add_constant("strlen", sizeof);
-  add_constant("UNDEFINED", UNDEFINED);
   add_constant("write", _static_modules.files()->_stdout->write);
 
 #define CO(X)  add_constant(#X,_static_modules.Builtin.__backend->X)
@@ -1373,7 +1371,9 @@ class CompatResolver
   mixed resolv(string identifier, string|void current_file,
 	       object|void current_handler)
     {
-//      werror("Resolv(%O)\n",identifier);
+#ifdef RESOLV_DEBUG
+      werror("Resolv(%O)\n",identifier);
+#endif /* RESOLV_DEBUG */
 
       // FIXME: Support having the cache in the handler?
       if( no_resolv[ identifier ] )
@@ -1591,7 +1591,7 @@ void _main(array(string) orig_argv, array(string) env)
            case "threads":
              // not really 100% correct, but good enough for most things.
              no_resolv[ "Thread" ] = 1;
-             add_constant( "thread_create", ([])[0] );
+             add_constant( "thread_create", UNDEFINED );
              break;
            default:
              no_resolv[ feature ] = 1;
@@ -2568,8 +2568,7 @@ class Codec
 	if(mixed tmp=search(objects,x))
 	  if(tmp=search(programs,tmp))
 	    return tmp;
-
-      return ([])[0];
+      return UNDEFINED;
     } 
   
   function functionof(string x)
