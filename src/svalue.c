@@ -362,7 +362,7 @@ unsigned INT32 hash_svalue(struct svalue *s)
 
   default:      q=(unsigned INT32)s->u.refs >> 2;
   case T_INT:   q=s->u.integer; break;
-  case T_FLOAT: q=(unsigned INT32)(s->u.float_number * 16843009.0); break;
+  case T_FLOAT: q=(unsigned INT32)(s->u.float_number * 16843009.731757771173); break;
   }
   q+=q % 997;
   q+=((q + s->type) * 9248339);
@@ -936,3 +936,21 @@ void gc_mark_short_svalue(union anything *u, TYPE_T type)
   }
 }
 #endif /* GC2 */
+
+INT32 lpc_sizeof(struct svalue *s)
+{
+  switch(s->type)
+  {
+  case T_STRING: return s->u.string->len;
+  case T_ARRAY: return s->u.array->size;
+  case T_MAPPING: return m_sizeof(s->u.mapping);
+  case T_LIST: return l_sizeof(s->u.list);
+  case T_OBJECT:
+    if(!s->u.object->prog)
+      error("sizeof() on destructed object.\n");
+    return s->u.object->prog->num_identifier_indexes;
+  default:
+    error("Bad argument 1 to sizeof().\n");
+    return 0; /* make apcc happy */
+  }
+}
