@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: error.c,v 1.117 2003/11/09 01:10:13 mast Exp $
+|| $Id: error.c,v 1.118 2003/11/14 00:07:35 mast Exp $
 */
 
 #define NO_PIKE_SHORTHAND
@@ -23,7 +23,7 @@
 #include "threads.h"
 #include "gc.h"
 
-RCSID("$Id: error.c,v 1.117 2003/11/09 01:10:13 mast Exp $");
+RCSID("$Id: error.c,v 1.118 2003/11/14 00:07:35 mast Exp $");
 
 #undef ATTRIBUTE
 #define ATTRIBUTE(X)
@@ -189,10 +189,7 @@ PMOD_EXPORT DECLSPEC(noreturn) void low_error(const char *buf) ATTRIBUTE((noretu
 {
   push_error(buf);
   free_svalue(& throw_value);
-  dmalloc_touch_svalue(Pike_sp-1);
-  throw_value = *--Pike_sp;
-  dmalloc_touch_svalue(&throw_value);
-
+  move_svalue (&throw_value, --Pike_sp);
   throw_severity = THROW_ERROR;
   in_error=0;
   pike_throw();  /* Hope someone is catching, or we will be out of balls. */
@@ -299,9 +296,7 @@ PMOD_EXPORT DECLSPEC(noreturn) void new_error(const char *name, const char *text
 
   f_aggregate(2);
 
-  free_svalue(& throw_value);
-  dmalloc_touch_svalue(Pike_sp-1);
-  throw_value = *--Pike_sp;
+  move_svalue (&throw_value, --Pike_sp);
   throw_severity=THROW_ERROR;
 
   in_error=0;
