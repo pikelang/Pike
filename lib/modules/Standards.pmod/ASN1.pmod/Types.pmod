@@ -1,5 +1,5 @@
 //
-// $Id: Types.pmod,v 1.31 2004/02/22 17:13:23 nilsson Exp $
+// $Id: Types.pmod,v 1.32 2004/02/22 20:24:07 nilsson Exp $
 //
 
 //! Encodes various asn.1 objects according to the Distinguished
@@ -373,15 +373,25 @@ class BitString
     return build_der(sprintf("%c%s", unused, value));
   }
 
-  //! @fixme
-  //!   document me!
+  //! Set the bitstring value as a string with @expr{"1"@} and
+  //! @expr{"0"@}.
+  this_program set_from_ascii(string s) {
+    array v = array_sscanf(s, "%8b"*(sizeof(s)/8)+"%b");
+    v[-1] = v[-1]<<((-sizeof(s))%8);
+    value = (string)v;
+    set_length(sizeof(s));
+    return this;
+  }
+
+  //! Sets the length of the bit string to @[len] number of bits.
   int set_length(int len) {
     if (len)
     {
       value = value[..(len + 7)/8];
       unused = (- len) % 8;
       value = sprintf("%s%c", value[..sizeof(value)-2], value[-1]
-		      & ({ 0xff, 0xfe, 0xfc, 0xf8, 0xf0, 0xe0, 0xc0, 0x80 })[unused]);
+		      & ({ 0xff, 0xfe, 0xfc, 0xf8,
+			   0xf0, 0xe0, 0xc0, 0x80 })[unused]);
     } else {
       unused = 0;
       value = "";
@@ -401,8 +411,8 @@ class BitString
   }
 
   static string _sprintf(int t) {
-    return t=='O' && sprintf("%O(%d %s)", this_program,
-			     sizeof(value)*8-unused,
+    int size = sizeof(value)*8-unused;
+    return t=='O' && sprintf("%O(%d %0"+size+"s)", this_program, size,
 			     (Gmp.mpz(value, 256) >> unused)->digits(2));
   }
 
