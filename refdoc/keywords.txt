@@ -144,6 +144,22 @@ Examples:
 
 _______________________________________________________________________________
 
+Keyword:      @inherit
+Description:  Tell which classes are inherited into this class.
+Arguments:    <name>
+              Where:
+                <name> is an "absolute" name with identifiers
+                  separated by dots.  It can also be prefixed by
+                  'scope::' where scope is one of the valid scope
+                  modules.
+Children:     -
+Groups with:  -
+Examples:
+              //! @class XHTML
+              //! @inherit XML
+
+_______________________________________________________________________________
+
 Keyword:      @module
 Description:  Declare and enter a new scope for a module. Only in C
               mode. Until an @endmodule is found, all declarations

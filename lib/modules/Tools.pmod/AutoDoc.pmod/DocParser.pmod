@@ -15,6 +15,7 @@ class MetaData {
   array(PikeObject) decls = ({});
   string belongs = 0;
   string appears = 0;
+  array(PikeObject) inherits = ({});
 }
 
 constant EOF = .PikeParser.EOF;
@@ -42,6 +43,7 @@ mapping(string : int) keywordtype =
   "namespace" : METAKEYWORD,
   "endnamespace" : METAKEYWORD,
   "decl" : METAKEYWORD,
+  "inherit" : METAKEYWORD,
   "enum" : METAKEYWORD,
   "endenum" : METAKEYWORD,
 
@@ -824,6 +826,20 @@ static class DocParserClass {
           else if (!first && scopeModule)
             parseError("@decl's must have identical 'scope::' prefix");
           meta->decls += ({ p });
+	}
+	break;
+
+      case "inherit":
+	{
+          if (endkeyword)
+            parseError("@%s must stand alone", endkeyword);
+	  string s = .PikeParser(arg, currentPosition)->parseIdents();
+	  if (!s)
+	    parseError("@inherits: expected identifier, got %O", arg);
+	  Inherit i = .PikeObjects.Inherit();
+	  i->name = s;
+	  i->classname = s;
+	  meta->inherits += ({ i });
 	}
 	break;
 
