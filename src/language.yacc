@@ -112,7 +112,7 @@
 /* This is the grammar definition of Pike. */
 
 #include "global.h"
-RCSID("$Id: language.yacc,v 1.229 2001/06/25 12:02:11 grubba Exp $");
+RCSID("$Id: language.yacc,v 1.230 2001/06/26 21:15:47 hubbe Exp $");
 #ifdef HAVE_MEMORY_H
 #include <memory.h>
 #endif
@@ -1168,7 +1168,14 @@ identifier_type: idents
 	  yyerror("Destructed object used as program identifier.");
 	}else{
 	  extern void f_object_program(INT32);
-	  f_object_program(1);
+	  int f=FIND_LFUN(Pike_sp[-1].u.object->prog,LFUN_CALL);
+	  if(f!=-1)
+	  {
+	    Pike_sp[-1].subtype=f;
+	    Pike_sp[-1].type=T_FUNCTION;
+	  }else{
+	    f_object_program(1);
+	  }
 	}
       }
 
