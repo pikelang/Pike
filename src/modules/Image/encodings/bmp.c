@@ -1,9 +1,9 @@
-/* $Id: bmp.c,v 1.8 1999/05/02 15:33:19 mirar Exp $ */
+/* $Id: bmp.c,v 1.9 1999/05/02 18:26:42 mirar Exp $ */
 
 /*
 **! module Image
 **! note
-**!	$Id: bmp.c,v 1.8 1999/05/02 15:33:19 mirar Exp $
+**!	$Id: bmp.c,v 1.9 1999/05/02 18:26:42 mirar Exp $
 **! submodule BMP
 **!
 **!	This submodule keeps the BMP (Windows Bitmap)
@@ -22,7 +22,7 @@
 #include <ctype.h>
 
 #include "stralloc.h"
-RCSID("$Id: bmp.c,v 1.8 1999/05/02 15:33:19 mirar Exp $");
+RCSID("$Id: bmp.c,v 1.9 1999/05/02 18:26:42 mirar Exp $");
 #include "pike_macros.h"
 #include "object.h"
 #include "constants.h"
@@ -383,7 +383,7 @@ void i_img_bmp__decode(INT32 args,int header_only)
 
 	 n++;
 
-	 s+=54;
+	 s+=54;     /* fuji mode doesn't care */
 	 len-=54;
 
 	 break;
@@ -420,8 +420,8 @@ void i_img_bmp__decode(INT32 args,int header_only)
 	 break;
 
       default:
-	 error("Image.BMP.decode: not a BMP "
-	       "(illegal info size %ld, expected 40 or 12)\n",
+	 error("Image.BMP.decode: not a known BMP type "
+	       "(illegal info size %ld, expected 68, 40 or 12)\n",
 	       int_from_32bit(s+14));
    }
 
@@ -513,16 +513,19 @@ void i_img_bmp__decode(INT32 args,int header_only)
    img=(struct image*)get_storage(o,image_program);
    n++;
 
-   if (comp > 2)
-      error("Image.BMP.decode: illegal compression: %d\n",comp);
+   if (int_from_32bit(os+10)) 
+   {
+      s=os+int_from_32bit(os+10);
+      len=olen-int_from_32bit(os+10);
+   }
 
-   switch (bpp)
+   if (len>0) switch (bpp)
    {
       case 24:
 	 if (comp)
 	    error("Image.BMP.decode: can't handle compressed 24bpp BMP\n");
 
-	 skip=(4-(img->xsize*3)&3)&3;
+	 skip=(4-((img->xsize*3)&3))&3;
 
 	 j=(len)/3;
 	 y=img->ysize;
@@ -542,33 +545,182 @@ void i_img_bmp__decode(INT32 args,int header_only)
 	 }
 	 break;
       case 8:
-	 if (comp)
-	    error("Image.BMP.decode: can't handle compressed 8bpp BMP\n");
+	 if (comp != 0 && comp != 1 )
+	    error("Image.BMP.decode: can't handle compression %d for 8bpp BMP\n",comp);
 
-	 skip=(4-img->xsize&3)&3;
-	 j=len;
-	 y=img->ysize;
-	 while (j && y--)
+	 if (comp==1)
 	 {
+	    int i;
+	    rgb_group *maxd=img->img+img->xsize*img->ysize;
+
+
+	    /* 00 00        -	end of line
+	       00 01        -	end of data
+	       00 02 dx dy  -	move cursor
+	       00  x (x bytes) 00   -  x bytes of data
+	        x  a        -   x bytes of rle data (a a ...)
+	    */
+
+	    y=img->ysize-1;
 	    d=img->img+img->xsize*y;
-	    i=img->xsize; if (i>j) i=j; 
-	    j-=i;
-	    while (i--)
-	       *(d++)=nct->u.flat.entries[*(s++)].color;
-	    if (j>=skip) { j-=skip; s+=skip; }
-	 }
-	 break;
-      case 4:
-	 if (comp == 1)
-	    error("Image.BMP.decode: can't handle RLE4 compressed 4bpp BMP\n");
-
-	 if (comp == 2) /* RLE4 */
-	 {
 	    
+	    while (j--)
+	    {
+	       if (!j--) break;
+	       switch (*s)
+	       {
+		  case 0:
+		     switch (s[1])
+		     {
+			case 0:
+			   if (y!=0) y--;
+			   d=img->img+img->xsize*y;
+			   break;
+			case 1:
+			   goto done_rle8;
+			case 2:
+			   error("Image.BMP.decode: advanced RLE "
+				 "decompression (cursor movement) "
+				 "is unimplemented (please send this "
+				 "image to mirar@idonex.se)\n");
+			default:
+			   error("Image.BMP.decode: advanced RLE "
+				 "decompression (non-rle data) "
+				 "is unimplemented (please send this "
+				 "image to mirar@idonex.se)\n");
+		     }
+		     break;
+		  default:
+		     for (i=0; i<s[0] && d<maxd; i++)
+			if (s[1]>nct->u.flat.numentries) 
+			   d++;
+			else 
+			   *(d++)=nct->u.flat.entries[s[1]].color;
+		     break;
+	       }
+	       s+=2;
+	    }
+   done_rle8:
 	 }
 	 else
 	 {
-	    skip=(4-((img->xsize+1)/2)&3)&3;
+	    skip=(4-(img->xsize&3))&3;
+	    j=len;
+	    y=img->ysize;
+	    while (j && y--)
+	    {
+	       d=img->img+img->xsize*y;
+	       i=img->xsize; if (i>j) i=j; 
+	       j-=i;
+	       while (i--)
+		  *(d++)=nct->u.flat.entries[*(s++)].color;
+	       if (j>=skip) { j-=skip; s+=skip; }
+	    }
+	 }
+	 break;
+      case 4:
+	 if (comp != 0 && comp != 2 )
+	    error("Image.BMP.decode: can't handle compression %d for 4bpp BMP\n",comp);
+
+	 if (comp == 2) /* RLE4 */
+	 {
+	    int i;
+	    rgb_group *maxd=img->img+img->xsize*img->ysize;
+	    y=img->ysize-1;
+	    d=img->img+img->xsize*y;
+
+	    /* 00 00        -	end of line
+	       00 01        -	end of data
+	       00 02 dx dy  -	move cursor
+	       00  x ((x+1)/2 bytes) 00   -  x nibbles of data
+	        x ab        -   x nibbles of rle data (a b a b a ...)
+	    */
+
+	    j=len;
+	    
+	    while (j--)
+	    {
+	       if (!j--) break;
+	       switch (*s)
+	       {
+		  case 0:
+		     switch (s[1])
+		     {
+			case 0:
+#if RLE_DEBUG
+			   fprintf(stderr,"end of line  %5d %02x %02x\n",
+				   j,s[0],s[1]);
+#endif
+			   if (y>0) y--;
+			   d=img->img+img->xsize*y;
+			   
+			   break;
+			case 1:
+#if RLE_DEBUG
+			   fprintf(stderr,"end of data  %5d %02x %02x\n",
+				   j,s[0],s[1]);
+#endif
+			   goto done_rle4;
+			case 2:
+			   error("Image.BMP.decode: advanced RLE "
+				 "decompression (cursor movement) "
+				 "is unimplemented (please send this "
+				 "image to mirar@idonex.se)\n");
+#if RLE_DEBUG
+			   if (j<2) break;
+			   fprintf(stderr,"cursor       "
+				   "%5d %02x %02x %02x %02x\n",
+				   j,s[0],s[1],s[2],s[3]);
+			   j-=2; s+=2;
+#endif
+			   break;
+			default:
+			   error("Image.BMP.decode: advanced RLE "
+				 "decompression (non-rle data) "
+				 "is unimplemented (please send this "
+				 "image to mirar@idonex.se)\n");
+#if RLE_DEBUG
+			   fprintf(stderr,"data         %5d %02x %02x [ ",
+				   j,s[0],s[1]);
+			   fflush(stderr);
+			   
+			   for (i=0; i<(s[1]+1)/2; i++)
+			      fprintf(stderr,"%02x ",s[2+i]);
+			   fprintf(stderr,"] %02x\n",s[2+i]);
+
+			   j-=2; s+=2;
+			   j-=i; s+=i;
+#endif 
+
+			   break;
+		     }
+		     break;
+		  default:
+#if RLE_DEBUG		     
+		     fprintf(stderr,"rle data     %02x %02x\n",s[0],s[1]);		     
+#endif
+		     for (i=0; i<s[0] && d<maxd; i++)
+		     {
+			int c;
+			if (i&1)
+			   c=s[1]&15;
+			else
+			   c=(s[1]>>4)&15;
+
+			if (c>nct->u.flat.numentries) 
+			   d++;
+			else 
+			   *(d++)=nct->u.flat.entries[c].color;
+		     }
+		     break;
+	       }
+	       s+=2;
+	    }
+   done_rle4:
+	 }
+	 else
+	 {
+	    skip=(4-(((img->xsize+1)/2)&3))&3;
 	    j=len;
 	    y=img->ysize;
 	    while (j && y--)
@@ -589,7 +741,7 @@ void i_img_bmp__decode(INT32 args,int header_only)
 	 if (comp)
 	    error("Image.BMP.decode: can't handle compressed 1bpp BMP\n");
 
-	 skip=(4-((img->xsize+7)/8)&3)&3;
+	 skip=(4-(((img->xsize+7)/8)&3))&3;
 	 j=len;
 	 y=img->ysize;
 	 while (j && y--)
