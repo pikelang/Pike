@@ -2,11 +2,11 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: mpz_glue.c,v 1.113 2002/10/15 16:34:14 marcus Exp $
+|| $Id: mpz_glue.c,v 1.114 2002/10/15 16:43:47 marcus Exp $
 */
 
 #include "global.h"
-RCSID("$Id: mpz_glue.c,v 1.113 2002/10/15 16:34:14 marcus Exp $");
+RCSID("$Id: mpz_glue.c,v 1.114 2002/10/15 16:43:47 marcus Exp $");
 #include "gmp_machine.h"
 
 #if defined(HAVE_GMP2_GMP_H) && defined(HAVE_LIBGMP2)
@@ -1608,18 +1608,12 @@ void pike_module_exit(void)
 }
 
 
-#define MPZ_ARG_TYPE "int|float|object"
-#define MPZ_RET_TYPE "object"
-#define MPZ_SHIFT_TYPE "function(int|float|object:" MPZ_RET_TYPE")"
-#define MPZ_BINOP_TYPE ("function(" MPZ_ARG_TYPE "...:"MPZ_RET_TYPE")")
-#define MPZ_CMPOP_TYPE ("function(mixed:int)")
-
 #define tMpz_arg tOr3(tInt,tFloat,tObj)
 #define tMpz_ret tObj
 #define tMpz_int tInt
 #define tMpz_shift_type tFunc(tMpz_arg,tMpz_ret)
 #define tMpz_binop_type tFuncV(tNone, tMpz_arg, tMpz_ret)
-#define tMpz_cmpop_type tFunc(tMixed, tMpz_ret)
+#define tMpz_cmpop_type tFunc(tMixed, tInt)
 
 #define MPZ_DEFS()							\
   ADD_STORAGE(MP_INT);							\
@@ -1656,13 +1650,13 @@ void pike_module_exit(void)
   ADD_FUNCTION("``<<",mpzmod_rlsh,tMpz_shift_type, ID_STATIC);		\
   ADD_FUNCTION("``>>",mpzmod_rrsh,tMpz_shift_type, ID_STATIC);		\
 									\
-  add_function("`>", mpzmod_gt,MPZ_CMPOP_TYPE, ID_STATIC);		\
-  add_function("`<", mpzmod_lt,MPZ_CMPOP_TYPE, ID_STATIC);		\
-  add_function("`>=",mpzmod_ge,MPZ_CMPOP_TYPE, ID_STATIC);		\
-  add_function("`<=",mpzmod_le,MPZ_CMPOP_TYPE, ID_STATIC);		\
+  ADD_FUNCTION("`>", mpzmod_gt,tMpz_cmpop_type, ID_STATIC);		\
+  ADD_FUNCTION("`<", mpzmod_lt,tMpz_cmpop_type, ID_STATIC);		\
+  ADD_FUNCTION("`>=",mpzmod_ge,tMpz_cmpop_type, ID_STATIC);		\
+  ADD_FUNCTION("`<=",mpzmod_le,tMpz_cmpop_type, ID_STATIC);		\
 									\
-  add_function("`==",mpzmod_eq,MPZ_CMPOP_TYPE, ID_STATIC);		\
-  add_function("`!=",mpzmod_nq,MPZ_CMPOP_TYPE, ID_STATIC);		\
+  ADD_FUNCTION("`==",mpzmod_eq,tMpz_cmpop_type, ID_STATIC);		\
+  ADD_FUNCTION("`!=",mpzmod_nq,tMpz_cmpop_type, ID_STATIC);		\
 									\
   ADD_FUNCTION("`!",mpzmod_not,tFunc(tNone,tInt), ID_STATIC);		\
 									\
@@ -1716,9 +1710,8 @@ void pike_module_init(void)
   /* These are not implemented yet */
   /* function(:int) */
   ADD_FUNCTION("squarep", mpzmod_squarep,tFunc(tNone,tInt), 0);
-  add_function("divmod", mpzmod_divmod, "function(" MPZ_ARG_TYPE ":array(object))", 0);
-  add_function("divm", mpzmod_divm, "function(" MPZ_ARG_TYPE ","
-	       MPZ_ARG_TYPE ":object)", 0);
+  ADD_FUNCTION("divmod", mpzmod_divmod, tFunc(tMpz_arg,tArr(tMpz_ret)), 0);
+  ADD_FUNCTION("divm", mpzmod_divm, tFunc(tMpz_arg tMpz_arg,tMpz_ret), 0);
 #endif
 
   mpzmod_program=end_program();
