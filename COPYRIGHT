@@ -12,9 +12,6 @@ created from the same source code. Parts of other
 copyrighted works are included in Pike, in accordance
 with their respective conditions for distribution.
 
-DES encryption and decryption code
-Copyright © 1992 Dana L. How
-
 Emacs font lock definitions
 Copyright © 2002 Martin Stjernholm
 
@@ -29,12 +26,6 @@ Copyright © Poul-Henning Kamp
 
 Regular expression matching code
 Copyright © 1986 by University of Toronto.
-
-Rijndael encryption and decryption code
-Copyright © 2000 Joan Daemen
-
-Secure Hash Algorithm code
-Copyright © 1995, A.M. Kuchling
 
 TrueVision Targa code
 Copyright © 1997 Raphael FRANCOIS and Gordon Matzigkeit
