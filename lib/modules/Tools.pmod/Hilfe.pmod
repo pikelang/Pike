@@ -1,9 +1,10 @@
 #pike __REAL_VERSION__
 
+//
 // Incremental Pike Evaluator
 //
-// $Id: Hilfe.pmod,v 1.63 2002/04/08 09:35:47 mikael%unix.pp.se Exp $
 
+constant cvs_version = ("$Id: Hilfe.pmod,v 1.64 2002/04/09 20:42:40 nilsson Exp $");
 constant hilfe_todo = #"List of known Hilfe bugs/room for improvements:
 
 - Hilfe can not handle sscanf statements like
@@ -37,7 +38,6 @@ class Command {
   //! The actual command callback. Messages to the user should be
   //! written out by using the write method in the @[Evaluator] object.
   void exec(Evaluator e, string line, array(string) words, array(string) tokens);
-
 }
 
 //! Variable reset command. Put ___Hilfe->commands->reset = Tools.Hilfe.CommandReset();
@@ -227,7 +227,6 @@ private class CommandExit {
   inherit Command;
   string help(string what) { return "Exit Hilfe."; }
 
-  string doc(string what, string with) { return "Exit Hilfe.\n"; }
   void exec(Evaluator e) {
     e->write("Exiting.\n");
     destruct(e);
@@ -243,13 +242,22 @@ private class CommandHelp {
     line = words[1..]*" ";
     function write = e->write;
 
-    if(line == "me more") {
+    switch(line) {
+
+    case "me more":
       write( documentation_help_me_more );
       return;
-    }
 
-    if(line == "hilfe todo") {
+    case "hilfe todo":
       write(hilfe_todo);
+      return;
+
+    case "about hilfe":
+      e->print_version();
+      write(cvs_version+#"
+Initial version written by Fredrik Hübinette 1996-2000
+Rewritten by Martin Nilsson 2002
+");
       return;
     }
 
@@ -288,7 +296,7 @@ Enter \"help me more\" for further Hilfe help.
 
 private class CommandDot {
   inherit Command;
-  string help(string what ) { return 0; }
+  string help(string what) { return 0; }
 
   private constant usr_vector_a = ({
     89, 111, 117, 32, 97, 114, 101, 32, 105, 110, 115, 105, 100, 101, 32, 97, 32,
@@ -467,9 +475,45 @@ private class CommandNew {
  }
 }
 
+private class CommandStartStop {
+  inherit Command;
+  SubSystems subsystems;
+
+  void create(){
+    subsystems=SubSystems();
+  }
+
+  string help(string what) {
+    switch(what){
+    case "start": return "Start a subsystem.";
+    case "stop":  return "Stop a subsystem.";
+    }
+  }
+
+  string doc(string what, string with) {
+    switch(what){
+    case "start": return "start backend [once]\n\tstart the backend thread. If \"once\" is "
+		    "specified execution\n\twill end at first exception. Can be restarted "
+		    "with \"start backend\".\n";
+    case "stop":  return "stop backend\n\tstop the backend thread.\n";
+    }
+  }
+
+  void exec(Evaluator e, string line, array(string) words) {
+    if(sizeof(words)>=2){
+      switch(words[0]){
+      case "start": subsystems->start(e, words[1], words[1..]); break;
+      case "stop":  subsystems->stop(e, words[1], words[1..]); break;
+      }
+    }
+  }
+}
+
+
 //
 // Backend subsystem
 //
+
 private class SubSysBackend {
   int(0..1) is_running;
   int(0..1) once;
@@ -509,10 +553,12 @@ private class SubSysBackend {
 
 }
 
-
-// 
-// General subsystem handler object.
 //
+// Support stuff..
+//
+
+
+// General subsystem handler class.
 private class SubSystems {
   mapping subsystems;
 
@@ -523,70 +569,31 @@ private class SubSystems {
     ]);
   }
 
-
-
   void start(Evaluator e, string what, array(string) words){
-    if(subsystems[what]){
-      if(!subsystems[what]->runningp()){
-	subsystems[what]->start(e,words);
-      }else{
-	e->write(sprintf("%s is already running.\n",what));
-      }
-    }else{
-      e->write("No such subsystem.\n");
+    if(subsystems[what]) {
+
+      if(!subsystems[what]->runningp())
+	subsystems[what]->start(e, words);
+      else
+	e->write(sprintf("%s is already running.\n", what));
+
     }
+    else
+      e->write("No such subsystem.\n");
   }
 
   void stop(Evaluator e, string what, array(string) words){
-    if(subsystems[what]){
-      if(subsystems[what]->runningp()){
+    if(subsystems[what]) {
+
+      if(subsystems[what]->runningp())
 	subsystems[what]->stop(e,words);
-      }else{
+      else
 	e->write(sprintf("%s is not running.\n",what));
-      }
-    }else{
+    }
+    else
       e->write("No such subsystem.\n");
-    }
   }
 }
-
-private class CommandStartStop {
-  inherit Command;
-  SubSystems subsystems;
-
-  void create(){
-    subsystems=SubSystems();
-  }
-  
-  string help(string what) { 
-    switch(what){
-    case "start": return "Start a subsystem."; 
-    case "stop":  return "Stop a subsystem.";
-    }
-  }
-  
-  string doc(string what, string with) { 
-    switch(what){
-    case "start": return "start backend [once]\n\tstart the backend thread. If \"once\" is "
-		         "specified execution\n\twill end at first exception. Can be restarted "
-		         "with \"start backend\".\n"; 
-    case "stop":  return "stop backend\n\tstop the backend thread.\n"; 
-    }
-  }
-      
-  void exec(Evaluator e, string line, array(string) words) {
-    if(sizeof(words)>=2){
-      switch(words[0]){
-      case "start": subsystems->start(e,words[1],words[1..]); break;
-      case "stop":  subsystems->stop(e,words[1],words[1..]); break;
-      }
-    }
-  }
-}
-
-//
-// Support stuff..
-//
 
 private constant whitespace = (< ' ', '\n' ,'\r', '\t' >);
 private constant termblock = (< "catch", "do", "gauge", "lambda", "class stop" >);
@@ -651,6 +658,54 @@ private class Expression {
     int p = search(tokens, " ");
     if(p==-1) p = sizeof(tokens)-1;
     return tokens[..p];
+  }
+
+  //! Returns at which position the type declaration that
+  //! begins at position @[position] ends. A return value of
+  //! -1 means that the token or tokens from @[position]
+  //! can not be a type declaration.
+  int(-1..) endoftype(int(-1..) position) {
+    if( (< "int", "float", "string",
+           "array", "mapping", "multiset",
+           "function", "object", "program" >)[ `[](position) ] ) {
+      // We are in a type declaration.
+      position++;
+
+      if( `[](position)!="(" )
+        return position-1;
+
+      int plevel;
+      for(; position<sizeof(positions); position++) {
+        if( `[](position)=="(" ) plevel++;
+        if( `[](position)==")" ) plevel--;
+	if( !plevel ) break;
+      }
+      return position;
+    }
+
+    if( (< "break", "continue", "class", "!", "-",
+           "(", "~", "[" >)[ `[](position) ] )
+      return -1;
+
+    for(; position<sizeof(positions); position++) {
+      if( (< "(", "->", "[", ":", ";", "+", "-",
+             "%", "/", "&", "&&", "|", "||",
+             "<", ">", "==", "=", "!=", "?",
+             "+=", "-=", "%=", "/=", "&=", "|=",
+             "~=", "<<", ">>", "<<=", ">>=", "<=",
+	     ">=", "^", "^=" >)[ `[](position) ] )
+        return -1;
+      if( `[](position)=="." ) {
+        position++;
+        continue;
+      }
+      return position;
+    }
+
+    // Well, we did find a type declaration, but it
+    // wasn't used for anything except perhaps loading
+    // a module into pike, e.g. "spider;"
+    return -1;
   }
 
   string _sprintf(int t) {
@@ -1156,14 +1211,7 @@ class Evaluator {
     // Rewrite variables for the Hilfe wrapper
     relocate(expr, 0, (multiset)(indices(variables)) );
 
-    // Identify the type of statement so that we can intercept
-    // variable declarations and store them locally.
-    string type = expr[0];
-    if( has_value(expr->first_complex(), ".") &&
-	type!="(" ) type=".object";
-    if(programs[expr[0]] && expr[1]!="(") type=".local";
-
-    switch(type)
+    switch(expr[0])
     {
       case "if":
       case "for":
@@ -1212,55 +1260,17 @@ class Evaluator {
       }
 
       case "class":
+	// FIXME: Unnamed create
 	add_hilfe_entity(expr[0], [string]expr[1..], expr[1], programs);
 	return 0;
+    }
 
-      case "int":
-      case "void":
-      case "object":
-      case ".object":
-      case ".local":
-      case "array":
-      case "mapping":
-      case "string":
-      case "multiset":
-      case "float":
-      case "mixed":
-      case "program":
-      case "function":
-      {
-	// This is either a variable declaration or a new function.
+    int pos = expr->endoftype(0);
+    if(pos>=0) {
+      string type = [string]expr[0..pos++];
 
-	string type = expr[0];
-	int pos=1;
-
-	// Find out the whole type, e.g. Stdio.File|mapping(string:int(0..3))
-	while(expr[pos]=="." || expr[pos]=="|" || expr[pos]=="(") {
-	  if(expr[pos]=="." || expr[pos]=="|")
-	    type += expr[pos++] + expr[pos++];
-	  else {
-	    int plevel=0;
-	    do {
-	      type += expr[pos];
-	      if(expr[pos]==",") type += " ";
-	      else if(expr[pos]=="(") plevel++;
-	      else if(expr[pos]==")") plevel--;
-	      pos++;
-	    } while(plevel);
-	  }
-	}
-
-	if(object_ops[expr[pos]])
-	  break;
-
-	// This is a new function
-	if(expr[pos+1]=="(") {
-	  if(constants[expr[pos]])
-	    return "Hilfe Error: \"" + expr[pos] + "\" already defined as constant.\n";
-	  add_hilfe_entity(type, [string]expr[pos..], expr[pos], functions);
-	  return 0;
-	}
-
+      if( (< ";", ",", "=" >)[expr[pos+1]] ) {
+	// We are declaring the variable expr[pos]
 	while(pos<sizeof(expr)) {
 	  int from = pos;
 	  int plevel;
@@ -1274,7 +1284,14 @@ class Evaluator {
 	  add_hilfe_variable(type, [string]expr[from..pos-1], expr[from]);
 	  pos++;
 	}
+	return 0;
+      }
 
+      if( expr[pos+1]=="(" ) {
+	// We are defining the function expr[pos]
+	if(constants[expr[pos]])
+	  return "Hilfe Error: \"" + expr[pos] + "\" already defined as constant.\n";
+	add_hilfe_entity(type, [string]expr[pos..], expr[pos], functions);
 	return 0;
       }
     }
@@ -1817,6 +1834,7 @@ ___HilfeWrapper  A wrapper around the entered expression.
 
 
 Type \"help hilfe todo\" to get a list of known Hilfe bugs/lackings.
+Type \"help about hilfe\" to extended version information.
 ";
 
 constant documentation_dump =
