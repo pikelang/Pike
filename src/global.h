@@ -5,7 +5,7 @@
 \*/
 
 /*
- * $Id: global.h,v 1.24 1998/08/07 16:12:39 grubba Exp $
+ * $Id: global.h,v 1.25 1998/10/11 11:18:51 hubbe Exp $
  */
 #ifndef GLOBAL_H
 #define GLOBAL_H
@@ -185,6 +185,10 @@ struct b8_t_s { B4_T x,y; };
 struct b16_t_s { B8_T x,y; };
 #define B16_T struct b16_t_s
 #endif
+
+typedef unsigned char p_wchar0;
+typedef unsigned INT16 p_wchar1;
+typedef unsigned INT32 p_wchar2;
 
 
 #if __GNUC__ > 2 || (__GNUC__ == 2 && __GNUC_MINOR__ >= 7)

@@ -4,7 +4,7 @@
 ||| See the files COPYING and DISCLAIMER for more information.
 \*/
 #include "global.h"
-RCSID("$Id: builtin_functions.c,v 1.127 1998/10/10 00:23:49 grubba Exp $");
+RCSID("$Id: builtin_functions.c,v 1.128 1998/10/11 11:18:50 hubbe Exp $");
 #include "interpret.h"
 #include "svalue.h"
 #include "pike_macros.h"
@@ -739,7 +739,7 @@ void f_unicode_to_string(INT32 args)
     p_wchar1 *str1 = STR1(out);
 
     for (i = len; i--;) {
-      str1[i] = in->str[i*2]<<8 + in->str[i*2 + 1];
+      str1[i] = (in->str[i*2]<<8) + in->str[i*2 + 1];
     }
   }
 #endif /* BYTEORDER == 4321 */
@@ -1187,8 +1187,8 @@ static struct pike_string * replace_many(struct pike_string *str,
 					struct array *from,
 					struct array *to)
 {
-  char *s;
-  INT32 length,e;
+  INT32 s,length,e,num;
+  struct string_builder ret;
 
   struct tupel *v;
 
@@ -1206,47 +1206,67 @@ static struct pike_string * replace_many(struct pike_string *str,
 
   v=(struct tupel *)xalloc(sizeof(struct tupel)*from->size);
 
-  for(e=0;e<from->size;e++)
+  for(num=e=0;e<from->size;e++)
   {
     if(ITEM(from)[e].type != T_STRING)
+    {
+      free((char *)v);
       error("Replace: from array is not array(string)\n");
-    v[e].ind=ITEM(from)[e].u.string;
-  }
+    }
 
-  for(e=0;e<to->size;e++)
-  {
     if(ITEM(to)[e].type != T_STRING)
+    {
+      free((char *)v);
       error("Replace: to array is not array(string)\n");
-    v[e].val=ITEM(to)[e].u.string;
+    }
+
+    if(ITEM(from)[e].u.string->size_shift > str->size_shift)
+      continue;
+
+    v[num].ind=ITEM(from)[e].u.string;
+    v[num].val=ITEM(to)[e].u.string;
+    num++;
   }
 
-  fsort((char *)v,from->size,sizeof(struct tupel),(fsortfun)replace_sortfun);
+  fsort((char *)v,num,sizeof(struct tupel),(fsortfun)replace_sortfun);
 
-  for(e=0;e<256;e++)
+  for(e=0;e<(INT32)NELEM(set_end);e++)
     set_end[e]=set_start[e]=0;
 
-  for(e=0;e<from->size;e++)
+  for(e=0;e<num;e++)
   {
-    set_start[EXTRACT_UCHAR(v[from->size-1-e].ind->str)]=from->size-e-1;
-    set_end[EXTRACT_UCHAR(v[e].ind->str)]=e+1;
+    INT32 x;
+    x=index_shared_string(v[num-1-e].ind,0);
+    if(x<(INT32)NELEM(set_start)) set_start[x]=num-e-1;
+    x=index_shared_string(v[e].ind,0);
+    if(x<(INT32)NELEM(set_end)) set_end[x]=e+1;
   }
 
-  init_buf();
+  init_string_builder(&ret,str->size_shift);
 
   length=str->len;
-  s=str->str;
 
-  for(;length > 0;)
+  for(s=0;length > 0;)
   {
-    INT32 a,b,c;
-    if((b=set_end[EXTRACT_UCHAR(s)]))
+    INT32 a,b,c,ch;
+
+    ch=index_shared_string(str,s);
+    if(ch<(INT32)NELEM(set_end)) b=set_end[ch]; else b=num;
+
+    if(b)
     {
-      a=set_start[EXTRACT_UCHAR(s)];
+      if(ch<(INT32)NELEM(set_start)) a=set_start[ch]; else a=0;
+
       while(a<b)
       {
 	c=(a+b)/2;
 
-	if(low_quick_binary_strcmp(v[c].ind->str,v[c].ind->len,s,length) <=0)
+	if(generic_quick_binary_strcmp(v[c].ind->str,
+				       v[c].ind->len,
+				       v[c].ind->size_shift,
+				       str->str+(s << str->size_shift),
+				       length,
+				       str->size_shift) <=0)
 	{
 	  if(a==c) break;
 	  a=c;
@@ -1254,26 +1274,30 @@ static struct pike_string * replace_many(struct pike_string *str,
 	  b=c;
 	}
       }
-      if(a<from->size &&
+      if(a<num &&
 	 length >= v[a].ind->len &&
-	 !low_quick_binary_strcmp(v[a].ind->str,v[a].ind->len,
-				  s,v[a].ind->len))
+	 !generic_quick_binary_strcmp(v[a].ind->str,
+				      v[a].ind->len,
+				      v[a].ind->size_shift,
+				      str->str+(s<<str->size_shift),
+				      v[a].ind->len,
+				      str->size_shift))
       {
 	c=v[a].ind->len;
 	if(!c) c=1;
 	s+=c;
 	length-=c;
-	my_binary_strcat(v[a].val->str,v[a].val->len);
+	string_builder_shared_strcat(&ret,v[a].val);
 	continue;
       }
     }
-    my_putchar(*s);
+    string_builder_putchar(&ret, ch);
     s++;
     length--;
   }
 
   free((char *)v);
-  return free_buf();
+  return finish_string_builder(&ret);
 }
 
 void f_replace(INT32 args)

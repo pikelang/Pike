@@ -1,4 +1,4 @@
-stest_true([["$Id: testsuite.in,v 1.123 1998/10/09 23:30:23 hubbe Exp $"]])
+stest_true([["$Id: testsuite.in,v 1.124 1998/10/11 11:18:53 hubbe Exp $"]])
 cond([[all_constants()->_verify_internals]],
 [[
   test_do(_verify_internals())
@@ -10,7 +10,11 @@ test_eq(1.1e1,11.0)
 test_eq(1e-1,0.1)
 test_eq('\x20',32)
 test_eq("\x20","\040")
+test_eq("\d32","\x20")
 test_eq('Å',"Å"[0])
+test_eq('\7777',"\7777"[0])
+test_eq('\77777777',"\77777777"[0])
+test_eq("\x10000","\x10000")
 test_eq(0x80000000-0x80000000, 0)
 test_eq(0xf0000000-0xf0000000, 0)
 test_eq(0x80000001-0x80000000, 1)
@@ -993,6 +997,8 @@ test_cmp3(1,2.0,3.6)
 test_cmp3(1.0,2,4)
 test_cmp3("a","b","c")
 test_cmp3("","b","cc")
+test_cmp3("\x0","\x100","\x10000")
+test_cmp3("a\x10000","b\x100","c\x100")
 
 // hex construction
 test_eq(0,0x0)
@@ -1079,6 +1085,8 @@ test_eq(3.0*4,12.0)
 test_eq(4.0*3,12.0)
 test_eq(2.0*2*2.0*2*2.0,32.0)
 test_eq(({"foo","bar","gazonk"})*"-","foo-bar-gazonk")
+test_eq(({"f\777\777","bar","gaz\777nk"})*"-","f\777\777-bar-gaz\777nk")
+test_eq(({"f\7777777\7777777","bar","gaz\7777777nk"})*"-","f\7777777\7777777-bar-gaz\7777777nk")
 test_equal( ({ ({1}), ({2}), ({3}) })*({8}), ({1,8,2,8,3}))
 test_equal( ({ 1 })*3, ({1,1,1}) )
 test_equal( "foo"*3, "foofoofoo" )
@@ -1241,6 +1249,21 @@ test_eq("foo"[2],'o')
 test_eq("foo"[-1],'o')
 test_eq("foo"[-2],'o')
 test_eq("foo"[-3],'f')
+
+test_eq("f\777\777"[0],'f')
+test_eq("f\777\777"[1],'\777')
+test_eq("f\777\777"[2],'\777')
+test_eq("f\777\777"[-1],'\777')
+test_eq("f\777\777"[-2],'\777')
+test_eq("f\777\777"[-3],'f')
+
+test_eq("f\77777777\77777777"[0],'f')
+test_eq("f\77777777\77777777"[1],'\77777777')
+test_eq("f\77777777\77777777"[2],'\77777777')
+test_eq("f\77777777\77777777"[-1],'\77777777')
+test_eq("f\77777777\77777777"[-2],'\77777777')
+test_eq("f\77777777\77777777"[-3],'f')
+
 test_eq(({'f','o','o'})[0],'f')
 test_eq(({'f','o','o'})[1],'o')
 test_eq(({'f','o','o'})[2],'o')
@@ -1298,6 +1321,19 @@ test_eq("foobargazonk"[1..],"oobargazonk")
 test_eq("foobargazonk"[5..],"rgazonk")
 test_eq("foobargazonk"[..2],"foo")
 test_eq("foobargazonk"[..5],"foobar")
+
+test_eq("f\7777\7777bargaz\7777nk"[0..],"f\7777\7777bargaz\7777nk")
+test_eq("f\7777\7777bargaz\7777nk"[1..],"\7777\7777bargaz\7777nk")
+test_eq("f\7777\7777bargaz\7777nk"[5..],"rgaz\7777nk")
+test_eq("f\7777\7777bargaz\7777nk"[..2],"f\7777\7777")
+test_eq("f\7777\7777bargaz\7777nk"[..5],"f\7777\7777bar")
+
+test_eq("f\77777777\77777777bargaz\77777777nk"[0..],"f\77777777\77777777bargaz\77777777nk")
+test_eq("f\77777777\77777777bargaz\77777777nk"[1..],"\77777777\77777777bargaz\77777777nk")
+test_eq("f\77777777\77777777bargaz\77777777nk"[5..],"rgaz\77777777nk")
+test_eq("f\77777777\77777777bargaz\77777777nk"[..2],"f\77777777\77777777")
+test_eq("f\77777777\77777777bargaz\77777777nk"[..5],"f\77777777\77777777bar")
+
 test_equal(({1,2,3})[0..0],({1}))
 test_equal(({1,2,3})[1..2],({2,3}))
 test_equal(({1,2,3})[2..10],({3}))
@@ -2129,6 +2165,8 @@ test_equal(Array.diff("123.org"/"","http://123.org/"/""),
 
 // - explode
 test_equal(({"a","b","c",}), "anna bnna c"/"nna ")
+test_equal(({"\3333","\3333","\3333",}), "\3333nna \3333nna \3333"/"nna ")
+test_equal(({"\3333333","\3333333","\3333333",}), "\3333333nna \3333333nna \3333333"/"nna ")
 test_equal(({"","",}),"hej"/"hej")
 test_equal(({""}),""/"hej")
 
@@ -2212,6 +2250,17 @@ test_eq(replace("foobargazonk","o","-"),"f--bargaz-nk")
 test_eq(replace("foobargazonk",({"o","a"}),({"()","<>"})),"f()()b<>rg<>z()nk")
 test_eq(replace("f--barf--",({"f--","f--bar"}),({"f--bar","f--"})),"f--f--bar")
 test_eq(replace("f--barf--",({"f--bar","f--"}),({"f--","f--bar"})),"f--f--bar")
+
+test_eq(replace("f\777\777bargaz\777nk","\777","-"),"f--bargaz-nk")
+test_eq(replace("f\777\777bargaz\777nk",({"\777","a"}),({"()","<>"})),"f()()b<>rg<>z()nk")
+test_eq(replace("f\777\777barf\777\777",({"f\777\777","f\777\777bar"}),({"f\777\777bar","f\777\777"})),"f\777\777f\777\777bar")
+test_eq(replace("f\777\777barf\777\777",({"f\777\777bar","f\777\777"}),({"f\777\777","f\777\777bar"})),"f\777\777f\777\777bar")
+
+test_eq(replace("f\7777777\7777777bargaz\7777777nk","\7777777","-"),"f--bargaz-nk")
+test_eq(replace("f\7777777\7777777bargaz\7777777nk",({"\7777777","a"}),({"()","<>"})),"f()()b<>rg<>z()nk")
+test_eq(replace("f\7777777\7777777barf\7777777\7777777",({"f\7777777\7777777","f\7777777\7777777bar"}),({"f\7777777\7777777bar","f\7777777\7777777"})),"f\7777777\7777777f\7777777\7777777bar")
+test_eq(replace("f\7777777\7777777barf\7777777\7777777",({"f\7777777\7777777bar","f\7777777\7777777"}),({"f\7777777\7777777","f\7777777\7777777bar"})),"f\7777777\7777777f\7777777\7777777bar")
+
 test_equal(replace(({1,2,3,4,5,1,2,3,4}),3,-1),({1,2,-1,4,5,1,2,-1,4}))
 test_equal(replace(([1:2,3:4,5:1,2:3]),3,-1),([1:2,3:4,5:1,2:-1]))
 
@@ -2287,6 +2336,13 @@ test_search4("-------------------+")
 test_search4("\345-------------------")
 test_search4(sprintf("%'argel-bargel glop-glyf?'2000n"))
 
+dnl these can be uncommented when sprintf handles wide strings
+dnl test_search4("\34567-------------------")
+dnl test_search4("\345677777-------------------")
+dnl test_search4("kapit\3333l>")
+dnl test_search4("kapit\3333333l>")
+
+
 // - sizeof
 test_eq(sizeof("felbar"),6)
 test_eq(sizeof(({"fulbar","gazonk",7})),3)
@@ -2304,6 +2360,13 @@ test_eq(`+(1,1),2)
 test_eq(`+(1,-2),-1)
 test_eq(`+(-2,-2),-4)
 test_eq(`+("hi","there"),"hithere")
+
+test_eq(`+("hi\777","there"),"hi\777there")
+test_eq(`+("hi","there\777"),"hithere\777")
+
+test_eq(`+("hi\7777777","there"),"hi\7777777there")
+test_eq(`+("hi","there\7777777"),"hithere\7777777")
+
 test_eq(`+("human","number",666),"humannumber666")
 test_eq(`+("human","number",666),"humannumber666")
 test_eq(`+("human","number",666),"humannumber666")
@@ -2450,6 +2513,8 @@ test_do([[
 ]])
 
 test_any([[string s="foo"; s[2]='t'; s[0]--; return s;]],"eot")
+test_any([[string s="foo"; s[2]=0777; s[0]--; return s;]],"eo\777")
+test_any([[string s="foo"; s[2]=07777777; s[0]--; return s;]],"eo\7777777")
 
 cond([[all_constants()->_verify_internals]],
 [[

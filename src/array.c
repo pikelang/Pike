@@ -19,7 +19,7 @@
 #include "gc.h"
 #include "main.h"
 
-RCSID("$Id: array.c,v 1.39 1998/05/24 02:28:20 hubbe Exp $");
+RCSID("$Id: array.c,v 1.40 1998/10/11 11:18:50 hubbe Exp $");
 
 struct array empty_array=
 {
@@ -1364,20 +1364,28 @@ struct array *explode(struct pike_string *str,
     for(e=0;e<str->len;e++)
     {
       ITEM(ret)[e].type=T_STRING;
-      ITEM(ret)[e].u.string=make_shared_binary_string(str->str+e,1);
+      ITEM(ret)[e].u.string=string_slice(str,e,1);
     }
   }else{
-    struct mem_searcher searcher;
+    struct generic_mem_searcher searcher;
     
     s=str->str;
-    end=s+str->len;
+    end=s+(str->len << str->size_shift);
 
     ret=allocate_array(10);
     ret->size=0;
     
-    init_memsearch(&searcher, del->str, del->len, str->len);
+    init_generic_memsearcher(&searcher,
+			     del->str,
+			     del->len,
+			     del->size_shift,
+			     str->len,
+			     str->size_shift);
     
-    while((tmp=memory_search(&searcher, s, end-s)))
+    while((tmp=(char *)generic_memory_search(&searcher,
+					     s,
+					     (end-s)>>str->size_shift,
+					     str->size_shift)))
     {
       if(ret->size == ret->malloced_size)
       {
@@ -1386,11 +1394,13 @@ struct array *explode(struct pike_string *str,
 	ret->size=e;
       }
 
-      ITEM(ret)[ret->size].u.string=make_shared_binary_string(s, tmp-s);
+      ITEM(ret)[ret->size].u.string=string_slice(str,
+						 (s-str->str)>>str->size_shift,
+						 (tmp-s)>>str->size_shift);
       ITEM(ret)[ret->size].type=T_STRING;
       ret->size++;
 
-      s=tmp+del->len;
+      s=tmp+(del->len << str->size_shift);
     }
 
     if(ret->size == ret->malloced_size)
@@ -1400,7 +1410,10 @@ struct array *explode(struct pike_string *str,
       ret->size=e;
     }
 
-    ITEM(ret)[ret->size].u.string=make_shared_binary_string(s, end-s);
+    ITEM(ret)[ret->size].u.string=string_slice(str,
+					       (s-str->str)>>str->size_shift,
+					       (end-s)>>str->size_shift);
+
     ITEM(ret)[ret->size].type=T_STRING;
     ret->size++;
   }
@@ -1413,15 +1426,22 @@ struct pike_string *implode(struct array *a,struct pike_string *del)
   INT32 len,e, inited;
   char *r;
   struct pike_string *ret,*tmp;
+  int max_shift=0;
 
   len=0;
 
   for(e=0;e<a->size;e++)
+  {
     if(ITEM(a)[e].type==T_STRING)
+    {
       len+=ITEM(a)[e].u.string->len + del->len;
+      if(ITEM(a)[e].u.string->size_shift > max_shift)
+	max_shift=ITEM(a)[e].u.string->size_shift;
+    }
+  }
   if(len) len-=del->len;
   
-  ret=begin_shared_string(len);
+  ret=begin_wide_shared_string(len,max_shift);
   r=ret->str;
   inited=0;
   for(e=0;e<a->size;e++)
@@ -1430,13 +1450,13 @@ struct pike_string *implode(struct array *a,struct pike_string *del)
     {
       if(inited)
       {
-	MEMCPY(r,del->str,del->len);
-	r+=del->len;
+	pike_string_cpy(r,max_shift,del);
+	r+=del->len << max_shift;
       }
       inited=1;
       tmp=ITEM(a)[e].u.string;
-      MEMCPY(r,tmp->str,tmp->len);
-      r+=tmp->len;
+      pike_string_cpy(r,max_shift,tmp);
+      r+=tmp->len << max_shift;
       len++;
     }
   }

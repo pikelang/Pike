@@ -9,7 +9,7 @@
 #include "pike_macros.h"
 #include "gc.h"
 
-RCSID("$Id: pike_memory.c,v 1.25 1998/10/09 17:56:32 hubbe Exp $");
+RCSID("$Id: pike_memory.c,v 1.26 1998/10/11 11:18:52 hubbe Exp $");
 
 /* strdup() is used by several modules, so let's provide it */
 #ifndef HAVE_STRDUP
@@ -405,11 +405,14 @@ void init_generic_memsearcher(struct generic_mem_searcher *s,
   s->needle_shift=needle_shift;
   s->haystack_shift=haystack_shift;
 
-  if(needle_shift ==1 && haystack_shift ==1)
+  if(needle_shift ==0 && haystack_shift ==0)
   {
-    init_memsearch(& s->data.eightbit, (char *)needle, estimated_haystack,estimated_haystack);
+    init_memsearch(& s->data.eightbit, (char *)needle, needlelen,estimated_haystack);
     return;
   }
+
+  s->data.other.needlelen=needlelen;
+  s->data.other.needle=needle;
 
   switch(needlelen)
   {
@@ -441,49 +444,81 @@ void *generic_memory_search(struct generic_mem_searcher *s,
 			    SIZE_T haystacklen,
 			    char haystack_shift)
 {
-  if(s->needle_shift==1 && s->haystack_shift==1)
+  if(s->needle_shift==0 && s->haystack_shift==0)
   {
     return memory_search(& s->data.eightbit, (char *)haystack, haystacklen);
   }
-  switch((s->data.other.method<<2) + haystack_shift)
+  switch(s->data.other.method)
   {
+    case no_search:  return haystack;
 
-#define GENERIC(X)							\
-    case (no_search << 2) + X:						\
-      return haystack;							\
-									\
-    case (use_memchr << 2) + X:						\
-      return PIKE_CONCAT(MEMCHR,X)((PIKE_CONCAT(p_wchar,X) *)haystack,	\
-				   s->data.other.first_char,		\
-				   haystacklen);			\
-									\
-    case (memchr_and_memcmp << 2) + X:					\
-    {									\
-      PIKE_CONCAT(p_wchar,X) *end,c,*needle,*hay;			\
-      SIZE_T needlelen;							\
-      									\
-      needle=(PIKE_CONCAT(p_wchar,X) *)s->data.other.needle;		\
-      hay=(PIKE_CONCAT(p_wchar,X) *)haystack;				\
-      needlelen=s->data.other.needlelen;				\
-      									\
-      end=hay + haystacklen - needlelen+1;				\
-      needle++;								\
-      needlelen--;							\
-      while((hay=PIKE_CONCAT(MEMCHR,X)(hay,				\
-				       s->data.other.first_char,	\
-				       end-hay)))			\
-	if(!MEMCMP(++hay,needle,needlelen))				\
-	  return (void *)(hay-1);					\
-									\
-      return 0;								\
-    }
+    case use_memchr:
+      switch(haystack_shift)
+      {
+        case 0:
+	  return MEMCHR0((p_wchar0 *)haystack,
+			 s->data.other.first_char,
+			 haystacklen);
+	  
+
+        case 1:
+	  return MEMCHR1((p_wchar1 *)haystack,
+			 s->data.other.first_char,
+			 haystacklen);
+
+        case 2:
+	  return MEMCHR2((p_wchar2 *)haystack,
+			 s->data.other.first_char,
+			 haystacklen);
+
+	default:
+	  fatal("Shift size out of range!\n");
+      }
+
+    case memchr_and_memcmp:
+      switch((haystack_shift << 2)+s->needle_shift)
+      {
+#define SEARCH(X,Y)							  \
+	case (X<<2)+Y:							  \
+	{								  \
+	  PIKE_CONCAT(p_wchar,X) *end,*hay;				  \
+	  PIKE_CONCAT(p_wchar,Y) *needle;				  \
+	  SIZE_T needlelen;						  \
+	  								  \
+	  needle=(PIKE_CONCAT(p_wchar,Y) *)s->data.other.needle;	  \
+	  hay=(PIKE_CONCAT(p_wchar,X) *)haystack;			  \
+	  needlelen=s->data.other.needlelen;				  \
+	  								  \
+	  end=hay + haystacklen - needlelen+1;				  \
+	  needle++;							  \
+	  needlelen--;							  \
+	  while((hay=PIKE_CONCAT(MEMCHR,X)(hay,				  \
+					   s->data.other.first_char,	  \
+					   end-hay)))			  \
+	    if(!PIKE_CONCAT4(compare_,Y,_to_,X)(++hay,needle,needlelen)) \
+	      return (void *)(hay-1);					  \
+	  								  \
+	  return 0;							  \
+	}
 
 
-      GENERIC(0)
-      GENERIC(1)
-      GENERIC(2)
+	SEARCH(0,0)
+	SEARCH(0,1)
+	SEARCH(0,2)
 
-#undef GENERIC
+	SEARCH(1,0)
+	SEARCH(1,1)
+	SEARCH(1,2)
+
+	SEARCH(2,0)
+	SEARCH(2,1)
+	SEARCH(2,2)
+
+#undef SEARCH
+      }
+
+    default:
+     fatal("Wacko method!\n");
   }
 }
 		    
@@ -671,7 +706,7 @@ void check_pad(struct memhdr *mh, int freeok)
     }
     if(mem[size+e] != tmp)
     {
-      fprintf(stderr,"Post-padding overwritten for block at %p (size %ld) (e=%ld %d!=%d)!\n",mem, size, e, tmp, mem[e-DEBUG_MALLOC_PAD]);
+      fprintf(stderr,"Post-padding overwritten for block at %p (size %ld) (e=%ld %d!=%d)!\n",mem, size, e, tmp, mem[size+e]);
       dump_memhdr_locations(mh, 0);
       abort();
     }

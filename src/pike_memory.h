@@ -5,18 +5,15 @@
 \*/
 
 /*
- * $Id: pike_memory.h,v 1.5 1998/10/09 17:56:32 hubbe Exp $
+ * $Id: pike_memory.h,v 1.6 1998/10/11 11:18:52 hubbe Exp $
  */
 #ifndef MEMORY_H
 #define MEMORY_H
 
 #include "global.h"
+#include "stralloc.h"
 
 #define MEMSEARCH_LINKS 512
-
-typedef unsigned char p_wchar0;
-typedef unsigned INT16 p_wchar1;
-typedef unsigned INT32 p_wchar2;
 
 struct link
 {
@@ -63,7 +60,6 @@ struct generic_mem_searcher
 #define MEMCHR0 MEMCHR
 
 /* Prototypes begin here */
-char *strdup(const char *str);
 INLINE p_wchar1 *MEMCHR1(p_wchar1 *p,p_wchar1 c,INT32 e);
 INLINE p_wchar2 *MEMCHR2(p_wchar2 *p,p_wchar2 c,INT32 e);
 void swap(char *a, char *b, INT32 size);
@@ -121,7 +117,10 @@ void debug_free(void *p, const char *fn, int line);
 char *debug_strdup(const char *s, const char *fn, int line);
 void dump_memhdr_locations(struct memhdr *from,
 			   struct memhdr *notfrom);
+void debug_malloc_dump_references(void *x);
 void cleanup_memhdrs();
+int main(int argc, char *argv[]);
+void * debug_malloc_update_location(void *p,const char *fn, int line);
 void reset_debug_malloc(void);
 /* Prototypes end here */
 

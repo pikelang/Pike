@@ -5,7 +5,7 @@
 \*/
 #include "global.h"
 #include <math.h>
-RCSID("$Id: operators.c,v 1.40 1998/09/18 21:34:28 hubbe Exp $");
+RCSID("$Id: operators.c,v 1.41 1998/10/11 11:18:52 hubbe Exp $");
 #include "interpret.h"
 #include "svalue.h"
 #include "multiset.h"
@@ -141,28 +141,31 @@ void f_add(INT32 args)
     struct pike_string *r;
     char *buf;
     INT32 tmp;
+    int max_shift=0;
 
-    switch(args)
+    if(args==1) return;
+
+    size=0;
+    for(e=-args;e<0;e++)
     {
-    case 1: return;
-    default:
-      size=0;
-      for(e=-args;e<0;e++) size+=sp[e].u.string->len;
-
-      tmp=sp[-args].u.string->len;
-      r=realloc_shared_string(sp[-args].u.string,size);
-      sp[-args].type=T_INT;
-      buf=r->str+tmp;
-      for(e=-args+1;e<0;e++)
-      {
-	MEMCPY(buf,sp[e].u.string->str,sp[e].u.string->len);
-	buf+=sp[e].u.string->len;
-      }
-      sp[-args].u.string=end_shared_string(r);
-      sp[-args].type=T_STRING;
-      for(e=-args+1;e<0;e++) free_string(sp[e].u.string);
-      sp-=args-1;
+      size+=sp[e].u.string->len;
+      if(sp[e].u.string->size_shift > max_shift)
+	max_shift=sp[e].u.string->size_shift;
     }
+    
+    tmp=sp[-args].u.string->len;
+    r=new_realloc_shared_string(sp[-args].u.string,size,max_shift);
+    sp[-args].type=T_INT;
+    buf=r->str+(tmp<<max_shift);
+    for(e=-args+1;e<0;e++)
+    {
+      pike_string_cpy(buf,max_shift,sp[e].u.string);
+      buf+=sp[e].u.string->len << max_shift;
+    }
+    sp[-args].u.string=end_shared_string(r);
+    sp[-args].type=T_STRING;
+    for(e=-args+1;e<0;e++) free_string(sp[e].u.string);
+    sp-=args-1;
 
     break;
   }
@@ -172,7 +175,9 @@ void f_add(INT32 args)
   case BIT_STRING | BIT_FLOAT | BIT_INT:
   {
     struct pike_string *r;
-    char *buf,*str;
+    char *buf;
+    char buffer[50];
+    int max_shift=0;
     size=0;
     for(e=-args;e<0;e++)
     {
@@ -180,6 +185,8 @@ void f_add(INT32 args)
       {
       case T_STRING:
 	size+=sp[e].u.string->len;
+	if(sp[e].u.string->size_shift > max_shift)
+	  max_shift=sp[e].u.string->size_shift;
 	break;
 
       case T_INT:
@@ -191,7 +198,9 @@ void f_add(INT32 args)
 	break;
       }
     }
-    str=buf=xalloc(size+1);
+
+    r=begin_wide_shared_string(size,max_shift);
+    buf=r->str;
     size=0;
     
     for(e=-args;e<0;e++)
@@ -199,23 +208,29 @@ void f_add(INT32 args)
       switch(sp[e].type)
       {
       case T_STRING:
-	MEMCPY(buf,sp[e].u.string->str,sp[e].u.string->len);
-	buf+=sp[e].u.string->len;
+	pike_string_cpy(buf,max_shift,sp[e].u.string);
+	buf+=sp[e].u.string->len<<max_shift;
 	break;
 
       case T_INT:
-	sprintf(buf,"%ld",(long)sp[e].u.integer);
-	buf+=strlen(buf);
-	break;
+	sprintf(buffer,"%ld",(long)sp[e].u.integer);
+	goto append_buffer;
 
       case T_FLOAT:
-	sprintf(buf,"%f",(double)sp[e].u.float_number);
-	buf+=strlen(buf);
-	break;
+	sprintf(buffer,"%f",(double)sp[e].u.float_number);
+      append_buffer:
+	switch(max_shift)
+	{
+	  case 0: convert_0_to_0((p_wchar0 *)buf,buffer,strlen(buffer)); break;
+	  case 1: convert_0_to_1((p_wchar1 *)buf,buffer,strlen(buffer)); break;
+	  case 2: convert_0_to_2((p_wchar2 *)buf,buffer,strlen(buffer)); break;
+	}
+	buf+=strlen(buffer)<<max_shift;
       }
     }
-    r=make_shared_binary_string(str,buf-str);
-    free(str);
+    r->len=(buf-r->str)>>max_shift;
+    low_set_index(r,r->len,0);
+    r=end_shared_string(r);
     pop_n_elems(args);
     push_string(r);
     break;
@@ -1725,7 +1740,7 @@ void o_range(void)
       fatal("Error in o_range.\n");
 #endif
 
-    s=make_shared_binary_string(sp[-1].u.string->str+from,to-from+1);
+    s=string_slice(sp[-1].u.string, from, to-from+1);
     free_string(sp[-1].u.string);
     sp[-1].u.string=s;
     break;
