@@ -1,4 +1,4 @@
-// $Id: DNS.pmod,v 1.82 2004/04/13 13:14:19 grubba Exp $
+// $Id: DNS.pmod,v 1.83 2004/09/15 19:59:15 grubba Exp $
 // Not yet finished -- Fredrik Hubinette
 
 //! Domain Name System
@@ -695,12 +695,16 @@ class client
 					   "/locations/resolver",
 					   "nameserver")) {
 	    nameservers = map(nameservers, `-, "\n");
+	  } else {
+	    nameservers = ({});
 	  }
 	  
 	  if (domains = System->get_netinfo_property(".",
 						    "/locations/resolver",
 						    "domain")) {
 	    domains = map(domains, `-, "\n");
+	  } else {
+	    domains = ({});
 	  }
 	} else {
 	  /* FIXME: Is this a good idea?
