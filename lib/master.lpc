@@ -1,5 +1,7 @@
 string describe_backtrace(mixed *trace);
 
+string lpc_library_path;
+
 /* This function is called when an error occurs that is not caught
  * with catch(). It's argument consists of:
  * ({ error_string, backtrace }) where backtrace is the output from the
@@ -112,6 +114,11 @@ varargs mixed getenv(string s)
   return environment[s];
 }
 
+void putenv(string var, string val)
+{
+  environment[var]=val;
+}
+
 /* This function is called when all the driver is done with all setup
  * of modules, efuns, tables etc. etc. and is ready to start executing
  * _real_ programs. It receives the arguments not meant for the driver
@@ -127,28 +134,15 @@ void _main(string *argv, string *env)
 
   foreach(env,a) if(sscanf(a,"%s=%s",a,b)) environment[a]=b;
   add_efun("getenv",getenv);
+  add_efun("putenv",putenv);
 
   add_efun("write",clone(cast_to_program("/precompiled/file"),"stdout")->write);
 
-//  terminal->set_nonblocking(test,0,0);
-//  write("Gurka.\n");
-//  return;
-
-//  script=clone((program)"/precompiled/file");
-//  script->popen(({"ls"}));
-//  write(script->read(10000000));
-
-//  script->close();
-
-//  perror(sprintf("%O\n",backtrace()[-1]));
   a=backtrace()[-1][0];
   q=a/"/";
-  q[-1]="simulate.lpc";
-//  perror(sprintf("%O\n",q));
-//  perror(sprintf("%O\n",q*"/"));
-  clone(compile_file(q*"/"));
+  lpc_library_path = q[0..sizeof(q)-2] * "/";
 
-//  perror(sprintf("All efuns:\n%O\n",all_efuns()));
+  clone(compile_file(lpc_library_path+"/simulate.lpc"));
 
   if(!sizeof(argv))
   {
@@ -198,25 +192,50 @@ void compile_error(string file,int line,string err)
  * Note that previous_object cannot be trusted in ths function, because
  * the compiler calls this function.
  */
-string handle_include(string f, string current_file)
+string handle_include(string f,
+		      string current_file,
+		      int local_include)
 {
   string *tmp, path;
-/*  perror("Handle include: "+f+"\n"); */
 
-  tmp=current_file/"/";
-  tmp[-1]=f;
-  path=combine_path(getcwd(),tmp*"/");
-  if(file_stat(path)) return path;
-  
-  if(path=getenv("LPC_INCLUDE_PATH"))
+  if(local_include)
   {
-    foreach(path/":", path)
+    tmp=current_file/"/";
+    tmp[-1]=f;
+    path=combine_path(getcwd(),tmp*"/");
+    if(!file_stat(path)) return 0;
+  }
+  else
+  {
+    if(path=getenv("LPC_INCLUDE_PATH"))
     {
-      path=combine_path(path,f);
-      if(file_stat(path)) return path;
+      foreach(path/":", path)
+      {
+	path=combine_path(path,f);
+	if(file_stat(path))
+	  break;
+	else
+	  path=0;
+      }
+    }
+    
+    if(!path)
+    {
+      path=combine_path(lpc_library_path+"/include",f);
+      if(!file_stat(path)) path=0;
     }
   }
-  return 0;
+
+  if(path)
+  {
+    /* Handle preload */
+
+    if(path[-1]=='h' && path[-2]=='.' &&
+       file_stat(path[0..sizeof(path)-2]+"pre.lpc"))
+      cast_to_object(path);
+  }
+
+  return path;
 }
 
 /* It is possible that this should be a real efun,
