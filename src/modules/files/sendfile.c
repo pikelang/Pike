@@ -1,5 +1,5 @@
 /*
- * $Id: sendfile.c,v 1.15 1999/04/22 23:21:24 grubba Exp $
+ * $Id: sendfile.c,v 1.16 1999/05/01 21:50:49 grubba Exp $
  *
  * Sends headers + from_fd[off..off+len-1] + trailers to to_fd asyncronously.
  *
@@ -647,7 +647,7 @@ static void sf_create(INT32 args)
 					       file_ref_program)) ||
 	!(*ob) ||
 	!(sf.from = (struct my_file *)get_storage(*ob, file_program))) {
-	SIMPLE_BAD_ARG_ERROR("sendfile", 6, "object(Stdio.File)");
+	SIMPLE_BAD_ARG_ERROR("sendfile", 2, "object(Stdio.File)");
       }
       add_ref(*ob);
 #ifdef PIKE_DEBUG
