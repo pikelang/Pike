@@ -5,7 +5,7 @@
 \*/
 
 /*
- * $Id: cpp.c,v 1.33 1999/04/15 22:40:44 marcus Exp $
+ * $Id: cpp.c,v 1.34 1999/04/15 22:45:45 marcus Exp $
  */
 #include "global.h"
 #include "dynamic_buffer.h"
@@ -1360,7 +1360,7 @@ static INT32 low_cpp(struct cpp *this,
 	      
 	    case '\\':
 	      if(GOBBLE('\n') ||
-		 (data[pos]=='\r' && (data[pos+1]=='\n'?(pos+=2),1:0))
+		 (data[pos]=='\r' && (data[pos+1]=='\n'?(pos+=2),1:0)))
 	      { 
 		this->current_line++;
 		PUTNL();
