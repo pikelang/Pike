@@ -5,7 +5,7 @@
 \*/
 /**/
 #include "global.h"
-RCSID("$Id: las.c,v 1.137 1999/12/13 23:41:07 grubba Exp $");
+RCSID("$Id: las.c,v 1.138 1999/12/13 23:52:41 grubba Exp $");
 
 #include "language.h"
 #include "interpret.h"
@@ -204,7 +204,7 @@ struct pike_string *find_return_type(node *n)
 
   if(a)
   {
-    if(b && a!=b) return or_pike_types(a, b);
+    if(b && a!=b) return or_pike_types(a, b, 1);
     add_ref(a);
     return a;
   }
