@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: udp.c,v 1.67 2004/05/11 15:59:04 grubba Exp $
+|| $Id: udp.c,v 1.68 2004/11/06 21:46:48 peter Exp $
 */
 
 #define NO_PIKE_SHORTHAND
@@ -10,7 +10,7 @@
 
 #include "file_machine.h"
 
-RCSID("$Id: udp.c,v 1.67 2004/05/11 15:59:04 grubba Exp $");
+RCSID("$Id: udp.c,v 1.68 2004/11/06 21:46:48 peter Exp $");
 #include "fdlib.h"
 #include "pike_netlib.h"
 #include "interpret.h"
@@ -338,9 +338,12 @@ void udp_wait(INT32 args)
   pollfds->events = POLLIN;
   pollfds->revents = 0;
   ms = timeout * 1000;
-  res = poll(pollfds, 1, ms);
-  e = errno;
 
+  do {
+    res = poll(pollfds, 1, ms);
+    e = errno;
+  } while (res < 0 && e == EINTR)
+    
   THREADS_DISALLOW();
   if (!res) {
     /* Timeout */
