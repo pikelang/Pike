@@ -2,11 +2,11 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: iterators.cmod,v 1.37 2003/04/21 14:43:42 grubba Exp $
+|| $Id: iterators.cmod,v 1.38 2003/04/21 15:27:24 grubba Exp $
 */
 
 #include "global.h"
-RCSID("$Id: iterators.cmod,v 1.37 2003/04/21 14:43:42 grubba Exp $");
+RCSID("$Id: iterators.cmod,v 1.38 2003/04/21 15:27:24 grubba Exp $");
 #include "main.h"
 #include "object.h"
 #include "mapping.h"
@@ -39,7 +39,7 @@ DECLARATIONS
  *! This is the interface for iterator objects. They implement an
  *! interface to a collection or stream of data items and a cursor
  *! that can be used to iterate over and examine individual items in
- *! that data set.
+ *! the data set.
  *!
  *! Iterators are typically created to access a data set in some
  *! specific object, array, mapping, multiset or string. An object can
@@ -49,7 +49,7 @@ DECLARATIONS
  *! over splitted substrings (@[String.SplitIterator]).
  *! @[lfun::_get_iterator] may be defined in an object to get an
  *! instance of the canonical iterator type for it. It's used by e.g.
- *! @[foreach] to iterate over the object conveniently.
+ *! @[foreach] to iterate over objects conveniently.
  *!
  *! It's not an error to advance an iterator past the beginning or end
  *! of the data set; @[`!()] will only return true then, and @[index]
@@ -80,7 +80,7 @@ PIKECLASS Iterator
    *!
    *! Initialize this iterator to access a data set in @[data]. The
    *! type of @[data] is specific to the iterator implementation. An
-   *! iterator might also access some implicit data set, in which
+   *! iterator may also access some implicit data set, in which case
    *! @[data] isn't specified at all.
    *!
    *! The iterator initially points to the first item in the data set,
@@ -90,6 +90,7 @@ PIKECLASS Iterator
    *! typically static.
    */
   PIKEFUN void create(void|mixed data)
+    flags ID_STATIC;
     prototype;
   {}
 
@@ -99,10 +100,11 @@ PIKECLASS Iterator
    *! @expr{1@} otherwise.
    */
   PIKEFUN int(0..1) `!()
+    flags ID_STATIC;
     prototype;
   {}
 
-  /*! @decl Iterator `+ (int steps)
+  /*! @decl Iterator `+(int steps)
    *!
    *! Returns a clone of this iterator which is advanced the specified
    *! number of steps. The amount may be negative to move backwards.
@@ -110,15 +112,37 @@ PIKECLASS Iterator
    *! throw an exception in that case.
    */
   PIKEFUN Iterator `+(int steps)
+    flags ID_STATIC;
     prototype;
   {}
 
-  /*! @decl Iterator `+= (int steps)
+  /*! @decl Iterator `+=(int steps)
    *!
    *! Advance this iterator the specified number of steps and return
    *! it. The amount may be negative to move backwards. If the
    *! iterator doesn't support backward movement it should throw an
    *! exception in that case.
+   *!
+   *! @[foreach] currently only calls this function with a
+   *! step value of @expr{1@}.
+   *!
+   *! @note
+   *!   @[foreach] will call this function even when the the
+   *!   iterator has more than one reference. If you want to
+   *!   loop over a copy of the iterator, you can create a
+   *!   copy by adding @expr{0@} (zero) to it:
+   *!   @code
+   *!     Iterator iterator;
+   *!     ...
+   *!     foreach(iterator+0; mixed index; mixed value) {
+   *!       ...
+   *!     }
+   *!   @endcode
+   *!
+   *! @note
+   *!   Even though this function is an lfun, it is often beneficial
+   *!   to not declare it static, since code might want to advance
+   *!   the iterator by hand.
    */
   PIKEFUN Iterator `+=(int steps)
     prototype;
@@ -132,7 +156,7 @@ PIKECLASS Iterator
    *! forward.
    */
   PIKEFUN int(0..1) `-(int steps)
-    flags ID_OPTIONAL;
+    flags ID_STATIC|ID_OPTIONAL;
     prototype;
   {}
 
@@ -183,8 +207,11 @@ PIKECLASS Iterator
   /*! @decl optional int(0..1) first()
    *!
    *! If this function is defined then it resets the iterator to point
-   *! to the first item. Returns zero it there are no items at all in
-   *! the data set, one otherwise.
+   *! to the first item.
+   *!
+   *! @returns
+   *!   Returns zero it there are no items at all in
+   *!   the data set, one otherwise.
    *!
    *! @note
    *!   It's not enough to set the iterator to the earliest accessible
@@ -1689,11 +1716,28 @@ PIKECLASS string_split_iterator
  *!
  *! Creates and returns a canonical iterator for @[data].
  *!
- *! If @[data] is an object with @[lfun::_get_iterator] defined then
- *! it's called in it to create the iterator.
- *!
- *! If @[data] is an iterator object that lacks @[lfun::_get_iterator]
- *! then it's simply returned.
+ *! @returns
+ *!   @mixed data
+ *!     @type object
+ *!       If @[data] is an object with @[lfun::_get_iterator] defined then
+ *!       it's called in it to create the iterator.
+ *!   
+ *!       If @[data] is an object that lacks @[lfun::_get_iterator] then
+ *!       it's assumed to already be an iterator object, and is simply
+ *!       returned.
+ *!     @type array
+ *!       If @[data] is an array, an @[Array.Iterator] object will be
+ *!       returned.
+ *!     @type mapping
+ *!       If @[data] is a mapping, a @[Mapping.Iterator] object will be
+ *!       returned
+ *!     @type multiset
+ *!       If @[data] is a multiset, a @[Multiset.Iterator] object will be
+ *!       returned
+ *!     @type string
+ *!       If @[data] is a string, a @[String.Iterator] object will be
+ *!       returned
+ *!   @endmixed
  *!
  *! @note
  *!   This function is used by @[foreach] to get an iterator for an
