@@ -1,6 +1,6 @@
 #!/usr/local/bin/pike
 
-/* $Id: test_pike.pike,v 1.73 2002/10/09 02:07:42 nilsson Exp $ */
+/* $Id: test_pike.pike,v 1.74 2002/10/09 02:16:19 nilsson Exp $ */
 
 import Stdio;
 
@@ -379,7 +379,6 @@ int main(int argc, array(string) argv)
   while(loop--)
   {
     successes=errors=0;
-    mapping diffmem = _memory_usage();
   testloop:
     foreach(testsuites, string testsuite)
     {
