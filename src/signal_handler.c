@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: signal_handler.c,v 1.307 2004/09/30 14:01:00 mast Exp $
+|| $Id: signal_handler.c,v 1.308 2004/09/30 14:05:35 mast Exp $
 */
 
 #include "global.h"
@@ -4547,7 +4547,8 @@ static void do_signal_exit(INT32 sig)
 /*! @decl void atexit(function callback)
  *!
  *! This function puts the @[callback] in a queue of callbacks to
- *! call when pike exits.
+ *! call when pike exits. The call order is reversed, i.e. callbacks
+ *! that have been added earlier are called after @[callback].
  *!
  *! @note
  *!   Please note that @[atexit] callbacks are not called if Pike
