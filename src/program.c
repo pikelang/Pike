@@ -5,7 +5,7 @@
 \*/
 /**/
 #include "global.h"
-RCSID("$Id: program.c,v 1.252 2000/07/28 17:16:55 hubbe Exp $");
+RCSID("$Id: program.c,v 1.253 2000/07/30 05:34:54 hubbe Exp $");
 #include "program.h"
 #include "object.h"
 #include "dynamic_buffer.h"
@@ -2525,8 +2525,10 @@ INT32 define_function(struct pike_string *name,
     {
       if(func)
 	funp->func = *func;
+#if 0 /* prototypes does not override non-prototypes, ok? */
       else
 	funp->func.offset = -1;
+#endif
 
       funp->identifier_flags=function_flags;
 
