@@ -1,5 +1,5 @@
 #
-# $Id: Makefile,v 1.34 2001/01/24 18:35:39 mast Exp $
+# $Id: Makefile,v 1.35 2001/01/25 19:12:20 mast Exp $
 #
 # Meta Makefile
 #
@@ -7,7 +7,7 @@
 VPATH=.
 MAKE=make
 MAKEFLAGS=
-OS=`uname -s -r -m|sed -e s/\ /-/g|tr [A-Z] [a-z]|tr / _`
+OS=`uname -s -r -m|tr \" \" \"-\"|tr \"[A-Z]\" \"[a-z]\"|tr \"/\" \"_\"`
 BUILDDIR=build/$(OS)
 METATARGET=
 
