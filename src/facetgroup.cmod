@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: facetgroup.cmod,v 1.4 2004/11/05 20:02:26 nilsson Exp $
+|| $Id: facetgroup.cmod,v 1.5 2004/11/06 07:06:14 nilsson Exp $
 */
 
 #include "global.h"
@@ -89,7 +89,6 @@ BLOCK_ALLOC_FILL_PAGES(facet_node_struct, 2)
 BLOCK_ALLOC_FILL_PAGES(product_class_struct, 2)
 BLOCK_ALLOC_FILL_PAGES(facet_list_struct, 2)
 
-
 /* The actual facet_group class */
 PIKECLASS facet_group
 {
@@ -111,7 +110,8 @@ PIKECLASS facet_group
     int error = 0;
     for(pc=THIS->pclasses; pc; pc = pc->next) {
       if (pc->num_used_facets < THIS->num_facets) {
-	yyerror("Product class does not inherit from all facets.");
+	my_yyerror("Product class only inherits from %d out of %d facets.",
+		   pc->num_used_facets, THIS->num_facets);
       }
 #ifdef PIKE_DEBUG
       else if (pc->num_used_facets > THIS->num_facets) {
@@ -178,15 +178,14 @@ PIKECLASS facet_group
     struct object *o;
     int facet_index = 0;
 
-    fprintf(stderr, "add_facet-class %s %ld %ld\n", facet->str, class, product_class);
-
     // Check if it is a new facet or not.
     prevf = NULL;
     for(f=THIS->facets; f; f=f->next, facet_index++) {
-      if (f->name == facet)
+      if ( is_same_string(f->name,facet) )
 	break;
       prevf=f;
     }
+
     if (product_class) {
       // This occurs if the inherit statement comes before the facet
       // statement in the class
