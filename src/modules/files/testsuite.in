@@ -66,7 +66,7 @@ test_any([[object o=clone(Stdio.File),o2=o->pipe();o2->write("1"); return o->rea
 test_any([[object o=clone(Stdio.File); o->open("conftest","r"); o=o->dup(); return o->read(100)]] ,sprintf("%'+-*'100s",""))
 
 // - file->assign
-est_any([[object o=clone(Stdio.File),o2=clone(Stdio.File); o->open("conftest","r"); o2->assign(o); return o2->read(100)]] ,sprintf("%'+-*'100s",""))
+test_any([[object o=clone(Stdio.File),o2=clone(Stdio.File); o->open("conftest","r"); o2->assign(o); return o2->read(100)]] ,sprintf("%'+-*'100s",""))
 
 // - file->dup2
 test_any([[object o=clone(Stdio.File),o2=clone(Stdio.File); o2->pipe(); o->open("conftest","r"); o->dup2(o2); return o2->read(100)]] ,sprintf("%'+-*'100s",""))
