@@ -1,4 +1,4 @@
-/* $Id: mirardoc.pike,v 1.9 2002/03/16 13:17:06 nilsson Exp $ */
+/* $Id: mirardoc.pike,v 1.10 2002/05/21 22:05:57 nilsson Exp $ */
 
 string IMAGE_DIR = "../src_images/";
 string makepic1;
@@ -250,7 +250,7 @@ string fixdesc(string s,string prefix,void|string where)
    return s;
 }
 
-multiset(string) get_method_names(string *decls)
+multiset(string) get_method_names(array(string) decls)
 {
    string decl,name;
    multiset(string) names=(<>);
@@ -262,7 +262,7 @@ multiset(string) get_method_names(string *decls)
    return names;
 }
 
-array(string) nice_order(string *arr)
+array(string) nice_order(array(string) arr)
 {
    sort(map(arr,replace,({"_","`"}),({"ÿ","þ"})),
 	arr);
@@ -708,7 +708,8 @@ void document(string enttype,
       // postprocess methods to get names
 
       multiset(string) method_names=(<>);
-      string *method_names_arr,method_name;
+      array(string) method_names_arr;
+      string method_name;
       mapping method;
 
       if (huh->methods) 
