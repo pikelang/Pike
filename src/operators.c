@@ -6,7 +6,7 @@
 /**/
 #include "global.h"
 #include <math.h>
-RCSID("$Id: operators.c,v 1.157 2002/08/02 03:07:18 jhs Exp $");
+RCSID("$Id: operators.c,v 1.158 2002/08/02 03:10:17 jhs Exp $");
 #include "interpret.h"
 #include "svalue.h"
 #include "multiset.h"
@@ -2034,7 +2034,7 @@ PMOD_EXPORT void o_rsh(void)
  *!   If @[arg2] is an object that implements @[lfun::``>>()], that
  *!   function will be called with @[arg1] as the single argument.
  *!
- *!   Otherwise @[arg1] will be shifted @[arg2] bits left.
+ *!   Otherwise @[arg1] will be shifted @[arg2] bits right.
  *!
  *! @seealso
  *!   @[`<<()]
