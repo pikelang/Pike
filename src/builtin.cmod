@@ -1,5 +1,5 @@
 /* -*- c -*-
- * $Id: builtin.cmod,v 1.36 2001/06/19 14:45:52 grubba Exp $
+ * $Id: builtin.cmod,v 1.37 2001/06/19 17:41:35 grubba Exp $
  */
 
 #include "global.h"
@@ -878,7 +878,7 @@ PIKEFUN array(mixed) backtrace()
   struct pike_frame *f;
   int size = 0;
 
-  for (f = (Pike_fp?Pike_fp->next:NULL); f; f = f->next) {
+  for (f = Pike_fp; f; f = f->next) {
     struct object *o = low_clone(backtrace_frame_program);
     struct backtrace_frame_struct *bf;
 
