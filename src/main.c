@@ -2,11 +2,11 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: main.c,v 1.195 2004/03/16 18:33:45 mast Exp $
+|| $Id: main.c,v 1.196 2004/03/17 19:29:56 mast Exp $
 */
 
 #include "global.h"
-RCSID("$Id: main.c,v 1.195 2004/03/16 18:33:45 mast Exp $");
+RCSID("$Id: main.c,v 1.196 2004/03/17 19:29:56 mast Exp $");
 #include "fdlib.h"
 #include "backend.h"
 #include "module.h"
@@ -526,10 +526,23 @@ int dbm_main(int argc, char **argv)
 	  break;
 
 	case 't':
-	  if(p[1]>='0' && p[1]<='9')
-	    Pike_interpreter.trace_level+=STRTOL(p+1,&p,10);
-	  else
-	    Pike_interpreter.trace_level++,p++;
+	  more_t_flags:
+	  switch (p[1]) {
+	    case '0': case '1': case '2': case '3': case '4':
+	    case '5': case '6': case '7': case '8': case '9':
+	      Pike_interpreter.trace_level+=STRTOL(p+1,&p,10);
+	      break;
+
+	    case 'g':
+	      gc_trace++;
+	      p++;
+	      goto more_t_flags;
+
+	    default:
+	      if (p[0] == 't')
+		Pike_interpreter.trace_level++;
+	      p++;
+	  }
 	  default_t_flag = Pike_interpreter.trace_level;
 	  break;
 
