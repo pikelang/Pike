@@ -46,7 +46,7 @@ class NSNode {
   mapping(string:string)|mapping(string:mapping(string:string))
     get_ns_attributes(void|string namespace) {
     if(namespace)
-      return ns_attrs[namespace];
+      return ns_attrs[namespace] || ([]);
     return ns_attrs;
   }
 
