@@ -1,5 +1,5 @@
 #include "global.h"
-RCSID("$Id: threads.c,v 1.94 1999/05/08 00:41:01 hubbe Exp $");
+RCSID("$Id: threads.c,v 1.95 1999/05/08 16:49:24 grubba Exp $");
 
 int num_threads = 1;
 int threads_disabled = 0;
@@ -503,12 +503,16 @@ TH_RETURN_TYPE new_thread_func(void * data)
 #if defined(PIKE_DEBUG)
   if(d_flag)
     {
-      if( thread_id && !th_equal( OBJ2THREAD(thread_id)->id, th_self()) )
-	fatal("Current thread is wrong. %x %x\n",OBJ2THREAD(thread_id)->id,th_self());
+      THREAD_T self = th_self();
+
+      if( thread_id && !th_equal( OBJ2THREAD(thread_id)->id, self) )
+	fatal("Current thread is wrong. %x %x\n",
+	      OBJ2THREAD(thread_id)->id, self);
 	
       if(thread_for_id(th_self()) != thread_id)
-	fatal("thread_for_id() (or thread_id) failed in new_thread_func! %p != %p\n",thread_for_id(th_self()),thread_id);
-      }
+	fatal("thread_for_id() (or thread_id) failed in new_thread_func! "
+	      "%p != %p\n", thread_for_id(self), thread_id);
+    }
 #endif
 
 #ifdef THREAD_TRACE
