@@ -2,11 +2,11 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: program.c,v 1.462 2002/11/24 22:47:06 mast Exp $
+|| $Id: program.c,v 1.463 2002/11/25 03:16:08 mast Exp $
 */
 
 #include "global.h"
-RCSID("$Id: program.c,v 1.462 2002/11/24 22:47:06 mast Exp $");
+RCSID("$Id: program.c,v 1.463 2002/11/25 03:16:08 mast Exp $");
 #include "program.h"
 #include "object.h"
 #include "dynamic_buffer.h"
@@ -22,6 +22,7 @@ RCSID("$Id: program.c,v 1.462 2002/11/24 22:47:06 mast Exp $");
 #include "interpret.h"
 #include "hashtable.h"
 #include "main.h"
+#include "pike_memory.h"
 #include "gc.h"
 #include "threads.h"
 #include "constants.h"
@@ -1888,8 +1889,15 @@ static void exit_program_struct(struct program *p)
 
   if(p->flags & PROGRAM_OPTIMIZED)
   {
-    if(p->program)
+    if(p->program) {
+#ifdef PIKE_USE_MACHINE_CODE
+#ifdef VALGRIND_DISCARD_TRANSLATIONS
+      VALGRIND_DISCARD_TRANSLATIONS(p->program,
+				    p->num_program*sizeof(p->program[0]));
+#endif /* VALGRIND_DISCARD_TRANSLATIONS */
+#endif /* PIKE_USE_MACHINE_CODE */
       dmfree(p->program);
+    }
 #define FOO(NUMTYPE,TYPE,NAME) p->NAME=0;
 #include "program_areas.h"
   }else{
