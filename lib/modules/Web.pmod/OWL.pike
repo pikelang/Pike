@@ -1,6 +1,7 @@
-// $Id: OWL.pike,v 1.5 2004/03/09 13:46:23 grubba Exp $
+// $Id: OWL.pike,v 1.6 2004/03/09 14:12:30 nilsson Exp $
 
 #pike __REAL_VERSION__
+#define Node Parser.XML.NSTree.NSNode
 
 //! Represents an RDF tuple set from an OWL perspective.
 
@@ -37,7 +38,9 @@ OWLResource owl_equivalentClass = OWLResource("equivalentClass");
 OWLResource owl_disjointWith    = OWLResource("disjointWith");
 OWLResource owl_Restriction     = OWLResource("Restriction");
 
-function parse_owl = parse_xml;
+this_program parse_owl(string|Node in, void|string base) {
+  return parse_xml(in, base);
+}
 
 void add_Class(Resource c)
 {
