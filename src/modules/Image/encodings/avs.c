@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: avs.c,v 1.16 2003/12/17 21:08:56 marcus Exp $
+|| $Id: avs.c,v 1.17 2004/03/06 00:06:59 nilsson Exp $
 */
 
 #include "global.h"
@@ -18,14 +18,9 @@
 #endif
 
 #include "stralloc.h"
-RCSID("$Id: avs.c,v 1.16 2003/12/17 21:08:56 marcus Exp $");
-#include "pike_macros.h"
+RCSID("$Id: avs.c,v 1.17 2004/03/06 00:06:59 nilsson Exp $");
 #include "object.h"
-#include "constants.h"
 #include "interpret.h"
-#include "svalue.h"
-#include "threads.h"
-#include "array.h"
 #include "pike_error.h"
 #include "mapping.h"
 #include "operators.h"

@@ -2,23 +2,20 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: pcx.c,v 1.20 2002/10/21 17:06:15 marcus Exp $
+|| $Id: pcx.c,v 1.21 2004/03/06 00:06:59 nilsson Exp $
 */
 
 #include "global.h"
-RCSID("$Id: pcx.c,v 1.20 2002/10/21 17:06:15 marcus Exp $");
+RCSID("$Id: pcx.c,v 1.21 2004/03/06 00:06:59 nilsson Exp $");
 
 #include "image_machine.h"
 
-#include "pike_macros.h"
 #include "object.h"
-#include "constants.h"
 #include "module_support.h"
 #include "interpret.h"
 #include "object.h"
 #include "svalue.h"
 #include "threads.h"
-#include "array.h"
 #include "interpret.h"
 #include "svalue.h"
 #include "mapping.h"
@@ -26,7 +23,6 @@ RCSID("$Id: pcx.c,v 1.20 2002/10/21 17:06:15 marcus Exp $");
 #include "stralloc.h"
 #include "builtin_functions.h"
 #include "operators.h"
-#include "dynamic_buffer.h"
 #include "bignum.h"
 
 #include "image.h"

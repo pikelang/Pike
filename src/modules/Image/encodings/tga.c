@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: tga.c,v 1.34 2003/11/14 10:26:43 mast Exp $
+|| $Id: tga.c,v 1.35 2004/03/06 00:07:00 nilsson Exp $
 */
 
 /*
@@ -48,27 +48,13 @@
 #include "pike_macros.h"
 #include "object.h"
 #include "program.h"
-#include "array.h"
 #include "pike_error.h"
-#include "constants.h"
 #include "mapping.h"
 #include "stralloc.h"
-#include "multiset.h"
-#include "pike_types.h"
 #include "operators.h"
-#include "fsort.h"
-#include "callback.h"
-#include "backend.h"
-#include "main.h"
 #include "pike_memory.h"
 #include "threads.h"
-#include "time_stuff.h"
-#include "version.h"
-#include "encode.h"
 #include "module_support.h"
-#include "module.h"
-#include "cyclic.h"
-#include "signal_handler.h"
 #include "builtin_functions.h"
 
 
@@ -77,7 +63,7 @@
 
 
 
-RCSID("$Id: tga.c,v 1.34 2003/11/14 10:26:43 mast Exp $");
+RCSID("$Id: tga.c,v 1.35 2004/03/06 00:07:00 nilsson Exp $");
 
 #define ROUNDUP_DIVIDE(n,d) (((n) + (d - 1)) / (d))
 

@@ -2,25 +2,21 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: png.c,v 1.58 2004/02/06 02:34:17 jhs Exp $
+|| $Id: png.c,v 1.59 2004/03/06 00:06:59 nilsson Exp $
 */
 
 #include "global.h"
-RCSID("$Id: png.c,v 1.58 2004/02/06 02:34:17 jhs Exp $");
+RCSID("$Id: png.c,v 1.59 2004/03/06 00:06:59 nilsson Exp $");
 
 #include "image_machine.h"
 
-#include "pike_macros.h"
 #include "object.h"
-#include "constants.h"
 #include "interpret.h"
 #include "svalue.h"
 #include "threads.h"
-#include "array.h"
 #include "mapping.h"
 #include "pike_error.h"
 #include "stralloc.h"
-#include "dynamic_buffer.h"
 #include "builtin_functions.h"
 #include "operators.h"
 

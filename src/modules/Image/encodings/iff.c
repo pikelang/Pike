@@ -2,16 +2,13 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: iff.c,v 1.13 2002/10/21 17:06:14 marcus Exp $
+|| $Id: iff.c,v 1.14 2004/03/06 00:06:59 nilsson Exp $
 */
 
 #include "global.h"
 
 #include "stralloc.h"
-RCSID("$Id: iff.c,v 1.13 2002/10/21 17:06:14 marcus Exp $");
-#include "pike_macros.h"
-#include "object.h"
-#include "constants.h"
+RCSID("$Id: iff.c,v 1.14 2004/03/06 00:06:59 nilsson Exp $");
 #include "interpret.h"
 #include "svalue.h"
 #include "mapping.h"

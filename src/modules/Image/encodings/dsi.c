@@ -2,35 +2,26 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: dsi.c,v 1.7 2002/10/21 17:06:14 marcus Exp $
+|| $Id: dsi.c,v 1.8 2004/03/06 00:06:59 nilsson Exp $
 */
 
 /* Dream SNES Image file */
 
 #include "global.h"
-RCSID("$Id: dsi.c,v 1.7 2002/10/21 17:06:14 marcus Exp $");
+RCSID("$Id: dsi.c,v 1.8 2004/03/06 00:06:59 nilsson Exp $");
 
 #include "image_machine.h"
 
-#include "pike_macros.h"
 #include "object.h"
-#include "constants.h"
-#include "module_support.h"
 #include "interpret.h"
 #include "object.h"
 #include "svalue.h"
-#include "threads.h"
-#include "array.h"
 #include "interpret.h"
 #include "svalue.h"
 #include "mapping.h"
 #include "pike_error.h"
-#include "stralloc.h"
 #include "builtin_functions.h"
 #include "operators.h"
-#include "dynamic_buffer.h"
-#include "signal_handler.h"
-#include "bignum.h"
 
 #include "image.h"
 #include "colortable.h"

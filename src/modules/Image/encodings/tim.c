@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: tim.c,v 1.16 2003/12/12 17:45:16 nilsson Exp $
+|| $Id: tim.c,v 1.17 2004/03/06 00:07:00 nilsson Exp $
 */
 
 #include "global.h"
@@ -10,19 +10,13 @@
 #include <math.h>
 #include <ctype.h>
 
-#include "stralloc.h"
-RCSID("$Id: tim.c,v 1.16 2003/12/12 17:45:16 nilsson Exp $");
-#include "pike_macros.h"
+RCSID("$Id: tim.c,v 1.17 2004/03/06 00:07:00 nilsson Exp $");
 #include "object.h"
-#include "constants.h"
 #include "interpret.h"
 #include "svalue.h"
-#include "threads.h"
-#include "array.h"
 #include "mapping.h"
 #include "pike_error.h"
 #include "operators.h"
-#include "stralloc.h"
 #include "builtin_functions.h"
 #include "module_support.h"
 

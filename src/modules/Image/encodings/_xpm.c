@@ -2,40 +2,22 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: _xpm.c,v 1.32 2003/12/01 18:10:36 nilsson Exp $
+|| $Id: _xpm.c,v 1.33 2004/03/06 00:06:58 nilsson Exp $
 */
 
 #include "global.h"
-RCSID("$Id: _xpm.c,v 1.32 2003/12/01 18:10:36 nilsson Exp $");
+RCSID("$Id: _xpm.c,v 1.33 2004/03/06 00:06:58 nilsson Exp $");
 
 #include "image_machine.h"
 
 #include "interpret.h"
 #include "svalue.h"
-#include "pike_macros.h"
-#include "object.h"
 #include "program.h"
-#include "array.h"
 #include "pike_error.h"
-#include "constants.h"
-#include "mapping.h"
 #include "stralloc.h"
-#include "multiset.h"
-#include "pike_types.h"
 #include "operators.h"
-#include "fsort.h"
-#include "callback.h"
-#include "backend.h"
-#include "main.h"
-#include "pike_memory.h"
 #include "threads.h"
-#include "time_stuff.h"
-#include "version.h"
-#include "encode.h"
 #include "module_support.h"
-#include "module.h"
-#include "cyclic.h"
-#include "signal_handler.h"
 
 #include "image.h"
 #include "colortable.h"
