@@ -1,5 +1,5 @@
 /*
- * $Id: Tar.pmod,v 1.9 2000/09/28 03:38:39 hubbe Exp $
+ * $Id: Tar.pmod,v 1.10 2001/01/20 14:14:17 jhs Exp $
  */
 
 #pike __REAL_VERSION__
@@ -149,16 +149,17 @@ class _Tar  // filesystem
     filename_to_entry[what] = r;
   }
 
-  void create(Stdio.File _fd, string filename, object parent)
+  void create(Stdio.File fd, string filename, object parent)
   {
+    local::filename = filename;
     // read all entries
 
-    fd = _fd;
+    local::fd = fd;
     int pos = 0; // fd is at position 0 here
     for(;;)
     {
       Record r;
-      string s = fd->read(512);
+      string s = local::fd->read(512);
 
       if(s=="" || strlen(s)<512 || sscanf(s, "%*[\0]%*2s")==1)
 	break;
@@ -172,7 +173,7 @@ class _Tar  // filesystem
       pos += 512 + r->size;
       if(pos%512)
 	pos += 512 - (pos%512);
-      fd->seek(pos);
+      local::fd->seek(pos);
     }
 
     filename_to_entry = mkmapping(entries->fullpath, entries);
@@ -193,6 +194,11 @@ class _Tar  // filesystem
 
     filenames = indices(filename_to_entry);
   }
+
+  string _sprintf()
+  {
+    return sprintf("_Tar(/* filename=%O */)", filename);
+  }
 };
 
 class _TarFS
@@ -202,7 +208,8 @@ class _TarFS
   _Tar tar;
 
   static Stdio.File fd;    // tar file object
-  static string filename;  // tar filename in parent filesystem
+  //not used; it's present in tar->filename, though /jhs 2001-01-20
+  //static string filename;  // tar filename in parent filesystem
 
   void create(_Tar _tar,
 	      string _wd, string _root,
@@ -217,6 +224,11 @@ class _TarFS
 
     sscanf(_root, "%*[/]%s", root);
     parent = _parent;
+  }
+
+  string _sprintf()
+  {
+    return  sprintf("_TarFS(/* root=%O, wd=%O */)", root, wd);
   }
 
   Filesystem.Stat stat(string file, void|int lstat)
@@ -287,5 +299,11 @@ class `()
     _Tar tar = _Tar(fd, filename, this_object());
 
     _TarFS::create(tar, "/", "", parent);
+  }
+
+  string _sprintf()
+  {
+    return sprintf("Filesystem.Tar(/* tar->filename=%O, root=%O, wd=%O */)",
+		   tar && tar->filename, root, wd);
   }
 }
