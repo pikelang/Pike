@@ -1,4 +1,4 @@
-// $Id: module.pmod,v 1.99 2000/12/12 17:06:40 grubba Exp $
+// $Id: module.pmod,v 1.100 2000/12/28 16:24:32 grubba Exp $
 #pike __REAL_VERSION__
 
 
@@ -6,11 +6,26 @@ import String;
 
 inherit files;
 
+//! The Stdio.Stream API.
+//!
+//! This class exists purely for typing reasons.
+//!
+//! Use in types in place of @[Stdio.File] where only blocking stream-oriented
+//! I/O is done with the object.
+//!
+//! @seealso
+//! @[NonblockingStream], @[BlockFile], @[File], @[FILE]
+//!
 class Stream
 {
   string read(int nbytes);
   int write(string data);
   void close();
+
+#if constant(files.__HAVE_OOB__)
+  optional string read_oob(int nbytes);
+  optional int write_oob(string data);
+#endif
 
   static string _sprintf( int type )
   {
@@ -24,6 +39,16 @@ class Stream
   }
 }
 
+//! The Stdio.NonblockingStream API.
+//!
+//! This class exists purely for typing reasons.
+//!
+//! Use in types in place of @[Stdio.File] where nonblocking and/or blocking
+//! stream-oriented I/O is done with the object.
+//! 
+//! @seealso
+//! @[Stream], @[BlockFile], @[File], @[FILE]
+//!
 class NonblockingStream
 {
   inherit Stream;
@@ -57,6 +82,16 @@ class NonblockingStream
   }
 }
 
+//! The Stdio.BlockFile API.
+//!
+//! This class exists purely for typing reasons.
+//!
+//! Use in types in place of @[Stdio.File] where only blocking
+//! I/O is done with the object.
+//! 
+//! @seealso
+//! @[Stream], @[NonblockingStream], @[File], @[FILE]
+//!
 class BlockFile
 {
   inherit Stream;
