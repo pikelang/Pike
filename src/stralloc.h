@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: stralloc.h,v 1.70 2002/10/11 01:39:38 nilsson Exp $
+|| $Id: stralloc.h,v 1.71 2003/01/08 13:48:51 grubba Exp $
 */
 
 #ifndef STRALLOC_H
@@ -41,9 +41,14 @@ struct string_builder
 PMOD_EXPORT struct pike_string *debug_findstring(const struct pike_string *foo);
 #endif
 
-#define free_string(s) do{ struct pike_string *_=(s); debug_malloc_touch(_); if(sub_ref(_)<=0) really_free_string(_); }while(0)
+#define free_string(s) do{ \
+    struct pike_string *_=(s); \
+    debug_malloc_touch(_); \
+    if(sub_ref(_)<=0) \
+      really_free_string(_); \
+  } while(0)
 
-#define my_hash_string(X) ((size_t)(X))
+#define my_hash_string(X) ((size_t)(((char *)(X))-(char *)0))
 #define my_order_strcmp(X,Y) ((char *)(X)-(char *)(Y))
 #define is_same_string(X,Y) ((X)==(Y))
 
