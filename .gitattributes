@@ -21,6 +21,7 @@ testfont binary
 # changes to these files.
 /Makefile foreign_ident
 /NT/tools/install-sh foreign_ident
+/NT/tools/rntecl foreign_ident
 /bin/export.pike foreign_ident
 /bin/extract.pike foreign_ident
 /bin/feature_list foreign_ident

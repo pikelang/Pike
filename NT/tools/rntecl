@@ -1,6 +1,8 @@
 #!/usr/local/bin/pike
 // -*- Pike -*-
 
+// $Id: rntecl,v 1.2 2000/08/01 13:40:06 grubba Exp $
+
 // RNTECL, a front-end to Intel ECL with options similar to GCC
 // Written by Fredrik Hubinette & Henrik Grubbström.
 
@@ -43,7 +45,9 @@ int main(int argc, string *argv)
 {
   string *ldopts=({"-INCREMENTAL:no"});
   string *cflags=({
-    "-Wp64",
+    "-Wp64",	// Generate warnings for loss of precision.
+    //"-W4",	// Maximum verbosity.
+    "-W3",	// More warnings.
     "-D__WIN32__",
     "-D_WIN32",
     "-D__NT__",
@@ -307,8 +311,10 @@ int main(int argc, string *argv)
 		     "#!/usr/local/bin/pike\n"
 		     "inherit \""+find_lib_location()+"\";\n"
 		     "int main(int argc, string *argv) {\n"
-		     "argv[0]+=\".exe\";\n"
-		     "argv[0]=getenv(\"NTDRIVE\")+fixpath(combine_path(getcwd(),argv[0]));\n"
+		     "  if (lower_case(getenv(\"CROSSCOMPILING\")||\"no\") != \"no\")\n"
+		     "    exit(1);\n"
+		     "  argv[0]+=\".exe\";\n"
+		     "  argv[0]=getenv(\"NTDRIVE\")+fixpath(combine_path(getcwd(),argv[0]));\n"
 		     "  int ret=silent_do_cmd(argv);\n"
 		     "  exit(ret);\n"
 		     "}\n");
