@@ -1,5 +1,5 @@
 #include "global.h"
-RCSID("$Id: threads.c,v 1.57 1998/02/27 20:09:04 marcus Exp $");
+RCSID("$Id: threads.c,v 1.58 1998/03/01 03:33:50 hubbe Exp $");
 
 int num_threads = 1;
 int threads_disabled = 0;
@@ -168,7 +168,7 @@ void thread_table_init()
 
 unsigned INT32 thread_table_hash(THREAD_T *tid)
 {
-  return hashmem((unsigned char *)tid, sizeof(*tid), 16) % THREAD_TABLE_SIZE;
+  return th_hash(*tid) % THREAD_TABLE_SIZE;
 }
 
 void thread_table_insert(struct object *o)
@@ -198,13 +198,18 @@ struct thread_state *thread_state_for_id(THREAD_T tid)
   unsigned INT32 h = thread_table_hash(&tid);
   struct thread_state *s = NULL;
   mt_lock( & thread_table_lock );
-  if(thread_table_chains[h] == NULL) {
+  if(thread_table_chains[h] == NULL)
+  {
     /* NULL result */
-  } else if((s=thread_table_chains[h])->id == tid) {
+  }
+  else if(th_equal((s=thread_table_chains[h])->id, tid))
+  {
     /* Quick return */
-  } else {
+  }
+  else
+  {
     while((s = s->hashlink) != NULL)
-      if(s->id == tid)
+      if(th_equal(s->id, tid))
 	break;
     if(s != NULL) {
       /* Move the thread_state to the head of the chain, in case

@@ -150,6 +150,8 @@ extern pthread_attr_t small_pattr;
 #define th_exit(X)	exit(X)
 #define th_self()	getpid()
 #define th_yield()	sginap(0)
+#define th_equal(X,Y) ((X)==(Y))
+#define th_hash(X) ((unsigned INT32)(X))
 
 /*
  * No cond_vars yet
@@ -170,6 +172,8 @@ extern pthread_attr_t small_pattr;
 #define th_self() GetCurrentThread()
 #define th_destroy(X)
 #define th_yield() Sleep(0)
+#define th_equal(X,Y) ((X)==(Y))
+#define th_hash(X) ((unsigned INT32)(X))
 
 #define MUTEX_T HANDLE
 #define mt_init(X) CheckValidHandle((*(X)=CreateMutex(NULL, 0, NULL)))
@@ -248,6 +252,14 @@ struct thread_state {
 
 #ifndef th_yield
 #define th_yield()
+#endif
+
+#ifndef th_equal
+#define th_equal(X,Y) (!MEMCPY(&(X),&(Y),sizeof(THREAD_T)))
+#endif
+
+#ifndef th_hash
+#define th_hash(X) hashmem(&(X),sizeof(THREAD_T), 16)
 #endif
 
 /* Define to get a debug-trace of some of the threads operations. */
