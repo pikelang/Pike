@@ -1,5 +1,5 @@
 #include "global.h"
-RCSID("$Id: threads.c,v 1.66 1998/04/06 04:12:05 hubbe Exp $");
+RCSID("$Id: threads.c,v 1.67 1998/04/09 02:48:40 hubbe Exp $");
 
 int num_threads = 1;
 int threads_disabled = 0;
@@ -179,7 +179,7 @@ void init_threads_disable(struct object *o)
 
 static struct thread_state *thread_table_chains[THREAD_TABLE_SIZE];
 
-void thread_table_init()
+void thread_table_init(void)
 {
   INT32 x;
   for(x=0; x<THREAD_TABLE_SIZE; x++)
@@ -885,7 +885,7 @@ static void *farm(void *_a)
   } while(1);
 }
 
-int th_num_idle_farmers()
+int th_num_idle_farmers(void)
 {
   int q = 0;
   struct farmer *f = farmers;

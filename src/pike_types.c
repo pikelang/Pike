@@ -4,7 +4,7 @@
 ||| See the files COPYING and DISCLAIMER for more information.
 \*/
 #include "global.h"
-RCSID("$Id: pike_types.c,v 1.36 1998/03/26 00:51:37 hubbe Exp $");
+RCSID("$Id: pike_types.c,v 1.37 1998/04/09 02:47:47 hubbe Exp $");
 #include <ctype.h>
 #include "svalue.h"
 #include "pike_types.h"
@@ -63,7 +63,7 @@ struct pike_string *any_type_string;
 
 static struct pike_string *a_markers[10],*b_markers[10];
 
-static void clear_markers()
+static void clear_markers(void)
 {
   unsigned int e;
   for(e=0;e<NELEM(a_markers);e++)
