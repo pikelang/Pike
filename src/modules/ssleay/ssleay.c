@@ -5,7 +5,7 @@
 \*/
 
 #include "global.h"
-RCSID("$Id: ssleay.c,v 1.2 1996/12/01 19:51:12 grubba Exp $");
+RCSID("$Id: ssleay.c,v 1.3 1996/12/02 07:04:34 hubbe Exp $");
 #include "types.h"
 #include "interpret.h"
 #include "svalue.h"
@@ -192,23 +192,31 @@ void init_connection(struct object *o)
 
 void exit_connection(struct object *o) {}
 
+#endif
+
 void init_ssleay_efuns(void)
 {
+#if 0
+  /* This is not only not needed, it will never work since
+   * ssleay_create is a method which tries to access fp->current_storage.
+   * /Fredrik Hubinette
+   */
   add_efun("ssleay", ssleay_create, "function(void:object)", 0);
+#endif
 }
 
 void exit_ssleay()
 {
+#ifdef HAVE_SSLEAY
   free_program(ssleay_connection_program);
   free_program(ssleay_program);
+#endif
 }
-
-#endif /* HAVE_SSLEAY */
 
 void init_ssleay_programs(void)
 {
-  start_new_program();
 #ifdef HAVE_SSLEAY
+  start_new_program();
   add_storage(sizeof(struct ssleay_context));
 
   add_function("use_certificate_file", ssleay_use_certificate_file, "function(string:void)", 0);
@@ -217,13 +225,11 @@ void init_ssleay_programs(void)
 
   set_init_callback(init_context);
   set_exit_callback(exit_context);
-#endif /* HAVE_SSLEAY */
 
   ssleay_program=end_c_program("/precompiled/ssleay");
   ssleay_program->refs++;
   
   start_new_program();
-#ifdef HAVE_SSLEAY
   add_storage(sizeof(struct ssleay_connection));
 
   add_function("create", ssleay_connection_create, "function(int:void)",0);
@@ -233,9 +239,10 @@ void init_ssleay_programs(void)
   add_function("set_fd",ssleay_connection_set_fd,"function(int:void)",0);
   set_init_callback(init_connection);
   set_exit_callback(exit_connection);
-#endif /* HAVE_SSLEAY */
+
   ssleay_connection_program=end_c_program("/precompiled/ssleay_connection");
   ssleay_connection_program->refs++;
+#endif /* HAVE_SSLEAY */
 }
 
 

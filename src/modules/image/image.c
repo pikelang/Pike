@@ -1,4 +1,4 @@
-/* $Id: image.c,v 1.29 1996/12/01 00:01:13 law Exp $ */
+/* $Id: image.c,v 1.30 1996/12/02 07:04:15 hubbe Exp $ */
 
 #include "global.h"
 
@@ -7,7 +7,7 @@
 
 #include "stralloc.h"
 #include "global.h"
-RCSID("$Id: image.c,v 1.29 1996/12/01 00:01:13 law Exp $");
+RCSID("$Id: image.c,v 1.30 1996/12/02 07:04:15 hubbe Exp $");
 #include "types.h"
 #include "macros.h"
 #include "object.h"
@@ -1630,8 +1630,13 @@ void init_image_programs()
    add_function("turbulence",image_turbulence,
                 "function(array(float|int|array(int)),int|void,float|void,float|void,float|void,float|void:object)",0);
 
+#if 0
+   /* If you check this in, maybe you should chekin dct.c too? 
+    * /Hubbe
+    */
    add_function("dct",image_dct,
 		"function(:object)",0);
+#endif
 		
    set_init_callback(init_image_struct);
    set_exit_callback(exit_image_struct);
