@@ -43,7 +43,7 @@
 #include "threads.h"
 #include "operators.h"
 
-RCSID("$Id: spider.c,v 1.60 1998/02/20 11:23:43 per Exp $");
+RCSID("$Id: spider.c,v 1.61 1998/02/24 20:36:05 per Exp $");
 
 #ifdef HAVE_PWD_H
 #include <pwd.h>
@@ -1259,8 +1259,6 @@ struct thread_args *done;
 void *do_shuffle(void *_a)
 {
   struct thread_args *a = (struct thread_args *)_a;
-  int sent = 0;
-  int fail=0;
   char buffer[8192];
 
 #ifdef DIRECTIO_ON
@@ -1268,9 +1266,9 @@ void *do_shuffle(void *_a)
     directio(a->from_fd, DIRECTIO_ON);
 #endif
 
-  while(!fail && a->len)
+  while(a->len)
   {
-    int nread, ts=0;
+    int nread;
     nread = fd_read(a->from_fd, buffer, 8192);
     if(nread <= 0)
       break;
@@ -1278,22 +1276,18 @@ void *do_shuffle(void *_a)
     while(nread)
     {
       int nsent = fd_write(a->to_fd, buffer, nread);
-      if(nsent < 0) 
-      {
-	fail=1;
-	break;
-      }
-      ts+=nsent;
+      if(nsent < 0)
+	goto end;
+      a->sent += nsent;
       nread -= nsent;
+      a->len -= nsent;
     }
-    a->len -= ts;
-    sent += ts;
   }
-  a->sent = sent;
 
   /* We are done. It is up to the backend callback to call the 
    * finish function
    */
+ end:
   mt_lock(&done_lock);
   a->next = done;
   done = a;
@@ -1302,8 +1296,8 @@ void *do_shuffle(void *_a)
   return 0;
 }
 
-int num_shuffles = 0;
-struct callback *my_callback;
+static int num_shuffles = 0;
+static struct callback *my_callback;
 
 void finished_p(struct callback *foo, void *b, void *c)
 {
@@ -1318,7 +1312,7 @@ void finished_p(struct callback *foo, void *b, void *c)
 
     num_shuffles--;
 
-    push_int( d->len );
+    push_int( d->sent );
     *(sp++) = d->args;
     push_object( d->from );
     push_object( d->to );
@@ -1345,7 +1339,7 @@ void f_shuffle(INT32 args)
   num_shuffles++;
   apply(a->to, "query_fd", 0); 
   apply(a->from, "query_fd", 0);
-  get_all_args("shuffle2", 2, "%d%d", &a->to_fd, &a->from_fd);
+  get_all_args("shuffle", 2, "%d%d", &a->to_fd, &a->from_fd);
 
   a->from->refs++; 
   a->to->refs++; 
