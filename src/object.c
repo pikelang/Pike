@@ -4,7 +4,7 @@
 ||| See the files COPYING and DISCLAIMER for more information.
 \*/
 #include "global.h"
-RCSID("$Id: object.c,v 1.42 1998/03/22 06:21:25 hubbe Exp $");
+RCSID("$Id: object.c,v 1.43 1998/04/06 04:28:31 hubbe Exp $");
 #include "object.h"
 #include "dynamic_buffer.h"
 #include "interpret.h"
@@ -21,6 +21,8 @@ RCSID("$Id: object.c,v 1.42 1998/03/22 06:21:25 hubbe Exp $");
 #include "callback.h"
 #include "cpp.h"
 #include "builtin_functions.h"
+
+#include "dmalloc.h"
 
 struct object *master_object = 0;
 struct program *master_program =0;
@@ -41,7 +43,7 @@ struct object *low_clone(struct program *p)
 
   GC_ALLOC();
 
-  o=(struct object *)xalloc(sizeof(struct object)-1+p->storage_needed);
+  o=(struct object *)xalloc( ((long)(((struct object *)0)->storage))+p->storage_needed);
 
   o->prog=p;
   p->refs++;
@@ -950,10 +952,15 @@ void gc_mark_object_as_referenced(struct object *o)
 
 void gc_check_all_objects(void)
 {
-  struct object *o;
+  struct object *o,*next;
 
-  for(o=first_object;o;o=o->next)
+  for(o=first_object;o;o=next)
   {
+    int e;
+    struct frame frame;
+    struct program *p;
+    o->refs++;
+
 #ifdef DEBUG
     if(o->parent)
       if(debug_gc_check(o->parent,T_OBJECT,o)==-2)
@@ -962,41 +969,68 @@ void gc_check_all_objects(void)
     if(o->parent)
       gc_check(o->parent);
 #endif
-    if(o->prog)
+    if((p=o->prog))
     {
-      INT32 e,d;
+      frame.parent_frame=fp;
+      frame.current_object=o;  /* refs already updated */
+      frame.locals=0;
+      frame.fun=-1;
+      frame.pc=0;
+      fp= & frame;
       
-      for(e=0;e<(int)o->prog->num_inherits;e++)
+      for(e=p->num_inherits-1; e>=0; e--)
       {
-	struct inherit in=o->prog->inherits[e];
-	char *base=o->storage + in.storage_offset;
-
-	for(d=0;d<in.prog->num_identifiers;d++)
+	int d;
+	
+	frame.context=p->inherits[e];
+	frame.context.prog->refs++;
+	frame.current_storage=o->storage+frame.context.storage_offset;
+	
+	if(frame.context.prog->gc_check)
+	  frame.context.prog->gc_check(o);
+	
+	for(d=0;d<(int)frame.context.prog->num_identifiers;d++)
 	{
-	  struct identifier *i=in.prog->identifiers+d;
+	  if(!IDENTIFIER_IS_VARIABLE(frame.context.prog->identifiers[d].identifier_flags)) 
+	    continue;
 	  
-	  if(!IDENTIFIER_IS_VARIABLE(i->identifier_flags)) continue;
-	  
-	  if(i->run_time_type == T_MIXED)
+	  if(frame.context.prog->identifiers[d].run_time_type == T_MIXED)
 	  {
-	    debug_gc_check_svalues((struct svalue *)(base+i->func.offset),1, T_OBJECT, o);
+	    struct svalue *s;
+	    s=(struct svalue *)(frame.current_storage +
+				frame.context.prog->identifiers[d].func.offset);
+	    debug_gc_check_svalues(s,1,T_OBJECT,o);
 	  }else{
-	    debug_gc_check_short_svalue((union anything *)
-					(base+i->func.offset),
-					i->run_time_type, T_OBJECT,o);
+	    union anything *u;
+	    u=(union anything *)(frame.current_storage +
+				 frame.context.prog->identifiers[d].func.offset);
+	    debug_gc_check_short_svalue(u,frame.context.prog->identifiers[d].run_time_type,T_OBJECT,o);
 	  }
 	}
+	free_program(frame.context.prog);
       }
+      fp = frame.parent_frame;
     }
+    next=o->next;
+    free_object(o);
   }
 }
 
 void gc_mark_all_objects(void)
 {
-  struct object *o;
-  for(o=first_object;o;o=o->next)
+  struct object *o,*next;
+  for(o=first_object;o;o=next)
+  {
     if(gc_is_referenced(o))
+    {
+      o->refs++;
       gc_mark_object_as_referenced(o);
+      next=o->next;
+      free_object(o);
+    }else{
+      next=o->next;
+    }
+  }
 }
 
 void gc_free_all_unreferenced_objects(void)
