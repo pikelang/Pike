@@ -1,6 +1,6 @@
 /* IMAP.requests
  *
- * $Id: requests.pmod,v 1.67 1999/03/13 00:01:44 grubba Exp $
+ * $Id: requests.pmod,v 1.68 1999/03/13 00:07:00 grubba Exp $
  */
 
 import .types;
@@ -975,7 +975,7 @@ class find
       
     if (mailboxes) {
       foreach(mailboxes, array a)
-	send("*", "MAILBOX", imap_string(a[-1]));
+	send("*", "MAILBOX", a[-1]);
       
       send(tag, "OK FIND done");
     } else {
