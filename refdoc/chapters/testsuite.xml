@@ -46,7 +46,7 @@
   </dl>
 
   <p>It is possible to alter the flags given to the
-  <tt>test_install</tt> program by using the <tt>TESTARGS</tt> make variable.
+  <tt>test_install</tt> program by using the <tt>TESTARGS</tt> make variable.</p>
 
 <example>
 make verify TESTARGS="-a -v4 -l2 -t1 -c1 -m"
