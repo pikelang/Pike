@@ -1,7 +1,7 @@
 /* cipher.cmod -*- c -*- */
 
 #include "global.h"
-RCSID("$Id: cipher.cmod,v 1.23 2003/11/29 18:31:01 nilsson Exp $");
+RCSID("$Id: cipher.cmod,v 1.24 2003/11/29 18:50:39 nilsson Exp $");
 #include "interpret.h"
 #include "svalue.h"
 #include "array.h"
@@ -59,7 +59,6 @@ struct pike_cipher
   
   unsigned context_size;
 
-  /* Zero for stream ciphers */
   unsigned block_size;
 
   /* Suggested key size; other sizes are sometimes possible. */
@@ -245,8 +244,7 @@ PIKECLASS CipherState
 
       NO_WIDE_STRING(data);
 
-      if (info->meta->block_size
-	  && (data->len % info->meta->block_size))
+      if (data->len % info->meta->block_size)
 	Pike_error("Data must be an integral number of blocks.\n");
 
       s = begin_shared_string(data->len);
@@ -362,7 +360,7 @@ pike_arcfour_set_key(void *ctx,
 #define pike_arcfour_set_decrypt_key pike_arcfour_set_key
 #define arcfour_encrypt arcfour_crypt
 #define arcfour_decrypt arcfour_crypt
-#define ARCFOUR_BLOCK_SIZE 0
+#define ARCFOUR_BLOCK_SIZE 1
 
 /*! @class ARCFOUR_Info
  *!
