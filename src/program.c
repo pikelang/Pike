@@ -5,7 +5,7 @@
 \*/
 /**/
 #include "global.h"
-RCSID("$Id: program.c,v 1.218 2000/03/29 04:56:22 hubbe Exp $");
+RCSID("$Id: program.c,v 1.219 2000/03/30 08:43:07 hubbe Exp $");
 #include "program.h"
 #include "object.h"
 #include "dynamic_buffer.h"
@@ -347,7 +347,8 @@ static struct node_s *index_modules(struct pike_string *ident,
 }
 
 
-struct node_s *find_module_identifier(struct pike_string *ident)
+struct node_s *find_module_identifier(struct pike_string *ident,
+				      int see_inherit)
 {
   struct node_s *ret;
 
@@ -365,14 +366,18 @@ struct node_s *find_module_identifier(struct pike_string *ident)
     int n;
     for(n=0;n<compilation_depth;n++,p=p->previous)
     {
-      int i=really_low_find_shared_string_identifier(ident,
-						     p->new_program,
-						     SEE_STATIC);
-      if(i!=-1)
+      int i;
+      if(see_inherit)
       {
-	struct identifier *id;
-	id=ID_FROM_INT(p->new_program, i);
-	return mkexternalnode(n, i, id);
+	i=really_low_find_shared_string_identifier(ident,
+						   p->new_program,
+						   SEE_STATIC);
+	if(i!=-1)
+	{
+	  struct identifier *id;
+	  id=ID_FROM_INT(p->new_program, i);
+	  return mkexternalnode(n, i, id);
+	}
       }
 
       if((ret=index_modules(ident,

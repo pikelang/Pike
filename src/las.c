@@ -5,7 +5,7 @@
 \*/
 /**/
 #include "global.h"
-RCSID("$Id: las.c,v 1.170 2000/03/17 05:13:17 hubbe Exp $");
+RCSID("$Id: las.c,v 1.171 2000/03/30 08:43:07 hubbe Exp $");
 
 #include "language.h"
 #include "interpret.h"
@@ -774,7 +774,7 @@ node *debug_mkefuncallnode(char *function, node *args)
   struct pike_string *name;
   node *n;
   name = findstring(function);
-  if(!name || !(n=find_module_identifier(name)))
+  if(!name || !(n=find_module_identifier(name,0)))
   {
     my_yyerror("Internally used efun undefined: %s",function);
     return mkintnode(0);

@@ -5,7 +5,7 @@
 \*/
 /**/
 #include "global.h"
-RCSID("$Id: docode.c,v 1.66 2000/03/09 20:37:15 hubbe Exp $");
+RCSID("$Id: docode.c,v 1.67 2000/03/30 08:43:07 hubbe Exp $");
 #include "las.h"
 #include "program.h"
 #include "language.h"
@@ -781,7 +781,7 @@ static int do_docode2(node *n,int flags)
 
       tmp=findstring("call_function");
       if(!tmp) yyerror("No call_function efun.");
-      foo=find_module_identifier(tmp);
+      foo=find_module_identifier(tmp,0);
       if(!foo || !foo->token==F_CONSTANT)
       {
 	yyerror("No call_function efun.");

@@ -1,4 +1,4 @@
-test_true([["$Id: testsuite.in,v 1.288 2000/03/29 04:53:01 hubbe Exp $"]]);
+test_true([["$Id: testsuite.in,v 1.289 2000/03/30 08:43:07 hubbe Exp $"]]);
 
 cond([[all_constants()->_verify_internals]],
 [[
@@ -300,6 +300,22 @@ test_compile_any([[void foo(Stdio.FILE f) {}]])
 test_compile_any([[void foo(array(Stdio.FILE) f) {}]])
 test_compile_any([[void foo(array(Stdio.FILE) f) {}]])
 test_compile_any([[Stdio.File foo(array(Stdio.FILE) f) { return f[0]; }]])
+test_compile_any([[
+class a {
+  int `== (mixed x) {
+    return 0;
+  }
+}
+
+class b {
+  inherit a;
+  class c {
+    int d (string x, string y) {
+      return x==y;
+     }
+  }
+}
+]])
 test_compile([[Stdio.File foo=Stdio.FILE();]])
 
 dnl this should really work...
