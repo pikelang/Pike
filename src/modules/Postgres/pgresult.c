@@ -1,5 +1,5 @@
 /*
- * $Id: pgresult.c,v 1.6 1998/04/20 18:53:48 grubba Exp $
+ * $Id: pgresult.c,v 1.7 1998/07/04 17:01:02 grubba Exp $
  *
  * Postgres95 support for pike/0.5 and up
  *
@@ -33,6 +33,7 @@
  *   moving the check inside the actual sql classes.
  */
 
+#include "global.h"
 #include "pgres_config.h"
 #ifdef HAVE_POSTGRES
 
@@ -54,7 +55,6 @@
 #include <libpq-fe.h>
 
 /* Pike includes */
-#include "global.h"
 #include "stralloc.h"
 #include "object.h"
 #include "threads.h"
@@ -63,7 +63,7 @@
 #include "builtin_functions.h"
 #include "module_support.h"
 
-RCSID("$Id: pgresult.c,v 1.6 1998/04/20 18:53:48 grubba Exp $");
+RCSID("$Id: pgresult.c,v 1.7 1998/07/04 17:01:02 grubba Exp $");
 
 #ifdef _REENTRANT
 MUTEX_T pike_postgres_result_mutex;

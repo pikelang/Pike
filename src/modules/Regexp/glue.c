@@ -4,11 +4,12 @@
 ||| See the files COPYING and DISCLAIMER for more information.
 \*/
 
+#include "global.h"
+
 #ifdef HAVE_CONFIG_H
 #include "config.h"
 #endif /* HAVE_CONFIG_H */
 
-#include "global.h"
 #include "interpret.h"
 #include "svalue.h"
 #include "stralloc.h"
@@ -18,7 +19,7 @@
 #include "threads.h"
 #include "module_support.h"
 
-RCSID("$Id: glue.c,v 1.11 1998/04/20 18:53:50 grubba Exp $");
+RCSID("$Id: glue.c,v 1.12 1998/07/04 17:02:00 grubba Exp $");
 
 #ifdef USE_SYSTEM_REGEXP
 #include <regexp.h>

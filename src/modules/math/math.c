@@ -3,8 +3,8 @@
 ||| Pike is distributed as GPL (General Public License)
 ||| See the files COPYING and DISCLAIMER for more information.
 \*/
-#include <math.h>
 #include "global.h"
+#include <math.h>
 #include "interpret.h"
 #include "constants.h"
 #include "svalue.h"
@@ -12,7 +12,7 @@
 #include "module_support.h"
 #include "operators.h"
 
-RCSID("$Id: math.c,v 1.11 1998/06/07 21:20:15 grubba Exp $");
+RCSID("$Id: math.c,v 1.12 1998/07/04 17:02:55 grubba Exp $");
 
 #ifndef M_PI
 #define M_PI 3.1415926535897932384626433832795080

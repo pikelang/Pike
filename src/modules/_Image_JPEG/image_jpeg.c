@@ -1,6 +1,8 @@
 /*
- * $Id: image_jpeg.c,v 1.18 1998/06/19 12:55:24 mirar Exp $
+ * $Id: image_jpeg.c,v 1.19 1998/07/04 17:06:52 grubba Exp $
  */
+
+#include "global.h"
 
 #include "config.h"
 
@@ -21,8 +23,7 @@
 #ifdef HAVE_STDLIB_H
 #undef HAVE_STDLIB_H
 #endif
-#include "global.h"
-RCSID("$Id: image_jpeg.c,v 1.18 1998/06/19 12:55:24 mirar Exp $");
+RCSID("$Id: image_jpeg.c,v 1.19 1998/07/04 17:06:52 grubba Exp $");
 
 #include "pike_macros.h"
 #include "object.h"

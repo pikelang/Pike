@@ -1,5 +1,5 @@
 /*
- * $Id: odbc.c,v 1.9 1998/05/31 15:40:31 grubba Exp $
+ * $Id: odbc.c,v 1.10 1998/07/04 17:00:01 grubba Exp $
  *
  * Pike interface to ODBC compliant databases.
  *
@@ -10,12 +10,13 @@
  * Includes
  */
 
+#include "global.h"
+
 #ifdef HAVE_CONFIG_H
 #include "config.h"
 #endif /* HAVE_CONFIG_H */
 
-#include "global.h"
-RCSID("$Id: odbc.c,v 1.9 1998/05/31 15:40:31 grubba Exp $");
+RCSID("$Id: odbc.c,v 1.10 1998/07/04 17:00:01 grubba Exp $");
 
 #include "interpret.h"
 #include "object.h"

@@ -1,10 +1,13 @@
 /*
- * $Id: mysql.c,v 1.22 1998/07/02 16:30:03 grubba Exp $
+ * $Id: mysql.c,v 1.23 1998/07/04 16:59:32 grubba Exp $
  *
  * SQL database functionality for Pike
  *
  * Henrik Grubbström 1996-12-21
  */
+
+/* Master Pike headerfile */
+#include "global.h"
 
 #ifdef HAVE_CONFIG_H
 #include "config.h"
@@ -44,7 +47,6 @@ typedef struct dynamic_buffer_s dynamic_buffer;
 #endif /* HAVE_MYSQL */
 
 /* From the Pike-dist */
-#include "global.h"
 #include "svalue.h"
 #include "object.h"
 #include "stralloc.h"
@@ -73,7 +75,7 @@ typedef struct dynamic_buffer_s dynamic_buffer;
  * Globals
  */
 
-RCSID("$Id: mysql.c,v 1.22 1998/07/02 16:30:03 grubba Exp $");
+RCSID("$Id: mysql.c,v 1.23 1998/07/04 16:59:32 grubba Exp $");
 
 /*
 **! module Mysql
@@ -85,7 +87,7 @@ RCSID("$Id: mysql.c,v 1.22 1998/07/02 16:30:03 grubba Exp $");
 **! see also: Mysql.mysql, Mysql.result, Sql.sql
 **!
 **! note
-**!	$Id: mysql.c,v 1.22 1998/07/02 16:30:03 grubba Exp $
+**!	$Id: mysql.c,v 1.23 1998/07/04 16:59:32 grubba Exp $
 **! class mysql
 **!
 **!	Mysql.mysql is a pre-compiled Pike program. It enables

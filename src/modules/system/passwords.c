@@ -1,5 +1,5 @@
 /*
- * $Id: passwords.c,v 1.14 1998/05/22 12:34:28 grubba Exp $
+ * $Id: passwords.c,v 1.15 1998/07/04 17:08:53 grubba Exp $
  *
  * Password handling for Pike.
  *
@@ -17,12 +17,12 @@
 /*
  * Includes
  */
+#include "global.h"
+
 #include "system_machine.h"
 #include "system.h"
 
-#include "global.h"
-
-RCSID("$Id: passwords.c,v 1.14 1998/05/22 12:34:28 grubba Exp $");
+RCSID("$Id: passwords.c,v 1.15 1998/07/04 17:08:53 grubba Exp $");
 
 #include "module_support.h"
 #include "interpret.h"

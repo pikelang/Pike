@@ -3,9 +3,9 @@
 ||| Pike is distributed as GPL (General Public License)
 ||| See the files COPYING and DISCLAIMER for more information.
 \*/
-#include <math.h>
 #include "global.h"
-RCSID("$Id: operators.c,v 1.36 1998/06/06 13:05:03 grubba Exp $");
+#include <math.h>
+RCSID("$Id: operators.c,v 1.37 1998/07/04 16:56:42 grubba Exp $");
 #include "interpret.h"
 #include "svalue.h"
 #include "multiset.h"

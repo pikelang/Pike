@@ -7,6 +7,7 @@
  * of the GNU General Public License, version 2.
  */
 
+#include "global.h"
 #include "pgres_config.h"
 #ifdef HAVE_POSTGRES
 
@@ -20,7 +21,6 @@
 #include <string.h>
 
 /* Pike includes */
-#include "global.h"
 #include "las.h"
 #include "machine.h"
 #include "pike_memory.h"
@@ -62,7 +62,7 @@ static void pgdebug (char * a, ...) {}
 
 struct program * postgres_program;
 
-RCSID("$Id: postgres.c,v 1.6 1998/04/20 18:53:49 grubba Exp $");
+RCSID("$Id: postgres.c,v 1.7 1998/07/04 17:01:31 grubba Exp $");
 
 #define THIS ((struct pgres_object_data *) fp->current_storage)
 

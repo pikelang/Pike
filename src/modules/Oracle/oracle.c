@@ -1,5 +1,5 @@
 /*
- * $Id: oracle.c,v 1.13 1998/05/18 15:15:02 marcus Exp $
+ * $Id: oracle.c,v 1.14 1998/07/04 17:00:25 grubba Exp $
  *
  * Pike interface to Oracle databases.
  *
@@ -10,11 +10,12 @@
  * Includes
  */
 
+#include "global.h"
+
 #ifdef HAVE_CONFIG_H
 #include "config.h"
 #endif /* HAVE_CONFIG_H */
 
-#include "global.h"
 #include "svalue.h"
 #include "object.h"
 #include "array.h"
@@ -35,7 +36,7 @@
 
 #endif
 
-RCSID("$Id: oracle.c,v 1.13 1998/05/18 15:15:02 marcus Exp $");
+RCSID("$Id: oracle.c,v 1.14 1998/07/04 17:00:25 grubba Exp $");
 
 #ifdef HAVE_ORACLE
 

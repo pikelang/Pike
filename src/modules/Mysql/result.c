@@ -1,10 +1,13 @@
 /*
- * $Id: result.c,v 1.11 1998/04/20 18:53:41 grubba Exp $
+ * $Id: result.c,v 1.12 1998/07/04 16:58:51 grubba Exp $
  *
  * mysql query result
  *
  * Henrik Grubbström 1996-12-21
  */
+
+/* Pike master headerfile */
+#include "global.h"
 
 #ifdef HAVE_CONFIG_H
 #include "config.h"
@@ -41,7 +44,6 @@
 typedef struct dynamic_buffer_s dynamic_buffer;
 
 /* From the Pike-dist */
-#include "global.h"
 #include "svalue.h"
 #include "mapping.h"
 #include "object.h"
@@ -78,7 +80,7 @@ typedef struct dynamic_buffer_s dynamic_buffer;
  * Globals
  */
 
-RCSID("$Id: result.c,v 1.11 1998/04/20 18:53:41 grubba Exp $");
+RCSID("$Id: result.c,v 1.12 1998/07/04 16:58:51 grubba Exp $");
 
 struct program *mysql_result_program = NULL;
 

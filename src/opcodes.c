@@ -3,9 +3,9 @@
 ||| Pike is distributed as GPL (General Public License)
 ||| See the files COPYING and DISCLAIMER for more information.
 \*/
+#include "global.h"
 #include <math.h>
 #include <ctype.h>
-#include "global.h"
 #include "interpret.h"
 #include "svalue.h"
 #include "array.h"
@@ -22,7 +22,7 @@
 #include "builtin_functions.h"
 #include "module_support.h"
 
-RCSID("$Id: opcodes.c,v 1.28 1998/06/07 19:47:53 grubba Exp $");
+RCSID("$Id: opcodes.c,v 1.29 1998/07/04 16:56:14 grubba Exp $");
 
 void index_no_free(struct svalue *to,struct svalue *what,struct svalue *ind)
 {
