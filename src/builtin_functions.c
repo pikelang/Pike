@@ -4,7 +4,7 @@
 ||| See the files COPYING and DISCLAIMER for more information.
 \*/
 #include "global.h"
-RCSID("$Id: builtin_functions.c,v 1.18 1996/12/05 04:49:38 hubbe Exp $");
+RCSID("$Id: builtin_functions.c,v 1.19 1997/01/17 19:08:25 hubbe Exp $");
 #include "interpret.h"
 #include "svalue.h"
 #include "macros.h"
@@ -627,9 +627,7 @@ void f_exit(INT32 args)
   free_callback(&exit_callbacks);
 
   i=sp[-args].u.integer;
-#ifdef DEBUG
   exit_modules();
-#endif
 
   UNSET_ONERROR(tmp);
   exit(i);
