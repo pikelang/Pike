@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: builtin_functions.c,v 1.567 2004/09/18 20:50:48 nilsson Exp $
+|| $Id: builtin_functions.c,v 1.568 2004/10/11 16:50:02 mast Exp $
 */
 
 #include "global.h"
@@ -3302,10 +3302,17 @@ node *optimize_replace(node *n)
 	struct svalue *save_sp = Pike_sp;
 	JMP_BUF tmp;
 	if (SETJMP(tmp)) {
-	  yywarning("Optimizer failure in replace().");
-	  pop_n_elems(Pike_sp - save_sp);
-	  free_svalue(&throw_value);
+	  struct svalue thrown = throw_value;
+	  struct pike_string *s;
 	  throw_value.type = T_INT;
+	  pop_n_elems(Pike_sp - save_sp);
+	  yywarning("Optimizer failure in replace().");
+	  s = format_exception_for_error_msg (&thrown);
+	  if (s) {
+	    yywarning ("%S", s);
+	    free_string (s);
+	  }
+	  free_svalue(&thrown);
 	} else {
 	  extern struct program *multi_string_replace_program;
 	  INT16 lfun;
