@@ -1,4 +1,4 @@
-/* $Id: mkwmml.pike,v 1.6 1997/12/06 22:09:33 mirar Exp $ */
+/* $Id: mkwmml.pike,v 1.7 1997/12/13 19:13:07 mirar Exp $ */
 
 import Stdio;
 import Array;
@@ -8,10 +8,8 @@ int illustration_counter;
 
 mapping manpage_suffix=
 ([
-   "Image":"I",
+   "Image":"i",
    "Image.image":"i",
-   "Image.colortable":"c",
-   "Image.font":"f",
 ]);
 
 
