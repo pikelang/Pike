@@ -1,5 +1,5 @@
 /*
- * $Id: acconfig.h,v 1.4 1999/05/27 18:25:04 grubba Exp $
+ * $Id: acconfig.h,v 1.5 2000/09/17 17:06:41 grubba Exp $
  *
  * System dependant definitions for the system module for Pike
  *
@@ -29,5 +29,8 @@
 
 /* Define if <netinet/in.h> defines the in_addr_t type. */
 #undef HAVE_IN_ADDR_T
+
+/* Define if your setpgrp(2) takes two arguments (BSD). */
+#undef HAVE_SETPGRP_BSD
 
 #endif /* SYSTEM_MACHINE_H */
