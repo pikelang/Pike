@@ -326,7 +326,7 @@ class Client(string|Standards.URI url)
 					       ([ "Content-Type":"text/xml"]),
 					       0,
 					       encode_call( call, args ));
-	     return Protocols.XMLRPC.decode_response(c->data());
+	     return decode_response(c->data());
 	   };
   }
 
