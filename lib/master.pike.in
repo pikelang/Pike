@@ -6,7 +6,7 @@
 // Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 // for more information.
 //
-// $Id: master.pike.in,v 1.369 2004/12/26 11:54:03 per Exp $
+// $Id: master.pike.in,v 1.370 2004/12/27 15:49:09 grubba Exp $
 
 #pike __REAL_VERSION__
 //#pragma strict_types
@@ -120,6 +120,7 @@ void resolv_debug (string fmt, mixed... args)
     fmt = pad + replace (fmt[..<1], "\n", "\n" + pad) + "\n";
   else
     fmt = pad + replace (fmt, "\n", "\n" + pad);
+  if (!werror) werror = Files()->_stderr->write;
   werror (fmt);
 }
 
@@ -395,9 +396,9 @@ int invalidate_time;
 mapping(string:multiset(string)) dir_cache = ([]);
 
 
-array(string) master_get_dir( string x )
+array(string) master_get_dir(string|void x)
 {
-    return get_dir( x );
+  return get_dir(x);
 }
 
 Stat master_file_stat(string x)
@@ -2193,6 +2194,9 @@ class CompatResolver
     array(string) tmp=identifier/".";
     mixed ret = resolv_base(tmp[0], current_file, current_handler);
     foreach(tmp[1..],string index) {
+      resolv_debug("indexing %O with %O...\n",
+		   ret, index);
+      resolv_debug("indices(Gmp): %O\n", indices(ret));
       if (zero_type(ret)) break;
       ret = ret[index];
     }
