@@ -442,6 +442,10 @@ static string mergeRef(array(string) ref) {
 
 static class Scope(string|void type, string|void name) {
   multiset(string) idents = (<>);
+
+  string _sprintf(int t) {
+    if(t=='O') return "Scope(" + (sort(indices(idents))*",") + ")";
+  }
 }
 
 static class ScopeStack {
@@ -459,46 +463,47 @@ static class ScopeStack {
     array(string) idents = splitRef(ref);
     int not_param = has_suffix(ref, "()");
     if (!sizeof(idents))
-      ref = "";
-    else {
-      if (idents[0] == "top::")
-        // top:: is an anchor to the root.
-        ref = mergeRef(idents[1..]);
-      else if(idents[0] == "predef::") {
-	// Better-than-nothing
-	// FIXME: Should look backwards until it finds a
-	// matching symbol.
-        ref = mergeRef(idents[1..]);
-      }
-      else
-        ref = mergeRef(idents);
-      string firstIdent = idents[0];
-      for(int i = 0; ; ++i) {
-        Scope s = scopeArr[i];
-        if (!s)
-          break;  // end of array
-        if (s->idents[firstIdent])
-          if (s->type == "params" && !not_param) {
-            return ([ "param" : ref ]);
-          }
-          else {
-            //werror("[[[[ found in type(%O) name(%O)\n", s->type, s->name);
-            string res = "";
-            // work our way from the bottom of the stack
-            for (int j = sizeof(scopeArr) - 1; j >= i; --j) {
-              string name = 0;
-              if (scopeArr[j])
-                name = scopeArr[j]->name;
-              if (name && name != "")
-                res += name + ".";
-              //werror("[[[[ name == %O\n", name);
-            }
-            return ([ "resolved" : res + ref ]);
-          }
-        if (s->type == "module")
-          break; // reached past the innermost module...
-      }
+      return ([ "resolved" : "" ]);
+
+    if (idents[0] == "top::")
+      // top:: is an anchor to the root.
+      ref = mergeRef(idents[1..]);
+    else if(idents[0] == "predef::") {
+      // Better-than-nothing
+      // FIXME: Should look backwards until it finds a
+      // matching symbol.
+      ref = mergeRef(idents[1..]);
     }
+    else
+      ref = mergeRef(idents);
+
+    string firstIdent = idents[0];
+    for(int i = 0; ; ++i) {
+      Scope s = scopeArr[i];
+      if (!s)
+	break;  // end of array
+      if (s->idents[firstIdent])
+	if (s->type == "params" && !not_param) {
+	  return ([ "param" : ref ]);
+	}
+	else {
+	  //werror("[[[[ found in type(%O) name(%O)\n", s->type, s->name);
+	  string res = "";
+	  // work our way from the bottom of the stack
+	  for (int j = sizeof(scopeArr) - 1; j >= i; --j) {
+	    string name = 0;
+	    if (scopeArr[j])
+	      name = scopeArr[j]->name;
+	    if (name && name != "")
+	      res += name + ".";
+	    //werror("[[[[ name == %O\n", name);
+	  }
+	  return ([ "resolved" : res + ref ]);
+	}
+      if (s->type == "module")
+	break; // reached past the innermost module...
+    }
+
     // TODO: should we check that the symbol really DOES appear
     // on the top level too?
     return ([ "resolved" : ref ]); // we consider it to be an absolute reference
@@ -517,7 +522,7 @@ static void fixupRefs(ScopeStack scopes, Node node) {
           mapping m = n->get_attributes();
           if (m["resolved"])
             return;
-          mapping resolved = scopes->resolveRef(n->value_of_node());
+          mapping resolved = scopes->resolveRef(m->to || n->value_of_node());
           foreach (indices(resolved), string i)
             m[i] = resolved[i];
         }
