@@ -1,6 +1,6 @@
 // -*- c -*-
 //
-// $Id: treeopt.in,v 1.53 2000/12/17 21:28:08 grubba Exp $
+// $Id: treeopt.in,v 1.54 2000/12/17 21:30:19 grubba Exp $
 //
 // The tree optimizer
 //
@@ -71,7 +71,7 @@ F_APPLY(0 = F_CONSTANT
 		[$$->u.sval.subtype == FUNCTION_BUILTIN]
 		[$$->u.sval.u.efun->function == f_multiply],
 		F_ARG_LIST(2 = +[pike_types_le($$->type, int_type_string)],
-			   3 = +[!match_types(object_type_string, $$->type)]]))):
+			   3 = +[!match_types(object_type_string, $$->type)]))):
   F_APPLY($1, F_ARG_LIST($2, F_APPLY($0, $3)));
 			   
 // sizeof(`*(A,B))  =>  `*(sizeof(A), B)  if typeof(B) <= int
