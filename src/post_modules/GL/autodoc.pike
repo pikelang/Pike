@@ -15,7 +15,10 @@ string fix_row(string in) {
   if(in==".P" || in==".br" || in==".IP") return "\n";
   in = replace(in, ([ "@":"@@",
 		      "\\-":"-",
-		      "\\&":"", ]) );
+		      "\\&":"",
+		      "\\(<=":"<=",
+		      "\\(>=":">=",
+		      "\\(!=":"!=", ]) );
   string a, b, c;
   while( sscanf(in, "%s\\f3%s\\fP%s", a, b, c)==3 ) {
     if(has_value(b, "]")) error("] in reference.\n");
@@ -23,6 +26,7 @@ string fix_row(string in) {
   }
 
   while( sscanf(in, "%s\\f2%s\\fP%s", a, b, c)==3 ||
+	 sscanf(in, "%s\\fI%s\\fP%s", a, b, c)==3 ||
 	 sscanf(in, "%s\\f2%s\\f1%s", a, b, c)==3 )
     in = a + "@i{" + b + "@}" + c;
 
@@ -46,11 +50,13 @@ string fix_xml_row(string in) {
   return in;
 }
 
+array(string) not_documented = ({});
+array(string) not_implemented = ({});
 mapping(string:array(array(string)|string)) docs = ([]);
 mapping(string:string) ref_alias = ([]);
 
-string preprocess_man(array(string) rows, string fn) {
-
+string preprocess_man(array(string) rows, string fn)
+{
   string _args;
   string desc;
   string param;
@@ -79,7 +85,7 @@ string preprocess_man(array(string) rows, string fn) {
       param_spec = 0;
       tp_state = 0;
       state = row[4..];
-      
+
       // I don't know if these can occur, but now it can handle it.
       if(state=="DESCRIPTION" && desc)
         desc = newline(desc);
@@ -289,8 +295,8 @@ array(string|array(string)) special_234(int mi, int mx, string ty, int|void a)
   return typ;
 }
 
-string document(string name, string features) {
-
+string document(string name, string features)
+{
   string ret;
   switch(features[0]) {
   case 'V':
@@ -377,21 +383,44 @@ string document(string name, string features) {
   return x;
 }
 
-void prefetch() {
+void prefetch()
+{
+  if( !file_stat( "release/xc/doc/man/GL/gl/" ) )
+  {
+    werror( "Need OpenGL man pages unpacked in present working directory.\n"
+	    "Download ftp://ftp.sgi.com/sgi/opengl/doc/mangl.tar.Z first.\n" );
+    exit( 1 );
+  }
   foreach(glob("*.3gl", get_dir("release/xc/doc/man/GL/gl/")), string fn) {
     array(string) rows = Stdio.read_file("release/xc/doc/man/GL/gl/"+fn)/"\n";
     preprocess_man(rows, fn[..sizeof(fn)-5]);
   }
 }
 
-string first_page() {
+string first_page()
+{
+  string ret = #"@module GL
 
-  string ret = "@module GL\n\nNot implemented OpenGL methods:\n\n";
+OpenGL glue. All method and constant names have been kept close to their low
+level counterparts for easy adoption of OpenGL code from other languages and
+examples off the web. Superfluous suffixes specifying the number and types of
+arguments have been dropped, though.
 
-  ret += "@xml{<matrix>\n";
-  foreach(sort(indices(docs)), string name)
+OpenGL methods still missing in the Pike API:
+
+@xml{<matrix>
+";
+  foreach( sort( (array)not_implemented ), string name )
     ret += "<r><c>" + name + "</c></r>\n";
-  ret += "</matrix>@}\n";
+  ret += #"</matrix>@}
+
+@fixme
+Methods available, but lacking documentation:
+@xml{<matrix>
+";
+  foreach( sort( not_documented ), string name )
+    ret += "<r><c>" + name + "</c></r>\n";
+  ret += "</matrix>@}";
   return comment(ret);
 }
 
@@ -404,9 +433,10 @@ void fix_refs() {
     string in = jox[1];
     while( sscanf(in, "%s@[%s]%s", string a, string b, string c)==3 ) {
       if(ref_alias[b]) {
-	werror("Remapped %O (%O)\n", b, func);
+	werror("Remapped %s (to %s)\n", b, func);
 	b = ref_alias[b];
       }
+      // else if( !GL[b] ) werror( "Maybe not %s?\n", b );
       out += a + "@[" + b + "]";
       in = c;
     }
@@ -423,7 +453,8 @@ void fix_refs() {
   }
 }
 
-void main() {
+void main()
+{
   werror("Reading manpages.\n");
   prefetch();
   fix_refs();
@@ -431,10 +462,13 @@ void main() {
   werror("Building documentation.\n");
   string doc = "";
 
-  foreach( func_misc, array func) {
-    if(catch {
-      doc += document(func[0], func[1]) + "\n";
-    }) werror("Failed with %O\n", func[0]);
+  foreach( func_misc + ({ ({"glFrustum", "VDDDDDD"}) }), array func)
+  {
+    if(catch { doc += document(func[0], func[1]) + "\n"; })
+    {
+      werror("Failed with %s [%s]\n", @func);
+      not_documented += ({ func[0] });
+    }
   }
 
   foreach( funcV, string func)
@@ -443,19 +477,24 @@ void main() {
   foreach( funcEV, string func)
     doc += document(func, "VE") + "\n";
 
-  foreach( sort(indices(constants)), string name ) {
-    doc += "/*!@decl constant "+name+" " + constants[name] + "\n";
-    if(refs[name])
-      doc += " *! Used in " +
-	String.implode_nicely(map(refs[name],
-				  lambda(string in) {
-				    return "@[" + in + "]";
-				  })) + "\n";
-    doc += " */\n\n";
+  not_implemented = indices(docs) - not_documented;
+  foreach( sort(indices(constants)), string name )
+  {
+    array relevant = refs[name];
+    if( relevant && sizeof( relevant -= not_implemented ) )
+    {
+      array r = map(relevant, lambda(string in) { return "@[" + in + "]"; });
+      doc += sprintf( "/*!@decl constant %s %d\n *! Used in %s\n */\n\n",
+		      name, constants[name], String.implode_nicely( r ) );
+    }
   }
 
-  doc = "\n/* AutoDoc generated from OpenGL man pages\n$Id"
-    "$ */\n\n" + first_page() + "\n\n" + doc +
+  doc = #"/*
+|| This file is part of Pike. For copyright information see COPYRIGHT.
+|| Pike is distributed under GPL, LGPL and MPL. See the file COPYING
+|| for more information.
+|| $" + "Id:$\n*/\n\n/* AutoDoc generated from OpenGL man pages */"
+    "\n\n" + first_page() + "\n\n" + doc +
     "\n/*! @endmodule\n */\n\n";
 
   werror("Writing result file.\n");
