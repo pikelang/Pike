@@ -2,11 +2,11 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: image_xface.c,v 1.18 2002/10/21 17:06:25 marcus Exp $
+|| $Id: image_xface.c,v 1.19 2003/08/31 22:39:46 nilsson Exp $
 */
 
 #include "global.h"
-RCSID("$Id: image_xface.c,v 1.18 2002/10/21 17:06:25 marcus Exp $");
+RCSID("$Id: image_xface.c,v 1.19 2003/08/31 22:39:46 nilsson Exp $");
 
 #include "module.h"
 #include "config.h"
@@ -434,7 +434,7 @@ static void image_xface_decode(INT32 args)
 
 static void image_xface_encode(INT32 args)
 {
-  struct image *img = NULL;
+  struct image *img;
   struct pike_string *res;
 
   if (args<1 

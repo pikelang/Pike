@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: peep.c,v 1.87 2003/08/06 18:05:27 mast Exp $
+|| $Id: peep.c,v 1.88 2003/08/31 22:44:14 nilsson Exp $
 */
 
 #include "global.h"
@@ -26,7 +26,7 @@
 #include "interpret.h"
 #include "pikecode.h"
 
-RCSID("$Id: peep.c,v 1.87 2003/08/06 18:05:27 mast Exp $");
+RCSID("$Id: peep.c,v 1.88 2003/08/31 22:44:14 nilsson Exp $");
 
 static void asm_opt(void);
 
@@ -281,7 +281,6 @@ void assemble(void)
 
   for(e=0;e<=max_label;e++) labels[e]=jumps[e]=-1;
   
-  c=(p_instr *)instrbuf.s.str;
 #ifdef PIKE_DEBUG
   synch_depth = 0;
 #endif
