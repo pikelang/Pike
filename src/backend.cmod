@@ -2,11 +2,11 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: backend.cmod,v 1.105 2004/04/03 18:54:45 grubba Exp $
+|| $Id: backend.cmod,v 1.106 2004/04/03 19:36:33 grubba Exp $
 */
 
 #include "global.h"
-RCSID("$Id: backend.cmod,v 1.105 2004/04/03 18:54:45 grubba Exp $");
+RCSID("$Id: backend.cmod,v 1.106 2004/04/03 19:36:33 grubba Exp $");
 #include "fdlib.h"
 #include "backend.h"
 #include <errno.h>
@@ -2365,8 +2365,8 @@ PIKECLASS Backend
 
 	    copy_selectors(& me->active_set, &me->set);
 
-	    timeout.tv_usec=0;
-	    timeout.tv_sec=0;
+	    timeout->tv_usec=0;
+	    timeout->tv_sec=0;
 	    if(MY_POLL(me->active_set, *timeout) < 0)
 	    {
 	      switch(errno)
@@ -2399,8 +2399,8 @@ PIKECLASS Backend
 		    if(my_FD_ISSET(i, &me->set.except))
 		      fd_FD_SET(i, & me->active_set.eset);
 		    
-		    timeout.tv_usec=0;
-		    timeout.tv_sec=0;
+		    timeout->tv_usec=0;
+		    timeout->tv_sec=0;
 		    
 		    if(MY_POLL(me->active_set, *timeout) < 0)
 		    {
