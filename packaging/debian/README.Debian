@@ -1,0 +1,22 @@
+Notes for developers
+--------------------
+
+*** THIS PIKE DISTRIBUTION IS NOT PART OF THE DEBIAN GNU/LINUX SYSTEM ***
+
+The postinst script created a few directories in /usr/local which you can
+use for your modules/include files. Once created by the postinst script
+they will never be touched by any pike package again. The directories
+are:
+
+/usr/local/include/pike
+/usr/local/include/pike7.3
+
+/usr/local/lib/pike/site_pike
+/usr/local/lib/pike7.3/site_pike
+
+/usr/local/share/pike/site_pike
+/usr/local/share/pike7.3/site_pike
+
+
+----
+$Id: README.Debian,v 1.1 2002/08/02 21:12:15 grendel Exp $

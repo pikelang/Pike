@@ -1,0 +1,41 @@
+pike7.3 (7.3.51-1) unstable; urgency=low
+
+  * Latest CVS snapshot
+  * the -crypto and -gz packages are merged with the core Pike package.
+  * the -doc package is split into -manual and -reference and
+  * The pike7.3 package became a meta package that installs a subset
+    of all the Pike packages present in Debian. This subset makes up a
+    recommended Pike environment for most systems.
+
+ -- Marek Habersack <grendel@debian.org>  Wed, 31 Jul 2002 23:35:18 +0200
+
+pike7.3 (7.3.49-2) unstable; urgency=low
+
+  * Latest CVS snapshot
+
+ -- Marek Habersack <grendel@debian.org>  Mon, 29 Jul 2002 10:23:44 +0200
+
+pike7.3 (7.3.49-1) unstable; urgency=low
+
+  * Latest CVS snapshot
+
+ -- Marek Habersack <grendel@debian.org>  Mon, 15 Jul 2002 23:21:33 +0200
+
+pike7.3 (7.3.47-1) unstable; urgency=low
+
+  * Latest CVS snapshot
+
+ -- Marek Habersack <grendel@debian.org>  Wed, 12 Jun 2002 18:13:12 +0200
+
+pike7.3 (7.3.45-1) unstable; urgency=low
+
+  * Latest CVS snapshot
+
+ -- Marek Habersack <grendel@debian.org>  Fri, 17 May 2002 16:41:09 +0200
+
+pike7.3 (7.3.41-1) unstable; urgency=low
+
+  * Initial Release.
+
+ -- Marek Habersack <grendel@debian.org>  Sun,  5 May 2002 01:34:05 +0200
+

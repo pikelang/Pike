@@ -202,6 +202,10 @@ testfont binary
 /lib/modules/system.pmod foreign_ident
 /lib/tools/pike.el foreign_ident
 /man/pike.1 foreign_ident
+/packaging/debian/README.Debian foreign_ident
+/packaging/debian/postinst foreign_ident
+/packaging/debian/prerm foreign_ident
+/packaging/debian/rules foreign_ident
 /refdoc/Makefile foreign_ident
 /refdoc/bin/extract.pike foreign_ident
 /refdoc/bin/join.pike foreign_ident

@@ -1,0 +1,2 @@
+?package(pike7.3-core):needs=text section=Apps/Programming\
+  title="Pike 7.3 HILFE" command="/usr/bin/pike7.3"

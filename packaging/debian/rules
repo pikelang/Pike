@@ -1,0 +1,268 @@
+#!/usr/bin/make -f
+# Sample debian/rules that uses debhelper. 
+# GNU copyright 1997 by Joey Hess.
+#
+# This version is for a hypothetical package that builds an
+# architecture-dependant package, as well as an architecture-independent
+# package.
+#
+# $Id: rules,v 1.1 2002/08/02 21:12:15 grendel Exp $
+#
+
+# Uncomment this to turn on verbose mode. 
+#export DH_VERBOSE=1
+
+# This is the debhelper compatibility version to use.
+export DH_COMPAT=3
+
+VERSION=$(shell dpkg-parsechangelog | grep ^Version | sed -e 's/Version: //;s/-[0-9]*$$//')
+OS=$(shell uname -srm|sed -e 's/ /-/g'|tr '[A-Z]' '[a-z]'|tr '/' '_')
+BUILDDIR=build/$(OS)
+CFARGS=--without-rtldebug \
+       --without-cdebug \
+       --without-ssleay \
+       --with-bignums \
+       --with-gmp \
+       --with-poll \
+       --with-zlib \
+       --with-freetype \
+       --with-ttflib \
+       --without-libpdf \
+       --without-libpanda \
+       --with-sybase \
+       --with-odbc \
+       --with-sane \
+       --with-postgres \
+       --with-postgres-include-dir=/usr/include/postgresql \
+       --with-libpq-dir=/usr/lib 
+
+RUNPIKE=$(CURDIR)/$(BUILDDIR)/pike -DNOT_INSTALLED -DPRECOMPILED_SEARCH_MORE -m$(CURDIR)/$(BUILDDIR)/master.pike
+
+CFLAGS=-O2 -s
+# Temporary workaround for hppa linker issues
+ifeq ($(DEB_BUILD_ARCH),hppa)
+CFLAGS+=-ffunction-sections
+endif
+
+ifneq (,$(findstring debug,$(DEB_BUILD_OPTIONS)))
+	CFLAGS += -g
+endif
+ifeq (,$(findstring nostrip,$(DEB_BUILD_OPTIONS)))
+	INSTALL_PROGRAM += -s
+endif
+
+export CFLAGS
+
+configure: configure-stamp
+configure-stamp:
+	dh_testdir
+	install -d -m 755 $(BUILDDIR)
+	# Add here commands to configure the package.
+	(cd $(BUILDDIR); $(CURDIR)/src/configure --prefix=/usr $(CFARGS))
+	touch configure-stamp
+
+
+build-arch: configure-stamp  build-arch-stamp
+build-arch-stamp:
+	dh_testdir
+
+	# Add here command to compile/build the package.
+	$(MAKE) -C$(BUILDDIR)
+
+
+	touch build-arch-stamp
+
+build-indep:  configure-stamp build-indep-stamp
+build-indep-stamp:
+	dh_testdir
+
+	# Add here command to compile/build the arch indep package.
+	# It's ok not to do anything here, if you don't need to build
+	#  anything for this package.
+	#/usr/bin/docbook-to-man debian/pike7.3.sgml > pike7.3.1
+	$(MAKE) -C$(CURDIR)/refdoc PIKE="$(RUNPIKE)"
+
+	touch build-indep-stamp
+
+build: build-arch build-indep
+
+clean:
+	dh_testdir
+	dh_testroot
+	rm -f build-stamp build-arch-stamp build-indep-stamp configure-stamp
+
+	# Add here commands to clean up after the build process.
+	- if [ -f src/Makefile ]; then \
+	    mkdir -p src/lib/modules; \
+	    $(MAKE) -Csrc/ spotless; \
+	fi
+	- rm -rf refdoc/modref/
+	- rm -rf refdoc/traditional_manual/
+	- rm -rf refdoc/build/
+	- $(MAKE) cvsclean
+	- rm -f `find src -name "*.o" -print`
+	- rm -f `find src -name "*.a" -print`
+	- rm -f `find src -name "*.so" -print`
+	- mv src/modules/Image/Makefile src/modules/Image/Makefile.old
+	- rm -f `find src -name "Makefile" -print`
+	- mv src/modules/Image/Makefile.old src/modules/Image/Makefile
+	- rm -f `find src -name "make_variables" -print`
+	- rm -f `find src -name "*_machine.h" -print`
+	- rm -rf `find -name "CVS" -type d -print`
+	- rm -f `find -name ".cvsignore" -type f -print`
+	- rm -f src/post_modules/GL/auto.c src/post_modules/GLUT/auto.c
+	- rm -f src/config.cache src/precompile.sh src/y.tab.c src/y.tab.h src/pike src/tpike src/hilfe src/C.pmod
+	- rm -f `find src -name "config.status" -print`
+	- rm -f `find src -name "config.log" -print`
+	- rm -f `find src -name "config.h" -print`
+	- rm -f `find src -name "modlist_segment" -print`
+	- rm -f `find src -name "modlist_segment" -print`
+	- rm -f `find src -name "modlist_headers" -print`
+	- rm -f `find src -name "linker_options" -print`
+	- rm -f `find src -name "stamp-h" -print`
+	- rm -f `find src -name "*_config.h" -print`
+	- rm -f `find . -name "*.feature" -print`
+	- rm -f `cat debian/toclean.txt`
+
+	- rm src/modules/Gmp/prime_table src/modules/Gmp/prime_table.out src/modules/Gmp/prime_table_no 
+	- rm src/share src/pike-module src/dumpmodule.log
+	- rm src/modules/Perl/perlxsi.c src/modules/Java/module.pmod.in
+	- rm src/smartlink src/post_modules/GTK/prototypes.h src/post_modules/GTK/time_stamp
+	- rm src/pike.tmp src/post_modules/GTK/files_to_compile
+	- rm src/post_modules/GTK/sources
+	- rm src/post_modules/GTK/options
+	- rm src/post_modules/static_module_makefile
+	- rm src/post_modules/dynamic_module_makefile
+	- rm -rf build/
+
+	dh_clean
+
+install: DH_OPTIONS=
+install: build
+	dh_testdir
+	dh_testroot
+	dh_clean -k
+	dh_installdirs
+
+	# Add here commands to install the package into debian/pike7.3.
+	$(MAKE) -C$(BUILDDIR)/ buildroot=$(CURDIR)/debian/pike7.3-core \
+	        prefix=/usr \
+		share_prefix=/usr/lib/pike7.3/$(VERSION) \
+		lib_prefix=/usr/lib/pike7.3/$(VERSION) \
+		INSTALLARGS=--traditional install
+
+	# install the docs
+	install -d -m 755 -o root -g root $(CURDIR)/debian/pike7.3-manual/usr/share/doc/pike7.3-doc/html/manual
+	install -d -m 755 -o root -g root $(CURDIR)/debian/pike7.3-reference/usr/share/doc/pike7.3-doc/html/reference
+	cp -pr refdoc/traditional_manual/* $(CURDIR)/debian/pike7.3-manual/usr/share/doc/pike7.3-doc/html/manual
+	install -m 644 -o root -g root $(CURDIR)/debian/dhelp.manual $(CURDIR)/debian/pike7.3-manual/usr/share/doc/pike7.3-doc/html/manual/.dhelp
+
+	cp -pr refdoc/modref/* $(CURDIR)/debian/pike7.3-reference/usr/share/doc/pike7.3-doc/html/reference
+	install -m 644 -o root -g root $(CURDIR)/debian/dhelp.refdoc $(CURDIR)/debian/pike7.3-reference/usr/share/doc/pike7.3-doc/html/reference/.dhelp
+
+	mv $(CURDIR)/debian/pike7.3-core/usr/bin/pike debian/pike7.3-core/usr/bin/pike7.3
+	rm $(CURDIR)/debian/pike7.3-core/usr/bin/hilfe
+	install -d $(CURDIR)/debian/pike7.3-core/usr/share/man/man1/
+	mv $(CURDIR)/debian/pike7.3-core/usr/man/man1/pike.1 $(CURDIR)/debian/pike7.3-core/usr/share/man/man1/pike7.3.1
+	rm -rf $(CURDIR)/debian/pike7.3-core/usr/man/
+
+	mkdir -p $(CURDIR)/debian/pike7.3-core/usr/lib/pike7.3/$(VERSION)/include ; \
+	mv $(CURDIR)/debian/pike7.3-core/usr/include/pike \
+	   $(CURDIR)/debian/pike7.3-core/usr/include/pike7.3 ; \
+	chmod 644 `find $(CURDIR)/debian/pike7.3-core/usr/include/pike7.3/ -type f -print`
+
+	install -m 755 -d -o root -g root $(CURDIR)/debian/pike7.3-dev/usr/share/emacs
+	cp -p $(CURDIR)/tools/pike.el $(CURDIR)/debian/pike7.3-dev/usr/share/emacs
+        # Remove some files that shouldn't be there...
+
+	-rm -f $(CURDIR)/debian/pike7.3-core/usr/lib/pike7.3/$(VERSION)/master.pike.in
+	-rm -f $(CURDIR)/debian/pike7.3-core/usr/bin/pike-module
+	-rm -rf $(CURDIR)/debian/pike7.3-core/usr/lib/pike7.3/$(VERSION)/tools
+	-rm -f $(CURDIR)/debian/pike7.3-core/usr/bin/pike.syms
+	-rm -f $(CURDIR)/debian/pike7.3-core/usr/bin/rsif
+
+        # Fix permissions
+
+	find $(CURDIR)/debian/pike7.3-core/usr/lib/pike7.3 -type f -exec chmod -x '{}' ';'
+
+	for f in `find $(CURDIR)/debian/pike7.3-core/usr/bin -type f` \
+                 `find $(CURDIR)/debian/pike7.3-core/usr/lib/pike7.3 -type f`; \
+	do \
+	  file $$f | grep "script" >/dev/null \
+            && perl -pi -e 's@#\!.*NOMODULE@#\!/usr/bin/pike7.3@' $$f \
+	    && chmod a+x $$f; \
+	  file $$f | grep "script" >/dev/null \
+            && perl -pi -e 's@#\!.*/usr/local/bin/pike@#\!/usr/bin/pike7.3@' $$f; \
+	done; exit 0
+
+	# Remove disabled modules
+	-rm $(CURDIR)/debian/pike7.3-core/usr/lib/pike7.3/$(VERSION)/modules/Ssleay.so
+	-rm $(CURDIR)/debian/pike7.3-core/usr/lib/pike7.3/$(VERSION)/modules/*Java*
+
+        # msql is non-free
+	-rm $(CURDIR)/debian/pike7.3-core/usr/lib/pike7.3/$(VERSION)/include/msql.h
+	-rm $(CURDIR)/debian/pike7.3-core/usr/lib/pike7.3/$(VERSION)/modules/Msql.so
+	-rm $(CURDIR)/debian/pike7.3-core/usr/lib/pike7.3/$(VERSION)/modules/Sql.pmod/msql.pike
+
+	dh_movefiles --sourcedir=debian/pike7.3-core
+
+# Build architecture-independent files here.
+# Pass -i to all debhelper commands in this target to reduce clutter.
+binary-indep: build install
+	dh_testdir -i
+	dh_testroot -i
+#	dh_installdebconf -i
+	dh_installdocs -i
+	dh_installexamples -i
+	dh_installmenu -i
+#	dh_installlogrotate -i
+#	dh_installemacsen -i
+#	dh_installpam -i
+#	dh_installmime -i
+#	dh_installinit -i
+#	dh_installcron -i
+#	dh_installman -i
+#	dh_installinfo -i
+#	dh_undocumented -i
+	dh_installchangelogs  -i
+	dh_link -i
+	dh_compress -i
+	dh_fixperms -i
+	dh_installdeb -i
+#	dh_perl -i
+	dh_gencontrol -i
+	dh_md5sums -i
+	dh_builddeb -i
+
+# Build architecture-dependent files here.
+binary-arch: build install
+	dh_testdir -a
+	dh_testroot -a
+#	dh_installdebconf -a
+	dh_installdocs -a
+#	dh_installexamples -a
+	dh_installmenu -a
+#	dh_installlogrotate -a
+#	dh_installemacsen -a
+#	dh_installpam -a
+#	dh_installmime -a
+#	dh_installinit -a
+#	dh_installcron -a
+	dh_installman -ppike7.3 debian/pike7.3-core/usr/share/man/man1/pike7.3.1
+#	dh_installinfo -a
+#	dh_undocumented -a
+	dh_installchangelogs  -a
+	dh_strip -a
+	dh_link -a
+	dh_compress -a
+	dh_fixperms -a
+#	dh_makeshlibs -a
+	dh_installdeb -a
+#	dh_perl -a
+	dh_shlibdeps -a
+	dh_gencontrol -a
+	dh_md5sums -a
+	dh_builddeb -a
+
+binary: binary-indep binary-arch
+.PHONY: build clean binary-indep binary-arch binary install configure
