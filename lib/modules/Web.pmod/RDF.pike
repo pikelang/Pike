@@ -1,9 +1,11 @@
-// $Id: RDF.pike,v 1.19 2003/10/14 23:52:55 nilsson Exp $
+// $Id: RDF.pike,v 1.20 2003/11/07 15:26:48 nilsson Exp $
 
 #pike __REAL_VERSION__
 
 //! Represents an RDF domain which can contain any number of complete
 //! statements.
+
+constant rdf_ns = "http://www.w3.org/1999/02/22-rdf-syntax-ns#";
 
 static int(1..) node_counter = 1;
 static mapping(string:Resource) uris = ([]);
@@ -601,11 +603,10 @@ static int dirty_namespaces = 1;
 static mapping(string:string) namespaces = ([]); // url-prefix:name
 
 static Node add_xml_children(Node p, string rdfns) {
-  string subj_uri = p->get_attributes()->about;
+  string subj_uri = p->get_ns_attributes(rdf_ns)->about;
   Resource subj;
-  if(!subj_uri) {
+  if(!subj_uri)
     subj = Resource();
-  }
   else
     subj = make_resource(subj_uri);
 
@@ -767,8 +768,8 @@ string get_xml() {
 
   String.Buffer ret = String.Buffer();
   ret->add("<?xml version=\"1.0\"?>\n"
-	   "<RDF\nxmlns=\"http://www.w3.org/1999/02/22-rdf-syntax-ns#\"\n"
-	   "rdf:xmlns=\"http://www.w3.org/1999/02/22-rdf-syntax-ns#\"\n");
+	   "<RDF\nxmlns=\"" + rdf_ns +"\"\n"
+	   "rdf:xmlns=\"" +rdf_ns + "\"\n");
   foreach(namespaces; string url; string name)
     ret->add("xmlns:", name, "=\"", url, "\"\n");
   ret->add(">\n");
