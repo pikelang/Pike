@@ -1,5 +1,5 @@
 #include "global.h"
-RCSID("$Id: threads.c,v 1.28 1997/09/02 22:18:07 grubba Exp $");
+RCSID("$Id: threads.c,v 1.29 1997/09/03 03:39:58 per Exp $");
 
 int num_threads = 1;
 int threads_disabled = 0;
@@ -324,6 +324,9 @@ void f_cond_wait(INT32 args)
     
     mt_lock(&mutex_kluge);
     mut=OB2KEY(key)->mut;
+    if(!mut)
+      error("Bad argument 1 to condition->wait()\n");
+
     THREADS_ALLOW();
 
     /* Unlock mutex */
