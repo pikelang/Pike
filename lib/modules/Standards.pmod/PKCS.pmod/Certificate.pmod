@@ -144,9 +144,8 @@ class AttributeValueAssertion
 	      object value)
     {
       if (!types[type])
-	throw( ({ sprintf("AttributeValueAssertion: "
-			  "Unknown attribute type '%s'\n",
-			  type), backtrace() }) );
+	error( "AttributeValueAssertion: "
+	       "Unknown attribute type '%s'\n", type );
       ::create( ({ types[type], value }) );
     }
 }
@@ -186,9 +185,7 @@ class Attribute
 	      array(object) v)
     {
       if (!types[type])
-	throw( ({ sprintf("Attribute: "
-			  "Unknown attribute type '%s'\n",
-			  type), backtrace() }) );
+	error( "Attribute: Unknown attribute type '%s'\n", type);
       ::create( ({ types[type], asn1_set(v) }) );
     }
 }
