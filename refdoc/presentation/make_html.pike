@@ -116,42 +116,106 @@ string parse_text(Node n) {
       ret += "<font face='courier' size='-1'>" + parse_text(c) + "</font>";
       break;
     case "dl":
-      // Not implemented yet.
+      ret += "<dl>" + map(get_tags(c, "group"), parse_text)*"" + "</dl>";
       break;
     case "item":
       ret += "<dt>" + parse_text(c) + "</dt>\n";
       break;
 
     case "mapping":
-    case "multiset": // Not in XSLT
+      ret += "<dl>";
+      foreach(get_tags(c, "group"), Node d) {
+	foreach(get_tags(d, "member"), Node e)
+	  ret += "<dt><tt><font color='green'>" + parse_text(get_tag(e, "index")) +
+	    "</font> : " + parse_type(get_first_element(get_tag(e, "type"))) +
+	    "</tt></dt><dd></dd>\n";
+
+      	ret += "<dd>" + parse_text(get_tag(d, "text")) + "</dd>";
+      }
+      ret += "</dl>";
+      break;
+
     case "array":
+      ret += "<dl>";
+      foreach(get_tags(c, "group"), Node d) {
+	foreach(get_tags(d, "elem"), Node e)
+	  ret += "<dt><tt>" + parse_type(get_first_element(get_tag(e, "type"))) +
+	    " <font color='green'>" + parse_text(get_tag(e, "index")) +
+	    "</font></tt></dt><dd></dd>\n";
+
+
+	if(get_tag(d, "text")) // Must there be one?
+	   ret += "<dd>" + parse_text(get_tag(d, "text")) + "</dd>";
+      }
+      ret += "</dl>";
+      break;
+
     case "int":
-    case "string": // Not in XSLT
+      ret += "<dl>";
+      foreach(get_tags(c, "group"), Node d) {
+	foreach(get_tags(d, "value"), Node e) {
+	  ret += "<dt><tt><font color='green'>";
+	  if(get_tag(e, "minvalue"))
+	    ret += parse_text(get_tag(e, "minvalue")) + "..";
+	  else
+	    ret += parse_text(get_tag(e, "value"));
+	  ret += "</font></tt></dt><dd></dd>\n";
+	}
+       	ret += "<dd>" + parse_text(get_tag(d, "text")) + "</dd>";
+      }
+      ret += "</dl>";
+      break;
+
     case "mixed":
+      /*
+      ret += "<tt>" + c->get_attributes()->name + "</tt> can have any of the following types:<dl>";
+      foreach(get_tags(c, "group"), Node d)
+	ret += "<dt><tt>" + parse_type(get_first_element(get_tag(d, "type"))) + "</tt></dt>"
+	  "<dd>" + parse_text(get_tag(d, "text")) + "</dd>";
+      ret += "</dl>";
+      break;
+      */
+    case "multiset": // Not in XSLT
+    case "string": // Not in XSLT
+      ret += " <font color='red'>Missing content (" + c->get_any_name() + ")</font> ";
       // Not implemented yet.
       break;
 
     case "image": // Not in XSLT
       mapping m = c->get_attributes();
-      m->src = m_delete(m, "file");
+      m->src = "images/" + m_delete(m, "file");
       ret += sprintf("<img%{ %s='%s'%} />", (array)m);
       break;
 
     case "section":
+    case "url":
+    case "wbr":
+      // Found...
+      break;
+
+    // Not really allowed
     case "br":
+      ret += sprintf("<%s%{ %s='%s'%} />", c->get_any_name(), (array)c->get_attributes());
+      break;
     case "a":
     case "table":
     case "ul":
-    case "url":
-    case "wbr":
     case "sub":
     case "sup":
     case "ol":
-      // Found...
+    case "li":
+    case "td":
+    case "tr":
+    case "th":
+      ret += sprintf("<%s%{ %s='%s'%}>%s</%s>", c->get_any_name(), (array)c->get_attributes(),
+		     parse_text(c), c->get_any_name());
       break;
+
+
     case "source-position":
       // Ignore...
       break;
+
     default:
 #ifdef DEBUG
       throw( ({ "Illegal element \"" + name + "\" in mode text.\n", backtrace() }) );
