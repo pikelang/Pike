@@ -4,6 +4,8 @@
 
 #include "error.h"
 
+#define DEBUG
+
 constant XPORT = 6000;
 
 class rec_buffer
@@ -171,6 +173,10 @@ class Display
   mapping pending_requests; /* Pending requests */
   object pending_actions;   /* Actions awaiting handling */
 
+#ifdef DEBUG
+  mapping debug_requests = ([ ]);
+#endif
+  
   void create()
   { /* Delay initialization of id_manager */
     atom_manager::create();
@@ -407,6 +413,9 @@ class Display
 		       errorCode, m->sequenceNumber, m->resourceID,
 		       m->minorCode, m->majorCode);
 		m->errorCode = _Xlib.error_codes[errorCode];
+#ifdef DEBUG
+		m->failed_request = debug_requests[m->sequenceNumber];
+#endif
 #if 0
 		if (m->errorCode == "Success")
 		  {
@@ -794,8 +803,12 @@ class Display
 
   int send_request(object req, mixed|void handler)
   {
-    send(req->to_string());
-    return sequence_number++;
+    string data = req->to_string();
+    send(data);
+#ifdef DEBUG
+    debug_requests[sequence_number & 0x7fff] = data;
+#endif DEBUG
+    return sequence_number++ & 0x7fff;
   }
 
   array blocking_request(object req)
