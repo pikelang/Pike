@@ -2,11 +2,11 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: main.c,v 1.158 2002/11/25 00:52:18 mast Exp $
+|| $Id: main.c,v 1.159 2003/01/22 15:12:24 nilsson Exp $
 */
 
 #include "global.h"
-RCSID("$Id: main.c,v 1.158 2002/11/25 00:52:18 mast Exp $");
+RCSID("$Id: main.c,v 1.159 2003/01/22 15:12:24 nilsson Exp $");
 #include "fdlib.h"
 #include "backend.h"
 #include "module.h"
@@ -165,7 +165,7 @@ static void get_master_key(HKEY cat)
   DWORD len=sizeof(buffer)-1,type=REG_SZ;
 
   if(RegOpenKeyEx(cat,
-		  (LPCTSTR)("SOFTWARE\\Idonex\\Pike\\"
+		  (LPCTSTR)("SOFTWARE\\Pike\\"
 			    DEFINETOSTR(PIKE_MAJOR_VERSION)
 			    "."
 			    DEFINETOSTR(PIKE_MINOR_VERSION)),
