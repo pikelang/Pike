@@ -2140,7 +2140,7 @@ of this chapter.
 When applied to integers or floats these operators do exactly what they
 are supposed to do. The only operator in the list not known from basic
 math is the <b>modulo</b> operator. The modulo operator returns the
-rest of an integer division. It is the same as calculating
+remainder from an integer division. It is the same as calculating
 <tt>a - floor(a / b) * b</tt>. <tt>floor</tt> rounds the value down to
 closest lower integer value. Note that the call to <tt>floor</tt> isn't
 needed when operating on integers, since dividing two integers will return
@@ -2289,24 +2289,24 @@ the complete list of combinations of types you can use with these operators:
 </tr>
 
 <tr>
-<td><tt><i>int</i>&nbsp;%&nbsp;<i>int</i></tt></td><td>int</td><td>The rest of a division. If <tt>a</tt> and <tt>b</tt> are integers, <tt>a%b</tt> is the same as <tt>a-(a/b)*b</tt></td>
+<td><tt><i>int</i>&nbsp;%&nbsp;<i>int</i></tt></td><td>int</td><td>The remainder of a division. If <tt>a</tt> and <tt>b</tt> are integers, <tt>a%b</tt> is the same as <tt>a-(a/b)*b</tt></td>
 </tr>
 
 <tr>
 <td><tt>
 <i>float</i>&nbsp;%&nbsp;<i>float</i><br>
 <i>int</i>&nbsp;%&nbsp;<i>float</i><br>
-<i>float</i>&nbsp;%&nbsp;<i>int</i></tt></td><td>float</td><td>The rest of a division. If <tt>a</tt> and <tt>b</tt> are floats, <tt>a%b</tt> is the same as <tt>a-floor(a/b)*b</tt></td>
+<i>float</i>&nbsp;%&nbsp;<i>int</i></tt></td><td>float</td><td>The remainder of a division. If <tt>a</tt> and <tt>b</tt> are floats, <tt>a%b</tt> is the same as <tt>a-floor(a/b)*b</tt></td>
 </tr>
 
 <tr>
 <td><tt>
-<i>string</i>&nbsp;%&nbsp;<i>int</i></td><td>string</td><td>The rest of a string division. Example: <tt>"foo-bar"%2</tt> will return <tt>"r"</tt></td>
+<i>string</i>&nbsp;%&nbsp;<i>int</i></tt></td><td>string</td><td>The remainder of a string division. Example: <tt>"foo-bar"%2</tt> will return <tt>"r"</tt></td>
 </tr>
 
 <tr>
 <td><tt>
-<i>array</i>&nbsp;%&nbsp;<i>int</i></td><td>string</td><td>The rest of an array division. Example: <tt>({1,2,3,4,5,6,7})%2</tt> will return <tt>({7})</tt></td>
+<i>array</i>&nbsp;%&nbsp;<i>int</i></tt></td><td>string</td><td>The remainder of an array division. Example: <tt>({1,2,3,4,5,6,7})%2</tt> will return <tt>({7})</tt></td>
 </tr>
 
 </table>
@@ -4719,7 +4719,7 @@ the thread will sleep until the mutex is unlocked.
 Mutex locks are only available on systems with POSIX or UNIX threads support.
 <p>
 In POSIX threads, mutex locks can only be unlocked by the same thread
-locked them. In Pike any thread can unlock a locked mutex.
+that locked them. In Pike any thread can unlock a locked mutex.
 </man_note>
 <man_example>
 <pre>
