@@ -6,7 +6,7 @@
 // Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 // for more information.
 //
-// $Id: master.pike.in,v 1.248 2003/05/19 12:09:37 mast Exp $
+// $Id: master.pike.in,v 1.249 2003/08/18 12:43:49 tomas Exp $
 
 #pike __REAL_VERSION__
 
@@ -1235,11 +1235,33 @@ mixed handle_import(string what, string|void current_file, object|void handler)
   werror("%*nhandle_import(%O, %O, %O)\n",
 	 sizeof(backtrace()), what, current_file, handler);
 #endif /* MODULE_TRACE */
+  if (!handler && fc[path]) return fc[path];
+#ifdef PIKE_MODULE_RELOC
+  if (has_prefix(path+"/", "/${PIKE_MODULE_PATH}/")) {
+    string tmp = path[21..];
+    array(mixed) dirnodes = ({});
+    foreach(pike_module_path, string path) {
+      string s2 = fakeroot(sizeof(tmp)? combine_path(path, tmp) : path);
+      if(master_file_stat(s2)) {
+        dirnodes += ({ handler?dirnode(s2, handler):dirnode(s2) });
+      }
+    }
+    if (sizeof(dirnodes) > 1) {
+      if (!handler) return fc[path] = joinnode(dirnodes);
+      return joinnode(dirnodes);
+    }
+    if (sizeof(dirnodes)) {
+      if (!handler) return fc[path] = dirnodes[0];
+      return dirnodes[0];
+    }
+    return UNDEFINED;
+  }
+#endif
   if (handler) {
-    return dirnode(path, handler);
+    return dirnode(fakeroot(path), handler);
   }
   if(fc[path]) return fc[path];
-  return dirnode(path);
+  return dirnode(fakeroot(path));
 }
 
 
