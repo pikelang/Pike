@@ -20,8 +20,9 @@
 #include "module_support.h"
 #include "fsort.h"
 #include "threads.h"
+#include "stuff.h"
 
-RCSID("$Id: encode.c,v 1.21 1998/04/27 22:33:17 hubbe Exp $");
+RCSID("$Id: encode.c,v 1.22 1998/05/01 16:20:27 grubba Exp $");
 
 #ifdef _AIX
 #include <net/nh.h>
