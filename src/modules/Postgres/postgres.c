@@ -62,7 +62,7 @@ static void pgdebug (char * a, ...) {}
 
 struct program * postgres_program;
 
-RCSID("$Id: postgres.c,v 1.12 1999/05/28 13:29:29 mast Exp $");
+RCSID("$Id: postgres.c,v 1.13 2000/05/24 11:54:32 grubba Exp $");
 
 #define THIS ((struct pgres_object_data *) fp->current_storage)
 
@@ -284,6 +284,19 @@ static void f_big_query(INT32 args)
 	PQ_LOCK();
 	pgdebug("f_big_query(\"%s\")\n",query);
 	res=PQexec(conn,query);
+	/* A dirty hack to fix the reconnect bug.
+	 * we don't need to store the host/user/pass/db... etc..
+	 * PQreset() does all the job.
+	 *  Zsolt Varga <redax@agria.hu> 2000-apr-04
+	 */
+	if((PQstatus(conn) != CONNECTION_OK) ||
+	   (PQresultStatus(res) == PGRES_FATAL_ERROR) ||
+	   (PQresultStatus(res) == PGRES_BAD_RESPONSE)) {
+	  PQclear(res);
+	  PQreset(conn);
+	  res=PQexec(conn,query);
+	}
+
 	notification=PQnotifies(conn);
 	PQ_UNLOCK();
 	THREADS_DISALLOW();
