@@ -1,5 +1,5 @@
 #include "global.h"
-RCSID("$Id: polyfill.c,v 1.26 1998/04/24 13:50:19 mirar Exp $");
+RCSID("$Id: polyfill.c,v 1.27 1999/04/13 12:32:33 mirar Exp $");
 
 /* Prototypes are needed for these */
 extern double floor(double);
@@ -32,8 +32,8 @@ extern double floor(double);
 /*
 **! module Image
 **! note
-**!	$Id: polyfill.c,v 1.26 1998/04/24 13:50:19 mirar Exp $
-**! class image
+**!	$Id: polyfill.c,v 1.27 1999/04/13 12:32:33 mirar Exp $
+**! class Image
 */
 
 /*
@@ -737,11 +737,11 @@ void image_polyfill(INT32 args)
    float *buf;
 
    if (!THIS->img)
-      error("Image.image->polyfill: no image\n");
+      error("Image.Image->polyfill: no image\n");
 
    buf=malloc(sizeof(float)*(THIS->xsize+1));
    if (!buf)
-      error("Image.image->polyfill: out of memory\n");
+      error("Image.Image->polyfill: out of memory\n");
 
    v=polyfill_begin();
 
@@ -752,14 +752,14 @@ void image_polyfill(INT32 args)
       if (sp[-1].type!=T_ARRAY)
       {
 	 polyfill_free(v);
-	 error("Image.image->polyfill: Illegal argument %d, expected array\n",
+	 error("Image.Image->polyfill: Illegal argument %d, expected array\n",
 	       args);
       }
-      if ((v_tmp=polyfill_add(v, sp[-1].u.array, args, "Image.image->polyfill()"))) {
+      if ((v_tmp=polyfill_add(v, sp[-1].u.array, args, "Image.Image->polyfill()"))) {
 	 v = v_tmp;
       } else {
 	 polyfill_free(v);
-	 error("Image.image->polyfill: Bad argument %d, bad vertex\n", args);
+	 error("Image.Image->polyfill: Bad argument %d, bad vertex\n", args);
       }
       args--;
       pop_stack();

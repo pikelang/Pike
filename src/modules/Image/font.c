@@ -1,4 +1,4 @@
-/* $Id: font.c,v 1.43 1999/02/10 21:48:27 hubbe Exp $ */
+/* $Id: font.c,v 1.44 1999/04/13 12:32:20 mirar Exp $ */
 #include "global.h"
 #include <config.h>
 
@@ -7,8 +7,8 @@
 /*
 **! module Image
 **! note
-**!	$Id: font.c,v 1.43 1999/02/10 21:48:27 hubbe Exp $
-**! class font
+**!	$Id: font.c,v 1.44 1999/04/13 12:32:20 mirar Exp $
+**! class Font
 **!
 **! note
 **! 	Short technical documentation on a font file:
@@ -88,7 +88,7 @@
 **!            	    len * (short char, short value)
 **!            **!	</pre>
 **!
-**! see also: Image, Image.image
+**! see also: Image, Image.Image
 */
 
 /* Dump a font into a Roxen Font file (format version 2)
@@ -514,10 +514,10 @@ void font_load(INT32 args)
 **! method object write(string text,...)
 **! 	Writes some text; thus creating an image object
 **!	that can be used as mask or as a complete picture.
-**! returns an <ref>Image.image</ref> object
+**! returns an <ref>Image.Image</ref> object
 **! arg string text, ...
 **!	One or more lines of text.
-**! see also: text_extents, load, Image.image->paste_mask, Image.image->paste_alpha_color
+**! see also: text_extents, load, Image.Image->paste_mask, Image.Image->paste_alpha_color
 */
 
 void font_write(INT32 args)
@@ -884,45 +884,46 @@ void init_font_programs(void)
    ADD_STORAGE(struct font*);
 
    /* function(string:object|int) */
-  ADD_FUNCTION("load",font_load,tFunc(tStr,tOr(tObj,tInt)),0);
+   ADD_FUNCTION("load",font_load,tFunc(tStr,tOr(tObj,tInt)),0);
 
    /* function(void|string:void) */
-  ADD_FUNCTION("create",font_create,tFunc(tOr(tVoid,tStr),tVoid),0);
+   ADD_FUNCTION("create",font_create,tFunc(tOr(tVoid,tStr),tVoid),0);
 
    /* function(string:object) */
-  ADD_FUNCTION("write",font_write,tFunc(tStr,tObj),0);
+   ADD_FUNCTION("write",font_write,tFunc(tStr,tObj),0);
 
    /* function(:int) */
-  ADD_FUNCTION("height",font_height,tFunc(,tInt),0);
+   ADD_FUNCTION("height",font_height,tFunc(,tInt),0);
 
    /* function(:int) */
-  ADD_FUNCTION("baseline",font_baseline,tFunc(,tInt),0);
+   ADD_FUNCTION("baseline",font_baseline,tFunc(,tInt),0);
 		
    /* function(string ...:array(int)) */
-  ADD_FUNCTION("extents",font_text_extents,tFuncV(,tStr,tArr(tInt)),0);
+   ADD_FUNCTION("extents",font_text_extents,tFuncV(,tStr,tArr(tInt)),0);
 		
    /* function(string ...:array(int)) */
-  ADD_FUNCTION("text_extents",font_text_extents,tFuncV(,tStr,tArr(tInt)),0);
+   ADD_FUNCTION("text_extents",font_text_extents,tFuncV(,tStr,tArr(tInt)),0);
 		
    /* function(float:void) */
-  ADD_FUNCTION("set_x_spacing",font_set_xspacing_scale,tFunc(tFlt,tVoid),0);
+   ADD_FUNCTION("set_x_spacing",font_set_xspacing_scale,tFunc(tFlt,tVoid),0);
 
    /* function(float:void) */
-  ADD_FUNCTION("set_y_spacing",font_set_yspacing_scale,tFunc(tFlt,tVoid),0);
+   ADD_FUNCTION("set_y_spacing",font_set_yspacing_scale,tFunc(tFlt,tVoid),0);
 
    /* function(void:void) */
-  ADD_FUNCTION("center", font_set_center,tFunc(tVoid,tVoid), 0);
+   ADD_FUNCTION("center", font_set_center,tFunc(tVoid,tVoid), 0);
    /* function(void:void) */
-  ADD_FUNCTION("left", font_set_left,tFunc(tVoid,tVoid), 0);
+   ADD_FUNCTION("left", font_set_left,tFunc(tVoid,tVoid), 0);
    /* function(void:void) */
-  ADD_FUNCTION("right", font_set_right,tFunc(tVoid,tVoid), 0);
+   ADD_FUNCTION("right", font_set_right,tFunc(tVoid,tVoid), 0);
 
    
    set_init_callback(init_font_struct);
    set_exit_callback(exit_font_struct);
   
    font_program=end_program();
-   add_program_constant("font",font_program, 0);
+   add_program_constant("font",font_program, 0); /* compat */
+   add_program_constant("Font",font_program, 0);
 }
 
 void exit_font(void) 

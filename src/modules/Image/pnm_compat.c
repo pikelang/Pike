@@ -1,10 +1,10 @@
-/* $Id: pnm_compat.c,v 1.1 1999/03/11 18:49:30 grubba Exp $ */
+/* $Id: pnm_compat.c,v 1.2 1999/04/13 12:32:31 mirar Exp $ */
 
 /*
 **! module Image
 **! note
-**!	$Id: pnm_compat.c,v 1.1 1999/03/11 18:49:30 grubba Exp $
-**! class image
+**!	$Id: pnm_compat.c,v 1.2 1999/04/13 12:32:31 mirar Exp $
+**! class Image
 */
 
 #include "global.h"

@@ -1,9 +1,9 @@
-/* $Id: x.c,v 1.17 1998/08/09 11:36:18 grubba Exp $ */
+/* $Id: x.c,v 1.18 1999/04/13 12:32:46 mirar Exp $ */
 
 /*
 **! module Image
 **! note
-**!	$Id: x.c,v 1.17 1998/08/09 11:36:18 grubba Exp $
+**!	$Id: x.c,v 1.18 1999/04/13 12:32:46 mirar Exp $
 **! submodule X
 **!
 **!	This submodule handles encoding and decoding of
@@ -11,7 +11,7 @@
 **!
 **!	
 **!
-**! see also: Image, Image.image, Image.colortable
+**! see also: Image, Image.Image, Image.Colortable
 */
 #include "global.h"
 
@@ -29,7 +29,7 @@
 #include <winsock.h>
 #endif
 
-RCSID("$Id: x.c,v 1.17 1998/08/09 11:36:18 grubba Exp $");
+RCSID("$Id: x.c,v 1.18 1999/04/13 12:32:46 mirar Exp $");
 #include "pike_macros.h"
 #include "object.h"
 #include "constants.h"

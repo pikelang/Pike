@@ -1,20 +1,20 @@
-/* $Id: ilbm.c,v 1.8 1999/04/09 18:21:36 marcus Exp $ */
+/* $Id: ilbm.c,v 1.9 1999/04/13 12:32:43 mirar Exp $ */
 
 /*
 **! module Image
 **! note
-**!	$Id: ilbm.c,v 1.8 1999/04/09 18:21:36 marcus Exp $
+**!	$Id: ilbm.c,v 1.9 1999/04/13 12:32:43 mirar Exp $
 **! submodule ILBM
 **!
 **!	This submodule keep the ILBM encode/decode capabilities
 **!	of the <ref>Image</ref> module.
 **!
-**! see also: Image, Image.image, Image.colortable
+**! see also: Image, Image.Image, Image.Colortable
 */
 #include "global.h"
 
 #include "stralloc.h"
-RCSID("$Id: ilbm.c,v 1.8 1999/04/09 18:21:36 marcus Exp $");
+RCSID("$Id: ilbm.c,v 1.9 1999/04/13 12:32:43 mirar Exp $");
 #include "pike_macros.h"
 #include "object.h"
 #include "constants.h"

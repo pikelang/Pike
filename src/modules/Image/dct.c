@@ -1,10 +1,10 @@
-/* $Id: dct.c,v 1.11 1998/01/13 22:59:22 hubbe Exp $ */
+/* $Id: dct.c,v 1.12 1999/04/13 12:32:18 mirar Exp $ */
 
 /*
 **! module Image
 **! note
-**!	$Id: dct.c,v 1.11 1998/01/13 22:59:22 hubbe Exp $
-**! class image
+**!	$Id: dct.c,v 1.12 1999/04/13 12:32:18 mirar Exp $
+**! class Image
 */
 
 #include "global.h"

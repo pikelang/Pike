@@ -1,10 +1,10 @@
-/* $Id: operator.c,v 1.19 1999/03/19 18:21:49 mirar Exp $ */
+/* $Id: operator.c,v 1.20 1999/04/13 12:32:27 mirar Exp $ */
 
 /*
 **! module Image
 **! note
-**!	$Id: operator.c,v 1.19 1999/03/19 18:21:49 mirar Exp $
-**! class image
+**!	$Id: operator.c,v 1.20 1999/04/13 12:32:27 mirar Exp $
+**! class Image
 */
 
 #include "global.h"
@@ -630,9 +630,9 @@ void image_average(INT32 args)
    pop_n_elems(args);
 
    if (!THIS->img)
-      error("Image.image->average(): no image\n");
+      error("Image.Image->average(): no image\n");
    if (!THIS->xsize || !THIS->ysize)
-      error("Image.image->average(): no pixels in image (division by zero)\n");
+      error("Image.Image->average(): no pixels in image (division by zero)\n");
 
    y=THIS->ysize;
    xz=THIS->xsize;
@@ -671,7 +671,7 @@ void image_sumf(INT32 args)
    pop_n_elems(args);
 
    if (!THIS->img)
-      error("Image.image->sumf(): no image\n");
+      error("Image.Image->sumf(): no image\n");
 
    y=THIS->ysize;
    xz=THIS->xsize;
@@ -709,7 +709,7 @@ void image_sum(INT32 args)
    pop_n_elems(args);
 
    if (!THIS->img)
-      error("Image.image->sum(): no image\n");
+      error("Image.Image->sum(): no image\n");
 
    n=THIS->ysize*THIS->xsize;
    THREADS_ALLOW();
@@ -738,7 +738,7 @@ void image_min(INT32 args)
    pop_n_elems(args);
 
    if (!THIS->img)
-      error("Image.image->min(): no image\n");
+      error("Image.Image->min(): no image\n");
 
    n=THIS->ysize*THIS->xsize;
    THREADS_ALLOW();
@@ -767,7 +767,7 @@ void image_max(INT32 args)
    pop_n_elems(args);
 
    if (!THIS->img)
-      error("Image.image->max(): no image\n");
+      error("Image.Image->max(): no image\n");
 
    n=THIS->ysize*THIS->xsize;
    THREADS_ALLOW();
@@ -829,7 +829,7 @@ void image_find_min(INT32 args)
       rgb.b=41;
    }
    else
-      getrgbl(&rgb,0,args,"Image.image->find_min()");
+      getrgbl(&rgb,0,args,"Image.Image->find_min()");
    if (rgb.r||rgb.g||rgb.b)
       div=1.0/(rgb.r+rgb.g+rgb.b);
    else
@@ -838,9 +838,9 @@ void image_find_min(INT32 args)
    pop_n_elems(args);
 
    if (!THIS->img)
-      error("Image.image->find_min(): no image\n");
+      error("Image.Image->find_min(): no image\n");
    if (!THIS->xsize || !THIS->ysize)
-      error("Image.image->find_min(): no pixels in image (none to find)\n");
+      error("Image.Image->find_min(): no pixels in image (none to find)\n");
 
    yz=THIS->ysize;
    xz=THIS->xsize;
@@ -877,7 +877,7 @@ void image_find_max(INT32 args)
       rgb.b=41;
    }
    else
-      getrgbl(&rgb,0,args,"Image.image->find_max()");
+      getrgbl(&rgb,0,args,"Image.Image->find_max()");
    if (rgb.r||rgb.g||rgb.b)
       div=1.0/(rgb.r+rgb.g+rgb.b);
    else
@@ -886,9 +886,9 @@ void image_find_max(INT32 args)
    pop_n_elems(args);
 
    if (!THIS->img)
-      error("Image.image->find_max(): no image\n");
+      error("Image.Image->find_max(): no image\n");
    if (!THIS->xsize || !THIS->ysize)
-      error("Image.image->find_max(): no pixels in image (none to find)\n");
+      error("Image.Image->find_max(): no pixels in image (none to find)\n");
 
    yz=THIS->ysize;
    xz=THIS->xsize;

@@ -1,10 +1,10 @@
-/* $Id: matrix.c,v 1.17 1998/04/24 13:51:00 mirar Exp $ */
+/* $Id: matrix.c,v 1.18 1999/04/13 12:32:25 mirar Exp $ */
 
 /*
 **! module Image
 **! note
-**!	$Id: matrix.c,v 1.17 1998/04/24 13:51:00 mirar Exp $
-**! class image
+**!	$Id: matrix.c,v 1.18 1999/04/13 12:32:25 mirar Exp $
+**! class Image
 */
 
 #include "global.h"

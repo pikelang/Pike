@@ -1,11 +1,11 @@
-/* $Id: blit.c,v 1.29 1998/04/24 13:46:04 mirar Exp $ */
+/* $Id: blit.c,v 1.30 1999/04/13 12:32:09 mirar Exp $ */
 #include "global.h"
 
 /*
 **! module Image
 **! note
-**!	$Id: blit.c,v 1.29 1998/04/24 13:46:04 mirar Exp $
-**! class image
+**!	$Id: blit.c,v 1.30 1999/04/13 12:32:09 mirar Exp $
+**! class Image
 */
 
 #include <math.h>

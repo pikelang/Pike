@@ -2,7 +2,7 @@
 
 togif 
 
-$Id: togif.c,v 1.32 1998/04/24 13:51:03 mirar Exp $ 
+$Id: togif.c,v 1.33 1999/04/13 12:32:36 mirar Exp $ 
 
 old GIF API compat stuff
 
@@ -11,8 +11,8 @@ old GIF API compat stuff
 /*
 **! module Image
 **! note
-**!	$Id: togif.c,v 1.32 1998/04/24 13:51:03 mirar Exp $
-**! class image
+**!	$Id: togif.c,v 1.33 1999/04/13 12:32:36 mirar Exp $
+**! class Image
 */
 
 #include "global.h"
@@ -83,7 +83,7 @@ extern struct program *image_colortable_program;
 **!	<tr><td>gif_add_fs_nomap</td><td><ref>Image.GIF.render_block</ref>¹²</td></tr>
 **!	</table>
 **!
-**!	¹ Use <ref>Image.colortable</ref> to get whatever dithering
+**!	¹ Use <ref>Image.Colortable</ref> to get whatever dithering
 **!	you want.
 **!
 **!	² local map toggle is sent as an argument

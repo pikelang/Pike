@@ -3,7 +3,7 @@
 **! module Image
 **! note
 **!	Experimental functions.
-**! class image
+**! class Image
 */
 #include "global.h"
 
@@ -600,13 +600,13 @@ void image_apply_max(INT32 args)
 
    if (args<1 ||
        sp[-args].type!=T_ARRAY)
-      error("Illegal arguments to Image.image->apply_max()\n");
+      error("Illegal arguments to Image.Image->apply_max()\n");
 
    if (args>3) 
       if (sp[1-args].type!=T_INT ||
 	  sp[2-args].type!=T_INT ||
 	  sp[3-args].type!=T_INT)
-	 error("Illegal argument(s) (2,3,4) to Image.image->apply_max()\n");
+	 error("Illegal argument(s) (2,3,4) to Image.Image->apply_max()\n");
       else
       {
 	 default_rgb.r=sp[1-args].u.integer;
@@ -640,12 +640,12 @@ void image_apply_max(INT32 args)
    {
       struct svalue s=sp[-args].u.array->item[i];
       if (s.type!=T_ARRAY) 
-	 error("Illegal contents of (root) array (Image.image->apply_max)\n");
+	 error("Illegal contents of (root) array (Image.Image->apply_max)\n");
       if (width==-1)
 	 width=s.u.array->size;
       else
 	 if (width!=s.u.array->size)
-	    error("Arrays has different size (Image.image->apply_max)\n");
+	    error("Arrays has different size (Image.Image->apply_max)\n");
    }
    if (width==-1) width=0;
 

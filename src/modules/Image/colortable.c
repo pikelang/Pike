@@ -1,12 +1,12 @@
 #include "global.h"
 #include <config.h>
 
-/* $Id: colortable.c,v 1.64 1999/04/13 11:14:55 mirar Exp $ */
+/* $Id: colortable.c,v 1.65 1999/04/13 12:32:15 mirar Exp $ */
 
 /*
 **! module Image
 **! note
-**!	$Id: colortable.c,v 1.64 1999/04/13 11:14:55 mirar Exp $
+**!	$Id: colortable.c,v 1.65 1999/04/13 12:32:15 mirar Exp $
 **! class Colortable
 **!
 **!	This object keeps colortable information,
@@ -15,13 +15,13 @@
 **!	The object has color reduction, quantisation,
 **!	mapping and dithering capabilities.
 **!
-**! see also: Image, Image.image, Image.font, Image.GIF
+**! see also: Image, Image.Image, Image.Font, Image.GIF
 */
 
 #undef COLORTABLE_DEBUG
 #undef COLORTABLE_REDUCE_DEBUG
 
-RCSID("$Id: colortable.c,v 1.64 1999/04/13 11:14:55 mirar Exp $");
+RCSID("$Id: colortable.c,v 1.65 1999/04/13 12:32:15 mirar Exp $");
 
 #include <math.h> /* fabs() */
 
@@ -1815,8 +1815,6 @@ static rgbl_group dither_ordered_encode(struct nct_dither *dith,
    int xs=dith->u.ordered.xs;
    int ys=dith->u.ordered.ys;
 
-   fprintf(stderr,"newline\n");
-
    i=(int)(s.r+dith->u.ordered.rdiff
 	          [((rowpos+dith->u.ordered.rx)%xs)+
 		   ((dith->u.ordered.row+dith->u.ordered.ry)%ys)*xs]); 
@@ -1981,13 +1979,13 @@ void image_colortable_free_dither(struct nct_dither *dith)
 /*
 **! method void create()
 **! method void create(array(array(int)) colors)
-**! method void create(object(Image.image) image,int number)
-**! method void create(object(Image.image) image,int number,array(array(int)) needed)
+**! method void create(object(Image.Image) image,int number)
+**! method void create(object(Image.Image) image,int number,array(array(int)) needed)
 **! method void create(int r,int g,int b)
 **! method void create(int r,int g,int b, array(int) from1,array(int) to1,int steps1, ..., array(int) fromn,array(int) ton,int stepsn)
 **! method object add(array(array(int)) colors)
-**! method object add(object(Image.image) image,int number)
-**! method object add(object(Image.image) image,int number,array(array(int)) needed)
+**! method object add(object(Image.Image) image,int number)
+**! method object add(object(Image.Image) image,int number,array(array(int)) needed)
 **! method object add(int r,int g,int b)
 **! method object add(int r,int g,int b, array(int) from1,array(int) to1,int steps1, ..., array(int) fromn,array(int) ton,int stepsn)
 **
@@ -2021,7 +2019,7 @@ void image_colortable_free_dither(struct nct_dither *dith)
 **!	
 **! arg array(array(int)) colors
 **!	list of colors 
-**! arg object(Image.image) image
+**! arg object(Image.Image) image
 **!	source image 
 **!
 **!	note: you may not get all colors from image,
@@ -2258,7 +2256,7 @@ void image_colortable_create(INT32 args)
 **!	improve floyd-steinberg dithering result.
 **!	(It doesn't work very well, though.)
 **!
-**! returns the new <ref>colortable</ref> object
+**! returns the new <ref>Colortable</ref> object
 **!
 **! arg int colors
 **!	target number of colors
@@ -2356,10 +2354,10 @@ void image_colortable_reduce_fs(INT32 args)
 /*
 **! method object `+(object with,...)
 **!	sums colortables
-**! returns the resulting new <ref>colortable</ref> object
+**! returns the resulting new <ref>Colortable</ref> object
 **!
-**! arg object(<ref>colortable</ref>) with
-**!	<ref>colortable</ref> object with colors to add
+**! arg object(<ref>Colortable</ref>) with
+**!	<ref>Colortable</ref> object with colors to add
 **/
 
 void image_colortable_operator_plus(INT32 args)
@@ -2408,10 +2406,10 @@ void image_colortable_operator_plus(INT32 args)
 /*
 **! method object `-(object with,...)
 **!	subtracts colortables
-**! returns the resulting new <ref>colortable</ref> object
+**! returns the resulting new <ref>Colortable</ref> object
 **!
-**! arg object(<ref>colortable</ref>) with
-**!	<ref>colortable</ref> object with colors to subtract
+**! arg object(<ref>Colortable</ref>) with
+**!	<ref>Colortable</ref> object with colors to subtract
 **/
 
 void image_colortable_operator_minus(INT32 args)
@@ -2620,9 +2618,9 @@ void image_colortable_cast_to_string(struct neo_colortable *nct)
 /*
 **! method object cast(string to)
 **!	cast the colortable to an array or mapping,
-**!	the array consists of <ref>Image.color</ref> objects
+**!	the array consists of <ref>Image.Color</ref> objects
 **!	and are not in index order. The mapping consists of
-**!	index:<ref>Image.color</ref> pairs, where index is 
+**!	index:<ref>Image.Color</ref> pairs, where index is 
 **!	the index (int) of that color.
 **!
 **!	example: <tt>(mapping)Image.Colortable(img)</tt>
@@ -2792,8 +2790,8 @@ void image_colortable_rigid(INT32 args)
 **!
 **!	<table><tr valign=center>
 **!	<td><illustration> return lena(); </illustration></td>
-**!	<td><illustration> object c=Image.Colortable(lena(),16); return c*lena(); </illustration></td>
-**!	<td><illustration> object c=Image.Colortable(lena(),16)->cubicles(4,5,4,200); return c*lena(); </illustration></td>
+**!	<td><illustration> object c=Colortable(lena(),16); return c*lena(); </illustration></td>
+**!	<td><illustration> object c=Colortable(lena(),16)->cubicles(4,5,4,200); return c*lena(); </illustration></td>
 **!	</tr><tr valign=center>
 **!	<td>original</td>
 **!	<td>default cubicles,<br>16 colors</td>
@@ -3267,35 +3265,35 @@ void build_rigid(struct neo_colortable *nct)
 **!
 **!	<table><tr valign=center>
 **!	<td></td>
-**!	<td><illustration> object c=Image.Colortable(lena(),2); return c*lena(); </illustration></td>
-**!	<td><illustration> object c=Image.Colortable(lena(),4); return c*lena(); </illustration></td>
-**!	<td><illustration> object c=Image.Colortable(lena(),8); return c*lena(); </illustration></td>
-**!	<td><illustration> object c=Image.Colortable(lena(),16); return c*lena(); </illustration></td>
-**!	<td><illustration> object c=Image.Colortable(lena(),32); return c*lena(); </illustration></td>
+**!	<td><illustration> object c=Colortable(lena(),2); return c*lena(); </illustration></td>
+**!	<td><illustration> object c=Colortable(lena(),4); return c*lena(); </illustration></td>
+**!	<td><illustration> object c=Colortable(lena(),8); return c*lena(); </illustration></td>
+**!	<td><illustration> object c=Colortable(lena(),16); return c*lena(); </illustration></td>
+**!	<td><illustration> object c=Colortable(lena(),32); return c*lena(); </illustration></td>
 **!	<td>no dither</td>
 **!	</tr><tr valign=center>
 **!	<td></td>
-**!	<td><illustration> object c=Image.Colortable(lena(),2)->floyd_steinberg(); return c*lena(); </illustration></td>
-**!	<td><illustration> object c=Image.Colortable(lena(),4)->floyd_steinberg(); return c*lena(); </illustration></td>
-**!	<td><illustration> object c=Image.Colortable(lena(),8)->floyd_steinberg(); return c*lena(); </illustration></td>
-**!	<td><illustration> object c=Image.Colortable(lena(),16)->floyd_steinberg(); return c*lena(); </illustration></td>
-**!	<td><illustration> object c=Image.Colortable(lena(),32)->floyd_steinberg(); return c*lena(); </illustration></td>
+**!	<td><illustration> object c=Colortable(lena(),2)->floyd_steinberg(); return c*lena(); </illustration></td>
+**!	<td><illustration> object c=Colortable(lena(),4)->floyd_steinberg(); return c*lena(); </illustration></td>
+**!	<td><illustration> object c=Colortable(lena(),8)->floyd_steinberg(); return c*lena(); </illustration></td>
+**!	<td><illustration> object c=Colortable(lena(),16)->floyd_steinberg(); return c*lena(); </illustration></td>
+**!	<td><illustration> object c=Colortable(lena(),32)->floyd_steinberg(); return c*lena(); </illustration></td>
 **!	<td><ref>floyd_steinberg</ref> dither</td>
 **!	</tr><tr valign=center>
 **!	<td></td>
-**!	<td><illustration> object c=Image.Colortable(lena(),2)->ordered(60,60,60); return c*lena(); </illustration></td>
-**!	<td><illustration> object c=Image.Colortable(lena(),4)->ordered(45,45,45); return c*lena(); </illustration></td>
-**!	<td><illustration> object c=Image.Colortable(lena(),8)->ordered(40,40,40); return c*lena(); </illustration></td>
-**!	<td><illustration> object c=Image.Colortable(lena(),16)->ordered(40,40,40); return c*lena(); </illustration></td>
-**!	<td><illustration> object c=Image.Colortable(lena(),32)->ordered(15,15,15); return c*lena(); </illustration></td>
+**!	<td><illustration> object c=Colortable(lena(),2)->ordered(60,60,60); return c*lena(); </illustration></td>
+**!	<td><illustration> object c=Colortable(lena(),4)->ordered(45,45,45); return c*lena(); </illustration></td>
+**!	<td><illustration> object c=Colortable(lena(),8)->ordered(40,40,40); return c*lena(); </illustration></td>
+**!	<td><illustration> object c=Colortable(lena(),16)->ordered(40,40,40); return c*lena(); </illustration></td>
+**!	<td><illustration> object c=Colortable(lena(),32)->ordered(15,15,15); return c*lena(); </illustration></td>
 **!	<td><ref>ordered</ref> dither</td>
 **!	</tr><tr valign=center>
 **!	<td><illustration> return lena(); </illustration></td>
-**!	<td><illustration> object c=Image.Colortable(lena(),2)->randomcube(60,60,60); return c*lena(); </illustration></td>
-**!	<td><illustration> object c=Image.Colortable(lena(),4)->randomcube(45,45,45); return c*lena(); </illustration></td>
-**!	<td><illustration> object c=Image.Colortable(lena(),8)->randomcube(40,40,40); return c*lena(); </illustration></td>
-**!	<td><illustration> object c=Image.Colortable(lena(),16)->randomcube(40,40,40); return c*lena(); </illustration></td>
-**!	<td><illustration> object c=Image.Colortable(lena(),32)->randomcube(15,15,15); return c*lena(); </illustration></td>
+**!	<td><illustration> object c=Colortable(lena(),2)->randomcube(60,60,60); return c*lena(); </illustration></td>
+**!	<td><illustration> object c=Colortable(lena(),4)->randomcube(45,45,45); return c*lena(); </illustration></td>
+**!	<td><illustration> object c=Colortable(lena(),8)->randomcube(40,40,40); return c*lena(); </illustration></td>
+**!	<td><illustration> object c=Colortable(lena(),16)->randomcube(40,40,40); return c*lena(); </illustration></td>
+**!	<td><illustration> object c=Colortable(lena(),32)->randomcube(15,15,15); return c*lena(); </illustration></td>
 **!	<td><ref>randomcube</ref> dither</td>
 **!	</tr><tr valign=center>
 **!	<td>original</td>
@@ -3652,7 +3650,7 @@ void image_colortable_index_32bit(INT32 args)
 **!	in the colorspace and comparing grey levels.
 **!
 **!	Default factors are 3, 4 and 1; blue is much 
-**!	darker than green. Compare with <ref>Image.image->grey</ref>().
+**!	darker than green. Compare with <ref>Image.Image->grey</ref>().
 **!
 **! returns the called object
 **!
@@ -3692,8 +3690,8 @@ void image_colortable_spacefactors(INT32 args)
 **!
 **!	<table><tr valign=center>
 **!	<td><illustration> return lena(); </illustration></td>
-**!	<td><illustration> object c=Image.Colortable(4,4,4)->floyd_steinberg(); return c*lena(); </illustration></td>
-**!	<td><illustration> object c=Image.Colortable(lena(),16)->floyd_steinberg(); return c*lena(); </illustration></td>
+**!	<td><illustration> object c=Colortable(4,4,4)->floyd_steinberg(); return c*lena(); </illustration></td>
+**!	<td><illustration> object c=Colortable(lena(),16)->floyd_steinberg(); return c*lena(); </illustration></td>
 **!	</tr><tr valign=center>
 **!	<td>original</td>
 **!	<td>floyd_steinberg to a 4󫶘 colorcube</td>
@@ -3820,8 +3818,8 @@ void image_colortable_nodither(INT32 args)
 **!
 **!	<table><tr valign=center>
 **!	<td><illustration> return lena(); </illustration></td>
-**!	<td><illustration> object c=Image.Colortable(4,4,4)->randomcube(); return c*lena(); </illustration></td>
-**!	<td><illustration> object c=Image.Colortable(4,4,4)->randomgrey(); return c*lena(); </illustration></td>
+**!	<td><illustration> object c=Colortable(4,4,4)->randomcube(); return c*lena(); </illustration></td>
+**!	<td><illustration> object c=Colortable(4,4,4)->randomgrey(); return c*lena(); </illustration></td>
 **!	</tr><tr valign=top>
 **!	<td>original</td>
 **!	<td colspan=2>mapped to <br><tt>Image.Colortable(4,4,4)-></tt></td>
@@ -3831,23 +3829,23 @@ void image_colortable_nodither(INT32 args)
 **!	<td>randomgrey()</td>
 **!	</tr><tr valign=top>
 **!	<td><illustration> 
-**!		object i=Image.image(lena()->xsize(),lena()->ysize()); 
+**!		object i=Image(lena()->xsize(),lena()->ysize()); 
 **!		i->tuned_box(0,0,i->xsize()-1,i->ysize()-1,
 **!		     ({({0,0,0}),({0,0,0}),({255,255,255}),({255,255,255})})); 
 **!		return i; 
 **!	</illustration></td>
 **!	<td><illustration> 
-**!		object i=Image.image(lena()->xsize(),lena()->ysize()); 
+**!		object i=Image(lena()->xsize(),lena()->ysize()); 
 **!		i->tuned_box(0,0,i->xsize()-1,i->ysize()-1,
 **!		     ({({0,0,0}),({0,0,0}),({255,255,255}),({255,255,255})})); 
-**!		object c=Image.Colortable(4,4,4)->randomcube(); 
+**!		object c=Colortable(4,4,4)->randomcube(); 
 **!		return c*i; 
 **!	</illustration></td>
 **!	<td><illustration> 
-**!		object i=Image.image(lena()->xsize(),lena()->ysize()); 
+**!		object i=Image(lena()->xsize(),lena()->ysize()); 
 **!		i->tuned_box(0,0,i->xsize()-1,i->ysize()-1,
 **!		     ({({0,0,0}),({0,0,0}),({255,255,255}),({255,255,255})})); 
-**!		object c=Image.Colortable(4,4,4)->randomgrey(); 
+**!		object c=Colortable(4,4,4)->randomgrey(); 
 **!		return c*i; 
 **!	</illustration></td>
 **!	</tr></table>
@@ -4058,9 +4056,9 @@ static int *ordered_make_diff(int *errors,int sz,int err)
 **!
 **!	<table><tr valign=center>
 **!	<td><illustration> return lena(); </illustration></td>
-**!	<td><illustration> object c=Image.Colortable(6,6,6)->ordered(42,42,42,2,2); return c*lena(); </illustration></td>
-**!	<td><illustration> object c=Image.Colortable(6,6,6)->ordered(); return c*lena(); </illustration></td>
-**!	<td><illustration> object c=Image.Colortable(6,6,6)->ordered(42,42,42,8,8,0,0,0,1,1,0); return c*lena(); </illustration></td>
+**!	<td><illustration> object c=Colortable(6,6,6)->ordered(42,42,42,2,2); return c*lena(); </illustration></td>
+**!	<td><illustration> object c=Colortable(6,6,6)->ordered(); return c*lena(); </illustration></td>
+**!	<td><illustration> object c=Colortable(6,6,6)->ordered(42,42,42,8,8,0,0,0,1,1,0); return c*lena(); </illustration></td>
 **!	</tr><tr valign=top>
 **!	<td>original</td>
 **!	<td colspan=2>mapped to <br><tt>Image.Colortable(6,6,6)-></tt></td>
@@ -4071,30 +4069,30 @@ static int *ordered_make_diff(int *errors,int sz,int err)
 **!	<td><tt>ordered<br> (42,42,42, 8,8,<br> 0,0, 0,1, 1,0)</tt></td>
 **!	</tr><tr valign=top>
 **!	<td><illustration> 
-**!		object i=Image.image(lena()->xsize(),lena()->ysize()); 
+**!		object i=Image(lena()->xsize(),lena()->ysize()); 
 **!		i->tuned_box(0,0,i->xsize()-1,i->ysize()-1,
 **!		     ({({0,0,0}),({0,0,0}),({255,255,255}),({255,255,255})})); 
 **!		return i; 
 **!	</illustration></td>
 **!	<td><illustration> 
-**!		object i=Image.image(lena()->xsize(),lena()->ysize()); 
+**!		object i=Image(lena()->xsize(),lena()->ysize()); 
 **!		i->tuned_box(0,0,i->xsize()-1,i->ysize()-1,
 **!		     ({({0,0,0}),({0,0,0}),({255,255,255}),({255,255,255})})); 
-**!		object c=Image.Colortable(6,6,6)->ordered(42,42,42,2,2); 
+**!		object c=Colortable(6,6,6)->ordered(42,42,42,2,2); 
 **!		return c*i; 
 **!	</illustration></td>
 **!	<td><illustration> 
-**!		object i=Image.image(lena()->xsize(),lena()->ysize()); 
+**!		object i=Image(lena()->xsize(),lena()->ysize()); 
 **!		i->tuned_box(0,0,i->xsize()-1,i->ysize()-1,
 **!		     ({({0,0,0}),({0,0,0}),({255,255,255}),({255,255,255})})); 
-**!		object c=Image.Colortable(6,6,6)->ordered(); 
+**!		object c=Colortable(6,6,6)->ordered(); 
 **!		return c*i; 
 **!	</illustration></td>
 **!	<td><illustration> 
-**!		object i=Image.image(lena()->xsize(),lena()->ysize()); 
+**!		object i=Image(lena()->xsize(),lena()->ysize()); 
 **!		i->tuned_box(0,0,i->xsize()-1,i->ysize()-1,
 **!		     ({({0,0,0}),({0,0,0}),({255,255,255}),({255,255,255})})); 
-**!		object c=Image.Colortable(6,6,6)->ordered(42,42,42,8,8,0,0,0,1,1,0); 
+**!		object c=Colortable(6,6,6)->ordered(42,42,42,8,8,0,0,0,1,1,0); 
 **!		return c*i; 
 **!	</illustration></td>
 **!	</tr></table>

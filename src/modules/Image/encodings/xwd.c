@@ -1,9 +1,9 @@
-/* $Id: xwd.c,v 1.9 1999/04/12 11:41:17 mirar Exp $ */
+/* $Id: xwd.c,v 1.10 1999/04/13 12:32:50 mirar Exp $ */
 
 /*
 **! module Image
 **! note
-**!	$Id: xwd.c,v 1.9 1999/04/12 11:41:17 mirar Exp $
+**!	$Id: xwd.c,v 1.10 1999/04/13 12:32:50 mirar Exp $
 **! submodule XWD
 **!
 **!	This submodule keeps the XWD (X Windows Dump) 
@@ -17,7 +17,7 @@
 **!	Advanced decoding:<br>
 **!	<ref>_decode</ref>
 **!
-**! see also: Image, Image.image, Image.PNM, Image.X
+**! see also: Image, Image.Image, Image.PNM, Image.X
 */
 #include "global.h"
 
@@ -25,7 +25,7 @@
 #include <ctype.h>
 
 #include "stralloc.h"
-RCSID("$Id: xwd.c,v 1.9 1999/04/12 11:41:17 mirar Exp $");
+RCSID("$Id: xwd.c,v 1.10 1999/04/13 12:32:50 mirar Exp $");
 #include "pike_macros.h"
 #include "object.h"
 #include "constants.h"

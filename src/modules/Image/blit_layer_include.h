@@ -1,11 +1,11 @@
-/* $Id: blit_layer_include.h,v 1.5 1997/12/28 09:29:31 hubbe Exp $ */
+/* $Id: blit_layer_include.h,v 1.6 1999/04/13 12:32:11 mirar Exp $ */
 /* included w/ defines in blit.c, image_add_layer() */
 
 /*
 **! module Image
 **! note
-**!	$Id: blit_layer_include.h,v 1.5 1997/12/28 09:29:31 hubbe Exp $
-**! class image
+**!	$Id: blit_layer_include.h,v 1.6 1999/04/13 12:32:11 mirar Exp $
+**! class Image
 */
 
 

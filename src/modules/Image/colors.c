@@ -1,8 +1,8 @@
 /*
 **! module Image
 **! note
-**!	$Id: colors.c,v 1.11 1999/04/12 14:55:48 mirar Exp $
-**! submodule color
+**!	$Id: colors.c,v 1.12 1999/04/13 12:32:12 mirar Exp $
+**! submodule Color
 **!
 **!	This module keeps names and easy handling 
 **!	for easy color support. It gives you an easy
@@ -11,47 +11,47 @@
 **!	A color is here an object, containing color
 **!	information and methods for conversion, see below.
 **!
-**!	<ref>Image.color</ref> can be called to make a color object.
-**!	<ref>Image.color()</ref> takes the following arguments:
+**!	<ref>Image.Color</ref> can be called to make a color object.
+**!	<ref>Image.Color()</ref> takes the following arguments:
 **!	<pre>
-**!	Image.color(string name)          // "red"
-**!	Image.color(string prefix_string) // "lightblue"
-**!	Image.color(string hex_name)      // "#ff00ff"
-**!	Image.color(string cmyk_string)   // "%17,42,0,19.4"
-**!	Image.color(string hsv_string)    // "%@327,90,32"
-**!	Image.color(int red, int green, int blue) 
+**!	Image.Color(string name)          // "red"
+**!	Image.Color(string prefix_string) // "lightblue"
+**!	Image.Color(string hex_name)      // "#ff00ff"
+**!	Image.Color(string cmyk_string)   // "%17,42,0,19.4"
+**!	Image.Color(string hsv_string)    // "%@327,90,32"
+**!	Image.Color(int red, int green, int blue) 
 **!     </pre>
 **!
 **!	The color names available can be listed by using indices 
-**!	on Image.color. The colors are available by name directly 
-**!	as <tt>Image.color.name</tt>, too:
+**!	on Image.Color. The colors are available by name directly 
+**!	as <tt>Image.Color.name</tt>, too:
 **!	<pre>
-**!	...Image.color.red...
-**!	...Image.color.green...
+**!	...Image.Color.red...
+**!	...Image.Color.green...
 **!	or, maybe
-**!	import Image.color;
+**!	import Image.Color;
 **!	...red...
 **!	...green...
 **!	...lightgreen...
 **!	</pre>
 **!
 **!	Giving red, green and blue values is equal to calling
-**!	<ref>Image.color.rgb</ref>().
+**!	<ref>Image.Color.rgb</ref>().
 **!	
 **!	The prefix_string method is a form for getting modified 
 **!	colors, it understands all modifiers
-**!	(<link to=Image.color.color.light>light</link>,
-**!	<link to=Image.color.color.dark>dark</link>,
-**!	<link to=Image.color.color.bright>bright</link>,
-**!	<link to=Image.color.color.dull>dull</link> and 
-**!	<link to=Image.color.color.neon>neon</link>). Simply  use
+**!	(<link to=Image.Color.Color.light>light</link>,
+**!	<link to=Image.Color.Color.dark>dark</link>,
+**!	<link to=Image.Color.Color.bright>bright</link>,
+**!	<link to=Image.Color.Color.dull>dull</link> and 
+**!	<link to=Image.Color.Color.neon>neon</link>). Simply  use
 **!	"method"+"color"; (as in <tt>lightgreen</tt>, 
 **!	<tt>dullmagenta</tt>, <tt>lightdullorange</tt>).
 **!
 **!	The <tt>hex_name</tt> form is a simple 
 **!	<tt>#rrggbb</tt> form, as in HTML or X-program argument.
 **!	A shorter form (<tt>#rgb</tt>) is also accepted. This
-**!	is the inverse to the <ref>Image.color.color->hex</ref>()
+**!	is the inverse to the <ref>Image.Color.Color->hex</ref>()
 **!	method.
 **!
 **!	The <tt>cmyk_string</tt> is a string form of giving
@@ -63,30 +63,30 @@
 **!	and saturation and value is given in percent. <i>This is not
 **!	the same as returned or given to the <ref>hsv</ref>() methods!</i>
 **!
-**! see also: Image.color.color->name, Image.color.color->rgb
+**! see also: Image.Color.Color->name, Image.Color.Color->rgb
 **!
 **! added:
 **!	pike 0.7
 **!	
 **! note: 
-**!	<tt>Image.color["something"]</tt> will never(!) generate an error, 
+**!	<tt>Image.Color["something"]</tt> will never(!) generate an error, 
 **!	but a zero_type 0, if the color is unknown. This is enough
 **!	to give the error "not present in module", if used 
-**!	as <tt>Image.color.something</tt>, though.
+**!	as <tt>Image.Color.something</tt>, though.
 **!
 **!     If you are using colors from for instance a webpage, you might
-**!	want to create the color from <ref>Image.color.guess</ref>(),
+**!	want to create the color from <ref>Image.Color.guess</ref>(),
 **!     since that method is more tolerant for mistakes and errors.
 **!
-**!     <tt>Image.color</tt>() is case- and space-sensitive.
-**!	Use <ref>Image.color.guess</ref>() to catch all variants.
+**!     <tt>Image.Color</tt>() is case- and space-sensitive.
+**!	Use <ref>Image.Color.guess</ref>() to catch all variants.
 **!
 **!	and subtract with a space (lower_case(x)-" ") to make
 **!	sure you get all variants.
 **!	
-**! see also: Image.color.color, Image.color.guess, Image, Image.colortable
+**! see also: Image.Color.Color, Image.Color.guess, Image, Image.Colortable
 **!
-**! class color
+**! class Color
 **!	This is the color object. It has six readable variables,
 **!	<tt>r</tt>, <tt>g</tt>, <tt>b</tt>, for the <i>red</i>, 
 **!	<i>green</i> and <i>blue</i> values, 
@@ -97,7 +97,7 @@
 #include "global.h"
 #include <config.h>
 
-RCSID("$Id: colors.c,v 1.11 1999/04/12 14:55:48 mirar Exp $");
+RCSID("$Id: colors.c,v 1.12 1999/04/13 12:32:12 mirar Exp $");
 
 #include "config.h"
 
@@ -299,7 +299,7 @@ static void try_find_name(struct color_struct *this)
 
 /*
 **! method void create(int r,int g,int b)
-**!	This is the main <ref>Image.color.color</ref> creation
+**!	This is the main <ref>Image.Color.Color</ref> creation
 **!	method, mostly for internal use. 
 **----- internal note: it takes a fourth argument, name of color ---
 **!
@@ -311,7 +311,7 @@ static void try_find_name(struct color_struct *this)
 **! method int greylevel()
 **! method int greylevel(int r, int g, int b)
 **!	This is methods of getting information from an
-**!	<ref>Image.color.color</ref> object. 
+**!	<ref>Image.Color.Color</ref> object. 
 **!	
 **!	They give an array of 
 **!	red, green and blue (rgb) values (color value),<br>
@@ -324,7 +324,7 @@ static void try_find_name(struct color_struct *this)
 **!	and could be given by argument.
 **!
 **! returns array(int) respective int
-**! see also: Image.color.color, grey
+**! see also: Image.Color.Color, grey
 */
 
 static void image_color_rgb(INT32 args)
@@ -356,7 +356,7 @@ static void image_color_greylevel(INT32 args)
    }
    else
    {
-      get_all_args("Image.color.color->greylevel()",args,"%i%i%i",&r,&g,&b);
+      get_all_args("Image.Color.Color->greylevel()",args,"%i%i%i",&r,&g,&b);
    }
    pop_n_elems(args);
    if (r+g+b==0) r=g=b=1;
@@ -452,7 +452,7 @@ static void image_color_cmyk(INT32 args)
 **! method object grey(int red,int green,int blue)
 **!	Gives a new color, containing a grey color,
 **!	which is calculated by the <ref>greylevel</ref> method.
-**! returns a new <ref>Image.color.color</ref> object
+**! returns a new <ref>Image.Color.Color</ref> object
 **! see also: greylevel
 */
 
@@ -484,8 +484,8 @@ static void image_color_grey(INT32 args)
 **!	the color, or the <ref>hex</ref>(2) if it isn't one
 **!	of the 16 <tt>HTML</tt> colors.
 **!
-**! returns a new <ref>Image.color.color</ref> object
-**! see also: rgb, hsv, Image.color
+**! returns a new <ref>Image.Color.Color</ref> object
+**! see also: rgb, hsv, Image.Color
 */
 
 static void image_color_hex(INT32 args)
@@ -494,7 +494,7 @@ static void image_color_hex(INT32 args)
    INT32 i=sizeof(COLORTYPE)*2;
 
    if (args)
-      get_all_args("Image.color.color->hex()",args,"%i",&i);
+      get_all_args("Image.Color.Color->hex()",args,"%i",&i);
 
    pop_n_elems(args);
    if (i<1)
@@ -591,7 +591,7 @@ static void image_color_cast(INT32 args)
 {
    if (args!=1 ||
        sp[-1].type!=T_STRING)
-      error("Image.color.color->cast(): Illegal argument(s)\n");
+      error("Image.Color.Color->cast(): Illegal argument(s)\n");
    
    if (sp[-1].u.string==str_array)
    {
@@ -603,7 +603,7 @@ static void image_color_cast(INT32 args)
       image_color_name(args);
       return;
    }
-   error("Image.color.color->cast(): Can't cast to that\n");
+   error("Image.Color.Color->cast(): Can't cast to that\n");
 }
 
 static void image_color_index(INT32 args)
@@ -611,7 +611,7 @@ static void image_color_index(INT32 args)
    struct svalue s;
 
    if (args!=1)
-      error("Image.color[]: illegal number of arguments\n");
+      error("Image.Color[]: illegal number of arguments\n");
 
    object_index_no_free2(&s,THISOBJ,sp-1);
    if (s.type==T_INT && sp[-1].type==T_STRING)
@@ -672,9 +672,9 @@ static void image_color_index(INT32 args)
 **!	Compares this object to another color,
 **!	or color name. Example:
 **!	<pre>
-**!	object red=Image.color.red;
-**!	object other=Image.color. ...;
-**!	object black=Image.color.black;
+**!	object red=Image.Color.red;
+**!	object other=Image.Color. ...;
+**!	object black=Image.Color.black;
 **!	
 **!	if (red==other) ...
 **!     if (red==({255,0,0})) ...
@@ -691,7 +691,7 @@ static void image_color_index(INT32 args)
 static void image_color_equal(INT32 args)
 {
    if (args!=1) 
-      error("Image.color.color->`==: illegal number of arguments");
+      error("Image.Color.Color->`==: illegal number of arguments");
 
    if (sp[-1].type==T_OBJECT)
    {
@@ -769,32 +769,32 @@ static void image_color___hash(INT32 args)
 **!	<tr><th>method</th><th width=50%>effect</th>
 **!	<th>h</th><th>s</th><th>v</th><th>as</th></tr>
 **!	<tr><td>light </td><td>raise light level</td><td>±0</td><td> ±0</td><td>+50</td>
-**!	<td><illustration>return Image.image(20,20,@(array)Image.color["#693e3e"])</illustration>
-**!	<illustration>return Image.image(20,20,@(array)Image.color["#693e3e"]->light())</illustration>
-**!	<illustration>return Image.image(20,20,@(array)Image.color["#693e3e"]->light()->light())</illustration>
-**!	<illustration>return Image.image(20,20,@(array)Image.color["#693e3e"]->light()->light()->light())</illustration></td></tr>
+**!	<td><illustration>return Image(20,20,@(array)Color["#693e3e"])</illustration>
+**!	<illustration>return Image(20,20,@(array)Color["#693e3e"]->light())</illustration>
+**!	<illustration>return Image(20,20,@(array)Color["#693e3e"]->light()->light())</illustration>
+**!	<illustration>return Image(20,20,@(array)Color["#693e3e"]->light()->light()->light())</illustration></td></tr>
 **!
 **!	<tr><td>dark  </td><td>lower light level</td><td>±0</td><td> ±0</td><td>-50</td>
-**!	<td><illustration>return Image.image(20,20,@(array)Image.color["#693e3e"])</illustration>
-**!	<illustration>return Image.image(20,20,@(array)Image.color["#693e3e"]->dark())</illustration>
-**!	<illustration>return Image.image(20,20,@(array)Image.color["#693e3e"]->dark()->dark())</illustration>
-**!	<illustration>return Image.image(20,20,@(array)Image.color["#693e3e"]->dark()->dark()->dark())</illustration></td></tr>
+**!	<td><illustration>return Image(20,20,@(array)Color["#693e3e"])</illustration>
+**!	<illustration>return Image(20,20,@(array)Color["#693e3e"]->dark())</illustration>
+**!	<illustration>return Image(20,20,@(array)Color["#693e3e"]->dark()->dark())</illustration>
+**!	<illustration>return Image(20,20,@(array)Color["#693e3e"]->dark()->dark()->dark())</illustration></td></tr>
 **!
 **!	<tr><td>bright</td><td>brighter color   </td><td>±0</td><td>+50</td><td>+50</td>
-**!	<td><illustration>return Image.image(20,20,@(array)Image.color["#693e3e"])</illustration>
-**!	<illustration>return Image.image(20,20,@(array)Image.color["#693e3e"]->bright())</illustration>
-**!	<illustration>return Image.image(20,20,@(array)Image.color["#693e3e"]->bright()->bright())</illustration>
-**!	<illustration>return Image.image(20,20,@(array)Image.color["#693e3e"]->bright()->bright()->bright())</illustration></td></tr>
+**!	<td><illustration>return Image(20,20,@(array)Color["#693e3e"])</illustration>
+**!	<illustration>return Image(20,20,@(array)Color["#693e3e"]->bright())</illustration>
+**!	<illustration>return Image(20,20,@(array)Color["#693e3e"]->bright()->bright())</illustration>
+**!	<illustration>return Image(20,20,@(array)Color["#693e3e"]->bright()->bright()->bright())</illustration></td></tr>
 **!
 **!	<tr><td>dull  </td><td>greyer color     </td><td>±0</td><td>-50</td><td>-50</td>
-**!	<td><illustration>return Image.image(20,20,@(array)Image.color.red)</illustration>
-**!	<illustration>return Image.image(20,20,@(array)Image.color.red->dull())</illustration>
-**!	<illustration>return Image.image(20,20,@(array)Image.color.red->dull()->dull())</illustration>
-**!	<illustration>return Image.image(20,20,@(array)Image.color.red->dull()->dull()->dull())</illustration></td></tr>
+**!	<td><illustration>return Image(20,20,@(array)Color.red)</illustration>
+**!	<illustration>return Image(20,20,@(array)Color.red->dull())</illustration>
+**!	<illustration>return Image(20,20,@(array)Color.red->dull()->dull())</illustration>
+**!	<illustration>return Image(20,20,@(array)Color.red->dull()->dull()->dull())</illustration></td></tr>
 **!
 **!	<tr><td>neon  </td><td>set to extreme   </td><td>±0</td><td>max</td><td>max</td>
-**!	<td><illustration>return Image.image(20,20,@(array)Image.color["#693e3e"])</illustration>
-**!	<illustration>return Image.image(20,20,@(array)Image.color["#693e3e"]->neon())</illustration></td></tr>
+**!	<td><illustration>return Image(20,20,@(array)Color["#693e3e"])</illustration>
+**!	<illustration>return Image(20,20,@(array)Color["#693e3e"]->neon())</illustration></td></tr>
 **!
 **!     </table>
 **! returns the new color object
@@ -802,9 +802,9 @@ static void image_color___hash(INT32 args)
 **!	The opposites may not always take each other out.
 **!	The color is maximised at white and black levels,
 **!	so, for instance 
-**!	<ref>Image.color</ref>.white-><ref>light</ref>()-><ref>dark</ref>()
+**!	<ref>Image.Color</ref>.white-><ref>light</ref>()-><ref>dark</ref>()
 **!	doesn't give the white color back, but the equal to
-**!	<ref>Image.color</ref>.white-><ref>dark</ref>(), since
+**!	<ref>Image.Color</ref>.white-><ref>dark</ref>(), since
 **!	white can't get any <ref>light</ref>er.
 */
 
@@ -893,7 +893,7 @@ static void image_color_bright(INT32 args)
 static void image_color_mult(INT32 args)
 {
    float x=0.0;
-   get_all_args("Image.color.color->`*",args,"%f",&x);
+   get_all_args("Image.Color.Color->`*",args,"%f",&x);
    pop_n_elems(args);
    _image_make_rgb_color((int)(THIS->rgb.r*x),
 			 (int)(THIS->rgb.g*x),
@@ -955,7 +955,7 @@ static void image_color_add(INT32 args)
    rgb_group rgb;
 
    if (!image_color_arg(args,&rgb))
-      error("Image.color.color->`+: Illegal argument(s)");
+      error("Image.Color.Color->`+: Illegal argument(s)");
 
    pop_n_elems(args);
    _image_make_rgb_color((int)(THIS->rgb.r+rgb.r),
@@ -977,7 +977,7 @@ static void image_get_color(INT32 args)
    static char *callables[]={"light","dark","neon","dull","bright"};
 
    if (args!=1) 
-      error("Image.color[]: illegal number of args");
+      error("Image.Color[]: illegal number of args");
    
    if (!colors)
       make_colors();
@@ -1061,7 +1061,7 @@ static void image_get_color(INT32 args)
 	       pop_stack();
 	       sp--;
 	       push_array_items(sp->u.array);
-	       get_all_args("Image.color()",3,"%f%f%f",&h,&s,&v);
+	       get_all_args("Image.Color()",3,"%f%f%f",&h,&s,&v);
 	       pop_n_elems(3);
 	       push_int((INT32)(h/360.0*256.0));
 	       push_int((INT32)(s/100.0*255.4));
@@ -1142,7 +1142,7 @@ static void image_guess_color(INT32 args)
    struct svalue s;
 
    if (args!=1 && sp[-args].type!=T_STRING) 
-      error("Image.color->guess(): illegal argument(s)\n");
+      error("Image.Color->guess(): illegal argument(s)\n");
    
    f_lower_case(1);
    push_text(" ");
@@ -1179,11 +1179,11 @@ static void image_make_color(INT32 args)
 
 /* 
 **! module Image
-**! submodule color
+**! submodule Color
 **!
 **! method object guess(string)
 **!	This is equivalent to
-**!	<tt><ref>Image.color</ref>(lower_case(str)-" ")</tt>,
+**!	<tt><ref>Image.Color</ref>(lower_case(str)-" ")</tt>,
 **!	and tries the color with a prepending '#' if no 
 **!	corresponding color is found.
 **!
@@ -1255,7 +1255,7 @@ static void image_make_rgb_color(INT32 args)
 {
    INT32 r=0,g=0,b=0;
 
-   get_all_args("Image.color.rgb()",args,"%i%i%i",&r,&g,&b);
+   get_all_args("Image.Color.rgb()",args,"%i%i%i",&r,&g,&b);
 
    _image_make_rgb_color(r,g,b);
 }
@@ -1268,7 +1268,7 @@ static void image_make_hsv_color(INT32 args)
    if (args && sp[-args].type==T_INT)
    {
       INT32 hi,si,vi;
-      get_all_args("Image.color.hsv()",args,"%i%i%i",
+      get_all_args("Image.Color.hsv()",args,"%i%i%i",
 		   &hi,&si,&vi);
       pop_n_elems(args);
 
@@ -1283,7 +1283,7 @@ static void image_make_hsv_color(INT32 args)
    }
    else
    {
-      get_all_args("Image.color.hsv()",args,"%f%f%f",
+      get_all_args("Image.Color.hsv()",args,"%f%f%f",
 		   &h,&s,&v);
       pop_n_elems(args);
       if (h<0) h=360+h-(((int)h/360)*360);
@@ -1324,7 +1324,7 @@ static void image_make_hsv_color(INT32 args)
 static void image_make_cmyk_color(INT32 args)
 {
    float c,m,y,k,r,g,b;
-   get_all_args("Image.color.cmyk()",args,"%F%F%F%F",&c,&m,&y,&k);
+   get_all_args("Image.Color.cmyk()",args,"%F%F%F%F",&c,&m,&y,&k);
    pop_n_elems(args);
 
    r=100-(c+k);
@@ -1338,7 +1338,7 @@ static void image_make_greylevel_color(INT32 args)
 {
    INT32 i;
 
-   get_all_args("Image.color.greylevel()",args,"%i",&i);
+   get_all_args("Image.Color.greylevel()",args,"%i",&i);
    pop_n_elems(args);
 
    _image_make_rgb_color(i,i,i);
@@ -1351,7 +1351,7 @@ static void image_make_html_color(INT32 args)
    if (args!=1 ||
        sp[-1].type!=T_STRING) 
    {
-      error("Image.color.html(): illegal arguments\n");
+      error("Image.Color.html(): illegal arguments\n");
       return;
    }
    
@@ -1380,10 +1380,10 @@ static void image_make_html_color(INT32 args)
 /*
 **! method array(string) _indices()
 **! method array(object) _values()
-**!	(ie as <tt>indices(Image.color)</tt> or <tt>values(Image.color)</tt>)
+**!	(ie as <tt>indices(Image.Color)</tt> or <tt>values(Image.Color)</tt>)
 **!	<tt>indices</tt> gives a list of all the known color names,
 **!	<tt>values</tt> gives there corresponding objects.
-**! see also: Image.color
+**! see also: Image.Color
 */
 
 static void image_colors_indices(INT32 args)
@@ -1476,12 +1476,12 @@ void init_image_colors(void)
    ADD_FUNCTION("_indices",image_colors_indices,tFunc(,tArr(tStr)),0);
    ADD_FUNCTION("_values",image_colors_values,tFunc(,tArr(tObj)),0);
 
-   add_program_constant("color",image_color_program,0);
+   add_program_constant("Color",image_color_program,0);
 
    prg=end_program();
    push_object(clone_object(prg,0));
    free_program(prg);
-   str=make_shared_string("color");
+   str=make_shared_string("Color");
    add_constant(str,sp-1,0);
    free_string(str);
    pop_stack();

@@ -1,5 +1,5 @@
 #include "global.h"
-RCSID("$Id: xcf.c,v 1.5 1999/04/12 11:41:16 mirar Exp $");
+RCSID("$Id: xcf.c,v 1.6 1999/04/13 12:32:47 mirar Exp $");
 
 #include "config.h"
 
@@ -865,7 +865,7 @@ void image_xcf_f__rle_decode( INT32 args )
 **!
 **!   <pre> Supported options
 **!    ([
-**!       "background":({r,g,b})||Image.color object
+**!       "background":({r,g,b})||Image.Color object
 **!       "draw_all_layers":1,
 **!            Draw invisible layers as well
 **!
@@ -881,7 +881,7 @@ void image_xcf_f__rle_decode( INT32 args )
 **!       "mark_layers":1,
 **!            Draw an outline around all (drawn) layers
 **!
-**!       "mark_layer_names":Image.font object,
+**!       "mark_layer_names":Image.Font object,
 **!            Write the name of all layers using the font object,
 **!
 **!       "mark_active_layer":1,
@@ -908,8 +908,8 @@ void image_xcf_f__rle_decode( INT32 args )
 **!      float xres = 72.0;
 **!      float yres = 72.0;
 **!      int res_unit;
-**!      Image.colortable colormap;
-**!      Image.colortable meta_colormap;
+**!      Image.Colortable colormap;
+**!      Image.Colortable meta_colormap;
 **!      array(Layer) layers = ({});
 **!      array(Channel) channels = ({});
 **!      array(Guide) guides = ({});
@@ -952,8 +952,8 @@ void image_xcf_f__rle_decode( INT32 args )
 **!    
 **!    !class Hierarchy
 **!    {
-**!      Image.image img;
-**!      Image.image alpha;
+**!      Image.Image img;
+**!      Image.Image alpha;
 **!      int width;
 **!      int height;
 **!      int bpp;

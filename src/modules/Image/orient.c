@@ -1,10 +1,10 @@
-/* $Id: orient.c,v 1.10 1998/04/20 19:51:56 mirar Exp $ */
+/* $Id: orient.c,v 1.11 1999/04/13 12:32:29 mirar Exp $ */
 
 /*
 **! module Image
 **! note
-**!	$Id: orient.c,v 1.10 1998/04/20 19:51:56 mirar Exp $
-**! class image
+**!	$Id: orient.c,v 1.11 1999/04/13 12:32:29 mirar Exp $
+**! class Image
 */
 
 #include "global.h"

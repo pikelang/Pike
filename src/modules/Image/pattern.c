@@ -1,10 +1,10 @@
-/* $Id: pattern.c,v 1.14 1999/04/12 23:55:20 mirar Exp $ */
+/* $Id: pattern.c,v 1.15 1999/04/13 12:32:30 mirar Exp $ */
 
 /*
 **! module Image
 **! note
-**!	$Id: pattern.c,v 1.14 1999/04/12 23:55:20 mirar Exp $
-**! class image
+**!	$Id: pattern.c,v 1.15 1999/04/13 12:32:30 mirar Exp $
+**! class Image
 */
 
 #include "global.h"
@@ -341,7 +341,7 @@ static void init_colorrange(rgb_group *cr,struct svalue *s,char *where)
 **!
 **!	Example: 
 **!	<tt>->noise( ({0,({255,0,0}), 0.3,({0,255,0}), 0.6,({0,0,255}), 0.8,({255,255,0})}), 0.2,0.0,0.0,1.0 );</tt>
-**!	<br><illustration>return image(200,100)->noise( ({0,({255,0,0}), 0.3,({0,255,0}), 0.6,({0,0,255}), 0.8,({255,255,0})}), 0.2,0.0,0.0,1.0 );</illustration>
+**!	<br><illustration>return Image(200,100)->noise( ({0,({255,0,0}), 0.3,({0,255,0}), 0.6,({0,0,255}), 0.8,({255,255,0})}), 0.2,0.0,0.0,1.0 );</illustration>
 **!
 **! arg array(float|int|array(int)) colorrange
 **! 	colorrange table
@@ -412,9 +412,9 @@ void image_noise(INT32 args)
 **!	The random seed may be different with each instance of pike.
 **!
 **!	Example: <br>
-**!	<tt>->turbulence( ({0,({229,204,204}), 0.9,({229,20,20}), 0.9,Image.color.black}) );</tt>
-**!	<br><illustration>return image(200,100)->
-**!     turbulence( ({0,({229,204,204}), 0.9,({229,20,20}), 0.9,Image.color.black}));</illustration>
+**!	<tt>->turbulence( ({0,({229,204,204}), 0.9,({229,20,20}), 0.9,Color.black}) );</tt>
+**!	<br><illustration>return Image(200,100)->
+**!     turbulence( ({0,({229,204,204}), 0.9,({229,20,20}), 0.9,Color.black}));</illustration>
 **! arg array(float|int|array(int)) colorrange
 **! 	colorrange table
 **! arg int octaves
@@ -426,7 +426,7 @@ void image_noise(INT32 args)
 **!	default value is 0,0
 **! arg float cscale
 **!	default value is 1
-**! see also: noise
+**! see also: noise, Image.Color
 */
 
 void image_turbulence(INT32 args)
