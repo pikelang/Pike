@@ -1,5 +1,5 @@
 /*
- * $Id: system.c,v 1.76 1999/10/27 15:16:40 grubba Exp $
+ * $Id: system.c,v 1.77 1999/10/28 20:59:25 grubba Exp $
  *
  * System-call module for Pike
  *
@@ -15,7 +15,7 @@
 #include "system_machine.h"
 #include "system.h"
 
-RCSID("$Id: system.c,v 1.76 1999/10/27 15:16:40 grubba Exp $");
+RCSID("$Id: system.c,v 1.77 1999/10/28 20:59:25 grubba Exp $");
 #ifdef HAVE_WINSOCK_H
 #include <winsock.h>
 #endif
@@ -891,6 +891,53 @@ void f_gethostname(INT32 args)
 }
 #endif /* HAVE_UNAME || HAVE_GETHOSTNAME || HAVE_SYSINFO */
 
+/* RFC 1884
+ *
+ * 2.2 Text Representation of Addresses
+ *
+ *  There are three conventional forms for representing IPv6 addresses
+ *  as text strings: 
+ * 
+ *   1. The preferred form is x:x:x:x:x:x:x:x, where the 'x's are the
+ *      hexadecimal values of the eight 16-bit pieces of the address.
+ * 	Examples:
+ * 	    FEDC:BA98:7654:3210:FEDC:BA98:7654:3210
+ * 	    1080:0:0:0:8:800:200C:417A
+ * 	Note that it is not necessary to write the leading zeros in an
+ * 	individual field, but there must be at least one numeral in
+ * 	every field (except for the case described in 2.).
+ *
+ *   2. Due to the method of allocating certain styles of IPv6
+ * 	addresses, it will be common for addresses to contain long
+ * 	strings of zero bits.  In order to make writing addresses
+ * 	containing zero bits easier a special syntax is available to
+ * 	compress the zeros.  The use of "::" indicates multiple groups
+ * 	of 16-bits of zeros.  The "::" can only appear once in an
+ * 	address.  The "::" can also be used to compress the leading
+ * 	and/or trailing zeros in an address.
+ * 	For example the following addresses:
+ * 	    1080:0:0:0:8:800:200C:417A  a unicast address
+ * 	    FF01:0:0:0:0:0:0:43         a multicast address
+ * 	    0:0:0:0:0:0:0:1             the loopback address
+ * 	    0:0:0:0:0:0:0:0             the unspecified addresses
+ * 	may be represented as:
+ * 	    1080::8:800:200C:417A       a unicast address
+ * 	    FF01::43                    a multicast address
+ * 	    ::1                         the loopback address
+ * 	    ::                          the unspecified addresses
+ *
+ *   3. An alternative form that is sometimes more convenient when
+ * 	dealing with a mixed environment of IPv4 and IPv6 nodes is
+ * 	x:x:x:x:x:x:d.d.d.d, where the 'x's are the hexadecimal values
+ * 	of the six high-order 16-bit pieces of the address, and the 'd's
+ * 	are the decimal values of the four low-order 8-bit pieces of the
+ * 	address (standard IPv4 representation).  Examples:
+ * 	    0:0:0:0:0:0:13.1.68.3
+ * 	    0:0:0:0:0:FFFF:129.144.52.38
+ * 	or in compressed form:
+ * 	    ::13.1.68.3
+ * 	    ::FFFF:129.144.52.38
+ */
 int my_isipnr(char *s)
 {
   int e,i;
@@ -910,6 +957,72 @@ int my_isipnr(char *s)
   while(*s==' ') s++;
   if(*s) return 0;
   return 1;
+}
+
+int my_isipv6nr(char *s)
+{
+  int i = 0;
+  int field = 0;
+  int compressed = 0;
+  int is_hex = 0;
+  int has_value = 0;
+
+  for(i = 0; s[i]; i++) {
+    switch(s[i]) {
+    case 'A':case 'B':case 'C':case 'D':case 'E':case 'F':
+    case 'a':case 'b':case 'c':case 'd':case 'e':case 'f':
+      is_hex = 1;
+      /* FALL_THROUGH */
+    case '0':case '1':case '2':case '3':case '4':
+    case '5':case '6':case '7':case '8':case '9':
+      has_value++;
+      if (has_value > 4) {
+	/* Too long value field. */
+	return 0;
+      }
+      break;
+    case ':':
+      if (s[i+1] == ':') {
+	if (compressed) {
+	  /* Only one compressed range is allowed. */
+	  return 0;
+	}
+	compressed++;
+	break;
+      } else if (!has_value) {
+	/* The first value can only be left out if it starts with '::'. */
+	return 0;
+      }
+      is_hex = 0;
+      has_value = 0;
+      field++;
+      if ((field + compressed) > 7) {
+	/* Too many fields */
+	return 0;
+      }
+      break;
+    case '.':
+      /* Dotted decimal. */
+      if (is_hex || !has_value ||
+	  (!compressed && (field != 6)) ||
+	  (compressed && (field > 6))) {
+	/* Hex not allowed in dotted decimal section.
+	 * Must have a value before the first '.'.
+	 * Must have 6 fields or a compressed range with at most 6 fields
+	 * before the dotted decimal section.
+	 */
+	return 0;
+      }
+      return my_isipnr(s+i-1);
+    default:
+      return 0;
+    }
+  }
+  if (((has_value) || (compressed && (s[i-2] == ':'))) &&
+      (compressed || (fields == 7))) {
+    return 1;
+  }
+  return 0;
 }
 
 #ifdef _REENTRANT
