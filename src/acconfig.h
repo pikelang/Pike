@@ -139,9 +139,13 @@
 #undef USE_FCNTL_O_NONBLOCK
 
 /* We want to use errno later */
-#if !defined(_UNIX_THREADS) && !defined(_MIT_POSIX_THREADS) && defined(HAVE_SPROC) && defined(HAVE_OSERROR) && !defined(errno)
+#ifdef _SGI_SPROC_THREADS
+/* Magic define of _SGI_MP_SOURCE above might redefine errno below */
+#include <errno.h>
+#if defined(HAVE_OSERROR) && !defined(errno)
 #define errno (oserror())
-#endif /* !_UNIX_THREADS && !_MIT_POSIX_THREADS && HAVE_SPROC && HAVE_OSERROR */
+#endif /* HAVE_OSERROR && !errno */
+#endif /* _SGI_SPROC_THREADS */
 
 #ifdef HAVE_FUNCTION_ATTRIBUTES
 #define ATTRIBUTE(X) __attribute__ (X)
