@@ -1,6 +1,6 @@
 #pike __REAL_VERSION__
 
-//  $Id: Session.pike,v 1.30 2002/01/16 23:21:47 nilsson Exp $
+//  $Id: Session.pike,v 1.31 2002/05/05 14:10:17 mast Exp $
 
 import ".";
 
@@ -801,8 +801,8 @@ class Membership
 	ProtocolTypes.TextList textlist=block->dense;
 	int j=textmapping->range_begin;
 
-	foreach(textlist->texts, int global)
-	  local_to_global[j++]=global;
+	foreach(textlist->texts, int global_text)
+	  local_to_global[j++]=global_text;
       }
       else                         /* Use array(TextNumberPair) */
       {
