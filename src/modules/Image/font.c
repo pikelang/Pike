@@ -1,6 +1,6 @@
 #include <config.h>
 
-/* $Id: font.c,v 1.1 1997/02/11 08:35:43 hubbe Exp $ */
+/* $Id: font.c,v 1.2 1997/03/09 13:45:55 grubba Exp $ */
 
 #include "global.h"
 
@@ -528,7 +528,7 @@ void init_font_programs(void)
    add_storage(sizeof(struct font*));
 
    add_function("load",font_load,
-                "function(string:int)",0);
+                "function(string:object|int)",0);
 
    add_function("write",font_write,
                 "function(string:object)",0);

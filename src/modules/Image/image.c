@@ -1,4 +1,4 @@
-/* $Id: image.c,v 1.1 1997/02/11 08:35:43 hubbe Exp $ */
+/* $Id: image.c,v 1.2 1997/03/09 13:45:56 grubba Exp $ */
 
 #include "global.h"
 
@@ -7,7 +7,7 @@
 
 #include "stralloc.h"
 #include "global.h"
-RCSID("$Id: image.c,v 1.1 1997/02/11 08:35:43 hubbe Exp $");
+RCSID("$Id: image.c,v 1.2 1997/03/09 13:45:56 grubba Exp $");
 #include "types.h"
 #include "macros.h"
 #include "object.h"
@@ -1636,7 +1636,7 @@ void pike_module_init()
    add_storage(sizeof(struct image));
 
    add_function("create",image_create,
-		"function(int,int,"RGB_TYPE":void)",0);
+		"function(int|void,int|void,"RGB_TYPE":void)",0);
    add_function("clone",image_clone,
 		"function(int,int,"RGB_TYPE":object)",0);
    add_function("new",image_clone, /* alias */
