@@ -19,7 +19,7 @@
 #include "file_machine.h"
 #include "file.h"
 
-RCSID("$Id: socket.c,v 1.45 1999/12/14 19:50:48 mast Exp $");
+RCSID("$Id: socket.c,v 1.46 2000/01/30 20:58:18 per Exp $");
 
 #ifdef HAVE_SYS_TYPE_H
 #include <sys/types.h>
@@ -87,7 +87,7 @@ static void do_close(struct port *p, struct object *o)
       o->refs--;
     set_read_callback(p->fd,0,0);
   }
-  
+
   p->fd=-1;
 }
 
@@ -139,7 +139,7 @@ static void port_listen_fd(INT32 args)
 
   if(sp[-args].type != T_INT)
     error("Bad argument 1 to port->bind_fd()\n");
-  
+
   fd=sp[-args].u.integer;
 
   if(fd<0 || fd >MAX_OPEN_FILEDESCRIPTORS)
@@ -337,7 +337,7 @@ static void port_accept(INT32 args)
 
   my_set_close_on_exec(fd,1);
   o=file_make_object_from_fd(fd,FILE_READ | FILE_WRITE, SOCKET_CAPABILITIES);
-  
+
   pop_n_elems(args);
   push_object(o);
 }
@@ -392,6 +392,13 @@ static void exit_port_struct(struct object *o)
   THIS->accept_callback.type=T_INT;
 }
 
+struct program *port_program;
+
+void port_exit_program(void)
+{
+  free_program( port_program );
+}
+
 void port_setup_program(void)
 {
   INT32 offset;
@@ -419,6 +426,14 @@ void port_setup_program(void)
   set_init_callback(init_port_struct);
   set_exit_callback(exit_port_struct);
 
-  end_class("_port",0);
+  port_program = end_program();
+  add_program_constant( "_port", port_program, 0 );
+/*   end_class("_port",0); */
 }
 
+int fd_from_portobject( struct object *p )
+{
+  struct port *po = get_storage( p, port_program );
+  if(!po) return -1;
+  return po->fd;
+}

@@ -5,7 +5,7 @@
 \*/
 /**/
 #include "global.h"
-RCSID("$Id: file.c,v 1.164 2000/01/10 00:42:25 hubbe Exp $");
+RCSID("$Id: file.c,v 1.165 2000/01/30 20:58:17 per Exp $");
 #include "fdlib.h"
 #include "interpret.h"
 #include "svalue.h"
@@ -126,7 +126,7 @@ static struct my_file *get_file_storage(struct object *o)
   if((ob=(struct object **)get_storage(o,file_ref_program)))
      if(*ob && (f=(struct my_file *)get_storage(*ob, file_program)))
 	return f;
-  
+
   return 0;
 }
 
@@ -148,7 +148,7 @@ OOBOP( || (query_read_oob_callback((X)->fd)==file_read_oob_callback) ||	\
          fatal("Internal reference is wrong. %d\n",(X)->flags & FILE_HAS_INTERNAL_REF);		\
    } while (0)
 #else
-#define CHECK_FILEP(o) 
+#define CHECK_FILEP(o)
 #define DEBUG_CHECK_INTERNAL_REFERENCE(X)
 #endif
 #define SET_INTERNAL_REFERENCE(f) \
@@ -194,7 +194,7 @@ static void init_fd(int fd, int open_mode)
   THIS->write_oob_callback.type=T_INT;
   THIS->write_oob_callback.u.integer=0;
 #endif /* WITH_OOB */
-#if defined(HAVE_FD_FLOCK) || defined(HAVE_FD_LOCKF) 
+#if defined(HAVE_FD_FLOCK) || defined(HAVE_FD_LOCKF)
   THIS->key=0;
 #endif
 }
@@ -216,7 +216,7 @@ void reset_variables(void)
 
 static void free_fd_stuff(void)
 {
-#if defined(HAVE_FD_FLOCK) || defined(HAVE_FD_LOCKF) 
+#if defined(HAVE_FD_FLOCK) || defined(HAVE_FD_LOCKF)
   if(THIS->key)
   {
     destruct(THIS->key);
@@ -246,7 +246,7 @@ static void just_close_fd(void)
     THREADS_ALLOW_UID();
     i=fd_close(fd);
     THREADS_DISALLOW_UID();
-    
+
     if(i < 0)
     {
       switch(errno)
@@ -255,10 +255,10 @@ static void just_close_fd(void)
 	  ERRNO=errno;
 	  FD=fd;
 	  error("Failed to close file.\n");
-	  
+
 	case EBADF:
 	  error("Internal error: Closing a non-active file descriptor %d.\n",fd);
-	  
+
 	case EINTR:
 	  continue;
       }
@@ -330,7 +330,7 @@ static int parse(char *a)
     case 'w':
     case 'W':
       ret|=FILE_WRITE;
-      break; 
+      break;
 
     case 'a':
     case 'A':
@@ -428,7 +428,7 @@ static struct pike_string *do_read(int fd,
     }while(r);
 
     UNSET_ONERROR(ebuf);
-    
+
     if(!IS_ZERO(& THIS->read_callback))
     {
       set_read_callback(FD, file_read_callback, THIS);
@@ -444,7 +444,7 @@ static struct pike_string *do_read(int fd,
       free((char *)str);
       return foo;
     }
-    
+
   }else{
 #define CHUNK 65536
     INT32 try_read;
@@ -457,7 +457,7 @@ static struct pike_string *do_read(int fd,
       int e;
       char *buf;
       try_read=MINIMUM(CHUNK,r);
-      
+
       buf = low_make_buf_space(try_read, &b);
 
       THREADS_ALLOW();
@@ -466,7 +466,7 @@ static struct pike_string *do_read(int fd,
 
       e=errno; /* check signals may effect errno */
       check_signals(0,0,0);
-      
+
       if(i==try_read)
       {
 	r-=i;
@@ -568,7 +568,7 @@ static struct pike_string *do_read_oob(int fd,
     }while(r);
 
     UNSET_ONERROR(ebuf);
-    
+
     if(!IS_ZERO(& THIS->read_oob_callback))
     {
       set_read_oob_callback(FD, file_read_oob_callback, THIS);
@@ -584,7 +584,7 @@ static struct pike_string *do_read_oob(int fd,
       free_string(end_shared_string(str));
       return foo;
     }
-    
+
   }else{
 #define CHUNK 65536
     INT32 try_read;
@@ -597,7 +597,7 @@ static struct pike_string *do_read_oob(int fd,
       int e;
       char *buf;
       try_read=MINIMUM(CHUNK,r);
-      
+
       buf = low_make_buf_space(try_read, &b);
 
       THREADS_ALLOW();
@@ -606,7 +606,7 @@ static struct pike_string *do_read_oob(int fd,
 
       e=errno;
       check_signals(0,0,0);
-      
+
       if(i==try_read)
       {
 	r-=i;
@@ -849,7 +849,7 @@ static void file__enable_callbacks(INT32 args)
     PIKE_CONCAT(set_,X)(FD, 0, 0);				\
   }else{							\
     PIKE_CONCAT(set_,X)(FD, PIKE_CONCAT(file_,X), THIS);	\
-  }								
+  }
 
 DO_TRIGGER(read_callback)
 DO_TRIGGER(write_callback)
@@ -868,7 +868,7 @@ static void file__disable_callbacks(INT32 args)
   if(FD<0)
     error("File is not open.\n");
 #define DO_DISABLE(X) \
-  PIKE_CONCAT(set_,X)(FD, 0, 0); 
+  PIKE_CONCAT(set_,X)(FD, 0, 0);
 
 
 DO_DISABLE(read_callback)
@@ -897,7 +897,7 @@ static void file_write(INT32 args)
 
   if(FD < 0)
     error("File not open for write.\n");
-  
+
   if (sp[-args].type == T_ARRAY) {
     struct array *a = sp[-args].u.array;
     i = a->size;
@@ -1114,7 +1114,7 @@ static void file_write_oob(INT32 args)
 
   if(FD < 0)
     error("File not open for write_oob.\n");
-  
+
   written=0;
   str=sp[-args].u.string;
 
@@ -1261,7 +1261,7 @@ static void file_open(INT32 args)
   int access;
   struct pike_string *str, *flag_str;
   close_fd();
-  
+
   if(args < 2)
     error("Too few arguments to file->open()\n");
 
@@ -1315,19 +1315,19 @@ static void file_open(INT32 args)
 		    pop_n_elems(args+1);
 		    push_int(0);
 		    return;
-	    
+
 		 case 1: /* return 1 */
 		    pop_n_elems(args+1);
 		    push_int(1);
 		    return;
-	    
+
 		 case 2: /* ok */
 		    pop_stack();
 		    break;
-	    
+
 		 case 3: /* permission denied */
 		    error("Stdio.file->open: permission denied.\n");
-	    
+
 		 default:
 		    error("Error in user->valid_open, wrong return value.\n");
 	      }
@@ -1342,7 +1342,7 @@ static void file_open(INT32 args)
 	}
      }
 #endif
-      
+
      if(!( flags &  (FILE_READ | FILE_WRITE)))
 	error("Must open file for at least one of read and write.\n");
 
@@ -1402,7 +1402,7 @@ static void file_seek(INT32 args)
 #else
   INT32 to;
 #endif
-  
+
 #ifdef HAVE_LSEEK64
 #ifdef AUTO_BIGNUM
   if(1 <= args && is_bignum_object_in_svalue(&sp[-args]))
@@ -1454,7 +1454,7 @@ static void file_tell(INT32 args)
 
   if(FD < 0)
     error("File not open.\n");
-  
+
   ERRNO=0;
 #ifdef HAVE_LSEEK64
   to=lseek64(FD, 0L, SEEK_CUR);
@@ -1484,13 +1484,13 @@ static void file_truncate(INT32 args)
     error("File not open.\n");
 
   len = sp[-args].u.integer;
-  
+
   ERRNO=0;
   res=fd_ftruncate(FD, len);
 
   pop_n_elems(args);
 
-  if(res<0) 
+  if(res<0)
      ERRNO=errno;
 
   push_int(!res);
@@ -1506,7 +1506,7 @@ static void file_stat(INT32 args)
 
   if(FD < 0)
     error("File not open.\n");
-  
+
   pop_n_elems(args);
 
   fd=FD;
@@ -1692,14 +1692,14 @@ int my_socketpair(int family, int type, int protocol, int sv[2])
   if(family != AF_UNIX || type != SOCK_STREAM)
   {
     errno=EINVAL;
-    return -1; 
+    return -1;
   }
 
   if(socketpair_fd==-1)
   {
     if((socketpair_fd=fd_socket(AF_INET, SOCK_STREAM, 0)) < 0)
       return -1;
-    
+
     /* I wonder what is most common a loopback on ip# 127.0.0.1 or
      * a loopback with the name "localhost"?
      * Let's hope those few people who don't have socketpair have
@@ -1742,7 +1742,7 @@ int my_socketpair(int family, int type, int protocol, int sv[2])
 
     my_addr.sin_addr.s_addr=inet_addr("127.0.0.1");
   }
-  
+
 
   if((sv[1]=fd_socket(AF_INET, SOCK_STREAM, 0)) <0) return -1;
 
@@ -1763,7 +1763,7 @@ retry_connect:
 
 	len2=sizeof(addr);
 	tmp=fd_accept(socketpair_fd,(struct sockaddr *)&addr,&len2);
-	
+
 	if(tmp!=-1)
 	  fd_close(tmp);
 	else
@@ -1820,7 +1820,7 @@ int socketpair_ultra(int family, int type, int protocol, int sv[2])
   {
     int ret=my_socketpair(family, type, protocol, sv);
     if(ret>=0) return ret;
-    
+
     switch(errno)
     {
       case EAGAIN: break;
@@ -1881,7 +1881,7 @@ static void file_pipe(INT32 args)
       }
     }
 #endif
-    
+
     if(!(type & ~(SOCKET_CAPABILITIES)))
     {
       i=socketpair_ultra(AF_UNIX, SOCK_STREAM, 0, &inout[0]);
@@ -1895,7 +1895,7 @@ static void file_pipe(INT32 args)
       error("Cannot create a pipe matching those parameters.\n");
     }
   }while(0);
-    
+
   if ((i<0) || (inout[0] < 0) || (inout[1] < 0))
   {
     if (inout[0] >= 0) {
@@ -1919,11 +1919,11 @@ static void file_pipe(INT32 args)
   {
     init_fd(inout[0],FILE_READ | (type&fd_BIDIRECTIONAL?FILE_WRITE:0) |
 	    fd_query_properties(inout[0], type));
-    
+
     my_set_close_on_exec(inout[0],1);
     my_set_close_on_exec(inout[1],1);
     FD=inout[0];
-    
+
     ERRNO=0;
     push_object(file_make_object_from_fd(inout[1], (type&fd_BIDIRECTIONAL?FILE_READ:0)| FILE_WRITE,type));
   }
@@ -1935,7 +1935,7 @@ static void init_file_struct(struct object *o)
   ERRNO=0;
   THIS->open_mode=0;
   THIS->flags=0;
-#if defined(HAVE_FD_FLOCK) || defined(HAVE_FD_LOCKF) 
+#if defined(HAVE_FD_FLOCK) || defined(HAVE_FD_LOCKF)
   THIS->key=0;
 #endif /* HAVE_FD_FLOCK */
   THIS->myself=o;
@@ -1944,7 +1944,7 @@ static void init_file_struct(struct object *o)
 
 static void exit_file_struct(struct object *o)
 {
-  if(!(THIS->flags & (FILE_NO_CLOSE_ON_DESTRUCT | 
+  if(!(THIS->flags & (FILE_NO_CLOSE_ON_DESTRUCT |
 		      FILE_LOCK_FD |
 		      FILE_NOT_OPENED)))
      just_close_fd();
@@ -1985,7 +1985,7 @@ static void low_dup(struct object *toob,
   }else{
     set_read_callback(to->fd, file_read_callback, to);
   }
-  
+
   if(IS_ZERO(& from->write_callback))
   {
     set_write_callback(to->fd, 0,0);
@@ -1993,14 +1993,14 @@ static void low_dup(struct object *toob,
     set_write_callback(to->fd, file_write_callback, to);
   }
 
-#ifdef WITH_OOB  
+#ifdef WITH_OOB
   if(IS_ZERO(& from->read_oob_callback))
   {
     set_read_oob_callback(to->fd, 0,0);
   }else{
     set_read_oob_callback(to->fd, file_read_oob_callback, to);
   }
-  
+
   if(IS_ZERO(& from->write_oob_callback))
   {
     set_write_oob_callback(to->fd, 0,0);
@@ -2049,7 +2049,7 @@ static void file_dup2(INT32 args)
   }
   ERRNO=0;
   low_dup(o, fd, THIS);
-  
+
   pop_n_elems(args);
   push_int(1);
 }
@@ -2191,7 +2191,7 @@ static void file_connect(INT32 args)
 
   if(sp[-args].type != T_STRING)
     error("Bad argument 1 to file->connect()\n");
-      
+
   if(sp[1-args].type != T_INT)
     error("Bad argument 2 to file->connect()\n");
 
@@ -2394,7 +2394,7 @@ void file_proxy(INT32 args)
     fd_close(from);
     error("Failed to dup proxy fd.\n");
   }
-  
+
   p=ALLOC_STRUCT(new_thread_data);
   p->from=from;
   p->to=to;
@@ -2437,7 +2437,7 @@ void create_proxy_pipe(struct object *o, int for_reading)
 
 #endif
 
-#if defined(HAVE_FD_FLOCK) || defined(HAVE_FD_LOCKF) 
+#if defined(HAVE_FD_FLOCK) || defined(HAVE_FD_LOCKF)
 
 static struct program * file_lock_key_program;
 
@@ -2479,7 +2479,7 @@ static void low_file_lock(INT32 args, int flags)
   ret=fd_flock(fd, flags);
 #else
   ret=fd_lockf(fd, flags);
-#endif  
+#endif
   THREADS_DISALLOW();
 
   if(ret<0)
@@ -2592,6 +2592,7 @@ static void exit_file_locking(void)
 void pike_module_exit(void)
 {
   extern void exit_sendfile(void);
+  extern void port_exit_program(void);
 
   exit_sendfile();
 
@@ -2610,6 +2611,7 @@ void pike_module_exit(void)
     fd_close(socketpair_fd);
     socketpair_fd = -1;
   }
+  port_exit_program();
 }
 
 void init_files_efuns(void);
@@ -2649,8 +2651,8 @@ void check_static_file_data(struct callback *a, void *b, void *c)
 #if defined(HAVE_TERMIOS_H)
 void file_tcgetattr(INT32 args);
 void file_tcsetattr(INT32 args);
-void file_tcsendbreak(INT32 args); 
-void file_tcflush(INT32 args); 
+void file_tcsendbreak(INT32 args);
+void file_tcflush(INT32 args);
 /* void file_tcdrain(INT32 args); */
 /* void file_tcflow(INT32 args); */
 /* void file_tcgetpgrp(INT32 args); */
@@ -2704,7 +2706,7 @@ void pike_module_init(void)
   ((struct my_file *)(o->storage))->flags |= FILE_NO_CLOSE_ON_DESTRUCT;
   add_object_constant("_stderr",o,0);
   free_object(o);
-  
+
   start_new_program();
   ADD_STORAGE(struct object *);
   map_variable("_fd","object",0,0,T_OBJECT);
@@ -2745,7 +2747,9 @@ int pike_make_pipe(int *fds)
 
 int fd_from_object(struct object *o)
 {
+  extern int fd_from_portobject( struct object *o );
   struct my_file *f=get_file_storage(o);
-  if(!f) return -1;
+  if(!f)
+    return fd_from_portobject( o );
   return f->fd;
 }
