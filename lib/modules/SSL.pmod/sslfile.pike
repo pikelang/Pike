@@ -1,6 +1,6 @@
 #pike __REAL_VERSION__
 
-/* $Id: sslfile.pike,v 1.87 2005/01/26 20:53:56 mast Exp $
+/* $Id: sslfile.pike,v 1.88 2005/01/26 21:35:08 mast Exp $
  */
 
 #if constant(SSL.Cipher.CipherAlgorithm)
@@ -74,8 +74,8 @@ static array(string) write_buffer; // Encrypted data to be written.
 static String.Buffer read_buffer; // Decrypted data that has been read.
 
 static mixed callback_id;
-static function(object, void|mixed:int) accept_callback;
-static function(mixed,string:int) read_callback;
+static function(void|object,void|mixed:int) accept_callback;
+static function(void|mixed,void|string:int) read_callback;
 static function(void|mixed:int) write_callback;
 static function(void|mixed:int) close_callback;
 
@@ -755,12 +755,12 @@ int renegotiate()
   } LEAVE;
 }
 
-void set_nonblocking (void|function(mixed,string:void) read,
-		      void|function(void|mixed:void) write,
-		      void|function(void|mixed:void) close,
-		      void|function(void|mixed:void) read_oob,
-		      void|function(void|mixed:void) write_oob,
-		      void|function(void|mixed:void) accept)
+void set_nonblocking (void|function(void|mixed,void|string:int) read,
+		      void|function(void|mixed:int) write,
+		      void|function(void|mixed:int) close,
+		      void|function(void|mixed:int) read_oob,
+		      void|function(void|mixed:int) write_oob,
+		      void|function(void|mixed:int) accept)
 //! Set the stream in nonblocking mode, installing the specified
 //! callbacks. The alert callback isn't touched.
 //!
@@ -870,7 +870,7 @@ function(object,int|object,string:void) query_alert_callback()
   return conn && conn->alert_callback;
 }
 
-void set_accept_callback (function(object,void|mixed:int) accept)
+void set_accept_callback (function(void|object,void|mixed:int) accept)
 //! Install a function that will be called when the handshake is
 //! finished and the connection is ready for use.
 //!
@@ -892,13 +892,13 @@ void set_accept_callback (function(object,void|mixed:int) accept)
   } LEAVE;
 }
 
-function(object,void|mixed:int) query_accept_callback()
+function(void|object,void|mixed:int) query_accept_callback()
 //!
 {
   return accept_callback;
 }
 
-void set_read_callback (function(mixed,string:int) read)
+void set_read_callback (function(void|mixed,void|string:int) read)
 //! Install a function to be called when data is available.
 {
   SSL3_DEBUG_MSG ("SSL.sslfile->set_read_callback (%O)\n", read);
@@ -912,7 +912,7 @@ void set_read_callback (function(mixed,string:int) read)
   } LEAVE;
 }
 
-function(mixed,string:int) query_read_callback()
+function(void|mixed,void|string:int) query_read_callback()
 //!
 {
   return read_callback;
