@@ -5,7 +5,7 @@
 \*/
 /**/
 #include "global.h"
-RCSID("$Id: program.c,v 1.384 2001/11/08 23:34:29 nilsson Exp $");
+RCSID("$Id: program.c,v 1.385 2001/11/24 23:18:48 mast Exp $");
 #include "program.h"
 #include "object.h"
 #include "dynamic_buffer.h"
@@ -56,7 +56,6 @@ static size_t add_xstorage(size_t size,
   struct program *p;				\
   for(p=first_program;p;p=p->next)		\
   {						\
-    num++;					\
     size+=p->total_size;			\
   }						\
 }while(0)
