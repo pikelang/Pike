@@ -14,6 +14,7 @@
   FILE_FUNC("tell",file_tell,"function(:int)")
   FILE_FUNC("stat",file_stat,"function(:int *)")
   FILE_FUNC("errno",file_errno,"function(:int)")
+  FILE_FUNC("mode",file_mode,"function(:int)")
 
   FILE_FUNC("set_close_on_exec",file_set_close_on_exec,"function(int:void)")
   FILE_FUNC("set_nonblocking",file_set_nonblocking,"function(:void)")

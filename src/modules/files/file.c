@@ -5,7 +5,7 @@
 \*/
 /**/
 #include "global.h"
-RCSID("$Id: file.c,v 1.147 1999/04/17 13:55:27 grubba Exp $");
+RCSID("$Id: file.c,v 1.148 1999/04/19 15:06:38 grubba Exp $");
 #include "fdlib.h"
 #include "interpret.h"
 #include "svalue.h"
@@ -1438,6 +1438,12 @@ static void file_errno(INT32 args)
 {
   pop_n_elems(args);
   push_int(ERRNO);
+}
+
+static void file_mode(INT32 args)
+{
+  pop_n_elems(args);
+  push_int(THIS->open_mode);
 }
 
 static void file_set_nonblocking(INT32 args)
