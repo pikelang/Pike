@@ -1,3 +1,19 @@
+dnl $Id: testsuite.in,v 1.2 2003/01/04 00:36:26 nilsson Exp $
+
+dnl Crypto.randomness
+
+test_true( stringp(Crypto.randomness.some_entropy()) )
+test_true( stringp(Crypto.randomness.RandomSource()->read(1)) )
+test_any([[
+#pike 7.4
+return stringp(Crypto.randomness.pike_random()->read(1));
+]], 1)
+test_true( stringp(Crypto.randomness.arcfour_random("hej")->read(1)) )
+test_true( stringp(Crypto.randomness.reasonably_random()->read(1)) )
+test_true( functionp(Crypto.randomness.really_random) )
+
+
+dnl Crypto.substitution
 
 test_do( add_constant("C", Crypto.substitution()) )
 
