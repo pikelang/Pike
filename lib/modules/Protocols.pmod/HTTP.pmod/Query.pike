@@ -259,7 +259,8 @@ void async_got_host(string server,int port)
    }
 
    con->set_nonblocking(0,async_connected,async_failed);
-//    werror(server+"\n");
+
+   //   werror(server+"\n");
 
    if (catch { con->connect(server,port); })
    {
@@ -319,7 +320,7 @@ void dns_lookup_async(string hostname,function callback,mixed ...extra)
       call_out(callback,0,0,@extra); // can't lookup that...
       return;
    }
-   sscanf(hostname,"%*[0-9.]",id);
+   sscanf(hostname,"%[0-9.]",id);
    if (hostname==id ||
        (id=hostname_cache[hostname]))
    {
@@ -438,8 +439,6 @@ object async_request(string server,int port,string query,
    
    call_out(async_timeout,timeout);
 
-   dns_lookup_async(server,async_got_host,port);
-
    // prepare the request
 
    if (!data) data="";
@@ -457,6 +456,8 @@ object async_request(string server,int port,string query,
    
    request=query+"\r\n"+headers+"\r\n"+data;
    
+   dns_lookup_async(server,async_got_host,port);
+
    return this_object();
 }
 
