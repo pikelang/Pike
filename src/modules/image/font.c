@@ -170,7 +170,7 @@ void font_load(INT32 args)
       size = file_size(fd);
       if (size > 0)
       {
-	 THIS=malloc(sizeof(struct font));
+	 THIS=(struct font *)xalloc(sizeof(struct font));
 #ifdef HAVE_MMAP
 	 THIS->mem = 
 	    mmap(0,size,PROT_READ,MAP_SHARED,fd,0);
@@ -203,6 +203,7 @@ void font_load(INT32 args)
 	    fh=(struct file_head*)THIS->mem;
 
 	    if (ntohl(fh->cookie)==0x464f4e54) /* "FONT" */
+	    {
 	       if (ntohl(fh->version)==1)
 	       {
 		  unsigned long i;
@@ -237,7 +238,7 @@ void font_load(INT32 args)
 		  push_int(1);   /* success */
 		  return;
 	       } /* wrong version */
-  	       /* wrong cookie */
+	    } /* wrong cookie */
 	 } /* mem failure */
 	 free_font_struct(THIS);
 	 THIS=NULL;
@@ -263,23 +264,25 @@ void font_write(INT32 args)
 
    for (j=0; j<args; j++)
    {
-      if (sp[j-args].type!=T_STRING)
-	 error("font->write: illegal argument(s)\n");
-      
-      xsize = 0;
-      maxwidth = 0;
+     if (sp[j-args].type!=T_STRING)
+       error("font->write: illegal argument(s)\n");
+     
+     xsize = 0;
+     maxwidth = 0;
+     
+     for (i = 0; i < sp[j-args].u.string->len; i++)
+     {
+       c=EXTRACT_UCHAR(sp[j-args].u.string->str+i);
+       if (c < (INT32)THIS->chars)
+       {
+	 if (xsize + (signed long)THIS->charinfo[c].width > maxwidth)
+	   maxwidth = xsize + THIS->charinfo[c].width;
+	 xsize += THIS->charinfo[c].spacing;
+       }
+     }
 
-      for (i = 0; i < sp[j-args].u.string->len; i++)
-	if ((c=(unsigned char)sp[j-args].u.string->str[i])
-	    <(unsigned char)THIS->chars)
-	 {
-	    if (xsize + (signed long)THIS->charinfo[c].width > maxwidth)
-	       maxwidth = xsize + THIS->charinfo[c].width;
-	    xsize += THIS->charinfo[c].spacing;
-	 }
-
-      if (xsize>maxwidth) maxwidth=xsize;
-      if (maxwidth>maxwidth2) maxwidth2=maxwidth;
+     if (xsize>maxwidth) maxwidth=xsize;
+     if (maxwidth>maxwidth2) maxwidth2=maxwidth;
    }
    
    o = clone(image_program,0);
@@ -295,17 +298,19 @@ void font_write(INT32 args)
 
    for (j=0; j<args; j++)
    {
-      xsize = 0;
-      for (i = 0; i < (int)sp[j-args].u.string->len; i++)
-	 if ( (c=(unsigned char)sp[j-args].u.string->str[i]) <
-	      (unsigned char)THIS->chars)
-	 {
-	    write_char(THIS->charinfo+c,
-		       img->img+xsize+img->xsize*j*THIS->height,
-		       img->xsize,
-		       THIS->height);
-	    xsize += THIS->charinfo[c].spacing;
-	 }
+     xsize = 0;
+     for (i = 0; i < (int)sp[j-args].u.string->len; i++)
+     {
+       c=EXTRACT_UCHAR(sp[j-args].u.string->str+i);
+       if ( c < (INT32)THIS->chars)
+       {
+	 write_char(THIS->charinfo+c,
+		    img->img+xsize+img->xsize*j*THIS->height,
+		    img->xsize,
+		    THIS->height);
+	 xsize += THIS->charinfo[c].spacing;
+       }
+     }
    }
    
    pop_n_elems(args);
@@ -368,7 +373,11 @@ void init_font_programs(void)
 
 void exit_font(void) 
 {
-  free_program(font_program);
+  if(font_program)
+  {
+    free_program(font_program);
+    font_program=0;
+  }
 }
 
 
