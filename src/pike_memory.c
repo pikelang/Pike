@@ -45,7 +45,7 @@ void swap(char *a, char *b, INT32 size)
   {
     tmp=MINIMUM((long)sizeof(tmpbuf), size);
     MEMCPY(tmpbuf,a,tmp);
-    MEMCPY(b,a,tmp);
+    MEMCPY(a,b,tmp);
     MEMCPY(b,tmpbuf,tmp);
     size-=tmp;
     a+=tmp;
@@ -68,7 +68,6 @@ void reverse(char *memory, INT32 nitems, INT32 size)
 
   switch(size)
   {
-    DOSIZE(1,TMP1)
     DOSIZE(2,TMP2)
     DOSIZE(4,TMP4)
     DOSIZE(8,TMP8)
@@ -109,7 +108,6 @@ void reorder(char *memory, INT32 nitems, INT32 size,INT32 *order)
 
   switch(size)
   {
-    DOSIZE(1,TMP1)
     DOSIZE(2,TMP2)
     DOSIZE(4,TMP4)
     DOSIZE(8,TMP8)

@@ -17,7 +17,7 @@ static char *tmp_area;
 #define STEP(X,Y) ((X)+(Y))
 
 #define ID fsort_1
-typedef struct a1 { char b[1]; } b1;
+typedef char b1;
 #define TYPE b1
 #include "fsort_template.h"
 #undef ID
