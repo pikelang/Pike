@@ -1,5 +1,5 @@
 //
-// $Id: TELNET.pmod,v 1.12 2000/09/30 20:35:23 per Exp $
+// $Id: TELNET.pmod,v 1.13 2000/10/10 19:58:05 hubbe Exp $
 //
 // The TELNET protocol as described by RFC 764 and others.
 //
@@ -925,6 +925,7 @@ class Readline
     read_cb2(id,data+"\n");
   }
   
+  static string prompt="";
   static mixed call_callback(mixed what, mixed ... args)
   {
     switch(what)
@@ -944,6 +945,7 @@ class Readline
 // 		werror("Enabeling READLINE, term=%s\n",term);
 		readline=Stdio.Readline(this_object(),lower_case(term));
 		readline->set_nonblocking(readline_callback);
+		readline->set_prompt(prompt);
 		readline->enable_history(200);
 		/* enable data processing */
 	      }
@@ -994,9 +996,9 @@ class Readline
     }
   }
   
-  static string prompt="";
   void set_prompt(string s)
   {
+//    werror("TELNET: prompt=%O\n",s);
     if(readline)
     {
       prompt=s;
