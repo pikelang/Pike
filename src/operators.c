@@ -5,7 +5,7 @@
 \*/
 #include <math.h>
 #include "global.h"
-RCSID("$Id: operators.c,v 1.30 1998/04/10 15:24:05 grubba Exp $");
+RCSID("$Id: operators.c,v 1.31 1998/04/10 17:41:22 grubba Exp $");
 #include "interpret.h"
 #include "svalue.h"
 #include "multiset.h"
@@ -756,7 +756,7 @@ void f_or(INT32 args)
 {
   switch(args)
   {
-  case 0: ERRROR("`|", "Too few arguments.\n", sp, 0);
+  case 0: ERROR("`|", "Too few arguments.\n", sp, 0);
   case 1: return;
   case 2: o_or(); return;
   default:
