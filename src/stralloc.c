@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: stralloc.c,v 1.154 2004/05/14 10:50:23 grubba Exp $
+|| $Id: stralloc.c,v 1.155 2004/05/18 08:13:15 grubba Exp $
 */
 
 #include "global.h"
@@ -24,7 +24,7 @@
 #include <ctype.h>
 #include <math.h>
 
-RCSID("$Id: stralloc.c,v 1.154 2004/05/14 10:50:23 grubba Exp $");
+RCSID("$Id: stralloc.c,v 1.155 2004/05/18 08:13:15 grubba Exp $");
 
 /* #define STRALLOC_USE_PRIMES */
 
@@ -1287,15 +1287,7 @@ PMOD_EXPORT int c_compare_string(struct pike_string *s, char *foo, int len)
   return s->len == len && s->size_shift == 0 && !MEMCMP(s->str,foo,len);
 }
 
-#if !defined(HAVE_STRCOLL) || defined(DONT_USE_SYSTEM_LOCALE)
-/* No locale function available */
-static int low_binary_strcmp(char *a, ptrdiff_t alen,
-			     char *b, ptrdiff_t blen)
-{
-  low_quick_binary_strcmp(a,alen,b,blen);
-}
-#else
-
+#if defined(HAVE_STRCOLL) && !defined(DONT_USE_SYSTEM_LOCALE)
 /* takes locale into account */
 static int low_binary_strcmp(char *a, ptrdiff_t alen,
 			     char *b, ptrdiff_t blen)
@@ -1331,6 +1323,9 @@ PMOD_EXPORT ptrdiff_t my_quick_strcmp(struct pike_string *a,
 /* Does take locale into account */
 PMOD_EXPORT ptrdiff_t my_strcmp(struct pike_string *a,struct pike_string *b)
 {
+#if !defined(HAVE_STRCOLL) || defined(DONT_USE_SYSTEM_LOCALE)
+  return my_quick_strcmp(a, b);
+#else /* HAVE_STRCOLL && !DONT_USE_SYSTEM_LOCALE */
   if(a==b) return 0;
 
   switch(TWO_SIZES(a->size_shift,b->size_shift))
@@ -1346,7 +1341,6 @@ PMOD_EXPORT ptrdiff_t my_strcmp(struct pike_string *a,struct pike_string *b)
 	INT32 ac=index_shared_string(a,e);
 	INT32 bc=index_shared_string(b,e);
 
-#if defined(HAVE_STRCOLL) && !defined(DONT_USE_SYSTEM_LOCALE)
 	if(ac < 256 && bc < 256)
 	{
 	  char atmp[2],btmp[2];
@@ -1358,12 +1352,12 @@ PMOD_EXPORT ptrdiff_t my_strcmp(struct pike_string *a,struct pike_string *b)
 	  if((tmp=strcoll(atmp,btmp)))
 	     return tmp;
 	}else
-#endif
 	  if(ac-bc) return ac-bc;
       }
       return a->len - b->len;
     }
   }
+#endif /* !HAVE_STRCOLL || DONT_USE_SYSTEM_LOCALE */
 }
 
 PMOD_EXPORT struct pike_string *realloc_unlinked_string(struct pike_string *a,
