@@ -1,5 +1,5 @@
 /*
- * $Id: ppc32.h,v 1.9 2001/08/16 21:35:41 marcus Exp $
+ * $Id: ppc32.h,v 1.10 2001/09/19 21:59:15 marcus Exp $
  */
 
 #define PIKE_OPCODE_T	unsigned INT32
@@ -46,6 +46,8 @@
       }									  \
     }									  \
   } while(0)
+
+#define PPC_REG_RET 0
 
 #define PPC_REG_ARG1 3
 #define PPC_REG_ARG2 4
