@@ -87,6 +87,15 @@ void myproxy(object pi, object io, int channel)
   {
     string s=pi->read(1000,1); // Don't read more than 2<<24 :)
     if(!s || !strlen(s)) break;
+    if (sizeof(s) == 1) {
+      // Stderr has a tendency to get one character at a time...
+      pi->set_nonblocking();
+      string extra;
+      while ((extra = pi->read(1000 - sizeof(s), 1)) && sizeof(extra)) {
+	s += extra;
+      }
+      pi->set_blocking();
+    }
     object key=outlock->lock();
     io->write(sprintf("%c%3c%s",channel,strlen(s),s));
     destruct(key);
