@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: encode.c,v 1.161 2003/02/24 19:03:03 mast Exp $
+|| $Id: encode.c,v 1.162 2003/06/01 18:35:12 mast Exp $
 */
 
 #include "global.h"
@@ -27,7 +27,7 @@
 #include "bignum.h"
 #include "pikecode.h"
 
-RCSID("$Id: encode.c,v 1.161 2003/02/24 19:03:03 mast Exp $");
+RCSID("$Id: encode.c,v 1.162 2003/06/01 18:35:12 mast Exp $");
 
 /* #define ENCODE_DEBUG */
 
@@ -3080,6 +3080,8 @@ static void decode_value2(struct decode_data *data)
 
 	  debug_malloc_touch(p);
 
+	  data->pickyness++;
+
 	  /* parent */
 	  decode_value2(data);
 	  if (Pike_sp[-1].type == T_PROGRAM) {
@@ -3536,6 +3538,8 @@ static void decode_value2(struct decode_data *data)
 	    constant->sval = Pike_sp[-2];
 	    Pike_sp -= 2;
 	  }
+
+	  data->pickyness--;
 
 	  /* The program should be consistent now. */
 	  p->flags &= ~PROGRAM_AVOID_CHECK;
