@@ -29,7 +29,7 @@ struct callback *gc_evaluator_callback=0;
 
 #include "block_alloc.h"
 
-RCSID("$Id: gc.c,v 1.53 2000/04/08 02:01:08 hubbe Exp $");
+RCSID("$Id: gc.c,v 1.54 2000/04/14 15:53:07 grubba Exp $");
 
 /* Run garbage collect approximate every time we have
  * 20 percent of all arrays, objects and programs is
@@ -512,6 +512,8 @@ void debug_describe_svalue(struct svalue *s)
 
 INT32 real_gc_check(void *a)
 {
+  struct marker *m = get_marker(a);
+
 #ifdef PIKE_DEBUG
   if(check_for)
   {
@@ -522,7 +524,9 @@ INT32 real_gc_check(void *a)
     return 0;
   }
 #endif
-  return add_ref(get_marker(a));
+  m->flags |= GC_CHECKED;
+
+  return add_ref(m);
 }
 
 static void init_gc(void)
@@ -681,7 +685,8 @@ int debug_gc_do_free(void *a)
   struct marker *m;
   m=get_marker(a);
 
-  if( !(m->flags & GC_REFERENCED)  && (m->flags & GC_XREFERENCED))
+  if( ((m->flags & (GC_REFERENCED|GC_CHECKED)) == GC_CHECKED) &&
+      (m->flags & GC_XREFERENCED))
   {
     INT32 refs=m->refs;
     INT32 xrefs=m->xrefs;
@@ -698,7 +703,7 @@ int debug_gc_do_free(void *a)
 	  xrefs);
   }
 
-  return !(m->flags & GC_REFERENCED);
+  return (m->flags & (GC_REFERENCED|GC_CHECKED)) == GC_CHECKED;
 }
 #endif
 
