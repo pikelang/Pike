@@ -1,82 +1,55 @@
 /*
- * $Id: GLU.pmod,v 1.2 1999/08/10 17:13:31 grubba Exp $
+ * $Id: GLU.pmod,v 1.3 1999/10/25 18:31:43 mirar Exp $
  *
  * GL Utilities module.
  */
 #if constant(GL)
 import GL;
+import Math;
 
 #ifndef M_PI
 #define M_PI 3.1415926536
 #endif
 #define EPS 0.00001
 
-void gluLookAt(float eyex, float eyey, float eyez,
-	       float centerx, float centery, float centerz,
-	       float upx, float upy, float upz)
+void gluLookAt(float|object eye,float|object center,float|object up,
+	       float ... old_api)
 {
-
-  array(float) m=allocate(16);
-  array(float) x=allocate(3), y=allocate(3), z=allocate(3);
+  Matrix x,y,z;
   float mag;
+
+  if (!objectp(eye))
+  {
+     eye=Matrix( ({eye,center,up }) );
+     center=Matrix( old_api[..2] );
+     up=Matrix( old_api[3..5] );
+  }
   
   /* Make rotation matrix */
   
-  /* Z vector */
-  z[0] = eyex - centerx;
-  z[1] = eyey - centery;
-  z[2] = eyez - centerz;
-  mag = sqrt( z[0]*z[0] + z[1]*z[1] + z[2]*z[2] );
-  if (mag) {  /* mpichler, 19950515 */
-    z[0] /= mag;
-    z[1] /= mag;
-    z[2] /= mag;
-  }
+  z=(eye-center)->normv();   /* Z vector */
+  y=up;                      /* Y vector */
+  x=y->cross(z);             /* X vector = Y cross Z */
+  y=z->cross(x);             /* Recompute Y = Z cross X */
   
-  /* Y vector */
-  y[0] = upx;
-  y[1] = upy;
-  y[2] = upz;
-  
-  /* X vector = Y cross Z */
-  x[0] =  y[1]*z[2] - y[2]*z[1];
-  x[1] = -y[0]*z[2] + y[2]*z[0];
-  x[2] =  y[0]*z[1] - y[1]*z[0];
-  
-  /* Recompute Y = Z cross X */
-  y[0] =  z[1]*x[2] - z[2]*x[1];
-  y[1] = -z[0]*x[2] + z[2]*x[0];
-  y[2] =  z[0]*x[1] - z[1]*x[0];
-  
-   /* mpichler, 19950515 */
+  /* mpichler, 19950515 */
   /* cross product gives area of parallelogram, which is < 1.0 for
    * non-perpendicular unit-length vectors; so normalize x, y here
    */
   
-  mag = sqrt( x[0]*x[0] + x[1]*x[1] + x[2]*x[2] );
-  if (mag) {
-    x[0] /= mag;
-    x[1] /= mag;
-    x[2] /= mag;
-  }
+  x=x->normv(); // normalize
+  y=y->normv(); // normalize
+
+  array m=Array.transpose(({ @(x->vect()), 0.0,
+			     @(y->vect()), 0.0,
+			     @(z->vect()), 0.0,
+			     0.0, 0.0, 0.0, 1.0 })/4)*({}); 
   
-  mag = sqrt( y[0]*y[0] + y[1]*y[1] + y[2]*y[2] );
-  if (mag) {
-    y[0] /= mag;
-    y[1] /= mag;
-    y[2] /= mag;
-  }
-  
-#define M(row,col)  m[col*4+row]
-  M(0,0) = x[0];  M(0,1) = x[1];  M(0,2) = x[2];  M(0,3) = 0.0;
-  M(1,0) = y[0];  M(1,1) = y[1];  M(1,2) = y[2];  M(1,3) = 0.0;
-  M(2,0) = z[0];  M(2,1) = z[1];  M(2,2) = z[2];  M(2,3) = 0.0;
-  M(3,0) = 0.0;   M(3,1) = 0.0;   M(3,2) = 0.0;   M(3,3) = 1.0;
-#undef M
-  glMultMatrix( m );
+  werror("%O\n",Matrix(m/4));
+//   glMultMatrix( m );
   
   /* Translate Eye to Origin */
-  glTranslate( -eyex, -eyey, -eyez );
+//   glTranslate( ((array)(-1*eye))[0] );
 }  
 
 void gluOrtho2D(float left, float right,
