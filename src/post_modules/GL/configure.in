@@ -1,4 +1,4 @@
-# $Id: configure.in,v 1.17 2003/02/14 17:48:51 per Exp $
+# $Id: configure.in,v 1.18 2003/04/02 19:39:48 nilsson Exp $
 AC_INIT(top.c)
 AC_CONFIG_HEADER(config.h)
 
@@ -21,10 +21,10 @@ else
 
   old_CPPFLAGS="$CPPFLAGS"
   CPPFLAGS="$X_CFLAGS $CPPFLAGS"
-  AC_CHECK_HEADERS(windef.h wingdi.h GL/gl.h GL/glx.h)
+  AC_CHECK_HEADERS(windef.h GL/gl.h GL/glx.h)
   CPPFLAGS="$old_CPPFLAGS"
 
-  if test "x$ac_cv_header_windef_h$ac_cv_header_wingdi_h$ac_cv_header_GL_gl_h$ac_cv_header_GL_glx_h" = "xnononono"; then
+  if test "x$ac_cv_header_windef_h$ac_cv_header_GL_gl_h$ac_cv_header_GL_glx_h" = "xnonono"; then
     # Solaris 7 comes with libGL, but without the headerfiles by default.
     :
   else
@@ -42,9 +42,6 @@ else
 #ifdef HAVE_WINDEF_H
 #include <windef.h>
 #endif /* HAVE_WINDEF_H */
-#ifdef HAVE_WINGDI_H
-#include <wingdi.h>
-#endif /* HAVE_WINGDI_H */
 #ifdef HAVE_GL_GL_H
 #include <GL/gl.h>
 #endif /* HAVE_GL_GL_H */
@@ -64,9 +61,6 @@ else
 #ifdef HAVE_WINDEF_H
 #include <windef.h>
 #endif /* HAVE_WINDEF_H */
-#ifdef HAVE_WINGDI_H
-#include <wingdi.h>
-#endif /* HAVE_WINGDI_H */
 #ifdef HAVE_GL_GL_H
 #include <GL/gl.h>
 #endif /* HAVE_GL_GL_H */
