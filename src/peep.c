@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: peep.c,v 1.100 2004/08/24 16:56:32 grubba Exp $
+|| $Id: peep.c,v 1.101 2004/08/25 09:36:47 grubba Exp $
 */
 
 #include "global.h"
@@ -25,7 +25,7 @@
 #include "interpret.h"
 #include "pikecode.h"
 
-RCSID("$Id: peep.c,v 1.100 2004/08/24 16:56:32 grubba Exp $");
+RCSID("$Id: peep.c,v 1.101 2004/08/25 09:36:47 grubba Exp $");
 
 static void asm_opt(void);
 
@@ -146,7 +146,7 @@ void update_arg(int instr,INT32 arg)
 
 /**** Bytecode Generator *****/
 
-static int reoptimize;
+static int relabel;
 
 INT32 assemble(int store_linenumbers)
 {
@@ -163,8 +163,6 @@ INT32 assemble(int store_linenumbers)
   int synch_depth = 0;
   size_t fun_start = Pike_compiler->new_program->num_program;
 #endif
-
-  reoptimize=!(debug_options & NO_PEEP_OPTIMIZING);
 
   c=(p_instr *)instrbuf.s.str;
   length=instrbuf.s.len / sizeof(p_instr);
@@ -294,9 +292,11 @@ INT32 assemble(int store_linenumbers)
   jumps = labels + max_label + 2;
   uses = jumps + max_label + 2;
 
-  while(reoptimize)
+  int reoptimize = relabel = !(debug_options & NO_PEEP_OPTIMIZING);
+
+  while(relabel)
   {
-    reoptimize=0;
+    /* First do the relabel pass. */
     for(e=0;e<=max_label;e++)
     {
       labels[e]=jumps[e]=-1;
@@ -376,20 +376,29 @@ INT32 assemble(int store_linenumbers)
       if(!uses[e] && labels[e]>=0)
       {
 	c[labels[e]].opcode=F_NOP;
-	reoptimize++;
+	reoptimize = 1;
       }
     }
-    
-    asm_opt();
+
+    relabel = 0;
 
     if(!reoptimize) break;
+
+    /* Then do the optimize pass. */
+
+    asm_opt();
+
+    reoptimize = 0;
+
+    if (!relabel) break;
+
 #if 1
 #ifdef PIKE_DEBUG
     if (a_flag > 3)
       fprintf(stderr, "Rerunning optimizer.\n");
 #endif
 #else /* !1 */
-    reoptimize=0;
+    relabel = 0;
 #endif /* 1 */
   }
 
@@ -907,7 +916,10 @@ static void pop_n_opcodes(int n)
       }					\
     )					\
   					\
-    fifo_len += q + 3;			\
+    /* Note: The 5 below is the longest	\
+     *       match prefix in the ruleset\
+     */					\
+    fifo_len += q + 5;			\
   }  while(0)
 
 
@@ -962,7 +974,7 @@ static void do_optimization(int topop, ...)
 
   DO_OPTIMIZATION_POSTQUEL(q);
 
-  reoptimize++;
+  relabel = 1;
 }
 
 #include "peep_engine.c"
