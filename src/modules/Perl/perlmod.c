@@ -1,4 +1,4 @@
-/* $Id: perlmod.c,v 1.25 2002/08/15 14:50:27 marcus Exp $ */
+/* $Id: perlmod.c,v 1.26 2002/08/29 12:48:40 stensson Exp $ */
 
 #define NO_PIKE_SHORTHAND
 
@@ -36,7 +36,8 @@
 EXTERN_C void boot_DynaLoader();
 
 static void xs_init()
-{ char *file = __FILE__;
+{
+  char *file = __FILE__;
   dXSUB_SYS;
 #ifdef PIKE_PERLDEBUG
   fprintf(stderr, "[my xs_init]\n");
@@ -71,8 +72,10 @@ struct perlmod_storage
 
 #define _THIS ((struct perlmod_storage *)(Pike_fp->current_storage))
 
-#ifdef PERL_560
+#ifdef PERL_560 /* Perl 5.6? */
 #define my_perl PERL
+#else
+#define my_perl (_THIS)->perl
 #endif
 
 #define BLOCKING 1
@@ -91,13 +94,16 @@ struct perlmod_storage
 
 /* utility function: push a zero_type zero */
 static void _push_zerotype()
-{ push_int(0);
+{
+  push_int(0);
   Pike_sp[-1].subtype = 1;
 }
 
 static SV * _pikev2sv(struct svalue *s)
-{ switch (s->type)
-  { case PIKE_T_INT:
+{
+  switch (s->type)
+  {
+    case PIKE_T_INT:
       return newSViv(s->u.integer); break;
     case PIKE_T_FLOAT:
       return newSVnv(s->u.float_number); break;
@@ -110,19 +116,24 @@ static SV * _pikev2sv(struct svalue *s)
 }
 
 static void _sv_to_svalue(SV *sv, struct svalue *sval)
-{ if (sv && (SvOK(sv)))
-  { if (SvIOKp(sv))
-    { sval->type = PIKE_T_INT; sval->subtype = 0;
+{
+  if (sv && (SvOK(sv)))
+  {
+    if (SvIOKp(sv))
+    {
+      sval->type = PIKE_T_INT; sval->subtype = 0;
       sval->u.integer = SvIV(sv);
       return;
     }
     else if (SvNOKp(sv))
-    { sval->type = PIKE_T_FLOAT; sval->subtype = 0;
+    {
+      sval->type = PIKE_T_FLOAT; sval->subtype = 0;
       sval->u.float_number = SvNV(sv);
       return;
     }
     else if (SvPOKp(sv))
-    { sval->type = PIKE_T_STRING; sval->subtype = 0;
+    {
+      sval->type = PIKE_T_STRING; sval->subtype = 0;
       sval->u.string = make_shared_binary_string(SvPVX(sv), SvCUR(sv));
       return;
     }
@@ -132,7 +143,8 @@ static void _sv_to_svalue(SV *sv, struct svalue *sval)
 }
 
 static void _pikepush_sv(SV *sv)
-{ if (!SvOK(sv))
+{
+  if (!SvOK(sv))
      push_int(0);
   else if (SvIOKp(sv))
      push_int(SvIV(sv));
@@ -146,7 +158,8 @@ static void _pikepush_sv(SV *sv)
 
 static int _perl_parse(struct perlmod_storage *ps,
                           int argc, char *argv[], char *envp[])
-{ int result;
+{
+  int result;
 #ifndef MY_XS
   extern void xs_init(void);
 #endif
@@ -178,6 +191,7 @@ static int _perl_parse(struct perlmod_storage *ps,
       ps->env_block=xalloc(env_block_size);
     else
       ps->env_block = NULL;
+
     ps->env=(char **)xalloc(sizeof(char *)*(d+1));
 
     env_blockp = ps->env_block;
@@ -207,7 +221,8 @@ static int _perl_parse(struct perlmod_storage *ps,
 static char *dummyargv[] = { "perl", "-e", "1", 0 };
 
 static void init_perl_glue(struct object *o)
-{ struct perlmod_storage *ps = _THIS;
+{
+  struct perlmod_storage *ps = _THIS;
 
 #ifdef PIKE_PERLDEBUG
   fprintf(stderr, "[init_perl_glue]\n");
