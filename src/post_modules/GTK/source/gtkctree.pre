@@ -170,7 +170,7 @@ void unselect_recursive( GTK.CTreeNode node );
 //! Unselect a node and it's children.
 
 
-void find_by_row_data(object data, GTK.CtreeNode root)
+void find_by_row_data(object data, ?GTK.CtreeNode root)
 //! Find a node in the tree starting with root, that has the given user data.
 //! If no node is found, 0 is returned.
 {
