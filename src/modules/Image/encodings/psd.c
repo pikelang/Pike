@@ -1,5 +1,5 @@
 #include "global.h"
-RCSID("$Id: psd.c,v 1.8 1999/05/06 23:44:24 neotron Exp $");
+RCSID("$Id: psd.c,v 1.9 1999/05/08 00:44:42 hubbe Exp $");
 
 #include "config.h"
 
@@ -24,6 +24,7 @@ RCSID("$Id: psd.c,v 1.8 1999/05/06 23:44:24 neotron Exp $");
 
 #include "image.h"
 #include "colortable.h"
+
 #ifdef HAVE_NETINET_IN_H
 #include <netinet/in.h>
 #endif
