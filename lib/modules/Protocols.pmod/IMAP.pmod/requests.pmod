@@ -1,6 +1,6 @@
 /* IMAP.requests
  *
- * $Id: requests.pmod,v 1.35 1999/02/13 16:02:23 grubba Exp $
+ * $Id: requests.pmod,v 1.36 1999/02/13 16:42:27 grubba Exp $
  */
 
 import .types;
@@ -178,6 +178,22 @@ class logout
       send(tag, "OK");
       return ([ "action" : "close" ]);
     }
+}
+
+class create_mailbox
+{
+  inherit request;
+  constant arg_info = ({ "string" });
+
+  mapping easy_process(string mailbox_name)
+  {
+    if (server->create_mailbox(session, mailbox_name)) {
+      send(tag, "OK");
+    } else {
+      send(tag, "NO");
+    }
+    return ([ "action" : "finished" ]);
+  }
 }
 
 class list
