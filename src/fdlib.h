@@ -1,5 +1,5 @@
 /*
- * $Id: fdlib.h,v 1.18 1998/06/08 12:48:27 grubba Exp $
+ * $Id: fdlib.h,v 1.19 1998/07/15 23:26:24 hubbe Exp $
  */
 #ifndef FDLIB_H
 #define FDLIB_H
@@ -76,14 +76,14 @@ SOCKFUN2(bind, struct sockaddr *, int)
 int fd_connect (FD fd, struct sockaddr *a, int len);
 SOCKFUN4(getsockopt,int,int,void*,int*)
 SOCKFUN4(setsockopt,int,int,void*,int)
-SOCKFUN2(getsockname,struct sockaddr *,int *)
-SOCKFUN2(getpeername,struct sockaddr *,int *)
 SOCKFUN3(recv,void *,int,int)
 SOCKFUN5(recvfrom,void *,int,int,struct sockaddr *,int*)
 SOCKFUN3(send,void *,int,int)
 SOCKFUN5(sendto,void *,int,int,struct sockaddr *,int*)
 SOCKFUN1(shutdown, int)
 SOCKFUN1(listen, int)
+int fd_getsockname(FD fd, struct sockaddr *a, size_t *b);
+int fd_getpeername(FD fd, struct sockaddr *a, size_t *b);
 int fd_close(FD fd);
 long fd_write(FD fd, void *buf, long len);
 long fd_read(FD fd, void *to, long len);
@@ -94,25 +94,6 @@ int fd_select(int fds, FD_SET *a, FD_SET *b, FD_SET *c, struct timeval *t);
 int fd_ioctl(FD fd, int cmd, void *data);
 FD fd_dup(FD from);
 FD fd_dup2(FD from, FD to);
-struct fd_mapper;
-void init_fd_mapper(struct fd_mapper *x);
-void exit_fd_mapper(struct fd_mapper *x);
-void fd_mapper_set(struct fd_mapper *x, FD fd, void *data);
-void *fd_mapper_get(struct fd_mapper *x, FD fd);
-struct fd_mapper_data;
-struct fd_mapper;
-void init_fd_mapper(struct fd_mapper *x);
-void exit_fd_mapper(struct fd_mapper *x);
-void fd_mapper_set(struct fd_mapper *x, FD fd, void *data);
-void *fd_mapper_get(struct fd_mapper *x, FD fd);
-struct fd_data_hash;
-struct fd_data_hash_block;
-int get_fd_data_key(void);
-void store_fd_data(FD fd, int key, void *data);
-void *get_fd_data(FD fd, int key);
-struct event;
-struct fd_waitor;
-void fd_waitor_set_customer(struct fd_waitor *x, FD customer, int flags);
 /* Prototypes end here */
 
 #undef SOCKFUN1

@@ -22,7 +22,7 @@
 #include "file_machine.h"
 #include "file.h"
 
-RCSID("$Id: efuns.c,v 1.57 1998/07/06 21:59:27 grubba Exp $");
+RCSID("$Id: efuns.c,v 1.58 1998/07/15 23:26:56 hubbe Exp $");
 
 #ifdef HAVE_SYS_TYPES_H
 #include <sys/types.h>
@@ -428,7 +428,10 @@ void f_get_dir(INT32 args)
 		 ((pathconf(path, _PC_NAME_MAX) < 1024)?1024:
 		  pathconf(path, _PC_NAME_MAX)) + 1)
 #else
-	  alloca(sizeof(struct dirent) + NAME_MAX + 1024 + 1)
+#ifndef NAME_MAX
+#define NAME_MAX 1024
+#endif
+	  alloca(sizeof(struct dirent) + NAME_MAX+ 1024 + 1)
 #endif /* HAVE_SOLARIS_READDIR_R */
       )) {
       closedir(dir);
