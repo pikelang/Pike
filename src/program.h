@@ -5,7 +5,7 @@
 \*/
 
 /*
- * $Id: program.h,v 1.63 1999/10/29 00:09:48 hubbe Exp $
+ * $Id: program.h,v 1.64 1999/10/29 03:34:34 mast Exp $
  */
 #ifndef PROGRAM_H
 #define PROGRAM_H
@@ -217,6 +217,13 @@ struct pike_trampoline
 
 /* */
 #define PROGRAM_USES_PARENT 128
+
+/* Objects should not be destructed even when they only has weak
+ * references left. */
+#define PROGRAM_NO_WEAK_DESTRUCT 256
+
+/* Objects should not be destructed by f_destruct(). */
+#define PROGRAM_NO_EXPLICIT_DESTRUCT 512
 
 struct program
 {

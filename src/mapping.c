@@ -5,7 +5,7 @@
 \*/
 /**/
 #include "global.h"
-RCSID("$Id: mapping.c,v 1.43 1999/10/29 00:07:19 hubbe Exp $");
+RCSID("$Id: mapping.c,v 1.44 1999/10/29 03:34:34 mast Exp $");
 #include "main.h"
 #include "object.h"
 #include "mapping.h"
@@ -1065,7 +1065,7 @@ void gc_mark_mapping_as_referenced(struct mapping *m)
   INT32 e;
   struct keypair *k;
 
-  if(gc_mark(m) && !( m->flags & MAPPING_FLAG_WEAK))
+  if(gc_mark(m))
   {
     if((m->ind_types | m->val_types) & BIT_COMPLEX)
     {
@@ -1077,9 +1077,20 @@ void gc_mark_mapping_as_referenced(struct mapping *m)
 	if(((1 << k->ind.type) & (BIT_OBJECT | BIT_FUNCTION)) &&
 	   !(k->ind.u.object->prog))
 	  continue;
-	  
-	gc_mark_svalues(&k->ind, 1);
-	gc_mark_svalues(&k->val, 1);
+
+	if (m->flags & MAPPING_FLAG_WEAK)
+	{
+	  if (k->ind.type == T_OBJECT &&
+	      k->ind.u.object->prog->flags & PROGRAM_NO_WEAK_DESTRUCT)
+	    gc_mark_svalues(&k->ind, 1);
+	  if (k->val.type == T_OBJECT && k->val.u.object->prog &&
+	      k->val.u.object->prog->flags & PROGRAM_NO_WEAK_DESTRUCT)
+	    gc_mark_svalues(&k->val, 1);
+	}
+	else {
+	  gc_mark_svalues(&k->ind, 1);
+	  gc_mark_svalues(&k->val, 1);
+	}
       }
     }
   }
@@ -1169,8 +1180,14 @@ void gc_free_all_unreferenced_mappings(void)
       {
 	for(prev= m->hash + e;(k=*prev);)
 	{
-	  if((k->val.type <= MAX_COMPLEX && gc_do_free(k->val.u.refs)) ||
-	     (k->ind.type <= MAX_COMPLEX && gc_do_free(k->ind.u.refs)))
+	  if((k->val.type <= MAX_COMPLEX &&
+	      !(k->val.type == T_OBJECT && k->val.u.object->prog &&
+		k->val.u.object->prog->flags & PROGRAM_NO_WEAK_DESTRUCT) &&
+	      gc_do_free(k->val.u.refs)) ||
+	     (k->ind.type <= MAX_COMPLEX &&
+	      !(k->ind.type == T_OBJECT && k->ind.u.object->prog &&
+		k->ind.u.object->prog->flags & PROGRAM_NO_WEAK_DESTRUCT) &&
+	      gc_do_free(k->ind.u.refs)))
 	  {
 	    *prev=k->next;
 	    free_svalue(& k->ind);

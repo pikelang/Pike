@@ -21,8 +21,9 @@
 #include "main.h"
 #include "security.h"
 #include "stuff.h"
+#include "bignum.h"
 
-RCSID("$Id: array.c,v 1.56 1999/10/03 21:44:17 hubbe Exp $");
+RCSID("$Id: array.c,v 1.57 1999/10/29 03:34:34 mast Exp $");
 
 struct array empty_array=
 {
@@ -1773,9 +1774,19 @@ void check_all_arrays(void)
 
 void gc_mark_array_as_referenced(struct array *a)
 {
-  if(gc_mark(a) && !(a->flags & ARRAY_WEAK_FLAG))
-    if(a->type_field & BIT_COMPLEX)
+  int e;
+  if(gc_mark(a) && a->type_field & BIT_COMPLEX)
+  {
+    if (a->flags & ARRAY_WEAK_FLAG)
+      for (e=0; e<a->size; e++)
+      {
+	if (a->item[e].type == T_OBJECT && a->item[e].u.object->prog &&
+	    a->item[e].u.object->prog->flags & PROGRAM_NO_WEAK_DESTRUCT)
+	  gc_mark_svalues(a->item + e, 1);
+      }
+    else
       gc_mark_svalues(ITEM(a), a->size);
+  }
 }
 
 void gc_check_all_arrays(void)
@@ -1850,7 +1861,10 @@ void gc_free_all_unreferenced_arrays(void)
 	int d=0;
 	for(e=0;e<a->size;e++)
 	{
-	  if(a->item[e].type <= MAX_COMPLEX && gc_do_free(a->item[e].u.refs))
+	  if(a->item[e].type <= MAX_COMPLEX &&
+	     !(a->item[e].type == T_OBJECT && a->item[e].u.object->prog &&
+	       a->item[e].u.object->prog->flags & PROGRAM_NO_WEAK_DESTRUCT) &&
+	     gc_do_free(a->item[e].u.refs))
 	    free_svalue(a->item+e);
 	  else
 	    a->item[d++]=a->item[e];
@@ -1859,7 +1873,10 @@ void gc_free_all_unreferenced_arrays(void)
       }else{
 	for(e=0;e<a->size;e++)
 	{
-	  if(a->item[e].type <= MAX_COMPLEX && gc_do_free(a->item[e].u.refs))
+	  if(a->item[e].type <= MAX_COMPLEX &&
+	     !(a->item[e].type == T_OBJECT && a->item[e].u.object->prog &&
+	       a->item[e].u.object->prog->flags & PROGRAM_NO_WEAK_DESTRUCT) &&
+	     gc_do_free(a->item[e].u.refs))
 	  {
 	    free_svalue(a->item+e);
 	    a->item[e].type=T_INT;
