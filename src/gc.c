@@ -29,7 +29,7 @@ struct callback *gc_evaluator_callback=0;
 
 #include "block_alloc.h"
 
-RCSID("$Id: gc.c,v 1.118 2000/08/11 14:27:41 grubba Exp $");
+RCSID("$Id: gc.c,v 1.119 2000/08/11 15:44:27 grubba Exp $");
 
 /* Run garbage collect approximately every time
  * 20 percent of all arrays, objects and programs is
@@ -478,6 +478,9 @@ void describe_location(void *real_memblock,
   }
 
 #ifdef DEBUG_MALLOC
+  /* FIXME: Is the following call correct?
+   * Shouldn't the second argument be an offset?
+   */
   dmalloc_describe_location(memblock, location, indent);
 #endif
 }
