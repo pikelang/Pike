@@ -1,12 +1,42 @@
 #!/home/grubba/src/pike/build/sol2.5/pike
 
 /*
- * $Id: Grammar_parser.pmod,v 1.2 1997/03/28 14:42:43 grubba Exp $
+ * $Id: Grammar_parser.pmod,v 1.3 1997/03/30 17:28:17 grubba Exp $
  *
  * Generates a parser from a textual specification.
  *
  * Henrik Grubbström 1996-12-06
  */
+
+//.
+//. File:	Grammar_parser.pmod
+//. RCSID:	$Id: Grammar_parser.pmod,v 1.3 1997/03/30 17:28:17 grubba Exp $
+//. Author:	Henrik grubbström (grubba@infovav.se)
+//.
+//. Synopsis:	Generates an LR parser from a textual specification.
+//.
+//. ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+//.
+//. This module generates an LR parser from a grammar specified according
+//. to the following grammar:
+//.
+//.        directives : directive ;
+//.	   directives : directives directive ;
+//.	   directive : declaration ;
+//.	   directive : rule ;
+//.	   declaration : "%token" terminals ";" ;
+//.	   rule : nonterminal ":" symbols ";" ;
+//.	   rule : nonterminal ":" symbols action ";" ;
+//.	   symbols : symbol ;
+//.	   symbols : symbols symbol ;
+//.	   terminals : terminal ;
+//.	   terminals : terminals terminal ;
+//.	   symbol : nonterminal ;
+//.	   symbol : "string" ;
+//.	   action : "{" "identifier" "}" ;
+//.	   nonterminal : "identifier" ;
+//.	   terminal : "string";
+//.
 
 /*
  * Includes
@@ -28,13 +58,13 @@
 
 import LR;
 
-private object(parser) _parser = parser();
+static private object(parser) _parser = parser();
 
 /*
  * Scanner
  */
 
-class scan {
+static private class scan {
   string str = "";
   int pos;
 
@@ -130,9 +160,9 @@ class scan {
   }
 }
 
-private object(scan) scanner = scan();
+static private object(scan) scanner = scan();
 
-private array(string) nonterminals = ({
+static private array(string) nonterminals = ({
   "translation_unit",
   "directives",
   "directive",
@@ -147,17 +177,19 @@ private array(string) nonterminals = ({
   "priority",
 });
 
-private object(Stack.stack) id_stack = Stack.stack();
+static private object(Stack.stack) id_stack = Stack.stack();
 
-private mapping(string:int) nonterminal_lookup = ([]);
+static private mapping(string:int) nonterminal_lookup = ([]);
 
-private object(parser) g;
+static private object(parser) g;
 
-private object master;
+static private object master;
 
+//. + error
+//.   Error code from the parsing.
 int error;
 
-private int add_nonterminal(string id)
+static private int add_nonterminal(string id)
 {
   int nt = nonterminal_lookup[id];
 
@@ -168,7 +200,7 @@ private int add_nonterminal(string id)
   return(nt);
 }
 
-private void add_tokens(array(string) tokens)
+static private void add_tokens(array(string) tokens)
 {
   /* NOOP */
 #if 0
@@ -178,7 +210,7 @@ private void add_tokens(array(string) tokens)
 #endif /* 0 */
 }
 
-private void set_left_tokens(string ignore, int pri_val, array(string) tokens)
+static private void set_left_tokens(string ignore, int pri_val, array(string) tokens)
 {
   foreach (tokens, string token) {
     g->set_associativity(token, -1);	/* Left associative */
@@ -186,7 +218,7 @@ private void set_left_tokens(string ignore, int pri_val, array(string) tokens)
   }
 }
 
-private string internal_symbol_to_string(int|string symbol)
+static private string internal_symbol_to_string(int|string symbol)
 {
   if (intp(symbol)) {
     return (nonterminals[symbol]);
@@ -195,7 +227,7 @@ private string internal_symbol_to_string(int|string symbol)
   }
 }
 
-private string symbol_to_string(int|string symbol)
+static private string symbol_to_string(int|string symbol)
 {
   if (intp(symbol)) {
     if (symbol < id_stack->ptr) {
@@ -209,7 +241,7 @@ private string symbol_to_string(int|string symbol)
   }
 }
 
-private void add_rule(int nt, string colon, array(mixed) symbols, string action)
+static private void add_rule(int nt, string colon, array(mixed) symbols, string action)
 {
   if (action == ";") {
     action = 0;
@@ -286,6 +318,14 @@ void create()
   _parser->compile();
 }
 
+//. - make_parser
+//.
+//. Compiles the parser-specification given in the first argument.
+//. Named actions are taken from the object if available, otherwise
+//. left as is.
+//.
+//. BUGS: Returns error-code in both Grammar_parser.error and
+//. return_value->error.
 object(parser) make_parser(string str, object|void m)
 {
   object(parser) res = 0;
@@ -328,6 +368,11 @@ object(parser) make_parser(string str, object|void m)
   return (res);
 }
 
+//. - make_parser_from_file
+//.
+//. Compiles the file specified in the first argument into an LR parser.
+//.
+//. SEE ALSO: Grammar_parser.make_parser
 int|object(parser) make_parser_from_file(string f, object|void m)
 {
   object(files.file) f = files.file();

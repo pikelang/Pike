@@ -1,11 +1,31 @@
 /*
- * $Id: parser.pike,v 1.1 1997/03/03 23:50:18 grubba Exp $
+ * $Id: parser.pike,v 1.2 1997/03/30 17:28:25 grubba Exp $
  *
  * A BNF-grammar in Pike.
  * Compiles to a LALR(1) state-machine.
  *
  * Henrik Grubbström 1996-11-24
  */
+
+//.
+//. File:	parser.pike
+//. RCSID:	$Id: parser.pike,v 1.2 1997/03/30 17:28:25 grubba Exp $
+//. Author:	Henrik Grubbström (grubba@infovav.se)
+//.
+//. Synopsis:	LALR(1) parser and compiler.
+//.
+//. +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+//.
+//. This object implements an LALR(1) parser and compiler.
+//.
+//. Normal use of this object would be:
+//.
+//. {add_rule, set_priority, set_associativity}*
+//. set_scanner
+//. set_symbol_to_string
+//. compile
+//. {parse}*
+//.
 
 /*
  * Includes
@@ -39,14 +59,25 @@
  * Classes
  */
 
+//. o state_queue
+//.
+//. This is a combined set and queue.
 class state_queue {
-  /*
-   * This is a combined set and queue.
-   */
-
-  int head, tail;
+  //. + head
+  //. Index of the head of the queue.
+  int head;
+  //. + tail
+  //. Index of the tail of the queue.
+  int tail;
+  //. + arr
+  //. The queue/set itself.
   array(object(LR.kernel)) arr=allocate(64);
 
+  //. - memberp
+  //.   Returns the index of the state in arr if present.
+  //.   Returns -1 on failure.
+  //. > state
+  //.   State to search for.
   int|object(LR.kernel) memberp(object(LR.kernel) state)
   {
     int j;
@@ -59,6 +90,10 @@ class state_queue {
     return(-1);
   }
 
+  //. - push_if_new
+  //.   Pushes the state on the queue if it isn't there already.
+  //. > state
+  //.   State to push.
   object(LR.kernel) push_if_new(object(LR.kernel) state)
   {
     int index;
@@ -75,6 +110,8 @@ class state_queue {
     }
   }
 
+  //. - next
+  //.   Return the next state from the queue.
   int|object(LR.kernel) next()
   {
     if (head == tail) {
@@ -110,13 +147,14 @@ static private mapping(int : multiset(object(rule))) used_by = ([]);
 
 static private object(kernel) start_state;
 
-/* Verbosity level
- * 0 - none
- * 1 - some
- */
+//. + verbose
+//.   Verbosity level
+//.   0 - none
+//.   1 - some
 int verbose=1;
 
-/* Error code */
+//. + error
+//.   Error code
 int error=0;
 
 /* Number of next rule (used only for conflict resolving) */
@@ -141,20 +179,28 @@ static private string builtin_symbol_to_string(int|string symbol)
 
 static private function(int|string : string) symbol_to_string = builtin_symbol_to_string;
 
+//. - rule_to_string
+//.   Pretty-prints a rule to a string.
+//. > r
+//.   Rule to print.
 string rule_to_string(object(rule) r)
 {
-  array(string) res = ({ symbol_to_string(r->nonterminal), ":\t" });
+  string res = symbol_to_string(r->nonterminal) + ":\t";
 
   if (sizeof(r->symbols)) {
     foreach (r->symbols, int|string symbol) {
-      res += ({ symbol_to_string(symbol), " " });
+      res += symbol_to_string(symbol) + " ";
     }
   } else {
-    res += ({ "/* empty */" });
+    res += "/* empty */";
   }
-  return(res * "");
+  return(res);
 }
 
+//. - item_to_string
+//.   Pretty-prints an item to a string.
+//. > i
+//.   Item to pretty-print.
 string item_to_string(object(item) i)
 {
   array(string) res = ({ symbol_to_string(i->r->nonterminal), ":\t" });
@@ -178,11 +224,17 @@ string item_to_string(object(item) i)
   return(res * "");
 }
 
+//. - state_to_string
+//.   Pretty-prints a state to a string.
+//. > state
+//.   State to pretty-print.
 string state_to_string(object(kernel) state)
 {
   return (map(state->items, item_to_string) * "\n");
 }
 
+//. - cast_to_string
+//.   Pretty-prints the current grammar to a string.
 string cast_to_string()
 {
   array(string) res = ({});
@@ -205,6 +257,10 @@ string cast_to_string()
   return (res * "");
 }
 
+//. - cast
+//.   Implements casting.
+//. > type
+//.   Type to cast to.
 mixed cast(string type)
 {
   if (type == "string") {
@@ -215,6 +271,12 @@ mixed cast(string type)
 
 /* Here come the functions that actually do some work */
 
+//. - set_priority
+//.   Sets the priority of a terminal.
+//. > terminal
+//.   Terminal to set the priority for.
+//. > pri_val
+//.   Priority; higher = prefer this terminal.
 void set_priority(string terminal, int pri_val)
 {
   object(priority) pri;
@@ -226,6 +288,12 @@ void set_priority(string terminal, int pri_val)
   }
 }
 
+//. - set_associativity
+//.   Sets the associativity of a terminal.
+//. > terminal
+//.   Terminal to set the associativity for.
+//. > assoc
+//.   Associativity; negative - left, positive - right, zero - no associativity.
 void set_associativity(string terminal, int assoc)
 {
   object(priority) pri;
@@ -237,7 +305,14 @@ void set_associativity(string terminal, int assoc)
   }
 }
 
-void set_symbol_to_string(function(int|string:string) s_to_s)
+//. - set_symbol_to_string
+//.   Sets the symbol to string conversion function.
+//.   The conversion function is used by the various *_to_string functions
+//.   to make comprehensible output.
+//. > s_to_s
+//.   Symbol to string conversion function.
+//.   If zero or not specified, use the built-in function.
+void set_symbol_to_string(void|function(int|string:string) s_to_s)
 {
   if (s_to_s) {
     symbol_to_string = s_to_s;
@@ -246,7 +321,10 @@ void set_symbol_to_string(function(int|string:string) s_to_s)
   }
 }
 
-/* Add a rule to the grammar */
+//. - add_rule
+//.   Add a rule to the grammar.
+//. > r
+//.   Rule to add.
 void add_rule(object(rule) r)
 {
   array(object(rule)) rules;
@@ -946,6 +1024,8 @@ static private int repair(object(kernel) state, multiset(int|string) conflicts)
   }
 }
 
+//. - compile
+//.   Compiles the grammar into a parser, so that parse() can be called.
 int compile()
 {
   int error = 0;	/* No error yet */
@@ -1161,6 +1241,22 @@ int compile()
   return (error);
 }
 
+//. - parse
+//.   Parse the input according to the compiled grammar.
+//.   The last value reduced is returned.
+//. NOTA BENE:
+//.   The parser must have been compiled (with compile()), and a scanner
+//.   been set (with set_scanner()) prior to calling this function.
+//. BUGS
+//.   Errors should be throw()n.
+//. > scanner
+//.   The scanner function. It returns the next symbol from the input.
+//.   It should either return a string (terminal) or an array with
+//.   a string (terminal) and a mixed (value).
+//.   EOF is indicated with the empty string.
+//. > action_object
+//.   Object used to resolve those actions that have been specified as
+//.   strings.
 mixed parse(function(void:string|array(string|mixed)) scanner,
 	    void|object action_object)
 {

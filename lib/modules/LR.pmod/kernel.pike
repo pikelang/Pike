@@ -1,33 +1,52 @@
 /*
- * $Id: kernel.pike,v 1.1 1997/03/03 23:50:16 grubba Exp $
+ * $Id: kernel.pike,v 1.2 1997/03/30 17:28:22 grubba Exp $
  *
  * Implements a LR(1) state;
  *
  * Henrik Grubbström 1996-11-25
  */
 
+//.
+//. File:	kernel.pike
+//. RCSID:	$Id: kernel.pike,v 1.2 1997/03/30 17:28:22 grubba Exp $
+//. Author:	Henrik Grubbström
+//.
+//. Synopsis:	Implements an LR(1) state.
+//.
+//. +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+//.
+//. State in the LR(1) state-machine.
+//.
+
 import LR;
 
-/* Used to check if a rule already has been added when doing closures */
+//. + rules
+//.   Used to check if a rule already has been added when doing closures.
 multiset(object(rule)) rules = (<>);
 
-/* Contains the items in this state */
+//. + items
+//.   Contains the items in this state.
 array(object(item)) items = ({});
 
-/* Contains the items whose next symbol is this non-terminal */
+//. + symbol_items
+//.   Contains the items whose next symbol is this non-terminal.
 mapping(int : multiset(object(item))) symbol_items = ([]);
 
-/* The action table for this state
- *
- * object(kernel)	SHIFT to this state on this symbol.
- * object(rule)		REDUCE according to this rule on this symbol.
- */
+//. + action
+//.   The action table for this state
+//.
+//.   object(kernel)	SHIFT to this state on this symbol.
+//.   object(rule)	REDUCE according to this rule on this symbol.
 mapping(int|string : object /* (kernel) */|object(rule)) action = ([]);
 
 /*
  * Functions
  */
 
+//. - add_item
+//.   Add an item to the state.
+//. > i
+//.   Item to add.
 void add_item(object(item) i)
 {
   int|string symbol;
@@ -44,6 +63,10 @@ void add_item(object(item) i)
   }
 }
 
+//. - equalp
+//.   Compare with another state.
+//. > state
+//.   State to compare with.
 int equalp(object /* (kernel) */ state)
 {
   /* Two states are the same if they contain the same items */
