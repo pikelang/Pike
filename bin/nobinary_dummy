@@ -51,7 +51,8 @@ case "$1" in
 
     test x"$prog" = x || {
       rm -f "$prog" 2>/dev/null
-      ln -s /bin/true "$prog"
+      echo "#! /bin/sh" > "$prog"
+      chmod 775 "$prog"
     }
     ;;
 
