@@ -33,14 +33,14 @@ int cp(string from, string to)
     object tmp=Stdio.File();
     if(!tmp->open(from,"r"))
     {
-      werror(sprintf("Open %s failed.\n",from));
+      werror(sprintf("Open %s for reading failed.\n",from));
       return 0;
     }
     function r=tmp->read;
     tmp=Stdio.File();
     if(!tmp->open(to,"wct"))
     {
-      werror(sprintf("Open %s failed.\n",to));
+      werror(sprintf("Open %s for writing failed.\n",to));
       return 0;
     }
     function w=tmp->write;
@@ -103,15 +103,25 @@ void handle_incoming_connection(object(Stdio.File) io)
   string dir=cmd[0];
   cmd=cmd[1..];
 
-  write("Doing "+cmd*" "+"\n");
+  write("Doing %s in %s\n",cmd*" ",dir);
 
   switch(lower_case(cmd[0]))
   {
     case "mkdir":
     {
+      string dir=combine_path(combine_path(getcwd(),dir),cmd[1]);
+      int ret;
+      if(Stdio.file_size(dir)!=-2)
+	ret=mkdir(dir);
+      else
+	ret=1;
+      if(!ret)
+      {
+	string x=sprintf("MKDIR %s failed, errno=%d\n",dir,errno());
+	io->write(sprintf("%4c%s",strlen(x),x));
+      }
       io->write(sprintf("%4c",0));
-      mkdir(combine_path(combine_path(getcwd(),dir),cmd[1]));
-      io->write(sprintf("%4c",0));
+      io->write(sprintf("%4c",!ret));
       break;
     }
 
@@ -199,13 +209,18 @@ void handle_incoming_connection(object(Stdio.File) io)
 	io->write(sprintf("%4c",0));
 	io->write(sprintf("%4c",p->wait()));
       }else{
+	werror("dir=%s\n",dir);
 	werror(master()->describe_backtrace(err));
 	destruct(p2);
 	io->write(sprintf("%4c",0));
 	io->write(sprintf("%4c",69));
       }
   }
+#ifdef WINE
+  io->close("rw");
+#else
   io->close("w");
+#endif
   destruct(io);
 }
 
