@@ -1,5 +1,5 @@
 /*
- * $Id: precompiled_odbc.h,v 1.3 1997/11/02 22:19:35 grubba Exp $
+ * $Id: precompiled_odbc.h,v 1.4 1998/05/31 17:17:14 grubba Exp $
  *
  * Pike interface to ODBC compliant databases.
  *
@@ -37,18 +37,15 @@ extern struct program *odbc_result_program;
  */
 
 struct field_info {
-  int type;		/* Pike-type */
   SDWORD len;
   int size;		/* Size of buffer */
   void *buf;
 };
 
 struct precompiled_odbc {
-  HENV henv;
   HDBC hdbc;
-  HSTMT hstmt;
-  SWORD num_fields;
-  SDWORD affected_rows;
+  int affected_rows;
+  unsigned int flags;
   struct pike_string *last_error;
 };
 
@@ -56,8 +53,8 @@ struct precompiled_odbc_result {
   struct object *obj;
   struct precompiled_odbc *odbc;
   HSTMT hstmt;
-  int num_fields;
-  int num_rows;
+  SWORD num_fields;
+  SDWORD num_rows;
   struct array *fields;
   struct field_info *field_info;
 };
@@ -68,6 +65,9 @@ struct precompiled_odbc_result {
 
 #define PIKE_ODBC	((struct precompiled_odbc *)(fp->current_storage))
 #define PIKE_ODBC_RES	((struct precompiled_odbc_result *)(fp->current_storage))
+
+/* Flags */
+#define PIKE_ODBC_CONNECTED	1
 
 /*
  * Prototypes
