@@ -469,10 +469,32 @@ static class DocParserClass {
         args += ({ s });
       }
       else {
-        int start = i;
-        while (arg[i] && !isSpaceChar(arg[i]))
+	String.Buffer out = String.Buffer();
+	int quote = 0;
+        while (arg[i] && (!isSpaceChar(arg[i]) || quote) ) {
+	  if(arg[i]=='@') {
+	    switch(arg[i+1]) {
+	    case '@':
+	      out->putchar( '@' );
+	      break;
+	    case '{':
+	      quote++;
+	      break;
+	    case '}':
+	      quote--;
+	      if(quote<0)
+		parseError(sprintf("@%s with too many @}.\n", keyword));
+	      break;
+	    case 0:
+	    default:
+	      parseError("Illegal @ statement.\n");
+	    }
+	  }
+	  else
+	    out->putchar(arg[i]);
           ++i;
-        args += ({ arg[start .. i - 1] });
+	}
+        args += ({ (string)out });
       }
     }
 
