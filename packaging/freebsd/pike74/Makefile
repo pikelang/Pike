@@ -26,7 +26,7 @@ BUILD_DEPENDS+=	nasm:${PORTSDIR}/devel/nasm/
 
 LIB_DEPENDS=	jpeg.9:${PORTSDIR}/graphics/jpeg \
 		tiff.4:${PORTSDIR}/graphics/tiff \
-		gdbm.2:${PORTSDIR}/databases/gdbm
+		gdbm.3:${PORTSDIR}/databases/gdbm
 
 WRKSRC=		${WRKDIR}/${DISTNAME}/src/
 
