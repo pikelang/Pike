@@ -4,9 +4,31 @@
 
 import ".";
 
-void main()
+constant data = ([ "data":
+		   ({ ({1.0}), ({2.0}), ({1.0}), ({2.0}) }),
+                ]);
+
+void main(int num, array(string) args)
 {
-  Image.Image image=
-    Graphics.Graph.bars((["data":({({1.0}),({2.0}),({1.0}),({2.0})})]));
-  Stdio.write_file("graph.gif", Image.GIF.encode(image));
+  int w = has_value(args, "-w")||has_value(args, "--write");
+
+  Image.Image image;
+
+  image = Graphics.Graph.bars(data);
+  if(w) Stdio.write_file("bars.gif", Image.GIF.encode(image));
+
+  image = Graphics.Graph.pie(data);
+  if(w) Stdio.write_file("pie.gif", Image.GIF.encode(image));
+
+  image = Graphics.Graph.sumbars(data);
+  if(w) Stdio.write_file("sumbars.gif", Image.GIF.encode(image));
+
+  image = Graphics.Graph.line(data);
+  if(w) Stdio.write_file("line.gif", Image.GIF.encode(image));
+
+  image = Graphics.Graph.norm(data);
+  if(w) Stdio.write_file("norm.gif", Image.GIF.encode(image));
+
+  image = Graphics.Graph.graph(data);
+  if(w) Stdio.write_file("graph.gif", Image.GIF.encode(image));
 }
