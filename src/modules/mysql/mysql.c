@@ -1,5 +1,5 @@
 /*
- * $Id: mysql.c,v 1.7 1997/01/08 17:32:41 grubba Exp $
+ * $Id: mysql.c,v 1.8 1997/01/10 00:30:09 grubba Exp $
  *
  * SQL database functionality for Pike
  *
@@ -59,7 +59,7 @@ typedef struct dynamic_buffer_s dynamic_buffer;
  * Globals
  */
 
-RCSID("$Id: mysql.c,v 1.7 1997/01/08 17:32:41 grubba Exp $");
+RCSID("$Id: mysql.c,v 1.8 1997/01/10 00:30:09 grubba Exp $");
 
 struct program *mysql_program = NULL;
 
@@ -225,8 +225,8 @@ static void f_select_db(INT32 args)
   pop_n_elems(args);
 }
 
-/* object(mysql_result) query(string q) */
-static void f_query(INT32 args)
+/* object(mysql_result) big_query(string q) */
+static void f_big_query(INT32 args)
 {
   MYSQL *socket = PIKE_MYSQL->socket;
   MYSQL_RES *result;
@@ -234,10 +234,10 @@ static void f_query(INT32 args)
   int tmp;
 
   if (!args) {
-    error("Too few arguments to mysql->query()\n");
+    error("Too few arguments to mysql->big_query()\n");
   }
   if (sp[-args].type != T_STRING) {
-    error("Bad argument 1 to mysql->query()\n");
+    error("Bad argument 1 to mysql->big_query()\n");
   }
 
   query = sp[-args].u.string->str;
@@ -253,7 +253,7 @@ static void f_query(INT32 args)
   THREADS_DISALLOW();
 
   if (tmp < 0) {
-    error("mysql->query(): Query \"%s\" failed\n",
+    error("mysql->big_query(): Query \"%s\" failed\n",
 	  sp[-args].u.string->str);
   }
 
@@ -269,7 +269,7 @@ static void f_query(INT32 args)
 
   if (!(PIKE_MYSQL->last_result = result)) {
     if (mysql_num_fields(socket)) {
-      error("mysql->query(): Couldn't create result for query\n");
+      error("mysql->big_query(): Couldn't create result for query\n");
     }
     /* query was INSERT or similar - return 0 */
 
@@ -413,6 +413,8 @@ static void f_server_info(INT32 args)
 
   pop_n_elems(args);
 
+  push_text("mysql/");
+
   THREADS_ALLOW();
 
   info = mysql_get_server_info(socket);
@@ -420,6 +422,7 @@ static void f_server_info(INT32 args)
   THREADS_DISALLOW();
 
   push_text(info);
+  f_add(2);
 }
 
 /* string host_info() */
@@ -625,11 +628,11 @@ void init_mysql_programs(void)
   add_storage(sizeof(struct precompiled_mysql));
 
   add_function("error", f_error, "function(void:string)", OPT_EXTERNAL_DEPEND);
-  add_function("create", f_create, "function(string|void, string|void, string|void:void, string|void)", OPT_SIDE_EFFECT);
+  add_function("create", f_create, "function(string|void, string|void, string|void, string|void:void)", OPT_SIDE_EFFECT);
   add_function("affected_rows", f_affected_rows, "function(void:int)", OPT_EXTERNAL_DEPEND);
   add_function("insert_id", f_insert_id, "function(void:int)", OPT_EXTERNAL_DEPEND);
   add_function("select_db", f_select_db, "function(string:void)", OPT_SIDE_EFFECT);
-  add_function("query", f_query, "function(string:int|object)", OPT_EXTERNAL_DEPEND);
+  add_function("big_query", f_big_query, "function(string:int|object)", OPT_EXTERNAL_DEPEND);
   add_function("create_db", f_create_db, "function(string:void)", OPT_SIDE_EFFECT);
   add_function("drop_db", f_drop_db, "function(string:void)", OPT_SIDE_EFFECT);
   add_function("shutdown", f_shutdown, "function(void:void)", OPT_SIDE_EFFECT);
