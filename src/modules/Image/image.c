@@ -1,4 +1,4 @@
-/* $Id: image.c,v 1.39 1997/10/06 23:26:47 grubba Exp $ */
+/* $Id: image.c,v 1.40 1997/10/06 23:40:30 grubba Exp $ */
 
 /*
 **! module Image
@@ -6,7 +6,7 @@
 **!     This module adds image-drawing and -manipulating
 **!	capabilities to pike. 
 **! note
-**!	$Id: image.c,v 1.39 1997/10/06 23:26:47 grubba Exp $<br>
+**!	$Id: image.c,v 1.40 1997/10/06 23:40:30 grubba Exp $<br>
 **! see also: Image.font, Image.image
 **!
 **! class image
@@ -107,7 +107,7 @@
 
 #include "stralloc.h"
 #include "global.h"
-RCSID("$Id: image.c,v 1.39 1997/10/06 23:26:47 grubba Exp $");
+RCSID("$Id: image.c,v 1.40 1997/10/06 23:40:30 grubba Exp $");
 #include "pike_macros.h"
 #include "object.h"
 #include "constants.h"
@@ -302,6 +302,9 @@ static INLINE rgb_group _pixel_apply_matrix(struct image *img,
 					    rgb_group default_rgb,
 					    double div)
 {
+  /* NOTE:
+   *	This code MUST be MT-SAFE!
+   */
    rgb_group res;
    int i,j,bx,by,xp,yp;
    int sumr,sumg,sumb,r,g,b;
@@ -1120,6 +1123,9 @@ static INLINE void
 			       rgba_group rgba,
 			       float factor)
 {
+  /* NOTE:
+   *	This code MUST be MT-SAFE!
+   */
    sum->r=testrange(sum->r+(INT32)(rgba.r*factor+0.5));
    sum->g=testrange(sum->g+(INT32)(rgba.g*factor+0.5));
    sum->b=testrange(sum->b+(INT32)(rgba.b*factor+0.5));
@@ -1131,6 +1137,9 @@ static INLINE void
 			      rgba_group rgba,
 			      float factor)
 {
+  /* NOTE:
+   *	This code MUST be MT-SAFE!
+   */
    sum->r=testrange(sum->r+(INT32)(rgba.r*factor+0.5));
    sum->g=testrange(sum->g+(INT32)(rgba.g*factor+0.5));
    sum->b=testrange(sum->b+(INT32)(rgba.b*factor+0.5));
