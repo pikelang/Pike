@@ -5,7 +5,7 @@
 \*/
 /**/
 #include "global.h"
-RCSID("$Id: interpret.c,v 1.179 2001/01/10 19:56:37 mast Exp $");
+RCSID("$Id: interpret.c,v 1.180 2001/01/11 23:28:30 mast Exp $");
 #include "interpret.h"
 #include "object.h"
 #include "program.h"
@@ -753,6 +753,18 @@ void dump_backlog(void)
 
 #endif
 static int o_catch(unsigned char *pc);
+
+struct light_frame_info
+{
+  struct svalue *expendible;
+  struct svalue *locals;
+};
+
+static void restore_light_frame_info(struct light_frame_info *info)
+{
+  Pike_fp->expendible = info->expendible;
+  Pike_fp->locals = info->locals;
+}
 
 #ifdef PIKE_DEBUG
 #define EVAL_INSTR_RET_CHECK(x)						\

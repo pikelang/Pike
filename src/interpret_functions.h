@@ -1,5 +1,5 @@
 /*
- * $Id: interpret_functions.h,v 1.37 2001/01/10 19:56:37 mast Exp $
+ * $Id: interpret_functions.h,v 1.38 2001/01/11 23:28:30 mast Exp $
  *
  * Opcode definitions for the interpreter.
  */
@@ -1485,18 +1485,41 @@ BREAK;
 
 
 /* Assume that the number of arguments is correct */
-OPCODE0_JUMP(F_RECUR,"recur")
+OPCODE1_JUMP(F_COND_RECUR,"recur if not overloaded")
+{
+  /* FIXME:
+   * this test should actually test if this function is
+   * overloaded or not. Currently it only tests if
+   * this context is inherited or not.
+   */
+  if(Pike_fp->current_object->prog != Pike_fp->context.prog)
+  {
+    apply_low(Pike_fp->current_object,
+	      arg1+Pike_fp->context.identifier_level,
+	      DO_NOT_WARN(Pike_sp - *--Pike_mark_sp));
+    pc+=sizeof(INT32);
+    DONE;
+  }
+}
+/* FALL THROUGH */
+
+/* Assume that the number of arguments is correct */
+OPCODE0_TAILJUMP(F_RECUR,"recur")
 {
   int x;
   INT32 num_locals, args;
   char *addr;
-  struct svalue *expendible=Pike_fp->expendible;
-  struct svalue *locals=Pike_fp->locals;
+  struct light_frame_info info;
   struct svalue *save_sp, **save_mark_sp;
+  ONERROR uwp;
 
   fast_check_threads_etc(6);
   check_c_stack(8192);
   check_stack(256);
+
+  info.expendible = Pike_fp->expendible;
+  info.locals = Pike_fp->locals;
+  SET_ONERROR(uwp, restore_light_frame_info, &info);
 
   save_sp = Pike_fp->expendible = Pike_fp->locals = *--Pike_mark_sp;
   args = DO_NOT_WARN(Pike_sp - Pike_fp->locals);
@@ -1528,80 +1551,12 @@ OPCODE0_JUMP(F_RECUR,"recur")
     assign_svalue(save_sp,Pike_sp-1);
     pop_n_elems(Pike_sp-save_sp-1);
   }
-  Pike_fp->expendible=expendible;
-  Pike_fp->locals=locals;
+  CALL_AND_UNSET_ONERROR(uwp);
   print_return_value();
 #ifdef PIKE_DEBUG
   if(Pike_sp != save_sp+1)
     fatal("Stack whack in F_RECUR Pike_sp=%p, expected=%p\n",Pike_sp,save_sp+1);
 #endif
-}
-BREAK
-
-/* Assume that the number of arguments is correct */
-OPCODE1_JUMP(F_COND_RECUR,"recur if not overloaded")
-{
-  int x;
-  INT32 num_locals,args;
-  char *addr;
-
-  struct svalue *expendible=Pike_fp->expendible;
-  struct svalue *locals=Pike_fp->locals;
-  struct svalue *save_sp, **save_mark_sp;
-
-  /* FIXME:
-   * this test should actually test if this function is
-   * overloaded or not. Currently it only tests if
-   * this context is inherited or not.
-   */
-  if(Pike_fp->current_object->prog != Pike_fp->context.prog)
-  {
-    apply_low(Pike_fp->current_object,
-	      arg1+Pike_fp->context.identifier_level,
-	      DO_NOT_WARN(Pike_sp - *--Pike_mark_sp));
-    pc+=sizeof(INT32);
-  }else{
-    fast_check_threads_etc(6);
-    check_c_stack(8192);
-    check_stack(256);
-    
-    save_sp = Pike_fp->expendible = Pike_fp->locals = *--Pike_mark_sp;
-    args = DO_NOT_WARN(Pike_sp - Pike_fp->locals);
-    save_mark_sp = Pike_mark_sp;
-    
-    addr=pc+EXTRACT_INT(pc);
-    num_locals=EXTRACT_UCHAR(addr-2);
-    
-#ifdef PIKE_DEBUG
-    if(args != EXTRACT_UCHAR(addr-1))
-      fatal("Wrong number of arguments in F_RECUR %d!=%d\n",args,EXTRACT_UCHAR(addr-1));
-#endif
-    
-    clear_svalues(Pike_sp, num_locals - args);
-    Pike_sp += num_locals - args;
-    
-    x=eval_instruction(addr);
-    EVAL_INSTR_RET_CHECK(x);
-#ifdef PIKE_DEBUG
-  if(Pike_mark_sp < save_mark_sp)
-    fatal("mark Pike_sp underflow in F_RECUR.\n");
-#endif
-    Pike_mark_sp=save_mark_sp;
-    if(x>=0) mega_apply(APPLY_STACK, x, 0,0);
-    pc+=sizeof(INT32);
-    if(save_sp+1 < Pike_sp)
-    {
-      assign_svalue(save_sp,Pike_sp-1);
-      pop_n_elems(Pike_sp-save_sp-1);
-    }
-    Pike_fp->expendible=expendible;
-    Pike_fp->locals=locals;
-    print_return_value();
-#ifdef PIKE_DEBUG
-    if(Pike_sp != save_sp+1)
-      fatal("Stack whack in F_RECUR Pike_sp=%p, expected=%p\n",Pike_sp,save_sp+1);
-#endif
-  }
 }
 BREAK
 

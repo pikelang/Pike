@@ -194,9 +194,9 @@ static int eval_instruction(unsigned char *pc)
 #define OPCODE2_TAILJUMP(OP,DESC) } CASE(OP) {; 
 
 
-
 #define BREAK break; }
-     
+#define DONE break
+
 #include "interpret_functions.h"
       
     default:
