@@ -1,4 +1,4 @@
-// $Id: module.pmod,v 1.95 2000/12/03 23:55:56 per Exp $
+// $Id: module.pmod,v 1.96 2000/12/10 00:23:31 per Exp $
 #pike __REAL_VERSION__
 
 
@@ -582,7 +582,7 @@ class FILE
   /* Private functions / buffers etc. */
 
   private string b="";
-  private int bpos=0, lp;
+  private int bpos=0, lp, do_lines;
   private array cached_lines = ({});
 
   static string _sprintf( int type, mapping flags )
@@ -602,7 +602,8 @@ class FILE
     string s = file::read(BUFSIZE,1);
     if(!s || !strlen(s))
       return 0;
-    cached_lines = (b+=s)/"\n";
+    if( do_lines )
+      cached_lines = (b+=s)/"\n";
     lp = 0;
     return 1;
   }
@@ -623,6 +624,7 @@ class FILE
       string r = cached_lines[ lp++ ];
       return (bpos += sizeof( r  )+1),r;
     }
+    do_lines = 1;
     if( !get_data() )
     {
       if( sizeof( cached_lines ) > lp && cached_lines[lp] != "" )
@@ -730,6 +732,7 @@ class FILE
   string read(int|void bytes,void|int(0..1) now)
   {
     cached_lines = ({});
+    do_lines = 0;
     if (!query_num_arg()) {
       bytes = 0x7fffffff;
     }
