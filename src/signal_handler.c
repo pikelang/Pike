@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: signal_handler.c,v 1.244 2003/03/03 12:43:56 grubba Exp $
+|| $Id: signal_handler.c,v 1.245 2003/03/06 12:50:22 grubba Exp $
 */
 
 #include "global.h"
@@ -26,7 +26,7 @@
 #include "main.h"
 #include <signal.h>
 
-RCSID("$Id: signal_handler.c,v 1.244 2003/03/03 12:43:56 grubba Exp $");
+RCSID("$Id: signal_handler.c,v 1.245 2003/03/06 12:50:22 grubba Exp $");
 
 #ifdef HAVE_PASSWD_H
 # include <passwd.h>
@@ -101,6 +101,10 @@ RCSID("$Id: signal_handler.c,v 1.244 2003/03/03 12:43:56 grubba Exp $");
 #include <sys/ptrace.h>
 #endif
 
+#ifdef HAVE_SYS_USER_H
+#include <sys/user.h>
+#endif
+
 #ifdef __amigaos__
 #define timeval amigaos_timeval
 #include <exec/types.h>
@@ -146,19 +150,56 @@ RCSID("$Id: signal_handler.c,v 1.244 2003/03/03 12:43:56 grubba Exp $");
 #ifdef HAVE_PTRACE
 /* BSDs have different names for these constants...
  *
- * And Solaris 2.x doesn't name them at all...
+ * ... and so does HPUX...
+ *
+ * And Solaris 2.9 and later don't name them at all...
+ *
+ * Requests 0 - 9 are standardized by AT&T/SVID as follows:
+ *
+ * PTRACE_TRACEME	0	Enter trace mode. Stop at exec() and signals.
+ * PTRACE_PEEKTEXT	1	Read a word from the text area.
+ * PTRACE_PEEKDATA	2	Read a word from the data area.
+ * PTRACE_PEEKUSER	3	Read a word from the user area.
+ * PTRACE_POKETEXT	4	Set a word in the text area.
+ * PTRACE_POKEDATA	5	Set a word in the data area.
+ * PTRACE_POKEUSER	6	Set a word in the user area.
+ * PTRACE_CONT		7	Continue process with specified signal.
+ * PTRACE_KILL		8	Exit process.
+ * PTRACE_SINGLESTEP	9	Execute a single instruction.
+ *
+ * NB: In Solaris 2.x ptrace() is simulated by libc.
  */
 #ifndef PTRACE_TRACEME
 #ifdef PT_TRACE_ME
+/* BSD */
 #define PTRACE_TRACEME	PT_TRACE_ME
+#elif defined(PT_SETTRC)
+/* HPUX */
+#define PTRACE_TRACEME	PT_SETTRC
 #else
 #define PTRACE_TRACEME	0
 #endif
 #endif
 
+#ifndef PTRACE_PEEKUSER
+#ifdef PT_READ_U
+/* BSD */
+#define PTRACE_PEEKUSER	PT_READ_U
+#elif defined(PT_RUAREA)
+/* HPUX */
+#define PTRACE_PEEKUSER	PT_RUAREA
+#else
+#define PTRACE_PEEKUSER	3
+#endif
+#endif
+
 #ifndef PTRACE_CONT
 #ifdef PT_CONTINUE
+/* BSD */
 #define PTRACE_CONT	PT_CONTINUE
+#elif defined(PT_CONTIN)
+/* HPUX */
+#define PTRACE_CONT	PT_CONTIN
 #else
 #define PTRACE_CONT	7
 #endif
@@ -166,10 +207,18 @@ RCSID("$Id: signal_handler.c,v 1.244 2003/03/03 12:43:56 grubba Exp $");
 
 #ifndef PTRACE_KILL
 #ifdef PT_KILL
+/* BSD */
 #define PTRACE_KILL	PT_KILL
+#elif defined(PT_EXIT)
+#define PTRACE_KILL	PT_EXIT
 #else
 #define PTRACE_KILL	8
 #endif
+#endif
+
+#ifndef PTRACE_TAKES_FOUR_ARGS
+/* HPUX and SunOS 4 have a fifth argument "addr2". */
+#define ptrace(R,P,A,D)	ptrace(R,P,A,D,NULL)
 #endif
 
 #endif /* HAVE_PTRACE */
@@ -1631,7 +1680,8 @@ static void f_trace_process_cont(INT32 args)
 
   THIS->state = PROCESS_RUNNING;
 
-  if (ptrace(PTRACE_CONT, THIS->pid, NULL, cont_signal) == -1) {
+  /* The addr argument must be 1 for this request. */
+  if (ptrace(PTRACE_CONT, THIS->pid, (void *)(ptrdiff_t)1, cont_signal) == -1) {
     int err = errno;
     THIS->state = PROCESS_STOPPED;
     /* FIXME: Better diagnostics. */
@@ -1674,6 +1724,67 @@ static void f_trace_process_exit(INT32 args)
   pop_n_elems(args);
   push_int(0);  
 }
+
+#if 0	/* Disabled for now. */
+
+/*! @class Registers
+ *!   Interface to the current register contents of
+ *!   a stopped process.
+ *!
+ *! @seealso
+ *!   @[TraceProcess]
+ */
+
+/* NB: No storage needed, all state is in the parent object. */
+
+#define THIS_PROC_REG_PROC_ID	((struct pid_status *)parent_storage(1))
+
+/*! @decl int `[](int regno)
+ *!   Get the contents of register @[regno].
+ */
+static void f_proc_reg_index(INT32 args)
+{
+  struct pid_status *proc = THIS_PROC_REG_PROC_ID;
+  INT32 regno = 0;
+  long val;
+
+#ifdef PIKE_SECURITY
+  if(!CHECK_SECURITY(SECURITY_BIT_SECURITY))
+    Pike_error("`[](): permission denied.\n");
+#endif
+  if(proc->pid == -1)
+    Pike_error("This process object has no process associated with it.\n");
+
+  if (proc->state != PROCESS_STOPPED) {
+    if (proc->state == PROCESS_EXITED) {
+      Pike_error("Process has exited.\n");
+    }
+    Pike_error("Process not stopped.\n");
+  }
+
+  get_all_args("`[]", args, "%i", &regno);
+
+  if ((regno < 0) ||
+      (regno * sizeof(long) > sizeof(((struct user *)NULL)->regs))) {
+    SIMPLE_BAD_ARG_ERROR("`[]", 1, "register number");
+  }
+
+  if ((val = ptrace(PTRACE_PEEKUSER, proc->pid,
+		    ((long *)(((struct user *)0)->regs)) + regno, 0)) == -1) {
+    int err = errno;
+    /* FIXME: Better diagnostics. */
+    if (errno) {
+      Pike_error("Failed to exit process. errno:%d\n", err);
+    }
+  }
+  pop_n_elems(args);
+  push_int64(val);
+}
+
+/*! @endclass
+ */
+
+#endif /* 0 */
 
 /*! @endclass
  */
@@ -1886,7 +1997,6 @@ extern int pike_make_pipe(int *);
 #define PROCE_DUP		10
 #define PROCE_SETSID		11
 #define PROCE_SETCTTY		12
-#define PROCE_PTRACE		13
 
 #define PROCERROR(err, id)	do { int _l, _i; \
     buf[0] = err; buf[1] = errno; buf[2] = id; \
@@ -2343,9 +2453,6 @@ static void internal_add_limit( struct perishables *storage,
  *!   The modifiers @tt{"fds"@}, @tt{"uid"@}, @tt{"gid"@}, @tt{"nice"@},
  *!   @tt{"noinitgroups"@}, @tt{"setgroups"@}, @tt{"keep_signals"@}
  *!   and @tt{"rlimit"@} only exist on unix.
- *!
- *!   The modifier @tt{"trace"@} currently only exists on OS's that
- *!   implement @tt{ptrace()@}.
  */
 
 /*! @endclass */
@@ -3362,9 +3469,6 @@ void f_create_process(INT32 args)
 	case PROCE_SETCTTY:
           Pike_error("Process.create_process(): failed to set controlling TTY. errno:%d\n", buf[1]);
 	  break;
-	case PROCE_PTRACE:
-          Pike_error("Process.TraceProcess(): failed to enter trace mode. errno:%d\n", buf[1]);
-	  break;
 	case PROCE_EXEC:
 	  switch(buf[1]) {
 	  case ENOENT:
@@ -3691,10 +3795,8 @@ void f_create_process(INT32 args)
 
 #ifdef HAVE_PTRACE
       if (do_trace) {
-	long code = ptrace(PTRACE_TRACEME, 0, NULL, NULL);
-	if (code == -1) {
-	  PROCERROR(PROCE_PTRACE, 0);
-	}
+	/* NB: A return value is not defined for this ptrace request! */
+	ptrace(PTRACE_TRACEME, 0, NULL, NULL);
       }
 #endif /* HAVE_PTRACE */
 	
@@ -4422,6 +4524,15 @@ void init_signals(void)
   ADD_FUNCTION("exit", f_trace_process_exit,
 	       tFunc(tNone, tVoid), 0);
 
+#if 0	/* Disabled for now. */
+
+  start_new_program();
+  Pike_compiler->new_program->flags |= PROGRAM_USES_PARENT;
+  ADD_FUNCTION("`[]", f_proc_reg_index, tFunc(tMix, tInt), ID_STATIC);
+  end_class("Registers", 0);
+
+#endif /* 0 */
+
   end_class("TraceProcess", 0);
 #endif /* HAVE_PTRACE */
   
@@ -4467,7 +4578,7 @@ void init_signals(void)
 void exit_signals(void)
 {
   int e;
-#ifndef __NT__
+#ifdef USE_PID_MAPPING
   if(pid_mapping)
   {
     free_mapping(pid_mapping);

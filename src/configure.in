@@ -1,4 +1,4 @@
-AC_REVISION("$Id: configure.in,v 1.706 2003/03/05 16:18:30 mast Exp $")
+AC_REVISION("$Id: configure.in,v 1.707 2003/03/06 12:50:21 grubba Exp $")
 AC_INIT(interpret.c)
 AC_CONFIG_HEADER(machine.h)
 
@@ -3796,6 +3796,34 @@ if test "x$ac_cv_func_ualarm" = "xyes"; then
     AC_MSG_RESULT(1)
   fi
 fi
+
+if test "x$ac_cv_func_ptrace" = "xyes"; then
+  AC_MSG_CHECKING(no of arguments to ptrace)
+  AC_CACHE_VAL(pike_cv_ptrace_takes_four_args,
+  [
+    AC_TRY_COMPILE([
+#ifdef HAVE_UNISTD_H
+#include <unistd.h>
+#endif /* HAVE_UNISTD_H */
+#ifdef HAVE_SYS_TYPES_H
+#include <sys/types.h>
+#endif /* HAVE_SYS_TYPES_H */
+#ifdef HAVE_SYS_PTRACE_H
+#include <sys/ptrace.h>
+#endif /* HAVE_SYS_PTRACE_H */
+    ],[
+      ptrace(0,0,NULL,NULL);
+    ],pike_cv_ptrace_takes_four_args=yes,pike_cv_ptrace_takes_four_args=no)
+  ])
+  if test "$pike_cv_ptrace_takes_four_args" = yes; then
+    AC_MSG_RESULT(4)
+    AC_DEFINE(PTRACE_TAKES_FOUR_ARGS)
+  else
+    AC_MSG_RESULT(5)
+  fi
+fi
+
+
 
 ########################################################################
 AC_MSG_CHECKING(stack direction)

@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: acconfig.h,v 1.119 2003/02/27 12:36:26 mirar Exp $
+|| $Id: acconfig.h,v 1.120 2003/03/06 12:50:21 grubba Exp $
 */
 
 #ifndef MACHINE_H
@@ -244,8 +244,11 @@
 /* Define if you have ualarm. */
 #undef HAVE_UALARM
 
-/* Define if your ualarm takes two args.. */
+/* Define if your ualarm takes two args. */
 #undef UALARM_TAKES_TWO_ARGS
+
+/* Define if your ptrace takes four args. */
+#undef PTRACE_TAKES_FOUR_ARGS
 
 /* Define if gettimeofday takes to arguments */
 #undef GETTIMEOFDAY_TAKES_TWO_ARGS
