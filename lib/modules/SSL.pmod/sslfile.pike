@@ -1,4 +1,4 @@
-/* $Id: sslfile.pike,v 1.15 1999/05/06 01:01:59 mast Exp $
+/* $Id: sslfile.pike,v 1.16 1999/08/04 21:17:54 mast Exp $
  *
  */
 
@@ -37,13 +37,6 @@ void die(int status)
 #endif
   }
   is_closed = 1;
-#ifdef SSL3_CLOSE_BUG_STILL_EXISTS
-#ifndef CALLBACK_BUG_FIXED
-  // The write callback sometimes gets called although the socket is closed.
-  socket::set_write_callback(0);
-  socket::set_read_callback(0);
-#endif /* CALLBACK_BUG_FIXED */
-#endif
   socket::close();
 }
 
@@ -76,18 +69,11 @@ private int queue_write()
 
 void close()
 {
-#ifdef SSL3_CLOSE_BUG_STILL_EXISTS
-  if (is_closed)
-    throw( ({ "SSL.sslfile->close: Already closed!\n", backtrace() }) );
-#endif
-
 #ifdef SSL3_DEBUG
   werror("SSL.sslfile->close\n");
 #endif
 
-#ifndef SSL3_CLOSE_BUG_STILL_EXISTS
   if (is_closed) return;
-#endif
 
   is_closed = 1;
   send_close();
@@ -103,9 +89,7 @@ int write(string s)
   werror("SSL.sslfile->write\n");
 #endif
 
-#ifndef SSL3_CLOSE_BUG_STILL_EXISTS
   if (is_closed) return -1;
-#endif
 
   int len = strlen(s);
   object packet;
@@ -197,7 +181,11 @@ private void ssl_write_callback(mixed id)
       write_buffer = write_buffer[written ..];
     } else {
       if (written < 0)
-	die(-1);
+#ifdef __NT__
+	// You don't want to know.. (Bug observed in Pike 0.6.132.)
+	if (socket::errno() != 1)
+#endif
+	  die(-1);
     }
   }
   int res = queue_write();
@@ -280,9 +268,7 @@ void set_nonblocking(function ...args)
   werror(sprintf("SSL.sslfile->set_nonblocking(%O)\n", args));
 #endif
 
-#ifndef SSL3_CLOSE_BUG_STILL_EXISTS
   if (is_closed) return;
-#endif
 
   switch (sizeof(args))
   {
