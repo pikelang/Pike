@@ -1,4 +1,4 @@
-// $Id: module.pmod,v 1.207 2004/09/20 20:29:04 grubba Exp $
+// $Id: module.pmod,v 1.208 2005/01/18 19:45:34 mast Exp $
 #pike __REAL_VERSION__
 
 inherit files;
@@ -848,7 +848,7 @@ class File
       // nothing else. What we really need is a special error callback
       // from the backend. /mast
       ::set_read_callback(0);
-      ___close_callback = 0;
+      //___close_callback = 0;
     }
     else {
       ::set_read_callback(0);
