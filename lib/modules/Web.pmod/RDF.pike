@@ -1,4 +1,4 @@
-// $Id: RDF.pike,v 1.40 2004/01/30 13:39:02 nilsson Exp $
+// $Id: RDF.pike,v 1.41 2004/02/27 15:17:09 nilsson Exp $
 
 #pike __REAL_VERSION__
 
@@ -677,8 +677,9 @@ static mapping(string:string) namespaces = ([]); // url-prefix:name
 static string common_ns = ""; // The most common namespace
 
 // W3C must die!
-static Node add_xml_children(Node p, string rdfns) {
+static Node add_xml_children(Node p, string rdfns, string base) {
   mapping rdf_m = p->get_ns_attributes(rdf_ns);
+  base = p->get_ns_attributes("xml")->base || base;
   if(rdf_m->about && rdf_m->ID)
     error("Both rdf:about and rdf:ID defined on the same element.\n");
 
@@ -731,7 +732,7 @@ static Node add_xml_children(Node p, string rdfns) {
 	if(obj_uri) add_statement( subj, rdf_rest, make_resource(obj_uri) );
 	array(Node) dcs = c->get_elements();
 	foreach(dcs, Node dc)
-	  add_statement( subj, rdf_rest, add_xml_children(dc, rdfns) );
+	  add_statement( subj, rdf_rest, add_xml_children(dc, rdfns, base) );
 	continue;
       }
       else if(sscanf(name, "_%*d")) {
@@ -778,7 +779,7 @@ static Node add_xml_children(Node p, string rdfns) {
 	if(sizeof(dcs)) {
 	  foreach(dcs, Node dc)
 	    add_statement( subj, make_resource(pred_uri),
-			   add_xml_children(dc, rdfns) );
+			   add_xml_children(dc, rdfns, base) );
 	  continue;
 	}
       }
@@ -788,7 +789,7 @@ static Node add_xml_children(Node p, string rdfns) {
 	Resource n = Resource();
 	add_statement( subj, make_resource(pred_uri), n );
 	foreach(dcs; int pos; Node dc) {
-	  add_statement( n, rdf_first, add_xml_children(dc, rdfns) );
+	  add_statement( n, rdf_first, add_xml_children(dc, rdfns, base) );
 	  if(pos<sizeof(dcs)-1)
 	    add_statement( n, rdf_rest, n=Resource() );
 	}
@@ -817,13 +818,15 @@ static Node add_xml_children(Node p, string rdfns) {
 //! variable.
 this_program parse_xml(string|Node in, void|string base) {
   Node n;
-  if(base && base[-1]!='/') base += "#";
   if(stringp(in)) {
-    n = Parser.XML.NSTree.parse_input(in, base);
+    n = Parser.XML.NSTree.parse_input(in);
     n = n->get_first_element("RDF");
   }
   else
     n = in;
+
+  // Determine the document base.
+  base = n->get_ns_attributes("xml")->base || base || "";
 
   // FIXME: Namespaces defined under the rdf-element will not be used
   // in serialization.
@@ -838,7 +841,7 @@ this_program parse_xml(string|Node in, void|string base) {
   string rdfns = n->get_ns();
 
   foreach(n->get_elements(), Node c)
-    add_xml_children(c, rdfns);
+    add_xml_children(c, rdfns, base);
 
   return this;
 }
