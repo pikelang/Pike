@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: port.h,v 1.48 2003/03/24 15:10:11 marcus Exp $
+|| $Id: port.h,v 1.49 2003/03/28 13:38:47 marcus Exp $
 */
 
 #ifndef PORT_H
@@ -229,8 +229,8 @@ static INLINE INT32 EXTRACT_INT_(unsigned char *p)
 
 #endif
 
-PMOD_EXPORT unsigned long my_rand(void);
-PMOD_EXPORT void my_srand(long seed);
+PMOD_EXPORT unsigned INT32 my_rand(void);
+PMOD_EXPORT void my_srand(INT32 seed);
 
 PMOD_EXPORT void *pike_realloc(void *ptr, size_t sz);
 
