@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: array.c,v 1.147 2003/05/15 15:33:30 mast Exp $
+|| $Id: array.c,v 1.148 2003/08/26 18:33:20 mast Exp $
 */
 
 #include "global.h"
@@ -26,7 +26,7 @@
 #include "cyclic.h"
 #include "multiset.h"
 
-RCSID("$Id: array.c,v 1.147 2003/05/15 15:33:30 mast Exp $");
+RCSID("$Id: array.c,v 1.148 2003/08/26 18:33:20 mast Exp $");
 
 PMOD_EXPORT struct array empty_array=
 {
@@ -959,6 +959,27 @@ static int alpha_svalue_cmpfun(const struct svalue *a, const struct svalue *b)
 
       case T_MULTISET:
 	if (a == b) return 0;
+#ifdef PIKE_NEW_MULTISETS
+	{
+	  ptrdiff_t a_pos = multiset_first (a->u.multiset);
+	  ptrdiff_t b_pos = multiset_first (b->u.multiset);
+	  struct svalue ind_a, ind_b;
+	  if (a_pos < 0)
+	    if (b_pos < 0)
+	      return 0;
+	    else
+	      return -1;
+	  else
+	    if (b_pos < 0)
+	      return 1;
+	  res = alpha_svalue_cmpfun (
+	    use_multiset_index (a->u.multiset, a_pos, ind_a),
+	    use_multiset_index (b->u.multiset, b_pos, ind_b));
+	  sub_msnode_ref (a->u.multiset);
+	  sub_msnode_ref (b->u.multiset);
+	  return res;
+	}
+#else
 	if (multiset_is_empty (a->u.multiset))
 	  if (multiset_is_empty (b->u.multiset))
 	    return 0;
@@ -967,14 +988,6 @@ static int alpha_svalue_cmpfun(const struct svalue *a, const struct svalue *b)
 	else
 	  if (multiset_is_empty (b->u.multiset))
 	    return 1;
-#ifdef PIKE_NEW_MULTISETS
-	{
-	  struct svalue ind_a, ind_b;
-	  return alpha_svalue_cmpfun (
-	    use_multiset_index (a->u.multiset, multiset_first (a->u.multiset), ind_a),
-	    use_multiset_index (b->u.multiset, multiset_first (b->u.multiset), ind_b));
-	}
-#else
 	return alpha_svalue_cmpfun (ITEM (a->u.multiset->ind), ITEM (b->u.multiset->ind));
 #endif
 

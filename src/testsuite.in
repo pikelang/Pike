@@ -1,4 +1,4 @@
-test_true([["$Id: testsuite.in,v 1.671 2003/08/26 17:34:32 grubba Exp $"]]);
+test_true([["$Id: testsuite.in,v 1.672 2003/08/26 18:33:20 mast Exp $"]]);
 
 // This triggered a bug only if run sufficiently early.
 test_compile_any([[#pike 7.2]])
@@ -9187,6 +9187,8 @@ test_any([[
       return e;
   return -1;
 ]],-1)
+test_equal(sort (({(<2>), (<1>)})), ({(<1>), (<2>)}))
+
 dnl missing tests for objects, arrays, multisets and mappings
 
 // - sprintf
