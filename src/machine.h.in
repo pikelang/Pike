@@ -164,6 +164,9 @@
 /* Define if you have gettimeofday.  */
 #undef HAVE_GETTIMEOFDAY
 
+/* Define if gettimeofday takes to arguments */
+#undef GETTIMEOFDAY_TAKES_TWO_ARGS
+
 /* Does your unix have a putenv function? */
 #undef HAVE_PUTENV
 

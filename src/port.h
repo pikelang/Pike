@@ -13,7 +13,11 @@ struct timeval;
 #ifndef HAVE_GETTIMEOFDAY
 void GETTIMEOFDAY(struct timeval *t);
 #else
-#  define GETTIMEOFDAY gettimeofday
+#  ifdef GETTIMEOFDAY_TAKES_TWO_ARGS
+#    define GETTIMEOFDAY(X) gettimeofday((X),(void *)0)
+#  else
+#    define GETTIMEOFDAY gettimeofday
+#  endif
 #endif
 
 #ifndef HAVE_TIME
