@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: array.h,v 1.53 2003/11/14 11:15:14 mast Exp $
+|| $Id: array.h,v 1.54 2004/03/09 15:49:04 nilsson Exp $
 */
 
 #ifndef ARRAY_H
@@ -128,8 +128,9 @@ INT32 switch_lookup(struct array *a, struct svalue *s);
 PMOD_EXPORT struct array *order_array(struct array *v, INT32 *order);
 PMOD_EXPORT struct array *reorder_and_copy_array(struct array *v, INT32 *order);
 PMOD_EXPORT void array_fix_type_field(struct array *v);
+#ifdef PIKE_DEBUG
 void array_check_type_field(struct array *v);
-PMOD_EXPORT struct array *compact_array(struct array *v);
+#endif
 PMOD_EXPORT union anything *low_array_get_item_ptr(struct array *a,
 				       INT32 ind,
 				       TYPE_T t);
@@ -153,11 +154,13 @@ int array_is_constant(struct array *a,
 node *make_node_from_array(struct array *a);
 PMOD_EXPORT void push_array_items(struct array *a);
 void describe_array_low(struct array *a, struct processing *p, int indent);
-PMOD_EXPORT void simple_describe_array(struct array *a);
+#ifdef PIKE_DEBUG
+void simple_describe_array(struct array *a);
 void describe_index(struct array *a,
 		    int e,
 		    struct processing *p,
 		    int indent);
+#endif
 void describe_array(struct array *a,struct processing *p,int indent);
 PMOD_EXPORT struct array *aggregate_array(INT32 args);
 PMOD_EXPORT struct array *append_array(struct array *a, struct svalue *s);
@@ -170,8 +173,10 @@ PMOD_EXPORT struct array *reverse_array(struct array *a);
 void array_replace(struct array *a,
 		   struct svalue *from,
 		   struct svalue *to);
+#ifdef PIKE_DEBUG
 PMOD_EXPORT void check_array(struct array *a);
 void check_all_arrays(void);
+#endif
 void gc_mark_array_as_referenced(struct array *a);
 void real_gc_cycle_check_array(struct array *a, int weak);
 unsigned gc_touch_all_arrays(void);
@@ -180,8 +185,10 @@ void gc_mark_all_arrays(void);
 void gc_cycle_check_all_arrays(void);
 void gc_zap_ext_weak_refs_in_arrays(void);
 size_t gc_free_all_unreferenced_arrays(void);
+#ifdef PIKE_DEBUG
 void debug_dump_type_field(TYPE_FIELD t);
 void debug_dump_array(struct array *a);
+#endif
 void count_memory_in_arrays(INT32 *num_, INT32 *size_);
 PMOD_EXPORT struct array *explode_array(struct array *a, struct array *b);
 PMOD_EXPORT struct array *implode_array(struct array *a, struct array *b);

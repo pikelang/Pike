@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: array.c,v 1.152 2003/11/09 02:40:42 mast Exp $
+|| $Id: array.c,v 1.153 2004/03/09 15:48:51 nilsson Exp $
 */
 
 #include "global.h"
@@ -26,7 +26,7 @@
 #include "cyclic.h"
 #include "multiset.h"
 
-RCSID("$Id: array.c,v 1.152 2003/11/09 02:40:42 mast Exp $");
+RCSID("$Id: array.c,v 1.153 2004/03/09 15:48:51 nilsson Exp $");
 
 PMOD_EXPORT struct array empty_array=
 {
@@ -1257,9 +1257,7 @@ void array_check_type_field(struct array *v)
     Pike_fatal("Type field out of order!\n");
   }
 }
-#endif
-
-PMOD_EXPORT struct array *compact_array(struct array *v) { return v; }
+#endif /* PIKE_DEBUG */
 
 /*
  * Get a pointer to the 'union anything' specified IF it is of the specified
@@ -1895,7 +1893,9 @@ void describe_array_low(struct array *a, struct processing *p, int indent)
   }
 }
 
-PMOD_EXPORT void simple_describe_array(struct array *a)
+
+#ifdef PIKE_DEBUG
+void simple_describe_array(struct array *a)
 {
   dynamic_buffer save_buf;
   char *s;
@@ -1913,6 +1913,7 @@ void describe_index(struct array *a,
 {
   describe_svalue(ITEM(a)+e, indent, p);
 }
+#endif
 
 
 void describe_array(struct array *a,struct processing *p,int indent)
