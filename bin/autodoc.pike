@@ -1,5 +1,5 @@
 /*
- * $Id: autodoc.pike,v 1.14 2001/05/06 15:47:20 grubba Exp $
+ * $Id: autodoc.pike,v 1.15 2001/05/06 16:04:22 grubba Exp $
  *
  * AutoDoc mk II extraction script.
  *
@@ -28,8 +28,11 @@ int main(int argc, array(string) argv)
   	// Recurse.
       } else if (st->isreg) {
   	string raw = Stdio.read_bytes(path);
+	int i;
 
-	if (has_value(raw, "**!") || has_value(raw, "//! ""module ")) {
+	if (has_value(raw, "**!") ||
+	    (((i = search(raw, "//! ""module ")) != -1) &&
+	     (sizeof(array_sscanf(raw[i+11..],"%s\n%*s")[0]/" ") == 1))) {
 	  // Mirar-style markup.
 	  // FIXME: Better heuristic for detecting //!-style MirarDoc...
 	  object mirar_parser = MirarDoc();
