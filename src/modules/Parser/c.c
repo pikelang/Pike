@@ -1,5 +1,6 @@
-/*! array(array(string),string) split( string x );
- *! Returns an array with C-level tokens and the remainder (a partial token), if any
+/*! array(array(string),string) split( string x )
+ *! Returns an array with C-level tokens and the remainder (a partial
+ *! token), if any.
  */
 #include "global.h"
 #include "config.h"
@@ -127,7 +128,7 @@ static void f_tokenize( INT32 args )
 
 void init_parser_c()
 {
-  ADD_FUNCTION("tokenize",f_tokenize,tFunc(tStr,tArray),0);
+  ADD_FUNCTION("tokenize",f_tokenize,tFunc(tStr,tArr(tStr)),0);
 }
 
 void exit_parser_c()
