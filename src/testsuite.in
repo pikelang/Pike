@@ -1,4 +1,4 @@
-test_true([["$Id: testsuite.in,v 1.300 2000/06/12 03:21:34 mast Exp $"]]);
+test_true([["$Id: testsuite.in,v 1.301 2000/06/12 13:52:32 mast Exp $"]]);
 
 cond([[all_constants()->_verify_internals]],
 [[
@@ -1844,6 +1844,13 @@ ifefun(gc,
     array a = set_weak_flag(({o}), 1);
     gc(); o = 0; return gc() > 0;
   }]], 1)
+
+  test_do([[{
+    object o = class {}();
+    array a = ({o});
+    destruct (o);
+    gc();
+  }]]);
 
   test_do([[{
     int got_error = 0;
