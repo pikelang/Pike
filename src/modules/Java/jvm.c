@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: jvm.c,v 1.68 2004/04/17 16:49:23 marcus Exp $
+|| $Id: jvm.c,v 1.69 2004/04/17 16:51:28 marcus Exp $
 */
 
 /*
@@ -22,7 +22,7 @@
 #endif /* HAVE_CONFIG_H */
 
 #include "global.h"
-RCSID("$Id: jvm.c,v 1.68 2004/04/17 16:49:23 marcus Exp $");
+RCSID("$Id: jvm.c,v 1.69 2004/04/17 16:51:28 marcus Exp $");
 #include "program.h"
 #include "interpret.h"
 #include "stralloc.h"
@@ -3129,7 +3129,23 @@ static void f_create(INT32 args)
     Pike_error( "Failed to create virtual machine\n" );
 
   /* Java tries to be a wiseguy with the locale... */
-  setlocale(LC_NUMERIC, "");
+#ifdef HAVE_SETLOCALE
+#ifdef LC_NUMERIC
+  setlocale(LC_NUMERIC, "C");
+#endif
+#ifdef LC_CTYPE
+  setlocale(LC_CTYPE, "");
+#endif
+#ifdef LC_TIME
+  setlocale(LC_TIME, "C");
+#endif
+#ifdef LC_COLLATE
+  setlocale(LC_COLLATE, "");
+#endif
+#ifdef LC_MESSAGES
+  setlocale(LC_MESSAGES, "");
+#endif
+#endif
 
   cls = (*j->env)->FindClass(j->env, "java/lang/Object");
   j->class_object = (*j->env)->NewGlobalRef(j->env, cls);
