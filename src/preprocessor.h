@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: preprocessor.h,v 1.53 2002/10/11 01:39:36 nilsson Exp $
+|| $Id: preprocessor.h,v 1.54 2002/11/04 15:30:09 grubba Exp $
 */
 
 /*
@@ -1083,6 +1083,8 @@ static ptrdiff_t lower_cpp(struct cpp *this,
 	      
 	      if(d->parts[e].argument & DEF_ARG_STRINGIFY)
 	      {
+		while(l && WC_ISSPACE(a[l-1]))
+		  l--;
 		PUSH_STRING(a,l,&tmp);
 	      }else{
 		if(DEF_ARG_NOPRESPACE)
