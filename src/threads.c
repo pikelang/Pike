@@ -1,5 +1,5 @@
 #include "global.h"
-RCSID("$Id: threads.c,v 1.103 1999/08/30 06:23:50 hubbe Exp $");
+RCSID("$Id: threads.c,v 1.104 1999/10/14 20:29:19 grubba Exp $");
 
 int num_threads = 1;
 int threads_disabled = 0;
@@ -598,6 +598,7 @@ TH_RETURN_TYPE new_thread_func(void * data)
     }
     if(throw_severity == THROW_EXIT)
     {
+      free((char *) data);
       do_exit(throw_value.u.integer);
     }
   } else {
@@ -653,15 +654,15 @@ void f_thread_create(INT32 args)
   THREAD_T dummy;
   struct thread_starter *arg;
   int tmp;
-  arg=ALLOC_STRUCT(thread_starter);
+  arg = ALLOC_STRUCT(thread_starter);
   arg->args=aggregate_array(args);
   arg->id=clone_object(thread_id_prog,0);
   OBJ2THREAD(arg->id)->status=THREAD_RUNNING;
 
   do {
-    tmp=th_create(& OBJ2THREAD(arg->id)->id,
-		  new_thread_func,
-		  arg);
+    tmp = th_create(& OBJ2THREAD(arg->id)->id,
+		    new_thread_func,
+		    arg);
   } while( tmp == EINTR );
 
   if(!tmp)
