@@ -1,5 +1,5 @@
 #
-# $Id: Makefile.in,v 1.393 2004/11/08 14:46:34 grubba Exp $
+# $Id: Makefile.in,v 1.394 2004/11/24 10:22:15 mast Exp $
 #
 
 # This line is needed on some machines.
@@ -988,17 +988,14 @@ lex_t.o: $(SRCDIR)/lex_t.c $(SRCDIR)/interpret_protos.h
 
 language.o: $(SRCDIR)/language.c $(SRCDIR)/object.h $(SRCDIR)/interpret.h $(SRCDIR)/program.h
 
-$(SRCDIR)/y.tab.c: $(SRCDIR)/language.yacc
+$(SRCDIR)/y.tab.c $(SRCDIR)/language.h_src: $(SRCDIR)/language.yacc
 	@echo "Expect 1 shift/reduce conflict."
-	cd $(SRCDIR) && $(YACC) $(YFLAGS) language.yacc
+	cd $(SRCDIR) && $(YACC) $(YFLAGS) language.yacc && mv $(SRCDIR)/y.tab.h $(SRCDIR)/language.h_src
 
 $(SRCDIR)/language.c: $(SRCDIR)/y.tab.c
 	sed -e 's/YY_COUNT_TYPE/@YY_COUNT_TYPE@/' \
 	    -e 's/YY_FROM_CONST/@YY_FROM_CONST@/' \
 	    < $(SRCDIR)/y.tab.c > $(SRCDIR)/language.c
-
-$(SRCDIR)/language.h_src: $(SRCDIR)/y.tab.c
-	mv $(SRCDIR)/y.tab.h $(SRCDIR)/language.h_src
 
 $(SRCDIR)/interpret_functions_fixed.h: $(SRCDIR)/interpret_functions.h precompile.sh-stamp
 	./precompile.sh --cache make_interpret_functions.pike >"$@" "$(SRCDIR)/interpret_functions.h" || { rm "$@"; exit 1; }
