@@ -52,6 +52,7 @@ testfont binary
 /src/modules/_Crypto/des.pike foreign_ident
 /src/modules/_Crypto/idea.c foreign_ident
 /src/modules/_Crypto/idea.pike foreign_ident
+/src/modules/_Crypto/include/des.h foreign_ident
 /src/modules/_Crypto/invert.c foreign_ident
 /src/modules/_Crypto/lib/descore/Makefile foreign_ident
 /src/modules/_Crypto/lib/descore/README foreign_ident
