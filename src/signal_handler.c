@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: signal_handler.c,v 1.285 2003/12/05 13:48:29 nilsson Exp $
+|| $Id: signal_handler.c,v 1.286 2003/12/05 14:55:33 grubba Exp $
 */
 
 #include "global.h"
@@ -26,7 +26,7 @@
 #include "main.h"
 #include <signal.h>
 
-RCSID("$Id: signal_handler.c,v 1.285 2003/12/05 13:48:29 nilsson Exp $");
+RCSID("$Id: signal_handler.c,v 1.286 2003/12/05 14:55:33 grubba Exp $");
 
 #ifdef HAVE_PASSWD_H
 # include <passwd.h>
@@ -3645,6 +3645,10 @@ void f_create_process(INT32 args)
 	  break;
 	case PROCE_CLOEXEC:
 	  Pike_error("Process.create_process(): set_close_on_exec() failed. errno:%d\n",
+		     buf[1]);
+	  break;
+	case PROCE_CHROOT:
+	  Pike_error("Process.create_process(): chroot() failed. errno:%d\n",
 		     buf[1]);
 	  break;
 	case 0:
