@@ -1,4 +1,4 @@
-AC_REVISION("$Id: configure.in,v 1.806 2004/03/09 17:26:07 kiwi Exp $")
+AC_REVISION("$Id: configure.in,v 1.807 2004/03/09 18:40:50 grubba Exp $")
 AC_INIT(interpret.c)
 AC_CONFIG_HEADER(machine.h)
 
@@ -6930,15 +6930,6 @@ if test "$pike_bundle_dir" = ""; then :; else
   if test "$bundle_info" = ""; then :; else
     # We have some bundles to enable.
 
-    # Add some dummy programs to hide stuff that potentially breaks
-    # the builds.
-    test -d "${pike_bundle_prefix}/bin/." || mkdir "${pike_bundle_prefix}/bin"
-    if test -f "${pike_bundle_prefix}/bin/makeinfo"; then :; else
-      cat >"${pike_bundle_prefix}/bin/makeinfo" <<EOF
-#!/bin/sh
-EOF
-      chmod a+x "${pike_bundle_prefix}/bin/makeinfo"
-    fi
     cat <<EOF
 
 
@@ -6978,6 +6969,17 @@ $bundle_info])
 	  ( cd "$pike_bundle_dir" && \
 	    gzip -cd "$dist_file" | tar xf -
 	  )
+	fi
+	# Use ptar.gz instead of tar.gz to avoid problems with globbing.
+	if test -f "${bundle_source_dir}.ptar.gz"; then
+	  # There's a patch file.
+	  if test -f "${bundle_source_dir}/pike-patch.stamp"; then :; else
+	    echo "Patching bundle $dist_file..."
+	    ( cd "$pike_bundle_dir" && \
+	      gzip -cd "${bundle_source_dir}.ptar.gz" | tar xf -
+	      touch "${bundle_source_dir}/pike-patch.stamp"
+	    )
+	  fi
 	fi
 	if test -d "bundles/$bundle.build" || \
 	   mkdir "bundles/$bundle.build"; then :; else
