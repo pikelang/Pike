@@ -1,6 +1,6 @@
 #pike __REAL_VERSION__
 
-/* $Id: sslfile.pike,v 1.48 2002/09/17 14:19:08 nilsson Exp $
+/* $Id: sslfile.pike,v 1.49 2002/10/25 20:01:31 nilsson Exp $
  *
  */
 
@@ -574,6 +574,14 @@ void create(object f, object c, int|void is_client, int|void is_blocking)
 			  ssl_close_callback);
     connection::create(!is_client);
   }
+}
+
+string _sprintf(int t) {
+  switch(t) {
+  case 't': return "SSL.sslfile";
+  case 'O': return sprintf("SSL.sslfile(%O,%O)", _fd, context);
+  }
+  error("Can not output SSL.sslfile as %c\n", t);
 }
 
 void renegotiate()
