@@ -1,5 +1,5 @@
 #include "global.h"
-RCSID("$Id: threads.c,v 1.162 2001/09/05 23:44:32 hubbe Exp $");
+RCSID("$Id: threads.c,v 1.163 2001/09/06 00:20:59 hubbe Exp $");
 
 PMOD_EXPORT int num_threads = 1;
 PMOD_EXPORT int threads_disabled = 0;
@@ -1283,10 +1283,16 @@ void f_thread_backtrace(INT32 args)
 
   pop_n_elems(args);
 
-  if(foo->state.stack_pointer)
+  if(foo->state.thread_id == Pike_interpreter.thread_id)
+  {
+    f_backtrace(0);
+  }
+  else if(foo->state.stack_pointer)
   {
     low_backtrace(& foo->state);
-  }else{
+  }
+  else
+  {
     push_int(0);
     f_allocate(1);
   }
