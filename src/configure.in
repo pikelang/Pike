@@ -1,4 +1,4 @@
-AC_REVISION("$Id: configure.in,v 1.238 1998/09/17 22:16:27 grubba Exp $")
+AC_REVISION("$Id: configure.in,v 1.239 1998/09/24 20:27:23 grubba Exp $")
 AC_INIT(interpret.c)
 AC_CONFIG_HEADER(machine.h)
 
@@ -890,6 +890,14 @@ int main()
  
       xBSD/OS*)
         LIBS="${OLDLIBS}"
+      ;;
+
+      xUnixWare)
+        if test "$GCC" = yes ; then
+          LIBS="${LIBS} -lthread"
+        else
+          LIBS="${LIBS} -Kthread"
+        fi
       ;;
 
       xFreeBSD*)      
@@ -2591,6 +2599,8 @@ then
         GNU*) LINKFORSHARED="-rdynamic";;
 	next) LINKFORSHARED="-u libsys_s";;
 	SCO_SV*) LINKFORSHARED="-Bdynamic -dy -Wl,-Bexport";;
+	# What about UNIX_SV?
+        UnixWare) LINKFORSHARED="-Bdynamic -dy -Wl,-Bexport";;
     esac
   fi
 fi
