@@ -1,5 +1,5 @@
 /*
- * $Id: tree-split-autodoc.pike,v 1.40 2002/12/11 17:03:50 grubba Exp $
+ * $Id: tree-split-autodoc.pike,v 1.41 2002/12/16 14:30:29 grubba Exp $
  *
  */
 
@@ -197,9 +197,11 @@ class Node
 		 },
 		 "inherit":
 		 lambda(Parser.HTML p, mapping m, string c) {
-		   string name = Parser.parse_html_entities(m->name);
-		   refs[path + name] =
-		     Node( "inherit", name, "", this_object());
+		   if (m->name) {
+		     string name = Parser.parse_html_entities(m->name);
+		     refs[path + name] =
+		       Node( "inherit", name, "", this_object());
+		   }
 		 },
 	    ]) )->finish(c);
 	}
