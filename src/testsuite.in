@@ -1,4 +1,4 @@
-test_true([["$Id: testsuite.in,v 1.607 2003/02/25 15:52:39 marcus Exp $"]]);
+test_true([["$Id: testsuite.in,v 1.608 2003/02/26 07:35:19 mirar Exp $"]]);
 
 // This triggered a bug only if run sufficiently early.
 test_compile_any([[#pike 7.2]])
@@ -38,6 +38,16 @@ test_eq(8, 0b1000);
 test_eq(-8, -0b1000);
 test_eq(16, 0b10000);
 test_eq(-16, -0b10000);
+
+test_true(1e-10000<=1e-1000)
+test_true(1e-1000<=1e-100)
+test_true(1e-100<=1e-10)
+test_true(1e-10<=1e-1)
+test_true(1e-1<=1e1)
+test_true(1e1<=1e10)
+test_true(1e10<=1e100)
+test_true(1e100<=1e1000)
+test_true(1e1000<=1e10000)
 
 test_do([[
   // bug 2677
