@@ -62,6 +62,12 @@
 /* Define if you have memmem.  */
 #undef HAVE_MEMMEM
 
+/* Define if you have ldexp.  */
+#undef HAVE_LDEXP
+
+/* Define if you have frexp.  */
+#undef HAVE_FREXP
+
 /* Define if your signals are one-shot */
 #undef SIGNAL_ONESHOT
 

@@ -1,4 +1,4 @@
-AC_REVISION("$Id: configure.in,v 1.88 1997/04/17 05:08:29 hubbe Exp $")
+AC_REVISION("$Id: configure.in,v 1.89 1997/04/22 01:39:42 hubbe Exp $")
 AC_INIT(interpret.c)
 AC_CONFIG_HEADER(machine.h)
 
@@ -258,6 +258,19 @@ if test $cppflags_is_set$ldflags_is_set = nono -a x${C_INCLUDE_PATH-} = x ; then
   done
 else
   :
+fi
+
+#############################################################################
+
+if test ! -f confdefs.h ; then
+  AC_MSG_WARN([Warning, lost confdefs.h, testing will be flawed!!
+You might need to use bash instead of /bin/sh to get correct results.
+To do this, please type the following at an sh prompt:
+	\$ rm ./config.cache
+	\$ CONFIG_SHELL=/path/to/bash
+	\$ export CONFIG_SHELL
+	\$ $CONFIG_SHELL ./configure
+])
 fi
 
 #############################################################################
@@ -634,14 +647,12 @@ AC_CHECK_FUNCS(
  clock \
  crypt \
  fchmod \
- frexp \
  getenv \
  getrlimit \
  getrusage \
  gettimeofday \
  index \
  localtime \
- ldexp \
  memchr \
  memcpy \
  memset \
@@ -676,7 +687,6 @@ AC_CHECK_FUNCS(
 if test $ac_cv_func_crypt$ac_cv_func__crypt = nono ; then
   AC_CHECK_LIB(crypt,crypt,[LIBS="${LIBS} -lcrypt" ; AC_DEFINE(HAVE_CRYPT)])
 fi
-
 
 
 AC_STRUCT_TM
@@ -939,12 +949,57 @@ pike_cv_hardware_byteorder=0
 AC_MSG_RESULT($pike_cv_hardware_byteorder)
 AC_DEFINE_UNQUOTED(BYTEORDER,$pike_cv_hardware_byteorder)
 
+dnl#####################################################################
+
+define(MY_CHECK_FUNCTION,[
+AC_MSG_CHECKING(for working $1)
+AC_CACHE_VAL(pike_cv_have_func_$1,[
+AC_TRY_RUN([$2],pike_cv_func_$1=yes,pike_cv_func_$1=no)
+AC_MSG_RESULT([$]pike_cv_func_$1)
+if test [$]pike_cv_func_$1 = yes; then
+AC_DEFINE(translit(HAVE_$1,[a-z],[A-Z]))
+fi])])
+
 ########################################################################
 
-AC_MSG_CHECKING(for working memmem)
-AC_CACHE_VAL(pike_cv_func_memmem,
+MY_CHECK_FUNCTION(ldexp,
 [
-AC_TRY_RUN([
+#include <math.h>
+int main()
+{
+  double x;
+  int p;
+
+  for(x=0.0;x<2.0;x+=1.0/64.0)
+    for(p=-6;p<7;p++)
+      if(ldexp(x,p) != x*pow(2.0, (double)p))
+	exit(1);
+    exit(0);
+}])
+
+########################################################################
+
+MY_CHECK_FUNCTION(frexp,
+[
+#include <math.h>
+int main()
+{
+  double x,y;
+  int p=-7;
+
+  for(x=3.0/4.0*pow(2.0,(double)p);x<50000.0;x*=2.0,p++)
+  {
+    int e;
+    if(frexp(x, &e)!=3.0/4.0) exit(1);
+    if(e!=p) exit(1);
+  }
+  exit(0);
+}])
+
+########################################################################
+
+MY_CHECK_FUNCTION(memmem,
+[
 #include <string.h>
 char *a="foo bar gazonk";
 char *b="foo";
@@ -960,19 +1015,12 @@ int main()
     exit(1);
   exit(0);
 }
-],pike_cv_func_memmem=yes,pike_cv_func_memmem=no)])
+])
 
-if test "$pike_cv_func_memmem" = yes; then
-  AC_MSG_RESULT(yes)
-  AC_DEFINE(HAVE_MEMMEM)
-else
-  AC_MSG_RESULT(no)
-fi
+########################################################################
 
-AC_MSG_CHECKING(for working memmove)
-AC_CACHE_VAL(pike_cv_func_memmove,
+MY_CHECK_FUNCTION(memmove,
 [
-AC_TRY_RUN([
 #include <string.h>
 char buf[100];
 int main()
@@ -987,16 +1035,22 @@ int main()
   if(strcmp(buf,"ooo bar  gaznk elefantsnabel.")) exit(1);
   exit(0);
 }
-],pike_cv_func_memmove=yes,pike_cv_func_memmove=no)])
-
-if test "$pike_cv_func_memmove" = yes; then
-  AC_MSG_RESULT(yes)
-  AC_DEFINE(HAVE_MEMMOVE)
-else
-  AC_MSG_RESULT(no)
-fi
+])
 
 ########################################################################
+
+MY_CHECK_FUNCTION(isspace,
+[
+#include <ctype.h>
+int main()
+{
+  if(isspace(' ')) exit(0);
+  exit(1);
+}
+])
+
+#############################################################################
+
 
 AC_MSG_CHECKING(how to extract an unsigned char)
 AC_CACHE_VAL(pike_cv_method_extract_uchar,
@@ -1232,28 +1286,7 @@ else
   AC_MSG_RESULT(no)
 fi
 
-
-AC_MSG_CHECKING(for isspace)
-AC_CACHE_VAL(pike_cv_have_func_isspace,
-[
-AC_TRY_LINK([
-#include <ctype.h>
-],[
-  if(isspace(' ')) exit(0);
-],
-  pike_cv_have_func_isspace=yes
-,
-  pike_cv_have_func_isspace=no
-)])
-
-if test "$pike_cv_have_func_isspace" = yes; then
-  AC_MSG_RESULT(yes)
-  AC_DEFINE(HAVE_ISSPACE)
-else
-  AC_MSG_RESULT(no)
-fi
-
-
+#############################################################################
 
 AC_MSG_CHECKING(checking for volatile)
 AC_CACHE_VAL(pike_cv_volatile,
@@ -1268,6 +1301,8 @@ else
  AC_MSG_RESULT(no)
  AC_DEFINE(VOLATILE,)
 fi
+
+#############################################################################
 
 AC_MSG_CHECKING(for gcc function attributes)
 AC_CACHE_VAL(pike_cv_gcc_attributes,
@@ -1295,6 +1330,8 @@ AC_MSG_RESULT($pike_cv_gcc_attributes)
 if test "$pike_cv_gcc_attributes" = yes; then
  AC_DEFINE(HAVE_FUNCTION_ATTRIBUTES)
 fi
+
+#############################################################################
 
 AC_MSG_CHECKING(how to set things nonblocking)
 AC_CACHE_VAL(pike_cv_sys_nonblock,
