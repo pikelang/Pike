@@ -1,5 +1,5 @@
 /*
- * $Id: rijndaeltest.pike,v 1.1 2001/03/24 21:29:48 grubba Exp $
+ * $Id: rijndaeltest.pike,v 1.2 2001/03/24 22:32:22 grubba Exp $
  *
  * Test Crypto.aes against the official test-vectors.
  *
@@ -97,7 +97,79 @@ int check_ecb_d_m()
   return fail;
 }
 
+int check_cbc_e_m()
+{
+  int fail;
+  string keysize;
+
+  object aes_cbc = Crypto.cbc(Crypto.aes());
+
+  fail = run_test(raw_cbc_e_m, lambda(mapping(string:string) v) {
+    if (v->KEYSIZE) {
+      keysize = v->KEYSIZE;
+      if (keysize) write("\n");
+      return;
+    }
+    if (!v->I) return;
+
+    write("Rijndael CBC Encryption (%s): %s\r", keysize, v->I);
+
+    string pt = Crypto.hex_to_string(v->PT);
+    string ct = Crypto.hex_to_string(v->CT);
+    string iv = Crypto.hex_to_string(v->IV);
+
+    aes_cbc->set_encrypt_key(Crypto.hex_to_string(v->KEY));
+    aes_cbc->set_iv(iv);
+
+    pt += iv;
+
+    for(int i = 0; i < 5000; i++) {
+      pt = aes_cbc->crypt_block(pt);
+    }
+
+    return pt[16..] != ct;
+  });
+
+  write("\n");
+  return fail;
+}
+
+int check_cbc_d_m()
+{
+  int fail;
+  string keysize;
+
+  object aes_cbc = Crypto.cbc(Crypto.aes());
+
+  fail = run_test(raw_cbc_d_m, lambda(mapping(string:string) v) {
+    if (v->KEYSIZE) {
+      keysize = v->KEYSIZE;
+      if (keysize) write("\n");
+      return;
+    }
+    if (!v->I) return;
+
+    write("Rijndael CBC Decryption (%s): %s\r", keysize, v->I);
+
+    string pt = Crypto.hex_to_string(v->PT);
+    string ct = Crypto.hex_to_string(v->CT);
+    string iv = Crypto.hex_to_string(v->IV);
+
+    aes_cbc->set_decrypt_key(Crypto.hex_to_string(v->KEY));
+    aes_cbc->set_iv(iv);
+
+    for(int i = 0; i < 10000; i++) {
+      ct = aes_cbc->crypt_block(ct);
+    }
+
+    return pt != ct;
+  });
+
+  write("\n");
+  return fail;
+}
+
 int main(int argc, array(string) argv)
 {
-  return check_ecb_e_m() | check_ecb_d_m();
+  return check_ecb_e_m() | check_ecb_d_m() | check_cbc_e_m() | check_cbc_d_m();
 }
