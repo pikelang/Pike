@@ -275,6 +275,36 @@ class Connection {
      log(errmsg);
      shutdown_fd();
    }
+
+   // return true if the given return code from the call back function
+   // is a success one or not
+   static int is_success(array|int check)
+   {
+     return (getretcode(check)/100 == 2);
+   }
+
+   // get the return code from the callback function
+   static int getretcode(array|int check)
+   {
+     int smtpretcode;
+     if(arrayp(check))
+       smtpretcode = check[0];
+     else
+       smtpretcode = check;
+     // if the callback function return nothing, fail the SMTP command
+     if(!smtpretcode)
+       return 451;
+     return smtpretcode;
+   }
+
+   // get optionnal error string from the callback function
+   // 0 is no error string were returned
+   static int|string geterrorstring(array|int check)
+   {
+     if(arrayp(check) && stringp(check[1]))
+       return check[1];
+     return 0;
+   }
    
    static void outcode(int code, void|string internal_error)
    {
@@ -424,7 +454,7 @@ class Connection {
        else
        {
          mixed err;
-      	 int check;
+      	 int|array check;
          err = catch(check = cb_mailfrom(email));
          if(err)
          {
@@ -432,12 +462,7 @@ class Connection {
            log(describe_backtrace(err));
            return;
          }
-	 if(!check)
-	 {
-	   outcode(451);
-	   return;
-	 }
-         if(check/100 == 2)
+         if(is_success(check))
 	 {
 	   mailfrom = email;
 	   mailto = ({ });
@@ -458,7 +483,7 @@ class Connection {
            sequence -= ({ "rcpt to" });
            sequence += ({ "mail from" });
          }
-         outcode(check);
+         outcode(getretcode(check), geterrorstring(check));
        }
      }
      else
@@ -485,20 +510,20 @@ class Connection {
        outcode(email);
      else
      {
-       int check;
+       int|array check;
        err = catch(check = cb_rcptto(email));
-       if(err || !check)
+       if(err)
        {
          outcode(451);
          log(describe_backtrace(err));
          return;
        }
-       if(check/100 == 2)
+       if(is_success(check))
        {
          mailto += ({ email });
          sequence += ({ "rcpt to" });
        }
-       outcode(check);
+       outcode(getretcode(check), geterrorstring(check));
      }
    }
   
@@ -584,12 +609,7 @@ class Connection {
        log(describe_backtrace(err));
        return;
      }
-     if(check)
-     {
-       outcode(554);
-       return;
-     }
-     outcode(check);
+     outcode(getretcode(check), geterrorstring(check));
    }
 
    void noop()
@@ -829,7 +849,9 @@ class Server {
    //!   Mailfrom callback function, this function will be called
    //!   when a client send a mail from command. This function must take a
    //!   string as argument (corresponding to the sender's email) and return
-   //!   int corresponding to the SMTP code to output to the client.
+   //!   int corresponding to the SMTP code to output to the client. If you
+   //!   return an array the first element is the SMTP code and the second
+   //!   is the error string to display.
    //! @param cb_rcptto
    //!   Same as cb_mailfrom but called when a client sends a rcpt to.
    //! @param cb_data
@@ -841,7 +863,9 @@ class Server {
    //!  string sender : sender of the mail (from the mailfrom command)
    //!  array(string) recipients : one or more recipients given by the rcpt 
    //!     to command
-   //! return : SMTP code to output to the client
+   //! return : SMTP code to output to the client. If you return an array 
+   //!   the first element is the SMTP code and the second is the error string
+   //!   to display.
    //! @example
    //!  Here is an example of silly program that does nothing except outputting
    //!  informations to stdout.

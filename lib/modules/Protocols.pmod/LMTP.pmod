@@ -1,5 +1,5 @@
 //
-// $Id: LMTP.pmod,v 1.6 2003/12/10 17:53:04 vida Exp $
+// $Id: LMTP.pmod,v 1.7 2004/01/21 17:10:58 vida Exp $
 //
 
 #pike __REAL_VERSION__
@@ -32,19 +32,19 @@ class Connection {
     mixed err;
     foreach(mailto, string recipient)
     {
-      int check;
+      int|array check;
       if(givedata)
 	err = catch(check = cb_data(copy_value(message), mailfrom,
 				    recipient, content));
       else
 	err = catch(check = cb_data(copy_value(message), mailfrom, recipient));
-      if(err || !check)
+      if(err)
       {
 	outcode(554);
 	log(describe_backtrace(err));
 	continue;
       }
-      outcode(check);
+      outcode(getretcode(check), geterrorstring(check));
     }
   }
 }
@@ -86,21 +86,25 @@ class Server {
    //!   Mailfrom callback function, this function will be called
    //!   when a client send a mail from command. This function must take a
    //!   string as argument (corresponding to the sender's email) and return
-   //!   int corresponding to the SMTP code to output to the client.
+   //!   int corresponding to the SMTP code to output to the client. If you
+   //!   return an array the first element is the SMTP code and the second
+   //!   is the error string to display.
    //! @param cb_rcptto
    //!   Same as cb_mailfrom but called when a client sends a rcpt to.
    //! @param cb_data
    //!  This function is called for each recipient in the "rcpt to" command
    //!  after the client sends the "data" command
    //!  It must have the following synopsis:
-   //!  int cb_data(object mime, string sender, string recipients,@
+   //!  int|array cb_data(object mime, string sender, string recipients,@
    //!  void|string rawdata)
    //!  object mime : the mime data object
    //!  string sender : sender of the mail (from the mailfrom command)
    //!  string recipient : one recipient given by one rcpt 
    //!     command.
-   //! return : SMTP code to output to the client. Note that to comply with
-   //!   LMTP protocol you must output a code each time this function is called 
+   //! return : SMTP code to output to the client. If you return an array 
+   //!   the first element is the SMTP code and the second is the error string
+   //!   to display. Note that to comply with LMTP protocol you must output a
+   //!   code each time this function is called.
    //! @example
    //!  Here is an example of silly program that does nothing except outputting
    //!  informations to stdout.
