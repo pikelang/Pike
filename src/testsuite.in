@@ -1,4 +1,4 @@
-test_true([["$Id: testsuite.in,v 1.719 2004/04/23 19:31:10 mast Exp $"]]);
+test_true([["$Id: testsuite.in,v 1.720 2004/04/29 19:23:49 nilsson Exp $"]]);
 
 // This triggered a bug only if run sufficiently early.
 test_compile_any([[#pike 7.2]])
@@ -8434,7 +8434,29 @@ test_eq(1,call_function(intp,1))
 
 // - call_out
 // - call_out_info
+
 // - callablep
+test_true( callablep(time) )
+test_true( callablep(String.capitalize) )
+test_true( callablep(CommonLog.read) )
+test_true( callablep(ADT.Stack) )
+test_true( callablep(String.Buffer) )
+test_true( callablep( class { void `()() { } }() ) )
+test_false( callablep(String.Buffer()) )
+test_true( callablep( ({}) ) )
+test_true( callablep( ({ 0,0 }) ) )
+test_false( callablep( ({ 0,1 }) ) )
+test_true( callablep( ({ time }) ) )
+test_true( callablep( ({ time, 0 }) ) )
+test_false( callablep( ({ "a", time }) ) )
+test_false( callablep( ({ "" }) ) )
+test_false( callablep( "" ) )
+test_false( callablep( 3.14 ) )
+test_false( callablep( (< time >) ) )
+test_false( callablep( 0 ) )
+test_false( callablep( 7 ) )
+
+
 // - cd
 
 // - ceil
@@ -9606,11 +9628,13 @@ test_true(stringp(strerror(1)))
 test_true(stringp(strerror(-1)))
 
 // - string_to_unicode, unicode_to_string
+test_eq(string_to_unicode(""), "")
 test_eq(string_to_unicode("foo"), "\0f\0o\0o")
 test_eq(string_to_unicode("blä"), "\0b\0l\0ä")
 test_eq(string_to_unicode("\77077"), "\176\77")
 test_eq(string_to_unicode("\777077"), "\330\277\336\77")
 test_eq(string_to_unicode("\777077foo\77077\777077blä\777077"), "\330\277\336\77\0f\0o\0o\176\77\330\277\336\77\0b\0l\0ä\330\277\336\77")
+test_eq(unicode_to_string(""), "")
 test_eq(unicode_to_string("\330\277\336\77\0f\0o\0o\176\77\330\277\336\77\0b\0l\0ä\330\277\336\77"), "\777077foo\77077\777077blä\777077")
 test_eq(unicode_to_string("\330\277\336\77"), "\777077")
 test_eq(unicode_to_string("\176\77"), "\77077")
@@ -9628,6 +9652,8 @@ test_eq(unicode_to_string("\xff\xfe""b\0l\0ä\0"), "blä")
 test_eq(unicode_to_string("\xff\xfe""f\0o\0o\0"), "foo")
 
 test_eval_error(return string_to_unicode("\7077077"))
+test_eval_error(return string_to_unicode("\xffff\x10000"))
+test_eval_error(return unicode_to_string(" "))
 
 // - string_to_utf8, utf8_to_string
 test_eq(string_to_utf8("foo"), "foo")
