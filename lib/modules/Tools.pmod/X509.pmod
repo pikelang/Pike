@@ -44,7 +44,7 @@ mapping parse_time(object asn1)
 			 (array(int)) (s/2));
 
   if (m->year < 50)
-    m->year += 50;
+    m->year += 100;
   if ( (m->mon <= 0 ) || (m->mon > 12) )
     return 0;
   m->mon--;
