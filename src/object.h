@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: object.h,v 1.82 2004/04/18 02:16:06 mast Exp $
+|| $Id: object.h,v 1.83 2004/04/21 17:13:29 mast Exp $
 */
 
 #ifndef OBJECT_H
@@ -144,7 +144,7 @@ void check_all_objects(void);
 #define gc_cycle_check_object(X, WEAK) \
   gc_cycle_enqueue((gc_cycle_check_cb *) real_gc_cycle_check_object, (X), (WEAK))
 
-#define PIKE_OBJ_DESTRUCTED(o) (o->prog)
+#define PIKE_OBJ_DESTRUCTED(o) (!(o)->prog)
 #define PIKE_OBJ_INITED(o) (o->prog && (o->prog->flags & PROGRAM_PASS_1_DONE) && !((o->prog->flags & PROGRAM_AVOID_CHECK)))
 #define destruct_objects_to_destruct() do{ if(objects_to_destruct) low_destruct_objects_to_destruct(); }while(0)
 
