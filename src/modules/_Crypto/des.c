@@ -1,5 +1,5 @@
 /*
- * $Id: des.c,v 1.7 1997/03/17 03:11:15 hubbe Exp $
+ * $Id: des.c,v 1.8 1997/05/30 02:40:14 grubba Exp $
  *
  * A pike module for getting access to some common cryptos.
  *
@@ -94,7 +94,7 @@ static void set_key(INT32 args)
   }
   if (sp[-1].u.string->len != 8)
     error("Invalid key length to des->set_key()\n");
-  switch (DesMethod(THIS->method, sp[-1].u.string->str))
+  switch (DesMethod(THIS->method, (unsigned INT8 *)sp[-1].u.string->str))
     {
     case -1:
       error("des->set_key: parity error\n");

@@ -4,7 +4,7 @@
 ||| See the files COPYING and DISCLAIMER for more information.
 \*/
 #include "global.h"
-RCSID("$Id: pike_types.c,v 1.22 1997/05/19 23:31:06 hubbe Exp $");
+RCSID("$Id: pike_types.c,v 1.23 1997/05/30 02:40:10 grubba Exp $");
 #include <ctype.h>
 #include "svalue.h"
 #include "pike_types.h"
@@ -188,7 +188,7 @@ void type_stack_reverse()
 {
   INT32 a;
   a=pop_stack_mark();
-  reverse(type_stackp-a,a,1);
+  reverse((char *)(type_stackp-a),a,1);
 }
 
 void push_type_int(unsigned INT32 i)

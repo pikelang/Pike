@@ -7,7 +7,7 @@
 #include "des.h"
 
 #include "RCSID.h"
-RCSID2(desKerb_cRcs, "$Id: desKerb.c,v 1.2 1997/03/15 04:51:44 nisse Exp $");
+RCSID2(desKerb_cRcs, "$Id: desKerb.c,v 1.3 1997/05/30 02:40:17 grubba Exp $");
 
 /* permit the default style of des functions to be changed */
 
@@ -16,7 +16,7 @@ DesFunc *DesCryptFuncs[2] = { DesSmallFipsDecrypt, DesSmallFipsEncrypt };
 /* kerberos-compatible key schedule function */
 
 int
-des_key_sched(INT8 *k, INT32 *s)
+des_key_sched(unsigned INT8 *k, unsigned INT32 *s)
 {
 	return DesMethod(s, k);
 }
@@ -24,7 +24,7 @@ des_key_sched(INT8 *k, INT32 *s)
 /* kerberos-compatible des coding function */
 
 int
-des_ecb_encrypt(INT8 *s, INT8 *d, INT32 *r, int e)
+des_ecb_encrypt(unsigned INT8 *s, unsigned INT8 *d, unsigned INT32 *r, int e)
 {
 	(*DesCryptFuncs[e])(d, r, s);
 	return 0;

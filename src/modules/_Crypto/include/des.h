@@ -12,7 +12,7 @@
 #include "crypto_types.h"
 
 #include "RCSID.h"
-RCSID2(desCore_hRcs, "$Id: des.h,v 1.3 1997/03/15 04:51:08 nisse Exp $");
+RCSID2(desCore_hRcs, "$Id: des.h,v 1.4 1997/05/30 02:40:15 grubba Exp $");
 
 #define DES_KEYSIZE 8
 #define DES_BLOCKSIZE 8
@@ -35,7 +35,7 @@ extern DesFunc DesSmallCoreDecrypt;
 extern DesFunc DesSmallFipsDecrypt;
 
 extern DesFunc *DesCryptFuncs[2];
-extern int des_key_sched(INT8 *k, INT32 *s);
-extern int des_ecb_encrypt(INT8 *s, INT8 *d, INT32 *r, int e);
+extern int des_key_sched(unsigned INT8 *k, unsigned INT32 *s);
+extern int des_ecb_encrypt(unsigned INT8 *s, unsigned INT8 *d, unsigned INT32 *r, int e);
 
 #endif /*  DES_H_INCLUDED */
