@@ -103,6 +103,101 @@ static int type_length(char *t)
   return t-q;
 }
 
+
+#define STACK_SIZE 100000
+static unsigned char type_stack[STACK_SIZE];
+static unsigned char *type_stackp=type_stack;
+static unsigned char *mark_stack[STACK_SIZE/4];
+static unsigned char **mark_stackp=mark_stack;
+
+void reset_type_stack()
+{
+  type_stackp=type_stack;
+  mark_stackp=mark_stack;
+}
+
+void type_stack_mark()
+{
+  *mark_stackp=type_stackp;
+  mark_stackp++;
+  if(mark_stackp > mark_stack + NELEM(mark_stack))
+    yyerror("Type mark stack overflow.");
+}
+
+unsigned char *pop_stack_mark()
+{ 
+  mark_stackp--;
+  if(mark_stackp<mark_stack)
+    fatal("Type mark stack underflow\n");
+
+  return *mark_stackp;
+}
+
+void pop_type_stack()
+{ 
+  type_stackp--;
+  if(type_stackp<type_stack)
+    fatal("Type stack underflow\n");
+}
+
+void type_stack_pop_to_mark()
+{
+  type_stackp=pop_stack_mark();
+}
+
+void type_stack_reverse()
+{
+  unsigned char *a,*b,tmp;
+  a=pop_stack_mark();
+  b=type_stackp-1;
+  while(b>a) { tmp=*a; *a=*b; *b=tmp; b--; a++; }
+}
+
+void push_type(unsigned char tmp)
+{
+  *type_stackp=tmp;
+  type_stackp++;
+  if(type_stackp > type_stack + sizeof(type_stack))
+    yyerror("Type stack overflow.");
+}
+
+void push_unfinished_type(char *s)
+{
+  int e;
+  e=type_length(s);
+  for(e--;e>=0;e--) push_type(s[e]);
+}
+
+void push_finished_type(struct lpc_string *type)
+{
+  int e;
+  for(e=type->len-1;e>=0;e--) push_type(type->str[e]);
+}
+
+struct lpc_string *pop_unfinished_type()
+{
+  int len,e;
+  struct lpc_string *s;
+  len=type_stackp - pop_stack_mark();
+  s=begin_shared_string(len);
+  for(e=0;e<len;e++) s->str[e] = *--type_stackp;
+  return end_shared_string(s);
+}
+
+struct lpc_string *pop_type()
+{
+  int len,e;
+  struct lpc_string *s;
+  len=type_stackp - type_stack;
+  s=begin_shared_string(len);
+  for(e=0;e<len;e++) s->str[e] = *--type_stackp;
+  s=end_shared_string(s);
+  reset_type_stack();
+  return s;
+}
+
+
+
 static void internal_parse_typeA(char **s)
 {
   char buf[80];
@@ -634,11 +729,48 @@ static int low_get_return_type(char *a,char *b)
   switch(EXTRACT_UCHAR(a))
   {
   case T_OR:
-    a++;
-    tmp=low_get_return_type(a,b);
-    tmp+=low_get_return_type(a+type_length(a),b);
-    if(tmp==2) push_type(T_OR);
-    return tmp>0;
+    {
+      struct lpc_string *o1,*o2;
+      a++;
+      o1=o2=0;
+
+      type_stack_mark();
+      if(low_get_return_type(a,b)) 
+      {
+	o1=pop_unfinished_type();
+	type_stack_mark();
+      }
+
+      if(low_get_return_type(a+type_length(a),b))
+	o2=pop_unfinished_type();
+      else
+	pop_stack_mark();
+
+      if(o1 == o2)
+      {
+	if(!o1)
+	{
+	  return 0;
+	}else{
+	  push_finished_type(o1);
+	}
+      }
+      else if(o1 == mixed_type_string || o2 == mixed_type_string)
+      {
+	push_type(T_MIXED);
+      }
+      else
+      {
+	if(o1) push_finished_type(o1);
+	if(o2) push_finished_type(o2);
+	if(o1 && o2) push_type(T_OR);
+      }
+
+      if(o1) free_string(o1);
+      if(o2) free_string(o2);
+
+      return 1;
+    }
 
   case T_AND:
     a++;
@@ -684,88 +816,6 @@ int match_types(struct lpc_string *a,struct lpc_string *b)
 }
 
 
-#define STACK_SIZE 100000
-static unsigned char type_stack[STACK_SIZE];
-static unsigned char *type_stackp=type_stack;
-static unsigned char *mark_stack[STACK_SIZE/4];
-static unsigned char **mark_stackp=mark_stack;
-
-void reset_type_stack()
-{
-  type_stackp=type_stack;
-  mark_stackp=mark_stack;
-}
-
-void type_stack_mark()
-{
-  *mark_stackp=type_stackp;
-  mark_stackp++;
-  if(mark_stackp > mark_stack + NELEM(mark_stack))
-    yyerror("Type mark stack overflow.");
-}
-
-void pop_stack_mark()
-{ 
-  mark_stackp--;
-  if(mark_stackp<mark_stack)
-    fatal("Type mark stack underflow\n");
-}
-
-void pop_type_stack()
-{ 
-  type_stackp--;
-  if(type_stackp<type_stack)
-    fatal("Type stack underflow\n");
-}
-
-void type_stack_pop_to_mark()
-{
-  pop_stack_mark();
-  type_stackp=*mark_stackp;
-}
-
-void type_stack_reverse()
-{
-  unsigned char *a,*b,tmp;
-  a=mark_stackp[-1];
-  b=type_stackp-1;
-  while(b>a) { tmp=*a; *a=*b; *b=tmp; b--; a++; }
-  pop_stack_mark();
-}
-
-void push_type(unsigned char tmp)
-{
-  *type_stackp=tmp;
-  type_stackp++;
-  if(type_stackp > type_stack + sizeof(type_stack))
-    yyerror("Type stack overflow.");
-}
-
-void push_unfinished_type(char *s)
-{
-  int e;
-  e=type_length(s);
-  for(e--;e>=0;e--) push_type(s[e]);
-}
-
-void push_finished_type(struct lpc_string *type)
-{
-  int e;
-  for(e=type->len-1;e>=0;e--) push_type(type->str[e]);
-}
-
-
-struct lpc_string *pop_type()
-{
-  int len,e;
-  struct lpc_string *s;
-  len=type_stackp - type_stack;
-  s=begin_shared_string(len);
-  for(e=0;e<len;e++) s->str[e] = *--type_stackp;
-  s=end_shared_string(s);
-  reset_type_stack();
-  return s;
-}
 
 /* FIXME, add the index */
 static struct lpc_string *low_index_type(char *t)

@@ -21,6 +21,17 @@ extern struct lpc_string *any_type_string;
 
 /* Prototypes begin here */
 void init_types();
+void reset_type_stack();
+void type_stack_mark();
+unsigned char *pop_stack_mark();
+void pop_type_stack();
+void type_stack_pop_to_mark();
+void type_stack_reverse();
+void push_type(unsigned char tmp);
+void push_unfinished_type(char *s);
+void push_finished_type(struct lpc_string *type);
+struct lpc_string *pop_unfinished_type();
+struct lpc_string *pop_type();
 struct lpc_string *parse_type(char *s);
 void stupid_describe_type(char *a,INT32 len);
 void simple_describe_type(struct lpc_string *s);
@@ -28,16 +39,6 @@ char *low_describe_type(char *t);
 struct lpc_string *describe_type(struct lpc_string *type);
 TYPE_T compile_type_to_runtime_type(struct lpc_string *s);
 int match_types(struct lpc_string *a,struct lpc_string *b);
-void reset_type_stack();
-void type_stack_mark();
-void pop_stack_mark();
-void pop_type_stack();
-void type_stack_pop_to_mark();
-void type_stack_reverse();
-void push_type(unsigned char tmp);
-void push_unfinished_type(char *s);
-void push_finished_type(struct lpc_string *type);
-struct lpc_string *pop_type();
 struct lpc_string *index_type(struct lpc_string *type);
 int check_indexing(struct lpc_string *type,
 		   struct lpc_string *index_type);
