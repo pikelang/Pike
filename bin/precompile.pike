@@ -124,7 +124,10 @@ string cname(mixed type)
   else
     btype=type;
 
-  if (search(type, "|") != -1) {
+  // werror("type:%O\n" "btype: %O\n", type, btype);
+
+  if (sizeof(type / ({"|"})) > 1) {
+    // werror("Found '|'.\n");
     btype = "mixed";
   }
 
@@ -219,6 +222,7 @@ mapping(string:string) parse_arg(array x)
   ret->basetype=x[0];
   if(ret->basetype == PC.Token("CTYPE"))
   {
+    // werror("Is CTYPE\n");
     ret->cname = merge(ret->type[1..]);
     ret->type = convert_ctype(ret->type[1..]);
     ret->is_c_type=1;
@@ -226,11 +230,15 @@ mapping(string:string) parse_arg(array x)
     array ored_types=ret->type/({"|"});
     if(sizeof(ored_types)>1)
       ret->basetype="mixed";
+
+    // werror("sizeof(ored_types): %d\n", sizeof(ored_types));
     
     if(search(ored_types,PC.Token("void"))!=-1)
       ret->optional=1;
     
     ret->ctype=cname(ret->type);
+
+    // werror("ctype: %O\n", ret->ctype);
   }
   ret->typename=trim(merge(recursive(strip_type_assignments,ret->type)));
   ret->line=ret->name->line;
@@ -662,6 +670,7 @@ array convert(array x, string base)
 	/* FIXME:
 	 * Add runtime debug to these defines...
 	 */
+	sprintf("\n"),
 	sprintf("#undef THIS\n"), // FIXME: must remember previous def
 	sprintf("#define THIS ((struct %s_struct *)(Pike_interpreter.frame_pointer->current_storage))\n",base),
 	sprintf("#define THIS_%s ((struct %s_struct *)(Pike_interpreter.frame_pointer->current_storage))\n",upper_case(base),base),
@@ -715,8 +724,9 @@ array convert(array x, string base)
       "{","\n",
     });
 
-//    werror("%O %O\n",proto,args);
+    // werror("%O %O\n",proto,args);
     args=map(args,parse_arg);
+    // werror("parsed args: %O\n", args);
     int min_args=sizeof(args);
     int max_args=sizeof(args); /* FIXME: check for ... */
 
