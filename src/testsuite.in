@@ -1,4 +1,4 @@
-test_true([["$Id: testsuite.in,v 1.714 2004/04/16 16:57:20 grubba Exp $"]]);
+test_true([["$Id: testsuite.in,v 1.715 2004/04/16 17:03:47 grubba Exp $"]]);
 
 // This triggered a bug only if run sufficiently early.
 test_compile_any([[#pike 7.2]])
@@ -10144,10 +10144,10 @@ array a()
   int err = pid->wait();
   int ok;
   int failed;
-  if ((sscanf(s, "%*sok:%d", ok) != 2) +
-      (sscanf(s, "%*sfailed:%d", failed) != 2)) {
+  if (((sscanf(results, "%*sok:%d", ok) != 2) +
+       (sscanf(results, "%*sfailed:%d", failed) != 2)) == 2) {
     // No "ok", and no "failed".
-    return ({ err, s });
+    return ({ err, results });
   }
   return ({ ok, failed });
 }
