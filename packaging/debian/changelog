@@ -20,6 +20,7 @@ pike7.4 (7.4.27-1) unstable; urgency=high
      - pike7.4-odbc (closes: Bug#209916)
      - pike7.4-pg (closes: Bug#209744)
      - pike7.4-sane (closes: Bug#209771)
+     - pike7.4-sdl (closes: Bug#210037)
 
  -- Marek Habersack <grendel@debian.org>  Wed, 10 Sep 2003 00:05:46 +0200
 

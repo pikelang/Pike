@@ -134,7 +134,8 @@ Architecture: any
 Depends: ${shlibs:Depends}, pike7.4-core (=${Source-Version})
 Description: SDL module for Pike
  This module extends Pike with the ability to write programs that
- take advantage of the SDL graphics library.
+ take advantage of the SDL graphics library. For the more information
+ about the SDL library, please check http://sdl.org/
  .
  Pike is an interpreted, object-oriented, dynamic programming language
  with a syntax similar to C. It includes many powerful data types and
