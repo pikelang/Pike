@@ -67,7 +67,7 @@ IF IT DOESN'T WORK:
    $ export CONFIG_SHELL
    $ $CONFIG_SHELL ./configure
 
- o If you are not using GNU make, compile in he source dir rather than
+ o If you are not using GNU make, compile in the source dir rather than
    using a separate build dir.
 
  o ./configure relies heavily on sed, if you have several sed in your path
