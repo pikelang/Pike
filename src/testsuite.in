@@ -1,4 +1,4 @@
-test_true([["$Id: testsuite.in,v 1.223 1999/11/04 20:25:20 hubbe Exp $"]])
+test_true([["$Id: testsuite.in,v 1.224 1999/11/04 22:28:00 hubbe Exp $"]])
 
 cond([[all_constants()->_verify_internals]],
 [[
@@ -1759,7 +1759,7 @@ test_equal([[array_sscanf("1 2 3 4 5 6 7 8 9","%d %d %d %d %d %d %d %d %s")]],[[
 test_equal([[array_sscanf("abc","%{%c%}")]],[[ ({ ({ ({'a'}), ({'b'}), ({'c'}) }) }) ]])
 
 test_equal([[array_sscanf("\x7fffffab#", "%c%c")]], [[ ({ 0x7fffffab, '#' }) ]])
-test_equal([[array_sscanf("\x7fffffab#", "%1c%1c")]], [[ ({ 0xab, '#' }) ]])
+test_equal([[array_sscanf("\x7fffffab#", "%1c%1c")]], [[ ({  }) ]])
 
 test_true([[array_sscanf("(02323) 23455 344","%{%*[^0-9]%[0-9]%}")]])
 

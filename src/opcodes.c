@@ -24,8 +24,9 @@
 #include "module_support.h"
 #include "security.h"
 #include "bignum.h"
+#include "operators.h"
 
-RCSID("$Id: opcodes.c,v 1.65 1999/11/04 20:25:18 hubbe Exp $");
+RCSID("$Id: opcodes.c,v 1.66 1999/11/04 22:27:59 hubbe Exp $");
 
 void index_no_free(struct svalue *to,struct svalue *what,struct svalue *ind)
 {
@@ -1087,14 +1088,36 @@ static INT32 PIKE_CONCAT4(very_low_sscanf_,INPUT_SHIFT,_,MATCH_SHIFT)(	 \
 	}								 \
 									 \
 	case 'c':							 \
-	  if(field_length == -1) field_length = 1;			 \
+        {								 \
+          int e;							 \
+	  sval.type=T_INT;						 \
+	  sval.subtype=NUMBER_NUMBER;					 \
+          if(field_length == -1)					 \
+          { 								 \
+	    if(eye+1 > input_len)					 \
+	    {								 \
+	      chars_matched[0]=eye;					 \
+	      return matches;						 \
+	    }								 \
+            sval.u.integer=input[eye];					 \
+	    eye++;							 \
+            break;							 \
+          }								 \
 	  if(eye+field_length > input_len)				 \
 	  {								 \
 	    chars_matched[0]=eye;					 \
 	    return matches;						 \
 	  }								 \
-	  sval.type=T_INT;						 \
-	  sval.subtype=NUMBER_NUMBER;					 \
+CHAROPT2(								 \
+          for(e=0;e<field_length;e++)					 \
+          {								 \
+             if(input[eye+e]>255)					 \
+             {								 \
+               chars_matched[0]=eye;					 \
+               return matches;						 \
+             }								 \
+          }								 \
+)									 \
 	  sval.u.integer=0;						 \
 	  if (minus_flag)						 \
 	  {								 \
@@ -1110,20 +1133,14 @@ static INT32 PIKE_CONCAT4(very_low_sscanf_,INPUT_SHIFT,_,MATCH_SHIFT)(	 \
 	       {							 \
 		 push_int(sval.u.integer);				 \
 		 convert_stack_top_to_bignum();				 \
-		 lshfun=FIND_LFUN(sp[-1].u.object->prog, LFUN_LSH);	 \
-		 orfun=FIND_LFUN(sp[-1].u.object->prog, LFUN_OR);	 \
 									 \
 		 while(field_length-- >= 0)				 \
 		 {							 \
 		   push_int(input[eye]);				 \
 		   convert_stack_top_to_bignum();			 \
 		   push_int(pos);					 \
-		   apply_low(sp[-2].u.object, lshfun, 1);		 \
-		   stack_swap();					 \
-		   pop_stack();						 \
-		   apply_low(sp[-2].u.object, orfun, 1);		 \
-		   stack_swap();					 \
-		   pop_stack();						 \
+		   o_lsh();						 \
+		   o_or();						 \
 		   pos+=8;						 \
 		   eye++;						 \
 		 }							 \
@@ -1140,25 +1157,18 @@ static INT32 PIKE_CONCAT4(very_low_sscanf_,INPUT_SHIFT,_,MATCH_SHIFT)(	 \
 	  else								 \
 	     while(--field_length >= 0)					 \
 	     {								 \
-	       int lshfun, orfun;					 \
                DO_IF_BIGNUM(						 \
 	       if(INT_TYPE_LSH_OVERFLOW(sval.u.integer, 8))		 \
 	       {							 \
 		 push_int(sval.u.integer);				 \
 		 convert_stack_top_to_bignum();				 \
-		 lshfun=FIND_LFUN(sp[-1].u.object->prog, LFUN_LSH);	 \
-		 orfun=FIND_LFUN(sp[-1].u.object->prog, LFUN_OR);	 \
 									 \
 		 while(field_length-- >= 0)				 \
 		 {							 \
 		   push_int(8);						 \
-		   apply_low(sp[-2].u.object, lshfun, 1);		 \
-		   stack_swap();					 \
-		   pop_stack();						 \
+		   o_lsh();						 \
 		   push_int(input[eye]);				 \
-		   apply_low(sp[-2].u.object, orfun, 1);		 \
-		   stack_swap();					 \
-		   pop_stack();						 \
+		   o_or();						 \
 		   eye++;						 \
 		 }							 \
 		 sval=*--sp;						 \
@@ -1170,6 +1180,7 @@ static INT32 PIKE_CONCAT4(very_low_sscanf_,INPUT_SHIFT,_,MATCH_SHIFT)(	 \
 	       eye++;							 \
 	     }								 \
 	  break;							 \
+        }								 \
 									 \
         case 'b':							 \
         case 'o':							 \
@@ -1440,14 +1451,14 @@ CHAROPT(								 \
 		tmp.type=T_INT;						 \
 		tmp.u.integer=input[eye];				 \
 		x=switch_lookup(set.a, &tmp);				 \
-		if( set.neg != (x<0 && (x&1)) ) break;	                 \
+		if( set.neg != (x<0 && (x&1)) ) break;			 \
 	      }else{							 \
 		break;							 \
 	      }								 \
 	    }								 \
 )									 \
 	  }								 \
-          if(set.a) { free_array(set.a); set.a=0; }                      \
+          if(set.a) { free_array(set.a); set.a=0; }			 \
 	  sval.type=T_STRING;						 \
 	  DO_IF_CHECKER(sval.subtype=0);				 \
 	  sval.u.string=PIKE_CONCAT(make_shared_binary_string,		 \
@@ -1482,23 +1493,38 @@ CHAROPT(								 \
   return matches;							 \
 }
 
+
+/* Confusing? Yes - Hubbe */
+
 #define CHAROPT(X)
+#define CHAROPT2(X) X
 
 MKREADSET(0)
 MK_VERY_LOW_SSCANF(0,0)
+
+#undef CHAROPT2
+#define CHAROPT2(X) X
+
 MK_VERY_LOW_SSCANF(1,0)
 MK_VERY_LOW_SSCANF(2,0)
 
 #undef CHAROPT
 #define CHAROPT(X) X
+
 MKREADSET(1)
 MKREADSET(2)
 
+#undef CHAROPT2
+#define CHAROPT2(X)
 
 MK_VERY_LOW_SSCANF(0,1)
+MK_VERY_LOW_SSCANF(0,2)
+
+#undef CHAROPT2
+#define CHAROPT2(X) X
+
 MK_VERY_LOW_SSCANF(1,1)
 MK_VERY_LOW_SSCANF(2,1)
-MK_VERY_LOW_SSCANF(0,2)
 MK_VERY_LOW_SSCANF(1,2)
 MK_VERY_LOW_SSCANF(2,2)
 
