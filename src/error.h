@@ -5,7 +5,7 @@
 \*/
 
 /*
- * $Id: error.h,v 1.42 2000/05/25 02:18:35 hubbe Exp $
+ * $Id: error.h,v 1.43 2000/06/03 23:44:01 noring Exp $
  */
 #ifndef ERROR_H
 #define ERROR_H
@@ -255,3 +255,41 @@ void cleanup_error(void);
 #ifndef PIKE_DEBUG
 #define check_recovery_context() ((void)0)
 #endif
+
+/* Experimental convenience exception macros. */
+
+#define exception_try \
+        do \
+        { \
+            int __exception_rethrow, __is_exception; \
+            JMP_BUF exception; \
+            __is_exception = SETJMP(exception); \
+            __exception_rethrow = 0; \
+            if(__is_exception) /* rethrow needs this */ \
+                UNSETJMP(exception); \
+            if(!__is_exception)
+    
+#define exception_catch_if \
+            else if
+
+#define exception_catch(e) \
+            exception_catch_if(exception->severity = (e))
+
+#define exception_catch_all \
+            exception_catch_if(1)
+
+#define exception_semicatch_all \
+            exception_catch_if((__exception_rethrow = 1))
+
+#define rethrow \
+            pike_throw()
+
+#define exception_endtry \
+            else \
+                __exception_rethrow = 1; \
+            if(!__is_exception) \
+                UNSETJMP(exception); \
+            if(__exception_rethrow) \
+                rethrow; \
+        } \
+        while(0)
