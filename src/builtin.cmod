@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: builtin.cmod,v 1.104 2003/02/24 21:44:30 mast Exp $
+|| $Id: builtin.cmod,v 1.105 2003/04/07 15:32:58 mast Exp $
 */
 
 #include "global.h"
@@ -1536,7 +1536,7 @@ PIKECLASS Buffer
 				 str->str.malloced,
 				 str->str.s->size_shift );
       MEMCPY( (void *)str2->str.s, (void *)str->str.s,
-	      str->str.malloced+sizeof(struct pike_string));
+	      (str->str.malloced << str->str.s->size_shift) + sizeof(struct pike_string));
     }
     apply( res, "add", 1 );
     RETURN res;
