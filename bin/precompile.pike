@@ -99,6 +99,10 @@ string cname(mixed type)
   else
     btype=type;
 
+  if (search(type, "|") != -1) {
+    btype = "mixed";
+  }
+
   switch(objectp(btype) ? btype->text : btype)
   {
     case "int": return "INT_TYPE";
