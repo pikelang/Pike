@@ -13,6 +13,7 @@
 #include "module_support.h"
 #include "operators.h"
 #include "bignum.h"
+#include "opcodes.h"
 
 #ifdef PC
 #undef PC
@@ -26,7 +27,7 @@
 #include <floatingpoint.h>
 #endif
 
-RCSID("$Id: math.c,v 1.25 1999/10/31 00:28:27 noring Exp $");
+RCSID("$Id: math.c,v 1.26 1999/11/16 17:07:30 grubba Exp $");
 
 #ifndef M_PI
 #define M_PI 3.1415926535897932384626433832795080
