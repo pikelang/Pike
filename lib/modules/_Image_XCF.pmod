@@ -590,7 +590,7 @@ mapping _decode( string|mapping what, mapping|void opts )
     }
   }
 
-  Array.map( data->layers, destruct );
+  Array.map( data->layers, lambda(object o) { destruct(o); } );
   destruct( data );
   return 
   ([
