@@ -8,7 +8,7 @@
 #  include "pike_macros.h"
 #  include "main.h"
 
-RCSID("$Id: dynamic_load.c,v 1.39 2000/02/17 18:58:16 hubbe Exp $");
+RCSID("$Id: dynamic_load.c,v 1.40 2000/06/27 15:15:11 grubba Exp $");
 
 #endif /* !TESTING */
 
@@ -51,7 +51,7 @@ typedef void (*modfun)(void);
 #ifdef USE_LOADLIBRARY
 #include <windows.h>
 
-static TCHAR *convert_string(char *str, int len)
+static TCHAR *convert_string(const char *str, int len)
 {
   int e;
   TCHAR *ret=(TCHAR *)xalloc((len+1) * sizeof(TCHAR));
