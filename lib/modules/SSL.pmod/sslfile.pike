@@ -1,6 +1,6 @@
 #pike __REAL_VERSION__
 
-/* $Id: sslfile.pike,v 1.69 2004/02/29 02:56:04 nilsson Exp $
+/* $Id: sslfile.pike,v 1.70 2004/03/02 15:31:10 grubba Exp $
  */
 
 #if constant(SSL.Cipher.CipherAlgorithm)
@@ -1160,19 +1160,23 @@ static int ssl_read_callback (int called_from_real_backend, string input)
 		  conn && SSL_CLOSING ? ", closing" : "");
 
   ENTER (1, called_from_real_backend) {
-#ifdef DEBUG
-    if (!stream)
-      error ("Got zapped stream in callback.\n");
-#endif
+    int handshake_already_finished = conn->handshake_finished;
+    string|int data = conn->got_data (input);
 
 #ifdef SSL3_DEBUG_TRANSPORT
     werror ("ssl_read_callback: Got data: %O\n", data);
 #endif
-    int handshake_already_finished = conn->handshake_finished;
-    string|int data = conn->got_data (input);
 
-    // got_data might have put more packets in the write queue.
-    int write_res = queue_write();
+    int write_res;
+    if (stringp(data) || (data > 0)) {
+#ifdef DEBUG
+      if (!stream)
+	error ("Got zapped stream in callback.\n");
+#endif
+
+      // got_data might have put more packets in the write queue.
+      write_res = queue_write();
+    }
 
     if (stringp (data)) {
       SSL3_DEBUG_MSG ("ssl_read_callback: "
