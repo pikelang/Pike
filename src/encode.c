@@ -25,7 +25,7 @@
 #include "version.h"
 #include "bignum.h"
 
-RCSID("$Id: encode.c,v 1.51 1999/12/11 01:14:56 grubba Exp $");
+RCSID("$Id: encode.c,v 1.52 1999/12/19 15:52:32 grubba Exp $");
 
 /* #define ENCODE_DEBUG */
 
@@ -890,7 +890,21 @@ one_more_type:
 	case T_PROGRAM:
 	  push_type_int(sp[-1].u.program->id);
 	  break;
-	  
+
+        case T_FUNCTION:
+	  {
+	    struct program *prog;
+	    if (sp[-1].subtype == FUNCTION_BUILTIN) {
+	      error("Failed to decode object type.\n");
+	    }
+	    prog = program_from_svalue(sp-1);
+	    if (!prog) {
+	      error("Failed to decode object type.\n");
+	    }
+	    push_type_int(prog->id);
+	  }
+	  break;
+
 	default:
 	  error("Failed to decode type "
 		"(object(%s), expected object(zero|program)).\n",
