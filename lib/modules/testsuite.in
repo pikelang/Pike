@@ -1,4 +1,4 @@
-dnl $Id: testsuite.in,v 1.29 2004/05/02 18:25:47 nilsson Exp $
+dnl $Id: testsuite.in,v 1.30 2004/07/13 14:53:42 grubba Exp $
 
 START_MARKER
 
@@ -389,6 +389,8 @@ dnl - Getopt
 dnl setup
 test_do( add_constant("getopt_env", master()->environment); )
 test_do( master()->environment=([ "foo": ({ "foo", "bar" }) ]); )
+test_equal(getenv("foo"), "bar");
+test_false(getenv("POSIX_ME_HARDER"));
 
 test_eq( Getopt.find_option( ({}), "a" ), 0 )
 test_eq( Getopt.find_option( "-a,-b"/",", "a" ), 0 )
