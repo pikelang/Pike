@@ -325,4 +325,7 @@
 /* Define if you have struct timeval */
 #define HAVE_STRUCT_TIMEVAL
 
+/* Define this to the max value of an unsigned short unles <limits.h> does.. */
+#undef USHRT_MAX
+
 #endif /* MACHINE_H */
