@@ -5,7 +5,7 @@
 \*/
 /**/
 #include "global.h"
-RCSID("$Id: mpz_glue.c,v 1.101 2002/03/08 09:51:05 grubba Exp $");
+RCSID("$Id: mpz_glue.c,v 1.102 2002/03/08 22:14:55 nilsson Exp $");
 #include "gmp_machine.h"
 
 #if defined(HAVE_GMP2_GMP_H) && defined(HAVE_LIBGMP2)
@@ -121,6 +121,11 @@ void mpzmod_reduce(struct object *o)
 #define PUSH_REDUCED(o) push_object(o)
 #endif /* AUTO_BIGNUM */
 
+/*! @module Gmp
+ */
+
+/*! @class mpz
+ */
 
 void get_mpz_from_digits(MP_INT *tmp,
 			 struct pike_string *digits,
@@ -1698,3 +1703,8 @@ void pike_module_init(void)
   pike_init_mpf_module();
 }
 
+/*! @endclass
+ */
+
+/*! @endmodule
+ */
