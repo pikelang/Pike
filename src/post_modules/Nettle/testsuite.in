@@ -71,9 +71,15 @@ cond([[ Nettle->CBC ]], [[
     Nettle.CBC(A);
   ]])
   test_eq( Nettle.CBC(Crypto.AES())->block_size(), 16)
+  test_eq( Nettle.CBC(Crypto.AES)->block_size(), 16)
   test_eq( Nettle.CBC(Crypto.AES())->key_size(), 0)
+  test_eq( Nettle.CBC(Crypto.AES)->key_size(), 0)
   test_any([[
     object cbc=Nettle.CBC(Crypto.AES());
+    cbc->set_encrypt_key("qwertyuiopasdfghjklzxcvbnm123456");
+    return cbc->key_size();]], 32)
+  test_any([[
+    object cbc=Nettle.CBC(Crypto.AES);
     cbc->set_encrypt_key("qwertyuiopasdfghjklzxcvbnm123456");
     return cbc->key_size();]], 32)
   test_eval_error([[
@@ -81,8 +87,18 @@ cond([[ Nettle->CBC ]], [[
     cbc->set_encrypt_key("qwertyuiopasdfghjklzxcvbnm123456");
     cbc->crypt("123");
   ]])
+  test_eval_error([[
+    object cbc=Nettle.CBC(Crypto.AES);
+    cbc->set_encrypt_key("qwertyuiopasdfghjklzxcvbnm123456");
+    cbc->crypt("123");
+  ]])
   test_any([[
     object cbc=Nettle.CBC(Crypto.AES());
+    cbc->set_encrypt_key("qwertyuiopasdfghjklzxcvbnm123456");
+    return String.string2hex(cbc->crypt("0123456789abcdef"));
+  ]], "b71a7f6d29d66bd468294ed9cfda2af1")
+  test_any([[
+    object cbc=Nettle.CBC(Crypto.AES);
     cbc->set_encrypt_key("qwertyuiopasdfghjklzxcvbnm123456");
     return String.string2hex(cbc->crypt("0123456789abcdef"));
   ]], "b71a7f6d29d66bd468294ed9cfda2af1")
