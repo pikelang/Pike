@@ -6,10 +6,13 @@
 FROM="$1"
 TO="$2"
 
+DIRS_TO_MAKE=
+
 DIR="$TO"
 while :
 do
   DIR=`echo $DIR | sed -e 's@/[^/]*$@@'`
+
   case "$DIR" in
     *.pmod)
       if [ -d "$DIR" ]; then
@@ -34,6 +37,8 @@ do
         break
       fi
 
+#FIXME: Add sed expression to quote spaces, quotes etc. in $DIR
+      DIRS_TO_MAKE="$DIR $DIRS_TO_MAKE"
     ;;
     *) break ;;
   esac
@@ -41,6 +46,12 @@ do
 done
 
 BASE=`echo $TO | sed -e 's/\.[^.]*$//'`
+
+if test "x$DIRS_TO_MAKE" != x; then
+  mkdir $DIRS_TO_MAKE
+else
+  :
+fi
 
 if [ -d "$BASE.pmod" ]; then
   EXT=`echo $TO | sed -e 's@(\.[^.]$)@\1@/'`
