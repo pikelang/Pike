@@ -853,7 +853,7 @@ mapping srccache=([]);
 
 string mkgif(mixed o)
 {
-  string g=stringp(o)?o:o->togif();
+  string g=stringp(o)?o:Image.GIF.encode(o);
 
   int key=hash(g);
 
@@ -969,7 +969,7 @@ string image_to_gif(TAG data, float dpi)
       werror("Converting ");
       Process.system("/bin/sh -c 'fig2dev -L ps "+params->src+" ___tmp.ps;echo showpage >>___tmp.ps'");
       Process.system("/bin/sh -c 'gs -q -sDEVICE=pbmraw -r225 -g2500x2500 -sOutputFile=___tmp.ppm ___tmp.ps </dev/null >/dev/null'");
-      object o=Image.image()->fromppm(Stdio.read_file("___tmp.ppm"))->autocrop()->scale(1.0/3)->rotate(-90);
+      object o=Image.PNM.decode(Stdio.read_file("___tmp.ppm"))->autocrop()->scale(1.0/3)->rotate(-90);
       o=Image.image(o->xsize()+40, o->ysize()+40, 255,255,255)->paste(o,20,20);
       rm("___tmp.ps");
       rm("___tmp.ppm");
