@@ -1,4 +1,4 @@
-dnl $Id: aclocal.m4,v 1.39 2002/03/06 01:01:25 mast Exp $
+dnl $Id: aclocal.m4,v 1.40 2002/03/06 20:16:43 mast Exp $
 
 dnl Some compatibility with Autoconf 2.50+. Not complete.
 dnl newer autoconf call substr m4_substr
@@ -234,7 +234,7 @@ define(PIKE_FEATURE_OK,[
 
 define([AC_LOW_MODULE_INIT],
 [
-# $Id: aclocal.m4,v 1.39 2002/03/06 01:01:25 mast Exp $
+# $Id: aclocal.m4,v 1.40 2002/03/06 20:16:43 mast Exp $
 
 MY_AC_PROG_CC
 
@@ -352,16 +352,15 @@ pushdef([AC_OUTPUT],
 
 ifdef([PIKE_INCLUDE_PATH],
 [
+  dnl Is PIKE_INCLUDE_PATH really on the ../../... form, or is this broken?
   make_variables_in=PIKE_INCLUDE_PATH/make_variables_in
 ],[
   AC_MSG_CHECKING([for the Pike base directory])
 
-  make_variables_in=make_variables.in
-
   counter=.
 
   uplevels=
-  while test ! -f "$srcdir/$uplevels$make_variables_in"
+  while test ! -f "$srcdir/${uplevels}make_variables.in"
   do
     counter=.$counter
     if test $counter = .......... ; then
@@ -373,9 +372,11 @@ ifdef([PIKE_INCLUDE_PATH],
     uplevels=../$uplevels
   done
 
-  make_variables_in=$uplevels$make_variables_in
+  make_variables_in=${uplevels}make_variables.in
   AC_MSG_RESULT(${uplevels}.)
 ])
+
+  AC_SUBST(make_variables_in)
 
   AC_SUBST_FILE(make_variables)
   make_variables=make_variables

@@ -1,5 +1,5 @@
 #
-# $Id: static_module_makefile.in,v 1.75 2002/03/06 01:19:49 mast Exp $
+# $Id: static_module_makefile.in,v 1.76 2002/03/06 20:16:46 mast Exp $
 #
 
 
@@ -78,8 +78,8 @@ modlist_headers: Makefile
 modlist_segment: Makefile
 	@echo >modlist_segment " ,{ \"$(MODNAME)\", pike_module_$(MODNAME)_init, pike_module_$(MODNAME)_exit } "
 
-make_variables: $(PIKE_SRC_DIR)/make_variables.in config.status
-	CONFIG_FILES="make_variables:$(BUILD_BASE)/make_variables.in" CONFIG_HEADERS="" ./config.status
+make_variables: $(make_variables_in) config.status
+	CONFIG_FILES="make_variables:$(make_variables_in)" CONFIG_HEADERS="" ./config.status
 
 Makefile: $(MODULE_BASE)/static_module_makefile $(SRCDIR)/Makefile.in $(SRCDIR)/dependencies $(SRCDIR)/$(CONFIG_HEADERS).in make_variables config.status
 	CONFIG_FILES=Makefile CONFIG_HEADERS="$(CONFIG_HEADERS)" ./config.status
@@ -122,7 +122,7 @@ clean:
 	-rm -f *.o *.fail *.obj *.a *.so module.so module.pmod linker_options modlist_headers modlist_segment module_testsuite $(MODULE_CLEAN_EXTRA)
 	@for a in '' $(MODULE_SUBDIRS) ; do if test "x$$a" = "x"; then :; else echo cleaning $$a ; ( cd $$a ; $(MAKE) $(MAKE_FLAGS) clean ) ; fi ; done
 
-depend: $(SRC_TARGETS) $(PMOD_TARGETS)
+depend: $(SRC_TARGETS) $(PMOD_TARGETS) Makefile
 	-@echo Fixing dependencies for $(SRCDIR)/\*.c
 	@gcc -MM $(PREFLAGS) $(SRCDIR)/*.c \
 	|sed -e "s@ $(SRCDIR)/\([-a-zA-Z0-9.,_]*\)@ \$$(SRCDIR)/\1@g" \
