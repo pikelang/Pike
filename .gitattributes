@@ -38,6 +38,16 @@ testfont binary
 /lib/modules/LR.pmod/scanner.pike foreign_ident
 /lib/modules/MIME.pmod foreign_ident
 /lib/modules/Protocols.pmod/TELNET.pmod foreign_ident
+/lib/modules/Protocols.pmod/X.pmod/Atom.pmod foreign_ident
+/lib/modules/Protocols.pmod/X.pmod/Auth.pmod foreign_ident
+/lib/modules/Protocols.pmod/X.pmod/Extensions.pmod foreign_ident
+/lib/modules/Protocols.pmod/X.pmod/Requests.pmod foreign_ident
+/lib/modules/Protocols.pmod/X.pmod/Types.pmod foreign_ident
+/lib/modules/Protocols.pmod/X.pmod/XImage.pmod foreign_ident
+/lib/modules/Protocols.pmod/X.pmod/XTools.pmod foreign_ident
+/lib/modules/Protocols.pmod/X.pmod/Xlib.pmod foreign_ident
+/lib/modules/Protocols.pmod/X.pmod/_Types.pmod foreign_ident
+/lib/modules/Protocols.pmod/X.pmod/_Xlib.pmod foreign_ident
 /lib/modules/SSL.pmod/alert.pike foreign_ident
 /lib/modules/SSL.pmod/cipher.pike foreign_ident
 /lib/modules/SSL.pmod/connection.pike foreign_ident

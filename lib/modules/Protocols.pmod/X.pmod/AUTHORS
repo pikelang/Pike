@@ -1,0 +1,31 @@
+Who wrote what in px?  [Updated 1998-04-06 by nisse]
+
+Atom.pmod: nisse
+Auth.pmod: nisse
+Extensions.pmod: cardeci
+GUG.pmod: nisse
+Requests.pmod: nisse, cardeci, marcus, neotron
+_Types.pmod: nisse
+Types.pmod: nisse, cardeci, marcus
+Widgets.pmod: nisse
+XImage.pmod: cardeci, nisse
+XTools.pmod: nisse
+_Xlib: nisse, cardeci
+Xlib.pmod: nisse, cardeci, marcus, mirar, neotron
+
+gug_button.pike: nisse
+gug_hbox.pike: nisse
+gug_image.pike: nisse
+gug_table.pike: nisse
+
+programs/imageblit.pike: cardeci
+programs/pertest.pike: cardeci
+programs/quitp.pike: cardeci
+
+Cast:
+
+nisse is Niels Möller, nisse@idonex.se
+cardeci is Per Hedbor, per@idonex.se
+neotron is David Hedbor, neotron@idonex.se
+mirar is Pontus Hagland, mirar@idonex.se
+marcus is Marcus Comstedt, marcus@idonex.se
