@@ -6,7 +6,7 @@
 // Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 // for more information.
 //
-// $Id: master.pike.in,v 1.279 2003/05/19 12:09:37 mast Exp $
+// $Id: master.pike.in,v 1.280 2003/05/28 15:21:07 jhs Exp $
 
 #pike __REAL_VERSION__
 
@@ -581,12 +581,12 @@ static program low_findprog(string pname,
   }
 #endif
 
-  if( (s=master_file_stat(fakeroot(fname)))  && s[1]>=0 )
+  if( (s=master_file_stat(fakeroot(fname))) && s->isreg )
   {
     AUTORELOAD_BEGIN();
 
 #ifdef PIKE_AUTORELOAD
-    if (load_time[fname] > s[3])
+    if (load_time[fname] > s->mtime)
       if (!zero_type (ret=programs[fname])) {
 	resolv_debug ("low_findprog %s: returning cached (autoreload)\n", fname);
 	return ret;
@@ -599,8 +599,8 @@ static program low_findprog(string pname,
     case ".pike":
       foreach(query_precompiled_names(fname), string oname) {
 	if(Stat s2=master_file_stat(fakeroot(oname)))
-	{	
-	  if(s2[1]>=0 && s2[3]>=s[3])
+	{
+	  if(s2->isreg && s2->mtime >= s->mtime)
 	  {
 	    mixed err=catch {
 	      AUTORELOAD_CHECK_FILE(oname);
@@ -1345,7 +1345,8 @@ object findmodule(string fullname, object|void handler)
 
   if(Stat stat=master_file_stat(fakeroot(fullname+".pmod")))
   {
-    if(stat[1]==-2) {
+    if(stat->isdir)
+    {
       resolv_debug ("findmodule(%O) => new dirnode\n", fullname);
       return dirnode(fullname+".pmod", handler);
     }
