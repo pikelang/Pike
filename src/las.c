@@ -4,7 +4,7 @@
 ||| See the files COPYING and DISCLAIMER for more information.
 \*/
 #include "global.h"
-RCSID("$Id: las.c,v 1.25 1997/02/27 11:18:13 hubbe Exp $");
+RCSID("$Id: las.c,v 1.26 1997/02/27 11:20:52 hubbe Exp $");
 
 #include "language.h"
 #include "interpret.h"
@@ -517,9 +517,9 @@ node *index_node(node *n, struct pike_string * id)
 
       if(sp[-1].type == T_INT &&
 	 !sp[-1].u.number &&
-	 sp[-1].subtype)
+	 sp[-1].subtype==NUMBER_UNDEFINED)
       {
-	yyerror("Index not present in module.");
+	my_yyerror("Index '%s' not present in module.",id->str);
       }
     }
   }
