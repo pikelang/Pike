@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: pgresult.c,v 1.21 2003/12/15 22:28:24 nilsson Exp $
+|| $Id: pgresult.c,v 1.22 2003/12/16 15:33:30 grubba Exp $
 */
 
 /*
@@ -70,7 +70,7 @@
 #include "builtin_functions.h"
 #include "module_support.h"
 
-RCSID("$Id: pgresult.c,v 1.21 2003/12/15 22:28:24 nilsson Exp $");
+RCSID("$Id: pgresult.c,v 1.22 2003/12/16 15:33:30 grubba Exp $");
 
 #ifdef _REENTRANT
 # ifdef PQ_THREADSAFE
@@ -290,9 +290,8 @@ static void f_seek (INT32 args)
  *! You can typecast them in Pike to get the numeric value.
  *!
  *! @seealso
- *!   seek
+ *!   @[seek()]
  */
-
 static void f_fetch_row (INT32 args)
 {
 	int j,k,numfields;
@@ -340,15 +339,23 @@ badresult:
 		value=PQgetvalue(THIS->result,THIS->cursor,j);
 		k=PQgetlength(THIS->result,THIS->cursor,j);
 		switch(PQftype(THIS->result,j)) {
+		  /* FIXME: This code is questionable, and BPCHAROID
+		   *        and BYTEAOID are usually not available
+		   *        to Postgres frontends.
+		   */
 #ifdef CUT_TRAILING_SPACES
+#ifdef BPCHAROID
 		case BPCHAROID:
 		  for(;k>0 && value[k]==' ';k--);
 		  break;
 #endif
+#endif
+#ifdef BYTEAOID
 		case BYTEAOID:
 		  if(binbuf=PQunescapeBytea(value,&binlen))
 		    value=binbuf,k=binlen;
 		  break;
+#endif
 		}
 		push_string(make_shared_binary_string(value,k));
 		if(binbuf)
