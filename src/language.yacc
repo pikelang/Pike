@@ -110,7 +110,7 @@
 /* This is the grammar definition of Pike. */
 
 #include "global.h"
-RCSID("$Id: language.yacc,v 1.215 2000/10/04 05:07:51 hubbe Exp $");
+RCSID("$Id: language.yacc,v 1.216 2000/10/26 01:33:25 hubbe Exp $");
 #ifdef HAVE_MEMORY_H
 #include <memory.h>
 #endif
@@ -1550,12 +1550,69 @@ local_name_list2: new_local_name2
   | local_name_list2 ',' { $<n>$=$<n>0; } new_local_name { $$=mknode(F_COMMA_EXPR,mkcastnode(void_type_string,$1),$4); }
   ;
 
+
+local_constant_name: TOK_IDENTIFIER '=' safe_expr0
+  {
+    struct pike_string *type;
+
+    /* Ugly hack to make sure that $3 is optimized */
+    {
+      int tmp=Pike_compiler->compiler_pass;
+      $3=mknode(F_COMMA_EXPR,$3,0);
+      Pike_compiler->compiler_pass=tmp;
+      type=$3->u.node.a->type;
+    }
+
+    if(!is_const($3))
+    {
+      if(Pike_compiler->compiler_pass==2)
+	yyerror("Constant definition is not constant.");
+    }else{
+      ptrdiff_t tmp=eval_low($3);
+      if(tmp < 1)
+      {
+	yyerror("Error in constant definition.");
+      }else{
+	pop_n_elems(DO_NOT_WARN((INT32)(tmp - 1)));
+	if($3) free_node($3);
+	$3=mksvaluenode(Pike_sp-1);
+	type=$3->type;
+	pop_stack();
+      }
+    }
+    if(!type) type=mixed_type_string;
+    add_ref(type);
+    low_add_local_name(Pike_compiler->compiler_frame->previous,
+		       $1->u.sval.u.string,
+		       type, $3);
+    free_node($1);
+  }
+  | bad_identifier '=' safe_expr0 { if ($3) free_node($3); }
+  | error '=' safe_expr0 { if ($3) free_node($3); }
+  ;
+
+local_constant_list: local_constant_name
+  | local_constant_list ',' local_constant_list
+  ;
+
+local_constant: TOK_CONSTANT local_constant_list ;
+  |  TOK_CONSTANT error ';' { yyerrok; }
+  |  TOK_CONSTANT error TOK_LEX_EOF
+  {
+    yyerror("Missing ';'.");
+    yyerror("Unexpected end of file.");
+  }
+  |  TOK_CONSTANT error '}' { yyerror("Missing ';'."); }
+  ;
+
+
 statements: { $$=0; }
   | statements statement
   {
     $$=mknode(F_COMMA_EXPR,$1,mkcastnode(void_type_string,$2));
   }
   ;
+
 
 statement: unused2 ';'
   | import { $$=0; }
@@ -1567,6 +1624,7 @@ statement: unused2 ';'
   | case
   | default
   | return expected_semicolon
+  | local_constant { $$=0; }
   | block
   | foreach
   | break expected_semicolon
@@ -3227,8 +3285,6 @@ bad_expr_ident:
   { yyerror("else without if."); }
   | TOK_RETURN
   { yyerror("return is a reserved word."); }
-  | TOK_CONSTANT
-  { yyerror("constant is a reserved word."); }
   | TOK_IMPORT
   { yyerror("import is a reserved word."); }
   | TOK_INHERIT
