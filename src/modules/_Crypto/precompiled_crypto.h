@@ -58,6 +58,11 @@ void MOD_INIT2(des)(void);
 void MOD_INIT(des)(void);
 void MOD_EXIT(des)(void);
 
+/* /precompiled/crypto/rc4 */
+void MOD_INIT2(rc4)(void);
+void MOD_INIT(rc4)(void);
+void MOD_EXIT(rc4)(void);
+
 /* /precompiled/crypto/invert */
 void MOD_INIT2(invert)(void);
 void MOD_INIT(invert)(void);
