@@ -25,7 +25,7 @@
 #include "main.h"
 #include <signal.h>
 
-RCSID("$Id: signal_handler.c,v 1.199 2002/04/16 09:56:17 mast Exp $");
+RCSID("$Id: signal_handler.c,v 1.200 2002/04/24 15:20:41 jonasw Exp $");
 
 #ifdef HAVE_PASSWD_H
 # include <passwd.h>
@@ -2981,7 +2981,7 @@ void f_create_process(INT32 args)
 
       /* Perform fd remapping */
       {
-        int fd;
+        int fd, max_fds;
 	/* Note: This is O(n²), but that ought to be ok. */
 	for (fd=0; fd<num_fds; fd++) {
 	  int fd2;
@@ -3012,6 +3012,23 @@ void f_create_process(INT32 args)
 	    }
 	  }
 	}
+
+#ifdef _SC_OPEN_MAX
+	/* Close unknown fds which have been created elsewhere (e.g. in
+	   the Java environment) */
+	max_fds = sysconf(_SC_OPEN_MAX);
+	for (fd = num_fds; fd < max_fds; fd++)
+	  if (fd != control_pipe[1]) {
+#ifdef HAVE_BROKEN_F_SETFD
+	    /* In this case set_close_on_exec is not fork1(2) safe. */
+	    close(fd);
+#else /* !HAVE_BROKEN_F_SETFD */
+	    /* Delay close to actual exec */
+	    set_close_on_exec(fd, 1);
+#endif /* HAVE_BROKEN_F_SETFD */
+	  }
+#endif
+	
 	/* FIXME: Map the fds as not close on exec? */
       }
 
