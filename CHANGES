@@ -175,7 +175,17 @@ o The Local module
     inspect when resolving Local.* symbols.
 
 o enum reserved
-   
+    An enum construct similar to that in C has been introduced.
+    For example:
+
+	enum AlphaMode
+	{
+	  Squares,
+	  Solid,
+	  None,
+	  AlphaOnly,
+	};
+
 o enum and typedef have implicit local binding
 
 o ::_indices(), ::_values().
