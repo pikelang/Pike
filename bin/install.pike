@@ -2,7 +2,7 @@
 
 // Pike installer and exporter.
 //
-// $Id: install.pike,v 1.147 2004/11/08 16:00:09 grubba Exp $
+// $Id: install.pike,v 1.148 2004/11/08 16:00:30 grubba Exp $
 
 #define USE_GTK
 
@@ -14,7 +14,7 @@
 // #define GENERATE_WIX_ACTIONS
 // #define WIX_DEBUG
 
-constant pike_upgrade_guid = "FCBB6B90-1608-4A7C-926C-69BBAB366326";
+constant pike_upgrade_guid = "fcbb6b90-1608-4a7c-926c-69bbab366326";
 
 constant line_feed = Standards.XML.Wix.line_feed;
 
