@@ -15,6 +15,7 @@
 
 #define BEGIN_HASH_SIZE 997
 #define MAX_AVG_LINK_LENGTH 3
+#define HASH_PREFIX 20
 
 unsigned INT32 htable_size=0;
 static unsigned int hashprimes_entry=0;
@@ -25,7 +26,7 @@ unsigned INT32 num_strings=0;
 /*** Main string hash function ***/
 static unsigned int StrHash(const char *s,int len)
 {
-  full_hash_value=hashmem((unsigned char *)s, len, 20);
+  full_hash_value=hashmem((unsigned char *)s, len, HASH_PREFIX);
   return full_hash_value % htable_size;
 }
 
@@ -481,6 +482,42 @@ struct pike_string *realloc_shared_string(struct pike_string *a, INT32 size)
     MEMCPY(r->str, a->str, a->len);
     free_string(a);
     return r;
+  }
+}
+
+/* Modify one index in a shared string
+ * Not suitable for building new strings or changing multiple characters
+ * within a string!
+ */
+struct pike_string *modify_shared_string(struct pike_string *a,
+					 INT32 index,
+					 char c)
+{
+#ifdef DEBUG
+  if(index<0 || index>=a->len)
+    fatal("Index out of range in modify_shared_string()\n");
+#endif
+
+  if(a->str[index]==c) return a;
+
+  if(a->refs==1)
+  {
+    if(index>=HASH_PREFIX && index<a->len-8)
+    {
+      a->str[index]=c;
+      return a;
+    }else{
+      unlink_pike_string(a);
+      a->str[index]=c;
+      return end_shared_string(a);
+    }
+  }else{
+    struct pike_string *r;
+    r=begin_shared_string(a->len);
+    MEMCPY(r->str, a->str, a->len);
+    a->str[index]=c;
+    free_string(a);
+    return end_shared_string(r);
   }
 }
 

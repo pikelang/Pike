@@ -162,7 +162,7 @@
 /* This is the grammar definition of Pike. */
 
 #include "global.h"
-RCSID("$Id: language.yacc,v 1.51 1998/01/13 22:56:43 hubbe Exp $");
+RCSID("$Id: language.yacc,v 1.52 1998/01/19 18:38:45 hubbe Exp $");
 #ifdef HAVE_MEMORY_H
 #include <memory.h>
 #endif
@@ -1272,11 +1272,17 @@ low_idents: F_IDENTIFIER
 	
 	     if(throw_value.type == T_STRING)
 	     {
-	       my_yyerror("%s",throw_value.u.string->str);
+	       if(compiler_pass==2)
+		 my_yyerror("%s",throw_value.u.string->str);
+	       else
+		 $$=mknode(F_UNDEFINED,0,0);
 	     }
 	     else if(IS_ZERO(sp-1) && sp[-1].subtype==1)
 	     {
-	       my_yyerror("'%s' undefined.", $1->str);
+	       if(compiler_pass==2)
+		 my_yyerror("'%s' undefined.", $1->str);
+	       else
+		 $$=mknode(F_UNDEFINED,0,0);
 	     }else{
 	       $$=mkconstantsvaluenode(sp-1);
 	     }
