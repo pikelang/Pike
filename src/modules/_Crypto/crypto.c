@@ -1,5 +1,5 @@
 /*
- * $Id: crypto.c,v 1.22 1997/11/16 22:25:41 nisse Exp $
+ * $Id: crypto.c,v 1.23 1997/12/22 23:28:30 hubbe Exp $
  *
  * A pike module for getting access to some common cryptos.
  *
@@ -24,7 +24,9 @@
 /* System includes */
 #include <sys/types.h>
 #include <sys/stat.h>
+#ifdef HAVE_SYS_MMAN_H
 #include <sys/mman.h>
+#endif
 #include <sys/stat.h>
 #include <unistd.h>
 #include <fcntl.h>
