@@ -1,4 +1,4 @@
-dnl $Id: configure.in,v 1.9 1998/11/09 15:35:38 grubba Exp $
+dnl $Id: configure.in,v 1.10 2000/10/27 17:36:15 grubba Exp $
 dnl (C) 1997 Francesco Chemolli <kinkie@kame.usr.dsi.unimi.it>
 
 AC_INIT(postgres.c)
@@ -132,7 +132,7 @@ dnl okay, now let's start working on the libraries
 
 dnl last check, just to be sure
 		if test x$pike_cv_pgres_lib_dir != xno; then
-			LDFLAGS="$LDFLAGS -L$pike_cv_pgres_lib_dir"
+			LDFLAGS="$LDFLAGS -L$pike_cv_pgres_lib_dir -R$pike_cv_pgres_lib_dir"
 		fi
 		AC_CHECK_LIB(crypt, crypt)
 		AC_CHECK_LIB(pq,PQclear)
