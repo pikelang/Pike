@@ -746,3 +746,35 @@ array common_prefix(array(array) arrs)
 
   return arrs0[0..n-1];
 }
+
+//! Returns 1 if all of the elements in @[a] fulfills the requirement
+//! @[predicate]( @[a][@i{i@}], @@@[extra_args] ), otherwise 0. The
+//! predicate should return non-zero for an element that meets the
+//! requirements and zero for those that do not.
+//! @example
+//!   Array.all( ({ 2, 4, 6, 8 }), `<, 17 )
+//! @seealso
+//!   @[any], @[has_value]
+int(0..1) all( array a, function predicate, mixed ... extra_args )
+{
+  foreach( a, mixed elem )
+    if( !predicate( elem, @extra_args ) )
+      return 0;
+  return 1;
+}
+
+//! Returns 1 if any of the elements in @[a] fulfills the requirement
+//! @[predicate]( @[a][@i{i@}], @@@[extra_args] ), otherwise 0. The
+//! predicate should return non-zero for an element that meets the
+//! requirements and zero for those that do not.
+//! @example
+//!   Array.any( ({ 2, 4, 6, 8 }), `>, 5 )
+//! @seealso
+//!   @[all], @[has_value]
+int(0..1) any( array a, function predicate, mixed ... extra_args )
+{
+  foreach( a, mixed elem )
+    if( predicate( elem, @extra_args ) )
+      return 1;
+  return 0;
+}
