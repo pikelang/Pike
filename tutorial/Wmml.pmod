@@ -654,7 +654,8 @@ SGML low_make_concrete_wmml(SGML data)
 
 	case "add_appendix":
 	  tag->tag="appendix";
-	  add_appendices+=fix_section(tag,appendixE);
+//	  add_appendices+=fix_section(tag,appendixE);
+	  add_appendices+=({tag});
 	  continue;
 
         case "insert_added_appendices":
