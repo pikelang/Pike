@@ -4,7 +4,7 @@
 // Incremental Pike Evaluator
 //
 
-constant cvs_version = ("$Id: Hilfe.pmod,v 1.91 2002/11/25 05:51:37 nilsson Exp $");
+constant cvs_version = ("$Id: Hilfe.pmod,v 1.92 2002/11/28 15:42:39 nilsson Exp $");
 constant hilfe_todo = #"List of known Hilfe bugs/room for improvements:
 
 - Hilfe can not handle sscanf statements like
@@ -1890,7 +1890,7 @@ class Evaluator {
     }
 
     object o;
-    if(hilfe_error( catch(o=clone(p)) ))
+    if(hilfe_error( catch(o=p()) ))
       return o;
 
     return 0;
