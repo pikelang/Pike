@@ -1,5 +1,5 @@
 ;;; pike.el -- Font lock definitions for Pike and other LPC files.
-;;; $Id: pike.el,v 1.12 2000/11/17 04:31:19 mast Exp $
+;;; $Id: pike.el,v 1.13 2000/11/17 05:04:58 mast Exp $
 ;;; Copyright (C) 1995, 1996, 1997, 1998, 1999 Per Hedbor.
 ;;; This file is distributed as GPL
 
@@ -29,6 +29,7 @@
 (defvar pike-font-lock-refdoc-init-face 'pike-font-lock-refdoc-init-face)
 (defvar pike-font-lock-refdoc-init2-face 'pike-font-lock-refdoc-init2-face)
 (defvar pike-font-lock-refdoc-keyword-face 'pike-font-lock-refdoc-keyword-face)
+(defvar pike-font-lock-refdoc-error-face 'pike-font-lock-refdoc-error-face)
 
 (defconst pike-font-lock-keywords-1 nil
  "For consideration as a value of `pike-font-lock-keywords'.
@@ -48,40 +49,31 @@ Highlight some constructs differently")
   :group 'faces)
 
 (defface pike-font-lock-refdoc-face
-  '((t (:foreground "black" :background "black")))
-  "Face to use for normal text in Pike documentation comments."
+  '((t))
+  "Face to use for normal text in Pike documentation comments. It's
+overlaid over the `font-lock-comment-face'."
   :group 'pike-faces)
 (defface pike-font-lock-refdoc-init-face
-  '((t (:foreground "black" :background "black")))
-  "Face to use for the magic init char of Pike documentation comments."
+  '((t (:bold t)))
+  "Face to use for the magic init char of Pike documentation comments. It's
+overlaid over the `font-lock-comment-face'."
   :group 'pike-faces)
 (defface pike-font-lock-refdoc-init2-face
-  '((t (:foreground "black" :background "black")))
-  "Face to use for the comment starters Pike documentation comments."
+  '((t))
+  "Face to use for the comment starters Pike documentation comments. It's
+overlaid over the `font-lock-comment-face'."
   :group 'pike-faces)
 (defface pike-font-lock-refdoc-keyword-face
-  '((t (:foreground "black" :background "black")))
-  "Face to use for markup keywords Pike documentation comments."
+  '((t))
+  "Face to use for markup keywords Pike documentation comments. It's
+overlaid over the `font-lock-reference-face'."
   :group 'pike-faces)
-
-(defadvice font-lock-set-defaults (after pike-font-lock-set-defaults nil
-					 activate preactivate)
-  (mapcar (lambda (facedef)
-	    (if (and (equal (face-foreground (car facedef)) "black")
-		     (equal (face-background (car facedef)) "black"))
-		(eval (car (cdr facedef)))))
-	  '((pike-font-lock-refdoc-face
-	     (copy-face 'font-lock-comment-face 'pike-font-lock-refdoc-face))
-	    (pike-font-lock-refdoc-init-face
-	     (progn
-	       (copy-face 'font-lock-comment-face 'pike-font-lock-refdoc-init-face)
-	       (make-face-unitalic 'pike-font-lock-refdoc-init-face)
-	       (make-face-bold 'pike-font-lock-refdoc-init-face)))
-	    (pike-font-lock-refdoc-init2-face
-	     (copy-face 'font-lock-comment-face 'pike-font-lock-refdoc-init2-face))
-	    (pike-font-lock-refdoc-keyword-face
-	     (copy-face 'font-lock-reference-face 'pike-font-lock-refdoc-keyword-face))
-	    )))
+(defface pike-font-lock-refdoc-error-face
+  '((((class color)) (:foreground "black" :background "hotpink"))
+    (((background light)) (:foreground "white" :background "black"))
+    (t (:foreground "black" :background "white")))
+  "Face to use for invalid markup in Pike documentation comments."
+  :group 'pike-faces)
 
 (defconst pike-font-lock-type-regexp
   (concat "\\<\\("
@@ -309,24 +301,22 @@ The name is assumed to begin with a capital letter.")
 	  '("\\<private\\>"   0 font-lock-preprocessor-face)
 	  '("\\<nomask\\>"    0 font-lock-preprocessor-face)
 
-	  '("^.*\\(//\\)\\([.!|]\\)\\([^@\n\r]*\\)"
-	    (1 pike-font-lock-refdoc-init2-face t)
-	    (2 pike-font-lock-refdoc-init-face t)
-	    (3 pike-font-lock-refdoc-face t)
+	  '("^.*\\(//\\)\\([.!|]\\)\\([^\n\r]*\\)"
+	    (1 pike-font-lock-refdoc-init2-face prepend)
+	    (2 pike-font-lock-refdoc-init-face prepend)
+	    (3 pike-font-lock-refdoc-face prepend)
 	    ((lambda (limit)
-	       (if (looking-at "\\(@decl\\)\\([^\n\r]*\\)")
+	       (if (looking-at "[ \t]*@decl")
 		   (progn
-		     (put-text-property (match-beginning 2)
-					(match-end 2)
-					'face nil)
-		     (goto-char (match-end 0))
+		     (put-text-property (match-end 0) limit 'face nil)
+		     (goto-char limit)
 		     t)))
-	     nil nil
-	     (1 pike-font-lock-refdoc-keyword-face t))
-	    ("\\(@\\(\\w+{?\\|[^[]\\|\\[[^]]*\\]\\)\\)\\([^@\n\r]*\\)"
-	     nil nil
-	     (1 pike-font-lock-refdoc-keyword-face t)
-	     (3 pike-font-lock-refdoc-face t))
+	     (goto-char (match-end 2)) nil)
+	    ("\\(@\\(\\w+{?\\|\\[[^\]]*\\]\\|[@}]\\|$\\)\\)\\|\\(@.\\)"
+	     (goto-char (match-end 2)) nil
+	     (1 font-lock-reference-face t t)
+	     (1 pike-font-lock-refdoc-keyword-face prepend t)
+	     (3 pike-font-lock-refdoc-error-face t t))
 	    )
 	  )
 	 pike-font-lock-keywords-2
