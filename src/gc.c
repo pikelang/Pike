@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: gc.c,v 1.249 2004/04/03 17:34:34 mast Exp $
+|| $Id: gc.c,v 1.250 2004/04/04 21:54:04 mast Exp $
 */
 
 #include "global.h"
@@ -33,7 +33,7 @@ struct callback *gc_evaluator_callback=0;
 
 #include "block_alloc.h"
 
-RCSID("$Id: gc.c,v 1.249 2004/04/03 17:34:34 mast Exp $");
+RCSID("$Id: gc.c,v 1.250 2004/04/04 21:54:04 mast Exp $");
 
 int gc_enabled = 1;
 
@@ -1470,7 +1470,8 @@ static INLINE struct marker *gc_check_debug(void *a, int weak)
     gc_fatal(a, 1, "Refs changed in gc check pass.\n");
   if (m->refs + m->xrefs >= *(INT32 *) a)
     /* m->refs will be incremented by the caller. */
-    gc_fatal(a, 1, "Thing is getting more internal refs than refs.\n");
+    gc_fatal(a, 1, "Thing is getting more internal refs than refs "
+	     "(a pointer has probably been checked more than once).\n");
   checked++;
 
   return m;
@@ -1605,6 +1606,7 @@ static void mark_externals (void)
 void locate_references(void *a)
 {
   int tmp, orig_in_gc = Pike_in_gc;
+  const char *orig_gc_found_place = gc_found_place;
   int i=0;
   if(!marker_blocks)
   {
@@ -1612,6 +1614,7 @@ void locate_references(void *a)
     init_gc();
   }
   Pike_in_gc = GC_PASS_LOCATE;
+  gc_found_place = NULL;
 
   /* Disable debug, this may help reduce recursion bugs */
   tmp=d_flag;
@@ -1647,6 +1650,7 @@ void locate_references(void *a)
 	  "found %"PRINTSIZET"d refs.\n", a, found_ref_count);
 
   Pike_in_gc = orig_in_gc;
+  gc_found_place = orig_gc_found_place;
   if(i) exit_gc();
   d_flag=tmp;
 }
