@@ -67,7 +67,8 @@ static class _ymd_base
 
    int month_number_from_name(string name)
    {
-      int j=(month_s2n[flat(name)]);
+      int j=(month_s2n[name])
+	 || (month_s2n[flat(name)]);
       if (!j) error("no such month of year: %O\n",name);
       return j;
    }
@@ -84,7 +85,8 @@ static class _ymd_base
 
    int week_day_number_from_name(string name)
    {
-      int j=(week_day_s2n[flat(name)]);
+      int j=(week_day_s2n[name])
+	 || (week_day_s2n[flat(name)]);
       if (!j) error("no such day of week: %O\n",name);
       return j;
    }

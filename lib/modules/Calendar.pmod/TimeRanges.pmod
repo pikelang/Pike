@@ -1,14 +1,12 @@
 //! module Calendar
 
-// $Id: TimeRanges.pmod,v 1.12 2000/10/18 11:01:18 mirar Exp $
+// $Id: TimeRanges.pmod,v 1.13 2001/01/10 23:44:13 mirar Exp $
 
 #pike __REAL_VERSION__
 
 #define zero int(0..0)
 
 import ".";
-
-constant CALUNKNOWN=-1000; // not calculated yet
 
 program SuperTimeRange=cSuperTimeRange;
 

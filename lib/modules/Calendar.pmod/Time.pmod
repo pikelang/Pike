@@ -19,7 +19,7 @@
 import ".";
 inherit TimeRanges:TimeRanges;
 
-constant inano=1000000000;
+#include "constants.h"
 
 // from inherited module
 

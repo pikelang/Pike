@@ -15,6 +15,8 @@
 import ".";
 inherit Gregorian:Gregorian;
 
+#include "constants.h"
+
 string calendar_name() { return "ISO"; }
 
 private static mixed __initstuff=lambda()
