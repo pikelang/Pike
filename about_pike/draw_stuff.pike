@@ -1,76 +1,70 @@
-#!/usr/local/bin/pike-mirar 
+#!/usr/local/bin/pike
 
-//Information about Pike is found at
-// http://pike.indonex.se 
+// Information about Pike is found at: http://pike.indonex.se 
 
-//This program is made by hedda@idenex.se to demonstrate the Image-package
-//in Pike.
+// This program is made by hedda@idenex.se to demonstrate the Image-package
+// in Pike.
 
-//Some understanding of Pike or C is assumed to understand this program.
+// Program cleaned up and made readable by Fredrik Hubinette
 
-import Image;
+// Some understanding of Pike or C is assumed to understand this program.
 
 int main()
 {
-  object(Stdio.File) filefoo;
-  filefoo=Stdio.File();                     //Init the file-object
-  int k=filefoo->open("foo.ppm", "r");      //Open file foo.ppm for reading
-
+  // Create an empy file object for file operations
+  object(Stdio.File) file=Stdio.File();
 
   //Check if foo.ppm exists
-  if (k==0)
-    {
-      write("\nThe picture foo.ppm isn't here! Why?\n");
-      return 0;
-    }
+  if(!file->open("foo.ppm", "r"))
+  {
+    // If there was an error while opening the file:
+    write("\nThe picture foo.ppm isn't here! Why?\n");
+    return 0;
+  }
 
-  object(image) imagefoo; 
-  imagefoo=Image.PNM.decode(filefoo->read()); //Read foo.ppm and place in
-                                              //the imagefoo-object 
+  //Read foo.ppm and place in an image-object 
+  object(Image.image) image=Image.PNM.decode(file->read());
 
-  filefoo->close(); // Close the file foo.ppm
-
+  file->close(); // Close the file foo.ppm
   
-  object(image) imagebar=image(52, 65); //Make another image: imagebar.
-                                        //This image has width=80 & high=40
-                                        //The image will be black
+  // Make another image called image2, this image has width=80 & high=40
+  // The image will be black
+  object(Image.image) image2=Image.image(52, 65);
 
-  imagebar->setcolor(160, 240, 192); //The Pike-color! 
+  // Set the current color to the Pike-green :)
   //The color is coded (red, green, blue)
   // 0 means nothing of that color and 255 is maximum 
+  image2->setcolor(160, 240, 192);
 
-  //This draws a polygone. It's of cource anti-aliased!
-  imagebar->polygone(
-		     ({
-		       4.1, 50, //First x,y corner
-		       7,33, //second x,y corner
-		       51, 2, //..
-		       45, 28, //The corners can be floats
-		       53, 50,
-		       9,64 
-		     }));  
+  // This draws a polygone. It's of cource anti-aliased!
+  image2->polygone(
+    ({
+      4.1, 50,   // First x,y corner
+        7, 33,   // second x,y corner
+       51,  2,   // third...
+       45, 28,  
+       53, 50,   // The corners can also be floats..
+        9, 64 
+    })
+  );  
 
-  //Now we paste the imagebar image onto the imagefoo image
-  // "imagebar->threshold(1,1,1)*128" creates the alpha-mask image and
-  // is created to be grey where the image imagebar isn't black.
-  imagefoo->paste_mask(imagebar, imagebar->threshold(1,1,1)*128, 35, 16);
+  // Now we paste the image2 image onto the first image
+  // "image2->threshold(1,1,1)*128" creates the alpha-mask image and
+  // is created to be grey where the image image2 isn't black.
+  image->paste_mask(image2, image2->threshold(1,1,1)*128, 35, 16);
 
-  object(Stdio.File) filebar;
-  filebar=Stdio.File();
-  k=filebar->open("bar.gif", "wcx"); //Open bar.gif for writing. Fail if
-                                     //it exists.
-
-  if (k==0)
-    {
-      write("\nSome error while trying to write to the file bar.gif!\n"
-	    "Maybe the file already exists.\n");
-      return 0;
-    }
+  // Open bar.gif for writing.
+  if(!file->open("bar.gif", "wcx"))
+  {
+    // Fail if the file already exists.
+    write("\nSome error while trying to write to the file bar.gif!\n"
+	  "Maybe the file already exists.\n");
+    return 0;
+  }
   
-  filebar->write(imagefoo->togif()); // Save the image as a gif to the file
-                                     // bar.gif
-
-  filebar->close();  //Close the file bar.gif
+  // Save the image as a gif to the file (bar.gif)
+  file->write(image->togif());
+  file->close();  // Close the file bar.gif
 
   write("\nI have greated the image foo.gif with help of bar.ppm.\n"
 	"This achieved by drawing a polygon and pasting"
