@@ -1,5 +1,5 @@
 #include "global.h"
-RCSID("$Id: threads.c,v 1.38 1997/09/08 21:32:37 hubbe Exp $");
+RCSID("$Id: threads.c,v 1.39 1997/09/15 12:43:23 grubba Exp $");
 
 int num_threads = 1;
 int threads_disabled = 0;
@@ -293,6 +293,7 @@ void exit_mutex_key_obj(struct object *o)
   if(THIS_KEY->mut)
   {
     struct mutex_storage *mut = THIS_KEY->mut;
+
 #ifdef DEBUG
     if(mut->key != o)
       fatal("Mutex unlock from wrong key %p != %p!\n",THIS_KEY->mut->key,o);
@@ -302,9 +303,11 @@ void exit_mutex_key_obj(struct object *o)
       free_object(THIS_KEY->owner);
       THIS_KEY->owner=0;
     }
-    co_signal(& mut->condition);
     THIS_KEY->mut=0;
     THIS_KEY->initialized=0;
+    THREADS_ALLOW();
+    co_signal(& mut->condition);
+    THREADS_DISALLOW();
   }
 }
 
