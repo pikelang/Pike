@@ -24,7 +24,7 @@
 #include "stuff.h"
 #include "bignum.h"
 
-RCSID("$Id: array.c,v 1.104 2001/09/28 23:18:51 hubbe Exp $");
+RCSID("$Id: array.c,v 1.105 2001/10/15 09:34:59 mast Exp $");
 
 PMOD_EXPORT struct array empty_array=
 {
@@ -2083,24 +2083,23 @@ void real_gc_cycle_check_array(struct array *a, int weak)
 
     if (a->type_field & BIT_COMPLEX)
     {
-      if (a->flags & ARRAY_WEAK_FLAG) {
-	if (gc_cycle_check_weak_svalues(ITEM(a), a->size)) {
+      TYPE_FIELD t = a->flags & ARRAY_WEAK_FLAG ?
+	gc_cycle_check_weak_svalues(ITEM(a), a->size) :
+	gc_cycle_check_svalues(ITEM(a), a->size);
+      if (t) {
+	/* In the weak case we should only get here if references to
+	 * destructed objects are removed. */
+	if(!(a->type_field & BIT_UNFINISHED) || a->refs!=1)
+	  a->type_field = t;
+	else
+	  a->type_field |= t;
+      }
 #ifdef PIKE_DEBUG
-	  fatal("Didn't expect an svalue zapping now.\n");
-#endif
-	}
+      if (a->flags & ARRAY_WEAK_FLAG)
 	gc_assert_checked_as_weak(a);
-      }
-      else {
-	TYPE_FIELD t;
-	if ((t = gc_cycle_check_svalues(ITEM(a), a->size))) {
-	  if(!(a->type_field & BIT_UNFINISHED) || a->refs!=1)
-	    a->type_field = t;
-	  else
-	    a->type_field |= t;
-	}
+      else
 	gc_assert_checked_as_nonweak(a);
-      }
+#endif
     }
   } GC_CYCLE_LEAVE;
 }
