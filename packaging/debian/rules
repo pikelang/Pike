@@ -6,7 +6,7 @@
 # architecture-dependant package, as well as an architecture-independent
 # package.
 #
-# $Id: rules,v 1.42 2003/02/03 18:04:25 grendel Exp $
+# $Id: rules,v 1.43 2003/02/04 23:29:50 grendel Exp $
 #
 
 # Uncomment this to turn on verbose mode. 
@@ -31,11 +31,13 @@ ifeq ($(DEB_BUILD_ARCH),powerpc)
 DO_MACHINE_CODE=yes
 endif
 ifeq ($(DEB_BUILD_ARCH),sparc)
-DO_MACHINE_CODE=yes
+DO_MACHINE_CODE=no
 endif
 
 ifeq ($(DO_MACHINE_CODE),yes)
 MACHINE_OPTS=--with-machine-code
+else
+MACHINE_OPTS=--without-machine-code
 endif
 
 VERSION=$(shell dpkg-parsechangelog | grep ^Version | sed -e 's/Version: //;s/-[0-9]*$$//')
