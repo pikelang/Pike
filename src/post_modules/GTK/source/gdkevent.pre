@@ -70,10 +70,10 @@ mixed _index(string ind)
      if( index == s_x_root )   RETURN_FLOAT( e->motion.x_root );
      if( index == s_y_root )   RETURN_FLOAT( e->motion.y_root );
      if( index == s_state )    RETURN_INT( e->motion.state );
-     if( index == s_xtilt )    RETURN_FLOAT( e->motion.xtilt );
-     if( index == s_ytilt )    RETURN_FLOAT( e->motion.ytilt );
-     if( index == s_pressure ) RETURN_FLOAT( e->motion.pressure );
-     if( index == s_deviceid ) RETURN_INT( e->motion.deviceid );
+/*      if( index == s_xtilt )    RETURN_FLOAT( e->motion.xtilt ); */
+/*      if( index == s_ytilt )    RETURN_FLOAT( e->motion.ytilt ); */
+/*      if( index == s_pressure ) RETURN_FLOAT( e->motion.pressure ); */
+/*      if( index == s_deviceid ) RETURN_INT( e->motion.deviceid ); */
      break;
 
    case GDK_BUTTON_PRESS:
@@ -86,12 +86,12 @@ mixed _index(string ind)
      if( index == s_type ) RETURN_TEXT( 3button_press );
      if( index == s_x ) RETURN_FLOAT(e->button.x);
      if( index == s_y ) RETURN_FLOAT(e->button.y);
-     if( index == s_pressure ) RETURN_FLOAT(e->button.pressure);
-     if( index == s_xtilt ) RETURN_FLOAT(e->button.xtilt);
-     if( index == s_ytilt ) RETURN_FLOAT(e->button.ytilt);
+/*      if( index == s_pressure ) RETURN_FLOAT(e->button.pressure); */
+/*      if( index == s_xtilt ) RETURN_FLOAT(e->button.xtilt); */
+/*      if( index == s_ytilt ) RETURN_FLOAT(e->button.ytilt); */
+/*      if( index == s_deviceid ) RETURN_INT(e->button.deviceid); */
      if( index == s_state ) RETURN_INT(e->button.state);
      if( index == s_button ) RETURN_INT(e->button.button);
-     if( index == s_deviceid ) RETURN_INT(e->button.deviceid);
      if( index == s_x_root ) RETURN_FLOAT(e->button.x_root);
      if( index == s_y_root ) RETURN_FLOAT(e->button.y_root);
      break;
@@ -158,12 +158,12 @@ mixed _index(string ind)
 
    case GDK_PROXIMITY_IN:
      if( index == s_type ) RETURN_TEXT(proximity_in);
-     if( index == s_deviceid ) RETURN_INT( e->proximity.deviceid );
+/*      if( index == s_deviceid ) RETURN_INT( e->proximity.deviceid ); */
      break;
 
    case GDK_PROXIMITY_OUT:
      if( index == s_type ) RETURN_TEXT(proximity_out);
-     if( index == s_deviceid ) RETURN_INT( e->proximity.deviceid );
+/*      if( index == s_deviceid ) RETURN_INT( e->proximity.deviceid ); */
      break;
 
    case GDK_CLIENT_EVENT:
@@ -271,11 +271,11 @@ mixed cast(string to)
      ref_push_string(s_type);    ref_push_string(s_motion);
      ref_push_string(s_x);       push_float(e->motion.x);
      ref_push_string(s_y);       push_float(e->motion.y);
-     ref_push_string(s_pressure);push_float(e->motion.pressure);
-     ref_push_string(s_xtilt);   push_float(e->motion.xtilt);
-     ref_push_string(s_ytilt);   push_float(e->motion.ytilt);
+/*      ref_push_string(s_pressure);push_float(e->motion.pressure); */
+/*      ref_push_string(s_xtilt);   push_float(e->motion.xtilt); */
+/*      ref_push_string(s_ytilt);   push_float(e->motion.ytilt); */
+/*      ref_push_string(s_deviceid);push_int(e->motion.deviceid); */
      ref_push_string(s_state);   push_int(e->motion.state);
-     ref_push_string(s_deviceid);push_int(e->motion.deviceid);
      ref_push_string(s_is_hint); push_int(e->motion.is_hint);
      ref_push_string(s_x_root);  push_float(e->motion.x_root);
      ref_push_string(s_y_root);  push_float(e->motion.y_root);
@@ -297,12 +297,12 @@ mixed cast(string to)
      ref_push_string(s_time);    push_int(e->button.time);
      ref_push_string(s_x);       push_float(e->button.x);
      ref_push_string(s_y);       push_float(e->button.y);
-     ref_push_string(s_pressure);push_float(e->button.pressure);
-     ref_push_string(s_xtilt);   push_float(e->button.xtilt);
-     ref_push_string(s_ytilt);   push_float(e->button.ytilt);
+/*      ref_push_string(s_pressure);push_float(e->button.pressure); */
+/*      ref_push_string(s_xtilt);   push_float(e->button.xtilt); */
+/*      ref_push_string(s_ytilt);   push_float(e->button.ytilt); */
+/*      ref_push_string(s_deviceid);push_int(e->button.deviceid); */
      ref_push_string(s_state);   push_int(e->button.state);
      ref_push_string(s_button);  push_int(e->button.button);
-     ref_push_string(s_deviceid);push_int(e->button.deviceid);
      ref_push_string(s_x_root);  push_float(e->button.x_root);
      ref_push_string(s_y_root);  push_float(e->button.y_root);
      break;
@@ -388,11 +388,11 @@ mixed cast(string to)
 
    case GDK_PROXIMITY_IN:
      ref_push_string(s_type);   ref_push_string(s_proximity_in);
-     ref_push_string(s_deviceid ); push_int( e->proximity.deviceid );
+/*      ref_push_string(s_deviceid ); push_int( e->proximity.deviceid ); */
      break;
    case GDK_PROXIMITY_OUT:
      ref_push_string(s_type);   ref_push_string(s_proximity_out);
-     ref_push_string(s_deviceid ); push_int( e->proximity.deviceid );
+/*      ref_push_string(s_deviceid ); push_int( e->proximity.deviceid ); */
      break;
 
    case GDK_CLIENT_EVENT:
