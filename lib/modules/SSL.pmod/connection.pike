@@ -1,6 +1,6 @@
 #pike __REAL_VERSION__
 
-/* $Id: connection.pike,v 1.22 2002/03/20 16:40:00 nilsson Exp $
+/* $Id: connection.pike,v 1.23 2002/12/06 20:31:06 grubba Exp $
  *
  * SSL packet layer
  */
@@ -25,24 +25,21 @@ function(object,int|object,string:void) alert_callback;
 inherit "constants";
 inherit "handshake";
 
-constant Queue = ADT.Queue;
-constant State = SSL.state;
-
 constant PRI_alert = 1;
 constant PRI_urgent = 2;
 constant PRI_application = 3;
 
-inherit Queue : alert;
-inherit Queue : urgent;
-inherit Queue : application;
+inherit ADT.Queue : alert;
+inherit ADT.Queue : urgent;
+inherit ADT.Queue : application;
 
 void create(int is_server)
 {
   alert::create();
   urgent::create();
   application::create();
-  current_read_state = State(this_object());
-  current_write_state = State(this_object());
+  current_read_state = SSL.state(this_object());
+  current_write_state = SSL.state(this_object());
   handshake::create(is_server);
 }
 
