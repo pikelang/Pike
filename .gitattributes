@@ -36,6 +36,7 @@ testfont binary
 /bin/mkpeep.pike foreign_ident
 /bin/mktreeopt.pike foreign_ident
 /bin/parse_install_log foreign_ident
+/bin/pike_etags.sh foreign_ident
 /bin/test_pike.pike foreign_ident
 /bin/unbug foreign_ident
 /bin/xenofarm.sh foreign_ident
