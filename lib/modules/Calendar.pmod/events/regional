@@ -1,6 +1,6 @@
 ### Calendar module
 ### Event definition file
-### $Id: regional,v 1.10 2000/11/28 09:50:19 mirar Exp $
+### $Id: regional,v 1.11 2001/05/09 13:15:25 hop Exp $
 
 ### =====================================================================
 ###
@@ -1168,8 +1168,11 @@ Region "cz"
   Add   "new year"                        - # "New Year's Day"               Fixed Jan  1
   Add   "c/easter monday"                 - # "Easter Monday"                Easter +1
   Add   "labor"                           - # "Labor Day"                    Fixed May  1
+  Event "cz/liberation"                   -   "Liberation Day"               Fixed May  8
   Event "cz/introduction of christianity" -   "Introduction of Christianity" Fixed Jul  5
   Event "cz/death of jan hus"             -   "Death of Jan Hus"             Fixed Jul  6
+  Event "cz/constitution"                 -   "Constitution Day"             Fixed Sep 28
+  Event "cz/independence day"             -   "Struggle for Independence Day" Fixed Nov 17
   Add   "c/christmas eve"                 - # "Christmas Eve"                Fixed Dec 24
   Add   "c/christmas"                     - # "Christmas Day"                Fixed Dec 25
   Add   "saints/stephen"                  - # "St. Stephen"                  Fixed Dec 26
