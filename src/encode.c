@@ -25,7 +25,7 @@
 #include "version.h"
 #include "bignum.h"
 
-RCSID("$Id: encode.c,v 1.81 2001/04/19 13:39:54 grubba Exp $");
+RCSID("$Id: encode.c,v 1.82 2001/06/29 02:13:32 mast Exp $");
 
 /* #define ENCODE_DEBUG */
 
@@ -611,6 +611,7 @@ static void encode_value2(struct svalue *val, struct encode_data *data)
 	    return;
 	  }
 	}
+	Pike_error("Failed to encode function.\n");
       }
 
       code_entry(type_to_tag(val->type), 0,data);
