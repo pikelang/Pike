@@ -43,7 +43,16 @@ import Getopt;
 /* do nothing */
   
   function write;
-  
+
+  object compile_handler = class
+    {
+      void compile_error(string file,int line,string err)
+      {
+	write(sprintf("%s:%s:%s\n",master()->trim_file_name(file),
+		      line?(string)line:"-",err));
+      }
+    }();
+
   object eval(string f)
   {
     string prog,file;
@@ -73,7 +82,7 @@ import Getopt;
     mixed oldwrite=all_constants()->write;
     add_constant("write",write);
     add_constant("___hilfe",constants);
-    err=catch(p=compile_string(prog));
+    err=catch(p=compile_string(prog, "-", compile_handler));
     add_constant("___hilfe");
     add_constant("write",oldwrite);
 
@@ -140,6 +149,17 @@ import Getopt;
       {
 	case '"':
 	  for(e++;s[e]!='"';e++)
+	  {
+	    switch(s[e])
+	    {
+	      case 0: return 0;
+	      case '\\': e++; break;
+	    }
+	  }
+	  break;
+
+	case '\'':
+	  for(e++;s[e]!='\'';e++)
 	  {
 	    switch(s[e])
 	    {
@@ -339,7 +359,8 @@ import Getopt;
 	  break;
 	  
 	case '=':
-	  if(in_string || in_comment  || parenthese_level || eq_pos!=-1) break;
+	  if(in_char || in_string || in_comment  || parenthese_level ||
+	     eq_pos!=-1) break;
 	  eq_pos=pos;
 	  break;
 	  
@@ -351,14 +372,14 @@ import Getopt;
 	case '{':
 	case '(':
 	case '[':
-	  if(in_string || in_comment) break;
+	  if(in_char || in_string || in_comment) break;
 	  parenthese_level++;
 	  break;
 	  
 	case '}':
 	case ')':
 	case ']':
-	  if(in_string || in_comment) break;
+	  if(in_char || in_string || in_comment) break;
 	  if(--parenthese_level<0)
 	  {
 	    write("Syntax error.\n");
@@ -387,12 +408,12 @@ import Getopt;
 	  break;
 	  
 	case '*':
-	  if(in_string || in_comment) break;
+	  if(in_char || in_string || in_comment) break;
 	  if(input[pos-1]=='/') in_comment=1;
 	  break;
 	  
 	case '/':
-	  if(in_string) break;
+	  if(in_char || in_string) break;
 	  if(input[pos-1]=='*') in_comment=0;
 	  break;
       }
