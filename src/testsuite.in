@@ -1,4 +1,4 @@
-test_true([["$Id: testsuite.in,v 1.519 2002/05/27 12:01:13 jhs Exp $"]]);
+test_true([["$Id: testsuite.in,v 1.520 2002/06/07 02:16:42 mast Exp $"]]);
 
 cond([[all_constants()->_verify_internals]],
 [[
@@ -8738,11 +8738,12 @@ test_program([[
     class B {
       string _sprintf() {return "B";}
       mixed f() {
-	return sprintf ("%O%O%O%O", global::this, A::this, B::this, this);
+	return sprintf ("%O%O%O%O%O",
+			global::this, A::this, B::this, this_program::this, this);
       }
     }
   }
-  int a() {return A()->B()->f() == "gABB";}
+  int a() {return A()->B()->f() == "gABBB";}
 ]])
 
 test_program([[
@@ -8783,12 +8784,13 @@ test_program([[
     class B {
       string _sprintf() {return "B";}
       mixed f() {
-	return sprintf ("%O%O%O%O", global::this, A::this, B::this, this);
+	return sprintf ("%O%O%O%O%O",
+			global::this, A::this, B::this, this_program::this, this);
       }
     }
     constant this = 7;
   }
-  int a() {return A()->B()->f() == "g7B7";}
+  int a() {return A()->B()->f() == "g7BB7";}
 ]])
 
 test_program([[

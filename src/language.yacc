@@ -113,7 +113,7 @@
 /* This is the grammar definition of Pike. */
 
 #include "global.h"
-RCSID("$Id: language.yacc,v 1.285 2002/05/31 22:41:24 nilsson Exp $");
+RCSID("$Id: language.yacc,v 1.286 2002/06/07 02:16:42 mast Exp $");
 #ifdef HAVE_MEMORY_H
 #include <memory.h>
 #endif
@@ -3296,8 +3296,15 @@ inherit_specifier: TOK_IDENTIFIER TOK_COLON_COLON
     if (e == -1) {
       if (TEST_COMPAT (7, 2))
 	my_yyerror("No such inherit %s.", $1->u.sval.u.string->str);
-      else
-	my_yyerror("No inherit or surrounding class %s.", $1->u.sval.u.string->str);
+      else {
+	if ($1->u.sval.u.string == this_program_string) {
+	  inherit_state = Pike_compiler;
+	  inherit_depth = 0;
+	  e = 0;
+	}
+	else
+	  my_yyerror("No inherit or surrounding class %s.", $1->u.sval.u.string->str);
+      }
     }
     free_node($1);
     $$ = e;
