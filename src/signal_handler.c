@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: signal_handler.c,v 1.253 2003/03/16 18:09:30 grubba Exp $
+|| $Id: signal_handler.c,v 1.254 2003/03/18 14:42:09 grubba Exp $
 */
 
 #include "global.h"
@@ -26,7 +26,7 @@
 #include "main.h"
 #include <signal.h>
 
-RCSID("$Id: signal_handler.c,v 1.253 2003/03/16 18:09:30 grubba Exp $");
+RCSID("$Id: signal_handler.c,v 1.254 2003/03/18 14:42:09 grubba Exp $");
 
 #ifdef HAVE_PASSWD_H
 # include <passwd.h>
@@ -1261,12 +1261,24 @@ static TH_RETURN_TYPE wait_thread(void *data)
 
     mt_unlock(&wait_thread_mutex);
 
-    if(pid <= 0) pid=MY_WAIT_ANY(&status, 0|WUNTRACED);
+#ifdef ENODEV
+    do {
+#endif
+      errno = 0;
+      if(pid <= 0) pid=MY_WAIT_ANY(&status, 0|WUNTRACED);
 
 #ifdef PROC_DEBUG
-    fprintf(stderr, "wait thread: pid=%d errno=%d\n",pid,errno);
+      fprintf(stderr, "wait thread: pid=%d status=%d errno=%d\n",
+	      pid, status, errno);
 #endif
     
+#ifdef ENODEV
+      /* FreeBSD threads are broken, and sometimes
+       * signals status 0, errno ENODEV on living processes.
+       */
+    } while (errno == ENODEV);
+#endif
+
     if(pid>0)
     {
 #if defined(HAVE_PTRACE) && defined(SIGPROF)
@@ -1274,6 +1286,9 @@ static TH_RETURN_TYPE wait_thread(void *data)
 	/* FreeBSD sends spurious SIGPROF signals to the child process
 	 * which interferes with the process trace startup code.
 	 */
+#ifdef PROC_DEBUG
+	fprintf(stderr, "wait thread: Got SIGPROF from pid %d\n",pid);
+#endif
 	ptrace(PTRACE_CONT, pid, (void *)(size_t)1, SIGPROF);
 	continue;
       }
