@@ -1,7 +1,7 @@
 /* cipher.cmod -*- c -*- */
 
 #include "global.h"
-RCSID("$Id: cipher.cmod,v 1.18 2003/10/10 15:36:56 nilsson Exp $");
+RCSID("$Id: cipher.cmod,v 1.19 2003/11/08 23:43:57 nisse Exp $");
 #include "interpret.h"
 #include "svalue.h"
 
@@ -45,12 +45,41 @@ werror(const char *format, ...)
 /*! @module Nettle
  */
 
-/* Checks if a key is acceptable. str can be NULL, in which case only
- * the length is checked. */
-typedef int check_key_func(ptrdiff_t len, const char *str);
+/* Calls Pike_error on errors */ 
+typedef void (*pike_nettle_set_key_func)(void *ctx,
+					 ptrdiff_t length, const char *key,
+					 /* Force means to use key even if it is weak */
+					 int force);
 
-/* Checks if a key is weak. str must not be NULL. */
-typedef int weak_key_func(ptrdiff_t len, const char *str);
+struct pike_cipher
+{
+  const char *name;
+  
+  unsigned context_size;
+  
+  /* Zero for stream ciphers */
+  unsigned block_size;
+
+  /* Suggested key size; other sizes are sometimes possible. */
+  unsigned key_size;
+
+  pike_nettle_set_key_func set_encrypt_key;
+  pike_nettle_set_key_func set_decrypt_key;
+
+  nettle_crypt_func encrypt;
+  nettle_crypt_func decrypt;
+};
+
+#define _PIKE_CIPHER(name, NAME) {		\
+  #name,					\
+  sizeof(struct name##_ctx),			\
+  NAME##_BLOCK_SIZE,				\
+  NAME##_KEY_SIZE,				\
+  pike_##name##_set_encrypt_key,		\
+  pike_##name##_set_decrypt_key,		\
+  (nettle_crypt_func) name##_encrypt,		\
+  (nettle_crypt_func) name##_decrypt,		\
+}
 
 /*! @class CipherInfo
  *!
@@ -59,9 +88,7 @@ typedef int weak_key_func(ptrdiff_t len, const char *str);
  */
 PIKECLASS CipherInfo
 {
-  CVAR const struct nettle_cipher *meta;
-  CVAR check_key_func *check_key;
-  CVAR weak_key_func *weak_key;
+  CVAR const struct pike_cipher *meta;
   
   /*! @decl string name(void)
    *!
@@ -88,20 +115,6 @@ PIKECLASS CipherInfo
 
       push_int(THIS->meta->key_size);
     }
-
-  /*! @decl int check_key_size(void)
-   *!
-   *! @returns
-   *!   1 if the given key size is acceptable for the cipher,
-   *!   otherwise 0.
-   */
-  PIKEFUN int check_key_size(int size)
-    {
-      if (!THIS->meta)
-	Pike_error("CipherInfo not properly initialized.\n");
-
-      push_int(THIS->check_key(size, NULL));
-    }
   
   /*! @decl string block_size(void)
    *!
@@ -118,8 +131,6 @@ PIKECLASS CipherInfo
   INIT
     {
       THIS->meta = NULL;
-      THIS->check_key = NULL;
-      THIS->weak_key = NULL;
     }
 }
 /*! @endclass
@@ -155,14 +166,9 @@ PIKECLASS CipherState
 	Pike_error("CipherState not properly initialized.\n");
 
       NO_WIDE_STRING(key);
-      if (!info->check_key(key->len, key->str))
-	Pike_error("Invalid key.\n");
+      info->meta->set_encrypt_key(THIS->ctx, key->len, key->str,
+				  force ? force->u.integer : 0);
 
-      if ( (!force || !force->u.integer) &&
-	   info->weak_key && info->weak_key(key->len, key->str))
-	Pike_error("Key is weak.\n");
-
-      info->meta->set_encrypt_key(THIS->ctx, key->len, key->str);
       THIS->crypt = info->meta->encrypt;
       THIS->key_size = key->len;
 
@@ -182,14 +188,8 @@ PIKECLASS CipherState
 	Pike_error("CipherState not properly initialized.\n");
 
       NO_WIDE_STRING(key);
-      if (!info->check_key(key->len, key->str))
-	Pike_error("Invalid key.\n");
-      
-      if ( (!force || !force->u.integer) &&
-	   info->weak_key && info->weak_key(key->len, key->str))
-	Pike_error("Key is weak.\n");
-
-      info->meta->set_decrypt_key(THIS->ctx, key->len, key->str);
+      info->meta->set_decrypt_key(THIS->ctx, key->len, key->str,
+				  force ? force->u.integer : 0);
       THIS->crypt = info->meta->decrypt;
       THIS->key_size = key->len;
 
@@ -225,7 +225,7 @@ PIKECLASS CipherState
       s = begin_shared_string(data->len);
 
       THIS->crypt(THIS->ctx, data->len, s->str, data->str);
-      push_string(end_shared_string(s));      
+      push_string(end_shared_string(s)); 
     }
 
   /*! @decl string key_size(void)
@@ -258,10 +258,26 @@ PIKECLASS CipherState
 }
 /*! @endclass CipherState */
 
-static int
-AES_check_key(ptrdiff_t len, const char *key)
+static void
+pike_aes_set_encrypt_key(void *ctx,
+			 ptrdiff_t length, const char *key,
+			 int force)
 {
-  return (len == 16 || len == 24 || len == 32);
+  if (length == 16 || length == 24 || length == 32)
+    aes_set_encrypt_key(ctx, length, key);
+  else
+    Pike_error("AES_Info: Bad keysize for AES.\n");
+}
+
+static void
+pike_aes_set_decrypt_key(void *ctx,
+			 ptrdiff_t length, const char *key,
+			 int force)
+{
+  if (length == 16 || length == 24 || length == 32)
+    aes_set_decrypt_key(ctx, length, key);
+  else
+    Pike_error("AES_Info: Bad keysize for AES.\n");
 }
 
 /*! @class AES_Info
@@ -273,13 +289,11 @@ PIKECLASS AES_Info
 {
   INIT
     {
+      static const struct pike_cipher pike_aes = _PIKE_CIPHER(aes, AES);
       struct CipherInfo_struct *CipherInfo = GET_INFO(Pike_fp->current_object);
 
       if (CipherInfo && !CipherInfo->meta)
-      {
-	CipherInfo->meta = &nettle_aes256;
-	CipherInfo->check_key = &AES_check_key;
-      }
+	CipherInfo->meta = &pike_aes;
     }
 }
 
@@ -307,11 +321,21 @@ PIKECLASS AES_State
 }
 /*! @endclass AES_State */
 
-static int
-ARCFOUR_check_key(ptrdiff_t len, const char *key)
+static void
+pike_arcfour_set_key(void *ctx,
+		     ptrdiff_t length, const char *key,
+		     int force)
 {
-  return (len>=ARCFOUR_MIN_KEY_SIZE && len<=ARCFOUR_MAX_KEY_SIZE);
+  if (length < ARCFOUR_MIN_KEY_SIZE || length > ARCFOUR_MAX_KEY_SIZE)
+    Pike_error("ARCFOUR_Info: Bad keysize for ARCFOUR.\n");
+
+  arcfour_set_key(ctx, length, key);
 }
+#define pike_arcfour_set_encrypt_key pike_arcfour_set_key
+#define pike_arcfour_set_decrypt_key pike_arcfour_set_key
+#define arcfour_encrypt arcfour_crypt
+#define arcfour_decrypt arcfour_crypt
+#define ARCFOUR_BLOCK_SIZE 0
 
 /*! @class ARCFOUR_Info
  *!
@@ -322,13 +346,11 @@ PIKECLASS ARCFOUR_Info
 {
   INIT
     {
+      static const struct pike_cipher pike_arcfour = _PIKE_CIPHER(arcfour, ARCFOUR);
       struct CipherInfo_struct *CipherInfo = GET_INFO(Pike_fp->current_object);
 
       if (CipherInfo && !CipherInfo->meta)
-      {
-	CipherInfo->meta = &nettle_arcfour128;
-	CipherInfo->check_key = &ARCFOUR_check_key;
-      }
+	CipherInfo->meta = &pike_arcfour;
     }
 }
 
@@ -356,22 +378,19 @@ PIKECLASS ARCFOUR_State
 }
 /*! @endclass ARCFOUR_State */
 
-
-static int
-BLOWFISH_check_key(ptrdiff_t len, const char *key)
+static void
+pike_blowfish_set_key(void *ctx,
+		      ptrdiff_t length, const char *key,
+		      int force)
 {
-  return (len>=BLOWFISH_MIN_KEY_SIZE && len<=BLOWFISH_MAX_KEY_SIZE);
+  if (length < BLOWFISH_MIN_KEY_SIZE || length > BLOWFISH_MAX_KEY_SIZE)
+    Pike_error("BLOWFISH_Info: Bad keysize for BLOWFISH.\n");
+  if (!blowfish_set_key(ctx, length, key))
+    Pike_error("BLOWFISH_Info: Key is weak (and force flag is currently ignored).\n");
 }
+#define pike_blowfish_set_encrypt_key pike_blowfish_set_key
+#define pike_blowfish_set_decrypt_key pike_blowfish_set_key
 
-static int
-BLOWFISH_weak_key(ptrdiff_t len, const char *key)
-{
-  /* FIXME: Check if key is weak. Assume yes for now. */
-  return 1;
-}
-
-const struct nettle_cipher nettle_blowfish =
-  _NETTLE_CIPHER_FIX(blowfish, BLOWFISH, 448);
 
 /*! @class BLOWFISH_Info
  *!
@@ -382,14 +401,11 @@ PIKECLASS BLOWFISH_Info
 {
   INIT
     {
+      static const struct pike_cipher pike_blowfish = _PIKE_CIPHER(blowfish, BLOWFISH);
       struct CipherInfo_struct *CipherInfo = GET_INFO(Pike_fp->current_object);
 
       if (CipherInfo && !CipherInfo->meta)
-      {
-	CipherInfo->meta = &nettle_blowfish;
-	CipherInfo->check_key = &BLOWFISH_check_key;
-	CipherInfo->weak_key = &BLOWFISH_weak_key;
-      }
+	CipherInfo->meta = &pike_blowfish;
     }
 }
 
@@ -417,11 +433,18 @@ PIKECLASS BLOWFISH_State
 }
 /*! @endclass BLOWFISH_State */
 
-static int
-CAST128_check_key(ptrdiff_t len, const char *key)
+static void
+pike_cast128_set_key(void *ctx,
+		     ptrdiff_t length, const char *key,
+		     int force)
 {
-  return (len>=CAST128_MIN_KEY_SIZE && len<=CAST128_MAX_KEY_SIZE);
+  if (length < CAST128_MIN_KEY_SIZE || length > CAST128_MAX_KEY_SIZE)
+    Pike_error("CAST128_info: Bad keysize for CAST128.\n");
+  
+  cast128_set_key(ctx, length, key);
 }
+#define pike_cast128_set_encrypt_key pike_cast128_set_key
+#define pike_cast128_set_decrypt_key pike_cast128_set_key
 
 /*! @class CAST128_Info
  *!
@@ -432,13 +455,11 @@ PIKECLASS CAST128_Info
 {
   INIT
     {
+      static const struct pike_cipher pike_cast128 = _PIKE_CIPHER(cast128, CAST128);
       struct CipherInfo_struct *CipherInfo = GET_INFO(Pike_fp->current_object);
 
       if (CipherInfo && !CipherInfo->meta)
-      {
-	CipherInfo->meta = &nettle_cast128;
-	CipherInfo->check_key = &CAST128_check_key;
-      }
+	CipherInfo->meta = &pike_cast128;
     }
 }
 
@@ -466,28 +487,39 @@ PIKECLASS CAST128_State
 }
 /*! @endclass CAST128_State */
 
-static int
-DES_check_key(ptrdiff_t len, const char *key)
-{
-  return len==8;
-}
-
 static void
-glue_des_set_key(struct des_ctx *ctx, unsigned length, const uint8_t *key)
+pike_des_set_key(void *c,
+		 ptrdiff_t length, const char *key,
+		 int force)
 {
-  des_set_key(ctx, key);
+  struct des_ctx *ctx = (struct des_ctx *) c;
+  if (length != 8)
+    Pike_error("DES_INFO: Bad keysize for DES.\n");
+
+  if (!des_set_key(ctx, key))
+  {
+    switch (ctx->status)
+    {
+    case DES_WEAK_KEY:
+      if (force)
+	/* Use key anyway */
+	ctx->status = DES_OK;
+      else
+	Pike_error("DES_INFO: Key is weak.\n");
+      break;
+      
+    case DES_BAD_PARITY:
+      /* FIXME: I don't think this should be visible in the user
+       * interface, the parity bits should just be ignored. */
+      Pike_error("DES_INFO: Key has bad parity.\n");
+    default:
+      Pike_error("DES_INFO: Unexpected error, please send a bug report.\n");
+    }
+  }
 }
 
-const struct nettle_cipher nettle_des = {
-  "DES",
-  sizeof(struct des_ctx),
-  8,
-  56/8,
-  (nettle_set_key_func) glue_des_set_key,
-  (nettle_set_key_func) glue_des_set_key,
-  (nettle_crypt_func) des_encrypt,
-  (nettle_crypt_func) des_decrypt,
-};
+#define pike_des_set_encrypt_key pike_des_set_key
+#define pike_des_set_decrypt_key pike_des_set_key
 
 /*! @class DES_Info
  *!
@@ -498,13 +530,11 @@ PIKECLASS DES_Info
 {
   INIT
     {
+      static const struct pike_cipher pike_des = _PIKE_CIPHER(des, DES);
       struct CipherInfo_struct *CipherInfo = GET_INFO(Pike_fp->current_object);
 
       if (CipherInfo && !CipherInfo->meta)
-      {
-	CipherInfo->meta = &nettle_des;
-	CipherInfo->check_key = &DES_check_key;
-      }
+	CipherInfo->meta = &pike_des;
     }
 
   PIKEFUN string fix_parity(string key)
@@ -526,8 +556,8 @@ PIKECLASS DES_Info
     else
       memcpy(buf, key->str, 8);
 
-    des_fix_parity(8, buf, (const uint8_t *)buf);
-    RETURN make_shared_binary_string((const char *)buf, 8);
+    des_fix_parity(8, buf, buf);
+    RETURN make_shared_binary_string(buf, 8);
   }
 }
 
@@ -555,28 +585,43 @@ PIKECLASS DES_State
 }
 /*! @endclass DES_State */
 
-static int
-DES3_check_key(ptrdiff_t len, const char *key)
-{
-  return len==24;
-}
-
 static void
-glue_des3_set_key(struct des3_ctx *ctx, unsigned length, const uint8_t *key)
+pike_des3_set_key(void *c,
+		  ptrdiff_t length, const char *key,
+		  int force)
 {
-  des3_set_key(ctx, key);
-}
+  struct des3_ctx *ctx = (struct des3_ctx *) c;
+  int i;
+  
+  if (length != 24)
+    Pike_error("DES3_INFO: Bad keysize for DES3.\n");
 
-const struct nettle_cipher nettle_des3 = {
-  "DES3",
-  sizeof(struct des3_ctx),
-  8,
-  (56*3)/8,
-  (nettle_set_key_func) glue_des3_set_key,
-  (nettle_set_key_func) glue_des3_set_key,
-  (nettle_crypt_func) des3_encrypt,
-  (nettle_crypt_func) des3_decrypt,
-};
+  /* The hack of resetting ctx->status to use a weak key doesn't
+   * currently work with nettle's des3_set_key function. So we set the
+   * individual keys by ourself. */
+  for (i = 0; i<3; i++, key += DES_KEY_SIZE)
+    if (!des_set_key(&ctx->des[i], key))
+      switch (ctx->des[i].status)
+      {
+      case DES_WEAK_KEY:
+	if (force)
+	  /* Use key anyway */
+	  ctx->des[i].status = DES_OK;
+	else
+	  Pike_error("DES3_INFO: Key is weak.\n");
+	break;
+      
+      case DES_BAD_PARITY:
+	/* FIXME: I don't think this should be visible in the user
+	 * interface, the parity bits should just be ignored. */
+	Pike_error("DES3_INFO: Key has bad parity.\n");
+      default:
+	Pike_error("DES3_INFO: Unexpected error, please send a bug report.\n");
+    }
+}
+#define pike_des3_set_encrypt_key pike_des3_set_key
+#define pike_des3_set_decrypt_key pike_des3_set_key
+
 
 /*! @class DES3_Info
  *!
@@ -587,13 +632,11 @@ PIKECLASS DES3_Info
 {
   INIT
     {
+      static const struct pike_cipher pike_des3 = _PIKE_CIPHER(des3, DES3);
       struct CipherInfo_struct *CipherInfo = GET_INFO(Pike_fp->current_object);
 
       if (CipherInfo && !CipherInfo->meta)
-      {
-	CipherInfo->meta = &nettle_des3;
-	CipherInfo->check_key = &DES3_check_key;
-      }
+	CipherInfo->meta = &pike_des3;
     }
 }
 
@@ -621,11 +664,18 @@ PIKECLASS DES3_State
 }
 /*! @endclass DES3_State */
 
-static int
-serpent_check_key(ptrdiff_t len, const char *key)
+static void
+pike_serpent_set_key(void *ctx,
+		     ptrdiff_t length, const char *key,
+		     int force)
 {
-  return (len>=SERPENT_MIN_KEY_SIZE && len<=SERPENT_MAX_KEY_SIZE);
+  if (length < SERPENT_MIN_KEY_SIZE || length > SERPENT_MAX_KEY_SIZE)
+    Pike_error("SERPENT_Info: Bad keysize for SERPENT.\n");
+  
+  serpent_set_key(ctx, length, key);
 }
+#define pike_serpent_set_encrypt_key pike_serpent_set_key
+#define pike_serpent_set_decrypt_key pike_serpent_set_key
 
 /*! @class Serpent_Info
  *!
@@ -636,13 +686,11 @@ PIKECLASS Serpent_Info
 {
   INIT
     {
+      static const struct pike_cipher pike_serpent = _PIKE_CIPHER(serpent, SERPENT);
       struct CipherInfo_struct *CipherInfo = GET_INFO(Pike_fp->current_object);
 
       if (CipherInfo && !CipherInfo->meta)
-      {
-	CipherInfo->meta = &nettle_serpent256;
-	CipherInfo->check_key = &serpent_check_key;
-      }
+	CipherInfo->meta = &pike_serpent;
     }
 }
 
@@ -670,11 +718,18 @@ PIKECLASS Serpent_State
 }
 /*! @endclass Serpent_State */
 
-static int
-twofish_check_key(ptrdiff_t len, const char *key)
+static void
+pike_twofish_set_key(void *ctx,
+		     ptrdiff_t length, const char *key,
+		     int force)
 {
-  return (len>=TWOFISH_MIN_KEY_SIZE && len<=TWOFISH_MAX_KEY_SIZE);
+  if (length < TWOFISH_MIN_KEY_SIZE || length > TWOFISH_MAX_KEY_SIZE)
+    Pike_error("TWOFISH_Info: Bad keysize for TWOFISH.\n");
+
+  twofish_set_key(ctx, length, key);
 }
+#define pike_twofish_set_encrypt_key pike_twofish_set_key
+#define pike_twofish_set_decrypt_key pike_twofish_set_key
 
 /*! @class Twofish_Info
  *!
@@ -685,13 +740,11 @@ PIKECLASS Twofish_Info
 {
   INIT
     {
+      static const struct pike_cipher pike_twofish = _PIKE_CIPHER(twofish, TWOFISH);
       struct CipherInfo_struct *CipherInfo = GET_INFO(Pike_fp->current_object);
 
       if (CipherInfo && !CipherInfo->meta)
-      {
-	CipherInfo->meta = &nettle_twofish256;
-	CipherInfo->check_key = &twofish_check_key;
-      }
+	CipherInfo->meta = &pike_twofish;
     }
 }
 
