@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: mysql.c,v 1.61 2002/10/21 17:06:20 marcus Exp $
+|| $Id: mysql.c,v 1.62 2002/11/18 12:29:15 nilsson Exp $
 */
 
 /*
@@ -94,17 +94,17 @@
  * Globals
  */
 
-RCSID("$Id: mysql.c,v 1.61 2002/10/21 17:06:20 marcus Exp $");
+RCSID("$Id: mysql.c,v 1.62 2002/11/18 12:29:15 nilsson Exp $");
 
 /*! @module Mysql
  *!
  *! This module enables access to the Mysql database from within Pike.
- *! Use @[Sql.sql] for general database access.
+ *! Use @[Sql.Sql] for general database access.
  *!
  *! Mysql is available from @url{http://www.mysql.com@}.
  *!
  *! @seealso
- *!  @[Mysql.mysql], @[Mysql.mysql_result], @[Sql.sql]
+ *!  @[Mysql.mysql], @[Mysql.mysql_result], @[Sql.Sql]
  */
 
 /*! @class mysql
@@ -116,7 +116,7 @@ RCSID("$Id: mysql.c,v 1.61 2002/10/21 17:06:20 marcus Exp $");
  *! Mysql is available from @url{http://www.mysql.com@}.
  *!
  *! @seealso
- *!   @[Mysql.result], @[Sql.sql]
+ *!   @[Mysql.result], @[Sql.Sql]
  */
 
 struct program *mysql_program = NULL;

@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: msqlmod.c,v 1.23 2002/10/21 17:06:17 marcus Exp $
+|| $Id: msqlmod.c,v 1.24 2002/11/18 12:28:51 nilsson Exp $
 */
 
 /* All this code is pretty useless if we don't have a msql library...*/
@@ -33,7 +33,7 @@
 #include "operators.h"
 #include "multiset.h"
 
-RCSID("$Id: msqlmod.c,v 1.23 2002/10/21 17:06:17 marcus Exp $");
+RCSID("$Id: msqlmod.c,v 1.24 2002/11/18 12:28:51 nilsson Exp $");
 #include "version.h"
 
 #ifdef _REENTRANT
@@ -58,13 +58,13 @@ MUTEX_T pike_msql_mutex STATIC_MUTEX_INIT;
  *! This is an interface to the mSQL database server.
  *! This module may or may not be availible on your Pike, depending
  *! whether the appropriate include and library files (msql.h and libmsql.a
- *! respectively) could be found at compile-time. Note that you DO NOT
+ *! respectively) could be found at compile-time. Note that you @b{do not@}
  *! need to have a mSQL server running on your host to use this module:
  *! you can connect to the database over a TCP/IP socket
  *!
  *! Please notice that unless you wish to specifically connect to a mSQL
- *! server, you'd better use the @[Sql.sql] program instead. Using Sql.sql
- *! ensures that your pike applications will run with any supported SQL
+ *! server, you'd better use the @[Sql.Sql] program instead. Using @[Sql.Sql]
+ *! ensures that your Pike applications will run with any supported SQL
  *! server without changing a single line of code.
  *!
  *! Also notice that some functions may be mSQL/2.0-specific, and thus missing
@@ -92,7 +92,7 @@ MUTEX_T pike_msql_mutex STATIC_MUTEX_INIT;
  *! it's really VERY VERY primitive, so it won't be added for now.
  *!
  *! @seealso
- *!   @[Sql.sql]
+ *!   @[Sql.Sql]
  */
 
 /*! @class msql
@@ -217,9 +217,9 @@ static void do_shutdown (INT32 args)
  *! This function forces a server to reload its ACLs.
  *!
  *! @note
- *!  This function is @b{not@} part of the standard interface, so it is NOT
- *!  availible through the Sql.sql interface, but only through Sql.msql and
- *!  Msql.msql programs
+ *!  This function is @b{not@} part of the standard interface, so it is
+ *!  @b{not@} availible through the @[Sql.Sql] interface, but only through
+ *!  @[Sql.msql] and @[Msql.msql] programs.
  *!
  *! @seealso
  *!   @[create]
@@ -785,9 +785,9 @@ static void do_drop_db (INT32 args)
  *! @endmapping
  *!
  *! @note
- *!   The version of this function in the Msql.msql() program is <b>not</b>
+ *!   The version of this function in the Msql.msql() program is @b{not@}
  *!   sql-interface compliant (this is the main reason why using that program
- *!   directly is deprecated). Use @[Sql.sql] instead.
+ *!   directly is deprecated). Use @[Sql.Sql] instead.
  *!
  *! @seealso
  *!   @[query]
@@ -880,7 +880,7 @@ static void do_list_fields (INT32 args)
  *!  were availible when the module was compiled).
  *!
  *!  This function is @b{not@} part of the standard interface, so it is @b{not@}
- *!  availible through the @[Sql.sql] interface, but only through @[Sql.msql] and
+ *!  availible through the @[Sql.Sql] interface, but only through @[Sql.msql] and
  *!  @[Msql.msql] programs
  */
 
@@ -906,7 +906,7 @@ static void do_affected_rows (INT32 args)
  *!  or later.
  *!
  *!  This function is @b{not@} part of the standard interface, so it is @b{not@}
- *!  availible through the @[Sql.sql] interface, but only through @[Sql.msql] and
+ *!  availible through the @[Sql.Sql] interface, but only through @[Sql.msql] and
  *!  @[Msql.msql] programs.
  */
 
