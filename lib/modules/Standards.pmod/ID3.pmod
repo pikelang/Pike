@@ -1,6 +1,6 @@
 // ID3.pmod
 //
-//  $Id: ID3.pmod,v 1.7 2002/11/26 15:46:06 nilsson Exp $
+//  $Id: ID3.pmod,v 1.8 2003/09/04 15:16:27 nilsson Exp $
 //
 
 //! ID3 decoder/encoder.
@@ -109,11 +109,11 @@ class TagHeader {
     minor_version = bytes[0];
     sub_version = bytes[1];
     decode_flags(bytes[2]);
-    tag_size = synchsafe_to_int( bytes[1..] );
+    tag_size = synchsafe_to_int( bytes[3..] );
   }
 
   void decode_flags( int byte ) {
-    if(byte&&0b1111)
+    if(byte&0b1111)
       error( "Unknown flag set in tag header flag field.\n" );
 
     flag_unsynchronisation = TEST(byte,7);
