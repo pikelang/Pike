@@ -1022,6 +1022,16 @@ string mkjpeg(mixed o,void|int quality)
    return gifname;
 }
 
+Image.Image read_image(string file)
+{
+  string data=Stdio.read_file(file);
+  catch  { return Image.GIF.decode(data); };
+  catch { return Image.JPEG.decode(data); };
+  catch  { return Image.PNM.decode(data); };
+  werror("\nFailed to read image %s\n\n",file);
+  return Image.image(10,10)->test();
+}
+
 //
 // Execute a small pice of pike code to generate an illustration. 
 // 
@@ -1038,9 +1048,9 @@ object render_illustration(string pike_code, mapping params, float wanted_dpi)
   float scale=wanted_dpi/actual_dpi;
 
   if(params->src) 
-     img=srccache[params->src]||
-	(srccache[params->src]=
-	 Image.PNM.decode(Process.popen("anytopnm "+params->src)));
+    img=srccache[params->src]||
+      (srccache[params->src]=
+       read_image(params->src));
   if(scale!=1.0) img=img->scale(scale);
   return compile_string("import Image;\n"
 			"mixed `()(object src){ "+pike_code+" ; }")()(img);
