@@ -787,7 +787,7 @@ void dump_memhdr_locations(struct memhdr *from,
   }
 }
 
-void cleanup_memhdrs()
+void cleanup_memhdrs(void)
 {
   unsigned long h;
   mt_lock(&debug_malloc_mutex);
