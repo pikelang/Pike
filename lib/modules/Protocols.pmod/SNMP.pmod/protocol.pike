@@ -17,7 +17,7 @@
 //!      2570   : v3 description
 //!
 
-// $Id: protocol.pike,v 1.6 2002/11/30 22:33:51 bill Exp $
+// $Id: protocol.pike,v 1.7 2002/12/01 18:09:33 mast Exp $
 
 
 #include "snmp_globals.h"
@@ -214,7 +214,7 @@ void create(int|void rem_port, string|void rem_addr, int|void loc_port, string|v
 
   local_host = (!loc_addr || !sizeof(loc_addr)) ? SNMP_DEFAULT_LOCHOST : loc_addr;
   if(stringp(rem_addr) && sizeof(rem_addr)) remote_host = rem_addr;
-  if(intp(rem_port) && sizeof(rem_port)) remote_port = rem_port;
+  if(rem_port) remote_port = rem_port;
 
   if (!snmp::bind(lport, local_host)) {
     //# error ...
