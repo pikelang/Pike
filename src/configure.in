@@ -1,4 +1,4 @@
-AC_REVISION("$Id: configure.in,v 1.110 1997/09/06 16:53:49 grubba Exp $")
+AC_REVISION("$Id: configure.in,v 1.111 1997/09/08 11:53:33 grubba Exp $")
 AC_INIT(interpret.c)
 AC_CONFIG_HEADER(machine.h)
 
@@ -528,7 +528,7 @@ if test x$with_threads = xyes ; then
 #define _MIT_POSIX_THREADS 1
 #include <thread.h>
 
-void *foo(void *bar) { return ; }
+void *foo(void *bar) { return 0; }
 mutex_t tmp;
 thread_t gazonk;
 
@@ -573,7 +573,7 @@ int main()
 
 #include <pthread.h>
 
-void *foo(void *bar) { return ; }
+void *foo(void *bar) { return 0; }
 pthread_mutexattr_t attr;
 pthread_mutex_t tmp;
 pthread_t gazonk;
