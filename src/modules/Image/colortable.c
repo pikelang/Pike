@@ -1,12 +1,12 @@
 #include "global.h"
 #include <config.h>
 
-/* $Id: colortable.c,v 1.65 1999/04/13 12:32:15 mirar Exp $ */
+/* $Id: colortable.c,v 1.66 1999/04/20 18:16:09 mirar Exp $ */
 
 /*
 **! module Image
 **! note
-**!	$Id: colortable.c,v 1.65 1999/04/13 12:32:15 mirar Exp $
+**!	$Id: colortable.c,v 1.66 1999/04/20 18:16:09 mirar Exp $
 **! class Colortable
 **!
 **!	This object keeps colortable information,
@@ -21,7 +21,7 @@
 #undef COLORTABLE_DEBUG
 #undef COLORTABLE_REDUCE_DEBUG
 
-RCSID("$Id: colortable.c,v 1.65 1999/04/13 12:32:15 mirar Exp $");
+RCSID("$Id: colortable.c,v 1.66 1999/04/20 18:16:09 mirar Exp $");
 
 #include <math.h> /* fabs() */
 
@@ -151,7 +151,7 @@ static void free_colortable_struct(struct neo_colortable *nct)
 	 {
 	    nct->u.cube.firstscale=s->next;
 	    free(s);
-	 };
+	 }
 	 nct->type=NCT_NONE;
          break; /* done */
    }
@@ -894,7 +894,7 @@ static struct nct_flat _img_get_flat_from_array(struct array *arr)
 	 continue;
 
       if (!image_color_svalue(arr->item+i,
-			      &(flat.entries[i].color)))
+			      &(flat.entries[n].color)))
 	 bad_arg_error("Colortable", 
 		       0,0, 1, "array of colors or 0", 0,
 		       "Colortable(): bad element %d of colorlist\n",i);
