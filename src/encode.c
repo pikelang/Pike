@@ -26,7 +26,7 @@
 #include "bignum.h"
 #include "pikecode.h"
 
-RCSID("$Id: encode.c,v 1.140 2002/05/02 14:48:10 mast Exp $");
+RCSID("$Id: encode.c,v 1.141 2002/05/02 16:32:13 mast Exp $");
 
 /* #define ENCODE_DEBUG */
 
@@ -889,6 +889,7 @@ static void encode_value2(struct svalue *val, struct encode_data *data)
 	     */
 	    if(!low_mapping_lookup(data->encoded, val))
 	    {
+	      int fun;
 	      EDB(1,fprintf(stderr, "%*sZapping 3 -> 1 in TAG_OBJECT\n",
 			    data->depth, ""));
 	      
@@ -897,14 +898,12 @@ static void encode_value2(struct svalue *val, struct encode_data *data)
 	       * -Hubbe
 	       */
 	      data->buf.s.str[to_change] = 99;
-	      apply(data->codec,"encode_object",1);
 
-	      if ((Pike_sp[-1].type == T_INT) &&
-		  (!Pike_sp[-1].u.integer) &&
-		  (Pike_sp[-1].subtype)) {
-		/* encode_object() returned UNDEFINED (aka failed). */
-		Pike_error("Failed to encode object.\n");
-	      }
+	      fun = find_identifier("encode_object", data->codec->prog);
+	      if (fun < 0)
+		Pike_error("Cannot encode objects without an "
+			   "\"encode_object\" function in the codec.\n");
+	      apply_low(data->codec,fun,1);
 
 	      /* Put value back in cache for future reference -Hubbe */
 	      mapping_insert(data->encoded, val, &tmp);
@@ -2034,6 +2033,7 @@ static void decode_value2(struct decode_data *data)
 	    decode_value2(data);
 	    pop_stack();
 	  }else{
+	    int fun;
 	    struct object *o;
 	    /* decode_value_clone_object does not call __INIT, so
 	     * we want to do that ourselves...
@@ -2068,7 +2068,12 @@ static void decode_value2(struct decode_data *data)
 	    decode_value2(data);
 	    if(!data->codec)
 	      Pike_error("Failed to decode (no codec)\n");
-	    apply(data->codec,"decode_object",2);
+
+	    fun = find_identifier("decode_object", data->codec->prog);
+	    if (fun < 0)
+	      Pike_error("Cannot decode objects without a "
+			 "\"decode_object\" function in the codec.\n");
+	    apply_low(data->codec,fun,2);
 	    pop_stack();
 	  }
 
