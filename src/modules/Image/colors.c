@@ -1,7 +1,7 @@
 /*
 **! module Image
 **! note
-**!	$Id: colors.c,v 1.14 1999/04/25 20:34:00 grubba Exp $
+**!	$Id: colors.c,v 1.15 1999/04/25 20:34:51 grubba Exp $
 **! submodule Color
 **!
 **!	This module keeps names and easy handling 
@@ -97,7 +97,7 @@
 #include "global.h"
 #include <config.h>
 
-RCSID("$Id: colors.c,v 1.14 1999/04/25 20:34:00 grubba Exp $");
+RCSID("$Id: colors.c,v 1.15 1999/04/25 20:34:51 grubba Exp $");
 
 #include "config.h"
 
@@ -1302,7 +1302,7 @@ static void image_make_hsv_color(INT32 args)
 #define t (v * (1 - (s * (1 -f))))
       switch((int)i)
       {
-	 case 6: // 360 degrees. Same as 0..
+         case 6: /* 360 degrees. Same as 0.. */
 	 case 0: r = v;	 g = t;	 b = p;	 break;
 	 case 1: r = q;	 g = v;	 b = p;	 break;
 	 case 2: r = p;  g = v;	 b = t;	 break;
