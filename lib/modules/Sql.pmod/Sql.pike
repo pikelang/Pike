@@ -1,5 +1,5 @@
 /*
- * $Id: Sql.pike,v 1.49 2001/08/23 21:57:28 grubba Exp $
+ * $Id: Sql.pike,v 1.50 2001/08/24 12:39:15 grubba Exp $
  *
  * Implements the generic parts of the SQL-interface
  *
@@ -10,7 +10,7 @@
 
 //.
 //. File:	sql.pike
-//. RCSID:	$Id: Sql.pike,v 1.49 2001/08/23 21:57:28 grubba Exp $
+//. RCSID:	$Id: Sql.pike,v 1.50 2001/08/24 12:39:15 grubba Exp $
 //. Author:	Henrik Grubbström (grubba@roxen.com)
 //.
 //. Synopsis:	Implements the generic parts of the SQL-interface.
@@ -179,12 +179,13 @@ void create(void|string|object host, void|string db,
     }
 
     if (!program_name) {
-      error("Sql.Sql(): No protocol specified.\n");
+      throw_error("Sql.Sql(): No protocol specified.\n");
     }
     /* Don't call ourselves... */
     if ((sizeof(program_name / "_result") != 1) ||
 	(lower_case(program_name[..2]) == "sql")) {
-      error(sprintf("Sql.Sql(): Unsupported protocol: %O\n", program_name));
+      throw_error(sprintf("Sql.Sql(): Unsupported protocol: %O\n",
+			  program_name));
     }
 
 
@@ -205,8 +206,8 @@ void create(void|string|object host, void|string db,
 	master_sql = p();
       }
     } else {
-      throw(({ sprintf("Sql.sql(): Failed to index module Sql.%s\n",
-		       program_name), backtrace() }));
+      throw_error(sprintf("Sql.sql(): Failed to index module Sql.%s\n",
+			  program_name));
     }
   }
 
