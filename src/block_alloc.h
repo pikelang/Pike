@@ -1,4 +1,4 @@
-/* $Id: block_alloc.h,v 1.34 2001/09/01 07:20:29 hubbe Exp $ */
+/* $Id: block_alloc.h,v 1.35 2001/09/02 21:08:29 grubba Exp $ */
 #undef PRE_INIT_BLOCK
 #undef INIT_BLOCK
 #undef EXIT_BLOCK
@@ -19,9 +19,11 @@
 /* Block Alloc UnLocked */
 #define BA_UL(X) PIKE_CONCAT(X,_unlocked)
 #define BA_STATIC static
+#define BA_INLINE inline
 #else
 #define BA_UL(X) X
 #define BA_STATIC
+#define BA_INLINE
 #endif
 
 #define BLOCK_ALLOC(DATA,BSIZE)						\
@@ -58,7 +60,7 @@ static void PIKE_CONCAT(alloc_more_,DATA)(void)				\
   }									\
 }									\
 									\
-BA_STATIC inline struct DATA *BA_UL(PIKE_CONCAT(alloc_,DATA))(void)	\
+BA_STATIC BA_INLINE struct DATA *BA_UL(PIKE_CONCAT(alloc_,DATA))(void)	\
 {									\
   struct DATA *tmp;							\
   if(!PIKE_CONCAT3(free_,DATA,s))					\
@@ -76,7 +78,7 @@ BA_STATIC inline struct DATA *BA_UL(PIKE_CONCAT(alloc_,DATA))(void)	\
 }									\
 									\
 DO_IF_RUN_UNLOCKED(                                                     \
-inline struct DATA *PIKE_CONCAT(alloc_,DATA)(void)		        \
+struct DATA *PIKE_CONCAT(alloc_,DATA)(void)			        \
 {									\
   struct DATA *ret;  							\
   DO_IF_RUN_UNLOCKED(mt_lock(&PIKE_CONCAT(DATA,_mutex)));		\
