@@ -93,7 +93,11 @@ void f_parse_accessed_database(INT32 args)
 #ifdef SOLARIS
 #include <errno.h>
 #include <sys/socket.h>
+#include <sys/sockio.h>
+#include <sys/conf.h>
+#include <stropts.h>
 
+#if 0
 void f_send_fd(INT32 args)
 {
   struct iovec iov; 
@@ -146,6 +150,52 @@ void f_send_fd(INT32 args)
   push_int(1);
   return;
 }
+#else
+void f_send_fd(INT32 args)
+{
+  int sock_fd, fd;
+
+  if(args != 2) error("RTSL\n");
+
+  sock_fd = sp[-args].u.integer;
+  fd =  sp[-args+1].u.integer;
+  pop_stack();
+  pop_stack();
+
+  while(ioctl(sock_fd, I_SENDFD, fd) == -1)
+  {
+    switch(errno)
+    {
+     case EINVAL:
+      perror("Strange error while sending fd");
+      push_int(0);
+      return;
+
+     case EIO:
+     case EBADF:
+     case ENOTSOCK:
+     case ESTALE:
+      perror("Cannot send fd");
+      push_int(0);
+      return;
+
+     case EWOULDBLOCK:
+     case EINTR:
+     case ENOMEM:
+     case ENOSR:
+      continue;
+
+     default:
+      perror("Unknown error while semdmsg()ing");
+      push_int(0);
+      return;
+    }
+  }
+  push_int(1);
+  return;
+}
+
+#endif
 #endif
 
 void f_parse_html(INT32 args)
