@@ -6,7 +6,8 @@ pushdef([AC_PROG_CC_WORKS],
     ac_prog_cc_works_this_run="${ac_cv_prog_cc_works-no}"
     export ac_prog_cc_works_this_run
   else
-    AC_MSG_RESULT([whether the C compiler ($CC $CFLAGS $LDFLAGS) works... yes])
+    AC_MSG_CHECKING([whether the C compiler ($CC $CFLAGS $LDFLAGS) works])
+    AC_MSG_RESULT([(cached) yes])
   fi
 ])
 
@@ -44,7 +45,7 @@ pushdef([AC_CONFIG_HEADER],
 
 define([AC_LOW_MODULE_INIT],
 [
-# $Id: aclocal.m4,v 1.9 1999/05/08 00:27:40 hubbe Exp $
+# $Id: aclocal.m4,v 1.10 1999/05/11 23:07:35 grubba Exp $
 
 MY_AC_PROG_CC
 
