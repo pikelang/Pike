@@ -1222,7 +1222,7 @@ class NScopeStack
     }
     return 0;
   }
-  string resolveInherits()
+  void resolveInherits()
   {
     int removed_self;
     string name = sizeof(stack) && splitRef(top->name)[-1];
@@ -1338,6 +1338,21 @@ void doResolveNode(NScopeStack scopestack, Node tree)
     }
     break;
   case "inherit":
+    foreach(tree->get_children(), Node child) {
+      mapping(string:string) m;
+      if ((child->get_any_name() == "classname") &&
+	  (!(m = child->get_attributes())->resolved)) {
+	string ref = child->value_of_node();
+	NScope ns;
+	if (ns = (scopestack->top->inherits[ref])) {
+	  string resolution = scopestack->resolve(splitRef(ns->name));
+	  if (resolution) {
+	    m->resolved = resolution;
+	  }
+	}
+      }
+    }
+    break;
   case "modifiers":
   case "enum":
   case "doc":
