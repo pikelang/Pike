@@ -1,4 +1,4 @@
-// $Id: testsuite.in,v 1.6 2003/01/09 22:47:34 nilsson Exp $
+// $Id: testsuite.in,v 1.7 2003/02/12 21:59:49 nilsson Exp $
 
 // Tools.Hilfe
 define(test_hilfe_setup_low,[[test_do([[
@@ -119,7 +119,7 @@ test_hilfe("foreach( ({ 1, 2, 3, }); int i; int m) { n+=m; }", "Ok.\n")
 test_hilfe("n;", "12")
 
 test_hilfe("for(int j; j<5; j++) write(\"%d\",j);", "01234Ok.\n")
-test_hilfe("j;", "Compiler Error: 1:Undefined identifier j.\n")
+test_hilfe("j;", "Compiler Error: 1:Undefined identifier \"j\".\n")
 test_hilfe("for(int i; i<5; i++) write(\"%d\",i);", "01234Ok.\n")
 test_hilfe("i;", "1")
 test_hilfe("catch { for(int i; i<5; i++) write(\"%d\",i); };", "012340")
