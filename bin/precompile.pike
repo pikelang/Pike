@@ -72,46 +72,9 @@ int parse_type(array x, int pos)
   }
 }
 
-array(PC.Token) strip(array(PC.Token) t)
-{
-  array ret=({});
-  foreach(t, mixed x)
-    {
-      if(objectp(x))
-      {
-	switch(x->text[0])
-	{
-	  case ' ':
-	  case '\t':
-	  case '\n':
-	  case '\r':
-	    continue;
-
-	  case '/':
-	    if(strlen(x->text)>1)
-	    {
-	      switch(x->text[1])
-	      {
-		case '/':
-		case '*':
-		  continue;
-	      }
-	    }
-	}
-      }else{
-	x=strip(x);
-      }
-      ret+=({x});
-    }
-  return ret;
-}
-
 string merge(array x)
 {
-  string ret="";
-  foreach(x,x)
-    ret+=arrayp(x)?merge(x):objectp(x)?x->text:x;
-  return ret;
+  return PC.simple_reconstitute(x);
 }
 
 string cname(mixed type)
@@ -241,6 +204,12 @@ string make_pop(mixed howmany)
   }
 }
 
+/* Fixme:
+ * This routine inserts non-tokenized strings into the data, which
+ * can confuse a later stage, we might need to do something about that.
+ * However, I need a *simple* way of doing it first...
+ * -Hubbe
+ */
 array fix_return(array body, string rettype, string ctype, mixed args)
 {
   int pos=0;
@@ -292,8 +261,6 @@ array recursive(mixed func, array data, mixed ... args)
 
 mapping parse_attributes(array attr)
 {
-  attr=strip(attr);
-  
   mapping attributes=([]);
   foreach(attr/ ({";"}), attr)
     {
@@ -331,7 +298,7 @@ array convert(array x)
     for(p=0;p<sizeof(func);p++)
       if(arrayp(func[p]) && func[p][0]=="{")
 	break;
-    array proto=strip(func[..p-1]);
+    array proto=func[..p-1];
     array body=func[p];
     string name=proto[p]->text;
     mapping attributes=parse_attributes(proto[p+2..]);
@@ -370,7 +337,7 @@ array convert(array x)
       if(arrayp(func[p]) && func[p][0]=="{")
 	break;
 
-    array proto=strip(func[..p-1]);
+    array proto=func[..p-1];
     array body=func[p];
     array rest=func[p+1..];
 
@@ -519,6 +486,7 @@ int main(int argc, array(string) argv)
   x=Stdio.read_file(file);
   x=PC.split(x);
   x=PC.tokenize(x,file);
+  x=PC.hide_whitespaces(x);
   x=PC.group(x);
 
   array tmp=convert(x);

@@ -190,12 +190,14 @@ class Token
   int line;
   string text;
   string file;
+  string trailing_whitespaces="";
 
-  void create(string t, int l, void|string f)
+  void create(string t, int l, void|string f, void|string space)
     {
       text=t;
       line=l;
       file=f;
+      if(space) trailing_whitespaces=space;
     }
 
   string _sprintf(int how)
@@ -230,6 +232,9 @@ class Token
     }
 }
 
+/* FIXME:
+ * Check for #line statements
+ */
 array(Token) tokenize(array(string) s, void|string file)
 {
   array(Token) ret=allocate(sizeof(s));
@@ -241,7 +246,6 @@ array(Token) tokenize(array(string) s, void|string file)
   }
   return ret;
 }
-
 
 array group(array(Token) tokens, void|mapping groupings)
 {
@@ -265,6 +269,33 @@ array group(array(Token) tokens, void|mapping groupings)
   return ret;
 }
 
+array hide_whitespaces(array tokens)
+{
+  array(Token) ret=({tokens[0]});
+  foreach(tokens[1..], array|object(Token) t)
+    {
+      if(arrayp(t))
+      {
+	ret+=({ hide_whitespaces(t) });
+      }else{
+	switch( ((string)t) [0])
+	{
+	  case ' ':
+	  case '\t':
+	  case '\n':
+	    mixed tmp=ret[-1];
+	    while(arrayp(tmp)) tmp=tmp[-1];
+	    tmp->trailing_whitespaces+=(string)t;
+	    break;
+
+	  default:
+	    ret+=({t});
+	}
+      }
+    }
+  return ret;
+}
+
 /* This module must work with Pike 7.0 */
 #if constant(Array.flatten)
 #define FLATTEN Array.flatten
@@ -278,9 +309,17 @@ array flatten(array a)
 }
 #endif
 
-string simple_reconstitute(array(Token) tokens)
+string simple_reconstitute(array(string|object(Token)|array) tokens)
 {
-  return FLATTEN(tokens->text) * "";
+  string ret="";
+  foreach(FLATTEN(tokens), mixed tok)
+    {
+      if(objectp(tok))
+	tok=tok->text + tok->trailing_whitespaces;
+      ret+=tok;
+    }
+
+  return ret;
 }
 
 string reconstitute_with_line_numbers(array(string|object(Token)|array) tokens)
@@ -300,7 +339,7 @@ string reconstitute_with_line_numbers(array(string|object(Token)|array) tokens)
 	  if(tok->file) file=tok->file;
 	  ret+=sprintf("#line %d %O\n",line,file);
 	}
-	tok=tok->text;
+	tok=tok->text + tok->trailing_whitespaces;
       }
       ret+=tok;
       line+=sizeof(tok/"\n")-1;
