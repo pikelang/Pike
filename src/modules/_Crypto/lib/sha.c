@@ -283,7 +283,7 @@ void sha_update(struct sha_ctx *ctx, unsigned INT8 *buffer, unsigned INT32 len)
 {
   if (ctx->index)
     { /* Try to fill partial block */
-      int left = SHA_DATASIZE - ctx->index;
+      unsigned left = SHA_DATASIZE - ctx->index;
       if (len < left)
 	{
 	  memcpy(ctx->block + ctx->index, buffer, len);

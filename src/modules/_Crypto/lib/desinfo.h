@@ -8,13 +8,13 @@
  */
 
 #include "RCSID.h"
-RCSID2(desinfo_hRcs, "$Id: desinfo.h,v 1.2 1997/03/15 04:52:28 nisse Exp $");
+RCSID2(desinfo_hRcs, "$Id: desinfo.h,v 1.3 1997/04/18 20:09:24 nisse Exp $");
 
 /* the initial permutation, E selection, and final permutation are hardwired */
 
 /* Key Load: how to load the shift register from the user key */
 
-char KL[] = {
+unsigned char KL[] = {
 
 	57, 49, 41, 33, 25, 17,  9,  1, 58, 50, 42, 34, 26, 18,
 	10,  2, 59, 51, 43, 35, 27, 19, 11,  3, 60, 52, 44, 36,
@@ -25,14 +25,14 @@ char KL[] = {
 
 /* Key Shift: how many times to shift the key shift register */
 
-char KS[] = {
+unsigned char KS[] = {
 
 	1, 1, 2, 2, 2, 2, 2, 2, 1, 2, 2, 2, 2, 2, 2, 1,
 };
 
 /* Key Choose: which key bits from shift reg are used in the key schedule */
 
-char KC[] = {
+unsigned char KC[] = {
 
 	14, 17, 11, 24,  1,  5,  3, 28, 15,  6, 21, 10,
 	23, 19, 12,  4, 26,  8, 16,  7, 27, 20, 13,  2,
@@ -43,7 +43,7 @@ char KC[] = {
 
 /* S Boxes */
 
-char SB[8][64] = {
+unsigned char SB[8][64] = {
   {
 	14,  4, 13,  1,  2, 15, 11,  8,  3, 10,  6, 12,  5,  9,  0,  7,
 	 0, 15,  7,  4, 14,  2, 13,  1, 10,  6, 12, 11,  9,  5,  3,  8,

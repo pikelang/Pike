@@ -158,27 +158,27 @@ void md5_update(struct md5_ctx *ctx,
 {
   if (ctx->index)
   { /* Try to fill partial block */
-      int left = MD5_DATASIZE - ctx->index;
-      if (len < left)
-	{
-	  memcpy(ctx->block + ctx->index, buffer, len);
-	  ctx->index += len;
-	  return; /* Finished */
-	}
-      else
-	{
-	  memcpy(ctx->block + ctx->index, buffer, left);
-	  md5_block(ctx, ctx->block);
-	  buffer += left;
-	  len -= left;
-	}
-    }
-  while (len >= MD5_DATASIZE)
+    unsigned left = MD5_DATASIZE - ctx->index;
+    if (len < left)
     {
-      md5_block(ctx, buffer);
-      buffer += MD5_DATASIZE;
-      len -= MD5_DATASIZE;
+      memcpy(ctx->block + ctx->index, buffer, len);
+      ctx->index += len;
+      return; /* Finished */
     }
+    else
+    {
+      memcpy(ctx->block + ctx->index, buffer, left);
+      md5_block(ctx, ctx->block);
+      buffer += left;
+      len -= left;
+    }
+  }
+  while (len >= MD5_DATASIZE)
+  {
+    md5_block(ctx, buffer);
+    buffer += MD5_DATASIZE;
+    len -= MD5_DATASIZE;
+  }
   if ((ctx->index = len))     /* This assignment is intended */
     /* Buffer leftovers */
     memcpy(ctx->block, buffer, len);
