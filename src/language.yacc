@@ -112,7 +112,7 @@
 /* This is the grammar definition of Pike. */
 
 #include "global.h"
-RCSID("$Id: language.yacc,v 1.240 2001/04/01 14:10:39 grubba Exp $");
+RCSID("$Id: language.yacc,v 1.241 2001/04/01 15:14:06 grubba Exp $");
 #ifdef HAVE_MEMORY_H
 #include <memory.h>
 #endif
@@ -1083,7 +1083,7 @@ soft_cast: '[' type ']'
     }
     ;
 
-full_type: type8
+full_type: type4
   | full_type '*'
   {
     if (Pike_compiler->compiler_pass == 2) {
