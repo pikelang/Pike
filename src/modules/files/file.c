@@ -5,7 +5,7 @@
 \*/
 /**/
 #include "global.h"
-RCSID("$Id: file.c,v 1.140 1999/03/31 22:01:46 grubba Exp $");
+RCSID("$Id: file.c,v 1.141 1999/03/31 22:42:35 grubba Exp $");
 #include "fdlib.h"
 #include "interpret.h"
 #include "svalue.h"
@@ -893,7 +893,7 @@ static void file_write(INT32 args)
 #endif /* HAVE_WRITEV */
       ref_push_array(a);
       push_constant_text("");
-      o_mult();
+      o_multiply();
       sp--;
       assign_svalue(sp-args, sp);
 
