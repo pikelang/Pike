@@ -9,6 +9,13 @@ dnl note that not everything is tested yet, you are welcome to
 dnl submit more tests.
 
 changequote([[,]])
+
+define(DOIT,ifelse([foo],foo,[DOIT($1)]))dnl
+DOIT([[errprint([This m4 cannot handle quote strings with more than one character
+Please consider installing GNU m4.])
+m4exit(1)
+]])dnl
+
 changecom
 
 define(SEPARATOR,[[....]])
