@@ -6,7 +6,7 @@
 /**/
 #include "global.h"
 #include <math.h>
-RCSID("$Id: operators.c,v 1.127 2001/02/25 17:40:19 hubbe Exp $");
+RCSID("$Id: operators.c,v 1.128 2001/02/26 21:46:15 grubba Exp $");
 #include "interpret.h"
 #include "svalue.h"
 #include "multiset.h"
@@ -2820,12 +2820,21 @@ PMOD_EXPORT void o_compl(void)
 
   case T_TYPE:
     type_stack_mark();
-    if (EXTRACT_UCHAR(sp[-1].u.string->str) == T_NOT) {
-      push_unfinished_type(sp[-1].u.string->str + 1);
+#ifdef USE_PIKE_TYPE
+    if (sp[-1].u.type->type == T_NOT) {
+      push_finished_type(sp[-1].u.type->car);
     } else {
-      push_unfinished_type(sp[-1].u.string->str);
+      push_finished_type(sp[-1].u.type);
       push_type(T_NOT);
     }
+#else /* !USE_PIKE_TYPE */
+    if (EXTRACT_UCHAR(sp[-1].u.type->str) == T_NOT) {
+      push_unfinished_type(sp[-1].u.type->str + 1);
+    } else {
+      push_finished_type(sp[-1].u.type);
+      push_type(T_NOT);
+    }
+#endif /* USE_PIKE_TYPE */
     pop_stack();
     push_type_value(pop_unfinished_type());
     break;
