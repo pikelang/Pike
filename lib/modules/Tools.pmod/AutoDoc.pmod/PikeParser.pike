@@ -572,9 +572,16 @@ PikeObject|array(PikeObject) parseDecl(mapping|void args) {
       readToken();
       i->name = eatIdentifier();
     } else {
-      i->name = (replace(i->classname,
-			 ({ "::", "->", "()" }),
-			 ({ ".", ".", "" }))/".")[-1];
+      if (i->classname[0] == '"') {
+	// Remove the quotes.
+	i->name = i->classname[1..sizeof(i->classname)-2];
+      } else {
+	// Keep just the last part.
+	i->name = (replace(i->classname,
+			   ({ "::", "->", "()" }),
+			   ({ ".", ".", "" }))/".")[-1];
+      }
+      i["implicit-name"] = "yes";
     }
     return i;
   }
