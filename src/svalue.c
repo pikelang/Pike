@@ -20,7 +20,7 @@
 #include "pike_macros.h"
 #include <ctype.h>
 
-RCSID("$Id: svalue.c,v 1.27 1998/04/08 03:35:51 hubbe Exp $");
+RCSID("$Id: svalue.c,v 1.28 1998/04/24 00:10:44 hubbe Exp $");
 
 struct svalue dest_ob_zero = { T_INT, 0 };
 
@@ -131,7 +131,7 @@ void really_free_svalue(struct svalue *s)
  * We put this routine here so the compiler can optimize the call
  * inside the loop if it wants to
  */
-void free_svalues(struct svalue *s,INT32 num, INT32 type_hint)
+void debug_free_svalues(struct svalue *s,INT32 num, INT32 type_hint LINE_ARGS)
 {
   switch(type_hint)
   {
@@ -141,7 +141,7 @@ void free_svalues(struct svalue *s,INT32 num, INT32 type_hint)
   case BIT_FLOAT | BIT_INT:
     return;
 
-#define DOTYPE(X,Y,Z) case X:while(--num>=0) { Y(s->u.Z); s++; }return
+#define DOTYPE(X,Y,Z) case X:while(--num>=0) { debug_malloc_update_location(s->u.Z, file, line); Y(s->u.Z); s++; }return
     DOTYPE(BIT_STRING, free_string, string);
     DOTYPE(BIT_ARRAY, free_array, array);
     DOTYPE(BIT_MAPPING, free_mapping, mapping);
@@ -149,55 +149,35 @@ void free_svalues(struct svalue *s,INT32 num, INT32 type_hint)
     DOTYPE(BIT_OBJECT, free_object, object);
     DOTYPE(BIT_PROGRAM, free_program, program);
 
-#define COMBINE9(A) case A:
-
-#define COMBINE8(A,B) \
-  COMBINE9(A|B)
-
-#define COMBINE7(A,B,C) \
-  COMBINE8(A|B,C) \
-  COMBINE9(A|C)
-
-#define COMBINE6(A,B,C,D) \
-  COMBINE7(A|B,C,D) \
-  COMBINE8(A|C,D) \
-  COMBINE9(A|D)
-
-#define COMBINE5(A,B,C,D,E) \
-  COMBINE6(A|B,C,D,E) \
-  COMBINE7(A|C,D,E) \
-  COMBINE8(A|D,E) \
-  COMBINE9(A|E)
-
-#define COMBINE4(A,B,C,D,E,F) \
-  COMBINE5(A|B,C,D,E,F) \
-  COMBINE6(A|C,D,E,F) \
-  COMBINE7(A|D,E,F) \
-  COMBINE8(A|E,F) \
-  COMBINE9(A|F)
-
-#define COMBINE3(A,B,C,D,E,F,G) \
-  COMBINE4(A|B,C,D,E,F,G) \
-  COMBINE5(A|C,D,E,F,G) \
-  COMBINE6(A|D,E,F,G) \
-  COMBINE7(A|E,F,G) \
-  COMBINE8(A|F,G) \
-  COMBINE9(A|G)
-
-#define COMBINE(A,B,C,D,E,F,G) \
-  COMBINE3(A,B,C,D,E,F,G) \
-  COMBINE4(B,C,D,E,F,G) \
-  COMBINE5(C,D,E,F,G) \
-  COMBINE6(D,E,F,G) \
-  COMBINE7(E,F,G) \
-  COMBINE8(F,G)
-
-
-  COMBINE(BIT_STRING, BIT_ARRAY, BIT_MAPPING, BIT_MULTISET, BIT_OBJECT, BIT_PROGRAM, BIT_FUNCTION);
+   case   3: case   5: case   6: case   7: case   9: case  10: 
+   case  11: case  12: case  13: case  14: case  15: case  17: 
+   case  18: case  19: case  20: case  21: case  22: case  23: 
+   case  24: case  25: case  26: case  27: case  28: case  29: 
+   case  30: case  31: case  33: case  34: case  35: case  36: 
+   case  37: case  38: case  39: case  40: case  41: case  42: 
+   case  43: case  44: case  45: case  46: case  47: case  48: 
+   case  49: case  50: case  51: case  52: case  53: case  54: 
+   case  55: case  56: case  57: case  58: case  59: case  60: 
+   case  61: case  62: case  63: case  65: case  66: case  67: 
+   case  68: case  69: case  70: case  71: case  72: case  73: 
+   case  74: case  75: case  76: case  77: case  78: case  79: 
+   case  80: case  81: case  82: case  83: case  84: case  85: 
+   case  86: case  87: case  88: case  89: case  90: case  91: 
+   case  92: case  93: case  94: case  95: case  96: case  97: 
+   case  98: case  99: case 100: case 101: case 102: case 103: 
+   case 104: case 105: case 106: case 107: case 108: case 109: 
+   case 110: case 111: case 112: case 113: case 114: case 115: 
+   case 116: case 117: case 118: case 119: case 120: case 121: 
+   case 122: case 123: case 124: case 125: case 126: case 127: 
     while(--num>=0)
     {
+#ifdef DEBUG_MALLOC
+      debug_malloc_update_location(s->u.refs, file, line);
+#endif
       if(--s->u.refs[0]<=0)
+      {
 	really_free_svalue(s);
+      }
       s++;
     }
     break;
@@ -205,6 +185,9 @@ void free_svalues(struct svalue *s,INT32 num, INT32 type_hint)
   case BIT_FUNCTION:
     while(--num>=0)
     {
+#ifdef DEBUG_MALLOC
+      debug_malloc_update_location(s->u.refs, file, line);
+#endif
       if(--s->u.refs[0] <= 0)
       {
 	if(s->subtype == FUNCTION_BUILTIN)
@@ -218,7 +201,14 @@ void free_svalues(struct svalue *s,INT32 num, INT32 type_hint)
 
 #undef DOTYPE
   default:
-    while(--num >= 0) free_svalue(s++);
+    while(--num >= 0)
+      {
+#ifdef DEBUG_MALLOC
+	if(s->type <= MAX_REF_TYPE)
+	  debug_malloc_update_location(s->u.refs, file, line);
+#endif
+	free_svalue(s++);
+      }
   }
 }
 
@@ -792,9 +782,9 @@ void describe_svalue(struct svalue *s,int indent,struct processing *p)
 	    case 0: case 1: case 2: case 3: case 4:
 	    case 5: case 6: case 7:
 	      my_putchar('\\');
-	      my_putchar('0');
-	      my_putchar('0');
-	      my_putchar('0' + s->u.string->str[i]);
+	      my_putchar(EXTRACT_UCHAR(s->u.string->str+i) / 64 + '0');
+	      my_putchar(((EXTRACT_UCHAR(s->u.string->str+i) / 8) & 7) + '0');
+	      my_putchar((EXTRACT_UCHAR(s->u.string->str+i) & 7) + '0');
 	      break;
           } 
         }
