@@ -5,7 +5,7 @@
 \*/
 /**/
 #include "global.h"
-RCSID("$Id: builtin_functions.c,v 1.265 2000/04/19 20:37:51 neotron Exp $");
+RCSID("$Id: builtin_functions.c,v 1.266 2000/04/19 22:26:00 grubba Exp $");
 #include "interpret.h"
 #include "svalue.h"
 #include "pike_macros.h"
@@ -6042,7 +6042,8 @@ void init_builtin_efuns(void)
 	       tFuncV(tNone,tArr(tSetvar(0,tMix)),tArr(tVar(0))), 0);
 
   /* function(array:array) */
-  ADD_FUNCTION("uniq_array", f_uniq_array, tFunc(tArray, tArray), 0);
+  ADD_FUNCTION("uniq_array", f_uniq_array,
+	       tFunc(tArr(tSetvar(0,tMix)), tArr(tVar(0))), 0);
   
 /* function(mixed:int) */
   ADD_EFUN("stringp", f_stringp,tFunc(tMix,tInt),0);
