@@ -184,7 +184,7 @@
 /* This is the grammar definition of Pike. */
 
 #include "global.h"
-RCSID("$Id: language.yacc,v 1.143 1999/12/13 01:21:12 grubba Exp $");
+RCSID("$Id: language.yacc,v 1.144 1999/12/14 00:24:36 grubba Exp $");
 #ifdef HAVE_MEMORY_H
 #include <memory.h>
 #endif
@@ -1303,9 +1303,10 @@ lambda: F_LAMBDA
     $4=mknode(F_COMMA_EXPR,$4,mknode(F_RETURN,mkintnode(0),0));
     type=find_return_type($4);
 
-    if(type)
+    if(type) {
       push_finished_type(type);
-    else
+      free_string(type);
+    } else
       push_type(T_MIXED);
     
     e=$3-1;
