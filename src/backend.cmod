@@ -2,11 +2,11 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: backend.cmod,v 1.95 2004/03/20 20:19:30 grubba Exp $
+|| $Id: backend.cmod,v 1.96 2004/04/01 20:39:22 grubba Exp $
 */
 
 #include "global.h"
-RCSID("$Id: backend.cmod,v 1.95 2004/03/20 20:19:30 grubba Exp $");
+RCSID("$Id: backend.cmod,v 1.96 2004/04/01 20:39:22 grubba Exp $");
 #include "fdlib.h"
 #include "backend.h"
 #include <errno.h>
@@ -398,13 +398,23 @@ static void MY_FD_SET(int *pfd, int fd, int add)
   poll_state.fd = fd;
   poll_state.events = add;
   poll_state.revents = 0;
-#ifdef USE_DEVPOLL
-  if (write(*pfd, &poll_state, sizeof(poll_state)) != sizeof(poll_state)) {
+
+  while (((e = write(*pfd, &poll_state, sizeof(poll_state))) < 0) &&
+	 (errno == EINTR))
+    ;
+
+  if (e < 0) {
     Pike_fatal("Failed to register fd %d for 0x%04x with " PIKE_POLL_DEVICE
 	       " (errno:%d).\n",
 	       fd, add, errno);
   }
-#endif
+
+  /* FIXME: Probably ought to support partial writes. */
+  if (e != sizeof(poll_state)) {
+    Pike_fatal("Failed to register fd %d for 0x%04x with " PIKE_POLL_DEVICE
+	       " (len %d != %d).\n",
+	       fd, add, e, (int)sizeof(poll_state));
+  }
 }
 
 static void MY_FD_CLR(int *pfd, int fd, int sub)
@@ -503,6 +513,13 @@ static void MY_FD_CLR(int *pfd, int fd, int sub)
   }
 #endif
 }
+#else /* POLL_DEVICE_IS_BLACK */
+
+/* NOTE: With black poll devices the poll set is recalculated
+ *       each time it's potentially changed, so MY_FD_{SET,CLR}()
+ *       are not used in this case.
+ */
+
 #endif /* !POLL_DEVICE_IS_BLACK */
   
 #define copy_selectors(TO, FROM)
@@ -2785,10 +2802,11 @@ PIKECLASS Backend
 	if(CALL(e)->caller) free_object(CALL(e)->caller);
 	really_free_call_out(CALL(e));
       }
-      if(me->call_buffer) free((char*)me->call_buffer);
-      if(me->call_hash) free((char*)me->call_hash);
       me->num_pending_calls=0;
+      if(me->call_buffer) free((char*)me->call_buffer);
       me->call_buffer=NULL;
+      if(me->call_hash) free((char*)me->call_hash);
+      me->call_hash=NULL;
     }
 }
 
