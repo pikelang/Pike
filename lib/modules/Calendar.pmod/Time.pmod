@@ -1141,17 +1141,6 @@ class cHour
 
    inherit TimeofDay;
 
-   void create_unixtime(int unixtime,int _len)
-   {
-      int z;
-      ux=unixtime;
-      len=_len;
-      if (base==0) make_base();
-      ls=ux-(z=base->unix_time());
-      ls-=ls%3600;
-      ux=z+ls;
-   }
-
    void create_unixtime_default(int unixtime)
    {
       create_unixtime(unixtime,3600);
@@ -1222,17 +1211,6 @@ class cMinute
 //! inherits TimeofDay
 
    inherit TimeofDay;
-
-   void create_unixtime(int unixtime,int _len)
-   {
-      int z;
-      ux=unixtime;
-      len=_len;
-      if (base==0) make_base();
-      ls=ux-(z=base->unix_time());
-      ls-=ls%60;
-      ux=z+ls;
-   }
 
    void create_unixtime_default(int unixtime)
    {
