@@ -5,7 +5,7 @@
 \*/
 /**/
 #include "global.h"
-RCSID("$Id: object.c,v 1.133 2000/07/07 15:31:14 grubba Exp $");
+RCSID("$Id: object.c,v 1.134 2000/07/10 21:05:25 mast Exp $");
 #include "object.h"
 #include "dynamic_buffer.h"
 #include "interpret.h"
@@ -589,7 +589,7 @@ void low_destruct(struct object *o,int do_free)
 	u=(union anything *)(pike_frame->current_storage +
 			     pike_frame->context.prog->identifiers[d].func.offset);
 #ifdef PIKE_DEBUG
-	if (rtt <= MAX_REF_TYPE) debug_malloc_touch(u->refs);
+	if (rtt <= MAX_REF_TYPE) {debug_malloc_touch(u->refs);}
 #endif /* PIKE_DEBUG */
 	free_short_svalue(u, pike_frame->context.prog->identifiers[d].run_time_type);
 	DO_IF_DMALLOC(u->refs=(void *)-1);
