@@ -488,21 +488,8 @@ string gen()
       prot[f]+")\", OPT_SIDE_EFFECT);\n";
   foreach(sort(indices(constants)), string co) {
     int val = constants[co];
-    if (val >= 1 << 31)
-      res += sprintf (#"\
-#ifdef INT64
-  push_int64(%dLL);
-#else
-  push_int(%d);
-  push_int(31);
-  f_lsh(2);
-  push_int(%d);
-  f_or(2);
-#endif
-  simple_add_constant(%O, Pike_sp-1, 0);
-  pop_stack();
-",
-		      val, val >> 31, val & ((1 << 31) - 1), co);
+    if (val >= 1 << 31 || val < -(1 << 31))
+      error("Constant %s = %O out of range 32 bit.", co, val);
     else
       res += "  add_integer_constant(\""+co+"\", "+
 	(string)val+", 0);\n";
