@@ -5,7 +5,7 @@
 \*/
 /**/
 #include "global.h"
-RCSID("$Id: builtin_functions.c,v 1.284 2000/06/26 17:35:41 noring Exp $");
+RCSID("$Id: builtin_functions.c,v 1.285 2000/06/28 16:59:00 noring Exp $");
 #include "interpret.h"
 #include "svalue.h"
 #include "pike_macros.h"
@@ -752,6 +752,7 @@ static char *combine_path(char *cwd,char *file)
   char *my_cwd;
   char *cwdbuf = 0;
   int tmp;
+  ONERROR err;
 
   SET_ONERROR(err, free_nonull, cwdbuf);
   
