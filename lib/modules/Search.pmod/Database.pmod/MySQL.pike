@@ -12,21 +12,36 @@ void create_tables()
   catch(db->query("drop table word"));
   catch(db->query("drop table occurance"));
   db->query(
+#"create table uri      (id int unsigned primary key auto_increment not null,
+                         uri_first varchar(235),
+                         uri_rest text not null,
+                         uri_md5 char(16) not null default '',
+                         protocol_id tinyint,
+                         UNIQUE(uri_md5),
+                         INDEX index_uri_first (uri_first(235))"
+			 );
+
+  db->query(
+#"create table language (id smallint unsigned primary key auto_increment not null,
+                         language_code char(3) not null)"
+                         );
+  db->query(
 #"create table document (id int unsigned primary key auto_increment not null,
-                         uri text not null,
-                         uri_md5 char(32) not null,
+                         uri_id int unsigned not null,
                          title varchar(255),
                          description text,
                          last_indexed timestamp,
                          last_changed int unsigned,
                          size int unsigned,
                          mime_type smallint unsigned,
-                         unique(uri_md5),
-                         key(id,uri_md5))"
+                         language_id smallint unsigned)"
 			 );
-  //We're missing language...
-  //domain could be tokenized
-
+  
+  db->query(
+#"create table mime_type (id smallint unsigned primary_key auto_increment not null,
+                          name varchar(127))"
+                          );
+                          
   db->query(
 #"create table word (word varchar(255),
                      id int unsigned primary key)"
@@ -70,11 +85,7 @@ string to_md5(string url)
 {
   object md5 = Crypto.md5();
   md5->update(url);
-  string digest=md5->digest();
-  string res="";
-  foreach(values(digest), int c)
-    res+=sprintf("%02x",c);
-  return res;
+  return md5->digest();
 }
 
 
@@ -99,6 +110,10 @@ int hash_word(string word) {
 
 int wc=0;
 
+array(string) split_uri(string in)
+{
+  return ({ in[..218], in[219..] });
+}
 
 // Insert or update a page in the database.
 // title and description is already in words.
@@ -116,9 +131,9 @@ void insert_page(string uri, string title, string description, int last_changed,
   if(!doc_id)
   {
     db->query("INSERT INTO document "
-	      "(uri, uri_md5, title, description, last_changed, size, mime_type)"
-	      " VALUES ('%s', '%s', '%s', '%s', %s, %s, %s)",
-	      uri, to_md5(uri), title, description, last_changed, size, mime_type);
+	      "(uri_first, uri_rest, uri_md5, title, description, last_changed, size, mime_type)"
+	      " VALUES ('%s', '%s', '%s', '%s', '%s', %s, %s, %s)",
+	      @split_uri(uri), to_md5(uri), title, description, last_changed, size, mime_type);
     werror("[%s] ",uri);
     doc_id = db->master_sql->insert_id();
     new=1;
@@ -197,8 +212,9 @@ void optimize()
 array(mapping) lookup_word(string word)
 {
   return db->query("SELECT SUM(ranking) AS score, COUNT(id) AS hits, "
-		   "document.* FROM document, "
-		   "occurance WHERE word_id=%s and "
+		   "document.*, document.uri_first+document.uri_rest as document.uri "
+                   "FROM document, occurance "
+                   "WHERE word_id=%s and "
 		   "occurance.document_id=document.id GROUP BY id",
 		   hash_word(word));
 }
