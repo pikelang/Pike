@@ -63,6 +63,10 @@ void status1(string fmt, mixed ... args)
   }
 #endif
 
+  // Ugly thing, but status_clear does not indent in non-tty mode...
+  if(!istty())
+    write("   ");
+  
   write("%s\n",sprintf(fmt,@args));
 }
 
