@@ -1,5 +1,5 @@
 #
-# $Id: dynamic_module_makefile.in,v 1.105 2003/05/15 14:04:51 grubba Exp $
+# $Id: dynamic_module_makefile.in,v 1.106 2003/10/28 21:25:16 bill Exp $
 #
 
 LIBGCC=@LIBGCC@
@@ -35,24 +35,35 @@ Makefile: $(MODULE_BASE)/dynamic_module_makefile $(SRCDIR)/Makefile.in $(SRCDIR)
 	@exit 1
 
 $(MODULE_TARGET): module.so
+	if test "x$(OBJS)" = "x" ; then \
+	  exit 0; \
+	fi; \
+	echo "Installing C component"; \
 	$(TMP_BINDIR)/install_module module.so $(MODULE_TARGET)
 
 module.so: $(OBJS)  $(MODULE_ARCHIVES)
-	@echo "Linking $(MODNAME)" ;\
+	@if test "x$(OBJS)" = "x" ; then \
+	  echo "No C components"; exit 0; \
+	fi; \
+	echo "Linking $(MODNAME)" ;\
 	if $(TMP_BINDIR)/smartlink "$(LDSHARED)" $(LDFLAGS) -o module.@SO@ \
-	    $(OBJS) $(MODULE_ARCHIVES) $(MODULE_LDFLAGS) \
-	    $(LIBGCC) $(LC_REQ) $(LIBGCC) ; then \
+	  $(OBJS) $(MODULE_ARCHIVES) $(MODULE_LDFLAGS) \
+	  $(LIBGCC) $(LC_REQ) $(LIBGCC) ; then \
 	  if test @SO@ != so ; then mv module.@SO@ module.so ; else :; fi ;\
 	else \
 	  echo "Linking failed:" >&2; \
 	  echo $(TMP_BINDIR)/smartlink "$(LDSHARED)" $(LDFLAGS) -o module.@SO@ $(OBJS) $(MODULE_ARCHIVES) $(MODULE_LDFLAGS) $(LIBGCC) $(LC_REQ) $(LIBGCC) >&2 ;\
 	  exit 1; \
 	fi
-
+				
 $(OBJS) : $(MODULE_BASE)/dynamic_module_makefile
 
 
 # FIXME: Is the following code correct?
 install: $(MODULE_INSTALL)
+	@if test "x$(OBJS)" = "x" ; then \
+	 exit 0; \
+	fi; \
+	echo "Installing C component"; \
 	$(TMP_BINDIR)/install_module module.so @prefix@/lib/pike/modules/$(MODNAME).so
 
