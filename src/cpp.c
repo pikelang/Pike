@@ -5,7 +5,7 @@
 \*/
 
 /*
- * $Id: cpp.c,v 1.66 2000/06/16 15:37:10 lange Exp $
+ * $Id: cpp.c,v 1.67 2000/08/08 19:44:06 grubba Exp $
  */
 #include "global.h"
 #include "stralloc.h"
@@ -551,9 +551,9 @@ static struct pike_string *recode_string(struct pike_string *data)
 	(!((unsigned char *)data->str)[1])) {
       /* 32bit Unicode (UCS4) */
       struct pike_string *new_str;
-      int len;
-      int i;
-      int j;
+      ptrdiff_t len;
+      ptrdiff_t i;
+      ptrdiff_t j;
       p_wchar0 *orig = STR0(data);
       p_wchar2 *dest;
 
@@ -622,7 +622,7 @@ static struct pike_string *recode_string(struct pike_string *data)
     struct pike_string *new_str;
     char *p = strchr(data->str, '\n');
     char *p2;
-    unsigned int len;
+    size_t len;
 
     if (!p) {
       return data;
@@ -646,7 +646,7 @@ static struct pike_string *recode_string(struct pike_string *data)
 
     /* Various consistency checks. */
     if ((sp[-1].type != T_STRING) || (sp[-1].u.string->size_shift) ||
-	(((unsigned int)sp[-1].u.string->len) < CONSTANT_STRLEN("#charset")) ||
+	(((size_t)sp[-1].u.string->len) < CONSTANT_STRLEN("#charset")) ||
 	(sp[-1].u.string->str[0] != '#')) {
       pop_stack();
       return data;

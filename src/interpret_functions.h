@@ -1,5 +1,5 @@
 /*
- * $Id: interpret_functions.h,v 1.28 2000/08/07 16:12:39 grubba Exp $
+ * $Id: interpret_functions.h,v 1.29 2000/08/08 19:37:13 grubba Exp $
  *
  * Opcode definitions for the interpreter.
  */
@@ -704,15 +704,17 @@ OPCODE0(F_ASSIGN, "assign")
 BREAK;
 
 OPCODE2(F_APPLY_ASSIGN_LOCAL_AND_POP,"apply, assign local and pop")
-  strict_apply_svalue(Pike_fp->context.prog->constants + arg1, Pike_sp - *--Pike_mark_sp );
+  strict_apply_svalue(&((Pike_fp->context.prog->constants + arg1)->sval),
+		      DO_NOT_WARN(Pike_sp - *--Pike_mark_sp));
   free_svalue(Pike_fp->locals+arg2);
   Pike_fp->locals[arg2]=Pike_sp[-1];
   Pike_sp--;
 BREAK;
 
 OPCODE2(F_APPLY_ASSIGN_LOCAL,"apply, assign local")
-  strict_apply_svalue(Pike_fp->context.prog->constants + arg1, Pike_sp - *--Pike_mark_sp );
-  assign_svalue(Pike_fp->locals+arg2,Pike_sp-1);
+  strict_apply_svalue(&((Pike_fp->context.prog->constants + arg1)->sval),
+		      DO_NOT_WARN(Pike_sp - *--Pike_mark_sp));
+  assign_svalue(Pike_fp->locals+arg2, Pike_sp-1);
 BREAK;
 
 OPCODE0(F_ASSIGN_AND_POP, "assign and pop")
@@ -1478,21 +1480,21 @@ OPCODE1(F_CALL_LFUN_AND_POP,"call lfun & pop")
 BREAK;
 
 OPCODE1(F_MARK_APPLY,"mark apply")
- strict_apply_svalue(Pike_fp->context.prog->constants + arg1, 0);
+ strict_apply_svalue(&((Pike_fp->context.prog->constants + arg1)->sval), 0);
 BREAK;
 
 OPCODE1(F_MARK_APPLY_POP,"mark, apply & pop")
-  strict_apply_svalue(Pike_fp->context.prog->constants + arg1, 0);
+  strict_apply_svalue(&((Pike_fp->context.prog->constants + arg1)->sval), 0);
   pop_stack();
 BREAK;
 
     CASE(F_APPLY);
-      strict_apply_svalue(Pike_fp->context.prog->constants + GET_ARG(),
+      strict_apply_svalue(&((Pike_fp->context.prog->constants + GET_ARG())->sval),
 			  DO_NOT_WARN(Pike_sp - *--Pike_mark_sp ));
       break;
 
     CASE(F_APPLY_AND_POP);
-      strict_apply_svalue(Pike_fp->context.prog->constants + GET_ARG(),
+      strict_apply_svalue(&((Pike_fp->context.prog->constants + GET_ARG())->sval),
 			  DO_NOT_WARN(Pike_sp - *--Pike_mark_sp ));
       pop_stack();
       break;
