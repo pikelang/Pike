@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: error.c,v 1.104 2003/03/28 22:00:46 mast Exp $
+|| $Id: error.c,v 1.105 2003/04/01 14:24:19 mast Exp $
 */
 
 #define NO_PIKE_SHORTHAND
@@ -23,7 +23,7 @@
 #include "threads.h"
 #include "gc.h"
 
-RCSID("$Id: error.c,v 1.104 2003/03/28 22:00:46 mast Exp $");
+RCSID("$Id: error.c,v 1.105 2003/04/01 14:24:19 mast Exp $");
 
 #undef ATTRIBUTE
 #define ATTRIBUTE(X)
@@ -752,7 +752,10 @@ PMOD_EXPORT DECLSPEC(noreturn) void bad_arg_error(
 {
   INIT_ERROR(bad_arg);
   ERROR_COPY(bad_arg, which_arg);
-  ERROR_STRUCT(bad_arg,o)->expected_type=make_shared_string(expected_type);
+  if (expected_type)
+    ERROR_STRUCT(bad_arg,o)->expected_type=make_shared_string(expected_type);
+  else
+    ERROR_STRUCT(bad_arg,o)->expected_type = NULL;
   if(got)
   {
     ERROR_COPY_SVALUE(bad_arg, got);
@@ -763,30 +766,6 @@ PMOD_EXPORT DECLSPEC(noreturn) void bad_arg_error(
   }
   DWERROR((stderr, "%s():Bad arg %d (expected %s)\n",
 	   func, which_arg, expected_type));
-  ERROR_DONE(generic);
-}
-
-/* This one doesn't record an expected type. */
-PMOD_EXPORT DECLSPEC(noreturn) void bad_arg_error_2(
-  const char *func,
-  struct svalue *base_sp,  int args,
-  int which_arg,
-  struct svalue *got,
-  const char *desc, ...)  ATTRIBUTE((noreturn,format (printf, 7, 8)))
-{
-  INIT_ERROR(bad_arg);
-  ERROR_COPY(bad_arg, which_arg);
-  ERROR_STRUCT(bad_arg,o)->expected_type=NULL;
-  if(got)
-  {
-    ERROR_COPY_SVALUE(bad_arg, got);
-  }else{
-    ERROR_STRUCT(bad_arg,o)->got.type=PIKE_T_INT;
-    ERROR_STRUCT(bad_arg,o)->got.subtype=NUMBER_UNDEFINED;
-    ERROR_STRUCT(bad_arg,o)->got.u.integer=0;
-  }
-  DWERROR((stderr, "%s():Bad arg %d\n",
-	   func, which_arg));
   ERROR_DONE(generic);
 }
 
@@ -838,13 +817,13 @@ PMOD_EXPORT void wrong_number_of_args_error(const char *name, int args, int expe
 {
   if(expected>args)
   {
-    bad_arg_error_2 (name, Pike_sp-args, args, expected, NULL,
-		     "Too few arguments to %s(). Expected at least %d.\n",
-		     name, expected);
+    bad_arg_error (name, Pike_sp-args, args, expected, NULL, NULL,
+		   "Too few arguments to %s(). Expected at least %d.\n",
+		   name, expected);
   }else {
-    bad_arg_error_2 (name, Pike_sp-args, args, expected, NULL,
-		     "Too many arguments to %s(). Expected at most %d.\n",
-		     name, expected);
+    bad_arg_error (name, Pike_sp-args, args, expected, NULL, NULL,
+		   "Too many arguments to %s(). Expected at most %d.\n",
+		   name, expected);
   }
 }
 

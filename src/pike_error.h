@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: pike_error.h,v 1.27 2003/03/28 22:00:46 mast Exp $
+|| $Id: pike_error.h,v 1.28 2003/04/01 14:24:19 mast Exp $
 */
 
 #ifndef PIKE_ERROR_H
@@ -240,12 +240,6 @@ PMOD_EXPORT DECLSPEC(noreturn) void bad_arg_error(
   const char *expected_type,
   struct svalue *got,
   const char *desc, ...)  ATTRIBUTE((noreturn,format (printf, 7, 8)));
-PMOD_EXPORT DECLSPEC(noreturn) void bad_arg_error_2(
-  const char *func,
-  struct svalue *base_sp,  int args,
-  int which_arg,
-  struct svalue *got,
-  const char *desc, ...)  ATTRIBUTE((noreturn,format (printf, 6, 7)));
 PMOD_EXPORT void DECLSPEC(noreturn) math_error(
   const char *func,
   struct svalue *base_sp,  int args,
@@ -262,7 +256,8 @@ PMOD_EXPORT void DECLSPEC(noreturn) permission_error(
   struct svalue *base_sp, int args,
   const char *permission_type,
   const char *desc, ...) ATTRIBUTE((noreturn, format(printf, 5, 6)));
-PMOD_EXPORT void wrong_number_of_args_error(const char *name, int args, int expected);
+PMOD_EXPORT void wrong_number_of_args_error(const char *name, int args, int expected)
+  ATTRIBUTE((noreturn));
 void init_error(void);
 void cleanup_error(void);
 /* Prototypes end here */
@@ -285,8 +280,8 @@ PMOD_EXPORT extern const char msg_bad_arg[];
  * trailing newline. */
 PMOD_EXPORT extern const char msg_bad_arg_2[];
 #define SIMPLE_ARG_ERROR(FUNC, ARG, PROBLEM) \
-   bad_arg_error_2(FUNC, Pike_sp-args, args, ARG, Pike_sp+ARG-1-args,\
-		   msg_bad_arg_2, ARG, FUNC, PROBLEM)
+  bad_arg_error (FUNC, Pike_sp-args, args, ARG, NULL, Pike_sp+ARG-1-args, \
+		 msg_bad_arg_2, ARG, FUNC, PROBLEM)
 
 #define SIMPLE_WRONG_NUM_ARGS_ERROR(FUNC, ARG) \
   wrong_number_of_args_error (FUNC, args, ARG)
