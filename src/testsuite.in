@@ -1,4 +1,4 @@
-test_true([["$Id: testsuite.in,v 1.475 2001/12/12 21:14:04 mast Exp $"]]);
+test_true([["$Id: testsuite.in,v 1.476 2001/12/15 01:53:10 mast Exp $"]]);
 
 cond([[all_constants()->_verify_internals]],
 [[
@@ -1120,6 +1120,60 @@ test_do([[
  if (err) throw (err);
 
  Stdio.recursive_rm("testsuite_test_dir.pmod");
+]]);
+
+test_do([[
+  Stdio.recursive_rm ("testsuite_test_dir.pmod");
+  mkdir ("testsuite_test_dir.pmod");
+
+  Stdio.write_file ("testsuite_test_dir.pmod/module.pmod", #"\
+    .B b();
+    class X {}");
+  Stdio.write_file ("testsuite_test_dir.pmod/A.pike", #"\
+    int f() {return 0;}");
+  Stdio.write_file ("testsuite_test_dir.pmod/B.pike", #"\
+    inherit .A;
+    .X g() {return f() && .X();}");
+
+  object orig_master = master();
+  replace_master (object_program (orig_master)());
+  mixed err = catch {
+      compile_string ("import \".\";\n"
+		      "int foo() { testsuite_test_dir.B(); }",
+		      "test");
+    };
+  replace_master (orig_master);
+  if (err) throw (err);
+
+  Stdio.recursive_rm ("testsuite_test_dir.pmod");
+]]);
+
+test_do([[
+  Stdio.recursive_rm ("testsuite_test_dir.pmod");
+  mkdir ("testsuite_test_dir.pmod");
+
+  Stdio.write_file ("testsuite_test_dir.pmod/module.pmod", #"\
+    .B b();
+    class X {}");
+  Stdio.write_file ("testsuite_test_dir.pmod/A.pike", #"\
+    int f() {return 0;}");
+  Stdio.write_file ("testsuite_test_dir.pmod/B.pmod", #"\
+    class B {
+      inherit .A;
+      .X g() {return f() && .X();}
+    }");
+
+  object orig_master = master();
+  replace_master (object_program (orig_master)());
+  mixed err = catch {
+      compile_string ("import \".\";\n"
+		      "int foo() { testsuite_test_dir.B.B(); }",
+		      "test");
+    };
+  replace_master (orig_master);
+  if (err) throw (err);
+
+  Stdio.recursive_rm ("testsuite_test_dir.pmod");
 ]]);
 
 test_compile_any([[int log() { return 17; } class Greta { int hanna() { return log(); } }]])
