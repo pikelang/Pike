@@ -3,7 +3,7 @@
 #endif /* HAVE_CONFIG_H */
 
 #include "../../global.h"
-RCSID("$Id: charsetmod.c,v 1.27 2001/05/10 18:05:17 grubba Exp $");
+RCSID("$Id: charsetmod.c,v 1.28 2001/06/05 21:41:08 marcus Exp $");
 #include "program.h"
 #include "interpret.h"
 #include "stralloc.h"
@@ -28,6 +28,7 @@ static struct program *std_cs_program = NULL, *std_rfc_program = NULL;
 static struct program *utf7_program = NULL, *utf8_program = NULL;
 static struct program *utf7e_program = NULL, *utf8e_program = NULL;
 static struct program *utf7_5_program = NULL, *utf7_5e_program = NULL;
+static struct program *euc_program = NULL, *sjis_program = NULL;
 static struct program *std_94_program = NULL, *std_96_program = NULL;
 static struct program *std_9494_program = NULL, *std_9696_program = NULL;
 static struct program *std_8bit_program = NULL, *std_8bite_program = NULL;
@@ -54,6 +55,11 @@ struct utf7_stor {
   int shift, datbit;
 };
 static size_t utf7_stor_offs = 0;
+
+struct euc_stor {
+  UNICHAR const *table;
+};
+static size_t euc_stor_offs = 0;
 
 struct std8e_stor {
   p_wchar0 *revtab;
@@ -402,6 +408,122 @@ static void utf7_init_stor(struct object *o)
 static void f_feed_utf7(INT32 args)
 {
   f_std_feed(args, feed_utf7);
+}
+
+static ptrdiff_t feed_sjis(const p_wchar0 *p, ptrdiff_t l,
+			   struct std_cs_stor *s)
+{
+  extern UNICHAR map_JIS_C6226_1983[];
+  while(l>0) {
+    unsigned INT32 ch = *p++;
+    if(ch < 0x80) {
+      if(ch == 0x5c)
+	ch = 0xa5;
+      else if(ch == 0x7e)
+	ch = 0x203e;
+      string_builder_putchar(&s->strbuild, ch);
+      --l;
+    } else if(ch < 0xa1 || ch >= 0xe0) {
+      if(ch == 0x80 || ch == 0xa0 || ch >= 0xeb) {
+	string_builder_putchar(&s->strbuild, 0xfffd);
+	--l;
+      } else {
+	int lo;
+	if(l<2)
+	  return l;
+	lo = *p++;
+	l -= 2;
+	if(ch > 0xa0)
+	  ch -= 0x40;
+	if(lo >= 0x40 && lo <= 0x9e)
+	  ch = map_JIS_C6226_1983[(ch-0x81)*188+(lo-0x40)];
+	else if(lo >= 0x9f && lo <= 0xfc)
+	  ch = map_JIS_C6226_1983[(ch-0x81)*188+94+(lo-0x9f)];
+	else
+	  ch = 0xfffd;
+	string_builder_putchar(&s->strbuild, ch);
+      }
+    } else {
+      string_builder_putchar(&s->strbuild, ch+0xfec0);
+      --l;
+    }
+  }
+  return l;
+}
+
+static void f_feed_sjis(INT32 args)
+{
+  f_std_feed(args, feed_sjis);
+}
+
+static ptrdiff_t feed_euc(const p_wchar0 *p, ptrdiff_t l,
+			  struct std_cs_stor *s)
+{
+  struct euc_stor *euc = (struct euc_stor *)(((char*)s)+euc_stor_offs);
+  UNICHAR const *map = euc->table;
+
+  while(l>0) {
+    unsigned INT32 ch = *p++;
+    if(ch < 0x80) {
+      string_builder_putchar(&s->strbuild, ch);
+      --l;
+    } else if(ch > 0xa0 && ch < 0xff) {
+      int lo;
+      if(l<2)
+	return l;
+      lo = (*p++)|0x80;
+      if(lo > 0xa0 && lo < 0xff)
+	ch = map[(ch-0xa1)*94+(lo-0xa1)];
+      else
+	ch = 0xfffd;
+      string_builder_putchar(&s->strbuild, ch);
+      l -= 2;
+    } else {
+      string_builder_putchar(&s->strbuild, 0xfffd);
+      --l;
+    }
+  }
+  return l;
+}
+
+static void f_feed_euc(INT32 args)
+{
+  f_std_feed(args, feed_euc);
+}
+
+static void f_create_euc(INT32 args)
+{
+  struct euc_stor *s = (struct euc_stor *)(fp->current_storage + euc_stor_offs);
+  extern struct charset_def charset_map[];
+  extern int num_charset_def;
+  struct pike_string *str;
+  int lo=0, hi=num_charset_def-1;
+
+  check_all_args("create()", args, BIT_STRING, 0);
+
+  str = sp[-args].u.string;
+
+  if(str->size_shift>0)
+    hi = -1;
+
+  while(lo<=hi) {
+    int c, mid = (lo+hi)>>1;
+    if((c = strcmp((char *)STR0(str), charset_map[mid].name))==0) {
+      if(charset_map[mid].mode == MODE_9494)
+	s->table = charset_map[mid].table;
+      break;
+    }
+    if(c<0)
+      hi=mid-1;
+    else
+      lo=mid+1;
+  }
+
+  if(s->table == NULL)
+    Pike_error("Unknown charset in EUCDec\n");
+
+  pop_n_elems(args);
+  push_int(0);
 }
 
 static struct std8e_stor *push_std_8bite(int args, int allargs, int lo, int hi)
@@ -1272,6 +1394,21 @@ void pike_module_init(void)
 
   start_new_program();
   do_inherit(&prog, 0, NULL);
+  euc_stor_offs = ADD_STORAGE(struct euc_stor);
+  /* function(string:object) */
+  ADD_FUNCTION("feed", f_feed_euc,tFunc(tStr,tObj), 0);
+  /* function(string:) */
+  ADD_FUNCTION("create", f_create_euc,tFunc(tStr,tVoid), ID_STATIC);
+  add_program_constant("EUCDec", euc_program = end_program(), ID_STATIC|ID_NOMASK);
+
+  start_new_program();
+  do_inherit(&prog, 0, NULL);
+  /* function(string:object) */
+  ADD_FUNCTION("feed", f_feed_sjis,tFunc(tStr,tObj), 0);
+  add_program_constant("ShiftJisDec", sjis_program = end_program(), ID_STATIC|ID_NOMASK);
+
+  start_new_program();
+  do_inherit(&prog, 0, NULL);
   std8e_stor_offs = ADD_STORAGE(struct std8e_stor);
   /* function(string:object) */
   ADD_FUNCTION("feed", f_feed_std8e,tFunc(tStr,tObj), 0);
@@ -1352,6 +1489,12 @@ void pike_module_exit(void)
 
   if(utf7_5e_program != NULL)
     free_program(utf7_5e_program);
+
+  if(euc_program != NULL)
+    free_program(euc_program);
+
+  if(sjis_program != NULL)
+    free_program(sjis_program);
 
   if(std_94_program != NULL)
     free_program(std_94_program);

@@ -50,10 +50,22 @@ object(ascii) decoder(string name)
     "utf-8": UTF8dec,
     "utf-7.5": UTF7_5dec,
     "utf-7½": UTF7_5dec,
+    "shift_jis": ShiftJisDec,
   ])[name];
 
   if(p)
     return p();
+
+  if(name[..3]=="euc-" || name[..3]=="euc_") {
+    string sub = ([
+      "kr":"korean",
+      "jp":"x0208",
+      "cn":"chinese",
+    ])[name[4..]];
+
+    if(sub)
+      return EUCDec(sub);
+  }
 
   object o = rfc1345(name);
 
