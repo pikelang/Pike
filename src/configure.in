@@ -1,4 +1,4 @@
-AC_REVISION("$Id: configure.in,v 1.463 2001/01/25 22:13:44 grubba Exp $")
+AC_REVISION("$Id: configure.in,v 1.464 2001/01/25 22:47:35 grubba Exp $")
 AC_INIT(interpret.c)
 AC_CONFIG_HEADER(machine.h)
 
@@ -657,12 +657,16 @@ string:
 
 	AC_MSG_CHECKING(if patch_cc1 works)
 	if ./patch_cc1 "$cc1" 2>&5 >"$cc1.patched"; then
+	  if test -f "$cc1.patched"; then :; else
+	    AC_MSG_RESULT(no - failed to create $cc1.patched)
+	    exit 1
+	  fi
 	  if chmod 755 "$cc1.patched"; then :; else
-	    AC_MSG_ERROR(Failed to set permission to 755 on $cc1.patched)
+	    AC_MSG_RESULT(no - failed to set permission to 755 on $cc1.patched)
 	    exit 1
 	  fi
 
-	  if test "`ls -l \"$cc1\"|awk '{print $5}'`" = "`ls -l \"$cc1.patched\"|awk '{print $5}'`"; then
+	  if test "`/bin/ls -l \"$cc1\"|awk '{print $5}'`" = "`/bin/ls -l \"$cc1.patched\"|awk '{print $5}'`"; then
             if /usr/bin/strings "$cc1.patched" | grep uaword >/dev/null 2>&1; then
 	      rm -f "$cc1.patched"
               AC_MSG_RESULT(no -- patching failed)
@@ -680,6 +684,9 @@ string:
 	    AC_MSG_WARN(NOTE: Entering critical section.)
 	    AC_MSG_WARN(If configure fails at this point a broken gcc my result.)
 	    if /usr/bin/mv -f "$cc1" "$cc1.orig"; then
+
+	      AC_MSG_WARN(Moved $cc1 to $cc1.orig.)
+
 	      if /usr/bin/mv -f "$cc1.patched" "$cc1"; then
 	        AC_MSG_WARN(Patching seems to have succeeded.)
 		AC_MSG_WARN(Please rerun configure.)
