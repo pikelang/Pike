@@ -2,10 +2,8 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: dumpmaster.pike,v 1.9 2002/10/11 02:06:25 nilsson Exp $
+|| $Id: dumpmaster.pike,v 1.10 2002/10/11 02:39:03 nilsson Exp $
 */
-
-#define UNDEFINED (([])[0])
 
 string fr;
 
@@ -26,7 +24,7 @@ void handle_error(mixed err)
 
 void compile_error(string file,int line,string err)
 {
-  werror(sprintf("%s:%s:%s\n",file, line?(string)line:"-",err));
+  werror("%s:%s:%s\n", file, line?(string)line:"-", err);
 }
 
 string fakeroot(string s)
@@ -60,10 +58,11 @@ class Codec
     return UNDEFINED;
   } 
 }
-void _main(string *argv, string *env)
+
+void _main(array(string) argv, array(string) env)
 {
   foreach(argv[1..sizeof(argv)-2], string f)
-    sscanf(f,"--fakeroot=%s",fr);
+    sscanf(f, "--fakeroot=%s", fr);
     
   program p=compile_file(argv[-1]);
   string s=encode_value(p, Codec());
@@ -71,5 +70,4 @@ void _main(string *argv, string *env)
   exit(0);
 }
 
-
-mixed resolv() { return ([])[0]; }
+mixed resolv() { return UNDEFINED; }
