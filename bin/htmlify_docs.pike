@@ -158,8 +158,8 @@ string magic(string s, int quote)
 /*
  * Magic to convert SYNTAX sections
  */
-inherit "/precompiled/regexp" : lastident;
-inherit "/precompiled/regexp" : megamagic;
+inherit Regexp : lastident;
+inherit Regexp : megamagic;
 
 string syntax_magic(string s)
 {
@@ -250,7 +250,7 @@ string short(string s)
 }
 
 
-inherit "/precompiled/regexp":is_example;
+inherit Regexp:is_example;
 
 list(string) indexes_done=(<>);
 list(string) pages_done=(<>);
