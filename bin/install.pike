@@ -633,7 +633,7 @@ void do_export()
     // Minimize the number of src directives.
     root->set_sources();
 
-    // Generate the XML tree.
+    // Generate the XML directory tree.
     WixNode xml_root = Parser.XML.Tree.SimpleRootNode()->
       add_child(Parser.XML.Tree.SimpleHeaderNode((["version":"1.0",
 						   "encoding":"utf-8"])))->
@@ -660,6 +660,35 @@ void do_export()
 			  add_child(root->gen_xml())));
 
     Stdio.write_file(export_base_name+"_module.wxs", xml_root->render_xml());
+
+    // Generate the custom actions needed to install the master,
+    // and finalize the pike binary.
+
+    status("Creating", export_base_name+"_actions.wxs");
+
+    WixNode xml_root = Parser.XML.Tree.SimpleRootNode()->
+      add_child(Parser.XML.Tree.SimpleHeaderNode((["version":"1.0",
+						   "encoding":"utf-8"])))->
+      add_child(WixNode("Wix", ([
+			  "xmlns":"http://schemas.microsoft.com/wix/2003/01/wi",
+			]))->
+		add_child(WixNode("Fragment", ([
+				    "Id":"PikeActions",
+				  ]))->
+			  add_child(WixNode("CustomAction", ([
+					      "Id":"FinalizePike",
+					      "ExeCommand":
+					      "-m"+translate("unpack_master.pike", translator)+
+					      " -DNOT_INSTALLED"+
+					      " "+translate( combine_path(vars->TMP_BINDIR,"install.pike"), translator),
+					      "FileKey":root->sub_dirs->build->files["pike.exe"]->id,
+					      
+					    ])))->
+			  add_child(WixNode("CustomAction", ([
+					      "Id":"InstallMaster",
+					    ])))));
+
+    Stdio.write_file(export_base_name+"_actions.wxs", xml_root->render_xml());
 
     // Generate the main wxs file.
 
@@ -1301,7 +1330,7 @@ int pre_install(array(string) argv)
 
 #ifndef __NT__
       if (export == 1) {
-	if (mkdir(export_base_name+".dir")) {
+	if (!mkdir(export_base_name+".dir")) {
 	  error("Failed to create directory %O: %s\n",
 		export_base_name+".dir", strerror(errno()));
 	}
