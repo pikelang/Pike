@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: fdlib.c,v 1.60 2003/03/28 14:17:23 mast Exp $
+|| $Id: fdlib.c,v 1.61 2003/05/02 18:29:29 grubba Exp $
 */
 
 #include "global.h"
@@ -10,7 +10,7 @@
 #include "pike_error.h"
 #include <math.h>
 
-RCSID("$Id: fdlib.c,v 1.60 2003/03/28 14:17:23 mast Exp $");
+RCSID("$Id: fdlib.c,v 1.61 2003/05/02 18:29:29 grubba Exp $");
 
 #ifdef HAVE_WINSOCK_H
 
@@ -976,8 +976,9 @@ static long convert_filetime_to_time_t(FILETIME tmp)
 PMOD_EXPORT int debug_fd_fstat(FD fd, PIKE_STAT_T *s)
 {
   DWORD x;
-
   FILETIME c,a,m;
+
+  mt_lock(&fd_mutex);
   FDDEBUG(fprintf(stderr, "fstat on %d (%ld)\n",
 		  fd, PTRDIFF_T_TO_LONG((ptrdiff_t)da_handle[fd])));
   if(fd_type[fd]!=FD_FILE)
@@ -1009,6 +1010,7 @@ PMOD_EXPORT int debug_fd_fstat(FD fd, PIKE_STAT_T *s)
 	    if (s->st_size == INVALID_FILE_SIZE &&
 		(err = GetLastError()) != NO_ERROR) {
 	      errno = err;
+	      mt_unlock(&fd_mutex);
 	      return -1;
 	    }
 #ifdef INT64
@@ -1020,6 +1022,7 @@ PMOD_EXPORT int debug_fd_fstat(FD fd, PIKE_STAT_T *s)
 	  if(!GetFileTime(da_handle[fd], &c, &a, &m))
 	  {
 	    errno=GetLastError();
+	    mt_unlock(&fd_mutex);
 	    return -1;
 	  }
 	  s->st_ctime=convert_filetime_to_time_t(c);
@@ -1031,6 +1034,7 @@ PMOD_EXPORT int debug_fd_fstat(FD fd, PIKE_STAT_T *s)
       }
   }
   s->st_mode |= 0666;
+  mt_unlock(&fd_mutex);
   return 0;
 }
 
@@ -1124,6 +1128,8 @@ PMOD_EXPORT FD debug_fd_dup(FD from)
 {
   FD fd;
   HANDLE x,p=GetCurrentProcess();
+
+  mt_lock(&fd_mutex);
 #ifdef DEBUG
   if(fd_type[from]>=FD_NO_MORE_FREE)
     Pike_fatal("fd_dup() on file which is not open!\n");
@@ -1131,10 +1137,10 @@ PMOD_EXPORT FD debug_fd_dup(FD from)
   if(!DuplicateHandle(p,da_handle[from],p,&x,0,0,DUPLICATE_SAME_ACCESS))
   {
     errno=GetLastError();
+    mt_unlock(&fd_mutex);
     return -1;
   }
 
-  mt_lock(&fd_mutex);
   fd=first_free_handle;
   first_free_handle=fd_type[fd];
   fd_type[fd]=fd_type[from];
@@ -1149,13 +1155,15 @@ PMOD_EXPORT FD debug_fd_dup(FD from)
 PMOD_EXPORT FD debug_fd_dup2(FD from, FD to)
 {
   HANDLE x,p=GetCurrentProcess();
+
+  mt_lock(&fd_mutex);
   if(!DuplicateHandle(p,da_handle[from],p,&x,0,0,DUPLICATE_SAME_ACCESS))
   {
     errno=GetLastError();
+    mt_unlock(&fd_mutex);
     return -1;
   }
 
-  mt_lock(&fd_mutex);
   if(fd_type[to] < FD_NO_MORE_FREE)
   {
     if(!CloseHandle(da_handle[to]))
