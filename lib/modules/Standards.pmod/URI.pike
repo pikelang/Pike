@@ -3,7 +3,7 @@
 
 // Implemented by Johan Sundström and Johan Schön.
 // Copyright (c) Roxen Internet Software 2001
-// $Id: URI.pike,v 1.7 2001/01/26 14:54:31 jhs Exp $
+// $Id: URI.pike,v 1.8 2001/07/11 21:13:05 js Exp $
 
 #pragma strict_types
 
@@ -361,6 +361,11 @@ string|mapping cast(string to)
 			   "raw_uri", "base_uri",  });
       return mkmapping(i, rows(this_object(), i));
   }
+}
+
+string get_path_query()
+{
+  return (path||"") + (query ? "?" + query : "");
 }
 
 string _sprintf(int how, mapping|void args)
