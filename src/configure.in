@@ -1,4 +1,4 @@
-AC_REVISION("$Id: configure.in,v 1.383 2000/06/29 20:23:21 grubba Exp $")
+AC_REVISION("$Id: configure.in,v 1.384 2000/07/09 11:55:07 grubba Exp $")
 AC_INIT(interpret.c)
 AC_CONFIG_HEADER(machine.h)
 
@@ -841,7 +841,7 @@ if test $cflags_is_set = no; then
   DO_IF_OS(Windows_NT,
   [
     # FIXME: The test below probably doesn't work.
-    if test "x$CC" = "xecl"; then
+    if test "x$CC" = "xrntecl"; then
       # Some options used by ecl (Intel's IA64 compiler).
 
       # We want threads, and link libc statically.
@@ -1508,6 +1508,11 @@ rm confdefs.out.2 >/dev/null 2>/dev/null || :
 
     xAIX*)
       LIBS="${OLDLIBS} -lpthreads -lc_r"
+    ;;
+
+    xSolaris*)
+      # Some versions of Solaris 2.5.1 require linking with -lthread too.
+      LIBS="${OLDLIBS} -lpthread -lthread"
     ;;
 
     *)
