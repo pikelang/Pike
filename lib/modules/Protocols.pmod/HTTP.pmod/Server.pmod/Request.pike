@@ -163,18 +163,18 @@ static int parse_variables()
    if (query!="")
       .http_decode_urlencoded_query(query,variables);
 
-   if (request_type=="POST" &&
-       request_headers["content-type"]=="application/x-www-form-urlencoded")
+   if(((int)request_headers["content-length"]<=sizeof(buf)))
    {
-      if ((int)request_headers["content-length"]<=sizeof(buf))
-      {
-	 parse_post();
-	 return 1;
-      }
-      my_fd->set_read_callback(read_cb_post);
-      return 0; // delay
+      if(request_type=="POST" &&
+         request_headers["content-type"]=="application/x-www-form-urlencoded")
+         parse_post();
+      return 1;
    }
-   return 1;
+   else
+   {
+      my_fd->set_read_callback(read_cb_post);
+      return 0;
+   }
 }
 
 static void populate_raw()
