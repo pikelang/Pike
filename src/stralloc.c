@@ -15,7 +15,7 @@
 
 #include <ctype.h>
 
-RCSID("$Id: stralloc.c,v 1.50 1998/11/22 11:03:18 hubbe Exp $");
+RCSID("$Id: stralloc.c,v 1.51 1998/12/06 22:54:15 hubbe Exp $");
 
 #define BEGIN_HASH_SIZE 997
 #define MAX_AVG_LINK_LENGTH 3
@@ -604,6 +604,11 @@ void unlink_pike_string(struct pike_string *s)
   s->next=(struct pike_string *)-1;
 #endif
   num_strings--;
+}
+
+void do_free_string(struct pike_string *s)
+{
+  free_string(s);
 }
 
 void really_free_string(struct pike_string *s)

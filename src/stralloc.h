@@ -5,7 +5,7 @@
 \*/
 
 /*
- * $Id: stralloc.h,v 1.26 1998/11/22 11:03:19 hubbe Exp $
+ * $Id: stralloc.h,v 1.27 1998/12/06 22:54:16 hubbe Exp $
  */
 #ifndef STRALLOC_H
 #define STRALLOC_H
@@ -151,7 +151,7 @@ INLINE INT32 PIKE_CONCAT4(compare_,FROM,_to_,TO)(const PIKE_CONCAT(p_wchar,TO) *
 /* Prototypes begin here */
 INLINE unsigned INT32 index_shared_string(struct pike_string *s, int pos);
 INLINE void low_set_index(struct pike_string *s, int pos, int value);
-INLINE struct pike_string *debug_check_size_shift(struct pike_string *a,int shift);
+struct INLINE pike_string *debug_check_size_shift(struct pike_string *a,int shift);
 CONVERT(0,1)
 CONVERT(0,2)
 CONVERT(1,0)
@@ -178,6 +178,7 @@ struct pike_string *debug_make_shared_string(const char *str);
 struct pike_string *debug_make_shared_string1(const p_wchar1 *str);
 struct pike_string *debug_make_shared_string2(const p_wchar2 *str);
 void unlink_pike_string(struct pike_string *s);
+void do_free_string(struct pike_string *s);
 void really_free_string(struct pike_string *s);
 void debug_free_string(struct pike_string *s);
 struct pike_string *add_string_status(int verbose);
