@@ -31,22 +31,10 @@
 #ifdef HAVE_FREXP
 #define FREXP frexp
 #else
-double frexp(double x, int *exp)
-{
-  double ret;
-  *exp=(int)ceil(log(x)/log(2.0));
-  ret=(x*pow(2.0,(float)-*exp));
-  return ret;
-}
-#endif
-
-#ifdef HAVE_FREXP
-#define FREXP frexp
-#else
 double FREXP(double x, int *exp)
 {
   double ret;
-  *exp=(int)ceil(log(x)/log(2.0));
+  *exp=(int)ceil(log(fabs(x))/log(2.0));
   ret=(x*pow(2.0,(float)-*exp));
   return ret;
 }
