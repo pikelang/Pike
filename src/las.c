@@ -4,7 +4,7 @@
 ||| See the files COPYING and DISCLAIMER for more information.
 \*/
 #include "global.h"
-RCSID("$Id: las.c,v 1.37 1997/09/09 03:36:11 hubbe Exp $");
+RCSID("$Id: las.c,v 1.38 1997/09/29 01:38:53 hubbe Exp $");
 
 #include "language.h"
 #include "interpret.h"
@@ -521,8 +521,7 @@ node *index_node(node *n, struct pike_string * id)
       break;
 
     default:
-      push_string(id);
-      reference_shared_string(id);
+      ref_push_string(id);
       f_index(2);
 
       if(sp[-1].type == T_INT &&
