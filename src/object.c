@@ -5,7 +5,7 @@
 \*/
 /**/
 #include "global.h"
-RCSID("$Id: object.c,v 1.91 1999/12/14 23:54:28 mast Exp $");
+RCSID("$Id: object.c,v 1.92 2000/01/22 02:34:59 hubbe Exp $");
 #include "object.h"
 #include "dynamic_buffer.h"
 #include "interpret.h"
@@ -1308,7 +1308,7 @@ void push_magic_index(struct program *type, int inherit_no, int parent_level)
   o=fp->current_object;
   if(!o) error("Illegal magic index call.\n");
   
-  inherit=INHERIT_FROM_INT(fp->context.prog, fp->fun);
+  inherit=INHERIT_FROM_INT(fp->current_object->prog, fp->fun);
 
   while(parent_level--)
   {
