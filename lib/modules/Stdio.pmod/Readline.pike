@@ -1,4 +1,4 @@
-// $Id: Readline.pike,v 1.22 1999/06/11 21:40:29 marcus Exp $
+// $Id: Readline.pike,v 1.23 1999/06/16 22:53:05 marcus Exp $
 
 class OutputController
 {
@@ -884,7 +884,6 @@ class DefaultEditKeys
 
     if(ic->dumb) {
       ic->bind("^J", newline);
-      ic->bind("^M", lambda() { });
       return;
     }
     
