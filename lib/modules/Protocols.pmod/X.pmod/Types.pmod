@@ -615,6 +615,24 @@ class Window
       m->type = display->lookup_atom(m->type);
     return m;
   }
+
+  object ClearArea_req(int x, int y, int width, int height, int exposures)
+  {
+    object req = Requests.ClearArea();
+    req->window = id;
+    req->exposures = exposures;
+    req->x = x;
+    req->y = y;
+    req->width = width;
+    req->height = height;
+
+    return req;
+  }
+
+  void ClearArea(int x, int y, int width, int height, int|void exposures)
+  {
+    display->send_request(ClearArea_req(x, y, width, height, exposures));
+  }
   
   // Shape extension
   void ShapeRectangles( string kind, int xo, int yo, string operation,
