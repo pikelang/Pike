@@ -55,6 +55,20 @@ private class UTF16LEdec {
   static void create() { le=1; }
 }
 
+private string normalize(string in) {
+  if(!in) return 0;
+  string out = replace(lower_case(in),
+		      ({ "_",".",":","-","(",")" }),
+		      ({ "","","","","","" }));
+
+  if( (out=="isoir91" || out=="isoir92") && in[-2]!='9')
+    out = sprintf("%s-%c", out[..sizeof(out)-2], out[-1]);
+
+  if(sscanf(out, "cp%*d")) out = out[2..];
+  if(sscanf(out, "ibm%*d")) out = out[3..];
+  return out;
+}
+
 //! Returns a charset decoder object.
 //! @param name
 //!   The name of the character set to decode from. Supported charsets
@@ -68,36 +82,36 @@ private class UTF16LEdec {
 //!   If the asked-for @[name] was not supported, an error is thrown.
 object(ascii) decoder(string name)
 {
+  name = normalize(name);
   if(!name || (<
-    "iso_8859-1:1987", "iso_8859-1:1998", "iso-8859-1", "iso_8859-1", 
-    "iso-ir-100", "latin1", "l1", "ansi_x3.4-1968", "iso_646.irv:1991", 
-    "iso646-us", "iso-ir-6", "us", "us-ascii", "ascii", "cp367", "ibm367", 
-    "cp819", "ibm819">)[name=lower_case(name)])
+    "iso885911987", "iso885911998", "iso88591", "isoir100",
+    "latin1", "l1", "ansix341968", "iso646irv1991", "iso646us",
+    "isoir6", "us", "usascii", "ascii", "367", "819">)[name])
     return ascii();
 
-  if(name[..7]=="iso-2022")
+  if(has_prefix(name, "iso2022"))
     return ISO2022Dec();
 
   program p = ([
-    "utf-7": UTF7dec,
-    "utf-8": UTF8dec,
-    "utf-16": UTF16dec,
-    "utf-16be": UTF16dec,
-    "utf-16le": UTF16LEdec,
-    "utf-7.5": UTF7_5dec,
-    "utf-7½": UTF7_5dec,
-    "shift_jis": ShiftJisDec,
+    "utf7": UTF7dec,
+    "utf8": UTF8dec,
+    "utf16": UTF16dec,
+    "utf16be": UTF16dec,
+    "utf16le": UTF16LEdec,
+    "utf75": UTF7_5dec,
+    "utf7½": UTF7_5dec,
+    "shiftjis": ShiftJisDec,
   ])[name];
 
   if(p)
     return p();
 
-  if(name[..3]=="euc-" || name[..3]=="euc_") {
+  if(has_prefix(name, "euc")) {
     string sub = ([
       "kr":"korean",
       "jp":"x0208",
       "cn":"chinese",
-    ])[name[4..]];
+    ])[name[3..]];
 
     if(sub)
       return EUCDec(sub);
@@ -211,36 +225,36 @@ private class UTF16LEenc {
 object(_encoder) encoder(string name, string|void replacement,
 			 function(string:string)|void repcb)
 {
+  name = normalize(name);
   if(!name || (<
-    "iso_8859-1:1987", "iso_8859-1:1998", "iso-8859-1", "iso_8859-1", 
-    "iso-ir-100", "latin1", "l1", "ansi_x3.4-1968", "iso_646.irv:1991", 
-    "iso646-us", "iso-ir-6", "us", "us-ascii", "ascii", "cp367", "ibm367", 
-    "cp819", "ibm819">)[name=lower_case(name)])
+    "iso885911987", "iso885911998", "iso88591", "isoir100",
+    "latin1", "l1", "ansix341968", "iso646irv1991", "iso646us",
+    "isoir6", "us", "usascii", "ascii", "367", "819">)[name])
     return _encoder(replacement, repcb);
 
-  if(name[..7]=="iso-2022")
+  if(has_prefix(name, "iso2022"))
     return ISO2022Enc(replacement, repcb);
 
   program p = ([
-    "utf-7": UTF7enc,
-    "utf-8": UTF8enc,
-    "utf-16": UTF16enc,
-    "utf-16be": UTF16enc,
-    "utf-16le": UTF16LEenc,
-    "utf-7.5": UTF7_5enc,
-    "utf-7½": UTF7_5enc,
-    "shift_jis": ShiftJisEnc,
+    "utf7": UTF7enc,
+    "utf8": UTF8enc,
+    "utf16": UTF16enc,
+    "utf16be": UTF16enc,
+    "utf16le": UTF16LEenc,
+    "utf7.5": UTF7_5enc,
+    "utf7½": UTF7_5enc,
+    "shiftjis": ShiftJisEnc,
   ])[name];
 
   if(p)
     return p(replacement, repcb);
 
-  if(name[..3]=="euc-" || name[..3]=="euc_") {
+  if(has_prefix(name, "euc")) {
     string sub = ([
       "kr":"korean",
       "jp":"x0208",
       "cn":"chinese",
-    ])[name[4..]];
+    ])[name[3..]];
 
     if(sub)
       return EUCEnc(sub, replacement, repcb);

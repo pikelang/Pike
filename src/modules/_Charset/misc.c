@@ -1892,206 +1892,151 @@ static const struct {
   p_wchar1 const * table;
   int lo, hi;
 } charset_map[] = {
-  { "437", map_IBM437, 128, 255 },
-  { "850", map_IBM850, 128, 255 },
-  { "851", map_IBM851, 128, 255 },
-  { "852", map_IBM852, 128, 255 },
-  { "855", map_IBM855, 128, 255 },
-  { "857", map_IBM857, 128, 255 },
-  { "860", map_IBM860, 128, 255 },
-  { "861", map_IBM861, 128, 255 },
-  { "862", map_IBM862, 128, 255 },
-  { "863", map_IBM863, 128, 255 },
-  { "865", map_IBM865, 128, 255 },
-  { "866", map_IBM866, 128, 255 },
-  { "869", map_IBM869, 128, 255 },
-  { "904", map_IBM904, 128, 255 },
-  { "ansi_x3.110-1983", map_ANSI_X3_110_1983, 33, 255 },
-  { "cp-ar", map_IBM868, 128, 255 },
-  { "cp-gr", map_IBM869, 128, 255 },
-  { "cp-is", map_IBM861, 128, 255 },
-  { "cp037", map_IBM037, 32, 255 },
-  { "cp038", map_IBM038, 32, 255 },
-  { "cp1026", map_IBM1026, 32, 255 },
-  { "cp1250", map_windows_1250, 128, 255 },
-  { "cp1251", map_windows_1251, 128, 255 },
-  { "cp1252", map_windows_1252, 128, 255 },
-  { "cp1253", map_windows_1253, 128, 255 },
-  { "cp1254", map_windows_1254, 128, 255 },
-  { "cp1255", map_windows_1255, 128, 255 },
-  { "cp1256", map_windows_1256, 128, 255 },
-  { "cp1257", map_windows_1257, 128, 255 },
-  { "cp1258", map_windows_1258, 128, 255 },
-  { "cp273", map_IBM273, 32, 255 },
-  { "cp274", map_IBM274, 32, 255 },
-  { "cp275", map_IBM275, 32, 255 },
-  { "cp278", map_IBM278, 32, 255 },
-  { "cp280", map_IBM280, 32, 255 },
-  { "cp281", map_IBM281, 32, 255 },
-  { "cp284", map_IBM284, 32, 255 },
-  { "cp285", map_IBM285, 32, 255 },
-  { "cp290", map_IBM290, 32, 255 },
-  { "cp297", map_IBM297, 32, 255 },
-  { "cp420", map_IBM420, 32, 255 },
-  { "cp423", map_IBM423, 32, 255 },
-  { "cp424", map_IBM424, 32, 255 },
-  { "cp437", map_IBM437, 128, 255 },
-  { "cp500", map_IBM500, 32, 255 },
-  { "cp850", map_IBM850, 128, 255 },
-  { "cp851", map_IBM851, 128, 255 },
-  { "cp852", map_IBM852, 128, 255 },
-  { "cp855", map_IBM855, 128, 255 },
-  { "cp857", map_IBM857, 128, 255 },
-  { "cp860", map_IBM860, 128, 255 },
-  { "cp861", map_IBM861, 128, 255 },
-  { "cp862", map_IBM862, 128, 255 },
-  { "cp863", map_IBM863, 128, 255 },
-  { "cp864", map_IBM864, 128, 255 },
-  { "cp865", map_IBM865, 128, 255 },
-  { "cp866", map_IBM866, 128, 255 },
-  { "cp868", map_IBM868, 128, 255 },
-  { "cp869", map_IBM869, 128, 255 },
-  { "cp870", map_IBM870, 32, 255 },
-  { "cp871", map_IBM871, 32, 255 },
-  { "cp880", map_IBM880, 32, 255 },
-  { "cp891", map_IBM891, 128, 255 },
-  { "cp903", map_IBM903, 128, 255 },
-  { "cp904", map_IBM904, 128, 255 },
-  { "cp905", map_IBM905, 32, 255 },
-  { "cp918", map_IBM918, 32, 255 },
-  { "csa_t500-1983", map_ANSI_X3_110_1983, 33, 255 },
-  { "cuba", map_NC_NC00_10_81, 36, 127 },
-  { "dec", map_DEC_MCS, 160, 255 },
-  { "dec-mcs", map_DEC_MCS, 160, 255 },
-  { "dk", map_DS_2089, 91, 127 },
-  { "ds2089", map_DS_2089, 91, 127 },
-  { "ds_2089", map_DS_2089, 91, 127 },
-  { "ebcdic-at-de", map_EBCDIC_AT_DE, 32, 255 },
-  { "ebcdic-at-de-a", map_EBCDIC_AT_DE_A, 32, 255 },
-  { "ebcdic-be", map_IBM274, 32, 255 },
-  { "ebcdic-br", map_IBM275, 32, 255 },
-  { "ebcdic-ca-fr", map_EBCDIC_CA_FR, 32, 255 },
-  { "ebcdic-cp-ar1", map_IBM420, 32, 255 },
-  { "ebcdic-cp-ar2", map_IBM918, 32, 255 },
-  { "ebcdic-cp-be", map_IBM500, 32, 255 },
-  { "ebcdic-cp-ca", map_IBM037, 32, 255 },
-  { "ebcdic-cp-ch", map_IBM500, 32, 255 },
-  { "ebcdic-cp-dk", map_IBM277, 32, 255 },
-  { "ebcdic-cp-es", map_IBM284, 32, 255 },
-  { "ebcdic-cp-fi", map_IBM278, 32, 255 },
-  { "ebcdic-cp-fr", map_IBM297, 32, 255 },
-  { "ebcdic-cp-gb", map_IBM285, 32, 255 },
-  { "ebcdic-cp-gr", map_IBM423, 32, 255 },
-  { "ebcdic-cp-he", map_IBM424, 32, 255 },
-  { "ebcdic-cp-is", map_IBM871, 32, 255 },
-  { "ebcdic-cp-it", map_IBM280, 32, 255 },
-  { "ebcdic-cp-nl", map_IBM037, 32, 255 },
-  { "ebcdic-cp-no", map_IBM277, 32, 255 },
-  { "ebcdic-cp-roece", map_IBM870, 32, 255 },
-  { "ebcdic-cp-se", map_IBM278, 32, 255 },
-  { "ebcdic-cp-tr", map_IBM905, 32, 255 },
-  { "ebcdic-cp-us", map_IBM037, 32, 255 },
-  { "ebcdic-cp-wt", map_IBM037, 32, 255 },
-  { "ebcdic-cp-yu", map_IBM870, 32, 255 },
-  { "ebcdic-cyrillic", map_IBM880, 32, 255 },
-  { "ebcdic-dk-no", map_EBCDIC_DK_NO, 32, 255 },
-  { "ebcdic-dk-no-a", map_EBCDIC_DK_NO_A, 32, 255 },
-  { "ebcdic-es", map_EBCDIC_ES, 32, 255 },
-  { "ebcdic-es-a", map_EBCDIC_ES_A, 32, 255 },
-  { "ebcdic-es-s", map_EBCDIC_ES_S, 32, 255 },
-  { "ebcdic-fi-se", map_EBCDIC_FI_SE, 32, 255 },
-  { "ebcdic-fi-se-a", map_EBCDIC_FI_SE_A, 32, 255 },
-  { "ebcdic-fr", map_EBCDIC_FR, 32, 255 },
-  { "ebcdic-int", map_IBM038, 32, 255 },
-  { "ebcdic-it", map_EBCDIC_IT, 32, 255 },
-  { "ebcdic-jp-e", map_IBM281, 32, 255 },
-  { "ebcdic-jp-kana", map_IBM290, 32, 255 },
-  { "ebcdic-pt", map_EBCDIC_PT, 32, 255 },
-  { "ebcdic-uk", map_EBCDIC_UK, 32, 255 },
-  { "ebcdic-us", map_EBCDIC_US, 32, 255 },
-  { "greek-ccitt", map_greek_ccitt, 36, 127 },
-  { "hp-roman8", map_hp_roman8, 161, 255 },
-  { "ibm037", map_IBM037, 32, 255 },
-  { "ibm038", map_IBM038, 32, 255 },
-  { "ibm1026", map_IBM1026, 32, 255 },
-  { "ibm273", map_IBM273, 32, 255 },
-  { "ibm274", map_IBM274, 32, 255 },
-  { "ibm275", map_IBM275, 32, 255 },
-  { "ibm277", map_IBM277, 32, 255 },
-  { "ibm278", map_IBM278, 32, 255 },
-  { "ibm280", map_IBM280, 32, 255 },
-  { "ibm281", map_IBM281, 32, 255 },
-  { "ibm284", map_IBM284, 32, 255 },
-  { "ibm285", map_IBM285, 32, 255 },
-  { "ibm290", map_IBM290, 32, 255 },
-  { "ibm297", map_IBM297, 32, 255 },
-  { "ibm420", map_IBM420, 32, 255 },
-  { "ibm423", map_IBM423, 32, 255 },
-  { "ibm424", map_IBM424, 32, 255 },
-  { "ibm437", map_IBM437, 128, 255 },
-  { "ibm500", map_IBM500, 32, 255 },
-  { "ibm850", map_IBM850, 128, 255 },
-  { "ibm851", map_IBM851, 128, 255 },
-  { "ibm852", map_IBM852, 128, 255 },
-  { "ibm855", map_IBM855, 128, 255 },
-  { "ibm857", map_IBM857, 128, 255 },
-  { "ibm860", map_IBM860, 128, 255 },
-  { "ibm861", map_IBM861, 128, 255 },
-  { "ibm862", map_IBM862, 128, 255 },
-  { "ibm863", map_IBM863, 128, 255 },
-  { "ibm864", map_IBM864, 128, 255 },
-  { "ibm865", map_IBM865, 128, 255 },
-  { "ibm866", map_IBM866, 128, 255 },
-  { "ibm868", map_IBM868, 128, 255 },
-  { "ibm869", map_IBM869, 128, 255 },
-  { "ibm870", map_IBM870, 32, 255 },
-  { "ibm871", map_IBM871, 32, 255 },
-  { "ibm880", map_IBM880, 32, 255 },
-  { "ibm891", map_IBM891, 128, 255 },
-  { "ibm903", map_IBM903, 128, 255 },
-  { "ibm904", map_IBM904, 128, 255 },
-  { "ibm905", map_IBM905, 32, 255 },
-  { "ibm918", map_IBM918, 32, 255 },
-  { "invariant", map_INVARIANT, 35, 127 },
-  { "iso-ir-103", map_T_61_8bit, 33, 255 },
-  { "iso-ir-128", map_T_101_G2, 33, 255 },
-  { "iso-ir-150", map_greek_ccitt, 36, 127 },
-  { "iso-ir-151", map_NC_NC00_10_81, 36, 127 },
-  { "iso-ir-70", map_videotex_suppl, 33, 255 },
-  { "iso-ir-90", map_iso_ir_90, 33, 255 },
-  { "iso-ir-99", map_ANSI_X3_110_1983, 33, 255 },
-  { "iso646-cu", map_NC_NC00_10_81, 36, 127 },
-  { "iso646-dk", map_DS_2089, 91, 127 },
-  { "iso646-kr", map_KSC5636, 92, 127 },
-  { "iso_646.basic:1983", map_ISO_646_basic_1983, 35, 122 },
-  { "jis_x0201", map_JIS_X0201, 92, 255 },
-  { "koi8-r", map_koi8_r, 128, 255 },
-  { "koi8-u", map_koi8_u, 128, 255 },
-  { "ksc5636", map_KSC5636, 92, 127 },
-  { "mac", map_macintosh, 128, 255 },
-  { "mac-cyr", map_macintosh_cyr, 128, 255 },
-  { "macintosh", map_macintosh, 128, 255 },
-  { "macintosh-cyr", map_macintosh_cyr, 128, 255 },
-  { "ms-ansi", map_windows_1252, 128, 255 },
-  { "naplps", map_ANSI_X3_110_1983, 33, 255 },
-  { "nc_nc00-10:81", map_NC_NC00_10_81, 36, 127 },
-  { "r8", map_hp_roman8, 161, 255 },
-  { "ref", map_ISO_646_basic_1983, 35, 122 },
-  { "roman8", map_hp_roman8, 161, 255 },
-  { "t.101-g2", map_T_101_G2, 33, 255 },
-  { "t.61", map_T_61_8bit, 33, 255 },
-  { "t.61-8bit", map_T_61_8bit, 33, 255 },
-  { "videotex-suppl", map_videotex_suppl, 33, 255 },
-  { "windows-1250", map_windows_1250, 128, 255 },
-  { "windows-1251", map_windows_1251, 128, 255 },
-  { "windows-1252", map_windows_1252, 128, 255 },
-  { "windows-1253", map_windows_1253, 128, 255 },
-  { "windows-1254", map_windows_1254, 128, 255 },
-  { "windows-1255", map_windows_1255, 128, 255 },
-  { "windows-1256", map_windows_1256, 128, 255 },
-  { "windows-1257", map_windows_1257, 128, 255 },
-  { "windows-1258", map_windows_1258, 128, 255 },
-  { "x0201", map_JIS_X0201, 92, 255 },
+  { "037", map_IBM037, 32, 255 },                                     /* :: ibm037 */
+  { "038", map_IBM038, 32, 255 },                                     /* :: ibm038 */
+  { "1026", map_IBM1026, 32, 255 },                                   /* :: ibm1026 */
+  { "1250", map_windows_1250, 128, 255 },                             /* :: cp1250 */
+  { "1251", map_windows_1251, 128, 255 },                             /* :: cp1251 */
+  { "1252", map_windows_1252, 128, 255 },                             /* :: cp1252 */
+  { "1253", map_windows_1253, 128, 255 },                             /* :: cp1253 */
+  { "1254", map_windows_1254, 128, 255 },                             /* :: cp1254 */
+  { "1255", map_windows_1255, 128, 255 },                             /* :: cp1255 */
+  { "1256", map_windows_1256, 128, 255 },                             /* :: cp1256 */
+  { "1257", map_windows_1257, 128, 255 },                             /* :: cp1257 */
+  { "1258", map_windows_1258, 128, 255 },                             /* :: cp1258 */
+  { "273", map_IBM273, 32, 255 },                                     /* :: ibm273 */
+  { "274", map_IBM274, 32, 255 },                                     /* :: ibm274 */
+  { "275", map_IBM275, 32, 255 },                                     /* :: ibm275 */
+  { "277", map_IBM277, 32, 255 },                                     /* :: ibm277 */
+  { "278", map_IBM278, 32, 255 },                                     /* :: ibm278 */
+  { "280", map_IBM280, 32, 255 },                                     /* :: ibm280 */
+  { "281", map_IBM281, 32, 255 },                                     /* :: ibm281 */
+  { "284", map_IBM284, 32, 255 },                                     /* :: ibm284 */
+  { "285", map_IBM285, 32, 255 },                                     /* :: ibm285 */
+  { "290", map_IBM290, 32, 255 },                                     /* :: ibm290 */
+  { "297", map_IBM297, 32, 255 },                                     /* :: ibm297 */
+  { "420", map_IBM420, 32, 255 },                                     /* :: ibm420 */
+  { "423", map_IBM423, 32, 255 },                                     /* :: ibm423 */
+  { "424", map_IBM424, 32, 255 },                                     /* :: ibm424 */
+  { "437", map_IBM437, 128, 255 },                                    /* :: ibm437 */
+  { "500", map_IBM500, 32, 255 },                                     /* :: ibm500 */
+  { "850", map_IBM850, 128, 255 },                                    /* :: ibm850 */
+  { "851", map_IBM851, 128, 255 },                                    /* :: ibm851 */
+  { "852", map_IBM852, 128, 255 },                                    /* :: ibm852 */
+  { "855", map_IBM855, 128, 255 },                                    /* :: ibm855 */
+  { "857", map_IBM857, 128, 255 },                                    /* :: ibm857 */
+  { "860", map_IBM860, 128, 255 },                                    /* :: ibm860 */
+  { "861", map_IBM861, 128, 255 },                                    /* :: ibm861 */
+  { "862", map_IBM862, 128, 255 },                                    /* :: ibm862 */
+  { "863", map_IBM863, 128, 255 },                                    /* :: ibm863 */
+  { "864", map_IBM864, 128, 255 },                                    /* :: ibm864 */
+  { "865", map_IBM865, 128, 255 },                                    /* :: ibm865 */
+  { "866", map_IBM866, 128, 255 },                                    /* :: ibm866 */
+  { "868", map_IBM868, 128, 255 },                                    /* :: ibm868 */
+  { "869", map_IBM869, 128, 255 },                                    /* :: ibm869 */
+  { "870", map_IBM870, 32, 255 },                                     /* :: ibm870 */
+  { "871", map_IBM871, 32, 255 },                                     /* :: ibm871 */
+  { "880", map_IBM880, 32, 255 },                                     /* :: ibm880 */
+  { "891", map_IBM891, 128, 255 },                                    /* :: ibm891 */
+  { "903", map_IBM903, 128, 255 },                                    /* :: ibm903 */
+  { "904", map_IBM904, 128, 255 },                                    /* :: ibm904 */
+  { "905", map_IBM905, 32, 255 },                                     /* :: ibm905 */
+  { "918", map_IBM918, 32, 255 },                                     /* :: ibm918 */
+  { "ansix31101983", map_ANSI_X3_110_1983, 33, 255 },                 /* :: ansi_x3.110-1983 */
+  { "cpar", map_IBM868, 128, 255 },                                   /* :: cp-ar */
+  { "cpgr", map_IBM869, 128, 255 },                                   /* :: cp-gr */
+  { "cpis", map_IBM861, 128, 255 },                                   /* :: cp-is */
+  { "csat5001983", map_ANSI_X3_110_1983, 33, 255 },                   /* :: csa_t500-1983 */
+  { "cuba", map_NC_NC00_10_81, 36, 127 },                             /* :: cuba */
+  { "dec", map_DEC_MCS, 160, 255 },                                   /* :: dec */
+  { "decmcs", map_DEC_MCS, 160, 255 },                                /* :: dec-mcs */
+  { "dk", map_DS_2089, 91, 127 },                                     /* :: dk */
+  { "ds2089", map_DS_2089, 91, 127 },                                 /* :: ds_2089 */
+  { "ebcdicatde", map_EBCDIC_AT_DE, 32, 255 },                        /* :: ebcdic-at-de */
+  { "ebcdicatdea", map_EBCDIC_AT_DE_A, 32, 255 },                     /* :: ebcdic-at-de-a */
+  { "ebcdicbe", map_IBM274, 32, 255 },                                /* :: ebcdic-be */
+  { "ebcdicbr", map_IBM275, 32, 255 },                                /* :: ebcdic-br */
+  { "ebcdiccafr", map_EBCDIC_CA_FR, 32, 255 },                        /* :: ebcdic-ca-fr */
+  { "ebcdiccpar1", map_IBM420, 32, 255 },                             /* :: ebcdic-cp-ar1 */
+  { "ebcdiccpar2", map_IBM918, 32, 255 },                             /* :: ebcdic-cp-ar2 */
+  { "ebcdiccpbe", map_IBM500, 32, 255 },                              /* :: ebcdic-cp-be */
+  { "ebcdiccpca", map_IBM037, 32, 255 },                              /* :: ebcdic-cp-ca */
+  { "ebcdiccpch", map_IBM500, 32, 255 },                              /* :: ebcdic-cp-ch */
+  { "ebcdiccpdk", map_IBM277, 32, 255 },                              /* :: ebcdic-cp-dk */
+  { "ebcdiccpes", map_IBM284, 32, 255 },                              /* :: ebcdic-cp-es */
+  { "ebcdiccpfi", map_IBM278, 32, 255 },                              /* :: ebcdic-cp-fi */
+  { "ebcdiccpfr", map_IBM297, 32, 255 },                              /* :: ebcdic-cp-fr */
+  { "ebcdiccpgb", map_IBM285, 32, 255 },                              /* :: ebcdic-cp-gb */
+  { "ebcdiccpgr", map_IBM423, 32, 255 },                              /* :: ebcdic-cp-gr */
+  { "ebcdiccphe", map_IBM424, 32, 255 },                              /* :: ebcdic-cp-he */
+  { "ebcdiccpis", map_IBM871, 32, 255 },                              /* :: ebcdic-cp-is */
+  { "ebcdiccpit", map_IBM280, 32, 255 },                              /* :: ebcdic-cp-it */
+  { "ebcdiccpnl", map_IBM037, 32, 255 },                              /* :: ebcdic-cp-nl */
+  { "ebcdiccpno", map_IBM277, 32, 255 },                              /* :: ebcdic-cp-no */
+  { "ebcdiccproece", map_IBM870, 32, 255 },                           /* :: ebcdic-cp-roece */
+  { "ebcdiccpse", map_IBM278, 32, 255 },                              /* :: ebcdic-cp-se */
+  { "ebcdiccptr", map_IBM905, 32, 255 },                              /* :: ebcdic-cp-tr */
+  { "ebcdiccpus", map_IBM037, 32, 255 },                              /* :: ebcdic-cp-us */
+  { "ebcdiccpwt", map_IBM037, 32, 255 },                              /* :: ebcdic-cp-wt */
+  { "ebcdiccpyu", map_IBM870, 32, 255 },                              /* :: ebcdic-cp-yu */
+  { "ebcdiccyrillic", map_IBM880, 32, 255 },                          /* :: ebcdic-cyrillic */
+  { "ebcdicdkno", map_EBCDIC_DK_NO, 32, 255 },                        /* :: ebcdic-dk-no */
+  { "ebcdicdknoa", map_EBCDIC_DK_NO_A, 32, 255 },                     /* :: ebcdic-dk-no-a */
+  { "ebcdices", map_EBCDIC_ES, 32, 255 },                             /* :: ebcdic-es */
+  { "ebcdicesa", map_EBCDIC_ES_A, 32, 255 },                          /* :: ebcdic-es-a */
+  { "ebcdicess", map_EBCDIC_ES_S, 32, 255 },                          /* :: ebcdic-es-s */
+  { "ebcdicfise", map_EBCDIC_FI_SE, 32, 255 },                        /* :: ebcdic-fi-se */
+  { "ebcdicfisea", map_EBCDIC_FI_SE_A, 32, 255 },                     /* :: ebcdic-fi-se-a */
+  { "ebcdicfr", map_EBCDIC_FR, 32, 255 },                             /* :: ebcdic-fr */
+  { "ebcdicint", map_IBM038, 32, 255 },                               /* :: ebcdic-int */
+  { "ebcdicit", map_EBCDIC_IT, 32, 255 },                             /* :: ebcdic-it */
+  { "ebcdicjpe", map_IBM281, 32, 255 },                               /* :: ebcdic-jp-e */
+  { "ebcdicjpkana", map_IBM290, 32, 255 },                            /* :: ebcdic-jp-kana */
+  { "ebcdicpt", map_EBCDIC_PT, 32, 255 },                             /* :: ebcdic-pt */
+  { "ebcdicuk", map_EBCDIC_UK, 32, 255 },                             /* :: ebcdic-uk */
+  { "ebcdicus", map_EBCDIC_US, 32, 255 },                             /* :: ebcdic-us */
+  { "greekccitt", map_greek_ccitt, 36, 127 },                         /* :: greek-ccitt */
+  { "hproman8", map_hp_roman8, 161, 255 },                            /* :: hp-roman8 */
+  { "invariant", map_INVARIANT, 35, 127 },                            /* :: invariant */
+  { "iso646basic1983", map_ISO_646_basic_1983, 35, 122 },             /* :: iso_646.basic:1983 */
+  { "iso646cu", map_NC_NC00_10_81, 36, 127 },                         /* :: iso646-cu */
+  { "iso646dk", map_DS_2089, 91, 127 },                               /* :: iso646-dk */
+  { "iso646kr", map_KSC5636, 92, 127 },                               /* :: iso646-kr */
+  { "isoir103", map_T_61_8bit, 33, 255 },                             /* :: iso-ir-103 */
+  { "isoir128", map_T_101_G2, 33, 255 },                              /* :: iso-ir-128 */
+  { "isoir150", map_greek_ccitt, 36, 127 },                           /* :: iso-ir-150 */
+  { "isoir151", map_NC_NC00_10_81, 36, 127 },                         /* :: iso-ir-151 */
+  { "isoir70", map_videotex_suppl, 33, 255 },                         /* :: iso-ir-70 */
+  { "isoir90", map_iso_ir_90, 33, 255 },                              /* :: iso-ir-90 */
+  { "isoir99", map_ANSI_X3_110_1983, 33, 255 },                       /* :: iso-ir-99 */
+  { "jisx0201", map_JIS_X0201, 92, 255 },                             /* :: jis_x0201 */
+  { "koi8r", map_koi8_r, 128, 255 },                                  /* :: koi8-r */
+  { "koi8u", map_koi8_u, 128, 255 },                                  /* :: koi8-u */
+  { "ksc5636", map_KSC5636, 92, 127 },                                /* :: ksc5636 */
+  { "mac", map_macintosh, 128, 255 },                                 /* :: mac */
+  { "maccyr", map_macintosh_cyr, 128, 255 },                          /* :: mac-cyr */
+  { "macintosh", map_macintosh, 128, 255 },                           /* :: macintosh */
+  { "macintoshcyr", map_macintosh_cyr, 128, 255 },                    /* :: macintosh-cyr */
+  { "msansi", map_windows_1252, 128, 255 },                           /* :: ms-ansi */
+  { "naplps", map_ANSI_X3_110_1983, 33, 255 },                        /* :: naplps */
+  { "ncnc001081", map_NC_NC00_10_81, 36, 127 },                       /* :: nc_nc00-10:81 */
+  { "r8", map_hp_roman8, 161, 255 },                                  /* :: r8 */
+  { "ref", map_ISO_646_basic_1983, 35, 122 },                         /* :: ref */
+  { "roman8", map_hp_roman8, 161, 255 },                              /* :: roman8 */
+  { "t101g2", map_T_101_G2, 33, 255 },                                /* :: t.101-g2 */
+  { "t61", map_T_61_8bit, 33, 255 },                                  /* :: t.61 */
+  { "t618bit", map_T_61_8bit, 33, 255 },                              /* :: t.61-8bit */
+  { "videotexsuppl", map_videotex_suppl, 33, 255 },                   /* :: videotex-suppl */
+  { "windows1250", map_windows_1250, 128, 255 },                      /* :: windows-1250 */
+  { "windows1251", map_windows_1251, 128, 255 },                      /* :: windows-1251 */
+  { "windows1252", map_windows_1252, 128, 255 },                      /* :: windows-1252 */
+  { "windows1253", map_windows_1253, 128, 255 },                      /* :: windows-1253 */
+  { "windows1254", map_windows_1254, 128, 255 },                      /* :: windows-1254 */
+  { "windows1255", map_windows_1255, 128, 255 },                      /* :: windows-1255 */
+  { "windows1256", map_windows_1256, 128, 255 },                      /* :: windows-1256 */
+  { "windows1257", map_windows_1257, 128, 255 },                      /* :: windows-1257 */
+  { "windows1258", map_windows_1258, 128, 255 },                      /* :: windows-1258 */
+  { "x0201", map_JIS_X0201, 92, 255 },                                /* :: x0201 */
 };
 #define NUM_CHARSETS (sizeof(charset_map)/sizeof(charset_map[0]))
 

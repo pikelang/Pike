@@ -10766,289 +10766,274 @@ const UNICHAR * const iso2022_9696[] = {
   NULL, NULL, NULL, NULL, 
   NULL, NULL, NULL, NULL };
 const struct charset_def charset_map[] = {
-  { "ansi_x3.4-1968", map_ANSI_X3_4_1968, MODE_94 },
-  { "ansi_x3.4-1986", map_ANSI_X3_4_1968, MODE_94 },
-  { "arabic", map_ISO_8859_6_1999, MODE_96 },
-  { "arabic7", map_ASMO_449, MODE_94 },
-  { "ascii", map_ANSI_X3_4_1968, MODE_94 },
-  { "asmo-708", map_ISO_8859_6_1999, MODE_96 },
-  { "asmo_449", map_ASMO_449, MODE_94 },
-  { "big5", map_BIG5, MODE_BIG5 },
-  { "bs_4730", map_BS_4730, MODE_94 },
-  { "bs_viewdata", map_BS_viewdata, MODE_94 },
-  { "ca", map_CSA_Z243_4_1985_1, MODE_94 },
-  { "celtic", map_ISO_8859_14_1998, MODE_96 },
-  { "chinese", map_GB_2312_80, MODE_9494 },
-  { "cn", map_GB_1988_80, MODE_94 },
-  { "cp367", map_ANSI_X3_4_1968, MODE_94 },
-  { "cp819", map_ISO_8859_1_1998, MODE_96 },
-  { "cp950", map_CP950, MODE_BIG5 },
-  { "csa7-1", map_CSA_Z243_4_1985_1, MODE_94 },
-  { "csa7-2", map_CSA_Z243_4_1985_2, MODE_94 },
-  { "csa_z243.4-1985-1", map_CSA_Z243_4_1985_1, MODE_94 },
-  { "csa_z243.4-1985-2", map_CSA_Z243_4_1985_2, MODE_94 },
-  { "csa_z243.4-1985-gr", map_CSA_Z243_4_1985_gr, MODE_96 },
-  { "csn_369103", map_CSN_369103, MODE_96 },
-  { "cyrillic", map_ISO_8859_5_1999, MODE_96 },
-  { "de", map_DIN_66003, MODE_94 },
-  { "din_66003", map_DIN_66003, MODE_94 },
-  { "e13b", map_ISO_2033_1983, MODE_94 },
-  { "ecma-114", map_ISO_8859_6_1999, MODE_96 },
-  { "ecma-118", map_ISO_8859_7_1987, MODE_96 },
-  { "ecma-cyrillic", map_ECMA_cyrillic, MODE_96 },
-  { "elot_928", map_ISO_8859_7_1987, MODE_96 },
-  { "es", map_ES, MODE_94 },
-  { "es2", map_ES2, MODE_94 },
-  { "fi", map_SEN_850200_B, MODE_94 },
-  { "fr", map_NF_Z_62_010, MODE_94 },
-  { "gb", map_BS_4730, MODE_94 },
-  { "gb_1988-80", map_GB_1988_80, MODE_94 },
-  { "gb_2312-80", map_GB_2312_80, MODE_9494 },
-  { "gost_19768-74", map_GOST_19768_74, MODE_96 },
-  { "greek", map_ISO_8859_7_1987, MODE_96 },
-  { "greek7", map_greek7, MODE_94 },
-  { "greek7-old", map_greek7_old, MODE_94 },
-  { "greek8", map_ISO_8859_7_1987, MODE_96 },
-  { "hebrew", map_ISO_8859_8_1999, MODE_96 },
-  { "hu", map_MSZ_7795_3, MODE_94 },
-  { "ibm367", map_ANSI_X3_4_1968, MODE_94 },
-  { "ibm819", map_ISO_8859_1_1998, MODE_96 },
-  { "iec_p27-1", map_IEC_P27_1, MODE_96 },
-  { "inis", map_INIS, MODE_94 },
-  { "inis-8", map_INIS_8, MODE_94 },
-  { "inis-cyrillic", map_INIS_cyrillic, MODE_94 },
-  { "irv", map_ISO_646_irv_1983, MODE_94 },
-  { "iso-8859-1", map_ISO_8859_1_1998, MODE_96 },
-  { "iso-8859-10", map_ISO_8859_10_1998, MODE_96 },
-  { "iso-8859-13", map_ISO_8859_13_1998, MODE_96 },
-  { "iso-8859-14", map_ISO_8859_14_1998, MODE_96 },
-  { "iso-8859-15", map_ISO_8859_15_1999, MODE_96 },
-  { "iso-8859-2", map_ISO_8859_2_1999, MODE_96 },
-  { "iso-8859-3", map_ISO_8859_3_1999, MODE_96 },
-  { "iso-8859-4", map_ISO_8859_4_1998, MODE_96 },
-  { "iso-8859-5", map_ISO_8859_5_1999, MODE_96 },
-  { "iso-8859-6", map_ISO_8859_6_1999, MODE_96 },
-  { "iso-8859-7", map_ISO_8859_7_1987, MODE_96 },
-  { "iso-8859-8", map_ISO_8859_8_1999, MODE_96 },
-  { "iso-8859-9", map_ISO_8859_9_1999, MODE_96 },
-  { "iso-ir-10", map_SEN_850200_B, MODE_94 },
-  { "iso-ir-100", map_ISO_8859_1_1998, MODE_96 },
-  { "iso-ir-101", map_ISO_8859_2_1999, MODE_96 },
-  { "iso-ir-102", map_T_61_7bit, MODE_94 },
-  { "iso-ir-109", map_ISO_8859_3_1999, MODE_96 },
-  { "iso-ir-11", map_SEN_850200_C, MODE_94 },
-  { "iso-ir-110", map_ISO_8859_4_1998, MODE_96 },
-  { "iso-ir-111", map_ECMA_cyrillic, MODE_96 },
-  { "iso-ir-121", map_CSA_Z243_4_1985_1, MODE_94 },
-  { "iso-ir-122", map_CSA_Z243_4_1985_2, MODE_94 },
-  { "iso-ir-123", map_CSA_Z243_4_1985_gr, MODE_96 },
-  { "iso-ir-126", map_ISO_8859_7_1987, MODE_96 },
-  { "iso-ir-127", map_ISO_8859_6_1999, MODE_96 },
-  { "iso-ir-13", map_JIS_C6220_1969_jp, MODE_94 },
-  { "iso-ir-138", map_ISO_8859_8_1999, MODE_96 },
-  { "iso-ir-139", map_CSN_369103, MODE_96 },
-  { "iso-ir-14", map_JIS_C6220_1969_ro, MODE_94 },
-  { "iso-ir-141", map_JUS_I_B1_002, MODE_94 },
-  { "iso-ir-142", map_ISO_6937_2_add, MODE_96 },
-  { "iso-ir-143", map_IEC_P27_1, MODE_96 },
-  { "iso-ir-144", map_ISO_8859_5_1999, MODE_96 },
-  { "iso-ir-146", map_JUS_I_B1_003_serb, MODE_94 },
-  { "iso-ir-147", map_JUS_I_B1_003_mac, MODE_94 },
-  { "iso-ir-148", map_ISO_8859_9_1999, MODE_96 },
-  { "iso-ir-149", map_KS_C_5601_1987, MODE_9494 },
-  { "iso-ir-15", map_IT, MODE_94 },
-  { "iso-ir-152", map_ISO_6937_2_25, MODE_96 },
-  { "iso-ir-153", map_GOST_19768_74, MODE_96 },
-  { "iso-ir-154", map_ISO_8859_supp, MODE_96 },
-  { "iso-ir-155", map_ISO_10367_box, MODE_96 },
-  { "iso-ir-157", map_ISO_8859_10_1998, MODE_96 },
-  { "iso-ir-158", map_latin_lap, MODE_96 },
-  { "iso-ir-159", map_JIS_X0212_1990, MODE_9494 },
-  { "iso-ir-16", map_PT, MODE_94 },
-  { "iso-ir-17", map_ES, MODE_94 },
-  { "iso-ir-179", map_ISO_8859_13_1998, MODE_96 },
-  { "iso-ir-18", map_greek7_old, MODE_94 },
-  { "iso-ir-19", map_latin_greek, MODE_94 },
-  { "iso-ir-199", map_ISO_8859_14_1998, MODE_96 },
-  { "iso-ir-2", map_ISO_646_irv_1983, MODE_94 },
-  { "iso-ir-203", map_ISO_8859_15_1999, MODE_96 },
-  { "iso-ir-21", map_DIN_66003, MODE_94 },
-  { "iso-ir-25", map_NF_Z_62_010_1973, MODE_94 },
-  { "iso-ir-27", map_Latin_greek_1, MODE_94 },
-  { "iso-ir-37", map_ISO_5427, MODE_94 },
-  { "iso-ir-4", map_BS_4730, MODE_94 },
-  { "iso-ir-42", map_JIS_C6226_1978, MODE_9494 },
-  { "iso-ir-47", map_BS_viewdata, MODE_94 },
-  { "iso-ir-49", map_INIS, MODE_94 },
-  { "iso-ir-50", map_INIS_8, MODE_94 },
-  { "iso-ir-51", map_INIS_cyrillic, MODE_94 },
-  { "iso-ir-54", map_ISO_5427_1981, MODE_94 },
-  { "iso-ir-55", map_ISO_5428_1980, MODE_94 },
-  { "iso-ir-57", map_GB_1988_80, MODE_94 },
-  { "iso-ir-58", map_GB_2312_80, MODE_9494 },
-  { "iso-ir-6", map_ANSI_X3_4_1968, MODE_94 },
-  { "iso-ir-60", map_NS_4551_1, MODE_94 },
-  { "iso-ir-61", map_NS_4551_2, MODE_94 },
-  { "iso-ir-69", map_NF_Z_62_010, MODE_94 },
-  { "iso-ir-8-1", map_NATS_SEFI, MODE_94 },
-  { "iso-ir-8-2", map_NATS_SEFI_ADD, MODE_94 },
-  { "iso-ir-84", map_PT2, MODE_94 },
-  { "iso-ir-85", map_ES2, MODE_94 },
-  { "iso-ir-86", map_MSZ_7795_3, MODE_94 },
-  { "iso-ir-87", map_JIS_C6226_1983, MODE_9494 },
-  { "iso-ir-88", map_greek7, MODE_94 },
-  { "iso-ir-89", map_ASMO_449, MODE_94 },
-  { "iso-ir-9-1", map_NATS_DANO, MODE_94 },
-  { "iso-ir-9-2", map_NATS_DANO_ADD, MODE_94 },
-  { "iso-ir-91", map_JIS_C6229_1984_a, MODE_94 },
-  { "iso-ir-92", map_JIS_C6229_1984_b, MODE_94 },
-  { "iso-ir-93", map_JIS_C6229_1984_b_add, MODE_94 },
-  { "iso-ir-94", map_JIS_C6229_1984_hand, MODE_94 },
-  { "iso-ir-95", map_JIS_C6229_1984_hand_add, MODE_94 },
-  { "iso-ir-96", map_JIS_C6229_1984_kana, MODE_94 },
-  { "iso-ir-98", map_ISO_2033_1983, MODE_94 },
-  { "iso646-ca", map_CSA_Z243_4_1985_1, MODE_94 },
-  { "iso646-ca2", map_CSA_Z243_4_1985_2, MODE_94 },
-  { "iso646-cn", map_GB_1988_80, MODE_94 },
-  { "iso646-de", map_DIN_66003, MODE_94 },
-  { "iso646-es", map_ES, MODE_94 },
-  { "iso646-es2", map_ES2, MODE_94 },
-  { "iso646-fi", map_SEN_850200_B, MODE_94 },
-  { "iso646-fr", map_NF_Z_62_010, MODE_94 },
-  { "iso646-fr1", map_NF_Z_62_010_1973, MODE_94 },
-  { "iso646-gb", map_BS_4730, MODE_94 },
-  { "iso646-hu", map_MSZ_7795_3, MODE_94 },
-  { "iso646-it", map_IT, MODE_94 },
-  { "iso646-jp", map_JIS_C6220_1969_ro, MODE_94 },
-  { "iso646-jp-ocr-b", map_JIS_C6229_1984_b, MODE_94 },
-  { "iso646-no", map_NS_4551_1, MODE_94 },
-  { "iso646-no2", map_NS_4551_2, MODE_94 },
-  { "iso646-pt", map_PT, MODE_94 },
-  { "iso646-pt2", map_PT2, MODE_94 },
-  { "iso646-se", map_SEN_850200_B, MODE_94 },
-  { "iso646-se2", map_SEN_850200_C, MODE_94 },
-  { "iso646-us", map_ANSI_X3_4_1968, MODE_94 },
-  { "iso646-yu", map_JUS_I_B1_002, MODE_94 },
-  { "iso_10367-box", map_ISO_10367_box, MODE_96 },
-  { "iso_2033-1983", map_ISO_2033_1983, MODE_94 },
-  { "iso_5427", map_ISO_5427, MODE_94 },
-  { "iso_5427:1981", map_ISO_5427_1981, MODE_94 },
-  { "iso_5428:1980", map_ISO_5428_1980, MODE_94 },
-  { "iso_646.irv:1983", map_ISO_646_irv_1983, MODE_94 },
-  { "iso_646.irv:1991", map_ANSI_X3_4_1968, MODE_94 },
-  { "iso_6937-2-25", map_ISO_6937_2_25, MODE_96 },
-  { "iso_6937-2-add", map_ISO_6937_2_add, MODE_96 },
-  { "iso_8859-1", map_ISO_8859_1_1998, MODE_96 },
-  { "iso_8859-10", map_ISO_8859_10_1998, MODE_96 },
-  { "iso_8859-10:1998", map_ISO_8859_10_1998, MODE_96 },
-  { "iso_8859-13", map_ISO_8859_13_1998, MODE_96 },
-  { "iso_8859-13:1998", map_ISO_8859_13_1998, MODE_96 },
-  { "iso_8859-14", map_ISO_8859_14_1998, MODE_96 },
-  { "iso_8859-14:1998", map_ISO_8859_14_1998, MODE_96 },
-  { "iso_8859-15", map_ISO_8859_15_1999, MODE_96 },
-  { "iso_8859-15:1999", map_ISO_8859_15_1999, MODE_96 },
-  { "iso_8859-1:1987", map_ISO_8859_1_1998, MODE_96 },
-  { "iso_8859-1:1998", map_ISO_8859_1_1998, MODE_96 },
-  { "iso_8859-2", map_ISO_8859_2_1999, MODE_96 },
-  { "iso_8859-2:1987", map_ISO_8859_2_1999, MODE_96 },
-  { "iso_8859-2:1999", map_ISO_8859_2_1999, MODE_96 },
-  { "iso_8859-3", map_ISO_8859_3_1999, MODE_96 },
-  { "iso_8859-3:1988", map_ISO_8859_3_1999, MODE_96 },
-  { "iso_8859-3:1999", map_ISO_8859_3_1999, MODE_96 },
-  { "iso_8859-4", map_ISO_8859_4_1998, MODE_96 },
-  { "iso_8859-4:1998", map_ISO_8859_4_1998, MODE_96 },
-  { "iso_8859-5", map_ISO_8859_5_1999, MODE_96 },
-  { "iso_8859-5:1988", map_ISO_8859_5_1999, MODE_96 },
-  { "iso_8859-5:1999", map_ISO_8859_5_1999, MODE_96 },
-  { "iso_8859-6", map_ISO_8859_6_1999, MODE_96 },
-  { "iso_8859-6:1987", map_ISO_8859_6_1999, MODE_96 },
-  { "iso_8859-6:1999", map_ISO_8859_6_1999, MODE_96 },
-  { "iso_8859-7", map_ISO_8859_7_1987, MODE_96 },
-  { "iso_8859-7:1987", map_ISO_8859_7_1987, MODE_96 },
-  { "iso_8859-8", map_ISO_8859_8_1999, MODE_96 },
-  { "iso_8859-8:1999", map_ISO_8859_8_1999, MODE_96 },
-  { "iso_8859-9", map_ISO_8859_9_1999, MODE_96 },
-  { "iso_8859-9:1999", map_ISO_8859_9_1999, MODE_96 },
-  { "iso_8859-supp", map_ISO_8859_supp, MODE_96 },
-  { "iso_9036", map_ASMO_449, MODE_94 },
-  { "it", map_IT, MODE_94 },
-  { "jis_c6220-1969", map_JIS_C6220_1969_jp, MODE_94 },
-  { "jis_c6220-1969-jp", map_JIS_C6220_1969_jp, MODE_94 },
-  { "jis_c6220-1969-ro", map_JIS_C6220_1969_ro, MODE_94 },
-  { "jis_c6226-1978", map_JIS_C6226_1978, MODE_9494 },
-  { "jis_c6226-1983", map_JIS_C6226_1983, MODE_9494 },
-  { "jis_c6229-1984-a", map_JIS_C6229_1984_a, MODE_94 },
-  { "jis_c6229-1984-b", map_JIS_C6229_1984_b, MODE_94 },
-  { "jis_c6229-1984-b-add", map_JIS_C6229_1984_b_add, MODE_94 },
-  { "jis_c6229-1984-hand", map_JIS_C6229_1984_hand, MODE_94 },
-  { "jis_c6229-1984-hand-add", map_JIS_C6229_1984_hand_add, MODE_94 },
-  { "jis_c6229-1984-kana", map_JIS_C6229_1984_kana, MODE_94 },
-  { "jis_x0208-1983", map_JIS_C6226_1983, MODE_9494 },
-  { "jis_x0212-1990", map_JIS_X0212_1990, MODE_9494 },
-  { "jp", map_JIS_C6220_1969_ro, MODE_94 },
-  { "jp-ocr-a", map_JIS_C6229_1984_a, MODE_94 },
-  { "jp-ocr-b", map_JIS_C6229_1984_b, MODE_94 },
-  { "jp-ocr-b-add", map_JIS_C6229_1984_b_add, MODE_94 },
-  { "jp-ocr-hand", map_JIS_C6229_1984_hand, MODE_94 },
-  { "jp-ocr-hand-add", map_JIS_C6229_1984_hand_add, MODE_94 },
-  { "js", map_JUS_I_B1_002, MODE_94 },
-  { "jus_i.b1.002", map_JUS_I_B1_002, MODE_94 },
-  { "jus_i.b1.003-mac", map_JUS_I_B1_003_mac, MODE_94 },
-  { "jus_i.b1.003-serb", map_JUS_I_B1_003_serb, MODE_94 },
-  { "katakana", map_JIS_C6220_1969_jp, MODE_94 },
-  { "korean", map_KS_C_5601_1987, MODE_9494 },
-  { "ks_c_5601-1987", map_KS_C_5601_1987, MODE_9494 },
-  { "ks_c_5601-1989", map_KS_C_5601_1987, MODE_9494 },
-  { "ksc_5601", map_KS_C_5601_1987, MODE_9494 },
-  { "l1", map_ISO_8859_1_1998, MODE_96 },
-  { "l2", map_ISO_8859_2_1999, MODE_96 },
-  { "l3", map_ISO_8859_3_1999, MODE_96 },
-  { "l4", map_ISO_8859_4_1998, MODE_96 },
-  { "l5", map_ISO_8859_9_1999, MODE_96 },
-  { "l6", map_ISO_8859_10_1998, MODE_96 },
-  { "l7", map_ISO_8859_13_1998, MODE_96 },
-  { "l8", map_ISO_8859_14_1998, MODE_96 },
-  { "l9", map_ISO_8859_15_1999, MODE_96 },
-  { "lap", map_latin_lap, MODE_96 },
-  { "latin-greek", map_latin_greek, MODE_94 },
-  { "latin-greek-1", map_Latin_greek_1, MODE_94 },
-  { "latin1", map_ISO_8859_1_1998, MODE_96 },
-  { "latin1-2-5", map_ISO_8859_supp, MODE_96 },
-  { "latin2", map_ISO_8859_2_1999, MODE_96 },
-  { "latin3", map_ISO_8859_3_1999, MODE_96 },
-  { "latin4", map_ISO_8859_4_1998, MODE_96 },
-  { "latin5", map_ISO_8859_9_1999, MODE_96 },
-  { "latin6", map_ISO_8859_10_1998, MODE_96 },
-  { "latin7", map_ISO_8859_13_1998, MODE_96 },
-  { "latin8", map_ISO_8859_14_1998, MODE_96 },
-  { "latin9", map_ISO_8859_15_1999, MODE_96 },
-  { "macedonian", map_JUS_I_B1_003_mac, MODE_94 },
-  { "msz_7795.3", map_MSZ_7795_3, MODE_94 },
-  { "nats-dano", map_NATS_DANO, MODE_94 },
-  { "nats-dano-add", map_NATS_DANO_ADD, MODE_94 },
-  { "nats-sefi", map_NATS_SEFI, MODE_94 },
-  { "nats-sefi-add", map_NATS_SEFI_ADD, MODE_94 },
-  { "nf_z_62-010", map_NF_Z_62_010, MODE_94 },
-  { "nf_z_62-010_(1973)", map_NF_Z_62_010_1973, MODE_94 },
-  { "no", map_NS_4551_1, MODE_94 },
-  { "no2", map_NS_4551_2, MODE_94 },
-  { "ns_4551-1", map_NS_4551_1, MODE_94 },
-  { "ns_4551-2", map_NS_4551_2, MODE_94 },
-  { "pt", map_PT, MODE_94 },
-  { "pt2", map_PT2, MODE_94 },
-  { "se", map_SEN_850200_B, MODE_94 },
-  { "se2", map_SEN_850200_C, MODE_94 },
-  { "sen_850200_b", map_SEN_850200_B, MODE_94 },
-  { "sen_850200_c", map_SEN_850200_C, MODE_94 },
-  { "serbian", map_JUS_I_B1_003_serb, MODE_94 },
-  { "st_sev_358-88", map_GOST_19768_74, MODE_96 },
-  { "t.61-7bit", map_T_61_7bit, MODE_94 },
-  { "uk", map_BS_4730, MODE_94 },
-  { "us", map_ANSI_X3_4_1968, MODE_94 },
-  { "us-ascii", map_ANSI_X3_4_1968, MODE_94 },
-  { "x0201-7", map_JIS_C6220_1969_jp, MODE_94 },
-  { "x0208", map_JIS_C6226_1983, MODE_9494 },
-  { "x0212", map_JIS_X0212_1990, MODE_9494 },
-  { "yu", map_JUS_I_B1_002, MODE_94 },
+  { "367", map_ANSI_X3_4_1968, MODE_94 },                             /* :: ibm367 */
+  { "819", map_ISO_8859_1_1998, MODE_96 },                            /* :: ibm819 */
+  { "950", map_CP950, MODE_BIG5 },                                    /* :: cp950 */
+  { "ansix341968", map_ANSI_X3_4_1968, MODE_94 },                     /* :: ansi_x3.4-1968 */
+  { "ansix341986", map_ANSI_X3_4_1968, MODE_94 },                     /* :: ansi_x3.4-1986 */
+  { "arabic", map_ISO_8859_6_1999, MODE_96 },                         /* :: arabic */
+  { "arabic7", map_ASMO_449, MODE_94 },                               /* :: arabic7 */
+  { "ascii", map_ANSI_X3_4_1968, MODE_94 },                           /* :: ascii */
+  { "asmo449", map_ASMO_449, MODE_94 },                               /* :: asmo_449 */
+  { "asmo708", map_ISO_8859_6_1999, MODE_96 },                        /* :: asmo-708 */
+  { "big5", map_BIG5, MODE_BIG5 },                                    /* :: big5 */
+  { "bs4730", map_BS_4730, MODE_94 },                                 /* :: bs_4730 */
+  { "bsviewdata", map_BS_viewdata, MODE_94 },                         /* :: bs_viewdata */
+  { "ca", map_CSA_Z243_4_1985_1, MODE_94 },                           /* :: ca */
+  { "celtic", map_ISO_8859_14_1998, MODE_96 },                        /* :: celtic */
+  { "chinese", map_GB_2312_80, MODE_9494 },                           /* :: chinese */
+  { "cn", map_GB_1988_80, MODE_94 },                                  /* :: cn */
+  { "csa71", map_CSA_Z243_4_1985_1, MODE_94 },                        /* :: csa7-1 */
+  { "csa72", map_CSA_Z243_4_1985_2, MODE_94 },                        /* :: csa7-2 */
+  { "csaz243419851", map_CSA_Z243_4_1985_1, MODE_94 },                /* :: csa_z243.4-1985-1 */
+  { "csaz243419852", map_CSA_Z243_4_1985_2, MODE_94 },                /* :: csa_z243.4-1985-2 */
+  { "csaz24341985gr", map_CSA_Z243_4_1985_gr, MODE_96 },              /* :: csa_z243.4-1985-gr */
+  { "csn369103", map_CSN_369103, MODE_96 },                           /* :: csn_369103 */
+  { "cyrillic", map_ISO_8859_5_1999, MODE_96 },                       /* :: cyrillic */
+  { "de", map_DIN_66003, MODE_94 },                                   /* :: de */
+  { "din66003", map_DIN_66003, MODE_94 },                             /* :: din_66003 */
+  { "e13b", map_ISO_2033_1983, MODE_94 },                             /* :: e13b */
+  { "ecma114", map_ISO_8859_6_1999, MODE_96 },                        /* :: ecma-114 */
+  { "ecma118", map_ISO_8859_7_1987, MODE_96 },                        /* :: ecma-118 */
+  { "ecmacyrillic", map_ECMA_cyrillic, MODE_96 },                     /* :: ecma-cyrillic */
+  { "elot928", map_ISO_8859_7_1987, MODE_96 },                        /* :: elot_928 */
+  { "es", map_ES, MODE_94 },                                          /* :: es */
+  { "es2", map_ES2, MODE_94 },                                        /* :: es2 */
+  { "fi", map_SEN_850200_B, MODE_94 },                                /* :: fi */
+  { "fr", map_NF_Z_62_010, MODE_94 },                                 /* :: fr */
+  { "gb", map_BS_4730, MODE_94 },                                     /* :: gb */
+  { "gb198880", map_GB_1988_80, MODE_94 },                            /* :: gb_1988-80 */
+  { "gb231280", map_GB_2312_80, MODE_9494 },                          /* :: gb_2312-80 */
+  { "gost1976874", map_GOST_19768_74, MODE_96 },                      /* :: gost_19768-74 */
+  { "greek", map_ISO_8859_7_1987, MODE_96 },                          /* :: greek */
+  { "greek7", map_greek7, MODE_94 },                                  /* :: greek7 */
+  { "greek7old", map_greek7_old, MODE_94 },                           /* :: greek7-old */
+  { "greek8", map_ISO_8859_7_1987, MODE_96 },                         /* :: greek8 */
+  { "hebrew", map_ISO_8859_8_1999, MODE_96 },                         /* :: hebrew */
+  { "hu", map_MSZ_7795_3, MODE_94 },                                  /* :: hu */
+  { "iecp271", map_IEC_P27_1, MODE_96 },                              /* :: iec_p27-1 */
+  { "inis", map_INIS, MODE_94 },                                      /* :: inis */
+  { "inis8", map_INIS_8, MODE_94 },                                   /* :: inis-8 */
+  { "iniscyrillic", map_INIS_cyrillic, MODE_94 },                     /* :: inis-cyrillic */
+  { "irv", map_ISO_646_irv_1983, MODE_94 },                           /* :: irv */
+  { "iso10367box", map_ISO_10367_box, MODE_96 },                      /* :: iso_10367-box */
+  { "iso20331983", map_ISO_2033_1983, MODE_94 },                      /* :: iso_2033-1983 */
+  { "iso5427", map_ISO_5427, MODE_94 },                               /* :: iso_5427 */
+  { "iso54271981", map_ISO_5427_1981, MODE_94 },                      /* :: iso_5427:1981 */
+  { "iso54281980", map_ISO_5428_1980, MODE_94 },                      /* :: iso_5428:1980 */
+  { "iso646ca", map_CSA_Z243_4_1985_1, MODE_94 },                     /* :: iso646-ca */
+  { "iso646ca2", map_CSA_Z243_4_1985_2, MODE_94 },                    /* :: iso646-ca2 */
+  { "iso646cn", map_GB_1988_80, MODE_94 },                            /* :: iso646-cn */
+  { "iso646de", map_DIN_66003, MODE_94 },                             /* :: iso646-de */
+  { "iso646es", map_ES, MODE_94 },                                    /* :: iso646-es */
+  { "iso646es2", map_ES2, MODE_94 },                                  /* :: iso646-es2 */
+  { "iso646fi", map_SEN_850200_B, MODE_94 },                          /* :: iso646-fi */
+  { "iso646fr", map_NF_Z_62_010, MODE_94 },                           /* :: iso646-fr */
+  { "iso646fr1", map_NF_Z_62_010_1973, MODE_94 },                     /* :: iso646-fr1 */
+  { "iso646gb", map_BS_4730, MODE_94 },                               /* :: iso646-gb */
+  { "iso646hu", map_MSZ_7795_3, MODE_94 },                            /* :: iso646-hu */
+  { "iso646irv1983", map_ISO_646_irv_1983, MODE_94 },                 /* :: iso_646.irv:1983 */
+  { "iso646irv1991", map_ANSI_X3_4_1968, MODE_94 },                   /* :: iso_646.irv:1991 */
+  { "iso646it", map_IT, MODE_94 },                                    /* :: iso646-it */
+  { "iso646jp", map_JIS_C6220_1969_ro, MODE_94 },                     /* :: iso646-jp */
+  { "iso646jpocrb", map_JIS_C6229_1984_b, MODE_94 },                  /* :: iso646-jp-ocr-b */
+  { "iso646no", map_NS_4551_1, MODE_94 },                             /* :: iso646-no */
+  { "iso646no2", map_NS_4551_2, MODE_94 },                            /* :: iso646-no2 */
+  { "iso646pt", map_PT, MODE_94 },                                    /* :: iso646-pt */
+  { "iso646pt2", map_PT2, MODE_94 },                                  /* :: iso646-pt2 */
+  { "iso646se", map_SEN_850200_B, MODE_94 },                          /* :: iso646-se */
+  { "iso646se2", map_SEN_850200_C, MODE_94 },                         /* :: iso646-se2 */
+  { "iso646us", map_ANSI_X3_4_1968, MODE_94 },                        /* :: iso646-us */
+  { "iso646yu", map_JUS_I_B1_002, MODE_94 },                          /* :: iso646-yu */
+  { "iso6937225", map_ISO_6937_2_25, MODE_96 },                       /* :: iso_6937-2-25 */
+  { "iso69372add", map_ISO_6937_2_add, MODE_96 },                     /* :: iso_6937-2-add */
+  { "iso88591", map_ISO_8859_1_1998, MODE_96 },                       /* :: iso_8859-1 */
+  { "iso885910", map_ISO_8859_10_1998, MODE_96 },                     /* :: iso_8859-10 */
+  { "iso8859101998", map_ISO_8859_10_1998, MODE_96 },                 /* :: iso_8859-10:1998 */
+  { "iso885911987", map_ISO_8859_1_1998, MODE_96 },                   /* :: iso_8859-1:1987 */
+  { "iso885911998", map_ISO_8859_1_1998, MODE_96 },                   /* :: iso_8859-1:1998 */
+  { "iso885913", map_ISO_8859_13_1998, MODE_96 },                     /* :: iso_8859-13 */
+  { "iso8859131998", map_ISO_8859_13_1998, MODE_96 },                 /* :: iso_8859-13:1998 */
+  { "iso885914", map_ISO_8859_14_1998, MODE_96 },                     /* :: iso_8859-14 */
+  { "iso8859141998", map_ISO_8859_14_1998, MODE_96 },                 /* :: iso_8859-14:1998 */
+  { "iso885915", map_ISO_8859_15_1999, MODE_96 },                     /* :: iso_8859-15 */
+  { "iso8859151999", map_ISO_8859_15_1999, MODE_96 },                 /* :: iso_8859-15:1999 */
+  { "iso88592", map_ISO_8859_2_1999, MODE_96 },                       /* :: iso_8859-2 */
+  { "iso885921987", map_ISO_8859_2_1999, MODE_96 },                   /* :: iso_8859-2:1987 */
+  { "iso885921999", map_ISO_8859_2_1999, MODE_96 },                   /* :: iso_8859-2:1999 */
+  { "iso88593", map_ISO_8859_3_1999, MODE_96 },                       /* :: iso_8859-3 */
+  { "iso885931988", map_ISO_8859_3_1999, MODE_96 },                   /* :: iso_8859-3:1988 */
+  { "iso885931999", map_ISO_8859_3_1999, MODE_96 },                   /* :: iso_8859-3:1999 */
+  { "iso88594", map_ISO_8859_4_1998, MODE_96 },                       /* :: iso_8859-4 */
+  { "iso885941998", map_ISO_8859_4_1998, MODE_96 },                   /* :: iso_8859-4:1998 */
+  { "iso88595", map_ISO_8859_5_1999, MODE_96 },                       /* :: iso_8859-5 */
+  { "iso885951988", map_ISO_8859_5_1999, MODE_96 },                   /* :: iso_8859-5:1988 */
+  { "iso885951999", map_ISO_8859_5_1999, MODE_96 },                   /* :: iso_8859-5:1999 */
+  { "iso88596", map_ISO_8859_6_1999, MODE_96 },                       /* :: iso_8859-6 */
+  { "iso885961987", map_ISO_8859_6_1999, MODE_96 },                   /* :: iso_8859-6:1987 */
+  { "iso885961999", map_ISO_8859_6_1999, MODE_96 },                   /* :: iso_8859-6:1999 */
+  { "iso88597", map_ISO_8859_7_1987, MODE_96 },                       /* :: iso_8859-7 */
+  { "iso885971987", map_ISO_8859_7_1987, MODE_96 },                   /* :: iso_8859-7:1987 */
+  { "iso88598", map_ISO_8859_8_1999, MODE_96 },                       /* :: iso_8859-8 */
+  { "iso885981999", map_ISO_8859_8_1999, MODE_96 },                   /* :: iso_8859-8:1999 */
+  { "iso88599", map_ISO_8859_9_1999, MODE_96 },                       /* :: iso_8859-9 */
+  { "iso885991999", map_ISO_8859_9_1999, MODE_96 },                   /* :: iso_8859-9:1999 */
+  { "iso8859supp", map_ISO_8859_supp, MODE_96 },                      /* :: iso_8859-supp */
+  { "iso9036", map_ASMO_449, MODE_94 },                               /* :: iso_9036 */
+  { "isoir10", map_SEN_850200_B, MODE_94 },                           /* :: iso-ir-10 */
+  { "isoir100", map_ISO_8859_1_1998, MODE_96 },                       /* :: iso-ir-100 */
+  { "isoir101", map_ISO_8859_2_1999, MODE_96 },                       /* :: iso-ir-101 */
+  { "isoir102", map_T_61_7bit, MODE_94 },                             /* :: iso-ir-102 */
+  { "isoir109", map_ISO_8859_3_1999, MODE_96 },                       /* :: iso-ir-109 */
+  { "isoir11", map_SEN_850200_C, MODE_94 },                           /* :: iso-ir-11 */
+  { "isoir110", map_ISO_8859_4_1998, MODE_96 },                       /* :: iso-ir-110 */
+  { "isoir111", map_ECMA_cyrillic, MODE_96 },                         /* :: iso-ir-111 */
+  { "isoir121", map_CSA_Z243_4_1985_1, MODE_94 },                     /* :: iso-ir-121 */
+  { "isoir122", map_CSA_Z243_4_1985_2, MODE_94 },                     /* :: iso-ir-122 */
+  { "isoir123", map_CSA_Z243_4_1985_gr, MODE_96 },                    /* :: iso-ir-123 */
+  { "isoir126", map_ISO_8859_7_1987, MODE_96 },                       /* :: iso-ir-126 */
+  { "isoir127", map_ISO_8859_6_1999, MODE_96 },                       /* :: iso-ir-127 */
+  { "isoir13", map_JIS_C6220_1969_jp, MODE_94 },                      /* :: iso-ir-13 */
+  { "isoir138", map_ISO_8859_8_1999, MODE_96 },                       /* :: iso-ir-138 */
+  { "isoir139", map_CSN_369103, MODE_96 },                            /* :: iso-ir-139 */
+  { "isoir14", map_JIS_C6220_1969_ro, MODE_94 },                      /* :: iso-ir-14 */
+  { "isoir141", map_JUS_I_B1_002, MODE_94 },                          /* :: iso-ir-141 */
+  { "isoir142", map_ISO_6937_2_add, MODE_96 },                        /* :: iso-ir-142 */
+  { "isoir143", map_IEC_P27_1, MODE_96 },                             /* :: iso-ir-143 */
+  { "isoir144", map_ISO_8859_5_1999, MODE_96 },                       /* :: iso-ir-144 */
+  { "isoir146", map_JUS_I_B1_003_serb, MODE_94 },                     /* :: iso-ir-146 */
+  { "isoir147", map_JUS_I_B1_003_mac, MODE_94 },                      /* :: iso-ir-147 */
+  { "isoir148", map_ISO_8859_9_1999, MODE_96 },                       /* :: iso-ir-148 */
+  { "isoir149", map_KS_C_5601_1987, MODE_9494 },                      /* :: iso-ir-149 */
+  { "isoir15", map_IT, MODE_94 },                                     /* :: iso-ir-15 */
+  { "isoir152", map_ISO_6937_2_25, MODE_96 },                         /* :: iso-ir-152 */
+  { "isoir153", map_GOST_19768_74, MODE_96 },                         /* :: iso-ir-153 */
+  { "isoir154", map_ISO_8859_supp, MODE_96 },                         /* :: iso-ir-154 */
+  { "isoir155", map_ISO_10367_box, MODE_96 },                         /* :: iso-ir-155 */
+  { "isoir157", map_ISO_8859_10_1998, MODE_96 },                      /* :: iso-ir-157 */
+  { "isoir158", map_latin_lap, MODE_96 },                             /* :: iso-ir-158 */
+  { "isoir159", map_JIS_X0212_1990, MODE_9494 },                      /* :: iso-ir-159 */
+  { "isoir16", map_PT, MODE_94 },                                     /* :: iso-ir-16 */
+  { "isoir17", map_ES, MODE_94 },                                     /* :: iso-ir-17 */
+  { "isoir179", map_ISO_8859_13_1998, MODE_96 },                      /* :: iso-ir-179 */
+  { "isoir18", map_greek7_old, MODE_94 },                             /* :: iso-ir-18 */
+  { "isoir19", map_latin_greek, MODE_94 },                            /* :: iso-ir-19 */
+  { "isoir199", map_ISO_8859_14_1998, MODE_96 },                      /* :: iso-ir-199 */
+  { "isoir2", map_ISO_646_irv_1983, MODE_94 },                        /* :: iso-ir-2 */
+  { "isoir203", map_ISO_8859_15_1999, MODE_96 },                      /* :: iso-ir-203 */
+  { "isoir21", map_DIN_66003, MODE_94 },                              /* :: iso-ir-21 */
+  { "isoir25", map_NF_Z_62_010_1973, MODE_94 },                       /* :: iso-ir-25 */
+  { "isoir27", map_Latin_greek_1, MODE_94 },                          /* :: iso-ir-27 */
+  { "isoir37", map_ISO_5427, MODE_94 },                               /* :: iso-ir-37 */
+  { "isoir4", map_BS_4730, MODE_94 },                                 /* :: iso-ir-4 */
+  { "isoir42", map_JIS_C6226_1978, MODE_9494 },                       /* :: iso-ir-42 */
+  { "isoir47", map_BS_viewdata, MODE_94 },                            /* :: iso-ir-47 */
+  { "isoir49", map_INIS, MODE_94 },                                   /* :: iso-ir-49 */
+  { "isoir50", map_INIS_8, MODE_94 },                                 /* :: iso-ir-50 */
+  { "isoir51", map_INIS_cyrillic, MODE_94 },                          /* :: iso-ir-51 */
+  { "isoir54", map_ISO_5427_1981, MODE_94 },                          /* :: iso-ir-54 */
+  { "isoir55", map_ISO_5428_1980, MODE_94 },                          /* :: iso-ir-55 */
+  { "isoir57", map_GB_1988_80, MODE_94 },                             /* :: iso-ir-57 */
+  { "isoir58", map_GB_2312_80, MODE_9494 },                           /* :: iso-ir-58 */
+  { "isoir6", map_ANSI_X3_4_1968, MODE_94 },                          /* :: iso-ir-6 */
+  { "isoir60", map_NS_4551_1, MODE_94 },                              /* :: iso-ir-60 */
+  { "isoir61", map_NS_4551_2, MODE_94 },                              /* :: iso-ir-61 */
+  { "isoir69", map_NF_Z_62_010, MODE_94 },                            /* :: iso-ir-69 */
+  { "isoir81", map_NATS_SEFI, MODE_94 },                              /* :: iso-ir-8-1 */
+  { "isoir82", map_NATS_SEFI_ADD, MODE_94 },                          /* :: iso-ir-8-2 */
+  { "isoir84", map_PT2, MODE_94 },                                    /* :: iso-ir-84 */
+  { "isoir85", map_ES2, MODE_94 },                                    /* :: iso-ir-85 */
+  { "isoir86", map_MSZ_7795_3, MODE_94 },                             /* :: iso-ir-86 */
+  { "isoir87", map_JIS_C6226_1983, MODE_9494 },                       /* :: iso-ir-87 */
+  { "isoir88", map_greek7, MODE_94 },                                 /* :: iso-ir-88 */
+  { "isoir89", map_ASMO_449, MODE_94 },                               /* :: iso-ir-89 */
+  { "isoir9-1", map_NATS_DANO, MODE_94 },                             /* :: iso-ir-9-1 */
+  { "isoir9-2", map_NATS_DANO_ADD, MODE_94 },                         /* :: iso-ir-9-2 */
+  { "isoir91", map_JIS_C6229_1984_a, MODE_94 },                       /* :: iso-ir-91 */
+  { "isoir92", map_JIS_C6229_1984_b, MODE_94 },                       /* :: iso-ir-92 */
+  { "isoir93", map_JIS_C6229_1984_b_add, MODE_94 },                   /* :: iso-ir-93 */
+  { "isoir94", map_JIS_C6229_1984_hand, MODE_94 },                    /* :: iso-ir-94 */
+  { "isoir95", map_JIS_C6229_1984_hand_add, MODE_94 },                /* :: iso-ir-95 */
+  { "isoir96", map_JIS_C6229_1984_kana, MODE_94 },                    /* :: iso-ir-96 */
+  { "isoir98", map_ISO_2033_1983, MODE_94 },                          /* :: iso-ir-98 */
+  { "it", map_IT, MODE_94 },                                          /* :: it */
+  { "jisc62201969", map_JIS_C6220_1969_jp, MODE_94 },                 /* :: jis_c6220-1969 */
+  { "jisc62201969jp", map_JIS_C6220_1969_jp, MODE_94 },               /* :: jis_c6220-1969-jp */
+  { "jisc62201969ro", map_JIS_C6220_1969_ro, MODE_94 },               /* :: jis_c6220-1969-ro */
+  { "jisc62261978", map_JIS_C6226_1978, MODE_9494 },                  /* :: jis_c6226-1978 */
+  { "jisc62261983", map_JIS_C6226_1983, MODE_9494 },                  /* :: jis_c6226-1983 */
+  { "jisc62291984a", map_JIS_C6229_1984_a, MODE_94 },                 /* :: jis_c6229-1984-a */
+  { "jisc62291984b", map_JIS_C6229_1984_b, MODE_94 },                 /* :: jis_c6229-1984-b */
+  { "jisc62291984badd", map_JIS_C6229_1984_b_add, MODE_94 },          /* :: jis_c6229-1984-b-add */
+  { "jisc62291984hand", map_JIS_C6229_1984_hand, MODE_94 },           /* :: jis_c6229-1984-hand */
+  { "jisc62291984handadd", map_JIS_C6229_1984_hand_add, MODE_94 },    /* :: jis_c6229-1984-hand-add */
+  { "jisc62291984kana", map_JIS_C6229_1984_kana, MODE_94 },           /* :: jis_c6229-1984-kana */
+  { "jisx02081983", map_JIS_C6226_1983, MODE_9494 },                  /* :: jis_x0208-1983 */
+  { "jisx02121990", map_JIS_X0212_1990, MODE_9494 },                  /* :: jis_x0212-1990 */
+  { "jp", map_JIS_C6220_1969_ro, MODE_94 },                           /* :: jp */
+  { "jpocra", map_JIS_C6229_1984_a, MODE_94 },                        /* :: jp-ocr-a */
+  { "jpocrb", map_JIS_C6229_1984_b, MODE_94 },                        /* :: jp-ocr-b */
+  { "jpocrbadd", map_JIS_C6229_1984_b_add, MODE_94 },                 /* :: jp-ocr-b-add */
+  { "jpocrhand", map_JIS_C6229_1984_hand, MODE_94 },                  /* :: jp-ocr-hand */
+  { "jpocrhandadd", map_JIS_C6229_1984_hand_add, MODE_94 },           /* :: jp-ocr-hand-add */
+  { "js", map_JUS_I_B1_002, MODE_94 },                                /* :: js */
+  { "jusib1002", map_JUS_I_B1_002, MODE_94 },                         /* :: jus_i.b1.002 */
+  { "jusib1003mac", map_JUS_I_B1_003_mac, MODE_94 },                  /* :: jus_i.b1.003-mac */
+  { "jusib1003serb", map_JUS_I_B1_003_serb, MODE_94 },                /* :: jus_i.b1.003-serb */
+  { "katakana", map_JIS_C6220_1969_jp, MODE_94 },                     /* :: katakana */
+  { "korean", map_KS_C_5601_1987, MODE_9494 },                        /* :: korean */
+  { "ksc5601", map_KS_C_5601_1987, MODE_9494 },                       /* :: ksc_5601 */
+  { "ksc56011987", map_KS_C_5601_1987, MODE_9494 },                   /* :: ks_c_5601-1987 */
+  { "ksc56011989", map_KS_C_5601_1987, MODE_9494 },                   /* :: ks_c_5601-1989 */
+  { "l1", map_ISO_8859_1_1998, MODE_96 },                             /* :: l1 */
+  { "l2", map_ISO_8859_2_1999, MODE_96 },                             /* :: l2 */
+  { "l3", map_ISO_8859_3_1999, MODE_96 },                             /* :: l3 */
+  { "l4", map_ISO_8859_4_1998, MODE_96 },                             /* :: l4 */
+  { "l5", map_ISO_8859_9_1999, MODE_96 },                             /* :: l5 */
+  { "l6", map_ISO_8859_10_1998, MODE_96 },                            /* :: l6 */
+  { "l7", map_ISO_8859_13_1998, MODE_96 },                            /* :: l7 */
+  { "l8", map_ISO_8859_14_1998, MODE_96 },                            /* :: l8 */
+  { "l9", map_ISO_8859_15_1999, MODE_96 },                            /* :: l9 */
+  { "lap", map_latin_lap, MODE_96 },                                  /* :: lap */
+  { "latin1", map_ISO_8859_1_1998, MODE_96 },                         /* :: latin1 */
+  { "latin125", map_ISO_8859_supp, MODE_96 },                         /* :: latin1-2-5 */
+  { "latin2", map_ISO_8859_2_1999, MODE_96 },                         /* :: latin2 */
+  { "latin3", map_ISO_8859_3_1999, MODE_96 },                         /* :: latin3 */
+  { "latin4", map_ISO_8859_4_1998, MODE_96 },                         /* :: latin4 */
+  { "latin5", map_ISO_8859_9_1999, MODE_96 },                         /* :: latin5 */
+  { "latin6", map_ISO_8859_10_1998, MODE_96 },                        /* :: latin6 */
+  { "latin7", map_ISO_8859_13_1998, MODE_96 },                        /* :: latin7 */
+  { "latin8", map_ISO_8859_14_1998, MODE_96 },                        /* :: latin8 */
+  { "latin9", map_ISO_8859_15_1999, MODE_96 },                        /* :: latin9 */
+  { "latingreek", map_latin_greek, MODE_94 },                         /* :: latin-greek */
+  { "latingreek1", map_Latin_greek_1, MODE_94 },                      /* :: latin-greek-1 */
+  { "macedonian", map_JUS_I_B1_003_mac, MODE_94 },                    /* :: macedonian */
+  { "msz77953", map_MSZ_7795_3, MODE_94 },                            /* :: msz_7795.3 */
+  { "natsdano", map_NATS_DANO, MODE_94 },                             /* :: nats-dano */
+  { "natsdanoadd", map_NATS_DANO_ADD, MODE_94 },                      /* :: nats-dano-add */
+  { "natssefi", map_NATS_SEFI, MODE_94 },                             /* :: nats-sefi */
+  { "natssefiadd", map_NATS_SEFI_ADD, MODE_94 },                      /* :: nats-sefi-add */
+  { "nfz62010", map_NF_Z_62_010, MODE_94 },                           /* :: nf_z_62-010 */
+  { "nfz620101973", map_NF_Z_62_010_1973, MODE_94 },                  /* :: nf_z_62-010_(1973) */
+  { "no", map_NS_4551_1, MODE_94 },                                   /* :: no */
+  { "no2", map_NS_4551_2, MODE_94 },                                  /* :: no2 */
+  { "ns45511", map_NS_4551_1, MODE_94 },                              /* :: ns_4551-1 */
+  { "ns45512", map_NS_4551_2, MODE_94 },                              /* :: ns_4551-2 */
+  { "pt", map_PT, MODE_94 },                                          /* :: pt */
+  { "pt2", map_PT2, MODE_94 },                                        /* :: pt2 */
+  { "se", map_SEN_850200_B, MODE_94 },                                /* :: se */
+  { "se2", map_SEN_850200_C, MODE_94 },                               /* :: se2 */
+  { "sen850200b", map_SEN_850200_B, MODE_94 },                        /* :: sen_850200_b */
+  { "sen850200c", map_SEN_850200_C, MODE_94 },                        /* :: sen_850200_c */
+  { "serbian", map_JUS_I_B1_003_serb, MODE_94 },                      /* :: serbian */
+  { "stsev35888", map_GOST_19768_74, MODE_96 },                       /* :: st_sev_358-88 */
+  { "t617bit", map_T_61_7bit, MODE_94 },                              /* :: t.61-7bit */
+  { "uk", map_BS_4730, MODE_94 },                                     /* :: uk */
+  { "us", map_ANSI_X3_4_1968, MODE_94 },                              /* :: us */
+  { "usascii", map_ANSI_X3_4_1968, MODE_94 },                         /* :: us-ascii */
+  { "x02017", map_JIS_C6220_1969_jp, MODE_94 },                       /* :: x0201-7 */
+  { "x0208", map_JIS_C6226_1983, MODE_9494 },                         /* :: x0208 */
+  { "x0212", map_JIS_X0212_1990, MODE_9494 },                         /* :: x0212 */
+  { "yu", map_JUS_I_B1_002, MODE_94 },                                /* :: yu */
 };
 int num_charset_def = sizeof(charset_map)/sizeof(charset_map[0]);
