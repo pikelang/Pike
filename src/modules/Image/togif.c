@@ -4,7 +4,7 @@ togif
 
 Pontus Hagland, law@infovav.se
 
-$Id: togif.c,v 1.1 1997/02/11 08:35:47 hubbe Exp $ 
+$Id: togif.c,v 1.2 1997/03/17 03:08:02 hubbe Exp $ 
 
 */
 
@@ -17,7 +17,7 @@ $Id: togif.c,v 1.1 1997/02/11 08:35:47 hubbe Exp $
 #include "global.h"
 #include "threads.h"
 #include "types.h"
-#include "macros.h"
+#include "pike_macros.h"
 #include "object.h"
 #include "constants.h"
 #include "interpret.h"

@@ -4,14 +4,14 @@
 ||| See the files COPYING and DISCLAIMER for more information.
 \*/
 #include "global.h"
-RCSID("$Id: object.c,v 1.15 1997/03/12 12:15:28 hubbe Exp $");
+RCSID("$Id: object.c,v 1.16 1997/03/17 03:04:42 hubbe Exp $");
 #include "object.h"
 #include "dynamic_buffer.h"
 #include "interpret.h"
 #include "program.h"
 #include "stralloc.h"
 #include "svalue.h"
-#include "macros.h"
+#include "pike_macros.h"
 #include "memory.h"
 #include "error.h"
 #include "main.h"

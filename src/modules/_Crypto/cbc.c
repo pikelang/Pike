@@ -1,5 +1,5 @@
 /*
- * $Id: cbc.c,v 1.6 1997/03/12 12:21:13 hubbe Exp $
+ * $Id: cbc.c,v 1.7 1997/03/17 03:11:14 hubbe Exp $
  *
  * CBC (Cipher Block Chaining Mode) crypto module for Pike.
  *
@@ -18,7 +18,7 @@
 #include "interpret.h"
 #include "svalue.h"
 #include "constants.h"
-#include "macros.h"
+#include "pike_macros.h"
 #include "threads.h"
 #include "object.h"
 #include "stralloc.h"

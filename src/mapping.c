@@ -4,14 +4,14 @@
 ||| See the files COPYING and DISCLAIMER for more information.
 \*/
 #include "global.h"
-RCSID("$Id: mapping.c,v 1.15 1997/03/14 04:37:16 hubbe Exp $");
+RCSID("$Id: mapping.c,v 1.16 1997/03/17 03:04:41 hubbe Exp $");
 #include "main.h"
 #include "types.h"
 #include "object.h"
 #include "mapping.h"
 #include "svalue.h"
 #include "array.h"
-#include "macros.h"
+#include "pike_macros.h"
 #include "language.h"
 #include "error.h"
 #include "memory.h"

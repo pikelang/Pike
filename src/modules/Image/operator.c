@@ -1,4 +1,4 @@
-/* $Id: operator.c,v 1.2 1997/03/12 12:19:26 hubbe Exp $ */
+/* $Id: operator.c,v 1.3 1997/03/17 03:08:01 hubbe Exp $ */
 #include "global.h"
 
 #include <math.h>
@@ -7,7 +7,7 @@
 #include "stralloc.h"
 #include "global.h"
 #include "types.h"
-#include "macros.h"
+#include "pike_macros.h"
 #include "object.h"
 #include "constants.h"
 #include "interpret.h"

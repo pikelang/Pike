@@ -4,7 +4,7 @@
 ||| See the files COPYING and DISCLAIMER for more information.
 \*/
 #include "global.h"
-#include "macros.h"
+#include "pike_macros.h"
 #include "error.h"
 #include "interpret.h"
 #include "stralloc.h"

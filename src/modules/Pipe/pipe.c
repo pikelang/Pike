@@ -20,11 +20,11 @@
 #include <fcntl.h>
 
 #include "global.h"
-RCSID("$Id: pipe.c,v 1.3 1997/03/12 12:20:30 hubbe Exp $");
+RCSID("$Id: pipe.c,v 1.4 1997/03/17 03:09:45 hubbe Exp $");
 
 #include "stralloc.h"
 #include "types.h"
-#include "macros.h"
+#include "pike_macros.h"
 #include "object.h"
 #include "constants.h"
 #include "interpret.h"

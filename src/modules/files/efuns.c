@@ -10,7 +10,7 @@
 #include "stralloc.h"
 #include "array.h"
 #include "mapping.h"
-#include "macros.h"
+#include "pike_macros.h"
 #include "fd_control.h"
 #include "threads.h"
 #include "module_support.h"

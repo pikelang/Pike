@@ -1,6 +1,6 @@
 #include <config.h>
 
-/* $Id: font.c,v 1.3 1997/03/12 12:19:25 hubbe Exp $ */
+/* $Id: font.c,v 1.4 1997/03/17 03:08:00 hubbe Exp $ */
 
 #include "global.h"
 
@@ -22,7 +22,7 @@
 
 #include "stralloc.h"
 #include "types.h"
-#include "macros.h"
+#include "pike_macros.h"
 #include "object.h"
 #include "constants.h"
 #include "interpret.h"

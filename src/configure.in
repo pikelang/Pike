@@ -1,4 +1,4 @@
-AC_REVISION("$Id: configure.in,v 1.61 1997/03/12 12:05:48 hubbe Exp $")
+AC_REVISION("$Id: configure.in,v 1.62 1997/03/17 03:04:36 hubbe Exp $")
 AC_INIT(interpret.c)
 AC_CONFIG_HEADER(machine.h)
 
@@ -1334,13 +1334,23 @@ AC_MSG_RESULT($CCSHARED)
 AC_MSG_CHECKING(LINKFORSHARED)
 if test -z "$LINKFORSHARED"
 then
+  if test "$GCC" = yes ; then
     case $pike_cv_sys_os in
-	AIX*)	LINKFORSHARED="-Wl,-bE:python.exp";;
+	AIX*)	LINKFORSHARED="-Wl,-bE:pike.exp";;
+	hp*|HP*) LINKFORSHARED="-Wl,-E";;
+	Linux*) LINKFORSHARED="-rdynamic";;
+	next) LINKFORSHARED="-u libsys_s";;
+	SCO_SV*) LINKFORSHARED="-fpic -belf -dy";;
+    esac
+  else
+    case $pike_cv_sys_os in
+	AIX*)	LINKFORSHARED="-Wl,-bE:pike.exp";;
 	hp*|HP*) LINKFORSHARED="-Wl,-E";;
 	Linux*) LINKFORSHARED="-rdynamic";;
 	next) LINKFORSHARED="-u libsys_s";;
 	SCO_SV*) LINKFORSHARED="-Bdynamic -dy -Wl,-Bexport";;
     esac
+  fi
 fi
 AC_MSG_RESULT($LINKFORSHARED)
 

@@ -4,7 +4,7 @@
 ||| See the files COPYING and DISCLAIMER for more information.
 \*/
 #include "global.h"
-RCSID("$Id: program.c,v 1.27 1997/03/11 23:32:33 grubba Exp $");
+RCSID("$Id: program.c,v 1.28 1997/03/17 03:04:43 hubbe Exp $");
 #include "program.h"
 #include "object.h"
 #include "dynamic_buffer.h"
@@ -13,7 +13,7 @@ RCSID("$Id: program.c,v 1.27 1997/03/11 23:32:33 grubba Exp $");
 #include "las.h"
 #include "language.h"
 #include "lex.h"
-#include "macros.h"
+#include "pike_macros.h"
 #include "fsort.h"
 #include "error.h"
 #include "docode.h"

@@ -4,7 +4,7 @@
 ||| See the files COPYING and DISCLAIMER for more information.
 \*/
 #include "global.h"
-RCSID("$Id: mpz_glue.c,v 1.7 1997/03/15 07:10:18 nisse Exp $");
+RCSID("$Id: mpz_glue.c,v 1.8 1997/03/17 03:06:58 hubbe Exp $");
 #include "gmp_machine.h"
 #include "types.h"
 
@@ -18,7 +18,7 @@ RCSID("$Id: mpz_glue.c,v 1.7 1997/03/15 07:10:18 nisse Exp $");
 #include "svalue.h"
 #include "stralloc.h"
 #include "array.h"
-#include "macros.h"
+#include "pike_macros.h"
 #include "program.h"
 #include "stralloc.h"
 #include "object.h"

@@ -4,7 +4,7 @@
 ||| See the files COPYING and DISCLAIMER for more information.
 \*/
 #include "global.h"
-RCSID("$Id: interpret.c,v 1.36 1997/03/14 04:37:14 hubbe Exp $");
+RCSID("$Id: interpret.c,v 1.37 1997/03/17 03:04:38 hubbe Exp $");
 #include "interpret.h"
 #include "object.h"
 #include "program.h"
@@ -15,7 +15,7 @@ RCSID("$Id: interpret.c,v 1.36 1997/03/14 04:37:14 hubbe Exp $");
 #include "language.h"
 #include "stralloc.h"
 #include "constants.h"
-#include "macros.h"
+#include "pike_macros.h"
 #include "multiset.h"
 #include "backend.h"
 #include "operators.h"

@@ -1,4 +1,4 @@
-/* $Id: pnm.c,v 1.1 1997/02/11 08:35:45 hubbe Exp $ */
+/* $Id: pnm.c,v 1.2 1997/03/17 03:08:02 hubbe Exp $ */
 
 #include "global.h"
 
@@ -8,7 +8,7 @@
 #include "stralloc.h"
 #include "global.h"
 #include "types.h"
-#include "macros.h"
+#include "pike_macros.h"
 #include "object.h"
 #include "constants.h"
 #include "interpret.h"

@@ -1,5 +1,5 @@
 /*
- * $Id: des.c,v 1.6 1997/03/11 03:14:39 nisse Exp $
+ * $Id: des.c,v 1.7 1997/03/17 03:11:15 hubbe Exp $
  *
  * A pike module for getting access to some common cryptos.
  *
@@ -18,7 +18,7 @@
 #include "interpret.h"
 #include "svalue.h"
 #include "constants.h"
-#include "macros.h"
+#include "pike_macros.h"
 #include "threads.h"
 #include "object.h"
 #include "stralloc.h"

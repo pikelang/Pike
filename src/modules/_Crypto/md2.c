@@ -1,5 +1,5 @@
 /*
- * $Id: md2.c,v 1.2 1997/03/11 03:16:36 nisse Exp $
+ * $Id: md2.c,v 1.3 1997/03/17 03:11:16 hubbe Exp $
  *
  * A pike module for getting access to some common cryptos.
  *
@@ -18,7 +18,7 @@
 #include "interpret.h"
 #include "svalue.h"
 #include "constants.h"
-#include "macros.h"
+#include "pike_macros.h"
 #include "threads.h"
 #include "object.h"
 #include "stralloc.h"

@@ -8,7 +8,7 @@
 #include "interpret.h"
 #include "stralloc.h"
 #include "constants.h"
-#include "macros.h"
+#include "pike_macros.h"
 #include "backend.h"
 #include "error.h"
 #include "callback.h"

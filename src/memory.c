@@ -6,7 +6,7 @@
 #include "global.h"
 #include "memory.h"
 #include "error.h"
-#include "macros.h"
+#include "pike_macros.h"
 
 char *xalloc(SIZE_T size)
 {

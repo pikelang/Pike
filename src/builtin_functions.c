@@ -4,10 +4,10 @@
 ||| See the files COPYING and DISCLAIMER for more information.
 \*/
 #include "global.h"
-RCSID("$Id: builtin_functions.c,v 1.33 1997/03/12 12:15:26 hubbe Exp $");
+RCSID("$Id: builtin_functions.c,v 1.34 1997/03/17 03:04:35 hubbe Exp $");
 #include "interpret.h"
 #include "svalue.h"
-#include "macros.h"
+#include "pike_macros.h"
 #include "object.h"
 #include "program.h"
 #include "array.h"
@@ -311,7 +311,7 @@ void f_backtrace(INT32 args)
 
       ITEM(a)[frames].u.array=i=allocate_array_no_init(3+args,0);
       ITEM(a)[frames].type=T_ARRAY;
-      assign_svalues_no_free(ITEM(i)+3, fp->locals, args, BIT_MIXED);
+      assign_svalues_no_free(ITEM(i)+3, f->locals, args, BIT_MIXED);
       ITEM(i)[2].type=T_FUNCTION;
       ITEM(i)[2].subtype=f->fun;
       ITEM(i)[2].u.object=f->current_object;

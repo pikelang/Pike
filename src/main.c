@@ -4,7 +4,7 @@
 ||| See the files COPYING and DISCLAIMER for more information.
 \*/
 #include "global.h"
-RCSID("$Id: main.c,v 1.18 1997/02/07 01:08:18 hubbe Exp $");
+RCSID("$Id: main.c,v 1.19 1997/03/17 03:04:40 hubbe Exp $");
 #include "types.h"
 #include "backend.h"
 #include "module.h"
@@ -16,7 +16,7 @@ RCSID("$Id: main.c,v 1.18 1997/02/07 01:08:18 hubbe Exp $");
 #include "stralloc.h"
 #include "interpret.h"
 #include "error.h"
-#include "macros.h"
+#include "pike_macros.h"
 #include "callback.h"
 #include "signal_handler.h"
 #include "threads.h"

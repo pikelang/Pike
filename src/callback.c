@@ -3,7 +3,7 @@
 ||| Pike is distributed as GPL (General Public License)
 ||| See the files COPYING and DISCLAIMER for more information.
 \*/
-#include "macros.h"
+#include "pike_macros.h"
 #include "callback.h"
 
 /*

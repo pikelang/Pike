@@ -1,5 +1,5 @@
 /*
- * $Id: pipe.c,v 1.6 1997/03/12 12:21:14 hubbe Exp $
+ * $Id: pipe.c,v 1.7 1997/03/17 03:11:16 hubbe Exp $
  *
  * PIPE crypto module for Pike.
  *
@@ -18,7 +18,7 @@
 #include "interpret.h"
 #include "svalue.h"
 #include "constants.h"
-#include "macros.h"
+#include "pike_macros.h"
 #include "threads.h"
 #include "object.h"
 #include "stralloc.h"

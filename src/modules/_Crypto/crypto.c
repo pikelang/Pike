@@ -1,5 +1,5 @@
 /*
- * $Id: crypto.c,v 1.17 1997/03/12 12:21:14 hubbe Exp $
+ * $Id: crypto.c,v 1.18 1997/03/17 03:11:15 hubbe Exp $
  *
  * A pike module for getting access to some common cryptos.
  *
@@ -16,7 +16,7 @@
 #include "interpret.h"
 #include "svalue.h"
 #include "constants.h"
-#include "macros.h"
+#include "pike_macros.h"
 #include "threads.h"
 #include "object.h"
 #include "interpret.h"

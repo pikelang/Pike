@@ -1,5 +1,5 @@
 #include "global.h"
-RCSID("$Id: threads.c,v 1.19 1997/03/12 12:15:29 hubbe Exp $");
+RCSID("$Id: threads.c,v 1.20 1997/03/17 03:04:44 hubbe Exp $");
 
 int num_threads = 1;
 int threads_disabled = 0;
@@ -8,7 +8,7 @@ int threads_disabled = 0;
 #include "threads.h"
 #include "array.h"
 #include "object.h"
-#include "macros.h"
+#include "pike_macros.h"
 #include "callback.h"
 
 

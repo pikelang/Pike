@@ -4,7 +4,7 @@
 ||| See the files COPYING and DISCLAIMER for more information.
 \*/
 #include "global.h"
-RCSID("$Id: gdbmmod.c,v 1.1 1997/02/11 08:00:50 hubbe Exp $");
+RCSID("$Id: gdbmmod.c,v 1.2 1997/03/17 03:06:36 hubbe Exp $");
 #include "gdbm_machine.h"
 #include "types.h"
 #include "threads.h"
@@ -18,7 +18,7 @@ RCSID("$Id: gdbmmod.c,v 1.1 1997/02/11 08:00:50 hubbe Exp $");
 #include "stralloc.h"
 #include "array.h"
 #include "object.h"
-#include "macros.h"
+#include "pike_macros.h"
 
 #include <gdbm.h>
 

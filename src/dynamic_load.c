@@ -16,7 +16,7 @@
 #include "error.h"
 #include "module.h"
 #include "stralloc.h"
-#include "macros.h"
+#include "pike_macros.h"
 
 #ifdef HAVE_DLFCN_H
 #include <dlfcn.h>
@@ -155,7 +155,7 @@ void exit_dynamic_load()
 #include "error.h"
 #include "module.h"
 #include "stralloc.h"
-#include "macros.h"
+#include "pike_macros.h"
 
 #ifdef HAVE_DLFCN_H
 #include <dlfcn.h>

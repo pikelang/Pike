@@ -4,7 +4,7 @@
 ||| See the files COPYING and DISCLAIMER for more information.
 \*/
 #include "global.h"
-RCSID("$Id: zlibmod.c,v 1.4 1997/02/27 09:14:21 hubbe Exp $");
+RCSID("$Id: zlibmod.c,v 1.5 1997/03/17 03:07:21 hubbe Exp $");
 
 #include "zlib_machine.h"
 #include "types.h"
@@ -19,7 +19,7 @@ RCSID("$Id: zlibmod.c,v 1.4 1997/02/27 09:14:21 hubbe Exp $");
 #include "svalue.h"
 #include "stralloc.h"
 #include "array.h"
-#include "macros.h"
+#include "pike_macros.h"
 #include "program.h"
 #include "stralloc.h"
 #include "object.h"

@@ -5,7 +5,7 @@
 \*/
 #include "global.h"
 #include "module.h"
-#include "macros.h"
+#include "pike_macros.h"
 #include "error.h"
 #include "builtin_functions.h"
 #include "main.h"

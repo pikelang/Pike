@@ -5,9 +5,9 @@
 \*/
 #include "global.h"
 #include "stralloc.h"
-#include "macros.h"
+#include "pike_macros.h"
 #include "dynamic_buffer.h"
-#include "macros.h"
+#include "pike_macros.h"
 #include "memory.h"
 #include "error.h"
 
