@@ -34,7 +34,7 @@ the_image_module.html: Image.wmml the_image_module.wmml
 	$(pike) ./wmmltohtml2 the_image_module.wmml html the_image_module
 
 clean:
-	rm *.html *.md illustration_cache illustration*.gif 
+	rm *.html *.md illustration_cache illustration*.gif Image.wmml
 
 rebuild:
 	-rm Image.wmml Mysql.wmml
@@ -47,4 +47,8 @@ export:
 	tar czvTf tutorial.files tutorial.tar.gz 
 	tar czvTf tutorial_onepage.files tutorial_onepage.tar.gz 
 
+remakeImage.wmml:
+	rm Image.wmml || exit 0
 
+mirar_www: remakeImage.wmml the_image_module_onepage.html
+	ln -f illustration*.gif the_image_module_onepage.html /home/mirar/www/image
