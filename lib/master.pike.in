@@ -1,4 +1,4 @@
-/* $Id: master.pike.in,v 1.22 1998/04/29 13:11:01 grubba Exp $
+/* $Id: master.pike.in,v 1.23 1998/04/29 15:56:52 grubba Exp $
  * 
  * Master-file for Pike.
  *
@@ -532,6 +532,8 @@ mixed resolv(string identifier, string|void current_file)
   return UNDEFINED;
 }
 
+string _master_file_name;
+
 /* This function is called when all the driver is done with all setup
  * of modules, efuns, tables etc. etc. and is ready to start executing
  * _real_ programs. It receives the arguments not meant for the driver
@@ -580,11 +582,12 @@ void _main(string *orig_argv, string *env)
       ({"ipath",tmp->HAS_ARG,({"-I","--include-path"})}),
       ({"ppath",tmp->HAS_ARG,({"-P","--program-path"})}),
       ({"warnings",tmp->NO_ARG,({"-w","--warnings"})}),
-      ({"ignore",tmp->HAS_ARG,"-ms"}),
+      ({"master",tmp->HAS_ARG,"-m"}),
       ({"compiler_trace",tmp->NO_ARG,"--compiler-trace"}),
       ({"debug",tmp->MAY_HAVE_ARG,"--debug",0,1}),
       ({"trace",tmp->MAY_HAVE_ARG,"--trace",0,1}),
       ({"ignore",tmp->MAY_HAVE_ARG,"-Dqdatpl",0,1})
+      ({"ignore",tmp->HAS_ARG,"-s"}),
     }), 1);
     
     /* Parse -M and -I backwards */
@@ -620,6 +623,10 @@ void _main(string *orig_argv, string *env)
 
       case "warnings":
 	want_warnings++;
+	break;
+
+      case "master":
+	_master_file_name = q[i][1];
 	break;
       }
     }
