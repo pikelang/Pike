@@ -1,4 +1,4 @@
-# $Id: .exportable_files,v 1.4 1999/05/08 03:17:23 neotron Exp $
+# $Id: .exportable_files,v 1.5 1999/05/29 08:23:28 neotron Exp $
 CREDITS
 cbc.c
 configure.in
@@ -10,4 +10,4 @@ invert.c
 md5.c
 pipe.c
 sha.c
-acconfig.h
+
