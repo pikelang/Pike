@@ -1,7 +1,7 @@
 /*
 **! module Image
 **! note
-**!	$Id: layers.c,v 1.30 1999/07/26 11:27:23 mirar Exp $
+**!	$Id: layers.c,v 1.31 1999/08/09 14:46:41 mirar Exp $
 **! class Layer
 **! see also: layers
 **!
@@ -195,7 +195,7 @@
 
 #include <math.h> /* floor */
 
-RCSID("$Id: layers.c,v 1.30 1999/07/26 11:27:23 mirar Exp $");
+RCSID("$Id: layers.c,v 1.31 1999/08/09 14:46:41 mirar Exp $");
 
 #include "image_machine.h"
 
@@ -264,6 +264,7 @@ struct layer
 
    lm_row_func *row_func;/* layer mode */
    int optimize_alpha;
+   int really_optimize_alpha;
 };
 
 #undef THIS
@@ -631,6 +632,20 @@ static INLINE void hsv_to_rgb(double h,double s,double v,rgb_group *colorp)
 #undef t
 }
 
+/*** helper ***********************************************/
+
+static int really_optimize_p(struct layer *l)
+{
+   return 
+      l->optimize_alpha &&
+      l->fill_alpha.r==0 &&
+      l->fill_alpha.g==0 &&
+      l->fill_alpha.b==0 &&
+      !l->tiled;
+}
+
+
+
 /*** layer object : init and exit *************************/
 
 static void init_layer(struct object *dummy)
@@ -649,6 +664,7 @@ static void init_layer(struct object *dummy)
    THIS->alpha_value=1.0;
    THIS->row_func=lm_normal;
    THIS->optimize_alpha=1;
+   THIS->really_optimize_alpha=1;
 
    smear_color(THIS->sfill,THIS->fill,SNUMPIXS);
    smear_color(THIS->sfill_alpha,THIS->fill_alpha,SNUMPIXS);
@@ -855,6 +871,8 @@ static void image_layer_set_mode(INT32 args)
       {
 	 THIS->row_func=layer_mode[i].func;
 	 THIS->optimize_alpha=layer_mode[i].optimize_alpha;
+	 THIS->really_optimize_alpha=really_optimize_p(THIS);
+	    
 	 pop_n_elems(args);
 	 ref_push_object(THISOBJ);
 	 return;
@@ -936,6 +954,8 @@ static void image_layer_set_fill(INT32 args)
    }
 #endif
 
+   THIS->really_optimize_alpha=really_optimize_p(THIS);
+
    pop_n_elems(args);
    ref_push_object(THISOBJ);
 }
@@ -1011,6 +1031,7 @@ static void image_layer_set_tiled(INT32 args)
    get_all_args("Image.Layer->set_offset",args,"%i",
 		&(THIS->tiled));
    THIS->tiled=!!THIS->tiled;
+   THIS->really_optimize_alpha=really_optimize_p(THIS);
    pop_n_elems(args);
    ref_push_object(THISOBJ);
 }
@@ -2015,12 +2036,9 @@ static INLINE void img_lay_stroke(struct layer *ly,
       return;
    }
 
-   if (!la &&
-       ly->fill_alpha.r==0 && 
-       ly->fill_alpha.g==0 && 
-       ly->fill_alpha.b==0 && 
-       ly->optimize_alpha)
+   if (!la && ly->really_optimize_alpha)
    {
+/*       fprintf(stderr,"fast skip ly->yoffs=%d\n",ly->yoffs); */
       MEMCPY(d,s,len*sizeof(rgb_group));
       MEMCPY(da,sa,len*sizeof(rgb_group));
       return;
@@ -2161,7 +2179,7 @@ void img_lay(struct layer **layer,
 	     int layers,
 	     struct layer *dest)
 {
-   rgb_group *line1,*line2,*aline1,*aline2,*tmp;
+   rgb_group *line1,*line2,*aline1,*aline2;
    rgb_group *d,*da;
    int width=dest->xsize;
    int y,z;
@@ -2208,13 +2226,32 @@ void img_lay(struct layer **layer,
 
 	 /* loop over the rest of the layers, except the last */
 	 for (; z<layers-1; z++)
-	 {
-	    img_lay_line(layer[z],line1,aline1,
-			 xoffs,xsize,y-layer[z]->yoffs,line2,aline2);
-	    /* swap buffers */
-	    tmp=line1; line1=line2; line2=tmp;
-	    tmp=aline1; aline1=aline2; aline2=tmp;
-	 }
+	    if (!layer[z]->really_optimize_alpha ||
+		(layer[z]->yoffs<=y+dest->yoffs && 
+		 y+dest->yoffs<layer[z]->yoffs+layer[z]->ysize))
+	    {
+	       rgb_group *tmp;
+	       
+/* 	       if (!layer[z]->really_optimize_alpha) */
+/* 		  fprintf(stderr,"huh %d\n",z); */
+/* 	       if (!(layer[z]->yoffs>=y+dest->yoffs &&  */
+/* 		     y+dest->yoffs<layer[z]->yoffs+layer[z]->ysize)) */
+/* 		  fprintf(stderr,"hmm %d %d<=%d<%d\n", */
+/* 			  z, */
+/* 			  layer[z]->yoffs, */
+/* 			  y+dest->yoffs, */
+/* 			  layer[z]->yoffs+layer[z]->ysize); */
+
+	       img_lay_line(layer[z],line1,aline1,
+			    xoffs,xsize,
+			    y+dest->yoffs-layer[z]->yoffs,
+			    line2,aline2);
+	       /* swap buffers */
+	       tmp=line1; line1=line2; line2=tmp;
+	       tmp=aline1; aline1=aline2; aline2=tmp;
+	    }
+/* 	    else */
+/* 	       fprintf(stderr,"skip %d\n",z); */
 
 	 /* make the last layer on the destionation */
 	 img_lay_line(layer[layers-1],line1,aline1,
@@ -2386,6 +2423,7 @@ static INLINE struct layer *clone_this_layer()
    l->tiled=THIS->tiled;
    l->row_func=THIS->row_func;
    l->optimize_alpha=THIS->optimize_alpha;
+   l->really_optimize_alpha=THIS->really_optimize_alpha;
    return l;
 }
 
