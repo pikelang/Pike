@@ -1,9 +1,9 @@
-/* $Id: image.c,v 1.91 1998/03/23 22:52:19 mirar Exp $ */
+/* $Id: image.c,v 1.92 1998/03/24 00:53:55 mirar Exp $ */
 
 /*
 **! module Image
 **! note
-**!	$Id: image.c,v 1.91 1998/03/23 22:52:19 mirar Exp $
+**!	$Id: image.c,v 1.92 1998/03/24 00:53:55 mirar Exp $
 **! class image
 **!
 **!	The main object of the <ref>Image</ref> module, this object
@@ -82,7 +82,7 @@
 
 #include "stralloc.h"
 #include "global.h"
-RCSID("$Id: image.c,v 1.91 1998/03/23 22:52:19 mirar Exp $");
+RCSID("$Id: image.c,v 1.92 1998/03/24 00:53:55 mirar Exp $");
 #include "pike_macros.h"
 #include "object.h"
 #include "constants.h"
@@ -1375,6 +1375,140 @@ void image_tuned_box(INT32 args)
 	}
     }
   THREADS_DISALLOW();
+}
+
+/*
+**! method int gradients(array(int) point, ...)
+**! method int gradients(array(int) point, ..., float grad)
+**! returns the new image
+*/
+
+static void image_gradients(INT32 args)
+{
+   struct gr_point
+   {
+      INT32 x,y,yd,xd;
+      double r,g,b;
+      struct gr_point *next;
+   } *first=NULL,*c;
+   INT32 n;
+   INT32 x,y,xz;
+   struct object *o;
+   struct image *img;
+   rgb_group *d;
+   double grad=0.0;
+
+   push_int(THIS->xsize);
+   push_int(THIS->ysize);
+   o=clone_object(image_program,2);
+   img=(struct image*)get_storage(o,image_program);
+   d=img->img;
+
+   if (args && sp[-1].type==T_FLOAT)
+   {
+      args--;
+      grad=sp[-1].u.float_number;
+      pop_n_elems(1);
+   }
+
+   n=args;
+
+   while (args--)
+   {
+      struct array *a;
+      if (sp[-1].type!=T_ARRAY ||
+	  (a=sp[-1].u.array)->size!=5 ||
+	  a->item[0].type!=T_INT ||
+	  a->item[1].type!=T_INT ||
+	  a->item[2].type!=T_INT ||
+	  a->item[3].type!=T_INT ||
+	  a->item[4].type!=T_INT)
+      {
+	 while (first) { c=first; first=c->next; free(c); }
+	 error("Image.image->gradients: Illegal argument %d\n",n);
+      }
+      c=malloc(sizeof(struct gr_point));
+      if (!c)
+      {
+	 while (first) { c=first; first=c->next; free(c); }
+	 error("Image.image->gradients: out of memory\n");
+      }
+      c->next=first;
+      c->x=a->item[0].u.integer;
+      c->y=a->item[1].u.integer;
+      c->r=(double)a->item[2].u.integer;
+      c->g=(double)a->item[3].u.integer;
+      c->b=(double)a->item[4].u.integer;
+      first=c;
+      n--;
+      pop_n_elems(1);
+   }
+
+   if (!first) 
+      error("Image.image->gradients: need at least one argument\n");
+
+   THREADS_ALLOW();
+
+   xz=img->xsize;
+   for (y=0; y<img->ysize; y++)
+   {
+      c=first;
+      while (c)
+      {
+	 c->yd=y-c->y;
+	 c->xd=-1-c->x;
+	 c=c->next;
+      }
+      for (x=0; x<xz; x++)
+      {
+	 double r,g,b;
+	 double z,di;
+
+	 r=g=b=z=0.0;
+
+	 c=first;
+
+	 if (grad!=0.0)
+	    while (c)
+	    {
+	       c->xd++;
+	       di=pow((c->xd*c->xd)+(c->yd*c->yd),0.5*grad);
+	       if (!di) di=1e20; else di=1.0/di;
+	       r+=c->r*di;
+	       g+=c->g*di;
+	       b+=c->b*di;
+	       z+=di;
+
+	       c=c->next;
+	    }
+	 else
+	    while (c)
+	    {
+	       c->xd++;
+	       di=pow((c->xd*c->xd)+(c->yd*c->yd),0.5);
+	       if (!di) di=1e20; else di=1.0/di;
+	       r+=c->r*di;
+	       g+=c->g*di;
+	       b+=c->b*di;
+	       z+=di;
+
+	       c=c->next;
+	    }
+
+	 z=1.0/z;
+
+	 d->r=(COLORTYPE)(r*z);
+	 d->g=(COLORTYPE)(g*z);
+	 d->b=(COLORTYPE)(b*z);
+	 d++;
+      }
+   }
+
+   while (first) { c=first; first=c->next; free(c); }
+
+   THREADS_DISALLOW();
+
+   push_object(o);
 }
 
 /*
@@ -3146,6 +3280,8 @@ void pike_module_init(void)
 		"function(int,int,int,int,"RGB_TYPE":object)",0);
    add_function("tuned_box",image_tuned_box,
 		"function(int,int,int,int,array:object)",0);
+   add_function("gradients",image_gradients,
+		"function(array(int)|float ...:object)",0);
    add_function("polygone",image_polyfill,
 		"function(array(float|int) ...:object)",0);
    add_function("polyfill",image_polyfill,
