@@ -6,7 +6,7 @@
 // Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 // for more information.
 //
-// $Id: master.pike.in,v 1.328 2004/01/12 21:45:38 marcus Exp $
+// $Id: master.pike.in,v 1.329 2004/01/12 21:49:28 marcus Exp $
 
 #pike __REAL_VERSION__
 
@@ -2447,7 +2447,7 @@ void _main(array(string) orig_argv, array(string) env)
 	    // eval_instruction in interpret.c so that the debug and
 	    // trace levels set above take effect in the bytecode
 	    // evaluator.
-	    if(currentversion <= Version(7,4))
+	    if(Version(compat_major,compat_minor) <= Version(7,4))
 	      prog (sizeof(argv),argv,env);
 	    else
 	      ret = prog()->run(sizeof(argv),argv,getenv());
