@@ -1,6 +1,6 @@
 #include "global.h"
 #include "stralloc.h"
-RCSID("$Id: Shuffler.cmod,v 1.11 2002/07/04 14:33:19 per Exp $");
+RCSID("$Id: Shuffler.cmod,v 1.12 2002/07/05 09:55:32 per Exp $");
 #include "pike_macros.h"
 #include "interpret.h"
 #include "threads.h"
@@ -30,6 +30,7 @@ RCSID("$Id: Shuffler.cmod,v 1.11 2002/07/04 14:33:19 per Exp $");
 #define BLOCK 8192
 static void free_source( struct source *s )
 {
+  debug_malloc_touch(s);
   if( s->free_source ) s->free_source( s );
   free( s );
 }
@@ -146,6 +147,7 @@ PIKECLASS Shuffle
     if( THIS->throttler )
       free_object( THIS->throttler );
     THIS->throttler = t;
+    debug_malloc_touch(THIS->throttler);
     Pike_sp--;
     push_int(0);
   }
@@ -193,6 +195,7 @@ PIKECLASS Shuffle
     THIS->state = INITIAL;
     /* NOTE: this_obj is a weak reference. */
     THIS->this_obj = Pike_fp->current_object;
+    debug_malloc_touch(THIS->this_obj);
     THIS->callback = 
       find_identifier("send_more_callback",Pike_fp->current_object->prog);
     
@@ -219,7 +222,10 @@ PIKECLASS Shuffle
     }
 
     if( THIS->leftovers.data && THIS->leftovers.do_free )
+    {
+      debug_malloc_touch(THIS->leftovers.data);
       free( THIS->leftovers.data );
+    }
   }
   
   static void __send_more_callback( struct Shuffle_struct *t, int amount );
@@ -229,6 +235,8 @@ PIKECLASS Shuffle
     if( t->throttler && t->throttler->prog )
     {
       __remove_callbacks( t );
+      debug_malloc_touch( t->throttler );
+      debug_malloc_touch( t->this_obj );
       ref_push_object( t->this_obj );
       push_int( amount );
       ref_push_object( t->this_obj );
@@ -274,14 +282,19 @@ PIKECLASS Shuffle
     SHUFFLE_DEBUG("_all_done(%d)\n", t,reason );
     _remove_callbacks( t );
     
+    debug_malloc_touch( t->this_obj );
     ref_push_object( t->this_obj );
     /* It might have been destroyed. */
-    if( t->shuffler && t->shuffler->prog ) 
+    if( t->shuffler && t->shuffler->prog )
+    {
+      debug_malloc_touch( t->shuffler );
       safe_apply( t->shuffler, "___remove_shuffle", 1 );
+    }
     pop_stack();
 
     if( t->file_obj )
     {
+      debug_malloc_touch( t->file_obj );
       free_object( t->file_obj );
       t->file_obj = 0;
     }
@@ -297,11 +310,15 @@ PIKECLASS Shuffle
     while( t->current_source )
     {
       struct source *n = t->current_source->next;
+      debug_malloc_touch( t->current_source );
       free_source( t->current_source );
       t->current_source = n;
     }
     if( t->leftovers.data && t->leftovers.do_free )
+    {
+      debug_malloc_touch( t->leftovers.data );
       free( t->leftovers.data );
+    }
 
     t->leftovers.data = 0;
 
@@ -349,6 +366,8 @@ PIKECLASS Shuffle
     if( t->throttler && t->throttler->prog )
     {
       ref_push_object( t->this_obj );
+      debug_malloc_touch( t->this_obj );
+      debug_malloc_touch( t->throttler );
       push_int( amount );
       push_svalue( &t->request_arg );
       safe_apply( t->throttler, "give_back", 3 );
@@ -487,14 +506,17 @@ PIKECLASS Shuffle
 
     THIS->file_obj = fd;
     THIS->file_obj->refs++;
+    debug_malloc_touch( THIS->file_obj );
 
     THIS->shuffler = shuffler;
     THIS->shuffler->refs++;
+    debug_malloc_touch( THIS->shuffler );
 
     if( throttler->type == PIKE_T_OBJECT )
     {
       THIS->throttler = throttler->u.object;
       THIS->throttler->refs++;
+      debug_malloc_touch( THIS->throttler );
     }
 
     safe_apply( fd, "query_fd", 0 );
@@ -600,7 +622,11 @@ PIKECLASS Shuffle
       push_int(0);
       return;
     }
+    debug_malloc_touch( source );
+
     res = source_make( source, rstart, rlength );
+
+    debug_malloc_touch( res );
 
     SHUFFLE_DEBUG("add_source(XX,%d,%d) --> %p\n", THIS,
 		  (int)rstart, (int)rlength, res );
@@ -642,10 +668,12 @@ PIKECLASS Shuffler
   static void update_sources()
   {
     push_array( THIS->sources );
+    debug_malloc_touch( THIS->sources );
     push_int(0);
     f_aggregate(1);
     o_subtract();
     THIS->sources = Pike_sp[-1].u.array;
+    debug_malloc_touch( THIS->sources );
     Pike_sp--;
   }
   
@@ -660,6 +688,7 @@ PIKECLASS Shuffler
     if( THIS->backend )
       free_object( THIS->backend );
     THIS->backend = b;
+    debug_malloc_touch( THIS->backend );
     Pike_sp--;
     push_int(0);
   }
@@ -677,6 +706,7 @@ PIKECLASS Shuffler
     THIS->throttler = NULL;
     if( t->type == PIKE_T_OBJECT )
       THIS->throttler = t->u.object;
+    debug_malloc_touch( THIS->throttler );
     Pike_sp--;
     push_int(0);
   }
@@ -722,6 +752,7 @@ PIKECLASS Shuffler
     stack_swap();
     o_subtract();
     THIS->sources = Pike_sp[-1].u.array;
+    debug_malloc_touch( THIS->sources );
     Pike_sp--;
     push_int(0);
   }
@@ -749,6 +780,7 @@ PIKECLASS Shuffler
     stack_swap();
     f_add(2);
     THIS->sources = Pike_sp[-1].u.array;
+    debug_malloc_touch( THIS->sources );
     Pike_sp--;
   }
 

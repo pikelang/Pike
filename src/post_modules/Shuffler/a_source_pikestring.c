@@ -4,7 +4,7 @@
 #include "interpret.h"
 
 #include "shuffler.h"
-/* $Id: a_source_pikestring.c,v 1.4 2002/05/29 09:33:13 per Exp $ */
+/* $Id: a_source_pikestring.c,v 1.5 2002/07/05 09:55:32 per Exp $ */
 
 /* Source: String
  * Argument: 8-bit string
@@ -55,6 +55,8 @@ struct source *source_pikestring_make( struct svalue *s,
   if( s->u.string->size_shift )    return 0;
   
   res = malloc( sizeof( struct ps_source ) );
+  debug_malloc_touch( res );
+  debug_malloc_touch( s );
   MEMSET( res, 0, sizeof( struct ps_source ) );
 
   res->s.free_source = free_source;
