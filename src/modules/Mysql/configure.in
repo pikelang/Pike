@@ -1,5 +1,5 @@
 #
-# $Id: configure.in,v 1.30 2001/11/29 14:37:45 grubba Exp $
+# $Id: configure.in,v 1.31 2002/03/18 13:10:53 grubba Exp $
 #
 # Configure script for the mysql-module
 #
@@ -298,6 +298,7 @@ fi
     
     PIKE_CHECK_MYSQL_FUNC(mysql_real_query)
     PIKE_CHECK_MYSQL_FUNC(mysql_fetch_lengths)
+    PIKE_CHECK_MYSQL_FUNC(mysql_options)
 
     # Note: The following two are variables:
     PIKE_CHECK_MYSQL_FUNC(mysql_port)

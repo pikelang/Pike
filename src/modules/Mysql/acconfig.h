@@ -1,5 +1,5 @@
 /*
- * $Id: acconfig.h,v 1.6 2001/11/26 15:34:53 grubba Exp $
+ * $Id: acconfig.h,v 1.7 2002/03/18 13:10:53 grubba Exp $
  *
  * Config-file for the Pike mySQL-module.
  *
@@ -23,6 +23,9 @@
 
 /* Define if you have mysql_real_query(). */
 #undef HAVE_MYSQL_REAL_QUERY
+
+/* Define if you have mysql_options(). */
+#undef HAVE_MYSQL_OPTIONS
 
 /* Define if you have the mysql_port variable. */
 #undef HAVE_MYSQL_PORT

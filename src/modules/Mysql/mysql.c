@@ -1,5 +1,5 @@
 /*
- * $Id: mysql.c,v 1.53 2002/01/27 01:00:53 mast Exp $
+ * $Id: mysql.c,v 1.54 2002/03/18 13:10:54 grubba Exp $
  *
  * SQL database functionality for Pike
  *
@@ -93,7 +93,7 @@ typedef struct dynamic_buffer_s dynamic_buffer;
  * Globals
  */
 
-RCSID("$Id: mysql.c,v 1.53 2002/01/27 01:00:53 mast Exp $");
+RCSID("$Id: mysql.c,v 1.54 2002/03/18 13:10:54 grubba Exp $");
 
 /*! @module Mysql
  *!
@@ -112,7 +112,7 @@ RCSID("$Id: mysql.c,v 1.53 2002/01/27 01:00:53 mast Exp $");
  *!
  *! This class enables access to the Mysql database from within Pike.
  *!
- *! Mysql is available from www.mysql.com.
+ *! Mysql is available from @url{http://www.mysql.com@}.
  *!
  *! @seealso
  *!   @[Mysql.result], @[Sql.sql]
@@ -167,6 +167,10 @@ static void init_mysql_struct(struct object *o)
 {
   MEMSET(PIKE_MYSQL, 0, sizeof(struct precompiled_mysql));
   INIT_MYSQL_LOCK();
+  PIKE_MYSQL->mysql = (MYSQL *)xalloc(sizeof(MYSQL));
+#if defined(HAVE_MYSQL_REAL_CONNECT)
+  mysql_init(PIKE_MYSQL->mysql);
+#endif /* HAVE_MYSQL_REAL_CONNECT */
 }
 
 static void exit_mysql_struct(struct object *o)
@@ -208,6 +212,81 @@ static void exit_mysql_struct(struct object *o)
   DESTROY_MYSQL_LOCK();
 }
 
+static void pike_mysql_set_options(struct mapping *options)
+{
+  struct svalue *val;
+
+#ifdef HAVE_MYSQL_OPTIONS
+#ifdef MYSQL_READ_DEFAULT_FILE
+  if ((val = simple_mapping_string_lookup(options, "mysql_config_file")) &&
+      (val->type == T_STRING) && (!val->u.string->size_shift)) {
+    mysql_options(PIKE_MYSQL->mysql, MYSQL_READ_DEFAULT_FILE,
+		  val->u.string->str);
+  }
+#endif /* MYSQL_READ_DEFAULT_FILE */
+#ifdef MYSQL_READ_DEFAULT_GROUP
+  if ((val = simple_mapping_string_lookup(options, "mysql_group")) &&
+      (val->type == T_STRING) && (!val->u.string->size_shift)) {
+    mysql_options(PIKE_MYSQL->mysql, MYSQL_READ_DEFAULT_GROUP,
+		  val->u.string->str);
+  }
+#endif /* MYSQL_READ_DEFAULT_GROUP */
+#ifdef MYSQL_INIT_COMMAND
+  if ((val = simple_mapping_string_lookup(options, "init_command")) &&
+      (val->type == T_STRING) && (!val->u.string->size_shift)) {
+    mysql_options(PIKE_MYSQL->mysql, MYSQL_INIT_COMMAND,
+		  val->u.string->str);
+  }
+#endif /* MYSQL_INIT_COMMAND */
+#ifdef MYSQL_OPT_NAMED_PIPE
+  if ((val = simple_mapping_string_lookup(options, "mysql_named_pipe")) &&
+      (val->type == T_INT) && (val->u.integer)) {
+    mysql_options(PIKE_MYSQL->mysql, MYSQL_OPT_NAMED_PIPE, NULL);
+  }
+#endif /* MYSQL_OPT_NAMED_PIPE */
+#ifdef MYSQL_OPT_CONNECT_TIMEOUT
+  if ((val = simple_mapping_string_lookup(options, "timeout")) &&
+      (val->type == T_INT)) {
+    unsigned int timeout = (unsigned int)val->u.integer;
+    mysql_options(PIKE_MYSQL->mysql, MYSQL_OPT_CONNECT_TIMEOUT,
+		  (char *)&timeout);
+  }
+#endif /* MYSQL_OPT_CONNECT_TIMEOUT */
+#ifdef MYSQL_OPT_COMPRESS
+  if ((val = simple_mapping_string_lookup(options, "compress")) &&
+      (val->type == T_INT) && (val->u.integer)) {
+    mysql_options(PIKE_MYSQL->mysql, MYSQL_OPT_COMPRESS, NULL);
+  }
+#endif /* MYSQL_OPT_COMPRESS */
+#ifdef MYSQL_OPT_LOCAL_INFILE
+  if ((val = simple_mapping_string_lookup(options, "mysql_local_infile")) &&
+      (val->type == T_INT)) {
+    unsigned int allowed = (unsigned int)val->u.integer;
+    mysql_options(PIKE_MYSQL->mysql, MYSQL_OPT_CONNECT_TIMEOUT,
+		  (char *)&allowed);
+  } else {
+    /* Default to not allowed */
+    unsigned int allowed = 0;
+    mysql_options(PIKE_MYSQL->mysql, MYSQL_OPT_CONNECT_TIMEOUT,
+		  (char *)&allowed);    
+  }
+#endif /* MYSQL_OPT_LOCAL_INFILE */
+#ifdef MYSQL_SET_CHARSET_DIR
+  if ((val = simple_mapping_string_lookup(options, "mysql_charset_dir")) &&
+      (val->type == T_STRING) && (!val->u.string->size_shift)) {
+    mysql_options(PIKE_MYSQL->mysql, MYSQL_SET_CHARSET_DIR,
+		  val->u.string->str);
+  }
+#endif /* MYSQL_SET_CHARSET_DIR */
+#ifdef MYSQL_SET_CHARSET_NAME
+  if ((val = simple_mapping_string_lookup(options, "mysql_charset_name")) &&
+      (val->type == T_STRING) && (!val->u.string->size_shift)) {
+    mysql_options(PIKE_MYSQL->mysql, MYSQL_SET_CHARSET_NAME,
+		  val->u.string->str);
+  }
+#endif /* MYSQL_SET_CHARSET_NAME */
+#endif /* HAVE_MYSQL_OPTIONS */
+}
 
 static void pike_mysql_reconnect(void)
 {
@@ -245,13 +324,6 @@ static void pike_mysql_reconnect(void)
   }
   if (PIKE_MYSQL->password) {
     password = PIKE_MYSQL->password->str;
-  }
-
-  if (!mysql) {
-    mysql = PIKE_MYSQL->mysql = (MYSQL *)xalloc(sizeof(MYSQL));
-#if defined(HAVE_MYSQL_REAL_CONNECT)
-    mysql_init(mysql);
-#endif /* HAVE_MYSQL_REAL_CONNECT */
   }
 
   socket = PIKE_MYSQL->socket;
@@ -355,17 +427,64 @@ static void pike_mysql_reconnect(void)
  *! @decl void create(string host, string database, string user)
  *! @decl void create(string host, string database, string user, @
  *!                   string password)
+ *! @decl void create(string host, string database, string user, @
+ *!                   string password, mapping(string:string|int) options)
  *!
  *! Connect to a Mysql database.
  *!
  *! To access the Mysql database, you must first connect to it. This is
  *! done with this function.
  *!
- *! If you give no argument, or give "" as hostname it will connect with
- *! a UNIX-domain socket, which can be a big performance gain.
+ *! @param host
+ *!   If you give no argument, or give @tt{""@} as @[host] it will connect with
+ *!   a UNIX-domain socket, which can be a big performance gain.
+ *!
+ *! @param options
+ *!   This optional mapping can contain zero or more of the following
+ *!   parameters:
+ *!
+ *!   @mapping
+ *!     @member string "init_command"
+ *!       Command to execute on connect.
+ *!
+ *!     @member int "timeout"
+ *!       Timeout in seconds.
+ *!
+ *!     @member int(0..1) "compress"
+ *!       Enable compressed protocol.
+ *!
+ *!     @member string "mysql_config_file"
+ *!       Change config file from @tt{"my.cnf"@}.
+ *!
+ *!     @member string "mysql_group"
+ *!       Specify additional group to read from config file.
+ *!
+ *!     @member int(0..1) "mysql_named_pipe"
+ *!       Use named pipe to connect to server.
+ *!
+ *!     @member int(0..1) "mysql_local_infile"
+ *!       Enable use of LOCAL INFILE (security).
+ *!
+ *!     @member string "mysql_charset_dir"
+ *!       Change charset directory.
+ *!
+ *!     @member string "mysql_charset_name"
+ *!       Change charset name.
+ *!   @endmapping
+ *!
+ *! @note
+ *!   Some options may not be implemented. Unimplemented options are
+ *!   silently ignored.
  */
 static void f_create(INT32 args)
 {
+#ifdef HAVE_MYSQL_OPTIONS
+  /* Default to not allowed */
+  unsigned int allowed = 0;
+  mysql_options(PIKE_MYSQL->mysql, MYSQL_OPT_CONNECT_TIMEOUT,
+		(char *)&allowed);    
+#endif /* HAVE_MYSQL_OPTIONS */
+
   if (args >= 1) {
     if (sp[-args].type != T_STRING) {
       Pike_error("Bad argument 1 to mysql()\n");
@@ -381,7 +500,7 @@ static void f_create(INT32 args)
       if (sp[1-args].u.string->len) {
 	add_ref(PIKE_MYSQL->database = sp[1-args].u.string);
       }
-
+      
       if (args >= 3) {
 	if (sp[2-args].type != T_STRING) {
 	  Pike_error("Bad argument 3 to mysql()\n");
@@ -389,13 +508,19 @@ static void f_create(INT32 args)
 	if (sp[2-args].u.string->len) {
 	  add_ref(PIKE_MYSQL->user = sp[2-args].u.string);
 	}
-
+	
 	if (args >= 4) {
 	  if (sp[3-args].type != T_STRING) {
 	    Pike_error("Bad argument 4 to mysql()\n");
 	  }
 	  if (sp[3-args].u.string->len) {
 	    add_ref(PIKE_MYSQL->password = sp[3-args].u.string);
+	  }
+	  if (args >= 5) {
+	    if (sp[4-args].type != T_MAPPING) {
+	      Pike_error("Bad argument 5 to mysql()\n");
+	    }
+	    pike_mysql_set_options(sp[4-args].u.mapping);
 	  }
 	}
       }
