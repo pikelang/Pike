@@ -347,7 +347,7 @@ int insopt(int f, INT32 b, int cl, struct pike_string *cf)
 #endif
 
   p->opcode=f;
-  p->line=current_line;
+  p->line=cl;
   copy_shared_string(p->file, current_file);
   p->arg=b;
 
