@@ -109,7 +109,7 @@
 /* This is the grammar definition of Pike. */
 
 #include "global.h"
-RCSID("$Id: language.yacc,v 1.197 2000/07/09 17:54:08 grubba Exp $");
+RCSID("$Id: language.yacc,v 1.198 2000/07/10 14:32:06 grubba Exp $");
 #ifdef HAVE_MEMORY_H
 #include <memory.h>
 #endif
@@ -145,7 +145,6 @@ int low_add_local_name(struct compiler_frame *,
 		       struct pike_string *,struct pike_string *,node *);
 static node *lexical_islocal(struct pike_string *);
 
-static int varargs;
 static struct pike_string *last_identifier=0;
 static int inherit_depth;
 static struct program_state *inherit_state = NULL;
@@ -614,11 +613,11 @@ def: modifiers type_or_error optional_stars TOK_IDENTIFIER push_compiler_frame0
     push_finished_type(Pike_compiler->compiler_frame->current_return_type);
     
     e=$7-1;
-    if(varargs)
+    if(Pike_compiler->varargs)
     {
       push_finished_type(Pike_compiler->compiler_frame->variable[e].type);
       e--;
-      varargs=0;
+      Pike_compiler->varargs=0;
       pop_type_stack();
     }else{
       push_type(T_VOID);
@@ -786,12 +785,12 @@ optional_identifier: TOK_IDENTIFIER
 
 new_arg_name: type7 optional_dot_dot_dot optional_identifier
   {
-    if(varargs) yyerror("Can't define more arguments after ...");
+    if(Pike_compiler->varargs) yyerror("Can't define more arguments after ...");
 
     if($2)
     {
       push_type(T_ARRAY);
-      varargs=1;
+      Pike_compiler->varargs=1;
     }
 
     if(!$3)
@@ -1494,11 +1493,11 @@ lambda: TOK_LAMBDA push_compiler_frame1
       push_type(T_MIXED);
     
     e=$4-1;
-    if(varargs)
+    if(Pike_compiler->varargs)
     {
       push_finished_type(Pike_compiler->compiler_frame->variable[e].type);
       e--;
-      varargs=0;
+      Pike_compiler->varargs=0;
       pop_type_stack();
     }else{
       push_type(T_VOID);
@@ -1560,11 +1559,11 @@ local_function: TOK_IDENTIFIER push_compiler_frame1 func_args
     push_finished_type(Pike_compiler->compiler_frame->current_return_type);
     
     e=$3-1;
-    if(varargs)
+    if(Pike_compiler->varargs)
     {
       push_finished_type(Pike_compiler->compiler_frame->variable[e].type);
       e--;
-      varargs=0;
+      Pike_compiler->varargs=0;
       pop_type_stack();
     }else{
       push_type(T_VOID);
@@ -1677,11 +1676,11 @@ local_function2: optional_stars TOK_IDENTIFIER push_compiler_frame1 func_args
     push_finished_type(Pike_compiler->compiler_frame->current_return_type);
     
     e=$4-1;
-    if(varargs)
+    if(Pike_compiler->varargs)
     {
       push_finished_type(Pike_compiler->compiler_frame->variable[e].type);
       e--;
-      varargs=0;
+      Pike_compiler->varargs=0;
       pop_type_stack();
     }else{
       push_type(T_VOID);

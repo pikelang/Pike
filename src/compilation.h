@@ -1,5 +1,5 @@
 /*
- * $Id: compilation.h,v 1.16 2000/07/09 17:54:08 grubba Exp $
+ * $Id: compilation.h,v 1.17 2000/07/10 14:32:05 grubba Exp $
  *
  * Compilator state push / pop operator construction file
  *
@@ -134,6 +134,7 @@
   ZMEMBER(int,local_class_counter,0)
   ZMEMBER(int,catch_level,0)
   ZMEMBER(INT32,current_modifiers,0)
+  ZMEMBER(int,varargs,0)
   ZMEMBER(struct mapping *,module_index_cache,0)
   STACKMEMBER(unsigned char *,type_stackp,type_stack)
   STACKMEMBER(unsigned char **,pike_type_mark_stackp,pike_type_mark_stack)
