@@ -13,9 +13,10 @@
 #include "mapping.h"
 #include "array.h"
 #include "multiset.h"
-#include "builtin_functions.h"
 #include "dynamic_buffer.h"
 #include "error.h"
+#include "operators.h"
+#include "builtin_functions.h"
 
 #ifdef _AIX
 #include <net/nh.h>
@@ -119,10 +120,25 @@ static void code_entry(int type, INT32 num, struct encode_data *data)
   }
 }
 
+#ifdef DEBUG
+#define encode_value2 encode_value2_
+#endif
+
 static void encode_value2(struct svalue *val, struct encode_data *data)
+
+#ifdef DEBUG
+#undef encode_value2
+#define encode_value2(X,Y) do { struct svalue *_=sp; encode_value2_(X,Y); if(sp!=_) fatal("encode_value2 failed!\n"); } while(0);
+#endif
+
 {
+  static struct svalue dested = { T_INT, NUMBER_DESTRUCTED };
   INT32 i;
   struct svalue *tmp;
+  
+  if((val->type == T_OBJECT || val->type==T_FUNCTION) && !val->u.object->prog)
+    val=&dested;
+  
   if((tmp=low_mapping_lookup(data->encoded, val)))
   {
     code_entry(T_AGAIN, tmp->u.integer, data);
@@ -131,86 +147,158 @@ static void encode_value2(struct svalue *val, struct encode_data *data)
     mapping_insert(data->encoded, val, &data->counter);
     data->counter.u.integer++;
   }
-
+  
+  
   switch(val->type)
   {
-  case T_INT:
-    code_entry(T_INT, val->u.integer,data);
-    break;
-
-  case T_STRING:
-    code_entry(T_STRING, val->u.string->len,data);
-    addstr(val->u.string->str, val->u.string->len);
-    break;
-
-  case T_FLOAT:
-  {
-    if(val->u.float_number==0.0)
+    case T_INT:
+      code_entry(T_INT, val->u.integer,data);
+      break;
+      
+    case T_STRING:
+      code_entry(T_STRING, val->u.string->len,data);
+      addstr(val->u.string->str, val->u.string->len);
+      break;
+      
+    case T_FLOAT:
     {
-      code_entry(T_FLOAT,0,data);
-      code_entry(T_FLOAT,0,data);
-    }else{
-      INT32 x;
-      int y;
-      double tmp;
-
-      tmp=FREXP((double)val->u.float_number, &y);
-      x=(INT32)((1<<30)*tmp);
-      y-=30;
-      while(x && y && !(x&1))
+      if(val->u.float_number==0.0)
       {
-	x>>=1;
-	y++;
+	code_entry(T_FLOAT,0,data);
+	code_entry(T_FLOAT,0,data);
+      }else{
+	INT32 x;
+	int y;
+	double tmp;
+	
+	tmp=FREXP((double)val->u.float_number, &y);
+	x=(INT32)((1<<30)*tmp);
+	y-=30;
+	while(x && y && !(x&1))
+	{
+	  x>>=1;
+	  y++;
+	}
+	code_entry(T_FLOAT,x,data);
+	code_entry(T_FLOAT,y,data);
       }
-      code_entry(T_FLOAT,x,data);
-      code_entry(T_FLOAT,y,data);
+      break;
     }
-    break;
-  }
-
-  case T_ARRAY:
-    code_entry(T_ARRAY, val->u.array->size, data);
-    for(i=0; i<val->u.array->size; i++)
-      encode_value2(ITEM(val->u.array)+i, data);
-    break;
-
-  case T_MAPPING:
-    check_stack(2);
-    val->u.mapping->refs++;
-    push_mapping(val->u.mapping);
-    f_indices(1);
     
-    val->u.mapping->refs++;
-    push_mapping(val->u.mapping);
-    f_values(1);
-    
-    code_entry(T_MAPPING, sp[-2].u.array->size,data);
-    for(i=0; i<sp[-2].u.array->size; i++)
-    {
-      encode_value2(ITEM(sp[-2].u.array)+i, data); /* indices */
-      encode_value2(ITEM(sp[-1].u.array)+i, data); /* values */
-    }
-    pop_n_elems(2);
-    break;
+    case T_ARRAY:
+      code_entry(T_ARRAY, val->u.array->size, data);
+      for(i=0; i<val->u.array->size; i++)
+	encode_value2(ITEM(val->u.array)+i, data);
+      break;
+      
+    case T_MAPPING:
+      check_stack(2);
+      ref_push_mapping(val->u.mapping);
+      f_indices(1);
+      
+      ref_push_mapping(val->u.mapping);
+      f_values(1);
+      
+      code_entry(T_MAPPING, sp[-2].u.array->size,data);
+      for(i=0; i<sp[-2].u.array->size; i++)
+      {
+	encode_value2(ITEM(sp[-2].u.array)+i, data); /* indices */
+	encode_value2(ITEM(sp[-1].u.array)+i, data); /* values */
+      }
+      pop_n_elems(2);
+      break;
+      
+    case T_MULTISET:
+      code_entry(T_MULTISET, val->u.multiset->ind->size,data);
+      for(i=0; i<val->u.multiset->ind->size; i++)
+	encode_value2(ITEM(val->u.multiset->ind)+i, data);
+      break;
+      
+    case T_OBJECT:
+      check_stack(1);
+      push_svalue(val);
+      APPLY_MASTER("nameof", 1);
+      switch(sp[-1].type)
+      {
+	case T_INT:
+	  if(sp[-1].subtype == NUMBER_UNDEFINED) 
+	  {
+	    struct svalue s;
+	    s.type = T_PROGRAM;
+	    s.u.program=val->u.object->prog;
+	    
+	    pop_stack();
+	    code_entry(val->type, 1,data);
+	    encode_value2(&s, data);
+	    
+	    push_svalue(val);
+	    APPLY_MASTER("encode_object",1);
+	    break;
+	  }
+	  /* FALL THROUGH */
+	
+	default:
+	  code_entry(val->type, 0,data);
+	  break;
+	  
+      }
+      encode_value2(sp-1, data);
+      pop_stack();
+      break;
+      
+    case T_FUNCTION:
+      check_stack(1);
+      push_svalue(val);
+      APPLY_MASTER("nameof", 1);
+      if(sp[-1].type == T_INT && sp[-1].subtype==NUMBER_UNDEFINED)
+      {
+	if(val->subtype != FUNCTION_BUILTIN)
+	{
+	  int eq;
+	  code_entry(val->type, 1, data);
+	  push_svalue(val);
+	  sp[-1].type=T_OBJECT;
+	  ref_push_string(ID_FROM_INT(val->u.object->prog, val->subtype)->name);
+	  f_arrow(2);
+	  eq=is_eq(sp-1, val);
+	  pop_stack();
+	  if(eq)
+	  {
+	    /* We have to remove ourself from the cache for now */
+	    struct svalue tmp=data->counter;
+	    tmp.u.integer--;
+	    map_delete(data->encoded, val);
+	    
+	    push_svalue(val);
+	    sp[-1].type=T_OBJECT;
+	    encode_value2(sp-1, data);
+	    ref_push_string(ID_FROM_INT(val->u.object->prog, val->subtype)->name);
+	    encode_value2(sp-1, data);
+	    pop_n_elems(3);
+	    
+	    /* Put value back in cache */
+	    mapping_insert(data->encoded, val, &tmp);
+	    return;
+	  }
+	}
+      }
 
-  case T_MULTISET:
-    code_entry(T_MULTISET, val->u.multiset->ind->size,data);
-    for(i=0; i<val->u.multiset->ind->size; i++)
-      encode_value2(ITEM(val->u.multiset->ind)+i, data);
-    break;
-
-  case T_OBJECT:
-  case T_FUNCTION:
-  case T_PROGRAM:
-    check_stack(1);
-    push_svalue(val);
-    APPLY_MASTER("nameof", 1);
-    if(sp[-1].type == val->type)
-      error("Error in master()->nameof(), same type returned.\n");
-    code_entry(val->type, 0,data);
-    encode_value2(sp-1, data);
-    pop_stack();
-    break;
+      code_entry(val->type, 0,data);
+      encode_value2(sp-1, data);
+      pop_stack();
+      break;
+      
+      
+    case T_PROGRAM:
+      check_stack(1);
+      push_svalue(val);
+      APPLY_MASTER("nameof", 1);
+      if(sp[-1].type == val->type)
+	error("Error in master()->nameof(), same type returned.\n");
+      code_entry(val->type, 0,data);
+      encode_value2(sp-1, data);
+      pop_stack();
+      break;
   }
 }
 
@@ -271,135 +359,196 @@ static int my_extract_char(struct decode_data *data)
   } \
   if(what & T_NEG) num=~num
 
+#ifdef DEBUG
+#define decode_value2 decode_value2_
+#endif
+
 static void decode_value2(struct decode_data *data)
+
+#ifdef DEBUG
+#undef decode_value2
+#define decode_value2(X) do { struct svalue *_=sp; decode_value2_(X); if(sp!=_+1) fatal("decode_value2 failed!\n"); } while(0);
+#endif
+
+
 {
   INT32 what, e, num;
   struct svalue tmp, *tmp2;
-
+  
   DECODE();
-
+  
   check_stack(1);
-
+  
   switch(what & T_MASK)
   {
-  case T_AGAIN:
-    tmp.type=T_INT;
-    tmp.subtype=0;
-    tmp.u.integer=num;
-    if((tmp2=low_mapping_lookup(data->decoded, &tmp)))
+    case T_AGAIN:
+      tmp.type=T_INT;
+      tmp.subtype=0;
+      tmp.u.integer=num;
+      if((tmp2=low_mapping_lookup(data->decoded, &tmp)))
+      {
+	push_svalue(tmp2);
+      }else{
+	error("Failed to decode string. (invalid T_AGAIN)\n");
+      }
+      return;
+      
+    case T_INT:
+      tmp=data->counter;
+      data->counter.u.integer++;
+      push_int(num);
+      break;
+      
+    case T_STRING:
+      tmp=data->counter;
+      data->counter.u.integer++;
+      if(data->ptr + num > data->len)
+	error("Failed to decode string. (string range error)\n");
+      push_string(make_shared_binary_string((char *)(data->data + data->ptr), num));
+      data->ptr+=num;
+      break;
+      
+    case T_FLOAT:
     {
-      push_svalue(tmp2);
-    }else{
-      error("Failed to decode string. (invalid T_AGAIN)\n");
+      INT32 num2=num;
+      
+      tmp=data->counter;
+      data->counter.u.integer++;
+      
+      DECODE();
+      push_float(LDEXP((double)num2, num));
+      break;
     }
-    return;
-
-  case T_INT:
-    tmp=data->counter;
-    data->counter.u.integer++;
-    push_int(num);
-    break;
-
-  case T_STRING:
-    tmp=data->counter;
-    data->counter.u.integer++;
-    if(data->ptr + num > data->len)
-      error("Failed to decode string. (string range error)\n");
-    push_string(make_shared_binary_string((char *)(data->data + data->ptr), num));
-    data->ptr+=num;
-    break;
-
-  case T_FLOAT:
-  {
-    INT32 num2=num;
-
-    tmp=data->counter;
-    data->counter.u.integer++;
-
-    DECODE();
-    push_float(LDEXP((double)num2, num));
-    break;
-  }
-
-  case T_ARRAY:
-  {
-    struct array *a=allocate_array(num);
-    tmp.type=T_ARRAY;
-    tmp.u.array=a;
-    mapping_insert(data->decoded, & data->counter, &tmp);
-    data->counter.u.integer++;
-
-    /* Since a reference to the array is stored in the mapping, we can
-     * safely decrease this reference here. Thus it will be automatically
-     * freed if something goes wrong.
-     */
-    a->refs--;
-
-    for(e=0;e<num;e++)
+    
+    case T_ARRAY:
     {
+      struct array *a=allocate_array(num);
+      tmp.type=T_ARRAY;
+      tmp.u.array=a;
+      mapping_insert(data->decoded, & data->counter, &tmp);
+      data->counter.u.integer++;
+      
+      /* Since a reference to the array is stored in the mapping, we can
+       * safely decrease this reference here. Thus it will be automatically
+       * freed if something goes wrong.
+       */
+      a->refs--;
+      
+      for(e=0;e<num;e++)
+      {
+	decode_value2(data);
+	ITEM(a)[e]=sp[-1];
+	sp--;
+      }
+      a->refs++;
+      push_array(a);
+      return;
+    }
+    
+    case T_MAPPING:
+    {
+      struct mapping *m=allocate_mapping(num);
+      tmp.type=T_MAPPING;
+      tmp.u.mapping=m;
+      mapping_insert(data->decoded, & data->counter, &tmp);
+      data->counter.u.integer++;
+      m->refs--;
+      
+      for(e=0;e<num;e++)
+      {
+	decode_value2(data);
+	decode_value2(data);
+	mapping_insert(m, sp-2, sp-1);
+	pop_n_elems(2);
+      }
+      m->refs++;
+      push_mapping(m);
+      return;
+    }
+    
+    case T_MULTISET:
+    {
+      struct multiset *m=mkmultiset(low_allocate_array(0, num));
+      tmp.type=T_MULTISET;
+      tmp.u.multiset=m;
+      mapping_insert(data->decoded, & data->counter, &tmp);
+      data->counter.u.integer++;
+      m->refs--;
+      
+      for(e=0;e<num;e++)
+      {
+	decode_value2(data);
+	multiset_insert(m, sp-1);
+	pop_stack();
+      }
+      m->refs++;
+      push_multiset(m);
+      return;
+    }
+    
+    
+    case T_OBJECT:
+      tmp=data->counter;
+      data->counter.u.integer++;
       decode_value2(data);
-      ITEM(a)[e]=sp[-1];
-      sp--;
-    }
-    a->refs++;
-    push_array(a);
-    return;
-  }
-
-  case T_MAPPING:
-  {
-    struct mapping *m=allocate_mapping(num);
-    tmp.type=T_MAPPING;
-    tmp.u.mapping=m;
-    mapping_insert(data->decoded, & data->counter, &tmp);
-    data->counter.u.integer++;
-    m->refs--;
-
-    for(e=0;e<num;e++)
-    {
+      
+      switch(num)
+      {
+	case 0:
+	  APPLY_MASTER("objectof", 1);
+	  break;
+	  
+	case 1:
+	  if(IS_ZERO(sp-1))
+	  {
+	    mapping_insert(data->decoded, &tmp, sp-1);
+	    decode_value2(data);
+	    pop_stack();
+	  }else{
+	    f_call_function(1);
+	    mapping_insert(data->decoded, &tmp, sp-1);
+	    push_svalue(sp-1);
+	    decode_value2(data);
+	    APPLY_MASTER("decode_object",2);
+	    pop_stack();
+	  }
+	  return;
+	  
+	default:
+	  error("Object coding not compatible.\n");
+	  break;
+      }
+      break;
+      
+    case T_FUNCTION:
+      tmp=data->counter;
+      data->counter.u.integer++;
       decode_value2(data);
+      
+      switch(num)
+      {
+	case 0:
+	  APPLY_MASTER("objectof", 1);
+	  break;
+	  
+	case 1:
+	  decode_value2(data);
+	  f_arrow(2);
+	  break;
+	  
+	default:
+	  error("Function coding not compatible.\n");
+	  break;
+      }
+      break;
+      
+      
+    case T_PROGRAM:
+      tmp=data->counter;
+      data->counter.u.integer++;
       decode_value2(data);
-      mapping_insert(m, sp-2, sp-1);
-      pop_n_elems(2);
-    }
-    m->refs++;
-    push_mapping(m);
-    return;
-  }
-
-  case T_MULTISET:
-  {
-    struct multiset *m=mkmultiset(low_allocate_array(0, num));
-    tmp.type=T_MULTISET;
-    tmp.u.multiset=m;
-    mapping_insert(data->decoded, & data->counter, &tmp);
-    data->counter.u.integer++;
-    m->refs--;
-
-    for(e=0;e<num;e++)
-    {
-      decode_value2(data);
-      multiset_insert(m, sp-1);
-      pop_stack();
-    }
-    m->refs++;
-    push_multiset(m);
-    return;
-  }
-
-  case T_OBJECT:
-  case T_FUNCTION:
-  case T_PROGRAM:
-    tmp=data->counter;
-    data->counter.u.integer++;
-    decode_value2(data);
-    switch(what & T_MASK)
-    {
-    case T_OBJECT: APPLY_MASTER("objectof", 1); break;
-    case T_FUNCTION: APPLY_MASTER("functionof", 1); break;
-    case T_PROGRAM: APPLY_MASTER("programof", 1); break;
-    }
-    break;
+      APPLY_MASTER("programof", 1);
+      break;
 
   default:
     error("Failed to restore string. (Illegal type)\n");
@@ -542,7 +691,7 @@ void f_decode_value(INT32 args)
   struct pike_string *s;
 
   if(args != 1 || (sp[-1].type != T_STRING))
-    error("Illegal argument to restore_value(STRING)\n");
+    error("Illegal argument to decode_value()\n");
 
   s = sp[-1].u.string;
   if(!my_decode(s))
