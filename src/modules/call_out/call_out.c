@@ -6,7 +6,7 @@
 /**/
 #include "global.h"
 #include "config.h"
-RCSID("$Id: call_out.c,v 1.29 1999/07/04 14:53:21 grubba Exp $");
+RCSID("$Id: call_out.c,v 1.30 1999/08/06 14:27:46 grubba Exp $");
 #include "array.h"
 #include "dynamic_buffer.h"
 #include "object.h"
@@ -739,11 +739,13 @@ void pike_module_exit(void)
     remove_callback(mem_callback);
     mem_callback=0;
   }
+#ifdef PIKE_DEBUG
   if(verify_call_out_callback)
   {
     remove_callback(verify_call_out_callback);
     verify_call_out_callback=0;
   }
+#endif /* PIKE_DEBUG */
   if(call_out_backend_callback)
   {
     remove_callback(call_out_backend_callback);
