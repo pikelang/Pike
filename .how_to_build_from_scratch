@@ -30,6 +30,12 @@ Pike development environment you must do the following steps:
 7) 'make'
 	This builds pike.
 
+8) 'make new_peep_engine'
+	This creates the peephole optimizer
+
+9) 'make'
+	This builds a new pike with the peephole optimizer
+
 After doing this, DO NOT, commit the generated files. They are placed in
 .cvsignore files so you shouldn't have to bother with them.
 Doing 'make export' will create a tar file with all the needed files,
