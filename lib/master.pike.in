@@ -6,7 +6,7 @@
 // Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 // for more information.
 //
-// $Id: master.pike.in,v 1.289 2003/06/05 14:18:21 mast Exp $
+// $Id: master.pike.in,v 1.290 2003/07/22 10:45:50 nilsson Exp $
 
 #pike __REAL_VERSION__
 
@@ -1970,6 +1970,7 @@ void _main(array(string) orig_argv, array(string) env)
 #endif
 
       case "debug_without":
+	// FIXME: Disable loading of dumped modules?
         foreach( q[i][1]/",", string feature )
         {
           switch( feature )
