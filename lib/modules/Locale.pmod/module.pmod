@@ -8,9 +8,9 @@
 //#define LOCALE_DEBUG_ALL
 
 // project_name:project_path
-private mapping(string:string) projects;
+static mapping(string:string) projects;
 // language:(project_name:project)
-private mapping(string:mapping(string:object)) locales;
+static mapping(string:mapping(string:object)) locales;
 
 void create() {
   projects=([]);
@@ -52,6 +52,9 @@ static class LanguageListObject {
     timestamp = time(1);
   }
 
+  string _sprintf() {
+    return sprintf("LanguageListObject(timestamp: %d, %O)", timestamp, languages);
+  }
 }
 
 array(string) list_languages(string project) {
@@ -100,10 +103,11 @@ array(string) list_languages(string project) {
 class LocaleObject {
 
   // key:string
-  private mapping(string|int:string) bindings;
+  static mapping(string|int:string) bindings;
   // key:function
-  mapping(string:function) functions;
+  public mapping(string:function) functions;
   int timestamp;
+  constant is_locale=1;
 
   void create(mapping(string|int:string) _bindings,
 	      void|mapping(string:function) _functions) {
@@ -133,6 +137,23 @@ class LocaleObject {
       return functions[f];
   }
 
+  int estimate_size() {
+    int size=2*64+8; //Two mappings and a timestamp
+    foreach(indices(bindings), string|int id) {
+      size+=8;
+      if(stringp(id)) size+=strlen(id);
+      else size+=4;
+      size+=strlen(bindings[id]);
+    }
+    size+=32*sizeof(functions); // The actual functions are not included though...
+    size+=strlen( indices(functions)*"" );
+    return size;
+  }
+
+  string _sprintf() {
+    return sprintf("LocaleObject(timestamp: %d, bindings: %d, functions: %d)",
+		   timestamp, sizeof(bindings), sizeof(functions) );
+  }
 }
 
 object get_object(string project, string lang) {
@@ -330,7 +351,7 @@ function call(string project, string lang, string name,
   return f || [function]fb;
 }
 
-static void clean_cache() {
+void clean_cache() {
   remove_call_out(clean_cache);
   int t = time(1)-CLEAN_CYCLE;
   foreach(indices(locales), string lang) {
@@ -345,6 +366,31 @@ static void clean_cache() {
     }
   }
   call_out(clean_cache, CLEAN_CYCLE);
+}
+
+void flush_cache() {
+#ifdef LOCALE_DEBUG
+  werror("Locale.flush_cache()\n");
+#endif
+  locales=([]);
+  // We could throw away the projects too,
+  // but then things would probably stop working.
+}
+
+mapping cache_status() {
+  int size=0, lp=0;
+  foreach(values(locales), mapping l)
+    foreach(values(l), object o) {
+      if(!o->is_locale) continue;
+      lp++;
+      size+=o->estimate_size();
+    }
+
+  return (["bytes":size,
+	   "languages":sizeof(locales),
+	   "reg_proj":sizeof(projects),
+	   "load_proj":lp,
+  ]);
 }
 
 class DeferredLocale
