@@ -120,6 +120,14 @@ optional class Fifo {
     return tmp;
   }
 
+  //! This function returns all values currently in the fifo. Values in
+  //! the array will be in the order they were written. If there are no
+  //! values present in the fifo the current thread will sleep until
+  //! some other thread writes a value to the fifo.
+  //!
+  //! @seealso
+  //! @[write()], @[read()]
+  //!
   array read_array()
   {
     array ret;
