@@ -1,4 +1,4 @@
-// $Id: module.pmod,v 1.170 2004/06/23 10:58:36 grubba Exp $
+// $Id: module.pmod,v 1.171 2004/09/01 17:21:50 mast Exp $
 #pike __REAL_VERSION__
 
 inherit files;
@@ -2038,16 +2038,14 @@ int mkdirhier (string pathname, void|int mode)
 //!
 int recursive_rm (string path)
 {
-  int res = 1;
   Stat a = file_stat(path, 1);
   if(!a)
     return 0;
-  if(a[1] == -2)
+  if(a->isdir)
     if (array(string) sub = get_dir (path))
       foreach( sub, string name )
-        if (!recursive_rm (path + "/" + name)) 
-          res = 0;
-  return res && rm (path);
+	recursive_rm (path + "/" + name);
+  return rm (path);
 }
 
 /*
