@@ -1,5 +1,5 @@
 /*
- * $Id: result.c,v 1.9 1997/09/15 20:40:24 grubba Exp $
+ * $Id: result.c,v 1.10 1997/12/12 17:07:13 grubba Exp $
  *
  * mysql query result
  *
@@ -78,7 +78,7 @@ typedef struct dynamic_buffer_s dynamic_buffer;
  * Globals
  */
 
-RCSID("$Id: result.c,v 1.9 1997/09/15 20:40:24 grubba Exp $");
+RCSID("$Id: result.c,v 1.10 1997/12/12 17:07:13 grubba Exp $");
 
 struct program *mysql_result_program = NULL;
 
@@ -357,7 +357,7 @@ static void f_fetch_row(INT32 args)
 
 	if ((field = mysql_fetch_field(PIKE_MYSQL_RES->result))) {
 	  switch (field->type) {
-#ifndef OLD_SQL_COMPAT
+#ifdef OLD_SQL_COMPAT
 	    /* Integer types */
 	  case FIELD_TYPE_SHORT:
 	  case FIELD_TYPE_LONG:
@@ -374,7 +374,7 @@ static void f_fetch_row(INT32 args)
 	  case FIELD_TYPE_DOUBLE:
 	    push_float(atof(row[i]));
 	    break;
-#endif /* !OLD_SQL_COMPAT */
+#endif /* OLD_SQL_COMPAT */
 	  default:
 #ifdef HAVE_MYSQL_FETCH_LENGTHS
 	    push_string(make_shared_binary_string(row[i], row_lengths[i]));
