@@ -1,0 +1,80 @@
+Information for Pike package maintainers
+========================================
+
+This file contains information for people who develops any kind of
+Pike distribution. It is both intended as information to assist Pike
+package creation as well as requests and demands to ensure high
+quality Pike installations.
+
+
+  Legal Matters
+
+The product name Pike is a trademark owned by Linköping University and
+as such we gets to decide what is to be called Pike and what is not.
+If you have made extensive alterations to Pike we might request (and
+later demand) that you do not call it Pike, to avoid confusion. We
+would however much prefer to be contacted early, since we might
+approve the changes to be part of Pike.
+
+Pike is released as GPL, LGPL and MPL. Pick any combination for your
+distribution and provide your alterations accordingly. Make sure to
+keep the file COPYING up to date. The files COPYING and COPYRIGHT must
+be included in all distributions of Pike.
+
+
+  Version Numbering
+
+The build number of Pike, to be found in src/version.h, is updated
+either manually or automatically. It is updated manually when eg. the
+format for dumped files changes, thus invalidating previously dumped
+files and preventing Pike from crashing should it try to read one. It
+is updated automatically whenever someone makes a source export by
+invoking export.pike with the right arguments. This is typically done
+with the "export" target in the make file.
+
+When a the build number is automatically updated, first the build
+number is incremented by one and the whole CVS tree is tagged with the
+new version number, eg. "v7_3_12". The another increment and another
+tagging is commited right after, so that there are no CVS commits done
+to the tree during the first build number "life span". Hence that
+build number maps one to one to the file versions in the CVS tree and
+eliminates any version confusion.
+
+We would like only these "unambigous" builds to be exported as
+packages to the world. That means that you as a package builder has
+two choices, either use the latest build tag in the tree or create a
+new one. We would prefer that the build number is not incremented on
+an otherwise unaltered CVS tree, but if you alter your build process
+so that the Pike in your package is a different one we would like you
+to increment the build number (though an manual increment by one is
+sufficient on an otherwise unaltered tree).
+
+
+  Dependencies
+
+We would like all Pike installations in the world to be as "feature
+complete" as possible and support as many of the modules that are
+bundled with Pike in the CVS as possible. The goal is of course that a
+Pike program should be able to run on any installed Pike. Since this
+is an impossible goal we have prioritized the modules with exernal
+dependencies according to their usefulness, or in other words, which
+modules we would like all Pike installations to have. In order:
+ Gmp, Gz, Mysql, _Image_JPEG, _Image_FreeType
+
+If modules or functionality residing in the standard Pike repository
+is missing in your package, the package documentation should clearly
+state so and provide a description for how to aquire a complete Pike
+installation.
+
+
+  Crypto code
+
+For political reasons it might be wanted to make a Pike release
+without support for encryption and decryption. By executing the make
+target "lobotomize" in a source tree, fresh from CVS, all encryption
+code should be removed from it. Enryption dependent parts of Pike,
+such as SSL and parts of PKCS and X509, will also be removed.
+Cryptographic hashes and signatures will remain in Pike and still be
+functional. Please verify manually that all encryption code really is
+gone in your release.
+
