@@ -5236,7 +5236,7 @@ Array.diff, Array.diff_longest_sequence
 <function name=Array.diff_longest_sequence
  title="gives the longest common sequence of two arrays">
 <man_syntax>
-array(array(array)) diff(array <i>a</i>, array <i>b</i>);<br>
+array(int) diff_longest_sequence(array <i>a</i>, array <i>b</i>);<br>
 </man_syntax>
 <man_description>
 Gives the longest sequence of indices in <b>b</b> that have corresponding
