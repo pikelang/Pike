@@ -1,7 +1,7 @@
 #include "global.h"
 #include "stralloc.h"
 #include "global.h"
-RCSID("$Id: resultset.c,v 1.12 2001/05/24 14:16:34 per Exp $");
+RCSID("$Id: resultset.c,v 1.13 2001/05/25 12:47:41 per Exp $");
 #include "pike_macros.h"
 #include "interpret.h"
 #include "program.h"
@@ -124,16 +124,32 @@ static void free_rs()
 
 /* Pike functions */
 
+static void f_resultset_create( INT32 args )
+{
+  if( args && sp[-1].type == PIKE_T_ARRAY )
+  {
+    int i;
+    wf_resultset_clear(  Pike_fp->current_object );
+    for(i = 0; i<sp[-1].u.array->size; i++ )
+      wf_resultset_add( Pike_fp->current_object,
+			sp[-1].u.array->item[i].u.integer, 1 );
+  }
+}
+
 static void f_resultset_cast( INT32 args )
 /*
 *! @decl string cast( string type )
-*! Only works when type == "string". Returns the resultset data as a string.
+*! Only works when type == "array". Returns the resultset data as a array.
 */
 {
   pop_n_elems( args );
   if( THIS->d )
-    push_string(make_shared_binary_string((char*)THIS->d,
-					  THIS->d->num_docs*8+4));
+  {
+    static void f_resultset_slice( INT32 args );
+    push_int(0);
+    push_int( 0x7fffffff );
+    f_resultset_slice(2);
+  }
   else
     push_int( 0 );
 }
@@ -572,6 +588,8 @@ void init_resultset_program(void)
   {  
     ADD_STORAGE( ResultSet );
     add_function("cast", f_resultset_cast, "function(string:mixed)", 0 );
+    add_function("create",f_resultset_create,
+		 "function(void|array(int):void)",0);
     add_function("test", f_resultset_test, "function(int,int,int:int)", 0 );
     add_function("sort",f_resultset_sort,"function(void:object)",0);
     add_function("sort_docid",f_resultset_sort_docid,
