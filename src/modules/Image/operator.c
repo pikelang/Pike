@@ -1,9 +1,9 @@
-/* $Id: operator.c,v 1.28 2000/06/03 21:01:16 per Exp $ */
+/* $Id: operator.c,v 1.29 2000/07/07 13:56:46 grubba Exp $ */
 
 /*
 **! module Image
 **! note
-**!	$Id: operator.c,v 1.28 2000/06/03 21:01:16 per Exp $
+**!	$Id: operator.c,v 1.29 2000/07/07 13:56:46 grubba Exp $
 **! class Image
 */
 
@@ -32,8 +32,8 @@ extern struct program *image_program;
 #ifdef THIS
 #undef THIS
 #endif
-#define THIS ((struct image *)(fp->current_storage))
-#define THISOBJ (fp->current_object)
+#define THIS ((struct image *)(Pike_fp->current_storage))
+#define THISOBJ (Pike_fp->current_object)
 
 #define absdiff(a,b) ((a)<(b)?((b)-(a)):((a)-(b)))
 

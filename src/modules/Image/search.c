@@ -30,8 +30,8 @@ extern struct program *image_program;
 #ifdef THIS
 #undef THIS /* Needed for NT */
 #endif
-#define THIS ((struct image *)(fp->current_storage))
-#define THISOBJ (fp->current_object)
+#define THIS ((struct image *)(Pike_fp->current_storage))
+#define THISOBJ (Pike_fp->current_object)
 
 #define testrange(x) MAXIMUM(MINIMUM((x),255),0)
 

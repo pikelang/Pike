@@ -1,4 +1,4 @@
-/* $Id: font.c,v 1.58 2000/03/25 23:34:32 hubbe Exp $ */
+/* $Id: font.c,v 1.59 2000/07/07 13:56:45 grubba Exp $ */
 #include "global.h"
 
 #define SPACE_CHAR 'i'
@@ -9,7 +9,7 @@ extern unsigned char * image_default_font;
 /*
 **! module Image
 **! note
-**!	$Id: font.c,v 1.58 2000/03/25 23:34:32 hubbe Exp $
+**!	$Id: font.c,v 1.59 2000/07/07 13:56:45 grubba Exp $
 **! class Font
 **!
 **! note
@@ -189,8 +189,8 @@ extern struct program *font_program;
 extern struct program *image_program;
 
 #undef THIS
-#define THIS (*(struct font **)(fp->current_storage))
-#define THISOBJ (fp->current_object)
+#define THIS (*(struct font **)(Pike_fp->current_storage))
+#define THISOBJ (Pike_fp->current_object)
 
 struct font 
 {
@@ -560,7 +560,7 @@ void font_write(INT32 args)
    p_wchar2 *to_write2;
    int to_write_len;
    INT32 c;
-   struct font *this = (*(struct font **)(fp->current_storage));
+   struct font *this = (*(struct font **)(Pike_fp->current_storage));
    if (!this)
       error("font->write: no font loaded\n");
 

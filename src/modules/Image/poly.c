@@ -1,7 +1,7 @@
 /*
 **! module Image
 **! note
-**!	$Id: poly.c,v 1.3 1999/07/28 09:26:20 mirar Exp $
+**!	$Id: poly.c,v 1.4 2000/07/07 13:56:46 grubba Exp $
 **! class Poly
 **!
 */
@@ -18,7 +18,7 @@ another?
 
 #include "global.h"
 
-RCSID("$Id: poly.c,v 1.3 1999/07/28 09:26:20 mirar Exp $");
+RCSID("$Id: poly.c,v 1.4 2000/07/07 13:56:46 grubba Exp $");
 
 #include "image_machine.h"
 
@@ -52,8 +52,8 @@ RCSID("$Id: poly.c,v 1.3 1999/07/28 09:26:20 mirar Exp $");
 #ifdef THIS
 #undef THIS
 #endif
-#define THIS ((struct poly *)(fp->current_storage))
-#define THISOBJ (fp->current_object)
+#define THIS ((struct poly *)(Pike_fp->current_storage))
+#define THISOBJ (Pike_fp->current_object)
 
 struct poly
 {

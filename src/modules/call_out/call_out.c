@@ -6,7 +6,7 @@
 /**/
 #include "global.h"
 #include "config.h"
-RCSID("$Id: call_out.c,v 1.33 2000/04/13 20:15:14 hubbe Exp $");
+RCSID("$Id: call_out.c,v 1.34 2000/07/07 14:01:47 grubba Exp $");
 #include "array.h"
 #include "dynamic_buffer.h"
 #include "object.h"
@@ -374,9 +374,9 @@ static struct array * new_call_out(int num_arg,struct svalue *argp)
 #endif
     my_add_timeval(& new->tv, &current_time);
 
-  if(fp && fp->current_object)
+  if(Pike_fp && Pike_fp->current_object)
   {
-    add_ref(new->caller=fp->current_object);
+    add_ref(new->caller=Pike_fp->current_object);
   }else{
     new->caller=0;
   }

@@ -1,7 +1,7 @@
 /*
 **! module Image
 **! note
-**!	$Id: colors.c,v 1.30 2000/02/03 19:02:22 grubba Exp $
+**!	$Id: colors.c,v 1.31 2000/07/07 13:56:45 grubba Exp $
 **! submodule Color
 **!
 **!	This module keeps names and easy handling 
@@ -179,7 +179,7 @@
 
 #include "global.h"
 
-RCSID("$Id: colors.c,v 1.30 2000/02/03 19:02:22 grubba Exp $");
+RCSID("$Id: colors.c,v 1.31 2000/07/07 13:56:45 grubba Exp $");
 
 #include "image_machine.h"
 
@@ -314,8 +314,8 @@ static void make_colors(void)
 #ifdef THIS
 #undef THIS /* Needed for NT */
 #endif
-#define THIS ((struct color_struct*)(fp->current_storage))
-#define THISOBJ (fp->current_object)
+#define THIS ((struct color_struct*)(Pike_fp->current_storage))
+#define THISOBJ (Pike_fp->current_object)
 
 static void init_color_struct(struct object *dummy)
 {

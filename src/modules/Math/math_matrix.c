@@ -1,4 +1,4 @@
-/* $Id: math_matrix.c,v 1.12 1999/11/08 22:39:28 grubba Exp $ */
+/* $Id: math_matrix.c,v 1.13 2000/07/07 14:01:16 grubba Exp $ */
 
 #include "global.h"
 #include "config.h"
@@ -47,8 +47,8 @@ struct matrix_storage
 #undef THIS /* Needed for NT */
 #endif
 
-#define THIS ((struct matrix_storage*)(fp->current_storage))
-#define THISOBJ (fp->current_object)
+#define THIS ((struct matrix_storage*)(Pike_fp->current_storage))
+#define THISOBJ (Pike_fp->current_object)
 
 static struct pike_string *s_array;
 static struct pike_string *s__clr;

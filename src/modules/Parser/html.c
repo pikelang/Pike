@@ -267,8 +267,8 @@ typedef enum { STATE_DONE=0, STATE_WAIT, STATE_REREAD, STATE_REPARSE } newstate;
 #undef THIS /* Needed for NT */
 #endif
 
-#define THIS ((struct parser_html_storage*)(fp->current_storage))
-#define THISOBJ (fp->current_object)
+#define THIS ((struct parser_html_storage*)(Pike_fp->current_storage))
+#define THISOBJ (Pike_fp->current_object)
 
 static struct pike_string *empty_string;
 
@@ -834,6 +834,11 @@ static void html_add_container(INT32 args)
    }
    else if (sp[1-args].type == T_INT && sp[1-args].u.integer)
      SIMPLE_BAD_ARG_ERROR("add_tag", 1, "zero, string, array or function");
+
+   if (args > 2) {
+     pop_n_elems(args-2);
+     args = 2;
+   }
 
    if (THIS->mapcont->refs>1)
    {

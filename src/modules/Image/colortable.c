@@ -1,11 +1,11 @@
 #include "global.h"
 
-/* $Id: colortable.c,v 1.77 1999/10/30 11:51:41 mirar Exp $ */
+/* $Id: colortable.c,v 1.78 2000/07/07 13:56:45 grubba Exp $ */
 
 /*
 **! module Image
 **! note
-**!	$Id: colortable.c,v 1.77 1999/10/30 11:51:41 mirar Exp $
+**!	$Id: colortable.c,v 1.78 2000/07/07 13:56:45 grubba Exp $
 **! class Colortable
 **!
 **!	This object keeps colortable information,
@@ -20,7 +20,7 @@
 #undef COLORTABLE_DEBUG
 #undef COLORTABLE_REDUCE_DEBUG
 
-RCSID("$Id: colortable.c,v 1.77 1999/10/30 11:51:41 mirar Exp $");
+RCSID("$Id: colortable.c,v 1.78 2000/07/07 13:56:45 grubba Exp $");
 
 #include <math.h> /* fabs() */
 
@@ -80,8 +80,8 @@ static INLINE int sq(int x) { return x*x; }
 #ifdef THIS
 #undef THIS /* Needed for NT */
 #endif
-#define THIS ((struct neo_colortable *)(fp->current_storage))
-#define THISOBJ (fp->current_object)
+#define THIS ((struct neo_colortable *)(Pike_fp->current_storage))
+#define THISOBJ (Pike_fp->current_object)
 
 static struct pike_string *s_array;
 static struct pike_string *s_string;
@@ -577,13 +577,14 @@ static int reduce_recurse(struct nct_flat_entry *src,
 #endif
 
       n=reduce_recurse(src,dest,left,i,level+2,sf,newpos1,space,type);
-      if (n!=oldn) 
+      if (n!=oldn) {
 	 if (n<oldn) /* i certainly hope so */
 	    MEMMOVE(dest+n,dest+oldn,sizeof(struct nct_flat_entry)*m);
 	 else /* huh? */
 	    /* this is the only case we don't have them already */
 	    m=reduce_recurse(src+left,dest+n,src_size-left,
 			     target_size-n,level+2,sf,newpos2,space,type);
+      }
 #ifdef COLORTABLE_REDUCE_DEBUG
       fprintf(stderr,"COLORTABLE%*s ->%d+%d=%d (retried for %d+%d=%d)\n",level,"",n,m,n+m,i,target_size-i,target_size);
 #endif

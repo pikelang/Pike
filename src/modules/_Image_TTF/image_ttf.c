@@ -1,12 +1,12 @@
 /*
- * $Id: image_ttf.c,v 1.29 2000/04/05 15:09:16 grubba Exp $
+ * $Id: image_ttf.c,v 1.30 2000/07/07 13:57:44 grubba Exp $
  */
 
 #include "config.h"
 
 
 #include "global.h"
-RCSID("$Id: image_ttf.c,v 1.29 2000/04/05 15:09:16 grubba Exp $");
+RCSID("$Id: image_ttf.c,v 1.30 2000/07/07 13:57:44 grubba Exp $");
 
 #ifdef HAVE_LIBTTF
 #if defined(HAVE_FREETYPE_FREETYPE_H) && defined(HAVE_FREETYPE_FTXKERN_H)
@@ -260,7 +260,7 @@ static void image_ttf_make(INT32 args)
 **!	This represents instances of TTF Faces.
 */
 
-#define THISOBJ (fp->current_object)
+#define THISOBJ (Pike_fp->current_object)
 #define THISf ((struct image_ttf_face_struct*)get_storage(THISOBJ,image_ttf_face_program))
 #define THISi ((struct image_ttf_faceinstance_struct*)get_storage(THISOBJ,image_ttf_faceinstance_program))
 

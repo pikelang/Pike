@@ -1,10 +1,10 @@
-/* $Id: blit.c,v 1.41 2000/06/11 21:07:21 per Exp $ */
+/* $Id: blit.c,v 1.42 2000/07/07 13:56:45 grubba Exp $ */
 #include "global.h"
 
 /*
 **! module Image
 **! note
-**!	$Id: blit.c,v 1.41 2000/06/11 21:07:21 per Exp $
+**!	$Id: blit.c,v 1.42 2000/07/07 13:56:45 grubba Exp $
 **! class Image
 */
 
@@ -33,8 +33,8 @@ extern struct program *image_program;
 #ifdef THIS
 #undef THIS /* Needed for NT */
 #endif
-#define THIS ((struct image *)(fp->current_storage))
-#define THISOBJ (fp->current_object)
+#define THIS ((struct image *)(Pike_fp->current_storage))
+#define THISOBJ (Pike_fp->current_object)
 
 #define absdiff(a,b) ((a)<(b)?((b)-(a)):((a)-(b)))
 

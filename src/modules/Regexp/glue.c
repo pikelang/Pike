@@ -19,7 +19,7 @@
 #include "threads.h"
 #include "module_support.h"
 
-RCSID("$Id: glue.c,v 1.16 2000/04/13 18:43:26 grubba Exp $");
+RCSID("$Id: glue.c,v 1.17 2000/07/07 13:58:57 grubba Exp $");
 
 #ifdef USE_SYSTEM_REGEXP
 #include <regexp.h>
@@ -44,7 +44,7 @@ struct regexp_glue
 #undef THIS
 #endif
 
-#define THIS ((struct regexp_glue *)(fp->current_storage))
+#define THIS ((struct regexp_glue *)(Pike_fp->current_storage))
 
 static void do_free(void)
 {

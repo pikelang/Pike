@@ -4,7 +4,7 @@
 ||| See the files COPYING and DISCLAIMER for more information.
 \*/
 #include "global.h"
-RCSID("$Id: gdbmmod.c,v 1.9 2000/04/18 06:53:53 jonasw Exp $");
+RCSID("$Id: gdbmmod.c,v 1.10 2000/07/07 14:02:12 grubba Exp $");
 #include "gdbm_machine.h"
 #include "threads.h"
 
@@ -30,7 +30,7 @@ struct gdbm_glue
   GDBM_FILE dbf;
 };
 
-#define THIS ((struct gdbm_glue *)(fp->current_storage))
+#define THIS ((struct gdbm_glue *)(Pike_fp->current_storage))
 
 static void do_free(void)
 {
@@ -117,7 +117,7 @@ static void gdbmmod_create(INT32 args)
     mt_unlock(& gdbm_lock);
     THREADS_DISALLOW();
 
-    if(!fp->current_object->prog)
+    if(!Pike_fp->current_object->prog)
     {
       if(tmp) gdbm_close(tmp);
       error("Object destructed in gdbm->open()n");

@@ -1,9 +1,9 @@
-/* $Id: orient.c,v 1.13 1999/06/19 20:24:48 hubbe Exp $ */
+/* $Id: orient.c,v 1.14 2000/07/07 13:56:46 grubba Exp $ */
 
 /*
 **! module Image
 **! note
-**!	$Id: orient.c,v 1.13 1999/06/19 20:24:48 hubbe Exp $
+**!	$Id: orient.c,v 1.14 2000/07/07 13:56:46 grubba Exp $
 **! class Image
 */
 
@@ -31,8 +31,8 @@ extern struct program *image_program;
 #ifdef THIS
 #undef THIS /* Needed for NT */
 #endif
-#define THIS ((struct image *)(fp->current_storage))
-#define THISOBJ (fp->current_object)
+#define THIS ((struct image *)(Pike_fp->current_storage))
+#define THISOBJ (Pike_fp->current_object)
 
 #define testrange(x) MAXIMUM(MINIMUM((x),255),0)
 

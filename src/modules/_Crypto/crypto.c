@@ -1,5 +1,5 @@
 /*
- * $Id: crypto.c,v 1.31 2000/03/28 12:16:39 grubba Exp $
+ * $Id: crypto.c,v 1.32 2000/07/07 13:57:15 grubba Exp $
  *
  * A pike module for getting access to some common cryptos.
  *
@@ -58,7 +58,7 @@ static const char *crypto_functions[] = {
 };
 
 #undef THIS
-#define THIS	((struct pike_crypto *)(fp->current_storage))
+#define THIS	((struct pike_crypto *)(Pike_fp->current_storage))
 
 static struct program *pike_crypto_program;
 

@@ -1,9 +1,9 @@
-/* $Id: pattern.c,v 1.18 1999/07/16 11:44:20 mirar Exp $ */
+/* $Id: pattern.c,v 1.19 2000/07/07 13:56:46 grubba Exp $ */
 
 /*
 **! module Image
 **! note
-**!	$Id: pattern.c,v 1.18 1999/07/16 11:44:20 mirar Exp $
+**!	$Id: pattern.c,v 1.19 2000/07/07 13:56:46 grubba Exp $
 **! class Image
 */
 
@@ -31,8 +31,8 @@ extern struct program *image_program;
 #undef THIS
 #endif
 
-#define THIS ((struct image *)(fp->current_storage))
-#define THISOBJ (fp->current_object)
+#define THIS ((struct image *)(Pike_fp->current_storage))
+#define THISOBJ (Pike_fp->current_object)
 
 #define testrange(x) MAXIMUM(MINIMUM((x),255),0)
 
