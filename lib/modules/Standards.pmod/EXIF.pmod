@@ -3,7 +3,7 @@
 //!
 //! Copyright (c) Roxen Internet Software 2001
 
-// $Id: EXIF.pmod,v 1.1 2001/07/16 01:07:35 js Exp $
+// $Id: EXIF.pmod,v 1.2 2001/09/14 18:29:11 mirar Exp $
 //  Johan Schön <js@roxen.com>, July 2001.
 //  Based on Exiftool by Robert F. Tobler <rft@cg.tuwien.ac.at>.
 //
@@ -148,7 +148,7 @@ mapping canon_d30_multi1(array(int) data)
 {
   mapping res=([]);
   res->CanonWhiteBalance =
-    ({ "Auto", "Sunny", "Clody",
+    ({ "Auto", "Sunny", "Cloudy",
 	 "Tungsten", "Flourescent", "Flash", "Custom"})[data[7]];
   res->CanonBurstSequenceNumber=(string)data[9];
 //    res->CanonAutoFocusPoint=sprintf("%b",data[14]);
