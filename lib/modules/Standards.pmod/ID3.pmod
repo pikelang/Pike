@@ -1,6 +1,6 @@
 // ID3.pmod
 //
-//  $Id: ID3.pmod,v 1.15 2003/10/08 18:52:34 nilsson Exp $
+//  $Id: ID3.pmod,v 1.16 2003/12/14 23:45:40 nilsson Exp $
 //
 
 #pike __REAL_VERSION__
@@ -305,15 +305,18 @@ array(string|int) encode_strings(array(string) in) {
   return ({ 0 }) + in;
 }
 
-
+//! Abstract class for frame data.
 class FrameData {
 
   private string original_data;
+
+  //!
   void create(void|string data) {
     original_data = data;
     if(data) decode(data);
   }
 
+  //! Is the content altered?
   int(0..1) changed() {
     return original_data && (encode() != original_data);
   }
@@ -322,6 +325,7 @@ class FrameData {
   string encode();
 }
 
+//!
 class Frame {
 
   string id;
