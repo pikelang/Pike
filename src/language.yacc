@@ -156,7 +156,7 @@
 /* This is the grammar definition of Pike. */
 
 #include "global.h"
-RCSID("$Id: language.yacc,v 1.42 1997/05/07 06:25:35 per Exp $");
+RCSID("$Id: language.yacc,v 1.42.2.1 1997/05/10 12:56:55 hubbe Exp $");
 #ifdef HAVE_MEMORY_H
 #include <memory.h>
 #endif
@@ -202,6 +202,17 @@ void fix_comp_stack(int sp)
     comp_stackp=sp;
   }else if(comp_stackp<sp){
     fatal("Compiler stack frame underflow.");
+  }
+}
+
+void pop_local_variables(int level)
+{
+  while(local_variables->current_number_of_locals > level)
+  {
+    int e;
+    e=--(local_variables->current_number_of_locals);
+    free_string(local_variables->variable[e].name);
+    free_string(local_variables->variable[e].type);
   }
 }
 
@@ -795,13 +806,7 @@ block:'{'
   } 
   statements '}'
   {
-    while(local_variables->current_number_of_locals > $<number>2)
-    {
-      int e;
-      e=--(local_variables->current_number_of_locals);
-      free_string(local_variables->variable[e].name);
-      free_string(local_variables->variable[e].type);
-    }
+    pop_local_variables($<number>2);
     $$=$3;
   }
   ;
@@ -932,12 +937,17 @@ class: modifiers F_CLASS optional_identifier
   }
   ;
 
-cond: F_IF '(' comma_expr ')' statement optional_else_part
+cond: F_IF
   {
-    $$=mknode('?',$3,mknode(':',$5,$6));
+    $<number>$=local_variables->current_number_of_locals;
+  }
+  '(' comma_expr ')' statement optional_else_part
+  {
+    $$=mknode('?',$4,mknode(':',$6,$7));
     $$->line_number=$1;
     $$=mkcastnode(void_type_string,$$);
     $$->line_number=$1;
+    pop_local_variables($<number>2);
   }
   ;
 
@@ -945,10 +955,15 @@ optional_else_part: { $$=0; }
   | F_ELSE statement { $$=$2; }
   ;      
 
-foreach: F_FOREACH '(' expr0 ',' lvalue ')' statement
+foreach: F_FOREACH
   {
-    $$=mknode(F_FOREACH,mknode(F_VAL_LVAL,$3,$5),$7);
+    $<number>$=local_variables->current_number_of_locals;
+  }
+  '(' expr0 ',' lvalue ')' statement
+  {
+    $$=mknode(F_FOREACH, mknode(F_VAL_LVAL,$4,$6),$8);
     $$->line_number=$1;
+    pop_local_variables($<number>2);
   }
   ;
 
@@ -959,22 +974,32 @@ do: F_DO statement F_WHILE '(' comma_expr ')' ';'
   }
   ;
 
-for: F_FOR '(' unused  ';' for_expr ';' unused ')' statement
+for: F_FOR
+  {
+    $<number>$=local_variables->current_number_of_locals;
+  }
+  '(' unused  ';' for_expr ';' unused ')' statement
   {
     int i=current_line;
     current_line=$1;
-    $$=mknode(F_ARG_LIST,mkcastnode(void_type_string,$3),mknode(F_FOR,$5,mknode(':',$9,$7)));
+    $$=mknode(F_ARG_LIST,mkcastnode(void_type_string,$4),mknode(F_FOR,$6,mknode(':',$10,$8)));
     current_line=i;
+    pop_local_variables($<number>2);
   }
   ;
 
 
-while:  F_WHILE '(' comma_expr ')' statement
+while:  F_WHILE
+  {
+    $<number>$=local_variables->current_number_of_locals;
+  }
+  '(' comma_expr ')' statement
   {
     int i=current_line;
     current_line=$1;
-    $$=mknode(F_FOR,$3,mknode(':',$5,NULL));
+    $$=mknode(F_FOR,$4,mknode(':',$6,NULL));
     current_line=i;
+    pop_local_variables($<number>2);
   }
   ;
 
@@ -982,10 +1007,15 @@ for_expr: /* EMPTY */ { $$=mkintnode(1); }
   | comma_expr
   ;
 
-switch:	F_SWITCH '(' comma_expr ')' statement
+switch:	F_SWITCH
   {
-    $$=mknode(F_SWITCH,$3,$5);
+    $<number>$=local_variables->current_number_of_locals;
+  }
+  '(' comma_expr ')' statement
+  {
+    $$=mknode(F_SWITCH,$4,$6);
     $$->line_number=$1;
+    pop_local_variables($<number>2);
   }
   ;
 

@@ -19,18 +19,11 @@ varargs int exec(string file,string ... foo)
   return 69;
 }
 
-varargs int spawn(string s,object stdin,object stdout,object stderr)
+varargs object spawn(string s,object stdin,object stdout,object stderr)
 {
-  int pid;
-
-  pid=fork();
-  
-  if(pid==-1)
-    error("No more processes.\n");
-
-  if(pid)
+  if(object proc=fork())
   {
-    return pid;
+    return proc;
   }else{
     if(stdin) {
       stdin->dup2(File("stdin"));
@@ -63,7 +56,7 @@ string popen(string s)
   p->close();
   destruct(p);
 
-  t=read(0x7fffffff);
+  t=read();
   if(!t)
   {
     int e;
@@ -76,27 +69,7 @@ string popen(string s)
   return t;
 }
 
-void system(string s)
-{
-  object p;
-  int pid;
-  string t;
-
-  p=file::pipe();
-  if(!p) error("System() failed.\n");
-  p->set_close_on_exec(0);
-  if(pid=fork())
-  {
-    destruct(p);
-    /* Nothing will ever be written here, we are just waiting for it
-     * to close
-     */
-    file::read(1);
-  }else{
-    exec("/bin/sh","-c",s);
-    exit(69);
-  }
-}
+int system(string s) { return spawn(s)->wait(); }
  
 constant fork = predef::fork;
 constant exece = predef::exece;

@@ -6,7 +6,7 @@
 #define READ_BUFFER 8192
 
 #include "global.h"
-RCSID("$Id: file.c,v 1.37 1997/05/05 05:29:37 nisse Exp $");
+RCSID("$Id: file.c,v 1.37.2.1 1997/05/10 12:57:28 hubbe Exp $");
 #include "types.h"
 #include "interpret.h"
 #include "svalue.h"
@@ -1465,7 +1465,7 @@ void pike_module_init()
 
   add_function("open",file_open,"function(string,string:int)",0);
   add_function("close",file_close,"function(string|void:int)",0);
-  add_function("read",file_read,"function(int,int|void:int|string)",0);
+  add_function("read",file_read,"function(int|void,int|void:int|string)",0);
   add_function("write",file_write,"function(string:int)",0);
 
   add_function("seek",file_seek,"function(int:int)",0);

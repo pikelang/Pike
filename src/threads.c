@@ -1,5 +1,5 @@
 #include "global.h"
-RCSID("$Id: threads.c,v 1.23 1997/04/20 03:53:35 grubba Exp $");
+RCSID("$Id: threads.c,v 1.23.2.1 1997/05/10 12:56:57 hubbe Exp $");
 
 int num_threads = 1;
 int threads_disabled = 0;
@@ -30,6 +30,19 @@ struct thread_starter
   struct array *args;
 };
 
+struct thread_id {
+  int status;
+  COND_T status_change;
+};
+
+static int thread_id_result_variable;
+
+static MUTEX_T thread_id_kluge = PTHREAD_MUTEX_INITIALIZER;
+
+#define THREAD_UNKNOWN 0
+#define THREAD_RUNNING 1
+#define THREAD_EXITED 2
+
 static void check_threads(struct callback *cb, void *arg, void * arg2)
 {
   THREADS_ALLOW();
@@ -37,6 +50,42 @@ static void check_threads(struct callback *cb, void *arg, void * arg2)
   /* Allow other threads to run */
 
   THREADS_DISALLOW();
+}
+
+#define THIS_THREAD ((struct thread_id *)fp->current_storage)
+#define THREAD_INFO ((struct thread_id *)thread_id->storage)
+
+static void init_thread_id(struct object *o)
+{
+  THIS_THREAD->status=THREAD_UNKNOWN;
+  co_init(& THIS_THREAD->status_change);
+}
+
+static void exit_thread_id(struct object *o)
+{
+  co_destroy(& THIS_THREAD->status_change);
+}
+
+static void f_thread_id_status(INT32 args)
+{
+  pop_n_elems(args);
+  push_int(THIS_THREAD->status);
+}
+
+static void f_thread_id_result(INT32 args)
+{
+  struct thread_id *th=THIS_THREAD;
+  THREADS_ALLOW();
+  mt_lock(&thread_id_kluge);
+  while(th->status != THREAD_EXITED)
+    co_wait(&th->status_change, &thread_id_kluge);
+  mt_unlock(&thread_id_kluge);
+  THREADS_DISALLOW();
+
+  low_object_index_no_free(sp,
+			   fp->current_object, 
+			   thread_id_result_variable);
+  sp++;
 }
 
 void *new_thread_func(void * data)
@@ -54,6 +103,7 @@ void *new_thread_func(void * data)
   init_interpreter();
 
   thread_id=arg.id;
+  THREAD_INFO->status=THREAD_RUNNING;
 
   if(SETJMP(back))
   {
@@ -68,12 +118,19 @@ void *new_thread_func(void * data)
     push_array_items(arg.args);
     arg.args=0;
     f_call_function(args);
-    pop_stack(); /* Discard the return value. /Per */
+
+    fprintf(stderr,"Done ");
+    /* copy return value to the thread_id here */
+    object_low_set_index(thread_id,
+			 thread_id_result_variable,
+			 sp-1);
+    pop_stack();
   }
 
   UNSETJMP(back);
 
-  destruct(thread_id);
+  THREAD_INFO->status=THREAD_EXITED;
+  co_signal(& THREAD_INFO->status_change);
 
   free_object(thread_id);
   thread_id=0;
@@ -104,6 +161,7 @@ void f_thread_create(INT32 args)
   arg=ALLOC_STRUCT(thread_starter);
   arg->args=aggregate_array(args);
   arg->id=clone_object(thread_id_prog,0);
+  arg->id->refs++;
 
   tmp=th_create(&dummy,new_thread_func,arg);
 
@@ -121,8 +179,8 @@ void f_thread_create(INT32 args)
       th_setconcurrency(++num_lwps);
 #endif
     push_object(arg->id);
-    arg->id->refs++;
   } else {
+    free_object(arg->id);
     free_object(arg->id);
     free_array(arg->args);
     free((char *)arg);
@@ -365,6 +423,12 @@ void th_init()
   end_class("condition", 0);
 
   start_new_program();
+  add_storage(sizeof(struct thread_id));
+  thread_id_result_variable=simple_add_variable("result","mixed",0);
+  add_function("wait",f_thread_id_result,"function(:int)",0);
+  add_function("status",f_thread_id_status,"function(:int)",0);
+  set_init_callback(init_thread_id);
+  set_exit_callback(exit_thread_id);
   thread_id_prog=end_program();
   if(!mutex_key)
     fatal("Failed to initialize thread program!\n");
@@ -388,7 +452,6 @@ void th_cleanup()
 
   if(thread_id)
   {
-    destruct(thread_id);
     free_object(thread_id);
     thread_id=0;
   }

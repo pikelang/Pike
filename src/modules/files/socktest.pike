@@ -232,7 +232,7 @@ void finish()
     case 22:
       werror("Testing accept. ");
       string data1=strmult("foobar",4711);
-      for(e=0;e<10;e++)
+      for(int e=0;e<10;e++)
       {
 	sock1=Socket();
 	sock1->connect("127.0.0.1",portno1);
@@ -243,7 +243,7 @@ void finish()
     case 23..45:
       tests=(_tests-22)*2;
       werror("Testing "+(tests*2)+" sockets. ");
-      for(e=0;e<tests;e++) stdtest();
+      for(int e=0;e<tests;e++) stdtest();
       break;
 
     case 46:

@@ -202,6 +202,9 @@ int isidentifier(struct pike_string *s);
 int define_variable(struct pike_string *name,
 		    struct pike_string *type,
 		    INT32 flags);
+int simple_add_variable(char *name,
+			char *type,
+			INT32 flags);
 int add_constant(struct pike_string *name,
 		 struct svalue *c,
 		 INT32 flags);
@@ -236,7 +239,7 @@ int store_constant(struct svalue *foo, int equal);
 void start_line_numbering(void);
 void store_linenumber(INT32 current_line, struct pike_string *current_file);
 char *get_line(unsigned char *pc,struct program *prog,INT32 *linep);
-void my_yyerror(char *fmt,...);
+void my_yyerror(char *fmt,...)  ATTRIBUTE((format(printf,1,2)));
 void compile();
 struct program *compile_file(struct pike_string *file_name);
 struct program *compile_string(struct pike_string *prog,
@@ -252,10 +255,9 @@ void count_memory_in_programs(INT32 *num_, INT32 *size_);
 void push_locals();
 void pop_locals();
 char *get_storage(struct object *o, struct program *p);
+void yywarning(char *fmt, ...) ATTRIBUTE((format(printf,1,2)));
 /* Prototypes end here */
 
-
-void my_yyerror(char *fmt,...) ATTRIBUTE((format (printf, 1, 2)));
 
 #endif
 

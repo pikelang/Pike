@@ -54,6 +54,9 @@ void object_index_no_free2(struct svalue *to,
 void object_index_no_free(struct svalue *to,
 			   struct object *o,
 			   struct svalue *index);
+void object_low_set_index(struct object *o,
+				 int f,
+				 struct svalue *from);
 void object_set_index2(struct object *o,
 		      struct svalue *index,
 		      struct svalue *from);

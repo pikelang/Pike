@@ -4,7 +4,7 @@
 ||| See the files COPYING and DISCLAIMER for more information.
 \*/
 #include "global.h"
-RCSID("$Id: program.c,v 1.33 1997/04/16 03:09:16 hubbe Exp $");
+RCSID("$Id: program.c,v 1.33.2.1 1997/05/10 12:56:56 hubbe Exp $");
 #include "program.h"
 #include "object.h"
 #include "dynamic_buffer.h"
@@ -27,6 +27,11 @@ RCSID("$Id: program.c,v 1.33 1997/04/16 03:09:16 hubbe Exp $");
 
 #include <errno.h>
 #include <fcntl.h>
+
+
+#undef ATTRIBUTE
+#define ATTRIBUTE(X)
+
 
 /*
  * Define the size of the cache that is used for method lookup.
@@ -962,6 +967,21 @@ int define_variable(struct pike_string *name,
   return n;
 }
 
+int simple_add_variable(char *name,
+			char *type,
+			INT32 flags)
+{
+  INT32 ret;
+  struct pike_string *name_s, *type_s;
+  name_s=make_shared_string(name);
+  type_s=parse_type(type);
+  
+  ret=define_variable(name_s, type_s, flags);
+  free_string(name_s);
+  free_string(type_s);
+  return ret;
+}
+
 int add_constant(struct pike_string *name,
 		 struct svalue *c,
 		 INT32 flags)
@@ -1455,10 +1475,10 @@ char *get_line(unsigned char *pc,struct program *prog,INT32 *linep)
   return file;
 }
 
-void my_yyerror(char *fmt,...)
+void my_yyerror(char *fmt,...)  ATTRIBUTE((format(printf,1,2)))
 {
   va_list args;
-  char buf[1000];
+  char buf[8192];
   va_start(args,fmt);
   VSPRINTF(buf,fmt,args);
 
@@ -1755,4 +1775,25 @@ char *get_storage(struct object *o, struct program *p)
 
   if(offset == -1) return 0;
   return o->storage + offset;
+}
+
+void yywarning(char *fmt, ...) ATTRIBUTE((format(printf,1,2)))
+{
+  char buf[4711];
+  va_list args;
+  va_start(args,fmt);
+  VSPRINTF(buf, fmt, args);
+  va_end(args);
+
+  if(strlen(buf)>sizeof(buf))
+    fatal("Buffer overfloat in yywarning!\n");
+
+  if(get_master())
+  {
+    ref_push_string(current_file);
+    push_int(current_line);
+    push_text(buf);
+    SAFE_APPLY_MASTER("compile_warning",3);
+    pop_stack();
+  }
 }

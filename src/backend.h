@@ -20,6 +20,9 @@ struct callback *add_backend_callback(callback_func call,
 				      void *arg,
 				      callback_func free_func);
 void wake_up_backend(void);
+void init_signal_wait();
+void exit_signal_wait();
+void wait_for_signal();
 void init_backend();
 void set_read_callback(int fd,file_callback cb,void *data);
 void set_write_callback(int fd,file_callback cb,void *data);

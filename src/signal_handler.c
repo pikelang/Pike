@@ -12,6 +12,8 @@
 #include "backend.h"
 #include "error.h"
 #include "callback.h"
+#include "mapping.h"
+#include "object.h"
 #include <signal.h>
 #include <sys/wait.h>
 
@@ -32,6 +34,7 @@ static struct svalue signal_callbacks[MAX_SIGNALS];
 static unsigned char sigbuf[SIGNAL_BUFFER];
 static int firstsig, lastsig;
 static struct callback *signal_evaluator_callback =0;
+static int sigchild_arrived=0;
 
 
 struct sigdesc
@@ -192,30 +195,6 @@ static void my_signal(int sig, sigfunctype fun)
 #endif
 }
 
-static RETSIGTYPE sig_child(int arg)
-{
-  /* We carefully reap what we saw */
-#ifdef HAVE_WAITPID
-  while(waitpid(-1,0,WNOHANG) > 0); 
-#else
-#ifdef HAVE_WAIT3
-  while( wait3(0,WNOHANG,0) > 0);
-#else
-#ifdef HAVE_WAIT4
-  while( wait4(-1,0,WNOHANG,0) > 0);
-#else
-
-  /* Leave'em hanging */
-
-#endif /* HAVE_WAIT4 */
-#endif /* HAVE_WAIT3 */
-#endif /* HAVE_WAITPID */
-
-#ifdef SIGNAL_ONESHOT
-  my_signal(SIGCHLD, sig_child);
-#endif
-}
-
 static RETSIGTYPE receive_signal(int signum)
 {
   int tmp;
@@ -225,7 +204,8 @@ static RETSIGTYPE receive_signal(int signum)
   if(tmp != lastsig)
     sigbuf[firstsig=tmp]=signum;
 
-  if(signum==SIGCHLD) sig_child(signum);
+  if(signum==SIGCHLD)
+    sigchild_arrived++;
 
   wake_up_backend();
 
@@ -267,6 +247,193 @@ void check_signals(struct callback *foo, void *bar, void *gazonk)
     signalling=0;
   }
 }
+
+#define PROCESS_UNKNOWN 0
+#define PROCESS_RUNNING 1
+#define PROCESS_EXITED 2
+
+#define THIS ((struct pid_status *)fp->current_storage)
+
+static struct callback *children_evaluator_callback =0;
+struct mapping *pid_mapping=0;;
+struct program *pid_status_program=0;
+
+struct pid_status
+{
+  int pid;
+  int state;
+  int result;
+};
+
+static void init_pid_status(struct object *o)
+{
+  THIS->pid=-1;
+  THIS->state=PROCESS_UNKNOWN;
+  THIS->result=-1;
+}
+
+static void exit_pid_status(struct object *o)
+{
+  if(pid_mapping)
+  {
+    struct svalue key;
+    key.type=T_INT;
+    key.u.integer=THIS->pid;
+    map_delete(pid_mapping, &key);
+  }
+}
+
+static RETSIGTYPE sig_child(int arg)
+{
+  wake_up_backend();
+  fprintf(stderr,"Got sigchild %d\n",sigchild_arrived);
+  sigchild_arrived++;
+
+#ifdef SIGNAL_ONESHOT
+  my_signal(SIGCHLD, sig_child);
+#endif
+}
+
+static void check_children(struct callback *foo, void *bar, void *gazonk)
+{
+  if(sigchild_arrived)
+  {
+#ifdef HAVE_SIGPROCMASK
+    sigset_t set, oset;
+    sigemptyset(&set);
+    sigaddset(&set, SIGCHLD);
+    sigprocmask(SIG_BLOCK, &set, &oset);
+#else
+#ifdef HAVE_SIGBLOCK
+    int oset;
+    oset=siggetmask();
+    sigblock(sigmask(SIGCHLD));
+#endif
+#endif
+    while(sigchild_arrived>0)
+    {
+      sigchild_arrived--;
+      while(1)
+      {
+	pid_t pid;
+	int status;
+	fprintf(stderr,"Waitpid...\n");
+      /* We carefully reap what we saw */
+#ifdef HAVE_WAITPID
+	pid=waitpid(-1,& status,WNOHANG);
+#else
+#ifdef HAVE_WAIT3
+	pid=wait3(&status,WNOHANG,0);
+#else
+#ifdef HAVE_WAIT4
+	pid=wait4(-1,&status,WNOHANG,0);
+#else
+	pid=-1;
+#endif
+#endif
+#endif
+	fprintf(stderr,"Done...\n");
+	if(pid>0)
+	{
+	  if(pid_mapping)
+	  {
+	    struct svalue *s, key;
+	    key.type=T_INT;
+	    key.u.integer=pid;
+	    if((s=low_mapping_lookup(pid_mapping, &key)))
+	    {
+	      if(s->type == T_OBJECT)
+	      {
+		struct pid_status *p;
+		if((p=(struct pid_status *)get_storage(s->u.object,
+						      pid_status_program)))
+		{
+		  p->state = PROCESS_EXITED;
+		  p->result = WEXITSTATUS(status);
+		}
+	      }
+	      map_delete(pid_mapping, &key);
+	    }
+	  }
+	}else{
+	  break;
+	}
+      }
+    }
+
+#ifdef HAVE_SIGPROCMASK
+    sigprocmask(SIG_SETMASK, &oset, 0);
+#else
+#ifdef HAVE_SIGBLOCk
+    sigsetmask(oset);
+#endif
+#endif
+  }
+}
+
+static void f_pid_status_wait(INT32 args)
+{
+  pop_n_elems(args);
+  init_signal_wait();
+  printf("Init wait\n");
+  while(THIS->state == PROCESS_RUNNING)
+  {
+    printf("Waiting...\n");
+    wait_for_signal();
+    printf("Woke up! %d\n",sigchild_arrived);
+    check_threads_etc();
+  }
+  printf("Done!\n");
+  exit_signal_wait();
+  push_int(THIS->result);
+}
+
+static void f_pid_status_status(INT32 args)
+{
+  pop_n_elems(args);
+  push_int(THIS->state);
+}
+
+static void f_pid_status_pid(INT32 args)
+{
+  pop_n_elems(args);
+  push_int(THIS->pid);
+}
+
+void f_fork(INT32 args)
+{
+  struct object *o;
+  pid_t pid;
+  pop_n_elems(args);
+#if defined(HAVE_FORK1) && defined(_REENTRANT)
+  pid=fork1();
+#else
+  pid=fork();
+#endif
+  if(pid==-1) error("Fork failed\n");
+
+  if(pid)
+  {
+    struct pid_status *p;
+    if(!children_evaluator_callback)
+    {
+      children_evaluator_callback=add_to_callback(&evaluator_callbacks,
+						  check_children,
+						  0,0);
+    }
+    o=clone_object(pid_status_program,0);
+    p=(struct pid_status *)get_storage(o,pid_status_program);
+    p->pid=pid;
+    p->state=PROCESS_RUNNING;
+    push_object(o);
+    push_int(pid);
+    mapping_insert(pid_mapping,sp-1, sp-2);
+    pop_stack();
+  }else{
+    push_int(0);
+  }
+}
+
 
 /* Get the name of a signal given the number */
 static char *signame(int sig)
@@ -385,10 +552,30 @@ static void f_signame(int args)
 
 static void f_kill(INT32 args)
 {
+  pid_t pid;
   if(args < 2)
     error("Too few arguments to kill().\n");
-  if(sp[-args].type != T_INT)
+  switch(sp[-args].type)
+  {
+  case T_INT:
+    pid=sp[-args].u.integer;
+    break;
+
+  case T_OBJECT:
+  {
+    struct pid_status *p;
+    if((p=(struct pid_status *)get_storage(sp[-args].u.object,
+					  pid_status_program)))
+    {
+      pid=p->pid;
+      break;
+    }
+  }
+  default:
     error("Bad argument 1 to kill().\n");
+  }
+    
+  if(sp[-args].type != T_INT)
   if(sp[1-args].type != T_INT)
     error("Bad argument 1 to kill().\n");
 
@@ -452,12 +639,23 @@ void init_signals()
 
   firstsig=lastsig=0;
 
+  pid_mapping=allocate_mapping(2);
+  start_new_program();
+  add_storage(sizeof(struct pid_status));
+  set_init_callback(init_pid_status);
+  set_init_callback(exit_pid_status);
+  add_function("wait",f_pid_status_wait,"function(:int)",0);
+  add_function("status",f_pid_status_status,"function(:int)",0);
+  add_function("pid",f_pid_status_pid,"function(:int)",0);
+  pid_status_program=end_program();
+
   add_efun("signal",f_signal,"function(int,mixed|void:void)",OPT_SIDE_EFFECT);
-  add_efun("kill",f_kill,"function(int,int:int)",OPT_SIDE_EFFECT);
+  add_efun("kill",f_kill,"function(int|object,int:int)",OPT_SIDE_EFFECT);
   add_efun("signame",f_signame,"function(int:string)",0);
   add_efun("signum",f_signum,"function(string:int)",0);
   add_efun("getpid",f_getpid,"function(:int)",0);
   add_efun("alarm",f_alarm,"function(int:int)",OPT_SIDE_EFFECT);
+  add_efun("fork",f_fork,"function(:object)",OPT_SIDE_EFFECT);
 #ifdef HAVE_UALARM
   add_efun("ualarm",f_ualarm,"function(int:int)",OPT_SIDE_EFFECT);
 #endif
@@ -466,6 +664,17 @@ void init_signals()
 void exit_signals()
 {
   int e;
+  if(pid_mapping)
+  {
+    free_mapping(pid_mapping);
+    pid_mapping=0;
+  }
+
+  if(pid_status_program)
+  {
+    free_program(pid_status_program);
+    pid_status_program=0;
+  }
   for(e=0;e<MAX_SIGNALS;e++)
   {
     free_svalue(signal_callbacks+e);

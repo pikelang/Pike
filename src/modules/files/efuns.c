@@ -357,18 +357,6 @@ void f_getcwd(INT32 args)
   free(e);
 }
 
-void f_fork(INT32 args)
-{
-  do_set_close_on_exec();
-  pop_n_elems(args);
-#if defined(HAVE_FORK1) && defined(_REENTRANT)
-  push_int(fork1());
-#else
-  push_int(fork());
-#endif
-}
-
-
 void f_exece(INT32 args)
 {
   INT32 e;
@@ -526,7 +514,6 @@ void init_files_efuns()
   add_efun("get_dir",f_get_dir,"function(string:string *)",OPT_EXTERNAL_DEPEND);
   add_efun("cd",f_cd,"function(string:int)",OPT_SIDE_EFFECT);
   add_efun("getcwd",f_getcwd,"function(:string)",OPT_EXTERNAL_DEPEND);
-  add_efun("fork",f_fork,"function(:int)",OPT_SIDE_EFFECT);
   add_efun("exece",f_exece,"function(string,mixed*,void|mapping(string:string):int)",OPT_SIDE_EFFECT); 
 
 #ifdef HAVE_STRERROR

@@ -4,7 +4,7 @@
 ||| See the files COPYING and DISCLAIMER for more information.
 \*/
 #include "global.h"
-RCSID("$Id: backend.c,v 1.10 1997/03/01 01:43:01 hubbe Exp $");
+RCSID("$Id: backend.c,v 1.10.2.1 1997/05/10 12:56:54 hubbe Exp $");
 #include "backend.h"
 #include <errno.h>
 #ifdef HAVE_SYS_TYPES_H
@@ -70,6 +70,28 @@ void wake_up_backend(void)
   char foo=0;
   if(may_need_wakeup)
     write(wakeup_pipe[1], &foo ,1);
+}
+
+void init_signal_wait()
+{
+  may_need_wakeup=1;
+}
+
+void exit_signal_wait()
+{
+  may_need_wakeup=0;
+}
+
+void wait_for_signal()
+{
+  fd_set rset;
+  may_need_wakeup=1;
+  FD_ZERO(&rset);
+  FD_SET(wakeup_pipe[0], &rset);
+  THREADS_ALLOW();
+  select(wakeup_pipe[0]+1, &rset, 0, 0, 0);
+  THREADS_DISALLOW();
+  wakeup_callback(wakeup_pipe[0], 0);
 }
 
 void init_backend()
@@ -221,21 +243,21 @@ void backend()
     next_timeout.tv_usec = 0;
     next_timeout.tv_sec = 7 * 24 * 60 * 60;  /* See you in a week */
     my_add_timeval(&next_timeout, &current_time);
-
+    
     may_need_wakeup=1;
     call_callback(& backend_callbacks, (void *)0);
-
+    
     check_threads_etc();
-
-    sets=selectors;
-
     alloca(0);			/* Do garbage collect */
+    
+    sets=selectors;
+    
 #ifdef DEBUG
     if(d_flag > 1) do_debug();
 #endif
-
+    
     GETTIMEOFDAY(&current_time);
-
+    
     if(my_timercmp(&next_timeout, > , &current_time))
     {
       my_subtract_timeval(&next_timeout, &current_time);
@@ -243,20 +265,20 @@ void backend()
       next_timeout.tv_usec = 0;
       next_timeout.tv_sec = 0;
     }
-
+    
     THREADS_ALLOW();
     i=select(max_fd+1, &sets.read, &sets.write, 0, &next_timeout);
     GETTIMEOFDAY(&current_time);
     THREADS_DISALLOW();
     may_need_wakeup=0;
-
+    
     if(i>=0)
     {
       for(i=0; i<max_fd+1; i++)
       {
 	if(FD_ISSET(i, &sets.read) && read_callback[i])
 	  (*(read_callback[i]))(i,read_callback_data[i]);
-
+	
 	if(FD_ISSET(i, &sets.write) && write_callback[i])
 	  (*(write_callback[i]))(i,write_callback_data[i]);
       }
@@ -266,10 +288,10 @@ void backend()
       case EINVAL:
 	fatal("Invalid timeout to select().\n");
 	break;
-
+	
       case EINTR:		/* ignore */
 	break;
-
+	
       case EBADF:
 	sets=selectors;
 	next_timeout.tv_usec=0;
@@ -279,7 +301,7 @@ void backend()
 	  fatal("Bad filedescriptor to select().\n");
 	}
 	break;
-
+	
       }
     }
     call_callback(& backend_callbacks, (void *)1);

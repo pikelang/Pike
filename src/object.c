@@ -4,7 +4,7 @@
 ||| See the files COPYING and DISCLAIMER for more information.
 \*/
 #include "global.h"
-RCSID("$Id: object.c,v 1.17 1997/04/16 03:09:14 hubbe Exp $");
+RCSID("$Id: object.c,v 1.17.2.1 1997/05/10 12:56:56 hubbe Exp $");
 #include "object.h"
 #include "dynamic_buffer.h"
 #include "interpret.h"
@@ -416,7 +416,7 @@ void object_index_no_free(struct svalue *to,
 }
 
 
-static void object_low_set_index(struct object *o,
+void object_low_set_index(struct object *o,
 				 int f,
 				 struct svalue *from)
 {

@@ -9,6 +9,8 @@ string *pike_include_path=({});
 string *pike_module_path=({});
 string *pike_program_path=({});
 
+int want_warnings;
+
 mapping (string:string) environment=([]);
 
 varargs mixed getenv(string s)
@@ -362,6 +364,7 @@ void _main(string *argv, string *env)
   q=tmp->find_all_options(argv,({
     ({"version",tmp->NO_ARG,({"-v","--version"})}),
       ({"help",tmp->NO_ARG,({"-h","--help"})}),
+	({"warnings",tmp->NO_ARG,({"-w","--warnings"})}),
 	({"execute",tmp->HAS_ARG,({"-e","--execute"})}),
 	  ({"modpath",tmp->HAS_ARG,({"-M","--module-path"})}),
 	    ({"ipath",tmp->HAS_ARG,({"-I","--include-path"})}),
@@ -392,6 +395,10 @@ void _main(string *argv, string *env)
     {
       switch(opts[0])
       {
+      case "warnings":
+	want_warnings++;
+	break;
+
       case "version":
 	werror(version() + " Copyright (C) 1994-1997 Fredrik Hübinette\n"
 	       "Pike comes with ABSOLUTELY NO WARRANTY; This is free software and you are\n"
@@ -490,6 +497,19 @@ void compile_error(string file,int line,string err)
   if(!inhibit_compile_errors)
   {
     werror(sprintf("%s:%d:%s\n",trim_file_name(file),line,err));
+  }
+  else if(functionp(inhibit_compile_errors))
+  {
+    inhibit_compile_errors(file,line,err);
+  }
+}
+
+void compile_warning(string file,int line,string err)
+{
+  if(!inhibit_compile_errors)
+  {
+    if(want_warnings)
+      werror(sprintf("%s:%d:%s\n",trim_file_name(file),line,err));
   }
   else if(functionp(inhibit_compile_errors))
   {
