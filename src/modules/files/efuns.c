@@ -25,7 +25,7 @@
 #include "file_machine.h"
 #include "file.h"
 
-RCSID("$Id: efuns.c,v 1.90 2001/01/31 21:02:19 grubba Exp $");
+RCSID("$Id: efuns.c,v 1.91 2001/01/31 21:25:24 grubba Exp $");
 
 #ifdef HAVE_SYS_TYPES_H
 #include <sys/types.h>
@@ -606,7 +606,7 @@ void f_rm(INT32 args)
  *!
  *! @seealso
  *!   @[rm()], @[cd()], @[Stdio.mkdirhier()]
- *!
+ */
 void f_mkdir(INT32 args)
 {
   struct pike_string *str;
