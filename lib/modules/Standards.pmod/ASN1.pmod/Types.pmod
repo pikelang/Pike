@@ -427,11 +427,11 @@ class asn1_identifier
       return "IDENTIFIER " + (array(string)) id * ".";
     }
 
-  int `==(object other)
+  int `==(mixed other)
     {
-      return (object_program(this_object())
-	      == object_program(other))
-	&& equal(id, other->id);
+      return (objectp(other) &&
+	      (object_program(this_object()) == object_program(other)) &&
+	      equal(id, other->id));
     }
 }
 
