@@ -30,9 +30,9 @@ ARGS(Stdio.File);
 RETURNS(Gnome.Less);
 {
   struct object *o;
-  extern int fd_from_fileobject( struct object *o );
+  extern int fd_from_object( struct object *o );
   get_all_args( "show_filestream", args, "%o", &o );
-  gnome_less_show_fd( GNOME_LESS( THIS->obj ), fd_from_fileobject( o ) );
+  gnome_less_show_fd( GNOME_LESS( THIS->obj ), fd_from_object( o ) );
   RETURN_THIS();
 }
 int write_file( string path );
@@ -45,10 +45,10 @@ ARGS(Stdio.File);
 RETURNS(int);
 {
   struct object *o;
-  extern int fd_from_fileobject( struct object *o );
+  extern int fd_from_object( struct object *o );
   get_all_args( "show_filestream", args, "%o", &o );
   push_int( gnome_less_write_fd( GNOME_LESS( THIS->obj ),
-                                 fd_from_fileobject( o )  ) );
+                                 fd_from_object( o )  ) );
   stack_swap();
   pop_stack();
 }
