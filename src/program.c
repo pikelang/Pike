@@ -4,7 +4,7 @@
 ||| See the files COPYING and DISCLAIMER for more information.
 \*/
 #include "global.h"
-RCSID("$Id: program.c,v 1.78 1998/04/13 15:34:31 grubba Exp $");
+RCSID("$Id: program.c,v 1.79 1998/04/14 19:24:12 grubba Exp $");
 #include "program.h"
 #include "object.h"
 #include "dynamic_buffer.h"
@@ -400,13 +400,12 @@ void fixate_program(void)
  */
 void restore_threads_disabled(void *arg)
 {
-  fprintf(stderr, "restore_threads_disabled(): threads_disabled:%d, compilation_depth:%d\n", threads_disabled, compilation_depth);
+  fprintf(stderr, "restore_threads_disabled(): threads_disabled:%d, saved_threads_disabled:%d compilation_depth:%d\n", threads_disabled, (int)arg, compilation_depth);
 #ifdef DEBUG
   fatal("restore_threads_disabled() called\n");
 #endif /* DEBUG */
 
-  if (threads_disabled)
-    threads_disabled--;
+  threads_disabled = (int)arg;
   co_signal(&threads_disabled_change);
 }
 
@@ -2027,6 +2026,7 @@ struct program *compile(struct pike_string *prog)
   struct program *p;
   struct lex save_lex;
   int save_depth=compilation_depth;
+  int saved_threads_disabled = threads_disabled;
   void yyparse(void);
   ONERROR just_in_case;
 
@@ -2038,7 +2038,7 @@ struct program *compile(struct pike_string *prog)
   lex.pragmas=0;
 
   threads_disabled++;
-  SET_ONERROR(just_in_case, restore_threads_disabled, NULL);
+  SET_ONERROR(just_in_case, restore_threads_disabled, saved_threads_disabled);
 
   /* fprintf(stderr, "compile() Enter: threads_disabled:%d, compilation_depth:%d\n", threads_disabled, compilation_depth); */
 
@@ -2064,7 +2064,13 @@ struct program *compile(struct pike_string *prog)
     p=end_program();
   }
 
-  threads_disabled--;
+#ifdef DEBUG
+  if (threads_disabled != saved_threads_disabled+1) {
+    fatal("compile(): threads_disabled:%d saved_threads_disabled:%d\n",
+	  threads_disabled, saved_threads_disabled);
+  }
+#endif /* DEBUG */
+  threads_disabled = saved_threads_disabled;
   /* fprintf(stderr, "compile() Leave: threads_disabled:%d, compilation_depth:%d\n", threads_disabled, compilation_depth); */
   co_signal(&threads_disabled_change);
 
