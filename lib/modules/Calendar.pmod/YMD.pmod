@@ -1925,7 +1925,6 @@ class cWeek
 //   Day
 // ----------------------------------------------------------------
 
-function(mixed...:cDay) Day=cDay;
 class cDay
 {
    inherit YMD;
@@ -2257,6 +2256,8 @@ class cDay
    string iso_name() { return format_ymd(); }
    string iso_short_name() { return format_ymd_short(); }
 }
+
+function(mixed...:cDay) Day=cDay;
 
 //------------------------------------------------------------------------
 //- class YMD_Time
