@@ -1,5 +1,5 @@
 //
-// $Id: module.pmod.in,v 1.20 2003/09/05 16:44:02 grubba Exp $
+// $Id: module.pmod.in,v 1.21 2003/10/07 14:43:19 grubba Exp $
 //
 // Interface to pike code tokenizer.
 //
@@ -548,6 +548,10 @@ class PikeCompiler
     void parse_modifier(Iterator tokens_left) {}
   }
 
+  class VariableDecl(Token name, Expression type, Modifiers modifiers)
+  {
+  }
+
   class Expression
   {
   }
@@ -1052,7 +1056,7 @@ class PikeCompiler
     Token token;
 
     if (tokens_left && ((token = tokens_left->value())->is_identifier)) {
-      current_scope->add_variable(0, token, type);
+      current_scope->add_identifier(0, token, (VariableDecl(token, type, 0));
       tokens_left->`+=(1);
       return LiteralExpression(token);
     }
@@ -1088,13 +1092,15 @@ class PikeCompiler
 	} else {
 	  Lambda func = Lambda("lambda", "lambda", "lambda", name->pos);
 	  func->return_type = type;
+	  func->name = name;
 	  func->parse_meta_program(current_scope, tokens_left,
 				   current_modifiers);
-	  current_scope->add_function(current_modifiers, name, func);
 	  tokens_left = 0;	// Force loop to stop.
 	}
       } else {
-	current_scope->add_variable(current_modifiers, name, type);
+	current_scope->add_identifier(current_modifiers, name,
+				      VariableDecl(name, type,
+						   current_modifiers));
       }
       sub_expression = LiteralExpression(name);
       if (tokens_left && (token = tokens_left->value())->symbol == "=") {
@@ -1133,7 +1139,7 @@ class PikeCompiler
       BlockStatement block = BlockStatement();
       block->parse_meta_program(scope, get_iterator(token->contents),
 				current_modifiers);
-      scope->add_statement(block);
+      scope->add_meta_object(block);
       return;
     }
     if (token->symbol == ";") {
@@ -1145,7 +1151,7 @@ class PikeCompiler
 	(token = tokens_left->value())->symbol != ";") {
       expr = parse_decl(scope, tokens_left, expr, current_modifiers);
     }
-    scope->add_statement(ExpressionStatement(expr));
+    scope->add_meta_object(ExpressionStatement(expr));
     if (tokens_left && tokens_left->value()->symbol == ";") {
       tokens_left->`+=(1);
     }
@@ -1165,7 +1171,7 @@ class PikeCompiler
     void parse_meta_program(Class current_class, Iterator tokens_left,
 			    Modifiers current_modifiers)
     {
-      current_class->add_namespace(this_object());
+      current_class->add_meta_object(this_object());
 
       source = parse_basic_expression(tokens_left);
 
@@ -1194,35 +1200,40 @@ class PikeCompiler
     }
   }
 
-  class Definition
+  class Definition(Modifiers modifiers, Token name, Token meta)
   {
     // FIXME!
     static string _sprintf()
     {
       return "Definition";
     }
-  }
 
-  class ConstantDefinition(Modifiers modifiers, Token name, Expression value)
-  {
-    inherit Definition;
-    // FIXME!
-  }
-
-  class VariableDefinition(Modifiers modifiers, Token name, Expression type)
-  {
-    inherit Definition;
-    // FIXME!
-  }
-
-  class FunctionDefinition(Modifiers modifiers, Token name,
-			   Expression definition)
-  {
-    inherit Definition;
-    // FIXME!
-    static string _sprintf()
+    static void redefinition_error(Token old, Token new, string msg)
     {
-      return sprintf("%s:%s:%s", modifiers, name, definition);
+      report(ERROR, new->pos, "parser", msg);
+      report(ERROR, old->pos, "parser", "Previously defined here.");
+    }
+
+    void redefine(Modifiers new_modifiers, Token new_meta)
+    {
+      if (new_modifiers != modifiers) {
+	redefinition_error(modifiers, new_modifiers, 
+			   sprintf("Modifier mismatch for identifier %s.",
+				   name));
+      }
+      if (new_meta) {
+	if (meta) {
+	  if (!meta->redefine) {
+	    redefinition_error(meta, new_meta,
+			       sprintf("Redefinition of identifier %s.",
+				       name));
+	  } else {
+	    meta->redefine(new_meta);
+	  }
+	} else {
+	  meta = new_meta;
+	}
+      }
     }
   }
 
@@ -1233,33 +1244,24 @@ class PikeCompiler
 
   class Scope
   {
+    array(Token) meta_programs = ({});
     mapping(string:Definition) identifiers = ([]);
 
-    void add_constant(Modifiers modifiers, Token name, Expression value)
+    void add_identifier(Modifiers modifiers, Token name, Token meta)
     {
-      werror("%s: Defining constant %O with modifiers %O and value %O\n",
-	     this_object(), name, modifiers, value);
-      identifiers[name->symbol] = ConstantDefinition(modifiers, name, value);
+      string identifier = name->symbol;
+      Definition def;
+      if (!(def = identifiers[identifier])) {
+	identifiers[identifier] = Definition(modifiers, name, meta);
+      } else {
+	def->redefine(modifiers, meta);
+      }
     }
 
-    void add_variable(Modifiers modifiers, Token name, Expression type)
+    void add_meta_object(Token token)
     {
-      werror("%s->add_variable(%O, %O, %O)\n",
-	     this_object(), modifiers, name, type);
-      identifiers[name->symbol] = VariableDefinition(modifiers, name, type);
-    }
-
-    void add_function(Modifiers modifiers, Token name, Expression definition)
-    {
-      werror("%s->add_function(%O, %O, %O)\n",
-	     this_object(), modifiers, name, definition);
-      identifiers[name->symbol] =
-	FunctionDefinition(modifiers, name, definition);
-    }
-
-    void add_statement(Statement statement)
-    {
-      werror("%s->add_statement(%O)\n", this_object(), statement);
+      werror("%s->add_meta_object(%O)\n", this_object(), token);
+      meta_programs += ({ token });
     }
   }
 
@@ -1272,6 +1274,7 @@ class PikeCompiler
     void parse_meta_program(Scope scope, Iterator tokens_left,
 			    Modifiers current_modifiers)
     {
+      scope->add_meta_object(this);
       while(tokens_left) {
 	parse_statement(this, tokens_left, current_modifiers);
       }
@@ -1354,6 +1357,7 @@ class PikeCompiler
     void parse_meta_program(Scope scope, Iterator tokens_left,
 			    Modifiers current_modifiers)
     {
+      scope->add_meta_object(this);
       Token token;
       if (!tokens_left ||
 	  !((token = tokens_left->value())->group_start) ||
@@ -1376,7 +1380,7 @@ class PikeCompiler
     Statement true_branch;
     Statement false_branch;
 
-    void add_statement(Statement statement)
+    void add_meta_object(Statement statement)
     {
       if (true_branch) {
 	false_branch = statement;
@@ -1405,6 +1409,7 @@ class PikeCompiler
     void parse_meta_program(Scope scope, Iterator tokens_left,
 			    Modifiers current_modifiers)
     {
+      scope->add_meta_object(this);
       Token token;
       if (!tokens_left ||
 	  !((token = tokens_left->value())->group_start) ||
@@ -1433,6 +1438,7 @@ class PikeCompiler
     array(Expression) parameter_types = ({});
     array(Token) parameter_names = ({});
     BlockStatement function_body;
+    Token name;
 
     void add_parameter(Expression type, Token name)
     {
@@ -1440,7 +1446,7 @@ class PikeCompiler
       // Should modify the function type by adding one parameter at a time.
       parameter_types += ({ type });
       parameter_names += ({ name });
-      add_variable(0, name, type);
+      add_identifier(0, name, VariableDecl(0, name, type));
     }
 
     // Parse list of parameters.
@@ -1496,6 +1502,7 @@ class PikeCompiler
     void parse_meta_program(Scope scope, Iterator tokens_left,
 			    Modifiers current_modifiers)
     {
+      scope->add_meta_object(this);
       Token token;
       if (!tokens_left ||
 	  !((token = tokens_left->value())->group_start) ||
@@ -1518,8 +1525,6 @@ class PikeCompiler
   {
     inherit IdentifierToken;
     inherit Scope;
-
-    Lambda create_fun;
 
     // Called at
     //   class name '{' · class_body '}'
@@ -1568,7 +1573,7 @@ class PikeCompiler
     }
 
     // Parse list of parameters.
-    static void parse_create_args(TokenList tokens)
+    static void parse_create_args(Lambda create_fun, TokenList tokens)
     {
       Iterator tokens_left = get_iterator(tokens);
 
@@ -1592,7 +1597,7 @@ class PikeCompiler
 	}
 	tokens_left->`+=(1);
 	create_fun->add_parameter(type, token);
-	add_variable(modifiers, token, type);
+	add_identifier(modifiers, token, VariableDecl(modifiers, token, type));
 	// FIXME: Generate code for create()...
 	if (tokens_left) {
 	  if ((token = tokens_left->value())->symbol != ",") {
@@ -1609,14 +1614,14 @@ class PikeCompiler
     void parse_meta_program(Class current_class, Iterator tokens_left,
 			    Modifiers current_modifiers)
     {
+      current_class->add_meta_object(this);
       if (!tokens_left) {
 	report(ERROR, tokens_left->last_pos, "parser", "Syntax error");
 	return;
       }
-      Token name;
       Token token = tokens_left->value();
       if (!token->group_start) {
-	name = token;
+	current_class->add_identifier(current_modifiers, token, this);
 	tokens_left->`+=(1);
 	token = tokens_left->value();
       }
@@ -1625,10 +1630,16 @@ class PikeCompiler
 	return;
       }
       if (token->group_start->symbol == "(") {
-	create_fun = Lambda("lambda", "lambda", "lambda", token->pos);
+	Lambda create_fun = Lambda("lambda", "lambda", "lambda", token->pos);
 	create_fun->return_type =
 	  LiteralExpression(Token("void", "void", "void", token->pos));
-	parse_create_args(token->contents);
+	create_fun->name = IdentifierToken("create", "identifier",
+					   "create", token->pos);
+	this->add_meta_object(create_fun);
+	this->add_identifier(Modifiers(({Modifier("static","static","static",
+						  token->pos)})),
+			     create_fun->name, create_fun);
+	parse_create_args(create_fun, token->contents);
 	tokens_left->`+=(1);
 	token = tokens_left->value();
 	if (!token->group_start) {
@@ -1642,8 +1653,6 @@ class PikeCompiler
       }
       parse_class_body(token->contents);
       tokens_left->`+=(1);
-      current_class->add_constant(current_modifiers, name,
-				  LiteralExpression(this));
     }
 
     // Notes about resolving:
@@ -1658,12 +1667,14 @@ class PikeCompiler
     //   in the local scope are known, and the remaining
     //   symbols can be resolved.
 
+#if 0
     void resolv_symbols(Scope parent_scope)
     {
       foreach(namespaces, Namespace namespace) {
 	namespace->resolv(parent_scope);
       }
     }
+#endif /* 0 */
 
     CodeBlock current_block;
 
