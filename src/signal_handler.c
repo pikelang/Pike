@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: signal_handler.c,v 1.246 2003/03/06 15:35:14 grubba Exp $
+|| $Id: signal_handler.c,v 1.247 2003/03/06 18:12:33 grubba Exp $
 */
 
 #include "global.h"
@@ -26,7 +26,7 @@
 #include "main.h"
 #include <signal.h>
 
-RCSID("$Id: signal_handler.c,v 1.246 2003/03/06 15:35:14 grubba Exp $");
+RCSID("$Id: signal_handler.c,v 1.247 2003/03/06 18:12:33 grubba Exp $");
 
 #ifdef HAVE_PASSWD_H
 # include <passwd.h>
@@ -98,6 +98,12 @@ RCSID("$Id: signal_handler.c,v 1.246 2003/03/06 15:35:14 grubba Exp $");
 #endif
 
 #ifdef HAVE_SYS_PTRACE_H
+/* <sys/ptrace.h> on Linux/IA64 includes <asm/current.h>,
+ * which contains stuff that some compilers (ecc) don't like...
+ */
+#ifndef _ASM_IA64_CURRENT_H
+#define _ASM_IA64_CURRENT_H
+#endif
 #include <sys/ptrace.h>
 #endif
 
