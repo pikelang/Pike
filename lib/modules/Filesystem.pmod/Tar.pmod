@@ -1,5 +1,5 @@
 /*
- * $Id: Tar.pmod,v 1.21 2003/09/09 16:28:19 nilsson Exp $
+ * $Id: Tar.pmod,v 1.22 2003/09/23 19:13:47 nilsson Exp $
  */
 
 #pike __REAL_VERSION__
@@ -263,17 +263,13 @@ class _Tar  // filesystem
   {
     return t=='O' && sprintf("_Tar(/* filename=%O */)", filename);
   }
-};
+}
 
 class _TarFS
 {
   inherit Filesystem.System;
 
   _Tar tar;
-
-  static Stdio.File fd;    // tar file object
-  //not used; it's present in tar->filename, though /jhs 2001-01-20
-  //static string filename;  // tar filename in parent filesystem
 
   void create(_Tar _tar,
 	      string _wd, string _root,
@@ -288,6 +284,10 @@ class _TarFS
 
     sscanf(_root, "%*[/]%s", root);
     parent = _parent;
+  }
+
+  void destroy() {
+    if(tar && tar->fd) tar->fd->close();
   }
 
   string _sprintf(int t)
