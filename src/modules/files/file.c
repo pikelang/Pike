@@ -6,7 +6,7 @@
 #define READ_BUFFER 8192
 
 #include "global.h"
-RCSID("$Id: file.c,v 1.55 1997/09/22 21:03:42 grubba Exp $");
+RCSID("$Id: file.c,v 1.56 1997/09/23 00:26:44 grubba Exp $");
 #include "interpret.h"
 #include "svalue.h"
 #include "stralloc.h"
@@ -1396,7 +1396,8 @@ static int isipnr(char *s)
 static void file_query_address(INT32 args)
 {
   struct sockaddr_in addr;
-  int i,len;
+  int i;
+  size_t len;
   char buffer[496],*q;
 
   if(FD <0)
