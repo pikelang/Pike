@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: dlopen.c,v 1.48 2002/10/26 15:10:23 grubba Exp $
+|| $Id: dlopen.c,v 1.49 2002/10/26 16:01:24 grubba Exp $
 */
 
 #include <global.h>
@@ -196,7 +196,7 @@ size_t STRNLEN(char *s, size_t maxlen)
 
 #else /* PIKE_CONCAT */
 
-RCSID("$Id: dlopen.c,v 1.48 2002/10/26 15:10:23 grubba Exp $");
+RCSID("$Id: dlopen.c,v 1.49 2002/10/26 16:01:24 grubba Exp $");
 
 #endif
 
@@ -642,23 +642,23 @@ struct COFFSymbol
 #define COFFReloc_I386_sectrel 11 
 #define COFFReloc_I386_rel32 20
 
-#define COFFReloc_IA64_imm14 1
-#define COFFReloc_IA64_imm22 2
-#define COFFReloc_IA64_imm64 3
+#define COFFReloc_IA64_imm14 1		/* A4 */
+#define COFFReloc_IA64_imm22 2		/* A5 */
+#define COFFReloc_IA64_imm64 3		/* X2 */
 #define COFFReloc_IA64_dir32 4
 #define COFFReloc_IA64_dir64 5
-#define COFFReloc_IA64_pcrel21b 6
-#define COFFReloc_IA64_pcrel21m 7
-#define COFFReloc_IA64_pcrel21f 8
-#define COFFReloc_IA64_gprel22 9
-#define COFFReloc_IA64_ltoff22 10
-#define COFFReloc_IA64_sect 11
-#define COFFReloc_IA64_secrel22 12
-#define COFFReloc_IA64_secrel64i 13
-#define COFFReloc_IA64_secrel32 14
-#define COFFReloc_IA64_ltoff64 15
-#define COFFReloc_IA64_dir32nb 16
-#define COFFReloc_IA64_addend 31
+#define COFFReloc_IA64_pcrel21b 6	/* B9 */
+#define COFFReloc_IA64_pcrel21m 7	/* M37 */
+#define COFFReloc_IA64_pcrel21f 8	/* F15 */
+#define COFFReloc_IA64_gprel22 9	/* A5? */
+#define COFFReloc_IA64_ltoff22 10	/* A5? */
+#define COFFReloc_IA64_sect 11		/* */
+#define COFFReloc_IA64_secrel22 12	/* A5? */
+#define COFFReloc_IA64_secrel64i 13	/* */
+#define COFFReloc_IA64_secrel32 14	/* */
+#define COFFReloc_IA64_ltoff64 15	/* X2? */
+#define COFFReloc_IA64_dir32nb 16	/* */
+#define COFFReloc_IA64_addend 31	/* */
 
 
 /* This structure is correct, but should not be used because of
