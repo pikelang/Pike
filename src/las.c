@@ -4,7 +4,7 @@
 ||| See the files COPYING and DISCLAIMER for more information.
 \*/
 #include "global.h"
-RCSID("$Id: las.c,v 1.19 1997/02/11 01:52:26 hubbe Exp $");
+RCSID("$Id: las.c,v 1.20 1997/02/11 07:10:54 hubbe Exp $");
 
 #include "language.h"
 #include "interpret.h"
@@ -998,7 +998,7 @@ static void find_written_vars(node *n,
 
   case F_APPLY:
     if(n->tree_info & OPT_SIDE_EFFECT)
-      MEMSET(p->globals, MAX_GLOBAL, VAR_USED);
+      MEMSET(p->globals, VAR_USED, MAX_GLOBAL);
     break;
 
   case F_INDEX:
@@ -1049,8 +1049,10 @@ static int depend_p2(node *a,node *b)
   if(!a || !b || is_const(a)) return 0;
   aa.err=0;
   bb.err=0;
-  for(e=0;e<MAX_LOCAL;e++) aa.locals[e]=bb.locals[e]=VAR_UNUSED;
-  for(e=0;e<MAX_GLOBAL;e++) aa.globals[e]=bb.globals[e]=VAR_UNUSED;
+  MEMSET((char *)aa.locals, VAR_UNUSED, MAX_LOCAL);
+  MEMSET((char *)bb.locals, VAR_UNUSED,  MAX_LOCAL);
+  MEMSET((char *)aa.globals, VAR_UNUSED, MAX_GLOBAL);
+  MEMSET((char *)bb.globals, VAR_UNUSED, MAX_GLOBAL);
 
   find_used_variables(a,&aa,0,0);
   find_written_vars(b,&bb,0);
