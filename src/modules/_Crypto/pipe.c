@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: pipe.c,v 1.25 2002/10/21 17:06:24 marcus Exp $
+|| $Id: pipe.c,v 1.26 2003/09/11 18:48:51 nilsson Exp $
 */
 
 /*
@@ -143,6 +143,10 @@ static void f_create(INT32 args)
     int sub_size;
     int factor = 1;
 
+    /* E.g. arcfour has no query_block_size, since it's not a block cipher */
+    if( find_identifier("query_block_size", THIS->objects[i]->prog)==-1 )
+      continue;
+
     safe_apply(THIS->objects[i], "query_block_size", 0);
     if (sp[-1].type != T_INT) {
       Pike_error("_Crypto.pipe->create(): query_block_size() returned other than int\n"
@@ -174,9 +178,9 @@ static void f_create(INT32 args)
 
 /*! @decl string name()
  *!
- *! Returns the string @tt{"PIPE("@} followed by a
+ *! Returns the string @expr{"PIPE("@} followed by a
  *! comma-separated list of the names of contained ciphers, and
- *! terminated with the string @tt{")"@}.
+ *! terminated with the string @expr{")"@}.
  */
 static void f_name(INT32 args)
 {
