@@ -6,10 +6,10 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: dump.pike,v 1.6 2004/09/17 14:30:11 nilsson Exp $
+|| $Id: dump.pike,v 1.7 2004/09/17 14:32:35 nilsson Exp $
 */
 
-constant description = "Dumps pike files into object files.";
+constant description = "Dumps Pike files into object files.";
 
 int quiet=1, report_failed=0, recursive=0, update=0, nt_install=0;
 string target_dir = 0;
