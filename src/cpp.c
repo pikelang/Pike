@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: cpp.c,v 1.117 2003/04/07 17:28:55 nilsson Exp $
+|| $Id: cpp.c,v 1.118 2003/07/08 13:17:38 grubba Exp $
 */
 
 #include "global.h"
@@ -545,14 +545,30 @@ static void simple_add_define(struct cpp *this,
   } while(0)
 
 #define SKIPWHITE() do {					\
-    if(!WC_ISSPACE(data[pos])) break;				\
+    if(!WC_ISSPACE(data[pos])) {				\
+      if (data[pos] == '\\' && data[pos+1] == '\n') {		\
+	pos += 2;						\
+	PUTNL();						\
+	this->current_line++;					\
+	continue;						\
+      }								\
+      break;							\
+    }								\
     if(data[pos]=='\n') { PUTNL(); this->current_line++; }	\
     pos++;							\
   } while(1)
 
-#define SKIPSPACE() \
-  do { while(WC_ISSPACE(data[pos]) && data[pos]!='\n') pos++; \
-  } while (0)
+#define SKIPSPACE()						\
+  do {								\
+    while (WC_ISSPACE(data[pos]) && data[pos]!='\n') {		\
+      pos++;							\
+    }								\
+    if (data[pos] != '\\' || data[pos+1] != '\n') {		\
+      break;							\
+    }								\
+    pos+=2;							\
+    this->current_line++;					\
+  } while (1)
 
 #define SKIPCOMMENT()	do{				\
   	pos++;						\
