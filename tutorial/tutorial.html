@@ -3761,6 +3761,7 @@ mode. This short program takes an URL as first argument, connects to the
 WWW server, sends a HEAD request and writes the reply to stdout. For clarity,
 all calls to Stdio.File use <tt>File::</tt> even if that is not strictly
 nessesary.
+
 <pre>
 	import Stdio;
 	inherit File;
@@ -3790,6 +3791,7 @@ nessesary.
 	  stdout::write(File::read());
 	}
 </pre>
+
 
 </a>
 
@@ -4267,7 +4269,356 @@ Stdio.File. The new file is by default set to blocking.
 </a>
 <hr noshade size=1>
 
-<!-- FIXME, example of Stdio.Port here -->
+<h2>A more complex example - a simple www server</h2>
+
+</h2>For you who are not familiar with WWW (World Wide Web), it works by using
+client program which will fetch files from remote servers when asked.
+Usually by clicking a pitcure or text. This example is a program for the
+server which will send files to any computer that requests them. The
+protocol used to send the file is called HTTP. (HyperText Transfer Protocol)
+<p>
+Usually WWW involves HTML. HTML (HyperText Markup Language) is a way to
+write documents with embedded pictures and links to other pages. These
+links are normally displayed underlined and if you click them your WWW-
+browser will load whatever document that link leads to.
+<p>
+<pre>
+	#!/usr/local/bin/pike
+	
+	/* A very small httpd capable of fetching files only.
+	 * Written by Fredrik Hübinette as a demonstration of Pike.
+	 */
+	
+	inherit Stdio.Port;
+</pre>
+We inherit Stdio.Port into this program so we can bind a TCP socket to accept
+incoming connection.  A socket is simply a number to separate communications
+to and from different programs on the same computer.
+<p>
+Next are some constants that will affect how uHTTPD will operate. This uses
+the preprocessor directive #define. The preprocessor is the first stage in
+the compiling process and can make textual processing of the code before
+it is compiled. As an example, after the first define below, all occurances
+of 'BLOCK' will be replaced with 16060.
+<pre>
+	
+	/* Amount of data moved in one operation */
+	#define BLOCK 16060
+	
+	/* Where do we have the html files ? */
+	#define BASE "/usr/local/html/"
+	
+	/* File to return when we can't find the file requested */
+	#define NOFILE "/user/local/html/nofile.html"
+	
+	/* Port to open */
+	#define PORT 1905
+</pre>
+A port is a destination for a TCP connection. It is simply a number on the
+local computer. 1905 is not the standard port for HTTP connections though,
+which means that if you want to access this WWW server from a browser you
+need to specify the port like this: http://my.host.my.domain:1905/
+<p>
+Next we declare a class called output_class. Later we will clone one
+instance of this class for each incoming HTTP connection.
+<p>
+<pre>
+	class output_class
+	{
+	  inherit Stdio.File : socket;
+	  inherit Stdio.File : file;
+</pre>
+Our new class inherits Stdio.File twice. To be able to separate them
+they are then named 'socket' and 'file'.
+<p>
+<pre>
+	  int offset=0;
+</pre>
+Then there is a global variable called offset which is initalized to zero.
+(each instance of this class will have it's own instance of this variable,
+ so it is not truly global, but..) 
+Note that the initalization is done when the class is cloned. (or
+instanciated if you prefer C++ terminology)
+<p>
+Next we define the function write_callback(). Later the program will go
+into a 'waiting' state, until something is received to process, or until
+there is buffer space available to write output to. When that happens a
+callback will be called to do this. The write_callback() is called when
+there is buffer space available. In the following lines 'void' means that
+it does not return a value. Write callback will be used further down as a
+callback and will be called whenever there is room in the socket output
+buffer.
+<pre>
+	
+	  void write_callback()
+	  {
+	    int written;
+	    string data;
+</pre>
+The following line means: call seek in the inherited program 'file'.
+<pre>
+	
+	    file::seek(offset);
+</pre>
+Move the file pointer to the where we want to the position we want to read
+from. The file pointer is simply a location in the file, usually it is where
+the last read() ended and the next will begin. seek() can move this pointer
+to where we want it though.
+<p>
+<pre>
+	    data=file::read(BLOCK);
+</pre>
+Read BLOCK (16060) bytes from the file. If there are less that that left to
+read only that many bytes will be returned.
+<p>
+<pre>
+	    if(strlen(data))
+	    {
+</pre>
+ If we managed to read someting...
+<p>
+<pre>
+	      written=socket::write(data);
+</pre>
+ ... we try to write it to the socket.
+<p>
+<pre>
+	      if(written &gt;= 0)
+	      {
+		offset+=written;
+		return;
+	      }
+</pre>
+ Update offset if we managed to write to the socket without errors.
+<p>
+<pre>
+	      werror("Error: "+socket::errno()+".\n");
+	    }
+</pre>
+ If something went wront during writing, or there was nothing left to read
+ we destruct this instance of this class.
+<p>
+<pre>
+	    destruct(this_object());
+	  }
+</pre>
+ That was the end of write_callback()
+<p>
+
+ Next we need a variable to buffer the input received in. We initialize it
+ to an empty string.
+<pre>
+	
+	  string input="";
+</pre>
+ And then we define the function that will be called when there is something
+ in the socket input buffer. The first argument 'id' is declared as mixed,
+ which means that it can contain any type of value. The second argument is
+ the contents of the input buffer.
+<p>
+<pre>
+	  void read_callback(mixed id,string data)
+	  {
+	    string cmd;
+	
+	    input+=data;
+</pre>
+Append data to the string input. Then we check if we have received a
+a complete line yet. If so we parse this and start ouputting the file.
+<p>
+<pre>
+	    if(sscanf(input,"%s %s%*[\012\015 \t]",cmd,input))
+	    {
+</pre>
+This sscanf is pretty complicated, but in essense it means: put the
+first word in 'input' in 'cmd' and the second in 'input' and return 2
+if successfull, 0 otherwise.
+<p>
+<pre>
+	      if(cmd!="GET")
+	      {
+		werror("Only method GET is supported.\n");
+		destruct(this_object());
+		return;
+	      }
+</pre>
+If the first word isn't GET print an error message and terminate
+this instance of the program. (and thus the connection)
+<pre>
+	
+	      sscanf(input,"%*[/]%s",input);
+</pre>
+Remove the leading slash.
+<p>
+<pre>
+	      input=combine_path(BASE,input);
+</pre>
+Combine the requested file with the base of the HTML tree, this gives
+us a full filename beginning with a slash. The HTML tree is the
+directory on the server in which the HTML files are located. Normally
+all files in this directory can be accessed by anybody by using a WWW
+browser. So if a user requests 'index.html' then that file name is first
+added to BASE (/home/hubbe/www/html/ in this case) and if that file exists
+it will be returned to the browser.
+<pre>
+	      
+	      if(!file::open(input,"r"))
+	      {
+</pre>
+Try opening the file in read-only mode. If this fails, try opening NOFILE
+instead. Opening the file will enable us to read it later.
+<p>
+<pre>
+		if(!file::open(NOFILE,"r"))
+		{
+</pre>
+If this fails too. Write an error message and destruct this object.
+<p>
+<pre>
+		  werror("Couldn't find default file.\n");
+		  destruct(this_object());
+		  return;
+		}
+	      }
+</pre>
+Ok, now we set up the socket so we can write the data back.
+<pre>
+	
+	      socket::set_buffer(65536,"w");
+</pre>
+Set the buffer size to 64 kilobytes.
+<p>
+<pre>
+	      socket::set_nonblocking(0,write_callback,0);
+</pre>
+Make it so that write_callback is called when it is time to write more
+data to the socket.
+<p>
+<pre>
+	      write_callback();
+</pre>
+Jump-start the writing.
+<pre>
+	    }
+	  }
+</pre>
+That was the end of read_callback().
+<p>
+
+This function is called if the connection is closed while we are reading
+from the socket.
+<pre>
+	  void selfdestruct() { destruct(this_object()); }
+
+</pre>
+This function is called when the program is instanciated. It is used
+to set up data the way we want it. Extra arguments to clone() will be
+sent to this function. In this case it is the object representing the
+new connection.
+<p>
+<pre>
+	  void create(object f)
+	  {
+	    socket::assign(f);
+</pre>
+We insert the data from the file f into 'socket'.
+<p>
+<pre>
+	    socket::set_nonblocking(read_callback,0,selfdestruct);
+</pre>
+Then we set up the callback functions and sets the file nonblocking.
+Nonblocking mode means that read() and write() will rather return that
+wait for I/O to finish. Then we sit back and wait for read_callback to
+be called.
+<p>
+<pre>
+	  }
+</pre>
+End of create()
+<p>
+<pre>
+	};
+</pre>
+End of the new class.
+<pre>
+	
+</pre>
+Next we define the function called when someone connects.
+<p>
+<pre>
+	void accept_callback()
+	{
+	  object tmp_output;
+</pre>
+This creates a local variable of type 'object'. An object variable can
+contain a clone of any program. Pike does not consider clones of different
+programs different types. This also means that function calls to objects
+have to be resolved at run time.
+<p>
+<pre>
+	  tmp_output=accept();
+</pre>
+The function accept  clones a /precompiled/file and makes this equal to the
+newly connected socket.
+<p>
+<pre>
+	  if(!tmp_output) return;
+</pre>
+If it failed we just return.
+<p>
+<pre>
+	  output_class(tmp_output);
+</pre>
+Otherwise we clone an instanec of 'output_class' and let it take care of the
+connection. Each clone of output_class will have it's own set of global
+variables, which will enable many connections to be active at the same
+time without data being mixed up. Note that the programs will not actually
+run simulataneously though.
+<p>
+<pre>
+	  destruct(tmp_output);
+</pre>
+Destruct the object returned by accept(), output_class has already copied
+the contents of this object.
+<p>
+<pre>
+	}
+
+</pre>
+Then there is main, the function that gets it all started.
+	
+<pre>
+	int main(int argc, string *argv)
+	{
+	  werror("Starting minimal httpd\n");
+</pre>
+Write an encouraging message to stderr.
+<pre>
+	
+	  if(!bind(PORT, accept_callback))
+	  {
+	    werror("Failed to open socket (already bound?)\n");
+	    return 17;
+	  }
+
+</pre>
+Bind PORT and set it up to call accept_callback as soon as someone connects
+to it. If the bind() fails we write an error message and return the 17 to
+indicate failiure.
+<pre>
+	
+	  return - 17; /* Keep going */
+</pre>
+If everything went ok, we return -17, any negative value returned by main()
+means that the program WONT exit, it will hang around waiting for events
+instead. (like someone connecting)
+<pre>
+	}
+</pre>
+That's it, this simple program can be used as the basis for a simple
+WWW-server. Note that today most WWW servers are very complicated programs,
+and the above program can never replace a modern WWW server.
+<p>
 
 <HR NEWPAGE>
 
@@ -4814,6 +5165,106 @@ This function returns how many values are currently in the queue.
 </dl>
 
 </a>
+<hr noshade size=1>
+<p>
+Let's look at an example of how to work with threads. This program is the same
+minimal WWW server as in the chapter XXXX <!-- FIXME --> but it has been
+re-written to use threads, as you can see it is a lot smaller this
+way. This is because we can use blocking I/O operations instead of
+non-blocking and callbacks. This also makes the program much easier to
+follow:
+<pre>
+#!/usr/local/bin/pike
+
+/* A very small threaded httpd capable of fetching files only.
+ * Written by Fredrik Hübinette as a demonstration of Pike
+ */
+
+import Thread;
+inherit Stdio.Port;
+
+/* number of bytes to read for each write */
+#define BLOCK 16384
+
+/* Where do we have the html files ? */
+#define BASE "/home/hubbe/pike/src/"
+
+/* File to return when we can't find the file requested */
+#define NOFILE "/home/hubbe/www/html/nofile.html"
+
+/* Port to open */
+#define PORT 1905
+
+/* Number of threads to start */
+#define THREADS 5
+
+// There will be one of these for each thread
+class worker
+{
+  inherit Stdio.FILE : socket;  // For communication with the browser
+  inherit Stdio.File : file;    // For reading the file from disc
+
+  void create(function accept)
+  {
+    string cmd, input, tmp;
+
+    while(1)
+    {
+      socket::close();    // Close previous connection
+      file::close();
+
+      object o=accept();  // Accept a connection
+      if(!o) continue;
+      socket::assign(o);
+      destruct(o);
+
+      // Read request
+      sscanf(socket::gets(),"%s %s%*[\012\015 \t]",cmd, input);
+      if(cmd!="GET")
+      {
+	werror("Only method GET is supported.\n");
+	continue;
+      }
+
+      // Open the requested file      
+      sscanf(input,"%*[/]%s",input);
+      input=combine_path(BASE,input);
+      
+      if(!file::open(input,"r"))
+      {
+	if(!file::open(NOFILE,"r"))
+	{
+	  werror("Couldn't find default file.\n");
+	  continue;
+	}
+      }
+
+      // Copy data to socket
+      while(socket::write(file::read(BLOCK))==BLOCK);
+    }
+  }
+};
+
+int main(int argc, string *argv)
+{
+  werror("Starting minimal threaded httpd\n");
+
+  // Bind the port, don't set it nonblocking
+  if(!bind(PORT))
+  {
+    werror("Failed to open socket (already bound?)\n");
+    return 17;
+  }
+
+  // Start worker threads
+  for(int e=1;e&lt;THREADS;e++) thread_create(worker,accept);
+  worker(accept);
+}
+</pre>
+<p>
+As stated in the beginning of this chapter; Pike threads are only available
+on some UNIX systems. The above example does not work if your systems does
+not have threads.
 </a>
 
 <HR NEWPAGE>
@@ -7994,9 +8445,504 @@ the <tt>Content-Type</tt> header directly, please use this function instead.
 </a>
 <hr newpage>
 
+<h2>Simulate</h2>
+This module is used to achive better compatibility with older versions of
+Pike. It can also be used for convenience, but I would advice against it
+since some functions defined here are much slower than using similar
+functions in other modules. The purpose of this section in the manual is
+to make it easier for the reader to understand code that uses the Simulate
+module, not to encourage the use of the Simulate module.
+<p>
+Simulate inherits the Array, Stdio, String and Process modules, so
+importing he Simulate module also imports all identifiers from these
+modules. In addition, these functions are available:
+
+<hr newpage>
+
+<a name=Simulate.member_array>
+<dl>
+<dt><b> <font size=+1>N</font><font size=-1>AME</font></b><dd>
+<tt>Simulate.member_array</tt> - find first occurance of a value in an array
+<p>
+<dt><b> <font size=+1>S</font><font size=-1>YNTAX</font></b><dd>
+<tt>int member_array(mixed <I>item</I>, mixed *<I>arr</I>);<br>
+</tt>
+<p>
+<dt><b> <font size=+1>D</font><font size=-1>ESCRIPTION</font></b><dd>
+Returns the index of the first occurence of item in array arr.
+If not found, then -1 is returned. This is the same as
+<tt>search(<i>arr</i>, <i>item</i>)</tt>.
+<p>
+</dl>
+
+</a>
+<hr newpage>
+
+<a name=Simulate.previous_object>
+<dl>
+<dt><b> <font size=+1>N</font><font size=-1>AME</font></b><dd>
+<tt>Simulate.previous_object</tt> - return the calling object
+<p>
+<dt><b> <font size=+1>S</font><font size=-1>YNTAX</font></b><dd>
+<tt>object previous_object();<br>
+</tt>
+<p>
+<dt><b> <font size=+1>D</font><font size=-1>ESCRIPTION</font></b><dd>
+Returns an object pointer to the object that called current function,
+if any.
+<p>
+<dt><b> <font size=+1>S</font><font size=-1>EE</font> <font size=+1>A</font><font size=-1>LSO</font></b><dd>
+<a href=#backtrace>bactrace</a>
+<p>
+</dl>
+
+</a>
+
+<hr newpage>
+
+<a name=Simulate.this_function>
+<dl>
+<dt><b> <font size=+1>N</font><font size=-1>AME</font></b><dd>
+<tt>Simulate.this_function</tt> - return a functionpointer to the current function
+<p>
+<dt><b> <font size=+1>S</font><font size=-1>YNTAX</font></b><dd>
+<tt>function this_function();<br>
+</tt>
+<p>
+<dt><b> <font size=+1>D</font><font size=-1>ESCRIPTION</font></b><dd>
+Returns a functionpointer to the current function, useful for
+making recursive lambda-functions.
+<p>
+<dt><b> <font size=+1>K</font><font size=-1>EYWORDS</font></b><dd>
+<a href=types_function.html>function</a>
+<p>
+<dt><b> <font size=+1>S</font><font size=-1>EE</font> <font size=+1>A</font><font size=-1>LSO</font></b><dd>
+<a href=#backtrace>backtrace</a>
+<p>
+</dl>
+
+</a>
+<hr newpage>
+
+<a name=Simulate.get_function>
+<dl>
+<dt><b> <font size=+1>N</font><font size=-1>AME</font></b><dd>
+<tt>Simulate.get_function</tt> - fetch a function from an object
+<p>
+<dt><b> <font size=+1>S</font><font size=-1>YNTAX</font></b><dd>
+<tt>function get_function(object <I>o</I>, string <I>name</I>);<br>
+</tt>
+<p>
+<dt><b> <font size=+1>D</font><font size=-1>ESCRIPTION</font></b><dd>
+Defined as: return o[name];
+<p>
+</dl>
+
+</a>
+<hr newpage>
+<a name=Simulate.map_regexp>
+<dl>
+<dt><b> <font size=+1>N</font><font size=-1>AME</font></b><dd>
+<tt>Simulate.map_regexp</tt> - filter an array through a regexp
+<p>
+<dt><b> <font size=+1>S</font><font size=-1>YNTAX</font></b><dd>
+<tt>string *regexp(string *<I>arr</I>, string <I>reg</I>);<br>
+</tt>
+<p>
+<dt><b> <font size=+1>D</font><font size=-1>ESCRIPTION</font></b><dd>
+Return those strings in arr that matches the regexp in reg.
+<p>
+<dt><b> <font size=+1>S</font><font size=-1>EE</font> <font size=+1>A</font><font size=-1>LSO</font></b><dd>
+<a href=#Regexp>Regexp</a>
+<p>
+</dl>
+</a>
+
+<hr newpage>
+
+<a name=Simulate.PI>
+<dl>
+<dt><b> <font size=+1>N</font><font size=-1>AME</font></b><dd>
+<tt>Simulate.PI</tt> - pi
+<p>
+<dt><b> <font size=+1>S</font><font size=-1>YNTAX</font></b><dd>
+<tt>PI<br>
+</tt>
+<p>
+<dt><b> <font size=+1>D</font><font size=-1>ESCRIPTION</font></b><dd>
+This is not a function, it is a constant roughly equal to the mathimatical
+constant Pi.
+<p>
+<dt><b> <font size=+1>K</font><font size=-1>EYWORDS</font></b><dd>
+<a href=types_float.html>float</a>
+<p>
+</dl>
+
+</a>
+<hr newpage>
+
+<a name=Simulate.all_efuns>
+<dl>
+<dt><b> <font size=+1>N</font><font size=-1>AME</font></b><dd>
+<tt>all_efuns</tt> - return all 'efuns'
+<p>
+<dt><b> <font size=+1>S</font><font size=-1>YNTAX</font></b><dd>
+<tt>mapping all_efuns();<br>
+</tt>
+<p>
+<dt><b> <font size=+1>D</font><font size=-1>ESCRIPTION</font></b><dd>
+This function is the same as all_constants.
+<p>
+<dt><b> <font size=+1>S</font><font size=-1>EE</font> <font size=+1>A</font><font size=-1>LSO</font></b><dd>
+<a href=#all_constants>all_constants</a>
+<p>
+</dl>
+
+</a>
+
+<hr newpage>
+
+<a name=Simulate.filter_array>
+<dl>
+<dt><b> <font size=+1>N</font><font size=-1>AME</font></b><dd>
+<tt>Simulate.filter_array</tt> - filter an array through a function
+<p>
+<dt><b> <font size=+1>S</font><font size=-1>YNTAX</font></b><dd>
+<tt>
+<p>mixed *filter_array(mixed *<I>arr</I>,function <I>fun</I>,mixed ... <I>args</I>);<br>
+or<br>
+mixed *filter_array(object *<I>arr</I>,string <I>fun</I>,mixed ... <I>args</I>);<br>
+or<br>
+mixed *filter_array(function *<I>arr</I>,-<I>1</I>,mixed ... <I>args</I>);<br>
+</tt>
+<p>
+<dt><b> <font size=+1>D</font><font size=-1>ESCRIPTION</font></b><dd>
+Filter array is the same function as Array.filter.
+<p>
+<dt><b> <font size=+1>K</font><font size=-1>EYWORDS</font></b><dd>
+<a href=types_array.html>array</a>
+<p>
+<dt><b> <font size=+1>S</font><font size=-1>EE</font> <font size=+1>A</font><font size=-1>LSO</font></b><dd>
+<a href=#Array.filter>Array.filter</a>
+<p>
+</dl>
+
+</a>
+
+<a name=Simulate.map_array>
+<dl>
+<dt><b> <font size=+1>N</font><font size=-1>AME</font></b><dd>
+<tt>Simulate.map_array</tt> - map an array over a function
+<p>
+<dt><b> <font size=+1>S</font><font size=-1>YNTAX</font></b><dd>
+<tt>mixed *map_array(mixed *<I>arr</I>,function <I>fun</I>,mixed ... <I>args</I>);<br>
+or<br>
+mixed *map_array(object *<I>arr</I>,string <I>fun</I>,mixed ... <I>args</I>);<br>
+or<br>
+mixed *map_array(function *<I>arr</I>,-<I>1</I>,mixed ... <I>arg</I>);<br>
+</tt>
+<p>
+<dt><b> <font size=+1>D</font><font size=-1>ESCRIPTION</font></b><dd>
+This function is the same as Array.map.
+<p>
+<dt><b> <font size=+1>K</font><font size=-1>EYWORDS</font></b><dd>
+<a href=types_array.html>array</a>
+<p>
+<dt><b> <font size=+1>S</font><font size=-1>EE</font> <font size=+1>A</font><font size=-1>LSO</font></b><dd>
+<a href=#Array.map>Array.map</a>
+<p>
+</dl>
+
+</a>
+<hr newpage>
+
+<a name=Simulate.implode>
+<dl>
+<dt><b> <font size=+1>N</font><font size=-1>AME</font></b><dd>
+<tt>Simulate.implode</tt> - implode an array of strings
+<p>
+<dt><b> <font size=+1>S</font><font size=-1>YNTAX</font></b><dd>
+<tt>string implode(string *<I>a</I>, string <I>delimeter</I>);<br>
+</tt>
+<p>
+<dt><b> <font size=+1>D</font><font size=-1>ESCRIPTION</font></b><dd>
+This function is the inverse of explode. It contatenates all the
+strings in a with a delimeter in between each.
+<p>This function is the same as multiplication.
+<p>
+<dt><b> <font size=+1>E</font><font size=-1>XAMPLES</font></b><dd>
+<tt>&gt; implode( ({ "foo","bar","gazonk"}), "-" );<br>
+Result: foo-bar-gazonk<br>
+&gt; ({ "a","b","c" })*" and ";<br>
+Result: a and b and c<br>
+&gt; <br>
+</tt>
+<p>
+<dt><b> <font size=+1>K</font><font size=-1>EYWORDS</font></b><dd>
+<a href=types_string.html>string</a>
+<p>
+<dt><b> <font size=+1>S</font><font size=-1>EE</font> <font size=+1>A</font><font size=-1>LSO</font></b><dd>
+<a href=#Simulate.simulated_explode.html>Simulate.explode</a>
+<p>
+</dl>
+
+</a>
+<hr newpage>
+
+
+<a name=Simulate.m_indices>
+<dl>
+<dt><b> <font size=+1>N</font><font size=-1>AME</font></b><dd>
+<tt>Simulate.m_indices</tt> - return all indices from a mapping
+<p>
+<dt><b> <font size=+1>S</font><font size=-1>YNTAX</font></b><dd>
+<tt>mixed *m_indices(mapping <I>m</I>);<br>
+</tt>
+<p>
+<dt><b> <font size=+1>D</font><font size=-1>ESCRIPTION</font></b><dd>
+This function is equal to indices
+<p>
+<dt><b> <font size=+1>K</font><font size=-1>EYWORDS</font></b><dd>
+<a href=types_mapping.html>mapping</a>
+<p>
+<dt><b> <font size=+1>S</font><font size=-1>EE</font> <font size=+1>A</font><font size=-1>LSO</font></b><dd>
+<a href=builtin_indices.html>indices</a>
+<p>
+</dl>
+</a>
+
+<hr newpage>
+<a name=Simulate.m_sizeof>
+<dl>
+<dt><b> <font size=+1>N</font><font size=-1>AME</font></b><dd>
+<tt>Simulate.m_sizeof</tt> - Return the size of a mapping
+<p>
+<dt><b> <font size=+1>S</font><font size=-1>YNTAX</font></b><dd>
+<tt>int m_sizeof(mapping <I>m</I>);<br>
+</tt>
+<p>
+<dt><b> <font size=+1>D</font><font size=-1>ESCRIPTION</font></b><dd>
+This function is equal to sizeof.
+<p>
+<dt><b> <font size=+1>K</font><font size=-1>EYWORDS</font></b><dd>
+<a href=types_mapping.html>mapping</a>
+<p>
+<dt><b> <font size=+1>S</font><font size=-1>EE</font> <font size=+1>A</font><font size=-1>LSO</font></b><dd>
+<a href=#sizeof>sizeof</a>
+<p>
+</dl>
+
+</a>
+
+<hr newpage>
+<a name=Simulate.m_values>
+<dl>
+<dt><b> <font size=+1>N</font><font size=-1>AME</font></b><dd>
+<tt>Simulate.m_values</tt> - return all values from a mapping
+<p>
+<dt><b> <font size=+1>S</font><font size=-1>YNTAX</font></b><dd>
+<tt>mixed *m_values(mapping <I>m</I>);<br>
+</tt>
+<p>
+<dt><b> <font size=+1>D</font><font size=-1>ESCRIPTION</font></b><dd>
+This function is equal to values
+<p>
+<dt><b> <font size=+1>K</font><font size=-1>EYWORDS</font></b><dd>
+<a href=types_mapping.html>mapping</a>
+<p>
+<dt><b> <font size=+1>S</font><font size=-1>EE</font> <font size=+1>A</font><font size=-1>LSO</font></b><dd>
+<a href=#values>values</a>
+<p>
+</dl>
+
+</a>
+
+<hr newpage>
+<a name=Simulate.strstr>
+<dl>
+<dt><b> <font size=+1>N</font><font size=-1>AME</font></b><dd>
+<tt>Simulate.strstr</tt> - find a string inside a string
+<p>
+<dt><b> <font size=+1>S</font><font size=-1>YNTAX</font></b><dd>
+<tt>int strstr(string <I>str1</I>,string <I>str2</I>);<br>
+</tt>
+<p>
+<dt><b> <font size=+1>D</font><font size=-1>ESCRIPTION</font></b><dd>
+Return the position of str2 in str1, if str2 can't be found in str1
+-1 is returned.
+<p>
+<dt><b> <font size=+1>K</font><font size=-1>EYWORDS</font></b><dd>
+<a href=types_string.html>string</a>
+<p>
+<dt><b> <font size=+1>S</font><font size=-1>EE</font> <font size=+1>A</font><font size=-1>LSO</font></b><dd>
+<a href=#sscanf>sscanf</a> and <a href=#Simulate.explode>Simulate.explode</a>
+<p>
+</dl>
+
+</a>
+
+<hr newpage>
+<a name=Simulate.sum>
+<dl>
+<dt><b> <font size=+1>N</font><font size=-1>AME</font></b><dd>
+<tt>Simulate.sum</tt> - add values together
+<p>
+<dt><b> <font size=+1>S</font><font size=-1>YNTAX</font></b><dd>
+<tt>
+<p>int sum(int ... <I>i</I>);<br>
+or<br>
+float sum(float ... <I>f</I>);<br>
+or<br>
+string sum(string|float|int ... <I>p</I>);<br>
+or<br>
+array sum(array ... <I>a</I>);<br>
+or<br>
+mapping sum(mapping ... <I>m</I>);<br>
+or<br>
+list sum(multiset ... <I>l</I>);<br>
+</tt>
+<p>
+<dt><b> <font size=+1>D</font><font size=-1>ESCRIPTION</font></b><dd>
+This function does exactly the same thing as adding all the arguments
+together with +. It's just here so you can get a function-pointer to
+the summation operator.
+<p>
+</dl>
+
+</a>
+
+<hr newpage>
+<a name=Simulate.add_efun>
+<dl>
+<dt><b> <font size=+1>N</font><font size=-1>AME</font></b><dd>
+<tt>Simulate.add_efun</tt> - add an efun or constant
+<p>
+<dt><b> <font size=+1>S</font><font size=-1>YNTAX</font></b><dd>
+<tt>void add_efun(string func_name, mixed function)<br>
+or<br>
+void add_efun(string func_name)<br>
+</tt>
+<p>
+<dt><b> <font size=+1>D</font><font size=-1>ESCRIPTION</font></b><dd>
+This function is the same as add_constant.
+<p>
+<dt><b> <font size=+1>S</font><font size=-1>EE</font> <font size=+1>A</font><font size=-1>LSO</font></b><dd>
+<a href=#add_constant>Simulate.add_constant</a>
+<p>
+</dl>
+</a>
+
+<hr newpage>
+<a name=Simulate.l_sizeof>
+<dl>
+<dt><b> <font size=+1>N</font><font size=-1>AME</font></b><dd>
+<tt>Simulate.l_sizeof</tt> - Return the size of a multiset
+<p>
+<dt><b> <font size=+1>S</font><font size=-1>YNTAX</font></b><dd>
+<tt>int l_sizeof(multiset <I>m</I>);<br>
+</tt>
+<p>
+<dt><b> <font size=+1>D</font><font size=-1>ESCRIPTION</font></b><dd>
+This function is equal to sizeof.
+<p>
+<dt><b> <font size=+1>S</font><font size=-1>EE</font> <font size=+1>A</font><font size=-1>LSO</font></b><dd>
+<a href=#sizeof>sizeof</a>
+<p>
+</dl>
+
+</a>
+<hr newpage>
+<a name=Simulate.listp>
+<dl>
+<dt><b> <font size=+1>N</font><font size=-1>AME</font></b><dd>
+<tt>Simulate.listp</tt> - is the argument a list? (multiset)
+<p>
+<dt><b> <font size=+1>S</font><font size=-1>YNTAX</font></b><dd>
+<tt>int listp(mixed l)<br>
+</tt>
+<p>
+<dt><b> <font size=+1>D</font><font size=-1>ESCRIPTION</font></b><dd>
+This function is the same as multisetp.
+<p>
+<dt><b> <font size=+1>S</font><font size=-1>EE</font> <font size=+1>A</font><font size=-1>LSO</font></b><dd>
+<a href=#multisetp>Simulate.multisetp</a>
+<p>
+</dl>
+
+</a>
+
+<hr newpage>
+<a name=Simulate.mklist>
+<dl>
+<dt><b> <font size=+1>N</font><font size=-1>AME</font></b><dd>
+<tt>Simulate.mklist</tt> - make a multiset
+<p>
+<dt><b> <font size=+1>S</font><font size=-1>YNTAX</font></b><dd>
+<tt>multiset mklist(mixed *a)<br>
+</tt>
+<p>
+<dt><b> <font size=+1>D</font><font size=-1>ESCRIPTION</font></b><dd>
+This function creates a multiset from an array.
+<p>
+<dt><b> <font size=+1>E</font><font size=-1>XAMPLE</font></b><dd>
+<tt>&gt; mklist( ({1,2,3}) );<br>
+Result: (&lt; /* 3 elements */<br>
+<dl><dt><dd>1,<br>
+2,<br>
+3<br>
+</dl>&gt;)<br>
+</tt>
+<p>
+<dt><b> <font size=+1>S</font><font size=-1>EE</font> <font size=+1>A</font><font size=-1>LSO</font></b><dd>
+<a href=#aggregage_multiset>aggregate_multiset</a>
+<p>
+</dl>
+
+</a>
+
+<hr newpage>
+<a name=Simulate.aggregage_list>
+<dl>
+<dt><b> <font size=+1>N</font><font size=-1>AME</font></b><dd>
+<tt>Simulate.aggregage_list</tt> - aggregate a multiset
+<p>
+<dt><b> <font size=+1>S</font><font size=-1>YNTAX</font></b><dd>
+<tt>multiset aggregage_list(mixed ... <I>args</I>);<br>
+</tt>
+<p>
+<dt><b> <font size=+1>D</font><font size=-1>ESCRIPTION</font></b><dd>
+This function is exactly the same as aggregate_multiset.
+<p>
+<dt><b> <font size=+1>S</font><font size=-1>EE</font> <font size=+1>A</font><font size=-1>LSO</font></b><dd>
+<a href=#aggregage_multiset>aggregate_multiset</a>
+<p>
+</dl>
+
+</a>
+
+<hr newpage>
+<a name=Simulate.query_host_name>
+<dl>
+<dt><b> <font size=+1>N</font><font size=-1>AME</font></b><dd>
+<tt>Simulate.query_host_name</tt> - return the name of the host we are running on
+<p>
+<dt><b> <font size=+1>S</font><font size=-1>YNTAX</font></b><dd>
+<tt>string query_host_name();<br>
+</tt>
+<p>
+<dt><b> <font size=+1>D</font><font size=-1>ESCRIPTION</font></b><dd>
+This function returns the name of the machine the interpreter is
+running on. This is the same thing that the command 'hostname'
+prints.
+<p>
+</dl>
+
+</a>
+
+<hr newpage>
+
 <h2>Structs</h2>
 <!-- FIXME priority_queue and heap should be placed here -->
-<h2>Simulate</h2>
 <h2>Msql</h2>
 <h2>Mysql</h2>
 <h2>Sql</h2>
@@ -8020,7 +8966,6 @@ This chapter describes the different preprocessor directives. This is
 what it can do:
 
 <hr noshade size=1>
-<a name=error>
 <dl>
 <dt><b> <font size=+1>D</font><font size=-1>IRECTIVE</font></b><dd>
 <tt>#!<br>
@@ -8036,9 +8981,8 @@ the script with
 <p>
 </dl>
 
-</a>
 <hr noshade size=1>
-<a name=error>
+<a name=define>
 <dl>
 <dt><b> <font size=+1>D</font><font size=-1>IRECTIVE</font></b><dd>
 <tt>#define<br>
@@ -8081,7 +9025,7 @@ int main()
 
 </a>
 <hr noshade size=1>
-<a name=error>
+<a name=undef>
 <dl>
 <dt><b> <font size=+1>D</font><font size=-1>IRECTIVE</font></b><dd>
 <tt>#undef<br>
@@ -8105,7 +9049,10 @@ arguments.
 
 </a>
 <hr noshade size=1>
-<a name=error>
+<a name=if>
+<a name=elseif>
+<a name=else>
+<a name=endif>
 <dl>
 <dt><b> <font size=+1>D</font><font size=-1>IRECTIVE</font></b><dd>
 <tt>#if<br>
@@ -8157,6 +9104,9 @@ inherit "simulate.pike"<br>
 </dl>
 
 </a>
+</a>
+</a>
+</a>
 <hr noshade size=1>
 <a name=error>
 <dl>
@@ -8179,7 +9129,7 @@ the user that certain functions are missing and similar things.
 
 </a>
 <hr noshade size=1>
-<a name=error>
+<a name=include>
 <dl>
 <dt><b> <font size=+1>D</font><font size=-1>IRECTIVE</font></b><dd>
 <tt>#include<br>
@@ -8199,7 +9149,7 @@ The compiler then continues to compile this file.
 
 </a>
 <hr noshade size=1>
-<a name=error>
+<a name=line>
 <dl>
 <dt><b> <font size=+1>D</font><font size=-1>IRECTIVE</font></b><dd>
 <tt>#line<br>
@@ -8222,7 +9172,7 @@ tell teh compiler where the code originally originated from.
 
 </a>
 <hr noshade size=1>
-<a name=error>
+<a name=pragma>
 <dl>
 <dt><b> <font size=+1>D</font><font size=-1>IRECTIVE</font></b><dd>
 <tt>#pragma<br>
@@ -8238,13 +9188,6 @@ modifier 'inline' to all functions that follows.
 
 </a>
 
-<ul>
-  <li> Comments: //, /* */
-  <li> Substitution: #define, #undef
-  <li> Conditional: #if, #ifdef, #if defined(), #if efun(), #endif, #else, #elseif
-  <li> Including other files: #include "", #include <>
-  <li> Misc: #error, #pragma, #!
-</ul>
 <HR NEWPAGE>
 <h1>11. All the builtin functions</h1>
 This chapter is a reference for all the builtin functions in pike.
@@ -8423,50 +9366,6 @@ add_constant("add_constant");<br>
 </a>
 
 <HR NEWPAGE>
-<a name=add_efun>
-<dl>
-<dt><b> <font size=+1>N</font><font size=-1>AME</font></b><dd>
-<tt>add_efun</tt> - add an efun or constant
-<p>
-<dt><b> <font size=+1>S</font><font size=-1>YNTAX</font></b><dd>
-<tt>#include &lt;simulate.h&gt;<br>
-
-<p>void add_efun(string func_name, mixed function)<br>
-or<br>
-void add_efun(string func_name)<br>
-</tt>
-<p>
-<dt><b> <font size=+1>D</font><font size=-1>ESCRIPTION</font></b><dd>
-This function is the same as add_constant.
-<p>
-<dt><b> <font size=+1>S</font><font size=-1>EE</font> <font size=+1>A</font><font size=-1>LSO</font></b><dd>
-<a href=#add_constant>add_constant</a>
-<p>
-</dl>
-</a>
-
-<HR NEWPAGE>
-<a name=aggregage_list>
-<dl>
-<dt><b> <font size=+1>N</font><font size=-1>AME</font></b><dd>
-<tt>aggregage_list</tt> - aggregate a multiset
-<p>
-<dt><b> <font size=+1>S</font><font size=-1>YNTAX</font></b><dd>
-<tt>#include &lt;simulate.h&gt;<br>
-
-<p>multiset aggregage_list(mixed ... <I>args</I>);<br>
-</tt>
-<p>
-<dt><b> <font size=+1>D</font><font size=-1>ESCRIPTION</font></b><dd>
-This function is exactly the same as aggregate_multiset.
-<p>
-<dt><b> <font size=+1>S</font><font size=-1>EE</font> <font size=+1>A</font><font size=-1>LSO</font></b><dd>
-<a href=#aggregage_multiset>aggregate_multiset</a>
-<p>
-</dl>
-</a>
-
-<HR NEWPAGE>
 <a name=aggregate>
 <dl>
 <dt><b> <font size=+1>N</font><font size=-1>AME</font></b><dd>
@@ -8594,27 +9493,6 @@ constant, and with the value of the efun as argument.
 <p>
 <dt><b> <font size=+1>S</font><font size=-1>EE</font> <font size=+1>A</font><font size=-1>LSO</font></b><dd>
 <a href=#add_constant>add_constant</a>
-<p>
-</dl>
-</a>
-
-<HR NEWPAGE>
-<a name=all_efuns>
-<dl>
-<dt><b> <font size=+1>N</font><font size=-1>AME</font></b><dd>
-<tt>all_efuns</tt> - return all 'efuns'
-<p>
-<dt><b> <font size=+1>S</font><font size=-1>YNTAX</font></b><dd>
-<tt>#include &lt;simulate.h&gt;<br>
-
-<p>mapping all_efuns();<br>
-</tt>
-<p>
-<dt><b> <font size=+1>D</font><font size=-1>ESCRIPTION</font></b><dd>
-This function is the same as all_constants.
-<p>
-<dt><b> <font size=+1>S</font><font size=-1>EE</font> <font size=+1>A</font><font size=-1>LSO</font></b><dd>
-<a href=#all_constants>all_constants</a>
 <p>
 </dl>
 </a>
@@ -9137,15 +10015,33 @@ Result: Wed Jan 14 03:36:08 1970<br>
 </a>
 
 <HR NEWPAGE>
+<a name=decode_value>
+<dl>
+<dt><b> <font size=+1>N</font><font size=-1>AME</font></b><dd>
+<tt>decode_value</tt> - code a value into a string
+<p>
+<dt><b> <font size=+1>S</font><font size=-1>YNTAX</font></b><dd>
+<tt>mixed denode_value(mixed <I>value</I>);<br>
+</tt>
+<p>
+<dt><b> <font size=+1>D</font><font size=-1>ESCRIPTION</font></b><dd>
+This function takes a string created with encode_value() and converts
+it back to the value that was coded. 
+<p>
+<dt><b> <font size=+1>S</font><font size=-1>EE</font> <font size=+1>A</font><font size=-1>LSO</font></b><dd>
+<a href=#encode_value>encode_value</a>
+<p>
+</dl>
+</a>
+
+<HR NEWPAGE>
 <a name=describe_backtrace>
 <dl>
 <dt><b> <font size=+1>N</font><font size=-1>AME</font></b><dd>
 <tt>describe_backtrace</tt> - make a backtrace readable
 <p>
 <dt><b> <font size=+1>S</font><font size=-1>YNTAX</font></b><dd>
-<tt>#include &lt;simulate.h&gt;<br>
-
-<p>string describe_backtrace(mixed **<I>backtrace</I>);<br>
+<tt>string describe_backtrace(mixed **<I>backtrace</I>);<br>
 </tt>
 <p>
 <dt><b> <font size=+1>D</font><font size=-1>ESCRIPTION</font></b><dd>
@@ -9180,6 +10076,32 @@ o-&gt;destroy.
 <p>
 <dt><b> <font size=+1>S</font><font size=-1>EE</font> <font size=+1>A</font><font size=-1>LSO</font></b><dd>
 <a href=#clone>clone</a>
+<p>
+</dl>
+</a>
+
+<HR NEWPAGE>
+<a name=encode_value>
+<dl>
+<dt><b> <font size=+1>N</font><font size=-1>AME</font></b><dd>
+<tt>encode_value</tt> - code a value into a string
+<p>
+<dt><b> <font size=+1>S</font><font size=-1>YNTAX</font></b><dd>
+<tt>string encode_value(mixed <I>value</I>);<br>
+</tt>
+<p>
+<dt><b> <font size=+1>D</font><font size=-1>ESCRIPTION</font></b><dd>
+This function takes a value, and converts it to a string. This string
+can then be saved, sent to another Pike process, packed or used in
+any way you like. When you want your value back you simply send this
+string to decode_value() and it will return the value you encoded.
+<p>
+Almost any value can be coded, mappings, floats, arrays, circular
+structures etc. At present, objects, programs and functions cannot be
+saved in this way. This is being worked on.
+<p>
+<dt><b> <font size=+1>S</font><font size=-1>EE</font> <font size=+1>A</font><font size=-1>LSO</font></b><dd>
+<a href=#encode_value>decode_value</a> and <a href=#sprintf>sprintf</a>
 <p>
 </dl>
 </a>
@@ -9316,72 +10238,6 @@ log( exp( x ) ) == x as long as exp(x) doesn't overflow an int.
 </a>
 
 <HR NEWPAGE>
-<a name=explode>
-<dl>
-<dt><b> <font size=+1>N</font><font size=-1>AME</font></b><dd>
-<tt>explode</tt> - explode a string on a delimeter
-<p>
-<dt><b> <font size=+1>S</font><font size=-1>YNTAX</font></b><dd>
-<tt>#include &lt;simulate.h&gt;<br>
-
-<p>string *explode(string <I>victim</I>, string <I>delimeter</I>);<br>
-</tt>
-<p>
-<dt><b> <font size=+1>D</font><font size=-1>ESCRIPTION</font></b><dd>
-Explode divides the string called victim at every occurance of
-the string delimeter and returns the resulting parts in an array.
-If delimeter is an empty string, victim will be divided into strings
-of length 1.
-<p>Explode is the same as division.
-<p>
-<dt><b> <font size=+1>E</font><font size=-1>XAMPLES</font></b><dd>
-<tt>&gt; explode("foobar","o");<br>
-Result: ({ "f", "", "bar" })<br>
-&gt; explode("10101001010100010101","10");<br>
-Result: ({ "", "", "", "0", "", "", "00", "", "1" })<br>
-&gt; explode("/foo/bar/gazonk","/");<br>
-Result: ({ "", "foo", "bar", "gazonk" })<br>
-&gt; explode("foobar","");<br>
-Result: ({ "f", "o", "o", "b", "a", "r" })<br>
-</tt>
-<p>
-<dt><b> <font size=+1>K</font><font size=-1>EYWORDS</font></b><dd>
-<a href=types_string>string</a>
-<p>
-<dt><b> <font size=+1>S</font><font size=-1>EE</font> <font size=+1>A</font><font size=-1>LSO</font></b><dd>
-<a href=simulated_implode>implode</a> and <a href=operators_divide>`/</a>
-<p>
-</dl>
-</a>
-
-<HR NEWPAGE>
-<a name=file_size>
-<dl>
-<dt><b> <font size=+1>N</font><font size=-1>AME</font></b><dd>
-<tt>file_size</tt> - return the size of a file in bytes
-<p>
-<dt><b> <font size=+1>S</font><font size=-1>YNTAX</font></b><dd>
-<tt>#include &lt;stdio.h&gt;<br>
-
-<p>int file_size(string <I>file</I>);<br>
-</tt>
-<p>
-<dt><b> <font size=+1>D</font><font size=-1>ESCRIPTION</font></b><dd>
-Give the size of a file. Size -1 indicates that the file either
-does not exist, or that it is not readable by you. Size -2
-indicates that it is a directory.
-<p>
-<dt><b> <font size=+1>K</font><font size=-1>EYWORDS</font></b><dd>
-<a href=index#file>file</a>
-<p>
-<dt><b> <font size=+1>S</font><font size=-1>EE</font> <font size=+1>A</font><font size=-1>LSO</font></b><dd>
-<a href=simulated_write_file>write_file</a> and <a href=simulated_read_bytes>read_bytes</a>
-<p>
-</dl>
-</a>
-
-
-<HR NEWPAGE>
 <a name=file_stat>
 <dl>
 <dt><b> <font size=+1>N</font><font size=-1>AME</font></b><dd>
@@ -9419,34 +10275,6 @@ You can never get -3 as size if you don't give a second argument.<br>
 <p>
 <dt><b> <font size=+1>S</font><font size=-1>EE</font> <font size=+1>A</font><font size=-1>LSO</font></b><dd>
 <a href=files_get_dir>get_dir</a>
-<p>
-</dl>
-</a>
-
-<HR NEWPAGE>
-<a name=filter_array>
-<dl>
-<dt><b> <font size=+1>N</font><font size=-1>AME</font></b><dd>
-<tt>filter_array</tt> - filter an array through a function
-<p>
-<dt><b> <font size=+1>S</font><font size=-1>YNTAX</font></b><dd>
-<tt>#include &lt;simulate.h&gt;<br>
-
-<p>mixed *filter_array(mixed *<I>arr</I>,function <I>fun</I>,mixed ... <I>args</I>);<br>
-or<br>
-mixed *filter_array(object *<I>arr</I>,string <I>fun</I>,mixed ... <I>args</I>);<br>
-or<br>
-mixed *filter_array(function *<I>arr</I>,-<I>1</I>,mixed ... <I>args</I>);<br>
-</tt>
-<p>
-<dt><b> <font size=+1>D</font><font size=-1>ESCRIPTION</font></b><dd>
-Filter array is the same function as filter.
-<p>
-<dt><b> <font size=+1>K</font><font size=-1>EYWORDS</font></b><dd>
-<a href=types_array>array</a>
-<p>
-<dt><b> <font size=+1>S</font><font size=-1>EE</font> <font size=+1>A</font><font size=-1>LSO</font></b><dd>
-<a href=simulated_sum_arrays>sum_arrays</a>, <a href=simulated_map_array>map_array</a> and <a href=simulated_filter>filter</a>
 <p>
 </dl>
 </a>
@@ -9688,27 +10516,6 @@ no such directory exists.
 </a>
 
 <HR NEWPAGE>
-<a name=get_function>
-<dl>
-<dt><b> <font size=+1>N</font><font size=-1>AME</font></b><dd>
-<tt>get_function</tt> - fetch a function from an object
-<p>
-<dt><b> <font size=+1>S</font><font size=-1>YNTAX</font></b><dd>
-<tt>#include &lt;simulate.h&gt;<br>
-
-<p>function get_function(object <I>o</I>, string <I>name</I>);<br>
-</tt>
-<p>
-<dt><b> <font size=+1>D</font><font size=-1>ESCRIPTION</font></b><dd>
-Defined as: return o[name];
-<p>
-<dt><b> <font size=+1>K</font><font size=-1>EYWORDS</font></b><dd>
-<a href=types_function>function</a>
-<p>
-</dl>
-</a>
-
-<HR NEWPAGE>
 <a name=getcwd>
 <dl>
 <dt><b> <font size=+1>N</font><font size=-1>AME</font></b><dd>
@@ -9819,42 +10626,6 @@ is given, the result will be &gt;= 0 and lesser than that argument.
 </a>
 
 <HR NEWPAGE>
-<a name=implode>
-<dl>
-<dt><b> <font size=+1>N</font><font size=-1>AME</font></b><dd>
-<tt>implode</tt> - implode an array of strings
-<p>
-<dt><b> <font size=+1>S</font><font size=-1>YNTAX</font></b><dd>
-<tt>#include &lt;simulate.h&gt;<br>
-
-<p>string implode(string *<I>a</I>, string <I>delimeter</I>);<br>
-or<br>
-a * delimeter<br>
-</tt>
-<p>
-<dt><b> <font size=+1>D</font><font size=-1>ESCRIPTION</font></b><dd>
-This function is the inverse of explode. It contatenates all the
-strings in a with a delimeter in between each.
-<p>This function is the same as multiplication.
-<p>
-<dt><b> <font size=+1>E</font><font size=-1>XAMPLES</font></b><dd>
-<tt>&gt; implode( ({ "foo","bar","gazonk"}), "-" );<br>
-Result: foo-bar-gazonk<br>
-&gt; ({ "a","b","c" })*" and ";<br>
-Result: a and b and c<br>
-&gt; <br>
-</tt>
-<p>
-<dt><b> <font size=+1>K</font><font size=-1>EYWORDS</font></b><dd>
-<a href=types_string>string</a>
-<p>
-<dt><b> <font size=+1>S</font><font size=-1>EE</font> <font size=+1>A</font><font size=-1>LSO</font></b><dd>
-<a href=simulated_explode>explode</a>
-<p>
-</dl>
-</a>
-
-<HR NEWPAGE>
 <a name=indices>
 <dl>
 <dt><b> <font size=+1>N</font><font size=-1>AME</font></b><dd>
@@ -9948,51 +10719,6 @@ to it's number.
 <p>
 <dt><b> <font size=+1>S</font><font size=-1>EE</font> <font size=+1>A</font><font size=-1>LSO</font></b><dd>
 <a href=#signal>signal</a>, <a href=#signum>signum</a>, <a href=#signame>signame</a> and <a href=files_fork>fork</a>
-<p>
-</dl>
-</a>
-
-<HR NEWPAGE>
-<a name=l_sizeof>
-<dl>
-<dt><b> <font size=+1>N</font><font size=-1>AME</font></b><dd>
-<tt>l_sizeof</tt> - Return the size of a multiset
-<p>
-<dt><b> <font size=+1>S</font><font size=-1>YNTAX</font></b><dd>
-<tt>#include &lt;simulate.h&gt;<br>
-
-<p>int l_sizeof(multiset <I>m</I>);<br>
-</tt>
-<p>
-<dt><b> <font size=+1>D</font><font size=-1>ESCRIPTION</font></b><dd>
-This function is equal to sizeof.
-<p>
-<dt><b> <font size=+1>K</font><font size=-1>EYWORDS</font></b><dd>
-<a href=types_multiset>multiset</a>
-<p>
-<dt><b> <font size=+1>S</font><font size=-1>EE</font> <font size=+1>A</font><font size=-1>LSO</font></b><dd>
-<a href=#sizeof>sizeof</a>
-<p>
-</dl>
-</a>
-
-<HR NEWPAGE>
-<a name=listp>
-<dl>
-<dt><b> <font size=+1>N</font><font size=-1>AME</font></b><dd>
-<tt>listp</tt> - is the argument a list? (multiset)
-<p>
-<dt><b> <font size=+1>S</font><font size=-1>YNTAX</font></b><dd>
-<tt>#include &lt;simulate.h&gt;<br>
-
-<p>int listp(mixed l)<br>
-</tt>
-<p>
-<dt><b> <font size=+1>D</font><font size=-1>ESCRIPTION</font></b><dd>
-This function is the same as multisetp.
-<p>
-<dt><b> <font size=+1>S</font><font size=-1>EE</font> <font size=+1>A</font><font size=-1>LSO</font></b><dd>
-<a href=#multisetp>multisetp</a>
 <p>
 </dl>
 </a>
@@ -10137,139 +10863,6 @@ the mapping for compatibility reasons.
 </a>
 
 <HR NEWPAGE>
-<a name=m_indices>
-<dl>
-<dt><b> <font size=+1>N</font><font size=-1>AME</font></b><dd>
-<tt>m_indices</tt> - return all indices from a mapping
-<p>
-<dt><b> <font size=+1>S</font><font size=-1>YNTAX</font></b><dd>
-<tt>#include &lt;simulate.h&gt;<br>
-
-<p>mixed *m_indices(mapping <I>m</I>);<br>
-</tt>
-<p>
-<dt><b> <font size=+1>D</font><font size=-1>ESCRIPTION</font></b><dd>
-This function is equal to indices
-<p>
-<dt><b> <font size=+1>K</font><font size=-1>EYWORDS</font></b><dd>
-<a href=types_mapping>mapping</a>
-<p>
-<dt><b> <font size=+1>S</font><font size=-1>EE</font> <font size=+1>A</font><font size=-1>LSO</font></b><dd>
-<a href=#indices>indices</a>
-<p>
-</dl>
-</a>
-
-<HR NEWPAGE>
-<a name=m_sizeof>
-<dl>
-<dt><b> <font size=+1>N</font><font size=-1>AME</font></b><dd>
-<tt>m_sizeof</tt> - Return the size of a mapping
-<p>
-<dt><b> <font size=+1>S</font><font size=-1>YNTAX</font></b><dd>
-<tt>#include &lt;simulate.h&gt;<br>
-
-<p>int m_sizeof(mapping <I>m</I>);<br>
-</tt>
-<p>
-<dt><b> <font size=+1>D</font><font size=-1>ESCRIPTION</font></b><dd>
-This function is equal to sizeof.
-<p>
-<dt><b> <font size=+1>K</font><font size=-1>EYWORDS</font></b><dd>
-<a href=types_mapping>mapping</a>
-<p>
-<dt><b> <font size=+1>S</font><font size=-1>EE</font> <font size=+1>A</font><font size=-1>LSO</font></b><dd>
-<a href=#sizeof>sizeof</a>
-<p>
-</dl>
-</a>
-
-<HR NEWPAGE>
-<a name=m_values>
-<dl>
-<dt><b> <font size=+1>N</font><font size=-1>AME</font></b><dd>
-<tt>m_values</tt> - return all values from a mapping
-<p>
-<dt><b> <font size=+1>S</font><font size=-1>YNTAX</font></b><dd>
-<tt>#include &lt;simulate.h&gt;<br>
-
-<p>mixed *m_values(mapping <I>m</I>);<br>
-</tt>
-<p>
-<dt><b> <font size=+1>D</font><font size=-1>ESCRIPTION</font></b><dd>
-This function is equal to values
-<p>
-<dt><b> <font size=+1>K</font><font size=-1>EYWORDS</font></b><dd>
-<a href=types_mapping>mapping</a>
-<p>
-<dt><b> <font size=+1>S</font><font size=-1>EE</font> <font size=+1>A</font><font size=-1>LSO</font></b><dd>
-<a href=#values>values</a>
-<p>
-</dl>
-</a>
-
-<HR NEWPAGE>
-<a name=map>
-<dl>
-<dt><b> <font size=+1>N</font><font size=-1>AME</font></b><dd>
-<tt>map</tt> - map an array or mapping over a function
-<p>
-<dt><b> <font size=+1>S</font><font size=-1>YNTAX</font></b><dd>
-<tt>mixed *map(mixed <I>arr</I>,function <I>fun</I>,mixed ... <I>args</I>);<br>
-or<br>
-mixed *map(object *<I>arr</I>,string <I>fun</I>,mixed ... <I>args</I>);<br>
-or<br>
-mixed *map(function *<I>arr</I>,-<I>1</I>,mixed ... <I>arg</I>);<br>
-</tt>
-<p>
-<dt><b> <font size=+1>D</font><font size=-1>ESCRIPTION</font></b><dd>
-First syntax:
-Map array returns an array holding the items of arr mapped thrugh
-the function fun. ie. arr[x]=fun(arr[x], @args) for all x.
-<p>Second syntax:
-Map array calls function fun in all objects in the array arr.
-ie. arr[x]=arr[x]-&gt;fun(@ args);
-<p>Third syntax:
-Map array calls the functions in the array arr:
-arr[x]=arr[x]-&gt;fun(@ args);
-<p>
-<dt><b> <font size=+1>K</font><font size=-1>EYWORDS</font></b><dd>
-<a href=types_array>array</a>
-<p>
-<dt><b> <font size=+1>S</font><font size=-1>EE</font> <font size=+1>A</font><font size=-1>LSO</font></b><dd>
-<a href=simulated_sum_arrays>sum_arrays</a> and <a href=simulated_filter>filter</a>
-<p>
-</dl>
-</a>
-
-
-<HR NEWPAGE>
-<a name=map_array>
-<dl>
-<dt><b> <font size=+1>N</font><font size=-1>AME</font></b><dd>
-<tt>map_array</tt> - map an array over a function
-<p>
-<dt><b> <font size=+1>S</font><font size=-1>YNTAX</font></b><dd>
-<tt>mixed *map_array(mixed *<I>arr</I>,function <I>fun</I>,mixed ... <I>args</I>);<br>
-or<br>
-mixed *map_array(object *<I>arr</I>,string <I>fun</I>,mixed ... <I>args</I>);<br>
-or<br>
-mixed *map_array(function *<I>arr</I>,-<I>1</I>,mixed ... <I>arg</I>);<br>
-</tt>
-<p>
-<dt><b> <font size=+1>D</font><font size=-1>ESCRIPTION</font></b><dd>
-This function is the same as map.
-<p>
-<dt><b> <font size=+1>K</font><font size=-1>EYWORDS</font></b><dd>
-<a href=types_array>array</a>
-<p>
-<dt><b> <font size=+1>S</font><font size=-1>EE</font> <font size=+1>A</font><font size=-1>LSO</font></b><dd>
-<a href=simulated_filter_array>filter_array</a>, <a href=simulated_sum_arrays>sum_arrays</a> and <a href=simulated_map>map</a>
-<p>
-</dl>
-</a>
-
-<HR NEWPAGE>
 <a name=mappingp>
 <dl>
 <dt><b> <font size=+1>N</font><font size=-1>AME</font></b><dd>
@@ -10311,28 +10904,6 @@ Master is added by the master object to make it easier to access it.
 </a>
 
 <HR NEWPAGE>
-<a name=member_array>
-<dl>
-<dt><b> <font size=+1>N</font><font size=-1>AME</font></b><dd>
-<tt>member_array</tt> - find first occurance of a value in an array
-<p>
-<dt><b> <font size=+1>S</font><font size=-1>YNTAX</font></b><dd>
-<tt>#include &lt;simulate.h&gt;<br>
-
-<p>int member_array(mixed <I>item</I>, mixed *<I>arr</I>);<br>
-</tt>
-<p>
-<dt><b> <font size=+1>D</font><font size=-1>ESCRIPTION</font></b><dd>
-Returns the index of the first occurence of item in array arr.
-If not found, then -1 is returned.
-<p>
-<dt><b> <font size=+1>K</font><font size=-1>EYWORDS</font></b><dd>
-<a href=types_array>array</a>
-<p>
-</dl>
-</a>
-
-<HR NEWPAGE>
 <a name=mkdir>
 <dl>
 <dt><b> <font size=+1>N</font><font size=-1>AME</font></b><dd>
@@ -10354,39 +10925,6 @@ Create a directory, return zero if it fails and nonzero if it fails.
 </dl>
 </a>
 
-
-<HR NEWPAGE>
-<a name=mklist>
-<dl>
-<dt><b> <font size=+1>N</font><font size=-1>AME</font></b><dd>
-<tt>mklist</tt> - make a multiset
-<p>
-<dt><b> <font size=+1>S</font><font size=-1>YNTAX</font></b><dd>
-<tt>#include &lt;simulate.h&gt;<br>
-
-<p>multiset mklist(mixed *a)<br>
-</tt>
-<p>
-<dt><b> <font size=+1>D</font><font size=-1>ESCRIPTION</font></b><dd>
-This function creates a multiset from an array.
-<p>
-<dt><b> <font size=+1>E</font><font size=-1>XAMPLE</font></b><dd>
-<tt>&gt; mklist( ({1,2,3}) );<br>
-Result: (&lt; /* 3 elements */<br>
-<dl><dt><dd>1,<br>
-2,<br>
-3<br>
-</dl>&gt;)<br>
-</tt>
-<p>
-<dt><b> <font size=+1>K</font><font size=-1>EYWORDS</font></b><dd>
-<a href=types_multiset>multiset</a>
-<p>
-<dt><b> <font size=+1>S</font><font size=-1>EE</font> <font size=+1>A</font><font size=-1>LSO</font></b><dd>
-<a href=#aggregage_multiset>aggregate_multiset</a>
-<p>
-</dl>
-</a>
 
 <HR NEWPAGE>
 <a name=mkmapping>
@@ -10439,6 +10977,44 @@ Result: (&lt; /* 3 elements */<br>
 <p>
 <dt><b> <font size=+1>S</font><font size=-1>EE</font> <font size=+1>A</font><font size=-1>LSO</font></b><dd>
 <a href=#aggregage_multiset>aggregate_multiset</a>
+<p>
+</dl>
+</a>
+
+
+<HR NEWPAGE>
+<a name=mktime>
+<dl>
+<dt><b> <font size=+1>N</font><font size=-1>AME</font></b><dd>
+<tt>mktime</tt> - convert date and time to seconds
+<p>
+<dt><b> <font size=+1>S</font><font size=-1>YNTAX</font></b><dd>
+<tt>int mktime(mapping tm)</tt><br>
+or<br>
+<tt>int mktime(int sec, int min, int hour, int mday, int mon, int year, int isdst, int tz)</tt><br>
+<p>
+<dt><b> <font size=+1>D</font><font size=-1>ESCRIPTION</font></b><dd>
+This function converts information about date and time into an integer which
+contains the number of seconds since the beginning of 1970. You can either
+call this function with a mapping containing the following elements:
+<p>
+<center>
+<table>
+<tr><td>year</td><td>The number of years since 1900</td></tr>
+<tr><td>mon</td><td>The month</td></tr>
+<tr><td>mday</td><td>The day of the month.</td></tr>
+<tr><td>hour</td><td>The number of hours past midnight</td></tr>
+<tr><td>min</td><td>The number of minutes after the hour</td></tr>
+<tr><td>sec</td><td>The number of seconds after the minute</td></tr>
+<tr><td>isdst</td><td>If this is 1, daylight savings time is assumed</td></tr>
+<tr><td>tm</td><td>The timezone (-12 &lt;= tz &lt;= 12)</td></tr>
+</table>
+</center>
+<p>
+Or you can just send them all on one line as the second syntax suggests.
+<p>
+<dt><b> <font size=+1>S</font><font size=-1>EE</font> <font size=+1>A</font><font size=-1>LSO</font></b><dd>
+<a href=#time>time</a>
 <p>
 </dl>
 </a>
@@ -10591,28 +11167,6 @@ Return n raised to the power of x.
 </a>
 
 <HR NEWPAGE>
-<a name=previous_object>
-<dl>
-<dt><b> <font size=+1>N</font><font size=-1>AME</font></b><dd>
-<tt>previous_object</tt> - return the calling object
-<p>
-<dt><b> <font size=+1>S</font><font size=-1>YNTAX</font></b><dd>
-<tt>#include &lt;simulate.h&gt;<br>
-
-<p>object previous_object();<br>
-</tt>
-<p>
-<dt><b> <font size=+1>D</font><font size=-1>ESCRIPTION</font></b><dd>
-Returns an object pointer to the object that called current function,
-if any.
-<p>
-<dt><b> <font size=+1>S</font><font size=-1>EE</font> <font size=+1>A</font><font size=-1>LSO</font></b><dd>
-<a href=#call_function>call_function</a> and <a href=#backtrace>backtrace</a>
-<p>
-</dl>
-</a>
-
-<HR NEWPAGE>
 <a name=programp>
 <dl>
 <dt><b> <font size=+1>N</font><font size=-1>AME</font></b><dd>
@@ -10757,30 +11311,6 @@ Result: 94<br>
 </dl>
 </a>
 
-
-<HR NEWPAGE>
-<a name=regexp>
-<dl>
-<dt><b> <font size=+1>N</font><font size=-1>AME</font></b><dd>
-<tt>regexp</tt> - filter an array through a regexp
-<p>
-<dt><b> <font size=+1>S</font><font size=-1>YNTAX</font></b><dd>
-<tt>#include &lt;simulate.h&gt;<br>
-
-<p>string *regexp(string *<I>arr</I>, string <I>reg</I>);<br>
-</tt>
-<p>
-<dt><b> <font size=+1>D</font><font size=-1>ESCRIPTION</font></b><dd>
-Return those strings in arr that matches the regexp in reg.
-<p>
-<dt><b> <font size=+1>K</font><font size=-1>EYWORDS</font></b><dd>
-<a href=types_string>string</a>
-<p>
-<dt><b> <font size=+1>S</font><font size=-1>EE</font> <font size=+1>A</font><font size=-1>LSO</font></b><dd>
-<a href=simulated_regexp>regexp</a>
-<p>
-</dl>
-</a>
 
 <HR NEWPAGE>
 <a name=remove_call_out>
@@ -11041,36 +11571,6 @@ This function replaces strstr and member_array from Pike4.
 </a>
 
 <HR NEWPAGE>
-<a name=search_array>
-<dl>
-<dt><b> <font size=+1>N</font><font size=-1>AME</font></b><dd>
-<tt>search_array</tt> - search for something in an array
-<p>
-<dt><b> <font size=+1>S</font><font size=-1>YNTAX</font></b><dd>
-<tt>#include &lt;array.h&gt;<br>
-
-<p>int search_array(mixed *<I>arr</I>,function <I>fun</I>,mixed <I>arg</I>, ...);<br>
-or<br>
-int search_array(object *<I>arr</I>,string <I>fun</I>,mixed <I>arg</I>, ...);<br>
-or<br>
-int search_array(function *<I>arr</I>,-<I>1</I>,mixed <I>arg</I>, ...);<br>
-</tt>
-<p>
-<dt><b> <font size=+1>D</font><font size=-1>ESCRIPTION</font></b><dd>
-search_array works like map_array, only it returns the index of the
-first call that returned true instead or returning an array of the
-returned values. If no call returns true, -1 is returned.
-<p>
-<dt><b> <font size=+1>K</font><font size=-1>EYWORDS</font></b><dd>
-<a href=types_array>array</a>
-<p>
-<dt><b> <font size=+1>S</font><font size=-1>EE</font> <font size=+1>A</font><font size=-1>LSO</font></b><dd>
-<a href=simulated_sum_arrays>sum_arrays</a>, <a href=simulated_filter_array>filter_array</a> and <a href=simulated_member_array>member_array</a>
-<p>
-</dl>
-</a>
-
-<HR NEWPAGE>
 <a name=signal>
 <dl>
 <dt><b> <font size=+1>N</font><font size=-1>AME</font></b><dd>
@@ -11241,35 +11741,6 @@ Arrays will be sorted first on the first element of each array.
 <p>
 </dl>
 </a>
-
-<HR NEWPAGE>
-<a name=sort_array>
-<dl>
-<dt><b> <font size=+1>N</font><font size=-1>AME</font></b><dd>
-<tt>sort_array</tt> - sort an array
-<p>
-<dt><b> <font size=+1>S</font><font size=-1>YNTAX</font></b><dd>
-<tt>#include &lt;array.h&gt;<br>
-
-<p>mixed *sort_array(mixed *<I>arr</I>,function <I>fun</I>,mixed ... <I>args</I>);<br>
-</tt>
-<p>
-<dt><b> <font size=+1>D</font><font size=-1>ESCRIPTION</font></b><dd>
-This function sorts an array after a compare-function 'fun'
-which takes two arguments and should return 1 if the first argument
-is larger then the second. The rest of the arguments 'args' will be
-sent as 3rd, 4th etc. argument to fun. If fun is omitted, `&lt; is unsed
-instead.
-<p>
-<dt><b> <font size=+1>K</font><font size=-1>EYWORDS</font></b><dd>
-<a href=types_array>array</a>
-<p>
-<dt><b> <font size=+1>S</font><font size=-1>EE</font> <font size=+1>A</font><font size=-1>LSO</font></b><dd>
-<a href=simulated_map_array>map_array</a> and <a href=simulated_filter_array>filter_array</a>
-<p>
-</dl>
-</a>
-
 
 <HR NEWPAGE>
 <a name=sprintf>
@@ -11539,9 +12010,7 @@ Returns 1 if arg is a string, zero otherwise.
 <tt>strlen</tt> - Return the length of a string
 <p>
 <dt><b> <font size=+1>S</font><font size=-1>YNTAX</font></b><dd>
-<tt>#include &lt;simulate.h&gt;<br>
-
-<p>int strlen(string <I>s</I>);<br>
+<tt>int strlen(string <I>s</I>);<br>
 </tt>
 <p>
 <dt><b> <font size=+1>D</font><font size=-1>ESCRIPTION</font></b><dd>
@@ -11556,65 +12025,6 @@ This function is equal to sizeof.
 </dl>
 </a>
 
-
-<HR NEWPAGE>
-<a name=strstr>
-<dl>
-<dt><b> <font size=+1>N</font><font size=-1>AME</font></b><dd>
-<tt>strstr</tt> - find a string inside a string
-<p>
-<dt><b> <font size=+1>S</font><font size=-1>YNTAX</font></b><dd>
-<tt>#include &lt;simulate.h&gt;<br>
-
-<p>int strstr(string <I>str1</I>,string <I>str2</I>);<br>
-</tt>
-<p>
-<dt><b> <font size=+1>D</font><font size=-1>ESCRIPTION</font></b><dd>
-Return the position of str2 in str1, if str2 can't be found in str1
--1 is returned.
-<p>
-<dt><b> <font size=+1>K</font><font size=-1>EYWORDS</font></b><dd>
-<a href=types_string>string</a>
-<p>
-<dt><b> <font size=+1>S</font><font size=-1>EE</font> <font size=+1>A</font><font size=-1>LSO</font></b><dd>
-<a href=pike_sscanf>sscanf</a> and <a href=simulated_explode>explode</a>
-<p>
-</dl>
-</a>
-
-<HR NEWPAGE>
-<a name=sum>
-<dl>
-<dt><b> <font size=+1>N</font><font size=-1>AME</font></b><dd>
-<tt>sum</tt> - add values together
-<p>
-<dt><b> <font size=+1>S</font><font size=-1>YNTAX</font></b><dd>
-<tt>#include &lt;simulate.h&gt;<br>
-
-<p>int sum(int ... <I>i</I>);<br>
-or<br>
-float sum(float ... <I>f</I>);<br>
-or<br>
-string sum(string|float|int ... <I>p</I>);<br>
-or<br>
-array sum(array ... <I>a</I>);<br>
-or<br>
-mapping sum(mapping ... <I>m</I>);<br>
-or<br>
-list sum(multiset ... <I>l</I>);<br>
-</tt>
-<p>
-<dt><b> <font size=+1>D</font><font size=-1>ESCRIPTION</font></b><dd>
-This function does exactly the same thing as adding all the arguments
-together with +. It's just here so you can get a function-pointer to
-the summation operator.
-<p>
-<dt><b> <font size=+1>K</font><font size=-1>EYWORDS</font></b><dd>
-<a href=types_int>int</a>, <a href=types_float>float</a>, <a href=types_string>string</a>, <a href=types_array>array</a>, <a href=types_mapping>mapping</a> and <a href=types_multiset>multiset</a>
-<p>
-</dl>
-d
-</a>
 
 <HR NEWPAGE>
 <a name=tan>
@@ -11634,31 +12044,6 @@ Return the tangent value for f.
 <p>
 <dt><b> <font size=+1>S</font><font size=-1>EE</font> <font size=+1>A</font><font size=-1>LSO</font></b><dd>
 <a href=math_atan>atan</a>, <a href=math_sin>sin</a> and <a href=math_cos>cos</a>
-<p>
-</dl>
-</a>
-
-<HR NEWPAGE>
-<a name=this_function>
-<dl>
-<dt><b> <font size=+1>N</font><font size=-1>AME</font></b><dd>
-<tt>this_function</tt> - return a functionpointer to the current function
-<p>
-<dt><b> <font size=+1>S</font><font size=-1>YNTAX</font></b><dd>
-<tt>#include &lt;simulate.h&gt;<br>
-
-<p>function this_function();<br>
-</tt>
-<p>
-<dt><b> <font size=+1>D</font><font size=-1>ESCRIPTION</font></b><dd>
-Returns a functionpointer to the current function, useful for
-making recursive lambda-functions.
-<p>
-<dt><b> <font size=+1>K</font><font size=-1>EYWORDS</font></b><dd>
-<a href=types_function>function</a>
-<p>
-<dt><b> <font size=+1>S</font><font size=-1>EE</font> <font size=+1>A</font><font size=-1>LSO</font></b><dd>
-<a href=simulated_get_function>get_function</a>, <a href=#function_name>function_name</a>, <a href=#function_object>function_object</a> and <a href=#backtrace>backtrace</a>
 <p>
 </dl>
 </a>
@@ -11947,13 +12332,9 @@ returned. Otherwize zero_type will return zero.
   <li>garbage collection
   <li>int ... ars
   <li>data storage (local vs. global variables)
-  <li>exception handling (catch, throw)
   <li>trace
   <li>pike command line
   <li>hilfe
-  <li>{encode,decode}_value
-  <li>replace_master
-  <li>mktime
   <li>socket->query_address()
   <li> scope for class {}
   <li>optimzation
@@ -11979,6 +12360,7 @@ I will assume that the reader knows C or C++.
 <dd> 
   <dl>
   <dt> callback
+  </dl>
 
 <dt> compiler
 <dt> backend
@@ -11986,6 +12368,7 @@ I will assume that the reader knows C or C++.
 <dt> constants
 <dt> docode
 <dt> 
+</dl>
 
 <ul>
   <li>Overview of the pike source
@@ -11999,6 +12382,9 @@ I will assume that the reader knows C or C++.
 <H1> Appendixes </H1>
 <h2> Appendix A: Terms and jargon</h2>
 <dl>
+  <dt> HTTP <dd> HyperText Transfer Protocol, the protocol used by WWW to transfer HTML from the server to the client. Based on TCP.
+  <dt> WWW <dd> World Wide Web, popularly known as 'the internet' :)
+  <dt> TCP <dd> Transmission Control Protocol, the internet standard for computer communication
   <dt> ASCII <dd> <!-- FIXME -->
   <dt> UNIX <dd> A group of operating systems. Some noteworthy unixes are: Solaris, Linux, HP-UX, Digital Unix, SunOs, BSD and Unixware.
   <dt> clone <dd> To create an object from a program. Or to use C++ jargon: to instanciate a class.
@@ -12316,11 +12702,11 @@ been tested on the following:
 
 After obtaining the Pike source you need to unpack it. To unpack Pike you
 need gzip, which is available from any GNU mirror site. You also need tar,
-which is a part of UNIX. If you got Pike-v0.3.tar.gz, simply unpack it by
+which is a part of UNIX. If you got Pike-v0.4.tar.gz, simply unpack it by
 typing:
 <pre>
-	$ gunzip -d Pike-v0.3.tar.gz
-	$ tar xvf Pike-v0.3.tar
+	$ gunzip -d Pike-v0.4.tar.gz
+	$ tar xvf Pike-v0.4.tar
 </pre>
 
 Now you have a directory called Pike-v0.3. Please read the README file
@@ -12329,7 +12715,7 @@ available at the time this book was written.
 <p>
 Now, to compile Pike, the following three commands should be enough.
 <pre>
-	$ cd Pike-v0.3/src
+	$ cd Pike-v0.4/src
 	$ ./configure --prefix=/dir/to/install/pike
 	$ make
 </pre>
