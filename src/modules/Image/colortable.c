@@ -1,11 +1,11 @@
 #include <config.h>
 
-/* $Id: colortable.c,v 1.21 1997/11/05 03:41:33 mirar Exp $ */
+/* $Id: colortable.c,v 1.22 1997/11/07 06:06:05 mirar Exp $ */
 
 /*
 **! module Image
 **! note
-**!	$Id: colortable.c,v 1.21 1997/11/05 03:41:33 mirar Exp $
+**!	$Id: colortable.c,v 1.22 1997/11/07 06:06:05 mirar Exp $
 **! class colortable
 **!
 **!	This object keeps colortable information,
@@ -21,7 +21,7 @@
 #undef COLORTABLE_REDUCE_DEBUG
 
 #include "global.h"
-RCSID("$Id: colortable.c,v 1.21 1997/11/05 03:41:33 mirar Exp $");
+RCSID("$Id: colortable.c,v 1.22 1997/11/07 06:06:05 mirar Exp $");
 
 #include <sys/types.h>
 #include <sys/stat.h>
@@ -125,26 +125,31 @@ static void free_colortable_struct(struct neo_colortable *nct)
    }
 }
 
-static void init_colortable_struct(struct object *o)
+static void colortable_init_stuff(struct neo_colortable *nct)
 {
    int i;
-   THIS->type=NCT_NONE;
-   THIS->lookup_mode=NCT_CUBICLES;
-   THIS->lu.cubicles.cubicles=NULL;
+   nct->type=NCT_NONE;
+   nct->lookup_mode=NCT_CUBICLES;
+   nct->lu.cubicles.cubicles=NULL;
 
-   THIS->spacefactor.r=SPACEFACTOR_R;
-   THIS->spacefactor.g=SPACEFACTOR_G;
-   THIS->spacefactor.b=SPACEFACTOR_B;
+   nct->spacefactor.r=SPACEFACTOR_R;
+   nct->spacefactor.g=SPACEFACTOR_G;
+   nct->spacefactor.b=SPACEFACTOR_B;
    
-   THIS->lu.cubicles.r=CUBICLE_DEFAULT_R;
-   THIS->lu.cubicles.g=CUBICLE_DEFAULT_G;
-   THIS->lu.cubicles.b=CUBICLE_DEFAULT_B;
-   THIS->lu.cubicles.accur=CUBICLE_DEFAULT_ACCUR;
+   nct->lu.cubicles.r=CUBICLE_DEFAULT_R;
+   nct->lu.cubicles.g=CUBICLE_DEFAULT_G;
+   nct->lu.cubicles.b=CUBICLE_DEFAULT_B;
+   nct->lu.cubicles.accur=CUBICLE_DEFAULT_ACCUR;
 
    for (i=0; i<COLORLOOKUPCACHEHASHSIZE; i++)
-      THIS->lookupcachehash[i].index=-1;
+      nct->lookupcachehash[i].index=-1;
 
-   THIS->dither_type=NCTD_NONE;
+   nct->dither_type=NCTD_NONE;
+}
+
+static void init_colortable_struct(struct object *obj)
+{
+   colortable_init_stuff(THIS);
 }
 
 static void exit_colortable_struct(struct object *obj)
@@ -1130,8 +1135,8 @@ static void _img_add_colortable(struct neo_colortable *rdest,
    struct neo_colortable *dest=rdest;
    int no;
 
-   tmp1.type=NCT_NONE;
-   tmp2.type=NCT_NONE; /* easy free... */
+   colortable_init_stuff(&tmp1);
+   colortable_init_stuff(&tmp2);
 
    if (dest->type==NCT_NONE)
    {
@@ -1312,8 +1317,8 @@ static void _img_sub_colortable(struct neo_colortable *rdest,
    struct neo_colortable *dest=rdest;
    int no;
 
-   tmp1.type=NCT_NONE;
-   tmp2.type=NCT_NONE; /* easy free... */
+   colortable_init_stuff(&tmp1);
+   colortable_init_stuff(&tmp2);
 
    if (dest->type==NCT_NONE)
    {
@@ -1858,7 +1863,7 @@ void image_colortable_free_dither(struct nct_dither *dith)
 **!	Example:
 **!	<pre>
 **!	ct=colortable(my_image,256); // the best 256 colors
-**!	ct=colortable(my_image,255,({0,0,0})); // black and the best other 255
+**!	ct=colortable(my_image,256,({0,0,0})); // black and the best other 255
 **!
 **!	ct=colortable(({({0,0,0}),({255,255,255})})); // black and white
 **!
@@ -1979,9 +1984,7 @@ static void image_colortable_add(INT32 args)
 	 if (args>=2)
 	    if (sp[1-args].type==T_INT)
 	    {
-	       THIS->u.flat=_img_get_flat_from_image(img,
-						     sp[1-args].u.integer);
-	       THIS->type=NCT_FLAT;
+	       int numcolors=sp[1-args].u.integer;
 	       if (args>2)
 	       {
 		  struct object *o;
@@ -2004,19 +2007,28 @@ static void image_colortable_add(INT32 args)
 			nct->u.flat.entries[i].weight=WEIGHT_NEEDED;
 		  }
 
+		  numcolors-=image_colortable_size(nct);
+		  if (numcolors<0) numcolors=1;
+
+		  THIS->u.flat=_img_get_flat_from_image(img,2500+numcolors);
+		  THIS->type=NCT_FLAT;
+
 		  push_object(o);
 		  image_colortable_add(1);
 		  pop_n_elems(1);
 		  /* we will keep flat... */
 		  args=2;
-	       }
 
-	       if (sp[1-args].u.integer>0 && 
-		   THIS->u.flat.numentries>sp[1-args].u.integer)
 		  THIS->u.flat=
 		     _img_reduce_number_of_colors(THIS->u.flat,
-						  sp[1-args].u.integer,
+						  numcolors,
 						  THIS->spacefactor);
+	       }
+	       else
+	       {
+		  THIS->u.flat=_img_get_flat_from_image(img,numcolors);
+		  THIS->type=NCT_FLAT;
+	       }
 	    }
 	    else 
 	       error("Illegal argument 2 to Image.colortable->add|create\n");

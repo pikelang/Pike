@@ -1,7 +1,7 @@
 /*
 **! module Image
 **! note
-**!	$Id: colortable.h,v 1.6 1997/11/03 01:40:35 mirar Exp $
+**!	$Id: colortable.h,v 1.7 1997/11/07 06:06:07 mirar Exp $
 */
 
 #define COLORLOOKUPCACHEHASHSIZE 207
@@ -187,3 +187,9 @@ int image_colortable_index_8bit_image(struct neo_colortable *nct,
 				      int rowlen);
 
 void image_colortable_internal_floyd_steinberg(struct neo_colortable *nct);
+
+int image_colortable_map_image(struct neo_colortable *nct,
+			       rgb_group *s,
+			       rgb_group *d,
+			       int len,
+			       int rowlen);

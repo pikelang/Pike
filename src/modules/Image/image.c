@@ -1,9 +1,9 @@
-/* $Id: image.c,v 1.51 1997/11/05 03:41:35 mirar Exp $ */
+/* $Id: image.c,v 1.52 1997/11/07 06:06:10 mirar Exp $ */
 
 /*
 **! module Image
 **! note
-**!	$Id: image.c,v 1.51 1997/11/05 03:41:35 mirar Exp $
+**!	$Id: image.c,v 1.52 1997/11/07 06:06:10 mirar Exp $
 **! class image
 **!
 **!	The main object of the <ref>Image</ref> module, this object
@@ -66,27 +66,9 @@
 **!	<ref>rgb_to_hsv</ref>,
 **!	<ref>hsv_to_rgb</ref>
 **!
-**!	converting to other datatypes: <ref>cast</ref>,
-**!	<ref>fromgif</ref>, 
-**!	<ref>frompnm</ref>/<ref>fromppm</ref>, 
-**!	<ref>gif_add</ref>,
-**!	<ref>gif_add_fs</ref>,
-**!	<ref>gif_add_fs_nomap</ref>,
-**!	<ref>gif_add_nomap</ref>,
-**!	<ref>gif_begin</ref>,
-**!	<ref>gif_end</ref>,
-**!	<ref>gif_netscape_loop</ref>,
-**!	<ref>gif_transparency</ref>,
-**!	<ref>to8bit</ref>,
-**!	<ref>to8bit_closest</ref>, 
-**!	<ref>to8bit_fs</ref>,
-**!	<ref>to8bit_rgbcube</ref>, 
-**!	<ref>to8bit_rgbcube_rdither</ref>,
-**!	<ref>tobitmap</ref>, 
-**!	<ref>togif</ref>,
-**!	<ref>togif_fs</ref>, 
-**!	<ref>toppm</ref>,
-**!	<ref>tozbgr</ref>
+**!	converting to other datatypes: 
+**!	<ref>Image.GIF</ref>,
+**!	<ref>Image.PNG</ref>
 **!
 **!	special pattern drawing:
 **!	<ref>noise</ref>,
@@ -102,7 +84,7 @@
 
 #include "stralloc.h"
 #include "global.h"
-RCSID("$Id: image.c,v 1.51 1997/11/05 03:41:35 mirar Exp $");
+RCSID("$Id: image.c,v 1.52 1997/11/07 06:06:10 mirar Exp $");
 #include "pike_macros.h"
 #include "object.h"
 #include "constants.h"
@@ -117,7 +99,7 @@ RCSID("$Id: image.c,v 1.51 1997/11/05 03:41:35 mirar Exp $");
 #include "builtin_functions.h"
 
 struct program *image_program;
-extern struct program *colortable_program;
+extern struct program *image_colortable_program;
 
 #define THIS ((struct image *)(fp->current_storage))
 #define THISOBJ (fp->current_object)
@@ -2346,7 +2328,7 @@ CHRONO("apply_matrix, end");
 
 void image_modify_by_intensity(INT32 args)
 {
-   INT32 x,y,i;
+   INT32 x,y;
    rgbl_group rgb;
    rgb_group *list;
    rgb_group *s,*d;
@@ -2441,236 +2423,44 @@ void image_modify_by_intensity(INT32 args)
 
 /*
 **! method object map_closest(array(array(int)) colors)
-**!    Maps all pixel colors to the colors given.
-**!
-**!    Method to find the correct color is linear search
-**!    over the colors given, selecting the nearest in the
-**!    color cube. Slow...
-**!
-**!	<table><tr valign=center>
-**!	<td><illustration> return lena(); </illustration></td>
-**!	<td><illustration> return lena()->map_closest(({({255,0,0}),({255,255,255}),({0,0,0})})); </illustration></td>
-**!	</tr><tr valign=center>
-**!	<td>original</td>
-**!	<td>->map_closest(({({255,0,0}),({255,255,255}),({0,0,0})}));</td>
-**!	</tr></table>
-**!
-**! returns the new image object
-**!
-**! arg array(array(int)) color
-**!     list of destination (available) colors
-**!
-**! note
-**!     this function may change slightly when <ref>Image.image->colortable</ref> 
-**!	is implemented (pike 0.6, probably)
-**!
-**! see also: map_fast, select_colors, map_fs
-*/
-
-
-static void image_map_closest(INT32 args)
-{
-   struct colortable *ct;
-   long i;
-   rgb_group *d,*s;
-   struct object *o;
-
-   if (!THIS->img) error("no image\n");
-   if (args<1
-       || sp[-args].type!=T_ARRAY)
-      error("illegal argument to Image.image->map_closest()\n");
-
-   push_int(THIS->xsize);
-   push_int(THIS->ysize);
-   o=clone_object(image_program,2);
-      
-   ct=colortable_from_array(sp[-args].u.array,"Image.image->map_closest()\n");
-   pop_n_elems(args);
-
-   i=THIS->xsize*THIS->ysize;
-   s=THIS->img;
-   d=((struct image*)(o->storage))->img;
-   THREADS_ALLOW();
-   while (i--)
-   {
-      *d=ct->clut[colortable_rgb_nearest(ct,*s)];
-      d++; s++;
-   }
-   THREADS_DISALLOW();
-
-   colortable_free(ct);
-   push_object(o);
-}
-
-/*
 **! method object map_fast(array(array(int)) colors)
-**!    Maps all pixel colors to the colors given.
-**!
-**!    Method to find the correct color is to branch
-**!    in a binary space partitioning tree in the 
-**!    colorcube. This is fast, but in some cases
-**!    it gives the wrong color (mostly when few colors
-**!    are available).
-**!
-**! returns the new image object
-**!
-**! arg array(array(int)) color
-**!    list of destination (available) colors
-**!
-**! note
-**!     this function may change slightly when <ref>Image.image->colortable</ref> 
-**!	is implemented (pike 0.6, probably)
-**!
-**! see also: map_fast, select_colors
-*/
-
-static void image_map_fast(INT32 args)
-{
-   struct colortable *ct;
-   long i;
-   rgb_group *d,*s;
-   struct object *o;
-
-   if (!THIS->img) error("no image\n");
-   if (args<1
-       || sp[-args].type!=T_ARRAY)
-      error("illegal argument to Image.image->map_closest()\n");
-
-   push_int(THIS->xsize);
-   push_int(THIS->ysize);
-   o=clone_object(image_program,2);
-      
-   ct=colortable_from_array(sp[-args].u.array,"Image.image->map_closest()\n");
-   pop_n_elems(args);
-
-   i=THIS->xsize*THIS->ysize;
-   s=THIS->img;
-   d=((struct image*)(o->storage))->img;
-   THREADS_ALLOW();
-   while (i--)
-   {
-      *d=ct->clut[colortable_rgb(ct,*s)];
-      d++; s++;
-   }
-   THREADS_DISALLOW();
-
-   colortable_free(ct);
-   push_object(o);
-}
-
-/*
 **! method object map_fs(array(array(int)) colors)
-**!    Maps all pixel colors to the colors given.
-**!
-**!    Method to find the correct color is linear search
-**!    over the colors given, selecting the nearest in the
-**!    color cube. Slow...
-**!
-**!    Floyd-steinberg error correction is added to create
-**!    a better-looking image, in many cases, anyway.
-**!
-**!	<table><tr valign=center>
-**!	<td><illustration> return lena(); </illustration></td>
-**!	<td><illustration> return lena()->map_fs(({({255,0,0}),({255,255,255}),({0,0,0})})); </illustration></td>
-**!	</tr><tr valign=center>
-**!	<td>original</td>
-**!	<td>->map_fs(({({255,0,0}),({255,255,255}),({0,0,0})}));</td>
-**!	</tr></table>
-**!
-**! returns the new image object
-**!
-**! arg array(array(int)) color
-**!    list of destination (available) colors
-**!
-**! note
-**!     this function may change slightly when <ref>Image.image->colortable</ref> 
-**!	is implemented (pike 0.6, probably)
-**!
-**! see also: map_fast, select_colors, map_closest
+**! method array select_colors(int num)
+**!	Compatibility functions. Do not use!
 */
 
-static void image_map_fs(INT32 args)
+void image_map_compat(INT32 args) /* compat function */
 {
-   struct colortable *ct;
-   INT32 i,j,xs;
-   rgb_group *d,*s;
-   struct object *o;
-   int *res,w;
-   rgbl_group *errb;
+  struct neo_colortable *nct;
+  struct object *o,*co;
+  struct pike_string *res = begin_shared_string((THIS->xsize*THIS->ysize));
+  rgb_group *d;
 
-   if (!THIS->img) error("no image\n");
-   if (args<1
-       || sp[-args].type!=T_ARRAY)
-      error("illegal argument to Image.image->map_fs()\n");
+  if(!res) error("Out of memory\n");
 
-   push_int(THIS->xsize);
-   push_int(THIS->ysize);
-   o=clone_object(image_program,2);
+  co=clone_object(image_colortable_program,args);
+  nct=(struct neo_colortable*)get_storage(co,image_colortable_program);
+
+  push_int(THIS->xsize);
+  push_int(THIS->ysize);
+  o=clone_object(image_program,2);
       
-   res=(int*)xalloc(sizeof(int)*THIS->xsize);
-   errb=(rgbl_group*)xalloc(sizeof(rgbl_group)*THIS->xsize);
-      
-   ct=colortable_from_array(sp[-args].u.array,"Image.image->map_closest()\n");
-   pop_n_elems(args);
+  d=((struct image*)(o->storage))->img;
 
-   for (i=0; i<THIS->xsize; i++)
-      errb[i].r=(rand()%(FS_SCALE*2+1))-FS_SCALE,
-      errb[i].g=(rand()%(FS_SCALE*2+1))-FS_SCALE,
-      errb[i].b=(rand()%(FS_SCALE*2+1))-FS_SCALE;
+  THREADS_ALLOW();
 
-   i=THIS->ysize;
-   s=THIS->img;
-   d=((struct image*)(o->storage))->img;
-   w=0;
-   xs=THIS->xsize;
-   THREADS_ALLOW();
-   while (i--)
-   {
-      image_floyd_steinberg(s,xs,errb,w=!w,res,ct,1);
-      for (j=0; j<xs; j++)
-	 *(d++)=ct->clut[res[j]];
-      s+=xs;
-   }
-   THREADS_DISALLOW();
+  image_colortable_map_image(nct,THIS->img,d,
+			     THIS->xsize*THIS->ysize,THIS->xsize);
 
-   free(errb);
-   free(res);
-   colortable_free(ct);
-   push_object(o);
+  THREADS_DISALLOW();
+
+  free_object(o);
+  push_object(co);
 }
-
-/*
-**! method array(array(int)) select_colors(int num_colors)
-**!    	Selects the best colors to represent the image.
-**!
-**! returns an array of colors
-**!
-**!	<table><tr valign=center>
-**!	<td><illustration> return lena(); </illustration></td>
-**!	<td><illustration> return lena()->map_closest(lena()->select_colors(2)); </illustration></td>
-**!	<td><illustration> return lena()->map_closest(lena()->select_colors(8)); </illustration></td>
-**!	<td><illustration> return lena()->map_closest(lena()->select_colors(32)); </illustration></td>
-**!	</tr><tr valign=center>
-**!	<td>original</td>
-**!	<td>2</td>
-**!	<td>8</td>
-**!	<td>32</td>
-**!	</tr></table>
-**!
-**! arg int num_colors
-**!	number of colors to return
-**!
-**! note
-**!     this function may change somewhat when <ref>Image.image->colortable</ref>
-**!	is implemented (pike 0.6, probably)
-**!
-**! see also: map_fast, select_colors
-*/
 
 void image_select_colors(INT32 args)
 {
-   struct colortable *ct;
-   int colors,i;
+   int colors;
 
    if (args<1
       || sp[-args].type!=T_INT)
@@ -2678,18 +2468,11 @@ void image_select_colors(INT32 args)
 
    colors=sp[-args].u.integer;
    pop_n_elems(args);
-   if (!THIS->img) { error("no image\n");  return; }
 
-   ct=colortable_quant(THIS,colors);
-   for (i=0; i<colors; i++)
-   {
-      push_int(ct->clut[i].r);
-      push_int(ct->clut[i].g);
-      push_int(ct->clut[i].b);
-      f_aggregate(3);
-   }
-   f_aggregate(colors);
-   colortable_free(ct);
+   push_object(THISOBJ); THISOBJ->refs++;
+   push_int(colors);
+
+   push_object(clone_object(image_colortable_program,2));
 }
 
 /*
@@ -2891,8 +2674,6 @@ void pike_module_init(void)
 		"function(string:object|string)",0);
    add_function("fromppm",image_frompnm,
 		"function(string:object|string)",0);
-   add_function("fromgif",image_fromgif,
-		"function(string:object)",0);
    add_function("togif",image_togif,
 		"function(:string)",0);
    add_function("togif_fs",image_togif_fs,
@@ -2915,9 +2696,9 @@ void pike_module_init(void)
    add_function("cast",image_cast, "function(string:string)",0);
    add_function("to8bit",image_to8bit,
 		"function(array(array(int)):string)",0);
-   add_function("to8bit_closest",image_to8bit_closest,
+   add_function("to8bit_closest",image_to8bit,
 		"function(array(array(int)):string)",0);
-   add_function("to8bit_fs",image_to8bit_fs,
+   add_function("to8bit_fs",image_to8bit,
 		"function(:string)",0);
    add_function("torgb",image_torgb,
 		"function(:string)",0);
@@ -3024,11 +2805,11 @@ void pike_module_init(void)
    add_function("ysize",image_ysize,
 		"function(:int)",0);
 
-   add_function("map_closest",image_map_closest,
+   add_function("map_closest",image_map_compat,
                 "function(array(array(int)):object)",0);
-   add_function("map_fast",image_map_fast,
+   add_function("map_fast",image_map_compat,
                 "function(array(array(int)):object)",0);
-   add_function("map_fs",image_map_fs,
+   add_function("map_fs",image_map_compat,
                 "function(array(array(int)):object)",0);
    add_function("select_colors",image_select_colors,
                 "function(int:array(array(int)))",0);

@@ -13,9 +13,9 @@ This object keeps colortable information,
 
 <h4>SEE ALSO</h4>
 <blockquote>     <tt><a href=Image.html>Image</a></tt>,
-     <tt><a href=Image.html>Image.image</a></tt>,
-     <tt><a href=Image.html>Image.font</a></tt>,
-     <tt><a href=Image.html>Image.GIF</a></tt>
+     <tt><a href=Image.image.html>Image.image</a></tt>,
+     <tt><a href=Image.font.html>Image.font</a></tt>,
+     <tt><a href=Image.GIF.html>Image.GIF</a></tt>
 </blockquote>
 
 <hr>
@@ -52,7 +52,7 @@ Map colors in an image object to the colors in
      <td><a href=illustrations.html#illustration_7.gif><img border=0 src=illustration_7.gif width=67 height=67></a></td>
      <td><a href=illustrations.html#illustration_8.gif><img border=0 src=illustration_8.gif width=67 height=67></a></td>
      <td><a href=illustrations.html#illustration_9.gif><img border=0 src=illustration_9.gif width=67 height=67></a></td>
-     <td><tt><a href=Image.html>floyd_steinberg</a></tt> dither</td>
+     <td><tt><a href=Image.colortable.html#floyd_steinberg>floyd_steinberg</a></tt> dither</td>
      </tr><tr valign=center>
      <td></td>
      <td><a href=illustrations.html#illustration_10.gif><img border=0 src=illustration_10.gif width=67 height=67></a></td>
@@ -60,7 +60,7 @@ Map colors in an image object to the colors in
      <td><a href=illustrations.html#illustration_12.gif><img border=0 src=illustration_12.gif width=67 height=67></a></td>
      <td><a href=illustrations.html#illustration_13.gif><img border=0 src=illustration_13.gif width=67 height=67></a></td>
      <td><a href=illustrations.html#illustration_14.gif><img border=0 src=illustration_14.gif width=67 height=67></a></td>
-     <td><tt><a href=Image.html>ordered</a></tt> dither</td>
+     <td><tt><a href=Image.colortable.html#ordered>ordered</a></tt> dither</td>
      </tr><tr valign=center>
      <td><img src=lena.gif width=67 height=67></td>
      <td><a href=illustrations.html#illustration_16.gif><img border=0 src=illustration_16.gif width=67 height=67></a></td>
@@ -68,7 +68,7 @@ Map colors in an image object to the colors in
      <td><a href=illustrations.html#illustration_18.gif><img border=0 src=illustration_18.gif width=67 height=67></a></td>
      <td><a href=illustrations.html#illustration_19.gif><img border=0 src=illustration_19.gif width=67 height=67></a></td>
      <td><a href=illustrations.html#illustration_20.gif><img border=0 src=illustration_20.gif width=67 height=67></a></td>
-     <td><tt><a href=Image.html>randomcube</a></tt> dither</td>
+     <td><tt><a href=Image.colortable.html#randomcube>randomcube</a></tt> dither</td>
      </tr><tr valign=center>
      <td>original</td>
      <td>2</td>
@@ -88,7 +88,7 @@ a new image object
 
 <h4>NOTE</h4>
 <blockquote>
-Flat (not cube) colortable and not '<tt><a href=Image.html>full</a></tt>' method: 
+Flat (not cube) colortable and not '<tt><a href=Image.colortable.html#full>full</a></tt>' method: 
      this method does figure out the data needed for
      the lookup method, which may take time the first
      use of the colortable - the second use is quicker.
@@ -96,8 +96,8 @@ Flat (not cube) colortable and not '<tt><a href=Image.html>full</a></tt>' method
 
 
 <h4>SEE ALSO</h4>
-<blockquote>     <tt><a href=Image.html>cubicles</a></tt>,
-     <tt><a href=Image.html>full</a></tt>
+<blockquote>     <tt><a href=Image.colortable.html#cubicles>cubicles</a></tt>,
+     <tt><a href=Image.colortable.html#full>full</a></tt>
 </blockquote>
 
 <hr>
@@ -116,7 +116,7 @@ sums colortables
 <h4>ARGUMENTS</h4>
 <blockquote><dl>
 <dt><tt>object(<ref>colortable</ref>) with</tt>
-  <dd><tt><a href=Image.html>colortable</a></tt> object with colors to add
+  <dd><tt><a href=Image.colortable.html#colortable>colortable</a></tt> object with colors to add
 </dl></blockquote>
 <h4>RETURNS</h4>
 
@@ -141,7 +141,7 @@ subtracts colortables
 <h4>ARGUMENTS</h4>
 <blockquote><dl>
 <dt><tt>object(<ref>colortable</ref>) with</tt>
-  <dd><tt><a href=Image.html>colortable</a></tt> object with colors to subtract
+  <dd><tt><a href=Image.colortable.html#colortable>colortable</a></tt> object with colors to subtract
 </dl></blockquote>
 <h4>RETURNS</h4>
 
@@ -172,11 +172,11 @@ object <b>add</b>(int&nbsp;r, int&nbsp;g, int&nbsp;b, &nbsp;array(int)&nbsp;from
 
 
 <blockquote>
-<tt><a href=Image.html>create</a></tt> initiates a colortable object. 
+<tt><a href=Image.colortable.html#create>create</a></tt> initiates a colortable object. 
      Default is that no colors are in the colortable. 
 
-<p>     <tt><a href=Image.html>create</a></tt> can also take the same arguments
-     as <tt><a href=Image.html>add</a></tt>, thus adding colors to the colortable.
+<p>     <tt><a href=Image.colortable.html#add>add</a></tt> takes the same argument as
+     <tt><a href=Image.colortable.html#create>create</a></tt>, thus adding colors to the colortable.
 
 <p>     The colortable is mostly a list of colors,
      or more advanced, colors and weight.
@@ -320,7 +320,7 @@ Set the colortable to use the cubicles algorithm to lookup
      1000×1000   cubicles(12,12,12) (factor 2 faster than default)
      </pre>  
 
-<p>     In some cases, the <tt><a href=Image.html>full</a></tt> method is faster.
+<p>     In some cases, the <tt><a href=Image.colortable.html#full>full</a></tt> method is faster.
 
 <p>     <table><tr valign=center>
      <td><img src=lena.gif width=67 height=67></td>
@@ -450,8 +450,8 @@ Not applicable to colorcube types of colortable.
 
 
 <h4>SEE ALSO</h4>
-<blockquote>     <tt><a href=Image.html>cubicles</a></tt>,
-     <tt><a href=Image.html>map</a></tt>
+<blockquote>     <tt><a href=Image.colortable.html#cubicles>cubicles</a></tt>,
+     <tt><a href=Image.colortable.html#map>map</a></tt>
 </blockquote>
 
 <hr>
@@ -543,10 +543,10 @@ the called object
 
 
 <h4>SEE ALSO</h4>
-<blockquote>     <tt><a href=Image.html>randomcube</a></tt>,
-     <tt><a href=Image.html>nodither</a></tt>,
-     <tt><a href=Image.html>floyd_steinberg</a></tt>,
-     <tt><a href=Image.html>create</a></tt>
+<blockquote>     <tt><a href=Image.colortable.html#randomcube>randomcube</a></tt>,
+     <tt><a href=Image.colortable.html#nodither>nodither</a></tt>,
+     <tt><a href=Image.colortable.html#floyd_steinberg>floyd_steinberg</a></tt>,
+     <tt><a href=Image.colortable.html#create>create</a></tt>
 </blockquote>
 
 <hr>
@@ -606,17 +606,17 @@ the called object
 
 <h4>NOTE</h4>
 <blockquote>
-<tt><a href=Image.html>randomgrey</a></tt> method needs colorcube size to be the same on
+<tt><a href=Image.colortable.html#randomgrey>randomgrey</a></tt> method needs colorcube size to be the same on
      red, green and blue sides to work properly. It uses the
      red colorcube value as default.
 </blockquote>
 
 
 <h4>SEE ALSO</h4>
-<blockquote>     <tt><a href=Image.html>ordered</a></tt>,
-     <tt><a href=Image.html>nodither</a></tt>,
-     <tt><a href=Image.html>floyd_steinberg</a></tt>,
-     <tt><a href=Image.html>create</a></tt>
+<blockquote>     <tt><a href=Image.colortable.html#ordered>ordered</a></tt>,
+     <tt><a href=Image.colortable.html#nodither>nodither</a></tt>,
+     <tt><a href=Image.colortable.html#floyd_steinberg>floyd_steinberg</a></tt>,
+     <tt><a href=Image.colortable.html#create>create</a></tt>
 </blockquote>
 
 <hr>
@@ -632,7 +632,7 @@ the called object
 <blockquote>
 reduces the number of colors
 
-<p>     All needed (see <tt><a href=Image.html>create</a></tt>) colors are kept.
+<p>     All needed (see <tt><a href=Image.colortable.html#create>create</a></tt>) colors are kept.
 </blockquote>
 <h4>ARGUMENTS</h4>
 <blockquote><dl>
@@ -661,8 +661,8 @@ Colortable tuning option, this sets the color space
      distance factors. This is used when comparing distances
      in the colorspace and comparing grey levels.
 
-<p>     Default factors are 2, 3 and 1; blue is much 
-     darker than green. Compare with <tt><a href=Image.html>Image.image::grey</a></tt>().
+<p>     Default factors are 3, 4 and 1; blue is much 
+     darker than green. Compare with <tt><a href=Image.image::grey.html>Image.image::grey</a></tt>().
 </blockquote>
 <h4>RETURNS</h4>
 

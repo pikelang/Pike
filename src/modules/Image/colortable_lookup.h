@@ -1,10 +1,10 @@
-/* $Id: colortable_lookup.h,v 1.3 1997/11/03 01:40:36 mirar Exp $ */
+/* $Id: colortable_lookup.h,v 1.4 1997/11/07 06:06:08 mirar Exp $ */
 /* included w/ defines in colortable.c */
 
 /*
 **! module Image
 **! note
-**!	$Id: colortable_lookup.h,v 1.3 1997/11/03 01:40:36 mirar Exp $
+**!	$Id: colortable_lookup.h,v 1.4 1997/11/07 06:06:08 mirar Exp $
 **! class colortable
 */
 
@@ -408,7 +408,7 @@ static void NCTLU_CUBE_NAME(rgb_group *s,
 		     lc->dest.r=(unsigned char)drgbr;
 		     lc->dest.g=(unsigned char)drgbg;
 		     lc->dest.b=(unsigned char)drgbb;
-		     lc->index=i;
+		     lc->index=sc->no[i];
 		     mindist=ldist;
 		     NCTLU_CACHE_HIT_WRITE;
 		  }

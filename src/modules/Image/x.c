@@ -1,4 +1,4 @@
-/* $Id: x.c,v 1.12 1997/10/21 13:36:07 mirar Exp $ */
+/* $Id: x.c,v 1.13 1997/11/07 06:06:18 mirar Exp $ */
 
 /*
 **! module Image
@@ -12,7 +12,7 @@
 
 #include "stralloc.h"
 #include "global.h"
-RCSID("$Id: x.c,v 1.12 1997/10/21 13:36:07 mirar Exp $");
+RCSID("$Id: x.c,v 1.13 1997/11/07 06:06:18 mirar Exp $");
 #include "pike_macros.h"
 #include "object.h"
 #include "constants.h"
@@ -25,6 +25,8 @@ RCSID("$Id: x.c,v 1.12 1997/10/21 13:36:07 mirar Exp $");
 
 #include "image.h"
 #include "builtin_functions.h"
+
+extern struct program *image_colortable_program;
 
 #define THIS ((struct image *)(fp->current_storage))
 #define THISOBJ (fp->current_object)
@@ -46,21 +48,10 @@ void image_cast(INT32 args)
 					*sizeof(rgb_group)));
 }
 
-/*
-**! method string to8bit(array(array(int)) colors)
-**! method string to8bit_fs(array(array(int)) colors)
-**! method string to8bit_closest(array(array(int)) colors)
-**!     Maps the image to the given colors and returns 
-**!	the 8 bit data.
-**!
-**!	to8bit_fs uses floyd-steinberg dithering
-**! returns the calculated string
-**! see also: to8bit_rgbcube, tozbgr, map_fast, map_closest, select_colors, tobitmap
-*/
-
-void image_to8bit_closest(INT32 args)
+void image_to8bit(INT32 args) /* compat function */
 {
-  struct colortable *ct;
+  struct neo_colortable *nct;
+  struct object *o;
   struct pike_string *res = begin_shared_string((THIS->xsize*THIS->ysize));
   unsigned long i;
   rgb_group *s;
@@ -68,120 +59,25 @@ void image_to8bit_closest(INT32 args)
 
   if(!res) error("Out of memory\n");
 
-  if (args!=1)
-     error("Illegal number of arguments to image->to8bit(COLORTABLE);\n");
-  if(sp[-args].type != T_ARRAY)
-     error("Wrong type to image->to8bit(COLORTABLE);\n");
-
-  ct=colortable_from_array(sp[-args].u.array,"image->to8bit()\n");
+  o=clone_object(image_colortable_program,args);
+  nct=get_storage(o,image_colortable_program);
 
   i=THIS->xsize*THIS->ysize;
   s=THIS->img;
   d=(unsigned char *)res->str;
 
   THREADS_ALLOW();
-  while (i--)
-  {
-    *d=ct->index[colortable_rgb_nearest(ct,*s)];
-    d++; s++;
-  }
+
+  image_colortable_index_8bit_image(nct,THIS->img,
+				    THIS->xsize*THIS->ysize,THIS->xsize);
+
   THREADS_DISALLOW();
 
-  colortable_free(ct);
+  free_object(o);
 
   pop_n_elems(args);
   push_string(end_shared_string(res));
 }
-
-void image_to8bit(INT32 args)
-{
-  struct colortable *ct;
-  struct pike_string *res = begin_shared_string((THIS->xsize*THIS->ysize));
-  unsigned long i;
-  rgb_group *s;
-  unsigned char *d;
-
-  if(!res) error("Out of memory\n");
-
-  if (args!=1)
-     error("Illegal number of arguments to image->to8bit(COLORTABLE);\n");
-  if(sp[-args].type != T_ARRAY)
-     error("Wrong type to image->to8bit(COLORTABLE);\n");
-
-  ct=colortable_from_array(sp[-args].u.array,"image->to8bit()\n");
-
-  i=THIS->xsize*THIS->ysize;
-  s=THIS->img;
-  d=(unsigned char *)res->str;
-
-  THREADS_ALLOW();
-  while (i--)
-  {
-    *d=ct->index[colortable_rgb(ct,*s)];
-    d++; s++;
-  }
-  THREADS_DISALLOW();
-
-  colortable_free(ct);
-
-  pop_n_elems(args);
-  push_string(end_shared_string(res));
-}
-
-void image_to8bit_fs(INT32 args)
-{
-   struct colortable *ct;
-   INT32 i,j,xs;
-   rgb_group *s;
-   int *res,w;
-   unsigned char *d;
-   rgbl_group *errb;
-   struct pike_string *sres = begin_shared_string((THIS->xsize*THIS->ysize));
-   
-   if (!THIS->img) error("no image\n");
-   if (args<1
-       || sp[-args].type!=T_ARRAY)
-      error("illegal argument to image->map_fs()\n");
-
-
-   res=(int*)xalloc(sizeof(int)*THIS->xsize);
-   errb=(rgbl_group*)xalloc(sizeof(rgbl_group)*THIS->xsize);
-      
-   ct=colortable_from_array(sp[-args].u.array,"image->map_closest()\n");
-   pop_n_elems(args);
-
-   for (i=0; i<THIS->xsize; i++)
-      errb[i].r=(rand()%(FS_SCALE*2+1))-FS_SCALE,
-      errb[i].g=(rand()%(FS_SCALE*2+1))-FS_SCALE,
-      errb[i].b=(rand()%(FS_SCALE*2+1))-FS_SCALE;
-
-   i=THIS->ysize;
-   s=THIS->img;
-   d=(unsigned char *)sres->str;
-   w=0;
-   xs=THIS->xsize;
-   THREADS_ALLOW();
-   while (i--)
-   {
-      image_floyd_steinberg(s,xs,errb,w=!w,res,ct,1);
-      for (j=0; j<xs; j++)
-	 *(d++)=ct->index[res[j]];
-      s+=xs;
-   }
-   THREADS_DISALLOW();
-
-   free(errb);
-   free(res);
-   colortable_free(ct);
-   push_string(end_shared_string(sres));
-}
-
-
-/*
-**! method string tozbgr(array(array(int)) colors)
-**! returns the image data as a string ("zbgrzbgr...", where z is zero...)
-**! see also: cast, to8bit, to8bit_rgbcube, tobitmap
-*/
 
 void image_tozbgr(INT32 args)
 {
@@ -211,12 +107,6 @@ void image_tozbgr(INT32 args)
    push_string(end_shared_string(sres));
 }
 
-/*
-**! method string tozrgb(array(array(int)) colors)
-**! returns the image data as a string ("rgbrgb...")
-**! see also: cast, to8bit, to8bit_rgbcube, tobitmap, tozbgr
-*/
-
 void image_torgb(INT32 args)
 {
    if (!THIS->img) error("no image\n");
@@ -225,29 +115,6 @@ void image_torgb(INT32 args)
    push_string(make_shared_binary_string((char*)THIS->img,
         THIS->xsize*THIS->ysize*sizeof(rgb_group)));
 }
-
-/*
-**! method string to8bit_rgbcube(int red,int green,int blue)
-**! method string to8bit_rgbcube(int red,int green,int blue,string map)
-**! method string to8bit_rgbcube_rdither(int red,int green,int blue)
-**! method string to8bit_rgbcube_rdither(int red,int green,int blue,string map)
-**!     Maps the image into a colorcube with the given 
-**!	dimensions. Red is least significant, blue is most.
-**!
-**!	The "rdither" type of method uses a random dither algoritm.
-**! arg int red
-**! arg int green
-**! arg int blue
-**!	The sides of the colorcube. Not the number of bits!
-**! arg string map
-**!	Map this position in the colorcube to another value,
-**!	ie: say we have position red=1,green=2,blue=3 in a colorcube of
-**!	6󬝲, we have the index 1+2*6+3*6*6=121. If the 
-**!	map-string contains '�' in position 121, the resulting
-**!	byte is '�' or 229.
-**! returns the calculated string
-**! see also: tozbgr, to8bit, tobitmap
-*/
 
 void image_to8bit_rgbcube(INT32 args)
 /*
@@ -403,18 +270,6 @@ void image_to8bit_rgbcube_rdither(INT32 args)
   pop_n_elems(args);
   push_string(end_shared_string(res));
 }
-
-/*
-**! method string tobitmap();
-**!     Maps the image to a bitmap.
-**!
-**!	Bit 0 is the leftmost pixel, and the rows are aligned to 
-**!	bytes.
-**!
-**!	Any pixel value other then black results in a set bit.
-**! returns the calculated string
-**! see also: tozbgr, to8bit, to8bit_rgbcube, cast
-*/
 
 void image_tobitmap(INT32 args)
 {
