@@ -1,6 +1,6 @@
 /* XImage.pmod
  *
- * $Id: XImage.pmod,v 1.11 1998/04/19 00:34:11 mirar Exp $
+ * $Id: XImage.pmod,v 1.12 1998/04/21 02:56:03 per Exp $
  */
 
 /*
@@ -106,6 +106,7 @@ class Image_wrapper
 class XImage
 {
   inherit Image_wrapper;
+  import Protocols.X;
 
   object /*(Types.Window)*/ window;
   object /*(Types.RootWindow)*/ root; // extends window
@@ -356,8 +357,9 @@ class WindowImage
 class PixmapImage
 {
   inherit XImage;
+  import Protocols.X;
 
-  void create(object (Types.Pixmap) p, object|void ct)
+  void create(Types.Pixmap p, object|void ct)
   {
     if(ct) ccol = ct;
     set_drawable( p );

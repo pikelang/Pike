@@ -1,6 +1,6 @@
 /* Types.pmod
  *
- * $Id: Types.pmod,v 1.31 1998/04/19 00:31:02 grubba Exp $
+ * $Id: Types.pmod,v 1.32 1998/04/21 02:56:02 per Exp $
  */
 
 /*
@@ -65,6 +65,7 @@ class XResource
 
 class Font
 {
+  import ".";
   inherit XResource;
 
   object QueryTextExtents_req(string str)
@@ -111,7 +112,7 @@ class Font
 class Cursor
 {
   inherit XResource;
-  constant FreeRequest = Requests.FreeCursor;
+  constant FreeRequest = .Requests.FreeCursor;
 }
 
 class Visual
@@ -137,13 +138,13 @@ class Visual
 class GC
 {
   inherit XResource;
-  constant FreeRequest = Requests.FreeGC;
+  constant FreeRequest = .Requests.FreeGC;
 
   mapping(string:mixed) values;
 
   object ChangeGC_req(mapping attributes)
   {
-    object req = Requests.ChangeGC();
+    object req = .Requests.ChangeGC();
     req->gc = id;
     req->attributes = attributes;
     return req;
@@ -164,7 +165,7 @@ class GC
   void create(mixed ... args)
   {
     ::create(@args);
-    values = mkmapping(_Xlib.gc_attributes,
+    values = mkmapping(._Xlib.gc_attributes,
 		       ({ 3, -1, 0, 1, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0,
 			  0, 0, 1, 0, 0, 0, 0, 4, 1 }));
   }
@@ -229,12 +230,12 @@ class Colormap
 {
   inherit XResource;
   object visual;
-  constant FreeRequest = Requests.FreeColormap;
+  constant FreeRequest = .Requests.FreeColormap;
   mapping alloced = ([]);
 
   object FreeColors_req(int pixel)
   {
-    object req = Requests.FreeColors();
+    object req = .Requests.FreeColors();
     req->colormap = id;
     req->plane_mask=0;
     req->colors = ({ pixel });
@@ -258,7 +259,7 @@ class Colormap
   {
     if(alloced[sprintf("%2c%2c%2c", r, g, b)])
       return alloced[sprintf("%2c%2c%2c", r, g, b)];
-    object req = Requests.AllocColor();
+    object req = .Requests.AllocColor();
     req->colormap = id;
     req->red = r;
     req->green = g;
@@ -288,7 +289,7 @@ class Drawable
 
   object CopyArea_req(object gc, object src, object area, int x, int y)
   {
-    object r= Requests.CopyArea();
+    object r= .Requests.CopyArea();
     r->gc = gc;
     r->src = src;
     r->area = area;
@@ -305,7 +306,7 @@ class Drawable
 
   object CreateGC_req()
   {
-    object req = Requests.CreateGC();
+    object req = .Requests.CreateGC();
 
     req->drawable = id;
     req->gc = display->alloc_id();
@@ -325,7 +326,7 @@ class Drawable
 
   object CreatePixmap_req(int width, int height, int depth)
   {
-    object req = Requests.CreatePixmap();
+    object req = .Requests.CreatePixmap();
 
     req->pid = display->alloc_id();
     req->drawable = id;
@@ -339,14 +340,14 @@ class Drawable
   {
     object req = CreatePixmap_req(width, height, depth);
     display->send_request( req );
-    object p = PIXMAP(display, req->pid, this_object(), colormap );
+    object p = Pixmap(display, req->pid, this_object(), colormap );
     p->depth = depth;
     return p;
   }
 
   object FillPoly_req(int gc, int shape, int coordMode, array(object) p)
   {
-    object req = Requests.FillPoly();
+    object req = .Requests.FillPoly();
     req->drawable = id;
     req->gc = gc;
     req->shape = shape;
@@ -363,7 +364,7 @@ class Drawable
 
   object FillRectangles_req(int gc, array(object) r)
   {
-    object req = Requests.PolyFillRectangle();
+    object req = .Requests.PolyFillRectangle();
     req->drawable = id;
     req->gc = gc;
     req->rectangles = r;
@@ -378,7 +379,7 @@ class Drawable
 
   object DrawLine_req(int gc, int coordMode, array(object) points)
   {
-    object req = Requests.PolyLine();
+    object req = .Requests.PolyLine();
     req->drawable = id;
     req->gc = gc;
     req->coordMode = coordMode;
@@ -394,7 +395,7 @@ class Drawable
   object PutImage_req(object gc, int depth,
 		      int tx, int ty, int width, int height, string data)
   {
-    object r = Requests.PutImage();
+    object r = .Requests.PutImage();
     r->drawable = id;
     r->gc = gc->id;
     r->depth = depth;
@@ -418,7 +419,7 @@ class Drawable
 
   object ImageText8_req(int gc, int x, int y, string str)
   {
-    object req = Requests.ImageText8();
+    object req = .Requests.ImageText8();
     req->drawable = id;
     req->gc = gc;
     req->x = x;
@@ -437,7 +438,7 @@ class Drawable
 
   object ImageText16_req(int gc, int x, int y, string str)
   {
-    object req = Requests.ImageText16();
+    object req = .Requests.ImageText16();
     req->drawable = id;
     req->gc = gc;
     req->x = x;
@@ -458,7 +459,7 @@ class Drawable
 class Pixmap
 {
   inherit Drawable;
-  constant FreeRequest = Requests.FreePixmap;
+  constant FreeRequest = .Requests.FreePixmap;
 
   // Init function.
   void create(mixed ... args)
@@ -630,7 +631,7 @@ class Window
   object CreateWindow_req(int x, int y, int width, int height,
 			  int border_width, int depth, object visual)
   {
-    object req = Requests.CreateWindow();
+    object req = .Requests.CreateWindow();
     req->depth = depth;  /* CopyFromParent */
     req->wid = display->alloc_id();
     req->parent = id;
@@ -651,7 +652,7 @@ class Window
 
   object CreateColormap(object visual, int|void alloc)
   {
-    object req = Requests.CreateColormap();
+    object req = .Requests.CreateColormap();
     req->cid = display->alloc_id();
     req->alloc = alloc;
     req->visual = visual->id;
@@ -708,7 +709,7 @@ class Window
 
   object ChangeAttributes_req(mapping m)
   {
-    object req = Requests.ChangeWindowAttributes();
+    object req = .Requests.ChangeWindowAttributes();
     req->window = id;
     req->attributes = m;
     return req;
@@ -722,7 +723,7 @@ class Window
 
   object Configure_req(mapping m)
   {
-    object req = Requests.ConfigureWindow();
+    object req = .Requests.ConfigureWindow();
     req->window = id;
     req->attributes = m;
 
@@ -756,7 +757,7 @@ class Window
   
   object SelectInput_req()
   {
-    object req = Requests.ChangeWindowAttributes();
+    object req = .Requests.ChangeWindowAttributes();
     req->window = id;
     req->attributes->EventMask = currentInputMask;
     attributes->EventMask = currentInputMask;
@@ -769,7 +770,7 @@ class Window
     
     foreach(masks, string type)
       mask
-	|= _Xlib.event_masks[type];
+	|= ._Xlib.event_masks[type];
     return mask;
   }
 
@@ -792,7 +793,7 @@ class Window
 
   object GrabButton_req(int button, int modifiers, array(string) types)
   {
-    object req = Requests.GrabButton();
+    object req = .Requests.GrabButton();
     req->ownerEvents = 1;
     req->grabWindow = id;
     req->eventMask = event_mask_to_int(types);
@@ -812,7 +813,7 @@ class Window
 
   object Map_req()
   {
-    object req = Requests.MapWindow();
+    object req = .Requests.MapWindow();
     req->id = id;
     return req;
   }
@@ -824,7 +825,7 @@ class Window
 
   object Unmap_req()
   {
-    object req = Requests.UnmapWindow();
+    object req = .Requests.UnmapWindow();
     req->id = id;
     return req;
   }
@@ -836,7 +837,7 @@ class Window
 
   object ListProperties_req()
   {
-    object req = Requests.ListProperties();
+    object req = .Requests.ListProperties();
     req->window = id;
     return req;
   }
@@ -863,7 +864,7 @@ class Window
   object ChangeProperty_req(object property, object type,
 			    int format, array(int)|string data)
   {
-    object req = Requests.ChangeProperty();
+    object req = .Requests.ChangeProperty();
     req->window = id;
     req->property = property->id;
     req->type = type->id;
@@ -881,7 +882,7 @@ class Window
   
   object GetProperty_req(object property, object|void type)
   {
-    object req = Requests.GetProperty();
+    object req = .Requests.GetProperty();
     req->window = id;
     req->property = property->id;
     if (type)
@@ -908,7 +909,7 @@ class Window
 
   object ClearArea_req(int x, int y, int width, int height, int exposures)
   {
-    object req = Requests.ClearArea();
+    object req = .Requests.ClearArea();
     req->window = id;
     req->exposures = exposures;
     req->x = x;
@@ -1013,5 +1014,5 @@ class RootWindow
 /* Kludge */
 void create()
 {
-  _Types.set_pixmap_class(Pixmap);
+  ._Types.set_pixmap_class(Pixmap);
 }

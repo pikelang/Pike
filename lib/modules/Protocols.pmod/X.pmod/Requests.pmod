@@ -1,6 +1,6 @@
 /* Requests.pike
  *
- * $Id: Requests.pmod,v 1.25 1998/04/19 00:31:01 grubba Exp $
+ * $Id: Requests.pmod,v 1.26 1998/04/21 02:56:01 per Exp $
  */
 
 /*
@@ -57,7 +57,7 @@ class request
 
   string build_request(string req, void|int data)
   {
-    req = _Xlib.pad(req);
+    req = ._Xlib.pad(req);
     
     // Big requests extension. Will not work
     // if this extension is not present.
@@ -175,8 +175,8 @@ class CreateWindow
 		      x, y,
 		      width, height, borderWidth,
 		      c_class, visual,
-		      @build_value_list(attributes,
-					_Xlib.window_attributes) ),
+	                 @build_value_list(attributes,
+					   ._Xlib.window_attributes) ),
        depth);
   }
 }
@@ -194,7 +194,7 @@ class ChangeWindowAttributes
     return build_request
       (sprintf("%4c%4c%s", window,
 	       @build_value_list(attributes,
-				 _Xlib.window_attributes)));
+				 ._Xlib.window_attributes)));
   }
 }
 
@@ -270,7 +270,7 @@ class ConfigureWindow
     return build_request
       (sprintf("%4c%2c\0\0%s", window,
 	       @build_value_list(attributes,
-				 _Xlib.window_configure_attributes)));
+				 ._Xlib.window_configure_attributes)));
   }
 }
 
@@ -633,7 +633,7 @@ class CreateGC
   {
     return build_request(sprintf("%4c%4c%4c%s", gc, drawable,
 				 @build_value_list(attributes,
-						  _Xlib.gc_attributes)));
+						  ._Xlib.gc_attributes)));
   }
 }
 
@@ -649,7 +649,7 @@ class ChangeGC
   {
     return build_request(sprintf("%4c%4c%s", gc, 
 				 @build_value_list(attributes,
-						  _Xlib.gc_attributes)));
+						  ._Xlib.gc_attributes)));
   }
 }
 

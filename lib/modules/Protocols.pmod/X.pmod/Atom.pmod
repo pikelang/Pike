@@ -1,6 +1,6 @@
 /* Atom.pmod
  *
- * X Atoms $Id: Atom.pmod,v 1.4 1998/04/19 00:48:25 grubba Exp $
+ * X Atoms $Id: Atom.pmod,v 1.5 1998/04/21 02:55:59 per Exp $
  *
  */
 
@@ -112,7 +112,7 @@ class atom_manager
 
   object InternAtom_req(string name)
   {
-    object req = Requests.InternAtom();
+    object req = .Requests.InternAtom();
     req->name = name;
     return req;
   }
@@ -127,7 +127,7 @@ class atom_manager
     object atom = Atom(this_object());
     atom->name = name;
 
-    object req = Requests.InternAtom();
+    object req = .Requests.InternAtom();
     req->name = name;
     if (callback)
       {
@@ -146,7 +146,7 @@ class atom_manager
 
   object GetAtomName_req(object atom)
   {
-    object req = Requests.GetAtomName();
+    object req = .Requests.GetAtomName();
     req->atom = atom->id;
     return req;
   }
@@ -175,11 +175,11 @@ class atom_manager
 
   void create()
   {
-    for(int i = 1; i<sizeof(_Xlib.predefined_atoms); i++)
+    for(int i = 1; i<sizeof(._Xlib.predefined_atoms); i++)
       {
 	object atom = Atom(this_object());
 	atom->id = i;
-	atom->name = _Xlib.predefined_atoms[i];
+	atom->name = ._Xlib.predefined_atoms[i];
 	remember_atom(atom);
       }
   }

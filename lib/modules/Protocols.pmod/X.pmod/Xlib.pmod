@@ -1,6 +1,6 @@
 /* Xlib.pmod
  *
- * $Id: Xlib.pmod,v 1.33 1998/04/20 01:49:36 nisse Exp $
+ * $Id: Xlib.pmod,v 1.34 1998/04/21 02:56:05 per Exp $
  */
 
 /*
@@ -135,11 +135,11 @@ class id_manager
   
 class Display
 {
-  import _Xlib;
+  import ._Xlib;
   
   inherit Stdio.File;
   inherit id_manager;
-  inherit Atom.atom_manager;
+  inherit .Atom.atom_manager;
   
 
   
@@ -372,9 +372,9 @@ class Display
 	    for(i=0; i<numRoots; i++)
 	      {
 		int wid = struct->get_uint(4);
-		object r = Types.RootWindow(this_object(), wid);
+		object r = .Types.RootWindow(this_object(), wid);
 		int cm = struct->get_uint(4);
-		r->colormap = r->defaultColorMap = Types.Colormap(this_object(), cm, 0);
+		r->colormap = r->defaultColorMap = .Types.Colormap(this_object(), cm, 0);
 		r->colormap->autofree=0;
 		r->whitePixel = struct->get_uint(4);
 		r->blackPixel = struct->get_uint(4);
@@ -404,7 +404,7 @@ class Display
 		    for(int k=0; k<nVisuals; k++)
 		      {
 			int visualID = struct->get_uint(4);
-			object v = Types.Visual(this_object(), visualID);
+			object v = .Types.Visual(this_object(), visualID);
 
 			v->depth = depth;
 			v->c_class = struct->get_uint(1);
@@ -440,7 +440,7 @@ class Display
 	case STATE_WAIT_HEADER:
 	  {
 	    received->expect(32); /* Correct for most of the cases */
-	    string type = _Xlib.event_types[msg[0] & 0x3f];
+	    string type = ._Xlib.event_types[msg[0] & 0x3f];
 	    if (type == "Error")
 	      {
 		mapping m = ([]);
@@ -448,7 +448,7 @@ class Display
 		sscanf(msg, "%*c%c%2c%4c%2c%c",
 		       errorCode, m->sequenceNumber, m->resourceID,
 		       m->minorCode, m->majorCode);
-		m->errorCode = _Xlib.error_codes[errorCode];
+		m->errorCode = ._Xlib.error_codes[errorCode];
 #ifdef DEBUG
 		m->failed_request = debug_requests[DEBUGEQ(m->sequenceNumber)];
 #endif
@@ -628,7 +628,7 @@ class Display
 
 		  default:  /* Any other event */
 // 		    werror("Unimplemented event: "+
-// 			   _Xlib.event_types[msg[0] & 0x3f]+"\n");
+// 			   ._Xlib.event_types[msg[0] & 0x3f]+"\n");
 		    event = ([ "type" :type,
 				      "raw" : msg ]);
 		    break;
@@ -755,7 +755,7 @@ class Display
     /* Authentication */
 
     mapping auth_data;
-    object auth_file = Auth.read_auth_data();
+    object auth_file = .Auth.read_auth_data();
 
     if (auth_file)
       auth_data = host ? auth_file->lookup_ip(gethostbyname(host)[1][0],
@@ -803,7 +803,7 @@ class Display
     string msg = sprintf("B\0%2c%2c%2c%2c\0\0%s%s",
 			 11, 0,
 			 strlen(auth_data->name), strlen(auth_data->data),
-			 _Xlib.pad(auth_data->name), _Xlib.pad(auth_data->data));
+			 ._Xlib.pad(auth_data->name), ._Xlib.pad(auth_data->data));
 
     state = STATE_WAIT_CONNECT;
     received->expect(8);
@@ -915,7 +915,7 @@ class Display
 
   void get_keyboard_mapping()
   {
-    object r = Requests.GetKeyboardMapping();
+    object r = .Requests.GetKeyboardMapping();
     r->first = minKeyCode;
     r->num = maxKeyCode - minKeyCode + 1;
     send_async_request(r, got_mapping);
@@ -928,7 +928,7 @@ class Display
 
   object OpenFont_req(string name)
   {
-    object req = Requests.OpenFont();
+    object req = .Requests.OpenFont();
     req->fid = alloc_id();
     req->name = name;
     return req;
@@ -941,7 +941,7 @@ class Display
     if(fonts[name]) return fonts[name];
     object req = OpenFont_req(name);
     send_request(req);
-    fonts[name] = Types.Font(this_object(), req->fid);
+    fonts[name] = .Types.Font(this_object(), req->fid);
     return fonts[name];
   }
 
@@ -949,7 +949,7 @@ class Display
 			       int sourcechar, int maskchar,
 			       array(int) foreground, array(int) background)
   {
-    object req = Requests.CreateGlyphCursor();
+    object req = .Requests.CreateGlyphCursor();
     req->cid = alloc_id();
     req->sourcefont = sourcefont->id;
     req->maskfont = maskfont->id;
@@ -979,12 +979,12 @@ class Display
 				       foreground||({0,0,0}),
 				       background||({0xffff,0xffff,0xffff}));
     send_request(req);
-    return Types.Cursor(this_object(), req->cid);
+    return .Types.Cursor(this_object(), req->cid);
   }
   
   object Bell_req(int volume)
   {
-    object req=Requests.Bell();
+    object req=.Requests.Bell();
     req->percent=volume;
     return req;
   }
