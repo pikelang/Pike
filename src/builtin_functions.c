@@ -4,7 +4,7 @@
 ||| See the files COPYING and DISCLAIMER for more information.
 \*/
 #include "global.h"
-RCSID("$Id: builtin_functions.c,v 1.61 1998/03/03 11:24:28 hubbe Exp $");
+RCSID("$Id: builtin_functions.c,v 1.62 1998/03/03 14:28:47 grubba Exp $");
 #include "interpret.h"
 #include "svalue.h"
 #include "pike_macros.h"
@@ -673,7 +673,7 @@ void f_exit(INT32 args)
 
 #ifdef DEBUG_MALLOC
   {
-    extern cleanup_memhdrs(void);
+    extern void cleanup_memhdrs(void);
     cleanup_memhdrs();
   }
 #endif
@@ -1810,7 +1810,7 @@ static struct array* diff_longest_sequence(struct array *cmptbl)
 	    
 	    stack[pos]=dml;
 	 }
-	 else if (stack[pos]->x!=x)
+	 else if (stack[pos]->x!=x) {
 	    if (pos && 
 		stack[pos]->refs==1 &&
 		stack[pos-1]==stack[pos]->prev)
@@ -1839,6 +1839,7 @@ static struct array* diff_longest_sequence(struct array *cmptbl)
 	    
 	       stack[pos]=dml;
 	    }
+	 }
       }
    }
 
