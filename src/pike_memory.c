@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: pike_memory.c,v 1.124 2002/10/11 01:39:35 nilsson Exp $
+|| $Id: pike_memory.c,v 1.125 2002/10/11 13:18:09 grubba Exp $
 */
 
 #include "global.h"
@@ -11,7 +11,7 @@
 #include "pike_macros.h"
 #include "gc.h"
 
-RCSID("$Id: pike_memory.c,v 1.124 2002/10/11 01:39:35 nilsson Exp $");
+RCSID("$Id: pike_memory.c,v 1.125 2002/10/11 13:18:09 grubba Exp $");
 
 /* strdup() is used by several modules, so let's provide it */
 #ifndef HAVE_STRDUP
@@ -2199,6 +2199,17 @@ static void initialize_dmalloc(void)
 #else
     mt_init(&debug_malloc_mutex);
 #endif
+
+    /* NOTE: th_atfork() may be a simulated function, which
+     *       utilizes callbacks. We thus need to initialize
+     *       the callback blocks before we perform the call
+     *       to th_atfork().
+     */
+    {
+      extern void init_callback_blocks(void);
+      init_callback_blocks();
+    }
+
     th_atfork(lock_da_lock, unlock_da_lock,  unlock_da_lock);
 #endif
 #ifdef DMALLOC_USING_DLOPEN
