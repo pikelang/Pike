@@ -2,12 +2,12 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: operators.c,v 1.179 2003/05/15 15:33:30 mast Exp $
+|| $Id: operators.c,v 1.180 2003/11/10 01:19:51 mast Exp $
 */
 
 #include "global.h"
 #include <math.h>
-RCSID("$Id: operators.c,v 1.179 2003/05/15 15:33:30 mast Exp $");
+RCSID("$Id: operators.c,v 1.180 2003/11/10 01:19:51 mast Exp $");
 #include "interpret.h"
 #include "svalue.h"
 #include "multiset.h"
@@ -150,18 +150,20 @@ COMPARISON(f_gt,"`>" , is_gt)
 COMPARISON(f_ge,"`>=",!is_lt)
 
 
-#define CALL_OPERATOR(OP, args) \
- if(!sp[-args].u.object->prog) \
-   bad_arg_error(lfun_names[OP], sp-args, args, 1, "object", sp-args, \
-                 "Called in destructed object.\n"); \
- if(FIND_LFUN(sp[-args].u.object->prog,OP) == -1) \
-   bad_arg_error(lfun_names[OP], sp-args, args, 1, "object", sp-args, \
-                 "Operator not in object.\n"); \
- apply_lfun(sp[-args].u.object, OP, args-1); \
- free_svalue(sp-2); \
- sp[-2]=sp[-1]; \
- sp--; \
- dmalloc_touch_svalue(sp);
+#define CALL_OPERATOR(OP, args) do {					\
+    int i;								\
+    if(!sp[-args].u.object->prog)					\
+      bad_arg_error(lfun_names[OP], sp-args, args, 1, "object", sp-args, \
+		    "Called in destructed object.\n");			\
+    if((i = FIND_LFUN(sp[-args].u.object->prog,OP)) == -1)		\
+      bad_arg_error(lfun_names[OP], sp-args, args, 1, "object", sp-args, \
+		    "Operator not in object.\n");			\
+    apply_low(sp[-args].u.object, i, args-1);				\
+    free_svalue(sp-2);							\
+    sp[-2]=sp[-1];							\
+    sp--;								\
+    dmalloc_touch_svalue(sp);						\
+  } while (0)
 
 /*! @decl mixed `+(mixed arg1)
  *! @decl mixed `+(object arg1, mixed ... extras)
@@ -245,18 +247,22 @@ PMOD_EXPORT void f_add(INT32 args)
     }else{
       if(types & BIT_OBJECT)
       {
+	if (args == 1)
+	  return;
+
 	if(sp[-args].type == T_OBJECT && sp[-args].u.object->prog)
 	{
+	  int i;
 	  if(sp[-args].u.object->refs==1 &&
-	     FIND_LFUN(sp[-args].u.object->prog,LFUN_ADD_EQ) != -1)
+	     (i = FIND_LFUN(sp[-args].u.object->prog,LFUN_ADD_EQ)) != -1)
 	  {
-	    apply_lfun(sp[-args].u.object, LFUN_ADD_EQ, args-1);
+	    apply_low(sp[-args].u.object, i, args-1);
 	    stack_pop_keep_top();
 	    return;
 	  }
-	  if(FIND_LFUN(sp[-args].u.object->prog,LFUN_ADD) != -1)
+	  if((i = FIND_LFUN(sp[-args].u.object->prog,LFUN_ADD)) != -1)
 	  {
-	    apply_lfun(sp[-args].u.object, LFUN_ADD, args-1);
+	    apply_low(sp[-args].u.object, i, args-1);
 	    free_svalue(sp-2);
 	    sp[-2]=sp[-1];
 	    sp--;
@@ -264,17 +270,19 @@ PMOD_EXPORT void f_add(INT32 args)
 	    return;
 	  }
 	}
+
 	for(e=1;e<args;e++)
 	{
+	  int i;
 	  if(sp[e-args].type == T_OBJECT &&
 	     sp[e-args].u.object->prog &&
-	     FIND_LFUN(sp[e-args].u.object->prog,LFUN_RADD) != -1)
+	     (i = FIND_LFUN(sp[e-args].u.object->prog,LFUN_RADD)) != -1)
 	  {
 	    struct svalue *tmp=sp+e-args;
 	    check_stack(e);
 	    assign_svalues_no_free(sp, sp-args, e, -1);
 	    sp+=e;
-	    apply_lfun(tmp->u.object, LFUN_RADD, e);
+	    apply_low(tmp->u.object, i, e);
 	    if(args - e > 1)
 	    {
 	      assign_svalue(tmp, sp-1);
@@ -895,11 +903,12 @@ static int float_promote(void)
 
 static int call_lfun(int left, int right)
 {
+  int i;
   if(sp[-2].type == T_OBJECT &&
      sp[-2].u.object->prog &&
-     FIND_LFUN(sp[-2].u.object->prog,left) != -1)
+     (i = FIND_LFUN(sp[-2].u.object->prog,left)) != -1)
   {
-    apply_lfun(sp[-2].u.object, left, 1);
+    apply_low(sp[-2].u.object, i, 1);
     free_svalue(sp-2);
     sp[-2]=sp[-1];
     sp--;
@@ -909,10 +918,10 @@ static int call_lfun(int left, int right)
 
   if(sp[-1].type == T_OBJECT &&
      sp[-1].u.object->prog &&
-     FIND_LFUN(sp[-1].u.object->prog,right) != -1)
+     (i = FIND_LFUN(sp[-1].u.object->prog,right)) != -1)
   {
     push_svalue(sp-2);
-    apply_lfun(sp[-2].u.object, right, 1);
+    apply_low(sp[-2].u.object, i, 1);
     free_svalue(sp-3);
     sp[-3]=sp[-1];
     sp--;
@@ -1049,6 +1058,8 @@ PMOD_EXPORT void o_subtract(void)
     sp--;
     return;
   }
+
+  /* FIXME: Support types? */
 
   default:
     {
@@ -1579,7 +1590,7 @@ PMOD_EXPORT void o_or(void)
   case T_MULTISET:
   {
     struct multiset *l;
-    l=merge_multisets(sp[-2].u.multiset, sp[-1].u.multiset, PIKE_ARRAY_OP_OR);
+    l=merge_multisets(sp[-2].u.multiset, sp[-1].u.multiset, PIKE_ARRAY_OP_OR_LEFT);
     pop_n_elems(2);
     push_multiset(l);
     return;
@@ -1588,7 +1599,7 @@ PMOD_EXPORT void o_or(void)
   case T_ARRAY:
   {
     struct array *a;
-    a=merge_array_with_order(sp[-2].u.array, sp[-1].u.array, PIKE_ARRAY_OP_OR);
+    a=merge_array_with_order(sp[-2].u.array, sp[-1].u.array, PIKE_ARRAY_OP_OR_LEFT);
     pop_n_elems(2);
     push_array(a);
     return;
