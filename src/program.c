@@ -2,11 +2,11 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: program.c,v 1.558 2004/03/13 19:50:23 grubba Exp $
+|| $Id: program.c,v 1.559 2004/03/14 05:45:00 nilsson Exp $
 */
 
 #include "global.h"
-RCSID("$Id: program.c,v 1.558 2004/03/13 19:50:23 grubba Exp $");
+RCSID("$Id: program.c,v 1.559 2004/03/14 05:45:00 nilsson Exp $");
 #include "program.h"
 #include "object.h"
 #include "dynamic_buffer.h"
@@ -6922,6 +6922,7 @@ void init_program(void)
     lfun_strings[i] = make_shared_string(lfun_names[i]);
 
     id.type = T_INT;
+    id.subtype = NUMBER_NUMBER;
     id.u.integer = i;
     key.type = T_STRING;
     key.u.string = lfun_strings[i];
