@@ -262,6 +262,17 @@
 * sscanf("foo-%-bar"%s-%%-%s",a,b); didn't work
 	fixed
 
+* machines with strange byteorders that didn't handle unaligned reads/write
+  jumped into space because EXTRACT_INT didn't work
+	fixed
+
+* Didn't work on 64-bit-machines (alpha for instance)
+	fixed
+
+* the macro ALIGN interfered with some standard include files on
+  some systems
+	fixed
+
 * setup_fake_program is called too often, I should keep fake_program updated instead
 
 * foreach somtimes says 'bad argument 1 to foreach' after a completed loop

@@ -272,13 +272,13 @@ void describe_mapping(struct mapping *m,struct processing *p,int indent)
   {
     if(p->pointer_a == (void *)m)
     {
-      sprintf(buf,"@%ld",e);
+      sprintf(buf,"@%ld",(long)e);
       my_strcat(buf);
       return;
     }
   }
   
-  sprintf(buf,"([ /* %ld elements */\n", m->ind->size);
+  sprintf(buf,"([ /* %ld elements */\n", (long) m->ind->size);
   my_strcat(buf);
   for(e=0;e<m->ind->size;e++)
   {

@@ -160,9 +160,10 @@ void do_debug(int check_refs)
   extern void verify_shared_strings_tables(int);
   extern void slow_check_stack(int);
 
+#if 0
   if(d_flag>1)
     init_checked();
-
+#endif
   slow_check_stack(0);
   check_all_arrays(0);
   check_all_mappings(0);
@@ -171,6 +172,7 @@ void do_debug(int check_refs)
   verify_shared_strings_tables(0);
   verify_all_call_outs();
 
+#if 0
   if(d_flag>1)
   {
     check_all_arrays(1);
@@ -180,7 +182,7 @@ void do_debug(int check_refs)
     verify_shared_strings_tables(1);
     exit_checked();
   }
-
+#endif
 }
 #endif
 

@@ -1667,13 +1667,13 @@ void describe_array(struct array *a,struct processing *p,int indent)
   {
     if(p->pointer_a == (void *)a)
     {
-      sprintf(buf,"@%ld",e);
+      sprintf(buf,"@%ld",(long)e);
       my_strcat(buf);
       return;
     }
   }
   
-  sprintf(buf,"({ /* %ld elements */\n",a->size);
+  sprintf(buf,"({ /* %ld elements */\n",(long)a->size);
   my_strcat(buf);
   describe_array_low(a,&doing,indent);
   my_putchar('\n');
@@ -1856,8 +1856,6 @@ void apply_array(struct array *a, INT32 args)
   struct svalue *argp;
   INT32 e;
   struct array *ret;
-  ret=allocate_array_no_init(a->size,0,T_MIXED);
-  ret->type_field=BIT_MIXED;
   argp=sp-args;
   if(a->array_type == T_MIXED)
   {
@@ -1866,8 +1864,6 @@ void apply_array(struct array *a, INT32 args)
       assign_svalues_no_free(sp,argp,args);
       sp+=args;
       apply_svalue(ITEM(a)+e,args);
-      ITEM(ret)[e]=sp[-1];
-      sp--;
     }
   }else{
     for(e=0;e<a->size;e++)
@@ -1876,10 +1872,9 @@ void apply_array(struct array *a, INT32 args)
       assign_svalues_no_free(sp,argp,args);
       sp+=args;
       f_call_function(args+1);
-      ITEM(ret)[e]=sp[-1];
-      sp--;
     }
   }
+  ret=aggregate_array(a->size,T_MIXED);
   pop_n_elems(args);
   push_array(ret);
 }

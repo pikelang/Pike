@@ -254,7 +254,7 @@ extern struct program *file_program;
 
 static void port_accept(INT32 args)
 {
-  int fd;
+  int fd, tmp;
   int len=0;
   struct object *o;
 
@@ -277,6 +277,9 @@ static void port_accept(INT32 args)
     close(fd);
     return;
   }
+  
+  tmp=1;
+  setsockopt(fd,SOL_SOCKET, SO_KEEPALIVE, (char *)&tmp, sizeof(tmp));
 
   set_close_on_exec(fd,1);
   o=file_make_object_from_fd(fd,FILE_READ | FILE_WRITE);

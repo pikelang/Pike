@@ -130,7 +130,7 @@ void f_cast()
       switch(sp[-1].type)
       {
       case T_INT:
-	sprintf(buf,"%ld",sp[-1].u.integer);
+	sprintf(buf,"%ld",(long)sp[-1].u.integer);
 	break;
 
       case T_FLOAT:
@@ -516,7 +516,7 @@ void f_sscanf(INT32 args)
     if((nonblock=query_nonblocking(2)))
       set_nonblocking(2,0);
     
-    fprintf(stderr,"-    Matches: %ld\n",i);
+    fprintf(stderr,"-    Matches: %ld\n",(long)i);
     if(nonblock)
       set_nonblocking(2,1);
   }

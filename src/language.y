@@ -62,7 +62,6 @@
 %token F_ARRAY_ID
 %token F_ARROW
 %token F_BREAK
-%token F_CALL_OTHER
 %token F_CASE
 %token F_COLON_COLON
 %token F_COMMA
@@ -168,7 +167,6 @@ void add_local_name(struct lpc_string *,struct lpc_string *);
 struct locals *local_variables;
 
 static int varargs;
-static struct lpc_string *current_type;
 static INT32  current_modifiers;
 
 void fix_comp_stack(int sp)
@@ -208,7 +206,7 @@ void fix_comp_stack(int sp)
 %type <number> F_IF F_INHERIT F_INLINE F_INT_ID F_LAMBDA F_LIST_ID F_MAPPING_ID
 %type <number> F_MIXED_ID F_NO_MASK F_OBJECT_ID F_PRIVATE F_PROGRAM_ID
 %type <number> F_PROTECTED F_PUBLIC F_RETURN F_SSCANF F_STATIC
-%type <number> F_STRING_ID F_SWITCH F_VARARGS F_VOID_ID F_WHILE F_CALL_OTHER
+%type <number> F_STRING_ID F_SWITCH F_VARARGS F_VOID_ID F_WHILE
 
 /* The following symbos return type information */
 
@@ -217,7 +215,7 @@ void fix_comp_stack(int sp)
 %type <n> lambda for_expr block  assoc_pair new_local_name
 %type <n> expr_list2 m_expr_list m_expr_list2 statement gauge sscanf
 %type <n> for do cond optional_else_part while statements
-%type <n> local_name_list call_other expr_list3
+%type <n> local_name_list
 %type <n> unused2 foreach unused switch case return expr_list default
 %type <n> continue break block_or_semi
 %%
@@ -255,8 +253,8 @@ block_or_semi: block { $$ = mknode(F_ARG_LIST,$1,mknode(F_RETURN,mkintnode(0),0)
 
 type_or_error: simple_type
              {
-                if(current_type) free_string(current_type); 
-                current_type=$1;
+                if(local_variables->current_type) free_string(local_variables->current_type); 
+                local_variables->current_type=$1;
              }
              | /* empty */
              {
@@ -269,7 +267,7 @@ def: modifiers type_or_error optional_stars F_IDENTIFIER '(' arguments ')'
    {
      int e;
      /* construct the function type */
-     push_finished_type(current_type);
+     push_finished_type(local_variables->current_type);
      while($3--) push_type(T_ARRAY);
      e=$6-1;
      if(varargs)
@@ -469,7 +467,7 @@ name_list: new_name
 new_name: optional_stars F_IDENTIFIER
 	{
 	  struct lpc_string *type;
-	  push_finished_type(current_type);
+	  push_finished_type(local_variables->current_type);
 	  while($1--) push_type(T_ARRAY);
 	  type=pop_type();
           define_variable($2, type, current_modifiers);
@@ -479,7 +477,7 @@ new_name: optional_stars F_IDENTIFIER
         | optional_stars F_IDENTIFIER '='
         {
 	  struct lpc_string *type;
-	  push_finished_type(current_type);
+	  push_finished_type(local_variables->current_type);
 	  while($1--) push_type(T_ARRAY);
 	  type=pop_type();
           $<number>$=define_variable($2, type, current_modifiers);
@@ -495,7 +493,7 @@ new_name: optional_stars F_IDENTIFIER
 
 new_local_name: optional_stars F_IDENTIFIER
                 {
-		  push_finished_type(current_type);
+		  push_finished_type(local_variables->current_type);
 		  while($1--) push_type(T_ARRAY);
                   add_local_name($2, pop_type());
                   $$=mkcastnode(void_type_string,
@@ -504,7 +502,7 @@ new_local_name: optional_stars F_IDENTIFIER
                 }
               | optional_stars F_IDENTIFIER '=' expr0
                 {
-		  push_finished_type(current_type);
+		  push_finished_type(local_variables->current_type);
 		  while($1--) push_type(T_ARRAY);
                   add_local_name($2, pop_type());
                   $$=mkcastnode(void_type_string,
@@ -551,8 +549,8 @@ statements: { $$=0; }
 statement: unused2 ';' { $$=$1; }
          | simple_type
          {
-	   if(current_type) free_string(current_type);
-	   current_type=$1;
+	   if(local_variables->current_type) free_string(local_variables->current_type);
+	   local_variables->current_type=$1;
 	 } local_name_list ';' { $$=$3; }
          | cond
          | while
@@ -840,7 +838,6 @@ expr4: string
      | catch
      | gauge
      | sscanf
-     | call_other
      | lambda
      | F_IDENTIFIER
      {
@@ -932,17 +929,6 @@ expr4: string
        free_string($2);
      }
      ;
-
-expr_list3: { $$=0; }
-          | ',' expr_list { $$=$2; }
-          ;
-
-call_other: F_CALL_OTHER '(' expr0 ',' expr0 expr_list3 ')'
-          {
-	    $$=mkapplynode(mknode(F_INDEX,
-				  mkcastnode(object_type_string,$3),
-				  $5),$6);
-          }
   
 gauge: F_GAUGE '(' unused ')'
   {
@@ -1011,7 +997,10 @@ void yyerror(char *str)
     SAFE_APPLY_MASTER("compile_error",3);
     pop_stack();
   }else{
-    (void)fprintf(stderr, "%s:%ld: %s\n", current_file->str,current_line,str);
+    (void)fprintf(stderr, "%s:%ld: %s\n",
+		  current_file->str,
+		  (long)current_line,
+		  str);
     fflush(stderr);
   }
 }
@@ -1096,9 +1085,8 @@ void dump_program_desc(struct program *p)
 static void push_locals()
 {
   struct locals *l;
-  push_explicit((int)current_type);
-  current_type=0;
   l=ALLOC_STRUCT(locals);
+  l->current_type=0;
   l->next=local_variables;
   local_variables=l;
   local_variables->current_number_of_locals=0;
@@ -1109,10 +1097,10 @@ static void pop_locals()
   struct locals *l;
   free_all_local_names();
   l=local_variables->next;
+  if(local_variables->current_type)
+    free_string(local_variables->current_type);
   free((char *)local_variables);
 
   local_variables=l;
   /* insert check if ( local->next == parent locals ) here */
-  if(current_type) free_string(current_type);
-  current_type=(struct lpc_string *)pop_address();
 }

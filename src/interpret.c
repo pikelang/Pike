@@ -166,7 +166,8 @@ static char trace_buffer[100];
   instr=prefix,\
   prefix=0,\
   instr+=EXTRACT_UCHAR(pc++),\
-  (t_flag>3 ? sprintf(trace_buffer,"-    Arg = %ld\n",instr),write_to_stderr(trace_buffer,strlen(trace_buffer)) : 0),\
+  (t_flag>3 ? sprintf(trace_buffer,"-    Arg = %ld\n",(long)instr),\
+   write_to_stderr(trace_buffer,strlen(trace_buffer)) : 0),\
   instr))
 
 #else
@@ -218,7 +219,7 @@ CASE(ID) \
     pc+=EXTRACT_INT(pc); \
     check_signals(); \
   }else{ \
-    pc+=4; \
+    pc+=sizeof(INT32); \
     pop_n_elems(3); \
   } \
   break; \
@@ -254,7 +255,6 @@ void f_catch(unsigned char *pc)
 
 #ifdef DEBUG
 #define BACKLOG 512
-#define BACKLOG_FILE_LENGTH 48
 struct backlog
 {
   INT32 instruction;
@@ -286,9 +286,9 @@ void dump_backlog()
       file=get_line(backlog[e].pc-1,backlog[e].program, &line);
       fprintf(stderr,"%s:%ld: %s(%ld)\n",
 	      file,
-	      line,
+	      (long)line,
 	      low_get_f_name(backlog[e].instruction + F_OFFSET, backlog[e].program),
-	      backlog[e].arg);
+	      (long)backlog[e].arg);
     }
   }while(e!=backlogp);
 };
@@ -343,12 +343,12 @@ static void eval_instruction(unsigned char *pc)
 
       file=get_line(pc-1,fp->context.prog,&linep);
       while((f=strchr(file,'/'))) file=f+1;
-      fprintf(stderr,"- %s:%4ld:(%x): %-25s %4d %4d\n",
-	      file,linep,
-	      pc-fp->context.prog->program-1,
+      fprintf(stderr,"- %s:%4ld:(%lx): %-25s %4ld %4ld\n",
+	      file,(long)linep,
+	      (long)(pc-fp->context.prog->program-1),
 	      get_f_name(instr + F_OFFSET),
-	      sp-evaluator_stack,
-	      mark_sp-mark_stack);
+	      (long)(sp-evaluator_stack),
+	      (long)(mark_sp-mark_stack));
       if(nonblock)
 	set_nonblocking(2,1);
     }
@@ -361,7 +361,7 @@ static void eval_instruction(unsigned char *pc)
       CASE(F_ADD_512); instr=EXTRACT_UCHAR(pc++)+512; goto again;
       CASE(F_ADD_768); instr=EXTRACT_UCHAR(pc++)+768; goto again;
       CASE(F_ADD_1024);instr=EXTRACT_UCHAR(pc++)+1024;goto again;
-      CASE(F_ADD_256X); instr=EXTRACT_UWORD(pc); pc+=2; goto again;
+      CASE(F_ADD_256X); instr=EXTRACT_UWORD(pc); pc+=sizeof(INT16); goto again;
 
       /* Support to allow large arguments */
       CASE(F_PREFIX_256); prefix+=256; break;
@@ -586,7 +586,7 @@ static void eval_instruction(unsigned char *pc)
       check_destructed(sp-1);
       if(!IS_ZERO(sp-1))
       {
-	pc+=4;
+	pc+=sizeof(INT32);
       }else{
 	check_signals();
 	pc+=EXTRACT_INT(pc);
@@ -597,8 +597,8 @@ static void eval_instruction(unsigned char *pc)
       CASE(F_BRANCH_WHEN_NON_ZERO);
       check_destructed(sp-1);
       if(IS_ZERO(sp-1))
-      {
-	pc+=4;
+      {	
+	pc+=sizeof(INT32);
       }else{
 	check_signals();
 	pc+=EXTRACT_INT(pc);
@@ -610,7 +610,7 @@ static void eval_instruction(unsigned char *pc)
       check_destructed(sp-1);
       if(!IS_ZERO(sp-1))
       {
-	pc+=4;
+	pc+=sizeof(INT32);
 	pop_stack();
       }else{
 	check_signals();
@@ -622,7 +622,7 @@ static void eval_instruction(unsigned char *pc)
       check_destructed(sp-1);
       if(IS_ZERO(sp-1))
       {
-	pc+=4;
+	pc+=sizeof(INT32);
 	pop_stack();
       }else{
 	check_signals();
@@ -631,7 +631,7 @@ static void eval_instruction(unsigned char *pc)
       break;
 
       CASE(F_CATCH);
-      f_catch(pc+4);
+      f_catch(pc+sizeof(INT32));
       pc+=EXTRACT_INT(pc);
       break;
 
@@ -640,8 +640,8 @@ static void eval_instruction(unsigned char *pc)
 	INT32 tmp;
 	tmp=switch_lookup(fp->context.prog->
 			  constants[EXTRACT_UWORD(pc)].u.array,sp-1);
-	pc+=2;
-	pc=(unsigned char *)ALIGN(pc);
+	pc+=sizeof(INT16);
+	pc=(unsigned char *)MY_ALIGN(pc);
 	if(tmp >= 0)
 	  pc+=((INT32 *)pc)[1+tmp*2];
 	else
@@ -667,7 +667,7 @@ static void eval_instruction(unsigned char *pc)
 	  pc+=EXTRACT_INT(pc);
 	  sp[-1].u.integer++;
 	}else{
-	  pc+=4;
+	  pc+=sizeof(INT32);
 	  pop_n_elems(4);
 	}
 	break;
@@ -895,7 +895,7 @@ void apply_low(struct object *o, int fun, int args)
     if((nonblock=query_nonblocking(2)))
       set_nonblocking(2,0);
 
-    if(fp)
+    if(fp && fp->pc)
     {
       file=get_line(fp->pc,fp->context.prog,&linep);
       while((f=strchr(file,'/'))) file=f+1;
@@ -916,7 +916,7 @@ void apply_low(struct object *o, int fun, int args)
     }
     my_strcat(")"); 
     s=simple_free_buf();
-    fprintf(stderr,"- %s:%4ld: %s\n",file,linep,s);
+    fprintf(stderr,"- %s:%4ld: %s\n",file,(long)linep,s);
     free(s);
 
     if(nonblock)
@@ -1093,7 +1093,7 @@ void strict_apply_svalue(struct svalue *s, INT32 args)
     if((nonblock=query_nonblocking(2)))
       set_nonblocking(2,0);
 
-    if(fp)
+    if(fp && fp->pc)
     {
       file=get_line(fp->pc,fp->context.prog,&linep);
       while((f=strchr(file,'/'))) file=f+1;
@@ -1112,7 +1112,7 @@ void strict_apply_svalue(struct svalue *s, INT32 args)
     }
     my_strcat(")"); 
     st=simple_free_buf();
-    fprintf(stderr,"- %s:%4ld: %s\n",file,linep,st);
+    fprintf(stderr,"- %s:%4ld: %s\n",file,(long)linep,st);
     free(st);
 
     if(nonblock)

@@ -300,9 +300,9 @@ struct lpc_string *add_string_status(int verbose)
       for(p=base_table[e];p;p=p->next)
       {
 	num_distinct_strings++;
-	bytes_distinct_strings+=ALIGN(p->len);
+	bytes_distinct_strings+=MY_ALIGN(p->len);
 	allocd_strings+=p->refs;
-	allocd_bytes+=p->refs*ALIGN(p->len+3);
+	allocd_bytes+=p->refs*MY_ALIGN(p->len+3);
       }
 
     }
@@ -336,7 +336,7 @@ void dump_stralloc_strings()
   struct lpc_string *p;
   for(e=0;e<HTABLE_SIZE;e++)
     for(p=base_table[e];p;p=p->next)
-      printf("%ld refs \"%s\"\n",p->refs,p->str);
+      printf("%ld refs \"%s\"\n",(long)p->refs,p->str);
 }
 
 struct lpc_string *add_shared_strings(struct lpc_string *a,

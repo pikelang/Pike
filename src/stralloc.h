@@ -19,7 +19,7 @@ struct lpc_string *debug_findstring(const struct lpc_string *foo);
 
 #define free_string(s) do{ struct lpc_string *_=(s); if(!--_->refs) really_free_string(_); }while(0)
 
-#define my_hash_string(X) ((unsigned int)(X))
+#define my_hash_string(X) ((unsigned long)(X))
 #define my_order_strcmp(X,Y) ((char *)(X)-(char *)(Y))
 #define is_same_string(X,Y) ((X)==(Y))
 
