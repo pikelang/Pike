@@ -98,6 +98,7 @@ testfont binary
 /lib/modules/Locale.pmod/Language.pmod/srp.pike foreign_ident
 /lib/modules/Locale.pmod/Language.pmod/swe.pike foreign_ident
 /lib/modules/MIME.pmod foreign_ident
+/lib/modules/Parser.pmod/RCS.pike foreign_ident
 /lib/modules/Parser.pmod/XML.pmod/Tree.pmod foreign_ident
 /lib/modules/Parser.pmod/module.pmod foreign_ident
 /lib/modules/Pike.pmod foreign_ident
