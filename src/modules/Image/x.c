@@ -1,4 +1,4 @@
-/* $Id: x.c,v 1.15 1997/11/10 14:19:57 mirar Exp $ */
+/* $Id: x.c,v 1.16 1997/11/11 01:26:17 grubba Exp $ */
 
 /*
 **! module Image
@@ -12,7 +12,7 @@
 
 #include "stralloc.h"
 #include "global.h"
-RCSID("$Id: x.c,v 1.15 1997/11/10 14:19:57 mirar Exp $");
+RCSID("$Id: x.c,v 1.16 1997/11/11 01:26:17 grubba Exp $");
 #include "pike_macros.h"
 #include "object.h"
 #include "constants.h"
@@ -61,8 +61,8 @@ void image_to8bit(INT32 args) /* compat function */
 
   if(!res) error("Out of memory\n");
 
-  o=clone_object(image_colortable_program,args);
-  nct=get_storage(o,image_colortable_program);
+  o = clone_object(image_colortable_program, args);
+  nct=(struct neo_colortable *)get_storage(o, image_colortable_program);
 
   i=this->xsize*this->ysize;
   s=this->img;
