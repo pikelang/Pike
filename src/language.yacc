@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: language.yacc,v 1.337 2004/08/16 16:22:11 mast Exp $
+|| $Id: language.yacc,v 1.338 2005/02/08 16:37:46 grubba Exp $
 */
 
 %pure_parser
@@ -113,7 +113,7 @@
 /* This is the grammar definition of Pike. */
 
 #include "global.h"
-RCSID("$Id: language.yacc,v 1.337 2004/08/16 16:22:11 mast Exp $");
+RCSID("$Id: language.yacc,v 1.338 2005/02/08 16:37:46 grubba Exp $");
 #ifdef HAVE_MEMORY_H
 #include <memory.h>
 #endif
@@ -3214,7 +3214,12 @@ expr4: string
   | expr4 open_bracket_with_line_info error ')'
     {$$=$1; yyerror("Missing ']'."); free_node ($2);}
   | open_paren_with_line_info comma_expr2 ')'
-    {$$=$2; COPY_LINE_NUMBER_INFO ($$, $1); free_node ($1);}
+  {
+    $$=$2;
+    if ($$)
+      COPY_LINE_NUMBER_INFO ($$, $1);
+    free_node ($1);
+  }
   | open_paren_with_line_info '{' expr_list close_brace_or_missing ')'
     {
       $$=mkefuncallnode("aggregate",$3);
