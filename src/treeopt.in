@@ -1,6 +1,6 @@
 // -*- c -*-
 //
-// $Id: treeopt.in,v 1.59 2001/03/20 00:33:47 grubba Exp $
+// $Id: treeopt.in,v 1.60 2001/03/20 12:48:08 grubba Exp $
 //
 // The tree optimizer
 //
@@ -1090,7 +1090,15 @@ F_INC_LOOP(F_VAL_LVAL(0,
 						OPT_BREAK|OPT_RETURN)) ]),
 	   2 = +[ !($$->tree_info & (OPT_BREAK|OPT_CONTINUE)) ]
 	        [ !depend2_p($$, $1) ]):
-  F_LOOP(F_ASSIGN($0, $1), $2);
+  {
+    $$ = mknode(F_LOOP,
+		mkefuncallnode("`+",
+			       mknode(F_ARG_LIST, mkintnode(-1),
+				      mknode(F_ARG_LIST,
+					     mkefuncallnode("`-", $1),
+					     mknode(F_ASSIGN, $0, $1)))), $2);
+  }
+  ;
 
 // No need for the pop_value.
 F_LOOP(0, F_POP_VALUE(1, -)):
