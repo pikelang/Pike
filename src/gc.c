@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: gc.c,v 1.235 2003/09/24 00:59:31 mast Exp $
+|| $Id: gc.c,v 1.236 2003/09/24 01:08:09 mast Exp $
 */
 
 #include "global.h"
@@ -33,7 +33,7 @@ struct callback *gc_evaluator_callback=0;
 
 #include "block_alloc.h"
 
-RCSID("$Id: gc.c,v 1.235 2003/09/24 00:59:31 mast Exp $");
+RCSID("$Id: gc.c,v 1.236 2003/09/24 01:08:09 mast Exp $");
 
 int gc_enabled = 1;
 
@@ -345,7 +345,6 @@ int gc_external_refs_zapped = 0;
 #endif
 
 #define DESCRIBE_MEM 1
-#define DESCRIBE_NO_REFS 2
 #define DESCRIBE_SHORT 4
 #define DESCRIBE_NO_DMALLOC 8
 
@@ -851,7 +850,7 @@ again:
 	else
 #endif
 	  low_describe_something(p, T_PROGRAM, indent, depth,
-				 flags | DESCRIBE_SHORT, 0);
+				 depth ? flags : flags | DESCRIBE_SHORT, 0);
 
 	if((p->flags & PROGRAM_USES_PARENT) &&
 	   LOW_PARENT_INFO(((struct object *)a),p)->parent)
@@ -860,8 +859,7 @@ again:
 	    fprintf(stderr,"%*s**Describing parent of object:\n",indent,"");
 	    describe_something( PARENT_INFO((struct object *)a)->parent, T_OBJECT,
 				indent+2, depth-1,
-				(flags | DESCRIBE_SHORT | DESCRIBE_NO_REFS )
-				& ~ (DESCRIBE_MEM),
+				(flags | DESCRIBE_SHORT) & ~DESCRIBE_MEM,
 				0);
 	  }
 	  else
@@ -1202,7 +1200,7 @@ void debug_describe_svalue(struct svalue *s)
 	}
       }
   }
-  describe_something(s->u.refs,s->type,0,0,0,0);
+  describe_something(s->u.refs,s->type,0,1,0,0);
 }
 
 void gc_watch(void *a)
