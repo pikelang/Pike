@@ -9,7 +9,7 @@
 
   <xsl:param rxml:type="color" name="background" select="'white'"/>
   <xsl:param rxml:type="color" name="type" select="'#202020'"/>
-  <xsl:param rxml:type="color" name="method-name" select="'blue'"/>
+  <xsl:param rxml:type="color" name="method-name" select="'#0000E0'"/>
   <xsl:param rxml:type="color" name="param-name" select="'#8000F0'"/>
   <xsl:param rxml:type="color" name="var-name" select="'#F000F0'"/>
   <xsl:param rxml:type="color" name="constant-name" select="'#F000F0'"/>
@@ -101,7 +101,7 @@
       <xsl:call-template name="show-class-path"/>
       <xsl:choose>
         <xsl:when test="ancestor::class">
-          <xsl:text>-&gt;</xsl:text>
+          <xsl:text>()-&gt;</xsl:text>
         </xsl:when>
         <xsl:when test="ancestor::module">
           <xsl:text>.</xsl:text>
@@ -196,7 +196,7 @@
   <xsl:template match="object" mode="type">
     <xsl:choose>
       <xsl:when test="text()">
-        <font color="{$program-name}"><xsl:value-of select="."/></font>
+        <font color="{$program-name}">object(<xsl:value-of select="."/>)</font>
       </xsl:when>
       <xsl:otherwise>
         <font color="{$type}">object</font>
@@ -287,7 +287,7 @@
   </xsl:template>
 
   <xsl:template match="seealso" mode="doc">
-    <dt><font face="Helvetica">See also</font></dt>    
+    <dt><font face="Helvetica">See also</font></dt>
   </xsl:template>
 
   <xsl:template match="*" mode="doc">
