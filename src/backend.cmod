@@ -2,11 +2,11 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: backend.cmod,v 1.71 2003/10/30 13:56:17 mast Exp $
+|| $Id: backend.cmod,v 1.72 2003/11/13 19:07:53 grubba Exp $
 */
 
 #include "global.h"
-RCSID("$Id: backend.cmod,v 1.71 2003/10/30 13:56:17 mast Exp $");
+RCSID("$Id: backend.cmod,v 1.72 2003/11/13 19:07:53 grubba Exp $");
 #include "fdlib.h"
 #include "backend.h"
 #include <errno.h>
@@ -1475,6 +1475,14 @@ PIKECLASS Backend
     else
       push_float ((float) timeout.tv_sec + (float) timeout.tv_usec / 1e6);
   }
+
+#ifndef tObjImpl_THREAD
+  /* Kludge for precompile.pike; it resolves object(Thread.Thread)
+   * to tObjImpl_THREAD, while "program_id.h" only knows about
+   * tObjImpl_THREAD_ID.
+   */
+#define tObjImpl_THREAD	tObjImpl_THREAD_ID
+#endif /* !tObjImpl_THREAD */
 
   /*! @decl Thread.Thread executing_thread()
    *! @decl int executing_thread()
