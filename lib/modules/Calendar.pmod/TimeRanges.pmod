@@ -1128,7 +1128,7 @@ class cSuperTimeRange
    TimeRange set_timezone(string|Timezone tz)
    {
 // fixme?
-      return `|(map(parts,"set_timezone",tz));
+      return `|(@map(parts,"set_timezone",tz));
    }
 }
 
