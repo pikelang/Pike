@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: pipe.c,v 1.54 2003/03/29 17:58:33 nilsson Exp $
+|| $Id: pipe.c,v 1.55 2003/04/02 20:30:46 nilsson Exp $
 */
 
 #include "global.h"
@@ -38,7 +38,7 @@
 
 #include <fcntl.h>
 
-RCSID("$Id: pipe.c,v 1.54 2003/03/29 17:58:33 nilsson Exp $");
+RCSID("$Id: pipe.c,v 1.55 2003/04/02 20:30:46 nilsson Exp $");
 
 #include "threads.h"
 #include "stralloc.h"
@@ -1302,8 +1302,6 @@ PIKE_MODULE_INIT
    start_new_program();
    ADD_STORAGE(struct pipe);
    
-   /* function(:array) */
-  ADD_FUNCTION("_pipe_debug", f__pipe_debug,tFunc(tNone,tArray), 0);
    /* function(object:void) */
   ADD_FUNCTION("input",pipe_input,tFunc(tObj,tVoid),0);
    /* function(object,void|int:void) */
@@ -1358,6 +1356,9 @@ PIKE_MODULE_INIT
    set_exit_callback(exit_output_struct);
    output_program=end_program();
    add_program_constant("__output",output_program, 0);
+
+   /* function(:array) */
+  ADD_FUNCTION("_pipe_debug", f__pipe_debug,tFunc(tNone,tArray), 0);
 }
 
 PIKE_MODULE_EXIT
