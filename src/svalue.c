@@ -23,7 +23,7 @@
 #include "queue.h"
 #include "bignum.h"
 
-RCSID("$Id: svalue.c,v 1.65 2000/04/08 02:01:09 hubbe Exp $");
+RCSID("$Id: svalue.c,v 1.66 2000/04/12 10:39:24 grubba Exp $");
 
 struct svalue dest_ob_zero = { T_INT, 0 };
 
@@ -1334,7 +1334,7 @@ void real_gc_check_short_svalue(union anything *u, TYPE_T type)
 #endif
 }
 
-void gc_mark_svalues(struct svalue *s, int num)
+void debug_gc_mark_svalues(struct svalue *s, int num)
 {
   INT32 e;
   for(e=0;e<num;e++,s++)
@@ -1381,7 +1381,7 @@ void gc_mark_svalues(struct svalue *s, int num)
   }
 }
 
-void gc_mark_short_svalue(union anything *u, TYPE_T type)
+void debug_gc_mark_short_svalue(union anything *u, TYPE_T type)
 {
   switch(type)
   {
