@@ -1,6 +1,6 @@
 /* -*- Pike -*-
  *	
- * $Id: master.pike.in,v 1.89 1999/12/28 03:40:19 mast Exp $
+ * $Id: master.pike.in,v 1.90 1999/12/29 18:46:00 mast Exp $
  * 
  * Master-file for Pike.
  *
@@ -1118,7 +1118,8 @@ void compile_error(string file,int line,string err)
 #endif /* constant(thread_local) */
 	))
   {
-    werror(sprintf("%s:%d:%s\n",trim_file_name(file),line,err));
+    werror(sprintf("%s:%s:%s\n",trim_file_name(file),
+		   line?(string)line:"-",err));
   }
   else if(objectp(val) ||
 	  programp(val) ||
@@ -1149,7 +1150,8 @@ void compile_warning(string file,int line,string err)
        ))
   {
     if(want_warnings)
-      werror(sprintf("%s:%d: Warning: %s\n",trim_file_name(file),line,err));
+      werror(sprintf("%s:%s: Warning: %s\n",trim_file_name(file),
+		     line?(string)line:"-",err));
   } else if (objectp(val) && val->compile_warning) {
     val->compile_warning(file, line, err);
   }
