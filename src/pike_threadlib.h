@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: pike_threadlib.h,v 1.23 2003/01/08 18:11:07 mast Exp $
+|| $Id: pike_threadlib.h,v 1.24 2003/03/31 18:18:52 grubba Exp $
 */
 
 #ifndef PIKE_THREADLIB_H
@@ -487,12 +487,14 @@ PMOD_EXPORT extern int t_flag;
 #define SWAP_IN_TRACE(_tmp)
 #endif /* THREAD_TRACE */
 
-#define SWAP_OUT_THREAD(_tmp) do {				\
-       (_tmp)->state=Pike_interpreter;				\
-       (_tmp)->swapped=1;					\
-       SWAP_OUT_TRACE(_tmp);					\
-       DO_IF_PROFILING( (_tmp)->time_base += gethrtime() ; )	\
-      } while(0)
+#define SWAP_OUT_THREAD(_tmp) do {					\
+       (_tmp)->state=Pike_interpreter;					\
+       (_tmp)->swapped=1;						\
+       SWAP_OUT_TRACE(_tmp);						\
+       DO_IF_PROFILING( (_tmp)->time_base += gethrtime() ; )		\
+       /* Do this one always to catch nested THREADS_ALLOW(), etc. */	\
+       Pike_interpreter.thread_id = (struct object *) (ptrdiff_t) -1;	\
+     } while(0)
 
 #define SWAP_IN_THREAD(_tmp) do {					\
        (_tmp)->swapped=0;						\
