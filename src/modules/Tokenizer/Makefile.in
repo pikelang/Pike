@@ -1,7 +1,7 @@
-# $Id: Makefile.in,v 1.1 2002/10/17 10:43:18 grubba Exp $
+# $Id: Makefile.in,v 1.2 2004/09/04 19:01:42 grubba Exp $
 @make_variables@
 VPATH=@srcdir@:@srcdir@/../..:../..
-OBJS=Tokenizer.o ParseTree.o misc.o
+OBJS=Tokenizer.o ParseTree.o misc.o # MetaProg.o
 MODULE_LDFLAGS=@LDFLAGS@ @LIBS@
 CONFIG_HEADERS=@CONFIG_HEADERS@
 
