@@ -1,5 +1,5 @@
 //
-// $Id: context.pike,v 1.20 2003/10/24 18:16:04 mast Exp $
+// $Id: context.pike,v 1.21 2004/01/14 19:37:05 bill Exp $
 
 #pike __REAL_VERSION__
 #pragma strict_types
@@ -13,6 +13,18 @@ import .Constants;
 
 //! The server's private key
 Crypto.rsa rsa;
+
+/* For client authentication */
+
+//! Policy for client authentication. One of @[SSL.Constants.AUTHLEVEL_none],
+//! @[SSL.Constants.AUTHLEVEL_ask] and @[SSL.Constants.AUTHLEVEL_require].
+int auth_level;
+
+//! Array of authorities that are accepted for client certificates.
+//! The client will only send certificates that are signed by any of
+//! these authorities. The string is the DER-encoded issuer, as generated
+//! by @[Standards.PKCS.Certificate.build_distinguished_name]
+array(string) authorities;
 
 //! Temporary, non-certified, private keys, used with a
 //! server_key_exchange message. The rules are as follows:

@@ -1,6 +1,6 @@
 #pike __REAL_VERSION__
 
-/* $Id: handshake.pike,v 1.36 2004/01/11 00:44:16 nilsson Exp $
+/* $Id: handshake.pike,v 1.37 2004/01/14 19:37:05 bill Exp $
  *
  */
 
@@ -1114,6 +1114,10 @@ void create(int is_server, void|SSL.context ctx)
   version=({0,0});
   context = ctx;
   auth_level = context->auth_level;
+
+  if(context->authorities)
+    authorities = context->authorities;
+
   if (is_server)
     handshake_state = STATE_server_wait_for_hello;
   else
