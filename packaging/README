@@ -46,8 +46,9 @@ two choices, either use the latest build tag in the tree or create a
 new one. We would prefer that the build number is not incremented on
 an otherwise unaltered CVS tree, but if you alter your build process
 so that the Pike in your package is a different one we would like you
-to increment the build number (though an manual increment by one is
-sufficient on an otherwise unaltered tree).
+to increment the build number. Though an manual increment by one is
+sufficient on an otherwise unaltered tree, we recommend using the
+export make target.
 
 
   Dependencies
