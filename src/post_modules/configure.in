@@ -1,0 +1,33 @@
+# $Id: configure.in,v 1.1 1999/11/07 01:33:42 per Exp $
+AC_INIT(Makefile.in)
+
+AC_SET_MAKE
+
+dirs=
+MODULE_LINKOBJS=
+MODULE_SEGMENTS=
+
+for a in `(cd $srcdir ; echo *)`
+do
+  if test "$a" != "CVS" -a "$a" != "RCS" ; then
+    if test -d "$srcdir/$a" ; then
+      yesno=`eval echo \\$with_$a`
+      if test "x${yesno-}" != xno ; then
+        dirs="$dirs $a"
+        MODULE_LINKOPTS="$MODULE_LINKOPTS $a/linker_options"
+        MODULE_SEGMENTS="$MODULE_SEGMENTS $a/modlist_headers"
+        module_names="$module_names $a"
+      fi
+    fi
+  fi
+done
+
+AC_SUBST(MODULE_LINKOPTS)
+AC_SUBST(MODULE_SEGMENTS)
+
+AC_SUBST_FILE(dependencies)
+dependencies=$srcdir/dependencies
+AC_CONFIG_SUBDIRS($dirs)
+
+AC_OUTPUT(Makefile,[],dirs="$module_names")
+
