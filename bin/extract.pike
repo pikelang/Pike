@@ -1,7 +1,7 @@
-#!/usr/local/bin/pike
+#! /usr/bin/env pike
 // By Martin Nilsson and Andreas Lange
 //
-// $Id: extract.pike,v 1.15 2002/07/26 14:21:20 nilsson Exp $
+// $Id: extract.pike,v 1.16 2003/01/19 01:51:14 nilsson Exp $
 //
 
 
@@ -1047,7 +1047,7 @@ int main(int argc, array(string) argv) {
 
   if( (!(xml_name && args->sync && args->xmlpath && args->baselang)) &&
       (!sizeof(files) || args->help) ) {
-    sscanf("$Revision: 1.15 $", "$"+"Revision: %s $", string v);
+    sscanf("$Revision: 1.16 $", "$"+"Revision: %s $", string v);
     werror("\n  Locale Extractor Utility "+v+"\n\n");
     werror("  Syntax: extract.pike [arguments] infile(s)\n\n");
     werror("  Arguments: --project=name  default: first found in infile\n");
