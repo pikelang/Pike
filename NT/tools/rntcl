@@ -47,6 +47,7 @@ int main(int argc, string *argv)
     "-D__WIN32__",
     "-D_WIN32",
     "-D__NT__",
+    "-D__STDC__",
     "-nologo",
   });
 
@@ -196,10 +197,9 @@ int main(int argc, string *argv)
       break;
 
     case "obj":
-      if(output)
-	cflags+=({"-Fo"+fixpath(output)});
-      else
-	output=remove_ext(argv[1])+".obj";
+      if(!output)
+	output=remove_ext(argv[1])+".o";
+      cflags+=({"-Fo"+fixpath(output)});
       wantfile=output;
       break;
 
