@@ -569,7 +569,8 @@ class Enum {
       //   </doc>
       // </docgroup>
 
-      Node doc = parse_input(documentation->xml);
+      Node doc = parse_input("<doc>"+documentation->xml+"</doc>")->
+	get_first_element();
 
       foreach (doc->get_children(), Node group) {
         if (group->get_node_type() == XML_ELEMENT
@@ -615,7 +616,7 @@ class Enum {
           }
         }
       }
-      s += xmltag("doc", doc->html_of_node());
+      s += doc->html_of_node();
     }
 
     foreach (children, DocGroup docGroup)
