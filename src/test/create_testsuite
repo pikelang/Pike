@@ -59,6 +59,7 @@ define(TESTNO,0)
 
 test_compile_error_low(master()->add_precompiled_program(\"/test\",compile_string(\"int foo() { return 17; }\",\"62\")))
 
+test_any([[function f=random_seed; int t; foreach(allocate(1),t) f(t); return 1;]],1)
 test_compile([[while(0)if(0)continue;else;]])
 test_program([[int b=1,c; int a() { c=b+2; return c==3; }]])
 test_true([[ ("foobar"/"o") & ({ "foo" }) ]])
