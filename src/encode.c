@@ -25,7 +25,7 @@
 #include "version.h"
 #include "bignum.h"
 
-RCSID("$Id: encode.c,v 1.136 2002/01/16 02:54:10 nilsson Exp $");
+RCSID("$Id: encode.c,v 1.137 2002/02/13 13:35:36 grubba Exp $");
 
 /* #define ENCODE_DEBUG */
 
@@ -854,6 +854,9 @@ static void encode_value2(struct svalue *val, struct encode_data *data)
 	Pike_error("Canonical encoding of objects not supported.\n");
       push_svalue(val);
       apply(data->codec, "nameof", 1);
+      EDB(5, fprintf(stderr, "%*s->nameof: ", data->depth, "");
+	  print_svalue(stderr, Pike_sp-1);
+	  fputc('\n', stderr););
       switch(Pike_sp[-1].type)
       {
 	case T_INT:
@@ -862,6 +865,8 @@ static void encode_value2(struct svalue *val, struct encode_data *data)
 	    int to_change = data->buf.s.len;
 	    struct svalue tmp=data->counter;
 	    tmp.u.integer--;
+
+	    EDB(5,fprintf(stderr, "%*s(UNDEFINED)\n", data->depth, ""));
 
 	    /* We have to remove ourself from the cache */
 	    map_delete(data->encoded, val);
@@ -892,6 +897,13 @@ static void encode_value2(struct svalue *val, struct encode_data *data)
 	       */
 	      data->buf.s.str[to_change] = 99;
 	      apply(data->codec,"encode_object",1);
+
+	      if ((Pike_sp[-1].type == T_INT) &&
+		  (!Pike_sp[-1].u.integer) &&
+		  (Pike_sp[-1].subtype)) {
+		/* encode_object() returned UNDEFINED (aka failed). */
+		Pike_error("Failed to encode object.\n");
+	      }
 
 	      /* Put value back in cache for future reference -Hubbe */
 	      mapping_insert(data->encoded, val, &tmp);
@@ -1189,12 +1201,8 @@ void f_encode_value(INT32 args)
   struct encode_data d, *data;
   data=&d;
 
-#ifdef ENCODE_DEBUG
   check_all_args("encode_value", args, BIT_MIXED, BIT_VOID | BIT_OBJECT,
 		 BIT_VOID | BIT_INT, 0);
-#else
-  check_all_args("encode_value", args, BIT_MIXED, BIT_VOID | BIT_OBJECT, 0);
-#endif
 
   initialize_buf(&data->buf);
   data->canonic = 0;
@@ -1247,12 +1255,8 @@ void f_encode_value_canonic(INT32 args)
   struct encode_data d, *data;
   data=&d;
 
-#ifdef ENCODE_DEBUG
   check_all_args("encode_value_canonic", args, BIT_MIXED, BIT_VOID | BIT_OBJECT,
 		 BIT_VOID | BIT_INT, 0);
-#else
-  check_all_args("encode_value_canonic", args, BIT_MIXED, BIT_VOID | BIT_OBJECT, 0);
-#endif
 
   initialize_buf(&data->buf);
   data->canonic = 1;
@@ -3059,13 +3063,15 @@ void f_decode_value(INT32 args)
 
 #ifdef ENCODE_DEBUG
   int debug;
+#endif /* ENCODE_DEBUG */
+
   check_all_args("decode_value", args,
-		 BIT_STRING, BIT_VOID | BIT_OBJECT | BIT_INT, BIT_VOID | BIT_INT, 0);
+		 BIT_STRING, BIT_VOID | BIT_OBJECT | BIT_INT,
+		 BIT_VOID | BIT_INT, 0);
+
+#ifdef ENCODE_DEBUG
   debug = args > 2 ? Pike_sp[2-args].u.integer : 0;
-#else
-  check_all_args("decode_value", args,
-		 BIT_STRING, BIT_VOID | BIT_OBJECT | BIT_INT, 0);
-#endif
+#endif /* ENCODE_DEBUG */
 
   s = Pike_sp[-args].u.string;
   if(args<2)
