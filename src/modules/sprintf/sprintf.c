@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: sprintf.c,v 1.108 2003/06/02 20:51:15 nilsson Exp $
+|| $Id: sprintf.c,v 1.109 2003/06/11 14:27:35 jhs Exp $
 */
 
 /* TODO: use ONERROR to cleanup fsp */
@@ -105,7 +105,7 @@
  *!       Use same argument again.
  *!     @value '^'
  *!       Repeat this on every line produced.
- *!     @value '@@'
+ *!     @value '@'
  *!       Repeat this format for each element in the argument array.
  *!     @value '>'
  *!       Put the string at the bottom end of column instead of top.
@@ -286,7 +286,7 @@
  *!   @[lfun::_sprintf()]
  */
 #include "global.h"
-RCSID("$Id: sprintf.c,v 1.108 2003/06/02 20:51:15 nilsson Exp $");
+RCSID("$Id: sprintf.c,v 1.109 2003/06/11 14:27:35 jhs Exp $");
 #include "pike_error.h"
 #include "array.h"
 #include "svalue.h"
