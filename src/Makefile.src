@@ -43,7 +43,7 @@ WARN=@WARN@
 
 #add extra defines here
 # Be sure to use -g and -DDEBUG when looking for bugs
-DEBUGDEF=-DDEBUG
+DEBUGDEF=
 DEFINES=-DDEFAULT_MASTER=\"$(lib_prefix)/master.pike\"
 
 # -O should work with all compilers

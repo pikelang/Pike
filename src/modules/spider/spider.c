@@ -1576,8 +1576,6 @@ void init_spider_efuns(void)
   add_efun("parse_accessed_database", f_parse_accessed_database,
 	   "function(string:array)", OPT_TRY_OPTIMIZE);
 
-#define DEBUG
-#ifdef DEBUG
   add_efun("_string_debug", f__string_debug, "function(void|mixed:string)", 
 	   OPT_EXTERNAL_DEPEND);
 
@@ -1598,7 +1596,6 @@ void init_spider_efuns(void)
 
   add_efun("_dump_obj_table", f__dump_obj_table, "function(:array(array))", 
 	   OPT_EXTERNAL_DEPEND);
-#endif
 
   add_efun("parse_html",f_parse_html,
 	   "function(string,mapping(string:function(string,mapping(string:string),mixed ...:string)),mapping(string:function(string,mapping(string:string),string,mixed ...:string)),mixed ...:string)",
