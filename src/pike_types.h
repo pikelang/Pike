@@ -5,7 +5,7 @@
 \*/
 
 /*
- * $Id: pike_types.h,v 1.67 2001/03/29 20:51:28 grubba Exp $
+ * $Id: pike_types.h,v 1.68 2001/03/29 21:30:32 grubba Exp $
  */
 #ifndef PIKE_TYPES_H
 #define PIKE_TYPES_H
@@ -394,6 +394,7 @@ int pike_type_allow_premature_toss(struct pike_type *type);
 #define push_finished_type_with_markers(T,M) do { debug_push_finished_type_with_markers((struct pike_type *)debug_malloc_pass(T),M);debug_malloc_pass(debug_peek_type_stack()); } while(0)
 #define push_finished_type_backwards(T) ERROR
 #else /* !USE_PIKE_TYPE */
+#define make_pike_type debug_make_pike_type
 #define pop_type_stack debug_pop_type_stack
 #define push_int_type debug_push_int_type
 #define push_object_type debug_push_object_type
@@ -406,6 +407,7 @@ int pike_type_allow_premature_toss(struct pike_type *type);
 #define push_finished_type_backwards debug_push_finished_type_backwards
 #endif /* USE_PIKE_TYPE */
 #else
+#define make_pike_type debug_make_pike_type
 #define pop_type debug_pop_type
 #define compiler_pop_type debug_compiler_pop_type
 #define pop_unfinished_type debug_pop_unfinished_type
