@@ -1,4 +1,4 @@
-test_true([["$Id: testsuite.in,v 1.637 2003/04/27 17:51:58 mast Exp $"]]);
+test_true([["$Id: testsuite.in,v 1.638 2003/04/28 18:32:38 mast Exp $"]]);
 
 // This triggered a bug only if run sufficiently early.
 test_compile_any([[#pike 7.2]])
@@ -7945,6 +7945,11 @@ clone(compile_string("int foo() { return 17; }"))->foo() ]],17)
 test_equal([[column(({({1,2,3}),({5,6,7}),({8,9,0})}),0)]],[[({1,5,8})]])
 test_equal([[column(({({1,2,3}),({5,6,7}),({8,9,0})}),1)]],[[({2,6,9})]])
 test_equal([[column(({({1,2,3}),({5,6,7}),({8,9,0})}),2)]],[[({3,7,0})]])
+test_any_equal([[
+  array a = ({({(["foo": 17])})});
+  mixed res = column (a, "foo"); // Avoid constant optimization.
+  return res && a[0][0];
+]], (["foo": 17]))
 
 // - combine_path
 test_eq([[combine_path("/foo/bar/gazonk/","..")]],"/foo/bar")

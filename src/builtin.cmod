@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: builtin.cmod,v 1.134 2003/04/28 00:32:42 mast Exp $
+|| $Id: builtin.cmod,v 1.135 2003/04/28 18:32:38 mast Exp $
 */
 
 #include "global.h"
@@ -273,7 +273,7 @@ PIKEFUN array column(array data, mixed index)
   efun;
   optflags OPT_TRY_OPTIMIZE;
 {
-  RETURN array_column (data, index);
+  RETURN array_column (data, index, 1);
 }
 
 /*! @decl multiset mkmultiset(array a)

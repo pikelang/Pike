@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: array.c,v 1.145 2003/04/28 18:08:35 mast Exp $
+|| $Id: array.c,v 1.146 2003/04/28 18:32:38 mast Exp $
 */
 
 #include "global.h"
@@ -26,7 +26,7 @@
 #include "cyclic.h"
 #include "multiset.h"
 
-RCSID("$Id: array.c,v 1.145 2003/04/28 18:08:35 mast Exp $");
+RCSID("$Id: array.c,v 1.146 2003/04/28 18:32:38 mast Exp $");
 
 PMOD_EXPORT struct array empty_array=
 {
@@ -201,8 +201,9 @@ PMOD_EXPORT void array_index(struct svalue *s,struct array *v,INT32 index)
   free_array(v);
 }
 
-/* Is destructive on data if it only has one ref. */
-PMOD_EXPORT struct array *array_column (struct array *data, struct svalue *index)
+/* Is destructive on data if destructive is set and it only has one ref. */
+PMOD_EXPORT struct array *array_column (struct array *data, struct svalue *index,
+					int destructive)
 {
   int e;
   struct array *a;
@@ -211,7 +212,7 @@ PMOD_EXPORT struct array *array_column (struct array *data, struct svalue *index
   DECLARE_CYCLIC();
 
   /* Optimization */
-  if(data->refs == 1)
+  if(data->refs == 1 && destructive)
   {
     /* An array with one ref cannot possibly be cyclic */
     struct svalue sval;
@@ -275,7 +276,7 @@ PMOD_EXPORT void simple_array_index_no_free(struct svalue *s,
     {
       /* Set the type afterwards to avoid a clobbered svalue in case
        * array_column throws. */
-      s->u.array = array_column (a, ind);
+      s->u.array = array_column (a, ind, 0);
       s->type = T_ARRAY;
       break;
     }
@@ -1262,7 +1263,7 @@ PMOD_EXPORT union anything *array_get_item_ptr(struct array *a,
 				   struct svalue *ind,
 				   TYPE_T t)
 {
-  INT32 i;
+  INT_TYPE i;
   if(ind->type != T_INT)
     Pike_error("Expected integer as array index, got %s.\n",
 	       get_name_of_type (ind->type));
@@ -1270,9 +1271,10 @@ PMOD_EXPORT union anything *array_get_item_ptr(struct array *a,
   if(i<0) i+=a->size;
   if(i<0 || i>=a->size) {
     if (a->size) {
-      Pike_error("Index %d is out of array range 0 - %d.\n", i, a->size-1);
+      Pike_error("Index %"PRINTPIKEINT"d is out of "
+		 "array range 0 - %"PRINTPTRDIFFT"d.\n", i, a->size-1);
     } else {
-      Pike_error("Attempt to index the empty array with %d.\n", i);
+      Pike_error("Attempt to index the empty array with %"PRINTPIKEINT"d.\n", i);
     }
   }
   return low_array_get_item_ptr(a,i,t);
