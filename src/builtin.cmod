@@ -1,5 +1,5 @@
 /* -*- c -*-
- * $Id: builtin.cmod,v 1.75 2002/01/04 13:44:16 grubba Exp $
+ * $Id: builtin.cmod,v 1.76 2002/01/18 04:56:22 nilsson Exp $
  */
 
 #include "global.h"
@@ -203,12 +203,12 @@ PIKEFUN string int2hex(int|object x)
   len=1;
   if(c<0) {
     len++;
-    n=-c;
+    n=(-c)&((unsigned int)(-1));
   }else{
     n=c;
   }
-  while(n>65536) { n>>=16; len+=4; }
-  while(n>16) { n>>=4; len++; }
+  while(n>65535) { n>>=16; len+=4; }
+  while(n>15) { n>>=4; len++; }
   
   s=begin_shared_string(len);
   c=x->u.integer;
@@ -219,11 +219,11 @@ PIKEFUN string int2hex(int|object x)
     if(c<0)
     {
       s->str[0]='-';
-      n=-c;
+      n=(-c)&((unsigned int)(-1));
     }else{
       n=c;
     }
-    while(n)
+    while(len && n)
     {
       s->str[--len]="0123456789abcdef"[n&0xf];
       n>>=4;
