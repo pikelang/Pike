@@ -1,5 +1,5 @@
 NAME
-	/precompiled/mysql_result - result of an Mysql query
+	/precompiled/mysql_result - result of an Mysql query (ALPHA)
 
 DESCRIPTION
 	/precompiled/mysql_result is a pre-compiled Pike program. It
@@ -118,16 +118,17 @@ SEE ALSO
 
 ============================================================================
 NAME
-	fetch_field - return specification of all fields
+	fetch_field - return specification of current field
 
 SYNTAX
 	#include <mysql.h>
 
-	array(int|mapping(string:mixed)) mysql_result->fetch_field();
+	int|mapping(string:mixed) mysql_result->fetch_field();
 
 DESCRIPTION
-	Returns an array with one mapping for every field in the
-	result table.
+	Returns a mapping with information about the current field, and
+	advances the field cursor one step. Returns 0 if there are no more
+	fields.
 
 	The mapping contains the following entries:
 
@@ -151,12 +152,34 @@ BUGS
 
 	The "default" value handling does not work correctly yet (DISABLED).
 
-	Is affected by field_seek. The resulting array is padded with
-	0's to reach mysql_result->num_fields entries.
+SEE ALSO
+	mysql_result->fetch_fields
+	mysql_result->field_seek
 
+
+============================================================================
+NAME
+	fetch_fields - return specification of all remaining fields
+
+SYNTAX
+	#include <mysql.h>
+
+	array(int|mapping(string:mixed)) mysql_result->fetch_fields();
+
+DESCRIPTION
+	Returns an array with one mapping for every remaining field in the
+	result table.
+
+	For a description of the mapping see mysql_result->fetch_field above.
+
+NOTA BENE
 	Resets the field cursor to 0.
 
+BUGS
+	See mysql_result->fetch_field.
+
 SEE ALSO
+	mysql_result->fetch_field
 	mysql_result->field_seek
 
 

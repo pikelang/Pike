@@ -1,5 +1,5 @@
 /*
- * $Id: result.c,v 1.2 1996/12/30 22:52:45 grubba Exp $
+ * $Id: result.c,v 1.3 1997/01/01 15:02:06 grubba Exp $
  *
  * mysql query result
  *
@@ -76,6 +76,95 @@ static void exit_res_struct(struct object *o)
 }
 
 /*
+ * Help functions
+ */
+
+static void parse_field(MYSQL_FIELD *field)
+{
+  if (field) {
+    push_text("name"); push_text(field->name);
+    push_text("table"); push_text(field->table);
+#ifdef SUPPORT_DEFAULT
+    push_text("default");
+    if (field->def) {
+      push_text(field->def);
+    } else {
+      push_int(0);
+    }
+#endif /* SUPPORT_DEFAULT */
+    push_text("type");
+    switch(field->type) {
+    case FIELD_TYPE_DECIMAL:
+      push_text("decimal");
+      break;
+    case FIELD_TYPE_CHAR:
+      push_text("char");
+      break;
+    case FIELD_TYPE_SHORT:
+      push_text("short");
+      break;
+    case FIELD_TYPE_LONG:
+      push_text("long");
+      break;
+    case FIELD_TYPE_FLOAT:
+      push_text("float");
+      break;
+    case FIELD_TYPE_DOUBLE:
+      push_text("double");
+      break;
+    case FIELD_TYPE_NULL:
+      push_text("null");
+      break;
+    case FIELD_TYPE_TIME:
+      push_text("time");
+      break;
+    case FIELD_TYPE_LONGLONG:
+      push_text("longlong");
+      break;
+    case FIELD_TYPE_INT24:
+      push_text("int24");
+      break;
+    case FIELD_TYPE_TINY_BLOB:
+      push_text("tiny blob");
+      break;
+    case FIELD_TYPE_MEDIUM_BLOB:
+      push_text("medium blob");
+      break;
+    case FIELD_TYPE_LONG_BLOB:
+      push_text("long blob");
+      break;
+    case FIELD_TYPE_BLOB:
+      push_text("blob");
+      break;
+    case FIELD_TYPE_VAR_STRING:
+      push_text("var string");
+      break;
+    case FIELD_TYPE_STRING:
+      push_text("string");
+      break;
+    default:
+      push_text("unknown");
+      break;
+    }
+    push_text("length"); push_int(field->length);
+    push_text("max_length"); push_int(field->max_length);
+    push_text("flags"); push_int(field->flags);		/*************/
+    push_text("decimals"); push_int(field->decimals);
+      
+#ifdef SUPPORT_DEFAULT
+    f_aggregate_mapping(8*2);
+#else
+    f_aggregate_mapping(7*2);
+#endif /* SUPPORT_DEFAULT */
+  } else {
+    /*
+     * Should this be an error?
+     */
+    push_int(0);
+  }
+}
+
+/*
  * Methods
  */
 
@@ -134,99 +223,32 @@ static void f_eof(INT32 args)
   push_int(mysql_eof(PIKE_MYSQL_RES->result));
 }
 
-/* array(int|mapping(string:mixed)) fetch_field() */
+/* int|mapping(string:mixed) fetch_field() */
 static void f_fetch_field(INT32 args)
 {
-  unsigned int i;
+  MYSQL_FIELD *field;
 
   pop_n_elems(args);
 
-  for (i=0; i < mysql_num_fields(PIKE_MYSQL_RES->result); i++) {
-    MYSQL_FIELD *field = mysql_fetch_field(PIKE_MYSQL_RES->result);
+  field = mysql_fetch_field(PIKE_MYSQL_RES->result);
 
-    if (field) {
-      push_text("name"); push_text(field->name);
-      push_text("table"); push_text(field->table);
-#ifdef SUPPORT_DEFAULT
-      push_text("default");
-      if (field->def) {
-	push_text(field->def);
-      } else {
-	push_int(0);
-      }
-#endif /* SUPPORT_DEFAULT */
-      push_text("type");
-      switch(field->type) {
-      case FIELD_TYPE_DECIMAL:
-	push_text("decimal");
-	break;
-      case FIELD_TYPE_CHAR:
-	push_text("char");
-	break;
-      case FIELD_TYPE_SHORT:
-	push_text("short");
-	break;
-      case FIELD_TYPE_LONG:
-	push_text("long");
-	break;
-      case FIELD_TYPE_FLOAT:
-	push_text("float");
-	break;
-      case FIELD_TYPE_DOUBLE:
-	push_text("double");
-	break;
-      case FIELD_TYPE_NULL:
-	push_text("null");
-	break;
-      case FIELD_TYPE_TIME:
-	push_text("time");
-	break;
-      case FIELD_TYPE_LONGLONG:
-	push_text("longlong");
-	break;
-      case FIELD_TYPE_INT24:
-	push_text("int24");
-	break;
-      case FIELD_TYPE_TINY_BLOB:
-	push_text("tiny blob");
-	break;
-      case FIELD_TYPE_MEDIUM_BLOB:
-	push_text("medium blob");
-	break;
-      case FIELD_TYPE_LONG_BLOB:
-	push_text("long blob");
-	break;
-      case FIELD_TYPE_BLOB:
-	push_text("blob");
-	break;
-      case FIELD_TYPE_VAR_STRING:
-	push_text("var string");
-	break;
-      case FIELD_TYPE_STRING:
-	push_text("string");
-	break;
-      default:
-	push_text("unknown");
-	break;
-      }
-      push_text("length"); push_int(field->length);
-      push_text("max_length"); push_int(field->max_length);
-      push_text("flags"); push_int(field->flags);		/*************/
-      push_text("decimals"); push_int(field->decimals);
-      
-#ifdef SUPPORT_DEFAULT
-      f_aggregate_mapping(8*2);
-#else
-      f_aggregate_mapping(7*2);
-#endif /* SUPPORT_DEFAULT */
-    } else {
-      /*
-       * Should this be an error?
-       */
-      push_int(0);
-    }
+  parse_field(field);
+}
+
+/* array(int|mapping(string:mixed)) fetch_fields() */
+static void f_fetch_fields(INT32 args)
+{
+  MYSQL_FIELD *field;
+  int i = 0;
+  
+  pop_n_elems(args);
+
+  while ((field = mysql_fetch_field(PIKE_MYSQL_RES->result))) {
+    parse_field(field);
+    i++;
   }
-  f_aggregate(mysql_num_fields(PIKE_MYSQL_RES->result));
+  f_aggregate(i);
+
   mysql_field_seek(PIKE_MYSQL_RES->result, 0);
 }
 
@@ -316,7 +338,8 @@ void init_mysql_res_programs(void)
   add_function("num_fields", f_num_fields, "function(void:int)", OPT_EXTERNAL_DEPEND);
   add_function("field_seek", f_field_seek, "function(int:void)", OPT_SIDE_EFFECT);
   add_function("eof", f_eof, "function(void:int)", OPT_EXTERNAL_DEPEND);
-  add_function("fetch_field", f_fetch_field, "function(void:array(int|mapping(string:mixed)))", OPT_EXTERNAL_DEPEND);
+  add_function("fetch_field", f_fetch_field, "function(void:int|mapping(string:mixed))", OPT_EXTERNAL_DEPEND);
+  add_function("fetch_fields", f_fetch_fields, "function(void:array(int|mapping(string:mixed)))", OPT_EXTERNAL_DEPEND);
   add_function("seek", f_seek, "function(int:void)", OPT_SIDE_EFFECT);
   add_function("fetch_row", f_fetch_row, "function(void:void|array(string|int))", OPT_EXTERNAL_DEPEND|OPT_SIDE_EFFECT);
 
