@@ -23,14 +23,14 @@
 #define HUGE HUGE_VAL
 #endif /*!HUGE*/
 
-RCSID("$Id: stralloc.c,v 1.63 1999/09/06 12:31:31 grubba Exp $");
+RCSID("$Id: stralloc.c,v 1.64 1999/09/16 23:01:14 hubbe Exp $");
 
 #define BEGIN_HASH_SIZE 997
 #define MAX_AVG_LINK_LENGTH 3
 
 /* Experimental dynamic hash length */
 #ifndef HASH_PREFIX
-static unsigned int HASH_PREFIX=32;
+static unsigned int HASH_PREFIX=64;
 static unsigned int need_more_hash_prefix=0;
 #endif
 
