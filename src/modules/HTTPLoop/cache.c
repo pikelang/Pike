@@ -26,6 +26,9 @@
 #include "util.h"
 #include "backend.h"
 
+/* This must be included last! */
+#include "module_magic.h"
+
 struct cache *first_cache;
 
 static struct pike_string *free_queue[1024];

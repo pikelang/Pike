@@ -48,6 +48,9 @@ MUTEX_T pike_postgres_mutex STATIC_MUTEX_INIT;
 
 #include "pg_types.h"
 
+/* must be included last */
+#include "module_magic.h"
+
 #ifdef PGDEBUG
 #define pgdebug printf
 #else
@@ -56,7 +59,7 @@ static void pgdebug (char * a, ...) {}
 
 struct program * postgres_program;
 
-RCSID("$Id: postgres.c,v 1.17 2000/04/18 06:54:08 jonasw Exp $");
+RCSID("$Id: postgres.c,v 1.18 2000/07/28 07:14:33 hubbe Exp $");
 
 #define THIS ((struct pgres_object_data *) fp->current_storage)
 
@@ -506,6 +509,7 @@ void pike_module_exit(void)
 }
 
 #else /* HAVE_POSTGRES */
+#include "module_magic.h"
 void pike_module_init(void) {}
 void pike_module_exit(void) {}
 #endif /* HAVE_POSTGRES */

@@ -28,7 +28,10 @@
 #include "builtin_functions.h"
 #include "module_support.h"
 
-RCSID("$Id: yp.c,v 1.17 1999/08/03 00:42:53 hubbe Exp $");
+/* must be included last */
+#include "module_magic.h"
+
+RCSID("$Id: yp.c,v 1.18 2000/07/28 07:15:01 hubbe Exp $");
 
 #define YPERROR(fun,err) do{ if(err) error("yp->%s(): %s\n", (fun), \
                                            yperr_string(err)); }while(0)
@@ -253,6 +256,7 @@ void pike_module_exit(void)
 }
 #else
 
+#include "module_magic.h"
 void pike_module_init(void) {}
 void pike_module_exit(void) {}
 

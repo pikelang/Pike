@@ -1,9 +1,9 @@
-/* $Id: gif.c,v 1.51 2000/07/03 13:30:32 grubba Exp $ */
+/* $Id: gif.c,v 1.52 2000/07/28 07:13:06 hubbe Exp $ */
 
 /*
 **! module Image
 **! note
-**!	$Id: gif.c,v 1.51 2000/07/03 13:30:32 grubba Exp $
+**!	$Id: gif.c,v 1.52 2000/07/28 07:13:06 hubbe Exp $
 **! submodule GIF
 **!
 **!	This submodule keep the GIF encode/decode capabilities
@@ -31,7 +31,7 @@
 #include <ctype.h>
 
 #include "stralloc.h"
-RCSID("$Id: gif.c,v 1.51 2000/07/03 13:30:32 grubba Exp $");
+RCSID("$Id: gif.c,v 1.52 2000/07/28 07:13:06 hubbe Exp $");
 #include "pike_macros.h"
 #include "object.h"
 #include "constants.h"
@@ -45,17 +45,19 @@ RCSID("$Id: gif.c,v 1.51 2000/07/03 13:30:32 grubba Exp $");
 #include "image.h"
 #include "colortable.h"
 #include "builtin_functions.h"
+#include "operators.h"
 #include "mapping.h"
 
 #include "gif_lzw.h"
 
 #include "encodings.h"
 
+/* MUST BE INCLUDED LAST */
+#include "module_magic.h"
+
 extern struct program *image_colortable_program;
 extern struct program *image_program;
 extern struct program *image_layer_program;
-
-extern void f_add(INT32 args);
 
 enum 
 {

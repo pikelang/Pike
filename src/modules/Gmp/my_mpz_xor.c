@@ -1,11 +1,11 @@
-/* $Id: my_mpz_xor.c,v 1.2 1999/11/09 17:01:50 mast Exp $
+/* $Id: my_mpz_xor.c,v 1.3 2000/07/28 07:12:07 hubbe Exp $
  *
  * since xor isn't implemented by gmp (for some odd reason)
  */
 
 #include "global.h"
 
-RCSID("$Id: my_mpz_xor.c,v 1.2 1999/11/09 17:01:50 mast Exp $");
+RCSID("$Id: my_mpz_xor.c,v 1.3 2000/07/28 07:12:07 hubbe Exp $");
 
 #include "gmp_machine.h"
 
@@ -20,6 +20,9 @@ RCSID("$Id: my_mpz_xor.c,v 1.2 1999/11/09 17:01:50 mast Exp $");
 #if defined(USE_GMP) || defined(USE_GMP2)
 
 #include "my_gmp.h"
+
+/* This must be included last! */
+#include "module_magic.h"
 
 void my_mpz_xor (mpz_ptr res, mpz_srcptr a, mpz_srcptr b)
 {

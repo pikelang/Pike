@@ -1,10 +1,10 @@
-/* $Id: blit.c,v 1.42 2000/07/07 13:56:45 grubba Exp $ */
+/* $Id: blit.c,v 1.43 2000/07/28 07:12:44 hubbe Exp $ */
 #include "global.h"
 
 /*
 **! module Image
 **! note
-**!	$Id: blit.c,v 1.42 2000/07/07 13:56:45 grubba Exp $
+**!	$Id: blit.c,v 1.43 2000/07/28 07:12:44 hubbe Exp $
 **! class Image
 */
 
@@ -28,6 +28,9 @@
 #ifdef ASSEMBLY_OK
 #include "assembly.h"
 #endif
+
+/* This must be included last! */
+#include "module_magic.h"
 
 extern struct program *image_program;
 #ifdef THIS

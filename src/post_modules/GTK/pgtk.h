@@ -40,6 +40,8 @@
 #define GTK_ACCEL_GROUP(X) ((void *)X)
 #include "../../modules/Image/image.h"
 
+#include "module_magic.h"
+
 struct object_wrapper
 {
   GtkObject *obj;

@@ -26,6 +26,8 @@
 #include "cache.h"
 #include "util.h"
 
+/* This must be included last! */
+#include "module_magic.h"
 
 struct file_ret *aap_find_file( char *s, int len, 
                                 char *ho, int hlen, 

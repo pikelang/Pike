@@ -8,7 +8,7 @@
 #endif
 
 #include "stralloc.h"
-RCSID("$Id: avs.c,v 1.8 2000/02/03 19:01:29 grubba Exp $");
+RCSID("$Id: avs.c,v 1.9 2000/07/28 07:13:06 hubbe Exp $");
 #include "pike_macros.h"
 #include "object.h"
 #include "constants.h"
@@ -17,11 +17,15 @@ RCSID("$Id: avs.c,v 1.8 2000/02/03 19:01:29 grubba Exp $");
 #include "threads.h"
 #include "array.h"
 #include "error.h"
-
+#include "mapping.h"
+#include "operators.h"
 
 #include "image.h"
 #include "builtin_functions.h"
 #include "module_support.h"
+
+/* MUST BE INCLUDED LAST */
+#include "module_magic.h"
 
 extern struct program *image_program;
 
@@ -46,7 +50,6 @@ extern struct program *image_program;
 
 void image_avs_f__decode(INT32 args)
 {
-  extern void f_aggregate_mapping(INT32 args);
   struct object *io, *ao;
   struct pike_string *s;
   unsigned int c;
@@ -91,7 +94,6 @@ void image_avs_f__decode(INT32 args)
 
 void image_avs_f_decode(INT32 args)
 {
-  extern void f_index(INT32 args);
   image_avs_f__decode(args);
   push_constant_text("image");
   f_index(2);

@@ -1,9 +1,9 @@
-/* $Id: iff.c,v 1.4 2000/02/03 19:01:29 grubba Exp $ */
+/* $Id: iff.c,v 1.5 2000/07/28 07:13:06 hubbe Exp $ */
 
 #include "global.h"
 
 #include "stralloc.h"
-RCSID("$Id: iff.c,v 1.4 2000/02/03 19:01:29 grubba Exp $");
+RCSID("$Id: iff.c,v 1.5 2000/07/28 07:13:06 hubbe Exp $");
 #include "pike_macros.h"
 #include "object.h"
 #include "constants.h"
@@ -15,6 +15,8 @@ RCSID("$Id: iff.c,v 1.4 2000/02/03 19:01:29 grubba Exp $");
 #include "operators.h"
 #include "builtin_functions.h"
 
+/* MUST BE INCLUDED LAST */
+#include "module_magic.h"
 
 static INT32 low_parse_iff(unsigned char *data, INT32 len, unsigned char *hdr,
 			   struct mapping *m, unsigned char *stopchunk)

@@ -1,9 +1,9 @@
-/* $Id: dct.c,v 1.14 1999/06/18 19:19:20 mirar Exp $ */
+/* $Id: dct.c,v 1.15 2000/07/28 07:12:44 hubbe Exp $ */
 
 /*
 **! module Image
 **! note
-**!	$Id: dct.c,v 1.14 1999/06/18 19:19:20 mirar Exp $
+**!	$Id: dct.c,v 1.15 2000/07/28 07:12:44 hubbe Exp $
 **! class Image
 */
 
@@ -23,6 +23,9 @@
 #include "error.h"
 
 #include "image.h"
+
+/* This must be included last! */
+#include "module_magic.h"
 
 extern struct program *image_program;
 #ifdef THIS

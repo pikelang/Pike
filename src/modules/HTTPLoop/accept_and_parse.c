@@ -50,6 +50,9 @@
 #include "util.h"
 #include "timeout.h"
 
+/* This must be included last! */
+#include "module_magic.h"
+
 static struct callback *my_callback;
 struct program *request_program;
 struct program *c_request_program;

@@ -1,7 +1,7 @@
 /*
 **! module Image
 **! note
-**!	$Id: colors.c,v 1.31 2000/07/07 13:56:45 grubba Exp $
+**!	$Id: colors.c,v 1.32 2000/07/28 07:12:44 hubbe Exp $
 **! submodule Color
 **!
 **!	This module keeps names and easy handling 
@@ -179,7 +179,7 @@
 
 #include "global.h"
 
-RCSID("$Id: colors.c,v 1.31 2000/07/07 13:56:45 grubba Exp $");
+RCSID("$Id: colors.c,v 1.32 2000/07/28 07:12:44 hubbe Exp $");
 
 #include "image_machine.h"
 
@@ -202,6 +202,9 @@ RCSID("$Id: colors.c,v 1.31 2000/07/07 13:56:45 grubba Exp $");
 
 #include "image.h"
 #include "colortable.h"
+
+/* This must be included last! */
+#include "module_magic.h"
 
 static struct mapping *colors=NULL;
 static struct object *colortable=NULL;

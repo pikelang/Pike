@@ -18,6 +18,8 @@
 #endif
 #endif
 
+#include "module_magic.h"
+
 #ifdef HAVE_MIRD
 
 #include "mird.h"

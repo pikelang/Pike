@@ -2,7 +2,7 @@
  * This code is (C) Francesco Chemolli, 1997.
  * You may use, modify and redistribute it freely under the terms
  * of the GNU General Public License, version 2.
- * $Id: msqlmod.c,v 1.13 2000/04/30 21:15:24 kinkie Exp $
+ * $Id: msqlmod.c,v 1.14 2000/07/28 07:13:45 hubbe Exp $
  *
  * This version is intended for Pike/0.5 and later.
  * It won't compile under older versions of the Pike interpreter.
@@ -35,7 +35,7 @@
 #include "operators.h"
 #include "multiset.h"
 
-RCSID("$Id: msqlmod.c,v 1.13 2000/04/30 21:15:24 kinkie Exp $");
+RCSID("$Id: msqlmod.c,v 1.14 2000/07/28 07:13:45 hubbe Exp $");
 #include "version.h"
 
 #ifdef _REENTRANT
@@ -806,6 +806,7 @@ void pike_module_init(void)
 }
 
 #else /*HAVE_MSQL*/
+#include "module_magic.h"
 void pike_module_init(void) {}
 #endif /*HAVE_MSQL*/
 

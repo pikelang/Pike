@@ -1,7 +1,7 @@
 /*
 **! module Image
 **! note
-**!	$Id: poly.c,v 1.4 2000/07/07 13:56:46 grubba Exp $
+**!	$Id: poly.c,v 1.5 2000/07/28 07:12:44 hubbe Exp $
 **! class Poly
 **!
 */
@@ -18,7 +18,7 @@ another?
 
 #include "global.h"
 
-RCSID("$Id: poly.c,v 1.4 2000/07/07 13:56:46 grubba Exp $");
+RCSID("$Id: poly.c,v 1.5 2000/07/28 07:12:44 hubbe Exp $");
 
 #include "image_machine.h"
 
@@ -43,6 +43,9 @@ RCSID("$Id: poly.c,v 1.4 2000/07/07 13:56:46 grubba Exp $");
 #include "image.h"
 #include "colortable.h"
 #include "initstuff.h"
+
+/* This must be included last! */
+#include "module_magic.h"
 
 #ifdef PFLOAT
 #undef PFLOAT

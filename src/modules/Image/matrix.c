@@ -1,9 +1,9 @@
-/* $Id: matrix.c,v 1.23 2000/07/07 13:56:46 grubba Exp $ */
+/* $Id: matrix.c,v 1.24 2000/07/28 07:12:44 hubbe Exp $ */
 
 /*
 **! module Image
 **! note
-**!	$Id: matrix.c,v 1.23 2000/07/07 13:56:46 grubba Exp $
+**!	$Id: matrix.c,v 1.24 2000/07/28 07:12:44 hubbe Exp $
 **! class Image
 */
 
@@ -24,6 +24,9 @@
 #include "error.h"
 
 #include "image.h"
+
+/* This must be included last! */
+#include "module_magic.h"
 
 extern struct program *image_program;
 #ifdef THIS

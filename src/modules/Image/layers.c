@@ -1,7 +1,7 @@
 /*
 **! module Image
 **! note
-**!	$Id: layers.c,v 1.44 2000/07/07 00:40:19 hubbe Exp $
+**!	$Id: layers.c,v 1.45 2000/07/28 07:12:44 hubbe Exp $
 **! class Layer
 **! see also: layers
 **!
@@ -215,7 +215,7 @@
 
 #include <math.h> /* floor */
 
-RCSID("$Id: layers.c,v 1.44 2000/07/07 00:40:19 hubbe Exp $");
+RCSID("$Id: layers.c,v 1.45 2000/07/28 07:12:44 hubbe Exp $");
 
 #include "image_machine.h"
 
@@ -236,6 +236,8 @@ RCSID("$Id: layers.c,v 1.44 2000/07/07 00:40:19 hubbe Exp $");
 
 #include "image.h"
 
+/* This must be included last! */
+#include "module_magic.h"
 
 #ifdef TRY_USE_MMX
 #include <mmx.h>

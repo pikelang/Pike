@@ -5,7 +5,7 @@
 #include <ctype.h>
 
 #include "stralloc.h"
-RCSID("$Id: wbf.c,v 1.4 2000/02/03 19:01:29 grubba Exp $");
+RCSID("$Id: wbf.c,v 1.5 2000/07/28 07:13:06 hubbe Exp $");
 #include "pike_macros.h"
 #include "object.h"
 #include "mapping.h"
@@ -23,6 +23,10 @@ RCSID("$Id: wbf.c,v 1.4 2000/02/03 19:01:29 grubba Exp $");
 #include "image.h"
 #include "builtin_functions.h"
 #include "module_support.h"
+
+/* MUST BE INCLUDED LAST */
+#include "module_magic.h"
+
 
 extern struct program *image_program;
 
@@ -80,7 +84,7 @@ static unsigned char read_uchar( struct buffer *from )
   return res;
 }
 
-static int read_int( struct buffer *from )
+static int wbf_read_int( struct buffer *from )
 {
   int res = 0;
   while( 1 )
@@ -107,14 +111,14 @@ static struct wbf_header decode_header( struct buffer *data )
 {
   struct wbf_header res;
   MEMSET( &res, 0, sizeof(res) );
-  res.type = read_int( data );
+  res.type = wbf_read_int( data );
   res.fix_header_field = read_uchar( data );
   if( res.fix_header_field & 0x80 )
   {
     switch( (res.fix_header_field>>5) & 0x3 )
     {
      case 0: /* Single varint extra header */
-       res.ext_header_field = read_int( data );
+       res.ext_header_field = wbf_read_int( data );
        break;
      case 1: /* reserved */
      case 2: /* reserved */
@@ -138,8 +142,8 @@ static struct wbf_header decode_header( struct buffer *data )
        }
     }
   }
-  res.width = read_int( data );
-  res.height = read_int( data );
+  res.width = wbf_read_int( data );
+  res.height = wbf_read_int( data );
   return res;
 }
 

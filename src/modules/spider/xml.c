@@ -18,6 +18,9 @@
 #include "opcodes.h"
 #include "block_alloc.h"
 
+/* This must be included last! */
+#include "module_magic.h"
+
 /* FIXME:
  * recursive parsing will lock make the parser lock or
  * use up all memory and then crash...

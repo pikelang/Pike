@@ -135,10 +135,14 @@ void status_clear()
   }
 }
 
-int mkdirhier(string dir)
+
+mapping already_created=([]);
+int mkdirhier(string orig_dir)
 {
   int tomove;
   if(export) return 1;
+  string dir=orig_dir;
+  if(already_created[orig_dir]) return 1;
 
   if(dir=="" || (strlen(dir)==2 && dir[-1]==':')) return 1;
   dir=fakeroot(dir);
@@ -149,7 +153,7 @@ int mkdirhier(string dir)
   if(s)
   {
     if(s[1]<0)
-      return 1;
+      return already_created[orig_dir]=1;
 
     if(glob("*.pmod",dir))
     {
@@ -174,7 +178,7 @@ int mkdirhier(string dir)
     if(!mv(dir+".tmp",dir+"/module.pmod"))
       fail("mv(%s,%s)",dir+".tmp",dir+"/module.pmod");
 
-  return 1;
+  return already_created[orig_dir]=1;
 }
 
 int compare_files(string a,string b)

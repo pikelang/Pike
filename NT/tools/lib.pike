@@ -206,6 +206,9 @@ int silent_do_cmd(string *cmd, mixed|void filter, int|void silent)
 	object rl=Stdio.Readline();
 	string prompt="";
 
+	array from_handler= ({"\r\n","\n\r","\n"});
+	array to_handler= ({"\n\r","\n\r","\n\r"});
+
 	string read()
 	  {
 	    string tmp=rl->read();
@@ -219,16 +222,42 @@ int silent_do_cmd(string *cmd, mixed|void filter, int|void silent)
 
 	int write(string s)
 	  {
-	    s=prompt+s-"\r";
-	    array lines=s/"\n";
-	    rl->write(lines[..sizeof(s)-2]*"\n");
-	    rl->set_prompt(prompt=lines[-1]);
+	    /* This provides some very basic terminal emulation */
+	    /* We need to understand \r, \n, and \b */
+//	    werror("%O\n",s);
+	    s=replace(prompt+s,from_handler,to_handler);
+	    
+	    array tmp=s/"/b";
+
+	    array lines=s/"\r";
+	    foreach(lines, string l)
+	    {
+	      if(strlen(l) && l[-1]=='\n')
+	      {
+		rl->write(l);
+		prompt="";
+	      }else{
+		prompt=l;
+	      }
+	    }
+	      
+	    rl->set_prompt(prompt);
 	    return strlen(s);
 	  }
 
 	void create()
 	  {
 	    rl->enable_history(512);
+	    for(int e=0;e<256;e++)
+	    {
+	      switch(e)
+	      {
+		case '\n': case '\r': break;
+		default:
+		  from_handler+=({ sprintf("%c\b",e) });
+		  to_handler+=({ sprintf("") });
+	      }
+	    }
 	  }
       };
 
@@ -252,13 +281,19 @@ int silent_do_cmd(string *cmd, mixed|void filter, int|void silent)
 	thread_create(lambda(object f)
 		      {
 			int killed;
+			int last_killed;
 			void killme()
 			  {
-			    if(!killed)
+			    if(last_killed == time()) return;
+			    last_killed=time();
+			    werror("\r\n** Interupted\r\n");
+			    if(!killed || killed+5 > time())
 			    {
-			      werror("\r\n** Interupted\r\n");
 			      f->write_oob("x");
-			      killed=1;
+			      if(!killed)
+				killed=time();
+			    }else{
+			      exit(1);
 			    }
 			  };
 

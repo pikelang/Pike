@@ -1,9 +1,9 @@
-/* $Id: operator.c,v 1.29 2000/07/07 13:56:46 grubba Exp $ */
+/* $Id: operator.c,v 1.30 2000/07/28 07:12:44 hubbe Exp $ */
 
 /*
 **! module Image
 **! note
-**!	$Id: operator.c,v 1.29 2000/07/07 13:56:46 grubba Exp $
+**!	$Id: operator.c,v 1.30 2000/07/28 07:12:44 hubbe Exp $
 **! class Image
 */
 
@@ -27,6 +27,9 @@
 #include "image.h"
 #include "image_machine.h"
 #include "assembly.h"
+
+/* This must be included last! */
+#include "module_magic.h"
 
 extern struct program *image_program;
 #ifdef THIS

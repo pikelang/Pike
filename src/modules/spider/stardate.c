@@ -1,5 +1,5 @@
 /*
- * $Id: stardate.c,v 1.8 1998/07/04 17:04:08 grubba Exp $
+ * $Id: stardate.c,v 1.9 2000/07/28 07:15:49 hubbe Exp $
  */
 
 #include "global.h"
@@ -17,13 +17,16 @@
 #include "builtin_functions.h"
 #include "error.h"
 
-RCSID("$Id: stardate.c,v 1.8 1998/07/04 17:04:08 grubba Exp $");
+RCSID("$Id: stardate.c,v 1.9 2000/07/28 07:15:49 hubbe Exp $");
 
 #ifdef HAVE_SYS_TIME_H 
 #include <sys/time.h>
 #endif
 #include <time.h>
 #define	FIT(x,y) while((x)<0)(x)+=(y);while((x)>(y))(x)-=(y)
+
+/* This must be included last! */
+#include "module_magic.h"
 
 
 #define MAXPRECISION       7

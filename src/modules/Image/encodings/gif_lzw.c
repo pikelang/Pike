@@ -1,12 +1,15 @@
 /*
 **! module Image
 **! note
-**!	$Id: gif_lzw.c,v 1.6 1999/05/30 20:11:14 mirar Exp $
+**!	$Id: gif_lzw.c,v 1.7 2000/07/28 07:13:06 hubbe Exp $
 */
 
 #include "global.h"
 #include "image_machine.h"
 #include "gif_lzw.h"
+
+/* MUST BE INCLUDED LAST */
+#include "module_magic.h"
 
 #define DEFAULT_OUTBYTES 16384
 #define STDLZWCODES 8192

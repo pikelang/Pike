@@ -43,7 +43,7 @@
 #include "threads.h"
 #include "operators.h"
 
-RCSID("$Id: spider.c,v 1.93 2000/06/29 09:55:04 per Exp $");
+RCSID("$Id: spider.c,v 1.94 2000/07/28 07:15:49 hubbe Exp $");
 
 #ifdef HAVE_PWD_H
 #include <pwd.h>
@@ -85,6 +85,10 @@ RCSID("$Id: spider.c,v 1.93 2000/06/29 09:55:04 per Exp $");
 /* #include <stdlib.h> */
 
 #include "dmalloc.h"
+
+
+/* This must be included last! */
+#include "module_magic.h"
 
 #define MAX_PARSE_RECURSE 102
 
@@ -972,7 +976,6 @@ void f_get_all_active_fd(INT32 args)
 {
   int i,fds,q, ne;
   struct stat foo;
-  extern int fds_size;
 
   ne = fds_size;
   if( MAX_OPEN_FILEDESCRIPTORS > ne )

@@ -29,7 +29,10 @@
 
 #include "../Image/image.h"
 
-RCSID("$Id: sane.c,v 1.5 2000/07/07 16:10:07 marcus Exp $");
+/* must be included last */
+#include "module_magic.h"
+
+RCSID("$Id: sane.c,v 1.6 2000/07/28 07:14:53 hubbe Exp $");
 
 /*
 **! module SANE
@@ -38,7 +41,7 @@ RCSID("$Id: sane.c,v 1.5 2000/07/07 16:10:07 marcus Exp $");
 **!     library from pike
 **!
 **! note
-**!	$Id: sane.c,v 1.5 2000/07/07 16:10:07 marcus Exp $
+**!	$Id: sane.c,v 1.6 2000/07/28 07:14:53 hubbe Exp $
 */
 
 static int sane_is_inited;
@@ -746,6 +749,7 @@ void pike_module_exit()
 }
 
 #else
+#include "module_magic.h"
 void pike_module_init() {}
 void pike_module_exit() {}
 #endif

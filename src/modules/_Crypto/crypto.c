@@ -1,5 +1,5 @@
 /*
- * $Id: crypto.c,v 1.32 2000/07/07 13:57:15 grubba Exp $
+ * $Id: crypto.c,v 1.33 2000/07/28 07:15:16 hubbe Exp $
  *
  * A pike module for getting access to some common cryptos.
  *
@@ -36,6 +36,9 @@
 
 /* Prototypes */
 #include "crypto.h"
+
+/* THIS MUST BE INCLUDED LAST */
+#include "module_magic.h"
 
 struct pike_crypto {
   struct object *object;
@@ -306,7 +309,7 @@ static void f_set_decrypt_key(INT32 args)
 }
 
 /* string crypt(string) */
-static void f_crypt(INT32 args)
+static void f_crypto_crypt(INT32 args)
 {
   unsigned char *result;
   INT32 roffset = 0;
@@ -482,7 +485,7 @@ void pike_crypto_init(void)
   /* function(string:object) */
   ADD_FUNCTION("set_decrypt_key", f_set_decrypt_key,tFunc(tStr,tObj), 0);
   /* function(string:string) */
-  ADD_FUNCTION("crypt", f_crypt,tFunc(tStr,tStr), 0);
+  ADD_FUNCTION("crypt", f_crypto_crypt,tFunc(tStr,tStr), 0);
 
   /* function(void:string) */
   ADD_FUNCTION("pad", f_pad,tFunc(tVoid,tStr), 0);

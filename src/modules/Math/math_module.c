@@ -1,5 +1,5 @@
 /*
- * $Id: math_module.c,v 1.4 1999/11/08 22:40:16 grubba Exp $
+ * $Id: math_module.c,v 1.5 2000/07/28 07:13:32 hubbe Exp $
  */
 
 #include "global.h"
@@ -8,6 +8,9 @@
 #include "program.h"
 
 #include "math_module.h"
+
+/* must be included last */
+#include "module_magic.h"
 
 /*** module init & exit & stuff *****************************************/
 

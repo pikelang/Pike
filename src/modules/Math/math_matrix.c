@@ -1,4 +1,4 @@
-/* $Id: math_matrix.c,v 1.13 2000/07/07 14:01:16 grubba Exp $ */
+/* $Id: math_matrix.c,v 1.14 2000/07/28 07:13:32 hubbe Exp $ */
 
 #include "global.h"
 #include "config.h"
@@ -19,6 +19,9 @@
 #include "module_support.h"
 
 #include "math_module.h"
+
+/* must be included last */
+#include "module_magic.h"
 
 /*
 **! module Math

@@ -1,5 +1,5 @@
 #include "global.h"
-RCSID("$Id: image_xface.c,v 1.8 1999/08/08 13:15:16 grubba Exp $");
+RCSID("$Id: image_xface.c,v 1.9 2000/07/28 07:15:41 hubbe Exp $");
 
 #include "config.h"
 
@@ -37,6 +37,9 @@ RCSID("$Id: image_xface.c,v 1.8 1999/08/08 13:15:16 grubba Exp $");
 #ifdef HAVE_GMP_H
 
 #include "../Image/image.h"
+
+/* This must be included last! */
+#include "module_magic.h"
 
 #ifdef DYNAMIC_MODULE
 static struct program *image_program=NULL;

@@ -22,6 +22,8 @@
 #include "accept_and_parse.h"
 #include "util.h"
 
+/* This must be included last! */
+#include "module_magic.h"
 
 int aap_get_time(void)
 {

@@ -1,5 +1,5 @@
 /*
- * $Id: oracle.c,v 1.43 2000/07/07 00:50:10 hubbe Exp $
+ * $Id: oracle.c,v 1.44 2000/07/28 07:14:04 hubbe Exp $
  *
  * Pike interface to Oracle databases.
  *
@@ -33,6 +33,9 @@
 #include "opcodes.h"
 #include "pike_macros.h"
 
+/* must be included last */
+#include "module_magic.h"
+
 #ifdef HAVE_ORACLE
 
 /* VERY VERY UGLY */
@@ -41,7 +44,7 @@
 #include <oci.h>
 #include <math.h>
 
-RCSID("$Id: oracle.c,v 1.43 2000/07/07 00:50:10 hubbe Exp $");
+RCSID("$Id: oracle.c,v 1.44 2000/07/28 07:14:04 hubbe Exp $");
 
 
 #define BLOB_FETCH_CHUNK 16384

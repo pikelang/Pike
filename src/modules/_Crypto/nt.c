@@ -1,5 +1,5 @@
 /*
- * $Id: nt.c,v 1.2 2000/01/10 00:41:48 hubbe Exp $
+ * $Id: nt.c,v 1.3 2000/07/28 07:15:16 hubbe Exp $
  *
  * NT crypto stuff for Pike
  */
@@ -24,6 +24,8 @@
 
 #include <wincrypt.h>
 
+/* THIS MUST BE INCLUDED LAST */
+#include "module_magic.h"
 
 static struct program *cryptcontext_program = NULL;
 

@@ -1,9 +1,9 @@
-/* $Id: image.c,v 1.165 2000/07/27 03:45:48 per Exp $ */
+/* $Id: image.c,v 1.166 2000/07/28 07:12:44 hubbe Exp $ */
 
 /*
 **! module Image
 **! note
-**!	$Id: image.c,v 1.165 2000/07/27 03:45:48 per Exp $
+**!	$Id: image.c,v 1.166 2000/07/28 07:12:44 hubbe Exp $
 **! class Image
 **!
 **!	The main object of the <ref>Image</ref> module, this object
@@ -98,7 +98,7 @@
 
 #include "stralloc.h"
 #include "global.h"
-RCSID("$Id: image.c,v 1.165 2000/07/27 03:45:48 per Exp $");
+RCSID("$Id: image.c,v 1.166 2000/07/28 07:12:44 hubbe Exp $");
 #include "pike_macros.h"
 #include "object.h"
 #include "constants.h"
@@ -118,6 +118,10 @@ RCSID("$Id: image.c,v 1.165 2000/07/27 03:45:48 per Exp $");
 #ifdef ASSEMBLY_OK
 #include "assembly.h"
 #endif
+
+/* This must be included last! */
+#include "module_magic.h"
+
 
 extern struct program *image_program;
 extern struct program *image_colortable_program;

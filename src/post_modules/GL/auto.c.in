@@ -1,5 +1,5 @@
 /*
- * $Id: auto.c.in,v 1.13 1999/11/07 01:43:31 per fake $
+ * $Id: auto.c.in,v 1.14 2000/07/28 07:16:09 hubbe Exp $
  *
  */
 
@@ -7,7 +7,7 @@
 
 #include "config.h"
 
-RCSID("$Id: auto.c.in,v 1.13 1999/11/07 01:43:31 per fake $");
+RCSID("$Id: auto.c.in,v 1.14 2000/07/28 07:16:09 hubbe Exp $");
 #include "stralloc.h"
 #include "pike_macros.h"
 #include "object.h"
@@ -28,6 +28,8 @@ RCSID("$Id: auto.c.in,v 1.13 1999/11/07 01:43:31 per fake $");
 #ifdef HAVE_GL_GL_H
 #include <GL/gl.h>
 #endif /* HAVE_GL_GL_H */
+
+#include "module_magic.h"
 
 #define ZT_INT    1
 #define ZT_FLOAT  2

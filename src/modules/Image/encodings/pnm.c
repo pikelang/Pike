@@ -1,9 +1,9 @@
-/* $Id: pnm.c,v 1.21 2000/07/03 13:30:32 grubba Exp $ */
+/* $Id: pnm.c,v 1.22 2000/07/28 07:13:06 hubbe Exp $ */
 
 /*
 **! module Image
 **! note
-**!	$Id: pnm.c,v 1.21 2000/07/03 13:30:32 grubba Exp $
+**!	$Id: pnm.c,v 1.22 2000/07/28 07:13:06 hubbe Exp $
 **! submodule PNM
 **!
 **!	This submodule keeps the PNM encode/decode capabilities
@@ -49,7 +49,7 @@
 #include <ctype.h>
 
 #include "stralloc.h"
-RCSID("$Id: pnm.c,v 1.21 2000/07/03 13:30:32 grubba Exp $");
+RCSID("$Id: pnm.c,v 1.22 2000/07/28 07:13:06 hubbe Exp $");
 #include "pike_macros.h"
 #include "object.h"
 #include "constants.h"
@@ -58,12 +58,16 @@ RCSID("$Id: pnm.c,v 1.21 2000/07/03 13:30:32 grubba Exp $");
 #include "threads.h"
 #include "array.h"
 #include "error.h"
+#include "operators.h"
 
 
 #include "image.h"
 #include "builtin_functions.h"
 
 #include "encodings.h"
+
+/* MUST BE INCLUDED LAST */
+#include "module_magic.h"
 
 extern struct program *image_colortable_program;
 extern struct program *image_program;
@@ -301,8 +305,6 @@ void img_pnm_encode_P1(INT32 args) /* ascii PBM */
    free_string(a);
    free_string(b);
 }
-
-extern void f_add(INT32 args);
 
 void img_pnm_encode_P2(INT32 args) /* ascii PGM */
 {

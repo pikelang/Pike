@@ -1,5 +1,5 @@
 #include "global.h"
-RCSID("$Id: _xpm.c,v 1.11 2000/06/09 22:06:05 mast Exp $");
+RCSID("$Id: _xpm.c,v 1.12 2000/07/28 07:13:06 hubbe Exp $");
 
 #include "image_machine.h"
 
@@ -36,6 +36,9 @@ RCSID("$Id: _xpm.c,v 1.11 2000/06/09 22:06:05 mast Exp $");
 
 #include "image.h"
 #include "colortable.h"
+
+/* MUST BE INCLUDED LAST */
+#include "module_magic.h"
 
 extern struct program *image_program;
 

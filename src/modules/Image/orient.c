@@ -1,9 +1,9 @@
-/* $Id: orient.c,v 1.14 2000/07/07 13:56:46 grubba Exp $ */
+/* $Id: orient.c,v 1.15 2000/07/28 07:12:44 hubbe Exp $ */
 
 /*
 **! module Image
 **! note
-**!	$Id: orient.c,v 1.14 2000/07/07 13:56:46 grubba Exp $
+**!	$Id: orient.c,v 1.15 2000/07/28 07:12:44 hubbe Exp $
 **! class Image
 */
 
@@ -26,6 +26,9 @@
 #include "image.h"
 
 #include <builtin_functions.h>
+
+/* This must be included last! */
+#include "module_magic.h"
 
 extern struct program *image_program;
 #ifdef THIS

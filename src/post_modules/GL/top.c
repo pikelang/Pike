@@ -1,5 +1,5 @@
 /*
- * $Id: top.c,v 1.11 1999/11/07 01:43:31 per fake $
+ * $Id: top.c,v 1.12 2000/07/28 07:16:09 hubbe Exp $
  *
  */
 
@@ -22,10 +22,11 @@
 
 #endif /* HAVE_GL */
 
+#include "module_magic.h"
 
 #include "global.h"
 
-RCSID("$Id: top.c,v 1.11 1999/11/07 01:43:31 per fake $");
+RCSID("$Id: top.c,v 1.12 2000/07/28 07:16:09 hubbe Exp $");
 #include "stralloc.h"
 #include "pike_macros.h"
 #include "object.h"

@@ -39,6 +39,9 @@
 #endif /* HAVE_POLL_H */
 #endif /* HAVE_POLL */
 
+/* This must be included last! */
+#include "module_magic.h"
+
 MUTEX_T aap_timeout_mutex;
 
 struct timeout 

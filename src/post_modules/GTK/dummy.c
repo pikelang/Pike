@@ -1,9 +1,11 @@
 #include "global.h"
 #include "config.h"
+#include "module_magic.h"
 
-RCSID("$Id: dummy.c,v 1.1 1999/11/07 01:38:48 per Exp $");
+RCSID("$Id: dummy.c,v 1.2 2000/07/28 07:16:22 hubbe Exp $");
 
 /* Well... Sort of basic, right? :-) */
+
 void pike_module_init()
 {
 }

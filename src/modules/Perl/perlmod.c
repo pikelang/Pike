@@ -1,4 +1,4 @@
-/* $Id: perlmod.c,v 1.17 2000/07/07 02:44:07 hubbe Exp $ */
+/* $Id: perlmod.c,v 1.18 2000/07/28 07:14:20 hubbe Exp $ */
 
 #include "builtin_functions.h"
 #include "global.h"
@@ -10,6 +10,9 @@
 #include "threads.h"
 #include "mapping.h"
 #include "perl_machine.h"
+
+/* must be included last */
+#include "module_magic.h"
 
 #ifdef HAVE_PERL
 

@@ -1,4 +1,14 @@
+Makefile
+config.log
+config.status
 configure
 dependencies
+linker_options
+make_variables
+modlist_headers
+modlist_segment
+module_testsuite
+stamp-h
 stamp-h.in
+sybase_config.h
 sybase_config.h.in

@@ -39,6 +39,9 @@
 #include "requestobject.h"
 #include "util.h"
 
+/* This must be included last! */
+#include "module_magic.h"
+
 int num_log_entries;
 void free_log_entry( struct log_entry *le )
 {

@@ -85,11 +85,14 @@ array(string) split(string data)
 	break;
 
       default:
-	werror("Unknown token %O\n",data[pos..pos+5]);
+	werror("%O\n",ret);
+	werror("Unknown token %O\n",data[pos..pos+20]);
 	exit(1);
 
       case  '`':
 	while(data[pos]=='`') data[pos]++;
+
+      case '\\': pos++; continue; /* IGNORED */
 
       case '/':
       case '{': case '}':
@@ -156,7 +159,7 @@ array(string) split(string data)
 	case '\'':
 	  pos++;
 	  if(data[pos]=='\\') pos++;
-	  pos=search(data, "'", pos)+1;
+	  pos=search(data, "'", pos+1)+1;
 	  break;
 
 	case '"':

@@ -1,5 +1,5 @@
 /*
- * $Id: image_jpeg.c,v 1.29 2000/07/04 14:49:49 grubba Exp $
+ * $Id: image_jpeg.c,v 1.30 2000/07/28 07:15:23 hubbe Exp $
  */
 
 #include "global.h"
@@ -37,7 +37,7 @@
 #ifdef HAVE_STDLIB_H
 #undef HAVE_STDLIB_H
 #endif
-RCSID("$Id: image_jpeg.c,v 1.29 2000/07/04 14:49:49 grubba Exp $");
+RCSID("$Id: image_jpeg.c,v 1.30 2000/07/28 07:15:23 hubbe Exp $");
 
 /* For some reason EXTERN can be defined here.
  * This is not good, since it confuses compilation.h.
@@ -59,6 +59,9 @@ RCSID("$Id: image_jpeg.c,v 1.29 2000/07/04 14:49:49 grubba Exp $");
 #include "threads.h"
 #include "builtin_functions.h"
 #include "module_support.h"
+
+/* This must be included last! */
+#include "module_magic.h"
 
 #ifdef HAVE_JPEGLIB_H
 
@@ -951,8 +954,6 @@ void image_jpeg_quant_tables(INT32 args)
 #endif /* HAVE_JPEGLIB_H */
 
 /*** module init & exit & stuff *****************************************/
-
-void f_index(INT32 args);
 
 
 void pike_module_exit(void)

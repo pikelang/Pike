@@ -1,5 +1,5 @@
 #include "global.h"
-RCSID("$Id: xbm.c,v 1.9 2000/07/07 00:42:24 hubbe Exp $");
+RCSID("$Id: xbm.c,v 1.10 2000/07/28 07:13:06 hubbe Exp $");
 
 #define NO_PIKE_SHORTHAND
 
@@ -38,6 +38,10 @@ RCSID("$Id: xbm.c,v 1.9 2000/07/07 00:42:24 hubbe Exp $");
 
 #include "image.h"
 #include "colortable.h"
+
+/* MUST BE INCLUDED LAST */
+#include "module_magic.h"
+
 
 extern struct program *image_colortable_program;
 extern struct program *image_program;

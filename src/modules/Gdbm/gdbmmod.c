@@ -4,13 +4,11 @@
 ||| See the files COPYING and DISCLAIMER for more information.
 \*/
 #include "global.h"
-RCSID("$Id: gdbmmod.c,v 1.10 2000/07/07 14:02:12 grubba Exp $");
+RCSID("$Id: gdbmmod.c,v 1.11 2000/07/28 07:11:52 hubbe Exp $");
 #include "gdbm_machine.h"
 #include "threads.h"
 
 /* Todo: make sure only one thread accesses the same gdbmmod */
-
-#if defined(HAVE_GDBM_H) && defined(HAVE_LIBGDBM)
 
 #include "interpret.h"
 #include "svalue.h"
@@ -18,6 +16,11 @@ RCSID("$Id: gdbmmod.c,v 1.10 2000/07/07 14:02:12 grubba Exp $");
 #include "array.h"
 #include "object.h"
 #include "pike_macros.h"
+
+/* THIS MUST BE INCLUDED LAST */
+#include "module_magic.h"
+
+#if defined(HAVE_GDBM_H) && defined(HAVE_LIBGDBM)
 
 #include <gdbm.h>
 

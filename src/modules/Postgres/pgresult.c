@@ -1,5 +1,5 @@
 /*
- * $Id: pgresult.c,v 1.12 2000/04/18 06:54:08 jonasw Exp $
+ * $Id: pgresult.c,v 1.13 2000/07/28 07:14:33 hubbe Exp $
  *
  * Postgres95 support for pike/0.5 and up
  *
@@ -63,7 +63,7 @@
 #include "builtin_functions.h"
 #include "module_support.h"
 
-RCSID("$Id: pgresult.c,v 1.12 2000/04/18 06:54:08 jonasw Exp $");
+RCSID("$Id: pgresult.c,v 1.13 2000/07/28 07:14:33 hubbe Exp $");
 
 #ifdef _REENTRANT
 MUTEX_T pike_postgres_result_mutex STATIC_MUTEX_INIT;
@@ -75,6 +75,10 @@ MUTEX_T pike_postgres_result_mutex STATIC_MUTEX_INIT;
 #endif
 
 #include "pg_types.h"
+
+/* must be included last */
+#include "module_magic.h"
+
 
 #define THIS ((struct postgres_result_object_data *) fp->current_storage)
 

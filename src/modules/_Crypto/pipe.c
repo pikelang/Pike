@@ -1,5 +1,5 @@
 /*
- * $Id: pipe.c,v 1.16 2000/07/07 13:57:15 grubba Exp $
+ * $Id: pipe.c,v 1.17 2000/07/28 07:15:16 hubbe Exp $
  *
  * PIPE crypto module for Pike.
  *
@@ -27,6 +27,9 @@
 
 /* Prototypes */
 #include "crypto.h"
+
+/* THIS MUST BE INCLUDED LAST */
+#include "module_magic.h"
 
 struct pike_crypto_pipe {
   struct object **objects;

@@ -1,5 +1,5 @@
 /*
- * $Id: top.c,v 1.2 1999/12/12 21:51:31 per Exp $
+ * $Id: top.c,v 1.3 2000/07/28 07:16:16 hubbe Exp $
  *
  */
 
@@ -7,7 +7,7 @@
 
 #include "config.h"
 
-RCSID("$Id: top.c,v 1.2 1999/12/12 21:51:31 per Exp $");
+RCSID("$Id: top.c,v 1.3 2000/07/28 07:16:16 hubbe Exp $");
 #include "stralloc.h"
 #include "pike_macros.h"
 #include "object.h"
@@ -15,6 +15,8 @@ RCSID("$Id: top.c,v 1.2 1999/12/12 21:51:31 per Exp $");
 #include "interpret.h"
 #include "builtin_functions.h"
 #include "error.h"
+
+#include "module_magic.h"
 
 #ifdef HAVE_LIBGLUT
 #ifdef HAVE_GL_GLUT_H

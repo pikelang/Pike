@@ -1,5 +1,5 @@
 /*
- * $Id: streamed_parser.c,v 1.11 1998/07/04 17:04:49 grubba Exp $
+ * $Id: streamed_parser.c,v 1.12 2000/07/28 07:15:49 hubbe Exp $
  */
 
 #include "global.h"
@@ -24,7 +24,10 @@
 
 #include "streamed_parser.h"
 
-RCSID("$Id: streamed_parser.c,v 1.11 1998/07/04 17:04:49 grubba Exp $");
+/* This must be included last! */
+#include "module_magic.h"
+
+RCSID("$Id: streamed_parser.c,v 1.12 2000/07/28 07:15:49 hubbe Exp $");
 
 #ifdef ENABLE_STREAMED_PARSER
 

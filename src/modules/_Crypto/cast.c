@@ -1,5 +1,5 @@
 /*
- * $Id: cast.c,v 1.6 1999/02/10 21:51:30 hubbe Exp $
+ * $Id: cast.c,v 1.7 2000/07/28 07:15:16 hubbe Exp $
  *
  * CAST crypto module for Pike
  *
@@ -21,6 +21,10 @@
 #include "las.h"
 
 #include <cast.h>
+
+/* THIS MUST BE INCLUDED LAST */
+#include "module_magic.h"
+
 
 struct pike_crypto_cast {
   struct cast_key key;

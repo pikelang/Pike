@@ -1,5 +1,5 @@
 /*
- * $Id: rsa.c,v 1.21 2000/07/07 13:57:15 grubba Exp $
+ * $Id: rsa.c,v 1.22 2000/07/28 07:15:16 hubbe Exp $
  *
  * Glue to RSA BSAFE's RSA implementation.
  *
@@ -31,7 +31,10 @@
 
 #include <bsafe.h>
 
-RCSID("$Id: rsa.c,v 1.21 2000/07/07 13:57:15 grubba Exp $");
+/* THIS MUST BE INCLUDED LAST */
+#include "module_magic.h"
+
+RCSID("$Id: rsa.c,v 1.22 2000/07/28 07:15:16 hubbe Exp $");
 
 struct pike_rsa_data
 {

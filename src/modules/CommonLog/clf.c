@@ -1,6 +1,6 @@
-
+/* MUST BE FIRST */
 #include "global.h"
-RCSID("$Id: clf.c,v 1.2 2000/03/27 00:04:48 grubba Exp $");
+RCSID("$Id: clf.c,v 1.3 2000/07/28 07:11:47 hubbe Exp $");
 #include "fdlib.h"
 #include "stralloc.h"
 #include "pike_macros.h"
@@ -15,11 +15,12 @@ RCSID("$Id: clf.c,v 1.2 2000/03/27 00:04:48 grubba Exp $");
 #include <stdio.h>
 #include <fcntl.h>
 
+/* MUST BE LAST */
+#include "module_magic.h"
+
 /** Forward declarations of functions implementing Pike functions **/
 
 static void f_read_clf( INT32 args );
-
-extern int fd_from_object(struct object *o);
 
 
 /** Global tables **/

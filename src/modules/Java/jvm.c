@@ -1,5 +1,5 @@
 /*
- * $Id: jvm.c,v 1.25 2000/07/08 01:10:36 marcus Exp $
+ * $Id: jvm.c,v 1.26 2000/07/28 07:13:18 hubbe Exp $
  *
  * Pike interface to Java Virtual Machine
  *
@@ -17,7 +17,7 @@
 #endif /* HAVE_CONFIG_H */
 
 #include "global.h"
-RCSID("$Id: jvm.c,v 1.25 2000/07/08 01:10:36 marcus Exp $");
+RCSID("$Id: jvm.c,v 1.26 2000/07/28 07:13:18 hubbe Exp $");
 #include "program.h"
 #include "interpret.h"
 #include "stralloc.h"
@@ -3159,6 +3159,8 @@ static void f_new_double_array(INT32 args)
     push_int(0);
 }
 
+#else
+#include "module_magic.h"
 #endif /* HAVE_JAVA */
 
 void pike_module_init(void)

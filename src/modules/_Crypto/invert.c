@@ -1,5 +1,5 @@
 /*
- * $Id: invert.c,v 1.8 1999/02/10 21:51:36 hubbe Exp $
+ * $Id: invert.c,v 1.9 2000/07/28 07:15:16 hubbe Exp $
  *
  * INVERT crypto module for Pike
  *
@@ -23,6 +23,9 @@
 #include "object.h"
 #include "stralloc.h"
 #include "builtin_functions.h"
+
+/* THIS MUST BE INCLUDED LAST */
+#include "module_magic.h"
 
 /*
  * Globals

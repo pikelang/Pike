@@ -1,7 +1,7 @@
 #include "global.h"
 #include "stralloc.h"
 #include "global.h"
-RCSID("$Id: parser.c,v 1.7 2000/06/24 00:48:31 hubbe Exp $");
+RCSID("$Id: parser.c,v 1.8 2000/07/28 07:14:14 hubbe Exp $");
 #include "pike_macros.h"
 #include "interpret.h"
 #include "program.h"
@@ -10,6 +10,9 @@ RCSID("$Id: parser.c,v 1.7 2000/06/24 00:48:31 hubbe Exp $");
 #include "operators.h"
 
 #include "parser.h"
+
+/* must be included last */
+#include "module_magic.h"
 
 #define PARSER_INITER
 

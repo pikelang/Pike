@@ -20,7 +20,10 @@
 #include "mapping.h"
 #include "module_support.h"
 
-RCSID("$Id: gettext.c,v 1.3 2000/02/29 20:41:13 neotron Exp $");
+/* This must be included last */
+#include "module_magic.h"
+
+RCSID("$Id: gettext.c,v 1.4 2000/07/28 07:12:00 hubbe Exp $");
 
 /*
 **! module Locale.Gettext
@@ -28,7 +31,7 @@ RCSID("$Id: gettext.c,v 1.3 2000/02/29 20:41:13 neotron Exp $");
 **!	This module enables access to localization functions from within Pike.
 **!
 **! note
-**!	$Id: gettext.c,v 1.3 2000/02/29 20:41:13 neotron Exp $
+**!	$Id: gettext.c,v 1.4 2000/07/28 07:12:00 hubbe Exp $
 */
 
 /******************** PUBLIC FUNCTIONS BELOW THIS LINE */
@@ -446,6 +449,8 @@ void pike_module_exit(void)
   
 }
 #else
+
+#include "module_magic.h"
 
 void pike_module_init(void) {}
 void pike_module_exit(void) {}

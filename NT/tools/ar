@@ -13,8 +13,8 @@ shift
 OUTPUT=$1
 shift
 
-case "$CC" in
-  *rntcl|*rntecl)
+case "`echo $CC`" in
+  *rntcl*|*rntecl*)
     case "E$OPTIONS" in
       *x*)
         ofixed="`fixpath $OUTPUT`"
@@ -43,7 +43,7 @@ case "$CC" in
     esac
   ;;
 
-  *rntcc)
+  *rntcc*)
 
   XOPTS="-b -c"
 
@@ -108,7 +108,7 @@ case "$CC" in
 
   ;;
   *)
-    echo Unknown C compiler: $CC
+    echo "Unknown C compiler: \"$CC\""
     exit 1
   ;;
 esac

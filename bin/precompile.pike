@@ -460,7 +460,7 @@ array convert(array x, string base)
 
     ret+=({
       sprintf("#define f_%s_defined\n",name),
-      sprintf("void f_%s(INT32 args) ",name),
+      sprintf("PMOD_EXPORT void f_%s(INT32 args) ",name),
       "{","\n",
     });
 

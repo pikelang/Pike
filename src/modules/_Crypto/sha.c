@@ -1,4 +1,4 @@
-/* $Id: sha.c,v 1.15 1999/02/10 21:51:41 hubbe Exp $
+/* $Id: sha.c,v 1.16 2000/07/28 07:15:16 hubbe Exp $
  *
  * Written by Niels Möller
  */
@@ -16,9 +16,12 @@
 #include "module_support.h"
 #include "las.h"
 
-RCSID("$Id: sha.c,v 1.15 1999/02/10 21:51:41 hubbe Exp $");
+RCSID("$Id: sha.c,v 1.16 2000/07/28 07:15:16 hubbe Exp $");
 
 #include <sha.h>
+
+/* THIS MUST BE INCLUDED LAST */
+#include "module_magic.h"
 
 #undef THIS
 #define THIS ((struct sha_ctx *)(fp->current_storage))

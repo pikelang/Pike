@@ -19,6 +19,9 @@
 
 #include "parser.h"
 
+/* must be included last */
+#include "module_magic.h"
+
 extern struct program *parser_html_program;
 
 /*

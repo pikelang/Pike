@@ -4,7 +4,7 @@
 #include <ctype.h>
 
 #include "stralloc.h"
-RCSID("$Id: hrz.c,v 1.4 1999/09/25 20:02:39 grubba Exp $");
+RCSID("$Id: hrz.c,v 1.5 2000/07/28 07:13:06 hubbe Exp $");
 #include "pike_macros.h"
 #include "object.h"
 #include "mapping.h"
@@ -20,6 +20,9 @@ RCSID("$Id: hrz.c,v 1.4 1999/09/25 20:02:39 grubba Exp $");
 #include "image.h"
 #include "builtin_functions.h"
 #include "module_support.h"
+
+/* MUST BE INCLUDED LAST */
+#include "module_magic.h"
 
 extern struct program *image_program;
 

@@ -1,5 +1,5 @@
 /*
- * $Id: idea.c,v 1.13 1999/02/10 21:51:35 hubbe Exp $
+ * $Id: idea.c,v 1.14 2000/07/28 07:15:16 hubbe Exp $
  *
  * IDEA crypto module for Pike
  *
@@ -23,6 +23,9 @@
 
 /* Backend includes */
 #include <idea.h>
+
+/* THIS MUST BE INCLUDED LAST */
+#include "module_magic.h"
 
 #undef THIS
 #define THIS ((unsigned INT16 *)(fp->current_storage))

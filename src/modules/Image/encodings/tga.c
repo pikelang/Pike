@@ -1,6 +1,6 @@
 
 /*
- * $Id: tga.c,v 1.15 2000/07/07 00:41:46 hubbe Exp $
+ * $Id: tga.c,v 1.16 2000/07/28 07:13:06 hubbe Exp $
  *
  *  Targa codec for pike. Based on the tga plugin for gimp.
  *
@@ -77,7 +77,11 @@
 #include "image.h"
 #include "colortable.h"
 
-RCSID("$Id: tga.c,v 1.15 2000/07/07 00:41:46 hubbe Exp $");
+/* MUST BE INCLUDED LAST */
+#include "module_magic.h"
+
+
+RCSID("$Id: tga.c,v 1.16 2000/07/28 07:13:06 hubbe Exp $");
 
 #ifndef MIN
 # define MIN(X,Y) ((X)<(Y)?(X):(Y))

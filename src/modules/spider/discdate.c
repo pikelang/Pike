@@ -23,7 +23,10 @@
 #include <string.h>
 #include <stdio.h>
 
-RCSID("$Id: discdate.c,v 1.6 1998/03/28 13:51:48 grubba Exp $");
+/* This must be included last! */
+#include "module_magic.h"
+
+RCSID("$Id: discdate.c,v 1.7 2000/07/28 07:15:49 hubbe Exp $");
 
 struct disc_time
 {

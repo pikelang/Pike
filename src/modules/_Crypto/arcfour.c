@@ -16,7 +16,10 @@
 
 #include "arcfour.h"
 
-RCSID("$Id: arcfour.c,v 1.10 2000/03/28 12:16:08 grubba Exp $");
+/* THIS MUST BE INCLUDED LAST */
+#include "module_magic.h"
+
+RCSID("$Id: arcfour.c,v 1.11 2000/07/28 07:15:16 hubbe Exp $");
 
 #undef THIS
 #define THIS ((struct arcfour_ctx *)(fp->current_storage))
@@ -69,7 +72,7 @@ static void f_set_key(INT32 args)
 }
 
 /* string crypt(string) */
-static void f_crypt(INT32 args)
+static void f_arcfour_crypt(INT32 args)
 {
   int len;
   struct pike_string *s;
@@ -107,7 +110,7 @@ void pike_arcfour_init(void)
   /* function(string:object) */
   ADD_FUNCTION("set_decrypt_key", f_set_key,tFunc(tStr,tObj), 0);
   /* function(string:string) */
-  ADD_FUNCTION("crypt", f_crypt,tFunc(tStr,tStr), 0);
+  ADD_FUNCTION("crypt", f_arcfour_crypt,tFunc(tStr,tStr), 0);
 
   set_init_callback(init_pike_arcfour);
   set_exit_callback(exit_pike_arcfour);

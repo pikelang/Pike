@@ -8,7 +8,7 @@
 #endif
 
 #include "stralloc.h"
-RCSID("$Id: gd.c,v 1.3 1999/05/30 20:12:08 mirar Exp $");
+RCSID("$Id: gd.c,v 1.4 2000/07/28 07:13:06 hubbe Exp $");
 #include "pike_macros.h"
 #include "object.h"
 #include "constants.h"
@@ -23,6 +23,9 @@ RCSID("$Id: gd.c,v 1.3 1999/05/30 20:12:08 mirar Exp $");
 
 
 #include "image.h"
+
+/* MUST BE INCLUDED LAST */
+#include "module_magic.h"
 
 extern struct program *image_program;
 

@@ -1,9 +1,9 @@
-/* $Id: xwd.c,v 1.14 2000/07/03 13:30:32 grubba Exp $ */
+/* $Id: xwd.c,v 1.15 2000/07/28 07:13:06 hubbe Exp $ */
 
 /*
 **! module Image
 **! note
-**!	$Id: xwd.c,v 1.14 2000/07/03 13:30:32 grubba Exp $
+**!	$Id: xwd.c,v 1.15 2000/07/28 07:13:06 hubbe Exp $
 **! submodule XWD
 **!
 **!	This submodule keeps the XWD (X Windows Dump) 
@@ -25,7 +25,7 @@
 #include <ctype.h>
 
 #include "stralloc.h"
-RCSID("$Id: xwd.c,v 1.14 2000/07/03 13:30:32 grubba Exp $");
+RCSID("$Id: xwd.c,v 1.15 2000/07/28 07:13:06 hubbe Exp $");
 #include "pike_macros.h"
 #include "object.h"
 #include "constants.h"
@@ -38,16 +38,18 @@ RCSID("$Id: xwd.c,v 1.14 2000/07/03 13:30:32 grubba Exp $");
 
 #include "image.h"
 #include "builtin_functions.h"
-
+#include "operators.h"
 #include "encodings.h"
+
+/* MUST BE INCLUDED LAST */
+#include "module_magic.h"
+
 
 extern struct program *image_colortable_program;
 extern struct program *image_program;
 
 void image_x_decode_truecolor_masks(INT32 args);
 void image_x_decode_pseudocolor(INT32 args);
-void f_aggregate_mapping(INT32 args);
-void f_index(INT32 args);
 
 /*
 **! method mapping _decode(string data)

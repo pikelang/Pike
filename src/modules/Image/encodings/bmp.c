@@ -1,9 +1,9 @@
-/* $Id: bmp.c,v 1.21 2000/07/03 13:30:32 grubba Exp $ */
+/* $Id: bmp.c,v 1.22 2000/07/28 07:13:06 hubbe Exp $ */
 
 /*
 **! module Image
 **! note
-**!	$Id: bmp.c,v 1.21 2000/07/03 13:30:32 grubba Exp $
+**!	$Id: bmp.c,v 1.22 2000/07/28 07:13:06 hubbe Exp $
 **! submodule BMP
 **!
 **!	This submodule keeps the BMP (Windows Bitmap)
@@ -22,7 +22,7 @@
 #include <ctype.h>
 
 #include "stralloc.h"
-RCSID("$Id: bmp.c,v 1.21 2000/07/03 13:30:32 grubba Exp $");
+RCSID("$Id: bmp.c,v 1.22 2000/07/28 07:13:06 hubbe Exp $");
 #include "pike_macros.h"
 #include "object.h"
 #include "constants.h"
@@ -34,7 +34,6 @@ RCSID("$Id: bmp.c,v 1.21 2000/07/03 13:30:32 grubba Exp $");
 #include "error.h"
 #include "operators.h"
 
-
 #include "image.h"
 #include "colortable.h"
 
@@ -42,7 +41,9 @@ RCSID("$Id: bmp.c,v 1.21 2000/07/03 13:30:32 grubba Exp $");
 
 #include "encodings.h"
 
-extern void f_add(INT32 args);
+/* MUST BE INCLUDED LAST */
+#include "module_magic.h"
+
 
 extern struct program *image_colortable_program;
 extern struct program *image_program;

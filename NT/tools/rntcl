@@ -90,6 +90,7 @@ int main(int argc, string *argv)
 	  switch(option[1])
 	  {
 	    case "hare":
+	    case "hared":
 	      share=1;
 	      target="dll";
 	      break;
@@ -220,7 +221,7 @@ int main(int argc, string *argv)
       else
 	output=remove_ext(argv[1])+".dll";
 
-//      cflags+=({"-MD" + (debug?"d":"") });
+      cflags+=({"-MD" + (debug?"d":""), "-LD" + (debug?"d":"")});
       wantfile=output;
       break;
 

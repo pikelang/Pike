@@ -1,5 +1,5 @@
 /* 
- * $Id: pike_regexp.c,v 1.13 1998/11/22 11:05:36 hubbe Exp $
+ * $Id: pike_regexp.c,v 1.14 2000/07/28 07:14:40 hubbe Exp $
  *
  * regexp.c - regular expression matching
  *
@@ -67,6 +67,9 @@
 #include "pike_regexp.h"
 #include "pike_memory.h"
 #include "error.h"
+
+/* must be included last */
+#include "module_magic.h"
 
 /*
  * The "internal use only" fields in regexp.h are present to pass info from

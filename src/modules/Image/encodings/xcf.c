@@ -1,5 +1,5 @@
 #include "global.h"
-RCSID("$Id: xcf.c,v 1.14 2000/04/10 21:58:23 grubba Exp $");
+RCSID("$Id: xcf.c,v 1.15 2000/07/28 07:13:06 hubbe Exp $");
 
 #include "image_machine.h"
 
@@ -20,9 +20,14 @@ RCSID("$Id: xcf.c,v 1.14 2000/04/10 21:58:23 grubba Exp $");
 #include "builtin_functions.h"
 #include "operators.h"
 #include "dynamic_buffer.h"
+#include "signal_handler.h"
 
 #include "image.h"
 #include "colortable.h"
+
+/* MUST BE INCLUDED LAST */
+#include "module_magic.h"
+
 
 extern struct program *image_colortable_program;
 extern struct program *image_program;
@@ -154,7 +159,7 @@ static unsigned int read_uint( struct buffer *from )
   return res;
 }
 
-static int read_int( struct buffer *from )
+static int xcf_read_int( struct buffer *from )
 {
   return (int)read_uint( from );
 }
@@ -173,7 +178,7 @@ static char *read_data( struct buffer * from, unsigned int len )
 static struct buffer read_string( struct buffer *data )
 {
   struct buffer res;
-  res.len = read_int( data );
+  res.len = xcf_read_int( data );
   res.str = (unsigned char *)read_data( data, res.len );
   if(res.len > 0) res.len--; /* len includes ending \0 */
   if(!res.str)
@@ -497,7 +502,7 @@ static struct layer read_layer( struct buffer *buff, struct buffer *initial )
   SET_ONERROR( err, free_layer, &res );
   res.width = read_uint( buff );
   res.height = read_uint( buff );
-  res.type = read_int( buff );
+  res.type = xcf_read_int( buff );
   res.name = read_string( buff );
 
 
@@ -513,8 +518,8 @@ static struct layer read_layer( struct buffer *buff, struct buffer *initial )
     }
   } while( tmp.type );
 
-  h_offset = read_int( buff );
-  lm_offset = read_int( buff );
+  h_offset = xcf_read_int( buff );
+  lm_offset = xcf_read_int( buff );
 
   if(lm_offset)
   {
@@ -565,7 +570,7 @@ static struct gimp_image read_image( struct buffer * data )
 
   res.width = read_uint( data );
   res.height = read_uint( data );
-  res.type = read_int( data );
+  res.type = xcf_read_int( data );
 
   SET_ONERROR( err, free_image, &res );
 
@@ -1088,7 +1093,6 @@ void image_xcf_f__rle_decode( INT32 args )
 
 void image_xcf_f__decode_tiles( INT32 args )
 {
-  extern void check_signals();
   struct object *io,*ao, *cmapo;
   struct array *tiles;
   struct image *i, *a=NULL;
@@ -1164,7 +1168,7 @@ void image_xcf_f__decode_tiles( INT32 args )
 
     s = (unsigned char *)tile->str;
 
-    check_signals(); /* Allow ^C */
+    check_signals(0,0,0); /* Allow ^C */
 
     for(cy=0; cy<eheight; cy++)
     {

@@ -3,7 +3,7 @@
 #endif /* HAVE_CONFIG_H */
 
 #include "global.h"
-RCSID("$Id: iso2022.c,v 1.15 2000/07/24 11:22:31 lange Exp $");
+RCSID("$Id: iso2022.c,v 1.16 2000/07/28 07:15:07 hubbe Exp $");
 #include "program.h"
 #include "interpret.h"
 #include "stralloc.h"
@@ -13,6 +13,8 @@ RCSID("$Id: iso2022.c,v 1.15 2000/07/24 11:22:31 lange Exp $");
 
 #include "iso2022.h"
 
+/* MUST BE LAST INCLUDE */
+#include "module_magic.h"
 
 #define PRGM_NAME "Locale.Charset.ISO2022"
 

@@ -24,7 +24,7 @@
 #include "sybase_config.h"
 #include "global.h"
 
-RCSID("$Id: sybase.c,v 1.3 2000/05/09 23:13:34 neotron Exp $");
+RCSID("$Id: sybase.c,v 1.4 2000/07/28 07:15:57 hubbe Exp $");
 
 #ifdef HAVE_SYBASE
 
@@ -44,6 +44,8 @@ RCSID("$Id: sybase.c,v 1.3 2000/05/09 23:13:34 neotron Exp $");
 #include "sybase.h"
 
 
+/* This must be included last! */
+#include "module_magic.h"
 
 /* define this to enable debugging */
 /* #define SYBDEBUG */
@@ -1249,6 +1251,9 @@ void pike_module_init (void) {
 
 
 #else /* HAVE_SYBASE */
+/* This must be included last! */
+#include "module_magic.h"
+
 void pike_module_init (void) {}
 void pike_module_exit (void) {}
 #endif /* HAVE_SYBASE */

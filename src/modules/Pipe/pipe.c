@@ -26,7 +26,7 @@
 
 #include <fcntl.h>
 
-RCSID("$Id: pipe.c,v 1.36 2000/07/07 13:59:28 grubba Exp $");
+RCSID("$Id: pipe.c,v 1.37 2000/07/28 07:14:27 hubbe Exp $");
 
 #include "threads.h"
 #include "stralloc.h"
@@ -46,6 +46,10 @@ RCSID("$Id: pipe.c,v 1.36 2000/07/07 13:59:28 grubba Exp $");
 #define S_ISREG(mode)   (((mode) & (_S_IFMT)) == (_S_IFREG))
 #endif
 #endif
+
+/* must be included last */
+#include "module_magic.h"
+
 
 /*
 #define PIPE_STRING_DEBUG

@@ -19,7 +19,7 @@
 #include "threads.h"
 #include "module_support.h"
 
-RCSID("$Id: glue.c,v 1.17 2000/07/07 13:58:57 grubba Exp $");
+RCSID("$Id: glue.c,v 1.18 2000/07/28 07:14:40 hubbe Exp $");
 
 #ifdef USE_SYSTEM_REGEXP
 #include <regexp.h>
@@ -38,6 +38,9 @@ struct regexp_glue
 };
 
 #endif /* USE_SYSTEM_REGEXP */
+
+/* must be included last */
+#include "module_magic.h"
 
 
 #ifdef THIS

@@ -1,5 +1,5 @@
 #include "global.h"
-RCSID("$Id: psd.c,v 1.16 2000/07/07 16:24:08 grubba Exp $");
+RCSID("$Id: psd.c,v 1.17 2000/07/28 07:13:06 hubbe Exp $");
 
 #include "image_machine.h"
 
@@ -25,6 +25,8 @@ RCSID("$Id: psd.c,v 1.16 2000/07/07 16:24:08 grubba Exp $");
 #include "image.h"
 #include "colortable.h"
 
+/* MUST BE INCLUDED LAST */
+#include "module_magic.h"
 
 
 /* The sp macro conflicts with Solaris 2.5.1's <netinet/in.h>. */
@@ -75,7 +77,7 @@ static unsigned int read_uint( struct buffer *from )
   return res;
 }
 
-static int read_int( struct buffer *from )
+static int psd_read_int( struct buffer *from )
 {
   return (int)read_uint( from );
 }
@@ -128,7 +130,7 @@ static char *read_data( struct buffer * from, unsigned int len )
 static struct buffer read_string( struct buffer *data )
 {
   struct buffer res;
-  res.len = read_int( data );
+  res.len = psd_read_int( data );
   res.str = (unsigned char *)read_data( data, res.len );
   if(res.len > 0) res.len--; /* len includes ending \0 */
   if(!res.str)
@@ -210,7 +212,7 @@ static void decode_layers_and_masks( struct psd_image *dst,
   if(!src->len) 
     return;
 
-  exp_offset = src->len-read_int( src ); /* size of layer region */
+  exp_offset = src->len-psd_read_int( src ); /* size of layer region */
   count = read_short( src );
   
   if( count < 0 )
@@ -228,10 +230,10 @@ static void decode_layers_and_masks( struct psd_image *dst,
     layer->next = dst->first_layer;
     if(dst->first_layer) dst->first_layer->prev = layer;
     dst->first_layer = layer;
-    layer->top = read_int( src );
-    layer->left = read_int( src );
-    layer->bottom = read_int( src );
-    layer->right = read_int( src );
+    layer->top = psd_read_int( src );
+    layer->left = psd_read_int( src );
+    layer->bottom = psd_read_int( src );
+    layer->right = psd_read_int( src );
     layer->num_channels = read_short( src );
     for(cnt=0; cnt<layer->num_channels; cnt++)
     {
@@ -253,10 +255,10 @@ static void decode_layers_and_masks( struct psd_image *dst,
       tmp2 = read_string( &tmp );
       if( tmp2.len )
       {
-        layer->mask_top    = read_int( &tmp2 );
-        layer->mask_left   = read_int( &tmp2 );
-        layer->mask_bottom = read_int( &tmp2 );
-        layer->mask_right  = read_int( &tmp2 );
+        layer->mask_top    = psd_read_int( &tmp2 );
+        layer->mask_left   = psd_read_int( &tmp2 );
+        layer->mask_bottom = psd_read_int( &tmp2 );
+        layer->mask_right  = psd_read_int( &tmp2 );
         layer->mask_default_color = read_uchar( &tmp2 );
         layer->mask_flags = read_uchar( &tmp2 );
       }
