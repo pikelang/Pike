@@ -1,0 +1,155 @@
+/* sqlite.cmod -*- c -*- */
+
+#include "global.h"
+#include "interpret.h"
+#include "module_support.h"
+#include "config.h"
+#include "object.h"
+#include "builtin_functions.h"
+
+#ifdef HAVE_SQLITE3_H
+
+#ifdef HAVE_UNISTD_H
+#include <unistd.h>
+#endif
+#include <sqlite3.h>
+#include <time.h>
+
+DECLARATIONS
+
+static int step(sqlite3_stmt *stmt) {
+  int ret;
+  while( (ret=sqlite3_step(stmt))==SQLITE_BUSY ) {
+#ifdef HAVE_USLEEP
+    usleep(100);
+#else
+    sleep(1);
+#endif
+  }
+  return ret;
+}
+
+PIKECLASS ResObj
+{
+  CVAR sqlite3 *db;
+  CVAR sqlite3_stmt *stmt;
+  CVAR int eof;
+  CVAR int columns;
+
+  static void ResObj_handle_error(void) {
+    Pike_error("Sql.SQLite: %s\n", sqlite3_errmsg(THIS->db));
+  }
+
+  PIKEFUN void create() {
+    THIS->columns = sqlite3_column_count(THIS->stmt);
+  }
+
+  PIKEFUN int num_rows() {
+    Pike_error("Sql.SQLite: Number of rows not known in advance.\n");
+  }
+
+  PIKEFUN int num_fields() {
+    RETURN THIS->columns;
+  }
+
+  PIKEFUN int eof() {
+    RETURN THIS->eof;
+  }
+
+  PIKEFUN mapping fetch_fields() {
+    Pike_error("Sql.SQLite: Not implemented.\n");
+  }
+
+  PIKEFUN void seek(int skip) {
+    int i;
+    for(i=0; i<skip; i++)
+      if( step(THIS->stmt)==SQLITE_DONE ) {
+	THIS->eof = 1;
+	return;
+      }
+  }
+
+  PIKEFUN array fetch_row() {
+    int i;
+
+    if(THIS->eof) {
+      push_int(0);
+      return;
+    }
+
+    switch( step(THIS->stmt) ) {
+    case SQLITE_DONE:
+      THIS->eof = 1;
+      sqlite3_finalize(THIS->stmt);
+      THIS->stmt = 0;
+      push_int(0);
+      return;
+    case SQLITE_ROW:
+      break;
+    default:
+      ResObj_handle_error();
+    }
+
+    for(i=0; i<THIS->columns; i++) {
+      push_string( make_shared_binary_string
+		   ( sqlite3_column_blob(THIS->stmt, i),
+		     sqlite3_column_bytes(THIS->stmt, i) ) );
+    }
+    f_aggregate(THIS->columns);
+  }
+
+  INIT {
+    THIS->eof = 0;
+    THIS->columns = -1;
+  }
+  EXIT {
+    if(THIS->stmt)
+      sqlite3_finalize(THIS->stmt);
+  }
+}
+
+PIKECLASS SQLite
+{
+  CVAR sqlite3 *db;
+
+  static void SQLite_handle_error(void) {
+    Pike_error("Sql.SQLite: %s\n", sqlite3_errmsg(THIS->db));
+  }
+#define ERR(X) if(X!=SQLITE_OK) SQLite_handle_error()
+
+  /* @decl void create(string path)
+   */
+  PIKEFUN void create(string path, mixed|void a, mixed|void b, mixed|void c) {
+    ERR( sqlite3_open(path->str, &THIS->db) );
+  }
+
+  PIKEFUN object big_query(string q) {
+    struct object *res;
+    sqlite3_stmt *stmt;
+    const char *tail;
+    struct ResObj_struct *store;
+
+    ERR( sqlite3_prepare(THIS->db, q->str, q->len, &stmt, &tail) );
+    if( tail[0] )
+      Pike_error("Sql.SQLite->big_query: Trailing query data (\"%s\")\n",
+		 tail);
+
+    res=fast_clone_object(ResObj_program);
+    store = GET_RESOBJ_STORAGE(res);
+    store->db = THIS->db;
+    store->stmt = stmt;
+    apply_low(res, f_ResObj_create_fun_num, 0);
+    push_object(res);
+  }
+}
+
+
+#endif /* HAVE_SQLITE3_H */
+
+PIKE_MODULE_INIT {
+  INIT;
+}
+
+PIKE_MODULE_EXIT {
+  EXIT;
+}

@@ -1,0 +1,13 @@
+# $Id: Makefile.in,v 1.1 2004/10/14 18:46:21 nilsson Exp $
+@make_variables@
+VPATH=@srcdir@
+OBJS=sqlite.o
+
+MODULE_LDFLAGS=@LDFLAGS@ @LIBS@
+CONFIG_HEADERS=@CONFIG_HEADERS@
+
+@dynamic_module_makefile@
+
+sqlite.o: $(SRCDIR)/sqlite.c
+
+@dependencies@

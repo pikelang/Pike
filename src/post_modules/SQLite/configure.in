@@ -1,0 +1,20 @@
+# $Id: configure.in,v 1.1 2004/10/14 18:46:21 nilsson Exp $
+AC_INIT(sqlite.cmod)
+
+AC_ARG_WITH(sqlite,[ --with(out)-sqlite    Support SQLite],[],[with_sqlite=yes])
+
+AC_MODULE_INIT()
+AC_CONFIG_HEADER(config.h)
+
+PIKE_FEATURE_WITHOUT(SQLite)
+
+if test x$with_sqlite = xyes ; then
+  PIKE_FEATURE_NODEP(SQLite)
+
+  AC_CHECK_HEADERS(sqlite3.h)
+  AC_CHECK_LIB(sqlite3,sqlite3_open)
+  AC_CHECK_HEADERS(unistd.h)
+  AC_CHECK_FUNCS(usleep)
+fi
+
+AC_OUTPUT(Makefile,echo FOO >stamp-h )
