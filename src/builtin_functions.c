@@ -5,7 +5,7 @@
 \*/
 /**/
 #include "global.h"
-RCSID("$Id: builtin_functions.c,v 1.437 2002/09/07 18:35:07 grubba Exp $");
+RCSID("$Id: builtin_functions.c,v 1.438 2002/09/09 08:04:27 grubba Exp $");
 #include "interpret.h"
 #include "svalue.h"
 #include "pike_macros.h"
@@ -4130,6 +4130,13 @@ PMOD_EXPORT void f_localtime(INT32 args)
  *!   @endmapping
  *!
  *!   Or you can just send them all on one line as the second syntax suggests.
+ *!
+ *! @note
+ *!   On some operating systems (notably AIX), dates before Jan 1, 1970
+ *!   00:00:00 UTC are not supported.
+ *!
+ *!   On most systems, the supported range of dates are Dec 13, 1901
+ *!   20:45:52 UTC through Jan 19, 2038 03:14:07 UTC (inclusive).
  *!
  *! @seealso
  *!   @[time()], @[ctime()], @[localtime()], @[gmtime()]
