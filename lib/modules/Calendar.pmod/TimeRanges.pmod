@@ -285,6 +285,22 @@ class TimeRange
       return add(-n);
    }
 
+//! method TimeRange next()
+//! method TimeRange prev()
+//!	Next and prev are compatible and convinience functions;
+//!	<tt>a->next()</tt> is exactly the same as <tt>a+1</tt>;
+//!	<tt>a=a->next()</tt> is <tt>a++</tt>.
+
+   TimeRange next()
+   {
+      return this_object()+1;
+   }
+
+   TimeRange prev()
+   {
+      return this_object()-1;
+   }
+
 //! method TimeRange `*(int n)
 //!	This changes the amount of time in 
 //!	the time period. <tt>t*17</tt> is
