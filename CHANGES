@@ -2,9 +2,62 @@
 visit http://community.roxen.com/crunch/ - or append the ticket id to
 "http://bugs.roxen.com/" for a address directly to the ticket itself)
 
-
-Changes since 2001-04-06 / Pike 7.2.30  (released separately):
+Changes since 2001-09-12 / Pike 7.2.197
 ----------------------------------------------------------------------
+
+
+Changes since 2001-04-06 / Pike 7.2.30
+----------------------------------------------------------------------
+
+  o SSL support is now available by default.
+
+  o Improved support for MacOS X.
+
+  o Support for dynamic modules on NetBSD.
+
+  o Support for AIX 5L/IA64.
+
+  o Several bugfixes in the Image module.
+
+  o Optimized the html parser.
+
+  o Math.Matrix nuw supports dot product.
+
+  o Improved support for NT.
+
+  o Protocols.HTTP.Query now supports HTTPS.
+
+  o Added support for TLS 1.0.
+
+  o Added support for blocking SSL.
+
+  o {encode,decode}_value() now support the type type.
+
+  o Protocols.SNMP added.
+
+  o Bytecode compiler and interpreter optimized.
+
+  o Improved support for NaN.
+
+  o Fix for macro-redefinition bug in cpp.
+
+  o Improved support for compilation handlers.
+
+  o Fixed a few optimizer bugs.
+
+  o Fixed bugs in handling of weak mappings and multisets.
+
+  o Fixed wide-string handling in combine_path().
+
+  o Added support for big5, sjis, euc and koi8.
+
+  o Several gc fixes.
+
+  o Updated the Unicode definitions to Unicode 3.1.0.
+
+  o Improved support for Postgres.
+
+  o Added Unicode module.
 
   o Modifier ranges added.
 
@@ -22,11 +75,10 @@ Changes since 2001-04-06 / Pike 7.2.30  (released separately):
     static int i;
     static Tools.PVImage image;
 
-Improvement and bug tickets closed: 968, 1420, 1468, 1469, 1505, 1546,
-                                    1593, 1645, 1648, 1670, 1679,
-                                    1711, 1714, 1728, 1735, 1739,
-                                    1743, 1757, 1770, 1777, 1793,
-                                    1825, 1831, 1839, 1843, 1499
+  o Fixed tickets:  968, 1304, 1330, 1420, 1468, 1469, 1499, 1505, 1546, 1593,
+		   1645, 1648, 1670, 1676, 1679, 1711, 1714, 1728, 1735, 1739,
+		   1743, 1757, 1770, 1777, 1793, 1811, 1825, 1831, 1839, 1843,
+		   1859, 1950, 1976, 2034, 2108, 2119, 2167, 2179, 2203, 2250
 
 Changes since before then; Pike 7.0
 ----------------------------------------------------------------------
