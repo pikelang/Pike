@@ -1,4 +1,6 @@
-/* The basic IDEA transformation
+/* $Id: idea.c,v 1.5 1998/03/28 14:03:53 grubba Exp $
+ *
+ * The basic IDEA transformation
  *
  * This implementation is taken from pgp, see note below.
  *

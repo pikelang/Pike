@@ -23,6 +23,8 @@
 #include <string.h>
 #include <stdio.h>
 
+RCSID("$Id: discdate.c,v 1.6 1998/03/28 13:51:48 grubba Exp $");
+
 struct disc_time
 {
   int season; /* 0-4 */

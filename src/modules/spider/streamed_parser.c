@@ -19,6 +19,8 @@
 
 #include "streamed_parser.h"
 
+RCSID("$Id: streamed_parser.c,v 1.9 1998/03/28 13:50:37 grubba Exp $");
+
 #ifdef ENABLE_STREAMED_PARSER
 
 /* streamed SGML parser, by wing */

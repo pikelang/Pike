@@ -1,3 +1,4 @@
+/* $Id: streamed_parser.h,v 1.3 1998/03/28 13:49:44 grubba Exp $ */
 #ifndef STREAMED_PARSER_H
 #define STREAMED_PARSER_H
 

@@ -1,3 +1,4 @@
+# $Id: configure.in,v 1.20 1998/03/28 13:46:49 grubba Exp $
 AC_INIT(system.c)
 AC_CONFIG_HEADER(system_machine.h)
 

@@ -1,3 +1,4 @@
+# $Id: Makefile.in,v 1.5 1998/03/28 13:48:22 grubba Exp $
 SRCDIR=@srcdir@
 VPATH=@srcdir@:@srcdir@/../..:../..
 OBJS=system.o syslog.o passwords.o

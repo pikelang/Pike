@@ -13,6 +13,8 @@
 #include "error.h"
 #include "builtin_functions.h"
 
+RCSID("$Id: accesseddb.c,v 1.14 1998/03/28 13:53:27 grubba Exp $");
+
 #include <stdio.h>
 
 #ifdef HAVE_SYS_UIO_H

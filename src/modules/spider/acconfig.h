@@ -1,3 +1,4 @@
+/* $Id: acconfig.h,v 1.3 1998/03/28 13:53:03 grubba Exp $ */
 
 /* Define this if you have an integer timezone. */
 #undef HAVE_INT_TIMEZONE

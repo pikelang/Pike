@@ -4,6 +4,7 @@
 ||| See the files COPYING and DISCLAIMER for more information.
 \*/
 #include <math.h>
+#include "global.h"
 #include "interpret.h"
 #include "constants.h"
 #include "svalue.h"
@@ -11,9 +12,22 @@
 #include "module_support.h"
 #include "operators.h"
 
+RCSID("$Id: math.c,v 1.10 1998/03/28 13:56:48 grubba Exp $");
+
 #ifndef M_PI
 #define M_PI 3.1415926535897932384626433832795080
 #endif
+
+#ifndef NO_MATHERR
+#ifdef HAVE_STRUCT_EXCEPTION
+
+int matherr(struct exception *exc)
+{
+  return 1;	/* No error */
+}
+
+#endif /* HAVE_STRUCT_EXCEPTION */
+#endif /* !NO_MATHERR */
 
 void f_sin(INT32 args)
 {

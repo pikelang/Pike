@@ -18,6 +18,8 @@
 #include "file_machine.h"
 #include "file.h"
 
+RCSID("$Id: socket.c,v 1.31 1998/03/28 13:58:31 grubba Exp $");
+
 #ifdef HAVE_SYS_TYPE_H
 #include <sys/types.h>
 #endif

@@ -1,3 +1,4 @@
+/* $Id: program_areas.h,v 1.3 1998/03/28 13:38:43 grubba Exp $ */
 /* Who needs templates anyway? / Hubbe */
 
 /* Program *must* be first! */

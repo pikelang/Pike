@@ -1,5 +1,7 @@
 divert(-1)
 
+dnl $Id: create_testsuite,v 1.2 1998/03/28 13:43:12 grubba Exp $
+dnl
 dnl generates a script that is supposed to test Pike
 dnl note that not everything is tested yet, you are welcome to
 dnl submit more tests.

@@ -1,5 +1,7 @@
 #! /bin/sh
 #
+# $Id: install-sh,v 1.2 1998/03/28 14:02:58 grubba Exp $
+#
 # install - install a program, script, or datafile
 # This comes from X11R5.
 #

@@ -1,3 +1,4 @@
+# $Id: configure.in,v 1.2 1998/03/28 13:55:46 grubba Exp $
 AC_INIT(readlinemod.c)
 AC_CONFIG_HEADER(readline_machine.h)
 AC_ARG_WITH(readline,[  --with(out)-readline   support command line editing],[],[with_readline=yes])

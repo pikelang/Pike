@@ -1,3 +1,7 @@
+/*
+ * $Id: image_jpeg.c,v 1.12 1998/03/28 13:44:34 grubba Exp $
+ */
+
 #include "config.h"
 
 #if !defined(HAVE_LIBJPEG)

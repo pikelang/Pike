@@ -13,6 +13,8 @@
 #include "pike_macros.h"
 #include "threads.h"
 
+RCSID("$Id: readlinemod.c,v 1.8 1998/03/28 13:54:12 grubba Exp $");
+
 #include <errno.h>
 
 #ifndef HAVE_LIBTERMCAP

@@ -22,6 +22,8 @@
 #include "file_machine.h"
 #include "file.h"
 
+RCSID("$Id: efuns.c,v 1.48 1998/03/28 13:58:53 grubba Exp $");
+
 #ifdef HAVE_SYS_TYPES_H
 #include <sys/types.h>
 #endif

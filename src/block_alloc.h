@@ -1,3 +1,4 @@
+/* $Id: block_alloc.h,v 1.4 1998/03/28 13:38:09 grubba Exp $ */
 #define PRE_INIT_BLOCK(X)
 #define INIT_BLOCK(X)
 #define EXIT_BLOCK(X)

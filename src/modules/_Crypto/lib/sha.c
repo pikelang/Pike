@@ -9,6 +9,8 @@
  * Adapted to pike and some cleanup by Niels Möller.
  */
 
+/* $Id: sha.c,v 1.7 1998/03/28 14:02:09 grubba Exp $ */
+
 /* SHA: NIST's Secure Hash Algorithm */
 
 /* Based on SHA code originally posted to sci.crypt by Peter Gutmann

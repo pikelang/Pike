@@ -1,3 +1,7 @@
+#
+# $Id: Makefile.in,v 1.65 1998/03/28 13:39:52 grubba Exp $
+#
+
 # This line is needed on some machines.
 @SET_MAKE@
 
@@ -67,7 +71,7 @@ AR=@AR@
 LD=@LD@
 LDFLAGS=$(CFLAGS) @LDFLAGS@ @LINKFORSHARED@
 
-RUNPIKE=$(TMP_BUILDDIR)/pike -m $(TMP_LIBDIR)/master.pike $(PIKEOPTS)
+RUNPIKE=$(TMP_BUILDDIR)/pike -m $(TMP_LIBDIR)/master.pike -M$(LIBDIR_SRC)/modules -I$(LIBDIR_SRC)/include $(PIKEOPTS)
 
 MOST_MAKE_FLAGS = "prefix=$(prefix)" "exec_prefix=$(exec_prefix)" "CC=$(CC)" "TMP_BINDIR=$(TMP_BINDIR)" "DEFINES=$(DEFINES)" "TMP_LIBDIR=$(TMP_LIBDIR)" "RUNPIKE=$(RUNPIKE)" "INSTALL=$(INSTALL)" "NOOPTFLAGS=$(NOOPTFLAGS)" "AR=$(AR)"
 MAKE_FLAGS = $(MOST_MAKE_FLAGS) "OTHERFLAGS=$(OTHERFLAGS)" 
@@ -122,7 +126,7 @@ OBJ= \
 #
 
 
-all: module_objects
+all: module_objects hilfe
 	$(MAKE) $(MAKE_FLAGS) pike
 
 pike: $(OBJ) compile_interpret modules/linker_options
@@ -143,6 +147,19 @@ cover: $(OBJ) compile_interpret module_objects
 quant: $(OBJ) compile_interpret module_objects
 	-@mv pike pike.old 2>/dev/null || true
 	$(SMARTLINK) quantify $(REALCC) $(LDFLAGS) $(OBJ) interpret.o `cat modules/linker_options` $(LIBS) -o pike
+
+
+hilfe: $(TMP_BINDIR)/hilfe Makefile
+	@echo "Creating ./hilfe..."; \
+	if [ "$(exec_prefix)" != "/usr/local/bin" -a \
+	      "$(exec_prefix)" != "/usr/local/bin/" ]; then \
+	  ( sed -e 's!/usr/local/bin!$(exec_prefix)!' <$(TMP_BINDIR)/hilfe \
+	    >./hilfe && chmod 755 ./hilfe) || exit 1 ; \
+	else \
+	  $(INSTALL) $(TMP_BINDIR)/hilfe . || exit 1; \
+	fi
+	@echo "Done."
+
 
 # Several optimizers have problems with interpret.c
 # First try compiling with optimization and if that doesn't work, without.
@@ -181,24 +198,27 @@ install:
 	else \
 	  if [ -f "$(exec_prefix)/pike" ]; then \
 	    echo Renaming old "$(exec_prefix)/pike" to "$(exec_prefix)/pike.old"; \
-	    mv -f "$(exec_prefix)/pike" "$(exec_prefix)/pike.old"; \
+	    mv -f "$(exec_prefix)/pike" "$(exec_prefix)/pike.old" || exit 1; \
 	  else : ; fi ; \
-	  echo "$(exec_prefix)/pike"; $(INSTALL) ./pike $(exec_prefix) ; \
+	  echo "$(exec_prefix)/pike"; \
+	  $(INSTALL) ./pike $(exec_prefix) || exit 1; \
+	  chmod a+rx $(exec_prefix)/pike; \
+	  chmod u+w $(exec_prefix)/pike; \
 	fi
-	@if [ -f $(SRCDIR)/../bin/hilfe ]; then \
-	  echo ; echo "Installing $(exec_prefix)/hilfe..."; \
-	  if [ "$(exec_prefix)" != "/usr/local/bin" -a \
-	       "$(exec_prefix)" != "/usr/local/bin/" ]; then \
+	@if [ -f ./hilfe ]; then \
+	  echo ; echo "Installing hilfe..."; \
+	  if cmp "$(exec_prefix)/hilfe" $(TMP_BINDIR)/hilfe >/dev/null 2>&1 ; \
+	  then
+	    echo "$(exec_prefix)/hilfe already installed." ; \
+	  else
 	    if [ -f $(exec_prefix)/hilfe ]; then \
-	      mv $(exec_prefix)/hilfe $(exec_prefix)/hilfe.old; \
-	    else : ; fi && \
-	    ( sed -e 's!/usr/local/bin!$(exec_prefix)!' <$(TMP_BINDIR)/hilfe \
-	      >./hilfe && chmod 755 ./hilfe && $(INSTALL) ./hilfe $(exec_prefix) ) || exit 1\
-	  else \
+	      mv $(exec_prefix)/hilfe $(exec_prefix)/hilfe.old || exit 1; \
+	    else : ; fi; \
+	    echo "$(exec_prefix)/hilfe"; \
 	    $(INSTALL) $(TMP_BINDIR)/hilfe $(exec_prefix) || exit 1; \
+	    chmod a+rx $(exec_prefix)/hilfe; \
+	    chmod u+w $(exec_prefix)/hilfe; \
 	  fi; \
-	  chmod a+rx $(exec_prefix)/hilfe; \
-	  chmod u+w $(exec_prefix)/hilfe; \
 	else : ; fi
 	@echo ; echo "Installing header-files..."; \
 	for a in $(SRCDIR)/*.h *.h ; do \
@@ -287,11 +307,26 @@ run_hilfe:
 feature_list:
 	$(RUNPIKE) $(TMP_BINDIR)/feature_list
 
-lib: $(LIBDIR_SRC) $(LIBDIR_SRC)/master.pike $(LIBDIR_SRC)/modules $(LIBDIR_SRC)/include
-	cp -r $(LIBDIR_SRC) .
-	-cvs_dirs="`find lib -type d -name CVS`"; if test "x$$cvs_dirs" = "x" ; then : ; else rm -r $$cvs_dirs; fi
-	-for f in `find lib -type f -name '*~'` `find lib -type f -name '.#*'` `find lib -type f -name '#*#'`; do rm $$f; done
-	-touch ./lib 2>/dev/null || (touch lib/.broken_gnu_touch && rm lib/.broken_gnu_touch)
+lib: $(LIBDIR_SRC)/master.pike.in Makefile
+	@for d in lib lib/modules lib/include; do \
+	  if [ -d $$d/. ]; then : ; else \
+	    echo "Creating $$d/."; \
+	    (mkdir $$d && chmod u+rwx $$d) || exit 1; \
+	  fi ; \
+	done
+	@if [ -d share/. ]; then : ; else \
+	  echo "Creating symlink ./share"; \
+	  if ls share >/dev/null 2>&1; then \
+	    echo "Renaming share to share.old"; \
+	    mv share share.old || exit 1; \
+	  else : ; fi; \
+	  ln -s "$(LIBDIR_SRC)" ./share || exit 1; \
+	fi
+	@echo "Creating lib/master.pike"; \
+	( sed -e 's!¤exec_prefix¤!$(exec_prefix)!' <$(LIBDIR_SRC)/master.pike.in \
+	  >./lib/master.pike && chmod 644 ./lib/master.pike) || exit 1
+	@echo "Done."
+	-@touch ./lib 2>/dev/null || (touch lib/.broken_gnu_touch && rm lib/.broken_gnu_touch)
 
 # make export archive (requires compiled Pike)
 # Do not compile in source tree if you want to use this!

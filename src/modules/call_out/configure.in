@@ -1,3 +1,4 @@
+# $Id: configure.in,v 1.5 1998/03/28 14:01:02 grubba Exp $
 AC_INIT(call_out.c)
 
 sinclude(../module_configure.in)
