@@ -1,4 +1,4 @@
-// $Id: module.pmod,v 1.17 2005/04/06 15:31:56 mast Exp $
+// $Id: module.pmod,v 1.18 2005/04/06 16:49:16 mast Exp $
 
 #include "ldap_globals.h"
 
@@ -72,14 +72,32 @@ constant LDAP_CLIENT_LOOP                = 0x60;    /* 96 - LDAPv3 */
 constant LDAP_REFERRAL_LIMIT_EXCEEDED    = 0x61;    /* 97 - LDAPv3 */
 
 constant SEARCH_LOWER_ATTRS = 1;
+constant SEARCH_MULTIVAL_ARRAYS_ONLY = 2;
 //! Bitfield flags given to @[Protocols.LDAP.client.search]:
 //!
 //! @dl
 //! @item SEARCH_LOWER_ATTRS
 //!   Lowercase all attribute values. This makes it easier to match
 //!   specific attributes in the mappings returned by
-//!   @[Protocols.LDAP.client.result.fetch] since they are case
-//!   insensitive.
+//!   @[Protocols.LDAP.client.result.fetch] since LDAP attribute names
+//!   are case insensitive.
+//!
+//! @item SEARCH_MULTIVAL_ARRAYS_ONLY
+//!   Only use arrays for attribute values where the attribute syntax
+//!   specify multiple values. I.e. the values for single valued
+//!   attributes are returned as strings instead of arrays containing
+//!   one string element.
+//!
+//!   If no value is returned for a single valued attribute, e.g. when
+//!   @expr{attrsonly@} is set in the search call, then a zero will be
+//!   used as value.
+//!
+//!   The special @expr{"dn"@} value is also returned as a string when
+//!   this flag is set.
+//!
+//!   Note that it's the attribute type descriptions that are used to
+//!   decide this, not the number of values a particular attribute
+//!   happens to have in the search result.
 //! @enddl
 
 constant SCOPE_BASE = 0;

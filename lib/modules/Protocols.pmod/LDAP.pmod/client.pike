@@ -2,7 +2,7 @@
 
 // LDAP client protocol implementation for Pike.
 //
-// $Id: client.pike,v 1.91 2005/04/06 14:55:59 mast Exp $
+// $Id: client.pike,v 1.92 2005/04/06 16:49:16 mast Exp $
 //
 // Honza Petrous, hop@unibase.cz
 //
@@ -112,7 +112,7 @@ import ".";
     int ldap_sizelimit;
     int ldap_timelimit;
     mapping lauth = ([]);
-    object last_rv;		// last returned value
+    result last_rv;		// last returned value
   }
 
 //! @ignore
@@ -169,23 +169,63 @@ static function(string:string) get_attr_encoder (string attr)
     private int resultcode = LDAP_SUCCESS;
     private string resultstring;
     private int actnum = 0;
-    private array(mapping(string:array(string))) entry = ({});
+    private array(mapping(string:string|array(string))) entry = ({});
     private int flags;
     array(string) referrals;
 
     static array decode_entries (array(string) rawres)
     {
-      array(mapping(string:array(string))) res = ({});
+      array(mapping(string:string|array(string))) res = ({});
 
 #define DECODE_ENTRIES(SET_DN, SET_ATTR) do {				\
-	foreach (rawres, string rawent) {				\
-	  object derent = .ldap_privates.ldap_der_decode (rawent)->elements[1]; \
-	  if (array(object) derattribs = ASN1_GET_ATTR_ARRAY (derent)) { \
-	    string dn = (SET_DN);					\
-	    mapping(string:array) attrs = (["dn": ({dn})]);		\
-	    foreach (derattribs, object derattr)			\
-	      {SET_ATTR;}						\
-	    res += ({attrs});						\
+	if (flags & SEARCH_MULTIVAL_ARRAYS_ONLY) {			\
+	  foreach (rawres, string rawent) {				\
+	    object derent = .ldap_privates.ldap_der_decode (rawent)->elements[1]; \
+	    if (array(object) derattribs = ASN1_GET_ATTR_ARRAY (derent)) { \
+	      string dn = (SET_DN);					\
+	      mapping(string:string|array) attrs = (["dn": dn]);	\
+	      foreach (derattribs, object derattr) {			\
+		string attr;						\
+		{SET_ATTR;}						\
+		sscanf (attr, "%[^;]", string bare_attr);		\
+		if (mapping(string:mixed) attr_descr =			\
+		    get_attr_type_descr (bare_attr)) {			\
+		  if (attr_descr["SINGLE-VALUE"]) {			\
+		    if (sizeof (attrs[attr])) {				\
+		      DO_IF_DEBUG (					\
+			if (sizeof (attrs[attr]) > 1)			\
+			  ERROR ("Got multple values %O for single valued " \
+				 "attribute %O.\n", attrs[attr], attr);	\
+		      );						\
+		      attrs[attr] = attrs[attr][0];			\
+		    }							\
+		    else						\
+		      attrs[attr] = 0;					\
+		  }							\
+		}							\
+		DO_IF_DEBUG (						\
+		  else if (dn != "")					\
+		    werror ("Warning: Couldn't fetch attribute description for %O - " \
+			    "multivalued attribute assumed.\n", attr);	\
+		);							\
+	      }								\
+	      res += ({attrs});						\
+	    }								\
+	  }								\
+	}								\
+									\
+	else {								\
+	  foreach (rawres, string rawent) {				\
+	    object derent = .ldap_privates.ldap_der_decode (rawent)->elements[1]; \
+	    if (array(object) derattribs = ASN1_GET_ATTR_ARRAY (derent)) { \
+	      string dn = (SET_DN);					\
+	      mapping(string:array) attrs = (["dn": ({dn})]);		\
+	      foreach (derattribs, object derattr) {			\
+		string attr;						\
+		{SET_ATTR;}						\
+	      }								\
+	      res += ({attrs});						\
+	    }								\
 	  }								\
 	}								\
       } while (0)
@@ -194,12 +234,12 @@ static function(string:string) get_attr_encoder (string attr)
 	// Use the values raw.
 	if (flags & SEARCH_LOWER_ATTRS)
 	  DECODE_ENTRIES (ASN1_GET_DN (derent), {
-	      attrs[lower_case (ASN1_GET_ATTR_NAME (derattr))] =
+	      attrs[attr = lower_case (ASN1_GET_ATTR_NAME (derattr))] =
 		ASN1_GET_ATTR_VALUES (derattr);
 	    });
 	else
 	  DECODE_ENTRIES (ASN1_GET_DN (derent), {
-	      attrs[ASN1_GET_ATTR_NAME (derattr)] =
+	      attrs[attr = ASN1_GET_ATTR_NAME (derattr)] =
 		ASN1_GET_ATTR_VALUES (derattr);
 	    });
       }
@@ -211,7 +251,7 @@ static function(string:string) get_attr_encoder (string attr)
 	// left untouched.
 	if (flags & SEARCH_LOWER_ATTRS)
 	  DECODE_ENTRIES (utf8_to_string (ASN1_GET_DN (derent)), {
-	      string attr = lower_case (ASN1_GET_ATTR_NAME (derattr));
+	      attr = lower_case (ASN1_GET_ATTR_NAME (derattr));
 	      if (function(string:string) decoder =
 		  // Microsoft AD has several attributes in its root DSE
 		  // that they have not bothered to include in their
@@ -225,7 +265,7 @@ static function(string:string) get_attr_encoder (string attr)
 	    });
 	else
 	  DECODE_ENTRIES (utf8_to_string (ASN1_GET_DN (derent)), {
-	      string attr = ASN1_GET_ATTR_NAME (derattr);
+	      attr = ASN1_GET_ATTR_NAME (derattr);
 	      if (function(string:string) decoder =
 		  get_attr_decoder (attr, DO_IF_DEBUG (dn == "")))
 		attrs[attr] = map (ASN1_GET_ATTR_VALUES (derattr), decoder);
@@ -365,7 +405,7 @@ static function(string:string) get_attr_encoder (string attr)
     //!
     //! @seealso
     //!   @[fetch_all]
-    int|mapping(string:array(string)) fetch(int|void idx) {
+    int|mapping(string:string|array(string)) fetch(int|void idx) {
 
       if (!idx)
 	idx = actnum + 1;
@@ -377,14 +417,18 @@ static function(string:string) get_attr_encoder (string attr)
     }
 
     //!
-    //! Returns distinguished name (DN) of the current entry
-    //! in the result list. Notice that this is the same
-    //! as @expr{fetch()->dn[0]@}.
+    //! Returns distinguished name (DN) of the current entry in the
+    //! result list. Note that this is the same as getting the
+    //! @expr{"dn"@} field from the return value from @[fetch].
     //!
     //! @note
     //!  In Pike 7.6 and earlier, this field was incorrectly returned
     //!  in UTF-8 encoded form for LDAPv3 connections.
-    string get_dn() { return fetch()["dn"][0]; }
+    string get_dn()
+    {
+      string|array(string) dn = fetch()->dn;
+      return stringp (dn) ? dn : dn[0];	// To cope with SEARCH_MULTIVAL_ARRAYS_ONLY.
+    }
 
     //!
     //! Initialized the result cursor to the first entry
@@ -407,7 +451,7 @@ static function(string:string) get_attr_encoder (string attr)
       return count_entries();
     }
 
-    array(mapping(string:array(string))) fetch_all()
+    array(mapping(string:string|array(string))) fetch_all()
     //! Convenience function to fetch all entries at once. The cursor
     //! isn't affected.
     //!
@@ -504,7 +548,7 @@ static function(string:string) get_attr_encoder (string attr)
   void create(string|mapping(string:mixed)|void url, object|void context)
   {
 
-    info = ([ "code_revision" : ("$Revision: 1.91 $"/" ")[1] ]);
+    info = ([ "code_revision" : ("$Revision: 1.92 $"/" ")[1] ]);
 
     if(!url || !sizeof(url))
       url = LDAP_DEFAULT_URL;
@@ -1026,6 +1070,14 @@ array(string) get_root_dse_attr (string attr)
 //!   been UTF-8 decoded where appropriate.
 //!
 //!   Don't be destructive on the returned array.
+//!
+//! @note
+//!   This function intentionally does not try to simplify the return
+//!   values for single-valued attributes (c.f.
+//!   @[Protocols.LDAP.SEARCH_MULTIVAL_ARRAYS_ONLY]). That since (at
+//!   least) Microsoft AD has a bunch of attributes in the root DSE
+//!   that they don't bother to provide schema entries for. The return
+//!   value format wouldn't be reliable if they suddenly change that.
 {
   attr = lower_case (attr);
 
@@ -1404,7 +1456,7 @@ multiset(string) get_supported_controls()
   //! @seealso
   //!  @[result], @[result.fetch], @[read], @[get_supported_controls],
   //!  @[Protocols.LDAP.quote_filter_value]
-  object|int search (string|void filter, array(string)|void attrs,
+  result|int search (string|void filter, array(string)|void attrs,
 		     int|void attrsonly,
 		     void|mapping(string:array(int|string)) controls,
 		     void|int flags) {
@@ -1564,12 +1616,13 @@ multiset(string) get_supported_controls()
 
   } // search
 
-mapping(string:array(string)) read (string object_name,
-				    void|string filter,
-				    void|array(string) attrs,
-				    void|int attrsonly,
-				    void|mapping(string:array(int|string)) controls,
-				    void|int flags)
+mapping(string:string|array(string)) read (
+  string object_name,
+  void|string filter,
+  void|array(string) attrs,
+  void|int attrsonly,
+  void|mapping(string:array(int|string)) controls,
+  void|int flags)
 //! Reads a specified object in the LDAP server. @[object_name] is the
 //! distinguished name for the object. The rest of the arguments are
 //! the same as to @[search].
@@ -1645,10 +1698,10 @@ mapping(string:array(string)) read (string object_name,
   return last_rv->fetch();
 }
 
-array(string) read_attr (string object_name,
-			 string attr,
-			 void|string filter,
-			 void|mapping(string:array(int|string)) controls)
+string|array(string) read_attr (string object_name,
+				string attr,
+				void|string filter,
+				void|mapping(string:array(int|string)) controls)
 //! Reads a specified attribute of a specified object in the LDAP
 //! server. @[object_name] is the distinguished name of the object and
 //! @[attr] is the attribute. The rest of the arguments are the same
@@ -1659,14 +1712,16 @@ array(string) read_attr (string object_name,
 //! @expr{"(objectClass=*)"@} is used.
 //!
 //! @returns
-//!   Returns an array containing the values of the attribute on
-//!   string form. Returns zero if there was an error.
+//!   For single-valued attributes, the value is returned as a string.
+//!   For multivalued attributes, the value is returned as an array of
+//!   strings. Returns zero if there was an error.
 //!
 //! @seealso
 //!   @[read], @[get_root_dse_attr]
 {
-  if (mapping(string:array(string)) res =
-      read (object_name, filter, ({attr}), 0, controls)) {
+  if (mapping(string:string|array(string)) res =
+      read (object_name, filter, ({attr}), 0, controls,
+	    SEARCH_MULTIVAL_ARRAYS_ONLY)) {
     m_delete (res, "dn");
     // Get the value regardless of the case of the attribute name that
     // the server used in the response.
