@@ -200,7 +200,12 @@ string parse_text(Node n) {
       break;
 
     case "item":
-      ret += "<dt>" + parse_text(c) + "</dt>\n";
+      if(c->get_attributes()->name)
+	ret += "<dt>" + c->get_attributes()->name + "</dt>\n";
+#ifdef DEBUG
+      if(c->count_children())
+	throw( ({ "dl item has a child.\n", backtrace() }) );
+#endif
       break;
 
     case "mapping":
