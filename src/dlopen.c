@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: dlopen.c,v 1.51 2002/10/26 21:04:58 grubba Exp $
+|| $Id: dlopen.c,v 1.52 2002/10/27 15:20:23 grubba Exp $
 */
 
 #include <global.h>
@@ -199,7 +199,7 @@ size_t STRNLEN(char *s, size_t maxlen)
 
 #else /* PIKE_CONCAT */
 
-RCSID("$Id: dlopen.c,v 1.51 2002/10/26 21:04:58 grubba Exp $");
+RCSID("$Id: dlopen.c,v 1.52 2002/10/27 15:20:23 grubba Exp $");
 
 #endif
 
@@ -650,16 +650,16 @@ struct COFFSymbol
 #define COFFReloc_IA64_imm64 3		/* X2 */
 #define COFFReloc_IA64_dir32 4
 #define COFFReloc_IA64_dir64 5
-#define COFFReloc_IA64_pcrel21b 6	/* B9 */
+#define COFFReloc_IA64_pcrel21b 6	/* B1 */
 #define COFFReloc_IA64_pcrel21m 7	/* M37 */
 #define COFFReloc_IA64_pcrel21f 8	/* F15 */
-#define COFFReloc_IA64_gprel22 9	/* A5? */
-#define COFFReloc_IA64_ltoff22 10	/* A5? */
+#define COFFReloc_IA64_gprel22 9	/* A5 */
+#define COFFReloc_IA64_ltoff22 10	/* A5 */
 #define COFFReloc_IA64_sect 11		/* */
-#define COFFReloc_IA64_secrel22 12	/* A5? */
+#define COFFReloc_IA64_secrel22 12	/* A5 */
 #define COFFReloc_IA64_secrel64i 13	/* */
 #define COFFReloc_IA64_secrel32 14	/* */
-#define COFFReloc_IA64_ltoff64 15	/* X2? */
+#define COFFReloc_IA64_ltoff64 15	/* X2 */
 #define COFFReloc_IA64_dir32nb 16	/* */
 #define COFFReloc_IA64_addend 31	/* */
 
@@ -918,6 +918,11 @@ static int dl_load_coff_files(struct DLHandle *ret,
   size_t memptr,codeptr;
   size_t num_exports=0;
   int data_protection_mode = PAGE_READWRITE;
+#ifdef _M_IA64
+  size_t gp_size = 0;
+  void **gp = NULL;
+  size_t gp_pos = 0;
+#endif /* _M_IA64 */
 
 #define data (tmp+e)
 #define SYMBOLS(X) (*(struct COFFSymbol *)(18 * (X) + (char *)data->symbols))
@@ -1354,6 +1359,55 @@ static int dl_load_coff_files(struct DLHandle *ret,
 #endif
 
   /* Do resolve and relocations */
+
+#ifdef _M_IA64
+  /* To support ltoff relocations, we need to calculate the size
+   * needed for the global offset table (gp).
+   */
+
+  for(e=0;e<num;e++)
+  {
+    for(s=0;s<data->coff->num_sections;s++)
+    {
+      struct COFFReloc *relocs;
+      if(data->sections[s].characteristics & 
+	 (COFF_SECT_NOLOAD | COFF_SECT_MEM_DISCARDABLE | COFF_SECT_MEM_LNK_REMOVE))
+	continue;
+
+      /* relocate all symbols in this section */
+      relocs=(struct COFFReloc *)(data->buffer +
+				  data->sections[s].ptr2_relocs);
+
+      for(r=0;r<data->sections[s].num_relocs;r++)
+      {
+/* This should work fine on x86 and other processors which handle
+ * unaligned memory access
+ */
+#define RELOCS(X) (*(struct COFFReloc *)( 10*(X) + (char *)relocs ))
+
+#ifdef DLDEBUG
+	fprintf(stderr,"DL: Reloc[%d] sym=%d loc=%d type=%d\n",
+		r,
+		RELOCS(r).symbol,
+		RELOCS(r).location,
+		RELOCS(r).type);
+#endif
+	if (RELOCS(r).type == COFFReloc_IA64_ltoff22) {
+	  /* FIXME: Ought to check if the symbol already has an entry. */
+	  gp_size++;
+	}
+#undef RELOCS
+      }
+    }
+  }
+
+  gp = calloc(sizeof(void *), gp_size);
+#ifdef DLDEBUG
+  fprintf(stderr, "Global Offset Table (gp) at 0x%p (%d entries)\n",
+	  gp, gp_size);
+#endif /* DLDEBUG */
+#endif /* _M_IA64 */
+
   for(e=0;e<num;e++)
   {
     for(s=0;s<data->coff->num_sections;s++)
@@ -1381,6 +1435,9 @@ static int dl_load_coff_files(struct DLHandle *ret,
 	ptrdiff_t sym=RELOCS(r).symbol;
 	char *name;
 	size_t len;
+#ifdef _M_IA64
+	int flag = ((size_t)loc) & 0xf;
+#endif /* _M_IA64 */
 
 #ifdef DLDEBUG
 	fprintf(stderr,"DL: Reloc[%d] sym=%d loc=%d type=%d\n",
@@ -1445,36 +1502,44 @@ static int dl_load_coff_files(struct DLHandle *ret,
 		    SYMBOLS(sym).value);
 #endif
 
-	    ptr=low_dlsym(ret, name, len, 1);
-	    if(!ptr) 
-	      ptr=low_dlsym(&global_dlhandle, name, len, 0);
-	    if(ptr)
-	      data->symbol_addresses[sym]=ptr;
-	    else if(len > 6 && !memcmp(name,"__imp_",6)) {
-	      ptr=low_dlsym(ret, name+6, len-6, 1);
+#ifdef _M_IA64
+	    if ((len == 3) && !memcmp(name, "_gp", 3)) {
+	      /* Magic reference to the Global Offset Table. */
+	      ptr = (void *)gp;
+	    } else {
+#endif /* _M_IA64 */
+
+	      ptr=low_dlsym(ret, name, len, 1);
 	      if(!ptr) 
-		ptr=low_dlsym(&global_dlhandle, name+6, len-6, 0);
-	      /* This is cheating a bit.  We should really put this
-		 value somewhere else, and have symbol_addresses[sym] point
-		 to this somewhere else, but this saves allocating the extra
-		 memory. */
-	      if(ptr) {
+		ptr=low_dlsym(&global_dlhandle, name, len, 0);
+	      if(ptr)
 		data->symbol_addresses[sym]=ptr;
-		ptr = (char *)&data->symbol_addresses[sym];
+	      else if(len > 6 && !memcmp(name,"__imp_",6)) {
+		ptr=low_dlsym(ret, name+6, len-6, 1);
+		if(!ptr) 
+		  ptr=low_dlsym(&global_dlhandle, name+6, len-6, 0);
+		/* This is cheating a bit.  We should really put this
+		   value somewhere else, and have symbol_addresses[sym] point
+		   to this somewhere else, but this saves allocating the extra
+		   memory. */
+		if(ptr) {
+		  data->symbol_addresses[sym]=ptr;
+		  ptr = (char *)&data->symbol_addresses[sym];
+		}
 	      }
-	    }
-	    if(!ptr)
-	    {
-	      static char err[256];
-	      MEMCPY(err,"Symbol '",8);
-	      MEMCPY(err+8,name,MINIMUM(len, 128));
-	      MEMCPY(err+8+MINIMUM(len, 128),"' not found.\0",13);
-	      dlerr=err;
+	      if(!ptr)
+	      {
+		static char err[256];
+		MEMCPY(err,"Symbol '",8);
+		MEMCPY(err+8,name,MINIMUM(len, 128));
+		MEMCPY(err+8+MINIMUM(len, 128),"' not found.\0",13);
+		dlerr=err;
 #ifndef DL_VERBOSE
-	      return -1;
+		return -1;
 #else
-	      fprintf(stderr,"DL: %s\n",err);
+		fprintf(stderr,"DL: %s\n",err);
 #endif
+	      }
 	    }
 	  }else{
 	    static char err[200];
@@ -1506,18 +1571,32 @@ static int dl_load_coff_files(struct DLHandle *ret,
 	{
 	  static char err[100];
 
-	default:
-	  sprintf(err,"Unknown relocation type: %d",RELOCS(r).type);
-	  dlerr=err;
-	  return -1;
-
+#ifdef DL_VERBOSE
+#define UNIMPLEMENTED_REL(X)						\
+	case X:								\
+	  sprintf(err, "Unimplemented relocation type: " #X " (%d)", X);\
+	  dlerr = err;							\
+	  fprintf(stderr, "DLERR: \"%s\"\n", dlerr);			\
+	  return -1
+#else /* !DL_VERBOSE */
 #define UNIMPLEMENTED_REL(X)						\
 	case X:								\
 	  sprintf(err, "Unimplemented relocation type: " #X " (%d)", X);\
 	  dlerr = err;							\
 	  return -1
+#endif /* DL_VERBOSE */
 
 #ifdef _M_IA64
+
+	  /* IA64 instruction format:
+	   *
+	   * 128bit little-endian.
+	   *
+	   * 22222222 22222222 22222222 22222222
+	   * 22222222 21111111 11111111 11111111
+	   * 11111111 11111111 11000000 00000000
+	   * 00000000 00000000 00000000 000ttttt
+	   */
 
 	  /* We will need to support more types here */
 	  UNIMPLEMENTED_REL(COFFReloc_IA64_imm14);
@@ -1532,11 +1611,107 @@ static int dl_load_coff_files(struct DLHandle *ret,
 	  ((INT64 *)loc)[0]+=(INT64)ptr;
 	  break;
 
-	  UNIMPLEMENTED_REL(COFFReloc_IA64_pcrel21b);
+	case COFFReloc_IA64_pcrel21b:
+	  {
+	    /* Instruction format B1
+	     *
+	     * 43333333333222222222211111111110000000000
+	     * 09876543210987654321098765432109876543210
+	     * XXXX.XXX....................XXXXXXXXXXXXX
+	     *
+	     * S += ptr - (loc & ~0x1f)
+	     */
+	    unsigned INT64 raw;
+	    unsigned INT64 S = 0;
+
+#ifdef DLDEBUG
+	    fprintf(stderr,"DL: reloc branch: loc %p = %p, %d\n",
+		    loc, ptr, flag);
+#endif
+	    loc = (void *)(((size_t)loc) & ~((size_t)0xf));
+	    switch (flag) {
+	    case 0:
+	      raw = ((unsigned INT64 *)loc)[0];
+	      S = (raw & 0x0003ffffc0000) +
+		(((unsigned INT64)ptr - (unsigned INT64)loc)<<(18-5));
+	      if (S & 0x0004000000000) {
+		/* Got carry, adjust sign. */
+		raw ^= 0x0000020000000000;
+	      }
+	      S &= 0x0003ffffc0000;
+	      ((unsigned INT64 *)loc)[0] = (raw & ~0x0003ffffc0000) | S;
+	      break;
+	    case 2:
+	      raw = ((unsigned INT64 *)loc)[1];
+	      S = (raw & 0x00fffff000000000) +
+		(((unsigned INT64)ptr - (unsigned INT64)loc)<<(36-5));
+	      if (S & 0x0080000000000) {
+		/* Got carry, adjust sign. */
+		raw ^= 0x0800000000000000;
+	      }
+	      S &= 0x00fffff000000000;
+	      ((unsigned INT64 *)loc)[1] = (raw & ~0x00fffff000000000) | S;
+	      break;
+	    case 1:
+	    default:
+	      sprintf(err, "Unsupported relocation: %d, 0x%p, %d",
+		      RELOCS(r).type, loc, flag);
+	      dlerr = err;
+#ifdef DL_VERBOSE
+	      fprintf(stderr, "DLERR: \"%s\"\n", dlerr);
+#endif /* DL_VERBOSE */
+	      return -1;
+	    }
+	  }
+	  break;
+
 	  UNIMPLEMENTED_REL(COFFReloc_IA64_pcrel21m);
 	  UNIMPLEMENTED_REL(COFFReloc_IA64_pcrel21f);
 	  UNIMPLEMENTED_REL(COFFReloc_IA64_gprel22);
-	  UNIMPLEMENTED_REL(COFFReloc_IA64_ltoff22);
+
+	case COFFReloc_IA64_ltoff22:
+	  {
+	    /* Instruction format A5
+	     *
+	     * 43333333 33322222 22222111 11111110 00000000 0
+	     * 09876543 21098765 43210987 65432109 87654321 0
+	     * XXXX.... ........ ...XX... ....XXXX XXXXXXXX X
+	     *
+	     * gp[gp_pos] = S + A;
+	     * S = gp_pos++;
+	     */
+	    unsigned INT64 raw;
+	    unsigned INT64 S;
+
+#ifdef DLDEBUG
+	    fprintf(stderr,"DL: reloc ltoff: loc %p = %p, %d\n", loc,ptr,flag);
+#endif
+	    loc = (void *)(((size_t)loc) & ~((size_t)0xf));
+	    switch(flag) {
+	    case 2:
+	      raw = ((unsigned INT64 *)loc)[1];
+	      S = (((raw & 0x0fffe00000000000)>>38)|
+		   ((raw & 0x000007f000000000)>>36)) +
+		(unsigned INT64)ptr;
+	      gp[gp_pos] = S;
+	      /* Note: multiplies gp_pos with 8 in the same operation. */
+	      S = (((gp_pos & 0x07fff0)<<41) | 
+		   ((gp_pos & 0x00000f)<<39));
+	      ((unsigned INT64 *)loc)[1] = (raw & 0xf000180fffffffff) | S;
+	      gp_pos++;
+	      break;
+	    default:
+	      sprintf(err, "Unsupported relocation: %d, 0x%p, %d",
+		      RELOCS(r).type, loc, flag);
+	      dlerr = err;
+#ifdef DL_VERBOSE
+	      fprintf(stderr, "DLERR: \"%s\"\n", dlerr);
+#endif /* DL_VERBOSE */
+	      return -1;
+	    }
+	  }
+	  break;
+
 	  UNIMPLEMENTED_REL(COFFReloc_IA64_sect);
 	  UNIMPLEMENTED_REL(COFFReloc_IA64_secrel22);
 	  UNIMPLEMENTED_REL(COFFReloc_IA64_secrel64i);
@@ -1575,6 +1750,14 @@ static int dl_load_coff_files(struct DLHandle *ret,
 	    break;
 
 #endif
+
+	default:
+	  sprintf(err,"Unknown relocation type: %d",RELOCS(r).type);
+	  dlerr=err;
+#ifdef DL_VERBOSE
+	  fprintf(stderr, "DLERR: \"%s\"\n", dlerr);
+#endif /* DL_VERBOSE */
+	  return -1;
 	}
       }
 
