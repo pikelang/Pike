@@ -207,8 +207,8 @@ class Drawable
     display->send_request(DrawLine_req(gc->id, coordMode, points));
   }
 
-  void PutImage(object gc, int depth,
-		int tx, int ty, int width, int height, string data)
+  object PutImage_req(object gc, int depth,
+		      int tx, int ty, int width, int height, string data)
   {
     object r = Requests.PutImage();
     r->drawable = id;
@@ -219,7 +219,14 @@ class Drawable
     r->width = width;
     r->height = height;
     r->data = data;
-    display->send_request(r);
+
+    return r;
+  }
+  
+  void PutImage(object gc, int depth,
+		int tx, int ty, int width, int height, string data)
+  {
+    display->send_request(PutImage_req(gc, depth, tx,tx,width, height, data));
   }
 }
 
