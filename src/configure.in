@@ -1,4 +1,4 @@
-AC_REVISION("$Id: configure.in,v 1.409 2000/08/28 17:53:23 grubba Exp $")
+AC_REVISION("$Id: configure.in,v 1.410 2000/08/28 21:19:14 grubba Exp $")
 AC_INIT(interpret.c)
 AC_CONFIG_HEADER(machine.h)
 
@@ -115,7 +115,11 @@ if test "x$ac_cv_header_fnord_fnord_fnord_h" = xyes ; then
 fi
 AC_MSG_RESULT(yes)
 #############################################################################
+
+AC_AIX
 AC_MINIX
+ 
+#############################################################################
 
 if test $ac_cv_prog_gcc = yes; then
   AC_MSG_CHECKING(for libgcc file name)
@@ -164,6 +168,61 @@ elif test -x /bin/uname 2>/dev/null; then
   UNAME=`/bin/uname -sr`
 else
   UNAME=unknown
+fi
+
+# We need some special hacks when running slowaris
+AC_PATH_PROG(uname_prog,uname,no)
+AC_MSG_CHECKING(operating system)
+AC_CACHE_VAL(pike_cv_sys_os,
+[
+if test "$uname_prog" != "no"; then
+  pike_cv_sys_os="`uname`"
+
+  case "$pike_cv_sys_os" in
+    SunOS)
+      case "`uname -r`" in
+        5.*) pike_cv_sys_os="Solaris" ;;
+      esac
+    ;;
+  esac
+else
+  pike_cv_sys_os="Not Solaris"
+fi
+])
+AC_MSG_RESULT($pike_cv_sys_os)
+
+if test "$GCC" = "yes"; then :; else
+#
+# Special hack for HP-UX stupid cc
+#
+  if test "$pike_cv_sys_os" = "HP-UX"; then
+    AC_TRY_COMPILE([int foo(int bar);],[],[],
+    [
+      OLD_CC="${CC-cc}"
+      OLD_CFLAGS="$CFLAGS"
+      case "/$CC" in
+        */smartlink\ cc)
+           if test -x /usr/bin/cc; then
+             CC="`echo $CC|sed -e 's/ cc/ \/usr\/bin\/cc/`"
+           else
+             : ;
+           fi
+        ;;
+      esac
+      CFLAGS="-Ae +Olibcalls $CFLAGS"
+      AC_TRY_COMPILE([int foo(int bar);],[],[],[
+        CC="$OLD_CC"
+	CFLAGS="$OLD_CFLAGS"
+      ])
+      pike_cv_prog_CC="${CC}"
+    ])
+  fi
+fi
+
+if test "$pike_cv_sys_os" = "Solaris" ; then
+  AC_DEFINE(SOLARIS)
+else
+  :
 fi
 
 # FIXME: Add proper tests
@@ -253,10 +312,6 @@ export FALLBACK_CC
 
 #############################################################################
 
-AC_AIX
-AC_MINIX
- 
-#############################################################################
 
 # option, cache_name, variable
 AC_DEFUN(AC_SYS_COMPILER_FLAG,
@@ -323,26 +378,11 @@ fi
 
 #############################################################################
 
-# We need some special hacks when running slowaris
-AC_PATH_PROG(uname_prog,uname,no)
-AC_MSG_CHECKING(operating system)
-AC_CACHE_VAL(pike_cv_sys_os,
-[
-if test "$uname_prog" != "no"; then
-  pike_cv_sys_os="`uname`"
-
-  case "$pike_cv_sys_os" in
-    SunOS)
-      case "`uname -r`" in
-        5.*) pike_cv_sys_os="Solaris" ;;
-      esac
-    ;;
-  esac
-else
-  pike_cv_sys_os="Not Solaris"
+if test "$GCC" = "yes"; then
+  if test $cflags_is_set = no; then
+    AC_SYS_COMPILER_FLAG(-pipe, pipe, CFLAGS)
+  fi
 fi
-])
-AC_MSG_RESULT($pike_cv_sys_os)
 
 LD='$(CC) $(CFLAGS)'
 
@@ -958,45 +998,6 @@ esac
  fi
 fi
 
-
-
-if test "$GCC" = "yes"; then
-  if test $cflags_is_set = no; then
-    AC_SYS_COMPILER_FLAG(-pipe, pipe, CFLAGS)
-  fi
-else
-#
-# Special hack for HP-UX stupid cc
-#
-  if test "$pike_cv_sys_os" = "HP-UX"; then
-    AC_TRY_COMPILE([int foo(int bar);],[],[],
-    [
-      OLD_CC="${CC-cc}"
-      OLD_CFLAGS="$CFLAGS"
-      case "/$CC" in
-        */smartlink\ cc)
-           if test -x /usr/bin/cc; then
-             CC="$SMARTLINK /usr/bin/cc"
-           else
-             : ;
-           fi
-        ;;
-      esac
-      CFLAGS="-Ae +Olibcalls $CFLAGS"
-      AC_TRY_COMPILE([int foo(int bar);],[],[],[
-        CC="$OLD_CC"
-	CFLAGS="$OLD_CFLAGS"
-      ])
-      pike_cv_prog_CC="${CC}"
-    ])
-  fi
-fi
-
-if test "$pike_cv_sys_os" = "Solaris" ; then
-  AC_DEFINE(SOLARIS)
-else
-  :
-fi
 
 if test ! -d modules/. ; then
   mkdir modules
