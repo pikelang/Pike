@@ -236,7 +236,7 @@ RETURNS(Gnome.AppProgressKey);
                                  (void *)progressfunc,
                                  (void *)progresscancelfunc,d);
   pop_n_elems( args );
-  push_pgdkobject( k, gnome_app_progress_key_program );
+  push_pgdkobject( k, pgtk_gnome_app_progress_key_program );
 }
 
 FUNCTION(progress_manual, "function(string:object)");
@@ -248,7 +248,7 @@ RETURNS(Gnome.AppProgressKey);
   get_all_args( "progress_manual", args, "%s", &message );
   k = gnome_app_progress_manual(GNOME_APP(THIS->obj), message, 0, 0 );
   pop_n_elems( args );
-  push_pgdkobject( k, gnome_app_progress_key_program );
+  push_pgdkobject( k, pgtk_gnome_app_progress_key_program );
 }
 
 

@@ -1,5 +1,5 @@
 require gnome;
-class gtk_clock;
+class clock;
 inherit label;
 // The GtkClock widget provides an easy way of providing a textual
 // clock in your application. It supports realtime display, as well as
