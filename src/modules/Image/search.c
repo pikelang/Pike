@@ -198,9 +198,9 @@ static INLINE int abs(int a) { return (a<0)?-a:a; }
 #define FBAR(CO, CERTI1, CERTI2)  \
        if ((h=haystacki[j].CO)> \
 	   (n=needlei[ny*nxs+nx].CO)) \
-	 sum+=MIN((h-n),(255-h+n)) MY_MAX(CERTI1, CERTI2); \
+	 sum+=MINIMUM((h-n),(255-h+n)) MY_MAX(CERTI1, CERTI2); \
        else \
-	 sum+=MIN((n-h),(255-n+h)) MY_MAX(CERTI1, CERTI2); 
+	 sum+=MINIMUM((n-h),(255-n+h)) MY_MAX(CERTI1, CERTI2); 
 #include "match.c"
 #undef NORMCODE
 #undef NEEDLEAVRCODE
