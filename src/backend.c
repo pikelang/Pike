@@ -4,7 +4,7 @@
 ||| See the files COPYING and DISCLAIMER for more information.
 \*/
 #include "global.h"
-RCSID("$Id: backend.c,v 1.16 1997/10/23 03:15:30 hubbe Exp $");
+RCSID("$Id: backend.c,v 1.17 1997/10/29 06:31:21 hubbe Exp $");
 #include "backend.h"
 #include <errno.h>
 #ifdef HAVE_SYS_TYPES_H
@@ -224,10 +224,10 @@ void do_debug(void)
 	switch(errno)
 	{
 	  case EBADF:
-	    fatal("Backend filedescriptor is bad.\n");
+	    fatal("Backend filedescriptor %d is bad.\n",e);
 	    break;
 	  case ENOENT:
-	    fatal("Backend filedescriptor is not.\n");
+	    fatal("Backend filedescriptor %d is not.\n",e);
 	    break;
 	}
       }
