@@ -182,21 +182,30 @@ void dumpit(string file)
     }
     if(programp(p=compile_file(file, Handler())))
     {
-      string s=encode_value(p, Codec());
-      p=decode_value(s,master()->Codec());
-      if(programp(p))
+      if(!p->dont_dump_program)
       {
-	Stdio.File(fakeroot(file) + ".o","wct")->write(s);
-	switch(quiet)
+	string s=encode_value(p, Codec());
+	p=decode_value(s,master()->Codec());
+	if(programp(p))
 	{
-	  case 1: werror("."); break;
-	  case 0: werror("dumped.\n");
+	  Stdio.File(fakeroot(file) + ".o","wct")->write(s);
+	  switch(quiet)
+	  {
+	    case 1: werror("."); break;
+	    case 0: werror("dumped.\n");
+	  }
+	}else{
+	  switch(quiet)
+	  {
+	    case 1: werror("i"); break;
+	    case 0: werror("Decode of %O failed.\n", file);
+	  }
 	}
       }else{
 	switch(quiet)
 	{
-	  case 1: werror("i"); break;
-	  case 0: werror("Decode of %O failed.\n", file);
+	  case 1: werror(","); break;
+	  case 0: werror("Not dumping %O.\n",file);
 	}
       }
     }else{

@@ -1,3 +1,5 @@
+constant dont_dump_module=1;
+
 #if constant(@module@.oracle)
 
 inherit @module@ : M;
