@@ -1,4 +1,4 @@
-AC_REVISION("$Id: configure.in,v 1.515 2001/04/09 22:08:16 marcus Exp $")
+AC_REVISION("$Id: configure.in,v 1.516 2001/04/17 14:13:41 grubba Exp $")
 AC_INIT(interpret.c)
 AC_CONFIG_HEADER(machine.h)
 
@@ -3393,7 +3393,7 @@ struct pike_string {
 
 struct pike_string *begin_shared_string(int len)
 {
-  return malloc(sizeof(struct pike_string) + len);
+  return (struct pike_string *)malloc(sizeof(struct pike_string) + len);
 }
 
 ], [
@@ -3404,63 +3404,63 @@ struct pike_string *begin_shared_string(int len)
   memset(foo, 0, 11);
   memset(foo, 'a', 10);
   memset(foo, 'b', 5);
+  fprintf(stderr, "1\n");
   if(strcmp(foo,"bbbbbaaaaa")) {
-    fprintf(stderr, "1\n");
     exit(1);
   }
   memset(foo, 0, 6);
+  fprintf(stderr, "2\n");
   for (i=6; i--;) {
     if (foo[i]) {
-      fprintf(stderr, "2\n");
       exit(1);
     }
   }
   memset(foo+1, 1, 6);
+  fprintf(stderr, "3\n");
   for (i=6; i--;) {
     if (foo[i+1] != 1) {
-      fprintf(stderr, "3\n");
       exit(1);
     }
   }
   memset(foo+2, 0, 6);
+  fprintf(stderr, "4\n");
   for (i=6; i--;) {
     if (foo[i+2]) {
-      fprintf(stderr, "4\n");
       exit(1);
     }
   }
   memset(foo+3, 1, 6);
+  fprintf(stderr, "5\n");
   for (i=6; i--;) {
     if (foo[i+3] != 1) {
-      fprintf(stderr, "5\n");
       exit(1);
     }
   }
   memset(foo+4, 0, 6);
+  fprintf(stderr, "6\n");
   for (i=6; i--;) {
     if (foo[i+4]) {
-      fprintf(stderr, "6\n");
       exit(1);
     }
   }
   memset(foo+5, 1, 6);
+  fprintf(stderr, "7\n");
   for (i=6; i--;) {
     if (foo[i+5] != 1) {
-      fprintf(stderr, "7\n");
       exit(1);
     }
   }
   memset(foo+6, 0, 6);
+  fprintf(stderr, "8\n");
   for (i=6; i--;) {
     if (foo[i+6]) {
-      fprintf(stderr, "8\n");
       exit(1);
     }
   }
   memset(foo+7, 1, 6);
+  fprintf(stderr, "9\n");
   for (i=6; i--;) {
     if (foo[i+7] != 1) {
-      fprintf(stderr, "9\n");
       exit(1);
     }
   }
@@ -3468,15 +3468,16 @@ struct pike_string *begin_shared_string(int len)
   len = 6;
   str = begin_shared_string(len);
 
+  fprintf(stderr, "string start\n");
   if (!str) exit(1);
 
   for (i=len; i--;) {
     str->str[i] = ~0;
   }
   memset(str->str, 0, len);
+  fprintf(stderr, "string end\n");
   for (i = len; i--;) {
     if (str->str[i]) {
-      fprintf(stderr, "string\n");
       exit(1);
     }
   }
