@@ -1,5 +1,5 @@
 #include "global.h"
-RCSID("$Id: _xpm.c,v 1.9 1999/10/26 22:54:03 marcus Exp $");
+RCSID("$Id: _xpm.c,v 1.10 2000/03/27 07:42:35 hubbe Exp $");
 
 #include "image_machine.h"
 
@@ -256,7 +256,8 @@ void f__xpm_write_rows( INT32 args )
           adst++;
         } else {
           dst++;
-          adst->r = adst->g = (adst++)->b = color.alpha;
+          adst->r = adst->g = adst->b = color.alpha;
+	  adst++;
         }
       }
     }

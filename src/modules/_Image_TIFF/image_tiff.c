@@ -13,7 +13,7 @@
 
 
 #ifdef HAVE_LIBTIFF
-RCSID("$Id: image_tiff.c,v 1.12 2000/02/01 23:53:00 hubbe Exp $");
+RCSID("$Id: image_tiff.c,v 1.13 2000/03/27 07:42:57 hubbe Exp $");
 
 #include "global.h"
 #include "machine.h"
@@ -275,7 +275,10 @@ void low_image_tiff_encode( struct buffer *buf,
       *(b++)=is->g;
       *(b++)=(is++)->b;
       if(as)
-        *(b++)=(as->r + as->g*2 + (as++)->b)/4;
+      {
+        *(b++)=(as->r + as->g*2 + as->b)/4;
+	as++;
+      }
     }
     if(TIFFWriteScanline(tif, buffer, y, 0) < 0)
     {
@@ -348,7 +351,10 @@ void low_image_tiff_decode( struct buffer *buf,
     di->g = (p>>8) & 255;
     (di++)->b = (p>>16) & 255;
     if(!image_only) 
-      da->r = da->g = (da++)->b = (p>>24) & 255;
+    {
+      da->r = da->g = da->b = (p>>24) & 255;
+      da++;
+    }
     s++;
   }
   free(raster);

@@ -1,5 +1,5 @@
 #include "global.h"
-RCSID("$Id: psd.c,v 1.14 2000/02/03 19:01:29 grubba Exp $");
+RCSID("$Id: psd.c,v 1.15 2000/03/27 07:42:35 hubbe Exp $");
 
 #include "image_machine.h"
 
@@ -386,7 +386,10 @@ static void f_decode_image_channel( INT32 args )
   io = clone_object( image_program, 2 );
   dst = ((struct image *)get_storage(io,image_program))->img;
   for(y=0; y<w*h; y++)
-    dst->r = dst->g = (dst++)->b = *(source++);
+  {
+    dst->r = dst->g = dst->b = *(source++);
+    dst++;
+  }
   pop_n_elems(args);
   push_object( io );
 }
@@ -458,7 +461,10 @@ static void f_decode_image_data( INT32 args )
          *dst++;
        }
        else
-         dst->r = dst->g = (dst++)->b = *(source++);
+       {
+         dst->r = dst->g = dst->b = *(source++);
+	 dst++;
+       }
        break;
     }
   }
