@@ -424,6 +424,9 @@ static void exit_html_struct(struct object *o)
    if (THIS->mapcont) free_mapping(THIS->mapcont);
    if (THIS->mapentity) free_mapping(THIS->mapentity);
 
+   dmalloc_touch_svalue(&(THIS->callback__tag));
+   dmalloc_touch_svalue(&(THIS->callback__data));
+   dmalloc_touch_svalue(&(THIS->callback__entity));
    free_svalue(&(THIS->callback__tag));
    free_svalue(&(THIS->callback__data));
    free_svalue(&(THIS->callback__entity));
@@ -496,6 +499,7 @@ static void gc_mark_html(struct object *o)
 static void html__set_tag_callback(INT32 args)
 {
    if (!args) error("_set_tag_callback: too few arguments\n");
+   dmalloc_touch_svalue(sp-args);
    assign_svalue(&(THIS->callback__tag),sp-args);
    pop_n_elems(args);
    ref_push_object(THISOBJ);
@@ -504,6 +508,7 @@ static void html__set_tag_callback(INT32 args)
 static void html__set_data_callback(INT32 args)
 {
    if (!args) error("_set_data_callback: too few arguments\n");
+   dmalloc_touch_svalue(sp-args);
    assign_svalue(&(THIS->callback__data),sp-args);
    pop_n_elems(args);
    ref_push_object(THISOBJ);
@@ -512,6 +517,7 @@ static void html__set_data_callback(INT32 args)
 static void html__set_entity_callback(INT32 args)
 {
    if (!args) error("_set_entity_callback: too few arguments\n");
+   dmalloc_touch_svalue(sp-args);
    assign_svalue(&(THIS->callback__entity),sp-args);
    pop_n_elems(args);
    ref_push_object(THISOBJ);
@@ -1470,11 +1476,14 @@ static void do_callback(struct parser_html_storage *this,
 
       DEBUG((stderr,"_-callback args=%d\n",2+this->extra_args->size));
 
+      dmalloc_touch_svalue(callback_function);
       apply_svalue(callback_function,2+this->extra_args->size);  
    }
    else
    {
       DEBUG((stderr,"_-callback args=%d\n",2));
+
+      dmalloc_touch_svalue(callback_function);
       apply_svalue(callback_function,2);  
    }
 
@@ -1712,6 +1721,7 @@ static newstate find_end_of_container(struct parser_html_storage *this,
       e=sp[-1];
       endtagname=&e;
       sp--;
+      dmalloc_touch_svalue(sp);
    }
    else
       add_ref_svalue(endtagname);
@@ -1843,6 +1853,8 @@ static int do_try_feed(struct parser_html_storage *this,
 	    if (scan_tag) look_for[n++]=this->tag_start;
 	    scan_forward(*feed,st->c,&dst,&cdst,look_for,n);
 	 }
+
+	 dmalloc_touch_svalue(&(this->callback__data));
 
 	 if (this->callback__data.type!=T_INT)
 	 {
@@ -2001,6 +2013,8 @@ static int do_try_feed(struct parser_html_storage *this,
 	    pop_stack();
 	 }
 	   
+	 dmalloc_touch_svalue(&(this->callback__tag));
+
 	 if (this->callback__tag.type!=T_INT)
 	 {
 	    res=scan_for_end_of_tag(this,*feed,st->c+1,&dst,&cdst,
@@ -2088,6 +2102,8 @@ static int do_try_feed(struct parser_html_storage *this,
 	    pop_stack();
 	 }
 
+
+	 dmalloc_touch_svalue(&(this->callback__entity));
 
 	 if (this->callback__entity.type!=T_INT)
 	 {
@@ -2810,6 +2826,12 @@ static void html_clone(INT32 args)
    if (p->mapentity) free_mapping(p->mapentity);
    add_ref(p->mapentity=THIS->mapentity);
 
+   dmalloc_touch_svalue(&p->callback__tag);
+   dmalloc_touch_svalue(&p->callback__data);
+   dmalloc_touch_svalue(&p->callback__entity);
+   dmalloc_touch_svalue(&THIS->callback__tag);
+   dmalloc_touch_svalue(&THIS->callback__data);
+   dmalloc_touch_svalue(&THIS->callback__entity);
    assign_svalue(&p->callback__tag,&THIS->callback__tag);
    assign_svalue(&p->callback__data,&THIS->callback__data);
    assign_svalue(&p->callback__entity,&THIS->callback__entity);
@@ -2864,6 +2886,7 @@ static void html_set_extra(INT32 args)
    if (THIS->extra_args) free_array(THIS->extra_args);
    THIS->extra_args=sp[-1].u.array;
    sp--;
+   dmalloc_touch_svalue(sp);
    ref_push_object(THISOBJ);
 }
 
