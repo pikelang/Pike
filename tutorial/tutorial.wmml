@@ -6495,7 +6495,7 @@ array sum_arrays(function fun,array arr1,...)
 {
   int e;
   array res=allocate(sizeof(arr1));
-  for(e=0;e&lt;sizeof(arr1);e++)<br>
+  for(e=0;e&lt;sizeof(arr1);e++)
   {
     res[e]=fun(arr1[e],arr2[e],...);
   }
