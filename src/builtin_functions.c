@@ -4,7 +4,7 @@
 ||| See the files COPYING and DISCLAIMER for more information.
 \*/
 #include "global.h"
-RCSID("$Id: builtin_functions.c,v 1.143 1999/01/16 01:20:39 hubbe Exp $");
+RCSID("$Id: builtin_functions.c,v 1.144 1999/01/16 02:57:05 grubba Exp $");
 #include "interpret.h"
 #include "svalue.h"
 #include "pike_macros.h"
@@ -1906,7 +1906,7 @@ void f_column(INT32 args)
 void f__verify_internals(INT32 args)
 {
   INT32 tmp=d_flag;
-  CHECK_SECURITY(0,SECURITY_BIT_SECURITY, ("_exit: permission denied.\n"));
+  CHECK_SECURITY(0,SECURITY_BIT_SECURITY, ("_verify_internals: permission denied.\n"));
   d_flag=0x7fffffff;
   do_debug();
   d_flag=tmp;
@@ -1917,7 +1917,7 @@ void f__verify_internals(INT32 args)
 void f__debug(INT32 args)
 {
   INT32 i=d_flag;
-  CHECK_SECURITY(0,SECURITY_BIT_SECURITY, ("_exit: permission denied.\n"));
+  CHECK_SECURITY(0,SECURITY_BIT_SECURITY, ("_debug: permission denied.\n"));
   get_all_args("_debug",args,"%i",&d_flag);
   pop_n_elems(args);
   push_int(i);
@@ -1929,7 +1929,7 @@ void f__compiler_trace(INT32 args)
 {
   extern int yydebug;
   INT32 i = yydebug;
-  CHECK_SECURITY(0,SECURITY_BIT_SECURITY, ("_exit: permission denied.\n"));
+  CHECK_SECURITY(0,SECURITY_BIT_SECURITY, ("_compiler_trace: permission denied.\n"));
   get_all_args("_compiler_trace", args, "%i", &yydebug);
   pop_n_elems(args);
   push_int(i);
