@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: stralloc.h,v 1.86 2004/11/06 17:20:27 grubba Exp $
+|| $Id: stralloc.h,v 1.87 2004/11/08 10:30:03 grubba Exp $
 */
 
 #ifndef STRALLOC_H
@@ -298,12 +298,6 @@ PMOD_EXPORT void string_builder_append_integer(struct string_builder *s,
 					       int flags,
 					       size_t min_width,
 					       size_t precision);
-PMOD_EXPORT void string_builder_append_integerv(struct string_builder *s,
-						va_list args,
-						unsigned int base,
-						int flags,
-						size_t min_width,
-						size_t precision);
 PMOD_EXPORT void string_builder_vsprintf(struct string_builder *s,
 					 const char *fmt,
 					 va_list args);

@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: stralloc.c,v 1.186 2004/11/06 18:04:46 grubba Exp $
+|| $Id: stralloc.c,v 1.187 2004/11/08 10:30:50 grubba Exp $
 */
 
 #include "global.h"
@@ -2302,52 +2302,36 @@ PMOD_EXPORT void string_builder_append_integer(struct string_builder *s,
   }
 }
 
-PMOD_EXPORT void string_builder_append_integerv(struct string_builder *s,
-						va_list args,
-						unsigned int base,
-						int flags,
-						size_t min_width,
-						size_t precision)
-{
-  LONGEST val = 0;
-  switch (flags & (APPEND_WIDTH_MASK|APPEND_SIGNED)) {
-  case APPEND_WIDTH_HALF:
-    val = va_arg(args, unsigned int) & 0xffff;
-    break;
-  case APPEND_WIDTH_HALF|APPEND_SIGNED:
-    val = (short)va_arg(args, int);
-    break;
-  case 0:
-    val = va_arg(args, unsigned int);
-    break;
-  case APPEND_SIGNED:
-    val = va_arg(args, int);
-    break;
-  case APPEND_WIDTH_LONG:
-    val = va_arg(args, unsigned long);
-    break;
-  case APPEND_WIDTH_LONG|APPEND_SIGNED:
-    val = va_arg(args, long);
-    break;
-#ifdef INT64
-  case APPEND_WIDTH_LONG_LONG:
-    val = va_arg(args, unsigned INT64);
-    break;
-  case APPEND_WIDTH_LONG_LONG|APPEND_SIGNED:
-    val = va_arg(args, INT64);
-    break;
-#endif /* INT64 */
-  default:
-    Pike_fatal("string_builder_append_integerv(): Unsupported flags: 0x%04x\n",
-	       flags);
-    break;
-  }
-  string_builder_append_integer(s, val, base, flags, min_width, precision);
-}
-
 /* Values used internally in string_builder_vsprintf() */
 #define STATE_MIN_WIDTH	1
 #define STATE_PRECISION 2
+
+static LONGEST pike_va_int(va_list *args, int flags)
+{
+  switch (flags & (APPEND_WIDTH_MASK|APPEND_SIGNED)) {
+  case APPEND_WIDTH_HALF:
+    return va_arg(*args, unsigned int) & 0xffff;
+  case APPEND_WIDTH_HALF|APPEND_SIGNED:
+    return (short)va_arg(*args, int);
+  case 0:
+    return va_arg(*args, unsigned int);
+  case APPEND_SIGNED:
+    return va_arg(*args, int);
+  case APPEND_WIDTH_LONG:
+    return va_arg(*args, unsigned long);
+  case APPEND_WIDTH_LONG|APPEND_SIGNED:
+    return va_arg(*args, long);
+#ifdef INT64
+  case APPEND_WIDTH_LONG_LONG:
+    return va_arg(*args, unsigned INT64);
+  case APPEND_WIDTH_LONG_LONG|APPEND_SIGNED:
+    return va_arg(*args, INT64);
+#endif /* INT64 */
+  }
+  Pike_fatal("string_builder_append_integerv(): Unsupported flags: 0x%04x\n",
+	     flags);
+  return 0;
+}
 
 PMOD_EXPORT void string_builder_vsprintf(struct string_builder *s,
 					 const char *fmt,
@@ -2492,30 +2476,30 @@ PMOD_EXPORT void string_builder_vsprintf(struct string_builder *s,
 	  string_builder_putchar(s, va_arg(args, int));
 	  break;
 	case 'b':
-	  string_builder_append_integerv(s, args, 2,
-					 flags, min_width, precision);
+	  string_builder_append_integer(s, pike_va_int(&args, flags), 2,
+					flags, min_width, precision);
 	  break;
 	case 'o':
-	  string_builder_append_integerv(s, args, 8,
-					 flags, min_width, precision);
+	  string_builder_append_integer(s, pike_va_int(&args, flags), 8,
+					flags, min_width, precision);
 	  break;
 	case 'x':
-	  string_builder_append_integerv(s, args, 16,
-					 flags, min_width, precision);
+	  string_builder_append_integer(s, pike_va_int(&args, flags), 16,
+					flags, min_width, precision);
 	  break;
 	case 'X':
-	  string_builder_append_integerv(s, args, 16,
-					 flags | APPEND_UPPER_CASE,
-					 min_width, precision);
+	  string_builder_append_integer(s, pike_va_int(&args, flags), 16,
+					flags | APPEND_UPPER_CASE,
+					min_width, precision);
 	  break;
 	case 'u':
-	  string_builder_append_integerv(s, args, 10,
-					 flags, min_width, precision);
+	  string_builder_append_integer(s, pike_va_int(&args, flags), 10,
+					flags, min_width, precision);
 	  break;
 	case 'd':
-	  string_builder_append_integerv(s, args, 10,
-					 flags | APPEND_SIGNED,
-					 min_width, precision);
+	  string_builder_append_integer(s, pike_va_int(&args, flags), 10,
+					flags | APPEND_SIGNED,
+					min_width, precision);
 	  break;
 
 	  /* FIMXE: TODO: Doubles (ie 'a', 'e', 'E', 'f', 'g', 'G'). */
