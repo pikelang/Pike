@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: encode.c,v 1.224 2004/11/12 13:05:27 grubba Exp $
+|| $Id: encode.c,v 1.225 2004/12/18 15:45:04 grubba Exp $
 */
 
 #include "global.h"
@@ -1619,7 +1619,7 @@ static void free_encode_data(struct encode_data *data)
   free_array(data->delayed);
 }
 
-/*! @decl string encode_value(mixed value, object|void codec)
+/*! @decl string encode_value(mixed value, Codec|void codec)
  *!
  *! Code a value into a string.
  *!
@@ -1633,6 +1633,11 @@ static void free_encode_data(struct encode_data *data)
  *!
  *! To encode objects, programs and functions, a codec object must be
  *! provided.
+ *!
+ *! If @expr{codec->nameof(o)@} returns @tt{UNDEFINED@} for an object,
+ *! @expr{val = o->encode_object(o)@} will be called. The returned value
+ *! will be passed to @expr{o->decode_object(o, val)@} when the object is
+ *! decoded.
  *!
  *! @note
  *!
