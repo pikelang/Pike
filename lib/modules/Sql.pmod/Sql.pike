@@ -1,5 +1,5 @@
 /*
- * $Id: Sql.pike,v 1.67 2003/06/10 17:44:34 mast Exp $
+ * $Id: Sql.pike,v 1.68 2003/07/30 02:30:33 nilsson Exp $
  *
  * Implements the generic parts of the SQL-interface
  *
@@ -24,7 +24,7 @@ object master_sql;
 //! @value 1
 //!   Yes
 //! @endint
-int case_convert;
+int(0..1) case_convert;
 
 //! @decl string quote(string s)
 //! Quote a string @[s] so that it can safely be put in a query.
@@ -34,48 +34,55 @@ function(string:string) quote = .sql_util.quote;
 //! @decl string encode_time(int t, int|void is_utc)
 //! Converts a system time value to an appropriately formatted time
 //! spec for the database.
-//! @[t] Time to encode.
-//! @[is_utc] If nonzero then time is taken as a "full" unix time spec
-//! (where the date part is ignored), otherwise it's converted as a
-//! seconds-since-midnight value.
+//! @param t
+//!   Time to encode.
+//! @param is_utc
+//!   If nonzero then time is taken as a "full" unix time spec
+//!   (where the date part is ignored), otherwise it's converted as a
+//!   seconds-since-midnight value.
 
 function(int,void|int:string) encode_time;
 
 //! @decl int decode_time(string t, int|void want_utc)
 //! Converts a database time spec to a system time value.
-//! @[t] Time spec to decode.
-//! @[want_utc] Take the date part from this system time value. If zero, a
-//! seconds-since-midnight value is returned.
+//! @param t
+//!   Time spec to decode.
+//! @param want_utc
+//!   Take the date part from this system time value. If zero, a
+//!   seconds-since-midnight value is returned.
 
 function(string,void|int:int) decode_time;
 
 //! @decl string encode_date(int t)
 //! Converts a system time value to an appropriately formatted
 //! date-only spec for the database.
-//! @[t] Time to encode.
+//! @param t
+//!   Time to encode.
 
 function(int:string) encode_date;
 
 //! @decl int decode_date(string d)
 //! Converts a database date-only spec to a system time value.
-//! @[d] Date spec to decode.
+//! @param d
+//!   Date spec to decode.
 
 function(string:int) decode_date;
 
 //! @decl string encode_datetime(int t)
 //! Converts a system time value to an appropriately formatted
 //! date and time spec for the database.
-//! @[t] Time to encode.
+//! @param t
+//!   Time to encode.
 
 function(int:string) encode_datetime;
 
 //! @decl int decode_datetime(string datetime)
 //! Converts a database date and time spec to a system time value.
-//! @[datetime] Date and time spec to decode.
+//! @param datetime
+//!   Date and time spec to decode.
 
 function(string:int) decode_datetime;
 
-//! @decl void create()
 //! @decl void create(string host)
 //! @decl void create(string host, string db)
 //! @decl void create(string host, mapping(string:int|string) options)
@@ -131,7 +138,7 @@ function(string:int) decode_datetime;
 //! @note
 //!   Support for @[options] was added in Pike 7.3.
 //!
-void create(void|string|object host, void|string|mapping(string:int|string) db,
+void create(string|object host, void|string|mapping(string:int|string) db,
 	    void|string user, void|string password,
 	    void|mapping(string:int|string) options)
 {
@@ -163,7 +170,7 @@ void create(void|string|object host, void|string|mapping(string:int|string) db,
 
     string program_name;
 
-    if (host && (host != replace(host, ({ ":", "/", "@" }), ({ "", "", "" })))) {
+    if (host && (host != replace(host, ([ ":":"", "/":"", "@":"" ]) ))) {
 
       // The hostname is on the format:
       //
@@ -248,7 +255,7 @@ void create(void|string|object host, void|string|mapping(string:int|string) db,
   decode_datetime = master_sql->decode_datetime || .sql_util.fallback;
 }
 
-string _sprintf(int type, mapping|void flags)
+static string _sprintf(int type, mapping|void flags)
 {
   if(type=='O' && master_sql && master_sql->_sprintf)
     return sprintf("Sql.%O", master_sql);
@@ -266,7 +273,7 @@ static private array(mapping(string:mixed)) res_obj_to_array(object res_obj)
 
     fieldnames = (Array.map(fields,
                             lambda (mapping(string:mixed) m) {
-                              return((m->table||"") + "." + m->name);
+                              return (m->table||"") + "." + m->name;
                             }) +
                   fields->name);
 
@@ -277,7 +284,7 @@ static private array(mapping(string:mixed)) res_obj_to_array(object res_obj)
     while (row = res_obj->fetch_row())
       res += ({ mkmapping(fieldnames, row + row) });
 
-    return(res);
+    return res;
   }
   return 0;
 }
@@ -305,9 +312,9 @@ void select_db(string db)
 string|object compile_query(string q)
 {
   if (functionp(master_sql->compile_query)) {
-    return(master_sql->compile_query(q));
+    return master_sql->compile_query(q);
   }
-  return(q);
+  return q;
 }
 
 //! Handle sprintf-based quoted arguments
@@ -379,15 +386,15 @@ array(mapping(string:mixed)) query(object|string q,
   }
   if (functionp(master_sql->query)) {
     if (bindings) {
-      return(master_sql->query(q, bindings));
+      return master_sql->query(q, bindings);
     } else {
-      return(master_sql->query(q));
+      return master_sql->query(q);
     }
   }
   if (bindings) {
-    return(res_obj_to_array(master_sql->big_query(q, bindings)));
+    return res_obj_to_array(master_sql->big_query(q, bindings));
   } else {
-    return(res_obj_to_array(master_sql->big_query(q)));
+    return res_obj_to_array(master_sql->big_query(q));
   }
 }
 
@@ -420,7 +427,7 @@ int|object big_query(object|string q, mixed ... extraargs)
   } else {
     pre_res = master_sql->query(q);
   }
-  return(pre_res && Sql.sql_result(pre_res));
+  return pre_res && Sql.sql_result(pre_res);
 }
 
 //! Create a new database.
@@ -465,18 +472,18 @@ void reload()
 string server_info()
 {
   if (functionp(master_sql->server_info)) {
-    return(master_sql->server_info());
+    return master_sql->server_info() ;
   }
-  return("Unknown SQL-server");
+  return "Unknown SQL-server";
 }
 
 //! Return info about the connection to the SQL-server.
 string host_info()
 {
   if (functionp(master_sql->host_info)) {
-    return(master_sql->host_info());
+    return master_sql->host_info();
   } 
-  return("Unknown connection to host");
+  return "Unknown connection to host";
 }
 
 //! List available databases on this SQL-server.
@@ -498,14 +505,14 @@ array(string) list_dbs(string|void wild)
   }
   if (res && sizeof(res) && mappingp(res[0])) {
     res = Array.map(res, lambda (mapping m) {
-      return(values(m)[0]);	/* Hope that there's only one field */
+      return values(m)[0];	/* Hope that there's only one field */
     } );
   }
   if (res && wild) {
     res = filter(res,
 		 Regexp(replace(wild, ({"%", "_"}), ({".*", "."})))->match);
   }
-  return(res);
+  return res;
 }
 
 //! List tables available in the current database.
@@ -527,14 +534,14 @@ array(string) list_tables(string|void wild)
   }
   if (res && sizeof(res) && mappingp(res[0])) {
     res = Array.map(res, lambda (mapping m) {
-      return(values(m)[0]);	/* Hope that there's only one field */
+      return values(m)[0];	/* Hope that there's only one field */
     } );
   }
   if (res && wild) {
     res = filter(res,
 		 Regexp(replace(wild, ({"%", "_"}), ({".*", "."})))->match);
   }
-  return(res);
+  return res;
 }
 
 //! List fields available in the specified table
@@ -559,7 +566,7 @@ array(mapping(string:mixed)) list_fields(string table, string|void wild)
 		   },
 		   Regexp(replace(wild, ({"%", "_"}), ({".*", "."})))->match);
     }
-    return(res);
+    return res;
   }
   catch {
     if (wild) {
@@ -585,8 +592,7 @@ array(mapping(string:mixed)) list_fields(string table, string|void wild)
     if (!m->table) {
       m["table"] = table;
     }
-    return(m);
+    return m;
   }, table);
-  return(res);
+  return res;
 }
-
