@@ -1,4 +1,4 @@
-# $Id: configure.in,v 1.37 1998/06/04 11:52:07 grubba Exp $
+# $Id: configure.in,v 1.38 1998/07/23 22:07:38 grubba Exp $
 AC_INIT(file.c)
 AC_CONFIG_HEADER(file_machine.h)
 
@@ -27,6 +27,11 @@ if test x$ac_cv_func_readdir_r = xyes ; then
 #  define _LARGEFILE_SOURCE
 #  define _LARGEFILE64_SOURCE 1
 #endif
+/* HPUX needs these too... */
+#ifndef __STDC_EXT__
+#  define __STDC_EXT__
+#endif /* !__STDC_EXT__ */
+
 /* For _REENTRANT */
 #include "machine.h"
 #ifndef POSIX_SOURCE
@@ -76,6 +81,11 @@ else
 #  define _LARGEFILE_SOURCE
 #  define _LARGEFILE64_SOURCE 1
 #endif
+/* HPUX needs these too... */
+#ifndef __STDC_EXT__
+#  define __STDC_EXT__
+#endif /* !__STDC_EXT__ */
+
 /* For _REENTRANT */
 #include "machine.h"
 #ifndef POSIX_SOURCE
@@ -153,6 +163,11 @@ if test x$ac_cv_func_statvfs = xyes ; then
 #  define _LARGEFILE_SOURCE
 #  define _LARGEFILE64_SOURCE 1
 #endif
+/* HPUX needs these too... */
+#ifndef __STDC_EXT__
+#  define __STDC_EXT__
+#endif /* !__STDC_EXT__ */
+
 #ifndef POSIX_SOURCE
 #define POSIX_SOURCE
 #endif
@@ -194,6 +209,11 @@ if test x$ac_cv_func_statvfs = xyes ; then
 #  define _LARGEFILE_SOURCE
 #  define _LARGEFILE64_SOURCE 1
 #endif
+/* HPUX needs these too... */
+#ifndef __STDC_EXT__
+#  define __STDC_EXT__
+#endif /* !__STDC_EXT__ */
+
 #ifndef POSIX_SOURCE
 #define POSIX_SOURCE
 #endif
@@ -239,6 +259,11 @@ if test x$ac_cv_func_statfs = xyes ; then
 #  define _LARGEFILE_SOURCE
 #  define _LARGEFILE64_SOURCE 1
 #endif
+/* HPUX needs these too... */
+#ifndef __STDC_EXT__
+#  define __STDC_EXT__
+#endif /* !__STDC_EXT__ */
+
 #ifndef POSIX_SOURCE
 #define POSIX_SOURCE
 #endif
@@ -289,6 +314,11 @@ int main()
 #  define _LARGEFILE_SOURCE
 #  define _LARGEFILE64_SOURCE 1
 #endif
+/* HPUX needs these too... */
+#ifndef __STDC_EXT__
+#  define __STDC_EXT__
+#endif /* !__STDC_EXT__ */
+
 #ifndef POSIX_SOURCE
 #define POSIX_SOURCE
 #endif
@@ -329,6 +359,11 @@ int main()
 #  define _LARGEFILE_SOURCE
 #  define _LARGEFILE64_SOURCE 1
 #endif
+/* HPUX needs these too... */
+#ifndef __STDC_EXT__
+#  define __STDC_EXT__
+#endif /* !__STDC_EXT__ */
+
 #ifndef POSIX_SOURCE
 #define POSIX_SOURCE
 #endif
@@ -373,6 +408,11 @@ int main()
 #  define _LARGEFILE_SOURCE
 #  define _LARGEFILE64_SOURCE 1
 #endif
+/* HPUX needs these too... */
+#ifndef __STDC_EXT__
+#  define __STDC_EXT__
+#endif /* !__STDC_EXT__ */
+
 #ifndef POSIX_SOURCE
 #define POSIX_SOURCE
 #endif
@@ -417,6 +457,11 @@ AC_TRY_RUN([
 #  define _LARGEFILE_SOURCE
 #  define _LARGEFILE64_SOURCE 1
 #endif
+/* HPUX needs these too... */
+#ifndef __STDC_EXT__
+#  define __STDC_EXT__
+#endif /* !__STDC_EXT__ */
+
 #include <stdio.h>
 #include <string.h>
 int main()
@@ -445,6 +490,11 @@ AC_TRY_RUN([
 #  define _LARGEFILE_SOURCE
 #  define _LARGEFILE64_SOURCE 1
 #endif
+/* HPUX needs these too... */
+#ifndef __STDC_EXT__
+#  define __STDC_EXT__
+#endif /* !__STDC_EXT__ */
+
 #ifndef POSIX_SOURCE
 #define POSIX_SOURCE
 #endif
@@ -598,6 +648,11 @@ AC_TRY_RUN([
 #  define _LARGEFILE_SOURCE
 #  define _LARGEFILE64_SOURCE 1
 #endif
+/* HPUX needs these too... */
+#ifndef __STDC_EXT__
+#  define __STDC_EXT__
+#endif /* !__STDC_EXT__ */
+
 #ifndef POSIX_SOURCE
 #define POSIX_SOURCE
 #endif
@@ -653,6 +708,11 @@ AC_TRY_RUN([
 #  define _LARGEFILE_SOURCE
 #  define _LARGEFILE64_SOURCE 1
 #endif
+/* HPUX needs these too... */
+#ifndef __STDC_EXT__
+#  define __STDC_EXT__
+#endif /* !__STDC_EXT__ */
+
 #ifndef POSIX_SOURCE
 #define POSIX_SOURCE
 #endif
