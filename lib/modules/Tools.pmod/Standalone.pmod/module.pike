@@ -1,6 +1,6 @@
 // -*- Pike -*-
 
-// $Id: module.pike,v 1.4 2002/09/13 15:21:59 marcus Exp $
+// $Id: module.pike,v 1.5 2002/09/13 23:12:42 marcus Exp $
 
 // Source directory
 string srcdir;
@@ -96,13 +96,13 @@ int max_time_of_files(string ... a)
 int just_run(mapping options, string ... cmd)
 {
   werror(" %s\n",cmd*" ");
-  return Process.create_process(cmd,options)->wait();
+  return Process.create_process(cmd,options|(["env":getenv()]))->wait();
 }
 
 void run_or_fail(mapping options,string ... cmd)
 {
   werror(" %s\n",cmd*" ");
-  int ret=Process.create_process(cmd,options)->wait();
+  int ret=Process.create_process(cmd,options|(["env":getenv()]))->wait();
   if(ret)
     exit(ret);
 }
@@ -158,6 +158,7 @@ int main(int argc, array(string) argv)
 #endif
   if(master()->_master_file_name)
     run_pike += " -m"+master()->_master_file_name;
+  putenv("RUNPIKE", run_pike);
 
   foreach(Getopt.find_all_options(argv,aggregate(
     ({"autoconf",Getopt.NO_ARG,({"--autoconf"}) }),

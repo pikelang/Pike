@@ -1287,6 +1287,8 @@ void do_install()
 
     install_file(combine_path(vars->SRCDIR,"make_variables.in"),
 		 combine_path(include_prefix,"make_variables.in"));
+    install_file(combine_path(vars->SRCDIR,"precompile2.sh"),
+		 combine_path(include_prefix,"precompile.sh"));
 
     foreach(({"install_module", "precompile.pike", "smartlink",
 	      "fixdepends.sh", "mktestsuite", "test_pike.pike"}), string f)
