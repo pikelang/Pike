@@ -5,7 +5,7 @@
 \*/
 /**/
 #include "global.h"
-RCSID("$Id: docode.c,v 1.52 1999/09/19 18:31:33 grubba Exp $");
+RCSID("$Id: docode.c,v 1.53 1999/11/05 23:21:26 grubba Exp $");
 #include "las.h"
 #include "program.h"
 #include "language.h"
@@ -223,6 +223,7 @@ static int do_docode2(node *n,int flags)
       case F_INDEX:
       case F_ARROW:
       case F_ARG_LIST:
+      case F_COMMA_EXPR:
       case F_EXTERNAL:
 	  break;
       }
@@ -779,6 +780,7 @@ static int do_docode2(node *n,int flags)
       return 1;
     }
 
+  case F_COMMA_EXPR:
   case F_ARG_LIST:
     tmp1=do_docode(CAR(n),flags & ~WANT_LVALUE);
     tmp1+=do_docode(CDR(n),flags);

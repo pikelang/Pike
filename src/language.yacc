@@ -94,6 +94,7 @@
 %token F_ADD_EQ
 %token F_AND_EQ
 %token F_ARG_LIST
+%token F_COMMA_EXPR
 %token F_ARRAY_ID
 %token F_BREAK
 %token F_CASE
@@ -182,7 +183,7 @@
 /* This is the grammar definition of Pike. */
 
 #include "global.h"
-RCSID("$Id: language.yacc,v 1.129 1999/11/04 02:35:30 grubba Exp $");
+RCSID("$Id: language.yacc,v 1.130 1999/11/05 23:21:27 grubba Exp $");
 #ifdef HAVE_MEMORY_H
 #include <memory.h>
 #endif
@@ -525,7 +526,7 @@ constant_name: F_IDENTIFIER '=' safe_expr0
 
     /* Ugly hack to make sure that $3 is optimized */
     tmp=compiler_pass;
-    $3=mknode(F_ARG_LIST,$3,0);
+    $3=mknode(F_COMMA_EXPR,$3,0);
     compiler_pass=tmp;
 
     if(!is_const($3))
@@ -570,7 +571,7 @@ constant: modifiers F_CONSTANT constant_list ';' {}
 
 block_or_semi: block
   {
-    $$ = mknode(F_ARG_LIST,$1,mknode(F_RETURN,mkintnode(0),0));
+    $$ = mknode(F_COMMA_EXPR,$1,mknode(F_RETURN,mkintnode(0),0));
   }
   | ';' { $$ = NULL;}
   ;
@@ -665,8 +666,8 @@ def: modifiers type_or_error optional_stars F_IDENTIFIER
       if(recoveries && sp-evaluator_stack < recoveries->sp)
 	fatal("Stack error (underflow)\n");
 
-	if(compiler_pass == 1 && f!=$<number>5)
-	  fatal("define_function screwed up! %d != %d\n",f,$<number>5);
+      if(compiler_pass == 1 && f!=$<number>5)
+	fatal("define_function screwed up! %d != %d\n",f,$<number>5);
 #endif
     }
     pop_compiler_frame();
@@ -1024,7 +1025,7 @@ new_name: optional_stars F_IDENTIFIER
   }
   expr0
   {
-    init_node=mknode(F_ARG_LIST,init_node,
+    init_node=mknode(F_COMMA_EXPR,init_node,
 		     mkcastnode(void_type_string,
 				mknode(F_ASSIGN,$5,
 				       mkidentifiernode($<number>4))));
@@ -1139,7 +1140,7 @@ local_name_list2: new_local_name2
 statements: { $$=0; }
   | statements statement
   {
-    $$=mknode(F_ARG_LIST,$1,mkcastnode(void_type_string,$2));
+    $$=mknode(F_COMMA_EXPR,$1,mkcastnode(void_type_string,$2));
   }
   ;
 
@@ -1201,7 +1202,7 @@ lambda: F_LAMBDA
     int f,e;
     struct pike_string *name;
     
-    $4=mknode(F_ARG_LIST,$4,mknode(F_RETURN,mkintnode(0),0));
+    $4=mknode(F_COMMA_EXPR,$4,mknode(F_RETURN,mkintnode(0),0));
     type=find_return_type($4);
 
     if(type)
@@ -1427,7 +1428,8 @@ for: F_FOR
   {
     int i=lex.current_line;
     lex.current_line=$1;
-    $$=mknode(F_ARG_LIST,mkcastnode(void_type_string,$4),mknode(F_FOR,$6,mknode(':',$10,$8)));
+    $$=mknode(F_COMMA_EXPR, mkcastnode(void_type_string,$4),
+	      mknode(F_FOR,$6,mknode(':',$10,$8)));
     lex.current_line=i;
     pop_local_variables($<number>2);
   }
@@ -1477,7 +1479,7 @@ case: F_CASE safe_comma_expr expected_colon
 expected_colon: ':'
   | F_LEX_EOF
   {
-    yyerror("Missing ';'.");
+    yyerror("Missing ':'.");
     yyerror("Unexpected end of file.");
   }
   ;
@@ -1520,7 +1522,7 @@ comma_expr: comma_expr2
 comma_expr2: expr0
   | comma_expr2 ',' expr0
   {
-    $$ = mknode(F_ARG_LIST,mkcastnode(void_type_string,$1),$3); 
+    $$ = mknode(F_COMMA_EXPR,mkcastnode(void_type_string,$1),$3); 
   }
   ;
 
@@ -1868,7 +1870,7 @@ gauge: F_GAUGE catch_arg
     $$=mkefuncallnode("abs",
 		  mkopernode("`/", 
 			     mkopernode("`-", mkefuncallnode("gethrvtime",0),
-					mknode(F_ARG_LIST,$2,
+					mknode(F_COMMA_EXPR,$2,
 					       mkefuncallnode("gethrvtime",0))),
 			     mkfloatnode((FLOAT_TYPE)1000000.0)));
 #else
@@ -1877,7 +1879,7 @@ gauge: F_GAUGE catch_arg
 		mkopernode("`-",
 			 mknode(F_INDEX,mkefuncallnode("rusage",0),
 				mkintnode(GAUGE_RUSAGE_INDEX)),
-		         mknode(F_ARG_LIST,$2,
+		         mknode(F_COMMA_EXPR,$2,
 				mknode(F_INDEX,mkefuncallnode("rusage",0),
 				       mkintnode(GAUGE_RUSAGE_INDEX)))),
 		mkfloatnode((FLOAT_TYPE)1000.0)));
@@ -1888,7 +1890,10 @@ typeof: F_TYPEOF '(' expr0 ')'
   {
     struct pike_string *s;
     node *tmp;
-    tmp=mknode(F_ARG_LIST,$3,0);
+
+    /* FIXME: Why build the node at all? */
+
+    tmp=mknode(F_COMMA_EXPR,$3,0);
 
     s=describe_type( tmp && CAR(tmp) && CAR(tmp)->type ? CAR(tmp)->type : mixed_type_string);
     $$=mkstrnode(s);
