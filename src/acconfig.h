@@ -1,5 +1,5 @@
 /*
- * $Id: acconfig.h,v 1.21 1998/04/30 06:32:36 hubbe Exp $
+ * $Id: acconfig.h,v 1.22 1998/05/17 20:39:18 grubba Exp $
  */
 #ifndef MACHINE_H
 #define MACHINE_H
@@ -173,6 +173,9 @@
 
 /* Define if you have the pthread_yield function.  */
 #undef HAVE_PTHREAD_YIELD
+
+/* Define if your OS has the union wait. */
+#undef HAVE_UNION_WAIT
 
 /* Define if your cpp supports the ANSI concatenation operator ## */
 #undef HAVE_ANSI_CONCAT
