@@ -5,7 +5,7 @@
 \*/
 
 /*
- * $Id: error.h,v 1.40 2000/02/17 00:31:08 hubbe Exp $
+ * $Id: error.h,v 1.41 2000/12/05 03:26:10 hubbe Exp $
  */
 #ifndef ERROR_H
 #define ERROR_H
@@ -249,6 +249,9 @@ void cleanup_error(void);
      math_error(FUNC, Pike_sp-args, args, 0, "Division by zero.\n")
 
 #endif
+
+/* forward compatibility */
+#define Pike_error error
 
 #ifndef PIKE_DEBUG
 #define check_recovery_context() ((void)0)
