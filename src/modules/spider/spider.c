@@ -632,7 +632,7 @@ void f_do_seteuid(INT32 args)
     id = pw->pw_uid;
   } else
     id = sp[-1].u.integer;
-#ifdef HAVE_SETUID
+#ifdef HAVE_SETEUID
   seteuid(id);
 #else
   setresuid(-1, id, -1);
@@ -658,7 +658,7 @@ void f_do_setegid(INT32 args)
   } else
     id = sp[-1].u.integer;
 
-#ifdef HAVE_SETUID
+#ifdef HAVE_SETEGID
   setegid(id);
 #else
   setresgid(-1, id, -1);
