@@ -587,6 +587,7 @@ mapping _decode( string|mapping what, mapping|void opts )
   ([
     "image":img,
     "alpha":alpha,
+    "type":"application/x-photoshop",
   ]);
 }
 
