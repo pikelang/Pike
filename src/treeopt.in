@@ -1,6 +1,6 @@
 // -*- c -*-
 //
-// $Id: treeopt.in,v 1.66 2001/09/29 08:47:04 hubbe Exp $
+// $Id: treeopt.in,v 1.67 2002/02/14 14:50:56 grubba Exp $
 //
 // The tree optimizer
 //
@@ -708,6 +708,12 @@ F_LAND(0 = +[node_is_false($$)], *):
 '?'(0, ':'(F_COMMA_EXPR(1, 2), F_COMMA_EXPR(3, $2))):
   F_COMMA_EXPR('?'($0, ':'($1, $3)), $2);
 
+'?'(*, ':'(0=+, +[(pike_types_le($0->type, void_type_string) !=
+		   pike_types_le($$->type, void_type_string))])):
+{
+  yyerror("The arguments to ?: may not be void.");
+}
+;
 
 // Optimizations of negations.
 F_NOT(-, *):
