@@ -1,4 +1,4 @@
-test_true([["$Id: testsuite.in,v 1.77 1998/03/13 21:44:26 grubba Exp $"]])
+test_true([["$Id: testsuite.in,v 1.78 1998/03/20 22:38:42 hubbe Exp $"]])
 test_eq(1e1,10.0)
 test_eq(1E1,10.0)
 test_eq(1e+1,10.0)
@@ -6,6 +6,12 @@ test_eq(1.1e1,11.0)
 test_eq(1e-1,0.1)
 test_eq('\x20',32)
 test_eq("\x20","\040")
+test_true([[1.0e-40]])
+test_eq([[#"foo
+bar"]],[["foo\nbar"]])
+test_true([[stringp(#string "Makefile")]])
+test_any([[object(Stdio.File) f; f=Stdio.File(); return 1]],1)
+test_compile([[class { object(Stdio.FILE) f; void create() { f=Stdio.FILE(); }}]])
 test_eq([[compile_string("#define A(X) (X)\nint x() { return A \n\t(1); }")()->x()]],1)
 test_any([[class G { mapping t=([]);
  class tO { void init(string name) { t[name]=this_object(); }}
