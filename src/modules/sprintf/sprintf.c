@@ -103,7 +103,7 @@
 */
 
 #include "global.h"
-RCSID("$Id: sprintf.c,v 1.63 2000/06/09 12:17:23 lange Exp $");
+RCSID("$Id: sprintf.c,v 1.64 2000/07/18 14:57:33 grubba Exp $");
 #include "error.h"
 #include "array.h"
 #include "svalue.h"
@@ -1435,8 +1435,24 @@ void f_sprintf(INT32 num_arg)
   
   fs.fsp = fs.format_info_stack-1;
 
-  if(argp[0].type != T_STRING)
-    error("Bad argument 1 to sprintf.\n");
+  if(argp[0].type != T_STRING) {
+    if (argp[0].type == T_OBJECT) {
+      /* Try checking if we can cast it into a string... */
+      PUSH_CONSTANT_STRING("string");
+      ref_push_object(argp[0].u.object);
+      o_cast(sp[-2].u.string, PIKE_T_STRING);
+      if (sp[-1].type != T_STRING) {
+	/* We don't accept objects... */
+	error("sprintf(): Cast to string failed.\n");
+      }
+      /* Replace the original object with the new string. */
+      assign_svalue(argp, sp-1);
+      /* Clean up the stack. */
+      pop_n_elems(2);
+    } else {
+      error("Bad argument 1 to sprintf.\n");
+    }
+  }
 
   init_string_builder(&r,0);
   SET_ONERROR(err_format_stack, free_sprintf_strings, &fs);
@@ -1458,8 +1474,9 @@ void f_sprintf(INT32 num_arg)
 
 void pike_module_init(void)
 {
-  /* function(string, mixed ... : string) */
-  ADD_EFUN("sprintf", f_sprintf,tFuncV(tStr,tMix,tStr), OPT_TRY_OPTIMIZE);
+  /* function(string|object, mixed ... : string) */
+  ADD_EFUN("sprintf", f_sprintf, tFuncV(tOr(tStr, tObj), tMix, tStr),
+	   OPT_TRY_OPTIMIZE);
 }
 
 void pike_module_exit(void)
