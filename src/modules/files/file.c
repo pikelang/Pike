@@ -6,7 +6,7 @@
 #define READ_BUFFER 8192
 
 #include "global.h"
-RCSID("$Id: file.c,v 1.39 1997/05/19 22:52:39 hubbe Exp $");
+RCSID("$Id: file.c,v 1.40 1997/05/20 11:22:33 grubba Exp $");
 #include "interpret.h"
 #include "svalue.h"
 #include "stralloc.h"
@@ -35,7 +35,9 @@ RCSID("$Id: file.c,v 1.39 1997/05/19 22:52:39 hubbe Exp $");
 #include <errno.h>
 #include <fcntl.h>
 #include <signal.h>
+#ifdef HAVE_SYS_SOCKET_H
 #include <sys/socket.h>
+#endif /* HAVE_SYS_SOCKET_H */
 
 #ifdef HAVE_SYS_STREAM_H
 #include <sys/stream.h>
