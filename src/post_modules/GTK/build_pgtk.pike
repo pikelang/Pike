@@ -210,7 +210,8 @@ string emit_function_def( string fun, string cfun, string type, int opt )
   type = function_type( type );
   emit_nl( "    quick_add_function((char*)_data+"+data_offset(fun)+","+
            strlen(fun)+","+cfun+",(char*)_data+"+data_offset( type )+
-           ","+strlen(type)+","+(fun=="create"?"ID_STATIC":"0")+",0);\n");
+           ","+strlen(type)+","+(fun=="create"?"ID_STATIC":"0")+","
+           "OPT_SIDE_EFFECT|OPT_EXTERNAL_DEPEND);\n");
 }
 
 int _num_functions;
