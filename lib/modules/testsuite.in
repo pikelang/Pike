@@ -1,4 +1,4 @@
-dnl $Id: testsuite.in,v 1.18 2003/10/04 19:29:51 grubba Exp $
+dnl $Id: testsuite.in,v 1.19 2003/10/05 13:35:38 grubba Exp $
 
 dnl - Array
 
@@ -808,7 +808,7 @@ test_any([[
   Stdio.File input_fd = Stdio.File();
   Process.TraceProcess proc =
     Process.TraceProcess(({ "/bin/cat" }), ([
-      "stdin":input_fd->pipe(),
+      "stdin":input_fd->pipe(Stdio.PROP_IPC),
     ]));
 
   int initial_sleep = 5;
