@@ -1,4 +1,4 @@
-test_true([["$Id: testsuite.in,v 1.205 1999/10/24 01:08:41 noring Exp $"]])
+test_true([["$Id: testsuite.in,v 1.206 1999/10/24 14:10:24 noring Exp $"]])
 
 cond([[all_constants()->_verify_internals]],
 [[
@@ -1351,14 +1351,14 @@ cond([[ sizeof( cpp("__AUTO_BIGNUM__")/"__AUTO_BIGNUM__" ) == 1 ]],
 
 cond([[ sizeof( cpp("__AUTO_BIGNUM__")/"__AUTO_BIGNUM__" ) == 1 ]],
 [[
-  // Left shift.
+  // - Left shift.
   test_eq("1073741824", [[ (string)(1<<30) ]])
   test_eq("2147483648", [[ (string)(1<<31) ]])
   test_eq("4294967296", [[ (string)(1<<32) ]])
   test_eq("8589934592", [[ (string)(1<<33) ]])
   test_eq("1267650600228229401496703205376", [[ (string)(1<<100) ]])
   
-  // Right shift.
+  // - Right shift.
   test_eq("53265209898187398182",
 		[[ (string)((int)"54543574935743895738479">>10) ]])
   test_false([[ objectp((int)"54543574935743895738479">>60) ]])
@@ -1367,23 +1367,23 @@ cond([[ sizeof( cpp("__AUTO_BIGNUM__")/"__AUTO_BIGNUM__" ) == 1 ]],
   test_eq(0, [[ 25>>32 ]])
   test_eq(0, [[ 25>>33 ]])
 
-  // abs.
+  // - abs.
   test_eq("2147483648", [[ (string)abs(-0x80000000) ]])
   test_eq("2147483648", [[ (string)abs(0x80000000) ]])
   test_eq("2147483649", [[ (string)abs(0x80000001) ]])
   test_eq("2147483649", [[ (string)abs(-0x80000001) ]])
 
-  // Add.
+  // - Add.
   test_eq("2147483648", [[ (string)(0x7fffffff + 1) ]])
   test_eq("2147483649", [[ (string)(0x7fffffff + 2) ]])
   test_eq("2684354560", [[ (string)(0x50000000 + 0x50000000) ]])
   test_eq("-2684354560", [[ (string)((-0x50000000) + (-0x50000000)) ]])
 
-  // Sub.
+  // - Sub.
   test_eq("-2147483648", [[ (string)(-0x7fffffff - 1) ]])
   test_eq("-2147483649", [[ (string)(-0x80000000 - 1) ]])
 
-  // Multiplication.
+  // - Multiplication.
   test_eq("6442450941", [[ (string)(0x7fffffff * 3) ]])
   test_eq("-6442450941", [[ (string)(0x7fffffff * -3) ]])
 
@@ -1393,7 +1393,7 @@ cond([[ sizeof( cpp("__AUTO_BIGNUM__")/"__AUTO_BIGNUM__" ) == 1 ]],
   test_eq("13934998268672547360069539025",
           [[ (string)(48324683476346278246238462784624627348 / 3467864333) ]])
 
-  // sscanf.
+  // - sscanf.
   test_eq("12345678901234567890",
 	   [[ (string)array_sscanf("12345678901234567890", "%d")[0] ]])
   test_eq("1375488932614371410344080",
@@ -1419,6 +1419,55 @@ cond([[ sizeof( cpp("__AUTO_BIGNUM__")/"__AUTO_BIGNUM__" ) == 1 ]],
   test_equal([[ ({ 0, 118 }) ]], [[ array_sscanf("0x76", "%xx%x") ]])
   test_equal([[ ({ 0, 557239244978618154304871 }) ]],
              [[ array_sscanf("0x76000000000001234567", "%xx%x") ]])
+]])
+
+cond([[ sizeof( cpp("__AUTO_BIGNUM__")/"__AUTO_BIGNUM__" ) == 1 ]],
+[[
+  test_eq(0x7fffffff, [[ decode_value(encode_value(0x7fffffff)) ]])
+  test_eq(0x7ffffffff, [[ decode_value(encode_value(0x7ffffffff)) ]])
+  test_eq(0x7fffffffff, [[ decode_value(encode_value(0x7fffffffff)) ]])
+  test_eq(0x7ffffffffff, [[ decode_value(encode_value(0x7ffffffffff)) ]])
+  test_eq(0x7fffffffffff, [[ decode_value(encode_value(0x7fffffffffff)) ]])
+  test_eq(0x7ffffffffffff, [[ decode_value(encode_value(0x7ffffffffffff)) ]])
+  test_eq(0x80000000, [[ decode_value(encode_value(0x80000000)) ]])
+  test_eq(0x800000000, [[ decode_value(encode_value(0x800000000)) ]])
+  test_eq(0x8000000000, [[ decode_value(encode_value(0x8000000000)) ]])
+  test_eq(0x80000000000, [[ decode_value(encode_value(0x80000000000)) ]])
+  test_eq(0x800000000000, [[ decode_value(encode_value(0x800000000000)) ]])
+  test_eq(0x8000000000000, [[ decode_value(encode_value(0x8000000000000)) ]])
+  test_eq(0x12345678, [[ decode_value(encode_value(0x12345678)) ]])
+  test_eq(0x123456780, [[ decode_value(encode_value(0x123456780)) ]])
+  test_eq(0x1234567801, [[ decode_value(encode_value(0x1234567801)) ]])
+  test_eq(0x12345678012, [[ decode_value(encode_value(0x12345678012)) ]])
+  test_eq(0x123456780123, [[ decode_value(encode_value(0x123456780123)) ]])
+  test_eq(0x1234567801234, [[ decode_value(encode_value(0x1234567801234)) ]])
+
+  test_eq(-0x7fffffff, [[ decode_value(encode_value(-0x7fffffff)) ]])
+  test_eq(-0x7ffffffff, [[ decode_value(encode_value(-0x7ffffffff)) ]])
+  test_eq(-0x7fffffffff, [[ decode_value(encode_value(-0x7fffffffff)) ]])
+  test_eq(-0x7ffffffffff, [[ decode_value(encode_value(-0x7ffffffffff)) ]])
+  test_eq(-0x7fffffffffff, [[ decode_value(encode_value(-0x7fffffffffff)) ]])
+  test_eq(-0x7ffffffffffff, [[ decode_value(encode_value(-0x7ffffffffffff))]])
+  test_eq(-0x80000000, [[ decode_value(encode_value(-0x80000000)) ]])
+  test_eq(-0x800000000, [[ decode_value(encode_value(-0x800000000)) ]])
+  test_eq(-0x8000000000, [[ decode_value(encode_value(-0x8000000000)) ]])
+  test_eq(-0x80000000000, [[ decode_value(encode_value(-0x80000000000)) ]])
+  test_eq(-0x800000000000, [[ decode_value(encode_value(-0x800000000000)) ]])
+  test_eq(-0x8000000000000, [[ decode_value(encode_value(-0x8000000000000))]])
+  test_eq(-0x12345678, [[ decode_value(encode_value(-0x12345678)) ]])
+  test_eq(-0x123456780, [[ decode_value(encode_value(-0x123456780)) ]])
+  test_eq(-0x1234567801, [[ decode_value(encode_value(-0x1234567801)) ]])
+  test_eq(-0x12345678012, [[ decode_value(encode_value(-0x12345678012)) ]])
+  test_eq(-0x123456780123, [[ decode_value(encode_value(-0x123456780123)) ]])
+  test_eq(-0x1234567801234, [[ decode_value(encode_value(-0x1234567801234))]])
+]])
+
+cond([[ sizeof( cpp("__AUTO_BIGNUM__")/"__AUTO_BIGNUM__" ) == 1 ]],
+[[
+  test_true([[ random(0x7fffffff)+1 ]])
+  test_true([[ random(0x7ffffffff)+1 ]])
+  test_true([[   sqrt(0x7fffffff)+1 ]])
+  test_true([[   sqrt(0x7ffffffff)+1 ]])
 ]])
 
 cond([[all_constants()->_verify_internals]],
