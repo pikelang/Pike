@@ -43,7 +43,7 @@
 #include "threads.h"
 #include "operators.h"
 
-RCSID("$Id: spider.c,v 1.68 1998/06/12 19:36:51 noring Exp $");
+RCSID("$Id: spider.c,v 1.69 1998/06/25 22:37:33 grubba Exp $");
 
 #ifdef HAVE_PWD_H
 #include <pwd.h>
@@ -972,6 +972,8 @@ void do_html_parse_lines(struct pike_string *ss,
 	apply_svalue(&sval1,4+(extra_args?extra_args->size:0));
 	HANDLE_RETURN_VALUE(m);
 	continue;
+      } else {
+	free_svalue(&sval2);
       }
       i=j;
     }
