@@ -15,6 +15,7 @@
 #include "stuff.h"
 #include "bignum.h"
 #include "interpret.h"
+#include "block_alloc.h"
 
 #include <errno.h>
 #include <float.h>
@@ -25,7 +26,7 @@
 #define HUGE HUGE_VAL
 #endif /*!HUGE*/
 
-RCSID("$Id: stralloc.c,v 1.106 2000/10/20 10:06:50 grubba Exp $");
+RCSID("$Id: stralloc.c,v 1.107 2000/11/25 17:00:17 grubba Exp $");
 
 #define BEGIN_HASH_SIZE 997
 #define MAX_AVG_LINK_LENGTH 3
@@ -414,6 +415,58 @@ static void rehash(void)
 
 /*** Make new strings ***/
 
+/* Use the BLOCK_ALLOC() stuff for short strings */
+
+#define SHORT_STRING_BLOCK	256
+#define SHORT_STRING_THRESHOLD	16
+
+struct short_pike_string0 {
+  struct pike_string str;
+  p_wchar0 data[SHORT_STRING_THRESHOLD];
+};
+
+struct short_pike_string1 {
+  struct pike_string str;
+  p_wchar1 data[SHORT_STRING_THRESHOLD];
+};
+
+struct short_pike_string2 {
+  struct pike_string str;
+  p_wchar2 data[SHORT_STRING_THRESHOLD];
+};
+
+#undef BLOCK_ALLOC_NEXT
+#define BLOCK_ALLOC_NEXT	str.next
+
+BLOCK_ALLOC(short_pike_string0, SHORT_STRING_BLOCK)
+BLOCK_ALLOC(short_pike_string1, SHORT_STRING_BLOCK)
+BLOCK_ALLOC(short_pike_string2, SHORT_STRING_BLOCK)
+
+#undef BLOCK_ALLOC_NEXT
+#define BLOCK_ALLOC_NEXT	next
+
+#define really_free_short_pike_string(s) do { \
+     if (!s->size_shift) { \
+       really_free_short_pike_string0((struct short_pike_string0 *)s); \
+     } else if (s->size_shift == 1) { \
+       really_free_short_pike_string1((struct short_pike_string1 *)s); \
+     DO_IF_DEBUG( \
+     } else if (s->size_shift != 2) { \
+       fatal("Unsupported string shift: %d\n", s->size_shift); \
+     ) \
+     } else { \
+       really_free_short_pike_string2((struct short_pike_string2 *)s); \
+     } \
+   } while(0)
+
+#define really_free_pike_string(s) do { \
+    if (s->len <= SHORT_STRING_THRESHOLD) { \
+      really_free_short_pike_string(s); \
+    } else { \
+      debug_free((char *)s, DMALLOC_LOCATION(), 1); \
+    } \
+  } while(0)
+
 /* note that begin_shared_string expects the _exact_ size of the string,
  * not the maximum size
  */
@@ -425,7 +478,11 @@ PMOD_EXPORT struct pike_string *debug_begin_shared_string(size_t len)
   if(d_flag>10)
     verify_shared_strings_tables();
 #endif
-  t=(struct pike_string *)xalloc(len + sizeof(struct pike_string));
+  if (len <= SHORT_STRING_THRESHOLD) {
+    t=(struct pike_string *)alloc_short_pike_string0();
+  } else {
+    t=(struct pike_string *)xalloc(len + sizeof(struct pike_string));
+  }
   t->str[len]=0;
   t->len=len;
   t->size_shift=0;
@@ -485,7 +542,21 @@ PMOD_EXPORT struct pike_string *debug_begin_wide_shared_string(size_t len, int s
   if(d_flag>10)
     verify_shared_strings_tables();
 #endif
-  t=(struct pike_string *)xalloc((len<<shift) + sizeof(struct pike_string));
+  if (len <= SHORT_STRING_THRESHOLD) {
+    if (!shift) {
+      t = (struct pike_string *)alloc_short_pike_string0();
+    } else if (shift == 1) {
+      t = (struct pike_string *)alloc_short_pike_string1();
+#ifdef PIKE_DEBUG
+    } else if (shift != 2) {
+      fatal("Unsupported string shift: %d\n", shift);
+#endif /* PIKE_DEBUG */
+    } else {
+      t = (struct pike_string *)alloc_short_pike_string2();
+    }
+  } else {
+    t=(struct pike_string *)xalloc((len<<shift) + sizeof(struct pike_string));
+  }
   t->len=len;
   t->size_shift=shift;
   low_set_index(t,len,0);
@@ -512,7 +583,7 @@ PMOD_EXPORT struct pike_string *low_end_shared_string(struct pike_string *s)
 
   if(s2)
   {
-    free((char *)s);
+    really_free_pike_string(s);
     s = s2;
   }else{
     link_pike_string(s, h);
@@ -542,14 +613,14 @@ PMOD_EXPORT struct pike_string *end_shared_string(struct pike_string *s)
 	case 0:
 	  s2=begin_shared_string(s->len);
 	  convert_2_to_0(STR0(s2),STR2(s),s->len);
-	  free((char *)s);
+	  really_free_pike_string(s);
 	  s=s2;
 	  break;
 
 	case 1:
 	  s2=begin_wide_shared_string(s->len,1);
 	  convert_2_to_1(STR1(s2),STR2(s),s->len);
-	  free((char *)s);
+	  really_free_pike_string(s);
 	  s=s2;
 	  /* Fall though */
       }
@@ -560,7 +631,7 @@ PMOD_EXPORT struct pike_string *end_shared_string(struct pike_string *s)
       {
 	s2=begin_shared_string(s->len);
 	convert_1_to_0(STR0(s2),STR1(s),s->len);
-	free((char *)s);
+	really_free_pike_string(s);
 	s=s2;
       }
       break;
@@ -742,7 +813,7 @@ PMOD_EXPORT void really_free_string(struct pike_string *s)
   }
 #endif
   unlink_pike_string(s);
-  debug_free((char *)s,DMALLOC_LOCATION(),1);
+  really_free_pike_string(s);
   GC_FREE_SIMPLE_BLOCK(s);
 }
 
@@ -1129,16 +1200,30 @@ PMOD_EXPORT ptrdiff_t my_strcmp(struct pike_string *a,struct pike_string *b)
 PMOD_EXPORT struct pike_string *realloc_unlinked_string(struct pike_string *a,
 							ptrdiff_t size)
 {
-  struct pike_string *r;
-  r=(struct pike_string *)realloc((char *)a,
-					sizeof(struct pike_string)+
-				  ((size+1)<<a->size_shift)); /* FIXME !! */
+  struct pike_string *r = NULL;
+
+  if (a->len <= SHORT_STRING_THRESHOLD) {
+    if (size <= SHORT_STRING_THRESHOLD) {
+      /* There's already place enough. */
+      a->len = size;
+      low_set_index(a, size, 0);
+      return a;
+    }
+  } else if (size > SHORT_STRING_THRESHOLD) {
+    r=(struct pike_string *)realloc((char *)a,
+				    sizeof(struct pike_string)+
+				    ((size+1)<<a->size_shift)); /* FIXME !! */
+  }
 	
   if(!r)
   {
-    r=begin_shared_string(size);
-    MEMCPY(r->str, a->str, a->len<<a->size_shift);
-    free((char *)a);
+    r=begin_wide_shared_string(size, a->size_shift);
+    if (a->len <= size) {
+      MEMCPY(r->str, a->str, a->len<<a->size_shift);
+    } else {
+      MEMCPY(r->str, a->str, size<<a->size_shift);
+    }
+    really_free_pike_string(a);
   }
 
   r->len=size;
@@ -1572,7 +1657,7 @@ void cleanup_shared_string_table(void)
     {
       next=s->next;
 #ifdef REALLY_FREE
-      free((char *)s);
+      really_free_pike_string(s);
 #else
       s->next=0;
 #endif
@@ -1654,21 +1739,20 @@ static void string_build_mkspace(struct string_builder *s,
     n=begin_wide_shared_string(l,mag);
     pike_string_cpy(MKPCHARP_STR(n),s->s);
     n->len=s->s->len;
+    s->s->len = s->malloced;	/* Restore the real length */
+    really_free_pike_string(s->s);
     s->malloced=l;
-    free((char *)s->s);
     s->s=n;
   }
   else if(((size_t)s->s->len+chars) > ((size_t)s->malloced))
   {
     size_t newlen = MAXIMUM((size_t)(s->malloced*2),
 			    (size_t)(s->s->len + chars));
+    ptrdiff_t oldlen = s->s->len;
 
-    s->s=(struct pike_string *)realloc((char *)s->s,
-				       sizeof(struct pike_string)+
-				       ((newlen+1)<<s->s->size_shift));
-    if(!s->s)
-      fatal("Out of memory.\n");
-    s->malloced=newlen;
+    s->s = realloc_unlinked_string(s->s, newlen);
+    s->s->len = oldlen;
+    s->malloced = newlen;
   }
 }
 
@@ -1685,7 +1769,14 @@ PMOD_EXPORT void *string_builder_allocate(struct string_builder *s, ptrdiff_t ch
 PMOD_EXPORT void string_builder_putchar(struct string_builder *s, int ch)
 {
   ptrdiff_t i;
+#if 1
+  if ((min_magnitude(ch) > s->s->size_shift) ||
+      (((size_t)s->s->len) >= ((size_t)s->malloced))) {
+    string_build_mkspace(s,1,min_magnitude(ch));
+  }
+#else
   string_build_mkspace(s,1,min_magnitude(ch));
+#endif /* 0 */
   s->known_shift=MAXIMUM((size_t)min_magnitude(ch),s->known_shift);
   i = s->s->len++;
   low_set_index(s->s,i,ch);
@@ -1711,7 +1802,15 @@ PMOD_EXPORT void string_builder_append(struct string_builder *s,
 				       PCHARP from,
 				       ptrdiff_t len)
 {
-  string_build_mkspace(s,len,from.shift);
+  int shift;
+  if ((shift = from.shift) > s->s->size_shift) {
+    if (shift == 1) {
+      shift = find_magnitude1((p_wchar1 *)from.ptr, len);
+    } else {
+      shift = find_magnitude2((p_wchar2 *)from.ptr, len);
+    }
+  }
+  string_build_mkspace(s, len, shift);
   generic_memcpy(MKPCHARP_STR_OFF(s->s,s->s->len), from, len);
   s->s->len+=len;
 }
@@ -1723,6 +1822,7 @@ PMOD_EXPORT void string_builder_fill(struct string_builder *s,
 				     ptrdiff_t offset)
 {
   ptrdiff_t tmp;
+  int shift;
 
 #ifdef PIKE_DEBUG
   if(len<=0)
@@ -1740,7 +1840,17 @@ PMOD_EXPORT void string_builder_fill(struct string_builder *s,
     return;
   }
 
-  string_build_mkspace(s,howmany,from.shift);
+  if ((shift = from.shift) > s->s->size_shift) {
+    /* Check if we really need the extra magnitude. */
+    /* FIXME: What about offset? */
+    if (shift == 1) {
+      shift = find_magnitude1((p_wchar1 *)from.ptr, len);
+    } else {
+      shift = find_magnitude2((p_wchar2 *)from.ptr, len);
+    }
+  }
+
+  string_build_mkspace(s, howmany, shift);
   tmp = MINIMUM(howmany, len - offset);
 
   generic_memcpy(MKPCHARP_STR_OFF(s->s,s->s->len),
@@ -1794,12 +1904,18 @@ PMOD_EXPORT void reset_string_builder(struct string_builder *s)
 
 PMOD_EXPORT void free_string_builder(struct string_builder *s)
 {
-  free((char *)s->s);
+  s->s->len = s->malloced;
+  really_free_pike_string(s->s);
 }
 
 PMOD_EXPORT struct pike_string *finish_string_builder(struct string_builder *s)
 {
   low_set_index(s->s,s->s->len,0);
+  if (s->s->len <= SHORT_STRING_THRESHOLD) {
+    ptrdiff_t len = s->s->len;
+    s->s->len = s->malloced;
+    s->s = realloc_unlinked_string(s->s, len);
+  }
   if(s->known_shift == (size_t)s->s->size_shift)
     return low_end_shared_string(s->s);
   return end_shared_string(s->s);
