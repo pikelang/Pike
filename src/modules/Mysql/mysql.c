@@ -1,5 +1,5 @@
 /*
- * $Id: mysql.c,v 1.19 1998/04/20 18:53:39 grubba Exp $
+ * $Id: mysql.c,v 1.20 1998/05/07 18:40:58 grubba Exp $
  *
  * SQL database functionality for Pike
  *
@@ -73,12 +73,19 @@ typedef struct dynamic_buffer_s dynamic_buffer;
  * Globals
  */
 
-RCSID("$Id: mysql.c,v 1.19 1998/04/20 18:53:39 grubba Exp $");
+RCSID("$Id: mysql.c,v 1.20 1998/05/07 18:40:58 grubba Exp $");
 
 /*
 **! module Mysql
+**!
+**!	This module enables access to the Mysql database from within Pike.
+**!
+**!	Mysql is available from www.tcx.se.
+**!
+**! see also: Mysql.mysql, Mysql.result, Sql.sql
+**!
 **! note
-**!	$Id: mysql.c,v 1.19 1998/04/20 18:53:39 grubba Exp $
+**!	$Id: mysql.c,v 1.20 1998/05/07 18:40:58 grubba Exp $
 **! class mysql
 **!
 **!	Mysql.mysql is a pre-compiled Pike program. It enables
