@@ -6,7 +6,7 @@
 // Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 // for more information.
 //
-// $Id: master.pike.in,v 1.267 2003/04/03 21:09:16 nilsson Exp $
+// $Id: master.pike.in,v 1.268 2003/04/09 23:48:10 nilsson Exp $
 
 #pike __REAL_VERSION__
 
@@ -2110,7 +2110,7 @@ void _main(array(string) orig_argv, array(string) env)
       // The main reason for this catch is actually to get a new call
       // to eval_instruction in interpret.c so that the debug and
       // trace levels set above take effect in the bytecode evaluator.
-      object script=prog();
+      object script=prog(argv);
       if(!script->main)
 	_error("Error: %s has no main().\n", argv[0]);
       i=script->main(sizeof(argv),argv,env);
