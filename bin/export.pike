@@ -1,6 +1,6 @@
 #!/usr/local/bin/pike
 
-/* $Id: export.pike,v 1.40 2002/02/03 22:37:06 nilsson Exp $ */
+/* $Id: export.pike,v 1.41 2002/02/04 09:23:30 grubba Exp $ */
 
 import Stdio;
 
@@ -145,9 +145,11 @@ int main(int argc, string *argv)
 
 	case "rebuild":
 	  rebuild=1;
+	  break;
 
         case "notag":
 	  notag=1;
+	  break;
       }
     }
       
