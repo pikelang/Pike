@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: nt.c,v 1.64 2004/05/10 21:45:13 agehall Exp $
+|| $Id: nt.c,v 1.65 2004/11/08 20:48:25 nilsson Exp $
 */
 
 /*
@@ -2972,6 +2972,7 @@ static void f_nt_uname(INT32 args)
 
   char buf[1024];
   char *machine = "unknown";
+  char *version = "??";
   OSVERSIONINFO osversion;
   SYSTEM_INFO sysinfo;
   int n=0;
@@ -3071,6 +3072,12 @@ static void f_nt_uname(INT32 args)
       break;
 #endif /* PROCESSOR_ARCHITECTURE_ALPHA64 */
 
+#ifdef PROCESSOR_ARCHITECTURE_AMD64
+    case PROCESSOR_ARCHITECTURE_AMD64:
+      machine = "amd64";
+      push_text("amd64");
+      break;
+
 #ifdef PROCESSOR_ARCHITECTURE_MSIL
     case PROCESSOR_ARCHITECTURE_MSIL:
       machine = "msil";
@@ -3094,43 +3101,62 @@ static void f_nt_uname(INT32 args)
   switch(osversion.dwPlatformId)
   {
     case VER_PLATFORM_WIN32s:
+      version = "3.1";
       push_text("Win32s");
       break;
 
     case VER_PLATFORM_WIN32_WINDOWS:
       push_text("Win32");
-      if(osversion.dwMajorVersion)
+      switch(osversion.dwMajorVersion)
       {
-	sprintf(buf,"Windows 95 %d.%d.%d",
-		osversion.dwMajorVersion,
-		osversion.dwMinorVersion,
-		osversion.dwBuildNumber & 0xffff);
-		
-      }else{
-	sprintf(buf,"Windows 98 %d.%d.%d",
-		osversion.dwMajorVersion,
-		osversion.dwMinorVersion,
-		osversion.dwBuildNumber & 0xffff);
-		
+      case 0:
+	version = "95";
+	break;
+      case 10:
+	version = "98";
+	break;
+      case 90:
+	version = "Me";
+	break;
       }
       break;
 
     case VER_PLATFORM_WIN32_NT:
       push_text("Win32");
-      sprintf(buf,"Windows NT %d.%d.%d",
-	      osversion.dwMajorVersion,
-	      osversion.dwMinorVersion,
-	      osversion.dwBuildNumber);
+      switch(osversion.dwMajorVersion)
+      {
+      case 3:
+	version = "NT 3.51";
+	break;
+      case 4:
+	version = "NT 4.0";
+	break;
+      case 5:
+	switch(osversion.dwMinorVersion)
+	{
+	case 0:
+	  version = "2000";
+	  break;
+	case 1:
+	  version = "XP";
+	  break;
+	case 2:
+	  version = "Server 2003";
+	  break;
+	}
+      }
       break;
 
     default:
       push_text("Win32");
-      sprintf(buf,"Windows ?? %d.%d.%d",
-	      osversion.dwMajorVersion,
-	      osversion.dwMinorVersion,
-	      osversion.dwBuildNumber);
       break;
   }
+
+  sprintf(buf,"Windows %s %d.%d.%d",
+	  version,
+	  osversion.dwMajorVersion,
+	  osversion.dwMinorVersion,
+	  osversion.dwBuildNumber & 0xffff);
 
   n+=2;
   push_text("release");
