@@ -2,12 +2,12 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: file.c,v 1.260 2003/03/12 14:30:39 grubba Exp $
+|| $Id: file.c,v 1.261 2003/03/13 22:13:21 nilsson Exp $
 */
 
 #define NO_PIKE_SHORTHAND
 #include "global.h"
-RCSID("$Id: file.c,v 1.260 2003/03/12 14:30:39 grubba Exp $");
+RCSID("$Id: file.c,v 1.261 2003/03/13 22:13:21 nilsson Exp $");
 #include "fdlib.h"
 #include "interpret.h"
 #include "svalue.h"
@@ -3353,19 +3353,21 @@ static void f_get_all_active_fd(INT32 args)
  *!
  *! @note
  *! When a program registers for some notification, only the first notification
- *! will be received unless DN_MULTISHOT is specified as part of the notification argument.
+ *! will be received unless DN_MULTISHOT is specified as part of the
+ *! notification argument.
  *!
  *! @note
- *! At present, this function is Linux-specific and requires a kernel which supports the F_NOTIFY fcntl() call.
+ *! At present, this function is Linux-specific and requires a kernel which
+ *! supports the F_NOTIFY fcntl() call.
  *!
- *! @arg notification
- *! What to notify the callback of. See the Stdio.DN_* constants for more information
- *! about possible notifications.
+ *! @param notification
+ *! What to notify the callback of. See the Stdio.DN_* constants for more
+ *! information about possible notifications.
  *!
- *! @arg callback
- *! Function which should be called when notification is received. The function gets
- *! the signal used to indicate the notification as its argument and shouldn't return
- *! anyting.
+ *! @param callback
+ *! Function which should be called when notification is received. The
+ *! function gets the signal used to indicate the notification as its
+ *! argument and shouldn't return anyting.
  */
 void file_set_notify(INT32 args) {
   int notifications = 0;
