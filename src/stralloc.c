@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: stralloc.c,v 1.193 2005/01/14 13:43:06 grubba Exp $
+|| $Id: stralloc.c,v 1.194 2005/01/17 15:21:48 grubba Exp $
 */
 
 #include "global.h"
@@ -89,7 +89,7 @@ static PIKE_MUTEX_T *bucket_locks;
 /* Experimental dynamic hash length */
 #ifndef HASH_PREFIX
 static unsigned int HASH_PREFIX=64;
-static unsigned int need_more_hash_prefix=0;
+static unsigned int need_more_hash_prefix_depth=0;
 #endif
 
 static unsigned INT32 htable_size=0;
@@ -410,20 +410,24 @@ static INLINE struct pike_string *internal_findstring(const char *s,
       return curr;		/* pointer to string */
     }
 #ifndef HASH_PREFIX
-    depth++;
+    if (curr->len > HASH_PREFIX)
+      depth++;
 #endif
   }
 #ifndef HASH_PREFIX
   /* These heuruistics might require tuning! /Hubbe */
-  if((depth > HASH_PREFIX) && (HASH_PREFIX < (size_t)len))
+  if (depth > need_more_hash_prefix_depth)
   {
-    need_more_hash_prefix++;
-/*    fprintf(stderr,"depth=%d  num_strings=%d need_more_hash_prefix=%d  HASH_PREFIX=%d\n",depth,num_strings,need_more_hash_prefix,HASH_PREFIX); */
-  }else{
-    if(need_more_hash_prefix)
-      need_more_hash_prefix--;
+#if 0
+    fprintf(stderr,
+	    "depth=%d  num_strings=%d need_more_hash_prefix_depth=%d\n"
+	    "  HASH_PREFIX=%d\n",
+	    depth, num_strings, need_more_hash_prefix_depth,
+	    HASH_PREFIX);
+#endif /* 0 */
+    need_more_hash_prefix_depth = depth;
   }
-#endif
+#endif /* !HASH_PREFIX */
   UNLOCK_BUCKET(hval);
   return 0; /* not found */
 }
@@ -523,6 +527,8 @@ static void stralloc_rehash(void)
   base_table=(struct pike_string **)xalloc(sizeof(struct pike_string *)*htable_size);
   MEMSET((char *)base_table,0,sizeof(struct pike_string *)*htable_size);
 
+  need_more_hash_prefix_depth = 0;
+
   for(h=0;h<old;h++)
     rehash_string_backwards(old_base[h]);
 
@@ -541,7 +547,7 @@ static void stralloc_rehash(void)
 /* Use the BLOCK_ALLOC() stuff for short strings */
 
 #define SHORT_STRING_BLOCK	256
-#define SHORT_STRING_THRESHOLD	15 /* % 4 === 1 */
+#define SHORT_STRING_THRESHOLD	15 /* % 4 === -1 */
 
 struct short_pike_string0 {
   PIKE_STRING_CONTENTS;
@@ -622,16 +628,24 @@ static void link_pike_string(struct pike_string *s, size_t hval)
     stralloc_rehash();
 
 #ifndef HASH_PREFIX
-  /* These heuruistics might require tuning! /Hubbe */
-  if(need_more_hash_prefix > ( htable_size >> 4))
+  /* These heuristics might require tuning! /Hubbe */
+  if(need_more_hash_prefix_depth > MAX_AVG_LINK_LENGTH * 4)
   {
-    /* This could in theory have a pretty ugly complexity */
-    /* /Hubbe
+    /* Changed heuristic 2005-01-17:
+     *
+     *   Increase HASH_PREFIX if there's some bucket containing
+     *   more than MAX_AVG_LINK_LENGTH * 4 strings that are longer
+     *   than HASH_PREFIX.
+     * /grubba
+     */
+
+    /* This could in theory have a pretty ugly complexity
+     * /Hubbe
      */
 
 #ifdef PIKE_RUN_UNLOCKED
     mt_lock(bucket_locks);
-    if(need_more_hash_prefix <= ( htable_size >> 4))
+    if(need_more_hash_prefix_depth <= MAX_AVG_LINK_DEPTH * 4)
     {
       /* Someone got here before us */
       mt_lock(bucket_locks);
@@ -640,9 +654,15 @@ static void link_pike_string(struct pike_string *s, size_t hval)
     for(h=1;h<BUCKET_LOCKS;h++) mt_lock(bucket_locks+h);
 #endif
 
-    need_more_hash_prefix=0;
+    /* NOTE: No need to update to the corect value, since that will
+     *       be done on demand.
+     */
+    need_more_hash_prefix_depth=0;
     HASH_PREFIX=HASH_PREFIX*2;
-/*    fprintf(stderr,"Doubling HASH_PREFIX to %d and rehashing\n",HASH_PREFIX); */
+#if 0
+    fprintf(stderr, "Doubling HASH_PREFIX to %d and rehashing\n",
+	    HASH_PREFIX);
+#endif /* 0 */
 
     for(h=0;h<htable_size;h++)
     {
@@ -1603,8 +1623,18 @@ PMOD_EXPORT struct pike_string *modify_shared_string(struct pike_string *a,
 
     if((((unsigned int)index) >= HASH_PREFIX) && (index < a->len-8))
     {
+      struct pike_string *old;
       /* Doesn't change hash value - sneak it in there */
       low_set_index(a,index,c);
+      unlink_pike_string(a);
+      old = internal_findstring(a->str, a->len, a->size_shift, a->hval);
+      if (old) {
+	/* The new string is equal to some old string. */
+	really_free_pike_string(a);
+	add_ref(a = old);
+      } else {
+	link_pike_string(a, a->hval);
+      }
       return a;
     }else{
       unlink_pike_string(a);
