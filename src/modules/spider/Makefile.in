@@ -1,7 +1,7 @@
-# $Id: Makefile.in,v 1.15 1998/12/05 04:01:02 hubbe Exp $
+# $Id: Makefile.in,v 1.16 1999/03/25 02:25:16 per Exp $
 SRCDIR=@srcdir@
 VPATH=@srcdir@:@srcdir@/../..:../..
-OBJS=spider.o discdate.o stardate.o dumudp.o accesseddb.o xml.o
+OBJS=spider.o discdate.o stardate.o dumudp.o xml.o
 MODULE_LDFLAGS=@LDFLAGS@
 #  streamed_parser.o
 

@@ -43,7 +43,7 @@
 #include "threads.h"
 #include "operators.h"
 
-RCSID("$Id: spider.c,v 1.78 1999/02/10 21:54:23 hubbe Exp $");
+RCSID("$Id: spider.c,v 1.79 1999/03/25 02:25:18 per Exp $");
 
 #ifdef HAVE_PWD_H
 #include <pwd.h>
@@ -101,9 +101,6 @@ void do_html_parse_lines(struct pike_string *ss,
 			 int line);
 
 
-extern void f_parse_tree(INT32 argc);
-
-
 void f_nice(INT32 args)
 {
 #ifdef HAVE_NICE
@@ -137,12 +134,12 @@ void f_http_decode_string(INT32 args)
    for (proc=0; bar<end; foo++)
       if (*bar=='%') 
       { 
-	 if (bar<end-2)
-	    *foo=(((bar[1]<'A')?(bar[1]&15):((bar[1]+9)&15))<<4)|
-	       ((bar[2]<'A')?(bar[2]&15):((bar[2]+9)&15));
-	 else
-	    *foo=0;
-	 bar+=3;
+        if (bar<end-2)
+          *foo=(((bar[1]<'A')?(bar[1]&15):((bar[1]+9)&15))<<4)|
+            ((bar[2]<'A')?(bar[2]&15):((bar[2]+9)&15));
+        else
+          *foo=0;
+        bar+=3;
       }
       else { *foo=*(bar++); }
    pop_n_elems(args);
@@ -185,133 +182,6 @@ void f_parse_accessed_database(INT32 args)
   push_int(cnum);
   f_aggregate(2);
 }
-
-
-
-#ifdef I_SENDFD
-#define HAVE_SEND_FD
-void f_send_fd(INT32 args)
-{
-  int sock_fd, fd, tmp;
-
-  if(args != 2) error("RTSL\n");
-
-  sock_fd = sp[-args].u.integer;
-  fd =  sp[-args+1].u.integer;
-  pop_stack();
-  pop_stack();
-
-  THREADS_ALLOW();
-  tmp=ioctl(sock_fd, I_SENDFD, fd);
-  THREADS_DISALLOW();
-
-  while(tmp == -1)
-  {
-    switch(errno)
-    {
-     case EINVAL:
-      perror("Strange error while sending fd");
-      push_int(0);
-      return;
-
-     case EIO:
-     case EBADF:
-     case ENOTSOCK:
-     case ESTALE:
-      perror("Cannot send fd");
-      push_int(0);
-      return;
-
-     case EWOULDBLOCK:
-     case EINTR:
-     case ENOMEM:
-#ifdef ENOSR
-     case ENOSR:
-#endif
-      THREADS_ALLOW();
-      tmp=ioctl(sock_fd, I_SENDFD, fd);
-      THREADS_DISALLOW();
-      continue;
-
-     default:
-      perror("Unknown error while ioctl(I_SENDFD)ing");
-      push_int(0);
-      return;
-    }
-  }
-  push_int(1);
-  return;
-}
-
-#else
-#if 0
-     /*
-    / Shuffle is only compiled on Solaris anyway. It is _not_ easy to fix
-   / this for _all_ systems (SYSV, BSDI, BSD, Linux all use different
-  / styles)
-*/
-#if HAVE_SENDMSG
-#define HAVE_SEND_FD
-void f_send_fd(INT32 args)
-{
-  struct iovec iov; 
-  struct msghdr msg;
-  int sock_fd, fd, tmp;
-
-  if(args != 2) error("RTSL\n");
-  sock_fd = sp[-args].u.integer;
-  fd =  sp[-args+1].u.integer;
-  pop_stack();
-  pop_stack();
-
-  iov.iov_base         = NULL;
-  iov.iov_len          = 0;
-  msg.msg_iov          = &iov;
-  msg.msg_iovlen       = 1;
-  msg.msg_name         = NULL;
-  msg.msg_accrights    = (caddr_t)&fd;
-  msg.msg_accrightslen = sizeof(fd);
-
-
-  THREADS_ALLOW();
-  tmp=sendmsg(sock_fd, &msg, 0);
-  THREADS_DISALLOW();
-
-  while(tmp == -1)
-  {
-    switch(errno)
-    {
-     case EINVAL:
-      perror("Strange error while sending fd");
-      push_int(0);
-      return;
-
-     case EIO:
-     case EBADF:
-     case ENOTSOCK:
-     case ESTALE:
-      perror("Cannot send fd");
-      push_int(0);
-      return;
-
-     case EWOULDBLOCK:
-     case EINTR:
-     case ENOMEM:
-     case ENOSR:
-      continue;
-
-     default:
-      perror("Unknown error while semdmsg()ing");
-      push_int(0);
-      return;
-    }
-  }
-  push_int(1);
-  return;
-}
-#endif
-#endif
-#endif
 
 void f_parse_html(INT32 args)
 {
@@ -1061,31 +931,6 @@ void do_html_parse_lines(struct pike_string *ss,
   }
 }
 
-
-static int does_match(char *s,int len,char *m,int mlen)
-{
-  int i,j;
-  for (i=j=0; i<mlen&&j<len; )
-    switch (m[i])
-    {
-     case '?': 
-      j++; i++; 
-      break;
-     case '*': 
-      i++;
-      if (i==mlen) return 1;	/* slut */
-      for (;j<len;j++)
-	if (does_match(s+j,len-j,m+i,mlen-i)) return 1;
-      return 0;
-     default: 
-      if (m[i]!=s[j]) return 0;
-      j++; i++;
-    }
-  if (i==mlen && j==len) return 1;
-  return 0;
-}
-
-
 #ifndef HAVE_INT_TIMEZONE
 int _tz;
 #else
@@ -1101,14 +946,6 @@ void f_timezone(INT32 args)
   push_int(timezone);
 #endif
 }
-
-#ifdef HAVE_PERROR
-void f_real_perror(INT32 args)
-{
-  pop_n_elems(args);
-  perror(NULL);
-}
-#endif
 
 void f_get_all_active_fd(INT32 args)
 {
@@ -1205,34 +1042,6 @@ void f_mark_fd(INT32 args)
   push_int(0);
 }
 
-#if 0
-void f_fcgi_create_listen_socket(INT32 args)
-{
-  int fd, true;
-  struct sockaddr_in addr;
-  if(!args)
-    error("No args?\n");
-  
-  true=1;
-  fd=socket(AF_INET, SOCK_STREAM, 0);
-  if(fd < 0)
-    error("socket() failed.\n");
-  setsockopt(fd, SOL_SOCKET, SO_REUSEADDR, (char *)&true, sizeof(int));
-  get_inet_addr(&addr, "127.0.0.1");
-  addr.sin_port = htons( ((u_short)sp[-args].u.integer) );
-  if(bind(fd, (struct sockaddr *)&addr, sizeof(addr)) < 0 ||
-     listen(fd, 4) < 0 )
-    error("Failed to bind() or listen\n");
-  if(fd)
-  {
-    dup2(fd, 0);
-    close(fd);
-  }
-  pop_n_elems(args);
-  push_int(1);
-}
-#endif
-
 static void program_name(struct program *p)
 {
   char *f;
@@ -1271,24 +1080,6 @@ void f__dump_obj_table(INT32 args)
 
 #ifndef MIN
 #define MIN(A,B) ((A)<(B)?(A):(B))
-#endif
-
-#if 0
-extern char **ARGV;
-void f_name_process(INT32 args)
-{
-  char *title;
-  int len, i;
-#ifdef SOLARIS
-  int fd;
-#endif
-  get_all_args("name_process", args, "%s", &title);
-
-  len = MIN(strlen(ARGV[0]),strlen(title));
-  for(i=0; i<len; i++) ARGV[0][i]=title[i];
-  
-  pop_n_elems(args);
-}
 #endif
 
 #ifdef ENABLE_STREAMED_PARSER
@@ -1448,13 +1239,6 @@ void pike_module_init(void)
   ADD_FUNCTION("shuffle", f_shuffle,tFunc(tObj tObj tFunction tMix tInt,tVoid), 0);
 #endif
 
-#if 0
-  
-/* function(int:int) */
-  ADD_EFUN("fcgi_create_listen_socket", f_fcgi_create_listen_socket,tFunc(tInt,tInt), OPT_SIDE_EFFECT);
-#endif
-  
-  
 /* function(string:string) */
   ADD_EFUN("http_decode_string",f_http_decode_string,tFunc(tStr,tStr),
 	   OPT_TRY_OPTIMIZE);
@@ -1463,18 +1247,9 @@ void pike_module_init(void)
 /* function(int:int) */
   ADD_EFUN("set_start_quote",f_set_start_quote,tFunc(tInt,tInt),OPT_EXTERNAL_DEPEND);
 
-  
 /* function(int:int) */
   ADD_EFUN("set_end_quote",f_set_end_quote,tFunc(tInt,tInt),OPT_EXTERNAL_DEPEND);
 
-#ifdef HAVE_SEND_FD
-  /* Defined above */
-  
-/* function(int,int:int) */
-  ADD_EFUN("send_fd", f_send_fd,tFunc(tInt tInt,tInt), OPT_EXTERNAL_DEPEND);
-#endif
-
-  
 /* function(string:array) */
   ADD_EFUN("parse_accessed_database", f_parse_accessed_database,tFunc(tStr,tArray), OPT_TRY_OPTIMIZE);
 
@@ -1492,22 +1267,13 @@ void pike_module_init(void)
 /* function(string,mapping(string:string|function(string|void,mapping(string:string)|void,int|void,mixed ...:string)),mapping(string:string|function(string|void,mapping(string:string)|void,string|void,int|void,mixed ...:string)),mixed ...:string) */
   ADD_EFUN("parse_html_lines",f_parse_html_lines,tFuncV(tStr tMap(tStr,tOr(tStr,tFuncV(tOr(tStr,tVoid) tOr(tMap(tStr,tStr),tVoid) tOr(tInt,tVoid),tMix,tStr))) tMap(tStr,tOr(tStr,tFuncV(tOr(tStr,tVoid) tOr(tMap(tStr,tStr),tVoid) tOr(tStr,tVoid) tOr(tInt,tVoid),tMix,tStr))),tMix,tStr),
 	   0);
-  
-#ifdef HAVE_PERROR
-  
-/* function(:void) */
-  ADD_EFUN("real_perror",f_real_perror,tFunc(,tVoid),
-	   OPT_EXTERNAL_DEPEND|OPT_SIDE_EFFECT);
-#endif
 
-  
 /* function(int:array) */
   ADD_EFUN("discdate", f_discdate,tFunc(tInt,tArray), 0);
   
 /* function(int,void|int:int) */
   ADD_EFUN("stardate", f_stardate,tFunc(tInt tOr(tVoid,tInt),tInt), 0);
 
-  
 /* function(:int) */
   ADD_EFUN("timezone", f_timezone,tFunc(,tInt), 0);
   
@@ -1518,12 +1284,7 @@ void pike_module_init(void)
 /* function(int:int) */
   ADD_EFUN("nice", f_nice,tFunc(tInt,tInt),
 	   OPT_EXTERNAL_DEPEND|OPT_SIDE_EFFECT);
-#if 0
-  
-/* function(string:void) */
-  ADD_EFUN("name_process", f_name_process,tFunc(tStr,tVoid), 0);
-#endif
-  
+
 /* function(int:string) */
   ADD_EFUN("fd_info", f_fd_info,tFunc(tInt,tStr), OPT_EXTERNAL_DEPEND);
   
@@ -1543,7 +1304,6 @@ void pike_module_init(void)
   }
 
   init_udp();
-  init_accessdb_program(); /* Accessed database */
 
 #ifdef ENABLE_STREAMED_PARSER
   start_new_program();
