@@ -4,7 +4,7 @@
 ||| See the files COPYING and DISCLAIMER for more information.
 \*/
 #include "global.h"
-RCSID("$Id: interpret.c,v 1.89 1998/06/18 23:53:12 hubbe Exp $");
+RCSID("$Id: interpret.c,v 1.90 1998/06/19 00:39:49 hubbe Exp $");
 #include "interpret.h"
 #include "object.h"
 #include "program.h"
@@ -2166,6 +2166,7 @@ int apply_low_safe_and_stupid(struct object *o, INT32 offset)
   free_object(new_frame.current_object);
   free_program(new_frame.context.prog);
 
+  fp=new_frame.parent_frame;
   return ret;
 }
 
