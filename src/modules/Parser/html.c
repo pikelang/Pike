@@ -1329,7 +1329,7 @@ static void put_out_feed_range(struct parser_html_storage *this,
       c_head=0;
       head=head->next;
    }
-   error("internal error: tail not found in feed (put_out_feed_range)\n");
+   fatal("internal error: tail not found in feed (put_out_feed_range)\n");
 }
 
 /* ------------------------ */
@@ -1371,7 +1371,7 @@ static INLINE void push_feed_range(struct piece *head,
       head=head->next;
    }
    if (!head)
-      error("internal error: tail not found in feed (push_feed_range)\n");
+      fatal("internal error: tail not found in feed (push_feed_range)\n");
    if (!n)
       ref_push_string(empty_string);
    else if (n>1)
@@ -2709,7 +2709,7 @@ static newstate find_end_of_container(struct parser_html_storage *this,
 
    for (;;)
    {
-      int found;
+      int found, got_fin;
 
       DEBUG_MARK_SPOT("find_end_of_cont : loop",feed,c);
       if (!scan_forward(feed,c,&s1,&c1,&(this->tag_start),1))
@@ -2811,7 +2811,8 @@ static newstate find_end_of_container(struct parser_html_storage *this,
       pop_stack();
 
       if (!scan_for_end_of_tag(this,s3,c3,&s2,&c2,finished,
-			       found == 'e' ? -1 : this->flags & FLAG_MATCH_TAG, NULL))
+			       found == 'e' ? -1 : this->flags & FLAG_MATCH_TAG,
+			       &got_fin))
       {
 	DEBUG_MARK_SPOT("find_end_of_cont : wait at tag end",s2,c2);
 	 return STATE_WAIT;
@@ -2819,6 +2820,13 @@ static newstate find_end_of_container(struct parser_html_storage *this,
 
       switch (found) {
 	case 't': /* push a new level */
+	 if (got_fin && this->flags & FLAG_XML_TAGS) {
+	   DEBUG_MARK_SPOT("find_end_of_cont : skipping empty element tag",s2,c2+1);
+	   feed = s2;
+	   c = c2+1;
+	   break;
+	 }
+
 	 DEBUG_MARK_SPOT("find_end_of_cont : push",s2,c2+1);
 	 res=find_end_of_container(this,tagname,
 				   s2,++c2,e1,ce1,&feed,&c,finished);
@@ -3656,7 +3664,7 @@ static void try_feed(int finished)
 	       return; /* all done, but keep last stack elem */
 
 	    if (THIS->stack->local_feed && THIS->stack->free_feed)
-	       error("internal wierdness in Parser.HTML: feed left\n");
+	       fatal("internal wierdness in Parser.HTML: feed left\n");
 
 	    free(THIS->stack);
 	    THIS->stack=st;
@@ -4077,15 +4085,19 @@ static void tag_args(struct parser_html_storage *this,struct piece *feed,int c,
       scan_forward(s2,c2,&s1,&c1,this->ws,-this->n_ws);
 
       /* end of tag? */
-      if (c1==s1->s->len) /* end<tm> */
-	 break;
+      if (c1==s1->s->len) { /* end<tm> */
+	DEBUG_MARK_SPOT("html_tag_args hard tag end (1)",s1,c1);
+	break;
+      }
       ch=index_shared_string(s1->s,c1);
       if ((flags & (FLAG_STRICT_TAGS|FLAG_XML_TAGS)) != FLAG_STRICT_TAGS &&
 	  ch==this->tag_fin) {
 	FORWARD_CHAR(s1, c1, s3, c3);
 	if ((c3==s3->s->len || index_shared_string(s3->s,c3)==this->tag_end) &&
-	    to_tag_end)
+	    to_tag_end) {
+	  DEBUG_MARK_SPOT("html_tag_args empty element tag end",s3,c3);
 	  break;
+	}
 	else if (n && s1==s2 && c1==c2) { /* previous arg value didn't really end */
 	  DEBUG_MARK_SPOT("html_tag_args arg val continues",s3,c3);
 	  push_string (make_shared_binary_string2 (&this->tag_fin, 1));
@@ -4094,8 +4106,10 @@ static void tag_args(struct parser_html_storage *this,struct piece *feed,int c,
 	  continue;
 	}
       }
-      else if (ch==this->tag_end && to_tag_end) /* end */
-	 break;
+      else if (ch==this->tag_end && to_tag_end) { /* end */
+	DEBUG_MARK_SPOT("html_tag_args soft tag end (1)",s1,c1);
+	break;
+      }
 
 new_arg:
 
@@ -4113,6 +4127,7 @@ new_arg:
 	scan_forward(s2,c2,&s3,&c3,this->ws,-this->n_ws);
 	if (c3==s3->s->len) /* end<tm> */
 	{
+	  DEBUG_MARK_SPOT("html_tag_args hard tag end (2)",s3,c3);
 	  tag_push_default_arg(def);
 	  goto done;
 	}
@@ -4136,6 +4151,7 @@ new_arg:
 
       if (ch==this->tag_end && to_tag_end) /* end */
       {
+	 DEBUG_MARK_SPOT("html_tag_args soft tag end (2)",s3,c3);
 	 tag_push_default_arg(def);
 	 break;
       }
@@ -4143,15 +4159,17 @@ new_arg:
       if (ch!=this->arg_eq) {
 	if (c1!=c3 || s1!=s3)	/* end of _this_ argument */
 	{
+	  DEBUG_MARK_SPOT("html_tag_args empty arg end",s3,c3);
 	  s1 = s3, c1 = c3;
 	  tag_push_default_arg(def);
 	  goto new_arg;
 	}
 	else {			/* a stray bogus character */
-	  s1 = s3, c1 = c3 + 1;
+	  DEBUG_MARK_SPOT("html_tag_args bogus char",s3,c3);
+	  s2 = s3, c2 = c3 + 1;
 	  pop_stack();
 	  n--;
-	  goto new_arg;
+	  continue;
 	}
       }
       
@@ -4165,6 +4183,8 @@ new_arg:
 
       /* scan the argument value */
       scan_forward_arg(this,s2,c2,&s1,&c1,SCAN_ARG_PUSH,1,NULL);
+
+      DEBUG_MARK_SPOT("html_tag_args value end",s1,c1);
 
       /* next argument in the loop */
       s2 = s1;
