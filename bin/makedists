@@ -31,14 +31,14 @@ PIKEDIR=`echo *`
 echo building $DIR/$BASE_TARFILE.tar.gz
 tar cf - $PIKEDIR | gzip -c9 >$DIR/$BASE_TARFILE-sweden.tar.gz
 
-#
-#( cd $PIKEDIR/src/modules/_Crypto ; ./.build_lobotomized_crypto )
-#rm -rf $PIKEDIR/src/modules/_Crypto
-#$PIKEDIR/src/run_autoconfig 
-#
-#echo building $DIR/$BASE_TARFILE-export.tar.gz
-#tar cf - $PIKEDIR | gzip -c9 >$DIR/$BASE_TARFILE-export.tar.gz
-#
+
+( cd $PIKEDIR/src/modules/_Crypto ; ./.build_lobotomized_crypto )
+rm -rf $PIKEDIR/src/modules/_Crypto
+$PIKEDIR/src/run_autoconfig 
+
+echo building $DIR/$BASE_TARFILE-export.tar.gz
+tar cf - $PIKEDIR | gzip -c9 >$DIR/$BASE_TARFILE-export.tar.gz
+
 
 cd /
 rm -rf $TMPDIR
