@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: pike_memory.h,v 1.34 2002/10/11 01:39:35 nilsson Exp $
+|| $Id: pike_memory.h,v 1.35 2002/11/19 12:29:14 grubba Exp $
 */
 
 #ifndef MEMORY_H
@@ -11,7 +11,9 @@
 #include "global.h"
 #include "stralloc.h"
 
-
+#ifdef HAVE_VALGRIND_H
+#include <valgrind.h>
+#endif /* HAVE_VALGRIND_H */
 
 #define MEMSEARCH_LINKS 512
 
