@@ -1,9 +1,9 @@
-/* $Id: image.c,v 1.148 1999/06/21 18:03:15 mirar Exp $ */
+/* $Id: image.c,v 1.149 1999/06/22 18:36:17 grubba Exp $ */
 
 /*
 **! module Image
 **! note
-**!	$Id: image.c,v 1.148 1999/06/21 18:03:15 mirar Exp $
+**!	$Id: image.c,v 1.149 1999/06/22 18:36:17 grubba Exp $
 **! class Image
 **!
 **!	The main object of the <ref>Image</ref> module, this object
@@ -97,7 +97,7 @@
 
 #include "stralloc.h"
 #include "global.h"
-RCSID("$Id: image.c,v 1.148 1999/06/21 18:03:15 mirar Exp $");
+RCSID("$Id: image.c,v 1.149 1999/06/22 18:36:17 grubba Exp $");
 #include "pike_macros.h"
 #include "object.h"
 #include "constants.h"
@@ -3656,9 +3656,9 @@ void init_image_image(void)
 		tFunc(tOr(tVoid,tInt) tOr(tVoid,tInt) tOr(tVoid,tInt) 
 		      tOr(tVoid,tInt) tRGB,tObj),0);
    ADD_FUNCTION("autocrop",image_autocrop,
-		tFuncV(,tOr(tVoid,tArr(tInt)),tObj),0);
+		tFuncV(tNone,tOr(tVoid,tArr(tInt)),tObj),0);
    ADD_FUNCTION("find_autocrop",image_find_autocrop,
-		tFuncV(,tOr(tVoid,tArr(tInt)),tObj),0);
+		tFuncV(tNone,tOr(tVoid,tArr(tInt)),tObj),0);
    ADD_FUNCTION("scale",image_scale,
 		tFunc(tOr(tInt,tFlt) tOr3(tInt,tFlt,tVoid),tObj),0);
    ADD_FUNCTION("translate",image_translate,
