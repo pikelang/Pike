@@ -1,4 +1,4 @@
-// $Id: module.pmod,v 1.106 2001/01/15 17:10:57 mirar Exp $
+// $Id: module.pmod,v 1.107 2001/01/27 03:49:15 per Exp $
 #pike __REAL_VERSION__
 
 
@@ -993,15 +993,17 @@ class FILE
       bpos=0;
     }
     string s = file::read(BUFSIZE,1);
-    if(!s || !strlen(s))
-      return 0;
-    b+=s;
-    if( do_lines )
+    if(s && strlen(s))
+      b+=s;
+    else
+      s = 0;
+    if( do_lines && (!sizeof( cached_lines ) || s) )
     {
       cached_lines = b/"\n";
       lp = 0;
-    }
-    return 1;
+      return 1;
+    } 
+    return s&&1;
   }
 
   inline private static nomask string extract(int bytes, int|void skip)
@@ -1075,7 +1077,7 @@ class FILE
 
   array(string) ngets(void|int(1..) n)
   {
-    cached_lines = ({});
+    cached_lines = ({}); lp=0;
     if (!n) return read()/"\n";
 
     array res=b[bpos..]/"\n";
@@ -1103,7 +1105,7 @@ class FILE
 
   object pipe(void|int flags)
   {
-    bpos=0; cached_lines=({});
+    bpos=0; cached_lines=({}); lp=0;
     b="";
     return query_num_arg() ? file::pipe(flags) : file::pipe();
   }
@@ -1111,7 +1113,7 @@ class FILE
   
   int assign(object foo)
   {
-    bpos=0; cached_lines=({});
+    bpos=0; cached_lines=({}); lp=0;
     b="";
     return ::assign(foo);
   }
@@ -1136,16 +1138,12 @@ class FILE
   //!
   int printf(string format, mixed ... data)
   {
-    if(!sizeof(data))
-      return file::write(format);
-    else
-      return file::write(sprintf(format,@data));
+    return ::write(format,@data);
   }
     
   string read(int|void bytes,void|int(0..1) now)
   {
-    cached_lines = ({});
-    do_lines = 0;
+    cached_lines = ({}); lp = do_lines = 0;
     if (!query_num_arg()) {
       bytes = 0x7fffffff;
     }
@@ -1175,7 +1173,7 @@ class FILE
   //!
   void ungets(string s)
   {
-     cached_lines = ({s})+cached_lines[lp..]; lp=0;
+     cached_lines = ({}); lp=0;
      b=s+"\n"+b[bpos..];
      bpos=0;
   }
@@ -1190,7 +1188,7 @@ class FILE
   //!
   int getchar()
   {
-    cached_lines = ({});
+    cached_lines = ({});lp=0;
     if(strlen(b) - bpos < 1)
       if(!get_data())
 	return -1;
