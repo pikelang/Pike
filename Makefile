@@ -1,5 +1,5 @@
 #
-# $Id: Makefile,v 1.24 2000/01/13 13:09:14 noring Exp $
+# $Id: Makefile,v 1.25 2000/02/14 23:42:03 mast Exp $
 #
 # Meta Makefile
 #
@@ -40,10 +40,11 @@ force_configure:
 builddir:
 	@builddir="$(BUILDDIR)"; \
 	{ \
-	  IFS='/'; dir=""; \
+	  IFS='/'; \
+	  dir=`echo "$$builddir" | sed -e 's|[^/].*||'`; \
 	  for d in $$builddir; do \
 	    dir="$$dir$$d"; \
-	    test -z "$$dir" -o -d "$$dir" || mkdir "$$dir" || exit 1; \
+	    test x"$$dir" = x -o -d "$$dir" || mkdir "$$dir" || exit 1; \
 	    dir="$$dir/"; \
 	  done; \
 	}
