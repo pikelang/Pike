@@ -1,4 +1,4 @@
-/* $Id: sslfile.pike,v 1.5 1997/05/31 22:04:01 grubba Exp $
+/* $Id: sslfile.pike,v 1.6 1997/08/03 22:48:42 grubba Exp $
  *
  */
 
@@ -37,6 +37,11 @@ private void die(int status)
 #endif
   }
   is_closed = 1;
+#ifndef CALLBACK_BUG_FIXED
+  // The write callback sometimes gets called although the socket is closed.
+  socket::set_write_callback(0);
+  socket::set_read_callback(0);
+#endif /* CALLBACK_BUG_FIXED */
   socket::close();
 }
   
@@ -157,7 +162,7 @@ private void ssl_read_callback(mixed id, string s)
 private void ssl_write_callback(mixed id)
 {
 #ifdef SSL3_DEBUG
-  werror(sprintf("SSL.sslport->ssl_write_callback: handshake_finished = %d\n"
+  werror(sprintf("SSL.sslfile->ssl_write_callback: handshake_finished = %d\n"
 		 "blocking = %d, write_callback = %O\n",
 		 handshake_finished, blocking, write_callback));
 #endif
