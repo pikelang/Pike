@@ -5,7 +5,7 @@
 \*/
 
 /*
- * $Id: stuff.c,v 1.12 2000/08/10 09:20:00 grubba Exp $
+ * $Id: stuff.c,v 1.13 2000/09/20 02:04:26 hubbe Exp $
  */
 #include "global.h"
 #include "stuff.h"
@@ -132,3 +132,18 @@ PMOD_EXPORT double my_strtod(char *nptr, char **endptr)
   return tmp;
 }
 
+PMOD_EXPORT unsigned INT32 my_sqrt(unsigned INT32 n)
+{
+  unsigned INT32 b, s, y=0;
+  unsigned INT16 x=0;
+  
+  for(b=1<<(sizeof(INT32)*8-2); b; b>>=2)
+  {
+    x<<=1; s=b+y; y>>=1;
+    if(n>=s)
+    {
+      x|=1; y|=b; n-=s;
+    }
+  }
+  return x;
+}
