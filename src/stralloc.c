@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: stralloc.c,v 1.170 2004/11/05 16:00:49 grubba Exp $
+|| $Id: stralloc.c,v 1.171 2004/11/05 16:05:07 grubba Exp $
 */
 
 #include "global.h"
@@ -2269,7 +2269,7 @@ PMOD_EXPORT void string_builder_vsprintf(struct string_builder *s,
 	    {
 	      p_wchar0 *p = string_builder_allocate(s, len, 0);
 	      do {
-		*(p++) = '0' + val%10;
+		p[--len] = '0' + val%10;
 		val /= 10;
 	      } while (val);
 	    }
@@ -2278,7 +2278,7 @@ PMOD_EXPORT void string_builder_vsprintf(struct string_builder *s,
 	    {
 	      p_wchar1 *p = string_builder_allocate(s, len, 0);
 	      do {
-		*(p++) = '0' + val%10;
+		p[--len] = '0' + val%10;
 		val /= 10;
 	      } while (val);
 	    }
@@ -2287,7 +2287,7 @@ PMOD_EXPORT void string_builder_vsprintf(struct string_builder *s,
 	    {
 	      p_wchar2 *p = string_builder_allocate(s, len, 0);
 	      do {
-		*(p++) = '0' + val%10;
+		p[--len] = '0' + val%10;
 		val /= 10;
 	      } while (val);
 	    }
