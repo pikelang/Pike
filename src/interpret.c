@@ -2,11 +2,11 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: interpret.c,v 1.333 2003/09/29 19:42:58 mast Exp $
+|| $Id: interpret.c,v 1.334 2003/10/01 15:07:00 grubba Exp $
 */
 
 #include "global.h"
-RCSID("$Id: interpret.c,v 1.333 2003/09/29 19:42:58 mast Exp $");
+RCSID("$Id: interpret.c,v 1.334 2003/10/01 15:07:00 grubba Exp $");
 #include "interpret.h"
 #include "object.h"
 #include "program.h"
@@ -1994,7 +1994,7 @@ PMOD_EXPORT int apply_low_safe_and_stupid(struct object *o, INT32 offset)
   new_frame->next = Pike_fp;
   new_frame->current_object = o;
   new_frame->context=o->prog->inherits[0];
-  new_frame->locals = Pike_interpreter.evaluator_stack;
+  new_frame->locals = Pike_sp;
   new_frame->expendible=new_frame->locals;
   new_frame->args = 0;
   new_frame->num_args=0;
@@ -2003,6 +2003,14 @@ PMOD_EXPORT int apply_low_safe_and_stupid(struct object *o, INT32 offset)
   new_frame->pc = 0;
   new_frame->current_storage=o->storage;
   new_frame->context.parent=0;
+
+#ifdef PIKE_DEBUG      
+  if (Pike_fp && (new_frame->locals < Pike_fp->locals)) {
+    fatal("New locals below old locals: %p < %p\n",
+	  new_frame->locals, Pike_fp->locals);
+  }
+#endif /* PIKE_DEBUG */
+
   Pike_fp = new_frame;
 
   add_ref(new_frame->current_object);

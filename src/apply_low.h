@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: apply_low.h,v 1.23 2003/09/08 19:46:52 mast Exp $
+|| $Id: apply_low.h,v 1.24 2003/10/01 15:07:00 grubba Exp $
 */
 
     {
@@ -173,7 +173,14 @@
 	my_strcat(function->name->str);
 	do_trace_call(args);
       }
-      
+
+#ifdef PIKE_DEBUG      
+      if (Pike_fp && (new_frame->locals < Pike_fp->locals)) {
+	fatal("New locals below old locals: %p < %p\n",
+	      new_frame->locals, Pike_fp->locals);
+      }
+#endif /* PIKE_DEBUG */
+
       Pike_fp = new_frame;
       
 #ifdef PROFILING

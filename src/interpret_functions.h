@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: interpret_functions.h,v 1.157 2003/09/23 17:36:36 grubba Exp $
+|| $Id: interpret_functions.h,v 1.158 2003/10/01 15:07:01 grubba Exp $
 */
 
 /*
@@ -2229,6 +2229,10 @@ OPCODE1(F_CALL_BUILTIN1_AND_POP, "call builtin1 & pop", I_UPDATE_ALL, {
     if(Pike_interpreter.trace_level > 3)				   \
       fprintf(stderr,"-    Allocating %d extra locals.\n",		   \
 	      new_frame->num_locals - new_frame->num_args);		   \
+    if (Pike_fp && (new_frame->locals < Pike_fp->locals)) {		   \
+      fatal("New locals below old locals: %p < %p\n",			   \
+	    new_frame->locals, Pike_fp->locals);			   \
+    }									   \
   });									   \
 									   \
                                                                            \
