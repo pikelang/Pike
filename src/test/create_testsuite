@@ -74,6 +74,163 @@ test_program([[int b=1,c; int a() { c=b+2; return c==3; }]])
 test_true([[ ("foobar"/"o") & ({ "foo" }) ]])
 test_any([[ array a="foo bar"/" "; return sizeof(a & ({"foo"}))]],1)
 
+
+// sort
+test_equal(sort(({1,3,2,4})),({1,2,3,4}))
+test_equal(sort(({4,3,2,1})),({1,2,3,4}))
+test_equal([[lambda() {string *a=({1,2,3,4}); sort(({4,3,2,1}),a); return a; }()]],[[({4,3,2,1})]] )
+test_equal([[lambda() {string *a=({1,2,3,4}),*b=a+({}); sort(({4,3,2,1}),a,b); return b; }()]],[[({4,3,2,1})]] )
+
+
+// m_delete
+test_equal(([1:1]),m_delete(a(),0))
+test_equal(([1:1]),m_delete(([1:1,0:3]),0))
+test_any(mapping a=([1:1]); return a==m_delete(a,1),1)
+test_any([[mapping m=([]); m[1]++; return m[1];]],1)
+test_any([[mapping m=([1:1]); m[1]++; return m[1];]],2)
+test_any([[mapping m=([]); m[1]++; m[1]++; return m[1];]],2)
+
+// mapping tests
+
+test_any([[mapping m=([]);int e;
+  for(e=0;e<1000;e++) m[e]=e;
+  for(e=0;e<1000;e++) if(m[e]!=e) return 0;
+  return 1;
+]],1)
+
+test_any([[mapping m=([]);int e;
+  for(e=0;e<1000;e++) m[e]=e;
+  for(e=999;e>=0;e--) if(m[e]!=e) return 0;
+  return 1;
+]],1)
+
+
+test_any([[mapping m=([]);int e;
+  for(e=999;e>=0;e--) m[e]=e;
+  for(e=0;e<1000;e++) if(m[e]!=e) return 0;
+  return 1;
+]],1)
+
+test_any([[mapping m=([]);int e;
+  for(e=999;e>=0;e--) m[e]=e;
+  for(e=999;e>=0;e--) if(m[e]!=e) return 0;
+  return 1;
+]],1)
+
+
+test_any([[mapping m=([]);int e;
+  for(e=0;e<1000;e++) m[reverse(e)]=e;
+  for(e=0;e<1000;e++) if(m[reverse(e)]!=e) return 0;
+  return 1;
+]],1)
+
+
+test_any([[mapping m=([]);int e;
+  for(e=999;e>=0;e--) m[reverse(e)]=e;
+  for(e=0;e<1000;e++) if(m[reverse(e)]!=e) return 0;
+  return 1;
+]],1)
+
+
+test_any([[mapping m=([]);int e;
+  for(e=0;e<1000;e++) m[reverse(e)]=e;
+  for(e=0;e<1000;e++) m_delete(m,reverse(e));
+  return sizeof(m);
+]],0)
+
+test_any([[mapping m=([]);int e;
+  for(e=0;e<1000;e++) m[reverse(e)]=e;
+  for(e=0;e<1000;e+=2) m_delete(m,reverse(e));
+  for(e=0;e<1000;e+=2) if(m[reverse(e)]) return 0;
+  for(e=1;e<1000;e+=2) if(m[reverse(e)]!=e) return 0;
+  return 1;
+]],1)
+
+test_any([[mapping m=([]);int e;
+  for(e=0;e<1000;e++) m[reverse(e)]=e;
+  for(e=0;e<1000;e++) m[reverse(e)]++;
+  for(e=0;e<1000;e++) if(m[reverse(e)]!=e+1) return 0;
+  return 1;
+]],1)
+
+test_any([[mapping m=([]);int e;
+  mixed a,b;
+  a=allocate(1000);
+  b=allocate(1000);
+  for(e=0;e<1000;e++)
+  {
+    m[reverse(e)]=e;
+    a[e]=reverse(e);
+    b[e]=e;
+  }
+  add_efun("mtest_m",m);
+  add_efun("mtest_i",a);
+  add_efun("mtest_v",b);
+  return 1;
+]],1)
+
+
+test_eq([[sizeof(mtest_m)]],sizeof(mtest_i))
+test_equal(sort_array(indices(mtest_m)),sort_array(mtest_i))
+test_equal(sort_array(values(mtest_m)),sort_array(mtest_v))
+test_equal(mtest_m,copy_value(mtest_m))
+test_any([[int e; for(e=0;e<1000;e++) if(!equal(mtest_m[mtest_i[e] ],mtest_v[e])) return 0; return 1;]],1)
+
+
+test_any([[mapping m=([]);int e;
+  mixed a,b;
+  a=allocate(100);
+  b=allocate(100);
+  for(e=0;e<100;e++)
+  {
+    m[reverse(e)]=e;
+    a[e]=reverse(e);
+    b[e]=reverse(e);
+  }
+  add_efun("mtest_m2",m);
+  add_efun("mtest_i2",a);
+  add_efun("mtest_v2",b);
+  return 1;
+]],1)
+
+test_equal(sort_array(indices(mtest_m|mtest_m2)),sort_array(mtest_i|mtest_i2))
+test_equal(sort_array(indices(mtest_m&mtest_m2)),sort_array(mtest_i&mtest_i2))
+test_equal(sort_array(indices(mtest_m-mtest_m2)),sort_array(mtest_i-mtest_i2))
+test_equal(sort_array(indices(mtest_m^mtest_m2)),sort_array(mtest_i^mtest_i2))
+test_equal(sort_array(indices(mtest_m2|mtest_m)),sort_array(mtest_i2|mtest_i))
+test_equal(sort_array(indices(mtest_m2&mtest_m)),sort_array(mtest_i2&mtest_i))
+test_equal(sort_array(indices(mtest_m2-mtest_m)),sort_array(mtest_i2-mtest_i))
+test_equal(sort_array(indices(mtest_m2^mtest_m)),sort_array(mtest_i2^mtest_i))
+
+define(MTEST,[[test_equal([[mkmapping(indices(allocate($1)),reverse(indices(allocate($1))))]],[[mkmapping(reverse(indices(allocate($1))),indices(allocate($1)))]])]])
+
+MTEST(0)
+MTEST(1)
+MTEST(2)
+MTEST(3)
+MTEST(5)
+MTEST(8)
+MTEST(13)
+MTEST(21)
+MTEST(34)
+MTEST(55)
+
+define([[MTEST]])
+
+test_do(add_efun("mtest_m"); add_efun("mtest_i"); add_efun("mtest_v");)
+test_do(add_efun("mtest_m2"); add_efun("mtest_i2"); add_efun("mtest_v2");)
+
+// rows
+test_equal([[rows(({1,2,3,4,5,6,7,8,9}),({6,7,2}))]],[[({7,8,3})]])
+test_equal([[rows(({1,2,3,4,5,6,7,8,9}),({0,4,1}))]],[[({1,5,2})]])
+test_equal([[rows(({1,2,3,4,5,6,7,8,9}),({8,3,5}))]],[[({9,4,6})]])
+
+// column
+test_equal([[column(({({1,2,3}),({5,6,7}),({8,9,0})}),0)]],[[({1,5,8})]])
+test_equal([[column(({({1,2,3}),({5,6,7}),({8,9,0})}),1)]],[[({2,6,9})]])
+test_equal([[column(({({1,2,3}),({5,6,7}),({8,9,0})}),2)]],[[({3,7,0})]])
+
+
 // gc
 ifefun(gc,
 [[
@@ -1708,11 +1865,6 @@ test_eq(find_call_out(a),-1)
 test_true(zero_type(find_call_out(a)))
 test_do(remove_call_out(call_out_info()[-1][2]))
 test_true(!sizeof(call_out_info()) || function_name(call_out_info()[-1][2])!="a")
-
-// m_delete
-test_equal(([1:1]),m_delete(a(),0))
-test_equal(([1:1]),m_delete(([1:1,0:3]),0))
-test_any(mapping a=([1:1]); return a==m_delete(a,1),1)
 
 test_program(int b=10; mixed a() { return 1; })
 test_program(mixed b=10; mixed a() { return 1;})

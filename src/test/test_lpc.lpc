@@ -1,8 +1,13 @@
 #!/usr/local/bin/ulpc
 
+#if !efun(_verify_internals)
+#define _verify_internals()
+#endif
+
+
 int main(int argc, string *argv)
 {
-  int e, verbose, successes, errors, t;
+  int e, verbose, successes, errors, t, check;
   string *tests;
   program testprogram;
   int start, fail;
@@ -47,6 +52,11 @@ int main(int argc, string *argv)
 	t+=arg;
 	break;
 
+      case "-c":
+      case "--check":
+	check++;
+	break;
+
       default:
 	if(tests)
 	{
@@ -70,6 +80,8 @@ int main(int argc, string *argv)
     object o;
     mixed a,b;
 
+    if(check) _verify_internals();
+
     test=tests[e];	
     if(sscanf(test,"COND %s\n%s",condition,test)==2)
     {
@@ -91,6 +103,8 @@ int main(int argc, string *argv)
       if(verbose>1)
 	perror(test+"\n");
     }
+
+    if(check > 1) _verify_internals();
 
     switch(type)
     {
@@ -123,11 +137,16 @@ int main(int argc, string *argv)
     default:
       o=clone(compile_string(test,"Test "+(e+1)));
 
+      if(check > 1) _verify_internals();
+
       a=b=0;
       if(t) trace(t);
       if(functionp(o->a)) a=o->a();
       if(functionp(o->b)) b=o->b();
       if(t) trace(0);
+
+      if(check > 1) _verify_internals();
+
       switch(type)
       {
       case "FALSE":
@@ -179,6 +198,9 @@ int main(int argc, string *argv)
 	errors++;
       }
     }
+
+    if(check > 2) _verify_internals();
+
     if(fail && errors)
       exit(1);
   }
@@ -188,6 +210,13 @@ int main(int argc, string *argv)
     perror("Errors + Successes != number of tests!\n");
     errors++;
   }
+
+  if(successes < 5000)
+  {
+    perror("Tests are missing!\n");
+    errors++;
+  }
+
   if(errors || verbose)
   {
     perror("Failed tests: "+errors+".\n");
