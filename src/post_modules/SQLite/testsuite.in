@@ -28,6 +28,7 @@ cond_resolv( SQLite.SQLite, [[
 
   test_equal( db->big_query("SELECT * FROM test")->fetch_row();, ({"7","4.5","xyz","xyz"}) )
 
+  test_do( add_constant("db"); )
   test_do( rm("testdb"); )
 
 ]])
