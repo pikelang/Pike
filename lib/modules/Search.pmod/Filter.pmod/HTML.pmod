@@ -1,7 +1,7 @@
 // This file is part of Roxen Search
 // Copyright © 2000,2001 Roxen IS. All rights reserved.
 //
-// $Id: HTML.pmod,v 1.17 2001/08/15 14:38:46 anders Exp $
+// $Id: HTML.pmod,v 1.18 2001/08/17 19:30:41 per Exp $
 
 // Filter for text/html
 
@@ -75,9 +75,16 @@ Output filter(Standards.URI uri, string|Stdio.File data,
     res->fields->title=Parser.parse_html_entities(c);
     return "";
   };
-
   string parse_a(Parser.HTML p, mapping m, string c)  {
     if(m->href) ladd( m->href );
+    return c;
+  };
+  string parse_frame(Parser.HTML p, mapping m, string c)  {
+    if(m->src) ladd( m->src );
+    return c;
+  };
+  string parse_img( Parser.HTML p, mapping m, string c)  {
+    if( m->alt ) return m->alt+c;
     return c;
   };
 
@@ -90,7 +97,10 @@ Output filter(Standards.URI uri, string|Stdio.File data,
   parser->add_tag("meta",parse_meta );
   //  parser->add_container("rank",parse_rank);
   parser->add_container("title",parse_title);
-  parser->add_tag("a",parse_a);
+  parser->add_container("a",parse_a);
+  parser->add_container("frame",parse_frame);
+  parser->add_container("frameset",parse_frame);
+  parser->add_container("img",parse_img);
 
   constant ignore_tags=({"noindex","script","style","no-index",});
   parser->add_containers(mkmapping(ignore_tags,({""})*sizeof(ignore_tags)));
