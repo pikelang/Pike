@@ -1,4 +1,4 @@
-/* $Id: constants.pike,v 1.4 1998/08/26 07:08:20 nisse Exp $
+/* $Id: constants.pike,v 1.5 1999/03/03 14:13:59 nisse Exp $
  *
  */
 
@@ -45,8 +45,11 @@ constant HASH_hashes = (< HASH_md5, HASH_sha >);
 
 /* Key exchange */
 constant KE_rsa	= 1;
+/* We ignore the distinction between dh_dss and dh_rsa for now. */
 constant KE_dh	= 2;
-constant KE_dms	= 3;
+constant KE_dhe_dss = 3;
+constant KE_dhe_rsa = 4;
+constant KE_dms	= 5;
 
 /* Compression methods */
 constant COMPRESSION_null = 0;
