@@ -21,9 +21,11 @@ struct callback *gc_evaluator_callback=0;
 #include "pike_memory.h"
 #include "pike_macros.h"
 #include "pike_types.h"
+#include "time_stuff.h"
 
 #include "gc.h"
 #include "main.h"
+#include <math.h>
 
 /* Run garbage collect approximate every time we have
  * 20 percent of all arrays, objects and programs is
@@ -36,12 +38,13 @@ struct callback *gc_evaluator_callback=0;
 #define MULTIPLIER 0.9
 #define MARKER_CHUNK_SIZE 1023
 
-INT32 num_objects;
-INT32 num_allocs;
+INT32 num_objects =0;
+INT32 num_allocs =0;
 INT32 alloc_threshold = MIN_ALLOC_THRESHOLD;
+static int in_gc = 0;
 
-static double objects_alloced;
-static double objects_freed;
+static double objects_alloced = 0.0;
+static double objects_freed = 0.0;
 
 struct callback_list gc_callbacks;
 
@@ -118,6 +121,20 @@ static struct marker *getmark(void *a)
 }
 
 #ifdef DEBUG
+
+time_t last_gc;
+
+void dump_gc_info(void)
+{
+  fprintf(stderr,"Current number of objects: %ld\n",(long)num_objects);
+  fprintf(stderr,"Objects allocated total  : %ld\n",(long)num_allocs);
+  fprintf(stderr," threshold for next gc() : %ld\n",(long)alloc_threshold);
+  fprintf(stderr,"Average allocs per gc()  : %f\n",objects_alloced);
+  fprintf(stderr,"Average frees per gc()   : %f\n",objects_freed);
+  fprintf(stderr,"Second since last gc()   : %ld\n", (long)TIME(0) - (long)last_gc);
+  fprintf(stderr,"Projected garbage        : %f\n", objects_freed * (double) num_allocs / (double) alloc_threshold);
+  fprintf(stderr,"in_gc                    : %d\n", in_gc);
+}
 
 TYPE_T attempt_to_identify(void *something)
 {
@@ -411,10 +428,10 @@ static INT32 hashprimes[] =
 
 void do_gc(void)
 {
-  static int in_gc = 0;
   double tmp;
   INT32 tmp2,tmp3;
   struct marker_chunk *m;
+  double multiplier;
 
   if(in_gc) return;
   in_gc=1;
@@ -432,12 +449,16 @@ void do_gc(void)
     fprintf(stderr,"Garbage collecting ... ");
   if(num_objects < 0)
     fatal("Panic, less than zero objects!\n");
+
+  last_gc=TIME(0);
+
 #endif
 
-  objects_alloced*=MULTIPLIER;
+  multiplier=pow(MULTIPLIER, (double) num_allocs / (double) alloc_threshold);
+  objects_alloced*=multiplier;
   objects_alloced += (double) num_allocs;
   
-  objects_freed*=MULTIPLIER;
+  objects_freed*=multiplier;
   objects_freed += (double) num_objects;
 
 
