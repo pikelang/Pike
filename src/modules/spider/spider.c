@@ -43,7 +43,7 @@
 #include "threads.h"
 #include "operators.h"
 
-RCSID("$Id: spider.c,v 1.99 2000/08/15 13:12:11 grubba Exp $");
+RCSID("$Id: spider.c,v 1.100 2000/11/06 20:56:02 per Exp $");
 
 #ifdef HAVE_PWD_H
 #include <pwd.h>
@@ -733,7 +733,7 @@ void do_html_parse(struct pike_string *ss,
   pop_stack();					\
 } while(0)
 
-struct svalue empty_string;
+static struct svalue empty_string;
 void do_html_parse_lines(struct pike_string *ss,
 			 struct mapping *cont,struct mapping *single,
 			 int *strings,int recurse_left,
