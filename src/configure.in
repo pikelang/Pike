@@ -1,4 +1,4 @@
-AC_REVISION("$Id: configure.in,v 1.800 2004/03/08 16:42:03 grubba Exp $")
+AC_REVISION("$Id: configure.in,v 1.801 2004/03/08 20:20:17 grubba Exp $")
 AC_INIT(interpret.c)
 AC_CONFIG_HEADER(machine.h)
 
@@ -167,7 +167,7 @@ fi
 if test "x$enable_make_conf" = x"yes" -a -f /etc/make.conf; then
   set >conftest.tmp
   echo Using settings from /etc/make.conf...
-  source /etc/make.conf
+  . /etc/make.conf
   set | diff -u conftest.tmp -  | grep '^+C'
   PIKE_MSG_WARN([Using settings from /etc/make.conf.])
 fi
