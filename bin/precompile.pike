@@ -711,7 +711,7 @@ class PikeType
 };
 
 /*
- * This class is used to represe one function argument
+ * This class is used to represent one function argument
  */
 class Argument
 {
@@ -1547,6 +1547,21 @@ class ParseBlock
 	array(Argument) args=map(args_tmp,Argument);
 	// werror("%O %O\n",proto,args);
 	// werror("parsed args: %O\n", args);
+
+	if((<"`<", "`>">)[name])
+	{
+	  if(sizeof(args) != 1)
+	  {
+	    werror("%s must take one argument.\n");
+	    exit(1);
+	  }
+	  if(sprintf("%s",args[0]->type()) != "mixed")
+	  {
+	    werror("%s:%s must take a mixed argument (was declared as %s)\n",
+		   location, name, args[0]->type());
+	    exit(1);
+	  }
+	}
 
 	// FIXME: support ... types
 	PikeType type;
