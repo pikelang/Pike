@@ -1,8 +1,11 @@
-// $Id: testsuite.in,v 1.1 1999/03/02 22:07:13 marcus Exp $
+// $Id: testsuite.in,v 1.2 1999/03/04 01:03:54 marcus Exp $
 
-test_true([[objectp(Java)]])
-test_true([[objectp(Java.pkg)]])
-test_true([[objectp(Java.pkg.java.lang.String)]])
-test_eq([[(string)Java.pkg.java.lang.String()->concat("FOO")->toLowerCase()]],
-	"foo")
-test_eq([[(string)Java.pkg.java.lang.Character(4711)]],"\11147")
+cond( [[ master()->resolv("Java")->jvm ]],
+[[
+  test_true([[objectp(Java)]])
+  test_true([[objectp(Java.pkg)]])
+  test_true([[objectp(Java.pkg.java.lang.String)]])
+  test_eq([[(string)Java.pkg.java.lang.String()->concat("FOO")
+	->toLowerCase()]],"foo")
+  test_eq([[(string)Java.pkg.java.lang.Character(4711)]],"\11147")
+]])
