@@ -1,4 +1,4 @@
-/* $Id: mkxml.pike,v 1.34 2001/07/28 14:11:50 nilsson Exp $ */
+/* $Id: mkxml.pike,v 1.35 2001/08/20 16:09:10 nilsson Exp $ */
 
 string IMAGE_DIR = "../autodoc/src_images/";
 string makepic1;
@@ -861,7 +861,14 @@ void create() {
 
   parser->add_containers( ([ "pre":tag_preserve_ws,
 			     "table":tag_preserve_ws,
-			     "ul":tag_preserve_ws ]) );
+			     "ul":tag_preserve_ws,
+			     "ol":tag_preserve_ws,
+  ]) );
+
+  parser->add_container("li",
+    lambda(Parser.HTML p, mapping m, string c) {
+      return "<group><item/><text>" + c + "</text></group>";
+    });
 
   parser->add_container("illustration",
     lambda(Parser.HTML p, mapping args, string c, string where)
