@@ -5,7 +5,7 @@
 \*/
 #include <math.h>
 #include "global.h"
-RCSID("$Id: operators.c,v 1.4 1996/11/27 03:47:02 hubbe Exp $");
+RCSID("$Id: operators.c,v 1.5 1997/01/27 01:27:13 hubbe Exp $");
 #include "interpret.h"
 #include "svalue.h"
 #include "multiset.h"
@@ -95,17 +95,42 @@ void f_add(INT32 args)
       size=0;
       for(e=-args;e<0;e++) size+=sp[e].u.string->len;
 
+#if 1
+      if(sp[-args].u.string->refs==1)
+      {
+	struct pike_string *tmp=sp[-args].u.string;
+
+	unlink_pike_string(tmp);
+	r=(struct pike_string *)realloc((char *)tmp,
+					sizeof(struct pike_string)+size);
+	
+	if(!r)
+	{
+	  r=begin_shared_string(size);
+	  MEMCPY(r->str, sp[-args].u.string->str, sp[-args].u.string->len);
+	  free((char *)r);
+	}
+
+	buf=r->str + r->len;
+	r->len=size;
+	r->str[size]=0;
+
+	for(e=-args+1;e<0;e++)
+	{
+	  MEMCPY(buf,sp[e].u.string->str,sp[e].u.string->len);
+	  buf+=sp[e].u.string->len;
+	}
+	sp[-args].u.string=end_shared_string(r);
+	for(e=-args+1;e<0;e++) free_string(sp[e].u.string);
+	sp-=args-1;
+	return;
+      }
+#endif
       r=begin_shared_string(size);
       buf=r->str;
       for(e=-args;e<0;e++)
       {
-#if 1
-	int q;
-	for(q=0;q<sp[e].u.string->len;q++)
-	  buf[q]=sp[e].u.string->str[q];
-#else
 	MEMCPY(buf,sp[e].u.string->str,sp[e].u.string->len);
-#endif
 	buf+=sp[e].u.string->len;
       }
       r=end_shared_string(r);
@@ -1092,6 +1117,10 @@ void o_range()
 
   switch(sp[-1].type)
   {
+  case T_OBJECT:
+    CALL_OPERATOR(LFUN_INDEX, 2);
+    break;
+
   case T_STRING:
   {
     struct pike_string *s;
@@ -1130,7 +1159,7 @@ void o_range()
   }
     
   default:
-    error("[ .. ] can only be done on strings and arrays.\n");
+    error("[ .. ] on non-scalar type.\n");
   }
 }
 
