@@ -1,4 +1,4 @@
-AC_REVISION("$Id: configure.in,v 1.459 2001/01/20 20:41:14 grubba Exp $")
+AC_REVISION("$Id: configure.in,v 1.460 2001/01/20 23:24:09 grubba Exp $")
 AC_INIT(interpret.c)
 AC_CONFIG_HEADER(machine.h)
 
@@ -656,7 +656,7 @@ AC_ARG_WITH(copt,        [  --without-copt         disable -O2],[],[with_copt=])
 AC_ARG_WITH(threads,     [  --without-threads      no threads support],[],[
    case "x$pike_cv_sys_os" in
      xFreeBSD*)
-        if test "`uname -r|sed -e 's/\([0-9]*\).*/\1/'`" -lt 4; then
+        if test "`uname -r|sed -e 's/\([[0-9]]*\).*/\1/'`" -lt 4; then
            AC_MSG_WARN([
 FreeBSD <= 3.x detected, disabling threads.
 Use --with-threads to force threads support.
