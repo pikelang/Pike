@@ -1,7 +1,7 @@
 #include "global.h"
 #include "stralloc.h"
 #include "global.h"
-RCSID("$Id: resultset.c,v 1.21 2003/02/18 10:36:32 mast Exp $");
+RCSID("$Id: resultset.c,v 1.22 2004/07/20 16:37:11 grubba Exp $");
 #include "pike_macros.h"
 #include "interpret.h"
 #include "program.h"
@@ -212,12 +212,7 @@ static void f_resultset_test( INT32 args )
 {
   int i, j, s, b;
   struct object *o = Pike_fp->current_object;
-  if( args != 3 )
-    Pike_error( "Expected 3 arguments\n" );
-
-  j = Pike_sp[-args].u.integer;
-  b = Pike_sp[-args+1].u.integer;
-  s = Pike_sp[-args+2].u.integer;
+  get_all_args("test", args, "%d%d%d", &j, &b, &s);
   wf_resultset_clear( o );
   for( i = 0; i<j; i++ )
     wf_resultset_add( o, b+i*s, rand()&0xffff );
@@ -243,8 +238,7 @@ static void f_resultset_slice( INT32 args )
     return;
   }
 
-  nelems = Pike_sp[-1].u.integer;
-  first = Pike_sp[-2].u.integer;
+  get_all_args("slice", args, "%d%d", &first, &nelems);
 
   if( THIS->d->num_docs - first < nelems )
     nelems = THIS->d->num_docs-first;

@@ -1,4 +1,4 @@
-/* $Id: buffer.c,v 1.11 2003/02/18 10:36:32 mast Exp $
+/* $Id: buffer.c,v 1.12 2004/07/20 16:37:11 grubba Exp $
  */
 #include "global.h"
 
@@ -15,7 +15,7 @@
 #endif
 
 #include "stralloc.h"
-RCSID("$Id: buffer.c,v 1.11 2003/02/18 10:36:32 mast Exp $");
+RCSID("$Id: buffer.c,v 1.12 2004/07/20 16:37:11 grubba Exp $");
 #include "pike_macros.h"
 #include "interpret.h"
 #include "program.h"
@@ -177,7 +177,7 @@ void wf_buffer_free( struct buffer *b )
 void wf_buffer_set_empty( struct buffer *b )
 {
   wf_buffer_clear( b );
-  b->data = malloc( 16 );
+  b->data = xalloc( 16 );
   b->allocated_size = 16;
 }
 
@@ -205,7 +205,7 @@ void wf_buffer_set_pike_string( struct buffer *b,
 
 struct buffer *wf_buffer_new( )
 {
-  struct buffer *b = malloc( sizeof( struct buffer ) );
+  struct buffer *b = xalloc( sizeof( struct buffer ) );
   MEMSET( b, 0, sizeof(struct buffer) );
   return b;
 }
