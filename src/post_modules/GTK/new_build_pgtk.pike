@@ -436,9 +436,12 @@ class Type
       optp = "|void";
     switch( name )
     {
-     case "uint":  case "int":     return "int"+optp;
-     case "float": case "double":  return "float"+optp;
-     case "string":                return "string"+optp;
+     case "uint":  case "int":
+       return "int"+optp;
+     case "float": case "double":
+       return "int|float"+optp;
+     case "string":
+       return "string"+optp;
      case "array":
        {
          if( !nc && !c_inited ) catch(c_init());
