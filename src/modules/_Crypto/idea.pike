@@ -1,6 +1,6 @@
 #!/home/grubba/src/pike/build/sol2.5/pike
 /*
- * $Id: idea.pike,v 1.3 1996/11/11 14:23:29 grubba Exp $
+ * $Id: idea.pike,v 1.4 1996/11/27 09:42:09 nisse Exp $
  *
  * An crypto using IDEA written in Pike
  * rename it to get it to use another crypto.
@@ -19,6 +19,16 @@
 /*
  * Functions
  */
+
+string hex_to_string(string h)
+{
+  array c = allocate(strlen(h) / 2);
+  int i;
+
+  for (i = 0; i<sizeof(c); i++)
+    sscanf(h[2*i..2*i+1], "%x", c[i]);
+  return sprintf("%@c", c);
+}
 
 int main(int argc, string *argv)
 {
