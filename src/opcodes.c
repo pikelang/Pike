@@ -26,7 +26,7 @@
 #include "bignum.h"
 #include "operators.h"
 
-RCSID("$Id: opcodes.c,v 1.74 2000/08/14 14:04:47 grubba Exp $");
+RCSID("$Id: opcodes.c,v 1.75 2001/01/15 22:17:20 grubba Exp $");
 
 void index_no_free(struct svalue *to,struct svalue *what,struct svalue *ind)
 {
@@ -1324,6 +1324,7 @@ CHAROPT2(								 \
 	    PIKE_CONCAT(p_wchar, MATCH_SHIFT) *p=0;			 \
 	    int start,contains_percent_percent, new_eye;		 \
 									 \
+	    e = cnt;							 \
 	    start=eye;							 \
 	    end_str_start=match+cnt+1;					 \
 									 \
@@ -1336,8 +1337,16 @@ CHAROPT2(								 \
               set.neg=0;						 \
 	      switch(*s)						 \
 	      {								 \
+                case 0:							 \
+                  /* FIXME: Should really look at the match len */	 \
+		  Pike_error("%% without conversion specifier.\n");	 \
+                  break;						 \
+									 \
 		case 'n':						 \
 		  s++;							 \
+                  /* Advance the end string start pointer */		 \
+                  end_str_start = s;					 \
+		  e = s - match;					 \
 	          goto test_again;					 \
 									 \
 		case 's':						 \
@@ -1387,7 +1396,7 @@ CHAROPT2(								 \
 									 \
 	    contains_percent_percent=0;					 \
 									 \
-	    for(e=cnt;e<match_len;e++)					 \
+	    for(;e<match_len;e++)					 \
 	    {								 \
 	      if(match[e]=='%')						 \
 	      {								 \
@@ -1403,7 +1412,15 @@ CHAROPT2(								 \
 									 \
 	    end_str_end=match+e;					 \
 									 \
-	    if(!contains_percent_percent)				 \
+    	    if (end_str_end == end_str_start) {				 \
+	      sval.type=T_STRING;					 \
+	      DO_IF_CHECKER(sval.subtype=0);				 \
+	      sval.u.string=PIKE_CONCAT(make_shared_binary_string,	 \
+	      				INPUT_SHIFT)(input+eye,		 \
+	      					     input_len-eye);	 \
+	      eye=input_len;						 \
+	      break;							 \
+	    } else if(!contains_percent_percent)			 \
 	    {								 \
 	      struct generic_mem_searcher searcher;			 \
 	      PIKE_CONCAT(p_wchar, INPUT_SHIFT) *s2;			 \
