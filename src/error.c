@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: error.c,v 1.94 2002/11/25 00:25:48 mast Exp $
+|| $Id: error.c,v 1.95 2002/11/28 02:19:15 mast Exp $
 */
 
 #define NO_PIKE_SHORTHAND
@@ -23,7 +23,7 @@
 #include "threads.h"
 #include "gc.h"
 
-RCSID("$Id: error.c,v 1.94 2002/11/25 00:25:48 mast Exp $");
+RCSID("$Id: error.c,v 1.95 2002/11/28 02:19:15 mast Exp $");
 
 #undef ATTRIBUTE
 #define ATTRIBUTE(X)
@@ -88,6 +88,7 @@ PMOD_EXPORT void check_recovery_context(void)
 
 PMOD_EXPORT void pike_gdb_breakpoint(INT32 args)
 {
+  pop_n_elems(args);
 }
 
 PMOD_EXPORT JMP_BUF *init_recovery(JMP_BUF *r, size_t stack_pop_levels DEBUG_LINE_ARGS)
