@@ -212,8 +212,6 @@ static constant prefix = ({ "bytes", "kb", "Mb", "Gb", "Tb", "Pb", "Eb", "Zb", "
 //! but we have chosen to keep the old notation for a while.
 //! The function knows about the quantifiers kilo, mega, giga,
 //! tera, peta, exa, zetta and yotta.
-//! @throws
-//!   Throws an error is @[size] is less than zero.
 string int2size( int size )
 {
   if(size<0)
