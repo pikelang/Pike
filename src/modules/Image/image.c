@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: image.c,v 1.207 2003/10/22 08:45:27 mirar Exp $
+|| $Id: image.c,v 1.208 2003/12/01 18:12:24 nilsson Exp $
 */
 
 /*
@@ -101,7 +101,7 @@
 
 #include "stralloc.h"
 #include "global.h"
-RCSID("$Id: image.c,v 1.207 2003/10/22 08:45:27 mirar Exp $");
+RCSID("$Id: image.c,v 1.208 2003/12/01 18:12:24 nilsson Exp $");
 #include "pike_macros.h"
 #include "object.h"
 #include "constants.h"
@@ -1339,6 +1339,7 @@ void image_setcolor(INT32 args)
 
 /*
 **! method object setpixel(int x,int y)
+**! method object setpixel(int x,int y,Image.Color c)
 **! method object setpixel(int x,int y,int r,int g,int b)
 **! method object setpixel(int x,int y,int r,int g,int b,int alpha)
 **!    
