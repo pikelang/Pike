@@ -5,7 +5,7 @@
 \*/
 /**/
 #include "global.h"
-RCSID("$Id: las.c,v 1.197 2000/08/27 19:59:41 grubba Exp $");
+RCSID("$Id: las.c,v 1.198 2000/08/28 10:29:47 grubba Exp $");
 
 #include "language.h"
 #include "interpret.h"
@@ -1901,6 +1901,12 @@ void print_tree(node *n)
 /* The following routines need much better commenting. */
 /* They also needed to support lexical scoping and external variables.
  * /grubba 2000-08-27
+ */
+
+/*
+ * Known bugs:
+ *  * Aliasing is not handled.
+ *  * Called functions are assumed not to use lexical scoping.
  */
 
 #if MAX_LOCAL > MAX_GLOBAL
