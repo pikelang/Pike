@@ -1,4 +1,4 @@
-AC_REVISION("$Id: configure.in,v 1.707 2003/03/06 12:50:21 grubba Exp $")
+AC_REVISION("$Id: configure.in,v 1.708 2003/03/09 22:24:20 kiwi Exp $")
 AC_INIT(interpret.c)
 AC_CONFIG_HEADER(machine.h)
 
@@ -681,6 +681,7 @@ case "$pike_cv_sys_os" in
       ac_cv_header_winsock2_h="no"
       ac_cv_header_winbase_h="no"
       ac_cv_header_windows_h="no"
+      with_machine_code="no"
    ;;
   FreeBSD*)
       # FreeBSD have other naming convention for gtk-config and sdl-config
