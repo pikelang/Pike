@@ -1,8 +1,10 @@
 // -*- Pike -*-
 
-// $Id: module.pike,v 1.16 2003/06/06 15:34:50 jhs Exp $
+// $Id: module.pike,v 1.17 2003/08/24 21:00:35 nilsson Exp $
 
-constant version = ("$Revision: 1.16 $"/" ")[1];
+#pike __REAL_VERSION__
+
+constant version = ("$Revision: 1.17 $"/" ")[1];
 constant description = "Pike module installer.";
 
 // Source directory

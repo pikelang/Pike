@@ -1,10 +1,12 @@
 #! /usr/bin/env pike
 
+#pike __REAL_VERSION__
+
 /*
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: dump.pike,v 1.2 2003/06/05 19:45:25 mast Exp $
+|| $Id: dump.pike,v 1.3 2003/08/24 21:00:35 nilsson Exp $
 */
 
 constant description = "Dumps pike files into object files.";

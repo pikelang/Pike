@@ -1,4 +1,6 @@
-// $Id: assemble_autodoc.pike,v 1.26 2003/02/08 01:46:29 nilsson Exp $
+// $Id: assemble_autodoc.pike,v 1.27 2003/08/24 21:00:35 nilsson Exp $
+
+#pike __REAL_VERSION__
 
 constant description = "Assembles AutoDoc output file.";
 
@@ -491,7 +493,7 @@ int(0..1) main(int num, array(string) args) {
 
   int T = time();
   if(has_value(args, "--version"))
-     werror("$Id: assemble_autodoc.pike,v 1.26 2003/02/08 01:46:29 nilsson Exp $\n");
+     werror("$Id: assemble_autodoc.pike,v 1.27 2003/08/24 21:00:35 nilsson Exp $\n");
   if(num<3)
     error("To few arguments\n");
 

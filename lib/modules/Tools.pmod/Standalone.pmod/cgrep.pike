@@ -1,6 +1,8 @@
 #! /usr/bin/env pike
 // -*- Pike -*-
-// $Id: cgrep.pike,v 1.9 2003/01/20 14:59:27 jhs Exp $
+// $Id: cgrep.pike,v 1.10 2003/08/24 21:00:35 nilsson Exp $
+
+#pike __REAL_VERSION__
 
 constant description = "Context aware grep.";
 
@@ -316,7 +318,7 @@ Output control:
       --summarize           print a summary of the number of matches
 ";
 
-constant version = #"cgrep $Revision: 1.9 $
+constant version = #"cgrep $Revision: 1.10 $
 A token based grep with UI stolen from GNU grep.
 By Martin Nilsson 2003.
 ";

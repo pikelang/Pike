@@ -3,6 +3,8 @@
  *
  */
 
+#pike __REAL_VERSION__
+
 //! The name of the test.
 constant name="?";
 

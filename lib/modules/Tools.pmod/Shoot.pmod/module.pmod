@@ -5,6 +5,8 @@
  *
  */
 
+#pike __REAL_VERSION__
+
 import ".";
 
 static int procfs=-1;

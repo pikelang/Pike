@@ -1,5 +1,7 @@
 #! /usr/bin/env pike
-// $Id: rsqld.pike,v 1.8 2003/06/01 21:54:31 nilsson Exp $
+// $Id: rsqld.pike,v 1.9 2003/08/24 21:00:35 nilsson Exp $
+
+#pike __REAL_VERSION__
 
 constant description = "Implements an rsql daemon.";
 

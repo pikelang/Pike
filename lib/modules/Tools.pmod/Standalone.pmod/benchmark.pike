@@ -1,4 +1,6 @@
-// $Id: benchmark.pike,v 1.5 2003/07/30 20:55:40 mast Exp $
+// $Id: benchmark.pike,v 1.6 2003/08/24 21:00:35 nilsson Exp $
+
+#pike __REAL_VERSION__
 
 constant description = "Runs some built in Pike benchmarks.";
 constant help = #"

@@ -1,3 +1,6 @@
+
+#pike __REAL_VERSION__
+
 #if constant(GTK.Window)
 constant description = "Pike image viewer (diet).";
 int main(int argc, array(string) argv)
