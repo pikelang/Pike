@@ -5,7 +5,7 @@
 \*/
 /**/
 #include "global.h"
-RCSID("$Id: builtin_functions.c,v 1.256 2000/06/26 17:00:24 noring Exp $");
+RCSID("$Id: builtin_functions.c,v 1.257 2000/08/02 21:55:25 grubba Exp $");
 #include "interpret.h"
 #include "svalue.h"
 #include "pike_macros.h"
@@ -714,8 +714,6 @@ static char *combine_path(char *cwd,char *file)
   int tmp;
   ONERROR err;
 
-  SET_ONERROR(err, free_nonull, cwdbuf);
-  
   if((tmp=IS_ABS(file)))
   {
     cwdbuf = (char *)xalloc(tmp+1);
@@ -746,6 +744,8 @@ static char *combine_path(char *cwd,char *file)
   }
 #endif
 
+  SET_ONERROR(err, free_nonull, cwdbuf);
+  
 #ifdef PIKE_DEBUG    
   if(!cwd)
     fatal("No cwd in combine_path!\n");
