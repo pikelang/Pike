@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: Shuffler.cmod,v 1.39 2004/10/16 00:25:26 nilsson Exp $
+|| $Id: Shuffler.cmod,v 1.40 2004/10/16 12:11:26 grubba Exp $
 */
 
 #include "global.h"
@@ -715,7 +715,7 @@ PIKECLASS Shuffle
     res = source_make( source, rstart, rlength );
 
     debug_malloc_touch( res );
-885e490
+
     SHUFFLE_DEBUG4("add_source(XX,%d,%d) --> %p\n", THIS,
 		  (int)rstart, (int)rlength, res );
     if( !res )
