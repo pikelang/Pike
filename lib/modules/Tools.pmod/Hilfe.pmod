@@ -4,7 +4,7 @@
 // Incremental Pike Evaluator
 //
 
-constant cvs_version = ("$Id: Hilfe.pmod,v 1.82 2002/06/25 15:59:05 nilsson Exp $");
+constant cvs_version = ("$Id: Hilfe.pmod,v 1.83 2002/06/30 23:12:12 nilsson Exp $");
 constant hilfe_todo = #"List of known Hilfe bugs/room for improvements:
 
 - Hilfe can not handle sscanf statements like
@@ -706,7 +706,7 @@ private constant termblock = (< "catch", "do", "gauge", "lambda", "class stop" >
 private constant modifier = (< "extern", "final", "inline", "local", "nomask",
 			       "optional", "private", "protected", "public",
 			       "static", "variant" >);
-private constant notype = (< "(", "->", "[", ":", ";", "+", "++", "-", "--",
+private constant notype = (< "(", ")", "->", "[", "]", ":", ";", "+", "++", "-", "--",
 			     "%", "*", "/", "&", "&&", "||", ",",
 			     "<", ">", "==", "=", "!=", "?",
 			     "+=", "-=", "%=", "/=", "&=", "|=",
@@ -1105,7 +1105,7 @@ class Evaluator {
       write = new;
   }
 
-  //! Removes an output function
+  //! Removes an output function.
   void remove_writer(object|function old) {
     if(arrayp(write))
       write -= ({ old });
@@ -1225,7 +1225,7 @@ class Evaluator {
     }
 
     // See if the command is executed in overridden mode.
-    if(command[0]=='.') {
+    if(sizeof(command) && command[0]=='.') {
       command = command[1..];
       if(commands[command]) {
 	commands[command]->exec(this_object(), s, words, tokens);
@@ -1420,14 +1420,14 @@ class Evaluator {
     //    werror("%O %O\n", (symbols?indices(symbols||(<>))*", ":0),
     //	   (next_symbols?indices(next_symbols||(<>))*", ":0) );
     p = _relocate(expr, symbols, next_symbols, p, safe_word, top);
-    werror("relocate %O %O\n", op, expr[op..p]);
+    werror(" relocate %O %O\n", op, expr[op..p]);
     return p;
   }
 #endif
 
   private int relocate( Expression expr, multiset(string) symbols,
-			 multiset(string) next_symbols, int p, void|string safe_word,
-			 void|int(0..1) top) {
+			multiset(string) next_symbols, int p, void|string safe_word,
+			void|int(0..1) top) {
 
     // Type declaration?
     int pos = expr->endoftype(p);
@@ -1506,7 +1506,6 @@ class Evaluator {
 	return p;
 
       // Rewrite variable
-      // FIXME: Possibly soft cast value to declare variable type.
       if(symbols[t]) {
 	if(types[expr[p]])
 	  expr[p] = "(([mapping(string:"+types[expr[p]]+")]___hilfe)->"+
@@ -1580,7 +1579,7 @@ class Evaluator {
 	    if(pos==sizeof(expr))
 	      return "Hilfe Error: Bug in constant handling. Please report this!\n";
 	  }
-	  add_hilfe_constant([string]expr[from..pos-1], expr[from]);
+	  add_hilfe_constant(expr[from..pos-1], expr[from]);
 	  pos++;
 	}
 
@@ -1589,13 +1588,13 @@ class Evaluator {
 
       case "class":
 	// FIXME: Unnamed create
-	add_hilfe_entity("class", [string]expr[1..], expr[1], programs);
+	add_hilfe_entity("class", expr[1..], expr[1], programs);
 	return 0;
     }
 
     int pos = expr->endoftype(0);
     if(pos>=0) {
-      string type = [string]expr[0..pos++];
+      string type = expr[..pos++];
 
       if( (< ";", ",", "=" >)[expr[pos+1]] ) {
 	// We are declaring the variable expr[pos]
@@ -1611,7 +1610,7 @@ class Evaluator {
 	  }
 	  if(constants[expr[from]])
 	    return "Hilfe Error: \"" + expr[from] + "\" already defined as constant.\n";
-	  add_hilfe_variable(type, [string]expr[from..pos-1], expr[from]);
+	  add_hilfe_variable(type, expr[from..pos-1], expr[from]);
 	  pos++;
 	}
 	return 0;
@@ -1621,7 +1620,7 @@ class Evaluator {
 	// We are defining the function expr[pos]
 	if(constants[expr[pos]])
 	  return "Hilfe Error: \"" + expr[pos] + "\" already defined as constant.\n";
-	add_hilfe_entity(type, [string]expr[pos..], expr[pos], functions);
+	add_hilfe_entity(type, expr[pos..], expr[pos], functions);
 	return 0;
       }
     }
