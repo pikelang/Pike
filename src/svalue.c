@@ -374,6 +374,7 @@ int svalue_is_true(struct svalue *s)
 	pop_stack();
 	return 1;
       } else {
+	pop_stack();
 	return 0;
       }
     }
