@@ -2,11 +2,11 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: mpz_glue.c,v 1.159 2004/02/17 08:41:11 mirar Exp $
+|| $Id: mpz_glue.c,v 1.160 2004/03/21 18:04:34 grubba Exp $
 */
 
 #include "global.h"
-RCSID("$Id: mpz_glue.c,v 1.159 2004/02/17 08:41:11 mirar Exp $");
+RCSID("$Id: mpz_glue.c,v 1.160 2004/03/21 18:04:34 grubba Exp $");
 #include "gmp_machine.h"
 #include "module.h"
 
@@ -60,9 +60,9 @@ long random(void)
 #define THIS ((MP_INT *)(fp->current_storage))
 #define THIS_PROGRAM (fp->context.prog)
 
-struct program *mpzmod_program;
+struct program *mpzmod_program = NULL;
 #ifdef AUTO_BIGNUM
-struct program *bignum_program;
+struct program *bignum_program = NULL;
 #endif
 
 #ifdef AUTO_BIGNUM
@@ -2031,6 +2031,11 @@ PIKE_MODULE_EXIT
 PIKE_MODULE_INIT
 {
 #if defined(USE_GMP) || defined(USE_GMP2)
+#ifdef PIKE_DEBUG
+  if (mpzmod_program) {
+    fatal("Gmp.mpz initialized twice!\n");
+  }
+#endif /* PIKE_DEBUG */
   start_new_program();
 
   MPZ_DEFS();
@@ -2055,6 +2060,11 @@ PIKE_MODULE_INIT
     int id;
     extern struct svalue auto_bignum_program;
 
+#ifdef PIKE_DEBUG
+    if (bignum_program) {
+      fatal("Gmp.bignum initialized twice!\n");
+    }
+#endif /* PIKE_DEBUG */
     /* This program autoconverts to integers, Gmp.mpz does not!!
      * magic? no, just an if statement :)              /Hubbe
      */
@@ -2079,6 +2089,11 @@ PIKE_MODULE_INIT
     mpz_neg (mpz_int_type_min, mpz_int_type_min);
     
     /* Magic hook in... */
+#ifdef PIKE_DEBUG
+    if (auto_bignum_program.type <= MAX_REF_TYPE) {
+      Pike_fatal("Strange initial value for auto_bignum_program\n");
+    }
+#endif /* PIKE_DEBUG */
     free_svalue(&auto_bignum_program);
     add_ref(auto_bignum_program.u.program = bignum_program);
     auto_bignum_program.type = PIKE_T_PROGRAM;
