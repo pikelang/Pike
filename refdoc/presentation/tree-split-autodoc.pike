@@ -1,5 +1,5 @@
 /*
- * $Id: tree-split-autodoc.pike,v 1.17 2001/08/27 20:51:49 nilsson Exp $
+ * $Id: tree-split-autodoc.pike,v 1.18 2001/11/01 19:01:07 nilsson Exp $
  *
  */
 
@@ -323,12 +323,12 @@ class Node
     res += make_navbar_really_low(root->module_children);
     if(sizeof(root->class_children))
       res += "<tr><td><br /><b>Classes</b></td></tr>\n" +
-	make_navbar_really_low(root->class_children);
+	make_navbar_really_low(root->class_children) + "<br />";
 
     if(root->appendix_children) {
       if(sizeof(root->appendix_children))
 	res += "<tr><td><br /><b>Appendices</b></td></tr>\n"+
-	  make_navbar_really_low(root->appendix_children);
+	  make_navbar_really_low(root->appendix_children) + "<br />";
     }
     else
       res += make_navbar_really_low(root->method_children);
