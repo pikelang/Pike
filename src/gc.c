@@ -29,7 +29,7 @@ struct callback *gc_evaluator_callback=0;
 
 #include "block_alloc.h"
 
-RCSID("$Id: gc.c,v 1.92 2000/06/12 13:51:58 mast Exp $");
+RCSID("$Id: gc.c,v 1.93 2000/06/12 19:32:40 mast Exp $");
 
 /* Run garbage collect approximately every time
  * 20 percent of all arrays, objects and programs is
@@ -79,8 +79,8 @@ RCSID("$Id: gc.c,v 1.92 2000/06/12 13:51:58 mast Exp $");
  * will be freed. That's done before the live object destruct pass.
  */
 
-/* #define GC_VERBOSE */
-/* #define GC_CYCLE_DEBUG */
+#define GC_VERBOSE
+#define GC_CYCLE_DEBUG
 
 #if defined(GC_VERBOSE) && !defined(PIKE_DEBUG)
 #undef GC_VERBOSE
@@ -145,7 +145,6 @@ struct callback *debug_add_gc_callback(callback_func call,
 #ifdef PIKE_DEBUG
 #define INIT_BLOCK(X)					\
   (X)->flags=(X)->refs=(X)->weak_refs=(X)->xrefs=0;	\
-  (X)->saved_refs=-1;					\
   (X)->cycle = (unsigned INT16) -1;			\
   (X)->link = (struct marker *) -1;
 #else
@@ -410,9 +409,9 @@ static void describe_marker(struct marker *m)
 {
   if (m)
     fprintf(stderr, "marker at %p: flags=0x%04x, refs=%d, weak=%d, "
-	    "xrefs=%d, saved=%d, cycle=%d, link=%p\n",
+	    "xrefs=%d, cycle=%d, link=%p\n",
 	    m, m->flags, m->refs, m->weak_refs,
-	    m->xrefs, m->saved_refs, m->cycle, m->link);
+	    m->xrefs, m->cycle, m->link);
   else
     fprintf(stderr, "no marker\n");
 }
@@ -767,7 +766,7 @@ void debug_gc_touch(void *a)
 		 "got missed by gc_do_free().\n");
       else if (m->flags & GC_GOT_EXTRA_REF)
 	gc_fatal(a, 2, "A thing still got an extra ref.\n");
-      else if (m->weak_refs >= m->saved_refs)
+      else if (m->weak_refs == -1)
 	gc_fatal(a, 3, "A thing which had only weak references is "
 		 "still around after gc.\n");
       else if (!(m->flags & GC_LIVE))
@@ -799,9 +798,6 @@ static INLINE struct marker *gc_check_debug(void *a)
 
   if (!*(INT32 *)a)
     gc_fatal(a, 1, "GC check on thing without refs.\n");
-  if(m->saved_refs != -1 && m->saved_refs != *(INT32 *)a)
-    gc_fatal(a, 1, "Refs changed in gc.\n");
-  m->saved_refs = *(INT32 *)a;
   if (m->refs + m->xrefs >= *(INT32 *) a)
     /* m->refs will be incremented by the caller. */
     gc_fatal(a, 1, "Thing is getting more internal refs than refs.\n");
@@ -828,14 +824,16 @@ INT32 real_gc_check_weak(void *a)
   struct marker *m;
 #ifdef PIKE_DEBUG
   if (!(m = gc_check_debug(a))) return 0;
-#else
-  m = get_marker(a);
-#endif
-  m->weak_refs++;
-#ifdef PIKE_DEBUG
+  if (m->weak_refs == -1)
+    gc_fatal(a, 1, "Thing has already reached threshold for weak free.\n");
   if (m->weak_refs > m->refs + 1)
     gc_fatal(a, 1, "Thing has gotten more weak refs than internal refs.\n");
-  if (m->weak_refs == m->saved_refs) weak_freed++;
+  m->weak_refs++;
+  if (m->weak_refs >= *(INT32 *) a)
+    m->weak_refs = -1;
+#else
+  m = get_marker(a);
+  m->weak_refs++;
 #endif
   return add_ref(m);
 }
@@ -923,20 +921,6 @@ void locate_references(void *a)
 
 #ifdef PIKE_DEBUG
 
-void debug_gc_check_count_free(void *a)
-{
-  struct marker *m;
-  if (Pike_in_gc == GC_PASS_CHECK && (m = find_marker(a))) {
-   if(m->saved_refs == -1)
-     m->saved_refs = *(INT32 *)a - 1;
-   else {
-     if (m->saved_refs != *(INT32 *)a)
-       gc_fatal(a, 1, "Refs changed in gc.\n");
-     m->saved_refs--;
-   }
-  }
-}
-
 void gc_add_extra_ref(void *a)
 {
   struct marker *m = get_marker(a);
@@ -1007,9 +991,7 @@ int gc_external_mark3(void *a, void *in, char *where)
   m=get_marker(a);
   m->xrefs++;
   m->flags|=GC_XREFERENCED;
-  if(m->refs + m->xrefs > *(INT32 *)a ||
-     (Pike_in_gc == GC_PASS_CHECK &&
-      m->saved_refs != -1 && m->saved_refs != *(INT32 *)a))
+  if(m->refs + m->xrefs > *(INT32 *)a)
     gc_fatal(a, 1, "Ref counts are wrong.\n");
   return 0;
 }
@@ -1028,12 +1010,12 @@ int gc_do_weak_free(void *a)
   else m = get_marker(a);
   debug_malloc_touch(a);
 
-  if (m->weak_refs > m->saved_refs)
-    gc_fatal(a, 0, "More weak references than references.\n");
   if (m->weak_refs > m->refs)
     gc_fatal(a, 0, "More weak references than internal references.\n");
+  if (m->weak_refs >= *(INT32 *) a)
+    gc_fatal(a, 0, "Thing got only weak refs but real_gc_check_weak() missed it.\n");
 
-  return m->weak_refs >= *(INT32 *) a;
+  return m->weak_refs == -1;
 }
 
 #endif /* PIKE_DEBUG */
@@ -1196,7 +1178,12 @@ int gc_cycle_push(void *x, struct marker *m, int weak)
   if (weak >= 0) gc_rec_last->flags |= GC_FOLLOWED_NONSTRONG;
 #endif
 
-  if (m->flags & GC_RECURSING) { /* A cycle is found. */
+  if (m->flags & GC_RECURSING) { /* A cyclic reference is found. */
+#ifdef PIKE_DEBUG
+    if (m == &rec_list || gc_rec_last == &rec_list)
+      gc_fatal(x, 0, "Cyclic ref involves dummy rec_list marker.\n");
+#endif
+
     if (m != gc_rec_last) {
       struct marker *p, *weak_ref = 0, *nonstrong_ref = 0;
       if (!weak) {
@@ -1276,15 +1263,16 @@ int gc_cycle_push(void *x, struct marker *m, int weak)
 	/* It might be a reference to a marker that has been swapped
 	 * further down the list by break_cycle(). In that case we
 	 * must mark this path to stay on the list. */
+	struct marker *q = 0;
 	CYCLE_DEBUG_MSG(m, "gc_cycle_push, forward ref");
-	for (p = rec_list.link; !(p->flags & GC_DONT_POP); p = p->link)
-	  if (p == gc_rec_last) goto dont_stay_on_list;
-	for (;; p = p->link) {
-	  p->flags |= GC_DONT_POP;
-	  CYCLE_DEBUG_MSG(p, "gc_cycle_push, mark for don't pop");
-	  if (p == gc_rec_last) break;
-	}
-      dont_stay_on_list:
+	for (p = rec_list.link; p != gc_rec_last; p = p->link)
+	  if (p->flags & GC_DONT_POP) q = p;
+	if (q)
+	  for (p = q->link;; p = p->link) {
+	    p->flags |= GC_DONT_POP;
+	    CYCLE_DEBUG_MSG(p, "gc_cycle_push, mark for don't pop");
+	    if (p == gc_rec_last) break;
+	  }
       }
     }
   }
@@ -1400,6 +1388,10 @@ void gc_cycle_pop(void *a)
 #endif
 
   if (m->flags & GC_DONT_POP) {
+#ifdef PIKE_DEBUG
+    if (!m->link)
+      gc_fatal(a, 0, "Found GC_DONT_POP marker on top of stack.\n");
+#endif
     CYCLE_DEBUG_MSG(m, "gc_cycle_pop, keep on stack");
     return;
   }
