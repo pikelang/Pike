@@ -189,7 +189,7 @@ install:
 	      mv $(exec_prefix)/hilfe $(exec_prefix)/hilfe.old; \
 	    else : ; fi && \
 	    sed -e 's!/usr/local/bin!$(exec_prefix)!' <$(SRCDIR)/../bin/hilfe \
-	      >$(exec_prefix)/hilfe || exit 1\
+	      >$(exec_prefix)/hilfe || exit 1; \
 	  else \
 	    $(INSTALL) $(SRCDIR)/../bin/hilfe $(exec_prefix) || exit 1; \
 	  fi; \
