@@ -1,6 +1,6 @@
 #! /usr/bin/env pike
 
-/* $Id: test_pike.pike,v 1.96 2004/04/23 15:20:22 grubba Exp $ */
+/* $Id: test_pike.pike,v 1.97 2004/04/23 15:47:59 grubba Exp $ */
 
 #if !constant(_verify_internals)
 #define _verify_internals()
@@ -212,9 +212,10 @@ int main(int argc, array(string) argv)
   int e, verbose, prompt, successes, errors, t, check, asmdebug;
   int skipped;
   array(string) tests;
+  array(string) forked;
   program testprogram;
   int start, fail, mem;
-  int forked, loop=1;
+  int loop=1;
   int end=0x7fffffff;
   string extra_info="";
   int shift;
@@ -305,7 +306,17 @@ int main(int argc, array(string) argv)
 	case "start": start=foo(opt[1]); start--; break;
 	case "end": end=foo(opt[1]); break;
 	case "fail": fail=1; break;
-        case "forked": forked=1; break;
+        case "forked": {
+ 	  array(string) orig_argv = backtrace()[0][3];
+	  int i = search(orig_argv, argv[0]);
+	  if (i < 0) {
+	    werror("Forked operation failed: Failed to find %O in %O\n",
+		   argv[0], orig_argv);
+	    break;
+	  }
+	  forked = orig_argv[..i];
+	  break;
+	}
 	case "loop": loop=foo(opt[1]); break;
 	case "trace": t+=foo(opt[1]); break;
 	case "check": check+=foo(opt[1]); break;
@@ -347,6 +358,27 @@ int main(int argc, array(string) argv)
 #endif
       }
     }
+
+  if (forked) {
+    if (!use_watchdog) forked += ({ "--no-watchdog" });
+    if (!maybe_tty) forked += ({ "--notty" });
+    if (verbose) forked += ({ "--verbose=" + verbose });
+    if (prompt) forked += ({ "--prompt=" + prompt });
+    if (start) forked += ({ "--start-test=" + (start+1) });
+    // FIXME: end handling is not quite correct.
+    if (end != 0x7fffffff) forked += ({ "--end-after=" + end });
+    if (fail) forked += ({ "--fail" });
+    // forked is handled here.
+    // loop is handled here.
+    if (t) forked += ({ "--trace=" + t });
+    if (check) forked += ({ "--check=" + check });
+    if (asmdebug) forked += ({ "--asm=" + asmdebug });
+    if (mem) forked += ({ "--memory" });
+    // auto already handled.
+    if (all_constants()->regression) forked += ({ "--regression" });
+    // debug port not propagated.
+    //werror("forked:%O\n", forked);
+  }
 
   add_constant("_verbose", verbose);
   if(verbose)
@@ -398,29 +430,10 @@ int main(int argc, array(string) argv)
   {
     successes=errors=0;
     if (forked) {
-      array(string) args = ({ argv[0] });
-      if (!use_watchdog) args += ({ "--no-watchdog" });
-      if (!maybe_tty) args += ({ "--notty" });
-      if (verbose) args += ({ "--verbose=" + verbose });
-      if (prompt) args += ({ "--prompt=" + prompt });
-      if (start) args += ({ "--start-test=" + (start+1) });
-      // FIXME: end handling is not quite correct.
-      if (end != 0x7fffffff) args += ({ "--end-after=" + end });
-      if (fail) args += ({ "--fail" });
-      // forked is handled here.
-      // loop is handled here.
-      if (t) args += ({ "--trace=" + t });
-      if (check) args += ({ "--check=" + check });
-      if (asmdebug) args += ({ "--asm=" + asmdebug });
-      if (mem) args += ({ "--memory" });
-      // auto already handled.
-      if (all_constants()->regression) args += ({ "--regression" });
-      // debug port not propagated.
-      werror("args:%O\n", args);
       foreach(testsuites, string testsuite) {
 	Stdio.File p = Stdio.File();
 	object pid =
-	  Process.create_process(args + ({ testsuite }),
+	  Process.create_process(forked + ({ testsuite }),
 				 ([ "stdout":p->pipe(Stdio.PROP_IPC) ]));
 	string raw_results;
 	string results = lower_case(raw_results = p->read());
