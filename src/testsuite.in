@@ -1,4 +1,4 @@
-test_true([["$Id: testsuite.in,v 1.634 2003/04/08 14:23:16 mast Exp $"]]);
+test_true([["$Id: testsuite.in,v 1.635 2003/04/08 15:10:18 mast Exp $"]]);
 
 // This triggered a bug only if run sufficiently early.
 test_compile_any([[#pike 7.2]])
@@ -798,6 +798,105 @@ test_program([[
 ]]);
 test_program([[
   inherit Thread.Mutex : monitor;
+  int dummy;
+  int f (int x)
+  {
+    if(monitor::trylock(1))
+      return 0;
+    return x;
+  };
+  int a()
+  {
+    object key = monitor::lock();
+    int res = this->f (1); // F_CALL_OTHER (no `->)
+    dummy = random (res);
+    return res;
+  }
+]]);
+test_program([[
+  inherit Thread.Mutex : monitor;
+  mixed `-> (string what) {return this[what];}
+  int dummy;
+  int f (int x)
+  {
+    if(monitor::trylock(1))
+      return 0;
+    return x;
+  };
+  int a()
+  {
+    object key = monitor::lock();
+    int res = this->f (1); // F_CALL_OTHER (with `->)
+    dummy = random (res);
+    return res;
+  }
+]]);
+test_program([[
+  inherit Thread.Mutex : monitor;
+  int res = 0;
+  void f (int x)
+  {
+    if(monitor::trylock(1))
+      res = 0;
+    else
+      res = x;
+  };
+  int a()
+  {
+    object key = monitor::lock();
+    this->f (1); // F_CALL_OTHER_AND_POP (no `->)
+    return res;
+  }
+]]);
+test_program([[
+  inherit Thread.Mutex : monitor;
+  mixed `-> (string what) {return this[what];}
+  int res = 0;
+  void f (int x)
+  {
+    if(monitor::trylock(1))
+      res = 0;
+    else
+      res = x;
+  };
+  int a()
+  {
+    object key = monitor::lock();
+    this->f (1); // F_CALL_OTHER_AND_POP (with `->)
+    return res;
+  }
+]]);
+test_program([[
+  inherit Thread.Mutex : monitor;
+  int f (int x)
+  {
+    if(monitor::trylock(1))
+      return 0;
+    return x;
+  };
+  int a()
+  {
+    object key = monitor::lock();
+    return this->f (1); // F_CALL_OTHER_AND_RETURN (no `->)
+  }
+]]);
+test_program([[
+  inherit Thread.Mutex : monitor;
+  mixed `-> (string what) {return this[what];}
+  int f (int x)
+  {
+    if(monitor::trylock(1))
+      return 0;
+    return x;
+  };
+  int a()
+  {
+    object key = monitor::lock();
+    return this->f (1); // F_CALL_OTHER_AND_RETURN (with `->)
+  }
+]]);
+test_program([[
+  inherit Thread.Mutex : monitor;
   int iter = 0;
   int a (void|int x)
   {
@@ -930,6 +1029,111 @@ test_program([[
 ]]);
 test_program([[
   inherit Thread.Mutex : monitor;
+  int dummy;
+  int f (int x)
+  {
+    if(monitor::trylock(1))
+      return 0;
+    return x;
+  };
+  int a()
+  {
+    int res;
+    foreach (({0, monitor::lock()}), mixed m) {
+      res = this->f (1); // F_CALL_OTHER (no `->)
+      dummy = random (res);
+      return res;
+    }
+  }
+]]);
+test_program([[
+  inherit Thread.Mutex : monitor;
+  mixed `-> (string what) {return this[what];}
+  int dummy;
+  int f (int x)
+  {
+    if(monitor::trylock(1))
+      return 0;
+    return x;
+  };
+  int a()
+  {
+    int res;
+    foreach (({0, monitor::lock()}), mixed m) {
+      res = this->f (1); // F_CALL_OTHER (with `->)
+      dummy = random (res);
+      return res;
+    }
+  }
+]]);
+test_program([[
+  inherit Thread.Mutex : monitor;
+  int res = 0;
+  void f (int x)
+  {
+    if(monitor::trylock(1))
+      res = 0;
+    else
+      res = x;
+  };
+  int a()
+  {
+    foreach (({0, monitor::lock()}), mixed m) {
+      this->f (1); // F_CALL_OTHER_AND_POP (no `->)
+      return res;
+    }
+  }
+]]);
+test_program([[
+  inherit Thread.Mutex : monitor;
+  mixed `-> (string what) {return this[what];}
+  int res = 0;
+  void f (int x)
+  {
+    if(monitor::trylock(1))
+      res = 0;
+    else
+      res = x;
+  };
+  int a()
+  {
+    foreach (({0, monitor::lock()}), mixed m) {
+      this->f (1); // F_CALL_OTHER_AND_POP (with `->)
+      return res;
+    }
+  }
+]]);
+test_program([[
+  inherit Thread.Mutex : monitor;
+  int f (int x)
+  {
+    if(monitor::trylock(1))
+      return 0;
+    return x;
+  };
+  int a()
+  {
+    foreach (({0, monitor::lock()}), mixed m)
+      return this->f (1); // F_CALL_OTHER_AND_RETURN (no `->)
+  }
+]]);
+test_program([[
+  inherit Thread.Mutex : monitor;
+  mixed `-> (string what) {return this[what];}
+  int f (int x)
+  {
+    if(monitor::trylock(1))
+      return 0;
+    return x;
+  };
+  int a()
+  {
+    foreach (({0, monitor::lock()}), mixed m)
+      return this->f (1); // F_CALL_OTHER_AND_RETURN (with `->)
+  }
+]]);
+test_program([[
+  inherit Thread.Mutex : monitor;
   int iter = 0;
   int a (void|int x)
   {
@@ -1055,6 +1259,85 @@ test_program([[
         function s = lambda () {return x;};
 	return f (1); // F_APPLY_AND_RETURN
       }")()->g();
+  }
+]]);
+test_program([[
+  int dummy;
+  int f (int x)
+  {
+    return x;
+  };
+  int a (void|int x)
+  {
+    function s = lambda () {return x;};
+    int res = this->f (1); // F_CALL_OTHER (no `->)
+    dummy = random (res);
+    return res;
+  }
+]]);
+test_program([[
+  mixed `-> (string what) {return this[what];}
+  int dummy;
+  int f (int x)
+  {
+    return x;
+  };
+  int a (void|int x)
+  {
+    function s = lambda () {return x;};
+    int res = this->f (1); // F_CALL_OTHER (with `->)
+    dummy = random (res);
+    return res;
+  }
+]]);
+test_program([[
+  int res = 0;
+  void f (int x)
+  {
+    res = x;
+  };
+  int a (void|int x)
+  {
+    function s = lambda () {return x;};
+    this->f (1); // F_CALL_OTHER_AND_POP (no `->)
+    return res;
+  }
+]]);
+test_program([[
+  mixed `-> (string what) {return this[what];}
+  int res = 0;
+  void f (int x)
+  {
+    res = x;
+  };
+  int a (void|int x)
+  {
+    function s = lambda () {return x;};
+    this->f (1); // F_CALL_OTHER_AND_POP (with `->)
+    return res;
+  }
+]]);
+test_program([[
+  int f (int x)
+  {
+    return x;
+  };
+  int a (void|int x)
+  {
+    function s = lambda () {return x;};
+    return this->f (1); // F_CALL_OTHER_AND_RETURN (no `->)
+  }
+]]);
+test_program([[
+  mixed `-> (string what) {return this[what];}
+  int f (int x)
+  {
+    return x;
+  };
+  int a (void|int x)
+  {
+    function s = lambda () {return x;};
+    return this->f (1); // F_CALL_OTHER_AND_RETURN (with `->)
   }
 ]]);
 test_program([[
