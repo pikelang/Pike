@@ -230,8 +230,8 @@ static void port_bind(INT32 args)
     {
       fp->current_object->refs++;
       set_read_callback(fd, port_accept_callback, (void *)THIS);
+      set_nonblocking(fd,1);
     }
-    set_nonblocking(fd,1);
   }
 
   THIS->fd=fd;
@@ -268,8 +268,8 @@ static void port_create(INT32 args)
 	  {
 	    fp->current_object->refs++;
 	    set_read_callback(THIS->fd, port_accept_callback, (void *)THIS);
+	    set_nonblocking(THIS->fd,1);
 	  }
-	  set_nonblocking(THIS->fd,1);
 	}
       }
     }
