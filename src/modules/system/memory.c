@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: memory.c,v 1.21 2003/06/02 20:27:07 nilsson Exp $
+|| $Id: memory.c,v 1.22 2003/09/20 19:32:16 nilsson Exp $
 */
 
 /*! @module System
@@ -19,7 +19,7 @@
  *!	Don't blame Pike if you shoot your foot off.
  */
 #include "global.h"
-RCSID("$Id: memory.c,v 1.21 2003/06/02 20:27:07 nilsson Exp $");
+RCSID("$Id: memory.c,v 1.22 2003/09/20 19:32:16 nilsson Exp $");
 
 #include "system_machine.h"
 
@@ -51,6 +51,10 @@ RCSID("$Id: memory.c,v 1.21 2003/06/02 20:27:07 nilsson Exp $");
 #include <sys/shm.h>
 #endif
 
+#ifdef HAVE_WINDOWS_H
+#include <windows.h>
+#define WIN32SHM
+#endif
 
 /* something on AIX defines these */
 #ifdef T_INT
@@ -122,6 +126,13 @@ static void MEMORY_FREE( struct memory_storage *storage )
 #ifdef HAVE_SYS_SHM_H
   else if( storage->flags & MEM_FREE_SHMDEL )
     shmdt( storage->p );
+#endif
+#ifdef WIN32SHM
+  else if( storage->flags & MEM_FREE_SHMDEL )
+  {
+    UnmapViewOfFile( storage->p );
+    CloseHandle( (HANDLE)storage->extra );
+  }
 #endif
   storage->flags = 0;
   storage->p = 0;
@@ -230,7 +241,38 @@ static void memory_shm( INT32 args )
   pop_n_elems(args);
   push_int(1);
 #else /* HAVE_MMAP */
+#ifdef WIN32SHM
+  {
+    HANDLE handle;
+    char id[4711];
+    sprintf( id, "pike.%d", Pike_sp[-args].u.integer );
+    THIS->size = Pike_sp[1-args].u.integer;
+    THIS->flags = MEM_READ|MEM_WRITE|MEM_FREE_SHMDEL;
+    pop_n_elems(args);
+
+    handle = CreateFileMapping(INVALID_HANDLE_VALUE, NULL, PAGE_READWRITE,
+			       0, THIS->size, id);
+    if( handle != NULL )
+    {
+      THIS->extra = (void*)handle;
+      THIS->p = MapViewOfFile(handle,FILE_MAP_WRITE|FILE_MAP_READ,0,0,0);
+      if( !THIS->p )
+      {
+	THIS->flags = 0;
+	CloseHandle( handle );
+	Pike_error("Failed to create segment\n");
+      }
+    }
+    else
+    {
+	THIS->flags = 0;
+	CloseHandle( handle );
+	Pike_error("Failed to create segment\n");
+    }
+  }
+#else
    Pike_error("Memory.shmat(): system has no shmat() (sorry)\n");
+#endif
 #endif
 }
 
@@ -278,7 +320,7 @@ static void memory__mmap(INT32 args,int complain,int private)
       f_call_function(1);
       if (sp[-1].type!=T_INT)
 	 SIMPLE_BAD_ARG_ERROR("Memory.mmap",1,
-			      "(string or) Stdio.File (wierd query_fd)");
+			      "(string or) Stdio.File (weird query_fd)");
       fd=sp[-1].u.integer;
       sp--;
       if (fd<0) {
@@ -510,11 +552,10 @@ static void memory_cast(INT32 args)
       sv=ITEM(a);
       for (i=0; i<sz; i++)
       {
-	 sv->type=T_INT;
-	 sv->subtype=0;
 	 sv->u.integer=(((unsigned char*)(THIS->p)))[i];
 	 sv++;
       }
+      a->type_field = BIT_INT;
 
       push_array(a);
 
@@ -895,7 +936,7 @@ void init_system_memory(void)
 			   tOr(tIntPos,tVoid) tOr(tIntPos,tVoid),tVoid),
 		     tFunc(tIntPos tOr(tByte,tVoid),tVoid)), 0);
 
-#ifdef HAVE_SYS_SHM_H
+#if defined(HAVE_SYS_SHM_H) || defined(WIN32SHM)
    ADD_FUNCTION("shmat", memory_shm, tFunc(tInt tInt, tInt), 0 );
 #endif
 
