@@ -5,7 +5,7 @@
 \*/
 /**/
 #include "global.h"
-RCSID("$Id: object.c,v 1.157 2001/01/17 14:01:28 mast Exp $");
+RCSID("$Id: object.c,v 1.158 2001/01/18 09:33:35 mast Exp $");
 #include "object.h"
 #include "dynamic_buffer.h"
 #include "interpret.h"
@@ -635,6 +635,7 @@ PMOD_EXPORT void destruct(struct object *o)
 
 struct object *objects_to_destruct = 0;
 static struct callback *destruct_object_evaluator_callback =0;
+static int in_destruct_objects_to_destruct = 0;
 
 /* This function destructs the objects that are scheduled to be
  * destructed by schedule_really_free_object. It links the object back into the
@@ -649,6 +650,10 @@ PMOD_EXPORT void destruct_objects_to_destruct(void)
   if (Pike_in_gc > GC_PASS_PREPARE && Pike_in_gc < GC_PASS_KILL)
     fatal("Can't meddle with the object link list in gc pass %d.\n", Pike_in_gc);
 #endif
+
+  if(in_destruct_objects_to_destruct)
+    return;
+  in_destruct_objects_to_destruct = 1;
 
   while((o=objects_to_destruct))
   {
@@ -676,6 +681,8 @@ PMOD_EXPORT void destruct_objects_to_destruct(void)
     remove_callback(destruct_object_evaluator_callback);
     destruct_object_evaluator_callback=0;
   }
+
+  in_destruct_objects_to_destruct = 0;
 }
 
 
