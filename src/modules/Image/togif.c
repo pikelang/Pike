@@ -4,14 +4,14 @@ togif
 
 Pontus Hagland, law@infovav.se
 
-$Id: togif.c,v 1.16 1997/09/01 14:18:17 per Exp $ 
+$Id: togif.c,v 1.17 1997/10/07 03:33:33 grubba Exp $ 
 
 */
 
 /*
 **! module Image
 **! note
-**!	$Id: togif.c,v 1.16 1997/09/01 14:18:17 per Exp $<br>
+**!	$Id: togif.c,v 1.17 1997/10/07 03:33:33 grubba Exp $<br>
 **! class image
 */
 
@@ -89,6 +89,9 @@ static int floyd_steinberg_add(rgbl_group *errl,
 			       struct colortable *ct,
 			       int closest)
 {
+  /* NOTE:
+   *	This code MUST be MT-SAFE!
+   */
    rgb_group rgb2,rgb3;
    rgbl_group cerr;
    int c;
