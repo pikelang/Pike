@@ -5,8 +5,7 @@ AC_PROG_CC
 AC_PROG_RANLIB
 AC_SUBST(RANLIB)
 
-AC_CHECK_HEADERS(readline.h)
-AC_CHECK_HEADERS(history.h)
+AC_CHECK_HEADERS(readline.h history.h readline/readline.h history/history.h)
 AC_CHECK_LIB(termcap, tputs)
 AC_CHECK_LIB(readline, readline)
 
