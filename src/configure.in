@@ -1,4 +1,4 @@
-AC_REVISION("$Id: configure.in,v 1.294 1999/05/30 20:11:12 mirar Exp $")
+AC_REVISION("$Id: configure.in,v 1.295 1999/05/30 20:45:02 grubba Exp $")
 AC_INIT(interpret.c)
 AC_CONFIG_HEADER(machine.h)
 
@@ -265,6 +265,68 @@ if test "$GCC" = "yes" -a "$pike_cv_sys_os" = "Solaris" -a "`uname -p`" = "sparc
   fi
   unset gcc_ld_path
 
+
+  # Watch out for gcc-2.8.1 on Solaris 7 sparc machines. It generates
+  # assembler code which contains .uaword directives, which in turn
+  # generates code with R_SPARC_UA32 relocations, which /usr/bin/ld.so
+  # has buggy support for (it doesn't relocate the MSB).
+
+  #  Check that gcc doesn't generate uaword opcodes
+  AC_MSG_CHECKING(if your gcc generates uaword opcodes)
+  AC_CACHE_VAL(pike_cv_gcc_uaword, [
+    cat > conftest.c <<EOF    
+char *foo[[]] = { "bar" };
+EOF
+    pike_compile='${CC-cc} -S $CFLAGS $CPPFLAGS conftest.c 1>&5'
+    pike_cv_gcc_uaword=no
+    if { (eval echo configure: \"$pike_compile\") >&5; (eval $pike_compile) 2>&5; }; then
+      if grep ".uaword" conftest.s 2>&5 >/dev/null; then
+        echo "configure: result contains .uaword:" >&5
+	cat conftest.s >&5
+        pike_cv_gcc_uaword=yes
+      else :; fi
+    else
+      echo "configure: failed program was:" >&5
+      cat conftest.c >&5
+    fi
+    rm -rf conftest.*
+  ])
+  AC_MSG_RESULT(pike_cv_gcc_uaword)
+
+  # Check if as generates R_SPARC_UA32 relocations from .uaword.
+  if test "$pike_cv_gcc_uaword" = "yes"; then
+    AC_MSG_CHECKING([if your as generates R_SPARC_UA32 relocations])
+    AC_CACHE_VAL(pike_cv_as_r_sparc_ua32, [
+      AC_TRY_ASSEMBLE([
+.section	".rodata"
+	.align 8
+.STRING:
+	.asciz	"String"
+.section	".data"
+	.align 4
+	.type	string,#object
+	.size	string,4
+string:
+	.uaword	.STRING
+      ],[
+        if /usr/ccs/bin/elfdump -r conftest.o | grep -i R_SPARC_UA32 >/dev/null 2>&AC_FD_CC; then
+	  pike_cv_ac_r_sparc_ua32=yes
+	else
+	  pike_cv_ac_r_sparc_ua32=no
+	fi
+      ],[
+        pike_cv_ac_r_sparc_ua32=no
+      ])
+    ])
+    AC_MSG_RESULT($pike_cv_ac_r_sparc_ua32)
+    if test "$pike_cv_ac_r_sparc_ua32" = "yes"; then
+      AC_MSG_WARN([Your gcc/as combination may generate R_SPARC_UA32 relocations.])
+      AC_MSG_WARN([R_SPARC_UA32 relocations are unsupported in Solaris >= 2.4])
+      AC_MSG_WARN([You may want to consider backing out patch 107058-01, or])
+      AC_MSG_WARN([recompile your gcc with a modified config/sparc/sol2.h.])
+      exit 1
+    else :; fi
+  else :; fi
 else :; fi
 
 #############################################################################
