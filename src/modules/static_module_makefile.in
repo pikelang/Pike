@@ -1,5 +1,5 @@
 #
-# $Id: static_module_makefile.in,v 1.23 1998/02/11 00:42:13 hubbe Exp $
+# $Id: static_module_makefile.in,v 1.24 1998/02/20 00:43:17 hubbe Exp $
 #
 
 
@@ -18,7 +18,7 @@ subdirs:
 	@for a in '' $(MODULE_SUBDIRS) ; do if test ! -z "$$a"; then echo making $$a ; ( cd $$a && $(MAKE) $(MAKE_FLAGS) ) || exit $$? ; else :; fi ; done
 
 dummy:	linker_options modlist_headers modlist_segment module.pmod module.a
-	tmp="$(INSTALL_NAME)" ;\
+	@tmp="$(INSTALL_NAME)" ;\
 	if test x$$tmp = x ; then tmp="$(MODNAME)"; else :; fi ;\
 	$(INSTALL) module.pmod $(TMP_LIBDIR)/modules/$$tmp.pmod
 
