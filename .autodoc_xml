@@ -61,7 +61,7 @@ For example, the top module is mapped to a skeletal element in each XML
 file extracted from a single source file. To get from state 2 to state 3 
 in the list above, all XML files are merged into one big. All the elements
 that a module or class map to are merged into one, and if one of those 
-elements contains documentation (=is a content emlement), then that
+elements contains documentation (=is a content element), then that
 documentation becomes a child of the merger of the elements.
 
 ======================================================================
@@ -86,7 +86,11 @@ has two member variables, a and b, that are documented as a group:
           ... perhaps some info on inherits, members &c ...
 
         <docgroup homogen-type="variable">
-          <variable>
+          <variable name="a"><type><int/></type></variable>
+          <variable name="b"><type><int/></type></variable>
+          <doc> 
+            ... documentation for Module.Class.a and Module.Class.b ...
+          </doc>
         </docgroup>
 
         <doc>
@@ -96,3 +100,241 @@ has two member variables, a and b, that are documented as a group:
     </module>
   </module>
 
+If all the children of a <docgroup> are of the same type, e.g. all are <method> 
+elements, then the <docgroup> has the attribute homogen-type (="method" in the 
+example). If all the children have identical name="..." attributes, then the 
+<docgroup> gets a homogen-name="..." attribute aswell.
+
+The <docgroup> has a <doc> child containing the docmentation for the other 
+children of the <docgroup>. An entity that cannot be grouped (class, module,
+enum), has a <doc> child of its own instead.
+
+======================================================================
+d) Pike entities
+----------------------------------------------------------------------
+
+Pike entities - classes, modules, methods, variables, constants, &c, have some
+things in common, and many parts of the xml format are the same for all of
+these entities. All entities are represented with an XML element, namely one of:
+
+  <class>
+  <constant>
+  <enum>
+  <inherit>
+  <method>
+  <modifier>    
+  <module>
+  <typedef>
+  <variable> 
+
+The names speak for themselves, except: <modifier> which is used for modifier 
+ranges: 
+
+  //! Some variables:
+  static nomask { 
+    int x, y; 
+
+    string n;  
+  }
+
+A Pike entity may also have the following properties:
+
+  Name - Given as a name="..." attribute:
+    <variable name="i"> ... </variable>
+
+  Modifiers - Given as a child element <modifiers>:
+    <variable name="i">
+      <modifiers>
+        <optional/><static/><private/>
+      </modifiers>
+      ...
+    </variable>
+  If there are no modifiers before the declaration of the entity, the
+  <modifiers> element can be omitted.
+
+  Source position - Given as a child element <source-position>:
+    <variable name="i">
+      <source-position file="/home/rolf/hejhopp.pike" first-line="12"/>
+      <modifiers>
+        <optional/><static/><private/>
+      </modifiers>
+      ...
+    </variable>
+  The source position is the place in the code tree where the entity is 
+  declared or defined. For a method, the attribute last-line="..." can be
+  added to <source-position> to give the range of lines that the method 
+  body spans in the source code.
+
+And then there are some things that are specific to each of the types of
+entities:
+
+<class>
+   All inherits of the class are given as child elements <inherit>. If there
+   is doc for the inherits, the <inherit> is repeated inside the appropriate 
+   <docgroup>:
+
+     class Bosse { 
+       inherit "arne.pike" : Arne; 
+       inherit Benny;   
+
+       //! Documented inherit
+       inherit Sven;
+     }
+
+     <class name="Bosse">
+       <inherit name="Arne"><source-position ... />
+                            <classname>"arne.pike"</classname></inherit>
+       <inherit><source-position ... />
+                <classname>Benny</classname></inherit>
+       <inherit><source-position ... />
+                <classname>Sven</classname></inherit>
+       <docgroup homogen-type="inherit">
+         <doc>
+           <text><p>Documented inherit</p></text>
+         </doc>
+         <inherit><source-position ... />
+                  <classname>Sven</classname></inherit>
+       </docgroup>
+       ...
+     </class>
+ 
+<constant>
+   Only has a name. The element is empty (or has a <source-position> child.)
+
+<enum>
+   Works as a container ... ???
+
+<inherit> 
+   The name="..." attribute gives the name after the colon, if any. The name
+   of the inherited class is given in a <classname> child. If a file name is
+   used, the class name is the file name surrounded by quotes (see <class>).
+
+<method>
+   The arguments are given inside an <arguments> child. Each argument is 
+   given as an <argument name="..."> element. Each <argument> has a <type>
+   child, with the type of the argument. The return type of the method is 
+   given inside a <returntype> container:
+
+     int a(int x, int y);
+  
+     <method name="a">
+       <arguments>
+         <argument name="x"><type><int/></type></argument>
+         <argument name="y"><type><int/></type></argument>
+       </arguments>
+       <returntype><int/></returntype>
+     </method>
+                 
+<modifier>
+   Works as a container ... ???
+
+<module>
+   Works just like <class>.
+
+<typedef>
+   The type is given in a <type> child:
+
+     typedef float Boat;
+     
+     <typedef name="Boat"><type><float/></type></typedef>
+
+<variable>
+   The type of the variable is given in a <type> child:
+     
+     int x;
+
+     <variable name="x"><type><int/></type></variable>
+
+======================================================================
+e) Pike types
+----------------------------------------------------------------------
+
+Above we have seen the types int and float represented as <int/> and <float/>.
+Some of the types are complex, some are simple. The simpler types are just on
+the form <foo/>:
+
+  <float/>
+  <mixed/>
+  <program/>
+  <string/>
+  <void/>
+
+The same goes for mapping, array, function, object, multiset, &c that have 
+no narrowing type qualification: <mapping/>, <array/>, <function/> ...
+
+The complex types are represented as follows:
+
+array
+   If the type of the elements of the array is specified it is given in a
+   <valuetype> child element:
+
+     array(int) 
+ 
+     <array><valuetype><int/></valuetype></array>
+
+function
+   The types of the arguments and the return type are given (the order 
+   of the <argtype> elements is significant, of course):
+
+     function(int, string: mixed)
+
+     <function>
+       <argtype><int/></argtype>
+       <argtype><string/></argtype>
+       <returntype><mixed/></returntype>
+     </function>
+   
+int
+   An int type can have a min and/or max value. The values can be numbers or
+   identifiers:
+
+     int(0..MAX)
+   
+     <int><min>0</min><max>MAX</max></int>
+
+mapping
+   The types of the indices and values are given:
+
+     mapping(int:int)
+
+     <mapping>
+       <indextype><int/></indextype>
+       <valuetype><int/></valuetype>
+
+multiset
+   The type of the indices is given:
+  
+     multiset(string)
+
+     <multiset>
+       <indextype><string/></indextype>
+     </multiset>
+
+object 
+   If the program/class is specified, it is given as the text child of 
+   the <object> element:
+
+     object(Foo.Bar.Ippa)
+
+     <object>Foo.Bar.Ippa</object>
+
+Then there are two special type constructions. A disjunct type is written
+with the <or> element:
+
+  string|int
+
+  <or><string/><int/></or>
+
+An argument to a method can be of the varargs type:
+
+  function(string, mixed ... : void)
+
+  <function>
+    <argtype><string/></argtype>
+    <argtype><varargs><mixed/></varargs></argtype>
+    <returntype><void/></returntype>
+  </function>
+
+======================================================================
+f) XML generated from the doc markup
+----------------------------------------------------------------------
