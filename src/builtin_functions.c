@@ -5,7 +5,7 @@
 \*/
 /**/
 #include "global.h"
-RCSID("$Id: builtin_functions.c,v 1.288 2000/07/02 15:53:30 grubba Exp $");
+RCSID("$Id: builtin_functions.c,v 1.289 2000/07/07 02:07:57 hubbe Exp $");
 #include "interpret.h"
 #include "svalue.h"
 #include "pike_macros.h"
@@ -62,9 +62,9 @@ void f_equal(INT32 args)
 {
   int i;
   if(args != 2)
-    PIKE_ERROR("equal", "Bad number of arguments.\n", sp, args);
+    PIKE_ERROR("equal", "Bad number of arguments.\n", Pike_sp, args);
 
-  i=is_equal(sp-2,sp-1);
+  i=is_equal(Pike_sp-2,Pike_sp-1);
   pop_n_elems(args);
   push_int(i);
 }
@@ -86,40 +86,40 @@ void f_hash(INT32 args)
   INT32 i;
   if(!args)
     SIMPLE_TOO_FEW_ARGS_ERROR("hash",1);
-  if(sp[-args].type != T_STRING)
+  if(Pike_sp[-args].type != T_STRING)
     SIMPLE_BAD_ARG_ERROR("hash", 1, "string");
 
-  switch(sp[-args].u.string->size_shift)
+  switch(Pike_sp[-args].u.string->size_shift)
   {
     case 0:
-      i=hashstr((unsigned char *)sp[-args].u.string->str,100);
+      i=hashstr((unsigned char *)Pike_sp[-args].u.string->str,100);
       break;
 
     case 1:
-      i=simple_hashmem((unsigned char *)sp[-args].u.string->str,
-		       sp[-args].u.string->len << 1,
+      i=simple_hashmem((unsigned char *)Pike_sp[-args].u.string->str,
+		       Pike_sp[-args].u.string->len << 1,
 		       200);
       break;
 
     case 2:
-      i=simple_hashmem((unsigned char *)sp[-args].u.string->str,
-		       sp[-args].u.string->len << 2,
+      i=simple_hashmem((unsigned char *)Pike_sp[-args].u.string->str,
+		       Pike_sp[-args].u.string->len << 2,
 		       400);
       break;
 
     default:
-      fatal("hash(): Bad string shift:%d\n", sp[-args].u.string->size_shift);
+      fatal("hash(): Bad string shift:%d\n", Pike_sp[-args].u.string->size_shift);
   }
   
   if(args > 1)
   {
-    if(sp[1-args].type != T_INT)
+    if(Pike_sp[1-args].type != T_INT)
       SIMPLE_BAD_ARG_ERROR("hash",2,"int");
     
-    if(!sp[1-args].u.integer)
-      PIKE_ERROR("hash", "Modulo by zero.\n", sp, args);
+    if(!Pike_sp[1-args].u.integer)
+      PIKE_ERROR("hash", "Modulo by zero.\n", Pike_sp, args);
 
-    i%=(unsigned INT32)sp[1-args].u.integer;
+    i%=(unsigned INT32)Pike_sp[1-args].u.integer;
   }
   pop_n_elems(args);
   push_int(i);
@@ -131,10 +131,10 @@ void f_copy_value(INT32 args)
     SIMPLE_TOO_FEW_ARGS_ERROR("copy_value",1);
 
   pop_n_elems(args-1);
-  copy_svalues_recursively_no_free(sp,sp-1,1,0);
-  free_svalue(sp-1);
-  sp[-1]=sp[0];
-  dmalloc_touch_svalue(sp-1);
+  copy_svalues_recursively_no_free(Pike_sp,Pike_sp-1,1,0);
+  free_svalue(Pike_sp-1);
+  Pike_sp[-1]=Pike_sp[0];
+  dmalloc_touch_svalue(Pike_sp-1);
 }
 
 struct case_info {
@@ -298,7 +298,7 @@ void f_upper_case(INT32 args)
 
   if (widen) {
     /* Widen the string, and replace any 0xff's with 0x178's. */
-    orig = sp[-1].u.string;
+    orig = Pike_sp[-1].u.string;
     ret = begin_wide_shared_string(orig->len, 1);
 
     i = orig->len;
@@ -308,8 +308,8 @@ void f_upper_case(INT32 args)
 	STR1(ret)[i] = 0x178;
       }
     }
-    free_string(sp[-1].u.string);
-    sp[-1].u.string = end_shared_string(ret);
+    free_string(Pike_sp[-1].u.string);
+    Pike_sp[-1].u.string = end_shared_string(ret);
   }
 }
 
@@ -317,10 +317,10 @@ void f_random(INT32 args)
 {
   INT_TYPE i;
 
-  if(args && (sp[-args].type == T_OBJECT))
+  if(args && (Pike_sp[-args].type == T_OBJECT))
   {
     pop_n_elems(args-1);
-    apply(sp[-1].u.object,"_random",0);
+    apply(Pike_sp[-1].u.object,"_random",0);
     stack_swap();
     pop_stack();
     return;
@@ -354,11 +354,11 @@ void f_random_seed(INT32 args)
   INT_TYPE i;
 #ifdef AUTO_BIGNUM
   check_all_args("random_seed",args,BIT_INT | BIT_OBJECT, 0);
-  if(sp[-args].type == T_INT)
+  if(Pike_sp[-args].type == T_INT)
   {
-    i=sp[-args].u.integer;
+    i=Pike_sp[-args].u.integer;
   }else{
-    i=hash_svalue(sp-args);
+    i=hash_svalue(Pike_sp-args);
   }
 #else
   get_all_args("random_seed",args,"%i",&i);
@@ -370,7 +370,7 @@ void f_random_seed(INT32 args)
 void f_query_num_arg(INT32 args)
 {
   pop_n_elems(args);
-  push_int(fp ? fp->args : 0);
+  push_int(Pike_fp ? Pike_fp->args : 0);
 }
 
 void f_search(INT32 args)
@@ -380,34 +380,34 @@ void f_search(INT32 args)
   if(args < 2)
     SIMPLE_TOO_FEW_ARGS_ERROR("search", 2);
 
-  switch(sp[-args].type)
+  switch(Pike_sp[-args].type)
   {
   case T_STRING:
   {
     char *ptr;
-    if(sp[1-args].type != T_STRING)
+    if(Pike_sp[1-args].type != T_STRING)
       SIMPLE_BAD_ARG_ERROR("search", 2, "string");
     
     start=0;
     if(args > 2)
     {
-      if(sp[2-args].type!=T_INT)
+      if(Pike_sp[2-args].type!=T_INT)
 	SIMPLE_BAD_ARG_ERROR("search", 3, "int");
 
-      start=sp[2-args].u.integer;
+      start=Pike_sp[2-args].u.integer;
       if(start<0) {
-	bad_arg_error("search", sp-args, args, 3, "int(0..)", sp+2-args,
+	bad_arg_error("search", Pike_sp-args, args, 3, "int(0..)", Pike_sp+2-args,
 		   "Start must be greater or equal to zero.\n");
       }
     }
 
-    if(sp[-args].u.string->len < start)
-      bad_arg_error("search", sp-args, args, 1, "int(0..)", sp-args,
+    if(Pike_sp[-args].u.string->len < start)
+      bad_arg_error("search", Pike_sp-args, args, 1, "int(0..)", Pike_sp-args,
 		    "Start must not be greater than the "
 		    "length of the string.\n");
 
-    start=string_search(sp[-args].u.string,
-			sp[1-args].u.string,
+    start=string_search(Pike_sp[-args].u.string,
+			Pike_sp[1-args].u.string,
 			start);
     pop_n_elems(args);
     push_int(start);
@@ -418,29 +418,29 @@ void f_search(INT32 args)
     start=0;
     if(args > 2)
     {
-      if(sp[2-args].type!=T_INT)
+      if(Pike_sp[2-args].type!=T_INT)
 	SIMPLE_BAD_ARG_ERROR("search", 3, "int");
 
-      start=sp[2-args].u.integer;
+      start=Pike_sp[2-args].u.integer;
       if(start<0) {
-	bad_arg_error("search", sp-args, args, 3, "int(0..)", sp+2-args,
+	bad_arg_error("search", Pike_sp-args, args, 3, "int(0..)", Pike_sp+2-args,
 		   "Start must be greater or equal to zero.\n");
       }
     }
-    start=array_search(sp[-args].u.array,sp+1-args,start);
+    start=array_search(Pike_sp[-args].u.array,Pike_sp+1-args,start);
     pop_n_elems(args);
     push_int(start);
     break;
 
   case T_MAPPING:
     if(args > 2) {
-      mapping_search_no_free(sp,sp[-args].u.mapping,sp+1-args,sp+2-args);
+      mapping_search_no_free(Pike_sp,Pike_sp[-args].u.mapping,Pike_sp+1-args,Pike_sp+2-args);
     } else {
-      mapping_search_no_free(sp,sp[-args].u.mapping,sp+1-args,0);
+      mapping_search_no_free(Pike_sp,Pike_sp[-args].u.mapping,Pike_sp+1-args,0);
     }
-    free_svalue(sp-args);
-    sp[-args]=*sp;
-    dmalloc_touch_svalue(sp);
+    free_svalue(Pike_sp-args);
+    Pike_sp[-args]=*Pike_sp;
+    dmalloc_touch_svalue(Pike_sp);
     pop_n_elems(args-1);
     return;
 
@@ -511,21 +511,21 @@ void f_has_index(INT32 args)
   int t = 0;
   
   if(args != 2)
-    PIKE_ERROR("has_index", "Bad number of arguments.\n", sp, args);
+    PIKE_ERROR("has_index", "Bad number of arguments.\n", Pike_sp, args);
 
-  switch(sp[-2].type)
+  switch(Pike_sp[-2].type)
   {
     case T_STRING:
-      if(sp[-1].type == T_INT)
-	t = (0 <= sp[-1].u.integer && sp[-1].u.integer < sp[-2].u.string->len);
+      if(Pike_sp[-1].type == T_INT)
+	t = (0 <= Pike_sp[-1].u.integer && Pike_sp[-1].u.integer < Pike_sp[-2].u.string->len);
   
       pop_n_elems(args);
       push_int(t);
       break;
       
     case T_ARRAY:
-      if(sp[-1].type == T_INT)
-	t = (0 <= sp[-1].u.integer && sp[-1].u.integer < sp[-2].u.array->size);
+      if(Pike_sp[-1].type == T_INT)
+	t = (0 <= Pike_sp[-1].u.integer && Pike_sp[-1].u.integer < Pike_sp[-2].u.array->size);
       
       pop_n_elems(args);
       push_int(t);
@@ -536,11 +536,11 @@ void f_has_index(INT32 args)
       f_index(2);
       f_zero_type(1);
       
-      if(sp[-1].type == T_INT)
-	sp[-1].u.integer = !sp[-1].u.integer;
+      if(Pike_sp[-1].type == T_INT)
+	Pike_sp[-1].u.integer = !Pike_sp[-1].u.integer;
       else
 	PIKE_ERROR("has_index",
-		   "Function `zero_type' gave incorrect result.\n", sp, args);
+		   "Function `zero_type' gave incorrect result.\n", Pike_sp, args);
       break;
       
     case T_OBJECT:
@@ -561,30 +561,30 @@ void f_has_index(INT32 args)
       stack_swap();
       f_search(2);
       
-      if(sp[-1].type == T_INT)
-	sp[-1].u.integer = (sp[-1].u.integer != -1);
+      if(Pike_sp[-1].type == T_INT)
+	Pike_sp[-1].u.integer = (Pike_sp[-1].u.integer != -1);
       else
 	PIKE_ERROR("has_index",
-		   "Function `search' gave incorrect result.\n", sp, args);
+		   "Function `search' gave incorrect result.\n", Pike_sp, args);
   }
 }
 
 void f_has_value(INT32 args)
 {
   if(args != 2)
-    PIKE_ERROR("has_value", "Bad number of arguments.\n", sp, args);
+    PIKE_ERROR("has_value", "Bad number of arguments.\n", Pike_sp, args);
 
-  switch(sp[-2].type)
+  switch(Pike_sp[-2].type)
   {
     case T_MAPPING:
       f_search(2);
       f_zero_type(1);
       
-      if(sp[-1].type == T_INT)
-	sp[-1].u.integer = !sp[-1].u.integer;
+      if(Pike_sp[-1].type == T_INT)
+	Pike_sp[-1].u.integer = !Pike_sp[-1].u.integer;
       else
 	PIKE_ERROR("has_value",
-		   "Function `zero_type' gave incorrect result.\n", sp, args);
+		   "Function `zero_type' gave incorrect result.\n", Pike_sp, args);
       break;
       
     case T_OBJECT:
@@ -609,10 +609,10 @@ void f_has_value(INT32 args)
     case T_ARRAY:
       f_search(2);
 
-      if(sp[-1].type == T_INT)
-	sp[-1].u.integer = (sp[-1].u.integer != -1);
+      if(Pike_sp[-1].type == T_INT)
+	Pike_sp[-1].u.integer = (Pike_sp[-1].u.integer != -1);
       else
-	PIKE_ERROR("has_value", "Search gave incorrect result.\n", sp, args);
+	PIKE_ERROR("has_value", "Search gave incorrect result.\n", Pike_sp, args);
   }
 }
 
@@ -626,15 +626,15 @@ void f_backtrace(INT32 args)
 
   frames=0;
   if(args) pop_n_elems(args);
-  for(f=fp;f;f=f->next) frames++;
+  for(f=Pike_fp;f;f=f->next) frames++;
 
-  sp->type=T_ARRAY;
-  sp->u.array=a=allocate_array_no_init(frames,0);
-  sp++;
+  Pike_sp->type=T_ARRAY;
+  Pike_sp->u.array=a=allocate_array_no_init(frames,0);
+  Pike_sp++;
 
   /* NOTE: The first pike_frame is ignored, since it is the call to backtrace(). */
   of=0;
-  for(f=fp;f;f=(of=f)->next)
+  for(f=Pike_fp;f;f=(of=f)->next)
   {
     char *program_name;
 
@@ -645,7 +645,7 @@ void f_backtrace(INT32 args)
     {
       INT32 args;
       args=f->num_args;
-      args=MINIMUM(f->num_args, sp - f->locals);
+      args=MINIMUM(f->num_args, Pike_sp - f->locals);
       if(of)
 	args=MINIMUM(f->num_args, of->locals - f->locals);
       args=MAXIMUM(args,0);
@@ -699,15 +699,15 @@ void f_add_constant(INT32 args)
   if(args<1)
     SIMPLE_TOO_FEW_ARGS_ERROR("add_constant", 1);
 
-  if(sp[-args].type!=T_STRING)
+  if(Pike_sp[-args].type!=T_STRING)
     SIMPLE_BAD_ARG_ERROR("add_constant", 1, "string");
 
   if(args>1)
   {
-    dmalloc_touch_svalue(sp-args+1);
-    low_add_efun(sp[-args].u.string, sp-args+1);
+    dmalloc_touch_svalue(Pike_sp-args+1);
+    low_add_efun(Pike_sp[-args].u.string, Pike_sp-args+1);
   }else{
-    low_add_efun(sp[-args].u.string, 0);
+    low_add_efun(Pike_sp[-args].u.string, 0);
   }
   pop_n_elems(args);
 }
@@ -738,10 +738,9 @@ static int find_absolute(char *s)
 #define IS_ROOT(X) (IS_SEP((X)[0])?1:0)
 #endif
 
-static void free_nonull(void *ptr)
+static void free_nonull(char **ptr)
 {
-  if(ptr)
-    free(ptr);
+  if(*ptr) free(*ptr);
 }
 
 static char *combine_path(char *cwd,char *file)
@@ -754,6 +753,8 @@ static char *combine_path(char *cwd,char *file)
   int tmp;
   ONERROR err;
 
+  SET_ONERROR(err, free_nonull, &cwdbuf);
+  
   if((tmp=IS_ABS(file)))
   {
     cwdbuf = (char *)xalloc(tmp+1);
@@ -784,8 +785,6 @@ static char *combine_path(char *cwd,char *file)
   }
 #endif
 
-  SET_ONERROR(err, free_nonull, cwdbuf);
-  
 #ifdef PIKE_DEBUG    
   if(!cwd)
     fatal("No cwd in combine_path!\n");
@@ -885,21 +884,21 @@ void f_combine_path(INT32 args)
   if(args<1)
     SIMPLE_TOO_FEW_ARGS_ERROR("combine_path", 1);
 
-  if(sp[-args].type != T_STRING)
+  if(Pike_sp[-args].type != T_STRING)
     SIMPLE_BAD_ARG_ERROR("combine_path", 1, "string");
 
-  path=sp[-args].u.string->str;
+  path=Pike_sp[-args].u.string->str;
 
   for(e=1;e<args;e++)
   {
     char *newpath;
-    if(sp[e-args].type != T_STRING)
+    if(Pike_sp[e-args].type != T_STRING)
     {
       if(dofree) free(path);
       SIMPLE_BAD_ARG_ERROR("combine_path", e+1, "string");
     }
 
-    newpath=combine_path(path,sp[e-args].u.string->str);
+    newpath=combine_path(path,Pike_sp[e-args].u.string->str);
     if(dofree) free(path);
     path=newpath;
     dofree=1;
@@ -915,16 +914,16 @@ void f_function_object(INT32 args)
 {
   if(args < 1)
     SIMPLE_TOO_FEW_ARGS_ERROR("function_object",1);
-  if(sp[-args].type != T_FUNCTION)
+  if(Pike_sp[-args].type != T_FUNCTION)
     SIMPLE_BAD_ARG_ERROR("function_object",1,"function");
 
-  if(sp[-args].subtype == FUNCTION_BUILTIN)
+  if(Pike_sp[-args].subtype == FUNCTION_BUILTIN)
   {
     pop_n_elems(args);
     push_int(0);
   }else{
     pop_n_elems(args-1);
-    sp[-1].type=T_OBJECT;
+    Pike_sp[-1].type=T_OBJECT;
   }
 }
 
@@ -933,25 +932,25 @@ void f_function_name(INT32 args)
   struct pike_string *s;
   if(args < 1)
     SIMPLE_TOO_FEW_ARGS_ERROR("function_name", 1);
-  if(sp[-args].type != T_FUNCTION)
+  if(Pike_sp[-args].type != T_FUNCTION)
     SIMPLE_BAD_ARG_ERROR("function_name", 1, "function");
 
-  if(sp[-args].subtype == FUNCTION_BUILTIN)
+  if(Pike_sp[-args].subtype == FUNCTION_BUILTIN)
   {
     pop_n_elems(args);
     push_int(0);
   }else{
-    if(!sp[-args].u.object->prog)
-      bad_arg_error("function_name", sp-args, args, 1, "function", sp-args,
+    if(!Pike_sp[-args].u.object->prog)
+      bad_arg_error("function_name", Pike_sp-args, args, 1, "function", Pike_sp-args,
 		    "Destructed object.\n");
 
-    copy_shared_string(s,ID_FROM_INT(sp[-args].u.object->prog,
-				     sp[-args].subtype)->name);
+    copy_shared_string(s,ID_FROM_INT(Pike_sp[-args].u.object->prog,
+				     Pike_sp[-args].subtype)->name);
     pop_n_elems(args);
   
-    sp->type=T_STRING;
-    sp->u.string=s;
-    sp++;
+    Pike_sp->type=T_STRING;
+    Pike_sp->u.string=s;
+    Pike_sp++;
   }
 }
 
@@ -960,21 +959,21 @@ void f_zero_type(INT32 args)
   if(args < 1)
     SIMPLE_TOO_FEW_ARGS_ERROR("zero_type",1);
 
-  if(sp[-args].type != T_INT)
+  if(Pike_sp[-args].type != T_INT)
   {
     pop_n_elems(args);
     push_int(0);
   }
-  else if((sp[-args].type==T_OBJECT || sp[-args].type==T_FUNCTION)
-	   && !sp[-args].u.object->prog)
+  else if((Pike_sp[-args].type==T_OBJECT || Pike_sp[-args].type==T_FUNCTION)
+	   && !Pike_sp[-args].u.object->prog)
   {
     pop_n_elems(args);
     push_int(NUMBER_DESTRUCTED);
   }
   {
     pop_n_elems(args-1);
-    sp[-1].u.integer=sp[-1].subtype;
-    sp[-1].subtype=NUMBER_NUMBER;
+    Pike_sp[-1].u.integer=Pike_sp[-1].subtype;
+    Pike_sp[-1].subtype=NUMBER_NUMBER;
   }
 }
 
@@ -1098,7 +1097,7 @@ void f_unicode_to_string(INT32 args)
   get_all_args("unicode_to_string", args, "%S", &in);
 
   if (in->len & 1) {
-    bad_arg_error("unicode_to_string", sp-args, args, 1, "string", sp-args,
+    bad_arg_error("unicode_to_string", Pike_sp-args, args, 1, "string", Pike_sp-args,
 		  "String length is odd.\n");
   }
 
@@ -1142,10 +1141,10 @@ void f_string_to_utf8(INT32 args)
   get_all_args("string_to_utf8", args, "%W", &in);
 
   if (args > 1) {
-    if (sp[1-args].type != T_INT) {
+    if (Pike_sp[1-args].type != T_INT) {
       SIMPLE_BAD_ARG_ERROR("string_to_utf8", 2, "int|void");
     }
-    extended = sp[1-args].u.integer;
+    extended = Pike_sp[1-args].u.integer;
   }
 
   len = in->len;
@@ -1260,10 +1259,10 @@ void f_utf8_to_string(INT32 args)
   get_all_args("utf8_to_string", args, "%S", &in);
 
   if (args > 1) {
-    if (sp[1-args].type != T_INT) {
+    if (Pike_sp[1-args].type != T_INT) {
       SIMPLE_BAD_ARG_ERROR("utf8_to_string()", 2, "int|void");
     }
-    extended = sp[1-args].u.integer;
+    extended = Pike_sp[1-args].u.integer;
   }
 
   for(i=0; i < in->len; i++) {
@@ -1392,10 +1391,10 @@ void f_utf8_to_string(INT32 args)
 static void f_parse_pike_type( INT32 args )
 {
   struct pike_string *res;
-  if( sp[-1].type != T_STRING ||
-      sp[-1].u.string->size_shift )
+  if( Pike_sp[-1].type != T_STRING ||
+      Pike_sp[-1].u.string->size_shift )
     error( "__parse_type requires a 8bit string as its first argument\n" );
-  res = parse_type( (char *)STR0(sp[-1].u.string) );
+  res = parse_type( (char *)STR0(Pike_sp[-1].u.string) );
   pop_stack();
   push_string( res );
 }
@@ -1414,18 +1413,18 @@ void f_allocate(INT32 args)
   if(args < 1)
     SIMPLE_TOO_FEW_ARGS_ERROR("allocate",1);
 
-  if(sp[-args].type!=T_INT)
+  if(Pike_sp[-args].type!=T_INT)
     SIMPLE_BAD_ARG_ERROR("allocate",1,"int");
 
-  size=sp[-args].u.integer;
+  size=Pike_sp[-args].u.integer;
   if(size < 0)
-    PIKE_ERROR("allocate", "Can't allocate array of negative size.\n", sp, args);
+    PIKE_ERROR("allocate", "Can't allocate array of negative size.\n", Pike_sp, args);
   a=allocate_array(size);
   if(args>1)
   {
     INT32 e;
     for(e=0;e<a->size;e++)
-      copy_svalues_recursively_no_free(a->item+e, sp-args+1, 1, 0);
+      copy_svalues_recursively_no_free(a->item+e, Pike_sp-args+1, 1, 0);
   }
   pop_n_elems(args);
   push_array(a);
@@ -1438,7 +1437,7 @@ void f_rusage(INT32 args)
   pop_n_elems(args);
   rus=low_rusage();
   if(!rus)
-    PIKE_ERROR("rusage", "System rusage information not available.\n", sp, args);
+    PIKE_ERROR("rusage", "System rusage information not available.\n", Pike_sp, args);
   v=allocate_array_no_init(29,0);
 
   for(e=0;e<29;e++)
@@ -1448,17 +1447,17 @@ void f_rusage(INT32 args)
     ITEM(v)[e].u.integer=rus[e];
   }
 
-  sp->u.array=v;
-  sp->type=T_ARRAY;
-  sp++;
+  Pike_sp->u.array=v;
+  Pike_sp->type=T_ARRAY;
+  Pike_sp++;
 }
 
 void f_this_object(INT32 args)
 {
   pop_n_elems(args);
-  if(fp)
+  if(Pike_fp)
   {
-    ref_push_object(fp->current_object);
+    ref_push_object(Pike_fp->current_object);
   }else{
     push_int(0);
   }
@@ -1483,7 +1482,7 @@ void f_throw(INT32 args)
 {
   if(args < 1)
     SIMPLE_TOO_FEW_ARGS_ERROR("throw", 1);
-  assign_svalue(&throw_value,sp-args);
+  assign_svalue(&throw_value,Pike_sp-args);
   pop_n_elems(args);
   throw_severity=0;
   pike_throw();
@@ -1496,13 +1495,13 @@ void f_exit(INT32 args)
   if(args < 1)
     SIMPLE_TOO_FEW_ARGS_ERROR("exit", 1);
 
-  if(sp[-args].type != T_INT)
+  if(Pike_sp[-args].type != T_INT)
     SIMPLE_BAD_ARG_ERROR("exit", 1, "int");
 
   if(in_exit) error("exit already called!\n");
   in_exit=1;
 
-  assign_svalue(&throw_value, sp-args);
+  assign_svalue(&throw_value, Pike_sp-args);
   throw_severity=THROW_EXIT;
   pike_throw();
 }
@@ -1513,10 +1512,10 @@ void f__exit(INT32 args)
   if(args < 1)
     SIMPLE_TOO_FEW_ARGS_ERROR("_exit", 1);
 
-  if(sp[-args].type != T_INT)
+  if(Pike_sp[-args].type != T_INT)
     SIMPLE_BAD_ARG_ERROR("_exit", 1, "int");
 
-  exit(sp[-args].u.integer);
+  exit(Pike_sp[-args].u.integer);
 }
 
 void f_time(INT32 args)
@@ -1525,11 +1524,11 @@ void f_time(INT32 args)
   {
     GETTIMEOFDAY(&current_time);
   }else{
-    if(sp[-args].type == T_INT && sp[-args].u.integer > 1)
+    if(Pike_sp[-args].type == T_INT && Pike_sp[-args].u.integer > 1)
     {
       struct timeval tmp;
       GETTIMEOFDAY(&current_time);
-      tmp.tv_sec=sp[-args].u.integer;
+      tmp.tv_sec=Pike_sp[-args].u.integer;
       tmp.tv_usec=0;
       my_subtract_timeval(&tmp,&current_time);
       pop_n_elems(args);
@@ -1551,21 +1550,21 @@ void f_crypt(INT32 args)
   if(args < 1)
     SIMPLE_TOO_FEW_ARGS_ERROR("crypt", 1);
 
-  if(sp[-args].type != T_STRING)
+  if(Pike_sp[-args].type != T_STRING)
     SIMPLE_BAD_ARG_ERROR("crypt", 1, "string");
 
   
   if(args>1)
   {
-    if(sp[1-args].type != T_STRING ||
-       sp[1-args].u.string->len < 2)
+    if(Pike_sp[1-args].type != T_STRING ||
+       Pike_sp[1-args].u.string->len < 2)
     {
       pop_n_elems(args);
       push_int(0);
       return;
     }
       
-    saltp=sp[1-args].u.string->str;
+    saltp=Pike_sp[1-args].u.string->str;
   } else {
     unsigned int foo; /* Sun CC want's this :( */
     foo=my_rand();
@@ -1575,12 +1574,12 @@ void f_crypt(INT32 args)
     saltp=salt;
   }
 #ifdef HAVE_CRYPT
-  ret = (char *)crypt(sp[-args].u.string->str, saltp);
+  ret = (char *)crypt(Pike_sp[-args].u.string->str, saltp);
 #else
 #ifdef HAVE__CRYPT
-  ret = (char *)_crypt(sp[-args].u.string->str, saltp);
+  ret = (char *)_crypt(Pike_sp[-args].u.string->str, saltp);
 #else
-  ret = sp[-args].u.string->str;
+  ret = Pike_sp[-args].u.string->str;
 #endif
 #endif
   if(args < 2)
@@ -1589,7 +1588,7 @@ void f_crypt(INT32 args)
     push_string(make_shared_string(ret));
   }else{
     int i;
-    i=!strcmp(ret,sp[1-args].u.string->str);
+    i=!strcmp(ret,Pike_sp[1-args].u.string->str);
     pop_n_elems(args);
     push_int(i);
   }
@@ -1600,18 +1599,18 @@ void f_destruct(INT32 args)
   struct object *o;
   if(args)
   {
-    if(sp[-args].type != T_OBJECT)
+    if(Pike_sp[-args].type != T_OBJECT)
       SIMPLE_BAD_ARG_ERROR("destruct", 1, "object");
 
-    o=sp[-args].u.object;
+    o=Pike_sp[-args].u.object;
   }else{
-    if(!fp)
-      PIKE_ERROR("destruct", "Destruct called without argument from callback function.\n", sp, args);
+    if(!Pike_fp)
+      PIKE_ERROR("destruct", "Destruct called without argument from callback function.\n", Pike_sp, args);
 	   
-    o=fp->current_object;
+    o=Pike_fp->current_object;
   }
   if (o->prog && o->prog->flags & PROGRAM_NO_EXPLICIT_DESTRUCT)
-    PIKE_ERROR("destruct", "Object can't be destructed explicitly.\n", sp, args);
+    PIKE_ERROR("destruct", "Object can't be destructed explicitly.\n", Pike_sp, args);
 #ifdef PIKE_SECURITY
   if(!CHECK_DATA_SECURITY(o, SECURITY_BIT_DESTRUCT))
     error("Destruct permission denied.\n");
@@ -1627,14 +1626,14 @@ void f_indices(INT32 args)
   if(args < 1)
     SIMPLE_TOO_FEW_ARGS_ERROR("indices", 1);
 
-  switch(sp[-args].type)
+  switch(Pike_sp[-args].type)
   {
   case T_STRING:
-    size=sp[-args].u.string->len;
+    size=Pike_sp[-args].u.string->len;
     goto qjump;
 
   case T_ARRAY:
-    size=sp[-args].u.array->size;
+    size=Pike_sp[-args].u.array->size;
 
   qjump:
     a=allocate_array_no_init(size,0);
@@ -1647,24 +1646,24 @@ void f_indices(INT32 args)
     break;
 
   case T_MAPPING:
-    a=mapping_indices(sp[-args].u.mapping);
+    a=mapping_indices(Pike_sp[-args].u.mapping);
     break;
 
   case T_MULTISET:
-    a=copy_array(sp[-args].u.multiset->ind);
+    a=copy_array(Pike_sp[-args].u.multiset->ind);
     break;
 
   case T_OBJECT:
-    a=object_indices(sp[-args].u.object);
+    a=object_indices(Pike_sp[-args].u.object);
     break;
 
   case T_PROGRAM:
-    a = program_indices(sp[-args].u.program);
+    a = program_indices(Pike_sp[-args].u.program);
     break;
 
   case T_FUNCTION:
     {
-      struct program *p = program_from_svalue(sp-args);
+      struct program *p = program_from_svalue(Pike_sp-args);
       if (p) {
 	a = program_indices(p);
 	break;
@@ -1893,29 +1892,29 @@ void f_values(INT32 args)
   if(args < 1)
     SIMPLE_TOO_FEW_ARGS_ERROR("values", 1);
 
-  switch(sp[-args].type)
+  switch(Pike_sp[-args].type)
   {
   case T_STRING:
-    size = sp[-args].u.string->len;
+    size = Pike_sp[-args].u.string->len;
     a = allocate_array_no_init(size,0);
     while(--size >= 0)
     {
       ITEM(a)[size].type = T_INT;
       ITEM(a)[size].subtype = NUMBER_NUMBER;
-      ITEM(a)[size].u.integer = index_shared_string(sp[-args].u.string, size);
+      ITEM(a)[size].u.integer = index_shared_string(Pike_sp[-args].u.string, size);
     }
     break;
 
   case T_ARRAY:
-    a=copy_array(sp[-args].u.array);
+    a=copy_array(Pike_sp[-args].u.array);
     break;
 
   case T_MAPPING:
-    a=mapping_values(sp[-args].u.mapping);
+    a=mapping_values(Pike_sp[-args].u.mapping);
     break;
 
   case T_MULTISET:
-    size=sp[-args].u.multiset->ind->size;
+    size=Pike_sp[-args].u.multiset->ind->size;
     a=allocate_array_no_init(size,0);
     while(--size>=0)
     {
@@ -1926,16 +1925,16 @@ void f_values(INT32 args)
     break;
 
   case T_OBJECT:
-    a=object_values(sp[-args].u.object);
+    a=object_values(Pike_sp[-args].u.object);
     break;
 
   case T_PROGRAM:
-    a = program_values(sp[-args].u.program);
+    a = program_values(Pike_sp[-args].u.program);
     break;
 
   case T_FUNCTION:
     {
-      struct program *p = program_from_svalue(sp - args);
+      struct program *p = program_from_svalue(Pike_sp - args);
       if (p) {
 	a = program_values(p);
 	break;
@@ -1960,9 +1959,9 @@ void f_next_object(INT32 args)
   {
     o=first_object;
   }else{
-    if(sp[-args].type != T_OBJECT)
+    if(Pike_sp[-args].type != T_OBJECT)
       SIMPLE_BAD_ARG_ERROR("next_object", 1, "object");
-    o=sp[-args].u.object->next;
+    o=Pike_sp[-args].u.object->next;
     while(o && !o->prog) o=o->next;
   }
   pop_n_elems(args);
@@ -1979,9 +1978,9 @@ void f_object_program(INT32 args)
   if(args < 1)
     SIMPLE_TOO_FEW_ARGS_ERROR("object_program", 1);
 
-  if(sp[-args].type == T_OBJECT)
+  if(Pike_sp[-args].type == T_OBJECT)
   {
-    struct object *o=sp[-args].u.object;
+    struct object *o=Pike_sp[-args].u.object;
     struct program *p;
     if((p=o->prog))
     {
@@ -1992,8 +1991,8 @@ void f_object_program(INT32 args)
 	add_ref(o);
 	pop_n_elems(args);
 	push_object(o);
-	sp[-1].subtype=id;
-	sp[-1].type=T_FUNCTION;
+	Pike_sp[-1].subtype=id;
+	Pike_sp[-1].type=T_FUNCTION;
 	return;
       }else{
 	add_ref(p);
@@ -2038,29 +2037,29 @@ void f_reverse(INT32 args)
   if(args < 1)
     SIMPLE_TOO_FEW_ARGS_ERROR("reverse", 1);
 
-  switch(sp[-args].type)
+  switch(Pike_sp[-args].type)
   {
   case T_STRING:
   {
     INT32 e;
     struct pike_string *s;
-    s=begin_wide_shared_string(sp[-args].u.string->len,
-			  sp[-args].u.string->size_shift);
-    switch(sp[-args].u.string->size_shift)
+    s=begin_wide_shared_string(Pike_sp[-args].u.string->len,
+			  Pike_sp[-args].u.string->size_shift);
+    switch(Pike_sp[-args].u.string->size_shift)
     {
       case 0:
-	for(e=0;e<sp[-args].u.string->len;e++)
-	  STR0(s)[e]=STR0(sp[-args].u.string)[sp[-args].u.string->len-1-e];
+	for(e=0;e<Pike_sp[-args].u.string->len;e++)
+	  STR0(s)[e]=STR0(Pike_sp[-args].u.string)[Pike_sp[-args].u.string->len-1-e];
 	break;
 
       case 1:
-	for(e=0;e<sp[-args].u.string->len;e++)
-	  STR1(s)[e]=STR1(sp[-args].u.string)[sp[-args].u.string->len-1-e];
+	for(e=0;e<Pike_sp[-args].u.string->len;e++)
+	  STR1(s)[e]=STR1(Pike_sp[-args].u.string)[Pike_sp[-args].u.string->len-1-e];
 	break;
 
       case 2:
-	for(e=0;e<sp[-args].u.string->len;e++)
-	  STR2(s)[e]=STR2(sp[-args].u.string)[sp[-args].u.string->len-1-e];
+	for(e=0;e<Pike_sp[-args].u.string->len;e++)
+	  STR2(s)[e]=STR2(Pike_sp[-args].u.string)[Pike_sp[-args].u.string->len-1-e];
 	break;
     }
     s=low_end_shared_string(s);
@@ -2072,13 +2071,13 @@ void f_reverse(INT32 args)
   case T_INT:
   {
     INT32 e;
-    e=sp[-args].u.integer;
+    e=Pike_sp[-args].u.integer;
     e=((e & 0x55555555UL)<<1) + ((e & 0xaaaaaaaaUL)>>1);
     e=((e & 0x33333333UL)<<2) + ((e & 0xccccccccUL)>>2);
     e=((e & 0x0f0f0f0fUL)<<4) + ((e & 0xf0f0f0f0UL)>>4);
     e=((e & 0x00ff00ffUL)<<8) + ((e & 0xff00ff00UL)>>8);
     e=((e & 0x0000ffffUL)<<16)+ ((e & 0xffff0000UL)>>16);
-    sp[-args].u.integer=e;
+    Pike_sp[-args].u.integer=e;
     pop_n_elems(args-1);
     break;
   }
@@ -2086,7 +2085,7 @@ void f_reverse(INT32 args)
   case T_ARRAY:
   {
     struct array *a;
-    a=reverse_array(sp[-args].u.array);
+    a=reverse_array(Pike_sp[-args].u.array);
     pop_n_elems(args);
     push_array(a);
     break;
@@ -2279,18 +2278,18 @@ void f_replace(INT32 args)
   if(args < 3)
     SIMPLE_TOO_FEW_ARGS_ERROR("replace", 3);
 
-  switch(sp[-args].type)
+  switch(Pike_sp[-args].type)
   {
   case T_ARRAY:
   {
-    array_replace(sp[-args].u.array,sp+1-args,sp+2-args);
+    array_replace(Pike_sp[-args].u.array,Pike_sp+1-args,Pike_sp+2-args);
     pop_n_elems(args-1);
     break;
   }
 
   case T_MAPPING:
   {
-    mapping_replace(sp[-args].u.mapping,sp+1-args,sp+2-args);
+    mapping_replace(Pike_sp[-args].u.mapping,Pike_sp+1-args,Pike_sp+2-args);
     pop_n_elems(args-1);
     break;
   }
@@ -2298,27 +2297,27 @@ void f_replace(INT32 args)
   case T_STRING:
   {
     struct pike_string *s;
-    switch(sp[1-args].type)
+    switch(Pike_sp[1-args].type)
     {
     default:
       SIMPLE_BAD_ARG_ERROR("replace", 2, "string|array");
       
     case T_STRING:
-      if(sp[2-args].type != T_STRING)
+      if(Pike_sp[2-args].type != T_STRING)
 	SIMPLE_BAD_ARG_ERROR("replace", 3, "string");
 
-      s=string_replace(sp[-args].u.string,
-		       sp[1-args].u.string,
-		       sp[2-args].u.string);
+      s=string_replace(Pike_sp[-args].u.string,
+		       Pike_sp[1-args].u.string,
+		       Pike_sp[2-args].u.string);
       break;
       
     case T_ARRAY:
-      if(sp[2-args].type != T_ARRAY)
+      if(Pike_sp[2-args].type != T_ARRAY)
 	SIMPLE_BAD_ARG_ERROR("replace", 3, "array");
 
-      s=replace_many(sp[-args].u.string,
-		     sp[1-args].u.array,
-		     sp[2-args].u.array);
+      s=replace_many(Pike_sp[-args].u.string,
+		     Pike_sp[1-args].u.array,
+		     Pike_sp[2-args].u.array);
     
     }
     pop_n_elems(args);
@@ -2338,18 +2337,18 @@ void f_compile(INT32 args)
   if(args < 1)
     SIMPLE_TOO_FEW_ARGS_ERROR("compile", 1);
 
-  if(sp[-args].type != T_STRING)
+  if(Pike_sp[-args].type != T_STRING)
     SIMPLE_BAD_ARG_ERROR("compile", 1, "string");
 
-  if ((args > 1) && (sp[1-args].type != T_OBJECT) &&
-      (sp[1-args].type != T_INT)) {
+  if ((args > 1) && (Pike_sp[1-args].type != T_OBJECT) &&
+      (Pike_sp[1-args].type != T_INT)) {
     SIMPLE_BAD_ARG_ERROR("compile", 2, "object");
   }
 
-  if ((args > 1) && (sp[1-args].type == T_OBJECT)) {
-    p = compile(sp[-args].u.string, sp[1-args].u.object);
+  if ((args > 1) && (Pike_sp[1-args].type == T_OBJECT)) {
+    p = compile(Pike_sp[-args].u.string, Pike_sp[1-args].u.object);
   } else {
-    p = compile(sp[-args].u.string, NULL);
+    p = compile(Pike_sp[-args].u.string, NULL);
   }
 #ifdef PIKE_DEBUG
   if(!(p->flags & PROGRAM_FINISHED))
@@ -2391,9 +2390,9 @@ void f_objectp(INT32 args)
 {
   if(args<1)
     SIMPLE_TOO_FEW_ARGS_ERROR("objectp", 1);
-  if(sp[-args].type != T_OBJECT || !sp[-args].u.object->prog
+  if(Pike_sp[-args].type != T_OBJECT || !Pike_sp[-args].u.object->prog
 #ifdef AUTO_BIGNUM
-     || is_bignum_object(sp[-args].u.object)
+     || is_bignum_object(Pike_sp[-args].u.object)
 #endif
      )
   {
@@ -2409,8 +2408,8 @@ void f_functionp(INT32 args)
 {
   if(args<1)
     SIMPLE_TOO_FEW_ARGS_ERROR("functionp", 1);
-  if(sp[-args].type != T_FUNCTION ||
-     (sp[-args].subtype != FUNCTION_BUILTIN && !sp[-args].u.object->prog))
+  if(Pike_sp[-args].type != T_FUNCTION ||
+     (Pike_sp[-args].subtype != FUNCTION_BUILTIN && !Pike_sp[-args].u.object->prog))
   {
     pop_n_elems(args);
     push_int(0);
@@ -2454,14 +2453,14 @@ void f_sleep(INT32 args)
        left = delay - TIME_ELAPSED; \
        if (do_microsleep) left-=POLL_SLEEP_LIMIT;
 
-   switch(sp[-args].type)
+   switch(Pike_sp[-args].type)
    {
       case T_INT:
-	 delay=(double)sp[-args].u.integer;
+	 delay=(double)Pike_sp[-args].u.integer;
 	 break;
 
       case T_FLOAT:
-	 delay=(double)sp[-args].u.float_number;
+	 delay=(double)Pike_sp[-args].u.float_number;
 	 break;
    }
 
@@ -2542,18 +2541,18 @@ void ID(INT32 args)						\
   int t;							\
   if(args<1)							\
     SIMPLE_TOO_FEW_ARGS_ERROR(NAME, 1);				\
-  if(sp[-args].type == T_OBJECT && sp[-args].u.object->prog)	\
+  if(Pike_sp[-args].type == T_OBJECT && Pike_sp[-args].u.object->prog)	\
   {								\
-    int fun=FIND_LFUN(sp[-args].u.object->prog,LFUN__IS_TYPE);	\
+    int fun=FIND_LFUN(Pike_sp[-args].u.object->prog,LFUN__IS_TYPE);	\
     if(fun != -1)						\
     {								\
       push_constant_text(TYPE_NAME);				\
-      apply_low(sp[-args-1].u.object,fun,1);			\
+      apply_low(Pike_sp[-args-1].u.object,fun,1);			\
       stack_unlink(args);					\
       return;							\
     }								\
   }								\
-  t=sp[-args].type == TYPE;					\
+  t=Pike_sp[-args].type == TYPE;					\
   pop_n_elems(args);						\
   push_int(t);							\
 }
@@ -2563,7 +2562,7 @@ void ID(INT32 args) \
 { \
   int t; \
   if(args<1) SIMPLE_TOO_FEW_ARGS_ERROR(NAME, 1); \
-  t=sp[-args].type == TYPE; \
+  t=Pike_sp[-args].type == TYPE; \
   pop_n_elems(args); \
   push_int(t); \
 }
@@ -2574,7 +2573,7 @@ void f_programp(INT32 args)
 {
   if(args<1)
     SIMPLE_TOO_FEW_ARGS_ERROR("programp", 1);
-  switch(sp[-args].type)
+  switch(Pike_sp[-args].type)
   {
   case T_PROGRAM:
     pop_n_elems(args);
@@ -2582,7 +2581,7 @@ void f_programp(INT32 args)
     return;
 
   case T_FUNCTION:
-    if(program_from_function(sp-args))
+    if(program_from_function(Pike_sp-args))
     {
       pop_n_elems(args);
       push_int(1);
@@ -2620,22 +2619,22 @@ void f_sort(INT32 args)
 
   for(e=0;e<args;e++)
   {
-    if(sp[e-args].type != T_ARRAY)
+    if(Pike_sp[e-args].type != T_ARRAY)
       SIMPLE_BAD_ARG_ERROR("sort", e+1, "array");
 
-    if(sp[e-args].u.array->size != sp[-args].u.array->size)
-      bad_arg_error("sort", sp-args, args, e+1, "array", sp+e-args,
+    if(Pike_sp[e-args].u.array->size != Pike_sp[-args].u.array->size)
+      bad_arg_error("sort", Pike_sp-args, args, e+1, "array", Pike_sp+e-args,
 		    "Argument %d has wrong size.\n", (e+1));
   }
 
   if(args > 1)
   {
-    order=get_alpha_order(sp[-args].u.array);
-    for(e=0;e<args;e++) order_array(sp[e-args].u.array,order);
+    order=get_alpha_order(Pike_sp[-args].u.array);
+    for(e=0;e<args;e++) order_array(Pike_sp[e-args].u.array,order);
     free((char *)order);
     pop_n_elems(args-1);
   } else {
-    sort_array_destructively(sp[-args].u.array);
+    sort_array_destructively(Pike_sp[-args].u.array);
   }
 }
 
@@ -2668,8 +2667,8 @@ void f_rows(INT32 args)
   for(e=0;e<a->size;e++)
     index_no_free(ITEM(a)+e, val, ITEM(tmp)+e);
   
-  sp--;
-  dmalloc_touch_svalue(sp);
+  Pike_sp--;
+  dmalloc_touch_svalue(Pike_sp);
   pop_n_elems(args);
   push_array(a);
 }
@@ -2832,9 +2831,9 @@ void f_mktime (INT32 args)
     push_text("timezone");
     f_aggregate(8);
     f_rows(2);
-    sp--;
-    dmalloc_touch_svalue(sp);
-    push_array_items(sp->u.array);
+    Pike_sp--;
+    dmalloc_touch_svalue(Pike_sp);
+    push_array_items(Pike_sp->u.array);
 
     args=8;
   }
@@ -2850,17 +2849,17 @@ void f_mktime (INT32 args)
   date.tm_mon=mon;
   date.tm_year=year;
 
-  if ((args > 6) && (sp[6-args].subtype == NUMBER_NUMBER))
+  if ((args > 6) && (Pike_sp[6-args].subtype == NUMBER_NUMBER))
   {
-    date.tm_isdst = sp[6-args].u.integer;
+    date.tm_isdst = Pike_sp[6-args].u.integer;
   } else {
     date.tm_isdst = -1;
   }
 
 #if STRUCT_TM_HAS_GMTOFF
-  if((args > 7) && (sp[7-args].subtype == NUMBER_NUMBER))
+  if((args > 7) && (Pike_sp[7-args].subtype == NUMBER_NUMBER))
   {
-    date.tm_gmtoff=sp[7-args].u.intger;
+    date.tm_gmtoff=Pike_sp[7-args].u.intger;
   }else{
     time_t tmp = 0;
     data.tm_gmtoff=localtime(&tmp).tm_gmtoff;
@@ -2868,9 +2867,9 @@ void f_mktime (INT32 args)
   retval=mktime(&date);
 #else
 #ifdef HAVE_EXTERNAL_TIMEZONE
-  if((args > 7) && (sp[7-args].subtype == NUMBER_NUMBER))
+  if((args > 7) && (Pike_sp[7-args].subtype == NUMBER_NUMBER))
   {
-    retval=mktime(&date) + sp[7-args].u.integer - timezone;
+    retval=mktime(&date) + Pike_sp[7-args].u.integer - timezone;
   }else{
     retval=mktime(&date);
   }
@@ -2880,7 +2879,7 @@ void f_mktime (INT32 args)
 #endif
 
   if (retval == -1)
-    PIKE_ERROR("mktime", "Cannot convert.\n", sp, args);
+    PIKE_ERROR("mktime", "Cannot convert.\n", Pike_sp, args);
   pop_n_elems(args);
   push_int(retval);
 }
@@ -2893,14 +2892,14 @@ static int low_parse_format(p_wchar0 *s, int slen)
   int i;
   int offset = 0;
   int num_percent_percent = 0;
-  struct svalue *old_sp = sp;
+  struct svalue *old_sp = Pike_sp;
 
   for (i=offset; i < slen; i++) {
     if (s[i] == '%') {
       int j;
       if (i != offset) {
 	push_string(make_shared_binary_string0(s + offset, i));
-	if ((sp != old_sp+1) && (sp[-2].type == T_STRING)) {
+	if ((Pike_sp != old_sp+1) && (Pike_sp[-2].type == T_STRING)) {
 	  /* Concat. */
 	  f_add(2);
 	}
@@ -2942,7 +2941,7 @@ static int low_parse_format(p_wchar0 *s, int slen)
 	  /* Specials */
 	case '%':
 	  push_constant_text("%");
-	  if ((sp != old_sp+1) && (sp[-2].type == T_STRING)) {
+	  if ((Pike_sp != old_sp+1) && (Pike_sp[-2].type == T_STRING)) {
 	    /* Concat. */
 	    f_add(2);
 	  }
@@ -2956,7 +2955,7 @@ static int low_parse_format(p_wchar0 *s, int slen)
 	  i += 2;
 	  break;
 	case '}':
-	  f_aggregate(sp - old_sp);
+	  f_aggregate(Pike_sp - old_sp);
 	  return i;
 	  /* Set */
 	case '[':
@@ -2977,13 +2976,13 @@ static int low_parse_format(p_wchar0 *s, int slen)
 
   if (i != offset) {
     push_string(make_shared_binary_string0(s + offset, i));
-    if ((sp != old_sp+1) && (sp[-2].type == T_STRING)) {
+    if ((Pike_sp != old_sp+1) && (Pike_sp[-2].type == T_STRING)) {
       /* Concat. */
       f_add(2);
     }
   }
 
-  f_aggregate(sp - old_sp);
+  f_aggregate(Pike_sp - old_sp);
   return i;
 }
 
@@ -3001,11 +3000,11 @@ static void f_parse_format(INT32 args)
 	  len);
   }
 #ifdef PIKE_DEBUG
-  if (sp[-1].type != T_ARRAY) {
+  if (Pike_sp[-1].type != T_ARRAY) {
     fatal("parse_format(): Unexpected result from low_parse_format()\n");
   }
 #endif /* PIKE_DEBUG */
-  a = (--sp)->u.array;
+  a = (--Pike_sp)->u.array;
   debug_malloc_touch(a);
 
   pop_n_elems(args);
@@ -3058,21 +3057,21 @@ void f_glob(INT32 args)
     pop_n_elems(args-2);
   args=2;
 
-  if (sp[-args].type!=T_STRING)
+  if (Pike_sp[-args].type!=T_STRING)
     SIMPLE_BAD_ARG_ERROR("glob", 1, "string");
 
-  glob=sp[-args].u.string;
+  glob=Pike_sp[-args].u.string;
 
-  switch(sp[1-args].type)
+  switch(Pike_sp[1-args].type)
   {
   case T_STRING:
-    i=does_match(sp[1-args].u.string,0,glob,0);
+    i=does_match(Pike_sp[1-args].u.string,0,glob,0);
     pop_n_elems(2);
     push_int(i);
     break;
     
   case T_ARRAY:
-    a=sp[1-args].u.array;
+    a=Pike_sp[1-args].u.array;
     matches=0;
     for(i=0;i<a->size;i++)
     {
@@ -3087,12 +3086,12 @@ void f_glob(INT32 args)
       }
     }
     f_aggregate(matches);
-    tmp=sp[-1];
-    sp--;
-    dmalloc_touch_svalue(sp);
+    tmp=Pike_sp[-1];
+    Pike_sp--;
+    dmalloc_touch_svalue(Pike_sp);
     pop_n_elems(2);
-    sp[0]=tmp;
-    sp++;
+    Pike_sp[0]=tmp;
+    Pike_sp++;
     break;
 
   default:
@@ -3135,7 +3134,7 @@ static void f_interleave_array(INT32 args)
   /* The order array */
   ref_push_array(arr);
   f_indices(1);
-  order = sp[-1].u.array;
+  order = Pike_sp[-1].u.array;
 
   /* The min array */
   push_array(min = allocate_array(arr->size));
@@ -3995,8 +3994,8 @@ static struct array* diff_build(struct array *a,
 	 if (lbi>=eqstart)
 	 {
 	    push_array(friendly_slice_array(b,eqstart,lbi+1));
-	    ad=append_array(ad,sp-1);
-	    bd=append_array(bd,sp-1);
+	    ad=append_array(ad,Pike_sp-1);
+	    bd=append_array(bd,Pike_sp-1);
 	    pop_stack();
 	 }
 	 /* insert the difference */
@@ -4004,11 +4003,11 @@ static struct array* diff_build(struct array *a,
 	 ai=array_search(a,b->item+bi,ai+1)-1;
 
 	 push_array(friendly_slice_array(b,lbi+1,bi));
-	 bd=append_array(bd, sp-1);
+	 bd=append_array(bd, Pike_sp-1);
 	 pop_stack();
 
 	 push_array(friendly_slice_array(a,lai+1,ai+1));
-	 ad=append_array(ad,sp-1);
+	 ad=append_array(ad,Pike_sp-1);
 	 pop_stack();
 
 	 eqstart=bi;
@@ -4020,19 +4019,19 @@ static struct array* diff_build(struct array *a,
    if (lbi>=eqstart)
    {
       push_array(friendly_slice_array(b,eqstart,lbi+1));
-      ad=append_array(ad,sp-1);
-      bd=append_array(bd,sp-1);
+      ad=append_array(ad,Pike_sp-1);
+      bd=append_array(bd,Pike_sp-1);
       pop_stack();
    }
 
    if (b->size>bi+1 || a->size>ai+1)
    {
       push_array(friendly_slice_array(b,lbi+1,b->size));
-      bd=append_array(bd, sp-1);
+      bd=append_array(bd, Pike_sp-1);
       pop_stack();
       
       push_array(friendly_slice_array(a,ai+1,a->size));
-      ad=append_array(ad,sp-1);
+      ad=append_array(ad,Pike_sp-1);
       pop_stack();
    }
 
@@ -4053,34 +4052,34 @@ void f_diff(INT32 args)
    if (args<2)
       SIMPLE_TOO_FEW_ARGS_ERROR("diff", 2);
 
-   if (sp[-args].type != T_ARRAY)
+   if (Pike_sp[-args].type != T_ARRAY)
      SIMPLE_BAD_ARG_ERROR("diff", 1, "array");
-   if (sp[1-args].type != T_ARRAY)
+   if (Pike_sp[1-args].type != T_ARRAY)
      SIMPLE_BAD_ARG_ERROR("diff", 2, "array");
 
-   cmptbl = diff_compare_table(sp[-args].u.array, sp[1-args].u.array, &uniq);
+   cmptbl = diff_compare_table(Pike_sp[-args].u.array, Pike_sp[1-args].u.array, &uniq);
 
    push_array(cmptbl);
 #ifdef ENABLE_DYN_DIFF
-   if (uniq * 100 > sp[1-args].u.array->size) {
+   if (uniq * 100 > Pike_sp[1-args].u.array->size) {
 #endif /* ENABLE_DYN_DIFF */
 #ifdef DIFF_DEBUG
      fprintf(stderr, "diff: Using G-M algorithm, u:%d, s:%d\n",
-	     uniq, sp[1-args].u.array->size);
+	     uniq, Pike_sp[1-args].u.array->size);
 #endif /* DIFF_DEBUG */
-     seq = diff_longest_sequence(cmptbl, sp[1-1-args].u.array->size);
+     seq = diff_longest_sequence(cmptbl, Pike_sp[1-1-args].u.array->size);
 #ifdef ENABLE_DYN_DIFF
    } else {
 #ifdef DIFF_DEBUG
      fprintf(stderr, "diff: Using dyn algorithm, u:%d, s:%d\n",
-	     uniq, sp[1-args].u.array->size);
+	     uniq, Pike_sp[1-args].u.array->size);
 #endif /* DIFF_DEBUG */
-     seq = diff_dyn_longest_sequence(cmptbl, sp[1-1-args].u.array->size);
+     seq = diff_dyn_longest_sequence(cmptbl, Pike_sp[1-1-args].u.array->size);
    }     
 #endif /* ENABLE_DYN_DIFF */
    push_array(seq);
    
-   diff=diff_build(sp[-2-args].u.array,sp[1-2-args].u.array,seq);
+   diff=diff_build(Pike_sp[-2-args].u.array,Pike_sp[1-2-args].u.array,seq);
 
    pop_n_elems(2+args);
    push_array(diff);
@@ -4155,7 +4154,7 @@ void f__memory_usage(INT32 args)
   INT32 num,size;
   struct svalue *ss;
   pop_n_elems(args);
-  ss=sp;
+  ss=Pike_sp;
 
   count_memory_in_mappings(&num, &size);
   push_text("num_mappings");
@@ -4213,7 +4212,7 @@ void f__memory_usage(INT32 args)
 
   call_callback(&memory_usage_callback, (void *)0);
 
-  f_aggregate_mapping(sp-ss);
+  f_aggregate_mapping(Pike_sp-ss);
 }
 
 void f__next(INT32 args)
@@ -4227,7 +4226,7 @@ void f__next(INT32 args)
   
   pop_n_elems(args-1);
   args = 1;
-  tmp=sp[-1];
+  tmp=Pike_sp[-1];
   switch(tmp.type)
   {
   case T_OBJECT:  tmp.u.object=tmp.u.object->next; break;
@@ -4242,7 +4241,7 @@ void f__next(INT32 args)
   }
   if(tmp.u.refs)
   {
-    assign_svalue(sp-1,&tmp);
+    assign_svalue(Pike_sp-1,&tmp);
   }else{
     pop_stack();
     push_int(0);
@@ -4260,7 +4259,7 @@ void f__prev(INT32 args)
   
   pop_n_elems(args-1);
   args = 1;
-  tmp=sp[-1];
+  tmp=Pike_sp[-1];
   switch(tmp.type)
   {
   case T_OBJECT:  tmp.u.object=tmp.u.object->prev; break;
@@ -4273,7 +4272,7 @@ void f__prev(INT32 args)
   }
   if(tmp.u.refs)
   {
-    assign_svalue(sp-1,&tmp);
+    assign_svalue(Pike_sp-1,&tmp);
   }else{
     pop_stack();
     push_int(0);
@@ -4287,12 +4286,12 @@ void f__refs(INT32 args)
   if(!args)
     SIMPLE_TOO_FEW_ARGS_ERROR("_refs", 1);
 
-  if(sp[-args].type > MAX_REF_TYPE)
+  if(Pike_sp[-args].type > MAX_REF_TYPE)
     SIMPLE_BAD_ARG_ERROR("refs", 1,
 			 "array|mapping|multiset|object|"
 			 "function|program|string");
 
-  i=sp[-args].u.refs[0];
+  i=Pike_sp[-args].u.refs[0];
   pop_n_elems(args);
   push_int(i);
 }
@@ -4308,13 +4307,13 @@ void f__leak(INT32 args)
   if(!args)
     SIMPLE_TOO_FEW_ARGS_ERROR("_leak", 1);
 
-  if(sp[-args].type > MAX_REF_TYPE)
+  if(Pike_sp[-args].type > MAX_REF_TYPE)
     SIMPLE_BAD_ARG_ERROR("_leak", 1,
 			 "array|mapping|multiset|object|"
 			 "function|program|string");
 
-  add_ref(sp[-args].u.array);
-  i=sp[-args].u.refs[0];
+  add_ref(Pike_sp[-args].u.array);
+  i=Pike_sp[-args].u.refs[0];
   pop_n_elems(args);
   push_int(i);
 }
@@ -4325,11 +4324,11 @@ void f__typeof(INT32 args)
   if(!args)
     SIMPLE_TOO_FEW_ARGS_ERROR("_typeof", 1);
 
-  s = get_type_of_svalue(sp-args);
+  s = get_type_of_svalue(Pike_sp-args);
 
   pop_n_elems(args);
   push_string(s);
-  sp[-1].type = T_TYPE;
+  Pike_sp[-1].type = T_TYPE;
 }
 
 void f_replace_master(INT32 args)
@@ -4339,14 +4338,14 @@ void f_replace_master(INT32 args)
 
   if(!args)
     SIMPLE_TOO_FEW_ARGS_ERROR("replace_master", 1);
-  if(sp[-args].type != T_OBJECT)
+  if(Pike_sp[-args].type != T_OBJECT)
     SIMPLE_BAD_ARG_ERROR("replace_master", 1, "object");
- if(!sp[-args].u.object->prog)
-    bad_arg_error("replace_master", sp-args, args, 1, "object", sp-args,
+ if(!Pike_sp[-args].u.object->prog)
+    bad_arg_error("replace_master", Pike_sp-args, args, 1, "object", Pike_sp-args,
 		  "Called with destructed object.\n");
     
   free_object(master_object);
-  master_object=sp[-args].u.object;
+  master_object=Pike_sp[-args].u.object;
   add_ref(master_object);
 
   free_program(master_program);
@@ -4409,7 +4408,7 @@ static void f_get_prof_info(INT32 args)
   if (!args) {
     SIMPLE_TOO_FEW_ARGS_ERROR("get_profiling_info", 1);
   }
-  prog = program_from_svalue(sp-args);
+  prog = program_from_svalue(Pike_sp-args);
   if(!prog)
     SIMPLE_BAD_ARG_ERROR("get_profiling_info", 1, "program|function|object");
 
@@ -4450,7 +4449,7 @@ void f_object_variablep(INT32 args)
   get_all_args("variablep",args,"%o%S",&o, &s);
 
   if(!o->prog)
-    bad_arg_error("variablep", sp-args, args, 1, "object", sp-args,
+    bad_arg_error("variablep", Pike_sp-args, args, 1, "object", Pike_sp-args,
 		  "Called on destructed object.\n");
 
   ret=find_shared_string_identifier(s,o->prog);
@@ -4487,7 +4486,7 @@ void f_uniq_array(INT32 args)
       assign_svalue_no_free(ITEM(b)+ j++, ITEM(a)+i);
     }
   }
-  sp--; /* keep the ref to 'b' */
+  Pike_sp--; /* keep the ref to 'b' */
   b=resize_array(b,  j);
   pop_n_elems(args-1); /* pop args and the mapping */
   push_array(b);
@@ -4504,11 +4503,11 @@ void f_splice(INT32 args)
 #endif
 
   for(i=0;i<args;i++)
-    if (sp[i-args].type!=T_ARRAY) 
+    if (Pike_sp[i-args].type!=T_ARRAY) 
       SIMPLE_BAD_ARG_ERROR("splice", i+1, "array");
     else
-      if (sp[i-args].u.array->size < size)
-	size=sp[i-args].u.array->size;
+      if (Pike_sp[i-args].u.array->size < size)
+	size=Pike_sp[i-args].u.array->size;
 
   out=allocate_array(args * size);
   if (!args)
@@ -4518,11 +4517,11 @@ void f_splice(INT32 args)
   }
 
   out->type_field=0;
-  for(i=-args; i<0; i++) out->type_field|=sp[i].u.array->type_field;
+  for(i=-args; i<0; i++) out->type_field|=Pike_sp[i].u.array->type_field;
 
   for(k=j=0; j<size; j++)
     for(i=-args; i<0; i++)
-      assign_svalue_no_free(out->item+(k++), sp[i].u.array->item+j);
+      assign_svalue_no_free(out->item+(k++), Pike_sp[i].u.array->item+j);
 
   pop_n_elems(args);
   push_array(out);
@@ -4547,17 +4546,17 @@ void f_everynth(INT32 args)
   {
     default:
     case 3:
-     start=sp[2-args].u.integer;
+     start=Pike_sp[2-args].u.integer;
      if(start<0)
-       bad_arg_error("everynth", sp-args, args, 3, "int", sp+2-args,
+       bad_arg_error("everynth", Pike_sp-args, args, 3, "int", Pike_sp+2-args,
 		     "Argument negative.\n");
     case 2:
-      n=sp[1-args].u.integer;
+      n=Pike_sp[1-args].u.integer;
       if(n<1)
-	bad_arg_error("everynth", sp-args, args, 2, "int", sp+1-args,
+	bad_arg_error("everynth", Pike_sp-args, args, 2, "int", Pike_sp+1-args,
 		      "Argument negative.\n");
     case 1:
-      ina=sp[-args].u.array;
+      ina=Pike_sp[-args].u.array;
   }
 
   a=allocate_array(((size=ina->size)-start+n-1)/n);
@@ -4588,10 +4587,10 @@ void f_transpose(INT32 args)
   if (args<1)
     SIMPLE_TOO_FEW_ARGS_ERROR("transpose", 1);
 
-  if (sp[-args].type!=T_ARRAY) 
+  if (Pike_sp[-args].type!=T_ARRAY) 
     SIMPLE_BAD_ARG_ERROR("transpose", 1, "array(array)");
 
-  in=sp[-args].u.array;
+  in=Pike_sp[-args].u.array;
   sizein=in->size;
 
   if(!sizein)
@@ -4681,7 +4680,7 @@ void f__locate_references(INT32 args)
   CHECK_SECURITY_OR_ERROR(SECURITY_BIT_SECURITY,
 			  ("_locate_references: permission denied.\n"));
   if(args)
-    locate_references(sp[-args].u.refs);
+    locate_references(Pike_sp[-args].u.refs);
   pop_n_elems(args-1);
 }
 
@@ -4708,22 +4707,22 @@ void f_map_array(INT32 args)
   if (args < 2)
     SIMPLE_TOO_FEW_ARGS_ERROR("map_array", 2);
 
-  if(sp[-args].type != T_ARRAY)
+  if(Pike_sp[-args].type != T_ARRAY)
     SIMPLE_BAD_ARG_ERROR("map_array", 1, "array");
   
-  foo=sp[-args].u.array;
-  fun=sp-args+1;
+  foo=Pike_sp[-args].u.array;
+  fun=Pike_sp-args+1;
 
   ret=allocate_array(foo->size);
   SET_ONERROR(tmp, do_free_array, ret);
   for(e=0;e<foo->size;e++)
   {
     push_svalue(foo->item+e);
-    assign_svalues_no_free(sp,fun+1,args-2,-1);
-    sp+=args-2;
+    assign_svalues_no_free(Pike_sp,fun+1,args-2,-1);
+    Pike_sp+=args-2;
     apply_svalue(fun,args-1);
-    ret->item[e]=*(--sp);
-    dmalloc_touch_svalue(sp);
+    ret->item[e]=*(--Pike_sp);
+    dmalloc_touch_svalue(Pike_sp);
   }
   pop_n_elems(args);
   UNSET_ONERROR(tmp);
@@ -4780,7 +4779,7 @@ void f_map(INT32 args)
    else if (args<2)
       { push_int(0); args++; }
 
-   switch (sp[-args].type)
+   switch (Pike_sp[-args].type)
    {
       case T_ARRAY:
 	 break;
@@ -4792,15 +4791,15 @@ void f_map(INT32 args)
 	       mkmapping(indices(arr),                
 	                 map(values(arr),fun,@extra)); */
 	 f_aggregate(args-2);
-	 mysp=sp;
+	 mysp=Pike_sp;
 	 splice=mysp[-1].u.array->size;
 
 	 push_svalue(mysp-3); /* arr */
 	 f_values(1);
 	 push_svalue(mysp-2); /* fun */
-	 *sp=mysp[-1];        /* extra */
+	 *Pike_sp=mysp[-1];        /* extra */
 	 mysp[-1].type=T_INT;
-	 push_array_items(sp->u.array);
+	 push_array_items(Pike_sp->u.array);
 	 f_map(splice+2);     /* ... arr fun extra -> ... retval */
 	 stack_pop_n_elems_keep_top(2); /* arr fun extra ret -> arr retval */
 	 stack_swap();        /* retval arr */
@@ -4812,29 +4811,29 @@ void f_map(INT32 args)
       case T_MULTISET:
 	 /* multiset ret =                             
 	       (multiset)(map(indices(arr),fun,@extra)); */
-	 push_svalue(sp-args);      /* take indices from arr */
-	 free_svalue(sp-args-1);    /* move it to top of stack */
-	 sp[-args-1].type=T_INT;    
+	 push_svalue(Pike_sp-args);      /* take indices from arr */
+	 free_svalue(Pike_sp-args-1);    /* move it to top of stack */
+	 Pike_sp[-args-1].type=T_INT;    
 	 f_indices(1);              /* call f_indices */
-	 sp--;
-	 dmalloc_touch_svalue(sp);
-	 sp[-args]=sp[0];           /* move it back */
+	 Pike_sp--;
+	 dmalloc_touch_svalue(Pike_sp);
+	 Pike_sp[-args]=Pike_sp[0];           /* move it back */
 	 f_map(args);               
-	 sp--;                      /* allocate_multiset is destructive */
-	 dmalloc_touch_svalue(sp);
-	 push_multiset(allocate_multiset(sp->u.array));
+	 Pike_sp--;                      /* allocate_multiset is destructive */
+	 dmalloc_touch_svalue(Pike_sp);
+	 push_multiset(allocate_multiset(Pike_sp->u.array));
 	 return;
 
       case T_STRING:
 	 /* multiset ret =                             
 	       (string)(map((array)arr,fun,@extra)); */
-	 push_svalue(sp-args);      /* take indices from arr */
-	 free_svalue(sp-args-1);    /* move it to top of stack */
-	 sp[-args-1].type=T_INT;    
+	 push_svalue(Pike_sp-args);      /* take indices from arr */
+	 free_svalue(Pike_sp-args-1);    /* move it to top of stack */
+	 Pike_sp[-args-1].type=T_INT;    
 	 o_cast(NULL,T_ARRAY);      /* cast the string to an array */
-	 sp--;                       
-	 dmalloc_touch_svalue(sp);
-	 sp[-args]=sp[0];           /* move it back */
+	 Pike_sp--;                       
+	 dmalloc_touch_svalue(Pike_sp);
+	 Pike_sp[-args]=Pike_sp[0];           /* move it back */
 	 f_map(args);               
 	 o_cast(NULL,T_STRING);     /* cast the array to a string */
 	 return;
@@ -4845,22 +4844,22 @@ void f_map(INT32 args)
                try map((mapping)arr,fun,@extra);
                try map((multiset)arr,fun,@extra); */
 
-	 mysp=sp+3-args;
+	 mysp=Pike_sp+3-args;
 
 	 push_svalue(mysp-3);
 	 push_constant_text("cast");
 	 f_arrow(2);
-	 if (!IS_ZERO(sp-1))
+	 if (!IS_ZERO(Pike_sp-1))
 	 {
 	    pop_stack();
 
 	    push_constant_text("array");
 	    safe_apply(mysp[-3].u.object,"cast",1);
-	    if (sp[-1].type==T_ARRAY)
+	    if (Pike_sp[-1].type==T_ARRAY)
 	    {
 	       free_svalue(mysp-3);
-	       mysp[-3]=*(--sp);
-	       dmalloc_touch_svalue(sp);
+	       mysp[-3]=*(--Pike_sp);
+	       dmalloc_touch_svalue(Pike_sp);
 	       f_map(args);
 	       return;
 	    }
@@ -4868,11 +4867,11 @@ void f_map(INT32 args)
 
 	    push_constant_text("mapping");
 	    safe_apply(mysp[-3].u.object,"cast",1);
-	    if (sp[-1].type==T_MAPPING)
+	    if (Pike_sp[-1].type==T_MAPPING)
 	    {
 	       free_svalue(mysp-3);
-	       mysp[-3]=*(--sp);
-	       dmalloc_touch_svalue(sp);
+	       mysp[-3]=*(--Pike_sp);
+	       dmalloc_touch_svalue(Pike_sp);
 	       f_map(args);
 	       return;
 	    }
@@ -4880,11 +4879,11 @@ void f_map(INT32 args)
 
 	    push_constant_text("multiset");
 	    safe_apply(mysp[-3].u.object,"cast",1);
-	    if (sp[-1].type==T_MULTISET)
+	    if (Pike_sp[-1].type==T_MULTISET)
 	    {
 	       free_svalue(mysp-3);
-	       mysp[-3]=*(--sp);
-	       dmalloc_touch_svalue(sp);
+	       mysp[-3]=*(--Pike_sp);
+	       dmalloc_touch_svalue(Pike_sp);
 	       f_map(args);
 	       return;
 	    }
@@ -4905,13 +4904,13 @@ void f_map(INT32 args)
 	 push_svalue(mysp-3);
 	 push_constant_text("_sizeof");
 	 f_arrow(2);
-	 if (!IS_ZERO(sp-2)&&!IS_ZERO(sp-1))
+	 if (!IS_ZERO(Pike_sp-2)&&!IS_ZERO(Pike_sp-1))
 	 {
 	    f_call_function(1);
-	    if (sp[-1].type!=T_INT)
+	    if (Pike_sp[-1].type!=T_INT)
 	       SIMPLE_BAD_ARG_ERROR("map", 1, 
 				    "object sizeof() returning integer");
-	    n=sp[-1].u.integer;
+	    n=Pike_sp[-1].u.integer;
 	    pop_stack();
 	    push_array(d=allocate_array(n));
 	    stack_swap();
@@ -4920,13 +4919,13 @@ void f_map(INT32 args)
 	       stack_dup(); /* `[] */
 	       push_int(i);
 	       f_call_function(2);
-	       d->item[i]=*(--sp);
-	       dmalloc_touch_svalue(sp);
+	       d->item[i]=*(--Pike_sp);
+	       dmalloc_touch_svalue(Pike_sp);
 	    }
 	    pop_stack();
 	    free_svalue(mysp-3);
-	    mysp[-3]=*(--sp);
-	    dmalloc_touch_svalue(sp);
+	    mysp[-3]=*(--Pike_sp);
+	    dmalloc_touch_svalue(Pike_sp);
 	    f_map(args);
 	    return;
 	 }
@@ -4943,7 +4942,7 @@ void f_map(INT32 args)
    }
 
    f_aggregate(args-2);
-   mysp=sp;
+   mysp=Pike_sp;
    splice=mysp[-1].u.array->size;
 
    a=mysp[-3].u.array;
@@ -4957,13 +4956,13 @@ void f_map(INT32 args)
       case T_ARRAY:
 	 /* ret[i]=fun(arr[i],@extra); */
          push_array(d=allocate_array(n));
-	 d=sp[-1].u.array;
+	 d=Pike_sp[-1].u.array;
 
 	 if(mysp[-2].type == T_FUNCTION &&
 	    mysp[-2].subtype == FUNCTION_BUILTIN)
 	 {
 	   c_fun fun=mysp[-2].u.efun->function;
-	   struct svalue *spbase=sp;
+	   struct svalue *spbase=Pike_sp;
 
 	   if(splice)
 	   {
@@ -4973,11 +4972,11 @@ void f_map(INT32 args)
 	       add_ref_svalue(mysp-1);
 	       push_array_items(mysp[-1].u.array);
 	       (* fun)(1+splice);
-	       if(sp>spbase)
+	       if(Pike_sp>spbase)
 	       {
-		 dmalloc_touch_svalue(sp-1);
-		 d->item[i]=*--sp;
-		 pop_n_elems(sp-spbase);
+		 dmalloc_touch_svalue(Pike_sp-1);
+		 d->item[i]=*--Pike_sp;
+		 pop_n_elems(Pike_sp-spbase);
 	       }
 	     }
 	   }else{
@@ -4985,11 +4984,11 @@ void f_map(INT32 args)
 	     {
 	       push_svalue(a->item+i);
 	       (* fun)(1);
-	       if(sp>spbase)
+	       if(Pike_sp>spbase)
 	       {
-		 dmalloc_touch_svalue(sp-1);
-		 d->item[i]=*--sp;
-		 pop_n_elems(sp-spbase);
+		 dmalloc_touch_svalue(Pike_sp-1);
+		 d->item[i]=*--Pike_sp;
+		 pop_n_elems(Pike_sp-spbase);
 	       }
 	     }
 	   }
@@ -5007,8 +5006,8 @@ void f_map(INT32 args)
 	     {
 	       apply_svalue(mysp-2,1);
 	     }
-	     dmalloc_touch_svalue(sp-1);
-	     d->item[i]=*--sp;
+	     dmalloc_touch_svalue(Pike_sp-1);
+	     d->item[i]=*--Pike_sp;
 	   }
 	 }
 	 stack_pop_n_elems_keep_top(3); /* fun arr extra d -> d */
@@ -5025,13 +5024,13 @@ void f_map(INT32 args)
       case T_STRING:
 	 /* ret[i]=arr[i][fun](@extra); */
          push_array(d=allocate_array(n));
-	 d=sp[-1].u.array;
+	 d=Pike_sp[-1].u.array;
 	 for (i=0; i<n; i++)
 	 {
 	    push_svalue(a->item+i);
 	    push_svalue(mysp-2);
 	    f_arrow(2);
-	    if(IS_ZERO(sp-1))
+	    if(IS_ZERO(Pike_sp-1))
 	    {
 	      pop_stack();
 	      continue;
@@ -5039,8 +5038,8 @@ void f_map(INT32 args)
 	    add_ref_svalue(mysp-1);
 	    push_array_items(mysp[-1].u.array);
 	    f_call_function(splice+1);
-	    d->item[i]=*--sp;
-	    dmalloc_touch_svalue(sp);
+	    d->item[i]=*--Pike_sp;
+	    dmalloc_touch_svalue(Pike_sp);
 	 }
 	 stack_pop_n_elems_keep_top(3); /* fun arr extra d -> d */
 	 return;
@@ -5051,9 +5050,9 @@ void f_map(INT32 args)
 	    /* ret=arr(@extra); */
 	    stack_swap(); /* arr fun extra -> arr extra fun */
 	    pop_stack();  /* arr extra */
-	    sp--;
-	    dmalloc_touch_svalue(sp);
-	    push_array_items(sp->u.array);
+	    Pike_sp--;
+	    dmalloc_touch_svalue(Pike_sp);
+	    push_array_items(Pike_sp->u.array);
 	    f_call_function(1+splice);
 	    return;
 	 }	    
@@ -5101,24 +5100,24 @@ void f_filter(INT32 args)
    if (args<1)
       SIMPLE_TOO_FEW_ARGS_ERROR("filter", 1);
    
-   switch (sp[-args].type)
+   switch (Pike_sp[-args].type)
    {
       case T_ARRAY:
-	 if (args >= 2 && sp[1-args].type == T_ARRAY) {
-	   if (sp[1-args].u.array->size != sp[-args].u.array->size)
+	 if (args >= 2 && Pike_sp[1-args].type == T_ARRAY) {
+	   if (Pike_sp[1-args].u.array->size != Pike_sp[-args].u.array->size)
 	     SIMPLE_BAD_ARG_ERROR("filter", 2, "array of same size as the first");
 	   pop_n_elems(args-2);
 	 }
 	 else {
-	   MEMMOVE(sp-args+1,sp-args,args*sizeof(*sp));
-	   dmalloc_touch_svalue(sp);
-	   sp++;
-	   add_ref_svalue(sp-args);
+	   MEMMOVE(Pike_sp-args+1,Pike_sp-args,args*sizeof(*Pike_sp));
+	   dmalloc_touch_svalue(Pike_sp);
+	   Pike_sp++;
+	   add_ref_svalue(Pike_sp-args);
 	   f_map(args);
 	 }
 
-	 f=sp[-1].u.array;
-	 a=sp[-2].u.array;
+	 f=Pike_sp[-1].u.array;
+	 a=Pike_sp[-2].u.array;
 	 n=a->size;
 	 for (k=m=i=0; i<n; i++)
 	    if (!IS_ZERO(f->item+i))
@@ -5148,28 +5147,28 @@ void f_filter(INT32 args)
 	 /* mapping ret =                             
 	       mkmapping(indices(arr),                
 	                 map(values(arr),fun,@extra)); */
-	 MEMMOVE(sp-args+2,sp-args,args*sizeof(*sp));
-	 sp+=2;
-	 sp[-args-2].type=T_INT;
-	 sp[-args-1].type=T_INT;
+	 MEMMOVE(Pike_sp-args+2,Pike_sp-args,args*sizeof(*Pike_sp));
+	 Pike_sp+=2;
+	 Pike_sp[-args-2].type=T_INT;
+	 Pike_sp[-args-1].type=T_INT;
 
-	 push_svalue(sp-args);
+	 push_svalue(Pike_sp-args);
 	 f_indices(1);
-	 sp--;
-	 sp[-args-2]=*sp;
-	 dmalloc_touch_svalue(sp);
-	 push_svalue(sp-args);
+	 Pike_sp--;
+	 Pike_sp[-args-2]=*Pike_sp;
+	 dmalloc_touch_svalue(Pike_sp);
+	 push_svalue(Pike_sp-args);
 	 f_values(1);
-	 sp--;
-	 sp[-args-1]=*sp;
-	 dmalloc_touch_svalue(sp);
+	 Pike_sp--;
+	 Pike_sp[-args-1]=*Pike_sp;
+	 dmalloc_touch_svalue(Pike_sp);
 
-	 assign_svalue(sp-args,sp-args-1); /* loop values only */
+	 assign_svalue(Pike_sp-args,Pike_sp-args-1); /* loop values only */
 	 f_map(args);
 
-	 y=sp[-3].u.array;
-	 a=sp[-2].u.array;
-	 f=sp[-1].u.array;
+	 y=Pike_sp[-3].u.array;
+	 a=Pike_sp[-2].u.array;
+	 f=Pike_sp[-1].u.array;
 	 n=a->size;
 
 	 for (m=i=0; i<n; i++)
@@ -5179,54 +5178,54 @@ void f_filter(INT32 args)
 
 	 for (i=0; i<n; i++)
 	    if (!IS_ZERO(f->item+i))
-	       mapping_insert(sp[-1].u.mapping,y->item+i,a->item+i);
+	       mapping_insert(Pike_sp[-1].u.mapping,y->item+i,a->item+i);
 
 	 stack_pop_n_elems_keep_top(3);
 	 return;
 
       case T_MULTISET:
-	 push_svalue(sp-args);      /* take indices from arr */
-	 free_svalue(sp-args-1);    /* move it to top of stack */
-	 sp[-args-1].type=T_INT;    
+	 push_svalue(Pike_sp-args);      /* take indices from arr */
+	 free_svalue(Pike_sp-args-1);    /* move it to top of stack */
+	 Pike_sp[-args-1].type=T_INT;    
 	 f_indices(1);              /* call f_indices */
-	 sp--;                       
-	 dmalloc_touch_svalue(sp);
-	 sp[-args]=sp[0];           /* move it back */
+	 Pike_sp--;                       
+	 dmalloc_touch_svalue(Pike_sp);
+	 Pike_sp[-args]=Pike_sp[0];           /* move it back */
 	 f_filter(args);               
-	 sp--;                      /* allocate_multiset is destructive */
-	 dmalloc_touch_svalue(sp);
-	 push_multiset(allocate_multiset(sp->u.array));
+	 Pike_sp--;                      /* allocate_multiset is destructive */
+	 dmalloc_touch_svalue(Pike_sp);
+	 push_multiset(allocate_multiset(Pike_sp->u.array));
 	 return;
 
       case T_STRING:
-	 push_svalue(sp-args);      /* take indices from arr */
-	 free_svalue(sp-args-1);    /* move it to top of stack */
-	 sp[-args-1].type=T_INT;    
+	 push_svalue(Pike_sp-args);      /* take indices from arr */
+	 free_svalue(Pike_sp-args-1);    /* move it to top of stack */
+	 Pike_sp[-args-1].type=T_INT;    
 	 o_cast(NULL,T_ARRAY);      /* cast the string to an array */
-	 sp--;                       
-	 dmalloc_touch_svalue(sp);
-	 sp[-args]=sp[0];           /* move it back */
+	 Pike_sp--;                       
+	 dmalloc_touch_svalue(Pike_sp);
+	 Pike_sp[-args]=Pike_sp[0];           /* move it back */
 	 f_filter(args);               
 	 o_cast(NULL,T_STRING);     /* cast the array to a string */
 	 return;
 
       case T_OBJECT:
-	 mysp=sp+3-args;
+	 mysp=Pike_sp+3-args;
 
 	 push_svalue(mysp-3);
 	 push_constant_text("cast");
 	 f_arrow(2);
-	 if (!IS_ZERO(sp-1))
+	 if (!IS_ZERO(Pike_sp-1))
 	 {
 	    pop_stack();
 
 	    push_constant_text("array");
 	    safe_apply(mysp[-3].u.object,"cast",1);
-	    if (sp[-1].type==T_ARRAY)
+	    if (Pike_sp[-1].type==T_ARRAY)
 	    {
 	       free_svalue(mysp-3);
-	       mysp[-3]=*(--sp);
-	       dmalloc_touch_svalue(sp);
+	       mysp[-3]=*(--Pike_sp);
+	       dmalloc_touch_svalue(Pike_sp);
 	       f_filter(args);
 	       return;
 	    }
@@ -5234,11 +5233,11 @@ void f_filter(INT32 args)
 
 	    push_constant_text("mapping");
 	    safe_apply(mysp[-3].u.object,"cast",1);
-	    if (sp[-1].type==T_MAPPING)
+	    if (Pike_sp[-1].type==T_MAPPING)
 	    {
 	       free_svalue(mysp-3);
-	       mysp[-3]=*(--sp);
-	       dmalloc_touch_svalue(sp);
+	       mysp[-3]=*(--Pike_sp);
+	       dmalloc_touch_svalue(Pike_sp);
 	       f_filter(args);
 	       return;
 	    }
@@ -5246,11 +5245,11 @@ void f_filter(INT32 args)
 
 	    push_constant_text("multiset");
 	    safe_apply(mysp[-3].u.object,"cast",1);
-	    if (sp[-1].type==T_MULTISET)
+	    if (Pike_sp[-1].type==T_MULTISET)
 	    {
 	       free_svalue(mysp-3);
-	       mysp[-3]=*(--sp);
-	       dmalloc_touch_svalue(sp);
+	       mysp[-3]=*(--Pike_sp);
+	       dmalloc_touch_svalue(Pike_sp);
 	       f_filter(args);
 	       return;
 	    }
@@ -5324,8 +5323,8 @@ void f_enumerate(INT32 args)
    }
 
    if (args<=3 &&
-       (sp[1-args].type==T_INT &&
-	sp[2-args].type==T_INT))
+       (Pike_sp[1-args].type==T_INT &&
+	Pike_sp[2-args].type==T_INT))
    {
       INT_TYPE step,start;
 
@@ -5344,10 +5343,10 @@ void f_enumerate(INT32 args)
       }
    }
    else if (args<=3 &&
-	    ((sp[1-args].type==T_INT ||
-	      sp[1-args].type==T_FLOAT) &&
-	     (sp[2-args].type==T_INT ||
-	      sp[2-args].type==T_FLOAT) ) )
+	    ((Pike_sp[1-args].type==T_INT ||
+	      Pike_sp[1-args].type==T_FLOAT) &&
+	     (Pike_sp[2-args].type==T_INT ||
+	      Pike_sp[2-args].type==T_FLOAT) ) )
    {
       FLOAT_TYPE step, start;
 
@@ -5373,13 +5372,13 @@ void f_enumerate(INT32 args)
       if (args<4)
       {
 	 push_array(d=allocate_array(n));
-	 push_svalue(sp-2); /* start */
+	 push_svalue(Pike_sp-2); /* start */
 	 for (i=0; i<n; i++)
 	 {
-	    assign_svalue_no_free(d->item+i,sp-1);
+	    assign_svalue_no_free(d->item+i,Pike_sp-1);
 	    if (i<n-1)
 	    {
-	       push_svalue(sp-4); /* step */
+	       push_svalue(Pike_sp-4); /* step */
 	       f_add(2);
 	    }
 	 }
@@ -5387,15 +5386,15 @@ void f_enumerate(INT32 args)
       else
       {
 	 push_array(d=allocate_array(n));
-	 push_svalue(sp-3); /* start */
+	 push_svalue(Pike_sp-3); /* start */
 	 for (i=0; i<n; i++)
 	 {
-	    assign_svalue_no_free(d->item+i,sp-1);
+	    assign_svalue_no_free(d->item+i,Pike_sp-1);
 	    if (i<n-1)
 	    {
-	       push_svalue(sp-3); /* function */
+	       push_svalue(Pike_sp-3); /* function */
 	       stack_swap();
-	       push_svalue(sp-6); /* step */
+	       push_svalue(Pike_sp-6); /* step */
 	       f_call_function(3);
 	    }
 	 }
@@ -5413,7 +5412,7 @@ void f_inherit_list(INT32 args)
   int parid,e,q=0;
 
   get_all_args("inherit_list",args,"%*",&arg);
-  if(sp[-args].type == T_OBJECT)
+  if(Pike_sp[-args].type == T_OBJECT)
     f_object_program(1);
   
   p=program_from_svalue(arg);
@@ -5463,10 +5462,10 @@ void f_inherit_list(INT32 args)
 	if(o && o->prog && i>=0)
 	{
 	  ref_push_object(o);
-	  sp[-1].subtype=i;
-	  sp[-1].type=T_FUNCTION;
+	  Pike_sp[-1].subtype=i;
+	  Pike_sp[-1].type=T_FUNCTION;
 #ifdef PIKE_DEBUG
-	  if(program_from_svalue(sp-1) != in->prog)
+	  if(program_from_svalue(Pike_sp-1) != in->prog)
 	    fatal("Programming error in inherit_list!\n");
 #endif
 	  q++;
@@ -5477,10 +5476,10 @@ void f_inherit_list(INT32 args)
       if(in->parent && in->parent->prog)
       {
 	ref_push_object(in->parent);
-	sp[-1].subtype=in->parent_identifier;
-	sp[-1].type=T_FUNCTION;
+	Pike_sp[-1].subtype=in->parent_identifier;
+	Pike_sp[-1].type=T_FUNCTION;
 #ifdef PIKE_DEBUG
-	if(program_from_svalue(sp-1) != in->prog)
+	if(program_from_svalue(Pike_sp-1) != in->prog)
 	  fatal("Programming error in inherit_list!\n");
 #endif
       }else{
@@ -5497,18 +5496,18 @@ void f_function_defined(INT32 args)
 {
   check_all_args("Function.defined",args,BIT_FUNCTION, 0);
 
-  if(sp[-args].subtype != FUNCTION_BUILTIN &&
-     sp[-args].u.object->prog)
+  if(Pike_sp[-args].subtype != FUNCTION_BUILTIN &&
+     Pike_sp[-args].u.object->prog)
   {
     char *tmp;
     INT32 line;
-    struct identifier *id=ID_FROM_INT(sp[-args].u.object->prog,
-				      sp[-args].subtype);
+    struct identifier *id=ID_FROM_INT(Pike_sp[-args].u.object->prog,
+				      Pike_sp[-args].subtype);
     if(IDENTIFIER_IS_PIKE_FUNCTION( id->identifier_flags ) &&
       id->func.offset != -1)
     {
-      if((tmp=get_line(sp[-args].u.object->prog->program + id->func.offset,
-		       sp[-args].u.object->prog,
+      if((tmp=get_line(Pike_sp[-args].u.object->prog->program + id->func.offset,
+		       Pike_sp[-args].u.object->prog,
 		       &line)))
       {
 	struct pike_string *tmp2;

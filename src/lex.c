@@ -5,7 +5,7 @@
 \*/
 /**/
 #include "global.h"
-RCSID("$Id: lex.c,v 1.80 2000/05/11 14:09:45 grubba Exp $");
+RCSID("$Id: lex.c,v 1.81 2000/07/07 02:11:40 hubbe Exp $");
 #include "language.h"
 #include "array.h"
 #include "lex.h"
@@ -258,13 +258,13 @@ char *get_f_name(int n)
   {
     return instrs[n-F_OFFSET].name;
   }else if(n >= F_MAX_OPCODE) {
-    if(fp && fp->context.prog &&
-       (int)fp->context.prog->num_constants > (int)(n-F_MAX_OPCODE) &&
-       fp->context.prog->constants[n-F_MAX_OPCODE].sval.type==T_FUNCTION &&
-       fp->context.prog->constants[n-F_MAX_OPCODE].sval.subtype == FUNCTION_BUILTIN &&
-       fp->context.prog->constants[n-F_MAX_OPCODE].sval.u.efun)
+    if(Pike_fp && Pike_fp->context.prog &&
+       (int)Pike_fp->context.prog->num_constants > (int)(n-F_MAX_OPCODE) &&
+       Pike_fp->context.prog->constants[n-F_MAX_OPCODE].sval.type==T_FUNCTION &&
+       Pike_fp->context.prog->constants[n-F_MAX_OPCODE].sval.subtype == FUNCTION_BUILTIN &&
+       Pike_fp->context.prog->constants[n-F_MAX_OPCODE].sval.u.efun)
     {
-      return fp->context.prog->constants[n-F_MAX_OPCODE].sval.u.efun->name->str;
+      return Pike_fp->context.prog->constants[n-F_MAX_OPCODE].sval.u.efun->name->str;
     }else{
       sprintf(buf, "Call efun %d", n - F_MAX_OPCODE);
       return buf;
