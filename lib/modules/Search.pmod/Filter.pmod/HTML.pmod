@@ -1,13 +1,14 @@
 // This file is part of Roxen Search
 // Copyright © 2000,2001 Roxen IS. All rights reserved.
 //
-// $Id: HTML.pmod,v 1.13 2001/06/22 01:28:35 nilsson Exp $
+// $Id: HTML.pmod,v 1.14 2001/06/23 02:08:54 js Exp $
 
 // Filter for text/html
 
 inherit Search.Filter.Base;
 
 constant contenttypes = ({ "text/html" });
+constant fields = ({ "body", "title", "keywords", "description" });
 
 string _sprintf()
 {
