@@ -80,7 +80,7 @@ array encode(mixed val)
 
 array encode_error(string e)
 {
-  return ({ CTX_ERROR, e });
+  return ({ CTX_ERROR, gethostname()+":"+replace(e, "\n", "\n"+gethostname()+":") });
 }
 
 array encode_error_return(int id, string e)

@@ -61,16 +61,19 @@ void start_server(object c, object cx)
 //
 // Add a function that is called when the connection is closed.
 //
-void add_close_callback(function f)
+void add_close_callback(function f, mixed ... args)
 {
-  close_callbacks += ({ f });
+  if(sizeof(args))
+    close_callbacks += ({ ({f})+args });
+  else
+    close_callbacks += ({ f });
 }
 
 // - remove_close_callback
 //
 // Remove a function that is called when the connection is closed.
 //
-void remove_close_callback(function f)
+void remove_close_callback(array f)
 {
   close_callbacks -= ({ f });
 }
@@ -79,25 +82,36 @@ void remove_close_callback(function f)
 void closed_connection(int|void ignore)
 {
   DEBUGMSG("connection closed\n");
-  foreach(close_callbacks, function f)
-    f();
+  foreach(close_callbacks, function|array f)
+    if(functionp(f))
+       f();
+    else
+      f[0](@f[1..]);
 }
-
+int closed;
 string write_buffer = "";
 void write_some(int|void ignore)
 {
+  if(closed) return;
   int c;
   if (!sizeof(write_buffer))
     return;
   c = con->write(write_buffer);
+  if(c <= 0)
+  {
+    closed_connection();
+    closed=1;
+    return;
+  }
   write_buffer = write_buffer[c..];
   DEBUGMSG("wrote "+c+" bytes\n");
 }
 
 void send(string s)
 {
+  string ob = write_buffer;
   write_buffer += s;
-  write_some();
+  if(!strlen(ob)) write_some();
 }
 
 mapping pending_calls = ([ ]);
@@ -229,6 +243,7 @@ void read_some(int ignore, string s)
 //
 mixed call_sync(array data)
 {
+  if(closed) error("connection closed\n");
   int refno = data[4];
   string s = encode_value(data);
   con->set_blocking();
@@ -238,8 +253,12 @@ mixed call_sync(array data)
   while(zero_type(finished_calls[refno]))
   {
     string s = con->read(8192,1);
-    if(!s)
+    if(!s || !strlen(s))
+    {
+      closed_connection();
+      closed=1;
       error("Could not read");
+    }
     read_some(0,s);
   }
   con->set_nonblocking(read_some, write_some, closed_connection);
@@ -252,6 +271,7 @@ mixed call_sync(array data)
 //
 void call_async(array data)
 {
+  if(closed) error("connection closed\n");
   string s = encode_value(data);
   DEBUGMSG("call_sync "+ctx->describe(data)+"\n");
   send(sprintf("%4c%s", sizeof(s), s));
