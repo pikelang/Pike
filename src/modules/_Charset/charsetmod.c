@@ -3,7 +3,7 @@
 #endif /* HAVE_CONFIG_H */
 
 #include "global.h"
-RCSID("$Id: charsetmod.c,v 1.9 1999/02/10 21:51:16 hubbe Exp $");
+RCSID("$Id: charsetmod.c,v 1.10 1999/02/23 15:01:58 marcus Exp $");
 #include "program.h"
 #include "interpret.h"
 #include "stralloc.h"
@@ -1059,10 +1059,9 @@ void pike_module_init(void)
 {
   int i;
   struct svalue prog;
-  extern struct program *iso2022_init();
-  struct program *iso2022_program = iso2022_init();
-  if(iso2022_program != NULL)
-    add_program_constant("ISO2022", iso2022_program, ID_STATIC|ID_NOMASK);
+  extern void iso2022_init();
+
+  iso2022_init();
 
   start_new_program();
   ADD_STORAGE(struct std_cs_stor);

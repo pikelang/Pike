@@ -3,7 +3,7 @@
 #endif /* HAVE_CONFIG_H */
 
 #include "global.h"
-RCSID("$Id: iso2022.c,v 1.4 1999/02/10 21:51:17 hubbe Exp $");
+RCSID("$Id: iso2022.c,v 1.5 1999/02/23 15:01:59 marcus Exp $");
 #include "program.h"
 #include "interpret.h"
 #include "stralloc.h"
@@ -16,7 +16,8 @@ RCSID("$Id: iso2022.c,v 1.4 1999/02/10 21:51:17 hubbe Exp $");
 #define PRGM_NAME "Locale.Charset.ISO2022"
 
 
-static struct program *iso2022_program = NULL;
+static struct program *iso2022dec_program = NULL;
+static struct program *iso2022enc_program = NULL;
 
 struct gdesc {
   UNICHAR *transl;
@@ -29,6 +30,12 @@ struct iso2022_stor {
 
   struct string_builder strbuild;
 
+};
+
+struct iso2022enc_stor {
+  struct gdesc g[2];
+  struct pike_string *replace;
+  struct string_builder strbuild;
 };
 
 #define EMIT(X) string_builder_putchar(&s->strbuild,(X))
@@ -325,12 +332,158 @@ static void eat_string(struct pike_string *str, struct iso2022_stor *s)
     free_string(tmpstr);
 }
 
+static void eat_enc_string(struct pike_string *str, struct iso2022enc_stor *s,
+			   struct pike_string *rep)
+{
+  extern UNICHAR map_ANSI_X3_4_1968[];
+  extern UNICHAR map_ISO_8859_1_1987[];
+  INT32 l = str->len;
+
+  switch(str->size_shift) {
+  case 0:
+    /* Simple case, just ASCII and latin1... */
+    {
+      int asc, lat;
+      p_wchar0 c, *p = STR0(str);
+      if(s->g[0].mode == MODE_94 && s->g[0].index == 0x12)
+	asc = 1;
+      else
+	asc = 0;
+      if(s->g[1].mode == MODE_96 && s->g[1].index == 0x11)
+	lat = 1;
+      else
+	lat = 0;
+      while(l--) {
+	if((c=*p++)<0x80) {
+	  if(c=='\r' || c=='\n') {
+	    if(s->g[0].mode != MODE_94 || s->g[0].index != 0x12) {
+	      s->g[0].transl = NULL;
+	      s->g[0].index = 0;
+	    }
+	    s->g[1].transl = NULL;
+	    s->g[1].index = 0;
+	    lat = 0;
+	  } else if(!asc && c>' ' && c<0x7f) {
+	    string_builder_strcat(&s->strbuild, "\033(B");
+	    s->g[0].transl = map_ANSI_X3_4_1968;
+	    s->g[0].mode = MODE_94;
+	    s->g[0].index = 0x12;
+	    asc = 1;
+	  }
+	} else if(!lat) {
+	  string_builder_strcat(&s->strbuild, "\033-A");
+	  s->g[1].transl = map_ISO_8859_1_1987;
+	  s->g[1].mode = MODE_96;
+	  s->g[1].index = 0x11;
+	  lat = 1;
+	}
+	string_builder_putchar(&s->strbuild,c);
+      }
+    }
+    break;
+  case 1:
+    {
+      p_wchar1 c, *p = STR1(str);
+      while(l--)
+	if((c=*p++)<0x21 || c==0x7f) {
+	  if(c=='\r' || c=='\n') {
+	    if(s->g[0].mode != MODE_94 || s->g[0].index != 0x12) {
+	      s->g[0].transl = NULL;
+	      s->g[0].index = 0;
+	    }
+	    s->g[1].transl = NULL;
+	    s->g[1].index = 0;
+	  }
+	  string_builder_putchar(&s->strbuild,c);
+	} else if(c<0x7f) {
+	  if(s->g[0].mode != MODE_94 || s->g[0].index != 0x12) {
+	    string_builder_strcat(&s->strbuild, "\033(B");
+	    s->g[0].transl = map_ANSI_X3_4_1968;
+	    s->g[0].mode = MODE_94;
+	    s->g[0].index = 0x12;
+	  }
+	  string_builder_putchar(&s->strbuild,c);
+	} else if(c<0x100) {
+	  if(s->g[1].mode != MODE_96 || s->g[1].index != 0x11) {
+	    string_builder_strcat(&s->strbuild, "\033-A");
+	    s->g[1].transl = map_ISO_8859_1_1987;
+	    s->g[1].mode = MODE_96;
+	    s->g[1].index = 0x11;
+	  }
+	  string_builder_putchar(&s->strbuild,c);
+	} else if(c==0xfffd) {
+	  /* Substitution character... */
+	  if(rep != NULL)
+	    eat_enc_string(rep, s, NULL);
+	  else
+	    error("Character unsupported by encoding.\n");
+	} else if(c>=0x3000) {
+	  /* CJK */
+	  error("Not implemented.\n");
+	} else {
+	  int mode, index, ch;
+	  UNICHAR *ttab = NULL;
+	  if(c<0x180) {
+	    unsigned char map1[] = {
+	      0x02, 0x00, 0x15, 0x00, 0xa0, 0xa0, 0x02, 0xff,
+	      0xff, 0xff, 0xff, 0xf0, 0xff, 0xff, 0x80, 0xc0,
+	      0x00, 0x08, 0xfc, 0x03, 0x30, 0x20, 0x00, 0x15,
+	      0x00, 0xf0, 0xff, 0x03, 0xf0, 0xff, 0x00, 0x00 };
+	    unsigned char map2[] = { 0x12, 0x13, 0x14, 0x20 };
+	    mode = MODE_96;
+	    index = map2[(map1[(c-0x100)>>2]>>((c&3)<<1))&3];
+	  } else {
+	    error("Not implemented.\n");
+	  }
+	  if(index!=0 && (ttab = transltab[mode][index-0x10])!=NULL) {
+	    switch(mode) {
+	    case MODE_96:
+	      for(ch=0; ch<96; ch++)
+		if(ttab[ch]==c)
+		  break;
+	      if(ch<96) {
+		if(s->g[1].mode != MODE_96 || s->g[1].index != index) {
+		  string_builder_strcat(&s->strbuild, "\033-");
+		  string_builder_putchar(&s->strbuild,index+0x30);
+		  s->g[1].transl = ttab;
+		  s->g[1].mode = MODE_96;
+		  s->g[1].index = index;
+		}
+		string_builder_putchar(&s->strbuild,ch+160);
+	      } else
+		ttab = NULL;
+	      break;
+	    default:
+	      ttab = NULL;
+	    }
+	  }
+	  if(ttab == NULL)
+	    if(rep != NULL)
+	      eat_enc_string(rep, s, NULL);
+	    else
+	      error("Character unsupported by encoding.\n");
+	}
+    }
+    break;
+  case 2:
+    {
+      /* Quick exit, no characters beyond 0xffe6 are supported anyway :) */
+      if(rep == NULL)
+	error("Character unsupported by encoding.\n");
+
+      error("Not implemented.\n");
+    }
+    break;
+  default:
+    fatal("Illegal shift size!\n");
+  }
+}
 
 static void f_feed(INT32 args)
 {
   struct pike_string *str;
 
-  get_all_args(PRGM_NAME"->feed()", args, "%S", &str);
+  get_all_args(PRGM_NAME"Dec->feed()", args, "%S", &str);
 
   eat_string(str, (struct iso2022_stor *)fp->current_storage);
 
@@ -381,6 +534,67 @@ static void f_clear(INT32 args)
   push_object(this_object());
 }
 
+
+static void f_enc_feed(INT32 args)
+{
+  struct pike_string *str;
+
+  get_all_args(PRGM_NAME"Dec->feed()", args, "%W", &str);
+
+  eat_enc_string(str, (struct iso2022enc_stor *)fp->current_storage,
+		 ((struct iso2022enc_stor *)fp->current_storage)->replace);
+
+  pop_n_elems(args);
+  push_object(this_object());
+}
+
+static void f_enc_drain(INT32 args)
+{
+  struct iso2022enc_stor *s = (struct iso2022enc_stor *)fp->current_storage;
+
+  pop_n_elems(args);
+  push_string(finish_string_builder(&s->strbuild));
+  init_string_builder(&s->strbuild, 0);
+}
+
+static void f_enc_clear(INT32 args)
+{
+  extern UNICHAR map_ANSI_X3_4_1968[];
+  struct iso2022enc_stor *s = (struct iso2022enc_stor *)fp->current_storage;
+  int i;
+
+  pop_n_elems(args);
+
+  for(i=0; i<2; i++) {
+    s->g[i].transl = NULL;
+    s->g[i].mode = MODE_96;
+    s->g[i].index = 0;
+  }
+  s->g[0].transl = map_ANSI_X3_4_1968;
+  s->g[0].mode = MODE_94;
+  s->g[0].index = 0x12;
+
+  reset_string_builder(&s->strbuild);
+  
+  push_object(this_object());
+}
+
+static void f_create(INT32 args)
+{
+  struct iso2022enc_stor *s = (struct iso2022enc_stor *)fp->current_storage;
+
+  check_all_args("create()", args, BIT_STRING|BIT_VOID|BIT_INT, 0);
+
+  if(args>0 && sp[-args].type == T_STRING) {
+    if(s->replace != NULL)
+      free_string(s->replace);
+    add_ref(s->replace = sp[-args].u.string);
+  }
+
+  pop_n_elems(args);
+  push_int(0);
+}
+
 static void init_stor(struct object *o)
 {
   struct iso2022_stor *s = (struct iso2022_stor *)fp->current_storage;
@@ -406,7 +620,32 @@ static void exit_stor(struct object *o)
   free_string(finish_string_builder(&s->strbuild));
 }
 
-struct program *iso2022_init(void)
+static void init_enc_stor(struct object *o)
+{
+  struct iso2022enc_stor *s = (struct iso2022enc_stor *)fp->current_storage;
+
+  s->replace = NULL;
+
+  init_string_builder(&s->strbuild,0);
+
+  f_enc_clear(0);
+  pop_n_elems(1);
+}
+
+static void exit_enc_stor(struct object *o)
+{
+  struct iso2022enc_stor *s = (struct iso2022enc_stor *)fp->current_storage;
+
+  if(s->replace != NULL) {
+    free_string(s->replace);
+    s->replace = NULL;
+  }
+
+  reset_string_builder(&s->strbuild);
+  free_string(finish_string_builder(&s->strbuild));
+}
+
+void iso2022_init(void)
 {
   start_new_program();
   ADD_STORAGE(struct iso2022_stor);
@@ -418,13 +657,33 @@ struct program *iso2022_init(void)
   ADD_FUNCTION("clear", f_clear,tFunc(,tObj), 0);
   set_init_callback(init_stor);
   set_exit_callback(exit_stor);
-  return iso2022_program = end_program();
+  add_program_constant("ISO2022Dec", iso2022dec_program = end_program(),
+		       ID_STATIC|ID_NOMASK);
+
+  start_new_program();
+  ADD_STORAGE(struct iso2022enc_stor);
+  /* function(string:object) */
+  ADD_FUNCTION("feed", f_enc_feed,tFunc(tStr,tObj), 0);
+  /* function(:string) */
+  ADD_FUNCTION("drain", f_enc_drain,tFunc(,tStr), 0);
+  /* function(:object) */
+  ADD_FUNCTION("clear", f_enc_clear,tFunc(,tObj), 0);
+  /* function(string|void:void) */
+  ADD_FUNCTION("create", f_create,tFunc(tOr(tStr,tVoid),tVoid), 0);
+  set_init_callback(init_enc_stor);
+  set_exit_callback(exit_enc_stor);
+  add_program_constant("ISO2022Enc", iso2022enc_program = end_program(),
+		       ID_STATIC|ID_NOMASK);
 }
 
 void iso2022_exit(void)
 {
-  if(iso2022_program) {
-    free_program(iso2022_program);
-    iso2022_program = NULL;
+  if(iso2022dec_program) {
+    free_program(iso2022dec_program);
+    iso2022dec_program = NULL;
+  }
+  if(iso2022enc_program) {
+    free_program(iso2022enc_program);
+    iso2022enc_program = NULL;
   }
 }

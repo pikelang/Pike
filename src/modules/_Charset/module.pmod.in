@@ -29,7 +29,7 @@ object decoder(string name)
     }();
 
   if(name[..7]=="iso-2022")
-    return ISO2022();
+    return ISO2022Dec();
 
   program p = ([
     "utf-7": UTF7dec,
@@ -89,6 +89,9 @@ object encoder(string name, string|void replacement)
 	replacement = r;
       }
     }(replacement);
+
+  if(name[..7]=="iso-2022")
+    return ISO2022Enc(replacement);
 
   program p = ([
     "utf-7": UTF7enc,
