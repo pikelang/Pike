@@ -559,9 +559,7 @@ void postProcess(Node tree) {
 
 // Structure description file format:
 //
-// <!-- Top container has no name attribute, maps to the dir
-//      supplied as a parameter to the splitIntoDirHier function -->
-// <dir>
+// <dir name="manual">
 //   <dir name="Process">
 //     <file name="create_process.xml">
 //       <!-- Only create and limit_value på den här sidan,
@@ -613,7 +611,7 @@ void splitIntoDirHier(string docXMLFile, string structureXMLFile,
                       string rootDir)
 {
   Node doc = parse_input(docXMLFile)[0];
-  Node struc = parse_input(structureXMLFile)[0];
+  Node struc = parse_input(structureXMLFile);
 
   // First we find and all targets
 
@@ -655,11 +653,13 @@ void splitIntoDirHier(string docXMLFile, string structureXMLFile,
               || splitError("<file> must have a name attribute");
             break;
           case "dir":
-            if (attr["name"])
-              dirs += ({ attr["name"] });
+            if (!attr->name)
+	      throw( ({ "Dir element is missing name attribute.\n", backtrace() }) );
+              dirs += ({ attr->name });
             break;
           default:
-            werror("Skipping unknown structure tag: <%s>\n", n->get_any_name());
+            throw( ({ "Found unknown structure tag: <" + n->get_any_name() +
+		      ">\n", backtrace() }) );
         }
       }
     },
@@ -670,8 +670,7 @@ void splitIntoDirHier(string docXMLFile, string structureXMLFile,
             fileName = 0;
             break;
           case "dir":
-            if (n->get_attributes()["name"])
-              dirs = dirs[0..sizeof(dirs) - 2];
+	    dirs = dirs[0..sizeof(dirs) - 2];
             break;
         }
     }
