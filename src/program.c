@@ -2,11 +2,11 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: program.c,v 1.498 2003/04/07 17:28:55 nilsson Exp $
+|| $Id: program.c,v 1.499 2003/04/17 22:51:13 mast Exp $
 */
 
 #include "global.h"
-RCSID("$Id: program.c,v 1.498 2003/04/07 17:28:55 nilsson Exp $");
+RCSID("$Id: program.c,v 1.499 2003/04/17 22:51:13 mast Exp $");
 #include "program.h"
 #include "object.h"
 #include "dynamic_buffer.h"
@@ -341,7 +341,30 @@ static char *raw_lfun_types[] = {
  *!   Left associative addition operator callback.
  *!
  *! @seealso
- *!   @[lfun::``+()], @[predef::`+()]
+ *!   @[lfun::``+()], @[lfun::`+=()], @[predef::`+()]
+ */
+
+/*! @decl this_program lfun::`+=(zero ... args)
+ *!
+ *!   Left associative addition operator callback that destructively
+ *!   assigns the result of the addition to this object. It should
+ *!   always return this object.
+ *!
+ *! @note
+ *!   This function should only be implemented if @[lfun::`+()] also
+ *!   is. It should only work as a more optimized alternative to that
+ *!   one, for the case when it's safe to change the object
+ *!   destructively.
+ *!
+ *! @note
+ *!   This function is not an lfun for the @expr{+=@} operator. It's
+ *!   only the safety to do a destructive change that decides whether
+ *!   this function or @[lfun::`+()] will be called; both the
+ *!   @expr{+@} operator and the @expr{+=@} operator can call either
+ *!   one.
+ *!
+ *! @seealso
+ *!   @[lfun::`+()], @[predef::`+()]
  */
 
 /*! @decl mixed lfun::`-(zero ... args)
