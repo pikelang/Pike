@@ -245,7 +245,7 @@ lib: $(LIBDIR_SRC) $(LIBDIR_SRC)/master.pike $(LIBDIR_SRC)/modules $(LIBDIR_SRC)
 # and thus has to follow the rules stated in that code.
 export: new_peep_engine $(SRCDIR)/language.c $(SRCDIR)/language.h depend
 	chmod +x $(SRCDIR)/install-sh
-	$(RUNPIKE) $(TMP_BINDIR)/export.pike Odbc Oracle _Crypto Crypto
+	$(RUNPIKE) $(TMP_BINDIR)/export.pike Odbc Oracle _Crypto
 
 full_export: new_peep_engine $(SRCDIR)/language.c $(SRCDIR)/language.h depend
 	chmod +x $(SRCDIR)/install-sh
@@ -264,6 +264,7 @@ peep.o: $(SRCDIR)/peep_engine.c
 depend: $(SRCDIR)/language.c
 	gcc -MM $(PREFLAGS) $(SRCDIR)/*.c | $(TMP_BINDIR)/fixdepends.sh $(SRCDIR)
 	( cd modules ; $(MAKE) $(MAKE_FLAGS) depend )
+	$(SRCDIR)/configure
 
 docs:
 	mkdir docs
