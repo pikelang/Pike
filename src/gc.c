@@ -29,7 +29,7 @@ struct callback *gc_evaluator_callback=0;
 
 #include "block_alloc.h"
 
-RCSID("$Id: gc.c,v 1.94 2000/06/12 19:35:08 mast Exp $");
+RCSID("$Id: gc.c,v 1.95 2000/06/12 21:41:41 mast Exp $");
 
 /* Run garbage collect approximately every time
  * 20 percent of all arrays, objects and programs is
@@ -114,10 +114,10 @@ static unsigned last_cycle;
  * cyclic reference at a chosen point. Some markers thus get a place
  * earlier on the list even though their corresponding stack frames
  * are later than some other markers they have references to. These
- * markers are given the GC_DONT_POP flag to make them stay on the
- * list when they're popped from the stack. They'll get popped
- * eventually since all markers in the gap between the top one and
- * it's previous gc_rec_last point are popped.
+ * markers are flagged to make them stay on the list when they're
+ * popped from the stack. They'll get popped eventually since all
+ * markers in the gap between the top one and it's previous
+ * gc_rec_last point are popped.
  *
  * Markers for live objects are linked into the beginning of kill_list
  * when they're popped from rec_list.
@@ -408,7 +408,7 @@ void describe_location(void *real_memblock,
 static void describe_marker(struct marker *m)
 {
   if (m)
-    fprintf(stderr, "marker at %p: flags=0x%04x, refs=%d, weak=%d, "
+    fprintf(stderr, "marker at %p: flags=0x%06x, refs=%d, weak=%d, "
 	    "xrefs=%d, cycle=%d, link=%p\n",
 	    m, m->flags, m->refs, m->weak_refs,
 	    m->xrefs, m->cycle, m->link);
@@ -747,8 +747,8 @@ void debug_gc_touch(void *a)
       if (!(m->flags & GC_TOUCHED))
 	gc_fatal(a, 2, "An existing but untouched marker found "
 		 "for object in linked lists.\n");
-      else if (m->flags & (GC_RECURSING|GC_LIVE_RECURSE|GC_DONT_POP|
-			   GC_WEAK_REF|GC_STRONG_REF))
+      else if (m->flags & (GC_ON_STACK|GC_IN_REC_LIST|GC_DONT_POP|
+			   GC_LIVE_RECURSE|GC_WEAK_REF|GC_STRONG_REF))
 	gc_fatal(a, 2, "Marker still got flag from recurse list.\n");
       else if (m->flags & GC_REFERENCED)
 	return;
@@ -1057,7 +1057,6 @@ static void break_cycle (struct marker *beg, struct marker *pos)
   /* There's a cycle from beg to gc_rec_last which should be broken at
    * pos. Do it by switching places of the markers before and after pos. */
   struct marker *p, *q;
-  CYCLE_DEBUG_MSG(pos, "break_cycle");
 #ifdef PIKE_DEBUG
   if (beg == pos)
     gc_fatal(beg->data, 0, "Cycle already broken at requested position.\n");
@@ -1074,12 +1073,15 @@ static void break_cycle (struct marker *beg, struct marker *pos)
   else
     for (p = &rec_list; p->link != beg; p = p->link) {}
 
+  CYCLE_DEBUG_MSG(beg, "break_cycle, break from");
+  CYCLE_DEBUG_MSG(pos, "break_cycle, break at");
+
   p->link = pos;
 
   for (p = beg; p->link != pos; p = p->link) {}
 
   for (q = pos;; q = q->link) {
-    q->flags |= GC_DONT_POP;
+    q->flags |= GC_MOVED_BACK|GC_DONT_POP;
     CYCLE_DEBUG_MSG(q, "break_cycle, mark for don't pop");
     if (q == gc_rec_last) break;
   }
@@ -1178,7 +1180,7 @@ int gc_cycle_push(void *x, struct marker *m, int weak)
   if (weak >= 0) gc_rec_last->flags |= GC_FOLLOWED_NONSTRONG;
 #endif
 
-  if (m->flags & GC_RECURSING) { /* A cyclic reference is found. */
+  if (m->flags & GC_IN_REC_LIST) { /* A cyclic reference is found. */
 #ifdef PIKE_DEBUG
     if (m == &rec_list || gc_rec_last == &rec_list)
       gc_fatal(x, 0, "Cyclic ref involves dummy rec_list marker.\n");
@@ -1259,21 +1261,16 @@ int gc_cycle_push(void *x, struct marker *m, int weak)
 	      if (p == gc_rec_last) break;
 	    }}}}		/* Mmm.. lisp ;) */
 
-      else {			/* A forward reference. */
-	/* It might be a reference to a marker that has been swapped
-	 * further down the list by break_cycle(). In that case we
-	 * must mark this path to stay on the list. */
-	struct marker *q = 0;
-	CYCLE_DEBUG_MSG(m, "gc_cycle_push, forward ref");
-	for (p = rec_list.link; p != gc_rec_last; p = p->link)
-	  if (p->flags & GC_DONT_POP) q = p;
-	if (q)
-	  for (p = q->link;; p = p->link) {
-	    p->flags |= GC_DONT_POP;
-	    CYCLE_DEBUG_MSG(p, "gc_cycle_push, mark for don't pop");
-	    if (p == gc_rec_last) break;
-	  }
-      }
+      else			/* A forward reference. */
+	if (m->flags & GC_ON_STACK) {
+	  /* It's a reference to a marker that has been swapped
+	   * further down the list by break_cycle(). In that case we
+	   * must mark gc_rec_last to stay on the list. */
+	  CYCLE_DEBUG_MSG(m, "gc_cycle_push, mark for don't pop");
+	  gc_rec_last->flags |= GC_DONT_POP;
+	}
+	else
+	  CYCLE_DEBUG_MSG(m, "gc_cycle_push, forward ref");
     }
   }
 
@@ -1287,6 +1284,8 @@ int gc_cycle_push(void *x, struct marker *m, int weak)
       }
 #ifdef PIKE_DEBUG
       cycle_checked++;
+      if (m->flags & GC_ON_STACK)
+	gc_fatal(x, 0, "Recursing twice into thing.\n");
       if (m->flags & GC_LIVE_RECURSE)
 	gc_fatal(x, 0, "GC_LIVE_RECURSE set in normal recursion.\n");
 #endif
@@ -1296,7 +1295,7 @@ int gc_cycle_push(void *x, struct marker *m, int weak)
 	for (; p->link && p->link->cycle == gc_rec_last->cycle; p = p->link) {}
       m->link = p->link;
       p->link = m;
-      m->flags |= GC_CYCLE_CHECKED|GC_RECURSING;
+      m->flags |= GC_CYCLE_CHECKED|GC_ON_STACK|GC_IN_REC_LIST;
       m->cycle = 0;
 
 #ifdef GC_CYCLE_DEBUG
@@ -1376,13 +1375,15 @@ void gc_cycle_pop(void *a)
   gc_cycle_indent -= 2;
 #endif
 
-  if (!(m->flags & GC_RECURSING) || m->flags & GC_LIVE_RECURSE) {
+  if (m->flags & GC_LIVE_RECURSE) {
     m->flags &= ~GC_LIVE_RECURSE;
-    CYCLE_DEBUG_MSG(m, "gc_cycle_pop, pop ignored");
+    CYCLE_DEBUG_MSG(m, "gc_cycle_pop, live pop");
     return;
   }
 
 #ifdef PIKE_DEBUG
+  if (!(m->flags & GC_ON_STACK))
+    gc_fatal(a, 0, "Marker being popped isn't on stack.\n");
   if (m->flags & GC_GOT_DEAD_REF)
     gc_fatal(a, 0, "Didn't expect a dead extra ref.\n");
 #endif
@@ -1393,6 +1394,10 @@ void gc_cycle_pop(void *a)
       gc_fatal(a, 0, "Found GC_DONT_POP marker on top of stack.\n");
 #endif
     CYCLE_DEBUG_MSG(m, "gc_cycle_pop, keep on stack");
+    if (!(m->flags & GC_MOVED_BACK)) {
+      gc_rec_last->flags |= GC_DONT_POP;
+      CYCLE_DEBUG_MSG(gc_rec_last, "gc_cycle_pop, propagate don't pop");
+    }
     return;
   }
 
@@ -1406,14 +1411,16 @@ void gc_cycle_pop(void *a)
 
     if (!p->cycle && !(p->flags & GC_LIVE_OBJ)) {
       ADD_REF_IF_DEAD(p);
-      p->flags &= ~(GC_RECURSING|GC_DONT_POP|GC_WEAK_REF|GC_STRONG_REF);
+      p->flags &= ~(GC_ON_STACK|GC_IN_REC_LIST|GC_DONT_POP|
+		    GC_WEAK_REF|GC_STRONG_REF);
       q->link = p->link;
       DO_IF_DEBUG(p->link = (struct marker *) -1);
       CYCLE_DEBUG_MSG(p, "gc_cycle_pop, pop off");
     }
 
     else {
-      p->flags &= ~(GC_DONT_POP|GC_WEAK_REF|GC_STRONG_REF);
+      p->flags &= ~(GC_ON_STACK|GC_DONT_POP|
+		    GC_WEAK_REF|GC_STRONG_REF);
       q = p;
     }
     if (p == m) break;
@@ -1439,12 +1446,12 @@ void gc_cycle_pop(void *a)
 #ifdef PIKE_DEBUG
 	if (p->cycle && cycle && p->cycle != cycle)
 	  gc_fatal(p->data, 0, "Popping more than one cycle from rec_list.\n");
-	if (!(p->flags & GC_RECURSING))
-	  gc_fatal(p->data, 0, "Marker being cycle popped doesn't have GC_RECURSING.\n");
+	if (!(p->flags & GC_IN_REC_LIST))
+	  gc_fatal(p->data, 0, "Marker being cycle popped doesn't have GC_IN_REC_LIST.\n");
 	if (p->flags & GC_GOT_DEAD_REF)
 	  gc_fatal(p->data, 0, "Didn't expect a dead extra ref.\n");
 #endif
-	p->flags &= ~GC_RECURSING;
+	p->flags &= ~GC_IN_REC_LIST;
 
 	if (p->flags & GC_LIVE_OBJ) {
 	  /* This extra ref is taken away in the kill pass. */

@@ -1,5 +1,5 @@
 /*
- * $Id: gc.h,v 1.49 2000/06/12 19:33:27 mast Exp $
+ * $Id: gc.h,v 1.50 2000/06/12 21:41:41 mast Exp $
  */
 #ifndef GC_H
 #define GC_H
@@ -70,27 +70,33 @@ struct marker
   INT32 xrefs;			/* Known external references. */
 #endif
   unsigned INT16 cycle;		/* Cycle id number. */
+#ifdef PIKE_DEBUG
+  unsigned INT32 flags;
+#else
   unsigned INT16 flags;
+#endif
 };
 
 #define GC_REFERENCED		0x0001
 #define GC_CYCLE_CHECKED	0x0002
 #define GC_LIVE			0x0004
 #define GC_LIVE_OBJ		0x0008
-#define GC_GOT_DEAD_REF		0x0010
-#define GC_RECURSING		0x0020
-#define GC_DONT_POP		0x0040
-#define GC_LIVE_RECURSE		0x0080
-#define GC_WEAK_REF		0x0100
-#define GC_STRONG_REF		0x0200
+#define GC_ON_STACK		0x0010
+#define GC_IN_REC_LIST		0x0020
+#define GC_MOVED_BACK		0x0040
+#define GC_DONT_POP		0x0080
+#define GC_LIVE_RECURSE		0x0100
+#define GC_WEAK_REF		0x0200
+#define GC_STRONG_REF		0x0400
+#define GC_GOT_DEAD_REF		0x0800
 
 /* Debug mode flags. */
-#define GC_TOUCHED		0x0400
-#define GC_IS_REFERENCED	0x0800
-#define GC_XREFERENCED		0x1000
-#define GC_DO_FREE		0x2000
-#define GC_GOT_EXTRA_REF	0x4000
-#define GC_FOLLOWED_NONSTRONG	0x8000
+#define GC_TOUCHED		0x010000
+#define GC_IS_REFERENCED	0x020000
+#define GC_XREFERENCED		0x040000
+#define GC_DO_FREE		0x080000
+#define GC_GOT_EXTRA_REF	0x100000
+#define GC_FOLLOWED_NONSTRONG	0x200000
 
 #include "block_alloc_h.h"
 PTR_HASH_ALLOC(marker,MARKER_CHUNK_SIZE)
