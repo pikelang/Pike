@@ -1,5 +1,5 @@
 /*
- * $Id: oracle.c,v 1.26 2000/03/29 22:27:10 hubbe Exp $
+ * $Id: oracle.c,v 1.27 2000/03/29 22:43:22 hubbe Exp $
  *
  * Pike interface to Oracle databases.
  *
@@ -41,7 +41,7 @@
 #include <oci.h>
 #include <math.h>
 
-RCSID("$Id: oracle.c,v 1.26 2000/03/29 22:27:10 hubbe Exp $");
+RCSID("$Id: oracle.c,v 1.27 2000/03/29 22:43:22 hubbe Exp $");
 
 
 #define BLOB_FETCH_CHUNK 16384
@@ -859,7 +859,7 @@ static void f_fetch_row(INT32 args)
 
   pop_n_elems(args);
 
-  if(!dbquery->cols)
+  if(dbquery->cols==-2)
   {
     f_fetch_fields(0);
     pop_stack();
@@ -1350,6 +1350,11 @@ static void f_big_query_create(INT32 args)
 			    input_callback,
 			    (void *)(bind.bind + bind.bindnum),
 			    bind_output_callback);
+	  if(rc)
+	  {
+	    UNLOCK(dbcon->lock);
+	    ora_error_handler(dbcon->error_handle, rc, "OCiBindDynamic");
+	  }
 	}
       }
   }
