@@ -1,5 +1,5 @@
 #include "global.h"
-RCSID("$Id: threads.c,v 1.165 2001/09/20 19:36:43 hubbe Exp $");
+RCSID("$Id: threads.c,v 1.166 2001/09/24 16:45:39 grubba Exp $");
 
 PMOD_EXPORT int num_threads = 1;
 PMOD_EXPORT int threads_disabled = 0;
@@ -28,6 +28,9 @@ PMOD_EXPORT int live_threads = 0;
 PMOD_EXPORT COND_T live_threads_change;
 PMOD_EXPORT COND_T threads_disabled_change;
 PMOD_EXPORT size_t thread_stack_size=256 * 1204;
+
+/* SCO magic... */
+int  __thread_sys_behavior = 1;
 
 #if !defined(HAVE_PTHREAD_ATFORK) && !defined(th_atfork)
 #include "callback.h"
@@ -738,7 +741,6 @@ int num_lwps = 1;
  */
 void f_thread_create(INT32 args)
 {
-  THREAD_T dummy;
   struct thread_starter *arg;
   int tmp;
   arg = ALLOC_STRUCT(thread_starter);
@@ -1668,7 +1670,6 @@ void low_th_init(void)
 
 void th_init(void)
 {
-  struct program *tmp;
   ptrdiff_t mutex_key_offset;
 
 #ifdef UNIX_THREADS

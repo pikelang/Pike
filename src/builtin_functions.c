@@ -5,7 +5,7 @@
 \*/
 /**/
 #include "global.h"
-RCSID("$Id: builtin_functions.c,v 1.405 2001/09/04 19:26:54 mast Exp $");
+RCSID("$Id: builtin_functions.c,v 1.406 2001/09/24 16:57:17 grubba Exp $");
 #include "interpret.h"
 #include "svalue.h"
 #include "pike_macros.h"
@@ -495,7 +495,7 @@ PMOD_EXPORT void f_random_string(INT32 args)
   INT_TYPE len, e;
   get_all_args("random_string",args,"%i",&len);
   ret = begin_shared_string(len);
-  for(e=0;e<len;e++) ret->str[e]=my_rand();
+  for(e=0;e<len;e++) ret->str[e] = DO_NOT_WARN((char)my_rand());
   pop_n_elems(args);
   push_string(end_shared_string(ret));
 }
@@ -1080,7 +1080,6 @@ PMOD_EXPORT void f_zero_type(INT32 args)
 
 static int generate_zero_type(node *n)
 {
-  node **arg;
   if(count_args(CDR(n)) != 1) return 0;
   if(do_docode(CDR(n),DO_NOT_COPY) != 1)
     fatal("Count args was wrong in generate_zero_type().\n");
@@ -1502,7 +1501,7 @@ void f_string_to_utf8(INT32 args)
     } else {
       /* This and onwards is extended UTF-8 encoding. */
       /* 32 - 36bit */
-      out->str[j++] = 0xfe;
+      out->str[j++] = DO_NOT_WARN((char)0xfe);
       out->str[j++] = 0x80 | ((c >> 30) & 0x3f);
       out->str[j++] = 0x80 | ((c >> 24) & 0x3f);
       out->str[j++] = 0x80 | ((c >> 18) & 0x3f);
@@ -1684,7 +1683,7 @@ PMOD_EXPORT void f_utf8_to_string(INT32 args)
 static void f_parse_pike_type( INT32 args )
 {
   struct pike_type *t;
-  struct pike_string *res;
+
   if( !args || Pike_sp[-1].type != T_STRING ||
       Pike_sp[-1].u.string->size_shift )
     Pike_error( "__parse_pike_type requires a 8bit string as its first argument\n" );
@@ -3314,7 +3313,6 @@ PMOD_EXPORT void f_sleep(INT32 args)
 #endif
 
    double delay=0.0;
-   double target;
    int do_microsleep;
    int do_abort_on_signal;
 
@@ -3424,7 +3422,6 @@ PMOD_EXPORT void f_sleep(INT32 args)
  */
 void f_gc(INT32 args)
 {
-  INT32 tmp;
   pop_n_elems(args);
   push_int(do_gc());
 }
@@ -3941,11 +3938,10 @@ PMOD_EXPORT void f_localtime(INT32 args)
  */
 PMOD_EXPORT void f_mktime (INT32 args)
 {
-  INT_TYPE sec, min, hour, mday, mon, year, isdst;
+  INT_TYPE sec, min, hour, mday, mon, year;
   struct tm date;
-  struct svalue s;
-  struct svalue * r;
   int retval;
+
   if (args<1)
     SIMPLE_TOO_FEW_ARGS_ERROR("mktime", 1);
 
@@ -4200,7 +4196,7 @@ PMOD_EXPORT void f_glob(INT32 args)
 {
   INT32 i,matches;
   struct array *a;
-  struct svalue *sval, tmp;
+  struct svalue tmp;
   struct pike_string *glob;
 
   if(args < 2)
@@ -4458,7 +4454,7 @@ static struct array *longest_ordered_sequence(struct array *a)
 {
   int *stack;
   int *links;
-  int i,j,top=0,l=0,ltop=-1;
+  int i, top=0, l=0, ltop=-1;
   struct array *res;
   ONERROR tmp;
   ONERROR tmp2;
@@ -6019,7 +6015,6 @@ PMOD_EXPORT void f_transpose(INT32 args)
   struct array *out;
   struct array *in;
   struct array *outinner;
-  struct array *ininner;
   INT32 sizeininner=0,sizein=0;
   INT32 inner=0;
   INT32 j,i;
@@ -6332,7 +6327,7 @@ PMOD_EXPORT void f_map_array(INT32 args)
 PMOD_EXPORT void f_map(INT32 args)
 {
    struct svalue *mysp;
-   struct array *a,*d,*f;
+   struct array *a,*d;
    int splice,i,n;
 
    if (args<1)

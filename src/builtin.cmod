@@ -1,5 +1,5 @@
 /* -*- c -*-
- * $Id: builtin.cmod,v 1.65 2001/09/21 17:57:12 grubba Exp $
+ * $Id: builtin.cmod,v 1.66 2001/09/24 16:46:34 grubba Exp $
  */
 
 #include "global.h"
@@ -620,7 +620,6 @@ PIKEFUN string function_name(program|function func)
   efun;
   optflags OPT_TRY_OPTIMIZE;
 {
-  struct pike_string *s;
   switch(func->type)
   {
     default:
@@ -1025,7 +1024,6 @@ PIKECLASS backtrace_frame
   PIKEFUN mixed `[]=(int index, mixed value)
   {
     INT32 numargs = 0;
-    INT32 i;
 
     if (THIS->args) {
       numargs = THIS->args->size;
@@ -1255,7 +1253,7 @@ PIKECLASS Buffer
    *!
    *!   Initializes a new buffer.
    *!
-   *!   If no @[initial_size] is specified, 4096 is used. If you
+   *!   If no @[initial_size] is specified, 256 is used. If you
    *!   know approximately how big the buffer will be, you can optimize
    *!   the operation of @[add()] (slightly) by passing the size to this
    *!   function.

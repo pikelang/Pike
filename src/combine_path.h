@@ -1,5 +1,5 @@
 /*
- * $Id: combine_path.h,v 1.7 2001/06/11 11:49:47 grubba Exp $
+ * $Id: combine_path.h,v 1.8 2001/09/24 16:51:28 grubba Exp $
  *
  * Combine path template.
  *
@@ -54,7 +54,7 @@ static void APPEND_PATH(struct string_builder *s,
 			size_t len)
 {
   size_t from=0;
-  int tmp,c;
+  int tmp;
   int abs=0;
 
   /* First, check if path is absolute, 

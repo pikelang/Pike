@@ -62,7 +62,7 @@ static int pike_isnan(double x)
 #endif /* HAVE__ISNAN */
 #endif /* HAVE_ISNAN */
 
-RCSID("$Id: svalue.c,v 1.123 2001/09/20 19:10:24 hubbe Exp $");
+RCSID("$Id: svalue.c,v 1.124 2001/09/24 16:49:20 grubba Exp $");
 
 struct svalue dest_ob_zero = {
   T_INT, 0,
@@ -532,7 +532,6 @@ PMOD_EXPORT unsigned INT32 hash_svalue(const struct svalue *s)
 
 PMOD_EXPORT int svalue_is_true(const struct svalue *s)
 {
-  unsigned INT32 q;
   check_type(s->type);
   check_refs(s);
 
@@ -1231,10 +1230,10 @@ PMOD_EXPORT void describe_svalue(const struct svalue *s,int indent,struct proces
 	  pop_stack();
 	}
 	else {
+#if 0
 	  struct pike_string *file;
 	  INT32 line;
-#if 0
-	  /* This provides useful info sometimes, but there are code
+	  /* This provides useful info sometimes, but there is code
 	   * that looks for the plain "object" string to resort to
 	   * other fallbacks. */
 	  if ((file = get_program_line(s->u.object->prog, &line))) {
@@ -1257,10 +1256,10 @@ PMOD_EXPORT void describe_svalue(const struct svalue *s,int indent,struct proces
       break;
 
     case T_PROGRAM: {
+#if 0
       struct pike_string *file;
       INT32 line;
-#if 0
-      /* This provides useful info sometimes, but there are code that
+      /* This provides useful info sometimes, but there is code that
        * looks for the plain "program" string to resort to other
        * fallbacks. */
       if ((file = get_program_line(s->u.program, &line))) {

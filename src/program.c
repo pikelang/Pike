@@ -5,7 +5,7 @@
 \*/
 /**/
 #include "global.h"
-RCSID("$Id: program.c,v 1.371 2001/09/20 19:09:37 hubbe Exp $");
+RCSID("$Id: program.c,v 1.372 2001/09/24 16:42:48 grubba Exp $");
 #include "program.h"
 #include "object.h"
 #include "dynamic_buffer.h"
@@ -1927,7 +1927,6 @@ struct program *end_first_pass(int finish)
 
   if(Pike_compiler->init_node)
   {
-    union idptr tmp;
     e=dooptcode(s,
 		mknode(F_COMMA_EXPR,
 		       Pike_compiler->init_node,mknode(F_RETURN,mkintnode(0),0)),
@@ -2475,7 +2474,6 @@ void low_inherit(struct program *p,
   int e;
   ptrdiff_t inherit_offset, storage_offset;
   struct inherit inherit;
-  struct pike_string *s;
 
 #if 0
   fprintf(stderr,"LOW_INHERIT(pid=%d, parent=%p, parid=%d, paroff=%d, flags=0x%x, name=%s);\n",
@@ -3309,7 +3307,7 @@ PMOD_EXPORT int add_float_constant(char *name,
 {
   struct svalue tmp;
   tmp.type=T_FLOAT;
-  tmp.u.float_number=f;
+  tmp.u.float_number = DO_NOT_WARN((FLOAT_TYPE)f);
   tmp.subtype=0;
   return simple_add_constant(name, &tmp, flags);
 }
@@ -3357,7 +3355,6 @@ PMOD_EXPORT int add_object_constant(char *name,
 PMOD_EXPORT int add_function_constant(char *name, void (*cfun)(INT32), char * type, INT16 flags)
 {
   struct svalue s;
-  struct pike_string *n;
   INT32 ret;
 
   s.type=T_FUNCTION;
@@ -5239,7 +5236,7 @@ void pop_local_variables(int level)
 void pop_compiler_frame(void)
 {
   struct compiler_frame *f;
-  int e;
+
   f=Pike_compiler->compiler_frame;
 #ifdef PIKE_DEBUG
   if(!f)
@@ -5331,7 +5328,6 @@ struct program *low_program_from_function(struct program *p,
 
 PMOD_EXPORT struct program *program_from_function(const struct svalue *f)
 {
-  struct identifier *id;
   if(f->type != T_FUNCTION) return 0;
   if(f->subtype == FUNCTION_BUILTIN) return 0;
   if(!f->u.object->prog) return 0;

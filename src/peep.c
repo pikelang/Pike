@@ -19,7 +19,7 @@
 #include "interpret.h"
 #include "pikecode.h"
 
-RCSID("$Id: peep.c,v 1.69 2001/08/16 18:49:46 marcus Exp $");
+RCSID("$Id: peep.c,v 1.70 2001/09/24 16:58:33 grubba Exp $");
 
 static void asm_opt(void);
 
@@ -142,7 +142,7 @@ void update_arg(int instr,INT32 arg)
 
 void assemble(void)
 {
-  INT32 d,max_label,tmp;
+  INT32 max_label,tmp;
   INT32 *labels, *jumps, *uses;
   ptrdiff_t e, length;
   p_instr *c;
@@ -185,7 +185,7 @@ void assemble(void)
       {
 	while(1)
 	{
-	  int tmp,tmp2;
+	  int tmp;
 	  tmp=labels[c[e].arg];
 	  
 	  while(tmp<length &&

@@ -5,7 +5,7 @@
 \*/
 /**/
 #include "global.h"
-RCSID("$Id: las.c,v 1.265 2001/08/16 04:38:51 mast Exp $");
+RCSID("$Id: las.c,v 1.266 2001/09/24 16:50:58 grubba Exp $");
 
 #include "language.h"
 #include "interpret.h"
@@ -4692,7 +4692,9 @@ static node *localopt(node *n)
 
 static void optimize(node *n)
 {
+#ifndef IN_TPIKE
   node *tmp1, *tmp2, *tmp3;
+#endif /* !IN_TPIKE */
   INT32 save_line = lex.current_line;
 #ifdef PIKE_DEBUG
   struct pike_string *save_file = lex.current_file;
@@ -5168,7 +5170,6 @@ static struct svalue *is_stupid_func(node *n,
 				     int vargs,
 				     struct pike_type *type)
 {
-  node *a,*b;
   int tmp;
   while(1)
   {
