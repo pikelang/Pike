@@ -5,7 +5,7 @@
 \*/
 /**/
 #include "global.h"
-RCSID("$Id: builtin_functions.c,v 1.322 2000/12/15 21:35:22 grubba Exp $");
+RCSID("$Id: builtin_functions.c,v 1.323 2000/12/15 21:40:50 grubba Exp $");
 #include "interpret.h"
 #include "svalue.h"
 #include "pike_macros.h"
@@ -5991,7 +5991,7 @@ void init_builtin_efuns(void)
 		tFunc(tMap(tSetvar(1,tMix),tSetvar(2,tMix)) tVar(2) tOr(tVoid,tVar(1)),
 		      tVar(1)),
 
-		tIfnot(tOr(tFunc(tNot(tArray) tMix tOr(tVoid,tInt), tMix)
+		tIfnot(tOr(tFunc(tNot(tArray) tMix tOr(tVoid,tInt), tMix),
 			   tFunc(tNot(tMapping) tMix tOr(tVoid,tInt), tMix)),
 		       tFunc(tOr(tMapping, tArray) tMix tOr(tVoid,tInt),
 			     tZero))),
