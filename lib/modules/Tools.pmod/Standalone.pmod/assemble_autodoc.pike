@@ -1,4 +1,4 @@
-// $Id: assemble_autodoc.pike,v 1.28 2003/11/07 05:38:57 nilsson Exp $
+// $Id: assemble_autodoc.pike,v 1.29 2004/05/14 21:18:49 grubba Exp $
 
 #pike __REAL_VERSION__
 
@@ -6,7 +6,7 @@ constant description = "Assembles AutoDoc output file.";
 
 // AutoDoc mk II assembler
 
-#define Node Parser.XML.Tree.Node
+#define Node Parser.XML.Tree.SimpleNode
 #define XML_ELEMENT Parser.XML.Tree.XML_ELEMENT
 #define XML_TEXT Parser.XML.Tree.XML_TEXT
 
@@ -131,13 +131,21 @@ class mvEntry {
   inherit Entry;
   constant type = "mv";
 
+  static Node parent;
+
+  static void create(Node target, Node parent)
+  {
+    ::create(target);
+    mvEntry::parent = parent;
+  }
+
   void `()(Node data) {
     if(args) {
       mapping m = data->get_attributes();
       foreach(indices(args), string index)
 	m[index] = args[index];
     }
-    target->replace_node(data);
+    parent->replace_child(target, data);
   }
 }
 
@@ -145,14 +153,20 @@ class mvPeelEntry {
   inherit Entry;
   constant type = "mvPeel";
 
-  void `()(Node data) {
-    Node i_node = target->get_parent();
+  static Node parent;
 
+  static void create(Node target, Node parent)
+  {
+    ::create(target);
+    mvPeelEntry::parent = parent;
+  }
+
+  void `()(Node data) {
     // WARNING! Disrespecting information hiding!
-    int pos = search(i_node->mChildren, data);
-    array pre = i_node->mChildren[..pos-1];
-    array post = i_node->mChildren[pos+1..];
-    i_node->mChildren = pre + data->mChildren + post;
+    int pos = search(parent->mChildren, data);
+    array pre = parent->mChildren[..pos-1];
+    array post = parent->mChildren[pos+1..];
+    parent->mChildren = pre + data->mChildren + post;
   }
 }
 
@@ -166,7 +180,7 @@ class cpEntry {
   }
 }
 
-void enqueue_move(Node target) {
+void enqueue_move(Node target, Node parent) {
 
   mapping(string:string) m = target->get_attributes();
   if(m->namespace) {
@@ -176,9 +190,9 @@ void enqueue_move(Node target) {
     if(ns_queue[ns])
       error("Move source already allocated (%O).\n", ns);
     if(m->peel="yes")
-      ns_queue[ns] = mvPeelEntry(target);
+      ns_queue[ns] = mvPeelEntry(target, parent);
     else
-      ns_queue[ns] = mvEntry(target);
+      ns_queue[ns] = mvEntry(target, parent);
     return;
   }
   else if(!m->entity)
@@ -206,13 +220,13 @@ void enqueue_move(Node target) {
   if(bucket[0])
     error("Move source already allocated (%s).\n", m->entity);
 
-  bucket[0] = mvEntry(target);
+  bucket[0] = mvEntry(target, parent);
 }
 
 Node parse_file(string fn) {
   Node n;
   mixed err = catch {
-    n = Parser.XML.Tree.parse_file(fn);
+    n = Parser.XML.Tree.simple_parse_file(fn);
   };
   if(stringp(err)) error(err);
   if(err) throw(err);
@@ -236,7 +250,7 @@ void section_ref_expansion(Node n) {
       break;
 
     case "insert-move":
-      enqueue_move(c);
+      enqueue_move(c, n);
       break;
 
     default:
@@ -263,7 +277,7 @@ void chapter_ref_expansion(Node n, string dir) {
       break;
 
     case "insert-move":
-      enqueue_move(c);
+      enqueue_move(c, n);
       break;
 
     default:
@@ -321,7 +335,7 @@ void ref_expansion(Node n, string dir, void|string file) {
       break;
 
     case "void":
-      c->get_parent()->remove_child(c);
+      n->remove_child(c);
       void_node->add_child(c);
       chapter_ref_expansion(c, dir);
     }
@@ -332,8 +346,6 @@ Node wrap(Node n, Node wrapper) {
   if(wrapper->count_children())
     wrap(n, wrapper[0]);
   else {
-    Node p = n->get_parent();
-    if(p) p->remove_child(n);
     wrapper->add_child(n);
   }
   return wrapper;
@@ -441,7 +453,7 @@ int(0..1) main(int num, array(string) args) {
 
   int T = time();
   if(has_value(args, "--version"))
-     werror("$Id: assemble_autodoc.pike,v 1.28 2003/11/07 05:38:57 nilsson Exp $\n");
+     werror("$Id: assemble_autodoc.pike,v 1.29 2004/05/14 21:18:49 grubba Exp $\n");
   if(num<3)
     error("To few arguments\n");
 
