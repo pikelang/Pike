@@ -22,7 +22,7 @@ mixed map(mixed arr, mixed fun, mixed ... args)
   if(multisetp(arr))
     return mkmultiset(map(indices(arr,fun,@args)));
 
-  if(!arrayp(arr))
+  if(!(arrayp(arr) || objectp(arr)))
     error("Bad argument 1 to Array.map().\n");
 
   switch(sprintf("%t",fun))
