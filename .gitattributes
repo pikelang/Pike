@@ -16,7 +16,6 @@
 /src/modules/_Crypto/rijndael_ecb_vk.txt eol=lf
 /src/modules/_Crypto/rijndael_ecb_vt.txt eol=lf
 install-welcome binary
-rules binary
 testfont binary
 
 # Handling of foreign (ie CVS) identifiers.
@@ -209,6 +208,7 @@ testfont binary
 /packaging/debian/README.Debian foreign_ident
 /packaging/debian/postinst foreign_ident
 /packaging/debian/prerm foreign_ident
+/packaging/debian/rules foreign_ident
 /refdoc/Makefile foreign_ident
 /refdoc/bin/extract.pike foreign_ident
 /refdoc/bin/join.pike foreign_ident
