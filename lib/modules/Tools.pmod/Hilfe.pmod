@@ -4,7 +4,7 @@
 // Incremental Pike Evaluator
 //
 
-constant cvs_version = ("$Id: Hilfe.pmod,v 1.78 2002/05/27 00:46:46 nilsson Exp $");
+constant cvs_version = ("$Id: Hilfe.pmod,v 1.79 2002/06/07 17:44:38 nilsson Exp $");
 constant hilfe_todo = #"List of known Hilfe bugs/room for improvements:
 
 - Hilfe can not handle sscanf statements like
@@ -54,7 +54,7 @@ class CommandReset {
       "name. Example: \"reset tmp\"\n";
   }
 
-  void exec(Evaluator e, string line, array(string) words) {
+  void exec(Evaluator e, string line, array(string) words, array(string) tokens) {
     string n = sizeof(words)>1 && words[1];
     if(!n) {
       e->safe_write("No symbol given as argument to reset.\n");
@@ -160,6 +160,23 @@ private class CommandSet {
       return;
     }
 
+    if(arg_check("warnings")) {
+      switch( words[2] ) {
+      case "strict":
+	e->warnings = 1;
+	e->strict_types = 1;
+	return;
+      case "on":
+	e->warnings = 1;
+	e->strict_types = 0;
+	return;
+      default:
+	e->warnings = 0;
+	e->strict_types = 1;
+	return;
+      }
+    }
+
     if(arg_check("trace")) {
       e->trace_level = (int)words[2];
       return;
@@ -232,7 +249,7 @@ private class CommandExit {
   inherit Command;
   string help(string what) { return "Exit Hilfe."; }
 
-  void exec(Evaluator e) {
+  void exec(Evaluator e, string line, array(string) words, array(string) tokens) {
     e->safe_write("Exiting.\n");
     destruct(e);
     exit(0);
@@ -243,7 +260,7 @@ private class CommandHelp {
   inherit Command;
   string help(string what) { return "Show help text."; }
 
-  void exec(Evaluator e, string line, array(string) words) {
+  void exec(Evaluator e, string line, array(string) words, array(string) tokens) {
     line = words[1..]*" ";
     function(string, mixed ... : void) write = e->safe_write;
 
@@ -321,7 +338,7 @@ private class CommandDot {
     return ({ sizeof(thing)+" "+what+(sizeof(thing)==1?(a||""):(b||"s")) });
   }
 
-  void exec(Evaluator e) {
+  void exec(Evaluator e, string line, array(string) words, array(string) tokens) {
     string ret = (string)usr_vector_a;
 
     array(string) tmp = ({});
@@ -411,7 +428,7 @@ class CommandDump {
     }
   }
 
-  void exec(Evaluator e, string line, array(string) words) {
+  void exec(Evaluator e, string line, array(string) words, array(string) tokens) {
     write = e->safe_write;
 
     line = words[1..]*"";
@@ -437,7 +454,7 @@ class CommandDump {
 private class CommandHej {
   inherit Command;
   string help(string what) { return 0; }
-  void exec(Evaluator e, string line) {
+  void exec(Evaluator e, string line, array(string) words, array(string) tokens) {
     if(line[0]=='.') e->safe_write( (string)({ 84,106,97,98,97,33,10 }) );
   }
 }
@@ -447,39 +464,39 @@ private class CommandNew {
   string help(string what) { return "Clears the Hilfe state."; }
   string doc(string what, string with) { return documentation_new; }
 
- void exec(Evaluator e, string line, array(string) words) {
+  void exec(Evaluator e, string line, array(string) words, array(string) tokens) {
 
-   line = sizeof(words)>1 && words[1];
-   switch(line) {
-   case "variables":
-     e->variables = ([]);
-     e->types = ([]);
-     return;
-   case "constants":
-     e->constants = ([]);
-     return;
-   case "functions":
-     e->functions = ([]);
-     return;
-   case "programs":
-     e->programs = ([]);
-     return;
-   case "imports":
-     e->imports = ({});
-     return;
-   case "inherits":
-     e->inherits = ({});
-     return;
-   case "history":
-     e->history->flush();
-     return;
-   }
-   if(line) {
-     e->safe_write("Unknown specifier %O.\n", line);
-     return;
-   }
-   e->reset_evaluator();
- }
+    line = sizeof(words)>1 && words[1];
+    switch(line) {
+    case "variables":
+      e->variables = ([]);
+      e->types = ([]);
+      return;
+    case "constants":
+      e->constants = ([]);
+      return;
+    case "functions":
+      e->functions = ([]);
+      return;
+    case "programs":
+      e->programs = ([]);
+      return;
+    case "imports":
+      e->imports = ({});
+      return;
+    case "inherits":
+      e->inherits = ({});
+      return;
+    case "history":
+      e->history->flush();
+      return;
+    }
+    if(line) {
+      e->safe_write("Unknown specifier %O.\n", line);
+      return;
+    }
+    e->reset_evaluator();
+  }
 }
 
 private class CommandStartStop {
@@ -505,7 +522,7 @@ private class CommandStartStop {
     }
   }
 
-  void exec(Evaluator e, string line, array(string) words) {
+  void exec(Evaluator e, string line, array(string) words, array(string) tokens) {
     if(sizeof(words)>=2) {
       switch(words[0]) {
       case "start":
@@ -1443,8 +1460,13 @@ class Evaluator {
 
 	  // Relocate symbols in the variable assignment.
 	  for(int i=from+1; i<pos; i++)
-	    if(symbols[expr[i]])
-	      expr[i] = "(___hilfe->"+expr[i]+")";
+	    if(symbols[expr[i]]) {
+	      if(types[expr[i]])
+		expr[i] = "(([mapping(string:"+types[expr[i]]+")]___hilfe)->"+
+		  expr[i]+")";
+	      else
+		expr[i] = "(___hilfe->"+expr[i]+")";
+	    }
 
 	  if(next_symbols)
 	    next_symbols[expr[from]] = 0;
@@ -1493,7 +1515,11 @@ class Evaluator {
       // Rewrite variable
       // FIXME: Possibly soft cast value to declare variable type.
       if(symbols[t]) {
-	expr[p] = "(___hilfe->" + t + ")";
+	if(types[expr[p]])
+	  expr[p] = "(([mapping(string:"+types[expr[p]]+")]___hilfe)->"+
+	    expr[p]+")";
+	else
+	  expr[p] = "(___hilfe->"+expr[p]+")";
 	continue;
       }
 
@@ -1628,6 +1654,12 @@ class Evaluator {
   //! The last evaluation time;
   int(0..) last_eval_time;
 
+  //! Strict types?
+  int(0..1) strict_types;
+
+  //! Show warnings?
+  int(0..1) warnings;
+
   //! The current trace level.
   int trace_level;
 #if constant(_assembler_debug)
@@ -1748,14 +1780,18 @@ class Evaluator {
       symbols["_"] = history[-1];
     }
 
-    string prog =
-      ("#pragma unpragma_strict_types\n" +
+    string prog;
+    if(strict_types)
+      prog = "#pragma strict_types\n";
+    else
+      prog = "#pragma unpragma_strict_types\n";
 
-       map(inherits, lambda(string f) { return "inherit "+f+";\n"; }) * "" +
+    prog +=
+      map(inherits, lambda(string f) { return "inherit "+f+";\n"; }) * "" +
 
-       map(imports, lambda(string f) { return "import "+f+";\n"; }) * "" +
+      map(imports, lambda(string f) { return "import "+f+";\n"; }) * "" +
 
-       "mapping(string:mixed) ___hilfe = ___Hilfe->variables;\n# 1\n" + f + "\n");
+      "mapping(string:mixed) ___hilfe = ___Hilfe->variables;\n# 1\n" + f + "\n";
 
     HilfeCompileHandler handler = HilfeCompileHandler (sizeof (backtrace()));
 
@@ -1787,8 +1823,9 @@ class Evaluator {
     _compiler_trace(0);
 #endif
 
-    if(err) {
+    if(warnings||err)
       handler->show_warnings();
+    if(err) {
       handler->show_errors();
       return 0;
     }
@@ -2086,6 +2123,13 @@ trace
        2 Calls to buitin functions are printed.
        3 Every opcode interpreted is printed.
        4 Arguments to these opcodes are printed as well.
+
+warnings
+    Change the current level of warnings checking. Possible
+    values are:
+       off     No warnings are shown.
+       on      Normal warnings are shown.
+       strict  Try a little harder to show warnings.
 ";
 
 constant documentation_set_format =
