@@ -4,7 +4,7 @@
 ||| See the files COPYING and DISCLAIMER for more information.
 \*/
 #include "global.h"
-RCSID("$Id: interpret.c,v 1.72 1998/03/31 21:52:17 hubbe Exp $");
+RCSID("$Id: interpret.c,v 1.73 1998/04/01 00:47:46 hubbe Exp $");
 #include "interpret.h"
 #include "object.h"
 #include "program.h"
@@ -1172,6 +1172,26 @@ static int eval_instruction(unsigned char *pc)
       CJUMP(F_BRANCH_WHEN_LE,!is_gt);
       CJUMP(F_BRANCH_WHEN_GT, is_gt);
       CJUMP(F_BRANCH_WHEN_GE,!is_lt);
+
+      CASE(F_BRANCH_AND_POP_WHEN_ZERO);
+      if(!IS_ZERO(sp-1))
+      {
+	pc+=sizeof(INT32);
+      }else{
+	DOJUMP();
+	pop_stack();
+      }
+      break;
+
+      CASE(F_BRANCH_AND_POP_WHEN_NON_ZERO);
+      if(!IS_ZERO(sp-1))
+      {
+	pc+=sizeof(INT32);
+      }else{
+	DOJUMP();
+	pop_stack();
+      }
+      break;
 
       CASE(F_LAND);
       if(!IS_ZERO(sp-1))

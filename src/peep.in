@@ -1,6 +1,7 @@
-#
-# $Id: peep.in,v 1.13 1998/03/31 21:52:23 hubbe Exp $
-#
+//
+// $Id: peep.in,v 1.14 1998/04/01 00:47:49 hubbe Exp $
+//
+
 NOP :
 POP_N_ELEMS (0) : 
 POP_N_ELEMS POP_VALUE : POP_N_ELEMS ($1a + 1)
@@ -36,14 +37,14 @@ CLEAR_LOCAL NUMBER(0) ASSIGN_LOCAL_AND_POP ($1a) : CLEAR_LOCAL($1a)
 CLEAR_LOCAL NUMBER(0) ASSIGN_LOCAL_AND_POP ($1a+1) : CLEAR_2_LOCAL($1a)
 CLEAR_2_LOCAL CLEAR_2_LOCAL($1a+2) : CLEAR_4_LOCAL($1a)
 
-#CONST_1 MULTIPLY : NEGATE
-#CONST0 MULTIPLY : POP_VALUE CONST0
-#CONST1 MULTIPLY : 
-#NUMBER MULTIPLY [count_bits($1a)==1]: NUMBER(my_log2($1a)) LSH
+// CONST_1 MULTIPLY : NEGATE
+// CONST0 MULTIPLY : POP_VALUE CONST0
+// CONST1 MULTIPLY : 
+// NUMBER MULTIPLY [count_bits($1a)==1]: NUMBER(my_log2($1a)) LSH
 
-#CONST_1 DIVIDE : NEGATE
-#CONST1 DIVIDE : 
-#NUMBER DIVIDE [count_bits($1a)==1]: NUMBER(my_log2($1a)) RSH
+// CONST_1 DIVIDE : NEGATE
+// CONST1 DIVIDE : 
+// NUMBER DIVIDE [count_bits($1a)==1]: NUMBER(my_log2($1a)) RSH
 
 CONST0 SUBTRACT:
 CONST0 XOR:
@@ -184,7 +185,7 @@ APPLY_ASSIGN_LOCAL_AND_POP BYTE MARK_AND_LOCAL ($2a) : APPLY_ASSIGN_LOCAL($1a) B
 
 ASSIGN_LOCAL ASSIGN_LOCAL($1a) : ASSIGN_LOCAL($1a)
 
-# MARK_X rules
+// MARK_X rules
 MARK_X(0) : MARK
 LOCAL MARK_X [$2a>0] : MARK_X($2a-1) LOCAL($1a)
 STRING MARK_X [$2a>0] : MARK_X($2a-1) STRING($1a)
@@ -201,3 +202,18 @@ LFUN MARK_X [$2a>0] : MARK_X($2a-1) LFUN($1a)
 LTOSVAL MARK_X [$2a>0] : MARK_X($2a-1) LTOSVAL
 LOCAL_LVALUE MARK_X [$2a>1] : MARK_X($2a-2) LOCAL_LVALUE($1a)
 2_LOCALS BYTE MARK_X [$2a>0] : LOCAL($1a) MARK_X($3a-1) LOCAL($2a)
+
+#define BasicBranch2(Branch,Oper,Pre,Post,Variable) \
+ Variable Branch Pre Variable ($1a) : Variable ($1a) Oper ($2a) Post ; \
+ ASSIGN_##Variable Branch Pre Variable ($1a) : ASSIGN_##Variable($1a) Oper ($2a) Post ;
+
+#define BasicBranch1(Branch,Oper,Pre,Post) \
+  BasicBranch2(Branch,Oper,Pre,Post,LOCAL) \
+  BasicBranch2(Branch,Oper,Pre,Post,GLOBAL)
+
+#define BasicBranch0(Branch,Oper) \
+  BasicBranch1(Branch,Oper,MARK,MARK_X(1)) \
+  BasicBranch1(Branch,Oper, , )
+
+BasicBranch0(BRANCH_WHEN_NON_ZERO, BRANCH_AND_POP_WHEN_NON_ZERO)
+BasicBranch0(BRANCH_WHEN_ZERO, BRANCH_AND_POP_WHEN_ZERO)

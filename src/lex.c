@@ -4,7 +4,7 @@
 ||| See the files COPYING and DISCLAIMER for more information.
 \*/
 #include "global.h"
-RCSID("$Id: lex.c,v 1.46 1998/03/31 21:52:20 hubbe Exp $");
+RCSID("$Id: lex.c,v 1.47 1998/04/01 00:47:48 hubbe Exp $");
 #include "language.h"
 #include "array.h"
 #include "lex.h"
@@ -146,6 +146,8 @@ struct keyword instr_names[]=
 { "branch if >=",	F_BRANCH_WHEN_GE, I_ISJUMP },
 { "branch if ==",	F_BRANCH_WHEN_EQ, I_ISJUMP },
 { "branch if !=",	F_BRANCH_WHEN_NE, I_ISJUMP },
+{ "branch & pop if zero",	F_BRANCH_AND_POP_WHEN_ZERO, I_ISJUMP },
+{ "branch & pop if !zero",	F_BRANCH_AND_POP_WHEN_NON_ZERO, I_ISJUMP },
 { "++Loop",		F_INC_LOOP, I_ISJUMP },	
 { "++Loop!=",		F_INC_NEQ_LOOP, I_ISJUMP },
 { "--Loop",		F_DEC_LOOP, I_ISJUMP },	

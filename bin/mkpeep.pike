@@ -1,6 +1,6 @@
 #!/usr/local/bin/pike
 
-/* $Id: mkpeep.pike,v 1.6 1997/09/22 01:00:49 hubbe Exp $ */
+/* $Id: mkpeep.pike,v 1.7 1998/04/01 00:47:18 hubbe Exp $ */
 
 import Simulate;
 
@@ -9,7 +9,7 @@ import Simulate;
 string skipwhite(string s)
 {
 #if DEBUG > 9
-  perror("skipwhite("+s+")\n");
+  werror("skipwhite("+s+")\n");
 #endif
 
   sscanf(s,"%*[ \t\n]%s",s);
@@ -22,7 +22,7 @@ int find_end(string s)
   int e,parlvl=1;
 
 #if DEBUG > 8
-  perror("find_end("+s+")\n");
+  werror("find_end("+s+")\n");
 #endif
   
   for(e=1;e<strlen(s);e++)
@@ -37,7 +37,7 @@ int find_end(string s)
       break;
     }
   }
-  perror("Syntax error.\n");
+  werror("Syntax error (1).\n");
   exit(1);
 }
 
@@ -51,7 +51,7 @@ mixed split(string s)
   opcodes=0;
 
 #ifdef DEBUG
-  perror("split("+s+")\n");
+  werror("split("+s+")\n");
 #endif
 
   b=({});
@@ -102,7 +102,7 @@ mixed split(string s)
   int i=search(b, ":");
   if(i==-1)
   {
-    perror("Syntax error.\n");
+    werror("Syntax error (%O).\n",b);
     return 0;
   }
 
@@ -145,7 +145,7 @@ mixed split(string s)
   }
 
 #ifdef DEBUG
-  perror(sprintf("%O\n",({a,b})));
+  werror(sprintf("%O\n",({a,b})));
 #endif
 
   return ({a,b,opcodes, line});
@@ -162,7 +162,7 @@ string treat(string expr)
     string num, type, rest;
     if(sscanf(tmp[e],"%d%c%s",num,type,rest)!=3)
     {
-      perror("Syntax error.\n");
+      werror("Syntax error (3).\n");
       exit(2);
     }
     num--;
@@ -354,15 +354,19 @@ int main(int argc, string *argv)
 
   mapping tests=([]);
 
-  f=read_bytes(argv[1]);
+  f=cpp(read_bytes(argv[1]),argv[1]);
   foreach(explode(f,"\n"),f)
   {
     string *a,*b;
     mapping tmp;
 
     sscanf(f,"%s#",f);
-    if(!strlen(f)) continue;
-    data+=({split(f)});
+    foreach(f/";",f)
+      {
+	f=skipwhite(f);
+	if(!strlen(f)) continue;
+	data+=({split(f)});
+      }
   }
 
 //  write(sprintf("%O\n",data));

@@ -5,7 +5,7 @@
 \*/
 
 /*
- * $Id: cpp.c,v 1.21 1998/03/28 15:41:55 grubba Exp $
+ * $Id: cpp.c,v 1.22 1998/04/01 00:47:46 hubbe Exp $
  */
 #include "global.h"
 #include "dynamic_buffer.h"
@@ -609,15 +609,22 @@ static INT32 low_cpp(struct cpp *this,
 	    
 	    for(arg=0;arg<d->args;arg++)
 	    {
-	      if(arg && data[pos]==',') pos++;
-	      SKIPWHITE();
+	      if(arg && data[pos]==',')
+	      {
+		pos++;
+		SKIPWHITE();
+	      }else{
+		SKIPWHITE();
+		if(data[pos]==')')
+		{
+		  char buffer[1024];
+		  sprintf(buffer,"Too few arguments to macro %s, expected %d.",d->link.s->str,d->args);
+		  cpp_error(this,buffer);
+		  break;
+		}
+	      }
 	      arguments[arg].arg=data + pos;
 
-	      if(data[pos]==')')
-	      {
-		cpp_error(this,"Too few arguments to macro.");
-		break;
-	      }
 	      
 	      while(1)
 	      {

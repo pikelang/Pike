@@ -12,7 +12,7 @@
 #include "peep.h"
 #include "dmalloc.h"
 
-RCSID("$Id: peep.c,v 1.20 1998/03/31 21:52:23 hubbe Exp $");
+RCSID("$Id: peep.c,v 1.21 1998/04/01 00:47:48 hubbe Exp $");
 
 struct p_instr_s
 {
@@ -59,7 +59,7 @@ int insert_opcode(unsigned int f,
 
 #ifdef DEBUG
   if(!hasarg(f) && b)
-    fatal("hasarg() is wrong!\n");
+    fatal("hasarg(%d) is wrong!\n",f);
 #endif
 
   p=(p_instr *)low_make_buf_space(sizeof(p_instr), &instrbuf);
@@ -82,7 +82,7 @@ int insert_opcode2(int f,int current_line, struct pike_string *current_file)
 {
 #ifdef DEBUG
   if(hasarg(f))
-    fatal("hasarg() is wrong!\n");
+    fatal("hasarg(%d) is wrong!\n",f);
 #endif
   return insert_opcode(f,0,current_line, current_file);
 }
@@ -340,7 +340,7 @@ int insopt(int f, INT32 b, int cl, struct pike_string *cf)
 
 #ifdef DEBUG
   if(!hasarg(f) && b)
-    fatal("hasarg() is wrong!\n");
+    fatal("hasarg(%d) is wrong!\n",f);
 #endif
 
   p=(p_instr *)low_make_buf_space(sizeof(p_instr), &instrbuf);
@@ -368,7 +368,7 @@ int insopt2(int f, int cl, struct pike_string *cf)
 {
 #ifdef DEBUG
   if(hasarg(f))
-    fatal("hasarg() is wrong!\n");
+    fatal("hasarg(%d) is wrong!\n",f);
 #endif
   return insopt(f,0,cl, cf);
 }
