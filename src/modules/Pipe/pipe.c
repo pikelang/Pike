@@ -26,7 +26,7 @@
 
 #include <fcntl.h>
 
-RCSID("$Id: pipe.c,v 1.27 1998/07/22 18:03:00 grubba Exp $");
+RCSID("$Id: pipe.c,v 1.28 1998/10/23 01:03:18 grubba Exp $");
 
 #include "threads.h"
 #include "stralloc.h"
@@ -62,7 +62,7 @@ RCSID("$Id: pipe.c,v 1.27 1998/07/22 18:03:00 grubba Exp $");
 #endif /* SEEK_SET */
 #ifndef SEEK_CUR
 #ifdef L_INCR
-#define SEEK_SET	L_INCR
+#define SEEK_CUR	L_INCR
 #else /* !L_INCR */
 #define SEEK_CUR	1
 #endif /* L_INCR */
