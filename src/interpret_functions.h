@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: interpret_functions.h,v 1.167 2004/04/03 21:53:49 mast Exp $
+|| $Id: interpret_functions.h,v 1.168 2004/05/21 16:32:07 grubba Exp $
 */
 
 /*
@@ -2250,6 +2250,15 @@ OPCODE1(F_CALL_BUILTIN1_AND_POP, "call builtin1 & pop", I_UPDATE_ALL, {
   add_ref(new_frame->context.prog);					   \
   if(new_frame->context.parent)						   \
     add_ref(new_frame->context.parent);					   \
+  									   \
+  DO_IF_PROFILING({							   \
+      new_frame->start_time =						   \
+	gethrtime() - Pike_interpreter.time_base;			   \
+      new_frame->ident = Pike_fp->ident;				   \
+      new_frame->children_base = Pike_interpreter.accounted_time;          \
+      new_frame->context.prog->identifiers[new_frame->ident].num_calls++;  \
+    });									   \
+  									   \
   Pike_fp=new_frame;							   \
   new_frame->flags=PIKE_FRAME_RETURN_INTERNAL | XFLAGS;			   \
 									   \

@@ -2,11 +2,11 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: interpret.c,v 1.348 2004/04/06 13:00:42 nilsson Exp $
+|| $Id: interpret.c,v 1.349 2004/05/21 16:30:16 grubba Exp $
 */
 
 #include "global.h"
-RCSID("$Id: interpret.c,v 1.348 2004/04/06 13:00:42 nilsson Exp $");
+RCSID("$Id: interpret.c,v 1.349 2004/05/21 16:30:16 grubba Exp $");
 #include "interpret.h"
 #include "object.h"
 #include "program.h"
@@ -1797,26 +1797,6 @@ int low_mega_apply(enum apply_type type, INT32 args, void *arg1, void *arg2)
 
 
 
-#define low_return_profiling()
-
-#ifdef PROFILING
-#ifdef HAVE_GETHRTIME
-#undef low_return_profiling
-#define low_return_profiling() do {					      \
-  struct identifier *function;						      \
-  long long time_passed, time_in_children, self_time;			      \
-  time_in_children=Pike_interpreter.accounted_time-Pike_fp->children_base;    \
-  time_passed = gethrtime()-Pike_interpreter.time_base - Pike_fp->start_time; \
-  self_time=time_passed - time_in_children;				      \
-  Pike_interpreter.accounted_time+=self_time;				      \
-  function = Pike_fp->context.prog->identifiers + Pike_fp->ident;	      \
-  function->total_time=Pike_fp->self_time_base + (INT32)(time_passed /1000);  \
-  function->self_time+=(INT32)( self_time /1000);			      \
-}while(0)
-#endif
-#endif
-
-
 #define basic_low_return(save_sp)			\
   DO_IF_DEBUG(						\
     if(Pike_mark_sp < Pike_fp->save_mark_sp)		\
@@ -1932,12 +1912,35 @@ void unlink_previous_frame(void)
   /* Unlink the top frame temporarily. */
   Pike_interpreter.frame_pointer=prev;
 
+#if defined(PROFILING) && defined(HAVE_GETHRTIME)
+  {
+    /* We must update the profiling info of the previous frame
+     * to account for that the current frame has gone away.
+     */
+    long long total_time =
+       gethrtime() - (Pike_interpreter.time_base + current->start_time);
+    cpu_time_t child_time =
+      Pike_interpreter.accounted_time - current->children_base;
+    struct identifier *function =
+      current->context.prog->identifiers + current->ident;
+    function->total_time += total_time;
+    total_time -= child_time;
+    function->self_time += total_time;
+    Pike_interpreter.accounted_time += total_time;
+  }
+#endif /* PROFILING && HAVE_GETHRTIME */
+
   /* Unlink the frame. */
   POP_PIKE_FRAME();
 
   /* Hook our frame again. */
   current->next=Pike_interpreter.frame_pointer;
   Pike_interpreter.frame_pointer=current;
+
+#if defined(PROFILING) && defined(HAVE_GETHRTIME)
+  current->children_base = Pike_interpreter.accounted_time;
+  current->start_time = gethrtime() - Pike_interpreter.unlocked_time;
+#endif /* PROFILING && HAVE_GETHRTIME */
 
 #if 0
   /* FIXME: This code is questionable, and the Pike_sp

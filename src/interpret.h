@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: interpret.h,v 1.151 2004/05/01 16:46:13 marcus Exp $
+|| $Id: interpret.h,v 1.152 2004/05/21 16:26:29 grubba Exp $
 */
 
 #ifndef INTERPRET_H
@@ -467,6 +467,27 @@ PMOD_EXPORT extern const char msg_pop_neg[];
 #define POP_PIKE_FRAME() do {						\
   struct pike_frame *_fp_ = Pike_fp;					\
   struct pike_frame *tmp_=_fp_->next;					\
+  DO_IF_PROFILING({							\
+      /* Time spent in this frame + children. */			\
+      cpu_time_t time_passed =						\
+	gethrtime() - Pike_interpreter.time_base;			\
+      /* Time spent in children to this frame. */			\
+      cpu_time_t time_in_children;					\
+      /* Time spent in just this frame. */				\
+      cpu_time_t self_time;						\
+      struct identifier *function;					\
+      time_passed -= _fp_->start_time;					\
+      time_in_children =						\
+	Pike_interpreter.accounted_time - _fp_->children_base;		\
+      self_time = time_passed - time_in_children;			\
+      Pike_interpreter.accounted_time += self_time;			\
+      /* FIXME: Can context.prog be NULL? */				\
+      function = _fp_->context.prog->identifiers + _fp_->ident;		\
+      /* function->total_time =						\
+	 Pike_fp->self_time_base + time_passed; */			\
+      function->total_time += time_passed;				\
+      function->self_time += self_time;					\
+    });									\
   if(!sub_ref(_fp_))							\
   {									\
     really_free_pike_frame(_fp_);					\

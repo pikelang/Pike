@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: apply_low.h,v 1.27 2004/04/03 21:53:48 mast Exp $
+|| $Id: apply_low.h,v 1.28 2004/05/21 16:33:35 grubba Exp $
 */
 
     {
@@ -351,19 +351,6 @@
 	Pike_fatal("Unknown identifier type.\n");
 #endif
       }
-#ifdef PROFILING
-#ifdef HAVE_GETHRTIME
-  {
-    long long time_passed, time_in_children, self_time;
-    time_in_children=  Pike_interpreter.accounted_time - Pike_fp->children_base;
-    time_passed = gethrtime() - Pike_interpreter.time_base - Pike_fp->start_time;
-    self_time=time_passed - time_in_children;
-    Pike_interpreter.accounted_time+=self_time;
-    function->total_time=Pike_fp->self_time_base + (INT32)(time_passed /1000);
-    function->self_time+=(INT32)( self_time /1000);
-  }
-#endif
-#endif
 
 #if 0
 #ifdef PIKE_DEBUG
