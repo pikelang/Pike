@@ -166,7 +166,7 @@ void main(int argc, char **argv, char **env)
 	  break;
 
 	default:
-	  fprintf(stderr,"Uknown flag '%c'\n",*p);
+	  fprintf(stderr,"Unknown flag '%c'\n",*p);
 	  exit(1);
 	}
       }
