@@ -1,6 +1,6 @@
 #!/usr/local/bin/pike
 
-/* $Id: test_pike.pike,v 1.54 2001/02/21 16:31:43 mirar Exp $ */
+/* $Id: test_pike.pike,v 1.55 2001/06/23 21:52:43 hubbe Exp $ */
 
 import Stdio;
 
@@ -488,11 +488,21 @@ int main(int argc, array(string) argv)
 
 	  string to_compile = test + linetester + widener;
 
+	  if((shift/6)&1)
+	  {
+	    fname+=" (save parent)";
+	    to_compile=
+	      "#pragma save_parent\n"
+	      "# 1\n"
+	      +to_compile;
+	  }
+
 	  if((shift/3)&1)
 	  {
 	    fname+=" (CRNL)";
 	    to_compile=replace(to_compile,"\n","\r\n");
 	  }
+
 
 	  // _optimizer_debug(5);
 	   
