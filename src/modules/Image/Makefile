@@ -6,14 +6,20 @@ DOCFILES = doc-header \
    encodings/gif_lzw.h encodings/pnm.c \
    doc-footer
 
+WMMLDOCPLACE = ../../../tutorial/Image.wmml
+
 pike=pike
 
 default:
 	echo "This makefile only builds documentation. Please run configure."
-	echo "To build documentation, type 'make doc'."
+	echo "To build HTML documentation, type 'make doc'."
+	echo "To build WMML documentation, type 'make wmml'."
 
-docs:	$(DOCFILES) mkdoc.pike Makefile
+doc:	$(DOCFILES) mkdoc.pike Makefile
 	$(pike) mkdoc.pike $(DOCFILES)
 
-doc:	docs
+$(WMMLDOCPLACE): $(DOCFILES) mkwmml.pike Makefile
+	$(pike) mkwmml.pike $(DOCFILES) >$(WMMLDOCPLACE)
+
+wmml:	$(WMMLDOCPLACE)
 

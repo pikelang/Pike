@@ -1,9 +1,9 @@
-/* $Id: image.c,v 1.56 1997/11/09 18:54:48 mirar Exp $ */
+/* $Id: image.c,v 1.57 1997/11/10 05:41:12 mirar Exp $ */
 
 /*
 **! module Image
 **! note
-**!	$Id: image.c,v 1.56 1997/11/09 18:54:48 mirar Exp $
+**!	$Id: image.c,v 1.57 1997/11/10 05:41:12 mirar Exp $
 **! class image
 **!
 **!	The main object of the <ref>Image</ref> module, this object
@@ -84,7 +84,7 @@
 
 #include "stralloc.h"
 #include "global.h"
-RCSID("$Id: image.c,v 1.56 1997/11/09 18:54:48 mirar Exp $");
+RCSID("$Id: image.c,v 1.57 1997/11/10 05:41:12 mirar Exp $");
 #include "pike_macros.h"
 #include "object.h"
 #include "constants.h"
@@ -2159,7 +2159,7 @@ void image_select_from(INT32 args)
 **!	);
 **!	</illustration>
 **!	</td>
-**!	<tr><td></td><td>greyed</td></table>
+**!	<tr><td></td><td>greyed</td></tr></table>
 **!
 **!	This function is not very fast -- and it's hard to 
 **!	optimize it more, not using assembler.

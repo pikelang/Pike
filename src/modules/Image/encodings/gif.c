@@ -1,9 +1,9 @@
-/* $Id: gif.c,v 1.15 1997/11/09 18:40:54 mirar Exp $ */
+/* $Id: gif.c,v 1.16 1997/11/10 05:41:19 mirar Exp $ */
 
 /*
 **! module Image
 **! note
-**!	$Id: gif.c,v 1.15 1997/11/09 18:40:54 mirar Exp $
+**!	$Id: gif.c,v 1.16 1997/11/10 05:41:19 mirar Exp $
 **! submodule GIF
 **!
 **!	This submodule keep the GIF encode/decode capabilities
@@ -31,7 +31,7 @@
 
 #include "stralloc.h"
 #include "global.h"
-RCSID("$Id: gif.c,v 1.15 1997/11/09 18:40:54 mirar Exp $");
+RCSID("$Id: gif.c,v 1.16 1997/11/10 05:41:19 mirar Exp $");
 #include "pike_macros.h"
 #include "object.h"
 #include "constants.h"
@@ -378,7 +378,7 @@ static void image_gif__gce_block(INT32 args)
 **! arg string colortable
 **!	Colortable with colors to write as palette.
 **!	If this argument is zero, no local colortable is written.
-**!	Colortable string len must be 1<<bpp.
+**!	Colortable string len must be 1&lt;&lt;bpp.
 **! arg int interlace
 **!     Interlace index data and set interlace bit. The given string
 **!	should _not_ be pre-interlaced.
