@@ -5,7 +5,7 @@
 \*/
 /**/
 #include "global.h"
-RCSID("$Id: program.c,v 1.231 2000/04/20 01:49:44 mast Exp $");
+RCSID("$Id: program.c,v 1.232 2000/04/23 03:01:26 mast Exp $");
 #include "program.h"
 #include "object.h"
 #include "dynamic_buffer.h"
@@ -689,7 +689,7 @@ struct program *low_allocate_program(void)
   MEMSET(p, 0, sizeof(struct program));
   p->alignment_needed=1;
 
-  GC_ALLOC();
+  GC_ALLOC(p);
   p->refs=1;
   p->id=++current_program_id;
 
@@ -784,7 +784,7 @@ void low_start_new_program(struct program *p,
 #else
   fake_object=ALLOC_STRUCT(object);
 #endif
-  GC_ALLOC();
+  GC_ALLOC(fake_object);
 
   fake_object->next=fake_object;
   fake_object->prev=fake_object;
@@ -971,7 +971,7 @@ void really_free_program(struct program *p)
   FREE_PROT(p);
   dmfree((char *)p);
 
-  GC_FREE(p);
+  GC_FREE();
 }
 
 #ifdef PIKE_DEBUG
@@ -3560,6 +3560,25 @@ static void gc_check_program(struct program *p)
   }
 #endif
 }
+
+#ifdef PIKE_DEBUG
+INT32 gc_touch_all_programs(void)
+{
+  INT32 n = 0;
+  struct program *p;
+  struct program_state *ps;
+  for (p = first_program; p; p = p->next) {
+    debug_gc_touch(p);
+    n++;
+  }
+  /* Count the fake objects. They're not part of the gc, but they're
+   * still counted by the gc. */
+  if (fake_object) n++;
+  for (ps = previous_program_state; ps; ps = ps->previous)
+    if (ps->fake_object) n++;
+  return n;
+}
+#endif
 
 void gc_check_all_programs(void)
 {

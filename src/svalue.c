@@ -23,7 +23,7 @@
 #include "queue.h"
 #include "bignum.h"
 
-RCSID("$Id: svalue.c,v 1.71 2000/04/19 16:05:19 mast Exp $");
+RCSID("$Id: svalue.c,v 1.72 2000/04/23 03:01:26 mast Exp $");
 
 struct svalue dest_ob_zero = { T_INT, 0 };
 
@@ -1411,7 +1411,7 @@ void debug_gc_mark_svalues(struct svalue *s, int num)
       else
       {
 	describe(s->u.object);
-	fatal("Unfreed destructed object in GC pass 2??\n");
+	fatal("Unfreed destructed object in GC mark pass??\n");
       }
 #endif
       break;
@@ -1425,7 +1425,7 @@ void debug_gc_mark_short_svalue(union anything *u, TYPE_T type)
   {
 #ifdef PIKE_DEBUG
     case T_STRING:
-      if(d_flag) gc_mark(debug_malloc_pass(u->string));
+      if(d_flag && u->refs) gc_mark(debug_malloc_pass(u->string));
       break;
 #endif
 
@@ -1470,7 +1470,7 @@ void debug_gc_mark_short_svalue(union anything *u, TYPE_T type)
     else
     {
       describe(u->object);
-      fatal("Unfreed destructed object in GC pass 2??\n");
+      fatal("Unfreed destructed object in GC mark pass??\n");
     }
 #endif
     break;

@@ -29,7 +29,7 @@ struct callback *gc_evaluator_callback=0;
 
 #include "block_alloc.h"
 
-RCSID("$Id: gc.c,v 1.78 2000/04/22 02:23:56 hubbe Exp $");
+RCSID("$Id: gc.c,v 1.79 2000/04/23 03:01:25 mast Exp $");
 
 /* Run garbage collect approximate every time we have
  * 20 percent of all arrays, objects and programs is
@@ -42,7 +42,7 @@ RCSID("$Id: gc.c,v 1.78 2000/04/22 02:23:56 hubbe Exp $");
 #define MULTIPLIER 0.9
 #define MARKER_CHUNK_SIZE 1023
 
-INT32 num_objects =0;
+INT32 num_objects = 1;		/* Account for empty_array. */
 INT32 num_allocs =0;
 INT32 alloc_threshold = MIN_ALLOC_THRESHOLD;
 int Pike_in_gc = 0;
@@ -129,6 +129,7 @@ static void *found_in=0;
 static int found_in_type=0;
 void *gc_svalue_location=0;
 char *fatal_after_gc=0;
+static int gc_debug = 0;
 
 #define DESCRIBE_MEM 1
 #define DESCRIBE_NO_REFS 2
@@ -387,6 +388,19 @@ void low_describe_something(void *a,
       fprintf(stderr,"%*s**Parent identifier: %d\n",indent,"",((struct object *)a)->parent_identifier);
       fprintf(stderr,"%*s**Program id: %ld\n",indent,"",((struct object *)a)->program_id);
 
+      if (((struct object *)a)->next == ((struct object *)a))
+	fprintf(stderr, "%*s**The object is fake.\n",indent,"");
+
+      if(!p)
+      {
+	fprintf(stderr,"%*s**The object is destructed.\n",indent,"");
+	p=id_to_program(((struct object *)a)->program_id);
+      }
+      if (p) {
+	fprintf(stderr,"%*s**Attempting to describe program object was instantiated from:\n",indent,"");
+	low_describe_something(p, T_PROGRAM, indent, depth, flags);
+      }
+
       if( ((struct object *)a)->parent)
       {
 	fprintf(stderr,"%*s**Describing object's parent:\n",indent,"");
@@ -396,14 +410,7 @@ void low_describe_something(void *a,
       }else{
 	fprintf(stderr,"%*s**There is no parent (any longer?)\n",indent,"");
       }
-      if(!p)
-      {
-	fprintf(stderr,"%*s**The object is destructed.\n",indent,"");
-	p=id_to_program(((struct object *)a)->program_id);
-
-	if(!p) break;
-      }
-      fprintf(stderr,"%*s**Attempting to describe program object was instantiated from:\n",indent,"");
+      break;
       
     case T_PROGRAM:
     {
@@ -566,13 +573,49 @@ void debug_describe_svalue(struct svalue *s)
   describe_something(s->u.refs,s->type,0,2,0);
 }
 
+void debug_gc_touch(void *a)
+{
+  struct marker *m;
+  if (!a) fatal("real_gc_check(): Got null pointer.\n");
+
+  m = find_marker(a);
+  if (Pike_in_gc == GC_PASS_PRETOUCH) {
+    if (m) {
+      fprintf(stderr,"**Object touched twice.\n");
+      describe(a);
+      fatal("Object touched twice.\n");
+    }
+    get_marker(a)->flags |= GC_TOUCHED;
+  }
+  else if (Pike_in_gc == GC_PASS_POSTTOUCH) {
+    if (m) {
+      if (!(m->flags & GC_TOUCHED)) {
+	fprintf(stderr,"**An existing but untouched marker found for object in linked lists. flags: %x.\n", m->flags);
+	describe(a);
+	fatal("An existing but untouched marker found for object in linked lists.\n");
+      }
+      if ((m->flags & (GC_REFERENCED|GC_CHECKED)) == GC_CHECKED) {
+	fprintf(stderr,"**An object to garb is still around. flags: %x.\n", m->flags);
+	fprintf(stderr,"    has %ld references, while gc() found %ld + %ld external.\n",(long)*(INT32 *)a,(long)m->refs,(long)m->xrefs);
+	describe(a);
+	locate_references(a);
+	fprintf(stderr,"##### Continuing search for more bugs....\n");
+	fatal_after_gc="An object to garb is still around.\n";
+      }
+    }
+  }
+  else
+    fatal("debug_gc_touch() used in invalid gc pass.\n");
+}
+
 #endif /* PIKE_DEBUG */
 
 INT32 real_gc_check(void *a)
 {
-  struct marker *m=get_marker(a);
+  struct marker *m;
 
 #ifdef PIKE_DEBUG
+  if (!a) fatal("real_gc_check(): Got null pointer.\n");
   if(check_for)
   {
     if(check_for == a)
@@ -580,9 +623,10 @@ INT32 real_gc_check(void *a)
       gdb_gc_stop_here(a);
     }
 
-    if(check_for == (void *)1 && gc_do_free(a))
+    m=get_marker(a);
+    if(check_for == (void *)1 &&
+       m && (m->flags & (GC_REFERENCED|GC_CHECKED)) == GC_CHECKED)
     {
-      struct marker *m=get_marker(a);
       int t=attempt_to_identify(a);
       if(t != T_STRING && t != T_UNKNOWN)
       {
@@ -601,8 +645,10 @@ INT32 real_gc_check(void *a)
     return 0;
   }
 
-  if (Pike_in_gc /100 != 1)
-    fatal("gc check attempted in pass %d.\n", Pike_in_gc);
+  if (Pike_in_gc != GC_PASS_CHECK)
+    fatal("gc check attempted in invalid pass.\n");
+
+  m = get_marker(a);
 
   if(m->saved_refs != -1)
     if(m->saved_refs != *(INT32 *)a) {
@@ -669,9 +715,15 @@ static void exit_gc(void)
 #ifdef PIKE_DEBUG
 void locate_references(void *a)
 {
+  int tmp, orig_in_gc = Pike_in_gc;
   void *orig_check_for=check_for;
   if(!Pike_in_gc)
     init_gc();
+  Pike_in_gc = GC_PASS_LOCATE;
+
+  /* Disable debug, this may help reduce recursion bugs */
+  tmp=d_flag;
+  d_flag=0;
 
   fprintf(stderr,"**Looking for references:\n");
   
@@ -717,8 +769,10 @@ void locate_references(void *a)
   }
 #endif
 
+  Pike_in_gc = orig_in_gc;
   if(!Pike_in_gc)
     exit_gc();
+  d_flag=tmp;
 }
 #endif
 
@@ -727,11 +781,13 @@ void locate_references(void *a)
 int debug_gc_is_referenced(void *a)
 {
   struct marker *m;
-  m=get_marker(a);
+  if (!a) fatal("real_gc_check(): Got null pointer.\n");
 
+  m=get_marker(a);
   if(m->refs + m->xrefs > *(INT32 *)a ||
      (!(m->refs < *(INT32 *)a) && m->xrefs)  ||
-     (Pike_in_gc < 300 && m->saved_refs != -1 && m->saved_refs != *(INT32 *)a))
+     (Pike_in_gc >= GC_PASS_CHECK && Pike_in_gc <= GC_PASS_MARK &&
+      m->saved_refs != -1 && m->saved_refs != *(INT32 *)a))
   {
     INT32 refs=m->refs;
     INT32 xrefs=m->xrefs;
@@ -744,7 +800,7 @@ int debug_gc_is_referenced(void *a)
 	    (long)xrefs);
 
     if(m->saved_refs != *(INT32 *)a)
-      fprintf(stderr,"**In pass one it had %ld refs!!!\n",(long)m->saved_refs);
+      fprintf(stderr,"**In check pass it had %ld refs!!!\n",(long)m->saved_refs);
 
     describe_something(a, t, 0,2,0);
 
@@ -764,6 +820,7 @@ int debug_gc_is_referenced(void *a)
 int gc_external_mark3(void *a, void *in, char *where)
 {
   struct marker *m;
+  if (!a) fatal("real_gc_check(): Got null pointer.\n");
 
   if(check_for)
   {
@@ -783,9 +840,10 @@ int gc_external_mark3(void *a, void *in, char *where)
       return 1;
     }
 
-    if(check_for == (void *)1 && gc_do_free(a))
+    m=get_marker(a);
+    if(check_for == (void *)1 &&
+       m && (m->flags & (GC_REFERENCED|GC_CHECKED)) == GC_CHECKED)
     {
-      struct marker *m=get_marker(a);
       int t=attempt_to_identify(a);
       if(t != T_STRING && t != T_UNKNOWN)
       {
@@ -816,13 +874,14 @@ int gc_external_mark3(void *a, void *in, char *where)
 int gc_mark(void *a)
 {
   struct marker *m;
-  m=get_marker(debug_malloc_pass(a));
 
 #ifdef PIKE_DEBUG
-  if (Pike_in_gc /100 != 2)
-    fatal("gc mark attempted in pass %d.\n", Pike_in_gc);
+  if (!a) fatal("real_gc_check(): Got null pointer.\n");
+  if (Pike_in_gc != GC_PASS_MARK)
+    fatal("gc mark attempted in invalid pass.\n");
 #endif
 
+  m = get_marker(debug_malloc_pass(a));
   if(m->flags & GC_REFERENCED)
   {
     return 0;
@@ -836,8 +895,10 @@ int gc_mark(void *a)
 int debug_gc_do_free(void *a)
 {
   struct marker *m;
+  if (!a) fatal("real_gc_check(): Got null pointer.\n");
 
-  m=get_marker(debug_malloc_pass(a));
+  m=find_marker(debug_malloc_pass(a));
+  if (!m) return 0;		/* Object created after mark pass. */
 
   if( (m->flags & (GC_REFERENCED|GC_CHECKED)) == GC_CHECKED &&
       (m->flags & GC_XREFERENCED) )
@@ -849,12 +910,12 @@ int debug_gc_do_free(void *a)
     {
       fprintf(stderr,
 	      "**gc_is_referenced failed, object has %ld references,\n"
-	      "** while gc() found %ld + %ld external. (type=%d, flags=%d)\n",
+	      "** while gc() found %ld + %ld external. (type=%d, flags=%x)\n",
 	      (long)*(INT32 *)a,(long)refs,(long)xrefs,t,m->flags);
       describe_something(a, t, 4,1,0);
 
       locate_references(a);
-      
+
       fatal("GC failed object (has %d, found %d + %d external)\n",
 	    *(INT32 *)a,
 	    refs,
@@ -879,7 +940,11 @@ void do_gc(void)
 #endif
 
   if(Pike_in_gc) return;
-  Pike_in_gc=10; /* before pass 1 */
+  init_gc();
+  Pike_in_gc=GC_PASS_PREPARE;
+#ifdef PIKE_DEBUG
+  gc_debug = d_flag;
+#endif
 
   /* Make sure there will be no callback to this while we're in the
    * gc. That can be fatal since this function links objects back to
@@ -915,10 +980,21 @@ void do_gc(void)
   objects_freed*=multiplier;
   objects_freed += (double) num_objects;
 
+#ifdef PIKE_DEBUG
+  if (gc_debug) {
+    INT32 n;
+    Pike_in_gc = GC_PASS_PRETOUCH;
+    n = gc_touch_all_arrays();
+    n += gc_touch_all_multisets();
+    n += gc_touch_all_mappings();
+    n += gc_touch_all_programs();
+    n += gc_touch_all_objects();
+    if (n != num_objects)
+      fatal("Object count wrong before gc; expected %d, got %d.\n", num_objects, n);
+  }
+#endif
 
-  init_gc();
-
-  Pike_in_gc=100; /* pass one */
+  Pike_in_gc=GC_PASS_CHECK;
   /* First we count internal references */
   gc_check_all_arrays();
   gc_check_all_multisets();
@@ -935,12 +1011,12 @@ void do_gc(void)
   }
 #endif
 
-  /* These callbacks are mainly for pass 1, but can also
-   * do things that are normally associated with pass 2
+  /* These callbacks are mainly for the check pass, but can also
+   * do things that are normally associated with the mark pass
    */
   call_callback(& gc_callbacks, (void *)0);
 
-  Pike_in_gc=200; /* pass two */
+  Pike_in_gc=GC_PASS_MARK;
   /* Next we mark anything with external references */
   gc_mark_all_arrays();
   run_queue(&gc_mark_queue);
@@ -959,21 +1035,19 @@ void do_gc(void)
 #ifdef PIKE_DEBUG
   check_for=(void *)1;
 #endif
-  Pike_in_gc=350; /* pass 3.5 */
+  Pike_in_gc=GC_PASS_FREE;
   /* Now we free the unused stuff */
-
-
   gc_free_all_unreferenced_arrays();
   gc_free_all_unreferenced_multisets();
   gc_free_all_unreferenced_mappings();
   gc_free_all_unreferenced_programs();
-  Pike_in_gc=300;
+  Pike_in_gc=GC_PASS_DESTROY;	/* Pike code allowed in this pass. */
   /* This is intended to happen before the freeing done above. But
    * it's put here for the time being, since the problem of non-object
    * objects getting external references from destroy code isn't
    * solved yet. */
   destroyed = gc_destroy_all_unreferenced_objects();
-  Pike_in_gc=350;
+  Pike_in_gc=GC_PASS_FREE;
   destructed = gc_free_all_unreferenced_objects();
 
 #ifdef PIKE_DEBUG
@@ -984,11 +1058,27 @@ void do_gc(void)
   if(fatal_after_gc) fatal(fatal_after_gc);
 #endif
 
+  Pike_in_gc=GC_PASS_DESTRUCT;
+  destruct_objects_to_destruct();
+
+#ifdef PIKE_DEBUG
+  if (gc_debug) {
+    INT32 n;
+    Pike_in_gc=GC_PASS_POSTTOUCH;
+    n = gc_touch_all_arrays();
+    n += gc_touch_all_multisets();
+    n += gc_touch_all_mappings();
+    n += gc_touch_all_programs();
+    n += gc_touch_all_objects();
+    if (n != num_objects)
+      fatal("Object count wrong after gc; expected %d, got %d.\n", num_objects, n);
+    if(fatal_after_gc) fatal(fatal_after_gc);
+  }
+#endif
+
+  Pike_in_gc=0;
   exit_gc();
 
-  Pike_in_gc=400;
-  destruct_objects_to_destruct();
-  
   objects_freed -= (double) num_objects;
 
   tmp=(double)num_objects;
@@ -1026,7 +1116,6 @@ void do_gc(void)
 #else
   if(d_flag > 3) ADD_GC_CALLBACK();
 #endif
-  Pike_in_gc=0;
 }
 
 
@@ -1057,4 +1146,3 @@ void f__gc_status(INT32 args)
 
   f_aggregate_mapping(14);
 }
-

@@ -5,7 +5,7 @@
 \*/
 
 /*
- * $Id: array.h,v 1.18 1999/10/03 21:44:18 hubbe Exp $
+ * $Id: array.h,v 1.19 2000/04/23 03:01:25 mast Exp $
  */
 #ifndef ARRAY_H
 #define ARRAY_H
@@ -148,6 +148,7 @@ void array_replace(struct array *a,
 void check_array(struct array *a);
 void check_all_arrays(void);
 void gc_mark_array_as_referenced(struct array *a);
+INT32 gc_touch_all_arrays(void);
 void gc_check_all_arrays(void);
 void gc_mark_all_arrays(void);
 void gc_free_all_unreferenced_arrays(void);

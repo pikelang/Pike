@@ -5,7 +5,7 @@
 \*/
 /**/
 #include "global.h"
-RCSID("$Id: object.c,v 1.119 2000/04/22 02:25:10 hubbe Exp $");
+RCSID("$Id: object.c,v 1.120 2000/04/23 03:01:25 mast Exp $");
 #include "object.h"
 #include "dynamic_buffer.h"
 #include "interpret.h"
@@ -84,9 +84,9 @@ struct object *low_clone(struct program *p)
   p->num_clones++;
 #endif /* PROFILING */
 
-  GC_ALLOC();
-
   o=(struct object *)xalloc( ((long)(((struct object *)0)->storage))+p->storage_needed);
+
+  GC_ALLOC(o);
 
 #ifdef DEBUG_MALLOC
   if(!debug_malloc_copy_names(o, p)) 
@@ -471,7 +471,7 @@ void low_destruct(struct object *o,int do_free)
 
 #ifdef PIKE_DEBUG
   if(d_flag > 20) do_debug();
-  if(Pike_in_gc >= 100 && Pike_in_gc < 300)
+  if(Pike_in_gc > GC_PASS_PREPARE && Pike_in_gc <= GC_PASS_MARK)
     fatal("Destructing object inside gc()\n");
 #endif
 
@@ -561,7 +561,7 @@ void destruct_objects_to_destruct(void)
   struct object *o, *next;
 
 #ifdef PIKE_DEBUG
-  if (Pike_in_gc >= 100 && Pike_in_gc < 400)
+  if (Pike_in_gc > GC_PASS_PREPARE && Pike_in_gc != GC_PASS_DESTRUCT)
     fatal("Can't meddle with the object link list in gc pass %d.\n", Pike_in_gc);
 #endif
 
@@ -572,7 +572,7 @@ void destruct_objects_to_destruct(void)
     
     /* link */
     DOUBLELINK(first_object,o);
-    
+
     /* call destroy, keep one ref */
     add_ref(o);
     call_destroy(o,0);
@@ -612,10 +612,9 @@ void really_free_object(struct object *o)
   if(o->prog)
   {
     DOUBLELINK(objects_to_destruct,o);
-    if (Pike_in_gc) {
-      remove_marker(o);
-      if (Pike_in_gc < 400) return; /* Done last in gc(). */
-    }
+    if (Pike_in_gc > GC_PASS_PREPARE && Pike_in_gc < GC_PASS_DESTRUCT)
+      /* destruct_objects_to_destruct() done last in gc() instead. */
+      return;
     if(!destruct_object_evaluator_callback)
     {
       destruct_object_evaluator_callback=
@@ -636,7 +635,7 @@ void really_free_object(struct object *o)
 
     free((char *)o);
 
-    GC_FREE(o);
+    GC_FREE();
   }
 }
 
@@ -1207,10 +1206,24 @@ static inline void gc_check_object(struct object *o)
   }
 }
 
+#ifdef PIKE_DEBUG
+INT32 gc_touch_all_objects(void)
+{
+  INT32 n = 0;
+  struct object *o;
+  for (o = first_object; o; o = o->next) {
+    debug_gc_touch(o);
+    n++;
+  }
+  if (objects_to_destruct)
+    fatal("Shouldn't have any objects to destruct in touch pass.\n");
+  return n;
+}
+#endif
+
 void gc_check_all_objects(void)
 {
   struct object *o;
-
   for(o=first_object;o;o=o->next)
     gc_check_object(o);
 }
@@ -1281,17 +1294,13 @@ int gc_free_all_unreferenced_objects(void)
     if(gc_do_free(o))
     {
 #ifdef PIKE_DEBUG
-      if (!(get_marker(o)->flags & GC_DO_FREE_OBJ) ||
-	  !(get_marker(o)->flags & GC_OBJ_DESTROY_CHECK)) {
+      if (!(get_marker(o)->flags & (GC_OBJ_DESTROY_CHECK|GC_DO_FREE_OBJ))) {
 	extern char *fatal_after_gc;
-	fprintf(stderr,"**Object unexpectedly marked for gc. flags: %d\n",
+	fprintf(stderr,"**Object unexpectedly marked for gc. flags: %x\n",
 		get_marker(o)->flags);
 	describe(o);
 	locate_references(o);
-	fprintf(stderr,"##### Continuing search for more bugs....\n");
-	fatal_after_gc="Object unexpectedly marked for gc.\n";
-	next=o->next;		/* Leave it alone and continue. */
-	continue;
+	fatal("Object unexpectedly marked for gc.\n");
       }
 #endif
       low_destruct(o,1);

@@ -1,5 +1,5 @@
 /*
- * $Id: gc.h,v 1.37 2000/04/20 01:49:43 mast Exp $
+ * $Id: gc.h,v 1.38 2000/04/23 03:01:25 mast Exp $
  */
 #ifndef GC_H
 #define GC_H
@@ -23,21 +23,29 @@ extern void *gc_svalue_location;
 
 #define ADD_GC_CALLBACK() gc_evaluator_callback=add_to_callback(&evaluator_callbacks,(callback_func)do_gc,0,0)
 
-#ifdef ALWAYS_GC
-#define GC_ALLOC() do{ num_objects++; num_allocs++;  if(!gc_evaluator_callback) ADD_GC_CALLBACK(); } while(0)
-#else
-#define GC_ALLOC()  do{							\
+#define LOW_GC_ALLOC(OBJ) do {						\
  extern int d_flag;							\
  num_objects++;								\
  num_allocs++;								\
  DO_IF_DEBUG(								\
    if(d_flag) CHECK_INTERPRETER_LOCK();					\
-   if(Pike_in_gc > 1 && Pike_in_gc < 4 && Pike_in_gc != 5)		\
+   if(Pike_in_gc > GC_PASS_PREPARE && Pike_in_gc <= GC_PASS_MARK)	\
      fatal("Allocating new objects within gc is not allowed!\n");	\
  )									\
- if(num_allocs == alloc_threshold && !gc_evaluator_callback)		\
-   ADD_GC_CALLBACK();							\
- } while(0)
+ if (Pike_in_gc) remove_marker(OBJ);					\
+} while (0)
+
+#ifdef ALWAYS_GC
+#define GC_ALLOC(OBJ) do{						\
+  LOW_GC_ALLOC(OBJ);							\
+  if(!gc_evaluator_callback) ADD_GC_CALLBACK();				\
+} while(0)
+#else
+#define GC_ALLOC(OBJ)  do{						\
+  LOW_GC_ALLOC(OBJ);							\
+  if(num_allocs == alloc_threshold && !gc_evaluator_callback)		\
+    ADD_GC_CALLBACK();							\
+} while(0)
 #endif
 
 struct marker
@@ -69,6 +77,7 @@ int debug_gc_check(void *x, TYPE_T t, void *data);
 void describe_something(void *a, int t, int indent, int depth, int flags);
 void describe(void *x);
 void debug_describe_svalue(struct svalue *s);
+void debug_gc_touch(void *a);
 INT32 real_gc_check(void *a);
 void locate_references(void *a);
 int debug_gc_is_referenced(void *a);
@@ -85,19 +94,19 @@ void f__gc_status(INT32 args);
 #define gc_check(VP) real_gc_check(debug_malloc_pass(VP))
 
 #ifdef PIKE_DEBUG
-#define LOW_GC_FREE(OBJ) do {						\
+
+#define LOW_GC_FREE() do {						\
   extern int d_flag;							\
   if(d_flag) CHECK_INTERPRETER_LOCK();					\
   num_objects-- ;							\
   if(num_objects < 0)							\
     fatal("Panic!! less than zero objects!\n");				\
-  if (Pike_in_gc) remove_marker(OBJ);					\
 }while(0)
 
-#define GC_FREE(OBJ) do {						\
-  if(Pike_in_gc >2 && Pike_in_gc <4)					\
+#define GC_FREE() do {							\
+  if(Pike_in_gc == GC_PASS_MARK)					\
     fatal("Freeing objects within gc is not allowed!\n");		\
-  LOW_GC_FREE(OBJ);							\
+  LOW_GC_FREE();							\
 }while(0)
 
 #else
@@ -105,11 +114,8 @@ void f__gc_status(INT32 args);
 #define debug_gc_check_short_svalue(S,N,T,V) gc_check_short_svalue((S),N)
 #define debug_gc_xmark_svalues(S,N,X) gc_xmark_svalues((S),N)
 #define debug_gc_check(VP,T,V) gc_check((VP))
-#define LOW_GC_FREE(OBJ) do {						\
-  num_objects-- ;							\
-  if (Pike_in_gc) remove_marker(OBJ);					\
-}while(0)
-#define GC_FREE(OBJ) LOW_GC_FREE(OBJ)
+#define LOW_GC_FREE() do {num_objects-- ; }while(0)
+#define GC_FREE() LOW_GC_FREE()
 #endif
 
 
@@ -122,10 +128,20 @@ void f__gc_status(INT32 args);
 #define GC_REFERENCED 1
 #define GC_XREFERENCED 2
 #define GC_CHECKED 4
-#ifdef PIKE_DEBUG
 #define GC_OBJ_DESTROY_CHECK 8
 #define GC_DO_FREE_OBJ 16
-#endif
+#define GC_TOUCHED 32
+
+#define GC_PASS_PREPARE		 50
+#define GC_PASS_PRETOUCH	 90
+#define GC_PASS_CHECK		100
+#define GC_PASS_MARK		200
+#define GC_PASS_DESTROY		300
+#define GC_PASS_FREE		400
+#define GC_PASS_DESTRUCT	500
+#define GC_PASS_POSTTOUCH	600
+
+#define GC_PASS_LOCATE -1
 
 #ifdef PIKE_DEBUG
 #define gc_is_referenced(X) debug_gc_is_referenced(debug_malloc_pass(X))

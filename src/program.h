@@ -5,7 +5,7 @@
 \*/
 
 /*
- * $Id: program.h,v 1.86 2000/04/08 02:01:09 hubbe Exp $
+ * $Id: program.h,v 1.87 2000/04/23 03:01:26 mast Exp $
  */
 #ifndef PROGRAM_H
 #define PROGRAM_H
@@ -453,6 +453,7 @@ void check_all_programs(void);
 void init_program(void);
 void cleanup_program(void);
 void gc_mark_program_as_referenced(struct program *p);
+INT32 gc_touch_all_programs(void);
 void gc_check_all_programs(void);
 void gc_mark_all_programs(void);
 void gc_free_all_unreferenced_programs(void);

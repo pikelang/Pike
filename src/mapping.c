@@ -5,7 +5,7 @@
 \*/
 /**/
 #include "global.h"
-RCSID("$Id: mapping.c,v 1.78 2000/04/20 01:49:43 mast Exp $");
+RCSID("$Id: mapping.c,v 1.79 2000/04/23 03:01:25 mast Exp $");
 #include "main.h"
 #include "object.h"
 #include "mapping.h"
@@ -63,7 +63,7 @@ DO_IF_DEBUG(								\
 									\
   if(m->next) m->next->prev = m->prev;					\
 									\
-  GC_FREE(m);
+  GC_FREE();
 
 
 #undef COUNT_OTHER
@@ -131,7 +131,7 @@ static void init_mapping(struct mapping *m, INT32 size)
     e=MAPPING_DATA_SIZE(hashsize, size);
 
     md=(struct mapping_data *)xalloc(e);
-    
+
     m->data=md;
     md->hashsize=hashsize;
     
@@ -170,9 +170,9 @@ struct mapping *debug_allocate_mapping(int size)
 {
   struct mapping *m;
 
-  GC_ALLOC();
-
   m=alloc_mapping();
+
+  GC_ALLOC(m);
 
   INITIALIZE_PROT(m);
   init_mapping(m,size);
@@ -1877,6 +1877,19 @@ static void gc_check_mapping(struct mapping *m)
       }
   }
 }
+
+#ifdef PIKE_DEBUG
+INT32 gc_touch_all_mappings(void)
+{
+  INT32 n = 0;
+  struct mapping *m;
+  for (m = first_mapping; m; m = m->next) {
+    debug_gc_touch(m);
+    n++;
+  }
+  return n;
+}
+#endif
 
 void gc_check_all_mappings(void)
 {
