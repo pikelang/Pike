@@ -17,16 +17,6 @@
 //! @tt{--test=@i{argument@}@}.
 
 
-//  startpid = (int)find_arg(argv, "s", ({ "start-script-pid" }),
-// 			     ({ "ROXEN_START_SCRIPT_PID"}));
-
-//  configuration_dir = find_arg(argv, "d", ({ "config-dir",
-//					     "configurations",
-//					     "configuration-directory" }),
-//			          ({ "ROXEN_CONFIGDIR", "CONFIGURATIONS" }),
-//			           "../configurations");
-
-
 //!   This is a generic function to parse command line options of the
 //!   type @tt{-f@}, @tt{--foo@} or @tt{--foo=bar@}.
 //!
@@ -59,12 +49,6 @@
 //!   option is not present. If @[def] is given and the option does not have an
 //!   argument @[find_option()] will fail.
 //!
-//! @param throw_errors
-//!   If @[throw_errors] has been specified @[find_option] will throw errors
-//!   on failure. If it has been left out, or is @tt{0@} (zero), it will
-//!   instead print an error message on @[Stdio.stderr] and exit the
-//!   program with result code 1 on failure.
-//!
 //! @returns
 //!   Returns the value the option has been set to if any.
 //!
@@ -76,8 +60,12 @@
 //!
 //!   If all else fails, @[def] will be returned.
 //!
+//! @throws
+//!   If an option that requires an argument misses the argument an
+//!   error will be thrown.
+//!
 //! @note
-//!   @[find_option()] modifies argv.
+//!   @[find_option()] modifies @[argv].
 //!
 //!   This function reads options even if they are written after the first
 //!   non-option on the line.
@@ -88,100 +76,67 @@
 //! @seealso
 //!   @[Getopt.get_args()]
 //!
-string|int find_option(array(string) argv,
-		       array(string)|string shortform,
-		       array(string)|string|void longform,
-		       array(string)|string|void envvars,
-		       string|int|void def,
-		       int|void throw_errors)
+string|int(0..1) find_option(array(string) argv,
+			     array(string)|string shortform,
+			     array(string)|string|void longform,
+			     array(string)|string|void envvars,
+			     string|int(0..1)|void def)
 {
-  string|int value;
+  string|int(0..1) value;
 
   int(0..1) hasarg = query_num_arg() > 4;
   if(!arrayp(longform)) longform = ({ [string]longform });
   if(!arrayp(shortform)) shortform = ({ [string]shortform });
-  if(!arrayp(envvars)) envvars = ({ [string]envvars });
+  if(stringp(envvars)) envvars = ({ [string]envvars });
 
-  for(int i=1; i<sizeof(argv); i++)
-  {
-    if(argv[i] && strlen(argv[i]) > 1)
-    {
-      if(argv[i][0] == '-')
-      {
-	if(argv[i][1] == '-')
-	{
-	  string tmp;
-	  int nf;
+  foreach(argv; int i; string opt) {
+    if(!i || !opt || sizeof(opt)<2 || opt[0]!='-') continue;
 
-	  if(argv[i]=="--") break;
+    if(opt[1] == '-') {
+      if(opt=="--") break;
 
-	  sscanf(tmp=argv[i], "%s=%s", tmp, value);
+      string tmp=opt;
+      sscanf(tmp, "%s=%s", tmp, value);
 	  
-	  if(search(longform, tmp[2..]) != -1)
-	  {
-	    argv[i]=0;
-	    if(hasarg)
-	    {
-	      if(!value)
-	      {
-		if(i == sizeof(argv)-1)
-		{
-		  if (throw_errors) {
-		    error( "No argument to option "+tmp+".\n" );
-		  } else {
-		    werror("No argument to option "+tmp+".\n");
-		    exit(1);
-		  }
-		}
-		value=argv[i+1];
-		argv[i+1]=0;
-	      }
-	      return value;
-	    } else {
-	      return value || 1;
+      if(has_value([array(string)]longform, tmp[2..])) {
+	argv[i]=0;
+
+	if(hasarg && !value) {
+	  if(i == sizeof(argv)-1)
+	    error( "No argument to option "+tmp+".\n" );
+
+	  value=argv[i+1];
+	  argv[i+1]=0;
+	}
+
+	return value || 1;
+      }
+    }
+    else {
+      foreach(opt/1; int j; string sopt) {
+
+	if(has_value([array(string)]shortform, sopt)) {
+	  string arg = opt[j+1..];
+
+	  if(hasarg) {
+	    if(arg == "") {
+	      if(i == sizeof(argv)-1)
+		error( "No argument to option -"+sopt+".\n" );
+
+	      value=argv[i+1];
+	      argv[i+1] = 0;
+	    }
+	    else {
+	      value=arg;
+	      arg="";
 	    }
 	  }
-	} else {
-	  int j;
-	  for(j=1;j<strlen(argv[i]);j++)
-	  {
-            string opt;
-            int pos;
-	    if(search(shortform, opt=argv[i][j..j]) != -1)
-	    {
-              string arg;
-              arg=argv[i][j+1..];
+	  else
+	    value=1;
 
-	      if(hasarg)
-	      {
-		if(arg=="")
-		{
-		  if(i == sizeof(argv)-1)
-                  {
-		    if (throw_errors) {
-		      error( "No argument to option -"+argv[i][j..j]+".\n" );
-		    } else {
-		      werror("No argument to option -"+argv[i][j..j]+".\n");
-		      exit(1);
-		    }
-		  }
-
-                  value=argv[i+1];
-		  argv[i+1] = 0;
-		} else {
-		  value=arg;
-                  arg="";
-		}
-		if (value == "") value = 1;
-	      } else {
-		value=1;
-	      }
-
-	      argv[i]=argv[i][..j-1]+arg;
-	      if(argv[i]=="-") argv[i]=0;
-	      return value;
-	    }
-	  }
+	  argv[i] = opt[..j-1]+arg;
+	  if(argv[i]=="-") argv[i]=0;
+	  return value;
 	}
       }
     }
@@ -214,6 +169,12 @@ constant MAY_HAVE_ARG=3;
 #define DEF 4
 
 #define SIZE 5
+
+static void my_error(string err, int throw_errors) {
+  if(throw_errors) error(err);
+  werror(err);
+  exit(1);
+}
 
 //!   This function does the job of several calls to @[find_option()].
 //!   The main advantage of this is that it allows it to handle the
@@ -254,7 +215,7 @@ constant MAY_HAVE_ARG=3;
 //!   	  command line option.
 //!   	@elem void|mixed default
 //!   	  This is the default value a @[MAY_HAVE_ARG] option will have in the
-//!       output if it was set but not assign any value.
+//!       output if it was set but not assigned any value.
 //!   @endarray
 //!
 //!   Only the first three elements need to be included.
@@ -291,15 +252,19 @@ constant MAY_HAVE_ARG=3;
 //!
 array(array) find_all_options(array(string) argv,
 		       array(array(array(string)|string)) options,
-		       void|int posix_me_harder, void|int throw_errors)
+		       void|int(-1..1) posix_me_harder, void|int throw_errors)
 {
+  // --- Initialize variables
+
   mapping(string:array(string|array(string))) quick=([]);
 
-  for(int i; i<sizeof(options); i++) {
-    options[i] = options[i] + allocate(SIZE-sizeof(options[i]));
-    array(array(string)|string) opt = options[i];
-    array(string)|string aliases=[array(string)|string]opt[ALIASES];
-    if(!arrayp(aliases)) aliases=({[string]aliases});
+  foreach(options; int i; array(array(string)|string) opt) {
+    if(sizeof(opt)!=SIZE) {
+      options[i] = opt + allocate(SIZE-sizeof(opt));
+      opt = options[i];
+    }
+    array(string)|string aliases = [array(string)|string]opt[ALIASES];
+    if(!arrayp(aliases)) aliases = ({[string]aliases});
 
     foreach([array(string)]aliases, string optname)
       if(optname[0..1]=="--")
@@ -309,113 +274,95 @@ array(array) find_all_options(array(string) argv,
 	  quick["-"+optletter]=opt;
   }
 
+  posix_me_harder = posix_me_harder!=-1 &&
+    (posix_me_harder || !!getenv("POSIX_ME_HARDER"));
+
+  // --- Do the actual parsing of arguments.
+
   array(array) ret=({});
-  for(int e=1; e<sizeof(argv); e++)
-  {
-    if(!argv[e]) continue;
+  foreach(argv; int e; string opt) {
 
-    if(strlen(argv[e]) && argv[e][0]=='-')
-    {
-      if(strlen(argv[e])>1 && argv[e][1]=='-')
-      {
-	string opt=argv[e];
-	if(opt=="--") break;
+    if(!e) continue;
+    if(!opt || sizeof(opt)<2 || opt[0]!='-') {
+      if(posix_me_harder) break;
+      continue;
+    }
 
-	string arg;
-	sscanf(opt,"%s=%s",opt, arg);
-	if(array option=quick[opt])
-	{
-	  argv[e]=0;
-	  if(!arg && option[TYPE]==HAS_ARG)
-	  {
-	    if(e==sizeof(argv)-1)
-	    {
-	      if (throw_errors) {
-		error( "No argument to option "+opt+".\n" );
-	      } else {
-		werror("No argument to option "+opt+".\n");
-		exit(1);
-	      }
-	    }
-	    arg=argv[e+1];
-	    argv[e+1]=0;
-	  }
-	  ret+=({ ({ option[0], arg || option[DEF] || 1 }) });
+    if(opt[1]=='-') {
+
+      if(opt=="--") break;
+
+      string arg;
+      sscanf(opt, "%s=%s", opt, arg);
+      if(array option=quick[opt]) {
+	argv[e]=0;
+	if(!arg && option[TYPE]==HAS_ARG) {
+	  if(e==sizeof(argv)-1)
+	    my_error( "No argument to option "+opt+".\n", throw_errors );
+
+	  arg = argv[e+1];
+	  argv[e+1] = 0;
 	}
-      }
-      else {
-	array(string) foo=argv[e]/"";
-	for(int j=1;j<strlen(foo);j++)
-	{
-	  string opt="-"+foo[j];
-	  if(array option=quick[opt])
-	  {
-	    foo[j]=0;
-	    string arg;
-	    if(option[TYPE]!=NO_ARG)
-	    {
-	      arg=argv[e][j+1..];
-	      
-	      if(option[TYPE]==HAS_ARG && arg=="")
-	      {
-		if(e==sizeof(argv)-1)
-		{
-		  if (throw_errors) {
-		    error( "No argument to option "+opt+".\n" );
-		  } else {
-		    werror("No argument to option "+opt+".\n");
-		    exit(1);
-		  }
-		}
-		arg=argv[e+1];
-		argv[e+1]=0;
-	      }
-	      else
-		foo=foo[..j];
-	    }
 
-	    if (arg == "") arg = 0;
-	    ret+=({ ({ option[0], arg || option[DEF] || 1 }) });
-	  }
-	}
-	argv[e]=foo*"";
-	if(argv[e]=="-") argv[e]=0;
+	ret+=({ ({ option[NAME], arg || option[DEF] || 1 }) });
       }
     }
-    else{
-      if(posix_me_harder != -1)
-	if(posix_me_harder || getenv("POSIX_ME_HARDER"))
-	  break;
+    else {
+      array(string) opts = opt/1;
+      foreach(opts; int j; string s_opt) {
+	s_opt = "-"+s_opt;
+
+	if(array option=quick[s_opt]) {
+	  opts[j]=0;
+	  string arg;
+
+	  if(option[TYPE]!=NO_ARG) { // HAS_ARG or MAY_HAVE_ARG
+	    arg = opt[j+1..];
+	      
+	    if(option[TYPE]==HAS_ARG && arg=="") {
+	      if(e==sizeof(argv)-1)
+		my_error( "No argument to option "+opt+".\n", throw_errors );
+
+	      arg = argv[e+1];
+	      argv[e+1] = 0;
+	    }
+	    else {
+	      arg = opts[j+1..]*"";
+	      opts = opts[..j];
+	    }
+	  }
+
+	  if (arg == "") arg = 0;
+	  ret+=({ ({ option[NAME], arg || option[DEF] || 1 }) });
+	  if(sizeof(opts)==j+1) break; // if opts=opts[..j] we're done.
+	}
+      }
+
+      argv[e] = opts*"";
+      if(argv[e]=="-") argv[e]=0;
     }
   }
 
-  multiset done=mkmultiset(column(ret, 0));
-  foreach(options, array(string|array(string)) option)
-    {
-      string name=[string]option[NAME];
-      if(done[name]) continue;
-      if(option[ENV])
-      {
-	array(string)|string foo=option[ENV];
-	if(!foo) continue;
-	if(stringp(foo)) foo = ({ [string]foo });
-	foreach([array(string)]foo, foo)
-	  {
-	    if(foo=[string]getenv([string]foo))
-	    {
-	      ret += ({ ({name, foo}) });
-	      done[name] = 1;
-	      break;
-	    }
-	  }
+  // --- Fill out empty slots with environment values
 
-	if(!done && option[ENV])
-	{
-	  ret += ({ ({name, option[ENV]}) });
+  multiset(string) done = [multiset(string)]mkmultiset(column(ret, 0));
+  foreach(options, array(string|array(string)) option) {
+    string name=[string]option[NAME];
+    if(done[name]) continue;
+
+    if(option[ENV]) {
+      array(string)|string foo=option[ENV];
+      if(!foo) continue;
+      if(stringp(foo)) foo = ({ [string]foo });
+
+      foreach([array(string)]foo, foo)
+	if(foo=[string]getenv([string]foo)) {
+	  ret += ({ ({name, foo}) });
 	  done[name] = 1;
+	  break;
 	}
-      }
     }
+  }
 
   return ret;
 }
@@ -438,52 +385,37 @@ array(array) find_all_options(array(string) argv,
 //! @seealso
 //! @[Getopt.find_option()], @[Getopt.find_all_options()]
 //!
-array(string) get_args(array(string) argv, void|int posix_me_harder,
+array(string) get_args(array(string) argv, void|int(-1..1) posix_me_harder,
 		       void|int throw_errors)
 {
-  int i;
-  for(i=1;i<sizeof(argv);i++)
-  {
-    if(argv[i] && strlen(argv[i])>1 && argv[i][0]=='-')
-    {
-      if(argv[i][1]=='-')
-      {
-	if(argv[i]=="--")
-	{
-	  argv[i]=0;
-	  break;
-	}else{
-	  if (throw_errors) {
-	    error( "Unknown option "+argv[i]+".\n" );
-	  } else {
-	    werror("Unknown option "+argv[i]+".\n");
-	    exit(1);
-	  }
-	}
-      }else{
-	if(strlen(argv[i]) == 2) {
-	  if (throw_errors) {
-	    error( "Unknown option "+argv[i]+".\n" );
-	  } else {
-	    werror("Unknown option "+argv[i]+".\n");
-	  }
-	} else {
-	  if (throw_errors) {
-	    error( "Unknown options "+argv[i]+".\n" );
-	  } else {
-	    werror("Unknown options "+argv[i]+".\n");
-	  }
-	}
-	exit(1);
+  posix_me_harder = posix_me_harder!=-1 &&
+    (posix_me_harder || !!getenv("POSIX_ME_HARDER"));
+
+  foreach(argv; int i; string opt) {
+
+    if(!i) continue;
+    if(!stringp(opt) || sizeof(opt)<2 || opt[0]!='-') {
+      if(posix_me_harder) break;
+      continue;
+    }
+
+    if(opt[1]=='-') {
+
+      if(opt=="--") {
+	argv[i]=0;
+	break;
       }
-    }else{
-      if(posix_me_harder != -1)
-	if(posix_me_harder || getenv("POSIX_ME_HARDER"))
-	  break;
+
+      my_error( "Unknown option "+opt+".\n", throw_errors );
+    }
+    else {
+      if(strlen(argv[i]) == 2)
+	my_error( "Unknown option "+argv[i]+".\n", throw_errors );
+      my_error( "Unknown options "+argv[i]+".\n", throw_errors );
     }
   }
 
-  argv-=({0,1});
+  argv -= ({0, 1});
 
   return argv;
 }
