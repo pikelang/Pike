@@ -1,5 +1,5 @@
 /*
- * $Id: sql_result.pike,v 1.2 1997/03/30 19:07:41 grubba Exp $
+ * $Id: sql_result.pike,v 1.3 1997/12/12 21:36:20 grubba Exp $
  *
  * Implements the generic result module of the SQL-interface
  *
@@ -8,7 +8,7 @@
 
 //.
 //. File:	sql_result.pike
-//. RCSID:	$Id: sql_result.pike,v 1.2 1997/03/30 19:07:41 grubba Exp $
+//. RCSID:	$Id: sql_result.pike,v 1.3 1997/12/12 21:36:20 grubba Exp $
 //. Author:	Henrik Grubbström (grubba@infovav.se)
 //.
 //. Synopsis:	Implements the generic result of the SQL-interface.
@@ -120,6 +120,7 @@ int|array(string|int) fetch_row()
       return(0);
     }
     sort(indices(master_res[index]), res = values(master_res[index]));
+    index++;
     return(res);
   }
   return (master_res->fetch_row());
