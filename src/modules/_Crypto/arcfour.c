@@ -19,7 +19,7 @@
 /* THIS MUST BE INCLUDED LAST */
 #include "module_magic.h"
 
-RCSID("$Id: arcfour.c,v 1.13 2000/12/01 08:10:25 hubbe Exp $");
+RCSID("$Id: arcfour.c,v 1.14 2001/02/10 20:37:41 grubba Exp $");
 
 #undef THIS
 #define THIS ((struct arcfour_ctx *)(fp->current_storage))
@@ -36,7 +36,18 @@ void exit_pike_arcfour(struct object *o)
   MEMSET(THIS, 0, sizeof(struct arcfour_ctx));
 }
 
-/* string name(void) */
+/*! @module Crypto
+ */
+
+/*! @class arcfour
+ *!
+ *! Implementation of the arcfour stream-crypto.
+ */
+
+/*! @decl string name()
+ *!
+ *! Returns the string @tt{"ARCFOUR"@}.
+ */
 static void f_name(INT32 args)
 {
   if (args) {
@@ -45,16 +56,23 @@ static void f_name(INT32 args)
   push_string(make_shared_string("ARCFOUR"));
 }
 
-/* int query_key_length(void) */
+/*! @decl int query_key_length()
+ *!
+ *! Returns the minimum required encryption key length.
+ *! Currently this is @tt{1@}.
+ */
 static void f_query_key_length(INT32 args)
 {
   if (args) {
     Pike_error("Too many arguments to arcfour->query_key_length()\n");
   }
-  push_int(0);
+  push_int(1);
 }
 
-/* void set_key(string) */
+/*! @decl void set_key(string key)
+ *!
+ *! Set the encryption key to @[key].
+ */
 static void f_set_key(INT32 args)
 {
   if (args != 1) {
@@ -72,7 +90,14 @@ static void f_set_key(INT32 args)
   push_object(this_object());
 }
 
-/* string crypt(string) */
+/*! @decl string crypt(string data)
+ *!
+ *! Returns the string @[data] encrypted with the current
+ *! encryption key.
+ *!
+ *! @seealso
+ *!   @[set_key()]
+ */
 static void f_arcfour_crypt(INT32 args)
 {
   ptrdiff_t len;
@@ -97,21 +122,27 @@ static void f_arcfour_crypt(INT32 args)
   push_string(end_shared_string(s));
 }
 
+/*! @endclass
+ */
+
+/*! @endmodule
+ */
+
 void pike_arcfour_init(void)
 {
   start_new_program();
   ADD_STORAGE(struct arcfour_ctx);
 
-  /* function(void:string) */
-  ADD_FUNCTION("name", f_name,tFunc(tVoid,tStr), 0);
-  /* function(void:int) */
-  ADD_FUNCTION("query_key_length", f_query_key_length,tFunc(tVoid,tInt), 0);
+  /* function(:string) */
+  ADD_FUNCTION("name", f_name, tFunc(tNone,tStr), 0);
+  /* function(:int) */
+  ADD_FUNCTION("query_key_length", f_query_key_length, tFunc(tNone, tInt), 0);
   /* function(string:object) */
-  ADD_FUNCTION("set_encrypt_key", f_set_key,tFunc(tStr,tObj), 0);
+  ADD_FUNCTION("set_encrypt_key", f_set_key, tFunc(tStr, tObj), 0);
   /* function(string:object) */
-  ADD_FUNCTION("set_decrypt_key", f_set_key,tFunc(tStr,tObj), 0);
+  ADD_FUNCTION("set_decrypt_key", f_set_key, tFunc(tStr, tObj), 0);
   /* function(string:string) */
-  ADD_FUNCTION("crypt", f_arcfour_crypt,tFunc(tStr,tStr), 0);
+  ADD_FUNCTION("crypt", f_arcfour_crypt, tFunc(tStr, tStr), 0);
 
   set_init_callback(init_pike_arcfour);
   set_exit_callback(exit_pike_arcfour);
