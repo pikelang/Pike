@@ -1,4 +1,4 @@
-/* $Id: image.c,v 1.34 1997/05/29 23:36:58 per Exp $ */
+/* $Id: image.c,v 1.35 1997/05/30 00:21:12 mirar Exp $ */
 
 /*
 **! module Image
@@ -6,7 +6,7 @@
 **!     This module adds image-drawing and -manipulating
 **!	capabilities to pike. 
 **! note
-**!	$Id: image.c,v 1.34 1997/05/29 23:36:58 per Exp $<br>
+**!	$Id: image.c,v 1.35 1997/05/30 00:21:12 mirar Exp $<br>
 **! see also: Image.font, Image.image
 **!
 **! class image
@@ -107,7 +107,7 @@
 
 #include "stralloc.h"
 #include "global.h"
-RCSID("$Id: image.c,v 1.34 1997/05/29 23:36:58 per Exp $");
+RCSID("$Id: image.c,v 1.35 1997/05/30 00:21:12 mirar Exp $");
 #include "pike_macros.h"
 #include "object.h"
 #include "constants.h"
@@ -1294,6 +1294,16 @@ void image_ysize(INT32 args)
 **!
 **! returns the new image object
 **!
+**!	<table><tr valign=center>
+**!	<td><illustration> return lena(); </illustration></td>
+**!	<td><illustration> return lena()->grey(); </illustration></td>
+**!	<td><illustration> return lena()->grey(0,0,255); </illustration></td>
+**!	</tr><tr valign=center>
+**!	<td>original</td>
+**!	<td>->grey();</td>
+**!	<td>->grey(0,0,255);</td>
+**!	</tr></table>
+**!
 **! arg int r
 **! arg int g
 **! arg int b
@@ -1360,6 +1370,14 @@ void image_grey(INT32 args)
 **!    The result is divided by 255, giving correct pixel values.
 **!
 **!    If no arguments are given, the current color is used as factors.
+**!
+**!	<table><tr valign=center>
+**!	<td><illustration> return lena(); </illustration></td>
+**!	<td><illustration> return lena()->color(128,128,255); </illustration></td>
+**!	</tr><tr valign=center>
+**!	<td>original</td>
+**!	<td>->color(128,128,255);</td>
+**!	</tr></table>
 **!
 **! returns the new image object
 **!
@@ -1431,9 +1449,11 @@ void image_color(INT32 args)
 **!	<table><tr valign=center>
 **!	<td><illustration> return lena(); </illustration></td>
 **!	<td><illustration> return lena()->invert(); </illustration></td>
+**!	<td><illustration> return lena()->rgb_to_hsv()->invert()->hsv_to_rgb(); </illustration></td>
 **!	</tr><tr valign=center>
 **!	<td>original</td>
 **!	<td>->invert();</td>
+**!	<td>->rgb_to_hsv()->invert()->hsv_to_rgb();</td>
 **!	</tr></table>
 **!
 **! returns the new image object
@@ -1555,7 +1575,7 @@ void image_threshold(INT32 args)
 
 
 /*
-**x method object rgb_to_hsv()
+**! method object rgb_to_hsv()
 **! method object hsv_to_rgb()
 **!    Converts RGB data to HSV data, or the other way around.
 **!    When converting to HSV, the resulting data is stored like this:
@@ -1567,16 +1587,33 @@ void image_threshold(INT32 args)
 **!	<table><tr valign=center>
 **!	<td><illustration> return lena(); </illustration></td>
 **!	<td><illustration> return lena()->hsv_to_rgb(); </illustration></td>
+**!	<td><illustration> return lena()->rgb_to_hsv(); </illustration></td>
+**!	</tr><tr valign=center>
+**!	<td>original</td>
+**!	<td>->hsv_to_rgb();</td>
+**!	<td>->rgb_to_hsv();</td>
+**!	</tr><tr valign=center>
+**!	<td><illustration>
+**!     return image(67,67)->tuned_box(0,0, 67,67,
+**!                      ({ ({ 255,255,128 }), ({ 0,255,128 }),
+**!                         ({ 255,255,255 }), ({ 0,255,255 })}));
+**!	</illustration></td>
 **!	<td><illustration>
 **!     return image(67,67)->tuned_box(0,0, 67,67,
 **!                      ({ ({ 255,255,128 }), ({ 0,255,128 }),
 **!                         ({ 255,255,255 }), ({ 0,255,255 })}))
 **!          ->hsv_to_rgb();
 **!	</illustration></td>
+**!	<td><illustration>
+**!     return image(67,67)->tuned_box(0,0, 67,67,
+**!                      ({ ({ 255,255,128 }), ({ 0,255,128 }),
+**!                         ({ 255,255,255 }), ({ 0,255,255 })}))
+**!          ->rgb_to_hsv();
+**!	</illustration></td>
 **!	</tr><tr valign=center>
-**!	<td>original</td>
-**!	<td>->hsv_to_rgb();</td>
+**!	<td>tuned box (below)</td>
 **!	<td>the rainbow (below)</td>
+**!	<td>same, but rgb_to_hsv()</td>
 **!	</tr></table>
 **!
 **!
