@@ -2,11 +2,11 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: object.c,v 1.243 2003/08/03 00:59:21 mast Exp $
+|| $Id: object.c,v 1.244 2003/08/03 01:09:54 mast Exp $
 */
 
 #include "global.h"
-RCSID("$Id: object.c,v 1.243 2003/08/03 00:59:21 mast Exp $");
+RCSID("$Id: object.c,v 1.244 2003/08/03 01:09:54 mast Exp $");
 #include "object.h"
 #include "dynamic_buffer.h"
 #include "interpret.h"
@@ -1095,7 +1095,7 @@ PMOD_EXPORT void low_object_index_no_free(struct svalue *to,
     break;
   }
 
-  default:
+  default:;
 #ifdef PIKE_DEBUG
     Pike_fatal ("Unknown identifier type.\n");
 #endif

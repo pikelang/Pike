@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: apply_low.h,v 1.21 2003/08/03 00:51:35 mast Exp $
+|| $Id: apply_low.h,v 1.22 2003/08/03 01:09:54 mast Exp $
 */
 
     {
@@ -333,7 +333,7 @@
 	return 1;
       }
 
-      default:
+      default:;
 #ifdef PIKE_DEBUG
 	Pike_fatal("Unknown identifier type.\n");
 #endif

@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: encode.c,v 1.193 2003/08/03 00:53:20 mast Exp $
+|| $Id: encode.c,v 1.194 2003/08/03 01:09:54 mast Exp $
 */
 
 #include "global.h"
@@ -27,7 +27,7 @@
 #include "bignum.h"
 #include "pikecode.h"
 
-RCSID("$Id: encode.c,v 1.193 2003/08/03 00:53:20 mast Exp $");
+RCSID("$Id: encode.c,v 1.194 2003/08/03 01:09:54 mast Exp $");
 
 /* #define ENCODE_DEBUG */
 
@@ -1405,7 +1405,7 @@ static void encode_value2(struct svalue *val, struct encode_data *data, int forc
 		  pop_stack();
 		  break;
 
-		default:
+		default:;
 #ifdef PIKE_DEBUG
 		  Pike_fatal ("Unknown identifier type.\n");
 #endif
