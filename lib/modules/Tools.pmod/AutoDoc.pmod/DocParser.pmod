@@ -95,6 +95,11 @@ mapping(string : array(string)) attributenames =
   "enum" : ({ "name" }),
 ]);
 
+mapping(string:array(string)) required_attributes =
+([
+  "param" : ({ "name" }),
+]);  
+
 static constant standard = (<
   "note", "bugs", "example", "seealso", "deprecated", "fixme"
 >);
@@ -470,6 +475,12 @@ static class DocParserClass {
       parseError(sprintf("@%s with too many parameters", keyword));
     for (int i = 0; i < sizeof(args); ++i)
       res[attrnames[i]] =  attributequote(args[i]);
+    foreach(required_attributes[keyword], string attrname) {
+      if (!res[attrname]) {
+	parseError(sprintf("@%s lacking required parameter %s",
+			   keyword, attrname));
+      }
+    }
     return res;
   }
 
