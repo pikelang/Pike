@@ -145,10 +145,18 @@ static private class Extractor {
         mapping(string:int) contexts = ([]);
         foreach (decls, PikeObject obj)
           contexts[obj->objtype] = 1;
-        if (contexts["inherit"] && sizeof(decls) > 1)
-          extractorErrorAt(token->currentPosition,
-                           "inherit can not be grouped"
-                           " with other declarations");
+
+	if (sizeof(decls) > 1) {
+	  if (contexts["enum"])
+	    extractorErrorAt(token->currentPosition,
+			     "enum can not be grouped"
+			     " with other declarations");
+	
+	  if (contexts["inherit"])
+	    extractorErrorAt(token->currentPosition,
+			     "inherit can not be grouped"
+			     " with other declarations");
+	}
         string context;
         if (sizeof(indices(contexts)) == 1)
           context = "_" + indices(contexts)[0];
@@ -156,12 +164,18 @@ static private class Extractor {
           context = "_general";
         Documentation doc = Documentation();
         doc->xml = token->doc(context);
-        DocGroup d = DocGroup(decls, doc);
-        d->appears = meta->appears;
-        d->belongs = meta->belongs;
+	object(DocGroup)|Enum d;
+	if (contexts["enum"]) {
+	  // Enums are their own docgroup...
+	  d = decls[0];
+	} else {
+	  d = DocGroup(decls, doc);
+	}
+	d->appears = meta->appears;
+	d->belongs = meta->belongs;
         d->documentation = doc;
         tokens = tokens[1..];
-        return ({ "docgroup", d });
+        return ({ d->objtype || "docgroup", d });
       }
       break;
     case 0:
@@ -188,6 +202,7 @@ static private class Extractor {
 	  
         case "class":
         case "module":
+        case "enum":
           //werror("in parent %O: found child %O\n", c->name, a[1]->name);
           // Check if it was a @class or @module that was reentered:
 	  if (search(c->children, a[1]) < 0)
@@ -196,6 +211,9 @@ static private class Extractor {
         case "docgroup":
           c->AddGroup([object(DocGroup)]a[1]);
           break;
+        default:
+	  werror("parseClassBody(): Unhandled object: %O\n", a);
+	  break;
       }
     }
   }
