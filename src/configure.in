@@ -1,4 +1,4 @@
-AC_REVISION("$Id: configure.in,v 1.270 1999/05/27 08:22:24 hubbe Exp $")
+AC_REVISION("$Id: configure.in,v 1.271 1999/06/30 23:43:04 hubbe Exp $")
 AC_INIT(interpret.c)
 AC_CONFIG_HEADER(machine.h)
 
@@ -2820,7 +2820,11 @@ esac
 
 case "x$pike_cv_sys_os" in
   xSolaris | xAIX)
-    AC_DEFINE(USE_WAIT_THREAD)
+   if grep _REENTRANT confdefs.h >/dev/null 2>&1; then
+     AC_DEFINE(USE_WAIT_THREAD)
+   else
+     AC_DEFINE(USE_SIGCHILD)
+   fi
   ;;
 
   xWindows_NT)
