@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: program.c,v 1.580 2004/12/18 16:41:04 grubba Exp $
+|| $Id: program.c,v 1.581 2004/12/18 18:39:56 grubba Exp $
 */
 
 #include "global.h"
@@ -1566,34 +1566,19 @@ struct node_s *program_magic_identifier (struct program_state *state,
 	   state_depth, inherit_num, ident->str, colon_colon_ref);
 #endif
 
-  if (!inherit_num) {
-    /* These are only recognized when looking in the current program
-     * and not an inherited one. */
-
-    /* Handle this by referring to the magic this identifier at index 0. */
+  if (inherit_num >= 0) {
     if (ident == this_string) {
-      if (state_depth > 0) 
-	return mkexternalnode (state->new_program, IDREF_MAGIC_THIS);
-      else
-	return mkidentifiernode (IDREF_MAGIC_THIS);
+      /* Handle this. */
+      return mkthisnode(state->new_program, inherit_num);
     }
 
     /* Handle this_program */
     if (ident == this_program_string) {
-      node *n = mkefuncallnode ("object_program",
-				state_depth > 0 ?
-				mkexternalnode (state->new_program, IDREF_MAGIC_THIS) :
-				mkidentifiernode (IDREF_MAGIC_THIS));
+      node *n = mkefuncallnode("object_program",
+			       mkthisnode(state->new_program, inherit_num));
       /* We know this expression is constant. */
       n->node_info &= ~OPT_NOT_CONST;
       n->tree_info &= ~OPT_NOT_CONST;
-      return n;
-    }
-  } else if (inherit_num > 0) {
-    /* Handle this_program */
-    if (ident == this_program_string) {
-      /* Not very useful, but... */
-      node *n = mkprgnode(state->new_program->inherits[inherit_num].prog);
       return n;
     }
   }
