@@ -1081,7 +1081,6 @@ void dump_modules()
 				     sprintf("%d,%d", offset, sizeof(to_dump))
 				     }) : ({"--quiet"}) ) +
 			       delta_dump, options)->wait();
-
 	offset += sizeof(delta_dump);
       }
 

@@ -1,5 +1,5 @@
 #
-# $Id: Makefile.in,v 1.188 2000/07/26 20:33:38 nilsson Exp $
+# $Id: Makefile.in,v 1.189 2001/01/18 10:38:03 hubbe Exp $
 #
 
 # This line is needed on some machines.
@@ -23,6 +23,14 @@ TMP_BUILDDIR = @BUILDDIR@
 TMP_DOCDIR = @DOCDIR@
 TMP_LIBDIR = $(TMP_BUILDDIR)/lib
 
+#
+# RPM and package builders, listen up, because this is your only
+# documentation! This variable is prepended to the install path.
+# Please note that Pike will not work until moved into the proper
+# place.  -Hubbe
+# 
+buildroot=
+
 prefix = @prefix@
 exec_prefix = $(prefix)/bin
 lib_prefix = $(prefix)/lib/pike
@@ -32,6 +40,9 @@ man_prefix = $(prefix)/man
 
 # Arguments for test_pike.pike used by the verify targets.
 #TESTARGS = -a
+
+# Arguments for install.pike used by the install targets.
+INSTALLARGS = --new-style
 
 #
 # use bison please, yacc isn't good enough.
@@ -271,17 +282,20 @@ force :
 
 # install
 install: pike hilfe pike-module aclocal
-	@$(RUNPIKE) $(TMP_BINDIR)/install.pike --new-style \
+	@$(RUNPIKE) $(TMP_BINDIR)/install.pike $(INSTALLARGS) \
 	exec_prefix="$(exec_prefix)" lib_prefix="$(lib_prefix)" \
 	TMP_LIBDIR="$(TMP_LIBDIR)" LIBDIR_SRC="$(LIBDIR_SRC)" \
 	SRCDIR="$(SRCDIR)" prefix="$(prefix)" MANDIR_SRC="$(MANDIR_SRC)" \
-	man_prefix="$(man_prefix)" pike_name=$(pike_name)
+	man_prefix="$(man_prefix)" pike_name=$(pike_name) \
+	fakeroot="$(buildroot)"
 
 install_interactive: pike hilfe pike-module aclocal
 	@$(RUNPIKE) $(TMP_BINDIR)/install.pike --interactive \
 	exec_prefix="$(exec_prefix)"  prefix=$(prefix) \
 	TMP_LIBDIR="$(TMP_LIBDIR)" LIBDIR_SRC="$(LIBDIR_SRC)" \
-	SRCDIR="$(SRCDIR)" MANDIR_SRC="$(MANDIR_SRC)"
+	SRCDIR="$(SRCDIR)" MANDIR_SRC="$(MANDIR_SRC)" \
+	fakeroot="$(buildroot)"
+
 
 # tidy up a bit
 tidy:

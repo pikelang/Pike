@@ -1,6 +1,6 @@
 /* -*- Pike -*-
  *	
- * $Id: master.pike.in,v 1.117 2000/09/15 13:26:15 peter Exp $
+ * $Id: master.pike.in,v 1.118 2001/01/18 10:38:03 hubbe Exp $
  * 
  * Master-file for Pike.
  *
@@ -27,6 +27,22 @@ constant out_of_date_warning = OUT_OF_DATE_WARNING;
 /*
  * Functions begin here.
  */
+
+#ifdef PIKE_FAKEROOT
+object o;
+string fakeroot(string s)
+{
+  string tmp1=combine_path_with_cwd(s);
+#ifdef PIKE_FAKEROOT_OMIT
+  foreach(PIKE_FAKEROOT_OMIT/":", string x)
+    if(glob(x,tmp1))
+      return s;
+#endif
+  return PIKE_FAKEROOT+tmp1;
+}
+#else
+#define fakeroot(X) X
+#endif
 
 int is_absolute_path(string p)
 {
@@ -120,7 +136,7 @@ program compile_string(string data, void|string name, object|void handler)
 string master_read_file(string file)
 {
   object o=_static_modules.files()->Fd();
-  if(o->open(file,"r"))
+  if(o->open(fakeroot(file),"r"))
     return o->read();
   return 0;
 }
@@ -313,7 +329,7 @@ static program low_findprog(string pname, string ext, object|void handler)
   }
 #endif
 
-  if( (s=master_file_stat(fname))  && s[1]>=0 )
+  if( (s=master_file_stat(fakeroot(fname)))  && s[1]>=0 )
   {
     AUTORELOAD_BEGIN();
 
@@ -327,7 +343,7 @@ static program low_findprog(string pname, string ext, object|void handler)
     case "":
     case ".pike":
       foreach(query_precompiled_names(fname), string oname) {
-	if(array s2=master_file_stat(oname))
+	if(array s2=master_file_stat(fakeroot(oname)))
 	{	
 	  if(s2[1]>=0 && s2[3]>=s[3])
 	  {
@@ -374,7 +390,7 @@ static program low_findprog(string pname, string ext, object|void handler)
 	werror(sprintf("low_find_prog(\"%s\", \"%s\") => load_module(\"\")\n"
 		       "%s\n", pname, ext, describe_backtrace(backtrace())));
       }
-      ret=load_module(fname);
+      ret=load_module(fakeroot(fname));
 #endif /* load_module */
     }
 
@@ -612,7 +628,7 @@ class dirnode
     }
 
     if( !files )
-      files = get_dir(dirname);
+      files = get_dir(fakeroot(dirname));
 
     int ret;
     foreach( files, string s )
@@ -665,7 +681,7 @@ class dirnode
     }
 
     if( !files )
-      files = get_dir(dirname);
+      files = get_dir(fakeroot(dirname));
     foreach(files, string fname) {
       mixed err = catch {
 	if (((< ".pike", ".pmod" >)[fname[sizeof(fname)-5..]]) &&
@@ -800,7 +816,7 @@ object findmodule(string fullname)
     return o;
   }
 
-  if(array stat=master_file_stat(fullname+".pmod"))
+  if(array stat=master_file_stat(fakeroot(fullname+".pmod")))
   {
     if(stat[1]==-2)
       return fc[fullname]=dirnode(fullname+".pmod");
@@ -810,7 +826,7 @@ object findmodule(string fullname)
     return fc[fullname]=o;
     
 #if constant(load_module)
-  if(master_file_stat(fullname+".so"))
+  if(master_file_stat(fakeroot(fullname+".so")))
     return fc[fullname]=low_cast_to_object(fullname,"/.");
 #endif
 
@@ -1272,7 +1288,7 @@ string handle_include(string f,
     foreach(pike_include_path, path)
       {
 	path=combine_path(path,f);
-	if(master_file_stat(path))
+	if(master_file_stat(fakeroot(path)))
 	  break;
 	else
 	  path=0;
