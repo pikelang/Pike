@@ -1,7 +1,7 @@
 SRCDIR=@srcdir@
 VPATH=@srcdir@:@srcdir@/../..:../..
 OBJS=zlibmod.o
-MODULE_LDFLAGS=@LIBS@
+MODULE_LDFLAGS=@LDFLAGS@ @LIBS@
 
 @dynamic_module_makefile@
 @dependencies@
