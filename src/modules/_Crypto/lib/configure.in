@@ -1,4 +1,4 @@
-# $Id: configure.in,v 1.10 2000/10/02 19:35:03 grubba Exp $
+# $Id: configure.in,v 1.11 2000/10/02 19:42:33 grubba Exp $
 AC_INIT(sha.c)
 
 MY_AC_PROG_CC
@@ -9,7 +9,5 @@ CROSS="$ac_cv_prog_cc_cross"
 AC_SUBST(CROSS)
 
 AC_C_CONST
-
-AC_CONFIG_SUBDIRS(rijndael)
 
 AC_OUTPUT(Makefile)
