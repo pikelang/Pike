@@ -67,11 +67,11 @@ desCore.a:	$O
 		ar cru $@ $O
 		$(RANLIB) $@
 
-desdata.o:	desinfo.h des.h
+desdata.o:	desinfo.h $(SRCDIR)/../include/des.h
 desUtil.o:	$(GH)
-$(SO):		des.h
-$(GI):		desCode.h des.h Makefile
-desTest.o:	des.h
+$(SO):		$(SRCDIR)/../include/des.h
+$(GI):		desCode.h $(SRCDIR)/../include/des.h Makefile
+desTest.o:	$(SRCDIR)/../include/des.h
 
 $(GH):		desdata
 		./desdata $@ > $@
