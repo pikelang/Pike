@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: signal_handler.c,v 1.299 2004/06/21 18:56:31 mast Exp $
+|| $Id: signal_handler.c,v 1.300 2004/06/23 14:30:24 nilsson Exp $
 */
 
 #include "global.h"
@@ -26,7 +26,7 @@
 #include "main.h"
 #include <signal.h>
 
-RCSID("$Id: signal_handler.c,v 1.299 2004/06/21 18:56:31 mast Exp $");
+RCSID("$Id: signal_handler.c,v 1.300 2004/06/23 14:30:24 nilsson Exp $");
 
 #ifdef HAVE_PASSWD_H
 # include <passwd.h>
@@ -412,7 +412,7 @@ struct sigdesc
   char *signame;
 };
 
-static struct sigdesc signal_desc []={
+static const struct sigdesc signal_desc []={
 #ifdef SIGHUP
   { SIGHUP, "SIGHUP" },
 #endif
