@@ -246,7 +246,9 @@ void read_some(int ignore, string s)
 //
 mixed call_sync(array data)
 {
-  if(closed) error("connection closed\n");
+  if(closed) {
+    error("connection closed\n");
+  }
   int refno = data[4];
   string s = encode_value(data);
   con->set_blocking();
