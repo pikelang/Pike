@@ -1,7 +1,7 @@
 #include <config.h>
 
 #include "global.h"
-RCSID("$Id: dumudp.c,v 1.8 1997/04/16 03:13:24 hubbe Exp $");
+RCSID("$Id: dumudp.c,v 1.9 1997/04/21 19:29:50 grubba Exp $");
 #include "types.h"
 #include "interpret.h"
 #include "svalue.h"
@@ -262,12 +262,12 @@ void udp_sendto(INT32 args)
 }
 
 
-void zero_udp()
+void zero_udp(struct object *o)
 {
   MEMSET(THIS, 0, sizeof(struct dumudp));
 }
 
-void exit_udp()
+void exit_udp(struct object *o)
 {
   if(THIS->fd) close(THIS->fd);
 }
