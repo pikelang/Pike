@@ -25,7 +25,7 @@
 #include "main.h"
 #include <signal.h>
 
-RCSID("$Id: signal_handler.c,v 1.138 1999/06/11 06:39:56 hubbe Exp $");
+RCSID("$Id: signal_handler.c,v 1.139 1999/06/12 13:53:21 grubba Exp $");
 
 #ifdef HAVE_PASSWD_H
 # include <passwd.h>
@@ -216,7 +216,7 @@ static struct svalue signal_callbacks[MAX_SIGNALS];
 static void (*default_signals[MAX_SIGNALS])(INT32);
 static struct callback *signal_evaluator_callback =0;
 
-DECLARE_FIFO(sig,char);
+DECLARE_FIFO(sig, unsigned char);
 
 
 #ifdef USE_PID_MAPPING
@@ -233,7 +233,7 @@ typedef struct wait_data_s {
   WAITSTATUSTYPE status;
 } wait_data;
 
-DECLARE_FIFO(wait,wait_data);
+DECLARE_FIFO(wait, wait_data);
 
 #endif
 
@@ -478,7 +478,8 @@ void dump_process_history(pid_t pid)
     fprintf(stderr," %d",last_pids[ (last_pid_p + e) & 4095]);
   }
 
-  fprintf(stderr,"\nProblem pid = %d, status = %d\n",pid,process_info[pid]);
+  fprintf(stderr,"\nProblem pid = %d, status = %d\n",
+	  (int)pid, process_info[pid]);
 }
 
 
@@ -535,9 +536,9 @@ void process_done(pid_t pid, char *from)
 
 static void register_signal(int signum)
 {
-  BEGIN_FIFO_PUSH(sig,char);
-  FIFO_DATA(sig,char)=signum;
-  END_FIFO_PUSH(sig,char);
+  BEGIN_FIFO_PUSH(sig, unsigned char);
+  FIFO_DATA(sig, unsigned char)=signum;
+  END_FIFO_PUSH(sig, unsigned char);
   wake_up_backend();
 }
 
@@ -619,16 +620,16 @@ void check_signals(struct callback *foo, void *bar, void *gazonk)
 #endif
 
 
-  if(QUICK_CHECK_FIFO(sig,char) && !signalling)
+  if(QUICK_CHECK_FIFO(sig, unsigned char) && !signalling)
   {
     signalling=1;
 
     SET_ONERROR(ebuf,unset_signalling,0);
 
-    BEGIN_FIFO_LOOP(sig,char);
+    BEGIN_FIFO_LOOP(sig, unsigned char);
 
 #ifdef USE_SIGCHILD
-    if(FIFO_DATA(sig,char)==SIGCHLD)
+    if(FIFO_DATA(sig, unsigned char)==SIGCHLD)
     {
       BEGIN_FIFO_LOOP(wait,wait_data);
 
@@ -647,17 +648,18 @@ void check_signals(struct callback *foo, void *bar, void *gazonk)
     }
 #endif
 
-    if(IS_ZERO(signal_callbacks + FIFO_DATA(sig,char)))
+    if(IS_ZERO(signal_callbacks + FIFO_DATA(sig, unsigned char)))
     {
-      if(default_signals[FIFO_DATA(sig,char)])
-	default_signals[FIFO_DATA(sig,char)](FIFO_DATA(sig,char));
+      if(default_signals[FIFO_DATA(sig, unsigned char)])
+	default_signals[FIFO_DATA(sig, unsigned char)]
+	  (FIFO_DATA(sig, unsigned char));
     }else{
-      push_int(FIFO_DATA(sig,char));
-      apply_svalue(signal_callbacks + FIFO_DATA(sig,char), 1);
+      push_int(FIFO_DATA(sig, unsigned char));
+      apply_svalue(signal_callbacks + FIFO_DATA(sig, unsigned char), 1);
       pop_stack();
     }
 
-    END_FIFO_LOOP(sig,char);
+    END_FIFO_LOOP(sig, unsigned char);
     UNSET_ONERROR(ebuf);
     signalling=0;
   }
@@ -3026,7 +3028,7 @@ void init_signals(void)
 {
   int e;
 
-  INIT_FIFO(sig,char);
+  INIT_FIFO(sig, unsigned char);
   INIT_FIFO(wait,wait_data);
 
 #ifdef USE_SIGCHILD
