@@ -7,11 +7,6 @@
 /* The main stuff.. */
 
 int pigtk_is_setup = 0, gnome_is_setup = 0;
-static void socket_ready_callback(int fd, void *f)
-{
-  g_main_iteration(0);
-}
-
 /* Not used in this file, really, but we need the require
  * 'preprocessor' stuff..
  */
@@ -24,37 +19,24 @@ int IS_OBJECT_PROGRAM(struct program *X)
             || ((X) == pgtk_selection_data_program));
 }
 
-static void backend_callback(struct callback *_cb,void *_x,void *_y)
+static void backend_callback(struct callback *_cb,
+                             void *arg,
+                             void *post_select)
 {
-  next_timeout = current_time;
-#ifndef __NT__
-  next_timeout.tv_usec += 20000;
-#else
-  next_timeout.tv_usec += 10000;
-#endif
-  if(next_timeout.tv_usec > 1000000)
+  if( !post_select )
   {
-    next_timeout.tv_usec-=1000000;
-    next_timeout.tv_sec+=1;
-  }
-  while(g_main_iteration( 0 ) );
+    next_timeout = current_time;
+    next_timeout.tv_usec += 20000;
+    if(next_timeout.tv_usec > 1000000)
+    {
+      next_timeout.tv_usec-=1000000;
+      next_timeout.tv_sec+=1;
+    }
+  } else
+    while(g_main_iteration( 0 ) );
 }
 
 static struct callback *backend_cb;
-
-#include <errno.h>
-#include "builtin_functions.h"
-static void do_error( void *dom, int level, char *err, void *data )
-{
-  push_text( err );
-  f_backtrace( 0 );
-  f_aggregate( 2 );
-  APPLY_MASTER("describe_backtrace",1);
-  if(Pike_sp[-1].type==PIKE_T_STRING)
-    write_to_stderr(Pike_sp[-1].u.string->str, Pike_sp[-1].u.string->len);
-  pop_stack();
-}
-
 %}
 void parse_rc(string rc)
 //! Takes a string and reads it as a gtkrc file.
@@ -109,33 +91,32 @@ void gnome_init(string app_id, string app_version,
 //! corba_init_flags is 0 or more of GNORBA_INIT_SERVER_FUNC (1),
 //! GNORBA_INIT_DISABLE_COOKIES (2) and GNORBA_INIT_CORBA_PRIO_HIGH (4)
 {
-  char **data;
+  gchar **data;
   char *id, *vers;
   INT_TYPE argc, flags=0;
-  struct array *a;
+
   if( pigtk_is_setup )
     Pike_error( "You should only call GTK.setup_gtk() or Gnome.init() once\n");
+
+  switch( args )
+  {
+   default:
+     Pike_error( "Too few arguments, expected at least 3\n");
+   case 4:
+     flags = PGTK_GETINT( Pike_sp-1 );
+   case 3:
+     if( !PGTK_ISSTR( Pike_sp-args ) ||
+         !PGTK_ISSTR( Pike_sp-args+1 ) )
+       Pike_error("Illegal argument to Gnome.init()\n");
+     id = PGTK_GETSTR( Pike_sp-args );
+     vers = PGTK_GETSTR( Pike_sp-args+1 );
+     data = get_argv( &argc, args-2 );
+  }
   gnome_is_setup = 1;
   pigtk_is_setup = 1;
-  if( args == 4 )
-    get_all_args("gnome_init", args, "%s%s%a%d", &id, &vers, &a, &flags);
-  else
-    get_all_args("gnome_init", args, "%s%s%a", &id, &vers, &a);
-  data = g_malloc(sizeof(char *)*(a->size+1));
-  for(argc=0; argc<a->size; argc++)
-  {
-    if(a->item[argc].type != PIKE_T_STRING)
-    {
-      g_free(data);
-      Pike_error("Index %d in the array given as argument to setup_gtk "
-		 "is not a string.\n", argc);
-    }
-    data[argc] = a->item[argc].u.string->str;
-  }
-  data[argc] = NULL;
-
 
   gtk_set_locale();
+
   if( args == 4 )
     applet_widget_init( id, vers, argc, data, NULL, flags, NULL );
   else
@@ -144,8 +125,7 @@ void gnome_init(string app_id, string app_version,
   backend_cb = (void *)add_backend_callback( backend_callback, 0, 0);
 
   my_pop_n_elems(args);
-  g_free(data);
-  push_int( 0 );
+  push_and_free_argv( data, argc, 1 );
 }
 
 void applet_widget_gtk_main_quit()
@@ -170,6 +150,44 @@ void set_new_signal_convention( int n )
   pop_n_elems( args );
 }
 
+%{
+static gchar **get_argv( int *argc_ret, int an )
+{
+  struct array *a;
+  int argc;
+  gchar **data;
+  if( Pike_sp[-an].type != PIKE_T_ARRAY )
+    Pike_error("Expected array\n");
+  a = Pike_sp[-an].u.array;
+  data = g_malloc0(sizeof(char *)*(a->size+1));
+  for( argc=0; argc<a->size; argc++ )
+    if(!PGTK_ISSTR( a->item+argc ))
+    {
+      g_free(data);
+      Pike_error("Index %d in the array given as argv  "
+                 "is not a valid string.\n", argc);
+    }
+    else
+      data[argc] = PGTK_GETSTR( a->item+argc );
+  *argc_ret = argc;
+  return data;
+}
+
+static void push_and_free_argv( gchar ** data, int argc, int np )
+{
+  int i;
+  for( i=0; i<argc; i++ )
+  {
+    PGTK_PUSH_GCHAR( data[ i ] );
+    if(!np) PGTK_FREESTR( data[ i ] );
+  }
+  if(!np)
+    f_aggregate( argc );
+  else
+    push_int( 0 );
+  g_free(data);
+}
+%}
 void setup_gtk(array(string)|void argv, int|void do_not_parse_rc)
 //! Initialize GTK, and all that comes with it.
 //! Also parses $HOME/.pgtkrc and $HOME/.gtkrc if they exists.
@@ -180,101 +198,27 @@ void setup_gtk(array(string)|void argv, int|void do_not_parse_rc)
 //! <p>
 //! The most common usage is GTK.setup_gtk(argv);</p>
 {
-  char **data;
+  gchar **data;
   int argc;
-#ifndef NSIG
-#define NSIG 32
-#endif
-  int sig;
-#ifdef HAVE_SIGACTION
-  struct sigaction save_sigs[NSIG];
-  for(sig=1;sig<NSIG;sig++)
-  {
-    int ret;
-    do
-    {
-      ret=sigaction(sig,0,save_sigs+sig);
-    }while(ret == -1 && errno==EINTR);
-  }
-#else /* HAVE_SIGACTION */
-
-#if HAVE_SIGNAL
-#ifndef RETSIGTYPE
-#define RETSIGTYPE void
-#endif
-  typedef RETSIGTYPE (*sigtype)(int);
-  sigtype save_sigs[NSIG];
-  for(sig=1;sig<NSIG;sig++)
-    signal(sig,save_sigs[sig]=signal(sig,SIG_IGN));
-
-#endif /* HAVE_SIGNAL */
-#endif /* ! HAVE_SIGACTION */
 
   if( pigtk_is_setup )
     Pike_error( "You should only call GTK.setup_gtk() or Gnome.init() once\n");
   pigtk_is_setup = 1;
 
   if(args)
+    data = get_argv( &argc, args );
+  else
   {
-    struct array *a;
-    get_all_args("setup_gtk", args, "%a", &a);
-
-    data = g_malloc(sizeof(char *)*(a->size+1));
-    for(argc=0; argc<a->size; argc++)
-    {
-      if(a->item[argc].type != PIKE_T_STRING)
-      {
-        g_free(data);
-        Pike_error("Index %d in the array given as argument to setup_gtk "
-		   "is not a string.\n", argc);
-      }
-      data[argc] = a->item[argc].u.string->str;
-    }
-  } else {
     data = g_malloc(sizeof(char *)*2);
     data[ 0 ] = "Pike GTK";
     argc=1;
   }
-  data[ argc ] = NULL;
-
   gtk_set_locale();
   gtk_init( &argc, &data );
 
-#ifdef HAVE_SIGACTION
-  for(sig=1;sig<NSIG;sig++)
-  {
-    int ret;
-    do ret=sigaction(sig,save_sigs+sig,0); while(ret == -1 && errno==EINTR);
-  }
-#else /* HAVE_SIGACTION */
-#if HAVE_SIGNAL
-  for(sig=1;sig<NSIG;sig++)
-    signal(sig,save_sigs[sig]);
-#endif /* HAVE_SIGNAL */
-#endif /* HAVE_SIGACTION */
   backend_cb = (void *)add_backend_callback( backend_callback, 0, 0);
-  /* Get the display fd.. */
-#ifndef __NT__
-  {
-    Display *d = GDK_DISPLAY();
-    int fd;
-    if(!d) {
-      g_free(data);
-      Pike_error("Failed to get GDK display.\n");
-    }
-    fd = ConnectionNumber( d );
-    set_read_callback( fd, socket_ready_callback, NULL );
-  }
-#endif
-
   my_pop_n_elems(args);
-  /*
-   * Now it's time to return the leftovers.
-   */
-  for( sig=0; sig<argc; sig++ )
-    PGTK_PUSH_GCHAR( data[ sig ] );
-  f_aggregate( argc );
-  g_free(data);
+  push_and_free_argv( data, argc, 0 );
 }
 
 void flush()
@@ -287,10 +231,12 @@ void flush()
 }
 
 void low_flush()
-//! Flush X. Not normally needed.
+//! Flush, but do not process events. Not normally needed.
 {
 #ifndef __NT__
   XFlush( GDK_DISPLAY() );
+#else
+  gdk_flush();
 #endif
   my_pop_n_elems( args );
   push_int( 0 );
@@ -332,19 +278,17 @@ int main_iteration_do(int block)
 {
   INT_TYPE n;
   get_all_args( "gtk_main_iteration_do", args, "%d", &n );
-  push_int( gtk_main_iteration_do( n ) );
+  push_int( g_main_iteration( n ) );
 }
 
 int true()
 //! Always returns true.
-//! To be used as a signal function.
 {
   push_int( 1 );
 }
 
 int false()
 //! Always returns false.
-//! To be used as a signal function.
 {
   push_int( 0 );
 }
