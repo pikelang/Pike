@@ -286,7 +286,6 @@ static void exit_pid_status(struct object *o)
 static RETSIGTYPE sig_child(int arg)
 {
   wake_up_backend();
-  fprintf(stderr,"Got sigchild %d\n",sigchild_arrived);
   sigchild_arrived++;
 
 #ifdef SIGNAL_ONESHOT
@@ -317,7 +316,6 @@ static void check_children(struct callback *foo, void *bar, void *gazonk)
       {
 	pid_t pid;
 	int status;
-	fprintf(stderr,"Waitpid...\n");
       /* We carefully reap what we saw */
 #ifdef HAVE_WAITPID
 	pid=waitpid(-1,& status,WNOHANG);
@@ -332,7 +330,6 @@ static void check_children(struct callback *foo, void *bar, void *gazonk)
 #endif
 #endif
 #endif
-	fprintf(stderr,"Done...\n");
 	if(pid>0)
 	{
 	  if(pid_mapping)
@@ -375,15 +372,11 @@ static void f_pid_status_wait(INT32 args)
 {
   pop_n_elems(args);
   init_signal_wait();
-  printf("Init wait\n");
   while(THIS->state == PROCESS_RUNNING)
   {
-    printf("Waiting...\n");
     wait_for_signal();
-    printf("Woke up! %d\n",sigchild_arrived);
     check_threads_etc();
   }
-  printf("Done!\n");
   exit_signal_wait();
   push_int(THIS->result);
 }
