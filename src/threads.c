@@ -1,5 +1,5 @@
 #include "global.h"
-RCSID("$Id: threads.c,v 1.73 1998/07/05 13:51:50 grubba Exp $");
+RCSID("$Id: threads.c,v 1.74 1998/07/09 21:50:37 grubba Exp $");
 
 int num_threads = 1;
 int threads_disabled = 0;
@@ -174,7 +174,22 @@ void exit_threads_disable(struct object *o)
 
 void init_threads_disable(struct object *o)
 {
-  threads_disabled++;
+  /* Serious black magic to avoid dead-locks */
+
+  if (!threads_disabled) {
+    extern MUTEX_T password_protection_mutex;
+
+    THREADS_ALLOW_UID();
+    mt_lock(&password_protection_mutex);
+    THREADS_DISALLOW_UID();
+
+    threads_disabled = 1;
+
+    mt_unlock(&password_protection_mutex);
+  } else {
+    threads_disabled++;
+  }
+
   THREADS_FPRINTF((stderr, "init_threads_disable(): threads_disabled:%d\n",
 		   threads_disabled));
   while (live_threads) {
