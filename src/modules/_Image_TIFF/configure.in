@@ -1,5 +1,5 @@
 #
-# $Id: configure.in,v 1.5 2001/02/13 15:44:18 mirar Exp $
+# $Id: configure.in,v 1.6 2002/08/20 13:53:44 grubba Exp $
 #
 AC_INIT(image_tiff.c)
 AC_CONFIG_HEADER(config.h)
@@ -14,17 +14,30 @@ if test x$with_tifflib = xyes ; then
 
   AC_CHECK_HEADERS(tiff.h tiffio.h tiffiop.h)
   if test $ac_cv_header_tiff_h = yes ; then
-    AC_CHECK_LIB(tiff, main, [
-      AC_DEFINE(HAVE_LIBTIFF) 
-      LIBS="${LIBS-} -ltiff"
-      PIKE_FEATURE_OK(Image.TIFF)
-     ],[])
-    AC_CHECK_LIB(jpeg, main, [
-      LIBS="${LIBS-} -ljpeg"
-     ],[])
-    AC_CHECK_LIB(z, main, [
-      LIBS="${LIBS-} -lz"
-     ],[])
+    AC_MSG_CHECKING([if if this tifflib is working])
+    AC_CACHE_VAL(pike_cv_working_tiff, [
+      AC_EGREP_CPP(42, [
+#include <tiff.h>
+TIFF_VERSION
+      ], [ pike_cv_working_tiff=no ], [ pike_cv_working_tiff=yes ])
+    ])
+    if test "x$pike_cv_working_tiff" = "xno"; then
+      AC_MSG_RESULT([no])
+      PIKE_FEATURE([Image.TIFF],[no, tifflib version 42])
+    else
+      AC_MSG_RESULT([yes])
+      AC_CHECK_LIB(tiff, main, [
+  	AC_DEFINE(HAVE_LIBTIFF) 
+  	LIBS="${LIBS-} -ltiff"
+  	PIKE_FEATURE_OK(Image.TIFF)
+       ],[])
+      AC_CHECK_LIB(jpeg, main, [
+  	LIBS="${LIBS-} -ljpeg"
+       ],[])
+      AC_CHECK_LIB(z, main, [
+  	LIBS="${LIBS-} -lz"
+       ],[])
+    fi
   fi
 fi
 
