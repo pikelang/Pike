@@ -2,12 +2,12 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: SDL.cmod,v 1.20 2003/09/10 15:21:58 mast Exp $
+|| $Id: SDL.cmod,v 1.21 2003/12/12 17:53:44 nilsson Exp $
 */
 
 #include "global.h"
 #include "stralloc.h"
-RCSID("$Id: SDL.cmod,v 1.20 2003/09/10 15:21:58 mast Exp $");
+RCSID("$Id: SDL.cmod,v 1.21 2003/12/12 17:53:44 nilsson Exp $");
 #include "pike_macros.h"
 #include "interpret.h"
 #include "program.h"
@@ -324,10 +324,10 @@ PIKECLASS Rect {
   
   PIKEFUN mixed `->(string key) {
     struct pike_string *x, *y, *w, *h;
-    MAKE_CONSTANT_SHARED_STRING( x, "x" );     
-    MAKE_CONSTANT_SHARED_STRING( y, "y" );     
-    MAKE_CONSTANT_SHARED_STRING( w, "w" );     
-    MAKE_CONSTANT_SHARED_STRING( h, "h" );     
+    REF_MAKE_CONST_STRING( x, "x" );     
+    REF_MAKE_CONST_STRING( y, "y" );     
+    REF_MAKE_CONST_STRING( w, "w" );     
+    REF_MAKE_CONST_STRING( h, "h" );     
     if(key == x) {
       pop_stack(); push_int(THIS->rect.x); 
     } else if(key == y) {
@@ -343,10 +343,10 @@ PIKECLASS Rect {
     
   PIKEFUN int `->=(string key, int value) {
     struct pike_string *x, *y, *w, *h;
-    MAKE_CONSTANT_SHARED_STRING( x, "x" );     
-    MAKE_CONSTANT_SHARED_STRING( y, "y" );     
-    MAKE_CONSTANT_SHARED_STRING( w, "w" );     
-    MAKE_CONSTANT_SHARED_STRING( h, "h" );     
+    REF_MAKE_CONST_STRING( x, "x" );     
+    REF_MAKE_CONST_STRING( y, "y" );     
+    REF_MAKE_CONST_STRING( w, "w" );     
+    REF_MAKE_CONST_STRING( h, "h" );     
     if(key == x) {
       THIS->rect.x = value;
     } else if(key == y) {
@@ -379,8 +379,8 @@ PIKECLASS Rect {
   {
     struct pike_string *array_t;
     struct pike_string *mapping_t;
-    MAKE_CONSTANT_SHARED_STRING( array_t, "array" ); 
-    MAKE_CONSTANT_SHARED_STRING( mapping_t, "mapping" ); 
+    REF_MAKE_CONST_STRING( array_t, "array" ); 
+    REF_MAKE_CONST_STRING( mapping_t, "mapping" ); 
 
     if( type == array_t )
     {
@@ -448,10 +448,10 @@ PIKECLASS Keysym {
     struct pike_string *scancode;
     struct pike_string *sym;
     struct pike_string *unicode;
-    MAKE_CONSTANT_SHARED_STRING(mod, "mod");
-    MAKE_CONSTANT_SHARED_STRING(scancode, "scancode");
-    MAKE_CONSTANT_SHARED_STRING(sym, "sym");
-    MAKE_CONSTANT_SHARED_STRING(unicode, "unicode");
+    REF_MAKE_CONST_STRING(mod, "mod");
+    REF_MAKE_CONST_STRING(scancode, "scancode");
+    REF_MAKE_CONST_STRING(sym, "sym");
+    REF_MAKE_CONST_STRING(unicode, "unicode");
     if(key == mod) {
       pop_stack(); push_int(THIS->keysym.mod);
     } else if(key == scancode) {
@@ -531,22 +531,22 @@ PIKECLASS PixelFormat {
     struct pike_string *rmask;
     struct pike_string *rshift;
     CHECK_INIT(); /* Make sure this is inited */
-    MAKE_CONSTANT_SHARED_STRING(aloss, "aloss");
-    MAKE_CONSTANT_SHARED_STRING(alpha, "alpha");
-    MAKE_CONSTANT_SHARED_STRING(amask, "amask");
-    MAKE_CONSTANT_SHARED_STRING(ashift, "ashift");
-    MAKE_CONSTANT_SHARED_STRING(bits_per_pixel, "bits_per_pixel");
-    MAKE_CONSTANT_SHARED_STRING(bloss, "bloss");
-    MAKE_CONSTANT_SHARED_STRING(bmask, "bmask");
-    MAKE_CONSTANT_SHARED_STRING(bshift, "bshift");
-    MAKE_CONSTANT_SHARED_STRING(bytes_per_pixel, "bytes_per_pixel");
-    MAKE_CONSTANT_SHARED_STRING(colorkey, "colorkey");
-    MAKE_CONSTANT_SHARED_STRING(gloss, "gloss");
-    MAKE_CONSTANT_SHARED_STRING(gmask, "gmask");
-    MAKE_CONSTANT_SHARED_STRING(gshift, "gshift");
-    MAKE_CONSTANT_SHARED_STRING(rloss, "rloss");
-    MAKE_CONSTANT_SHARED_STRING(rmask, "rmask");
-    MAKE_CONSTANT_SHARED_STRING(rshift, "rshift");
+    REF_MAKE_CONST_STRING(aloss, "aloss");
+    REF_MAKE_CONST_STRING(alpha, "alpha");
+    REF_MAKE_CONST_STRING(amask, "amask");
+    REF_MAKE_CONST_STRING(ashift, "ashift");
+    REF_MAKE_CONST_STRING(bits_per_pixel, "bits_per_pixel");
+    REF_MAKE_CONST_STRING(bloss, "bloss");
+    REF_MAKE_CONST_STRING(bmask, "bmask");
+    REF_MAKE_CONST_STRING(bshift, "bshift");
+    REF_MAKE_CONST_STRING(bytes_per_pixel, "bytes_per_pixel");
+    REF_MAKE_CONST_STRING(colorkey, "colorkey");
+    REF_MAKE_CONST_STRING(gloss, "gloss");
+    REF_MAKE_CONST_STRING(gmask, "gmask");
+    REF_MAKE_CONST_STRING(gshift, "gshift");
+    REF_MAKE_CONST_STRING(rloss, "rloss");
+    REF_MAKE_CONST_STRING(rmask, "rmask");
+    REF_MAKE_CONST_STRING(rshift, "rshift");
     if(key == aloss) {
       pop_stack(); push_int(THIS->fmt->Aloss);
     } else if(key == alpha) {
@@ -803,17 +803,17 @@ PIKECLASS VideoInfo {
     struct pike_string *wm_available;
     struct pike_string *vfmt;
     CHECK_INIT(); /* Make sure this is inited */
-    MAKE_CONSTANT_SHARED_STRING(blit_fill, "blit_fill");
-    MAKE_CONSTANT_SHARED_STRING(blit_hw, "blit_hw");
-    MAKE_CONSTANT_SHARED_STRING(blit_hw_a, "blit_hw_a");
-    MAKE_CONSTANT_SHARED_STRING(blit_hw_cc, "blit_hw_cc");
-    MAKE_CONSTANT_SHARED_STRING(blit_sw, "blit_sw");
-    MAKE_CONSTANT_SHARED_STRING(blit_sw_a, "blit_sw_a");
-    MAKE_CONSTANT_SHARED_STRING(blit_sw_cc, "blit_sw_cc");
-    MAKE_CONSTANT_SHARED_STRING(hw_available, "hw_available");
-    MAKE_CONSTANT_SHARED_STRING(video_mem, "video_mem");
-    MAKE_CONSTANT_SHARED_STRING(wm_available, "wm_available");
-    MAKE_CONSTANT_SHARED_STRING(vfmt, "format");
+    REF_MAKE_CONST_STRING(blit_fill, "blit_fill");
+    REF_MAKE_CONST_STRING(blit_hw, "blit_hw");
+    REF_MAKE_CONST_STRING(blit_hw_a, "blit_hw_a");
+    REF_MAKE_CONST_STRING(blit_hw_cc, "blit_hw_cc");
+    REF_MAKE_CONST_STRING(blit_sw, "blit_sw");
+    REF_MAKE_CONST_STRING(blit_sw_a, "blit_sw_a");
+    REF_MAKE_CONST_STRING(blit_sw_cc, "blit_sw_cc");
+    REF_MAKE_CONST_STRING(hw_available, "hw_available");
+    REF_MAKE_CONST_STRING(video_mem, "video_mem");
+    REF_MAKE_CONST_STRING(wm_available, "wm_available");
+    REF_MAKE_CONST_STRING(vfmt, "format");
     if(key == blit_fill) {
       pop_stack(); push_int(THIS->vidinfo->blit_fill);
     } else if(key == blit_hw) {
@@ -1030,14 +1030,14 @@ PIKECLASS Surface {
     struct pike_string *format;
     struct pike_string *init;
     struct pike_string *set_image;
-    MAKE_CONSTANT_SHARED_STRING(flags, "flags");
-    MAKE_CONSTANT_SHARED_STRING(h, "h");
-/*    MAKE_CONSTANT_SHARED_STRING(pitch, "pitch");*/
-    MAKE_CONSTANT_SHARED_STRING(w, "w");
-    MAKE_CONSTANT_SHARED_STRING(clip_rect, "clip_rect");
-    MAKE_CONSTANT_SHARED_STRING(format, "format");
-    MAKE_CONSTANT_SHARED_STRING(init, "init");
-    MAKE_CONSTANT_SHARED_STRING(set_image, "set_image");
+    REF_MAKE_CONST_STRING(flags, "flags");
+    REF_MAKE_CONST_STRING(h, "h");
+/*    REF_MAKE_CONST_STRING(pitch, "pitch");*/
+    REF_MAKE_CONST_STRING(w, "w");
+    REF_MAKE_CONST_STRING(clip_rect, "clip_rect");
+    REF_MAKE_CONST_STRING(format, "format");
+    REF_MAKE_CONST_STRING(init, "init");
+    REF_MAKE_CONST_STRING(set_image, "set_image");
 
     if(key == init || key == set_image) {
       // These actually (re)initialize the module and do not
@@ -2055,10 +2055,10 @@ PIKECLASS CDTrack {
     struct pike_string *length;
     struct pike_string *offset;
     struct pike_string *type;
-    MAKE_CONSTANT_SHARED_STRING(id, "id");
-    MAKE_CONSTANT_SHARED_STRING(length, "length");
-    MAKE_CONSTANT_SHARED_STRING(offset, "offset");
-    MAKE_CONSTANT_SHARED_STRING(type, "type");
+    REF_MAKE_CONST_STRING(id, "id");
+    REF_MAKE_CONST_STRING(length, "length");
+    REF_MAKE_CONST_STRING(offset, "offset");
+    REF_MAKE_CONST_STRING(type, "type");
     if(key == id) {
       pop_stack(); push_int(THIS->track.id);
     } else if(key == length) {
@@ -2120,10 +2120,10 @@ PIKECLASS CD {
     struct pike_string *id;
     struct pike_string *numtracks;
     CHECK_INIT(); /* Make sure this is inited */
-    MAKE_CONSTANT_SHARED_STRING(current_frame, "current_frame");
-    MAKE_CONSTANT_SHARED_STRING(current_track, "current_track");
-    MAKE_CONSTANT_SHARED_STRING(id, "id");
-    MAKE_CONSTANT_SHARED_STRING(numtracks, "numtracks");
+    REF_MAKE_CONST_STRING(current_frame, "current_frame");
+    REF_MAKE_CONST_STRING(current_track, "current_track");
+    REF_MAKE_CONST_STRING(id, "id");
+    REF_MAKE_CONST_STRING(numtracks, "numtracks");
     if(key == current_frame) {
       pop_stack(); push_int(THIS->cd->cur_frame);
     } else if(key == current_track) {
@@ -2525,23 +2525,23 @@ PIKECLASS Event {
     struct pike_string *y;
     struct pike_string *yrel;
 
-    MAKE_CONSTANT_SHARED_STRING(axis, "axis");
-    MAKE_CONSTANT_SHARED_STRING(ball, "ball");
-    MAKE_CONSTANT_SHARED_STRING(button, "button");
-    MAKE_CONSTANT_SHARED_STRING(code, "code");
-    MAKE_CONSTANT_SHARED_STRING(gain, "gain");
-    MAKE_CONSTANT_SHARED_STRING(h, "h");
-    MAKE_CONSTANT_SHARED_STRING(hat, "hat");
-    MAKE_CONSTANT_SHARED_STRING(keysym, "keysym");
-    MAKE_CONSTANT_SHARED_STRING(state, "state");
-    MAKE_CONSTANT_SHARED_STRING(type, "type");
-    MAKE_CONSTANT_SHARED_STRING(value, "value");
-    MAKE_CONSTANT_SHARED_STRING(w, "w");
-    MAKE_CONSTANT_SHARED_STRING(which, "which");
-    MAKE_CONSTANT_SHARED_STRING(x, "x");
-    MAKE_CONSTANT_SHARED_STRING(xrel, "xrel");
-    MAKE_CONSTANT_SHARED_STRING(y, "y");
-    MAKE_CONSTANT_SHARED_STRING(yrel, "yrel");
+    REF_MAKE_CONST_STRING(axis, "axis");
+    REF_MAKE_CONST_STRING(ball, "ball");
+    REF_MAKE_CONST_STRING(button, "button");
+    REF_MAKE_CONST_STRING(code, "code");
+    REF_MAKE_CONST_STRING(gain, "gain");
+    REF_MAKE_CONST_STRING(h, "h");
+    REF_MAKE_CONST_STRING(hat, "hat");
+    REF_MAKE_CONST_STRING(keysym, "keysym");
+    REF_MAKE_CONST_STRING(state, "state");
+    REF_MAKE_CONST_STRING(type, "type");
+    REF_MAKE_CONST_STRING(value, "value");
+    REF_MAKE_CONST_STRING(w, "w");
+    REF_MAKE_CONST_STRING(which, "which");
+    REF_MAKE_CONST_STRING(x, "x");
+    REF_MAKE_CONST_STRING(xrel, "xrel");
+    REF_MAKE_CONST_STRING(y, "y");
+    REF_MAKE_CONST_STRING(yrel, "yrel");
 
     if(key == axis) {
       switch(THIS->event.type) {
