@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: syslog.c,v 1.20 2003/05/20 15:12:40 mast Exp $
+|| $Id: syslog.c,v 1.21 2003/09/07 00:02:44 nilsson Exp $
 */
 
 /*
@@ -22,7 +22,7 @@
 
 #ifdef HAVE_SYSLOG
 
-RCSID("$Id: syslog.c,v 1.20 2003/05/20 15:12:40 mast Exp $");
+RCSID("$Id: syslog.c,v 1.21 2003/09/07 00:02:44 nilsson Exp $");
 
 #include "interpret.h"
 #include "svalue.h"
@@ -30,6 +30,7 @@ RCSID("$Id: syslog.c,v 1.20 2003/05/20 15:12:40 mast Exp $");
 #include "threads.h"
 #include "module_support.h"
 #include "builtin_functions.h"
+#include "security.h"
 
 #ifdef HAVE_SYSLOG_H
 #include <syslog.h>
@@ -186,6 +187,8 @@ void f_openlog(INT32 args)
   INT_TYPE p_option, p_facility;
   INT_TYPE option=0, facility=0;
 
+  ASSERT_SECURITY_ROOT("System.openlog");
+
   get_all_args("openlog", args, "%s%i%i", &ident, &p_option, &p_facility);
 
   if(p_option & (1<<0)) option |= LOG_CONS;
@@ -237,6 +240,10 @@ void f_syslog(INT32 args)
   struct pike_string *s;
   INT_TYPE pri=0, i;
 
+  int errno;
+#define EPERM 0
+  VALID_FILE_IO("System.syslog","write");
+
   get_all_args("syslog", args, "%i%S", &i, &s);
  
   if(i & (1<<0)) pri |= LOG_EMERG;
@@ -278,6 +285,7 @@ void f_syslog(INT32 args)
  */
 void f_closelog(INT32 args)
 {
+  ASSERT_SECURITY_ROOT("System.closelog");
   closelog();
   pop_n_elems(args);
 }
