@@ -1,5 +1,5 @@
 /*
- * $Id: threads.h,v 1.63 1999/05/12 05:27:49 hubbe Exp $
+ * $Id: threads.h,v 1.64 1999/05/14 22:30:29 hubbe Exp $
  */
 #ifndef THREADS_H
 #define THREADS_H
@@ -185,7 +185,7 @@ extern pthread_attr_t small_pattr;
 #define th_create_small(ID,fun,arg) low_nt_create_thread(8192*sizeof(char *), fun,arg,ID)
 #define TH_RETURN_TYPE unsigned __stdcall
 #define TH_STDCALL __stdcall
-#define th_exit(foo) _endthread(foo)
+#define th_exit(foo) _endthreadex(foo)
 #define th_join(ID,res)	/******************* FIXME! ****************/
 #define th_self() GetCurrentThreadId()
 #define th_destroy(X)
