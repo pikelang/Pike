@@ -4,7 +4,7 @@
 ||| See the files COPYING and DISCLAIMER for more information.
 \*/
 #include "global.h"
-RCSID("$Id: builtin_functions.c,v 1.88 1998/03/26 13:20:29 grubba Exp $");
+RCSID("$Id: builtin_functions.c,v 1.89 1998/04/01 14:25:51 grubba Exp $");
 #include "interpret.h"
 #include "svalue.h"
 #include "pike_macros.h"
@@ -36,6 +36,10 @@ RCSID("$Id: builtin_functions.c,v 1.88 1998/03/26 13:20:29 grubba Exp $");
 #include "module.h"
 #include "opcodes.h"
 #include "cyclic.h"
+
+#ifdef HAVE_POLL
+#include <poll.h>
+#endif /* HAVE_POLL */
 
 #ifdef HAVE_CRYPT_H
 #include <crypt.h>
