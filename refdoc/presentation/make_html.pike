@@ -122,12 +122,15 @@ string low_parse_chapter(Node n, int chapter, void|int section, void|int subsect
 
 string parse_chapter(Node n, void|int noheader) {
   string ret = "";
-  if(!noheader)
+  if(!noheader) {
     ret += "<dl><dt>"
       "<table width='100%' cellpadding='3' cellspacing='0' border='0'><tr>"
-      "<td bgcolor='#EEEEEE'><font size='+3'>&nbsp; " + n->get_attributes()->number +
-      ". " + n->get_attributes()->title + "</font></td></tr></table><br />\n"
+      "<td bgcolor='#EEEEEE'><font size='+3'>&nbsp; ";
+    if(n->get_attributes()->number)
+      ret += n->get_attributes()->number + ". ";
+    ret += n->get_attributes()->title + "</font></td></tr></table><br />\n"
       "</dt><dd>";
+  }
 
   ret += low_parse_chapter(n, (int)n->get_attributes()->number);
 
