@@ -11,12 +11,12 @@
   (t_flag>3 ? sprintf(trace_buffer,"-    Arg = %ld\n",(long)instr),write_to_stderr(trace_buffer,strlen(trace_buffer)) : 0),\
   instr))
 
-#define GET_ARG2() (\
+#define GET_ARG2() (backlog[backlogp].arg2=(\
   instr=prefix2,\
   prefix2=0,\
   instr+=EXTRACT_UCHAR(pc++),\
   (t_flag>3 ? sprintf(trace_buffer,"-    Arg2= %ld\n",(long)instr),write_to_stderr(trace_buffer,strlen(trace_buffer)) : 0),\
-  instr)
+  instr))
 
 #else
 #define GET_ARG() (instr=prefix,prefix=0,instr+EXTRACT_UCHAR(pc++))
@@ -47,7 +47,12 @@ static int eval_instruction(unsigned char *pc)
       Pike_sp[3].type=99;
       
       if(Pike_sp<Pike_evaluator_stack || Pike_mark_sp < Pike_mark_stack || Pike_fp->locals>Pike_sp)
-	fatal("Stack error (generic).\n");
+	fatal("Stack error (generic) sp=%p/%p mark_sp=%p/%p locals=%p.\n",
+	      Pike_sp,
+	      Pike_evaluator_stack,
+	      Pike_mark_sp,
+	      Pike_mark_stack,
+	      Pike_fp->locals);
       
       if(Pike_sp > Pike_evaluator_stack+Pike_stack_size)
 	fatal("Stack error (overflow).\n");

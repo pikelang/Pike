@@ -5,7 +5,7 @@
 \*/
 /**/
 #include "global.h"
-RCSID("$Id: interpret.c,v 1.145 2000/04/21 00:29:48 hubbe Exp $");
+RCSID("$Id: interpret.c,v 1.146 2000/04/21 20:08:08 hubbe Exp $");
 #include "interpret.h"
 #include "object.h"
 #include "program.h"
@@ -488,7 +488,7 @@ void reset_evaluator(void)
 struct backlog
 {
   INT32 instruction;
-  INT32 arg;
+  INT32 arg,arg2;
   struct program *program;
   unsigned char *pc;
 };
@@ -514,11 +514,38 @@ void dump_backlog(void)
       INT32 line;
 
       file=get_line(backlog[e].pc-1,backlog[e].program, &line);
-      fprintf(stderr,"%s:%ld: %s(%ld)\n",
-	      file,
-	      (long)line,
-	      low_get_f_name(backlog[e].instruction + F_OFFSET, backlog[e].program),
-	      (long)backlog[e].arg);
+      if(backlog[e].instruction < 0 || backlog[e].instruction+F_OFFSET > F_MAX_OPCODE)
+      {
+	fprintf(stderr,"%s:%ld: ILLEGAL INSTRUCTION %d\n",
+		file,
+		(long)line,
+		backlog[e].instruction + F_OFFSET);
+	continue;
+      }
+
+
+      if(instrs[backlog[e].instruction].flags & I_HASARG2)
+      {
+	fprintf(stderr,"%s:%ld: %s(%ld,%ld)\n",
+		file,
+		(long)line,
+		low_get_f_name(backlog[e].instruction + F_OFFSET, backlog[e].program),
+		(long)backlog[e].arg,
+		(long)backlog[e].arg2);
+      }
+      else if(instrs[backlog[e].instruction].flags & I_HASARG)
+      {
+	fprintf(stderr,"%s:%ld: %s(%ld)\n",
+		file,
+		(long)line,
+		low_get_f_name(backlog[e].instruction + F_OFFSET, backlog[e].program),
+		(long)backlog[e].arg);
+      }else{
+	fprintf(stderr,"%s:%ld: %s\n",
+		file,
+		(long)line,
+		low_get_f_name(backlog[e].instruction + F_OFFSET, backlog[e].program));
+      }
     }
   }while(e!=backlogp);
 }
