@@ -1,5 +1,5 @@
 #include <string.h>
-object stderr=clone((program)"/precompiled/file","stderr");
+object stderr=File("stderr");
 #define error(X) throw( ({ (X), backtrace()[0..sizeof(backtrace())-2] }) )
 program FILE = class {
 
@@ -82,7 +82,7 @@ program FILE = class {
     object dup()
     {
       object o;
-      o=clone(object_program(this_object()));
+      o=object_program(this_object())();
       o->assign(file::dup());
       return o;
     }
@@ -131,7 +131,7 @@ string read_file(string filename,void|int start,void|int len)
 {
   object buf,f;
   string ret,tmp;
-  f=clone(FILE);
+  f=FILE();
   if(!f->open(filename,"r")) return 0;
 
   switch(query_num_arg())
@@ -144,7 +144,7 @@ string read_file(string filename,void|int start,void|int len)
     len=0x7fffffff;
   case 3:
     while(start-- && f->gets());
-    buf=clone(String_buffer);
+    buf=String_buffer();
     while(len-- && (tmp=f->gets()))
     {
       buf->append(tmp);
@@ -216,7 +216,7 @@ void create()
 
   master()->add_precompiled_program("/precompiled/FILE", FILE);
 
-  add_constant("stdin",clone((program)"/precompiled/FILE","stdin"));
-  add_constant("stdout",clone(File,"stdout"));
+  add_constant("stdin",FILE("stdin"));
+  add_constant("stdout",File("stdout"));
   add_constant("stderr",stderr);
 }

@@ -16,7 +16,7 @@ varargs int exec(string file,string ... foo)
   return 69;
 }
 
-varargs int spawn(string s,object stdin,object stdout,object stderr)
+void int spawn(string s,object stdin,object stdout,object stderr)
 {
   object p;
   int pid;
@@ -31,15 +31,14 @@ varargs int spawn(string s,object stdin,object stdout,object stderr)
   {
     return pid;
   }else{
-    program f=(program)"/precompiled/file";
     if(stdin)
-      stdin->dup2(clone(f,"stdin"));
+      stdin->dup2(File("stdin"));
 
     if(stdout)
-      stdout->dup2(clone(f,"stdout"));
+      stdout->dup2(File("stdout"));
 
     if(stderr)
-      stderr->dup2(clone(f,"stderr"));
+      stderr->dup2(File,"stderr");
 
     exec("/bin/sh","-c",s);
     exit(69);
