@@ -1,4 +1,4 @@
-AC_REVISION("$Id: configure.in,v 1.542 2001/08/23 16:45:46 grubba Exp $")
+AC_REVISION("$Id: configure.in,v 1.543 2001/08/23 18:10:57 per Exp $")
 AC_INIT(interpret.c)
 AC_CONFIG_HEADER(machine.h)
 
@@ -2588,6 +2588,7 @@ AC_CHECK_FUNCS( \
  setpriority \
  usleep \
  nanosleep \
+ thr_yield \
 )
 
 AC_MSG_CHECKING(for the type of the last argument to accept)
