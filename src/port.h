@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: port.h,v 1.57 2004/09/19 00:36:39 nilsson Exp $
+|| $Id: port.h,v 1.58 2004/11/14 17:49:27 mast Exp $
 */
 
 #ifndef PORT_H
@@ -119,6 +119,9 @@ struct timeval;
 #endif
 
 /* Warning, these run 'C' more than once */
+/* FIXME: Is it that great that every wide char is considered an
+ * identifier char? Doesn't strike me as very unicode compliant.
+ * isalnum, isdigit and islower also look seriously borken. /mast */
 #define WIDE_ISSPACE(C)	(((C) < 256)?ISSPACE(C):0)
 #define WIDE_ISIDCHAR(C) (((C) < 256)?isidchar(C):1)
 #define WIDE_ISALNUM(C)	(((C) < 256)?isalnum(C):0)
