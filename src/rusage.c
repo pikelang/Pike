@@ -157,7 +157,6 @@ INT32 *low_rusage()
 #else /*HAVE_TIMES */
 #if defined(HAVE_CLOCK) && defined(CLOCKS_PER_SECOND)
 
-
 #define NEED_CONVERT_TIME
 static long convert_time(long t,long tick);
 INT32 *low_rusage()
@@ -170,7 +169,10 @@ INT32 *low_rusage()
 
 INT32 *low_rusage()
 {
-  rusage_values[0]=get_current_time()*1000; /* Wrong, but who cares */
+  /* This is totally wrong, but hey, if you can't do it _right_... */
+  struct timeval tm;
+  GETTIMEOFDAY(&tm);
+  rusage_values[0]=tm.tv_sec*1000 + tm.tv_usec/1000;
   return rusage_values;
 }
 #endif /* HAVE_CLOCK */
