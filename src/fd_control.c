@@ -10,7 +10,7 @@
 #include "error.h"
 #include "fdlib.h"
 
-RCSID("$Id: fd_control.c,v 1.26 1999/09/13 23:16:33 grubba Exp $");
+RCSID("$Id: fd_control.c,v 1.27 1999/09/14 21:07:20 hubbe Exp $");
 
 #else /* TESTING */
 
@@ -121,7 +121,7 @@ int query_nonblocking(int fd)
 #else
 
 #ifdef USE_FCNTL_O_NONBLOCK
-    ret=return fcntl(fd, F_GETFL, 0) & O_NONBLOCK;
+    ret=fcntl(fd, F_GETFL, 0) & O_NONBLOCK;
 #else
 
 #ifdef USE_FCNTL_FNDELAY
