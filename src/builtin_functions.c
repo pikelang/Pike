@@ -4,7 +4,7 @@
 ||| See the files COPYING and DISCLAIMER for more information.
 \*/
 #include "global.h"
-RCSID("$Id: builtin_functions.c,v 1.124 1998/10/09 22:28:35 grubba Exp $");
+RCSID("$Id: builtin_functions.c,v 1.125 1998/10/09 22:44:25 grubba Exp $");
 #include "interpret.h"
 #include "svalue.h"
 #include "pike_macros.h"
@@ -650,7 +650,8 @@ void f_string_to_unicode(INT32 args)
     /* 32 bit characters -- Is someone writing in Klingon? */
     {
       p_wchar2 *str2 = STR2(in);
-      int j = (len = in->len * 2);
+      int j;
+      len = in->len * 2;
       /* Check how many extra wide characters there are. */
       for(i = in->len; i--;) {
 	if (str2[i] > 0xfffd) {
@@ -672,7 +673,7 @@ void f_string_to_unicode(INT32 args)
 	}
       }
       out = begin_shared_string(len);
-      /* j is initialized above. */
+      j = len;
       for(i = in->len; i--;) {
 	unsigned INT32 c = str2[i];
 
