@@ -1,4 +1,4 @@
-// $Id: RSS.pmod,v 1.5 2003/12/02 00:29:03 nilsson Exp $
+// $Id: RSS.pmod,v 1.6 2003/12/15 22:28:53 nilsson Exp $
 
 #pike __REAL_VERSION__
 
@@ -6,6 +6,7 @@
 
 static constant ns = "http://purl.org/rss/1.0/";
 
+//! The base class for the RSS resources.
 static class Thing {
   static .RDF rdf;
   static mapping /* (string:string|Standards.URI) */ attributes = ([]);
@@ -34,6 +35,9 @@ static class Thing {
   function `-> = `[];
   function `->= = `[]=;
 
+  //! @decl void create(string about, mapping attributes)
+  //! @decl void create(.RDF.Resource me)
+  //! Creates an RSS resource.
   void create(.RDF _rdf, string|.RDF.Resource a, void|mapping b) {
     rdf = _rdf;
     if(b)
@@ -78,10 +82,19 @@ static class Thing {
     }
   }
 
+  //! Returns the @[RDF.Resource] that identifies this RSS resource.
   .RDF.Resource get_id() { return me; }
+
+  static string _sprintf(int t) {
+    if(t!='O') return UNDEFINED;
+    mapping x = ([]);
+    foreach(attributes; string index; mixed value)
+      if(value) x[index]=value;
+    return sprintf("%O(%O)", this_program, x);
+  }
 }
 
-//!
+//! Represents an RSS image resource.
 class Image {
   inherit Thing;
   constant thing = "image";
@@ -90,9 +103,13 @@ class Image {
     "url" : 0,
     "link" : 0
   ]);
+
+  //! @decl string title
+  //! @decl string url
+  //! @decl string link
 }
 
-//!
+//! Represents an RSS item resource.
 class Item {
   inherit Thing;
   constant thing = "item";
@@ -101,9 +118,13 @@ class Item {
     "link" : 0,
     "description" : 0
   ]);
+
+  //! @decl string title
+  //! @decl string link
+  //! @decl string description
 }
 
-//!
+//! Represents an RSS textinput resource.
 class Textinput {
   inherit Thing;
   constant thing = "textinput";
@@ -113,9 +134,14 @@ class Textinput {
     "name" : 0,
     "link" : 0,
   ]);
+
+  //! @decl string title
+  //! @decl string description
+  //! @decl string name
+  //! @decl string link
 }
 
-//!
+//! Represents an RSS channel.
 class Channel {
   inherit Thing;
   static constant thing = "channel";
@@ -127,6 +153,13 @@ class Channel {
     "items" : 0,
     "textinput" : 0,
   ]);
+
+  //! @decl string title
+  //! @decl string link
+  //! @decl string description
+  //! @decl string|Standards.URI image
+  //! @decl string|Standards.URI textinput
+  //! @decl array(Item) items
 
   void `[]=(string i, mixed v) {
     if( i=="image" || i=="textinput" ) {
@@ -152,15 +185,13 @@ class Channel {
       rdf->add_statement(me, attr, v);
       return;
     }
-    if( i=="textinput" ) {
+    else if( i=="items" ) {
       if(!arrayp(i)) error("Wrong type. Expected array(Item).\n");
-      // FIXME: Stuff here
-      return;
     }
     ::`[]=(i, v);
   }
 
-  //!
+  //! Adds the @[Item] @[i] to the @[Channel].
   void add_item(Item i) {
     if(!attributes->items)
       attributes->items = ({ i });
@@ -168,21 +199,21 @@ class Channel {
       attributes->items += ({ i });
   }
 
-  //!
+  //! Removes the @[Item] @[i] from the @[Channel].
   void remove_item(Item i) {
     attributes->items -= ({ i });
     if(!sizeof(attributes->items)) attributes->items = 0;
   }
 }
 
-//!
+//! Represents the top level of an RSS index.
 class Index {
-  static .RDF rdf;
+  .RDF rdf; //! The underlying RDF representation of the RSS index.
 
-  array(Channel)   channels = ({});   //!
-  array(Image)     images = ({});     //!
-  array(Item)      items = ({});      //!
-  array(Textinput) textinputs = ({}); //!
+  array(Channel)   channels = ({});   //! The RSS channels.
+  array(Image)     images = ({});     //! The RSS images.
+  array(Item)      items = ({});      //! The RSS items.
+  array(Textinput) textinputs = ({}); //! The RSS textinputs.
 
   //!
   void create(.RDF|void _rdf) {
