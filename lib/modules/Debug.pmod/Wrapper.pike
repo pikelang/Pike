@@ -47,3 +47,10 @@ int _sizeof() {
   werror("sizeof(%O)\n", wrappee);
   return sizeof(wrappee);
 }
+
+string _sprintf(int c, mapping(string:mixed)|void attrs)
+{
+  if (wrappee->_sprintf)
+    return sprintf("Debug.Wrapper(%s)", wrappee->_sprintf(c, attrs));
+  return sprintf(sprintf("Debug.Wrapper(%%%c)", c), wrappee);
+}
