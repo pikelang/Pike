@@ -5,7 +5,7 @@
 \*/
 /**/
 #include "global.h"
-RCSID("$Id: interpret.c,v 1.241 2001/08/15 09:26:32 hubbe Exp $");
+RCSID("$Id: interpret.c,v 1.242 2001/08/15 20:55:51 mast Exp $");
 #include "interpret.h"
 #include "object.h"
 #include "program.h"
@@ -1852,7 +1852,7 @@ PMOD_EXPORT void safe_apply_handler(const char *fun,
 {
   int i;
 #if 0
-  fprintf(stderr, "safe_apply_handler(\"%s\", 0x%08p, 0x%08p, %d\n",
+  fprintf(stderr, "safe_apply_handler(\"%s\", 0x%08p, 0x%08p, %d)\n",
 	  fun, handler, compat, args);
 #endif /* 0 */
 
@@ -1867,8 +1867,12 @@ PMOD_EXPORT void safe_apply_handler(const char *fun,
     safe_apply_low2(compat, i, args, 0);
   } else {
     struct object *master_obj = master();
-    i = find_identifier(fun, master_obj->prog);
-    safe_apply_low2(master_obj, i, args, 0);
+    if ((i = find_identifier(fun, master_obj->prog)) != -1)
+      safe_apply_low2(master_obj, i, args, 0);
+    else {
+      pop_n_elems(args);
+      push_undefined();
+    }
   }
   if (throw_value.type != T_STRING && throw_value.type != T_INT) {
     free_svalue(&throw_value);
