@@ -599,28 +599,29 @@ class YMD
 
    array(int(-1..1)) _compare(TimeRange with)
    {
-      if (with->is_timeofday)
-      {
-   // wrap
-	 array(int(-1..1)) cmp=with->_compare(this_object());
+      if (objectp(with))
+	 if (with->is_timeofday)
+	 {
+      // wrap
+	    array(int(-1..1)) cmp=with->_compare(this_object());
 
-	 return ({-cmp[0],
-		  -cmp[2],
-		  -cmp[1],
-		  -cmp[3]});
-      }
-      else if (with->is_ymd || with->julian_day)
-      {
+	    return ({-cmp[0],
+		     -cmp[2],
+		     -cmp[1],
+		     -cmp[3]});
+	 }
+	 else if (with->is_ymd || with->julian_day)
+	 {
 #define CMP(A,B) ( ((A)<(B))?-1:((A)>(B))?1:0 )
 
-	 int b1=julian_day();
-	 int e1=b1+number_of_days();
+	    int b1=julian_day();
+	    int e1=b1+number_of_days();
 
-	 int b2=with->julian_day();
-	 int e2=b2+with->number_of_days();
+	    int b2=with->julian_day();
+	    int e2=b2+with->number_of_days();
 
-	 return ({ CMP(b1,b2),CMP(b1,e2),CMP(e1,b2),CMP(e1,e2) });
-      }
+	    return ({ CMP(b1,b2),CMP(b1,e2),CMP(e1,b2),CMP(e1,e2) });
+	 }
       return ::_compare(with);
    }
 

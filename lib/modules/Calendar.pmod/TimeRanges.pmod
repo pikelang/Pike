@@ -500,7 +500,7 @@ class TimeRange
 // virtual, default
    array(int(-1..1)) _compare(TimeRange what)
    {
-      if (what->is_supertimerange)
+      if (objectp(what) && what->is_supertimerange)
       {
 	 array(int(-1..1)) cmp=what->_compare(this_object());
 
@@ -509,8 +509,9 @@ class TimeRange
 		  -cmp[1],
 		  -cmp[3]});
       }
-      error("_compare: incompatible classes %O <-> %O\n",
-	    object_program(this_object()),object_program(what));
+      return ({-1,-1,-1,-1});
+//        error("_compare: incompatible classes %O <-> %O\n",
+//  	    object_program(this_object()),object_program(what));
    }
 
    string _describe_compare(array(int(-1..1)) c,TimeRange a,TimeRange b)

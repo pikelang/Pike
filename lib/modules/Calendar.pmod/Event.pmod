@@ -104,6 +104,8 @@ class NullEvent
 {
    inherit Event;
 
+   constant is_nullevent=1;
+
    void create(mixed ...args) {}
  
    TimeRange next(TimeRange from,void|int(0..1) including)
@@ -487,6 +489,8 @@ class Gregorian_Fixed
 class Julian_Fixed
 {
    inherit Gregorian_Fixed;
+
+   constant is_julian_fixed=1;
 
    int scan_jd(Calendar realm,int jd,int(-1..1) direction)
    {
@@ -880,7 +884,7 @@ class Orthodox_Easter_Relative
 {
    inherit Easter_Relative;
 
-   constant is_easter_relative=1;
+   constant is_orthodox_easter_relative=1;
 
    int offset;
 
@@ -900,6 +904,7 @@ class Monthday_Weekday_Relative
    inherit Gregorian_Fixed;
 
    constant is_fixed=0;
+   constant is_monthday_weekday_relative=1;
 
    int offset;
    int wd;
