@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: svalue.c,v 1.212 2004/11/30 21:01:26 grubba Exp $
+|| $Id: svalue.c,v 1.213 2004/12/03 11:52:08 grubba Exp $
 */
 
 #include "global.h"
@@ -1107,7 +1107,6 @@ PMOD_EXPORT int is_le(const struct svalue *a, const struct svalue *b)
       struct program *p = program_from_svalue(a);
       if (p) {
 	int id = p->id;
-	free_program(p);
 	type_stack_mark();
 	push_object_type(0, id);
 	a_type = pop_unfinished_type();
@@ -1121,7 +1120,6 @@ PMOD_EXPORT int is_le(const struct svalue *a, const struct svalue *b)
       struct program *p = program_from_svalue(b);
       if (p) {
 	int id = p->id;
-	free_program(p);
 	type_stack_mark();
 	push_object_type(0, id);
 	b_type = pop_unfinished_type();
