@@ -13850,7 +13850,7 @@ intp, multisetp, arrayp, programp, objectp, mappingp, floatp, functionp
 string string_to_unicode(string <I>s</I>);
 </man_syntax>
 <man_description>
-Converts a string into an UTF16 compiant byte-stream.
+Converts a string into an UTF16 compliant byte-stream.
 <p>
 Throws an error if characters not legal in an UTF16 stream are encountered.
 Valid characters are in the range 0x00000 - 0x10ffff, except for characters
@@ -13871,7 +13871,7 @@ string string_to_utf8(string <I>s</I>);
 string string_to_utf8(string <I>s</I>, int <I>extended</I>);
 </man_syntax>
 <man_description>
-Converts a string into an UTF8 compilant byte-stream.
+Converts a string into an UTF8 compliant byte-stream.
 <p>
 Throws an error if characters not valid in an UTF8 stream are encountered.
 Valid characters are in the range 0x00000000 - 0x7fffffff.
