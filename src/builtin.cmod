@@ -24,8 +24,19 @@
 #include "main.h"
 #include "operators.h"
 
-
-PIKEFUN array column(array tmp, mixed val)
+//! Extract a column from a two-dimensional array.
+//!
+//! This function is exactly equivalent to:
+//! @code{map(@[data], lambda(mixed x,mixed y) { return x[y]; }, @[index])@}
+//!
+//! Except of course it is a lot shorter and faster.
+//! That is, it indices every index in the array data on the value of
+//! the argument index and returns an array with the results.
+//!
+//! @seealso
+//! @[rows()]
+//!
+PIKEFUN array column(array data, mixed index)
   efun;
   optflags OPT_TRY_OPTIMIZE;
 {
@@ -35,30 +46,30 @@ PIKEFUN array column(array tmp, mixed val)
   DECLARE_CYCLIC();
 
   /* Optimization */
-  if(tmp->refs == 1)
+  if(data->refs == 1)
   {
     /* An array with one ref cannot possibly be cyclic */
     struct svalue sval;
-    tmp->type_field = BIT_MIXED | BIT_UNFINISHED;
-    for(e=0;e<tmp->size;e++)
+    data->type_field = BIT_MIXED | BIT_UNFINISHED;
+    for(e=0;e<data->size;e++)
     {
-      index_no_free(&sval, ITEM(tmp)+e, val);
-      free_svalue(ITEM(tmp)+e);
-      ITEM(tmp)[e]=sval;
+      index_no_free(&sval, ITEM(data)+e, index);
+      free_svalue(ITEM(data)+e);
+      ITEM(data)[e]=sval;
     }
     pop_stack();
     return;
   }
 
-  if((a=(struct array *)BEGIN_CYCLIC(tmp,0)))
+  if((a=(struct array *)BEGIN_CYCLIC(data,0)))
   {
     add_ref(a);
   }else{
-    push_array(a=allocate_array(tmp->size));
+    push_array(a=allocate_array(data->size));
     SET_CYCLIC_RET(a);
 
     for(e=0;e<a->size;e++)
-      index_no_free(ITEM(a)+e, ITEM(tmp)+e, val);
+      index_no_free(ITEM(a)+e, ITEM(data)+e, index);
 
     sp--;
   }
@@ -66,6 +77,11 @@ PIKEFUN array column(array tmp, mixed val)
   RETURN a;
 }
 
+//! This function creates a multiset from an array.
+//!
+//! @seealso
+//! @[aggregate_multiset()]
+//!
 PIKEFUN multiset(1) mkmultiset(array(1=mixed) a)
   efun;
   optflags OPT_TRY_OPTIMIZE|OPT_EXTERNAL_DEPEND;
@@ -73,6 +89,17 @@ PIKEFUN multiset(1) mkmultiset(array(1=mixed) a)
   RETURN mkmultiset(a);
 }
 
+//! This function changes the debug trace level.
+//!
+//! The old level is returned.
+//!
+//! Trace level 1 or higher means that calls to Pike functions are
+//! printed to stderr, level 2 or higher means calls to builtin functions
+//! are printed, 3 means every opcode interpreted is printed, 4 means
+//! arguments to these opcodes are printed as well.
+//!
+//! See the @tt{-t@} command-line option for more information.
+//!
 PIKEFUN int trace(int t)
   efun;
   optflags OPT_SIDE_EFFECT;
@@ -82,26 +109,49 @@ PIKEFUN int trace(int t)
   t_flag=t;
 }
 
-PIKEFUN string ctime(int x)
+//! Convert the output from a previous call to @[time()] into a readable
+//! string containing the current year, month, day and time.
+//!
+//! @seealso
+//! @[time()], @[localtime()], @[mktime()], @[gmtime()]
+//!
+PIKEFUN string ctime(int timestamp)
   efun;
   optflags OPT_TRY_OPTIMIZE;
 {
-  time_t i=(time_t)x;
+  time_t i=(time_t)timestamp;
   RETURN make_shared_string(ctime(&i));
 }
 
-PIKEFUN mapping(1:2) mkmapping(array(1=mixed) a, array(2=mixed) b)
+//! Make a mapping from two arrays.
+//!
+//! Makes a mapping @[ind[x]]:@[val[x]], @tt{0 <= x < sizeof(ind)@}.
+//!
+//! @[ind] and @[val] must have the same size.
+//!
+//! This is the inverse operation of @[indices()] and @[values()].
+//!
+//! @seealso
+//! @[indices()], @[values()]
+//!
+PIKEFUN mapping(1:2) mkmapping(array(1=mixed) ind, array(2=mixed) val)
   efun;
   optflags OPT_TRY_OPTIMIZE|OPT_EXTERNAL_DEPEND;
 {
-  if(a->size != b->size)
+  if(ind->size != val->size)
     bad_arg_error("mkmapping", sp-args, args, 2, "array", sp+1-args,
 		  "mkmapping called on arrays of different sizes (%d != %d)\n",
-		  a->size, b->size);
+		  ind->size, val->size);
 
-  RETURN mkmapping(a,b);
+  RETURN mkmapping(ind, val);
 }
 
+//! Count the number of non-overlapping times the string @[needle] occurrs
+//! in the string @[haystack].
+//!
+//! @seealso
+//! @[search()], @[`/()]
+//!
 PIKEFUN int string_count(string haystack, string needle)
   errname String.count;
   optflags OPT_TRY_OPTIMIZE;
@@ -134,20 +184,32 @@ PIKEFUN int string_count(string haystack, string needle)
    RETURN DO_NOT_WARN((INT_TYPE)c);
 }
 
-PIKEFUN int program_implements(program p, program p2)
+//! Returns 1 if @[prog] implements @[api].
+//!
+PIKEFUN int program_implements(program prog, program api)
   errname Program.implements;
   optflags OPT_TRY_OPTIMIZE;
 {
-  RETURN implements(p,p2);
+  RETURN implements(prog, api);
 }
 
-PIKEFUN int program_inherits(program p, program p2)
+//! Returns 1 if @[child] has inherited @[parent].
+//!
+PIKEFUN int program_inherits(program child, program parent)
   errname Program.inherits;
   optflags OPT_TRY_OPTIMIZE;
 {
-  RETURN !!low_get_storage(p2,p);
+  RETURN !!low_get_storage(child, parent);
 }
 
+//! Returns a string with filename and linenumber describing where
+//! the program @[p] was defined.
+//!
+//! The returned string is of the format @tt{"@i{filename@}:@i{linenumber@}"@}.
+//!
+//! If it cannot be determined where the program was defined, @tt{0@} (zero)
+//! will be returned.
+//!
 PIKEFUN string program_defined(program p)
   errname Program.defined;
   optflags OPT_TRY_OPTIMIZE;
@@ -177,6 +239,18 @@ PIKEFUN string program_defined(program p)
   push_int(0);
 }
 
+//! Returns the width of a string.
+//!
+//! Three return values are possible:
+//! @int
+//!   @value 8
+//!     The string @[s] only contains characters <= 255.
+//!   @value 16
+//!     The string @[s] only contains characters <= 65535.
+//!   @value 32
+//!     The string @[s] contains characters >= 65536.
+//! @endint
+//!
 PIKEFUN int string_width(string s)
   errname String.width;
   optflags OPT_TRY_OPTIMIZE;
@@ -184,18 +258,33 @@ PIKEFUN int string_width(string s)
   RETURN 8 * (1 << s->size_shift);
 }
 
-PIKEFUN 1 m_delete(mapping(mixed:1=mixed) m, mixed val)
+//! Removes the entry with index @[index] from mapping @[map] destructively.
+//!
+//! If the mapping does not have an entry with index @[index], nothing is done.
+//!
+//! @returns
+//! The value that was removed will be returned.
+//!
+//! @note
+//! Note that @[m_delete()] changes @[map] destructively.
+//!
+//! @seealso
+//! @[mappingp()]
+//!
+PIKEFUN 1 m_delete(mapping(mixed:1=mixed) map, mixed index)
   efun;
   optflags OPT_SIDE_EFFECT;
 {
   struct svalue s;
-  map_delete_no_free(m, val, &s);
+  map_delete_no_free(map, index, &s);
   pop_n_elems(args);
   *sp=s;
   sp++;
 }
 
-PIKEFUN int get_weak_flag(mixed m)
+//! Returns 1 if the weak flag has been set for @[m].
+//!
+PIKEFUN int(0 .. 1) get_weak_flag(array|mapping|multiset m)
   efun;
   optflags OPT_EXTERNAL_DEPEND;
 {
