@@ -1,5 +1,5 @@
 #include "global.h"
-RCSID("$Id: png.c,v 1.8 1998/04/06 00:51:24 mirar Exp $");
+RCSID("$Id: png.c,v 1.9 1998/04/06 02:37:00 mirar Exp $");
 
 #include "config.h"
 
@@ -36,6 +36,8 @@ static struct pike_string *param_background;
 
 void f_add(INT32 args);
 void f_aggregate(INT32 args);
+void f_index(INT32 args);
+
 
 /*
 **! module Image
@@ -1031,14 +1033,12 @@ static void image_png__decode(INT32 args)
 	    {
 	       ct=(struct neo_colortable*)
 		  get_storage(sp[-1].u.object,image_colortable_program);
-	       push_string(param_palette);
-	       param_palette->refs++;
+	       push_string(param_palette); param_palette->refs++;
 	       mapping_insert(m,sp-1,sp-2);
 	    }
 	    else
 	    {
-	       push_string(param_spalette);
-	       param_spalette->refs++;
+	       push_string(param_spalette); param_spalette->refs++;
 	       mapping_insert(m,sp-1,sp-2);
 	    }
 	    pop_n_elems(2);
@@ -1112,8 +1112,7 @@ static void image_png__decode(INT32 args)
 		  break;
 	    }
 	    f_aggregate(3);
-	    push_string(param_background);
-	    param_background->refs++;
+	    push_string(param_background); param_background->refs++;
 	    mapping_insert(m,sp-1,sp-2);
 	    pop_n_elems(2);
 	    break;
@@ -1282,8 +1281,7 @@ static void image_png__decode(INT32 args)
    
    /* --- done, store in mapping --- */
 
-   push_string(param_image);
-   param_image->refs++;
+   push_string(param_image); param_image->refs++;
    push_object(clone_object(image_program,0));
    img=(struct image*)get_storage(sp[-1].u.object,image_program);
    if (img->img) free(img->img); /* protect from memleak */
@@ -1295,8 +1293,7 @@ static void image_png__decode(INT32 args)
    
    if (wa1)
    {
-      push_string(param_alpha);
-      param_image->refs++;
+      push_string(param_alpha); param_alpha->refs++;
       push_object(clone_object(image_program,0));
       img=(struct image*)get_storage(sp[-1].u.object,image_program);
       if (img->img) free(img->img); /* protect from memleak */
@@ -1344,35 +1341,123 @@ static void image_png__decode(INT32 args)
 **!
 **!	<pre>
 **!	normal options:
-**!	    "quality":0..100
-**!		Set quality of result. Default is 75.
-**!	    "optimize":0|1
-**!		Optimize Huffman table. Default is on (1) for
-**!		images smaller than 50kpixels.
-**!	    "progressive":0|1
-**!		Make a progressive JPEG. Default is off.
+**!	    "alpha":image object
+**!		Use this image as alpha channel 
+**!		(Note that PNG alpha channel is grey.
+**!		 The values are calculated by (r+2g+b)/3.)
 **!
-**!	advanced options:
-**!	    "smooth":1..100
-**!		Smooth input. Value is strength.
-**!	    "method":JPEG.IFAST|JPEG.ISLOW|JPEG.FLOAT|JPEG.DEFAULT|JPEG.FASTEST
-**!		DCT method to use.
-**!		DEFAULT and FASTEST is from the jpeg library,
-**!		probably ISLOW and IFAST respective.
-**!
-**!	wizard options:
-**!	    "baseline":0|1
-**!		Force baseline output. Useful for quality&lt;20.
 **!	</pre>
 **!
 **! note
-**!	Please read some about JPEG files. A quality 
-**!	setting of 100 does not mean the result is 
-**!	lossless.
+**!	Please read some about PNG files. 
 */
 
 static void image_png_encode(INT32 args)
 {
+   struct image *img,*alpha=NULL;
+   rgb_group *s,*sa;
+
+   int n=0,y,x;
+   char buf[20];
+   
+   if (!args)
+      error("Image.PNG.encode: too few arguments\n");
+   
+   if (sp[-args].type!=T_OBJECT ||
+       !(img=(struct image*)
+	 get_storage(sp[-args].u.object,image_program)))
+      error("Image.PNG.encode: illegal argument 1\n");
+   
+   if (!img->img)
+      error("Image.PNG.encode: no image\n");
+
+   if (args>1)
+   {
+      if (sp[1-args].type!=T_MAPPING)
+	 error("Image.PNG.encode: illegal argument 2\n");
+      
+      push_svalue(sp+1-args);
+      push_string(param_alpha); param_alpha->refs++;
+      f_index(2);
+      if (!(sp[-1].type==T_INT 
+	    && sp[-1].subtype==NUMBER_UNDEFINED))
+	 if (sp[-1].type!=T_OBJECT ||
+	     !(alpha=(struct image*)
+	       get_storage(sp[-1].u.object,image_program)))
+	    error("Image.PNG.encode: option (arg 2) \"alpha\" has illegal type\n");
+      if (alpha &&
+	  (alpha->xsize!=img->xsize ||
+	   alpha->ysize!=img->ysize))
+	 error("Image.PNG.encode option (arg 2) \"alpha\"; images differ in size\n");
+      if (alpha && !alpha->img)
+	 error("Image.PNG.encode option (arg 2) \"alpha\"; no image\n");
+   }
+   
+   sprintf(buf,"%c%c%c%c%c%c%c%c",
+	   137,'P','N','G',13,10,26,10);
+   push_string(make_shared_binary_string(buf,8));
+   n++;
+
+   sprintf(buf,"%c%c%c%c%c%c%c%c%c%c%c%c%c",
+	   (img->xsize>>24)&255,(img->xsize>>16)&255,
+	   (img->xsize>>8)&255,(img->xsize)&255,
+	   (img->ysize>>24)&255,(img->ysize>>16)&255,
+	   (img->ysize>>8)&255,(img->ysize)&255,
+	   8 /* bpp */,
+	   alpha?6:2 /* type (RGBA/RGB) */,
+	   0 /* compression */,
+	   0 /* filter */,
+	   0 /* interlace */);
+   push_string(make_shared_binary_string(buf,13));
+
+   push_png_chunk("IHDR",NULL);
+   n++;
+	      
+   y=img->ysize;
+   s=img->img;
+   if (alpha) sa=alpha->img;
+   while (y--)
+   {
+      struct pike_string *ps;
+      unsigned char *d;
+      ps=begin_shared_string(img->xsize*(3+!!alpha)+1);
+      d=(unsigned char*)ps->str;
+      x=img->xsize;
+      *(d++)=0; /* filter */
+      if (alpha)
+	 while (x--)
+	 {
+	    *(d++)=s->r;
+	    *(d++)=s->g;
+	    *(d++)=s->b;
+	    *(d++)=(sa->r+sa->g*2+sa->b)>>2;
+	    s++;
+	    sa++;
+	 }
+      else
+	 while (x--)
+	 {
+	    *(d++)=s->r;
+	    *(d++)=s->g;
+	    *(d++)=s->b;
+	    s++;
+	 }
+      push_string(end_shared_string(ps));
+   }
+   f_add(img->ysize);
+   png_compress(0);
+   push_png_chunk("IDAT",NULL);
+   n++;
+
+   push_string(make_shared_binary_string("",0));
+   push_png_chunk("IEND",NULL);
+   n++;
+
+   f_add(n);
+   sp--;
+   pop_n_elems(args);
+   *sp=sp[args];
+   sp++;
 }
 
 /*
@@ -1389,8 +1474,6 @@ static void image_png_encode(INT32 args)
 **! note
 **!	Throws upon error in data.
 */
-
-void f_index(INT32 args);
 
 static void image_png_decode(INT32 args)
 {
@@ -1424,7 +1507,7 @@ static void image_png_decode_alpha(INT32 args)
       push_int(255);
       push_int(255);
       push_int(255);
-      push_object(clone_object(image_program,3));
+      push_object(clone_object(image_program,5));
    }
    free_svalue(&s);
 }
@@ -1501,7 +1584,7 @@ struct object *init_image_png(void)
 		      "function(string,void|mapping(string:int):object)",0);
       }
       add_function("encode",image_png_encode,
-		   "function(object,void|mapping(string:int):string)",
+		   "function(object,void|mapping(string:mixed):string)",
 		   OPT_TRY_OPTIMIZE);
    }
 
