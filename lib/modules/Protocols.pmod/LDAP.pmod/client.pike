@@ -2,7 +2,7 @@
 
 // LDAP client protocol implementation for Pike.
 //
-// $Id: client.pike,v 1.84 2005/03/23 18:20:45 mast Exp $
+// $Id: client.pike,v 1.85 2005/03/23 19:23:03 mast Exp $
 //
 // Honza Petrous, hop@unibase.cz
 //
@@ -335,9 +335,7 @@ static function(string:string) get_attr_encoder (string attr)
     //!  @mapping
     //!  @member string attribute
     //!    An attribute in the entry. The value is an array containing
-    //!    the returned attribute value(s) on string form. It may be
-    //!    an empty array if only the attribute types were requested
-    //!    or if all values were excluded.
+    //!    the returned attribute value(s) on string form.
     //!
     //!  @member string "dn"
     //!    This special entry contains the object name of the entry as
@@ -489,7 +487,7 @@ static function(string:string) get_attr_encoder (string attr)
   void create(string|void url, object|void context)
   {
 
-    info = ([ "code_revision" : ("$Revision: 1.84 $"/" ")[1] ]);
+    info = ([ "code_revision" : ("$Revision: 1.85 $"/" ")[1] ]);
 
     if(!url || !sizeof(url))
       url = LDAP_DEFAULT_URL;
@@ -946,9 +944,9 @@ static function(string:string) get_attr_encoder (string attr)
 
   } // add
 
-static mapping(string:array(string)) simple_base_query (string object_name,
-							string filter,
-							array attrs)
+static mapping(string:array(string)) simple_read (string object_name,
+						  string filter,
+						  array attrs)
 // Makes a base object search for object_name. The result is returned
 // as a mapping where the attribute types have been lowercased and the
 // string values are unprocessed.
@@ -1028,7 +1026,7 @@ array(string) get_root_dse_attr (string attr)
 	attrs[attr] = 1;
 
 	mapping(string:array(string)) res =
-	  simple_base_query ("", "(objectClass=*)", indices (attrs));
+	  simple_read ("", "(objectClass=*)", indices (attrs));
 
 	foreach (indices (res), string attr)
 	  // Microsoft AD has several attributes in its root DSE that
@@ -1371,7 +1369,7 @@ multiset(string) get_supported_controls()
   //!	to follow his logic better.
   //!
   //! @seealso
-  //!  @[result], @[result.fetch], @[get_supported_controls],
+  //!  @[result], @[result.fetch], @[read], @[get_supported_controls],
   //!  @[Protocols.LDAP.quote_filter_value]
   object|int search (string|void filter, array(string)|void attrs,
 		     int|void attrsonly,
@@ -1533,6 +1531,116 @@ multiset(string) get_supported_controls()
 
   } // search
 
+mapping(string:array(string)) read (string object_name,
+				    void|string filter,
+				    void|array(string) attrs,
+				    void|int attrsonly,
+				    void|mapping(string:array(int|string)) controls,
+				    void|int flags)
+//! Reads a specified object in the LDAP server. @[object_name] is the
+//! distinguished name for the object. The rest of the arguments are
+//! the same as to @[search].
+//!
+//! The default filter and attributes that might have been set in the
+//! LDAP URL doesn't affect this call. If @[filter] isn't set then
+//! @expr{"(objectClass=*)"@} is used.
+//!
+//! @returns
+//!   Returns a mapping of the requested attributes. It has the same
+//!   form as the response from @[result.fetch].
+//!
+//! @seealso
+//!   @[search]
+{
+  if (chk_ver())
+    return 0;
+  if (chk_binded())
+    return 0;
+  if(ldap_version == 3) {
+    object_name = string_to_utf8 (object_name);
+    if (filter) filter = string_to_utf8(filter);
+  }
+
+  object|int search_request =
+    make_search_op (object_name, 0, ldap_deref,
+		    ldap_sizelimit, ldap_timelimit, attrsonly,
+		    filter || "(objectClass=*)", attrs);
+
+  if(intp(search_request)) {
+    THROW(({error_string()+"\n",backtrace()}));
+    return 0;
+  }
+
+  object ctrls;
+  if (controls) {
+    array(object) control_list = allocate (sizeof (controls));
+    int i;
+    foreach (controls; string type; array(int|string) data)
+      control_list[i++] =
+	make_control (type, [string] data[1], [int] data[0]);
+    if (sizeof (control_list))
+      ctrls = .ldap_privates.asn1_sequence(0, control_list);
+  }
+
+  string|int raw;
+  PROFILE ("send_get_op", {
+      if(intp(raw = do_op(search_request, ctrls))) {
+	THROW(({error_string()+"\n",backtrace()}));
+	return 0;
+      }
+    });
+
+  array(string) rawarr;
+  PROFILE("rawarr++", {
+      rawarr = ({raw});
+      while (ASN1_DECODE_RESULTAPP(raw) != 5) {
+	// NB: The msgid stuff is defunct in readmsg, so we can
+	// just as well pass a zero there. :P
+	PROFILE("readmsg", raw = readmsg(0));
+	if (intp(raw)) {
+	  THROW(({error_string()+"\n",backtrace()}));
+	  return 0;
+	}
+	rawarr += ({raw});
+      } // while
+    });
+
+  PROFILE ("result", last_rv = result (rawarr, 0, flags));
+  seterr (last_rv->error_number());
+
+  if (ldap_errno != LDAP_SUCCESS) return 0;
+  return last_rv->fetch();
+}
+
+array(string) read_attr (string object_name,
+			 string attr,
+			 void|string filter,
+			 void|mapping(string:array(int|string)) controls)
+//! Reads a specified attribute of a specified object in the LDAP
+//! server. @[object_name] is the distinguished name of the object and
+//! @[attr] is the attribute. The rest of the arguments are the same
+//! as to @[search].
+//!
+//! The default filter that might have been set in the LDAP URL
+//! doesn't affect this call. If @[filter] isn't set then
+//! @expr{"(objectClass=*)"@} is used.
+//!
+//! @returns
+//!   Returns an array containing the values of the attribute on
+//!   string form. Returns zero if there was an error.
+//!
+//! @seealso
+//!   @[read], @[get_root_dse_attr]
+{
+  if (mapping(string:array(string)) res =
+      read (object_name, filter, ({attr}), 0, controls)) {
+    m_delete (res, "dn");
+    // Get the value regardless of the case of the attribute name that
+    // the server used in the response.
+    return get_iterator (res)->value();
+  }
+  return 0;
+}
 
 //! Return the LDAP protocol version in use.
 int get_protocol_version() {return ldap_version;}
@@ -1552,7 +1660,7 @@ int get_protocol_version() {return ldap_version;}
   }
 
 //! Return the current base DN for searching.
-string get_basedn() {return ldap_basedn;}
+string get_basedn() {return utf8_to_string (ldap_basedn);}
 
   //!
   //! Sets value of scope for search operation.
@@ -1890,7 +1998,7 @@ static mapping(string:array(string)) query_subschema (string dn,
 						      array(string) attrs)
 // Queries the server for the specified attributes in the subschema
 // applicable for the specified object. The return value is on the
-// same form as from simple_base_query (specifically there's no UTF-8
+// same form as from simple_read (specifically there's no UTF-8
 // decoding of the values).
 //
 // If dn == "" then the attribute values might be joined from several
@@ -1905,14 +2013,14 @@ static mapping(string:array(string)) query_subschema (string dn,
     subschema_response = root_dse;
   else {
     subschema_response =
-      simple_base_query (dn, "(objectClass=*)", ({"subschemaSubentry"}));
+      simple_read (dn, "(objectClass=*)", ({"subschemaSubentry"}));
     utf8_decode_dns = 1;
   }
 
   if (subschema_response)
     if (array(string) subschema_dns = subschema_response->subschemasubentry) {
       if (sizeof (subschema_dns) == 1)
-	return simple_base_query (
+	return simple_read (
 	  utf8_decode_dns ? utf8_to_string (subschema_dns[0]) : subschema_dns[0],
 	  "(objectClass=subschema)", attrs);
 
@@ -1924,7 +2032,7 @@ static mapping(string:array(string)) query_subschema (string dn,
 	// root DSE. /mast
 	mapping(string:array(string)) res = ([]);
 	foreach (subschema_dns, string subschema_dn) {
-	  if (mapping(string:array(string)) subres = simple_base_query (
+	  if (mapping(string:array(string)) subres = simple_read (
 		utf8_decode_dns ? utf8_to_string (subschema_dn) : subschema_dn,
 		"(objectClass=subschema)", attrs))
 	    foreach (indices (subres), string attr)
