@@ -453,7 +453,7 @@ class DeferredLocale( static string project,
       case 's':
 	return lookup();
       case 'O':
-	return sprintf("%O", lookup());
+	return sprintf("DeferredLocale(%O)", lookup());
       default:
 	error(sprintf("Illegal formatting char '%c'\n", c));
     }
