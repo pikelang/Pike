@@ -1,4 +1,4 @@
-# $Id: configure.in,v 1.49 1998/05/24 19:39:02 grubba Exp $
+# $Id: configure.in,v 1.50 1998/06/28 16:15:02 grubba Exp $
 AC_INIT(file.c)
 AC_CONFIG_HEADER(file_machine.h)
 
@@ -145,14 +145,23 @@ int main()
     exit(0);
   }
 }
-],pike_cv_func_solaris_style_readdir_r=yes,pike_cv_func_solaris_style_readdir_r=no)
+],pike_cv_func_solaris_style_readdir_r=yes,
+  pike_cv_func_solaris_style_readdir_r=no,
+  [
+    ac_cv_func_readdir_r=no
+    pike_cv_func_solaris_style_readdir_r=unknown
+  ])
   ])
   if test x$pike_cv_func_solaris_style_readdir_r = xyes ; then
     AC_MSG_RESULT(Solaris style)
     AC_DEFINE(HAVE_SOLARIS_READDIR_R)
   else
-    AC_MSG_RESULT(HPUX style)
-    AC_DEFINE(HAVE_HPUX_READDIR_R)
+    if test x$pike_cv_func_solaris_style_readdir_r = xno ; then
+      AC_MSG_RESULT(HPUX style)
+      AC_DEFINE(HAVE_HPUX_READDIR_R)
+    else
+      AC_MSG_RESULT(Unknown)
+    fi
   fi
 fi
 
