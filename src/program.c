@@ -2,11 +2,11 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: program.c,v 1.544 2003/12/30 10:02:46 grubba Exp $
+|| $Id: program.c,v 1.545 2003/12/30 10:54:41 grubba Exp $
 */
 
 #include "global.h"
-RCSID("$Id: program.c,v 1.544 2003/12/30 10:02:46 grubba Exp $");
+RCSID("$Id: program.c,v 1.545 2003/12/30 10:54:41 grubba Exp $");
 #include "program.h"
 #include "object.h"
 #include "dynamic_buffer.h"
@@ -1923,12 +1923,12 @@ void fixate_program(void)
 				 p);
 
 
+  p->flags |= PROGRAM_FIXED;
+
   /* Yes, it is supposed to start at 1  /Hubbe */
   for(i=1;i<NUM_LFUNS;i++) {
     p->lfuns[i] = low_find_lfun(p, i);
   }
-
-  p->flags |= PROGRAM_FIXED;
 
   if(Pike_compiler->check_final)
   {
@@ -5015,7 +5015,7 @@ int low_find_lfun(struct program *p, ptrdiff_t lfun)
 					     dmalloc_touch(struct program *,
 							   p),
 					     SEE_STATIC);
-  if (i < 0) return i;
+  if (i < 0 || !(p->flags & PROGRAM_FIXED)) return i;
   id = ID_FROM_INT(p, i);
   if (IDENTIFIER_IS_PIKE_FUNCTION(id->identifier_flags) &&
       (id->func.offset == -1)) {
