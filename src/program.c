@@ -5,7 +5,7 @@
 \*/
 /**/
 #include "global.h"
-RCSID("$Id: program.c,v 1.402 2002/02/06 17:23:24 grubba Exp $");
+RCSID("$Id: program.c,v 1.403 2002/02/14 15:20:48 grubba Exp $");
 #include "program.h"
 #include "object.h"
 #include "dynamic_buffer.h"
@@ -100,6 +100,7 @@ BLOCK_ALLOC(program, 104);
 #include "compilation.h"
 
 struct pike_string *this_program_string=0;
+static struct pike_string *UNDEFINED_string=0;
 
 char *lfun_names[] = {
   "__INIT",
@@ -997,6 +998,14 @@ struct node_s *find_module_identifier(struct pike_string *ident,
     struct svalue s;
     s.type=T_PROGRAM;
     s.u.program=Pike_compiler->new_program;
+    return mkconstantsvaluenode(&s);
+  }
+  /* Handle UNDEFINED */
+  if (ident == UNDEFINED_string) {
+    struct svalue s;
+    s.type = T_INT;
+    s.subtype = NUMBER_UNDEFINED;
+    s.u.integer = 0;
     return mkconstantsvaluenode(&s);
   }
 
@@ -5559,6 +5568,7 @@ void init_program(void)
   init_program_blocks();
 
   MAKE_CONSTANT_SHARED_STRING(this_program_string,"this_program");
+  MAKE_CONSTANT_SHARED_STRING(UNDEFINED_string,"UNDEFINED");
 
   lfun_ids = allocate_mapping(NUM_LFUNS);
   lfun_types = allocate_mapping(NUM_LFUNS);
@@ -5619,6 +5629,7 @@ void cleanup_program(void)
 {
   int e;
 
+  free_string(UNDEFINED_string);
   free_string(this_program_string);
 
   free_mapping(lfun_types);
