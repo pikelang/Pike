@@ -102,7 +102,11 @@ int install_file(string from,
 		     void|int mode,
 		     void|int dump)
 {
-  int ret=install_file(from,to,mode);
+  int ret;
+  if(query_num_arg() == 2)
+    ret=low_install_file(from,to);
+  else
+    ret=low_install_file(from,to,mode);
   if((ret || redump_all) && dump)
   {
     switch(reverse(to)[..4])
