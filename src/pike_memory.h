@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: pike_memory.h,v 1.49 2004/03/24 20:05:34 grubba Exp $
+|| $Id: pike_memory.h,v 1.50 2004/12/30 13:40:19 grubba Exp $
 */
 
 #ifndef MEMORY_H
@@ -214,5 +214,11 @@ PMOD_EXPORT void *debug_xcalloc(size_t n, size_t s);
   							\
     RET = ret;						\
   } while(0)
+
+#ifdef DEBUG_MALLOC
+void initialize_dmalloc(void);
+#else
+#define initialize_dmalloc()
+#endif
 
 #endif

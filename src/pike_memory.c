@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: pike_memory.c,v 1.157 2004/10/22 15:50:22 grubba Exp $
+|| $Id: pike_memory.c,v 1.158 2004/12/30 13:40:19 grubba Exp $
 */
 
 #include "global.h"
@@ -439,7 +439,6 @@ static struct fakemallocblock *fake_free_list;
 #define ALIGNMENT OFFSETOF(fakemallocblock, body)
 #define FAKEMALLOCED(X) \
   ( ((char *)(X)) >= ((char *)fakemallocarea) && ((char *)(X)) < (((char *)(fakemallocarea))+sizeof(fakemallocarea)))
-static void initialize_dmalloc(void);
 
 void init_fake_malloc(void)
 {
@@ -2239,7 +2238,7 @@ static void unlock_da_lock(void)
 }
 #endif
 
-static void initialize_dmalloc(void)
+void initialize_dmalloc(void)
 {
   long e;
   static int initialized=0;
@@ -2289,13 +2288,6 @@ static void initialize_dmalloc(void)
     }
 #endif
   }
-}
-
-int main(int argc, char *argv[])
-{
-  extern int dbm_main(int, char **);
-  initialize_dmalloc();
-  return dbm_main(argc, argv);
 }
 
 void * debug_malloc_update_location(void *p,LOCATION location)

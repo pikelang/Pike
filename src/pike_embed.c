@@ -1,5 +1,5 @@
 /*
- * $Id: pike_embed.c,v 1.1 2004/12/29 10:16:43 grubba Exp $
+ * $Id: pike_embed.c,v 1.2 2004/12/30 13:40:19 grubba Exp $
  *
  * Pike embedding API.
  *
@@ -37,6 +37,7 @@
 #include "pike_rusage.h"
 #include "module_support.h"
 #include "opcodes.h"
+#include "pike_memory.h"
 
 #include "pike_embed.h"
 
@@ -88,17 +89,32 @@ int try_use_mmx;
 #define TRACE(X)
 #endif /* TRACE_MAIN */
 
-#define MASTER_COOKIE1 "(#*&)@(*&$"
-#define MASTER_COOKIE2 "Master Cookie:"
+PMOD_EXPORT int debug_options=0;
+PMOD_EXPORT int runtime_options=0;
+PMOD_EXPORT int d_flag=0;
+PMOD_EXPORT int c_flag=0;
+PMOD_EXPORT int default_t_flag=0;
+PMOD_EXPORT int a_flag=0;
+PMOD_EXPORT int l_flag=0;
+PMOD_EXPORT int p_flag=0;
 
-#define MASTER_COOKIE MASTER_COOKIE1 MASTER_COOKIE2
-
-char master_location[MAXPATHLEN * 2] = MASTER_COOKIE;
-const char *master_file;
-char **ARGV;
-
-void init_pike(char **argv)
+int set_pike_debug_options(int bits, int mask)
 {
+  return debug_options = (debug_options & ~mask) | (bits & mask);
+}
+
+int set_pike_runtime_options(int bits, int mask)
+{
+  return runtime_options = (runtime_options & ~mask) | (bits & mask);
+}
+
+char **ARGV;
+const char *master_file = NULL;
+
+void init_pike(char **argv, const char *file)
+{
+  initialize_dmalloc();
+
   init_rusage();
 
   /* Attempt to make sure stderr is unbuffered. */
@@ -127,6 +143,7 @@ void init_pike(char **argv)
 #endif
 
   ARGV=argv;
+  master_file = file;
 
   TRACE((stderr, "Main init...\n"));
   
@@ -186,40 +203,6 @@ void init_pike(char **argv)
   setlocale(LC_MESSAGES, "");
 #endif
 #endif
-}
-
-void pike_set_default_master()
-{
-  master_file = 0;
-
-#ifdef HAVE_GETENV
-  if(getenv("PIKE_MASTER"))
-    master_file = getenv("PIKE_MASTER");
-#endif
-
-  if(master_location[CONSTANT_STRLEN(MASTER_COOKIE)])
-    master_file=master_location + CONSTANT_STRLEN(MASTER_COOKIE);
-
-#if defined(__NT__)
-  if(!master_file) get_master_key(HKEY_CURRENT_USER);
-  if(!master_file) get_master_key(HKEY_LOCAL_MACHINE);
-#endif
-
-  if(!master_file)
-  {
-    sprintf(master_location,DEFAULT_MASTER,
-	    PIKE_MAJOR_VERSION,
-	    PIKE_MINOR_VERSION,
-	    PIKE_BUILD_VERSION);
-    master_file=master_location;
-  }
-
-  TRACE((stderr, "Default master at \"%s\"...\n", master_file));
-}
-
-void pike_set_master_file(const char *file)
-{
-  master_file = file;
 }
 
 static void (*pike_exit_cb)(int);
@@ -420,15 +403,6 @@ void init_pike_runtime(void (*exit_cb)(int))
     pike_do_exit(num);
   } else {
     back.severity=THROW_EXIT;
-
-    TRACE((stderr, "Init master cookie...\n"));
-
-    /* Avoid duplicate entries... */
-    push_constant_text(MASTER_COOKIE1);
-    push_constant_text(MASTER_COOKIE2);
-    f_add(2);
-    low_add_constant("__master_cookie", Pike_sp-1);
-    pop_stack();
 
     TRACE((stderr, "Init modules...\n"));
 

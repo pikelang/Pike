@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: main.c,v 1.218 2004/12/29 12:00:33 grubba Exp $
+|| $Id: main.c,v 1.219 2004/12/30 13:40:19 grubba Exp $
 */
 
 #include "global.h"
@@ -75,37 +75,30 @@
 #define TRACE(X)
 #endif /* TRACE_MAIN */
 
-PMOD_EXPORT int debug_options=0;
-PMOD_EXPORT int runtime_options=0;
-PMOD_EXPORT int d_flag=0;
-PMOD_EXPORT int c_flag=0;
-PMOD_EXPORT int default_t_flag=0;
-PMOD_EXPORT int a_flag=0;
-PMOD_EXPORT int l_flag=0;
-PMOD_EXPORT int p_flag=0;
-#if defined(YYDEBUG) || defined(PIKE_DEBUG)
-extern int yydebug;
-#endif /* YYDEBUG || PIKE_DEBUG */
-static long instructions_left;
+/*
+ * Code searching for master & libpike.
+ */
 
-static void time_to_exit(struct callback *cb,void *tmp,void *ignored)
+#define MASTER_COOKIE1 "(#*&)@(*&$"
+#define MASTER_COOKIE2 "Master Cookie:"
+
+#define MASTER_COOKIE MASTER_COOKIE1 MASTER_COOKIE2
+
+#ifndef MAXPATHLEN
+#define MAXPATHLEN 32768
+#endif
+
+static char master_location[MAXPATHLEN * 2] = MASTER_COOKIE;
+
+static void set_master(const char *file)
 {
-  if(instructions_left-- < 0)
-  {
-    push_int(0);
-    f_exit(1);
+  if (strlen(file) >= MAXPATHLEN*2 - CONSTANT_STRLEN(MASTER_COOKIE)) {
+    fprintf(stderr, "Too long path to master: \"%s\" (limit:%d)\n",
+	    file, MAXPATHLEN*2 - CONSTANT_STRLEN(MASTER_COOKIE));
+    exit(1);
   }
+  strcpy(master_location + CONSTANT_STRLEN(MASTER_COOKIE), file);
 }
-
-static struct callback_list post_master_callbacks;
-
-PMOD_EXPORT struct callback *add_post_master_callback(callback_func call,
-					  void *arg,
-					  callback_func free_func)
-{
-  return add_to_callback(&post_master_callbacks, call, arg, free_func);
-}
-
 
 #ifdef __NT__
 static void get_master_key(HKEY cat)
@@ -130,14 +123,144 @@ static void get_master_key(HKEY cat)
 		       buffer,
 		       &len)==ERROR_SUCCESS)
     {
-      char *leak = strdup(buffer)
-      dmalloc_accept_leak(leak);
-      pike_set_master_file(leak);
+      /* FIXME: Look at len? UNICODE? */
+      set_master(buffer);
     }
     RegCloseKey(k);
   }
 }
 #endif /* __NT__ */
+
+static void set_default_master(void)
+{
+#ifdef HAVE_GETENV
+  if(!master_location[CONSTANT_STRLEN(MASTER_COOKIE)] &&
+     getenv("PIKE_MASTER")) {
+    set_master(getenv("PIKE_MASTER"));
+  }
+#endif
+
+#ifdef __NT__
+  if(!master_location[CONSTANT_STRLEN(MASTER_COOKIE)])
+    get_master_key(HKEY_CURRENT_USER);
+  if(!master_location[CONSTANT_STRLEN(MASTER_COOKIE)])
+    get_master_key(HKEY_LOCAL_MACHINE);
+#endif
+
+  if(!master_location[CONSTANT_STRLEN(MASTER_COOKIE)])
+  {
+    sprintf(master_location + CONSTANT_STRLEN(MASTER_COOKIE),
+	    DEFAULT_MASTER,
+	    PIKE_MAJOR_VERSION,
+	    PIKE_MINOR_VERSION,
+	    PIKE_BUILD_VERSION);
+  }
+
+  TRACE((stderr, "Default master at \"%s\"...\n",
+	 master_location + CONSTANT_STRLEN(MASTER_COOKIE)));
+}
+
+#ifdef LIBPIKE
+static char libpike_file[MAXPATHLEN * 2];
+static void *libpike;
+
+static void (*init_pike)(const char **argv, const char *file);
+static void (*init_pike_runtime)(void (*exit_cb)(int));
+#endif /* LIBPIKE */
+
+static void find_lib_dir(int argc, char **argv)
+{
+  int e;
+  char *p;
+  char *dir;
+
+  TRACE((stderr, "find_lib_dir...\n"));
+  
+  set_default_master();
+
+  for(e=1; e<argc; e++)
+  {
+    TRACE((stderr, "Parse argument %d:\"%s\"...\n", e, argv[e]));
+  
+    if(argv[e][0] != '-') break;
+
+    switch(argv[e][1])
+    {
+    default:
+      break;
+	  
+    case 'm':
+      if(argv[e][2])
+      {
+	set_master(argv[e]+2);
+      }else{
+	e++;
+	if(e >= argc)
+	{
+	  fprintf(stderr,"Missing argument to -m\n");
+	  exit(1);
+	}
+	set_master(argv[e]);
+      }
+      break;
+
+    case 's':
+      if((!argv[e][2]) ||
+	 ((argv[e][2] == 's') && !argv[e][3])) {
+	e++;
+      }
+      break;
+
+    case 'q':
+      if(!argv[e][2]) e++;
+      break;
+    }
+  }
+#ifdef LIBPIKE
+  memcpy(libpike_file, master_location + CONSTANT_STRLEN(MASTER_COOKIE),
+	 sizeof(master_location) - CONSTANT_STRLEN(MASTER_COOKIE));
+  for (p = dir = libpike_file; *p; p++) {
+    if ((*p == '/')
+#ifdef __NT__
+	|| (*p == '\\')
+#endif /* __NT__ */
+	)
+      dir = p+1;
+  }
+  if ((p + CONSTANT_STRLEN("pike.so")) >= libpike_file + 2*MAXPATHLEN) {
+    /* Not likely to happen as long as MASTER_COOKIE is longer than "pike.so".
+     */
+    fprintf(stderr, "Too long path to pike.so.\n");
+    exit(1);
+  }
+  /* Don't forget the NUL! */
+  memcpy(p, "pike.so", CONSTANT_STRLEN("pike.so") + 1);
+#endif /* LIBPIKE */
+}
+
+
+
+static long instructions_left;
+
+static void time_to_exit(struct callback *cb,void *tmp,void *ignored)
+{
+  if(instructions_left-- < 0)
+  {
+    push_int(0);
+    f_exit(1);
+  }
+}
+
+static struct callback_list post_master_callbacks;
+
+PMOD_EXPORT struct callback *add_post_master_callback(callback_func call,
+					  void *arg,
+					  callback_func free_func)
+{
+  return add_to_callback(&post_master_callbacks, call, arg, free_func);
+}
+
+
 
 #ifdef __amigaos4__
 #define timeval timeval_amigaos
@@ -168,8 +291,7 @@ static struct Hook scan_amigaos_environment_hook = {
 };
 #endif /* __amigsos4__ */
 
-
-int dbm_main(int argc, char **argv)
+int main(int argc, char **argv)
 {
   JMP_BUF back;
   int e, num;
@@ -179,13 +301,42 @@ int dbm_main(int argc, char **argv)
   extern char **environ;
 #endif
 
-  TRACE((stderr, "dbm_main()\n"));
-
-  init_pike(argv);
-
   TRACE((stderr, "Init master...\n"));
   
-  pike_set_default_master();
+  find_lib_dir(argc, argv);
+
+#ifdef LIBPIKE
+  if (!dlinit()) {
+    fprintf(stderr, "dlinit failed.\n");
+    exit(1);
+  }
+
+  if (!(libpike = dlopen(libpike_name, RTLD_NOW))) {
+    const char *err = dlerror();
+    if (!err) err = "Unknown reason.";
+    fprintf(stderr, "Failed to open %s: %s\n", libpike_name, err);
+    exit(1);
+  }
+
+#define LOOKUP(symbol) do {						\
+    if (!(symbol = CAST_TO_FUN(dlsym(libpike, TOSTR(symbol)))) &&	\
+	!(symbol = CAST_TO_FUN(dlsym(libpike, "_" TOSTR(symbol))))) {	\
+      fprintf(stderr, "Missing symbol in %s: " TOSTR(symbol) "\n",	\
+	      libpike_name);						\
+      dlclose(libpike);							\
+      exit(1);								\
+    }									\
+  } while(0)
+
+  LOOKUP(init_pike);
+  LOOKUP(init_pike_runtime);
+  LOOKUP(add_predefine);
+  
+#endif /* LIBPIKE */
+
+  TRACE((stderr, "init_pike()\n"));
+
+  init_pike(argv, master_location + CONSTANT_STRLEN(MASTER_COOKIE));
 
   for(e=1; e<argc; e++)
   {
@@ -205,7 +356,6 @@ int dbm_main(int argc, char **argv)
 	case 'm':
 	  if(p[1])
 	  {
-	    pike_set_master_file(p+1);
 	    p+=strlen(p);
 	  }else{
 	    e++;
@@ -214,7 +364,6 @@ int dbm_main(int argc, char **argv)
 	      fprintf(stderr,"Missing argument to -m\n");
 	      exit(1);
 	    }
-	    pike_set_master_file(argv[e]);
 	    p+=strlen(p);
 	  }
 	  break;
@@ -300,29 +449,27 @@ int dbm_main(int argc, char **argv)
 	      break;
 
 	    case 's':
-	      debug_options|=DEBUG_SIGNALS;
+	      set_pike_debug_options(DEBUG_SIGNALS, DEBUG_SIGNALS);
 	      p++;
 	      goto more_d_flags;
 
 	    case 't':
-	      debug_options|=NO_TAILRECURSION;
+	      set_pike_debug_options(NO_TAILRECURSION, NO_TAILRECURSION);
 	      p++;
 	      goto more_d_flags;
 
-#ifdef DEBUG_MALLOC
 	    case 'g':
-	      debug_options|=GC_RESET_DMALLOC;
+	      set_pike_debug_options(GC_RESET_DMALLOC, GC_RESET_DMALLOC);
 	      p++;
 	      goto more_d_flags;
-#endif
 
 	    case 'p':
-	      debug_options|=NO_PEEP_OPTIMIZING;
+	      set_pike_debug_options(NO_PEEP_OPTIMIZING, NO_PEEP_OPTIMIZING);
 	      p++;
 	      goto more_d_flags;
 
 	    case 'T':
-	      debug_options |= ERRORCHECK_MUTEXES;
+	      set_pike_debug_options(ERRORCHECK_MUTEXES, ERRORCHECK_MUTEXES);
 	      p++;
 	      goto more_d_flags;
 
@@ -337,12 +484,13 @@ int dbm_main(int argc, char **argv)
 	  switch(p[1]) 
           {
 	  case 't':
-	    runtime_options |= RUNTIME_CHECK_TYPES;
+	    set_pike_runtime_options(RUNTIME_CHECK_TYPES, RUNTIME_CHECK_TYPES);
 	    p++;
 	    goto more_r_flags;
 
 	  case 'T':
-	    runtime_options |= RUNTIME_STRICT_TYPES;
+	    set_pike_runtime_options(RUNTIME_STRICT_TYPES,
+				     RUNTIME_STRICT_TYPES);
 	    p++;
 	    goto more_r_flags;
 
@@ -417,6 +565,12 @@ int dbm_main(int argc, char **argv)
   if (d_flag) debug_options |= ERRORCHECK_MUTEXES;
 
   init_pike_runtime(exit);
+
+  /* NOTE: Reuse master_location here to avoid duplicates of
+   *       the MASTER_COOKIE string in the binary.
+   */
+  add_pike_string_constant("__master_cookie",
+			   master_location, CONSTANT_STRLEN(MASTER_COOKIE));
 
   if(SETJMP(back))
   {
