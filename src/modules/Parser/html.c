@@ -30,10 +30,20 @@ struct piece
 
 struct feed_stack
 {
-   struct piece *start;
-   struct piece *location;
-   
    struct feed_stack *prev;
+
+   /* this is a feed-stack, ie
+      these contains the result of callbacks,
+      if they are to be parsed.
+      
+      The bottom stack element has no local feed,
+      it's just for convinience */
+
+   struct piece *local_feed;
+
+   struct piece *start;
+   int c; /* position in string */
+   struct location pos;
 };
 
 struct parser_html_storage
@@ -44,9 +54,6 @@ struct parser_html_storage
    /* resulting data */
    struct piece *out,*out_end;
    
-   /* location */
-   struct location head; /* first byte in feed is.. */
-
    /* parser stack */
    struct feed_stack *stack;
 
@@ -73,9 +80,10 @@ void _reset_feed()
 
    while (THIS->feed)
    {
-      f=THIS->feed->next;
+      f=THIS->feed;
+      THIS->feed=f->next;
+      free_string(f->s);
       free(THIS->feed);
-      THIS->feed=f;
    }
    THIS->feed_end=NULL;
 
@@ -83,9 +91,10 @@ void _reset_feed()
 
    while (THIS->out)
    {
-      f=THIS->out->next;
+      f=THIS->out;
+      THIS->out=f->next;
+      free_string(f->s);
       free(THIS->out);
-      THIS->out=f;
    }
    THIS->out_end=NULL;
 
@@ -98,10 +107,18 @@ void _reset_feed()
       free(st);
    }
 
-   THIS->head.p=NULL;
-   THIS->head.byteno=1;
-   THIS->head.lineno=1;
-   THIS->head.linestart=1;
+   /* new stack head */
+
+   THIS->stack=malloc(sizeof(struct feed_stack));
+   if (!THIS->stack)
+      error("out of memory\n");
+   THIS->stack->prev=NULL;
+   THIS->stack->local_feed=NULL;
+   THIS->stack->start=NULL;
+   THIS->stack->pos.byteno=1;
+   THIS->stack->pos.lineno=1;
+   THIS->stack->pos.linestart=1;
+   THIS->stack->c=0;
 }
 
 static void init_html_struct(struct object *o)
@@ -123,6 +140,7 @@ static void exit_html_struct(struct object *o)
    free_svalue(&(THIS->callback__tag));
    free_svalue(&(THIS->callback__data));
    free_svalue(&(THIS->callback__entity));
+   free(THIS->stack);
 }
 
 /****** setup callbacks *****************************/
@@ -153,6 +171,43 @@ static void html__set_entity_callback(INT32 args)
 
 /****** try_feed - internal main ********************/
 
+static void put_out_feed(struct pike_string *s)
+{
+   struct piece *f=malloc(sizeof(struct piece));
+   if (!f)
+      error("Parser.HTML(): out of memory\n");
+   copy_shared_string(f->s,s);
+
+   f->next=NULL;
+
+   if (THIS->out_end==NULL)
+     THIS->out=THIS->out_end=f;
+   else
+   {
+      THIS->out_end->next=f;
+      THIS->out_end=f;
+   }
+}
+
+static int do_try_feed(struct parser_html_storage *this,
+		       struct object *thisobj,
+		       struct feed_stack *st,
+		       struct piece **feed,
+		       int finished)
+{
+   while (*feed)
+   {
+      struct piece *f=*feed;
+      put_out_feed(f->s);
+
+      *feed=f->next;
+      free_string(f->s);
+      free(f);
+   }
+
+   return 0;
+}
+
 static void try_feed(int finished)
 {
    /* 
@@ -161,15 +216,62 @@ static void try_feed(int finished)
           o ev put on stack
    */
 
-   if (THIS->out_end)
-      THIS->out_end->next=THIS->feed;
-   else
-      THIS->out=THIS->out_end=THIS->feed;
+   for (;;)
+   {
+      int res;
+      struct feed_stack *st;
 
-   while (THIS->out_end && THIS->out_end->next)
-      THIS->out_end=THIS->out_end->next;
+      res=do_try_feed(THIS,THISOBJ,
+		      THIS->stack,
+		      THIS->stack->prev
+		      ?&(THIS->stack->local_feed)
+		      :&(THIS->feed),
+		      finished);
 
-   THIS->feed=THIS->feed_end=NULL;
+      switch (res)
+      {
+	 case 0: /* done, pop stack */
+	    if (!THIS->feed) THIS->feed_end=NULL;
+
+	    st=THIS->stack->prev;
+	    if (!st) return; /* all done, but keep last stack elem */
+
+	    if (THIS->stack->local_feed)
+	       error("internal wierdness in Parser.HTML: feed left\n");
+
+	    free(THIS->stack);
+	    THIS->stack=st;
+	    break;
+
+	 case 1: /* incomplete, call again */
+	    return;
+	 case 2: /* push sp[-1] on stack (it's a string) */
+	    if (sp[-1].type!=T_STRING)
+	       error("internal wierdness in Parser.HTML: wrong element\n");
+
+	    st=malloc(sizeof(struct feed_stack));
+	    if (!st)
+	       error("out of memory\n");
+
+	    st->local_feed=malloc(sizeof(struct piece));
+	    if (!st->local_feed)
+	    {
+	       free(st);
+	       error("out of memory\n");
+	    }
+	    copy_shared_string(st->local_feed->s,sp[-1].u.string);
+	    st->local_feed->next=NULL;
+	    pop_stack();
+	    st->start=NULL;
+	    st->pos.byteno=1;
+	    st->pos.lineno=1;
+	    st->pos.linestart=1;
+	    st->prev=THIS->stack;
+	    st->c=0;
+	    THIS->stack=st;
+	    break;
+      }
+   }
 }
 
 /****** feed ****************************************/
@@ -202,24 +304,6 @@ static void html_feed(INT32 args)
    try_feed(0);
 
    ref_push_object(THISOBJ);
-}
-
-static void put_out_feed(struct pike_string *s)
-{
-   struct piece *f=malloc(sizeof(struct piece));
-   if (!f)
-      error("Parser.HTML(): out of memory\n");
-   copy_shared_string(f->s,s);
-
-   f->next=NULL;
-
-   if (THIS->out_end==NULL)
-     THIS->out=THIS->out_end=f;
-   else
-   {
-      THIS->out_end->next=f;
-      THIS->out_end=f;
-   }
 }
 
 static void html_finish(INT32 args)

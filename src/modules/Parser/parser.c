@@ -1,5 +1,5 @@
 /*
- * $Id: parser.c,v 1.1 1999/02/19 04:58:40 mirar Exp $
+ * $Id: parser.c,v 1.2 1999/02/19 19:37:13 mirar Exp $
  */
 
 #include "global.h"
@@ -34,7 +34,6 @@ void pike_module_init(void)
       struct program *p;
 
       start_new_program();
-      fprintf(stderr,"%d %x\n",i,sub[i].func);
       sub[i].func();
       p=end_program();
       add_program_constant(sub[i].name,p,0);
