@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: module_support.c,v 1.58 2003/12/17 21:08:34 marcus Exp $
+|| $Id: module_support.c,v 1.59 2003/12/17 22:12:13 grubba Exp $
 */
 
 #include "global.h"
@@ -18,7 +18,7 @@
 
 #define sp Pike_sp
 
-RCSID("$Id: module_support.c,v 1.58 2003/12/17 21:08:34 marcus Exp $");
+RCSID("$Id: module_support.c,v 1.59 2003/12/17 22:12:13 grubba Exp $");
 
 /* Checks that args_to_check arguments are OK.
  * Returns 1 if everything worked ok, zero otherwise.
@@ -230,12 +230,12 @@ int va_get_args(struct svalue *s,
 	*va_arg(ap, LONGEST *)=s->u.integer;
 	break;
 #ifdef AUTO_BIGNUM
-      } else if (!is_bignum_object_in_svalue(s) ||
-		 !int64_from_bignum(va_arg(ap, LONGEST *), s->u.object)) {
-	return ret;
+      } else if (is_bignum_object_in_svalue(s) &&
+		 int64_from_bignum(va_arg(ap, LONGEST *), s->u.object) == 1) {
+        break;
 #endif
       }
-      break;
+      return ret;
     case 's':
       if(s->type != T_STRING) return ret;
       if(s->u.string->size_shift) return ret;
