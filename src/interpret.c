@@ -5,7 +5,7 @@
 \*/
 /**/
 #include "global.h"
-RCSID("$Id: interpret.c,v 1.132 1999/12/05 16:35:31 mirar Exp $");
+RCSID("$Id: interpret.c,v 1.133 1999/12/13 21:48:24 grubba Exp $");
 #include "interpret.h"
 #include "object.h"
 #include "program.h"
@@ -32,6 +32,7 @@ RCSID("$Id: interpret.c,v 1.132 1999/12/05 16:35:31 mirar Exp $");
 #include "security.h"
 #include "block_alloc.h"
 #include "bignum.h"
+#include "pike_types.h"
 
 #include <fcntl.h>
 #include <errno.h>
