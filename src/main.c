@@ -5,7 +5,7 @@
 \*/
 /**/
 #include "global.h"
-RCSID("$Id: main.c,v 1.88 2000/04/08 01:09:56 hubbe Exp $");
+RCSID("$Id: main.c,v 1.89 2000/10/01 08:53:34 hubbe Exp $");
 #include "fdlib.h"
 #include "backend.h"
 #include "module.h"
@@ -420,6 +420,15 @@ int dbm_main(int argc, char **argv)
 #ifdef Pike_INITIAL_STACK_SIZE
       if(lim.rlim_cur > Pike_INITIAL_STACK_SIZE)
 	lim.rlim_cur=Pike_INITIAL_STACK_SIZE;
+#endif
+
+#if defined(__linux__) && defined(PIKE_THREADS)
+      /* This is a really really *stupid* limit in glibc 2.x
+       * which is not detectable since __pthread_initial_thread_bos
+       * went static. On a stupidity-scale from 1-10, this rates a
+       * solid 11. - Hubbe
+       */
+      if(lim.rlim_cur > 2*1024*1024) lim.rlim_cur=2*1024*1024;
 #endif
 
       stack_top += STACK_DIRECTION * lim.rlim_cur;
