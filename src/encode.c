@@ -25,7 +25,7 @@
 #include "version.h"
 #include "bignum.h"
 
-RCSID("$Id: encode.c,v 1.87 2002/04/12 09:30:12 grubba Exp $");
+RCSID("$Id: encode.c,v 1.88 2002/04/12 11:31:45 grubba Exp $");
 
 /* #define ENCODE_DEBUG */
   
@@ -737,16 +737,16 @@ static void encode_value2(struct svalue *val, struct encode_data *data)
 	/* Type 2 -- Portable encoding. */
 	code_entry(type_to_tag(val->type), 2, data);
 
-	/* version */
-	f_version(0);
-	encode_value2(Pike_sp-1,data);
-	pop_stack();
-
 	/* Byte-order. */
 	code_number(PIKE_BYTEORDER, data);
 
 	/* flags */
 	code_number(p->flags,data);
+
+	/* version */
+	f_version(0);
+	encode_value2(Pike_sp-1,data);
+	pop_stack();
 
 	/* num_* */
 #define FOO(X,Y,Z) \
@@ -782,23 +782,6 @@ static void encode_value2(struct svalue *val, struct encode_data *data)
 	  for(d=0;d<p->num_strings;d++) {
 	    str_sval.u.string = p->strings[d];
 	    encode_value2(&str_sval, data);
-	  }
-
-	  /* constants */
-	  for(d=0;d<p->num_constants;d++)
-	  {
-	    /* value */
-	    encode_value2(&p->constants[d].sval, data);
-
-	    /* name */
-	    if (p->constants[d].name) {
-	      str_sval.u.string = p->constants[d].name;
-	      encode_value2(&str_sval, data);
-	    } else {
-	      push_int(0);
-	      encode_value2(Pike_sp-1, data);
-	      Pike_sp--;
-	    }
 	  }
 	}
 
@@ -906,6 +889,15 @@ static void encode_value2(struct svalue *val, struct encode_data *data)
 
 		/* offset */
 		code_number(id->func.offset, data);
+
+		/* type */
+		str_sval.u.string = id->type;
+		str_sval.type = T_TYPE;
+		encode_value2(&str_sval, data);
+		str_sval.type = T_STRING;
+
+		/* run-time type */
+		code_number(id->run_time_type, data);
 
 		/* Verify that we can restore the id */
 		if (ref->identifier_offset != local_num_identifiers) {
@@ -1074,6 +1066,29 @@ static void encode_value2(struct svalue *val, struct encode_data *data)
 #endif /* 0 */
 	  /* End-marker */
 	  code_number(ID_ENTRY_EOT, data);
+	}
+
+	{
+	  struct svalue str_sval;
+	  str_sval.type = T_STRING;
+	  str_sval.subtype = 0;
+
+	  /* constants */
+	  for(d=0;d<p->num_constants;d++)
+	  {
+	    /* value */
+	    encode_value2(&p->constants[d].sval, data);
+
+	    /* name */
+	    if (p->constants[d].name) {
+	      str_sval.u.string = p->constants[d].name;
+	      encode_value2(&str_sval, data);
+	    } else {
+	      push_int(0);
+	      encode_value2(Pike_sp-1, data);
+	      Pike_sp--;
+	    }
+	  }
 	}
       }else{
 	code_entry(type_to_tag(val->type), 0,data);
@@ -2261,15 +2276,6 @@ static void decode_value2(struct decode_data *data)
 	  NUMTYPE PIKE_CONCAT(local_num_, NAME) = 0;
 #include "program_areas.h"
 
-	  /* Check the version. */
-	  decode_value2(data);
-	  f_version(0);
-	  if(!is_eq(Pike_sp-1,Pike_sp-2))
-	    Pike_error("Cannot decode programs encoded with other pike version.\n");
-	  pop_n_elems(2);
-
-	  debug_malloc_touch(p);
-
 	  /* Decode byte-order. */
 	  decode_number(byteorder, data);
 
@@ -2308,6 +2314,15 @@ static void decode_value2(struct decode_data *data)
 	      fputc('\n', stderr););
 	  mapping_insert(data->decoded, & data->counter, &tmp);
 	  data->counter.u.integer++;
+
+	  debug_malloc_touch(p);
+
+	  /* Check the version. */
+	  decode_value2(data);
+	  f_version(0);
+	  if(!is_eq(Pike_sp-1,Pike_sp-2))
+	    Pike_error("Cannot decode programs encoded with other pike version.\n");
+	  pop_n_elems(2);
 
 	  debug_malloc_touch(p);
 
@@ -2376,25 +2391,20 @@ static void decode_value2(struct decode_data *data)
 	    Pike_sp--;
 	  }
 
-	  /* Decode constants */
-	  for (e=0; e<local_num_constants; e++) {
+	  /* Place holder constants.
+	   *
+	   * These will be replaced later on.
+	   */
+	  {
 	    struct program_constant constant;
-	    /* value */
-	    decode_value2(data);
-	    constant.sval = Pike_sp[-1];
-	    /* name */
-	    decode_value2(data);
-	    if (Pike_sp[-1].type == T_STRING) {
-	      constant.name = Pike_sp[-1].u.string;
-	    } else if ((Pike_sp[-1].type == T_INT) &&
-		       !Pike_sp[-1].u.integer) {
-	      constant.name = NULL;
-	    } else {
-	      Pike_error("Non strings in string table.\n");
+	    constant.name = NULL;
+	    constant.sval.type = T_INT;
+	    constant.sval.subtype = NUMBER_UNDEFINED;
+	    constant.sval.u.integer = 0;
+
+	    for(e=0;e<local_num_constants;e++) {
+	      add_to_constants(constant);
 	    }
-	    
-	    add_to_constants(constant);
-	    Pike_sp -= 2;
 	  }
 
 	  /* Decode identifier_references, inherits and identifiers. */
@@ -2492,11 +2502,14 @@ static void decode_value2(struct decode_data *data)
 		 */
 
 		/* type */
-		push_string(get_type_of_svalue(&p->constants[id.func.offset].sval));
+		decode_value2(data);
+		if (Pike_sp[-1].type != T_TYPE) {
+		  Pike_error("Bad function type (not a type)\n");
+		}
 		id.type = Pike_sp[-1].u.string;
 
 		/* run_time_type */
-		id.run_time_type = p->constants[id.func.offset].sval.type;
+		decode_number(id.run_time_type, data);
 
 #ifdef PROFILING
 		id.self_time=0;
@@ -2596,6 +2609,28 @@ static void decode_value2(struct decode_data *data)
 		       p->PIKE_CONCAT(num_, NAME));			     \
 	  }
 #include "program_areas.h"
+
+	  /* Decode the actual constants
+	   *
+	   * This must be done after the program has been ended.
+	   */
+	  for (e=0; e<local_num_constants; e++) {
+	    struct program_constant *constant = p->constants+e;
+	    /* value */
+	    decode_value2(data);
+	    /* name */
+	    decode_value2(data);
+	    if (Pike_sp[-1].type == T_STRING) {
+	      constant->name = Pike_sp[-1].u.string;
+	    } else if ((Pike_sp[-1].type == T_INT) &&
+		       !Pike_sp[-1].u.integer) {
+	      constant->name = NULL;
+	    } else {
+	      Pike_error("Non strings in string table.\n");
+	    }
+	    constant->sval = Pike_sp[-2];
+	    Pike_sp -= 2;
+	  }
 	}
 	break;
 
@@ -2853,12 +2888,12 @@ void f_decode_value(INT32 args)
 
 #ifdef ENCODE_DEBUG
   int debug;
+#endif
   check_all_args("decode_value", args,
 		 BIT_STRING, BIT_VOID | BIT_OBJECT | BIT_INT, BIT_VOID | BIT_INT, 0);
+
+#ifdef ENCODE_DEBUG
   debug = args > 2 ? Pike_sp[2-args].u.integer : 0;
-#else
-  check_all_args("decode_value", args,
-		 BIT_STRING, BIT_VOID | BIT_OBJECT | BIT_INT, 0);
 #endif
 
   s = Pike_sp[-args].u.string;
