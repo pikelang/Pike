@@ -2,11 +2,11 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: main.c,v 1.200 2004/04/18 02:16:05 mast Exp $
+|| $Id: main.c,v 1.201 2004/09/16 00:18:35 nilsson Exp $
 */
 
 #include "global.h"
-RCSID("$Id: main.c,v 1.200 2004/04/18 02:16:05 mast Exp $");
+RCSID("$Id: main.c,v 1.201 2004/09/16 00:18:35 nilsson Exp $");
 #include "fdlib.h"
 #include "backend.h"
 #include "module.h"
@@ -177,7 +177,9 @@ static void get_master_key(HKEY cat)
 		  (LPCTSTR)("SOFTWARE\\Pike\\"
 			    DEFINETOSTR(PIKE_MAJOR_VERSION)
 			    "."
-			    DEFINETOSTR(PIKE_MINOR_VERSION)),
+			    DEFINETOSTR(PIKE_MINOR_VERSION)
+			    "."
+			    DEFINETOSTR(PIKE_BUILD_VERSION)),
 		  0,KEY_READ,&k)==ERROR_SUCCESS)
   {
     if(RegQueryValueEx(k,
@@ -335,7 +337,7 @@ int dbm_main(int argc, char **argv)
   if(master_location[CONSTANT_STRLEN(MASTER_COOKIE)])
     master_file=master_location + CONSTANT_STRLEN(MASTER_COOKIE);
 
-#if __NT__
+#ifdef __NT__
   if(!master_file) get_master_key(HKEY_CURRENT_USER);
   if(!master_file) get_master_key(HKEY_LOCAL_MACHINE);
 #endif
