@@ -47,6 +47,7 @@ string fix_xml_row(string in) {
 }
 
 mapping(string:array(array(string)|string)) docs = ([]);
+mapping(string:string) ref_alias = ([]);
 
 string preprocess_man(array(string) rows, string fn) {
 
@@ -195,13 +196,19 @@ string preprocess_man(array(string) rows, string fn) {
 
   mapping names = mkmapping(map(indices(prots), lower_case), indices(prots));
   fn = "gl" + fn;
-  string name;
-  if(name = names[fn+"4f"]) prots = ([ name[..sizeof(name)-3] : prots[name] ]);
-  else if(name = names[fn+"3f"]) prots = ([ name[..sizeof(name)-3] : prots[name] ]);
-  else if(name = names[fn+"2f"]) prots = ([ name[..sizeof(name)-3] : prots[name] ]);
-  else if(name = names[fn+"f"])  prots = ([ name[..sizeof(name)-2] : prots[name] ]);
-  else if(name = names[fn+"2"])  prots = ([ name[..sizeof(name)-2] : prots[name] ]);
-  else if(name = names[fn+"fv"]) prots = ([ name[..sizeof(name)-3] : prots[name] ]);
+  string name, new_name;
+  if(name = names[fn+"4f"]) new_name = name[..sizeof(name)-3];
+  else if(name = names[fn+"3f"]) new_name = name[..sizeof(name)-3];
+  else if(name = names[fn+"2f"]) new_name = name[..sizeof(name)-3];
+  else if(name = names[fn+"f"])  new_name = name[..sizeof(name)-2];
+  else if(name = names[fn+"2"])  new_name = name[..sizeof(name)-2];
+  else if(name = names[fn+"fv"]) new_name = name[..sizeof(name)-3];
+
+  if(new_name) {
+    foreach(indices(prots), string name)
+      ref_alias[name] = new_name;
+    prots = ([ new_name : prots[name] ]);
+  }
 
   // Assemble result
   string res = "";
@@ -391,6 +398,22 @@ string first_page() {
 mapping(string:array(string)) refs = ([]);
 
 void fix_refs() {
+  werror("Resolving references to renamed methods.\n");
+  foreach(docs; string func; array jox) {
+    string out = "";
+    string in = jox[1];
+    while( sscanf(in, "%s@[%s]%s", string a, string b, string c)==3 ) {
+      if(ref_alias[b]) {
+	werror("Remapped %O (%O)\n", b, func);
+	b = ref_alias[b];
+      }
+      out += a + "@[" + b + "]";
+      in = c;
+    }
+    jox[1] = out + in;
+  }
+
+  werror("Finding constant references.\n");
   foreach(indices(constants), string name) {
     array r = ({});
     foreach(docs; string func; array jox)
@@ -404,7 +427,6 @@ void main() {
 
   werror("Reading manpages.\n");
   prefetch();
-  werror("Finding constant references.\n");
   fix_refs();
 
   werror("Building documentation.\n");
@@ -422,8 +444,8 @@ void main() {
   foreach( funcEV, string func)
       doc += document(func, "VE") + "\n";
 
-  foreach( constants; string name; int value ) {
-    doc += "/*!@decl constant "+name+" " + value + "\n";
+  foreach( sort(indices(constants)), string name ) {
+    doc += "/*!@decl constant "+name+" " + constants[name] + "\n";
     if(refs[name])
       doc += " *! Used in " +
 	String.implode_nicely(map(refs[name],
