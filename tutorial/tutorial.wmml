@@ -3387,12 +3387,12 @@ contain one or more of the following letters:
 <tr valign=top><td> 'r' </td><td> open file for reading </td></tr>
 <tr valign=top><td> 'w' </td><td> open file for writing </td></tr>
 <tr valign=top><td> 'a' </td><td> open file for append (use with 'w') </td></tr>
-<tr valign=top><td> 't' </td><td> truncate file at close (use with 'w') </td></tr>
+<tr valign=top><td> 't' </td><td> truncate file at open (use with 'w') </td></tr>
 <tr valign=top><td> 'c' </td><td> create file if it doesn't exist (use with 'w') </td></tr>
 <tr valign=top><td> 'x' </td><td> fail if file already exist (use with 'c') </td></tr>
 </table>
 
-<p>How should _always_ contain at least one of 'r' or 'w'.
+<p><i>How</i> should _always_ contain at least one of 'r' or 'w'.
 <p>Returns 1 on success, 0 otherwise.
 </man_description>
 <man_see>Stdio.File-&gt;close</man_see>
