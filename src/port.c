@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: port.c,v 1.56 2002/10/11 01:39:36 nilsson Exp $
+|| $Id: port.c,v 1.57 2003/02/26 12:03:41 mast Exp $
 */
 
 #define PORT_DO_WARN
@@ -23,7 +23,7 @@
 #include <float.h>
 #include <string.h>
 
-RCSID("$Id: port.c,v 1.56 2002/10/11 01:39:36 nilsson Exp $");
+RCSID("$Id: port.c,v 1.57 2003/02/26 12:03:41 mast Exp $");
 
 #ifdef sun
 time_t time PROT((time_t *));
@@ -543,8 +543,10 @@ PMOD_EXPORT double STRTOD(const char * nptr, char **endptr)
 
  underflow:
   /* Return an underflow error.  */
+#if 0
   if (endptr != NULL)
     *endptr = (char *) nptr;
+#endif
   errno = ERANGE;
   return 0.0;
   
