@@ -17,6 +17,7 @@
  *   Support Pike 7.2, 7.0? 0.6???
  *   Allow it to run without X
  *   Allow it to run on Win32
+ *   Trap errors and exceptions
  *   (Add your own wishes here)
  */
 
@@ -2567,7 +2568,7 @@ class Debug
 
 int main(int argc, string *argv)
 {
-  write(#"UNBUG $Id: unbug,v 1.1 2001/04/25 21:28:38 hubbe Exp $
+  write(#"UNBUG $Id: unbug,v 1.2 2001/04/25 21:38:21 hubbe Exp $
 Copyright 2001, Roxen Internet Services AB.
 UNBUG is free software, covered by the GNU General Public License, and you are
 welcome to change it and/or distribute copies of it under certain conditions.
