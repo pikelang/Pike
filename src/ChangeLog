@@ -1,3 +1,13 @@
+Sun Sep  6 01:32:48 1998  Henrik Grubbström  <grubba@idonex.se>
+
+	* modules/HTTPAccept/timeout.c (aap_exit_timeouts): Added function.
+	* modules/HTTPAccept/timeout.c (handle_timeouts): Can now terminate.
+	* modules/HTTPAccept/timeout.c (aap_init_timeouts): Now uses
+ 	th_create_small() instead of th_farm().
+	* modules/HTTPAccept/accept_and_parse.c (aap_handle_connection):
+	Fixed timeout handling bug.
+	* threads.h (th_join): Added function.
+
 Mon Jun  8 17:03:59 1998  Henrik Grubbström  <grubba@idonex.se>
 
 	* fd_control.c (set_close_on_exec, do_close_on_exec): Added fallback
