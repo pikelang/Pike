@@ -952,11 +952,7 @@ class YMD
    cMinute minute(void|int n,int ... time) 
    { 
       if (sizeof(time))
-      {
-	 if (n==number_of_hours())
-	    return (hour(-1)+1)->minute(time[0]);
-	 return hour(n)->minute(time[0]);
-      }
+	 return minute(n*60+time[0]);
       return get_unit("minute",n); 
    }
    array(cMinute) minutes(int ...range)
@@ -2435,8 +2431,12 @@ static TimeRange dwim_zone(TimeRange origin,string zonename,
 {
    if (zonename=="") return 0;
 
+   if (zonename[0]=='"') sscanf(zonename,"\"%s\"",zonename);
+   sscanf(zonename,"%*[ \t]%s",zonename);
+
    if (origin->rules->abbr2zone[zonename])
       zonename=origin->rules->abbr2zone[zonename];
+
    Ruleset.Timezone zone=Timezone[zonename];
    if (!zone)
    {
@@ -2455,7 +2455,7 @@ static TimeRange dwim_zone(TimeRange origin,string zonename,
 
 static mapping(string:array) parse_format_cache=([]);
 
-TimeRange parse(string fmt,string arg)
+TimeRange parse(string fmt,string arg,void|TimeRange context)
 {
    [string nfmt,array q]=(parse_format_cache[fmt]||({0,0}));
 
@@ -2465,12 +2465,12 @@ TimeRange parse(string fmt,string arg)
 #define ALNU "%[^- -,./:-?[-`{-¿]"
 #define AMPM "%[ampAMP]"
 #define NUME "%[0-9]"
-
+#define ZONE "%[-+0-9A-Za-z/]"
       nfmt=replace(fmt,
 		   ({"%Y","%y","%M","%W","%D","%a","%e","%h","%m","%s","%p",
 		     "%t","%f","%d","%z","%n"}),
 		   ({ALNU,ALNU,ALNU,"%d",NUME,"%d",ALNU,"%d","%d","%d",AMPM,
-		     NUME,NUME,NUME,"%[-+0-9A-Za-z/]","%s"}));
+		     NUME,NUME,NUME,ZONE,"%s"}));
 
 #if 1
       q=array_sscanf(fmt,"%{%*[^%]%%%1s%}")*({})*({})-({"*","%"});
@@ -2484,6 +2484,8 @@ TimeRange parse(string fmt,string arg)
       int i=-1;
       while ((i=search(pr,'%',i+1))!=-1) q+=({sprintf("%c",pr[i+1])});
 #endif
+      if (sizeof(q)==0) error("format doesn't contain anything to parse\n");
+      if (q[-1]=="z") nfmt=replace(nfmt,ZONE,"%s");
       parse_format_cache[fmt]=({nfmt,q});
    }
 
@@ -2497,6 +2499,8 @@ TimeRange parse(string fmt,string arg)
 
    mapping m=mkmapping(q,res);
    if (i!=-1 && m->n!="") return 0; 
+
+//     werror("%O\n",m);
 
 //     werror("bopa %O\n %O\n %O\n %O\n",fmt,arg,nfmt,m);
 
@@ -2550,7 +2554,7 @@ TimeRange parse(string fmt,string arg)
 	    }
 	    low=m->year=cal->Year(m->y);
 	 }
-	 else low=m->year=cal->Year();
+	 else low=m->year=context?context->year():cal->Year();
 
 	 if (m->M)
 	 {
@@ -2560,13 +2564,15 @@ TimeRange parse(string fmt,string arg)
 	    m->week=low=m->year->week("w"+m->W);
 
 	 if (!zero_type(m->D))
-	    m->day=low=(m->month||cal->Month())->day((int)m->D);
+	    m->day=low=(m->month||(context?context->month():cal->Month()))
+	       ->day((int)m->D);
 	 else if (!zero_type(m->a))
 	    m->day=low=m->year->day(m->a);
 	 else if (!zero_type(m->e))
-	    m->day=low=(m->week||cal->Week())->day(m->e);
+	    m->day=low=(m->week||(context?context->week():cal->Week()))
+	       ->day(m->e);
 	 else
-	    low=m->day=cal->Day();
+	    low=m->day=context?context->day():cal->Day();
 
 	 if (m->day && zero_type(m->Y) && zero_type(m->y) && m->e)
 	    if (m->month)
@@ -2650,6 +2656,7 @@ TimeRange parse(string fmt,string arg)
 }
 
 //! function Day dwim_day(string date)
+//! function Day dwim_day(string date,TimeRange context)
 //!	Tries a number of different formats on the given date (in order):
 //!	<pre>
 //!     <ref>parse</ref> format                  as in
@@ -2713,7 +2720,7 @@ Calendar.dwim_day("next monday");
 
 */
 
-array dwim_day_strings=
+static constant dwim_day_strings=
 ({
   "%y-%M-%D (%*s) -W%W-%e (%e)",
   "%y-%M-%D",
@@ -2736,27 +2743,27 @@ array dwim_day_strings=
   "%d"
 });
 
-cDay dwim_day(string day)
+cDay dwim_day(string day,void|TimeRange context)
 {
    cDay d;
 
    foreach ( dwim_day_strings, 
 	     string dayformat)
-      if ( (d=parse(dayformat+"%n",day)) ) 
+      if ( (d=parse(dayformat+"%n",day,context)) ) 
 	 return d;
 
    cDay t=Day();
-   if ( (d=parse("%e",day)) )
+   if ( (d=parse("%e",day,context)) )
    {
       if (d>=t) return d;
       else return (d->week()+1)->place(d);
    }
 
-   if (strlen(day)==4) catch { return parse("%M/%D",day/2*"/"); };
+   if (strlen(day)==4) catch { return parse("%M/%D",day/2*"/",context); };
 
-   if (day=="today") return t;
-   if (day=="tomorrow") return t+1;
-   if (day=="yesterday") return t-1;
+   if (day=="today") return context?context->day():t;
+   if (day=="tomorrow") return (context?context->day():t)+1;
+   if (day=="yesterday") return (context?context->day():t)-1;
    if (sscanf(day,"last %s",day))
    {
       cDay d=dwim_day(day);
@@ -2771,7 +2778,7 @@ cDay dwim_day(string day)
    error("Failed to dwim day from %O\n",day);
 }
 
-TimeofDay dwim_time(string what)
+TimeofDay dwim_time(string what,void|TimeRange cx)
 {
    string a,h,m,s;
    TimeofDay t;
@@ -2779,7 +2786,9 @@ TimeofDay dwim_time(string what)
 // #define COLON "$*[ :]" 
 #define COLON ":" 
 
-   if (t=parse("%e %M %D %h:%m:%s %Y",what)) return t; // ctime
+   sscanf(what,"%*[ \t]%s",what);
+
+   if (t=parse("%e %M %D %h:%m:%s %Y",what,cx)) return t; // ctime
 
    foreach ( dwim_day_strings +
 	     ({""}),
@@ -2816,12 +2825,12 @@ TimeofDay dwim_time(string what)
 //  		todformat+"%*[ ,]"+dayformat);
 	 if (dayformat=="") 
 	 {
-	    if ( (t=parse(todformat+"%*[ ]%n",what)) ) return t;
+	    if ( (t=parse(todformat+"%*[ ]%n",what,cx)) ) return t;
 	 }
 	 else
 	 {
-	    if ( (t=parse(dayformat+"%*[ ,]"+todformat,what)) ) return t;
-	    if ( (t=parse(todformat+"%*[ ,]"+dayformat,what)) ) return t;
+	    if ( (t=parse(dayformat+"%*[ ,]"+todformat,what,cx)) ) return t;
+	    if ( (t=parse(todformat+"%*[ ,]"+dayformat,what,cx)) ) return t;
 	 }
       }
 

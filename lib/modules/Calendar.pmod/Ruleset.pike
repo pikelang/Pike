@@ -73,6 +73,14 @@ mapping(string:string) abbr2zone=
    "GST":"Asia/Dubai",
    "IST":"Asia/Jerusalem",
    "WST":"Australia/Perth",
+
+// written out names -> standard abbreviation
+   "Pacific Daylight Time":"PDT",
+   "Pacific Standard Time":"PST",
+   "Central Daylight Time":"CDT",
+   "Central Standard Time":"CST",
+   "Eastern Daylight Time":"EDT",
+   "Eastern Standard Time":"EST",
 ]);
 
 this_program set_timezone(string|Timezone t)
