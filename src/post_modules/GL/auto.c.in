@@ -2,14 +2,14 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: auto.c.in,v 1.27 2003/11/09 01:24:35 nilsson Exp $
+|| $Id: auto.c.in,v 1.28 2004/09/06 11:47:49 grubba Exp $
 */
 
 #include "global.h"
 
 #include "config.h"
 
-RCSID("$Id: auto.c.in,v 1.27 2003/11/09 01:24:35 nilsson Exp $");
+RCSID("$Id: auto.c.in,v 1.28 2004/09/06 11:47:49 grubba Exp $");
 #include "stralloc.h"
 #include "pike_macros.h"
 #include "object.h"
@@ -30,6 +30,9 @@ RCSID("$Id: auto.c.in,v 1.27 2003/11/09 01:24:35 nilsson Exp $");
 #ifdef HAVE_GL_GL_H
 #include <GL/gl.h>
 #endif /* HAVE_GL_GL_H */
+#ifdef HAVE_OPENGL_GL_H
+#include <OpenGL/gl.h>
+#endif /* HAVE_OPENGL_GL_H */
 
 
 #define sp Pike_sp
