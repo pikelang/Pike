@@ -24,7 +24,7 @@ s///g'
 
 silent_do_cmd() {
   if [ $USE_SPRSH = yes ]; then
-    sprsh "$*"
+    sprsh "$@"
   else
     BATFILE=TMP$$.bat
     PWD=`pwd`
@@ -36,7 +36,7 @@ silent_do_cmd() {
     fi
     echo >>$BATFILE "$NTDRIVE"
     echo >>$BATFILE "cd $RPWD"
-    echo >>$BATFILE "$*"
+    echo >>$BATFILE "$@"
     rsh $NTHOST $NTDRIVE$RPWD\\$BATFILE
     if [ x$CLEANUP = xyes ]; then
       rm $BATFILE || :

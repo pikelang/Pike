@@ -5,8 +5,8 @@ dest=`eval echo '$'$#`
 case "x$dest" in
   x[a-zA-Z]:*)
     . $NTTOOLS
-    do_cmd "copy `fixpath $*`"
-    exit 0
+    do_cmd copy `fixpath $*`
+    exit $?
   ;;
 esac
 

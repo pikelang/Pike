@@ -20,8 +20,29 @@ void handle_incoming_connection(object(Stdio.File) io)
 
   write("Doing "+cmd*" "+"\n");
 
-  switch(cmd[0])
+  switch(lower_case(cmd[0]))
   {
+    case "mkdir":
+    {
+      io->write(sprintf("%4c",0));
+      mkdir(combine_path(combine_path(getcwd(),dir),cmd[1]));
+      io->write(sprintf("%4c",0));
+      break;
+    }
+
+    case "copy":
+    {
+      string from=combine_path(combine_path(getcwd(),dir),cmd[1]);
+      string to=combine_path(combine_path(getcwd(),dir),cmd[2]);
+
+      if(mixed stat=file_stat(to))
+	if(stat[1]==-2)
+	  to=combine_path(to,cmd[1]);
+
+      io->write(sprintf("%4c",0));
+      io->write(sprintf("%4c",!Stdio.cp(from,to)));
+      break;
+    }
     case "getenv":
     {
       string s=getenv(cmd[1])+"\n";
@@ -79,6 +100,7 @@ int main(int argc, string *argv)
 
   string *hosts=gethostbyname(argv[2])[1];
 
+  write("Ready.\n");
   while(1)
   {
     if(object io=accept())

@@ -15,8 +15,8 @@ case "x$dest" in
      set -- "$1.exe" "$2"
    fi
     
-    do_cmd "copy `fixpath $*`"
-    exit 0
+    do_cmd copy `fixpath $*`
+    exit $?
   ;;
 esac
 

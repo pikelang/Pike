@@ -77,8 +77,20 @@ while test "$#" != 0; do
     -R | -L) shift ;;
     -R* | -L* | -Wl*)  ;;
 
+    -W)
+      CFLAGS="$CFLAGS -w2"
+    ;;
+
+    -Wall)
+      CFLAGS="$CFLAGS -wx"
+    ;;
+
     -D*)
-      CFLAGS="$CFLAGS `echo $1 | sed -e 's/^-I/-d/g'`"
+      CFLAGS="$CFLAGS `echo $1 | sed -e 's/^-D/-d/g'`"
+    ;;
+
+    -U*)
+      CFLAGS="$CFLAGS `echo $1 | sed -e 's/^-U/-u/g'`"
     ;;
 
     -l*)
