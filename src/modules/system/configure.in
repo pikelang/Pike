@@ -1,4 +1,4 @@
-# $Id: configure.in,v 1.39 2000/12/06 12:36:23 mirar Exp $
+# $Id: configure.in,v 1.40 2000/12/27 09:51:30 mirar Exp $
 AC_INIT(system.c)
 AC_CONFIG_HEADER(system_machine.h)
 
@@ -237,7 +237,7 @@ res=setrlimit(RLIMIT_CPU,&rl);
 res=getrlimit(RLIMIT_CPU,&rl);
 #else
 res=setrlimit(0,&rl);
-res=getrlimit(RLIMIT_CPU,&rl);
+res=getrlimit(0,&rl);
 #endif
 ],pike_cv_setrlimit_syntax_bsd43=yes,pike_cv_setrlimit_syntax_bsd43=no)
 ])
@@ -250,6 +250,7 @@ AC_TRY_COMPILE([
 ],[
 struct rlimit rl;
 int res;
+rlim_t dummy=(rlim_t)17;
 rl.rlim_cur=(rlim_t)60;
 rl.rlim_max=(rlim_t)60;
 #ifdef RLIMIT_CPU
@@ -257,16 +258,18 @@ res=setrlimit(RLIMIT_CPU,&rl);
 res=getrlimit(RLIMIT_CPU,&rl);
 #else
 res=setrlimit(0,&rl);
-res=getrlimit(RLIMIT_CPU,&rl);
+res=getrlimit(0,&rl);
 #endif
 ],pike_cv_setrlimit_syntax_standard=yes,pike_cv_setrlimit_syntax_standard=no)
 ])
 
 if test "$pike_cv_setrlimit_syntax_standard" = yes; then
   AC_MSG_RESULT(standard)
+  AC_DEFINE(HAVE_SYS_RESOURCE_H)
   AC_DEFINE(SETRLIMIT_SYNTAX_STANDARD)
 else if test "$pike_cv_setrlimit_syntax_bsd43" = yes; then
   AC_MSG_RESULT(BSD 4.3)
+  AC_DEFINE(HAVE_SYS_RESOURCE_H)
   AC_DEFINE(SETRLIMIT_SYNTAX_BSD43)
 else
   AC_MSG_RESULT(unknown)

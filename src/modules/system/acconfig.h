@@ -1,5 +1,5 @@
 /*
- * $Id: acconfig.h,v 1.6 2000/12/06 12:36:23 mirar Exp $
+ * $Id: acconfig.h,v 1.7 2000/12/27 09:51:29 mirar Exp $
  *
  * System dependant definitions for the system module for Pike
  *
@@ -41,5 +41,8 @@
 
 /* Define if the get/setrlimit syntax is unknown */
 #undef SETRLIMIT_SYNTAX_UNKNOWN
+
+/* Define if you have the <sys/resource.h> header file.  */
+#undef HAVE_SYS_RESOURCE_H
 
 #endif /* SYSTEM_MACHINE_H */
