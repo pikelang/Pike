@@ -1,4 +1,4 @@
-test_true([["$Id: testsuite.in,v 1.76 1998/03/01 03:34:48 hubbe Exp $"]])
+test_true([["$Id: testsuite.in,v 1.77 1998/03/13 21:44:26 grubba Exp $"]])
 test_eq(1e1,10.0)
 test_eq(1E1,10.0)
 test_eq(1e+1,10.0)
@@ -1656,6 +1656,9 @@ test_equal(Array.diff("qadfgoksdfäojerjgöohjgdgkm"/"",
               ({ ({ "x" }), "adfgok"/"", ({}), ({ "ä" }), ({ "l" }),
                  "oje"/"", ({ "o" }), "rjgöo"/"", ({ "y" }), "jgdgkm"/"",
                  "zzz"/"" }) }))
+test_equal(Array.diff("123.org"/"","http://123.org/"/""),
+	   ({ ({ ({}), "123.org"/"", ({}) }),
+	      ({ "http://"/"", "123.org"/"", ({ "/" }) }) }))
 
 
 // - equal
