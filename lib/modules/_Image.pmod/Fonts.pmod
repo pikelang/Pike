@@ -1,7 +1,8 @@
 #pike __REAL_VERSION__
 
 //! @appears Image.Fonts
-//! Abstracted Font-handling support
+//! Abstracted Font-handling support. Should be used instead of
+//! accessing the FreeType, TTF and Image.Font modules directly.
 
 constant ITALIC = 1;
 //! The font is/should be italic
