@@ -1,9 +1,9 @@
-/* $Id: image.c,v 1.190 2001/07/18 18:49:58 nilsson Exp $ */
+/* $Id: image.c,v 1.191 2001/07/19 21:10:40 nilsson Exp $ */
 
 /*
 **! module Image
 **! note
-**!	$Id: image.c,v 1.190 2001/07/18 18:49:58 nilsson Exp $
+**!	$Id: image.c,v 1.191 2001/07/19 21:10:40 nilsson Exp $
 **! class Image
 **!
 **!	The main object of the <ref>Image</ref> module, this object
@@ -98,7 +98,7 @@
 
 #include "stralloc.h"
 #include "global.h"
-RCSID("$Id: image.c,v 1.190 2001/07/18 18:49:58 nilsson Exp $");
+RCSID("$Id: image.c,v 1.191 2001/07/19 21:10:40 nilsson Exp $");
 #include "pike_macros.h"
 #include "object.h"
 #include "constants.h"
@@ -3483,7 +3483,7 @@ static void image_outline_mask(INT32 args)
 }
 
 /*
-**! method object modify_by_intensity(int r,int g,int b,int|array(int) v1,...,int|array(int) vn)
+**! method object modify_by_intensity(int r,int g,int b,int|array(int) ... vn)
 **!    Recolor an image from intensity values.
 **!
 **!    For each color an intensity is calculated, from r, g and b factors
@@ -3829,7 +3829,7 @@ static void image_apply_curve( INT32 args )
 
 /*
 **! method object gamma(float g)
-**! method object gamma(float gred,ggreen,gblue)
+**! method object gamma(float gred, float ggreen, float gblue)
 **!     Calculate pixels in image by gamma curve.
 **!
 **!	Intensity of new pixels are calculated by:<br>

@@ -1,4 +1,4 @@
-/* $Id: html.c,v 1.145 2001/07/17 03:30:03 nilsson Exp $ */
+/* $Id: html.c,v 1.146 2001/07/19 21:09:07 nilsson Exp $ */
 
 #include "global.h"
 #include "config.h"
@@ -853,9 +853,9 @@ static void html__set_entity_callback(INT32 args)
 **! method Parser.HTML add_container(string name,mixed to_do)
 **! method Parser.HTML add_entity(string entity,mixed to_do)
 **! method Parser.HTML add_quote_tag(string name,mixed to_do,string end)
-**! method Parser.HTML add_tags(mapping(string:mixed))
-**! method Parser.HTML add_containers(mapping(string:mixed))
-**! method Parser.HTML add_entities(mapping(string:mixed))
+**! method Parser.HTML add_tags(mapping(string:mixed) tags)
+**! method Parser.HTML add_containers(mapping(string:mixed) containers)
+**! method Parser.HTML add_entities(mapping(string:mixed) entities)
 **!	Registers the actions to take when parsing various things.
 **!	Tags, containers, entities are as usual. add_quote_tag() adds
 **!	a special kind of tag that reads any data until the next
@@ -867,10 +867,10 @@ static void html__set_entity_callback(INT32 args)
 **!
 **!	<li><b>a function</b> to be called. The function is on the form
 **!	<pre>
-**!     mixed tag_callback(Parser.HTML parser,mapping args,mixed ...extra)
-**!	mixed container_callback(Parser.HTML parser,mapping args,string content,mixed ...extra)
-**!	mixed entity_callback(Parser.HTML parser,mixed ...extra)
-**!	mixed quote_tag_callback(Parser.HTML parser,string content,mixed ...extra)
+**!     mixed tag_callback(Parser.HTML parser,mapping args,mixed ... extra)
+**!	mixed container_callback(Parser.HTML parser,mapping args,string content,mixed ... extra)
+**!	mixed entity_callback(Parser.HTML parser,mixed ... extra)
+**!	mixed quote_tag_callback(Parser.HTML parser,string content,mixed ... extra)
 **!	</pre>
 **!	depending on what realm the function is called by.</li>
 **!
@@ -4004,7 +4004,7 @@ static void html_read(INT32 args)
 }
 
 /*
-**! method Parser.HTML write_out(mixed...)
+**! method Parser.HTML write_out(mixed ... args)
 **!	Send data to the output stream, i.e. it won't be parsed and
 **!	it won't be sent to the data callback, if any.
 **!
@@ -4662,7 +4662,7 @@ static void html_create(INT32 args)
 }
 
 /*
-**! method Parser.HTML clone(mixed ...)
+**! method Parser.HTML clone(mixed ... args)
 **!	Clones the <ref>Parser.HTML</ref> object.
 **!	A new object of the same class is created,
 **!	filled with the parse setup from the 

@@ -1,11 +1,11 @@
 #include "global.h"
 
-/* $Id: colortable.c,v 1.104 2001/07/18 18:49:58 nilsson Exp $ */
+/* $Id: colortable.c,v 1.105 2001/07/19 21:09:56 nilsson Exp $ */
 
 /*
 **! module Image
 **! note
-**!	$Id: colortable.c,v 1.104 2001/07/18 18:49:58 nilsson Exp $
+**!	$Id: colortable.c,v 1.105 2001/07/19 21:09:56 nilsson Exp $
 **! class Colortable
 **!
 **!	This object keeps colortable information,
@@ -21,7 +21,7 @@
 /* #define COLORTABLE_REDUCE_DEBUG */
 /* #define CUBICLE_DEBUG */
 
-RCSID("$Id: colortable.c,v 1.104 2001/07/18 18:49:58 nilsson Exp $");
+RCSID("$Id: colortable.c,v 1.105 2001/07/19 21:09:56 nilsson Exp $");
 
 #include <math.h> /* fabs() */
 
@@ -2414,7 +2414,7 @@ void image_colortable_reduce_fs(INT32 args)
 
 
 /*
-**! method object `+(object with,...)
+**! method object `+(object with, mixed ... more)
 **!	sums colortables
 **! returns the resulting new <ref>Colortable</ref> object
 **!
@@ -2467,7 +2467,7 @@ void image_colortable_operator_plus(INT32 args)
 }
 
 /*
-**! method object `-(object with,...)
+**! method object `-(object with, mixed ... more)
 **!	subtracts colortables
 **! returns the resulting new <ref>Colortable</ref> object
 **!

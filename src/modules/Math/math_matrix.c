@@ -1,4 +1,4 @@
-/* $Id: math_matrix.c,v 1.30 2001/07/16 13:20:32 grubba Exp $ */
+/* $Id: math_matrix.c,v 1.31 2001/07/19 21:12:02 nilsson Exp $ */
 
 #include "global.h"
 #include "config.h"
@@ -120,8 +120,8 @@ extern struct program *math_lmatrix_program;
 #undef FTYPE
 
 /*
-**! method void create(array(array(int|float)))
-**! method void create(array(int|float))
+**! method void create(array(array(int|float)) 2d_matrix)
+**! method void create(array(int|float) 1d_matrix)
 **! method void create(int n,int m)
 **! method void create(int n,int m,string type)
 **! method void create(int n,int m,float|int init)

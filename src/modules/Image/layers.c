@@ -1,7 +1,7 @@
 /*
 **! module Image
 **! note
-**!	$Id: layers.c,v 1.71 2001/07/17 03:44:13 nilsson Exp $
+**!	$Id: layers.c,v 1.72 2001/07/19 21:10:56 nilsson Exp $
 **! class Layer
 **! see also: layers
 **!
@@ -216,7 +216,7 @@
 
 #include <math.h> /* floor */
 
-RCSID("$Id: layers.c,v 1.71 2001/07/17 03:44:13 nilsson Exp $");
+RCSID("$Id: layers.c,v 1.72 2001/07/19 21:10:56 nilsson Exp $");
 
 #include "image_machine.h"
 
@@ -2895,8 +2895,8 @@ void img_lay(struct layer **layer,
 
 /*
 **! module Image
-**! method Image.Layer lay(array(Image.Layer|mapping))
-**! method Image.Layer lay(array(Image.Layer|mapping),int xoffset,int yoffset,int xsize,int ysize)
+**! method Image.Layer lay(array(Image.Layer|mapping) layers)
+**! method Image.Layer lay(array(Image.Layer|mapping) layers,int xoffset,int yoffset,int xsize,int ysize)
 **!	Combine layers.
 **! returns a new layer object.
 **!

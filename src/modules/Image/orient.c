@@ -1,9 +1,9 @@
-/* $Id: orient.c,v 1.18 2000/12/01 08:10:02 hubbe Exp $ */
+/* $Id: orient.c,v 1.19 2001/07/19 21:11:12 nilsson Exp $ */
 
 /*
 **! module Image
 **! note
-**!	$Id: orient.c,v 1.18 2000/12/01 08:10:02 hubbe Exp $
+**!	$Id: orient.c,v 1.19 2001/07/19 21:11:12 nilsson Exp $
 **! class Image
 */
 
@@ -67,7 +67,7 @@ static void chrono(char *x)
 #endif
 
 /*
-**! method object orient(void|array(object))
+**! method object orient(void|array(object) something)
 **! method array(object) orient4()
 **!	Draws images describing the orientation
 **!     of the current image.

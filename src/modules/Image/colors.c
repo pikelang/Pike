@@ -1,7 +1,7 @@
 /*
 **! module Image
 **! note
-**!	$Id: colors.c,v 1.53 2001/07/18 18:49:58 nilsson Exp $
+**!	$Id: colors.c,v 1.54 2001/07/19 21:09:37 nilsson Exp $
 **! submodule Color
 **!
 **!	This module keeps names and easy handling 
@@ -179,7 +179,7 @@
 
 #include "global.h"
 
-RCSID("$Id: colors.c,v 1.53 2001/07/18 18:49:58 nilsson Exp $");
+RCSID("$Id: colors.c,v 1.54 2001/07/19 21:09:37 nilsson Exp $");
 
 #include "image_machine.h"
 
@@ -1454,7 +1454,7 @@ static void image_make_color(INT32 args)
 **! module Image
 **! submodule Color
 **!
-**! method object guess(string)
+**! method object guess(string color)
 **!	This is equivalent to
 **!	<tt><ref>Image.Color</ref>(lower_case(str)-" ")</tt>,
 **!	and tries the color with a prepending '#' if no 
