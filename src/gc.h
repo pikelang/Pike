@@ -1,5 +1,5 @@
 /*
- * $Id: gc.h,v 1.85 2001/08/20 18:08:13 mast Exp $
+ * $Id: gc.h,v 1.86 2001/09/06 16:53:44 mast Exp $
  */
 #ifndef GC_H
 #define GC_H
@@ -204,6 +204,8 @@ void describe_location(void *real_memblock,
 		       int flags);
 void debug_gc_fatal(void *a, int flags, const char *fmt, ...);
 void debug_gc_xmark_svalues(struct svalue *s, ptrdiff_t num, char *fromwhere);
+void debug_gc_xmark_svalues2(struct svalue *s, ptrdiff_t num,
+			     int data_type, void *data, char *fromwhere);
 void debug_gc_check_svalues2(struct svalue *s, ptrdiff_t num,
 			     int data_type, void *data, char *fromwhere);
 void debug_gc_check_weak_svalues2(struct svalue *s, ptrdiff_t num,
@@ -315,7 +317,8 @@ void cleanup_gc(void);
 #define debug_gc_check_weak_svalues2(S,N,T,V,F) gc_check_weak_svalues((S),N)
 #define debug_gc_check_short_svalue2(S,N,T,V,F) gc_check_short_svalue((S),N)
 #define debug_gc_check_weak_short_svalue2(S,N,T,V,F) gc_check_weak_short_svalue((S),N)
-#define debug_gc_xmark_svalues(S,N,X) gc_xmark_svalues((S),N)
+#define debug_gc_xmark_svalues(S,N,F) gc_xmark_svalues((S),N)
+#define debug_gc_xmark_svalues2(S,N,T,V,F) gc_xmark_svalues((S),N)
 #define debug_gc_check2(VP,T,V,F) gc_check((VP))
 #endif
 
@@ -332,10 +335,10 @@ void cleanup_gc(void);
 #define gc_is_referenced(X) !(get_marker(X)->flags & GC_NOT_REFERENCED)
 #endif
 
-#define gc_external_mark2(X,Y,Z) \
-  DMALLOC_TOUCH_MARKER(X, gc_external_mark3( debug_malloc_pass(X),(Y),(Z)))
+#define gc_external_mark2(X,IN,WHERE) \
+  DMALLOC_TOUCH_MARKER(X, gc_external_mark3( debug_malloc_pass(X),(IN),(WHERE)))
 #define gc_external_mark(X) \
-  DMALLOC_TOUCH_MARKER(X, gc_external_mark2( (X)," externally", 0))
+  DMALLOC_TOUCH_MARKER(X, gc_external_mark2( (X), 0, " externally"))
 
 #define add_gc_callback(X,Y,Z) \
   dmalloc_touch(struct callback *,debug_add_gc_callback((X),(Y),(Z)))

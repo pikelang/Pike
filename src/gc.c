@@ -30,7 +30,7 @@ struct callback *gc_evaluator_callback=0;
 
 #include "block_alloc.h"
 
-RCSID("$Id: gc.c,v 1.172 2001/08/30 23:21:54 mast Exp $");
+RCSID("$Id: gc.c,v 1.173 2001/09/06 16:53:43 mast Exp $");
 
 /* Run garbage collect approximately every time
  * 20 percent of all arrays, objects and programs is
@@ -633,6 +633,8 @@ static void gdb_gc_stop_here(void *a, int weak)
       describe_something(found_in, found_in_type, 2, 0, DESCRIBE_MEM, 0);
     }
   }
+  else
+    fputc('\n', stderr);
   fprintf(stderr,"----------end------------\n");
 }
 
@@ -642,6 +644,19 @@ void debug_gc_xmark_svalues(struct svalue *s, ptrdiff_t num, char *fromwhere)
   if (fromwhere) found_where = fromwhere;
   found_in=(void *) -1;
   found_in_type=-1;
+  gc_xmark_svalues(s,num);
+  found_where=old_found_where;
+  found_in_type=PIKE_T_UNKNOWN;
+  found_in=0;
+}
+
+void debug_gc_xmark_svalues2(struct svalue *s, ptrdiff_t num,
+			     int data_type, void *data, char *fromwhere)
+{
+  char *old_found_where = found_where;
+  if (fromwhere) found_where = fromwhere;
+  found_in=data;
+  found_in_type=data_type;
   gc_xmark_svalues(s,num);
   found_where=old_found_where;
   found_in_type=PIKE_T_UNKNOWN;
