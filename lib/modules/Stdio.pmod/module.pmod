@@ -1,4 +1,4 @@
-// $Id: module.pmod,v 1.199 2004/04/07 09:33:47 nilsson Exp $
+// $Id: module.pmod,v 1.200 2004/04/07 20:00:53 grubba Exp $
 #pike __REAL_VERSION__
 
 inherit files;
@@ -664,6 +664,7 @@ class File
   //!
   int assign(File|Fd o)
   {
+    BE_WERR("assign()\n");
     is_file = o->is_file;
     if((program)Fd == (program)object_program(o))
     {
@@ -671,13 +672,12 @@ class File
     }else{
       File _o = [object(File)]o;
       _fd = _o->_fd;
-      ___read_callback = _o->___read_callback;
-      ___write_callback = _o->___write_callback;
-      ___close_callback = _o->___close_callback;
-      ___read_oob_callback = _o->___read_oob_callback;
-      ___write_oob_callback = _o->___write_oob_callback;
-      ___id = _o->___id;
-      fix_internal_callbacks();
+      set_read_callback(_o->query_read_callback());
+      set_write_callback(_o->query_write_callback());
+      set_close_callback(_o->query_close_callback());
+      set_read_oob_callback(_o->query_read_oob_callback());
+      set_write_oob_callback(_o->query_write_oob_callback());
+      set_id(_o->query_id());
     }
     return 0;
   }
@@ -692,6 +692,7 @@ class File
   //! @[assign()]
   File dup()
   {
+    BE_WERR("dup()\n");
     File to = File();
     to->is_file = is_file;
     to->_fd = _fd;
@@ -897,6 +898,7 @@ class File
 #define CBFUNC(TYPE, X)					\
   void set_##X (TYPE l##X)				\
   {							\
+    BE_WERR(sprintf("setting " #X " to %O\n", l##X));	\
     SET( X , l##X );					\
   }							\
 							\
@@ -1025,6 +1027,7 @@ class File
 
   void set_read_callback(function(void|mixed,void|string:void|mixed) read_cb)
   {
+    BE_WERR(sprintf("setting read_callback to %O\n", read_cb));
     ::set_read_callback(((___read_callback = read_cb) &&
 			 __stdio_read_callback) ||
 			(___close_callback && __stdio_close_callback));
@@ -1054,6 +1057,7 @@ class File
 
   static void fix_internal_callbacks()
   {
+    BE_WERR("fix_internal_callbacks()\n");
     ::set_read_callback ((___read_callback && __stdio_read_callback) ||
 			 (___close_callback && __stdio_close_callback));
     ::set_write_callback (___write_callback && __stdio_write_callback);
@@ -1211,11 +1215,15 @@ class File
    
   static void destroy()
   {
+    BE_WERR("destroy()");
     // Avoid cyclic refs.
-    FREE_CB(read_callback);
-    FREE_CB(write_callback);
-    FREE_CB(read_oob_callback);
-    FREE_CB(write_oob_callback);
+    // Not a good idea; the fd may have been
+    // given to another object (assign() or dup()).
+    //	/grubba 2004-04-07
+    // FREE_CB(read_callback);
+    // FREE_CB(write_callback);
+    // FREE_CB(read_oob_callback);
+    // FREE_CB(write_oob_callback);
 
     register_close_file (open_file_id);
   }
