@@ -33,16 +33,38 @@ mixed `[]=(mixed key, mixed val)
   return val;
 }
 
+void set_many(array(mixed) key, array(mixed) val)
+{
+  if(sizeof(key) > sizeof(data)/10)
+  {
+    /* substatial update */
+    data|=mkmapping(key,val);
+    save();
+  }else{
+    /* insubstantial update */
+    data|=mkmapping(key,val);
+
+    if(!log) log=Stdio.File(file+".log","wct");
+    log->write(Array.map(Array.map(Array.transpose( ({key, val}) ),
+				   encode_value),
+			 replace,"\0","\0\1")*"\0\0" + "\0\0");
+  }
+
+}
+
 void create(string f)
 {
   werror("Cache: %s",f);
   file=f;
-  catch {
-    data=decode_value(Stdio.read_file(file));
-    werror(" %d entries",sizeof(data));
+  mixed err=catch {
+    if(string tmp=Stdio.read_file(file))
+      data=decode_value(tmp);
   };
 
-  catch {
+  if(err)  werror(master()->describe_backtrace(err));
+  werror(" %d entries",sizeof(data));
+
+  err=catch {
     if(string s=Stdio.read_file(file+".log"))
     {
       array t=s/"\0\0";
@@ -57,6 +79,7 @@ void create(string f)
       save();
     }
   };
+  if(err)  werror(master()->describe_backtrace(err));
 
   werror("\n");
 
