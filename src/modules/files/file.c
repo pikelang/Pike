@@ -5,7 +5,7 @@
 \*/
 
 #include "global.h"
-RCSID("$Id: file.c,v 1.91 1998/04/18 06:30:57 hubbe Exp $");
+RCSID("$Id: file.c,v 1.92 1998/04/23 23:45:34 hubbe Exp $");
 #include "fdlib.h"
 #include "interpret.h"
 #include "svalue.h"
@@ -1154,7 +1154,8 @@ static void file_query_fd(INT32 args)
 
 struct object *file_make_object_from_fd(int fd, int mode, int guess)
 {
-  struct object *o=clone_object(file_program,0);
+  struct object *o=low_clone(file_program);
+  call_c_initializers(o);
   ((struct my_file *)(o->storage))->fd=fd;
   ((struct my_file *)(o->storage))->open_mode=mode | fd_query_properties(fd, guess);
   return o;

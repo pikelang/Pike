@@ -1,5 +1,5 @@
 #include "global.h"
-RCSID("$Id: threads.c,v 1.69 1998/04/20 18:53:24 grubba Exp $");
+RCSID("$Id: threads.c,v 1.70 1998/04/23 23:48:17 hubbe Exp $");
 
 int num_threads = 1;
 int threads_disabled = 0;
@@ -158,9 +158,10 @@ struct thread_starter
 
 void exit_threads_disable(struct object *o)
 {
-  if(threads_disabled) threads_disabled--;
   /* fprintf(stderr, "exit_threads_disable(): threads_disabled:%d\n", threads_disabled); */
-  co_broadcast(&threads_disabled_change);
+  if(threads_disabled)
+    if(!--threads_disabled)
+      co_broadcast(&threads_disabled_change);
 }
 
 void init_threads_disable(struct object *o)
