@@ -1,4 +1,4 @@
-test_true([["$Id: testsuite.in,v 1.334 2000/09/26 10:20:44 hedda Exp $"]]);
+test_true([["$Id: testsuite.in,v 1.335 2000/09/27 00:02:57 hedda Exp $"]]);
 
 cond([[all_constants()->_verify_internals]],
 [[
@@ -3600,7 +3600,7 @@ test_equal("f\777\777bargaz\777nk"/-7,({"rgaz\777nk"}))
 
 test_equal("f\777\777bargaz\777nk"/5.0,({"f\777\777ba","rgaz\777","nk"}))
 test_equal("f\777\777bargaz\777nk"/-5.0,({"f\777","\777barg","az\777nk"}))
-test_equal("f\777\777bargaz\777nk"/2.5,({"f\777","\777ba","rg","az\777","nk"}))
+test_equal("f\777\777bargaz\777nk"/2.5,({"f\777\777","ba","rga","z\777","nk"}))
 
 test_equal("f\7777777\7777777bargaz\7777777nk"/1,"f\7777777\7777777bargaz\7777777nk"/"")
 test_equal("f\7777777\7777777bargaz\7777777nk"/2,({"f\7777777","\7777777b","ar","ga","z\7777777","nk"}))
@@ -3612,7 +3612,7 @@ test_equal("f\7777777\7777777bargaz\7777777nk"/-7,({"rgaz\7777777nk"}))
 
 test_equal("f\7777777\7777777bargaz\7777777nk"/5.0,({"f\7777777\7777777ba","rgaz\7777777","nk"}))
 test_equal("f\7777777\7777777bargaz\7777777nk"/-5.0,({"f\7777777","\7777777barg","az\7777777nk"}))
-test_equal("f\7777777\7777777bargaz\7777777nk"/2.5,({"f\7777777","\7777777ba","rg","az\7777777","nk"}))
+test_equal("f\7777777\7777777bargaz\7777777nk"/2.5,({"f\7777777\7777777", ba","rga","z\7777777","nk"}))
 
 test_equal(({1,2,3})/1,({ ({1}), ({2}), ({3}) }))
 test_equal(({1,2,3})/2,({ ({1,2}) }))
