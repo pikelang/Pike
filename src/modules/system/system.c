@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: system.c,v 1.174 2004/10/15 17:06:44 nilsson Exp $
+|| $Id: system.c,v 1.175 2005/02/16 18:14:34 grubba Exp $
 */
 
 /*
@@ -350,18 +350,22 @@ void f_readlink(INT32 args)
 }
 #endif /* HAVE_READLINK */
 
-#ifndef HAVE_RESOLVEPATH
+#if !defined(HAVE_RESOLVEPATH) && !defined(HAVE_REALPATH)
 #ifdef HAVE_READLINK
-/* FIXME: Write code that simulates resolvepath() here
+/* FIXME: Write code that simulates resolvepath() here.
  */
 /* #define HAVE_RESOLVEPATH */
 #endif /* HAVE_READLINK */
-#endif /* !HAVE_RESOLVEPATH */
+#endif /* !HAVE_RESOLVEPATH && !HAVE_REALPATH */
 
-#ifdef HAVE_RESOLVEPATH
+#if defined(HAVE_RESOLVEPATH) || defined(HAVE_REALPATH)
 /*! @decl string resolvepath(string path)
  *!
- *! Resolve all symbolic links of a pathname.
+ *!   Resolve all symbolic links of a pathname.
+ *!
+ *!   This function resolves all symbolic links, extra ``/'' characters and
+ *!   references to /./ and /../ in @[pathname], and returns the resulting
+ *!   absolute path, or @tt{0@} (zero) if an error occurs.
  *!
  *! @note
  *!   This function is not available on all platforms.
@@ -374,12 +378,13 @@ void f_resolvepath(INT32 args)
   char *path;
   int buflen;
   char *buf;
-  int err;
+  int len = -1;
 
   VALID_FILE_IO("resolvepath","read");
 
   get_all_args("resolvepath", args, "%s", &path);
 
+#ifdef HAVE_RESOLVEPATH
   buflen = 100;
 
   do {
@@ -390,16 +395,29 @@ void f_resolvepath(INT32 args)
 
     do {
       THREADS_ALLOW_UID();
-      err = resolvepath(path, buf, buflen);
+      len = resolvepath(path, buf, buflen);
       THREADS_DISALLOW_UID();
-      if (err >= 0 || errno != EINTR) break;
+      if (len >= 0 || errno != EINTR) break;
       check_threads_etc();
     } while (1);
   } while(
 #ifdef ENAMETOOLONG
-	  ((err < 0) && (errno == ENAMETOOLONG)) ||
+	  ((len < 0) && (errno == ENAMETOOLONG)) ||
 #endif /* ENAMETOOLONG */
-	  (err >= buflen - 1));
+	  (len >= buflen - 1));
+#elif defined(HAVE_REALPATH)
+  buflen = PATH_MAX+1;
+
+  if (!(buf = alloca(buflen))) {
+    Pike_error("resolvepath(): Out of memory\n");
+  }
+  
+  if ((buf = realpath(path, buf))) {
+    len = strlen(buf);
+  }
+#else /* !HAVE_RESOLVEPATH && !HAVE_REALPATH */
+#error "f_resolvepath with neither resolvepath nor realpath."
+#endif /* HAVE_RESOLVEPATH */
 
   if (err < 0) {
     report_error("resolvepath");
@@ -407,7 +425,7 @@ void f_resolvepath(INT32 args)
   pop_n_elems(args);
   push_string(make_shared_binary_string(buf, err));
 }
-#endif /* HAVE_RESOLVEPATH */
+#endif /* HAVE_RESOLVEPATH || HAVE_REALPATH */
 
 /*! @decl int umask(void|int mask)
  *!
@@ -1762,9 +1780,10 @@ int get_inet_addr(PIKE_SOCKADDR *addr,char *name,char *service, INT_TYPE port, i
   if(!getaddrinfo(name, (service? service : servnum_buf), &hints, &res)) {
     struct addrinfo *p;
     size_t addr_len=0;
-    for(p=res; p; p=p->ai_next)
+    for(p=res; p; p=p->ai_next) {
       if(p->ai_addrlen > 0 && p->ai_addrlen <= sizeof(*addr))
 	break;
+    }
     if(p && p->ai_addr)
       MEMCPY((char *)addr, (char *)p->ai_addr, addr_len = p->ai_addrlen);
     freeaddrinfo(res);
