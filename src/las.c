@@ -5,7 +5,7 @@
 \*/
 /**/
 #include "global.h"
-RCSID("$Id: las.c,v 1.144 1999/12/15 19:42:08 hubbe Exp $");
+RCSID("$Id: las.c,v 1.145 1999/12/19 14:57:36 grubba Exp $");
 
 #include "language.h"
 #include "interpret.h"
@@ -2428,7 +2428,8 @@ void fix_type_field(node *n)
 	if (!match_types(compiler_frame->current_return_type,CAR(n)->type))
 	{
 	  yyerror("Wrong return type.");
-	  yyexplain_nonmatching_types(compiler_frame->current_return_type, CAR(n)->type);
+	  yyexplain_nonmatching_types(compiler_frame->current_return_type,
+				      CAR(n)->type);
 	}
 	else if (lex.pragmas & ID_STRICT_TYPES)
 	{
@@ -2477,6 +2478,60 @@ void fix_type_field(node *n)
 
   case F_CONSTANT:
     n->type = get_type_of_svalue(& n->u.sval);
+    break;
+
+  case F_FOREACH:
+    if (!CAR(n) || (CAR(n)->token != F_VAL_LVAL)) {
+      yyerror("foreach(): No expression to loop over.");
+    } else {
+      if (!CAAR(n) || pike_types_le(CAAR(n)->type, void_type_string)) {
+	yyerror("foreach(): Looping over a void expression.");
+      } else {
+	struct pike_string *array_zero;
+	MAKE_CONSTANT_SHARED_STRING(array_zero, tArr(tZero));
+
+	if (!pike_types_le(array_zero, CAAR(n)->type)) {
+	  yyerror("Bad argument 1 to foreach().");
+	} else {
+	  if ((lex.pragmas & ID_STRICT_TYPES) &&
+	      !pike_types_le(CAAR(n)->type, array_type_string)) {
+	    struct pike_string *t = describe_type(CAAR(n)->type);
+	    yywarning("Argument 1 to foreach() is not always an array.");
+	    yywarning("Got: %s", t->str);
+	    free_string(t);
+	  }
+
+	  if (!CDAR(n) || pike_types_le(CDAR(n)->type, void_type_string)) {
+	    yyerror("Bad argument 2 to foreach().");
+	  } else {
+	    struct pike_string *value_type = array_value_type(CAAR(n)->type);
+
+	    if (!pike_types_le(value_type, CDAR(n)->type)) {
+	      if (!match_types(value_type, CDAR(n)->type)) {
+		struct pike_string *t1 = describe_type(value_type);
+		struct pike_string *t2 = describe_type(CDAR(n)->type);
+		my_yyerror("Variable type missmatch in foreach().");
+		my_yyerror("Expected: %s", t1->str);
+		my_yyerror("Got     : %s", t2->str);
+		free_string(t2);
+		free_string(t1);
+	      } else if (lex.pragmas & ID_STRICT_TYPES) {
+		struct pike_string *t1 = describe_type(value_type);
+		struct pike_string *t2 = describe_type(CDAR(n)->type);
+		yywarning("Variable type missmatch in foreach().");
+		yywarning("Expected: %s", t1->str);
+		yywarning("Got     : %s", t2->str);
+		free_string(t2);
+		free_string(t1);
+	      }
+	    }
+	    free_string(value_type);
+	  }
+	}
+	free_string(array_zero);
+      }
+    }
+    copy_shared_string(n->type, void_type_string);
     break;
 
   case F_SSCANF:
