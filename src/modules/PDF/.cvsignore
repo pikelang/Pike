@@ -11,6 +11,5 @@ modlist_segment
 module.pmod
 module_testsuite
 stamp-h
-stamp-h.in
 pdf_machine.h
 pdf_machine.h.in
