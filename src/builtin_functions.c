@@ -5,7 +5,7 @@
 \*/
 /**/
 #include "global.h"
-RCSID("$Id: builtin_functions.c,v 1.403 2001/08/15 18:42:49 hubbe Exp $");
+RCSID("$Id: builtin_functions.c,v 1.404 2001/08/30 23:48:30 mast Exp $");
 #include "interpret.h"
 #include "svalue.h"
 #include "pike_macros.h"
@@ -41,6 +41,7 @@ RCSID("$Id: builtin_functions.c,v 1.403 2001/08/15 18:42:49 hubbe Exp $");
 #include "builtin_functions.h"
 #include "bignum.h"
 #include "language.h"
+#include "peep.h"
 #include "docode.h"
 #include "lex.h"
 
