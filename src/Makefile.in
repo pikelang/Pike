@@ -1,5 +1,5 @@
 #
-# $Id: Makefile.in,v 1.331 2002/11/03 21:24:37 nilsson Exp $
+# $Id: Makefile.in,v 1.332 2002/11/13 15:51:44 nilsson Exp $
 #
 
 # This line is needed on some machines.
@@ -435,7 +435,9 @@ tidy:
 clean: tidy
 	-( cd modules; $(MAKE) $(MAKE_FLAGS) clean )
 	-( cd post_modules; $(MAKE) $(MAKE_FLAGS) clean )
-	-rm -rf test-install test-pike
+	-( cd tlib; find . -name testsuite | xargs rm )
+	-rm -rf test-install test-pike testsuite_test_dir.pmod
+	-rm testsuite_test.pike testsuite.tmp
 	-rm -f TAGS tags yacc.acts yacc.debug yacc.tmp *.debug.log a.out
 	-rm -f hilfe rsif master.pike compiler-warnings
 	-rm -f tpike stamp-tpike-predep import-stamp modules-stamp master-stamp
