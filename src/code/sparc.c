@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: sparc.c,v 1.16 2002/11/05 19:35:52 grubba Exp $
+|| $Id: sparc.c,v 1.17 2002/11/06 16:19:19 grubba Exp $
 */
 
 /*
@@ -51,7 +51,7 @@
 #define SPARC_REG_I7	31	/* PC */
 
 /*
- * Logical operations.
+ * ALU operations.
  */
 
 #define SPARC_OP3_AND		0x01
@@ -69,14 +69,20 @@
 #define SPARC_OP3_SLL		0x25
 #define SPARC_OP3_SRL		0x26
 #define SPARC_OP3_SRA		0x27
+#define SPARC_OP3_ADD		0x00
+#define SPARC_OP3_ADDcc		0x10
+#define SPARC_OP3_ADDC		0x08
+#define SPARC_OP3_ADDCcc	0x18
 
-#define SPARC_LOG_OP(OP3, D, S1, S2, I)	\
+#define SPARC_ALU_OP(OP3, D, S1, S2, I)	\
     add_to_program(0x80000000|((D)<<25)|((OP3)<<19)|((S1)<<14)|((I)<<13)| \
 		   ((S2)&((I)?0x1fff:0x1f)))
 
-#define SPARC_OR(D,S1,S2,I)	SPARC_LOG_OP(SPARC_OP3_OR, D, S1, S2, I)
+#define SPARC_OR(D,S1,S2,I)	SPARC_ALU_OP(SPARC_OP3_OR, D, S1, S2, I)
 
-#define SPARC_SRA(D,S1,S2,I)	SPARC_LOG_OP(SPARC_OP3_SRA, D, S1, S2, I)
+#define SPARC_SRA(D,S1,S2,I)	SPARC_ALU_OP(SPARC_OP3_SRA, D, S1, S2, I)
+
+#define SPARC_ADD(D,S1,S2,I)	SPARC_ALU_OP(SPARC_OP3_ADD, D, S1, S2, I)
 
 #define SPARC_SETHI(D, VAL) \
     add_to_program(0x01000000|((D)<<25)|(((VAL)>>10)&0x3fffff))
@@ -103,6 +109,7 @@
   } while(0)
 
 #define ADD_CALL(X, DELAY_OK) do {					\
+    extern void opcode_F_CALL_OTHER(int);				\
     INT32 delta_;							\
     struct program *p_ = Pike_compiler->new_program;			\
     INT32 off_ = p_->num_program;					\
@@ -120,6 +127,45 @@
     p_->program[off_] = 0x40000000 | (delta_ & 0x3fffffff);		\
     add_to_relocations(off_);						\
     add_to_program(delay_);						\
+    if (X == (void *)opcode_F_CALL_OTHER) {				\
+      fprintf(stderr, "CALL_OTHER, delay opcode 0x%08x\n", delay_);	\
+    }									\
+  } while(0)
+
+/*
+ * Register conventions:
+ *
+ * I6	Frame pointer
+ * I7	Return address
+ *
+ * L0	Pike_fp
+ * L1	Pike_fp->pc
+ *
+ * O6	Stack Pointer
+ * O7	Program Counter
+ *
+ */
+
+#define SPARC_REG_PIKE_FP	SPARC_REG_L0
+#define SPARC_REG_PIKE_PC	SPARC_REG_L1
+#define SPARC_REG_SP		SPARC_REG_O6
+#define SPARC_REG_PC		SPARC_REG_O7
+
+/*
+ * Code generator state.
+ */
+unsigned INT32 sparc_codegen_state = 0;
+int sparc_last_pc = 0;
+
+#define LOAD_PIKE_FP() do {					\
+    if (!(sparc_codegen_state & SPARC_CODEGEN_FP_IS_SET)) {	\
+      SET_REG(SPARC_REG_PIKE_FP,				\
+	      ((INT32)(&Pike_interpreter.frame_pointer)));	\
+      /* lduw [ %i0 ], %i0 */					\
+      add_to_program(0xc0000000|(SPARC_REG_PIKE_FP<<25)|	\
+		     (SPARC_REG_PIKE_FP<<14));			\
+      sparc_codegen_state |= SPARC_CODEGEN_FP_IS_SET;		\
+    }								\
   } while(0)
 
 /*
@@ -130,20 +176,40 @@
 void sparc_ins_entry(void)
 {
   /* save	%sp, -112, %sp */
-  add_to_program(0x81e02000|(SPARC_REG_O6<<25)|
-		 (SPARC_REG_O6<<14)|((-112)&0x1fff));
+  add_to_program(0x81e02000|(SPARC_REG_SP<<25)|
+		 (SPARC_REG_SP<<14)|((-112)&0x1fff));
 }
 
 /* Update Pike_fp->pc */
 void sparc_update_pc(void)
 {
-  /* call .+8 */
-  add_to_program(0x40000002);
-  SET_REG(SPARC_REG_O3, ((INT32)(&Pike_interpreter.frame_pointer)));
-  /* lduw [ %o3 ], %o3 */
-  add_to_program(0xc0000000|(SPARC_REG_O3<<25)|(SPARC_REG_O3<<14));
-  /* stw %o7, [ %o3 + pc ] */
-  add_to_program(0xc0202000|(SPARC_REG_O7<<25)|(SPARC_REG_O3<<14)|
+  int tmp = PIKE_PC;
+  if (sparc_codegen_state & SPARC_CODEGEN_PC_IS_SET) {
+    INT32 diff = (tmp - sparc_last_pc) * sizeof(PIKE_OPCODE_T);
+    if (diff) {
+      if ((-4096 <= diff) && (diff < 4096)) {
+	SPARC_ADD(SPARC_REG_PIKE_PC, SPARC_REG_PIKE_PC, diff, 1);
+      } else {
+	SET_REG(SPARC_REG_O3, diff);
+	SPARC_ADD(SPARC_REG_PIKE_PC, SPARC_REG_PIKE_PC, SPARC_REG_O3, 0);
+      }
+    }
+  } else {
+    /* call .+8 */
+    add_to_program(0x40000002);
+    /* NOTE: No need to fill the delay slot with a nop, since %o7 is updated
+     *       immediately. (Sparc Architecture Manual V9 p149.)
+     */
+    /* or %o7, %g0, %pike_pc */
+    SPARC_OR(SPARC_REG_PIKE_PC, SPARC_REG_PC, SPARC_REG_G0, 0);
+  }
+  sparc_last_pc = tmp;
+  sparc_codegen_state |= SPARC_CODEGEN_PC_IS_SET;
+
+  LOAD_PIKE_FP();
+
+  /* stw %pike_pc, [ %pike_fp + pc ] */
+  add_to_program(0xc0202000|(SPARC_REG_PIKE_PC<<25)|(SPARC_REG_PIKE_FP<<14)|
 		 OFFSETOF(pike_frame, pc));
 }
 
@@ -166,7 +232,7 @@ static void low_ins_f_byte(unsigned int b, int delay_ok)
     
   {
     static int last_prog_id=-1;
-    static int last_num_linenumbers=-1;
+    static size_t last_num_linenumbers=(size_t)~0;
     if(last_prog_id != Pike_compiler->new_program->id ||
        last_num_linenumbers != Pike_compiler->new_program->num_linenumbers)
     {

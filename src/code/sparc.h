@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: sparc.h,v 1.16 2002/11/05 19:14:51 grubba Exp $
+|| $Id: sparc.h,v 1.17 2002/11/06 16:19:19 grubba Exp $
 */
 
 #define PIKE_OPCODE_ALIGN	4
@@ -13,6 +13,26 @@
 #define PROG_COUNTER		(reg_pc + 2)
 #define SET_PROG_COUNTER(X)	(reg_pc = ((unsigned INT32 *)(X))-2)
 
+
+/*
+ * Code generator state.
+ */
+extern unsigned INT32 sparc_codegen_state;
+extern int sparc_last_pc;
+
+#define SPARC_CODEGEN_FP_IS_SET	1
+#define SPARC_CODEGEN_SP_IS_SET	2
+#define SPARC_CODEGEN_PC_IS_SET	32
+
+#define FLUSH_CODE_GENERATOR_STATE()	do {	\
+    sparc_codegen_state = 0;			\
+    sparc_last_pc = 0;				\
+  } while(0)
+
+#define ADJUST_PIKE_PC(NEW_PC)	do {			\
+    sparc_last_pc = NEW_PC;				\
+    sparc_codegen_state |= SPARC_CODEGEN_PC_IS_SET;	\
+  } while(0)
 
 /* Size of the prologue added by INS_ENTRY() (in PIKE_OPCODE_T's). */
 #define ENTRY_PROLOGUE_SIZE	1
