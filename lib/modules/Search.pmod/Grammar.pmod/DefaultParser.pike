@@ -263,7 +263,7 @@ static void parseExpr6(TextNode node) {
       || peek()[0] == TOKEN_WORD) {
     string phrase = peek()[1];
     advance();
-    array(string) words = splitPhrase(phrase);
+    array(string) words = Unicode.split_words_and_normalize(phrase);
     if (!words || !sizeof(words))
       return;
     if (sizeof(words) == 1)

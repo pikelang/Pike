@@ -75,12 +75,6 @@ static multiset getDefaultFields() {
   return (< "anchor", "any", "body", "keywords", "title", "url",  >);
 }
 
-// Splits a string into its words...
-// TODO: Fix a better phrase function....
-static array(string) splitPhrase(string phrase) {
-  return phrase / " " - ({ "" });
-}
-
 // AND merge: Can merge all nodes with - or + bef. each thing.
 // OR merge: Can merge all nodes without any - or +.
 static private array(TextNode) mergeTextNodes(array(TextNode) a, string op) {
