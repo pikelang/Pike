@@ -1,4 +1,4 @@
-stest_true([["$Id: testsuite.in,v 1.146 1999/02/10 01:29:12 hubbe Exp $"]])
+stest_true([["$Id: testsuite.in,v 1.147 1999/02/15 01:56:36 hubbe Exp $"]])
 cond([[all_constants()->_verify_internals]],
 [[
   test_do(_verify_internals())
@@ -138,6 +138,8 @@ test_compile_error([[ int float = 0; ]])
 test_eval_error([[ return 0.0[0]; ]])
 test_eval_error([[ return 0[0]; ]])
 test_compile_error([[constant x=class {}(); ]])
+
+test_compile([[int x=gauge { return; },1;]])
 cond( [[ master()->resolv("Gmp")->mpz ]],
 [[
   test_compile_error([[object x = Gmp.mpz(17); constant y = x;]])
@@ -2409,6 +2411,7 @@ test_true(hash("foo",10)<10)
 test_true(hash("bar",10)<10)
 test_true(hash("gazonk",10)<10)
 test_eq(hash("foobargazonk"),hash("foobargazonk"))
+test_false(hash(""))
 
 // - implode
 test_eq([[({})*""]],"")

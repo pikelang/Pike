@@ -4,7 +4,7 @@
 ||| See the files COPYING and DISCLAIMER for more information.
 \*/
 #include "global.h"
-RCSID("$Id: program.c,v 1.110 1999/02/10 21:46:51 hubbe Exp $");
+RCSID("$Id: program.c,v 1.111 1999/02/15 01:56:35 hubbe Exp $");
 #include "program.h"
 #include "object.h"
 #include "dynamic_buffer.h"
@@ -609,6 +609,7 @@ void low_start_new_program(struct program *p,
   num_parse_error=0;
 
   push_compiler_frame(0);
+  add_ref(compiler_frame->current_return_type=void_type_string);
 
 #ifdef PIKE_DEBUG
   if(lex.current_file)
