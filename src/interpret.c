@@ -5,7 +5,7 @@
 \*/
 /**/
 #include "global.h"
-RCSID("$Id: interpret.c,v 1.125 1999/05/13 07:24:51 hubbe Exp $");
+RCSID("$Id: interpret.c,v 1.126 1999/06/03 01:39:33 hubbe Exp $");
 #include "interpret.h"
 #include "object.h"
 #include "program.h"
@@ -993,7 +993,7 @@ void mega_apply2(enum apply_type type, INT32 args, void *arg1, void *arg2)
 	/* adjust arguments on stack */
 	if(args < num_args) /* push zeros */
 	{
-	  clear_svalues(sp, num_args-args);
+	  clear_svalues_undefined(sp, num_args-args);
 	  sp += num_args-args;
 	  args += num_args-args;
 	}

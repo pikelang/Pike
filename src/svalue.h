@@ -5,7 +5,7 @@
 \*/
 
 /*
- * $Id: svalue.h,v 1.26 1999/04/17 22:37:33 grubba Exp $
+ * $Id: svalue.h,v 1.27 1999/06/03 01:39:39 hubbe Exp $
  */
 #ifndef SVALUE_H
 #define SVALUE_H
@@ -294,6 +294,7 @@ int is_equal(struct svalue *a,struct svalue *b);
 int is_lt(struct svalue *a,struct svalue *b);
 void describe_svalue(struct svalue *s,int indent,struct processing *p);
 void clear_svalues(struct svalue *s, INT32 num);
+void clear_svalues_undefined(struct svalue *s, INT32 num);
 void copy_svalues_recursively_no_free(struct svalue *to,
 				      struct svalue *from,
 				      INT32 num,

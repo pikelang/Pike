@@ -22,7 +22,7 @@
 #include <ctype.h>
 #include "queue.h"
 
-RCSID("$Id: svalue.c,v 1.41 1999/04/01 17:22:18 hubbe Exp $");
+RCSID("$Id: svalue.c,v 1.42 1999/06/03 01:39:38 hubbe Exp $");
 
 struct svalue dest_ob_zero = { T_INT, 0 };
 
@@ -874,6 +874,16 @@ void clear_svalues(struct svalue *s, INT32 num)
   struct svalue dum;
   dum.type=T_INT;
   dum.subtype=NUMBER_NUMBER;
+  dum.u.refs=0;
+  dum.u.integer=0;
+  while(--num >= 0) *(s++)=dum;
+}
+
+void clear_svalues_undefined(struct svalue *s, INT32 num)
+{
+  struct svalue dum;
+  dum.type=T_INT;
+  dum.subtype=NUMBER_UNDEFINED;
   dum.u.refs=0;
   dum.u.integer=0;
   while(--num >= 0) *(s++)=dum;

@@ -5,7 +5,7 @@
 \*/
 /**/
 #include "global.h"
-RCSID("$Id: las.c,v 1.80 1999/05/01 17:53:00 grubba Exp $");
+RCSID("$Id: las.c,v 1.81 1999/06/03 01:39:35 hubbe Exp $");
 
 #include "language.h"
 #include "interpret.h"
@@ -2409,7 +2409,8 @@ static int is_null_branch(node *n)
 
 static struct svalue *is_stupid_func(node *n,
 				     int args,
-				     int vargs)
+				     int vargs,
+				     struct pike_string *type)
 {
   node *a,*b;
   int tmp;
@@ -2445,10 +2446,13 @@ static struct svalue *is_stupid_func(node *n,
   n=CAR(n);
   if(!n || n->token != F_CONSTANT) return 0;
 
-  if((count_arguments(n->type) < 0) == !!vargs)
-    return &n->u.sval;
+  if((count_arguments(n->type) < 0) == !vargs)
+    return 0;
+  
+  if(minimum_arguments(type) < minimum_arguments(n->type))
+    return 0;
 
-  return 0;
+  return &n->u.sval;
 }
 
 int dooptcode(struct pike_string *name,
@@ -2488,7 +2492,7 @@ int dooptcode(struct pike_string *name,
   }else{
     n=mknode(F_ARG_LIST,n,0);
     
-    if((foo=is_stupid_func(n, args, vargs)))
+    if((foo=is_stupid_func(n, args, vargs, type)))
     {
       if(foo->type == T_FUNCTION && foo->subtype==FUNCTION_BUILTIN)
       {
