@@ -9,14 +9,14 @@
 #include "des.h"
 
 #include "RCSID.h"
-RCSID2(desQuick_cRcs, "$Id: desQuick.c,v 1.3 1997/08/30 18:36:18 grubba Exp $");
+RCSID2(desQuick_cRcs, "$Id: desQuick.c,v 1.4 1998/05/19 05:48:01 nisse Exp $");
 
 extern unsigned INT32 des_keymap[];
 
 
 /* static information */
 
-static depth = 0;		/* keep track of the request depth */
+static int depth = 0;		/* keep track of the request depth */
 unsigned INT32 des_bigmap[0x4000];	/* big lookup table */
 
 /* fill in the 64k table used by the `quick' option */
