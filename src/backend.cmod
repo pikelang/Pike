@@ -2,11 +2,11 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: backend.cmod,v 1.72 2003/11/13 19:07:53 grubba Exp $
+|| $Id: backend.cmod,v 1.73 2003/11/17 20:06:04 mast Exp $
 */
 
 #include "global.h"
-RCSID("$Id: backend.cmod,v 1.72 2003/11/13 19:07:53 grubba Exp $");
+RCSID("$Id: backend.cmod,v 1.73 2003/11/17 20:06:04 mast Exp $");
 #include "fdlib.h"
 #include "backend.h"
 #include <errno.h>
@@ -376,7 +376,7 @@ struct selectors
   int max_fd;
   my_fd_set read;
   my_fd_set write;
-  /* except == incoming OOB data
+  /* except == incoming OOB data (or error according to POSIX)
    * outgoing OOB data is multiplexed on write
    */
   my_fd_set except;
@@ -615,6 +615,11 @@ PIKECLASS Backend
 	if(!was_set)
 	{
 	  MY_FD_SET(&me->set, fd, MY_POLLIN);
+#ifndef HAVE_POLL
+	  /* Got to enable the exception set to get errors (at least according
+	   * to POSIX). */
+	  MY_FD_SET(&me->set, fd, MY_POLLEXCEPT);
+#endif
 	  backend_wake_up_backend(me);
 	}
       }else{
@@ -624,7 +629,11 @@ PIKECLASS Backend
 	  if (me->fds[fd].read_oob.callback)
           {
             MY_FD_SET(&me->set, fd, MY_POLLEXCEPT);
-          }
+	  }
+#else
+	  if (!me->fds[fd].read_oob.callback && !me->fds[fd].write.callback)
+	    /* Exceptions might cause calls to read, read_oob and write. */
+	    MY_FD_CLR(&me->set, fd, MY_POLLEXCEPT);
 #endif
         }
       }
@@ -661,13 +670,24 @@ PIKECLASS Backend
 	if(!was_set)
 	{
 	  MY_FD_SET(&me->set, fd, MY_POLLOUT);
+#ifndef HAVE_POLL
+	  /* Got to enable the exception set to get errors (at least according
+	   * to POSIX). */
+	  MY_FD_SET(&me->set, fd, MY_POLLEXCEPT);
+#endif
 	  backend_wake_up_backend(me);
 	}
       } else {
 	if (was_set
 	    && !me->fds[fd].write_oob.callback
-	  )
+	   ) {
 	  MY_FD_CLR(&me->set, fd, MY_POLLOUT);
+#ifndef HAVE_POLL
+	  if (!me->fds[fd].read.callback && !me->fds[fd].read_oob.callback)
+	    /* Exceptions might cause calls to read, read_oob and write. */
+	    MY_FD_CLR(&me->set, fd, MY_POLLEXCEPT);
+#endif
+	}
       }
     }
 
@@ -704,7 +724,13 @@ PIKECLASS Backend
       }else{
 	if(was_set) {
 	  if (!me->fds[fd].read.callback) {
+#ifdef HAVE_POLL
 	    MY_FD_CLR(&me->set, fd, MY_POLLEXCEPT);
+#else
+	    if (!me->fds[fd].write.callback)
+	      /* Exceptions might cause calls to read, read_oob and write. */
+	      MY_FD_CLR(&me->set, fd, MY_POLLEXCEPT);
+#endif
 	  } else {
 #ifdef RDBAND_IS_SPECIAL
 	    MY_FD_CLR(&me->set, fd, MY_POLLRDBAND);
@@ -1104,33 +1130,94 @@ PIKECLASS Backend
 	done_something = 1;
 
 #ifndef HAVE_POLL
-	/* FIXME: OOB? */
+
 	debug_malloc_touch(me->fds);
 	for(i=0; i <= me->active_set.max_fd; i++)
 	{
-	  /* FIXME: Error handling equivalent to POLLHUP/POLLERR? */
+	  int err = 0;
 
-	  if(fd_FD_ISSET(i, &me->active_set.eset) &&
-	     me->fds[i].read_oob.callback)
-	    if ((*(me->fds[i].read_oob.callback))(i, me->fds[i].read_oob.data) == -1)
-	      goto backend_round_done;
-	  
-	  if(fd_FD_ISSET(i, &me->active_set.rset) && me->fds[i].read.callback)
-	    if ((*(me->fds[i].read.callback))(i, me->fds[i].read.data) == -1)
-	      goto backend_round_done;
-	  
-	  if(fd_FD_ISSET(i, &me->active_set.wset)) {
-	    if (me->fds[i].write_oob.callback) {
-	      if ((*(me->fds[i].write_oob.callback))(i, me->fds[i].write_oob.data) == -1)
-		goto backend_round_done;
-	    } else
-	      if (me->fds[i].write.callback) {
-		if ((*(me->fds[i].write.callback))(i, me->fds[i].write.data) == -1)
+	  if(fd_FD_ISSET(i, &me->active_set.eset)) {
+	    /* Check for errors. GNU libc says this isn't set on error, but
+	     * POSIX does. FIXME: What bits will be set for errors on GNU
+	     * systems, then? Should we always check for that? */
+	    ACCEPT_SIZE_T len = sizeof (err);
+	    IF_PD(fprintf(stderr, "BACKEND[%d]: exception on %d\n", me->id, fd));
+	    if (!getsockopt (fd, SOL_SOCKET, SO_ERROR, &err, &len)) {
+	      IF_PD (fprintf (stderr, "BACKEND[%d]: error on %d, error=%d\n",
+			      me->id, fd, err));
+	    }
+
+	    else {
+	      if (me->fds[i].read_oob.callback) {
+		errno = 0;
+		IF_PD(fprintf(stderr, "BACKEND[%d]: read_oob_callback(%d, %p)\n",
+			      me->id, fd, me->fds[fd].read_oob.data));
+		if ((*(me->fds[i].read_oob.callback))(i, me->fds[i].read_oob.data) == -1)
 		  goto backend_round_done;
 	      }
+	      else if (!me->fds[i].read.callback && !me->fds[i].write.callback)
+		MY_FD_CLR(&me->set, fd, MY_POLLEXCEPT);
+	    }
+	  }
+	  
+	  if(fd_FD_ISSET(i, &me->active_set.rset)) {
+	    IF_PD(fprintf(stderr, "BACKEND[%d]: read on %d\n", me->id, fd));
+	    if (me->fds[i].read.callback) {
+	      IF_PD(fprintf(stderr, "BACKEND[%d]: read_callback(%d, %p)\n",
+			    me->id, fd, me->fds[fd].read.data));
+	      errno = 0;
+	      if ((*(me->fds[i].read.callback))(i, me->fds[i].read.data) == -1)
+		goto backend_round_done;
+	    }
+	    else
+	      MY_FD_CLR(&me->set, fd, MY_POLLIN);
+	  }
+	  
+	  if(fd_FD_ISSET(i, &me->active_set.wset)) {
+	    IF_PD(fprintf(stderr, "BACKEND[%d]: write on %d\n", me->id, fd));
+	    if (me->fds[i].write_oob.callback) {
+	      /* OOB can by BSD definition always be written, so if we can
+	       * write normal data it's reasonable to assume OOB can be
+	       * written too without too much risk of being thrown away. */
+	      IF_PD(fprintf(stderr, "BACKEND[%d]: write_oob_callback(%d, %p)\n",
+			    me->id, fd, me->fds[fd].write_oob.data));
+	      errno = 0;
+	      if ((*(me->fds[i].write_oob.callback))(i, me->fds[i].write_oob.data) == -1)
+		goto backend_round_done;
+	    }
+	    else if (me->fds[i].write.callback) {
+	      IF_PD(fprintf(stderr, "BACKEND[%d]: write_callback(%d, %p)\n",
+			    me->id, fd, me->fds[fd].write.data));
+	      errno = 0;
+	      if ((*(me->fds[i].write.callback))(i, me->fds[i].write.data) == -1)
+		goto backend_round_done;
+	    }
+	    else
+	      MY_FD_CLR(&me->set, fd, MY_POLLOUT);
+	  }
+
+	  if (err) {
+	    errno = err;
+	    /* We don't want to keep this fd anymore. */
+	    MY_FD_CLR(&me->set, fd, MY_POLLIN);
+	    MY_FD_CLR(&me->set, fd, MY_POLLOUT);
+	    MY_FD_CLR(&me->set, fd, MY_POLLEXCEPT);
+	    if (me->fds[fd].read.callback) {
+	      IF_PD(fprintf(stderr, "BACKEND[%d]: read_callback(%d, %p)\n",
+			    me->id, fd, me->fds[fd].read.data));
+	      if ((*(me->fds[fd].read.callback))(fd,me->fds[fd].read.data) == -1)
+		goto backend_round_done;
+	    } else if (me->fds[fd].write.callback) {
+	      IF_PD(fprintf(stderr, "BACKEND[%d]: write_callback(%d, %p)\n",
+			    me->id, fd, me->fds[fd].write.data));
+	      if ((*(me->fds[fd].write.callback))(fd, me->fds[fd].write.data) == -1)
+		goto backend_round_done;
+	    }
 	  }
 	}
+
 #else  /* HAVE_POLL */
+
 	for(i=0; i<me->active_set.num_in_poll; i++)
 	{
 	  int fd = me->active_set.poll_fds[i].fd;
@@ -1159,7 +1246,7 @@ PIKECLASS Backend
 	    handled = 1;
 #endif /* PIKE_DEBUG */
 	  }
-	  
+
 	  if (me->active_set.poll_fds[i].revents & POLLRDBAND) {
 	    IF_PD(fprintf(stderr, "BACKEND[%d]: POLLRDBAND on %d\n", me->id, fd));
 	    if (me->fds[fd].read_oob.callback)
@@ -1178,46 +1265,6 @@ PIKECLASS Backend
 		MY_FD_CLR(&me->set, fd, MY_POLLRDBAND);
 #endif
 	      }
-	    }
-#ifdef PIKE_DEBUG
-	    handled = 1;
-#endif /* PIKE_DEBUG */
-	  }
-	  
-	  if((me->active_set.poll_fds[i].revents & POLLHUP) ||
-	     (me->active_set.poll_fds[i].revents & POLLERR))
-	  {
-	    /* Closed or error */
-	    errno = 0;
-	    if (me->active_set.poll_fds[i].revents & POLLERR) {
-	      int err;
-	      ACCEPT_SIZE_T len = sizeof (err);
-	      if (!getsockopt (fd, SOL_SOCKET, SO_ERROR, &err, &len)) {
-		IF_PD (fprintf (stderr, "BACKEND[%d]: POLLERR on %d, error=%d\n",
-				me->id, fd, err));
-		errno = err;
-	      }
-#ifdef PIKE_DEBUG
-	      else
-		fprintf(stderr, "Got POLLERR on non-socket fd %d (getsockopt errno=%d)\n",
-			fd, errno);
-#endif /* PIKE_DEBUG */
-	    }
-	    else {
-	      IF_PD(fprintf(stderr, "BACKEND[%d]: POLLHUP on %d\n", me->id, fd));
-	    }
-	    /* We don't want to keep this fd anymore. */
-	    MY_FD_CLR(&me->set, fd, ~0);
-	    if (me->fds[fd].read.callback) {
-	      IF_PD(fprintf(stderr, "BACKEND[%d]: read_callback(%d, %p)\n",
-			    me->id, fd, me->fds[fd].read.data));
-	      if ((*(me->fds[fd].read.callback))(fd,me->fds[fd].read.data) == -1)
-		goto backend_round_done;
-	    } else if (me->fds[fd].write.callback) {
-	      IF_PD(fprintf(stderr, "BACKEND[%d]: write_callback(%d, %p)\n",
-			    me->id, fd, me->fds[fd].write.data));
-	      if ((*(me->fds[fd].write.callback))(fd, me->fds[fd].write.data) == -1)
-		goto backend_round_done;
 	    }
 #ifdef PIKE_DEBUG
 	    handled = 1;
@@ -1279,6 +1326,50 @@ PIKECLASS Backend
 	    handled = 1;
 #endif /* PIKE_DEBUG */
 	  }
+
+	  /* Suspect that these will never be set together with any other
+	   * bits, but if it happens I guess the error isn't so fatal that the
+	   * above can't run first. */
+	  if((me->active_set.poll_fds[i].revents & POLLHUP) ||
+	     (me->active_set.poll_fds[i].revents & POLLERR))
+	  {
+	    /* Closed or error */
+	    errno = 0;
+	    if (me->active_set.poll_fds[i].revents & POLLERR) {
+	      int err;
+	      ACCEPT_SIZE_T len = sizeof (err);
+	      if (!getsockopt (fd, SOL_SOCKET, SO_ERROR, &err, &len)) {
+		IF_PD (fprintf (stderr, "BACKEND[%d]: POLLERR on %d, error=%d\n",
+				me->id, fd, err));
+		errno = err;
+	      }
+#ifdef PIKE_DEBUG
+	      else
+		fprintf(stderr, "Got POLLERR on non-socket fd %d (getsockopt errno=%d)\n",
+			fd, errno);
+#endif /* PIKE_DEBUG */
+	    }
+	    else {
+	      IF_PD(fprintf(stderr, "BACKEND[%d]: POLLHUP on %d\n", me->id, fd));
+	    }
+	    /* We don't want to keep this fd anymore. */
+	    MY_FD_CLR(&me->set, fd, ~0);
+	    if (me->fds[fd].read.callback) {
+	      IF_PD(fprintf(stderr, "BACKEND[%d]: read_callback(%d, %p)\n",
+			    me->id, fd, me->fds[fd].read.data));
+	      if ((*(me->fds[fd].read.callback))(fd,me->fds[fd].read.data) == -1)
+		goto backend_round_done;
+	    } else if (me->fds[fd].write.callback) {
+	      IF_PD(fprintf(stderr, "BACKEND[%d]: write_callback(%d, %p)\n",
+			    me->id, fd, me->fds[fd].write.data));
+	      if ((*(me->fds[fd].write.callback))(fd, me->fds[fd].write.data) == -1)
+		goto backend_round_done;
+	    }
+#ifdef PIKE_DEBUG
+	    handled = 1;
+#endif /* PIKE_DEBUG */
+	  }
+
 #ifdef PIKE_DEBUG
 	  num_active -= handled;
 	  if (!handled && me->active_set.poll_fds[i].revents) {
@@ -1289,6 +1380,7 @@ PIKECLASS Backend
 	  }
 #endif /* PIKE_DEBUG */
 	}
+
 #ifdef PIKE_DEBUG
 	if (num_active) {
 	  fprintf(stderr, "BACKEND[%d]: %d more active fds than were handled.\n",
@@ -1302,6 +1394,7 @@ PIKECLASS Backend
 	  }
 	}
 #endif /* PIKE_DEBUG */
+
 #endif	/* HAVE_POLL */
 
 	/* Must be up-to-date for backend_do_call_outs. */
