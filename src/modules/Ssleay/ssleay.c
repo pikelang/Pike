@@ -8,7 +8,7 @@
 
 #include "config.h"
 
-RCSID("$Id: ssleay.c,v 1.10 1999/02/01 02:45:21 hubbe Exp $");
+RCSID("$Id: ssleay.c,v 1.11 1999/02/10 22:03:31 hubbe Exp $");
 #include "interpret.h"
 #include "svalue.h"
 #include "stralloc.h"
@@ -283,10 +283,14 @@ void pike_module_init(void)
   start_new_program();
   ADD_STORAGE(struct ssleay_context);
 
-  add_function("create", ssleay_create, "function(void:void)",0);
-  add_function("use_certificate_file", ssleay_use_certificate_file, "function(string:void)", 0);
-  add_function("use_private_key_file", ssleay_use_private_key_file, "function(string:void)", 0);
-  add_function("new", ssleay_new, "function(void:object)", 0);
+  /* function(void:void) */
+  ADD_FUNCTION("create", ssleay_create,tFunc(tVoid,tVoid),0);
+  /* function(string:void) */
+  ADD_FUNCTION("use_certificate_file", ssleay_use_certificate_file,tFunc(tStr,tVoid), 0);
+  /* function(string:void) */
+  ADD_FUNCTION("use_private_key_file", ssleay_use_private_key_file,tFunc(tStr,tVoid), 0);
+  /* function(void:object) */
+  ADD_FUNCTION("new", ssleay_new,tFunc(tVoid,tObj), 0);
 
   set_init_callback(init_context);
   set_exit_callback(exit_context);
@@ -297,12 +301,18 @@ void pike_module_init(void)
   start_new_program();
   ADD_STORAGE(struct ssleay_connection);
 
-  add_function("create", ssleay_connection_create, "function(object:void)",0);
-  add_function("accept", ssleay_connection_accept, "function(void:int)", 0);
-  add_function("read",ssleay_connection_read,"function(int,int|void:int|string)",0);
-  add_function("write",ssleay_connection_write,"function(string:int)",0);
-  add_function("set_fd",ssleay_connection_set_fd,"function(int:void)",0);
-  add_function("ssleay_werror", ssleay_connection_werror, "function(void:void)", 0);
+  /* function(object:void) */
+  ADD_FUNCTION("create", ssleay_connection_create,tFunc(tObj,tVoid),0);
+  /* function(void:int) */
+  ADD_FUNCTION("accept", ssleay_connection_accept,tFunc(tVoid,tInt), 0);
+  /* function(int,int|void:int|string) */
+  ADD_FUNCTION("read",ssleay_connection_read,tFunc(tInt tOr(tInt,tVoid),tOr(tInt,tStr)),0);
+  /* function(string:int) */
+  ADD_FUNCTION("write",ssleay_connection_write,tFunc(tStr,tInt),0);
+  /* function(int:void) */
+  ADD_FUNCTION("set_fd",ssleay_connection_set_fd,tFunc(tInt,tVoid),0);
+  /* function(void:void) */
+  ADD_FUNCTION("ssleay_werror", ssleay_connection_werror,tFunc(tVoid,tVoid), 0);
   set_init_callback(init_connection);
   set_exit_callback(exit_connection);
 

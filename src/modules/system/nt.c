@@ -1,5 +1,5 @@
 /*
- * $Id: nt.c,v 1.7 1999/02/01 02:47:18 hubbe Exp $
+ * $Id: nt.c,v 1.8 1999/02/10 21:55:27 hubbe Exp $
  *
  * NT system calls for Pike
  *
@@ -499,7 +499,8 @@ void f_NetUserEnum(INT32 args)
 
 void init_nt_system_calls(void)
 {
-  add_function("cp",f_cp,"function(string,string:int)", 0);
+  /* function(string,string:int) */
+  ADD_FUNCTION("cp",f_cp,tFunc(tStr tStr,tInt), 0);
 #define ADD_GLOBAL_INTEGER_CONSTANT(X,Y) \
    push_int((long)(Y)); low_add_constant(X,sp-1); pop_stack();
 
@@ -507,7 +508,9 @@ void init_nt_system_calls(void)
   ADD_GLOBAL_INTEGER_CONSTANT("HKEY_CURRENT_USER",HKEY_CURRENT_USER);
   ADD_GLOBAL_INTEGER_CONSTANT("HKEY_USERS",HKEY_USERS);
   ADD_GLOBAL_INTEGER_CONSTANT("HKEY_CLASSES_ROOT",HKEY_CLASSES_ROOT);
-  add_efun("RegGetValue",f_RegGetValue,"function(int,string,string:string|int|string*)",OPT_EXTERNAL_DEPEND);
+  
+/* function(int,string,string:string|int|string*) */
+  ADD_EFUN("RegGetValue",f_RegGetValue,tFunc(tInt tStr tStr,tOr3(tStr,tInt,tArr(tStr))),OPT_EXTERNAL_DEPEND);
 
 
   /* LogonUser only exists on NT, link it dynamically */
@@ -518,7 +521,8 @@ void init_nt_system_calls(void)
     {
       logonuser=(logonusertype)proc;
 
-      add_function("LogonUser",f_LogonUser,"function(string,string,string,int|void,void|int:object)",0);
+      /* function(string,string,string,int|void,void|int:object) */
+  ADD_FUNCTION("LogonUser",f_LogonUser,tFunc(tStr tStr tStr tOr(tInt,tVoid) tOr(tVoid,tInt),tObj),0);
 #define SIMPCONST(X) \
       add_integer_constant(#X,X,0);
       
@@ -550,7 +554,8 @@ void init_nt_system_calls(void)
       {
 	netusergetinfo=(netusergetinfotype)proc;
 	
-	add_function("NetUserGetInfo",f_NetUserGetInfo,"function(string,string,int|void:string|array(string|int))",0);
+	/* function(string,string,int|void:string|array(string|int)) */
+  ADD_FUNCTION("NetUserGetInfo",f_NetUserGetInfo,tFunc(tStr tStr tOr(tInt,tVoid),tOr(tStr,tArr(tOr(tStr,tInt)))),0);
 	
 	SIMPCONST(USER_PRIV_GUEST);
 	SIMPCONST(USER_PRIV_USER);
@@ -580,7 +585,8 @@ void init_nt_system_calls(void)
       {
 	netuserenum=(netuserenumtype)proc;
 	
-	add_function("NetUserEnum",f_NetUserEnum,"function(string|int|void,int|void,int|void:array(string|array(string|int)))",0);
+	/* function(string|int|void,int|void,int|void:array(string|array(string|int))) */
+  ADD_FUNCTION("NetUserEnum",f_NetUserEnum,tFunc(tOr3(tStr,tInt,tVoid) tOr(tInt,tVoid) tOr(tInt,tVoid),tArr(tOr(tStr,tArr(tOr(tStr,tInt))))),0);
 	
 	SIMPCONST(FILTER_TEMP_DUPLICATE_ACCOUNT);
 	SIMPCONST(FILTER_NORMAL_ACCOUNT);

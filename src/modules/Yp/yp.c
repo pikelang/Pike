@@ -28,7 +28,7 @@
 #include "builtin_functions.h"
 #include "module_support.h"
 
-RCSID("$Id: yp.c,v 1.15 1999/02/01 02:45:31 hubbe Exp $");
+RCSID("$Id: yp.c,v 1.16 1999/02/10 21:51:02 hubbe Exp $");
 
 #define YPERROR(fun,err) do{ if(err) error("yp->%s(): %s\n", (fun), \
                                            yperr_string(err)); }while(0)
@@ -216,7 +216,9 @@ static void exit_yp_struct( struct object *o )
 
 void pike_module_init(void)
 {
-  add_efun("default_yp_domain", f_default_yp_domain, "function(void:string)",
+  
+/* function(void:string) */
+  ADD_EFUN("default_yp_domain", f_default_yp_domain,tFunc(tVoid,tStr),
 	   OPT_EXTERNAL_DEPEND);
 
   start_new_program();
@@ -226,14 +228,21 @@ void pike_module_init(void)
   set_init_callback( init_yp_struct );
   set_exit_callback( exit_yp_struct );
 
-  add_function("create", f_create, "function(string|void:void)", 0);
-  add_function("bind", f_create, "function(string:void)", 0);
+  /* function(string|void:void) */
+  ADD_FUNCTION("create", f_create,tFunc(tOr(tStr,tVoid),tVoid), 0);
+  /* function(string:void) */
+  ADD_FUNCTION("bind", f_create,tFunc(tStr,tVoid), 0);
 
-  add_function("match", f_match, "function(string,string:string)", 0);
-  add_function("server", f_server, "function(string:string)", 0);
-  add_function("all", f_all, "function(string:mapping(string:string))", 0);
-  add_function("map", f_map, "function(string,function|array(function):void)", 0);
-  add_function("order", f_order, "function(string:int)", 0);
+  /* function(string,string:string) */
+  ADD_FUNCTION("match", f_match,tFunc(tStr tStr,tStr), 0);
+  /* function(string:string) */
+  ADD_FUNCTION("server", f_server,tFunc(tStr,tStr), 0);
+  /* function(string:mapping(string:string)) */
+  ADD_FUNCTION("all", f_all,tFunc(tStr,tMap(tStr,tStr)), 0);
+  /* function(string,function|array(function):void) */
+  ADD_FUNCTION("map", f_map,tFunc(tStr tOr(tFunction,tArr(tFunction)),tVoid), 0);
+  /* function(string:int) */
+  ADD_FUNCTION("order", f_order,tFunc(tStr,tInt), 0);
 
   end_class("Domain", 0);
 }

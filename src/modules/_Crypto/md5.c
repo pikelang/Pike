@@ -1,5 +1,5 @@
 /*
- * $Id: md5.c,v 1.11 1999/02/01 02:46:04 hubbe Exp $
+ * $Id: md5.c,v 1.12 1999/02/10 21:51:38 hubbe Exp $
  *
  * A pike module for getting access to some common cryptos.
  *
@@ -101,10 +101,15 @@ void pike_md5_init(void)
 {
   start_new_program();
   ADD_STORAGE(struct md5_ctx);
-  add_function("name", f_name, "function(void:string)", 0);
-  add_function("create", f_create, "function(void|object:void)", 0);
-  add_function("update", f_update, "function(string:object)", 0);
-  add_function("digest", f_digest, "function(void:string)", 0);
-  add_function("identifier", f_identifier, "function(void:string)", 0);
+  /* function(void:string) */
+  ADD_FUNCTION("name", f_name,tFunc(tVoid,tStr), 0);
+  /* function(void|object:void) */
+  ADD_FUNCTION("create", f_create,tFunc(tOr(tVoid,tObj),tVoid), 0);
+  /* function(string:object) */
+  ADD_FUNCTION("update", f_update,tFunc(tStr,tObj), 0);
+  /* function(void:string) */
+  ADD_FUNCTION("digest", f_digest,tFunc(tVoid,tStr), 0);
+  /* function(void:string) */
+  ADD_FUNCTION("identifier", f_identifier,tFunc(tVoid,tStr), 0);
   end_class("md5", 0);
 }

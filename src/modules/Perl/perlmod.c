@@ -222,10 +222,14 @@ void pike_module_init(void)
   perl_destruct_level=2;
   start_new_program();
   ADD_STORAGE(struct perlmod_storage);
-  add_function("create",perlmod_create,"function(array(string),void|mapping(string:string):int)",0);
-  add_function("run",perlmod_run,"function(:int)",0);
-  add_function("eval",perlmod_eval,"function(string:int)",0);
-  add_function("call",perlmod_call,"function(string,mixed...:int)",0);
+  /* function(array(string),void|mapping(string:string):int) */
+  ADD_FUNCTION("create",perlmod_create,tFunc(tArr(tStr) tOr(tVoid,tMap(tStr,tStr)),tInt),0);
+  /* function(:int) */
+  ADD_FUNCTION("run",perlmod_run,tFunc(,tInt),0);
+  /* function(string:int) */
+  ADD_FUNCTION("eval",perlmod_eval,tFunc(tStr,tInt),0);
+  /* function(string,mixed...:int) */
+  ADD_FUNCTION("call",perlmod_call,tFuncV(tStr,tMix,tInt),0);
   set_init_callback(init_perl_glue);
   set_exit_callback(exit_perl_glue);
   end_class("Perl",0);

@@ -1,5 +1,5 @@
 /*
- * $Id: pgresult.c,v 1.9 1999/02/01 02:45:00 hubbe Exp $
+ * $Id: pgresult.c,v 1.10 1999/02/10 22:03:20 hubbe Exp $
  *
  * Postgres95 support for pike/0.5 and up
  *
@@ -63,7 +63,7 @@
 #include "builtin_functions.h"
 #include "module_support.h"
 
-RCSID("$Id: pgresult.c,v 1.9 1999/02/01 02:45:00 hubbe Exp $");
+RCSID("$Id: pgresult.c,v 1.10 1999/02/10 22:03:20 hubbe Exp $");
 
 #ifdef _REENTRANT
 MUTEX_T pike_postgres_result_mutex;
@@ -220,16 +220,21 @@ void pgresult_init (void)
 	set_init_callback(result_create);
 	set_exit_callback(result_destroy);
 
-	add_function("create",f_create,"function(object:void)",OPT_SIDE_EFFECT);
-	add_function("num_rows",f_num_rows,"function(void:int)",
+	/* function(object:void) */
+  ADD_FUNCTION("create",f_create,tFunc(tObj,tVoid),OPT_SIDE_EFFECT);
+	/* function(void:int) */
+  ADD_FUNCTION("num_rows",f_num_rows,tFunc(tVoid,tInt),
 			OPT_EXTERNAL_DEPEND|OPT_RETURN);
-	add_function("num_fields",f_num_fields,"function(void:int)",
+	/* function(void:int) */
+  ADD_FUNCTION("num_fields",f_num_fields,tFunc(tVoid,tInt),
 			OPT_EXTERNAL_DEPEND|OPT_RETURN);
-	add_function("fetch_fields",f_fetch_fields,
-			"function(void:void|array(mapping(string:mixed)))",
+	/* function(void:void|array(mapping(string:mixed))) */
+  ADD_FUNCTION("fetch_fields",f_fetch_fields,tFunc(tVoid,tOr(tVoid,tArr(tMap(tStr,tMix)))),
 			OPT_EXTERNAL_DEPEND|OPT_RETURN);
-	add_function("seek",f_seek,"function(int:void)",OPT_SIDE_EFFECT);
-	add_function("fetch_row",f_fetch_row,"function(void:void|array(mixed))",
+	/* function(int:void) */
+  ADD_FUNCTION("seek",f_seek,tFunc(tInt,tVoid),OPT_SIDE_EFFECT);
+	/* function(void:void|array(mixed)) */
+  ADD_FUNCTION("fetch_row",f_fetch_row,tFunc(tVoid,tOr(tVoid,tArr(tMix))),
 			OPT_EXTERNAL_DEPEND|OPT_RETURN);
 	pgresult_program=end_program();
 	add_program_constant("postgres_result",pgresult_program,0);

@@ -1,5 +1,5 @@
 /*
- * $Id: crypto.c,v 1.26 1999/02/01 02:45:59 hubbe Exp $
+ * $Id: crypto.c,v 1.27 1999/02/10 21:51:33 hubbe Exp $
  *
  * A pike module for getting access to some common cryptos.
  *
@@ -467,17 +467,25 @@ void pike_crypto_init(void)
   start_new_program();
   ADD_STORAGE(struct pike_crypto);
 
-  add_function("create", f_create, "function(program|object:void)", 0);
+  /* function(program|object:void) */
+  ADD_FUNCTION("create", f_create,tFunc(tOr(tPrg,tObj),tVoid), 0);
 
-  add_function("query_block_size", f_query_block_size, "function(void:int)", 0);
-  add_function("query_key_length", f_query_key_length, "function(void:int)", 0);
+  /* function(void:int) */
+  ADD_FUNCTION("query_block_size", f_query_block_size,tFunc(tVoid,tInt), 0);
+  /* function(void:int) */
+  ADD_FUNCTION("query_key_length", f_query_key_length,tFunc(tVoid,tInt), 0);
 
-  add_function("set_encrypt_key", f_set_encrypt_key, "function(string:object)", 0);
-  add_function("set_decrypt_key", f_set_decrypt_key, "function(string:object)", 0);
-  add_function("crypt", f_crypt, "function(string:string)", 0);
+  /* function(string:object) */
+  ADD_FUNCTION("set_encrypt_key", f_set_encrypt_key,tFunc(tStr,tObj), 0);
+  /* function(string:object) */
+  ADD_FUNCTION("set_decrypt_key", f_set_decrypt_key,tFunc(tStr,tObj), 0);
+  /* function(string:string) */
+  ADD_FUNCTION("crypt", f_crypt,tFunc(tStr,tStr), 0);
 
-  add_function("pad", f_pad, "function(void:string)", 0);
-  add_function("unpad", f_unpad, "function(string:string)", 0);
+  /* function(void:string) */
+  ADD_FUNCTION("pad", f_pad,tFunc(tVoid,tStr), 0);
+  /* function(string:string) */
+  ADD_FUNCTION("unpad", f_unpad,tFunc(tStr,tStr), 0);
 
   set_init_callback(init_pike_crypto);
   set_exit_callback(exit_pike_crypto);
@@ -489,9 +497,12 @@ void pike_crypto_exit(void) {}
 
 void pike_module_init(void)
 {
-  add_function("string_to_hex", f_string_to_hex, "function(string:string)", 0);
-  add_function("hex_to_string", f_hex_to_string, "function(string:string)", 0);
-  add_function("des_parity", f_des_parity, "function(string:string)", 0);
+  /* function(string:string) */
+  ADD_FUNCTION("string_to_hex", f_string_to_hex,tFunc(tStr,tStr), 0);
+  /* function(string:string) */
+  ADD_FUNCTION("hex_to_string", f_hex_to_string,tFunc(tStr,tStr), 0);
+  /* function(string:string) */
+  ADD_FUNCTION("des_parity", f_des_parity,tFunc(tStr,tStr), 0);
 
   pike_md5_init();
   pike_sha_init();

@@ -1,5 +1,5 @@
 /*
- * $Id: passwords.c,v 1.23 1998/11/09 14:49:16 mast Exp $
+ * $Id: passwords.c,v 1.24 1999/02/10 21:55:28 hubbe Exp $
  *
  * Password handling for Pike.
  *
@@ -22,7 +22,7 @@
 #include "system_machine.h"
 #include "system.h"
 
-RCSID("$Id: passwords.c,v 1.23 1998/11/09 14:49:16 mast Exp $");
+RCSID("$Id: passwords.c,v 1.24 1999/02/10 21:55:28 hubbe Exp $");
 
 #include "module_support.h"
 #include "interpret.h"
@@ -527,46 +527,72 @@ void init_passwd(void)
    * From passwords.c
    */
 #ifdef HAVE_GETPWNAM
-  add_efun("getpwnam", f_getpwnam, "function(string:array(int|string))", 
+  
+/* function(string:array(int|string)) */
+  ADD_EFUN("getpwnam", f_getpwnam,tFunc(tStr,tArr(tOr(tInt,tStr))), 
 	   OPT_SIDE_EFFECT |OPT_EXTERNAL_DEPEND);
 #endif
 #ifdef HAVE_GETPWUID
-  add_efun("getpwuid", f_getpwuid, "function(int:array(int|string))", OPT_SIDE_EFFECT |OPT_EXTERNAL_DEPEND);
+  
+/* function(int:array(int|string)) */
+  ADD_EFUN("getpwuid", f_getpwuid,tFunc(tInt,tArr(tOr(tInt,tStr))), OPT_SIDE_EFFECT |OPT_EXTERNAL_DEPEND);
 #endif
 #ifdef HAVE_GETGRNAM
-  add_efun("getgrnam", f_getgrnam, "function(string:array(int|string|array(string)))",
+  
+/* function(string:array(int|string|array(string))) */
+  ADD_EFUN("getgrnam", f_getgrnam,tFunc(tStr,tArr(tOr3(tInt,tStr,tArr(tStr)))),
 	   OPT_SIDE_EFFECT |OPT_EXTERNAL_DEPEND);
 #endif
 #ifdef HAVE_GETGRGID
-  add_efun("getgrgid", f_getgrgid, "function(int:array(int|string|array(string)))", OPT_SIDE_EFFECT |OPT_EXTERNAL_DEPEND);
+  
+/* function(int:array(int|string|array(string))) */
+  ADD_EFUN("getgrgid", f_getgrgid,tFunc(tInt,tArr(tOr3(tInt,tStr,tArr(tStr)))), OPT_SIDE_EFFECT |OPT_EXTERNAL_DEPEND);
 #endif
 #ifdef HAVE_GETPWENT
-  add_efun("getpwent", f_getpwent, "function(void:array(int|string))",
+  
+/* function(void:array(int|string)) */
+  ADD_EFUN("getpwent", f_getpwent,tFunc(tVoid,tArr(tOr(tInt,tStr))),
            OPT_SIDE_EFFECT |OPT_EXTERNAL_DEPEND);
-  add_efun("get_all_users", f_get_all_users, "function(void:array(array(int|string)))",
+  
+/* function(void:array(array(int|string))) */
+  ADD_EFUN("get_all_users", f_get_all_users,tFunc(tVoid,tArr(tArr(tOr(tInt,tStr)))),
            OPT_SIDE_EFFECT | OPT_EXTERNAL_DEPEND);
 #endif
 #ifdef HAVE_ENDPWENT
-  add_efun("endpwent", f_endpwent, "function(void:int)", OPT_SIDE_EFFECT | OPT_EXTERNAL_DEPEND);
+  
+/* function(void:int) */
+  ADD_EFUN("endpwent", f_endpwent,tFunc(tVoid,tInt), OPT_SIDE_EFFECT | OPT_EXTERNAL_DEPEND);
 #endif
 #ifdef HAVE_SETPWENT
-  add_efun("setpwent", f_setpwent, "function(void:int)", OPT_SIDE_EFFECT | OPT_EXTERNAL_DEPEND);
+  
+/* function(void:int) */
+  ADD_EFUN("setpwent", f_setpwent,tFunc(tVoid,tInt), OPT_SIDE_EFFECT | OPT_EXTERNAL_DEPEND);
 #endif
 #ifdef HAVE_GETGRENT
-  add_efun("getgrent", f_getgrent, "function(void:array(int|string|array(string)))",
+  
+/* function(void:array(int|string|array(string))) */
+  ADD_EFUN("getgrent", f_getgrent,tFunc(tVoid,tArr(tOr3(tInt,tStr,tArr(tStr)))),
            OPT_SIDE_EFFECT | OPT_EXTERNAL_DEPEND);
-  add_efun("get_all_groups", f_get_all_groups, "function(void:array(array(int|string|array(string))))",
+  
+/* function(void:array(array(int|string|array(string)))) */
+  ADD_EFUN("get_all_groups", f_get_all_groups,tFunc(tVoid,tArr(tArr(tOr3(tInt,tStr,tArr(tStr))))),
            OPT_SIDE_EFFECT | OPT_EXTERNAL_DEPEND);
 
 #ifdef HAVE_GETPWENT
-  add_efun("get_groups_for_user", f_get_groups_for_user, "function(int|string:array(int))",
+  
+/* function(int|string:array(int)) */
+  ADD_EFUN("get_groups_for_user", f_get_groups_for_user,tFunc(tOr(tInt,tStr),tArr(tInt)),
            OPT_SIDE_EFFECT | OPT_EXTERNAL_DEPEND);
 #endif /* HAVE_GETPWENT */
 #endif
 #ifdef HAVE_ENDGRENT
-  add_efun("endgrent", f_endgrent, "function(void:int)", OPT_SIDE_EFFECT | OPT_EXTERNAL_DEPEND);
+  
+/* function(void:int) */
+  ADD_EFUN("endgrent", f_endgrent,tFunc(tVoid,tInt), OPT_SIDE_EFFECT | OPT_EXTERNAL_DEPEND);
 #endif
 #ifdef HAVE_SETGRENT
-  add_efun("setgrent", f_setgrent, "function(void:int)", OPT_SIDE_EFFECT |OPT_EXTERNAL_DEPEND);
+  
+/* function(void:int) */
+  ADD_EFUN("setgrent", f_setgrent,tFunc(tVoid,tInt), OPT_SIDE_EFFECT |OPT_EXTERNAL_DEPEND);
 #endif
 }

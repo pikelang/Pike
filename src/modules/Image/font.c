@@ -1,4 +1,4 @@
-/* $Id: font.c,v 1.42 1999/02/01 02:43:12 hubbe Exp $ */
+/* $Id: font.c,v 1.43 1999/02/10 21:48:27 hubbe Exp $ */
 #include "global.h"
 #include <config.h>
 
@@ -7,7 +7,7 @@
 /*
 **! module Image
 **! note
-**!	$Id: font.c,v 1.42 1999/02/01 02:43:12 hubbe Exp $
+**!	$Id: font.c,v 1.43 1999/02/10 21:48:27 hubbe Exp $
 **! class font
 **!
 **! note
@@ -883,36 +883,39 @@ void init_font_programs(void)
    start_new_program();
    ADD_STORAGE(struct font*);
 
-   add_function("load",font_load,
-                "function(string:object|int)",0);
+   /* function(string:object|int) */
+  ADD_FUNCTION("load",font_load,tFunc(tStr,tOr(tObj,tInt)),0);
 
-   add_function("create",font_create,
-                "function(void|string:void)",0);
+   /* function(void|string:void) */
+  ADD_FUNCTION("create",font_create,tFunc(tOr(tVoid,tStr),tVoid),0);
 
-   add_function("write",font_write,
-                "function(string:object)",0);
+   /* function(string:object) */
+  ADD_FUNCTION("write",font_write,tFunc(tStr,tObj),0);
 
-   add_function("height",font_height,
-                "function(:int)",0);
+   /* function(:int) */
+  ADD_FUNCTION("height",font_height,tFunc(,tInt),0);
 
-   add_function("baseline",font_baseline,
-                "function(:int)",0);
+   /* function(:int) */
+  ADD_FUNCTION("baseline",font_baseline,tFunc(,tInt),0);
 		
-   add_function("extents",font_text_extents,
-                "function(string ...:array(int))",0);
+   /* function(string ...:array(int)) */
+  ADD_FUNCTION("extents",font_text_extents,tFuncV(,tStr,tArr(tInt)),0);
 		
-   add_function("text_extents",font_text_extents,
-                "function(string ...:array(int))",0);
+   /* function(string ...:array(int)) */
+  ADD_FUNCTION("text_extents",font_text_extents,tFuncV(,tStr,tArr(tInt)),0);
 		
-   add_function("set_x_spacing",font_set_xspacing_scale,
-                "function(float:void)",0);
+   /* function(float:void) */
+  ADD_FUNCTION("set_x_spacing",font_set_xspacing_scale,tFunc(tFlt,tVoid),0);
 
-   add_function("set_y_spacing",font_set_yspacing_scale,
-                "function(float:void)",0);
+   /* function(float:void) */
+  ADD_FUNCTION("set_y_spacing",font_set_yspacing_scale,tFunc(tFlt,tVoid),0);
 
-   add_function("center", font_set_center, "function(void:void)", 0);
-   add_function("left", font_set_left, "function(void:void)", 0);
-   add_function("right", font_set_right, "function(void:void)", 0);
+   /* function(void:void) */
+  ADD_FUNCTION("center", font_set_center,tFunc(tVoid,tVoid), 0);
+   /* function(void:void) */
+  ADD_FUNCTION("left", font_set_left,tFunc(tVoid,tVoid), 0);
+   /* function(void:void) */
+  ADD_FUNCTION("right", font_set_right,tFunc(tVoid,tVoid), 0);
 
    
    set_init_callback(init_font_struct);

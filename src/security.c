@@ -223,13 +223,20 @@ void init_pike_security(void)
 
   start_new_program();
   ADD_STORAGE(struct pike_creds);
-  add_function("set_default_creds",set_default_creds,"function(object:void)",0);
-  add_function("get_default_creds",get_default_creds,"function(:object)",0);
-  add_function("get_user",creds_get_user,"function(:object)",0);
-  add_function("get_allow_bits",creds_get_allow_bits,"function(:int)",0);
-  add_function("get_data_bits",creds_get_data_bits,"function(:int)",0);
-  add_function("create",creds_create,"function(object,int,int:void)",0);
-  add_function("apply",creds_apply,"function(mixed:void)",0);
+  /* function(object:void) */
+  ADD_FUNCTION("set_default_creds",set_default_creds,tFunc(tObj,tVoid),0);
+  /* function(:object) */
+  ADD_FUNCTION("get_default_creds",get_default_creds,tFunc(,tObj),0);
+  /* function(:object) */
+  ADD_FUNCTION("get_user",creds_get_user,tFunc(,tObj),0);
+  /* function(:int) */
+  ADD_FUNCTION("get_allow_bits",creds_get_allow_bits,tFunc(,tInt),0);
+  /* function(:int) */
+  ADD_FUNCTION("get_data_bits",creds_get_data_bits,tFunc(,tInt),0);
+  /* function(object,int,int:void) */
+  ADD_FUNCTION("create",creds_create,tFunc(tObj tInt tInt,tVoid),0);
+  /* function(mixed:void) */
+  ADD_FUNCTION("apply",creds_apply,tFunc(tMix,tVoid),0);
   set_init_callback(init_creds_object);
   set_exit_callback(exit_creds_object);
   set_gc_check_callback(creds_gc_check);
@@ -237,9 +244,15 @@ void init_pike_security(void)
   creds_program=end_program();
   add_program_constant("Creds",creds_program, 0);
 
-  add_efun("call_with_creds",f_call_with_creds,"function(object,mixed...:mixed)",OPT_SIDE_EFFECT);
-  add_efun("get_current_creds",f_get_current_creds,"function(:object)",OPT_EXTERNAL_DEPEND);
-  add_efun("get_object_creds",f_get_object_creds,"function(mixed:object)",OPT_EXTERNAL_DEPEND);
+  
+/* function(object,mixed...:mixed) */
+  ADD_EFUN("call_with_creds",f_call_with_creds,tFuncV(tObj,tMix,tMix),OPT_SIDE_EFFECT);
+  
+/* function(:object) */
+  ADD_EFUN("get_current_creds",f_get_current_creds,tFunc(,tObj),OPT_EXTERNAL_DEPEND);
+  
+/* function(mixed:object) */
+  ADD_EFUN("get_object_creds",f_get_object_creds,tFunc(tMix,tObj),OPT_EXTERNAL_DEPEND);
 
 #define CONST(X) add_integer_constant("BIT_" #X,SECURITY_BIT_##X,0)
   CONST(INDEX);

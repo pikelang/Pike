@@ -4,7 +4,7 @@
 ||| See the files COPYING and DISCLAIMER for more information.
 \*/
 #include "global.h"
-RCSID("$Id: builtin_functions.c,v 1.147 1999/02/05 01:03:52 hubbe Exp $");
+RCSID("$Id: builtin_functions.c,v 1.148 1999/02/10 21:46:38 hubbe Exp $");
 #include "interpret.h"
 #include "svalue.h"
 #include "pike_macros.h"
@@ -3737,128 +3737,290 @@ void f_map_array(INT32 args)
 
 void init_builtin_efuns(void)
 {
-  add_efun("gethrtime", f_gethrtime,"function(int|void:int)", OPT_EXTERNAL_DEPEND);
+  ADD_EFUN("gethrtime", f_gethrtime,tFunc(tOr(tInt,tVoid),tInt), OPT_EXTERNAL_DEPEND);
 
 #ifdef HAVE_GETHRVTIME
-  add_efun("gethrvtime",f_gethrvtime,"function(void:int)",OPT_EXTERNAL_DEPEND);
+  ADD_EFUN("gethrvtime",f_gethrvtime,tFunc(tVoid,tInt),OPT_EXTERNAL_DEPEND);
 #endif
   
 #ifdef PROFILING
-  add_efun("get_profiling_info", f_get_prof_info,
-	   "function(program:array)", OPT_EXTERNAL_DEPEND);
+  ADD_EFUN("get_profiling_info", f_get_prof_info,
+	   tFunc(tProg,tArr), OPT_EXTERNAL_DEPEND);
 #endif /* PROFILING */
 
-  add_efun("_refs",f__refs,"function(function|string|array|mapping|multiset|object|program:int)",OPT_EXTERNAL_DEPEND);
-  add_efun("_typeof",f__typeof,"function(mixed:string)",0);
-  add_efun("replace_master",f_replace_master,"function(object:void)",OPT_SIDE_EFFECT);
-  add_efun("master",f_master,"function(:object)",OPT_EXTERNAL_DEPEND);
-  add_efun("add_constant",f_add_constant,"function(string,void|mixed:void)",OPT_SIDE_EFFECT);
-  add_efun("aggregate",f_aggregate,"function(0=mixed ...:array(0))",OPT_TRY_OPTIMIZE);
-  add_efun("aggregate_multiset",f_aggregate_multiset,"function(0=mixed ...:multiset(0))",OPT_TRY_OPTIMIZE);
-  add_efun("aggregate_mapping",f_aggregate_mapping,"function(0=mixed ...:mapping(0:0))",OPT_TRY_OPTIMIZE);
-  add_efun("all_constants",f_all_constants,"function(:mapping(string:mixed))",OPT_EXTERNAL_DEPEND);
-  add_efun("allocate", f_allocate, "function(int,void|0=mixed:array(0))", 0);
-  add_efun("arrayp",  f_arrayp,  "function(mixed:int)",0);
-  add_efun("backtrace",f_backtrace,"function(:array(array(function|int|string)))",OPT_EXTERNAL_DEPEND);
+  ADD_EFUN("_refs",f__refs,tFunc(tRef,tInt),OPT_EXTERNAL_DEPEND);
+  ADD_EFUN("_typeof",f__typeof,tFunc(tMix,tStr),0);
+  ADD_EFUN("replace_master",f_replace_master,tFunc(tObj,tVoid),OPT_SIDE_EFFECT);
+  
+/* function(:object) */
+  ADD_EFUN("master",f_master,tFunc(,tObj),OPT_EXTERNAL_DEPEND);
+  
+/* function(string,void|mixed:void) */
+  ADD_EFUN("add_constant",f_add_constant,tFunc(tStr tOr(tVoid,tMix),tVoid),OPT_SIDE_EFFECT);
+  
+/* function(0=mixed ...:array(0)) */
+  ADD_EFUN("aggregate",f_aggregate,tFuncV(,tSetvar(0,tMix),tArr(tVar(0))),OPT_TRY_OPTIMIZE);
+  
+/* function(0=mixed ...:multiset(0)) */
+  ADD_EFUN("aggregate_multiset",f_aggregate_multiset,tFuncV(,tSetvar(0,tMix),tSet(tVar(0))),OPT_TRY_OPTIMIZE);
+  
+/* function(0=mixed ...:mapping(0:0)) */
+  ADD_EFUN("aggregate_mapping",f_aggregate_mapping,tFuncV(,tSetvar(0,tMix),tMap(tVar(0),tVar(0))),OPT_TRY_OPTIMIZE);
+  
+/* function(:mapping(string:mixed)) */
+  ADD_EFUN("all_constants",f_all_constants,tFunc(,tMap(tStr,tMix)),OPT_EXTERNAL_DEPEND);
+  
+/* function(int,void|0=mixed:array(0)) */
+  ADD_EFUN("allocate", f_allocate,tFunc(tInt tOr(tVoid,tSetvar(0,tMix)),tArr(tVar(0))), 0);
+  
+/* function(mixed:int) */
+  ADD_EFUN("arrayp",  f_arrayp,tFunc(tMix,tInt),0);
+  
+/* function(:array(array(function|int|string))) */
+  ADD_EFUN("backtrace",f_backtrace,tFunc(,tArr(tArr(tOr3(tFunction,tInt,tStr)))),OPT_EXTERNAL_DEPEND);
 
-  add_efun("column",f_column,"function(array,mixed:array)",0);
-  add_efun("combine_path",f_combine_path,"function(string...:string)",0);
-  add_efun("compile",f_compile,"function(string,mixed...:program)",OPT_EXTERNAL_DEPEND);
-  add_efun("copy_value",f_copy_value,"function(1=mixed:1)",0);
-  add_efun("crypt",f_crypt,"function(string:string)|function(string,string:int)",OPT_EXTERNAL_DEPEND);
-  add_efun("ctime",f_ctime,"function(int:string)",OPT_TRY_OPTIMIZE);
-  add_efun("destruct",f_destruct,"function(object|void:void)",OPT_SIDE_EFFECT);
-  add_efun("equal",f_equal,"function(mixed,mixed:int)",OPT_TRY_OPTIMIZE);
-  add_function("everynth",f_everynth,"function(array(0=mixed),int|void,int|void:array(0))", 0);
-  add_efun("exit",f_exit,"function(int:void)",OPT_SIDE_EFFECT);
-  add_efun("_exit",f__exit,"function(int:void)",OPT_SIDE_EFFECT);
-  add_efun("floatp",  f_floatp,  "function(mixed:int)",OPT_TRY_OPTIMIZE);
-  add_efun("function_name",f_function_name,"function(function:string)",OPT_TRY_OPTIMIZE);
-  add_efun("function_object",f_function_object,"function(function:object)",OPT_TRY_OPTIMIZE);
-  add_efun("functionp",  f_functionp,  "function(mixed:int)",OPT_TRY_OPTIMIZE);
-  add_efun("glob",f_glob,"function(string,string:int)|function(string,string*:array(string))",OPT_TRY_OPTIMIZE);
-  add_efun("hash",f_hash,"function(string,int|void:int)",OPT_TRY_OPTIMIZE);
-  add_efun("indices",f_indices,"function(string|array:int*)|function(mapping(1=mixed:mixed)|multiset(1=mixed):array(1))|function(object|program:string*)",0);
-  add_efun("intp",   f_intp,    "function(mixed:int)",OPT_TRY_OPTIMIZE);
-  add_efun("multisetp",   f_multisetp,   "function(mixed:int)",OPT_TRY_OPTIMIZE);
-  add_efun("lower_case",f_lower_case,"function(string:string)",OPT_TRY_OPTIMIZE);
-  add_efun("m_delete",f_m_delete,"function(0=mapping,mixed:0)",0);
-  add_efun("mappingp",f_mappingp,"function(mixed:int)",OPT_TRY_OPTIMIZE);
-  add_efun("mkmapping",f_mkmapping,"function(array(1=mixed),array(2=mixed):mapping(1:2))",OPT_TRY_OPTIMIZE);
-  add_efun("set_weak_flag",f_set_weak_flag,"function(mapping,int:int)",OPT_SIDE_EFFECT);
-  add_efun("next_object",f_next_object,"function(void|object:object)",OPT_EXTERNAL_DEPEND);
-  add_efun("_next",f__next,"function(string:string)|function(object:object)|function(mapping:mapping)|function(multiset:multiset)|function(program:program)|function(array:array)",OPT_EXTERNAL_DEPEND);
-  add_efun("_prev",f__prev,"function(object:object)|function(mapping:mapping)|function(multiset:multiset)|function(program:program)|function(array:array)",OPT_EXTERNAL_DEPEND);
-  add_efun("object_program",f_object_program,"function(mixed:program)",0);
-  add_efun("objectp", f_objectp, "function(mixed:int)",0);
-  add_efun("programp",f_programp,"function(mixed:int)",0);
-  add_efun("query_num_arg",f_query_num_arg,"function(:int)",OPT_EXTERNAL_DEPEND);
-  add_efun("random",f_random,"function(int:int)",OPT_EXTERNAL_DEPEND);
-  add_efun("random_seed",f_random_seed,"function(int:void)",OPT_SIDE_EFFECT);
-  add_efun("replace",f_replace,"function(string,string,string:string)|function(string,string*,string*:string)|function(0=array,mixed,mixed:0)|function(1=mapping,mixed,mixed:1)",0);
-  add_efun("reverse",f_reverse,"function(int:int)|function(string:string)|function(array:array)",0);
-  add_efun("rows",f_rows,"function(mixed,array:array)",0);
-  add_efun("rusage", f_rusage, "function(:int *)",OPT_EXTERNAL_DEPEND);
-  add_efun("search",f_search,"function(string,string,void|int:int)|function(array,mixed,void|int:int)|function(mapping,mixed:mixed)",0);
-  add_efun("sleep", f_sleep, "function(float|int,int|void:void)",OPT_SIDE_EFFECT);
-  add_efun("sort",f_sort,"function(array(0=mixed),array(mixed)...:array(0))",OPT_SIDE_EFFECT);
-  add_function("splice",f_splice,"function(array(0=mixed)...:array(0))", 0);
-  add_efun("stringp", f_stringp, "function(mixed:int)",0);
-  add_efun("this_object", f_this_object, "function(:object)",OPT_EXTERNAL_DEPEND);
-  add_efun("throw",f_throw,"function(mixed:void)",OPT_SIDE_EFFECT);
-  add_efun("time",f_time,"function(void|int:int|float)",OPT_EXTERNAL_DEPEND);
-  add_efun("trace",f_trace,"function(int:int)",OPT_SIDE_EFFECT);
-  add_function("transpose",f_transpose,"function(array(0=mixed):array(0))", 0);
-  add_efun("upper_case",f_upper_case,"function(string:string)",0);
-  add_efun("values",f_values,"function(string|multiset:array(int))|function(array(0=mixed)|mapping(mixed:0=mixed)|object|program:array(0))",0);
-  add_efun("zero_type",f_zero_type,"function(mixed:int)",0);
-  add_efun("array_sscanf",f_sscanf,"function(string,string:array)",0);
+  
+/* function(array,mixed:array) */
+  ADD_EFUN("column",f_column,tFunc(tArray tMix,tArray),0);
+  
+/* function(string...:string) */
+  ADD_EFUN("combine_path",f_combine_path,tFuncV(,tStr,tStr),0);
+  
+/* function(string,mixed...:program) */
+  ADD_EFUN("compile",f_compile,tFuncV(tStr,tMix,tPrg),OPT_EXTERNAL_DEPEND);
+  
+/* function(1=mixed:1) */
+  ADD_EFUN("copy_value",f_copy_value,tFunc(tSetvar(1,tMix),tVar(1)),0);
+  
+/* function(string:string)|function(string,string:int) */
+  ADD_EFUN("crypt",f_crypt,tOr(tFunc(tStr,tStr),tFunc(tStr tStr,tInt)),OPT_EXTERNAL_DEPEND);
+  
+/* function(int:string) */
+  ADD_EFUN("ctime",f_ctime,tFunc(tInt,tStr),OPT_TRY_OPTIMIZE);
+  
+/* function(object|void:void) */
+  ADD_EFUN("destruct",f_destruct,tFunc(tOr(tObj,tVoid),tVoid),OPT_SIDE_EFFECT);
+  
+/* function(mixed,mixed:int) */
+  ADD_EFUN("equal",f_equal,tFunc(tMix tMix,tInt),OPT_TRY_OPTIMIZE);
+  /* function(array(0=mixed),int|void,int|void:array(0)) */
+  ADD_FUNCTION("everynth",f_everynth,tFunc(tArr(tSetvar(0,tMix)) tOr(tInt,tVoid) tOr(tInt,tVoid),tArr(tVar(0))), 0);
+  
+/* function(int:void) */
+  ADD_EFUN("exit",f_exit,tFunc(tInt,tVoid),OPT_SIDE_EFFECT);
+  
+/* function(int:void) */
+  ADD_EFUN("_exit",f__exit,tFunc(tInt,tVoid),OPT_SIDE_EFFECT);
+  
+/* function(mixed:int) */
+  ADD_EFUN("floatp",  f_floatp,tFunc(tMix,tInt),OPT_TRY_OPTIMIZE);
+  
+/* function(function:string) */
+  ADD_EFUN("function_name",f_function_name,tFunc(tFunction,tStr),OPT_TRY_OPTIMIZE);
+  
+/* function(function:object) */
+  ADD_EFUN("function_object",f_function_object,tFunc(tFunction,tObj),OPT_TRY_OPTIMIZE);
+  
+/* function(mixed:int) */
+  ADD_EFUN("functionp",  f_functionp,tFunc(tMix,tInt),OPT_TRY_OPTIMIZE);
+  
+/* function(string,string:int)|function(string,string*:array(string)) */
+  ADD_EFUN("glob",f_glob,tOr(tFunc(tStr tStr,tInt),tFunc(tStr tArr(tStr),tArr(tStr))),OPT_TRY_OPTIMIZE);
+  
+/* function(string,int|void:int) */
+  ADD_EFUN("hash",f_hash,tFunc(tStr tOr(tInt,tVoid),tInt),OPT_TRY_OPTIMIZE);
+  
+/* function(string|array:int*)|function(mapping(1=mixed:mixed)|multiset(1=mixed):array(1))|function(object|program:string*) */
+  ADD_EFUN("indices",f_indices,tOr3(tFunc(tOr(tStr,tArray),tArr(tInt)),tFunc(tOr(tMap(tSetvar(1,tMix),tMix),tSet(tSetvar(1,tMix))),tArr(tVar(1))),tFunc(tOr(tObj,tPrg),tArr(tStr))),0);
+  
+/* function(mixed:int) */
+  ADD_EFUN("intp",   f_intp,tFunc(tMix,tInt),OPT_TRY_OPTIMIZE);
+  
+/* function(mixed:int) */
+  ADD_EFUN("multisetp",   f_multisetp,tFunc(tMix,tInt),OPT_TRY_OPTIMIZE);
+  
+/* function(string:string) */
+  ADD_EFUN("lower_case",f_lower_case,tFunc(tStr,tStr),OPT_TRY_OPTIMIZE);
+  
+/* function(0=mapping,mixed:0) */
+  ADD_EFUN("m_delete",f_m_delete,tFunc(tSetvar(0,tMapping) tMix,tVar(0)),0);
+  
+/* function(mixed:int) */
+  ADD_EFUN("mappingp",f_mappingp,tFunc(tMix,tInt),OPT_TRY_OPTIMIZE);
+  
+/* function(array(1=mixed),array(2=mixed):mapping(1:2)) */
+  ADD_EFUN("mkmapping",f_mkmapping,tFunc(tArr(tSetvar(1,tMix)) tArr(tSetvar(2,tMix)),tMap(tVar(1),tVar(2))),OPT_TRY_OPTIMIZE);
+  
+/* function(mapping,int:int) */
+  ADD_EFUN("set_weak_flag",f_set_weak_flag,tFunc(tMapping tInt,tInt),OPT_SIDE_EFFECT);
+  
+/* function(void|object:object) */
+  ADD_EFUN("next_object",f_next_object,tFunc(tOr(tVoid,tObj),tObj),OPT_EXTERNAL_DEPEND);
+  
+/* function(string:string)|function(object:object)|function(mapping:mapping)|function(multiset:multiset)|function(program:program)|function(array:array) */
+  ADD_EFUN("_next",f__next,tOr6(tFunc(tStr,tStr),tFunc(tObj,tObj),tFunc(tMapping,tMapping),tFunc(tMultiset,tMultiset),tFunc(tPrg,tPrg),tFunc(tArray,tArray)),OPT_EXTERNAL_DEPEND);
+  
+/* function(object:object)|function(mapping:mapping)|function(multiset:multiset)|function(program:program)|function(array:array) */
+  ADD_EFUN("_prev",f__prev,tOr5(tFunc(tObj,tObj),tFunc(tMapping,tMapping),tFunc(tMultiset,tMultiset),tFunc(tPrg,tPrg),tFunc(tArray,tArray)),OPT_EXTERNAL_DEPEND);
+  
+/* function(mixed:program) */
+  ADD_EFUN("object_program",f_object_program,tFunc(tMix,tPrg),0);
+  
+/* function(mixed:int) */
+  ADD_EFUN("objectp", f_objectp,tFunc(tMix,tInt),0);
+  
+/* function(mixed:int) */
+  ADD_EFUN("programp",f_programp,tFunc(tMix,tInt),0);
+  
+/* function(:int) */
+  ADD_EFUN("query_num_arg",f_query_num_arg,tFunc(,tInt),OPT_EXTERNAL_DEPEND);
+  
+/* function(int:int) */
+  ADD_EFUN("random",f_random,tFunc(tInt,tInt),OPT_EXTERNAL_DEPEND);
+  
+/* function(int:void) */
+  ADD_EFUN("random_seed",f_random_seed,tFunc(tInt,tVoid),OPT_SIDE_EFFECT);
+  
+/* function(string,string,string:string)|function(string,string*,string*:string)|function(0=array,mixed,mixed:0)|function(1=mapping,mixed,mixed:1) */
+  ADD_EFUN("replace",f_replace,tOr4(tFunc(tStr tStr tStr,tStr),tFunc(tStr tArr(tStr) tArr(tStr),tStr),tFunc(tSetvar(0,tArray) tMix tMix,tVar(0)),tFunc(tSetvar(1,tMapping) tMix tMix,tVar(1))),0);
+  
+/* function(int:int)|function(string:string)|function(array:array) */
+  ADD_EFUN("reverse",f_reverse,tOr3(tFunc(tInt,tInt),tFunc(tStr,tStr),tFunc(tArray,tArray)),0);
+  
+/* function(mixed,array:array) */
+  ADD_EFUN("rows",f_rows,tFunc(tMix tArray,tArray),0);
+  
+/* function(:int *) */
+  ADD_EFUN("rusage", f_rusage,tFunc(,tArr(tInt)),OPT_EXTERNAL_DEPEND);
+  
+/* function(string,string,void|int:int)|function(array,mixed,void|int:int)|function(mapping,mixed:mixed) */
+  ADD_EFUN("search",f_search,tOr3(tFunc(tStr tStr tOr(tVoid,tInt),tInt),tFunc(tArray tMix tOr(tVoid,tInt),tInt),tFunc(tMapping tMix,tMix)),0);
+  
+/* function(float|int,int|void:void) */
+  ADD_EFUN("sleep", f_sleep,tFunc(tOr(tFlt,tInt) tOr(tInt,tVoid),tVoid),OPT_SIDE_EFFECT);
+  
+/* function(array(0=mixed),array(mixed)...:array(0)) */
+  ADD_EFUN("sort",f_sort,tFuncV(tArr(tSetvar(0,tMix)),tArr(tMix),tArr(tVar(0))),OPT_SIDE_EFFECT);
+  /* function(array(0=mixed)...:array(0)) */
+  ADD_FUNCTION("splice",f_splice,tFuncV(,tArr(tSetvar(0,tMix)),tArr(tVar(0))), 0);
+  
+/* function(mixed:int) */
+  ADD_EFUN("stringp", f_stringp,tFunc(tMix,tInt),0);
+  
+/* function(:object) */
+  ADD_EFUN("this_object", f_this_object,tFunc(,tObj),OPT_EXTERNAL_DEPEND);
+  
+/* function(mixed:void) */
+  ADD_EFUN("throw",f_throw,tFunc(tMix,tVoid),OPT_SIDE_EFFECT);
+  
+/* function(void|int:int|float) */
+  ADD_EFUN("time",f_time,tFunc(tOr(tVoid,tInt),tOr(tInt,tFlt)),OPT_EXTERNAL_DEPEND);
+  
+/* function(int:int) */
+  ADD_EFUN("trace",f_trace,tFunc(tInt,tInt),OPT_SIDE_EFFECT);
+  /* function(array(0=mixed):array(0)) */
+  ADD_FUNCTION("transpose",f_transpose,tFunc(tArr(tSetvar(0,tMix)),tArr(tVar(0))), 0);
+  
+/* function(string:string) */
+  ADD_EFUN("upper_case",f_upper_case,tFunc(tStr,tStr),0);
+  
+/* function(string|multiset:array(int))|function(array(0=mixed)|mapping(mixed:0=mixed)|object|program:array(0)) */
+  ADD_EFUN("values",f_values,tOr(tFunc(tOr(tStr,tMultiset),tArr(tInt)),tFunc(tOr4(tArr(tSetvar(0,tMix)),tMap(tMix,tSetvar(0,tMix)),tObj,tPrg),tArr(tVar(0)))),0);
+  
+/* function(mixed:int) */
+  ADD_EFUN("zero_type",f_zero_type,tFunc(tMix,tInt),0);
+  
+/* function(string,string:array) */
+  ADD_EFUN("array_sscanf",f_sscanf,tFunc(tStr tStr,tArray),0);
 
   /* Some Wide-string stuff */
-  add_efun("string_to_unicode", f_string_to_unicode, "function(string:string)", OPT_TRY_OPTIMIZE);
-  add_efun("unicode_to_string", f_unicode_to_string, "function(string:string)", OPT_TRY_OPTIMIZE);
-  add_efun("string_to_utf8", f_string_to_utf8, "function(string,int|void:string)", OPT_TRY_OPTIMIZE);
-  add_efun("utf8_to_string", f_utf8_to_string, "function(string,int|void:string)", OPT_TRY_OPTIMIZE);
+  
+/* function(string:string) */
+  ADD_EFUN("string_to_unicode", f_string_to_unicode,tFunc(tStr,tStr), OPT_TRY_OPTIMIZE);
+  
+/* function(string:string) */
+  ADD_EFUN("unicode_to_string", f_unicode_to_string,tFunc(tStr,tStr), OPT_TRY_OPTIMIZE);
+  
+/* function(string,int|void:string) */
+  ADD_EFUN("string_to_utf8", f_string_to_utf8,tFunc(tStr tOr(tInt,tVoid),tStr), OPT_TRY_OPTIMIZE);
+  
+/* function(string,int|void:string) */
+  ADD_EFUN("utf8_to_string", f_utf8_to_string,tFunc(tStr tOr(tInt,tVoid),tStr), OPT_TRY_OPTIMIZE);
 
 #ifdef HAVE_LOCALTIME
-  add_efun("localtime",f_localtime,"function(int:mapping(string:int))",OPT_EXTERNAL_DEPEND);
+  
+/* function(int:mapping(string:int)) */
+  ADD_EFUN("localtime",f_localtime,tFunc(tInt,tMap(tStr,tInt)),OPT_EXTERNAL_DEPEND);
 #endif
 #ifdef HAVE_GMTIME
-  add_efun("gmtime",f_gmtime,"function(int:mapping(string:int))",OPT_EXTERNAL_DEPEND);
+  
+/* function(int:mapping(string:int)) */
+  ADD_EFUN("gmtime",f_gmtime,tFunc(tInt,tMap(tStr,tInt)),OPT_EXTERNAL_DEPEND);
 #endif
 
 #ifdef HAVE_MKTIME
-  add_efun("mktime",f_mktime,"function(int,int,int,int,int,int,int,void|int:int)|function(object|mapping:int)",OPT_TRY_OPTIMIZE);
+  
+/* function(int,int,int,int,int,int,int,void|int:int)|function(object|mapping:int) */
+  ADD_EFUN("mktime",f_mktime,tOr(tFunc(tInt tInt tInt tInt tInt tInt tInt tOr(tVoid,tInt),tInt),tFunc(tOr(tObj,tMapping),tInt)),OPT_TRY_OPTIMIZE);
 #endif
 
 #ifdef PIKE_DEBUG
-  add_efun("_verify_internals",f__verify_internals,"function(:void)",OPT_SIDE_EFFECT|OPT_EXTERNAL_DEPEND);
-  add_efun("_debug",f__debug,"function(int:int)",OPT_SIDE_EFFECT|OPT_EXTERNAL_DEPEND);
+  
+/* function(:void) */
+  ADD_EFUN("_verify_internals",f__verify_internals,tFunc(,tVoid),OPT_SIDE_EFFECT|OPT_EXTERNAL_DEPEND);
+  
+/* function(int:int) */
+  ADD_EFUN("_debug",f__debug,tFunc(tInt,tInt),OPT_SIDE_EFFECT|OPT_EXTERNAL_DEPEND);
 #ifdef YYDEBUG
-  add_efun("_compiler_trace",f__compiler_trace,"function(int:int)",OPT_SIDE_EFFECT|OPT_EXTERNAL_DEPEND);
+  
+/* function(int:int) */
+  ADD_EFUN("_compiler_trace",f__compiler_trace,tFunc(tInt,tInt),OPT_SIDE_EFFECT|OPT_EXTERNAL_DEPEND);
 #endif /* YYDEBUG */
 #endif
-  add_efun("_memory_usage",f__memory_usage,"function(:mapping(string:int))",OPT_EXTERNAL_DEPEND);
+  
+/* function(:mapping(string:int)) */
+  ADD_EFUN("_memory_usage",f__memory_usage,tFunc(,tMap(tStr,tInt)),OPT_EXTERNAL_DEPEND);
 
-  add_efun("gc",f_gc,"function(:int)",OPT_SIDE_EFFECT);
-  add_efun("version", f_version, "function(:string)", OPT_TRY_OPTIMIZE);
+  
+/* function(:int) */
+  ADD_EFUN("gc",f_gc,tFunc(,tInt),OPT_SIDE_EFFECT);
+  
+/* function(:string) */
+  ADD_EFUN("version", f_version,tFunc(,tStr), OPT_TRY_OPTIMIZE);
 
-  add_efun("encode_value", f_encode_value, "function(mixed,void|object:string)", OPT_TRY_OPTIMIZE);
-  add_efun("decode_value", f_decode_value, "function(string,void|object:mixed)", OPT_TRY_OPTIMIZE);
-  add_efun("object_variablep", f_object_variablep, "function(object,string:int)", OPT_EXTERNAL_DEPEND);
+  
+/* function(mixed,void|object:string) */
+  ADD_EFUN("encode_value", f_encode_value,tFunc(tMix tOr(tVoid,tObj),tStr), OPT_TRY_OPTIMIZE);
+  
+/* function(string,void|object:mixed) */
+  ADD_EFUN("decode_value", f_decode_value,tFunc(tStr tOr(tVoid,tObj),tMix), OPT_TRY_OPTIMIZE);
+  
+/* function(object,string:int) */
+  ADD_EFUN("object_variablep", f_object_variablep,tFunc(tObj tStr,tInt), OPT_EXTERNAL_DEPEND);
 
-  add_function("interleave_array",f_interleave_array,"function(array(mapping(int:mixed)):array(int))",OPT_TRY_OPTIMIZE);
-  add_function("diff",f_diff,"function(array,array:array(array))",OPT_TRY_OPTIMIZE);
-  add_function("diff_longest_sequence",f_diff_longest_sequence,"function(array,array:array(int))",OPT_TRY_OPTIMIZE);
-  add_function("diff_dyn_longest_sequence",f_diff_dyn_longest_sequence,"function(array,array:array(int))",OPT_TRY_OPTIMIZE);
-  add_function("diff_compare_table",f_diff_compare_table,"function(array,array:array(array))",OPT_TRY_OPTIMIZE);
-  add_function("longest_ordered_sequence",f_longest_ordered_sequence,"function(array:array(int))",0);
-  add_function("sort",f_sort,"function(array(mixed),array(mixed)...:array(mixed))",OPT_SIDE_EFFECT);
+  /* function(array(mapping(int:mixed)):array(int)) */
+  ADD_FUNCTION("interleave_array",f_interleave_array,tFunc(tArr(tMap(tInt,tMix)),tArr(tInt)),OPT_TRY_OPTIMIZE);
+  /* function(array,array:array(array)) */
+  ADD_FUNCTION("diff",f_diff,tFunc(tArray tArray,tArr(tArray)),OPT_TRY_OPTIMIZE);
+  /* function(array,array:array(int)) */
+  ADD_FUNCTION("diff_longest_sequence",f_diff_longest_sequence,tFunc(tArray tArray,tArr(tInt)),OPT_TRY_OPTIMIZE);
+  /* function(array,array:array(int)) */
+  ADD_FUNCTION("diff_dyn_longest_sequence",f_diff_dyn_longest_sequence,tFunc(tArray tArray,tArr(tInt)),OPT_TRY_OPTIMIZE);
+  /* function(array,array:array(array)) */
+  ADD_FUNCTION("diff_compare_table",f_diff_compare_table,tFunc(tArray tArray,tArr(tArray)),OPT_TRY_OPTIMIZE);
+  /* function(array:array(int)) */
+  ADD_FUNCTION("longest_ordered_sequence",f_longest_ordered_sequence,tFunc(tArray,tArr(tInt)),0);
+  /* function(array(mixed),array(mixed)...:array(mixed)) */
+  ADD_FUNCTION("sort",f_sort,tFuncV(tArr(tMix),tArr(tMix),tArr(tMix)),OPT_SIDE_EFFECT);
 #ifdef DEBUG_MALLOC
-  add_efun("_reset_dmalloc",f__reset_dmalloc,"function(void:void)",OPT_SIDE_EFFECT);
+  
+/* function(void:void) */
+  ADD_EFUN("_reset_dmalloc",f__reset_dmalloc,tFunc(tVoid,tVoid),OPT_SIDE_EFFECT);
 #endif
 #ifdef PIKE_DEBUG
-  add_efun("_locate_references",f__locate_references,"function(1=mixed:1)",OPT_SIDE_EFFECT);
+  
+/* function(1=mixed:1) */
+  ADD_EFUN("_locate_references",f__locate_references,tFunc(tSetvar(1,tMix),tVar(1)),OPT_SIDE_EFFECT);
 #endif
 }
 

@@ -4,7 +4,7 @@
 ||| See the files COPYING and DISCLAIMER for more information.
 \*/
 #include "global.h"
-RCSID("$Id: gdbmmod.c,v 1.6 1999/02/01 02:42:09 hubbe Exp $");
+RCSID("$Id: gdbmmod.c,v 1.7 1999/02/10 21:47:17 hubbe Exp $");
 #include "gdbm_machine.h"
 #include "threads.h"
 
@@ -336,18 +336,29 @@ void pike_module_init(void)
   start_new_program();
   ADD_STORAGE(struct gdbm_glue);
   
-  add_function("create",gdbmmod_create,"function(void|string,void|string:void)",0);
+  /* function(void|string,void|string:void) */
+  ADD_FUNCTION("create",gdbmmod_create,tFunc(tOr(tVoid,tStr) tOr(tVoid,tStr),tVoid),0);
 
-  add_function("close",gdbmmod_close,"function(:void)",0);
-  add_function("store",gdbmmod_store,"function(string,string:int)",0);
-  add_function("`[]=",gdbmmod_store,"function(string,string:int)",0);
-  add_function("fetch",gdbmmod_fetch,"function(string:string)",0);
-  add_function("`[]",gdbmmod_fetch,"function(string:string)",0);
-  add_function("delete",gdbmmod_delete,"function(string:int)",0);
-  add_function("firstkey",gdbmmod_firstkey,"function(:string)",0);
-  add_function("nextkey",gdbmmod_nextkey,"function(string:string)",0);
-  add_function("reorganize",gdbmmod_reorganize,"function(:int)",0);
-  add_function("sync",gdbmmod_sync,"function(:void)",0);
+  /* function(:void) */
+  ADD_FUNCTION("close",gdbmmod_close,tFunc(,tVoid),0);
+  /* function(string,string:int) */
+  ADD_FUNCTION("store",gdbmmod_store,tFunc(tStr tStr,tInt),0);
+  /* function(string,string:int) */
+  ADD_FUNCTION("`[]=",gdbmmod_store,tFunc(tStr tStr,tInt),0);
+  /* function(string:string) */
+  ADD_FUNCTION("fetch",gdbmmod_fetch,tFunc(tStr,tStr),0);
+  /* function(string:string) */
+  ADD_FUNCTION("`[]",gdbmmod_fetch,tFunc(tStr,tStr),0);
+  /* function(string:int) */
+  ADD_FUNCTION("delete",gdbmmod_delete,tFunc(tStr,tInt),0);
+  /* function(:string) */
+  ADD_FUNCTION("firstkey",gdbmmod_firstkey,tFunc(,tStr),0);
+  /* function(string:string) */
+  ADD_FUNCTION("nextkey",gdbmmod_nextkey,tFunc(tStr,tStr),0);
+  /* function(:int) */
+  ADD_FUNCTION("reorganize",gdbmmod_reorganize,tFunc(,tInt),0);
+  /* function(:void) */
+  ADD_FUNCTION("sync",gdbmmod_sync,tFunc(,tVoid),0);
 
   set_init_callback(init_gdbm_glue);
   set_exit_callback(exit_gdbm_glue);

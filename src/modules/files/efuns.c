@@ -22,7 +22,7 @@
 #include "file_machine.h"
 #include "file.h"
 
-RCSID("$Id: efuns.c,v 1.63 1999/02/07 16:29:04 grubba Exp $");
+RCSID("$Id: efuns.c,v 1.64 1999/02/10 21:53:35 hubbe Exp $");
 
 #ifdef HAVE_SYS_TYPES_H
 #include <sys/types.h>
@@ -878,23 +878,45 @@ void init_files_efuns(void)
   set_close_on_exec(1,1);
   set_close_on_exec(2,1);
 
-  add_efun("file_stat",f_file_stat,
-	   "function(string,int|void:int *)", OPT_EXTERNAL_DEPEND);
+  
+/* function(string,int|void:int *) */
+  ADD_EFUN("file_stat",f_file_stat,tFunc(tStr tOr(tInt,tVoid),tArr(tInt)), OPT_EXTERNAL_DEPEND);
 #if defined(HAVE_STATVFS) || defined(HAVE_STATFS) || defined(HAVE_USTAT) || defined(__NT__)
-  add_efun("filesystem_stat", f_filesystem_stat,
-	   "function(string:mapping(string:string|int))", OPT_EXTERNAL_DEPEND);
+  
+/* function(string:mapping(string:string|int)) */
+  ADD_EFUN("filesystem_stat", f_filesystem_stat,tFunc(tStr,tMap(tStr,tOr(tStr,tInt))), OPT_EXTERNAL_DEPEND);
 #endif /* HAVE_STATVFS || HAVE_STATFS */
-  add_efun("errno",f_errno,"function(:int)",OPT_EXTERNAL_DEPEND);
-  add_efun("werror",f_werror,"function(string,void|mixed...:void)",OPT_SIDE_EFFECT);
-  add_efun("rm",f_rm,"function(string:int)",OPT_SIDE_EFFECT);
-  add_efun("mkdir",f_mkdir,"function(string,void|int:int)",OPT_SIDE_EFFECT);
-  add_efun("mv", f_mv, "function(string,string:int)", OPT_SIDE_EFFECT);
-  add_efun("get_dir",f_get_dir,"function(string:string *)",OPT_EXTERNAL_DEPEND);
-  add_efun("cd",f_cd,"function(string:int)",OPT_SIDE_EFFECT);
-  add_efun("getcwd",f_getcwd,"function(:string)",OPT_EXTERNAL_DEPEND);
-  add_efun("exece",f_exece,"function(string,mixed*,void|mapping(string:string):int)",OPT_SIDE_EFFECT); 
+  
+/* function(:int) */
+  ADD_EFUN("errno",f_errno,tFunc(,tInt),OPT_EXTERNAL_DEPEND);
+  
+/* function(string,void|mixed...:void) */
+  ADD_EFUN("werror",f_werror,tFuncV(tStr,tOr(tVoid,tMix),tVoid),OPT_SIDE_EFFECT);
+  
+/* function(string:int) */
+  ADD_EFUN("rm",f_rm,tFunc(tStr,tInt),OPT_SIDE_EFFECT);
+  
+/* function(string,void|int:int) */
+  ADD_EFUN("mkdir",f_mkdir,tFunc(tStr tOr(tVoid,tInt),tInt),OPT_SIDE_EFFECT);
+  
+/* function(string,string:int) */
+  ADD_EFUN("mv", f_mv,tFunc(tStr tStr,tInt), OPT_SIDE_EFFECT);
+  
+/* function(string:string *) */
+  ADD_EFUN("get_dir",f_get_dir,tFunc(tStr,tArr(tStr)),OPT_EXTERNAL_DEPEND);
+  
+/* function(string:int) */
+  ADD_EFUN("cd",f_cd,tFunc(tStr,tInt),OPT_SIDE_EFFECT);
+  
+/* function(:string) */
+  ADD_EFUN("getcwd",f_getcwd,tFunc(,tStr),OPT_EXTERNAL_DEPEND);
+  
+/* function(string,mixed*,void|mapping(string:string):int) */
+  ADD_EFUN("exece",f_exece,tFunc(tStr tArr(tMix) tOr(tVoid,tMap(tStr,tStr)),tInt),OPT_SIDE_EFFECT); 
 
 #ifdef HAVE_STRERROR
-  add_efun("strerror",f_strerror,"function(int:string)",0);
+  
+/* function(int:string) */
+  ADD_EFUN("strerror",f_strerror,tFunc(tInt,tStr),0);
 #endif
 }

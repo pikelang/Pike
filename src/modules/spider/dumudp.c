@@ -1,12 +1,12 @@
 /*
- * $Id: dumudp.c,v 1.42 1999/02/01 02:47:03 hubbe Exp $
+ * $Id: dumudp.c,v 1.43 1999/02/10 21:54:21 hubbe Exp $
  */
 
 #include "global.h"
 
 #include "config.h"
 
-RCSID("$Id: dumudp.c,v 1.42 1999/02/01 02:47:03 hubbe Exp $");
+RCSID("$Id: dumudp.c,v 1.43 1999/02/10 21:54:21 hubbe Exp $");
 #include "fdlib.h"
 #include "interpret.h"
 #include "svalue.h"
@@ -439,16 +439,22 @@ void init_udp(void)
   start_new_program();
 
   ADD_STORAGE(struct dumudp);
-  add_function("bind",udp_bind,"function(int,void|function,void|string:int)",0);
-  add_function("enable_broadcast", udp_enable_broadcast, "function(:void)", 0);
-  add_function("read",udp_read,"function(int|void:mapping(string:int|string))",0);
-  add_function("send",udp_sendto,"function(string,int,string,void|int:int)",0);
-  add_function( "set_nonblocking", udp_set_nonblocking,
-		"function(function(void:void):void)", 0 );
-  add_function( "set_read_callback", udp_set_read_callback,
-		"function(function(void:void):void)", 0 );
-  add_function( "set_blocking", udp_set_blocking,"function(void:void)", 0 );
-  add_function("query_address",udp_query_address,"function(:string)",0);
+  /* function(int,void|function,void|string:int) */
+  ADD_FUNCTION("bind",udp_bind,tFunc(tInt tOr(tVoid,tFunction) tOr(tVoid,tStr),tInt),0);
+  /* function(:void) */
+  ADD_FUNCTION("enable_broadcast", udp_enable_broadcast,tFunc(,tVoid), 0);
+  /* function(int|void:mapping(string:int|string)) */
+  ADD_FUNCTION("read",udp_read,tFunc(tOr(tInt,tVoid),tMap(tStr,tOr(tInt,tStr))),0);
+  /* function(string,int,string,void|int:int) */
+  ADD_FUNCTION("send",udp_sendto,tFunc(tStr tInt tStr tOr(tVoid,tInt),tInt),0);
+  /* function(function(void:void):void) */
+  ADD_FUNCTION( "set_nonblocking", udp_set_nonblocking,tFunc(tFunc(tVoid,tVoid),tVoid), 0 );
+  /* function(function(void:void):void) */
+  ADD_FUNCTION( "set_read_callback", udp_set_read_callback,tFunc(tFunc(tVoid,tVoid),tVoid), 0 );
+  /* function(void:void) */
+  ADD_FUNCTION( "set_blocking", udp_set_blocking,tFunc(tVoid,tVoid), 0 );
+  /* function(:string) */
+  ADD_FUNCTION("query_address",udp_query_address,tFunc(,tStr),0);
   set_init_callback(zero_udp);
   set_exit_callback(exit_udp);
   end_class("dumUDP",0);

@@ -1,5 +1,5 @@
 /*
- * $Id: oracle.c,v 1.15 1999/02/01 02:44:20 hubbe Exp $
+ * $Id: oracle.c,v 1.16 1999/02/10 21:49:57 hubbe Exp $
  *
  * Pike interface to Oracle databases.
  *
@@ -36,7 +36,7 @@
 
 #endif
 
-RCSID("$Id: oracle.c,v 1.15 1999/02/01 02:44:20 hubbe Exp $");
+RCSID("$Id: oracle.c,v 1.16 1999/02/10 21:49:57 hubbe Exp $");
 
 #ifdef HAVE_ORACLE
 
@@ -704,9 +704,12 @@ void pike_module_init(void)
   start_new_program();
   ADD_STORAGE(struct dbcon);
 
-  add_function("create", f_create, "function(string|void, string|void, string|void, string|void:void)", ID_PUBLIC);
-  add_function("big_query", f_big_query, "function(string,mapping(int|string:int|float|string|multiset(string))|void:object)", ID_PUBLIC);
-  add_function("list_tables", f_list_tables, "function(void|string:object)", ID_PUBLIC);
+  /* function(string|void, string|void, string|void, string|void:void) */
+  ADD_FUNCTION("create", f_create,tFunc(tOr(tStr,tVoid) tOr(tStr,tVoid) tOr(tStr,tVoid) tOr(tStr,tVoid),tVoid), ID_PUBLIC);
+  /* function(string,mapping(int|string:int|float|string|multiset(string))|void:object) */
+  ADD_FUNCTION("big_query", f_big_query,tFunc(tStr tOr(tMap(tOr(tInt,tStr),tOr4(tInt,tFlt,tStr,tSet(tStr))),tVoid),tObj), ID_PUBLIC);
+  /* function(void|string:object) */
+  ADD_FUNCTION("list_tables", f_list_tables,tFunc(tOr(tVoid,tStr),tObj), ID_PUBLIC);
 
   set_init_callback(init_dbcon_struct);
   set_exit_callback(exit_dbcon_struct);
@@ -717,10 +720,14 @@ void pike_module_init(void)
   start_new_program();
   ADD_STORAGE(struct dbresult);
 
-  add_function("create", f_result_create, "function(object, array(string|int):void)", ID_PUBLIC);
-  add_function("num_fields", f_num_fields, "function(:int)", ID_PUBLIC);
-  add_function("fetch_fields", f_fetch_fields, "function(:array(mapping(string:mixed)))", ID_PUBLIC);
-  add_function("fetch_row", f_fetch_row, "function(:int|array(string|int))", ID_PUBLIC);
+  /* function(object, array(string|int):void) */
+  ADD_FUNCTION("create", f_result_create,tFunc(tObj tArr(tOr(tStr,tInt)),tVoid), ID_PUBLIC);
+  /* function(:int) */
+  ADD_FUNCTION("num_fields", f_num_fields,tFunc(,tInt), ID_PUBLIC);
+  /* function(:array(mapping(string:mixed))) */
+  ADD_FUNCTION("fetch_fields", f_fetch_fields,tFunc(,tArr(tMap(tStr,tMix))), ID_PUBLIC);
+  /* function(:int|array(string|int)) */
+  ADD_FUNCTION("fetch_row", f_fetch_row,tFunc(,tOr(tInt,tArr(tOr(tStr,tInt)))), ID_PUBLIC);
 
   set_init_callback(init_dbresult_struct);
   set_exit_callback(exit_dbresult_struct);

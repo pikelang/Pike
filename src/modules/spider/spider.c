@@ -43,7 +43,7 @@
 #include "threads.h"
 #include "operators.h"
 
-RCSID("$Id: spider.c,v 1.77 1998/12/05 04:01:03 hubbe Exp $");
+RCSID("$Id: spider.c,v 1.78 1999/02/10 21:54:23 hubbe Exp $");
 
 #ifdef HAVE_PWD_H
 #include <pwd.h>
@@ -1444,59 +1444,91 @@ void pike_module_init(void)
 
 
 #ifdef _REENTRANT
-  add_function("shuffle", f_shuffle, 
-	       "function(object,object,function,mixed,int:void)", 0);
+  /* function(object,object,function,mixed,int:void) */
+  ADD_FUNCTION("shuffle", f_shuffle,tFunc(tObj tObj tFunction tMix tInt,tVoid), 0);
 #endif
 
 #if 0
-  add_efun("fcgi_create_listen_socket", f_fcgi_create_listen_socket,
-	   "function(int:int)", OPT_SIDE_EFFECT);
+  
+/* function(int:int) */
+  ADD_EFUN("fcgi_create_listen_socket", f_fcgi_create_listen_socket,tFunc(tInt,tInt), OPT_SIDE_EFFECT);
 #endif
   
-  add_efun("http_decode_string",f_http_decode_string,"function(string:string)",
+  
+/* function(string:string) */
+  ADD_EFUN("http_decode_string",f_http_decode_string,tFunc(tStr,tStr),
 	   OPT_TRY_OPTIMIZE);
 
-  add_efun("set_start_quote",f_set_start_quote,"function(int:int)",OPT_EXTERNAL_DEPEND);
+  
+/* function(int:int) */
+  ADD_EFUN("set_start_quote",f_set_start_quote,tFunc(tInt,tInt),OPT_EXTERNAL_DEPEND);
 
-  add_efun("set_end_quote",f_set_end_quote,"function(int:int)",OPT_EXTERNAL_DEPEND);
+  
+/* function(int:int) */
+  ADD_EFUN("set_end_quote",f_set_end_quote,tFunc(tInt,tInt),OPT_EXTERNAL_DEPEND);
 
 #ifdef HAVE_SEND_FD
   /* Defined above */
-  add_efun("send_fd", f_send_fd, "function(int,int:int)", OPT_EXTERNAL_DEPEND);
+  
+/* function(int,int:int) */
+  ADD_EFUN("send_fd", f_send_fd,tFunc(tInt tInt,tInt), OPT_EXTERNAL_DEPEND);
 #endif
 
-  add_efun("parse_accessed_database", f_parse_accessed_database,
-	   "function(string:array)", OPT_TRY_OPTIMIZE);
+  
+/* function(string:array) */
+  ADD_EFUN("parse_accessed_database", f_parse_accessed_database,tFunc(tStr,tArray), OPT_TRY_OPTIMIZE);
 
-  add_efun("_dump_obj_table", f__dump_obj_table, "function(:array(array))", 
+  
+/* function(:array(array)) */
+  ADD_EFUN("_dump_obj_table", f__dump_obj_table,tFunc(,tArr(tArray)), 
 	   OPT_EXTERNAL_DEPEND);
 
-  add_efun("parse_html",f_parse_html,
-	   "function(string,mapping(string:string|function(string|void,mapping(string:string)|void,mixed ...:string)),mapping(string:string|function(string|void,mapping(string:string)|void,string|void,mixed ...:string)),mixed ...:string)",
+  
+/* function(string,mapping(string:string|function(string|void,mapping(string:string)|void,mixed ...:string)),mapping(string:string|function(string|void,mapping(string:string)|void,string|void,mixed ...:string)),mixed ...:string) */
+  ADD_EFUN("parse_html",f_parse_html,tFuncV(tStr tMap(tStr,tOr(tStr,tFuncV(tOr(tStr,tVoid) tOr(tMap(tStr,tStr),tVoid),tMix,tStr))) tMap(tStr,tOr(tStr,tFuncV(tOr(tStr,tVoid) tOr(tMap(tStr,tStr),tVoid) tOr(tStr,tVoid),tMix,tStr))),tMix,tStr),
 	   0);
 
-  add_efun("parse_html_lines",f_parse_html_lines,
-	   "function(string,mapping(string:string|function(string|void,mapping(string:string)|void,int|void,mixed ...:string)),mapping(string:string|function(string|void,mapping(string:string)|void,string|void,int|void,mixed ...:string)),mixed ...:string)",
+  
+/* function(string,mapping(string:string|function(string|void,mapping(string:string)|void,int|void,mixed ...:string)),mapping(string:string|function(string|void,mapping(string:string)|void,string|void,int|void,mixed ...:string)),mixed ...:string) */
+  ADD_EFUN("parse_html_lines",f_parse_html_lines,tFuncV(tStr tMap(tStr,tOr(tStr,tFuncV(tOr(tStr,tVoid) tOr(tMap(tStr,tStr),tVoid) tOr(tInt,tVoid),tMix,tStr))) tMap(tStr,tOr(tStr,tFuncV(tOr(tStr,tVoid) tOr(tMap(tStr,tStr),tVoid) tOr(tStr,tVoid) tOr(tInt,tVoid),tMix,tStr))),tMix,tStr),
 	   0);
   
 #ifdef HAVE_PERROR
-  add_efun("real_perror",f_real_perror, "function(:void)",
+  
+/* function(:void) */
+  ADD_EFUN("real_perror",f_real_perror,tFunc(,tVoid),
 	   OPT_EXTERNAL_DEPEND|OPT_SIDE_EFFECT);
 #endif
 
-  add_efun("discdate", f_discdate, "function(int:array)", 0);
-  add_efun("stardate", f_stardate, "function(int,void|int:int)", 0);
+  
+/* function(int:array) */
+  ADD_EFUN("discdate", f_discdate,tFunc(tInt,tArray), 0);
+  
+/* function(int,void|int:int) */
+  ADD_EFUN("stardate", f_stardate,tFunc(tInt tOr(tVoid,tInt),tInt), 0);
 
-  add_efun("timezone", f_timezone, "function(:int)", 0);
-  add_efun("get_all_active_fd", f_get_all_active_fd, "function(:array(int))",
+  
+/* function(:int) */
+  ADD_EFUN("timezone", f_timezone,tFunc(,tInt), 0);
+  
+/* function(:array(int)) */
+  ADD_EFUN("get_all_active_fd", f_get_all_active_fd,tFunc(,tArr(tInt)),
 	   OPT_EXTERNAL_DEPEND);
-  add_efun("nice", f_nice, "function(int:int)",
+  
+/* function(int:int) */
+  ADD_EFUN("nice", f_nice,tFunc(tInt,tInt),
 	   OPT_EXTERNAL_DEPEND|OPT_SIDE_EFFECT);
 #if 0
-  add_efun("name_process", f_name_process, "function(string:void)", 0);
+  
+/* function(string:void) */
+  ADD_EFUN("name_process", f_name_process,tFunc(tStr,tVoid), 0);
 #endif
-  add_efun("fd_info", f_fd_info, "function(int:string)", OPT_EXTERNAL_DEPEND);
-  add_efun("mark_fd", f_mark_fd, "function(int,void|mixed:mixed)",
+  
+/* function(int:string) */
+  ADD_EFUN("fd_info", f_fd_info,tFunc(tInt,tStr), OPT_EXTERNAL_DEPEND);
+  
+/* function(int,void|mixed:mixed) */
+  ADD_EFUN("mark_fd", f_mark_fd,tFunc(tInt tOr(tVoid,tMix),tMix),
 	   OPT_EXTERNAL_DEPEND|OPT_SIDE_EFFECT);
 
   /* timezone() needs */
@@ -1516,10 +1548,12 @@ void pike_module_init(void)
 #ifdef ENABLE_STREAMED_PARSER
   start_new_program();
   add_storage( sizeof (struct streamed_parser) );
-  add_function( "init", streamed_parser_set_data,
-		"function(mapping(string:function(string,mapping(string:string),mixed:mixed)),mapping(string:function(string,mapping(string:string),string,mixed:mixed)),mapping(string:function(string,mixed:mixed)):void)", 0 );
-  add_function( "parse", streamed_parser_parse, "function(string,mixed:string)", 0 );
-  add_function( "finish", streamed_parser_finish, "function(void:string)", 0 );
+  /* function(mapping(string:function(string,mapping(string:string),mixed:mixed)),mapping(string:function(string,mapping(string:string),string,mixed:mixed)),mapping(string:function(string,mixed:mixed)):void) */
+  ADD_FUNCTION( "init", streamed_parser_set_data,tFunc(tMap(tStr,tFunc(tStr tMap(tStr,tStr) tMix,tMix)) tMap(tStr,tFunc(tStr tMap(tStr,tStr) tStr tMix,tMix)) tMap(tStr,tFunc(tStr tMix,tMix)),tVoid), 0 );
+  /* function(string,mixed:string) */
+  ADD_FUNCTION( "parse", streamed_parser_parse,tFunc(tStr tMix,tStr), 0 );
+  /* function(void:string) */
+  ADD_FUNCTION( "finish", streamed_parser_finish,tFunc(tVoid,tStr), 0 );
   set_init_callback( streamed_parser_init );
   set_exit_callback( streamed_parser_destruct );
    

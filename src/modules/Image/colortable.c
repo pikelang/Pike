@@ -1,12 +1,12 @@
 #include "global.h"
 #include <config.h>
 
-/* $Id: colortable.c,v 1.47 1999/02/01 02:43:10 hubbe Exp $ */
+/* $Id: colortable.c,v 1.48 1999/02/10 21:48:25 hubbe Exp $ */
 
 /*
 **! module Image
 **! note
-**!	$Id: colortable.c,v 1.47 1999/02/01 02:43:10 hubbe Exp $
+**!	$Id: colortable.c,v 1.48 1999/02/10 21:48:25 hubbe Exp $
 **! class colortable
 **!
 **!	This object keeps colortable information,
@@ -21,7 +21,7 @@
 #undef COLORTABLE_DEBUG
 #undef COLORTABLE_REDUCE_DEBUG
 
-RCSID("$Id: colortable.c,v 1.47 1999/02/01 02:43:10 hubbe Exp $");
+RCSID("$Id: colortable.c,v 1.48 1999/02/10 21:48:25 hubbe Exp $");
 
 #include <math.h> /* fabs() */
 
@@ -3915,74 +3915,74 @@ void init_colortable_programs(void)
 
    set_init_callback(init_colortable_struct);
 
-   add_function("create",image_colortable_create,
-		"function(void:void)|"
+   /* function(void:void)|"
 		"function(array(array(int)):void)|"
 		"function(object,int,mixed ...:void)|"
-		"function(int,int,int,void|int ...:void)",0);
+		"function(int,int,int,void|int ...:void) */
+  ADD_FUNCTION("create",image_colortable_create,tOr4(tFunc(tVoid,tVoid),tFunc(tArr(tArr(tInt)),tVoid),tFuncV(tObj tInt,tMix,tVoid),tFuncV(tInt tInt tInt,tOr(tVoid,tInt),tVoid)),0);
 
-   add_function("add",image_colortable_create,
-		"function(void:void)|"
+   /* function(void:void)|"
 		"function(array(array(int)):void)|"
 		"function(object,int,mixed ...:void)|"
-		"function(int,int,int,void|int ...:void)",0);
+		"function(int,int,int,void|int ...:void) */
+  ADD_FUNCTION("add",image_colortable_create,tOr4(tFunc(tVoid,tVoid),tFunc(tArr(tArr(tInt)),tVoid),tFuncV(tObj tInt,tMix,tVoid),tFuncV(tInt tInt tInt,tOr(tVoid,tInt),tVoid)),0);
 
-   add_function("reduce",image_colortable_reduce,
-		"function(int:object)",0);
+   /* function(int:object) */
+  ADD_FUNCTION("reduce",image_colortable_reduce,tFunc(tInt,tObj),0);
 
    /* operators */
-   add_function("`+",image_colortable_operator_plus,
-		"function(object:object)",0);
-   add_function("``+",image_colortable_operator_plus,
-		"function(object:object)",0);
+   /* function(object:object) */
+  ADD_FUNCTION("`+",image_colortable_operator_plus,tFunc(tObj,tObj),0);
+   /* function(object:object) */
+  ADD_FUNCTION("``+",image_colortable_operator_plus,tFunc(tObj,tObj),0);
 
    /* cast to array */
-   add_function("cast",image_colortable_cast,
-		"function(string:array)",0);
+   /* function(string:array) */
+  ADD_FUNCTION("cast",image_colortable_cast,tFunc(tStr,tArray),0);
 
    /* info */
-   add_function("_sizeof",image_colortable__sizeof,
-		"function(:int)",0);
+   /* function(:int) */
+  ADD_FUNCTION("_sizeof",image_colortable__sizeof,tFunc(,tInt),0);
 
    /* lookup modes */
-   add_function("cubicles",image_colortable_cubicles,
-		"function(:object)",0);
-   add_function("full",image_colortable_full,
-		"function(:object)",0);
+   /* function(:object) */
+  ADD_FUNCTION("cubicles",image_colortable_cubicles,tFunc(,tObj),0);
+   /* function(:object) */
+  ADD_FUNCTION("full",image_colortable_full,tFunc(,tObj),0);
 
    /* map image */
-   add_function("map",image_colortable_map,
-		"function(object:object)",0);
-   add_function("`*",image_colortable_map,
-		"function(object:object)",0);
-   add_function("``*",image_colortable_map,
-		"function(object:object)",0);
+   /* function(object:object) */
+  ADD_FUNCTION("map",image_colortable_map,tFunc(tObj,tObj),0);
+   /* function(object:object) */
+  ADD_FUNCTION("`*",image_colortable_map,tFunc(tObj,tObj),0);
+   /* function(object:object) */
+  ADD_FUNCTION("``*",image_colortable_map,tFunc(tObj,tObj),0);
 
-   add_function("index_8bit",image_colortable_index_8bit,
-		"function(object:object)",0);
-   add_function("index_16bit",image_colortable_index_16bit,
-		"function(object:object)",0);
+   /* function(object:object) */
+  ADD_FUNCTION("index_8bit",image_colortable_index_8bit,tFunc(tObj,tObj),0);
+   /* function(object:object) */
+  ADD_FUNCTION("index_16bit",image_colortable_index_16bit,tFunc(tObj,tObj),0);
 
    /* dither */
-   add_function("nodither",image_colortable_nodither,
-		"function(:object)",0);
-   add_function("floyd_steinberg",image_colortable_floyd_steinberg,
-		"function(void|int:object)"
-		"|function(int,int|float,int|float,int|float,int|float:object)",0);
-   add_function("randomcube",image_colortable_randomcube,
-		"function(:object)|function(int,int,int:object)",0);
-   add_function("randomgrey",image_colortable_randomgrey,
-		"function(:object)|function(int:object)",0);
-   add_function("ordered",image_colortable_ordered,
-		"function(:object)"
-		"|function(int,int,int:object)",0);
+   /* function(:object) */
+  ADD_FUNCTION("nodither",image_colortable_nodither,tFunc(,tObj),0);
+   /* function(void|int:object)"
+		"|function(int,int|float,int|float,int|float,int|float:object) */
+  ADD_FUNCTION("floyd_steinberg",image_colortable_floyd_steinberg,tOr(tFunc(tOr(tVoid,tInt),tObj),tFunc(tInt tOr(tInt,tFlt) tOr(tInt,tFlt) tOr(tInt,tFlt) tOr(tInt,tFlt),tObj)),0);
+   /* function(:object)|function(int,int,int:object) */
+  ADD_FUNCTION("randomcube",image_colortable_randomcube,tOr(tFunc(,tObj),tFunc(tInt tInt tInt,tObj)),0);
+   /* function(:object)|function(int:object) */
+  ADD_FUNCTION("randomgrey",image_colortable_randomgrey,tOr(tFunc(,tObj),tFunc(tInt,tObj)),0);
+   /* function(:object)"
+		"|function(int,int,int:object) */
+  ADD_FUNCTION("ordered",image_colortable_ordered,tOr(tFunc(,tObj),tFunc(tInt tInt tInt,tObj)),0);
 
-   add_function("image",image_colortable_image,
-		"function(:object)",0);
+   /* function(:object) */
+  ADD_FUNCTION("image",image_colortable_image,tFunc(,tObj),0);
 
    /* tuning image */
-   add_function("spacefactors",image_colortable_spacefactors,
-		"function(int,int,int:object)",0);
+   /* function(int,int,int:object) */
+  ADD_FUNCTION("spacefactors",image_colortable_spacefactors,tFunc(tInt tInt tInt,tObj),0);
 
    set_exit_callback(exit_colortable_struct);
   

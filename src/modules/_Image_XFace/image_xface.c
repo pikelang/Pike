@@ -1,5 +1,5 @@
 #include "global.h"
-RCSID("$Id: image_xface.c,v 1.5 1998/06/19 15:12:45 mirar Exp $");
+RCSID("$Id: image_xface.c,v 1.6 1999/02/10 21:53:05 hubbe Exp $");
 
 #include "config.h"
 
@@ -500,12 +500,12 @@ void pike_module_init(void)
 
    if (image_program)
    {
-      add_function("decode",image_xface_decode,
-		   "function(string,void|mapping(string:int):object)",0);
-      add_function("decode_header",image_xface_decode_header,
-		   "function(string,void|mapping(string:int):object)",0);
-      add_function("encode",image_xface_encode,
-		   "function(object,void|mapping(string:int):string)",0);
+      /* function(string,void|mapping(string:int):object) */
+  ADD_FUNCTION("decode",image_xface_decode,tFunc(tStr tOr(tVoid,tMap(tStr,tInt)),tObj),0);
+      /* function(string,void|mapping(string:int):object) */
+  ADD_FUNCTION("decode_header",image_xface_decode_header,tFunc(tStr tOr(tVoid,tMap(tStr,tInt)),tObj),0);
+      /* function(object,void|mapping(string:int):string) */
+  ADD_FUNCTION("encode",image_xface_encode,tFunc(tObj tOr(tVoid,tMap(tStr,tInt)),tStr),0);
    }
 
 #endif /* HAVE_GMP_H */

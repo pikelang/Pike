@@ -5,7 +5,7 @@
 \*/
 
 /*
- * $Id: svalue.h,v 1.20 1999/01/21 09:15:17 hubbe Exp $
+ * $Id: svalue.h,v 1.21 1999/02/10 21:46:56 hubbe Exp $
  */
 #ifndef SVALUE_H
 #define SVALUE_H
@@ -102,6 +102,41 @@ struct svalue
 #define T_LVALUE 253
 #define T_ARRAY_LVALUE 254
 #define T_MIXED 255
+
+#define tArr(VAL) "\000" VAL
+#define tArray tArr(tMix)
+#define tMap(IND,VAL) "\001" IND VAL
+#define tMapping tMap(tMix,tMix)
+#define tSet(IND) "\002" IND
+#define tMultiset tSet(tMix)
+#define tObj "\003\000\000\000\000\000"
+#define tFuncV(ARGS,REST,RET) "\004" ARGS "\021" REST RET
+#define tFunc(ARGS,RET) tFuncV(ARGS,tVoid,RET)
+#define tFunction tFuncV(,tMix,tMix)
+#define tPrg "\005"
+#define tProgram "\005"
+#define tStr "\006"
+#define tString "\006"
+#define tFlt "\007"
+#define tFloat "\007"
+#define tInt "\010"
+
+#define tVoid "\020"
+#define tVar(X) #X
+#define tSetvar(X,Y) "\365" #X Y
+#define tNot(X) "\367" X
+#define tAnd(X,Y) "\370" X Y
+#define tOr(X,Y) "\373" X Y
+#define tOr3(X,Y,Z) tOr(X,tOr(Y,Z))
+#define tOr4(X,Y,Z,A) tOr(X,tOr(Y,tOr(Z,A)))
+#define tOr5(X,Y,Z,A,B) tOr(X,tOr(Y,tOr(Z,tOr(A,B))))
+#define tOr6(X,Y,Z,A,B,C) tOr(X,tOr(Y,tOr(Z,tOr(A,tOr(B,C)))))
+#define tOr7(X,Y,Z,A,B,C,D) tOr(X,tOr(Y,tOr(Z,tOr(A,tOr(B,tOr(C,D))))))
+#define tMix "\377"
+#define tMixed "\377"
+#define tComplex tOr6(tArray,tMapping,tMultiset,tObj,tFunction,tProgram)
+#define tRef tOr(tString,tComplex)
+#define tIfnot(X,Y) tAnd(tNot(X),Y)
 
 #define BIT_ARRAY (1<<T_ARRAY)
 #define BIT_MAPPING (1<<T_MAPPING)

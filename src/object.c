@@ -4,7 +4,7 @@
 ||| See the files COPYING and DISCLAIMER for more information.
 \*/
 #include "global.h"
-RCSID("$Id: object.c,v 1.56 1999/02/01 02:41:40 hubbe Exp $");
+RCSID("$Id: object.c,v 1.57 1999/02/10 21:46:45 hubbe Exp $");
 #include "object.h"
 #include "dynamic_buffer.h"
 #include "interpret.h"
@@ -262,6 +262,10 @@ struct object *get_master(void)
       JMP_BUF tmp;
       if(SETJMP(tmp))
       {
+#ifdef DEBUG
+	if(d_flag)
+	  debug_describe_svalue(&throw_value);
+#endif
 	/* do nothing */
 	UNSETJMP(tmp);
       }else{
@@ -277,6 +281,11 @@ struct object *get_master(void)
 	pop_stack();
 	  
       }
+#ifdef DEBUG
+      if(d_flag)
+	fprintf(stderr,"Failed to import dumped master!\n");
+#endif
+
     }
     s2=low_read_file(master_file);
     if(s2)

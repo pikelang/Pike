@@ -1,5 +1,5 @@
 /*
- * $Id: result.c,v 1.14 1999/02/01 02:43:56 hubbe Exp $
+ * $Id: result.c,v 1.15 1999/02/10 21:49:25 hubbe Exp $
  *
  * mysql query result
  *
@@ -83,7 +83,7 @@ typedef struct dynamic_buffer_s dynamic_buffer;
  * Globals
  */
 
-RCSID("$Id: result.c,v 1.14 1999/02/01 02:43:56 hubbe Exp $");
+RCSID("$Id: result.c,v 1.15 1999/02/10 21:49:25 hubbe Exp $");
 
 struct program *mysql_result_program = NULL;
 
@@ -438,19 +438,28 @@ void init_mysql_res_programs(void)
   start_new_program();
   ADD_STORAGE(struct precompiled_mysql_result);
 
-  add_function("create", f_create, "function(object:void)", ID_PUBLIC);
-  add_function("num_rows", f_num_rows, "function(void:int)", ID_PUBLIC);
-  add_function("num_fields", f_num_fields, "function(void:int)", ID_PUBLIC);
+  /* function(object:void) */
+  ADD_FUNCTION("create", f_create,tFunc(tObj,tVoid), ID_PUBLIC);
+  /* function(void:int) */
+  ADD_FUNCTION("num_rows", f_num_rows,tFunc(tVoid,tInt), ID_PUBLIC);
+  /* function(void:int) */
+  ADD_FUNCTION("num_fields", f_num_fields,tFunc(tVoid,tInt), ID_PUBLIC);
 #ifdef SUPPORT_FIELD_SEEK
-  add_function("field_seek", f_field_seek, "function(int:void)", ID_PUBLIC);
+  /* function(int:void) */
+  ADD_FUNCTION("field_seek", f_field_seek,tFunc(tInt,tVoid), ID_PUBLIC);
 #endif /* SUPPORT_FIELD_SEEK */
-  add_function("eof", f_eof, "function(void:int)", ID_PUBLIC);
+  /* function(void:int) */
+  ADD_FUNCTION("eof", f_eof,tFunc(tVoid,tInt), ID_PUBLIC);
 #ifdef SUPPORT_FIELD_SEEK
-  add_function("fetch_field", f_fetch_field, "function(void:int|mapping(string:mixed))", ID_PUBLIC);
+  /* function(void:int|mapping(string:mixed)) */
+  ADD_FUNCTION("fetch_field", f_fetch_field,tFunc(tVoid,tOr(tInt,tMap(tStr,tMix))), ID_PUBLIC);
 #endif /* SUPPORT_FIELD_SEEK */
-  add_function("fetch_fields", f_fetch_fields, "function(void:array(int|mapping(string:mixed)))", ID_PUBLIC);
-  add_function("seek", f_seek, "function(int:void)", ID_PUBLIC);
-  add_function("fetch_row", f_fetch_row, "function(void:int|array(string|int|float))", ID_PUBLIC);
+  /* function(void:array(int|mapping(string:mixed))) */
+  ADD_FUNCTION("fetch_fields", f_fetch_fields,tFunc(tVoid,tArr(tOr(tInt,tMap(tStr,tMix)))), ID_PUBLIC);
+  /* function(int:void) */
+  ADD_FUNCTION("seek", f_seek,tFunc(tInt,tVoid), ID_PUBLIC);
+  /* function(void:int|array(string|int|float)) */
+  ADD_FUNCTION("fetch_row", f_fetch_row,tFunc(tVoid,tOr(tInt,tArr(tOr3(tStr,tInt,tFlt)))), ID_PUBLIC);
 
   set_init_callback(init_res_struct);
   set_exit_callback(exit_res_struct);

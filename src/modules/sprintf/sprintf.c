@@ -99,7 +99,7 @@
 */
 
 #include "global.h"
-RCSID("$Id: sprintf.c,v 1.31 1998/11/22 11:08:52 hubbe Exp $");
+RCSID("$Id: sprintf.c,v 1.32 1999/02/10 21:55:07 hubbe Exp $");
 #include "error.h"
 #include "array.h"
 #include "svalue.h"
@@ -1197,7 +1197,9 @@ void f_sprintf(INT32 num_arg)
 
 void pike_module_init(void)
 {
-  add_efun("sprintf", f_sprintf,"function(string, mixed ... : string)",
+  
+/* function(string, mixed ... : string) */
+  ADD_EFUN("sprintf", f_sprintf,tFuncV(tStr,tMix,tStr),
 	   OPT_TRY_OPTIMIZE);
 }
 

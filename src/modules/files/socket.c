@@ -18,7 +18,7 @@
 #include "file_machine.h"
 #include "file.h"
 
-RCSID("$Id: socket.c,v 1.41 1999/02/01 02:46:43 hubbe Exp $");
+RCSID("$Id: socket.c,v 1.42 1999/02/10 21:53:36 hubbe Exp $");
 
 #ifdef HAVE_SYS_TYPE_H
 #include <sys/types.h>
@@ -398,14 +398,22 @@ void port_setup_program(void)
   offset=ADD_STORAGE(struct port);
   map_variable("_accept_callback","mixed",0,offset+OFFSETOF(port,accept_callback),T_MIXED);
   map_variable("_id","mixed",0,offset+OFFSETOF(port,id),T_MIXED);
-  add_function("bind",port_bind,"function(int,void|mixed,void|string:int)",0);
-  add_function("listen_fd",port_listen_fd,"function(int,void|mixed:int)",0);
-  add_function("set_id",port_set_id,"function(mixed:mixed)",0);
-  add_function("query_id",port_query_id,"function(:mixed)",0);
-  add_function("query_address",socket_query_address,"function(:string)",0);
-  add_function("errno",port_errno,"function(:int)",0);
-  add_function("accept",port_accept,"function(:object)",0);
-  add_function("create",port_create,"function(void|string|int,void|mixed,void|string:void)",0);
+  /* function(int,void|mixed,void|string:int) */
+  ADD_FUNCTION("bind",port_bind,tFunc(tInt tOr(tVoid,tMix) tOr(tVoid,tStr),tInt),0);
+  /* function(int,void|mixed:int) */
+  ADD_FUNCTION("listen_fd",port_listen_fd,tFunc(tInt tOr(tVoid,tMix),tInt),0);
+  /* function(mixed:mixed) */
+  ADD_FUNCTION("set_id",port_set_id,tFunc(tMix,tMix),0);
+  /* function(:mixed) */
+  ADD_FUNCTION("query_id",port_query_id,tFunc(,tMix),0);
+  /* function(:string) */
+  ADD_FUNCTION("query_address",socket_query_address,tFunc(,tStr),0);
+  /* function(:int) */
+  ADD_FUNCTION("errno",port_errno,tFunc(,tInt),0);
+  /* function(:object) */
+  ADD_FUNCTION("accept",port_accept,tFunc(,tObj),0);
+  /* function(void|string|int,void|mixed,void|string:void) */
+  ADD_FUNCTION("create",port_create,tFunc(tOr3(tVoid,tStr,tInt) tOr(tVoid,tMix) tOr(tVoid,tStr),tVoid),0);
 
   set_init_callback(init_port_struct);
   set_exit_callback(exit_port_struct);

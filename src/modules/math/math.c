@@ -24,7 +24,7 @@
 #include <floatingpoint.h>
 #endif
 
-RCSID("$Id: math.c,v 1.16 1998/11/30 10:27:44 per Exp $");
+RCSID("$Id: math.c,v 1.17 1999/02/10 21:53:47 hubbe Exp $");
 
 #ifndef M_PI
 #define M_PI 3.1415926535897932384626433832795080
@@ -260,19 +260,45 @@ void pike_module_init(void)
 #ifdef HAVE_FPSETMASK
   fpsetmask(0);
 #endif
-  add_efun("sin",f_sin,"function(float:float)",0);
-  add_efun("asin",f_asin,"function(float:float)",0);
-  add_efun("cos",f_cos,"function(float:float)",0);
-  add_efun("acos",f_acos,"function(float:float)",0);
-  add_efun("tan",f_tan,"function(float:float)",0);
-  add_efun("atan",f_atan,"function(float:float)",0);
-  add_efun("atan2",f_atan2,"function(float,float:float)",0);
-  add_efun("sqrt",f_sqrt,"function(float:float)|function(int:int)",0);
-  add_efun("log",f_log,"function(float:float)",0);
-  add_efun("exp",f_exp,"function(float:float)",0);
-  add_efun("pow",f_pow,"function(float,float:float)",0);
-  add_efun("floor",f_floor,"function(float:float)",0);
-  add_efun("ceil",f_ceil,"function(float:float)",0);
+  
+/* function(float:float) */
+  ADD_EFUN("sin",f_sin,tFunc(tFlt,tFlt),0);
+  
+/* function(float:float) */
+  ADD_EFUN("asin",f_asin,tFunc(tFlt,tFlt),0);
+  
+/* function(float:float) */
+  ADD_EFUN("cos",f_cos,tFunc(tFlt,tFlt),0);
+  
+/* function(float:float) */
+  ADD_EFUN("acos",f_acos,tFunc(tFlt,tFlt),0);
+  
+/* function(float:float) */
+  ADD_EFUN("tan",f_tan,tFunc(tFlt,tFlt),0);
+  
+/* function(float:float) */
+  ADD_EFUN("atan",f_atan,tFunc(tFlt,tFlt),0);
+  
+/* function(float,float:float) */
+  ADD_EFUN("atan2",f_atan2,tFunc(tFlt tFlt,tFlt),0);
+  
+/* function(float:float)|function(int:int) */
+  ADD_EFUN("sqrt",f_sqrt,tOr(tFunc(tFlt,tFlt),tFunc(tInt,tInt)),0);
+  
+/* function(float:float) */
+  ADD_EFUN("log",f_log,tFunc(tFlt,tFlt),0);
+  
+/* function(float:float) */
+  ADD_EFUN("exp",f_exp,tFunc(tFlt,tFlt),0);
+  
+/* function(float,float:float) */
+  ADD_EFUN("pow",f_pow,tFunc(tFlt tFlt,tFlt),0);
+  
+/* function(float:float) */
+  ADD_EFUN("floor",f_floor,tFunc(tFlt,tFlt),0);
+  
+/* function(float:float) */
+  ADD_EFUN("ceil",f_ceil,tFunc(tFlt,tFlt),0);
 
 #define CMP_TYPE \
   "!function(!object...:mixed)&function(mixed...:mixed)|" \
@@ -283,8 +309,12 @@ void pike_module_init(void)
     
   add_efun("max",f_max,CMP_TYPE,0);
   add_efun("min",f_min,CMP_TYPE,0);
-  add_efun("abs",f_abs,"function(float|int|object:float|int|object)",0);
-  add_efun("sgn",f_sgn,"function(mixed,mixed|void:int)",0);
+  
+/* function(float|int|object:float|int|object) */
+  ADD_EFUN("abs",f_abs,tFunc(tOr3(tFlt,tInt,tObj),tOr3(tFlt,tInt,tObj)),0);
+  
+/* function(mixed,mixed|void:int) */
+  ADD_EFUN("sgn",f_sgn,tFunc(tMix tOr(tMix,tVoid),tInt),0);
 }
 
 void pike_module_exit(void) {}

@@ -1,12 +1,12 @@
 /*
- * $Id: image_ttf.c,v 1.10 1999/02/09 16:16:52 grubba Exp $
+ * $Id: image_ttf.c,v 1.11 1999/02/10 21:52:29 hubbe Exp $
  */
 
 #include "config.h"
 
 
 #include "global.h"
-RCSID("$Id: image_ttf.c,v 1.10 1999/02/09 16:16:52 grubba Exp $");
+RCSID("$Id: image_ttf.c,v 1.11 1999/02/10 21:52:29 hubbe Exp $");
 
 #ifdef HAVE_LIBTTF
 #include <freetype.h>
@@ -1281,25 +1281,25 @@ void pike_module_init(void)
 
    if (image_program)
    {
-      add_function("`()",image_ttf_make,
-		   "function(string,void|mapping(string:int):object)",0);
+      /* function(string,void|mapping(string:int):object) */
+  ADD_FUNCTION("`()",image_ttf_make,tFunc(tStr tOr(tVoid,tMap(tStr,tInt)),tObj),0);
 
       /* make face program */
 
       start_new_program();
       ADD_STORAGE(struct image_ttf_face_struct);
 
-      add_function("properties",image_ttf_face_properties,
-		   "function(:mapping)",0);
-      add_function("flush",image_ttf_face_flush,
-		   "function(:object)",0);
-      add_function("names",image_ttf_face_names,
-		   "function(:mapping(string:string))",0);
-      add_function("_names",image_ttf_face__names,
-		   "function(:array(array))",0);
+      /* function(:mapping) */
+  ADD_FUNCTION("properties",image_ttf_face_properties,tFunc(,tMapping),0);
+      /* function(:object) */
+  ADD_FUNCTION("flush",image_ttf_face_flush,tFunc(,tObj),0);
+      /* function(:mapping(string:string)) */
+  ADD_FUNCTION("names",image_ttf_face_names,tFunc(,tMap(tStr,tStr)),0);
+      /* function(:array(array)) */
+  ADD_FUNCTION("_names",image_ttf_face__names,tFunc(,tArr(tArray)),0);
 
-      add_function("`()",image_ttf_face_make,
-		   "function(:object)",0);
+      /* function(:object) */
+  ADD_FUNCTION("`()",image_ttf_face_make,tFunc(,tObj),0);
 
       set_exit_callback(image_ttf_face_exit);
       image_ttf_face_program=end_program();
@@ -1309,16 +1309,16 @@ void pike_module_init(void)
       start_new_program();
       ADD_STORAGE(struct image_ttf_faceinstance_struct);
       
-      add_function("create",image_ttf_faceinstance_create,
-		   "function(object:void)",0);
-      add_function("ponder",image_ttf_faceinstance_ponder,
-		   "function(string:object)",0);
-      add_function("write",image_ttf_faceinstance_write,
-		   "function(string...:object)",0);
-      add_function("face",image_ttf_faceinstance_face,
-		   "function(:object)",0);
-      add_function("set_height",image_ttf_faceinstance_set_height,
-		   "function(int:object)",0);
+      /* function(object:void) */
+  ADD_FUNCTION("create",image_ttf_faceinstance_create,tFunc(tObj,tVoid),0);
+      /* function(string:object) */
+  ADD_FUNCTION("ponder",image_ttf_faceinstance_ponder,tFunc(tStr,tObj),0);
+      /* function(string...:object) */
+  ADD_FUNCTION("write",image_ttf_faceinstance_write,tFuncV(,tStr,tObj),0);
+      /* function(:object) */
+  ADD_FUNCTION("face",image_ttf_faceinstance_face,tFunc(,tObj),0);
+      /* function(int:object) */
+  ADD_FUNCTION("set_height",image_ttf_faceinstance_set_height,tFunc(tInt,tObj),0);
       
       set_exit_callback(image_ttf_faceinstance_exit);
       image_ttf_faceinstance_program=end_program();

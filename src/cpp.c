@@ -5,7 +5,7 @@
 \*/
 
 /*
- * $Id: cpp.c,v 1.32 1999/02/01 02:55:29 hubbe Exp $
+ * $Id: cpp.c,v 1.33 1999/02/10 21:46:41 hubbe Exp $
  */
 #include "global.h"
 #include "dynamic_buffer.h"
@@ -2159,7 +2159,9 @@ void init_cpp()
   constant_macro->magic=check_constant;
   constant_macro->args=1;
 
-  add_efun("cpp",f_cpp,"function(string,string|void:string)",OPT_EXTERNAL_DEPEND);
+  
+/* function(string,string|void:string) */
+  ADD_EFUN("cpp",f_cpp,tFunc(tStr tOr(tStr,tVoid),tStr),OPT_EXTERNAL_DEPEND);
 }
 
 

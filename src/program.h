@@ -5,7 +5,7 @@
 \*/
 
 /*
- * $Id: program.h,v 1.50 1999/02/10 01:29:10 hubbe Exp $
+ * $Id: program.h,v 1.51 1999/02/10 21:46:52 hubbe Exp $
  */
 #ifndef PROGRAM_H
 #define PROGRAM_H
@@ -332,6 +332,10 @@ int simple_add_constant(char *name,
 int add_integer_constant(char *name,
 			 INT32 i,
 			 INT32 flags);
+int quick_add_integer_constant(char *name,
+			       int name_length,
+			       INT32 i,
+			       INT32 flags);
 int add_float_constant(char *name,
 			 double f,
 			 INT32 flags);
@@ -345,7 +349,7 @@ int add_object_constant(char *name,
 			struct object *o,
 			INT32 flags);
 int add_function_constant(char *name, void (*cfun)(INT32), char * type, INT16 flags);
-int debug_end_class(char *name, INT32 flags);
+int debug_end_class(char *name, int namelen, INT32 flags);
 INT32 define_function(struct pike_string *name,
 		      struct pike_string *type,
 		      INT16 flags,
@@ -372,6 +376,13 @@ char *get_line(unsigned char *pc,struct program *prog,INT32 *linep);
 void my_yyerror(char *fmt,...)  ATTRIBUTE((format(printf,1,2)));
 struct program *compile(struct pike_string *prog);
 int add_function(char *name,void (*cfun)(INT32),char *type,INT16 flags);
+int quick_add_function(char *name,
+		       int name_length,
+		       void (*cfun)(INT32),
+		       char *type,
+		       int type_length,
+		       INT16 flags,
+		       int opt_flags);
 void check_all_programs(void);
 void init_program(void);
 void cleanup_program(void);
@@ -396,13 +407,18 @@ struct implements_cache_s;
 int implements(struct program *a, struct program *b);
 /* Prototypes end here */
 
+#define ADD_FUNCTION(NAME,FUNC,TYPE,FLAGS) \
+  quick_add_function(NAME,CONSTANT_STRLEN(NAME),FUNC,TYPE,CONSTANT_STRLEN(TYPE),FLAGS,0)
+
+#define ADD_INT_CONSTANT(NAME,CONST,FLAGS) \
+  quick_add_integer_constant(NAME,CONSTANT_STRLEN(NAME),CONST,FLAGS)
 
 #endif
 
 #ifdef DEBUG_MALLOC
 #define end_program() ((struct program *)debug_malloc_touch(debug_end_program()))
-#define end_class(NAME, FLAGS) do { debug_malloc_touch(new_program); debug_end_class(NAME, FLAGS); }while(0)
+#define end_class(NAME, FLAGS) do { debug_malloc_touch(new_program); debug_end_class(NAME, CONSTANT_STRLEN(NAME), FLAGS); }while(0)
 #else
-#define end_class debug_end_class
+#define end_class(NAME,FLAGS) debug_end_class(NAME, CONSTANT_STRLEN(NAME), FLAGS)
 #define end_program debug_end_program
 #endif

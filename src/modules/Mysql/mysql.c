@@ -1,5 +1,5 @@
 /*
- * $Id: mysql.c,v 1.25 1999/02/01 02:43:55 hubbe Exp $
+ * $Id: mysql.c,v 1.26 1999/02/10 21:49:24 hubbe Exp $
  *
  * SQL database functionality for Pike
  *
@@ -79,7 +79,7 @@ typedef struct dynamic_buffer_s dynamic_buffer;
  * Globals
  */
 
-RCSID("$Id: mysql.c,v 1.25 1999/02/01 02:43:55 hubbe Exp $");
+RCSID("$Id: mysql.c,v 1.26 1999/02/10 21:49:24 hubbe Exp $");
 
 /*
 **! module Mysql
@@ -91,7 +91,7 @@ RCSID("$Id: mysql.c,v 1.25 1999/02/01 02:43:55 hubbe Exp $");
 **! see also: Mysql.mysql, Mysql.result, Sql.sql
 **!
 **! note
-**!	$Id: mysql.c,v 1.25 1999/02/01 02:43:55 hubbe Exp $
+**!	$Id: mysql.c,v 1.26 1999/02/10 21:49:24 hubbe Exp $
 **! class mysql
 **!
 **!	Mysql.mysql is a pre-compiled Pike program. It enables
@@ -1371,26 +1371,45 @@ void pike_module_init(void)
   start_new_program();
   ADD_STORAGE(struct precompiled_mysql);
 
-  add_function("error", f_error, "function(void:int|string)", ID_PUBLIC);
-  add_function("create", f_create, "function(string|void, string|void, string|void, string|void:void)", ID_PUBLIC);
-  add_function("affected_rows", f_affected_rows, "function(void:int)", ID_PUBLIC);
-  add_function("insert_id", f_insert_id, "function(void:int)", ID_PUBLIC);
-  add_function("select_db", f_select_db, "function(string:void)", ID_PUBLIC);
-  add_function("big_query", f_big_query, "function(string:int|object)", ID_PUBLIC);
-  add_function("create_db", f_create_db, "function(string:void)", ID_PUBLIC);
-  add_function("drop_db", f_drop_db, "function(string:void)", ID_PUBLIC);
-  add_function("shutdown", f_shutdown, "function(void:void)", ID_PUBLIC);
-  add_function("reload", f_reload, "function(void:void)", ID_PUBLIC);
-  add_function("statistics", f_statistics, "function(void:string)", ID_PUBLIC);
-  add_function("server_info", f_server_info, "function(void:string)", ID_PUBLIC);
-  add_function("host_info", f_host_info, "function(void:string)", ID_PUBLIC);
-  add_function("protocol_info", f_protocol_info, "function(void:int)", ID_PUBLIC);
-  add_function("list_dbs", f_list_dbs, "function(void|string:object)", ID_PUBLIC);
-  add_function("list_tables", f_list_tables, "function(void|string:object)", ID_PUBLIC);
-  add_function("list_fields", f_list_fields, "function(string, void|string:array(int|mapping(string:mixed)))", ID_PUBLIC);
-  add_function("list_processes", f_list_processes, "function(void|string:object)", ID_PUBLIC);
+  /* function(void:int|string) */
+  ADD_FUNCTION("error", f_error,tFunc(tVoid,tOr(tInt,tStr)), ID_PUBLIC);
+  /* function(string|void, string|void, string|void, string|void:void) */
+  ADD_FUNCTION("create", f_create,tFunc(tOr(tStr,tVoid) tOr(tStr,tVoid) tOr(tStr,tVoid) tOr(tStr,tVoid),tVoid), ID_PUBLIC);
+  /* function(void:int) */
+  ADD_FUNCTION("affected_rows", f_affected_rows,tFunc(tVoid,tInt), ID_PUBLIC);
+  /* function(void:int) */
+  ADD_FUNCTION("insert_id", f_insert_id,tFunc(tVoid,tInt), ID_PUBLIC);
+  /* function(string:void) */
+  ADD_FUNCTION("select_db", f_select_db,tFunc(tStr,tVoid), ID_PUBLIC);
+  /* function(string:int|object) */
+  ADD_FUNCTION("big_query", f_big_query,tFunc(tStr,tOr(tInt,tObj)), ID_PUBLIC);
+  /* function(string:void) */
+  ADD_FUNCTION("create_db", f_create_db,tFunc(tStr,tVoid), ID_PUBLIC);
+  /* function(string:void) */
+  ADD_FUNCTION("drop_db", f_drop_db,tFunc(tStr,tVoid), ID_PUBLIC);
+  /* function(void:void) */
+  ADD_FUNCTION("shutdown", f_shutdown,tFunc(tVoid,tVoid), ID_PUBLIC);
+  /* function(void:void) */
+  ADD_FUNCTION("reload", f_reload,tFunc(tVoid,tVoid), ID_PUBLIC);
+  /* function(void:string) */
+  ADD_FUNCTION("statistics", f_statistics,tFunc(tVoid,tStr), ID_PUBLIC);
+  /* function(void:string) */
+  ADD_FUNCTION("server_info", f_server_info,tFunc(tVoid,tStr), ID_PUBLIC);
+  /* function(void:string) */
+  ADD_FUNCTION("host_info", f_host_info,tFunc(tVoid,tStr), ID_PUBLIC);
+  /* function(void:int) */
+  ADD_FUNCTION("protocol_info", f_protocol_info,tFunc(tVoid,tInt), ID_PUBLIC);
+  /* function(void|string:object) */
+  ADD_FUNCTION("list_dbs", f_list_dbs,tFunc(tOr(tVoid,tStr),tObj), ID_PUBLIC);
+  /* function(void|string:object) */
+  ADD_FUNCTION("list_tables", f_list_tables,tFunc(tOr(tVoid,tStr),tObj), ID_PUBLIC);
+  /* function(string, void|string:array(int|mapping(string:mixed))) */
+  ADD_FUNCTION("list_fields", f_list_fields,tFunc(tStr tOr(tVoid,tStr),tArr(tOr(tInt,tMap(tStr,tMix)))), ID_PUBLIC);
+  /* function(void|string:object) */
+  ADD_FUNCTION("list_processes", f_list_processes,tFunc(tOr(tVoid,tStr),tObj), ID_PUBLIC);
 
-  add_function("binary_data", f_binary_data, "function(void:int)", ID_PUBLIC);
+  /* function(void:int) */
+  ADD_FUNCTION("binary_data", f_binary_data,tFunc(tVoid,tInt), ID_PUBLIC);
 
   set_init_callback(init_mysql_struct);
   set_exit_callback(exit_mysql_struct);

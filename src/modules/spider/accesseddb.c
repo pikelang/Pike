@@ -1,5 +1,5 @@
 /*
- * $Id: accesseddb.c,v 1.17 1999/02/01 02:47:02 hubbe Exp $
+ * $Id: accesseddb.c,v 1.18 1999/02/10 21:54:20 hubbe Exp $
  */
 
 #include "global.h"
@@ -18,7 +18,7 @@
 #include "error.h"
 #include "builtin_functions.h"
 
-RCSID("$Id: accesseddb.c,v 1.17 1999/02/01 02:47:02 hubbe Exp $");
+RCSID("$Id: accesseddb.c,v 1.18 1999/02/10 21:54:20 hubbe Exp $");
 
 #include <stdio.h>
 
@@ -541,14 +541,19 @@ void init_accessdb_program(void)
 {
    start_new_program();
    ADD_STORAGE(struct file_head);
-   add_function("create", f_create, "function(string:void)", ID_PUBLIC);
-   add_function("add", f_add, "function(string,int ...:mapping(string:int))",
+   /* function(string:void) */
+  ADD_FUNCTION("create", f_create,tFunc(tStr,tVoid), ID_PUBLIC);
+   /* function(string,int ...:mapping(string:int)) */
+  ADD_FUNCTION("add", f_add,tFuncV(tStr,tInt,tMap(tStr,tInt)),
 		ID_PUBLIC);
-   add_function("set", f_set, "function(string,int ...:mapping(string:int))",
+   /* function(string,int ...:mapping(string:int)) */
+  ADD_FUNCTION("set", f_set,tFuncV(tStr,tInt,tMap(tStr,tInt)),
 		ID_PUBLIC);
-   add_function("new", f_new, "function(string,int ...:mapping(string:int))",
+   /* function(string,int ...:mapping(string:int)) */
+  ADD_FUNCTION("new", f_new,tFuncV(tStr,tInt,tMap(tStr,tInt)),
 		ID_PUBLIC);
-   add_function("debug", f_debug, "function(void:mapping)", ID_PUBLIC);
+   /* function(void:mapping) */
+  ADD_FUNCTION("debug", f_debug,tFunc(tVoid,tMapping), ID_PUBLIC);
    set_init_callback(init_file_head);
    set_exit_callback(free_file_head);
    end_class("accessdb",0);

@@ -2298,9 +2298,11 @@ void init_xml(void)
 #define PARSETYPE \
  "function(string," CALLBACKTYPE ",mixed...:array(0))"
 
-  add_function("autoconvert",autoconvert,"function(string:string)",0);
+  /* function(string:string) */
+  ADD_FUNCTION("autoconvert",autoconvert,tFunc(tStr,tStr),0);
   add_function("parse",parse_xml,PARSETYPE,0);
   add_function("parse_dtd",parse_dtd,PARSETYPE,0);
-  add_function("create",create,"function(:void)",0);
+  /* function(:void) */
+  ADD_FUNCTION("create",create,tFunc(,tVoid),0);
   end_class("XML",0);
 }

@@ -4,7 +4,7 @@
 ||| See the files COPYING and DISCLAIMER for more information.
 \*/
 #include "global.h"
-RCSID("$Id: program.c,v 1.109 1999/02/10 01:29:08 hubbe Exp $");
+RCSID("$Id: program.c,v 1.110 1999/02/10 21:46:51 hubbe Exp $");
 #include "program.h"
 #include "object.h"
 #include "dynamic_buffer.h"
@@ -1656,6 +1656,24 @@ int add_integer_constant(char *name,
   return simple_add_constant(name, &tmp, flags);
 }
 
+int quick_add_integer_constant(char *name,
+			       int name_length,
+			       INT32 i,
+			       INT32 flags)
+{
+  struct svalue tmp;
+  struct pike_string *id;
+  INT32 ret;
+
+  tmp.u.integer=i;
+  tmp.type=T_INT;
+  tmp.subtype=NUMBER_NUMBER;
+  id=make_shared_binary_string(name,name_length);
+  ret=add_constant(id, &tmp, flags);
+  free_string(id);
+  return ret;
+}
+
 int add_float_constant(char *name,
 			 double f,
 			 INT32 flags)
@@ -1722,16 +1740,21 @@ int add_function_constant(char *name, void (*cfun)(INT32), char * type, INT16 fl
 }
 
 
-int debug_end_class(char *name, INT32 flags)
+int debug_end_class(char *name, int namelen, INT32 flags)
 {
   INT32 ret;
   struct svalue tmp;
+  struct pike_string *id;
+
   tmp.type=T_PROGRAM;
   tmp.subtype=0;
   tmp.u.program=end_program();
   if(!tmp.u.program)
     fatal("Failed to initialize class '%s'\n",name);
-  ret=simple_add_constant(name, &tmp, flags);
+
+  id=make_shared_binary_string(name,namelen);
+  ret=add_constant(id, &tmp, flags);
+  free_string(id);
   free_svalue(&tmp);
   return ret;
 }
@@ -2358,6 +2381,41 @@ int add_function(char *name,void (*cfun)(INT32),char *type,INT16 flags)
   
   name_tmp=make_shared_string(name);
   type_tmp=parse_type(type);
+
+  if(cfun)
+  {
+    tmp.c_fun=cfun;
+    ret=define_function(name_tmp,
+			type_tmp,
+			flags,
+			IDENTIFIER_C_FUNCTION,
+			&tmp);
+  }else{
+    ret=define_function(name_tmp,
+			type_tmp,
+			flags,
+			IDENTIFIER_C_FUNCTION,
+			0);
+  }
+  free_string(name_tmp);
+  free_string(type_tmp);
+  return ret;
+}
+
+int quick_add_function(char *name,
+		       int name_length,
+		       void (*cfun)(INT32),
+		       char *type,
+		       int type_length,
+		       INT16 flags,
+		       int opt_flags)
+{
+  int ret;
+  struct pike_string *name_tmp,*type_tmp;
+  union idptr tmp;
+  
+  name_tmp=make_shared_binary_string(name,name_length);
+  type_tmp=make_shared_binary_string(type,type_length);
 
   if(cfun)
   {

@@ -4,7 +4,7 @@
 ||| See the files COPYING and DISCLAIMER for more information.
 \*/
 #include "global.h"
-RCSID("$Id: call_out.c,v 1.24 1999/01/31 09:03:50 hubbe Exp $");
+RCSID("$Id: call_out.c,v 1.25 1999/02/10 21:53:21 hubbe Exp $");
 #include "array.h"
 #include "dynamic_buffer.h"
 #include "object.h"
@@ -707,12 +707,22 @@ void free_all_call_outs(void)
 
 void pike_module_init(void)
 {
-  add_efun("call_out",f_call_out,"function(function,float|int,mixed...:mixed)",OPT_SIDE_EFFECT);
-  add_efun("call_out_info",f_call_out_info,"function(:array*)",OPT_EXTERNAL_DEPEND);
-  add_efun("_do_call_outs",f_do_call_outs,"function(void:void)",
+  
+/* function(function,float|int,mixed...:mixed) */
+  ADD_EFUN("call_out",f_call_out,tFuncV(tFunction tOr(tFlt,tInt),tMix,tMix),OPT_SIDE_EFFECT);
+  
+/* function(:array*) */
+  ADD_EFUN("call_out_info",f_call_out_info,tFunc(,tArr(tArray)),OPT_EXTERNAL_DEPEND);
+  
+/* function(void:void) */
+  ADD_EFUN("_do_call_outs",f_do_call_outs,tFunc(tVoid,tVoid),
 	   OPT_EXTERNAL_DEPEND);
-  add_efun("find_call_out",f_find_call_out,"function(mixed:int)",OPT_EXTERNAL_DEPEND);
-  add_efun("remove_call_out",f_remove_call_out,"function(mixed:int)",OPT_SIDE_EFFECT);
+  
+/* function(mixed:int) */
+  ADD_EFUN("find_call_out",f_find_call_out,tFunc(tMix,tInt),OPT_EXTERNAL_DEPEND);
+  
+/* function(mixed:int) */
+  ADD_EFUN("remove_call_out",f_remove_call_out,tFunc(tMix,tInt),OPT_SIDE_EFFECT);
 }
 
 void pike_module_exit(void)

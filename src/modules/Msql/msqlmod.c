@@ -2,7 +2,7 @@
  * This code is (C) Francesco Chemolli, 1997.
  * You may use, modify and redistribute it freely under the terms
  * of the GNU General Public License, version 2.
- * $Id: msqlmod.c,v 1.9 1999/02/01 02:43:37 hubbe Exp $
+ * $Id: msqlmod.c,v 1.10 1999/02/10 21:49:01 hubbe Exp $
  *
  * This version is intended for Pike/0.5 and later.
  * It won't compile under older versions of the Pike interpreter.
@@ -35,7 +35,7 @@
 #include "operators.h"
 #include "multiset.h"
 
-RCSID("$Id: msqlmod.c,v 1.9 1999/02/01 02:43:37 hubbe Exp $");
+RCSID("$Id: msqlmod.c,v 1.10 1999/02/10 21:49:01 hubbe Exp $");
 #include "version.h"
 
 #ifdef _REENTRANT
@@ -711,8 +711,8 @@ void pike_module_init(void)
 	set_init_callback (msql_object_created);
 	set_exit_callback (msql_object_destroyed);
 
-	add_function("create",msql_mod_create,
-			"function(void|string,void|string,void|string,void|string:void)",
+	/* function(void|string,void|string,void|string,void|string:void) */
+  ADD_FUNCTION("create",msql_mod_create,tFunc(tOr(tVoid,tStr) tOr(tVoid,tStr) tOr(tVoid,tStr) tOr(tVoid,tStr),tVoid),
 			OPT_EXTERNAL_DEPEND);
 	/* 1st arg: hostname or "localhost", 2nd arg: dbname or nothing 
 	 * CAN raise exception if there is no server listening, or no database
@@ -726,15 +726,16 @@ void pike_module_init(void)
 	 * and is provided only for generic-interface compliancy
 	 */
 
-	add_function("select_db",select_db,"function(string:void)",
+	/* function(string:void) */
+  ADD_FUNCTION("select_db",select_db,tFunc(tStr,tVoid),
 		OPT_EXTERNAL_DEPEND);
 	/* if no db was selected by connect, does it now.
 	 * CAN raise an exception if there's no such database or we haven't selected
 	 * an host.
 	 */
 
-	add_function("query",do_query,
-			"function(string:array(mapping(string:mixed)))",
+	/* function(string:array(mapping(string:mixed))) */
+  ADD_FUNCTION("query",do_query,tFunc(tStr,tArr(tMap(tStr,tMix))),
 			OPT_ASSIGNMENT|OPT_TRY_OPTIMIZE|OPT_EXTERNAL_DEPEND|OPT_RETURN);
 	/* Gets an SQL query, and returns an array of the results, one element
 	 * for each result line, each row is a mapping with the column name as
@@ -742,56 +743,65 @@ void pike_module_init(void)
 	 * CAN raise excaptions if there's no active database.
 	 */
 
-	add_function ("list_dbs",do_list_dbs,
-		"function(void|string:array(string))",
+	/* function(void|string:array(string)) */
+  ADD_FUNCTION("list_dbs",do_list_dbs,tFunc(tOr(tVoid,tStr),tArr(tStr)),
 		OPT_ASSIGNMENT|OPT_EXTERNAL_DEPEND|OPT_RETURN);
 	/* Lists the tables contained in the selected database. */
 
-	add_function ("list_tables",do_list_tables,
-		"function(void:array(string))",
+	/* function(void:array(string)) */
+  ADD_FUNCTION("list_tables",do_list_tables,tFunc(tVoid,tArr(tStr)),
 		OPT_ASSIGNMENT|OPT_EXTERNAL_DEPEND|OPT_RETURN);
 	/* Lists the tables contained in the selected database. */
 
-	add_function ("list_fields", do_list_fields,
-		"function(string:mapping(string:array(mixed)))",
+	/* function(string:mapping(string:array(mixed))) */
+  ADD_FUNCTION("list_fields", do_list_fields,tFunc(tStr,tMap(tStr,tArr(tMix))),
 		OPT_RETURN|OPT_EXTERNAL_DEPEND);
 	/* Returns information on the the fields of the given table of the current
 	  database */
 
-	add_function ("error",do_error, "function(void:void|string)",
+	/* function(void:void|string) */
+  ADD_FUNCTION("error",do_error,tFunc(tVoid,tOr(tVoid,tStr)),
 		OPT_RETURN|OPT_EXTERNAL_DEPEND);
 	/* return the last error reported by the server. */
 
-	add_function ("server_info", do_info, "function(void:string)",
+	/* function(void:string) */
+  ADD_FUNCTION("server_info", do_info,tFunc(tVoid,tStr),
 		OPT_RETURN|OPT_EXTERNAL_DEPEND);
 	/* Returns "msql/<server_version>" */
 
-	add_function ("host_info", do_host_info, "function(void:string)",
+	/* function(void:string) */
+  ADD_FUNCTION("host_info", do_host_info,tFunc(tVoid,tStr),
 			OPT_EXTERNAL_DEPEND|OPT_RETURN);
 	/* Returns information on the connection type and such */
 
-	add_function ("create_db", do_create_db, "function(string:void)",
+	/* function(string:void) */
+  ADD_FUNCTION("create_db", do_create_db,tFunc(tStr,tVoid),
 		OPT_EXTERNAL_DEPEND);
 	/* creates a new database with the name as argument */
 
-	add_function ("drop_db", do_drop_db, "function(string:void)",
+	/* function(string:void) */
+  ADD_FUNCTION("drop_db", do_drop_db,tFunc(tStr,tVoid),
 		OPT_EXTERNAL_DEPEND);
 	/* destroys a database and its contents */
 
-	add_function ("shutdown", do_shutdown, "function(void:void)",
+	/* function(void:void) */
+  ADD_FUNCTION("shutdown", do_shutdown,tFunc(tVoid,tVoid),
 			OPT_EXTERNAL_DEPEND);
 	/* Shuts the server down */
 
-	add_function ("reload_acl", do_reload_acl, "function(void:void)",
+	/* function(void:void) */
+  ADD_FUNCTION("reload_acl", do_reload_acl,tFunc(tVoid,tVoid),
 			OPT_EXTERNAL_DEPEND);
 	/* Reloads the ACL for the DBserver */
 
 #ifdef MSQL_VERSION_2
-	add_function ("affected_rows", do_affected_rows, "function(void:int)",
+	/* function(void:int) */
+  ADD_FUNCTION("affected_rows", do_affected_rows,tFunc(tVoid,tInt),
 		OPT_RETURN|OPT_EXTERNAL_DEPEND);
 	/* Returns the number of rows 'touched' by last query */
 
-	add_function ("list_index", do_list_index, "function(string,string:array)",
+	/* function(string,string:array) */
+  ADD_FUNCTION("list_index", do_list_index,tFunc(tStr tStr,tArray),
 			OPT_EXTERNAL_DEPEND);
 	/* Returns the index structure on the specified table */
 #endif

@@ -62,7 +62,7 @@ static void pgdebug (char * a, ...) {}
 
 struct program * postgres_program;
 
-RCSID("$Id: postgres.c,v 1.11 1999/02/01 02:45:01 hubbe Exp $");
+RCSID("$Id: postgres.c,v 1.12 1999/02/10 22:03:21 hubbe Exp $");
 
 #define THIS ((struct pgres_object_data *) fp->current_storage)
 
@@ -434,37 +434,42 @@ void pike_module_init (void)
 	set_exit_callback(pgres_destroy);
 
 	/* sql-interface compliant functions */
-	add_function ("create",f_create,
-		"function(void|string,void|string,void|string,void|string,int|void:void)",
+	/* function(void|string,void|string,void|string,void|string,int|void:void) */
+  ADD_FUNCTION("create",f_create,tFunc(tOr(tVoid,tStr) tOr(tVoid,tStr) tOr(tVoid,tStr) tOr(tVoid,tStr) tOr(tInt,tVoid),tVoid),
 		OPT_EXTERNAL_DEPEND);
 	/* That is: create(hostname,database,port)
 	 * It depends on the environment variables:
 	 * PGHOST, PGOPTIONS, PGPORT, PGTTY(don't use!), PGDATABASE
 	 * Notice: Postgres _requires_ a database to be selected upon connection
 	 */
-	add_function("select_db",f_select_db,"function(string:void)",
+	/* function(string:void) */
+  ADD_FUNCTION("select_db",f_select_db,tFunc(tStr,tVoid),
 			OPT_EXTERNAL_DEPEND);
-	add_function("big_query",f_big_query, "function(string:int|object)",
+	/* function(string:int|object) */
+  ADD_FUNCTION("big_query",f_big_query,tFunc(tStr,tOr(tInt,tObj)),
 			OPT_EXTERNAL_DEPEND|OPT_RETURN);
-	add_function("error",f_error,"function(void:string)",
+	/* function(void:string) */
+  ADD_FUNCTION("error",f_error,tFunc(tVoid,tStr),
 			OPT_EXTERNAL_DEPEND|OPT_RETURN);
-	add_function("host_info",f_host_info,"function(void:string)",
+	/* function(void:string) */
+  ADD_FUNCTION("host_info",f_host_info,tFunc(tVoid,tStr),
 			OPT_EXTERNAL_DEPEND|OPT_RETURN);
 
 	/* postgres-specific functions */
-	add_function("reset",f_reset,
-			"function(void:void)",OPT_EXTERNAL_DEPEND|OPT_SIDE_EFFECT);
+	/* function(void:void) */
+  ADD_FUNCTION("reset",f_reset,tFunc(tVoid,tVoid),OPT_EXTERNAL_DEPEND|OPT_SIDE_EFFECT);
 
 #if 0
-	 add_function("trace",f_trace,"function(object|int:void)",
+	 /* function(object|int:void) */
+  ADD_FUNCTION("trace",f_trace,tFunc(tOr(tObj,tInt),tVoid),
 		 OPT_EXTERNAL_DEPEND|OPT_SIDE_EFFECT);
 	 /* If given a clone of /precompiled/file, traces to that file.
 		* If given 0, stops tracing.
 		* See note on the implementation.
 		*/
 #endif
-	add_function("_set_notify_callback",f_callback,
-			"function(int|function(string:void):void)",
+	/* function(int|function(string:void):void) */
+  ADD_FUNCTION("_set_notify_callback",f_callback,tFunc(tOr(tInt,tFunc(tStr,tVoid)),tVoid),
 			OPT_SIDE_EFFECT);
 
 	postgres_program = end_program();

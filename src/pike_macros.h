@@ -5,7 +5,7 @@
 \*/
 
 /*
- * $Id: pike_macros.h,v 1.11 1999/02/01 02:41:42 hubbe Exp $
+ * $Id: pike_macros.h,v 1.12 1999/02/10 21:46:47 hubbe Exp $
  */
 #ifndef MACROS_H
 #define MACROS_H
@@ -60,4 +60,6 @@
 #define ALIGNOF(X) ((int)&(((struct { char ignored_ ; X fooo_; } *)0)->fooo_))
 
 #define DO_ALIGN(X,Y) (((long)(X)+((Y)-1)) & -(Y))
+#define CONSTANT_STRLEN(X) (sizeof(X) - sizeof(""))
+
 #endif

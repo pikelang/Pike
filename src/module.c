@@ -17,7 +17,7 @@
 
 #include "modules/modlist_headers.h"
 
-RCSID("$Id: module.c,v 1.9 1998/04/24 00:30:44 hubbe Exp $");
+RCSID("$Id: module.c,v 1.10 1999/02/10 21:46:44 hubbe Exp $");
 
 typedef void (*modfun)(void);
 
@@ -45,7 +45,7 @@ void init_modules(void)
   {
     start_new_program();
     module_list[e].init();
-    end_class(module_list[e].name,0);
+    debug_end_class(module_list[e].name,strlen(module_list[e].name),0);
   }
   push_text("_static_modules");
   push_object(low_clone(p=end_program()));

@@ -3,7 +3,7 @@
 #endif /* HAVE_CONFIG_H */
 
 #include "global.h"
-RCSID("$Id: charsetmod.c,v 1.8 1999/02/01 02:45:42 hubbe Exp $");
+RCSID("$Id: charsetmod.c,v 1.9 1999/02/10 21:51:16 hubbe Exp $");
 #include "program.h"
 #include "interpret.h"
 #include "stralloc.h"
@@ -1066,9 +1066,12 @@ void pike_module_init(void)
 
   start_new_program();
   ADD_STORAGE(struct std_cs_stor);
-  add_function("drain", f_drain, "function(:string)", 0);
-  add_function("clear", f_clear, "function(:object)", 0);
-  add_function("create", f_create, "function(string|void:void)", 0);
+  /* function(:string) */
+  ADD_FUNCTION("drain", f_drain,tFunc(,tStr), 0);
+  /* function(:object) */
+  ADD_FUNCTION("clear", f_clear,tFunc(,tObj), 0);
+  /* function(string|void:void) */
+  ADD_FUNCTION("create", f_create,tFunc(tOr(tStr,tVoid),tVoid), 0);
   set_init_callback(init_stor);
   set_exit_callback(exit_stor);
   std_cs_program = end_program();
@@ -1084,33 +1087,40 @@ void pike_module_init(void)
   start_new_program();
   do_inherit(&prog, 0, NULL);
   utf7_stor_offs = ADD_STORAGE(struct utf7_stor);
-  add_function("feed", f_feed_utf7, "function(string:object)", 0);
-  add_function("clear", f_clear_utf7, "function(:object)", 0);
+  /* function(string:object) */
+  ADD_FUNCTION("feed", f_feed_utf7,tFunc(tStr,tObj), 0);
+  /* function(:object) */
+  ADD_FUNCTION("clear", f_clear_utf7,tFunc(,tObj), 0);
   set_init_callback(utf7_init_stor);
   add_program_constant("UTF7dec", utf7_program = end_program(), ID_STATIC|ID_NOMASK);
 
   start_new_program();
   do_inherit(&prog, 0, NULL);
-  add_function("feed", f_feed_utf8, "function(string:object)", 0);
+  /* function(string:object) */
+  ADD_FUNCTION("feed", f_feed_utf8,tFunc(tStr,tObj), 0);
   add_program_constant("UTF8dec", utf8_program = end_program(), ID_STATIC|ID_NOMASK);
 
   prog.u.program = utf7_program;
   start_new_program();
   do_inherit(&prog, 0, NULL);
-  add_function("feed", f_feed_utf7e, "function(string:object)", 0);
-  add_function("drain", f_drain_utf7e, "function(:string)", 0);
+  /* function(string:object) */
+  ADD_FUNCTION("feed", f_feed_utf7e,tFunc(tStr,tObj), 0);
+  /* function(:string) */
+  ADD_FUNCTION("drain", f_drain_utf7e,tFunc(,tStr), 0);
   add_program_constant("UTF7enc", utf7e_program = end_program(), ID_STATIC|ID_NOMASK);
   prog.u.program = std_cs_program;
 
   start_new_program();
   do_inherit(&prog, 0, NULL);
-  add_function("feed", f_feed_utf8e, "function(string:object)", 0);
+  /* function(string:object) */
+  ADD_FUNCTION("feed", f_feed_utf8e,tFunc(tStr,tObj), 0);
   add_program_constant("UTF8enc", utf8e_program = end_program(), ID_STATIC|ID_NOMASK);
 
   start_new_program();
   do_inherit(&prog, 0, NULL);
   std8e_stor_offs = ADD_STORAGE(struct std8e_stor);
-  add_function("feed", f_feed_std8e, "function(string:object)", 0);
+  /* function(string:object) */
+  ADD_FUNCTION("feed", f_feed_std8e,tFunc(tStr,tObj), 0);
   set_init_callback(std_8bite_init_stor);
   set_exit_callback(std_8bite_exit_stor);
   std_8bite_program = end_program();
@@ -1118,7 +1128,8 @@ void pike_module_init(void)
   start_new_program();
   do_inherit(&prog, 0, NULL);
   std16e_stor_offs = ADD_STORAGE(struct std16e_stor);
-  add_function("feed", f_feed_std16e, "function(string:object)", 0);
+  /* function(string:object) */
+  ADD_FUNCTION("feed", f_feed_std16e,tFunc(tStr,tObj), 0);
   set_init_callback(std_16bite_init_stor);
   set_exit_callback(std_16bite_exit_stor);
   std_16bite_program = end_program();
@@ -1132,28 +1143,33 @@ void pike_module_init(void)
 
   start_new_program();
   do_inherit(&prog, 0, NULL);
-  add_function("feed", f_feed_94, "function(string:object)", 0);
+  /* function(string:object) */
+  ADD_FUNCTION("feed", f_feed_94,tFunc(tStr,tObj), 0);
   std_94_program = end_program();
 
   start_new_program();
   do_inherit(&prog, 0, NULL);
-  add_function("feed", f_feed_96, "function(string:object)", 0);
+  /* function(string:object) */
+  ADD_FUNCTION("feed", f_feed_96,tFunc(tStr,tObj), 0);
   std_96_program = end_program();
 
   start_new_program();
   do_inherit(&prog, 0, NULL);
-  add_function("feed", f_feed_9494, "function(string:object)", 0);
+  /* function(string:object) */
+  ADD_FUNCTION("feed", f_feed_9494,tFunc(tStr,tObj), 0);
   std_9494_program = end_program();
 
   start_new_program();
   do_inherit(&prog, 0, NULL);
-  add_function("feed", f_feed_9696, "function(string:object)", 0);
+  /* function(string:object) */
+  ADD_FUNCTION("feed", f_feed_9696,tFunc(tStr,tObj), 0);
   std_9696_program = end_program();
 
   start_new_program();
   do_inherit(&prog, 0, NULL);
   std_misc_stor_offs = ADD_STORAGE(struct std_misc_stor);
-  add_function("feed", f_feed_8bit, "function(string:object)", 0);
+  /* function(string:object) */
+  ADD_FUNCTION("feed", f_feed_8bit,tFunc(tStr,tObj), 0);
   std_8bit_program = end_program();
 
   add_function_constant("rfc1345", f_rfc1345,

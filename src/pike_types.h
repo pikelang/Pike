@@ -5,7 +5,7 @@
 \*/
 
 /*
- * $Id: pike_types.h,v 1.16 1998/11/22 11:03:11 hubbe Exp $
+ * $Id: pike_types.h,v 1.17 1999/02/10 21:46:49 hubbe Exp $
  */
 #ifndef PIKE_TYPES_H
 #define PIKE_TYPES_H
@@ -98,6 +98,7 @@ extern struct pike_string *any_type_string;
 } while(0)
 
 /* Prototypes begin here */
+void check_type_string(struct pike_string *s);
 void init_types(void);
 INT32 pop_stack_mark(void);
 void pop_type_stack(void);
@@ -140,6 +141,10 @@ int type_may_overload(char *type, int lfun);
 #define pop_type debug_pop_type
 #define compiler_pop_type debug_compiler_pop_type
 #define pop_unfinished_type debug_pop_unfinished_type
+#endif
+
+#ifndef PIKE_DEBUG
+#define check_type_string(X)
 #endif
 
 #endif

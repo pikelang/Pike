@@ -16,7 +16,7 @@
 
 #include "rc4.h"
 
-RCSID("$Id: rc4.c,v 1.8 1999/02/01 02:46:06 hubbe Exp $");
+RCSID("$Id: rc4.c,v 1.9 1999/02/10 21:51:40 hubbe Exp $");
 
 #undef THIS
 #define THIS ((struct rc4_ctx *)(fp->current_storage))
@@ -98,11 +98,16 @@ void pike_rc4_init(void)
   start_new_program();
   ADD_STORAGE(struct rc4_ctx);
 
-  add_function("name", f_name, "function(void:string)", 0);
-  add_function("query_key_length", f_query_key_length, "function(void:int)", 0);
-  add_function("set_encrypt_key", f_set_key, "function(string:object)", 0);
-  add_function("set_decrypt_key", f_set_key, "function(string:object)", 0);
-  add_function("crypt", f_crypt, "function(string:string)", 0);
+  /* function(void:string) */
+  ADD_FUNCTION("name", f_name,tFunc(tVoid,tStr), 0);
+  /* function(void:int) */
+  ADD_FUNCTION("query_key_length", f_query_key_length,tFunc(tVoid,tInt), 0);
+  /* function(string:object) */
+  ADD_FUNCTION("set_encrypt_key", f_set_key,tFunc(tStr,tObj), 0);
+  /* function(string:object) */
+  ADD_FUNCTION("set_decrypt_key", f_set_key,tFunc(tStr,tObj), 0);
+  /* function(string:string) */
+  ADD_FUNCTION("crypt", f_crypt,tFunc(tStr,tStr), 0);
 
   set_init_callback(init_pike_rc4);
   set_exit_callback(exit_pike_rc4);

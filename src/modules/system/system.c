@@ -1,5 +1,5 @@
 /*
- * $Id: system.c,v 1.61 1999/01/21 09:15:55 hubbe Exp $
+ * $Id: system.c,v 1.62 1999/02/10 21:55:29 hubbe Exp $
  *
  * System-call module for Pike
  *
@@ -15,7 +15,7 @@
 #include "system_machine.h"
 #include "system.h"
 
-RCSID("$Id: system.c,v 1.61 1999/01/21 09:15:55 hubbe Exp $");
+RCSID("$Id: system.c,v 1.62 1999/02/10 21:55:29 hubbe Exp $");
 #ifdef HAVE_WINSOCK_H
 #include <winsock.h>
 #endif
@@ -950,84 +950,136 @@ void pike_module_init(void)
    * From this file:
    */
 #ifdef HAVE_LINK
-  add_efun("hardlink", f_hardlink, "function(string, string:void)", OPT_SIDE_EFFECT);
+  
+/* function(string, string:void) */
+  ADD_EFUN("hardlink", f_hardlink,tFunc(tStr tStr,tVoid), OPT_SIDE_EFFECT);
 #endif /* HAVE_LINK */
 #ifdef HAVE_SYMLINK
-  add_efun("symlink", f_symlink, "function(string, string:void)", OPT_SIDE_EFFECT);
+  
+/* function(string, string:void) */
+  ADD_EFUN("symlink", f_symlink,tFunc(tStr tStr,tVoid), OPT_SIDE_EFFECT);
 #endif /* HAVE_SYMLINK */
 #ifdef HAVE_READLINK
-  add_efun("readlink", f_readlink, "function(string:string)", OPT_EXTERNAL_DEPEND);
+  
+/* function(string:string) */
+  ADD_EFUN("readlink", f_readlink,tFunc(tStr,tStr), OPT_EXTERNAL_DEPEND);
 #endif /* HAVE_READLINK */
 #ifdef HAVE_RESOLVEPATH
-  add_efun("resolvepath", f_resolvepath, "function(string:string)", OPT_EXTERNAL_DEPEND);
+  
+/* function(string:string) */
+  ADD_EFUN("resolvepath", f_resolvepath,tFunc(tStr,tStr), OPT_EXTERNAL_DEPEND);
 #endif /* HAVE_RESOLVEPATH */
-  add_efun("chmod", f_chmod, "function(string, int:void)", OPT_SIDE_EFFECT);
+  
+/* function(string, int:void) */
+  ADD_EFUN("chmod", f_chmod,tFunc(tStr tInt,tVoid), OPT_SIDE_EFFECT);
 #ifdef HAVE_CHOWN
-  add_efun("chown", f_chown, "function(string, int, int:void)", OPT_SIDE_EFFECT);
+  
+/* function(string, int, int:void) */
+  ADD_EFUN("chown", f_chown,tFunc(tStr tInt tInt,tVoid), OPT_SIDE_EFFECT);
 #endif
 #ifdef HAVE_INITGROUPS
-  add_efun("initgroups", f_initgroups, "function(string, int:void)", OPT_SIDE_EFFECT);
+  
+/* function(string, int:void) */
+  ADD_EFUN("initgroups", f_initgroups,tFunc(tStr tInt,tVoid), OPT_SIDE_EFFECT);
 #endif /* HAVE_INITGROUPS */
 #ifdef HAVE_SETGROUPS
-  add_efun("cleargroups", f_cleargroups, "function(:void)", OPT_SIDE_EFFECT);
+  
+/* function(:void) */
+  ADD_EFUN("cleargroups", f_cleargroups,tFunc(,tVoid), OPT_SIDE_EFFECT);
   /* NOT Implemented in Pike 0.5 */
-  add_efun("setgroups", f_setgroups, "function(array(int):void)", OPT_SIDE_EFFECT);
+  
+/* function(array(int):void) */
+  ADD_EFUN("setgroups", f_setgroups,tFunc(tArr(tInt),tVoid), OPT_SIDE_EFFECT);
 #endif /* HAVE_SETGROUPS */
 #ifdef HAVE_GETGROUPS
-  add_efun("getgroups", f_getgroups, "function(:array(int))", OPT_EXTERNAL_DEPEND);
+  
+/* function(:array(int)) */
+  ADD_EFUN("getgroups", f_getgroups,tFunc(,tArr(tInt)), OPT_EXTERNAL_DEPEND);
 #endif /* HAVE_GETGROUPS */
 #ifdef HAVE_SETUID
-  add_efun("setuid", f_setuid, "function(int:void)", OPT_SIDE_EFFECT);
+  
+/* function(int:void) */
+  ADD_EFUN("setuid", f_setuid,tFunc(tInt,tVoid), OPT_SIDE_EFFECT);
 #endif
 #ifdef HAVE_SETGID
-  add_efun("setgid", f_setgid, "function(int:void)", OPT_SIDE_EFFECT);
+  
+/* function(int:void) */
+  ADD_EFUN("setgid", f_setgid,tFunc(tInt,tVoid), OPT_SIDE_EFFECT);
 #endif
 #if defined(HAVE_SETEUID) || defined(HAVE_SETRESUID)
-  add_efun("seteuid", f_seteuid, "function(int:int)", OPT_SIDE_EFFECT);
+  
+/* function(int:int) */
+  ADD_EFUN("seteuid", f_seteuid,tFunc(tInt,tInt), OPT_SIDE_EFFECT);
 #endif /* HAVE_SETEUID || HAVE_SETRESUID */
 #if defined(HAVE_SETEGID) || defined(HAVE_SETRESGID)
-  add_efun("setegid", f_setegid, "function(int:int)", OPT_SIDE_EFFECT);
+  
+/* function(int:int) */
+  ADD_EFUN("setegid", f_setegid,tFunc(tInt,tInt), OPT_SIDE_EFFECT);
 #endif /* HAVE_SETEGID || HAVE_SETRESGID */
 
 #ifdef HAVE_GETUID
-  add_efun("getuid", f_getuid, "function(:int)", OPT_EXTERNAL_DEPEND);
+  
+/* function(:int) */
+  ADD_EFUN("getuid", f_getuid,tFunc(,tInt), OPT_EXTERNAL_DEPEND);
 #endif
 
 #ifdef HAVE_GETGID
-  add_efun("getgid", f_getgid, "function(:int)", OPT_EXTERNAL_DEPEND);
+  
+/* function(:int) */
+  ADD_EFUN("getgid", f_getgid,tFunc(,tInt), OPT_EXTERNAL_DEPEND);
 #endif
  
 #ifdef HAVE_GETEUID
-  add_efun("geteuid", f_geteuid, "function(:int)", OPT_EXTERNAL_DEPEND);
-  add_efun("getegid", f_getegid, "function(:int)", OPT_EXTERNAL_DEPEND);
+  
+/* function(:int) */
+  ADD_EFUN("geteuid", f_geteuid,tFunc(,tInt), OPT_EXTERNAL_DEPEND);
+  
+/* function(:int) */
+  ADD_EFUN("getegid", f_getegid,tFunc(,tInt), OPT_EXTERNAL_DEPEND);
 #endif /* HAVE_GETEUID */
  
-  add_efun("getpid", f_getpid, "function(:int)", OPT_EXTERNAL_DEPEND);
+  
+/* function(:int) */
+  ADD_EFUN("getpid", f_getpid,tFunc(,tInt), OPT_EXTERNAL_DEPEND);
 #ifdef HAVE_GETPPID
-  add_efun("getppid", f_getppid, "function(:int)", OPT_EXTERNAL_DEPEND);
+  
+/* function(:int) */
+  ADD_EFUN("getppid", f_getppid,tFunc(,tInt), OPT_EXTERNAL_DEPEND);
 #endif /* HAVE_GETPPID */
  
 #ifdef HAVE_GETPGRP
-  add_efun("getpgrp", f_getpgrp, "function(:int)", OPT_EXTERNAL_DEPEND);
+  
+/* function(:int) */
+  ADD_EFUN("getpgrp", f_getpgrp,tFunc(,tInt), OPT_EXTERNAL_DEPEND);
 #endif /* HAVE_GETPGRP */
 
 #ifdef HAVE_CHROOT 
-  add_efun("chroot", f_chroot, "function(string|object:int)", 
+  
+/* function(string|object:int) */
+  ADD_EFUN("chroot", f_chroot,tFunc(tOr(tStr,tObj),tInt), 
            OPT_EXTERNAL_DEPEND);
 #endif /* HAVE_CHROOT */
  
 #ifdef HAVE_UNAME
-  add_efun("uname", f_uname, "function(:mapping)", OPT_TRY_OPTIMIZE);
+  
+/* function(:mapping) */
+  ADD_EFUN("uname", f_uname,tFunc(,tMapping), OPT_TRY_OPTIMIZE);
 #endif /* HAVE_UNAME */
  
 #if defined(HAVE_GETHOSTNAME) || defined(HAVE_UNAME)
-  add_efun("gethostname", f_gethostname, "function(:string)",OPT_TRY_OPTIMIZE);
+  
+/* function(:string) */
+  ADD_EFUN("gethostname", f_gethostname,tFunc(,tStr),OPT_TRY_OPTIMIZE);
 #endif /* HAVE_GETHOSTNAME || HAVE_UNAME */
 
 #ifdef GETHOST_DECLARE
-  add_efun("gethostbyname", f_gethostbyname, "function(string:array)",
+  
+/* function(string:array) */
+  ADD_EFUN("gethostbyname", f_gethostbyname,tFunc(tStr,tArray),
            OPT_TRY_OPTIMIZE);
-  add_efun("gethostbyaddr", f_gethostbyaddr, "function(string:array)",
+  
+/* function(string:array) */
+  ADD_EFUN("gethostbyaddr", f_gethostbyaddr,tFunc(tStr,tArray),
            OPT_TRY_OPTIMIZE);
 #endif /* GETHOST_DECLARE */
 
@@ -1035,9 +1087,15 @@ void pike_module_init(void)
    * From syslog.c:
    */
 #ifdef HAVE_SYSLOG
-  add_efun("openlog", f_openlog, "function(string,int,int:void)", 0);
-  add_efun("syslog", f_syslog, "function(int,string:void)", 0);
-  add_efun("closelog", f_closelog, "function(:void)", 0);
+  
+/* function(string,int,int:void) */
+  ADD_EFUN("openlog", f_openlog,tFunc(tStr tInt tInt,tVoid), 0);
+  
+/* function(int,string:void) */
+  ADD_EFUN("syslog", f_syslog,tFunc(tInt tStr,tVoid), 0);
+  
+/* function(:void) */
+  ADD_EFUN("closelog", f_closelog,tFunc(,tVoid), 0);
 #endif /* HAVE_SYSLOG */
 
   init_passwd();

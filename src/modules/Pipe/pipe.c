@@ -26,7 +26,7 @@
 
 #include <fcntl.h>
 
-RCSID("$Id: pipe.c,v 1.29 1999/02/01 02:44:43 hubbe Exp $");
+RCSID("$Id: pipe.c,v 1.30 1999/02/10 21:50:35 hubbe Exp $");
 
 #include "threads.h"
 #include "stralloc.h"
@@ -1242,31 +1242,40 @@ void pike_module_init(void)
 {
    start_new_program();
    ADD_STORAGE(struct pipe);
-   add_efun("_pipe_debug", f__pipe_debug, "function(:array)", 0);
-   add_function("input",pipe_input,"function(object:void)",0);
-   add_function("output",pipe_output,"function(object:void)",0);
-   add_function("write",pipe_write,"function(string:void)",0);
+   
+/* function(:array) */
+  ADD_EFUN("_pipe_debug", f__pipe_debug,tFunc(,tArray), 0);
+   /* function(object:void) */
+  ADD_FUNCTION("input",pipe_input,tFunc(tObj,tVoid),0);
+   /* function(object:void) */
+  ADD_FUNCTION("output",pipe_output,tFunc(tObj,tVoid),0);
+   /* function(string:void) */
+  ADD_FUNCTION("write",pipe_write,tFunc(tStr,tVoid),0);
 
-   add_function("start",pipe_start,"function(:void)",0);
-   add_function("finish",pipe_finish,"function(:void)",0);
+   /* function(:void) */
+  ADD_FUNCTION("start",pipe_start,tFunc(,tVoid),0);
+   /* function(:void) */
+  ADD_FUNCTION("finish",pipe_finish,tFunc(,tVoid),0);
    
-   add_function("set_output_closed_callback",pipe_set_output_closed_callback,
-		"function(void|function(mixed,object:mixed),void|mixed:void)",0);
-   add_function("set_done_callback",pipe_set_done_callback,
-		"function(void|function(mixed:mixed),void|mixed:void)",0);
+   /* function(void|function(mixed,object:mixed),void|mixed:void) */
+  ADD_FUNCTION("set_output_closed_callback",pipe_set_output_closed_callback,tFunc(tOr(tVoid,tFunc(tMix tObj,tMix)) tOr(tVoid,tMix),tVoid),0);
+   /* function(void|function(mixed:mixed),void|mixed:void) */
+  ADD_FUNCTION("set_done_callback",pipe_set_done_callback,tFunc(tOr(tVoid,tFunc(tMix,tMix)) tOr(tVoid,tMix),tVoid),0);
    
-   add_function("_output_close_callback",pipe_close_output_callback,
-		"function(int:void)",0);
-   add_function("_input_close_callback",pipe_close_input_callback,
-		"function(int:void)",0);
-   add_function("_output_write_callback",pipe_write_output_callback,
-		"function(int:void)",0);
-   add_function("_input_read_callback",pipe_read_input_callback,
-		"function(int,string:void)",0);
+   /* function(int:void) */
+  ADD_FUNCTION("_output_close_callback",pipe_close_output_callback,tFunc(tInt,tVoid),0);
+   /* function(int:void) */
+  ADD_FUNCTION("_input_close_callback",pipe_close_input_callback,tFunc(tInt,tVoid),0);
+   /* function(int:void) */
+  ADD_FUNCTION("_output_write_callback",pipe_write_output_callback,tFunc(tInt,tVoid),0);
+   /* function(int,string:void) */
+  ADD_FUNCTION("_input_read_callback",pipe_read_input_callback,tFunc(tInt tStr,tVoid),0);
 
-   add_function("version",pipe_version,"function(:string)",0);
+   /* function(:string) */
+  ADD_FUNCTION("version",pipe_version,tFunc(,tStr),0);
    
-   add_function("bytes_sent",f_bytes_sent,"function(:int)",0);
+   /* function(:int) */
+  ADD_FUNCTION("bytes_sent",f_bytes_sent,tFunc(,tInt),0);
 
    set_init_callback(init_pipe_struct);
    set_exit_callback(exit_pipe_struct);

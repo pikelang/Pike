@@ -8,7 +8,7 @@
 #  include "pike_macros.h"
 #  include "main.h"
 
-RCSID("$Id: dynamic_load.c,v 1.33 1999/02/01 01:36:06 per Exp $");
+RCSID("$Id: dynamic_load.c,v 1.34 1999/02/10 21:46:43 hubbe Exp $");
 
 #endif /* !TESTING */
 
@@ -294,7 +294,9 @@ void init_dynamic_load(void)
 #if defined(HAVE_DLOPEN) || defined(USE_DLD) || defined(USE_HPUX_DL)
   dlinit();
 
-  add_efun("load_module",f_load_module,"function(string:program)",OPT_EXTERNAL_DEPEND);
+  
+/* function(string:program) */
+  ADD_EFUN("load_module",f_load_module,tFunc(tStr,tPrg),OPT_EXTERNAL_DEPEND);
 #endif
 }
 

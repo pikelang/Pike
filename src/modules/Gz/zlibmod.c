@@ -4,7 +4,7 @@
 ||| See the files COPYING and DISCLAIMER for more information.
 \*/
 #include "global.h"
-RCSID("$Id: zlibmod.c,v 1.22 1999/02/01 02:42:32 hubbe Exp $");
+RCSID("$Id: zlibmod.c,v 1.23 1999/02/10 21:47:46 hubbe Exp $");
 
 #include "zlib_machine.h"
 
@@ -379,8 +379,10 @@ void pike_module_init(void)
   start_new_program();
   ADD_STORAGE(struct zipper);
   
-  add_function("create",gz_deflate_create,"function(int|void:void)",0);
-  add_function("deflate",gz_deflate,"function(string,int|void:string)",0);
+  /* function(int|void:void) */
+  ADD_FUNCTION("create",gz_deflate_create,tFunc(tOr(tInt,tVoid),tVoid),0);
+  /* function(string,int|void:string) */
+  ADD_FUNCTION("deflate",gz_deflate,tFunc(tStr tOr(tInt,tVoid),tStr),0);
 
   add_integer_constant("NO_FLUSH",Z_NO_FLUSH,0);
   add_integer_constant("PARTIAL_FLUSH",Z_PARTIAL_FLUSH,0);
@@ -395,8 +397,10 @@ void pike_module_init(void)
   start_new_program();
   ADD_STORAGE(struct zipper);
   
-  add_function("create",gz_inflate_create,"function(int|void:void)",0);
-  add_function("inflate",gz_inflate,"function(string:string)",0);
+  /* function(int|void:void) */
+  ADD_FUNCTION("create",gz_inflate_create,tFunc(tOr(tInt,tVoid),tVoid),0);
+  /* function(string:string) */
+  ADD_FUNCTION("inflate",gz_inflate,tFunc(tStr,tStr),0);
 
   add_integer_constant("NO_FLUSH",Z_NO_FLUSH,0);
   add_integer_constant("PARTIAL_FLUSH",Z_PARTIAL_FLUSH,0);
@@ -413,8 +417,8 @@ void pike_module_init(void)
   add_integer_constant("SYNC_FLUSH",Z_SYNC_FLUSH,0);
   add_integer_constant("FINISH",Z_FINISH,0);
 
-  add_function("crc32",gz_crc32,
-	       "function(string,void|int:int)",
+  /* function(string,void|int:int) */
+  ADD_FUNCTION("crc32",gz_crc32,tFunc(tStr tOr(tVoid,tInt),tInt),
 	       OPT_TRY_OPTIMIZE);
 
 #endif

@@ -1,5 +1,5 @@
 /*
- * $Id: image_jpeg.c,v 1.19 1998/07/04 17:06:52 grubba Exp $
+ * $Id: image_jpeg.c,v 1.20 1999/02/10 21:52:14 hubbe Exp $
  */
 
 #include "global.h"
@@ -23,7 +23,7 @@
 #ifdef HAVE_STDLIB_H
 #undef HAVE_STDLIB_H
 #endif
-RCSID("$Id: image_jpeg.c,v 1.19 1998/07/04 17:06:52 grubba Exp $");
+RCSID("$Id: image_jpeg.c,v 1.20 1999/02/10 21:52:14 hubbe Exp $");
 
 #include "pike_macros.h"
 #include "object.h"
@@ -764,12 +764,12 @@ void pike_module_init(void)
 
    if (image_program)
    {
-      add_function("decode",image_jpeg_decode,
-		   "function(string,void|mapping(string:int):object)",0);
-      add_function("decode_header",image_jpeg_decode_header,
-		   "function(string,void|mapping(string:int):object)",0);
-      add_function("encode",image_jpeg_encode,
-		   "function(object,void|mapping(string:int):string)",0);
+      /* function(string,void|mapping(string:int):object) */
+  ADD_FUNCTION("decode",image_jpeg_decode,tFunc(tStr tOr(tVoid,tMap(tStr,tInt)),tObj),0);
+      /* function(string,void|mapping(string:int):object) */
+  ADD_FUNCTION("decode_header",image_jpeg_decode_header,tFunc(tStr tOr(tVoid,tMap(tStr,tInt)),tObj),0);
+      /* function(object,void|mapping(string:int):string) */
+  ADD_FUNCTION("encode",image_jpeg_encode,tFunc(tObj tOr(tVoid,tMap(tStr,tInt)),tStr),0);
 
       add_integer_constant("IFAST", JDCT_IFAST, 0);
       add_integer_constant("FLOAT", JDCT_FLOAT, 0);

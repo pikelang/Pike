@@ -1,5 +1,5 @@
 #include "global.h"
-RCSID("$Id: threads.c,v 1.88 1999/02/01 04:11:35 hubbe Exp $");
+RCSID("$Id: threads.c,v 1.89 1999/02/10 21:46:58 hubbe Exp $");
 
 int num_threads = 1;
 int threads_disabled = 0;
@@ -977,23 +977,34 @@ void th_init(void)
   struct program *tmp;
   INT32 mutex_key_offset;
 
-  add_efun("thread_create",f_thread_create,"function(mixed ...:object)",
+  
+/* function(mixed ...:object) */
+  ADD_EFUN("thread_create",f_thread_create,tFuncV(,tMix,tObj),
            OPT_SIDE_EFFECT);
 #ifdef UNIX_THREADS
-  add_efun("thread_set_concurrency",f_thread_set_concurrency,
-	   "function(int:void)", OPT_SIDE_EFFECT);
+  
+/* function(int:void) */
+  ADD_EFUN("thread_set_concurrency",f_thread_set_concurrency,tFunc(tInt,tVoid), OPT_SIDE_EFFECT);
 #endif
-  add_efun("this_thread",f_this_thread,"function(:object)",
+  
+/* function(:object) */
+  ADD_EFUN("this_thread",f_this_thread,tFunc(,tObj),
            OPT_EXTERNAL_DEPEND);
-  add_efun("all_threads",f_all_threads,"function(:array(object))",
+  
+/* function(:array(object)) */
+  ADD_EFUN("all_threads",f_all_threads,tFunc(,tArr(tObj)),
 	   OPT_EXTERNAL_DEPEND);
 
-  add_efun("thread_local",f_thread_local,"function(:object)",OPT_SIDE_EFFECT);
+  
+/* function(:object) */
+  ADD_EFUN("thread_local",f_thread_local,tFunc(,tObj),OPT_SIDE_EFFECT);
 
   start_new_program();
   ADD_STORAGE(struct mutex_storage);
-  add_function("lock",f_mutex_lock,"function(int|void:object)",0);
-  add_function("trylock",f_mutex_trylock,"function(int|void:object)",0);
+  /* function(int|void:object) */
+  ADD_FUNCTION("lock",f_mutex_lock,tFunc(tOr(tInt,tVoid),tObj),0);
+  /* function(int|void:object) */
+  ADD_FUNCTION("trylock",f_mutex_trylock,tFunc(tOr(tInt,tVoid),tObj),0);
   set_init_callback(init_mutex_obj);
   set_exit_callback(exit_mutex_obj);
   end_class("mutex", 0);
@@ -1016,9 +1027,12 @@ void th_init(void)
 
   start_new_program();
   ADD_STORAGE(COND_T);
-  add_function("wait",f_cond_wait,"function(void|object:void)",0);
-  add_function("signal",f_cond_signal,"function(:void)",0);
-  add_function("broadcast",f_cond_broadcast,"function(:void)",0);
+  /* function(void|object:void) */
+  ADD_FUNCTION("wait",f_cond_wait,tFunc(tOr(tVoid,tObj),tVoid),0);
+  /* function(:void) */
+  ADD_FUNCTION("signal",f_cond_signal,tFunc(,tVoid),0);
+  /* function(:void) */
+  ADD_FUNCTION("broadcast",f_cond_broadcast,tFunc(,tVoid),0);
   set_init_callback(init_cond_obj);
   set_exit_callback(exit_cond_obj);
   end_class("condition", 0);
@@ -1036,8 +1050,10 @@ void th_init(void)
 
   start_new_program();
   ADD_STORAGE(struct thread_local);
-  add_function("get",f_thread_local_get,"function(:mixed)",0);
-  add_function("set",f_thread_local_set,"function(mixed:mixed)",0);
+  /* function(:mixed) */
+  ADD_FUNCTION("get",f_thread_local_get,tFunc(,tMix),0);
+  /* function(mixed:mixed) */
+  ADD_FUNCTION("set",f_thread_local_set,tFunc(tMix,tMix),0);
   thread_local_prog=end_program();
   if(!thread_local_prog)
     fatal("Failed to initialize thread_local program!\n");
@@ -1045,9 +1061,12 @@ void th_init(void)
   start_new_program();
   thread_storage_offset=ADD_STORAGE(struct thread_state);
   thread_id_result_variable=simple_add_variable("result","mixed",0);
-  add_function("backtrace",f_thread_backtrace,"function(:array)",0);
-  add_function("wait",f_thread_id_result,"function(:mixed)",0);
-  add_function("status",f_thread_id_status,"function(:int)",0);
+  /* function(:array) */
+  ADD_FUNCTION("backtrace",f_thread_backtrace,tFunc(,tArray),0);
+  /* function(:mixed) */
+  ADD_FUNCTION("wait",f_thread_id_result,tFunc(,tMix),0);
+  /* function(:int) */
+  ADD_FUNCTION("status",f_thread_id_status,tFunc(,tInt),0);
   set_gc_mark_callback(thread_was_marked);
   set_gc_check_callback(thread_was_checked);
   set_init_callback(init_thread_obj);

@@ -23,7 +23,7 @@
 #include "builtin_functions.h"
 #include <signal.h>
 
-RCSID("$Id: signal_handler.c,v 1.105 1999/02/04 07:22:14 hubbe Exp $");
+RCSID("$Id: signal_handler.c,v 1.106 1999/02/10 21:46:54 hubbe Exp $");
 
 #ifdef HAVE_PASSWD_H
 # include <passwd.h>
@@ -2527,32 +2527,55 @@ void init_signals(void)
   ADD_STORAGE(struct pid_status);
   set_init_callback(init_pid_status);
   set_exit_callback(exit_pid_status);
-  add_function("set_priority",f_pid_status_set_priority,"function(string:int)",0);
-  add_function("wait",f_pid_status_wait,"function(:int)",0);
-  add_function("status",f_pid_status_status,"function(:int)",0);
-  add_function("pid",f_pid_status_pid,"function(:int)",0);
-  add_function("create",f_create_process,"function(array(string),void|mapping(string:mixed):object)",0);
+  /* function(string:int) */
+  ADD_FUNCTION("set_priority",f_pid_status_set_priority,tFunc(tStr,tInt),0);
+  /* function(:int) */
+  ADD_FUNCTION("wait",f_pid_status_wait,tFunc(,tInt),0);
+  /* function(:int) */
+  ADD_FUNCTION("status",f_pid_status_status,tFunc(,tInt),0);
+  /* function(:int) */
+  ADD_FUNCTION("pid",f_pid_status_pid,tFunc(,tInt),0);
+  /* function(array(string),void|mapping(string:mixed):object) */
+  ADD_FUNCTION("create",f_create_process,tFunc(tArr(tStr) tOr(tVoid,tMap(tStr,tMix)),tObj),0);
   pid_status_program=end_program();
   add_program_constant("create_process",pid_status_program,0);
 
-  add_efun("set_priority",f_set_priority,"function(string,int|void:int)",
+  
+/* function(string,int|void:int) */
+  ADD_EFUN("set_priority",f_set_priority,tFunc(tStr tOr(tInt,tVoid),tInt),
            OPT_SIDE_EFFECT);
-  add_efun("signal",f_signal,"function(int,mixed|void:void)",OPT_SIDE_EFFECT);
+  
+/* function(int,mixed|void:void) */
+  ADD_EFUN("signal",f_signal,tFunc(tInt tOr(tMix,tVoid),tVoid),OPT_SIDE_EFFECT);
 #ifdef HAVE_KILL
-  add_efun("kill",f_kill,"function(int|object,int:int)",OPT_SIDE_EFFECT);
+  
+/* function(int|object,int:int) */
+  ADD_EFUN("kill",f_kill,tFunc(tOr(tInt,tObj) tInt,tInt),OPT_SIDE_EFFECT);
 #endif
 #ifdef HAVE_FORK
-  add_efun("fork",f_fork,"function(void:object)",OPT_SIDE_EFFECT);
+  
+/* function(void:object) */
+  ADD_EFUN("fork",f_fork,tFunc(tVoid,tObj),OPT_SIDE_EFFECT);
 #endif
 
-  add_efun("signame",f_signame,"function(int:string)",0);
-  add_efun("signum",f_signum,"function(string:int)",0);
-  add_efun("getpid",f_getpid,"function(:int)",0);
+  
+/* function(int:string) */
+  ADD_EFUN("signame",f_signame,tFunc(tInt,tStr),0);
+  
+/* function(string:int) */
+  ADD_EFUN("signum",f_signum,tFunc(tStr,tInt),0);
+  
+/* function(:int) */
+  ADD_EFUN("getpid",f_getpid,tFunc(,tInt),0);
 #ifdef HAVE_ALARM
-  add_efun("alarm",f_alarm,"function(int:int)",OPT_SIDE_EFFECT);
+  
+/* function(int:int) */
+  ADD_EFUN("alarm",f_alarm,tFunc(tInt,tInt),OPT_SIDE_EFFECT);
 #endif
 #if defined(HAVE_UALARM) || defined(HAVE_SETITIMER)
-  add_efun("ualarm",f_ualarm,"function(int:int)",OPT_SIDE_EFFECT);
+  
+/* function(int:int) */
+  ADD_EFUN("ualarm",f_ualarm,tFunc(tInt,tInt),OPT_SIDE_EFFECT);
 #endif
 }
 
