@@ -5,7 +5,7 @@
 \*/
 /**/
 #include "global.h"
-RCSID("$Id: builtin_functions.c,v 1.330 2001/01/09 14:49:25 grubba Exp $");
+RCSID("$Id: builtin_functions.c,v 1.331 2001/01/09 15:37:12 grubba Exp $");
 #include "interpret.h"
 #include "svalue.h"
 #include "pike_macros.h"
@@ -5470,7 +5470,7 @@ PMOD_EXPORT void f__next(INT32 args)
  *!
  *! @note
  *! Unlike @[_next()] this function does not work on strings.
- */
+ *!
  *! @seealso
  *! @[next_object()], @[_prev()]
  */
