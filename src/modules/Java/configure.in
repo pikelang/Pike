@@ -162,7 +162,9 @@ if test "x$with_java" = xyes; then
     fi
     for i in "$pike_cv_java_arch/$pike_cv_java_threads_type" \
              "$pike_cv_java_arch/classic" "$pike_cv_java_arch" \
-	     "." "../bin" "../bin/classic"; do
+	     "." "../bin" "../bin/classic" \
+	     "$pike_cv_java_arch/client" "../bin/client" \
+	     "$pike_cv_java_arch/server" "../bin/server" ; do
       if test -d "$tmp_java_lib_dir/$i/." && "$LS" $tmp_java_lib_dir/$i/lib* >/dev/null 2>&1; then
         pike_cv_java_lib_dir="$pike_cv_java_lib_dir$tmp_java_lib_dir/$i "
       else
