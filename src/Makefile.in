@@ -270,6 +270,10 @@ docs:
 
 html_docs: docs
 	$(RUNPIKE) $(TMP_BINDIR)/htmlify_docs docs $(TMP_DOCDIR) `echo $(SRCDIR)/modules/*/doc`
+
+lobotomize_crypto:
+	( cd $(SRCDIR)/modules/_Crypto ; ./.build_lobotomized_crypto  )
+	( cd $(SRCDIR)/modules/_Lobotomized_Crypto ; autoconf )
 #
 # Pike internal targets
 #
