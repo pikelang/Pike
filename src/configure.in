@@ -1,4 +1,4 @@
-AC_REVISION("$Id: configure.in,v 1.444 2000/12/19 14:52:56 grubba Exp $")
+AC_REVISION("$Id: configure.in,v 1.445 2000/12/19 20:54:04 marcus Exp $")
 AC_INIT(interpret.c)
 AC_CONFIG_HEADER(machine.h)
 
@@ -2607,6 +2607,44 @@ pike_cv_hardware_byteorder=0
 
 AC_MSG_RESULT($pike_cv_hardware_byteorder)
 AC_DEFINE_UNQUOTED(PIKE_BYTEORDER,$pike_cv_hardware_byteorder)
+
+########################################################################
+
+AC_MSG_CHECKING(INT32 alignment)
+AC_CACHE_VAL(pike_cv_hardware_alignment,
+[
+AC_TRY_RUN([
+#include <stdio.h>
+
+#if SIZEOF_SHORT >= 4
+#define INT32 short
+#else
+#if SIZEOF_INT >= 4
+#define INT32 int
+#else
+#define INT32 long
+#endif
+#endif
+
+struct x { char a; INT32 b; };
+
+int main(int argc, char *argv[])
+{
+  FILE f;
+  struct x x;
+  if(!(f=fopen("conftest.out.2","w")))
+    return 1;
+  fprintf(f, "%u\n", (unsigned int)(((char *)&x.b)-((char*)&x)));
+  fclose(f);
+  return 0;
+}],
+pike_cv_hardware_alignment=`cat conftest.out.2`,
+pike_cv_hardware_alignment=4,
+pike_cv_hardware_alignment=4
+)])
+
+AC_MSG_RESULT($pike_cv_hardware_alignment)
+AC_DEFINE_UNQUOTED(PIKE_INT32_ALIGNMENT,$pike_cv_hardware_alignment)
 
 ########################################################################
 MY_CHECK_FUNCTION(fork,

@@ -1,5 +1,5 @@
 /*
- * $Id: acconfig.h,v 1.68 2000/11/27 12:20:20 mirar Exp $
+ * $Id: acconfig.h,v 1.69 2000/12/19 20:54:04 marcus Exp $
  */
 #ifndef MACHINE_H
 #define MACHINE_H
@@ -255,6 +255,9 @@
 
 /* What byteorder does your machie use most machines use 4321, PC use 1234 */
 #define PIKE_BYTEORDER 0
+
+/* What alignment do 32-bit integers need */
+#define PIKE_INT32_ALIGNMENT 4
 
 /* Number of possible filedesriptors */
 #define MAX_OPEN_FILEDESCRIPTORS 1024
