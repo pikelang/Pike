@@ -1341,7 +1341,9 @@ class ParseBlock
 
 	    if(arg->may_be_void())
 	    {
-	      ret+=({  PC.Token("}") });
+	      ret+=({  PC.Token(sprintf("}else{\n"
+					"%s=0;\n"
+					"}", arg->name())) });
 	    }
 
 	    argnum++;
