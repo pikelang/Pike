@@ -2,11 +2,11 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: interpret.c,v 1.319 2003/08/06 18:54:18 mast Exp $
+|| $Id: interpret.c,v 1.320 2003/08/07 11:15:18 grubba Exp $
 */
 
 #include "global.h"
-RCSID("$Id: interpret.c,v 1.319 2003/08/06 18:54:18 mast Exp $");
+RCSID("$Id: interpret.c,v 1.320 2003/08/07 11:15:18 grubba Exp $");
 #include "interpret.h"
 #include "object.h"
 #include "program.h"
@@ -720,7 +720,7 @@ static inline void low_debug_instr_prologue (PIKE_INSTR_T instr)
 {
   if(Pike_interpreter.trace_level > 2)
   {
-    char *file, *f;
+    char *file = NULL, *f;
     struct pike_string *filep;
     INT32 linep;
 
