@@ -1,7 +1,7 @@
 #pike __REAL_VERSION__
 
 /*
- * $Id: Tree.pmod,v 1.28 2003/03/12 13:47:05 grubba Exp $
+ * $Id: Tree.pmod,v 1.29 2003/03/13 22:06:37 nilsson Exp $
  *
  */
 
@@ -1034,7 +1034,8 @@ Node parse_input(string data, void|int(0..1) no_fallback,
       extras->xmlns = XMLNSParser();
     }
     mRoot = Node(XML_ROOT, "", ([ ]), "");
-    foreach(xp->parse(xp->autoconvert(data), parse_xml_callback,
+    catch( data=xp->autoconvert(data) );
+    foreach(xp->parse(data, parse_xml_callback,
 		      sizeof(extras) && extras),
 	    Node child)
       mRoot->add_child(child);
