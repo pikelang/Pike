@@ -24,6 +24,7 @@
 #include "accept_and_parse.h"
 #include "cache.h"
 #include "util.h"
+#include "backend.h"
 
 struct cache *first_cache;
 
@@ -78,7 +79,7 @@ static int ensure_interpreter_lock( )
 {
   struct thread_state *thi;
   int free=0;
-  if( thi = thread_state_for_id( th_self() ) )
+  if( (thi = thread_state_for_id( th_self() )) )
   {
     if( thi->swapped ) /* We are swapped out.. */
     {
@@ -118,7 +119,7 @@ void aap_enqueue_string_to_free( struct pike_string *s )
      * have to be freed in one backend callback loop.
      *
      */
-    int free_interpreter_lock = ensure_interpteter_lock();
+    int free_interpreter_lock = ensure_interpreter_lock();
     really_free_from_queue();
     if( free_interpreter_lock )
       mt_unlock( &interpreter_lock );
