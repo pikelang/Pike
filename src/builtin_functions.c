@@ -5,7 +5,7 @@
 \*/
 /**/
 #include "global.h"
-RCSID("$Id: builtin_functions.c,v 1.353 2001/12/03 14:19:56 grubba Exp $");
+RCSID("$Id: builtin_functions.c,v 1.354 2001/12/03 15:46:53 grubba Exp $");
 #include "interpret.h"
 #include "svalue.h"
 #include "pike_macros.h"
@@ -4040,7 +4040,7 @@ PMOD_EXPORT void f_localtime(INT32 args)
 #else
 #ifdef STRUCT_TM_HAS_GMTOFF
   push_string(make_shared_string("timezone"));
-  push_int(tm->tm_gmtoff);
+  push_int(-tm->tm_gmtoff);
   f_aggregate_mapping(20);
 #else
   f_aggregate_mapping(18);
@@ -4135,7 +4135,7 @@ PMOD_EXPORT void f_mktime (INT32 args)
 #if STRUCT_TM_HAS_GMTOFF
   if((args > 7) && (Pike_sp[7-args].subtype == NUMBER_NUMBER))
   {
-    date.tm_gmtoff=Pike_sp[7-args].u.integer;
+    date.tm_gmtoff=-Pike_sp[7-args].u.integer;
   }else{
     time_t tmp = 0;
     date.tm_gmtoff=localtime(&tmp)->tm_gmtoff;
