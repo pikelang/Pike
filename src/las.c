@@ -5,7 +5,7 @@
 \*/
 /**/
 #include "global.h"
-RCSID("$Id: las.c,v 1.283 2002/03/04 16:02:37 mast Exp $");
+RCSID("$Id: las.c,v 1.284 2002/03/04 22:00:13 mast Exp $");
 
 #include "language.h"
 #include "interpret.h"
@@ -1230,15 +1230,28 @@ node *debug_mkefuncallnode(char *function, node *args)
 {
   struct pike_string *name;
   node *n;
+  /* Force resolving since we don't want to get tangled up in the
+   * placeholder object here. The problem is really that the
+   * placeholder purport itself to contain every identifier, which
+   * makes it hide the real ones in find_module_identifier. This
+   * kludge will fail if the class being placeholded actually contains
+   * these identifiers, but then again I think it's a bit odd in the
+   * first place to look up these efuns in the module being compiled.
+   * Wouldn't it be better if this function consulted
+   * compiler_handler->get_default_module? /mast */
+  int orig_force_resolve = force_resolve;
+  force_resolve = 1;
   name = make_shared_string(function);
   if(!name || !(n=find_module_identifier(name,0)))
   {
     free_string(name);
     my_yyerror("Internally used efun undefined: %s",function);
+    force_resolve = orig_force_resolve;
     return mkintnode(0);
   }
   free_string(name);
   n = mkapplynode(n, args);
+  force_resolve = orig_force_resolve;
   return n;
 }
 
@@ -1823,6 +1836,9 @@ node *index_node(node *n, char *node_name, struct pike_string *id)
 	  if(report_compiler_dependency(p))
 	  {
 	    pop_stack();
+#if 0
+	    fprintf(stderr, "Placeholder deployed for %p\n", p);
+#endif
 	    ref_push_object(placeholder_object);
 	    break;
 	  }
@@ -1891,6 +1907,11 @@ node *index_node(node *n, char *node_name, struct pike_string *id)
 	  }else if (!force_resolve) {
 	    /* Hope it's there in pass 2 */
 	    pop_stack();
+#if 0
+	    fprintf(stderr, "Placeholder deployed when indexing ");
+	    print_tree(n);
+	    fprintf(stderr, "with %s\n", id->str);
+#endif
 	    ref_push_object(placeholder_object);
 	    if (thrown.type != PIKE_T_UNKNOWN)
 	      free_svalue(&thrown);
