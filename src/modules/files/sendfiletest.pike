@@ -1,6 +1,6 @@
 #!/usr/local/bin/pike
 
-/* $Id: sendfiletest.pike,v 1.4 2000/10/07 11:34:28 grubba Exp $ */
+/* $Id: sendfiletest.pike,v 1.5 2000/10/07 12:00:23 grubba Exp $ */
 
 constant TEST_SIZE = 16384;
 
@@ -49,6 +49,27 @@ array(object(Stdio.File)) SocketPair()
     exit(1);
   }
   return ({ sock1, sock2 });
+}
+
+void Verify()
+{
+  array(string) data = From("conftest.dst")->read()/TEST_SIZE;
+  int i;
+  for(i=0; i < sizeof(data); i++) {
+    if (data[i] != testdata) {
+      werror("Segment %d corrupted!\n", i);
+      int j;
+      for (j=0; j < TEST_SIZE; j++) {
+	if (data[i][j] != testdata[j]) {
+	  werror("First corrupt byte at segment offset %d: 0x%02x != 0x%02x\n",
+		 j, data[i][j], testdata[j]);
+	  exit(1);
+	}
+      }
+      werror("Corrupt byte not found!\n");
+      exit(1);
+    }
+  }
 }
 
 /*
@@ -113,12 +134,7 @@ void test2()
 
 void test3()
 {
-  /* Check that the testdata still is correct. */
-
-  if (From("conftest.dst")->read() != testdata) {
-    werror("Data corruption!\n");
-    exit(1);
-  }
+  Verify();
 
   /* Try with a headers + file + trailers combo. */
 
@@ -131,12 +147,7 @@ void test3()
 
 void test4()
 {
-  /* Check that the testdata still is correct. */
-
-  if (From("conftest.dst")->read() != testdata*3) {
-    werror("Data corruption!\n");
-    exit(1);
-  }
+  Verify();
 
   /* Try a loopback test. */
 
@@ -164,12 +175,7 @@ void test5()
 
 void test6()
 {
-  /* Check that the testdata still is correct. */
-
-  if (From("conftest.dst")->read() != testdata*5) {
-    werror("Data corruption!\n");
-    exit(1);
-  }
+  Verify();
 
   next();
 }
