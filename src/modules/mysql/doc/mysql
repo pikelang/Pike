@@ -25,7 +25,10 @@ SYNTAX
 	or
 	object(Mysql) Mysql(string hostname, string database);
 	or
-	object(Mysql) Mysql(string hostname, string database, string password);
+	object(Mysql) Mysql(string hostname, string database, string user);
+	or
+	object(Mysql) Mysql(string hostname, string database, string user,
+	                    string password);
 
 DESCRIPTION
 	To access the Mysql database, you must first connect to it. This is
@@ -99,11 +102,13 @@ NAME
 SYNTAX
 	#include <mysql.h>
 
-	object(Mysql_result) mysql->query(string q);
+	int|object(Mysql_result) mysql->query(string q);
 
 DESCRIPTION
 	This function sends an SQL query to the Mysql-server. The result
 	of the query is returned as a /precompiled/sql/mysql_result object.
+	Returns 0 if the query didn't return any result (e.g. INSERT or
+	similar).
 
 SEE ALSO
 	/precompiled/sql/mysql_result
