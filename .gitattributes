@@ -23,6 +23,7 @@ testfont binary
 # Files containing CVS ids follow.
 # Remove the corresponding line before committing
 # changes to these files.
+/ANNOUNCE foreign_ident
 /Makefile foreign_ident
 /bin/export.pike foreign_ident
 /bin/extract.pike foreign_ident
