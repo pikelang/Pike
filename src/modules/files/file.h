@@ -34,10 +34,12 @@ struct my_file
   struct svalue close_callback;
 };
 
+extern void get_inet_addr(struct sockaddr_in *addr,char *name);
+
 /* Prototypes begin here */
+struct file_struct;
 struct object *file_make_object_from_fd(int fd, int mode);
 int socketpair(int family, int type, int protocol, int sv[2]);
-void get_inet_addr(struct sockaddr_in *addr,char *name);
 void exit_files();
 void init_files_programs();
 /* Prototypes end here */

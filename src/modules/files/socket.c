@@ -308,6 +308,34 @@ static void port_accept(INT32 args)
   push_object(o);
 }
 
+static void socket_query_address(INT32 args)
+{
+  struct sockaddr_in addr;
+  int i,len;
+  char buffer[496],*q;
+
+  if(THIS->fd <0)
+    error("socket->query_address(): Socket not bound yet.\n");
+
+  len=sizeof(addr);
+  i=getsockname(THIS->fd,(struct sockaddr *)&addr,&len);
+  pop_n_elems(args);
+  if(i < 0 || len < (int)sizeof(addr))
+  {
+    THIS->my_errno=errno;
+    push_int(0);
+    return;
+  }
+
+  q=inet_ntoa(addr.sin_addr);
+  strncpy(buffer,q,sizeof(buffer)-20);
+  buffer[sizeof(buffer)-20]=0;
+  sprintf(buffer+strlen(buffer)," %d",(int)(ntohs(addr.sin_port)));
+
+  push_string(make_shared_string(buffer));
+}
+
+
 static void init_port_struct(struct object *o)
 {
   THIS->fd=-1;
@@ -338,6 +366,7 @@ void port_setup_program()
   add_function("listen_fd",port_listen_fd,"function(int,void|mixed:int)",0);
   add_function("set_id",port_set_id,"function(mixed:mixed)",0);
   add_function("query_id",port_query_id,"function(:mixed)",0);
+  add_function("query_address",socket_query_address,"function(:string)",0);
   add_function("errno",port_errno,"function(:int)",0);
   add_function("accept",port_accept,"function(:object)",0);
   add_function("create",port_create,"function(void|string,void|mixed:void)",0);

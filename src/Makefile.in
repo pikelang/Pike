@@ -88,6 +88,7 @@ OBJ= \
  mapping.o \
  memory.o \
  module.o \
+ module_support.o \
  object.o \
  opcodes.o \
  operators.o \

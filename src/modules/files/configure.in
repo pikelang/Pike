@@ -14,77 +14,8 @@ AC_HAVE_HEADERS(arpa/inet.h sys/socketvar.h netinet/in.h \
  sys/stream.h sys/protosw.h netdb.h)
 AC_HEADER_DIRENT
 AC_CHECK_LIB(socket, socket)
-AC_CHECK_LIB(nsl, gethostbyname)
 
-AC_HAVE_FUNCS(socketpair getwd perror fork1)
-
-AC_MSG_CHECKING(for solaris style gethostbyname_r)
-
-AC_CACHE_VAL(pike_cv_have_solaris_gethostbyname_r,
-[
-AC_TRY_LINK([
-#define _REENTRANT
-#include <netdb.h>
-],[
-  char data[2000];
-  int h_errno;
-  struct hostent result,*bar;
-  gethostbyname_r("foo",&result, data, sizeof(data), h_errno)->h_name;
-],pike_cv_have_solaris_gethostbyname_r=yes,
-pike_cv_have_solaris_gethostbyname_r=no)
-])
-
-AC_MSG_RESULT($pike_cv_have_solaris_gethostbyname_r)
-
-if test $pike_cv_have_solaris_gethostbyname_r = yes; then
-  AC_DEFINE(HAVE_SOLARIS_GETHOSTBYNAME_R)
-fi
-
-
-AC_MSG_CHECKING(for OSF1 style gethostbyname_r)
-
-AC_CACHE_VAL(pike_cv_have_osf1_gethostbyname_r,
-[
-AC_TRY_LINK([
-#define _THREAD_SAFE
-#include <netdb.h>
-],[
-  int bar;
-  struct hostent result;
-  struct hostent_data data;
-  bar=gethostbyname_r("foo",&result, &data);
-],pike_cv_have_osf1_gethostbyname_r=yes,
-pike_cv_have_osf1_gethostbyname_r=no)
-])
-
-AC_MSG_RESULT($pike_cv_have_osf1_gethostbyname_r)
-
-if test $pike_cv_have_osf1_gethostbyname_r = yes; then
-  AC_DEFINE(HAVE_OSF1_GETHOSTBYNAME_R)
-fi
-
-AC_MSG_CHECKING(for h_addr_list)
-AC_CACHE_VAL(pike_cv_struct_has_h_addr_list,
-[
-AC_TRY_LINK([
-#include <sys/types.h>
-#include <sys/socket.h>
-#include <netinet/in.h>
-#include <arpa/inet.h>
-#include <netdb.h>
-],[
-struct hostent foo;
-foo.h_addr_list[0];
-],pike_cv_struct_has_h_addr_list=yes,pike_cv_struct_has_h_addr_list=no)
-])
-
-if test "$pike_cv_struct_has_h_addr_list" = yes; then
-  AC_MSG_RESULT(yes)
-  AC_DEFINE(HAVE_H_ADDR_LIST)
-else
-  AC_MSG_RESULT(no)
-fi
-
+AC_HAVE_FUNCS(socketpair getwd perror fork1 readdir_r)
 
 AC_MSG_CHECKING(for working (and failsafe) strerror)
 AC_CACHE_VAL(pike_cv_func_failsafe_strerror,

@@ -13,6 +13,7 @@
 #include "macros.h"
 #include "fd_control.h"
 #include "threads.h"
+#include "module_support.h"
 
 #include "file_machine.h"
 
@@ -167,14 +168,61 @@ void f_get_dir(INT32 args)
   DIR *dir;
   struct dirent *d;
   struct array *a=0;
+  char *path;
 
-  if(!args)
-    error("Too few arguments to get_dir()\n");
+  get_all_args("get_dir",args,"%s",&path);
 
-  if(sp[-args].type != T_STRING)
-    error("Bad argument 1 to get_dir()\n");
-
-  dir=opendir(sp[-args].u.string->str);
+#if defined(_REENTRANT) && defined(HAVE_READDIR_R)
+  THREADS_ALLOW();
+  dir=opendir(path);
+  THREADS_DISALLOW();
+  if(dir)
+  {
+#define FPR 1024
+    char buffer[MAXPATHLEN * 4];
+    char ptrs[FPR];
+    int lens[FPR];
+    
+    while(1)
+    {
+      int e;
+      struct dirent tmp;
+      int num_files=0;
+      char *bufptr=buffer;
+      THREADS_ALLOW();
+      while(1)
+      {
+	d=readdir_r(dir, &tmp);
+	if(d->d_name[0]=='.')
+	{
+	  if(!d->d_name[1]) continue;
+	  if(d->d_name[1]=='.' && !d->d_name[2]) continue;
+	}
+	if(num_files >= FPR) break;
+	lens[num_files]=NAMLEN(d);
+	if(ptr+lens[num_files] >= buffer+sizeof(buffer)) break;
+	MEMCPY(ptr, d->d_name, lens[num_files]);
+	ptrs[num_files]=ptr;
+	ptr+=len;
+	num_files++;
+      }
+      THREADS_DISALLOW();
+      for(e=0;e<num_files;e++)
+      {
+	push_string(make_shared_string(ptrs[e],lens[e]));
+      }
+      if(d)
+	push_string(make_shared_binary_string(d->d_name,NAMLEN(d)));
+      else
+	break;
+    }
+    THREADS_ALLOW();
+    closedir(dir);
+    THREADS_DISALLOW();
+    a=aggregate_array(sp-save_sp);
+  }
+#else
+  dir=opendir(path);
   if(dir)
   {
     for(d=readdir(dir); d; d=readdir(dir))
@@ -189,6 +237,7 @@ void f_get_dir(INT32 args)
     closedir(dir);
     a=aggregate_array(sp-save_sp);
   }
+#endif
 
   pop_n_elems(args);
   if(a)

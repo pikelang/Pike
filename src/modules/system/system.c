@@ -1,5 +1,5 @@
 /*
- * $Id: system.c,v 1.3 1997/01/22 02:55:12 grubba Exp $
+ * $Id: system.c,v 1.4 1997/01/22 05:15:27 hubbe Exp $
  *
  * System-call module for Pike
  *
@@ -13,7 +13,8 @@
 #include "system_machine.h"
 
 #include <global.h>
-RCSID("$Id: system.c,v 1.3 1997/01/22 02:55:12 grubba Exp $");
+RCSID("$Id: system.c,v 1.4 1997/01/22 05:15:27 hubbe Exp $");
+#include <module_support.h>
 #include <las.h>
 #include <interpret.h>
 #include <stralloc.h>
@@ -127,86 +128,6 @@ static volatile void report_error(const char *function_name)
   error("%s(): Failed:%s\n", function_name, error_msg);
 }
 
-#if defined(HAVE_STDARG_H) || !defined(HAVE_VARARGS_H)
-#ifdef HAVE_STDARG_H
-#include <stdarg.h>
-#else
-/* Fallback to this if we have neither <stdarg.h> nor <varargs.h>.
- *
- * Should work on anything that passes all arguments on the stack,
- * and the stack grows downwards.
- *
- * /grubba 1997-01-21
- */
-#define va_list			void *
-#define va_start(var, last_var)	(var = (va_list)(&(last_var)+1))
-/* Could be a NOP as well */
-#define va_end(var)		(var = 0)
-/* Is the following line legal C? */
-#define va_arg(var, type)	(*(((type *)var)++))
-#endif /* HAVE_STDARG_H */
-
-static void check_args(const char *fnname, int args, int minargs, ... )
-{
-  va_list arglist;
-  int argno;
-  
-  if (args < minargs) {
-    error("Too few arguments to %s()\n", fnname);
-  }
-
-  va_start(arglist, minargs);
-
-  for (argno=0; argno < minargs; argno++) {
-    int type_mask = va_arg(arglist, unsigned INT32);
-
-    if (!((1UL << sp[argno-args].type) & type_mask)) {
-      va_end(arglist);
-      error("Bad argument %d to %s()\n", argno+1, fnname);
-    }
-  }
-
-  va_end(arglist);
-}
-
-#else /* Only HAVE_VARARGS_H */
-
-#include <varargs.h>
-
-static void check_args(va_alist)
-va_dcl
-{
-  const char *fnname;
-  int args;
-  int minargs;
-  va_list arglist;
-  int argno;
-
-  va_start(arglist);
-
-  fnname = va_arg(arglist, const char *);
-  args = va_arg(arglist, int);
-  minargs = va_arg(arglist, int);
-  
-  if (args < minargs) {
-    error("Too few arguments to %s()\n", fnname);
-  }
-
-  va_start(arglist, minargs);
-
-  for (argno=0; argno < minargs; argno++) {
-    int type_mask = va_arg(arglist, unsigned INT32);
-
-    if (!((1UL << sp[argno-args].type) & type_mask)) {
-      va_end(arglist);
-      error("Bad argument %d to %s()\n", argno+1, fnname);
-    }
-  }
-
-  va_end(arglist);
-}
-
-#endif /* HAVE_STDARG_H || !HAVE_VARARGS_H */
 
 /*
  * efuns
@@ -220,20 +141,7 @@ void f_hardlink(INT32 args)
   char *to;
   int err;
 
-  check_args("hardlink", args, 2, BIT_STRING, BIT_STRING);
-#if 0
-  if (args < 2) {
-    error("Too few arguments to hardlink()\n");
-  }
-  if (sp[-args].type != T_STRING) {
-    error("Bad argument 1 to hardlink()\n");
-  }
-  if (sp[1-args].type != T_STRING) {
-    error("Bad argument 2 to hardlink()\n");
-  }
-#endif /* 0 */
-  from = sp[-args].u.string->str;
-  to = sp[1-args].u.string->str;
+  get_all_args("hardlink",args, "%s%s", &from, &to);
 
   do {
     THREADS_ALLOW();
@@ -258,20 +166,7 @@ void f_symlink(INT32 args)
   char *to;
   int err;
 
-  check_args("symlink", args, 2, BIT_STRING, BIT_STRING);
-#if 0
-  if (args < 2) {
-    error("Too few arguments to symlink()\n");
-  }
-  if (sp[-args].type != T_STRING) {
-    error("Bad argument 1 to symlink()\n");
-  }
-  if (sp[1-args].type != T_STRING) {
-    error("Bad argument 2 to symlink()\n");
-  }
-#endif /* 0 */
-  from = sp[-args].u.string->str;
-  to = sp[1-args].u.string->str;
+  get_all_args("symlink",args, "%s%s", &from, &to);
 
   do {
     THREADS_ALLOW();
@@ -297,17 +192,7 @@ void f_readlink(INT32 args)
   char *buf;
   int err;
 
-  check_args("readlink", args, 1, BIT_STRING);
-#if 0
-  if (!args) {
-    error("Too few arguments to readlink()\n");
-  }
-  if (sp[-args].type != T_STRING) {
-    error("Bad argument 1 to readlink()\n");
-  }
-#endif /* 0 */
-
-  path = sp[-args].u.string->str;
+  get_all_args("readlink",args, "%s", &path);
 
   buflen = 100;
 
@@ -338,42 +223,21 @@ void f_readlink(INT32 args)
 /* void initgroups(string name, int gid) */
 void f_initgroups(INT32 args)
 {
-  check_args("initgroups", args, 2, BIT_STRING, BIT_INT);
-#if 0
-  if(args < 2) {
-    error("Too few arguments to initgroups()\n");
-  }
- 
-  if(sp[-args].type != T_STRING) {
-    error("Bad argument 1 to initgroups()\n");
-  }
-  if (sp[1-args].type != T_INT) {
-    error("Bad argument 2 to initgroups()\n");
-  }
-#endif /* 0 */
- 
-  initgroups(sp[-args].u.string->str, sp[1-args].u.integer);
-    
+  char *user;
+  INT32 group;
+  get_all_args("initgroups", args, "%s%i", &user, &group);
+  initgroups(user, group);
   pop_n_elems(args);
 }
 #endif /* HAVE_INITGROUPS */
  
 void f_setuid(INT32 args)
 {
-  int id;
+  INT32 id;
 
-  check_args("setuid", args, 1, BIT_INT);
-#if 0
-  if (!args) {
-    error("Too few arguments to setuid()\n");
-  }
+  get_all_args("setuid", args, "%i", &id);
  
-  if (sp[-args].type != T_INT) {
-    error("Bad argument 1 to setuid()\n");
-  }
-#endif /* 0 */
- 
-  if(sp[-args].u.integer == -1) {
+  if(id == -1) {
     struct passwd *pw = getpwnam("nobody");
     id = pw->pw_uid;
   } else {
@@ -388,18 +252,9 @@ void f_setgid(INT32 args)
 {
   int id;
 
-  check_args("setgid", args, 1, BIT_INT);
-#if 0
-  if (!args) {
-    error("Too few arguments to setgid()\n");
-  }
+  get_all_args("setgid", args, "%i", &id);
  
-  if(sp[-args].type != T_INT) {
-    error("Bad argumnet 1 to setgid()\n");
-  }
-#endif /* 0 */
- 
-  if(sp[-args].u.integer == -1) {
+  if(id == -1) {
     struct passwd *pw = getpwnam("nobody");
     id = pw->pw_gid;
   } else {
@@ -415,18 +270,9 @@ void f_seteuid(INT32 args)
 {
   int id;
 
-  check_args("seteuid", args, 1, BIT_INT);
-#if 0
-  if (!args) {
-    error("Too few arguments to seteuid()\n");
-  }
+  get_all_args("seteuid", args, "%i", &id);
  
-  if (sp[-args].type != T_INT) {
-    error("Bad argument 1 to seteuid()\n");
-  }
-#endif /* 0 */
- 
-  if(sp[-args].u.integer == -1) {
+  if(id == -1) {
     struct passwd *pw = getpwnam("nobody");
     id = pw->pw_uid;
   } else {
@@ -445,18 +291,9 @@ void f_setegid(INT32 args)
 {
   int id;
 
-  check_args("setegid", args, 1, BIT_INT);
-#if 0
-  if (!args) {
-    error("Too few arguments to setegid()\n");
-  }
- 
-  if(sp[-args].type != T_INT) {
-    error("Bad argument 1 to setegid()\n");
-  }
-#endif /* 0 */
+  get_all_args("setegid", args, "%i", &id);
 
-  if(sp[-args].u.integer == -1)
+  if(id == -1)
   {
     struct passwd *pw = getpwnam("nobody");
     id = pw->pw_gid;
@@ -541,11 +378,6 @@ void f_chroot(INT32 args)
   check_args("chroot", args, 1, BIT_STRING);
 #endif /* HAVE_FCHROOT */
 
-#if 0
-  if(args < 1) {
-    error("Too few arguments to chroot()\n");
-  }
-#endif /* 0 */
 
 #ifdef HAVE_FCHROOT
   if(sp[-args].type == T_STRING)
@@ -627,42 +459,157 @@ void f_gethostname(INT32 args)
 }
 #endif /* HAVE_UNAME || HAVE_GETHOSTNAME */
 
-#ifdef HAVE_GETHOSTBYNAME
-/* array(string|array(string)) gethostbyaddr(string addr) */
-void f_gethostbyaddr(INT32 args)
+int my_isipnr(char *s)
 {
-  u_long addr;
-  struct hostent *hp;
-  char **p, **q;
-  int nelem;
-
-  check_args("gethostbyaddr", args, 1, BIT_STRING);
-#if 0
-  if (!args) {
-    error("Too few arguments to gethostbyaddr()\n");
+  int e,i;
+  for(e=0;e<3;e++)
+  {
+    i=0;
+    while(*s==' ') s++;
+    while(*s>='0' && *s<='9') s++,i++;
+    if(!i) return 0;
+    if(*s!='.') return 0;
+    s++;
   }
-  if (sp[-args].type != T_STRING) {
-    error("Bad argument 1 to gethostbyaddr()\n");
+  i=0;
+  while(*s==' ') s++;
+  while(*s>='0' && *s<='9') s++,i++;
+  if(!i) return 0;
+  while(*s==' ') s++;
+  if(*s) return 0;
+  return 1;
+}
+
+#ifdef _REENTRANT
+#ifdef HAVE_SOLARIS_GETHOSTBYNAME_R
+
+#define GETHOST_DECLARE() \
+    struct hostent *ret; \
+    struct hostent result; \
+    char data[2048]; \
+    int h_errno
+
+#define CALL_GETHOSTBYNAME(X) \
+    THREADS_ALLOW(); \
+    ret=gethostbyname_r((X), &result, data, sizeof(data), &h_errno); \
+    THREADS_DISALLOW()
+
+#define CALL_GETHOSTBYADDR(X,Y,Z) \
+    THREADS_ALLOW(); \
+    ret=gethostbyaddr_r((X),(Y),(Z), &result, data, sizeof(data), &h_errno); \
+    THREADS_DISALLOW()
+
+#else /* HAVE_SOLARIS_GETHOSTBYNAME_R */
+#ifdef HAVE_OSF1_GETHOSTBYNAME_R
+
+#define GETHOST_DECLARE() \
+    struct hostent *ret; \
+    struct hostent result; \
+    struct hostent_data data
+
+#define CALL_GETHOSTBYNAME(X) \
+    THREADS_ALLOW(); \
+    MEMSET((char *)&data,0,sizeof(data)); \
+    if(gethostbyname_r((X), &result, &data) < 0) { \
+      ret=0; \
+    }else{ \
+      ret=&result; \
+    } \
+    THREADS_DISALLOW()
+
+#define CALL_GETHOSTBYADDR(X,Y,Z) \
+    THREADS_ALLOW(); \
+    MEMSET((char *)&data,0,sizeof(data)); \
+    if(gethostbyaddr_r((X),(Y),(Z), &result, &data) < 0) { \
+      ret=0; \
+    }else{ \
+      ret=&result; \
+    } \
+    THREADS_DISALLOW()
+
+#else /* HAVE_OSF1_GETHOSTBYNAME_R */
+static MUTEX_T gethostbyname_mutex;
+
+#define GETHOST_DECLARE() struct hostent *ret
+
+#defne CALL_GETHOSTBYNAME(X) \
+    THREADS_ALLOW(); \
+    mt_lock(&gethostbyname_mutex); \
+    ret=gethostbyname(X); \
+    mt_unlock(&gethostbyname_mutex); \
+    THREADS_DISALLOW()
+
+
+#defne CALL_GETHOSTBYADDR(X,Y,Z) \
+    THREADS_ALLOW(); \
+    mt_lock(&gethostbyname_mutex); \
+    ret=gethostbyaddr((X),(Y),(Z)); \
+    mt_unlock(&gethostbyname_mutex); \
+    THREADS_DISALLOW()
+
+#endif /* HAVE_OSF1_GETHOSTBYNAME_R */
+#endif /* HAVE_SOLARIS_GETHOSTBYNAME_R */
+#else /* _REENTRANT */
+
+#ifdef HAVE_GETHOSTBYNAME
+
+#define GETHOST_DECLARE() struct hostent *ret; 
+#define CALL_GETHOSTBYNAME(X) ret=gethostbyname(X)
+#define CALL_GETHOSTBYADDR(X,Y,Z) ret=gethostbyaddr((X),(Y),(Z))
+#endif
+
+#endif /* REENTRANT */
+
+/* this is used from modules/file/file.c ! */
+void get_inet_addr(struct sockaddr_in *addr,char *name)
+{
+  MEMSET((char *)addr,0,sizeof(struct sockaddr_in));
+
+  addr->sin_family = AF_INET;
+  if(!strcmp(name,"*"))
+  {
+    addr->sin_addr.s_addr=htonl(INADDR_ANY);
   }
-#endif /* 0 */ 
+  else if(my_isipnr(name)) /* I do not entirely trust inet_addr */
+  {
+    if ((long)inet_addr(name) == (long)-1)
+      error("Malformed ip number.\n");
 
-  if ((int)(addr = inet_addr(sp[-args].u.string->str)) == -1) {
-    error("gethostbyaddr(): IP-address must be of the form a.b.c.d\n");
+    addr->sin_addr.s_addr = inet_addr(name);
   }
- 
-  pop_n_elems(args);
+  else
+  {
+#ifdef GETHOST_DECLARE
+    GETHOST_DECLARE();
+    CALL_GETHOSTBYNAME(name);
 
-  THREADS_ALLOW();
+    if(!ret)
+      error("Invalid address '%s'\n",name);
 
-  hp = gethostbyaddr((char *)&addr, sizeof (addr), AF_INET);
-
-  THREADS_DISALLOW();
-
-  if(!hp) {
-    push_int(0);
-    return;
+#ifdef HAVE_H_ADDR_LIST
+    MEMCPY((char *)&(addr->sin_addr),
+	   (char *)ret->h_addr_list[0],
+	   ret->h_length);
+#else
+    MEMCPY((char *)&(addr->sin_addr),
+	   (char *)ret->h_addr,
+	   ret->h_length);
+#endif
+#else
+    error("Invalid address '%s'\n",name);
+#endif
   }
- 
+}
+
+
+#ifdef GETHOST_DECLARE
+/* array(string|array(string)) gethostbyaddr(string addr) */
+
+static void describe_hostent(struct hostent *hp)
+{
+  char **p;
+  INT32 nelem;
+
   push_text(hp->h_name);
   
 #ifdef HAVE_H_ADDR_LIST
@@ -677,74 +624,65 @@ void f_gethostbyaddr(INT32 args)
   f_aggregate(nelem);
  
   nelem=0;
-  for (q = hp->h_aliases; *q != 0; q++) {
-    push_text(*q);
+  for (p = hp->h_aliases; *p != 0; p++) {
+    push_text(*p);
     nelem++;
   }
   f_aggregate(nelem);
 #else
-  f_aggregate(0);
+  {
+    struct in_addr in;
+    memcpy(&in.s_addr, ret->h_addr, sizeof (in.s_addr));
+    push_text(inet_ntoa(in));
+  }
+
+  f_aggregate(1);
   f_aggregate(0);
 #endif /* HAVE_H_ADDR_LIST */
   f_aggregate(3);
+}
+
+void f_gethostbyaddr(INT32 args)
+{
+  u_long addr;
+  char *name;
+  GETHOST_DECLARE();
+
+  get_all_args("gethostbyaddr", args, "%s", &name);
+
+  if ((int)(addr = inet_addr(name)) == -1) {
+    error("gethostbyaddr(): IP-address must be of the form a.b.c.d\n");
+  }
+ 
+  pop_n_elems(args);
+
+  CALL_GETHOSTBYADDR((char *)&addr, sizeof (addr), AF_INET);
+
+  if(!ret) {
+    push_int(0);
+    return;
+  }
+ 
+  describe_hostent(ret);
 }  
 
 /* array(array(string)) gethostbyname(string hostname) */ 
 void f_gethostbyname(INT32 args)
 {
-  struct hostent *hp;
-  char **p, **q;
-  struct svalue *old_sp;
   char *name;
-  int nelem;
+  GETHOST_DECLARE();
 
-  check_args("gethostbyname", args, 1, BIT_STRING);
-#if 0
-  if (!args) {
-    error("Too few arguments to gethostbyname()\n");
-  }
-  if (sp[-args].type != T_STRING) {
-    error("Bad argument 1 to gethostbyname()\n");
-  }
-#endif /* 0 */
- 
-  name = sp[-args].u.string->str;
+  get_all_args("gethostbyname", args, "%s", &name);
 
-  THREADS_ALLOW();
-
-  hp = gethostbyname(name);
-
-  THREADS_DISALLOW();
+  CALL_GETHOSTBYNAME(name);
  
   pop_n_elems(args);
   
-  if(!hp) {
+  if(!ret) {
     push_int(0);
     return;
   }
-  
-#ifdef HAVE_H_ADDR_LIST
-  nelem=0;
-  for (p = hp->h_addr_list; *p != 0; p++) {
-    struct in_addr in;
- 
-    memcpy(&in.s_addr, *p, sizeof (in.s_addr));
-    push_text(inet_ntoa(in));
-    nelem++;
-  }
-  f_aggregate(nelem);
- 
-  nelem=0;
-  for (q = hp->h_aliases; *q != 0; q++) {
-    push_text(*q);
-    nelem++;
-  }
-  f_aggregate(nelem);
-#else
-  f_aggregate(0);
-  f_aggregate(0);
-#endif /* HAVE_H_ADDR_LIST */
-  f_aggregate(3);
+  describe_hostent(ret);
 }  
 #endif /* HAVE_GETHOSTBYNAME */
 
@@ -770,7 +708,7 @@ void init_system_efuns(void)
   add_efun("setgid", f_setgid, "function(int:void)", OPT_SIDE_EFFECT);
 #if defined(HAVE_SETEUID) || defined(HAVE_SETRESUID)
   add_efun("seteuid", f_seteuid, "function(int:void)", OPT_SIDE_EFFECT);
-  add_efun("setegid", f_do_setegid, "function(int:void)", OPT_SIDE_EFFECT);
+  add_efun("setegid", f_setegid, "function(int:void)", OPT_SIDE_EFFECT);
 #endif /* HAVE_SETEUID || HAVE_SETRESUID */
 
   add_efun("getuid", f_getuid, "function(:int)", OPT_EXTERNAL_DEPEND);
@@ -801,7 +739,7 @@ void init_system_efuns(void)
   add_efun("gethostname", f_gethostname, "function(:string)",OPT_TRY_OPTIMIZE);
 #endif /* HAVE_GETHOSTNAME || HAVE_UNAME */
 
-#ifdef HAVE_GETHOSTBYNAME
+#ifdef GETHOST_DECLARE
   add_efun("gethostbyname", f_gethostbyname, "function(string:array)",
            OPT_TRY_OPTIMIZE);
   add_efun("gethostbyaddr", f_gethostbyaddr, "function(string:array)",

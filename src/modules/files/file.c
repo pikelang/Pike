@@ -6,7 +6,7 @@
 #define READ_BUFFER 16384
 
 #include "global.h"
-RCSID("$Id: file.c,v 1.21 1997/01/18 22:00:10 hubbe Exp $");
+RCSID("$Id: file.c,v 1.22 1997/01/22 05:14:59 hubbe Exp $");
 #include "types.h"
 #include "interpret.h"
 #include "svalue.h"
@@ -1244,78 +1244,6 @@ static int isipnr(char *s)
   return 1;
 }
 
-void get_inet_addr(struct sockaddr_in *addr,char *name)
-{
-  MEMSET((char *)addr,0,sizeof(struct sockaddr_in));
-
-  addr->sin_family = AF_INET;
-  if(!strcmp(name,"*"))
-  {
-    addr->sin_addr.s_addr=htonl(INADDR_ANY);
-  }
-  else if(isipnr(name))
-  {
-    if ((long)inet_addr(name) == (long)-1)
-      error("Malformed ip number.\n");
-
-    addr->sin_addr.s_addr = inet_addr(name);
-  }
-  else
-  {
-    struct hostent *ret;
-#ifdef _REENTRANT
-#ifdef HAVE_SOLARIS_GETHOSTBYNAME_R
-    struct hostent result;
-    char data[2048];
-    int h_errno;
-
-    THREADS_ALLOW();
-    ret=gethostbyname_r(name, &result, data, sizeof(data), &h_errno);
-    THREADS_DISALLOW();
-#else
-#ifdef HAVE_OSF1_GETHOSTBYNAME_R
-    struct hostent result;
-    struct hostent_data data;
-
-    THREADS_ALLOW();
-    MEMSET((char *)&data,0,sizeof(data));
-    if(gethostbyname_r(name, &result, &data) < 0)
-    {
-      ret=0;
-    }else{
-      ret=&result;
-    }
-    THREADS_DISALLOW();
-#else
-    static MUTEX_T l;
-
-    THREADS_ALLOW();
-
-    mt_lock(&l);
-    ret=gethostbyname(name);
-    mt_unlock(&l);
-
-    THREADS_DISALLOW();
-#endif
-#endif
-#else
-    ret=gethostbyname(name);
-#endif
-    if(!ret)
-      error("Invalid address '%s'\n",name);
-
-#ifdef HAVE_H_ADDR_LIST
-    MEMCPY((char *)&(addr->sin_addr),
-	   (char *)ret->h_addr_list[0],
-	   ret->h_length);
-#else
-    MEMCPY((char *)&(addr->sin_addr),
-	   (char *)ret->h_addr,
-	   ret->h_length);
-#endif
-  }
-}
-
 static void file_query_address(INT32 args)
 {
   struct sockaddr_in addr;
@@ -1337,6 +1265,7 @@ static void file_query_address(INT32 args)
   {
     ERRNO=errno;
     push_int(0);
+    return;
   }
 
   q=inet_ntoa(addr.sin_addr);

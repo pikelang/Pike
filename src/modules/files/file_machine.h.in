@@ -40,14 +40,11 @@
 /* Define if you have getwd.  */
 #undef HAVE_GETWD
 
-/* Define if you have solaris stype gethostbyname_r.  */
-#undef HAVE_SOLARIS_GETHOSTBYNAME_R
-
-/* Define if you have OSF1 stype gethostbyname_r.  */
-#undef HAVE_OSF1_GETHOSTBYNAME_R
-
 /* Define if you have fork1.  */
 #undef HAVE_FORK1
+
+/* Define if you have a solaris compatible readdir_r.  */
+#undef HAVE_READDIR_R
 
 /* Define if you have strerror.  */
 #undef HAVE_STRERROR
@@ -57,9 +54,6 @@
 
 /* Define this if you have perror() */
 #undef HAVE_PERROR
-
-/* Define this if your struct hostent has h_addr_list */
-#undef HAVE_H_ADDR_LIST
 
 #endif
 
