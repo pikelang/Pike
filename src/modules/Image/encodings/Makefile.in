@@ -34,4 +34,9 @@ pike: all
 pure: all
 	cd ../../..; $(MAKE) pure
 
+Makefile: $(SRCDIR)/Makefile.in $(SRCDIR)/dependencies
+	CONFIG_FILES=Makefile CONFIG_HEADERS= ./config.status
+	@echo "Run make again"
+	@exit 1
+
 @dependencies@
