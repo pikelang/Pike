@@ -22,7 +22,7 @@
 #include "builtin_functions.h"
 #include <signal.h>
 
-RCSID("$Id: signal_handler.c,v 1.54 1998/04/22 16:38:22 grubba Exp $");
+RCSID("$Id: signal_handler.c,v 1.55 1998/04/24 18:20:59 hubbe Exp $");
 
 #ifdef HAVE_PASSWD_H
 # include <passwd.h>
@@ -730,16 +730,35 @@ void f_create_process(INT32 args)
     PROCESS_INFORMATION proc;
     int ret;
     TCHAR *filename=NULL, *command_line=NULL, *dir=NULL;
-    struct pike_string *p1,*p2;
     void *env=NULL;
 
+    /* Quote command to allow all characters (if possible) */
+    {
+      int e,d;
+      dynamic_buffer buf;
+      initialize_buf(&buf);
+      for(e=0;e<cmd->size;e++)
+      {
+	if(e) low_my_putchar(' ', &buf);
+	low_my_putchar('"', &buf);
+	for(d=0;d<ITEM(cmd)[e].u.string->len;d++)
+	{
+	  switch(ITEM(cmd)[e].u.string->str[d])
+	  {
+	    case '"':
+	    case '\\':
+	      low_my_putchar('\\', &buf);
+	    default:
+	      low_my_putchar(ITEM(cmd)[e].u.string->str[d], &buf);
+	  }
+	}
+	low_my_putchar('"', &buf);
+      }
+      low_my_putchar(0, &buf);
+      command_line=(TCHAR *)buf.s.str;
+    }
 
-    /* FIX QUOTING LATER */
-    p1=make_shared_string(" ");
-    p2=implode(cmd, p1);
-    command_line=convert_string(p2->str, p2->len);
-    free_string(p1);
-    free_string(p2);
+
     
     GetStartupInfo(&info);
 
