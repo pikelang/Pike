@@ -48,6 +48,10 @@ testfont binary
 /lib/modules/ADT.pmod/Relation.pmod/Binary.pike foreign_ident
 /lib/modules/ADT.pmod/Stack.pike foreign_ident
 /lib/modules/ADT.pmod/Table.pmod foreign_ident
+/lib/modules/Audio.pmod/AU.pmod foreign_ident
+/lib/modules/Audio.pmod/MP3.pmod foreign_ident
+/lib/modules/Audio.pmod/RIFF.pmod foreign_ident
+/lib/modules/Audio.pmod/vbuffer.pike foreign_ident
 /lib/modules/Cache.pmod/Policy.pmod/Base.pike foreign_ident
 /lib/modules/Cache.pmod/Policy.pmod/Multiple.pike foreign_ident
 /lib/modules/Cache.pmod/Policy.pmod/Null.pike foreign_ident
@@ -102,7 +106,6 @@ testfont binary
 /lib/modules/Parser.pmod/LR.pmod/Grammar_parser.pmod foreign_ident
 /lib/modules/Parser.pmod/LR.pmod/lr.pike foreign_ident
 /lib/modules/Parser.pmod/LR.pmod/module.pmod foreign_ident
-/lib/modules/Parser.pmod/MP3.pmod foreign_ident
 /lib/modules/Parser.pmod/Pike.pmod foreign_ident
 /lib/modules/Parser.pmod/RCS.pike foreign_ident
 /lib/modules/Parser.pmod/XML.pmod/Tree.pmod foreign_ident
