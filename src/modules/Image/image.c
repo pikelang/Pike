@@ -1,9 +1,9 @@
-/* $Id: image.c,v 1.79 1998/02/10 23:51:49 mirar Exp $ */
+/* $Id: image.c,v 1.80 1998/02/13 00:41:40 mirar Exp $ */
 
 /*
 **! module Image
 **! note
-**!	$Id: image.c,v 1.79 1998/02/10 23:51:49 mirar Exp $
+**!	$Id: image.c,v 1.80 1998/02/13 00:41:40 mirar Exp $
 **! class image
 **!
 **!	The main object of the <ref>Image</ref> module, this object
@@ -82,7 +82,7 @@
 
 #include "stralloc.h"
 #include "global.h"
-RCSID("$Id: image.c,v 1.79 1998/02/10 23:51:49 mirar Exp $");
+RCSID("$Id: image.c,v 1.80 1998/02/13 00:41:40 mirar Exp $");
 #include "pike_macros.h"
 #include "object.h"
 #include "constants.h"
@@ -2387,6 +2387,227 @@ CHRONO("apply_matrix, end");
 }
 
 /*
+**! method object outline()
+**! method object outline(int olr,int olg,int olb)
+**! method object outline(int olr,int olg,int olb,int bkgr,int bkgg,int bkgb)
+**! method object outline(array(array(int)) mask)
+**! method object outline(array(array(int)) mask,int olr,int olg,int olb)
+**! method object outline(array(array(int)) mask,int olr,int olg,int olb,int bkgr,int bkgg,int bkgb)
+**! method object outline_mask()
+**! method object outline_mask(int bkgr,int bkgg,int bkgb)
+**! method object outline_mask(array(array(int)) mask)
+**! method object outline_mask(array(array(int)) mask,int bkgr,int bkgg,int bkgb)
+**!     Makes an outline of this image, ie paints with the
+**!	given color around the non-background pixels.
+**!
+**!	Default is to paint above, below, to the left and the right of 
+**!	these pixels.
+**!
+**!	You can also run your own outline mask.
+**!
+**!	The outline_mask function gives the calculated outline as an
+**!	alpha channel image of white and black instead.
+**!    
+**! returns the new image object
+**!
+**! arg array(array(int)) mask
+**!     mask matrix. Default is <tt>({({0,1,0}),({1,1,1}),({0,1,0})})</tt>.
+**! arg int olr
+**! arg int olg
+**! arg int olb
+**!	outline color. Default is current.
+**! arg int bkgr
+**! arg int bkgg
+**! arg int bkgb
+**!	background color (what color to outline to);
+**!	default is color of pixel 0,0.
+**! arg int|float div
+**!	division factor, default is 1.0.
+**!
+**! note
+**!	no antialias!
+*/
+
+static void _image_outline(INT32 args,int mask)
+{
+   static unsigned char defaultmatrix[9]={0,1,0,1,1,1,0,1,0};
+   unsigned char *matrix=defaultmatrix;
+   int height=3;
+   int width=3;
+   unsigned char *tmp,*d;
+   INT32 ai=0;
+   rgb_group *s,*di;
+   int x,y,xz;
+   rgbl_group bkgl={0,0,0};
+   struct object *o;
+   struct image *img;
+
+   if (!THIS->img || !THIS->xsize || !THIS->ysize)
+      error("Image.image->outline: no image\n");
+
+   if (args && sp[-args].type==T_ARRAY)
+   {
+      int i,j;
+      height=sp[-args].u.array->size;
+      width=-1;
+      for (i=0; i<height; i++)
+      {
+	 struct svalue s=sp[-args].u.array->item[i];
+	 if (s.type!=T_ARRAY) 
+	    error("Image.image->outline: Illegal contents of (root) array\n");
+	 if (width==-1)
+	    width=s.u.array->size;
+	 else
+	    if (width!=s.u.array->size)
+	       error("Image.image->outline: Arrays has different size\n");
+      }
+      if (width==-1) width=0;
+
+      matrix=malloc(sizeof(int)*width*height+1);
+      if (!matrix) error("Out of memory");
+   
+      for (i=0; i<height; i++)
+      {
+	 struct svalue s=sp[-args].u.array->item[i];
+	 for (j=0; j<width; j++)
+	 {
+	    struct svalue s2=s.u.array->item[j];
+	    if (s2.type==T_INT)
+	       matrix[j+i*width]=(unsigned char)s2.u.integer;
+	    else
+	       matrix[j+i*width]=1;
+	 }
+      }
+      ai=1;
+   }
+
+   push_int(THIS->xsize);
+   push_int(THIS->ysize);
+   o=clone_object(image_program,2);
+   img=(struct image*)(o->storage);
+
+   tmp=malloc((THIS->xsize+width-1)*(THIS->ysize+height));
+   if (!tmp) { free_object(o); error("out of memory\n"); }
+   MEMSET(tmp,0,(THIS->xsize+width-1)*(THIS->ysize+height-1));
+ 
+   s=THIS->img;
+
+   if (!mask)
+   {
+      if (args-ai==6)
+      {
+	 getrgbl(&bkgl,ai+3,args,"Image.image->outline");
+	 pop_n_elems(args-(ai+3));
+	 args=ai+3;
+      }
+      else if (args-ai==7)
+      {
+	 getrgbl(&bkgl,ai+4,args,"Image.image->outline");
+	 pop_n_elems(args-(ai+4));
+	 args=ai+4;
+      }
+      else
+      {
+	 bkgl.r=s->r;
+	 bkgl.g=s->g;
+	 bkgl.b=s->b;
+      }
+      getrgb(img,ai,args,"Image.image->outline");
+   }
+   else
+   {
+      if (args-ai==4)
+      {
+	 getrgbl(&bkgl,ai,args,"Image.image->outline_mask");
+	 pop_n_elems(args-(ai+3));
+	 args=ai+3;
+      }
+      else
+      {
+	 bkgl.r=s->r;
+	 bkgl.g=s->g;
+	 bkgl.b=s->b;
+      }
+   }
+
+   xz=img->xsize;
+   d=tmp+width/2+(height/2)*(width+xz);
+   y=img->ysize;
+   while (y--)
+   {
+      x=xz;
+      while (x--)
+      {
+	 if (s->r!=bkgl.r || s->g!=bkgl.g || s->b!=bkgl.b)
+	 {
+	    unsigned char *d2=d-width/2-(height/2)*(width+xz);
+	    int y2,x2;
+	    unsigned char *s2=matrix;
+	    y2=height;
+	    while (y2--)
+	    {
+	       x2=width;
+	       while (x2--) *(d2++)|=*(s2++);
+	       d2+=xz;
+	    }
+	 }
+	 s++;
+	 d++;
+      }
+      d+=width;
+   }
+
+   di=img->img;
+   d=tmp+width/2+(height/2)*(width+xz);
+   s=THIS->img;
+   y=img->ysize;
+   while (y--)
+   {
+      x=xz;
+      if (mask)
+	 while (x--)
+	 {
+	    static rgb_group white={255,255,255};
+	    static rgb_group black={0,0,0};
+	    if (*d && s->r==bkgl.r && s->g==bkgl.g && s->b==bkgl.b)
+	       *di=white;
+	    else
+	       *di=black;
+	    s++;
+	    d++;
+	    di++;
+	 }
+      else
+	 while (x--)
+	 {
+	    if (*d && s->r==bkgl.r && s->g==bkgl.g && s->b==bkgl.b)
+	       *di=img->rgb;
+	    else
+	       *di=*s;
+	    s++;
+	    d++;
+	    di++;
+	 }
+      d+=width;
+   }
+
+   if (matrix!=defaultmatrix) free(matrix);
+
+   pop_n_elems(args);
+   push_object(o);
+}
+
+static void image_outline(INT32 args)
+{
+   _image_outline(args,0);
+}
+
+static void image_outline_mask(INT32 args)
+{
+   _image_outline(args,1);
+}
+
+/*
 **! method object modify_by_intensity(int r,int g,int b,int|array(int) v1,...,int|array(int) vn)
 **!    Recolor an image from intensity values.
 **!
@@ -2922,6 +3143,13 @@ void pike_module_init(void)
 
    add_function("apply_matrix",image_apply_matrix,
                 "function(array(array(int|array(int))), void|int ...:object)",0);
+   add_function("outline",image_outline,
+                "function(void|array(array(int)):object)"
+                "|function(array(array(int)),int,int,int,void|int:object)"
+                "|function(array(array(int)),int,int,int,int,int,int,void|int:object)",0);
+   add_function("outline_mask",image_outline_mask,
+                "function(void|array(array(int)):object)"
+                "|function(array(array(int)),int,int,int:object)",0);
    add_function("modify_by_intensity",image_modify_by_intensity,
                 "function(int,int,int,int,int:object)",0);
 
