@@ -1,5 +1,5 @@
 /*
- * $Id: pike_threadlib.h,v 1.7 2001/11/01 18:10:28 mast Exp $
+ * $Id: pike_threadlib.h,v 1.8 2001/11/01 18:14:42 mast Exp $
  */
 #ifndef PIKE_THREADLIB_H
 #define PIKE_THREADLIB_H
@@ -312,6 +312,18 @@ extern int th_running;
 
 PMOD_EXPORT extern PIKE_MUTEX_T interpreter_lock;
 
+/* Define to get a debug-trace of some of the threads operations. */
+/* #define VERBOSE_THREADS_DEBUG	0 */ /* Some debug */
+/* #define VERBOSE_THREADS_DEBUG	1 */ /* Lots of debug */
+
+#ifndef VERBOSE_THREADS_DEBUG
+#define THREADS_FPRINTF(L,X)
+#else
+#define THREADS_FPRINTF(L,X)	do { \
+    if ((VERBOSE_THREADS_DEBUG + 0) >= (L)) fprintf X; \
+  } while(0)
+#endif /* VERBOSE_THREADS_DEBUG */
+
 #if defined(PIKE_DEBUG) && !defined(__NT__)
 
 /* This is a debug wrapper to enable checks that the interpreter lock
@@ -390,18 +402,6 @@ static inline int threads_disabled_wait()
 #define th_hash(X) hashmem((unsigned char *)&(X),sizeof(THREAD_T), 16)
 #endif
 
-
-/* Define to get a debug-trace of some of the threads operations. */
-/* #define VERBOSE_THREADS_DEBUG	0 */ /* Some debug */
-/* #define VERBOSE_THREADS_DEBUG	1 */ /* Lots of debug */
-
-#ifndef VERBOSE_THREADS_DEBUG
-#define THREADS_FPRINTF(L,X)
-#else
-#define THREADS_FPRINTF(L,X)	do { \
-    if ((VERBOSE_THREADS_DEBUG + 0) >= (L)) fprintf X; \
-  } while(0)
-#endif /* VERBOSE_THREADS_DEBUG */
 
 #ifdef THREAD_TRACE
 PMOD_EXPORT extern int t_flag;
