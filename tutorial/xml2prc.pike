@@ -1,5 +1,5 @@
 #!/usr/local/bin/pike
-/* $Id: xml2prc.pike,v 1.1 2000/03/30 05:57:48 neotron Exp $
+/* $Id: xml2prc.pike,v 1.2 2000/03/30 06:12:49 neotron Exp $
  *
  * Converts tutorial.xml to the Palm DOC format for use in varios PalmOS
  * compatible handhelds.
@@ -15,6 +15,13 @@ array to = ({" ","&","<",">", " "});
 
 #define BOOKMARK "*)"
 string module;
+
+string fix(string what)
+{
+  if(search(what, " ") == -1)
+    what = (what/".")[-1];
+  return what;
+}
 string tag_type(string tag, mapping args, string data)
 {
   switch(tag) {
@@ -27,21 +34,18 @@ string tag_type(string tag, mapping args, string data)
       sscanf(args->number, "%*s.%s", args->number);
       args->number = "0."+args->number;
     }
-    data = sprintf(BOOKMARK " %s: %s\n\n%s", args->number, args->title, data);
+    data = sprintf(BOOKMARK " %s: %s\n\n%s", args->number,
+		   fix(args->title), data);
     break;
    case "preface":
    case "introduction":
     data = sprintf(BOOKMARK " %s\n\n%s", args->title, data);
     break;
-   case "module":
-    module = args->name;
-    break;
-   case "class":
+    //   case "class":
    case "method":
    case "function":
-    sscanf(args->name, module+".%s", args->name);
-    data = sprintf(BOOKMARK " %s\n\n%s", args->name, data);
-    
+    data = sprintf(BOOKMARK " %s\n\n%s", fix(args->name), data);
+    break;
   }
   return data;
 }
@@ -223,6 +227,8 @@ void main(int argc, array (string) argv)
     "a": tag_remove,
     "adesc": tag_adesc,
   ]));
+  data = parse_html(data, ([]), (["method":tag_remove]));
+
   werror("ok.\nCleaning up whitespaces...");
   data = replace(data, ({ "\n\n", "</p>" }),  ({ "<p>", "" }));
   data = (replace(data, ({"\r", "\t", "\n"}),
