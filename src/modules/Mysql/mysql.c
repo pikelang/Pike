@@ -1,5 +1,5 @@
 /*
- * $Id: mysql.c,v 1.8 1997/11/03 22:02:50 grubba Exp $
+ * $Id: mysql.c,v 1.9 1997/11/05 14:50:00 grubba Exp $
  *
  * SQL database functionality for Pike
  *
@@ -73,7 +73,7 @@ typedef struct dynamic_buffer_s dynamic_buffer;
  * Globals
  */
 
-RCSID("$Id: mysql.c,v 1.8 1997/11/03 22:02:50 grubba Exp $");
+RCSID("$Id: mysql.c,v 1.9 1997/11/05 14:50:00 grubba Exp $");
 
 struct program *mysql_program = NULL;
 
@@ -241,6 +241,9 @@ static void f_create(INT32 args)
 /* int affected_rows() */
 static void f_affected_rows(INT32 args)
 {
+  if (!PIKE_MYSQL->socket) {
+    pike_mysql_reconnect();
+  }
   pop_n_elems(args);
   push_int(mysql_affected_rows(PIKE_MYSQL->socket));
 }
@@ -248,6 +251,9 @@ static void f_affected_rows(INT32 args)
 /* int insert_id() */
 static void f_insert_id(INT32 args)
 {
+  if (!PIKE_MYSQL->socket) {
+    pike_mysql_reconnect();
+  }
   pop_n_elems(args);
   push_int(mysql_insert_id(PIKE_MYSQL->socket));
 }
@@ -255,9 +261,16 @@ static void f_insert_id(INT32 args)
 /* int|string error() */
 static void f_error(INT32 args)
 {
-  char *error_msg = mysql_error(PIKE_MYSQL->socket);
+  char *error_msg;
+
+  if (!PIKE_MYSQL->socket) {
+    pike_mysql_reconnect();
+  }
+
+  error_msg = mysql_error(PIKE_MYSQL->socket);
 
   pop_n_elems(args);
+
   if (error_msg && *error_msg) {
     push_text(error_msg);
   } else {
@@ -559,6 +572,11 @@ static void f_statistics(INT32 args)
   MYSQL *socket = PIKE_MYSQL->socket;
   char *stats;
 
+  if (!socket) {
+    pike_mysql_reconnect();
+    socket = PIKE_MYSQL->socket;
+  }
+
   pop_n_elems(args);
 
   THREADS_ALLOW();
@@ -575,6 +593,11 @@ static void f_server_info(INT32 args)
 {
   MYSQL *socket = PIKE_MYSQL->socket;
   char *info;
+
+  if (!socket) {
+    pike_mysql_reconnect();
+    socket = PIKE_MYSQL->socket();
+  }
 
   pop_n_elems(args);
 
@@ -593,6 +616,10 @@ static void f_server_info(INT32 args)
 /* string host_info() */
 static void f_host_info(INT32 args)
 {
+  if (!PIKE_MYSQL->socket) {
+    pike_mysql_reconnect();
+  }
+
   pop_n_elems(args);
 
   push_text(mysql_get_host_info(PIKE_MYSQL->socket));
@@ -601,6 +628,10 @@ static void f_host_info(INT32 args)
 /* int protocol_info() */
 static void f_protocol_info(INT32 args)
 {
+  if (!PIKE_MYSQL->socket) {
+    pike_mysql_reconnect();
+  }
+
   pop_n_elems(args);
 
   push_int(mysql_get_proto_info(PIKE_MYSQL->socket));
