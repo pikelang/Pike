@@ -1,4 +1,4 @@
-AC_REVISION("$Id: configure.in,v 1.146 1998/03/03 13:54:38 grubba Exp $")
+AC_REVISION("$Id: configure.in,v 1.147 1998/03/05 14:06:19 grubba Exp $")
 AC_INIT(interpret.c)
 AC_CONFIG_HEADER(machine.h)
 
@@ -167,6 +167,11 @@ case "$pike_cv_sys_os" in
           LDFLAGS="$LDFLAGS -belf"
        ;;
      esac
+  ;;
+  SunOS*)
+    # gcc on SunOS 4 forgets to define this:
+    echo "SunOS. Adding -D__USE_FIXED_PROTOTYPES__"
+    CFLAGS="$CFLAGS -D__USE_FIXED_PROTOTYPES__"
   ;;
   BSD/OS*)
     LD="$BINDIR/smartlink shlicc"
