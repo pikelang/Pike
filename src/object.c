@@ -5,7 +5,7 @@
 \*/
 /**/
 #include "global.h"
-RCSID("$Id: object.c,v 1.72 1999/06/19 20:01:05 hubbe Exp $");
+RCSID("$Id: object.c,v 1.73 1999/07/16 22:54:23 hubbe Exp $");
 #include "object.h"
 #include "dynamic_buffer.h"
 #include "interpret.h"
@@ -832,20 +832,20 @@ union anything *object_get_item_ptr(struct object *o,
     return 0; /* make gcc happy */
   }
 
-  f=ARROW_INDEX_P(index) ? LFUN_ASSIGN_ARROW : LFUN_ASSIGN_INDEX;
-
-  if(FIND_LFUN(p,f) != -1)
-  {
-    return 0;
-
-    /* error("Cannot do incremental operations on overloaded index (yet).\n");
-     */
-  }
-    
 
   switch(index->type)
   {
   case T_STRING:
+    f=ARROW_INDEX_P(index) ? LFUN_ASSIGN_ARROW : LFUN_ASSIGN_INDEX;
+
+    if(FIND_LFUN(p,f) != -1)
+    {
+      return 0;
+      
+      /* error("Cannot do incremental operations on overloaded index (yet).\n");
+       */
+    }
+    
     f=find_shared_string_identifier(index->u.string, p);
     break;
 
@@ -854,7 +854,7 @@ union anything *object_get_item_ptr(struct object *o,
     break;
 
   default:
-    error("Lookup on non-string value.\n");
+/*    error("Lookup on non-string value.\n"); */
     return 0;
   }
 
