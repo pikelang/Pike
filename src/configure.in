@@ -1,4 +1,4 @@
-AC_REVISION("$Id: configure.in,v 1.260 1999/01/21 20:52:28 grubba Exp $")
+AC_REVISION("$Id: configure.in,v 1.261 1999/01/29 12:25:25 hubbe Exp $")
 AC_INIT(interpret.c)
 AC_CONFIG_HEADER(machine.h)
 
@@ -42,15 +42,15 @@ rm ./config.cache ; CONFIG_SITE=x ./configure ; make])
   fi
 done
 
-if test ! -z "$pike_cv_prog_CC" -a ! -z "$CC" -a "$CC" != "$pike_cv_prog_CC"
+if test ! -z "$pike_cv_prog_CC_save" -a ! -z "$CC" -a "$CC" != "$pike_cv_prog_CC_save"
 then
   AC_MSG_WARN([CC is different than last time Pike was compiled,
 It is probably best to delete ./config.cache before proceeding])
 fi
 
-pike_cv_prog_CC="$CC"
+pike_cv_prog_CC_save="$CC"
 
-AC_PROG_CC
+MY_AC_PROG_CC
 AC_ISC_POSIX
 AC_MINIX
 
@@ -93,7 +93,7 @@ case $CC in
  *smartlink*) ;;
  *)
    CC="$BINDIR/smartlink $CC"
-   ac_cv_prog_CC="$CC"
+   pike_cv_prog_CC="$CC"
  ;;
 esac
 
@@ -172,6 +172,7 @@ AC_SUBST(LD)
 
 
 AC_ARG_WITH(dynamic_modules,   [  --without-dynamic-modules        link modules statically],[],[with_dynamic_modules=yes])
+AC_ARG_WITH(static_linking,    [  --with-static-linking            link statically, if possible],[with_static_linking=yes],[])
 AC_ARG_WITH(include-path,[  --with-include-path    A list of paths to search for include files.])
 AC_ARG_WITH(lib-path,    [  --with-lib-path        A list of paths to search for libraries.])
 AC_ARG_WITH(gdbm,        [  --without-gdbm         no GNU database manager support ])
@@ -264,7 +265,8 @@ AC_DEFUN(AC_SYS_COMPILER_FLAG,
 AC_DEFUN(AC_SYS_CPU_COMPILER_FLAG,
 [
  if test "`uname -m 2>/dev/null`" = "$1" ; then
-    AC_SYS_COMPILER_FLAG($2,$3,$4)
+    AC_SYS_COMPILER_FLAG($2,$3,$4,$5,$6)
+    $7
  fi
 ])
 
@@ -272,8 +274,23 @@ AC_DEFUN(AC_SYS_CPU_COMPILER_FLAG,
 AC_DEFUN(AC_SYS_OS_COMPILER_FLAG,
 [
  if test "x$pike_cv_sys_os" = "x$1" ; then
-    AC_SYS_COMPILER_FLAG($2,$3,$4)
+    AC_SYS_COMPILER_FLAG($2,$3,$4,$5,$6)
+    $7
  fi
+])
+
+define([DO_IF_OS],
+[
+ if test "x$pike_cv_sys_os" = "x$1" ; then
+$2
+fi
+])
+
+define([DO_IF_CPU],
+[
+if test "`uname -m 2>/dev/null`" = "$1" ; then
+$2
+fi
 ])
 
 WARN=""
@@ -289,6 +306,12 @@ if test $cflags_is_set = no; then
 
  if test "x${GCC-}" = xyes ; then
   WARN="-W -Wall -Wpointer-arith -Wno-unused"
+
+  if "x${with_static_linking-}" = "xyes" ; then
+    AC_SYS_COMPILER_FLAG(-static,link_static,CFLAGS)
+  else
+    :
+  fi
 
   ##
   ## -fomit-frame-pointer does not work with egcs 1.1.1
@@ -329,73 +352,113 @@ if test $cflags_is_set = no; then
   esac
  else
 
+
+  if "x${with_static_linking-}" = "xyes" ; then
+    DO_IF_OS(AIX,
+    [
+      AC_SYS_COMPILER_FLAG(-Wl,-bstatic,wl_link_static,CFLAGS)
+      LD_FALLBACK_FLAGS="${LD_FALLBACK_FLAGS} -bstatic"
+    ])
+
+    DO_IF_OS(OSF1,
+    [
+      AC_SYS_COMPILER_FLAG(-non_shared,non_shared,CFLAGS)
+      LD_FALLBACK_FLAGS="${LD_FALLBACK_FLAGS} -non_shared"
+    ])
+
+    DO_IF_OS(IRIX,
+    [
+      AC_SYS_COMPILER_FLAG(-non_shared,non_shared,CFLAGS)
+      LD_FALLBACK_FLAGS="${LD_FALLBACK_FLAGS} -B static"
+    ])
+
+    # how do you link statically on HP-UX ?
+  else
+    :
+  fi
+
 ### Non-gcc thingies. This should probably be enhanced...
 
   # Solaris
-  AC_SYS_OS_COMPILER_FLAG(Solaris,-fast,fast,OPTIMIZE)
-  AC_SYS_OS_COMPILER_FLAG(Solaris,-xdepend,xdepend,OPTIMIZE)
-  AC_SYS_OS_COMPILER_FLAG(Solaris,-xs,xs,CFLAGS)
-  # Causes __STDC__ to be 1 which causes several headerfiles to behave
-  # differently.
-  # AC_SYS_OS_COMPILER_FLAG(Solaris,-Xc,Xc,WARN)
+  DO_IF_OS(Solaris,
+  [
+    AC_SYS_COMPILER_FLAG(-fast,fast,OPTIMIZE)
+    AC_SYS_COMPILER_FLAG(-xdepend,xdepend,OPTIMIZE)
+    AC_SYS_COMPILER_FLAG(-xs,xs,CFLAGS)
+    # Causes __STDC__ to be 1 which causes several headerfiles to behave
+    # differently.
+    # AC_SYS_OS_COMPILER_FLAG(-Xc,Xc,WARN)
+  ])
 
   # AIX
-  # This one is needed to get the compiler to fail on errors,
-  # which is needed for several configure-scripts.
-  AC_SYS_OS_COMPILER_FLAG(AIX,-qhalt=e,qhalt_e,CFLAGS)
-  AC_SYS_OS_COMPILER_FLAG(AIX,-qro,qro,OPTIMIZE)
+  DO_IF_OS(AIX,
+  [
+    # This one is needed to get the compiler to fail on errors,
+    # which is needed for several configure-scripts.
+    AC_SYS_COMPILER_FLAG(-qhalt=e,qhalt_e,CFLAGS)
+    AC_SYS_COMPILER_FLAG(-qro,qro,OPTIMIZE)
+  ])
 
   # HP-UX
-  AC_SYS_OS_COMPILER_FLAG(HP-UX,-D__STDC_EXT__,stdc_ext,CFLAGS)
-  AC_SYS_OS_COMPILER_FLAG(HP-UX,+ESlit,plus_ESlit,OPTIMIZE)
-  AC_SYS_OS_COMPILER_FLAG(HP-UX,+Odataprefetch,plus_Odataprefetch,OPTIMIZE)
-  AC_SYS_OS_COMPILER_FLAG(HP-UX,+Ofailsafe,plus_Ofailsafe,OPTIMIZE)
-  AC_SYS_OS_COMPILER_FLAG(HP-UX,+O3,plus_O3,OPTIMIZE)
-  # Ignore the following warnings if you enable +w1
-  #   414 Optimization reduced to +O2 for compatibility with Debug.
-  #   530 Casting from loose to strict alignment
-  #   558 Empty declaration.
-  # AC_SYS_OS_COMPILER_FLAG(HP-UX,+w1,plus_w1,WARN)
+  DO_IF_OS(HP-UX,
+  [
+    AC_SYS_COMPILER_FLAG(-D__STDC_EXT__,stdc_ext,CFLAGS)
+    AC_SYS_COMPILER_FLAG(+ESlit,plus_ESlit,OPTIMIZE)
+    AC_SYS_COMPILER_FLAG(+Odataprefetch,plus_Odataprefetch,OPTIMIZE)
+    AC_SYS_COMPILER_FLAG(+Ofailsafe,plus_Ofailsafe,OPTIMIZE)
+    AC_SYS_COMPILER_FLAG(+O3,plus_O3,OPTIMIZE)
+    # Ignore the following warnings if you enable +w1
+    #   414 Optimization reduced to +O2 for compatibility with Debug.
+    #   530 Casting from loose to strict alignment
+    #   558 Empty declaration.
+    # AC_SYS_COMPILER_FLAG(+w1,plus_w1,WARN)
+  ])
 
   # OSF/1
-  AC_SYS_OS_COMPILER_FLAG(OSF1,-fast,fast,OPTIMIZE)
-  # The need for -ieee is not detected properly by the FPE tests below.
-  # AC_SYS_OS_COMPILER_FLAG(OSF1,-ieee,ieee,CFLAGS)
-  AC_SYS_OS_COMPILER_FLAG(OSF1,-readonly_strings,readonly_strings,OPTIMIZE)
-  AC_SYS_OS_COMPILER_FLAG(OSF1,-assume trusted_short_alignment,
-    assume_trusted_short_alignment,OPTIMIZE)
-  AC_SYS_OS_COMPILER_FLAG(OSF1,-assume aligned_objects,
-    assume_aligned_objects,OPTIMIZE)
-  AC_SYS_OS_COMPILER_FLAG(OSF1,-no_misalign,no_misalign,OPTIMIZE)
+  DO_IF_OS(OSF1,
+  [
+    AC_SYS_COMPILER_FLAG(-fast,fast,OPTIMIZE)
+    # The need for -ieee is not detected properly by the FPE tests below.
+    # AC_SYS_COMPILER_FLAG(-ieee,ieee,CFLAGS)
+    AC_SYS_COMPILER_FLAG(-readonly_strings,readonly_strings,OPTIMIZE)
+    AC_SYS_COMPILER_FLAG(-assume trusted_short_alignment,
+      assume_trusted_short_alignment,OPTIMIZE)
+    AC_SYS_COMPILER_FLAG(-assume aligned_objects,
+      assume_aligned_objects,OPTIMIZE)
+    AC_SYS_COMPILER_FLAG(-no_misalign,no_misalign,OPTIMIZE)
+  
+    if test "x$with_cdebug" = "xyes" ; then
+      # FIXME:
+      # Maybe should remove the -g flag if this succeeds.
+      AC_SYS_COMPILER_FLAG(-g3,g3,OPTIMIZE)
+      AC_SYS_COMPILER_FLAG(-trapuv,trapuv,WARN)
+    fi
+    AC_SYS_COMPILER_FLAG(-host,host,OPTIMIZE)
 
-  if test "x$with_cdebug" = "xyes" ; then
-    # FIXME:
-    # Maybe should remove the -g flag if this succeeds.
-    AC_SYS_OS_COMPILER_FLAG(OSF1,-g3,g3,OPTIMIZE)
-    AC_SYS_OS_COMPILER_FLAG(OSF1,-trapuv,trapuv,WARN)
-  fi
-  AC_SYS_OS_COMPILER_FLAG(OSF1,-host,host,OPTIMIZE)
-
-  # Flags that cause errors or change compiler behaviour
-  # must go in CFLAGS, they can not go in WARN
-  # /Hubbe
-  AC_SYS_OS_COMPILER_FLAG(OSF1,-std1,std1,CFLAGS)
-  AC_SYS_OS_COMPILER_FLAG(OSF1,-warnprotos,warnprotos,WARN)
+    # Flags that cause errors or change compiler behaviour
+    # must go in CFLAGS, they can not go in WARN
+    # /Hubbe
+    AC_SYS_COMPILER_FLAG(-std1,std1,CFLAGS)
+    AC_SYS_COMPILER_FLAG(-warnprotos,warnprotos,WARN)
+  ])
 
   # IRIX
-  # sopt disabled since it takes too long time on interpret.c (>45min on an O²)
-  # AC_SYS_OS_COMPILER_FLAG(IRIX,-sopt,sopt,OPTIMIZE)
+  DO_IF_OS(IRIX,
+  [
+    # sopt disabled since it takes too long time on interpret.c (>45min on an O²)
+    # AC_SYS_COMPILER_FLAG(-sopt,sopt,OPTIMIZE)
 
-  # -n32 moved to smartlink so it will affekt cc as well as linker
-  # this way the user can override it by setting LDFLAGS and/or CFLAGS
-  # AC_SYS_OS_COMPILER_FLAG(IRIX,-n32,n32,CFLAGS)
-  AC_SYS_OS_COMPILER_FLAG(IRIX,-fullwarn,fullwarn,WARN)
-  if test x$with_cdebug = xyes ; then
-    AC_SYS_OS_COMPILER_FLAG(IRIX,-g3,g3,OPTIMIZE)
-  fi
-  if test x$with_rtldebug = xyes ; then
-    AC_SYS_OS_COMPILER_FLAG(IRIX,-trapuw,trapuw,WARN)
-  fi
+    # -n32 moved to smartlink so it will affekt cc as well as linker
+    # this way the user can override it by setting LDFLAGS and/or CFLAGS
+    # AC_SYS_COMPILER_FLAG(-n32,n32,CFLAGS)
+    AC_SYS_COMPILER_FLAG(-fullwarn,fullwarn,WARN)
+    if test x$with_cdebug = xyes ; then
+      AC_SYS_COMPILER_FLAG(-g3,g3,OPTIMIZE)
+    fi
+    if test x$with_rtldebug = xyes ; then
+      AC_SYS_COMPILER_FLAG(-trapuw,trapuw,WARN)
+    fi
+  ])
 
 dnl
 dnl This does not work with Digital UNIX cc/ld (cc thinks it is ok, ld does not)
@@ -446,14 +509,14 @@ else
       OLD_CC="${CC-cc}"
       OLD_CFLAGS="$CFLAGS"
       if test "$CC" = "$BINDIR/smartlink cc" -a -x /usr/bin/cc ; then
-        CC="$BINDIR/smartlink /usr/bin/cc"
+        CC="$SMARTLINK /usr/bin/cc"
       fi
       CFLAGS="-Ae +Olibcalls $CFLAGS"
       AC_TRY_COMPILE([int foo(int bar);],[],[],[
         CC="$OLD_CC"
 	CFLAGS="$OLD_CFLAGS"
       ])
-      ac_cv_prog_CC="${CC}"
+      pike_cv_prog_CC="${CC}"
     ])
   fi
 fi
@@ -2807,7 +2870,7 @@ AC_SUBST(EXTRA_OBJS)
 AC_SUBST(RANLIB)
 AC_SUBST(DEBUGDEF)
 AC_SUBST(ac_configure_args)
-pike_cv_prog_CC="$CC"
+pike_cv_prog_CC="${CC}"
 
 if test x$ac_cv_func_dlopen$ac_cv_func_dld_link$ac_cv_func_shl_load = xnonono;
 then
