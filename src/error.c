@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: error.c,v 1.122 2004/04/20 13:56:26 nilsson Exp $
+|| $Id: error.c,v 1.123 2004/05/19 00:04:38 nilsson Exp $
 */
 
 #define NO_PIKE_SHORTHAND
@@ -23,8 +23,10 @@
 #include "threads.h"
 #include "gc.h"
 
-RCSID("$Id: error.c,v 1.122 2004/04/20 13:56:26 nilsson Exp $");
+RCSID("$Id: error.c,v 1.123 2004/05/19 00:04:38 nilsson Exp $");
 
+/* __attribute__ only applies to function declarations, not
+   definitions, so we disable them here. */
 #undef ATTRIBUTE
 #define ATTRIBUTE(X)
 
