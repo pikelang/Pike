@@ -1,4 +1,4 @@
-AC_REVISION("$Id: configure.in,v 1.143 1998/02/16 20:50:39 marcus Exp $")
+AC_REVISION("$Id: configure.in,v 1.144 1998/02/17 23:37:57 marcus Exp $")
 AC_INIT(interpret.c)
 AC_CONFIG_HEADER(machine.h)
 
@@ -144,6 +144,8 @@ fi
 ])
 AC_MSG_RESULT($pike_cv_sys_os)
 
+LD='$(CC)'
+
 case "$pike_cv_sys_os" in
   SCO*)
      case "$CFLAGS" in
@@ -161,7 +163,12 @@ case "$pike_cv_sys_os" in
        ;;
      esac
   ;;
+  BSD/OS*)
+    LD="$BINDIR/smartlink shlicc"
+  ;;
 esac
+
+AC_SUBST(LD)
 
 #############################################################################
 
@@ -335,7 +342,7 @@ fi
 
 echo Searching for include-file directories...
 if test $cppflags_is_set = no -a x${C_INCLUDE_PATH-} = x ; then
-  for d in /usr/local /sw/local /usr/gnu /opt/gnu /sw/gnu /sw /usr/freeware
+  for d in `echo $prefix | sed "s@^NONE@$ac_default_prefix@g"` /usr/local /sw/local /usr/gnu /opt/gnu /sw/gnu /sw /usr/freeware
   do
     AC_MSG_CHECKING($d/include)
     if test -d "$d/include/." ; then
@@ -351,7 +358,7 @@ fi
 
 echo Searching for library directories...
 if test $ldflags_is_set = no ; then
-  for d in /usr/local /sw/local /usr/gnu /opt/gnu /sw/gnu /sw /usr/freeware
+  for d in `echo $exec_prefix | sed "s@^NONE@$prefix@g" | sed "s@^NONE@$ac_default_prefix@g"` /usr/local /sw/local /usr/gnu /opt/gnu /sw/gnu /sw /usr/freeware
   do
     AC_MSG_CHECKING($d/lib)
     if test -d "$d/lib/." ; then
@@ -366,7 +373,7 @@ else
 fi
 
 echo Searching for binary directories...
-for d in "" /usr /usr/ccs /usr/local /sw/local /usr/gnu /opt/gnu /sw/gnu /sw /usr/freeware
+for d in `echo $exec_prefix | sed "s@^NONE@$prefix@g" | sed "s@^NONE@$ac_default_prefix@g"` "" /usr /usr/ccs /usr/local /sw/local /usr/gnu /opt/gnu /sw/gnu /sw /usr/freeware
 do
   AC_MSG_CHECKING($d/bin)
   if test -d "$d/bin/." ; then
@@ -720,12 +727,17 @@ int main()
         LIBS="${OLDLIBS} -lpthread -lmach -lexc -lc"
       ;;
  
+      xBSD/OS*)
+        LIBS="${OLDLIBS}"
+      ;;
+
       *)
         LIBS="${OLDLIBS} -lpthread"
       ;;
     esac
 
     AC_CHECK_FUNCS(pthread_init)
+    AC_CHECK_FUNCS(pthread_mutexattr_init)
 
     AC_MSG_CHECKING(posix threads)
 
@@ -748,7 +760,11 @@ int main()
 #ifdef HAVE_PTHREAD_INIT
   pthread_init();
 #endif /* HAVE_PTHREAD_INIT */
+#ifdef HAVE_PTHREAD_MUTEXATTR_INIT
   pthread_mutexattr_init(&attr);
+#else
+  memset(&attr, 0, sizeof(attr));
+#endif
   pthread_mutex_init(&tmp, &attr);
   pthread_mutex_lock(&tmp);
   pthread_create(&gazonk,0,foo,0);
@@ -1710,7 +1726,7 @@ then
 	FreeBSD*) LDSHARED="ld -Bshareable";;
 	NetBSD) LDSHARED="ld -Bshareable";;
 	OpenBSD*) LDSHARED="ld -Bshareable";;
-	BSD/OS*) LDSHARED="ld -r";;
+	BSD/OS*) LDSHARED="shlicc -r";;
 	SCO_SV*) LDSHARED="cc -G -KPIC -Wl,-Bexport";;
 	UNIX_SV) LDSHARED="ld -G";;
 	*) LDSHARED="ld";;
@@ -1804,12 +1820,17 @@ AC_CACHE_VAL(pike_cv_sys_dynamic_loading,
 
     OLD_CFLAGS="$CFLAGS"
     CFLAGS="$CFLAGS $LINKFORSHARED"
+    OLD_CC="$CC"
+    case "$LD" in
+      *shlicc) CC="$BINDIR/smartlink shlicc";;
+    esac
     AC_TRY_RUN([
 #define TESTING
 #include "$srcdir/dynamic_load.c"
 void testfunc2(void) { exit(0); }
 ], pike_cv_sys_dynamic_loading=yes, pike_cv_sys_dynamic_loading=no)
     CFLAGS="$OLD_CFLAGS"
+    CC="$OLD_CC"
   fi
   rm -f myconftest.so >/dev/null 2>/dev/null
 ])
