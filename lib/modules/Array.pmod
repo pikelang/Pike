@@ -197,28 +197,32 @@ array(array(array(mixed))) diff3(array mid,array left,array right)
    [lmid,ldst]=diff(mid,left);
    [rmid,rdst]=diff(mid,right);
 
+   werror(sprintf("%O\n",({rmid,rdst})));
+
    array res=({});
    int lpos=0,rpos=0;
    int l=0,r=0,n;
    array eq=({});
    int x;
 
-   for (n=0; n<sizeof(mid);)
+   for (n=0; ;)
    {
-      while (lpos>=sizeof(lmid[l]))
+      while (l<sizeof(lmid) && lpos>=sizeof(lmid[l]))
       {
 	 if (sizeof(ldst[l])>lpos)
 	    res+=({({({}),ldst[l][lpos..],({})})});
 	 l++;
 	 lpos=0;
       }
-      while (rpos>=sizeof(rmid[r])) 
+      while (r<sizeof(rmid) && rpos>=sizeof(rmid[r])) 
       {
 	 if (sizeof(rdst[r])>rpos)
 	    res+=({({({}),({}),rdst[r][rpos..]})});
 	 r++;
 	 rpos=0;
       }
+
+      if (n==sizeof(mid)) break;
 
       x=min(sizeof(lmid[l])-lpos,sizeof(rmid[r])-rpos);
 
@@ -244,8 +248,8 @@ array(array(array(mixed))) diff3(array mid,array left,array right)
 		  rdst[r][rpos..rpos+x-1]})});
       }
 
-//       werror(sprintf("-> %-5{%O%} %-5{%O%} %-5{%O%}"
-// 		     " x=%d l=%d:%d r=%d:%d \n",@res[-1],x,l,lpos,r,rpos));
+//        werror(sprintf("-> %-5{%O%} %-5{%O%} %-5{%O%}"
+//  		     " x=%d l=%d:%d r=%d:%d \n",@res[-1],x,l,lpos,r,rpos));
 	 
       rpos+=x;
       lpos+=x;
