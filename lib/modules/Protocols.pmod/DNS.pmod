@@ -248,8 +248,8 @@ class client {
 	
 	etc_hosts = ([ "localhost":"127.0.0.1" ]);
 	
-	if (raw) {
-	  foreach(raw/"\n", string line) {
+	if (raw && sizeof(raw)) {
+	  foreach(raw/"\n"-({""}), string line) {
 	    // Handle comments, and split the line on white-space
 		 line = lower_case(replace((line/"#")[0], "\t", " "));
 	    array arr = (line/" ") - ({ "" });
