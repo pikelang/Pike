@@ -1,9 +1,9 @@
-/* $Id: ilbm.c,v 1.11 1999/05/23 17:46:54 mirar Exp $ */
+/* $Id: ilbm.c,v 1.12 1999/09/25 23:29:53 grubba Exp $ */
 
 /*
 **! module Image
 **! note
-**!	$Id: ilbm.c,v 1.11 1999/05/23 17:46:54 mirar Exp $
+**!	$Id: ilbm.c,v 1.12 1999/09/25 23:29:53 grubba Exp $
 **! submodule ILBM
 **!
 **!	This submodule keep the ILBM encode/decode capabilities
@@ -14,7 +14,7 @@
 #include "global.h"
 
 #include "stralloc.h"
-RCSID("$Id: ilbm.c,v 1.11 1999/05/23 17:46:54 mirar Exp $");
+RCSID("$Id: ilbm.c,v 1.12 1999/09/25 23:29:53 grubba Exp $");
 #include "pike_macros.h"
 #include "object.h"
 #include "constants.h"
@@ -249,7 +249,7 @@ static void parse_body(struct BMHD *bmhd, unsigned char *body, INT32 blen,
   int rbyt = ((bmhd->w+15)&~15)>>3;
   int eplanes = (bmhd->masking == mskHasMask? bmhd->nPlanes+1:bmhd->nPlanes);
   unsigned char *line=0;
-  INT32 *cptr, *cline = alloca((rbyt<<3)*sizeof(INT32));
+  unsigned INT32 *cptr, *cline = alloca((rbyt<<3)*sizeof(unsigned INT32));
   INT32 suse=0;
   rgb_group *dest = img->img;
   rgb_group *adest = (alpha==NULL? NULL : alpha->img);
@@ -333,7 +333,8 @@ static void parse_body(struct BMHD *bmhd, unsigned char *body, INT32 blen,
 	if(bmhd->nPlanes>6) {
 	  /* HAM7/HAM8 */
 	  rgb_group hold;
-	  int clr, numcolors = ctable->u.flat.numentries;
+	  int clr;
+	  unsigned int numcolors = ctable->u.flat.numentries;
 	  struct nct_flat_entry *entries = ctable->u.flat.entries;
 	  hold.r = hold.g = hold.b = 0;
 	  for(x=0; x<bmhd->w; x++)
@@ -365,7 +366,8 @@ static void parse_body(struct BMHD *bmhd, unsigned char *body, INT32 blen,
 	} else {
 	  /* HAM5/HAM6 */	  
 	  rgb_group hold;
-	  int clr, numcolors = ctable->u.flat.numentries;
+	  int clr;
+	  unsigned int numcolors = ctable->u.flat.numentries;
 	  struct nct_flat_entry *entries = ctable->u.flat.entries;
 	  hold.r = hold.g = hold.b = 0;
 	  for(x=0; x<bmhd->w; x++)
@@ -397,7 +399,7 @@ static void parse_body(struct BMHD *bmhd, unsigned char *body, INT32 blen,
 	}
       else {
 	/* normal palette */
-	int numcolors = ctable->u.flat.numentries;
+	unsigned int numcolors = ctable->u.flat.numentries;
 	struct nct_flat_entry *entries = ctable->u.flat.entries;
 	for(x=0; x<bmhd->w; x++)
 	  if(*cptr<numcolors)
