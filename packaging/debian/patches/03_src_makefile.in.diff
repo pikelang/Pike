@@ -1,6 +1,7 @@
---- pike7.3-7.3.51.orig/src/Makefile.in
-+++ pike7.3-7.3.51/src/Makefile.in
-@@ -640,21 +640,21 @@
+diff -U3 -r -N pike7.4-7.4.35.orig/src/Makefile.in pike7.4-7.4.35/src/Makefile.in
+--- pike7.4-7.4.35.orig/src/Makefile.in	2003-11-12 22:25:54.000000000 +0100
++++ pike7.4-7.4.35/src/Makefile.in	2003-12-04 00:18:36.000000000 +0100
+@@ -658,21 +658,21 @@
  #	$(RUNPIKE) $(TMP_BINDIR)/mkpeep.pike $(SRCDIR)/peep.in >$(SRCDIR)/peep_engine.c
  #	$(RUNPIKE) $(TMP_BINDIR)/make_ci.pike <$(SRCDIR)/UnicodeData.txt >$(SRCDIR)/case_info.h
  

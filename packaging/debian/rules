@@ -6,7 +6,7 @@
 # architecture-dependant package, as well as an architecture-independent
 # package.
 #
-# $Id: rules,v 1.47 2003/09/27 14:48:34 grendel Exp $
+# $Id: rules,v 1.48 2003/12/03 23:50:53 grendel Exp $
 #
 
 # Uncomment this to turn on verbose mode. 
@@ -19,6 +19,23 @@ ifdef CCVER
 CC=gcc-$(CCVER)
 else
 CC=gcc
+endif
+
+ifneq (,$(findstring noopt,$(DEB_BUILD_OPTIONS)))
+CFLAGS=-O0
+CFARGSEXTRA=--with-rtldebug --with-cdebug --with-debug --without-copt
+else
+CFLAGS=-O2
+CFARGSEXTRA=--without-rtldebug --without-cdebug --without-debug
+endif
+
+# Temporary workaround for hppa linker issues
+ifeq ($(DEB_BUILD_ARCH),hppa)
+CFLAGS+=-ffunction-sections
+endif
+
+ifneq (,$(findstring debug,$(DEB_BUILD_OPTIONS)))
+CFLAGS += -g3 -ggdb3
 endif
 
 EXTRA_ARGS=--with-security
@@ -43,8 +60,8 @@ endif
 VERSION=$(shell dpkg-parsechangelog | grep ^Version | sed -e 's/Version: //;s/-[0-9]*$$//')
 OS=$(shell uname -srm|sed -e 's/ /-/g'|tr '[A-Z]' '[a-z]'|tr '/' '_')
 BUILDDIR=build/$(OS)
-CFARGS=--without-rtldebug \
-       --without-cdebug \
+CFARGS=$(CFARGSEXTRA) \
+       --with-cflags="$(CFLAGS)" \
        --without-ssleay \
        --with-bignums \
        --with-gmp \
@@ -70,15 +87,7 @@ RUNPIKE2=$(CURDIR)/debian/$(PIKE)-core/usr/bin/pike -m$(CURDIR)/$(BUILDDIR)/lib/
 PIKE_FAKEROOT=$(CURDIR)/debian/$(PIKE)-core
 PIKE_FAKEROOT_OMIT=$(BUILDDIR)*:$(CURDIR)/lib*:$(CURDIR)/src*:$(CURDIR)/bin*:$(CURDIR)/man*:$(BUILDDIR)/lib*:$(CURDIR)*:$(CURDIR)/debian/$(PIKE)-core*
 
-CFLAGS=-O2 -s
-# Temporary workaround for hppa linker issues
-ifeq ($(DEB_BUILD_ARCH),hppa)
-CFLAGS+=-ffunction-sections
-endif
 
-ifneq (,$(findstring debug,$(DEB_BUILD_OPTIONS)))
-	CFLAGS += -g
-endif
 ifeq (,$(findstring nostrip,$(DEB_BUILD_OPTIONS)))
 	INSTALL_PROGRAM += -s
 endif
