@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: language.yacc,v 1.348 2004/10/30 15:30:02 nilsson Exp $
+|| $Id: language.yacc,v 1.349 2004/11/05 15:27:19 grubba Exp $
 */
 
 %pure_parser
@@ -458,7 +458,7 @@ facet: TOK_FACET TOK_IDENTIFIER ':' idents ';'
 	  pop_stack();
 	}
 	else
-	  yyerror("Illegal facet group specifier.");
+	  yyerror("Invalid facet group specifier.");
 	pop_stack();
       }
     }
@@ -492,22 +492,25 @@ inheritance: modifiers TOK_INHERIT inherit_ref optional_rename_inherit ';'
     }
 
     /* If this is a product class, check that all product classes in its
-     * facet-group inherits from all facets */
+     * facet-group inherit from all facets */
     if($3 && Pike_compiler->compiler_pass == 2) {
       if (Pike_compiler->new_program->facet_class==PROGRAM_IS_PRODUCT_CLASS){
 	if (!Pike_compiler->new_program->facet_group)
-	  yyerror("Invalid facet group.");
-	apply(Pike_compiler->new_program->facet_group,
-	      "product_classes_checked", 0);
-	if (Pike_sp[-1].type == T_INT &&
-	    Pike_sp[-1].u.integer == 0) {
+	  yyerror("Product class without facet group.");
+	else {
+	  safe_apply(Pike_compiler->new_program->facet_group,
+		     "product_classes_checked", 0);
+	  if (Pike_sp[-1].type == T_INT &&
+	      Pike_sp[-1].u.integer == 0) {
+	    pop_stack();
+	    safe_apply_low3(Pike_compiler->new_program->facet_group,
+			    find_identifier
+			    ("check_product_classes",
+			     Pike_compiler->new_program->facet_group->prog),
+			    0,
+			    "Error in some product classes");
+	  }
 	  pop_stack();
-	  safe_apply_low3(Pike_compiler->new_program->facet_group,
-			  find_identifier
-			  ("check_product_classes",
-			   Pike_compiler->new_program->facet_group->prog),
-			  0,
-			  "Error in some product classes");
 	}
       }
     }
@@ -709,7 +712,7 @@ push_compiler_frame0: /* empty */
     if(!Pike_compiler->compiler_frame->previous ||
        !Pike_compiler->compiler_frame->previous->current_type)
     {
-      yyerror("Internal compiler fault.");
+      yyerror("Internal compiler error (push_compiler_frame0).");
       copy_pike_type(Pike_compiler->compiler_frame->current_type,
 		mixed_type_string);
     }else{
@@ -3976,7 +3979,7 @@ bad_expr_ident:
 
 %%
 
-void yyerror(char *str)
+void low_yyerror(struct pike_string *str)
 {
   extern int cumulative_parse_error;
 
@@ -4002,7 +4005,7 @@ void yyerror(char *str)
       push_constant_text("");
     }
     push_int(lex.current_line);
-    push_text(str);
+    ref_push_string(str);
     low_safe_apply_handler("compile_error", error_handler, compat_handler, 3);
     pop_stack();
   }else{
@@ -4010,16 +4013,23 @@ void yyerror(char *str)
       (void)fprintf(stderr, "%s:%ld: %s\n",
 		    lex.current_file->str,
 		    (long)lex.current_line,
-		    str);
+		    str->str);
     } else {
       (void)fprintf(stderr, "NULL:%ld: %s\n",
 		    (long)lex.current_line,
-		    str);
+		    str->str);
     }
     fflush(stderr);
   }
 
   STACK_LEVEL_DONE(0);
+}
+
+void yyerror(char *str)
+{
+  push_text(str);
+  low_yyerror(Pike_sp[-1].u.string);
+  pop_stack();
 }
 
 static void yyerror_reserved(char *keyword)
