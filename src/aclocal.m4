@@ -43,6 +43,33 @@ pushdef([AC_CONFIG_HEADER],
   AC_CONFIG_HEADER($1)
 ])
 
+AC_DEFUN(AC_MY_CHECK_TYPE,
+[
+AC_MSG_CHECKING([for $1])
+AC_CACHE_VAL(ac_cv_type_$1,
+[
+AC_TRY_COMPILE([
+#include <sys/types.h>
+
+#if STDC_HEADERS
+#include <stdlib.h>
+#include <stddef.h>
+#endif
+
+],[
+$1 tmp;
+],ac_cv_type_$1=yes,ac_cv_type_$1=no)
+])
+
+if test $ac_cv_type_$1 = no; then
+  AC_DEFINE($1,$2)
+  AC_MSG_RESULT(no)
+else
+  AC_MSG_RESULT(yes)
+fi
+])
+
+
 AC_DEFUN(AC_TRY_ASSEMBLE,
 [ac_c_ext=$ac_ext
  ac_ext=${ac_s_ext-s}
@@ -67,7 +94,7 @@ rm -rf conftest*])
 
 define([AC_LOW_MODULE_INIT],
 [
-# $Id: aclocal.m4,v 1.12 1999/05/30 20:52:29 grubba Exp $
+# $Id: aclocal.m4,v 1.13 1999/07/15 16:54:34 hubbe Exp $
 
 MY_AC_PROG_CC
 

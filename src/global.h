@@ -5,7 +5,7 @@
 \*/
 
 /*
- * $Id: global.h,v 1.35 1999/06/19 20:00:09 hubbe Exp $
+ * $Id: global.h,v 1.36 1999/07/15 16:54:36 hubbe Exp $
  */
 #ifndef GLOBAL_H
 #define GLOBAL_H
@@ -110,6 +110,11 @@ char *alloca ();
 
 #ifdef HAVE_STDLIB_H
 #include <stdlib.h>
+#undef HAVE_STDLIB_H
+#endif
+
+#ifdef HAVE_STDLIB_H
+#include <stddef.h>
 #undef HAVE_STDLIB_H
 #endif
 
