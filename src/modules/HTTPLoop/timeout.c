@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: timeout.c,v 1.13 2003/04/02 21:12:14 mast Exp $
+|| $Id: timeout.c,v 1.14 2003/04/23 15:31:19 marcus Exp $
 */
 
 #include "config.h"
@@ -30,6 +30,7 @@
 #include <arpa/inet.h>
 #endif
 
+#include "pike_netlib.h"
 #include "accept_and_parse.h"
 #include "timeout.h"
 #include "util.h"

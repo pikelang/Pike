@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: udp.c,v 1.45 2003/04/22 16:06:07 marcus Exp $
+|| $Id: udp.c,v 1.46 2003/04/23 15:31:19 marcus Exp $
 */
 
 #define NO_PIKE_SHORTHAND
@@ -10,7 +10,7 @@
 
 #include "file_machine.h"
 
-RCSID("$Id: udp.c,v 1.45 2003/04/22 16:06:07 marcus Exp $");
+RCSID("$Id: udp.c,v 1.46 2003/04/23 15:31:19 marcus Exp $");
 #include "fdlib.h"
 #include "interpret.h"
 #include "svalue.h"
@@ -162,7 +162,8 @@ struct udp_storage {
  */
 static void udp_bind(INT32 args)
 {
-  struct sockaddr_in addr;
+  SOCKADDR addr;
+  int addr_len;
   int o;
   int fd,tmp;
 #if !defined(SOL_IP) && defined(HAVE_GETPROTOBYNAME)
@@ -230,16 +231,16 @@ static void udp_bind(INT32 args)
 	Pike_error("UDP->bind: setsockopt IP_HDRINCL failed\n");
 #endif /* IP_HDRINCL */
 
-  get_inet_addr(&addr, (args > 1 && Pike_sp[1-args].type==PIKE_T_STRING?
-			Pike_sp[1-args].u.string->str : NULL),
-		(Pike_sp[-args].type == PIKE_T_STRING?
-		 Pike_sp[-args].u.string->str : NULL),
-		(Pike_sp[-args].type == PIKE_T_INT?
-		 Pike_sp[-args].u.integer : -1), 1);
+  addr_len = get_inet_addr(&addr, (args > 1 && Pike_sp[1-args].type==PIKE_T_STRING?
+				   Pike_sp[1-args].u.string->str : NULL),
+			   (Pike_sp[-args].type == PIKE_T_STRING?
+			    Pike_sp[-args].u.string->str : NULL),
+			   (Pike_sp[-args].type == PIKE_T_INT?
+			    Pike_sp[-args].u.integer : -1), 1);
 
   THREADS_ALLOW_UID();
 
-  tmp=fd_bind(fd, (struct sockaddr *)&addr, sizeof(addr))<0;
+  tmp=fd_bind(fd, (struct sockaddr *)&addr, addr_len)<0;
 
   THREADS_DISALLOW_UID();
 
@@ -393,9 +394,9 @@ void udp_wait(INT32 args)
 void udp_read(INT32 args)
 {
   int flags = 0, res=0, fd, e;
-  struct sockaddr_in from;
+  SOCKADDR from;
   char buffer[UDP_BUFFSIZE];
-  ACCEPT_SIZE_T fromlen = sizeof(struct sockaddr_in);
+  ACCEPT_SIZE_T fromlen = sizeof(from);
   
   if(args)
   {
@@ -470,14 +471,14 @@ void udp_read(INT32 args)
 
   push_text("ip");
 #ifdef HAVE_INET_NTOP
-  push_text( inet_ntop( from.sin_family, &from.sin_addr,
+  push_text( inet_ntop( SOCKADDR_FAMILY(from), SOCKADDR_IN_ADDR(from),
 			buffer, sizeof(buffer) ) );
 #else
-  push_text( inet_ntoa( from.sin_addr ) );
+  push_text( inet_ntoa( *SOCKADDR_IN_ADDR(from) ) );
 #endif
 
   push_text("port");
-  push_int(ntohs(from.sin_port));
+  push_int(ntohs(from.ipv4.sin_port));
   f_aggregate_mapping( 6 );
 }
 
@@ -497,7 +498,8 @@ void udp_sendto(INT32 args)
 {
   int flags = 0, fd, e;
   ptrdiff_t res = 0;
-  struct sockaddr_in to;
+  SOCKADDR to;
+  int to_len;
   char *str;
   ptrdiff_t len;
 
@@ -525,11 +527,11 @@ void udp_sendto(INT32 args)
     }
   }
 
-  get_inet_addr(&to, Pike_sp[-args].u.string->str,
-		(Pike_sp[1-args].type == PIKE_T_STRING?
-		 Pike_sp[1-args].u.string->str : NULL),
-		(Pike_sp[1-args].type == PIKE_T_INT?
-		 Pike_sp[1-args].u.integer : -1), 1);
+  to_len = get_inet_addr(&to, Pike_sp[-args].u.string->str,
+			 (Pike_sp[1-args].type == PIKE_T_STRING?
+			  Pike_sp[1-args].u.string->str : NULL),
+			 (Pike_sp[1-args].type == PIKE_T_INT?
+			  Pike_sp[1-args].u.integer : -1), 1);
 
   fd = FD;
   str = Pike_sp[2-args].u.string->str;
@@ -537,7 +539,7 @@ void udp_sendto(INT32 args)
 
   do {
     THREADS_ALLOW();
-    res = fd_sendto( fd, str, len, flags, (struct sockaddr *)&to, sizeof(to));
+    res = fd_sendto( fd, str, len, flags, (struct sockaddr *)&to, to_len);
     e = errno;
     THREADS_DISALLOW();
 
@@ -681,7 +683,8 @@ static void udp_set_blocking(INT32 args)
  */
 static void udp_connect(INT32 args)
 {
-  struct sockaddr_in addr;
+  SOCKADDR addr;
+  int addr_len;
   struct pike_string *dest_addr = NULL;
   struct svalue *dest_port = NULL;
 
@@ -704,15 +707,15 @@ static void udp_connect(INT32 args)
      set_close_on_exec(FD, 1);
   }
 
-  get_inet_addr(&addr, dest_addr->str,
-		(dest_port->type == PIKE_T_STRING?
-		 dest_port->u.string->str : NULL),
-		(dest_port->type == PIKE_T_INT?
-		 dest_port->u.integer : -1), 0);
+  addr_len =  get_inet_addr(&addr, dest_addr->str,
+			    (dest_port->type == PIKE_T_STRING?
+			     dest_port->u.string->str : NULL),
+			    (dest_port->type == PIKE_T_INT?
+			     dest_port->u.integer : -1), 0);
 
   tmp=FD;
   THREADS_ALLOW();
-  tmp=fd_connect(tmp, (struct sockaddr *)&addr, sizeof(addr));
+  tmp=fd_connect(tmp, (struct sockaddr *)&addr, addr_len);
   THREADS_DISALLOW();
 
   if(tmp < 0)
@@ -734,7 +737,7 @@ static void udp_connect(INT32 args)
  */
 static void udp_query_address(INT32 args)
 {
-  struct sockaddr_in addr;
+  SOCKADDR addr;
   int i;
   int fd = THIS->fd;
   char buffer[496],*q;
@@ -751,20 +754,21 @@ static void udp_query_address(INT32 args)
   THREADS_DISALLOW();
 
   pop_n_elems(args);
-  if(i < 0 || len < (int)sizeof(addr))
+  if(i < 0 || len < (int)sizeof(addr.ipv4))
   {
     push_int(0);
     return;
   }
 
 #ifdef HAVE_INET_NTOP
-  inet_ntop(addr.sin_family, &addr.sin_addr, buffer, sizeof(buffer)-20);
+  inet_ntop(SOCKADDR_FAMILY(addr), SOCKADDR_IN_ADDR(addr),
+	    buffer, sizeof(buffer)-20);
 #else
-  q=inet_ntoa(addr.sin_addr);
+  q=inet_ntoa(*SOCKADDR_IN_ADDR(addr));
   strncpy(buffer,q,sizeof(buffer)-20);
   buffer[sizeof(buffer)-20]=0;
 #endif
-  sprintf(buffer+strlen(buffer)," %d",(int)(ntohs(addr.sin_port)));
+  sprintf(buffer+strlen(buffer)," %d",(int)(ntohs(addr.ipv4.sin_port)));
 
   push_string(make_shared_string(buffer));
 }

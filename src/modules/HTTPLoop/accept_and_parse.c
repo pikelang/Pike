@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: accept_and_parse.c,v 1.31 2002/10/25 14:09:44 nilsson Exp $
+|| $Id: accept_and_parse.c,v 1.32 2003/04/23 15:31:19 marcus Exp $
 */
 
 /* Hohum. Here we go. This is try number four for a more optimized
@@ -51,6 +51,7 @@
 #include <arpa/inet.h>
 #endif
 
+#include "pike_netlib.h"
 #include "accept_and_parse.h"
 #include "log.h"
 #include "cache.h"

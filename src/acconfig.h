@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: acconfig.h,v 1.123 2003/04/01 19:41:13 mast Exp $
+|| $Id: acconfig.h,v 1.124 2003/04/23 15:31:18 marcus Exp $
 */
 
 #ifndef MACHINE_H
@@ -392,6 +392,9 @@
 
 /* Define if you have struct timeval */
 #undef HAVE_STRUCT_TIMEVAL
+
+/* Define if you have struct sockaddr_in6 */
+#undef HAVE_STRUCT_SOCKADDR_IN6
 
 /* Define this to the max value of an unsigned short unles <limits.h> does.. */
 #undef USHRT_MAX

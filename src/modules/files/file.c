@@ -2,12 +2,12 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: file.c,v 1.270 2003/04/23 09:57:14 grubba Exp $
+|| $Id: file.c,v 1.271 2003/04/23 15:31:19 marcus Exp $
 */
 
 #define NO_PIKE_SHORTHAND
 #include "global.h"
-RCSID("$Id: file.c,v 1.270 2003/04/23 09:57:14 grubba Exp $");
+RCSID("$Id: file.c,v 1.271 2003/04/23 15:31:19 marcus Exp $");
 #include "fdlib.h"
 #include "interpret.h"
 #include "svalue.h"
@@ -2652,7 +2652,8 @@ static void file_open_socket(INT32 args)
   }
 
   if (args) {
-    struct sockaddr_in addr;
+    SOCKADDR addr;
+    int addr_len;
     char *name;
     int o;
 
@@ -2672,11 +2673,11 @@ static void file_open_socket(INT32 args)
     } else {
       name = NULL;
     }
-    get_inet_addr(&addr, name,
-		  (Pike_sp[-args].type == PIKE_T_STRING?
-		   Pike_sp[-args].u.string->str : NULL),
-		  (Pike_sp[-args].type == PIKE_T_INT?
-		   Pike_sp[-args].u.integer : -1), 0);
+    addr_len = get_inet_addr(&addr, name,
+			     (Pike_sp[-args].type == PIKE_T_STRING?
+			      Pike_sp[-args].u.string->str : NULL),
+			     (Pike_sp[-args].type == PIKE_T_INT?
+			      Pike_sp[-args].u.integer : -1), 0);
 
     o=1;
     if(fd_setsockopt(fd, SOL_SOCKET, SO_REUSEADDR, (char *)&o, sizeof(int)) < 0) {
@@ -2686,7 +2687,7 @@ static void file_open_socket(INT32 args)
       push_int(0);
       return;
     }
-    if (fd_bind(fd, (struct sockaddr *)&addr, sizeof(addr)) < 0) {
+    if (fd_bind(fd, (struct sockaddr *)&addr, addr_len) < 0) {
       ERRNO=errno;
       fd_close(fd);
       pop_n_elems(args);
@@ -2827,7 +2828,8 @@ static void file_connect_unix( INT32 args )
  */
 static void file_connect(INT32 args)
 {
-  struct sockaddr_in addr;
+  SOCKADDR addr;
+  int addr_len;
   struct pike_string *dest_addr = NULL;
   struct pike_string *src_addr = NULL;
   struct svalue *dest_port = NULL;
@@ -2864,15 +2866,15 @@ static void file_connect(INT32 args)
     pop_stack();
   }
 
-  get_inet_addr(&addr, dest_addr->str,
-		(dest_port->type == PIKE_T_STRING?
-		 dest_port->u.string->str : NULL),
-		(dest_port->type == PIKE_T_INT?
-		 dest_port->u.integer : -1), 0);
+  addr_len = get_inet_addr(&addr, dest_addr->str,
+			   (dest_port->type == PIKE_T_STRING?
+			    dest_port->u.string->str : NULL),
+			   (dest_port->type == PIKE_T_INT?
+			    dest_port->u.integer : -1), 0);
 
   tmp=FD;
   THREADS_ALLOW();
-  tmp=fd_connect(tmp, (struct sockaddr *)&addr, sizeof(addr));
+  tmp=fd_connect(tmp, (struct sockaddr *)&addr, addr_len);
   THREADS_DISALLOW();
 
   if(tmp < 0
@@ -2943,7 +2945,7 @@ static int isipnr(char *s)
  */
 static void file_query_address(INT32 args)
 {
-  struct sockaddr_in addr;
+  SOCKADDR addr;
   int i;
   char buffer[496],*q;
   /* XOPEN GROUP thinks this variable should be a size_t.
@@ -2962,20 +2964,21 @@ static void file_query_address(INT32 args)
     i=fd_getpeername(FD,(struct sockaddr *)&addr,&len);
   }
   pop_n_elems(args);
-  if(i < 0 || len < (int)sizeof(addr))
+  if(i < 0 || len < (int)sizeof(addr.ipv4))
   {
     ERRNO=errno;
     push_int(0);
     return;
   }
 #ifdef HAVE_INET_NTOP
-  inet_ntop(addr.sin_family, &addr.sin_addr, buffer, sizeof(buffer)-20);
+  inet_ntop(SOCKADDR_FAMILY(addr), SOCKADDR_IN_ADDR(addr),
+	    buffer, sizeof(buffer)-20);
 #else
-  q=inet_ntoa(addr.sin_addr);
+  q=inet_ntoa(*SOCKADDR_IN_ADDR(addr));
   strncpy(buffer,q,sizeof(buffer)-20);
   buffer[sizeof(buffer)-20]=0;
 #endif
-  sprintf(buffer+strlen(buffer)," %d",(int)(ntohs(addr.sin_port)));
+  sprintf(buffer+strlen(buffer)," %d",(int)(ntohs(addr.ipv4.sin_port)));
 
   push_string(make_shared_string(buffer));
 }

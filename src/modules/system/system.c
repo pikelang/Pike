@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: system.c,v 1.145 2003/04/22 22:41:29 marcus Exp $
+|| $Id: system.c,v 1.146 2003/04/23 15:31:19 marcus Exp $
 */
 
 /*
@@ -20,7 +20,7 @@
 #include "system_machine.h"
 #include "system.h"
 
-RCSID("$Id: system.c,v 1.145 2003/04/22 22:41:29 marcus Exp $");
+RCSID("$Id: system.c,v 1.146 2003/04/23 15:31:19 marcus Exp $");
 #ifdef HAVE_WINSOCK_H
 #include <winsock.h>
 #endif
@@ -42,6 +42,7 @@ RCSID("$Id: system.c,v 1.145 2003/04/22 22:41:29 marcus Exp $");
 #include "security.h"
 #include "bignum.h"
 #include "pike_rusage.h"
+#include "pike_netlib.h"
 
 #ifdef HAVE_SYS_TYPES_H
 #include <sys/types.h>
@@ -1679,21 +1680,21 @@ static MUTEX_T getservbyname_mutex;
 #endif /* REENTRANT */
 
 /* this is used from modules/file, and modules/spider! */
-void get_inet_addr(struct sockaddr_in *addr,char *name,char *service, INT_TYPE port, int udp)
+int get_inet_addr(SOCKADDR *addr,char *name,char *service, INT_TYPE port, int udp)
 {
-  MEMSET((char *)addr,0,sizeof(struct sockaddr_in));
+  MEMSET((char *)addr,0,sizeof(SOCKADDR));
 
-  addr->sin_family = AF_INET;
+  SOCKADDR_FAMILY(*addr) = AF_INET;
   if(!name || !strcmp(name,"*"))
   {
-    addr->sin_addr.s_addr=htonl(INADDR_ANY);
+    addr->ipv4.sin_addr.s_addr=htonl(INADDR_ANY);
   }
   else if(my_isipnr(name)) /* I do not entirely trust inet_addr */
   {
     if (((IN_ADDR_T)inet_addr(name)) == ((IN_ADDR_T)-1))
       Pike_error("Malformed ip number.\n");
 
-    addr->sin_addr.s_addr = inet_addr(name);
+    addr->ipv4.sin_addr.s_addr = inet_addr(name);
   }
   else
   {
@@ -1709,12 +1710,14 @@ void get_inet_addr(struct sockaddr_in *addr,char *name,char *service, INT_TYPE p
       }
     }
 
+    SOCKADDR_FAMILY(*addr) = ret->h_addrtype;
+
 #ifdef HAVE_H_ADDR_LIST
-    MEMCPY((char *)&(addr->sin_addr),
+    MEMCPY((char *)SOCKADDR_IN_ADDR(*addr),
 	   (char *)ret->h_addr_list[0],
 	   ret->h_length);
 #else
-    MEMCPY((char *)&(addr->sin_addr),
+    MEMCPY((char *)SOCKADDR_IN_ADDR(*addr),
 	   (char *)ret->h_addr,
 	   ret->h_length);
 #endif
@@ -1740,7 +1743,7 @@ void get_inet_addr(struct sockaddr_in *addr,char *name,char *service, INT_TYPE p
       }
     }
 
-    addr->sin_port = ret->s_port;
+    addr->ipv4.sin_port = ret->s_port;
 #else
     if (strlen(service) < 1024) {
       Pike_error("Invalid service '%s'\n",service);
@@ -1749,9 +1752,11 @@ void get_inet_addr(struct sockaddr_in *addr,char *name,char *service, INT_TYPE p
     }
 #endif
   } else if(port >= 0)
-    addr->sin_port = htons((u_short)port);
+    addr->ipv4.sin_port = htons((u_short)port);
   else
-    addr->sin_port = 0;
+    addr->ipv4.sin_port = 0;
+
+  return (SOCKADDR_FAMILY(*addr) == AF_INET? sizeof(addr->ipv4):sizeof(*addr));
 }
 
 

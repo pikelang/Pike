@@ -1,4 +1,4 @@
-AC_REVISION("$Id: configure.in,v 1.715 2003/04/04 20:31:58 marcus Exp $")
+AC_REVISION("$Id: configure.in,v 1.716 2003/04/23 15:31:18 marcus Exp $")
 AC_INIT(interpret.c)
 AC_CONFIG_HEADER(machine.h)
 
@@ -3456,6 +3456,35 @@ AC_MSG_RESULT($pike_cv_has_external_timezone)
 
 # No test for this yet...
 AC_DEFINE(HAVE_STRUCT_TIMEVAL)
+
+#############################################################################
+
+AC_MSG_CHECKING(struct sockaddr_in6)
+
+AC_CACHE_VAL(pike_cv_has_struct_sockaddr_in6,[
+AC_TRY_LINK([
+#ifdef HAVE_SYS_TYPES_H
+#include <sys/types.h>
+#endif /* HAVE_SYS_TYPES_H */
+#ifdef HAVE_UNISTD_H
+#include <unistd.h>
+#endif /* HAVE_UNISTD_H */
+#ifdef HAVE_SYS_SOCKET_H
+#include <sys/socket.h>
+#endif /* HAVE_SYS_SOCKET_H */
+#ifdef HAVE_NETINET_IN_H
+#include <netinet/in.h>
+#endif /* HAVE_NETINET_IN_H */
+],[
+  struct sockaddr_in6 foo;
+],pike_cv_has_struct_sockaddr_in6=yes,pike_cv_has_struct_sockaddr_in6=no)
+])
+
+if test "$pike_cv_has_struct_sockaddr_in6" = "yes"; then
+  AC_DEFINE(HAVE_STRUCT_SOCKADDR_IN6)
+fi
+
+AC_MSG_RESULT($pike_cv_has_struct_sockaddr_in6)
 
 #############################################################################
 

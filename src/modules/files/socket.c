@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: socket.c,v 1.69 2003/04/22 16:06:07 marcus Exp $
+|| $Id: socket.c,v 1.70 2003/04/23 15:31:19 marcus Exp $
 */
 
 #define NO_PIKE_SHORTHAND
@@ -23,7 +23,7 @@
 #include "file_machine.h"
 #include "file.h"
 
-RCSID("$Id: socket.c,v 1.69 2003/04/22 16:06:07 marcus Exp $");
+RCSID("$Id: socket.c,v 1.70 2003/04/23 15:31:19 marcus Exp $");
 
 #ifdef HAVE_SYS_TYPE_H
 #include <sys/types.h>
@@ -245,8 +245,8 @@ static void port_listen_fd(INT32 args)
  */
 static void port_bind(INT32 args)
 {
-  struct sockaddr_in addr;
-  int fd,tmp;
+  SOCKADDR addr;
+  int addr_len,fd,tmp;
 
   do_close(THIS,Pike_fp->current_object);
 
@@ -284,15 +284,15 @@ static void port_bind(INT32 args)
 
   my_set_close_on_exec(fd,1);
 
-  get_inet_addr(&addr, (args > 2 && Pike_sp[2-args].type==PIKE_T_STRING?
-			Pike_sp[2-args].u.string->str : NULL),
-		(Pike_sp[-args].type == PIKE_T_STRING?
-		 Pike_sp[-args].u.string->str : NULL),
-		(Pike_sp[-args].type == PIKE_T_INT?
-		 Pike_sp[-args].u.integer : -1), 0);
+  addr_len = get_inet_addr(&addr, (args > 2 && Pike_sp[2-args].type==PIKE_T_STRING?
+				   Pike_sp[2-args].u.string->str : NULL),
+			   (Pike_sp[-args].type == PIKE_T_STRING?
+			    Pike_sp[-args].u.string->str : NULL),
+			   (Pike_sp[-args].type == PIKE_T_INT?
+			    Pike_sp[-args].u.integer : -1), 0);
 
   THREADS_ALLOW_UID();
-  tmp=fd_bind(fd, (struct sockaddr *)&addr, sizeof(addr)) < 0 || fd_listen(fd, 16384) < 0;
+  tmp=fd_bind(fd, (struct sockaddr *)&addr, addr_len) < 0 || fd_listen(fd, 16384) < 0;
   THREADS_DISALLOW_UID();
 
   if(tmp)
@@ -380,7 +380,7 @@ extern struct program *file_program;
 
 static void port_accept(INT32 args)
 {
-  struct sockaddr_in addr;
+  SOCKADDR addr;
   struct port *this=THIS;
   int fd;
   struct object *o;
@@ -416,7 +416,7 @@ static void port_accept(INT32 args)
  */
 static void socket_query_address(INT32 args)
 {
-  struct sockaddr_in addr;
+  SOCKADDR addr;
   int i;
   char buffer[496],*q;
   ACCEPT_SIZE_T len;
@@ -427,7 +427,7 @@ static void socket_query_address(INT32 args)
   len=sizeof(addr);
   i=fd_getsockname(THIS->fd,(struct sockaddr *)&addr,&len);
   pop_n_elems(args);
-  if(i < 0 || len < (int)sizeof(addr))
+  if(i < 0 || len < (int)sizeof(addr.ipv4))
   {
     THIS->my_errno=errno;
     push_int(0);
@@ -435,13 +435,14 @@ static void socket_query_address(INT32 args)
   }
 
 #ifdef HAVE_INET_NTOP
-  inet_ntop(addr.sin_family, &addr.sin_addr, buffer, sizeof(buffer)-20);
+  inet_ntop(SOCKADDR_FAMILY(addr), SOCKADDR_IN_ADDR(addr),
+	    buffer, sizeof(buffer)-20);
 #else
-  q=inet_ntoa(addr.sin_addr);
+  q=inet_ntoa(*SOCKADDR_IN_ADDR(addr));
   strncpy(buffer,q,sizeof(buffer)-20);
   buffer[sizeof(buffer)-20]=0;
 #endif
-  sprintf(buffer+strlen(buffer)," %d",(int)(ntohs(addr.sin_port)));
+  sprintf(buffer+strlen(buffer)," %d",(int)(ntohs(addr.ipv4.sin_port)));
 
   push_string(make_shared_string(buffer));
 }

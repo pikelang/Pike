@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: log.c,v 1.15 2003/04/22 16:06:07 marcus Exp $
+|| $Id: log.c,v 1.16 2003/04/23 15:31:19 marcus Exp $
 */
 
 #include "config.h"
@@ -41,6 +41,7 @@
 #include <arpa/inet.h>
 #endif
 
+#include "pike_netlib.h"
 #include "accept_and_parse.h"
 #include "log.h"
 #include "requestobject.h"
@@ -82,12 +83,12 @@ static void push_log_entry(struct log_entry *le)
 #ifdef HAVE_INET_NTOP
   {
     char buffer[64];
-    lo->from = make_shared_string( inet_ntop(le->from.sin_family,
-					     &le->from.sin_addr,
+    lo->from = make_shared_string( inet_ntop(SOCKADDR_FAMILY(le->from),
+					     SOCKADDR_IN_ADDR(le->from),
 					     buffer, sizeof(buffer)) );
   }
 #else
-  lo->from = make_shared_string( inet_ntoa(le->from.sin_addr) );
+  lo->from = make_shared_string( inet_ntoa(*SOCKADDR_IN_ADDR(le->from)) );
 #endif
   push_object( o );
 }
@@ -214,12 +215,27 @@ void f_aap_log_as_commonlog_to_file(INT32 args)
 	break;
       }
 
+#ifdef HAVE_INET_NTOP
+    if(SOCKADDR_FAMILY(le->from) != AF_INET) {
+      char buffer[64];
+      fprintf(foo,
+      "%s - %s [%02d/%s/%d:%02d:%02d:%02d +0000] \"%s\" %d %ld\n",
+	      inet_ntop(SOCKADDR_FAMILY(le->from), SOCKADDR_IN_ADDR(le->from),
+			buffer, sizeof(buffer)), /* hostname */
+	      "-",                          /* remote-user */
+	      tm.tm_mday, month[tm.tm_mon], tm.tm_year+1900,
+	      tm.tm_hour, tm.tm_min, tm.tm_sec, /* date */
+	      le->raw.str, /* request line */
+	      le->reply, /* reply code */
+	      DO_NOT_WARN((long)le->sent_bytes)); /* bytes transfered */
+    } else
+#endif /* HAVE_INET_NTOP */
     fprintf(foo,
     "%d.%d.%d.%d - %s [%02d/%s/%d:%02d:%02d:%02d +0000] \"%s\" %d %ld\n",
-	    ((unsigned char *)&le->from.sin_addr)[ 0 ],
-	    ((unsigned char *)&le->from.sin_addr)[ 1 ],
-	    ((unsigned char *)&le->from.sin_addr)[ 2 ],
-	    ((unsigned char *)&le->from.sin_addr)[ 3 ], /* hostname */
+	    ((unsigned char *)&le->from.ipv4.sin_addr)[ 0 ],
+	    ((unsigned char *)&le->from.ipv4.sin_addr)[ 1 ],
+	    ((unsigned char *)&le->from.ipv4.sin_addr)[ 2 ],
+	    ((unsigned char *)&le->from.ipv4.sin_addr)[ 3 ], /* hostname */
 	    "-",                          /* remote-user */
 	    tm.tm_mday, month[tm.tm_mon], tm.tm_year+1900,
 	    tm.tm_hour, tm.tm_min, tm.tm_sec, /* date */
