@@ -5,7 +5,7 @@
 \*/
 /**/
 #include "global.h"
-RCSID("$Id: builtin_functions.c,v 1.435 2002/08/15 14:49:19 marcus Exp $");
+RCSID("$Id: builtin_functions.c,v 1.436 2002/08/20 18:19:52 mast Exp $");
 #include "interpret.h"
 #include "svalue.h"
 #include "pike_macros.h"
@@ -1757,37 +1757,46 @@ PMOD_EXPORT void f_allocate(INT32 args)
  *!   The elements are as follows:
  *!   @array
  *!   	@elem int user_time
- *!   	  Time in seconds spent in user code.
+ *!   	  Time in milliseconds spent in user code.
  *!   	@elem int system_time
- *!   	  Time in seconds spent in system calls.
+ *!   	  Time in milliseconds spent in system calls.
  *!   	@elem int maxrss
- *!   	  Maximum resident size.
+ *!   	  Maximum used resident size in kilobytes.
  *!   	@elem int ixrss
- *!   	  ?
+ *!       Quote from GNU libc: An integral value expressed in
+ *!       kilobytes times ticks of execution, which indicates the
+ *!       amount of memory used by text that was shared with other
+ *!       processes.
  *!   	@elem int idrss
- *!   	  Integral resident size.
+ *!       Quote from GNU libc: An integral value expressed the same
+ *!       way, which is the amount of unshared memory used for data.
  *!   	@elem int isrss
- *!   	  ?
+ *!       Quote from GNU libc: An integral value expressed the same
+ *!       way, which is the amount of unshared memory used for stack
+ *!       space.
  *!   	@elem int minor_page_faults
- *!   	  Minor page faults (TLB misses).
+ *!   	  Minor page faults, i.e. TLB misses which required no disk I/O.
  *!   	@elem int major_page_faults
- *!   	  Major page faults (paging required).
+ *!   	  Major page faults, i.e. paging with disk I/O required.
  *!   	@elem int swaps
- *!   	  Number of full swaps.
+ *!   	  Number of times the process was swapped out entirely.
  *!   	@elem int block_input_op
  *!   	  Number of block input operations.
  *!   	@elem int block_output_op
  *!   	  Number of block output operations.
  *!   	@elem int messages_sent
- *!   	  Number of messsages sent.
+ *!   	  Number of IPC messsages sent.
  *!   	@elem int messages_received
- *!   	  Number of messsages received.
+ *!   	  Number of IPC messsages received.
  *!   	@elem int signals_received
  *!   	  Number of signals received.
  *!   	@elem int voluntary_context_switches
- *!   	  Number of voluntary context switches.
+ *!   	  Number of voluntary context switches (usually to wait for
+ *!   	  some service).
  *!   	@elem int involuntary_context_switches
- *!   	  Number of preemptions.
+ *!   	  Number of preemptions, i.e. context switches due to expired
+ *!   	  time slices, or when processes with higher priority were
+ *!   	  scheduled.
  *!   	@elem int sysc
  *!   	  Number of system calls.
  *!   	@elem int ioch
