@@ -1,7 +1,7 @@
 #include "global.h"
 #include "stralloc.h"
 #include "global.h"
-RCSID("$Id: whitefish.c,v 1.4 2001/05/22 13:52:27 per Exp $");
+RCSID("$Id: whitefish.c,v 1.5 2001/05/22 13:52:49 per Exp $");
 #include "pike_macros.h"
 #include "interpret.h"
 #include "program.h"
@@ -51,6 +51,10 @@ static struct object *low_do_query_merge( Blob **blobs,
   __f->blobs = blobs;
   __f->nblobs = nblobs;
   SET_ONERROR( e, free_stuff, __f );
+
+
+  /* Time to do the real work. :-) */
+
 
   UNSET_ONERROR( e );
   __f->res = 0;
