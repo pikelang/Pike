@@ -5,7 +5,7 @@
 \*/
 /**/
 #include "global.h"
-RCSID("$Id: pike_types.c,v 1.115 1999/12/30 21:05:19 mast Exp $");
+RCSID("$Id: pike_types.c,v 1.116 1999/12/31 14:50:16 grubba Exp $");
 #include <ctype.h>
 #include "svalue.h"
 #include "pike_types.h"
@@ -1956,7 +1956,7 @@ static char *low_match_types2(char *a,char *b, int flags)
 /*
  * Flags used by pike_types_le()
  */
-#define LE_WEAK_ARGS	1	/* Perform weaker checking of funtion args. */
+#define LE_WEAK_OBJECTS	1	/* Perform weaker checking of objects. */
 
 
 /*
@@ -2350,10 +2350,7 @@ static int low_pike_types_le2(char *a, char *b,
 
       if (EXTRACT_UCHAR(a_tmp) != T_VOID) {
 	if (!low_pike_types_le(b_tmp, a_tmp, 0, flags)) {
-	  if (!(flags & LE_WEAK_ARGS) ||
-	      !low_pike_types_le(a_tmp, b_tmp, 0, flags)) {
-	    return 0;
-	}
+	  return 0;
 	}
       }
     }
@@ -2362,10 +2359,7 @@ static int low_pike_types_le2(char *a, char *b,
     b++;
     if ((EXTRACT_UCHAR(a) != T_VOID) && (EXTRACT_UCHAR(b) != T_VOID)) {
       if (!low_pike_types_le(b, a, 0, flags)) {
-	if (!(flags & LE_WEAK_ARGS) ||
-	    !low_pike_types_le(a, b, 0, flags)) {
-	  return 0;
-	}
+	return 0;
       }
     }
 
@@ -2407,7 +2401,11 @@ static int low_pike_types_le2(char *a, char *b,
      * object(0|1 0) <=! object(0|1 !0)
      * object(1 x) <= object(0|1 x)
      * object(1 x) <= object(1 y)	iff x == y
-     * object(0|1 x) <= object(0 y)	iff x implements y
+     * object(1 x) <= object(0 y)	iff x implements y
+     * Not WEAK_OBJECTS:
+     *   object(0 x) <= object(0 y)	iff x implements y
+     * WEAK_OBJECTS:
+     *   object(0 x) <= object(0 y)	iff x is_compatible y
      */
 
     /* object(* 0) matches any object */
@@ -2432,6 +2430,9 @@ static int low_pike_types_le2(char *a, char *b,
       if (!ap || !bp) {
 	/* Shouldn't happen... */
 	return 0;
+      }
+      if ((flags & LE_WEAK_OBJECTS) && (!EXTRACT_UCHAR(a+1))) {
+	return is_compatible(implements_a=ap, implements_b=bp);
       }
       return implements(implements_a=ap, implements_b=bp);
     }
@@ -2494,7 +2495,7 @@ int strict_check_call(char *fun_type, char *arg_type)
  */
 int check_soft_cast(struct pike_string *to, struct pike_string *from)
 {
-  return low_pike_types_le(to->str, from->str, 0, LE_WEAK_ARGS);
+  return low_pike_types_le(to->str, from->str, 0, LE_WEAK_OBJECTS);
 }
 
 /*
