@@ -232,7 +232,9 @@ int silent_do_cmd(string *cmd, mixed|void filter, int|void silent)
 	  }
       };
 
-      if(!silent && !!Stdio.stdin->tcgetattr())
+      if(!silent &&
+	 !!Stdio.stdin->tcgetattr() &&
+	!!Stdio.stdout->tcgetattr())
       {
 	inout=RLInOut();
       }else
