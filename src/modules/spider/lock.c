@@ -93,7 +93,7 @@ mylock_t *newlock( int id )
   {
     pthread_mutexattr_t attributes;
     pthread_mutexattr_init( &attributes );
-#ifdef PTHREAD_PROCESS_SHARED
+#if defined(PTHREAD_PROCESS_SHARED) && defined(HAVE_PTHREAD_MUTEXATTR_SETPSHARED)
     pthread_mutexattr_setpshared( &attributes,  PTHREAD_PROCESS_SHARED );
 #endif
     pthread_mutex_init( &lock->lock, &attributes );
