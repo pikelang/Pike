@@ -6,7 +6,7 @@
 #define READ_BUFFER 8192
 
 #include "global.h"
-RCSID("$Id: file.c,v 1.26 1997/01/29 20:57:29 per Exp $");
+RCSID("$Id: file.c,v 1.27 1997/01/29 21:45:27 hubbe Exp $");
 #include "types.h"
 #include "interpret.h"
 #include "svalue.h"
@@ -162,6 +162,32 @@ static int close_fd(int fd)
     files[fd].open_mode = 0;
   }
   return 0;
+}
+
+void my_set_close_on_exec(int fd, int to)
+{
+  if(to)
+  {
+    files[fd].open_mode |= FILE_SET_CLOSE_ON_EXEC;
+  }else{
+    if(files[fd].open_mode & FILE_SET_CLOSE_ON_EXEC)
+      files[fd].open_mode &=~ FILE_SET_CLOSE_ON_EXEC;
+    else
+      set_close_on_exec(fd, 0);
+  }
+}
+
+void do_set_close_on_exec()
+{
+  int e;
+  for(e=0;e<MAX_OPEN_FILEDESCRIPTORS;e++)
+  {
+    if(files[e].open_mode & FILE_SET_CLOSE_ON_EXEC)
+    {
+      set_close_on_exec(e, 1);
+      files[e].open_mode &=~ FILE_SET_CLOSE_ON_EXEC;
+    }
+  }
 }
 
 /* Parse "rw" to internal flags */
@@ -405,18 +431,8 @@ static void file_write(INT32 args)
   written=0;
   str=sp[-args].u.string;
 
-/*  while(written < str->len)  Not really. The only thing this does is:
-
-  write(24, " H e d b o r < / a > < /".., 534712) = 7300
-  write(24, " f = / m l i s t . l p c".., 527412) Err#11 EAGAIN
-
-  etc.
-
-  The 'write' system call in blocking mode is quite atomous, unless a
-  signal is received. This case (signals) is handled below. /Per
-  
-  */
-  do {
+  while(written < str->len)
+  {
     int fd=FD;
     THREADS_ALLOW();
     i=write(fd, str->str + written, str->len - written);
@@ -432,13 +448,18 @@ static void file_write(INT32 args)
 	push_int(-1);
 	return;
 
-      case EINTR: continue; /* Got a signal, Retry... /Per */
+      case EINTR: continue;
       case EWOULDBLOCK: break;
       }
+      break;
+    }else{
+      written+=i;
+
+      /* Avoid extra write() */
+      if(THIS->open_mode & FILE_NONBLOCKING)
+	break;
     }
-    written=i;
-    break;
-  } while(1);
+  }
 
   if(!IS_ZERO(& THIS->write_callback))
     set_write_callback(FD, file_write_callback, 0);
@@ -763,6 +784,7 @@ static void file_set_nonblocking(INT32 args)
   case 1: file_set_read_callback(1);
   }
   set_nonblocking(FD,1);
+  THIS->open_mode |= FILE_NONBLOCKING;
 }
 
 
@@ -783,6 +805,7 @@ static void file_set_blocking(INT32 args)
     set_read_callback(FD, 0, 0);
     set_write_callback(FD, 0, 0);
     set_nonblocking(FD,0);
+    THIS->open_mode &=~ FILE_NONBLOCKING;
   }
   pop_n_elems(args);
 }
@@ -790,15 +813,15 @@ static void file_set_blocking(INT32 args)
 static void file_set_close_on_exec(INT32 args)
 {
   if(args < 0)
-    error("Too few arguments to file->set_close_on_exit()\n");
+    error("Too few arguments to file->set_close_on_exec()\n");
   if(FD <0)
     error("File not open.\n");
 
   if(IS_ZERO(sp-args))
   {
-    set_close_on_exec(FD,0);
+    my_set_close_on_exec(FD,0);
   }else{
-    set_close_on_exec(FD,1);
+    my_set_close_on_exec(FD,1);
   }
   pop_n_elems(args-1);
 }
@@ -1036,8 +1059,8 @@ static void file_pipe(INT32 args)
   {
     init_fd(inout[0],FILE_READ | FILE_WRITE);
 
-    set_close_on_exec(inout[0],1);
-    set_close_on_exec(inout[1],1);
+    my_set_close_on_exec(inout[0],1);
+    my_set_close_on_exec(inout[1],1);
     FD=inout[0];
 
     ERRNO=0;
@@ -1137,7 +1160,7 @@ static void file_dup2(INT32 args)
     return;
   }
   ERRNO=0;
-  set_close_on_exec(fd, fd > 2);
+  my_set_close_on_exec(fd, fd > 2);
   files[fd].open_mode=files[FD].open_mode;
 
   assign_svalue_no_free(& files[fd].read_callback, & THIS->read_callback);
@@ -1165,7 +1188,7 @@ static void file_dup2(INT32 args)
 
 static void file_open_socket(INT32 args)
 {
-  int fd,tmp;
+  int fd;
 
   do_close(FD, FILE_READ | FILE_WRITE);
   FD=-1;
@@ -1185,15 +1208,29 @@ static void file_open_socket(INT32 args)
     return;
   }
 
-  tmp=1;
-  setsockopt(fd,SOL_SOCKET, SO_KEEPALIVE, (char *)&tmp, sizeof(tmp));
   init_fd(fd, FILE_READ | FILE_WRITE);
-  set_close_on_exec(fd,1);
+  my_set_close_on_exec(fd,1);
   FD = fd;
   ERRNO=0;
 
   pop_n_elems(args);
   push_int(1);
+}
+
+static void file_set_keepalive(INT32 args)
+{
+  int tmp, i;
+  check_all_args("file->set_keepalive()",args, 1, T_INT);
+  tmp=sp[-args].u.integer;
+  i=setsockopt(FD,SOL_SOCKET, SO_KEEPALIVE, (char *)&tmp, sizeof(tmp));
+  if(i)
+  {
+    ERRNO=errno;
+  }else{
+    ERRNO=0;
+  }
+  pop_n_elems(args);
+  push_int(!i);
 }
 
 static void file_connect(INT32 args)
@@ -1210,7 +1247,12 @@ static void file_connect(INT32 args)
     error("Bad argument 2 to file->connect()\n");
 
   if(FD < 0)
-    error("file->connect(): File not open for connect()\n");
+  {
+    file_open_socket(0);
+    if(IS_ZERO(sp-1) || FD < 0)
+      error("file->connect(): Failed to open socket.\n");
+    pop_stack();
+  }
 
 
   get_inet_addr(&addr, sp[-args].u.string->str);
