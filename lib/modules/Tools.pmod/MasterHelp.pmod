@@ -13,7 +13,7 @@ Driver options include:
  -m <file>            : Use <file> as master object.
  -d -d#               : Increase debug (# is how much)
  -t -t#               : Increase trace level
- -x <tool>            : Execute a built in tool.
+ -x [<tool>]          : Execute a built in tool.
 
  Use --help=options to show all available options.
 ";
@@ -37,7 +37,7 @@ Driver options:
  -d -d# -d<what>      : Increase debug.
  -t -t#               : Increase trace level.
  -V <v> --compat=<v>  : Run with compatibility for version <v>.
- -x <tool>            : Execute a built in tool.
+ -x [<tool>]          : Execute a built in tool.
  --debug-without=<m>  : Prohibit the resolver to resolve mobule <m>.
  -E --preprocess=<f>  : Run only the preprocessor.
  -w --warnings        : Enable warnings
@@ -55,6 +55,37 @@ Driver options:
  -l -l#               : Increase debug level in the global optimizer.
  -rt                  : Turn on runtime type checking.
  -rT                  : Turn on #pragma strict_types for all files.
+";
+
+constant environment_help =
+#"The Pike master looks at the following environment variables:
+
+PIKE_INCLUDE_PATH  : These paths will be added to the include paths.
+PIKE_PROGRAM_PATH  : These paths will be added to the program paths.
+PIKE_MODULE_PATH   : These paths will be added to the module paths.
+
+OSTYPE             : If set to \"cygwin32\", cygwin path mangling will be used.
+
+LONG_PIKE_ERRORS   : If set, full paths will be used in errors.
+SHORT_PIKE_ERRORS  : If set, only filenames will be used in errors.
+
+PIKE_BACKTRACE_LEN : Backtraces will be limited to this length (default 200).
+";
+
+constant kladdkaka_help =
+#"Ingredients:
+  4 eggs
+  5 dl sugar
+  2 pinches salt
+  6 msk cocoa
+  200 g melted butter
+  3 dl wheat-flour
+  2 tsk vanilla sugar
+
+1. Mix everything together
+2. Pour into a greased circular form.
+3. Bake in 175 degrees C (350 degrees F) for 1 hour.
+4. Serve while it is still hot with whipped cream.
 ";
 
 string do_help(string|int what) {
