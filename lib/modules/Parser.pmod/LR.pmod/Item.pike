@@ -1,5 +1,5 @@
 /*
- * $Id: Item.pike,v 1.2 2002/05/09 20:46:49 nilsson Exp $
+ * $Id: Item.pike,v 1.3 2002/05/10 23:30:59 nilsson Exp $
  *
  * An LR(0) item
  *
@@ -12,7 +12,7 @@
 //! An LR(0) item, a partially parsed rule.
 //!
 
-import LR;
+import Parser.LR;
 
 /* constant kernel = (program)"kernel"; */
 /* constant item = (program)"item"; */
