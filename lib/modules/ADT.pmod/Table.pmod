@@ -1,5 +1,5 @@
 // Table.pmod by Fredrik Noring, 1998
-// $Id: Table.pmod,v 1.20 2001/04/27 13:34:06 grubba Exp $
+// $Id: Table.pmod,v 1.21 2001/05/10 13:09:52 grubba Exp $
 
 #pike __REAL_VERSION__
 #define TABLE_ERR(msg) throw(({ "(Table) "+msg+"\n", backtrace() }))
@@ -358,30 +358,33 @@ class table {
     return copy_value(types);
   }
 
-  //! The @[ADT.Table.table] class takes two or three arguments:
+  //!   The @[ADT.Table.table] class takes two or three arguments:
   //!
-  //! @[table] is a two-dimensional array consisting of one array of
-  //! columns per row. All rows must have the same number of columns
-  //! as specified in @[column_names].
+  //! @param table
+  //!   The first argument is a two-dimensional array consisting of
+  //!   one array of columns per row. All rows must have the same
+  //!   number of columns as specified in @[column_names].
   //!
-  //! @[column_names] is an array of column names associated with each
-  //! column in the table. References by column name are case insensitive.
-  //! The case used in @[column_names] will be used when the table is
-  //! displayed. A column can also be referred to by its position,
-  //! starting from zero.
+  //! @param column_names
+  //!   This argument is an array of column names associated with each
+  //!   column in the table. References by column name are case insensitive.
+  //!   The case used in @[column_names] will be used when the table is
+  //!   displayed. A column can also be referred to by its position,
+  //!   starting from zero.
   //!
-  //! @[column_types] is an optional array of mappings. The column type
-  //! information is only used when displaying the table. Currently, only the
-  //! keyword @tt{"type"@} is recognized. The type can be specified as
-  //! @tt{"text"@} or @tt{"num"@} (numerical). Text columns are left
-  //! adjusted, whereas numerical columns are right adjusted. If a mapping
-  //! in the array is 0 (zero), it will be assumed to be a text column.
-  //! If @[column_types] is omitted, all columns will displayed as text.
+  //! @param column_types
+  //!   This is an optional array of mappings. The column type
+  //!   information is only used when displaying the table. Currently, only the
+  //!   keyword @tt{"type"@} is recognized. The type can be specified as
+  //!   @tt{"text"@} or @tt{"num"@} (numerical). Text columns are left
+  //!   adjusted, whereas numerical columns are right adjusted. If a mapping
+  //!   in the array is 0 (zero), it will be assumed to be a text column.
+  //!   If @[column_types] is omitted, all columns will displayed as text.
   //!
-  //! See @[ADT.Table.ASCII.encode()] on how to display a table.
+  //!   See @[ADT.Table.ASCII.encode()] on how to display a table.
   //!
   //! @seealso
-  //! @[ADT.Table.ASCII.encode()]
+  //!   @[ADT.Table.ASCII.encode()]
   //!
   void create(array(array) table, array(string) column_names,
 	      array(mapping(string:string))|void column_types)
