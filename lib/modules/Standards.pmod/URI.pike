@@ -3,7 +3,7 @@
 
 // Implemented by Johan Sundström and Johan Schön.
 // Copyright (c) Roxen Internet Software 2001
-// $Id: URI.pike,v 1.6 2001/01/21 23:40:17 jhs Exp $
+// $Id: URI.pike,v 1.7 2001/01/26 14:54:31 jhs Exp $
 
 #pragma strict_types
 
@@ -308,13 +308,13 @@ void create(object(this_program)|string uri,
   reparse_uri(base_uri);
 }
 
-
 //! Assign a new value to a property of URI
 //! @param property
 //!   When any of the following properties are used, properties that
 //!   depend on them are recalculated: user, password, host, port, authority, base_uri.
 //! @param value
 //!   The value to assign to @[property]
+mixed `->=(string property, mixed value) { return `[]=(property, value); }
 mixed `[]=(string property, mixed value)
 {
   DEBUG("`[]=(%O, %O)", property, value);
@@ -345,10 +345,6 @@ mixed `[]=(string property, mixed value)
       return ::`[]=(property, value); // Set and return the new value
   }
 }
-
-//! Works similar to @[`[]=(string property, mixed value)]
-mixed `->=(string property, mixed value) { return `[]=(property, value); }
-
 
 //! When cast to string, return the URI (in a canonicalized form).
 //! When cast to mapping, return a mapping with scheme, authority, user, password, host,
