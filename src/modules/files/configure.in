@@ -1,4 +1,4 @@
-# $Id: configure.in,v 1.75 2001/06/06 10:56:14 mirar Exp $
+# $Id: configure.in,v 1.76 2001/06/06 22:51:28 grubba Exp $
 AC_INIT(file.c)
 AC_CONFIG_HEADER(file_machine.h)
 
@@ -17,7 +17,7 @@ AC_CHECK_LIB(bind, __inet_ntoa)
 AC_CHECK_LIB(socket, socket)
 
 AC_HAVE_FUNCS(getwd perror readdir_r statvfs statfs ustat lseek64 lstat \
- socketpair writev sendfile munmap madvise poll setsockopt)
+ socketpair writev sendfile munmap madvise poll setsockopt getprotobyname)
 
 AC_FUNC_MMAP
 
