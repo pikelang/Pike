@@ -3,7 +3,7 @@
 //! This module implements EXIF (Exchangeable image file format for
 //! Digital Still Cameras) 2.2 parsing.
 
-// $Id: EXIF.pmod,v 1.16 2003/01/20 17:44:01 nilsson Exp $
+// $Id: EXIF.pmod,v 1.17 2003/04/14 13:06:48 nilsson Exp $
 //  Johan Schön <js@roxen.com>, July 2001.
 //  Based on Exiftool by Robert F. Tobler <rft@cg.tuwien.ac.at>.
 //
@@ -288,8 +288,8 @@ static mapping NIKON_990_MAKERNOTE = ([
   0x000F:	({"MN_ISOSelection", 	    	0, ([]) }),
   0x0080:	({"MN_ImageAdjustment",	    	0, ([]) }),
   0x0082:	({"MN_AuxiliaryLens",	    	0, ([]) }),
-  0x0085:	({"MN_ManualFocusDistance",  	"FLOAT"}),
-  0x0086:	({"MN_DigitalZoomFactor",    	"FLOAT"}),
+  0x0085:	({"MN_ManualFocusDistance",  	"FLOAT", ([]) }),
+  0x0086:	({"MN_DigitalZoomFactor",    	"FLOAT", ([]) }),
   0x0088:	({"MN_AFFocusPosition",	    	"MAP",
 		    ([ "\00\00\00\00": "Center",
 		       "\00\01\00\00": "Top",
