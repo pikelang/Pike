@@ -1,19 +1,33 @@
 #pike __REAL_VERSION__
 
 #if constant(thread_create)
-
 constant Thread=__builtin.thread_id;
-constant MutexKey=__builtin.mutex_key;
-constant Mutex=__builtin.mutex;
-constant Condition=__builtin.condition;
-constant _Disabled=__builtin.threads_disabled;
-constant Local=__builtin.thread_local;
 
-constant thread_create = predef::thread_create;
-constant this_thread = predef::this_thread;
-constant all_threads = predef::all_threads;
+// The reason for this inherit is rather simple.
+// It's now possible to write Thread Thread( ... );
+//
+// This makes the interface look somewhat more thought-through.
+//
+inherit Thread;
 
-class Fifo {
+optional Thread `()( mixed f, mixed ... args )
+{
+  return thread_create( f, @args );
+}
+
+optional constant MutexKey=__builtin.mutex_key;
+optional constant Mutex=__builtin.mutex;
+optional constant Condition=__builtin.condition;
+optional constant _Disabled=__builtin.threads_disabled;
+optional constant Local=__builtin.thread_local;
+
+optional constant thread_create = predef::thread_create;
+optional constant this_thread = predef::this_thread;
+optional constant all_threads = predef::all_threads;
+
+
+
+optional class Fifo {
   inherit Condition : r_cond;
   inherit Condition : w_cond;
   inherit Mutex : lock;
@@ -81,14 +95,25 @@ class Fifo {
     key = 0;
   }
 
-  void create(int|void size)
+  static void create(int|void size)
   {
     write_tres=0;
     buffer=allocate(read_tres=size || 128);
   }
+
+  static string _sprintf( int f )
+  {
+    switch( f )
+    {
+      case 't':
+	return "Thread.Fifo";
+      case 'O':
+	return sprintf( "%t(%d / %d)", this_object(), size(), read_tres );
+    }
+  }
 };
 
-class Queue {
+optional class Queue {
   inherit Condition : r_cond;
   inherit Mutex : lock;
   
@@ -123,11 +148,22 @@ class Queue {
     key=0; // Must free this one _before_ the signal...
     r_cond::signal();
   }
+
+  static string _sprintf( int f )
+  {
+    switch( f )
+    {
+      case 't':
+	return "Thread.Queue";
+      case 'O':
+	return sprintf( "%t(%d)", this_object(), size() );
+    }
+  }
 }
 
 
 
-class Farm
+optional class Farm
 {
   class Result
   {
@@ -174,6 +210,18 @@ class Farm
       value = what;
       if( done_cb )
         done_cb( what, 0 );
+    }
+
+
+    static string _sprintf( int f )
+    {
+      switch( f )
+      {
+	case 't':
+	  return "Thread.Farm().Result";
+	case 'O':
+	  return sprintf( "%t(%d %O)", this_object(), ready, value );
+      }
     }
   }
 
@@ -247,9 +295,21 @@ class Farm
               +"\n\n");
     }
 
-    void create()
+    static void create()
     {
       thread = thread_create( handler );
+    }
+
+
+    static string _sprintf( int f )
+    {
+      switch( f )
+      {
+	case 't':
+	  return "Thread.Farm().Handler";
+	case 'O':
+	  return sprintf( "%t(%f / %d,  %d)", total_time, max_time,handled );
+      }
     }
   }
 
@@ -288,12 +348,8 @@ class Farm
       aquire_thread()->run( q[1], q[0] );
   }
 
-  static class ValueAdjuster
+  static class ValueAdjuster( object r, object r2, int i, mapping v )
   {
-    object r, r2;
-    mapping v;
-    int i;
-
     void go(mixed vn, int err)
     {
       ([array]r->value)[ i ] = vn;
@@ -302,10 +358,6 @@ class Farm
       if( !--v->num_left )
         r->provide( r->value );
       destruct();
-    }
-    void create( object _1,object _2,int _3,mapping _4 )
-    {
-      r = _1; r2 = _2; i=_3; v=_4;
     }
   }
 
@@ -380,10 +432,23 @@ class Farm
     return res;
   }
 
-  void create()
+
+  static string _sprintf( int f )
+  {
+    switch( f )
+    {
+      case 't':
+	return "Thread.Farm";
+      case 'O':
+	return sprintf( "%t(/* %s */)", this_object, debug_status() );
+    }
+  }
+
+
+
+  static void create()
   {
     thread_create( dispatcher );
   }
 }
-
 #endif /* constant(thread_create) */
