@@ -11,6 +11,10 @@ class Layer
   int xoffset, yoffset;
   int width, height;
 
+  int mask_flags;
+  int mask_xoffset, mask_yoffset;
+  int mask_width, mask_height;
+
 
   Layer copy()
   {
@@ -56,7 +60,18 @@ Layer decode_layer(mapping layer, mapping i)
   l->mode = layer->mode;
   l->flags = layer->flags;
 
+  l->mask_width = layer->mask_right-layer->mask_left;
+  l->mask_height = layer->mask_bottom-layer->mask_top;
+  l->mask_xoffset = layer->mask_left;
+  l->mask_yoffset = layer->mask_top;
+
+  if( !(l->mask_flags & 1 ) ) // pos relative to layer
+  {
+    l->mask_xoffset -= l->xoffset;
+    l->mask_yoffset -= l->yoffset;
+  }
   array colors;
+  int inverted;
   switch(i->mode)
   {
    case Greyscale:
@@ -70,35 +85,67 @@ Layer decode_layer(mapping layer, mapping i)
                  ({0,0,255,}),
                }) + ({ 255,255,255 }) * 24;
      break;
+   case CMYK:
+     inverted = 1;
+     colors = ({ ({255,0,0,}),
+                 ({0,255,0,}),
+                 ({0,0,255,}),
+               }) + ({ 255,255,255 }) * 24;
+     break;
    case Indexed:
      use_cmap = 1;
-     error("Tell per to fix colormap support\n");
      break;
    default:
      werror("Unsupported mode (for now), using greyscale\n");
-     colors = ({
-       255,255,255
-     })*24;
+     colors = ({ 255,255,255 })*24;
      break;
   }
   foreach(layer->channels, mapping c)
   {
-    object tmp =___decode_image_channel(l->width,l->height,c->data);
-       
+    object tmp;
+    if( c->id != -2)
+      tmp = ___decode_image_channel(l->width, l->height, c->data);
+    else
+      tmp = ___decode_image_channel(l->mask_width,l->mask_height,c->data);
+
     switch(c->id)
     {
      default:
-       l->image->paste_alpha_color( tmp, @colors[c->id%24] );
+       if(!use_cmap)
+       {
+         if(inverted)
+           l->image -= tmp*colors[c->id%sizeof(colors)];
+         else
+           l->image += tmp*colors[c->id%sizeof(colors)];
+       } else {
+         __apply_cmap( tmp, i->color_data );
+         l->image = tmp;
+       }
        break;
      case -1: /* alpha */
-       l->alpha = tmp;
-       break;
-     case -2: /* user mask */
        if(!l->alpha)
          l->alpha = tmp;
        else
          l->alpha *= tmp;
        break;
+     case -2: /* user mask */
+       if(!(l->mask_flags & 2 )) /* layer mask disabled */
+       {
+         array pad_color = ({255,255,255});
+         if( (l->mask_flags & 4 ) ) /* invert mask */
+           tmp = tmp->invert();
+
+         tmp = tmp->copy( -l->mask_xoffset, -l->mask_yoffset, 
+                          l->image->xsize()-1, l->image->ysize()-1,
+                          @pad_color )
+           ->copy(0,0,l->image->xsize()-1,l->image->ysize()-1,
+                  @pad_color);
+         if(!l->alpha)
+           l->alpha = tmp;
+         else
+           l->alpha *= tmp;
+         break;
+       }
     }
   }
   return l;
@@ -137,11 +184,12 @@ array(object) decode_background( mapping data, array bg )
   object img, alpha;
   if( !bg )
     alpha = Image.image(data->width, data->height);
-
-//   if( data->image_data )
-//     img = ___decode_image_data(data->width, data->height, 
-//                                data->channels, data->image_data);
-//   else
+  if( data->image_data )
+    img = ___decode_image_data(data->width,       data->height, 
+                               data->channels,    data->mode,
+                               data->compression, data->image_data,
+                               data->color_data);
+  else
     img = Image.image( data->width, data->height,
                        @((bg&&(array)bg)||({255,255,255})));
   return ({ img, alpha });
@@ -150,6 +198,7 @@ array(object) decode_background( mapping data, array bg )
 mapping _decode( string|mapping what, mapping|void opts )
 {
   mapping data;
+mixed e =catch{
   if(!opts) opts = ([]);
   if(mappingp(what))
     data = what;
@@ -162,7 +211,7 @@ mapping _decode( string|mapping what, mapping|void opts )
 
   foreach(reverse(data->layers), object l)
   {
-//     if((l->flags & LAYER_FLAG_VISIBLE)|| opts->draw_all_layers)
+    if((l->flags & LAYER_FLAG_VISIBLE) || opts->draw_all_layers)
     {
       Layer h = l->get_opaqued( l->opacity );
 
@@ -171,7 +220,6 @@ mapping _decode( string|mapping what, mapping|void opts )
       case "norm":
         PASTE_ALPHA(h->image,h->alpha);
         break;
-
 
       case "mul ":
         object oi = IMG_SLICE(l,h);
@@ -208,4 +256,6 @@ mapping _decode( string|mapping what, mapping|void opts )
     "image":img,
     "alpha":alpha,
   ]);
+};
+ werror(describe_backtrace(e));
 }

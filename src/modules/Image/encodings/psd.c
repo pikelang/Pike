@@ -1,5 +1,5 @@
 #include "global.h"
-RCSID("$Id: psd.c,v 1.4 1999/04/15 20:31:49 per Exp $");
+RCSID("$Id: psd.c,v 1.5 1999/04/17 01:25:48 per Exp $");
 
 #include "config.h"
 
@@ -162,6 +162,14 @@ struct layer
   unsigned int left;
   unsigned int right;
   unsigned int bottom;
+
+  unsigned int mask_top;
+  unsigned int mask_left;
+  unsigned int mask_right;
+  unsigned int mask_bottom;
+  unsigned int mask_default_color;
+  unsigned int mask_flags;
+
   unsigned int opacity;
   unsigned int num_channels;
   unsigned int clipping;
@@ -220,6 +228,21 @@ static void decode_layers_and_masks( struct psd_image *dst,
     layer->flags = read_uchar( src );
     read_uchar( src );
     layer->extra_data = read_string( src );
+    if(layer->extra_data.len)
+    {
+      struct buffer tmp = layer->extra_data;
+      struct buffer tmp2;
+      tmp2 = read_string( &tmp );
+      if( tmp2.len )
+      {
+        layer->mask_top    = read_int( &tmp2 );
+        layer->mask_left   = read_int( &tmp2 );
+        layer->mask_bottom = read_int( &tmp2 );
+        layer->mask_right  = read_int( &tmp2 );
+        layer->mask_default_color = read_uchar( &tmp2 );
+        layer->mask_flags = read_uchar( &tmp2 );
+      }
+    }
   }
   while(layer->next)
     layer = layer->next;
@@ -284,25 +307,37 @@ packbitsdecode(struct buffer src,
 
 static void f_decode_packbits_encoded(INT32 args)
 {
-  struct pike_string *src = sp[-3].u.string;
-  int nelems = sp[-2].u.integer;
-  int width = sp[-1].u.integer;
+  struct pike_string *src = sp[-args].u.string;
+  int nelems = sp[-args+1].u.integer;
+  int width = sp[-args+2].u.integer;
   struct pike_string *dest;
+  int compression = 0;
   struct buffer b, ob, d;
-  if(args != 3)
-    error("internal argument error 2");
-  if(sp[-3].type != T_STRING)
+  if(sp[-args].type != T_STRING)
     error("internal argument error");
-  pop_n_elems(2);
 
-  if( src->str[0] )
-    error("Impossible compression (%d)!\n", (src->str[0]<<8|src->str[1]) );
-  b.str = src->str+2;
-  b.len = src->len-2;
+
+  if(args == 5)
+  {
+    nelems *= sp[-args+3].u.integer;
+    compression = sp[-args+4].u.integer;
+    b.str = src->str;
+    b.len = src->len;
+    pop_n_elems(4);
+  } else if(args == 3) {
+    if( src->str[0] )
+      error("Impossible compression (%d)!\n", (src->str[0]<<8|src->str[1]) );
+    compression = src->str[1];
+    b.str = src->str+2;
+    b.len = src->len-2;
+    pop_n_elems(2);
+  }
+
   ob = b;
   ob.str += nelems*2;
   ob.len -= nelems*2;
-  switch(src->str[1])
+
+  switch(compression)
   {
    case 1:
      push_text("");
@@ -316,8 +351,7 @@ static void f_decode_packbits_encoded(INT32 args)
      }
      break;
    case 0:
-     push_string( make_shared_binary_string(((char *)src->str)+2,
-                                            src->len-2 ) );
+     push_string( make_shared_binary_string(b.str,b.len));
      break;
    default:
      error("Impossible compression (%d)!\n", src->str[1]);
@@ -359,34 +393,84 @@ static void f_decode_image_channel( INT32 args )
 
 
 
-/* static void f_decode_image_data( INT32 args ) */
-/* { */
-/*   INT32 w, h, c, d; */
-/*   int y; */
-/*   struct pike_string *s; */
-/*   struct object *io; */
-/*   unsigned char *source; */
-/*   rgb_group *dst; */
-/*   get_all_args( "_decode_image_channel",args, "%d%d%S", &w,&h,&s); */
+static void f_decode_image_data( INT32 args )
+{
+  INT32 w, h, c, d, m;
+  int y;
+  struct pike_string *s, *ct;
+  struct object *io;
+  unsigned char *source, *source2, *source3, *source4;
+  rgb_group *dst;
+  get_all_args( "_decode_image_data",args, "%d%d%d%d%d%S%S", 
+                &w,&h,&d,&m,&c,&s,&ct);
 
-/*   ref_push_string( s ); */
-/*   push_int( h ); */
-/*   push_int( w ); */
-/*   f_decode_packbits_encoded( 3 ); */
-/*   s = sp[-1].u.string; */
-/*   stack_swap(); */
-/*   pop_stack(); */
-/*   if(s->len < w*h) */
-/*     error("Not enough data in string for this channel\n"); */
-/*   source = s->str; */
-/*   push_int( w ); push_int( h ); */
-/*   io = clone_object( image_program, 2 ); */
-/*   dst = ((struct image *)get_storage(io,image_program))->img; */
-/*   for(y=0; y<w*h; y++) */
-/*     dst->r = dst->g = (dst++)->b = *(source++); */
-/*   pop_n_elems(args); */
-/*   push_object( io ); */
-/* } */
+  if(!ct->len) ct = NULL;
+
+  ref_push_string( s );
+  push_int( h );
+  push_int( w );
+  push_int( d );
+  push_int( c );
+  f_decode_packbits_encoded( 5 );
+  s = sp[-1].u.string;
+  stack_swap();
+  pop_stack();
+  if(s->len < w*h*d)
+    error("Not enough data in string for this channel\n");
+  source = s->str;
+  source2 = s->str+w*h;
+  source3 = s->str+w*h*2;
+  source4 = s->str+w*h*3;
+  push_int( w ); push_int( h );
+  io = clone_object( image_program, 2 );
+  dst = ((struct image *)get_storage(io,image_program))->img;
+  for(y=0; y<w*h; y++)
+  {
+    switch( d )
+    {
+     case 4:
+       /* cmyk.. */
+       dst->r = dst->g = dst->b = 255;
+       dst->r -= *(source++);
+       dst->g -= *(source2++);
+       dst->b -= *(source3++);
+       if(dst->r > *source4)
+         dst->r -= *source4;
+       else
+         dst->r = 0;
+       if(dst->g > *source4)
+         dst->g -= *source4;
+       else
+         dst->g = 0;
+       if(dst->b > *source4)
+         dst->b -= *source4;
+       else
+         dst->b = 0;
+       source4++;
+       break;
+     case 3:
+       dst->r = *(source++);
+       dst->g = *(source2++);
+       (dst++)->b = *(source3++);
+       break;
+     case 2:
+     case 1:
+       if(ct)
+       {
+         dst->r = ct->str[*source];
+         dst->g = ct->str[*source+256];
+         dst->b = ct->str[*source+256*2];
+         *source++;
+         *dst++;
+       }
+       else
+         dst->r = dst->g = (dst++)->b = *(source++);
+       break;
+    }
+  }
+  pop_n_elems(args);
+  push_object( io );
+}
 
 
 
@@ -437,6 +521,11 @@ void push_layer( struct layer  *l)
   ref_push_string( s_left );          push_int( l->left );
   ref_push_string( s_right );         push_int( l->right );
   ref_push_string( s_bottom );        push_int( l->bottom );
+  ref_push_string( s_mask_top );      push_int( l->mask_top );
+  ref_push_string( s_mask_left );     push_int( l->mask_left );
+  ref_push_string( s_mask_right );    push_int( l->mask_right );
+  ref_push_string( s_mask_bottom );   push_int( l->mask_bottom );
+  ref_push_string( s_mask_flags );    push_int( l->mask_flags );
   ref_push_string( s_opacity );       push_int( l->opacity );
   ref_push_string( s_clipping );      push_int( l->clipping );
   ref_push_string( s_flags );         push_int( l->flags );
@@ -509,6 +598,33 @@ static void image_f_psd___decode( INT32 args )
   }
 }
 
+static void f_apply_cmap( INT32 args )
+{
+  struct object *io;
+  struct image *i;
+  rgb_group *d;
+  struct pike_string *cmap;
+  int n;
+  get_all_args( "apply_cmap", args, "%o%S", &io, &cmap );
+  if(cmap->len < 256*3)
+    error("Invalid colormap resource\n");
+  if(!(i = (struct image *)get_storage( io, image_program )))
+    error("Invalid image object\n");
+  n = i->xsize * i->ysize;
+  d = i->img;
+  THREADS_ALLOW();
+  while(n--)
+  {
+    int i = d->g;
+    d->r = cmap->str[i];
+    d->g = cmap->str[i+256];
+    d->b = cmap->str[i+512];
+  }
+  THREADS_DISALLOW();
+  pop_n_elems(args);
+  push_int(0);
+}
+
 static struct program *image_encoding_psd_program=NULL;
 void init_image_psd()
 {
@@ -517,8 +633,9 @@ void init_image_psd()
                 "function(string:mapping)", 0);
   add_function( "___decode_image_channel", f_decode_image_channel, 
                 "mixed", 0);
-/*   add_function( "___decode_image_data", f_decode_image_data,  */
-/*                 "mixed", 0); */
+  add_function( "___decode_image_data", f_decode_image_data, 
+                "mixed", 0);
+  add_function( "__apply_cmap", f_apply_cmap, "mixed", 0);
 
   add_integer_constant("Bitmap" , Bitmap, 0 );
   add_integer_constant("Greyscale" , Greyscale, 0 );
