@@ -4,7 +4,7 @@
 ||| See the files COPYING and DISCLAIMER for more information.
 \*/
 #include "global.h"
-RCSID("$Id: interpret.c,v 1.15 1996/12/03 21:41:18 hubbe Exp $");
+RCSID("$Id: interpret.c,v 1.16 1996/12/05 03:23:48 per Exp $");
 #include "interpret.h"
 #include "object.h"
 #include "program.h"
@@ -192,7 +192,10 @@ void lvalue_to_svalue_no_free(struct svalue *to,struct svalue *lval)
     break;
     
   default:
-    error("Indexing a basic type.\n");
+   if(IS_ZERO(lval))
+     error("Indexing the NULL value.\n"); /* Per */
+   else
+     error("Indexing a basic type.\n");
   }
 }
 
@@ -228,7 +231,10 @@ void assign_lvalue(struct svalue *lval,struct svalue *from)
     break;
     
   default:
-    error("Indexing a basic type.\n");
+   if(IS_ZERO(lval))
+     error("Indexing the NULL value.\n"); /* Per */
+   else
+     error("Indexing a basic type.\n");
   }
 }
 
@@ -256,7 +262,10 @@ union anything *get_pointer_if_this_type(struct svalue *lval, TYPE_T t)
   case T_MULTISET: return 0;
 
   default:
-    error("Indexing a basic type.\n");
+    if(IS_ZERO(lval))
+      error("Indexing the NULL value.\n"); /* Per */
+    else
+      error("Indexing a basic type.\n");
     return 0;
   }
 }
