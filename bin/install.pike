@@ -576,7 +576,7 @@ done
 		   "PIKE_PROGRAM_PATH=\n"
 		   "PIKE_INCLUDE_PATH=lib/include\n"
 		   "export PIKE_MODULE_PATH PIKE_INCLUDE_PATH PIKE_PROGRAM_PATH\n"
-		   "( cd "+export_base_name+".dir\n"
+		   "( cd '"+export_base_name+".dir'\n"
 		   "  eval \"build/pike -mbuild/master.pike "
 		                "\"$INSTALL_SCRIPT\" \\\n"
 		   "  TMP_LIBDIR=\"build/lib\"\\\n"
@@ -588,7 +588,7 @@ done
 		   "  PIKE_MODULE_RELOC=\""+vars->PIKE_MODULE_RELOC+"\"\\\n"
 		   "  $ARGS\"\n"
 		   ")\n"
-		   "rm -rf "+export_base_name+".dir "+tmpname+".x\n"
+		   "rm -rf '"+export_base_name+".dir' "+tmpname+".x\n"
     );
   chmod(tmpname+".x",0755);
   string script=sprintf("#!/bin/sh\n"
