@@ -1,10 +1,11 @@
 usr/lib/@PIKE@/@VERSION@/modules/Ssleay.so
 usr/lib/@PIKE@/@VERSION@/modules/modules/*Java*
 usr/lib/@PIKE@/@VERSION@/modules/include/msql.h
-usr/lib/@PIKE@/@VERSION@/modules/modules/Msql.so
-usr/lib/@PIKE@/@VERSION@/modules/modules/Sql.pmod/msql.pike
-usr/lib/@PIKE@/@VERSION@/modules/modules/PDF.so
-usr/lib/@PIKE@/@VERSION@/modules/modules/_Ffmpeg.so
+usr/lib/@PIKE@/@VERSION@/modules/Msql.so
+usr/lib/@PIKE@/@VERSION@/modules/Sql.pmod/msql.pike
+usr/lib/@PIKE@/@VERSION@/modules/PDF.so
+usr/lib/@PIKE@/@VERSION@/modules/_Ffmpeg.so
+usr/lib/@PIKE@/@VERSION@/modules/sybase.so
 usr/include/pike/fixdepends.sh
 usr/include/pike/install_module
 usr/include/pike/mktestsuite
