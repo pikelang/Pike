@@ -1,4 +1,4 @@
-// $Id: module.pmod,v 1.186 2003/10/24 19:07:29 mast Exp $
+// $Id: module.pmod,v 1.187 2003/10/29 18:55:57 mast Exp $
 #pike __REAL_VERSION__
 
 inherit files;
@@ -85,9 +85,20 @@ class BlockFile
   int tell();
 }
 
-//! This is the basic I/O object, it provides socket communication as well
-//! as file access. It does not buffer reads and writes or provide line-by-line
-//! reading, that is done with @[Stdio.FILE] object.
+//! This is the basic I/O object, it provides socket and pipe
+//! communication as well as file access. It does not buffer reads and
+//! writes or provide line-by-line reading, that is done with
+//! @[Stdio.FILE] object.
+//!
+//! @note
+//! The file or stream will normally be closed when this object is
+//! destructed (unless there are more objects that refer to the same
+//! file through use of @[assign] or @[dup]). Objects do not contain
+//! cyclic references in themselves, so they will be destructed timely
+//! when they run out of references.
+//!
+//! @seealso
+//! @[Stdio.FILE]
 class File
 {
   optional inherit Fd_ref;
@@ -410,12 +421,15 @@ class File
   //!   The socket may be opened with @[open_socket()] ahead of
   //!   the call to this function, but it is not required.
   //!
-  //!   For @[callback] to be called, the backend must be active (ie
-  //!   @[main()] must have returned @expr{-1@}, or @[Pike.DefaultBackend]
-  //!   get called in some other way).
+  //! @note
+  //!   This object is put in callback mode by this function. For
+  //!   @[callback] to be called, the backend must be active. See e.g.
+  //!   @[set_read_callback] for more details about backends and
+  //!   callback mode.
   //!
-  //!   The socket will be in non-blocking state if @expr{1@} has been
-  //!   returned, and any non-blocking callbacks will be cleared.
+  //! @note
+  //!   The socket will be in nonblocking state if the connection is
+  //!   successful, and any callbacks will be cleared.
   //!
   //! @seealso
   //!   @[connect()], @[open_socket()], @[set_nonblocking()]
@@ -745,52 +759,51 @@ class File
 ** 
 */
 
+    if (!errno()) {
 #if 0
-    if (!(::mode() & PROP_IS_NONBLOCKING))
-      error ("Read callback called on blocking socket!\n"
-	     "Callbacks: %O, %O\n"
-	     "Id: %O\n",
-	     ___read_callback,
-	     ___close_callback,
-	     ___id);
+      if (!(::mode() & PROP_IS_NONBLOCKING))
+	error ("Read callback called on blocking socket!\n"
+	       "Callbacks: %O, %O\n"
+	       "Id: %O\n",
+	       ___read_callback,
+	       ___close_callback,
+	       ___id);
 #endif /* 0 */
 
 #if !defined(__NT__)
-    if (peek_file_before_read_callback)
-       if (!::peek()) 
-       {
+      if (peek_file_before_read_callback)
+	if (!::peek()) 
+	{
 	  ::read(0,1);
 	  return; // nothing to read
-       }
+	}
 #endif
 
 #if defined(__STDIO_DEBUG) && !defined(__NT__)
-    if(!::peek())
-      error( "Read callback with no data to read!\n" );
+      if(!::peek())
+	error( "Read callback with no data to read!\n" );
 #endif
 
-    string s=::read(8192,1);
-    if(s)
-    {
-      if(sizeof(s))
+      if(string s=::read(8192,1))
       {
-        ___read_callback(___id, s);
-        return;
-      }
-    }else{
-      switch(errno())
-      {
-#if constant(System.EINTR)
-         case System.EINTR:
-#endif
-
+	if(sizeof(s))
+	{
+	  ___read_callback(___id, s);
+	  return;
+	}
+      }else{
 #if constant(System.EWOULDBLOCK)
-	 case System.EWOULDBLOCK:
+	if (errno() == System.EWOULDBLOCK) {
+#if 0
+	  // Why this? Callbacks aren't single-shot. /mast
+	  ::set_read_callback(__stdio_read_callback);
 #endif
-	   ::set_read_callback(__stdio_read_callback);
-           return;
+	  return;
+	}
+#endif
       }
     }
+
     ::set_read_callback(0);
     if (___close_callback) {
       ___close_callback(___id);
@@ -803,34 +816,28 @@ class File
     if (!(::mode() & PROP_IS_NONBLOCKING)) ::set_nonblocking();
 #endif /* 0 */
 
-    string s=::read(0, 1);
-    if(!s)
-    {
-      switch(errno())
-      {
-#if constant(System.EINTR)
-         case System.EINTR:
-#endif
-
-#if constant(System.EWOULDBLOCK)
-	 case System.EWOULDBLOCK:
-#endif
-	   ::set_read_callback(__stdio_close_callback);
-           return;
-      }
-    } else {
+    if (!errno() && read (0, 1)) {
       // There's data to read...
+      // FIXME: This doesn't work well since the close callback might
+      // very well be called sometime later, due to an error if
+      // nothing else. What we really need is a special error callback
+      // from the backend. /mast
       ::set_read_callback(0);
       ___close_callback = 0;
-      return;
     }
-    ::set_read_callback(0);
-    if (___close_callback) {
-      ___close_callback(___id);
+    else {
+      ::set_read_callback(0);
+      if (___close_callback) {
+	___close_callback(___id);
+      }
     }
   }
 
-  static void __stdio_write_callback() { ___write_callback(___id); }
+  static void __stdio_write_callback()
+  {
+    if (!errno())
+      ___write_callback(___id);
+  }
 
   static void __stdio_read_oob_callback()
   {
@@ -841,6 +848,8 @@ class File
     }else{
       ::set_read_oob_callback(0);
       if (___close_callback) {
+	// Why this? The oob callbacks doesn't get called at eof or
+	// errors, do they? /mast
 	___close_callback(___id);
       }
     }
@@ -851,56 +860,128 @@ class File
 #define SET(X,Y) ::set_##X ((___##X = (Y)) && __stdio_##X)
 #define _SET(X,Y) _fd->_##X=(___##X = (Y)) && __stdio_##X
 
-#define CBFUNC(X)					\
-  void set_##X (mixed l##X)				\
+#define CBFUNC(TYPE, X)					\
+  void set_##X (TYPE l##X)				\
   {							\
     CHECK_OPEN();                                       \
     SET( X , l##X );					\
   }							\
 							\
-  mixed query_##X ()					\
+  TYPE query_##X ()					\
   {							\
     return ___##X;					\
   }
 
-  //! @decl void set_read_callback(function(mixed, string:int) read_callback)
+  //! @decl void set_read_callback(function(mixed, string:int) read_cb)
+  //! @decl void set_write_callback(function(mixed:int) write_cb)
+  //! @decl void set_read_oob_callback(function(mixed, string:int) read_oob_cb)
+  //! @decl void set_write_oob_callback(function(mixed:int) write_oob_cb)
+  //! @decl void set_close_callback(function(mixed:int) close_cb)
   //!
-  //! This function sets the @tt{read_callback@} for the file. The
-  //! @tt{read_callback@} is called whenever there is data to read from
-  //! the file.
+  //! These functions set the various callbacks, which will be called
+  //! when various events occur on the stream. A zero as argument will
+  //! remove a callback.
   //!
-  //! The callback is called with the @tt{id@} of the file as
-  //! first argument and some or all of its data as second.
+  //! A @[Pike.Backend] object is responsible for calling the
+  //! callbacks. It requires a thread to be waiting in it to execute
+  //! the calls. That means that only one of the callbacks will be
+  //! running at a time, so you don't need mutexes between them.
   //!
-  //! If the callback returns @expr{-1@}, no other call out or
-  //! callback will be called by the backend in that round. I.e. the
-  //! caller of the backend will get control back right away. For the
-  //! main backend that means it will immediately start another round
-  //! and check files and call outs anew.
+  //! Unless you've specified otherwise with the @[set_backend]
+  //! function, the default backend @[Pike.DefaultBackend] will be
+  //! used. It's normally activated by returning @expr{-1@} from the
+  //! @tt{main@} function and will then execute in the main thread.
+  //!
+  //! @ul
+  //! @item
+  //!   When data arrives on the stream, @[read_cb] will be called with
+  //!   some or all of that data as the second argument.
+  //! @item
+  //!   When the stream has buffer space over for writing, @[write_cb]
+  //!   will be called so that you can write more data to it.
+  //! @item
+  //!   When out-of-band data arrives on the stream, @[read_oob_cb]
+  //!   will be called with some or all of that data as the second
+  //!   argument.
+  //! @item
+  //!   When the stream allows out-of-band data to be sent,
+  //!   @[write_oob_cb] will be called so that you can write more
+  //!   out-of-band data to it.
+  //! @item
+  //!   When the stream has been shut down, either due to an error or
+  //!   a close from the other end, @[close_cb] will be called.
+  //!   @[errno] will return the error that has occurred or zero in
+  //!   the case of a normal close. Note that @[close_cb] will not be
+  //!   called for a local close, neither by a call to @[close] or by
+  //!   destructing this object.
+  //! @endul
+  //!
+  //! All callbacks will receive the @tt{id@} set by @[set_id] as
+  //! first argument.
+  //!
+  //! If a callback returns @expr{-1@}, no other callback or call out
+  //! will be called by the backend in that round. I.e. the caller of
+  //! the backend will get control back right away. For the default
+  //! backend that means it will immediately start another round and
+  //! check files and call outs anew.
   //!
   //! @note
-  //!   This function does not set the file nonblocking.
+  //!   These functions do not set the file nonblocking.
   //!
   //! @note
-  //!   The @tt{read_callback@} can also be set by calling
-  //!   @[set_nonblocking()].
+  //!   Callbacks are also set by @[set_nonblocking()].
+  //!
+  //! @note
+  //! Installing callbacks means that you will start doing I/O on the
+  //! stream from the thread running the backend. If you are running
+  //! these set functions from another thread you must be prepared
+  //! that the callbacks can be called immediately by the backend
+  //! thread, so it might not be safe to continue using the stream in
+  //! this thread.
+  //! 
+  //! Because of that, it's useful to talk about "callback mode" when
+  //! any callback is installed. In callback mode the stream should be
+  //! seen as "bound" to the backend thread. For instance, it's only
+  //! the backend thread that reliably can end callback mode before
+  //! the stream is "handed over" to another thread.
+  //!
+  //! @note
+  //! Callback mode has nothing to do with nonblocking mode - although
+  //! the two often are used together they don't have to be.
+  //!
+  //! @note
+  //! The file object will stay referenced as long as callbacks are
+  //! installed.
+  //!
+  //! @bugs
+  //! Setting a close callback without a read callback currently only
+  //! works when there's no risk of getting more data on the stream.
+  //! Otherwise the close callback will be silently deregistered if
+  //! data arrives.
   //!
   //! @seealso
-  //! @[set_nonblocking()], @[read()],
-  //! @[query_read_callback()], @[set_write_callback()],
-  //! @[set_close_callback()], @[set_read_oob_callback]
-  //! @[set_write_oob_callback()], @[set_id()]
+  //! @[set_nonblocking()], @[set_id()], @[set_backend],
+  //! @[query_read_callback], @[query_write_callback],
+  //! @[query_read_oob_callback], @[query_write_oob_callback],
+  //! @[query_close_callback]
 
   //! @decl function(mixed, string:int) query_read_callback()
+  //! @decl function(mixed:int) query_write_callback()
+  //! @decl function(mixed, string:int) query_read_oob_callback()
+  //! @decl function(mixed:int) query_write_oob_callback()
+  //! @decl function(mixed:int) query_close_callback()
   //!
-  //! This function returns the @tt{read_callback@}, which has been set with
-  //! @[set_nonblocking()] or @[set_read_callback()].
+  //! These functions return the currently installed callbacks for the
+  //! respective events.
   //!
   //! @seealso
-  //! @[set_nonblocking()], @[set_read_callback]
+  //! @[set_nonblocking()], @[set_read_callback],
+  //! @[set_write_callback], @[set_read_oob_callback],
+  //! @[set_write_oob_callback], @[set_close_callback]
 
   //! @ignore
-  void set_read_callback(mixed read_cb)
+
+  void set_read_callback(function(void|mixed,void|string:void|mixed) read_cb)
   {
     CHECK_OPEN();
     ::set_read_callback(((___read_callback = read_cb) &&
@@ -908,102 +989,15 @@ class File
 			(___close_callback && __stdio_close_callback));
   }
 
-  mixed query_read_callback()
+  function(void|mixed,void|string:void|mixed) query_read_callback()
   {
     return ___read_callback;
   }
-  //! @endignore
 
-  //! @decl void set_write_callback(function(mixed:void) write_cb)
-  //!
-  //! This function sets the @tt{write_callback@} for the file. The
-  //! @tt{write_callback@} is called whenever there is buffer space
-  //! available to write to for the file.
-  //!
-  //! The callback is called with the @tt{id@} of the file as argument.
-  //!
-  //! If the callback returns @expr{-1@}, no other call out or
-  //! callback will be called by the backend in that round. I.e. the
-  //! caller of the backend will get control back right away. For the
-  //! main backend that means it will immediately start another round
-  //! and check files and call outs anew.
-  //!
-  //! @note
-  //! This function does not set the file nonblocking.
-  //!
-  //! @note
-  //!   The @tt{write_callback@} can also be set by calling
-  //!   @[set_nonblocking()].
-  //!
-  //! @seealso
-  //! @[set_nonblocking()], @[write()],
-  //! @[query_write_callback()], @[set_read_callback()],
-  //! @[set_close_callback()], @[set_read_oob_callback]
-  //! @[set_write_oob_callback()], @[set_id()]
+  CBFUNC(function(void|mixed:void|mixed), write_callback)
+  CBFUNC(function(void|mixed,void|string:void|mixed), read_oob_callback)
+  CBFUNC(function(void|mixed:void|mixed), write_oob_callback)
 
-  //! @decl function(mixed:int) query_write_callback()
-  //!
-  //! This function returns the @tt{write_callback@}, which has been set with
-  //! @[set_nonblocking()] or @[set_write_callback()].
-  //!
-  //! @seealso
-  //! @[set_nonblocking()], @[set_write_callback]
-
-  //! @ignore
-  CBFUNC(write_callback)
-  //! @endignore
-
-  //! @decl void set_read_oob_callback(function(mixed, string:int) read_oob_cb)
-  //!
-  //! @fixme
-  //!   Document this function.
-
-  //! @decl function(mixed, string:int) query_read_oob_callback()
-  //!
-  //! @fixme
-  //!   Document this function.
-
-  //! @decl void set_write_oob_callback(function(mixed:int) write_oob_cb)
-  //!
-  //! @fixme
-  //!   Document this function.
-
-  //! @decl function(mixed:int) query_write_oob_callback()
-  //!
-  //! @fixme
-  //!   Document this function.
-
-  //! @ignore
-  CBFUNC(read_oob_callback)
-  CBFUNC(write_oob_callback)
-  //! @endignore
-
-  //! @decl void set_close_callback(function(mixed:int) close_cb)
-  //!
-  //! This function sets the @tt{close_callback@} for the file. The
-  //! @tt{close callback@} is called when the remote end of a socket or
-  //! pipe is closed.
-  //!
-  //! The callback is called with the @tt{id@} of the file as argument.
-  //!
-  //! If the callback returns @expr{-1@}, no other call out or
-  //! callback will be called by the backend in that round. I.e. the
-  //! caller of the backend will get control back right away. For the
-  //! main backend that means it will immediately start another round
-  //! and check files and call outs anew.
-  //!
-  //! @note
-  //! This function does not set the file nonblocking.
-  //!
-  //! @note
-  //!   The @tt{close_callback@} can also be set by calling
-  //!   @[set_nonblocking()].
-  //!
-  //! @seealso
-  //! @[set_nonblocking()], @[close]
-  //! @[query_close_callback()], @[set_read_callback()],
-  //! @[set_write_callback()], @[set_id()]
-  //!
   void set_close_callback(mixed c)  {
     CHECK_OPEN();
     ___close_callback=c;
@@ -1016,15 +1010,9 @@ class File
     }
   }
 
-  //! @decl function(mixed:void) query_close_callback()
-  //!
-  //! This function returns the @tt{close_callback@}, which has been set with
-  //! @[set_nonblocking()] or @[set_close_callback()].
-  //!
-  //! @seealso
-  //! @[set_nonblocking()], @[set_close_callback()]
-  //!
   mixed query_close_callback()  { return ___close_callback; }
+
+  //! @endignore
 
   //! This function sets the @tt{id@} of this file. The @tt{id@} is mainly
   //! used as an identifier that is sent as the first argument to all
@@ -1054,29 +1042,16 @@ class File
   //!                            function(mixed:int) write_oob_callback)
   //! @decl void set_nonblocking()
   //!
-  //! This function sets a stream to nonblocking mode. When data arrives on
-  //! the stream, @[read_callback] will be called with some or all of this
-  //! data. When the stream has buffer space over for writing,
-  //! @[write_callback] will be called so that you can write more data to it.
-  //! If the stream is closed at the other end, @[close_callback] will be
-  //! called. 
-  //!
-  //! When out-of-band data arrives on the stream, @[read_oob_callback] will
-  //! be called with some or all of this data. When the stream allows
-  //! out-of-band data to be sent, @[write_oob_callback] will be called so that
-  //! you can write out-of-band data to it.
-  //!
-  //! All callbacks will have the @tt{id@} of the file as first argument
-  //! when called (see @[set_id()]).
-  //!
-  //! If a callback returns @expr{-1@}, no other call out or callback
-  //! will be called by the backend in that round. I.e. the caller of
-  //! the backend will get control back right away. For the main
-  //! backend that means it will immediately start another round and
-  //! check files and call outs anew.
+  //! This function sets a stream to nonblocking mode and installs the
+  //! specified callbacks. See the @expr{set_*_callback@} functions
+  //! for details about them. If no arguments are given, the callbacks
+  //! will be cleared.
   //!
   //! @note
-  //!   If no arguments are given, the callbacks will be cleared.
+  //! As opposed to calling the set callback functions separately,
+  //! this function will set all the callbacks and nonblocking mode
+  //! atomically so that no callback gets called in between. That
+  //! avoids races in case the backend is executed by another thread.
   //!
   //! @note
   //!   Out-of-band data was not be supported on Pike 0.5 and earlier,
@@ -1084,9 +1059,11 @@ class File
   //!   option @tt{'--without-oob'@}.
   //!
   //! @seealso
-  //! @[set_blocking()], @[set_id()], @[set_read_callback()],
-  //! @[set_write_callback()], @[set_close_callback()]
-  //! @[set_nonblocking_keep_callbacks()], @[set_blocking_keep_callbacks()]
+  //! @[set_blocking()], @[set_read_callback()],
+  //! @[set_write_callback()], @[set_read_oob_callback()],
+  //! @[set_write_oob_callback()], @[set_close_callback()]
+  //! @[set_nonblocking_keep_callbacks()],
+  //! @[set_blocking_keep_callbacks()]
   //!
   void set_nonblocking(mixed|void rcb,
 		       mixed|void wcb,
@@ -1120,11 +1097,20 @@ class File
     ::_enable_callbacks();
   }
 
-  //! This function sets a stream to blocking mode. i.e. all reads and writes
-  //! will wait until data has been transferred before returning.
+  //! This function clears all callbacks and sets a stream to blocking
+  //! mode. i.e. reading, writing and closing will wait until data has
+  //! been transferred before returning.
   //!
   //! @note
-  //!   Calling this function will also clear all non-blocking callbacks.
+  //! The callbacks are cleared and blocking mode is set in one atomic
+  //! operation, so no callback gets called in between if the backend
+  //! is running in another thread.
+  //!
+  //! Even so, if the stream is in callback mode (i.e. if any
+  //! callbacks are installed) then only the backend thread can use
+  //! this function reliably; it might otherwise already be running in
+  //! a callback which is about to call e.g. @[write] when the stream
+  //! becomes blocking.
   //!
   //! @seealso
   //! @[set_nonblocking()], @[set_nonblocking_keep_callbacks()],
@@ -1154,17 +1140,25 @@ class File
   void set_blocking_keep_callbacks()
   {
      CHECK_OPEN();
-     ::_disable_callbacks(); // Thread safing
+#if 0
+     ::_disable_callbacks(); // Thread safing // Unnecessary. /mast
+#endif
      ::set_blocking();
+#if 0
      ::_enable_callbacks();
+#endif
   }
 
   void set_nonblocking_keep_callbacks()
   {
      CHECK_OPEN();
-     ::_disable_callbacks(); // Thread safing
+#if 0
+     ::_disable_callbacks(); // Thread safing // Unnecessary. /mast
+#endif
      ::set_nonblocking();
+#if 0
      ::_enable_callbacks();
+#endif
   }
    
   static void destroy()
