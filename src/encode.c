@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: encode.c,v 1.186 2004/05/19 09:19:34 grubba Exp $
+|| $Id: encode.c,v 1.187 2004/09/06 11:43:44 grubba Exp $
 */
 
 #include "global.h"
@@ -32,7 +32,7 @@
 #include "opcodes.h"
 #include "peep.h"
 
-RCSID("$Id: encode.c,v 1.186 2004/05/19 09:19:34 grubba Exp $");
+RCSID("$Id: encode.c,v 1.187 2004/09/06 11:43:44 grubba Exp $");
 
 /* #define ENCODE_DEBUG */
 
@@ -1585,6 +1585,8 @@ static void encode_value2(struct svalue *val, struct encode_data *data, int forc
 	      continue;
 	    }
 #endif /* PIKE_PORTABLE_BYTECODE */
+
+	    EDB(4, fprintf(stderr, "Encoding constant #%d.\n", d));
 	    /* value */
 	    encode_value2(&p->constants[d].sval, data, 0);
 
@@ -4077,6 +4079,9 @@ static void decode_value2(struct decode_data *data)
 	      /* Already initialized. */
 	      continue;
 	    }
+
+	    EDB(4, fprintf(stderr, "Decoding constant #%d.\n", e));
+
 	    /* value */
 	    decode_value2(data);
 	    /* name */

@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: array.c,v 1.137 2004/04/14 22:04:37 mast Exp $
+|| $Id: array.c,v 1.138 2004/09/06 11:43:23 grubba Exp $
 */
 
 #include "global.h"
@@ -25,7 +25,7 @@
 #include "bignum.h"
 #include "cyclic.h"
 
-RCSID("$Id: array.c,v 1.137 2004/04/14 22:04:37 mast Exp $");
+RCSID("$Id: array.c,v 1.138 2004/09/06 11:43:23 grubba Exp $");
 
 PMOD_EXPORT struct array empty_array=
 {
@@ -1038,7 +1038,8 @@ PMOD_EXPORT void array_fix_type_field(struct array *v)
   if(t & ~(v->type_field))
   {
     describe(v);
-    Pike_fatal("Type field out of order!\n");
+    Pike_fatal("Type field out of order (old:0x%04x new:0x%04x)!\n",
+	       v->type_field, t);
   }
 #endif
   v->type_field = t;
