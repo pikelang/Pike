@@ -1,4 +1,4 @@
-# $Id: configure.in,v 1.8 1999/04/24 13:47:49 grubba Exp $
+# $Id: configure.in,v 1.9 2000/08/28 20:53:41 grubba Exp $
 AC_INIT(math.c)
 
 AC_CONFIG_HEADER(config.h)
@@ -13,6 +13,22 @@ fi
 
 AC_CHECK_HEADERS(ieeefp.h fp_class.h floatingpoint.h)
 
+AC_CHECK_FUNCS(fpsetmask fpsetround fpsetfastmode)
+
+AC_MSG_CHECKING(for FP_RZ)
+AC_CACHE_VAL(pike_cv_FP_RZ, [
+  AC_TRY_LINK([
+#include <math.h>
+  ], [
+    fpsetround(FP_RZ);
+  ], [ pike_cv_FP_RZ=yes ], [ pike_cv_FP_RZ=no ])
+])
+if test "xpike_cv_FP_RZ" = "xyes"; then
+  AC_MSG_RESULT(yes)
+  AC_DEFINE(HAVE_FP_RZ)
+else
+  AC_MSG_RESULT(no)
+fi
 AC_OUTPUT(Makefile,echo FOO >stamp-h )
 
 
