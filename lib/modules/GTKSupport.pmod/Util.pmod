@@ -95,7 +95,7 @@ class signal_handling
 
     void `()(mixed ... args)
     {
-      array err;
+      array|int(1..1) err;
       if(!tocall)
         destruct();
       else
