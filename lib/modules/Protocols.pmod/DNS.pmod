@@ -429,6 +429,7 @@ class client
 			     "SYSTEM\\CurrentControlSet\\Tcpip\\Parameters\\Interfaces\\"+key,val);
 	};
       }
+#endif
 			   
   }
 #endif
