@@ -1,4 +1,4 @@
-/* $Id: mkxml.pike,v 1.16 2001/05/07 18:08:38 grubba Exp $ */
+/* $Id: mkxml.pike,v 1.17 2001/05/07 19:12:41 grubba Exp $ */
 
 import Stdio;
 import Array;
@@ -822,6 +822,7 @@ void make_doc_files()
    html2xml=Parser.HTML();
    html2xml->add_tag("p",lambda(mixed...) { return ({"</p><p>"}); });
    html2xml->add_tag("br",lambda(mixed...) { return ({"<br/>"}); });
+   html2xml->add_tag("wbr",lambda(mixed...) { return ({"<wbr/>"}); });
    html2xml->add_container(
       "text",
       lambda(Parser.HTML p,mapping args,string cont)
