@@ -1,5 +1,5 @@
 /*
- * $Id: nt.c,v 1.10 1999/05/11 18:23:00 marcus Exp $
+ * $Id: nt.c,v 1.11 1999/05/12 00:26:50 marcus Exp $
  *
  * NT system calls for Pike
  *
@@ -526,8 +526,8 @@ void f_NetUserEnum(INT32 args)
 
     THREADS_ALLOW();
     ret=netuserenum(server,
-		    filter,
 		    level,
+		    filter,
 		    &buf,
 		    0x10000,
 		    &read,
