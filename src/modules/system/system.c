@@ -1,5 +1,5 @@
 /*
- * $Id: system.c,v 1.112 2001/05/24 21:19:41 mirar Exp $
+ * $Id: system.c,v 1.113 2001/05/28 12:38:10 grubba Exp $
  *
  * System-call module for Pike
  *
@@ -15,7 +15,7 @@
 #include "system_machine.h"
 #include "system.h"
 
-RCSID("$Id: system.c,v 1.112 2001/05/24 21:19:41 mirar Exp $");
+RCSID("$Id: system.c,v 1.113 2001/05/28 12:38:10 grubba Exp $");
 #ifdef HAVE_WINSOCK_H
 #include <winsock.h>
 #endif
@@ -35,6 +35,7 @@ RCSID("$Id: system.c,v 1.112 2001/05/24 21:19:41 mirar Exp $");
 #include "constants.h"
 #include "pike_memory.h"
 #include "security.h"
+#include "bignum.h"
 
 /* The sp macro conflicts with Solaris 2.5.1's <sys/conf.h>. */
 #ifdef sp
