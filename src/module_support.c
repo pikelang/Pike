@@ -6,7 +6,7 @@
 #include "pike_types.h"
 #include "error.h"
 
-RCSID("$Id: module_support.c,v 1.28 1999/11/08 18:13:50 hubbe Exp $");
+RCSID("$Id: module_support.c,v 1.29 1999/11/11 11:32:43 hubbe Exp $");
 
 /* Checks that args_to_check arguments are OK.
  * Returns 1 if everything worked ok, zero otherwise.
@@ -42,14 +42,12 @@ static int va_check_args(struct svalue *s,
   }
 
   if(!(res->expected & BIT_MANY))
-  {
     res->expected = va_arg(arglist, unsigned int);
-    if(!res->expected || (res->expected & BIT_VOID)) return 1;
-    res->error_type = ERR_TOO_FEW;
-    return 0;
-  }else{
-    return 1;
-  }
+
+  if(!res->expected ||
+     (res->expected & (BIT_MIXED|BIT_VOID))) return 1;
+  res->error_type = ERR_TOO_FEW;
+  return 0;
 }
 
 /* Returns the number of the first bad argument,
