@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: interpret.c,v 1.362 2005/01/25 18:01:24 grubba Exp $
+|| $Id: interpret.c,v 1.363 2005/01/25 18:23:51 grubba Exp $
 */
 
 #include "global.h"
@@ -2821,6 +2821,38 @@ PMOD_EXPORT void custom_check_stack(ptrdiff_t amount, const char *fmt, ...)
   }
 }
 
+PMOD_EXPORT void low_cleanup_interpret(struct Pike_interpreter *interpreter)
+{
+#ifdef USE_MMAP_FOR_STACK
+  if(!interpreter->evaluator_stack_malloced)
+  {
+    munmap((char *)interpreter->evaluator_stack,
+	   Pike_stack_size*sizeof(struct svalue));
+    interpreter->evaluator_stack = 0;
+  }
+  if(!interpreter->mark_stack_malloced)
+  {
+    munmap((char *)interpreter->mark_stack,
+	   Pike_stack_size*sizeof(struct svalue *));
+    interpreter->mark_stack = 0;
+  }
+#endif
+
+  if(interpreter->evaluator_stack)
+    free((char *)interpreter->evaluator_stack);
+  if(interpreter->mark_stack)
+    free((char *)interpreter->mark_stack);
+
+  interpreter->mark_stack = 0;
+  interpreter->evaluator_stack = 0;
+  interpreter->mark_stack_malloced = 0;
+  interpreter->evaluator_stack_malloced = 0;
+
+  interpreter->stack_pointer = 0;
+  interpreter->mark_stack_pointer = 0;
+  interpreter->frame_pointer = 0;
+}
+
 PMOD_EXPORT void cleanup_interpret(void)
 {
 #ifdef PIKE_DEBUG
@@ -2842,28 +2874,7 @@ PMOD_EXPORT void cleanup_interpret(void)
 #endif
   reset_evaluator();
 
-#ifdef USE_MMAP_FOR_STACK
-  if(!Pike_interpreter.evaluator_stack_malloced)
-  {
-    munmap((char *)Pike_interpreter.evaluator_stack, Pike_stack_size*sizeof(struct svalue));
-    Pike_interpreter.evaluator_stack=0;
-  }
-  if(!Pike_interpreter.mark_stack_malloced)
-  {
-    munmap((char *)Pike_interpreter.mark_stack, Pike_stack_size*sizeof(struct svalue *));
-    Pike_interpreter.mark_stack=0;
-  }
-#endif
-
-  if(Pike_interpreter.evaluator_stack)
-    free((char *)Pike_interpreter.evaluator_stack);
-  if(Pike_interpreter.mark_stack)
-    free((char *)Pike_interpreter.mark_stack);
-
-  Pike_interpreter.mark_stack=0;
-  Pike_interpreter.evaluator_stack=0;
-  Pike_interpreter.mark_stack_malloced=0;
-  Pike_interpreter.evaluator_stack_malloced=0;
+  low_cleanup_interpret(&Pike_interpreter);
 }
 
 void really_clean_up_interpret(void)

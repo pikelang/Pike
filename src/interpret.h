@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: interpret.h,v 1.157 2005/01/25 18:01:24 grubba Exp $
+|| $Id: interpret.h,v 1.158 2005/01/25 18:23:52 grubba Exp $
 */
 
 #ifndef INTERPRET_H
@@ -721,6 +721,7 @@ PMOD_EXPORT void slow_check_stack(void);
 PMOD_EXPORT void custom_check_stack(ptrdiff_t amount, const char *fmt, ...)
   ATTRIBUTE((format (printf, 2, 3)));
 PMOD_EXPORT void cleanup_interpret(void);
+PMOD_EXPORT void low_cleanup_interpret(struct Pike_interpreter *interpreter);
 void really_clean_up_interpret(void);
 /* Prototypes end here */
 
