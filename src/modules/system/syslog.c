@@ -1,5 +1,5 @@
 /*
- * $Id: syslog.c,v 1.6 1998/07/04 17:05:53 grubba Exp $
+ * $Id: syslog.c,v 1.7 1998/09/16 18:35:24 grubba Exp $
  *
  * Access to syslog from Pike.
  *
@@ -17,7 +17,7 @@
 
 #ifdef HAVE_SYSLOG
 
-RCSID("$Id: syslog.c,v 1.6 1998/07/04 17:05:53 grubba Exp $");
+RCSID("$Id: syslog.c,v 1.7 1998/09/16 18:35:24 grubba Exp $");
 
 #include "interpret.h"
 #include "svalue.h"
@@ -135,6 +135,11 @@ void f_openlog(INT32 args)
   if(p_facility & (1<<16)) facility |= LOG_SYSLOG;
   if(p_facility & (1<<17)) facility |= LOG_USER;
   if(p_facility & (1<<18)) facility |= LOG_UUCP;
+
+#ifdef LOG_NOWAIT
+  /* Don't let syslog wait for forked processes */
+  option |= LOG_NOWAIT;
+#endif /* LOG_NOWAIT */
 
   THREADS_ALLOW();
   
