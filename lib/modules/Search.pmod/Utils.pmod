@@ -1,7 +1,7 @@
 // This file is part of Roxen Search
 // Copyright © 2001 Roxen IS. All rights reserved.
 //
-// $Id: Utils.pmod,v 1.16 2001/07/26 04:50:08 nilsson Exp $
+// $Id: Utils.pmod,v 1.17 2001/07/26 19:16:18 nilsson Exp $
 
 #if !constant(report_error)
 #define report_error werror
@@ -54,10 +54,11 @@ class ProfileEntry {
     database_profile_id = _database_profile_id;
     search_profile_id = _search_profile_id;
     my_cache = _my_cache;
-    int last_stat = time(1);
+    int last_stat = time(1)-2;
   }
 
   void refresh() {
+    //    werror("Time since check: %d\n", time(1)-last_stat);
     if(time(1)-last_stat < 5*60) return;
     int check = my_cache->up_to_datep(database_profile_id);
     if(check == -1) destruct();
@@ -73,7 +74,7 @@ class ProfileEntry {
       ranking = 0;
       stop_words = 0;
     }
-    last_stat = time(1);
+    last_stat = time(1)-2;
   }
 
   mixed get_database_value(string index) {
@@ -89,6 +90,7 @@ class ProfileEntry {
   }
 
   Search.Database.MySQL get_database() {
+    refresh();
     if(!db) {
 #if constant(DBManager)
       db = Search.Database.MySQL( DBManager.db_url( get_database_value("db_name"), 1) );
@@ -101,6 +103,7 @@ class ProfileEntry {
   }
 
   Search.RankingProfile get_ranking() {
+    refresh();
     if(!ranking)
       ranking = Search.RankingProfile(8,
 				      get_search_value("px_rank"),
@@ -150,6 +153,7 @@ class ProfileEntry {
   }
 
   array(string) get_stop_words() {
+    refresh();
     if(!stop_words) {
       ADTSet words = ADTSet();
       foreach(get_search_value("sw_lists"), string fn) {
@@ -190,6 +194,7 @@ class ProfileCache (string db_name) {
   }
 
   int(-1..1) up_to_datep(int profile_id) {
+    //    werror("Called up-to-date...\n");
     array(mapping(string:string)) res;
     res = get_db()->query("SELECT altered, parent FROM wf_profile WHERE id=%d", profile_id);
 
@@ -219,6 +224,7 @@ class ProfileCache (string db_name) {
 
     // Not altered
     if((int)res[0]->altered == profile_stat[profile_id]) return 1;
+    profile_stat[profile_id] = (int)res[0]->altered;
 
     // Search profile
     if((int)res[0]->parent) {
@@ -302,6 +308,10 @@ class ProfileCache (string db_name) {
   }
 
   ProfileEntry get_profile_entry(string db_name, void|string srh_name) {
+    //    werror("Entry: %O\n", indices(entry_cache));
+    //    werror("Value: %O\n", indices(value_cache));
+    //    werror("Stat : %O\n", profile_stat);
+
     int db = get_db_profile_number(db_name);
     int srh = get_srh_profile_number(srh_name||"Default", db);
 
