@@ -168,8 +168,10 @@ PMOD_EXPORT void push_int64(INT64 i)
     apply_svalue(&auto_bignum_program, 2);
 
 
-    if(neg)
+    if(neg) {
       apply_low(sp[-1].u.object,FIND_LFUN(sp[-1].u.object->prog,LFUN_COMPL),0);
+      stack_pop_n_elems_keep_top(1);
+    }
   }
 }
 
