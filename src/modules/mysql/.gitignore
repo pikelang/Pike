@@ -5,3 +5,4 @@
 /dependencies
 /linker_options
 /stamp-h
+/config.h.in

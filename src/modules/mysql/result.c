@@ -1,10 +1,12 @@
 /*
- * $Id: result.c,v 1.12 1997/01/31 01:13:17 grubba Exp $
+ * $Id: result.c,v 1.13 1997/01/31 23:53:40 grubba Exp $
  *
  * mysql query result
  *
  * Henrik Grubbström 1996-12-21
  */
+
+#include "config.h"
 
 #ifdef HAVE_MYSQL
 /*
@@ -62,7 +64,7 @@ typedef struct dynamic_buffer_s dynamic_buffer;
  * Globals
  */
 
-RCSID("$Id: result.c,v 1.12 1997/01/31 01:13:17 grubba Exp $");
+RCSID("$Id: result.c,v 1.13 1997/01/31 23:53:40 grubba Exp $");
 
 struct program *mysql_result_program = NULL;
 
