@@ -5,7 +5,7 @@
 \*/
 /**/
 #include "global.h"
-RCSID("$Id: main.c,v 1.117 2001/03/23 01:05:42 grubba Exp $");
+RCSID("$Id: main.c,v 1.118 2001/03/25 20:44:06 grubba Exp $");
 #include "fdlib.h"
 #include "backend.h"
 #include "module.h"
@@ -450,7 +450,11 @@ int dbm_main(int argc, char **argv)
       if(lim.rlim_cur > 2*1024*1024) lim.rlim_cur=2*1024*1024;
 #endif
 
-      Pike_interpreter.stack_top += STACK_DIRECTION * lim.rlim_cur;
+#if STACK_DIRECTION < 0
+      Pike_interpreter.stack_top -= lim.rlim_cur;
+#else /* STACK_DIRECTION >= 0 */
+      Pike_interpreter.stack_top += lim.rlim_cur;
+#endif /* STACK_DIRECTION < 0 */
 
 #if defined(__linux__) && defined(HAVE_DLOPEN) && defined(HAVE_DLFCN_H)
       {
@@ -486,7 +490,12 @@ int dbm_main(int argc, char **argv)
 #endif /* HAVE_PTHREAD_INITIAL_THREAD_BOS */
 #endif /* __linux__ && HAVE_DLOPEN && HAVE_DLFCN_H */
 
-      Pike_interpreter.stack_top -= STACK_DIRECTION * 8192 * sizeof(char *);
+#if STACK_DIRECTION < 0
+      Pike_interpreter.stack_top += 8192 * sizeof(char *);
+#else /* STACK_DIRECTION >= 0 */
+      Pike_interpreter.stack_top -= 8192 * sizeof(char *);
+#endif /* STACK_DIRECTION < 0 */
+
 
 #ifdef STACK_DEBUG
       fprintf(stderr, "1: C-stack: 0x%08p - 0x%08p, direction:%d\n",
