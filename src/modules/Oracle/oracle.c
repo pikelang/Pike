@@ -1,5 +1,5 @@
 /*
- * $Id: oracle.c,v 1.10 1998/04/20 18:53:45 grubba Exp $
+ * $Id: oracle.c,v 1.11 1998/05/01 15:36:29 grubba Exp $
  *
  * Pike interface to Oracle databases.
  *
@@ -34,7 +34,7 @@
 
 #endif
 
-RCSID("$Id: oracle.c,v 1.10 1998/04/20 18:53:45 grubba Exp $");
+RCSID("$Id: oracle.c,v 1.11 1998/05/01 15:36:29 grubba Exp $");
 
 #ifdef HAVE_ORACLE
 
@@ -654,7 +654,7 @@ void pike_module_init(void)
 #endif
 }
 
-static void call_atexits();
+static void call_atexits(void);
 
 void pike_module_exit(void)
 {
@@ -685,7 +685,7 @@ int atexit(void (*func)(void))
   return 0;
 }
 
-static void call_atexits()
+static void call_atexits(void)
 {
   while(atexit_cnt)
     (*atexit_fnc[--atexit_cnt])();
@@ -693,7 +693,7 @@ static void call_atexits()
 
 #else
 
-static void call_atexits()
+static void call_atexits(void)
 {
 }
 
