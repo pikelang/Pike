@@ -76,19 +76,30 @@ class client
   
   void send_message(string from, string *to, string body)
   {
-    cmd("MAIL FROM: "+from);
+    cmd("MAIL FROM: <"+from+">");
     foreach(to, string t)
-      cmd("RCPT TO: "+t);
+      cmd("RCPT TO: <"+t+">");
     cmd("DATA");
     cmd(body+"\r\n.");
     cmd("QUIT");
   }
 
+  static string parse_addr(string addr)
+  {
+    array(string|int) tokens = replace(MIME.tokenize(to), '@', "@");
+
+    int i;
+    tokens = tokens[search(tokens, '<') + 1..];
+
+    if ((i = search(tokens, '>')) != -1) {
+      tokens = tokens[..i-1];
+    }
+    return tokens*"";
+  }
+
   void simple_mail(string to, string subject, string from, string msg)
   {
-    array foo = MIME.tokenize(to);
-    string bar = "<"+replace(((foo/({60}))[-1]/({62}))[0],64,"@")*""+">";
-    send_message(from, ({ bar }),
+    send_message(parse_addr(from), ({ parse_addr(to) }),
 		 (string)MIME.Message(msg, (["mime-version":"1.0",
 					     "subject":subject,
 					     "from":from,
