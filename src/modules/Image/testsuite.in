@@ -1,5 +1,5 @@
 START_MARKER
-dnl $Id: testsuite.in,v 1.18 2004/05/02 18:44:54 nilsson Exp $
+dnl $Id: testsuite.in,v 1.19 2004/05/02 23:12:56 nilsson Exp $
 
 test_eq([[ Image.PNM.decode("P1\n5 5\n0 1 1 1 1\n1 0 1 1 1\n"
   "1 1 0 1 1\n1 1 1 0 1\n1 1 1 1 0") ]],
@@ -274,11 +274,23 @@ test_any([[
 test_do( add_constant("img", Image.Image(100,100,0,0,0)) )
 test_do( img->box(40,0,0,40) )
 test_equal( img->max(), ({ 0, 0, 0 }) )
+test_equal( img->min(), ({ 0, 0, 0 }) )
+test_equal( img->sum(), ({ 0, 0, 0 })  )
+test_equal( img->sumf(), ({ 0.0, 0.0, 0.0 }) )
+test_equal( img->average(), ({ 0.0, 0.0, 0.0 }) )
 test_do( img->box(10,10,20,20,128,13,42) )
 test_equal( img->max(), ({ 128, 13, 42 }) )
+test_equal( img->min(), ({ 0, 0, 0 }) )
+test_equal( img->sum(), ({ 15488, 1573, 5082 }) )
+test_equal( (array(int))img->sumf(), ({ 15488, 1573, 5082 }) )
+test_equal( (array(int))img->average(), ({ 1, 0, 0}) )
 test_do( img->setcolor(200,19,99) )
 test_do( img->box(30,20,20,30) )
 test_equal( img->max(), ({ 200, 19, 99 }) )
+test_equal( img->min(), ({ 0, 0, 0 }) )
+test_equal( img->sum(), ({ 39560, 3859, 17019 }) )
+test_equal( (array(int))img->sumf(), ({ 39560, 3859, 17019 }) )
+test_equal( (array(int))img->average(), ({ 3, 0, 1 }) )
 test_do( add_constant("img") )
 
 test_define(test_polygone,[[
@@ -337,6 +349,128 @@ test_any_equal([[
 
 test_polyfill(img-img1<16, 1)
 test_polyfill(img->max(), ({255,254,253}) )
+
+// Image.Image operations
+
+test_do([[ add_constant("img", lambda(void|int x,void|int y) {
+  return Image.Image(x||50,y||50,0,0,0,)->test();
+}) ]])
+
+test_do( img()->apply_curve( enumerate(256,-1,255) ) )
+test_do( img()->apply_curve( "red", enumerate(256,-1,255) ) )
+test_do( img()->apply_curve( "green", enumerate(256,-1,255) ) )
+test_do( img()->apply_curve( "blue", enumerate(256,-1,255) ) )
+test_do( img()->apply_curve( "value", enumerate(256,-1,255) ) )
+test_do( img()->apply_curve( "saturation", enumerate(256,-1,255) ) )
+test_do( img()->apply_curve( "hue", enumerate(256,-1,255) ) )
+test_eval_error( img()->apply_curve( "bar", enumerate(256,-1,255) ) )
+
+test_do([[ img()->apply_matrix( ({ ({-1,-1,-1}), ({-1,16,-1}),
+  ({-1,-1,-1}) }) ) ]])
+test_do([[ img()->apply_matrix( ({ ({1,1,1}), ({1,-8,1}),
+  ({1,1,1}) }) ) ]])
+test_do([[ img()->apply_matrix( ({ ({0,0,0}), ({1,-2,1}),
+  ({0,0,0}) }) ) ]])
+test_do([[ img()->apply_matrix( ({ ({2,1,0}), ({1,0,-1}),
+  ({0,-1,-2}) }), 128, 128, 128, 3.0 ) ]])
+
+// MISSING_TEST: apply_max
+
+// autocrop tests above
+
+// average tests above
+
+test_do( img()->bitscale(0.75) )
+test_do( img()->bitscale(1.3, 0.6) )
+test_do( img()->bitscale(47, 11) )
+test_do( img()->bitscale(99, 0) )
+test_do( img()->bitscale(0, 99) )
+
+test_do( img()->blur(0) )
+test_do( img()->blur(1) )
+test_do( img()->blur(5) )
+
+test_do( img(100,100)->box(40,10,10,80) )
+test_do( img(100,100)->box(40,10,10,80,0,255,0) )
+test_do( img(100,100)->box(40,10,10,80,255,0,0,75) )
+
+test_do( (string)img() )
+test_do( (array)img() )
+
+test_do( img()->change_color(255,255,255) )
+test_do( img()->change_color(1,2,3,10,20,30) )
+
+test_do( img(100,100)->circle(50,50,30,50) )
+test_do( img(100,100)->circle(50,50,30,50,0,255,255) )
+test_do( img(100,100)->circle(50,50,30,50,0,255,255,75) )
+
+test_do( img()->clear() )
+test_do( img()->clear(0,128,255) )
+test_do( img()->clear(0,128,255,66) )
+
+test_do( img()->clone() )
+test_do( img()->clone(20,20) )
+test_do( img()->clone(100,100) )
+test_do( img()->clone(100,100,27,55,111) )
+test_do( img()->clone(99,99,66,33,22,11) )
+
+test_do( img()->color() )
+test_do( img()->color(69) )
+test_do( img()->color(128,128,255) )
+
+test_do( img()->copy() )
+test_do( img()->copy(5,5,45,45) )
+test_do( img()->copy(-5,-5,55,55) )
+test_do( img()->copy(-5,-5,55,55,255,0,0) )
+test_do( img()->copy(-5,-5,55,55,255,0,0,99) )
+
+test_do( Image.Image() )
+test_do( Image.Image(100,100) )
+test_do( Image.Image(100,100, Image.Color("red")) )
+test_do( Image.Image(100,100, "red") )
+test_do( Image.Image(100,100, "grey", 128) )
+test_do( Image.Image(100,100, "rgb", 11,22,33) )
+test_do( Image.Image(100,100, "cmyk", 10,20,30,40) )
+test_do( Image.Image(100,100, "test") )
+test_do( Image.Image(100,100, "gradients") )
+test_do( Image.Image(100,100, "noise",
+   ({0, ({0,0,0}), 0.8, ({255,255,255}) }) ) )
+test_do( Image.Image(100,100, "turbulence",
+   ({0, ({0,0,0}), 0.8, ({255,255,255}) }) ) )
+test_do( Image.Image(100,100, "random") )
+test_do( Image.Image(100,100, "randomgrey") )
+test_do( Image.Image(100,100, "tuned_box",
+   ({ Image.Color.black, Image.Color.black,
+      Image.Color.white, Image.Color.white}) ) )
+test_eval_error( Image.Image(100,100, "bacon") )
+test_do( Image.Image(100,100, 255,255,0) )
+dnl test_do( Image.Image(100,100, 255,255,0,40) )
+
+test_do( img()->dct(100,100) )
+
+test_do( img()->distancesq() )
+test_do( img()->distancesq(0,255,255) )
+
+// find_autocrp above
+
+// MISSING TEST: find_max
+// MISSING TEST: find_min
+
+test_do( img()->gamma(0.8) )
+test_do( img()->gamma(0.9, 0.8, 1.1) )
+
+// MISSING TEST: get_pixel
+
+
+
+// max tests above
+// min tests above
+// sum tests above
+// sumf tests above
+
+test_do( add_constant("img") )
+
+
 
 test_true( objectp(Image.Font()) )
 test_eq( Image.Font()->write("hej"),
