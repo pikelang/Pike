@@ -5,7 +5,7 @@
 \*/
 /**/
 #include "global.h"
-RCSID("$Id: builtin_functions.c,v 1.367 2003/01/29 15:55:25 mast Exp $");
+RCSID("$Id: builtin_functions.c,v 1.368 2003/05/07 12:31:43 mast Exp $");
 #include "interpret.h"
 #include "svalue.h"
 #include "pike_macros.h"
@@ -4448,20 +4448,24 @@ PMOD_EXPORT void f_glob(INT32 args)
   case T_ARRAY:
     a=Pike_sp[1-args].u.array;
     matches=0;
-    for(i=0;i<a->size;i++)
-    {
-      if(ITEM(a)[i].type != T_STRING)
-	SIMPLE_BAD_ARG_ERROR("glob", 2, "string|array(string)");
-
-      if(does_match(ITEM(a)[i].u.string,0,glob,0))
+    check_stack (120);
+    BEGIN_AGGREGATE_ARRAY (MINIMUM (a->size, 120)) {
+      for(i=0;i<a->size;i++)
       {
-	add_ref(ITEM(a)[i].u.string);
-	push_string(ITEM(a)[i].u.string);
-	matches++;
+	if(ITEM(a)[i].type != T_STRING)
+	  SIMPLE_BAD_ARG_ERROR("glob", 2, "string|array(string)");
+
+	if(does_match(ITEM(a)[i].u.string,0,glob,0))
+	{
+	  add_ref(ITEM(a)[i].u.string);
+	  push_string(ITEM(a)[i].u.string);
+	  matches++;
+	  DO_AGGREGATE_ARRAY (120);
+	}
       }
-    }
-    f_aggregate(matches);
+    } END_AGGREGATE_ARRAY;
     tmp=Pike_sp[-1];
+    tmp.u.array->type_field = BIT_STRING;
     Pike_sp--;
     dmalloc_touch_svalue(Pike_sp);
     pop_n_elems(2);
@@ -4470,7 +4474,7 @@ PMOD_EXPORT void f_glob(INT32 args)
     break;
 
   default:
-    SIMPLE_BAD_ARG_ERROR("glob", 1, "string|array(string)");
+    SIMPLE_BAD_ARG_ERROR("glob", 2, "string|array(string)");
   }
 }
 
