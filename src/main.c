@@ -190,7 +190,8 @@ void main(int argc, char **argv, char **env)
   if(SETJMP(back))
   {
     automatic_fatal="Error in handle_error, previous error (in _main): ";
-    assign_svalue_no_free(sp++, & throw_value);
+    assign_svalue_no_free(sp, & throw_value);
+    sp++;
     APPLY_MASTER("handle_error", 1);
     pop_stack();
     exit(10);

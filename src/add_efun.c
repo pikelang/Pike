@@ -109,7 +109,8 @@ static void push_efun_entry(struct hash_entry *h)
   f=BASEOF(h, efun, link);
   push_string(f->link.s);
   f->link.s->refs++;
-  copy_svalues_recursively_no_free(sp++,& f->function,1,0);
+  copy_svalues_recursively_no_free(sp,& f->function,1,0);
+  sp++;
 }
 
 void push_all_efuns_on_stack()
