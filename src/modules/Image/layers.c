@@ -1,7 +1,7 @@
 /*
 **! module Image
 **! note
-**!	$Id: layers.c,v 1.37 1999/08/13 05:58:00 per Exp $
+**!	$Id: layers.c,v 1.38 1999/08/15 23:25:55 mirar Exp $
 **! class Layer
 **! see also: layers
 **!
@@ -215,7 +215,7 @@
 
 #include <math.h> /* floor */
 
-RCSID("$Id: layers.c,v 1.37 1999/08/13 05:58:00 per Exp $");
+RCSID("$Id: layers.c,v 1.38 1999/08/15 23:25:55 mirar Exp $");
 
 #include "image_machine.h"
 
@@ -1283,6 +1283,7 @@ static void lm_normal(rgb_group *s,rgb_group *l,rgb_group *d,
 	 {
 	    if (la->r==0 && la->g==0 && la->b==0)
 	    {
+#if 0
 	       int n=0;
 	       do
 	       {
@@ -1298,6 +1299,10 @@ static void lm_normal(rgb_group *s,rgb_group *l,rgb_group *d,
 	       else 
 		  *(d++)=*(s++),*(da++)=*(sa++),l++;
 	       continue;
+#else
+	       *d=*s;
+	       *da=*sa;
+#endif
 	    }
 	    else if (la->r==COLORMAX && la->g==COLORMAX && la->b==COLORMAX)
 	    {
@@ -2188,7 +2193,7 @@ static INLINE void img_lay_stroke(struct layer *ly,
 				  rgb_group *da,
 				  int len)
 {
-   if (ly->row_func==lm_spec_burn_alpha)
+   if (ly->row_func==(lm_row_func*)lm_spec_burn_alpha)
    {
       lm_spec_burn_alpha(ly,l,la,s,sa,d,da,len);
       return;
@@ -2635,6 +2640,20 @@ static INLINE struct layer *clone_this_layer()
 /*
 **! module Image
 **! class Layer
+
+
+**! method object clone()
+**!	Creates a copy of the called object.
+**! returns the copy
+*/
+
+static void image_layer_clone(INT32 args)
+{
+   pop_n_elems(args);
+   clone_this_layer();
+}
+
+/*
 **! method object crop(int xoff,int yoff,int xsize,int ysize)
 **!	Crops this layer at this offset and size.
 **!	Offset is not relative the layer offset, so this
@@ -2831,6 +2850,10 @@ void init_image_layers(void)
 
    ADD_FUNCTION("cast",image_layer_cast,
 		tFunc(tString,tMapping),0);
+
+
+   ADD_FUNCTION("clone",image_layer_clone,
+		tFunc(,tObj),0);
 
    /* set */
 
