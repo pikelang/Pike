@@ -53,8 +53,8 @@ unsigned int TOKENIZE( struct array **res, CHAR *data, unsigned int len )
 	  pos++;
 	  while(data[pos]>='0' && data[pos]<='9') pos++;
 	}
-	if(data[pos]=='U' || data[pos]=='u') pos++; // 10UL
-	if(data[pos]=='L' || data[pos]=='l') pos++; // 10L
+	if(data[pos]=='U' || data[pos]=='u') pos++; /* 10UL */
+	if(data[pos]=='L' || data[pos]=='l') pos++; /* 10L */
 	if( pos != len )
 	  pos--;
 	break;
@@ -69,7 +69,7 @@ unsigned int TOKENIZE( struct array **res, CHAR *data, unsigned int len )
 	{
 	  case '/':
 	    NEWLINE();
-	    // line comment
+	    /* line comment */
 	    break;
 	  case '*':
 	    pos += 2;
@@ -85,8 +85,8 @@ unsigned int TOKENIZE( struct array **res, CHAR *data, unsigned int len )
       case '(': case ')':
       case ';': case ':':
       case ',': case '?':
-      case '@': // Hm. Pike specific if I ever saw one.
-	break; // all done, one character token
+      case '@': /* Hm. Pike specific if I ever saw one. */
+	break;  /* all done, one character token */
 
       case '<':
 	if( data[pos+1] == '<' ) pos++;
