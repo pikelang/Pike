@@ -2,6 +2,7 @@ Pike_v0.1.tar.gz
 alpha
 alpha-gcc
 alpha-no-debug
+alpha_cc
 build
 mudlib
 reports

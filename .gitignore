@@ -34,6 +34,7 @@ core
 /alpha
 /alpha-gcc
 /alpha-no-debug
+/alpha_cc
 /build
 /mudlib
 /reports
