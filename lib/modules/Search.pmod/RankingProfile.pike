@@ -1,7 +1,7 @@
 // This file is part of Roxen Search
 // Copyright © 2001 Roxen IS. All rights reserved.
 //
-// $Id: RankingProfile.pike,v 1.17 2001/08/08 19:30:09 nilsson Exp $
+// $Id: RankingProfile.pike,v 1.18 2001/08/08 23:08:21 js Exp $
 
 //!
 array(int) field_ranking;
@@ -34,7 +34,7 @@ void create(void|int _cutoff, void|array(int) _proximity_ranking,
     if(mappingp(_field_ranking))
     {
       for(int i=0; i<65; i++)
-	field_ranking[i]=1;
+	field_ranking[i]=100;
       int field_id;
       foreach(indices(_field_ranking), string field)
         if( (field_id=db->get_field_id(field, 1)) != -1 )
