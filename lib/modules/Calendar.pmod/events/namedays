@@ -1,7 +1,7 @@
 # ----------------------------------------------------------------
 # Sweden
 # source: 1900-1985 local almanack
-#         1986-     Keng Engström <kent@lysator.liu.se>
+#         1986-     Kent Engström <kent@lysator.liu.se>
 # ----------------------------------------------------------------
 
 Region "se"
@@ -1455,6 +1455,378 @@ Period 2001-
    Dec 29 Natalia, Natalie
    Dec 30 Abel, Set
    Dec 31 Sylvester
+
+# ----------------------------------------------------------------
+# Finland
+# source: Linus Sjöberg <lsjoberg@aland.net>
+# ----------------------------------------------------------------
+
+Region "fi"
+   Jan  1 
+   Jan  2 Aapeli
+   Jan  3 Elmeri, Elmer, Elmo
+   Jan  4 Ruut
+   Jan  5 Lea, Leea
+   Jan  6 Harri
+   Jan  7 Aukusti, Aku, August
+   Jan  8 Hilppa, Titta
+   Jan  9 Veikko, Veli, Veijo
+   Jan 10 Nyyrikki
+   Jan 11 Kari, Karri
+   Jan 12 Toini
+   Jan 13 Nuutti
+   Jan 14 Sakari, Saku
+   Jan 15 Solja
+   Jan 16 Ilmari, Ilmo
+   Jan 17 Toni, Anttoni, Antto, Anton
+   Jan 18 Laura
+   Jan 19 Heikki, Henrik, Henrikki, Henri
+   Jan 20 Henna, Henni, Henriikka
+   Jan 21 Aune, Oona, Auni
+   Jan 22 Visa
+   Jan 23 Eine, Eini, Enni
+   Jan 24 Senja
+   Jan 25 Paavo, Pauli, Paavali, Paul
+   Jan 26 Joonatan
+   Jan 27 Viljo
+   Jan 28 Kaarlo, Kalle, Kaarle, Mies
+   Jan 29 Valtteri
+   Jan 30 Irja
+   Jan 31 Alli
+   Feb  1 Riitta
+   Feb  2 Aamu, Jemina
+   Feb  3 Valo
+   Feb  4 Armi, Ronja
+   Feb  5 asser
+   Feb  6 Terhi, Teija, Tiia, Tea, Terhikki
+   Feb  7 Riku, Rikhard
+   Feb  8 Laina
+   Feb  9 Raija, Raisa
+   Feb 10 Elina, Elna, Ella, Ellen
+   Feb 11 Talvikki
+   Feb 12 Elma, Elmi
+   Feb 13 Sulo, Sulho
+   Feb 14 Voitto, Valentin, Tino
+   Feb 15 Sipi, Sippo
+   Feb 16 Kai
+   Feb 17 Väinö, Väonämö
+   Feb 18 Kaino
+   Feb 19 Eija
+   Feb 20 Heli, Helinä, Heljä, Hely
+   Feb 21 Keijo
+   Feb 22 Tuulikki, Tuuli, Tuulia
+   Feb 23 Aslak
+   Feb 24 Matti, Matias
+   Feb 25 Tuija, Tuire
+   Feb 26 Nestori
+   Feb 27 Torsti
+   Feb 28 Onni
+   Mar  1 Alpo, alvi, Alpi
+   Mar  2 Virve, Virva
+   Mar  3 Kauko
+   Mar  4 Ari, arsi, Atro
+   Mar  5 Laila, Leila
+   Mar  6 Tarmo
+   Mar  7 Tarja, Taru
+   Mar  8 Vilppu
+   Mar  9 Auvo
+   Mar 10 Aurora, Aura, Auri
+   Mar 11 Kalervo
+   Mar 12 Reijo, Reko
+   Mar 13 Erno, Tarvo, Ernesti
+   Mar 14 Matilda, Tilda
+   Mar 15 Risto
+   Mar 16 Ilkka
+   Mar 17 Kerttu, Kerttuli
+   Mar 18 Eetu, Edvard
+   Mar 19 Jooseppi, Juuso, Joosef, Josefiina
+   Mar 20 Aki, Joakim, Kim, Jaakkima
+   Mar 21 Pentti
+   Mar 22 Vihtori
+   Mar 23 Akseli
+   Mar 24 Kaapo, Gabriel, Kaapro, Kaappo
+   Mar 25 Aija
+   Mar 26 Manu, Immanuel, Manne, Immo
+   Mar 27 Sauli, Saul
+   Mar 28 Armas
+   Mar 29 Joonas, Jouni, Joni, Joonas, Jonne, Jonni
+   Mar 30 Usko
+   Mar 31 Irma, Irmeli
+   Apr  1 Raita, Pulmu
+   Apr  2 Pellervo
+   Apr  3 Sampo
+   Apr  4 Ukko
+   Apr  5 Irene, Irina, Ira, Iro
+   Apr  6 Vilho, Ville, Viljami, Vilhelm, Vili, Jami
+   Apr  7 Allan, Ahvo
+   Apr  8 Suoma, Suometar
+   Apr  9 Elias, Eelis, Eljas
+   Apr 10 Tero
+   Apr 11 Verna
+   Apr 12 Julius, Julia, Juliaana
+   Apr 13 Tellervo
+   Apr 14 Taito
+   Apr 15 Lina, Tuomi
+   Apr 16 Jalo, Patrik
+   Apr 17 Otto
+   Apr 18 Valto, Valdemar
+   Apr 19 Pälvi, Pilvi
+   Apr 20 Lauha
+   Apr 21 Anssi, Anselmi
+   Apr 22 Alina
+   Apr 23 Yrjö, Jyrki, Jyri, Yrjänä, Jori
+   Apr 24 Pertti, Albert, Altti
+   Apr 25 Markku, Markus, Marko
+   Apr 26 Terttu, Teresa
+   Apr 27 Merja
+   Apr 28 Ilpo, Ilppo, Tuure
+   Apr 29 Teijo
+   Apr 30 Mirja, Mirva, Mira, Miia, Mirjami, Mirka, Mirkka
+   May  1 Vappu, Valpuri
+   May  2 Vuokko, Viivi
+   May  3 Outi
+   May  4 Ruusu, Roosa
+   May  5 Maini
+   May  6 Ylermi
+   May  7 Helmi, Kastehelmi
+   May  8 Heino
+   May  9 Timo
+   May 10 aino, Aina, ainikki
+   May 11 Osmo
+   May 12 Liotta
+   May 13 Kukka, Floora
+   May 14 Tuula
+   May 15 Sofia, Sinja, Sohvi
+   May 16 Esteri, Essi, Ester
+   May 17 Maila, Maili, Mailis, Rebekka
+   May 18 Erkki, Eero, Eerikki, Eerika
+   May 19 Emilia, emma, emmi, Milla, Milja, Milka, Amalia
+   May 20 Lilja, Karoliina, Lilli
+   May 21 Kosti, Konsta, Konstantin
+   May 22 Hemmikki, Hemmo
+   May 23 Lyydia, Lyyli
+   May 24 Tuukka, Tuoko
+   May 25 Urpo
+   May 26 Vilhelmiina, Minna, Vilma, Miina, Mimmi
+   May 27 Ritva
+   May 28 Alma
+   May 29 Oiva, Oivi, Olivia
+   May 30 Pasi
+   May 31 Helka, Helga
+   Jun  1 Teemu, Nikodemus
+   Jun  2 Venla
+   Jun  3 Orvokki, Viola
+   Jun  4 Toivo
+   Jun  5 Sulevi
+   Jun  6 Kustaa, Kyösti, Kustavi
+   Jun  7 Suvi, Robert, Roope
+   Jun  8 Salomo, Salomon
+   Jun  9 Ensio
+   Jun 10 Seppo
+   Jun 11 Impi, Immi
+   Jun 12 Esko
+   Jun 13 Raili, Raila
+   Jun 14 Kielo
+   Jun 15 Vieno, Viena
+   Jun 16 Päivi, Päivikki, Päivä
+   Jun 17 Urho
+   Jun 18 Tapio
+   Jun 19 Siiri
+   Jun 20 Into
+   Jun 21 Ahti, Ahto
+   Jun 22 PaulaLiina, Pauliina
+   Jun 23 Aatto, Aatu, Aadolf
+   Jun 24 Johannes, Juhani, Juha, Juho, Jukka, Jussi, Janne, Jani, Juhana
+   Jun 25 Uuno
+   Jun 26 Jorm, Jarmo, Jarkko, Jarno, Jere, Jeremias
+   Jun 27 Elviira, Elvi
+   Jun 28 Leo
+   Jun 29 Pietari, Pekka, Petri, Petra, Petteri, Pekko
+   Jun 30 Päiviö, Päivö
+   Jul  1 Aaro, Aaron
+   Jul  2 Maria, Mari, Maija, Meeri, Maaria, Marika, Maiju, Maikki, Kukka-Maaria
+   Jul  3 Arvo
+   Jul  4 Ulla, Ulpu
+   Jul  5 Unto, Untamo
+   Jul  6 Esa, Esaias
+   Jul  7 Klaus, Launo
+   Jul  8 Turo, Turkka
+   Jul  9 Ilta, Jasmin
+   Jul 10 Saima, Saimi
+   Jul 11 Elli, Noora, Nelli, Eleonoora
+   Jul 12 Hermanni, Herkko, Herman
+   Jul 13 Ilari, Lari, Joel
+   Jul 14 Aliisa
+   Jul 15 Rauni, Rauna
+   Jul 16 Reino
+   Jul 17 Ossi, Ossian
+   Jul 18 Riikka
+   Jul 19 Saara, Sari, Salli, Salla, Sara
+   Jul 20 Marketta, Maarit, Reeta, Maaret, Reetta, Margareeta
+   Jul 21 Johanna, Hanna, Hanne, Jenni, Jonna, Jenna, Hannele, Joanna
+   Jul 22 Leena, Leeni, Lenita, Matleena
+   Jul 23 Oili, Olga
+   Jul 24 Kristiina, Kirsti, Tiina, Kirsi, Kiia
+   Jul 25 Jaakko, Jaakoppi, Jaakob
+   Jul 26 Martta
+   Jul 27 Heidi
+   Jul 28 Atso
+   Jul 29 Olavi, Olli, Uolevi, Uoti
+   Jul 30 Asta
+   Jul 31 Helena, Elena
+   Aug  1 Maire
+   Aug  2 Kimmo
+   Aug  3 Linnea, Nea, Vanamo
+   Aug  4 Veera
+   Aug  5 Salme, Sanelma
+   Aug  6 Toimi, Keimo
+   Aug  7 Lahja
+   Aug  8 Sylvi, Sylvia, Silva
+   Aug  9 Erja, Eira
+   Aug 10 Lauri, Lasse, Lassi
+   Aug 11 Sanna, Sanni, Susanna, Susanne
+   Aug 12 Klaara
+   Aug 13 Jesse
+   Aug 14 Onerva, Kanerva
+   Aug 15 Marjatta, Marja, Jaana, Marjo, Marjut, Marjaana, Marjukka, Marita, Maritta, Marianne, Marianna
+   Aug 16 Aulis
+   Aug 17 Verneri
+   Aug 18 Leevi
+   Aug 19 Mauno, Maunu
+   Aug 20 Samuli, Sami, Samuel, Samu
+   Aug 21 Soini, Veini
+   Aug 22 Iivari, Iivo
+   Aug 23 Varma, Signe
+   Aug 24 Perttu
+   Aug 25 Loviisa
+   Aug 26 Ilma, Ilmi, Ilmatar
+   Aug 27 Rauli
+   Aug 28 Tauno
+   Aug 29 Iines, Iina, Iinari
+   Aug 30 Eemil, Eemeli
+   Aug 31 Arvi
+   Sep  1 Pirkka
+   Sep  2 Sinikka, Sini
+   Sep  3 Soili, Soile, Soila
+   Sep  4 Ansa
+   Sep  5 Roni, Mainio
+   Sep  6 Asko
+   Sep  7 Miro, Arho, Arhippa
+   Sep  8 Taimi
+   Sep  9 Eevert, Isto
+   Sep 10 Kalevi, Kaleva
+   Sep 11 Aleksanteri, Ali, Ale, Aleksandra
+   Sep 12 Valma, Vilja
+   Sep 13 Orvo
+   Sep 14 Iida
+   Sep 15 Sirpa
+   Sep 16 Hellevi, Hillevi, Hille, Hilla
+   Sep 17 Aili, Aila
+   Sep 18 Tyyne, Tytti, Tyyni
+   Sep 19 Reija
+   Sep 20 Varpu, Vaula
+   Sep 21 Mervi
+   Sep 22 Mauri
+   Sep 23 Mielikki
+   Sep 24 Alvar, Auno
+   Sep 25 Kullervo
+   Sep 26 Kuisma
+   Sep 27 Vesa
+   Sep 28 Arja
+   Sep 29 Mikael, Mikko, Miika, Miikka, Miska, Mikaela
+   Sep 30 Sorja, Sirja
+   Oct  1 Rauno, Rainer, Raine, Raino
+   Oct  2 Valio
+   Oct  3 Raimo
+   Oct  4 Saila, Saija
+   Oct  5 Inkeri, Inka
+   Oct  6 Minttu, Pinja
+   Oct  7 Pirkko, Pirjo, Piritta, Pirita, Birgitta
+   Oct  8 Hilja
+   Oct  9 Ilona
+   Oct 10 Aleksi, Aleksis
+   Oct 11 Otso, Ohto
+   Oct 12 Aarre, Aarto
+   Oct 13 Taina, Tanja, Taija
+   Oct 14 Elsa, Else, Elsi
+   Oct 15 Helvi, Heta
+   Oct 16 Sirkka, Sirkku
+   Oct 17 Saini, Saana
+   Oct 18 Satu, Säde
+   Oct 19 Uljas
+   Oct 20 Kauno, Kasperi
+   Oct 21 Ursula
+   Oct 22 Anja, Anita, Anniina, Anitta
+   Oct 23 Severi
+   Oct 24 Asmo, Rasmus
+   Oct 25 Sointu
+   Oct 26 Amanda, Niina, Manta
+   Oct 27 Helli, Hellä, Hellin, Helle
+   Oct 28 Simo
+   Oct 29 Alfred, Urmas
+   Oct 30 Eila
+   Oct 31 Artturi, Arto, Arttu
+   Nov  1 Pyry, Lyly
+   Nov  2 Topi, Topias
+   Nov  3 Terho
+   Nov  4 Hertta
+   Nov  5 Reima
+   Nov  6 Kustaa Aadolf
+   Nov  7 Taisto
+   Nov  8 Aatos
+   Nov  9 Teuvo
+   Nov 10 Martti
+   Nov 11 Panu
+   Nov 12 Virpi
+   Nov 13 Ano, Kristian
+   Nov 14 Iiris
+   Nov 15 Janika, Janita, Janina, Janette
+   Nov 16 Aarne, Aarno, Aarni
+   Nov 17 Eino, Einari
+   Nov 18 Tenho, Jousia
+   Nov 19 Elisabet, Liisa, Eliisa, Elisa, Elise, Liisi
+   Nov 20 Jalmari, Jari
+   Nov 21 Hilma
+   Nov 22 Silja, Selja
+   Nov 23 Ismo
+   Nov 24 Lempi, Lemmikki, Sivi
+   Nov 25 Katri, Kaisa, Kaija, Katja, Kaarina, Katariina, Katriina, Kati, Kaisu, Riina
+   Nov 26 Sisko
+   Nov 27 Hilkka
+   Nov 28 Heini
+   Nov 29 Aimo
+   Nov 30 Antti, Antero, Atte
+   Dec  1 Oskari
+   Dec  2 Anelma, Unelma
+   Dec  3 Vellamo, Meri
+   Dec  4 Airi, Aira
+   Dec  5 Selma
+   Dec  6 Niilo, Nikolai, Niko, Niklas
+   Dec  7 Sampsa
+   Dec  8 Kyllikki, Kylli
+   Dec  9 Anna, Anne, Anni, Anu, Annikki, Anneli, Annukka, Annika</font>
+   Dec 10 Jutta
+   Dec 11 Taneli, Tatu, Daniel
+   Dec 12 Tuovi
+   Dec 13 Seija
+   Dec 14 Jouko
+   Dec 15 Heimo
+   Dec 16 Auli, Aulikki, Aada
+   Dec 17 Raakel
+   Dec 18 Aapo, Aappo, Rami
+   Dec 19 Iikka, Iiro, Iisakki, Isko
+   Dec 20 Benjamin, Kerkko
+   Dec 21 Tuomas, Tuomo, Tommi, Tomi
+   Dec 22 Raafael
+   Dec 23 Senni
+   Dec 24 Aatami, Eeva, Eevi, Eveliina
+   Dec 25 
+   Dec 26 Tapani, Teppo, Tahvo
+   Dec 27 Hannu, Hannes
+   Dec 28 Piia
+   Dec 29 Rauha
+   Dec 30 Daavid, Taavetti, Taavi
+   Dec 31 Sylvester, Silvo
 
 # ----------------------------------------------------------------
 # Hungary
