@@ -1,4 +1,4 @@
-// $Id: module.pmod,v 1.115 2001/06/13 11:57:00 grubba Exp $
+// $Id: module.pmod,v 1.116 2001/06/16 11:35:47 per Exp $
 #pike __REAL_VERSION__
 
 
@@ -323,6 +323,25 @@ class File
     _async_args = 0;
     set_nonblocking(0,0,0);
     cb(0, @args);
+  }
+
+  function(:string) read_function(int nbytes)
+  //! Returns a function that when called will call @[read] with
+  //! nbytes as argument. Can be used to get various callback
+  //! functions, as an example the fourth argument to
+  //! String.SplitIterator.
+  {
+    return lambda(){ return read( nbytes); };
+  }
+
+  object line_iterator( int trim )
+  //! Returns an iterator that will loop over the lines in this file. 
+  //! If trim is true, all '\r' characters will be removed from the
+  //! input.
+  {
+    if( trim )
+      return String.SplitIterator( "",(<'\n','\r'>),1,read_function(8192));
+    return String.SplitIterator( "",'\n',1,read_function(8192));
   }
 
 
@@ -1196,7 +1215,22 @@ class FILE
   {
     return ::write(format,@data);
   }
+
+  function(:string) read_function(int nbytes)
+  {
+    return lambda(){ return read( nbytes); };
+  }
     
+  object line_iterator( int trim )
+  //! Returns an iterator that will loop over the lines in this file. 
+  //! If trim is true, all '\r' characters will be removed from the
+  //! input.
+  {
+    if( trim )
+      return String.SplitIterator( "",(<'\n','\r'>),1,read_function(8192));
+    return String.SplitIterator( "",'\n',1,read_function(8192));
+  }
+
   string read(int|void bytes,void|int(0..1) now)
   {
     cached_lines = ({}); lp = do_lines = 0;
