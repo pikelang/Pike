@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: signal_handler.c,v 1.251 2003/03/15 16:59:59 grubba Exp $
+|| $Id: signal_handler.c,v 1.252 2003/03/16 17:00:32 grubba Exp $
 */
 
 #include "global.h"
@@ -26,7 +26,7 @@
 #include "main.h"
 #include <signal.h>
 
-RCSID("$Id: signal_handler.c,v 1.251 2003/03/15 16:59:59 grubba Exp $");
+RCSID("$Id: signal_handler.c,v 1.252 2003/03/16 17:00:32 grubba Exp $");
 
 #ifdef HAVE_PASSWD_H
 # include <passwd.h>
@@ -1269,6 +1269,15 @@ static TH_RETURN_TYPE wait_thread(void *data)
     
     if(pid>0)
     {
+#if defined(HAVE_PTRACE) && defined(SIGPROF)
+      if (WIFSTOPPED(status) && (WSTOPSIG(status) == SIGPROF)) {
+	/* FreeBSD sends spurious SIGPROF signals to the child process
+	 * which interferes with the process trace startup code.
+	 */
+	ptrace(PTRACE_CONT, pid, (void *)(size_t)1, SIGPROF);
+	continue;
+      }
+#endif /* HAVE_PTRACE && SIGPROF */
 #ifdef PROC_DEBUG
       fprintf(stderr, "wait thread: locking interpreter, pid=%d\n",pid);
 #endif
@@ -1365,8 +1374,8 @@ static void f_pid_status_wait(INT32 args)
 
 #ifdef USE_WAIT_THREAD
 
-  while(THIS->state == PROCESS_RUNNING ||
-	!wait_for_stopped && THIS->state == PROCESS_STOPPED)
+  while((THIS->state == PROCESS_RUNNING) ||
+	(!wait_for_stopped && (THIS->state == PROCESS_STOPPED)))
   {
     SWAP_OUT_CURRENT_THREAD();
     co_wait_interpreter( & process_status_change);
@@ -1392,16 +1401,19 @@ static void f_pid_status_wait(INT32 args)
 	   * same process, or if the second sleep below wasn't enough
 	   * for receive_sigchild to put the entry into the wait_data
 	   * fifo. In either case we just loop and try again. */
-	  pid = -1;
 #ifdef PROC_DEBUG
 	  fprintf(stderr, "wait(%d): Child isn't reaped yet, looping.\n", pid);
 #endif
+	  pid = -1;
 	}
 	else
 #endif
 	  Pike_error("Lost track of a child (pid %d, errno from wait %d).\n",pid,err);
       }
       else {
+#ifdef PROC_DEBUG
+	fprintf(stderr, "wait(%d): Waiting for child...\n", pid);
+#endif
 	THREADS_ALLOW();
 	pid = WAITPID(pid, &status, 0|WUNTRACED);
 	if (pid < 0) err = errno;
@@ -3391,18 +3403,26 @@ void f_create_process(INT32 args)
 		     e ,olderrno);
       }
 #else
+      THREADS_ALLOW();
+#ifdef PROC_DEBUG
+      fprintf(stderr, "Parent: Wake up child.\n");
+#endif /* PROC_DEBUG */
       while (((e = write(control_pipe[0], buf, 1)) < 0) && (errno == EINTR))
 	;
       if(e!=1) {
 	/* Paranoia in case close() sets errno. */
 	olderrno = errno;
-	while(close(control_pipe[0]) < 0 && errno==EINTR);
+	while(close(control_pipe[0]) < 0 && errno==EINTR)
+	  ;
 	Pike_error("Child process died prematurely. (e=%d errno=%d)\n",
 		   e ,olderrno);
       }
 
+#ifdef PROC_DEBUG
+      fprintf(stderr, "Parent: Wait for child...\n");
+#endif /* PROC_DEBUG */
       /* Wait for exec or error */
-      while (((e = read(control_pipe[0], buf, 3)) < 0) && (errno == EINTR))
+      while (((e = read(control_pipe[0], buf, 3)) < 0) && (errno == EINTR)) {
 	;
       /* Paranoia in case close() sets errno. */
       olderrno = errno;
@@ -3410,6 +3430,11 @@ void f_create_process(INT32 args)
       while(close(control_pipe[0]) < 0 && errno==EINTR);
 #endif
 
+#ifdef PROC_DEBUG
+      fprintf(stderr, "Parent: Child init done.\n");
+#endif /* PROC_DEBUG */
+
+      THREADS_DISALLOW();
 
       if (!e) {
 	/* OK! */
@@ -3539,6 +3564,10 @@ void f_create_process(INT32 args)
 	;
 
       /* FIXME: What to do if e < 0 ? */
+
+#ifdef PROC_DEBUG
+      write(2, "Child: Woken up.\n", 17);
+#endif /* PROC_DEBUG */
 
 /* We don't call _any_ pike functions at all after this point, so
  * there is no need at all to call this callback, really.
@@ -3796,13 +3825,6 @@ void f_create_process(INT32 args)
 #endif /* HAVE_SETRESUID */
 #endif /* HAVE_SETEUID */
 
-#ifdef HAVE_PTRACE
-      if (do_trace) {
-	/* NB: A return value is not defined for this ptrace request! */
-	ptrace(PTRACE_TRACEME, 0, NULL, NULL);
-      }
-#endif /* HAVE_PTRACE */
-	
       do_set_close_on_exec();
       set_close_on_exec(0,0);
       set_close_on_exec(1,0);
@@ -3812,14 +3834,29 @@ void f_create_process(INT32 args)
       do_close_on_exec();
 #endif /* HAVE_BROKEN_F_SETFD */
 
+#ifdef HAVE_PTRACE
+      if (do_trace) {
+#ifdef PROC_DEBUG
+	write(2, "Child: Calling ptrace()...\n", 27);
+#endif /* PROC_DEBUG */
+
+	/* NB: A return value is not defined for this ptrace request! */
+	ptrace(PTRACE_TRACEME, 0, NULL, NULL);
+      }
+#endif /* HAVE_PTRACE */
+	
+#ifdef PROC_DEBUG
+      write(2, "Child: Calling exec()...\n", 25);
+#endif /* PROC_DEBUG */
+
       execvp(storage.argv[0],storage.argv);
-#ifndef HAVE_BROKEN_F_SETFD
 #ifdef PROC_DEBUG
       fprintf(stderr,
-	      "execvp(\"%s\", ...) failed\n"
+	      "Child: execvp(\"%s\", ...) failed\n"
 	      "errno = %d\n",
 	      storage.argv[0], errno);
 #endif /* PROC_DEBUG */
+#ifndef HAVE_BROKEN_F_SETFD
       /* No way to tell about this on broken OS's :-( */
       PROCERROR(PROCE_EXEC, 0);
 #endif /* HAVE_BROKEN_F_SETFD */
