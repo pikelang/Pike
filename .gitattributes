@@ -30,6 +30,7 @@ testfont binary
 /bin/pikedoc2.pike foreign_ident
 /bin/test_pike.pike foreign_ident
 /lib/master.pike.in foreign_ident
+/lib/modules/ADT.pmod/Queue.pike foreign_ident
 /lib/modules/ADT.pmod/Table.pmod foreign_ident
 /lib/modules/Crypto/des3.pike foreign_ident
 /lib/modules/Crypto/des3_cbc.pike foreign_ident
