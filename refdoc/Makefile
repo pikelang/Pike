@@ -1,7 +1,7 @@
 #
 # Main Makefile for extracting AutoDoc mk II to XML
 #
-# $Id: Makefile,v 1.25 2001/09/09 00:30:28 nilsson Exp $
+# $Id: Makefile,v 1.26 2001/09/09 02:46:18 nilsson Exp $
 #
 # Henrik Grubbström 2001-02-02
 #
@@ -43,18 +43,7 @@ extract: build/src/Makefile build/lib/Makefile
 	@(cd build/src && $(MAKE) PIKE="$(PIKE)" extract)
 	@(cd build/lib && $(MAKE) PIKE="$(PIKE)" extract)
 
-autodoc_appendix: syntax.txt inlining.txt tags.txt xml.txt
-	@echo "<module name=''>\n<appendix name='AutoDoc'><doc><text>\n<p><pre>\n" > not_extracted/autodoc.xml
-	sed -e "s/&/\&amp;/g" -e "s/</\&lt;/g" -e "s/>/\&gt;/g" < syntax.txt >> not_extracted/autodoc.xml
-	@echo "\n\n" >> not_extracted/autodoc.xml
-	sed -e "s/&/\&amp;/g" -e "s/</\&lt;/g" -e "s/>/\&gt;/g" < inlining.txt >> not_extracted/autodoc.xml
-	@echo "\n\n" >> not_extracted/autodoc.xml
-	sed -e "s/&/\&amp;/g" -e "s/</\&lt;/g" -e "s/>/\&gt;/g" < tags.txt >> not_extracted/autodoc.xml
-	@echo "\n\n" >> not_extracted/autodoc.xml
-	sed -e "s/&/\&amp;/g" -e "s/</\&lt;/g" -e "s/>/\&gt;/g" < xml.txt >> not_extracted/autodoc.xml
-	@echo "</pre></p></text></doc></appendix></module>" >> not_extracted/autodoc.xml
-
-manual.xml: autodoc.xml structure.xml bin/assembler.pike autodoc_appendix
+manual.xml: autodoc.xml structure.xml bin/assembler.pike
 	@$(PIKE) bin/assembler.pike structure.xml autodoc.xml > manual.xml
 
 autodoc.xml: $(XMLFILES) bin/join.pike
