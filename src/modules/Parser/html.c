@@ -1,4 +1,4 @@
-/* $Id: html.c,v 1.129 2001/04/24 20:04:12 mast Exp $ */
+/* $Id: html.c,v 1.130 2001/06/06 01:15:55 mast Exp $ */
 
 #include "global.h"
 #include "config.h"
@@ -3484,6 +3484,13 @@ static newstate do_try_feed(struct parser_html_storage *this,
 	int quote;
 	p_wchar2 end_found;
 
+	if (!*feed) {
+	  DEBUG((stderr,"%*d do_try_feed end in tag arg\n",
+		 this->stack_count,this->stack_count));
+	  this->out_ctx = ctx;
+	  return STATE_DONE;
+	}
+
 	DEBUG((stderr,"%*d do_try_feed scan in tag arg\n",
 	       this->stack_count,this->stack_count));
 
@@ -3963,7 +3970,8 @@ static void html_read(INT32 args)
 
 /*
 **! method Parser.HTML write_out(mixed...)
-**!	Send data to the output stream (i.e. it won't be parsed).
+**!	Send data to the output stream, i.e. it won't be parsed and
+**!	it won't be sent to the data callback, if any.
 **!
 **!	<p>Any data is allowed when the parser is running in
 **!	<ref>mixed_mode</ref>. Only strings are allowed otherwise.
