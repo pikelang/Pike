@@ -264,7 +264,6 @@ void exit_main()
   void cleanup_pike_types();
   void cleanup_program();
 
-  exit_on_error="Pike is exiting: ";
   cleanup_objects();
   exit_signals();
   exit_lex();

@@ -88,7 +88,7 @@ void va_error(char *fmt, va_list args)
     abort();
   }
 
-  if(exit_on_error && !recoveries)
+  if(exit_on_error || !recoveries)
   {
     if(!exit_on_error)
       exit_on_error="No error recovery context: ";
