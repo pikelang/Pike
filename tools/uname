@@ -1,6 +1,6 @@
 #!/bin/sh
 
-# $Id: uname,v 1.15 2004/03/27 14:01:45 peter Exp $
+# $Id: uname,v 1.16 2004/03/27 14:25:45 peter Exp $
 
 . $NTTOOLS
 
@@ -15,7 +15,7 @@ for a in "$@"
 do
   case "$a" in
     --version)
-      ver=`echo "$Revision: 1.15 $" |sed -e 's/.* \(.*\) .*/\1/'`
+      ver=`echo "$Revision: 1.16 $" |sed -e 's/.* \(.*\) .*/\1/'`
       echo "Fake NT uname version $ver by Fredrik Hubinette and others"
       exit 0
     ;;
@@ -116,9 +116,14 @@ if [ "$M$P" = "" ]; then :; else
   #   "ia64 Family 7 Model 1 Stepping 5, GenuineIntel"
   # or
   #   "x86 Family 6 Model 7 Stepping 3, GenuineIntel"
+  # PROCESSOR_LEVEL jumps to 15 with P4/Xeon
 
   if [ "$PROCESSOR_ARCHITECTURE" = "x86" ]; then
-    PROCESSOR_ARCHITECTURE="i`getntenv PROCESSOR_LEVEL`86"
+    PL=`getntenv PROCESSOR_LEVEL`
+    if [ "$PL" > 6 ]; then 
+      PL=6
+    fi
+    PROCESSOR_ARCHITECTURE="i${PL}86"
     if [ "$PROCESSOR_ARCHITECTURE" = "i86" ]; then
       # Probably not reached, but...
       PROCESSOR_ARCHITECTURE="i386"
