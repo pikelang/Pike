@@ -520,3 +520,17 @@ mixed sum(array a)
       return mem;
    }
 }
+
+//! Perform uniq on an array,
+//! aabbbcaababb -> abcabab
+
+array uniq2(array a)
+{
+   array res;
+   mixed last;
+   if (!sizeof(a)) return ({});
+   res=({last=a[0]});
+   foreach (a,mixed v)
+      if (v!=last) last=v,res+=({v});
+   return res;
+}
