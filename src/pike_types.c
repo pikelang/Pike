@@ -5,7 +5,7 @@
 \*/
 /**/
 #include "global.h"
-RCSID("$Id: pike_types.c,v 1.177 2001/04/01 15:40:21 grubba Exp $");
+RCSID("$Id: pike_types.c,v 1.178 2001/04/18 17:58:12 grubba Exp $");
 #include <ctype.h>
 #include "svalue.h"
 #include "pike_types.h"
@@ -659,7 +659,11 @@ void debug_pop_type_stack(unsigned INT16 expected)
   if(Pike_compiler->type_stackp<type_stack)
     fatal("Type stack underflow\n");
 
-  top = *(Pike_compiler->type_stackp--);
+  top = *(Pike_compiler->type_stackp);
+  /* Special case... */
+  if (top->type == T_MIXED) return;	/* Probably due to an earlier error */
+
+  Pike_compiler->type_stackp--;
 #ifdef PIKE_DEBUG
   if ((top->type != expected) && (top->type != PIKE_T_NAME)) {
     fatal("Unexpected type on stack: %d (expected %d)\n", top->type, expected);
