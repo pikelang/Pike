@@ -5,7 +5,7 @@
 \*/
 #include <math.h>
 #include "global.h"
-RCSID("$Id: operators.c,v 1.3 1996/11/14 01:36:30 hubbe Exp $");
+RCSID("$Id: operators.c,v 1.4 1996/11/27 03:47:02 hubbe Exp $");
 #include "interpret.h"
 #include "svalue.h"
 #include "multiset.h"
@@ -1102,6 +1102,10 @@ void o_range()
 
       if(from>to+1) from=to+1;
     }
+#ifdef DEBUG
+    if(from < 0 || (to-from+1) < 0)
+      fatal("Error in o_range.\n");
+#endif
 
     s=make_shared_binary_string(sp[-1].u.string->str+from,to-from+1);
     free_string(sp[-1].u.string);
