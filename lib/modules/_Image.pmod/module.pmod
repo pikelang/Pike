@@ -1,6 +1,6 @@
 #pike __REAL_VERSION__
 
-//! $Id: module.pmod,v 1.20 2001/06/03 08:23:00 mirar Exp $
+//! $Id: module.pmod,v 1.21 2001/06/03 08:24:44 mirar Exp $
 
 //! @decl Image.Layer load()
 //! @decl Image.Image load(object file)
@@ -211,14 +211,16 @@ object(Image.Image) load(object|string file)
 //!
 //! @decl Image.Image filled_circle(int d)
 //! @decl Image.Image filled_circle(int xd,int yd)
-//! @decl Image.Image filled_circle_layer(int d)
-//! @decl Image.Image filled_circle_layer(int xd,int yd)
-//! @decl Image.Image filled_circle_layer(int d,Image.Color color)
-//! @decl Image.Image filled_circle_layer(int xd,int yd,Image.Color color)
-//! @decl Image.Image filled_circle_layer(int d,int r,int g,int b)
-//! @decl Image.Image filled_circle_layer(int xd,int yd,int r,int g,int b)
-//!	Generates a white filled circle on black background of the 
+//! @decl Image.Layer filled_circle_layer(int d)
+//! @decl Image.Layer filled_circle_layer(int xd,int yd)
+//! @decl Image.Layer filled_circle_layer(int d,Image.Color color)
+//! @decl Image.Layer filled_circle_layer(int xd,int yd,Image.Color color)
+//! @decl Image.Layer filled_circle_layer(int d,int r,int g,int b)
+//! @decl Image.Layer filled_circle_layer(int xd,int yd,int r,int g,int b)
+//!	Generates a filled circle of the 
 //!	dimensions xd x yd (or d x d).
+//!	The Image is a white circle on black background; the layer
+//!	function defaults to a white circle (the background is transparent).
 
 Image.Image filled_circle(int xd,void|int yd)
 {
