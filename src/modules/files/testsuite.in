@@ -248,3 +248,12 @@ test_false(Process.system(RUNPIKE+" SRCDIR/sendfiletest.pike"))
 
 test_false(Process.system(RUNPIKE+" -DTEST_NORMAL SRCDIR/connecttest.pike"))
 test_false(Process.system(RUNPIKE+" SRCDIR/connecttest.pike"))
+
+dnl Stdio.Stat
+
+dnl These tests actually test the bignum stuff..
+test_any([[
+  Stdio.Stat s = Stdio.Stat();
+  s->size = -0x100000000;
+  return s->size;
+]], -0x100000000)
