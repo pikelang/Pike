@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: encode.c,v 1.176 2003/06/03 18:15:31 mast Exp $
+|| $Id: encode.c,v 1.177 2003/06/04 13:03:11 nilsson Exp $
 */
 
 #include "global.h"
@@ -27,9 +27,9 @@
 #include "bignum.h"
 #include "pikecode.h"
 
-RCSID("$Id: encode.c,v 1.176 2003/06/03 18:15:31 mast Exp $");
+RCSID("$Id: encode.c,v 1.177 2003/06/04 13:03:11 nilsson Exp $");
 
-#define ENCODE_DEBUG
+/* #define ENCODE_DEBUG */
 
 /* Use the old encoding method for programs. */
 /* #define OLD_PIKE_ENCODE_PROGRAM */
@@ -38,6 +38,9 @@ RCSID("$Id: encode.c,v 1.176 2003/06/03 18:15:31 mast Exp $");
 /* Pass a nonzero integer as the third arg to encode_value,
  * encode_value_canonic and decode_value to activate this debug. */
 #define EDB(N,X) do { debug_malloc_touch(data); if (data->debug>=N) {X;} } while (0)
+#ifndef PIKE_DEBUG
+#error ENCODE_DEBUG requires PIKE_DEBUG
+#endif
 #else
 #define EDB(N,X) do { debug_malloc_touch(data); } while (0)
 #endif
