@@ -1,7 +1,7 @@
 // This file is part of Roxen Search
 // Copyright © 2001 Roxen IS. All rights reserved.
 //
-// $Id: Word.pmod,v 1.8 2001/11/19 13:33:15 js Exp $
+// $Id: Word.pmod,v 1.9 2003/01/20 17:39:14 jonasw Exp $
 
 inherit Search.Filter.HTML;
 
@@ -24,12 +24,14 @@ Output filter(Standards.URI uri, string|Stdio.File data, string content_type)
 	  fn, r, sizeof(data));
   
   string text;
+  string bin = combine_path(getcwd(), "modules/search/bin/wvWare");
+  string cwd = combine_path(getcwd(), "modules/search/bin");
+  string xml = combine_path(getcwd(), "modules/search/pike-modules/"
+				      "Search.pmod/Filter.pmod/wvHtml.xml");
+  string doc = combine_path(getcwd(), fn);
   mixed err = catch
   {
-    text = my_popen(({ "modules/search/bin/wvWare",
-		       "-c", "utf-8",
-		       "-x", "modules/search/pike-modules/Search.pmod/Filter.pmod/wvHtml.xml",
-		       fn }));
+    text = my_popen( ({ bin, "-c", "utf-8", "-x", xml, doc }), cwd);
   };
   if(!rm(fn))
     werror("Search: Failed to remove temporary file: %s\n", fn);
