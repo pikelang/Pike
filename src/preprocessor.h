@@ -1,5 +1,5 @@
 /*
- * $Id: preprocessor.h,v 1.12 1999/03/23 02:21:05 marcus Exp $
+ * $Id: preprocessor.h,v 1.13 1999/09/17 22:46:20 hubbe Exp $
  *
  * Preprocessor template.
  * Based on cpp.c 1.45
@@ -1544,7 +1544,6 @@ static INT32 lower_cpp(struct cpp *this,
           SKIPSPACE();
           foo=pos;
           FIND_EOL();
-	  pos++;
 	  if(OUTP())
 	  {
 #if (SHIFT == 0)
