@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: program_id.h,v 1.20 2004/05/01 12:33:47 mast Exp $
+|| $Id: program_id.h,v 1.21 2004/11/26 16:28:06 grubba Exp $
 */
 
 #ifndef PROGRAM_ID_H
@@ -92,6 +92,21 @@
 #define tObjImpl_GMP_MPZ                      "\003\000\000\000\000\040"
 #define   tObjIs_GMP_MPZ                      "\003\001\000\000\000\040"
 
+/* Classes in builtin.cmod. */
+#define     PROG_BACKTRACE_FRAME_ID				    050
+#define     PROG_BUFFER_ID					    051
+#define     PROG_MULTI_STRING_REPLACE_ID			    052
+#define     PROG_SIGNLE_STRING_REPLACE_ID			    053
+#define     PROG_BOOTSTRING_ID					    054
+#define     PROG_TIME_ID					    055
+#define     PROG_TIMER_ID					    056
+#define     PROG_AUTOMAP_MARKER_ID				    057
+#define     PROG_LIST_ID					    060
+#define tObjImpl_LIST			      "\003\000\000\000\000\060"
+#define     PROG_LIST__GET_ITERATOR_ID				    061
+#define tObjImpl_LIST__GET_ITERATOR_ID	      "\003\000\000\000\000\061"
+
+/* Common modules. */
 #define     PROG_MODULE_MIME_ID					   0100
 #define     PROG_MODULE_FILES_ID				   0101
 
