@@ -31,11 +31,14 @@ pike_atomic_compare_and_swap (INT32 *p, INT32 oldval, INT32 newval)
 {
   INT32 ret;
 
-  __asm__ __volatile__ ("mov ar.ccv = %1\n"
-			"cmpxchg4.rel.nta %0 = [%2], %3, ar.ccv"
+  register ptrdiff_t cmpval __asm__("ar.ccv") = oldval;
+
+  __asm__ __volatile__ ("mov ar.ccv = %1;\n"
+			"\t;;\n"
+			"\tcmpxchg4.rel.nta %0 = [%2], %3, ar.ccv"
 			: "=r" (ret)
-			: "r" (oldval), "r" (p), "r" (newval)
-			: "ar.ccv", "memory");
+			: "r" (cmpval), "r" (p), "r" (newval)
+			: "memory", "ar.ccv");
   return ret;
 }
 
