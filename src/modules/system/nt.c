@@ -1,5 +1,5 @@
 /*
- * $Id: nt.c,v 1.3 1998/08/06 05:32:20 hubbe Exp $
+ * $Id: nt.c,v 1.4 1998/09/18 21:40:43 hubbe Exp $
  *
  * NT system calls for Pike
  *
@@ -21,11 +21,12 @@
 #include "las.h"
 #include "threads.h"
 #include "module_support.h"
+#include "array.h"
 
 #include <winsock.h>
 #include <windows.h>
 #include <winbase.h>
-
+#include <lm.h>
 
 static void f_cp(INT32 args)
 {
@@ -126,7 +127,7 @@ void f_LogonUser(INT32 args)
     
   check_all_args("System.LogonUser",args,
 		 BIT_STRING, BIT_INT | BIT_STRING, BIT_STRING,
-		 BIT_INT, BIT_INT | BIT_VOID);
+		 BIT_INT, BIT_INT | BIT_VOID,0);
 
   username=(LPTSTR)sp[-args].u.string->str;
 
@@ -178,6 +179,319 @@ static void exit_token(struct object *o)
   THIS_TOKEN=INVALID_HANDLE_VALUE;
 }
 
+static void low_encode_user_info_0(USER_INFO_0 *tmp)
+{
+#define SAFE_PUSH_WSTR(X) \ 
+  if(X) \
+    push_string(make_shared_string2((INT16 *) X)); \
+  else \
+    push_int(0)
+
+  SAFE_PUSH_WSTR(tmp->usri0_name);
+}
+
+static void low_encode_user_info_1(USER_INFO_1 *tmp)
+{
+  low_encode_user_info_0((USER_INFO_0 *)tmp);
+  SAFE_PUSH_WSTR(tmp->usri1_password);
+  push_int(tmp->usri1_password_age);
+  push_int(tmp->usri1_priv);
+  SAFE_PUSH_WSTR(tmp->usri1_home_dir);
+  SAFE_PUSH_WSTR(tmp->usri1_comment);
+  push_int(tmp->usri1_flags);
+  SAFE_PUSH_WSTR(tmp->usri1_script_path);
+  /* 8 entries */
+}
+
+static void low_encode_user_info_2(USER_INFO_2 *tmp)
+{
+  low_encode_user_info_1((USER_INFO_1 *)tmp);
+  push_int(tmp->usri2_auth_flags);
+  SAFE_PUSH_WSTR(tmp->usri2_full_name);
+  SAFE_PUSH_WSTR(tmp->usri2_usr_comment);
+  SAFE_PUSH_WSTR(tmp->usri2_parms);
+  SAFE_PUSH_WSTR(tmp->usri2_workstations);
+  push_int(tmp->usri2_last_logon);
+  push_int(tmp->usri2_last_logoff);
+  push_int(tmp->usri2_acct_expires);
+  push_int(tmp->usri2_max_storage);
+  push_int(tmp->usri2_units_per_week);
+
+  if(tmp->usri2_logon_hours)
+   push_string(make_shared_binary_string(tmp->usri2_logon_hours,21));
+  else
+   push_int(0);
+  
+  push_int(tmp->usri2_bad_pw_count);
+  push_int(tmp->usri2_num_logons);
+  SAFE_PUSH_WSTR(tmp->usri2_logon_server);
+  push_int(tmp->usri2_country_code);
+  push_int(tmp->usri2_code_page);
+  /* 24 entries */
+}
+
+static void low_encode_user_info_3(USER_INFO_3 *tmp)
+{
+  low_encode_user_info_2((USER_INFO_2 *)tmp);
+  push_int(tmp->usri3_user_id);
+  push_int(tmp->usri3_primary_group_id);
+  SAFE_PUSH_WSTR(tmp->usri3_profile);
+  SAFE_PUSH_WSTR(tmp->usri3_home_dir_drive);
+  push_int(tmp->usri3_password_expired);
+  /* 29 entries */
+}
+
+static void low_encode_user_info_10(USER_INFO_10 *tmp)
+{
+  SAFE_PUSH_WSTR(tmp->usri10_name);
+  SAFE_PUSH_WSTR(tmp->usri10_comment);
+  SAFE_PUSH_WSTR(tmp->usri10_usr_comment);
+  SAFE_PUSH_WSTR(tmp->usri10_full_name);
+  /* 4 entries */
+}
+
+static void low_encode_user_info_11(USER_INFO_11 *tmp)
+{
+  low_encode_user_info_10((USER_INFO_10 *)tmp);
+  push_int(tmp->usri11_priv);
+  push_int(tmp->usri11_auth_flags);
+  push_int(tmp->usri11_password_age);
+  SAFE_PUSH_WSTR(tmp->usri11_home_dir);
+  SAFE_PUSH_WSTR(tmp->usri11_parms);
+  push_int(tmp->usri11_last_logon);
+  push_int(tmp->usri11_last_logoff);
+  push_int(tmp->usri11_bad_pw_count);
+  push_int(tmp->usri11_num_logons);
+  SAFE_PUSH_WSTR(tmp->usri11_logon_server);
+  push_int(tmp->usri11_country_code);
+  SAFE_PUSH_WSTR(tmp->usri11_workstations);
+  push_int(tmp->usri11_max_storage);
+  push_int(tmp->usri11_units_per_week);
+
+  if(tmp->usri11_logon_hours)
+   push_string(make_shared_binary_string(tmp->usri11_logon_hours,21));
+  else
+   push_int(0);
+
+  push_int(tmp->usri11_code_page);
+  /* 20 entries */
+}
+
+static void low_encode_user_info_20(USER_INFO_20 *tmp)
+{
+  SAFE_PUSH_WSTR(tmp->usri20_name);
+  SAFE_PUSH_WSTR(tmp->usri20_full_name);
+  SAFE_PUSH_WSTR(tmp->usri20_comment);
+  push_int(tmp->usri20_flags);
+  push_int(tmp->usri20_user_id);
+  /* 5 entries */
+}
+
+static void encode_user_info(BYTE *u, int level)
+{
+  if(!u)
+  {
+    push_int(0);
+    return;
+  }
+  switch(level)
+  {
+    case 0: low_encode_user_info_0 ((USER_INFO_0 *) u);break;
+    case 1: low_encode_user_info_1 ((USER_INFO_1 *) u);f_aggregate(8); break;
+    case 2: low_encode_user_info_2 ((USER_INFO_2 *) u);f_aggregate(24);break;
+    case 3: low_encode_user_info_3 ((USER_INFO_3 *) u);f_aggregate(29);break;
+    case 10:low_encode_user_info_10((USER_INFO_10 *)u);f_aggregate(4); break;
+    case 11:low_encode_user_info_11((USER_INFO_11 *)u);f_aggregate(20);break;
+    case 20:low_encode_user_info_20((USER_INFO_20 *)u);f_aggregate(5); break;
+    default:
+      error("Unsupported USERINFO level.\n");
+  }
+}
+
+static int sizeof_user_info(int level)
+{
+  switch(level)
+  {
+    case 0: return sizeof(USER_INFO_0);
+    case 1: return sizeof(USER_INFO_1);
+    case 2: return sizeof(USER_INFO_2);
+    case 3: return sizeof(USER_INFO_3);
+    case 10:return sizeof(USER_INFO_10);
+    case 11:return sizeof(USER_INFO_11);
+    case 20:return sizeof(USER_INFO_20);
+    default: return -1;
+  }
+}
+
+typedef NET_API_STATUS WINAPI (*netusergetinfotype)(LPWSTR,LPWSTR,DWORD,LPBYTE *);
+typedef NET_API_STATUS WINAPI (*netuserenumtype)(LPWSTR,DWORD,DWORD,LPBYTE*,DWORD,LPDWORD,LPDWORD,LPDWORD);
+typedef NET_API_STATUS WINAPI (*netapibufferfreetype)(LPVOID);
+
+static netusergetinfotype netusergetinfo;
+static netuserenumtype netuserenum;
+static netapibufferfreetype netapibufferfree;
+HINSTANCE netapilib;
+
+LPWSTR make_wstr(struct pike_string *s)
+{
+  LPWSTR ret=(LPWSTR)xalloc(sizeof(WCHAR)*(s->len+1));
+  INT32 e;
+  for(e=0;e<=s->len;e++) ret[e]=s->str[e];
+  return ret;
+}
+
+void f_NetUserGetInfo(INT32 args)
+{
+  BYTE *tmp=0;
+  DWORD level;
+  LPWSTR server, user;
+  NET_API_STATUS ret;
+
+  check_all_args("NetUserGetInfo",args,BIT_STRING|BIT_INT, BIT_STRING, BIT_VOID | BIT_INT, 0);
+
+  if(args>2)
+    level=sp[2-args].u.integer;
+  else
+    level=1;
+
+  switch(level)
+  {
+    case 0: case 1: case 2: case 3: case 10: case 11: case 20:
+      break;
+    default:
+      error("Unsupported information level in NetUserGetInfo.\n");
+  }
+
+  if(sp[-args].type==T_STRING)
+  {
+    server=make_wstr(sp[-args].u.string);
+  }else{
+    server=NULL;
+  }
+  
+  user=make_wstr(sp[1-args].u.string);
+
+  THREADS_ALLOW();
+  ret=netusergetinfo(server,user,level,&tmp);
+  THREADS_DISALLOW();
+
+  pop_n_elems(args);
+  if(server) free(server);
+  free(user);
+  
+  switch(ret)
+  {
+    case ERROR_ACCESS_DENIED:
+      error("NetGetUserInfo: Access denied.\n");
+      break;
+
+    case NERR_InvalidComputer:
+      error("NetGetUserInfo: Invalid computer.\n");
+      break;
+
+    case NERR_UserNotFound:
+      push_int(0);
+      return;
+
+    case NERR_Success:
+      encode_user_info(tmp,level);
+      netapibufferfree(tmp);
+      return;
+
+    default:
+      error("NetGetUserInfo: Unknown error %d\n",ret);
+  }
+}
+
+void f_NetUserEnum(INT32 args)
+{
+  DWORD level=0;
+  DWORD filter=0;
+  LPWSTR server=NULL;
+  INT32 pos=0,e;
+  struct array *a=0;
+
+  fprintf(stderr,"before: sp=%p args=%d (base=%p)\n",sp,args,sp-args);
+
+  check_all_args("NetUserEnum",args,BIT_STRING|BIT_INT|BIT_VOID, BIT_INT|BIT_VOID,BIT_INT|BIT_VOID,0);
+
+  switch(args)
+  {
+    default:filter=sp[2-args].u.integer;
+    case 2: level=sp[1-args].u.integer;
+      switch(level)
+      {
+	case 0: case 1: case 2: case 3: case 10: case 11: case 20:
+	  break;
+	default:
+	  error("Unsupported information level in NetUserGetInfo.\n");
+      }
+
+    case 1:
+      if(sp[-args].type==T_STRING)
+	server=make_wstr(sp[-args].u.string);
+
+    case 0: break;
+  }
+
+  pop_n_elems(args);
+
+  fprintf(stderr,"now: sp=%p\n",sp);
+
+  while(1)
+  {
+    DWORD read=0, total=0, resume=0;
+    NET_API_STATUS ret;
+    LPBYTE buf=0,ptr;
+
+    fprintf(stderr,"Result: filter=%d level=%d\n",filter,level);
+
+    THREADS_ALLOW();
+    ret=netuserenum(server,
+		    filter,
+		    level,
+		    &buf,
+		    0x10000,
+		    &read,
+		    &total,
+		    &resume);
+    THREADS_DISALLOW();
+    if(!a)
+      push_array(a=allocate_array(total));
+
+    fprintf(stderr,"Result: %d (%d) %d %d %p\n",ret,ret==NERR_Success,total,read,buf);
+
+    switch(ret)
+    {
+      case ERROR_ACCESS_DENIED:
+	error("NetGetUserInfo: Access denied.\n");
+	break;
+	
+      case NERR_InvalidComputer:
+	error("NetGetUserInfo: Invalid computer.\n");
+	break;
+
+      case NERR_Success:
+      case ERROR_MORE_DATA:
+	ptr=buf;
+	for(e=0;e<read;e++)
+	{
+	  fprintf(stderr,"before: sp=%p\n",sp);
+	  encode_user_info(ptr,level);
+	  a->item[pos]=sp[-1];
+	  sp--;
+	  fprintf(stderr,"after: sp=%p\n",sp);
+	  pos++;
+	  if(pos>=a->size) break;
+	  ptr+=sizeof_user_info(level);
+	}
+	netapibufferfree(buf);
+	if(ret==ERROR_MORE_DATA) continue;
+    }
+    break;
+  }
+}
+
 void init_nt_system_calls(void)
 {
   add_function("cp",f_cp,"function(string,string:int)", 0);
@@ -218,6 +532,59 @@ void init_nt_system_calls(void)
       token_program->flags |= PROGRAM_DESTRUCT_IMMEDIATE;
     }
   }
+
+  /* NetUserGetInfo only exists on NT, link it dynamically */
+  if(netapilib=LoadLibrary("netapi32"))
+  {
+    FARPROC proc;
+    if(proc=GetProcAddress(netapilib, "NetApiBufferFree"))
+    {
+      netapibufferfree=(netapibufferfreetype)proc;
+
+      if(proc=GetProcAddress(netapilib, "NetUserGetInfo"))
+      {
+	netusergetinfo=(netusergetinfotype)proc;
+	
+	add_function("NetUserGetInfo",f_NetUserGetInfo,"function(string,string,int|void:string|array(string|int))",0);
+	
+	SIMPCONST(USER_PRIV_GUEST);
+	SIMPCONST(USER_PRIV_USER);
+	SIMPCONST(USER_PRIV_ADMIN);
+	
+	SIMPCONST(UF_SCRIPT);
+	SIMPCONST(UF_ACCOUNTDISABLE);
+	SIMPCONST(UF_HOMEDIR_REQUIRED);
+	SIMPCONST(UF_PASSWD_NOTREQD);
+	SIMPCONST(UF_PASSWD_CANT_CHANGE);
+	SIMPCONST(UF_LOCKOUT);
+	SIMPCONST(UF_DONT_EXPIRE_PASSWD);
+	
+	SIMPCONST(UF_NORMAL_ACCOUNT);
+	SIMPCONST(UF_TEMP_DUPLICATE_ACCOUNT);
+	SIMPCONST(UF_WORKSTATION_TRUST_ACCOUNT);
+	SIMPCONST(UF_SERVER_TRUST_ACCOUNT);
+	SIMPCONST(UF_INTERDOMAIN_TRUST_ACCOUNT);
+	
+	SIMPCONST(AF_OP_PRINT);
+	SIMPCONST(AF_OP_COMM);
+	SIMPCONST(AF_OP_SERVER);
+	SIMPCONST(AF_OP_ACCOUNTS);
+      }
+      
+      if(proc=GetProcAddress(netapilib, "NetUserEnum"))
+      {
+	netuserenum=(netuserenumtype)proc;
+	
+	add_function("NetUserEnum",f_NetUserEnum,"function(string|int|void,int|void,int|void:array(string|array(string|int)))",0);
+	
+	SIMPCONST(FILTER_TEMP_DUPLICATE_ACCOUNT);
+	SIMPCONST(FILTER_NORMAL_ACCOUNT);
+	SIMPCONST(FILTER_INTERDOMAIN_TRUST_ACCOUNT);
+	SIMPCONST(FILTER_WORKSTATION_TRUST_ACCOUNT);
+	SIMPCONST(FILTER_SERVER_TRUST_ACCOUNT);
+      }
+    }
+  }
 }
 
 void exit_nt_system_calls(void)
@@ -233,6 +600,16 @@ void exit_nt_system_calls(void)
     {
       advapilib=0;
       logonuser=0;
+    }
+  }
+  if(netapilib)
+  {
+    if(FreeLibrary(netapilib))
+    {
+      netapilib=0;
+      netusergetinfo=0;
+      netuserenum=0;
+      netapibufferfree=0;
     }
   }
 }
