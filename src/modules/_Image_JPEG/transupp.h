@@ -2,7 +2,7 @@
 ||| This file is part of Pike. For copyright information see COPYRIGHT.
 ||| Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 ||| for more information.
-||| $Id: transupp.h,v 1.4 2002/10/08 20:22:40 nilsson Exp $
+||| $Id: transupp.h,v 1.5 2002/10/09 10:00:03 norrby Exp $
 \*/
 /*
  * transupp.h
@@ -27,7 +27,6 @@
 #ifndef TRANSFORMS_NOT_SUPPORTED
 #ifndef TRANSFORMS_SUPPORTED
 #define TRANSFORMS_SUPPORTED 1		/* 0 disables transform code */
-#endif
 #endif
 
 /*
@@ -202,3 +201,4 @@ EXTERN(void) jcopy_markers_setup
 EXTERN(void) jcopy_markers_execute
 	JPP((j_decompress_ptr srcinfo, j_compress_ptr dstinfo,
 	     JCOPY_OPTION option));
+#endif /* TRANSFORMS_NOT_SUPPORTED */

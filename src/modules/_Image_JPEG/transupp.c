@@ -2,7 +2,7 @@
 ||| This file is part of Pike. For copyright information see COPYRIGHT.
 ||| Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 ||| for more information.
-||| $Id: transupp.c,v 1.8 2002/10/08 20:22:40 nilsson Exp $
+||| $Id: transupp.c,v 1.9 2002/10/09 10:00:03 norrby Exp $
 \*/
 
 #include "global.h"
@@ -1572,6 +1572,7 @@ jtransform_execute_transform (j_decompress_ptr srcinfo,
  * This must be called before jpeg_read_header() to have the desired effect.
  */
 
+#ifndef TRANSFORMS_NOT_SUPPORTED
 GLOBAL(void)
 jcopy_markers_setup (j_decompress_ptr srcinfo, JCOPY_OPTION option)
 {
@@ -1641,5 +1642,5 @@ jcopy_markers_execute (j_decompress_ptr srcinfo, j_compress_ptr dstinfo,
 #endif
   }
 }
-
+#endif /* TRANSFORMS_NOT_SUPPORTED */
 #endif /* HAVE_JPEGLIB_H */
