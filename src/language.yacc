@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: language.yacc,v 1.328 2004/03/13 14:45:06 grubba Exp $
+|| $Id: language.yacc,v 1.329 2004/03/13 16:14:15 grubba Exp $
 */
 
 %pure_parser
@@ -113,7 +113,7 @@
 /* This is the grammar definition of Pike. */
 
 #include "global.h"
-RCSID("$Id: language.yacc,v 1.328 2004/03/13 14:45:06 grubba Exp $");
+RCSID("$Id: language.yacc,v 1.329 2004/03/13 16:14:15 grubba Exp $");
 #ifdef HAVE_MEMORY_H
 #include <memory.h>
 #endif
@@ -2513,9 +2513,7 @@ class: modifiers TOK_CLASS line_number_info optional_identifier
 
     /* fprintf(stderr, "LANGUAGE.YACC: CLASS end\n"); */
 
-    if(!p) {
-      yyerror("Class definition failed.");
-    }else{
+    if(p) {
       free_program(p);
     }
 
@@ -3921,7 +3919,7 @@ void yyerror(char *str)
     Pike_fatal("Stack error (underflow)\n");
 #endif
 
-  if (Pike_compiler->num_parse_error > 10) return;
+  if (Pike_compiler->num_parse_error > 20) return;
   Pike_compiler->num_parse_error++;
   cumulative_parse_error++;
 
