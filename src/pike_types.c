@@ -5,7 +5,7 @@
 \*/
 /**/
 #include "global.h"
-RCSID("$Id: pike_types.c,v 1.172 2001/03/29 20:19:16 grubba Exp $");
+RCSID("$Id: pike_types.c,v 1.173 2001/03/31 01:12:47 grubba Exp $");
 #include <ctype.h>
 #include "svalue.h"
 #include "pike_types.h"
@@ -504,8 +504,9 @@ ptrdiff_t pop_stack_mark(void)
 void type_stack_pop_to_mark(void)
 {
   pop_stack_mark();
-  while(Pike_compiler->type_stackp > *Pike_compiler->pike_type_mark_stackp)
-    pop_type_stack();
+  while(Pike_compiler->type_stackp > *Pike_compiler->pike_type_mark_stackp) {
+    free_type(*(Pike_compiler->type_stackp--));
+  }
 
   TYPE_STACK_DEBUG("type_stack_pop_to_mark");
 }
@@ -652,13 +653,21 @@ void debug_push_type(unsigned INT16 type)
 }
 
 /* Pop one level of types. This is the inverse of push_type() */
-void debug_pop_type_stack(void)
+void debug_pop_type_stack(unsigned INT16 expected)
 { 
   struct pike_type *top;
   if(Pike_compiler->type_stackp<type_stack)
     fatal("Type stack underflow\n");
 
   top = *(Pike_compiler->type_stackp--);
+#ifdef PIKE_DEBUG
+  if ((top->type != expected) && (top->type != PIKE_T_NAME)) {
+    fatal("Unexpected type on stack: %d (expected %d)\n", top->type, expected);
+  }
+#endif /* PIKE_DEBUG */
+  /* OPTIMIZE: It looks like this function is always called with
+   * expected == T_ARRAY.
+   */
   switch(top->type) {
   case T_FUNCTION:
   case T_MANY:
@@ -707,7 +716,7 @@ void debug_pop_type_stack(void)
   case PIKE_T_NAME:
     /* Pop the name and recurse. */
     push_finished_type(top->cdr);
-    pop_type_stack();
+    pop_type_stack(expected);
     break;
   default:
     Pike_error("pop_type_stack(): Unhandled node type: %d\n", top->type);
@@ -4587,8 +4596,14 @@ ptrdiff_t pop_stack_mark(void)
   return Pike_compiler->type_stackp - *Pike_compiler->pike_type_mark_stackp;
 }
 
-void debug_pop_type_stack(void)
+void debug_pop_type_stack(unsigned INT16 expected)
 { 
+#ifdef PIKE_DEBUG
+  if (Pike_compiler->type_stackp[0] != expected) {
+    fatal("Unexpected type node: %d (expected: %d)\n",
+	  Pike_compiler->type_stackp[0], expected);
+  }
+#endif /* PIKE_DEBUG */
   Pike_compiler->type_stackp--;
   if(Pike_compiler->type_stackp<type_stack)
     fatal("Type stack underflow\n");

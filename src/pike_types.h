@@ -5,7 +5,7 @@
 \*/
 
 /*
- * $Id: pike_types.h,v 1.69 2001/03/29 21:47:37 grubba Exp $
+ * $Id: pike_types.h,v 1.70 2001/03/31 01:12:48 grubba Exp $
  */
 #ifndef PIKE_TYPES_H
 #define PIKE_TYPES_H
@@ -257,7 +257,7 @@ void debug_push_reverse_type(unsigned INT16 type);
 void debug_check_type_string(struct pike_type *s);
 void init_types(void);
 ptrdiff_t pop_stack_mark(void);
-void debug_pop_type_stack(void);
+void debug_pop_type_stack(unsigned INT16 expected);
 void type_stack_pop_to_mark(void);
 void type_stack_reverse(void);
 struct pike_type *debug_peek_type_stack(void);
@@ -382,7 +382,7 @@ int pike_type_allow_premature_toss(struct pike_type *type);
 #define make_pike_type(X) \
  ((struct pike_type *)debug_malloc_pass(debug_make_pike_type(X)))
 #ifdef USE_PIKE_TYPE
-#define pop_type_stack() do { debug_malloc_pass(debug_peek_type_stack()); debug_pop_type_stack(); } while(0)
+#define pop_type_stack(E) do { debug_malloc_pass(debug_peek_type_stack()); debug_pop_type_stack(E); } while(0)
 #define push_int_type(MIN,MAX) do { debug_push_int_type(MIN,MAX);debug_malloc_pass(debug_peek_type_stack()); } while(0)
 #define push_object_type(FLAG,ID) do { debug_push_object_type(FLAG,ID);debug_malloc_pass(debug_peek_type_stack()); } while(0)
 #define push_object_type_backwards(FLAG,ID) do { debug_push_object_type_backwards(FLAG,ID);debug_malloc_pass(debug_peek_type_stack()); } while(0)

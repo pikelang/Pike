@@ -111,7 +111,7 @@
 /* This is the grammar definition of Pike. */
 
 #include "global.h"
-RCSID("$Id: language.yacc,v 1.236 2001/03/30 19:07:39 grubba Exp $");
+RCSID("$Id: language.yacc,v 1.237 2001/03/31 01:12:47 grubba Exp $");
 #ifdef HAVE_MEMORY_H
 #include <memory.h>
 #endif
@@ -623,7 +623,7 @@ def: modifiers type_or_error optional_stars TOK_IDENTIFIER push_compiler_frame0
       push_finished_type(Pike_compiler->compiler_frame->variable[e].type);
       e--;
       Pike_compiler->varargs=0;
-      pop_type_stack();
+      pop_type_stack(T_ARRAY);
     }else{
       push_type(T_VOID);
     }
@@ -1792,7 +1792,7 @@ lambda: TOK_LAMBDA push_compiler_frame1
     {
       push_finished_type(Pike_compiler->compiler_frame->variable[e].type);
       e--;
-      pop_type_stack();
+      pop_type_stack(T_ARRAY);
     }else{
       push_type(T_VOID);
     }
@@ -1866,7 +1866,7 @@ local_function: TOK_IDENTIFIER push_compiler_frame1 func_args
       push_finished_type(Pike_compiler->compiler_frame->variable[e].type);
       e--;
       Pike_compiler->varargs=0;
-      pop_type_stack();
+      pop_type_stack(T_ARRAY);
     }else{
       push_type(T_VOID);
     }
@@ -1992,7 +1992,7 @@ local_function2: optional_stars TOK_IDENTIFIER push_compiler_frame1 func_args
       push_finished_type(Pike_compiler->compiler_frame->variable[e].type);
       e--;
       Pike_compiler->varargs=0;
-      pop_type_stack();
+      pop_type_stack(T_ARRAY);
     }else{
       push_type(T_VOID);
     }
@@ -2162,7 +2162,7 @@ optional_create_arguments: /* empty */ { $$ = 0; }
     if (Pike_compiler->varargs) {
       /* Varargs */
       push_finished_type(Pike_compiler->compiler_frame->variable[e--].type);
-      pop_type_stack(); /* Pop one level of array. */
+      pop_type_stack(T_ARRAY); /* Pop one level of array. */
       Pike_compiler->varargs = 0;
     } else {
       /* Not varargs. */
