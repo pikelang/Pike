@@ -289,11 +289,13 @@ PIKEFUN mixed m_delete(object|mapping map, mixed index)
     *sp=s;
     sp++;
   }
-  else
+  else if (map->type == T_OBJECT)
   {
-    apply_lfun( map->u.object, LFUN__M_DELETE, 1 );
+    apply_lfun( map->u.object, LFUN__M_DELETE, args-1 );
     stack_swap();
     pop_stack();
+  } else {
+    SIMPLE_BAD_ARG_ERROR("m_delete", 1, "object|mapping");
   }
 }
 
