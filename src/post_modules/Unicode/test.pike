@@ -1,6 +1,6 @@
 #! /usr/bin/env pike
 
-// $Id: test.pike,v 1.6 2003/01/20 18:00:49 nilsson Exp $
+// $Id: test.pike,v 1.7 2003/04/28 00:25:41 mast Exp $
 
 #define c1 c[0]
 #define c2 c[1]
@@ -8,18 +8,12 @@
 #define c4 c[3]
 #define c5 c[4]
 
-void main(int argc, array argv)
-{
-  int tests, fail, part, opl;
+int tests, fail;
+array(string) argv = ({"dummy", combine_path (__FILE__, "..")});
 
-  werror("Performing Unicode normalization tests\n");
-  werror("See http://www.unicode.org/Public/3.2-Update/NormalizationTest-3.2.0.txt\n");
-  if( argc<2 || has_value( argv, "--help" ) )
-  {
-    werror("\nUsage %s <path>\nwhere path is the path to the directory with the NormalizationTest.txt file.\n",
-	  argv[0]);
-    exit(0);
-  }
+array(int) a()
+{
+  int part, opl;
 
   foreach( Stdio.File( argv[1]+"/NormalizationTest.txt","r" )->read()/"\n", string l )
   {
@@ -66,6 +60,7 @@ void main(int argc, array argv)
 	  fail++;
 	  return;
 	}
+      tests++;
     };
 
     
@@ -77,8 +72,24 @@ void main(int argc, array argv)
 
     test( c4, "NFKC", c1, c2, c3, c4, c5 );
     test( c5, "NFKD", c1, c2, c3, c4, c5 );
-    tests += 6;
   }
   werror( "Done. "+(tests-opl+1)+" tests.\n" );
-  write( tests+" "+fail );
+
+  return ({tests, fail});
+}
+
+void main(int argc, array argv)
+{
+
+  werror("Performing Unicode normalization tests\n");
+  werror("See http://www.unicode.org/Public/3.2-Update/NormalizationTest-3.2.0.txt\n");
+  if( argc<2 || has_value( argv, "--help" ) )
+  {
+    werror("\nUsage %s <path>\nwhere path is the path to the directory with the NormalizationTest.txt file.\n",
+	  argv[0]);
+    exit(0);
+  }
+
+  global::argv = argv;
+  a();
 }
