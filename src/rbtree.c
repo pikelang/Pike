@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: rbtree.c,v 1.14 2002/12/05 20:13:04 mast Exp $
+|| $Id: rbtree.c,v 1.15 2002/12/07 13:34:28 grubba Exp $
 */
 
 /* An implementation of a threaded red/black balanced binary tree.
@@ -12,7 +12,7 @@
 
 #include "global.h"
 
-RCSID("$Id: rbtree.c,v 1.14 2002/12/05 20:13:04 mast Exp $");
+RCSID("$Id: rbtree.c,v 1.15 2002/12/07 13:34:28 grubba Exp $");
 
 #include "interpret.h"
 #include "pike_error.h"
@@ -215,7 +215,7 @@ void rbstack_shift (struct rbstack_ptr rbstack,
  * through a tree they still sum up to O(n) since every node is
  * visited at most twice. */
 
-PMOD_EXPORT inline struct rb_node_hdr *rb_first (struct rb_node_hdr *root)
+PMOD_EXPORT struct rb_node_hdr *rb_first (struct rb_node_hdr *root)
 {
   DO_IF_RB_STATS (rb_num_sidesteps++; rb_num_sidestep_ops++);
   if (root)
@@ -226,7 +226,7 @@ PMOD_EXPORT inline struct rb_node_hdr *rb_first (struct rb_node_hdr *root)
   return root;
 }
 
-PMOD_EXPORT inline struct rb_node_hdr *rb_last (struct rb_node_hdr *root)
+PMOD_EXPORT struct rb_node_hdr *rb_last (struct rb_node_hdr *root)
 {
   DO_IF_RB_STATS (rb_num_sidesteps++; rb_num_sidestep_ops++);
   if (root)
@@ -237,7 +237,7 @@ PMOD_EXPORT inline struct rb_node_hdr *rb_last (struct rb_node_hdr *root)
   return root;
 }
 
-PMOD_EXPORT inline struct rb_node_hdr *rb_link_prev (struct rb_node_hdr *node)
+PMOD_EXPORT struct rb_node_hdr *rb_link_prev (struct rb_node_hdr *node)
 {
   node = node->prev;
   DO_IF_RB_STATS (rb_num_sidestep_ops++);
@@ -248,7 +248,7 @@ PMOD_EXPORT inline struct rb_node_hdr *rb_link_prev (struct rb_node_hdr *node)
   return node;
 }
 
-PMOD_EXPORT inline struct rb_node_hdr *rb_link_next (struct rb_node_hdr *node)
+PMOD_EXPORT struct rb_node_hdr *rb_link_next (struct rb_node_hdr *node)
 {
   node = node->next;
   DO_IF_RB_STATS (rb_num_sidestep_ops++);
