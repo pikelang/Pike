@@ -90,6 +90,8 @@ o Fixed bug in Image.Image()->scale(0.5) where it could generate zero-
   size image objects.
 o Fixed rounding bug in Image.Colortable that caused it to disregard
   exact matches near cubicle boundaries.
+o Fixed opcode level trace and debug (when compiled with
+  --with-rtldebug).
 
 Changes since Pike 7.2.30:
 ----------------------------------------------------------------------
