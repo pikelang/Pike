@@ -1,6 +1,6 @@
 // -*- c-mode -*-
 //
-// $Id: treeopt.in,v 1.7 1999/11/09 16:57:36 grubba Exp $
+// $Id: treeopt.in,v 1.8 1999/11/09 17:36:52 grubba Exp $
 //
 // The tree optimizer
 //
@@ -167,8 +167,14 @@ F_LOR(0, -):
 F_LOR(F_NOT(0, *), F_NOT(1, *)):
   F_NOT(F_LAND($0, $1), -);
 
+F_LOR(0, F_LOR(1, 2)):
+  F_LOR(F_LOR(0, 1), 2);
+
 F_LOR(0 = F_ASSIGN(*, *[node_is_false($$)]), 2):
   F_COMMA_EXPR($0, $2);
+
+F_LOR(F_COMMA_EXPR(0, 1), 2):
+  F_COMMA_EXPR(0, F_LOR(1, 2));
 
 F_LOR(0 = F_ASSIGN(*, *[node_is_true($$)]), *):
   $0;
@@ -192,11 +198,17 @@ F_LAND(0, -):
 F_LAND(F_NOT(0, *), F_NOT(1, *)):
   F_NOT(F_LOR($0, $1), -);
 
+F_LAND(0, F_LAND(1, 2)):
+  F_LAND(F_LAND(0, 1), 2);
+
 F_LAND(0 = F_ASSIGN(*, *[node_is_true($$)]), 2):
   F_COMMA_EXPR($0, $2);
 
 F_LAND(0 = F_ASSIGN(*, *[node_is_false($$)]), *):
   $0;
+
+F_LAND(F_COMMA_EXPR(0, 1), 2):
+  F_COMMA_EXPR(0, F_LAND(1, 2));
 
 F_LAND(*[node_is_true($$)], 0):
   $0;
@@ -204,17 +216,17 @@ F_LAND(*[node_is_true($$)], 0):
 F_LAND(0 = *[node_is_false($$)], *):
   $0;
 
-F_LAND(0, 1 = *[node_is_false($$)]):
-  F_COMMA_EXPR($0, $1);
+// F_LAND(0, 1 = *[node_is_false($$)]):
+//   F_COMMA_EXPR($0, $1);
 
 
 '?'(-, -):
   -;
 
-'?'(*, -):
-  -;
-
 '?'(-, ':'(*, 0)):
+  $0;
+
+'?'(0, -):
   $0;
 
 '?'(F_NOT(0, *), ':'(1, 2)):
