@@ -1,4 +1,4 @@
-/* $Id: master.pike.in,v 1.19 1998/04/24 18:18:49 hubbe Exp $
+/* $Id: master.pike.in,v 1.20 1998/04/29 00:18:38 hubbe Exp $
  * 
  * Master-file for Pike.
  *
@@ -539,15 +539,16 @@ void _main(string *orig_argv, string *env)
       ({"version",tmp->NO_ARG,({"-v","--version"})}),
 	({"help",tmp->NO_ARG,({"-h","--help"})}),
 	  ({"execute",tmp->HAS_ARG,({"-e","--execute"})}),
-	    ({"modpath",tmp->HAS_ARG,({"-M","--module-path"})}),
-	      ({"ipath",tmp->HAS_ARG,({"-I","--include-path"})}),
-		({"ppath",tmp->HAS_ARG,({"-P","--program-path"})}),
-		  ({"warnings",tmp->NO_ARG,({"-w","--warnings"})}),
-		    ({"ignore",tmp->HAS_ARG,"-ms"}),
-		      ({"debug",tmp->MAY_HAVE_ARG,"--debug",0,1}),
-			({"trace",tmp->MAY_HAVE_ARG,"--trace",0,1}),
-			  ({"ignore",tmp->MAY_HAVE_ARG,"-Dqdatpl",0,1})
-			}), 1);
+	    ({"preprocess",tmp->HAS_ARG,({"-E","--preprocess"})}),
+	      ({"modpath",tmp->HAS_ARG,({"-M","--module-path"})}),
+		({"ipath",tmp->HAS_ARG,({"-I","--include-path"})}),
+		  ({"ppath",tmp->HAS_ARG,({"-P","--program-path"})}),
+		    ({"warnings",tmp->NO_ARG,({"-w","--warnings"})}),
+		      ({"ignore",tmp->HAS_ARG,"-ms"}),
+			({"debug",tmp->MAY_HAVE_ARG,"--debug",0,1}),
+			  ({"trace",tmp->MAY_HAVE_ARG,"--trace",0,1}),
+			    ({"ignore",tmp->MAY_HAVE_ARG,"-Dqdatpl",0,1})
+			      }), 1);
     
     /* Parse -M and -I backwards */
     for(i=sizeof(q)-1;i>=0;i--)
@@ -610,6 +611,10 @@ void _main(string *orig_argv, string *env)
       case "execute":
 	compile_string("#include <simulate.h>\nmixed create(){"+opts[1]+";}")();
 	exit(0);
+
+	case "preprocess":
+	  _static_modules.files()->_stdout->write(cpp(_static_modules.files()->Fd(opts[1],"r")->read(),opts[1]));
+	  exit(0);
       }
     }
 
@@ -649,14 +654,15 @@ void _main(string *orig_argv, string *env)
 #if constant(_debug)
   if(debug) _debug(debug);
 #endif
-  if(trace) predef::trace(trace);
   if(!script->main)
   {
     werror("Error: "+argv[0]+" has no main().\n");
     exit(1);
   }
 
+  if(trace) predef::trace(trace);
   i=script->main(sizeof(argv),argv,env);
+  predef::trace(0);
   if(i >=0) exit(i);
 }
 
