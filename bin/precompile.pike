@@ -1598,6 +1598,7 @@ class ParseBlock
 	  min_args--;
 	  max_args=0x7fffffff;
 	  repeat_arg = min_args;
+	  args[-1]->_c_type = "struct svalue *";
 	}
 
 	while(min_args>0 && args[min_args-1]->may_be_void())
@@ -1650,21 +1651,24 @@ class ParseBlock
 
 	foreach(args, Argument arg)
 	  {
-	    if(arg->may_be_void() && "mixed" != (string)arg->basetype())
-	    {
-	      ret+=({
-		PC.Token(sprintf("if(args > %s) ",argnum)),
-		  });
-	    }
 	    if (argnum == repeat_arg) {
 	      // Begin the argcnt loop.
-	      ret += ({ PC.Token(sprintf("{\n"
-					 "  INT32 argcnt;\n"
-					 "  for (argcnt=0; argcnt < %s-%d; argcnt++) {\n",
-					 num_arguments, argnum),
-				 arg->line()) });
 	      check_argbase = "+argcnt"+argbase;
+	      ret += ({ PC.Token(sprintf("if (args > %d) {\n"
+					 "  INT32 argcnt = 0;\n"
+					 "  do {\n"
+					 "    dmalloc_touch_svalue(Pike_sp%+d%s);\n",
+					 argnum, argnum, check_argbase),
+				 arg->line()) });
 	    }
+
+	    else if(arg->may_be_void() && "mixed" != (string)arg->basetype())
+	    {
+	      ret+=({
+		PC.Token(sprintf("if(args > %d) ",argnum)),
+		  });
+	    }
+
 	    if(arg->is_c_type() && arg->basetype() == "string")
 	    {
 	      /* Special case for 'char *' */
@@ -1715,73 +1719,81 @@ class ParseBlock
 
 	    if (argnum == repeat_arg) {
 	      // End the argcnt loop.
-	      ret += ({ PC.Token("  }\n}\n", arg->line()) });
+	      ret += ({ PC.Token(sprintf ("  } while (++argcnt < %s-%d);\n"
+					  "  %s=Pike_sp%+d%s;\n"
+					  "} else %s=0;\n",
+					  num_arguments, argnum,
+					  arg->name(), argnum, argbase,
+					  arg->name()),
+				 arg->line()) });
 	    }
 
-	    if(arg->may_be_void())
-	    {
-	      ret+=({
-		PC.Token(sprintf("if(args > %d) { ",argnum)),
+	    else {
+	      if(arg->may_be_void())
+	      {
+		ret+=({
+		  PC.Token(sprintf("if(args > %d) { ",argnum)),
+		});
+	      }
+
+	      switch(arg->basetype())
+	      {
+		case "int":
+		  ret+=({
+		    sprintf("%s=Pike_sp[%d%s].u.integer;\n",arg->name(),
+			    argnum,argbase)
 		  });
-	    }
+		  break;
 
-	    switch(arg->basetype())
-	    {
-	      case "int":
-		ret+=({
-		  sprintf("%s=Pike_sp[%d%s].u.integer;\n",arg->name(),
-			  argnum,argbase)
-		    });
-		break;
-
-	      case "float":
-		ret+=({
-		  sprintf("%s=Pike_sp[%d%s].u.float_number;\n",
-			  arg->name(),
-			  argnum,argbase)
-		    });
-		break;
-
-
-	      case "mixed":
-		ret+=({
-		  PC.Token(sprintf("%s=Pike_sp%+d%s; dmalloc_touch_svalue(Pike_sp%+d%s);\n",
-				   arg->name(),
-				   argnum,argbase,argnum,argbase),arg->line()),
-		    });
-		break;
-
-	      default:
-		if(arg->is_c_type() && arg->basetype() == "string")
-		{
-		  /* some sort of 'char *' */
-		  /* This will have to be amended when we want to support
-		   * wide strings
-		   */
+		case "float":
 		  ret+=({
-		    PC.Token(sprintf("%s=Pike_sp[%d%s].u.string->str; debug_malloc_touch(Pike_sp[%d%s].u.string)\n",
+		    sprintf("%s=Pike_sp[%d%s].u.float_number;\n",
+			    arg->name(),
+			    argnum,argbase)
+		  });
+		  break;
+
+
+		case "mixed":
+		  ret+=({
+		    PC.Token(sprintf("%s=Pike_sp%+d%s; dmalloc_touch_svalue(Pike_sp%+d%s);\n",
 				     arg->name(),
-				     argnum,argbase,
-				     argnum,argbase),arg->line())
-		      });
+				     argnum,argbase,argnum,argbase),arg->line()),
+		  });
+		  break;
+
+		default:
+		  if(arg->is_c_type() && arg->basetype() == "string")
+		  {
+		    /* some sort of 'char *' */
+		    /* This will have to be amended when we want to support
+		     * wide strings
+		     */
+		    ret+=({
+		      PC.Token(sprintf("%s=Pike_sp[%d%s].u.string->str; debug_malloc_touch(Pike_sp[%d%s].u.string)\n",
+				       arg->name(),
+				       argnum,argbase,
+				       argnum,argbase),arg->line())
+		    });
 	      
-		}else{
-		  ret+=({
-		    PC.Token(sprintf("debug_malloc_pass(%s=Pike_sp[%d%s].u.%s);\n",
-				     arg->name(),
-				     argnum,argbase,
-				     arg->basetype()),arg->line())
-		      });
-		}
+		  }else{
+		    ret+=({
+		      PC.Token(sprintf("debug_malloc_pass(%s=Pike_sp[%d%s].u.%s);\n",
+				       arg->name(),
+				       argnum,argbase,
+				       arg->basetype()),arg->line())
+		    });
+		  }
 
-	      case "program":
-	    }
+		case "program":
+	      }
 
-	    if(arg->may_be_void())
-	    {
-	      ret+=({  PC.Token(sprintf("}else{\n"
-					"%s=0;\n"
-					"}", arg->name())) });
+	      if(arg->may_be_void())
+	      {
+		ret+=({  PC.Token(sprintf("}else{\n"
+					  "%s=0;\n"
+					  "}", arg->name())) });
+	      }
 	    }
 
 	    argnum++;
