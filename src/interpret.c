@@ -4,7 +4,7 @@
 ||| See the files COPYING and DISCLAIMER for more information.
 \*/
 #include "global.h"
-RCSID("$Id: interpret.c,v 1.104 1998/11/20 08:07:05 hubbe Exp $");
+RCSID("$Id: interpret.c,v 1.105 1998/11/20 08:11:41 hubbe Exp $");
 #include "interpret.h"
 #include "object.h"
 #include "program.h"
@@ -188,8 +188,7 @@ use_malloc:
 #endif
 #ifdef PROFILING
 #ifdef HAVE_GETHRTIME
-  accounted_time =0;
-  time_base =0;
+  time_base = accounted_time =gethrtime();
 #endif
 #endif
 }
