@@ -1,5 +1,5 @@
 dnl -*- Pike -*-
-test_true([["$Id: testsuite.in,v 1.273 2000/02/08 11:02:28 mast Exp $"]]);
+test_true([["$Id: testsuite.in,v 1.274 2000/02/09 18:52:12 hubbe Exp $"]]);
 
 cond([[all_constants()->_verify_internals]],
 [[
@@ -136,6 +136,11 @@ class C
   class D { inherit B; }
 }
 }()->C()->D()->bonk_me()]],"oiff")
+
+test_compile_error([[
+ class A { constant q = "x"; }
+ class B { inherit A; string z="z"; constant q="x"+z; }
+]])
 
 
 test_do([[

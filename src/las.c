@@ -5,7 +5,7 @@
 \*/
 /**/
 #include "global.h"
-RCSID("$Id: las.c,v 1.160 2000/02/03 19:09:12 grubba Exp $");
+RCSID("$Id: las.c,v 1.161 2000/02/09 18:52:11 hubbe Exp $");
 
 #include "language.h"
 #include "interpret.h"
@@ -566,7 +566,9 @@ node *debug_mknode(short token, node *a, node *b)
       res->node_info |= a->u.sval.u.efun->flags;
     }else{
       res->node_info |= OPT_SIDE_EFFECT | OPT_EXTERNAL_DEPEND; /* for now */
+      if(a) res->tree_info |= a->tree_info;
     }
+    if(b) res->tree_info |= b->tree_info;
     break;
 
   case F_POP_VALUE:
