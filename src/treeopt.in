@@ -1,6 +1,6 @@
 // -*- c -*-
 //
-// $Id: treeopt.in,v 1.51 2000/12/01 20:38:21 grubba Exp $
+// $Id: treeopt.in,v 1.52 2000/12/17 19:21:30 grubba Exp $
 //
 // The tree optimizer
 //
@@ -56,6 +56,41 @@ F_PUSH_ARRAY(0 = F_CONSTANT[$$->u.sval.type == T_ARRAY], *):
     $$ = n;
   }
   ;
+
+
+// NOTE: The following optimization assumes that sizeof()
+//       is a linear operation.
+
+// sizeof(`*(A,B))  =>  `*(A, sizeof(B))  if typeof(A) <= int
+F_APPLY(0 = F_CONSTANT
+	[$$->u.sval.type == T_FUNCTION]
+	[$$->u.sval.subtype == FUNCTION_BUILTIN]
+	[$$->u.sval.u.efun->function == f_sizeof],
+	F_APPLY(1 = F_CONSTANT
+		[$$->u.sval.type == T_FUNCTION]
+		[$$->u.sval.subtype == FUNCTION_BUILTIN]
+		[$$->u.sval.u.efun->function == f_multiply],
+		F_ARG_LIST(2 = +[pike_types_le($$->type, int_type_string)],
+			   3 = +))):
+  F_APPLY($1, F_ARG_LIST($2, F_APPLY($0, $3)));
+			   
+// sizeof(`*(A,B))  =>  `*(sizeof(A), B)  if typeof(B) <= int
+F_APPLY(0 = F_CONSTANT
+	[$$->u.sval.type == T_FUNCTION]
+	[$$->u.sval.subtype == FUNCTION_BUILTIN]
+	[$$->u.sval.u.efun->function == f_sizeof],
+	F_APPLY(1 = F_CONSTANT
+		[$$->u.sval.type == T_FUNCTION]
+		[$$->u.sval.subtype == FUNCTION_BUILTIN]
+		[$$->u.sval.u.efun->function == f_multiply],
+		F_ARG_LIST(2 = +,
+			   3 = +[pike_types_le($$->type, int_type_string)]))):
+  F_APPLY($1, F_ARG_LIST(F_APPLY($0, $2), $3));
+			   
+
+// FIXME: Similar rule for sizeof(A+B) => sizeof(A)+sizeof(B)
+//        when not A+B is not a mapping or object.
+
 
 // `+(`+(a,b),c)  =>  `+(a, b, c)
 // NOTE: We do some ugly stuff here to avoid
