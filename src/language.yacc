@@ -111,7 +111,7 @@
 /* This is the grammar definition of Pike. */
 
 #include "global.h"
-RCSID("$Id: language.yacc,v 1.235 2001/03/28 15:07:39 grubba Exp $");
+RCSID("$Id: language.yacc,v 1.236 2001/03/30 19:07:39 grubba Exp $");
 #ifdef HAVE_MEMORY_H
 #include <memory.h>
 #endif
@@ -2091,28 +2091,36 @@ local_function2: optional_stars TOK_IDENTIFIER push_compiler_frame1 func_args
   }
   ;
 
-create_arg: modifiers type_or_error optional_stars TOK_IDENTIFIER
+create_arg: modifiers type_or_error optional_stars optional_dot_dot_dot TOK_IDENTIFIER
   {
     struct pike_type *type;
+
+    if (Pike_compiler->varargs) {
+      yyerror("Can't define more variables after ...");
+    }
 
     push_finished_type(Pike_compiler->compiler_frame->current_type);
     if ($3 && (Pike_compiler->compiler_pass == 2)) {
       yywarning("The *-syntax in types is obsolete. Use array instead.");
     }
     while($3--) push_type(T_ARRAY);
+    if ($4) {
+      push_type(T_ARRAY);
+      Pike_compiler->varargs = 1;
+    }
     type=compiler_pop_type();
 
-    if(islocal($4->u.sval.u.string) >= 0)
+    if(islocal($5->u.sval.u.string) >= 0)
       my_yyerror("Variable '%s' appears twice in create argument list.",
-		 $4->u.sval.u.string->str);
+		 $5->u.sval.u.string->str);
 
     /* Add the identifier both globally and locally. */
-    define_variable($4->u.sval.u.string, type,
+    define_variable($5->u.sval.u.string, type,
 		    Pike_compiler->current_modifiers);
-    add_local_name($4->u.sval.u.string, type, 0);
+    add_local_name($5->u.sval.u.string, type, 0);
 
     /* free_type(type); */
-    free_node($4);
+    free_node($5);
     $$=0;
   }
   | modifiers type_or_error optional_stars bad_identifier { $$=0; }
@@ -2149,12 +2157,19 @@ optional_create_arguments: /* empty */ { $$ = 0; }
     MAKE_CONSTANT_SHARED_STRING(create_string, "create");
 
     /* First: Deduce the type for the create() function. */
-
     push_type(T_VOID); /* Return type. */
-    push_type(T_VOID); /* Not varargs. */
+    e = $3-1;
+    if (Pike_compiler->varargs) {
+      /* Varargs */
+      push_finished_type(Pike_compiler->compiler_frame->variable[e--].type);
+      pop_type_stack(); /* Pop one level of array. */
+      Pike_compiler->varargs = 0;
+    } else {
+      /* Not varargs. */
+      push_type(T_VOID);
+    }
     push_type(T_MANY);
-    for(e = $3-1; e>=0; e--)
-    {
+    for(; e >= 0; e--) {
       push_finished_type(Pike_compiler->compiler_frame->variable[e].type);
 #ifdef USE_PIKE_TYPE
       push_type(T_FUNCTION);
