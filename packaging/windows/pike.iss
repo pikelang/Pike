@@ -15,8 +15,8 @@ LicenseFile=X:\win32-pike\pikeinstaller\Copying.txt
 ; uncomment the following line if you want your installation to run on NT 3.51 too.
 ; MinVersion=4,3.51
 
-;FIXME: pike.exe fallerar på win98 om pike redan är installerat. Ordna
-;automatisk radering. Late note: Seems to fail on XP too. Gäller det 7.4 också tro?
+;FIXME: pike.exe failed on win98 if Pike already is installed. Fix automatic
+;uninstall. Late note: Seems to fail on XP too. Applies to 7.4 as well?
 
 ;ShowLanguageDialog=yes
 SetupIconFile=X:\win32-pike\icons\pikeinstall.ico
@@ -61,17 +61,6 @@ Source: "X:\win32-pike\dlls\libgtk-0.dll"; DestDir: "{app}\bin"; CopyMode: alway
 Source: "X:\win32-pike\dlls\libintl-1.dll"; DestDir: "{app}\bin"; CopyMode: alwaysoverwrite; Flags: restartreplace sharedfile; Components: gtk
 Source: "X:\win32-pike\dlls\localcharset.dll"; DestDir: "{app}\bin"; CopyMode: alwaysoverwrite; Flags: restartreplace sharedfile; Components: gtk
 ;;;End GTK+ files
-
-;;;Begin DreamSNES installer files
-;Source: "Y:\win32-pike\dsinstaller\README.txt"; DestDir: "{app}\apps\dsinstall\"; CopyMode: alwaysoverwrite; Components: dsinstaller
-;Source: "Y:\win32-pike\dsinstaller\dreamsnesinstall.pike"; DestDir: "{app}\apps\dsinstall\"; CopyMode: alwaysoverwrite; Components: dsinstaller
-;Source: "Y:\win32-pike\dsinstaller\tutorial.url"; DestDir: "{app}\apps\dsinstall\"; CopyMode: alwaysoverwrite; Components: dsinstaller; Flags: isreadme
-
-; the needed cdrtools stuff...
-;Source: "Y:\win32-pike\dsinstaller\cdrtools\cdda2wav.exe"; DestDir: "{app}\apps\dsinstall\"; CopyMode: alwaysoverwrite; Components: dsinstaller
-;*snip*
-;Source: "Y:\win32-pike\dsinstaller\cdrtools\scgcheck.exe"; DestDir: "{app}\apps\dsinstall\"; CopyMode: alwaysoverwrite; Components: dsinstaller
-;End DreamSNES installer files
 
 
 [Run]
