@@ -30,8 +30,8 @@ int timeout=120; // seconds
 #if constant(SSL.sslfile) 
  import SSL.constants;
  SSL.sslfile ssl;
- int https=0;
 #endif
+int(0..1) https = 0;
 
 object con;
 string request;
@@ -109,18 +109,23 @@ static void connect(string server,int port,int blocking)
 #ifdef HTTP_QUERY_DEBUG
    werror("<- (connect %O:%d)\n",server,port);
 #endif
+
    int success;
-   if (catch { success = con->connect(server,port,blocking); } || !success)
-   {
-      if (!(errno=con->errno())) errno=22; /* EINVAL */
+   if(con->_fd)
+     success = con->connect(server, port);
+   else
+     success = con->connect(server, port, blocking);
+
+   if(!success) {
 #ifdef HTTP_QUERY_DEBUG
-      werror("<- (error %d)\n",errno);
+     werror("<- (connect error)\n");
 #endif
-      destruct(con);
-      con=0;
-      ok=0;
-      return;
+     destruct(con);
+     con = 0;
+     ok = 0;
+     return;
    }
+
 #ifdef HTTP_QUERY_DEBUG
    werror("<- %O\n",request);
 #endif
