@@ -1,0 +1,23 @@
+(to browse bug crunch tickets noted at the end of these notes, either
+visit http://community.roxen.com/crunch/ - or append the ticket id to
+"http://bugs.roxen.com/" for a address directly to the ticket itself)
+
+
+Changes since xxxx-yy-zz / Pike u.v.w   (released                   ):
+----------------------------------------------------------------------
+
+
+
+Changes since before then; Pike 7.2
+----------------------------------------------------------------------
+
+New modules / classes / methods added:
+--------------------------------------
+
+Compatibility changes:
+----------------------
+
+Optimizations:
+--------------
+
+Improvement and bug tickets closed: 1499
