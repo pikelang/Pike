@@ -1,7 +1,7 @@
 #include "global.h"
 #include "stralloc.h"
 #include "global.h"
-RCSID("$Id: blobs.c,v 1.12 2004/08/07 15:26:56 js Exp $");
+RCSID("$Id: blobs.c,v 1.13 2004/08/18 12:24:30 grubba Exp $");
 #include "pike_macros.h"
 #include "interpret.h"
 #include "program.h"
@@ -166,6 +166,7 @@ static void f_blobs_read( INT32 args )
 {
   struct blobs *t = THIS;
   struct array *a = allocate_array( 2 );
+  pop_n_elems(args);
   while( !t->next_h )
   {
     if( t->next_ind >= HSIZE )
