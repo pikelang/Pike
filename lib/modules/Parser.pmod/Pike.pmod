@@ -4,7 +4,7 @@
 //
 // #pike __REAL_VERSION__
 //
-// $Id: Pike.pmod,v 1.23 2002/10/10 02:41:55 nilsson Exp $
+// $Id: Pike.pmod,v 1.24 2002/12/18 20:23:29 nilsson Exp $
 
 //! This module parses and tokanizes Pike source code.
 
@@ -281,7 +281,7 @@ array(string) split(string data, void|mapping state)
 
 	  case "<<": case ">>":
 	    if(data[pos+2]=='=') pos++;
-	  case "==": case "<=": case ">=":
+	  case "==": case "!=": case "<=": case ">=":
 	  case "*=": case "/=": case "%=":
 	  case "&=": case "|=": case "^=":
 	  case "+=": case "-=":
