@@ -1473,6 +1473,7 @@ class ParseBlock
 	{
 	  min_args--;
 	  max_args=0x7fffffff;
+	  args[-1]->_type = PikeType("mixed|void");
 	}
 
 	while(min_args>0 && args[min_args-1]->may_be_void())
