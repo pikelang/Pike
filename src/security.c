@@ -17,6 +17,7 @@
 #include "object.h"
 #include "mapping.h"
 #include "multiset.h"
+#include "gc.h"
 #include "security.h"
 #include "module_support.h"
 #include "constants.h"
@@ -113,7 +114,7 @@ static void creds_gc_check(struct object *o)
   if(THIS->default_creds) debug_gc_check(THIS->default_creds,T_OBJECT,o);
 }
 
-static void creds_gc_check(struct object *o)
+static void creds_gc_mark(struct object *o)
 {
   if(THIS->user) gc_mark_object_as_referenced(THIS->user);
   if(THIS->default_creds) gc_mark_object_as_referenced(THIS->default_creds);
