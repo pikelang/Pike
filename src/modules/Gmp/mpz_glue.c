@@ -4,7 +4,7 @@
 ||| See the files COPYING and DISCLAIMER for more information.
 \*/
 #include "global.h"
-RCSID("$Id: mpz_glue.c,v 1.4 1997/03/11 03:21:39 nisse Exp $");
+RCSID("$Id: mpz_glue.c,v 1.5 1997/03/11 04:00:25 nisse Exp $");
 #include "gmp_machine.h"
 #include "types.h"
 
@@ -390,7 +390,7 @@ static void mpzmod_div(INT32 args)
   struct object *res;
   
   for(e=0;e<args;e++)
-    if (mpz_sgn(get_mpz(sp+e-args)))
+    if (!mpz_sgn(get_mpz(sp+e-args)))
       error("Division by zero.\n");	
   
   res = clone(mpzmod_program, 0);
@@ -408,7 +408,7 @@ static void mpzmod_mod(INT32 args)
   struct object *res;
   
   for(e=0;e<args;e++)
-    if (mpz_sgn(get_mpz(sp+e-args)))
+    if (!mpz_sgn(get_mpz(sp+e-args)))
       error("Division by zero.\n");	
   
   res = clone(mpzmod_program, 0);
