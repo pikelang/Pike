@@ -1,5 +1,5 @@
 /*
- * $Id: jvm.c,v 1.36 2001/10/22 23:52:56 mast Exp $
+ * $Id: jvm.c,v 1.37 2002/02/05 15:26:00 tomas Exp $
  *
  * Pike interface to Java Virtual Machine
  *
@@ -10,6 +10,7 @@
  * Includes
  */
 
+//#define JAVA_DEBUG
 #define NO_PIKE_SHORTHAND
 
 #ifdef HAVE_CONFIG_H
@@ -17,7 +18,7 @@
 #endif /* HAVE_CONFIG_H */
 
 #include "global.h"
-RCSID("$Id: jvm.c,v 1.36 2001/10/22 23:52:56 mast Exp $");
+RCSID("$Id: jvm.c,v 1.37 2002/02/05 15:26:00 tomas Exp $");
 #include "program.h"
 #include "interpret.h"
 #include "stralloc.h"
@@ -64,7 +65,7 @@ struct jvm_storage {
   JavaVM *jvm;			/* Denotes a Java VM */
   JNIEnv *env;			/* pointer to native method interface */
   JavaVMInitArgs vm_args;       /* JDK 1.2 VM initialization arguments */
-  JavaVMOption vm_options[4];	/* Should be large enough to hold all opts. */
+  JavaVMOption vm_options[10];	/* Should be large enough to hold all opts. */
   struct pike_string *classpath_string;
   jclass class_object, class_class, class_string, class_throwable;
   jclass class_runtimex, class_system;
@@ -2849,6 +2850,22 @@ static void f_create(INT32 args)
   j->vm_args.options[j->vm_args.nOptions].extraInfo = NULL;
   j->vm_args.nOptions++;
 #endif
+#endif
+
+#ifdef JAVA_DEBUG
+  j->vm_args.options[j->vm_args.nOptions].optionString =
+    "-Xdebug";
+  j->vm_args.options[j->vm_args.nOptions].extraInfo = NULL;
+  j->vm_args.nOptions++;
+
+  j->vm_args.options[j->vm_args.nOptions].optionString =
+#ifdef __NT__
+    "-Xrunjdwp:transport=dt_shmem,address=roxenjdb,server=y,suspend=n";
+#else
+    "-Xrunjdwp:transport=dt_socket,address=8000,server=y,suspend=n";
+#endif
+  j->vm_args.options[j->vm_args.nOptions].extraInfo = NULL;
+  j->vm_args.nOptions++;
 #endif
 
   /* load and initialize a Java VM, return a JNI interface 

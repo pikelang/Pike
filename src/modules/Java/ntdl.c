@@ -1,5 +1,5 @@
 /*
- * $Id: ntdl.c,v 1.1 2001/06/18 14:14:48 marcus Exp $
+ * $Id: ntdl.c,v 1.2 2002/02/05 15:26:03 tomas Exp $
  *
  * Win32 DLL handling for jvm.c
  *
@@ -22,11 +22,16 @@ static int open_nt_dll(void)
   HKEY key;
   TCHAR buffer[2*MAX_PATH+32];
   DWORD type, len = sizeof(buffer)-16;
+  DWORD l;
   
-  if(RegOpenKeyEx(HKEY_CURRENT_USER, keyname, 0,
-		  KEY_READ, &key) == ERROR_SUCCESS ||
-     RegOpenKeyEx(HKEY_LOCAL_MACHINE, keyname, 0,
-		  KEY_READ, &key) == ERROR_SUCCESS) {
+  l = GetEnvironmentVariable("PIKE_JRE_JVMDLL", buffer, len);
+  if (l > 0) {
+    libname = buffer;
+  }
+  else if(RegOpenKeyEx(HKEY_CURRENT_USER, keyname, 0,
+                       KEY_READ, &key) == ERROR_SUCCESS ||
+          RegOpenKeyEx(HKEY_LOCAL_MACHINE, keyname, 0,
+                       KEY_READ, &key) == ERROR_SUCCESS) {
     LPCTSTR subkeyname=_T("1.2");
     HKEY subkey;
 
