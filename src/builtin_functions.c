@@ -4,7 +4,7 @@
 ||| See the files COPYING and DISCLAIMER for more information.
 \*/
 #include "global.h"
-RCSID("$Id: builtin_functions.c,v 1.82 1998/03/16 22:11:48 grubba Exp $");
+RCSID("$Id: builtin_functions.c,v 1.83 1998/03/17 23:03:34 grubba Exp $");
 #include "interpret.h"
 #include "svalue.h"
 #include "pike_macros.h"
@@ -1919,6 +1919,13 @@ static struct array* diff_longest_sequence(struct array *cmptbl, int blen)
 #ifdef DIFF_DEBUG
 	 fprintf(stderr, "DIFF:  j=%d, x=%d\n", j, x);
 #endif /* DIFF_DEBUG */
+#ifdef DEBUG
+	 if (x >= blen) {
+	   fatal("diff_longest_sequence(): x:%d >= blen:%d\n", x, blen);
+	 } else if (x < 0) {
+	   fatal("diff_longest_sequence(): x:%d < 0\n", x);
+	 }
+#endif /* DEBUG */
 	 if (!marks[x]) {
 	   int pos;
 
@@ -1955,6 +1962,13 @@ static struct array* diff_longest_sequence(struct array *cmptbl, int blen)
 #ifdef DIFF_DEBUG
 	   fprintf(stderr, "DIFF: New j=%d, x=%d\n", j, x);
 #endif /* DIFF_DEBUG */
+#ifdef DEBUG
+	   if (x >= blen) {
+	     fatal("diff_longest_sequence(): x:%d >= blen:%d\n", x, blen);
+	   } else if (x < 0) {
+	     fatal("diff_longest_sequence(): x:%d < 0\n", x);
+	   }
+#endif /* DEBUG */
 
 	   /* Put x on the stack. */
 	   marks[x] = 1;
