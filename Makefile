@@ -1,5 +1,5 @@
 #
-# $Id: Makefile,v 1.3 1999/02/05 18:53:25 grubba Exp $
+# $Id: Makefile,v 1.4 1999/02/05 18:54:17 grubba Exp $
 #
 # Meta Makefile
 #
@@ -15,6 +15,7 @@ METATARGET=
 BIN_TRUE=":"
 
 all: bin/pike compile
+	-@$(BIN_TRUE)
 
 src/configure: src/configure.in
 	cd src && ./run_autoconfig . 2>&1 | grep -v warning
