@@ -1,4 +1,4 @@
-AC_REVISION("$Id: configure.in,v 1.489 2001/11/02 14:02:00 jonasw Exp $")
+AC_REVISION("$Id: configure.in,v 1.490 2001/12/03 13:29:12 grubba Exp $")
 AC_INIT(interpret.c)
 AC_CONFIG_HEADER(machine.h)
 
@@ -2872,7 +2872,7 @@ AC_TRY_COMPILE([
 ],[
   int _tz;
   struct tm foo;
-  _tz=foo->tm_gmtoff;
+  _tz = foo.tm_gmtoff;
 ],pike_cv_struct_tm_has_gmtoff=yes,pike_cv_struct_tm_has_gmtoff=no)
 ])
 
