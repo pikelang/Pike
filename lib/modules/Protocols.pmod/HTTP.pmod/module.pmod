@@ -9,9 +9,20 @@
 //!
 //! method array(string) get_url_nice(string url)
 //! method array(string) get_url_nice(string url,mapping query_variables)
-//!	Returns an array of ({content_type,data})
+//! method string get_url_data(string url)
+//! method string get_url_data(string url,mapping query_variables)
+//!	Returns an array of ({content_type,data}) and just the data
+//!	string respective, 
 //!	after calling the requested server for the information.
 //!	0 is returned upon failure.
+//!
+//!
+//! method array(string) post_url_nice(string url,mapping query_variables)
+//! method string post_url_data(string url,mapping query_variables)
+//! method object(Protocols.HTTP.Query) post_url(string url,mapping query_variables)
+//! 	Similar to the <ref>get_url</ref> class of functions, except that the 
+//!	query variables is sent as a post request instead of a get.
+//!
 
 object get_url(string url,void|mapping query_variables)
 {
@@ -54,9 +65,10 @@ array(string) get_url_nice(string url,void|mapping query_variables)
    return c && ({c->headers["content-type"],c->data()});
 }
 
-array(string) get_url_result(string url,void|mapping query_variables)
+array(string) get_url_data(string url,void|mapping query_variables)
 {
-   return get_url(url,query_variables)[1];
+   array z=get_url(url,query_variables);
+   return z && get_url(url,query_variables)[1];
 }
 
 object post_url(string url,mapping query_variables)
@@ -95,9 +107,10 @@ array(string) post_url_nice(string url,mapping query_variables)
    return c && ({c->headers["content-type"],c->data()});
 }
 
-array(string) post_url_result(string url,mapping query_variables)
+array(string) post_url_data(string url,mapping query_variables)
 {
-   return post_url(url,query_variables)[1];
+   array z=post_url(url,query_variables);
+   return z && post_url(url,query_variables)[1];
 }
 
 //!
