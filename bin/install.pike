@@ -2070,7 +2070,8 @@ void dump_modules()
   rm("dumpmodule.log");
 
   foreach(to_dump, string mod)
-    rm(mod+".o");
+    if (file_stat(mod+".o"))
+      rm(mod+".o");
 
   array cmd=({ fakeroot(pike) });
 
