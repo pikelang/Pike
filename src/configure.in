@@ -1,4 +1,4 @@
-AC_REVISION("$Id: configure.in,v 1.271 1999/06/30 23:43:04 hubbe Exp $")
+AC_REVISION("$Id: configure.in,v 1.272 1999/11/28 22:58:09 peter Exp $")
 AC_INIT(interpret.c)
 AC_CONFIG_HEADER(machine.h)
 
@@ -198,13 +198,22 @@ case "$pike_cv_sys_os" in
     LD="$BINDIR/smartlink shlicc"
   ;;
   UnixWare*)
-    if test "$GCC" != "yes"; then
+    case "$CFLAGS" in
+      *-Kalloca*) ;;
+      *)
+      if test "$GCC" != "yes"; then
       # We are using built-in inline function
-      CFLAGS="$CFLAGS -Kalloca"
-    fi
+        CFLAGS="$CFLAGS -Kalloca"
+        CXX="CC -DNO_CPLUSPLUS_ALLOCA"
+      fi
+      ;;
+    esac
   ;;
 esac
 
+AC_SUBST(LDFLAGS)
+AC_SUBST(CFLAGS)
+AC_SUBST(CXXFLAGS)
 AC_SUBST(LD)
 
 #############################################################################
@@ -436,10 +445,18 @@ esac
      *+O*) ;;
      *-fast*) ;;
      *)
-      AC_SYS_COMPILER_FLAG(-O2,O2,OPTIMIZE)
-      if test "x$pike_cv_option_O2" != "xyes"; then
-        AC_SYS_COMPILER_FLAG(-O,O,OPTIMIZE)
-      fi
+       if test "$GCC" != "yes"; then
+         case $pike_cv_sys_os in
+           UnixWare*)
+             OPTIMIZE=""
+	   ;;
+         esac
+       else
+         AC_SYS_COMPILER_FLAG(-O2,O2,OPTIMIZE)
+         if test "x$pike_cv_option_O2" != "xyes"; then
+           AC_SYS_COMPILER_FLAG(-O,O,OPTIMIZE)
+         fi
+       fi
      ;;
   esac
  fi
@@ -2653,7 +2670,7 @@ if test -z "$LDSHARED" ; then
     BSD/OS*) LDSHARED="shlicc -r";;
     SCO_SV*) LDSHARED="cc -G -KPIC -Wl,-Bexport";;
     UNIX_SV) LDSHARED="ld -G";;
-    UnixWare)
+    UnixWare*)
       if test "$GCC" = yes ; then
         LDSHARED="ld -G"
       else
@@ -2682,6 +2699,7 @@ AC_CACHE_VAL(pike_cv_sys_ccshared,[
 	FreeBSD*) CCSHARED="-fpic";;
 	SCO_SV*) CCSHARED="-KPIC -dy -Bdynamic";;
 	Solaris*) CCSHARED="-KPIC -Bdynamic";;
+	UnixWare*) CCSHARED="-KPIC -dy -Bdynamic";;
 	Windows_NT*) CCSHARED="-shared" ;;
       esac
     fi
@@ -2692,6 +2710,15 @@ AC_CACHE_VAL(pike_cv_sys_ccshared,[
     pike_cv_sys_ccshared="$CCSHARED", pike_cv_sys_ccshared='')
   CFLAGS="$OLD_CFLAGS"
 ])
+
+if test "$GCC" != "yes"; then
+  case $pike_cv_sys_os in
+    UnixWare*) CCSHARED="-KPIC -dy -Bdynamic"
+    pike_cv_sys_ccshared="$CCSHARED"
+    ;;
+  esac
+fi
+
 CCSHARED="$pike_cv_sys_ccshared"
 AC_MSG_RESULT($CCSHARED)
 
@@ -2712,7 +2739,7 @@ then
       next) LINKFORSHARED="-u libsys_s";;
       SCO_SV*) LINKFORSHARED="-fpic -Wl,-Bexport";;
       # What about UNIX_SV?
-      UnixWare) LINKFORSHARED="-fpic -Wl,-Bexport";;
+      UnixWare*) LINKFORSHARED="-fpic -Wl,-Bexport";;
 
       FreeBSD)
         AC_TRY_RUN([int main(){exit(
@@ -2734,7 +2761,7 @@ then
       next) LINKFORSHARED="-u libsys_s";;
       SCO_SV*) LINKFORSHARED="-Bdynamic -dy -Wl,-Bexport";;
       # What about UNIX_SV?
-      UnixWare) LINKFORSHARED="-Bdynamic -dy -Wl,-Bexport";;
+      UnixWare*) LINKFORSHARED="-Bdynamic -dy -Wl,-Bexport";;
     esac
   fi
 fi
