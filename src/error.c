@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: error.c,v 1.131 2004/08/31 20:25:40 grubba Exp $
+|| $Id: error.c,v 1.132 2004/09/18 14:27:04 grubba Exp $
 */
 
 #define NO_PIKE_SHORTHAND
@@ -23,7 +23,7 @@
 #include "threads.h"
 #include "gc.h"
 
-RCSID("$Id: error.c,v 1.131 2004/08/31 20:25:40 grubba Exp $");
+RCSID("$Id: error.c,v 1.132 2004/09/18 14:27:04 grubba Exp $");
 
 /* __attribute__ only applies to function declarations, not
    definitions, so we disable them here. */
@@ -510,7 +510,10 @@ PMOD_EXPORT DECLSPEC(noreturn) void debug_fatal(const char *fmt, ...) ATTRIBUTE(
 
   (void)VFPRINTF(stderr, fmt, args);
 
+  va_end(args);
+
   d_flag=Pike_interpreter.trace_level=0;
+
   if(Pike_sp && Pike_interpreter.evaluator_stack &&
      master_object && master_object->prog)
   {
