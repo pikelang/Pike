@@ -216,7 +216,8 @@ static int eval_instruction(PIKE_OPCODE_T *pc)
 	case 2:
 	  check_object_context(Pike_fp->current_object,
 			       Pike_fp->context.prog,
-			       CURRENT_STORAGE);
+			       Pike_fp->current_object->storage+
+			       Pike_fp->context.storage_offset);
 	case 1:
 	case 0:
 	  break;

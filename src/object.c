@@ -5,7 +5,7 @@
 \*/
 /**/
 #include "global.h"
-RCSID("$Id: object.c,v 1.182 2001/08/30 20:16:52 hubbe Exp $");
+RCSID("$Id: object.c,v 1.183 2001/09/05 01:41:07 hubbe Exp $");
 #include "object.h"
 #include "dynamic_buffer.h"
 #include "interpret.h"
@@ -1812,7 +1812,6 @@ void check_object_context(struct object *o,
   int q;
   if(o == Pike_compiler->fake_object) return;
   if( ! o->prog ) return; /* Variables are already freed */
-
   for(q=0;q<(int)context_prog->num_variable_index;q++)
   {
     int d=context_prog->variable_index[q];
@@ -1886,7 +1885,8 @@ void check_object(struct object *o)
   if(id_to_program(o->prog->id) != o->prog)
     fatal("Object's program not in program list.\n");
 
-  /* clear globals and call C initializers */
+  if(!(o->prog->flags & PROGRAM_PASS_1_DONE)) return;
+
   for(e=p->num_inherits-1; e>=0; e--)
   {
     check_object_context(o,
