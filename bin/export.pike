@@ -1,6 +1,6 @@
 #!/usr/local/bin/pike
 
-/* $Id: export.pike,v 1.39 2001/12/18 21:20:25 nilsson Exp $ */
+/* $Id: export.pike,v 1.40 2002/02/03 22:37:06 nilsson Exp $ */
 
 import Stdio;
 
@@ -124,11 +124,12 @@ int main(int argc, string *argv)
   int e;
   string *files;
   object cvs;
-
+  int notag;
 
   foreach(Getopt.find_all_options(argv,aggregate(
     ({ "srcdir", Getopt.HAS_ARG, "--srcdir"  }),
     ({ "rebuild",Getopt.NO_ARG,  "--rebuild" }),
+    ({ "notag",  Getopt.NO_ARG,  "--notag"   }),
     )),array opt)
     {
       switch(opt[0])
@@ -144,6 +145,9 @@ int main(int argc, string *argv)
 
 	case "rebuild":
 	  rebuild=1;
+
+        case "notag":
+	  notag=1;
       }
     }
       
@@ -178,7 +182,7 @@ int main(int argc, string *argv)
     /* And other things... */
   }
 
-  if(file_stat(pike_base_name+"/CVS"))
+  if(!notag && file_stat(pike_base_name+"/CVS"))
   {
     bump_version();
 
@@ -253,7 +257,7 @@ int main(int argc, string *argv)
   rm(vpath);
   werror("Done.\n");
 
-  if(cvs)
+  if(cvs && !notag)
   {
     cvs->wait();
     bump_version();
