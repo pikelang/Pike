@@ -101,12 +101,12 @@ void f_file_stat(INT32 args)
 #ifdef HAVE_SYS_STATVFS_H
 #include <sys/statvfs.h>
 #endif /* HAVE_SYS_STATVFS_H */
-#ifdef HAVE_SYS_STATFS_H
-#include <sys/statfs.h>
-#endif
 #ifdef HAVE_SYS_VFS_H
 #include <sys/vfs.h>
 #endif /* HAVE_SYS_VFS_H */
+#ifdef HAVE_SYS_STATFS_H
+#include <sys/statfs.h>
+#endif
 #ifdef HAVE_SYS_MOUNT_H
 #include <sys/mount.h>
 #endif /* HAVE_SYS_MOUNT_H */
