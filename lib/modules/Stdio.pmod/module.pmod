@@ -1,12 +1,19 @@
-// $Id: module.pmod,v 1.196 2004/04/06 02:06:38 mast Exp $
+// $Id: module.pmod,v 1.197 2004/04/06 16:40:02 grubba Exp $
 #pike __REAL_VERSION__
 
 inherit files;
 
 #ifdef SENDFILE_DEBUG
-#define SF_WERR(X) werror("Stdio.sendfile(): %s\n", X);
+#define SF_WERR(X) werror("Stdio.sendfile(): %s\n", X)
 #else
 #define SF_WERR(X)
+#endif
+
+//#define BACKEND_DEBUG
+#ifdef BACKEND_DEBUG
+#define BE_WERR(X) werror("FD %O: %s\n", _fd, X)
+#else
+#define BE_WERR(X)
 #endif
 
 // TRACK_OPEN_FILES is a debug tool to track down where a file is
@@ -790,6 +797,8 @@ class File
 ** 
 */
 
+    BE_WERR("__stdio_read_callback()");
+
     if (!errno()) {
 #if 0
       if (!(::mode() & PROP_IS_NONBLOCKING))
@@ -817,6 +826,8 @@ class File
 
       if(string s=::read(8192,1))
       {
+	BE_WERR(sprintf("  got %O", s));
+
 	if(sizeof(s))
 	{
 	  ___read_callback(___id, s);
@@ -836,6 +847,8 @@ class File
 
     ::set_read_callback(0);
     if (___close_callback) {
+      BE_WERR("  calling close callback.");
+
       ___close_callback(___id);
     }
   }
@@ -865,6 +878,7 @@ class File
 
   static void __stdio_write_callback()
   {
+    BE_WERR("__stdio_write_callback()");
     if (!errno())
       ___write_callback(___id);
   }
@@ -1063,7 +1077,7 @@ class File
 			 (___close_callback && __stdio_close_callback));
     ::set_write_callback (___write_callback && __stdio_write_callback);
     ::set_read_oob_callback (___read_oob_callback && __stdio_read_oob_callback);
-    ::set_write_callback (___write_oob_callback && __stdio_write_oob_callback);
+    ::set_write_oob_callback (___write_oob_callback && __stdio_write_oob_callback);
   }
 
   //! @endignore
@@ -1238,7 +1252,8 @@ class Port
 
   static string _sprintf( int f )
   {
-    return f=='O' && sprintf( "%O(%s:%O)", this_program, (string)debug_ip, debug_port );
+    return f=='O' && sprintf( "%O(%s:%O)",
+			      this_program, debug_ip||"", debug_port );
   }
 
   //! @decl void create()
