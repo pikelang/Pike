@@ -1,4 +1,4 @@
-dnl $Id: configure.in,v 1.23 2003/12/18 15:43:49 grubba Exp $
+dnl $Id: configure.in,v 1.24 2003/12/20 15:17:18 grubba Exp $
 
 AC_INIT(postgres.c)
 AC_CONFIG_HEADER(pgres_config.h)
@@ -171,7 +171,7 @@ dnl last check, just to be sure
     AC_CHECK_LIB(crypt, crypt)
     AC_CHECK_LIB(pq,PQclear)
   fi
-  AC_CHECK_FUNCS(PQsetdbLogin PQsetnonblocking)
+  AC_CHECK_FUNCS(PQsetdbLogin PQsetnonblocking PQunescapeBytea)
   if test x$ac_cv_func_PQsetdbLogin = xno; then
     AC_MSG_WARN(No Login-related functions, username and password will be silently ignored)
   fi
