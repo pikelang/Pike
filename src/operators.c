@@ -6,7 +6,7 @@
 /**/
 #include "global.h"
 #include <math.h>
-RCSID("$Id: operators.c,v 1.119 2001/02/05 19:30:48 grubba Exp $");
+RCSID("$Id: operators.c,v 1.120 2001/02/07 14:58:35 grubba Exp $");
 #include "interpret.h"
 #include "svalue.h"
 #include "multiset.h"
@@ -57,16 +57,87 @@ PMOD_EXPORT void ID(INT32 args)				\
   }						\
 }
 
+/*! @decl int(0..1) `!=(mixed arg1, mixed arg2, mixed ... extras)
+ *!
+ *! Inequality operator.
+ *!
+ *! Returns @tt{0@} (zero) if all the arguments are equal, and
+ *! @tt{1@} otherwise.
+ *!
+ *! This is the inverse of @[`==()].
+ *!
+ *! @seealso
+ *!   @[`==()]
+ */
+
 PMOD_EXPORT void f_ne(INT32 args)
 {
   f_eq(args);
   o_not();
 }
 
+/*! @decl int(0..1) `==(mixed arg1, mixed arg2, mixed ... extras)
+ *!
+ *! Equality operator.
+ *!
+ *! Returns @tt{1@} if all the arguments are equal, and
+ *! @tt{0@} (zero) otherwise.
+ *!
+ *! @seealso
+ *!   @[`!=()]
+ */
 COMPARISON(f_eq,"`==", is_eq)
+
+/*! @decl int(0..1) `<(mixed arg1, mixed arg2, mixed ... extras)
+ *!
+ *! Less than operator.
+ *!
+ *! Returns @tt{1@} if the arguments are strictly increasing, and
+ *! @tt{0@} (zero) otherwise.
+ *!
+ *! @seealso
+ *!   @[`<=()], @[`>()], @[`>=()]
+ */
 COMPARISON(f_lt,"`<" , is_lt)
+
+/*! @decl int(0..1) `<=(mixed arg1, mixed arg2, mixed ... extras)
+ *!
+ *! Less or equal operator.
+ *!
+ *! Returns @tt{1@} if the arguments are not strictly decreasing, and
+ *! @tt{0@} (zero) otherwise.
+ *!
+ *! This is the inverse of @[`>()].
+ *!
+ *! @seealso
+ *!   @[`<()], @[`>()], @[`>=()]
+ */
 COMPARISON(f_le,"`<=",!is_gt)
+
+/*! @decl int(0..1) `>(mixed arg1, mixed arg2, mixed ... extras)
+ *!
+ *! Greater than operator.
+ *!
+ *! Returns @tt{1@} if the arguments are strictly decreasing, and
+ *! @tt{0@} (zero) otherwise.
+ *!
+ *! @seealso
+ *!   @[`<()], @[`<=()], @[`>=()]
+ */
 COMPARISON(f_gt,"`>" , is_gt)
+
+/*! @decl int(0..1) `>=(mixed arg1, mixed arg2, mixed ... extras)
+ *!
+ *! Greater or equal operator.
+ *!
+ *! Returns @tt{1@} if the arguments are not strictly increasing, and
+ *! @tt{0@} (zero) otherwise.
+ *!
+ *! This is the inverse of @[`<()].
+ *!
+ *! @seealso
+ *!   @[`<=()], @[`>()], @[`<()]
+ */
 COMPARISON(f_ge,"`>=",!is_lt)
 
 
@@ -83,6 +154,66 @@ COMPARISON(f_ge,"`>=",!is_lt)
  sp--; \
  dmalloc_touch_svalue(sp);
 
+/*! @decl mixed `+(mixed arg1)
+ *! @decl mixed `+(object arg1, mixed ... extras)
+ *! @decl string `+(string arg1, string|int|float arg2)
+ *! @decl string `+(int|float arg1, string arg2)
+ *! @decl int `+(int arg1, int arg2)
+ *! @decl float `+(float arg1, int|float arg2)
+ *! @decl float `+(int|float arg1, float arg2)
+ *! @decl array `+(array arg1, array arg2)
+ *! @decl mapping `+(mapping arg1, mapping arg2)
+ *! @decl multiset `+(multiset arg1, multiset arg2)
+ *! @decl mixed `+(mixed arg1, mixed arg2, mixed ... extras)
+ *!
+ *! Addition operator.
+ *!
+ *! If there's only a single argument, that argument will be returned.
+ *!
+ *! If @[arg1] is an object and it has an @[lfun::`+()],
+ *! that function will be called with the rest of the arguments,
+ *! and the result returned.
+ *!
+ *! Otherwise if any of the other arguments is an object that has
+ *! an @[lfun::``+()] the first such function fill be called
+ *! with the arguments leading up to it, and @[`+()] be called recursively
+ *! with the result and the rest of the srguments.
+ *!
+ *! If there are two arguments the result will be:
+ *! @mixed @[arg1]
+ *!   @type string
+ *!     @[arg2] will be converted to a string, and the result the
+ *!     strings concatenated.
+ *!   @type int|float
+ *!     @mixed @[arg2]
+ *!       @type string
+ *!         @[arg1] will be converted to string, and the result the
+ *!         strings concatenated.
+ *!       @type int|float
+ *!         The result will be @code{@[arg1] + @[arg2]@}, and will
+ *!         be a float if either @[arg1] or @[arg2] is a float.
+ *!     @endmixed
+ *!   @type array
+ *!     The arrays will be concatenated.
+ *!   @type mapping
+ *!     The mappings will be joined.
+ *!   @type multiset
+ *!     The multisets will be added.
+ *! @endmixed
+ *!
+ *! Otherwise if there are more than 2 arguments the result will be:
+ *!   @code{`+(`+(@[arg1], @[arg2]), @@@[extras])@}
+ *!
+ *! @note
+ *!   In Pike 7.0 and earlier the addition order was unspecified.
+ *!
+ *!   If @[arg1] is @tt{UNDEFINED@} it will behave as the empty
+ *!   array/mapping/multiset if needed. This behaviour was new
+ *!   in Pike 7.0.
+ *!
+ *! @seealso
+ *!   @[`-()], @[lfun::`+()], @[lfun::``+()]
+ */
 PMOD_EXPORT void f_add(INT32 args)
 {
   INT_TYPE e,size;
@@ -840,6 +971,65 @@ PMOD_EXPORT void o_subtract(void)
   }
 }
 
+/*! @decl mixed `-(mixed arg1)
+ *! @decl mixed `-(object arg1, mixed arg2)
+ *! @decl mixed `-(mixed arg1, mixed arg2)
+ *! @decl mapping `-(mapping arg1, array arg2)
+ *! @decl mapping `-(mapping arg1, multiset arg2)
+ *! @decl mapping `-(mapping arg1, mapping arg2)
+ *! @decl array `-(array arg1, array arg2)
+ *! @decl multiset `-(multiset arg1, multiset arg2)
+ *! @decl float `-(float arg1, int|float arg2)
+ *! @decl float `-(int arg1, float arg2)
+ *! @decl int `-(int arg1, int arg2)
+ *! @decl string `-(string arg1, string arg2)
+ *! @decl mixed `-(mixed arg1, mixed arg2, mixed ... extras)
+ *!
+ *! Negation/subtraction operator.
+ *!
+ *! If there's only a single argument, that argument will be returned
+ *! negated. If @[arg1] was an object, @code{@[arg1]::`-()@} will be called
+ *! without arguments.
+ *!
+ *! If there are more than two arguments the result will be:
+ *! @code{`-(`-(@[arg1], @[arg2]), @@@[extras])@}.
+ *!
+ *! If @[arg1] is an object that overloads @tt{`-()@}, that function will
+ *! be called with @[arg2] as the single argument.
+ *!
+ *! If @[arg2] is an object that overloads @tt{``-()@}, that function will
+ *! be called with @[arg1] as the single argument.
+ *!
+ *! Otherwise the result will be as follows:
+ *! @mixed @[arg1]
+ *!   @type mapping
+ *!     @mixed @[arg2]
+ *!       @type array
+ *!         The result will be @[arg1] with all occurrances of
+ *!         @[arg2] removed.
+ *!       @type multiset
+ *!       @type mapping
+ *!         The result will be @[arg1] with all occurrences of
+ *!         @code{@[indices](@[arg2])@} removed.
+ *!     @endmixed
+ *!   @type array
+ *!   @type multiset
+ *!     The result will be the elements of @[arg1] that are not in @[arg2].
+ *!   @type float
+ *!   @type int
+ *!     The result will be @code{@[arg1] - @[arg2]@}, and will be a float
+ *!     if either @[arg1] or @[arg2] is a float.
+ *!   @type string
+ *!     Result will be the string @[arg1] with all occurrances of the
+ *!     substring @[arg2] removed.
+ *! @endmixed
+ *!
+ *! @note
+ *!   In Pike 7.0 and earlier the subtraction order was unspecified.
+ *!
+ *! @seealso
+ *!   @[`+()]
+ */
 PMOD_EXPORT void f_minus(INT32 args)
 {
   switch(args)
@@ -1146,6 +1336,54 @@ static void speedup(INT32 args, void (*func)(void))
   }
 }
 
+/*! @decl mixed `&(mixed arg1)
+ *! @decl mixed `&(object arg1, mixed arg2)
+ *! @decl mixed `&(mixed arg1, object arg2)
+ *! @decl int `&(int arg1, int arg2)
+ *! @decl array `&(array arg1, array arg2)
+ *! @decl multiset `&(multiset arg1, multiset arg2)
+ *! @decl mapping `&(mapping arg1, mapping arg2)
+ *! @decl string `&(string arg1, string arg2)
+ *! @decl type `&(type|program arg1, type|program arg2)
+ *! @decl mapping `&(mapping arg1, array arg2)
+ *! @decl mapping `&(array arg1, mapping arg2)
+ *! @decl mapping `&(mapping arg1, multiset arg2)
+ *! @decl mapping `&(multiset arg1, mapping arg2)
+ *! @decl mixed `&(mixed arg1, mixed arg2, mixed ... extras)
+ *!
+ *! Bitwise and/intersection operator.
+ *!
+ *! If there's a single argument, that argument will be returned.
+ *!
+ *! If there are more than two arguments, the result will be:
+ *! @code{`&(`&(@[arg1], @[arg2]), @@@[extras])@}.
+ *!
+ *! If @[arg1] is an object that has an @[lfun::`&()], that function
+ *! will be called with @[arg2] as the single argument.
+ *! 
+ *! If @[arg2] is an object that has an @[lfun::``&()], that function
+ *! will be called with @[arg1] as the single argument.
+ *!
+ *! Otherwise the result will be:
+ *! @mixed @[arg1]
+ *!   @type int
+ *!     The result will be the bitwise and of @[arg1] and @[arg2].
+ *!   @type array
+ *!   @type multiset
+ *!   @type mapping
+ *!     The result will be the elements of @[arg1] and @[arg2] that
+ *!     occurr in both.
+ *!   @type type
+ *!   @type program
+ *!     The result will be the type intersection of @[arg1] and @[arg2].
+ *!   @type string
+ *!     The result will be the string where the elements of @[arg1]
+ *!     and @[arg2] have been pairwise anded.
+ *! @endmixed
+ *!
+ *! @seealso
+ *!   @[`|()], @[lfun::`&()], @[lfun::``&()]
+ */
 PMOD_EXPORT void f_and(INT32 args)
 {
   switch(args)
@@ -1320,6 +1558,10 @@ PMOD_EXPORT void o_or(void)
   }
 }
 
+/*! @decl mixed `|(mixed arg1, mixed ... extras)
+ *!
+ *! Or operator.
+ */
 PMOD_EXPORT void f_or(INT32 args)
 {
   switch(args)
@@ -1499,6 +1741,10 @@ PMOD_EXPORT void o_xor(void)
   }
 }
 
+/*! @decl mixed `^(mixed arg1, mixed ... extras)
+ *!
+ *! Xor operator.
+ */
 PMOD_EXPORT void f_xor(INT32 args)
 {
   switch(args)
@@ -1555,6 +1801,10 @@ PMOD_EXPORT void o_lsh(void)
   sp[-1].u.integer = sp[-1].u.integer << sp->u.integer;
 }
 
+/*! @decl mixed `<<(mixed arg1, mixed arg2)
+ *!
+ *! Left shift operator.
+ */
 PMOD_EXPORT void f_lsh(INT32 args)
 {
   if(args != 2) {
@@ -1600,6 +1850,10 @@ PMOD_EXPORT void o_rsh(void)
   sp[-1].u.integer = sp[-1].u.integer >> sp->u.integer;
 }
 
+/*! @decl mixed `>>(mixed arg1, mixed arg2)
+ *!
+ *! Right shift operator.
+ */
 PMOD_EXPORT void f_rsh(INT32 args)
 {
   if(args != 2) {
@@ -1806,6 +2060,10 @@ PMOD_EXPORT void o_multiply(void)
   }
 }
 
+/*! @decl mixed `*(mixed arg1, mixed ... extras)
+ *!
+ *! Multiplication operator.
+ */
 PMOD_EXPORT void f_multiply(INT32 args)
 {
   switch(args)
@@ -2109,6 +2367,10 @@ PMOD_EXPORT void o_divide(void)
   }
 }
 
+/*! @decl mixed `/(mixed arg1, mixed arg2, mixed ... extras)
+ *!
+ *! Division operator.
+ */
 PMOD_EXPORT void f_divide(INT32 args)
 {
   switch(args)
@@ -2247,6 +2509,10 @@ PMOD_EXPORT void o_mod(void)
   }
 }
 
+/*! @decl mixed `%(mixed arg1, mixed arg2)
+ *!
+ *! Modulo operator.
+ */
 PMOD_EXPORT void f_mod(INT32 args)
 {
   if(args != 2) {
@@ -2294,6 +2560,10 @@ PMOD_EXPORT void o_not(void)
   }
 }
 
+/*! @decl mixed `!(mixed arg)
+ *!
+ *! Negation operator.
+ */
 PMOD_EXPORT void f_not(INT32 args)
 {
   if(args != 1) {
@@ -2386,6 +2656,10 @@ PMOD_EXPORT void o_compl(void)
   }
 }
 
+/*! @decl mixed `~(mixed arg)
+ *!
+ *! Complement operator.
+ */
 PMOD_EXPORT void f_compl(INT32 args)
 {
   if(args != 1) {
@@ -2501,6 +2775,10 @@ PMOD_EXPORT void o_range(void)
   }
 }
 
+/*! @decl mixed `[](mixed arg1, mixed arg2, mixed|void arg3)
+ *!
+ *! Index and range operator.
+ */
 PMOD_EXPORT void f_index(INT32 args)
 {
   switch(args)
@@ -2521,6 +2799,10 @@ PMOD_EXPORT void f_index(INT32 args)
   }
 }
 
+/*! @decl mixed `->(mixed arg1, mixed arg2)
+ *!
+ *! Arrow index operator.
+ */
 PMOD_EXPORT void f_arrow(INT32 args)
 {
   switch(args)
@@ -2539,6 +2821,10 @@ PMOD_EXPORT void f_arrow(INT32 args)
   }
 }
 
+/*! @decl mixed `[]=(mixed arg1, mixed arg2, mixed arg3)
+ *!
+ *! Index assign operator.
+ */
 PMOD_EXPORT void f_index_assign(INT32 args)
 {
   switch (args) {
@@ -2558,6 +2844,10 @@ PMOD_EXPORT void f_index_assign(INT32 args)
   }
 }
 
+/*! @decl mixed `->=(mixed arg1, mixed arg2, mixed arg3)
+ *!
+ *! Arrow assign operator.
+ */
 PMOD_EXPORT void f_arrow_assign(INT32 args)
 {
   switch (args) {
@@ -2577,6 +2867,10 @@ PMOD_EXPORT void f_arrow_assign(INT32 args)
   }
 }
 
+/*! @decl int sizeof(mixed arg)
+ *!
+ *! Sizeof operator.
+ */
 PMOD_EXPORT void f_sizeof(INT32 args)
 {
   INT32 tmp;
@@ -2600,10 +2894,18 @@ static int generate_sizeof(node *n)
 }
 
 extern int generate_call_function(node *n);
+
+/*! @class string_assignment
+ */
+
 struct program *string_assignment_program;
 
 #undef THIS
 #define THIS ((struct string_assignment_storage *)(CURRENT_STORAGE))
+/*! @decl int `[](int i, int j)
+ *!
+ *! String index operator.
+ */
 static void f_string_assignment_index(INT32 args)
 {
   INT_TYPE i;
@@ -2620,6 +2922,10 @@ static void f_string_assignment_index(INT32 args)
   push_int(i);
 }
 
+/*! @decl int `[]=(int i, int j)
+ *!
+ *! String assign index operator.
+ */
 static void f_string_assignment_assign_index(INT32 args)
 {
   INT_TYPE i,j;
@@ -2662,6 +2968,9 @@ static void exit_string_assignment_storage(struct object *o)
   if(THIS->s)
     free_string(THIS->s);
 }
+
+/*! @endclass
+ */
 
 void init_operators(void)
 {
