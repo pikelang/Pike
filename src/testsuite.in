@@ -1,4 +1,4 @@
-stest_true([["$Id: testsuite.in,v 1.149 1999/03/01 05:32:41 hubbe Exp $"]])
+stest_true([["$Id: testsuite.in,v 1.150 1999/03/01 21:30:17 grubba Exp $"]])
 cond([[all_constants()->_verify_internals]],
 [[
   test_do(_verify_internals())
@@ -2427,7 +2427,8 @@ test_equal(indices("foo"),({0,1,2}))
 test_equal(indices(({'f','o','o'})),({0,1,2}))
 test_equal(Array.sort_array(indices(([7:3,8:9,99:12]))),({7,8,99}))
 test_equal(Array.sort_array(indices((<7,8,99>))),({7,8,99}))
-test_equal(mkmultiset(indices(this_object())),(<"a","b">))
+test_equal(mkmultiset(indices(class{constant a="a"; constant b="b";}())),
+	   (<"a","b">))
 
 // - Array.longest_ordered_sequence
 test_equal(Array.longest_ordered_sequence("dfgaokäpojghadjjioijrgxcvb"/""),
@@ -2752,7 +2753,8 @@ test_equal(values("foo"),({'f','o','o'}))
 test_equal(values(({'f','o','o'})),({'f','o','o'}))
 test_equal(Array.sort_array(values(([7:3,8:9,99:12]))),({3,9,12}))
 test_equal(values((<7,8,99>)),({1,1,1}))
-test_equal(mkmultiset(values(this_object())),(<a,b>))
+test_equal(mkmultiset(values(class{ constant a="a"; constant b="b";}())),
+           (<"a","b">))
 
 // - zero_type
 test_eq(zero_type(0),0)
