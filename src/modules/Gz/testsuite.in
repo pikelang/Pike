@@ -1,4 +1,4 @@
-// $Id: testsuite.in,v 1.5 1999/06/10 23:45:53 peter Exp $
+// $Id: testsuite.in,v 1.6 1999/06/13 09:52:11 hubbe Exp $
 
 cond([[ master()->resolv("Gz")->deflate ]],
 [[
@@ -9,9 +9,9 @@ cond([[ master()->resolv("Gz")->deflate ]],
 
 define(dotest,[[
   test_true(Gz.deflate(1)->deflate($1))
-  test_eq(Gz.inflate()->inflate(Gz.deflate(1)->deflate($1)),$1)
-  test_eq(Gz.inflate()->inflate(Gz.deflate(9)->deflate($1)),$1)
-  test_any([[object o=Gz.deflate(); return Gz.inflate()->inflate(o->deflate($1,o->PARTIAL_FLUSH) + o->deflate($1,o->FINISH))]], [[($1)+($1)]])
+  test_any([[string s=$1; return Gz.inflate()->inflate(Gz.deflate(1)->deflate(s))==s]],1)
+  test_any([[string s=$1; return Gz.inflate()->inflate(Gz.deflate(9)->deflate(s))==s]],1)
+  test_any([[string s=$1; object o=Gz.deflate(); return Gz.inflate()->inflate(o->deflate(s,o->PARTIAL_FLUSH) + o->deflate(s,o->FINISH)) == s+s; ]],1)
 ]])
 
   dotest("")
@@ -22,7 +22,12 @@ define(dotest,[[
   cond([[ master()->resolv("Crypto") && master()->resolv("Crypto")["randomness"] ]],
   [[
     dotest(Crypto.randomness.pike_random()->read(32768))
-    dotest(Crypto.randomness.pike_random()->read(524288))
-    dotest(Crypto.randomness.pike_random()->read(8388608))
+
+
+dnl  These two causes 'out of memory' errors /Hubbe
+dnl
+dnl    dotest(Crypto.randomness.pike_random()->read(524288))
+dnl    dotest(Crypto.randomness.pike_random()->read(8388608))
+dnl
   ]])
 ]])
