@@ -4,7 +4,7 @@
 ||| See the files COPYING and DISCLAIMER for more information.
 \*/
 #include "global.h"
-RCSID("$Id: builtin_functions.c,v 1.21 1997/01/19 09:07:59 hubbe Exp $");
+RCSID("$Id: builtin_functions.c,v 1.22 1997/01/27 01:02:07 hubbe Exp $");
 #include "interpret.h"
 #include "svalue.h"
 #include "macros.h"
@@ -29,6 +29,7 @@ RCSID("$Id: builtin_functions.c,v 1.21 1997/01/19 09:07:59 hubbe Exp $");
 #include "threads.h"
 #include "time_stuff.h"
 #include "version.h"
+#include "encode.h"
 #include <math.h>
 #include <ctype.h>
 
@@ -532,11 +533,9 @@ void f_zero_type(INT32 args)
 
 void f_all_constants(INT32 args)
 {
-  INT32 stack_size;
   pop_n_elems(args);
-  stack_size=sp - evaluator_stack;
-  push_all_efuns_on_stack();
-  f_aggregate_mapping(sp - evaluator_stack - stack_size);
+  push_mapping(get_builtin_constants());
+  sp[-1].u.mapping->refs++;
 }
 
 void f_allocate(INT32 args)
@@ -1498,12 +1497,6 @@ void f__memory_usage(INT32 args)
   push_text("callback_bytes");
   push_int(size);
 
-  count_memory_in_constants(&num, &size);
-  push_text("num_constants");
-  push_int(num);
-  push_text("constant_bytes");
-  push_int(size);
-
   count_memory_in_callables(&num, &size);
   push_text("num_callables");
   push_int(num);
@@ -1679,6 +1672,9 @@ void init_builtin_efuns()
 #ifdef GC2
   add_efun("gc",f_gc,"function(:int)",OPT_SIDE_EFFECT);
 #endif
-  add_efun("version", f_version, "function(:string)", 0);
+  add_efun("version", f_version, "function(:string)", OPT_TRY_OPTIMIZE);
+
+  add_efun("encode_value", f_encode_value, "function(mixed:string)", OPT_TRY_OPTIMIZE);
+  add_efun("decode_value", f_decode_value, "function(string:mixed)", OPT_TRY_OPTIMIZE);
 }
 
