@@ -1,4 +1,4 @@
-/* $Id: context.pike,v 1.8 1999/03/09 14:55:40 nisse Exp $
+/* $Id: context.pike,v 1.9 1999/05/22 23:09:00 mast Exp $
  *
  * Keeps track of global data for an SSL server,
  * such as preferred encryption algorithms and session cache.
@@ -37,16 +37,18 @@ void rsa_mode()
 #ifdef SSL3_DEBUG
   werror("SSL.context: rsa_mode()\n");
 #endif
-  preferred_suites =
-    ({ SSL_rsa_with_idea_cbc_sha,
-       SSL_rsa_with_rc4_128_sha,
-       SSL_rsa_with_rc4_128_md5,
-       SSL_rsa_with_3des_ede_cbc_sha,
-       SSL_rsa_with_des_cbc_sha,
-       SSL_rsa_export_with_rc4_40_md5,
-       SSL_rsa_with_null_sha,
-       SSL_rsa_with_null_md5
-    });
+  preferred_suites = ({
+#ifndef WEAK_CRYPTO_40BIT
+    SSL_rsa_with_idea_cbc_sha,
+    SSL_rsa_with_rc4_128_sha,
+    SSL_rsa_with_rc4_128_md5,
+    SSL_rsa_with_3des_ede_cbc_sha,
+    SSL_rsa_with_des_cbc_sha,
+#endif /* !WEAK_CRYPTO_40BIT (magic comment) */
+    SSL_rsa_export_with_rc4_40_md5,
+    SSL_rsa_with_null_sha,
+    SSL_rsa_with_null_md5,
+  });
 }
 
 void dhe_dss_mode()
@@ -54,25 +56,13 @@ void dhe_dss_mode()
 #ifdef SSL3_DEBUG
   werror("SSL.context: dhe_dss_mode()\n");
 #endif
-  preferred_suites =
-    ({ SSL_dhe_dss_with_3des_ede_cbc_sha,
-       SSL_dhe_dss_with_des_cbc_sha,
-       SSL_dhe_dss_export_with_des40_cbc_sha,
-    });
-}
-
-void export_mode()
-{
-#ifdef SSL3_DEBUG
-  werror("SSL.context: export_mode()\n");
-#endif
-  
-  preferred_suites &=
-    ({ SSL_rsa_export_with_rc4_40_md5,
-       SSL_rsa_with_null_sha,
-       SSL_rsa_with_null_md5,
-       SSL_dhe_dss_export_with_des40_cbc_sha
-    });
+  preferred_suites = ({
+#ifndef WEAK_CRYPTO_40BIT
+    SSL_dhe_dss_with_3des_ede_cbc_sha,
+    SSL_dhe_dss_with_des_cbc_sha,
+#endif /* !WEAK_CRYPTO_40BIT (magic comment) */
+    SSL_dhe_dss_export_with_des40_cbc_sha,
+  });
 }
 
 array(int) preferred_compressors =
