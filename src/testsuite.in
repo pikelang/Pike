@@ -1,4 +1,4 @@
-test_true([["$Id: testsuite.in,v 1.682 2003/09/30 18:03:10 grubba Exp $"]]);
+test_true([["$Id: testsuite.in,v 1.683 2003/10/04 18:21:51 grubba Exp $"]]);
 
 // This triggered a bug only if run sufficiently early.
 test_compile_any([[#pike 7.2]])
@@ -9797,8 +9797,10 @@ void test_resolv(string file, int base_size, object|void handler)
   if(prg[sizeof(prg)-7..]==".module")
     prg = prg[..sizeof(prg)-8];
   // werror("Resolving %O...\n", prg);
-  if( catch( (handler||master())->resolv(prg) ) ) {
-    werror("test: failed to peek at %O\n", prg);
+  mixed err;
+  if(err = catch( (handler||master())->resolv(prg) ) ) {
+    werror("test: failed to peek at %O: %s\n",
+	   prg, describe_error(err));
     ok=0;
   }
 }
@@ -9841,8 +9843,26 @@ void test_dir(string dir, int|void base_size, object|void handler)
           continue;
         }
 #endif
-	test_resolv(file+(has_suffix(file, ".so")? "XX":""),
-		    base_size, handler);
+	if (has_suffix(file, ".so")) {
+#if constant(load_module)
+	  // Load .so files by hand to make sure
+	  // loading errors aren't hidden.
+	  mixed err;
+	  if (err = catch{
+	    program ret = load_module(file);
+	    master()->programs[file] = ret;
+	  }) {
+	    werror("test: failed to load %O: %s\n",
+		   file, describe_error(err));
+	    ok=0;
+	  } else
+#endif /* constant(load_module) */
+	  {
+	    test_resolv(file+"XX", base_size, handler);
+	  }
+	} else {
+	  test_resolv(file, base_size, handler);
+	}
       }
     }
   }
