@@ -1,5 +1,5 @@
 /*
- * $Id: threads.h,v 1.114 2002/09/13 19:18:00 mast Exp $
+ * $Id: threads.h,v 1.115 2002/09/14 02:58:49 mast Exp $
  */
 #ifndef THREADS_H
 #define THREADS_H
@@ -417,6 +417,17 @@ struct thread_state {
 #define th_hash(X) hashmem((unsigned char *)&(X),sizeof(THREAD_T), 16)
 #endif
 
+#if !defined(HAVE_GETHRTIME) && defined(HAVE_CLOCK)
+#ifdef HAVE_TIME_H
+#include <time.h>
+#endif
+PMOD_EXPORT extern clock_t thread_start_clock;
+#define USE_CLOCK_FOR_SLICES
+#define DO_IF_USE_CLOCK_FOR_SLICES(X) X
+#else
+#define DO_IF_USE_CLOCK_FOR_SLICES(X)
+#endif
+
 /* Define to get a debug-trace of some of the threads operations. */
 /* #define VERBOSE_THREADS_DEBUG	0 */ /* Some debug */
 /* #define VERBOSE_THREADS_DEBUG	1 */ /* Lots of debug */
@@ -453,6 +464,7 @@ PMOD_EXPORT extern int t_flag;
 #define SWAP_IN_THREAD(_tmp) do {					\
        (_tmp)->swapped=0;						\
        Pike_interpreter=(_tmp)->state;					\
+       DO_IF_USE_CLOCK_FOR_SLICES (thread_start_clock = 0);		\
        DO_IF_PROFILING(  Pike_interpreter.time_base -=  gethrtime();)	\
      } while(0)
 
