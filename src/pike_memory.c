@@ -10,7 +10,7 @@
 #include "pike_macros.h"
 #include "gc.h"
 
-RCSID("$Id: pike_memory.c,v 1.37 1999/05/02 08:11:46 hubbe Exp $");
+RCSID("$Id: pike_memory.c,v 1.38 1999/05/03 07:03:41 hubbe Exp $");
 
 /* strdup() is used by several modules, so let's provide it */
 #ifndef HAVE_STRDUP
@@ -965,14 +965,13 @@ void dmalloc_register(void *p, int s, char *file, int line)
   low_make_memhdr(p,s,location_number(file, line));
 }
 
-void *dmalloc_accept_leak(void *p)
+void dmalloc_accept_leak(void *p)
 {
   if(p)
   {
     struct memhdr *mh;
     if((mh=my_find_memhdr(p,0))) add_location(mh, 0);
   }
-  return p;
 }
 
 int dmalloc_unregister(void *p, int already_gone)

@@ -1,5 +1,5 @@
 /*
- * $Id: dmalloc.h,v 1.11 1999/05/02 08:11:38 hubbe Exp $
+ * $Id: dmalloc.h,v 1.12 1999/05/03 07:03:40 hubbe Exp $
  */
 
 extern char *debug_xalloc(long);
@@ -42,10 +42,10 @@ void debug_malloc_dump_references(void *x);
 #define DMALLOC_LINE_ARGS ,char * dmalloc_file, int dmalloc_line
 #define DMALLOC_POS ,__FILE__,__LINE__
 #define DMALLOC_PROXY_ARGS ,dmalloc_file,dmalloc_line
-void *dmalloc_accept_leak(void *);
+void dmalloc_accept_leak(void *);
 #else
 #define dmfree(X) free((X))
-#define dmalloc_accept_leak(X) (X)
+#define dmalloc_accept_leak(X) (void)(X)
 #define DMALLOC_LINE_ARGS 
 #define DMALLOC_POS 
 #define DMALLOC_PROXY_ARGS
