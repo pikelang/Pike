@@ -1,5 +1,5 @@
 #
-# $Id: configure.in,v 1.5 1997/01/05 21:51:15 grubba Exp $
+# $Id: configure.in,v 1.6 1997/01/10 00:29:07 grubba Exp $
 #
 # Configure script for the mysql-module
 #
@@ -15,8 +15,7 @@
 #   libmysql.a				libmysqllib.a
 #   libstrings.a			libmystrings.a
 #
-#   After 3.20.0 pthreads are no longer needed.
-#
+
 
 AC_INIT(mysql.c)
 
@@ -34,7 +33,7 @@ if test x$with_mysql = xyes; then
   AC_MSG_CHECKING(Checking for Mysql lib-directory)
 
   AC_CACHE_VAL(pike_cv_mysql_lib_dir, [
-    for pike_cv_mysql_lib_dir in /usr/local/lib/mysql /usr/gnu/lib/mysql /usr/lib/mysql /lib/mysql /usr/local/mysql/mach-lib-thread no; do
+    for pike_cv_mysql_lib_dir in /usr/local/lib/mysql /usr/local/mysql/lib/mysql /usr/gnu/lib/mysql /usr/lib/mysql /lib/mysql /usr/local/mysql/lib /usr/local/mysql/mach-lib-thread no; do
       if test -d $pike_cv_mysql_lib_dir/.; then
         break
       fi
@@ -51,8 +50,8 @@ if test x$with_mysql = xyes; then
   AC_MSG_CHECKING(Checking for Mysql include-directory)
 
   AC_CACHE_VAL(pike_cv_mysql_include_dir, [
-    for pike_cv_mysql_include_dir in /usr/local/include/mysql /usr/gnu/include/mysql /usr/include/mysql /include/mysql /usr/local/mysql/include no; do
-      if test -d $dir/.; then
+    for pike_cv_mysql_include_dir in /usr/local/include/mysql /usr/local/mysql/include/mysql /usr/gnu/include/mysql /usr/include/mysql /include/mysql /usr/local/mysql/include no; do
+      if test -d $pike_cv_mysql_include_dir/.; then
         break
       else
 	:
