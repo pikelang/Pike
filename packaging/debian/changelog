@@ -35,6 +35,7 @@ pike7.4 (7.4.47-1) unstable; urgency=low
 	* Bugfixed Image.PNG grey scale decoding.
 	* _Roxen.http_decode_string now handles %u encoded characters.
 	* Fixed crash in GL.glGetString.
+  * Updated the standards version. No changes.
 
  -- Marek Habersack <grendel@debian.org>  Wed, 28 Apr 2004 13:17:46 +0200
 
