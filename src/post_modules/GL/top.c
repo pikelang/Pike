@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: top.c,v 1.20 2003/04/30 18:45:17 grubba Exp $
+|| $Id: top.c,v 1.21 2003/05/01 16:02:44 grubba Exp $
 */
 
 #include "global.h"
@@ -10,6 +10,16 @@
 #include "config.h"
 
 #ifdef HAVE_GL
+
+/* INT64, INT32, INT16 and INT8 conflict with some GL headerfiles.
+ * eg on AIX 4.2.
+ */
+#ifdef INT64
+#undef INT64
+#endif
+#undef INT32
+#undef INT16
+#undef INT8
 
 #ifdef HAVE_WINDEF_H
 #include <windows.h>
@@ -21,9 +31,12 @@
 #include <GL/glx.h>
 #endif /* HAVE_GL_GLX_H */
 
+/* Restore INT64, INT32, INT16 and INT8. */
+#include "pike_int_types.h"
+
 #endif /* HAVE_GL */
 
-RCSID("$Id: top.c,v 1.20 2003/04/30 18:45:17 grubba Exp $");
+RCSID("$Id: top.c,v 1.21 2003/05/01 16:02:44 grubba Exp $");
 #include "stralloc.h"
 #include "pike_macros.h"
 #include "object.h"
