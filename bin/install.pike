@@ -1159,7 +1159,7 @@ int main(int argc, string *argv)
 
 	case "notty":
 	  istty_cache=-1;
-	  exit(0);
+	  break;
 
 	default:
 	  install_type=opt[0];
