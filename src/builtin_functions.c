@@ -4,7 +4,7 @@
 ||| See the files COPYING and DISCLAIMER for more information.
 \*/
 #include "global.h"
-RCSID("$Id: builtin_functions.c,v 1.59 1998/01/13 22:56:39 hubbe Exp $");
+RCSID("$Id: builtin_functions.c,v 1.60 1998/01/15 05:59:40 hubbe Exp $");
 #include "interpret.h"
 #include "svalue.h"
 #include "pike_macros.h"
@@ -351,26 +351,38 @@ void f_add_constant(INT32 args)
   pop_n_elems(args);
 }
 
+#ifndef __NT__
+#define IS_SEP(X) ( (X)=='/' )
+#define IS_ABS(X) (IS_SEP((X)[0])?1:0)
+#define 
+#else   
+#define IS_SEP(X) ( (X) == '/' || (X) == '\\' )
+#define IS_ABS(X) (IS_SEP((X)[0])?1:(isalpha((X)[0]) && (X)[1]==':' && IS_SEP((X)[2]))?3:0)
+#endif
+
 static char *combine_path(char *cwd,char *file)
 {
   /* cwd is supposed to be combined already */
   char *ret;
   register char *from,*to;
   char *my_cwd;
+  char cwdbuf[10];
   my_cwd=0;
   
 
-  if(file[0]=='/')
+  if(IS_ABS(file))
   {
-    cwd="/";
-    file++;
+    MEMCPY(cwdbuf,file,IS_ABS(file));
+    cwdbuf[IS_ABS(file)]=0;
+    cwd=cwdbuf;
+    file+=IS_ABS(file);
   }
 #ifdef DEBUG    
   if(!cwd)
     fatal("No cwd in combine_path!\n");
 #endif
 
-  if(!*cwd || cwd[strlen(cwd)-1]=='/')
+  if(!*cwd || IS_SEP(cwd[strlen(cwd)-1]))
   {
     ret=(char *)xalloc(strlen(cwd)+strlen(file)+1);
     strcpy(ret,cwd);
@@ -385,11 +397,11 @@ static char *combine_path(char *cwd,char *file)
   from=to=ret;
 
   /* Skip all leading "./" */
-  while(from[0]=='.' && from[1]=='/') from+=2;
+  while(from[0]=='.' && IS_SEP(from[1])) from+=2;
   
   while(( *to = *from ))
   {
-    if(*from == '/')
+    if(IS_SEP(*from))
     {
       while(to>ret && to[-1]=='/') to--;
       if(from[1] == '.')
@@ -397,15 +409,15 @@ static char *combine_path(char *cwd,char *file)
 	switch(from[2])
 	{
 	case '.':
-	  if(from[3] == '/' || from[3] == 0)
+	  if(IS_SEP(from[3]) || !from[3])
 	  {
 	    char *tmp=to;
 	    while(--tmp>=ret)
-	      if(*tmp == '/')
+	      if(IS_SEP(*tmp))
 		break;
 	    tmp++;
 
-	    if(tmp[0]=='.' && tmp[1]=='.' && (tmp[2]=='/' || !tmp[2]))
+	    if(tmp[0]=='.' && tmp[1]=='.' && (IS_SEP(tmp[2]) || !tmp[2]))
 	      break;
 	    
 	    from+=3;
@@ -416,6 +428,9 @@ static char *combine_path(char *cwd,char *file)
 
 	case 0:
 	case '/':
+#ifdef __NT__
+        case '\\':
+#endif
 	  from+=2;
 	  continue;
 	}
@@ -425,12 +440,12 @@ static char *combine_path(char *cwd,char *file)
     to++;
   }
 
-  if(*ret && from[-1]!='/' && to[-1]=='/')
+  if(*ret && !IS_SEP(from[-1]) && IS_SEP(to[-1]))
       *--to=0;
 
   if(!*ret)
   {
-    if(*cwd=='/')
+    if(IS_SEP(*cwd))
     {
       ret[0]='/';
       ret[1]=0;
@@ -598,7 +613,7 @@ void f_throw(INT32 args)
   pop_n_elems(args-1);
   throw_value=sp[-1];
   sp--;
-  throw();
+  pike_throw();
 }
 
 static struct callback_list exit_callbacks;

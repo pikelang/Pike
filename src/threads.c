@@ -1,5 +1,5 @@
 #include "global.h"
-RCSID("$Id: threads.c,v 1.51 1998/01/13 22:56:51 hubbe Exp $");
+RCSID("$Id: threads.c,v 1.52 1998/01/15 05:59:43 hubbe Exp $");
 
 int num_threads = 1;
 int threads_disabled = 0;
@@ -15,16 +15,57 @@ int threads_disabled = 0;
 #include "program.h"
 #include "gc.h"
 
+#ifdef __NT__
+
+#ifdef DEBUG
+static int IsValidHandle(HANDLE h)
+{
+  __try {
+    HANDLE ret;
+    if(DuplicateHandle(GetCurrentProcess(),
+			h,
+			GetCurrentProcess(),
+			&ret,
+			NULL,
+			0,
+			DUPLICATE_SAME_ACCESS))
+    {
+      CloseHandle(ret);
+    }
+  }
+
+  __except (1) {
+    return 0;
+  }
+
+  return 1;
+}
+
+void CheckValidHandle(HANDLE h)
+{
+  if(!IsValidHandle((HANDLE)h))
+    fatal("Invalid handle!\n");
+}
+
+#endif
+
+#endif
+
 #ifdef SIMULATE_COND_WITH_EVENT
 int co_wait(COND_T *c, MUTEX_T *m)
 {
   struct cond_t_queue me;
   event_init(&me.event);
+  me.next=0;
   mt_lock(& c->lock);
 
-  me.next=c->tail;
-  c->tail=&me;
-  if(!c->head) c->head=&me;
+  if(c->tail)
+  {
+    c->tail->next=&me;
+    c->tail=&me;
+  }else{
+    c->head=c->tail=&me;
+  }
 
   mt_unlock(& c->lock);
   mt_unlock(m);
@@ -34,6 +75,11 @@ int co_wait(COND_T *c, MUTEX_T *m)
   event_destroy(& me.event);
   /* Cancellation point?? */
 
+#ifdef DEBUG
+  if(me.next)
+    fatal("Wait on event return prematurely!!\n");
+#endif
+
   return 0;
 }
 
@@ -41,7 +87,7 @@ int co_signal(COND_T *c)
 {
   struct cond_t_queue *t;
   mt_lock(& c->lock);
-  if(t=c->head)
+  if((t=c->head))
   {
     c->head=t->next;
     t->next=0;
@@ -64,6 +110,7 @@ int co_broadcast(COND_T *c)
   while((t=n))
   {
     n=t->next;
+    t->next=0;
     event_signal(& t->event);
   }
 

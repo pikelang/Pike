@@ -67,7 +67,7 @@ extern struct svalue throw_value;
 
 /* Prototypes begin here */
 JMP_BUF *init_recovery(JMP_BUF *r);
-void throw(void) ATTRIBUTE((noreturn));
+void pike_throw(void) ATTRIBUTE((noreturn));
 void va_error(char *fmt, va_list args) ATTRIBUTE((noreturn));
 void exit_on_error(void *msg);
 void fatal_on_error(void *msg);

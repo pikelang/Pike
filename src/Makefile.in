@@ -161,17 +161,17 @@ install:
 	  mv -f "$(exec_prefix)/pike" "$(exec_prefix)/pike.old"; \
 	else : ; fi
 	@echo "$(exec_prefix)/pike"; $(INSTALL) ./pike $(exec_prefix)
-	@if [ -f $(SRCDIR)/../bin/hilfe ]; then \
+	@if [ -f $(TMP_BINDIR)/hilfe ]; then \
 	  echo "$(exec_prefix)/hilfe"; \
 	  if [ "$(exec_prefix)" != "/usr/local/bin" -a \
 	       "$(exec_prefix)" != "/usr/local/bin/" ]; then \
 	    if [ -f $(exec_prefix)/hilfe ]; then \
 	      mv $(exec_prefix)/hilfe $(exec_prefix)/hilfe.old; \
 	    else : ; fi && \
-	    sed -e 's!/usr/local/bin!$(exec_prefix)!' <$(SRCDIR)/../bin/hilfe \
-	      >$(exec_prefix)/hilfe && \
-	    chmod 755 $(exec_prefix)/hilfe; \
-	  else $(INSTALL) $(SRCDIR)/../bin/hilfe $(exec_prefix); fi; \
+	    sed -e 's!/usr/local/bin!$(exec_prefix)!' <$(TMP_BINDIR)/hilfe >./hilfe && \
+	    chmod 755 ./hilfe && \
+            $(INSTALL) ./hilfe $(exec_prefix) ; \
+	  else $(INSTALL) $(TMP_BINDIR)/hilfe $(exec_prefix); fi; \
 	else : ; fi
 	@for a in $(SRCDIR)/*.h *.h ; do $(INSTALL) $$a $(prefix)/include/pike ; done
 	@for f in `cd "$(TMP_LIBDIR)"; find . -type f -print`; do echo "$(lib_prefix)/$$f"; if [ -f "$(lib_prefix)/$$f" ]; then mv -f "$(lib_prefix)/$$f" "$(lib_prefix)/$$f.old"; else : ; fi; cp "$(TMP_LIBDIR)/$$f" "$(lib_prefix)/$$f"; done
@@ -239,6 +239,8 @@ feature_list:
 
 lib: $(LIBDIR_SRC) $(LIBDIR_SRC)/master.pike $(LIBDIR_SRC)/modules $(LIBDIR_SRC)/include
 	cp -r $(LIBDIR_SRC) .
+	-rm -r `find lib -type d -name CVS`
+	-rm `find lib -type f -name '*~'`
 	-touch ./lib
 
 # make export archive (requires compiled Pike)

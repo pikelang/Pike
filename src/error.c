@@ -28,7 +28,7 @@ JMP_BUF *init_recovery(JMP_BUF *r)
   return r;
 }
 
-void throw(void) ATTRIBUTE((noreturn))
+void pike_throw(void) ATTRIBUTE((noreturn))
 {
   if(!recoveries)
     fatal("No error recovery context.\n");
@@ -100,7 +100,7 @@ void va_error(char *fmt, va_list args) ATTRIBUTE((noreturn))
   throw_value = *sp;
 
   in_error=0;
-  throw();  /* Hope someone is catching, or we will be out of balls. */
+  pike_throw();  /* Hope someone is catching, or we will be out of balls. */
 }
 
 void exit_on_error(void *msg)

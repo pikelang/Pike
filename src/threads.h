@@ -161,21 +161,21 @@ extern struct object *thread_id;
 #define th_create(ID,fun,arg)  (!(*(ID)=_beginthread(fun, 2*1024*1024, arg)))
 #define th_exit(foo) _endthread(foo)
 #define th_self() GetCurrentThread()
-#define th_destroy(X) CloseHandle(*(X))
+#define th_destroy(X)
 #define th_yield() Sleep(0)
 
 #define MUTEX_T HANDLE
-#define mt_init(X) (*(X)=CreateMutex(NULL, 0, NULL))
-#define mt_lock(X) WaitForSingleObject(*(X), INFINITE)
-#define mt_trylock(X) WaitForSingleObject(*(X), 0)
-#define mt_unlock(X) ReleaseMutex(*(X))
-#define mt_destroy(X) CloseHandle(*(X))
+#define mt_init(X) CheckValidHandle((*(X)=CreateMutex(NULL, 0, NULL)))
+#define mt_lock(X) (CheckValidHandle(*(X)),WaitForSingleObject(*(X), INFINITE))
+#define mt_trylock(X) (CheckValidHandle(*(X)),WaitForSingleObject(*(X), 0))
+#define mt_unlock(X) (CheckValidHandle(*(X)),ReleaseMutex(*(X)))
+#define mt_destroy(X) (CheckValidHandle(*(X)),CloseHandle(*(X)))
 
 #define EVENT_T HANDLE
-#define event_init(X) (*(X)=CreateEvent(NULL, 1, 0, NULL))
-#define event_signal(X) SetEvent(*(X))
-#define event_destroy(X) CloseHandle(*(X))
-#define event_wait(X) WaitForSingleObject(*(X), INFINITE) 
+#define event_init(X) CheckValidHandle(*(X)=CreateEvent(NULL, 1, 0, NULL))
+#define event_signal(X) (CheckValidHandle(*(X)),SetEvent(*(X)))
+#define event_destroy(X) (CheckValidHandle(*(X)),CloseHandle(*(X)))
+#define event_wait(X) (CheckValidHandle(*(X)),WaitForSingleObject(*(X), INFINITE))
 
 #endif
 
@@ -198,7 +198,7 @@ typedef struct cond_t_s
 
 #define COND_T struct cond_t_s
 
-#define co_init(X) mt_init(& (X)->lock)
+#define co_init(X) do { mt_init(& (X)->lock), (X)->head=(X)->tail=0; }while(0)
 
 int co_wait(COND_T *c, MUTEX_T *m);
 int co_signal(COND_T *c);
@@ -338,8 +338,8 @@ struct thread_state {
 struct thread_starter;
 void *new_thread_func(void * data);
 void f_thread_create(INT32 args);
+void f_thread_set_concurrency(INT32 args);
 void f_this_thread(INT32 args);
-void th_init(void);
 struct mutex_storage;
 struct key_storage;
 void f_mutex_lock(INT32 args);
@@ -353,6 +353,11 @@ void f_cond_signal(INT32 args);
 void f_cond_broadcast(INT32 args);
 void init_cond_obj(struct object *o);
 void exit_cond_obj(struct object *o);
+void f_thread_backtrace(INT32 args);
+void f_thread_id_status(INT32 args);
+void init_thread_obj(struct object *o);
+void exit_thread_obj(struct object *o);
+void th_init(void);
 void th_cleanup(void);
 /* Prototypes end here */
 
@@ -373,6 +378,13 @@ void th_cleanup(void);
 #define th_self() ((void*)0)
 #endif /* _REENTRANT */
 
+#ifdef __NT__
+#ifndef DEBUG
+#define CheckValidHandle(X) 0
+#else
+void CheckValidHandle(HANDLE h);
+#endif
+#endif
 
 extern int threads_disabled;
 

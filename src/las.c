@@ -4,7 +4,7 @@
 ||| See the files COPYING and DISCLAIMER for more information.
 \*/
 #include "global.h"
-RCSID("$Id: las.c,v 1.40 1998/01/13 22:56:44 hubbe Exp $");
+RCSID("$Id: las.c,v 1.41 1998/01/15 05:59:41 hubbe Exp $");
 
 #include "language.h"
 #include "interpret.h"
@@ -1867,7 +1867,7 @@ static void check_evaluation_time(struct callback *cb,void *tmp,void *ignored)
   if(foo->counter-- < 0)
   {
     foo->yes=1;
-    throw();
+    pike_throw();
   }
 }
 
