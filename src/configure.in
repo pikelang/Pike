@@ -245,7 +245,7 @@ AC_HEADER_TIME
 AC_HEADER_STDC
 AC_CHECK_HEADERS(sys/rusage.h time.h sys/time.h sys/types.h unistd.h stdlib.h \
 memory.h values.h string.h fcntl.h sys/filio.h sys/sockio.h crypt.h locale.h \
-sys/resource.h sys/select.h sys/mman.h setjmp.h limits.h pthread.h)
+sys/resource.h sys/select.h sys/mman.h setjmp.h limits.h pthread.h dlfcn.h)
 
 AC_SIZEOF_TYPE(char *)
 AC_SIZEOF_TYPE(long)
@@ -265,6 +265,7 @@ dnl AC_CHECK_LIB(PW, alloca)
 dnl AC_CHECK_LIB(crypt, crypt)
 
 AC_CHECK_LIB(m, floor)
+AC_CHECK_LIB(dl, dlopen)
 
 if test "${ac_cv_lib_m}" = "no" -a "${pike_cv_sys_os}" = "Linux"; then
   AC_MSG_WARN(I will compensate for this by adding -lc -lm)
@@ -367,6 +368,8 @@ AC_CHECK_FUNCS(
  wait4 \
  waitpid \
  munmap \
+ dlopen \
+ dlsym \
 )
 
 AC_STRUCT_TM

@@ -34,6 +34,7 @@ struct pike_string *debug_findstring(const struct pike_string *foo);
 /* Prototypes begin here */
 void check_string(struct pike_string *s);
 void verify_shared_strings_tables();
+struct pike_string *binary_findstring(const char *foo, INT32 len);
 struct pike_string *findstring(const char *foo);
 struct pike_string *debug_findstring(const struct pike_string *foo);
 struct pike_string *begin_shared_string(int len);

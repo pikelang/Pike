@@ -253,6 +253,7 @@ void init_main_efuns()
   init_builtin_efuns();
   init_signals();
   th_init();
+  init_dynamic_load();
 }
 
 void init_main_programs()
@@ -268,7 +269,7 @@ void exit_main()
   void cleanup_program();
 
   th_cleanup();
-
+  exit_dynamic_load();
   cleanup_objects();
   exit_signals();
   exit_lex();

@@ -102,11 +102,14 @@ static struct pike_string *internal_findstring(const char *s,int len,int h)
   return 0; /* not found */
 }
 
+struct pike_string *binary_findstring(const char *foo, INT32 l)
+{
+  return internal_findstring(foo, l, StrHash(foo,l));
+}
+
 struct pike_string *findstring(const char *foo)
 {
-  int l;
-  l=strlen(foo);
-  return internal_findstring(foo, l, StrHash(foo,l));
+  return binary_findstring(foo, strlen(foo));
 }
 
 /*
@@ -148,6 +151,7 @@ struct pike_string *begin_shared_string(int len)
 {
   struct pike_string *t;
   t=(struct pike_string *)xalloc(len + sizeof(struct pike_string));
+  t->str[len]=0;
   t->len=len;
   return t;
 }
@@ -166,7 +170,6 @@ struct pike_string *end_shared_string(struct pike_string *s)
     free((char *)s);
     s=s2;
   }else{
-    s->str[len]=0;
     s->refs = 0;
     s->next = base_table[h];
     base_table[h] = s;

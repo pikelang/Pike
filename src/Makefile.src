@@ -75,6 +75,7 @@ OBJ= \
  callback.o \
  docode.o \
  dynamic_buffer.o \
+ dynamic_load.o \
  error.o \
  fd_control.o \
  fsort.o \

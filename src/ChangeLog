@@ -1,3 +1,8 @@
+Tue Oct  8 06:19:19 1996  Fredrik Hubinette  <hubbe@cuckoo.infovav.se>
+
+	* New efun: load module
+	* bug in copy_mapping fixed
+
 Sat Oct  5 02:53:14 1996  Fredrik Hubinette  <hubbe@teleute.infovav.se>
 
 	* /precompiled/fifo added (with #include <fifo.h>)
