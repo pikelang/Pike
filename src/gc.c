@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: gc.c,v 1.244 2004/03/16 18:34:43 mast Exp $
+|| $Id: gc.c,v 1.245 2004/03/17 19:27:23 mast Exp $
 */
 
 #include "global.h"
@@ -33,7 +33,7 @@ struct callback *gc_evaluator_callback=0;
 
 #include "block_alloc.h"
 
-RCSID("$Id: gc.c,v 1.244 2004/03/16 18:34:43 mast Exp $");
+RCSID("$Id: gc.c,v 1.245 2004/03/17 19:27:23 mast Exp $");
 
 int gc_enabled = 1;
 
@@ -102,8 +102,8 @@ double gc_average_slowness = 0.9;
 #endif
 
 int num_objects = 3;		/* Account for *_empty_array. */
-int num_allocs =0;
-ptrdiff_t alloc_threshold = GC_MIN_ALLOC_THRESHOLD;
+unsigned LONGEST num_allocs =0;
+unsigned LONGEST alloc_threshold = GC_MIN_ALLOC_THRESHOLD;
 PMOD_EXPORT int Pike_in_gc = 0;
 int gc_generation = 0;
 time_t last_gc;
@@ -2700,7 +2700,8 @@ static void warn_bad_cycles()
 
 size_t do_gc(void *ignored, int explicit_call)
 {
-  size_t start_num_objs, start_allocs, unreferenced;
+  unsigned LONGEST start_allocs;
+  size_t start_num_objs, unreferenced;
   cpu_time_t gc_start_time;
   ptrdiff_t objs, pre_kill_objs;
 #if defined (PIKE_DEBUG) || defined (DO_PIKE_CLEANUP)
@@ -2750,7 +2751,10 @@ size_t do_gc(void *ignored, int explicit_call)
   last_cycle = 0;
 
   if(GC_VERBOSE_DO(1 ||) gc_trace) {
-    fprintf(stderr,"Garbage collecting ... ");
+    if (gc_destruct_everything)
+      fprintf (stderr, "Destructing all objects... ");
+    else
+      fprintf(stderr,"Garbage collecting... ");
     GC_VERBOSE_DO(fprintf(stderr, "\n"));
   }
 #ifdef PIKE_DEBUG
@@ -3124,7 +3128,7 @@ size_t do_gc(void *ignored, int explicit_call)
      * explicit call (start_allocs < alloc_threshold) or the gc has
      * been delayed past its due time (start_allocs >
      * alloc_threshold), and in those cases we adjust the multiplier
-     * to appropriately weight this last instance. */
+     * to give the appropriate weight to this last instance. */
     multiplier=pow(gc_average_slowness,
 		   (double) start_allocs / (double) alloc_threshold);
 
@@ -3186,11 +3190,11 @@ size_t do_gc(void *ignored, int explicit_call)
 #endif
 
     if(new_threshold < GC_MIN_ALLOC_THRESHOLD)
-      new_threshold = (double) GC_MIN_ALLOC_THRESHOLD;
+      alloc_threshold = GC_MIN_ALLOC_THRESHOLD;
     else if(new_threshold > GC_MAX_ALLOC_THRESHOLD)
-      new_threshold = (double) GC_MAX_ALLOC_THRESHOLD;
-
-    alloc_threshold = (ptrdiff_t)new_threshold;
+      alloc_threshold = GC_MAX_ALLOC_THRESHOLD;
+    else
+      alloc_threshold = (unsigned LONGEST) new_threshold;
 
     if (!explicit_call && last_gc_time != (cpu_time_t) -1) {
 #if CPU_TIME_IS_THREAD_LOCAL == PIKE_YES
@@ -3202,15 +3206,21 @@ size_t do_gc(void *ignored, int explicit_call)
 
     if(GC_VERBOSE_DO(1 ||) gc_trace)
     {
+      char timestr[40];
       if (last_gc_time != (cpu_time_t) -1)
-	fprintf(stderr, "done (%"PRINTSIZET"d of %"PRINTSIZET"d "
-		"was unreferenced), %ld ms.\n",
-		unreferenced, start_num_objs,
-		(long) (last_gc_time / (CPU_TIME_TICKS / 1000)));
+	sprintf (timestr, ", %ld ms",
+		 (long) (last_gc_time / (CPU_TIME_TICKS / 1000)));
       else
+	timestr[0] = 0;
+#ifdef DO_PIKE_CLEANUP
+      if (gc_destruct_everything)
+	fprintf(stderr, "done (%"PRINTSIZET"d was destructed)%s\n",
+		destroy_count, timestr);
+      else
+#endif
 	fprintf(stderr, "done (%"PRINTSIZET"d of %"PRINTSIZET"d "
-		"was unreferenced)\n",
-		unreferenced, start_num_objs);
+		"was unreferenced)%s\n",
+		unreferenced, start_num_objs, timestr);
     }
   }
 
@@ -3289,7 +3299,7 @@ void f__gc_status(INT32 args)
   size++;
 
   push_constant_text("num_allocs");
-  push_int(num_allocs);
+  push_int64(num_allocs);
   size++;
 
   push_constant_text("alloc_threshold");
@@ -3341,8 +3351,8 @@ void f__gc_status(INT32 args)
 void dump_gc_info(void)
 {
   fprintf(stderr,"Current number of things   : %d\n",num_objects);
-  fprintf(stderr,"Allocations since last gc  : %d\n",num_allocs);
-  fprintf(stderr,"Threshold for next gc      : %"PRINTPTRDIFFT"d\n",alloc_threshold);
+  fprintf(stderr,"Allocations since last gc  : %"PRINTLONGEST"u\n",num_allocs);
+  fprintf(stderr,"Threshold for next gc      : %"PRINTLONGEST"u\n",alloc_threshold);
   fprintf(stderr,"Projected current garbage  : %f\n",
 	  objects_freed * (double) num_allocs / (double) alloc_threshold);
 
