@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: signal_handler.c,v 1.287 2003/12/06 10:09:29 nilsson Exp $
+|| $Id: signal_handler.c,v 1.288 2003/12/07 22:51:35 marcus Exp $
 */
 
 #include "global.h"
@@ -26,7 +26,7 @@
 #include "main.h"
 #include <signal.h>
 
-RCSID("$Id: signal_handler.c,v 1.287 2003/12/06 10:09:29 nilsson Exp $");
+RCSID("$Id: signal_handler.c,v 1.288 2003/12/07 22:51:35 marcus Exp $");
 
 #ifdef HAVE_PASSWD_H
 # include <passwd.h>
@@ -128,7 +128,12 @@ RCSID("$Id: signal_handler.c,v 1.287 2003/12/06 10:09:29 nilsson Exp $");
 #include <dos/dostags.h>
 #include <dos/exall.h>
 #include <clib/dos_protos.h>
+#ifdef __amigaos4__
+#include <interfaces/dos.h>
+#include <inline4/dos.h>
+#else
 #include <inline/dos.h>
+#endif
 #undef timeval
 #endif
 
@@ -252,7 +257,7 @@ RCSID("$Id: signal_handler.c,v 1.287 2003/12/06 10:09:29 nilsson Exp $");
 
 /* #define PROC_DEBUG */
 
-#ifndef __NT__
+#if !defined(__NT__) && !defined(__amigaos__)
 #define USE_PID_MAPPING
 #else
 #undef USE_WAIT_THREAD
@@ -1901,6 +1906,9 @@ static void f_proc_reg_index(INT32 args)
 #ifdef __amigaos__
 
 extern struct DosLibrary *DOSBase;
+#ifdef __amigaos4__
+extern struct DOSIFace *IDOS;
+#endif
 
 static BPTR get_amigados_handle(struct mapping *optional, char *name, int fd)
 {
@@ -1920,6 +1928,7 @@ static BPTR get_amigados_handle(struct mapping *optional, char *name, int fd)
     }
   }
 
+#ifdef __ixemul__
   if((ext = fcntl(fd, F_EXTERNALIZE, 0)) < 0)
     Pike_error("File for %s can not be externalized.\n", name);
   
@@ -1930,6 +1939,10 @@ static BPTR get_amigados_handle(struct mapping *optional, char *name, int fd)
     Pike_error("File for %s can not be internalized.\n", name);
 
   return b;
+#else
+  /* FIXME! */
+  return MKBADDR(NULL);
+#endif
 }
 
 struct perishables

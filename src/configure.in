@@ -1,4 +1,4 @@
-AC_REVISION("$Id: configure.in,v 1.752 2003/12/07 21:28:58 marcus Exp $")
+AC_REVISION("$Id: configure.in,v 1.753 2003/12/07 22:51:35 marcus Exp $")
 AC_INIT(interpret.c)
 AC_CONFIG_HEADER(machine.h)
 
@@ -6575,6 +6575,10 @@ fi
 case "x$pike_cv_sys_os" in
   xWindows_NT)
     signal_handler="custom NT"
+  ;;
+
+  xAmigaOS)
+    signal_handler="custom AmigaOS"
   ;;
 
   xLinux)
