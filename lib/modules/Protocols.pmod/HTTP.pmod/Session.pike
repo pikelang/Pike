@@ -1,6 +1,6 @@
 #pike __REAL_VERSION__
 
-// $Id: Session.pike,v 1.8 2003/03/13 22:47:02 nilsson Exp $
+// $Id: Session.pike,v 1.9 2003/03/20 20:05:54 mirar Exp $
 
 import Protocols.HTTP;
 
@@ -92,7 +92,7 @@ class Request
 	       "protocol than HTTP\n",
 	       url->scheme);
 #endif
-      mapping request_headers = default_headers;
+      mapping request_headers = copy_value(default_headers);
       if (url->referer)
 	 request_headers->referer=(string)url->referer;
 
@@ -431,7 +431,6 @@ class Cookie
 	 switch (lower_case(what))
 	 {
 	    case "expires":
-	       werror("%O\n",value);
 	       expires=
 		  (Calendar.ISO.parse("%e, %D %M %Y %h:%m:%s %z",value)||
 		   Calendar.ISO.parse("%e, %D-%M-%y %h:%m:%s %z",value) )
@@ -494,6 +493,7 @@ void set_cookie(Cookie cookie,Standards.URI who)
    }
    else
       sc=cookie_lookup[cookie->site]=([]);
+
    sc[cookie->key]=cookie;
    all_cookies[cookie]=1;
 }
@@ -590,7 +590,9 @@ int maximum_connections_per_server=10;
 //!	Defaults to 50 connections.
 int maximum_total_connections=50;
 
-
+//!	Maximum times a connection is reused. 
+//!	Defaults to 1000000. &lt;2 means no reuse at all.
+int maximum_connection_reuse=1000000;
 
 // internal (but readable for debug purposes)
 mapping(string:array(KeptConnection)) connection_cache=([]);
@@ -660,6 +662,7 @@ Query give_me_connection(Standards.URI url)
       // clean up
       q->buf="";
       q->headerbuf="";
+      q->n_used++;
    }
    else
    {
@@ -673,7 +676,7 @@ Query give_me_connection(Standards.URI url)
 	 one->disconnect(); // removes itself
       }
 
-      q=Query();
+      q=SessionQuery();
       q->hostname_cache=hostname_cache;
       connections_host_n[connection_lookup(url)]++; // new
    }
@@ -714,13 +717,14 @@ void return_connection(Standards.URI url,Query query)
 {
    connections_inuse_n--;
    string lookup=connection_lookup(url);
-   if (query->con) 
+   if (query->con && query->is_sessionquery) 
    {
       if (query->headers->connection &&
 	  lower_case(query->headers->connection)=="keep-alive" &&
 	  connections_kept_n+connections_inuse_n
 	  < maximum_total_connections &&
-	  time_to_keep_unused_connections>0)
+	  time_to_keep_unused_connections>0 &&
+	  query->n_used < maximum_connection_reuse)
       {
          // clean up
 	 query->set_callbacks(0,0);
@@ -989,4 +993,12 @@ class SessionURL
       ::create(uri,base_uri);
       referer=_referer;
    }
+}
+
+class SessionQuery
+{
+   inherit Query;
+   
+   int n_used=1;
+   constant is_sessionquery=1;
 }
