@@ -422,7 +422,7 @@ void init_pike_security(void)
   free_program(tmpp);
 }
 
-void exit_pike_security()
+void exit_pike_security(void)
 {
 #ifdef DO_PIKE_CLEANUP
   if(creds_program)
