@@ -22,7 +22,7 @@
 
 #include <fcntl.h>
 
-RCSID("$Id: pipe.c,v 1.18 1998/06/12 19:19:00 noring Exp $");
+RCSID("$Id: pipe.c,v 1.19 1998/06/22 16:39:33 grubba Exp $");
 
 #include "threads.h"
 #include "stralloc.h"
@@ -333,7 +333,7 @@ static int read_some_data(void)
 
   if (!i || i->type != I_BLOCKING_OBJ) {
     fatal("PIPE: read_some_data(): Bad input type!\n");
-    return;
+    return(0);	/* Keep compiler happy */
   }
   push_int(8192);
   push_int(1);    /* We don't care if we don't get all 8192 bytes. */
