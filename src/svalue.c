@@ -20,7 +20,7 @@
 #include "pike_macros.h"
 #include <ctype.h>
 
-RCSID("$Id: svalue.c,v 1.25 1998/04/08 02:47:28 hubbe Exp $");
+RCSID("$Id: svalue.c,v 1.26 1998/04/08 03:31:49 hubbe Exp $");
 
 struct svalue dest_ob_zero = { T_INT, 0 };
 
@@ -1036,7 +1036,6 @@ void gc_xmark_svalues(struct svalue *s, int num)
 
 void gc_check_short_svalue(union anything *u, TYPE_T type)
 {
-  if(!u->refs) return;
 #ifdef DEBUG
   gc_svalue_location=(void *)u;
 #endif
@@ -1046,6 +1045,7 @@ void gc_check_short_svalue(union anything *u, TYPE_T type)
     fatal("Cannot have a function in a short svalue.\n");
 
   case T_OBJECT:
+    if(!u->refs) return;
     if(u->object->prog)
     {
       gc_check(u->object);
@@ -1060,7 +1060,8 @@ void gc_check_short_svalue(union anything *u, TYPE_T type)
   case T_ARRAY:
   case T_MULTISET:
   case T_MAPPING:
-  case T_PROGRAM:
+  case T_PROGRAM: 
+    if(!u->refs) return;
     gc_check(u->refs);
     break;
   }
