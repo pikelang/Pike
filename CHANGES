@@ -156,6 +156,9 @@ o Standards.CIFF
 o Standards.FIPS10_4
 
 o Standards.ID3
+    ID3 tags decoder/encoder. Supports versions: 1.0, 1.1,
+    2.2-2.4.
+    Uses frequently in MP3 files.
 
 o Standards.RDF
 
@@ -234,7 +237,7 @@ o Using local:: on variables is an error.
 o Protocols.LDAP.client
     The return code from all methods was changed to follow Pike's
     logic better. 0 is now a failure. The old behaviour is emulated in
-    compatibility layer
+    compatibility layer.
 
 o dirname
     Now correctly returns a directory instead of just stripping the
