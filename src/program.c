@@ -4,7 +4,7 @@
 ||| See the files COPYING and DISCLAIMER for more information.
 \*/
 #include "global.h"
-RCSID("$Id: program.c,v 1.31 1997/04/10 12:00:27 hubbe Exp $");
+RCSID("$Id: program.c,v 1.32 1997/04/15 03:50:10 hubbe Exp $");
 #include "program.h"
 #include "object.h"
 #include "dynamic_buffer.h"
@@ -1591,10 +1591,10 @@ void check_all_programs()
       {
 	check_string(cache[e].name);
 	if(cache[e].id<0 || cache[e].id > current_program_id)
-	  fatal("Error in find_function_cache[%d].id\n",e);
+	  fatal("Error in find_function_cache[%ld].id\n",(long)e);
 
 	if(cache[e].fun < -1 || cache[e].fun > 65536)
-	  fatal("Error in find_function_cache[%d].fun\n",e);
+	  fatal("Error in find_function_cache[%ld].fun\n",(long)e);
       }
     }
   }
