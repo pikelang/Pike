@@ -1,5 +1,5 @@
 #include "global.h"
-RCSID("$Id: threads.c,v 1.120 2001/10/22 23:54:43 mast Exp $");
+RCSID("$Id: threads.c,v 1.121 2003/03/31 18:43:59 grubba Exp $");
 
 int num_threads = 1;
 int threads_disabled = 0;
@@ -578,6 +578,7 @@ TH_RETURN_TYPE new_thread_func(void * data)
   stack_top=((char *)&data)+ (thread_stack_size-16384) * STACK_DIRECTION;
   recoveries = NULL;
   SWAP_OUT_THREAD(OBJ2THREAD(thread_id)); /* Init struct */
+  thread_id=arg.id;
   OBJ2THREAD(thread_id)->swapped=0;
 
 #if defined(PIKE_DEBUG)
@@ -1418,8 +1419,11 @@ void th_init(void)
   if(!mutex_key)
     fatal("Failed to initialize thread program!\n");
 
-  thread_id=clone_object(thread_id_prog,0);
-  SWAP_OUT_THREAD(OBJ2THREAD(thread_id)); /* Init struct */
+  {
+    struct object *o = thread_id = clone_object(thread_id_prog,0);
+    SWAP_OUT_THREAD(OBJ2THREAD(thread_id)); /* Init struct */
+    thread_id = o;
+  }
   OBJ2THREAD(thread_id)->swapped=0;
   OBJ2THREAD(thread_id)->id=th_self();
   thread_table_insert(thread_id);
