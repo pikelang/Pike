@@ -2,11 +2,11 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: backend.cmod,v 1.136 2004/04/09 16:46:39 grubba Exp $
+|| $Id: backend.cmod,v 1.137 2004/04/18 02:09:10 mast Exp $
 */
 
 #include "global.h"
-RCSID("$Id: backend.cmod,v 1.136 2004/04/09 16:46:39 grubba Exp $");
+RCSID("$Id: backend.cmod,v 1.137 2004/04/18 02:09:10 mast Exp $");
 #include "fdlib.h"
 #include "backend.h"
 #include <errno.h>
@@ -1747,9 +1747,9 @@ PIKECLASS Backend
   {
     struct Backend_struct *me = box->backend;
     int fd = box->fd;
-    IF_PD(fprintf(stderr, "BACKEND[%d]: hook_fd_callback_box: "
+    IF_PD(fprintf(stderr, "[%d]BACKEND[%d]: hook_fd_callback_box: "
 		  "fd %d, events 0x%x, object %p\n",
-		  me->id, fd, box->events, box->ref_obj));
+		  getpid(), me->id, fd, box->events, box->ref_obj));
 #ifdef PIKE_DEBUG
     if (!me) Pike_fatal ("Backend not set.\n");
 #endif
@@ -1763,14 +1763,14 @@ PIKECLASS Backend
     /* Accept an unhooked box; can happen when we're called from an
      * object exit hook due to being freed by free_object below. */
     if (!box->backend) {
-      IF_PD(fprintf(stderr, "BACKEND[unhooked box]: unhook_fd_callback_box: "
-		    "fd %d, object %p\n", box->fd, box->ref_obj));
+      IF_PD(fprintf(stderr, "[%d]BACKEND[unhooked box]: unhook_fd_callback_box: "
+		    "fd %d, object %p\n", getpid(), box->fd, box->ref_obj));
       return;
     }
 
     check_box (box, INT_MAX);
-    IF_PD(fprintf(stderr, "BACKEND[%d]: unhook_fd_callback_box: fd %d, object %p\n",
-		  box->backend->id, box->fd, box->ref_obj));
+    IF_PD(fprintf(stderr, "[%d]BACKEND[%d]: unhook_fd_callback_box: fd %d, object %p\n",
+		  getpid(), box->backend->id, box->fd, box->ref_obj));
 
     if (box->fd >= 0) update_fd_set (box->backend, box->fd, box->events, 0);
     remove_fd_box (box);
@@ -1790,9 +1790,10 @@ PIKECLASS Backend
   {
     int old_events = box->events;
     check_box (box, INT_MAX);
-    IF_PD(fprintf(stderr, "BACKEND[%d]: set_fd_callback_events: "
+    IF_PD(fprintf(stderr, "[%d]BACKEND[%d]: set_fd_callback_events: "
 		  "fd %d, events from 0x%x to 0x%x, object %p\n",
-		  box->backend->id, box->fd, old_events, events, box->ref_obj));
+		  getpid(), box->backend->id, box->fd, old_events, events,
+		  box->ref_obj));
 
     if (box->fd >= 0) update_fd_set (box->backend, box->fd, old_events, events);
     box->events = events;
@@ -1823,8 +1824,8 @@ PIKECLASS Backend
     if (!new) Pike_fatal ("New backend is invalid.\n");
 #endif
 
-    IF_PD(fprintf(stderr, "BACKEND[%d]: change_backend_for_box: "
-		  "fd %d, new backend %d\n", old->id, box->fd, new->id));
+    IF_PD(fprintf(stderr, "[%d]BACKEND[%d]: change_backend_for_box: "
+		  "fd %d, new backend %d\n", getpid(), old->id, box->fd, new->id));
 
     if (old != new) {
       if (box->fd >= 0) update_fd_set (old, box->fd, box->events, 0);
@@ -1842,8 +1843,8 @@ PIKECLASS Backend
     if (!box->backend) {
       /* Convenience so that the caller doesn't have to check if the
        * box is hooked in. */
-      IF_PD(fprintf(stderr, "BACKEND[unhooked box]: change_fd_for_box: "
-		    "fd from %d to %d\n", old_fd, new_fd));
+      IF_PD(fprintf(stderr, "[%d]BACKEND[unhooked box]: change_fd_for_box: "
+		    "fd from %d to %d\n", getpid(), old_fd, new_fd));
       box->fd = new_fd;
     }
 
@@ -1859,8 +1860,8 @@ PIKECLASS Backend
 	if (new_fd >= 0) update_fd_set (box->backend, new_fd, 0, box->events);
       }
 
-      IF_PD(fprintf(stderr, "BACKEND[%d]: change_fd_for_box: "
-		    "fd from %d to %d\n", box->backend->id, old_fd, new_fd));
+      IF_PD(fprintf(stderr, "[%d]BACKEND[%d]: change_fd_for_box: "
+		    "fd from %d to %d\n", getpid(), box->backend->id, old_fd, new_fd));
     }
   }
 
@@ -2299,14 +2300,15 @@ PIKECLASS Backend
 #error Unknown timeout method.
 #endif /* TIMEOUT_IS_* */
 
-	IF_PD(fprintf (stderr, "BACKEND[%d]: Doing poll on fds:\n", me->id));
+	IF_PD(fprintf (stderr, "[%d]BACKEND[%d]: Doing poll on fds:\n",
+		       getpid(), me->id));
 #if defined(HAVE_POLL) && defined(POLL_DEBUG) && !defined(USE_POLL_DEVICE)
 	{
 	  int i;
 	  for (i = 0; i < me->active_set.num_in_poll; i++) {
 	    fprintf (stderr,
-		     "BACKEND[%d]:   fd %4d: %-4s %-5s %-8s %-9s: 0x%04x\n",
-		     me->id,
+		     "[%d]BACKEND[%d]:   fd %4d: %-4s %-5s %-8s %-9s: 0x%04x\n",
+		     getpid(), me->id,
 		     me->active_set.poll_fds[i].fd,
 		     me->active_set.poll_fds[i].events & (POLLRDNORM|POLLIN) ? "read" : "",
 		     me->active_set.poll_fds[i].events & POLLOUT ? "write" : "",
@@ -2315,7 +2317,7 @@ PIKECLASS Backend
 		     me->active_set.poll_fds[i].events);
 	  }
 	}
-	fprintf(stderr, "BACKEND[%d]: poll(%p, %d, %d)...", me->id,
+	fprintf(stderr, "[%d]BACKEND[%d]: poll(%p, %d, %d)...", getpid(), me->id,
 		me->active_set.poll_fds,
 		me->active_set.num_in_poll,
 		poll_timeout);
@@ -2357,10 +2359,11 @@ PIKECLASS Backend
 	     * POSIX does. FIXME: What bits will be set for errors on GNU
 	     * systems, then? Should we always check for that? */
 	    ACCEPT_SIZE_T len = sizeof (err);
-	    IF_PD(fprintf(stderr, "BACKEND[%d]: exception on %d\n", me->id, i));
+	    IF_PD(fprintf(stderr, "[%d]BACKEND[%d]: exception on %d\n",
+			  getpid(), me->id, i));
 	    if (!getsockopt (i, SOL_SOCKET, SO_ERROR, &err, &len) && err) {
-	      IF_PD (fprintf (stderr, "BACKEND[%d]: error on %d, error=%d\n",
-			      me->id, i, err));
+	      IF_PD (fprintf (stderr, "[%d]BACKEND[%d]: error on %d, error=%d\n",
+			      getpid(), me->id, i, err));
 	    }
 
 	    else {
@@ -2368,8 +2371,8 @@ PIKECLASS Backend
 	      check_box (box, i);
 	      if (WANT_EVENT (box, READ_OOB)) {
 		errno = 0;
-		IF_PD(fprintf(stderr, "BACKEND[%d]: read_oob_callback(%d, %p)\n",
-			      me->id, i, box->ref_obj));
+		IF_PD(fprintf(stderr, "[%d]BACKEND[%d]: read_oob_callback(%d, %p)\n",
+			      getpid(), me->id, i, box->ref_obj));
 		if (box->callback (box, PIKE_FD_READ_OOB) == -1)
 		  goto backend_round_done;
 	      }
@@ -2377,12 +2380,13 @@ PIKECLASS Backend
 	  }
 	  
 	  if(fd_FD_ISSET(i, &me->active_set.rset)) {
-	    IF_PD(fprintf(stderr, "BACKEND[%d]: read on %d\n", me->id, i));
+	    IF_PD(fprintf(stderr, "[%d]BACKEND[%d]: read on %d\n",
+			  getpid(), me->id, i));
 	    box = SAFE_GET_ACTIVE_BOX (me, i);
 	    check_box (box, i);
 	    if (WANT_EVENT (box, READ)) {
-	      IF_PD(fprintf(stderr, "BACKEND[%d]: read_callback(%d, %p)\n",
-			    me->id, i, box->ref_obj));
+	      IF_PD(fprintf(stderr, "[%d]BACKEND[%d]: read_callback(%d, %p)\n",
+			    getpid(), me->id, i, box->ref_obj));
 	      errno = 0;
 	      if (box->callback (box, PIKE_FD_READ) == -1)
 		goto backend_round_done;
@@ -2390,22 +2394,23 @@ PIKECLASS Backend
 	  }
 	  
 	  if(fd_FD_ISSET(i, &me->active_set.wset)) {
-	    IF_PD(fprintf(stderr, "BACKEND[%d]: write on %d\n", me->id, i));
+	    IF_PD(fprintf(stderr, "[%d]BACKEND[%d]: write on %d\n",
+			  getpid(), me->id, i));
 	    box = SAFE_GET_ACTIVE_BOX (me, i);
 	    check_box (box, i);
 	    if (WANT_EVENT (box, WRITE_OOB)) {
 	      /* OOB can by BSD definition always be written, so if we can
 	       * write normal data it's reasonable to assume OOB can be
 	       * written too without too much risk of being thrown away. */
-	      IF_PD(fprintf(stderr, "BACKEND[%d]: write_oob_callback(%d, %p)\n",
-			    me->id, i, box->ref_obj));
+	      IF_PD(fprintf(stderr, "[%d]BACKEND[%d]: write_oob_callback(%d, %p)\n",
+			    getpid(), me->id, i, box->ref_obj));
 	      errno = 0;
 	      if (box->callback (box, PIKE_FD_WRITE_OOB) == -1)
 		goto backend_round_done;
 	    }
 	    else if (WANT_EVENT (box, WRITE)) {
-	      IF_PD(fprintf(stderr, "BACKEND[%d]: write_callback(%d, %p)\n",
-			    me->id, i, box->ref_obj));
+	      IF_PD(fprintf(stderr, "[%d]BACKEND[%d]: write_callback(%d, %p)\n",
+			    getpid(), me->id, i, box->ref_obj));
 	      errno = 0;
 	      if (box->callback (box, PIKE_FD_WRITE) == -1)
 		goto backend_round_done;
@@ -2423,22 +2428,22 @@ PIKECLASS Backend
 	      set_fd_callback_events (box, box->events & ~PIKE_BIT_FD_ERROR);
 	      if (WANT_EVENT (box, ERROR)) {
 		IF_PD(fprintf(stderr,
-			      "BACKEND[%d]: error event %d on fd %d sent to %p\n",
-			      me->id, err, i, box->ref_obj));
+			      "[%d]BACKEND[%d]: error event %d on fd %d sent to %p\n",
+			      getpid(), me->id, err, i, box->ref_obj));
 		if (box->callback (box, PIKE_FD_ERROR) == -1)
 		  goto backend_round_done;
 	      }
 	      /* The following is temporary compat stuff. */
 	      else if (old_events & PIKE_BIT_FD_READ) {
 		IF_PD(fprintf(stderr,
-			      "BACKEND[%d]: read_callback(%d, %p) for error %d\n",
-			      me->id, i, box->ref_obj, err));
+			      "[%d]BACKEND[%d]: read_callback(%d, %p) for error %d\n",
+			      getpid(), me->id, i, box->ref_obj, err));
 		if (box->callback (box, PIKE_FD_READ) == -1)
 		  goto backend_round_done;
 	      } else if (old_events & PIKE_BIT_FD_WRITE) {
 		IF_PD(fprintf(stderr,
-			      "BACKEND[%d]: write_callback(%d, %p) for error %d\n",
-			      me->id, i, box->ref_obj, err));
+			      "[%d]BACKEND[%d]: write_callback(%d, %p) for error %d\n",
+			      getpid(), me->id, i, box->ref_obj, err));
 		if (box->callback (box, PIKE_FD_WRITE) == -1)
 		  goto backend_round_done;
 	      }
@@ -2481,7 +2486,8 @@ PIKECLASS Backend
 	  if(CHECK_EVENT(ACTIVE_POLLSET[i], MY_POLLNVAL))
 	  {
 	    /* NOTE: /dev/poll returns POLLNVAL for closed descriptors. */
-	    IF_PD(fprintf(stderr, "BACKEND[%d]: POLLNVAL on %d\n", me->id, fd));
+	    IF_PD(fprintf(stderr, "[%d]BACKEND[%d]: POLLNVAL on %d\n",
+			  getpid(), me->id, fd));
 #ifdef PIKE_DEBUG
 #ifdef HAVE_POLL
 	    /* FIXME */
@@ -2504,14 +2510,15 @@ PIKECLASS Backend
 #endif /* MY_POLLNVAL */
 
 	  if (CHECK_EVENT(ACTIVE_POLLSET[i], MY_POLLRDBAND)) {
-	    IF_PD(fprintf(stderr, "BACKEND[%d]: POLLRDBAND on %d\n", me->id, fd));
+	    IF_PD(fprintf(stderr, "[%d]BACKEND[%d]: POLLRDBAND on %d\n",
+			  getpid(), me->id, fd));
 	    box = SAFE_GET_ACTIVE_BOX (me, fd);
 	    check_box (box, fd);
 	    if (WANT_EVENT (box, READ_OOB))
 	    {
 	      errno = 0;
-	      IF_PD(fprintf(stderr, "BACKEND[%d]: read_oob_callback(%d, %p)\n",
-			    me->id, fd, box->ref_obj));
+	      IF_PD(fprintf(stderr, "[%d]BACKEND[%d]: read_oob_callback(%d, %p)\n",
+			    getpid(), me->id, fd, box->ref_obj));
 	      if (box->callback (box, PIKE_FD_READ_OOB) == -1)
 		goto backend_round_done;
 	    }
@@ -2522,12 +2529,13 @@ PIKECLASS Backend
 
 	  if(CHECK_EVENT(ACTIVE_POLLSET[i], MY_POLLIN))
 	  {
-	    IF_PD(fprintf(stderr, "BACKEND[%d]: POLLRDNORM|POLLIN on %d\n", me->id, fd));
+	    IF_PD(fprintf(stderr, "[%d]BACKEND[%d]: POLLRDNORM|POLLIN on %d\n",
+			  getpid(), me->id, fd));
 	    box = SAFE_GET_ACTIVE_BOX (me, fd);
 	    check_box (box, fd);
 	    if (WANT_EVENT (box, READ)) {
-	      IF_PD(fprintf(stderr, "BACKEND[%d]: read_callback(%d, %p)\n",
-			    me->id, fd, box->ref_obj));
+	      IF_PD(fprintf(stderr, "[%d]BACKEND[%d]: read_callback(%d, %p)\n",
+			    getpid(), me->id, fd, box->ref_obj));
 	      errno = 0;
 	      if (box->callback (box, PIKE_FD_READ) == -1)
 		goto backend_round_done;
@@ -2538,12 +2546,13 @@ PIKECLASS Backend
 	  }
 
 	  if (CHECK_EVENT(ACTIVE_POLLSET[i], MY_POLLWRBAND)) {
-	    IF_PD(fprintf(stderr, "BACKEND[%d]: POLLWRBAND on %d\n", me->id, fd));
+	    IF_PD(fprintf(stderr, "[%d]BACKEND[%d]: POLLWRBAND on %d\n",
+			  getpid(), me->id, fd));
 	    box = SAFE_GET_ACTIVE_BOX (me, fd);
 	    check_box (box, fd);
 	    if (WANT_EVENT (box, WRITE_OOB)) {
-	      IF_PD(fprintf(stderr, "BACKEND[%d]: write_oob_callback(%d, %p)\n",
-			    me->id, fd, box->ref_obj));
+	      IF_PD(fprintf(stderr, "[%d]BACKEND[%d]: write_oob_callback(%d, %p)\n",
+			    getpid(), me->id, fd, box->ref_obj));
 	      errno = 0;
 	      if (box->callback (box, PIKE_FD_WRITE_OOB) == -1)
 		goto backend_round_done;
@@ -2554,12 +2563,13 @@ PIKECLASS Backend
 	  }
 
 	  if(CHECK_EVENT(ACTIVE_POLLSET[i], MY_POLLOUT)) {
-	    IF_PD(fprintf(stderr, "BACKEND[%d]: POLLOUT on %d\n", me->id, fd));
+	    IF_PD(fprintf(stderr, "[%d]BACKEND[%d]: POLLOUT on %d\n",
+			  getpid(), me->id, fd));
 	    box = SAFE_GET_ACTIVE_BOX (me, fd);
 	    check_box (box, fd);
 	    if (WANT_EVENT (box, WRITE)) {
-	      IF_PD(fprintf(stderr, "BACKEND[%d]: write_callback(%d, %p)\n",
-			    me->id, fd, box->ref_obj));
+	      IF_PD(fprintf(stderr, "[%d]BACKEND[%d]: write_callback(%d, %p)\n",
+			    getpid(), me->id, fd, box->ref_obj));
 	      errno = 0;
 	      if (box->callback (box, PIKE_FD_WRITE) == -1)
 		goto backend_round_done;
@@ -2583,8 +2593,8 @@ PIKECLASS Backend
 	      ACCEPT_SIZE_T len = sizeof (err);
 	      if (!getsockopt (fd, SOL_SOCKET, SO_ERROR, &err, &len)) {
 		IF_PD (fprintf (stderr,
-				"BACKEND[%d]: POLLERR on %d, error=%d\n",
-				me->id, fd, err));
+				"[%d]BACKEND[%d]: POLLERR on %d, error=%d\n",
+				getpid(), me->id, fd, err));
 		errno = err;
 	      }
 #ifdef PIKE_DEBUG
@@ -2594,7 +2604,8 @@ PIKECLASS Backend
 #endif /* PIKE_DEBUG */
 	    }
 	    else {
-	      IF_PD(fprintf(stderr, "BACKEND[%d]: POLLHUP on %d\n", me->id, fd));
+	      IF_PD(fprintf(stderr, "[%d]BACKEND[%d]: POLLHUP on %d\n",
+			    getpid(), me->id, fd));
 	    }
 	    box = SAFE_GET_ACTIVE_BOX (me, fd);
 	    if (box) {
@@ -2604,22 +2615,22 @@ PIKECLASS Backend
 	      set_fd_callback_events (box, box->events & ~PIKE_BIT_FD_ERROR);
 	      if (WANT_EVENT (box, ERROR)) {
 		IF_PD(fprintf(stderr,
-			      "BACKEND[%d]: error event on fd %d sent to %p\n",
-			      me->id, i, box->ref_obj));
+			      "[%d]BACKEND[%d]: error event on fd %d sent to %p\n",
+			      getpid(), me->id, i, box->ref_obj));
 		if (box->callback (box, PIKE_FD_ERROR) == -1)
 		  goto backend_round_done;
 	      }
 	      /* The following is temporary compat stuff. */
 	      else if (old_events & PIKE_BIT_FD_READ) {
 		IF_PD(fprintf(stderr,
-			      "BACKEND[%d]: read_callback(%d, %p) for error %d\n",
-			      me->id, fd, box->ref_obj, errno));
+			      "[%d]BACKEND[%d]: read_callback(%d, %p) for error %d\n",
+			      getpid(), me->id, fd, box->ref_obj, errno));
 		if (box->callback (box, PIKE_FD_READ) == -1)
 		  goto backend_round_done;
 	      } else if (old_events & PIKE_BIT_FD_WRITE) {
 		IF_PD(fprintf(stderr,
-			      "BACKEND[%d]: write_callback(%d, %p) for error %d\n",
-			      me->id, fd, box->ref_obj, errno));
+			      "[%d]BACKEND[%d]: write_callback(%d, %p) for error %d\n",
+			      getpid(), me->id, fd, box->ref_obj, errno));
 		if (box->callback (box, PIKE_FD_WRITE) == -1)
 		  goto backend_round_done;
 	      }
@@ -2633,8 +2644,8 @@ PIKECLASS Backend
 #ifdef PIKE_DEBUG
 	  num_active -= handled;
 	  if (!handled && GET_EVENTS(ACTIVE_POLLSET[i])) {
-	    fprintf(stderr, "BACKEND[%d]: fd %ld has revents 0x%08lx, "
-		    "but hasn't been handled.\n", me->id,
+	    fprintf(stderr, "[%d]BACKEND[%d]: fd %ld has revents 0x%08lx, "
+		    "but hasn't been handled.\n", getpid(), me->id,
 		    (long)GET_FD(ACTIVE_POLLSET[i]),
 		    (long)GET_EVENTS(ACTIVE_POLLSET[i]));
 	  }
@@ -2643,11 +2654,12 @@ PIKECLASS Backend
 
 #if defined(PIKE_DEBUG) && !defined(USE_POLL_DEVICE)
 	if (num_active) {
-	  fprintf(stderr, "BACKEND[%d]: %d more active fds than were handled.\n",
-		  me->id, num_active);
+	  fprintf(stderr, "[%d]BACKEND[%d]: %d more active fds than were handled.\n",
+		  getpid(), me->id, num_active);
 	  for(i=0; i<me->active_set.num_in_poll; i++) {
-	    fprintf(stderr, "BACKEND[%d]: fd %ld, events 0x%08lx, revents 0x%08lx\n",
-		    me->id,
+	    fprintf(stderr,
+		    "[%d]BACKEND[%d]: fd %ld, events 0x%08lx, revents 0x%08lx\n",
+		    getpid(), me->id,
 		    (long)me->active_set.poll_fds[i].fd,
 		    (long)me->active_set.poll_fds[i].events,
 		    (long)me->active_set.poll_fds[i].revents);
@@ -2945,7 +2957,7 @@ PIKECLASS Backend
 
       me->id = unused_id++;
 
-      IF_PD (fprintf (stderr, "BACKEND[%d]: init\n", me->id));
+      IF_PD (fprintf (stderr, "[%d]BACKEND[%d]: init\n", getpid(), me->id));
 
       me->exec_thread = 0;
 
@@ -3022,7 +3034,7 @@ PIKECLASS Backend
       struct Backend_struct *me=THIS;
       int e;
 
-      IF_PD (fprintf (stderr, "BACKEND[%d]: exit\n", me->id));
+      IF_PD (fprintf (stderr, "[%d]BACKEND[%d]: exit\n", getpid(), me->id));
 
       free_callback_list(& THIS->backend_callbacks);
 
@@ -3042,9 +3054,9 @@ PIKECLASS Backend
 
 	    if (box->callback == compat_box_dispatcher) {
 #ifdef PIKE_DEBUG
-	      fprintf (stderr, "BACKEND[%d]: "
+	      fprintf (stderr, "[%d]BACKEND[%d]: "
 		       "Compat callbacks left at exit for fd %d: 0x%x\n",
-		       me->id, box->fd, box->events);
+		       getpid(), me->id, box->fd, box->events);
 #endif
 	      really_free_compat_cb_box ((struct compat_cb_box *) box);
 	    }
@@ -3267,23 +3279,23 @@ static int compat_box_dispatcher (struct fd_callback_box *box, int event)
   struct compat_cb_box *cbox = (struct compat_cb_box *) box;
   switch (event) {
     case PIKE_FD_READ:
-      IF_PD (fprintf (stderr, "BACKEND[%d]: compat_box_dispatcher for "
-		      "PIKE_FD_READ to %p %p\n",
+      IF_PD (fprintf (stderr, "[%d]BACKEND[%d]: compat_box_dispatcher for "
+		      "PIKE_FD_READ to %p %p\n", getpid(),
 		      cbox->box.backend->id, cbox->read, cbox->read_data));
       return cbox->read (cbox->box.fd, cbox->read_data);
     case PIKE_FD_WRITE:
-      IF_PD (fprintf (stderr, "BACKEND[%d]: compat_box_dispatcher for "
-		      "PIKE_FD_WRITE to %p %p\n",
+      IF_PD (fprintf (stderr, "[%d]BACKEND[%d]: compat_box_dispatcher for "
+		      "PIKE_FD_WRITE to %p %p\n", getpid(),
 		      cbox->box.backend->id, cbox->write, cbox->write_data));
       return cbox->write (cbox->box.fd, cbox->write_data);
     case PIKE_FD_READ_OOB:
-      IF_PD (fprintf (stderr, "BACKEND[%d]: compat_box_dispatcher for "
-		      "PIKE_FD_READ_OOB to %p %p\n",
+      IF_PD (fprintf (stderr, "[%d]BACKEND[%d]: compat_box_dispatcher for "
+		      "PIKE_FD_READ_OOB to %p %p\n", getpid(),
 		      cbox->box.backend->id, cbox->read_oob, cbox->read_oob_data));
       return cbox->read_oob (cbox->box.fd, cbox->read_oob_data);
     case PIKE_FD_WRITE_OOB:
-      IF_PD (fprintf (stderr, "BACKEND[%d]: compat_box_dispatcher for "
-		      "PIKE_FD_WRITE_OOB to %p %p\n",
+      IF_PD (fprintf (stderr, "[%d]BACKEND[%d]: compat_box_dispatcher for "
+		      "PIKE_FD_WRITE_OOB to %p %p\n", getpid(),
 		      cbox->box.backend->id, cbox->write_oob, cbox->write_oob_data));
       return cbox->write_oob (cbox->box.fd, cbox->write_oob_data);
     default:
@@ -3301,8 +3313,8 @@ static int compat_box_dispatcher (struct fd_callback_box *box, int event)
     struct fd_callback_box *box = SAFE_GET_ACTIVE_BOX (b, fd);		\
     struct compat_cb_box *cbox;						\
 									\
-    IF_PD (fprintf (stderr, "BACKEND[%d]: set_" #CB "_callback (%d, %p, %p)\n",	\
-		    b->id, fd, cb, data));				\
+    IF_PD (fprintf (stderr, "[%d]BACKEND[%d]: set_" #CB "_callback (%d, %p, %p)\n", \
+		    getpid(), b->id, fd, cb, data));			\
 									\
     if (box) {								\
       check_box (box, fd);						\
