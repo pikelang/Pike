@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: builtin_functions.c,v 1.594 2005/04/02 11:43:03 mast Exp $
+|| $Id: builtin_functions.c,v 1.595 2005/04/02 12:24:43 mast Exp $
 */
 
 #include "global.h"
@@ -1930,7 +1930,7 @@ PMOD_EXPORT void f_utf8_to_string(INT32 args)
   get_all_args("utf8_to_string", args, "%S.%i", &in, &extended);
 
   for(i=0; i < in->len; i++) {
-    unsigned int c = ((unsigned char *)in->str)[i];
+    unsigned int c = STR0(in)[i];
     len++;
     if (c & 0x80) {
       int cont = 0;
@@ -1964,7 +1964,7 @@ PMOD_EXPORT void f_utf8_to_string(INT32 args)
 	  bad_arg_error ("utf8_to_string", Pike_sp - args, args, 1,	\
 			 NULL, Pike_sp - args,				\
 			 "Truncated UTF-8 sequence at end of string.\n"); \
-	c = ((unsigned char *)(in->str))[i];				\
+	c = STR0 (in)[i];						\
 	if ((c & 0xc0) != 0x80)						\
 	  bad_arg_error ("utf8_to_string", Pike_sp - args, args, 1,	\
 			 NULL, Pike_sp - args,				\
@@ -2016,9 +2016,6 @@ PMOD_EXPORT void f_utf8_to_string(INT32 args)
       }
 
       else {
-	if (shift < 2)
-	  shift = 2;
-
 	if ((c & 0xf8) == 0xf0) {
 	  /* 21bit */
 	  if (c == 0xf0) {
@@ -2087,10 +2084,16 @@ PMOD_EXPORT void f_utf8_to_string(INT32 args)
 	    cont = 5;
 	  }
 	}
+
+	if (shift < 2)
+	  shift = 2;
       }
 
       while(cont--)
 	GET_CONT_CHAR (in, i, c);
+
+#undef GET_CONT_CHAR
+#undef UTF8_SEQ_ERROR
     }
   }
   if (len == in->len) {
@@ -2100,55 +2103,98 @@ PMOD_EXPORT void f_utf8_to_string(INT32 args)
   }
 
   out = begin_wide_shared_string(len, shift);
-  
-  for(j=i=0; i < in->len; i++) {
-    unsigned int c = ((unsigned char *)in->str)[i];
 
-    if (c & 0x80) {
-      int cont = 0;
-
-      /* NOTE: No tests here since we've already tested the string
-       * above.
-       */
-      if ((c & 0xe0) == 0xc0) {
-	/* 11bit */
-	cont = 1;
-	c &= 0x1f;
-      } else if ((c & 0xf0) == 0xe0) {
-	/* 16bit */
-	cont = 2;
-	c &= 0x0f;
-      } else if ((c & 0xf8) == 0xf0) {
-	/* 21bit */
-	cont = 3;
-	c &= 0x07;
-      } else if ((c & 0xfc) == 0xf8) {
-	/* 26bit */
-	cont = 4;
-	c &= 0x03;
-      } else if ((c & 0xfe) == 0xfc) {
-	/* 31bit */
-	cont = 5;
-	c &= 0x01;
-      } else {
-	/* 36bit */
-	cont = 6;
-	c = 0;
+  switch (shift) {
+    case 0: {
+      p_wchar0 *out_str = (p_wchar0 *) out->str;
+      for(j=i=0; i < in->len;) {
+	unsigned int c = STR0(in)[i++];
+	/* NOTE: No tests here since we've already tested the string above. */
+	if (c & 0x80) {
+	  /* 11bit */
+	  unsigned int c2 = STR0(in)[i++] & 0x3f;
+	  c &= 0x1f;
+	  c = (c << 6) | c2;
+	}
+	out_str[j++] = c;
       }
-      while(cont--) {
-	unsigned INT32 c2 = ((unsigned char *)(in->str))[++i] & 0x3f;
-	c = (c << 6) | c2;
-      }
+      break;
     }
-    low_set_index(out, j++, c);
+
+    case 1: {
+      p_wchar1 *out_str = (p_wchar1 *) out->str;
+      for(j=i=0; i < in->len;) {
+	unsigned int c = STR0(in)[i++];
+	/* NOTE: No tests here since we've already tested the string above. */
+	if (c & 0x80) {
+	  if ((c & 0xe0) == 0xc0) {
+	    /* 11bit */
+	    unsigned int c2 = STR0(in)[i++] & 0x3f;
+	    c &= 0x1f;
+	    c = (c << 6) | c2;
+	  } else {
+	    /* 16bit */
+	    unsigned int c2 = STR0(in)[i++] & 0x3f;
+	    unsigned int c3 = STR0(in)[i++] & 0x3f;
+	    c &= 0x0f;
+	    c = (c << 12) | (c2 << 6) | c3;
+	  }
+	}
+	out_str[j++] = c;
+      }
+      break;
+    }
+
+    case 2: {
+      p_wchar2 *out_str = (p_wchar2 *) out->str;
+      for(j=i=0; i < in->len;) {
+	unsigned int c = STR0(in)[i++];
+	/* NOTE: No tests here since we've already tested the string above. */
+	if (c & 0x80) {
+	  int cont = 0;
+	  if ((c & 0xe0) == 0xc0) {
+	    /* 11bit */
+	    cont = 1;
+	    c &= 0x1f;
+	  } else if ((c & 0xf0) == 0xe0) {
+	    /* 16bit */
+	    cont = 2;
+	    c &= 0x0f;
+	  } else if ((c & 0xf8) == 0xf0) {
+	    /* 21bit */
+	    cont = 3;
+	    c &= 0x07;
+	  } else if ((c & 0xfc) == 0xf8) {
+	    /* 26bit */
+	    cont = 4;
+	    c &= 0x03;
+	  } else if ((c & 0xfe) == 0xfc) {
+	    /* 31bit */
+	    cont = 5;
+	    c &= 0x01;
+	  } else {
+	    /* 36bit */
+	    cont = 6;
+	    c = 0;
+	  }
+	  while(cont--) {
+	    unsigned int c2 = STR0(in)[i++] & 0x3f;
+	    c = (c << 6) | c2;
+	  }
+	}
+	out_str[j++] = c;
+      }
+      break;
+    }
   }
+
 #ifdef PIKE_DEBUG
   if (j != len) {
     Pike_fatal("utf8_to_string(): Calculated and actual lengths differ: %d != %d\n",
 	  len, j);
   }
 #endif /* PIKE_DEBUG */
-  out = end_shared_string(out);
+  out = low_end_shared_string(out);
   pop_n_elems(args);
   push_string(out);
 }
