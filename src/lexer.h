@@ -1,5 +1,5 @@
 /*
- * $Id: lexer.h,v 1.31 2001/04/01 13:58:53 grubba Exp $
+ * $Id: lexer.h,v 1.32 2001/06/08 11:01:26 hubbe Exp $
  *
  * Lexical analyzer template.
  * Based on lex.c 1.62
@@ -569,6 +569,10 @@ static int low_yylex(YYSTYPE *yylval)
 	  else if (ISWORD("strict_types"))
 	  {
 	    lex.pragmas |= ID_STRICT_TYPES;
+	  }
+	  else if (ISWORD("save_parent"))
+	  {
+	    lex.pragmas |= ID_SAVE_PARENT;
 	  }
 	  break;
 	}

@@ -5,7 +5,7 @@
 \*/
 /**/
 #include "global.h"
-RCSID("$Id: program.c,v 1.327 2001/06/05 10:15:58 hubbe Exp $");
+RCSID("$Id: program.c,v 1.328 2001/06/08 11:01:26 hubbe Exp $");
 #include "program.h"
 #include "object.h"
 #include "dynamic_buffer.h"
@@ -1189,6 +1189,23 @@ void low_start_new_program(struct program *p,
     {
       tmp.u.program=p;
       id=add_constant(name, &tmp, flags & ~ID_EXTERN);
+      if(TEST_COMPAT(7,2) || (lex.pragmas && ID_SAVE_PARENT))
+      {
+	p->flags |= PROGRAM_USES_PARENT;
+      }else{
+	struct pike_string *tmp=findstring("__pragma_save_parent__");
+	if(tmp)
+	{
+	  struct node_s *n=find_module_identifier(tmp, 0);
+	  if(n)
+	  {
+	    free_node(n);
+	    p->flags |= PROGRAM_USES_PARENT;
+	  }
+	}
+      }
+
+
 #if 0
       fprintf(stderr,"Compiling class %s, depth=%d\n",name->str,compilation_depth);
     }else{

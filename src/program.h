@@ -5,7 +5,7 @@
 \*/
 
 /*
- * $Id: program.h,v 1.127 2001/05/26 17:10:27 grubba Exp $
+ * $Id: program.h,v 1.128 2001/06/08 11:01:27 hubbe Exp $
  */
 #ifndef PROGRAM_H
 #define PROGRAM_H
@@ -189,6 +189,7 @@ struct program_constant
 #define ID_MODIFIER_MASK 0x07ff
 
 #define ID_STRICT_TYPES  0x8000	/* #pragma strict_types */
+#define ID_SAVE_PARENT 0x10000 /* pragma save_parent */
 
 struct reference
 {
