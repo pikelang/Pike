@@ -5,7 +5,7 @@
 \*/
 /**/
 #include "global.h"
-RCSID("$Id: program.c,v 1.417 2002/04/26 17:11:16 grubba Exp $");
+RCSID("$Id: program.c,v 1.418 2002/04/28 02:48:12 mast Exp $");
 #include "program.h"
 #include "object.h"
 #include "dynamic_buffer.h"
@@ -4258,6 +4258,39 @@ void program_index_no_free(struct svalue *to, struct program *p,
  * Line number support routines, now also tells what file we are in
  */
 
+/* program.linenumbers format:
+ *
+ * Filename entry:
+ *   1. char		127 (marker).
+ *   2. small number	Filename string length.
+ *   3. char		Filename string size shift.
+ *   4. string data	(Possibly wide) filename string without null termination.
+ * 			Each character is stored in native byte order.
+ * 
+ * Line number entry:
+ *   1. small number	Index in program.program (pc).
+ * 			Stored as the difference from the pc in the
+ * 			closest previous line number entry. The first
+ * 			stored entry is absolute.
+ *   2. small number	Line number. Stored in the same way as the pc.
+ * 
+ * Small number:
+ *   If -127 < n < 127:
+ *     1. char		The number.
+ *   Else if -32768 <= n < 32768:
+ *     1. char		-127 (marker).
+ *     2. short		The number stored in native byte order.
+ *   Else:
+ *     1. char		-128 (marker).
+ *     2. int		The number stored in native byte order.
+ *
+ * Whenever the filename changes, a filename entry followed by a line
+ * number entry is stored. If only the line number changes, a line
+ * number entry is stored. The first stored entry (at pc 0) is the
+ * file and line where the program is defined, if they are known. The
+ * definition line for a top level program is set to 0.
+ */
+
 int get_small_number(char **q)
 {
   /* This is a workaround for buggy cc & Tru64 */
@@ -4275,6 +4308,11 @@ int get_small_number(char **q)
     ret=EXTRACT_INT((unsigned char*)*q);
     *q+=4;
     return ret;
+
+#ifdef PIKE_DEBUG
+  case 127:
+    fatal("get_small_number used on filename entry\n");
+#endif
 
   default:
     return ret;
@@ -4334,7 +4372,7 @@ void store_linenumber(INT32 current_line, struct pike_string *current_file)
     char *cnt=Pike_compiler->new_program->linenumbers;
 
     if (a_flag > 50) {
-      fprintf(stderr, "store_line_number(%d, \"%s\")\n",
+      fprintf(stderr, "store_linenumber(%d, \"%s\")\n",
 	      current_line, current_file->str);
       fprintf(stderr, "  last_line:%d last_file:\"%s\"\n",
 	      Pike_compiler->last_line,
@@ -4395,8 +4433,7 @@ void store_linenumber(INT32 current_line, struct pike_string *current_file)
   if(Pike_compiler->last_line != current_line ||
      Pike_compiler->last_file != current_file)
   {
-    if((Pike_compiler->last_file != current_file) ||
-       (DO_NOT_WARN((INT32)(PIKE_PC - Pike_compiler->last_pc)) == 127))
+    if(Pike_compiler->last_file != current_file)
     {
       char *tmp;
       INT32 remain = DO_NOT_WARN((INT32)current_file->len)<<
@@ -4523,10 +4560,10 @@ char *debug_get_program_line(struct program *prog,
 #endif
 
 /*
- * return the file in which we were executing.
- * pc should be the program counter, prog the current
- * program, and line will be initialized to the line
- * in that file.
+ * return the file in which we were executing. pc should be the
+ * program counter (i.e. the address in prog->program), prog the
+ * current program, and line will be initialized to the line in that
+ * file.
  */
 PMOD_EXPORT struct pike_string *get_line(PIKE_OPCODE_T *pc,
 					 struct program *prog, INT32 *linep)
