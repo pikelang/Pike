@@ -1,4 +1,4 @@
-/* $Id: rsa.pike,v 1.22 2000/06/13 21:37:58 grubba Exp $
+/* $Id: rsa.pike,v 1.23 2000/06/20 10:36:13 grubba Exp $
  *
  * Follow the PKCS#1 standard for padding and encryption.
  */
@@ -272,12 +272,12 @@ bignum get_q()
   return q;
 }
 
-bignum cooked_get_p()
+string cooked_get_p()
 {
   return p->digits(256);
 }
 
-bignum get_q()
+string cooked_get_q()
 {
   return q->digits(256);
 }
