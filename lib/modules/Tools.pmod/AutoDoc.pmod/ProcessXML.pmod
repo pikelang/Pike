@@ -2,6 +2,8 @@
 // Some functions to apply to the XML tree after extraction, too, for
 // reference resolving etc.
 
+#include "./debug.h"
+
 static inherit Parser.XML.Tree;
 static inherit "module.pmod";
 
@@ -286,7 +288,7 @@ static string mergeRef(array(string) ref) {
     s = ref[0];
     ref = ref[1..];
   }
-  s += ref * ".";
+  s += (ref - ({ "" })) * ".";
   return s;
 }
 
@@ -492,11 +494,12 @@ void postProcess(Node tree) {
 // </dir>
 
 static class Target {
-  string type;         // "class", "module", or "entity"
-  int moduleNest = 0;  // How many idents (except last) are modules
-  int classNest = 0;   // How many idents (except last) are classes
   string file = 0;     // relative to the virtual root
   Node data = 0;       // the XML to insert in the file
+  string _sprintf() {
+    return sprintf("Target(%O, <%s>)",
+                   file, data ? data->get_any_name() || "" : "NULL");
+  }
 }
 
 static int splitError(string s, mixed ... args) {
@@ -536,29 +539,22 @@ void splitIntoDirHier(string docXMLFile, string structureXMLFile,
         switch(n->get_any_name()) {
           case "target":
             {
+
+            if (!sizeof(indices(attr)))
+              splitError("No attribute in <target> tag");
+            if (sizeof(indices(attr) - ({ "module","class","entity" })))
+              splitError("Bad attribute in <target> tag");
+
+            array(string) ids =
+              (attr["module"] || "") / "." +
+              (attr["class"] || "") / "." +
+              (attr["entity"] || "") / "." - ({ "" });
+
             Target t = Target();
-            array(string) ids = ({});
-            if (attr["module"])
-              t->moduleNest = sizeof(ids = attr["module"]/".");
-            if (attr["class"])
-              t->classNest = sizeof(ids += attr["class"]/".") - t->moduleNest;
-            if (attr["entity"]) {
-              ids += ({ attr["entity"] });
-              t->type = "entity";
-            }
-            else if (attr["class"]) {
-              t->type = "class";
-              --t->classNest;
-            }
-            else if (attr["module"]) {
-              t->type = "module";
-              --t->moduleNest;
-            }
-            else
-              splitError("Bad <target> tag");
+
+            targets[ids * "."] = t;
             t->file = dirs * "/" + "/" +
               (fileName || splitError("<target> must be inside a <file>"));
-            targets[ids * "."] = t;
             attr["full_ref"] = ids * ".";
             break;
             }
@@ -597,15 +593,18 @@ void splitIntoDirHier(string docXMLFile, string structureXMLFile,
   array(string) sortedTargets =
     Array.sort_array(indices(targets),
                      lambda(string s1, string s2) {
-                       return sizeof(s1 / ".") < sizeof(s2 / ".");
+                       return (strlen(s1) && sizeof(s1 / "."))
+                         < (strlen(s2) && sizeof(s2 / "."));
                      }
                     );
+
   foreach(sortedTargets, string target) {
     object(Target)|string t = targets[target];
+
     if (!objectp(t))
       continue; // It was just a "moved along" entry in a docgroup!
 
-    array(string) ref = target / ".";
+    array(string) ref = target / "." - ({ "" });
     Node n = findStuff(doc, ref);
     if (!n)
       splitError("unable to find %O in the doc tree", target);
@@ -667,15 +666,40 @@ void splitIntoDirHier(string docXMLFile, string structureXMLFile,
       }
     );
 
-    // Wrap the stuff in placeholder classes and modules
-    for (int i = sizeof(ref) - 2; i >= 0; --i) {
+    // Get all the outer placeholders...
+    array(string) parentClasses = ({});
+    array(string) parentModules = ({});
+    while (parent) {
+      string tag = parent->get_any_name();
+      if (tag == "class" || tag == "module") {
+        string name = (parent->get_attributes() || ([]))["name"] || "";
+        if (tag == "class")
+          parentClasses = ({ name }) + parentClasses;
+        else
+          parentModules = ({ name }) + parentModules;
+      }
+      parent = parent->get_parent();
+    }
+
+    // Wrap the stuff in outer placeholder classes and modules
+    array(string) allParents = parentModules + parentClasses;
+
+    for (int i = sizeof(allParents) - 1; i >= 0; --i) {
       mapping attr = ([]);
-      attr["href"] = findHref(targets, ref[0 .. i])
-        || (werror("unable to find href to %O", ref[0 .. i] * "."), 0);
-      attr["name"] = ref[i];
+
+      string href = findHref(targets, allParents[0 .. i]);
+
+      if (href)
+        attr["href"] = href;
+      else if (i)
+        werror("unable to find href to %O", mergeRef(allParents[0 .. i]));
+
+      attr["name"] = allParents[i];
       attr["type"] = "outer-placeholder";
       Node newNode =
-        Node(XML_ELEMENT, i < t->moduleNest ? "module" : "class", attr, 0);
+        Node(XML_ELEMENT,
+             i < sizeof(parentModules) ? "module" : "class",
+             attr, 0);
       newNode->add_child(n);
       n = newNode;
     }
@@ -721,14 +745,46 @@ void splitIntoDirHier(string docXMLFile, string structureXMLFile,
           splitError("unable to close file %O", path);
     }
   );
+
+  if (!targets[""]) { // The root module has no file of its own ...
+    // Then make sure that every top level module has been put somewhere.
+    foreach(doc->get_children(), Node child)
+      if (child->get_node_type() == XML_ELEMENT) {
+        mapping attr = child->get_attributes() || ([]);
+        if ((attr["type"] || "") == "inner-placeholder")
+          continue;
+        string tag = child->get_any_name();
+        array(string) forgotten = ({ });
+
+        if (tag == "docgroup") {
+          if (attr["homogen-name"])
+            forgotten = ({ attr["homogen-name"] });
+          else
+            foreach(child->get_children(), Node stuff) {
+              string name;
+              if (stuff->get_node_type() == XML_ELEMENT
+                  && (name = (stuff->get_attributes() || ([]))["name"]))
+                forgotten += ({ name });
+            }
+        }
+        else if (attr["name"])
+          forgotten = ({ attr["name"] });
+
+        werror("WARNING: No <target> for %s\n",
+               String.implode_nicely(forgotten));
+      }
+  }
 }
 
 // Find the file where the entity will have its documentation.
 static string findHref(mapping(string : Target|string) targets, array(string) ids) {
   for (;;) {
     object(Target)|string t = targets[mergeRef(ids)];
-    if (t)
+    if (t) {
+      //      SHOW(stringp(t) ? t : t->file);
       return stringp(t) ? t : t->file;
+    }
+
     if (sizeof(ids) <= 1)
       break;
     ids = ids[0 .. sizeof(ids) - 2];
