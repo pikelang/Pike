@@ -4,7 +4,7 @@
 // Incremental Pike Evaluator
 //
 
-constant cvs_version = ("$Id: Hilfe.pmod,v 1.104 2003/09/14 15:19:58 nilsson Exp $");
+constant cvs_version = ("$Id: Hilfe.pmod,v 1.105 2003/10/26 21:02:36 nilsson Exp $");
 constant hilfe_todo = #"List of known Hilfe bugs/room for improvements:
 
 - Hilfe can not handle sscanf statements like
@@ -108,20 +108,29 @@ private class CommandSet {
   private void bench_reswrite(function(string, mixed ... : int) w,
 			      string sres, int num, mixed res,
 			      int last_compile_time, int last_eval_time) {
-    w( "Result %d: %s\nCompilation: %s, Execution: %s\n",
-       num, replace(sres, "\n", "\n        "+(" "*sizeof(""+num))),
-       format_hr_time(last_compile_time),
-       format_hr_time(last_eval_time) );
+    if(!sres)
+      w( "Compilation: %s, Execution: %s\n",
+	 format_hr_time(last_compile_time),
+	 format_hr_time(last_eval_time) );
+
+    else
+      w( "Result %d: %s\nCompilation: %s, Execution: %s\n",
+	 num, replace(sres, "\n", "\n        "+(" "*sizeof(""+num))),
+	 format_hr_time(last_compile_time),
+	 format_hr_time(last_eval_time) );
   }
 
   private class Reswriter (string format) {
     void `()(function(string, mixed ... : int) w, string sres, int num, mixed res,
 	     int last_compile_time, int last_eval_time) {
       mixed err = catch {
-	w(format, sres, num, res,
-	  format_hr_time(last_compile_time),
-	  format_hr_time(last_eval_time),
-	  last_compile_time, last_eval_time);
+	if(!sres)
+	  w("Ok.\n");
+	else
+	  w(format, sres, num, res,
+	    format_hr_time(last_compile_time),
+	    format_hr_time(last_eval_time),
+	    last_compile_time, last_eval_time);
       };
       if(err)
 	w("Hilfe Error: Could not format result.\n%s\n",
@@ -1197,8 +1206,9 @@ class Evaluator {
     mixed err = catch {
       if(sizeof(args))
 	in = sprintf(in, @args);
-      write(in);
-      return sizeof(in);
+      int ret = write(in);
+      if(!ret && sizeof(in)) return sizeof(in);
+      return ret;
     };
     catch {
       write("HilfeError: Error while outputting data.\n");
@@ -1751,11 +1761,22 @@ class Evaluator {
   int debug_level;
 #endif
 
+  //! The standard @[reswrite] function.
   void std_reswrite(function w, string sres, int num, mixed res) {
-    w( "(%d) Result: %s\n", num,
-       replace(sres, "\n", "\n           "+(" "*sizeof(""+num))) );
+    if(!sres)
+      w("Ok.\n");
+    else
+      w( "(%d) Result: %s\n", num,
+	 replace(sres, "\n", "\n           "+(" "*sizeof(""+num))) );
   }
 
+  //! The function used to write results.
+  //! Gets as arguments in order: The safe_write function
+  //! (function(string, mixed ...:int), the result as a string (string),
+  //! the history entry number (int), the result (mixed), the compilation
+  //! time (int) and the evaulation time (int). If the evaluated expression
+  //! didn't return anything (e.g. a for loop) then 0 will be given as the
+  //! result string.
   function reswrite = std_reswrite;
 
 
@@ -1962,8 +1983,8 @@ class Evaluator {
 		    last_compile_time, last_eval_time );
 	}
 	else
-	  safe_write("Ok.\n");
-
+	  reswrite( safe_write, 0, history->get_latest_entry_num(), 0,
+		    last_compile_time, last_eval_time );
       }
     }
   }
