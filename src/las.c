@@ -5,7 +5,7 @@
 \*/
 /**/
 #include "global.h"
-RCSID("$Id: las.c,v 1.199 2000/08/30 21:58:16 grubba Exp $");
+RCSID("$Id: las.c,v 1.200 2000/08/31 14:16:55 grubba Exp $");
 
 #include "language.h"
 #include "interpret.h"
@@ -657,8 +657,8 @@ node *debug_mknode(short token, node *a, node *b)
 #ifdef PIKE_DEBUG
 	  /* Temporary check to see that the flags aren't reset somewhere. */
 	  if (i->opt_flags != (OPT_SIDE_EFFECT | OPT_EXTERNAL_DEPEND)) {
-	    my_yyerror("Identifier %s has opt_flags 0x%04x!",
-		       i->name->str, i->opt_flags);
+	    yywarning("Identifier %s has opt_flags 0x%04x!",
+		      i->name->str, i->opt_flags);
 	  }
 #endif /* PIKE_DEBUG */
 	  res->node_info |= i->opt_flags;
