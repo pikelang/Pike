@@ -30,7 +30,7 @@ struct callback *gc_evaluator_callback=0;
 
 #include "block_alloc.h"
 
-RCSID("$Id: gc.c,v 1.138 2000/09/30 17:26:49 mast Exp $");
+RCSID("$Id: gc.c,v 1.139 2000/09/30 19:21:44 mast Exp $");
 
 /* Run garbage collect approximately every time
  * 20 percent of all arrays, objects and programs is
@@ -249,12 +249,6 @@ void dump_gc_info(void)
   fprintf(stderr,"in_gc                    : %d\n", Pike_in_gc);
 }
 
-#ifdef DEBUG_MALLOC
-#define VALID_PTR(P) ((P) && (int) (P) != 0x55555555)
-#else
-#define VALID_PTR(P) (P)
-#endif
-
 TYPE_T attempt_to_identify(void *something)
 {
   struct array *a;
@@ -268,23 +262,23 @@ TYPE_T attempt_to_identify(void *something)
   {
     if(a==(struct array *)something) return T_ARRAY;
     a=a->next;
-  }while(VALID_PTR(a) && a!=&empty_array);
+  }while(a!=&empty_array);
 
-  for(o=first_object;VALID_PTR(o);o=o->next)
+  for(o=first_object;o;o=o->next)
     if(o==(struct object *)something)
       return T_OBJECT;
 
-  for(p=first_program;VALID_PTR(p);p=p->next)
+  for(p=first_program;p;p=p->next)
     if(p==(struct program *)something)
       return T_PROGRAM;
 
-  for(m=first_mapping;VALID_PTR(m);m=m->next)
+  for(m=first_mapping;m;m=m->next)
     if(m==(struct mapping *)something)
       return T_MAPPING;
     else if (m->data == (struct mapping_data *) something)
       return T_MAPPING_DATA;
 
-  for(mu=first_multiset;VALID_PTR(mu);mu=mu->next)
+  for(mu=first_multiset;mu;mu=mu->next)
     if(mu==(struct multiset *)something)
       return T_MULTISET;
 
