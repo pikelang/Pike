@@ -1,14 +1,14 @@
 #include "config.h"
 
 /*
- * $Id: svg.c,v 1.1 2002/05/10 21:51:51 per Exp $
+ * $Id: svg.c,v 1.2 2002/05/10 22:16:38 per Exp $
  */
 
 #ifdef HAVE_SVG
 #include "global.h"
 
 #include "stralloc.h"
-RCSID("$Id: svg.c,v 1.1 2002/05/10 21:51:51 per Exp $");
+RCSID("$Id: svg.c,v 1.2 2002/05/10 22:16:38 per Exp $");
 #include "pike_macros.h"
 #include "object.h"
 #include "constants.h"
@@ -26,6 +26,15 @@ RCSID("$Id: svg.c,v 1.1 2002/05/10 21:51:51 per Exp $");
 #include "modules/Image/image.h"
 
 #include <librsvg/rsvg.h>
+
+/*
+*! @module Image
+*/
+
+/*
+*! @module SVG
+*/
+
 
 static void _do_free_mapping( void *opts )
 {
@@ -204,16 +213,104 @@ static void low__decode( INT32 args, int header_only )
 }
 
 static void f_decode_header( INT32 args )
+/*! @method mapping decode_header( string data, void|mapping options )
+ *!  Data is the SVG data, the charset must be unicode.
+ *!
+ *!  If @[options] is specified, it contains one or more of the
+ *!  following options
+ *!
+ *!  @mapping
+ *!  @member int xsize
+ *!   If specified, gives the exact width in pixels the image will
+ *!   have. If only one of xsize or ysize is specified, the other
+ *!   is calculated.
+ *!  @member int ysize
+ *!   If specified, gives the exact height in pixels the image will
+ *!   have. If only one of xsize or ysize is specified, the other
+ *!   is calculated.
+ *!  @member float scale
+ *!   If specified, gives the scale the image will be drawn with.
+ *!   A scale of 2.0 will give an image that is twice as large.
+ *!  @endmapping
+ *!
+ *!  The result is a mapping with the following members:
+ *!  @mapping
+ *!  @member string type
+ *!    Always image/svg
+ *!  @member int xsize
+ *!    The width of the image, in pixels
+ *!  @member int ysize
+ *!    The height of the image, in pixels
+ *!  @endmapping
+ */
+
 {
   low__decode( args, 1 );
 }
 
 static void f__decode( INT32 args )
+/*! @method mapping _decode( string data, void|mapping options )
+ *!  Data is the SVG data, the charset must be unicode.
+ *!
+ *!  If @[options] is specified, it contains one or more of the
+ *!  following options
+ *!
+ *!  @mapping
+ *!  @member int xsize
+ *!   If specified, gives the exact width in pixels the image will
+ *!   have. If only one of xsize or ysize is specified, the other
+ *!   is calculated.
+ *!  @member int ysize
+ *!   If specified, gives the exact height in pixels the image will
+ *!   have. If only one of xsize or ysize is specified, the other
+ *!   is calculated.
+ *!  @member float scale
+ *!   If specified, gives the scale the image will be drawn with.
+ *!   A scale of 2.0 will give an image that is twice as large.
+ *!  @endmapping
+ *!
+ *!  The result is a mapping with the following members:
+ *!  @mapping
+ *!  @member string type
+ *!    Always image/svg
+ *!  @member int xsize
+ *!    The width of the image, in pixels
+ *!  @member int ysize
+ *!    The height of the image, in pixels
+ *!  @member Image.Image image
+ *!    The image data
+ *!  @member Image.Image alpha
+ *!    The alpha channel data
+ *!  @endmapping
+ */
 {
   low__decode( args, 0 );
 }
 
 static void f_decode_layers( INT32 args )
+/*! @method array(Image.Layer) decode_layers( string data, void|mapping options )
+ *!  Data is the SVG data, the charset must be unicode.
+ *!
+ *!  If @[options] is specified, it contains one or more of the
+ *!  following options
+ *!
+ *!  @mapping
+ *!  @member int xsize
+ *!   If specified, gives the exact width in pixels the image will
+ *!   have. If only one of xsize or ysize is specified, the other
+ *!   is calculated.
+ *!  @member int ysize
+ *!   If specified, gives the exact height in pixels the image will
+ *!   have. If only one of xsize or ysize is specified, the other
+ *!   is calculated.
+ *!  @member float scale
+ *!   If specified, gives the scale the image will be drawn with.
+ *!   A scale of 2.0 will give an image that is twice as large.
+ *!  @endmapping
+ *!
+ *!  The result is an array of Image.Layer objects.
+ *!  For now there is always at most one member in the array.
+ */
 {
   push_text( "Image.Layer" );
   APPLY_MASTER( "resolv", 1 );
@@ -225,6 +322,28 @@ static void f_decode_layers( INT32 args )
 }
 
 static void f_decode( INT32 args )
+/*! @method Image.Image decode( string data, void|mapping options )
+ *!  Data is the SVG data, the charset must be unicode.
+ *!
+ *!  If @[options] is specified, it contains one or more of the
+ *!  following options
+ *!
+ *!  @mapping
+ *!  @member int xsize
+ *!   If specified, gives the exact width in pixels the image will
+ *!   have. If only one of xsize or ysize is specified, the other
+ *!   is calculated.
+ *!  @member int ysize
+ *!   If specified, gives the exact height in pixels the image will
+ *!   have. If only one of xsize or ysize is specified, the other
+ *!   is calculated.
+ *!  @member float scale
+ *!   If specified, gives the scale the image will be drawn with.
+ *!   A scale of 2.0 will give an image that is twice as large.
+ *!  @endmapping
+ *!
+ *!  Returns the image member of the mapping returned by _decode
+ */
 {
   low__decode( args, 0 );
   push_text( "image" );
@@ -253,3 +372,9 @@ void pike_module_init()
 void pike_module_exit()
 {
 }
+
+/*! @endmodule
+ */
+
+/*! @endmodule
+ */
