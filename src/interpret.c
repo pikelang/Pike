@@ -5,7 +5,7 @@
 \*/
 /**/
 #include "global.h"
-RCSID("$Id: interpret.c,v 1.166 2000/08/24 04:04:40 hubbe Exp $");
+RCSID("$Id: interpret.c,v 1.167 2000/08/24 09:56:29 grubba Exp $");
 #include "interpret.h"
 #include "object.h"
 #include "program.h"
@@ -376,6 +376,8 @@ union anything *get_pointer_if_this_type(struct svalue *lval, TYPE_T t)
   }
 }
 
+#ifdef PIKE_DEBUG
+
 inline void pike_trace(int level,char *fmt, ...) ATTRIBUTE((format (printf, 2, 3)));
 inline void pike_trace(int level,char *fmt, ...)
 {
@@ -388,8 +390,6 @@ inline void pike_trace(int level,char *fmt, ...)
     write_to_stderr(trace_buffer,strlen(trace_buffer));
   }
 }
-
-#ifdef PIKE_DEBUG
 
 void my_describe_inherit_structure(struct program *p)
 {
@@ -636,7 +636,7 @@ CASE(X); \
 if(Y(Pike_sp-2,Pike_sp-1)) { \
   DOJUMP(); \
 }else{ \
-  pc+=sizeof(INT32); \
+  SKIPJUMP(); \
 } \
 pop_n_elems(2); \
 break
