@@ -1,5 +1,5 @@
 #
-# $Id: configure.in,v 1.4 1997/05/17 01:01:22 grubba Exp $
+# $Id: configure.in,v 1.5 1997/06/04 00:21:52 grubba Exp $
 #
 # Configure script for the odbc-module
 #
@@ -86,41 +86,45 @@ if test x$with_odbc = xyes; then
 
   AC_CHECK_HEADERS(qeodbc.h sql.h sqlext.h)
 
-  # System libs which might be needed
-
-  if echo $LIBS|grep -- -lsocket >&5 2>&5; then
-    :
-  else
-    AC_CHECK_LIB(socket, socket, [
-      LIBS="-lsocket $LIBS"
-      ODBC_LIBS="-lsocket ${ODBC_LIBS}"
-    ], [])
-  fi
-  if echo $LIBS|grep -- -lnsl >&5 2>&5; then
-    :
-  else
-    AC_CHECK_LIB(nsl, gethostbyname, [
-      LIBS="-lnsl $LIBS"
-      ODBC_LIBS="-lnsl ${ODBC_LIBS}"
-    ], [])
-  fi
-  if echo $LIBS|grep -- -lm >&5 2>&5; then
-    :
-  else
-    AC_CHECK_LIB(m, floor, [
-      LIBS="-lm $LIBS"
-      ODBC_LIBS="-lm ${ODBC_LIBS}"
-    ], [])
-  fi
-
   pike_cv_odbc=no;
 
-  AC_CHECK_LIB(odbc, SQLConnect, [
-    LIBS="-lodbc $LIBS"
-    ODBC_LIBS="-lodbc ${ODBC_LIBS}"
-    pike_cv_odbc=yes;
-  ], [])
+  if test "$ac_cv_header_qeodbc_h$ac_cv_header_sql_h$ac_cv_header_sqlext_h" = "yesyesyes"; then
 
+    # System libs which might be needed
+
+    if echo $LIBS|grep -- -lsocket >&5 2>&5; then
+      :
+    else
+      AC_CHECK_LIB(socket, socket, [
+        LIBS="-lsocket $LIBS"
+        ODBC_LIBS="-lsocket ${ODBC_LIBS}"
+      ], [])
+    fi
+    if echo $LIBS|grep -- -lnsl >&5 2>&5; then
+      :
+    else
+      AC_CHECK_LIB(nsl, gethostbyname, [
+        LIBS="-lnsl $LIBS"
+        ODBC_LIBS="-lnsl ${ODBC_LIBS}"
+      ], [])
+    fi
+    if echo $LIBS|grep -- -lm >&5 2>&5; then
+      :
+    else
+      AC_CHECK_LIB(m, floor, [
+        LIBS="-lm $LIBS"
+        ODBC_LIBS="-lm ${ODBC_LIBS}"
+      ], [])
+    fi
+
+    AC_CHECK_LIB(odbc, SQLConnect, [
+      LIBS="-lodbc $LIBS"
+      ODBC_LIBS="-lodbc ${ODBC_LIBS}"
+      pike_cv_odbc=yes;
+    ], [])
+  else
+    :
+  fi
   if test x$pike_cv_odbc = xno; then
     # Restore variables, so we don't link with unnessesary libs
 
