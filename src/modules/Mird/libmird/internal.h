@@ -6,7 +6,7 @@
 **
 ** for licence, read the LICENCE file
 **
-** $Id: internal.h,v 1.1 2001/03/26 12:32:49 mirar Exp $
+** $Id: internal.h,v 1.2 2001/03/26 16:46:16 mirar Exp $
 **
 */ 
 /* #define MASSIVE_DEBUG */
@@ -39,7 +39,11 @@
 #include "physical.h"
 
 /* find ntohl & htonl */
+/* netinet/in.h seems to need sys/types.h on some systems */
 
+#ifdef HAVE_SYS_TYPES_H
+#include <sys/types.h>
+#endif
 #ifdef HAVE_NETINET_IN_H
 #include <netinet/in.h>
 #endif
