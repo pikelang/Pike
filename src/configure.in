@@ -1,4 +1,4 @@
-AC_REVISION("$Id: configure.in,v 1.693 2003/02/19 23:58:20 mast Exp $")
+AC_REVISION("$Id: configure.in,v 1.694 2003/02/20 16:36:54 grubba Exp $")
 AC_INIT(interpret.c)
 AC_CONFIG_HEADER(machine.h)
 
@@ -2330,6 +2330,7 @@ AC_SUBST(YY_FROM_CONST)
 #############################################################################
 
 AC_C_CONST
+AC_C_CHAR_UNSIGNED
 
 # The above doesn't find IBM C's buggy const.
 

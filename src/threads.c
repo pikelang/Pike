@@ -2,12 +2,12 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: threads.c,v 1.208 2003/02/20 11:55:32 grubba Exp $
+|| $Id: threads.c,v 1.209 2003/02/20 16:36:54 grubba Exp $
 */
 
 #ifndef CONFIGURE_TEST
 #include "global.h"
-RCSID("$Id: threads.c,v 1.208 2003/02/20 11:55:32 grubba Exp $");
+RCSID("$Id: threads.c,v 1.209 2003/02/20 16:36:54 grubba Exp $");
 
 PMOD_EXPORT int num_threads = 1;
 PMOD_EXPORT int threads_disabled = 0;
@@ -869,7 +869,8 @@ void f_thread_create(INT32 args)
   int tmp;
 
   if (thread_state->status != THREAD_NOT_STARTED) {
-    Pike_error("Threads can not be restarted.\n");
+    Pike_error("Threads can not be restarted (status:%d).\n",
+	       thread_state->status);
   }
 
   arg.args = aggregate_array(args);
