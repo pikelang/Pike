@@ -4,7 +4,7 @@
 #include <ctype.h>
 
 #include "stralloc.h"
-RCSID("$Id: pvr.c,v 1.6 2000/02/27 16:14:11 marcus Exp $");
+RCSID("$Id: pvr.c,v 1.7 2000/03/05 19:24:17 marcus Exp $");
 #include "pike_macros.h"
 #include "object.h"
 #include "constants.h"
@@ -116,7 +116,7 @@ static int pvr_check_alpha(struct image *alpha)
 }
 
 static void pvr_encode_rect(INT32 attr, rgb_group *src, unsigned char *dst,
-			    INT32 stride, unsigned int h, unsigned int w)
+			    unsigned int h, unsigned int w)
 {
   INT32 cnt = h * w;
   switch(attr&0xff) {
@@ -132,8 +132,28 @@ static void pvr_encode_rect(INT32 attr, rgb_group *src, unsigned char *dst,
   }
 }
 
+static void pvr_encode_twiddled(INT32 attr, rgb_group *src, unsigned char *d,
+				unsigned int sz)
+{
+  unsigned int x, y;
+  switch(attr&0xff) {
+   case MODE_RGB565:
+     for(y=0; y<sz; y++) {
+       for(x=0; x<sz; x++) {
+	 unsigned char *dst = d+(((twiddletab[x]<<1)|twiddletab[y])<<1);
+	 unsigned int p =
+	   ((src->r&0xf8)<<8)|((src->g&0xfc)<<3)|((src->b&0xf8)>>3);
+	 *dst++=p&0xff;
+	 *dst=(p&0xff00)>>8;
+	 src++;
+       }
+     }
+     break;
+  }
+}
+
 static void pvr_encode_alpha_rect(INT32 attr, rgb_group *src, rgb_group *alpha,
-				  unsigned char *dst, INT32 stride,
+				  unsigned char *dst,
 				  unsigned int h, unsigned int w)
 {
   INT32 cnt = h * w;
@@ -164,13 +184,51 @@ static void pvr_encode_alpha_rect(INT32 attr, rgb_group *src, rgb_group *alpha,
   }
 }
 
+static void pvr_encode_alpha_twiddled(INT32 attr, rgb_group *src,
+				      rgb_group *alpha, unsigned char *d,
+				      unsigned int sz)
+{
+  unsigned int x, y;
+  switch(attr&0xff) {
+   case MODE_ARGB1555:
+     for(y=0; y<sz; y++) {
+       for(x=0; x<sz; x++) {
+	 unsigned char *dst = d+(((twiddletab[x]<<1)|twiddletab[y])<<1);
+	 unsigned int p =
+	   ((src->r&0xf8)<<7)|((src->g&0xf8)<<2)|((src->b&0xf8)>>3);
+	 if(alpha->g&0x80)
+	   p |= 0x8000;
+	 *dst++=p&0xff;
+	 *dst++=(p&0xff00)>>8;
+	 src++;
+	 alpha++;
+       }
+     }
+     break;
+   case MODE_ARGB4444:
+     for(y=0; y<sz; y++) {
+       for(x=0; x<sz; x++) {
+	 unsigned char *dst = d+(((twiddletab[x]<<1)|twiddletab[y])<<1);
+	 unsigned int p =
+	   ((alpha->g&0xf0)<<8)|
+	   ((src->r&0xf0)<<4)|(src->g&0xf0)|((src->b&0xf0)>>4);
+	 *dst++=p&0xff;
+	 *dst++=(p&0xff00)>>8;
+	 src++;
+	 alpha++;
+       }
+     }
+     break;
+  }
+}
+
 void image_pvr_f_encode(INT32 args)
 {
   struct object *imgo;
   struct mapping *optm = NULL;
   struct image *alpha = NULL, *img;
   INT32 gbix, sz, attr;
-  int has_gbix=0;
+  int has_gbix=0, twiddle=0;
   struct pike_string *res;
   unsigned char *dst;
 
@@ -220,7 +278,12 @@ void image_pvr_f_encode(INT32 args)
      break;
   }
 
-  attr |= MODE_RECTANGLE;
+  if(img->xsize == img->ysize && img->xsize>=8 && img->ysize<=1024 &&
+     !(img->xsize&(img->xsize-1))) {
+    attr |= MODE_TWIDDLE;
+    twiddle = 1;
+  } else
+    attr |= MODE_RECTANGLE;
 
   if(has_gbix) {
     *dst++ = 'G';
@@ -254,11 +317,20 @@ void image_pvr_f_encode(INT32 args)
   *dst++ = (img->ysize&0x00ff);
   *dst++ = (img->ysize&0xff00)>>8;
 
+  if(twiddle && !twiddleinited)
+    init_twiddletab();
+
   if(alpha != NULL)
-    pvr_encode_alpha_rect(attr, img->img, alpha->img, dst, 0,
-			  img->ysize, img->xsize);
+    if(twiddle)
+      pvr_encode_alpha_twiddled(attr, img->img, alpha->img, dst, img->xsize);
+    else
+      pvr_encode_alpha_rect(attr, img->img, alpha->img, dst,
+			    img->ysize, img->xsize);
   else
-    pvr_encode_rect(attr, img->img, dst, 0, img->ysize, img->xsize);
+    if(twiddle)
+      pvr_encode_twiddled(attr, img->img, dst, img->xsize);
+    else
+      pvr_encode_rect(attr, img->img, dst, img->ysize, img->xsize);
 
   pop_n_elems(args);
   push_string(end_shared_string(res));
