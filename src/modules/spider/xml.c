@@ -726,6 +726,7 @@ static inline int xmlread(int z,struct xmldata *data, int line)
 #define SIMPLE_READNAME_PERIOD() simple_readname_period(data)
 #define SIMPLE_READNMTOKEN() simple_readnmtoken(data)
 
+static void sys(struct xmldata *data);
 static int low_parse_dtd(struct xmldata *data);
 static void free_xmldata(struct xmldata *data);
 static void simple_readname(struct xmldata *);
@@ -917,8 +918,8 @@ static int gobble(struct xmldata *data, char *s)
 	  push_int(ATTR);						 \
 	  f_aggregate_mapping(2); /* attributes */			 \
 	  push_int(0); /* no data */					 \
-	  SYS();							 \
-	  if(sp[-1].type != T_STRING)					 \
+	  low_sys(data);						 \
+	  if(sp[-1].type != T_STRING)				 	 \
 	  {								 \
 	    pop_stack();						 \
 	    XMLERROR("No such entity.");				 \
@@ -990,6 +991,7 @@ static int gobble(struct xmldata *data, char *s)
 
 
 #define READ_PEREFERENCE(ATTR,X,PARSE_RECURSIVELY) do {		\
+  DO_IF_DEBUG(struct svalue *spsave=sp;)                        \
   READ(1); /* Assume '%'  */					\
   push_constant_text("%");					\
   SIMPLE_READNAME();						\
@@ -997,7 +999,8 @@ static int gobble(struct xmldata *data, char *s)
   if(PEEK(0)!=';')						\
     XMLERROR("Missing ';' after parsed entity reference.");	\
   READ(1);							\
-  PARSE_REF(ATTR,PARSE_RECURSIVELY);					\
+  PARSE_REF(ATTR,PARSE_RECURSIVELY);				\
+  DO_IF_DEBUG(if(sp<spsave) fatal("Stack underflow\n");)        \
 }while(0)
 
 
@@ -1086,33 +1089,37 @@ static int gobble(struct xmldata *data, char *s)
     }  } while (0)
 
 
-#define SYS() do{					\
-  struct xmlinput *i=&data->input;			\
-  check_stack(1+data->num_extra_args);			\
-  push_constant_text("location");			\
-  while(i->next) i=i->next;				\
-  push_int64(i->pos);					\
-  f_aggregate_mapping(2);				\
-  assign_svalues_no_free(sp, data->extra_args,		\
-			  data->num_extra_args,		\
-			  data->extra_arg_types);	\
-  sp+=data->num_extra_args;				\
-  apply_svalue(data->func, 5+data->num_extra_args);	\
-  if(IS_ZERO(sp-1))					\
-     pop_stack();					\
-}while(0);
+static inline void low_sys(struct xmldata *data)
+{
+  struct xmlinput *i=&data->input;
+  check_stack(1+data->num_extra_args);
+  push_constant_text("location");
+  while(i->next) i=i->next;
+  push_int64(i->pos);
+  f_aggregate_mapping(2);
+  assign_svalues_no_free(sp, data->extra_args,
+			  data->num_extra_args,
+			  data->extra_arg_types);
+  sp+=data->num_extra_args;
+  apply_svalue(data->func, 5+data->num_extra_args);
+}
 
+static void sys(struct xmldata *data)
+{
+  low_sys(data);
+  if(IS_ZERO(sp-1)) pop_stack();
+}
+
+#define SYS() sys(data)
 
 static void xmlerror(char *desc, struct xmldata *data)
 {
-  struct svalue * save_sp=sp;
-
   push_constant_text("error");
   push_int(0); /* no name */
   push_int(0); /* no attributes */
   push_text(desc);
-  SYS();
-  pop_n_elems(sp-save_sp);
+  low_sys(data);
+  pop_stack();
   READ(1);
 }
 
@@ -1151,10 +1158,10 @@ static int read_smeg_pereference(struct xmldata *data)
 	ref_push_string(name);
 	f_aggregate_mapping(0);
 	push_int(0); /* no data */
-	SYS();					
-	if(sp[-1].type != T_STRING)	
-	{				
-	  pop_stack();		
+	low_sys(data);
+	if(sp[-1].type != T_STRING)
+	{
+	  pop_stack();
 	  XMLERROR("No such entity in pereference.");
 	  
 	  break;				
