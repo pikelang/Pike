@@ -1,5 +1,5 @@
 /*
- * $Id: sql.pike,v 1.16 1998/03/02 15:32:03 grubba Exp $
+ * $Id: sql.pike,v 1.17 1998/06/17 12:59:09 grubba Exp $
  *
  * Implements the generic parts of the SQL-interface
  *
@@ -8,8 +8,8 @@
 
 //.
 //. File:	sql.pike
-//. RCSID:	$Id: sql.pike,v 1.16 1998/03/02 15:32:03 grubba Exp $
-//. Author:	Henrik Grubbström (grubba@infovav.se)
+//. RCSID:	$Id: sql.pike,v 1.17 1998/06/17 12:59:09 grubba Exp $
+//. Author:	Henrik Grubbström (grubba@idonex.se)
 //.
 //. Synopsis:	Implements the generic parts of the SQL-interface.
 //.
@@ -19,9 +19,6 @@
 //.
 
 #define throw_error(X)	throw(({ (X), backtrace() }))
-
-import Array;
-import Simulate;
 
 //. + master_sql
 //.   Object to use for the actual SQL-queries.
@@ -34,6 +31,17 @@ object master_sql;
 //.   0 - No (default)
 //.   1 - Yes
 int case_convert;
+
+//. - quote
+//.   Quote a string so that it can safely be put in a query.
+//. > s - String to quote.
+string quote(string s)
+{
+  if (master_sql && master_sql->quote) {
+    return(master_sql->quote(s));
+  }
+  return(replace(s, "\'", "\'\'"));
+}
 
 //. - create
 //.   Create a new generic SQL object.
@@ -90,7 +98,7 @@ void create(void|string|object host, void|string db,
       if (sizeof(arr[0]/".pike") > 1) {
 	program_names = ({ arr[0] });
       } else {
-	program_names = ({ arr[0]+".pike" });
+	program_names = ({ arr[0] + ".pike" });
       }
       host = arr[1..] * "://";
     }
@@ -122,30 +130,24 @@ void create(void|string|object host, void|string db,
     host = 0;
   }
 
-  //  werror(sprintf("Sql.sql(): program_names:%O\n", program_names));
-
   foreach(program_names || get_dir(Sql->dirname), string program_name) {
     if ((sizeof(program_name / "_result") == 1) &&
 	(sizeof(program_name / ".pike") > 1) &&
-	(program_name != "sql.pike")) {
+	(program_name[..7] != "sql.pike")) {
       /* Don't call ourselves... */
       array(mixed) err;
       
       err = catch {
 	program p;
 #ifdef PIKE_SQL_DEBUG
-	err = catch {
-	  p = Sql[program_name];
-	};
+	err = catch {p = Sql[program_name];};
 #else /* !PIKE_SQL_DEBUG */
 	// Ignore compiler errors for the various sql-modules,
 	// since we might not have some.
 	// This is NOT a nice way to do it, but...
 	mixed old_inhib = master()->inhibit_compile_errors;
 	master()->inhibit_compile_errors = lambda(){};
-	err = catch {
-	  p = Sql[program_name];
-	};
+	err = catch {p = Sql[program_name];};
 	// Restore compiler errors mode to whatever it was before.
 	master()->inhibit_compile_errors = old_inhib;
 #endif /* PIKE_SQL_DEBUG */
@@ -155,12 +157,9 @@ void create(void|string|object host, void|string db,
 				      program_name, err[0]));
 #endif /* PIKE_SQL_DEBUG */
 	  if (program_names) {
-	    //  werror("Throwing compile-error.\n");
 	    throw(err);
 	  } else {
-	    //  werror("Not throwing compile-error.\n");
-	    err = 0;
-	    break;	// NOTE: breaks the catch without giving an error.
+	    throw(0);
 	  }
 	}
 
@@ -200,7 +199,6 @@ void create(void|string|object host, void|string db,
 	}
       };
       if (err && program_names) {
-	//  werror("Rethrowing error.\n");
 	throw(err);
       }
     }
@@ -222,8 +220,8 @@ static private array(mapping(string:mixed)) res_obj_to_array(object res_obj)
     array(string) fieldnames;
     array(mixed) row;
       
-    fieldnames = map(res_obj->fetch_fields(),
-		     lambda (mapping(string:mixed) m) {
+    fieldnames = Array.map(res_obj->fetch_fields(),
+			   lambda (mapping(string:mixed) m) {
       if (case_convert) {
 	return(lower_case(m->name));	/* Hope this is even more unique */
       } else {
@@ -275,14 +273,27 @@ string|object compile_query(string q)
 //. > q
 //.   Query to send to the SQL-server. This can either be a string with the
 //.   query, or a previously compiled query (see compile_query()).
-array(mapping(string:mixed)) query(object|string q)
+//. > bindings
+//.   An optional mapping containing bindings of variables used in the query.
+//.   A variable is identified by a colon (:) followed by a name or number.
+//.   Each index in the mapping corresponds to one such variable, and the
+//.   value for that index is substituted into the query wherever the variable
+//.   is used.  Binary values (BLOBs) may need to be placed in multisets.
+array(mapping(string:mixed)) query(object|string q,
+				   mapping(string|int:mixed)|void bindings)
 {
-  object res_obj;
-
   if (functionp(master_sql->query)) {
-    return(master_sql->query(q));
+    if (bindings) {
+      return(master_sql->query(q, bindings));
+    } else {
+      return(master_sql->query(q));
+    }
   }
-  return(res_obj_to_array(master_sql->big_query(q)));
+  if (bindings) {
+    return(res_obj_to_array(master_sql->big_query(q, bindings)));
+  } else {
+    return(res_obj_to_array(master_sql->big_query(q)));
+  }
 }
 
 //. - big_query
@@ -293,12 +304,29 @@ array(mapping(string:mixed)) query(object|string q)
 //. > q
 //.   Query to send to the SQL-server. This can either be a string with the
 //.   query, or a previously compiled query (see compile_query()).
-object big_query(object|string q)
+//. > bindings
+//.   An optional mapping containing bindings of variables used in the query.
+//.   A variable is identified by a colon (:) followed by a name or number.
+//.   Each index in the mapping corresponds to one such variable, and the
+//.   value for that index is substituted into the query wherever the variable
+//.   is used.  Binary values (BLOBs) may need to be placed in multisets.
+object big_query(object|string q, mapping(string|int:mixed)|void bindings)
 {
+  object|array(mapping) pre_res;
+
   if (functionp(master_sql->big_query)) {
-    return(Sql.sql_result(master_sql->big_query(q)));
+    if (bindings) {
+      pre_res = master_sql->big_query(q, bindings);
+    } else {
+      pre_res = master_sql->big_query(q);
+    }
   }
-  return(Sql.sql_result(master_sql->query(q)));
+  if (bindings) {
+    pre_res = master_sql->query(q, bindings);
+  } else {
+    pre_res = master_sql->query(q);
+  }
+  return(pre_res && Sql.sql_result(pre_res));
 }
 
 //. - create_db
@@ -377,12 +405,13 @@ array(string) list_dbs(string|void wild)
     res = query("show databases");
   }
   if (sizeof(res) && mappingp(res[0])) {
-    res = map(res, lambda (mapping m) {
+    res = Array.map(res, lambda (mapping m) {
       return(values(m)[0]);	/* Hope that there's only one field */
     } );
   }
   if (wild) {
-    res = map_regexp(res, replace(wild, ({ "%", "_" }), ({ ".*", "." }) ));
+    res = Simulate.map_regexp(res,
+			      replace(wild, ({ "%", "_" }), ({ ".*", "." }) ));
   }
   return(res);
 }
@@ -403,12 +432,13 @@ array(string) list_tables(string|void wild)
     res = query("show tables");
   }
   if (sizeof(res) && mappingp(res[0])) {
-    res = map(res, lambda (mapping m) {
+    res = Array.map(res, lambda (mapping m) {
       return(values(m)[0]);	/* Hope that there's only one field */
     } );
   }
   if (wild) {
-    res = map_regexp(res, replace(wild, ({ "%", "_" }), ({ ".*", "." }) ));
+    res = Simulate.map_regexp(res,
+			      replace(wild, ({ "%", "_" }), ({ ".*", "." }) ));
   }
   return(res);
 }
@@ -429,8 +459,8 @@ array(mapping(string:mixed)) list_fields(string table, string|void wild)
     }
     if (wild) {
       /* Not very efficient, but... */
-      res = filter(res, lambda (mapping m, string re) {
-	return(sizeof(map_regexp( ({ m->name }), re)));
+      res = Array.filter(res, lambda (mapping m, string re) {
+	return(sizeof(Simulate.map_regexp( ({ m->name }), re)));
       }, replace(wild, ({ "%", "_" }), ({ ".*", "." }) ) );
     }
     return(res);
@@ -441,7 +471,7 @@ array(mapping(string:mixed)) list_fields(string table, string|void wild)
   } else {
     res = query("show fields from \'" + table + "\'");
   }
-  res = map(res, lambda (mapping m, string table) {
+  res = Array.map(res, lambda (mapping m, string table) {
     foreach(indices(m), string str) {
       /* Add the lower case variants */
       string low_str = lower_case(str);
