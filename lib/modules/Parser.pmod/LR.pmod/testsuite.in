@@ -1,0 +1,6 @@
+test_program([[ Parser.LR.Parser p = 
+  Parser.LR.GrammarParser.make_parser("foo : bar;foo : foo bar;bar : \"a\";");
+  int pos;
+  array(string) data="aaaaaaaaa"/"";
+  string scan() { if (pos < sizeof(data)) return(data[pos++]); else return ""; }
+  int a() { return(p->parse(scan) == "a"); }]])
