@@ -100,3 +100,15 @@ FUNCTION(destroy, "function(void:void)");
     gdk_gc_destroy( (void *)THIS->extra_data );
   THIS->extra_data = 0;
 }
+
+FUNCTION(ref, "function(void:object)");
+{
+  gdk_pixmap_ref( (void *)THIS->obj );
+  RETURN_THIS();
+}
+
+FUNCTION(unref, "function(void:object)");
+{
+  gdk_pixmap_unref( (void *)THIS->obj );
+  RETURN_THIS();
+}

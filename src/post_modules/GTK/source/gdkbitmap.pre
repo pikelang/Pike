@@ -44,3 +44,15 @@ FUNCTION(destroy, "function(void:void)");
     gdk_bitmap_unref( (void *)THIS->obj );
   THIS->obj = 0;
 }
+
+FUNCTION(ref, "function(void:object)");
+{
+  gdk_bitmap_ref( (void *)THIS->obj );
+  RETURN_THIS();
+}
+
+FUNCTION(unref, "function(void:object)");
+{
+  gdk_bitmap_unref( (void *)THIS->obj );
+  RETURN_THIS();
+}
