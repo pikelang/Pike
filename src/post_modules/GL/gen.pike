@@ -419,7 +419,7 @@ string gen()
     res += r[0];
     prot[f]=r[1];
   }
-  res += "void add_auto_funcs()\n{\n";
+  res += "void GL_add_auto_funcs()\n{\n";
   res += "  pre_init();\n";
   foreach(fn, string f)
     res += "  add_function_constant(\""+f+"\", f_"+f+",\n\t\t\t\"function("+

@@ -1,5 +1,5 @@
 /*
- * $Id: top.c,v 1.7 1999/07/24 19:22:57 marcus Exp $
+ * $Id: top.c,v 1.8 1999/07/24 23:57:17 marcus Exp $
  *
  */
 
@@ -10,7 +10,7 @@
 
 #include "config.h"
 
-RCSID("$Id: top.c,v 1.7 1999/07/24 19:22:57 marcus Exp $");
+RCSID("$Id: top.c,v 1.8 1999/07/24 23:57:17 marcus Exp $");
 #include "stralloc.h"
 #include "pike_macros.h"
 #include "object.h"
@@ -353,12 +353,12 @@ static void f_glGet(INT32 args)
 
 void pike_module_init( void )
 {
-  extern void add_auto_funcs(void);
+  extern void GL_add_auto_funcs(void);
 
   add_function_constant("glGet", f_glGet,
 			"function(int:int|float|array(int)|array(float))",
 			OPT_SIDE_EFFECT);
-  add_auto_funcs();
+  GL_add_auto_funcs();
 }
 
 
