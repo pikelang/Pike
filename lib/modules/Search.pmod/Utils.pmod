@@ -1,7 +1,7 @@
 // This file is part of Roxen Search
 // Copyright © 2001 Roxen IS. All rights reserved.
 //
-// $Id: Utils.pmod,v 1.6 2001/07/04 18:10:42 nilsson Exp $
+// $Id: Utils.pmod,v 1.7 2001/07/04 19:00:48 nilsson Exp $
 
 public array(string) tokenize_and_normalize( string what )
 //! This can be optimized quite significantly when compared to
@@ -93,11 +93,11 @@ class Logger {
     404 : "File %s not found",
   ]);
 
-  array(array(string)) get_log( int profile, array(string) types,
-				int form, int to ) {
+  array(array(string|int)) get_log( int profile, array(string) types,
+				int from, int to ) {
 
     string sql = "";
-#define SQLADD(X) do{sizeof(sql)?sql=" WHERE "+(X):sql+=" AND "+(X)}while(0)
+#define SQLADD(X) do{sizeof(sql)?(sql=" WHERE "+(X)):(sql+=" AND "+(X));}while(0)
     if(profile)
       SQLADD("profile=" + profile);
     if(!sizeof(types))
@@ -111,11 +111,11 @@ class Logger {
 #undef SQLADD
 
     Sql.Sql db = get_db();
-    if(!db) return;
+    if(!db) return ({});
 
     return map(db->query("SELECT unix_timstamp(at) as at,profile,code,type,extra FROM eventlog"+sql),
 	       lambda(mapping in) {
-		 return ({ in->at, in->profile, in->type,
+		 return ({ (int)in->at, (int)in->profile, in->type,
 			   in->extra?sprintf(codes[(int)in->code], in->extra):codes[(int)in->code] });
 	       } );
   }
