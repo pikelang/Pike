@@ -1,5 +1,5 @@
 #include "global.h"
-RCSID("$Id: png.c,v 1.10 1998/04/06 04:37:31 hubbe Exp $");
+RCSID("$Id: png.c,v 1.11 1998/04/06 14:26:03 mirar Exp $");
 
 #include "config.h"
 
@@ -519,7 +519,8 @@ static int _png_write_rgb(rgb_group *w1,
 
    unsigned long n0=n;
 
-   unsigned long x,mz;
+   unsigned long x;
+   int mz;
 
    /* write stuff to d1 */
 
@@ -1355,7 +1356,7 @@ static void image_png__decode(INT32 args)
 static void image_png_encode(INT32 args)
 {
    struct image *img,*alpha=NULL;
-   rgb_group *s,*sa;
+   rgb_group *s,*sa=NULL;
 
    int n=0,y,x;
    char buf[20];
