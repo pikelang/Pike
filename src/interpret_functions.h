@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: interpret_functions.h,v 1.128 2003/01/16 16:10:12 mast Exp $
+|| $Id: interpret_functions.h,v 1.129 2003/01/26 15:29:23 mirar Exp $
 */
 
 /*
@@ -224,6 +224,12 @@ OPCODE0(F_BIGNUM, "push 0x7fffffff", 0, {
 OPCODE1(F_NUMBER, "push int", 0, {
   push_int(arg1);
 });
+
+#if SIZEOF_INT_TYPE > 4
+OPCODE2(F_NUMBER64, "push 64-bit int", 0, {
+  push_int((((INT_TYPE)arg1)<<32)|((unsigned INT32)arg2));
+});
+#endif
 
 OPCODE1(F_NEG_NUMBER, "push -int", 0, {
   push_int(-arg1);

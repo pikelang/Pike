@@ -2,11 +2,11 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: docode.c,v 1.160 2002/11/23 16:36:44 mast Exp $
+|| $Id: docode.c,v 1.161 2003/01/26 15:29:23 mirar Exp $
 */
 
 #include "global.h"
-RCSID("$Id: docode.c,v 1.160 2002/11/23 16:36:44 mast Exp $");
+RCSID("$Id: docode.c,v 1.161 2003/01/26 15:29:23 mirar Exp $");
 #include "las.h"
 #include "program.h"
 #include "pike_types.h"
@@ -2041,7 +2041,25 @@ static int do_docode2(node *n, INT16 flags)
       {
 	emit0(F_UNDEFINED);
       }else{
+#if SIZEOF_INT_TYPE > 4
+	INT_TYPE i=n->u.sval.u.integer;
+	if (i != (INT32)i)
+	{
+	   INT_TYPE ip=i;
+	   INT32 a,b;
+
+	   if (ip<0) ip=-ip;
+	   a=(INT32)(ip>>32);
+	   b=(INT32)(ip&0xffffffff);
+	   if (i<0) a=-a;
+
+	   emit2(F_NUMBER64,a,b);
+	}
+	else
+	   emit1(F_NUMBER,i);
+#else
 	emit1(F_NUMBER,n->u.sval.u.integer);
+#endif
       }
       return 1;
 
