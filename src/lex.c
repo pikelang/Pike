@@ -5,7 +5,7 @@
 \*/
 /**/
 #include "global.h"
-RCSID("$Id: lex.c,v 1.70 2000/04/18 19:09:17 grubba Exp $");
+RCSID("$Id: lex.c,v 1.71 2000/04/18 20:26:30 grubba Exp $");
 #include "language.h"
 #include "array.h"
 #include "lex.h"
@@ -73,11 +73,13 @@ void exit_lex(void)
 
 #define OPCODE0(OP,DESC) { DESC, OP, 0 },
 #define OPCODE1(OP,DESC) { DESC, OP, I_HASARG },
-#define OPCODE2(OP,DESC) { DESC, OP, I_TWO_ARGS },
+#define OPCODE1ACC(OP,DESC) { DESC, OP, I_TWO_ARGS },
+#define OPCODE2(OP,DESC) { DESC, OP, I_HASARG },
 
 #define OPCODE0_TAIL(OP,DESC) { DESC, OP, 0 },
 #define OPCODE1_TAIL(OP,DESC) { DESC, OP, I_HASARG },
-#define OPCODE2_TAIL(OP,DESC) { DESC, OP, I_TWO_ARGS },
+#define OPCODE1ACC_TAIL(OP,DESC) { DESC, OP, I_TWO_ARGS },
+#define OPCODE2_TAIL(OP,DESC) { DESC, OP, I_HASARG },
 
 #define LEXER
 
