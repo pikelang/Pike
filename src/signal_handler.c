@@ -25,7 +25,7 @@
 #include "main.h"
 #include <signal.h>
 
-RCSID("$Id: signal_handler.c,v 1.157 1999/10/22 00:02:26 hubbe Exp $");
+RCSID("$Id: signal_handler.c,v 1.158 1999/10/24 14:28:12 grubba Exp $");
 
 #ifdef HAVE_PASSWD_H
 # include <passwd.h>
@@ -2288,6 +2288,7 @@ void f_create_process(INT32 args)
       {
 	storage.wanted_gids_array=sp[-1].u.array;
 	sp--;
+	dmalloc_touch_svalue(sp);
       } else {
 	pop_stack();
       }
