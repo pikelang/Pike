@@ -847,6 +847,7 @@ class Gdb
 
 		case 'a': c=7; s=s[1..]; break;
 		case 'b': c=8; s=s[1..]; break;
+	        case 'v': c=11; s=s[1..]; break;
 		case 'f': c=12; s=s[1..]; break;
 		case 'n': c='\n'; s=s[1..]; break;
 		case 't': c='\t'; s=s[1..]; break;
@@ -1130,7 +1131,7 @@ class Debug
 	  cnt++;
 	  int len=get_small_number();
 	  int shift = lineinfo[cnt++];
-	  file=lineinfo[cnt..cnt+len-1];
+	  file=lineinfo[cnt..cnt+len-1]; // FIXME: Only works if shift==0
 	  cnt += len<<shift;
 	}
 	off+=get_small_number();
@@ -1373,7 +1374,7 @@ class Debug
 	{
 	  ind=Svalue(pair->ind);
 	  val=Svalue(pair->val);
-	  hval=pair->hval->value();
+	  hval=pair->hval->_value();
 	}
     }
 
@@ -1459,7 +1460,7 @@ class Debug
       {
 	if(op == 't') return _type();
 	if(failsafe) return "MULTISET";
-	string desc=sprintf("%O",arr);
+	string desc= /* sprintf("%O",arr); */ "Multiset representation is broken.";
 	desc[1]='<';
 	desc[-2]='>';
 	return desc;
@@ -3015,7 +3016,7 @@ string find_in_path(string cmd)
 
 int main(int argc, array(string) argv)
 {
-  write(#"UNBUG $Id: unbug,v 1.12 2003/12/08 02:58:44 nilsson Exp $
+  write(#"UNBUG $Id: unbug,v 1.13 2003/12/08 05:09:59 nilsson Exp $
 Copyright 2001-2002, Roxen Internet Software AB.
 Copyright 2002-2003, Department of Computer and Information Science,
                      Linköping University
