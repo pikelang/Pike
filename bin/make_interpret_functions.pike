@@ -1,14 +1,10 @@
 #!/usr/local/bin/pike
 
 #ifdef OLD
-import ".";
-#define PC .Pike
+#import OLD;
+#define PC Pike
 #else /* !OLD */
-#if constant(Parser.Pike)
 #define PC Parser.Pike
-#else /* !constant(Parser.Pike) */
-#define PC Parser.C
-#endif /* constant(Parser.Pike) */
 #endif /* OLD */
 
 mapping ops=([]);
