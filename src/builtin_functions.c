@@ -5,7 +5,7 @@
 \*/
 /**/
 #include "global.h"
-RCSID("$Id: builtin_functions.c,v 1.327 2001/01/08 14:54:53 grubba Exp $");
+RCSID("$Id: builtin_functions.c,v 1.328 2001/01/08 19:12:23 grubba Exp $");
 #include "interpret.h"
 #include "svalue.h"
 #include "pike_macros.h"
@@ -82,7 +82,7 @@ PMOD_EXPORT void f_equal(INT32 args)
   push_int(i);
 }
 
-/*! @decl array(0) aggregate(0=mixed ... elements)
+/*! @decl array aggregate(mixed ... elements)
  *!
  *! Construct an array with the arguments as indices.
  *!
@@ -919,13 +919,13 @@ PMOD_EXPORT void f_has_value(INT32 args)
  *!
  *! Each entry has this format:
  *! @array
- *!   @element string file
+ *!   @elem string file
  *!     A string with the filename if known, else zero.
- *!   @element int line
+ *!   @elem int line
  *!     An integer containing the linenumber if known, else zero.
- *!   @element function fun
+ *!   @elem function fun
  *!     The function that was called at this level.
- *!   @element mixed|void ... args
+ *!   @elem mixed|void ... args
  *!     The arguments that the function was called with.
  *! @endarray
  *!
@@ -1581,7 +1581,7 @@ PMOD_EXPORT void f_unicode_to_string(INT32 args)
  *! Throws an error if characters not valid in an UTF8 stream are encountered.
  *! Valid characters are in the range 0x00000000 - 0x7fffffff.
  *!
- *! If @[extended@] is 1, characters in the range 0x80000000-0xfffffffff
+ *! If @[extended] is 1, characters in the range 0x80000000-0xfffffffff
  *! will also be accepted, and encoded using a non-standard UTF8 extension.
  *!
  *! @seealso
@@ -1862,7 +1862,7 @@ PMOD_EXPORT void f_utf8_to_string(INT32 args)
   push_string(out);
 }
 
-/*! @decl string __parse_pike_type(string)
+/*! @decl string __parse_pike_type(string t)
  */
 static void f_parse_pike_type( INT32 args )
 {
@@ -1932,35 +1932,35 @@ PMOD_EXPORT void f_allocate(INT32 args)
  *!
  *! The elements are as follows:
  *! @array
- *!   @element int user_time
- *!   @element int system_time
- *!   @element int maxrss
- *!   @element int idrss
- *!   @element int isrss
- *!   @element int minflt
- *!   @element int minor_page_faults
- *!   @element int major_page_faults
- *!   @element int swaps
- *!   @element int block_input_op
- *!   @element int block_output_op
- *!   @element int messages_sent
- *!   @element int messages_received
- *!   @element int signals_received
- *!   @element int voluntary_context_switches
- *!   @element int involuntary_context_switches
- *!   @element int sysc
- *!   @element int ioch
- *!   @element int rtime
- *!   @element int ttime
- *!   @element int tftime
- *!   @element int dftime
- *!   @element int dftime
- *!   @element int ltime
- *!   @element int slptime
- *!   @element int wtime
- *!   @element int stoptime
- *!   @element int brksize
- *!   @element int stksize
+ *!   @elem int user_time
+ *!   @elem int system_time
+ *!   @elem int maxrss
+ *!   @elem int idrss
+ *!   @elem int isrss
+ *!   @elem int minflt
+ *!   @elem int minor_page_faults
+ *!   @elem int major_page_faults
+ *!   @elem int swaps
+ *!   @elem int block_input_op
+ *!   @elem int block_output_op
+ *!   @elem int messages_sent
+ *!   @elem int messages_received
+ *!   @elem int signals_received
+ *!   @elem int voluntary_context_switches
+ *!   @elem int involuntary_context_switches
+ *!   @elem int sysc
+ *!   @elem int ioch
+ *!   @elem int rtime
+ *!   @elem int ttime
+ *!   @elem int tftime
+ *!   @elem int dftime
+ *!   @elem int dftime
+ *!   @elem int ltime
+ *!   @elem int slptime
+ *!   @elem int wtime
+ *!   @elem int stoptime
+ *!   @elem int brksize
+ *!   @elem int stksize
  *! @endarray
  *!
  *! The values will not be further explained here; read your system manual
