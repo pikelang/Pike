@@ -5,7 +5,7 @@
 \*/
 /**/
 #include "global.h"
-RCSID("$Id: object.c,v 1.110 2000/04/15 07:45:52 hubbe Exp $");
+RCSID("$Id: object.c,v 1.111 2000/04/17 14:11:09 mast Exp $");
 #include "object.h"
 #include "dynamic_buffer.h"
 #include "interpret.h"
@@ -1237,9 +1237,8 @@ void gc_free_all_unreferenced_objects(void)
 
   Pike_in_gc=4;  /* Allow thread switches, god help us */
 
-  for(o=first_object;o;o=next)
+  for(o=first_object;o;o=o->next)
   {
-    next=o->next;
     if(gc_do_free(o))
     {
       add_ref(o);
