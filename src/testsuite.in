@@ -1,4 +1,4 @@
-test_true([["$Id: testsuite.in,v 1.216 1999/10/31 14:58:27 grubba Exp $"]])
+test_true([["$Id: testsuite.in,v 1.217 1999/10/31 14:59:37 grubba Exp $"]])
 
 cond([[all_constants()->_verify_internals]],
 [[
@@ -1407,8 +1407,8 @@ cond([[ sizeof( cpp("__AUTO_BIGNUM__")/"__AUTO_BIGNUM__" ) == 1 ]],
   test_false([[ objectp((-0x80000001) + 1) ]])
 
   // - Add-eq.
-  test_eq([[ lambda() { int a=0x100000000; int b = a; a += 1; return b; }() ]],
-	  [[ 0x100000000 ]])
+  test_eq([[lambda() { int a=0x100000000; int b = a; a += 1; return b+a; }()]],
+	  [[0x200000001]])
 
   // - Sub.
   test_eq("-2147483648", [[ (string)(-0x7fffffff - 1) ]])
