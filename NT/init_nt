@@ -48,7 +48,14 @@ IA64SDK=${IA64SDK-'C:\ia64sdk17'}
 
 case "/$CC" in
   */rntcl)
-    if [ "x$NOPATHS" = "yes" ]; then
+
+    # I'll leave the following if-statement as a monument of
+    # non-tested code. - Hubbe
+    # 
+    # if [ "x$NOPATHS" = "yes" ]; then
+    # 
+
+    if [ "${USER-}@${HOST-}" = "hubbe@adenin" ]; then
       echo "I am Hubbe"
       MSVC='j:\winshare\vc98'
       local='j:\winshare\local'
