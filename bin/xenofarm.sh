@@ -25,7 +25,7 @@ log_end() {
 
 xenofarm_low() {
   log_start build
-  $MAKE $MAKE_FLAGS > build/xenofarm/makelog.txt 2>&1
+  $MAKE $MAKE_FLAGS > build/xenofarm/compilelog.txt 2>&1
   log_end
   if [ ! "$LAST"="0" ] ; then return; fi
 
