@@ -14,12 +14,14 @@ Node void_node = Node(XML_ELEMENT, "void", ([]), 0);
 array toc = ({});
 class TocNode {
   inherit Node;
+  string path;
 
   int|void walk_preorder_2(mixed ... args) {
     mChildren = ({});
     foreach(toc, array ent) {
-      // FIXME Some sort of path fixup is needed.
-      Node link = Node( XML_ELEMENT, "url", ([ "href" : ent[1] ]), 0 );
+      string file = ent[1][sizeof(String.common_prefix( ({ path, ent[1] }) ))..];
+      if(file[0]=='/') file = file[1..];
+      Node link = Node( XML_ELEMENT, "url", ([ "href" : file ]), 0 );
       link->add_child( Node( XML_TEXT, 0, 0, ent[0] ) );
       add_child(link);
       add_child( Node( XML_ELEMENT, "br", ([]), 0 ));
@@ -29,6 +31,11 @@ class TocNode {
   }
 
   int count_children() { return sizeof(toc)*3; }
+
+  void create(string _path) {
+    path = _path;
+    ::create(XML_ELEMENT, "p", ([]), "");
+  }
 }
 
 class Entry (Node target) {
@@ -153,7 +160,7 @@ void section_ref_expansion(Node n) {
     }
 }
 
-void chapter_ref_expansion(Node n) {
+void chapter_ref_expansion(Node n, string dir) {
   int section;
   foreach(n->get_elements(), Node c)
     switch(c->get_tag_name()) {
@@ -162,7 +169,7 @@ void chapter_ref_expansion(Node n) {
       break;
 
     case "contents":
-      c->replace_node( TocNode(XML_ELEMENT, "p", ([]), "") );
+      c->replace_node( TocNode(dir) );
       break;
 
     case "section":
@@ -222,8 +229,9 @@ void ref_expansion(Node n, string dir, void|string file) {
 			   get_first_element("chapter") );
       // fallthrough
     case "chapter":
-      c->get_attributes()->number = (string)++chapter;
-      chapter_ref_expansion(c);
+      if(c->get_attributes()->unnumbered!="1")
+	c->get_attributes()->number = (string)++chapter;
+      chapter_ref_expansion(c, dir);
       toc += ({ ({ c->get_attributes()->title, file }) });
       break;
 
@@ -249,7 +257,7 @@ void ref_expansion(Node n, string dir, void|string file) {
     case "void":
       c->get_parent()->remove_child(c);
       void_node->add_child(c);
-      chapter_ref_expansion(c);
+      chapter_ref_expansion(c, dir);
     }
   }
 }
