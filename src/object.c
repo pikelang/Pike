@@ -2,11 +2,11 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: object.c,v 1.247 2003/09/08 20:05:21 mast Exp $
+|| $Id: object.c,v 1.248 2003/09/23 22:26:57 mast Exp $
 */
 
 #include "global.h"
-RCSID("$Id: object.c,v 1.247 2003/09/08 20:05:21 mast Exp $");
+RCSID("$Id: object.c,v 1.248 2003/09/23 22:26:57 mast Exp $");
 #include "object.h"
 #include "dynamic_buffer.h"
 #include "interpret.h"
@@ -1680,12 +1680,12 @@ PMOD_EXPORT void gc_mark_object_as_referenced(struct object *o)
   debug_malloc_touch(o);
   debug_malloc_touch(o->storage);
 
-  if(gc_mark(o))
+  if(gc_mark(o)) {
+    if(o->next == o) return; /* Fake object used by compiler */
+
     GC_ENTER (o, T_OBJECT) {
       int e;
       struct program *p;
-
-      if(o->next == o) return; /* Fake object used by compiler */
 
       if (o == gc_mark_object_pos)
 	gc_mark_object_pos = o->next;
@@ -1696,61 +1696,61 @@ PMOD_EXPORT void gc_mark_object_as_referenced(struct object *o)
 	DOUBLELINK(first_object, o); /* Linked in first. */
       }
 
-      if(!o || !(p=o->prog)) return; /* Object already destructed */
-      if(!PIKE_OBJ_INITED(o)) return;
+      if(o && (p=o->prog) && PIKE_OBJ_INITED(o)) {
+	debug_malloc_touch(p);
 
-      debug_malloc_touch(p);
+	gc_mark_program_as_referenced (p);
 
-      gc_mark_program_as_referenced (p);
+	if(o->prog->flags & PROGRAM_USES_PARENT)
+	  if(PARENT_INFO(o)->parent)
+	    gc_mark_object_as_referenced(PARENT_INFO(o)->parent);
 
-      if(o->prog->flags & PROGRAM_USES_PARENT)
-	if(PARENT_INFO(o)->parent)
-	  gc_mark_object_as_referenced(PARENT_INFO(o)->parent);
+	LOW_PUSH_FRAME(o);
 
-      LOW_PUSH_FRAME(o);
-
-      for(e=p->num_inherits-1; e>=0; e--)
-      {
-	int q;
-      
-	LOW_SET_FRAME_CONTEXT(p->inherits[e]);
-
-	if(pike_frame->context.prog->event_handler)
-	  pike_frame->context.prog->event_handler(PROG_EVENT_GC_RECURSE);
-
-	for(q=0;q<(int)pike_frame->context.prog->num_variable_index;q++)
+	for(e=p->num_inherits-1; e>=0; e--)
 	{
-	  int d=pike_frame->context.prog->variable_index[q];
-	  struct identifier *id = pike_frame->context.prog->identifiers + d;
-	  int id_flags = id->identifier_flags;
-	  int rtt = id->run_time_type;
+	  int q;
+      
+	  LOW_SET_FRAME_CONTEXT(p->inherits[e]);
 
-	  if (IDENTIFIER_IS_ALIAS(id_flags)) continue;
-	
-	  if(rtt == T_MIXED)
+	  if(pike_frame->context.prog->event_handler)
+	    pike_frame->context.prog->event_handler(PROG_EVENT_GC_RECURSE);
+
+	  for(q=0;q<(int)pike_frame->context.prog->num_variable_index;q++)
 	  {
-	    struct svalue *s;
-	    s=(struct svalue *)(pike_frame->current_storage + id->func.offset);
-	    dmalloc_touch_svalue(s);
-	    if ((s->type != T_OBJECT && s->type != T_FUNCTION) || s->u.object != o ||
-		!(id_flags & IDENTIFIER_NO_THIS_REF))
-	      gc_mark_svalues(s, 1);
-	  }else{
-	    union anything *u;
-	    u=(union anything *)(pike_frame->current_storage + id->func.offset);
+	    int d=pike_frame->context.prog->variable_index[q];
+	    struct identifier *id = pike_frame->context.prog->identifiers + d;
+	    int id_flags = id->identifier_flags;
+	    int rtt = id->run_time_type;
+
+	    if (IDENTIFIER_IS_ALIAS(id_flags)) continue;
+	
+	    if(rtt == T_MIXED)
+	    {
+	      struct svalue *s;
+	      s=(struct svalue *)(pike_frame->current_storage + id->func.offset);
+	      dmalloc_touch_svalue(s);
+	      if ((s->type != T_OBJECT && s->type != T_FUNCTION) || s->u.object != o ||
+		  !(id_flags & IDENTIFIER_NO_THIS_REF))
+		gc_mark_svalues(s, 1);
+	    }else{
+	      union anything *u;
+	      u=(union anything *)(pike_frame->current_storage + id->func.offset);
 #ifdef DEBUG_MALLOC
-	    if (rtt <= MAX_REF_TYPE) debug_malloc_touch(u->refs);
+	      if (rtt <= MAX_REF_TYPE) debug_malloc_touch(u->refs);
 #endif
-	    if (rtt != T_OBJECT || u->object != o ||
-		!(id_flags & IDENTIFIER_NO_THIS_REF))
-	      gc_mark_short_svalue(u, rtt);
+	      if (rtt != T_OBJECT || u->object != o ||
+		  !(id_flags & IDENTIFIER_NO_THIS_REF))
+		gc_mark_short_svalue(u, rtt);
+	    }
 	  }
+	  LOW_UNSET_FRAME_CONTEXT();
 	}
-	LOW_UNSET_FRAME_CONTEXT();
+
+	LOW_POP_FRAME();
       }
-    
-      LOW_POP_FRAME();
     } GC_LEAVE;
+  }
 }
 
 PMOD_EXPORT void real_gc_cycle_check_object(struct object *o, int weak)

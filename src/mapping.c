@@ -2,11 +2,11 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: mapping.c,v 1.171 2003/09/23 20:08:00 mast Exp $
+|| $Id: mapping.c,v 1.172 2003/09/23 22:26:56 mast Exp $
 */
 
 #include "global.h"
-RCSID("$Id: mapping.c,v 1.171 2003/09/23 20:08:00 mast Exp $");
+RCSID("$Id: mapping.c,v 1.172 2003/09/23 22:26:56 mast Exp $");
 #include "main.h"
 #include "object.h"
 #include "mapping.h"
@@ -2289,42 +2289,41 @@ static void gc_check_mapping(struct mapping *m)
       INT32 e;
       struct keypair *k;
 
-      if(debug_gc_check (md, " as mapping data block of a mapping"))
-	return;
-
-      if (!(md->flags & MAPPING_WEAK) || MAPPING_DATA_IN_USE(md))
-	/* Disregard the weak flag if the mapping data is busy; we must
-	 * leave it untouched in that case anyway. */
-	NEW_MAPPING_LOOP(md)
-	{
-	  debug_gc_check_svalues(&k->ind, 1, " as mapping index");
-	  debug_gc_check_svalues(&k->val, 1, " as mapping value");
+      if(!debug_gc_check (md, " as mapping data block of a mapping")) {
+	if (!(md->flags & MAPPING_WEAK) || MAPPING_DATA_IN_USE(md))
+	  /* Disregard the weak flag if the mapping data is busy; we must
+	   * leave it untouched in that case anyway. */
+	  NEW_MAPPING_LOOP(md)
+	  {
+	    debug_gc_check_svalues(&k->ind, 1, " as mapping index");
+	    debug_gc_check_svalues(&k->val, 1, " as mapping value");
+	  }
+	else {
+	  switch (md->flags & MAPPING_WEAK) {
+	    case MAPPING_WEAK_INDICES:
+	      NEW_MAPPING_LOOP(md)
+	      {
+		debug_gc_check_weak_svalues(&k->ind, 1, " as mapping index");
+		debug_gc_check_svalues(&k->val, 1, " as mapping value");
+	      }
+	      break;
+	    case MAPPING_WEAK_VALUES:
+	      NEW_MAPPING_LOOP(md)
+	      {
+		debug_gc_check_svalues(&k->ind, 1, " as mapping index");
+		debug_gc_check_weak_svalues(&k->val, 1, " as mapping value");
+	      }
+	      break;
+	    default:
+	      NEW_MAPPING_LOOP(md)
+	      {
+		debug_gc_check_weak_svalues(&k->ind, 1, " as mapping index");
+		debug_gc_check_weak_svalues(&k->val, 1, " as mapping value");
+	      }
+	      break;
+	  }
+	  gc_checked_as_weak(md);
 	}
-      else {
-	switch (md->flags & MAPPING_WEAK) {
-	  case MAPPING_WEAK_INDICES:
-	    NEW_MAPPING_LOOP(md)
-	    {
-	      debug_gc_check_weak_svalues(&k->ind, 1, " as mapping index");
-	      debug_gc_check_svalues(&k->val, 1, " as mapping value");
-	    }
-	    break;
-	  case MAPPING_WEAK_VALUES:
-	    NEW_MAPPING_LOOP(md)
-	    {
-	      debug_gc_check_svalues(&k->ind, 1, " as mapping index");
-	      debug_gc_check_weak_svalues(&k->val, 1, " as mapping value");
-	    }
-	    break;
-	  default:
-	    NEW_MAPPING_LOOP(md)
-	    {
-	      debug_gc_check_weak_svalues(&k->ind, 1, " as mapping index");
-	      debug_gc_check_weak_svalues(&k->val, 1, " as mapping value");
-	    }
-	    break;
-	}
-	gc_checked_as_weak(md);
       }
     } GC_LEAVE;
 }
