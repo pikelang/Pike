@@ -1,5 +1,5 @@
 /*
- * $Id: preprocessor.h,v 1.17 2000/02/03 19:09:13 grubba Exp $
+ * $Id: preprocessor.h,v 1.18 2000/02/11 00:04:00 grubba Exp $
  *
  * Preprocessor template.
  * Based on cpp.c 1.45
@@ -1895,13 +1895,12 @@ static INT32 lower_cpp(struct cpp *this,
 	  if (sp[-1].type != PIKE_T_STRING) {
 	    pop_stack();
 	    cpp_error(this, "Unknown charset.");
+	  } else {
+	    low_cpp(this, sp[-1].u.string->str, sp[-1].u.string->len,
+		    sp[-1].u.string->size_shift, flags,
+		    auto_convert, charset);
+	    pop_stack();
 	  }
-
-	  low_cpp(this, sp[-1].u.string->str, sp[-1].u.string->len,
-		  sp[-1].u.string->size_shift, flags,
-		  auto_convert, charset);
-	  pop_stack();
-
 	  /* FIXME: Is this the correct thing to return? */
 	  return len;
 	} else {
