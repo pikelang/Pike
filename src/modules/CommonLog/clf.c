@@ -2,12 +2,12 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: clf.c,v 1.11 2002/10/21 17:06:12 marcus Exp $
+|| $Id: clf.c,v 1.12 2003/04/09 18:18:47 nilsson Exp $
 */
 
 /* MUST BE FIRST */
 #include "global.h"
-RCSID("$Id: clf.c,v 1.11 2002/10/21 17:06:12 marcus Exp $");
+RCSID("$Id: clf.c,v 1.12 2003/04/09 18:18:47 nilsson Exp $");
 #include "fdlib.h"
 #include "stralloc.h"
 #include "pike_macros.h"
@@ -49,7 +49,6 @@ static char char_class[1<<CHAR_BIT];
 #define CLS_SLASH  7
 #define CLS_COLON  8
 #define CLS_HYPHEN 9
-#define CLS_MINUS  9
 #define CLS_PLUS   10
 
 
@@ -97,19 +96,20 @@ PIKE_MODULE_EXIT
 /*! @module CommonLog
  *!
  *! The CommonLog module is used to parse the lines in a www server's logfile,
- *! which must be in "common log" format -- such as used by default for the access log by
- *! Roxen, Caudium, Apache et al.
+ *! which must be in "common log" format -- such as used by default for the
+ *! access log by Roxen, Caudium, Apache et al.
  */
 
 /*! @decl int read(function(array(int|string), int : void ) callback,@
  *!            Stdio.File|string logfile, void|int offset)
  *!
- *! Reads the log file and calls the callback function for every parsed line. For lines that
- *! fails to be parsed the callback is not called not is any error thrown. The number of
- *! bytes read are returned.
+ *! Reads the log file and calls the callback function for every parsed line.
+ *! For lines that fails to be parsed the callback is not called not is any
+ *! error thrown. The number of bytes read are returned.
  *!
  *! @param callback
- *! The callbacks first argument is an array with the different parts of the log entry.
+ *! The callbacks first argument is an array with the different parts of the
+ *! log entry.
  *! @array
  *!   @elem string remote_host
  *!
@@ -142,7 +142,8 @@ PIKE_MODULE_EXIT
  *!   @elem int bytes
  *! @endarray
  *!
- *! The second callback argument is the current offset to the end of the current line.
+ *! The second callback argument is the current offset to the end of the
+ *! current line.
  *!
  *! @param offset
  *! The position in the file where the parser should begin.
@@ -177,7 +178,7 @@ static void f_read_clf( INT32 args )
 
   get_all_args("CommonLog.read", args, "%*%*", &logfun, &file);
   if(logfun->type != T_FUNCTION)
-    Pike_error("Bad argument 1 to CommonLog.read, expected function.\n");
+    SIMPLE_BAD_ARG_ERROR("CommonLog.read", 1, "function");
 
   if(file->type == T_OBJECT)
   {
@@ -199,9 +200,9 @@ static void f_read_clf( INT32 args )
     if(errno < 0)
       Pike_error("CommonLog.read(): Failed to open file for reading (errno=%d).\n",
 	    errno);
-  } else 
-    Pike_error("Bad argument 1 to CommonLog.read, expected string or object .\n");
-  
+  } else
+    SIMPLE_BAD_ARG_ERROR("CommonLog.read", 2, "string|Stdio.File");
+
 #ifdef HAVE_LSEEK64
   lseek64(f, offs0, SEEK_SET);
 #else
@@ -241,7 +242,7 @@ static void f_read_clf( INT32 args )
       case CLS_RBRACK: fprintf(stderr, "CLS_RBRACK"); break;
       case CLS_SLASH: fprintf(stderr, "CLS_SLASH"); break;
       case CLS_COLON: fprintf(stderr, "CLS_COLON"); break;
-      case CLS_HYPHEN: fprintf(stderr, "CLS_HYPHEN/CLS_MINUS"); break;
+      case CLS_HYPHEN: fprintf(stderr, "CLS_HYPHEN"); break;
       case CLS_PLUS: fprintf(stderr, "CLS_PLUS"); break;
       default: fprintf(stderr, "???");
       }
@@ -599,7 +600,7 @@ static void f_read_clf( INT32 args )
 	  state = (cls == CLS_CRLF? 0:14);
 	break;
       case 28:
-	if(cls>=CLS_MINUS) {
+	if(cls>=CLS_HYPHEN) {
 	  state = 29;
 	  tzs = cls!=CLS_PLUS;
 	  tz = 0;
@@ -784,9 +785,6 @@ static void f_read_clf( INT32 args )
   pop_n_elems(sp-old_sp+args);  
   push_int64(offs0);
 }
-
-
-
 
 /*! @endmodule
  */
