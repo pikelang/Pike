@@ -4,7 +4,7 @@
 ||| See the files COPYING and DISCLAIMER for more information.
 \*/
 #include "global.h"
-RCSID("$Id: main.c,v 1.44 1998/03/31 21:52:21 hubbe Exp $");
+RCSID("$Id: main.c,v 1.45 1998/04/01 14:26:51 grubba Exp $");
 #include "fdlib.h"
 #include "backend.h"
 #include "module.h"
@@ -342,7 +342,7 @@ void do_exit(int num) ATTRIBUTE((noreturn))
 
 #ifdef DEBUG_MALLOC
   {
-    extern cleanup_memhdrs(void);
+    extern void cleanup_memhdrs(void);
     cleanup_memhdrs();
   }
 #endif
