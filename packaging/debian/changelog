@@ -1,3 +1,9 @@
+pike7.4 (7.4.118-1) unstable; urgency=low
+
+  * Release number bumped by export.pike.
+
+ -- Marek Habersack <grendel@debian.org>  Tue, 10 Aug 2004 11:44:53 +0200
+
 pike7.4 (7.4.117-1) unstable; urgency=medium
 
   * Changed the build-dep from libxpm4-dev to libxpm-dev
