@@ -2,7 +2,7 @@
 
 // Incremental Pike Evaluator
 //
-// $Id: Hilfe.pmod,v 1.43 2002/03/15 15:13:12 nilsson Exp $
+// $Id: Hilfe.pmod,v 1.44 2002/03/19 20:06:38 jhs Exp $
 
 constant hilfe_todo = #"List of known Hilfe bugs/room for improvements:
 
@@ -860,7 +860,7 @@ class Evaluator {
 	int pos = search(files, "HilfeInput");
 	write(describe_backtrace( ({ err[0], err[1][sizeof(err[1])-pos..] }) ));
      } else
-	write("Hilfe Error: Unknown format of thrown error (not backtrace).\n");
+	write("Hilfe Error: Unknown format of thrown error (not backtrace).\n(%O)\n", err);
     };
     if(err2)
       write("Hilfe Error: Error while printing backtrace.\n");
