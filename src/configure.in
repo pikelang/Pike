@@ -1,4 +1,4 @@
-AC_REVISION("$Id: configure.in,v 1.843 2004/09/27 21:47:34 mast Exp $")
+AC_REVISION("$Id: configure.in,v 1.844 2004/10/20 18:57:12 grubba Exp $")
 AC_INIT(interpret.c)
 AC_CONFIG_HEADER(machine.h)
 
@@ -2345,8 +2345,27 @@ if test "x${AR-}" = x ; then
   AC_PATH_PROG(AR, ar, ar, $PATH:$EXTRA_PATH)
   export AR
 fi
-
 AC_SUBST(AR)
+
+if test "x${RNTANY-}" = x ; then
+  AC_PATH_PROG(RNTANY, rntany, false, $PATH:$EXTRA_PATH)
+  export RNTANY
+fi
+AC_SUBST(RNTANY)
+
+# Wix compiler
+if test "x${CANDLE-}" = x ; then
+  AC_PATH_PROG(CANDLE, candle, $RNTANY candle, $PATH:$EXTRA_PATH)
+  export CANDLE
+fi
+AC_SUBST(CANDLE)
+
+# Wix linker
+if test "x${LIGHT-}" = x ; then
+  AC_PATH_PROG(LIGHT, light, $RNTANY light, $PATH:$EXTRA_PATH)
+  export LIGHT
+fi
+AC_SUBST(LIGHT)
 
 #############################################################################
 
