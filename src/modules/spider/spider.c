@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: spider.c,v 1.126 2004/04/06 13:00:50 nilsson Exp $
+|| $Id: spider.c,v 1.127 2004/09/19 00:51:13 nilsson Exp $
 */
 
 #include "global.h"
@@ -51,7 +51,7 @@
 #include "operators.h"
 #include "pike_security.h"
 
-RCSID("$Id: spider.c,v 1.126 2004/04/06 13:00:50 nilsson Exp $");
+RCSID("$Id: spider.c,v 1.127 2004/09/19 00:51:13 nilsson Exp $");
 
 #ifdef HAVE_PWD_H
 #include <pwd.h>
@@ -302,8 +302,8 @@ void f_parse_html_lines(INT32 args)
 /*   fprintf(stderr, "sp=%p (strings=%d)\n", sp, strings); */
 }
 
-char start_quote_character = '\000';
-char end_quote_character = '\000';
+static char start_quote_character = '\000';
+static char end_quote_character = '\000';
 
 /*! @decl void set_end_quote(int quote)
  */
