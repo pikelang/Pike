@@ -5,7 +5,7 @@
 // Pike is distributed as GPL (General Public License)
 // See the files COPYING and DISCLAIMER for more information.
 //
-// $Id: master.pike.in,v 1.195 2002/04/27 22:18:40 nilsson Exp $
+// $Id: master.pike.in,v 1.196 2002/04/30 15:59:20 nilsson Exp $
 
 #pike __REAL_VERSION__
 
@@ -1701,10 +1701,10 @@ void _main(array(string) orig_argv, array(string) env)
       switch(opts[0])
       {
       case "version":
-	werror(version() + " Copyright © 1994-2001 Roxen Internet Software\n"
+	werror(version() + " Copyright © 1994-2002 Roxen Internet Software\n"
 	       "Pike comes with ABSOLUTELY NO WARRANTY; This is free software and you are\n"
 	       "welcome to redistribute it under certain conditions; Read the files\n"
-	       "COPYING and DISCLAIMER in the Pike distribution for more details.\n");
+	       "COPYING and COPYRIGHT in the Pike distribution for more details.\n");
 	exit(0);
 	
       case "help":
