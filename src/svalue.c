@@ -63,7 +63,7 @@ static int pike_isnan(double x)
 #endif /* HAVE__ISNAN */
 #endif /* HAVE_ISNAN */
 
-RCSID("$Id: svalue.c,v 1.134 2002/03/07 10:57:52 grubba Exp $");
+RCSID("$Id: svalue.c,v 1.135 2002/03/07 11:43:58 grubba Exp $");
 
 struct svalue dest_ob_zero = {
   T_INT, 0,
@@ -1299,6 +1299,7 @@ PMOD_EXPORT void describe_svalue(const struct svalue *s,int indent,struct proces
 	    t_flag=save_t_flag;
 	    pop_stack();
 	  } else {
+	    /* Cyclic _sprintf() detected. */
 	    my_strcat("object");
 	  }
 	  END_CYCLIC();
