@@ -4,7 +4,7 @@
 ||| See the files COPYING and DISCLAIMER for more information.
 \*/
 #include "global.h"
-RCSID("$Id: interpret.c,v 1.77 1998/04/16 01:19:37 hubbe Exp $");
+RCSID("$Id: interpret.c,v 1.78 1998/04/16 21:32:01 hubbe Exp $");
 #include "interpret.h"
 #include "object.h"
 #include "program.h"
@@ -542,7 +542,7 @@ static int eval_instruction(unsigned char *pc)
 	free_program(backlog[backlogp].program);
 
       backlog[backlogp].program=fp->context.prog;
-      fp->context.prog->refs++;
+      add_ref(fp->context.prog);
       backlog[backlogp].instruction=instr;
       backlog[backlogp].arg=0;
       backlog[backlogp].pc=pc;
@@ -625,7 +625,7 @@ static int eval_instruction(unsigned char *pc)
 
       CASE(F_LFUN);
       sp->u.object=fp->current_object;
-      fp->current_object->refs++;
+      add_ref(fp->current_object);
       sp->subtype=GET_ARG()+fp->context.identifier_level;
       sp->type=T_FUNCTION;
       sp++;
@@ -1329,7 +1329,7 @@ static int eval_instruction(unsigned char *pc)
 	sp[-args-1].u.object=fp->current_object;
 	sp[-args-1].subtype=GET_ARG()+fp->context.identifier_level;
 	sp[-args-1].type=T_FUNCTION;
-	fp->current_object->refs++;
+	add_ref(fp->current_object);
 
 	return args+1;
       }
@@ -1789,9 +1789,9 @@ void mega_apply(enum apply_type type, INT32 args, void *arg1, void *arg2)
       new_frame.current_storage = o->storage+new_frame.context.storage_offset;
       new_frame.pc = 0;
       
-      new_frame.current_object->refs++;
-      new_frame.context.prog->refs++;
-      if(new_frame.context.parent) new_frame.context.parent->refs++;
+      add_ref(new_frame.current_object);
+      add_ref(new_frame.context.prog);
+      if(new_frame.context.parent) add_ref(new_frame.context.parent);
       
       if(t_flag)
       {
@@ -1992,8 +1992,8 @@ int apply_low_safe_and_stupid(struct object *o, INT32 offset)
   new_frame.context.parent=0;
   fp = & new_frame;
 
-  new_frame.current_object->refs++;
-  new_frame.context.prog->refs++;
+  add_ref(new_frame.current_object);
+  add_ref(new_frame.context.prog);
 
   if(SETJMP(tmp))
   {

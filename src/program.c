@@ -4,7 +4,7 @@
 ||| See the files COPYING and DISCLAIMER for more information.
 \*/
 #include "global.h"
-RCSID("$Id: program.c,v 1.82 1998/04/16 01:23:03 hubbe Exp $");
+RCSID("$Id: program.c,v 1.83 1998/04/16 21:32:03 hubbe Exp $");
 #include "program.h"
 #include "object.h"
 #include "dynamic_buffer.h"
@@ -417,7 +417,7 @@ void low_start_new_program(struct program *p,
     if((p->next=first_program)) first_program->prev=p;
     first_program=p;
   }else{
-    p->refs++;
+    add_ref(p);
   }
 
   if(name)
@@ -457,12 +457,12 @@ void low_start_new_program(struct program *p,
   fake_object->parent=0;
   fake_object->parent_identifier=0;
   fake_object->prog=p;
-  p->refs++;
+  add_ref(p);
 
   if(name)
   {
     if((fake_object->parent=previous_program_state->fake_object))
-      fake_object->parent->refs++;
+      add_ref(fake_object->parent);
     fake_object->parent_identifier=id;
   }
 
@@ -536,16 +536,16 @@ void really_free_program(struct program *p)
   for(e=0; e<p->num_constants; e++)
     free_svalue(p->constants+e);
 
-  for(e=1; e<p->num_inherits; e++)
+  for(e=0; e<p->num_inherits; e++)
   {
     if(p->inherits[e].name)
       free_string(p->inherits[e].name);
     if(e)
     {
       free_program(p->inherits[e].prog);
-      if(p->inherits[e].parent)
-	free_object(p->inherits[e].parent);
     }
+    if(p->inherits[e].parent)
+      free_object(p->inherits[e].parent);
   }
 
   if(p->prev)
@@ -816,7 +816,7 @@ struct program *end_first_pass(int finish)
     prog=0;
   }else{
     prog=new_program;
-    prog->refs++;
+    add_ref(prog);
 
 #ifdef DEBUG
     check_program(prog);
@@ -1045,7 +1045,7 @@ void low_inherit(struct program *p,
   for(e=0; e<(int)p->num_inherits; e++)
   {
     inherit=p->inherits[e];
-    inherit.prog->refs++;
+    add_ref(inherit.prog);
     inherit.identifier_level += new_program->num_identifier_references;
     inherit.storage_offset += storage_offset;
     inherit.inherit_level ++;
@@ -1103,7 +1103,7 @@ void low_inherit(struct program *p,
 	inherit.parent_offset=0;
       }
     }
-    if(inherit.parent) inherit.parent->refs++;
+    if(inherit.parent) add_ref(inherit.parent);
 
     if(name)
     {
@@ -2233,7 +2233,7 @@ void gc_free_all_unreferenced_programs(void)
     if(gc_do_free(p))
     {
       int e;
-      p->refs++;
+      add_ref(p);
       free_svalues(p->constants, p->num_constants, -1);
       for(e=0;e<p->num_inherits;e++)
       {

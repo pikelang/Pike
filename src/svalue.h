@@ -5,7 +5,7 @@
 \*/
 
 /*
- * $Id: svalue.h,v 1.15 1998/04/08 02:47:28 hubbe Exp $
+ * $Id: svalue.h,v 1.16 1998/04/16 21:32:03 hubbe Exp $
  */
 #ifndef SVALUE_H
 #define SVALUE_H
@@ -180,11 +180,19 @@ do{ \
 #define check_refs(S) if((S)->type < MAX_REF_TYPE && (!(S)->u.refs || (S)->u.refs[0] < 0)) fatal("Svalue to object without references.\n")
 #define check_refs2(S,T) if((T) < MAX_REF_TYPE && (S)->refs && (S)->refs[0] <= 0) fatal("Svalue to object without references.\n")
 
+#ifdef DEBUG_MALLOC
+#define add_ref(X) ((INT32 *)debug_malloc_pass( &((X)->refs)))[0]++
+#else
+#define add_ref(X) (X)->refs++
+#endif
+
+
 #else
 
 #define check_type(T)
 #define check_refs(S)
 #define check_refs2(S,T)
+#define add_ref(X) (X)->refs++
 
 #endif
 

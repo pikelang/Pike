@@ -5,7 +5,7 @@
 \*/
 
 #include "global.h"
-RCSID("$Id: file.c,v 1.88 1998/04/09 21:55:55 hubbe Exp $");
+RCSID("$Id: file.c,v 1.89 1998/04/16 21:39:45 hubbe Exp $");
 #include "fdlib.h"
 #include "interpret.h"
 #include "svalue.h"
@@ -128,7 +128,7 @@ OOBOP( || (query_read_oob_callback((X)->fd)==file_read_oob_callback) ||	\
 #define DEBUG_CHECK_INTERNAL_REFERENCE(X)
 #endif
 #define SET_INTERNAL_REFERENCE(f) \
-  do { CHECK_FILEP(f->myself); if(!(f->flags & FILE_HAS_INTERNAL_REF)) { f->myself->refs++; f->flags|=FILE_HAS_INTERNAL_REF; } }while (0)
+  do { CHECK_FILEP(f->myself); if(!(f->flags & FILE_HAS_INTERNAL_REF)) { add_ref(f->myself); f->flags|=FILE_HAS_INTERNAL_REF; } }while (0)
 
 #define REMOVE_INTERNAL_REFERENCE(f) \
   do { CHECK_FILEP(f->myself); if(f->flags & FILE_HAS_INTERNAL_REF) {  f->flags&=~FILE_HAS_INTERNAL_REF; free_object(f->myself); } }while (0)
@@ -1994,7 +1994,7 @@ static void init_file_lock_key(struct object *o)
   THIS_KEY->f=0;
 #ifdef _REENTRANT
   THIS_KEY->owner=thread_id;
-  thread_id->refs++;
+  add_ref(thread_id);
 #endif
 }
 

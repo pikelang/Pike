@@ -4,7 +4,7 @@
 ||| See the files COPYING and DISCLAIMER for more information.
 \*/
 #include "global.h"
-RCSID("$Id: object.c,v 1.45 1998/04/14 20:04:39 hubbe Exp $");
+RCSID("$Id: object.c,v 1.46 1998/04/16 21:32:02 hubbe Exp $");
 #include "object.h"
 #include "dynamic_buffer.h"
 #include "interpret.h"
@@ -47,7 +47,7 @@ struct object *low_clone(struct program *p)
   o=(struct object *)xalloc( ((long)(((struct object *)0)->storage))+p->storage_needed);
 
   o->prog=p;
-  p->refs++;
+  add_ref(p);
   o->parent=0;
   o->parent_identifier=0;
   o->next=first_object;
@@ -72,7 +72,7 @@ static void call_c_initializers(struct object *o)
   frame.pc=0;
   fp= & frame;
 
-  frame.current_object->refs++;
+  add_ref(frame.current_object);
 
   /* clear globals and call C initializers */
   for(e=p->num_inherits-1; e>=0; e--)
@@ -80,7 +80,7 @@ static void call_c_initializers(struct object *o)
     int d;
 
     frame.context=p->inherits[e];
-    frame.context.prog->refs++;
+    add_ref(frame.context.prog);
     frame.current_storage=o->storage+frame.context.storage_offset;
 
     for(d=0;d<(int)frame.context.prog->num_identifiers;d++)
@@ -154,7 +154,7 @@ struct object *parent_clone_object(struct program *p,
   SET_ONERROR(tmp, do_free_object, o);
   debug_malloc_touch(o);
   o->parent=parent;
-  parent->refs++;
+  add_ref(parent);
   o->parent_identifier=parent_identifier;
   call_c_initializers(o);
   call_pike_initializers(o,args);
@@ -243,7 +243,7 @@ void destruct(struct object *o)
 
   if(!o || !(p=o->prog)) return; /* Object already destructed */
 
-  o->refs++;
+  add_ref(o);
 
   e=FIND_LFUN(o->prog,LFUN_DESTROY);
   if(e != -1)
@@ -287,7 +287,7 @@ void destruct(struct object *o)
     int d;
 
     frame.context=p->inherits[e];
-    frame.context.prog->refs++;
+    add_ref(frame.context.prog);
     frame.current_storage=o->storage+frame.context.storage_offset;
 
     if(frame.context.prog->exit)
@@ -348,7 +348,7 @@ void destruct_objects_to_destruct(void)
     first_object=o;
     o->prev=0;
 
-    o->refs++; /* Don't free me now! */
+    add_ref(o); /* Don't free me now! */
 
     destruct(o);
 
@@ -373,7 +373,7 @@ void really_free_object(struct object *o)
 {
   if(o->prog && (o->prog->flags & PROGRAM_DESTRUCT_IMMEDIATE))
   {
-    o->refs++;
+    add_ref(o);
     destruct(o);
     if(--o->refs > 0) return;
   }
@@ -430,7 +430,7 @@ void low_object_index_no_free(struct svalue *to,
     to->type=T_FUNCTION;
     to->subtype=f;
     to->u.object=o;
-    o->refs++;
+    add_ref(o);
     break;
 
   case IDENTIFIER_CONSTANT:
@@ -442,7 +442,7 @@ void low_object_index_no_free(struct svalue *to,
 	to->type=T_FUNCTION;
 	to->subtype=f;
 	to->u.object=o;
-	o->refs++;
+	add_ref(o);
       }else{
 	check_destructed(s);
 	assign_svalue_no_free(to, s);
@@ -764,12 +764,12 @@ void verify_all_objects(void)
       frame.pc=0;
       fp= & frame;
 
-      frame.current_object->refs++;
+      add_ref(frame.current_object);
 
       for(e=0;e<(int)o->prog->num_inherits;e++)
       {
 	frame.context=o->prog->inherits[e];
-	frame.context.prog->refs++;
+	add_ref(frame.context.prog);
 	frame.current_storage=o->storage+frame.context.storage_offset;
       }
 
@@ -835,7 +835,7 @@ void cleanup_objects(void)
   struct object *o, *next;
   for(o=first_object;o;o=next)
   {
-    o->refs++;
+    add_ref(o);
     destruct(o);
     next=o->next;
     free_object(o);
@@ -914,7 +914,7 @@ void gc_mark_object_as_referenced(struct object *o)
     struct program *p;
 
     if(!o || !(p=o->prog)) return; /* Object already destructed */
-    o->refs++;
+    add_ref(o);
 
     if(o->parent)
       gc_mark_object_as_referenced(o->parent);
@@ -931,7 +931,7 @@ void gc_mark_object_as_referenced(struct object *o)
       int d;
       
       frame.context=p->inherits[e];
-      frame.context.prog->refs++;
+      add_ref(frame.context.prog);
       frame.current_storage=o->storage+frame.context.storage_offset;
 
       if(frame.context.prog->gc_marked)
@@ -972,7 +972,7 @@ void gc_check_all_objects(void)
     int e;
     struct frame frame;
     struct program *p;
-    o->refs++;
+    add_ref(o);
 
 #ifdef DEBUG
     if(o->parent)
@@ -996,7 +996,7 @@ void gc_check_all_objects(void)
 	int d;
 	
 	frame.context=p->inherits[e];
-	frame.context.prog->refs++;
+	add_ref(frame.context.prog);
 	frame.current_storage=o->storage+frame.context.storage_offset;
 	
 	if(frame.context.prog->gc_check)
@@ -1036,7 +1036,7 @@ void gc_mark_all_objects(void)
   {
     if(gc_is_referenced(o))
     {
-      o->refs++;
+      add_ref(o);
       gc_mark_object_as_referenced(o);
       next=o->next;
       free_object(o);
@@ -1054,7 +1054,7 @@ void gc_free_all_unreferenced_objects(void)
   {
     if(gc_do_free(o))
     {
-      o->refs++;
+      add_ref(o);
       destruct(o);
       next=o->next;
       free_object(o);
