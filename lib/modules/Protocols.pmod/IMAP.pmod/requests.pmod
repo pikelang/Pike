@@ -1,6 +1,6 @@
 /* IMAP.requests
  *
- * $Id: requests.pmod,v 1.78 1999/03/28 23:37:44 grubba Exp $
+ * $Id: requests.pmod,v 1.79 1999/03/28 23:42:04 grubba Exp $
  */
 
 import .types;
@@ -309,9 +309,9 @@ class status
 
     if (res) {
       send("*", "STATUS", mailbox, imap_list(res));
-      send(tag, "OK");
+      send(tag, "OK", "STATUS done");
     } else {
-      send(tag, "NO");
+      send(tag, "NO", "STATUS failed");
     }
     return([ "action" : "finished" ]);
   }
