@@ -1,6 +1,6 @@
 #!/usr/local/bin/pike
 
-/* $Id: test_pike.pike,v 1.71 2002/08/20 23:07:33 nilsson Exp $ */
+/* $Id: test_pike.pike,v 1.72 2002/10/01 21:28:44 nilsson Exp $ */
 
 import Stdio;
 
@@ -122,11 +122,11 @@ class WarningFlag {
 #define WATCHDOG_PIPE
 object watchdog_pipe;
 #else
-#if constant(signal) && constant(signum)
+#if constant(kill)
 #define WATCHDOG
 #define WATCHDOG_SIGNAL
 #endif
-#endif	
+#endif
 
 #ifdef WATCHDOG
 object watchdog;
@@ -165,7 +165,7 @@ void run_watchdog(int pid) {
 		  }
 		  exit_quietly=1;
 		});
-#endif
+#endif // WATCHDOG_PIPE
 
 #ifdef WATCHDOG_SIGNAL
   werror("Setting signal (1)\n");
@@ -180,7 +180,7 @@ void run_watchdog(int pid) {
   else {
     exit(1);
   }
-#endif	
+#endif // WATCHDOG_SIGNAL
 
   while(1)
   {
@@ -216,7 +216,7 @@ void run_watchdog(int pid) {
   }
 #else
   _exit(1);
-#endif
+#endif // else WATCHDOG
 }
 
 //
@@ -235,7 +235,6 @@ int main(int argc, array(string) argv)
   string extra_info="";
   int shift;
 
-#if constant(signal) && constant(signum)
   if(signum("SIGQUIT")>=0)
   {
     signal(signum("SIGQUIT"),lambda()
@@ -254,12 +253,11 @@ int main(int argc, array(string) argv)
 	     }
 	   });
   }
-#endif
 
   array(string) args=backtrace()[0][3];
   array(string) testsuites=({});
   args=args[..sizeof(args)-1-argc];
-  add_constant("RUNPIKE",Array.map(args,Process.sh_quote)*" ");
+  add_constant("RUNPIKE", map(args, Process.sh_quote)*" ");
 
   foreach(Getopt.find_all_options(argv,aggregate(
     ({"no-watchdog",Getopt.NO_ARG,({"--no-watchdog"})}),
@@ -367,7 +365,7 @@ int main(int argc, array(string) argv)
   add_constant("__signal_watchdog",signal_watchdog);
 #else
   add_constant("__signal_watchdog",lambda(){});
-#endif
+#endif // else WATCHDOG_PIPE
 
   testsuites += Getopt.get_args(argv, 1)[1..];
   if(!sizeof(testsuites))
@@ -457,7 +455,7 @@ int main(int argc, array(string) argv)
 	string pad_on_error = "\n";
 	if(istty())
         {
-	  if(!verbose) {
+	  if(verbose<2) {
 	    werror("test %d, line %d\r", e+1, testline);
 	    pad_on_error = "                                        \r";
 	  }
@@ -871,9 +869,7 @@ int main(int argc, array(string) argv)
   if(use_watchdog)
   {
     destruct(watchdog_pipe);
-#if constant(signum)
     catch { watchdog->kill(signum("SIGKILL")); };
-#endif
     watchdog->wait();
   }
 #endif
