@@ -26,6 +26,7 @@ testfont binary
 # changes to these files.
 /ANNOUNCE foreign_ident
 /Makefile foreign_ident
+/README-CVS foreign_ident
 /README-CVS.txt foreign_ident
 /bin/export.pike foreign_ident
 /bin/extract.pike foreign_ident
