@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: las.c,v 1.353 2004/11/06 07:35:17 nilsson Exp $
+|| $Id: las.c,v 1.354 2004/12/18 18:06:45 grubba Exp $
 */
 
 #include "global.h"
@@ -56,6 +56,7 @@ int car_is_node(node *n)
   case F_TRAMPOLINE:
   case F_CONSTANT:
   case F_LOCAL:
+  case F_THIS:
     return 0;
 
   default:
@@ -72,6 +73,7 @@ int cdr_is_node(node *n)
   case F_TRAMPOLINE:
   case F_CONSTANT:
   case F_LOCAL:
+  case F_THIS:
     return 0;
 
   default:
@@ -1472,6 +1474,32 @@ node *debug_mkexternalnode(struct program *parent_prog, int i)
 
   return res;
 #endif /* 0 */
+}
+
+node *debug_mkthisnode(struct program *parent_prog, int inherit_num)
+{
+  node *res;
+
+#ifdef PIKE_DEBUG
+  if ((inherit_num < 0) || (inherit_num > 65535)) {
+    Pike_fatal("This is bad: %p, %d\n", parent_prog, inherit_num);
+  }
+#endif /* PIKE_DEBUG */
+
+  res = mkemptynode();
+  res->token = F_THIS;
+  type_stack_mark();
+  push_object_type(1, parent_prog->inherits[inherit_num].prog->id);
+  res->type = pop_unfinished_type();
+  res->tree_info = res->node_info = OPT_NOT_CONST;
+
+#ifdef __CHECKER__
+  _CDR(res) = 0;
+#endif
+  res->u.integer.a = parent_prog->id;
+  res->u.integer.b = inherit_num;
+
+  return freeze_node(res);
 }
 
 node *debug_mkcastnode(struct pike_type *type, node *n)
@@ -5762,7 +5790,7 @@ int dooptcode(struct pike_string *name,
     if(a_flag > 2)
     {
       fputs("Coding: ", stderr);
-      print_tree(check_node_hash(n));
+      /*print_tree(check_node_hash(n));*/
     }
 #endif
     if(!Pike_compiler->num_parse_error)
