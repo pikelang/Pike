@@ -1,4 +1,4 @@
-// $Id: module.pmod,v 1.158 2002/11/23 15:47:58 mast Exp $
+// $Id: module.pmod,v 1.159 2002/11/26 15:01:13 grubba Exp $
 #pike __REAL_VERSION__
 
 inherit files;
@@ -1273,14 +1273,14 @@ class FILE
       input_conversion = output_conversion = 0;
   }
 
-  //! Read one line of input.
+  //! Read one line of input with support for input conversion.
   //!
   //! @returns
   //! This function returns the line read if successful, and @tt{0@} if
   //! no more lines are available.
   //!
   //! @seealso
-  //! @[ngets()], @[read()], @[line_iterator()]
+  //!   @[ngets()], @[read()], @[line_iterator()], @[set_charset()]
   //!
   string gets()
   {
@@ -1395,6 +1395,10 @@ class FILE
     error("Cannot use nonblocking IO with buffered files.\n");
   }
 
+  //! Write @[what] with support for output_conversion.
+  //!
+  //! @seealso
+  //!   @[Stdio.File()->write()]
   int write( array(string)|string what, mixed ... fmt  )
   {
     if( output_conversion )
@@ -1455,6 +1459,10 @@ class FILE
     return _get_iterator();
   }
 
+  //! Read @[bytes] with buffering and support for input conversion.
+  //!
+  //! @seealso
+  //!   @[Stdio.File()->read()], @[set_charset()]
   string read(int|void bytes,void|int(0..1) now)
   {
     cached_lines = ({}); lp = do_lines = 0;
@@ -1463,8 +1471,11 @@ class FILE
     }
 
     /* Optimization - Hubbe */
-    if(!strlen(b) && bytes > BUFSIZE)
+    if(!strlen(b) && bytes > BUFSIZE) {
+      if (input_conversion)
+	return input_conversion(::read(bytes, now));
       return ::read(bytes, now);
+    }
 
     while(strlen(b) - bpos < bytes)
       if(!get_data()) {
