@@ -1,7 +1,7 @@
 /*
 **! module Image
 **! note
-**!	$Id: layers.c,v 1.15 1999/06/03 17:20:13 mirar Exp $
+**!	$Id: layers.c,v 1.16 1999/06/13 11:46:09 mirar Exp $
 **! class Layer
 */
 
@@ -9,7 +9,7 @@
 
 #include <math.h> /* floor */
 
-RCSID("$Id: layers.c,v 1.15 1999/06/03 17:20:13 mirar Exp $");
+RCSID("$Id: layers.c,v 1.16 1999/06/13 11:46:09 mirar Exp $");
 
 #include "image_machine.h"
 
@@ -1516,7 +1516,7 @@ static void lm_erase(rgb_group *s,rgb_group *l,rgb_group *d,
 
 /*** the add-layer function ***************************/
 
-static void INLINE img_lay_first_line(struct layer *l,
+static INLINE void img_lay_first_line(struct layer *l,
 				      int xoffs,int xsize,
 				      int y, /* in _this_ layer */
 				      rgb_group *d,rgb_group *da)
