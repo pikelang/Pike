@@ -4,7 +4,7 @@
 ||| See the files COPYING and DISCLAIMER for more information.
 \*/
 #include "global.h"
-RCSID("$Id: builtin_functions.c,v 1.48 1997/10/14 10:00:01 hubbe Exp $");
+RCSID("$Id: builtin_functions.c,v 1.49 1997/10/22 02:36:31 hubbe Exp $");
 #include "interpret.h"
 #include "svalue.h"
 #include "pike_macros.h"
@@ -303,7 +303,7 @@ void f_backtrace(INT32 args)
 
     frames--;
 
-    if(f->current_object && f->current_object->prog)
+    if(f->current_object && f->context.prog)
     {
       INT32 args;
       args=f->num_args;
@@ -315,10 +315,17 @@ void f_backtrace(INT32 args)
       ITEM(a)[frames].u.array=i=allocate_array_no_init(3+args,0);
       ITEM(a)[frames].type=T_ARRAY;
       assign_svalues_no_free(ITEM(i)+3, f->locals, args, BIT_MIXED);
-      ITEM(i)[2].type=T_FUNCTION;
-      ITEM(i)[2].subtype=f->fun;
-      ITEM(i)[2].u.object=f->current_object;
-      f->current_object->refs++;
+      if(f->current_object->prog)
+      {
+	ITEM(i)[2].type=T_FUNCTION;
+	ITEM(i)[2].subtype=f->fun;
+	ITEM(i)[2].u.object=f->current_object;
+	f->current_object->refs++;
+      }else{
+	ITEM(i)[2].type=T_INT;
+	ITEM(i)[2].subtype=NUMBER_DESTRUCTED;
+	ITEM(i)[2].u.integer=0;
+      }
 
       if(f->pc)
       {
