@@ -1,3 +1,8 @@
+/*\
+||| This file a part of uLPC, and is copyright by Fredrik Hubinette
+||| uLPC is distributed as GPL (General Public License)
+||| See the files COPYING and DISCLAIMER for more information.
+\*/
 #include "global.h"
 #include "interpret.h"
 #include "object.h"
@@ -17,6 +22,7 @@
 #include "main.h"
 #include "lex.h"
 #include "builtin_efuns.h"
+#include "lpc_signal.h"
 
 #define TRACE_LEN 256
 struct svalue evaluator_stack[EVALUATOR_STACK_SIZE];
@@ -291,7 +297,7 @@ void dump_backlog()
 	      (long)backlog[e].arg);
     }
   }while(e!=backlogp);
-};
+}
 
 #endif
 
@@ -865,7 +871,7 @@ void apply_low(struct object *o, int fun, int args)
 
   ref = p->identifier_references + fun;
 #ifdef DEBUG
-  if(ref->inherit_offset<0 || ref->inherit_offset>=p->num_inherits)
+  if(ref->inherit_offset>=p->num_inherits)
     fatal("Inherit offset out of range in program.\n");
 #endif
 
@@ -937,7 +943,11 @@ void apply_low(struct object *o, int fun, int args)
 
   if(function->flags & IDENTIFIER_C_FUNCTION)
   {
+#if 0
     function->func.c_fun(args);
+#else
+    (*function->func.c_fun)(args);
+#endif
   }else{
     int num_args;
     int num_locals;
@@ -1144,9 +1154,23 @@ void strict_apply_svalue(struct svalue *s, INT32 args)
   {
   case T_FUNCTION:
     if(s->subtype == -1)
+    {
+      struct svalue *expected_sp=sp-args+1;
       (*(s->u.efun->function))(args);
-    else
+      if(sp > expected_sp)
+      {
+	pop_n_elems(sp-expected_sp);
+      }
+      else if(sp < expected_sp)
+      {
+	push_int(0);
+      }
+#ifdef DEBUG
+      if(sp < expected_sp) fatal("Stack underflow!\n");
+#endif
+    }else{
       apply_low(s->u.object, s->subtype, args);
+    }
     break;
 
   case T_ARRAY:

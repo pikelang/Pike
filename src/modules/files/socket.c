@@ -1,3 +1,8 @@
+/*\
+||| This file a part of uLPC, and is copyright by Fredrik Hubinette
+||| uLPC is distributed as GPL (General Public License)
+||| See the files COPYING and DISCLAIMER for more information.
+\*/
 #include "global.h"
 #include "types.h"
 #include "interpret.h"
@@ -20,7 +25,6 @@
 #include <sys/wait.h>
 #include <sys/socket.h>
 
-
 #ifdef HAVE_SYS_STREAM_H
 #include <sys/stream.h>
 #endif
@@ -31,6 +35,13 @@
 
 #ifdef HAVE_SYS_SOCKETVAR_H
 #include <sys/socketvar.h>
+#endif
+
+#ifdef SOLARIS
+#include <synch.h>
+#include <sys/mman.h>
+
+mutex_t *locks;
 #endif
 
 struct port
@@ -172,8 +183,10 @@ static void port_bind(INT32 args)
     push_int(0);
     return;
   }
+
   set_close_on_exec(fd,1);
-  
+
+
   if(args > 2 && sp[2-args].type==T_STRING)
   {
     get_inet_addr(&addr, sp[2-args].u.string->str);
@@ -252,7 +265,14 @@ static void port_accept(INT32 args)
   if(THIS->fd < 0)
     error("port->accept(): Port not open.\n");
 
+#ifdef SOLARIS
+  mutex_lock(locks+THIS->fd);
   fd=accept(THIS->fd, 0, &len);
+  mutex_unlock(locks+THIS->fd);
+#else
+  fd=accept(THIS->fd, 0, &len);
+#endif
+
   if(fd < 0)
   {
     THIS->errno=errno;
@@ -307,6 +327,41 @@ static void exit_port_struct(char *foo, struct object *o)
 
 void port_setup_program()
 {
+#ifdef SOLARIS
+  /* Note:
+   * This hack is because solaris accept() isn't atomic and problems arise
+   * when several processes do accept() on the same fd IF that fd is
+   * nonblocking. This patch puts an atomic mutex lock around accept().
+   * We allocate one lock / filedescriptor with mmap, and use MAP_SHARED
+   * so they are shared across fork()... For people who doesn't use fork()
+   * or nonblocking sockets this patch won't do anything.
+   *
+   * This is an ugly workaround (tm)  /Fredrik Hubinette
+   */
+  int i;
+  i=open("/dev/zero",O_RDWR);
+  if(i<0)
+  {
+    perror("Failed to open /dev/zero");
+    exit(5);
+  }
+  locks=(mutex_t *)mmap(0, sizeof(mutex_t)*MAX_OPEN_FILEDESCRIPTORS,
+			PROT_READ | PROT_WRITE, MAP_SHARED, i, 0);
+  if(!locks)
+  {
+    perror("Failed to mmap /dev/zero");
+    exit(5);
+  }
+  close(i);
+  for(i=0;i<MAX_OPEN_FILEDESCRIPTORS;i++)
+  {
+    if(mutex_init(locks+i,USYNC_PROCESS,0))
+    {
+      perror("Mutex init failed");
+      exit(5);
+    }
+  }
+#endif
   start_new_program();
   add_storage(sizeof(struct port));
   add_function("bind",port_bind,"function(int,void|mixed:int)",0);

@@ -3,13 +3,14 @@
 ||| uLPC is distributed as GPL (General Public License)
 ||| See the files COPYING and DISCLAIMER for more information.
 \*/
-#ifndef FD_CONTROL_H
-#define FD_CONTROL_H
+#ifndef SIGNAL_H
+#define SIGNAL_H
 
 /* Prototypes begin here */
-void set_nonblocking(int fd,int which);
-int query_nonblocking(int fd);
-int set_close_on_exec(int fd, int which);
+struct sigdesc;
+void check_signals();
+void init_signals();
+void exit_signals();
 /* Prototypes end here */
 
 #endif

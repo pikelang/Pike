@@ -1,3 +1,8 @@
+/*\
+||| This file a part of uLPC, and is copyright by Fredrik Hubinette
+||| uLPC is distributed as GPL (General Public License)
+||| See the files COPYING and DISCLAIMER for more information.
+\*/
 #include "global.h"
 #include "types.h"
 #include "interpret.h"
@@ -196,7 +201,7 @@ void f_getcwd(INT32 args)
 
 #ifdef HAVE_GETWD
 #ifndef MAXPATHLEN
-#define MAXPATHLEN (1024*20)
+#define MAXPATHLEN (32768)
 #endif
   e=(char *)getwd((char *)malloc(MAXPATHLEN+1));
   if(!e)
@@ -243,6 +248,7 @@ void f_exece(INT32 args)
     error("Too few arguments to exece().\n");
 
   e=0;
+  en=0;
   switch(args)
   {
   default:
@@ -282,7 +288,7 @@ void f_exece(INT32 args)
   }
   argv[e+1]=0;
 
-  if(args>2)
+  if(en)
   {
     env=(char **)xalloc((1+en->ind->size) * sizeof(char *));
 

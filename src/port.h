@@ -1,3 +1,8 @@
+/*\
+||| This file a part of uLPC, and is copyright by Fredrik Hubinette
+||| uLPC is distributed as GPL (General Public License)
+||| See the files COPYING and DISCLAIMER for more information.
+\*/
 #ifndef PORT_H
 #define PORT_H
 
@@ -17,6 +22,12 @@ double STRTOD(char * nptr, char **endptr);
 
 #ifndef HAVE_STRCSPN
 int STRCSPN(const char *s,const char * set);
+#else
+#  define STRCSPN strcspn
+#endif
+
+#ifndef HAVE_STRCASECMP
+int STRCASECMP(const char *a,const char *b);
 #else
 #  define STRCSPN strcspn
 #endif
@@ -42,7 +53,7 @@ char *MEMCPY(char *b,const char *a,int s);
 #ifndef HAVE_MEMMOVE
 char *MEMMOVE(char *b,const char *a,int s);
 #else
-#  define MEMCPY memmove
+#  define MEMMOVE memmove
 #endif
 
 #ifndef HAVE_MEMCMP

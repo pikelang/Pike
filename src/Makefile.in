@@ -66,7 +66,7 @@ OBJ=language.o add_efun.o array.o builtin_efuns.o backend.o \
     fsort.o hashtable.o interpret.o lex.o las.o list.o \
     lpc_types.o main.o mapping.o memory.o module.o object.o \
     opcodes.o operators.o port.o program.o rusage.o stralloc.o \
-    stuff.o svalue.o debug.o callback.o
+    stuff.o svalue.o debug.o callback.o lpc_signal.o
 
 #
 MODULES=@subdirs@
@@ -129,8 +129,7 @@ tidy:
 clean: tidy
 	-for a in $(MODULES) ; do ( cd $$a ; ${MAKE} $(MAKE_FLAGS) clean ) ; done
 	-for a in $(MODULES) ; do rm -f $$a/*.o ; done
-	-rm -f language.h language.c efun_protos.h opc_cost.h
-	-rm -f TAGS tags
+	-rm -f language.h language.c TAGS tags
 	-rm -f yacc.acts yacc.debug yacc.tmp *.debug.log a.out
 
 spotless: clean
@@ -166,206 +165,244 @@ verify: $(TMP_LIBDIR)/testsuite.lpc
 verbose_verify: $(TMP_LIBDIR)/testsuite.lpc
 	./ulpc -m $(TMP_LIBDIR)/master.lpc $(TMP_LIBDIR)/testsuite.lpc --verbose
 
+gdb_verify: $(TMP_LIBDIR)/testsuite.lpc
+	echo >.gdbinit handle SIGUSR1 nostop noprint pass
+	echo >>.gdbinit run -m $(TMP_LIBDIR)/master.lpc $(TMP_LIBDIR)/testsuite.lpc -v -v -f
+	gdb ./ulpc
+ 
+run_hilfe:
+	./ulpc -m $(TMP_LIBDIR)/master.lpc $(TMP_BINDIR)/hilfe
+ 
+
 depend: language.c
-	gcc -MM $(PREFLAGS) *.c $(SRCDIR)/*.c >$(SRCDIR)/dependencies
+	gcc -MM $(PREFLAGS) *.c $(SRCDIR)/*.c | sed 's;$(SRCDIR)/;;g' | sed 's;\./;;g' >$(SRCDIR)/dependencies
 	cat $(SRCDIR)/Makefile.in.src $(SRCDIR)/dependencies > $(SRCDIR)/Makefile.in
 	config.status
 	for a in $(MODULES) ; do ( cd $$a ; ${MAKE} $(MAKE_FLAGS) depend ) ; done
 
-add_efun.o: add_efun.c add_efun.h svalue.h types.h machine.h \
- hashtable.h macros.h memory.h program.h config.h lpc_types.h \
- stralloc.h interpret.h
+add_efun.o: add_efun.c add_efun.h \
+ svalue.h types.h machine.h \
+ hashtable.h las.h config.h \
+ dynamic_buffer.h program.h \
+ macros.h memory.h \
+ lpc_types.h stralloc.h \
+ interpret.h
 alloca.o: alloca.c
-array.o: array.c global.h config.h machine.h port.h types.h svalue.h \
- array.h las.h dynamic_buffer.h program.h object.h stralloc.h \
- interpret.h language.h error.h lpc_types.h fsort.h builtin_efuns.h \
- memory.h
-backend.o: backend.c global.h config.h machine.h port.h types.h \
- interpret.h program.h object.h svalue.h error.h call_out.h backend.h \
- fd_control.h main.h debug.h callback.h array.h las.h dynamic_buffer.h
-builtin_efuns.o: builtin_efuns.c global.h config.h machine.h port.h \
- types.h interpret.h program.h svalue.h macros.h memory.h object.h \
- array.h las.h dynamic_buffer.h error.h add_efun.h hashtable.h \
- mapping.h stralloc.h lex.h list.h lpc_types.h rusage.h operators.h \
- fsort.h call_out.h callback.h
-call_out.o: call_out.c global.h config.h machine.h port.h types.h \
- array.h las.h svalue.h dynamic_buffer.h program.h call_out.h object.h \
- interpret.h error.h builtin_efuns.h memory.h
-callback.o: callback.c macros.h memory.h types.h machine.h callback.h \
- array.h las.h config.h svalue.h dynamic_buffer.h program.h
-debug.o: debug.c global.h config.h machine.h port.h types.h memory.h
-docode.o: docode.c global.h config.h machine.h port.h types.h las.h \
- svalue.h dynamic_buffer.h program.h language.h lpc_types.h stralloc.h \
- interpret.h add_efun.h hashtable.h array.h macros.h memory.h error.h \
- main.h lex.h builtin_efuns.h
-dynamic_buffer.o: dynamic_buffer.c global.h config.h machine.h port.h \
- types.h dynamic_buffer.h stralloc.h error.h svalue.h memory.h
-error.o: error.c global.h config.h machine.h port.h types.h macros.h \
- memory.h error.h svalue.h interpret.h program.h stralloc.h \
- builtin_efuns.h array.h las.h dynamic_buffer.h object.h
-fd_control.o: fd_control.c fd_control.h global.h config.h machine.h \
- port.h types.h
-fsort.o: fsort.c global.h config.h machine.h port.h types.h fsort.h
-hashtable.o: hashtable.c hashtable.h types.h machine.h stralloc.h \
- config.h stuff.h error.h svalue.h
-interpret.o: interpret.c global.h config.h machine.h port.h types.h \
- interpret.h program.h object.h svalue.h array.h las.h \
- dynamic_buffer.h mapping.h error.h language.h stralloc.h add_efun.h \
- hashtable.h macros.h memory.h list.h backend.h operators.h opcodes.h \
- main.h lex.h builtin_efuns.h
-language.o: language.c ./global.h ./config.h ./machine.h ./port.h \
- ./interpret.h ./program.h ./array.h ./las.h ./svalue.h \
- ./dynamic_buffer.h ./object.h ./stralloc.h ./lex.h ./lpc_types.h \
- ./add_efun.h ./hashtable.h ./macros.h ./error.h ./docode.h
-las.o: las.c global.h config.h machine.h port.h types.h language.h \
- interpret.h program.h las.h svalue.h dynamic_buffer.h array.h \
- object.h stralloc.h lex.h lpc_types.h add_efun.h hashtable.h \
- mapping.h list.h error.h docode.h main.h memory.h
-lex.o: lex.c global.h config.h machine.h port.h types.h language.h \
- array.h las.h svalue.h dynamic_buffer.h program.h lex.h stralloc.h \
- add_efun.h hashtable.h stuff.h memory.h interpret.h error.h object.h \
- operators.h opcodes.h builtin_efuns.h macros.h
-list.o: list.c global.h config.h machine.h port.h types.h array.h \
- las.h svalue.h dynamic_buffer.h program.h list.h macros.h memory.h \
- error.h interpret.h builtin_efuns.h
-lpc_types.o: lpc_types.c global.h config.h machine.h port.h types.h \
- svalue.h lpc_types.h stralloc.h stuff.h array.h las.h \
- dynamic_buffer.h program.h add_efun.h hashtable.h object.h list.h \
- mapping.h macros.h memory.h error.h
-main.o: main.c global.h config.h machine.h port.h types.h backend.h \
- module.h object.h svalue.h lex.h lpc_types.h builtin_efuns.h array.h \
- las.h dynamic_buffer.h program.h stralloc.h interpret.h error.h \
- macros.h memory.h callback.h
-mapping.o: mapping.c global.h config.h machine.h port.h types.h \
- mapping.h las.h svalue.h dynamic_buffer.h program.h array.h macros.h \
- memory.h language.h error.h interpret.h
-memory.o: memory.c global.h config.h machine.h port.h types.h memory.h \
+array.o: array.c global.h \
+ machine.h config.h debug.h \
+ port.h svalue.h array.h \
+ las.h dynamic_buffer.h \
+ program.h object.h \
+ stralloc.h interpret.h \
+ language.h error.h \
+ lpc_types.h fsort.h \
+ builtin_efuns.h
+backend.o: backend.c global.h \
+ machine.h config.h debug.h \
+ port.h interpret.h \
+ program.h object.h svalue.h \
+ error.h call_out.h \
+ backend.h fd_control.h \
+ main.h callback.h array.h \
+ las.h dynamic_buffer.h
+builtin_efuns.o: builtin_efuns.c global.h \
+ machine.h config.h debug.h \
+ port.h interpret.h \
+ program.h svalue.h macros.h \
+ object.h array.h las.h \
+ dynamic_buffer.h error.h \
+ add_efun.h hashtable.h \
+ mapping.h stralloc.h lex.h \
+ list.h lpc_types.h rusage.h \
+ operators.h fsort.h \
+ call_out.h callback.h
+call_out.o: call_out.c global.h \
+ machine.h config.h debug.h \
+ port.h array.h las.h \
+ svalue.h dynamic_buffer.h \
+ program.h call_out.h \
+ object.h interpret.h \
+ error.h builtin_efuns.h
+callback.o: callback.c macros.h \
+ memory.h types.h machine.h \
+ callback.h array.h las.h \
+ config.h svalue.h \
+ dynamic_buffer.h program.h
+debug.o: debug.c global.h \
+ machine.h config.h debug.h \
+ port.h
+docode.o: docode.c global.h \
+ machine.h config.h debug.h \
+ port.h las.h svalue.h \
+ dynamic_buffer.h program.h \
+ language.h lpc_types.h \
+ stralloc.h interpret.h \
+ add_efun.h hashtable.h \
+ array.h macros.h error.h \
+ main.h lex.h \
+ builtin_efuns.h
+dynamic_buffer.o: dynamic_buffer.c \
+ global.h machine.h config.h \
+ debug.h port.h \
+ dynamic_buffer.h stralloc.h \
  error.h svalue.h
-module.o: module.c module.h types.h machine.h macros.h memory.h \
- error.h svalue.h modlist.h
-object.o: object.c global.h config.h machine.h port.h types.h object.h \
- svalue.h dynamic_buffer.h interpret.h program.h stralloc.h macros.h \
- memory.h error.h main.h
-opcodes.o: opcodes.c global.h config.h machine.h port.h types.h \
- interpret.h program.h svalue.h array.h las.h dynamic_buffer.h \
- stralloc.h mapping.h list.h opcodes.h object.h error.h lpc_types.h
-operators.o: operators.c global.h config.h machine.h port.h types.h \
- interpret.h program.h svalue.h list.h las.h dynamic_buffer.h \
- mapping.h array.h stralloc.h opcodes.h operators.h language.h \
- memory.h error.h
-port.o: port.c global.h config.h machine.h port.h types.h macros.h \
- memory.h
-program.o: program.c global.h config.h machine.h port.h types.h \
- program.h object.h svalue.h dynamic_buffer.h lpc_types.h stralloc.h \
- las.h language.h lex.h macros.h memory.h fsort.h error.h docode.h \
- interpret.h hashtable.h
-rusage.o: rusage.c global.h config.h machine.h port.h types.h rusage.h
-stralloc.o: stralloc.c global.h config.h machine.h port.h types.h \
- stralloc.h macros.h memory.h dynamic_buffer.h error.h svalue.h
-stuff.o: stuff.c stuff.h types.h machine.h
-svalue.o: svalue.c global.h config.h machine.h port.h types.h svalue.h \
- stralloc.h array.h las.h dynamic_buffer.h program.h mapping.h list.h \
- object.h add_efun.h hashtable.h error.h
+error.o: error.c global.h \
+ machine.h config.h debug.h \
+ port.h macros.h error.h \
+ svalue.h interpret.h \
+ program.h stralloc.h \
+ builtin_efuns.h array.h \
+ las.h dynamic_buffer.h \
+ object.h
+fd_control.o: fd_control.c fd_control.h \
+ global.h machine.h config.h \
+ debug.h port.h
+fsort.o: fsort.c global.h \
+ machine.h config.h debug.h \
+ port.h fsort.h
+hashtable.o: hashtable.c hashtable.h \
+ types.h machine.h \
+ stralloc.h config.h stuff.h \
+ error.h svalue.h
+interpret.o: interpret.c global.h \
+ machine.h config.h debug.h \
+ port.h interpret.h \
+ program.h object.h svalue.h \
+ array.h las.h \
+ dynamic_buffer.h mapping.h \
+ error.h language.h \
+ stralloc.h add_efun.h \
+ hashtable.h macros.h list.h \
+ backend.h operators.h \
+ opcodes.h main.h lex.h \
+ builtin_efuns.h lpc_signal.h
+language.o: language.c global.h \
+ machine.h config.h debug.h \
+ port.h interpret.h \
+ program.h array.h las.h \
+ svalue.h dynamic_buffer.h \
+ object.h stralloc.h lex.h \
+ lpc_types.h add_efun.h \
+ hashtable.h macros.h \
+ error.h docode.h
+las.o: las.c global.h \
+ machine.h config.h debug.h \
+ port.h language.h \
+ interpret.h program.h las.h \
+ svalue.h dynamic_buffer.h \
+ array.h object.h stralloc.h \
+ lex.h lpc_types.h \
+ add_efun.h hashtable.h \
+ mapping.h list.h error.h \
+ docode.h main.h
+lex.o: lex.c global.h \
+ machine.h config.h debug.h \
+ port.h language.h array.h \
+ las.h svalue.h \
+ dynamic_buffer.h program.h \
+ lex.h stralloc.h add_efun.h \
+ hashtable.h stuff.h \
+ interpret.h error.h \
+ object.h operators.h \
+ opcodes.h builtin_efuns.h \
+ macros.h
+list.o: list.c global.h \
+ machine.h config.h debug.h \
+ port.h array.h las.h \
+ svalue.h dynamic_buffer.h \
+ program.h list.h macros.h \
+ error.h interpret.h \
+ builtin_efuns.h
+lpc_signal.o: lpc_signal.c global.h \
+ machine.h config.h debug.h \
+ port.h svalue.h interpret.h \
+ program.h stralloc.h \
+ add_efun.h hashtable.h \
+ las.h dynamic_buffer.h \
+ macros.h backend.h
+lpc_types.o: lpc_types.c global.h \
+ machine.h config.h debug.h \
+ port.h svalue.h lpc_types.h \
+ stralloc.h stuff.h array.h \
+ las.h dynamic_buffer.h \
+ program.h add_efun.h \
+ hashtable.h object.h list.h \
+ mapping.h macros.h error.h
+main.o: main.c global.h \
+ machine.h config.h debug.h \
+ port.h backend.h module.h \
+ object.h svalue.h lex.h \
+ lpc_types.h builtin_efuns.h \
+ array.h las.h \
+ dynamic_buffer.h program.h \
+ stralloc.h interpret.h \
+ error.h macros.h callback.h \
+ lpc_signal.h
+mapping.o: mapping.c global.h \
+ machine.h config.h debug.h \
+ port.h mapping.h las.h \
+ svalue.h dynamic_buffer.h \
+ program.h array.h macros.h \
+ language.h error.h \
+ interpret.h
+memory.o: memory.c global.h \
+ machine.h config.h debug.h \
+ port.h error.h svalue.h
+module.o: module.c module.h \
+ types.h machine.h macros.h \
+ memory.h error.h svalue.h \
+ modlist.h
+object.o: object.c global.h \
+ machine.h config.h debug.h \
+ port.h object.h svalue.h \
+ dynamic_buffer.h interpret.h \
+ program.h stralloc.h \
+ macros.h error.h main.h
+opcodes.o: opcodes.c global.h \
+ machine.h config.h debug.h \
+ port.h interpret.h \
+ program.h svalue.h array.h \
+ las.h dynamic_buffer.h \
+ stralloc.h mapping.h list.h \
+ opcodes.h object.h error.h \
+ lpc_types.h
+operators.o: operators.c global.h \
+ machine.h config.h debug.h \
+ port.h interpret.h \
+ program.h svalue.h list.h \
+ las.h dynamic_buffer.h \
+ mapping.h array.h \
+ stralloc.h opcodes.h \
+ operators.h language.h \
+ error.h
+port.o: port.c global.h \
+ machine.h config.h debug.h \
+ port.h macros.h
+program.o: program.c global.h \
+ machine.h config.h debug.h \
+ port.h program.h object.h \
+ svalue.h dynamic_buffer.h \
+ lpc_types.h stralloc.h \
+ las.h language.h lex.h \
+ macros.h fsort.h error.h \
+ docode.h interpret.h \
+ hashtable.h
+rusage.o: rusage.c global.h \
+ machine.h config.h debug.h \
+ port.h rusage.h
+stralloc.o: stralloc.c global.h \
+ machine.h config.h debug.h \
+ port.h stralloc.h macros.h \
+ dynamic_buffer.h error.h \
+ svalue.h
+stuff.o: stuff.c stuff.h \
+ types.h machine.h
+svalue.o: svalue.c global.h \
+ machine.h config.h debug.h \
+ port.h svalue.h stralloc.h \
+ array.h las.h \
+ dynamic_buffer.h program.h \
+ mapping.h list.h object.h \
+ add_efun.h hashtable.h \
+ error.h
 ualarm.o: ualarm.c
-add_efun.o: ./add_efun.c ./add_efun.h ./svalue.h ./types.h ./machine.h \
- ./hashtable.h ./macros.h ./memory.h ./program.h ./config.h \
- ./lpc_types.h ./stralloc.h ./interpret.h
-alloca.o: ./alloca.c
-array.o: ./array.c ./global.h ./config.h ./machine.h ./port.h \
- ./svalue.h ./array.h ./las.h ./dynamic_buffer.h ./program.h \
- ./object.h ./stralloc.h ./interpret.h ./language.h ./error.h \
- ./lpc_types.h ./fsort.h ./builtin_efuns.h
-backend.o: ./backend.c ./global.h ./config.h ./machine.h ./port.h \
- ./interpret.h ./program.h ./object.h ./svalue.h ./error.h \
- ./call_out.h ./backend.h ./fd_control.h ./main.h ./debug.h \
- ./callback.h ./array.h ./las.h ./dynamic_buffer.h
-builtin_efuns.o: ./builtin_efuns.c ./global.h ./config.h ./machine.h \
- ./port.h ./interpret.h ./program.h ./svalue.h ./macros.h ./object.h \
- ./array.h ./las.h ./dynamic_buffer.h ./error.h ./add_efun.h \
- ./hashtable.h ./mapping.h ./stralloc.h ./lex.h ./list.h ./lpc_types.h \
- ./rusage.h ./operators.h ./fsort.h ./call_out.h ./callback.h
-call_out.o: ./call_out.c ./global.h ./config.h ./machine.h ./port.h \
- ./array.h ./las.h ./svalue.h ./dynamic_buffer.h ./program.h \
- ./call_out.h ./object.h ./interpret.h ./error.h ./builtin_efuns.h
-callback.o: ./callback.c ./macros.h ./memory.h ./types.h ./machine.h \
- ./callback.h ./array.h ./las.h ./config.h ./svalue.h \
- ./dynamic_buffer.h ./program.h
-debug.o: ./debug.c ./global.h ./config.h ./machine.h ./port.h
-docode.o: ./docode.c ./global.h ./config.h ./machine.h ./port.h \
- ./las.h ./svalue.h ./dynamic_buffer.h ./program.h ./language.h \
- ./lpc_types.h ./stralloc.h ./interpret.h ./add_efun.h ./hashtable.h \
- ./array.h ./macros.h ./error.h ./main.h ./lex.h ./builtin_efuns.h
-dynamic_buffer.o: ./dynamic_buffer.c ./global.h ./config.h ./machine.h \
- ./port.h ./dynamic_buffer.h ./stralloc.h ./error.h ./svalue.h
-error.o: ./error.c ./global.h ./config.h ./machine.h ./port.h \
- ./macros.h ./error.h ./svalue.h ./interpret.h ./program.h \
- ./stralloc.h ./builtin_efuns.h ./array.h ./las.h ./dynamic_buffer.h \
- ./object.h
-fd_control.o: ./fd_control.c ./fd_control.h ./global.h ./config.h \
- ./machine.h ./port.h
-fsort.o: ./fsort.c ./global.h ./config.h ./machine.h ./port.h \
- ./fsort.h
-hashtable.o: ./hashtable.c ./hashtable.h ./types.h ./machine.h \
- ./stralloc.h ./config.h ./stuff.h ./error.h ./svalue.h
-interpret.o: ./interpret.c ./global.h ./config.h ./machine.h ./port.h \
- ./interpret.h ./program.h ./object.h ./svalue.h ./array.h ./las.h \
- ./dynamic_buffer.h ./mapping.h ./error.h ./language.h ./stralloc.h \
- ./add_efun.h ./hashtable.h ./macros.h ./list.h ./backend.h \
- ./operators.h ./opcodes.h ./main.h ./lex.h ./builtin_efuns.h
-language.o: ./language.c ./global.h ./config.h ./machine.h ./port.h \
- ./interpret.h ./program.h ./array.h ./las.h ./svalue.h \
- ./dynamic_buffer.h ./object.h ./stralloc.h ./lex.h ./lpc_types.h \
- ./add_efun.h ./hashtable.h ./macros.h ./error.h ./docode.h
-las.o: ./las.c ./global.h ./config.h ./machine.h ./port.h ./language.h \
- ./interpret.h ./program.h ./las.h ./svalue.h ./dynamic_buffer.h \
- ./array.h ./object.h ./stralloc.h ./lex.h ./lpc_types.h ./add_efun.h \
- ./hashtable.h ./mapping.h ./list.h ./error.h ./docode.h ./main.h
-lex.o: ./lex.c ./global.h ./config.h ./machine.h ./port.h ./language.h \
- ./array.h ./las.h ./svalue.h ./dynamic_buffer.h ./program.h ./lex.h \
- ./stralloc.h ./add_efun.h ./hashtable.h ./stuff.h ./interpret.h \
- ./error.h ./object.h ./operators.h ./opcodes.h ./builtin_efuns.h \
- ./macros.h
-list.o: ./list.c ./global.h ./config.h ./machine.h ./port.h ./array.h \
- ./las.h ./svalue.h ./dynamic_buffer.h ./program.h ./list.h ./macros.h \
- ./error.h ./interpret.h ./builtin_efuns.h
-lpc_types.o: ./lpc_types.c ./global.h ./config.h ./machine.h ./port.h \
- ./svalue.h ./lpc_types.h ./stralloc.h ./stuff.h ./array.h ./las.h \
- ./dynamic_buffer.h ./program.h ./add_efun.h ./hashtable.h ./object.h \
- ./list.h ./mapping.h ./macros.h ./error.h
-main.o: ./main.c ./global.h ./config.h ./machine.h ./port.h \
- ./backend.h ./module.h ./object.h ./svalue.h ./lex.h ./lpc_types.h \
- ./builtin_efuns.h ./array.h ./las.h ./dynamic_buffer.h ./program.h \
- ./stralloc.h ./interpret.h ./error.h ./macros.h ./callback.h
-mapping.o: ./mapping.c ./global.h ./config.h ./machine.h ./port.h \
- ./mapping.h ./las.h ./svalue.h ./dynamic_buffer.h ./program.h \
- ./array.h ./macros.h ./language.h ./error.h ./interpret.h
-memory.o: ./memory.c ./global.h ./config.h ./machine.h ./port.h \
- ./error.h ./svalue.h
-module.o: ./module.c ./module.h ./types.h ./machine.h ./macros.h \
- ./memory.h ./error.h ./svalue.h ./modlist.h
-object.o: ./object.c ./global.h ./config.h ./machine.h ./port.h \
- ./object.h ./svalue.h ./dynamic_buffer.h ./interpret.h ./program.h \
- ./stralloc.h ./macros.h ./error.h ./main.h
-opcodes.o: ./opcodes.c ./global.h ./config.h ./machine.h ./port.h \
- ./interpret.h ./program.h ./svalue.h ./array.h ./las.h \
- ./dynamic_buffer.h ./stralloc.h ./mapping.h ./list.h ./opcodes.h \
- ./object.h ./error.h ./lpc_types.h
-operators.o: ./operators.c ./global.h ./config.h ./machine.h ./port.h \
- ./interpret.h ./program.h ./svalue.h ./list.h ./las.h \
- ./dynamic_buffer.h ./mapping.h ./array.h ./stralloc.h ./opcodes.h \
- ./operators.h ./language.h ./error.h
-port.o: ./port.c ./global.h ./config.h ./machine.h ./port.h ./macros.h
-program.o: ./program.c ./global.h ./config.h ./machine.h ./port.h \
- ./program.h ./object.h ./svalue.h ./dynamic_buffer.h ./lpc_types.h \
- ./stralloc.h ./las.h ./language.h ./lex.h ./macros.h ./fsort.h \
- ./error.h ./docode.h ./interpret.h ./hashtable.h
-rusage.o: ./rusage.c ./global.h ./config.h ./machine.h ./port.h \
- ./rusage.h
-stralloc.o: ./stralloc.c ./global.h ./config.h ./machine.h ./port.h \
- ./stralloc.h ./macros.h ./dynamic_buffer.h ./error.h ./svalue.h
-stuff.o: ./stuff.c ./stuff.h ./types.h ./machine.h
-svalue.o: ./svalue.c ./global.h ./config.h ./machine.h ./port.h \
- ./svalue.h ./stralloc.h ./array.h ./las.h ./dynamic_buffer.h \
- ./program.h ./mapping.h ./list.h ./object.h ./add_efun.h \
- ./hashtable.h ./error.h
-ualarm.o: ./ualarm.c

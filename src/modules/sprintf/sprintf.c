@@ -1,3 +1,8 @@
+/*\
+||| This file a part of uLPC, and is copyright by Fredrik Hubinette
+||| uLPC is distributed as GPL (General Public License)
+||| See the files COPYING and DISCLAIMER for more information.
+\*/
 /*
   LPC Sprintf v2.0 By Fredrik Hubinette (Profezzorn@nannymud)
   Should be reasonably compatible and somewhat faster than v1.05+ of Lynscar's

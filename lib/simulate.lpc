@@ -172,7 +172,15 @@ string popen(string s)
     string t;
     destruct(p);
     t=read(0x7fffffff);
-    close();
+    if(!t)
+    {
+      int e;
+      e=errno();
+      close();
+      error("Popen failed with error "+e+".\n");
+    }else{
+      close();
+    }
     return t;
   }
 }
@@ -199,7 +207,7 @@ varargs int spawn(string s,object stdin,object stdout,object stderr)
       stderr->dup2(clone(f,"stderr"));
 
     exec("/bin/sh","-c",s);
-    exit(0);
+    exit(69);
   }
 }
 
@@ -340,7 +348,7 @@ void create()
   add_efun("strstr",search);
   add_efun("sum_arrays",sum_arrays);
   add_efun("this_function",this_function);
-  add_efun("version",lambda() { return "uLPC v1.0E-20"; }); /* for now */
+  add_efun("version",lambda() { return "uLPC v1.1E-16"; });
   add_efun("write_file",write_file);
   add_efun("get_function",get_function);
   add_efun("regexp",regexp);

@@ -1,3 +1,8 @@
+/*\
+||| This file a part of uLPC, and is copyright by Fredrik Hubinette
+||| uLPC is distributed as GPL (General Public License)
+||| See the files COPYING and DISCLAIMER for more information.
+\*/
 #ifndef REGEXP_H
 #define REGEXP_H
 /*
@@ -7,7 +12,7 @@
  * not the System V one.
  */
 
-#define NSUBEXP  20
+#define NSUBEXP  40
 typedef struct regexp
 {
   char *startp[NSUBEXP];

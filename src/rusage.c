@@ -1,6 +1,11 @@
+/*\
+||| This file a part of uLPC, and is copyright by Fredrik Hubinette
+||| uLPC is distributed as GPL (General Public License)
+||| See the files COPYING and DISCLAIMER for more information.
+\*/
 #include <sys/types.h>
-#include <sys/time.h>
 #include <sys/stat.h>
+#include <sys/time.h>
 #include <fcntl.h>
 #include <time.h>
 #include <errno.h>
@@ -115,7 +120,7 @@ INT32 *low_rusage()
   rusage_values[0] = utime;
   rusage_values[1] = stime;
   rusage_values[2] = maxrss;
-#ifdef GETRUSAGE_RESTRICTED
+#ifndef GETRUSAGE_RESTRICTED
   rusage_values[3] = rus.ru_ixrss;
   rusage_values[4] = rus.ru_idrss;
   rusage_values[5] = rus.ru_isrss;

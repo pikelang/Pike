@@ -1,10 +1,6 @@
 #ifndef FILE_MACHINE_H
 #define FILE_MACHINE_H
 
-
-#undef HAVE_SYS_PROTOSW_H
-#undef HAVE_SYS_STREAM_H
-
 /* Define if you have arpa/inhet.h */
 #undef HAVE_ARPA_INET_H
 
@@ -13,6 +9,12 @@
 
 /* Define if you have the <netinet/in.h> header file.  */
 #undef HAVE_NETINET_IN_H
+
+/* Define if you have the <sys/straem.h> header file.  */
+#undef HAVE_SYS_STREAM_H
+
+/* Define if you have the <sys/protosw.h> header file.  */
+#undef HAVE_SYS_PROTOSW_H
 
 /* Define if you have dirent.h.  */
 #undef HAVE_DIRENT_H
@@ -31,6 +33,12 @@
 
 /* Do we have socketpair() ? */
 #undef HAVE_SOCKETPAIR
+
+/* Define if you have waitpid */
+#undef HAVE_WAITPID
+
+/* Define if you have wait4 */
+#undef HAVE_WAIT4
 
 #endif
 

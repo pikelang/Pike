@@ -1,14 +1,17 @@
+/*\
+||| This file a part of uLPC, and is copyright by Fredrik Hubinette
+||| uLPC is distributed as GPL (General Public License)
+||| See the files COPYING and DISCLAIMER for more information.
+\*/
 #ifndef CONFIG_H
 #define CONFIG_H
-
-#include "machine.h"
 
 /*
  * Define DEBUG and be sure to compile with -g if you want to debug uLPC
  * with DEBUG defined debugging becomes much easier.
  */
 
-/* #define DEBUG */
+#undef DEBUG
 
 /*
  * Define the evaluator stack size, used for just about everything.
@@ -25,12 +28,12 @@
  * Max number of local variables in a function.
  * Currently there is no support for more than 256
  */
-#define MAX_LOCAL	128
+#define MAX_LOCAL	256
 
 /*
  * Define the size of the shared string hash table.
  */
-#define	HTABLE_SIZE 117
+#define	HTABLE_SIZE 4711
 
 /*
  * Define the size of the cache that is used for method lookup.
@@ -45,5 +48,8 @@
 #ifdef DEBUG
 #define YYDEBUG 1
 #endif
+
+/* Not parently used */
+#define GC_TIME 60
 
 #endif

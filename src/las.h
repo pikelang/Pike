@@ -1,3 +1,8 @@
+/*\
+||| This file a part of uLPC, and is copyright by Fredrik Hubinette
+||| uLPC is distributed as GPL (General Public License)
+||| See the files COPYING and DISCLAIMER for more information.
+\*/
 #ifndef LAS_H
 #define LAS_H
 
@@ -19,6 +24,7 @@ struct locals
 {
   struct locals *next;
   struct lpc_string *current_type;
+  struct lpc_string *current_return_type;
   int current_number_of_locals;
   struct local_variable variable[MAX_LOCAL];
 };

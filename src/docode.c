@@ -1,7 +1,11 @@
+/*\
+||| This file a part of uLPC, and is copyright by Fredrik Hubinette
+||| uLPC is distributed as GPL (General Public License)
+||| See the files COPYING and DISCLAIMER for more information.
+\*/
 #include "global.h"
 #include <stdlib.h>
 #include <stdio.h>
-#include "config.h"
 #include "las.h"
 #include "program.h"
 #include "language.h"

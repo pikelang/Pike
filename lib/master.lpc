@@ -185,7 +185,7 @@ void compile_error(string file,int line,string err)
  * Note that previous_object cannot be trusted in ths function, because
  * the compiler calls this function.
  */
-void handle_include(string f, string current_file)
+string handle_include(string f, string current_file)
 {
   string *tmp, path;
 /*  perror("Handle include: "+f+"\n"); */

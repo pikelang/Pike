@@ -1,3 +1,8 @@
+/*\
+||| This file a part of uLPC, and is copyright by Fredrik Hubinette
+||| uLPC is distributed as GPL (General Public License)
+||| See the files COPYING and DISCLAIMER for more information.
+\*/
 #define READ_BUFFER 10000
 
 /*
@@ -24,6 +29,7 @@
 #include "file_machine.h"
 #include "file.h"
 #include "error.h"
+#include "lpc_signal.h"
 
 #include <sys/types.h>
 #include <sys/stat.h>
@@ -47,7 +53,7 @@
 #endif
 
 #ifdef HAVE_NETDB_H
-#include "netdb.h"
+#include <netdb.h>
 #endif
 
 #define THIS ((struct file *)(fp->current_storage))
@@ -132,9 +138,13 @@ static int map(int flags)
   return ret;
 }
 
+static void call_free(char *s) { free(s); }
+static void free_dynamic_buffer(dynamic_buffer *b) { free(b->s.str); }
+
 static void file_read(INT32 args)
 {
   INT32 i, r, bytes_read;
+  ONERROR ebuf;
 
   if(THIS->fd < 0)
     error("File not open.\n");
@@ -154,8 +164,12 @@ static void file_read(INT32 args)
 
     str=begin_shared_string(r);
 
+    SET_ONERROR(ebuf, call_free, str);
+
     do{
       i=read(THIS->fd, str->str+bytes_read, r);
+
+      check_signals();
 
       if(i>0)
       {
@@ -179,6 +193,8 @@ static void file_read(INT32 args)
       }
     }while(r);
 
+    UNSET_ONERROR(ebuf);
+    
     if(bytes_read == str->len)
     {
       push_string(end_shared_string(str));
@@ -190,13 +206,18 @@ static void file_read(INT32 args)
   }else{
 #define CHUNK 16384
     INT32 try_read;
+    dynamic_buffer b;
 
-    init_buf();
+    b.s.str=0;
+    low_init_buf(&b);
+    SET_ONERROR(ebuf, free_dynamic_buffer, &b);
     do{
       try_read=MINIMUM(CHUNK,r);
+      
+      i=read(THIS->fd, low_make_buf_space(try_read, &b), try_read);
 
-      i=read(THIS->fd, make_buf_space(try_read), try_read);
-
+      check_signals();
+      
       if(i==try_read)
       {
 	r-=i;
@@ -206,22 +227,22 @@ static void file_read(INT32 args)
       {
 	bytes_read+=i;
 	r-=i;
-	make_buf_space(i - try_read);
+	low_make_buf_space(i - try_read, &b);
       }
       else if(i==0)
       {
-	make_buf_space(-try_read);
+	low_make_buf_space(-try_read, &b);
 	break;
       }
       else
       {
-	make_buf_space(-try_read);
+	low_make_buf_space(-try_read, &b);
 	if(errno != EINTR)
 	{
 	  THIS->errno=errno;
 	  if(!bytes_read)
 	  {
-	    free(simple_free_buf());
+	    free(b.s.str);
 	    push_int(0);
 	    return;
 	  }
@@ -229,7 +250,8 @@ static void file_read(INT32 args)
 	}
       }
     }while(r);
-    push_string(free_buf());
+    UNSET_ONERROR(ebuf);
+    push_string(low_free_buf(&b));
   }
 }
 
@@ -663,6 +685,92 @@ static void file_set_buffer(INT32 args)
 #endif
 }
 
+
+#ifndef HAVE_SOCKETPAIR
+
+/* No socketpair() ?
+ * No AF_UNIX sockets ?
+ * No hope ?
+ *
+ * Don't dispair, socketpair_ultra is here!
+ * Tests done in an independant institute in europe shows
+ * socketpair_ultra is 50% more portable than other leading
+ * brands of socketpair.
+ *                                                   /Hubbe
+ */
+
+/* redefine socketpair to something that hopefully won't
+ * collide with any libs or headers. Also useful when testing
+ * this code on a system that _has_ socketpair...
+ */
+#define socketpair socketpair_ultra
+
+extern int errno;
+int socketpair(int family, int type, int protocol, int sv[2])
+{
+  struct sockaddr_in addr,addr2;
+  int len, fd;
+
+  MEMSET((char *)&addr,0,sizeof(struct sockaddr_in));
+
+  /* We lie, we actually create an AF_INET socket... */
+  if(family != AF_UNIX || type != SOCK_STREAM)
+  {
+    errno=EINVAL;
+    return -1; 
+  }
+  
+  if((fd=socket(AF_INET, SOCK_STREAM, 0)) < 0) return -1;
+  if((sv[1]=socket(AF_INET, SOCK_STREAM, 0)) <0) return -1;
+
+
+  /* I wonder what is most common a loopback on ip# 127.0.0.1 or
+   * a loopback with the name "localhost"?
+   * Let's hope those few people who doesn't have socketpair has
+   * a loopback on 127.0.0.1
+   */
+  addr.sin_addr.s_addr=inet_addr("127.0.0.1");
+  addr.sin_port=htons(0);
+  addr2.sin_addr.s_addr=inet_addr("127.0.0.1");
+  addr2.sin_port=htons(0);
+
+  /* Bind our sockets on any port */
+  if(bind(fd, (struct sockaddr *)&addr, sizeof(addr)) < 0) return -1;
+  if(bind(sv[1], (struct sockaddr *)&addr2, sizeof(addr2)) < 0) return -1;
+
+  /* Check what ports we got.. */
+  if(getsockname(fd,(struct sockaddr *)&addr,&len) < 0) return -1;
+  if(getsockname(sv[1],(struct sockaddr *)&addr2,&len) < 0) return -1;
+
+  /* Listen to connections on our new socket */
+  if(listen(fd, 3) < 0 ) return -1;
+  
+  /* Connect */
+  if(connect(sv[1], (struct sockaddr *)&addr, sizeof(addr)) < 0) return -1;
+
+  /* Accept connection
+   * Make sure this connection was our OWN connection,
+   * otherwise some wizeguy could interfere with our
+   * pipe by guessing our socket and connecting at
+   * just the right time... uLPC is supposed to be
+   * pretty safe...
+   */
+  do
+  {
+    len=sizeof(addr2);
+    sv[0]=accept(fd,(struct sockaddr_in *)&addr2,&len);
+    if(sv[0] < 0) return -1;
+  }while(len < sizeof(addr2) ||
+       addr2.sin_addr.s_addr != addr.sin_addr.s_addr ||
+       addr2.sin_port != addr.sin_port)
+
+  if(close(fd) <0) return -1;
+
+  return 0;
+}
+
+#endif
+
 static void file_pipe(INT32 args)
 {
   int inout[2],i;
@@ -1015,8 +1123,19 @@ void exit_files()
 
 static RETSIGTYPE sig_child(int arg)
 {
+#ifdef HAVE_WAITPID
   waitpid(-1,0,WNOHANG);
   signal(SIGCHLD,sig_child);
+#else
+#ifdef HAVE_WAIT3
+  wait3(-1,0,WNOHANG);
+  signal(SIGCHLD,sig_child);
+#else
+
+  /* Leave'em hanging */
+
+#endif /* HAVE_WAIT3 */
+#endif /* HAVE_WAITPID */
 }
 
 void init_files_programs()

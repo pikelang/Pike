@@ -1,3 +1,8 @@
+/*\
+||| This file a part of uLPC, and is copyright by Fredrik Hubinette
+||| uLPC is distributed as GPL (General Public License)
+||| See the files COPYING and DISCLAIMER for more information.
+\*/
 #include <unistd.h>
 #include <errno.h>
 #include <sys/types.h>
@@ -164,6 +169,7 @@ void do_debug(int check_refs)
   if(d_flag>1)
     init_checked();
 #endif
+
   slow_check_stack(0);
   check_all_arrays(0);
   check_all_mappings(0);
@@ -183,6 +189,7 @@ void do_debug(int check_refs)
     exit_checked();
   }
 #endif
+
 }
 #endif
 
@@ -278,11 +285,3 @@ int write_to_stderr(char *a, INT32 len)
   return 1;
 }
 
-void check_signals()
-{
-#ifdef DEBUG
-  if(d_flag>5) do_debug(0);
-#endif
-
-  /* Insert signal check here */
-}

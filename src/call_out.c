@@ -1,4 +1,8 @@
-#include <sys/types.h>
+/*\
+||| This file a part of uLPC, and is copyright by Fredrik Hubinette
+||| uLPC is distributed as GPL (General Public License)
+||| See the files COPYING and DISCLAIMER for more information.
+\*/
 #include <stdio.h>
 #include "global.h"
 #include "array.h"
@@ -8,7 +12,6 @@
 #include "interpret.h"
 #include "error.h"
 #include "builtin_efuns.h"
-#include "sys/types.h"
 #include "memory.h"
 
 call_out **pending_calls=0;      /* pointer to first busy pointer */

@@ -2,27 +2,27 @@
 
 int main(int argc,string *argv)
 {
-  int e,len;
+  int i;
   string file;
+
   if(argc<4)
   {
     write("Usage: rsif <from> <to> <files>\n");
     return 0;
   }
 
-  for(e=3;e<sizeof(argv);e++)
+  for(i=3; i<sizeof(argv); i++)
   {
-    if(file=read_bytes(argv[e]))
+    if(file=read_bytes(argv[i]))
     {
       if(-1!=strstr(file,argv[1]))
       {
-	write("Processing "+argv[e]+".\n");
-	len=strlen(file);
+	write("Processing "+argv[i]+".\n");
 	file=replace(file,argv[1],argv[2]);
 
-	if(mv(argv[e],argv[e]+"~"))
+	if( mv(argv[i],argv[i]+"~") )
 	{
-	  write_file(argv[e],file);
+	  write_file(argv[i],file);
 	}else{
 	  write("Failed to create backup file.\n");
 	}

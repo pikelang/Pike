@@ -1,3 +1,8 @@
+/*\
+||| This file a part of uLPC, and is copyright by Fredrik Hubinette
+||| uLPC is distributed as GPL (General Public License)
+||| See the files COPYING and DISCLAIMER for more information.
+\*/
 %pure_parser
 
 /*
@@ -15,7 +20,7 @@
 
 %token F_INDEX F_INDIRECT
 %token F_LTOSVAL F_LTOSVAL2
-%token F_WRITE_OPCODE F_PUSH_ARRAY 
+%token F_PUSH_ARRAY 
 %token F_RANGE F_COPY_VALUE
 
 /*
@@ -269,6 +274,13 @@ def: modifiers type_or_error optional_stars F_IDENTIFIER '(' arguments ')'
      /* construct the function type */
      push_finished_type(local_variables->current_type);
      while($3--) push_type(T_ARRAY);
+
+     if(local_variables->current_return_type)
+       free_string(local_variables->current_return_type);
+     local_variables->current_return_type=pop_type();
+
+     push_finished_type(local_variables->current_return_type);
+
      e=$6-1;
      if(varargs)
      {
@@ -332,6 +344,11 @@ def: modifiers type_or_error optional_stars F_IDENTIFIER '(' arguments ')'
 		       $1,
 		       IDENTIFIER_LPC_FUNCTION | vargs,
 		       &tmp);
+     }
+     if(local_variables->current_return_type)
+     {
+       free_string(local_variables->current_return_type);
+       local_variables->current_return_type=0;
      }
      free_all_local_names();
      free_string($4);
@@ -707,6 +724,11 @@ case: F_CASE comma_expr ':'
 
 return: F_RETURN
 	{
+	  if(!match_types(local_variables->current_return_type,
+			  void_type_string))
+	  {
+	    yyerror("Must return a value for a non-void function.");
+	  }
           $$=mknode(F_RETURN,mkintnode(0),0);
 	}
       | F_RETURN comma_expr
@@ -1087,6 +1109,7 @@ static void push_locals()
   struct locals *l;
   l=ALLOC_STRUCT(locals);
   l->current_type=0;
+  l->current_return_type=0;
   l->next=local_variables;
   local_variables=l;
   local_variables->current_number_of_locals=0;
@@ -1099,6 +1122,8 @@ static void pop_locals()
   l=local_variables->next;
   if(local_variables->current_type)
     free_string(local_variables->current_type);
+  if(local_variables->current_return_type)
+    free_string(local_variables->current_return_type);
   free((char *)local_variables);
 
   local_variables=l;

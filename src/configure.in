@@ -52,6 +52,31 @@ fi
 AC_PROG_CPP
 AC_PROG_RANLIB
 AC_SET_MAKE
+AC_PATH_PROG(uname_prog,uname,no)
+
+# We need some special hacks when running slowaris
+AC_MSG_CHECKING(operating system)
+AC_CACHE_VAL(lpc_cv_sys_os,
+[
+if test "$uname_prog" != "no"; then
+  lpc_cv_sys_os="`uname`"
+
+  if test "$lpc_cv_sys_os" = "SunOS"; then
+    case "`uname -r`" in
+      5.*) lpc_cv_sys_os="Solaris";
+    esac
+  fi
+else
+  lpc_cv_sys_os="Not Solaris"
+fi
+])
+AC_MSG_RESULT($lpc_cv_sys_os)
+
+if test "$lpc_cv_sys_os" = "Solaris"; then
+  AC_DEFINE(SOLARIS)
+  LIBS="$LIBS -lthread"
+fi
+
 
 AC_MSG_CHECKING(first yacc define)
 AC_CACHE_VAL(lpc_cv_yacc_first,
@@ -109,9 +134,36 @@ fi
 LIBOBJS="${OLD_LIBOBJS}"
 
 
-AC_HAVE_FUNCS(memset memcpy memchr strchr strrchr fchmod getrusage \
- strcspn crypt _crypt getwd getcwd strtod strtok getenv vfprintf bzero bcopy \
- strtol index rindex vsprintf clock times setlocale strcoll getrlimit  setrlimit)
+AC_HAVE_FUNCS(
+ _crypt \
+ bcopy \
+ bzero \
+ clock \
+ crypt \
+ fchmod \
+ getcwd \
+ getenv \
+ getrlimit \
+ getrusage \
+ getwd \
+ index \
+ memchr \
+ memcpy \
+ memset \
+ rindex \
+ setlocale \
+ setrlimit \
+ strcasecmp \
+ strchr \
+ strcspn \
+ strrchr \
+ strtod \
+ strtok \
+ strtol \
+ times \
+ vfprintf \
+ vsprintf \
+)
 
 define(MY_CHECK_HEADERS,
 [
@@ -210,6 +262,7 @@ AC_ALLOCA
 AC_CONST
 AC_INLINE
 
+AC_CHECK_LIB(PW, alloca)
 AC_CHECK_LIB(m, floor)
 AC_CHECK_LIB(socket, socket)
 
@@ -313,7 +366,7 @@ char *a="foo bar gazonk";
 char *b="foo";
 char *c="bar";
 char *d="gazonk";
-void main()
+int main()
 {
   if(memmem(b,strlen(b),a,strlen(a))!=a ||
      memmem(c,strlen(c),a,strlen(a))!=(a+4) ||
@@ -332,17 +385,40 @@ else
   AC_MSG_RESULT(no)
 fi
 
+AC_MSG_CHECKING(for working strcoll)
+AC_CACHE_VAL(lpc_cv_func_strcoll,
+[
+AC_TRY_RUN([
+#include <string.h>
+int main()
+{
+  if(strcoll("a","b")< 0 &&
+     strcoll("a","a")==0 &&
+     strcoll("b","a")> 0)
+    exit(0);
+  exit(1);
+}
+],lpc_cv_func_strcoll=yes,lpc_cv_func_strcoll=no)])
+
+if test "$lpc_cv_func_strcoll" = yes; then
+  AC_MSG_RESULT(yes)
+  AC_DEFINE(HAVE_STRCOLL)
+else
+  AC_MSG_RESULT(no)
+fi
+
+
 AC_MSG_CHECKING(for working memmove)
 AC_CACHE_VAL(lpc_cv_func_memmove,
 [
 AC_TRY_RUN([
 #include <string.h>
 char buf[100];
-void main()
+int main()
 {
   strcpy(buf,"foo bar gazonk elefantsnabel.");
   if(strcmp(buf,"foo bar gazonk elefantsnabel.")) exit(1);
-  memmove(buf,buf+1,8);
+  memmove(buf,buf+1,7);
   if(strcmp(buf,"oo bar  gazonk elefantsnabel.")) exit(1);
   memmove(buf+1,buf+1,9);
   if(strcmp(buf,"oo bar  gazonk elefantsnabel.")) exit(1);
@@ -363,7 +439,7 @@ AC_MSG_CHECKING(how to extract an unsigned char)
 AC_CACHE_VAL(lpc_cv_method_extract_uchar,
 [
 AC_TRY_RUN([
-void main()
+int main()
 {
   char i,*p;
   i=-10;
@@ -385,7 +461,7 @@ AC_MSG_CHECKING(how to extract a signed char)
 AC_CACHE_VAL(lpc_cv_method_extract_char,
 [
 AC_TRY_RUN([
-void main()
+int main()
 {
   char i,*p;
   i=-10;
@@ -426,7 +502,7 @@ int main()
 #if !defined(RLIMIT_NOFILE) && defined(RLIMIT_OFILE)
 #define RLIMIT_NOFILE RLIMIT_OFILE
 #endif
-#if defined(HAVE_GETRLIMIT) && defined(RLIMIT_NOFILE)
+#if defined(HAVE_SETRLIMIT) && defined(RLIMIT_NOFILE)
   struct rlimit lim;
 
   if(getrlimit(RLIMIT_NOFILE,&lim))
@@ -613,7 +689,7 @@ MODULE_OBJS=
 module_names=
 for a in `(cd $srcdir/modules ; echo *)`
 do
-  if test "$a" != "CVS" -a "$a" != "RCS"; then
+  if test "$a" != "CVS" -a "$a" != "RCS" ; then
       if test -d "$srcdir/modules/$a" ; then
       dirs="$dirs modules/$a"
       MODULE_OBJS="$MODULE_OBJS modules/$a/$a.a"

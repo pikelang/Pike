@@ -1,6 +1,9 @@
 #ifndef MACHINE_H
 #define MACHINE_H
 
+/* Define for solaris */
+#undef SOLARIS
+
 /* Define if using alloca.c.  */
 #undef C_ALLOCA
 
@@ -128,6 +131,9 @@
 /* Define if you have strtok */
 #undef HAVE_STRTOK
 
+/* Define if you have strcasecmp */
+#undef HAVE_STRCASECMP
+
 /* Define if you have strtod */
 #undef HAVE_STRTOD
 
@@ -216,26 +222,6 @@
 #define ATTRIBUTE(X) __attribute__ (X)
 #else
 #define ATTRIBUTE(X)
-#endif
-
-/* Do we need to use '#pragma alloca' ? */
-#undef USE_PRAGMA_ALLOCA
-
-/* AIX requires this to be the first thing in the file.  */
-#ifdef __GNUC__
-# define alloca __builtin_alloca
-#else
-# if HAVE_ALLOCA_H
-#  include <alloca.h>
-# else
-#  ifdef _AIX
-#pragma alloca
-#  else
-#   ifndef alloca /* predefined by HP cc +Olibcalls */
-char *alloca ();
-#   endif
-#  endif
-# endif
 #endif
 
 /* How to extract a char and an unsigned char from a char * */

@@ -1,0 +1,33 @@
+NAME
+	open - open a file and return the file object
+
+SYNTAX
+	object open(string file, string mode);
+
+DESCRIPTION
+	Opens a file for 'mode' and returns the object, or zero if the
+        file cannot be opened.
+
+        file is the filename, and mode is a combination of theese characters:
+
+        r -- Open for read
+        w -- Open for write
+        a -- When write, open for append
+        t -- When write, truncate
+        c -- When read or write, if there is no file, try to create one.
+        x -- Fail if file already exist (use with 'c')
+
+        One of r or w must always be present.
+
+        The return value is either the file object or false (integer zero).
+
+        Functions in the file object include:
+        string read(int howmuch)
+        int write(string what)
+        int seek(int whereto)
+  
+        See the documentation for files/file for more information.
+
+SEE ALSO
+	files/file, read_bytes, write_file
+
