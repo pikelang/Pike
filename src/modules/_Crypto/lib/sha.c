@@ -39,7 +39,11 @@ void sha_copy(struct sha_ctx *dest, struct sha_ctx *src)
 
   dest->count_l=src->count_l;
   dest->count_h=src->count_h;
-  for(i=0; i<SHA_DIGESTLEN; i++) dest->digest[i]=src->digest[i];
+  for(i=0; i<SHA_DIGESTLEN; i++)
+    dest->digest[i]=src->digest[i];
+  for(i=0; i < src->index; i++)
+    dest->block[i] = src->block[i];
+  dest->index = src->index;
 }
 
 
@@ -269,13 +273,13 @@ static void sha_block(struct sha_ctx *ctx, unsigned INT8 *block)
     ++ctx->count_h;
 
   /* Endian independent conversion */
-  for (i = 0; i<16; i++, block += 4)
+  for (i = 0; i<SHA_DATALEN; i++, block += 4)
     data[i] = STRING2INT(block);
 
   sha_transform(ctx, data);
 }
 
-void sha_update(struct sha_ctx *ctx, unsigned INT8 *buffer, INT32 len)
+void sha_update(struct sha_ctx *ctx, unsigned INT8 *buffer, unsigned INT32 len)
 {
   if (ctx->index)
     { /* Try to fill partial block */
@@ -341,8 +345,8 @@ void sha_final(struct sha_ctx *ctx)
     for (i = words ; i < SHA_DATALEN - 2; i++)
       data[i] = 0;
   /* Theres 512 = 2^9 bits in one block */
-  data[SHA_DATALEN-2] = ctx->count_h << 9;
-  data[SHA_DATALEN-1] = ctx->count_l << 9 | ctx->index << 3;
+  data[SHA_DATALEN-2] = (ctx->count_h << 9) | (ctx->count_l >> 23);
+  data[SHA_DATALEN-1] = (ctx->count_l << 9) | (ctx->index << 3);
   sha_transform(ctx, data);
 }
 
