@@ -2,7 +2,7 @@
 <!-- put everything together, as well as information about how to -->
 <!-- split it up into smaller files. -->
 
-<!-- $Id: structure.xml,v 1.8 2001/09/09 00:29:36 nilsson Exp $ -->
+<!-- $Id: structure.xml,v 1.9 2001/09/09 02:47:52 nilsson Exp $ -->
 
 <manual>
   <dir name="html_manual">
@@ -10,7 +10,9 @@
     <chapter-ref file="not_extracted/control_structures.xml"/>
     <chapter-ref file="not_extracted/data_types.xml"/>
     <chapter-ref file="not_extracted/language_reference.xml"/>
+    <chapter-ref file="not_extracted/autodoc.xml"/>
     <appendix-ref name="Image.Color colors"/>
+    <appendix-ref name="Image.Layer modes"/>
     <appendix-ref file="not_extracted/appendix_bnf.xml"/>
   </file>
   </dir>
