@@ -2,11 +2,11 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: mpz_glue.c,v 1.134 2003/03/29 03:14:44 mast Exp $
+|| $Id: mpz_glue.c,v 1.135 2003/03/29 03:49:58 mast Exp $
 */
 
 #include "global.h"
-RCSID("$Id: mpz_glue.c,v 1.134 2003/03/29 03:14:44 mast Exp $");
+RCSID("$Id: mpz_glue.c,v 1.135 2003/03/29 03:49:58 mast Exp $");
 #include "gmp_machine.h"
 #include "module.h"
 
@@ -292,7 +292,7 @@ int get_new_mpz(MP_INT *tmp, struct svalue *s,
   switch(s->type)
   {
   case T_INT:
-#if SIZEOF_INT_TYPE <= SIZEOF_LONG
+#ifndef BIG_PIKE_INT
     mpz_set_si(tmp, (signed long int) s->u.integer);
 #else
     {
@@ -907,12 +907,6 @@ double double_from_sval(struct svalue *s)
 #define DO_IF_AUTO_BIGNUM(X)
 #endif
 
-#ifdef BIG_PIKE_INT
-#define TOOBIGTEST || sp[e-args].u.integer>MAX_INT32
-#else
-#define TOOBIGTEST 
-#endif
-
 #define BINFUN2(name, errmsg_op, fun, OP)				\
 static void name(INT32 args)						\
 {									\
@@ -947,7 +941,7 @@ static void name(INT32 args)						\
     }									\
   } )									\
   for(e=0; e<args; e++)							\
-   if(sp[e-args].type != T_INT || sp[e-args].u.integer<=0 TOOBIGTEST)	\
+    if(sp[e-args].type != T_INT || !FITS_ULONG (sp[e-args].u.integer))	\
      get_mpz(sp+e-args, 1, "Gmp.mpz->`" errmsg_op, e + 1, args);	\
   res = fast_clone_object(THIS_PROGRAM);				\
   mpz_set(OBTOMPZ(res), THIS);						\
@@ -991,7 +985,7 @@ static void PIKE_CONCAT(name,_rhs)(INT32 args)				\
     }									\
   } )									\
   for(e=0; e<args; e++)							\
-   if(sp[e-args].type != T_INT || sp[e-args].u.integer<=0)		\
+    if(sp[e-args].type != T_INT || !FITS_ULONG (sp[e-args].u.integer))	\
      get_mpz(sp+e-args, 1, "Gmp.mpz->``" errmsg_op, e + 1, args);	\
   res = fast_clone_object(THIS_PROGRAM);				\
   mpz_set(OBTOMPZ(res), THIS);						\
@@ -1038,7 +1032,7 @@ static void PIKE_CONCAT(name,_eq)(INT32 args)				\
     }									\
   } )									\
   for(e=0; e<args; e++)							\
-   if(sp[e-args].type != T_INT || sp[e-args].u.integer<=0)		\
+    if(sp[e-args].type != T_INT || !FITS_ULONG (sp[e-args].u.integer))	\
      get_mpz(sp+e-args, 1, "Gmp.mpz->`" errmsg_op "=", e + 1, args);	\
   for(e=0;e<args;e++)							\
     if(sp[e-args].type != T_INT)					\
@@ -1419,18 +1413,13 @@ static void mpzmod_lsh(INT32 args)
   if(sp[-1].type == T_INT) {
     if(sp[-1].u.integer < 0)
       SIMPLE_ARG_ERROR ("Gmp.mpz->`<<", 1, "Got negative shift count.");
-#if SIZEOF_INT_TYPE > SIZEOF_LONG
-/* unsigned long int is the type of the argument to mpz_mul_2exp */
-    if (sp[-1].u.integer != (unsigned long int)sp[-1].u.integer)
-      if(mpz_cmp_si(THIS, -1)<0 || mpz_cmp_si(THIS, 1)>0)
-	 goto too_large;
+#ifdef BIG_PIKE_INT
+    if (!FITS_ULONG (sp[-1].u.integer) && mpz_sgn (THIS))
+      SIMPLE_ARG_ERROR ("Gmp.mpz->`<<", 1, "Shift count too large.");
 #endif
     res = fast_clone_object(THIS_PROGRAM);
     mpz_mul_2exp(OBTOMPZ(res), THIS, sp[-1].u.integer);
   } else {
-#if SIZEOF_INT_TYPE > SIZEOF_LONG
-too_large:
-#endif
     mi = get_mpz(sp-1, 1, "Gmp.mpz->`<<", 1, 1);
     if(!mpz_fits_ulong_p (mi))
     {
@@ -1464,9 +1453,8 @@ static void mpzmod_rsh(INT32 args)
   {
      if (sp[-1].u.integer < 0)
        SIMPLE_ARG_ERROR ("Gmp.mpz->`>>", 1, "Got negative shift count.");
-#if SIZEOF_INT_TYPE > SIZEOF_LONG
-/* unsigned long int is the type of the argument to mpz_mul_2exp */
-     if (sp[-1].u.integer != (unsigned long int)sp[-1].u.integer)
+#ifdef BIG_PIKE_INT
+     if (!FITS_ULONG (sp[-1].u.integer))
      {
 	res = fast_clone_object(THIS_PROGRAM);
 	mpz_set_si(OBTOMPZ(res), mpz_sgn(THIS)<0? -1:0);
@@ -1478,7 +1466,7 @@ static void mpzmod_rsh(INT32 args)
 	mpz_fdiv_q_2exp(OBTOMPZ(res), THIS, sp[-1].u.integer);
      } 
   }
-  else 
+  else
   {
      MP_INT *mi = get_mpz(sp-1, 1, "Gmp.mpz->`>>", 1, 1);
      if(!mpz_fits_ulong_p (mi)) {
@@ -1579,16 +1567,15 @@ static void mpzmod_pow(INT32 args)
   if (sp[-1].type == T_INT) {
     if (sp[-1].u.integer < 0)
       SIMPLE_ARG_ERROR ("Gmp.mpz->pow", 1, "Negative exponent.");
-#if SIZEOF_INT_TYPE > SIZEOF_LONG
-/* unsigned long int is the type of the argument to mpz_pow_ui */
-    if (sp[-1].u.integer != (unsigned long int)sp[-1].u.integer)
+#ifdef BIG_PIKE_INT
+    if (!FITS_ULONG (sp[-1].u.integer))
       if(mpz_cmp_si(THIS, -1)<0 || mpz_cmp_si(THIS, 1)>0)
 	 goto too_large;
 #endif
     res = fast_clone_object(THIS_PROGRAM);
     mpz_pow_ui(OBTOMPZ(res), THIS, sp[-1].u.integer);
   } else {
-#if SIZEOF_INT_TYPE > SIZEOF_LONG
+#ifdef BIG_PIKE_INT
 too_large:
 #endif
     mi = get_mpz(sp-1, 1, "Gmp.mpz->pow", 1, 1);
@@ -1636,7 +1623,7 @@ static void mpzmod_popcount(INT32 args)
   pop_n_elems(args);
 #ifdef HAVE_MPZ_POPCOUNT
   push_int(mpz_popcount(THIS));  
-#if SIZEOF_INT_TYPE > 4
+#ifdef BIG_PIKE_INT
 /* need conversion from MAXUINT32 to -1 (otherwise it's done already) */
   if (Pike_sp[-1].u.integer==0xffffffffLL)
      Pike_sp[-1].u.integer=-1;
@@ -1652,7 +1639,7 @@ static void mpzmod_popcount(INT32 args)
     break;
   case 1:
     push_int(mpn_popcount(THIS->_mp_d, THIS->_mp_size));
-#if SIZEOF_INT_TYPE > 4
+#ifdef BIG_PIKE_INT
     if (Pike_sp[-1].u.integer==0xffffffffLL)
        Pike_sp[-1].u.integer=-1;
 #endif
