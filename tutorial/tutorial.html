@@ -1759,7 +1759,7 @@ procedes to execute the function it points to. Also note that function pointers
 can be passed around just like any other data type:
 <pre>
 	int foo() { return 1; }
-	void bar() { return foo; }
+	function bar() { return foo; }
 	void gazonk() { return foo(); }
 	void teleledningsanka() { return bar()(); }
 </pre>
@@ -1770,6 +1770,21 @@ located in the same object. The function <tt>gazonk</tt> simply calls
 is an expression returning a function pointer that is then called. To
 further illustrate this, <tt>foo</tt> has been replaced by <tt>bar()</tt>
 in the function <tt>teleledningsanka</tt>.
+<p>
+For convenince, there is also a simple way to write a function inside another
+function. To do this you use the <tt>lambda</tt> keyword.  The
+syntax is the same as for a normal function, except you write
+<tt>lambda</tt> instead of the function name:
+<pre>
+	lambda ( <i>types</i> ) { <i>statements</i> }
+</pre>
+The major differeance is that this is an expression that can be used inside
+other function. Example:
+<pre>
+	function bar() { return lambda() { return 1; }; )
+</pre>
+This is the same as the first two lines in the previous example, the keyword
+<tt>lambda</tt> allows you to write the function inside <tt>bar</tt>.
 <p>
 This is what you can do with a function pointer.
 <dl>
@@ -1909,9 +1924,13 @@ you remember from maths in school. The arithmetic operators are:
 <tr><td>Division</td>	<td>a / b</td>	<td>`/</td>	<td>a divided by b</td></tr>
 <tr><td>Modulo</td>	<td>a % b</td>	<td>`%</td>	<td>the remainder of a division between a and b</td></tr>
 </table>
-<p>
 </center>
-
+<p>
+The third column, "Identifier" is the name of the function that actually
+evaluates the operation. For instance, <tt>a + b</tt> can also be written
+as <tt>`+(a, b)</tt>. I will show you how useful this can be at the end
+of this chapter.
+<p>
 When applied to integers or floats these operators do exactly what they
 are supposed to do. The only operator in the list not known from basic
 math is the <b>modulo</b> operator. The modulo operator returns the
@@ -2417,6 +2436,25 @@ Examples:
 </center>
 <p>
 
+<h2>Operator functions</h2>
+As mentioned earlier <tt>a + b</tt> can just as well be written as
+<tt>`+(a, b)</tt>. Together with the function <tt>map</tt> which
+calls a function for every index in an array and the splice operator
+this can be used to create some very very fast and compact code. Let's
+look at some examples:
+<dl>
+<dt> <tt>map(arr, `-)</tt>
+<dd> This will return an array with each element negated.
+<dt> <tt>map(text/"\n",`/," ")</tt>
+<dd> This will divide a text into lines, each line will then be mapped
+     through <tt>`/</tt> and divided into an array of words.
+<dt> <tt>`+(0, @arr)</tt>
+<dd> This will add all the integers in the array <tt>arr</tt> together.
+<dt> <tt>int abs(int a) { return ( a>0 ? `+ : `-)(a); }</tt>
+<dd> This is a rather absurd but working function wich will return the
+     absolute value of a.
+</dl>
+
 <HR NEWPAGE>
 
 <H1>Object orientation</h1>
@@ -2793,6 +2831,116 @@ expect, in which case you are better off not using operator overloading.
 <HR NEWPAGE>
 
 
+<h1>Misc. functions</h1>
+There are some 'functions' in pike that are not really functions at all but
+just as builtin as operators. These special functions can do things that no
+other functions can do, but they can not be re-defined or overloaded.
+In this chapter I will describe these functions and why they are implemented
+as special functions.
+
+<a name=sscanf>
+<h2>sscanf</h2>
+Sscanf may look exactly like a normal function, but normal functions
+can not set the variables you send to it. The purpose of sscanf is to
+match one string against a format string and place the matching results
+into a list of variables. The syntax looks like this:
+<pre>
+	int sscanf(string <i>str</i>, string <I>fmt</I>, <i>lvalue</i> ...)
+</pre>
+The string <i>str</i> will be matched against the format strin <i>fmt</i>.
+<i>fmt</i> can contain strings
+separated by "%d,%s,%c and %f. Every % corresponds to one <i>lvalue</i>.
+An lvalue is the name of a variable, a name of a local variable, an index
+in an array, mapping or object. It is because of these lvalues that sscanf
+can not be implemented as a normal function.
+<p>
+Whenever a percent is found in the format string, a match is according
+to the following table:
+<table border=0 cellpadding=0 cellspacing=0>
+<tr valign=top><td> %d </td><td> gives an integer </td></tr>
+<tr valign=top><td> %o </td><td> gives an octal integer </td></tr>
+<tr valign=top><td> %x </td><td> gives a hexadecimal integer </td></tr>
+<tr valign=top><td> %D </td><td> gives an integer that is either octal (leading zero), hexadecimal (leading 0x) or decimal. </td></tr>
+<tr valign=top><td> %f </td><td> gives a float </td></tr>
+<tr valign=top><td> %c </td><td> matches one char and returns it as an integer </td></tr>
+<tr valign=top><td> %2c </td><td> matches two chars and returns them as an integer (short) </td></tr>
+<tr valign=top><td> %s </td><td> gives a string </td></tr>
+<tr valign=top><td> %5s </td><td> gives a string of 5 characters (5 can be any number) </td></tr>
+<tr valign=top><td> %[set] </td><td> matches a string containing a given set of characters. (thos given inside the brackets) %[^set] means any character ecept those inside brackets. %[0-9H] means any number or 'H'. </td></tr>
+</table>
+
+<p>If a * is put between the percent and the operator, the operator
+will not only match it's argument, not assign any variables.
+<p>
+sscanf returns the number of matches that were made.
+<p>
+Let's look at a couple of examples:
+<pre>
+	// a will be assigned "oo" and 1 will be returned
+	sscanf("foo","f%s",a);
+
+	// a will be 4711 amd b will be "bar", 2 will be returned
+	sscanf("4711bar","%d%s",a,b);
+
+	// a will become "test"
+	sscanf(" \t test","%*[ \t]%s",a)
+</pre>
+<p>
+<font size=+1>S</font><font size=-1>EE</font> <font size=+1>A</font><font size=-1>LSO</font></b>: <a href=#sprintf>sprintf</a>
+<p>
+
+<a name=catch>
+<a name=exceptions>
+<h2>catch &amp; throw</h2>
+Catch is used to trap errors and other exceptions in Pike.
+It works by making a block of code into an expression, like this:
+<pre>
+	catch { <i>statements</i> }
+</pre>
+If an error occurse, catch will return a description of the error.
+The description of the error has the following format:
+<pre>
+	({
+	   "<i>error description</i>"
+	   backtrace()
+	})
+</pre>
+If no error occurs, catch will return zero. You may emulate your own errors
+using the function, throw is described in chapter XXXXX<!--FIXME-->.
+<p>
+Example:
+<pre>
+	int x,y;
+	// This might generate "division by zero"
+	mixed error=catch { x/=y; };
+</pre>
+</a>
+</a>
+
+<h2>gauge</h2>
+The syntax for gauge is the same as the syntax for catch:
+<pre>
+	gauge { <i>statements</i> }
+</pre>
+However, gauge simply returns how many milliseconds the code took to execute.
+This can be used to find out how fast your code actually is.. :)
+Only CPU time used by the pike process is measured. This means that if it takes
+two seconds to execute but only uses 50% cpu, this function will return 1000.
+<p>
+
+<h2>typeof</h2>
+This function retuns the type of an expression as a string. It does not
+evaluate the expression at all, which might be someone confusing. Example:
+<pre>
+	typeof( exit(1) )
+</pre>
+This will return the string "void" since exit is function that returns void.
+It will not execute the function exit and exit the process as you might
+expect.
+<p>
+
+<HR NEWPAGE>
+
 <h1>Modules</h1>
 A module is a software package that plugs into the Pike programming
 environment. They provide you with simple interfaces to system routines
@@ -2819,6 +2967,8 @@ In this chapter I will explain the basics of modules and how to use them.
 <dd>LALR(1) parser generator.
 <dt>Msql *
 <dd>Sql database support for the mini-SQL database server.
+<dt>MIME
+<dd>Support for coding and decoding MIME.
 <dt>Mysql *
 <dd>Sql database support for the mySQL database server.
 <dt>Regexp
@@ -2827,19 +2977,16 @@ In this chapter I will explain the basics of modules and how to use them.
 <dd>Routines to emulate old pike routines.
 <dt>String
 <dd>Routines that operate on strings.
-<dt>Sql **
+<dt>Sql *
 <dd>Generic SQL database support.
 <dt>Thread *
 <dd>Thread support functions.
 <dt>Yp *
 <dd>Network Information System support.
-<dt>X *
-<dd>Support for the X Window System.
 </dl>
 <p>
 * These modules might not be available depending on how Pike was compiled
   and wether support for these functions exist on your system.<br>
-** This module requires at least one specific SQL module (e.g. Msql or Mysql)
 <p>
 
 <h2>How to use modules</h2>
@@ -3493,7 +3640,7 @@ to move files around.
 <tt>Stdio.File-&gt;open_socket</tt> - open a socket
 <p>
 <dt><b> <font size=+1>S</font><font size=-1>YNTAX</font></b><dd>
-<tt>int open_socket();<br>
+<tt>int open_socket(int|void port, int|void address);<br>
 </tt>
 <p>
 <dt><b> <font size=+1>D</font><font size=-1>ESCRIPTION</font></b><dd>
@@ -3501,6 +3648,11 @@ This makes this file into a socket ready for connection. The reason
 for this function is so that you can set the socket to nonblocking
 or blocking (default is blocking) before you call Stdio.File-&gt;connect()
 This function returns 1 for success, 0 otherwise.
+<p>
+If you give a port number to this function, the socket will be bound to
+this port locally before connecting anywhere. This is only useful for
+some silly protocols like FTP. You may also specify an adress to bind to
+if your machine has many ip numbers.
 <p>
 <dt><b> <font size=+1>S</font><font size=-1>EE</font> <font size=+1>A</font><font size=-1>LSO</font></b><dd>
 <a href=#Stdio.File.connect>Stdio.File-&gt;connect</a> and <a href=#Stdio.File.set_nonblocking>Stdio.Fileile-&gt;set_nonblocking</a>
@@ -3727,6 +3879,9 @@ a string containing one character.
 
 </a>
 
+<a name=Stdio.stdin>
+<a name=Stdio.stdout>
+<a name=Stdio.stderr.>
 <h2>Standard streams</h2>
 Any UNIX program has three files open from the beginning. These are called
 standard input, standard output and standard error stream. These streams
@@ -3749,6 +3904,9 @@ This example will read lines from standard input for as long as there
 are more lines to read. Each line will then be written to stdout together
 with the line number. We could use <tt>Stdio.stdout.write</tt> instead
 of just <tt>write</tt> they are the same function.
+</a>
+</a>
+</a>
 
 <h2>Other Stdio functions</h2>
 The Stdio module also contains a collection of high level IO functions
@@ -3797,7 +3955,7 @@ out what went wrong, so it is only applicable to IO errors.
 <a href=index.html#file>file</a>
 <p>
 <dt><b> <font size=+1>S</font><font size=-1>EE</font> <font size=+1>A</font><font size=-1>LSO</font></b><dd>
-<a href=#Stdio.werror.html>Stdio.werror</a>
+<a href=#Stdio.werror>Stdio.werror</a>
 <p>
 </dl>
 
@@ -3927,8 +4085,6 @@ Append the string str onto the file file. Returns number of bytes written.
 </dl>
 
 </a>
-<hr noshade size=1>
-<!--FIXME insert doc for write_bytes here!!! --->
 <hr noshade size=1>
 
 <a name=Stdio.Port>
@@ -4995,7 +5151,7 @@ Usersecurity
 
 </a>
 <hr noshade size=1>
-a name=geteuid>
+<a name=geteuid>
 <dl>
 <dt><b> <font size=+1>N</font><font size=-1>AME</font></b><dd>
 <tt>geteuid</tt> - get the effective user ID
@@ -5017,7 +5173,7 @@ Usersecurity
 
 </a>
 <hr noshade size=1>
-a name=getgid>
+<a name=getgid>
 <dl>
 <dt><b> <font size=+1>N</font><font size=-1>AME</font></b><dd>
 <tt>getgid</tt> - get the group ID
@@ -5039,7 +5195,7 @@ Usersecurity
 
 </a>
 <hr noshade size=1>
-a name=gethostbyaddr>
+<a name=gethostbyaddr>
 <dl>
 <dt><b> <font size=+1>N</font><font size=-1>AME</font></b><dd>
 <tt>gethostbyaddr</tt> - gets information about a host given it's address
@@ -5064,7 +5220,7 @@ or similar system call.
 
 </a>
 <hr noshade size=1>
-a name=gethostbyname>
+<a name=gethostbyname>
 <dl>
 <dt><b> <font size=+1>N</font><font size=-1>AME</font></b><dd>
 <tt>gethostbyname</tt> - gets information about a host given it's name
@@ -5091,7 +5247,7 @@ or similar system call.
 
 </a>
 <hr noshade size=1>
-a name=gethostname>
+<a name=gethostname>
 <dl>
 <dt><b> <font size=+1>N</font><font size=-1>AME</font></b><dd>
 <tt>gethostname</tt> - get the name of this host
@@ -5112,7 +5268,7 @@ or uname(2) system calls.
 
 </a>
 <hr noshade size=1>
-a name=getpgrp>
+<a name=getpgrp>
 <dl>
 <dt><b> <font size=+1>N</font><font size=-1>AME</font></b><dd>
 <tt>getpgrp</tt> - get the process group ID
@@ -5138,7 +5294,7 @@ Processes
 
 </a>
 <hr noshade size=1>
-a name=getpid>
+<a name=getpid>
 <dl>
 <dt><b> <font size=+1>N</font><font size=-1>AME</font></b><dd>
 <tt>getpid</tt> - get the process ID
@@ -5160,7 +5316,7 @@ Processes
 
 </a>
 <hr noshade size=1>
-a name=getppid>
+<a name=getppid>
 <dl>
 <dt><b> <font size=+1>N</font><font size=-1>AME</font></b><dd>
 <tt>getppid</tt> - get the parent process ID
@@ -5182,7 +5338,7 @@ Processes
 
 </a>
 <hr noshade size=1>
-a name=getuid>
+<a name=getuid>
 <dl>
 <dt><b> <font size=+1>N</font><font size=-1>AME</font></b><dd>
 <tt>getuid</tt> - get the user ID
@@ -5204,7 +5360,7 @@ Usersecurity
 
 </a>
 <hr noshade size=1>
-a name=hardlink>
+<a name=hardlink>
 <dl>
 <dt><b> <font size=+1>N</font><font size=-1>AME</font></b><dd>
 <tt>hardlink</tt> - create a hardlink
@@ -5226,7 +5382,7 @@ Creates a hardlink named 'to' from the file 'from'.
 
 </a>
 <hr noshade size=1>
-a name=initgroups>
+<a name=initgroups>
 <dl>
 <dt><b> <font size=+1>N</font><font size=-1>AME</font></b><dd>
 <tt>initgroups</tt> - initialize the group access list
@@ -5250,7 +5406,7 @@ Usersecurity
 
 </a>
 <hr noshade size=1>
-a name=openlog>
+<a name=openlog>
 <dl>
 <dt><b> <font size=+1>N</font><font size=-1>AME</font></b><dd>
 <tt>openlog</tt> - initializes the connection to syslogd
@@ -5304,7 +5460,7 @@ syslog, closelog and setlogmask
 
 </a>
 <hr noshade size=1>
-a name=readlink>
+<a name=readlink>
 <dl>
 <dt><b> <font size=+1>N</font><font size=-1>AME</font></b><dd>
 <tt>readlink</tt> - read a symbolic link
@@ -5326,7 +5482,7 @@ Returns what the symbolic link 'linkname' points to.
 
 </a>
 <hr noshade size=1>
-a name=setegid>
+<a name=setegid>
 <dl>
 <dt><b> <font size=+1>N</font><font size=-1>AME</font></b><dd>
 <tt>setegid</tt> - set the effective group ID
@@ -5348,7 +5504,7 @@ Usersecurity
 
 </a>
 <hr noshade size=1>
-a name=seteuid>
+<a name=seteuid>
 <dl>
 <dt><b> <font size=+1>N</font><font size=-1>AME</font></b><dd>
 <tt>seteuid</tt> - set the effective user ID
@@ -5370,7 +5526,7 @@ Usersecurity
 
 </a>
 <hr noshade size=1>
-a name=setgid>
+<a name=setgid>
 <dl>
 <dt><b> <font size=+1>N</font><font size=-1>AME</font></b><dd>
 <tt>setgid</tt> - set the group ID
@@ -5392,7 +5548,7 @@ Usersecurity
 
 </a>
 <hr noshade size=1>
-a name=setuid>
+<a name=setuid>
 <dl>
 <dt><b> <font size=+1>N</font><font size=-1>AME</font></b><dd>
 <tt>setuid</tt> - set the user ID
@@ -5414,7 +5570,7 @@ Usersecurity
 
 </a>
 <hr noshade size=1>
-a name=symlink>
+<a name=symlink>
 <dl>
 <dt><b> <font size=+1>N</font><font size=-1>AME</font></b><dd>
 <tt>symlink</tt> - create a symbolic link
@@ -5436,7 +5592,7 @@ Creates a symbolic link named 'to' pointing to 'from'.
 
 </a>
 <hr noshade size=1>
-a name=uname>
+<a name=uname>
 <dl>
 <dt><b> <font size=+1>N</font><font size=-1>AME</font></b><dd>
 <tt>uname</tt> - get operating system information
@@ -5467,7 +5623,7 @@ system call.
 <h2>Process</h2>
 The Process module contains functions to start and control other programs from Pike.
 <hr noshade size=1>
-a name=Process.popen>
+<a name=Process.popen>
 <dl>
 <dt><b> <font size=+1>N</font><font size=-1>AME</font></b><dd>
 <tt>Process.popen</tt> - pipe open
@@ -5505,7 +5661,7 @@ be used.
 
 </a>
 <hr noshade size=1>
-a name=Process.spawn>
+<a name=Process.spawn>
 <dl>
 <dt><b> <font size=+1>N</font><font size=-1>AME</font></b><dd>
 <tt>Process.spawn</tt> - spawn a process
@@ -5522,7 +5678,7 @@ int spawn(string <I>cmd</I>, object <I>stdin</I>, object <I>stdout</I>, object <
 <p>
 <dt><b> <font size=+1>D</font><font size=-1>ESCRIPTION</font></b><dd>
 This function spawns a process but does not wait for it to finish.
-Optionally, clones of /precompiled/file can be sent to it to
+Optionally, clones of Stdio.File can be sent to it to
 specify where stdin, stdout and stderr of the spawned processes
 should go.
 <p>
@@ -5533,7 +5689,7 @@ should go.
 
 </a>
 <hr noshade size=1>
-a name=exece>
+<a name=exece>
 <dl>
 <dt><b> <font size=+1>N</font><font size=-1>AME</font></b><dd>
 <tt>exece</tt> - execute a program
@@ -5569,7 +5725,7 @@ exece("/bin/sh", ({"-c", "echo $HOME"}), (["HOME":"/not/home"]));<br>
 
 </a>
 <hr noshade size=1>
-a name=Process.exec>
+<a name=Process.exec>
 <dl>
 <dt><b> <font size=+1>N</font><font size=-1>AME</font></b><dd>
 <tt>Process.exec</tt> - simple way to use exece()
@@ -6126,12 +6282,1728 @@ on the disk.
 <hr noshade size=1>
 
 <h2>Getopt</h2>
+Getopt is a group of function which can be used to find command line options.
+Command line options come in two flavours: long and short. The short ones
+consists of a dash followed by a character (<tt>-t</tt>), the long ones
+consist of two dashes followed by a string of text (<tt>--test</tt>).
+The short options can also be combined, which means that you can write
+<tt>-tda</tt> instead of <tt>-t -d -a</tt>. Options can also require
+arguments, in which case they cannot be combined. To write an option
+with an argument you write <tt>-t <i>argument</i></tt> or <tt>-t<i>argument</i></tt> or <tt>--test=<i>argument</i></tt>.
+
+<hr noshade size=1>
+<a name=Getopt.find_option>
+<dl>
+<dt><b> <font size=+1>N</font><font size=-1>AME</font></b><dd>
+<tt>Getopt.find_option</tt> - find command line options
+<p>
+<dt><b> <font size=+1>S</font><font size=-1>YNTAX</font></b><dd>
+<tt><p>mixed find_option(string *argv,<br>
+<dl><dt><dd>string shortform,<br>
+string longform,<br>
+string envvar,<br>
+mixed def);<br>
+</dl></tt>
+<p>
+<dt><b> <font size=+1>D</font><font size=-1>ESCRIPTION</font></b><dd>
+This is a generic function to parse command line options of the
+type '-f', '--foo' or '--foo=bar'. The first argument should be
+the array of strings that is sent as second argument to your
+main() function, the second is a string with the short form of
+your option. The short form must be only one character long.
+The 'longform' is an alternative and maybe more readable way to
+give the same option. If you give "foo" as longform your program
+will accept --foo as argument. The envvar argument specifies what
+environment variable can be used to specify the same option. The
+envvar option exists to make it easier to custimizer program usage.
+The 'def' has two functions: It specifies that the option takes an
+argument and it tells find_option what to return if the option is
+not present. If 'def' is given and the option does not have an
+argument find_option will print an error message and exit the program.
+<p>Also, as an extra bonus: shortform, longform and envvar can all be
+arrays, in which case either of the options in the array will be
+accpted.
+<p>
+<dt><b> <font size=+1>N</font><font size=-1>OTA</font> <font size=+1>B</font><font size=-1>ENE</font></b><dd>
+find_option modifies argv.<br>
+This function reads options even if they are written after the first
+non-option on the line.
+<p>
+<dt><b> <font size=+1>E</font><font size=-1>XAMPLE</font></b><dd>
+<tt>int main(int argc, string *argv)<br>
+{<br>
+<dl><dt><dd>if(find_option(argv,"f","foo"))<br>
+<dl><dt><dd>werror("The FOO option was given.\n");<br>
+</dl></dl>
+<p><dl><dt><dd>werror("The BAR option got the "+<br>
+find_option(argv,"b","bar","BAR_OPTION","default")+<br>
+" argument.\n");<br>
+</dl>}<br>
+</tt>
+<p>
+<dt><b> <font size=+1>S</font><font size=-1>EE</font> <font size=+1>A</font><font size=-1>LSO</font></b><dd>
+<a href=#Getopt.get_args>Getopt.get_args</a>
+<p>
+</dl>
+</a>
+<hr noshade size=1>
+<a name=Getopt.find_all_options>
+<dl>
+<dt><b> <font size=+1>N</font><font size=-1>AME</font></b><dd>
+<tt>Getopt.find_all_options</tt> - find command line options
+<p>
+<dt><b> <font size=+1>S</font><font size=-1>YNTAX</font></b><dd>
+<tt><p>mixed * find_all_options(string *argv, mixed *option, int|void posix_me_harder);<br>
+</tt>
+<p>
+<dt><b> <font size=+1>D</font><font size=-1>ESCRIPTION</font></b><dd>
+This function does the job of serveral calls to <tt>find_option</tt>.
+The main advantage of this is that it allows it to handle the
+POSIX_ME_HARDER environment variable better. When the either
+the argument <i>posix_me_harder</i> or the environment variable
+POSIX_ME_HARDER is true, no arguments will be parsed after the first
+non-option on the command line.
+<p>
+Each element in the array <i>options</i> should be an array on the
+following form:
+<p>
+<dl>
+<dt>({
+<dd>string name,
+<dd>int type,
+<dd>string|array(string) aliases,
+<dd>void|string|array(string) env_var,
+<dd>void|mixed default
+<dt>})
+</dl>
+Only the first three elements has to be included.
+<dl>
+<dt> <i>name</i>
+<dd> Name is a tag used to identify the option in the output.
+<dt> <i>type</i>
+<dd> Type is one of Getopt.HAS_ARG, Getopt.NO_ARG and Getopt.MAY_HAVE_ARG
+     and it affects how the error handling and parsing works.
+     You should use HAS_ARG for options that require a path, a number or
+     similar. NO_ARG should be used for options that do not need an
+     argument, such as <tt>--version</tt>. MAY_HAVE_ARG should be used
+     for options that may or may not need an argument.
+<dt> <i>aliases</i>
+<dd> This  is a string or a list of string of options that will be looked for.
+     Short and long options can be mixed, and short options can be
+     combined into one string. Note that you must include the dashes
+     in <i>aliases</i> so find_all_options can distinguish between
+      long and short options. Example: <tt>({"-tT","--test"})</tt>
+      This would make find_all_options look for <tt>-t</tt>,
+      <tt>-T</tt> and <tt>--test</tt>.
+<dt> <i>env_var</i>
+<dd> This is a string or an array of strings containging names of
+     environment variables that can be used instead of the
+     command line option.
+<dt> <i>default</i>
+<dd> This is the default value the option will have in the output
+     from this function. Options without defaults will be omitted
+     from the output if they are not found in argv.
+</dl>
+The good news is that the output from this function is a lot simpler.
+Find_all_options returns an array where each element is an array on
+this form:
+<dl>
+<dt>({
+<dd>string name,
+<dd>mixed value
+<dt>})
+</dl>
+The <i>name</i> is the identifer from the input and <i>value</i> is the
+value given to it from the argument, environment variable or <i>default</i>.
+If no default is given, <i>value</i> will be 1.
+<p>
+<dt><b> <font size=+1>N</font><font size=-1>OTA</font> <font size=+1>B</font><font size=-1>ENE</font></b><dd>
+find_option modifies argv.<br>
+<p>
+<dt><b> <font size=+1>E</font><font size=-1>XAMPLE</font></b><dd>
+First let's take a look at input and output:
+<pre>
+&gt; Getopt.find_all_options(({"test","-dd"}),
+&gt;&gt;  ({ ({ "debug", Getopt.NO_ARG, ({"-d","--debug"}), "DEBUG", 1}) }));
+Result: ({
+  ({ "debug",  1 }),
+  ({ "debug",  1 })
+})
+</pre>
+<p>
+This is what it would look like in real code:
+<pre>
+import Getopt;
+
+int debug=0;
+
+int main(int argc, string *argv
+{
+  foreach(find_all_options(argv, ({
+    ({ "debug", MAY_HAVE_ARG, ({"-d","--debug"}), "DEBUG", 1}),
+    ({ "version", NO_ARG, ({"-v","--version" }) })  })),
+    mixed option)
+  {
+    switch(option[0])
+    {
+      case "debug": debug+=option[1]; break;
+      case "version":
+        write("Test program version 1.0\n");
+        exit(1);
+    }
+  }
+
+  argv=Getopt.get_args(argv);
+}
+</pre>
+<p>
+<dt><b> <font size=+1>S</font><font size=-1>EE</font> <font size=+1>A</font><font size=-1>LSO</font></b><dd>
+<a href=#Getopt.get_args>Getopt.get_args</a>
+<p>
+</dl>
+</a>
+<hr noshade size=1>
+<a name=Getopt.get_args>
+<dl>
+<dt><b> <font size=+1>N</font><font size=-1>AME</font></b><dd>
+<tt>Getopt.get_args</tt> - get the non-option arguments
+<p>
+<dt><b> <font size=+1>S</font><font size=-1>YNTAX</font></b><dd>
+<tt>string *get_args(string *<I>argv</I>);<br>
+</tt>
+<p>
+<dt><b> <font size=+1>D</font><font size=-1>ESCRIPTION</font></b><dd>
+This function returns the remaining command line arguments after
+you have run find_options to find all the options in the
+argument list. If there are any options left not handled by
+find_options an error message will be written and the program will
+exit. Otherwise a new 'argv' array without the parsed options is
+returned.
+<p>
+<dt><b> <font size=+1>E</font><font size=-1>XAMPLE</font></b><dd>
+<tt>int main(int argc, string *argv)<br>
+{<br>
+<dl><dt><dd>if(find_option(argv,"f","foo"))<br>
+<dl><dt><dd>werror("The FOO option was given.\n");<br>
+</dl></dl>
+<p><dl><dt><dd>argv=get_args(argv);<br>
+werror("The arguments are: "+(argv*" ")+".\n");<br>
+</dl>}<br>
+</tt>
+<p>
+<dt><b> <font size=+1>S</font><font size=-1>EE</font> <font size=+1>A</font><font size=-1>LSO</font></b><dd>
+<a href=#Getopt.find_option>Getopt.find_option</a>
+<p>
+</dl>
+
+</a>
+<hr noshade size=1>
+<p>
+<h2>Gz</h2>
+The Gz module contains functions to compress and uncompress strings using
+the same algorithm as the program <tt>gzip</tt>. Packing can be done in
+streaming mode or all at once. Note that this module is only available if
+the gzip library was available when Pike was compiled. The Gz module consists
+of two classes; Gz.deflate and Gz.inflate. Gz.deflate is used to pack data
+and Gz.inflate is used to unpack data. (Think "inflatable boat")
+Note that these functions use the same <i>algorithm</i> as gzip, they do
+not use the exact same format however, so you cannot directly unzip gzipped
+files with these routines. Support for this will be added in the future.
+<p>
+<a name=Gz.deflate>
+<dl>
+<dt><b> <font size=+1>N</font><font size=-1>AME</font></b><dd>
+<tt>Gz.deflate</tt> - string packer
+<p>
+<dt><b> <font size=+1>D</font><font size=-1>ESCRIPTION</font></b><dd>
+Gz.inflate is a builtin program written in C. It interfaces the
+packing routines in the libz library.
+<p>
+<dt><b> <font size=+1>N</font><font size=-1>OTA</font> <font size=+1>B</font><font size=-1>ENE</font></b><dd>
+This program is only available if libz was available and found when
+Pike was compiled.
+<p>
+<dt><b> <font size=+1>S</font><font size=-1>EE</font> <font size=+1>A</font><font size=-1>LSO</font></b><dd>
+<a href=Gz.inflate>Gz.inflate</a>
+<p>
+</dl>
+
+</a>
+<hr noshade size=1>
+<a name=Gz.deflate.create>
+<dl>
+<dt><b> <font size=+1>N</font><font size=-1>AME</font></b><dd>
+<tt>Gz.deflate-&gt;create</tt> - initialize packer
+<p>
+<dt><b> <font size=+1>S</font><font size=-1>YNTAX</font></b><dd>
+<tt>void create(int X)<br>
+or<br>
+object(Gz.deflate) Gz.deflate(int X)<br>
+</tt>
+<p>
+<dt><b> <font size=+1>D</font><font size=-1>ESCRIPTION</font></b><dd>
+This functionion is called when a new Gz.deflate is created.
+If given, X should be a number from 0 to 9 indicating the packing /
+cpu ratio. Zero means no packing, 2-3 is considered 'fast', 6 is
+default and higher is considered 'slow' but gives better packing.
+<p>This function can also be used to re-initialize a Gz.deflate object
+so it can be re-used.
+</dl>
+
+</a>
+<hr noshade size=1>
+<a name=Gz.deflate.deflate>
+<dl>
+<dt><b> <font size=+1>N</font><font size=-1>AME</font></b><dd>
+<tt>Gz.deflate-&gt;deflate</tt> - pack data
+<p>
+<dt><b> <font size=+1>S</font><font size=-1>YNTAX</font></b><dd>
+<tt>string deflate(string <I>data</I>, int <I>flush</I>);<br>
+</tt>
+<p>
+<dt><b> <font size=+1>D</font><font size=-1>ESCRIPTION</font></b><dd>
+This function preforms gzip style compression on a string and
+returns the packed data. Streaming can be done by calling this
+functon several time and concatenating the returned data.
+The optional 'flush' argument should be one f the following:
+<p><table border=0 cellpadding=0 cellspacing=0>
+<tr valign=top><td> Gz.NO_FLUSH       </td><td> Only data that doesn't fit in the </td></tr>
+<tr valign=top><td>  </td></tr>
+</table>
+<dl><dt><dd><table border=0 cellpadding=0 cellspacing=0>
+<tr valign=top><td>  </td><td> internal buffers is returned. </td></tr>
+<tr valign=top><td>  </td></tr>
+</table>
+</dl><table border=0 cellpadding=0 cellspacing=0>
+<tr valign=top><td> Gz.PARTIAL_FLUSH </td><td> All input is packed and returned. </td></tr>
+<tr valign=top><td> Gz.SYNC_FLUSH    </td><td> All input is packed and returned. </td></tr>
+</table>
+<dl><dt><dd><table border=0 cellpadding=0 cellspacing=0>
+<tr valign=top><td>  </td><td> Packing is syncronized. </td></tr>
+<tr valign=top><td>  </td></tr>
+</table>
+</dl><table border=0 cellpadding=0 cellspacing=0>
+<tr valign=top><td> Gz.FINISH        </td><td> All input is packed and an 'end of </td></tr>
+<tr valign=top><td>  </td><td>  </td><td>  </td><td>  </td><td> data' marker is appended. </td></tr>
+</table>
+
+<p>Using flushing will degrade packing. Normally NO_FLUSH should be
+used until the end of the data when FINISH should be used. For
+interactive data PARTIAL_FLUSH should be used.
+<p>
+<dt><b> <font size=+1>S</font><font size=-1>EE</font> <font size=+1>A</font><font size=-1>LSO</font></b><dd>
+<a href=#Gz.inflate.inflate>Gz.inflate-&gt;inflate</a>
+<p>
+</dl>
+
+</a>
+<hr noshade size=1>
+<a name=Gz.inflate>
+<dl>
+<dt><b> <font size=+1>N</font><font size=-1>AME</font></b><dd>
+<tt>Gz.inflate</tt> - string unpacker
+<p>
+<dt><b> <font size=+1>D</font><font size=-1>ESCRIPTION</font></b><dd>
+Gz.inflate is a builtin program written in C. It interfaces the
+packing routines in the libz library.
+<p>
+<dt><b> <font size=+1>N</font><font size=-1>OTA</font> <font size=+1>B</font><font size=-1>ENE</font></b><dd>
+This program is only available if libz was available and found when
+Pike was compiled.
+<p>
+<dt><b> <font size=+1>S</font><font size=-1>EE</font> <font size=+1>A</font><font size=-1>LSO</font></b><dd>
+<a href=#Gz.deflate>Gz.deflate</a>
+<p>
+</dl>
+
+</a>
+<hr noshade size=1>
+<a name=Gz.inflate.create>
+<dl>
+<dt><b> <font size=+1>N</font><font size=-1>AME</font></b><dd>
+<tt>Gz.inflate-&gt;create</tt> - initialize unpacker
+<p>
+<dt><b> <font size=+1>S</font><font size=-1>YNTAX</font></b><dd>
+<tt>void create()<br>
+or<br>
+object(Gz.inflate) Gz.inflate()<br>
+</tt>
+<p>
+<dt><b> <font size=+1>D</font><font size=-1>ESCRIPTION</font></b><dd>
+This functionion is called when a new Gz.inflate is created.
+It can also be called after the object has been used to re-initialize
+it.
+<p>
+</dl>
+
+</a>
+<hr noshade size=1>
+<a name=Gz.inflate.inflate>
+<dl>
+<dt><b> <font size=+1>N</font><font size=-1>AME</font></b><dd>
+<tt>Gz.inflate-&gt;inflate</tt> - unpack data
+<p>
+<dt><b> <font size=+1>S</font><font size=-1>YNTAX</font></b><dd>
+<tt>string inflate(string <I>data</I>);<br>
+</tt>
+<p>
+<dt><b> <font size=+1>D</font><font size=-1>ESCRIPTION</font></b><dd>
+This function preforms gzip style decompression. It can inflate
+a whole file at once or in blocks.
+<p>
+<dt><b> <font size=+1>E</font><font size=-1>XAMPLES</font></b><dd>
+<tt>import Stdio;<br>
+// whole file<br>
+write(Gz.inflate()-&gt;inflate(stdin-&gt;read());<br>
+
+<p>// streaming (blocks)<br>
+function inflate=Gz.inflate()-&gt;inflate;<br>
+while(string s=stdin-&gt;read(8192))<br>
+<dl><dt><dd>write(inflate(s));<br>
+</dl></tt>
+<p>
+<dt><b> <font size=+1>S</font><font size=-1>EE</font> <font size=+1>A</font><font size=-1>LSO</font></b><dd>
+<a href=#Gz.deflate.deflate>Gz.deflate-&gt;deflate</a>
+<p>
+</dl>
+
+</a>
+<hr noshade size=1>
+
+<a name=Yp>
+<h2>Yp</h2>
+This module is an interface to the Yellow Pages functions. Yp is also
+known as NIS (Network Information System) and is most commonly used to
+distribute passwords and similar information within a network.
+
+<hr noshade size=1>
+<a name=Yp.default_yp_domain>
+<dl>
+<dt><b> <font size=+1>N</font><font size=-1>AME</font></b><dd>
+<tt>Yp.default_yp_domain</tt> - get the default Yp domain
+<p>
+<dt><b> <font size=+1>S</font><font size=-1>YNTAX</font></b><dd>
+<tt>string default_yp_domain()<br>
+</tt>
+<p>
+<dt><b> <font size=+1>D</font><font size=-1>ESCRIPTION</font></b><dd>
+Returns the default yp-domain.
+<p>
+</dl>
+</a>
+
+<hr noshade size=1>
+
+<a name=Yp.YpDomain>
+<dl>
+<dt><b><font size=+1>N</font><font size=-1>AME</font></b><dd>
+<tt>Yp.YpDomain</tt> - class representing an Yp domain
+</p>
+<dt><b> <font size=+1>S</font><font size=-1>YNTAX</font></b><dd>
+<tt>object(Yp.YpDomain) Yp.YpDomain(string|void <i>domain</i>);
+</tt>
+<p>
+<dt><b> <font size=+1>D</font><font size=-1>ESCRIPTION</font></b><dd>
+This creates a new YpDomain object.
+<p>
+If there is no YP server available for the domain, this
+functioncall will block until there is one. If no server apperars
+in about ten minutes or so, an error will be returned. The timeout
+is not configurable from the C interface to Yp either.
+<p>
+If no domain is given, the default domain will be used. (As returned
+by Yp.default_yp_domain)
+</dl>
+</a>
+
+<hr noshade size=1>
+<a name=Yp.YpDomain.bind>
+<dl>
+<dt><b><font size=+1>N</font><font size=-1>AME</font></b><dd>
+<tt>Yp.YpDomain-&gt;bind</tt> - bind this object to another domain
+<p>
+<dt><b> <font size=+1>S</font><font size=-1>YNTAX</font></b><dd>
+<tt>void bind(string|void <i>domain</i>)</tt>
+<p>
+<dt><b> <font size=+1>D</font><font size=-1>ESCRIPTION</font></b><dd>
+Re-bind the object to another (or the same) domain. If no domain is given,
+the default domain will be used.
+<p>
+</dl>
+</a>
+
+<hr noshade size=1>
+<a name=Yp.YpDomain.match>
+<dl>
+<dt><b><font size=+1>N</font><font size=-1>AME</font></b><dd>
+<tt>Yp.Ypdomain-&gt;match</tt> - match a key in a map
+<p>
+<dt><b> <font size=+1>S</font><font size=-1>YNTAX</font></b><dd>
+<tt>string match(string <i>map</i>, string <i>key</i>)</tt>
+<p>
+<dt><b> <font size=+1>D</font><font size=-1>ESCRIPTION</font></b><dd>
+   If 'map' does not exist, an error will be generated. 
+   Otherwise the string matching the key will be returned.
+   If there is no such key in the map, 0 will be returned.
+<p>
+   <i>arguments</i> is the map Yp-map to search in. This must be a full map
+   name, for example, you should use <tt>passwd.byname</tt> instead of
+   just <tt>passwd</tt>. <i>key</i> is the key to search for. The key
+   must match exactly, no pattern matching of any kind is done.
+<p>
+<dt><b> <font size=+1>E</font><font size=-1>XAMPLE</font></b><dd>
+<pre>
+object dom = Yp.YpDomain();
+write(dom->match("passwd.byname", "root"));
+</pre>
+</dl>
+</a>
+
+<hr noshade size=1>
+
+<a name=Yp.YpDomain.all>
+<dl>
+<dt><b><font size=+1>N</font><font size=-1>AME</font></b><dd>
+<tt>Yp.YpDomain-&gt;all</tt> - return the whole map
+<p>
+<dt><b> <font size=+1>S</font><font size=-1>YNTAX</font></b><dd>
+<tt>mapping(string:string) all(string <i>map</i>)</tt>
+
+<p>
+<dt><b> <font size=+1>D</font><font size=-1>ESCRIPTION</font></b><dd>
+  Return the whole map as a mapping. <i>map</i> is the YP-map to search in.
+  This must be the full map name, you have to use <tt>passwd.byname</tt>
+  instead of just <tt>passwd</tt>.
+<p>
+</dl>
+</a>
+<hr noshade size=1>
+
+<a name=Yp.YpDomain.map>
+<dl>
+<dt><b><font size=+1>N</font><font size=-1>AME</font></b><dd>
+<tt>Yp.YpDomain-&gt;map</tt> - call a function for each entry in an Yp map
+<p>
+<dt><b> <font size=+1>S</font><font size=-1>YNTAX</font></b><dd>
+<tt>void map(string <i>map</i>, function(string,string:void) <i>over</i>)</tt>
+<p>
+<dt><b> <font size=+1>D</font><font size=-1>ESCRIPTION</font></b><dd>
+    For each entry in 'map', call the function(s) specified by 'over'.
+    Over will get two arguments, the first beeing the key, and the
+    second the value. <i>map</i> is the YP-map to search in.
+    This must be the full map name, as an
+    example, passwd.byname instead of just passwd.
+<p>
+</dl>
+</a>
+
+<hr noshade size=1>
+<a name=Yp.YpDomain.server>
+<dl>
+<dt><b><font size=+1>N</font><font size=-1>AME</font></b><dd>
+<tt>Yp.YpDomain-&gt;server</tt> - find an Yp server
+<p>
+<dt><b> <font size=+1>S</font><font size=-1>YNTAX</font></b><dd>
+<tt>string server(string <i>map</i>)</tt>
+<p>
+<dt><b> <font size=+1>D</font><font size=-1>ESCRIPTION</font></b><dd>
+  Return the hostname of the server serving the map 'map'. <i>map</i>
+  is the YP-map to search in. This must be the full map name, as an
+    example, passwd.byname instead of just passwd.
+<p>
+</dl>
+</a>
+<hr noshade size=1>
+
+<a name=Yp.YpDomain.order>
+<dl>
+<dt><b><font size=+1>N</font><font size=-1>AME</font></b><dd>
+<tt>Yp.YpDomain-&gt;order</tt> - get the'order' for specified map
+<p>
+<dt><b> <font size=+1>S</font><font size=-1>YNTAX</font></b><dd>
+<tt>int order(string <i>map</i>)</tt>
+<p>
+<dt><b> <font size=+1>D</font><font size=-1>ESCRIPTION</font></b><dd>
+  Return the 'order' number for the map map. This is usually a
+  time_t (see the efun time()). When the map is changed, this number
+  will change as well. <i>map</i> is
+    the YP-map to search in. This must be the full map name, as an
+    example, passwd.byname instead of just passwd.
+</dl>
+</a>
+<hr noshade size=1>
+
+<a name=Yp.YpMap>
+<dl>
+<dt><b><font size=+1>N</font><font size=-1>AME</font></b><dd>
+<tt>Yp.YpMap</tt> - class representing one Yp map
+<p>
+<dt><b> <font size=+1>S</font><font size=-1>YNTAX</font></b><dd>
+<tt>object(Yp.YpMap) Yp.Ypmap(string <i>map</i>, string|void <i>domain</i>)</tt>
+<dt><b> <font size=+1>D</font><font size=-1>ESCRIPTION</font></b><dd>
+  This creates a new YpMap object. 
+<p>
+  If there is no YP server available for the domain, this
+  functioncall will block until there is one. If no server appears
+  in about ten minutes or so, an error will be returned. The timeout
+  is not configurable from the C-yp interface either. <i>map</i> is
+    the YP-map to bind to. This must be the full map name, as an
+    example, passwd.byname instead of just passwd.
+  If no domain is specified, the
+  default domain will be used. This is usualy best.
+<p>
+</dl>
+</a>
+<hr noshade size=1>
+
+<a name=Yp.YpMap.match>
+<dl>
+<dt><b><font size=+1>N</font><font size=-1>AME</font></b><dd>
+<tt>Yp.YpMap-&gt;match</tt> - find key in map
+<p>
+<dt><b> <font size=+1>S</font><font size=-1>YNTAX</font></b><dd>
+<tt>string match(string <i>key</i>)</tt><br>
+or<br>
+<tt>string <i>Yp.YpMap</i>[string <i>key</i>]</tt>
+<p>
+<dt><b> <font size=+1>D</font><font size=-1>ESCRIPTION</font></b><dd>
+  Search for the key 'key'. If there is no 'key' in the map, 0
+  will be returned, otherwise the string matching the key will
+  be returned. <i>key</i> is the key to search for.
+  This key must match exactly, no pattern
+   matching of any kind is done.
+</dl>
+</a>
+<hr noshade size=1>
+
+
+<a name=Yp.YpMap.all>
+<dl>
+<dt><b><font size=+1>N</font><font size=-1>AME</font></b><dd>
+<tt>Yp.YpMap-&gt;all</tt> - return the whole map as a mapping
+<p>
+<dt><b> <font size=+1>S</font><font size=-1>YNTAX</font></b><dd>
+<tt>mapping(string:string) all();</tt><br>
+or<br>
+<tt>(mapping) <i>Yp.YpMap</i></tt><br>
+<p>
+<dt><b> <font size=+1>D</font><font size=-1>ESCRIPTION</font></b><dd>
+    Return the whole map as a mapping.
+</dl>
+</a>
+<hr noshade size=1>
+<p>
+<a name=Yp.YpMap.map>
+<dl>
+<dt><b><font size=+1>N</font><font size=-1>AME</font></b><dd>
+<tt>Yp.YpMap-&gt;map</tt> - call a function for each entry in the map
+<p>
+<dt><b> <font size=+1>S</font><font size=-1>YNTAX</font></b><dd>
+<tt>void map(function(string,string:void) <i>over</i>)</tt>
+<p>
+<dt><b> <font size=+1>D</font><font size=-1>ESCRIPTION</font></b><dd>
+    For each entry in the map, call the function(s) specified by 'over'.
+    The function will be called like 'void over(string key, string value)'
+</dl>
+</a>
+<hr noshade size=1>
+
+<a name=Yp.YpMap.server>
+<dl>
+<dt><b><font size=+1>N</font><font size=-1>AME</font></b><dd>
+<tt>Yp.YpMap-&gt;server</tt> - find what server servers this map
+<p>
+<dt><b> <font size=+1>S</font><font size=-1>YNTAX</font></b><dd>
+<tt>string server()</tt>
+<p>
+<dt><b> <font size=+1>D</font><font size=-1>ESCRIPTION</font></b><dd>
+    Return the hostname of the server serving this map.
+</dl>
+</a>
+<hr noshade size=1>
+<p>
+<a name=Yp.YpMap.order>
+<dl>
+<dt><b><font size=+1>N</font><font size=-1>AME</font></b><dd>
+<tt>Yp.YpMap-&gt;order()</tt> - find the 'order' of this map
+<p>
+<dt><b> <font size=+1>S</font><font size=-1>YNTAX</font></b><dd>
+<tt>int order()</tt>
+<p>
+<dt><b> <font size=+1>D</font><font size=-1>ESCRIPTION</font></b><dd>
+    Return the 'order' number for this map. This is usually a
+    time_t (see the efun time())
+</dl>
+</a>
+<hr noshade size=1>
+<p>
+<a name=Yp.YpMap._sizeof>
+<dl>
+<dt><b><font size=+1>N</font><font size=-1>AME</font></b><dd>
+<tt>Yp.YpMap._sizeof</tt> - return the number of entries in the map
+<p>
+<dt><b> <font size=+1>S</font><font size=-1>YNTAX</font></b><dd>
+<tt>int sizeof(<i>Yp.YpMap</i>)</tt>
+<p>
+<dt><b> <font size=+1>D</font><font size=-1>ESCRIPTION</font></b><dd>
+   Returns the number of entries in the map. This is equivalent to
+<tt>sizeof((mapping)map);</tt>
+</dl>
+</a>
+<hr noshade size=1>
+
+<a name=Yp.YpMap._indices>
+<a name=Yp.YpMap._values>
+<dl>
+<dt><b><font size=+1>N</font><font size=-1>AME</font></b><dd>
+<tt>Yp.YpMap._indices</tt> - return the indices from the map<br>
+<tt>Yp.YpMap._values</tt> - return the values from the map
+<p>
+<dt><b> <font size=+1>S</font><font size=-1>YNTAX</font></b><dd>
+array(string) indices(<i>Yp.YpMap</i>)</br>
+array(string) values(<i>Yp.Ypmap</i>)
+<p>
+<dt><b> <font size=+1>D</font><font size=-1>ESCRIPTION</font></b><dd>
+  Return the indices of the map. If indices is called first, values must
+  be called immediately after. If values is called first, it is the
+  other way around.
+</dl>
+<p>
+</dl>
+</a>
+</a>
+
+<p>
+<hr noshade size=1>
+Here is an example program using the Yp module, it lists users and
+their GCOS field from the Yp map "passwd.byname" if your system uses
+Yp.
+
+<pre>
+	import Yp;
+
+	void print_entry(string key, string val)
+	{
+	  val = (val/":")[4];
+	  if(strlen(val))
+	  {
+	    string q = ".......... ";
+	    werror(key+q[strlen(key)..]+val+"\n");
+	  }
+	}
+  
+	void main(int argc, array(string) argv)
+	{
+	  object (YpMap) o = YpMap("passwd.byname");
+
+	  werror("server.... "+ o-&gt;server() + "\n"
+	  	 "age....... "+ (-o-&gt;order()+time()) + "\n"
+	  	 "per....... "+ o["per"] + "\n"
+	  	 "size...... "+ sizeof(o) + "\n");
+  
+	  o-&gt;map(print_entry); // Print username/GECOS pairs
+	}
+</pre>
+<hr noshade size=1>
+
+<h2>MIME</h2>
+
+<a href="http://www.roxen.com/rfc/rfc1521.txt">RFC1521</a>, the
+<b>Multipurpose Internet Mail Extensions</b> memo, defines a
+structure is the base for all messages read and written by modern mail
+and news programs.  It is also partly the base for the HTTP protocol.
+Just like <a href="http://www.roxen.com/rfc/rfc822.txt">RFC822</a>,
+MIME declares that a message should consist of two entities,
+the headers and the body.  In addition, the following properties are given
+to these two entities:
+
+<dl>
+<dt>Headers
+<dd><ul>
+<li>A MIME-Version header must be present to signal MIME compatibility
+<li>A Content-Type header should be present to describe the nature of the
+data in the message body.  Seven major types are defined, and an extensive
+number of subtypes are available.  The header can also contain attributes
+specific to the type and subtype.
+<li>A Content-Transfer-Encoding may be present to notify that the data of
+the body is encoded in some particular encoding.
+</ul>
+<dt>Body
+<dd><ul>
+<li>Raw data to be interpreted according to the Content-Type header
+<li>Can be encoded using one of several Content-Transfer-Encodings to
+allow transport over non 8bit clean channels
+</ul>
+</dl>
+
+The MIME module can extract and analyze these two entitites from a stream
+of bytes.  It can also recreate such a stream from these entities.
+To encapsulate the headers and body entities, the class MIME.Message is
+used.  An object of this class holds all the headers as a mapping from
+string to string, and it is possible to obtain the body data in either
+raw or encoded form as a string.  Common attributes such as message type and
+text charset are also extracted into separate variables for easy access.
+
+<p>
+The Message class does not make any interpretation of the body data, unless
+the content type is <tt>multipart</tt>.  A multipart message contains several
+individual messages separated by boundary strings.  The <tt>create</tt>
+method of the Message class will divide a multipart body on these boundaries,
+and then create individial Message objects for each part.  These objects
+will be collecte in the array <tt>body_parts</tt> within the original
+Message object.  If any of the new Message objects have a body of type
+multpart, the process is of course repeated recursively.  The following
+figure illustrates a multipart message containing three parts, one of
+which contains plain text, one containing a graphical image, and the third
+containing raw uninterpreted data:
+
+<img src=multipart.gif>
+
+<hr newpage>
+
+<h2>Global functions</h2>
+
+<a name=MIME.decode>
+<dl>
+<dt><b> <font size=+1>N</font><font size=-1>AME</font></b><dd>
+<tt>MIME.decode</tt> - Remove transfer encoding
+<p>
+<dt><b> <font size=+1>S</font><font size=-1>YNTAX</font></b><dd>
+<tt>string decode(string <i>data</i>, string <i>encoding</i>);<br>
+</tt>
+<p>
+<dt><b> <font size=+1>D</font><font size=-1>ESCRIPTION</font></b><dd>
+Extract raw data from an encoded string suitable for transport between systems.
+The encoding can be any of
+<tt><ul>
+<li>7bit
+<li>8bit
+<li>base64
+<li>binary
+<li>quoted-printable
+<li>x-uue
+</ul></tt>
+The encoding string is not case sensitive.
+<p>
+<dt><b> <font size=+1>S</font><font size=-1>EE</font> <font size=+1>A</font><font size=-1>LSO</font></b><dd>
+<a href=#MIME.encode>MIME.encode</a>
+<p>
+</dl>
+</a>
+
+<hr newpage>
+<a name=MIME.decode_base64>
+<dl>
+<dt><b> <font size=+1>N</font><font size=-1>AME</font></b><dd>
+<tt>MIME.decode_base64</tt> - Decode <tt>base64</tt> transfer encoding
+<p>
+<dt><b> <font size=+1>S</font><font size=-1>YNTAX</font></b><dd>
+<tt>string decode_base64(string <i>encoded_data</i>);<br>
+</tt>
+<p>
+<dt><b> <font size=+1>D</font><font size=-1>ESCRIPTION</font></b><dd>
+This function decodes data encoded using the <tt>base64</tt> transfer encoding.
+<p>
+<dt><b> <font size=+1>S</font><font size=-1>EE</font> <font size=+1>A</font><font size=-1>LSO</font></b><dd>
+<a href=#MIME.encode_base64>MIME.encode_base64</a>
+<p>
+</dl>
+</a>
+
+<hr newpage>
+<a name=#MIME.decode_qp>
+<dl>
+<dt><b> <font size=+1>N</font><font size=-1>AME</font></b><dd>
+<tt>MIME.decode_qp</tt> - Decode <tt>quoted-printable</tt> transfer encoding
+<p>
+<dt><b> <font size=+1>S</font><font size=-1>YNTAX</font></b><dd>
+<tt>string decode_qp(string <i>encoded_data</i>);<br>
+</tt>
+<p>
+<dt><b> <font size=+1>D</font><font size=-1>ESCRIPTION</font></b><dd>
+This function decodes data encoded using the <tt>quoted-printable</tt>
+(a.k.a. quoted-unreadable) transfer encoding.
+<p>
+<dt><b> <font size=+1>S</font><font size=-1>EE</font> <font size=+1>A</font><font size=-1>LSO</font></b><dd>
+<a href=#MIME.encode_qp>MIME.encode_qp</a>
+<p>
+</dl>
+</a>
+
+<hr newpage>
+<a name=MIME.decode_uue>
+<dl>
+<dt><b> <font size=+1>N</font><font size=-1>AME</font></b><dd>
+<tt>MIME.decode_uue</tt> - Decode <tt>x-uue</tt> transfer encoding
+<p>
+<dt><b> <font size=+1>S</font><font size=-1>YNTAX</font></b><dd>
+<tt>string decode_uue(string <i>encoded_data</i>);<br>
+</tt>
+<p>
+<dt><b> <font size=+1>D</font><font size=-1>ESCRIPTION</font></b><dd>
+This function decodes data encoded using the <tt>x-uue</tt> transfer encoding.
+It can also be used to decode generic UUEncoded files.
+<p>
+<dt><b> <font size=+1>S</font><font size=-1>EE</font> <font size=+1>A</font><font size=-1>LSO</font></b><dd>
+<a href=#MIME.encode_uue>MIME.encode_uue</a>
+<p>
+</dl>
+</a>
+
+<hr newpage>
+<a name=#MIME.decode_word>
+<dl>
+<dt><b> <font size=+1>N</font><font size=-1>AME</font></b><dd>
+<tt>MIME.decode_word</tt> - Descramble RFC1522 encoding
+<p>
+<dt><b> <font size=+1>S</font><font size=-1>YNTAX</font></b><dd>
+<tt>array(string) decode_word(string <i>word</i>);<br>
+</tt>
+<p>
+<dt><b> <font size=+1>D</font><font size=-1>ESCRIPTION</font></b><dd>
+Extracts the textual content and character set from an <i>encoded word</i>
+as specified by RFC1522.  The result is an array where the first element
+is the raw text, and the second element the name of the character set.
+If the input string is not an encoded word, the result is still an array,
+but the charset element will be set to 0.  Note that this function can only
+be applied to individual encoded words.
+<p>
+<dt><b> <font size=+1>E</font><font size=-1>XAMPLES</font></b><dd>
+<pre>
+> Array.map("=?iso-8859-1?b?S2lscm95?= was =?us-ascii?q?h=65re?="/" ",
+            MIME.decode_word);
+Result: ({ /* 3 elements */
+    ({ /* 2 elements */
+        "Kilroy",
+        "iso-8859-1"
+    }),
+    ({ /* 2 elements */
+        "was",
+        0
+    }),
+    ({ /* 2 elements */
+        "here",
+        "us-ascii"
+    })
+})
+</pre>
+<p>
+<dt><b> <font size=+1>S</font><font size=-1>EE</font> <font size=+1>A</font><font size=-1>LSO</font></b><dd>
+<a href=#MIME.encode_word>MIME.encode_word</a>
+<p>
+</dl>
+</a>
+
+<hr newpage>
+<a name=MIME.encode>
+<dl>
+<dt><b> <font size=+1>N</font><font size=-1>AME</font></b><dd>
+<tt>MIME.encode</tt> - Apply transfer encoding
+<p>
+<dt><b> <font size=+1>S</font><font size=-1>YNTAX</font></b><dd>
+<tt>string encode(string <i>data</i>, string <i>encoding</i>,
+ void|string <i>filename</i>);<br>
+</tt>
+<p>
+<dt><b> <font size=+1>D</font><font size=-1>ESCRIPTION</font></b><dd>
+Encode raw data into something suitable for transport to other systems.
+The encoding can be any of
+<tt><ul>
+<li>7bit
+<li>8bit
+<li>base64
+<li>binary
+<li>quoted-printable
+<li>x-uue
+</ul></tt>
+The encoding string is not case sensitive.  For the <tt>x-uue</tt> encoding,
+an optional filename string may be supplied.
+<p>
+<dt><b> <font size=+1>S</font><font size=-1>EE</font> <font size=+1>A</font><font size=-1>LSO</font></b><dd>
+<a href=#MIME.decode>MIME.decode</a>
+<p>
+</dl>
+</a>
+
+<hr newpage>
+<a name=MIME.encode_base64>
+<dl>
+<dt><b> <font size=+1>N</font><font size=-1>AME</font></b><dd>
+<tt>MIME.encode_base64</tt> - Encode string using <tt>base64</tt> transfer encoding
+<p>
+<dt><b> <font size=+1>S</font><font size=-1>YNTAX</font></b><dd>
+<tt>string encode_base64(string <i>data</i>);<br>
+</tt>
+<p>
+<dt><b> <font size=+1>D</font><font size=-1>ESCRIPTION</font></b><dd>
+This function encodes data using the <tt>base64</tt> transfer encoding.
+<p>
+<dt><b> <font size=+1>S</font><font size=-1>EE</font> <font size=+1>A</font><font size=-1>LSO</font></b><dd>
+<a href=#MIME.decode_base64>MIME.decode_base64</a>
+<p>
+</dl>
+</a>
+
+<hr newpage>
+<a name=MIME.encode_qp>
+<dl>
+<dt><b> <font size=+1>N</font><font size=-1>AME</font></b><dd>
+<tt>MIME.encode_qp</tt> - Encode string using <tt>quoted-printable</tt> transfer encoding
+<p>
+<dt><b> <font size=+1>S</font><font size=-1>YNTAX</font></b><dd>
+<tt>string encode_qp(string <i>data</i>);<br>
+</tt>
+<p>
+<dt><b> <font size=+1>D</font><font size=-1>ESCRIPTION</font></b><dd>
+This function encodes data using the <tt>quoted-printable</tt>
+(a.k.a. quoted-unreadable) transfer encoding.  <strong>Please do not use
+this function.  QP is evil, and there's no excuse for using it.</strong>
+<p>
+<dt><b> <font size=+1>S</font><font size=-1>EE</font> <font size=+1>A</font><font size=-1>LSO</font></b><dd>
+<a href=#MIME.decode_qp>MIME.decode_qp</a>
+<p>
+</dl>
+</a>
+
+<hr newpage>
+<a name=MIME.encode_uue>
+<dl>
+<dt><b> <font size=+1>N</font><font size=-1>AME</font></b><dd>
+<tt>MIME.encode_uue</tt> - Encode string using <tt>x-uue</tt> transfer encoding
+<p>
+<dt><b> <font size=+1>S</font><font size=-1>YNTAX</font></b><dd>
+<tt>string encode_uue(string <i>encoded_data</i>,
+ void|string <i>filename</i>);<br>
+</tt>
+<p>
+<dt><b> <font size=+1>D</font><font size=-1>ESCRIPTION</font></b><dd>
+This function encodes data using the <tt>x-uue</tt> transfer encoding.
+The optional argument filename specifies an advisory filename to include
+in the encoded data, for extraction purposes.
+This function can also be used to produce generic UUEncoded files.
+<p>
+<dt><b> <font size=+1>S</font><font size=-1>EE</font> <font size=+1>A</font><font size=-1>LSO</font></b><dd>
+<a href=#MIME.decode_uue>MIME.decode_uue</a>
+<p>
+</dl>
+</a>
+
+<hr newpage>
+<a name=MIME.encode_word>
+<dl>
+<dt><b> <font size=+1>N</font><font size=-1>AME</font></b><dd>
+<tt>MIME.encode_word</tt> - Encode word according to RFC1522
+<p>
+<dt><b> <font size=+1>S</font><font size=-1>YNTAX</font></b><dd>
+<tt>string encode_word(array(string) <i>word</i>, string <i>encoding</i>);<br>
+</tt>
+<p>
+<dt><b> <font size=+1>D</font><font size=-1>ESCRIPTION</font></b><dd>
+Create an <i>encoded word</i> as specified in RFC1522 from an array containing
+a raw text string and a charset name.  The text will be transfer encoded
+according to the encoding argument, which can be either <tt>"base64"</tt> or
+<tt>"quoted-printable"</tt> (or either <tt>"b"</tt> or <tt>"q"</tt> for
+short).  If either the second element of the array (the charset name), or
+the encoding argument is 0, the raw text is returned as is.
+<p>
+<dt><b> <font size=+1>E</font><font size=-1>XAMPLES</font></b><dd>
+<pre>
+> MIME.encode_word( ({ "Quetzalcoatl", "iso-8859-1" }), "base64" );
+Result: =?iso-8859-1?b?UXVldHphbGNvYXRs?=
+> MIME.encode_word( ({ "Foo", 0 }), "base64" );
+Result: Foo
+</pre>
+<p>
+<dt><b> <font size=+1>S</font><font size=-1>EE</font> <font size=+1>A</font><font size=-1>LSO</font></b><dd>
+<a href=#MIME.decode_word>MIME.decode_word</a>
+<p>
+</dl>
+</a>
+
+<hr newpage>
+<a name=MIME.generate_boundary>
+<dl>
+<dt><b> <font size=+1>N</font><font size=-1>AME</font></b><dd>
+<tt>MIME.generate_boundary</tt> - Create a suitable boundary string for multiparts
+<p>
+<dt><b> <font size=+1>S</font><font size=-1>YNTAX</font></b><dd>
+<tt>string generate_boundary();<br>
+</tt>
+<p>
+<dt><b> <font size=+1>D</font><font size=-1>ESCRIPTION</font></b><dd>
+This function will create a string that can be used as a separator string
+for multipart messages.  The generated string is guaranteed not to appear
+in <tt>base64</tt>, <tt>quoted-printable</tt>, or <tt>x-uue</tt> encoded data.
+It is also unlikely to appear in normal text.  This function is used by
+the cast method of the <tt>Message</tt> class if no boundary string is
+specified.
+<p>
+</dl>
+</a>
+
+<hr newpage>
+<a name=MIME.guess_subtype>
+<dl>
+<dt><b> <font size=+1>N</font><font size=-1>AME</font></b><dd>
+<tt>MIME.guess_subtype</tt> - Provide a reasonable default for the subtype field
+<p>
+<dt><b> <font size=+1>S</font><font size=-1>YNTAX</font></b><dd>
+<tt>string guess_subtype(string <i>type</i>);<br>
+</tt>
+<p>
+<dt><b> <font size=+1>D</font><font size=-1>ESCRIPTION</font></b><dd>
+Some pre-RFC1521 mailers provide only a type and no subtype in the
+Content-Type header field.  This function can be used to obtain a
+reasonable default subtype given type type of a message.  Currently,
+the function uses the following guesses:
+<table border=1>
+<tr><th>type</th><th>subtype</th></tr>
+<tr><td>text</td><td>plain</td></tr>
+<tr><td>message</td><td>rfc822</td></tr>
+<tr><td>multipart</td><td>mixed</td></tr>
+</table>
+<p>
+</dl>
+</a>
+
+
+<hr newpage>
+<a name=MIME.quote>
+<dl>
+<dt><b> <font size=+1>N</font><font size=-1>AME</font></b><dd>
+<tt>MIME.quote</tt> - Create an RFC822 header field from lexical elements
+<p>
+<dt><b> <font size=+1>S</font><font size=-1>YNTAX</font></b><dd>
+<tt>string quote(array(string|int) <i>lexical_elements</i>);<br>
+</tt>
+<p>
+<dt><b> <font size=+1>D</font><font size=-1>ESCRIPTION</font></b><dd>
+This function is the inverse of the <a href=#tokenize>tokenize</a> function.
+A header field value is constructed from a sequence of lexical elements.
+Characters (<tt>int</tt>s) are taken to be special-characters, whereas
+strings are encoded as atoms or quoted-strings, depending on whether
+they contain any special characters.
+<p>
+<dt><b> <font size=+1>E</font><font size=-1>XAMPLES</font></b><dd>
+<pre>
+> MIME.quote( ({ "attachment", ';', "filename", '=', "/usr/dict/words" }) );
+Result: attachment;filename="/usr/dict/words"
+</pre>
+<p>
+<dt><b> <font size=+1>N</font><font size=-1>OTA</font> <font size=+1>B</font><font size=-1>ENE</font></b><dd>
+There is no way to constuct a domain-literal using this function.
+Neither can it be used to produce comments.
+<p>
+<dt><b> <font size=+1>S</font><font size=-1>EE</font> <font size=+1>A</font><font size=-1>LSO</font></b><dd>
+<a href=#MIME.tokenize>MIME.tokenize</a>
+<p>
+</dl>
+</a>
+
+<hr newpage>
+<a name=MIME.tokenize>
+<dl>
+<dt><b> <font size=+1>N</font><font size=-1>AME</font></b><dd>
+<tt>MIME.tokenize</tt> - Separate an RFC822 header field into lexical elements
+<p>
+<dt><b> <font size=+1>S</font><font size=-1>YNTAX</font></b><dd>
+<tt>array(string|int) tokenize(string <i>header</i>);<br>
+</tt>
+<p>
+<dt><b> <font size=+1>D</font><font size=-1>ESCRIPTION</font></b><dd>
+A structured header field, as specified by RFC822, is constructed from
+a sequence of lexical elements.  These are:
+<ul>
+<li>individual special characters
+<li>quoted-strings
+<li>domain-literals
+<li>comments
+<li>atoms
+</ul>
+This function will analyze a string containing the header value, and produce
+an array containing the lexical elements.  Individual special characters
+will be returned as characters (i.e. <tt>int</tt>s).  Quoted-strings,
+domain-literals and atoms will be decoded and returned as strings.
+Comments are not returned in the array at all.
+<p>
+<dt><b> <font size=+1>E</font><font size=-1>XAMPLES</font></b><dd>
+<pre>
+> MIME.tokenize("multipart/mixed; boundary=\"foo/bar\" (Kilroy was here)");
+Result: ({ /* 7 elements */
+    "multipart",
+    47,
+    "mixed",
+    59,
+    "boundary",
+    61,
+    "foo/bar"
+})
+</pre>
+<p>
+<dt><b> <font size=+1>N</font><font size=-1>OTA</font> <font size=+1>B</font><font size=-1>ENE</font></b><dd>
+As domain-literals are returned as strings, there is no way to tell the
+domain-literal <tt>[127.0.0.1]</tt> from the quoted-string
+<tt>"[127.0.0.1]"</tt>.  Hopefully this won't cause any problems.
+Domain-literals are used seldom, if at all, anyway...
+<p>
+The set of special-characters is the one specified in RFC1521 (i.e. <tt>"&lt;",
+"&gt;", "@", ",", ";", ":", "\", "/", "?", "="</tt>), and not the one
+specified in RFC822.
+<p>
+<dt><b> <font size=+1>S</font><font size=-1>EE</font> <font size=+1>A</font><font size=-1>LSO</font></b><dd>
+<a href=#MIME.quote>MIME.quote</a>
+<p>
+</dl>
+</a>
+
+<hr newpage>
+
+<h2>The MIME.Message class</h2>
+
+<h3>Public fields</h3>
+
+<hr newpage>
+<a name=MIME.Message.body_parts>
+<dl>
+<dt><b> <font size=+1>N</font><font size=-1>AME</font></b><dd>
+<tt>MIME.Message-&gt;body_parts</tt> - Multipart submessages
+<p>
+<dt><b> <font size=+1>S</font><font size=-1>YNTAX</font></b><dd>
+<tt>array(object) msg-&gt;body_parts;<br>
+</tt>
+<p>
+<dt><b> <font size=+1>D</font><font size=-1>ESCRIPTION</font></b><dd>
+If the message is of type <tt>multipart</tt>, this is an array containing one
+Message object for each part of the message.  If the message is not a
+multipart, this field is <tt>0</tt>.
+<p>
+<dt><b> <font size=+1>S</font><font size=-1>EE</font> <font size=+1>A</font><font size=-1>LSO</font></b><dd>
+<a href=#MIME.Message.type>MIME.Message.type</a>,
+<a href=#MIME.Message.boundary>MIME.Message.boundary</a>
+<p>
+</dl>
+</a>
+
+<hr newpage>
+<a name=MIME.Message.boundary>
+<dl>
+<dt><b> <font size=+1>N</font><font size=-1>AME</font></b><dd>
+<tt>MIME.mesage-&gt;boundary</tt> - Boundary string for multipart messages
+<p>
+<dt><b> <font size=+1>S</font><font size=-1>YNTAX</font></b><dd>
+<tt>string msg->boundary;<br>
+</tt>
+<p>
+<dt><b> <font size=+1>D</font><font size=-1>ESCRIPTION</font></b><dd>
+For multipart messages, this <tt>Content-Type</tt> parameter gives a
+delimiter string for separating the individual messages.  As multiparts
+are handled internally by the module, you should not need to access this
+field.
+<p>
+<dt><b> <font size=+1>S</font><font size=-1>EE</font> <font size=+1>A</font><font size=-1>LSO</font></b><dd>
+<a href=#MIME.Message.setboundary>MIME.Message.setboundary</a>
+<p>
+</dl>
+</a>
+
+<hr newpage>
+<a name=MIME.Message.charset>
+<dl>
+<dt><b> <font size=+1>N</font><font size=-1>AME</font></b><dd>
+<tt>MIME.Message-&gt;charset</tt> - Character encoding for text bodies
+<p>
+<dt><b> <font size=+1>S</font><font size=-1>YNTAX</font></b><dd>
+<tt>string msg-&gt;charset;<br>
+</tt>
+<p>
+<dt><b> <font size=+1>D</font><font size=-1>ESCRIPTION</font></b><dd>
+One of the possible parameters of the <tt>Content-Type</tt> header is the
+charset attribute.  It determines the character encoding used in bodies of
+type text.  If there is no <tt>Content-Type</tt> header, the value of this
+field is <tt>"us-ascii"</tt>.
+<p>
+<dt><b> <font size=+1>S</font><font size=-1>EE</font> <font size=+1>A</font><font size=-1>LSO</font></b><dd>
+<a href=#MIME.Message.type>MIME.Message-&gt;type</a>
+<p>
+</dl>
+</a>
+
+<hr newpage>
+<a name=MIME.Message.disposition>
+<dl>
+<dt><b> <font size=+1>N</font><font size=-1>AME</font></b><dd>
+<tt>MIME.Message-&gt;disposition</tt> - Multipart subpart disposition
+<p>
+<dt><b> <font size=+1>S</font><font size=-1>YNTAX</font></b><dd>
+<tt>string msg-&gt;disposition;<br>
+</tt>
+<p>
+<dt><b> <font size=+1>D</font><font size=-1>ESCRIPTION</font></b><dd>
+The first part of the <tt>Content-Disposition</tt> header, hinting on how
+this part of a multipart message should be presented in an interactive
+application.  If there is no <tt>Content-Disposition</tt> header, this
+field is <tt>0</tt>.
+<p>
+</dl>
+</a>
+
+<hr newpage>
+<a name=MIME.Message.disp_params>
+<dl>
+<dt><b> <font size=+1>N</font><font size=-1>AME</font></b><dd>
+<tt>MIME.Message-&gt;disp_params</tt> - Content-Disposition parameters
+<p>
+<dt><b> <font size=+1>S</font><font size=-1>YNTAX</font></b><dd>
+<tt>array(string:string) msg-&gt;disp_params;<br>
+</tt>
+<p>
+<dt><b> <font size=+1>D</font><font size=-1>ESCRIPTION</font></b><dd>
+A mapping containing all the additional parameters to the
+<tt>Content-Disposition</tt> header.
+<p>
+<dt><b> <font size=+1>S</font><font size=-1>EE</font> <font size=+1>A</font><font size=-1>LSO</font></b><dd>
+<a href=#MIME.Message.setdisp_param>MIME.Message-&gt;setdisp_param</a>,
+<a href=#MIME.Message.get_filename>MIME.Message-&gt;get_filename</a>
+<p>
+</dl>
+</a>
+
+<hr newpage>
+<a name=MIME.Message.headers>
+<dl>
+<dt><b> <font size=+1>N</font><font size=-1>AME</font></b><dd>
+<tt>MIME.Message-&gt;headers</tt> - All header fields of the message
+<p>
+<dt><b> <font size=+1>S</font><font size=-1>YNTAX</font></b><dd>
+<tt> mapping(string:string) msg-&gt;headers;<br>
+</tt>
+<p>
+<dt><b> <font size=+1>D</font><font size=-1>ESCRIPTION</font></b><dd>
+This mapping contains all the headers of the message.  The key is the
+header name (in lower case) and the value is the header value.
+Although the mapping contains all headers, some particular headers get
+special treatment by the module and should <b>not</b> be accessed through
+this mapping.  These fields are currently:
+<ul>
+<li><tt>content-type</tt>
+<li><tt>content-disposition</tt>
+<li><tt>content-length</tt>
+<li><tt>content-transfer-encoding</tt>
+</ul>
+The contents of these fields can be accessed and/or modified through a set
+of variables and methods available for this purpose.
+<p>
+<dt><b> <font size=+1>S</font><font size=-1>EE</font> <font size=+1>A</font><font size=-1>LSO</font></b><dd>
+<a href=#MIME.Message.type>MIME.Message-&gt;type</a>,
+<a href=#MIME.Message.subtype>MIME.Message-&gt;subtype</a>,
+<a href=#MIME.Message.charset>MIME.Message-&gt;charset</a>,
+<a href=#MIME.Message.boundary>MIME.Message-&gt;boundary</a>,
+<a href=#MIME.Message.transfer_encoding>MIME.Message-&gt;transfer_encoding</a>,
+<a href=#MIME.Message.params>MIME.Message-&gt;params</a>,
+<a href=#MIME.Message.disposition>MIME.Message-&gt;disposition</a>,
+<a href=#MIME.Message.disp_params>MIME.Message-&gt;disp_params</a>,
+<a href=#MIME.Message.setencoding>MIME.Message-&gt;setencoding</a>,
+<a href=#MIME.Message.setparam>MIME.Message-&gt;setparam</a>,
+<a href=#MIME.Message.setdisp_param>MIME.Message-&gt;setdisp_param</a>,
+<a href=#MIME.Message.setcharset>MIME.Message-&gt;setcharset</a>,
+<a href=#MIME.Message.setboundary>MIME.Message-&gt;setboundary</a>
+<p>
+</dl>
+</a>
+
+<hr newpage>
+<a name=MIME.Message.params>
+<dl>
+<dt><b> <font size=+1>N</font><font size=-1>AME</font></b><dd>
+<tt>MIME.Message-&gt;params</tt> - Content-Type parameters
+<p>
+<dt><b> <font size=+1>S</font><font size=-1>YNTAX</font></b><dd>
+<tt>mapping(string:string) msg-&gt;params;<br>
+</tt>
+<p>
+<dt><b> <font size=+1>D</font><font size=-1>ESCRIPTION</font></b><dd>
+A mapping containing all the additional parameters to the
+<tt>Content-Type</tt> header.  Some of these parameters have fields of their
+own, which should be accessed instead of this mapping wherever applicable.
+<p>
+<dt><b> <font size=+1>S</font><font size=-1>EE</font> <font size=+1>A</font><font size=-1>LSO</font></b><dd>
+<a href=#MIME.Message.charset>MIME.Message-&gt;charset</a>,
+<a href=#MIME.Message.boundary>MIME.Message-&gt;boundary</a>,
+<a href=#MIME.Message.setparam>MIME.Message-&gt;setparam</a>
+<p>
+</dl>
+</a>
+
+<hr newpage>
+<a name=MIME.Message.subtype>
+<dl>
+<dt><b> <font size=+1>N</font><font size=-1>AME</font></b><dd>
+<tt>MIME.Message-&gt;subtype</tt> - The subtype attribute of the Content-Type header
+<p>
+<dt><b> <font size=+1>S</font><font size=-1>YNTAX</font></b><dd>
+<tt>string msg-&gt;subtype;<br>
+</tt>
+<p>
+<dt><b> <font size=+1>D</font><font size=-1>ESCRIPTION</font></b><dd>
+The <tt>Content-Type</tt> header contains a type, a subtype, and optionally
+some parameters.  This field contains the subtype attribute extracted from the
+header.  If there is no <tt>Content-Type</tt> header, the value of this field
+is <tt>"plain"</tt>.
+<p>
+<dt><b> <font size=+1>S</font><font size=-1>EE</font> <font size=+1>A</font><font size=-1>LSO</font></b><dd>
+<a href=#MIME.Message.type>MIME.Message-&gt;type</a>,
+<a href=#MIME.Message.params>MIME.Message-&gt;params</a>
+<p>
+</dl>
+</a>
+
+<hr newpage>
+<a name=MIME.Message.transfer_encoding>
+<dl>
+<dt><b> <font size=+1>N</font><font size=-1>AME</font></b><dd>
+<tt>MIME.Message-&gt;transfer_encoding</tt> - Body encoding method
+<p>
+<dt><b> <font size=+1>S</font><font size=-1>YNTAX</font></b><dd>
+<tt>string msg-&gt;transfer_encoding;<br>
+</tt>
+<p>
+<dt><b> <font size=+1>D</font><font size=-1>ESCRIPTION</font></b><dd>
+The contents of the <tt>Content-Transfer-Encoding</tt> header.  If no
+<tt>Content-Transfer-Encoding</tt> header is given, this field is <tt>0</tt>.
+Transfer encoding and decoding is done transparantly by the module, so this
+field should be intrerresting only to applications wishing to do autoconversion
+of certain transfer encodings.
+<p>
+<dt><b> <font size=+1>S</font><font size=-1>EE</font> <font size=+1>A</font><font size=-1>LSO</font></b><dd>
+<a href=#MIME.Message.setencoding>MIME.Message-&gt;setencoding</a>
+<p>
+</dl>
+</a>
+
+<hr newpage>
+<a name=MIME.Message.type>
+<dl>
+<dt><b> <font size=+1>N</font><font size=-1>AME</font></b><dd>
+<tt>MIME.Message-&gt;type</tt> - The type attribute of the Content-Type header
+<p>
+<dt><b> <font size=+1>S</font><font size=-1>YNTAX</font></b><dd>
+<tt>string msg-&gt;type;<br>
+</tt>
+<p>
+<dt><b> <font size=+1>D</font><font size=-1>ESCRIPTION</font></b><dd>
+The <tt>Content-Type</tt> header contains a type, a subtype, and optionally
+some parameters.  This field contains the type attribute extracted from the
+header.  If there is no <tt>Content-Type</tt> header, the value of this field
+is <tt>"text"</tt>.
+<p>
+<dt><b> <font size=+1>S</font><font size=-1>EE</font> <font size=+1>A</font><font size=-1>LSO</font></b><dd>
+<a href=#MIME.Message.subtype>MIME.Message-&gt;subtype</a>,
+<a href=#MIME.Message.params>MIME.Message-&gt;params</a>
+<p>
+</dl>
+</a>
+
+<hr newpage>
+
+<h3>Public methods</h3>
+
+<hr newpage>
+<a name=MIME.Message.cast>
+<dl>
+<dt><b> <font size=+1>N</font><font size=-1>AME</font></b><dd>
+<tt>MIME.Message-&gt;cast</tt> - Encode message into byte stream
+<p>
+<dt><b> <font size=+1>S</font><font size=-1>YNTAX</font></b><dd>
+<tt>string (string )<i>MIME.Message</i>;<br>
+</tt>
+<p>
+<dt><b> <font size=+1>D</font><font size=-1>ESCRIPTION</font></b><dd>
+Casting the message object to a string will yield a byte stream suitable
+for transmitting the message over protocols such as ESMTP and NNTP.
+The body will be encoded using the current transfer encoding, and subparts
+of a multipart will be collected recursively.  If the message is a multipart
+and no boundary string has been set, one is generated using
+<a href=#generate_boundary>generate_boundary</a>.
+<p>
+<dt><b> <font size=+1>E</font><font size=-1>XAMPLES</font></b><dd>
+<pre>
+> object msg = MIME.Message( "Hello, world!",
+        ([ "MIME-Version" : "1.0",
+           "Content-Type":"text/plain",
+           "Content-Transfer-Encoding":"base64" ]) );
+Result: object
+> (string )msg;
+Result: Content-Type: text/plain
+Content-Length: 20
+Content-Transfer-Encoding: base64
+MIME-Version: 1.0
+ 
+SGVsbG8sIHdvcmxkIQ==
+</pre>
+<p>
+<dt><b> <font size=+1>S</font><font size=-1>EE</font> <font size=+1>A</font><font size=-1>LSO</font></b><dd>
+<a href=#MIME.Message.create>MIME.Message-&gt;create</a>
+<p>
+</dl>
+</a>
+
+<hr newpage>
+<a name=MIME.Message.create>
+<dl>
+<dt><b> <font size=+1>N</font><font size=-1>AME</font></b><dd>
+<tt>MIME.Message-&gt;create</tt> - Create a Message object
+<p>
+<dt><b> <font size=+1>S</font><font size=-1>YNTAX</font></b><dd>
+<tt>object MIME.Message(void | string <i>message</i>,<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+void | mapping(string:string) <i>headers</i>,<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+void | array(object) <i>parts</i>);<br>
+</tt>
+<p>
+<dt><b> <font size=+1>D</font><font size=-1>ESCRIPTION</font></b><dd>
+There are several ways to call the constructor of the Message class;
+<ul>
+<li>With zero arguments, you will get a dummy message without either headers
+or body.  Not very useful.
+<li>With one argument, the argument is taken to be a byte stream containing
+a message in encoded form.  The constructor will analyze the string and
+extract headers and body.
+<li>With two or three arguments, the first argument is taken to be the raw
+body data, and the second argument a desired set of headers.  The keys of
+this mapping are not case-sensitive.  If the given headers indicate that the
+message should be of type multipart, an array of Message objects constituting
+the subparts should be given as a third argument.
+</ul>
+<p>
+<dt><b> <font size=+1>E</font><font size=-1>XAMPLES</font></b><dd>
+<pre>
+> object msg = MIME.Message( "Hello, world!",
+        ([ "MIME-Version" : "1.0",
+           "Content-Type" : "text/plain; charset=iso-8859-1" ]) );
+Result: object
+> msg->charset;
+Result: iso-8859-1
+</pre>
+<p>
+<dt><b> <font size=+1>S</font><font size=-1>EE</font> <font size=+1>A</font><font size=-1>LSO</font></b><dd>
+<a href=#MIME.Messag.cast>MIME.Message-&gt;cast</a>
+<p>
+</dl>
+</a>
+
+<hr newpage>
+<a name=MIME.Message.getdata>
+<dl>
+<dt><b> <font size=+1>N</font><font size=-1>AME</font></b><dd>
+<tt>MIME.Message-&gt;getdata</tt> - Obtain raw body data
+<p>
+<dt><b> <font size=+1>S</font><font size=-1>YNTAX</font></b><dd>
+<tt>string getdata();<br>
+</tt>
+<p>
+<dt><b> <font size=+1>D</font><font size=-1>ESCRIPTION</font></b><dd>
+This method returns the raw data of the message body entity.  The
+<a href=#MIME.Message.type>type</a> and <a href=#MIME.Message.subtype>subtype</a> attributes
+indicate how this data should be interpreted.
+<p>
+<dt><b> <font size=+1>S</font><font size=-1>EE</font> <font size=+1>A</font><font size=-1>LSO</font></b><dd>
+<a href=#MIME.Message.getencoded>MIME.Message-&gt;getencoded</a>
+<p>
+</dl>
+</a>
+
+<hr newpage>
+<a name=MIME.Message.getencoded>
+<dl>
+<dt><b> <font size=+1>N</font><font size=-1>AME</font></b><dd>
+<tt>MIME.Message-&gt;getencoded</tt> - Obtain encoded body data
+<p>
+<dt><b> <font size=+1>S</font><font size=-1>YNTAX</font></b><dd>
+<tt>string getencoded();<br>
+</tt>
+<p>
+<dt><b> <font size=+1>D</font><font size=-1>ESCRIPTION</font></b><dd>
+This method returns the data of the message body entity, encoded using the
+current transfer encoding.  You should never have to call this function.
+<p>
+<dt><b> <font size=+1>S</font><font size=-1>EE</font> <font size=+1>A</font><font size=-1>LSO</font></b><dd>
+<a href=#MIME.Message.getdata>MIME.Message-&gt;getdata</a>
+<p>
+</dl>
+</a>
+
+<hr newpage>
+<a name=MIME.Message.get_filename>
+<dl>
+<dt><b> <font size=+1>N</font><font size=-1>AME</font></b><dd>
+<tt>MIME.Message-&gt;get_filename</tt> - Get supplied filename for body data
+<p>
+<dt><b> <font size=+1>S</font><font size=-1>YNTAX</font></b><dd>
+<tt>string get_filename();<br>
+</tt>
+<p>
+<dt><b> <font size=+1>D</font><font size=-1>ESCRIPTION</font></b><dd>
+This method tries to find a suitable filename should you want to save the
+body data to disk.  It will examine the <tt>filename</tt> attribute of the
+<tt>Content-Disposition</tt> header, and failing that the <tt>name</tt>
+attribute of the <tt>Content-Type</tt> header.  If neither attribute is set,
+the method returns 0.
+<p>
+<dt><b> <font size=+1>N</font><font size=-1>OTA</font> <font size=+1>B</font><font size=-1>ENE</font></b><dd>
+An interactive application should always query the user for the actual
+filename to use.  This method may provide a reasonable default though.
+<p>
+</dl>
+</a>
+
+<hr newpage>
+<a name=MIME.Message.setboundary>
+<dl>
+<dt><b> <font size=+1>N</font><font size=-1>AME</font></b><dd>
+<tt>MIME.Message-&gt;setboundary</tt> - Set boundary parameter
+<p>
+<dt><b> <font size=+1>S</font><font size=-1>YNTAX</font></b><dd>
+<tt>void setboundary(string <i>boundary</i>);<br>
+</tt>
+<p>
+<dt><b> <font size=+1>D</font><font size=-1>ESCRIPTION</font></b><dd>
+Sets the <tt>boundary</tt> parameter of the <tt>Content-Type</tt> header.
+This is equivalent of calling
+<tt>msg-&gt;setparam("boundary", <i>boundary</i>)</tt>.
+<p>
+<dt><b> <font size=+1>S</font><font size=-1>EE</font> <font size=+1>A</font><font size=-1>LSO</font></b><dd>
+<a href=#MIME.Message.setparam>MIME.Message-&gt;setparam</a>
+<p>
+</dl>
+</a>
+
+<hr newpage>
+<a name=MIME.Message.setcharset>
+<dl>
+<dt><b> <font size=+1>N</font><font size=-1>AME</font></b><dd>
+<tt>MIME.Message-&gt;setcharset</tt> - Set charset parameter
+<p>
+<dt><b> <font size=+1>S</font><font size=-1>YNTAX</font></b><dd>
+<tt>void setcharset(string <i>charset</i>);<br>
+</tt>
+<p>
+<dt><b> <font size=+1>D</font><font size=-1>ESCRIPTION</font></b><dd>
+Sets the <tt>charset</tt> parameter of the <tt>Content-Type</tt> header.
+This is equivalent of calling
+<tt>msg->setparam("charset", <i>charset</i>)</tt>.
+<p>
+<dt><b> <font size=+1>S</font><font size=-1>EE</font> <font size=+1>A</font><font size=-1>LSO</font></b><dd>
+<a href=#MIME.Message.setparam>MIME.Message-&gt;setparam</a>
+<p>
+</dl>
+</a>
+
+<hr newpage>
+<a name=MIME.Message.setdata>
+<dl>
+<dt><b> <font size=+1>N</font><font size=-1>AME</font></b><dd>
+<tt>MIME.Message-&gt;setdata</tt> - Replace body data
+<p>
+<dt><b> <font size=+1>S</font><font size=-1>YNTAX</font></b><dd>
+<tt>void setdata(string <i>data</i>);<br>
+</tt>
+<p>
+<dt><b> <font size=+1>D</font><font size=-1>ESCRIPTION</font></b><dd>
+Replaces the body entity of the data with a new piece of raw data.
+The new data should comply to the format indicated by the
+<a href=#type>type</a> and <a href=#subtype>subtype</a> attributes.
+Do not use this method unless you know what you are doing.
+<p>
+<dt><b> <font size=+1>S</font><font size=-1>EE</font> <font size=+1>A</font><font size=-1>LSO</font></b><dd>
+<a href=#></a>
+<p>
+</dl>
+</a>
+
+<hr newpage>
+<a name=MIME.Message.setdisp_param>
+<dl>
+<dt><b> <font size=+1>N</font><font size=-1>AME</font></b><dd>
+<tt>MIME.Message-&gt;setdisp_param</tt> - Set Content-Disposition parameters
+<p>
+<dt><b> <font size=+1>S</font><font size=-1>YNTAX</font></b><dd>
+<tt>void setdisp_param(string <i>param</i>, string <i>value</i>);<br>
+</tt>
+<p>
+<dt><b> <font size=+1>D</font><font size=-1>ESCRIPTION</font></b><dd>
+Set or modify the named parameter of the <tt>Content-Disposition</tt> header.
+A common parameters is e.g. <tt>filename</tt>.  It is not allowed to modify
+the <tt>Content-Disposition</tt> header directly, please use this
+function instead.
+<p>
+<dt><b> <font size=+1>S</font><font size=-1>EE</font> <font size=+1>A</font><font size=-1>LSO</font></b><dd>
+<a href=#MIME.Message.setparam>MIME.Message-&gt;setparam</a>,
+<a href=#MIME.Message.get_filename>MIME.Message-&gt;get_filename</a>
+<p>
+</dl>
+</a>
+
+<hr newpage>
+<a name=MIME.Message.setencoding>
+<dl>
+<dt><b> <font size=+1>N</font><font size=-1>AME</font></b><dd>
+<tt>MIME.Message-&gt;setencoding</tt> - Set transfer encoding for message body
+<p>
+<dt><b> <font size=+1>S</font><font size=-1>YNTAX</font></b><dd>
+<tt>void setencoding(string <i>encoding</i>);<br>
+</tt>
+<p>
+<dt><b> <font size=+1>D</font><font size=-1>ESCRIPTION</font></b><dd>
+Select a new transfer encoding for this message.  The
+<tt>Content-Transfer-Encoding</tt> header will be modified accordningly,
+and subsequent calls to <tt>getencoded</tt> will produce data encoded using
+the new encoding.  See <a href=#MIME.Message.encode>encode</a> for a list of valid
+encodings.
+<p>
+<dt><b> <font size=+1>S</font><font size=-1>EE</font> <font size=+1>A</font><font size=-1>LSO</font></b><dd>
+<a href=#MIME.Message.getencoded>MIME.Message-&gt;getencoded</a>
+<p>
+</dl>
+</a>
+
+<hr newpage>
+<a name=MIME.Message.setparam>
+<dl>
+<dt><b> <font size=+1>N</font><font size=-1>AME</font></b><dd>
+<tt>MIME.Message-&gt;setparam</tt> - Set Content-Type parameters
+<p>
+<dt><b> <font size=+1>S</font><font size=-1>YNTAX</font></b><dd>
+<tt>void setparam(string <i>param</i>, string <i>value</i>);<br>
+</tt>
+<p>
+<dt><b> <font size=+1>D</font><font size=-1>ESCRIPTION</font></b><dd>
+Set or modify the named parameter of the <tt>Content-Type</tt> header.
+Common parameters include <tt>charset</tt> for text messages, and
+<tt>boundary</tt> for multipart messages.  It is not allowed to modify
+the <tt>Content-Type</tt> header directly, please use this function instead.
+<p>
+<dt><b> <font size=+1>S</font><font size=-1>EE</font> <font size=+1>A</font><font size=-1>LSO</font></b><dd>
+<a href=#MIME.Message.setcharset>MIME.Message-&gt;setcharset</a>,
+<a href=#MIME.Message.setboundary>MIME.Message-&gt;setboundary</a>,
+<a href=#MIME.Message.setdisp_param>MIME.Message-&gt;setdisp_param</a>
+<p>
+</dl>
+</a>
+<hr newpage>
 
 <h2>Structs</h2>
 <!-- FIXME priority_queue and heap should be placed here -->
 <h2>Simulate</h2>
+<h2>Msql</h2>
+<h2>Mysql</h2>
+<h2>Sql</h2>
+<h2>LR</h2>
 
-<h1>The Image module</h2>
+
+<h1>The Image module</h1>
 
 <HR NEWPAGE>
 
@@ -7365,33 +9237,6 @@ object instead.
 </a>
 
 <HR NEWPAGE>
-<a name=exec>
-<dl>
-<dt><b> <font size=+1>N</font><font size=-1>AME</font></b><dd>
-<tt>exec</tt> - simple way to use exece()
-<p>
-<dt><b> <font size=+1>S</font><font size=-1>YNTAX</font></b><dd>
-<tt>#include &lt;process.h&gt;<br>
-
-<p>int exec(string <I>file</I>, string ... <I>args</I>);<br>
-</tt>
-<p>
-<dt><b> <font size=+1>D</font><font size=-1>ESCRIPTION</font></b><dd>
-This function destroys the Pike parser and runs the program
-'file' instead with the arguments. If no there are no '/' in
-the filename, the variable PATH will be consulted when looking
-for the program. This function does not return except when
-the exec fails for some reason.
-<p>
-<dt><b> <font size=+1>E</font><font size=-1>XAMPLE</font></b><dd>
-<tt>exec("/bin/echo","hello","world");<br>
-<br>
-</tt>
-<p>
-</dl>
-</a>
-
-<HR NEWPAGE>
 <a name=exece>
 <dl>
 <dt><b> <font size=+1>N</font><font size=-1>AME</font></b><dd>
@@ -7634,161 +9479,6 @@ zero_type(find_call_out(f)) will return 1.
 </a>
 
 <HR NEWPAGE>
-<a name=find_option>
-<dl>
-<dt><b> <font size=+1>N</font><font size=-1>AME</font></b><dd>
-<tt>find_option</tt> - find command line options
-<p>
-<dt><b> <font size=+1>S</font><font size=-1>YNTAX</font></b><dd>
-<tt>#include &lt;getopt.h&gt;<br>
-
-<p>mixed find_option(string *argv,<br>
-<dl><dt><dd>string shortform,<br>
-string longform,<br>
-string envvar,<br>
-mixed def);<br>
-</dl></tt>
-<p>
-<dt><b> <font size=+1>D</font><font size=-1>ESCRIPTION</font></b><dd>
-This is a generic function to parse command line options of the
-type '-f', '--foo' or '--foo=bar'. The first argument should be
-the array of strings that is sent as second argument to your
-main() function, the second is a string with the short form of
-your option. The short form must be only one character long.
-The 'longform' is an alternative and maybe more readable way to
-give the same option. If you give "foo" as longform your program
-will accept --foo as argument. The envvar argument specifies what
-environment variable can be used to specify the same option. The
-envvar option exists to make it easier to custimizer program usage.
-The 'def' has two functions: It specifies that the option takes an
-argument and it tells find_option what to return if the option is
-not present. If 'def' is given and the option does not have an
-argument find_option will print an error message and exit the program.
-<p>Also, as an extra bonus: shortform, longform and envvar can all be
-arrays, in which case either of the options in the array will be
-accpted.
-<p>
-<dt><b> <font size=+1>N</font><font size=-1>OTA</font> <font size=+1>B</font><font size=-1>ENE</font></b><dd>
-find_option modifies argv.
-<p>
-<dt><b> <font size=+1>E</font><font size=-1>XAMPLE</font></b><dd>
-<tt>int main(int argc, string *argv)<br>
-{<br>
-<dl><dt><dd>if(find_option(argv,"f","foo"))<br>
-<dl><dt><dd>werror("The FOO option was given.\n");<br>
-</dl></dl>
-<p><dl><dt><dd>werror("The BAR option got the "+<br>
-find_option(argv,"b","bar","BAR_OPTION","default")+<br>
-" argument.\n");<br>
-</dl>}<br>
-</tt>
-<p>
-<dt><b> <font size=+1>S</font><font size=-1>EE</font> <font size=+1>A</font><font size=-1>LSO</font></b><dd>
-<a href=simulated_get_args>get_args</a>
-<p>
-</dl>
-</a>
-
-<HR NEWPAGE>
-<a name=find_all_options>
-<dl>
-<dt><b> <font size=+1>N</font><font size=-1>AME</font></b><dd>
-<tt>find_all_options</tt> - find all command line options
-<p>
-<dt><b> <font size=+1>S</font><font size=-1>YNTAX</font></b><dd>
-<tt>#include &lt;getopt.h&gt;<br>
-
-<p>array(array(mixed)) find_option(string *argv,<br>
-<dl><dt><dd>array(array(mixed)) options,<br>
-[ int posix_me_harder ]);<br>
-</dl></tt>
-<p>
-<dt><b> <font size=+1>D</font><font size=-1>ESCRIPTION</font></b><dd>
-This is a generic function to parse command line options of the
-type '-f', '--foo' or '--foo=bar'. The first argument should be
-the array of strings that is sent as second argument to your
-main() function. The second argument is an array describing all
-options your program accepts. The third argument is optional, if
-the third argument is 0 or not given, find_all_options will look
-though the whole command line after options, otherwise it will
-only look until it finds a somthing that does not begin with '-'.
-The second argument an array, where each element is an array on
-the following format:
-<tt>
-<p>
-<dl><dt><dd>({<br>
-  <dl><dt><dd>
-  <i>name</i>, // A string identifying the option<br>
-  <i>type</i>, // Does the oprion need an argument <br>
-  <i>option</i>, // The actual option<br>
-  <i>environmen variable</i>,<br>
-  <i>default</i> // Use this if option not specified<br></dl>
-  })</dl>
-<p>
-</tt>
-Only the three first indexes in this array are needed, the last
-two are optional. The <i>name</i> is a string, it is not actually
-used in parsing the options, but rather in the return value to
-identify which option was found. The <i>type</i> is one of
-<tt>HAS_ARG</tt>, <tt>NO_ARG</tt> and <tt>MAY_HAVE_ARG</tt>.
-<tt>HAS_ARG</tt> means that an error will be given if no argument
-was given for the option. <tt>NO_ARG</tt> means that no arguments
-will be expected for this option. <tt>MAY_HAVE_ARG</tt> means
-that any argument found will be returned, but if there is no
-argument no error message will be generated. <i>option</i> should
-be a an array of string, each of these strings contain one
-<b>longform</b> (<tt>"--<i>option</i>"</tt>) or several
-<b>shortforms</b> (<tt>"-<i>shortforms</i></tt>) for the option.
-If they array contains only one string, the string can be given
-directly for <i>option</i>. If the option is not specified on
-the command line, the <i>environment variable</i> will be consulted.
-If that environment variable is set, the contents of that environment
-variable will be used as argument for this option.
-The <i>environment variable</i> can also be an array of variables to
-look for.</i> If the option was not on the command line, and not
-in any environment variable, the <i>default</i> value will be returned.
-<p>
-This function returns an array in which each element is an array
-of the following form:
-
-<tt><dl><dt><dd>({<i>name</i>, <i>value</i>})</dl></tt>
-
-<i>Name</i> is the same as given in the array of options, and <i>
-value</i> is a string if any value was given for the option, <tt>1</tt>
-otherwise.
-<p>
-<dt><b> <font size=+1>N</font><font size=-1>OTA</font> <font size=+1>B</font><font size=-1>ENE</font></b><dd>
-find_option modifies argv.
-<p>
-<dt><b> <font size=+1>E</font><font size=-1>XAMPLE</font></b><dd>
-<tt>int main(int argc, string *argv)<br>
-{<br>
-  <dl><dt><dd>
-  array(array) options=find_all_option(argv,({"version",NO_ARG,({"-vV","--version"}) }), 1);<br>
-  foreach(options, array option)<br>
-  {<br>
-    <dl><dt><dd>
-    switch(option[0])<br>
-    {<br>
-    case "version":<br>
-    <dl><dt><dd>
-       write("Running "+version+".\n");<br>
-       exit(0);<br>
-    </dl>
-    }<br>
-    </dl>
-  }<br>
-  </dl>
-}<br>
-</tt>
-<p>
-<dt><b> <font size=+1>S</font><font size=-1>EE</font> <font size=+1>A</font><font size=-1>LSO</font></b><dd>
-<a href=#get_args>get_args</a> and <a href=#find_options>find_option</a>
-<p>
-</dl>
-</a>
-
-<HR NEWPAGE>
 <a name=floatp>
 <dl>
 <dt><b> <font size=+1>N</font><font size=-1>AME</font></b><dd>
@@ -7971,44 +9661,6 @@ when 20% of all arrays/object/programs in memory is 'garbage'
 and call this routine then.)
 </table>
 
-</dl>
-</a>
-
-
-<HR NEWPAGE>
-<a name=get_args>
-<dl>
-<dt><b> <font size=+1>N</font><font size=-1>AME</font></b><dd>
-<tt>get_args</tt> - get the non-option arguments
-<p>
-<dt><b> <font size=+1>S</font><font size=-1>YNTAX</font></b><dd>
-<tt>#include &lt;getopt.h&gt;<br>
-
-<p>string *get_args(string *<I>argv</I>);<br>
-</tt>
-<p>
-<dt><b> <font size=+1>D</font><font size=-1>ESCRIPTION</font></b><dd>
-This function returns the remaining command line arguments after
-you have run find_options to find all the options in the
-argument list. If there are any options left not handled by
-find_options an error message will be written and the program will
-exit. Otherwise a new 'argv' array without the parsed options is
-returned.
-<p>
-<dt><b> <font size=+1>E</font><font size=-1>XAMPLE</font></b><dd>
-<tt>int main(int argc, string *argv)<br>
-{<br>
-<dl><dt><dd>if(find_option(argv,"f","foo"))<br>
-<dl><dt><dd>werror("The FOO option was given.\n");<br>
-</dl></dl>
-<p><dl><dt><dd>argv=get_args(argv);<br>
-werror("The arguments are: "+(argv*" ")+".\n");<br>
-</dl>}<br>
-</tt>
-<p>
-<dt><b> <font size=+1>S</font><font size=-1>EE</font> <font size=+1>A</font><font size=-1>LSO</font></b><dd>
-<a href=simulated_find_option>find_option</a>
-<p>
 </dl>
 </a>
 
@@ -8917,26 +10569,6 @@ Returns 1 if arg is an object, zero otherwise.
 
 
 <HR NEWPAGE>
-<a name=popen>
-<dl>
-<dt><b> <font size=+1>N</font><font size=-1>AME</font></b><dd>
-<tt>popen</tt> - pipe open
-<p>
-<dt><b> <font size=+1>S</font><font size=-1>YNTAX</font></b><dd>
-<tt>#include &lt;process.h&gt;<br>
-
-<p>string popen(string <I>cmd</I>);<br>
-</tt>
-<p>
-<dt><b> <font size=+1>D</font><font size=-1>ESCRIPTION</font></b><dd>
-This function runs the command cmd as in a shell and returns the
-output. See your unix/C manual for details on popen.
-<p>
-<p>
-</dl>
-</a>
-
-<HR NEWPAGE>
 <a name=pow>
 <dl>
 <dt><b> <font size=+1>N</font><font size=-1>AME</font></b><dd>
@@ -9640,36 +11272,6 @@ instead.
 
 
 <HR NEWPAGE>
-<a name=spawn>
-<dl>
-<dt><b> <font size=+1>N</font><font size=-1>AME</font></b><dd>
-<tt>spawn</tt> - spawn a process
-<p>
-<dt><b> <font size=+1>S</font><font size=-1>YNTAX</font></b><dd>
-<tt>#include &lt;process.h&gt;<br>
-
-<p>int spawn(string <I>cmd</I>);<br>
-or<br>
-int spawn(string <I>cmd</I>, object <I>stdin</I>);<br>
-or<br>
-int spawn(string <I>cmd</I>, object <I>stdin</I>, object <I>stdout</I>);<br>
-or<br>
-int spawn(string <I>cmd</I>, object <I>stdin</I>, object <I>stdout</I>, object <I>stderr</I>);<br>
-</tt>
-<p>
-<dt><b> <font size=+1>D</font><font size=-1>ESCRIPTION</font></b><dd>
-This function spawns a process but does not wait for it to finish.
-Optionally, clones of /precompiled/file can be sent to it to
-specify where stdin, stdout and stderr of the spawned processes
-should go.
-<p>
-<dt><b> <font size=+1>S</font><font size=-1>EE</font> <font size=+1>A</font><font size=-1>LSO</font></b><dd>
-<a href=simulated_popen>popen</a>, <a href=files_fork>fork</a>, <a href=simulated_exec>exec</a>, <a href=files_file#pipe>file-&gt;pipe</a> and <a href=files_file#dup2>file-&gt;dup2</a>
-<p>
-</dl>
-</a>
-
-<HR NEWPAGE>
 <a name=sprintf>
 <dl>
 <dt><b> <font size=+1>N</font><font size=-1>AME</font></b><dd>
@@ -9886,28 +11488,6 @@ truncated to the closest lower integer.
 </a>
 
 <HR NEWPAGE>
-<a name=stderr>
-<dl>
-<dt><b> <font size=+1>N</font><font size=-1>AME</font></b><dd>
-<tt>stderr</tt> - Standard error stream
-<p>
-<dt><b> <font size=+1>S</font><font size=-1>YNTAX</font> <font size=+1>E</font><font size=-1>XAMPLE</font></b><dd>
-<tt>#include &lt;stdio.h&gt;<br>
-
-<p>stderr-&gt;write("foo")<br>
-</tt>
-<p>
-<dt><b> <font size=+1>D</font><font size=-1>ESCRIPTION</font></b><dd>
-Stderr is a clone of /precompiled/file connected to the standard
-error stream.
-<p>
-<dt><b> <font size=+1>S</font><font size=-1>EE</font> <font size=+1>A</font><font size=-1>LSO</font></b><dd>
-<a href=files_file>/precompiled/file</a> and <a href=files_werror>werror</a>
-<p>
-</dl>
-</a>
-
-<HR NEWPAGE>
 <a name=strerror>
 <dl>
 <dt><b> <font size=+1>N</font><font size=-1>AME</font></b><dd>
@@ -10034,29 +11614,6 @@ the summation operator.
 <p>
 </dl>
 d
-</a>
-
-<HR NEWPAGE>
-<a name=system>
-<dl>
-<dt><b> <font size=+1>N</font><font size=-1>AME</font></b><dd>
-<tt>system</tt> - run an external program
-<p>
-<dt><b> <font size=+1>S</font><font size=-1>YNTAX</font></b><dd>
-<tt>#include &lt;process.h&gt;<br>
-
-<p>void system(string <I>cmd</I>);<br>
-</tt>
-<p>
-<dt><b> <font size=+1>D</font><font size=-1>ESCRIPTION</font></b><dd>
-This function runs the external program cmd and waits until it
-is finished. Standard /bin/sh completions/redirectoins/etc. can
-be used.
-<p>
-<dt><b> <font size=+1>S</font><font size=-1>EE</font> <font size=+1>A</font><font size=-1>LSO</font></b><dd>
-<a href=simulated_popen>popen</a>, <a href=simulated_exec>exec</a> and <a href=simulated_spawn>spawn</a>
-<p>
-</dl>
 </a>
 
 <HR NEWPAGE>
@@ -10325,26 +11882,6 @@ Result: Pike v0.3<br>
 </a>
 
 <HR NEWPAGE>
-<a name=werror>
-<dl>
-<dt><b> <font size=+1>N</font><font size=-1>AME</font></b><dd>
-<tt>werror</tt> - write to stderr
-<p>
-<dt><b> <font size=+1>S</font><font size=-1>YNTAX</font></b><dd>
-<tt>void werror(string <I>s</I>);<br>
-</tt>
-<p>
-<dt><b> <font size=+1>D</font><font size=-1>ESCRIPTION</font></b><dd>
-Writes a message to stderr. Stderr is normally the console, even if
-the process output has been redirected to a file or pipe.
-<p>
-<dt><b> <font size=+1>K</font><font size=-1>EYWORDS</font></b><dd>
-<a href=index#file>file</a>
-<p>
-</dl>
-</a>
-
-<HR NEWPAGE>
 <a name=write>
 <dl>
 <dt><b> <font size=+1>N</font><font size=-1>AME</font></b><dd>
@@ -10359,7 +11896,7 @@ Added by the master, it directly calls write in a clone of
 /precompiled/file
 <p>
 <dt><b> <font size=+1>S</font><font size=-1>EE</font> <font size=+1>A</font><font size=-1>LSO</font></b><dd>
-<a href=files_werror>werror</a>
+<a href=#Stdio.werror>Stdio.werror</a>
 <p>
 </dl>
 </a>
@@ -10411,11 +11948,7 @@ returned. Otherwize zero_type will return zero.
   <li>int ... ars
   <li>data storage (local vs. global variables)
   <li>exception handling (catch, throw)
-  <li>lambda
-  <li>gauge
   <li>trace
-  <li>sscanf is not a function
-  <li>typeof
   <li>pike command line
   <li>hilfe
   <li>{encode,decode}_value
@@ -10429,7 +11962,31 @@ returned. Otherwize zero_type will return zero.
 <HR NEWPAGE>
 <HR NEWPAGE>
 
-<H1>Pike internals - how to extend pike</H1>
+<H1>Pike internals - how to extend Pike</H1>
+The rest of this book describes how Pike works and how to extend it with
+your own functions written in C or C++. Even if you are not interested in
+extending Pike, the information in this section can make you understand
+Pike better and thus make you a better Pike programmer. From this point on
+I will assume that the reader knows C or C++.
+<p>
+<h2>The master object</h2>
+
+<h2> Functional overview </h2>
+
+<h2>Overview of the Pike source</h2>
+<dl>
+<dt> library files
+<dd> 
+  <dl>
+  <dt> callback
+
+<dt> compiler
+<dt> backend
+<dt> callback
+<dt> constants
+<dt> docode
+<dt> 
+
 <ul>
   <li>Overview of the pike source
   <li>The master object
@@ -10702,7 +12259,7 @@ This is the BNF for Pike:
 <tr valign=top><td>break</td><td>::=</td><td><b>break</b> ";"</td></tr>
 <tr valign=top><td>continue</td><td>::=</td><td><b>continue</b> ";"</td></tr>
 <tr valign=top><td>expression</td><td>::=</td><td>expression2 { "," expression2 }</td></tr>
-<tr valign=top><td>expression2</td><td>::=</td><td>{ expression6 ( "=" | "+=" | "*=" | "/=" | "&amp;=" | "|=" | "^=" | "&lt;&lt;=" | "&gt;&gt;=" | "%=" ) } expression3</td></tr>
+<tr valign=top><td>expression2</td><td>::=</td><td>{ lvalue ( "=" | "+=" | "*=" | "/=" | "&amp;=" | "|=" | "^=" | "&lt;&lt;=" | "&gt;&gt;=" | "%=" ) } expression3</td></tr>
 <tr valign=top><td>expression3</td><td>::=</td><td>expression4 '?' expression3 ":" expression3 </td></tr>
 <tr valign=top><td>expression4</td><td>::=</td><td>{ expression5 ( "||" | "&amp;&amp;" | "|" | "^" | "&amp;" | "==" | "!=" | "&gt;" | "&lg;" | "&gt;=" | "&lt;=" | "&lt;&lt;" | "&gt;&gt;" | "+" | "*" | "/" | "%" ) } expression5</td></tr>
 <tr valign=top><td>expression5</td><td>::=</td><td>expression6 | "(" type ")" expression5 | "--" expression6 | "++" expression6 | expression6 "--" | expression6 "++" | "~" expression5 | "-" expression5 </td></tr>
@@ -10711,7 +12268,9 @@ This is the BNF for Pike:
 <tr valign=top><td>float</td><td>::=</td><td>digit { digit } "." { digit }</td></tr>
 <tr valign=top><td>catch</td><td>::=</td><td><b>catch</b> ( "(" expression ")" | block )</td></tr>
 <tr valign=top><td>gauge</td><td>::=</td><td><b>gauge</b> ( "(" expression ")" | block )</td></tr>
-<tr valign=top><td>sscanf</td><td>::=</td><td><b>sscanf</b> "(" expression2 "," expression2 { "," expression6 } ")" </td></tr>
+<tr valign=top><td>sscanf</td><td>::=</td><td><b>sscanf</b> "(" expression2 "," expression2 { "," lvalue } ")" </td></tr>
+
+<tr valign=top><td>lvalue</td><td>::=</td><td><b>lambda</b> expression6 | type identifier </td></tr>
 <tr valign=top><td>lambda</td><td>::=</td><td><b>lambda</b> "(" arguments ")" block</td></tr>
 <tr valign=top><td>constant_identifer</td><td>::=</td><td>identifer { "." identifer }</td></tr>
 <tr valign=top><td>call</td><td>::=</td><td>expression6 "(" expression_list ")" </td></tr>
@@ -10729,7 +12288,7 @@ This is the BNF for Pike:
 <tr valign=top><td>argument</td><td>::=</td><td>type [ "..." ] [ identifier ]</td></tr>
 <tr valign=top><td>program_specifier</td><td>::=</td><td>string_constant | constant_identifier</td></tr>
 <tr valign=top><td>string</td><td>::=</td><td>string_literal { string_literal }</td></tr>
-<tr valign=top><td>identifer</td><td>::=</td><td>letter { letter | digit }</td></tr>
+<tr valign=top><td>identifier</td><td>::=</td><td>letter { letter | digit } | "`+" | "`/" | "`%" | "`*" | "`&amp;" | "`|" | "`^" | "`~" | "`&lt;" | "`&lt;&lt;" | "`&lt;=" | "`&gt;" | "`&gt;&gt;" | "`&gt;=" | "`==" | "`!=" | "`!" | "`()" | "`-" | "`-&gt;" | "`-&gt;=" | "`[]" | "`[]="</td></tr>
 <tr valign=top><td>letter</td><td>::=</td><td>"a"-"z" | "A"-"Z" | "_"</td></tr>
 <tr valign=top><td>digit</td><td>::=</td><td>"0"-"9"</td></tr>
 </table>
