@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: svalue.c,v 1.152 2002/11/28 01:56:44 mast Exp $
+|| $Id: svalue.c,v 1.153 2002/12/01 18:44:43 mast Exp $
 */
 
 #include "global.h"
@@ -66,7 +66,7 @@ static int pike_isnan(double x)
 #endif /* HAVE__ISNAN */
 #endif /* HAVE_ISNAN */
 
-RCSID("$Id: svalue.c,v 1.152 2002/11/28 01:56:44 mast Exp $");
+RCSID("$Id: svalue.c,v 1.153 2002/12/01 18:44:43 mast Exp $");
 
 struct svalue dest_ob_zero = {
   T_INT, 0,
@@ -1236,9 +1236,13 @@ PMOD_EXPORT void describe_svalue(const struct svalue *s,int indent,struct proces
       {
 	my_binary_strcat(s->u.efun->name->str,s->u.efun->name->len);
       }else{
-	if (s->u.object->prog == pike_trampoline_program) {
-	  struct pike_trampoline *t =
-	    (struct pike_trampoline *) s->u.object->storage;
+	struct object *obj = s->u.object;
+	struct program *prog = obj->prog;
+
+	/* What's the difference between this and the trampoline stuff
+	 * just below? /mast */
+	if (prog == pike_trampoline_program) {
+	  struct pike_trampoline *t = (struct pike_trampoline *) obj->storage;
 	  if (t->frame->current_object->prog) {
 	    struct svalue f;
 	    f.type = T_FUNCTION;
@@ -1248,12 +1252,14 @@ PMOD_EXPORT void describe_svalue(const struct svalue *s,int indent,struct proces
 	    break;
 	  }
 	}
-	if(s->u.object->prog)
-	{
-	  struct pike_string *name;
-	  struct object *obj = s->u.object;
 
-	  if (obj->prog == pike_trampoline_program) {
+	if(!prog)
+	  my_strcat("0");
+	else {
+	  struct pike_string *name;
+	  struct identifier *id;
+
+	  if (prog == pike_trampoline_program) {
 	    /* Trampoline */
 	    struct pike_trampoline *tramp = (struct pike_trampoline *)
 	      get_storage(obj, pike_trampoline_program);
@@ -1261,20 +1267,21 @@ PMOD_EXPORT void describe_svalue(const struct svalue *s,int indent,struct proces
 		!tramp->frame->current_object->prog) {
 	      /* Uninitialized trampoline, or
 	       * trampoline to destructed object. */
-	      name = NULL;
+	      id = NULL;
 	    } else {
 	      obj = tramp->frame->current_object;
-	      name = ID_FROM_INT(obj->prog, tramp->func)->name;
+	      id = ID_FROM_INT(prog, tramp->func);
 	    }
 	  } else {
-	    name=ID_FROM_INT(obj->prog, s->subtype)->name;
+	    id = ID_FROM_INT(prog, s->subtype);
 	  }
+	  if (id) name = id->name;
 
-	  if(name && obj->prog && (obj->prog->flags & PROGRAM_FINISHED) &&
+	  if(name && (prog->flags & PROGRAM_FINISHED) &&
 	     Pike_interpreter.evaluator_stack && !Pike_in_gc) {
 	    DECLARE_CYCLIC();
 	    debug_malloc_touch(obj);
-	    if (!BEGIN_CYCLIC(s->u.object, 0)) {
+	    if (!BEGIN_CYCLIC(obj, 0)) {
 	      /* We require some tricky coding to make this work
 	       * with tracing...
 	       */
@@ -1313,33 +1320,54 @@ PMOD_EXPORT void describe_svalue(const struct svalue *s,int indent,struct proces
 	      init_buf_with_string(save_buffer);
 	      t_flag=save_t_flag;
 	      pop_stack();
+	      prog = obj->prog;
 	    }
 	    END_CYCLIC();
 	  }
-	  if(name)
+
+	  if(name) {
 	    my_binary_strcat(name->str,name->len);
-	  else if (!obj->prog)
+	    break;
+	  }
+	  else if (!prog) {
 	    my_strcat("0");
-	  else
-	    my_strcat("function");
-	}else{
-	  my_strcat("0");
+	    break;
+	  }
+	  else if (id && id->func.offset != -1) {
+	    struct pike_string *file;
+	    INT32 line;
+	    if ((file = low_get_line(prog->program + id->func.offset, prog, &line))) {
+	      my_strcat("function(");
+	      my_strcat(file->str);
+	      free_string(file);
+	      if (line) {
+		sprintf(buf, ":%d", line);
+		my_strcat(buf);
+	      }
+	      my_putchar(')');
+	      break;
+	    }
+	  }
+
+	  my_strcat("function");
 	}
       }
       break;
 
-    case T_OBJECT:
-      if (!s->u.object->prog)
+    case T_OBJECT: {
+      struct object *obj = s->u.object;
+      struct program *prog = obj->prog;
+
+      if (!prog)
 	my_strcat("0");
-      else if (!(s->u.object->prog->flags & PROGRAM_FINISHED))
-	my_strcat("object");
       else {
-	if(Pike_interpreter.evaluator_stack && !Pike_in_gc) {
+	if ((prog->flags & PROGRAM_FINISHED) &&
+	    Pike_interpreter.evaluator_stack && !Pike_in_gc) {
 	  DECLARE_CYCLIC();
-	  int fun=FIND_LFUN(s->u.object->prog, LFUN__SPRINTF);
-	  debug_malloc_touch(s->u.object->prog);
+	  int fun=FIND_LFUN(prog, LFUN__SPRINTF);
+	  debug_malloc_touch(prog);
 	  if(fun != -1) {
-	    if (!BEGIN_CYCLIC(s->u.object, fun)) {
+	    if (!BEGIN_CYCLIC(obj, fun)) {
 	      /* We require some tricky coding to make this work
 	       * with tracing...
 	       */
@@ -1349,15 +1377,15 @@ PMOD_EXPORT void describe_svalue(const struct svalue *s,int indent,struct proces
 	      t_flag=0;
 	      SET_CYCLIC_RET(1);
 	      
-	      debug_malloc_touch(s->u.object);
+	      debug_malloc_touch(obj);
 
 	      push_int('O');
 	      push_constant_text("indent");
 	      push_int(indent);
 	      f_aggregate_mapping(2);					      
-	      safe_apply_low2(s->u.object, fun ,2,1);
+	      safe_apply_low2(obj, fun ,2,1);
 
-	      debug_malloc_touch(s->u.object);
+	      debug_malloc_touch(obj);
 
 	      if(!SAFE_IS_ZERO(sp-1))
 		{
@@ -1382,11 +1410,12 @@ PMOD_EXPORT void describe_svalue(const struct svalue *s,int indent,struct proces
 	      init_buf_with_string(save_buffer);
 	      t_flag=save_t_flag;
 	      pop_stack();
+	      prog = obj->prog;
 	    }
 	    END_CYCLIC();
 	  }
 	  
-	  if (!BEGIN_CYCLIC(0, s->u.object)) {
+	  if (!BEGIN_CYCLIC(0, obj)) {
 	    /* We require some tricky coding to make this work
 	     * with tracing...
 	     */
@@ -1396,12 +1425,12 @@ PMOD_EXPORT void describe_svalue(const struct svalue *s,int indent,struct proces
 	    t_flag=0;
 	    SET_CYCLIC_RET(1);
 	    
-	    debug_malloc_touch(s->u.object);
+	    debug_malloc_touch(obj);
 	    
-	    push_svalue(s);
+	    ref_push_object(obj);
 	    SAFE_APPLY_MASTER("describe_object", 1);
 	    
-	    debug_malloc_touch(s->u.object);
+	    debug_malloc_touch(obj);
 	    
 	    if(!SAFE_IS_ZERO(sp-1))
 	      {
@@ -1426,17 +1455,19 @@ PMOD_EXPORT void describe_svalue(const struct svalue *s,int indent,struct proces
 	    init_buf_with_string(save_buffer);
 	    t_flag=save_t_flag;
 	    pop_stack();
+	    prog = obj->prog;
 	  }
 	  END_CYCLIC();
 	}
-#if 0
-	{
+
+	if (!prog) {
+	  my_strcat("0");
+	  break;
+	}
+	else {
 	  struct pike_string *file;
 	  INT32 line;
-	  /* This provides useful info sometimes, but there is code
-	   * that looks for the plain "object" string to resort to
-	   * other fallbacks. */
-	  if (!Pike_in_gc && (file = get_program_line(s->u.object->prog, &line))) {
+	  if ((file = low_get_program_line(prog, &line))) {
 	    my_strcat("object(");
 	    my_strcat(file->str);
 	    free_string(file);
@@ -1448,17 +1479,20 @@ PMOD_EXPORT void describe_svalue(const struct svalue *s,int indent,struct proces
 	    break;
 	  }
 	}
-#endif
+
 	my_strcat("object");
       }
       break;
+    }
 
     case T_PROGRAM: {
-      if(s->u.program && (s->u.program->flags & PROGRAM_FINISHED) &&
+      struct program *prog = s->u.program;
+
+      if((prog->flags & PROGRAM_FINISHED) &&
 	 Pike_interpreter.evaluator_stack && !Pike_in_gc) {
 	DECLARE_CYCLIC();
-	debug_malloc_touch(s->u.program);
-	if (!BEGIN_CYCLIC(s->u.program, 0)) {
+	debug_malloc_touch(prog);
+	if (!BEGIN_CYCLIC(prog, 0)) {
 	  /* We require some tricky coding to make this work
 	   * with tracing...
 	   */
@@ -1468,12 +1502,12 @@ PMOD_EXPORT void describe_svalue(const struct svalue *s,int indent,struct proces
 	  t_flag=0;
 	  SET_CYCLIC_RET(1);
 	    
-	  debug_malloc_touch(s->u.program);
+	  debug_malloc_touch(prog);
 	    
-	  push_svalue(s);
+	  ref_push_program(prog);
 	  SAFE_APPLY_MASTER("describe_program", 1);
 	    
-	  debug_malloc_touch(s->u.program);
+	  debug_malloc_touch(prog);
 	    
 	  if(!SAFE_IS_ZERO(sp-1))
 	    {
@@ -1501,14 +1535,11 @@ PMOD_EXPORT void describe_svalue(const struct svalue *s,int indent,struct proces
 	}
 	END_CYCLIC();
       }
-#if 0
+
       {
 	struct pike_string *file;
 	INT32 line;
-	/* This provides useful info sometimes, but there is code that
-	 * looks for the plain "program" string to resort to other
-	 * fallbacks. */
-	if (!Pike_in_gc && (file = get_program_line(s->u.program, &line))) {
+	if ((file = low_get_program_line(prog, &line))) {
 	  my_strcat("program(");
 	  my_strcat(file->str);
 	  free_string(file);
@@ -1524,7 +1555,7 @@ PMOD_EXPORT void describe_svalue(const struct svalue *s,int indent,struct proces
 	  break;
 	}
       }
-#endif
+
       my_strcat("program");
       break;
     }
