@@ -104,7 +104,9 @@ static void pmird_no_transaction(void)
 struct pmird_storage
 {
    struct mird *db;
+#ifdef PIKE_THREADS
    PIKE_MUTEX_T mutex;
+#endif
 };
 
 #define THIS ((struct pmird_storage*)(fp->current_storage))
@@ -112,7 +114,9 @@ struct pmird_storage
 static void init_pmird(struct object *o)
 {
    THIS->db=NULL;
+#ifdef PIKE_THREADS
    mt_init(&THIS->mutex);
+#endif
 }
 
 static void exit_pmird(struct object *o)
@@ -122,7 +126,9 @@ static void exit_pmird(struct object *o)
       mird_free_structure(THIS->db);
       THIS->db=NULL;
    }
+#ifdef PIKE_THREADS
    mt_destroy(&THIS->mutex);
+#endif
 }
 
 /*
