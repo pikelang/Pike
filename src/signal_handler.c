@@ -25,7 +25,7 @@
 #include "main.h"
 #include <signal.h>
 
-RCSID("$Id: signal_handler.c,v 1.129 1999/05/02 08:11:48 hubbe Exp $");
+RCSID("$Id: signal_handler.c,v 1.130 1999/05/03 18:18:16 hubbe Exp $");
 
 #ifdef HAVE_PASSWD_H
 # include <passwd.h>
@@ -126,6 +126,24 @@ static unsigned char sigbuf[SIGNAL_BUFFER];
 static int firstsig, lastsig;
 static struct callback *signal_evaluator_callback =0;
 
+#ifdef USE_PID_MAPPING
+static void report_child(int pid,
+			 WAITSTATUSTYPE status);
+#endif
+
+
+#ifdef USE_SIGCHILD
+static RETSIGTYPE receive_sigchild(int signum);
+
+struct wait_data {
+  pid_t pid;
+  WAITSTATUSTYPE status;
+};
+
+static volatile struct wait_data wait_buf[WAIT_BUFFER];
+static volatile int firstwait=0;
+static volatile int lastwait=0;
+#endif
 
 
 /*
@@ -342,10 +360,23 @@ static struct sigdesc signal_desc []={
 };
 
 
-static RETSIGTYPE receive_signal(int signum)
+static void register_signal(int signum)
 {
   int tmp;
 
+  tmp=firstsig+1;
+  if(tmp == SIGNAL_BUFFER) tmp=0;
+  if(tmp != lastsig)
+  {
+    sigbuf[tmp]=signum;
+    firstsig=tmp;
+  }
+  wake_up_backend();
+
+}
+
+static RETSIGTYPE receive_signal(int signum)
+{
   if ((signum < 0) || (signum >= MAX_SIGNALS)) {
     /* Some OSs (Solaris 2.6) send a bad signum sometimes.
      * SIGCHLD is the safest signal to substitute.
@@ -358,16 +389,8 @@ static RETSIGTYPE receive_signal(int signum)
 #endif
   }
 
-  tmp=firstsig+1;
-  if(tmp == SIGNAL_BUFFER) tmp=0;
-  if(tmp != lastsig)
-  {
-    sigbuf[tmp]=signum;
-    firstsig=tmp;
-  }
-  wake_up_backend();
-
-#ifndef SIGNAL_ONESHOT
+  register_signal(signum);
+#ifdef SIGNAL_ONESHOT
   my_signal(signum, receive_signal);
 #endif
 }
@@ -438,7 +461,7 @@ void check_signals(struct callback *foo, void *bar, void *gazonk)
     {
       if(++lastsig == SIGNAL_BUFFER) lastsig=0;
 
-#ifdef USE_SIGCHLD
+#ifdef USE_SIGCHILD
       if(sigbuf[lastsig]==SIGCHLD)
       {
 	int tmp2 = firstwait;
@@ -540,7 +563,7 @@ static void f_signal(int args)
 
     switch(signum)
     {
-#ifdef USE_SIGCHLD
+#ifdef USE_SIGCHILD
       case SIGCHLD:
 	func=receive_sigchild;
 	break;
@@ -567,7 +590,7 @@ static void f_signal(int args)
       func=(sigfunctype) SIG_IGN;
     }else{
       func=receive_signal;
-#ifdef USE_SIGCHLD
+#ifdef USE_SIGCHILD
       if(signum == SIGCHLD)
 	func=receive_sigchild;
 #endif
@@ -704,16 +727,6 @@ void process_done(pid_t pid)
 
 
 #ifdef USE_SIGCHILD
-
-struct wait_data {
-  pid_t pid;
-  WAITSTATUSTYPE status;
-};
-
-static volatile struct wait_data wait_buf[WAIT_BUFFER];
-static volatile int firstwait=0;
-static volatile int lastwait=0;
-
 static RETSIGTYPE receive_sigchild(int signum)
 {
   pid_t pid;
@@ -735,7 +748,10 @@ static RETSIGTYPE receive_sigchild(int signum)
       goto try_reap_again;
     }
   }
-  receive_signal(SIGCHLD);
+  register_signal(SIGCHLD);
+#ifdef SIGNAL_ONESHOT
+  my_signal(signum, receive_sigchild);
+#endif
 }
 #endif
 
@@ -2814,7 +2830,7 @@ void f_atexit(INT32 args)
 void init_signals(void)
 {
   int e;
-#ifdef USE_SIGCHLD
+#ifdef USE_SIGCHILD
   my_signal(SIGCHLD, receive_sigchild);
 #endif
 
