@@ -39,6 +39,10 @@
  *   errname;  The name used when throwing errors.
  *   name;     The name used when doing add_function.
  *
+ * FUNCTION OVERLOADING
+ *   You can define the same function several times with different
+ *   types. This program will select the proper function whenever
+ *   possible.
  *
  * BUGS/LIMITATIONS
  *  o Parenthesis must match, even within #if 0
