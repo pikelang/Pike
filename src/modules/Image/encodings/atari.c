@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: atari.c,v 1.3 2003/12/14 22:48:36 nilsson Exp $
+|| $Id: atari.c,v 1.4 2004/05/19 00:06:06 nilsson Exp $
 */
 
 #include "global.h"
@@ -33,12 +33,20 @@ void rotate_atari_palette(struct atari_palette* pal, unsigned int left,
   }
 }
 
+void free_atari_palette(struct atari_palette* pal)
+{
+  if(pal) {
+    if(pal->colors) free(pal->colors);
+    free(pal);
+  }
+}
+
 /* pal is 2*size of palette data */
 struct atari_palette* decode_atari_palette(unsigned char *pal,
 					  unsigned int size)
 {
   unsigned int i;
-  struct atari_palette* ret_pal = malloc(sizeof(struct atari_palette));
+  struct atari_palette* ret_pal = xalloc(sizeof(struct atari_palette));
 
   ret_pal->size=size;
   ret_pal->colors=xalloc(size*sizeof(rgb_group));

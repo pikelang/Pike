@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: dct.c,v 1.26 2004/05/02 23:07:59 nilsson Exp $
+|| $Id: dct.c,v 1.27 2004/05/19 00:10:10 nilsson Exp $
 */
 
 /*
@@ -78,8 +78,9 @@ void image_dct(INT32 args)
    double xsz2,ysz2,enh,xp,yp,dx,dy;
    double *costbl;
    rgb_group *pix;
-   
-   if (!THIS->img) Pike_error("Called Image.Image object is not initialized\n");;
+
+   if (!THIS->img)
+     Pike_error("Called Image.Image object is not initialized\n");
 
 #ifdef DCT_DEBUG
    fprintf(stderr,"%lu bytes, %lu bytes\n",
@@ -87,8 +88,7 @@ void image_dct(INT32 args)
 	   DO_NOT_WARN((unsigned long)(sizeof(rgb_group)*THIS->xsize*THIS->ysize+1)));
 #endif
 
-   if (!(area=malloc(sizeof(rgbd_group)*THIS->xsize*THIS->ysize+1)))
-      resource_error(NULL,0,0,"memory",0,"Out of memory.\n");
+   area=xalloc(sizeof(rgbd_group)*THIS->xsize*THIS->ysize+1);
 
    if (!(costbl=malloc(sizeof(double)*THIS->xsize+1)))
    {
@@ -107,8 +107,13 @@ void image_dct(INT32 args)
       img->xsize=MAXIMUM(1,sp[-args].u.integer);
       img->ysize=MAXIMUM(1,sp[1-args].u.integer);
    }
-   else bad_arg_error("image->dct",sp-args,args,0,"",sp-args,
-		"Bad arguments to image->dct()\n");
+   else {
+     free(area);
+     free(costbl);
+     free_object(o);
+     bad_arg_error("image->dct",sp-args,args,0,"",sp-args,
+		   "Bad arguments to image->dct()\n");
+   }
 
    if (!(img->img=(rgb_group*)malloc(sizeof(rgb_group)*
 				     img->xsize*img->ysize+1)))

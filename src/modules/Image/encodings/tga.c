@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: tga.c,v 1.35 2004/03/06 00:07:00 nilsson Exp $
+|| $Id: tga.c,v 1.36 2004/05/19 00:08:01 nilsson Exp $
 */
 
 /*
@@ -63,7 +63,7 @@
 
 
 
-RCSID("$Id: tga.c,v 1.35 2004/03/06 00:07:00 nilsson Exp $");
+RCSID("$Id: tga.c,v 1.36 2004/05/19 00:08:01 nilsson Exp $");
 
 #define ROUNDUP_DIVIDE(n,d) (((n) + (d - 1)) / (d))
 
@@ -722,6 +722,7 @@ static struct buffer save_tga(struct image *img, struct image *alpha,
   struct buffer obuf;
   struct buffer *fp = &buf;
   struct tga_header hdr;
+  ONERROR err;
   ptrdiff_t (*myfwrite)(unsigned char *, size_t, size_t,
 			struct buffer *);
 
@@ -773,18 +774,14 @@ static struct buffer save_tga(struct image *img, struct image *alpha,
   buf.str = xalloc(buf.len);
   obuf.len = buf.len;
   obuf.str = buf.str;
+  SET_ONERROR(err, free, obuf.str);
 
   /* Just write the header. */
   if (std_fwrite((void *)&hdr, sizeof (hdr), 1, fp) != 1)
-  {
-    free(obuf.str);
-    Pike_error("Internal error: Out of space in buffer.\n");
-  }
+    Pike_error(msg_out_of_mem);
+
   if (std_fwrite ((void *)SAVE_ID_STRING, hdr.idLength, 1, fp) != 1)
-  {
-    free(obuf.str);
-    Pike_error("Internal error: Out of space in buffer.\n");
-  }
+    Pike_error(msg_out_of_mem);
 
   /* Allocate a new set of pixels. */
 
@@ -799,13 +796,8 @@ static struct buffer save_tga(struct image *img, struct image *alpha,
     {
       rgb_group *as = alpha->img;
       pixsize++;
-      p = data = malloc( width*height*4 );
+      p = data = xalloc( width*height*4 );
       datalen = width*height*4;
-      if(!data)
-      {
-        free(obuf.str);
-        Pike_error("Out of memory while encoding image\n");
-      }
       for(y=0; y<height; y++)
         for(x=0; x<width; x++)
         {
@@ -816,13 +808,8 @@ static struct buffer save_tga(struct image *img, struct image *alpha,
 	  as++;
         }
     } else {
-      p = data = malloc( width*height*3 );
+      p = data = xalloc( width*height*3 );
       datalen = width*height*3;
-      if(!data)
-      {
-        free(obuf.str);
-        Pike_error("Out of memory while encoding image\n");
-      }
       for(y=0; y<height; y++)
         for(x=0; x<width; x++)
         {
@@ -835,11 +822,11 @@ static struct buffer save_tga(struct image *img, struct image *alpha,
 	datalen/pixsize)
     {
       free(data);
-      free(obuf.str);
-      Pike_error("Internal error: Out of space in buffer.\n");
+      Pike_error(msg_out_of_mem);
     }
     free(data);
   }
+  UNSET_ONERROR(err);
   obuf.len -= buf.len;
   return obuf;
 }

@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: x.c,v 1.45 2004/03/06 00:07:00 nilsson Exp $
+|| $Id: x.c,v 1.46 2004/05/19 00:08:02 nilsson Exp $
 */
 
 /*
@@ -37,7 +37,7 @@
 #include <winsock.h>
 #endif
 
-RCSID("$Id: x.c,v 1.45 2004/03/06 00:07:00 nilsson Exp $");
+RCSID("$Id: x.c,v 1.46 2004/05/19 00:08:02 nilsson Exp $");
 #include "pike_macros.h"
 #include "object.h"
 #include "interpret.h"
@@ -939,8 +939,8 @@ static void image_x_decode_truecolor(INT32 args)
 	 COLORTYPE *gtbl=alloca(1<<gbits);
 	 COLORTYPE *btbl=alloca(1<<bbits);
 	 if (!rtbl || !gtbl || !btbl)
-	    resource_error(NULL,0,0,"memory",(1<<rbits)+(1<<rbits)+(1<<rbits),
-			   "Out of memory.\n");
+	   SIMPLE_OUT_OF_MEMORY_ERROR("decode_truecolor",
+				      (1<<rbits)+(1<<rbits)+(1<<rbits));
 
 	 for (j=0,i=24-rbits; i>0; i-=rbits) j+=1<<i;
 	 for (i=0; i<(1<<rbits); i++) rtbl[i]=(j*i)>>16;

@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: pattern.c,v 1.29 2004/03/05 23:04:03 nilsson Exp $
+|| $Id: pattern.c,v 1.30 2004/05/19 00:10:11 nilsson Exp $
 */
 
 /*
@@ -382,7 +382,8 @@ void image_noise(INT32 args)
    if (!(img->img=malloc(sizeof(rgb_group)*THIS->xsize*THIS->ysize+1)))
    {
       free_object(o);
-      Pike_error("Out of memory\n");
+      SIMPLE_OUT_OF_MEMORY_ERROR("noise",
+				 sizeof(rgb_group)*THIS->xsize*THIS->ysize+1);
    }
 
    cscale*=COLORRANGE_LEVELS;
@@ -462,7 +463,8 @@ void image_turbulence(INT32 args)
    if (!(img->img=malloc(sizeof(rgb_group)*THIS->xsize*THIS->ysize+1)))
    {
       free_object(o);
-      Pike_error("Out of memory\n");
+      SIMPLE_OUT_OF_MEMORY_ERROR("noise",
+				 sizeof(rgb_group)*THIS->xsize*THIS->ysize+1);
    }
 
    cscale*=COLORRANGE_LEVELS;

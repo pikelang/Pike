@@ -2,11 +2,11 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: pcx.c,v 1.21 2004/03/06 00:06:59 nilsson Exp $
+|| $Id: pcx.c,v 1.22 2004/05/19 00:08:01 nilsson Exp $
 */
 
 #include "global.h"
-RCSID("$Id: pcx.c,v 1.21 2004/03/06 00:06:59 nilsson Exp $");
+RCSID("$Id: pcx.c,v 1.22 2004/05/19 00:08:01 nilsson Exp $");
 
 #include "image_machine.h"
 
@@ -446,10 +446,10 @@ static struct pike_string *encode_pcx_24( struct pcx_header *pcx_header,
   
   pcx_header->planes = 3;
 
-  push_string( make_shared_binary_string( (char *)pcx_header, 
+  buffer = xalloc(data->xsize*data->ysize*3);
+  push_string( make_shared_binary_string( (char *)pcx_header,
                                           sizeof(struct pcx_header) ) );
   
-  buffer = malloc(data->xsize*data->ysize*3);
   s = data->img;
   for(y=0; y<data->ysize; y++)
   {
@@ -483,11 +483,10 @@ static struct pike_string *encode_pcx_8( struct pcx_header *pcx_header,
   char *buffer;
 
   pcx_header->planes = 1;
-  push_string( make_shared_binary_string( (char *)pcx_header, 
+  buffer = xalloc(data->xsize*data->ysize);
+  push_string( make_shared_binary_string( (char *)pcx_header,
                                           sizeof(struct pcx_header) ) );
 
-
-  buffer = malloc(data->xsize*data->ysize);
   image_colortable_index_8bit_image( opts->colortable, data->img,
 				     (unsigned char *)buffer,
 				     data->xsize*data->ysize, data->xsize );

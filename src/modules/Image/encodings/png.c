@@ -2,11 +2,11 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: png.c,v 1.63 2004/04/20 08:19:03 grubba Exp $
+|| $Id: png.c,v 1.64 2004/05/19 00:08:01 nilsson Exp $
 */
 
 #include "global.h"
-RCSID("$Id: png.c,v 1.63 2004/04/20 08:19:03 grubba Exp $");
+RCSID("$Id: png.c,v 1.64 2004/05/19 00:08:01 nilsson Exp $");
 
 #include "image_machine.h"
 
@@ -970,6 +970,14 @@ static struct png_interlace adam7[8]=
   {0,2,1,2},
   {1,2,0,1} };
 
+static void free_and_clear(void **mem)
+{
+  if(*mem) {
+    free(*mem);
+    *mem=0;
+  }
+}
+
 static void img_png_decode(INT32 args,int header_only)
 {
    struct array *a;
@@ -979,6 +987,7 @@ static void img_png_decode(INT32 args,int header_only)
    struct pike_string *fs,*trns=NULL;
    unsigned char *s,*s0;
    struct image *img;
+   ONERROR err, a_err, t_err;
 
    int n=0,i,x=-1,y;
    struct ihdr
@@ -1276,16 +1285,10 @@ static void img_png_decode(INT32 args,int header_only)
 
    s=(unsigned char*)fs->str;
 
-   w1=d1=malloc(sizeof(rgb_group)*ihdr.width*ihdr.height);
-   if (!d1)
-      Pike_error("Image.PNG._decode: Out of memory\n");
-
-   wa1=da1=malloc(sizeof(rgb_group)*ihdr.width*ihdr.height);
-   if (!da1)
-   {
-      free(d1);
-      Pike_error("Image.PNG._decode: Out of memory\n");
-   }
+   w1=d1=xalloc(sizeof(rgb_group)*ihdr.width*ihdr.height);
+   SET_ONERROR(err, free_and_clear, &d1);
+   wa1=da1=xalloc(sizeof(rgb_group)*ihdr.width*ihdr.height);
+   SET_ONERROR(a_err, free_and_clear, &da1);
 
    /* --- interlace decoding --- */
 
@@ -1313,16 +1316,11 @@ static void img_png_decode(INT32 args,int header_only)
       case 1: /* adam7 */
 
 	 /* need arena */
-	 t1=malloc(sizeof(rgb_group)*ihdr.width*ihdr.height);
-	 if (wa1) ta1=malloc(sizeof(rgb_group)*ihdr.width*ihdr.height);
-	 if (!t1 || (wa1 && !ta1))
-	 {
-	    free(w1); 
-	    if (wa1) free(wa1); 
-	    if (ta1) free(ta1); 
-	    if (ta1) free(t1); 
-	    Pike_error("Image.PNG._decode: out of memory (close one)\n");
-	 }
+	 t1=xalloc(sizeof(rgb_group)*ihdr.width*ihdr.height);
+	 SET_ONERROR(t_err, free_and_clear, &t1);
+	 ta1=xalloc(sizeof(rgb_group)*ihdr.width*ihdr.height);
+	 UNSET_ONERROR(t_err);
+
 	 /* loop over adam7 interlace's 
 	    and write them to the arena */
 
@@ -1369,18 +1367,18 @@ static void img_png_decode(INT32 args,int header_only)
 
 	    pop_stack();
 	 }
-	 
+
 	 free(w1);
 	 w1=t1;
 	 if (wa1) { free(wa1); wa1=ta1; }
 
 	 break;
       default:
-	 free(w1); if (wa1) free(wa1);
 	 Pike_error("Image.PNG._decode: Unknown interlace type\n");
    }
 
-
+   UNSET_ONERROR(a_err);
+   UNSET_ONERROR(err);
    
    
    /* --- done, store in mapping --- */
@@ -1580,10 +1578,8 @@ static void image_png_encode(INT32 args)
       }
       else
       {
-	 unsigned char *tmp=malloc(img->xsize*img->ysize),*ts;
+	 unsigned char *tmp=xalloc(img->xsize*img->ysize),*ts;
 
-	 if (!tmp)
-	    PIKE_ERROR("Image.PNG.encode", "Out of memory.\n", sp, args);
 	 image_colortable_index_8bit_image(ct,img->img,tmp,
 					   img->xsize*img->ysize,img->xsize);
 	 ts=tmp;

@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: blit.c,v 1.56 2004/03/05 23:04:02 nilsson Exp $
+|| $Id: blit.c,v 1.57 2004/05/19 00:10:10 nilsson Exp $
 */
 
 #include "global.h"
@@ -215,23 +215,18 @@ void img_crop(struct image *dest,
    if (x1>x2) tmp=x1, x1=x2, x2=tmp;
    if (y1>y2) tmp=y1, y1=y2, y2=tmp;
 
+   new=xalloc( (x2-x1+1)*(y2-y1+1)*sizeof(rgb_group) + 1);
+
    if (x1==0 && y1==0 &&
        img->xsize-1==x2 && img->ysize-1==y2)
    {
       *dest=*img;
-      new=malloc( (x2-x1+1)*(y2-y1+1)*sizeof(rgb_group) + 1);
-      if (!new) 
-	resource_error(NULL,0,0,"memory",0,"Out of memory.\n");
       THREADS_ALLOW();
       MEMCPY(new,img->img,(x2-x1+1)*(y2-y1+1)*sizeof(rgb_group));
       THREADS_DISALLOW();
       dest->img=new;
       return;
    }
-
-   new=malloc( (x2-x1+1)*(y2-y1+1)*sizeof(rgb_group) +1);
-   if (!new)
-     resource_error(NULL,0,0,"memory",0,"Out of memory.\n");
 
    img_clear(new,THIS->rgb,(x2-x1+1)*(y2-y1+1));
 
@@ -264,8 +259,7 @@ void img_crop(struct image *dest,
 void img_clone(struct image *newimg,struct image *img)
 {
    if (newimg->img) free(newimg->img);
-   newimg->img=malloc(sizeof(rgb_group)*img->xsize*img->ysize +1);
-   if (!newimg->img) resource_error(NULL,0,0,"memory",0,"Out of memory.\n");
+   newimg->img=xalloc(sizeof(rgb_group)*img->xsize*img->ysize +1);
    THREADS_ALLOW();
    MEMCPY(newimg->img,img->img,sizeof(rgb_group)*img->xsize*img->ysize);
    THREADS_DISALLOW();

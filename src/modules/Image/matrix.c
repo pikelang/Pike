@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: matrix.c,v 1.48 2004/03/05 23:04:03 nilsson Exp $
+|| $Id: matrix.c,v 1.49 2004/05/19 00:10:11 nilsson Exp $
 */
 
 /*
@@ -185,8 +185,8 @@ CHRONO("scale begin");
    if (newx<1) newx=1;
    if (newy<1) newy=1;
 
-   new=malloc(newx*newy*sizeof(rgbd_group) +1);
-   if (!new) resource_error(NULL,0,0,"memory",0,"Out of memory.\n");
+   new=xalloc(newx*newy*sizeof(rgbd_group) +1);
+
    THREADS_ALLOW();
 
    for (y=0; y<newx*newy; y++)
@@ -240,8 +240,8 @@ CHRONO("transfer begin");
 CHRONO("scale end");
 
    THREADS_DISALLOW();
-   if (!d) 
-      resource_error(NULL,0,0,"memory",0,"Out of memory.\n");
+   if (!d)
+     resource_error(NULL,0,0,"memory",0,"Out of memory.\n");
 }
 
 /* Special, faster, case for scale=1/2 */
@@ -258,8 +258,8 @@ void img_scale2(struct image *dest, struct image *source)
    if (!newx) newx = 1;
    if (!newy) newy = 1;
 
-   new=malloc(newx*newy*sizeof(rgb_group) +1);
-   if (!new) resource_error(NULL,0,0,"memory",0,"Out of memory.\n");
+   new=xalloc(newx*newy*sizeof(rgb_group) +1);
+
    THREADS_ALLOW();
    MEMSET(new,0,newx*newy*sizeof(rgb_group));
 
@@ -454,7 +454,8 @@ void image_ccw(INT32 args)
 
    pop_n_elems(args);
 
-   if (!THIS->img) Pike_error("Called Image.Image object is not initialized\n");;
+   if (!THIS->img)
+     Pike_error("Called Image.Image object is not initialized\n");
 
    o=clone_object(image_program,0);
    img=(struct image*)o->storage;
@@ -462,7 +463,8 @@ void image_ccw(INT32 args)
    if (!(img->img=malloc(sizeof(rgb_group)*THIS->xsize*THIS->ysize+1)))
    {
       free_object(o);
-      resource_error(NULL,0,0,"memory",0,"Out of memory.\n");
+      SIMPLE_OUT_OF_MEMORY_ERROR("ccw",
+				 sizeof(rgb_group)*THIS->xsize*THIS->ysize+1);
    }
    img->xsize=THIS->ysize;
    img->ysize=THIS->xsize;
@@ -561,7 +563,8 @@ void image_cw(INT32 args)
 
    pop_n_elems(args);
 
-   if (!THIS->img) Pike_error("Called Image.Image object is not initialized\n");;
+   if (!THIS->img)
+     Pike_error("Called Image.Image object is not initialized\n");
 
    o=clone_object(image_program,0);
    img=(struct image*)o->storage;
@@ -569,7 +572,8 @@ void image_cw(INT32 args)
    if (!(img->img=malloc(sizeof(rgb_group)*THIS->xsize*THIS->ysize+1)))
    {
       free_object(o);
-      resource_error(NULL,0,0,"memory",0,"Out of memory.\n");
+      SIMPLE_OUT_OF_MEMORY_ERROR("cw",
+				 sizeof(rgb_group)*THIS->xsize*THIS->ysize+1);
    }
    ys=img->xsize=THIS->ysize;
    i=xs=img->ysize=THIS->xsize;
@@ -613,7 +617,8 @@ void image_mirrorx(INT32 args)
 
    pop_n_elems(args);
 
-   if (!THIS->img) Pike_error("Called Image.Image object is not initialized\n");;
+   if (!THIS->img)
+     Pike_error("Called Image.Image object is not initialized\n");
 
    o=clone_object(image_program,0);
    img=(struct image*)o->storage;
@@ -621,7 +626,8 @@ void image_mirrorx(INT32 args)
    if (!(img->img=malloc(sizeof(rgb_group)*THIS->xsize*THIS->ysize+1)))
    {
       free_object(o);
-      resource_error(NULL,0,0,"memory",0,"Out of memory.\n");
+      SIMPLE_OUT_OF_MEMORY_ERROR("mirrorx",
+				 sizeof(rgb_group)*THIS->xsize*THIS->ysize+1);
    }
 
    i=THIS->ysize;
@@ -662,7 +668,8 @@ void image_mirrory(INT32 args)
 
    pop_n_elems(args);
 
-   if (!THIS->img) Pike_error("Called Image.Image object is not initialized\n");;
+   if (!THIS->img)
+     Pike_error("Called Image.Image object is not initialized\n");
 
    o=clone_object(image_program,0);
    img=(struct image*)o->storage;
@@ -670,7 +677,8 @@ void image_mirrory(INT32 args)
    if (!(img->img=malloc(sizeof(rgb_group)*THIS->xsize*THIS->ysize+1)))
    {
       free_object(o);
-      resource_error(NULL,0,0,"memory",0,"Out of memory.\n");
+      SIMPLE_OUT_OF_MEMORY_ERROR("mirrory",
+				 sizeof(rgb_group)*THIS->xsize*THIS->ysize+1);
    }
 
    i=THIS->ysize;
@@ -1166,7 +1174,8 @@ void img_translate(INT32 args,int expand)
    struct image *img;
    rgb_group *s,*d;
 
-   if (args<2) Pike_error("illegal number of arguments to image->translate()\n");
+   if (args<2)
+     Pike_error("illegal number of arguments to image->translate()\n");
 
    if (sp[-args].type==T_FLOAT) xt=sp[-args].u.float_number;
    else if (sp[-args].type==T_INT) xt=sp[-args].u.integer;
@@ -1192,12 +1201,13 @@ void img_translate(INT32 args,int expand)
    if (!(img->img=malloc(sizeof(rgb_group)*img->xsize*img->ysize+1)))
    {
       free_object(o);
-      resource_error(NULL,0,0,"memory",0,"Out of memory.\n");
+      SIMPLE_OUT_OF_MEMORY_ERROR("translate",
+				 sizeof(rgb_group)*img->xsize*img->ysize+1);
    }
 
    if (!xt)
    {
-      memcpy(img->img,THIS->img,sizeof(rgb_group)*THIS->xsize*THIS->ysize);
+      MEMCPY(img->img,THIS->img,sizeof(rgb_group)*THIS->xsize*THIS->ysize);
    }
    else
    {

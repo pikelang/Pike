@@ -2,11 +2,11 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: xcf.c,v 1.48 2004/03/06 00:07:00 nilsson Exp $
+|| $Id: xcf.c,v 1.49 2004/05/19 00:08:02 nilsson Exp $
 */
 
 #include "global.h"
-RCSID("$Id: xcf.c,v 1.48 2004/03/06 00:07:00 nilsson Exp $");
+RCSID("$Id: xcf.c,v 1.49 2004/05/19 00:08:02 nilsson Exp $");
 
 #include "image_machine.h"
 
@@ -1192,6 +1192,7 @@ void image_xcf_f__decode_tiles( INT32 args )
 
   INT_TYPE rle, bpp, span, shrink;
   unsigned int l, x=0, y=0, cx, cy;
+  ONERROR err;
   get_all_args( "_decode_tiles", args, "%o%O%a%i%i%O%i%d%d",
                 &io, &ao, &tiles, &rle, &bpp, &cmapo, &shrink, &rxs, &rys);
 
@@ -1216,7 +1217,8 @@ void image_xcf_f__decode_tiles( INT32 args )
 
   if(cmap)
   {
-    colortable = malloc(sizeof(rgb_group)*image_colortable_size( cmap ));
+    colortable = xalloc(sizeof(rgb_group)*image_colortable_size( cmap ));
+    SET_ONERROR(err, free, colortable);
     image_colortable_write_rgb( cmap, (unsigned char *)colortable );
   }
 
@@ -1403,8 +1405,10 @@ void image_xcf_f__decode_tiles( INT32 args )
     }
   }
   THREADS_DISALLOW();
-  if(colortable) 
+  if(colortable) {
+    UNSET_ONERROR(err);
     free( colortable );
+  }
 
   pop_n_elems(args);
   push_int(0);

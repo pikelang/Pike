@@ -2,11 +2,11 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: polyfill.c,v 1.48 2004/05/13 23:32:15 nilsson Exp $
+|| $Id: polyfill.c,v 1.49 2004/05/19 00:10:11 nilsson Exp $
 */
 
 #include "global.h"
-RCSID("$Id: polyfill.c,v 1.48 2004/05/13 23:32:15 nilsson Exp $");
+RCSID("$Id: polyfill.c,v 1.49 2004/05/19 00:10:11 nilsson Exp $");
 
 /* Prototypes are needed for these */
 extern double floor(double);
@@ -136,6 +136,7 @@ static void vertex_connect(struct vertex *above,
    above->below = c;
 
    d = malloc(sizeof(struct line_list));
+   if(!d) { free(c); return; }
    d->above = above; d->below = below;
    d->next = below->above;
    d->dx = c->dx;
@@ -290,6 +291,7 @@ static void add_vertices(struct line_list **first,
 
 
       c=malloc(sizeof(struct line_list));
+      if(!c) return;
       *c=*what;
       c->next=*ins;
       *ins=c;
@@ -797,9 +799,7 @@ void image_polyfill(INT32 args)
    if (!THIS->img)
       Pike_error("Image.Image->polyfill: no image\n");
 
-   buf=malloc(sizeof(double)*(THIS->xsize+1));
-   if (!buf)
-      Pike_error("Image.Image->polyfill: out of memory\n");
+   buf=xalloc(sizeof(double)*(THIS->xsize+1));
    SET_ONERROR(err, free, buf);
 
    v=polyfill_begin();

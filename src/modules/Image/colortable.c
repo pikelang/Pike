@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: colortable.c,v 1.119 2004/03/05 23:04:02 nilsson Exp $
+|| $Id: colortable.c,v 1.120 2004/05/19 00:10:10 nilsson Exp $
 */
 
 #include "global.h"
@@ -24,7 +24,7 @@
 /* #define COLORTABLE_REDUCE_DEBUG */
 /* #define CUBICLE_DEBUG */
 
-RCSID("$Id: colortable.c,v 1.119 2004/03/05 23:04:02 nilsson Exp $");
+RCSID("$Id: colortable.c,v 1.120 2004/05/19 00:10:10 nilsson Exp $");
 
 #include <math.h> /* fabs() */
 
@@ -3200,10 +3200,8 @@ static INLINE void _build_cubicle(struct neo_colortable *nct,
    INT32 n = nct->u.flat.numentries;
 
    int i=0;
-   int *p=malloc(n*sizeof(struct nctlu_cubicle));
+   int *p=xalloc(n*sizeof(struct nctlu_cubicle));
    int *pp; /* write */
-
-   if (!p) resource_error(NULL,0,0,"memory",0,"Out of memory.\n");
 
    rmin=(r*256)/red;   rmax=((r+1)*256)/red-1;
    gmin=(g*256)/green; gmax=((g+1)*256)/green-1;

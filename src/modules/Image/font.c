@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: font.c,v 1.83 2004/03/05 23:04:02 nilsson Exp $
+|| $Id: font.c,v 1.84 2004/05/19 00:10:10 nilsson Exp $
 */
 
 #include "global.h"
@@ -124,6 +124,7 @@ extern const unsigned char image_default_font[];
 #include "svalue.h"
 #include "threads.h"
 #include "builtin_functions.h"
+#include "module_support.h"
 
 #include "image.h"
 #ifdef HAVE_UNISTD_H
@@ -418,6 +419,10 @@ loading_default:
 
 		  new_font=malloc(sizeof(struct font)+
 			     sizeof(struct _char)*(THIS->chars-1));
+		  if(!new_font) {
+		    free(THIS);
+		    SIMPLE_OUT_OF_MEMORY_ERROR(0,0);
+		  }
 		  new_font->mem=THIS->mem;
 #ifdef HAVE_MMAP
 		  new_font->mmaped_size=THIS->mmaped_size;
@@ -524,19 +529,21 @@ void font_write(INT32 args)
    ptrdiff_t to_write_len;
    INT32 c;
    struct font *this = (*(struct font **)(Pike_fp->current_storage));
+   ONERROR err;
+
    if (!this)
       Pike_error("font->write: no font loaded\n");
 
    if (args==0)
    {
-      push_string(make_shared_binary_string("",0));
-      args++;
+      push_text("");
+      args=1;
    }
 
    maxwidth2=1;
 
-   width_of=(int *)malloc((args+1)*sizeof(int));
-   if(!width_of) resource_error(NULL,0,0,"memory",0,"Out of memory.\n");
+   width_of=(int *)xalloc((args+1)*sizeof(int));
+   SET_ONERROR(err, free, width_of);
 
    for (j=0; j<args; j++)
    {
@@ -607,7 +614,11 @@ void font_write(INT32 args)
    img->rgb.r=img->rgb.g=img->rgb.b=255;
    img->img=malloc(img->xsize*img->ysize*sizeof(rgb_group)+1);
 
-   if (!img) { free_object(o); free(width_of); resource_error(NULL,0,0,"memory",0,"Out of memory.\n"); }
+   if (!img->img) {
+     free_object(o);
+     SIMPLE_OUT_OF_MEMORY_ERROR("write",
+				img->xsize*img->ysize*sizeof(rgb_group)+1);
+   }
 
    MEMSET(img->img,0,img->xsize*img->ysize*sizeof(rgb_group));
 
@@ -694,6 +705,7 @@ void font_write(INT32 args)
 	Pike_fatal("Illegal shift size!\n");
      }
    }
+   UNSET_ONERROR(err);
    free(width_of);
 
    pop_n_elems(args);
@@ -744,8 +756,8 @@ void font_text_extents(INT32 args)
 
   if (args==0)
   {
-     push_string(make_shared_binary_string("",0));
-     args++;
+     push_text("");
+     args=1;
   }
 
   for (j=0; j<args; j++)
@@ -816,31 +828,27 @@ void font_text_extents(INT32 args)
 
 void font_set_xspacing_scale(INT32 args)
 {
-  if(!THIS) Pike_error("font->set_xspacing_scale(FLOAT): No font loaded.\n");
-  if(!args) Pike_error("font->set_xspacing_scale(FLOAT): No argument!\n");
-  if(sp[-args].type!=T_FLOAT)
-    Pike_error("font->set_xspacing_scale(FLOAT): Wrong type of argument!\n");
+  FLOAT_TYPE f;
 
-  THIS->xspacing_scale = (double)sp[-args].u.float_number;
-/*fprintf(stderr, "Setting xspacing to %f\n", THIS->xspacing_scale);*/
-  if(THIS->xspacing_scale < 0.0)
-    THIS->xspacing_scale=0.1;
-  pop_stack();
+  if(!THIS) Pike_error("font->set_xspacing_scale(): No font loaded.\n");
+  get_all_args("set_xspaxing_scale", args, "%f", &f);
+
+  if(f < 0.0) f=0.1;
+  THIS->xspacing_scale = (double)f;
+  pop_n_elems(args);
 }
 
 
 void font_set_yspacing_scale(INT32 args)
 {
-  if(!THIS) Pike_error("font->set_yspacing_scale(FLOAT): No font loaded.\n");
-  if(!args) Pike_error("font->set_yspacing_scale(FLOAT): No argument!\n");
-  if(sp[-args].type!=T_FLOAT)
-    Pike_error("font->set_yspacing_scale(FLOAT): Wrong type of argument!\n");
+  FLOAT_TYPE f;
 
-  THIS->yspacing_scale = (double)sp[-args].u.float_number;
-/*fprintf(stderr, "Setting yspacing to %f\n", THIS->yspacing_scale);*/
-  if(THIS->yspacing_scale <= 0.0)
-    THIS->yspacing_scale=0.1;
-  pop_stack();
+  if(!THIS) Pike_error("font->set_yspacing_scale(): No font loaded.\n");
+  get_all_args("set_yspacing_scale", args, "%f", &f);
+
+  if(f <= 0.0) f=0.1;
+  THIS->yspacing_scale = (double)f;
+  pop_n_elems(args);
 }
 
 
