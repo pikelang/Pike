@@ -2,11 +2,11 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: program.c,v 1.549 2004/01/16 21:51:38 mirar Exp $
+|| $Id: program.c,v 1.550 2004/01/17 19:20:43 nilsson Exp $
 */
 
 #include "global.h"
-RCSID("$Id: program.c,v 1.549 2004/01/16 21:51:38 mirar Exp $");
+RCSID("$Id: program.c,v 1.550 2004/01/17 19:20:43 nilsson Exp $");
 #include "program.h"
 #include "object.h"
 #include "dynamic_buffer.h"
@@ -3000,6 +3000,8 @@ struct program *end_first_pass(int finish)
 
   if(Pike_compiler->num_parse_error > 0)
   {
+    CDFPRINTF((stderr, "th(%ld) Compilation errors (%d).\n",
+	       (long)th_self(), Pike_compiler->num_parse_error));
     prog=0;
   }else{
     prog=Pike_compiler->new_program;
