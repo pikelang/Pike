@@ -20,7 +20,7 @@ AC_ARG_WITH(java-lib-dir,
 	[  --with-java-lib-dir=dir    look for JRE libs in dir],
 	[pike_java_user_lib_directory=$withval])
 
-if test "x$with_java" = xyes; then
+if test "x$with_java" = xyes -a "x$enable_binary" != xno; then
 
   AC_MSG_CHECKING(which operating system we're using)
   AC_CACHE_VAL(pike_cv_java_sysos, [
