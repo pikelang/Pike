@@ -2,11 +2,11 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: backend.cmod,v 1.128 2004/04/06 15:42:15 mast Exp $
+|| $Id: backend.cmod,v 1.129 2004/04/06 15:52:15 mast Exp $
 */
 
 #include "global.h"
-RCSID("$Id: backend.cmod,v 1.128 2004/04/06 15:42:15 mast Exp $");
+RCSID("$Id: backend.cmod,v 1.129 2004/04/06 15:52:15 mast Exp $");
 #include "fdlib.h"
 #include "backend.h"
 #include <errno.h>
@@ -2466,6 +2466,7 @@ PIKECLASS Backend
 	  if(CHECK_EVENT(ACTIVE_POLLSET[i], MY_POLLNVAL))
 	  {
 	    /* NOTE: /dev/poll returns POLLNVAL for closed descriptors. */
+#ifdef PIKE_DEBUG
 #ifndef USE_POLL_DEVICE
 	    /* FIXME */
 	    int j;
@@ -2485,7 +2486,6 @@ PIKECLASS Backend
 	      }
 	    }
 #endif
-#ifdef PIKE_DEBUG
 	    handled = 1;
 #endif /* PIKE_DEBUG */
 	  }
