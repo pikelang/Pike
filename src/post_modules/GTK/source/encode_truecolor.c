@@ -52,7 +52,7 @@ static void encode_truecolor_24_rgb_al32_swapped( rgb_group *s,
       *(d++) = (s++)->r;
       q--;
     }
-    d += (w*3)&3;
+    d += (4-((w*3)&3))&3;
   }
 }
 
@@ -66,7 +66,7 @@ static void encode_truecolor_24_rgb_al32( rgb_group *s,
     for(l=0; l<(q/w)/3; l++)
     {
       MEMCPY(d,(unsigned char *)s,w*3);
-      d += (w*3)&3;
+      d += (w*3+3)&~3;
     }
   }
 }

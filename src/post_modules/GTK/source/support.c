@@ -124,17 +124,20 @@ GdkImage *gdkimage_from_pikeimage( struct object *img, int fast, GdkImage *i )
     int pad = 0;
     int native_byteorder;
     PFTIME("Convert");
-
     if(vis->type == GDK_VISUAL_STATIC_GRAY)
       pgtk_encode_grey( (void *)img->storage, i->mem, i->bpp, i->bpl );
     else
     {
-      switch(i->bpl - (i->bpp*x))
-      {
-       case  0: pad = 0; break;
-       case  1: pad = 2; break;
-       default: pad = 4; break;
-      }
+      if(i->bpl != (i->bpp*x))
+	switch(i->bpl & 3)
+	{
+	 case  0: pad = 4; break;
+	 case  1: pad = 1; break;
+	 case  2: pad = 2; break;
+	 case  3: pad = 1; break;
+	}
+      else
+	pad = 0;
       pgtk_encode_truecolor_masks( (void *)img->storage, i->bpp*8, pad*8,
                                    (i->byte_order!=1), vis->red_mask,
                                    vis->green_mask, vis->blue_mask,
