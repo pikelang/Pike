@@ -251,6 +251,7 @@ void gc_free_all_unreferenced_programs();
 void count_memory_in_programs(INT32 *num_, INT32 *size_);
 void push_locals();
 void pop_locals();
+char *get_storage(struct object *o, struct program *p);
 /* Prototypes end here */
 
 

@@ -4,7 +4,7 @@
 ||| See the files COPYING and DISCLAIMER for more information.
 \*/
 #include "global.h"
-RCSID("$Id: program.c,v 1.28 1997/03/17 03:04:43 hubbe Exp $");
+RCSID("$Id: program.c,v 1.29 1997/03/23 22:23:52 hubbe Exp $");
 #include "program.h"
 #include "object.h"
 #include "dynamic_buffer.h"
@@ -1695,4 +1695,44 @@ void pop_locals()
 
   local_variables=l;
   /* insert check if ( local->next == parent locals ) here */
+}
+
+
+#define GET_STORAGE_CACHE_SIZE 1024
+static struct get_storage_cache
+{
+  INT32 oid, pid, offset;
+} get_storage_cache[GET_STORAGE_CACHE_SIZE];
+
+char *get_storage(struct object *o, struct program *p)
+{
+  INT32 oid,pid, offset;
+  unsigned INT32 hval;
+  if(!o->prog) return 0;
+  oid=o->prog->id;
+  pid=p->id;
+  hval=(oid*9248339 + pid) % GET_STORAGE_CACHE_SIZE;
+  if(get_storage_cache[hval].oid == oid &&
+     get_storage_cache[hval].pid == pid)
+  {
+    offset=get_storage_cache[hval].offset;
+  }else{
+    INT32 e;
+    offset=-1;
+    for(e=0;e<o->prog->num_inherits;e++)
+    {
+      if(o->prog->inherits[e].prog==p)
+      {
+	offset=o->prog->inherits[e].storage_offset;
+	break;
+      }
+    }
+
+    get_storage_cache[hval].oid=oid;
+    get_storage_cache[hval].pid=pid;
+    get_storage_cache[hval].offset=offset;
+  }
+
+  if(offset == -1) return 0;
+  return o->storage + offset;
 }
