@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: signal_handler.c,v 1.233 2002/10/31 16:21:55 jhs Exp $
+|| $Id: signal_handler.c,v 1.234 2002/10/31 17:33:16 grubba Exp $
 */
 
 #include "global.h"
@@ -26,7 +26,7 @@
 #include "main.h"
 #include <signal.h>
 
-RCSID("$Id: signal_handler.c,v 1.233 2002/10/31 16:21:55 jhs Exp $");
+RCSID("$Id: signal_handler.c,v 1.234 2002/10/31 17:33:16 grubba Exp $");
 
 #ifdef HAVE_PASSWD_H
 # include <passwd.h>
@@ -108,7 +108,6 @@ RCSID("$Id: signal_handler.c,v 1.233 2002/10/31 16:21:55 jhs Exp $");
 #undef timeval
 #endif
 
-#define sp Pike_sp
 #define fp Pike_fp
 
 
@@ -784,12 +783,12 @@ static void f_signal(int args)
   if(args < 1)
     Pike_error("Too few arguments to signal()\n");
 
-  if(sp[-args].type != T_INT)
+  if(Pike_sp[-args].type != T_INT)
   {
     Pike_error("Bad argument 1 to signal()\n");
   }
 
-  signum=sp[-args].u.integer;
+  signum=Pike_sp[-args].u.integer;
   if(signum <0 ||
      signum >=MAX_SIGNALS
 #if defined(__linux__) && defined(_REENTRANT)
@@ -836,7 +835,7 @@ static void f_signal(int args)
 	break;
     }
   } else {
-    if(SAFE_IS_ZERO(sp+1-args))
+    if(SAFE_IS_ZERO(Pike_sp+1-args))
     {
       /* Fixme: this can disrupt sigchild and other important signal handling
        */
@@ -849,8 +848,8 @@ static void f_signal(int args)
 #endif
     }
   }
-  assign_svalue(sp-args,signal_callbacks+signum);
-  assign_svalue(signal_callbacks + signum, sp+1-args);
+  assign_svalue(Pike_sp-args,signal_callbacks+signum);
+  assign_svalue(signal_callbacks + signum, Pike_sp+1-args);
   my_signal(signum, func);
   pop_n_elems(args-1);
 }
@@ -879,10 +878,10 @@ static void f_signum(int args)
   if(args < 1)
     Pike_error("Too few arguments to signum()\n");
 
-  if(sp[-args].type != T_STRING)
+  if(Pike_sp[-args].type != T_STRING)
     Pike_error("Bad argument 1 to signum()\n");
 
-  i=signum(sp[-args].u.string->str);
+  i=signum(Pike_sp[-args].u.string->str);
   pop_n_elems(args);
   push_int(i);
 }
@@ -900,10 +899,10 @@ static void f_signame(int args)
   if(args < 1)
     Pike_error("Too few arguments to signame()\n");
 
-  if(sp[-args].type != T_INT)
+  if(Pike_sp[-args].type != T_INT)
     Pike_error("Bad argument 1 to signame()\n");
 
-  n=signame(sp[-args].u.integer);
+  n=signame(Pike_sp[-args].u.integer);
   pop_n_elems(args);
   if(n)
     push_string(make_shared_string(n));
@@ -1471,7 +1470,7 @@ static HANDLE get_inheritable_handle(struct mapping *optional,
 				     int for_reading)
 {
   HANDLE ret = DO_NOT_WARN(INVALID_HANDLE_VALUE);
-  struct svalue *save_stack=sp;
+  struct svalue *save_stack=Pike_sp;
   struct svalue *tmp;
   if((tmp=simple_mapping_string_lookup(optional, name)))
   {
@@ -1508,7 +1507,7 @@ static HANDLE get_inheritable_handle(struct mapping *optional,
 	void create_proxy_pipe(struct object *o, int for_reading);
 	
 	create_proxy_pipe(tmp->u.object, for_reading);
-	fd=fd_from_object(sp[-1].u.object);
+	fd=fd_from_object(Pike_sp[-1].u.object);
 	
 	if(fd == -1)
 	  Pike_error("Proxy thread creation failed for %s.\n",name);
@@ -1526,7 +1525,7 @@ static HANDLE get_inheritable_handle(struct mapping *optional,
 	  Pike_error("Failed to duplicate handle %d.\n", GetLastError());
     }
   }
-  pop_n_elems(sp-save_stack);
+  pop_n_elems(Pike_sp-save_stack);
   return ret;
 }
 #endif
@@ -2060,13 +2059,13 @@ void f_create_process(INT32 args)
   switch(args)
   {
     default:
-      optional=sp[1-args].u.mapping;
+      optional=Pike_sp[1-args].u.mapping;
       mapping_fix_type_field(optional);
 
       if(m_ind_types(optional) & ~BIT_STRING)
 	Pike_error("Bad index type in argument 2 to Process->create()\n");
 
-    case 1: cmd=sp[-args].u.array;
+    case 1: cmd=Pike_sp[-args].u.array;
       if(cmd->size < 1)
 	Pike_error("Too few elements in argument array.\n");
       
@@ -2261,7 +2260,7 @@ void f_create_process(INT32 args)
 	    f_aggregate(ptr+1);
 	    push_string(make_shared_binary_string("\0",1));
 	    o_multiply();
-	    env=(void *)sp[-1].u.string->str;
+	    env=(void *)Pike_sp[-1].u.string->str;
 	  }
 	}
 
@@ -2384,7 +2383,7 @@ void f_create_process(INT32 args)
   }
 #else /* !__amigaos__ */
   {
-    struct svalue *stack_save=sp;
+    struct svalue *stack_save=Pike_sp;
     ONERROR err;
     struct passwd *pw=0;
     struct perishables storage;
@@ -2462,11 +2461,11 @@ void f_create_process(INT32 args)
 	    extern void f_getgrnam(INT32);
 	    push_svalue(tmp);
 	    f_getgrnam(1);
-	    if(!sp[-1].type != T_ARRAY)
+	    if(!Pike_sp[-1].type != T_ARRAY)
 	      Pike_error("No such group.\n");
-	    if(sp[-1].u.array->item[2].type != T_INT)
+	    if(Pike_sp[-1].u.array->item[2].type != T_INT)
 	      Pike_error("Getgrnam failed!\n");
-	    wanted_gid = sp[-1].u.array->item[2].u.integer;
+	    wanted_gid = Pike_sp[-1].u.array->item[2].u.integer;
 	    pop_stack();
 	    gid_request=1;
 	  }
@@ -2599,11 +2598,11 @@ void f_create_process(INT32 args)
 	      push_int(wanted_uid);
 	      f_getpwuid(1);
 
-	      if(sp[-1].type==T_ARRAY)
+	      if(Pike_sp[-1].type==T_ARRAY)
 	      {
-		if(sp[-1].u.array->item[3].type!=T_INT)
+		if(Pike_sp[-1].u.array->item[3].type!=T_INT)
 		  Pike_error("Getpwuid failed!\n");
-		wanted_gid = sp[-1].u.array->item[3].u.integer;
+		wanted_gid = Pike_sp[-1].u.array->item[3].u.integer;
 	      }
 	      pop_stack();
 	    }
@@ -2616,14 +2615,14 @@ void f_create_process(INT32 args)
 	    extern void f_getpwnam(INT32);
 	    push_svalue(tmp);
 	    f_getpwnam(1);
-	    if(sp[-1].type != T_ARRAY)
+	    if(Pike_sp[-1].type != T_ARRAY)
 	      Pike_error("No such user.\n");
-	    if(sp[-1].u.array->item[2].type!=T_INT ||
-	       sp[-1].u.array->item[3].type!=T_INT)
+	    if(Pike_sp[-1].u.array->item[2].type!=T_INT ||
+	       Pike_sp[-1].u.array->item[3].type!=T_INT)
 	      Pike_error("Getpwnam failed!\n");
-	    wanted_uid=sp[-1].u.array->item[2].u.integer;
+	    wanted_uid=Pike_sp[-1].u.array->item[2].u.integer;
 	    if(!gid_request)
-	      wanted_gid=sp[-1].u.array->item[3].u.integer;
+	      wanted_gid=Pike_sp[-1].u.array->item[3].u.integer;
 	    pop_stack();
 	    break;
 	  }
@@ -2675,7 +2674,7 @@ void f_create_process(INT32 args)
 	      push_string(make_shared_string("="));
 	      ref_push_string(ITEM(v)[e].u.string);
 	      f_add(3);
-	      storage.env[ptr++]=sp[-1].u.string->str;
+	      storage.env[ptr++]=Pike_sp[-1].u.string->str;
 	    }
 	  }
 	  storage.env[ptr++]=0;
@@ -2700,11 +2699,11 @@ void f_create_process(INT32 args)
       extern void f_get_groups_for_user(INT32);
       push_int(wanted_uid);
       f_get_groups_for_user(1);
-      if(sp[-1].type == T_ARRAY)
+      if(Pike_sp[-1].type == T_ARRAY)
       {
-	storage.wanted_gids_array=sp[-1].u.array;
-	sp--;
-	dmalloc_touch_svalue(sp);
+	storage.wanted_gids_array=Pike_sp[-1].u.array;
+	Pike_sp--;
+	dmalloc_touch_svalue(Pike_sp);
       } else {
 	pop_stack();
       }
@@ -2730,10 +2729,10 @@ void f_create_process(INT32 args)
 	    extern void f_getgrnam(INT32);
 	    ref_push_string(storage.wanted_gids_array->item[e].u.string);
 	    f_getgrnam(2);
-	    if(sp[-1].type != T_ARRAY)
+	    if(Pike_sp[-1].type != T_ARRAY)
 	      Pike_error("No such group.\n");
 
-	    storage.wanted_gids[e]=sp[-1].u.array->item[2].u.integer;
+	    storage.wanted_gids[e]=Pike_sp[-1].u.array->item[2].u.integer;
 	    pop_stack();
 	    break;
 	  }
@@ -2903,7 +2902,7 @@ void f_create_process(INT32 args)
 
       free_perishables(&storage);
 
-      pop_n_elems(sp - stack_save);
+      pop_n_elems(Pike_sp - stack_save);
 
 
 #ifdef USE_SIGCHILD
@@ -2921,7 +2920,7 @@ void f_create_process(INT32 args)
       THIS->state = PROCESS_RUNNING;
       ref_push_object(Pike_fp->current_object);
       push_int(pid);
-      mapping_insert(pid_mapping, sp-1, sp-2);
+      mapping_insert(pid_mapping, Pike_sp-1, Pike_sp-2);
       pop_n_elems(2);
 
       /* Wake up the child. */
@@ -3476,7 +3475,7 @@ void Pike_f_fork(INT32 args)
     p->state=PROCESS_RUNNING;
     push_object(o);
     push_int(pid);
-    mapping_insert(pid_mapping,sp-1, sp-2);
+    mapping_insert(pid_mapping,Pike_sp-1, Pike_sp-2);
     pop_stack();
   }else{
 #ifdef _REENTRANT
@@ -3594,10 +3593,10 @@ static void f_kill(INT32 args)
   if(args < 2)
     Pike_error("Too few arguments to kill().\n");
 
-  switch(sp[-args].type)
+  switch(Pike_sp[-args].type)
   {
   case T_INT:
-    pid = sp[-args].u.integer;
+    pid = Pike_sp[-args].u.integer;
     break;
 
     /* FIXME: What about if it's an object? */
@@ -3606,10 +3605,10 @@ static void f_kill(INT32 args)
     Pike_error("Bad argument 1 to kill().\n");
   }
     
-  if(sp[1-args].type != T_INT)
+  if(Pike_sp[1-args].type != T_INT)
     Pike_error("Bad argument 2 to kill().\n");
 
-  signum = sp[1-args].u.integer;
+  signum = Pike_sp[1-args].u.integer;
 
 #ifdef PROC_DEBUG
   fprintf(stderr, "kill: pid=%d, signum=%d\n", pid, signum);
@@ -3692,12 +3691,12 @@ static void f_kill(INT32 args)
   if(args < 2)
     Pike_error("Too few arguments to kill().\n");
 
-  switch(sp[-args].type)
+  switch(Pike_sp[-args].type)
   {
   case T_INT:
     tofree=proc=OpenProcess(PROCESS_TERMINATE,
 			    0,
-			    sp[-args].u.integer);
+			    Pike_sp[-args].u.integer);
 /*    fprintf(stderr,"PROC: %ld %ld\n",(long)proc,INVALID_HANDLE_VALUE); */
     if(!proc || proc == DO_NOT_WARN(INVALID_HANDLE_VALUE))
     {
@@ -3711,7 +3710,7 @@ static void f_kill(INT32 args)
   case T_OBJECT:
   {
     struct pid_status *p;
-    if((p=(struct pid_status *)get_storage(sp[-args].u.object,
+    if((p=(struct pid_status *)get_storage(Pike_sp[-args].u.object,
 					  pid_status_program)))
     {
       proc=p->handle;
@@ -3723,10 +3722,10 @@ static void f_kill(INT32 args)
     Pike_error("Bad argument 1 to kill().\n");
   }
     
-  if(sp[1-args].type != T_INT)
+  if(Pike_sp[1-args].type != T_INT)
     Pike_error("Bad argument 1 to kill().\n");
 
-  switch(sp[1-args].u.integer)
+  switch(Pike_sp[1-args].u.integer)
   {
     case 0:
       pop_n_elems(args);
@@ -3824,10 +3823,10 @@ static void f_alarm(INT32 args)
   if(args < 1)
     Pike_error("Too few arguments to signame()\n");
 
-  if(sp[-args].type != T_INT)
+  if(Pike_sp[-args].type != T_INT)
     Pike_error("Bad argument 1 to signame()\n");
 
-  seconds=sp[-args].u.integer;
+  seconds=Pike_sp[-args].u.integer;
 
   pop_n_elems(args);
   push_int(alarm(seconds));
@@ -3873,10 +3872,10 @@ static void f_ualarm(INT32 args)
   if(args < 1)
     Pike_error("Too few arguments to ualarm()\n");
 
-  if(sp[-args].type != T_INT)
+  if(Pike_sp[-args].type != T_INT)
     Pike_error("Bad argument 1 to ualarm()\n");
 
-  useconds=sp[-args].u.integer;
+  useconds=Pike_sp[-args].u.integer;
 
   pop_n_elems(args);
 
@@ -3966,7 +3965,7 @@ void f_atexit(INT32 args)
     atexit_functions=low_allocate_array(0,1);
   }
 
-  atexit_functions=append_array(atexit_functions,sp-args);
+  atexit_functions=append_array(atexit_functions,Pike_sp-args);
   atexit_functions->flags |= ARRAY_WEAK_FLAG | ARRAY_WEAK_SHRINK;
   pop_n_elems(args);
 }
