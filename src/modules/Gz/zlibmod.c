@@ -5,7 +5,7 @@
 \*/
 /**/
 #include "global.h"
-RCSID("$Id: zlibmod.c,v 1.33 2000/12/13 23:22:01 hubbe Exp $");
+RCSID("$Id: zlibmod.c,v 1.34 2000/12/15 20:40:24 nilsson Exp $");
 
 #include "zlib_machine.h"
 
@@ -99,7 +99,6 @@ static int do_deflate(dynamic_buffer *buf,
 		      int flush)
 {
    int ret=0;
-   int loop=0;
 
    THREADS_ALLOW();
    mt_lock(& this->lock);
