@@ -1,5 +1,5 @@
 // Table.pmod by Fredrik Noring, 1998
-// $Id: Table.pmod,v 1.8 1998/06/24 17:02:42 noring Exp $
+// $Id: Table.pmod,v 1.9 1998/06/26 16:43:34 noring Exp $
 
 #define TABLE_ERR(msg) throw(({ "(Table) "+msg+"\n", backtrace() }))
 
@@ -103,11 +103,10 @@ class table {
   {
     if(sizeof(t) != sizeof(table))
       TABLE_ERR("Table sizes are not equal.");
-    fields += indices(t);
     array v = values(t);
     for(int r = 0; r < sizeof(table); r++)
-      table[r] = table[r] + v[r];
-    return this_object();
+      v[r] = table[r] + v[r];
+    return copy(v, fields+indices(t), types+t->all_types());
   }
 
   static private mixed op_col(function f, int|string c, mixed ... args)
@@ -269,6 +268,11 @@ class table {
     if(query_num_arg() == 2)
       types[remap(c)] = copy_value(m);
     return copy_value(types[remap(c)]);
+  }
+
+  array all_types()
+  {
+    return copy_value(types);
   }
 
   void create(array(array) tab, array(string) fie, array|void typ)
