@@ -4,10 +4,11 @@
 ||| See the files COPYING and DISCLAIMER for more information.
 \*/
 
+#include "global.h"
+
 #include "config.h"
 
-#include "global.h"
-RCSID("$Id: ssleay.c,v 1.7 1997/08/30 18:36:14 grubba Exp $");
+RCSID("$Id: ssleay.c,v 1.8 1998/07/04 16:48:41 grubba Exp $");
 #include "interpret.h"
 #include "svalue.h"
 #include "stralloc.h"

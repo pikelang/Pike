@@ -1,7 +1,8 @@
+#include "global.h"
+
 #include "config.h"
 
-#include "global.h"
-RCSID("$Id: dumudp.c,v 1.29 1998/03/03 11:24:47 hubbe Exp $");
+RCSID("$Id: dumudp.c,v 1.30 1998/07/04 16:52:16 grubba Exp $");
 #include "interpret.h"
 #include "svalue.h"
 #include "stralloc.h"

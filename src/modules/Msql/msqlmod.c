@@ -2,13 +2,14 @@
  * This code is (C) Francesco Chemolli, 1997.
  * You may use, modify and redistribute it freely under the terms
  * of the GNU General Public License, version 2.
- * $Id: msqlmod.c,v 1.7 1998/03/03 14:17:45 grubba Exp $
+ * $Id: msqlmod.c,v 1.8 1998/07/04 16:43:45 grubba Exp $
  *
  * This version is intended for Pike/0.5 and later.
  * It won't compile under older versions of the Pike interpreter.
  */
 
 /* All this code is pretty useless if we don't have a msql library...*/
+#include "global.h"
 #include "msql_config.h"
 #ifdef HAVE_MSQL
 
@@ -21,7 +22,6 @@
 #include <string.h>
 #include <stdlib.h>
 
-#include "global.h"
 #include "threads.h"
 #include "machine.h"
 #include "interpret.h"
@@ -35,7 +35,7 @@
 #include "operators.h"
 #include "multiset.h"
 
-RCSID("$Id: msqlmod.c,v 1.7 1998/03/03 14:17:45 grubba Exp $");
+RCSID("$Id: msqlmod.c,v 1.8 1998/07/04 16:43:45 grubba Exp $");
 #include "version.h"
 
 #ifdef _REENTRANT

@@ -1,5 +1,5 @@
 /*
- * $Id: system.c,v 1.34 1998/03/03 11:24:48 hubbe Exp $
+ * $Id: system.c,v 1.35 1998/07/04 16:53:46 grubba Exp $
  *
  * System-call module for Pike
  *
@@ -10,11 +10,12 @@
  * Includes
  */
 
+#include "global.h"
+
 #include "system_machine.h"
 #include "system.h"
 
-#include "global.h"
-RCSID("$Id: system.c,v 1.34 1998/03/03 11:24:48 hubbe Exp $");
+RCSID("$Id: system.c,v 1.35 1998/07/04 16:53:46 grubba Exp $");
 #include "module_support.h"
 #include "las.h"
 #include "interpret.h"
