@@ -1,5 +1,5 @@
 /*
- * $Id: pikecode.h,v 1.1 2001/07/20 12:44:50 grubba Exp $
+ * $Id: pikecode.h,v 1.2 2001/07/20 16:27:53 grubba Exp $
  *
  * Generic headerfile for the code-generator.
  *
@@ -25,9 +25,9 @@ void ins_f_byte_with_2_args(unsigned int a,
 			    unsigned INT32 b);
 
 #ifdef PIKE_USE_MACHINE_CODE
-#ifdef __i386__
+#if defined(__i386__) || defined(__i386)
 #include "code/ia32.h"
-#elif defined(sparc) || defined(__sparc__)
+#elif defined(sparc) || defined(__sparc__) || defined(__sparc)
 #include "code/sparc.h"
 #else /* Unsupported cpu */
 #error Unknown CPU

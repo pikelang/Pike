@@ -1,5 +1,5 @@
 /*
- * $Id: pikecode.c,v 1.1 2001/07/20 12:44:49 grubba Exp $
+ * $Id: pikecode.c,v 1.2 2001/07/20 16:27:53 grubba Exp $
  *
  * Generic strap for the code-generator.
  *
@@ -17,9 +17,9 @@
 #include "pikecode.h"
 
 #ifdef PIKE_USE_MACHINE_CODE
-#ifdef __i386__
+#if defined(__i386__) || defined(__i386)
 #include "code/ia32.c"
-#elif defined(sparc) || defined(__sparc__)
+#elif defined(sparc) || defined(__sparc__) || defined(__sparc)
 #include "code/sparc.c"
 #else /* Unsupported cpu */
 #error Unknown CPU
