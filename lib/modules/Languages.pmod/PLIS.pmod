@@ -551,12 +551,12 @@ class Parser
 	{
 	case ')': return Lempty;
 	case '.':
-	  object final = _read();
-	  if (intp(final) || (_read() != ')'))
+	  object fin = _read();
+	  if (intp(fin) || (_read() != ')'))
 	  {
 	    return 0;
 	  }
-	  return final;
+	  return fin;
 	default:
 	  throw( ({ "lisp->parser: internal error\n",
 		    backtrace() }) );
