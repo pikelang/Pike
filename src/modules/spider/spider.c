@@ -43,7 +43,7 @@
 #include "threads.h"
 #include "operators.h"
 
-RCSID("$Id: spider.c,v 1.85 1999/08/13 14:10:58 grubba Exp $");
+RCSID("$Id: spider.c,v 1.86 1999/10/28 17:39:05 hubbe Exp $");
 
 #ifdef HAVE_PWD_H
 #include <pwd.h>
@@ -1112,6 +1112,7 @@ static struct program *streamed_parser;
 
 extern void init_udp(void);
 extern void init_xml(void);
+extern void exit_xml(void);
 
 
 /* Hohum. Here we go. This is try number three for a more optimized Roxen. */
@@ -1366,5 +1367,7 @@ void pike_module_exit(void)
       fd_marks[i]=0;
     }
   }
+
+  exit_xml();
 }
 
