@@ -3,7 +3,7 @@ Section: interpreters
 Priority: optional
 Maintainer: Marek Habersack <grendel@debian.org>
 Standards-Version: 3.5.10
-Build-Depends: debhelper (>> 4.0.0), libgdbmg1-dev, libgmp3-dev, libz-dev, libjpeg-dev, libttf-dev, libmysqlclient-dev, libreadline-dev, perl5, bison, debhelper, glutg3-dev, libgnome-dev, xlibmesa-gl-dev, xlibmesa-glu-dev, libgnorba-dev, libxpm4-dev, libglib1.2-dev, libglade0-dev, libxml2-dev, libgtkxmhtml-dev, libfreetype6-dev, libdockapp-dev, autoconf, automake, libiodbc2-dev, libsane-dev, postgresql-dev, librsvg2-dev, libsdl-mixer1.2-dev, libsdl1.2-dev, libperl-dev, sharutils, libpng2-dev, gtkglarea5-dev, orbit, libtiff3g-dev, libungif4-dev, gdk-imlib1-dev, bc
+Build-Depends: debhelper (>> 4.0.0), libgdbm-dev, libgmp3-dev, libz-dev, libjpeg-dev, libttf-dev, libmysqlclient-dev, libreadline-dev, perl5, bison, debhelper, glutg3-dev, libgnome-dev, xlibmesa-gl-dev, xlibmesa-glu-dev, libgnorba-dev, libxpm4-dev, libglib1.2-dev, libglade0-dev, libxml2-dev, libgtkxmhtml-dev, libfreetype6-dev, libdockapp-dev, autoconf, automake, libiodbc2-dev, libsane-dev, postgresql-dev, librsvg2-dev, libsdl-mixer1.2-dev, libsdl1.2-dev, libperl-dev, sharutils, libpng2-dev, gtkglarea5-dev, orbit, libtiff3g-dev, libungif4-dev, gdk-imlib1-dev, bc, libpcre3-dev, libbz2-dev
 Build-Conflicts: libutahglx-dev
 
 Package: pike7.5-core
@@ -116,6 +116,20 @@ Description: Perl module for Pike
  This Pike module enables one to embed perl in the pike
  programs.
 
+Package: pike7.5-pcre
+Architecture: any
+Depends: ${shlibs:Depends}, pike7.5-core (=${Source-Version})
+Description: PCRE module for Pike
+ This Pike module enables one to use the PCRE (Perl regular
+ expressions) from within the Pike programs.
+
+Package: pike7.5-bzip2
+Architecture: any
+Depends: ${shlibs:Depends}, pike7.5-core (=${Source-Version})
+Description: Bzip2 module for Pike
+ This Pike module enables one to use the Bzip2 compression
+ algorithm from within the Pike programs.
+
 Package: pike7.5-dev
 Architecture: all
 Depends: ${shlibs:Depends}
@@ -174,7 +188,7 @@ Description: Pike 7.5 documentation meta package
 
 Package: pike7.5-meta
 Architecture: all
-Depends: pike7.5 (=${Source-Version}), pike7.5-mysql (=${Source-Version}), pike7.5-pg (=${Source-Version}), pike7.5-odbc (=${Source-Version}), pike7.5-image (=${Source-Version}), pike7.5-sdl (=${Source-Version}), pike7.5-gdbm (=${Source-Version}), pike7.5-gtk (=${Source-Version}), pike7.5-gl (=${Source-Version}), pike7.5-sane (=${Source-Version}), pike7.5-doc (=${Source-Version}), pike7.5-dev (=${Source-Version}), pike7.5-perl (=${Source-Version})
+Depends: pike7.5 (=${Source-Version}), pike7.5-mysql (=${Source-Version}), pike7.5-pg (=${Source-Version}), pike7.5-odbc (=${Source-Version}), pike7.5-image (=${Source-Version}), pike7.5-sdl (=${Source-Version}), pike7.5-gdbm (=${Source-Version}), pike7.5-gtk (=${Source-Version}), pike7.5-gl (=${Source-Version}), pike7.5-sane (=${Source-Version}), pike7.5-doc (=${Source-Version}), pike7.5-dev (=${Source-Version}), pike7.5-perl (=${Source-Version}), pike7.5-svg (=${Source-Version}), pike7.5-pcre (=${Source-Version}), pike7.5-bzip2 (=${Source-Version})
 Description: Meta package for Pike 7.5
  This package depends on all the components that make up the Pike
  language distribution. It will pull in a LOT of packages the
