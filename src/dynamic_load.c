@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: dynamic_load.c,v 1.77 2004/03/21 17:59:24 grubba Exp $
+|| $Id: dynamic_load.c,v 1.78 2004/03/21 19:44:23 grubba Exp $
 */
 
 #ifdef TESTING
@@ -24,7 +24,7 @@
 #  include "language.h"
 #  include "lex.h"
 
-RCSID("$Id: dynamic_load.c,v 1.77 2004/03/21 17:59:24 grubba Exp $");
+RCSID("$Id: dynamic_load.c,v 1.78 2004/03/21 19:44:23 grubba Exp $");
 
 #else /* TESTING */
 
@@ -617,6 +617,8 @@ void exit_dynamic_load(void)
     UNSETJMP(recovery);
     free_program(tmp->module_prog);
     tmp->module_prog = NULL;
+    free_string(tmp->name);
+    tmp->name = NULL;
   }
 #endif
 }
@@ -634,11 +636,8 @@ void free_dynamic_load(void)
 #endif
 #ifdef PIKE_DEBUG
     if (tmp->module_prog)
-      Pike_fatal ("There's still a program for dynamic module \"%s\".\n",
-		  tmp->name->str);
+      Pike_fatal ("There's still a program for a dynamic module.\n");
 #endif
-    free_string(tmp->name);
-    tmp->name = NULL;
     free((char *)tmp);
   }
 #endif
