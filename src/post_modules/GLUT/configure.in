@@ -1,4 +1,4 @@
-# $Id: configure.in,v 1.1 1999/11/14 00:01:49 per Exp $
+# $Id: configure.in,v 1.2 1999/11/14 00:09:35 per Exp $
 AC_INIT(top.c)
 AC_CONFIG_HEADER(config.h)
 
@@ -9,7 +9,7 @@ AC_PATH_XTRA()
 AC_ARG_WITH(GLUT,  [  --without-GLUT    no support for GLUT],[without_GLUT=yes],[without_GLUT=no])
 
 if test x$without_GLUT = xyes; then
-  :
+  AUTO=""
 else
 
 AC_CHECK_LIB(X11, main)
@@ -42,9 +42,6 @@ if test x"$pike_cv_lib_glut" = xyes; then
   AUTO=auto.o
 else
   AC_MSG_RESULT(no)
-  AUTO=""
-fi
-else
   AUTO=""
 fi
 
