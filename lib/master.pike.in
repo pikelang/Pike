@@ -6,7 +6,7 @@
 // Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 // for more information.
 //
-// $Id: master.pike.in,v 1.324 2004/01/12 04:39:07 nilsson Exp $
+// $Id: master.pike.in,v 1.325 2004/01/12 16:34:29 nilsson Exp $
 
 #pike __REAL_VERSION__
 
@@ -2076,6 +2076,7 @@ class CompatResolver
   {
     if(local_include)
     {
+      if(IS_ABSOLUTE_PATH(f)) return combine_path("/",f);
       return combine_path_with_cwd(dirname(current_file), f);
     }
     else
