@@ -1,4 +1,4 @@
-AC_REVISION("$Id: configure.in,v 1.283 1999/05/11 22:41:39 grubba Exp $")
+AC_REVISION("$Id: configure.in,v 1.284 1999/05/11 23:08:35 grubba Exp $")
 AC_INIT(interpret.c)
 AC_CONFIG_HEADER(machine.h)
 
@@ -58,10 +58,12 @@ AC_ISC_POSIX
 
 AC_CHECK_HEADERS(fnord/fnord/fnord.h)
 
+AC_MSG_CHECKING([if CHECK_HEADERS works])
 if test "x$ac_cv_header_fnord_fnord_fnord_h" = xyes ; then
-  AC_MSG_RESULT("AC_MSG_HEADER is obviously not working properly.")
+  AC_MSG_RESULT(no)
   exit 1
 fi
+AC_MSG_RESULT(yes)
 
 #############################################################################
 AC_MINIX
