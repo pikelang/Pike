@@ -5,7 +5,7 @@
 \*/
 /**/
 #include "global.h"
-RCSID("$Id: main.c,v 1.77 1999/10/09 23:29:00 hubbe Exp $");
+RCSID("$Id: main.c,v 1.78 1999/12/05 15:32:15 grubba Exp $");
 #include "fdlib.h"
 #include "backend.h"
 #include "module.h"
@@ -32,6 +32,8 @@ RCSID("$Id: main.c,v 1.77 1999/10/09 23:29:00 hubbe Exp $");
 #include "security.h"
 #include "constants.h"
 #include "version.h"
+
+#include "las.h"
 
 #include <errno.h>
 
@@ -145,6 +147,15 @@ int dbm_main(int argc, char **argv)
   ARGV=argv;
 
   fd_init();
+
+#ifdef SHARED_NODES
+  node_hash.table = malloc(sizeof(node *)*16411);
+  if (!node_hash.table) {
+    fatal("Out of memory!\n");
+  }
+  MEMSET(node_hash.table, 0, sizeof(node *)*16411);
+  node_hash.size = 16411;
+#endif /* SHARED_NODES */
 
 #ifdef HAVE_SETLOCALE
 #ifdef LC_NUMERIC
@@ -306,6 +317,12 @@ int dbm_main(int argc, char **argv)
 
 	    case 't':
 	      debug_options|=NO_TAILRECURSION;
+	      p++;
+	      d_flag--;
+	      goto more_d_flags;
+
+	    case 'T':
+	      debug_options|=DEBUG_TYPES;
 	      p++;
 	      d_flag--;
 	      goto more_d_flags;
@@ -565,6 +582,10 @@ void low_exit_main(void)
   cleanup_compiler();
   cleanup_error();
   cleanup_backend();
+
+#ifdef SHARED_NODES
+  free(node_hash.table);
+#endif /* SHARED_NODES */
 
   do_gc();
   exit_pike_security();
