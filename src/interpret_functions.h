@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: interpret_functions.h,v 1.114 2002/11/10 20:19:18 grubba Exp $
+|| $Id: interpret_functions.h,v 1.115 2002/11/11 16:12:52 grubba Exp $
 */
 
 /*
@@ -1414,9 +1414,7 @@ OPCODE0(F_NEGATE, "unary minus", 0, {
   }
 });
 
-OPCODE0(F_COMPL, "~", 0, {
-  o_compl();
-});
+OPCODE0_ALIAS(F_COMPL, "~", 0, o_compl);
 
 OPCODE0(F_NOT, "!", 0, {
   switch(Pike_sp[-1].type)
@@ -1444,13 +1442,8 @@ OPCODE0(F_NOT, "!", 0, {
   }
 });
 
-OPCODE0(F_LSH, "<<", 0, {
-  o_lsh();
-});
-
-OPCODE0(F_RSH, ">>", 0, {
-  o_rsh();
-});
+OPCODE0_ALIAS(F_LSH, "<<", 0, o_lsh);
+OPCODE0_ALIAS(F_RSH, ">>", 0, o_rsh);
 
 #define COMPARISON(ID,DESC,EXPR)	\
   OPCODE0(ID, DESC, 0, {		\
