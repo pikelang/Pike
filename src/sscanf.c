@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: sscanf.c,v 1.160 2004/03/23 18:06:11 nilsson Exp $
+|| $Id: sscanf.c,v 1.161 2004/05/31 23:48:03 nilsson Exp $
 */
 
 #include "global.h"
@@ -15,10 +15,11 @@
 #include "module_support.h"
 #include "operators.h"
 #include "bignum.h"
+#include "pike_float.h"
 
 #define sp Pike_sp
 
-RCSID("$Id: sscanf.c,v 1.160 2004/03/23 18:06:11 nilsson Exp $");
+RCSID("$Id: sscanf.c,v 1.161 2004/05/31 23:48:03 nilsson Exp $");
 
 /* 
  * helper functions for sscanf %O
@@ -401,26 +402,7 @@ CHAROPT(							\
 /* Parse binary IEEE strings on a machine which uses a different kind
    of floating point internally */
 
-#ifndef FLOAT_IS_IEEE_BIG
-#ifndef FLOAT_IS_IEEE_LITTLE
-#define NEED_CUSTOM_IEEE
-#endif
-#endif
-#ifndef NEED_CUSTOM_IEEE
-#ifndef DOUBLE_IS_IEEE_BIG
-#ifndef DOUBLE_IS_IEEE_LITTLE
-#define NEED_CUSTOM_IEEE
-#endif
-#endif
-#endif
-
 #ifdef NEED_CUSTOM_IEEE
-
-#if HAVE_LDEXP
-#define LDEXP ldexp
-#else
-extern double LDEXP(double x, int exp); /* defined in encode.c */
-#endif
 
 static INLINE FLOAT_TYPE low_parse_IEEE_float(char *b, int sz)
 {

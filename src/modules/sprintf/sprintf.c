@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: sprintf.c,v 1.118 2004/03/21 17:14:47 nilsson Exp $
+|| $Id: sprintf.c,v 1.119 2004/05/31 23:48:29 nilsson Exp $
 */
 
 /* TODO: use ONERROR to cleanup fsp */
@@ -278,7 +278,7 @@
  *!   @[lfun::_sprintf()]
  */
 #include "global.h"
-RCSID("$Id: sprintf.c,v 1.118 2004/03/21 17:14:47 nilsson Exp $");
+RCSID("$Id: sprintf.c,v 1.119 2004/05/31 23:48:29 nilsson Exp $");
 #include "pike_error.h"
 #include "array.h"
 #include "svalue.h"
@@ -338,22 +338,20 @@ struct format_stack
   struct format_info format_info_stack[FORMAT_INFO_STACK_SIZE];
 };
 
-#define MINIMUM(X,Y) ((X)<(Y)?(X):(Y))
-
-#define FIELD_LEFT 1
-#define FIELD_CENTER 2
-#define PAD_POSITIVE 4
-#define LINEBREAK 8
-#define COLUMN_MODE 16
-#define ZERO_PAD 32
-#define ROUGH_LINEBREAK 64
-#define DO_TRUNC 128
-#define REPEAT 256
-#define SNURKEL 512
-#define INVERSE_COLUMN_MODE 1024
-#define MULTI_LINE 2048
-#define WIDTH_OF_DATA 4096
-#define MULTI_LINE_BREAK 8192
+#define FIELD_LEFT	(1<<0)
+#define FIELD_CENTER	(1<<1)
+#define PAD_POSITIVE	(1<<2)
+#define LINEBREAK	(1<<3)
+#define COLUMN_MODE	(1<<4)
+#define ZERO_PAD	(1<<5)
+#define ROUGH_LINEBREAK	(1<<6)
+#define DO_TRUNC	(1<<7)
+#define REPEAT		(1<<8)
+#define SNURKEL		(1<<9)
+#define INVERSE_COLUMN_MODE (1<<10)
+#define MULTI_LINE	(1<<11)
+#define WIDTH_OF_DATA	(1<<12)
+#define MULTI_LINE_BREAK (1<<13)
 
 #define MULTILINE (LINEBREAK | COLUMN_MODE | ROUGH_LINEBREAK | \
 		   INVERSE_COLUMN_MODE | MULTI_LINE | REPEAT)
@@ -361,19 +359,6 @@ struct format_stack
 
 /* Generate binary IEEE strings on a machine which uses a different kind
    of floating point internally */
-
-#ifndef FLOAT_IS_IEEE_BIG
-#ifndef FLOAT_IS_IEEE_LITTLE
-#define NEED_CUSTOM_IEEE
-#endif
-#endif
-#ifndef NEED_CUSTOM_IEEE
-#ifndef DOUBLE_IS_IEEE_BIG
-#ifndef DOUBLE_IS_IEEE_LITTLE
-#define NEED_CUSTOM_IEEE
-#endif
-#endif
-#endif
 
 #ifdef NEED_CUSTOM_IEEE
 
@@ -390,18 +375,6 @@ struct format_stack
 #define FP_PDENORM FP_POS_DENORM
 #define HAVE_FPCLASS
 #endif
-#endif
-
-#ifdef HAVE_FREXP
-#define FREXP frexp
-#else
-extern double FREXP(double x, int *exp); /* defined in encode.c */
-#endif
-
-#if HAVE_LDEXP
-#define LDEXP ldexp
-#else
-extern double LDEXP(double x, int exp); /* defined in encode.c */
 #endif
 
 INLINE static void low_write_IEEE_float(char *b, double d, int sz)
