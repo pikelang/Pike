@@ -175,6 +175,11 @@ static mixed decode(string xml_input, string dtd_input)
   // We cannot insert 0 integers directly into the parse tree, so
   // we'll use magic_zero as a placeholder and destruct it afterwards.
   object magic_zero = class {}();
+  // One more fix because some people found the specs too easy and 
+  // decided that you can have <value>test</value>
+  // (that is omitting string inside a value)
+  object mystring = class { string s; }();
+
   Parser.XML.Validating xml = Parser.XML.Validating();
   array tree = xml->
 	       parse(xml_input,
@@ -202,9 +207,17 @@ static mixed decode(string xml_input, string dtd_input)
 			   {
 			     case "methodResponse":
 			     case "param":
-			     case "value":
 			     case "array":
 			     case "fault":
+			       return data[0];
+			     case "value":
+			       foreach(data, mixed value)
+			         if(!stringp(value))
+				 {
+				   if(objectp(value) && value->s)
+				     return value->s;
+				   return value;
+				 }
 			       return data[0];
 			     case "i4":
 			     case "int":
@@ -213,11 +226,14 @@ static mixed decode(string xml_input, string dtd_input)
 			     case "double":
 			       return (float)(data*"");
 			     case "string":
+			       mystring->s = data*"";
+			       return mystring;
 			     case "name":
 			     case "methodName":
 			       return data*"";
 			     case "base64":
-			       return MIME.decode_base64(data*"");
+			       mystring->s = MIME.decode_base64(data*"");
+			       return mystring;
 			     case "methodCall":
 			     case "params":
 			     case "member":
