@@ -1,6 +1,6 @@
 // -*- c -*-
 //
-// $Id: treeopt.in,v 1.38 2000/04/11 19:51:32 grubba Exp $
+// $Id: treeopt.in,v 1.39 2000/04/30 11:24:12 grubba Exp $
 //
 // The tree optimizer
 //
@@ -25,12 +25,29 @@
 F_APPLY(-, 0 = *):
   F_COMMA_EXPR(F_POP_VALUE($0, -), 0);
 
-
 // Attempt to return a void expression.
 // The compiler has already complained about it, so just make a valid node.
 F_RETURN(-, *):
   F_RETURN(0, -);
 
+// @({ a, b, c })  =>  a, b, c
+F_PUSH_ARRAY(F_APPLY(F_CONSTANT
+		     [$$->u.sval.type == T_FUNCTION]
+		     [$$->u.sval.subtype == FUNCTION_BUILTIN]
+		     [$$->u.sval.u.efun->function == debug_f_aggregate], 0), *):
+  $0;
+
+F_PUSH_ARRAY(0 = F_CONSTANT[$$->u.sval.type == T_ARRAY], *):
+  {
+    struct array *a = $0->u.sval.u.array;
+    node *n = NULL;
+    int i;
+    for(i=0; i<a->size; i++) {
+      n = mknode(F_ARG_LIST, n, mksvaluenode(a->item+i));
+    }
+    $$ = n;
+  }
+  ;
 
 F_POP_VALUE(-, *):
   -;
@@ -331,8 +348,12 @@ F_LOR(0, -):
   $0;
 
 // DeMorgan
-F_LOR(F_NOT(0, *), F_NOT(1, *)):
-  F_NOT(F_LAND($0, $1), -);
+F_LOR(F_APPLY(0 = F_CONSTANT
+	      [$$->u.sval.type == T_FUNCTION]
+	      [$$->u.sval.subtype == FUNCTION_BUILTIN]
+	      [$$->u.sval.u.efun->function == f_not], 1),
+      F_APPLY($0, 2)):
+  F_APPLY($0, F_LAND($1, $2));
 
 F_LOR(0, F_LOR(1, 2)):
   F_LOR(F_LOR($0, $1), $2);
@@ -363,8 +384,12 @@ F_LAND(0, -):
   F_COMMA_EXPR($0, 0);
 
 // DeMorgan
-F_LAND(F_NOT(0, *), F_NOT(1, *)):
-  F_NOT(F_LOR($0, $1), -);
+F_LAND(F_APPLY(0 = F_CONSTANT
+	       [$$->u.sval.type == T_FUNCTION]
+	       [$$->u.sval.subtype == FUNCTION_BUILTIN]
+	       [$$->u.sval.u.efun->function == f_not], 1),
+       F_APPLY($0, 2)):
+  F_APPLY($0, F_LOR($1, $2));
 
 F_LAND(0, F_LAND(1, 2)):
   F_LAND(F_LAND($0, $1), $2);
@@ -398,7 +423,10 @@ F_LAND(0 = +[node_is_false($$)], *):
 '?'(0, ':'(-, -)):
   $0;
 
-'?'(F_NOT(0, *), ':'(1, 2)):
+'?'(F_APPLY(F_CONSTANT
+	    [$$->u.sval.type == T_FUNCTION]
+	    [$$->u.sval.subtype == FUNCTION_BUILTIN]
+	    [$$->u.sval.u.efun->function == f_not], 0), ':'(1, 2)):
   '?'($0, ':'($2, $1));
 
 '?'(+[node_is_true($$)], ':'(0, *)):
