@@ -40,7 +40,7 @@ int main(int num, array(string) args) {
   foreach(args[2..], string file) {
     if(has_suffix(file,"sub_manual.xml")) continue;
     Stdio.Stat st = file_stat(file);
-    if(st->size == 0 || st->size == 37) continue;
+    if(!st->size) continue;
     parse_file( file );
   }
 }

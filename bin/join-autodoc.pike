@@ -1,5 +1,5 @@
 /*
- * $Id: join-autodoc.pike,v 1.8 2001/08/11 22:09:27 nilsson Exp $
+ * $Id: join-autodoc.pike,v 1.9 2001/08/20 16:08:44 nilsson Exp $
  *
  * AutoDoc mk II join script.
  *
@@ -18,7 +18,7 @@ int main(int argc, array(string) argv)
 
   files = filter(files, lambda(string fn) {
 			  Stdio.Stat st = file_stat(fn);
-			  return st->size != 0 && st->size != 37;
+			  return st->size;
 			});
 
   if(!sizeof(files)) {
@@ -34,7 +34,7 @@ int main(int argc, array(string) argv)
   werror("Joining %d file%s...\n", sizeof(files),
 	 (sizeof(files)==1?"":"s"));
 
-  werror("Reading %s...\n", argv[2]);
+  werror("Reading %s...\n", files[0]);
   object dest = Parser.XML.Tree.parse_file(files[0])[0];
 
   int fail;
