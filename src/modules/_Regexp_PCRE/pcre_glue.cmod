@@ -2,12 +2,12 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: pcre_glue.cmod,v 1.16 2004/02/15 19:34:00 nilsson Exp $
+|| $Id: pcre_glue.cmod,v 1.17 2004/06/27 05:40:22 mirar Exp $
 || (original author: mirar)
 */
 
 #include "global.h"
-RCSID("$Id: pcre_glue.cmod,v 1.16 2004/02/15 19:34:00 nilsson Exp $");
+RCSID("$Id: pcre_glue.cmod,v 1.17 2004/06/27 05:40:22 mirar Exp $");
 #include "pcre_machine.h"
 
 #include "pike_macros.h"
@@ -415,11 +415,6 @@ PIKECLASS _pcre
 	 if (!THIS->re)
 	    Pike_error("need to initialize before exec() is called\n");
 
-#ifdef PCRE_EXTRA_STUDY_DATA
-	 if (THIS->extra) opts|=PCRE_EXTRA_STUDY_DATA;
-#else
-	 /* FIXME: Throw an error if THIS->extra is set? */
-#endif /* PCRE_EXTRA_STUDY_DATA */
          /* FIXME: also MATCH_LIMIT and CALLOUT_DATA ... later */
 
 	 switch (args) /* get ints and check 8 bit compliancy */
