@@ -1,4 +1,4 @@
-AC_REVISION("$Id: configure.in,v 1.477 2001/02/14 14:56:56 mirar Exp $")
+AC_REVISION("$Id: configure.in,v 1.478 2001/02/14 17:12:18 mirar Exp $")
 AC_INIT(interpret.c)
 AC_CONFIG_HEADER(machine.h)
 
@@ -5128,6 +5128,7 @@ sed <conftest.cpp >conftypes.txt '1,/^--$/d'
 
 rm config.info 2>/dev/null
 
+
 echo "=========================================================" >>config.info
 
 echo "$PIKE_VERSION_LONG configuration summary" >>config.info
@@ -5140,7 +5141,13 @@ echo "pike library.. $prefix/lib/${PIKE_VERSION}/" >>config.info
 
 echo >>config.info
 echo "build information:" >>config.info
+echo "system........ $UNAME$(echo $pike_cv_libgcc_filename | sed -n -e 's+^.*gcc-lib/\([[^/]]*\)/.*$+ (\1)+p')" >>config.info
+uname -a && echo "   $(uname -a)" >>config.info
+echo "host.......... $ac_hostname" >>config.info
+echo "user.......... $(whoami 2>/dev/null || echo '?')" >>config.info
+echo >>config.info
 echo "source path... $srcdir" >>config.info
+echo "build path.... $BUILDDIR" >>config.info
 echo "cpp........... $CPP" >>config.info
 echo "cc............ $CC" >>config.info
 echo "ld............ $LD" >>config.info
