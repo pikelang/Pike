@@ -2,7 +2,7 @@
 
 // LDAP client protocol implementation for Pike.
 //
-// $Id: client.pike,v 1.52 2004/09/14 10:40:07 mast Exp $
+// $Id: client.pike,v 1.53 2005/01/21 17:08:56 mast Exp $
 //
 // Honza Petrous, hop@unibase.cz
 //
@@ -368,7 +368,7 @@ import SSL.constants;
   void create(string|void url, object|void context)
   {
 
-    info = ([ "code_revision" : ("$Revision: 1.52 $"/" ")[1] ]);
+    info = ([ "code_revision" : ("$Revision: 1.53 $"/" ")[1] ]);
 
     if(!url || !sizeof(url))
       url = LDAP_DEFAULT_URL;
@@ -738,6 +738,23 @@ import SSL.constants;
 
   } // add
 
+  static string unescape_filter_value (string val)
+  // Decodes escapes in val according to section 4 in RFC 2254 and
+  // section 3 in the older RFC 1960.
+  {
+    string res = "";
+    while (sscanf (val, "%s\\%s", string pre, val) == 2) {
+      res += pre;
+      if (sscanf (val, "%2x%s", int chr, val) == 2)
+	res += sprintf ("%c", chr);
+      else {
+	res += val[..0];
+	val = val[1..];
+      }
+    }
+    return res + val;
+  }
+
   private static array(string) filter_get_sub1expr(string fstr) {
   // returns one-level brackets enclosed expressions
 
@@ -816,14 +833,17 @@ import SSL.constants;
 	    for (int cnt = 0; cnt < ix; cnt++)
 		if(!cnt) {	// leftmost element
 		    if(sizeof(ahlp[0]))
-			oarr = ({ASN1_CONTEXT_OCTET_STRING(0, ahlp[0])});
+		      oarr = ({ASN1_CONTEXT_OCTET_STRING(
+				 0, unescape_filter_value (ahlp[0]))});
 		} else
 		    if(cnt == ix-1) {	// rightmost element
 			if(sizeof(ahlp[ix-1]))
-			    oarr += ({ASN1_CONTEXT_OCTET_STRING(2, ahlp[ix-1])});
+			    oarr += ({ASN1_CONTEXT_OCTET_STRING(
+					2, unescape_filter_value (ahlp[ix-1]))});
 		    } else {	// inside element
 			if(sizeof(ahlp[cnt]))
-			    oarr += ({ASN1_CONTEXT_OCTET_STRING(1, ahlp[cnt])});
+			    oarr += ({ASN1_CONTEXT_OCTET_STRING(
+					1, unescape_filter_value (ahlp[cnt]))});
 		    }
 	    // for
 
@@ -836,7 +856,8 @@ import SSL.constants;
         DWRITE("client.make_simple_filter: [=]\n");
 	return(ASN1_CONTEXT_SEQUENCE(3,
 		({Standards.ASN1.Types.asn1_octet_string(filter[..(op-1)]),
-		  Standards.ASN1.Types.asn1_octet_string(filter[(op+1)..])
+		  Standards.ASN1.Types.asn1_octet_string(
+		    unescape_filter_value (filter[(op+1)..]))
 		})));
       }
     } // if equal,substring
