@@ -1,4 +1,4 @@
-AC_REVISION("$Id: configure.in,v 1.193 1998/05/24 22:40:22 marcus Exp $")
+AC_REVISION("$Id: configure.in,v 1.194 1998/05/29 20:41:19 grubba Exp $")
 AC_INIT(interpret.c)
 AC_CONFIG_HEADER(machine.h)
 
@@ -1064,6 +1064,28 @@ AC_MSG_RESULT($pike_cv_has_external_timezone)
 
 # No test for this yet...
 AC_DEFINE(HAVE_STRUCT_TIMEVAL)
+
+#############################################################################
+
+if test "x$ac_cv_func_strtol" = "xyes"; then
+  AC_MSG_CHECKING(if strtol works for large hexadecimal constants)
+  AC_CACHE_VAL(pike_cv_func_strtol_works, [
+    AC_TRY_RUN([
+#include <stdlib.h>
+int main(int argc, char **argv)
+{
+  /* On some OS's strtol() rounds this to 0x7fffffff. */
+  return(strtol("0xffffffff", NULL, 0) != 0xffffffff);
+}
+    ], pike_cv_func_strtol_works=yes,
+       pike_cv_func_strtol_works=no,
+       pike_cv_func_strtol_works=no)
+  ])
+  AC_MSG_RESULT($pike_cv_func_strtol_works)
+  if test "x$pike_cv_func_strtol_works" = "xyes"; then
+    AC_DEFINE(HAVE_WORKING_STRTOL)
+  else :; fi
+else :; fi
 
 #############################################################################
 
