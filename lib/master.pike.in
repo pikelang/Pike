@@ -6,7 +6,7 @@
 // Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 // for more information.
 //
-// $Id: master.pike.in,v 1.309 2003/11/12 15:45:57 grubba Exp $
+// $Id: master.pike.in,v 1.310 2003/11/14 06:11:38 mast Exp $
 
 #pike __REAL_VERSION__
 
@@ -73,9 +73,14 @@ int compat_minor=-1;
 
 // ---  Functions begin here.
 
-#define Stat _static_modules.___files.Stat
+// Have to access some stuff without going through the resolver.
+private constant Builtin = _static_modules.Builtin;
+private constant Files = _static_modules.___files;
+
+#define Stat Files.Stat
 #define capitalize(X) (upper_case((X)[..0])+(X)[1..])
-#define write(X ...) _static_modules.___files()->_stdout->write(X)
+#define write(X ...) (Files()->_stdout->write(X))
+#define trim_all_whites(X) (Builtin()->string_trim_all_whites (X))
 
 #ifdef RESOLV_DEBUG
 
@@ -306,7 +311,7 @@ program compile_string(string source, void|string filename,
 //!
 string master_read_file(string file)
 {
-  object o=_static_modules.___files()->Fd();
+  object o=Files()->Fd();
   if( ([function(string, string : int)]o->open)(fakeroot(file),"r") )
     return ([function(void : string)]o->read)();
   return 0;
@@ -604,9 +609,48 @@ array(string) query_precompiled_names(string fname)
   return ({ fname + ".o" });
 }
 
+static class CompileCallbackError (string error_message, array error_backtrace)
+{
+  constant is_generic_error = 1;
+  constant is_compile_callback_error = 1;
+}
+
+static void compile_cb_error (string msg, mixed ... args)
+// Use this to throw errors that should be converted to plain compile
+// error messages, without backtraces being reported by
+// compile_exception.
+{
+  if (sizeof (args)) msg = sprintf (msg, @args);
+  array bt = backtrace();
+  bt = bt[..sizeof (bt) - 2];
+  throw (CompileCallbackError (msg, bt));
+}
+
+static void compile_cb_rethrow (object|array err)
+// Use this to rethrow errors that should be converted to plain
+// compile error messages, without backtraces being reported by
+// compile_exception.
+{
+  array bt;
+  if (array|object e = catch (bt = get_backtrace (err)))
+    handle_error (e);
+  throw (CompileCallbackError (describe_error (err), bt));
+}
+
+static void call_compile_warning (object handler, string file,
+				  string msg, mixed ... args)
+{
+  if (sizeof (args)) msg = sprintf (msg, @args);
+  msg = trim_all_whites (msg);
+  if (handler && handler->compile_warning)
+    handler->compile_warning (file, 0, msg);
+  else
+    compile_warning (file, 0, msg);
+}
+
 #if constant(_static_modules.Builtin.mutex)
 #define THREADED
-_static_modules.Builtin.mutex compilation_mutex = _static_modules.Builtin()->mutex();
+Builtin.mutex compilation_mutex = Builtin()->mutex();
 #endif
 
 static program low_findprog(string pname,
@@ -700,22 +744,11 @@ static program low_findprog(string pname,
 	    DEC_RESOLV_MSG_DEPTH();
 	    resolv_debug ("low_findprog %s: dump decode failed\n", fname);
 	    programs[fname] = no_value;
-	    if (handler && handler->compile_warning) {
-	      handler->compile_warning(oname, 0,
-				       sprintf("Decode failed:\n"
-					       "\t%s", describe_error(err)));
-	    } else {
-	      compile_warning(oname, 0,
-			      sprintf("Decode failed:\n"
-				      "\t%s", describe_error(err)));
-	    }
+	    call_compile_warning (handler, oname,
+				  "Decode failed: " + describe_error(err));
 	  } else if (out_of_date_warning) {
-	    if (handler && handler->compile_warning) {
-	      handler->compile_warning(oname, 0,
-				       "Compiled file is out of date\n");
-	    } else {
-	      compile_warning(oname, 0, "Compiled file is out of date\n");
-	    }
+	    call_compile_warning (handler, oname,
+				  "Compiled file is out of date");
 	  }
 	}
       }
@@ -746,7 +779,8 @@ static program low_findprog(string pname,
 		"%s\n", pname, ext, describe_backtrace(backtrace()) );
       }
 
-      ret=load_module(fakeroot(fname));
+      if (array|object err = catch (ret = load_module(fakeroot(fname))))
+	compile_cb_rethrow (err);
       resolv_debug ("low_findprog %s: loaded binary\n", fname);
 #endif /* load_module */
     }
@@ -867,7 +901,10 @@ program cast_to_program(string pname,
   program ret = low_cast_to_program(pname, current_file, handler);
   DEC_RESOLV_MSG_DEPTH();
   resolv_debug ("cast_to_program(%O, %O) => %O\n", pname, current_file, ret);
-  return ret;
+  if (programp (ret)) return ret;
+  error("Cast %O to program failed%s.\n",
+	pname,
+	(current_file && current_file!="-") ? sprintf(" in %O",current_file) : "");
 }
 
 
@@ -920,6 +957,7 @@ constant master_efuns = ({
   "remove_program_path",
   "describe_backtrace",
   "describe_error",
+  "get_backtrace",
   "normalize_path",
   "getenv",
   "putenv",
@@ -956,9 +994,9 @@ static void create()
       error("Function %O is missing from master.pike.\n", e);
 
   add_constant("strlen", sizeof);
-  add_constant("write", _static_modules.___files()->_stdout->write);
+  add_constant("write", Files()->_stdout->write);
 
-#define CO(X)  add_constant(#X,_static_modules.Builtin.__backend->X)
+#define CO(X)  add_constant(#X,Builtin.__backend->X)
   CO(call_out);
   CO(_do_call_outs);
   CO(find_call_out);
@@ -996,7 +1034,7 @@ program handle_inherit(string pname, string current_file, object|void handler)
 {
   resolv_debug ("handle_inherit(%O, %O)\n", pname, current_file);
   INC_RESOLV_MSG_DEPTH();
-  program ret = low_cast_to_program(pname, current_file, handler);
+  program ret = cast_to_program(pname, current_file, handler);
   DEC_RESOLV_MSG_DEPTH();
   resolv_debug ("handle_inherit(%O, %O) => %O\n", pname, current_file, ret);
   return ret;
@@ -1026,9 +1064,9 @@ object cast_to_object(string oname, string current_file)
   DEC_RESOLV_MSG_DEPTH();
   resolv_debug ("cast_to_object(%O, %O) => %O\n", oname, current_file, o);
   if (objectp (o)) return o;
-  error("Cast '"+oname+"' to object failed"+
-	((current_file && current_file!="-")?sprintf(" for '%s'",current_file):"")+".\n");
-  return 0;
+  error("Cast %O to object failed%s.\n",
+	oname,
+	(current_file && current_file!="-") ? sprintf(" in %O",current_file) : "");
 }
 
 // Marker used for negative caching in module caches.
@@ -1205,7 +1243,7 @@ class dirnode
 	//        our cases, so we could make do with
 	//        low_findprog() and the caches.
 	mixed ret;
-	if (objectp(ret = cast_to_object(fname, 0, compilation_handler))) {
+	if (objectp(ret = low_cast_to_object(fname, 0, compilation_handler))) {
 	  // This assignment is needed for eg the Calendar module.
 	  if (set_module) module = ret;
 	  if(mixed tmp=ret->_module_value) ret=tmp;
@@ -1218,7 +1256,7 @@ class dirnode
 	resolv_debug("dirnode(%O)->ind(%O) casting (program)%O\n",
 		     dirname, index, fname);
 	program ret;
-	if (ret = cast_to_program(fname, 0, compilation_handler)) {
+	if (ret = low_cast_to_program(fname, 0, compilation_handler)) {
 	  DEC_RESOLV_MSG_DEPTH();
 	  resolv_debug("dirnode(%O)->ind(%O) => found subprogram %O:%O\n",
 		       dirname, index, fname, ret);
@@ -1307,10 +1345,9 @@ class dirnode
   {
     mixed err;
     if (err = catch { return `[](index); }) {
-      compile_warning(dirname+"."+fname, 0,
-		      sprintf("Compilation failed:\n"
-			      "%s\n",
-			      describe_backtrace(err)));
+      call_compile_warning (compilation_handler,
+			    dirname+"."+fname,
+			    "Compilation failed: " + describe_error(err));
     }
     return UNDEFINED;
   }
@@ -1329,6 +1366,8 @@ class dirnode
 
     // NOTE: We rely on side effects in `[]() and safe_index()
     //       to fill the cache.
+
+    // Why shouldn't thrown errors be propagated here? /mast
     if (module) {
       map(indices(module), safe_index);
     }
@@ -1649,7 +1688,7 @@ program|object findmodule(string fullname, object|void handler)
   }
 #endif
 
-  if (programp (o = cast_to_program(fullname, "/.", handler))) {
+  if (programp (o = low_cast_to_program(fullname, "/.", handler))) {
     DEC_RESOLV_MSG_DEPTH();
     resolv_debug ("findmodule(%O) => got .pike program %O\n", fullname, o);
     return fc[fullname] = o;
@@ -2088,7 +2127,7 @@ void _main(array(string) orig_argv, array(string) env)
   string postparseaction=0;
 
   predefines = initial_predefines =
-    _static_modules.Builtin()->_take_over_initial_predefines();
+    Builtin()->_take_over_initial_predefines();
   _pike_file_name = orig_argv[0];
 #if constant(thread_create)
   _backend_thread = this_thread();
@@ -2494,7 +2533,7 @@ void _main(array(string) orig_argv, array(string) env)
     mixed err=catch 
     {
       while(1)
-	_static_modules.Builtin.__backend(3600.0);
+	Builtin.__backend(3600.0);
     };
     master()->handle_error(err);
   }
@@ -2558,10 +2597,9 @@ function(string:string) set_trim_file_name_callback(function(string:string) s)
 }
 
 
-//! This function is called whenever a compiling error occurs.
-//! Nothing strange about it.
-//! Note that previous_object cannot be trusted in ths function, because
-//! the compiler calls this function.
+//! This function is called whenever a compile error occurs. @[line]
+//! is zero for errors that aren't associated with any specific line.
+//! @[err] is not newline terminated.
 void compile_error(string file,int line,string err)
 {
   mixed val;
@@ -2583,10 +2621,9 @@ void compile_error(string file,int line,string err)
 }
 
 
-//! This function is called whenever a compiling warning occurs.
-//! Nothing strange about it.
-//! Note that previous_object cannot be trusted in ths function, because
-//! the compiler calls this function.
+//! This function is called whenever a compile warning occurs. @[line]
+//! is zero for warnings that aren't associated with any specific
+//! line. @[err] is not newline terminated.
 void compile_warning(string file,int line,string err)
 {
   mixed val;
@@ -2615,6 +2652,10 @@ int compile_exception (array|object trace)
     // Errors thrown directly by cpp() and compile() are normally not
     // interesting; they've already been reported to compile_error.
     return 1;
+  if (objectp (trace) && ([object] trace)->is_compile_callback_error)
+    // Errors thrown by a compile callback that we should report as a
+    // normal compile error, so let the caller do just that.
+    return 0;
   if (mixed val = get_inhibit_compile_errors()) {
     if (objectp(val) && ([object]val)->compile_exception)
       return ([function(object:int)]([object]val)
@@ -2666,24 +2707,17 @@ string decode_charset(string data, string charset)
     object mod = [object]resolv("Locale");
 
     _charset_mod = [object](mod && mod["Charset"]);
-    if (!_charset_mod) {
-      compile_warning("-", 0, "No Locale.Charset module!");
-      return 0;
-    }
+    if (!_charset_mod)
+      compile_cb_error ("Cannot handle charset - no Locale.Charset module found.");
   }
 
-  object decoder;
 
-  catch {
-    decoder = ([function(string:object)]_charset_mod->decoder)(charset);
-  };
-
-  if (!decoder) {
-    compile_warning("-", 0, sprintf("Unknown charset %O!", charset));
-    return 0;
-  }
-  return ([function(void:string)]([function(string:object)]decoder->
-				  feed)(data)->drain)();
+  if (mixed err = catch {
+      object decoder = ([function(string:object)]_charset_mod->decoder)(charset);
+      return ([function(void:string)]([function(string:object)]decoder->
+				      feed)(data)->drain)();
+    })
+    compile_cb_rethrow (err);
 }
 
 
@@ -3108,7 +3142,7 @@ string describe_program(program|function p)
     }
   }
 
-  if(s=_static_modules.Builtin()->program_defined(p))
+  if(s=Builtin()->program_defined(p))
     return EXPLODE_PATH(s)[-1];
 
   return 0;
@@ -3148,11 +3182,12 @@ string describe_function (function f)
  */
 
 //! @appears describe_backtrace
-//! Returns a string containing a readable message that describes where
-//! the backtrace was made.
+//! Return a readable message that describes where the backtrace
+//! @[trace] was made (by @[backtrace]).
 //!
-//! The argument @[trace] should normally be the return value from a call
-//! to @[backtrace()], or a caught error.
+//! It may also be an error object or array (typically caught by a
+//! @[catch]), in which case the error message also is included in the
+//! description.
 //!
 //! @seealso
 //! @[backtrace()], @[describe_error()], @[catch()], @[throw()]
@@ -3160,7 +3195,7 @@ string describe_function (function f)
 string describe_backtrace(mixed trace, void|int linewidth)
 {
   int e;
-  string ret = "";
+  string ret;
   int backtrace_len=((int)getenv("PIKE_BACKTRACE_LEN")) || bt_max_string_len;
 
   if(!linewidth)
@@ -3168,27 +3203,59 @@ string describe_backtrace(mixed trace, void|int linewidth)
     linewidth=99999;
     catch 
     {
-      linewidth=[int]_static_modules.___files()->_stdin->tcgetattr()->columns;
+      linewidth=[int]Files()->_stdin->tcgetattr()->columns;
     };
     if(linewidth<10) linewidth=99999;
   }
 
-  if((arrayp(trace) && sizeof([array]trace)==2 && stringp(([array]trace)[0]))||
-     (objectp(trace) && ([object]trace)->is_generic_error))
-  {
-    if (catch {
-      ret = ([array(string)]trace)[0];
-      if(!stringp(ret))
-	ret = "No error message!\n";
-      trace = ([array]trace)[1];
-    }) {
-      return "Error indexing backtrace!\n";
+  // Note: Partial code duplication in describe_error and get_backtrace.
+
+  if (objectp(trace) && ([object]trace)->is_generic_error) {
+    object err_obj = [object] trace;
+    if (mixed err = catch {
+
+	if (functionp (err_obj->message))
+	  ret = err_obj->message();
+	else if (zero_type (ret = err_obj->error_message))
+	  // For compatibility with error objects trying to behave
+	  // like arrays.
+	  ret = err_obj[0];
+	if (!ret)
+	  ret = "";
+	else if (!stringp (ret))
+	  ret = sprintf ("<Message in %O is %t, expected string>\n",
+			 err_obj, ret);
+
+	if (functionp (err_obj->backtrace))
+	  trace = err_obj->backtrace();
+	else if (zero_type (trace = err_obj->error_backtrace))
+	  // For compatibility with error objects trying to behave
+	  // like arrays.
+	  trace = err_obj[1];
+	if (!trace)
+	  return ret + "<No backtrace>\n";
+	else if (!arrayp (trace))
+	  return sprintf ("%s<Backtrace in %O is %t, expected array>\n",
+			  ret, err_obj, trace);
+
+      })
+      return sprintf ("<Failed to index backtrace object %O: %s>\n",
+		      err_obj, trim_all_whites (describe_error (err)));
+  }
+
+  else if (arrayp(trace)) {
+    if (sizeof([array]trace)==2 && stringp(ret = ([array]trace)[0])) {
+      trace = ([array] trace)[1];
+      if(!trace)
+	return ret + "<No backtrace>\n";
+      else if (!arrayp (trace))
+	return sprintf ("%s<Backtrace in error array is %t, expected array>\n",
+			ret, trace);
     }
-    if(!arrayp(trace))
-      return ret + "No backtrace.\n";
-  }else
-    if (!arrayp (trace))
-      return sprintf ("Unrecognized backtrace format: %O\n", trace);
+  }
+
+  else
+    return sprintf ("<Invalid backtrace/error container: %O>\n", trace);
 
   {
     Describer desc = Describer();
@@ -3335,27 +3402,92 @@ string describe_backtrace(mixed trace, void|int linewidth)
 }
 
 //! @appears describe_error
-//! Returns only the error message from a backtrace.
 //!
-//! If there is no error message in the backtrace, a fallback message
-//! will be returned.
+//! Return the error message from an error object or array (typically
+//! caught by a @[catch]).
+//!
+//! If an error message couldn't be obtained, a fallback message
+//! describing the failure is returned. No errors due to incorrectness
+//! in @[err] are thrown.
 //!
 //! @seealso
-//! @[backtrace()], @[describe_backtrace()]
+//! @[describe_backtrace()], @[get_backtrace]
 //!
-string describe_error (mixed trace)
+string describe_error (object|array err)
 {
-  if((arrayp(trace) && sizeof([array]trace)==2 &&
-      stringp(([array]trace)[0])) ||
-     (objectp(trace) && ([object]trace)->is_generic_error))
-  {
-    if (catch {
-      return ([array(string)]trace)[0] || "No error message.\n";
-    }) {
-      return "Error indexing backtrace!\n";
-    }
+  mixed msg;
+
+  // Note: Partial code duplication in describe_backtrace and get_backtrace.
+
+  if (objectp(err) && ([object]err)->is_generic_error) {
+    object err_obj = [object] err;
+    if (mixed err = catch {
+
+	if (functionp (err_obj->message))
+	  msg = err_obj->message();
+	else if (zero_type (msg = err_obj->error_message))
+	  // For compatibility with error objects trying to behave
+	  // like arrays.
+	  msg = err_obj[0];
+
+	if (stringp (msg))
+	  return msg;
+	else if (!msg)
+	  return "<No error message>\n";
+	else
+	  return sprintf ("<Message in %O is %t, expected string>\n",
+			  err_obj, msg);
+
+      })
+      return sprintf ("<Failed to index error object %O: %s>\n",
+		      err_obj, trim_all_whites (describe_error (err)));
   }
-  return sprintf ("Backtrace is of unknown type %t!\n", trace);
+
+  else if (arrayp(err) && sizeof([array]err)==2 &&
+	   (!(msg = ([array]err)[0]) || stringp (msg)))
+    return [string] msg || "<No error message>\n";
+
+  else
+    return sprintf ("<Invalid error container: %O>\n", err);
+}
+
+//! @appears get_backtrace
+//!
+//! Return the backtrace array from an error object or array
+//! (typically caught by a @[catch]), or zero if there is none. Errors
+//! are thrown on if there are problems retrieving the backtrace.
+//!
+//! @seealso
+//! @[describe_backtrace()], @[describe_error()]
+//!
+array get_backtrace (object|array err)
+{
+  array bt;
+
+  // Note: Partial code duplication in describe_backtrace and describe_error.
+
+  if (objectp(err) && ([object]err)->is_generic_error) {
+    object err_obj = [object] err;
+
+    if (functionp (err_obj->backtrace))
+      bt = err_obj->backtrace();
+    else if (zero_type (bt = err_obj->error_backtrace))
+      // For compatibility with error objects trying to behave like
+      // arrays.
+      bt = err_obj[1];
+
+    if (bt && !arrayp (bt))
+      error ("Backtrace in %O is %t, expected array.\n", err_obj, bt);
+  }
+
+  else if (arrayp(err) && sizeof([array]err)==2 &&
+	   (!(bt = ([array]err)[1]) || arrayp (bt)))
+    {}
+
+  else if (err)
+    error ("Invalid error container: %O\n", err);
+
+  return bt;
 }
 
 
@@ -3562,7 +3694,7 @@ class Encoder
 
       else if (what->is_resolv_joinnode) {
 	ENC_MSG ("  is a joinnode\n");
-	object modules = _static_modules.Builtin.array_iterator (what->joined_modules);
+	object modules = Builtin.array_iterator (what->joined_modules);
 	object|mapping value;
       check_dirnode:
 	if (modules && objectp (value = modules->value()) &&
