@@ -8,7 +8,6 @@ MODULE_LDFLAGS=@LDFLAGS@ @LIBS@ @PGTK_LIBS@ @LIBGLADE_LIBS@
 MODULE_CFLAGS=@PGTK_CFLAGS@ @LIBGLADE_CFLAGS@
 CONFIG_HEADERS=config.h
 
-
 # OK.. This is somewhat confusing
 # 
 # WITH_GTK == 1
@@ -20,15 +19,18 @@ CONFIG_HEADERS=config.h
 
 MYRUNPIKE=../../pike -DNOT_INSTALLED -m../../master.pike
 
+
 override:  sources@WITH_GTK@
 	@:
 
 @dynamic_module_makefile@
 
+QMAKE=$(RUNPIKE) $(SRCDIR)/make.pike $(MAKE)
+
 sources1:
 	$(RUNPIKE) $(SRCDIR)/make_sources.pike $(SRCDIR)/source
 	$(RUNPIKE) $(SRCDIR)/build_pgtk.pike $(SRCDIR)
-	$(MAKE) $(MAKE_FLAGS) "OBJS=`cat files_to_compile`" all
+	$(QMAKE) $(MAKEFLAGS) "OBJS=`cat files_to_compile`" all
 
 sources0:
 	echo Pike-GTK disabled.

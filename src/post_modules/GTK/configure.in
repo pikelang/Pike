@@ -11,6 +11,9 @@ AC_DEFINE(FUNCPROTO)
 AC_HEADER_STDC
 AC_CHECK_HEADERS( signal.h arpa/inet.h )
 
+AC_ARG_WITH(GL,  [  --without-GTK     no support for GTK],[without_GTK=yes],[without_GTK=no])
+
+if test "x$without_GTK" = "xno" ; then
 
 dnl aclocal.m4 generated automatically by aclocal 1.3
 
@@ -361,7 +364,7 @@ else
  else
   have_GL=no
  fi
-
+fi
 fi
 
 CFLAGS="$GL_CFLAGS $CFLAGS"
@@ -384,7 +387,8 @@ if test "x$have_GL" = "xyes" ; then
     echo "*********************************************"
   fi
 fi
-
+else
+  WITH_GTK=0
 fi
 
 AC_OUTPUT(Makefile options)
