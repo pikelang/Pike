@@ -36,7 +36,7 @@ PIKECLASS FFT
   CVAR int r_cr_plan_size;
   CVAR int r_rc_plan_size;
 
-  /*! @decl array(array(float), array(float)) rFFT(array(int|float) real_input)
+  /*! @decl array(array(float)) rFFT(array(int|float) real_input)
    *!
    *!   Returns the FFT of the input array.
    *!   The input must be real and the output is complex.
@@ -50,7 +50,8 @@ PIKECLASS FFT
    *!   rIFFT(rFFT()) returns the input array scaled by n=sizeof(input array).
    *!   This is due to the nature of the DFT algorithm.
    *!
-   *! @seealso rIFFT()
+   *! @seealso
+   *!   @[rIFFT()]
    */
   PIKEFUN array rFFT(array myarray)
     {
@@ -123,7 +124,7 @@ PIKECLASS FFT
 	pop_n_elems(args);
     }
 
-  /*! @decl array(float) rIFFT(array(array(float), array(float)))
+  /*! @decl array(float) rIFFT(array(array(float)) input)
    *!
    *!   Returns the inverse FFT of the input array.
    *!   The input must be complex and guaranteed to generate a real output.
@@ -139,7 +140,8 @@ PIKECLASS FFT
    *!   rIFFT(rFFT()) returns the input array scaled by n=sizeof(input array).
    *!   This is due to the nature of the DFT algorithm.
    *!
-   *! @seealso rFFT()
+   *! @seealso
+   *!   @[rFFT()]
    */
   PIKEFUN array rIFFT(array myarray)
     {

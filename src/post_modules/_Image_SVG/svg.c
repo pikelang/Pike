@@ -1,14 +1,14 @@
 #include "config.h"
 
 /*
- * $Id: svg.c,v 1.2 2002/05/10 22:16:38 per Exp $
+ * $Id: svg.c,v 1.3 2002/05/11 14:27:57 nilsson Exp $
  */
 
 #ifdef HAVE_SVG
 #include "global.h"
 
 #include "stralloc.h"
-RCSID("$Id: svg.c,v 1.2 2002/05/10 22:16:38 per Exp $");
+RCSID("$Id: svg.c,v 1.3 2002/05/11 14:27:57 nilsson Exp $");
 #include "pike_macros.h"
 #include "object.h"
 #include "constants.h"
@@ -213,7 +213,7 @@ static void low__decode( INT32 args, int header_only )
 }
 
 static void f_decode_header( INT32 args )
-/*! @method mapping decode_header( string data, void|mapping options )
+/*! @decl mapping decode_header( string data, void|mapping options )
  *!  Data is the SVG data, the charset must be unicode.
  *!
  *!  If @[options] is specified, it contains one or more of the
@@ -249,7 +249,7 @@ static void f_decode_header( INT32 args )
 }
 
 static void f__decode( INT32 args )
-/*! @method mapping _decode( string data, void|mapping options )
+/*! @decl mapping _decode( string data, void|mapping options )
  *!  Data is the SVG data, the charset must be unicode.
  *!
  *!  If @[options] is specified, it contains one or more of the
@@ -288,7 +288,7 @@ static void f__decode( INT32 args )
 }
 
 static void f_decode_layers( INT32 args )
-/*! @method array(Image.Layer) decode_layers( string data, void|mapping options )
+/*! @decl array(Image.Layer) decode_layers( string data, void|mapping options )
  *!  Data is the SVG data, the charset must be unicode.
  *!
  *!  If @[options] is specified, it contains one or more of the
@@ -322,7 +322,7 @@ static void f_decode_layers( INT32 args )
 }
 
 static void f_decode( INT32 args )
-/*! @method Image.Image decode( string data, void|mapping options )
+/*! @decl Image.Image decode( string data, void|mapping options )
  *!  Data is the SVG data, the charset must be unicode.
  *!
  *!  If @[options] is specified, it contains one or more of the
