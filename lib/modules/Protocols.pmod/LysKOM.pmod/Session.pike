@@ -1,4 +1,4 @@
-//  $Id: Session.pike,v 1.10 1999/10/11 08:17:43 js Exp $
+//  $Id: Session.pike,v 1.11 1999/10/17 00:57:54 js Exp $
 //! module Protocols
 //! submodule LysKOM
 //! class Session
@@ -509,21 +509,19 @@ class Membership
   int(0..65535)    added_by;   // new
   object           added_at;   // new
   multiset(string) type;       // new
-  int              position;        // new
+  int              position;   // new
 
   object conf;
   
   object err;
 
-  void create(object mb,int pers)
+  void setup(object mb)
   {
-    person=pers;
-
     last_time_read=mb->last_time_read;
     read_texts=mb->read_texts;
     last_text_read=mb->last_text_read;
     priority=mb->priority;
-    conf=conference(mb->conf_no);
+    conf=Conference(mb->conf_no);
 	 
     if (mb->type)
     {
@@ -535,6 +533,12 @@ class Membership
     }
   }
 
+  void create(object mb,int pers)
+  {
+    person=pers;
+    setup(mb);
+  }
+
   //  FETCHER(unread,ProtocolTypes.TextMapping,_unread,local_to_global,@({conf->no,1,255}))
 
   int number_unread()
@@ -543,8 +547,13 @@ class Membership
       -last_text_read -sizeof(read_texts);
   }
 
-
-  array(Text) _unread_texts;
+  void query_read_texts()
+  {
+//     werror("query_read_texts()\n");
+//     werror("read_texts: %O\n",read_texts);
+    setup(con->query_read_texts(person,conf->no));
+//     werror("read_texts: %O\n",read_texts);
+  }
   
   array(object) get_unread_texts_blocking()
   {
@@ -555,7 +564,7 @@ class Membership
     werror("i: %d  last_text_read: %d\n",i,last_text_read);
     werror("conf: %d  conf->no_of_texts: %d\n",conf->no, conf->no_of_texts);
     if(i > con->get_uconf_stat(conf->no)->highest_local_no)
-      return /*_unread_texts =*/ ({ }) ;
+      return ({ }) ;
 
     /* Get all the global numbers after last-text-read */
     while(1)
@@ -585,7 +594,7 @@ class Membership
       local_to_global -
       mkmapping(read_texts,allocate(sizeof(read_texts)));
 
-    return /*_unread_texts =*/ map( sort(values(unread_numbers)), text );
+    return map( sort(values(unread_numbers)), text );
   }
 
   
@@ -594,7 +603,7 @@ class Membership
     switch (what)
     {
     case "unread_texts":
-      return _unread_texts || get_unread_texts_blocking();
+      return get_unread_texts_blocking();
     case "last_time_read":
     case "read_texts":
     case "last_text_read":
@@ -604,6 +613,7 @@ class Membership
     case "position":
     case "type":
     case "number_unread":
+    case "query_read_texts":
       return ::`[](what);
 
     }
@@ -721,7 +731,7 @@ class Conference
 	 case "error":
 	    return err;
 
-	 case "presentation":
+	    //	 case "presentation":
 	 case "msg_of_day":
 	    waitfor_stat();
 	    return text( (_conf||_confold)[what] );
@@ -741,7 +751,8 @@ class Conference
 	 case "no_of_members":
 	 case "first_local_no":
 	 case "no_of_texts":
-	    waitfor_stat();
+         case "presentation":
+		    waitfor_stat();
 	    return (_conf||_confold)[what];
       }
    }
@@ -858,7 +869,8 @@ object|void _create_text(string textstring,
    if (aux_info)
       error("unimplemented\n");
 
-   if (protlevel<10) call+="_old";
+//    if (protlevel<10)
+     call+="_old";
 
    if (callback)
    {
