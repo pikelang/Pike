@@ -5,7 +5,7 @@
 \*/
 /**/
 #include "global.h"
-RCSID("$Id: builtin_functions.c,v 1.151 2001/12/03 14:19:55 grubba Exp $");
+RCSID("$Id: builtin_functions.c,v 1.152 2001/12/03 15:46:52 grubba Exp $");
 #include "interpret.h"
 #include "svalue.h"
 #include "pike_macros.h"
@@ -2061,7 +2061,7 @@ void f_localtime(INT32 args)
 #else
 #ifdef STRUCT_TM_HAS_GMTOFF
   push_string(make_shared_string("timezone"));
-  push_int(tm->tm_gmtoff);
+  push_int(-tm->tm_gmtoff);
   f_aggregate_mapping(20);
 #else
   f_aggregate_mapping(18);
@@ -2121,7 +2121,7 @@ void f_mktime (INT32 args)
 #if STRUCT_TM_HAS_GMTOFF
   if(sp[7-args].subtype == NUMBER_NUMBER)
   {
-    date.tm_gmtoff=sp[7-args].u.integer;
+    date.tm_gmtoff=-sp[7-args].u.integer;
   }else{
     time_t tmp=0;
     date.tm_gmtoff=localtime(&t)->tm_gmtoff;
