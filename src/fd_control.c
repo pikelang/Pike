@@ -9,7 +9,7 @@
 #include "error.h"
 #include "fdlib.h"
 
-RCSID("$Id: fd_control.c,v 1.22 1998/11/22 11:02:46 hubbe Exp $");
+RCSID("$Id: fd_control.c,v 1.23 1999/05/26 07:08:10 hubbe Exp $");
 
 #else /* TESTING */
 #ifndef _LARGEFILE_SOURCE
@@ -63,26 +63,29 @@ RCSID("$Id: fd_control.c,v 1.22 1998/11/22 11:02:46 hubbe Exp $");
 
 int set_nonblocking(int fd,int which)
 {
+  int ret;
 #ifdef PIKE_DEBUG
   if(fd<0 || fd >MAX_OPEN_FILEDESCRIPTORS)
     fatal("Filedescriptor %d out of range [0,%d).\n",
 	  fd, MAX_OPEN_FILEDESCRIPTORS);
 #endif
 
+  do 
+  {
 #if defined(USE_IOCTL_FIONBIO) || defined(__NT__)
-  return fd_ioctl(fd, FIONBIO, &which);
+    ret=fd_ioctl(fd, FIONBIO, &which);
 #else
 
 #ifdef USE_FCNTL_O_NDELAY
-  return fcntl(fd, F_SETFL, which?O_NDELAY:0);
+    ret=fcntl(fd, F_SETFL, which?O_NDELAY:0);
 #else
 
 #ifdef USE_FCNTL_O_NONBLOCK
-  return fcntl(fd, F_SETFL, which?O_NONBLOCK:0);
+    ret=fcntl(fd, F_SETFL, which?O_NONBLOCK:0);
 #else
 
 #ifdef USE_FCNTL_FNDELAY
-  return fcntl(fd, F_SETFL, which?FNDELAY:0);
+    ret=fcntl(fd, F_SETFL, which?FNDELAY:0);
 #else
 
 #error Do not know how to set your filedescriptors nonblocking.
@@ -91,30 +94,37 @@ int set_nonblocking(int fd,int which)
 #endif
 #endif
 #endif
+  } while(ret <0 && errno==EINTR);
+  return ret;
 }
 
 int query_nonblocking(int fd)
 {
+  int ret;
 #ifdef PIKE_DEBUG
   if(fd<0 || fd > MAX_OPEN_FILEDESCRIPTORS)
     fatal("Filedescriptor out of range.\n");
 #endif
 
+  do 
+  {
 #ifdef USE_FCNTL_O_NDELAY
-  return fcntl(fd, F_GETFL, 0) & O_NDELAY;
+    ret=fcntl(fd, F_GETFL, 0) & O_NDELAY;
 #else
 
 #ifdef USE_FCNTL_O_NONBLOCK
-  return fcntl(fd, F_GETFL, 0) & O_NONBLOCK;
+    ret=return fcntl(fd, F_GETFL, 0) & O_NONBLOCK;
 #else
 
 #ifdef USE_FCNTL_FNDELAY
-  return fcntl(fd, F_GETFL, 0) & FNDELAY;
+    ret=fcntl(fd, F_GETFL, 0) & FNDELAY;
 #else
   return 0;
 #endif
 #endif
 #endif
+  } while(ret <0 && errno==EINTR);
+  return ret;
 }
 
 #ifndef FD_CLOEXEC
@@ -127,9 +137,9 @@ static int num_fds_to_close = 0;
 
 void do_close_on_exec(void)
 {
-  int i;
+  int i,ret;
   for(i=0; i < num_fds_to_close; i++) {
-    close(fds_to_close[i]);
+    while( close(fds_to_close[i]) <0 && errno==EINTR) ;
   }
   num_fds_to_close = 0;
 }
@@ -138,11 +148,12 @@ void do_close_on_exec(void)
 int set_close_on_exec(int fd, int which)
 {
 #ifndef HAVE_BROKEN_F_SETFD
-  if (which) {
-    return fcntl(fd, F_SETFD, FD_CLOEXEC);
-  } else {
-    return fcntl(fd, F_SETFD, 0);
-  }
+  int ret;
+  do 
+  {
+    ret=fcntl(fd, F_SETFD, which ? FD_CLOEXEC : 0);
+  } while (ret <0 && errno==EINTR );
+  return ret;
 #else /* HAVE_BROKEN_F_SETFD */
   int i;
   if (which) {
