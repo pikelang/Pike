@@ -1096,7 +1096,8 @@ class AbstractDOMParser
        foreach(indices(attributes), string att_name)
 	 e->set_attribute(att_name, attributes[att_name]);
        current_node->append_child(e);
-       node_stack += ({ current_node = e });
+       node_stack += ({ current_node });
+       current_node = e ;
        if(ty == "<")
 	 break;
      case ">":
@@ -1175,9 +1176,17 @@ class NonValidatingDOMParser
 {
   inherit AbstractDOMParser;
   static inherit Parser.XML.Simple : xml;
+
+  static string autoconvert(string data, InputSource input)
+  {
+    mixed err = catch{ return xml::autoconvert(data); };
+    throw(ParseException(err[0], input->get_system_id(),
+			 input->get_public_id(), 0));
+  }
+
   static void _parse(string data, function cb, InputSource input)
   {
-    xml::parse(data, cb, input);
+    xml::parse(autoconvert(data, input), cb, input);
   }
 }
 
@@ -1187,16 +1196,25 @@ class DOMParser
   inherit AbstractDOMParser;
   static inherit Parser.XML.Validating : xml;
 
-  string get_external_entity(string sysid, string|void pubid,
-			     InputSource input)
+  static string autoconvert(string data, InputSource input)
   {
-    return InputSource(combine_path(combine_path(input->get_system_id(), ".."),
-				    sysid))->get_data();
+    mixed err = catch{ return xml::autoconvert(data); };
+    throw(ParseException(err[0]-"\n", input->get_system_id(),
+			 input->get_public_id(), 0));
+  }
+
+  string get_external_entity(string sysid, string|void pubid,
+			     int|void unparsed, InputSource input)
+  {
+    InputSource is =
+      InputSource(combine_path(combine_path(input->get_system_id(), ".."),
+			       sysid));
+    return (unparsed? is->get_data() : autoconvert(is->get_data(), is));
   }
 
   static void _parse(string data, function cb, InputSource input)
   {
-    xml::parse(data, cb, input);
+    xml::parse(autoconvert(data, input), cb, input);
   }
 }
 #endif
