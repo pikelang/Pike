@@ -2,7 +2,7 @@
 
 // Pike installer and exporter.
 //
-// $Id: install.pike,v 1.116 2004/11/10 20:14:31 grubba Exp $
+// $Id: install.pike,v 1.117 2004/11/29 10:55:38 grubba Exp $
 
 #define USE_GTK
 
@@ -542,7 +542,7 @@ void do_export()
 			  //       bugs in light.
 			  //	/grubba 2004-11-08
 			  "Directory":"KLUDGE_TARGETDIR",
-			  "Execute":"commit",
+			  "Execute":"deferred",//"commit",
 			  "ExeCommand":"[KLUDGE_TARGETDIR]\\bin\\pike "
 			  "-mlib\\master.pike bin\\install.pike "
 			  "--finalize BASEDIR=. TMP_BUILDDIR=bin",
@@ -555,7 +555,7 @@ void do_export()
 			  //       bugs in light.
 			  //	/grubba 2004-11-08
 			  "Directory":"KLUDGE_TARGETDIR",
-			  "Execute":"commit",
+			  "Execute":"deferred",//"commit",
 			  "ExeCommand":"[KLUDGE_TARGETDIR]\\bin\\pike "
 			  "-mlib\\master.pike bin\\install.pike "
 			  "--install-master BASEDIR=.",
