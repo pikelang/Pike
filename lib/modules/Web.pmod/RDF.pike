@@ -1,4 +1,4 @@
-// $Id: RDF.pike,v 1.38 2004/01/30 11:18:58 nilsson Exp $
+// $Id: RDF.pike,v 1.39 2004/01/30 11:46:49 nilsson Exp $
 
 #pike __REAL_VERSION__
 
@@ -717,10 +717,18 @@ static Node add_xml_children(Node p, string rdfns) {
   foreach(p->get_elements(), Node c) {
     if(c->get_ns()==rdfns) {
       string name = c->get_any_name();
-      if(name=="type") {
+      if(name=="type" || name=="first") {
 	string obj_uri = c->get_ns_attributes(rdfns)->resource;
-	if(!obj_uri) error("rdf:type missing resource attribute.\n");
-	add_statement( subj, rdf_type, make_resource(obj_uri) );
+	if(!obj_uri) error("rdf:%s missing resource attribute.\n", name);
+	add_statement( subj, this["rdf_"+name], make_resource(obj_uri) );
+	continue;
+      }
+      if(name=="rest") {
+	string obj_uri = c->get_ns_attributes(rdfns)->resource;
+	if(obj_uri) add_statement( subj, rdf_rest, make_resource(obj_uri) );
+	array(Node) dcs = c->get_elements();
+	foreach(dcs, Node dc)
+	  add_statement( subj, rdf_rest, add_xml_children(dc, rdfns) );
 	continue;
       }
       else if(sscanf(name, "_%*d")) {
@@ -759,10 +767,10 @@ static Node add_xml_children(Node p, string rdfns) {
     }
     else {
       string ptype = c->get_ns_attributes(rdfns)->parseType;
-      if( !(< "Literal", "Resource", 0 >)[ptype] )
+      if( !(< "Literal", "Resource", "Collection", 0 >)[ptype] )
 	error("Illegal parserType value %O.\n", ptype);
 
-      if(ptype!="Literal") {
+      if(!ptype || ptype=="Resource") {
 	array(Node) dcs = c->get_elements();
 	if(sizeof(dcs)) {
 	  foreach(dcs, Node dc)
@@ -771,6 +779,21 @@ static Node add_xml_children(Node p, string rdfns) {
 	  continue;
 	}
       }
+      else if(ptype=="Collection") {
+	// FIXME: Empty lists?
+	array(Node) dcs = c->get_elements();
+	Resource n = Resource();
+	add_statement( subj, make_resource(pred_uri), n );
+	foreach(dcs; int pos; Node dc) {
+	  add_statement( n, rdf_first, add_xml_children(dc, rdfns) );
+	  if(pos<sizeof(dcs)-1)
+	    add_statement( n, rdf_rest, n=Resource() );
+	}
+	add_statement( n, rdf_rest, rdf_nil );
+	continue;
+      }
+
+      // ptype == "Literal"
 
       obj = LiteralResource((array(string))c->get_children()*"");
       obj->datatype = c->get_ns_attributes(rdfns)->datatype;
