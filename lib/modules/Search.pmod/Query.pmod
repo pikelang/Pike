@@ -1,7 +1,7 @@
 // This file is part of Roxen Search
 // Copyright © 2001 Roxen IS. All rights reserved.
 //
-// $Id: Query.pmod,v 1.24 2002/03/12 15:38:07 js Exp $
+// $Id: Query.pmod,v 1.25 2002/03/25 12:54:32 js Exp $
 
 static function(string,int:string) blobfeeder(Search.Database.Base db, array words)
 {
@@ -87,7 +87,6 @@ array(Search.ResultSet|array(string)) execute(Search.Database.Base db,
     q = Search.Grammar.remove_stop_words(q, stop_words);
   }
 
-  werror("%O\n", q);
   q = Search.Grammar.optimize(q);
   
   if (!q)                                  // The query was a null query
