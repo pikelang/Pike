@@ -535,6 +535,8 @@ object sync_request(string server, int port, string query,
     werror("** Connection kept alive!\n");
     #endif
     kept_alive = 1;
+    // Remove unread data from the connection.
+    local::data();
   }
   else
   {
@@ -568,6 +570,9 @@ object sync_request(string server, int port, string query,
 
   if(kept_alive)
   {
+#ifdef HTTP_QUERY_DEBUG
+    werror("<- %O\n",request);
+#endif
     con->write( request );
     ponder_answer();
   } else
