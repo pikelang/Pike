@@ -103,7 +103,7 @@
 */
 
 #include "global.h"
-RCSID("$Id: sprintf.c,v 1.65 2000/07/18 15:09:32 grubba Exp $");
+RCSID("$Id: sprintf.c,v 1.66 2000/07/18 19:59:27 grubba Exp $");
 #include "error.h"
 #include "array.h"
 #include "svalue.h"
@@ -1439,11 +1439,8 @@ void f_sprintf(INT32 num_arg)
   if(argp[0].type != T_STRING) {
     if (argp[0].type == T_OBJECT) {
       /* Try checking if we can cast it to a string... */
-      struct pike_string *string_string;
-      MAKE_CONSTANT_SHARED_STRING(string_string, "string");
-      push_string(string_string);
       ref_push_object(argp[0].u.object);
-      o_cast(sp[-2].u.string, PIKE_T_STRING);
+      o_cast(string_type_string, PIKE_T_STRING);
       if (sp[-1].type != T_STRING) {
 	/* We don't accept objects... */
 	error("sprintf(): Cast to string failed.\n");
@@ -1451,7 +1448,7 @@ void f_sprintf(INT32 num_arg)
       /* Replace the original object with the new string. */
       assign_svalue(argp, sp-1);
       /* Clean up the stack. */
-      pop_n_elems(2);
+      pop_stack();
     } else {
       error("Bad argument 1 to sprintf.\n");
     }
