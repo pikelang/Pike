@@ -85,6 +85,17 @@ static private class Extractor {
     case "class":
     case "module":
       {
+	if ((parent == root) && (meta->type != "namespace")) {
+	  // Use the default namespace "predef"...
+	  if (!(parent = root->findChild("predef"))) {
+	    // Create the namespace.
+	    parent = NameSpace();
+	    parent->name = "predef";
+	    root->AddChild(parent);
+	    parent->documentation = Documentation();
+	    parent->documentation->xml = "";
+	  }
+	}
         object(Class)|object(Module) alreadyChild =
           parent->findChild(meta->name);
         object(Class)|object(Module) c;
