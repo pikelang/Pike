@@ -5,7 +5,7 @@
 \*/
 /**/
 #include "global.h"
-RCSID("$Id: mapping.c,v 1.89 2000/07/03 20:14:07 mast Exp $");
+RCSID("$Id: mapping.c,v 1.90 2000/07/04 00:43:57 mast Exp $");
 #include "main.h"
 #include "object.h"
 #include "mapping.h"
@@ -1891,8 +1891,13 @@ void gc_mark_mapping_as_referenced(struct mapping *m)
       else
 	NEW_MAPPING_LOOP(m->data)
 	{
-	  gc_mark_svalues(&k->ind, 1);
-	  gc_mark_svalues(&k->val, 1);
+	  if (gc_mark_svalues(&k->ind, 1) ||
+	      gc_mark_svalues(&k->val, 1)) {
+#ifdef PIKE_DEBUG
+	    fatal("Looks like check_mapping_for_destruct "
+		  "didn't do its job properly.\n");
+#endif
+	  }
 	}
     }
   }
@@ -1915,8 +1920,13 @@ void low_gc_cycle_check_mapping(struct mapping *m)
     else
       NEW_MAPPING_LOOP(m->data)
       {
-	gc_cycle_check_svalues(&k->ind, 1);
-	gc_cycle_check_svalues(&k->val, 1);
+	if (gc_cycle_check_svalues(&k->ind, 1) ||
+	    gc_cycle_check_svalues(&k->val, 1)) {
+#ifdef PIKE_DEBUG
+	  fatal("Looks like check_mapping_for_destruct "
+		"didn't do its job properly.\n");
+#endif
+	}
       }
   }
 }
@@ -1955,8 +1965,7 @@ static void gc_check_mapping(struct mapping *m)
 	  continue;
 
 	debug_gc_check_weak_svalues(&k->ind, 1, T_MAPPING, m);
-	m->data->val_types |=
-	  debug_gc_check_weak_svalues(&k->val, 1, T_MAPPING, m);
+	debug_gc_check_weak_svalues(&k->val, 1, T_MAPPING, m);
       }
     }
     else {
@@ -1970,8 +1979,7 @@ static void gc_check_mapping(struct mapping *m)
 	  continue;
 
 	debug_gc_check_svalues(&k->ind, 1, T_MAPPING, m);
-	m->data->val_types |=
-	  debug_gc_check_svalues(&k->val, 1, T_MAPPING, m);
+	debug_gc_check_svalues(&k->val, 1, T_MAPPING, m);
       }
     }
   }

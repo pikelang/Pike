@@ -23,7 +23,7 @@
 #include "stuff.h"
 #include "bignum.h"
 
-RCSID("$Id: array.c,v 1.73 2000/06/09 22:43:04 mast Exp $");
+RCSID("$Id: array.c,v 1.74 2000/07/04 00:43:56 mast Exp $");
 
 struct array empty_array=
 {
@@ -1784,25 +1784,15 @@ static void gc_check_array(struct array *a)
 {
   if(a->type_field & BIT_COMPLEX)
   {
-    TYPE_FIELD t;
     if (a->flags & ARRAY_WEAK_FLAG)
-      t=debug_gc_check_weak_svalues(ITEM(a), a->size, T_ARRAY, a);
+      debug_gc_check_weak_svalues(ITEM(a), a->size, T_ARRAY, a);
     else
-      t=debug_gc_check_svalues(ITEM(a), a->size, T_ARRAY, a);
-
-    /* Ugly, but we are not allowed to change type_field
-     * at the same time as the array is being built...
-     * Actually we just need better primitives for building arrays.
-     */
-    if(!(a->type_field & BIT_UNFINISHED) || a->refs!=1)
-      a->type_field = t;
-    else
-      a->type_field |= t;
+      debug_gc_check_svalues(ITEM(a), a->size, T_ARRAY, a);
   }
 }
 
 static void gc_recurse_weak_array(struct array *a,
-				  TYPE_FIELD (*recurse_fn)(struct svalue *, int))
+				  TYPE_FIELD (*recurse_fn)(struct svalue *, size_t))
 {
   int e;
   TYPE_FIELD t;
@@ -1857,8 +1847,15 @@ void gc_mark_array_as_referenced(struct array *a)
     {
       if (a->flags & ARRAY_WEAK_FLAG)
 	gc_recurse_weak_array(a, gc_mark_weak_svalues);
-      else
-	gc_mark_svalues(ITEM(a), a->size);
+      else {
+	TYPE_FIELD t;
+	if ((t = gc_mark_svalues(ITEM(a), a->size))) {
+	  if(!(a->type_field & BIT_UNFINISHED) || a->refs!=1)
+	    a->type_field = t;
+	  else
+	    a->type_field |= t;
+	}
+      }
     }
   }
 }
@@ -1874,8 +1871,15 @@ static void low_gc_cycle_check_array(struct array *a)
   {
     if (a->flags & ARRAY_WEAK_FLAG)
       gc_recurse_weak_array(a, gc_cycle_check_weak_svalues);
-    else
-      gc_cycle_check_svalues(ITEM(a), a->size);
+    else {
+      TYPE_FIELD t;
+      if ((t = gc_cycle_check_svalues(ITEM(a), a->size))) {
+	if(!(a->type_field & BIT_UNFINISHED) || a->refs!=1)
+	  a->type_field = t;
+	else
+	  a->type_field |= t;
+      }
+    }
   }
 }
 

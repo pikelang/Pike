@@ -1,5 +1,5 @@
 /*
- * $Id: gc.h,v 1.52 2000/07/03 16:50:09 mast Exp $
+ * $Id: gc.h,v 1.53 2000/07/04 00:43:57 mast Exp $
  */
 #ifndef GC_H
 #define GC_H
@@ -49,23 +49,17 @@ extern void *gc_svalue_location;
 } while(0)
 #endif
 
-#define LOW_GC_FREE() do {						\
+#define GC_FREE() do {							\
   DO_IF_DEBUG(								\
     extern int d_flag;							\
     if(d_flag) CHECK_INTERPRETER_LOCK();				\
+    if(Pike_in_gc == GC_PASS_CHECK)					\
+      fatal("Freeing objects in this gc pass is not allowed.\n");	\
     if(num_objects < 1)							\
       fatal("Panic!! less than zero objects!\n");			\
   )									\
   num_objects-- ;							\
 }while(0)
-
-#define GC_FREE() do {							\
-  DO_IF_DEBUG(								\
-    if(Pike_in_gc == GC_PASS_CHECK)					\
-      fatal("Freeing objects in this gc pass is not allowed.\n");	\
-  );									\
-  LOW_GC_FREE();							\
-} while (0)
 
 struct marker
 {
@@ -123,8 +117,8 @@ void describe_location(void *memblock, int type, void *location,int indent, int 
 void debug_gc_fatal(void *a, int flags, const char *fmt, ...)
   ATTRIBUTE((format(printf, 3, 4)));
 void debug_gc_xmark_svalues(struct svalue *s, int num, char *fromwhere);
-TYPE_FIELD debug_gc_check_svalues(struct svalue *s, int num, TYPE_T t, void *data);
-TYPE_FIELD debug_gc_check_weak_svalues(struct svalue *s, int num, TYPE_T t, void *data);
+void debug_gc_check_svalues(struct svalue *s, int num, TYPE_T t, void *data);
+void debug_gc_check_weak_svalues(struct svalue *s, int num, TYPE_T t, void *data);
 void debug_gc_check_short_svalue(union anything *u, TYPE_T type, TYPE_T t, void *data);
 void debug_gc_check_weak_short_svalue(union anything *u, TYPE_T type, TYPE_T t, void *data);
 int debug_gc_check(void *x, TYPE_T t, void *data);

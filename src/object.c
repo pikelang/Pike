@@ -5,7 +5,7 @@
 \*/
 /**/
 #include "global.h"
-RCSID("$Id: object.c,v 1.130 2000/07/03 18:38:55 mast Exp $");
+RCSID("$Id: object.c,v 1.131 2000/07/04 00:43:57 mast Exp $");
 #include "object.h"
 #include "dynamic_buffer.h"
 #include "interpret.h"
@@ -734,8 +734,7 @@ void schedule_really_free_object(struct object *o)
       /* It's a fake object which isn't counted by the gc, so
        * counteract the num_objects-- done by GC_FREE. */
       num_objects++;
-    /* This is the only free allowed in the gc check pass. */
-    LOW_GC_FREE();
+    GC_FREE();
 
     FREE_PROT(o);
 

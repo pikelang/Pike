@@ -23,7 +23,7 @@
 #include "queue.h"
 #include "bignum.h"
 
-RCSID("$Id: svalue.c,v 1.80 2000/07/03 20:14:07 mast Exp $");
+RCSID("$Id: svalue.c,v 1.81 2000/07/04 00:43:57 mast Exp $");
 
 struct svalue dest_ob_zero = { T_INT, 0 };
 
@@ -1283,19 +1283,94 @@ void real_gc_xmark_svalues(struct svalue *s, ptrdiff_t num)
       fatal("Cannot have a function in a short svalue.\n");
 
 #define DO_CHECK_OBJ(U, T, ZAP, GC_DO)					\
-      if (U.object->prog)						\
-	GC_DO(U.object);						\
-      else ZAP();							\
+      GC_DO(U.object);							\
       break;
 
 #define DO_CHECK_OBJ_WEAK(U, T, ZAP, GC_DO)				\
-      if(U.object->prog)						\
-	if (U.object->prog->flags & PROGRAM_NO_WEAK_FREE)		\
-	  gc_check(U.object);						\
-	else								\
-	  gc_check_weak(U.object);					\
-      else ZAP();							\
+      if (U.object->prog &&						\
+	  !(U.object->prog->flags & PROGRAM_NO_WEAK_FREE))		\
+	gc_check_weak(U.object);					\
+      else								\
+	gc_check(U.object);						\
       break;
+
+#define NEVER_ZAP()
+
+#define SET_SUB_SVALUE(V) s->subtype = (V)
+
+#define SET_SUB_SHORT_SVALUE(V)
+
+void real_gc_check_svalues(struct svalue *s, size_t num)
+{
+#ifdef PIKE_DEBUG
+  extern void * check_for;
+#endif
+  size_t e;
+  for(e=0;e<num;e++,s++)
+  {
+    check_svalue(s);
+#ifdef PIKE_DEBUG
+    gc_svalue_location=(void *)s;
+#endif
+    GC_CHECK_SWITCH((s->u), (s->type), NEVER_ZAP, gc_check,
+		    {}, DO_CHECK_FUNC_SVALUE,
+		    DO_CHECK_OBJ);
+  }
+#ifdef PIKE_DEBUG
+  gc_svalue_location=0;
+#endif
+}
+
+void gc_check_weak_svalues(struct svalue *s, size_t num)
+{
+#ifdef PIKE_DEBUG
+  extern void * check_for;
+#endif
+  size_t e;
+  for(e=0;e<num;e++,s++)
+  {
+    check_svalue(s);
+#ifdef PIKE_DEBUG
+    gc_svalue_location=(void *)s;
+#endif
+    GC_CHECK_SWITCH((s->u), (s->type), NEVER_ZAP, gc_check_weak,
+		    {}, DO_CHECK_FUNC_SVALUE,
+		    DO_CHECK_OBJ_WEAK);
+  }
+#ifdef PIKE_DEBUG
+  gc_svalue_location=0;
+#endif
+}
+
+void real_gc_check_short_svalue(union anything *u, TYPE_T type)
+{
+#ifdef PIKE_DEBUG
+  extern void * check_for;
+  gc_svalue_location=(void *)u;
+#endif
+  debug_malloc_touch(u);
+  GC_CHECK_SWITCH((*u), type, NEVER_ZAP, gc_check,
+		  {if (!u->refs) return;}, DO_FUNC_SHORT_SVALUE,
+		  DO_CHECK_OBJ);
+#ifdef PIKE_DEBUG
+  gc_svalue_location=0;
+#endif
+}
+
+void gc_check_weak_short_svalue(union anything *u, TYPE_T type)
+{
+#ifdef PIKE_DEBUG
+  extern void * check_for;
+  gc_svalue_location=(void *)u;
+#endif
+  debug_malloc_touch(u);
+  GC_CHECK_SWITCH((*u), type, NEVER_ZAP, gc_check_weak,
+		  {if (!u->refs) return;}, DO_FUNC_SHORT_SVALUE,
+		  DO_CHECK_OBJ_WEAK);
+#ifdef PIKE_DEBUG
+  gc_svalue_location=0;
+#endif
+}
 
 #define ZAP_SVALUE()							\
       do {								\
@@ -1311,101 +1386,17 @@ void real_gc_xmark_svalues(struct svalue *s, ptrdiff_t num)
 	u->refs = 0;							\
       } while (0)
 
-#define SET_SUB_SVALUE(V) s->subtype = (V)
-
-#define SET_SUB_SHORT_SVALUE(V)
-
-TYPE_FIELD real_gc_check_svalues(struct svalue *s, size_t num)
-{
-#ifdef PIKE_DEBUG
-  extern void * check_for;
-#endif
-  size_t e;
-  TYPE_FIELD f;
-  f=0;
-  for(e=0;e<num;e++,s++)
-  {
-    check_svalue(s);
-#ifdef PIKE_DEBUG
-    gc_svalue_location=(void *)s;
-#endif
-    GC_CHECK_SWITCH((s->u), (s->type), ZAP_SVALUE, gc_check,
-		    {}, DO_CHECK_FUNC_SVALUE,
-		    DO_CHECK_OBJ);
-    f|= 1 << s->type;
-  }
-#ifdef PIKE_DEBUG
-  gc_svalue_location=0;
-#endif
-  return f;
-}
-
-TYPE_FIELD gc_check_weak_svalues(struct svalue *s, size_t num)
-{
-#ifdef PIKE_DEBUG
-  extern void * check_for;
-#endif
-  size_t e;
-  TYPE_FIELD f;
-  f=0;
-  for(e=0;e<num;e++,s++)
-  {
-    check_svalue(s);
-#ifdef PIKE_DEBUG
-    gc_svalue_location=(void *)s;
-#endif
-    GC_CHECK_SWITCH((s->u), (s->type), ZAP_SVALUE, gc_check_weak,
-		    {}, DO_CHECK_FUNC_SVALUE,
-		    DO_CHECK_OBJ_WEAK);
-    f|= 1 << s->type;
-  }
-#ifdef PIKE_DEBUG
-  gc_svalue_location=0;
-#endif
-  return f;
-}
-
-void real_gc_check_short_svalue(union anything *u, TYPE_T type)
-{
-#ifdef PIKE_DEBUG
-  extern void * check_for;
-  gc_svalue_location=(void *)u;
-#endif
-  debug_malloc_touch(u);
-  GC_CHECK_SWITCH((*u), type, ZAP_SHORT_SVALUE, gc_check,
-		  {if (!u->refs) return;}, DO_FUNC_SHORT_SVALUE,
-		  DO_CHECK_OBJ);
-#ifdef PIKE_DEBUG
-  gc_svalue_location=0;
-#endif
-}
-
-void gc_check_weak_short_svalue(union anything *u, TYPE_T type)
-{
-#ifdef PIKE_DEBUG
-  extern void * check_for;
-  gc_svalue_location=(void *)u;
-#endif
-  debug_malloc_touch(u);
-  GC_CHECK_SWITCH((*u), type, ZAP_SHORT_SVALUE, gc_check_weak,
-		  {if (!u->refs) return;}, DO_FUNC_SHORT_SVALUE,
-		  DO_CHECK_OBJ_WEAK);
-#ifdef PIKE_DEBUG
-  gc_svalue_location=0;
-#endif
-}
-
 #define GC_RECURSE_SWITCH(U,T,ZAP,FREE_WEAK,GC_DO,PRE,DO_FUNC,DO_STR)	\
   switch (T) {								\
     case T_FUNCTION:							\
       PRE DO_FUNC(U, T, ZAP, GC_DO)					\
     case T_OBJECT:							\
       PRE								\
-      DO_IF_DEBUG(							\
-	if (!U.object->prog)						\
-	  gc_fatal(U.object, 0,						\
-		   "Unfreed destructed object in mark pass.\n");	\
-      )									\
+      if (!U.object->prog) {						\
+	ZAP();								\
+	freed = 1;							\
+	break;								\
+      }									\
       FREE_WEAK(U, T, ZAP) GC_DO(U, object);				\
       break;								\
     case T_STRING:							\
@@ -1449,8 +1440,10 @@ void gc_check_weak_short_svalue(union anything *u, TYPE_T type)
       break;								\
     }
 
-void real_gc_mark_svalues(struct svalue *s, size_t num)
+TYPE_FIELD real_gc_mark_svalues(struct svalue *s, size_t num)
 {
+  TYPE_FIELD t = 0;
+  int freed = 0;
   size_t e;
   for(e=0;e<num;e++,s++)
   {
@@ -1458,7 +1451,9 @@ void real_gc_mark_svalues(struct svalue *s, size_t num)
     GC_RECURSE_SWITCH((s->u), (s->type), ZAP_SVALUE, DONT_FREE_WEAK,
 		      GC_DO_MARK, {},
 		      DO_MARK_FUNC_SVALUE, DO_MARK_STRING);
+    t |= 1 << s->type;
   }
+  return freed ? t : 0;
 }
 
 TYPE_FIELD gc_mark_weak_svalues(struct svalue *s, size_t num)
@@ -1477,12 +1472,14 @@ TYPE_FIELD gc_mark_weak_svalues(struct svalue *s, size_t num)
   return freed ? t : 0;
 }
 
-void real_gc_mark_short_svalue(union anything *u, TYPE_T type)
+int real_gc_mark_short_svalue(union anything *u, TYPE_T type)
 {
+  int freed = 0;
   debug_malloc_touch(u);
   GC_RECURSE_SWITCH((*u), type, ZAP_SHORT_SVALUE, DONT_FREE_WEAK,
-		    GC_DO_MARK, {if (!u->refs) return;},
+		    GC_DO_MARK, {if (!u->refs) return 0;},
 		    DO_FUNC_SHORT_SVALUE, DO_MARK_STRING);
+  return freed;
 }
 
 int gc_mark_weak_short_svalue(union anything *u, TYPE_T type)
@@ -1504,8 +1501,10 @@ int gc_mark_weak_short_svalue(union anything *u, TYPE_T type)
 #define GC_DO_CYCLE_CHECK(U, TN) PIKE_CONCAT(gc_cycle_check_, TN)(U.TN)
 #define GC_DO_CYCLE_CHECK_WEAK(U, TN) PIKE_CONCAT3(gc_cycle_check_, TN, _weak)(U.TN)
 
-void real_gc_cycle_check_svalues(struct svalue *s, size_t num)
+TYPE_FIELD real_gc_cycle_check_svalues(struct svalue *s, size_t num)
 {
+  TYPE_FIELD t = 0;
+  int freed = 0;
   size_t e;
   for(e=0;e<num;e++,s++)
   {
@@ -1513,7 +1512,9 @@ void real_gc_cycle_check_svalues(struct svalue *s, size_t num)
     GC_RECURSE_SWITCH((s->u), (s->type), ZAP_SVALUE, DONT_FREE_WEAK,
 		      GC_DO_CYCLE_CHECK, {},
 		      DO_CYCLE_CHECK_FUNC_SVALUE, DO_CYCLE_CHECK_STRING);
+    t |= 1 << s->type;
   }
+  return freed ? t : 0;
 }
 
 TYPE_FIELD gc_cycle_check_weak_svalues(struct svalue *s, size_t num)
@@ -1532,12 +1533,14 @@ TYPE_FIELD gc_cycle_check_weak_svalues(struct svalue *s, size_t num)
   return freed ? t : 0;
 }
 
-void real_gc_cycle_check_short_svalue(union anything *u, TYPE_T type)
+int real_gc_cycle_check_short_svalue(union anything *u, TYPE_T type)
 {
+  int freed = 0;
   debug_malloc_touch(u);
   GC_RECURSE_SWITCH((*u), type, ZAP_SHORT_SVALUE, DONT_FREE_WEAK,
-		    GC_DO_CYCLE_CHECK, {if (!u->refs) return;},
+		    GC_DO_CYCLE_CHECK, {if (!u->refs) return 0;},
 		    DO_FUNC_SHORT_SVALUE, DO_CYCLE_CHECK_STRING);
+  return freed;
 }
 
 int gc_cycle_check_weak_short_svalue(union anything *u, TYPE_T type)

@@ -29,7 +29,7 @@ struct callback *gc_evaluator_callback=0;
 
 #include "block_alloc.h"
 
-RCSID("$Id: gc.c,v 1.100 2000/07/03 18:38:26 mast Exp $");
+RCSID("$Id: gc.c,v 1.101 2000/07/04 00:43:57 mast Exp $");
 
 /* Run garbage collect approximately every time
  * 20 percent of all arrays, objects and programs is
@@ -453,26 +453,22 @@ void debug_gc_xmark_svalues(struct svalue *s, int num, char *fromwhere)
   found_in=0;
 }
 
-TYPE_FIELD debug_gc_check_svalues(struct svalue *s, int num, TYPE_T t, void *data)
+void debug_gc_check_svalues(struct svalue *s, int num, TYPE_T t, void *data)
 {
-  TYPE_FIELD ret;
   found_in=data;
   found_in_type=t;
-  ret=gc_check_svalues(s,num);
+  gc_check_svalues(s,num);
   found_in_type=T_UNKNOWN;
   found_in=0;
-  return ret;
 }
 
-TYPE_FIELD debug_gc_check_weak_svalues(struct svalue *s, int num, TYPE_T t, void *data)
+void debug_gc_check_weak_svalues(struct svalue *s, int num, TYPE_T t, void *data)
 {
-  TYPE_FIELD ret;
   found_in=data;
   found_in_type=t;
-  ret=gc_check_weak_svalues(s,num);
+  gc_check_weak_svalues(s,num);
   found_in_type=T_UNKNOWN;
   found_in=0;
-  return ret;
 }
 
 void debug_gc_check_short_svalue(union anything *u, TYPE_T type, TYPE_T t, void *data)
