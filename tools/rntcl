@@ -361,31 +361,30 @@ int main(int argc, array(string) argv)
 	for(int e=0;e<sizeof(libs);e++)
 	  ldopts+=({"-nodefaultlib:"+libs[e]});
 
-	
-	cmd+=({"-link",
-	       "-fixed:no",
-	       "-debug",
+
+	ldopts = ({ 
+	  "-fixed:no",
+	  "-debug",
 //	  "-PDB:NONE",
 	  "-DEBUGTYPE:BOTH",
 	  "-DEBUG",
-	  })
-	  +ldopts;
+	}) + ldopts;
 	if(dynamic)
-	  cmd += ({"-DEBUGTYPE:BOTH"});
+	  ldopts += ({"-DEBUGTYPE:BOTH"});
       }
       else if(dynamic)
       {
-	cmd += ({"-link", "-DEBUG", "-DEBUGTYPE:COFF"});
+	ldopts = ({ "-DEBUG", "-DEBUGTYPE:COFF"}) + ldopts;
       }
 
       break;
 
     default:
-      if(sizeof(ldopts))
-	cmd+=({"-link" }) +ldopts;
       break;
   }
 
+  if(sizeof(ldopts))
+    cmd += ({"-link" }) + ldopts;
 
   int ret;
   if(verbose && target!="-")
