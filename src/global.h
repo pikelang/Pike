@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: global.h,v 1.83 2003/03/29 01:45:22 mast Exp $
+|| $Id: global.h,v 1.84 2003/03/29 17:21:28 grubba Exp $
 */
 
 #ifndef GLOBAL_H
@@ -194,9 +194,12 @@ void *alloca();
 #ifdef LLONG_MAX
 #define MAX_INT64 LLONG_MAX
 #define MIN_INT64 LLONG_MIN
-#else
+#elif defined(LONG_LONG_MAX)
 #define MAX_INT64 LONG_LONG_MAX
 #define MIN_INT64 LONG_LONG_MIN
+#else
+#define MAX_INT64 0x7fffffffffffffffLL
+#define MIN_INT64 (-0x7fffffffffffffffLL - 1LL)
 #endif
 #endif
 #endif
@@ -361,17 +364,24 @@ typedef struct p_wchar_p
 #define INLINE
 #endif
 
-/* PMOD_EXPORT exports a function / variable vfsh. 
+/* PMOD_EXPORT exports a function / variable / whatever.
  * Putting PMOD_PROTO in front of a prototype does nothing.
  */
 #ifndef PMOD_EXPORT
-#if defined(__NT__) && !defined(DYNAMIC_MODULE)
-/* #define PMOD_EXPORT __declspec(dllexport) */
+#ifdef __NT__
+#ifdef DYNAMIC_MODULE
+#ifdef _M_IA64
+/* Make sure we use long calls to functions in the main binary. */
+#define PMOD_EXPORT	__declspec(dllimport)
+#endif /* _M_IA64 */
+#else /* !DYNAMIC_MODULE */
+/* #define PMOD_EXPORT	__declspec(dllexport) */
+#endif /* DYNAMIC_MODULE */
+#endif /* __NT__ */
+#ifndef PMOD_EXPORT
 #define PMOD_EXPORT
-#else
-#define PMOD_EXPORT
-#endif
-#endif
+#endif /* !PMOD_EXPORT */
+#endif /* !PMOD_EXPORT */
 
 
 /* PMOD_PROTO is essentially the same as PMOD_EXPORT, but
