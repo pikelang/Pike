@@ -1,4 +1,4 @@
-AC_REVISION("$Id: configure.in,v 1.112 1997/09/11 19:22:45 grubba Exp $")
+AC_REVISION("$Id: configure.in,v 1.113 1997/09/11 22:14:44 grubba Exp $")
 AC_INIT(interpret.c)
 AC_CONFIG_HEADER(machine.h)
 
@@ -194,7 +194,8 @@ if test $cflags_is_set = no; then
   AC_SYS_OS_COMPILER_FLAG(OSF1,-warnprotos,warnprotos)
 
   # IRIX
-  AC_SYS_OS_COMPILER_FLAG(IRIX,-sopt,sopt)
+  # sopt disabled since it takes too long time on interpret.c (>45min on an O²)
+  # AC_SYS_OS_COMPILER_FLAG(IRIX,-sopt,sopt)
   AC_SYS_OS_COMPILER_FLAG(IRIX,-g3,g3)
   AC_SYS_OS_COMPILER_FLAG(IRIX,-fullwarn,fullwarn)
   if test x$with_debug = xyes ; then
@@ -1410,6 +1411,34 @@ AC_MSG_RESULT($pike_cv_gcc_attributes)
 if test "$pike_cv_gcc_attributes" = yes; then
  AC_DEFINE(HAVE_FUNCTION_ATTRIBUTES)
 fi
+
+AC_MSG_CHECKING(how to concatenate two symbols)
+AC_CACHE_VAL(pike_cv_cpp_symbol_concat, [
+  AC_TRY_COMPILE([
+#define AABB	0
+#define CONCAT(X,Y)	X##Y
+  ], [
+    return CONCAT(AA,BB);
+  ], pike_cv_cpp_symbol_concat=ANSI, [
+    AC_TRY_COMPILE([
+#define AABB	0
+#define CONCAT(X,Y)	X/**/Y
+    ], [
+      return CONCAT(AA,BB);
+    ], pike_cv_cpp_symbol_concat=KR, [
+      pike_cv_cpp_symbol_concat=Unknown
+    ])
+  ])
+])
+AC_MSG_RESULT($pike_cv_cpp_symbol_concat)
+case "$pike_cv_cpp_symbol_concat" in
+  "ANSI")
+    AC_DEFINE(HAVE_ANSI_CONCAT)
+  ;;
+  "KR")
+    AC_DEFINE(HAVE_KR_CONCAT)
+  ;;
+esac
 
 #############################################################################
 
