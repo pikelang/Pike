@@ -9,6 +9,12 @@ int verbose=0;
 int main(int argc, array(string) argv)
 {
   int ret;
+
+  if (argv[1] == "-v" || argv[1] == "--verbose") {
+    verbose = 1;
+    argv = argv[0..0] + argv[2..];
+  }
+
   if(verbose)
   { 
     ret=do_cmd(argv[1..]);
