@@ -1,5 +1,5 @@
 /*
- * $Id: acconfig.h,v 1.92 2001/07/16 19:48:56 hubbe Exp $
+ * $Id: acconfig.h,v 1.93 2001/08/15 14:42:10 marcus Exp $
  */
 #ifndef MACHINE_H
 #define MACHINE_H
@@ -298,6 +298,9 @@
 
 /* What alignment do 32-bit integers need */
 #define PIKE_INT32_ALIGNMENT 4
+
+/* Assembler prefix for general purpose registers */
+#undef PIKE_CPU_REG_PREFIX
 
 /* Number of possible filedesriptors */
 #define MAX_OPEN_FILEDESCRIPTORS 1024

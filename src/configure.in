@@ -1,4 +1,4 @@
-AC_REVISION("$Id: configure.in,v 1.540 2001/07/20 10:20:09 mast Exp $")
+AC_REVISION("$Id: configure.in,v 1.541 2001/08/15 14:42:10 marcus Exp $")
 AC_INIT(interpret.c)
 AC_CONFIG_HEADER(machine.h)
 
@@ -3211,6 +3211,31 @@ pike_cv_hardware_alignment=4
 
 AC_MSG_RESULT($pike_cv_hardware_alignment)
 AC_DEFINE_UNQUOTED(PIKE_INT32_ALIGNMENT,$pike_cv_hardware_alignment)
+
+########################################################################
+
+if test yes = "$with_machine_code"; then
+AC_MSG_CHECKING(register name convention)
+AC_CACHE_VAL(pike_cv_cpu_reg_prefix,
+[
+  for pike_cv_cpu_reg_prefix in "default" "" "r" "%%" "%%r" "unknown"; do
+    AC_TRY_COMPILE([
+#define REGPREFIX "$pike_cv_cpu_reg_prefix"
+], [
+#if defined(__ppc__) || defined(_POWER)
+	__asm__ __volatile__(" li "REGPREFIX"11,1");
+#else
+	; /* Don't need to find out */
+#endif
+    ],[break])
+  done
+])
+case "$pike_cv_cpu_reg_prefix" in
+  default|unknown) AC_MSG_RESULT($pike_cv_cpu_reg_prefix);;
+  *) AC_MSG_RESULT(${pike_cv_cpu_reg_prefix}0)
+     AC_DEFINE_UNQUOTED(PIKE_CPU_REG_PREFIX,"$pike_cv_cpu_reg_prefix");;
+esac
+else :; fi
 
 ########################################################################
 MY_CHECK_FUNCTION(fork,
