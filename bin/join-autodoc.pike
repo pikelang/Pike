@@ -1,5 +1,5 @@
 /*
- * $Id: join-autodoc.pike,v 1.2 2001/04/21 15:05:57 grubba Exp $
+ * $Id: join-autodoc.pike,v 1.3 2001/04/23 13:20:11 grubba Exp $
  *
  * AutoDoc mk II join script.
  *
@@ -34,8 +34,9 @@ int main(int argc, array(string) argv)
       fail = 1;
     }
   }
-  werror("\rWriting %s...\n", save_to);
-  Stdio.write_file(save_to, dest->html_of_node());
-
+  if (!fail) {
+    werror("\rWriting %s...\n", save_to);
+    Stdio.write_file(save_to, dest->html_of_node());
+  }
   return fail;
 }
