@@ -1,12 +1,12 @@
 /*
- * $Id: dumudp.c,v 1.41 1998/08/08 13:53:37 grubba Exp $
+ * $Id: dumudp.c,v 1.42 1999/07/26 11:52:06 grubba Exp $
  */
 
 #include "global.h"
 
 #include "config.h"
 
-RCSID("$Id: dumudp.c,v 1.41 1998/08/08 13:53:37 grubba Exp $");
+RCSID("$Id: dumudp.c,v 1.42 1999/07/26 11:52:06 grubba Exp $");
 #include "fdlib.h"
 #include "interpret.h"
 #include "svalue.h"
@@ -36,6 +36,38 @@ RCSID("$Id: dumudp.c,v 1.41 1998/08/08 13:53:37 grubba Exp $");
 #ifdef HAVE_SYS_SOCKET_H
 #include <sys/socket.h>
 #endif
+
+#ifdef HAVE_SYS_TIME_H
+#include <sys/time.h>
+#endif /* HAVE_SYS_TIME_H */
+
+#ifdef HAVE_POLL
+
+#ifdef HAVE_POLL_H
+#include <poll.h>
+#endif /* HAVE_POLL_H */
+
+#ifdef HAVE_SYS_POLL_H
+#include <sys/poll.h>
+#endif /* HAVE_SYS_POLL_H */
+
+/* Some constants... */
+
+#ifndef POLLRDNORM
+#define POLLRDNORM	POLLIN
+#endif /* !POLLRDNORM */
+
+#ifndef POLLRDBAND
+#define POLLRDBAND	POLLPRI
+#endif /* !POLLRDBAND */
+
+#else /* !HAVE_POLL */
+
+#ifdef HAVE_SYS_SELECT_H
+#include <sys/select.h>
+#endif
+
+#endif /* HAVE_POLL */
 
 #ifdef HAVE_WINSOCK_H
 #include <winsock.h>
@@ -182,11 +214,85 @@ void udp_enable_broadcast(INT32 args)
 #endif /* SO_BROADCAST */
 }
 
+/* int wait(float timeout) */
+void udp_wait(INT32 args)
+{
+#ifdef HAVE_POLL
+  struct pollfd pollfds[1];
+  int ms;
+#else /* !HAVE_POLL */
+  fd_set rset;
+  struct timeval tv;
+#endif /* HAVE_POLL */
+  FLOAT_TYPE timeout;
+  int fd = FD;
+  int res;
+  int e;
+
+  get_all_args("wait", args, "%f", &timeout);
+
+  if (timeout < 0.0) {
+    timeout = 0.0;
+  }
+
+  if (fd < 0) {
+    error("udp->wait(): Port not bound!\n");
+  }
+
+#ifdef HAVE_POLL
+  pollfds->fd = fd;
+  pollfds->events = POLLIN;
+  pollfds->revents = 0;
+  ms = timeout * 1000;
+  res = poll(pollfds, 1, ms);
+  e = errno;
+  if (!res) {
+    /* Timeout */
+  } else if (res < 0) {
+    /* Error */
+    error("udp->wait(): poll() failed with errno %d\n", e);
+  } else {
+    /* Success? */
+    if (pollfds->revents) {
+      res = 1;
+    } else {
+      res = 0;
+    }
+  }
+#else /* !HAVE_POLL */
+  FD_ZERO(&rset);
+  FD_SET(fd, &rset);
+  tv.tv_sec = (int)timeout;
+  tv.tv_usec = (int)(timeout * 1000000.0);
+  THREADS_ALLOW();
+  res = select(fd+1, &rset, NULL, NULL, &tv);
+  e = errno;
+  THREADS_DISALLOW();
+  if (!res) {
+    /* Timeout */
+  } else if (res < 0) {
+    /* Error */
+    error("udp->wait(): select() failed with errno %d\n", e);
+  } else {
+    /* Success? */
+    if (FD_ISSET(fd, &rset)) {
+      res = 1;
+    } else {
+      res = 0;
+    }
+  }
+#endif /* HAVE_POLL */
+
+  pop_n_elems(args);
+
+  push_int(res);
+}
+
 #define UDP_BUFFSIZE 65536
 
 void udp_read(INT32 args)
 {
-  int flags = 0, res=0, fd;
+  int flags = 0, res=0, fd, e;
   struct sockaddr_in from;
   char buffer[UDP_BUFFSIZE];
   ACCEPT_SIZE_T fromlen = sizeof(struct sockaddr_in);
@@ -209,15 +315,19 @@ void udp_read(INT32 args)
   }
   pop_n_elems(args);
   fd = FD;
-  THREADS_ALLOW();
-  while(((res = fd_recvfrom(fd, buffer, UDP_BUFFSIZE, flags,
-			 (struct sockaddr *)&from, &fromlen))==-1)
-	&&(errno==EINTR));
-  THREADS_DISALLOW();
+  do {
+    THREADS_ALLOW();
+    res = fd_recvfrom(fd, buffer, UDP_BUFFSIZE, flags,
+		      (struct sockaddr *)&from, &fromlen);
+    e = errno;
+    THREADS_DISALLOW();
+
+    check_signals(0, 0, 0);
+  } while((res == -1) && (e == EINTR));
 
   if(res<0)
   {
-    switch(errno)
+    switch(e)
     {
 #ifdef WSAEBADF
       case WSAEBADF:
@@ -245,7 +355,7 @@ void udp_read(INT32 args)
       return;
 
      default:
-       error("Socket read failed with errno %d.\n",errno);
+       error("Socket read failed with errno %d.\n", e);
     }
   }
   /* Now comes the interresting part.
@@ -264,7 +374,7 @@ void udp_read(INT32 args)
 
 void udp_sendto(INT32 args)
 {
-  int flags = 0, res=0, i, fd;
+  int flags = 0, res=0, i, fd, e;
   struct sockaddr_in to;
   char *str;
   INT32 len;
@@ -302,14 +412,20 @@ void udp_sendto(INT32 args)
   fd = FD;
   str = sp[2-args].u.string->str;
   len = sp[2-args].u.string->len;
-  THREADS_ALLOW();
-  while(((res = fd_sendto( fd, str, len, flags, (struct sockaddr *)&to,
-		       sizeof( struct sockaddr_in ))) == -1) && errno==EINTR);
-  THREADS_DISALLOW();
+
+  do {
+    THREADS_ALLOW();
+    res = fd_sendto( fd, str, len, flags, (struct sockaddr *)&to,
+		     sizeof( struct sockaddr_in ));
+    e = errno;
+    THREADS_DISALLOW();
+
+    check_signals(0, 0, 0);
+  } while((res == -1) && (e == EINTR));
   
   if(res<0)
   {
-    switch(errno)
+    switch(e)
     {
 #ifdef EMSGSIZE
      case EMSGSIZE:
@@ -441,6 +557,9 @@ void init_udp(void)
   add_storage(sizeof(struct dumudp));
   add_function("bind",udp_bind,"function(int,void|function,void|string:int)",0);
   add_function("enable_broadcast", udp_enable_broadcast, "function(:void)", 0);
+
+  add_function("wait", udp_wait, "function(float:int)", 0);
+
   add_function("read",udp_read,"function(int|void:mapping(string:int|string))",0);
   add_function("send",udp_sendto,"function(string,int,string,void|int:int)",0);
   add_function( "set_nonblocking", udp_set_nonblocking,
