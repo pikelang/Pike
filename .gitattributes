@@ -2,6 +2,7 @@
 * text ident
 *.gif binary
 *.gz binary
+*.rs binary
 testfont binary
 
 # Handling of foreign (ie CVS) identifiers.

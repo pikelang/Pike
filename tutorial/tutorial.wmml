@@ -3213,7 +3213,7 @@ or like this:
 </chapter>
 
 
-<a href=Stdio>
+<a name=Stdio>
 <chapter title="File I/O" alias=io>
 Programming without reading and writing data from files, sockets, keybaord
 etc. would be quite pointless. Luckily enough, Pike provides you with an
@@ -3542,7 +3542,7 @@ is called whenever there is buffer space available to write to for
 the file. Note that this function does not set the file nonblocking.
 <p>
 <dt><encaps>SEE ALSO</encaps><dd>
-<a href=Stdio.File.set_nonblocking>Stdio.File-&gt;set_nonblocking</a>
+<a href=#Stdio.File.set_nonblocking>Stdio.File-&gt;set_nonblocking</a>
 <p>
 </dl>
 
@@ -3583,7 +3583,7 @@ This function sets a stream to blocking mode. ie. all reads and writes
 will wait until data has been written before returning.
 <p>
 <dt><encaps>SEE ALSO</encaps><dd>
-<a href=Stdio.File.set_nonblocking>Stdio.File-&gt;set_nonblocking</a>
+<a href=#Stdio.File.set_nonblocking>Stdio.File-&gt;set_nonblocking</a>
 <p>
 </dl>
 
@@ -4144,7 +4144,7 @@ the whole file is read.
 <a href=index.html#file>file</a>
 <p>
 <dt><encaps>SEE ALSO</encaps><dd>
-<a href=#Stdio.read_bytes>Stdio.read_bytes</a> and <a href=Stdio.write_file.html>Stdio.write_file</a>
+<a href=#Stdio.read_bytes>Stdio.read_bytes</a> and <a href=#Stdio.write_file.html>Stdio.write_file</a>
 <p>
 </dl>
 
@@ -5236,7 +5236,7 @@ between Thread.Queue and Thread.Fifo is that queues
 will never block in write(), only allocate more memory.
 <p>
 <dt><encaps>SEE ALSO</encaps><dd>
-<a href=Thread.Fifo>Thread.Fifo</a>
+<a href=#Thread.Fifo>Thread.Fifo</a>
 <p>
 <dt><encaps>NOTA BENE</encaps><dd>
 Queues are only available on systems with POSIX or UNIX threads support.
@@ -5966,7 +5966,7 @@ Creates a hardlink named 'to' from the file 'from'.
 <a href=index#file>file</a>
 <p>
 <dt><encaps>SEE ALSO</encaps><dd>
-<a href=#symlink>symlink</a>, <a href=files_mv>mv</a> and <a href=files_rm>rm</a>
+<a href=#symlink>symlink</a>, <a href=#mv>mv</a> and <a href=#rm>rm</a>
 <p>
 </dl>
 
@@ -6176,7 +6176,7 @@ Creates a symbolic link named 'to' pointing to 'from'.
 <a href=index#file>file</a>
 <p>
 <dt><encaps>SEE ALSO</encaps><dd>
-<a href=#hardlink>hardlink</a>, <a href=#readlink>readlink</a>, <a href=files_mv>mv</a> and <a href=files_rm>rm</a>
+<a href=#hardlink>hardlink</a>, <a href=#readlink>readlink</a>, <a href=#mv>mv</a> and <a href=#rm>rm</a>
 <p>
 </dl>
 
@@ -6879,7 +6879,7 @@ on the disk.
 </a>
 <hr noshade size=1>
 
-<a href=Getopt>
+<a name=Getopt>
 <section title="Getopt">
 Getopt is a group of function which can be used to find command line options.
 Command line options come in two flavours: long and short. The short ones
@@ -7100,7 +7100,7 @@ werror("The arguments are: "+(argv*" ")+".\n");<br>
 </a>
 <hr noshade size=1>
 
-<a href=Gz>
+<a name=Gz>
 <section title="Gz">
 The Gz module contains functions to compress and uncompress strings using
 the same algorithm as the program <tt>gzip</tt>. Packing can be done in
@@ -7126,7 +7126,7 @@ This program is only available if libz was available and found when
 Pike was compiled.
 <p>
 <dt><encaps>SEE ALSO</encaps><dd>
-<a href=Gz.inflate>Gz.inflate</a>
+<a href=#Gz.inflate>Gz.inflate</a>
 <p>
 </dl>
 
@@ -8067,6 +8067,7 @@ specified in RFC822.
 </section>
 
 <section title="The MIME.Message class">
+This class is used to hold a decoded MIME message.
 
 <section title="Public fields">
 
@@ -8607,7 +8608,7 @@ the <tt>Content-Type</tt> header directly, please use this function instead.
 </section>
 </a>
 
-<a href=Simulate>
+<a name=Simulate>
 <section title="Simulate">
 This module is used to achive better compatibility with older versions of
 Pike. It can also be used for convenience, but I would advice against it
@@ -8869,7 +8870,7 @@ This function is equal to indices
 <a href=types_mapping.html>mapping</a>
 <p>
 <dt><encaps>SEE ALSO</encaps><dd>
-<a href=builtin_indices.html>indices</a>
+<a href=#indices>indices</a>
 <p>
 </dl>
 </a>
@@ -9116,8 +9117,2298 @@ prints.
 
 </chapter>
 
+<a name=#Image>
 <chapter title="The Image module">
+The Image module is used to manipulate bit-mapped color images. 
+It can read PPM images and do various manipulations, or it can be
+used to create completely new images. The created images can be
+saved as PPM or converted to GIF.
+<p>
+All images handled by this module are stored as 24-bit RGB images.
+This means that a 1024 pixel wide and 1024 pixel high image will
+use 1024*1024*3 bytes = 3 megabytes. It is quite easy to mess up
+and use up all the memory by giving the wrong argument to one
+of the scaling functions.
+<p>
+Most functions in this module work by creating a new Image and then
+returning that instead of chaning the Image you are working with.
+This makes it possible to share the same image between many variables
+without having to worry that it will be changed by accident. This
+can reduce the amount of memory used.
+<p>
+Many functions in this module work with the 'current color', this can
+be thought of as the background color if you wish. To change the
+current color you use 'setcolor'.
+<p>
+
+Let's look at an example of how this can be used:
+<pre>
+	#!/usr/local/bin/pike
+
+	int main()
+	{
+	  write("Content-type: image/gif\n\n");
+	  object font=Image.font();
+	  font-&gt;load("testfont");
+	  object image=font-&gt;write(ctime(time));
+	  write(image-&gt;togif());
+	}
+</pre>
+This very simple example can be used as a cgi script to produce a gif image
+which says what time it is in white text on a black background.
+<p>
+
+<section title="Image.image">
+
+<dl><dd>
+The main object of the <a href=#Image>Image</a> module, this object
+     is used as drawing area, mask or result of operations.
+
+<p>     init: <a href=#Image.image.clear>Image.image-&gt;clear</a>,
+     <a href=#Image.image.clone>Image.image-&gt;clone</a>,
+     <a href=#Image.image.create>Image.image-&gt;create</a>, 
+     <a href=#Image.image.xsize>Image.image-&gt;xsize</a>,
+     <a href=#Image.image.ysize>Image.image-&gt;ysize</a>
+
+<p>     plain drawing: <a href=#Image.image.box>Image.image-&gt;box</a>,
+     <a href=#Image.image.circle>Image.image-&gt;circle</a>,
+     <a href=#Image.image.getpixel>Image.image-&gt;getpixel</a>, 
+     <a href=#Image.image.line>Image.image-&gt;line</a>,
+     <a href=#Image.image.setcolor>Image.image-&gt;setcolor</a>,
+     <a href=#Image.image.setpixel>Image.image-&gt;setpixel</a>, 
+     <a href=#Image.image.treshold>Image.image-&gt;treshold</a>,
+     <a href=#Image.image.tuned_box>Image.image-&gt;tuned_box</a>,
+     <a href=#Image.image.polyfill>Image.image-&gt;polyfill</a>
+
+<p>     operators: <a href=#Image.image.%60%26>Image.image-&gt;`&amp;</a>,
+     <a href=#Image.image.%60*>Image.image-&gt;`*</a>,
+     <a href=#Image.image.%60+>Image.image-&gt;`+</a>,
+     <a href=#Image.image.%60->Image.image-&gt;`-</a>,
+     <a href=#Image.image.%60|>Image.image-&gt;`|</a>
+
+<p>     pasting images, layers: <a href=#Image.image.add_layers>Image.image-&gt;add_layers</a>, 
+     <a href=#Image.image.paste>Image.image-&gt;paste</a>,
+     <a href=#Image.image.paste_alpha>Image.image-&gt;paste_alpha</a>,
+     <a href=#Image.image.paste_alpha_color>Image.image-&gt;paste_alpha_color</a>,
+     <a href=#Image.image.paste_mask>Image.image-&gt;paste_mask</a>
+
+<p>     getting subimages, scaling, rotating: <a href=#Image.image.autocrop>Image.image-&gt;autocrop</a>, 
+     <a href=#Image.image.ccw>Image.image-&gt;ccw</a>,
+     <a href=#Image.image.cw>Image.image-&gt;cw</a>,
+     <a href=#Image.image.clone>Image.image-&gt;clone</a>,
+     <a href=#Image.image.copy>Image.image-&gt;copy</a>, 
+     <a href=#Image.image.dct>Image.image-&gt;dct</a>,
+     <a href=#Image.image.mirrorx>Image.image-&gt;mirrorx</a>, 
+     <a href=#Image.image.rotate>Image.image-&gt;rotate</a>,
+     <a href=#Image.image.rotate_expand>Image.image-&gt;rotate_expand</a>, 
+     <a href=#Image.image.scale>Image.image-&gt;scale</a>, 
+     <a href=#Image.image.skewx>Image.image-&gt;skewx</a>,
+     <a href=#Image.image.skewx_expand>Image.image-&gt;skewx_expand</a>,
+     <a href=#Image.image.skewy>Image.image-&gt;skewy</a>,
+     <a href=#Image.image.skewy_expand>Image.image-&gt;skewy_expand</a>
+
+<p>     calculation by pixels: <a href=#Image.image.apply_matrix>Image.image-&gt;apply_matrix</a>, 
+     <a href=#Image.image.change_color>Image.image-&gt;change_color</a>,
+     <a href=#Image.image.color>Image.image-&gt;color</a>,
+     <a href=#Image.image.distancesq>Image.image-&gt;distancesq</a>, 
+     <a href=#Image.image.grey>Image.image-&gt;grey</a>,
+     <a href=#Image.image.invert>Image.image-&gt;invert</a>, 
+     <a href=#Image.image.map_closest>Image.image-&gt;map_closest</a>,
+     <a href=#Image.image.map_fast>Image.image-&gt;map_fast</a>, 
+     <a href=#Image.image.modify_by_intensity>Image.image-&gt;modify_by_intensity</a>,
+     <a href=#Image.image.select_from>Image.image-&gt;select_from</a> 
+
+<p>     converting to other datatypes: <a href=#Image.image.cast>Image.image-&gt;cast</a>,
+     <a href=#Image.image.fromgif>Image.image-&gt;fromgif</a>, 
+     <a href=#Image.image.frompnm>Image.image-&gt;frompnm</a>/<a href=#Image.image.fromppm>Image.image-&gt;fromppm</a>, 
+     <a href=#Image.image.gif_add>Image.image-&gt;gif_add</a>,
+     <a href=#Image.image.gif_add_fs>Image.image-&gt;gif_add_fs</a>,
+     <a href=#Image.image.gif_add_fs_nomap>Image.image-&gt;gif_add_fs_nomap</a>,
+     <a href=#Image.image.gif_add_nomap>Image.image-&gt;gif_add_nomap</a>,
+     <a href=#Image.image.gif_begin>Image.image-&gt;gif_begin</a>,
+     <a href=#Image.image.gif_end>Image.image-&gt;gif_end</a>,
+     <a href=#Image.image.gif_netscape_loop>Image.image-&gt;gif_netscape_loop</a>,
+     <a href=#Image.image.to8bit>Image.image-&gt;to8bit</a>,
+     <a href=#Image.image.to8bit_closest>Image.image-&gt;to8bit_closest</a>, 
+     <a href=#Image.image.to8bit_fs>Image.image-&gt;to8bit_fs</a>,
+     <a href=#Image.image.to8bit_rgbcube>Image.image-&gt;to8bit_rgbcube</a>, 
+     <a href=#Image.image.to8bit_rgbcube_rdither>Image.image-&gt;to8bit_rgbcube_rdither</a>,
+     <a href=#Image.image.tobitmap>Image.image-&gt;tobitmap</a>, 
+     <a href=#Image.image.togif>Image.image-&gt;togif</a>,
+     <a href=#Image.image.togif_fs>Image.image-&gt;togif_fs</a>, 
+     <a href=#Image.image.toppm>Image.image-&gt;toppm</a>,
+     <a href=#Image.image.tozbgr>Image.image-&gt;tozbgr</a>
+</dl>
+
+
+<encaps>SEE ALSO</encaps>
+<dl><dd>     <a href=#Image>Image</a>,
+     <a href=#Image.font>Image.font</a>
+</dl>
+
+<hr>
+<a name=Image.image.%60%26>
+<dl>
+<dt><encaps>NAME</encaps><dd>
+<tt>`&</tt> - makes a new image out of the minimum pixels values<p><dt><encaps>SYNTAX</encaps><dd>
+<tt>object `&amp;(object&nbsp;operand)<br>
+object `&amp;(array(int)&nbsp;color)<br>
+object `&amp;(int&nbsp;value)</tt>
+<p>
+<dt><encaps>DESCRIPTION</encaps><dd>
+makes a new image out of the minimum pixels values
+     
+
+<p> object operand
+     the other image to compare with;
+     the images must have the same size.
+ array(int) color
+     an array in format ({r,g,b}), this is equal
+     to using an uniform-colored image.
+ int value
+     equal to ({value,value,value}).
+</p>
+<dt><encaps>RETURNS</encaps><dd>
+the new image object
+<p>
+<dt><encaps>SEE ALSO</encaps><dd>
+<a href=#Image.image.%60->Image.image-&gt;`-</a>, <a href=#Image.image.%60+>Image.image-&gt;`+</a>, <a href=#Image.image.%60|>Image.image-&gt;`|</a>, <a href=#Image.image.%60*>Image.image-&gt;`*</a> and <a href=#Image.image.add_layers>Image.image-&gt;add_layers</a>
+</p>
+</dl>
+</a>
+
+<hr>
+<a name=Image.image.%60*>
+<dl>
+<dt><encaps>NAME</encaps><dd>
+<tt>`*</tt> - Multiplies pixel values and creates a new image<p><dt><encaps>SYNTAX</encaps><dd>
+<tt>object `*(object&nbsp;operand)<br>
+object `*(array(int)&nbsp;color)<br>
+object `*(int&nbsp;value)</tt>
+<p>
+<dt><encaps>DESCRIPTION</encaps><dd>
+Multiplies pixel values and creates a new image.
+
+<p>     This can be useful to lower the values of an image,
+     making it greyer, for instance:
+
+<p>     <pre>image=image*128+64;</pre>
+
+<p> object operand
+     the other image to multiply with;
+     the images must have the same size.
+ array(int) color
+     an array in format ({r,g,b}), this is equal
+     to using an uniform-colored image.
+ int value
+     equal to ({value,value,value}).
+</p>
+<dt><encaps>RETURNS</encaps><dd>
+the new image object
+<p>
+<dt><encaps>SEE ALSO</encaps><dd>
+<a href=#Image.image.%60->Image.image-&gt;`-</a>, <a href=#Image.image.%60+>Image.image-&gt;`+</a>, <a href=#Image.image.%60|>Image.image-&gt;`|</a>, <a href=#Image.image.%60%26>Image.image-&gt;`&</a> and <a href=#Image.image.add_layers>Image.image-&gt;add_layers</a>
+</p>
+</dl>
+</a>
+
+<hr>
+<a name=Image.image.%60+>
+<dl>
+<dt><encaps>NAME</encaps><dd>
+<tt>`+</tt> - adds two images
+<p><dt><encaps>SYNTAX</encaps><dd>
+<tt>object `+(object&nbsp;operand)<br>
+object `+(array(int)&nbsp;color)<br>
+object `+(int&nbsp;value)</tt>
+<p>
+<dt><encaps>DESCRIPTION</encaps><dd>
+adds two images; values are truncated at 255.
+
+<p> object operand
+     the image which to add.
+ array(int) color
+     an array in format ({r,g,b}), this is equal
+     to using an uniform-colored image.
+ int value
+     equal to ({value,value,value}).
+</p>
+<dt><encaps>RETURNS</encaps><dd>
+the new image object
+<p>
+<dt><encaps>SEE ALSO</encaps><dd>
+<a href=#Image.image.%60->Image.image-&gt;`-</a>, <a href=#Image.image.%60|>Image.image-&gt;`|</a>, <a href=#Image.image.%60%26>Image.image-&gt;`&</a>, <a href=#Image.image.%60*>Image.image-&gt;`*</a> and <a href=#Image.image.add_layers>Image.image-&gt;add_layers</a>
+</p>
+</dl>
+</a>
+
+<hr>
+<a name=Image.image.%60->
+<dl>
+<dt><encaps>NAME</encaps><dd>
+<tt>`-</tt> - makes a new image out of the difference
+<p><dt><encaps>SYNTAX</encaps><dd>
+<tt>object `-(object&nbsp;operand)<br>
+object `-(array(int)&nbsp;color)<br>
+object `-(int&nbsp;value)</tt>
+<p>
+<dt><encaps>DESCRIPTION</encaps><dd>
+makes a new image out of the difference
+
+<p> object operand
+     the other image to compare with;
+     the images must have the same size.
+ array(int) color
+     an array in format ({r,g,b}), this is equal
+     to using an uniform-colored image.
+ int value
+     equal to ({value,value,value}).
+</p>
+<dt><encaps>RETURNS</encaps><dd>
+the new image object
+<p>
+<dt><encaps>SEE ALSO</encaps><dd>
+<a href=#Image.image.%60+>Image.image-&gt;`+</a>, <a href=#Image.image.%60|>Image.image-&gt;`|</a>, <a href=#Image.image.%60%26>Image.image-&gt;`&</a>, <a href=#Image.image.%60*>Image.image-&gt;`*</a> and <a href=#Image.image.add_layers>Image.image-&gt;add_layers</a>
+</p>
+</dl>
+</a>
+
+<hr>
+<a name=Image.image.%60|>
+<dl>
+<dt><encaps>NAME</encaps><dd>
+<tt>`|</tt> - makes a new image out of the maximum pixels values<p><dt><encaps>SYNTAX</encaps><dd>
+<tt>object `|(object&nbsp;operand)<br>
+object `|(array(int)&nbsp;color)<br>
+object `|(int&nbsp;value)</tt>
+<p>
+<dt><encaps>DESCRIPTION</encaps><dd>
+makes a new image out of the maximum pixels values
+     
+
+<p> object operand
+     the other image to compare with;
+     the images must have the same size.
+ array(int) color
+     an array in format ({r,g,b}), this is equal
+     to using an uniform-colored image.
+ int value
+     equal to ({value,value,value}).
+</p>
+<dt><encaps>RETURNS</encaps><dd>
+the new image object
+<p>
+<dt><encaps>SEE ALSO</encaps><dd>
+<a href=#Image.image.%60->Image.image-&gt;`-</a>, <a href=#Image.image.%60+>Image.image-&gt;`+</a>, <a href=#Image.image.%60%26>Image.image-&gt;`&</a>, <a href=#Image.image.%60*>Image.image-&gt;`*</a> and <a href=#Image.image.add_layers>Image.image-&gt;add_layers</a>
+</p>
+</dl>
+</a>
+
+<hr>
+<a name=Image.image.add_layers>
+<dl>
+<dt><encaps>NAME</encaps><dd>
+<tt>add_layers</tt> - add layers together
+<p><dt><encaps>SYNTAX</encaps><dd>
+<tt>object add_layers(array(int|object))&nbsp;layer0, ...)<br>
+object add_layers(int&nbsp;x1, int&nbsp;y1, int&nbsp;x2, int&nbsp;y2, array(int|object))&nbsp;layer0, ...)</tt>
+<p>
+<dt><encaps>DESCRIPTION</encaps><dd>
+Using the called object as base, adds layers using masks,
+     opaque channel values and special methods.
+
+<p>     The destination image can also be cropped, thus
+     speeding up the process.
+
+<p>     Each array in the layers array is one of:
+     <pre>
+     ({object image,object|int mask})
+     ({object image,object|int mask,int opaque_value})
+     ({object image,object|int mask,int opaque_value,int method})
+     </pre>
+     Given 0 as mask means the image is totally opaque.
+
+<p>     Default opaque value is 255, only using the mask.
+
+<p>     Methods for now are:
+     <pre>
+     0  no operation (just paste with mask, default)
+     1  maximum  (`|)
+     2  minimum  (`&amp;)
+     3  multiply (`*)
+     4  add      (`+)
+     5  diff     (`-)
+     </pre>
+     The layer image and the current source are calculated
+     through the given method and then pasted using the mask
+     and the opaque channel value. 
+
+<p>     All given images must be the same size.
+</p>
+<dt><encaps>ARGUMENTS</encaps><dd><dl>
+<dt><tt>array(int|object) layer0</tt>
+  <dd>image to paste
+<dt><tt>int x1</tt>
+<dt><tt>int y1</tt>
+<dt><tt>int x2</tt>
+<dt><tt>int y2</tt>
+  <dd>rectangle for cropping
+
+</dl><p>
+<dt><encaps>RETURNS</encaps><dd>
+a new image object
+<p>
+<dt><encaps>SEE ALSO</encaps><dd>
+<a href=#Image.image.paste_mask>Image.image-&gt;paste_mask</a>, <a href=#Image.image.paste_alpha>Image.image-&gt;paste_alpha</a>, <a href=#Image.image.paste_alpha_color>Image.image-&gt;paste_alpha_color</a>, <a href=#Image.image.%60|>Image.image-&gt;`|</a>, <a href=#Image.image.%60%26>Image.image-&gt;`&</a>, <a href=#Image.image.%60*>Image.image-&gt;`*</a>, <a href=#Image.image.%60+>Image.image-&gt;`+</a> and <a href=#Image.image.%60->Image.image-&gt;`-</a>
+</p>
+</dl>
+</a>
+
+<hr>
+<a name=Image.image.apply_matrix>
+<dl>
+<dt><encaps>NAME</encaps><dd>
+<tt>apply_matrix</tt> - Applies a pixel-transform matrix, or filter, to the image.<p><dt><encaps>SYNTAX</encaps><dd>
+<tt>object apply_matrix(array(array(int|array(int)))&nbsp;matrix)<br>
+object apply_matrix(array(array(int|array(int)))&nbsp;matrix, int&nbsp;r, int&nbsp;g, int&nbsp;b)<br>
+object apply_matrix(array(array(int|array(int)))&nbsp;matrix, int&nbsp;r, int&nbsp;g, int&nbsp;b, int|float&nbsp;div)</tt>
+<p>
+<dt><encaps>DESCRIPTION</encaps><dd>
+Applies a pixel-transform matrix, or filter, to the image.
+    
+     <pre>
+                            2   2
+     pixel(x,y)= base+ k ( sum sum pixel(x+k-1,y+l-1)*matrix(k,l) ) 
+                           k=0 l=0 
+     </pre>
+     
+     1/k is sum of matrix, or sum of matrix multiplied with div.
+     base is given by r,g,b and is normally black.
+
+<p>     blur (ie a 2d gauss function):
+     <pre>
+     ({({1,2,1}),
+       ({2,5,2}),
+       ({1,2,1})})
+     </pre>
+     
+     sharpen (k>8, preferably 12 or 16):
+     <pre>
+     ({({-1,-1,-1}),
+       ({-1, k,-1}),
+       ({-1,-1,-1})})
+     </pre>
+
+<p>     edge detect:
+     <pre>
+     ({({1, 1,1}),
+       ({1,-8,1}),
+       ({1, 1,1})})
+     </pre>
+
+<p>     horisontal edge detect (get the idea):
+     <pre>
+     ({({0, 0,0})
+       ({1,-8,1}),
+       ({0, 0,0})})
+     </pre>
+
+<p>     emboss (might prefer to begin with a <a href=#Image.image.grey>Image.image-&gt;grey</a> image):
+     <pre>
+     ({({2, 1, 0})
+       ({1, 0,-1}),
+       ({0,-1, 2})}), 128,128,128, 5
+     </pre>
+
+<p>     This function is not very fast, and it's hard to 
+     optimize it more, not using assembler.
+</p>
+<dt><encaps>ARGUMENTS</encaps><dd><dl>
+<dt><tt>array(array(int|array(int)))</tt>
+  <dd>the matrix; innermost is a value or an array with red, green, blue
+     values for red, green, blue separation.
+<dt><tt>int r</tt>
+<dt><tt>int g</tt>
+<dt><tt>int b</tt>
+  <dd>base level of result, default is zero
+<dt><tt>int|float div</tt>
+  <dd>division factor, default is 1.0.
+
+</dl><p>
+<dt><encaps>RETURNS</encaps><dd>
+the new image object
+<p>
+</dl>
+</a>
+
+<hr>
+<a name=Image.image.autocrop>
+<dl>
+<dt><encaps>NAME</encaps><dd>
+<tt>autocrop</tt> - Removes "unneccesary" borders around the image<p><dt><encaps>SYNTAX</encaps><dd>
+<tt>object autocrop()<br>
+object autocrop(int&nbsp;border)<br>
+object autocrop(int&nbsp;border, int&nbsp;r, int&nbsp;g, int&nbsp;b)<br>
+object autocrop(int&nbsp;border, int&nbsp;left, int&nbsp;right, int&nbsp;top, int&nbsp;bottom)<br>
+object autocrop(int&nbsp;border, int&nbsp;left, int&nbsp;right, int&nbsp;top, int&nbsp;bottom, int&nbsp;r, int&nbsp;g, int&nbsp;b)</tt>
+<p>
+<dt><encaps>DESCRIPTION</encaps><dd>
+Removes "unneccesary" borders around the image, adds one of
+     its own if wanted to, in selected directions.
+
+<p>     "Unneccesary" is all pixels that are equal -- ie if all the same pixels
+     to the left are the same color, that column of pixels are removed.
+</p>
+<dt><encaps>ARGUMENTS</encaps><dd><dl>
+<dt><tt>int border</tt>
+  <dd>added border size in pixels
+<dt><tt>int r</tt>
+<dt><tt>int g</tt>
+<dt><tt>int b</tt>
+  <dd>color of the new border
+<dt><tt>int left</tt>
+<dt><tt>int right</tt>
+<dt><tt>int top</tt>
+<dt><tt>int bottom</tt>
+  <dd>which borders to scan and cut the image; 
+     a typical example is removing the top and bottom unneccesary
+     pixels:
+     <pre>img=img->autocrop(0, 0,0,1,1);</pre>
+
+</dl><p>
+<dt><encaps>RETURNS</encaps><dd>
+the new image object
+<p>
+<dt><encaps>SEE ALSO</encaps><dd>
+<a href=#Image.image.copy>Image.image-&gt;copy</a>
+</p>
+</dl>
+</a>
+
+<hr>
+<a name=Image.image.box>
+<dl>
+<dt><encaps>NAME</encaps><dd>
+<tt>box</tt> - Draws a filled rectangle on the image
+<p><dt><encaps>SYNTAX</encaps><dd>
+<tt>object box(int&nbsp;x1, int&nbsp;y1, int&nbsp;x2, int&nbsp;y2)<br>
+object box(int&nbsp;x1, int&nbsp;y1, int&nbsp;x2, int&nbsp;y2, int&nbsp;r, int&nbsp;g, int&nbsp;b)<br>
+object box(int&nbsp;x1, int&nbsp;y1, int&nbsp;x2, int&nbsp;y2, int&nbsp;r, int&nbsp;g, int&nbsp;b, int&nbsp;alpha)</tt>
+<p>
+<dt><encaps>DESCRIPTION</encaps><dd>
+Draws a filled rectangle on the image.
+</p>
+<dt><encaps>ARGUMENTS</encaps><dd><dl>
+<dt><tt>int x1</tt>
+<dt><tt>int y1</tt>
+<dt><tt>int x2</tt>
+<dt><tt>int y2</tt>
+  <dd>box corners
+<dt><tt>int r</tt>
+<dt><tt>int g</tt>
+<dt><tt>int b</tt>
+  <dd>color of the box
+<dt><tt>int alpha</tt>
+  <dd>alpha value
+
+</dl><p>
+<dt><encaps>RETURNS</encaps><dd>
+the object called
+<p>
+</dl>
+</a>
+
+<hr>
+<a name=Image.image.cast>
+<dl>
+<dt><encaps>NAME</encaps><dd>
+<tt>cast</tt> - convert to other types
+<p><dt><encaps>SYNTAX</encaps><dd>
+<tt>string cast(string&nbsp;type)</tt>
+<p>
+<dt><encaps>DESCRIPTION</encaps><dd>
+known bugs: always casts to string...
+</p>
+<dt><encaps>RETURNS</encaps><dd>
+the image data as a string ("rgbrgbrgb...")
+<p>
+<dt><encaps>SEE ALSO</encaps><dd>
+<a href=#Image.image.toppm>Image.image-&gt;toppm</a>, <a href=#Image.image.togif>Image.image-&gt;togif</a>, <a href=#Image.image.tozbgr>Image.image-&gt;tozbgr</a>, <a href=#Image.image.to8bit>Image.image-&gt;to8bit</a> and <a href=#Image.image.to8bit_rgbcube>Image.image-&gt;to8bit_rgbcube</a>
+</p>
+</dl>
+</a>
+
+<hr>
+<a name=Image.image.ccw>
+<dl>
+<dt><encaps>NAME</encaps><dd>
+<tt>ccw</tt> - rotates an image 90 degrees counter-clockwise<p><dt><encaps>SYNTAX</encaps><dd>
+<tt>object ccw()</tt>
+<p>
+<dt><encaps>DESCRIPTION</encaps><dd>
+rotates an image counter-clockwise, 90 degrees.
+</p>
+<dt><encaps>RETURNS</encaps><dd>
+the new image object
+<p>
+</dl>
+</a>
+
+<hr>
+<a name=Image.image.change_color>
+<dl>
+<dt><encaps>NAME</encaps><dd>
+<tt>change_color</tt> - Replaces one color with another
+<p><dt><encaps>SYNTAX</encaps><dd>
+<tt>object change_color(int&nbsp;tor, int&nbsp;tog, int&nbsp;tob)<br>
+object change_color(int&nbsp;fromr, int&nbsp;fromg, int&nbsp;fromb, &nbsp;int&nbsp;tor, int&nbsp;tog, int&nbsp;tob)</tt>
+<p>
+<dt><encaps>DESCRIPTION</encaps><dd>
+Changes one color (exakt match) to another.
+     If non-exakt-match is preferred, check <a href=#Image.image.distancesq>Image.image-&gt;distancesq</a>
+     and <a href=#Image.image.paste_alpha_color>Image.image-&gt;paste_alpha_color</a>.
+</p>
+<dt><encaps>ARGUMENTS</encaps><dd><dl>
+<dt><tt>int tor</tt>
+<dt><tt>int tog</tt>
+<dt><tt>int tob</tt>
+  <dd>destination color and next current color
+<dt><tt>int fromr</tt>
+<dt><tt>int fromg</tt>
+<dt><tt>int fromb</tt>
+  <dd>source color, default is current color
+
+</dl><p>
+<dt><encaps>RETURNS</encaps><dd>
+a new (the destination) image object
+<p>
+</dl>
+</a>
+
+<hr>
+<a name=Image.image.circle>
+<dl>
+<dt><encaps>NAME</encaps><dd>
+<tt>circle</tt> - Draw a line on the image
+<p><dt><encaps>SYNTAX</encaps><dd>
+<tt>object circle(int&nbsp;x, int&nbsp;y, int&nbsp;rx, int&nbsp;ry)<br>
+object circle(int&nbsp;x, int&nbsp;y, int&nbsp;rx, int&nbsp;ry, int&nbsp;r, int&nbsp;g, int&nbsp;b)<br>
+object circle(int&nbsp;x, int&nbsp;y, int&nbsp;rx, int&nbsp;ry, int&nbsp;r, int&nbsp;g, int&nbsp;b, int&nbsp;alpha)</tt>
+<p>
+<dt><encaps>DESCRIPTION</encaps><dd>
+Draws a line on the image. The line is <i>not</i> antialiased.
+</p>
+<dt><encaps>ARGUMENTS</encaps><dd><dl>
+<dt><tt>int x</tt>
+<dt><tt>int y</tt>
+  <dd>circle center
+<dt><tt>int rx</tt>
+<dt><tt>int ry</tt>
+  <dd>circle radius in pixels
+<dt><tt>int r</tt>
+<dt><tt>int g</tt>
+<dt><tt>int b</tt>
+  <dd>color
+<dt><tt>int alpha</tt>
+  <dd>alpha value
+
+</dl><p>
+<dt><encaps>RETURNS</encaps><dd>
+the object called
+<p>
+</dl>
+</a>
+
+<hr>
+<a name=Image.image.clear>
+<dl>
+<dt><encaps>NAME</encaps><dd>
+<tt>clear</tt> - create a new empty image of same size
+<p><dt><encaps>SYNTAX</encaps><dd>
+<tt>void clear()<br>
+void clear(int&nbsp;r, int&nbsp;g, int&nbsp;b)<br>
+void clear(int&nbsp;r, int&nbsp;g, int&nbsp;b, int&nbsp;alpha)</tt>
+<p>
+<dt><encaps>DESCRIPTION</encaps><dd>
+gives a new, cleared image with the same size of drawing area
+</p>
+<dt><encaps>ARGUMENTS</encaps><dd><dl>
+<dt><tt>int r</tt>
+<dt><tt>int g</tt>
+<dt><tt>int b</tt>
+  <dd>color of the new image
+<dt><tt>int alpha</tt>
+  <dd>new default alpha channel value
+
+</dl><p>
+<dt><encaps>SEE ALSO</encaps><dd>
+<a href=#Image.image.copy>Image.image-&gt;copy</a> and <a href=#Image.image.clone>Image.image-&gt;clone</a>
+</p>
+</dl>
+</a>
+
+<hr>
+<a name=Image.image.clone>
+<dl>
+<dt><encaps>NAME</encaps><dd>
+<tt>clone</tt> - Copies to or initialize a new image object<p><dt><encaps>SYNTAX</encaps><dd>
+<tt>object clone()<br>
+object clone(int&nbsp;xsize, int&nbsp;ysize)<br>
+object clone(int&nbsp;xsize, int&nbsp;ysize, int&nbsp;r, int&nbsp;g, int&nbsp;b)<br>
+object clone(int&nbsp;xsize, int&nbsp;ysize, int&nbsp;r, int&nbsp;g, int&nbsp;b, int&nbsp;alpha)</tt>
+<p>
+<dt><encaps>DESCRIPTION</encaps><dd>
+Copies to or initialize a new image object.
+</p>
+<dt><encaps>ARGUMENTS</encaps><dd><dl>
+<dt><tt>int xsize</tt>
+<dt><tt>int ysize</tt>
+  <dd>size of (new) image in pixels, called image
+     is cropped to that size
+<dt><tt>int r</tt>
+<dt><tt>int g</tt>
+<dt><tt>int b</tt>
+  <dd>current color of the new image, 
+     default is black. 
+     Will also be the background color if the cloned image
+     is empty (no drawing area made).
+<dt><tt>int alpha</tt>
+  <dd>new default alpha channel value
+
+</dl><p>
+<dt><encaps>RETURNS</encaps><dd>
+the new object
+<p>
+<dt><encaps>SEE ALSO</encaps><dd>
+<a href=#Image.image.copy>Image.image-&gt;copy</a> and <a href=#Image.image.create>Image.image-&gt;create</a>
+</p>
+</dl>
+</a>
+
+<hr>
+<a name=Image.image.color>
+<dl>
+<dt><encaps>NAME</encaps><dd>
+<tt>color</tt> - Colorize an image
+<p><dt><encaps>SYNTAX</encaps><dd>
+<tt>object color()<br>
+object color(int&nbsp;value)<br>
+object color(int&nbsp;r, int&nbsp;g, int&nbsp;b)</tt>
+<p>
+<dt><encaps>DESCRIPTION</encaps><dd>
+Colorize an image. 
+
+<p>    The red, green and blue values of the pixels are multiplied
+    with the given value(s). This works best on a grey image...
+
+<p>    The result is divided by 255, giving correct pixel values.
+
+<p>    If no arguments are given, the current color is used as factors.
+</p>
+<dt><encaps>ARGUMENTS</encaps><dd><dl>
+<dt><tt>int r</tt>
+<dt><tt>int g</tt>
+<dt><tt>int b</tt>
+  <dd>red, green, blue factors
+<dt><tt>int value</tt>
+  <dd>factor
+
+</dl><p>
+<dt><encaps>RETURNS</encaps><dd>
+the new image object
+<p>
+<dt><encaps>SEE ALSO</encaps><dd>
+<a href=#Image.image.grey>Image.image-&gt;grey</a>, <a href=#Image.image.%60*>Image.image-&gt;`*</a> and <a href=#Image.image.modify_by_intensity>Image.image-&gt;modify_by_intensity</a>
+</p>
+</dl>
+</a>
+
+<hr>
+<a name=Image.image.copy>
+<dl>
+<dt><encaps>NAME</encaps><dd>
+<tt>copy</tt> - Copies a part of the image
+<p><dt><encaps>SYNTAX</encaps><dd>
+<tt>object copy()<br>
+object copy(int&nbsp;x1, int&nbsp;y1, int&nbsp;x2, int&nbsp;y2)<br>
+object copy(int&nbsp;x1, int&nbsp;y1, int&nbsp;x2, int&nbsp;y2, int&nbsp;r, int&nbsp;g, int&nbsp;b)<br>
+object copy(int&nbsp;x1, int&nbsp;y1, int&nbsp;x2, int&nbsp;y2, int&nbsp;r, int&nbsp;g, int&nbsp;b, int&nbsp;alpha)</tt>
+<p>
+<dt><encaps>DESCRIPTION</encaps><dd>
+Copies this part of the image. The requested area can
+     be smaller, giving a cropped image, or bigger - 
+     the new area will be filled with the given or current color.
+</p>
+<dt><encaps>ARGUMENTS</encaps><dd><dl>
+<dt><tt>int x1</tt>
+<dt><tt>int y1</tt>
+<dt><tt>int x2</tt>
+<dt><tt>int y2</tt>
+  <dd>The requested new area. Default is the old image size.
+<dt><tt>int r</tt>
+<dt><tt>int g</tt>
+<dt><tt>int b</tt>
+  <dd>color of the new image
+<dt><tt>int alpha</tt>
+  <dd>new default alpha channel value
+
+</dl><p>
+<dt><encaps>RETURNS</encaps><dd>
+a new image object
+<p>
+<dt><encaps>NOTE</encaps>
+<dd>
+<a href=#Image.image.clone>Image.image-&gt;clone</a>(void) and <a href=#Image.image.copy>Image.image-&gt;copy</a>(void) does the same 
+     operation
+<p>
+<dt><encaps>SEE ALSO</encaps><dd>
+<a href=#Image.image.clone>Image.image-&gt;clone</a> and <a href=#Image.image.autocrop>Image.image-&gt;autocrop</a>
+</p>
+</dl>
+</a>
+
+<hr>
+<a name=Image.image.create>
+<dl>
+<dt><encaps>NAME</encaps><dd>
+<tt>create</tt> - Initializes a new image object
+<p><dt><encaps>SYNTAX</encaps><dd>
+<tt>void create()<br>
+void create(int&nbsp;xsize, int&nbsp;ysize)<br>
+void create(int&nbsp;xsize, int&nbsp;ysize, int&nbsp;r, int&nbsp;g, int&nbsp;b)<br>
+void create(int&nbsp;xsize, int&nbsp;ysize, int&nbsp;r, int&nbsp;g, int&nbsp;b, int&nbsp;alpha)</tt>
+<p>
+<dt><encaps>DESCRIPTION</encaps><dd>
+Initializes a new image object.
+</p>
+<dt><encaps>ARGUMENTS</encaps><dd><dl>
+<dt><tt>int xsize</tt>
+<dt><tt>int ysize</tt>
+  <dd>size of (new) image in pixels
+<dt><tt>int r</tt>
+<dt><tt>int g</tt>
+<dt><tt>int b</tt>
+  <dd>background color (will also be current color),
+     default color is black
+<dt><tt>int alpha</tt>
+  <dd>default alpha channel value
+
+</dl><p>
+<dt><encaps>SEE ALSO</encaps><dd>
+<a href=#Image.image.copy>Image.image-&gt;copy</a>, <a href=#Image.image.clone>Image.image-&gt;clone</a> and <a href=#Image.image>Image.image</a>
+</p>
+</dl>
+</a>
+
+<hr>
+<a name=Image.image.cw>
+<dl>
+<dt><encaps>NAME</encaps><dd>
+<tt>cw</tt> - rotates an image 90 degrees clockwise<p><dt><encaps>SYNTAX</encaps><dd>
+<tt>object cw()</tt>
+<p>
+<dt><encaps>DESCRIPTION</encaps><dd>
+rotates an image clockwise, 90 degrees.
+</p>
+<dt><encaps>RETURNS</encaps><dd>
+the new image object
+<p>
+</dl>
+</a>
+
+<hr>
+<a name=Image.image.dct>
+<dl>
+<dt><encaps>NAME</encaps><dd>
+<tt>dct</tt> - Scales the image to a new size<p><dt><encaps>SYNTAX</encaps><dd>
+<tt>object dct(int&nbsp;newx, int&nbsp;newy)</tt>
+<p>
+<dt><encaps>DESCRIPTION</encaps><dd>
+Scales the image to a new size.
+     
+     Method for scaling is rather complex;
+     the image is transformed via a cosine transform,
+     and then resampled back.
+
+<p>     This gives a quality-conserving upscale,
+     but the algorithm used is n*n+n*m, where n
+     and m is pixels in the original and new image.
+
+<p>     Recommended wrapping algorithm is to scale
+     overlapping parts of the image-to-be-scaled.
+
+<p>     This functionality is actually added as an
+     true experiment, but works...
+</p>
+<dt><encaps>ARGUMENTS</encaps><dd><dl>
+<dt><tt>int newx</tt>
+<dt><tt>int newy</tt>
+  <dd>new image size in pixels
+
+</dl><p>
+<dt><encaps>RETURNS</encaps><dd>
+the new image object
+<p>
+<dt><encaps>NOTE</encaps>
+<dd>
+Do NOT use this function if you don't know what 
+     you're dealing with! Read some signal theory first...
+<p>
+</dl>
+</a>
+
+<hr>
+<a name=Image.image.distancesq>
+<dl>
+<dt><encaps>NAME</encaps><dd>
+<tt>distancesq</tt> - Makes an grey-scale image for alpha-channel use<p><dt><encaps>SYNTAX</encaps><dd>
+<tt>object distancesq()<br>
+object distancesq(int&nbsp;r, int&nbsp;g, int&nbsp;b)</tt>
+<p>
+<dt><encaps>DESCRIPTION</encaps><dd>
+Makes an grey-scale image, for alpha-channel use.
+    
+    The given value (or current color) are used for coordinates
+    in the color cube. Each resulting pixel is the 
+    distance from this point to the source pixel color,
+    in the color cube, squared, rightshifted 8 steps:
+
+<p>    <pre>
+    p = pixel color
+    o = given color
+    d = destination pixel
+    d.red=d.blue=d.green=
+        ((o.red-p.red)²+(o.green-p.green)²+(o.blue-p.blue)²)>>8
+    </pre>
+</p>
+<dt><encaps>ARGUMENTS</encaps><dd><dl>
+<dt><tt>int r</tt>
+<dt><tt>int g</tt>
+<dt><tt>int b</tt>
+  <dd>red, green, blue coordinates
+
+</dl><p>
+<dt><encaps>RETURNS</encaps><dd>
+the new image object
+<p>
+<dt><encaps>SEE ALSO</encaps><dd>
+<a href=#Image.image.select_from>Image.image-&gt;select_from</a>
+</p>
+</dl>
+</a>
+
+<hr>
+<a name=Image.image.fromgif>
+<dl>
+<dt><encaps>NAME</encaps><dd>
+<tt>fromgif</tt> - Reads GIF data to the called image object<p><dt><encaps>SYNTAX</encaps><dd>
+<tt>object fromgif(string&nbsp;gif)</tt>
+<p>
+<dt><encaps>DESCRIPTION</encaps><dd>
+Reads GIF data to the called image object.
+
+<p>     GIF animation delay or loops are ignored,
+     and the resulting image is the written result.
+</p>
+<dt><encaps>ARGUMENTS</encaps><dd><dl>
+<dt><tt>string pnm</tt>
+  <dd>pnm data, as a string
+ known bugs: yes, it does -- it may even do segment overrides...
+
+</dl><p>
+<dt><encaps>RETURNS</encaps><dd>
+the called object
+<p>
+<dt><encaps>SEE ALSO</encaps><dd>
+<a href=#Image.image.togif>Image.image-&gt;togif</a> and <a href=#Image.image.frompnm>Image.image-&gt;frompnm</a>
+</p>
+</dl>
+</a>
+
+<hr>
+<a name=Image.image.frompnm>
+<a name=Image.image.fromppm>
+<dl>
+<dt><encaps>NAME</encaps><dd>
+<tt>frompnm, fromppm</tt> - Reads PNM data to the called image object
+<p><dt><encaps>SYNTAX</encaps><dd>
+<tt>object|string frompnm(string&nbsp;pnm)<br>
+object|string fromppm(string&nbsp;pnm)</tt>
+<p>
+<dt><encaps>DESCRIPTION</encaps><dd>
+Reads a PNM (PBM, PGM or PPM in ascii or binary)
+     to the called image object.
+
+<p>     The method accepts P1 through P6 type of PNM data.
+
+<p>     "fromppm" is an alias for "frompnm".
+</p>
+<dt><encaps>ARGUMENTS</encaps><dd><dl>
+<dt><tt>string pnm</tt>
+  <dd>pnm data, as a string
+
+</dl><p>
+<dt><encaps>RETURNS</encaps><dd>
+the called object or a hint of what wronged.
+<p>
+<dt><encaps>SEE ALSO</encaps><dd>
+<a href=#Image.image.toppm>Image.image-&gt;toppm</a> and <a href=#Image.image.fromgif>Image.image-&gt;fromgif</a>
+</p>
+</dl>
+</a>
+</a>
+
+<hr>
+<a name=Image.image.getpixel>
+<dl>
+<dt><encaps>NAME</encaps><dd>
+<tt>getpixel</tt> - get the value of a pixel
+<p><dt><encaps>SYNTAX</encaps><dd>
+<tt>array(int) getpixel(int&nbsp;x, int&nbsp;y)</tt>
+<p>
+<dt><encaps>ARGUMENTS</encaps><dd><dl>
+<dt><tt>int x</tt>
+<dt><tt>int y</tt>
+  <dd>position of the pixel
+
+</dl><p>
+<dt><encaps>RETURNS</encaps><dd>
+color of the requested pixel -- ({int red,int green,int blue})
+<p>
+</dl>
+</a>
+
+<hr>
+<a name=Image.image.gif_add>
+<a name=Image.image.gif_add_fs>
+<a name=Image.image.gif_add_fs_nomap>
+<a name=Image.image.gif_add_nomap>
+<dl>
+<dt><encaps>NAME</encaps><dd>
+<tt>gif_add, gif_add_fs, gif_add_fs_nomap, gif_add_nomap</tt> - Makes a GIF (sub)image data chunk
+<p><dt><encaps>SYNTAX</encaps><dd>
+<tt>string gif_add()<br>
+string gif_add(int&nbsp;x, int&nbsp;y)<br>
+string gif_add(int&nbsp;x, int&nbsp;y, int&nbsp;delay_cs)<br>
+string gif_add(int&nbsp;x, int&nbsp;y, float&nbsp;delay_s)<br>
+string gif_add(int&nbsp;x, int&nbsp;y, int&nbsp;num_colors, int&nbsp;delay_cs)<br>
+string gif_add(int&nbsp;x, int&nbsp;y, int&nbsp;num_colors, float&nbsp;delay_s)<br>
+string gif_add(int&nbsp;x, int&nbsp;y, array(array(int))&nbsp;colors, int&nbsp;delay_cs)<br>
+string gif_add(int&nbsp;x, int&nbsp;y, array(array(int))&nbsp;colors, float&nbsp;delay_s)<br>
+string gif_add_fs()<br>
+string gif_add_fs(int&nbsp;x, int&nbsp;y)<br>
+string gif_add_fs(int&nbsp;x, int&nbsp;y, int&nbsp;delay_cs)<br>
+string gif_add_fs(int&nbsp;x, int&nbsp;y, float&nbsp;delay_s)<br>
+string gif_add_fs(int&nbsp;x, int&nbsp;y, int&nbsp;num_colors, int&nbsp;delay_cs)<br>
+string gif_add_fs(int&nbsp;x, int&nbsp;y, int&nbsp;num_colors, float&nbsp;delay_s)<br>
+string gif_add_fs(int&nbsp;x, int&nbsp;y, array(array(int))&nbsp;colors, int&nbsp;delay_cs)<br>
+string gif_add_fs(int&nbsp;x, int&nbsp;y, array(array(int))&nbsp;colors, float&nbsp;delay_s)<br>
+string gif_add_nomap()<br>
+string gif_add_nomap(int&nbsp;x, int&nbsp;y)<br>
+string gif_add_nomap(int&nbsp;x, int&nbsp;y, int&nbsp;delay_cs)<br>
+string gif_add_nomap(int&nbsp;x, int&nbsp;y, float&nbsp;delay_s)<br>
+string gif_add_nomap(int&nbsp;x, int&nbsp;y, int&nbsp;num_colors, int&nbsp;delay_cs)<br>
+string gif_add_nomap(int&nbsp;x, int&nbsp;y, int&nbsp;num_colors, float&nbsp;delay_s)<br>
+string gif_add_nomap(int&nbsp;x, int&nbsp;y, array(array(int))&nbsp;colors, int&nbsp;delay_cs)<br>
+string gif_add_nomap(int&nbsp;x, int&nbsp;y, array(array(int))&nbsp;colors, float&nbsp;delay_s)<br>
+string gif_add_fs_nomap()<br>
+string gif_add_fs_nomap(int&nbsp;x, int&nbsp;y)<br>
+string gif_add_fs_nomap(int&nbsp;x, int&nbsp;y, int&nbsp;delay_cs)<br>
+string gif_add_fs_nomap(int&nbsp;x, int&nbsp;y, float&nbsp;delay_s)<br>
+string gif_add_fs_nomap(int&nbsp;x, int&nbsp;y, int&nbsp;num_colors, int&nbsp;delay_cs)<br>
+string gif_add_fs_nomap(int&nbsp;x, int&nbsp;y, int&nbsp;num_colors, float&nbsp;delay_s)<br>
+string gif_add_fs_nomap(int&nbsp;x, int&nbsp;y, array(array(int))&nbsp;colors, int&nbsp;delay_cs)<br>
+string gif_add_fs_nomap(int&nbsp;x, int&nbsp;y, array(array(int))&nbsp;colors, float&nbsp;delay_s)</tt>
+<p>
+<dt><encaps>DESCRIPTION</encaps><dd>
+Makes a GIF (sub)image data chunk, to be placed 
+     at the given position. 
+
+<p>     The "fs" versions uses floyd-steinberg dithering, and the "nomap"
+     versions have no local colormap.
+
+<p>     Example: 
+     <pre>
+     object img1 = Image(200,200); 
+     object img2 = Image(200,200); 
+     // load img1 and img2 with stuff
+     write(img1->gif_begin()+
+           img1->gif_netscape_loop()+
+           img1->gif_add(0,0,100)+
+           img2->gif_add(0,0,100)+
+           img1->gif_end());
+     // voila, a gif animation...
+     </pre>
+</p>
+<dt><encaps>ARGUMENTS</encaps><dd><dl>
+<dt><tt>int x</tt>
+<dt><tt>int y</tt>
+  <dd>the location of this subimage
+<dt><tt>int delay_cs</tt>
+  <dd>frame delay in centiseconds
+<dt><tt>float delay_s</tt>
+  <dd>frame delay in seconds
+<dt><tt>int num_colors</tt>
+  <dd>number of colors to quantize to (default is 256)
+<dt><tt>array array(array(int)) colors</tt>
+  <dd>colors to map to, format is ({({r,g,b}),({r,g,b}),...}).
+
+</dl><p>
+<dt><encaps>RETURNS</encaps><dd>
+the GIF data chunk as a string
+<p>
+<dt><encaps>NOTE</encaps>
+<dd>
+I (Mirar) recommend reading about the GIF file format before 
+     experementing with these.
+<p>
+<dt><encaps>SEE ALSO</encaps><dd>
+<a href=#Image.image.gif_add>Image.image-&gt;gif_add</a>, <a href=#Image.image.gif_end>Image.image-&gt;gif_end</a>, <a href=#Image.image.gif_netscape_loop>Image.image-&gt;gif_netscape_loop</a> and <a href=#Image.image.togif */>Image.image-&gt;togif */</a>
+</p>
+</dl>
+</a>
+</a>
+</a>
+</a>
+
+<hr>
+<a name=Image.image.gif_begin>
+<dl>
+<dt><encaps>NAME</encaps><dd>
+<tt>gif_begin</tt> - Makes GIF header<p><dt><encaps>SYNTAX</encaps><dd>
+<tt>string gif_begin()<br>
+string gif_begin(int&nbsp;num_colors)<br>
+string gif_begin(array(array(int))&nbsp;colors)</tt>
+<p>
+<dt><encaps>DESCRIPTION</encaps><dd>
+Makes GIF header. With no argument, there is no
+     global colortable (palette).
+</p>
+<dt><encaps>ARGUMENTS</encaps><dd><dl>
+<dt><tt>int num_colors</tt>
+  <dd>number of colors to quantize to (default is 256) 
+ array array(array(int)) colors
+     colors to map to, format is ({({r,g,b}),({r,g,b}),...}).
+
+</dl><p>
+<dt><encaps>RETURNS</encaps><dd>
+the GIF data
+<p>
+<dt><encaps>SEE ALSO</encaps><dd>
+<a href=#Image.image.gif_add>Image.image-&gt;gif_add</a>, <a href=#Image.image.gif_end>Image.image-&gt;gif_end</a>, <a href=#Image.image.togif>Image.image-&gt;togif</a> and <a href=#Image.image.gif_netscape_loop>Image.image-&gt;gif_netscape_loop</a>
+</p>
+</dl>
+</a>
+
+<hr>
+<a name=Image.image.gif_end>
+<dl>
+<dt><encaps>NAME</encaps><dd>
+<tt>gif_end</tt> - Ends GIF data
+<p><dt><encaps>SYNTAX</encaps><dd>
+<tt>string gif_end()</tt>
+<p>
+<dt><encaps>DESCRIPTION</encaps><dd>
+Ends GIF data.
+</p>
+<dt><encaps>RETURNS</encaps><dd>
+the GIF data.
+<p>
+<dt><encaps>SEE ALSO</encaps><dd>
+<a href=#Image.image.gif_begin>Image.image-&gt;gif_begin</a>
+</p>
+</dl>
+</a>
+
+<hr>
+<a name=Image.image.gif_netscape_loop>
+<dl>
+<dt><encaps>NAME</encaps><dd>
+<tt>gif_netscape_loop</tt> - makes a gif chunk which defines how many times it should loop
+<p><dt><encaps>SYNTAX</encaps><dd>
+<tt>string gif_netscape_loop()<br>
+string gif_netscape_loop(int&nbsp;loops)</tt>
+<p>
+<dt><encaps>ARGUMENTS</encaps><dd><dl>
+<dt><tt>int loops</tt>
+  <dd>number of loops, default is 65535.
+
+</dl><p>
+<dt><encaps>RETURNS</encaps><dd>
+a gif chunk that defines that the GIF animation should loop
+<p>
+<dt><encaps>SEE ALSO</encaps><dd>
+<a href=#Image.image.gif_add>Image.image-&gt;gif_add</a>, <a href=#Image.image.gif_begin>Image.image-&gt;gif_begin</a> and <a href=#Image.image.gif_end>Image.image-&gt;gif_end</a>
+</p>
+</dl>
+</a>
+
+<hr>
+<a name=Image.image.grey>
+<dl>
+<dt><encaps>NAME</encaps><dd>
+<tt>grey</tt> - Makes a grey-scale image
+<p><dt><encaps>SYNTAX</encaps><dd>
+<tt>object grey()<br>
+object grey(int&nbsp;r, int&nbsp;g, int&nbsp;b)</tt>
+<p>
+<dt><encaps>DESCRIPTION</encaps><dd>
+Makes a grey-scale image (with weighted values).
+</p>
+<dt><encaps>ARGUMENTS</encaps><dd><dl>
+<dt><tt>int r</tt>
+<dt><tt>int g</tt>
+<dt><tt>int b</tt>
+  <dd>weight of color, default is r=87,g=127,b=41,
+     which should be pretty accurate of what the eyes see...
+
+</dl><p>
+<dt><encaps>RETURNS</encaps><dd>
+the new image object
+<p>
+<dt><encaps>SEE ALSO</encaps><dd>
+<a href=#Image.image.color>Image.image-&gt;color</a>, <a href=#Image.image.%60*>Image.image-&gt;`*</a> and <a href=#Image.image.modify_by_intensity>Image.image-&gt;modify_by_intensity</a>
+</p>
+</dl>
+</a>
+
+<hr>
+<a name=Image.image.invert>
+<dl>
+<dt><encaps>NAME</encaps><dd>
+<tt>invert</tt> - Invert an image
+<p><dt><encaps>SYNTAX</encaps><dd>
+<tt>object invert()</tt>
+<p>
+<dt><encaps>DESCRIPTION</encaps><dd>
+Invert an image. Each pixel value gets to be 255-x, where x 
+    is the old value.
+</p>
+<dt><encaps>RETURNS</encaps><dd>
+the new image object
+<p>
+</dl>
+</a>
+
+<hr>
+<a name=Image.image.line>
+<dl>
+<dt><encaps>NAME</encaps><dd>
+<tt>line</tt> - Draws a line on the image
+<p><dt><encaps>SYNTAX</encaps><dd>
+<tt>object line(int&nbsp;x1, int&nbsp;y1, int&nbsp;x2, int&nbsp;y2)<br>
+object line(int&nbsp;x1, int&nbsp;y1, int&nbsp;x2, int&nbsp;y2, int&nbsp;r, int&nbsp;g, int&nbsp;b)<br>
+object line(int&nbsp;x1, int&nbsp;y1, int&nbsp;x2, int&nbsp;y2, int&nbsp;r, int&nbsp;g, int&nbsp;b, int&nbsp;alpha)</tt>
+<p>
+<dt><encaps>DESCRIPTION</encaps><dd>
+Draws a line on the image. The line is <i>not</i> antialiased.
+</p>
+<dt><encaps>ARGUMENTS</encaps><dd><dl>
+<dt><tt>int x1</tt>
+<dt><tt>int y1</tt>
+<dt><tt>int x2</tt>
+<dt><tt>int y2</tt>
+  <dd>line endpoints
+<dt><tt>int r</tt>
+<dt><tt>int g</tt>
+<dt><tt>int b</tt>
+  <dd>color
+<dt><tt>int alpha</tt>
+  <dd>alpha value
+
+</dl><p>
+<dt><encaps>RETURNS</encaps><dd>
+the object called
+<p>
+</dl>
+</a>
+
+<hr>
+<a name=Image.image.map_closest>
+<dl>
+<dt><encaps>NAME</encaps><dd>
+<tt>map_closest</tt> - Maps all pixel colors to the colors given
+<p><dt><encaps>SYNTAX</encaps><dd>
+<tt>object map_closest(array(array(int))&nbsp;colors)</tt>
+<p>
+<dt><encaps>DESCRIPTION</encaps><dd>
+Maps all pixel colors to the colors given.
+
+<p>    Method to find the correct color is linear search
+    over the colors given, selecting the nearest in the
+    color cube. Slow...
+</p>
+<dt><encaps>ARGUMENTS</encaps><dd><dl>
+<dt><tt>array(array(int)) color</tt>
+  <dd>list of destination (available) colors
+
+</dl><p>
+<dt><encaps>RETURNS</encaps><dd>
+the new image object
+<p>
+<dt><encaps>SEE ALSO</encaps><dd>
+<a href=#Image.image.map_fast>Image.image-&gt;map_fast</a>, <a href=#Image.image.select_colors>Image.image-&gt;select_colors</a> and <a href=#Image.image.map_fs>Image.image-&gt;map_fs</a>
+</p>
+</dl>
+</a>
+
+<hr>
+<a name=Image.image.map_closest>
+<dl>
+<dt><encaps>NAME</encaps><dd>
+<tt>map_closest</tt> - Selects the best colors to represent the image
+<p><dt><encaps>SYNTAX</encaps><dd>
+<tt>array(array(int)) map_closest(int&nbsp;num_colors)</tt>
+<p>
+<dt><encaps>DESCRIPTION</encaps><dd>
+Selects the best colors to represent the image.
+</p>
+<dt><encaps>ARGUMENTS</encaps><dd><dl>
+<dt><tt>int num_colors</tt>
+  <dd>number of colors to return
+
+</dl><p>
+<dt><encaps>RETURNS</encaps><dd>
+an array of colors
+<p>
+<dt><encaps>SEE ALSO</encaps><dd>
+<a href=#Image.image.map_fast>Image.image-&gt;map_fast</a> and <a href=#Image.image.select_colors>Image.image-&gt;select_colors</a>
+</p>
+</dl>
+</a>
+
+<hr>
+<a name=Image.image.map_fast>
+<dl>
+<dt><encaps>NAME</encaps><dd>
+<tt>map_fast</tt> - Maps all pixel colors to the colors given
+<p><dt><encaps>SYNTAX</encaps><dd>
+<tt>object map_fast(array(array(int))&nbsp;colors)</tt>
+<p>
+<dt><encaps>DESCRIPTION</encaps><dd>
+Maps all pixel colors to the colors given.
+
+<p>    Method to find the correct color is to branch
+    in a binary space partitioning tree in the 
+    colorcube. This is fast, but in some cases
+    it gives the wrong color (mostly when few colors
+    are available).
+</p>
+<dt><encaps>ARGUMENTS</encaps><dd><dl>
+<dt><tt>array(array(int)) color</tt>
+  <dd>list of destination (available) colors
+
+</dl><p>
+<dt><encaps>RETURNS</encaps><dd>
+the new image object
+<p>
+<dt><encaps>SEE ALSO</encaps><dd>
+<a href=#Image.image.map_fast>Image.image-&gt;map_fast</a> and <a href=#Image.image.select_colors>Image.image-&gt;select_colors</a>
+</p>
+</dl>
+</a>
+
+<hr>
+<a name=Image.image.map_fs>
+<dl>
+<dt><encaps>NAME</encaps><dd>
+<tt>map_fs</tt> - Maps all pixel colors to the colors given
+<p><dt><encaps>SYNTAX</encaps><dd>
+<tt>object map_fs(array(array(int))&nbsp;colors)</tt>
+<p>
+<dt><encaps>DESCRIPTION</encaps><dd>
+Maps all pixel colors to the colors given.
+
+<p>    Method to find the correct color is linear search
+    over the colors given, selecting the nearest in the
+    color cube. Slow...
+
+<p>    Floyd-steinberg error correction is added to create
+    a better-looking image, in many cases, anyway.
+</p>
+<dt><encaps>ARGUMENTS</encaps><dd><dl>
+<dt><tt>array(array(int)) color</tt>
+  <dd>list of destination (available) colors
+
+</dl><p>
+<dt><encaps>RETURNS</encaps><dd>
+the new image object
+<p>
+<dt><encaps>SEE ALSO</encaps><dd>
+<a href=#Image.image.map_fast>Image.image-&gt;map_fast</a>, <a href=#Image.image.select_colors>Image.image-&gt;select_colors</a> and <a href=#Image.image.map_closest>Image.image-&gt;map_closest</a>
+</p>
+</dl>
+</a>
+
+<hr>
+<a name=Image.image.mirrorx>
+<dl>
+<dt><encaps>NAME</encaps><dd>
+<tt>mirrorx</tt> - mirrors an image
+<p><dt><encaps>SYNTAX</encaps><dd>
+<tt>object mirrorx()</tt>
+<p>
+<dt><encaps>DESCRIPTION</encaps><dd>
+mirrors an image:
+<center>
+<img align=center src=lenna.gif>&nbsp-&gt;&nbsp;<img align=center src=lenna-mirrorx.gif><br>
+</center>
+</p>
+<dt><encaps>RETURNS</encaps><dd>
+the new image object
+<p>
+</dl>
+</a>
+
+<hr>
+<a name=Image.image.mirrorx>
+<dl>
+<dt><encaps>NAME</encaps><dd>
+<tt>mirrorx</tt> - mirrors an image
+<p><dt><encaps>SYNTAX</encaps><dd>
+<tt>object mirrory()</tt>
+<p>
+<dt><encaps>DESCRIPTION</encaps><dd>
+mirrors an image:
+<center>
+<img align=center src=lenna.gif>&nbsp-&gt;&nbsp;<img align=center src=lenna-mirrory.gif><br>
+</center>
+</p>
+</dl>
+</a>
+
+<hr>
+<a name=Image.image.modify_by_intensity>
+<dl>
+<dt><encaps>NAME</encaps><dd>
+<tt>modify_by_intensity</tt> - Recolor an image from intensity values
+<p><dt><encaps>SYNTAX</encaps><dd>
+<tt>object modify_by_intensity(int&nbsp;r, int&nbsp;g, int&nbsp;b, int|array(int)&nbsp;v1, ..., int|array(int)&nbsp;vn)</tt>
+<p>
+<dt><encaps>DESCRIPTION</encaps><dd>
+Recolor an image from intensity values.
+
+<p>    For each color an intensity is calculated, from r, g and b factors
+    (see <a href=#Image.image.grey>Image.image-&gt;grey</a>), this gives a value between 0 and max.
+
+<p>    The color is then calculated from the values given, v1 representing
+    the intensity value of 0, vn representing max, and colors between
+    representing intensity values between, linear.
+</p>
+<dt><encaps>ARGUMENTS</encaps><dd><dl>
+<dt><tt>int r</tt>
+<dt><tt>int g</tt>
+<dt><tt>int b</tt>
+  <dd>red, green, blue intensity factors
+<dt><tt>int|array(int) v1</tt>
+<dt><tt>int|array(int) vn</tt>
+  <dd>destination color
+
+</dl><p>
+<dt><encaps>RETURNS</encaps><dd>
+the new image object
+<p>
+<dt><encaps>SEE ALSO</encaps><dd>
+<a href=#Image.image.grey>Image.image-&gt;grey</a>, <a href=#Image.image.%60*>Image.image-&gt;`*</a> and <a href=#Image.image.color>Image.image-&gt;color</a>
+</p>
+</dl>
+</a>
+
+<hr>
+<a name=Image.image.paste>
+<dl>
+<dt><encaps>NAME</encaps><dd>
+<tt>paste</tt> - Pastes a given image over the current image
+<p><dt><encaps>SYNTAX</encaps><dd>
+<tt>object paste(object&nbsp;image)<br>
+object paste(object&nbsp;image, int&nbsp;x, int&nbsp;y)</tt>
+<p>
+<dt><encaps>DESCRIPTION</encaps><dd>
+Pastes a given image over the current image.
+</p>
+<dt><encaps>ARGUMENTS</encaps><dd><dl>
+<dt><tt>object image</tt>
+  <dd>image to paste
+<dt><tt>int x</tt>
+<dt><tt>int y</tt>
+  <dd>where to paste the image; default is 0,0
+
+</dl><p>
+<dt><encaps>RETURNS</encaps><dd>
+the object called
+<p>
+<dt><encaps>SEE ALSO</encaps><dd>
+<a href=#Image.image.paste_mask>Image.image-&gt;paste_mask</a>, <a href=#Image.image.paste_alpha>Image.image-&gt;paste_alpha</a> and <a href=#Image.image.paste_alpha_color>Image.image-&gt;paste_alpha_color</a>
+</p>
+</dl>
+</a>
+
+<hr>
+<a name=Image.image.paste_alpha>
+<dl>
+<dt><encaps>NAME</encaps><dd>
+<tt>paste_alpha</tt> - Pastes a given image over the current image
+<p><dt><encaps>SYNTAX</encaps><dd>
+<tt>object paste_alpha(object&nbsp;image, int&nbsp;alpha)<br>
+object paste_alpha(object&nbsp;image, int&nbsp;alpha, int&nbsp;x, int&nbsp;y)</tt>
+<p>
+<dt><encaps>DESCRIPTION</encaps><dd>
+Pastes a given image over the current image, with
+     the specified alpha channel value.
+     
+     An alpha channel value of 0 leaves nothing of the original 
+     image in the paste area, 255 is meaningless and makes the
+     given image invisible.
+</p>
+<dt><encaps>ARGUMENTS</encaps><dd><dl>
+<dt><tt>object image</tt>
+  <dd>image to paste
+<dt><tt>int alpha</tt>
+  <dd>alpha channel value
+<dt><tt>int x</tt>
+<dt><tt>int y</tt>
+  <dd>where to paste the image; default is 0,0
+
+</dl><p>
+<dt><encaps>RETURNS</encaps><dd>
+the object called
+<p>
+<dt><encaps>SEE ALSO</encaps><dd>
+<a href=#Image.image.paste_mask>Image.image-&gt;paste_mask</a>, <a href=#Image.image.paste>Image.image-&gt;paste</a> and <a href=#Image.image.paste_alpha_color>Image.image-&gt;paste_alpha_color</a>
+</p>
+</dl>
+</a>
+
+<hr>
+<a name=Image.image.paste_alpha_color>
+<dl>
+<dt><encaps>NAME</encaps><dd>
+<tt>paste_alpha_color</tt> - Pastes a given color over the current image
+<p><dt><encaps>SYNTAX</encaps><dd>
+<tt>object paste_alpha_color(object&nbsp;mask)<br>
+object paste_alpha_color(object&nbsp;mask, int&nbsp;x, int&nbsp;y)<br>
+object paste_alpha_color(object&nbsp;mask, int&nbsp;r, int&nbsp;g, int&nbsp;b)<br>
+object paste_alpha_color(object&nbsp;mask, int&nbsp;r, int&nbsp;g, int&nbsp;b, int&nbsp;x, int&nbsp;y)</tt>
+<p>
+<dt><encaps>DESCRIPTION</encaps><dd>
+Pastes a given color over the current image,
+    using the given mask as opaque channel.  
+    
+    A pixel value of 255 makes the result become the color given,
+    0 doesn't change anything.
+    
+    The masks red, green and blue values are used separately.
+    If no color are given, the current is used.
+</p>
+<dt><encaps>ARGUMENTS</encaps><dd><dl>
+<dt><tt>object mask</tt>
+  <dd>mask image
+<dt><tt>int r</tt>
+<dt><tt>int g</tt>
+<dt><tt>int b</tt>
+  <dd>what color to paint with; default is current
+<dt><tt>int x</tt>
+<dt><tt>int y</tt>
+  <dd>where to paste the image; default is 0,0
+
+</dl><p>
+<dt><encaps>RETURNS</encaps><dd>
+the object called
+<p>
+<dt><encaps>SEE ALSO</encaps><dd>
+<a href=#Image.image.paste_mask>Image.image-&gt;paste_mask</a>, <a href=#Image.image.paste_alpha>Image.image-&gt;paste_alpha</a> and <a href=#Image.image.paste_alpha_color>Image.image-&gt;paste_alpha_color</a>
+</p>
+</dl>
+</a>
+
+<hr>
+<a name=Image.image.paste_mask>
+<dl>
+<dt><encaps>NAME</encaps><dd>
+<tt>paste_mask</tt> - Pastes a given image over the current image
+<p><dt><encaps>SYNTAX</encaps><dd>
+<tt>object paste_mask(object&nbsp;image, object&nbsp;mask)<br>
+object paste_mask(object&nbsp;image, object&nbsp;mask, int&nbsp;x, int&nbsp;y)</tt>
+<p>
+<dt><encaps>DESCRIPTION</encaps><dd>
+Pastes a given image over the current image,
+    using the given mask as opaque channel.  
+    
+    A pixel value of 255 makes the result become a pixel
+    from the given image, 0 doesn't change anything.
+
+<p>    The masks red, green and blue values are used separately.
+</p>
+<dt><encaps>ARGUMENTS</encaps><dd><dl>
+<dt><tt>object image</tt>
+  <dd>image to paste
+<dt><tt>object mask</tt>
+  <dd>mask image
+<dt><tt>int x</tt>
+<dt><tt>int y</tt>
+  <dd>where to paste the image; default is 0,0
+
+</dl><p>
+<dt><encaps>RETURNS</encaps><dd>
+the object called
+<p>
+<dt><encaps>SEE ALSO</encaps><dd>
+<a href=#Image.image.paste>Image.image-&gt;paste</a>, <a href=#Image.image.paste_alpha>Image.image-&gt;paste_alpha</a> and <a href=#Image.image.paste_alpha_color>Image.image-&gt;paste_alpha_color</a>
+</p>
+</dl>
+</a>
+
+<hr>
+<a name=Image.image.polygone>
+<dl>
+<dt><encaps>NAME</encaps><dd>
+<tt>polygone</tt> - fills an area with the current color
+<p><dt><encaps>SYNTAX</encaps><dd>
+<tt>object polygone(array(int|float)&nbsp;...&nbsp;curve)</tt>
+<p>
+<dt><encaps>DESCRIPTION</encaps><dd>
+fills an area with the current color
+</p>
+<dt><encaps>ARGUMENTS</encaps><dd><dl>
+<dt><tt>array(int|float) curve</tt>
+  <dd>curve(s), <tt>({x1,y1,x2,y2,...,xn,yn})</tt>,
+     automatically closed.
+
+<p>     If any given curve is inside another, it
+     will make a hole.
+</dl><p>
+
+<dt><encaps>NOTE</encaps><dd>
+This function is new (april-97) and rather untested.
+</dl><p>
+
+<dt><encaps>RETURNS</encaps><dd>
+the current object
+<p>
+<dt><encaps>SEE ALSO</encaps><dd>
+<a href=#Image.image.box>Image.image-&gt;box</a> and <a href=#Image.image.setcolor>Image.image-&gt;setcolor</a>
+</p>
+</dl>
+</a>
+
+<hr>
+<a name=Image.image.rotate>
+<a name=Image.image.rotate_expand>
+<dl>
+<dt><encaps>NAME</encaps><dd>
+<tt>rotate, rotate_expand</tt> - Rotates an image
+<p><dt><encaps>SYNTAX</encaps><dd>
+<tt>object rotate(int|float&nbsp;angle)<br>
+object rotate(int|float&nbsp;angle, int&nbsp;r, int&nbsp;g, int&nbsp;b)<br>
+object rotate_expand(int|float&nbsp;angle)<br>
+object rotate_expand(int|float&nbsp;angle, int&nbsp;r, int&nbsp;g, int&nbsp;b)</tt>
+<p>
+<dt><encaps>DESCRIPTION</encaps><dd>
+Rotates an image a certain amount of degrees (360° is 
+     a complete rotation) counter-clockwise:
+<center>
+<img align=center src=lenna.gif>&nbsp-&gt;&nbsp;<img align=center src=lenna-rotate.gif><br>
+</center>
+     The "expand" variant of functions stretches the 
+     image border pixels rather then filling with 
+     the given or current color.
+
+<p>     This rotate uses the skewx() and skewy() functions.
+</p>
+<dt><encaps>ARGUMENTS</encaps><dd><dl>
+<dt><tt>int|float angle</tt>
+  <dd>the number of degrees to rotate
+<dt><tt>int r</tt>
+<dt><tt>int g</tt>
+<dt><tt>int b</tt>
+  <dd>color to fill with; default is current
+
+</dl><p>
+<dt><encaps>RETURNS</encaps><dd>
+the new image object
+<p>
+</dl>
+</a>
+</a>
+
+<hr>
+<a name=Image.image.scale>
+<dl>
+<dt><encaps>NAME</encaps><dd>
+<tt>scale</tt> - scales the image by a given factor
+<p><dt><encaps>SYNTAX</encaps><dd>
+<tt>object scale(float&nbsp;factor)<br>
+object scale(0.5)<br>
+object scale(float&nbsp;xfactor, float&nbsp;yfactor)</tt>
+<p>
+<dt><encaps>DESCRIPTION</encaps><dd>
+scales the image with a factor,
+     0.5 is an optimized case.
+</p>
+<dt><encaps>ARGUMENTS</encaps><dd><dl>
+<dt><tt>float factor</tt>
+  <dd>factor to use for both x and y
+<dt><tt>float xfactor</tt>
+<dt><tt>float yfactor</tt>
+  <dd>separate factors for x and y
+
+</dl><p>
+<dt><encaps>RETURNS</encaps><dd>
+the new image object
+<p>
+</dl>
+</a>
+
+<hr>
+<a name=Image.image.scale>
+<dl>
+<dt><encaps>NAME</encaps><dd>
+<tt>scale</tt> - scales the image to a specified new size
+<p><dt><encaps>SYNTAX</encaps><dd>
+<tt>object scale(int&nbsp;newxsize, int&nbsp;newysize)<br>
+object scale(0, int&nbsp;newysize)<br>
+object scale(int&nbsp;newxsize, 0)</tt>
+<p>
+<dt><encaps>DESCRIPTION</encaps><dd>
+scales the image to a specified new size,
+     if one of newxsize or newysize is 0,
+     the image aspect ratio is preserved.
+</p>
+<dt><encaps>ARGUMENTS</encaps><dd><dl>
+<dt><tt>int newxsize</tt>
+<dt><tt>int newysize</tt>
+  <dd>new image size in pixels
+
+</dl><p>
+<dt><encaps>RETURNS</encaps><dd>
+the new image object
+<p>
+</dl>
+</a>
+
+<hr>
+<a name=Image.image.select_from>
+<dl>
+<dt><encaps>NAME</encaps><dd>
+<tt>select_from</tt> - Makes an grey-scale image for alpha-channel use
+<p><dt><encaps>SYNTAX</encaps><dd>
+<tt>object select_from(int&nbsp;x, int&nbsp;y)<br>
+object select_from(int&nbsp;x, int&nbsp;y, int&nbsp;edge_value)</tt>
+<p>
+<dt><encaps>DESCRIPTION</encaps><dd>
+Makes an grey-scale image, for alpha-channel use.
+    
+    This is very close to a floodfill.
+    
+    The image is scanned from the given pixel,
+    filled with 255 if the color is the same,
+    or 255 minus distance in the colorcube, squared, rightshifted
+    8 steps (see <a href=#Image.image.distancesq>Image.image-&gt;distancesq</a>).
+
+<p>    When the edge distance is reached, the scan is stopped.
+    Default edge value is 30.
+    This value is squared and compared with the square of the 
+    distance above.
+</p>
+<dt><encaps>ARGUMENTS</encaps><dd><dl>
+<dt><tt>int x</tt>
+<dt><tt>int y</tt>
+  <dd>originating pixel in the image
+
+</dl><p>
+<dt><encaps>RETURNS</encaps><dd>
+the new image object
+<p>
+<dt><encaps>SEE ALSO</encaps><dd>
+<a href=#Image.image.distancesq>Image.image-&gt;distancesq</a>
+</p>
+</dl>
+</a>
+
+<hr>
+<a name=Image.image.setcolor>
+<dl>
+<dt><encaps>NAME</encaps><dd>
+<tt>setcolor</tt> - set the current color
+<p><dt><encaps>SYNTAX</encaps><dd>
+<tt>object setcolor(int&nbsp;r, int&nbsp;g, int&nbsp;b)<br>
+object setcolor(int&nbsp;r, int&nbsp;g, int&nbsp;b, int&nbsp;alpha)</tt>
+<p>
+<dt><encaps>DESCRIPTION</encaps><dd>
+set the current color
+</p>
+<dt><encaps>ARGUMENTS</encaps><dd><dl>
+<dt><tt>int r</tt>
+<dt><tt>int g</tt>
+<dt><tt>int b</tt>
+  <dd>new color
+<dt><tt>int alpha</tt>
+  <dd>new alpha value
+
+</dl><p>
+<dt><encaps>RETURNS</encaps><dd>
+the object called
+<p>
+</dl>
+</a>
+
+<hr>
+<a name=Image.image.setpixel>
+<dl>
+<dt><encaps>NAME</encaps><dd>
+<tt>setpixel</tt> - set a pixel in the image
+<p><dt><encaps>SYNTAX</encaps><dd>
+<tt>object setpixel(int&nbsp;x, int&nbsp;y)<br>
+object setpixel(int&nbsp;x, int&nbsp;y, int&nbsp;r, int&nbsp;g, int&nbsp;b)<br>
+object setpixel(int&nbsp;x, int&nbsp;y, int&nbsp;r, int&nbsp;g, int&nbsp;b, int&nbsp;alpha)</tt>
+<p>
+<dt><encaps>ARGUMENTS</encaps><dd><dl>
+<dt><tt>int x</tt>
+<dt><tt>int y</tt>
+  <dd>position of the pixel
+<dt><tt>int r</tt>
+<dt><tt>int g</tt>
+<dt><tt>int b</tt>
+  <dd>color
+<dt><tt>int alpha</tt>
+  <dd>alpha value
+
+</dl><p>
+<dt><encaps>RETURNS</encaps><dd>
+the object called
+<p>
+</dl>
+</a>
+
+<hr>
+<a name=Image.image.skewx>
+<a name=Image.image.skewx_expand>
+<dl>
+<dt><encaps>NAME</encaps><dd>
+<tt>skewx, skewx_expand</tt> - Skews an image an amount of pixels or a factor
+<p><dt><encaps>SYNTAX</encaps><dd>
+<tt>object skewx(int&nbsp;x)<br>
+object skewx(int&nbsp;yfactor)<br>
+object skewx(int&nbsp;x, int&nbsp;r, int&nbsp;g, int&nbsp;b)<br>
+object skewx(int&nbsp;yfactor, int&nbsp;r, int&nbsp;g, int&nbsp;b)<br>
+object skewx_expand(int&nbsp;x)<br>
+object skewx_expand(int&nbsp;yfactor)<br>
+object skewx_expand(int&nbsp;x, int&nbsp;r, int&nbsp;g, int&nbsp;b)<br>
+object skewx_expand(int&nbsp;yfactor, int&nbsp;r, int&nbsp;g, int&nbsp;b)</tt>
+<p>
+<dt><encaps>DESCRIPTION</encaps><dd>
+Skews an image an amount of pixels or a factor;
+     a skew-x is a transformation:
+<center>
+<img align=center src=lenna.gif>&nbsp-&gt;&nbsp;<img align=center src=lenna-skewx.gif><br>
+</center>
+</p>
+<dt><encaps>ARGUMENTS</encaps><dd><dl>
+<dt><tt>int x</tt>
+  <dd>the number of pixels
+     The "expand" variant of functions stretches the 
+     image border pixels rather then filling with 
+     the given or current color.
+<dt><tt>float yfactor</tt>
+  <dd>best described as: x=yfactor*this->ysize()
+<dt><tt>int r</tt>
+<dt><tt>int g</tt>
+<dt><tt>int b</tt>
+  <dd>color to fill with; default is current
+
+</dl><p>
+<dt><encaps>RETURNS</encaps><dd>
+the new image object
+<p>
+</dl>
+</a>
+</a>
+
+<hr>
+<a name=Image.image.skewy>
+<a name=Image.image.skewy_expand>
+<dl>
+<dt><encaps>NAME</encaps><dd>
+<tt>skewy, skewy_expand</tt> - Skews an image an amount of pixels or a factor
+<p><dt><encaps>SYNTAX</encaps><dd>
+<tt>object skewy(int&nbsp;y)<br>
+object skewy(int&nbsp;xfactor)<br>
+object skewy(int&nbsp;y, int&nbsp;r, int&nbsp;g, int&nbsp;b)<br>
+object skewy(int&nbsp;xfactor, int&nbsp;r, int&nbsp;g, int&nbsp;b)<br>
+object skewy_expand(int&nbsp;y)<br>
+object skewy_expand(int&nbsp;xfactor)<br>
+object skewy_expand(int&nbsp;y, int&nbsp;r, int&nbsp;g, int&nbsp;b)<br>
+object skewy_expand(int&nbsp;xfactor, int&nbsp;r, int&nbsp;g, int&nbsp;b)</tt>
+<p>
+<dt><encaps>DESCRIPTION</encaps><dd>
+Skews an image an amount of pixels or a factor;
+     a skew-y is a transformation:
+<center>
+<img align=center src=lenna.gif>&nbsp-&gt;&nbsp;<img align=center src=lenna-skewy.gif><br>
+</center>
+     The "expand" variant of functions stretches the 
+     image border pixels rather then filling with 
+     the given or current color.
+</p>
+<dt><encaps>ARGUMENTS</encaps><dd><dl>
+<dt><tt>int y</tt>
+  <dd>the number of pixels
+<dt><tt>float xfactor</tt>
+  <dd>best described as: t=xfactor*this->xsize()
+<dt><tt>int r</tt>
+<dt><tt>int g</tt>
+<dt><tt>int b</tt>
+  <dd>color to fill with; default is current
+
+</dl><p>
+<dt><encaps>RETURNS</encaps><dd>
+the new image object
+<p>
+</dl>
+</a>
+</a>
+
+<hr>
+<a name=Image.image.to8bit>
+<a name=Image.image.to8bit_closest>
+<a name=Image.image.to8bit_fs>
+<dl>
+<dt><encaps>NAME</encaps><dd>
+<tt>to8bit, to8bit_closest, to8bit_fs</tt> - Map image to 8-bit data
+<p><dt><encaps>SYNTAX</encaps><dd>
+<tt>string to8bit(array(array(int))&nbsp;colors)<br>
+string to8bit_fs(array(array(int))&nbsp;colors)<br>
+string to8bit_closest(array(array(int))&nbsp;colors)</tt>
+<p>
+<dt><encaps>DESCRIPTION</encaps><dd>
+Maps the image to the given colors and returns 
+     the 8 bit data.
+
+<p>     to8bit_fs uses floyd-steinberg dithering
+</p>
+<dt><encaps>RETURNS</encaps><dd>
+the calculated string
+<p>
+<dt><encaps>SEE ALSO</encaps><dd>
+<a href=#Image.image.to8bit_rgbcube>Image.image-&gt;to8bit_rgbcube</a>, <a href=#Image.image.tozbgr>Image.image-&gt;tozbgr</a>, <a href=#Image.image.map_fast>Image.image-&gt;map_fast</a>, <a href=#Image.image.map_closest>Image.image-&gt;map_closest</a>, <a href=#Image.image.select_colors>Image.image-&gt;select_colors</a> and <a href=#Image.image.tobitmap>Image.image-&gt;tobitmap</a>
+</p>
+</dl>
+</a>
+</a>
+</a>
+
+<hr>
+<a name=Image.image.to8bit_rgbcube>
+<a name=Image.image.to8bit_rgbcube_rdither>
+<a name=Image.image.tozbgr>
+<dl>
+<dt><encaps>NAME</encaps><dd>
+<tt>to8bit_rgbcube, to8bit_rgbcube_rdither, tozbgr</tt> - Maps the image into a colorcube
+<p><dt><encaps>SYNTAX</encaps><dd>
+<tt>string tozbgr(array(array(int))&nbsp;colors)<br>
+string to8bit_rgbcube(int&nbsp;red, int&nbsp;green, int&nbsp;blue)<br>
+string to8bit_rgbcube(int&nbsp;red, int&nbsp;green, int&nbsp;blue, string&nbsp;map)<br>
+string to8bit_rgbcube_rdither(int&nbsp;red, int&nbsp;green, int&nbsp;blue)<br>
+string to8bit_rgbcube_rdither(int&nbsp;red, int&nbsp;green, int&nbsp;blue, string&nbsp;map)</tt>
+<p>
+<dt><encaps>DESCRIPTION</encaps><dd>
+Maps the image into a colorcube with the given 
+     dimensions. Red is least significant, blue is most.
+
+<p>     The "rdither" type of method uses a random dither algoritm.
+</p>
+<dt><encaps>ARGUMENTS</encaps><dd><dl>
+<dt><tt>int red</tt>
+<dt><tt>int green</tt>
+<dt><tt>int blue</tt>
+  <dd>The sides of the colorcube. Not the number of bits!
+<dt><tt>string map</tt>
+  <dd>Map this position in the colorcube to another value,
+     ie: say we have position red=1,green=2,blue=3 in a colorcube of
+     6×6×6, we have the index 1+2*6+3*6*6=121. If the 
+     map-string contains 'å' in position 121, the resulting
+     byte is 'å' or 229.
+
+</dl><p>
+<dt><encaps>RETURNS</encaps><dd>
+the calculated string
+<p>
+<dt><encaps>SEE ALSO</encaps><dd>
+<a href=#Image.image.tozbgr>Image.image-&gt;tozbgr</a>, <a href=#Image.image.to8bit>Image.image-&gt;to8bit</a> and <a href=#Image.image.tobitmap>Image.image-&gt;tobitmap</a>
+</p>
+</dl>
+</a>
+</a>
+</a>
+
+<hr>
+<a name=Image.image.tobitmap>
+<dl>
+<dt><encaps>NAME</encaps><dd>
+<tt>tobitmap</tt> - Maps the image to a bitmap
+<p><dt><encaps>SYNTAX</encaps><dd>
+<tt>string tobitmap();</tt>
+<p>
+<dt><encaps>DESCRIPTION</encaps><dd>
+Maps the image to a bitmap.
+
+<p>     Bit 0 is the leftmost pixel, and the rows are aligned to 
+     bytes.
+
+<p>     Any pixel value other then black results in a set bit.
+</p>
+<dt><encaps>RETURNS</encaps><dd>
+the calculated string
+<p>
+<dt><encaps>SEE ALSO</encaps><dd>
+<a href=#Image.image.tozbgr>Image.image-&gt;tozbgr</a>, <a href=#Image.image.to8bit>Image.image-&gt;to8bit</a>, <a href=#Image.image.to8bit_rgbcube>Image.image-&gt;to8bit_rgbcube</a> and <a href=#Image.image.cast>Image.image-&gt;cast</a>
+</p>
+</dl>
+</a>
+
+<hr>
+<a name=Image.image.togif>
+<a name=Image.image.togif_fs>
+<dl>
+<dt><encaps>NAME</encaps><dd>
+<tt>togif, togif_fs</tt> - Makes GIF data
+<p><dt><encaps>SYNTAX</encaps><dd>
+<tt>string togif()<br>
+string togif(int&nbsp;num_colors)<br>
+string togif(array(array(int))&nbsp;colors)<br>
+string togif(int&nbsp;trans_r, int&nbsp;trans_g, int&nbsp;trans_b)<br>
+string togif(int&nbsp;num_colors, int&nbsp;trans_r, int&nbsp;trans_g, int&nbsp;trans_b)<br>
+string togif(array(array(int))&nbsp;colors, int&nbsp;trans_r, int&nbsp;trans_g, int&nbsp;trans_b)<br>
+string togif_fs()<br>
+string togif_fs(int&nbsp;num_colors)<br>
+string togif_fs(array(array(int))&nbsp;colors)<br>
+string togif_fs(int&nbsp;trans_r, int&nbsp;trans_g, int&nbsp;trans_b)<br>
+string togif_fs(int&nbsp;num_colors, int&nbsp;trans_r, int&nbsp;trans_g, int&nbsp;trans_b)<br>
+string togif_fs(array(array(int))&nbsp;colors, int&nbsp;trans_r, int&nbsp;trans_g, int&nbsp;trans_b)</tt>
+<p>
+<dt><encaps>DESCRIPTION</encaps><dd>
+Makes GIF data. The togif_fs variant uses floyd-steinberg 
+     dithereing.
+</p>
+<dt><encaps>ARGUMENTS</encaps><dd><dl>
+<dt><tt>int num_colors</tt>
+  <dd>number of colors to quantize to (default is 256) 
+ array array(array(int)) colors
+     colors to map to (default is to quantize to 256), format is ({({r,g,b}),({r,g,b}),...}).
+<dt><tt>int trans_r</tt>
+<dt><tt>int trans_g</tt>
+<dt><tt>int trans_b</tt>
+  <dd>one color, that is to be transparent.
+
+</dl><p>
+<dt><encaps>RETURNS</encaps><dd>
+the GIF data
+<p>
+<dt><encaps>SEE ALSO</encaps><dd>
+<a href=#Image.image.togif_begin>Image.image-&gt;togif_begin</a>, <a href=#Image.image.togif_add>Image.image-&gt;togif_add</a>, <a href=#Image.image.togif_end>Image.image-&gt;togif_end</a>, <a href=#Image.image.toppm>Image.image-&gt;toppm</a> and <a href=#Image.image.fromgif>Image.image-&gt;fromgif</a>
+</p>
+</dl>
+</a>
+</a>
+
+<hr>
+<a name=Image.image.toppm>
+<dl>
+<dt><encaps>NAME</encaps><dd>
+<tt>toppm</tt> - Returns PPM (P6, binary pixmap) data from the Image
+<p><dt><encaps>SYNTAX</encaps><dd>
+<tt>string toppm()</tt>
+<p>
+<dt><encaps>DESCRIPTION</encaps><dd>
+Returns PPM (P6, binary pixmap) data from the
+     current image object.
+</p>
+<dt><encaps>RETURNS</encaps><dd>
+PPM data
+<p>
+<dt><encaps>SEE ALSO</encaps><dd>
+<a href=#Image.image.frompnm>Image.image-&gt;frompnm</a> and <a href=#Image.image.fromgif>Image.image-&gt;fromgif</a>
+</p>
+</dl>
+</a>
+
+<hr>
+<a name=Image.image.treshold>
+<dl>
+<dt><encaps>NAME</encaps><dd>
+<tt>treshold</tt> - Makes a black-white image
+<p><dt><encaps>SYNTAX</encaps><dd>
+<tt>object treshold()<br>
+object treshold(int&nbsp;r, int&nbsp;g, int&nbsp;b)</tt>
+<p>
+<dt><encaps>DESCRIPTION</encaps><dd>
+Makes a black-white image. 
+
+<p>     If all red, green, blue parts of a pixel
+     is larger or equal then the given value, the pixel will become
+     white, else black.
+
+<p>     This method works fine with the grey method.
+
+<p>     If no arguments are given, the current color is used 
+     for treshold values.
+</p>
+<dt><encaps>ARGUMENTS</encaps><dd><dl>
+<dt><tt>int r</tt>
+<dt><tt>int g</tt>
+<dt><tt>int b</tt>
+  <dd>red, green, blue threshold values
+
+</dl><p>
+<dt><encaps>RETURNS</encaps><dd>
+the new image object
+<p>
+<dt><encaps>SEE ALSO</encaps><dd>
+<a href=#Image.image.grey>Image.image-&gt;grey</a>
+</p>
+</dl>
+</a>
+
+<hr>
+<a name=Image.image.tuned_box>
+<dl>
+<dt><encaps>NAME</encaps><dd>
+<tt>tuned_box</tt> - Draws a filled rectangle with colors (and alpha values) tuned
+<p><dt><encaps>SYNTAX</encaps><dd>
+<tt>object tuned_box(int&nbsp;x1, int&nbsp;y1, int&nbsp;x2, int&nbsp;y2, array(array(int))&nbsp;corner_color)</tt>
+<p>
+<dt><encaps>DESCRIPTION</encaps><dd>
+Draws a filled rectangle with colors (and alpha values) tuned
+     between the corners.
+
+<p>     Tuning function is (1.0-x/xw)*(1.0-y/yw) where x and y is
+     the distance to the corner and xw and yw are the sides of the
+     rectangle.
+</p>
+<dt><encaps>ARGUMENTS</encaps><dd><dl>
+<dt><tt>int x1</tt>
+<dt><tt>int y1</tt>
+<dt><tt>int x2</tt>
+<dt><tt>int y2</tt>
+  <dd>rectangle corners
+<dt><tt>array(array(int)) corner_color</tt>
+  <dd>colors of the corners:
+     <pre>
+     ({x1y1,x2y1,x1y2,x2y2})
+     </pre>
+     each of these is an array of integeres:
+     <pre>
+     ({r,g,b}) or ({r,g,b,alpha})
+     </pre>
+     Default alpha channel value is 0 (opaque).
+
+</dl><p>
+<dt><encaps>RETURNS</encaps><dd>
+the object called
+<p>
+</dl>
+</a>
+
+<hr>
+<a name=Image.image.xsize>
+<dl>
+<dt><encaps>NAME</encaps><dd>
+<tt>xsize</tt> - return the width of the image in pixels
+<p><dt><encaps>SYNTAX</encaps><dd>
+<tt>int xsize()</tt>
+<p>
+<dt><encaps>RETURNS</encaps><dd>
+the width of the image in pixels
+<p>
+</dl>
+</a>
+
+<hr>
+<a name=Image.image.ysize>
+<dl>
+<dt><encaps>NAME</encaps><dd>
+<tt>ysize</tt> - the height of the image in pixels
+<p><dt><encaps>SYNTAX</encaps><dd>
+<tt>int ysize()</tt>
+<p>
+<dt><encaps>RETURNS</encaps><dd>
+the height of the image
+<p>
+</dl>
+</a>
+<hr newpage>
+</section>
+
+<section title="Image.font">
+
+<dl><dd>
+This object adds the text-drawing and -creation
+     capabilities of the <a href=#Image>Image</a> module.
+
+<p>     For simple usage, see
+     <a href=#Image.font.write>Image.font-&gt;write</a> and <a href=#Image.font.load>Image.font-&gt;load</a>.
+
+<p>     other methods: <a href=#Image.font.baseline>Image.font-&gt;baseline</a>,
+     <a href=#Image.font.height>Image.font-&gt;height</a>,
+     <a href=#Image.font.set_xspacing_scale>Image.font-&gt;set_xspacing_scale</a>,
+     <a href=#Image.font.set_yspacing_scale>Image.font-&gt;set_yspacing_scale</a>,
+     <a href=#Image.font.text_extents>Image.font-&gt;text_extents</a>
+</dl>
+
+
+<encaps>NOTE</encaps>
+<dl><dd>
+Short technical documentation on a font file:
+     <pre>
+            struct file_head 
+            {
+               unsigned INT32 cookie;   - 0x464f4e54 
+               unsigned INT32 version;  - 1 
+               unsigned INT32 chars;    - number of chars
+               unsigned INT32 height;   - height of font
+               unsigned INT32 baseline; - font baseline
+               unsigned INT32 o[1];     - position of char_head's
+            } *fh;
+            struct char_head
+            {
+               unsigned INT32 width;    - width of this character
+               unsigned INT32 spacing;  - spacing to next character
+               unsigned char data[1];   - pixmap data (1byte/pixel)
+            } *ch;
+     </pre>
+</dl>
+
+
+<encaps>SEE ALSO</encaps>
+<dl><dd>     <a href=#Image>Image</a>,
+     <a href=#Image.image>Image.image</a>
+</dl>
+
+<hr>
+<a name=Image.font.baseline>
+<dl>
+<dt><encaps>NAME</encaps><dd>
+<tt>baseline</tt> - Return the font baseline
+<p><dt><encaps>SYNTAX</encaps><dd>
+<tt>int baseline()</tt>
+<p>
+<dt><encaps>RETURNS</encaps><dd>
+font baseline (pixels from top)
+<p>
+<dt><encaps>SEE ALSO</encaps><dd>
+<a href=#Image.font.height>Image.font-&gt;height</a> and <a href=#Image.font.text_extents>Image.font-&gt;text_extents</a>
+</p>
+</dl>
+</a>
+
+<hr>
+<a name=Image.font.height>
+<a name=Image.font.text_extents>
+<dl>
+<dt><encaps>NAME</encaps><dd>
+<tt>height, text_extents</tt> - Calculate extents of a text-image
+<p><dt><encaps>SYNTAX</encaps><dd>
+<tt>int height()<br>
+array(int) text_extents(string&nbsp;text, ...)</tt>
+<p>
+<dt><encaps>DESCRIPTION</encaps><dd>
+Calculate extents of a text-image,
+     that would be created by calling <a href=#Image.font.write>Image.font-&gt;write</a>
+     with the same arguments.
+</p>
+<dt><encaps>ARGUMENTS</encaps><dd><dl>
+<dt><tt>string text, ...</tt>
+  <dd>One or more lines of text.
+
+</dl><p>
+<dt><encaps>RETURNS</encaps><dd>
+an array of width and height
+<p>
+<dt><encaps>SEE ALSO</encaps><dd>
+<a href=#Image.font.write>Image.font-&gt;write</a>, <a href=#Image.font.height>Image.font-&gt;height</a> and <a href=#Image.font.baseline>Image.font-&gt;baseline</a>
+</p>
+</dl>
+</a>
+</a>
+
+<hr>
+<a name=Image.font.load>
+<dl>
+<dt><encaps>NAME</encaps><dd>
+<tt>load</tt> - Loads a font file to this font object
+<p><dt><encaps>SYNTAX</encaps><dd>
+<tt>object|int load(string&nbsp;filename)</tt>
+<p>
+<dt><encaps>DESCRIPTION</encaps><dd>
+Loads a font file to this font object.
+</p>
+<dt><encaps>ARGUMENTS</encaps><dd><dl>
+<dt><tt>string filename</tt>
+  <dd>Font file
+
+</dl><p>
+<dt><encaps>RETURNS</encaps><dd>
+zero upon failure, font object upon success
+<p>
+<dt><encaps>SEE ALSO</encaps><dd>
+<a href=#Image.font.write>Image.font-&gt;write</a>
+</p>
+</dl>
+</a>
+
+<hr>
+<a name=Image.font.set_xspacing_scale>
+<a name=Image.font.set_yspacing_scale>
+<dl>
+<dt><encaps>NAME</encaps><dd>
+<tt>set_xspacing_scale, set_yspacing_scale</tt> - Set character spacing
+<p><dt><encaps>SYNTAX</encaps><dd>
+<tt>void set_xspacing_scale(float&nbsp;scale)<br>
+void set_yspacing_scale(float&nbsp;scale)</tt>
+<p>
+<dt><encaps>DESCRIPTION</encaps><dd>
+Set spacing scale to write characters closer
+     or more far away. This does not change scale
+     of character, only the space between them.
+</p>
+<dt><encaps>ARGUMENTS</encaps><dd><dl>
+<dt><tt>float scale</tt>
+  <dd>what scale to use
+
+</dl><p>
+</dl>
+</a>
+</a>
+
+<hr>
+<a name=Image.font.write>
+<dl>
+<dt><encaps>NAME</encaps><dd>
+<tt>write</tt> - Writes some text
+<p><dt><encaps>SYNTAX</encaps><dd>
+<tt>object write(string&nbsp;text, ...)</tt>
+<p>
+<dt><encaps>DESCRIPTION</encaps><dd>
+Writes some text; thus creating an image object
+     that can be used as mask or as a complete picture.
+</p>
+<dt><encaps>ARGUMENTS</encaps><dd><dl>
+<dt><tt>string text, ...</tt>
+  <dd>One or more lines of text.
+
+</dl><p>
+<dt><encaps>RETURNS</encaps><dd>
+an <ref>Image::image</ref> object
+<p>
+<dt><encaps>SEE ALSO</encaps><dd>
+<a href=#Image.font.text_extents>Image.font-&gt;text_extents</a>, <a href=#Image.font.load>Image.font-&gt;load</a>, <a href=#Image.image.paste_mask>Image.image-&gt;paste_mask</a> and <a href=#Image.image.paste_alpha_color>Image.image-&gt;paste_alpha_color</a>
+</p>
+</dl>
+</a>
+<hr newpage>
+</section>
 </chapter>
+</a>
 
 <chapter title="The preprocessor">
 <a name=preprocessor>
@@ -9490,7 +11781,7 @@ Return the arcus cosinus value for f.
 <a href=types_float>float</a>
 <p>
 <dt><encaps>SEE ALSO</encaps><dd>
-<a href=math_cos>cos</a> and <a href=math_asin>asin</a>
+<a href=#cos>cos</a> and <a href=#asin>asin</a>
 <p>
 </dl>
 </a>
@@ -9679,7 +11970,7 @@ aggregage_multiset...
 <a href=types_multiset>multiset</a>
 <p>
 <dt><encaps>SEE ALSO</encaps><dd>
-<a href=#sizeof>sizeof</a>, <a href=#multisetp>multisetp</a> and <a href=simulated_mkmultiset>mkmultiset</a>
+<a href=#sizeof>sizeof</a>, <a href=#multisetp>multisetp</a> and <a href=#Simulate.mkmultiset>Simulate.mkmultiset</a>
 <p>
 </dl>
 </a>
@@ -9801,7 +12092,7 @@ Return the arcus sinus value for f.
 <a href=types_float>float</a>
 <p>
 <dt><encaps>SEE ALSO</encaps><dd>
-<a href=math_sin>sin</a> and <a href=math_acos>acos</a>
+<a href=#sin>sin</a> and <a href=#acos>acos</a>
 <p>
 </dl>
 </a>
@@ -9823,7 +12114,7 @@ Return the arcus tangent value for f.
 <a href=types_float>float</a>
 <p>
 <dt><encaps>SEE ALSO</encaps><dd>
-<a href=math_tan>tan</a>, <a href=math_asin>asin</a> and <a href=math_acos>acos</a>
+<a href=#tan>tan</a>, <a href=#asin>asin</a> and <a href=#acos>acos</a>
 <p>
 </dl>
 </a>
@@ -9855,7 +12146,7 @@ in the stack. Each entry has this format:
 that the last but one and so on.
 <p>
 <dt><encaps>SEE ALSO</encaps><dd>
-<a href=pike_control_structures_catch>catch</a> and <a href=#throw>throw</a>
+<a href=#catch>catch</a> and <a href=#throw>throw</a>
 <p>
 </dl>
 </a>
@@ -9882,7 +12173,7 @@ second syntax instead.
 <a href=types_function>function</a>
 <p>
 <dt><encaps>SEE ALSO</encaps><dd>
-<a href=#backtrace>backtrace</a> and <a href=simulated_get_function>get_function</a>
+<a href=#backtrace>backtrace</a> and <a href=#Simulate.get_function>Simulate.get_function</a>
 <p>
 </dl>
 </a>
@@ -9904,7 +12195,7 @@ identifies this call out. The return value can be sent to
 find_call_out or remove_call_out to remove the call out again.
 <p>
 <dt><encaps>SEE ALSO</encaps><dd>
-<a href=call_out_remove_call_out>remove_call_out</a>, <a href=call_out_find_call_out>find_call_out</a> and <a href=call_out_call_out_info>call_out_info</a>
+<a href=#remove_call_out>remove_call_out</a>, <a href=#find_call_out>find_call_out</a> and <a href=#call_out_info>call_out_info</a>
 <p>
 </dl>
 </a>
@@ -9936,7 +12227,7 @@ contains an array that looks like this:
 
 <p>
 <dt><encaps>SEE ALSO</encaps><dd>
-<a href=call_out_call_out>call_out</a>, <a href=call_out_find_call_out>find_call_out</a> and <a href=call_out_remove_call_out>remove_call_out</a>
+<a href=#call_out>call_out</a>, <a href=#find_call_out>find_call_out</a> and <a href=#remove_call_out>remove_call_out</a>
 <p>
 </dl>
 </a>
@@ -9959,7 +12250,7 @@ contains an array that looks like this:
 	<tt>time(1)</tt> to the current time.
 <p>
 <dt><encaps>SEE ALSO</encaps><dd>
-<a href=call_out_call_out>call_out</a>, <a href=call_out_find_call_out>find_call_out</a> and <a href=call_out_remove_call_out>remove_call_out</a>
+<a href=#call_out>call_out</a>, <a href=#find_call_out>find_call_out</a> and <a href=#remove_call_out>remove_call_out</a>
 <p>
 </dl>
 </a>
@@ -10008,7 +12299,7 @@ Change the current directory for the whole Pike process, return
 <a href=index#file>file</a>
 <p>
 <dt><encaps>SEE ALSO</encaps><dd>
-<a href=files_getcwd>getcwd</a>
+<a href=#getcwd>getcwd</a>
 <p>
 </dl>
 </a>
@@ -10031,7 +12322,7 @@ Note that ceil() does _not_ return an int, merely an integral value.
 <a href=types_float>float</a>
 <p>
 <dt><encaps>SEE ALSO</encaps><dd>
-<a href=math_floor>floor</a>
+<a href=#floor>floor</a>
 <p>
 </dl>
 </a>
@@ -10119,7 +12410,7 @@ Result: /foo/bar/sune.c<br>
 <a href=index#file>file</a>
 <p>
 <dt><encaps>SEE ALSO</encaps><dd>
-<a href=files_getcwd>getcwd</a>
+<a href=#getcwd>getcwd</a>
 <p>
 </dl>
 </a>
@@ -10212,7 +12503,7 @@ Return the cosinus value for f.
 <a href=types_float>float</a>
 <p>
 <dt><encaps>SEE ALSO</encaps><dd>
-<a href=math_acos>acos</a> and <a href=math_sin>sin</a>
+<a href=#acos>acos</a> and <a href=#sin>sin</a>
 <p>
 </dl>
 </a>
@@ -10414,7 +12705,7 @@ Note that you should normally use the function errno in the file
 object instead.
 <p>
 <dt><encaps>SEE ALSO</encaps><dd>
-<a href=files_errno>errno</a>
+<a href=#errno>errno</a>
 <p>
 </dl>
 </a>
@@ -10450,7 +12741,7 @@ exece("/bin/sh", ({"-c", "echo $HOME"}), (["HOME":"/not/home"]));<br>
 </tt>
 <p>
 <dt><encaps>SEE ALSO</encaps><dd>
-<a href=files_fork>fork</a> and <a href=files_file#pipe>file-&gt;pipe</a>
+<a href=#fork>fork</a> and <a href=#Stdio.File.pipe>file-&gt;pipe</a>
 <p>
 </dl>
 </a>
@@ -10493,7 +12784,7 @@ log( exp( x ) ) == x as long as exp(x) doesn't overflow an int.
 <a href=types_float>float</a>
 <p>
 <dt><encaps>SEE ALSO</encaps><dd>
-<a href=math_pow>pow</a> and <a href=math_log>log</a>
+<a href=#pow>pow</a> and <a href=#log>log</a>
 <p>
 </dl>
 </a>
@@ -10535,7 +12826,7 @@ You can never get -3 as size if you don't give a second argument.<br>
 <a href=index#file>file</a>
 <p>
 <dt><encaps>SEE ALSO</encaps><dd>
-<a href=files_get_dir>get_dir</a>
+<a href=#get_dir>get_dir</a>
 <p>
 </dl>
 </a>
@@ -10562,7 +12853,7 @@ before that call will be executed. If no call is found,
 zero_type(find_call_out(f)) will return 1.
 <p>
 <dt><encaps>SEE ALSO</encaps><dd>
-<a href=call_out_call_out>call_out</a>, <a href=call_out_remove_call_out>remove_call_out</a> and <a href=call_out_call_out_info>call_out_info</a>
+<a href=#call_out>call_out</a>, <a href=#remove_call_out>remove_call_out</a> and <a href=#call_out_info>call_out_info</a>
 <p>
 </dl>
 </a>
@@ -10607,7 +12898,7 @@ Note that floor() does _not_ return an int, merely an integral value.
 <a href=types_float>float</a>
 <p>
 <dt><encaps>SEE ALSO</encaps><dd>
-<a href=math_ceil>ceil</a>
+<a href=#ceil>ceil</a>
 <p>
 </dl>
 </a>
@@ -10630,7 +12921,7 @@ pid of the child. Refer to your unix manual for further details.
 This function cause endless bugs if used without proper care.
 <p>
 <dt><encaps>SEE ALSO</encaps><dd>
-<a href=simulated_exec>exec</a> and <a href=files_file#pipe>file-&gt;pipe</a>
+<a href=#Simulate.exec>Simulate.exec</a> and <a href=#Stdio.File.pipe>Stdio.File-&gt;pipe</a>
 <p>
 </dl>
 </a>
@@ -10653,7 +12944,7 @@ a pre-defined function in the driver, zero will be returned.
 <a href=types_function>function</a>
 <p>
 <dt><encaps>SEE ALSO</encaps><dd>
-<a href=#function_object>function_object</a> and <a href=simulated_get_function>get_function</a>
+<a href=#function_object>function_object</a> and <a href=Simulate.get_function>Simulate.get_function</a>
 <p>
 </dl>
 </a>
@@ -10677,7 +12968,7 @@ returned.
 <a href=types_function>function</a>
 <p>
 <dt><encaps>SEE ALSO</encaps><dd>
-<a href=#function_name>function_name</a> and <a href=simulated_get_function>get_function</a>
+<a href=#function_name>function_name</a> and <a href=#Simulate.get_function>Simulate.get_function</a>
 <p>
 </dl>
 </a>
@@ -10746,7 +13037,7 @@ no such directory exists.
 <a href=index#file>file</a>
 <p>
 <dt><encaps>SEE ALSO</encaps><dd>
-<a href=files_mkdir>mkdir</a> and <a href=files_cd>cd</a>
+<a href=#mkdir>mkdir</a> and <a href=#cd>cd</a>
 <p>
 </dl>
 </a>
@@ -10768,7 +13059,7 @@ getcwd returns the current working directory.
 <a href=index#file>file</a>
 <p>
 <dt><encaps>SEE ALSO</encaps><dd>
-<a href=files_cd>cd</a>
+<a href=#cd>cd</a>
 <p>
 </dl>
 </a>
@@ -10808,7 +13099,7 @@ This returns the pid of this process. Useful for sending
 signals to yourself.
 <p>
 <dt><encaps>SEE ALSO</encaps><dd>
-<a href=#kill>kill</a>, <a href=files_fork>fork</a> and <a href=#signal>signal</a>
+<a href=#kill>kill</a>, <a href=#fork>fork</a> and <a href=#signal>signal</a>
 <p>
 </dl>
 </a>
@@ -10833,7 +13124,7 @@ which reflects if the 'str' matches 'glob'. When given an array as
 second argument, an array containing all matching strings is returned.
 <p>
 <dt><encaps>SEE ALSO</encaps><dd>
-<a href=pike_sscanf>sscanf</a> and <a href=simulated_regexp>regexp</a>
+<a href=#sscanf>sscanf</a> and <a href=#Regexp.regexp>Regexp.regexp</a>
 <p>
 </dl>
 </a>
@@ -10954,7 +13245,7 @@ Kill sends a signal to another process. If something goes wrong
 to it's number.
 <p>
 <dt><encaps>SEE ALSO</encaps><dd>
-<a href=#signal>signal</a>, <a href=#signum>signum</a>, <a href=#signame>signame</a> and <a href=files_fork>fork</a>
+<a href=#signal>signal</a>, <a href=#signum>signum</a>, <a href=#signame>signame</a> and <a href=#fork>fork</a>
 <p>
 </dl>
 </a>
@@ -11045,7 +13336,7 @@ exp( log(x) ) == x for x &gt; 0.
 <a href=types_float>float</a>
 <p>
 <dt><encaps>SEE ALSO</encaps><dd>
-<a href=math_pow>pow</a> and <a href=math_exp>exp</a>
+<a href=#pow>pow</a> and <a href=#exp>exp</a>
 <p>
 </dl>
 </a>
@@ -11156,7 +13447,7 @@ Create a directory, return zero if it fails and nonzero if it successful.
 <a href=index#file>file</a>
 <p>
 <dt><encaps>SEE ALSO</encaps><dd>
-<a href=files_rm>rm</a> and <a href=files_cd>cd</a>
+<a href=#rm>rm</a> and <a href=#cd>cd</a>
 <p>
 </dl>
 </a>
@@ -11296,7 +13587,7 @@ file already exists, it will be overwritten. Returns 1 on sucess,
 <a href=index#file>file</a>
 <p>
 <dt><encaps>SEE ALSO</encaps><dd>
-<a href=files_rm>rm</a>
+<a href=#rm>rm</a>
 <p>
 </dl>
 </a>
@@ -11397,7 +13688,7 @@ Return n raised to the power of x.
 <a href=types_float>float</a>
 <p>
 <dt><encaps>SEE ALSO</encaps><dd>
-<a href=math_exp>exp</a> and <a href=math_log>log</a>
+<a href=#exp>exp</a> and <a href=#log>log</a>
 <p>
 </dl>
 </a>
@@ -11438,7 +13729,7 @@ Returns 1 if arg is a program, zero otherwise.
 This function sets the environment variable 'varname' to 'value'.
 <p>
 <dt><encaps>SEE ALSO</encaps><dd>
-<a href=simulated_getenv>getenv</a> and <a href=files_exece>exece</a>
+<a href=#getenv>getenv</a> and <a href=#exece>exece</a>
 <p>
 </dl>
 </a>
@@ -11567,7 +13858,7 @@ will return 1. You can also give a call out id as argument. (as
 returned by call_out)
 <p>
 <dt><encaps>SEE ALSO</encaps><dd>
-<a href=call_out_call_out_info>call_out_info</a>, <a href=call_out_call_out>call_out</a> and <a href=call_out_find_call_out>find_call_out</a>
+<a href=#call_out_info>call_out_info</a>, <a href=#call_out>call_out</a> and <a href=#find_call_out>find_call_out</a>
 <p>
 </dl>
 </a>
@@ -11722,7 +14013,7 @@ which require scanning backwards.
 <a href=types_string>string</a>, <a href=types_array>array</a> and <a href=types_int>int</a>
 <p>
 <dt><encaps>SEE ALSO</encaps><dd>
-<a href=pike_sscanf>sscanf</a>
+<a href=#sscanf>sscanf</a>
 <p>
 </dl>
 </a>
@@ -11745,7 +14036,7 @@ Remove a file or directory, return 0 if it fails. Nonzero otherwise.
 <a href=index#file>file</a>
 <p>
 <dt><encaps>SEE ALSO</encaps><dd>
-<a href=files_mkdir>mkdir</a>
+<a href=#mkdir>mkdir</a>
 <p>
 </dl>
 </a>
@@ -11962,7 +14253,7 @@ Return the sinus value for f.
 <a href=types_float>float</a>
 <p>
 <dt><encaps>SEE ALSO</encaps><dd>
-<a href=math_asin>asin</a> and <a href=math_cos>cos</a>
+<a href=#asin>asin</a> and <a href=#cos>cos</a>
 <p>
 </dl>
 </a>
@@ -12225,7 +14516,7 @@ Exiting.<br>
 <a href=types_string>string</a>
 <p>
 <dt><encaps>SEE ALSO</encaps><dd>
-<a href=pike_sscanf>sscanf</a>
+<a href=#sscanf>sscanf</a>
 <p>
 </dl>
 </a>
@@ -12250,7 +14541,7 @@ truncated to the closest lower integer.
 <a href=types_float>float</a> and <a href=types_int>int</a>
 <p>
 <dt><encaps>SEE ALSO</encaps><dd>
-<a href=math_pow>pow</a>, <a href=math_log>log</a>, <a href=math_exp>exp</a> and <a href=math_floor>floor</a>
+<a href=#pow>pow</a>, <a href=#log>log</a>, <a href=#exp>exp</a> and <a href=#floor>floor</a>
 <p>
 </dl>
 </a>
@@ -12340,7 +14631,7 @@ Return the tangent value for f.
 <a href=types_float>float</a>
 <p>
 <dt><encaps>SEE ALSO</encaps><dd>
-<a href=math_atan>atan</a>, <a href=math_sin>sin</a> and <a href=math_cos>cos</a>
+<a href=#atan>atan</a>, <a href=#sin>sin</a> and <a href=#cos>cos</a>
 <p>
 </dl>
 </a>
@@ -12383,7 +14674,7 @@ index contains an error message and the second index is a backtrace,
 like a real error by overlying functions.
 <p>
 <dt><encaps>SEE ALSO</encaps><dd>
-<a href=pike_control_structures_catch>catch</a>
+<a href=#catch>catch</a>
 <p>
 </dl>
 </a>
@@ -12609,7 +14900,7 @@ returned. Otherwize zero_type will return zero.
 <a href=types_int>int</a> and <a href=types_mapping>mapping</a>
 <p>
 <dt><encaps>SEE ALSO</encaps><dd>
-<a href=call_out_find_call_out>find_call_out</a>
+<a href=#find_call_out>find_call_out</a>
 <p>
 </dl>
 </a>

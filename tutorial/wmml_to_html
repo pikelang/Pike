@@ -147,11 +147,13 @@ string rtag(string name,
     data=data[..strlen(data)-11];
 
   string tmp;
-  if(sizeof(prefix/".") <2)
+  switch(sizeof(prefix/"."))
   {
-    tmp="h1";
-  }else{
-    tmp="h2";
+  case 0:
+  case 1: tmp="h1"; break;
+  case 2: tmp="h2"; break;
+  case 3:
+  default: tmp="h3"; break;
   }
 
   return
