@@ -1,4 +1,4 @@
-AC_REVISION("$Id: configure.in,v 1.89 1997/04/22 01:39:42 hubbe Exp $")
+AC_REVISION("$Id: configure.in,v 1.90 1997/04/22 03:36:28 hubbe Exp $")
 AC_INIT(interpret.c)
 AC_CONFIG_HEADER(machine.h)
 
@@ -303,7 +303,7 @@ AC_SET_MAKE
 AC_MSG_CHECKING(for yacc clone that handles %pure_parser)
 AC_CACHE_VAL(pike_cv_prog_working_yacc,
 [
-for YACC in byacc "bison -y" yacc "Get bison if you want to make export" ; do
+for YACC in byacc "bison -y" yacc "None"; do
   set dummy $YACC; ac_word=$2
   has_it=no
   IFS="${IFS= 	}"; ac_save_ifs="$IFS"; IFS="${IFS}:"
@@ -376,7 +376,13 @@ pike_cv_prog_working_yacc="$YACC"
 ])
 
 YACC="$pike_cv_prog_working_yacc"
-AC_MSG_RESULT($YACC)
+
+if test "x$YACC" = "xNone" ; then
+  AC_MSG_RESULT('Get bison if you want to do "make export"')
+  YACC="bison -y"
+else
+  AC_MSG_RESULT($YACC)
+fi
 
 #############################################################################
 

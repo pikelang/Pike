@@ -125,8 +125,9 @@ mixed *find_all_options(string *argv, mixed *options, void|int posix_me_harder)
   mapping quick=([]);
   foreach(options, mixed opt)
     {
-      foreach(stringp(opt[ALIASES])?({opt[ALIASES]}):opt[ALIASES],
-      mixed optname)
+      mixed aliases=opt[ALIASES];
+      if(!arrayp(aliases)) aliases=({aliases});
+      foreach(aliases, mixed optname)
 	{
 	  if(optname[0..1]=="--")
 	  {
@@ -211,11 +212,11 @@ mixed *find_all_options(string *argv, mixed *options, void|int posix_me_harder)
   multiset done=mkmultiset(column(ret, 0));
   foreach(options, string *option)
     {
-      if(done[ret]) continue;
+      string name=option[NAME];
+      if(done[name]) continue;
       if(sizeof(option) > ENV)
       {
 	mixed foo=option[ENV];
-	string name=option[NAME];
 	if(!foo) continue;
 	if(stringp(foo)) foo=({foo});
 	foreach(foo, foo)

@@ -1,5 +1,5 @@
 /*
- * $Id: parser.pike,v 1.2 1997/03/30 17:28:25 grubba Exp $
+ * $Id: parser.pike,v 1.3 1997/04/22 03:35:59 hubbe Exp $
  *
  * A BNF-grammar in Pike.
  * Compiles to a LALR(1) state-machine.
@@ -9,7 +9,7 @@
 
 //.
 //. File:	parser.pike
-//. RCSID:	$Id: parser.pike,v 1.2 1997/03/30 17:28:25 grubba Exp $
+//. RCSID:	$Id: parser.pike,v 1.3 1997/04/22 03:35:59 hubbe Exp $
 //. Author:	Henrik Grubbström (grubba@infovav.se)
 //.
 //. Synopsis:	LALR(1) parser and compiler.
@@ -31,7 +31,7 @@
  * Includes
  */
 
-#include <array.h>
+import Array;
 
 /*
  * Defines

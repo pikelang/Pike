@@ -7,6 +7,7 @@ object low_cast_to_object(string oname, string current_file);
 string pike_library_path;
 string *pike_include_path=({});
 string *pike_module_path=({});
+string *pike_program_path=({});
 
 mapping (string:string) environment=([]);
 
@@ -47,6 +48,21 @@ void remove_module_path(string tmp)
 {
   tmp=combine_path(getcwd(),tmp);
   pike_module_path-=({tmp});
+}
+
+
+void add_program_path(string tmp)
+{
+  tmp=combine_path(getcwd(),tmp);
+  pike_program_path-=({tmp});
+  pike_program_path=({tmp})+pike_module_path;
+}
+
+
+void remove_program_path(string tmp)
+{
+  tmp=combine_path(getcwd(),tmp);
+  pike_program_path-=({tmp});
 }
 
 
@@ -136,7 +152,7 @@ program cast_to_program(string pname, string current_file)
     if(program ret=findprog(combine_path(cwd,pname),ext))
       return ret;
 
-    foreach(pike_include_path, string path)
+    foreach(pike_program_path, string path)
       if(program ret=findprog(combine_path(path,pname),ext))
 	return ret;
 
@@ -327,11 +343,14 @@ void _main(string *argv, string *env)
 
   add_include_path(pike_library_path+"/include");
   add_module_path(pike_library_path+"/modules");
-  add_include_path(getcwd());
+  add_program_path(getcwd());
   add_module_path(getcwd());
 
   q=(getenv("PIKE_INCLUDE_PATH")||"")/":"-({""});
   for(i=sizeof(q)-1;i>=0;i--) add_include_path(q[i]);
+
+  q=(getenv("PIKE_PROGRAM_PATH")||"")/":"-({""});
+  for(i=sizeof(q)-1;i>=0;i--) add_program_path(q[i]);
 
   q=(getenv("PIKE_MODULE_PATH")||"")/":"-({""});
   for(i=sizeof(q)-1;i>=0;i--) add_module_path(q[i]);
@@ -344,8 +363,9 @@ void _main(string *argv, string *env)
 	({"execute",tmp->HAS_ARG,({"-e","--execute"})}),
 	  ({"modpath",tmp->HAS_ARG,({"-M","--module-path"})}),
 	    ({"ipath",tmp->HAS_ARG,({"-I","--include-path"})}),
-	      ({"ignore",tmp->HAS_ARG,"-ms"}),
-		({"ignore",tmp->MAY_HAVE_ARG,"-Ddatpl",0,1})}),1);
+	      ({"ppath",tmp->HAS_ARG,({"-P","--program-path"})}),
+		({"ignore",tmp->HAS_ARG,"-ms"}),
+		  ({"ignore",tmp->MAY_HAVE_ARG,"-Ddatpl",0,1})}),1);
 
   /* Parse -M and -I backwards */
   for(i=sizeof(q)-1;i>=0;i--)
@@ -358,6 +378,10 @@ void _main(string *argv, string *env)
 
       case "ipath":
 	add_include_path(q[i][1]);
+	break;
+
+      case "ppath":
+	add_program_path(q[i][1]);
 	break;
     }
   }
@@ -378,6 +402,7 @@ void _main(string *argv, string *env)
 	       "Driver options include:\n"
 	       " -I --include-path=<p>: Add <p> to the include path\n"
 	       " -M --module-path=<p> : Add <p> to the module path\n"
+	       " -P --program-path=<p>: Add <p> to the program path\n"
 	       " -e --execute=<cmd>   : Run the given command instead of a script.\n"
 	       " -h --help            : see this message\n"
 	       " -v --version         : See what version of pike you have.\n"
