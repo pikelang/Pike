@@ -35,6 +35,8 @@ struct object *make_bignum_object(void);
 struct object *bignum_from_svalue(struct svalue *s);
 struct pike_string *string_from_bignum(struct object *o, int base);
 void convert_svalue_to_bignum(struct svalue *s);
+int is_bignum_object(struct object *o);
+int is_bignum_object_in_svalue(struct svalue *sv);
 /* Prototypes end here */
 
 #endif /* AUTO_BIGNUM */

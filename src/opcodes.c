@@ -22,8 +22,9 @@
 #include "builtin_functions.h"
 #include "module_support.h"
 #include "security.h"
+#include "bignum.h"
 
-RCSID("$Id: opcodes.c,v 1.43 1999/08/21 23:21:07 noring Exp $");
+RCSID("$Id: opcodes.c,v 1.44 1999/10/19 22:21:30 noring Exp $");
 
 void index_no_free(struct svalue *to,struct svalue *what,struct svalue *ind)
 {
@@ -37,6 +38,13 @@ void index_no_free(struct svalue *to,struct svalue *what,struct svalue *ind)
 
   switch(what->type)
   {
+#ifdef AUTO_BIGNUM
+  case T_INT:
+    convert_svalue_to_bignum(what);
+    index_no_free(to, what, ind);
+    break;
+#endif /* AUTO_BIGNUM */
+    
   case T_ARRAY:
     simple_array_index_no_free(to,what->u.array,ind);
     break;
@@ -186,6 +194,15 @@ void o_cast(struct pike_string *type, INT32 run_time_type)
 	{
 	  case T_FLOAT:
 	    i=(int)(sp[-1].u.float_number);
+#ifdef AUTO_BIGNUM
+	    if((i < 0 ? -i : i) < fabs(floor(sp[-1].u.float_number)))
+	    {
+	      /* Note: This includes the case when i = 0x80000000, i.e.
+		 the absolute value is not computable. */
+	      convert_stack_top_to_bignum();
+	      return;
+	    }
+#endif /* AUTO_BIGNUM */
 	    break;
 	    
 	  case T_STRING:

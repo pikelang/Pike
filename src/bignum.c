@@ -8,7 +8,6 @@
 #include "svalue.h"
 #include "error.h"
 
-
 struct svalue auto_bignum_program = { T_INT };
 
 static void resolve_auto_bignum_program(void)
@@ -41,18 +40,28 @@ void convert_stack_top_to_bignum(void)
     error("Gmp.mpz conversion failed.\n");
 }
 
+int is_bignum_object(struct object *o)
+{
+  resolve_auto_bignum_program();
+  return o->prog == program_from_function(&auto_bignum_program);
+}
+
+int is_bignum_object_in_svalue(struct svalue *sv)
+{
+  return sv->type == T_OBJECT && is_bignum_object(sv->u.object);
+}
 
 struct object *make_bignum_object(void)
 {
   convert_stack_top_to_bignum();
-  return  (--sp)->u.object;
+  return (--sp)->u.object;
 }
 
 struct object *bignum_from_svalue(struct svalue *s)
 {
   push_svalue(s);
   convert_stack_top_to_bignum();
-  return  (--sp)->u.object;
+  return (--sp)->u.object;
 }
 
 struct pike_string *string_from_bignum(struct object *o, int base)

@@ -5,7 +5,7 @@
 \*/
 /**/
 #include "global.h"
-RCSID("$Id: builtin_functions.c,v 1.187 1999/10/19 15:30:43 hubbe Exp $");
+RCSID("$Id: builtin_functions.c,v 1.188 1999/10/19 22:21:28 noring Exp $");
 #include "interpret.h"
 #include "svalue.h"
 #include "pike_macros.h"
@@ -39,6 +39,7 @@ RCSID("$Id: builtin_functions.c,v 1.187 1999/10/19 15:30:43 hubbe Exp $");
 #include "signal_handler.h"
 #include "security.h"
 #include "builtin_functions.h"
+#include "bignum.h"
 
 #ifdef HAVE_POLL
 #ifdef HAVE_POLL_H
@@ -2087,7 +2088,22 @@ void f_programp(INT32 args)
   }
 }
 
-TYPEP(f_intp, "intpp", T_INT)
+#ifdef AUTO_BIGNUM
+void f_intp(INT32 args)
+{
+  int t;
+  
+  if(args<1)
+    SIMPLE_TOO_FEW_ARGS_ERROR("intp", 1);
+  
+  t = (sp[-args].type == T_INT) || is_bignum_object_in_svalue(&sp[-args]);
+  pop_n_elems(args);
+  push_int(t);
+}
+#else
+TYPEP(f_intp, "intp", T_INT)
+#endif /* AUTO_BIGNUM */
+     
 TYPEP(f_mappingp, "mappingp", T_MAPPING)
 TYPEP(f_arrayp, "arrayp", T_ARRAY)
 TYPEP(f_multisetp, "multisetp", T_MULTISET)
