@@ -5,7 +5,7 @@
 \*/
 /**/
 #include "global.h"
-RCSID("$Id: interpret.c,v 1.214 2001/07/08 18:54:52 grubba Exp $");
+RCSID("$Id: interpret.c,v 1.215 2001/07/08 20:58:05 grubba Exp $");
 #include "interpret.h"
 #include "object.h"
 #include "program.h"
@@ -222,6 +222,10 @@ use_malloc:
   Pike_interpreter.accounted_time =0;
 #endif
 #endif
+#ifdef HAVE_COMPUTED_GOTO
+  /* Initialize the fcode_to_opcode table. */
+  eval_instruction(NULL);
+#endif /* HAVE_COMPUTED_GOTO */
 }
 
 
