@@ -37,7 +37,7 @@ import Getopt;
 			 "mixed", "multiset", "nomask", "object", "optional",
 			 "program", "predef", "private", "protected", "public",
 			 "return", "sscanf", "string", "static", "switch",
-			 "typeof", "variant", "void", "while", >);
+			 "type", "typeof", "variant", "void", "while", >);
 
   mapping query_variables() { return variables; }
 /* do nothing */
@@ -235,8 +235,16 @@ import Getopt;
     input=skipwhite(input[where..old-1]);
     new=strlen(input);
     if(where>1) first_word=0;
-    pos-=old-new; if(pos<0) pos=0;
-    eq_pos-=old-new; if(eq_pos<0) eq_pos=-1;
+    pos-=old-new;
+    if(pos<0) {
+#ifdef DEBUG
+      write("negative pos: %O\n", pos);
+#endif /* DEBUG */
+      // Note: -1 since the loop will increase it to 0.
+      pos=-1;
+    }
+    eq_pos-=old-new;
+    if(eq_pos<0) eq_pos=-1;
   }
   
   void print_version()
@@ -249,6 +257,9 @@ import Getopt;
   int do_parse()
   {
     string tmp;
+#ifdef DEBUG
+    write("do_parse(): input = %O  pos = %o\n", input, pos);
+#endif /* DEBUG */
     if(pos<0) pos=0;
     for(;pos<strlen(input);pos++)
     {
@@ -264,7 +275,7 @@ import Getopt;
 	}
 	
 	d=input[pos];
-	if(d==' ' && !pos)
+	if((d<=' ' || d==';') && !pos)
 	{
 	  cut_buffer(1);
 	  continue;
@@ -273,8 +284,8 @@ import Getopt;
 	{
 	  first_word=input[0..pos-1];
 #ifdef DEBUG
-	  write("First = "+first_word+"  pos="+pos+"\n");
-	  write("input = "+input+"\n");
+	  write("First = %O  pos = %O\n", first_word, pos);
+	  write("input = %O\n", input);
 #endif
 	  switch(first_word)
 	  {
@@ -388,6 +399,9 @@ import Getopt;
 	  if(input[pos-1]=='*') in_comment=0;
 	  break;
       }
+#ifdef DEBUG
+      write("End of loop: input = %O  pos = %O\n", input, pos);
+#endif /* DEBUG */
     }
     if(pos>strlen(input)) pos=strlen(input);
     return -1;
