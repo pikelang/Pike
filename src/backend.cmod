@@ -2,11 +2,11 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: backend.cmod,v 1.112 2004/04/04 11:36:28 grubba Exp $
+|| $Id: backend.cmod,v 1.113 2004/04/04 13:22:30 grubba Exp $
 */
 
 #include "global.h"
-RCSID("$Id: backend.cmod,v 1.112 2004/04/04 11:36:28 grubba Exp $");
+RCSID("$Id: backend.cmod,v 1.113 2004/04/04 13:22:30 grubba Exp $");
 #include "fdlib.h"
 #include "backend.h"
 #include <errno.h>
@@ -255,6 +255,7 @@ struct Backend_struct *really_get_backend_for_fd(int fd)
 #define MY_POLLRDBAND POLLRDBAND
 #define MY_POLLWREXCEPT POLLWRBAND|POLLWRNORM|POLLOUT
 #define MY_POLLWRBAND POLLWRBAND
+#define MY_POLLNVAL	POLLNVAL
 
 #if (POLLRDBAND != POLLRDNORM) && (POLLRDBAND != POLLIN)
 #define RDBAND_IS_SPECIAL
@@ -564,12 +565,6 @@ static void copy_selectors(struct active_selectors *to,
 
 #endif /* HAVE_SYS_DEVPOLL_H || HAVE_SYS_EPOLL_H */
 
-#ifdef USE_POLL_DEVICE
-#ifndef POLL_SET_SIZE
-#define POLL_SET_SIZE		32
-#endif /* !POLL_SET_SIZE */
-#endif /* USE_POLL_DEVICE */
-
 #ifndef GET_FD
 #define GET_FD(EVENT)		EVENT.fd
 #endif
@@ -606,7 +601,7 @@ static void copy_selectors(struct active_selectors *to,
 #define OPEN_POLL_DEVICE()	kqueue()
 #define CHILD_NEEDS_TO_REOPEN
 
-#define TIMEOUT_IS_TIMEVAL
+#define TIMEOUT_IS_TIMESPEC
 
 #define MY_POLLIN	EVFILT_READ
 #define MY_POLLOUT	EVFILT_WRITE
@@ -617,9 +612,17 @@ static void copy_selectors(struct active_selectors *to,
 #define MY_POLLWREXCEPT	EVFILT_WRITE
 #define MY_POLLWRBAND	EVFILT_WRITE
 
-#define MY_POLL(SET, TIMEOUT)	kevent((SET), NULL, 0, evs, nevs, (TIMEOUT))
+#define DECLARE_POLL_EXTRAS		\
+  POLL_EVENT poll_fds[POLL_SET_SIZE]
 
-int MY_FD_CLR(int pfd, int fd, int filter)
+#define MY_POLL(SET, TIMEOUT)					\
+  kevent((SET), NULL, 0, poll_fds, POLL_SET_SIZE, &(TIMEOUT))
+
+#define GET_FD(EVENT)			EVENT.ident
+#define GET_EVENTS(EVENT)		EVENT.filter
+#define CHECK_EVENT(EVENT, MASK)	(GET_EVENTS(EVENT) == (MASK))
+
+int MY_FD_CLR(int *pfd, int fd, int filter)
 {
   struct kevent ev;
 
@@ -629,10 +632,10 @@ int MY_FD_CLR(int pfd, int fd, int filter)
    */
   EV_SET(&ev, fd, filter, EV_DISABLE, 0, 0, 0);
   
-  return kevent(pfd, &ev, 1, NULL, 0, NULL);
+  return kevent(*pfd, &ev, 1, NULL, 0, NULL);
 }
 
-int MY_FD_SET(int pfd, int fd, int filter)
+int MY_FD_SET(int *pfd, int fd, int filter)
 {
   struct kevent ev[2];
 
@@ -642,8 +645,10 @@ int MY_FD_SET(int pfd, int fd, int filter)
    */
   EV_SET(ev+1, fd, filter, EV_ENABLE, 0, 0, 0);
   
-  return kevent(pfd, ev, 2, NULL, 0, NULL);
+  return kevent(*pfd, ev, 2, NULL, 0, NULL);
 }
+
+#define copy_selectors(TO, FROM)
 
 #else  /* !HAVE_POLL && !HAVE_KQUEUE */
 
@@ -720,6 +725,14 @@ static void copy_selectors(struct active_selectors *to,
 
 #endif	/* HAVE_POLL || USE_KQUEUE */
 
+#ifndef POLL_SET_SIZE
+#define POLL_SET_SIZE		32
+#endif /* !POLL_SET_SIZE */
+
+#ifndef CHECK_EVENT
+#define CHECK_EVENT(EVENT, MASK)	(GET_EVENTS(EVENT) & (MASK))
+#endif /* CHECK_EVENT */
+
 #ifdef RBBAND_IS_SPECIAL
 #  define MY_FD_CLR_RDBAND(SET, FD) MY_FD_CLR (SET, FD, MY_POLLRDBAND)
 #else
@@ -770,7 +783,7 @@ PIKECLASS Backend
   /* 
    * POLL/SELECT fd sets
    */
-#ifdef USE_POLL_DEVICE
+#ifdef OPEN_POLL_DEVICE
   CVAR int set;
 #define active_set set
 #else /* !USE_POLL_DEVICE */
@@ -1915,6 +1928,8 @@ PIKECLASS Backend
 	int poll_timeout;
 #elif defined(TIMEOUT_IS_TIMEVAL)
 	struct timeval poll_timeout;
+#elif defined(TIMEOUT_IS_TIMESPEC)
+	struct timespec poll_timeout;
 #else
 #error Unknown timeout method.
 #endif /* TIMEOUT_IS_* */
@@ -1992,6 +2007,9 @@ PIKECLASS Backend
 	    next_timeout.tv_usec/1000;
 #elif defined(TIMEOUT_IS_TIMEVAL)
 	poll_timeout = next_timeout;
+#elif defined(TIMEOUT_IS_TIMESPEC)
+	poll_timeout.tv_sec = next_timeout.tv_sec;
+	poll_timeout.tv_nsec = next_timeout.tv_usec*1000;
 #else
 #error Unknown timeout method.
 #endif /* TIMEOUT_IS_* */
@@ -2040,7 +2058,7 @@ PIKECLASS Backend
 #endif /* PIKE_DEBUG */
 	done_something = 1;
 
-#ifndef HAVE_POLL
+#ifdef USE_SELECT
 
 	debug_malloc_touch(me->fds);
 	for(i=0; i <= me->active_set.max_fd; i++)
@@ -2132,9 +2150,9 @@ PIKECLASS Backend
 	  }
 	}
 
-#else  /* HAVE_POLL */
+#else  /* !USE_SELECT */
 
-#ifdef USE_POLL_DEVICE
+#if defined(USE_POLL_DEVICE) || defined(USE_KQUEUE)
 	while(i--)
 #define ACTIVE_POLLSET poll_fds
 #else
@@ -2148,8 +2166,10 @@ PIKECLASS Backend
 	  int handled = 0;
 #endif /* PIKE_DEBUG */
 
-	  if(GET_EVENTS(ACTIVE_POLLSET[i]) & POLLNVAL)
+#ifdef MY_POLLNVAL
+	  if(CHECK_EVENT(ACTIVE_POLLSET[i], MY_POLLNVAL))
 	  {
+	    /* NOTE: /dev/poll returns POLLNVAL for closed descriptors. */
 #ifndef USE_POLL_DEVICE
 	    /* FIXME */
 	    int j;
@@ -2173,8 +2193,9 @@ PIKECLASS Backend
 	    handled = 1;
 #endif /* PIKE_DEBUG */
 	  }
+#endif /* MY_POLLNVAL */
 
-	  if (GET_EVENTS(ACTIVE_POLLSET[i]) & POLLRDBAND) {
+	  if (CHECK_EVENT(ACTIVE_POLLSET[i], MY_POLLRDBAND)) {
 	    IF_PD(fprintf(stderr, "BACKEND[%d]: POLLRDBAND on %d\n", me->id, fd));
 	    box = GET_BOX (me, fd);
 	    if (WANT_EVENT (box, READ_OOB))
@@ -2199,7 +2220,7 @@ PIKECLASS Backend
 #endif /* PIKE_DEBUG */
 	  }
 
-	  if(GET_EVENTS(ACTIVE_POLLSET[i]) & (POLLRDNORM|POLLIN))
+	  if(CHECK_EVENT(ACTIVE_POLLSET[i], MY_POLLIN))
 	  {
 	    IF_PD(fprintf(stderr, "BACKEND[%d]: POLLRDNORM|POLLIN on %d\n", me->id, fd));
 	    box = GET_BOX (me, fd);
@@ -2219,7 +2240,7 @@ PIKECLASS Backend
 #endif /* PIKE_DEBUG */
 	  }
 
-	  if (GET_EVENTS(ACTIVE_POLLSET[i]) & POLLWRBAND) {
+	  if (CHECK_EVENT(ACTIVE_POLLSET[i], MY_POLLWRBAND)) {
 	    IF_PD(fprintf(stderr, "BACKEND[%d]: POLLWRBAND on %d\n", me->id, fd));
 	    box = GET_BOX (me, fd);
 	    if (WANT_EVENT (box, WRITE_OOB)) {
@@ -2243,7 +2264,7 @@ PIKECLASS Backend
 #endif /* PIKE_DEBUG */
 	  }
 
-	  if(GET_EVENTS(ACTIVE_POLLSET[i]) & POLLOUT) {
+	  if(CHECK_EVENT(ACTIVE_POLLSET[i], MY_POLLOUT)) {
 	    IF_PD(fprintf(stderr, "BACKEND[%d]: POLLOUT on %d\n", me->id, fd));
 	    box = GET_BOX (me, fd);
 	    if (WANT_EVENT (box, WRITE)) {
@@ -2262,11 +2283,12 @@ PIKECLASS Backend
 #endif /* PIKE_DEBUG */
 	  }
 
-	  if (GET_EVENTS(ACTIVE_POLLSET[i]) & (POLLHUP|POLLERR))
+#ifndef USE_KQUEUE
+	  if (CHECK_EVENT(ACTIVE_POLLSET[i], POLLHUP|POLLERR))
 	  {
 	    /* Closed or error */
 	    errno = 0;
-	    if (GET_EVENTS(ACTIVE_POLLSET[i]) & POLLERR) {
+	    if (CHECK_EVENT(ACTIVE_POLLSET[i], POLLERR)) {
 	      int err;
 	      ACCEPT_SIZE_T len = sizeof (err);
 	      if (!getsockopt (fd, SOL_SOCKET, SO_ERROR, &err, &len)) {
@@ -2303,6 +2325,7 @@ PIKECLASS Backend
 	    handled = 1;
 #endif /* PIKE_DEBUG */
 	  }
+#endif /* !USE_KQUEUE */
 
 #ifdef PIKE_DEBUG
 	  num_active -= handled;
@@ -2329,7 +2352,7 @@ PIKECLASS Backend
 	}
 #endif /* PIKE_DEBUG && !USE_POLL_DEVICE */
 
-#endif	/* HAVE_POLL */
+#endif	/* USE_SELECT */
 
 	/* Must be up-to-date for backend_do_call_outs. */
 	GETTIMEOFDAY(&current_time);
@@ -2639,7 +2662,7 @@ PIKECLASS Backend
       me->fd_boxes=0;
       me->num_fd_boxes=0;
 
-#ifdef USE_POLL_DEVICE
+#ifdef OPEN_POLL_DEVICE
       if ((me->set = OPEN_POLL_DEVICE()) < 0) {
 	Pike_error("Failed to open poll device (errno:%d)\n", errno);
       }
@@ -2661,7 +2684,7 @@ PIKECLASS Backend
       my_FD_ZERO(&me->set.except);
       /* FIXME: Should there be something else here? */
       /* me->set.num_fds=0; */
-#endif /* USE_POLL_DEVICE || HAVE_POLL */
+#endif /* OPEN_POLL_DEVICE || HAVE_POLL */
 
       if(pike_make_pipe(me->wakeup_pipe) < 0)
 	Pike_error("Couldn't create backend wakeup pipe! errno=%d.\n",errno);
