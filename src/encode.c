@@ -25,7 +25,7 @@
 #include "version.h"
 #include "bignum.h"
 
-RCSID("$Id: encode.c,v 1.56 2000/03/26 20:55:32 hubbe Exp $");
+RCSID("$Id: encode.c,v 1.57 2000/04/06 09:03:29 hubbe Exp $");
 
 /* #define ENCODE_DEBUG */
 
@@ -266,6 +266,7 @@ one_more_type:
 	int i;
 	/* FIXME: I assume the type is saved in network byte order. Is it?
 	 *	/grubba 1999-03-07
+	 * Yes - Hubbe
 	 */
 	for(i = 0; i < (int)(2*sizeof(INT32)); i++) {
 	  addchar(EXTRACT_UCHAR(t++));
