@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: charsetmod.c,v 1.43 2004/07/25 16:12:03 nilsson Exp $
+|| $Id: charsetmod.c,v 1.44 2004/08/17 20:15:08 nilsson Exp $
 */
 
 #ifdef HAVE_CONFIG_H
@@ -10,7 +10,7 @@
 #endif /* HAVE_CONFIG_H */
 
 #include "global.h"
-RCSID("$Id: charsetmod.c,v 1.43 2004/07/25 16:12:03 nilsson Exp $");
+RCSID("$Id: charsetmod.c,v 1.44 2004/08/17 20:15:08 nilsson Exp $");
 #include "program.h"
 #include "interpret.h"
 #include "stralloc.h"
@@ -32,6 +32,15 @@ RCSID("$Id: charsetmod.c,v 1.43 2004/07/25 16:12:03 nilsson Exp $");
 
 p_wchar1 *misc_charset_lookup(const char *name, int *rlo, int *rhi);
 
+struct multichar_table {
+  const unsigned int lo;
+  const unsigned int hi;
+  UNICHAR const *table;
+};
+
+extern const struct multichar_table GBK[];
+extern const struct multichar_table cp949[];
+
 static struct program *std_cs_program = NULL, *std_rfc_program = NULL;
 static struct program *utf1_program = NULL, *utf1e_program = NULL;
 static struct program *utf7_program = NULL, *utf8_program = NULL;
@@ -44,7 +53,7 @@ static struct program *std_9494_program = NULL, *std_9696_program = NULL;
 static struct program *std_big5_program = NULL;
 static struct program *std_8bit_program = NULL, *std_8bite_program = NULL;
 static struct program *std_16bite_program = NULL;
-static struct program *gbk_program = NULL;
+static struct program *multichar_program = NULL;
 
 struct std_cs_stor { 
   struct string_builder strbuild;
@@ -72,6 +81,11 @@ struct euc_stor {
   UNICHAR const *table;
 };
 static size_t euc_stor_offs = 0;
+
+struct multichar_stor {
+  const struct multichar_table *table;
+};
+static size_t multichar_stor_offs = 0;
 
 struct std8e_stor {
   p_wchar0 *revtab;
@@ -508,45 +522,6 @@ static void f_feed_euc(INT32 args)
   f_std_feed(args, feed_euc);
 }
 
-struct multichar_table {
-  const unsigned int lo;
-  const unsigned int hi;
-  UNICHAR const *table;
-};
-extern const struct multichar_table GBK[];
-
-static ptrdiff_t feed_gbk(const p_wchar0 *p, ptrdiff_t l,
-			  struct std_cs_stor *s)
-{
-  while(l>0) {
-    unsigned INT32 ch = *p++;
-    if(ch < 0x81) {
-      string_builder_putchar(&s->strbuild, ch);
-      --l;
-    }
-    else {
-      const struct multichar_table *tbl = &GBK[ ch-0x81 ];
-      if(l==1) return 1;
-      if(ch==0xff) {
-	Pike_error("Illegal character.\n");
-      }
-      ch = *p++;
-      if( ch<tbl->lo || ch>tbl->hi ) {
-	Pike_error("Illegal character.\n");
-      }
-      else
-	string_builder_putchar(&s->strbuild, tbl->table[ch-tbl->lo]);
-      l -= 2;
-    }
-  }
-  return 0;
-}
-
-static void f_feed_gbk(INT32 args)
-{
-  f_std_feed(args, feed_gbk);
-}
-
 static void f_create_euc(INT32 args)
 {
   struct euc_stor *s = (struct euc_stor *)(fp->current_storage + euc_stor_offs);
@@ -580,6 +555,60 @@ static void f_create_euc(INT32 args)
 
   pop_n_elems(args);
   push_int(0);
+}
+
+static void f_create_multichar(INT32 args)
+{
+  int no;
+  struct multichar_stor *s = (struct multichar_stor *)(fp->current_storage + multichar_stor_offs);
+
+  get_all_args("create()", args, "%d", &no);
+
+  switch(no) {
+  case 1:
+    s->table = &GBK;
+    break;
+  case 2:
+    s->table = &cp949;
+    break;
+  default:
+    Pike_error("Unknown multichar table.\n");
+  }
+}
+
+static ptrdiff_t feed_multichar(const p_wchar0 *p, ptrdiff_t l,
+				struct std_cs_stor *s)
+{
+  struct multichar_stor *m = (struct multichar_stor *)(fp->current_storage + multichar_stor_offs);
+  const struct multichar_table *table = m->table;
+
+  while(l>0) {
+    unsigned INT32 ch = *p++;
+    if(ch < 0x81) {
+      string_builder_putchar(&s->strbuild, ch);
+      --l;
+    }
+    else {
+      const struct multichar_table page = table[ ch-0x81 ];
+      if(l==1) return 1;
+      if(ch==0xff) {
+	Pike_error("Illegal character.\n");
+      }
+      ch = *p++;
+      if( ch<page.lo || ch>page.hi ) {
+	Pike_error("Illegal character.\n");
+      }
+      else
+	string_builder_putchar(&s->strbuild, page.table[ch-page.lo]);
+      l -= 2;
+    }
+  }
+  return 0;
+}
+
+static void f_feed_multichar(INT32 args)
+{
+  f_std_feed(args, feed_multichar);
 }
 
 static void f_create_sjise(INT32 args)
@@ -1585,9 +1614,10 @@ PIKE_MODULE_INIT
 
   start_new_program();
   do_inherit(&prog, 0, NULL);
-  /*  gbk_stor_offs = ADD_STORAGE(struct gbk_stor); */
-  ADD_FUNCTION("feed", f_feed_gbk,tFunc(tStr,tObj), 0);
-  add_program_constant("GBKDec", gbk_program = end_program(), ID_STATIC|ID_NOMASK);
+  multichar_stor_offs = ADD_STORAGE(struct multichar_stor);
+  ADD_FUNCTION("create", f_create_multichar,tFunc(tInt,tVoid), ID_STATIC);
+  ADD_FUNCTION("feed", f_feed_multichar,tFunc(tStr,tObj), 0);
+  add_program_constant("MulticharDec", multichar_program = end_program(), ID_STATIC|ID_NOMASK);
 
   start_new_program();
   do_inherit(&prog, 0, NULL);

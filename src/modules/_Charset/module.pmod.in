@@ -270,8 +270,14 @@ Decoder decoder(string name)
 	 "eucpkdfmtjapanese" >)[ name ] )
     return EUCDec("x0208");
 
-  if( (< "gbk", "936" >)[ name ] )
-    return GBKDec();
+
+  int multi = ([
+    "gbk" : 1,
+    "936" : 1,
+    "949" : 2,
+ ])[ name ];
+  if( multi )
+    return MulticharDec(multi);
 
   Decoder o = rfc1345(name);
 
