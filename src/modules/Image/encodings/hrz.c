@@ -4,7 +4,7 @@
 #include <ctype.h>
 
 #include "stralloc.h"
-RCSID("$Id: hrz.c,v 1.2 1999/05/23 17:46:53 mirar Exp $");
+RCSID("$Id: hrz.c,v 1.3 1999/05/24 12:53:57 mirar Exp $");
 #include "pike_macros.h"
 #include "object.h"
 #include "constants.h"
@@ -58,8 +58,8 @@ void image_hrz_f_decode(INT32 args)
   {
     rgb_group pix;
     pix.r = s->str[c*3]<<2 | s->str[c*3]>>4;
-    pix.g = s->str[c*3+1]<<2 | s->str[c*3]>>4;
-    pix.b = s->str[c*3+2]<<2 | s->str[c*3]>>4;
+    pix.g = s->str[c*3+1]<<2 | s->str[c*3+1]>>4;
+    pix.b = s->str[c*3+2]<<2 | s->str[c*3+2]>>4;
     ((struct image *)io->storage)->img[c] = pix;
   }
   pop_n_elems(args);

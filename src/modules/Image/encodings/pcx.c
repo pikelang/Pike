@@ -1,5 +1,5 @@
 #include "global.h"
-RCSID("$Id: pcx.c,v 1.6 1999/05/23 17:46:55 mirar Exp $");
+RCSID("$Id: pcx.c,v 1.7 1999/05/24 12:53:58 mirar Exp $");
 
 #include "config.h"
 
@@ -70,7 +70,7 @@ unsigned char *get_chunk( struct buffer *b, unsigned int len )
 
 unsigned char get_char( struct buffer *b )
 {
-  if(b->len > 1)
+  if(b->len)
   {
     b->str++;
     b->len--;
@@ -402,8 +402,11 @@ static void f_rle_encode( INT32 args )
       string_builder_putchar( &result, value );
     }
   }
-/*   fprintf(stderr, "RLE encode source len = %d;  dest len = %d\n", */
-/*           sp[-1].u.string->len, result.s->len ); */
+#if 0
+  fprintf(stderr, "read: %d\n", source-(unsigned char*)data->str);
+  fprintf(stderr, "RLE encode source len = %d;  dest len = %d\n",
+          sp[-1].u.string->len, result.s->len );
+#endif
   pop_n_elems( args );
   push_string( finish_string_builder( &result ));
 }
