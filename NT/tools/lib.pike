@@ -351,7 +351,7 @@ int silent_do_cmd(string *cmd, mixed|void filter, int|void silent)
       destruct(f);
       if(code > 127)
       {
-	werror("Software failiure. Press left mouse button to continue.\r\n"
+	werror("Software failure. Press left mouse button to continue.\r\n"
 	       "          Guru meditation #%s\r\n",
 	       sprintf("%016X",code)/8*".");
 	code=127;
