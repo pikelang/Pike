@@ -1,5 +1,5 @@
 /*
- * $Id: threads.h,v 1.104 2000/10/03 19:13:24 grubba Exp $
+ * $Id: threads.h,v 1.105 2000/10/26 01:34:51 hubbe Exp $
  */
 #ifndef THREADS_H
 #define THREADS_H
@@ -94,6 +94,22 @@ void th_atfork_child(void);
 #define THREAD_T pthread_t
 #define PIKE_MUTEX_T pthread_mutex_t
 #define mt_init(X) pthread_mutex_init((X),0)
+
+#if !defined(HAVE_PTHREAD_MUTEX_RECURSIVE_NP) && defined(HAVE_PTHREAD_MUTEX_RECURSIVE)
+#define PTHREAD_MUTEX_RECURSIVE_NP PTHREAD_MUTEX_RECURSIVE
+#define HAVE_PTHREAD_MUTEX_RECURSIVE_NP
+#endif
+
+#ifdef HAVE_PTHREAD_MUTEX_RECURSIVE_NP
+#define mt_init_recursive(X)						\
+    do{ \
+      pthread_mutexattr_t attr;					\
+      pthread_mutexattr_init(&attr);					\
+      pthread_mutexattr_settype(&attr, PTHREAD_MUTEX_RECURSIVE_NP);	\
+      pthread_mutex_init((X), &attr);					\
+    }while(0)
+#endif
+
 #define mt_lock(X) pthread_mutex_lock(X)
 #define mt_trylock(X) pthread_mutex_trylock(X)
 #define mt_unlock(X) pthread_mutex_unlock(X)
@@ -117,6 +133,13 @@ extern pthread_attr_t small_pattr;
 #define th_create_small(ID,fun,arg) pthread_create(ID,&small_pattr,fun,arg)
 #define th_exit(foo) pthread_exit(foo)
 #define th_self() pthread_self()
+
+#define TH_KEY_T pthread_key_t
+#define th_key_create pthread_key_create
+#define th_setspecific pthread_setspecific
+#define th_getpecific pthread_getspecific
+
+
 #ifdef HAVE_PTHREAD_KILL
 #define th_kill(ID,sig) pthread_kill((ID),(sig))
 #else /* !HAVE_PTHREAD_KILL */
