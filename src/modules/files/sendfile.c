@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: sendfile.c,v 1.67 2004/04/05 01:36:05 mast Exp $
+|| $Id: sendfile.c,v 1.68 2004/04/14 12:20:48 grubba Exp $
 */
 
 /*
@@ -62,6 +62,10 @@
 #ifdef HAVE_NETINET_TCP_H
 #include <netinet/tcp.h>
 #endif /* HAVE_NETINET_TCP_H */
+
+#ifdef HAVE_SYS_SENDFILE_H
+#include <sys/sendfile.h>
+#endif /* HAVE_SYS_SENDFILE_H */
 
 #if 0
 #ifdef HAVE_SYS_MMAN_H
@@ -348,6 +352,7 @@ void low_do_sendfile(struct pike_sendfile *this)
 {
 #if defined(SOL_TCP) && (defined(TCP_CORK) || defined(TCP_NODELAY))
   int old_val = -1;
+  size_t old_len = sizeof(old_val);	/* Might want to use socklen_t here. */
 #ifdef TCP_CORK
   int new_val = 1;
 #else /* !TCP_CORK */
@@ -364,7 +369,7 @@ void low_do_sendfile(struct pike_sendfile *this)
    * FIXME: Do we need to adjust TCP_NODELAY here?
    */
   while ((getsockopt(this->to_fd, SOL_TCP, TCP_CORK,
-		     &old_val, sizeof(old_val))<0) &&
+		     &old_val, &old_len)<0) &&
 	 (errno == EINTR))
     ;
   if (!old_val) {
@@ -377,7 +382,7 @@ void low_do_sendfile(struct pike_sendfile *this)
   /* Attempt to set the out socket into nagle mode.
    */
   while ((getsockopt(this->to_fd, SOL_TCP, TCP_NODELAY,
-		     &old_val, sizeof(old_val))<0) &&
+		     &old_val, &old_len)<0) &&
 	 (errno == EINTR))
     ;
   if (old_val == 1) {
@@ -660,14 +665,14 @@ void low_do_sendfile(struct pike_sendfile *this)
   /* Restore the cork mode for the socket. */
   if (!old_val) {
     while((setsockopt(this->to_fd, SOL_TCP, TCP_CORK,
-		      &old_val, sizeof(old_val))<0) && (errno == EINTR))
+		      &old_val, old_len)<0) && (errno == EINTR))
       ;
   }
 #elif defined(TCP_NODELAY)
   /* Restore the nagle mode for the socket. */
   if (old_val == 1) {
     while((setsockopt(this->to_fd, SOL_TCP, TCP_NODELAY,
-		      &old_val, sizeof(old_val))<0) && (errno == EINTR))
+		      &old_val, old_len)<0) && (errno == EINTR))
       ;
   }
 #endif /* TCP_CORK || TCP_NODELAY */

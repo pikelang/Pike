@@ -2,13 +2,13 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: image_ttf.c,v 1.50 2003/12/01 20:21:48 nilsson Exp $
+|| $Id: image_ttf.c,v 1.51 2004/04/14 12:12:50 grubba Exp $
 */
 
 #include "config.h"
 
 #include "global.h"
-RCSID("$Id: image_ttf.c,v 1.50 2003/12/01 20:21:48 nilsson Exp $");
+RCSID("$Id: image_ttf.c,v 1.51 2004/04/14 12:12:50 grubba Exp $");
 #include "module.h"
 
 #ifdef HAVE_LIBTTF
@@ -1279,7 +1279,7 @@ PIKE_MODULE_INIT
      return;
    }
 
-   TT_Set_Raster_Gray_Palette(engine,(char*)palette);
+   TT_Set_Raster_Gray_Palette(engine, palette);
    TT_Init_Kerning_Extension( engine );
 
 #ifdef DYNAMIC_MODULE
