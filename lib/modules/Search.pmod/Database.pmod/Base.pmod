@@ -1,7 +1,7 @@
 // This file is part of Roxen Search
 // Copyright © 2001 Roxen IS. All rights reserved.
 //
-// $Id: Base.pmod,v 1.18 2001/09/25 22:02:37 js Exp $
+// $Id: Base.pmod,v 1.19 2003/01/27 15:10:09 mattias Exp $
 
 //! Base class for Roxen Search database storage abstraction implementations.
 
@@ -145,6 +145,12 @@ int get_field_id(string field, void|int do_not_create);
 //! @param field
 //!   The (possibly wide string) field name to be removed.
 void remove_field(string field);
+
+//! Remove a field from the database if it isn't used by the filters. Also removes all stored metadata with this field, but
+//! not all indexed words using this field id.
+//! @param field
+//!   The (possibly wide string) field name to be removed.
+void safe_remove_field(string field);
 
 //! Remove a field from the database. Also removes all stored metadata with this field, but
 //! not all indexed words using this field id.

@@ -1,7 +1,7 @@
 // This file is part of Roxen Search
 // Copyright © 2001 Roxen IS. All rights reserved.
 //
-// $Id: Word.pmod,v 1.9 2003/01/20 17:39:14 jonasw Exp $
+// $Id: Word.pmod,v 1.10 2003/01/27 15:10:10 mattias Exp $
 
 inherit Search.Filter.HTML;
 
@@ -31,7 +31,7 @@ Output filter(Standards.URI uri, string|Stdio.File data, string content_type)
   string doc = combine_path(getcwd(), fn);
   mixed err = catch
   {
-    text = my_popen( ({ bin, "-c", "utf-8", "-x", xml, doc }), cwd);
+    text = my_popen( ({ bin, "-1", "-c", "utf-8", "-x", xml, doc }), cwd);
   };
   if(!rm(fn))
     werror("Search: Failed to remove temporary file: %s\n", fn);

@@ -134,9 +134,16 @@ class Indexer(Variable wa_var, void|function get_sb_workarea_view_url, Configura
     env["REMOTE_PORT"] = (sv->port->query_address()/" ")[-1];
     env["REMOTE_IDENTIFIER"] = remote_id;
 
+    array debug_args = ({});
+
+#ifdef SEARCH_CRAWLER_DEBUG
+    debug_args += ({"-DSEARCH_DEBUG"});
+#endif
+
     crawler=Process.create_process(
       ({
 	pike_binary,
+      }) + debug_args + ({
 	"-M",
 	"modules/search/pike-modules/",
 	"modules/search/programs/multiprocess_crawler.pike",
@@ -188,7 +195,7 @@ class Compactor {
 	report_notice("Compactor: All OK\n");
       return 0;
     }
-    call_out( is_perchance_done, 10 );
+    roxen.background_run( 10, is_perchance_done );
   }
 
   void create( string db, string log_db, int id, function done )

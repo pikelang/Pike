@@ -1,7 +1,7 @@
 // This file is part of Roxen Search
 // Copyright © 2000,2001 Roxen IS. All rights reserved.
 //
-// $Id: MySQL.pike,v 1.74 2002/11/26 10:41:50 mattias Exp $
+// $Id: MySQL.pike,v 1.75 2003/01/27 15:10:09 mattias Exp $
 
 inherit .Base;
 
@@ -189,6 +189,12 @@ void remove_field(string field)
   m_delete(field_cache, field);
   list_fields_cache=0;
   db->query("delete from field where name=%s", field);
+}
+
+void safe_remove_field(string field)
+{
+  if( search(({"uri"})+Search.get_filter_fields(), field) == -1 )
+    remove_field( field );
 }
 
 static _WhiteFish.Blobs blobs = _WhiteFish.Blobs();
