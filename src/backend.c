@@ -4,7 +4,7 @@
 ||| See the files COPYING and DISCLAIMER for more information.
 \*/
 #include "global.h"
-RCSID("$Id: backend.c,v 1.15 1997/08/30 18:35:21 grubba Exp $");
+RCSID("$Id: backend.c,v 1.16 1997/10/23 03:15:30 hubbe Exp $");
 #include "backend.h"
 #include <errno.h>
 #ifdef HAVE_SYS_TYPES_H
@@ -23,6 +23,8 @@ RCSID("$Id: backend.c,v 1.15 1997/08/30 18:35:21 grubba Exp $");
 #ifdef HAVE_SYS_SELECT_H
 #include <sys/select.h>
 #endif
+
+#include <sys/stat.h>
 
 #define SELECT_READ 1
 #define SELECT_WRITE 2
@@ -185,8 +187,13 @@ void *query_write_callback_data(int fd)
 }
 
 #ifdef DEBUG
+
+struct callback_list do_debug_callbacks;
+
 void do_debug(void)
 {
+  int e;
+  struct stat tmp;
   extern void check_all_arrays(void);
   extern void check_all_mappings(void);
   extern void check_all_programs(void);
@@ -200,6 +207,32 @@ void do_debug(void)
   check_all_programs();
   verify_all_objects();
   verify_shared_strings_tables();
+
+  call_callback(& do_debug_callbacks, 0);
+
+  for(e=0;e<=max_fd;e++)
+  {
+    if(FD_ISSET(e,&selectors.read) || FD_ISSET(e,&selectors.write))
+    {
+      int ret;
+      do {
+	ret=fstat(e, &tmp);
+      }while(ret < 0 && errno == EINTR);
+
+      if(ret<0)
+      {
+	switch(errno)
+	{
+	  case EBADF:
+	    fatal("Backend filedescriptor is bad.\n");
+	    break;
+	  case ENOENT:
+	    fatal("Backend filedescriptor is not.\n");
+	    break;
+	}
+      }
+    }
+  }
 }
 #endif
 

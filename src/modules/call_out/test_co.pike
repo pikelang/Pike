@@ -1,6 +1,6 @@
 #!/usr/local/bin/pike
 
-/* $Id: test_co.pike,v 1.2 1997/05/31 22:04:11 grubba Exp $ */
+/* $Id: test_co.pike,v 1.3 1997/10/23 03:15:42 hubbe Exp $ */
 
 void verify();
 
@@ -10,8 +10,7 @@ int cnt;
 
 #define FUN(X) void X() \
 { \
-  fc[X]--; \
-  if(!(++cnt & 15)) { verify(); werror("."); } \
+  if(!(--fc[X] && (++cnt & 15))) { verify(); werror("."); } \
 }
 
 FUN(f0)
@@ -41,7 +40,8 @@ void verify()
       exit(1);
     }
   }
-  if(!sizeof(ff)) exit(0);
+  if(!sizeof(ff)) { werror("\n"); exit(0); }
+  gc();
 }
 
 mixed co(mixed func, mixed ... args)
@@ -79,8 +79,8 @@ void do_remove()
     verify();
     werror(".");
   }
-  werror("\nWaiting to exit \n");
-  call_out(exit,5,30,1);
+  werror("\nWaiting to exit ");
+  call_out(exit,30,1);
 }
 
 int main()
@@ -103,6 +103,24 @@ int main()
 
   mixed *tmp=allocate(100);
   for(int e=0;e<sizeof(tmp);e++) tmp[e]=co(f0,50.0);
+
+  verify();
+
+  for(int e=0;e<sizeof(tmp);e++)
+  {
+    if(zero_type(rco(tmp[e]))==1)
+    {
+      werror("Remove call out failed!!!\n");
+      exit(1);
+    }
+  }
+
+  werror("\nTesting beginning of heap ...");
+
+  verify();
+
+  mixed *tmp=allocate(100);
+  for(int e=0;e<sizeof(tmp);e++) tmp[e]=co(f0,-50.0);
 
   verify();
 

@@ -4,7 +4,7 @@
 ||| See the files COPYING and DISCLAIMER for more information.
 \*/
 #include "global.h"
-RCSID("$Id: call_out.c,v 1.13 1997/08/30 18:36:19 grubba Exp $");
+RCSID("$Id: call_out.c,v 1.14 1997/10/23 03:15:41 hubbe Exp $");
 #include "array.h"
 #include "dynamic_buffer.h"
 #include "object.h"
@@ -46,15 +46,28 @@ static int call_buffer_size;     /* no of pointers in buffer */
 #define CAR(X) (((X)<<1)+1)
 #define CDR(X) (((X)<<1)+2)
 #define PARENT(X) (((X)-1)>>1)
-#define CALL(X) call_buffer[(X)]
+#define CALL(X) (call_buffer[(X)])
 #define CMP(X,Y) my_timercmp(& CALL(X).tv, <, & CALL(Y).tv)
 #define SWAP(X,Y) do{ call_out _tmp=CALL(X); CALL(X)=CALL(Y); CALL(Y)=_tmp; } while(0)
 
+#ifdef DEBUG
+static int inside_call_out=0;
+#define PROTECT_CALL_OUTS() \
+   if(inside_call_out) fatal("Recursive call in call_out module.\n"); \
+   inside_call_out=1
+
+#define UNPROTECT_CALL_OUTS() \
+   inside_call_out=0
+#else
+#define PROTECT_CALL_OUTS()
+#define UNPROTECT_CALL_OUTS()
+#endif
+
+#ifdef DEBUG
 static void verify_call_outs(void)
 {
-#ifdef DEBUG
   struct array *v;
-  int e;
+  int e,d;
 
   if(!d_flag) return;
   if(!call_buffer) return;
@@ -78,9 +91,37 @@ static void verify_call_outs(void)
 
     if(v->malloced_size<v->size)
       fatal("Impossible array.\n");
+
+    if(!v->size)
+      fatal("Call out array of zero size!\n");
+
+    if(d_flag>4)
+    {
+      for(d=e+1;d<num_pending_calls;d++)
+	if(CALL(e).args == CALL(d).args)
+	  fatal("Duplicate call out in heap.\n");
+    }
   }
-#endif
+
+  for(d=0;d<10 && e<call_buffer_size;d++,e++)
+  {
+    CALL(e).caller=(struct object *)1; /* Illegal value */
+    CALL(e).args=(struct array *)1; /* Illegal value */
+  }
 }
+
+static struct callback *verify_call_out_callback=0;
+void do_verify_call_outs(struct callback *foo, void *x, void *y)
+{
+  PROTECT_CALL_OUTS();
+  verify_call_outs();
+  UNPROTECT_CALL_OUTS();
+}
+#else
+#define verify_call_outs()
+#endif
+
+
 
 static void adjust_down(int pos)
 {
@@ -156,7 +197,7 @@ static struct array * new_call_out(int num_arg,struct svalue *argp)
     }else{
       new_buffer=(call_out *)realloc((char *)call_buffer, sizeof(call_out)*call_buffer_size*2);
       if(!new_buffer)
-	error("Not enough memorry for another call_out\n");
+	error("Not enough memory for another call_out\n");
       call_buffer_size*=2;
       call_buffer=new_buffer;
     }
@@ -238,8 +279,7 @@ void f_call_out(INT32 args)
   sp[1-args]=tmp;
 
   v=new_call_out(args,sp-args);
-  v->refs++;
-  push_array(v);
+  ref_push_array(v);
 
   /* We do not add this callback until we actually have
    * call outs to take care of.
@@ -249,6 +289,12 @@ void f_call_out(INT32 args)
 
   if(!mem_callback)
     mem_callback=add_memory_usage_callback(count_memory_in_call_outs,0,0);
+
+#ifdef DEBUG
+  if(!verify_call_out_callback)
+    verify_call_out_callback=add_to_callback(& do_debug_callbacks,
+					     do_verify_call_outs, 0, 0);
+#endif
 }
 
 void do_call_outs(struct callback *ignored, void *ignored_too, void *arg)
@@ -266,9 +312,15 @@ void do_call_outs(struct callback *ignored, void *ignored_too, void *arg)
     {
       /* unlink call out */
       call_out c;
+
+      PROTECT_CALL_OUTS();
       c=CALL(0);
-      CALL(0)=CALL(--num_pending_calls);
-      adjust_down(0);
+      if(--num_pending_calls)
+      {
+	CALL(0)=CALL(num_pending_calls);
+	adjust_down(0);
+      }
+      UNPROTECT_CALL_OUTS();
 
       if(c.caller) free_object(c.caller);
 
@@ -337,6 +389,8 @@ void f_find_call_out(INT32 args)
 {
   int e;
   verify_call_outs();
+
+  PROTECT_CALL_OUTS();
   e=find_call_out(sp - args);
   pop_n_elems(args);
   if(e==-1)
@@ -348,6 +402,7 @@ void f_find_call_out(INT32 args)
   }else{
     push_int(CALL(e).tv.tv_sec - current_time.tv_sec);
   }
+  UNPROTECT_CALL_OUTS();
   verify_call_outs();
 }
 
@@ -355,6 +410,7 @@ void f_remove_call_out(INT32 args)
 {
   int e;
   verify_call_outs();
+  PROTECT_CALL_OUTS();
   e=find_call_out(sp-args);
   if(e!=-1)
   {
@@ -376,6 +432,7 @@ void f_remove_call_out(INT32 args)
     sp->u.integer=-1;
     sp++;
   }
+  UNPROTECT_CALL_OUTS();
   verify_call_outs();
 }
 
@@ -388,6 +445,7 @@ struct array *get_all_call_outs(void)
   struct array *ret;
 
   verify_call_outs();
+  PROTECT_CALL_OUTS();
   ret=allocate_array_no_init(num_pending_calls,0);
   for(e=0;e<num_pending_calls;e++)
   {
@@ -413,6 +471,7 @@ struct array *get_all_call_outs(void)
     ITEM(ret)[e].type=T_ARRAY;
     ITEM(ret)[e].u.array=v;
   }
+  UNPROTECT_CALL_OUTS();
   return ret;
 }
 
@@ -435,13 +494,6 @@ void free_all_call_outs(void)
   num_pending_calls=0;
   call_buffer=NULL;
 }
-
-#ifdef DEBUG
-void verify_all_call_outs(void)
-{
-  verify_call_outs();
-}
-#endif
 
 void pike_module_init(void)
 {
