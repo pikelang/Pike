@@ -14,6 +14,17 @@ int verbose=0;
 // Temporary variable
 int linking_failed;
 
+// Files to remove upon exit
+string *tmpfiles=({});
+
+void exit(int code)
+{
+  if(getenv("CLEANUP")!="no")
+    Array.map(tmpfiles,rm);
+
+  predef::exit(code);
+}
+
 string get_ext(string file)
 {
   sscanf(file=lower_case(reverse(file)),"%s.",file);
@@ -133,11 +144,11 @@ int main(int argc, string *argv)
 	case "oper_pre": operation="preprocess"; break;
 	case "oper_comp": operation="compile"; break;
 	case "debug":
-//	  cflags+=({"-d2"});
-//	  ldopts+=({"DEBUG","WATCOM","ALL"});
+	  cflags+=({"-d2"});
+	  ldopts+=({"DEBUG","WATCOM","ALL"});
 
-	  cflags+=({"-d2","-hd"});
-	  ldopts+=({"DEBUG","DWARF"});
+//	  cflags+=({"-d2","-hd"});
+//	  ldopts+=({"DEBUG","DWARF"});
 
 //	  cflags+=({"-d2","-hc"});
 //	  ldopts+=({"DEBUG","CODEVIEW","OPTION","CVPACK"});
@@ -243,6 +254,7 @@ int main(int argc, string *argv)
 
   string errorfile="tmp"+getpid()+".err";
   rm(errorfile);
+  tmpfiles+=({errorfile});
 
   // Flags required to make the compiler behave well
   cflags+=({"-bm","-zq","-sg","-5","-fpi87","-fp3"});
@@ -275,22 +287,21 @@ int main(int argc, string *argv)
     }
 
     case "link":
+      int objnum;
       foreach(sources, string source)
 	{
-	  string obj=reverse(source);
-	  sscanf(obj,"%*s.%s",obj);
-	  obj=reverse(obj)+".obj";
-
+	  string obj=sprintf("TMP%dX%d.obj",getpid(),objnum++);
 	  compile( ({source}), obj, errorfile, cflags);
 	  objects+=({obj});
+	  tmpfiles+=({obj});
 	  check_errorfile(errorfile);
 	}
 
 //      objects+=({"BINMODE.OBJ"});
       string ldfile="TMP"+getpid()+".lk";
+      tmpfiles+=({ldfile});
       if(!output) output="a.out";
       rm(ldfile);
-
 
       target=output;
       if(!share) target+=".exe";
@@ -315,8 +326,6 @@ int main(int argc, string *argv)
 	  linking_failed++;
       });
 
-      if(getenv("CLEANUP")!="no")
-	rm(ldfile);
 
       if(linking_failed) exit(1);
   }
