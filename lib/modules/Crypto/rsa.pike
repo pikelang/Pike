@@ -1,4 +1,4 @@
-/* $Id: rsa.pike,v 1.10 1997/08/26 08:22:03 nisse Exp $
+/* $Id: rsa.pike,v 1.11 1997/10/12 14:39:47 grubba Exp $
  *
  * Follow the PKCS#1 standard for padding and encryption.
  * However, PKCS#1 style signing (involving ISO Object Identifiers) is
@@ -125,7 +125,7 @@ object generate_key(int bits, function|void r)
   {
     bignum p = get_prime(bits, r);
     bignum q = get_prime(bits, r);
-    bignum phi = (p-1)*(q-1);
+    bignum phi = Gmp.mpz(p-1)*Gmp.mpz(q-1);
 
     array gs; /* gcd(pub, phi), and pub^-1 mod phi */
     bignum pub = Gmp.mpz(random(1 << 30) | 0x10001);
