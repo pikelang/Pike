@@ -2,11 +2,11 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: main.c,v 1.162 2003/01/09 15:21:26 grubba Exp $
+|| $Id: main.c,v 1.163 2003/01/09 18:06:26 grubba Exp $
 */
 
 #include "global.h"
-RCSID("$Id: main.c,v 1.162 2003/01/09 15:21:26 grubba Exp $");
+RCSID("$Id: main.c,v 1.163 2003/01/09 18:06:26 grubba Exp $");
 #include "fdlib.h"
 #include "backend.h"
 #include "module.h"
@@ -536,10 +536,12 @@ int dbm_main(int argc, char **argv)
    */
 #if STACK_DIRECTION < 0
   /* Equvivalent with |= 0xffff */
-  Pike_interpreter.stack_top += (~((size_t)Pike_interpreter.stack_top)) & 0xffff;
+  Pike_interpreter.stack_top += (~(((char *)Pike_interpreter.stack_top)-
+				   (char *)0)) & 0xffff;
 #else /* STACK_DIRECTION >= 0 */
   /* Equvivalent with &= ~0xffff */
-  Pike_interpreter.stack_top -= ( ((size_t)Pike_interpreter.stack_top)) & 0xffff;
+  Pike_interpreter.stack_top -= (((char *)Pike_interpreter.stack_top)-
+				  (char *)0) & 0xffff;
 #endif /* STACK_DIRECTION < 0 */
 
 #ifdef PROFILING
