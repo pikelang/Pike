@@ -1,5 +1,5 @@
 /*
- * $Id: autodoc.pike,v 1.9 2001/04/25 20:30:22 grubba Exp $
+ * $Id: autodoc.pike,v 1.10 2001/04/25 21:36:13 grubba Exp $
  *
  * AutoDoc mk II extraction script.
  *
@@ -63,7 +63,7 @@ int main(int argc, array(string) argv)
   	  }
 
 	  if (!module_path_fixed && info) {
-	    for(int i = sizeof(segments)-2; i-- > 0;) {
+	    for(int i = sizeof(segments)-1; i-- > 0;) {
 	      if (name = Stdio.read_bytes(segments[..i]*"/" + "/.autodoc")) {
 		segments = name/"." +
 		  map(segments[i+1..sizeof(segments)-2],
@@ -74,7 +74,7 @@ int main(int argc, array(string) argv)
 			// Usually not reached.
 			return p;
 		      });
-		foreach(reverse(segments) + ({}), string seg) {
+		foreach(reverse(segments), string seg) {
 		  Tools.AutoDoc.PikeObjects.Module m =
 		    Tools.AutoDoc.PikeObjects.Module();
 		  m->children = ({ info });
