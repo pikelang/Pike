@@ -5,7 +5,7 @@
 \*/
 /**/
 #include "global.h"
-RCSID("$Id: program.c,v 1.107 1999/02/15 05:07:28 hubbe Exp $");
+RCSID("$Id: program.c,v 1.108 1999/04/03 01:34:17 hubbe Exp $");
 #include "program.h"
 #include "object.h"
 #include "dynamic_buffer.h"
@@ -1452,7 +1452,6 @@ int map_variable(char *name,
   struct pike_string *n,*t;
   n=make_shared_string(name);
   t=parse_type(type);
-  run_time_type=compile_type_to_runtime_type(t);
   ret=low_define_variable(n,t,flags,offset,run_time_type);
   free_string(n);
   free_string(t);
