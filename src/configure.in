@@ -1,4 +1,4 @@
-AC_REVISION("$Id: configure.in,v 1.384 2000/07/09 11:55:07 grubba Exp $")
+AC_REVISION("$Id: configure.in,v 1.385 2000/07/11 00:08:58 grubba Exp $")
 AC_INIT(interpret.c)
 AC_CONFIG_HEADER(machine.h)
 
@@ -698,7 +698,7 @@ if test $cflags_is_set = no; then
   # Yikes! We're using the TenDRA compiler!
 
   # Make sure we can use the system headerfiles...
-  AC_SYS_COMPILER_FLAG(-Ysystem, ysystem, CFLAGS)
+  AC_SYS_COMPILER_FLAG(-Ysystem, ysystem, CPPFLAGS)
 
   # Use lenient ANSI compliance...
   AC_SYS_COMPILER_FLAG(-Xa, xa, CFLAGS)
