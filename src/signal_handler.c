@@ -568,6 +568,23 @@ static HANDLE get_inheritable_handle(struct mapping *optional, char *name)
 
 /*
  * create_process(string *arguments, mapping optional_data);
+ *
+ * optional_data:
+ *
+ *   stdin	object(files.file)
+ *   stdout	object(files.file)
+ *   stderr	object(files.file)
+ *   cwd	string
+ *   env	mapping(string:string)
+ *
+ * only on UNIX:
+ *
+ *   uid	int
+ *   gid	int
+ *   nice	int
+ *
+ * FIXME:
+ *   Support for setresuid() and setresgid().
  */
 void f_create_process(INT32 args)
 {
@@ -812,6 +829,22 @@ void f_create_process(INT32 args)
 	  if(tmp->type == T_STRING)
 	    if(!chdir(tmp->u.string->str))
 	      exit(69);
+
+
+#ifdef HAVE_NICE
+	if ((tmp=simple_mapping_string_lookup(optional, "nice"))) {
+	  if (tmp->type == T_INT) {
+	    int n = nice(0);
+	    int nn = tmp->u.integer;
+
+	    if (nn > (NZERO-1)) {
+	      nn = NZERO-1;
+	    }
+
+	    nice(nn - n);
+	  }
+	}
+#endif /* HAVE_NICE */
 
 
 	if((tmp=simple_mapping_string_lookup(optional, "env")))
