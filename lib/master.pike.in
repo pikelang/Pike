@@ -6,7 +6,7 @@
 // Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 // for more information.
 //
-// $Id: master.pike.in,v 1.329 2004/01/12 21:49:28 marcus Exp $
+// $Id: master.pike.in,v 1.330 2004/01/12 23:17:02 nilsson Exp $
 
 #pike __REAL_VERSION__
 
@@ -3324,7 +3324,6 @@ string describe_backtrace(array|object trace, void|int linewidth)
 
   {
     Describer desc = Describer();
-    desc->identify_parts (trace);
     array trace = [array]trace;
 
     int end = 0;
@@ -3350,6 +3349,12 @@ string describe_backtrace(array|object trace, void|int linewidth)
 	}
 	else if(arrayp(tmp))
 	{
+	  if(sprintf("%t",tmp)) {
+	    // tmp is backtrace_frame
+	    desc->identify_parts( tmp->args );
+	  }
+	  else
+	    desc->identify_parts( tmp );
 	  array tmp = [array]tmp;
 	  string pos;
 	  if(sizeof(tmp)>=2 && stringp(tmp[0])) {
