@@ -233,9 +233,91 @@ array transpose_old(array x)
    return ret;
 }
 
+// diff3, complement to diff
+
+array(array(array)) diff3 (array a, array b, array c)
+{
+  // This does not necessarily produce the optimal sequence between
+  // all three arrays. A diff_longest_sequence() that takes any number
+  // of arrays would be nice.
+  array(int) seq_ab = diff_longest_sequence (a, b);
+  array(int) seq_bc = diff_longest_sequence (b, c);
+  array(int) seq_ca = diff_longest_sequence (c, a);
+
+  // A number bigger than any valid index servers as end of array marker.
+  int eoa = max (sizeof (a), sizeof (b), sizeof (c));
+
+  array(int) ab = allocate (sizeof (a) + 1, -1);
+  array(int) ac = allocate (sizeof (a) + 1, -1);
+  ab[sizeof (a)] = ac[sizeof (a)] = eoa;
+  array(int) bc = allocate (sizeof (b) + 1, -1);
+  array(int) ba = allocate (sizeof (b) + 1, -1);
+  bc[sizeof (b)] = ba[sizeof (b)] = eoa;
+  array(int) ca = allocate (sizeof (c) + 1, -1);
+  array(int) cb = allocate (sizeof (c) + 1, -1);
+  ca[sizeof (c)] = cb[sizeof (c)] = eoa;
+
+  for (int i = 0, j = 0; j < sizeof (seq_ab); i++)
+    if (a[i] == b[seq_ab[j]]) ab[i] = seq_ab[j], ba[seq_ab[j]] = i, j++;
+  for (int i = 0, j = 0; j < sizeof (seq_bc); i++)
+    if (b[i] == c[seq_bc[j]]) bc[i] = seq_bc[j], cb[seq_bc[j]] = i, j++;
+  for (int i = 0, j = 0; j < sizeof (seq_ca); i++)
+    if (c[i] == a[seq_ca[j]]) ca[i] = seq_ca[j], ac[seq_ca[j]] = i, j++;
+
+  array(array) ares = ({}), bres = ({}), cres = ({});
+  int ai = 0, bi = 0, ci = 0;
+  int part = 8;			// Chunk partition bitfield.
+
+  while (min (ac[ai], ab[ai], ba[bi], bc[bi], cb[ci], ca[ci]) != eoa) {
+    int apart = (ac[ai] == -1 && 1) | (ab[ai] == -1 && 2);
+    int bpart = (ba[bi] == -1 && 2) | (bc[bi] == -1 && 4);
+    int cpart = (cb[ci] == -1 && 4) | (ca[ci] == -1 && 1);
+    int newpart = apart | bpart | cpart;
+
+    if ((apart ^ bpart ^ cpart) == 7 && !(apart & bpart & cpart) &&
+	apart && bpart && cpart) {
+      // Solve cyclically interlocking equivalences by arbitrary
+      // breaking one of them.
+      if (ac[ai] != -1) ca[ac[ai]] = -1, ac[ai] = -1;
+      if (ab[ai] != -1) ba[ab[ai]] = -1, ab[ai] = -1;
+      apart = 3;
+    }
+
+    if ((part & newpart) == newpart) {
+      // If the previous block had the same equivalence partition or
+      // was a three-part conflict, we should tack any singleton
+      // equivalences we have onto it and mark them so they aren't
+      // used again below.
+      if (apart == 3) ares[-1] += ({a[ai++]}), apart = 8;
+      if (bpart == 6) bres[-1] += ({b[bi++]}), bpart = 8;
+      if (cpart == 5) cres[-1] += ({c[ci++]}), cpart = 8;
+    }
+
+    if (newpart == part) {
+      // The previous block had exactly the same equivalence
+      // partition, so tack anything else onto it too, but mask
+      // singleton equivalences this time.
+      if ((part & 3) == apart && apart != 3) ares[-1] += ({a[ai++]});
+      if ((part & 6) == bpart && bpart != 6) bres[-1] += ({b[bi++]});
+      if ((part & 5) == cpart && cpart != 5) cres[-1] += ({c[ci++]});
+    }
+    else {
+      // Start a new block. Wait with singleton equivalences (this may
+      // cause an extra iteration, but the necessary conditions to
+      // prevent that are tricky).
+      part = newpart;
+      ares += ({(part & 3) == apart && apart != 3 ? ({a[ai++]}) : ({})});
+      bres += ({(part & 6) == bpart && bpart != 6 ? ({b[bi++]}) : ({})});
+      cres += ({(part & 5) == cpart && cpart != 5 ? ({c[ci++]}) : ({})});
+    }
+  }
+
+  return ({ares, bres, cres});
+}
+
 // diff3, complement to diff (alpha stage)
 
-array(array(array(mixed))) diff3(array mid,array left,array right)
+array(array(array(mixed))) diff3_old(array mid,array left,array right)
 {
    array lmid,ldst;
    array rmid,rdst;
@@ -243,9 +325,9 @@ array(array(array(mixed))) diff3(array mid,array left,array right)
    [lmid,ldst]=diff(mid,left);
    [rmid,rdst]=diff(mid,right);
 
+   int l=0,r=0,n;
    array res=({});
    int lpos=0,rpos=0;
-   int l=0,r=0,n;
    array eq=({});
    int x;
 
