@@ -1,5 +1,5 @@
 #include "global.h"
-RCSID("$Id: psd.c,v 1.17 2000/11/20 15:08:00 per Exp $");
+RCSID("$Id: psd.c,v 1.18 2000/11/21 12:16:33 per Exp $");
 
 #include "image_machine.h"
 
@@ -518,7 +518,7 @@ static struct psd_image low_psd_decode( struct buffer *b )
   i.depth = read_ushort( b );
   i.mode = read_ushort( b );
   i.color_data = read_string( b );
-  i.resource_data = read_string( b );
+  i.resource_data = read_string( b ); i.resource_data.len++;
   i.layer_data = read_string( b );
   i.compression = read_short( b );
   i.image_data = *b;
@@ -568,6 +568,95 @@ void push_layer( struct layer  *l)
 }
 
 
+static void decode_resources( struct buffer *b )
+{
+  struct svalue *osp = Pike_sp;
+
+  while( b->len > 11 )
+  {
+    char  *signature = read_data( b, 4 );
+
+    int id;
+    struct buffer data;
+    struct buffer name;
+    if( signature[0] != '8' ||  signature[1] != 'B' ||
+        signature[2] != 'I' ||  signature[3] != 'M' )
+      break;
+
+    id = read_short( b );
+    name = read_pstring( b );
+    if( !(name.len & 1) ) read_uchar( b );
+    data = read_string( b );
+    data.len++;
+
+    if( data.len & 1 ) read_uchar( b );
+
+    switch( id )
+    {
+      case 0x03f0: /* caption */
+	{
+	  struct buffer b = read_pstring( &data );
+	  push_constant_text( "caption" );
+	  push_buffer( &b );
+	}
+	break;
+
+      case 0x0400: /* layer state info */
+	push_constant_text( "active_layer" );
+	push_int( read_short( &data ) );
+	break;
+      case 0x0408: /* guides */
+	push_constant_text( "guides" );
+	{
+	  int i,num_guides;
+	  short magic1, magic2, magic3, magic4, magic5, magic6; // from gimp.
+	  magic1 = read_short( &data ); magic2 = read_short( &data );
+	  magic3 = read_short( &data ); magic4 = read_short( &data );
+	  magic5 = read_short( &data ); magic6 = read_short( &data );
+	  num_guides = read_int( &data );
+
+	  if( data.len != (unsigned)(num_guides * 5) )
+	  {
+	    f_aggregate( 0 );
+	    break;
+	  }
+	  for (i=0; i<num_guides; i++)
+	  {
+	    int p = read_int( &data );
+	    int h = read_uchar( &data );
+	    if( h )
+	      p = (int)((((double)p) * (magic4>>8)) / ((double)(magic4&255)));
+	    else
+	      p = (int)((((double)p) * (magic6>>8)) / ((double)(magic6&255)));
+	    push_constant_text( "pos" );      push_int( p );
+	    push_constant_text( "vertical" ); push_int( !h );
+	    f_aggregate_mapping( 4 );
+	  }
+	  f_aggregate( num_guides );
+	}
+	break;
+      case 0x03ed: /* res. info. */
+	push_constant_text( "resinfo" );
+
+	push_constant_text( "hres" );       push_int(read_int( &data ) );
+	push_constant_text( "hres_unit" );  push_int(read_short( &data ) );
+	push_constant_text( "width_unit" ); push_int(read_short( &data ) );
+
+	push_constant_text( "vres" );       push_int(read_int( &data ) );
+	push_constant_text( "vres_unit" );  push_int(read_short( &data ) );
+	push_constant_text( "height_unit" );push_int(read_short( &data ) );
+
+	f_aggregate_mapping( 12 );
+	break;
+      default:
+	push_int( id );
+	push_buffer( &data );
+	break;
+    }
+  }
+  f_aggregate_mapping( sp-osp );
+}
+
 void push_psd_image( struct psd_image *i )
 {
   struct svalue *osp = sp, *tsp;
@@ -579,7 +668,7 @@ void push_psd_image( struct psd_image *i )
   ref_push_string( s_depth ); push_int( i->compression );
   ref_push_string( s_mode ); push_int( i->mode );
   ref_push_string( s_color_data ); push_buffer( &i->color_data );
-  ref_push_string( s_resource_data ); push_buffer( &i->resource_data );
+  ref_push_string( s_resources ); decode_resources( &i->resource_data );
   ref_push_string( s_image_data ); push_buffer( &i->image_data );
   ref_push_string( s_layers );
   l = i->first_layer;

@@ -20,7 +20,7 @@ STRING(mode);
 STRING(extra_data);
 STRING(id);
 STRING(color_data);
-STRING(resource_data);
+STRING(resources);
 STRING(channels);
 STRING(data);
 STRING(image_data);

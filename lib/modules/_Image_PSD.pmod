@@ -268,8 +268,14 @@ array decode_layers( string|mapping what, mapping|void opts )
     }
   }
   array layers;
+  Image.Layer lay;
   if( lopts->image )
-    layers = ({ Image.Layer( lopts ) });
+  {
+    layers = ({ (lay = Image.Layer( lopts )) });
+    lay->set_misc_value( "visible", 1 );
+    lay->set_misc_value( "name",    "Background" );
+    lay->set_misc_value( "image_guides", what->resources->guides );
+  }
   else
     layers = ({});
 
@@ -280,10 +286,11 @@ array decode_layers( string|mapping what, mapping|void opts )
 	((!(l->flags & LAYER_FLAG_INVISIBLE) && l->opacity)
 	 || opts->draw_all_layers ))
     {
-      Image.Layer lay = Image.Layer( l->image, l->alpha, m );
+      lay = Image.Layer( l->image, l->alpha, m );
       l->image = 0; l->alpha = 0;
       lay->set_misc_value( "visible", !(l->flags & LAYER_FLAG_INVISIBLE) );
       lay->set_misc_value( "name",      l->name );
+      lay->set_misc_value( "image_guides", what->resources->guides );
       if( lay->alpha() )
 	lay->set_image( lay->image(), lay->alpha()->color(l->opacity,
 							  l->opacity,
