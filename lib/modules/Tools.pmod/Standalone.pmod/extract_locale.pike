@@ -1,8 +1,10 @@
-#! /usr/bin/env pike
+// Locale Extractor Utility
+//
 // By Martin Nilsson and Andreas Lange
 //
-// $Id: extract_locale.pike,v 1.17 2004/01/21 18:53:58 grubba Exp $
-//
+// $Id: extract_locale.pike,v 1.18 2004/01/21 19:01:32 grubba Exp $
+
+#pike __REAL_VERSION__
 
 constant description = "Pike locale extractor utility";
 
@@ -691,7 +693,7 @@ void update_pike_sourcefiles(array filelist) {
 
     foreach(id_pike_order, array id) {
       // Insert ids based on tokens and the now regexp-safe string
-      object(Regexp) RE;
+      Regexp.SimpleRegexp RE;
       // RE = ^(.*TOKEN\( ")(", string \).*)$
       RE = Regexp("^(.*" + id[1] + "\\([ \n\t]*)[\"0]*" +
 		  "([ ,\n\t]*"+id[2]+"[ \t\n]*\\).*)$");
@@ -1048,7 +1050,7 @@ int main(int argc, array(string) argv) {
 
   if( (!(xml_name && args->sync && args->xmlpath && args->baselang)) &&
       (!sizeof(files) || args->help) ) {
-    sscanf("$Revision: 1.17 $", "$"+"Revision: %s $", string v);
+    sscanf("$Revision: 1.18 $", "$"+"Revision: %s $", string v);
     werror("\n  Locale Extractor Utility "+v+"\n\n");
     werror("  Syntax: pike -x extract_locale [arguments] infile(s)\n\n");
     werror("  Arguments: --project=name  default: first found in infile\n");
