@@ -1,5 +1,5 @@
 /*
- * $Id: mklibpike.pike,v 1.1 2005/01/03 17:22:22 grubba Exp $
+ * $Id: mklibpike.pike,v 1.2 2005/01/03 17:59:05 grubba Exp $
  *
  * Create strapping code for a list of symbols in pike.so,
  * and the pike headerfiles.
@@ -78,7 +78,12 @@ int main(int argc, array(string) argv)
 {
   array(string) headers = default_headers;
   array(string) srcdirs = ({ ".", "/home/grubba/src/Pike/7.7/src", });
-  array(string) symbols = ({ "init_pike", "pike_set_default_master" });
+  array(string) symbols = ({
+    "init_pike",
+    "init_pike_runtime",
+    "pike_set_default_master",
+    "set_pike_debug_options",
+  });
 
   Stdio.File out = Stdio.stdout;
 
@@ -126,8 +131,29 @@ int main(int argc, array(string) argv)
     
     array(array(Parser.C.Token)) args = info[1][1..sizeof(info[1])-2]/({","});
     foreach(args; int n; array(Parser.C.Token) arg) {
-      // FIXME: function pointer args!
-      out->write("%s%s", n?", ":"",arg[-1]->text);
+      array(Parser.C.Token)|Parser.C.Token name = arg[-1];
+      if (arrayp(name)) {
+	if (name[0]->text == "(") {
+	  // Function pointer arg.
+	  name = arg[-2];
+	  if (arrayp(name)) {
+	    // Expect something like ( * foo ).
+	    // FIXME: Support addresses to function pointers?
+	    name = name[2];
+	  } else {
+	    // Syntax error.
+	    werror("Failed to find variable name in %s\n",
+		   Parser.C.simple_reconstitute(arg));
+	    fail = 1;
+	  }
+	} else {
+	  // FIXME: Support array notation?
+	  werror("Failed to find variable name in %s\n",
+		 Parser.C.simple_reconstitute(arg));
+	  fail = 1;
+	}
+      }
+      out->write("%s%s", n?", ":"", name->text);
     }
     out->write(");\n"
 	       "}\n\n");
