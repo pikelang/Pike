@@ -1,5 +1,5 @@
 #
-# $Id: Makefile,v 1.4 1999/02/05 18:54:17 grubba Exp $
+# $Id: Makefile,v 1.5 1999/02/08 05:03:04 mast Exp $
 #
 # Meta Makefile
 #
@@ -44,7 +44,7 @@ compile: configure
 	metatarget="$(METATARGET)"; \
 	test -f "$$builddir"/pike || metatarget="new_peep_engine pike $$metatarget"; \
 	cd "$$builddir" && ( \
-	  echo Making in "$$builddir" $$metatarget; \
+	  echo Making in "$$builddir"; \
 	  rm -f remake; \
 	  $(MAKE) all $$metatarget || ( test -f remake && $(MAKE) all $$metatarget ) \
 	)
@@ -90,7 +90,7 @@ spotless:
 	-cd "$(BUILDDIR)" && $(MAKE) spotless
 
 distclean:
-	-rm -rf build
+	-rm -rf build bin/pike
 
 cvsclean: distclean
 	for d in `find src -type d -print`; do if test -f "$$d/.cvsignore"; then (cd "$$d" && rm -f `cat ".cvsignore"`); else :; fi; done
