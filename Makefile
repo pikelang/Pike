@@ -1,5 +1,5 @@
 #
-# $Id: Makefile,v 1.30 2001/01/19 16:26:38 grubba Exp $
+# $Id: Makefile,v 1.31 2001/01/21 23:06:29 jhs Exp $
 #
 # Meta Makefile
 #
@@ -154,3 +154,13 @@ cvsclean: distclean
 
 depend: configure
 	-cd "$(BUILDDIR)" && $(MAKE) "MAKE=$(MAKE)" depend
+
+pikefun_TAGS:
+	cd src && etags -l none -r \
+	'/[ 	]*\(PMOD_PROTO \|PMOD_EXPORT \|static \|extern \)*void[ 	]\{1,\}f_\([a-zA-Z0-9_]*\)[ 	]*([ 	]*INT32/\2/' \
+	`find . -type f -name '*.[ch]' -print`
+	cd lib/modules && etags -l none -r \
+	'/[ \t]*\(\<\(public\|inline\|final\|static\|protected\|local\|optional\|private\|nomask\|variant\)\>[ \t]\{1,\}\)*\(\<class\>\)[ \t]\{1,\}\<\([a-zA-Z¡-ÿ_][a-zA-Z¡-ÿ_0-9]*\)\>/\4/' \
+	-r '/[ \t]*\(\<\(mixed\|float\|int\|program\|string\|function\|function(.*)\|array\|array(.*)\|mapping\|mapping(.*)\|multiset\|multiset(.*)\|object\|object(.*)\|void\|constant\|class\)\>)*\|\<\([A-ZÀ-ÖØ-ß][a-zA-Z¡-ÿ_0-9]*\)\>\)[ \t]\{1,\}\(\<\([_a-zA-Z¡-ÿ][_a-zA-Z¡-ÿ0-9]*\)\>\|``?\(!=\|->=?\|<[<=]\|==\|>[=>]\|\[\]=?\|()\|[%-!^&+*<>|~\/]\)\)[ \t]*(/\4/' \
+	-r '/#[ \t]*define[ \t]+\([_a-zA-Z]+\)(?/\1/' \
+	`find . -type f '(' -name '*.pmod' -o -name '*.pike' ')' -print`
