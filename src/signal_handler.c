@@ -22,7 +22,7 @@
 #include "builtin_functions.h"
 #include <signal.h>
 
-RCSID("$Id: signal_handler.c,v 1.72 1998/06/30 21:00:00 grubba Exp $");
+RCSID("$Id: signal_handler.c,v 1.73 1998/07/09 21:22:29 grubba Exp $");
 
 #ifdef HAVE_PASSWD_H
 # include <passwd.h>
@@ -715,7 +715,8 @@ struct perishables
 
 static void free_perishables(struct perishables *storage)
 {
-  exit_threads_disable(NULL);
+  if (storage->disabled)
+    exit_threads_disable(NULL);
 
   if(storage->env) free((char *)storage->env);
 
@@ -960,6 +961,7 @@ void f_create_process(INT32 args)
 
     storage.env=0;
     storage.argv=0;
+    storage.disabled=0;
     MAKE_CONSTANT_SHARED_STRING(storage.nice_s, "nice");
     MAKE_CONSTANT_SHARED_STRING(storage.cwd_s, "cwd");
     MAKE_CONSTANT_SHARED_STRING(storage.stdin_s, "stdin");
@@ -971,8 +973,6 @@ void f_create_process(INT32 args)
     storage.wanted_gids=0;
     storage.wanted_gids_array=0;
 #endif
-
-    init_threads_disable(NULL);
 
     SET_ONERROR(err, free_perishables, &storage);
 
@@ -1212,6 +1212,10 @@ void f_create_process(INT32 args)
 #endif /* HAVE_SETGROUPS */
     
     storage.argv=(char **)xalloc((1+cmd->size) * sizeof(char *));
+
+    init_threads_disable(NULL);
+
+    storage.disabled = 1;
 
 #if defined(HAVE_FORK1) && defined(_REENTRANT)
     pid=fork1();
