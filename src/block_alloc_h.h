@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: block_alloc_h.h,v 1.15 2002/11/24 22:41:55 mast Exp $
+|| $Id: block_alloc_h.h,v 1.16 2002/11/25 00:19:46 mast Exp $
 */
 
 #undef BLOCK_ALLOC
@@ -36,7 +36,7 @@ void PIKE_CONCAT3(init_,DATA,_hash)(void);			\
 void PIKE_CONCAT3(exit_,DATA,_hash)(void);			\
 
 #define PTR_HASH_ALLOC_FIXED(DATA,BSIZE)			\
-PTR_ALLOC(DATA,BSIZE);
+PTR_HASH_ALLOC(DATA,BSIZE);
 
 #define BLOCK_ALLOC_FILL_PAGES(DATA,PAGES) BLOCK_ALLOC(DATA, n/a)
 #define PTR_HASH_ALLOC_FILL_PAGES(DATA,PAGES) PTR_HASH_ALLOC(DATA, n/a)
