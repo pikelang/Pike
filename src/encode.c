@@ -25,7 +25,7 @@
 #include "version.h"
 #include "bignum.h"
 
-RCSID("$Id: encode.c,v 1.109 2001/07/12 23:14:16 hubbe Exp $");
+RCSID("$Id: encode.c,v 1.110 2001/07/12 23:41:20 hubbe Exp $");
 
 /* #define ENCODE_DEBUG */
 
@@ -744,46 +744,33 @@ static void encode_value2(struct svalue *val, struct encode_data *data)
 	case T_INT:
 	  if(Pike_sp[-1].subtype == NUMBER_UNDEFINED)
 	  {
+	    int to_change = data->buf.s.len;
 	    pop_stack();
 	    push_svalue(val);
 	    f_object_program(1);
 
-	    /* FIXME:
-	     * If we want to be more backwards compatible, then
-	     * we could follow the following steps:
-	     * 1) do a code_entry(TAG_OBJECT, 1, data);
-	     * 2) remove ourselves from the cache
-	     * 3) code the program
-	     * 4) if val is present in the cache, goto 7
-	     * 5) call encode_object
-	     * 6) break;
-	     *    (This is the hard part...)
-	     * 7) change code_entry in (1) to code_entry(TAG_OBJECT,3 data)
-	     * 8) push_svalue(val)
-	     * 9) break;
-	     *
-	     * -Hubbe
+	    /* We have to remove ourself from the cache */
+	    map_delete(data->encoded, val);
+	    
+	    /* Code the program */
+	    code_entry(TAG_OBJECT, 3,data);
+	    encode_value2(Pike_sp-1, data);
+	    pop_stack();
+	    
+	    push_svalue(val);
+
+	    /* If we do not exist in cache, use backwards-
+	     * compatible method, otherwise use newfangled
+	     * style=3.  -Hubbe
 	     */
-
-	    if(low_mapping_lookup(data->encoded, Pike_sp-1))
+	    if(!low_mapping_lookup(data->encoded, val))
 	    {
-	      code_entry(TAG_OBJECT, 1,data);
-	      encode_value2(Pike_sp-1, data);
-	      pop_stack();
-	      
-	      push_svalue(val);
+	      /* This causes the code_entry above to
+	       * become: code_entry(TAG_OBJECT, 1, data);
+	       * -Hubbe
+	       */
+	      data->buf.s.str[to_change] = 99;
 	      apply(data->codec,"encode_object",1);
-	    }else{
-	      /* We have to remove ourself from the cache permanently */
-	      map_delete(data->encoded, val);
-	      
-	      /* Code the program */
-	      code_entry(TAG_OBJECT, 3,data);
-	      encode_value2(Pike_sp-1, data);
-	      pop_stack();
-
-	      /* Code the object */
-	      push_svalue(val);
 	    }
 	    break;
 	  }
