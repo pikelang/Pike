@@ -25,7 +25,7 @@
 #include "security.h"
 #include "bignum.h"
 
-RCSID("$Id: opcodes.c,v 1.57 1999/10/31 22:02:17 grubba Exp $");
+RCSID("$Id: opcodes.c,v 1.58 1999/10/31 22:04:11 grubba Exp $");
 
 void index_no_free(struct svalue *to,struct svalue *what,struct svalue *ind)
 {
@@ -1319,7 +1319,8 @@ static INT32 PIKE_CONCAT4(very_low_sscanf_,INPUT_SHIFT,_,MATCH_SHIFT)(	\
 		    set[input[eye]];eye++);				\
 	  sval.type=T_STRING;						\
 	  DO_IF_CHECKER(sval.subtype=0);				\
-	  sval.u.string=make_shared_binary_string(input+e,eye-e);	\
+	  sval.u.string=PIKE_CONCAT(make_shared_binary_string,		\
+				    INPUT_SHIFT)(input+e,eye-e);	\
 	  break;							\
 									\
 	case 'n':							\
