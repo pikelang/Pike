@@ -1,5 +1,5 @@
 #
-# $Id: Makefile,v 1.65 2002/05/01 00:02:13 nilsson Exp $
+# $Id: Makefile,v 1.66 2002/05/01 14:15:13 nilsson Exp $
 #
 # Meta Makefile
 #
@@ -212,9 +212,11 @@ snapshot_export:
 snapshot: snapshot_export
 
 autobuild_export:
+	@echo Begin export
 	@$(MAKE) "MAKE=$(MAKE)" "CONFIGUREARGS=--disable-binary $(CONFIGUREARGS)" \
 	  "OS=source" "LIMITED_TARGETS=yes" "METATARGET=snapshot_export" \
-	  "EXPORT_NAME=Pike-snapshot-%Y%M%D-%h%m%s" compile
+	  "EXPORT_NAME=Pike%maj.%min-%Y%M%D-%h%m%s" compile > export_result.txt 2>&1
+	@echo Export done
 
 bin_export:
 	@$(MAKE) $(MAKE_FLAGS) "METATARGET=bin_export"
