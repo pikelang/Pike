@@ -1,0 +1,12 @@
+STRING(bpp);
+STRING(channels);
+STRING(data);
+STRING(height);
+STRING(image_data);
+STRING(layers);
+STRING(mask);
+STRING(name);
+STRING(properties);
+STRING(tiles);
+STRING(type);
+STRING(width);
