@@ -1,10 +1,10 @@
-/* $Id: blit.c,v 1.43 2000/07/28 07:12:44 hubbe Exp $ */
+/* $Id: blit.c,v 1.44 2000/08/09 11:26:49 grubba Exp $ */
 #include "global.h"
 
 /*
 **! module Image
 **! note
-**!	$Id: blit.c,v 1.43 2000/07/28 07:12:44 hubbe Exp $
+**!	$Id: blit.c,v 1.44 2000/08/09 11:26:49 grubba Exp $
 **! class Image
 */
 
@@ -125,7 +125,7 @@ static INLINE int getrgb(struct image *img,
 /*** end internals ***/
 
 
-void img_clear(rgb_group *dest,rgb_group rgb,INT32 size)
+void img_clear(rgb_group *dest, rgb_group rgb, ptrdiff_t size)
 {
   if(!size) return;
   THREADS_ALLOW();
