@@ -1,6 +1,6 @@
 #pike __REAL_VERSION__
 
-/* $Id: sslfile.pike,v 1.70 2004/03/02 15:31:10 grubba Exp $
+/* $Id: sslfile.pike,v 1.71 2004/07/06 09:20:16 srb Exp $
  */
 
 #if constant(SSL.Cipher.CipherAlgorithm)
@@ -1390,13 +1390,18 @@ static int ssl_close_callback (int called_from_real_backend)
 
     // Always signal an error and do a blunt shutdown here. That since
     // the connection has always been closed abruptly if we arrive
-    // here (a proper close arrives in the read callback). Thus no
-    // close callback should be called here - we shouldn't hide
-    // truncation attacks.
+    // here (a proper close arrives in the read callback). Thus a
+    // close callback should be called here - but we shouldn't hide
+    // truncation attacks (hence the errno), let the application decide
+    // if the error should be shown.
     if (cb_errno)
       SSL3_DEBUG_MSG ("ssl_close_callback: Got errno from another callback\n");
     else {
       SSL3_DEBUG_MSG ("ssl_close_callback: Abrupt close - simulating System.EPIPE\n");
+      function(void|mixed:int) old_close_callback = close_callback;
+      close_callback = 0;
+      if(old_close_callback)
+        old_close_callback (callback_id);
       cb_errno = System.EPIPE;
     }
     shutdown();
