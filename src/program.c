@@ -5,7 +5,7 @@
 \*/
 /**/
 #include "global.h"
-RCSID("$Id: program.c,v 1.351 2001/07/11 18:12:37 grubba Exp $");
+RCSID("$Id: program.c,v 1.352 2001/07/12 23:15:41 hubbe Exp $");
 #include "program.h"
 #include "object.h"
 #include "dynamic_buffer.h"
@@ -2068,7 +2068,7 @@ static size_t add_xstorage(size_t size,
 }
 
 typedef void (*oldhandlertype)(struct object *);
-static void compat_event_handler(enum pike_program_event e)
+static void compat_event_handler(int e)
 {
   oldhandlertype handler;
   handler=((oldhandlertype *)Pike_fp->context.prog->program)[e];
@@ -2084,6 +2084,7 @@ static void add_compat_event_handler(void)
 
     for(d=0;d<NUM_PROG_EVENTS;d++) {
       /* FIXME: This looks like it might be broken. */
+      /* Broken how? -Hubbe */
 #ifdef HAVE_COMPUTED_GOTO
       add_to_program(Pike_compiler->new_program->event_handler);
 #else /* !HAVE_COMPUTED_GOTO */
@@ -2156,7 +2157,7 @@ PMOD_EXPORT void set_gc_check_callback(void (*m)(struct object *))
   ((oldhandlertype *)Pike_compiler->new_program->program)[PROG_EVENT_GC_CHECK]=m;
 }
 
-void pike_set_prog_event_callback(void (*cb)(enum pike_program_event))
+void pike_set_prog_event_callback(void (*cb)(int))
 {
 #ifdef PIKE_DEBUG
   if(Pike_compiler->new_program->event_handler)

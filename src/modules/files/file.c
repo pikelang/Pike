@@ -6,7 +6,7 @@
 /**/
 #define NO_PIKE_SHORTHAND
 #include "global.h"
-RCSID("$Id: file.c,v 1.217 2001/07/01 21:39:58 mast Exp $");
+RCSID("$Id: file.c,v 1.218 2001/07/12 23:15:42 hubbe Exp $");
 #include "fdlib.h"
 #include "interpret.h"
 #include "svalue.h"
@@ -2299,37 +2299,42 @@ static void file_pipe(INT32 args)
   }
 }
 
-static void init_file_struct(struct object *o)
+static void file_handle_events(int event)
 {
-  FD=-1;
-  ERRNO=0;
-  THIS->open_mode=0;
-  THIS->flags=0;
+  struct object *o=Pike_fp->current_object;
+  switch(event)
+  {
+    case PROG_EVENT_INIT:
+      FD=-1;
+      ERRNO=0;
+      THIS->open_mode=0;
+      THIS->flags=0;
 #if defined(HAVE_FD_FLOCK) || defined(HAVE_FD_LOCKF)
-  THIS->key=0;
+      THIS->key=0;
 #endif /* HAVE_FD_FLOCK */
-  THIS->myself=o;
-  /* map_variable will take care of the rest */
-}
+      THIS->myself=o;
+      /* map_variable will take care of the rest */
+      break;
 
-static void exit_file_struct(struct object *o)
-{
-  if(!(THIS->flags & (FILE_NO_CLOSE_ON_DESTRUCT |
-		      FILE_LOCK_FD |
-		      FILE_NOT_OPENED)))
-     just_close_fd();
-  free_fd_stuff();
-
-  REMOVE_INTERNAL_REFERENCE(THIS);
-  /* map_variable will free callbacks */
-}
+    case PROG_EVENT_EXIT:
+      if(!(THIS->flags & (FILE_NO_CLOSE_ON_DESTRUCT |
+			  FILE_LOCK_FD |
+			  FILE_NOT_OPENED)))
+	just_close_fd();
+      free_fd_stuff();
+      
+      REMOVE_INTERNAL_REFERENCE(THIS);
+      /* map_variable will free callbacks */
+      break;
 
 #ifdef PIKE_DEBUG
-static void gc_mark_file_struct(struct object *o)
-{
-  DEBUG_CHECK_INTERNAL_REFERENCE(THIS);
-}
+    case PROG_EVENT_GC_CHECK:
+      DEBUG_CHECK_INTERNAL_REFERENCE(THIS);
+      break;
 #endif
+  }
+}
+
 
 static void low_dup(struct object *toob,
 		    struct my_file *to,
@@ -3215,11 +3220,7 @@ void pike_module_init(void)
 
 
   init_file_locking();
-  set_init_callback(init_file_struct);
-  set_exit_callback(exit_file_struct);
-#ifdef PIKE_DEBUG
-  set_gc_check_callback(gc_mark_file_struct);
-#endif
+  pike_set_prog_event_callback(file_handle_events);
 
   file_program=end_program();
   add_program_constant("Fd",file_program,0);

@@ -1336,7 +1336,7 @@ class ParseBlock
 	string funcname=mkname(base,"event","handler");
 	ret+=IFDEF(ev_handler_define,
 		   ({
-		     sprintf("static void %s(enum pike_program_event ev) {\n",funcname),
+		     sprintf("static void %s(int ev) {\n",funcname),
 		       "  switch(ev) {\n"
 		       })+
 		   ev_handler+

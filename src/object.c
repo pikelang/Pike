@@ -5,7 +5,7 @@
 \*/
 /**/
 #include "global.h"
-RCSID("$Id: object.c,v 1.177 2001/07/03 17:01:49 grubba Exp $");
+RCSID("$Id: object.c,v 1.178 2001/07/12 23:15:40 hubbe Exp $");
 #include "object.h"
 #include "dynamic_buffer.h"
 #include "interpret.h"
@@ -97,7 +97,7 @@ PMOD_EXPORT struct object *low_clone(struct program *p)
   int e;
   struct object *o;
 
-  if(!(p->flags & PROGRAM_FINISHED))
+  if(!(p->flags & PROGRAM_PASS_1_DONE))
     Pike_error("Attempting to clone an unfinished program\n");
 
 #ifdef PROFILING
@@ -242,6 +242,27 @@ PMOD_EXPORT void call_c_initializers(struct object *o)
   POP_FRAME();
 }
 
+
+void call_prog_event(struct object *o, int event)
+{
+  int e;
+  struct program *p=o->prog;
+  PUSH_FRAME(o);
+
+  /* clear globals and call C initializers */
+  for(e=p->num_inherits-1; e>=0; e--)
+  {
+    int q;
+    SET_FRAME_CONTEXT(p->inherits[e]);
+
+    if(pike_frame->context.prog->event_handler)
+      pike_frame->context.prog->event_handler(event);
+  }
+
+  POP_FRAME();
+}
+
+
 void call_pike_initializers(struct object *o, int args)
 {
   apply_lfun(o,LFUN___INIT,0);
@@ -262,6 +283,9 @@ PMOD_EXPORT struct object *debug_clone_object(struct program *p, int args)
   struct object *o;
   if(p->flags & PROGRAM_NEEDS_PARENT)
     Pike_error("Parent lost, cannot clone program.\n");
+
+  if(!(p->flags & PROGRAM_FINISHED))
+    Pike_error("Attempting to clone an unfinished program\n");
 
   o=low_clone(p);
   SET_ONERROR(tmp, do_free_object, o);
@@ -298,6 +322,9 @@ PMOD_EXPORT struct object *parent_clone_object(struct program *p,
   SET_ONERROR(tmp, do_free_object, o);
   debug_malloc_touch(o);
 
+  if(!(p->flags & PROGRAM_FINISHED))
+    Pike_error("Attempting to clone an unfinished program\n");
+
   if(p->flags & PROGRAM_USES_PARENT)
   {
     add_ref( PARENT_INFO(o)->parent=parent );
@@ -305,6 +332,40 @@ PMOD_EXPORT struct object *parent_clone_object(struct program *p,
   }
   call_c_initializers(o);
   call_pike_initializers(o,args);
+  UNSET_ONERROR(tmp);
+  return o;
+}
+
+/* BEWARE: This function does not call create() or __INIT() */
+struct object *decode_value_clone_object(struct svalue *prog)
+{
+  struct object *o, *parent;
+  ONERROR tmp;
+  INT32 parent_identifier;
+  struct program *p=program_from_svalue(prog);
+  if(!p) Pike_error("Failed to decode program!\n");
+
+  o=low_clone(p);
+  SET_ONERROR(tmp, do_free_object, o);
+  debug_malloc_touch(o);
+  
+  if(prog->type == T_FUNCTION)
+  {
+    parent=prog->u.object;
+    parent_identifier=prog->subtype;
+  }else{
+    parent=0;
+    parent_identifier=0;
+  }
+
+  if(p->flags & PROGRAM_USES_PARENT)
+  {
+    
+    PARENT_INFO(o)->parent=parent;
+    if(parent) add_ref(parent);
+    PARENT_INFO(o)->parent_identifier = DO_NOT_WARN((INT32)parent_identifier);
+  }
+  call_c_initializers(o);
   UNSET_ONERROR(tmp);
   return o;
 }

@@ -5,7 +5,7 @@
 \*/
 
 /*
- * $Id: program.h,v 1.136 2001/07/09 14:19:16 grubba Exp $
+ * $Id: program.h,v 1.137 2001/07/12 23:15:41 hubbe Exp $
  */
 #ifndef PROGRAM_H
 #define PROGRAM_H
@@ -279,14 +279,12 @@ struct pike_trampoline
 /* */
 #define PROGRAM_NEEDS_PARENT 0x1000
 
-enum pike_program_event
-{
-  PROG_EVENT_INIT =0,
-  PROG_EVENT_EXIT,
-  PROG_EVENT_GC_RECURSE,
-  PROG_EVENT_GC_CHECK,
-  NUM_PROG_EVENTS,
-};
+/* Using define instead of enum allows for ifdefs - Hubbe */
+#define PROG_EVENT_INIT 0
+#define PROG_EVENT_EXIT 1
+#define PROG_EVENT_GC_RECURSE 2
+#define PROG_EVENT_GC_CHECK 3
+#define NUM_PROG_EVENTS 4
 
 /* These macros should only be used if (p->flags & PROGRAM_USES_PARENT)
  * is true
@@ -324,7 +322,7 @@ struct program
   
   struct node_s *(*optimize)(struct node_s *n);
 
-  void (*event_handler)(enum pike_program_event);
+  void (*event_handler)(int);
 #ifdef PIKE_DEBUG
   unsigned INT32 checksum;
 #endif
@@ -408,7 +406,7 @@ PMOD_EXPORT void set_init_callback(void (*init)(struct object *));
 PMOD_EXPORT void set_exit_callback(void (*exit)(struct object *));
 PMOD_EXPORT void set_gc_recurse_callback(void (*m)(struct object *));
 PMOD_EXPORT void set_gc_check_callback(void (*m)(struct object *));
-void pike_set_prog_event_callback(void (*cb)(enum pike_program_event));
+void pike_set_prog_event_callback(void (*cb)(int));
 void pike_set_prog_optimize_callback(struct node_s *(*opt)(struct node_s *));
 int low_reference_inherited_identifier(struct program_state *q,
 				       int e,
