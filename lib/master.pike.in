@@ -1,6 +1,6 @@
 /* -*- Pike -*-
  *	
- * $Id: master.pike.in,v 1.158 2001/06/21 10:12:43 wellhard Exp $
+ * $Id: master.pike.in,v 1.159 2001/07/02 17:07:18 grubba Exp $
  * 
  * Master-file for Pike.
  *
@@ -570,19 +570,23 @@ void handle_error(array(mixed)|object trace)
 {
   if(mixed x=catch {
     werror(describe_backtrace(trace));
-  })
-  {
+  }) {
     // One reason for this might be too little stack space, which
     // easily can occur for "out of stack" errors. It should help to
     // tune up the STACK_MARGIN values in interpret.c then.
     werror("Error in handle_error in master object:\n");
     if(catch {
-      if (catch {
-	string msg = x[0];
-	array bt = x[1];
-	werror ("%s%O\nOriginal error:\n%O\n", msg, bt, trace);
-      })
-	werror("%O\nOriginal error:\n%O\n",x,trace);
+      catch {
+	if (catch {
+	  string msg = x[0];
+	  array bt = x[1];
+	  werror("%s%O\n", msg, bt);
+	}) {
+	  werror("%O\n", x);
+	}
+      };
+      werror("Original error:\n"
+	     "%O\n", trace);
     }) {
       werror("sprintf() failed to write error.\n");
     }
@@ -2356,7 +2360,7 @@ class Codec
     }
   
   
-  mixed decode_object(object o, mixed data)
+  void decode_object(object o, mixed data)
   {
     o->_decode(data);
   }
