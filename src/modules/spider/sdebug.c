@@ -27,21 +27,22 @@ void f__string_debug(INT32 args)
   push_string(add_string_status(args));
 }
 #endif
-static char *program_name(struct program *p)
+
+void program_name(struct program *p)
 {
   char *f;
+  p->refs++;
+  push_program(p);
+  APPLY_MASTER("program_name", 1);
+  if(sp[-1].type == T_STRING)
+    return;
+  pop_stack();
   f=(char *)(p->linenumbers+1);
+
   if(!p->linenumbers || !strlen(f))
-  {
-    p->refs++;
-    push_program(p);
-    APPLY_MASTER("program_name", 1);
-    if(sp[-1].type == T_STRING)
-      return 0;
-    pop_stack();
-    f="Unknown program";
-  }
-  return f;
+    push_text("Unknown program");
+
+  push_text(f);
 }
 
 void f__dump_obj_table(INT32 args)
@@ -53,14 +54,10 @@ void f__dump_obj_table(INT32 args)
   while(o) 
   { 
     if(o->prog)
-    {
-      char *f;
-      f=program_name(o->prog);
-      if(f)
-	push_string(make_shared_string(f));
-    } else {
+      program_name(o->prog);
+    else 
       push_string(make_shared_binary_string("No program (Destructed?)",24));
-    }
+
     push_int(o->refs);
     f_aggregate(2);
     ++n;

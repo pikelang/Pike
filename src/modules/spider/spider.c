@@ -71,7 +71,7 @@
 #include <errno.h>
 
 
-#define MAX_PARSE_RECURSE 1024
+#define MAX_PARSE_RECURSE 102
 
 void do_html_parse(struct pike_string *ss,
 		   struct mapping *cont,struct mapping *single,
@@ -97,7 +97,7 @@ void f_http_decode_string(INT32 args)
    foo=bar=sp[-args].u.string->str;
    end=foo+sp[-args].u.string->len;
 
-   /* count procents */
+   /* count '%' characters */
    for (proc=0; foo<end; ) if (*foo=='%') { proc++; foo+=3; } else foo++;
 
    if (!proc) { pop_n_elems(args-1); return; }
@@ -133,7 +133,7 @@ void f_parse_accessed_database(INT32 args)
   arg = sp[-1].u.array;
   arg->refs++;
   /* The initial string is gone, but the array is there now. */
-  pop_stack(); 
+  pop_stack();
 
   for (i = 0; i < arg->size; i++)
   {
@@ -214,10 +214,10 @@ void f_send_fd(INT32 args)
 
 #else
 #if 0
-   /*
-  / Shuffle is only compiled on Solaris anyway. It is _not_ easy to fix
- / this for _all_ systems (SYSV, BSDI, BSD, Linux all use different
-/ styles)
+     /*
+    / Shuffle is only compiled on Solaris anyway. It is _not_ easy to fix
+   / this for _all_ systems (SYSV, BSDI, BSD, Linux all use different
+  / styles)
 */
 #if HAVE_SENDMSG
 #define HAVE_SEND_FD
@@ -328,7 +328,10 @@ void f_parse_html(INT32 args)
 
   free_mapping(cont);
   free_mapping(single);
-  f_add(strings);
+  if(strings > 1)
+    f_add(strings);
+  else if(!strings)
+    push_text("");
 }
 
 void f_parse_html_lines(INT32 args)
@@ -593,6 +596,7 @@ void do_html_parse(struct pike_string *ss,
   char *s;
   struct svalue sval1,sval2;
   struct pike_string *ss2;
+
   if (!ss->len)
   {
     free_string(ss);
@@ -1806,7 +1810,6 @@ void init_spider_efuns(void)
   add_efun("endpwent", f_endpwent, "function(void:int)", OPT_EXTERNAL_DEPEND);
 #endif
 
-
   add_efun("set_start_quote", f_set_start_quote, "function(int:int)",
 	   OPT_EXTERNAL_DEPEND);
 
@@ -1938,9 +1941,11 @@ void init_spider_efuns(void)
 static struct program *streamed_parser;
 
 extern void init_parse_program();
+extern void init_udp();
 
 void init_spider_programs()
 {
+  init_udp();
   start_new_program();
   add_storage( sizeof (struct streamed_parser) );
   add_function( "init", streamed_parser_set_data,

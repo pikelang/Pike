@@ -53,12 +53,20 @@
 #include <sys/stat.h>
 #include <fcntl.h>
 
-#define COOKIE 0x11223344
 
+
+#define COOKIE 0x11223344
 /* Must be (2**n)-1 */
 #define CACHESIZE 2047
 
 #define BASE_OFFSET 48
+#define BUFFLEN 8192
+#define FUZZ 60
+#define THIS ((struct file_head *)(fp->current_storage))
+#define N_SIZE(S) (((MAX((S).len,SHORT_FILE_NAME)+sizeof(struct node)-1)/8+1)*8)
+#define HASH(X) MAX(((int)(((X)>>10)^(X))&CACHESIZE)-FUZZ,0)
+#define SHORT_FILE_NAME 16
+
 
 struct string {
   unsigned int len;
@@ -68,14 +76,14 @@ struct string {
 
 typedef struct node
 {
-  /* THEWSE TWO MUST BE FIRST (optimization in write_entry) */
+  /* THEESE TWO MUST BE FIRST (optimization in write_entry) */
   INT32 hits;
   INT32 mtime;
 
   unsigned INT32 offset;
   INT32 creation_time;
-  INT32 reserved_1;
-  INT32 reserved_2;
+  INT32 val1;
+  INT32 val2;
 
   struct string name; /* MUST BE LAST */
 } node_t;
@@ -88,46 +96,53 @@ struct file_head {
 
   unsigned int reserved[8];
   /* Not saved */
-  int fd, fast_hits, other_hits, cache_conflicts;
+  int fd, fast_hits, other_hits, cache_conflicts, misses;
+  char buffer[BUFFLEN];
+  unsigned int buffer_inited;
+  unsigned int bpos; /* Start of the buffer */
+  unsigned int pos;      /* Current position in file */
   node_t *cache_table[CACHESIZE+1];
 };
 
-#define FUZZ 60
-#define THIS ((struct file_head *)(fp->current_storage))
-#define N_SIZE(S) (((MAX((S).len,64)+sizeof(struct node)-1)/8+1)*8)
-#define HASH(X) MAX(((int)(((X)>>10)^(X))&CACHESIZE)-FUZZ,0)
+int mread(struct file_head *this, char *data, int len, int pos)
+{
+  int buffert_pos = this->pos-this->bpos;
+  this->pos = pos;
+  if(this->buffer_inited
+     && (this->pos>this->bpos)
+     && (buffert_pos+len<BUFFLEN))
+  {
+    MEMCPY(data, this->buffer+buffert_pos, len);
+    return len;
+  }
 
+  this->bpos = this->pos;
+  lseek(this->fd, this->pos, SEEK_SET);
+  read(this->fd, this->buffer, BUFFLEN);
+  this->buffer_inited = 1;
+
+  MEMCPY(data, this->buffer, len);
+  return len;
+}
+
+int mwrite(struct file_head *this, char *data, int len, int pos)
+{
+  this->pos = pos;
+  lseek(this->fd, this->pos, SEEK_SET);
+  write(this->fd, data, len);
+}
 
 static node_t *entry(int offset, struct file_head *this)
 {
-  node_t *me;
-  int amnt;
+  node_t *me = malloc(sizeof(node_t)+63);
 
-  if(lseek(this->fd, offset+BASE_OFFSET, SEEK_SET)<0) {
-    perror("Cannot seek");
-    return 0;
-  }
-
-  me = malloc(sizeof(node_t)+63);
-  amnt=read(this->fd, me, sizeof(node_t)+63);
-  if((amnt <= 0) || (amnt < (int)(sizeof(node_t)+63)))
-  {
-    perror("Failed to read full entry");
-    free(me);
-    return NULL;
-  }
-  if(me->name.len > 64)
+  mread(this, (char *)me, sizeof(node_t)+63,offset+BASE_OFFSET);
+  if(me->name.len > SHORT_FILE_NAME)
   {
     int wl = sizeof(node_t)+me->name.len;
     free(me);
     me = malloc(wl);
-    amnt=read(this->fd, me, wl);
-    if(amnt <= 0 || amnt < wl)
-    {
-      fprintf(stderr, "read only %d bytes, wanted %d\n", amnt, wl);
-      free(me);
-      return NULL;
-    }
+    mread(this,(char *)me,wl,offset+BASE_OFFSET);
   }
   me->name.s[me->name.len]=0;
   return me;
@@ -135,36 +150,52 @@ static node_t *entry(int offset, struct file_head *this)
 
 static void save_head( struct file_head *this )
 {
-  if(lseek(this->fd, 0, SEEK_SET)<0) return;
-  write(this->fd, this, 32);
+  mwrite(this, (char *)this, 32, 0);
 }
-
 
 static void load_head( struct file_head *this )
 {
-  if(lseek(this->fd, 0, SEEK_SET)<0) return;
-  read(this->fd, this, 32);
+  mread(this, (char *)this, 32, 0);
 }
 
+#ifndef MAX
 #define MAX(a,b) ((a)<(b)?(b):(a))
+#endif
 
 static void write_entry( node_t *e, struct file_head *this, int shortp )
 {
-  if(lseek(this->fd, e->offset+BASE_OFFSET, SEEK_SET)<0)
-  {
-    perror("Cannot seek");
-    return;
-  }
   if(shortp)
-    write(this->fd, e, 8); /* <--- */
+    mwrite(this,(char*)e,8,e->offset+BASE_OFFSET);
   else
-    write(this->fd, e, sizeof(node_t)+MAX(e->name.len, 64)-1);
+    mwrite(this,(char*)e,sizeof(node_t)+MAX(e->name.len, SHORT_FILE_NAME)-1,
+	   e->offset+BASE_OFFSET);
 }
 
 static void free_entry( node_t *e )
 {
   free( e );
 }
+
+void insert_in_cache(node_t *me, struct file_head *this)
+{
+  int of = HASH(me->name.hval), oof=of;
+  while(this->cache_table[of]) {
+    of++;
+    if(of>CACHESIZE || (of-oof>FUZZ))
+      break;
+  }
+  if(of<=CACHESIZE && (of-oof)<=FUZZ)
+    this->cache_table[of]=me;
+  else {
+    if(this->cache_table[oof]->hits < me->hits)
+    {
+      this->cache_conflicts++;
+      free_entry(this->cache_table[oof]);
+      this->cache_table[oof]=me;
+    }
+  }
+}
+
 
 static node_t *new_entry(struct string *file_name, struct file_head *this)
 {
@@ -177,46 +208,52 @@ static node_t *new_entry(struct string *file_name, struct file_head *this)
   this->next_free += entry_size;
   save_head(this);
 
-  me = malloc(sizeof(node_t)+file_name->len-1+64);
+  me = malloc(sizeof(node_t)+file_name->len-1+SHORT_FILE_NAME);
   me->creation_time = t;
   me->hits=0;
   me->mtime = t;
   MEMCPY(&me->name, file_name, sizeof(string)+file_name->len);
   me->offset = pos;
   write_entry( me, this, 0 );
-
-  if(this->cache_table[HASH(me->name.hval)])
-    free_entry(this->cache_table[HASH(me->name.hval)]);
-  this->cache_table[HASH(me->name.hval)]=me;
+  
+  insert_in_cache(me,this);
   return me;
 }
 
 static node_t *slow_find_entry(struct string *name, struct file_head *this)
 {
-  unsigned int i;
+  unsigned int i,j=0;
   struct node *me;
-  for(i=0; i<this->next_free; )
+
+  if(!this->next_free) return 0; /* Empty */
+
+  /* Start with the _next_ entry. */
+  i=this->pos?(this->pos-BASE_OFFSET):0;
+  me=entry(i,this);
+  i+=N_SIZE(me->name);
+  if(i>=this->next_free) i=0;
+
+
+  /* Loop until found, if found, insert in cache, otherwise, return 0. */
+
+  while(j<(this->next_free-BASE_OFFSET))
   {
-    if(!(me=entry(i,this))) return 0;
-    if((me->name.hval==name->hval) && (me->name.len==name->len)
+    me=entry(i,this);
+    if((me->name.hval==name->hval)
+       && (me->name.len==name->len)
        && !strncmp(me->name.s, name->s, name->len))
     {
-      int of = HASH(name->hval), oof=of;
-      while(this->cache_table[of]) {
-	of++;
-	if(of>CACHESIZE || (of-oof>FUZZ))
-	  break;
-      }
-      if(of<=CACHESIZE && (of-oof)<=FUZZ)
-	this->cache_table[of]=me;
-      else {
-	this->cache_conflicts++;
-	free_entry(this->cache_table[oof]);
-	this->cache_table[oof]=me;
-      }
+      /* MATCH Insert in table */
+      insert_in_cache(me,this);
       return me;
     }
+    /* Step forward to the next entry */
+
     i+=N_SIZE(me->name);
+    j+=N_SIZE(me->name);
+
+    free_entry(me);
+    if(i>=this->next_free) i=0;
   }
   return NULL;
 }
@@ -252,6 +289,7 @@ static node_t *find_entry(struct string *name, struct file_head *this)
     this->other_hits++;
     return me;
   }
+  this->misses++;
   return 0;
 }
 
@@ -261,7 +299,7 @@ static struct string *make_string(struct svalue *s)
   if(s->type != T_STRING) return 0;
   res = malloc(sizeof(struct string) + s->u.string->len-1);
   res->len = s->u.string->len;
-  memcpy(res->s, s->u.string->str, res->len);
+  MEMCPY(res->s, s->u.string->str, res->len);
   res->hval = hashmem(res->s, (INT32)res->len, (INT32)res->len);
   return res;
 }
@@ -305,22 +343,31 @@ static void push_entry( node_t *t )
 {
   push_text("hits");
   push_int(t->hits);
+
   push_text("mtime");
   push_int(t->mtime);
+
   push_text("creation_time");
   push_int(t->creation_time);
 
-  f_aggregate_mapping(6);
+  push_text("value_1");
+  push_int(t->val1);
+
+  push_text("value_2");
+  push_int(t->val2);
+
+  f_aggregate_mapping(10);
 }
 
 static void f_add( INT32 args )
 {
   node_t *me;
+  int modified = 0;
   struct string *s;
 
   if(!THIS->fd) error("No open accessdb.\n");
   
-  if(args<2) error("Wrong number of arguments to add(string fname,int num)\n");
+  if(args<2) error("Wrong number of arguments to add(string fname,int num[, int arg1, int arg2])\n");
 
   if(!(s=make_string(sp-args)))
     error("Wrong type of argument to add(string fname,int num)\n");
@@ -332,7 +379,87 @@ static void f_add( INT32 args )
   {
     me->hits += sp[-1].u.integer;
     me->mtime = current_time.tv_sec;
+    modified=1;
+  }
+  if(args>2)
+  {
+    me->val1 = sp[-args+2].u.integer;
+    if(args>3)
+      me->val2 = sp[-args+3].u.integer;
+    me->mtime = current_time.tv_sec;
+    write_entry( me, THIS, 0);
+  } else if(modified)
     write_entry( me, THIS, 1);
+
+  pop_n_elems( args );
+  push_entry( me );
+  free(s);
+}
+
+static void f_set( INT32 args )
+{
+  node_t *me;
+  int modified = 0;
+  struct string *s;
+
+  if(!THIS->fd) error("No open accessdb.\n");
+  
+  if(args<2) error("Wrong number of arguments to set(string fname,int num[, int arg1, int arg2])\n");
+
+  if(!(s=make_string(sp-args)))
+    error("Wrong type of argument to set(string fname,int num,...)\n");
+
+  if(!(me = find_entry( s, THIS ))) me=new_entry( s, THIS );
+  if(!me) error("Failed to create entry.\n");
+
+  if(sp[-1].u.integer)
+  {
+    me->hits = sp[-1].u.integer;
+    me->mtime = current_time.tv_sec;
+    modified=1;
+  }
+  if(args>2)
+  {
+    me->val1 = sp[-args+2].u.integer;
+    if(args>3)
+      me->val2 = sp[-args+3].u.integer;
+    write_entry( me, THIS, 0);
+  } else if(modified)
+    write_entry( me, THIS, 1);
+
+  pop_n_elems( args );
+  push_entry( me );
+  free(s);
+}
+
+
+static void f_new( INT32 args )
+{
+  node_t *me;
+  struct string *s;
+
+  if(!THIS->fd) error("No open accessdb.\n");
+  
+  if(args<2) error("Wrong number of arguments to new(string fname,int num[, int val1, int val2])\n");
+
+  if(!(s=make_string(sp-args)))
+    error("Wrong type of argument to new(string fname,int num[, int val1, int val2])\n");
+
+  me=new_entry( s, THIS );
+  if(!me) error("Failed to create entry.\n");
+
+  if(sp[-1].u.integer)
+  {
+    me->hits = sp[-args+1].u.integer;
+    me->mtime = current_time.tv_sec;
+    if(args>2)
+    {
+      me->val1 = sp[-args+2].u.integer;
+      if(args>3)
+	me->val2 = sp[-args+3].u.integer;
+      write_entry( me, THIS, 0);
+    } else 
+      write_entry( me, THIS, 1);
   }
   pop_n_elems( args );
   push_entry( me );
@@ -346,13 +473,16 @@ static void f_debug( INT32 args )
   push_int( THIS->fast_hits );
   push_text("slowhits");
   push_int( THIS->other_hits );
+  push_text("misses");
+  push_int( THIS->misses );
   push_text("conflicts");
   push_int( THIS->cache_conflicts );
   THIS->fast_hits=0;
   THIS->other_hits=0;
+  THIS->misses=0;
   THIS->cache_conflicts=0;
   pop_n_elems(args);
-  f_aggregate_mapping( 6 );
+  f_aggregate_mapping( 8 );
 }
 
 static void init_file_head(struct object *o)
@@ -375,7 +505,11 @@ void init_accessdb_program()
    add_storage(sizeof(struct file_head));
    add_function("create", f_create, "function(string:void)",
 		OPT_EXTERNAL_DEPEND);
-   add_function("add", f_add, "function(string,int:mapping(string:int))",
+   add_function("add", f_add, "function(string,int ...:mapping(string:int))",
+		OPT_EXTERNAL_DEPEND|OPT_SIDE_EFFECT);
+   add_function("set", f_set, "function(string,int ...:mapping(string:int))",
+		OPT_EXTERNAL_DEPEND|OPT_SIDE_EFFECT);
+   add_function("new", f_new, "function(string,int ...:mapping(string:int))",
 		OPT_EXTERNAL_DEPEND|OPT_SIDE_EFFECT);
    add_function("debug", f_debug, "function(void:mapping)",OPT_EXTERNAL_DEPEND);
    set_init_callback(init_file_head);
