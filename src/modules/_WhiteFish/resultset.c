@@ -1,7 +1,7 @@
 #include "global.h"
 #include "stralloc.h"
 #include "global.h"
-RCSID("$Id: resultset.c,v 1.8 2001/05/22 12:32:02 per Exp $");
+RCSID("$Id: resultset.c,v 1.9 2001/05/22 12:50:35 per Exp $");
 #include "pike_macros.h"
 #include "interpret.h"
 #include "program.h"
@@ -372,6 +372,94 @@ static void f_resultset_or( INT32 args )
   push_object( res );
 }
 
+static void f_resultset_intersect( INT32 args )
+/*
+ *! @decl intersect( ResultSet a )
+ *! @decl `&( ResultSet a )
+ *!
+ *!
+ *! Return a new resultset with all entries that are present in _both_
+ *! sets. Only the document_id is checked, the resulting ranking is
+ *! the lowest ranking of the two sets..
+ */
+{
+  struct object *res = wf_resultset_new();
+  struct object *left = Pike_fp->current_object;
+  struct object *right;
+  int lp=-1, rp=-1;
+
+  int left_used=1, right_used=1;
+  int left_left=1, right_left=1;
+  int right_size, left_size;
+
+  int left_doc=0, left_rank=0, right_doc=0, right_rank=0, last=-1;
+  ResultSet *set_r, *set_l = T(left)->d;
+
+  get_all_args( "intersect", args, "%o", &right );
+
+  right = WF_RESULTSET( right );
+  set_r = T(right)->d;
+  left_size = set_l->num_docs;
+  right_size = set_r->num_docs;
+  
+  while( left_left && right_left )
+  {
+    if( left_left && left_used ) /* New from left */
+    {
+      if( ++lp == left_size )
+      {
+	left_left = 0;
+	continue;
+      }
+      else
+      {
+	left_doc = set_l->hits[lp].doc_id;
+	left_rank = set_l->hits[lp].ranking;
+	left_used = 0;
+      }
+    }
+
+    if( right_left && right_used ) /* New from right */
+    {
+      if( ++rp == right_size )
+      {
+	right_left = 0;
+	continue;
+      }
+      else
+      {
+	right_doc = set_r->hits[rp].doc_id;
+	right_rank = set_l->hits[lp].ranking;
+	right_used = 0;
+      }
+    }
+
+    if(!right_left || (left_doc <= right_doc))
+    {
+      if( left_doc == right_doc )
+      {	
+	if(left_doc>last)
+	  wf_resultset_add( res, (last = left_doc),
+			    MINIMUM(left_rank,right_rank) );
+      }
+      left_used=1;
+    }
+
+    if(!left_left || (right_doc <= left_doc))
+    {
+      if( right_doc == left_doc )
+      {	
+	if(right_doc>last)
+	  wf_resultset_add( res, (last = right_doc),
+			    MINIMUM(left_rank,right_rank) );
+      }
+      right_used=1;
+    }
+  }
+  pop_n_elems( args );
+  push_object( res );
+}
+
 static void f_resultset_sub( INT32 args )
 /*
  *! @decl sub( ResultSet a )
@@ -480,6 +568,10 @@ void init_resultset_program(void)
 
     add_function( "sub", f_resultset_sub, "function(object:object)", 0 );
     add_function( "`-", f_resultset_sub, "function(object:object)", 0 );
+
+    add_function( "intersect", f_resultset_intersect,
+		  "function(object:object)", 0 );
+    add_function( "`&", f_resultset_intersect, "function(object:object)", 0 );
 
     add_function("_sizeof",f_resultset__sizeof,"function(void:int)", 0 );
     add_function("size",f_resultset__sizeof,"function(void:int)", 0 );
