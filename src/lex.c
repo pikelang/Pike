@@ -385,7 +385,7 @@ struct inputstate
 {
   struct inputstate *next;
   int fd;
-  char *data;
+  unsigned char *data;
   INT32 buflen;
   INT32 pos;
   int dont_free_data;
@@ -611,7 +611,7 @@ static struct inputstate *prot_memory_inputstate(char *data,INT32 len)
 #define READAHEAD 8192
 static int file_getc()
 {
-  char buf[READAHEAD];
+  unsigned char buf[READAHEAD];
   int got;
   do {
     got=read(istate->fd, buf, READAHEAD);
@@ -1083,6 +1083,11 @@ static void do_skip(int to)
       {
 	do{
 	  SKIPTO('*');
+	  if(LOOK()==MY_EOF)
+	  {
+	    yyerror("Unexpected end of file while skipping comment.");
+	    return;
+	  }
 	}while(!GOBBLE('/'));
       }
       continue;
@@ -1507,6 +1512,10 @@ static int do_lex2(int literal, YYSTYPE *yylval)
       if(GOBBLE('=')) return F_MULT_EQ;
       return '*';
 
+    case (unsigned)('·'&0xff):
+      if(GOBBLE('=')) return F_MULT_EQ;
+      return F_MULT;
+
     case '%':
       if(GOBBLE('=')) return F_MOD_EQ;
       return '%';
@@ -1516,13 +1525,20 @@ static int do_lex2(int literal, YYSTYPE *yylval)
       {
 	do{
 	  SKIPTO('*');
-	}while(!GOBBLE('/'));
+	  if(LOOK()==MY_EOF)
+	  {
+	    yyerror("Unexpected end of file while skipping comment.");
+	    return 0;
+	  }
+	} while(!GOBBLE('/'));
 	continue;
       }else if(GOBBLE('/'))
       {
 	SKIPUPTO('\n');
 	continue;
       }
+       /* Fallthrough */
+     case ((unsigned)('÷'&0xff)):
       if(GOBBLE('=')) return F_DIV_EQ;
       return '/';
   
@@ -1550,6 +1566,7 @@ static int do_lex2(int literal, YYSTYPE *yylval)
       return '>';
 
     case '!':
+    case 0xac: /* ('¬') */
       if(GOBBLE('=')) return F_NE;
       return F_NOT;
 

@@ -198,11 +198,12 @@ struct pike_string *pop_type()
 
 
 
-static void internal_parse_typeA(char **s)
+static void internal_parse_typeA(char **_s)
 {
-  char buf[80];
+  unsigned char buf[80];
   unsigned int len;
-
+  unsigned char **s = (unsigned char **)_s;
+  
   while(ISSPACE(**s)) ++*s;
 
   len=0;
@@ -242,7 +243,7 @@ static void internal_parse_typeA(char **s)
 	type_stack_mark();
 	type_stack_mark();
 	type_stack_mark();
-	internal_parse_type(s);
+	internal_parse_type((char **)s);
 	type_stack_reverse();
 	if(**s==',')
 	{
@@ -264,7 +265,7 @@ static void internal_parse_typeA(char **s)
       }
       ++*s;
       type_stack_mark();
-      internal_parse_type(s);  /* return type */
+      internal_parse_type((char **)s);  /* return type */
       type_stack_reverse();
       if(**s != ')') error("Missing ')' in function type.\n");
       ++*s;
@@ -284,12 +285,12 @@ static void internal_parse_typeA(char **s)
       type_stack_mark();
       ++*s;
       type_stack_mark();
-      internal_parse_type(s);
+      internal_parse_type((char **)s);
       type_stack_reverse();
       if(**s != ':') error("Expecting ':'.\n");
       ++*s;
       type_stack_mark();
-      internal_parse_type(s);
+      internal_parse_type((char **)s);
       type_stack_reverse();
       if(**s != ')') error("Expecting ')'.\n");
       ++*s;
@@ -306,7 +307,7 @@ static void internal_parse_typeA(char **s)
     if(**s == '(')
     {
       ++*s;
-      internal_parse_type(s);
+      internal_parse_type((char **)s);
       if(**s != ')') error("Expecting ')'.\n");
       ++*s;
     }else{
@@ -320,7 +321,7 @@ static void internal_parse_typeA(char **s)
     if(**s == '(')
     {
       ++*s;
-      internal_parse_type(s);
+      internal_parse_type((char **)s);
       if(**s != ')') error("Expecting ')'.\n");
       ++*s;
     }else{
