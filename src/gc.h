@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: gc.h,v 1.108 2004/03/16 18:35:13 mast Exp $
+|| $Id: gc.h,v 1.109 2004/03/16 18:42:54 mast Exp $
 */
 
 #ifndef GC_H
@@ -64,14 +64,15 @@ extern void *gc_svalue_location;
 
 #ifdef DO_PIKE_CLEANUP
 extern int gc_destruct_everything;
-#ifdef PIKE_DEBUG
+#else
+#define gc_destruct_everything 0
+#endif
+
+#if defined (PIKE_DEBUG) && defined (DO_PIKE_CLEANUP)
 extern int gc_keep_markers;
 extern int gc_external_refs_zapped;
 #else
 #define gc_keep_markers 0
-#endif
-#else
-#define gc_destruct_everything 0
 #endif
 
 #define ADD_GC_CALLBACK() do { if(!gc_evaluator_callback)  gc_evaluator_callback=add_to_callback(&evaluator_callbacks,(callback_func)do_gc,0,0); }while(0)
