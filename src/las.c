@@ -5,7 +5,7 @@
 \*/
 /**/
 #include "global.h"
-RCSID("$Id: las.c,v 1.273 2001/12/06 14:10:30 grubba Exp $");
+RCSID("$Id: las.c,v 1.274 2001/12/12 09:23:49 grubba Exp $");
 
 #include "language.h"
 #include "interpret.h"
@@ -1867,7 +1867,7 @@ node *index_node(node *n, char *node_name, struct pike_string *id)
 	    }
 	    
 	    if (thrown.type != PIKE_T_UNKNOWN) {
-	      *Pike_sp = thrown;
+	      *(Pike_sp++) = thrown;
 	      thrown.type = PIKE_T_INT;
 	      low_safe_apply_handler("compile_exception", error_handler, compat_handler, 1);
 	      if (IS_ZERO(sp-1)) yy_describe_exception(&thrown);
