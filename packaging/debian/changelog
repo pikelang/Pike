@@ -1,3 +1,30 @@
+pike7.3 (7.3.56-1) unstable; urgency=low
+
+  * Latest upstream version. The most important changes:
+        * src/: docode.c, interpret_functions.h: Replaced the F_THROW_ZERO
+          opcode used at normal exit from catch blocks with F_EXIT_CATCH,
+          which uses the newer escape catch feature. This avoids a longjmp at
+          the normal exit of every catch block.
+          Also changed the return value for normal catch block exits to be
+          UNDEFINED and not zero.
+        * lib/modules/Parser.pmod/C.pmod: Added index possibility on
+          tokens.
+        * src/program.c: Use safe_apply_handler for calling
+          get_default_module, to get better checking of the return value and
+          to get correct handling of return values that are false.
+          This fixes a bug in the odd recursion that involves the compat
+          handler and e.g. lib/7.2/modules/__default.pmod which itself
+          contains "#pike 7.2": The second time get_default_module is called
+          it'll resolve an unfinished program with "__default" and thus get a
+          function pointer that evaluates to false.
+        * bin/pike.in, src/Makefile.in, src/builtin_functions.c,
+          src/error.c: Set a breakpoint on pike_gdb_breakpoint by default
+          when gdb is started. Made it accessible from pike with
+          "_gdb_breakpoint" to make it convenient to enter gdb at a specific
+          point in the pike code.
+
+ -- Marek Habersack <grendel@debian.org>  Wed, 25 Sep 2002 02:47:40 +0200
+
 pike7.3 (7.3.55-1) unstable; urgency=low
 
   * Latest upstream version. The most important changes:
