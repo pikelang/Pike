@@ -239,6 +239,7 @@ testfont binary
 /packaging/fink/README foreign_ident
 /packaging/fink/README.Panther foreign_ident
 /packaging/freebsd/README foreign_ident
+/packaging/windows/installer.vbs foreign_ident
 /refdoc/Makefile foreign_ident
 /refdoc/presentation/tree-split-autodoc.pike foreign_ident
 /refdoc/presentation/wiki.pike foreign_ident
