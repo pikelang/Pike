@@ -1,4 +1,4 @@
-/* $Id: context.pike,v 1.9 1999/05/22 23:09:00 mast Exp $
+/* $Id: context.pike,v 1.10 2000/04/13 19:08:07 per Exp $
  *
  * Keeps track of global data for an SSL server,
  * such as preferred encryption algorithms and session cache.
@@ -69,7 +69,7 @@ array(int) preferred_compressors =
 ({ COMPRESSION_null });
 
 constant Session = SSL.session;
-constant Queue = ADT.queue;
+constant Queue = ADT.Queue;
 
 int use_cache = 1;
 int session_lifetime = 600; /* Time to remember a session, in seconds */
