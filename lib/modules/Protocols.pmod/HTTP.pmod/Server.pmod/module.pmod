@@ -2,7 +2,7 @@
 
 //! module Protocols
 //! submodule HTTP
-//! subclass HeaderParser
+//! class HeaderParser
 //!	Fast HTTP header parser. 
 
 //! module Protocols
