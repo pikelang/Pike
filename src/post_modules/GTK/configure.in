@@ -358,6 +358,12 @@ dnl Not yet available with GTK 2.0 (Wait for gnome 2.0 etc.)
    pgtk_has_docklets=nodocklets
    GNOME_CFLAGS=""
    GNOME_LIBS=""
+ else
+   if test x"$pike_cv_sys_os" = xWindows_NT ; then
+     AC_DEFINE(PGTK_AUTO_UTF8)
+   else
+     :
+   fi
  fi
 
 if test "x$WITH_GTK" = x1 ; then
