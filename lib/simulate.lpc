@@ -274,7 +274,13 @@ varargs mixed *sort_array(array foo,function cmp, mixed ... args)
   int length;
   int foop, fooend, barp, barend;
   
-  if(!cmp) cmp=`>;
+  if(!cmp || cmp==`>)
+  {
+    foo+=({});
+    sort(foo);
+    return foo;
+  }
+
   length=sizeof(foo);
 
   foo+=({});
@@ -379,7 +385,7 @@ void create()
   add_efun("sum_arrays",sum_arrays);
   add_efun("system",system);
   add_efun("this_function",this_function);
-  add_efun("version",lambda() { return "uLPC v1.0E-8"; });
+  add_efun("version",lambda() { return "uLPC v1.0E-7"; });
   add_efun("write_file",write_file);
 }
 
