@@ -1,6 +1,6 @@
 #!/usr/local/bin/pike
 
-/* $Id: test_pike.pike,v 1.12 1998/04/16 01:10:40 hubbe Exp $ */
+/* $Id: test_pike.pike,v 1.13 1998/04/17 05:04:49 hubbe Exp $ */
 
 #include <simulate.h>
 
@@ -27,7 +27,7 @@ int main(int argc, string *argv)
 
   string *args=backtrace()[0][3];
   args=args[..sizeof(args)-1-argc];
-  add_constant("RUNPIKE",args*" ");
+  add_constant("RUNPIKE",Array.map(args,Process.sh_quote)*" ");
 
   foreach(Getopt.find_all_options(argv,aggregate(
     ({"help",Getopt.NO_ARG,({"-h","--help"})}),
