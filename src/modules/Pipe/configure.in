@@ -1,10 +1,10 @@
-# $Id: configure.in,v 1.4 1998/03/28 14:41:49 grubba Exp $
+# $Id: configure.in,v 1.5 1998/05/17 18:53:28 grubba Exp $
 AC_INIT(pipe.c)
 AC_CONFIG_HEADER(config.h)
 
 sinclude(../module_configure.in)
 
-AC_HAVE_HEADERS(sys/mman.h linux/mman.h)
+AC_HAVE_HEADERS(sys/mman.h linux/mman.h sys/file.h)
 AC_HAVE_FUNCS(mmap munmap geteuid seteuid setresuid madvise)
 
 AC_OUTPUT(Makefile,echo FOO >stamp-h )
