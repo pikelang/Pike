@@ -1,10 +1,17 @@
 #!/bin/sh
 #
-# $Id: run_autoconfig,v 1.25 1998/09/24 17:36:39 grubba Exp $
+# $Id: run_autoconfig,v 1.26 1998/10/22 05:02:23 hubbe Exp $
 #
 # Bootstrap script
 
 need_to_make_depend=no
+
+case :$PATH: in
+   */NT/tools:*)
+      echo Stripping NT/tools from path temporarily...
+      PATH=`echo :$PATH | sed 's@:[^:]*/NT/tools:@@g' | sed 's@^:@@'`
+   ;;
+esac
 
 if test "x$1" = "x" ; then
   base=`echo $0 | sed 's@[^/]*$@@g'`

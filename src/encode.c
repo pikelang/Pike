@@ -23,7 +23,7 @@
 #include "stuff.h"
 #include "version.h"
 
-RCSID("$Id: encode.c,v 1.24 1998/10/11 18:17:26 marcus Exp $");
+RCSID("$Id: encode.c,v 1.25 1998/10/22 05:02:22 hubbe Exp $");
 
 #ifdef _AIX
 #include <net/nh.h>
@@ -405,10 +405,10 @@ static void encode_value2(struct svalue *val, struct encode_data *data)
 	if(p->init || p->exit || p->gc_marked || p->gc_check ||
 	   (p->flags & PROGRAM_HAS_C_METHODS))
 	  error("Cannot encode C programs.\n");
+	code_entry(val->type, 1,data);
 	f_version(0);
 	encode_value2(sp-1,data);
 	pop_stack();
-	code_entry(val->type, 1,data);
 	code_number(p->flags,data);
 	code_number(p->storage_needed,data);
 	code_number(p->timestamp.tv_sec,data);
