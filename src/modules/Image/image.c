@@ -1,9 +1,9 @@
-/* $Id: image.c,v 1.68 1997/11/23 21:58:55 per Exp $ */
+/* $Id: image.c,v 1.69 1997/11/29 18:59:35 hedda Exp $ */
 
 /*
 **! module Image
 **! note
-**!	$Id: image.c,v 1.68 1997/11/23 21:58:55 per Exp $
+**!	$Id: image.c,v 1.69 1997/11/29 18:59:35 hedda Exp $
 **! class image
 **!
 **!	The main object of the <ref>Image</ref> module, this object
@@ -82,7 +82,7 @@
 
 #include "stralloc.h"
 #include "global.h"
-RCSID("$Id: image.c,v 1.68 1997/11/23 21:58:55 per Exp $");
+RCSID("$Id: image.c,v 1.69 1997/11/29 18:59:35 hedda Exp $");
 #include "pike_macros.h"
 #include "object.h"
 #include "constants.h"
@@ -1172,18 +1172,19 @@ static INLINE void
 INLINE static void 
 image_tuned_box_leftright(const rgba_group left, const rgba_group right, 
 			  rgb_group *dest, 
-			  const int length,  const int xsize,  const int height)
+			  const int length, const int maxlength,  
+			  const int xsize,  const int height)
 {
   int x, y=height, w;
   rgb_group *from = dest;
   if(!xsize || !height) return;
-  for(x=0; x<length; x++)
+  for(x=0; x<maxlength; x++)
   {
     (dest+x)->r = (((long)left.r)*(length-x)+((long)right.r)*(x))/length;
     (dest+x)->g = (((long)left.g)*(length-x)+((long)right.g)*(x))/length;
     (dest+x)->b = (((long)left.b)*(length-x)+((long)right.b)*(x))/length;
   }
-  while(--y)  MEMCPY((dest+=xsize), from, length*sizeof(rgb_group)); 
+  while(--y)  MEMCPY((dest+=xsize), from, maxlength*sizeof(rgb_group)); 
 }
 
 
@@ -1191,14 +1192,16 @@ image_tuned_box_leftright(const rgba_group left, const rgba_group right,
 INLINE static void 
 image_tuned_box_topbottom(const rgba_group left, const rgba_group right,
 			  rgb_group *dest, 
-			  const int length, const int xsize, const int height)
+			  const int length, const int xsize, 
+			  const int height,
+			  const int maxheight)
 {
   int x,y;
   rgb_group color, *from, old;
-  if(!xsize || !height) return;
+  if(!xsize || !maxheight) return;
   if(length > 128)
   {
-    for(y=0; y<height; y++)
+    for(y=0; y<maxheight; y++)
     {
       color.r = (((long)left.r)*(height-y)+((long)right.r)*(y))/height;
       color.g = (((long)left.g)*(height-y)+((long)right.g)*(y))/height;
@@ -1218,7 +1221,7 @@ image_tuned_box_topbottom(const rgba_group left, const rgba_group right,
       }
     }
   } else {
-    for(y=0; y<height; y++)
+    for(y=0; y<maxheight; y++)
     {
       color.r = (((long)left.r)*(height-y)+((long)right.r)*(y))/height;
       color.g = (((long)left.g)*(height-y)+((long)right.g)*(y))/height;
@@ -1238,123 +1241,129 @@ image_tuned_box_topbottom(const rgba_group left, const rgba_group right,
 
 void image_tuned_box(INT32 args)
 {
-   INT32 x1,y1,x2,y2,xw,yw,x,y;
-   rgba_group topleft,topright,bottomleft,bottomright,sum,sumzero={0,0,0,0};
-   rgb_group *img;
-   INT32 ymax;
-   struct image *this;
-   float dxw, dyw;
-   rgb_group *rows, *cols;
+  INT32 x1,y1,x2,y2,xw,yw,x,y;
+  rgba_group topleft,topright,bottomleft,bottomright,sum,sumzero={0,0,0,0};
+  rgb_group *img;
+  INT32 ymax;
+  struct image *this;
+  float dxw, dyw;
+  rgb_group *rows, *cols;
 
-   if (args<5||
-       sp[-args].type!=T_INT||
-       sp[1-args].type!=T_INT||
-       sp[2-args].type!=T_INT||
-       sp[3-args].type!=T_INT||
-       sp[4-args].type!=T_ARRAY||
-       sp[4-args].u.array->size<4)
-      error("Illegal number of arguments to Image.image->tuned_box()\n");
+  if (args<5||
+      sp[-args].type!=T_INT||
+      sp[1-args].type!=T_INT||
+      sp[2-args].type!=T_INT||
+      sp[3-args].type!=T_INT||
+      sp[4-args].type!=T_ARRAY||
+      sp[4-args].u.array->size<4)
+    error("Illegal number of arguments to Image.image->tuned_box()\n");
 
-   if (!THIS->img)
-      error("no image\n");
+  if (!THIS->img)
+    error("no image\n");
 
-   x1=sp[-args].u.integer;
-   y1=sp[1-args].u.integer;
-   x2=sp[2-args].u.integer;
-   y2=sp[3-args].u.integer;
+  x1=sp[-args].u.integer;
+  y1=sp[1-args].u.integer;
+  x2=sp[2-args].u.integer;
+  y2=sp[3-args].u.integer;
 
-   get_rgba_group_from_array_index(&topleft,sp[4-args].u.array,0);
-   get_rgba_group_from_array_index(&topright,sp[4-args].u.array,1);
-   get_rgba_group_from_array_index(&bottomleft,sp[4-args].u.array,2);
-   get_rgba_group_from_array_index(&bottomright,sp[4-args].u.array,3);
+  get_rgba_group_from_array_index(&topleft,sp[4-args].u.array,0);
+  get_rgba_group_from_array_index(&topright,sp[4-args].u.array,1);
+  get_rgba_group_from_array_index(&bottomleft,sp[4-args].u.array,2);
+  get_rgba_group_from_array_index(&bottomright,sp[4-args].u.array,3);
 
-   if (x1>x2) x1^=x2,x2^=x1,x1^=x2,
-              sum=topleft,topleft=topright,topright=sum,
-              sum=bottomleft,bottomleft=bottomright,bottomright=sum;
-   if (y1>y2) y1^=y2,y2^=y1,y1^=y2,
-              sum=topleft,topleft=bottomleft,bottomleft=sum,
-              sum=topright,topright=bottomright,bottomright=sum;
-   if (x2<0||y2<0||x1>=THIS->xsize||y1>=THIS->ysize) return;
-   xw=x2-x1;
-   yw=y2-y1;
-   if(xw == 0 || yw == 0) return;
-   this=THIS;
-   THREADS_ALLOW();
+  if (x1>x2) x1^=x2,x2^=x1,x1^=x2,
+	       sum=topleft,topleft=topright,topright=sum,
+	       sum=bottomleft,bottomleft=bottomright,bottomright=sum;
+  if (y1>y2) y1^=y2,y2^=y1,y1^=y2,
+	       sum=topleft,topleft=bottomleft,bottomleft=sum,
+	       sum=topright,topright=bottomright,bottomright=sum;
 
-   if (! (topleft.alpha||topright.alpha||bottomleft.alpha||bottomright.alpha))
-     if(color_equal(topleft,bottomleft) && 
-	color_equal(topright, bottomright))
-     {
-       image_tuned_box_leftright(topleft, bottomright, 
-				 this->img+x1+this->xsize*y1, 
-				 xw+1, this->xsize, yw+1);
-       return;
-     } 
-     else if(color_equal(topleft,topright) && color_equal(bottomleft,bottomright))
-     {
-       image_tuned_box_topbottom(topleft, bottomleft, 
-				 this->img+x1+this->xsize*y1, 
-				 xw+1, this->xsize, yw+1);
-       return;
-     }
+  pop_n_elems(args);
+  THISOBJ->refs++;
+  push_object(THISOBJ);
 
-   dxw = 1.0/(float)xw;
-   dyw = 1.0/(float)yw;
-   ymax=min(yw,this->ysize-y1);
-   for (x=max(0,-x1); x<=xw && x+x1<this->xsize; x++)
-   {
+  if (x2<0||y2<0||x1>=THIS->xsize||y1>=THIS->ysize) return;
+  xw=x2-x1;
+  yw=y2-y1;
+  if(xw == 0 || yw == 0) return;
+  this=THIS;
+  THREADS_ALLOW();
+
+  if (! (topleft.alpha||topright.alpha||bottomleft.alpha||bottomright.alpha))
+    {
+      if(color_equal(topleft,bottomleft) && 
+	 color_equal(topright, bottomright))
+	{
+	  image_tuned_box_leftright(topleft, bottomright, 
+				    this->img+x1+this->xsize*y1, 
+				    xw+1, min(xw+1, this->xsize-x1),  
+				    this->xsize, min(yw+1, this->ysize-y1));
+
+	} 
+      else if(color_equal(topleft,topright) && color_equal(bottomleft,bottomright))
+	{
+	  image_tuned_box_topbottom(topleft, bottomleft, 
+				    this->img+x1+this->xsize*y1, 
+				    min(xw+1, this->xsize-x1), this->xsize, 
+				    yw+1, min(yw+1, this->ysize-y1));
+	} else 
+	  goto ugly;
+    } else {  
+    ugly:
+      dxw = 1.0/(float)xw;
+      dyw = 1.0/(float)yw;
+      ymax=min(yw,this->ysize-y1);
+      for (x=max(0,-x1); x<=xw && x+x1<this->xsize; x++)
+	{
 #define tune_factor(a,aw) (1.0-((float)(a)*(aw)))
-      float tfx1=tune_factor(x,dxw);
-      float tfx2=tune_factor(xw-x,dxw);
+	  float tfx1=tune_factor(x,dxw);
+	  float tfx2=tune_factor(xw-x,dxw);
 
-      img=this->img+x+x1+this->xsize*max(0,y1);
-      if (topleft.alpha||topright.alpha||bottomleft.alpha||bottomright.alpha)
-	 for (y=max(0,-y1); y<ymax; y++)
-	 {
-	    float tfy;
-	    rgbda_group sum={0.0,0.0,0.0,0.0};
-	    rgbd_group rgb;
+	  img=this->img+x+x1+this->xsize*max(0,y1);
+	  if (topleft.alpha||topright.alpha||bottomleft.alpha||bottomright.alpha)
+	    for (y=max(0,-y1); y<ymax; y++)
+	      {
+		float tfy;
+		rgbda_group sum={0.0,0.0,0.0,0.0};
+		rgbd_group rgb;
 
-	    add_to_rgbda_sum_with_factor(&sum,topleft,(tfy=tune_factor(y,dyw))*tfx1);
-	    add_to_rgbda_sum_with_factor(&sum,topright,tfy*tfx2);
-	    add_to_rgbda_sum_with_factor(&sum,bottomleft,(tfy=tune_factor(yw-y,dyw))*tfx1);
-	    add_to_rgbda_sum_with_factor(&sum,bottomright,tfy*tfx2);
+		add_to_rgbda_sum_with_factor(&sum,topleft,(tfy=tune_factor(y,dyw))*tfx1);
+		add_to_rgbda_sum_with_factor(&sum,topright,tfy*tfx2);
+		add_to_rgbda_sum_with_factor(&sum,bottomleft,(tfy=tune_factor(yw-y,dyw))*tfx1);
+		add_to_rgbda_sum_with_factor(&sum,bottomright,tfy*tfx2);
 
-	    sum.alpha*=(1.0/255.0);
+		sum.alpha*=(1.0/255.0);
 
-	    rgb.r=sum.r*sum.alpha+img->r*(1.0-sum.alpha);
-	    rgb.g=sum.g*sum.alpha+img->g*(1.0-sum.alpha);
-	    rgb.b=sum.b*sum.alpha+img->b*(1.0-sum.alpha);
+		rgb.r=sum.r*sum.alpha+img->r*(1.0-sum.alpha);
+		rgb.g=sum.g*sum.alpha+img->g*(1.0-sum.alpha);
+		rgb.b=sum.b*sum.alpha+img->b*(1.0-sum.alpha);
 
-	    img->r=testrange(rgb.r+0.5);
-	    img->g=testrange(rgb.g+0.5);
-	    img->b=testrange(rgb.b+0.5);
+		img->r=testrange(rgb.r+0.5);
+		img->g=testrange(rgb.g+0.5);
+		img->b=testrange(rgb.b+0.5);
 
-	    img+=this->xsize;
-	 }
-      else
-	 for (y=max(0,-y1); y<ymax; y++)
-	 {
-	    float tfy;
-	    rgbd_group sum={0,0,0};
+		img+=this->xsize;
+	      }
+	  else
+	    for (y=max(0,-y1); y<ymax; y++)
+	      {
+		float tfy;
+		rgbd_group sum={0,0,0};
 
-	    add_to_rgbd_sum_with_factor(&sum,topleft,(tfy=tune_factor(y,dyw))*tfx1);
-	    add_to_rgbd_sum_with_factor(&sum,topright,tfy*tfx2);
-	    add_to_rgbd_sum_with_factor(&sum,bottomleft,(tfy=tune_factor(yw-y,dyw))*tfx1);
-	    add_to_rgbd_sum_with_factor(&sum,bottomright,tfy*tfx2);
+		add_to_rgbd_sum_with_factor(&sum,topleft,(tfy=tune_factor(y,dyw))*tfx1);
+		add_to_rgbd_sum_with_factor(&sum,topright,tfy*tfx2);
+		add_to_rgbd_sum_with_factor(&sum,bottomleft,(tfy=tune_factor(yw-y,dyw))*tfx1);
+		add_to_rgbd_sum_with_factor(&sum,bottomright,tfy*tfx2);
 
-	    img->r=testrange(sum.r+0.5);
-	    img->g=testrange(sum.g+0.5);
-	    img->b=testrange(sum.b+0.5);
-	    img+=this->xsize;
-	 }
+		img->r=testrange(sum.r+0.5);
+		img->g=testrange(sum.g+0.5);
+		img->b=testrange(sum.b+0.5);
+		img+=this->xsize;
+	      }
 	 
-   }
-   THREADS_DISALLOW();
-
-   pop_n_elems(args);
-   THISOBJ->refs++;
-   push_object(THISOBJ);
+	}
+    }
+  THREADS_DISALLOW();
 }
 
 /*
