@@ -35,6 +35,11 @@ PROFIL=
 #PROFIL=-pg
 
 #
+# OS dependant flags
+#
+OSFLAGS=
+
+#
 #Enable warnings from the compiler, if wanted.
 #
 WARN=@WARN@
@@ -59,7 +64,8 @@ LDFLAGS=$(CFLAGS) @LDFLAGS@ @LINKFORSHARED@
 
 RUNPIKE=$(TMP_BUILDDIR)/pike -m $(TMP_LIBDIR)/master.pike $(PIKEOPTS)
 
-MAKE_FLAGS = "prefix=$(prefix)" "exec_prefix=$(exec_prefix)" "CC=$(CC)" "OTHERFLAGS=$(OTHERFLAGS)" "TMP_BINDIR=$(TMP_BINDIR)" "DEFINES=$(DEFINES)" "TMP_LIBDIR=$(TMP_LIBDIR)" "RUNPIKE=$(RUNPIKE)" "INSTALL=$(INSTALL)"
+MOST_MAKE_FLAGS = "prefix=$(prefix)" "exec_prefix=$(exec_prefix)" "CC=$(CC)" "TMP_BINDIR=$(TMP_BINDIR)" "DEFINES=$(DEFINES)" "TMP_LIBDIR=$(TMP_LIBDIR)" "RUNPIKE=$(RUNPIKE)" "INSTALL=$(INSTALL)"
+MAKE_FLAGS = $(MOST_MAKE_FLAGS) "OTHERFLAGS=$(OTHERFLAGS)" 
 
 # Add alloca.o if you don't have alloca() on your machine.
 # Add ualarm.o if you don't have ualarm() on your machine.
@@ -81,7 +87,6 @@ OBJ= \
  fsort.o \
  gc.o \
  hashtable.o \
- interpret.o \
  las.o \
  lex.o \
  multiset.o \
@@ -113,24 +118,31 @@ OBJ= \
 all: module_objects
 	$(MAKE) $(MAKE_FLAGS) pike
 
-pike: $(OBJ) modules/linker_options
+pike: $(OBJ) compile_interpret modules/linker_options
 	-@mv pike pike.old 2>/dev/null || true
-	$(LD) $(LDFLAGS) $(OBJ) `cat modules/linker_options` $(LIBS) -o pike
+	$(LD) $(LDFLAGS) $(OBJ) interpret.o `cat modules/linker_options` $(LIBS) -o pike
 
 # purify
-pure: $(OBJ) module_objects
+pure: $(OBJ) compile_interpret module_objects
 	-@mv pike pike.old 2>/dev/null || true
-	purify -free-queue-length=500 -inuse-at-exit=yes -chain-length=12 gcc $(LDFLAGS) $(OBJ) `cat modules/linker_options` $(LIBS) -o pike
+	purify -free-queue-length=500 -inuse-at-exit=yes -chain-length=12 gcc $(LDFLAGS) $(OBJ) interpret.o `cat modules/linker_options` $(LIBS) -o pike
 
 # purecov
-cover: $(OBJ) module_objects
+cover: $(OBJ) compile_interpret module_objects
 	-@mv pike pike.old 2>/dev/null || true
-	purecov purify -free-queue-length=500 -inuse-at-exit=yes -chain-length=12 gcc $(LDFLAGS) $(OBJ) `cat modules/linker_options` $(LIBS) -o pike
+	purecov purify -free-queue-length=500 -inuse-at-exit=yes -chain-length=12 gcc $(LDFLAGS) $(OBJ) interpret.o `cat modules/linker_options` $(LIBS) -o pike
 
 # quantify
-quant: $(OBJ) module_objects
+quant: $(OBJ) compile_interpret module_objects
 	-@mv pike pike.old 2>/dev/null || true
-	quantify gcc $(LDFLAGS) $(OBJ) `cat modules/linker_options` $(LIBS) -o pike
+	quantify gcc $(LDFLAGS) $(OBJ) interpret.o `cat modules/linker_options` $(LIBS) -o pike
+
+# Several optimizers have problems with interpret.c
+# First try compiling with optimization and if that doesn't work, without.
+compile_interpret : force
+	$(MAKE) $(MAKE_FLAGS) interpret.o || NO_ULIMIT=yes $(MAKE) $(MOST_MAKE_FLAGS) "OPTIMIZE=" interpret.o
+
+force :
 
 # install
 install:
