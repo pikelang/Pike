@@ -40,9 +40,14 @@ program compile_file(string file)
 
 class Codec
 {
-  string nameof(string x)
+  string nameof(mixed x)
   {
     if(mixed tmp=search(all_constants(),x))  return tmp;
+    switch(x)
+    {
+#define CONST(X) case X: return #X
+      CONST(_static_modules.files.Stat);
+    }
     encoded+=({x});
     return UNDEFINED;
   } 

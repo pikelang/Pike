@@ -25,7 +25,7 @@
 #include "version.h"
 #include "bignum.h"
 
-RCSID("$Id: encode.c,v 1.79 2000/12/05 21:08:17 per Exp $");
+RCSID("$Id: encode.c,v 1.80 2001/01/25 11:34:18 hubbe Exp $");
 
 /* #define ENCODE_DEBUG */
 
@@ -794,6 +794,23 @@ struct decode_data
 
 static void decode_value2(struct decode_data *data);
 
+static void fallback_codec(void)
+{
+  size_t x;
+  push_constant_text(".");
+  f_divide(2);
+  f_reverse(1);
+  Pike_sp--;
+  x=Pike_sp->u.array->size;
+  push_array_items(Pike_sp->u.array);
+  ref_push_mapping(get_builtin_constants());
+  while(x--)
+  {
+    stack_swap();
+    f_arrow(2);
+  }
+}
+
 static int my_extract_char(struct decode_data *data)
 {
   if(data->ptr >= data->len)
@@ -1256,9 +1273,7 @@ static void decode_value2(struct decode_data *data)
 	  {
 	    apply(data->codec,"objectof", 1);
 	  }else{
-	    ref_push_mapping(get_builtin_constants());
-	    stack_swap();
-	    f_index(2);
+	    fallback_codec();
 	  }
 	  break;
 
@@ -1322,9 +1337,7 @@ static void decode_value2(struct decode_data *data)
 	  {
 	    apply(data->codec,"functionof", 1);
 	  }else{
-	    ref_push_mapping(get_builtin_constants());
-	    stack_swap();
-	    f_index(2);
+	    fallback_codec();
 	  }
 	  break;
 
@@ -1366,9 +1379,7 @@ static void decode_value2(struct decode_data *data)
 	  {
 	    apply(data->codec,"programof", 1);
 	  }else{
-	    ref_push_mapping(get_builtin_constants());
-	    stack_swap();
-	    f_index(2);
+	    fallback_codec();
 	  }
 	  if(data->pickyness && !program_from_svalue(Pike_sp-1)) {
 	    if ((prog_code->type == T_STRING) &&
