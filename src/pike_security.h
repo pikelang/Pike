@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: pike_security.h,v 1.19 2004/04/06 13:03:41 nilsson Exp $
+|| $Id: pike_security.h,v 1.20 2004/06/30 00:22:22 nilsson Exp $
 */
 
 #include "global.h"
@@ -45,17 +45,17 @@ struct pike_creds
 
 #define CHECK_DATA_SECURITY(DATA,BIT) (\
    CHECK_SECURITY(BIT) || \
-   !(DATA)->prot || (OBJ2CREDS((DATA)->prot)->data_bits & (BIT)) || \
-   (OBJ2CREDS((DATA)->prot)->user == OBJ2CREDS(CURRENT_CREDS)->user) )
+   ( (DATA)->prot && ( (OBJ2CREDS((DATA)->prot)->data_bits & (BIT)) ||  \
+   (OBJ2CREDS((DATA)->prot)->user == OBJ2CREDS(CURRENT_CREDS)->user))) )
 
 #define CHECK_DATA_SECURITY_OR_ERROR(DATA,BIT,ERR) do {	\
-  if(!CHECK_DATA_SECURITY(DATA,BIT))			\
+  if(!CHECK_DATA_SECURITY(DATA,BIT))             \
      Pike_error ERR;					\
  }while(0)
 
-#define CHECK_SECURITY_OR_ERROR(BIT,ERR) do {	\
-  if(!CHECK_SECURITY(BIT))			\
-     Pike_error ERR;				\
+#define CHECK_SECURITY_OR_ERROR(BIT,ERR) do { \
+  if(!CHECK_SECURITY(BIT))             \
+     Pike_error ERR;					\
  }while(0)
 
 #define ASSERT_SECURITY_ROOT(FUNC) CHECK_SECURITY_OR_ERROR( \
