@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: opcodes.c,v 1.136 2003/02/10 13:59:59 grubba Exp $
+|| $Id: opcodes.c,v 1.137 2003/02/11 15:22:28 mirar Exp $
 */
 
 #include "global.h"
@@ -30,7 +30,7 @@
 
 #define sp Pike_sp
 
-RCSID("$Id: opcodes.c,v 1.136 2003/02/10 13:59:59 grubba Exp $");
+RCSID("$Id: opcodes.c,v 1.137 2003/02/11 15:22:28 mirar Exp $");
 
 void index_no_free(struct svalue *to,struct svalue *what,struct svalue *ind)
 {
@@ -859,6 +859,224 @@ PMOD_EXPORT void f_cast(void)
 }
 
 
+/* 
+ * helper functions for sscanf %O
+ */
+
+static PMOD_EXPORT int pcharp_extract_char_const(PCHARP str,
+						 PCHARP *dstr,
+						 ptrdiff_t maxlength,
+						 ptrdiff_t *dmaxlength)
+{
+   int c;
+
+   *dstr=str;
+   maxlength--;  
+   *dmaxlength=maxlength;
+
+   switch (c=EXTRACT_PCHARP(str))
+   {
+      case 0:
+	 *dmaxlength=maxlength+1;
+	 *dstr=str;
+	 return 0;
+      case '\\':
+	 return '\\';
+
+   /* use of macros to keep similar to lexer.h: char_const */
+#define LOOK() (maxlength?INDEX_PCHARP(str,1):0)
+#define GETC() (INC_PCHARP(str,1),INDEX_PCHARP(str,0))
+      
+      case '0': case '1': case '2': case '3':
+      case '4': case '5': case '6': case '7':
+	 c-='0';
+	 while(LOOK()>='0' && LOOK()<='8')
+	    c=c*8+(GETC()-'0');
+	 break;
+      
+      case 'a': return 7;       /* BEL */
+      case 'b': return 8;       /* BS */
+      case 't': return 9;       /* HT */
+      case 'n': return 10;      /* LF */
+      case 'v': return 11;      /* VT */
+      case 'f': return 12;      /* FF */
+      case 'r': return 13;      /* CR */
+      case 'e': return 27;      /* ESC */
+      
+      case '\n': return '\n';
+      
+      case 'x':
+	 c=0;
+	 while(1)
+	 {
+	    switch(LOOK())
+	    {
+	       case '0': case '1': case '2': case '3':
+	       case '4': case '5': case '6': case '7':
+	       case '8': case '9':
+		  c=c*16+GETC()-'0';
+		  continue;
+	    
+	       case 'a': case 'b': case 'c': case 'd': case 'e': case 'f':
+		  c=c*16+GETC()-'a'+10;
+		  continue;
+	    
+	       case 'A': case 'B': case 'C': case 'D': case 'E': case 'F':
+		  c=c*16+GETC()-'A'+10;
+		  continue;
+	    }
+	    break;
+	 }
+	 break;
+
+      case 'd':
+	 c=0;
+	 while(1)
+	 {
+	    switch(LOOK())
+	    {
+	       case '0': case '1': case '2': case '3':
+	       case '4': case '5': case '6': case '7':
+	       case '8': case '9':
+		  c=c*10+GETC()-'0';
+		  continue;
+	    }
+	    break;
+	 }
+	 break;
+#undef LOOK
+#undef GETC
+   }
+   *dmaxlength=maxlength;
+   *dstr=str;
+   return c;
+}
+
+static PMOD_EXPORT int pcharp_to_svalue_procento(struct svalue *r,
+						 PCHARP str,
+						 PCHARP *dstr,
+						 ptrdiff_t maxlength)
+{
+   *dstr=str; /* default: no hit */
+
+   maxlength--;  
+/* calling convention: max_length <= 0 means no max length. */
+
+   for (;;)
+   {
+      switch (EXTRACT_PCHARP(str))
+      {
+	 case ' ':  /* whitespace */
+	 case '\t':
+	 case '\n':
+	 case '\r':  
+	    break;
+
+	 case '0': case '1': case '2': case '3': case '4':
+	 case '5': case '6': case '7': case '8': case '9':
+            /* fixme: grok floats */
+	    return pcharp_to_svalue_inumber(r,str,dstr,0,maxlength+1);
+
+	 case '\"':
+	 {
+	    struct string_builder tmp;
+	    init_string_builder(&tmp,0);
+	    for (;;)
+	    {
+	       PCHARP start;
+	       int len=0;
+	       INC_PCHARP(str,1);
+	       start=str;
+	       for (;;)
+	       {
+		  if (!maxlength) 
+		  {
+		     free_string_builder(&tmp);
+		     return 0; /* end of data */
+		  }
+		  maxlength--;
+		  switch (EXTRACT_PCHARP(str))
+		  {
+		     case '\"':
+		     case 0:
+		     case '\\':
+			break;
+		     default:
+			len++;
+			INC_PCHARP(str,1);
+			continue;
+		  }
+		  break;
+	       }
+	       if (len) string_builder_append(&tmp, start, len);
+
+	       switch (EXTRACT_PCHARP(str))
+	       {
+		  case '\"':
+		     INC_PCHARP(str,1);
+		     *dstr=str;
+		     r->type=T_STRING;
+		     r->subtype=0;
+		     r->u.string=finish_string_builder(&tmp);
+		     return 1;
+		  case 0: /* abort on NUL */
+		     free_string_builder(&tmp);
+		     return 0;
+		  case '\\':
+		     if (maxlength)
+		     {
+			INC_PCHARP(str,1);
+		     
+			string_builder_putchar(
+			   &tmp,
+			   pcharp_extract_char_const(str,&str,
+						     maxlength+1,&maxlength));
+			break;
+		     }
+		     break;
+	       }
+	    }
+
+	    case '\'':
+	       if (maxlength<0 ||
+		   maxlength>2)
+	       {
+		  r->subtype=0;
+		  r->type=T_INT;
+
+		  INC_PCHARP(str,1);
+		  r->u.integer=EXTRACT_PCHARP(str);
+		  INC_PCHARP(str,1);
+		  if (r->u.integer=='\\')
+		  {
+		     r->u.integer=
+			pcharp_extract_char_const(str,&str,
+						  maxlength+1,&maxlength);
+		     INC_PCHARP(str,1); 
+		     maxlength--;
+		  }
+		  if (!maxlength || EXTRACT_PCHARP(str)!='\'')
+		     return 0;
+		  INC_PCHARP(str,1); /* skip that ending quote */
+
+		  *dstr=str;
+		  return 1;
+	       }
+	       return 0;
+	    
+      /* fixme: arrays, multisets, mappings */
+	 }
+
+	 default:
+            /* unknown */
+	    return 0;
+      }
+      if (!maxlength) return 0; /* end of data */
+      INC_PCHARP(str,1);
+      maxlength--;
+   }
+}
+
 /*
   flags:
    *
@@ -870,6 +1088,7 @@ PMOD_EXPORT void f_cast(void)
   %n
   %[
   %%
+  %O
 */
 
 
@@ -1752,6 +1971,31 @@ CHAROPT2(								 \
 				    INPUT_SHIFT)(input+e,eye-e);	 \
 	  break;							 \
 									 \
+        case 'O':                                                        \
+        {                                                                \
+ 	   PIKE_CONCAT(p_wchar, INPUT_SHIFT) *t;			 \
+           PCHARP tmp;                                                   \
+           if(eye>=input_len)                                            \
+           {                                                             \
+              chars_matched[0]=eye;                                      \
+              return matches;                                            \
+           }                                                             \
+                                                                         \
+           pcharp_to_svalue_procento(&sval,				 \
+				     MKPCHARP(input+eye,INPUT_SHIFT),    \
+                                     &tmp,                               \
+				     field_length);			 \
+           t=(PIKE_CONCAT(p_wchar, INPUT_SHIFT) *)tmp.ptr;               \
+           if(input + eye == t)                                          \
+           {                                                             \
+              chars_matched[0]=eye;                                      \
+              return matches;                                            \
+           }                                                             \
+           eye=t-input;                                                  \
+                                                                         \
+           break;                                                        \
+        }                                                                \
+                                                                         \
 	case 'n':							 \
 	  sval.type=T_INT;						 \
 	  sval.subtype=NUMBER_NUMBER;					 \

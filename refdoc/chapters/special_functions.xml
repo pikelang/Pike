@@ -51,6 +51,7 @@ to the following table.
  Note that sets that includes the character - must have it first in the brackets to avoid having a range defined.</c></r>
 <r><c>%{format%}</c><c>Repeatedly matches 'format' as many times as possible and assigns an array of arrays with the results to the lvalue.</c></r>
 <r><c>%%</c><c>Match a single percent character.</c></r>
+<r><c>%O</c><c>Match a Pike constant, such as string or integer (currently only integer, string and character constant is functional)</c></r>
 </matrix>
 
 <p>If a * is put between the percent and the operator, the operator

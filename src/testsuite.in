@@ -1,4 +1,4 @@
-test_true([["$Id: testsuite.in,v 1.596 2003/02/08 22:36:14 mast Exp $"]]);
+test_true([["$Id: testsuite.in,v 1.597 2003/02/11 15:22:29 mirar Exp $"]]);
 
 // This triggered a bug only if run sufficiently early.
 test_compile_any([[#pike 7.2]])
@@ -5434,6 +5434,21 @@ class Bar {
   return Bar()->foo()
 ]], "foobarbaz")
 
+// sscanf %O
+test_equal([[array_sscanf("10","%O")]],[[({10})]])
+test_equal([[array_sscanf("\"gnurk\"","%O")]],[[({"gnurk"})]])
+test_equal([[array_sscanf("\"a\\bc\\123\\d\\x123e\\\\f\"","%O")]],[[({"a\bc\123\d\x123e\\f"})]])
+test_equal([[array_sscanf("'a'","%O")]],[[({'a'})]])
+test_equal([[array_sscanf("'\\a'","%O")]],[[({'\a'})]])
+
+test_equal([[array_sscanf("   10abcd","%O%s")]],[[({10,"abcd"})]])
+test_equal([[array_sscanf("   \"gnurk\"abcd","%O%s")]],[[({"gnurk","abcd"})]])
+test_equal([[array_sscanf("   \"a\\bc\\123\\d\\x123e\\\\f\"abcd","%O%s")]],[[({"a\bc\123\d\x123e\\f","abcd"})]])
+test_equal([[array_sscanf("   'a'abcd","%O%s")]],[[({'a',"abcd"})]])
+test_equal([[array_sscanf("   '\\a'abcd","%O%s")]],[[({'\a',"abcd"})]])
+
+test_equal([[array_sscanf("10 20 30","%O%O%O")]],[[({10,20,30})]])
+test_equal([[array_sscanf("10 20 30","%O%O%s")]],[[({10,20," 30"})]])
 
 // Basics
 test_true(1)
