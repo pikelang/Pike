@@ -1,15 +1,16 @@
 /*
- * $Id: image_ttf.c,v 1.1 1998/10/31 19:07:55 mirar Exp $
+ * $Id: image_ttf.c,v 1.2 1998/11/01 05:20:59 per Exp $
  */
 
 #include "config.h"
 
 
 #include "global.h"
-RCSID("$Id: image_ttf.c,v 1.1 1998/10/31 19:07:55 mirar Exp $");
+RCSID("$Id: image_ttf.c,v 1.2 1998/11/01 05:20:59 per Exp $");
 
 #ifdef HAVE_LIBTTF
 #include <freetype.h>
+#include <ftxkern.h>
 #endif /* HAVE_LIBTTF */
 
 #include "pike_macros.h"
@@ -224,7 +225,7 @@ static struct program *image_ttf_faceinstance_program=NULL;
 
 static void image_ttf_make(INT32 args)
 {
-   int col=0;
+   int col=0, i=0;
    struct object *o;
    TT_Error res;
    TT_Face face;
@@ -234,6 +235,7 @@ static void image_ttf_make(INT32 args)
 
    res=TT_Open_Collection(engine, sp[-args].u.string->str, col, &face);
    if (res) my_tt_error("Image.TTF()","",res);
+   while(! TT_Load_Kerning_Table( face, i++ ) );
 
    pop_n_elems(args);
 
@@ -496,7 +498,8 @@ static void image_ttf_face_flush(INT32 args)
 
 static void image_ttf_face__names(INT32 args)
 {
-   int ns,i,res;
+   int ns,res;
+   TT_UShort i;
    TT_Face face=THISf->face;
    pop_n_elems(args);
 
@@ -506,7 +509,7 @@ static void image_ttf_face__names(INT32 args)
    for (i=0; i<ns; i++)
    {
       short platformID,encodingID,languageID,nameID;
-      int length;
+      TT_UShort length;
       char *stringPtr;
       
       if ((res=TT_Get_Name_ID(face,i,
@@ -642,7 +645,7 @@ static void ttf_instance_setc(struct image_ttf_face_struct *face_s,
    if ((res=TT_Get_Instance_Metrics(face_i->instance,&metr)))
       my_tt_error(where,"TT_Get_Instance_Metrics",res);
 
-#if 1
+#if 0
    fprintf(stderr,
 	   "prop.horizontal->Ascender: %d\n",
 	   prop.horizontal->Ascender);
@@ -737,6 +740,23 @@ static void ttf_translate_8bit(TT_CharMap charMap,
    THREADS_DISALLOW();
 }
 
+
+static void ttf_translate_16bit(TT_CharMap charMap,
+				unsigned short *what,
+				int **dest,
+				int len,
+				int base)
+{
+   int i;
+
+   dest[0]=(int*)xalloc(len*sizeof(int));
+
+   THREADS_ALLOW();
+   for (i=0; i<len; i++)
+      dest[0][i]=TT_Char_Index(charMap,what[i]+base);
+   THREADS_DISALLOW();
+}
+
 static void ttf_get_nice_charmap(TT_Face face,
 				 TT_CharMap *charMap,
 				 char *where)
@@ -789,6 +809,19 @@ static void ttf_please_translate_8bit(TT_Face face,
    (*dlen)=s->len;
    ttf_translate_8bit(charMap,(unsigned char*)(s->str),dest,*dlen,base);
 }
+
+static void ttf_please_translate_16bit(TT_Face face,
+				      struct pike_string *s,
+				      int **dest,int *dlen,
+				      int base,
+				      char *where)
+{
+   TT_CharMap charMap;
+   
+   ttf_get_nice_charmap(face,&charMap,where);
+   (*dlen)=s->len;
+   ttf_translate_16bit(charMap,(unsigned short*)(s->str),dest,*dlen,base);
+}
 				      
 	
 static void image_ttf_faceinstance_ponder(INT32 args)
@@ -814,9 +847,16 @@ static void image_ttf_faceinstance_ponder(INT32 args)
    if (sp[-args].type!=T_STRING) 
       error("Image.TTF.FaceInstance->ponder(): illegal argument 1\n");
 
-   ttf_please_translate_8bit(face_s->face,
-			     sp[-args].u.string,&sstr,&len,base,
-			     "Image.TTF.FaceInstance->ponder()");
+   if(sp[-args].u.string->size_shift == 0)
+     ttf_please_translate_8bit(face_s->face,
+			       sp[-args].u.string,&sstr,&len,base,
+			       "Image.TTF.FaceInstance->ponder()");
+   else if(sp[-args].u.string->size_shift == 0)
+     ttf_please_translate_16bit(face_s->face,
+			       sp[-args].u.string,&sstr,&len,base,
+			       "Image.TTF.FaceInstance->ponder()");
+   else
+     error("Too wide string for truetype\n");
 
    pop_n_elems(args);
 
@@ -827,7 +867,7 @@ static void image_ttf_faceinstance_ponder(INT32 args)
       int ind;
       
       ind=sstr[i];
-      fprintf(stderr,"glyph: %d\n",ind);
+/*       fprintf(stderr,"glyph: %d\n",ind); */
       
       if ((res=TT_New_Glyph(face_s->face,&glyph)))
 	 my_tt_error("Image.TTF.FaceInstance->ponder()","TT_New_Glyph: ",res);
@@ -843,25 +883,98 @@ static void image_ttf_faceinstance_ponder(INT32 args)
       if (pos+metrics.bbox.xMax>xmax) xmax=pos+metrics.bbox.xMax;
       pos+=metrics.advance; /* insert kerning stuff here */
       
-      fprintf(stderr,"bbox: (%f,%f)-(%f,%f)\n",
-	      metrics.bbox.xMin/64.0,
-	      metrics.bbox.yMin/64.0,
-	      metrics.bbox.xMax/64.0,
-	      metrics.bbox.yMax/64.0);
+/*       fprintf(stderr,"bbox: (%f,%f)-(%f,%f)\n", */
+/* 	      metrics.bbox.xMin/64.0, */
+/* 	      metrics.bbox.yMin/64.0, */
+/* 	      metrics.bbox.xMax/64.0, */
+/* 	      metrics.bbox.yMax/64.0); */
 
-      fprintf(stderr,"BearingX: %f\n",metrics.bearingX/64.0);
-      fprintf(stderr,"BearingY: %f\n",metrics.bearingY/64.0);
-      fprintf(stderr,"advance: %f\n",metrics.advance/64.0);
+/*       fprintf(stderr,"BearingX: %f\n",metrics.bearingX/64.0); */
+/*       fprintf(stderr,"BearingY: %f\n",metrics.bearingY/64.0); */
+/*       fprintf(stderr,"advance: %f\n",metrics.advance/64.0); */
 
-      fprintf(stderr,"\n");
+/*       fprintf(stderr,"\n"); */
    }
 
    free(sstr);
 
-   fprintf(stderr,"xmin: %f\n",xmin/64.0);
-   fprintf(stderr,"xmax: %f\n",xmax/64.0);
+/*    fprintf(stderr,"xmin: %f\n",xmin/64.0); */
+/*    fprintf(stderr,"xmax: %f\n",xmax/64.0); */
 
    ref_push_object(THISOBJ);
+}
+
+static int find_kerning( TT_Kerning kerning, int c1, int c2 )
+{
+  int i,j;
+/*   fprintf(stderr, "kern: %d %d\n", c1, c2); */
+  for(j=0; j<kerning.nTables; j++)
+  {
+    if( (kerning.tables[j].coverage & 0x0f) != 1 ) /* We don't want it  */
+      continue;
+    switch(kerning.tables[j].format)
+    {
+     case 2: /* The smart one */
+       {
+	 int ind;
+	 int lclass=0, rclass=0;
+	 TT_Kern_2 table = kerning.tables[j].t.kern2;
+	 ind = c1 - table.leftClass.firstGlyph;
+	 if(ind >= table.leftClass.nGlyphs || ind < 0)
+	   continue;
+	 lclass = table.leftClass.classes[ ind ];
+	 ind = c2 - table.rightClass.firstGlyph;
+	 if(ind >= table.rightClass.nGlyphs || ind < 0)
+	   continue;
+	 rclass = table.rightClass.classes[ ind ];
+
+	 return table.array[ rclass+lclass ];
+       }
+     case 0: /* The microsoft one */
+       {
+	 TT_Kern_0 table = kerning.tables[j].t.kern0;
+	 int delta=1, i=table.nPairs>>1;
+	 while(i)
+	 {
+	   delta<<=1;
+	   i>>=1;
+	 }
+	 i=delta;
+
+	 while(delta)
+	 {
+	   if(table.pairs[i].left == c1)
+	   {
+	     if(table.pairs[i].right == c2)
+	     {
+/* 	       fprintf(stderr, "found kerning\n"); */
+	       return table.pairs[i].value;
+	     }
+	     else if(table.pairs[i].right < c2)
+	     {
+	       while(i+delta >= table.nPairs)
+		 delta>>=1;
+	       i += delta;
+	     } else {
+	       i-=delta;
+	     }
+	   } else if(table.pairs[i].left < c1) {
+	     while(i+delta >= table.nPairs)
+	       delta>>=1;
+	     i += delta;
+	   } else  {
+	     i-=delta;
+	   }
+	   delta>>=1;
+	 }
+       }
+       break;
+     default:
+       fprintf(stderr, "Warning: Unknown kerning table format %d\n", 
+	       kerning.tables[j].format);
+    }
+  }
+  return 0;
 }
 
 static void image_ttf_faceinstance_write(INT32 args)
@@ -872,16 +985,30 @@ static void image_ttf_faceinstance_write(INT32 args)
    struct image_ttf_face_struct *face_s;
    struct image_ttf_faceinstance_struct *face_i=THISi;
    TT_CharMap charMap;
+   TT_Kerning kerning;
+   int has_kerning = 0;
    char *errs=NULL;
-   
+   int scalefactor=0;
    int xmin=1000,xmax=-1000,pos=0,ypos;
    int width,height,mod;
    
    unsigned char* pixmap;
 
+
    if (!(face_s=(struct image_ttf_face_struct*)
 	 get_storage(THISi->faceobj,image_ttf_face_program)))
       error("Image.TTF.FaceInstance->write(): lost Face\n");
+
+   if(!TT_Get_Kerning_Directory( face_s->face, &kerning ))
+   {
+     TT_Instance_Metrics metrics;
+/*      fprintf(stderr, "has kerning!\n"); */
+     has_kerning = 1;
+     if(TT_Get_Instance_Metrics( face_i->instance, &metrics ))
+       error("Nope. No way.\n");
+     scalefactor = metrics.x_scale;
+/*      fprintf(stderr, "offset=%d\n", (int)metrics.x_scale); */
+   }
 
    if (args && sp[-1].type==T_INT)
    {
@@ -906,23 +1033,34 @@ static void image_ttf_faceinstance_write(INT32 args)
 
    for (a=0; a<args; a++)
    {
-      char *errs=NULL;
+     char *errs=NULL;
+     TT_Glyph_Metrics metrics;
 
       if (sp[a-args].type!=T_STRING) 
 	 error("Image.TTF.FaceInstance->write(): illegal argument %d\n",a+1);
 
-      ttf_translate_8bit(charMap,(unsigned char*)sp[a-args].u.string->str,
-			 sstr+a,slen[a]=sp[a-args].u.string->len,base);
+      switch(sp[a-args].u.string->size_shift)
+      {
+       case 0:
+	 ttf_translate_8bit(charMap,(unsigned char*)sp[a-args].u.string->str,
+			    sstr+a,slen[a]=sp[a-args].u.string->len,base);
+	 break;
+       case 1:
+	 ttf_translate_16bit(charMap,(unsigned short*)sp[a-args].u.string->str,
+			     sstr+a,slen[a]=sp[a-args].u.string->len,base);
+	 break;
+       case 2:
+	 error("Too wide string for truetype\n");
+      }
 
       pos=0;
       for (i=0; i<slen[a]; i++)
       {
 	 TT_Glyph glyph;
-	 TT_Glyph_Metrics metrics;
 	 int ind;
       
 	 ind=sstr[a][i];
-	 fprintf(stderr,"glyph: %d\n",ind);
+/* 	 fprintf(stderr,"glyph: %d\n",ind); */
       
 	 if ((res=TT_New_Glyph(face_s->face,&glyph)))
 	    { errs="TT_New_Glyph: "; break; }
@@ -935,12 +1073,22 @@ static void image_ttf_faceinstance_write(INT32 args)
 	    { errs="TT_Get_Glyph_Metrics: "; break; }
 
 	 if (pos+metrics.bbox.xMin<xmin) xmin=pos+metrics.bbox.xMin;
-	 if (pos+metrics.bbox.xMax>xmax) xmax=pos+metrics.bbox.xMax;
-	 pos+=metrics.advance; /* insert kerning stuff here */
+	 if (pos+metrics.bbox.xMax>xmax) 
+	   xmax=pos+metrics.bbox.xMax;
 
+	 pos+=metrics.advance;
+	 if(has_kerning && i<slen[a]-1)
+	 {
+	   int kern = find_kerning( kerning, ind, sstr[a][i+1] );
+	   pos += (int)(kern * (scalefactor/65535.0));
+	 }
 	 if ((res=TT_Done_Glyph(glyph)))
 	    { errs="TT_Done_Glyph: "; break; }
       }
+      pos -= metrics.advance;
+      pos += metrics.bbox.xMax-metrics.bbox.xMin;
+      if (pos>xmax) 
+	xmax=pos;
       if (errs)
       {
 	 for (i=0; i<a; i++) free(sstr[i]);
@@ -950,15 +1098,15 @@ static void image_ttf_faceinstance_write(INT32 args)
 
    pop_n_elems(args);
 
-   fprintf(stderr,"xmin=%f xmax=%f\n",xmin/64.0,xmax/64.0);
+/*    fprintf(stderr,"xmin=%f xmax=%f\n",xmin/64.0,xmax/64.0); */
 
    xmin&=~63;
-   width=(xmax-xmin+63)>>6;
+   width=((xmax-xmin+63)>>6)+4;
    height=face_i->height*args;
    mod=(4-(width&3))&3;
    if (width<1) width=1;
 
-   if ((pixmap=malloc((width+mod)*height)))
+   if ((pixmap=malloc((width+mod)*height/args)))
    {
       /* second pass: write the stuff */
 
@@ -968,30 +1116,36 @@ static void image_ttf_faceinstance_write(INT32 args)
       unsigned char *s;
       rgb_group *d;
       
-      MEMSET(pixmap,0,(width+mod)*height);
 
-      rastermap.rows=args*face_i->height;
+      rastermap.rows=face_i->height;
       rastermap.cols=rastermap.width=width+mod;
       rastermap.flow=TT_Flow_Down;
       rastermap.bitmap=pixmap;
-      rastermap.size=(width+mod)*height;
+      rastermap.size=rastermap.cols*rastermap.rows;
 
-      ypos=args*face_i->height*64-face_i->trans;
+      ypos=0;
 
-      fprintf(stderr,"rastermap.rows=%d cols=%d width=%d\n",
-	      rastermap.rows,rastermap.cols,rastermap.width);
+/*       fprintf(stderr,"rastermap.rows=%d cols=%d width=%d\n", */
+/* 	      rastermap.rows,rastermap.cols,rastermap.width); */
+
+      
+      push_int(width);
+      push_int(height);
+      o=clone_object(image_program,2);
+      img=(struct image*)get_storage(o,image_program);
+      d=img->img;
 
       for (a=0; a<args; a++)
       {
-	 pos=xmin;
+         pos=-xmin;
 	 for (i=0; i<slen[a]; i++)
 	 {
 	    TT_Glyph glyph;
 	    TT_Glyph_Metrics metrics;
-	    int ind;
+	    int ind, x, y;
       
 	    ind=sstr[a][i];
-	    fprintf(stderr,"glyph: %d\n",ind);
+/* 	    fprintf(stderr,"glyph: %d\n",ind); */
       
       
 	    if ((res=TT_New_Glyph(face_s->face,&glyph)))
@@ -1004,14 +1158,52 @@ static void image_ttf_faceinstance_write(INT32 args)
 	    if ((res=TT_Get_Glyph_Metrics(glyph,&metrics)))
 	       { errs="TT_Get_Glyph_Metrics: "; break; }
 
+	    MEMSET(pixmap,0,rastermap.size);
+
 	    if ((res=TT_Get_Glyph_Pixmap(glyph,
 					 &rastermap,
-					 pos,ypos)))
+					 metrics.bbox.xMin,
+					 face_i->height*64-
+					 face_i->trans)))
 	       { errs="TT_Get_Glyph_Pixmap: "; break; }
 
-	    pos+=metrics.advance; /* insert kerning stuff here, too */
 
-
+	    for(y=0; y<=face_i->height; y++)
+	      for(x=0; x<rastermap.cols; x++)
+	      {
+		int xp = x + (-metrics.bbox.xMin+pos)/64;
+		int i = (int)((y+ypos)*width+xp);
+		int s = pixmap[y*rastermap.width+x];
+		if(xp<0 || xp>=width || i>width*height)
+		  continue;
+		if(i<0)
+		{
+		  fatal( "i<0!\n");
+		}
+/* 		fprintf(stderr, "x=%d; y=%d; xa=%d; ya=%d\n", */
+/* 			x,y,(x+pos/64),(y+ypos)); */
+		if(s)
+		{
+/* 		  fprintf(stderr, "found pixel %d\n", s); */
+		  if(d[i].r+s < 256)
+		  {
+		    d[i].r+=s;
+		    d[i].g+=s;
+		    d[i].b+=s;
+		  } else
+		    d[i].r=d[i].g=d[i].b=255;
+		} 
+	      }
+	    
+	    pos+=metrics.advance/*+metrics.bbox.xMin*/;
+	    if(has_kerning && i<slen[a]-1)
+	    {
+	      int kern = find_kerning( kerning, sstr[a][i], sstr[a][i+1] );
+	      pos += (int)(kern * (scalefactor/65535.0));
+/* 	      fprintf(stderr, "Adjusted is %d\n", */
+/* 		      (int)(kern * (scalefactor/65535.0))); */
+	    }
+	    
 	    if ((res=TT_Done_Glyph(glyph)))
 	       { errs="TT_Done_Glyph: "; break; }
 	 }
@@ -1019,34 +1211,14 @@ static void image_ttf_faceinstance_write(INT32 args)
 	 {
 	    for (a=0; a<args; a++) free(sstr[a]);
 	    free(pixmap);
+	    free_object(o);
 	    my_tt_error("Image.TTF.FaceInstance->write()",errs,res);
 	 }
-	 ypos-=face_i->height*64;
+	 ypos+=face_i->height;
       }
 
-      fprintf(stderr,"rastermap.rows=%d cols=%d width=%d\n",
-	      rastermap.rows,rastermap.cols,rastermap.width);
-      
-      push_int(width);
-      push_int(height);
-      o=clone_object(image_program,2);
-      img=(struct image*)get_storage(o,image_program);
-      d=img->img;
-      s=pixmap;
-
-      for (i=0; i<height; i++)
-      {
-#if 1 /* DEBUG */
-	 if (i==face_i->baseline)
-	    for (a=0; a<width; a++)
-	       d->r=255,d->g=0,d->b=*s,d++,s++;
-	 else
-#endif
-	    for (a=0; a<width; a++)
-	       d->r=d->g=d->b=*s,d++,s++;
-	 s+=mod;
-      }
-      
+/*       fprintf(stderr,"rastermap.rows=%d cols=%d width=%d\n", */
+/* 	      rastermap.rows,rastermap.cols,rastermap.width); */
       push_object(o);
    }
    else 
@@ -1145,6 +1317,7 @@ void pike_module_init(void)
 
    TT_Init_FreeType(&engine);
    TT_Set_Raster_Gray_Palette(engine,(char*)palette);
+   TT_Init_Kerning_Extension( engine );
 #endif /* HAVE_LIBTTF */
 
    param_baseline=make_shared_string("baseline");
