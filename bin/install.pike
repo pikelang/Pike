@@ -2,7 +2,7 @@
 
 #define USE_GTK
 
-#if !constant(GTK.parse_rc)
+#if !constant(GTK.flush)
 #undef USE_GTK
 #endif
 
