@@ -1,4 +1,4 @@
-/* $Id: master.pike.in,v 1.50 1999/06/02 21:21:39 marcus Exp $
+/* $Id: master.pike.in,v 1.51 1999/06/14 13:11:21 mirar Exp $
  * 
  * Master-file for Pike.
  *
@@ -1112,7 +1112,7 @@ string describe_program(program p)
  * it is currently used by handle_error to convert a backtrace to a
  * readable message.
  */
-string describe_backtrace(mixed *trace)
+string describe_backtrace(mixed trace)
 {
   int e;
   string ret;
