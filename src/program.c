@@ -5,7 +5,7 @@
 \*/
 /**/
 #include "global.h"
-RCSID("$Id: program.c,v 1.187 1999/12/17 21:09:51 hubbe Exp $");
+RCSID("$Id: program.c,v 1.188 1999/12/26 19:08:02 grubba Exp $");
 #include "program.h"
 #include "object.h"
 #include "dynamic_buffer.h"
@@ -30,6 +30,7 @@ RCSID("$Id: program.c,v 1.187 1999/12/17 21:09:51 hubbe Exp $");
 #include "mapping.h"
 #include "cyclic.h"
 #include "security.h"
+#include "pike_types.h"
 
 #include <errno.h>
 #include <fcntl.h>
@@ -104,6 +105,54 @@ char *lfun_names[] = {
   "_is_type",
   "_sprintf",
   "_equal",
+};
+
+/* mapping(string:type) */
+static struct mapping *lfun_types;
+
+static char *raw_lfun_types[] = {
+  tFuncV(tNone,tVoid,tVoid),	/* "__INIT", */
+  tFuncV(tNone,tZero,tVoid),	/* "create", */
+  tFuncV(tNone,tVoid,tVoid),	/* "destroy", */
+  tFuncV(tNone,tZero,tMix),	/* "`+", */
+  tFuncV(tNone,tZero,tMix),	/* "`-", */
+  tFuncV(tNone,tZero,tMix),	/* "`&", */
+  tFuncV(tNone,tZero,tMix),	/* "`|", */
+  tFuncV(tNone,tZero,tMix),	/* "`^", */
+  tFuncV(tZero,tVoid,tMix),	/* "`<<", */
+  tFuncV(tZero,tVoid,tMix),	/* "`>>", */
+  tFuncV(tNone,tZero,tMix),	/* "`*", */
+  tFuncV(tNone,tZero,tMix),	/* "`/", */
+  tFuncV(tNone,tZero,tMix),	/* "`%", */
+  tFuncV(tNone,tVoid,tMix),	/* "`~", */
+  tFuncV(tMix,tVoid,tInt),	/* "`==", */
+  tFuncV(tMix,tVoid,tInt),	/* "`<", */
+  tFuncV(tMix,tVoid,tInt),	/* "`>", */
+  tFuncV(tNone,tVoid,tInt),	/* "__hash", */
+  tFuncV(tString,tVoid,tMix),	/* "cast", */
+  tFuncV(tNone,tVoid,tInt),	/* "`!", */
+  tFuncV(tZero,tVoid,tMix),	/* "`[]", */
+  tFuncV(tZero tSetvar(0,tZero),tVoid,tVar(0)),	/* "`[]=", */
+  tFuncV(tStr,tVoid,tMix),	/* "`->", */
+  tFuncV(tStr tSetvar(0,tZero),tVoid,tVar(0)),	/* "`->=", */
+  tFuncV(tNone,tVoid,tInt),	/* "_sizeof", */
+  tFuncV(tNone,tVoid,tArray),	/* "_indices", */
+  tFuncV(tNone,tVoid,tArray),	/* "_values", */
+  tFuncV(tNone,tZero,tMix),	/* "`()", */
+  tFuncV(tNone,tZero,tMix),	/* "``+", */
+  tFuncV(tNone,tZero,tMix),	/* "``-", */
+  tFuncV(tNone,tZero,tMix),	/* "``&", */
+  tFuncV(tNone,tZero,tMix),	/* "``|", */
+  tFuncV(tNone,tZero,tMix),	/* "``^", */
+  tFuncV(tZero,tVoid,tMix),	/* "``<<", */
+  tFuncV(tZero,tVoid,tMix),	/* "``>>", */
+  tFuncV(tNone,tZero,tMix),	/* "``*", */
+  tFuncV(tNone,tZero,tMix),	/* "``/", */
+  tFuncV(tNone,tZero,tMix),	/* "``%", */
+  tFuncV(tZero,tVoid,tMix),	/* "`+=", */
+  tFuncV(tStr,tVoid,tInt),	/* "_is_type", */
+  tFuncV(tInt tMap(tStr,tInt),tVoid,tStr),	/* "_sprintf", */
+  tFuncV(tMix,tVoid,tInt),	/* "_equal", */
 };
 
 struct program *first_program = 0;
@@ -2167,6 +2216,7 @@ INT32 define_function(struct pike_string *name,
 {
   struct identifier *funp,fun;
   struct reference ref;
+  struct svalue *lfun_type;
   INT32 i;
 
 #ifdef PROGRAM_BUILD_DEBUG
@@ -2187,6 +2237,23 @@ INT32 define_function(struct pike_string *name,
   fun.total_time=0;
 #endif
 
+  /* If this is an lfun, match against the predefined type. */
+  if ((lfun_type = low_mapping_string_lookup(lfun_types, name))) {
+#ifdef PIKE_DEBUG
+    if (lfun_type->type != T_TYPE) {
+      fatal("Bad entry in lfun_types for key \"%s\"\n", name->str);
+    }
+#endif /* PIKE_DEBUG */
+    if (!pike_types_le(type, lfun_type->u.string)) {
+      if (!match_types(type, lfun_type->u.string)) {
+	yytype_error("Function type mismatch", lfun_type->u.string, type, 0);
+      } else if (lex.pragmas & ID_STRICT_TYPES) {
+	yytype_error("Function type mismatch", lfun_type->u.string, type,
+		     YYTE_IS_WARNING);
+      }
+    }
+  }
+
   i=isidentifier(name);
 
   if(i >= 0)
@@ -2198,6 +2265,7 @@ INT32 define_function(struct pike_string *name,
 
     if(ref.inherit_offset == 0) /* not inherited */
     {
+
       if( !( IDENTIFIER_IS_FUNCTION(funp->identifier_flags) &&
 	     ( (!func || func->offset == -1) || (funp->func.offset == -1))))
       {
@@ -2211,7 +2279,6 @@ INT32 define_function(struct pike_string *name,
 	my_yyerror("Prototype doesn't match for function %s.",name->str);
       }
     }
-
 
     /* We modify the old definition if it is in this program */
 
@@ -3101,6 +3168,19 @@ static void gc_mark_trampoline(struct object *o)
 
 void init_program(void)
 {
+  int i;
+  struct svalue key;
+  struct svalue val;
+  lfun_types = allocate_mapping(NUM_LFUNS);
+  key.type = T_STRING;
+  val.type = T_TYPE;
+  for (i=0; i < NUM_LFUNS; i++) {
+    key.u.string = make_shared_string(lfun_names[i]);
+    val.u.string = make_pike_type(raw_lfun_types[i]);
+    mapping_insert(lfun_types, &key, &val);
+    free_string(val.u.string);
+    free_string(key.u.string);
+  }
   start_new_program();
   ADD_STORAGE(struct pike_trampoline);
   add_function("`()",apply_trampoline,"function(mixed...:mixed)",0);
@@ -3114,6 +3194,8 @@ void init_program(void)
 void cleanup_program(void)
 {
   int e;
+
+  free_mapping(lfun_types);
 #ifdef FIND_FUNCTION_HASHSIZE
   for(e=0;e<FIND_FUNCTION_HASHSIZE;e++)
   {
