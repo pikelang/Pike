@@ -35,7 +35,7 @@ compile1:
 	$(RUNPIKE) $(SRCDIR)/new_build_pgtk.pike --source='$(SRCDIR)/source/'\
                    $(SRCDIR)/output/few.pike
 	@$(MAKE) OBJS="`cat files_to_compile`" \
-               CFLAGS="`echo $(CFLAGS) | sed -e 's/-g//g' -e 's/-W[^ ]*//g'" \
+               CFLAGS="`echo $(CFLAGS) | sed -e 's/-g//g' -e 's/-W[^ ]*//g'`" \
                   all
 
 #
