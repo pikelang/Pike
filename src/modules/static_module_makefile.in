@@ -1,13 +1,10 @@
 #
-# $Id: static_module_makefile.in,v 1.95 2003/05/07 10:48:19 grubba Exp $
+# $Id: static_module_makefile.in,v 1.96 2003/05/15 14:05:10 grubba Exp $
 #
 
 
-PREFLAGS=-I. -I$(SRCDIR) -I$(BUILD_BASE) -I$(PIKE_SRC_DIR) -Dpike_module_init=pike_module_$(MODNAME)_init -Dpike_module_exit=pike_module_$(MODNAME)_exit $(MODULE_CPPFLAGS) $(DEFINES)
-CFLAGS=$(MODULE_CFLAGS) $(PREFLAGS) $(OTHERFLAGS)
-NOOPT_CFLAGS=$(PREFLAGS) $(NOOPTFLAGS) @CCSHARED@ $(MODULE_CFLAGS)
-
-MAKE_FLAGS = "prefix=$(prefix)" "exec_prefix=$(exec_prefix)" "CC=$(CC)" "OTHERFLAGS=$(OTHERFLAGS)" "TMP_BINDIR=$(TMP_BINDIR)" "DEFINES=$(DEFINES)" "TMP_LIBDIR=$(TMP_LIBDIR)" "RUNPIKE=$(RUNPIKE)" "INSTALL=$(INSTALL)" "AR=$(AR)" "NOOPTFLAGS=$(NOOPTFLAGS)" $(MODULE_MAKE_FLAGS)
+LINKAGE_CPPFLAGS=-Dpike_module_init=pike_module_$(MODNAME)_init -Dpike_module_exit=pike_module_$(MODNAME)_exit
+LINKAGE_CFLAGS=
 
 MODULE_PROGRAM=_static_modules.___$(MODNAME)
 MODULE_TARGET=module.a
