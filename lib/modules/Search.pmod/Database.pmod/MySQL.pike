@@ -1,7 +1,7 @@
 // SQL blob based database
 // Copyright © 2000,2001 Roxen IS.
 //
-// $Id: MySQL.pike,v 1.15 2001/05/25 15:01:24 js Exp $
+// $Id: MySQL.pike,v 1.16 2001/05/25 20:55:34 js Exp $
 
 // inherit Search.Database.Base;
 
@@ -145,13 +145,13 @@ int find_or_create_field_id(string field)
 
   s=sprintf("insert into field (name) values ('%s')", db->quote(field));
   db->query(s);
-  return db->master_sql->insert_id();
+  return db->master_sql->insert_id()+1;
 }
 
 
 mapping blobs=([]);
 
-#define MAXMEM 0x7fffffff
+#define MAXMEM 8*1024*1024
 
 //! Inserts the words of a resource into the database
 void insert_words(Standards.URI|string uri, void|string language,
@@ -159,30 +159,27 @@ void insert_words(Standards.URI|string uri, void|string language,
 {
   if(!sizeof(words))
     return;
-  werror("field: %O  words: %s\n",field,words*", ");
+  werror("field: %O  num words: %d\n",field,sizeof(words));
   int doc_id=find_or_create_document_id((string)uri, language);
   int field_id;
   field_id=find_or_create_field_id(field);
 
   mapping word_ids=([]);
   int offset;
-  
+  float f;
   foreach(words, string word)
   {
     int hsh=hash_word(word);
     if(!blobs[hsh])
-    {
-      array a=db->query("select hits from word_hit where word_id=%d",hsh);
-      if( `+(0, @values(blobs)->memsize() ) > MAXMEM )
-	sync();
-      if(sizeof(a))
-	blobs[hsh]=_WhiteFish.Blob(`+("",@a->hits));
-      else
-	blobs[hsh]=_WhiteFish.Blob();
-    }
-    
+      blobs[hsh]=_WhiteFish.Blob();
     blobs[hsh]->add(doc_id, field_id, offset++, link_hash);
   }
+  
+  int memsize=`+(0, @values(blobs)->memsize());
+  werror("memsize: %d  num: %d\n", memsize, sizeof(blobs));
+  
+  if(memsize> MAXMEM)
+    sync();
 }
 
 void remove_document(string uri)
@@ -192,11 +189,18 @@ void remove_document(string uri)
 
 int sync()
 {
+  werror("----------- sync() --------------\n");
   foreach(indices(blobs), int word_id)
   {
+    werror(".");
+    array a=db->query("select hits from word_hit where word_id=%d",word_id);
+    if(sizeof(a))
+      blobs[word_id]->merge(`+("",@a->hits));
+    
     db->query("replace into word_hit (word_id,first_doc_id,hits) "
 	      "values (%d,%d,%s)", word_id, 0, blobs[word_id]->data());
   }
+  blobs=([]);
 }
 
 string get_blob(int word_id, int num)
