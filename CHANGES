@@ -34,7 +34,7 @@ o Fixed bugs in float parsing code, preventing very large positive or
 o More robustness has been added to dlinit() and __alldiv(), which
   fixes some start up crashes in Microsoft Windows when invoking Pike
   with the wrong path.
-o set_priority now works on Microsoft Windows.
+o Process.create_process()->set_priority now works on Microsoft Windows.
 o SDL and GL now compiles, links and works on Microsoft Windows.
 o Produce real zeroes and not false function pointers when a local
   function with only a prototype is referenced. This was a compatibility
