@@ -1,4 +1,4 @@
-stest_true([["$Id: testsuite.in,v 1.107 1998/05/16 08:22:37 hubbe Exp $"]])
+stest_true([["$Id: testsuite.in,v 1.108 1998/05/16 09:10:55 hubbe Exp $"]])
 cond([[all_constants()->_verify_internals]],
 [[
   test_do(_verify_internals())
@@ -1265,7 +1265,7 @@ test_eq([[(string)1]],[["1"]])
 test_equal([[(array)(["1":1])]],[[ ({ ({"1", 1}) }) ]])
 test_equal([[(array(int)) ({"1","4711",2.0,4})]],[[({1,4711,2,4})]])
 test_equal([[(array(array))({({})})]],[[({({})})]])
-test_equal([[(array(array(int))) ({({"1","4711",2.0,4})})]],[[({({1,4711,2,4})]})])
+test_equal([[ (array(array(int)))) ({ ({"1","4711",2.0,4}) }) ]],[[ ({ ({1,4711,2,4}) }) ]])
 
 test_equal([[(array)"foo"]],[[ values("foo") ]])
 test_equal([[(array)(<1,2,3>)]],[[ indices( (<1,2,3>) )]])
