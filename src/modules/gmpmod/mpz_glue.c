@@ -4,7 +4,7 @@
 ||| See the files COPYING and DISCLAIMER for more information.
 \*/
 #include "global.h"
-RCSID("$Id: mpz_glue.c,v 1.12 1996/11/29 19:02:07 nisse Exp $");
+RCSID("$Id: mpz_glue.c,v 1.13 1996/12/12 17:15:35 grubba Exp $");
 #include "gmp_machine.h"
 #include "types.h"
 
@@ -124,6 +124,7 @@ static void mpzmod_create(INT32 args)
     error("Too many arguments to Mpz->create()\n");
 
   case 0:
+    break;	/* Needed by AIX cc */
   }
   pop_n_elems(args);
 }
