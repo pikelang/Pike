@@ -1,4 +1,4 @@
-# $Id: configure.in,v 1.41 2000/12/27 10:38:13 mirar Exp $
+# $Id: configure.in,v 1.42 2000/12/27 10:45:17 mirar Exp $
 AC_INIT(system.c)
 AC_CONFIG_HEADER(system_machine.h)
 
@@ -20,8 +20,16 @@ AC_HAVE_HEADERS(syslog.h sys/syslog.h sys/types.h errno.h unistd.h pwd.h \
         sys/systeminfo.h windows.h sys/param.h utime.h sys/utime.h sys/id.h)
 
 # some Linux systems have a broken resource.h that compiles anyway /Mirar
-AC_TRY_COMPILE([#include <sys/resource.h>],[],
-	AC_DEFINE(HAVE_SYS_RESOURCE_H),[])
+AC_MSG_CHECKING([for sys/resource.h])
+AC_CACHE_VAL(pike_cv_sys_resource_h,
+	[AC_TRY_COMPILE([#include <sys/resource.h>],[],
+	        [pike_cv_sys_resource_h=yes],[pike_cv_sys_resource_h=no])])
+if test "x$pike_cv_sys_resource_h" = "xyes"; then
+  AC_MSG_RESULT(yes)
+  AC_DEFINE(HAVE_SYS_RESOURCE_H)
+else
+  AC_MSG_RESULT(no)
+fi
 
 AC_HAVE_FUNCS(syslog link symlink readlink resolvepath chown \
 	initgroups setgroups getgroups seteuid setresuid setegid setresgid \
