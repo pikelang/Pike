@@ -25,22 +25,22 @@ static class _language_base
 static string roman_number(int m)
 {
   string res="";
-  if (m<0) return "["+m+"]";
-  if (m==0) return "O";
-  if (m>100000) return "["+m+"]";
-  while (m>999) { res+="M"; m-=1000; }
-  if (m>899) { res+="CM"; m-=900; }
-  else if (m>499) { res+="D"; m-=500; }
-  else if (m>399) { res+="CD"; m-=400; }
-  while (m>99) { res+="C"; m-=100; }
-  if (m>89) { res+="XC"; m-=90; }
-  else if (m>49) { res+="L"; m-=50; }
-  else if (m>39) { res+="XL"; m-=40; }
-  while (m>9) { res+="X"; m-=10; }
-  if (m>8) return res+"IX";
-  else if (m>4) { res+="V"; m-=5; }
-  else if (m>3) return res+"IV";
-  while (m) { res+="I"; m--; }
+  if      (m<0)      return "["+m+"]";
+  if      (m==0)     return "O";
+  if      (m>100000) return "["+m+"]";
+  while   (m>999)  { res+="M";  m-=1000; }
+  if      (m>899)  { res+="CM"; m-=900; }
+  else if (m>499)  { res+="D";  m-=500; }
+  else if (m>399)  { res+="CD"; m-=400; }
+  while   (m>99)   { res+="C";  m-=100; }
+  if      (m>89)   { res+="XC"; m-=90; }
+  else if (m>49)   { res+="L";  m-=50; }
+  else if (m>39)   { res+="XL"; m-=40; }
+  while   (m>9)    { res+="X";  m-=10; }
+  if      (m>8)      return res+"IX";
+  else if (m>4)    { res+="V";  m-=5; }
+  else if (m>3)      return res+"IV";
+  while   (m)      { res+="I";  m--; }
   return res;
 }
 
