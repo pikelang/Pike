@@ -6,7 +6,7 @@
 // Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 // for more information.
 //
-// $Id: master.pike.in,v 1.305 2003/09/20 20:49:48 nilsson Exp $
+// $Id: master.pike.in,v 1.306 2003/10/08 19:59:02 mast Exp $
 
 #pike __REAL_VERSION__
 
@@ -2396,11 +2396,14 @@ void _main(array(string) orig_argv, array(string) env)
       mapping t = ([]);
       int i;
       object ts = main_resolv( "Tools", "Standalone" );
-      foreach(indices(ts)-indices(ts->module), string s) {
-	object o = ts[s]();
-	if(!o->main) continue;
-	t[s] = o->description || "";
-	i = max(i, sizeof(s));
+      foreach (indices(ts), string s) {
+	mixed val = ts[s];
+	if (programp (val)) {
+	  object o = val();
+	  if(!o->main) continue;
+	  t[s] = o->description || "";
+	  i = max(i, sizeof(s));
+	}
       }
       foreach(sort(indices(t)), string s)
 	werror(" %-"+i+"s %s\n", s, t[s]);
