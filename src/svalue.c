@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: svalue.c,v 1.189 2004/04/03 17:34:34 mast Exp $
+|| $Id: svalue.c,v 1.190 2004/04/04 02:29:08 mast Exp $
 */
 
 #include "global.h"
@@ -30,7 +30,7 @@
 
 #define sp Pike_sp
 
-RCSID("$Id: svalue.c,v 1.189 2004/04/03 17:34:34 mast Exp $");
+RCSID("$Id: svalue.c,v 1.190 2004/04/04 02:29:08 mast Exp $");
 
 struct svalue dest_ob_zero = {
   T_INT, 0,
@@ -2185,7 +2185,8 @@ int gc_cycle_check_weak_short_svalue(union anything *u, TYPE_T type)
  * things in general during gc mark and cycle check passes, where
  * normal freeing is prohibited. If the thing runs out of refs, they
  * record them so that they're freed in the free pass along with the
- * rest.
+ * rest. If the gc isn't running, they behave just like free_svalue
+ * and free_short_svalue.
  *
  * Note that the gc will bug out if these are used on references that
  * have been accounted for by the recursing gc mark or cycle check
@@ -2193,25 +2194,29 @@ int gc_cycle_check_weak_short_svalue(union anything *u, TYPE_T type)
 
 void real_gc_free_svalue(struct svalue *s)
 {
+  if (Pike_in_gc) {
 #ifdef PIKE_DEBUG
-  if (Pike_in_gc != GC_PASS_MARK && Pike_in_gc != GC_PASS_CYCLE &&
-      Pike_in_gc != GC_PASS_ZAP_WEAK)
-    Pike_fatal("gc_free_svalue() called in invalid gc pass.\n");
+    if (Pike_in_gc != GC_PASS_MARK && Pike_in_gc != GC_PASS_CYCLE &&
+	Pike_in_gc != GC_PASS_ZAP_WEAK)
+      Pike_fatal("gc_free_svalue() called in invalid gc pass.\n");
 #endif
-  if (((1 << s->type) & BIT_COMPLEX) && *(s->u.refs) == 1)
-    gc_delayed_free(s->u.refs, s->type);
+    if (((1 << s->type) & BIT_COMPLEX) && *(s->u.refs) == 1)
+      gc_delayed_free(s->u.refs, s->type);
+  }
   free_svalue(s);
 }
 
 void real_gc_free_short_svalue(union anything *u, TYPE_T type)
 {
+  if (Pike_in_gc) {
 #ifdef PIKE_DEBUG
-  if (Pike_in_gc != GC_PASS_MARK && Pike_in_gc != GC_PASS_CYCLE &&
-      Pike_in_gc != GC_PASS_ZAP_WEAK)
-    Pike_fatal("gc_free_short_svalue() called in invalid gc pass.\n");
+    if (Pike_in_gc != GC_PASS_MARK && Pike_in_gc != GC_PASS_CYCLE &&
+	Pike_in_gc != GC_PASS_ZAP_WEAK)
+      Pike_fatal("gc_free_short_svalue() called in invalid gc pass.\n");
 #endif
-  if (((1 << type) & BIT_COMPLEX) && *u->refs == 1)
-    gc_delayed_free(u->refs, type);
+    if (((1 << type) & BIT_COMPLEX) && *u->refs == 1)
+      gc_delayed_free(u->refs, type);
+  }
   free_short_svalue(u, type);
 }
 
