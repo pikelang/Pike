@@ -1,5 +1,5 @@
 #
-# $Id: Makefile,v 1.71 2002/05/29 00:45:12 nilsson Exp $
+# $Id: Makefile,v 1.72 2002/05/30 14:35:10 nilsson Exp $
 #
 # Meta Makefile
 #
@@ -220,7 +220,7 @@ snapshot_export:
 
 snapshot: snapshot_export
 
-autobuild_export:
+xenofarm_export:
 	@echo Begin export
 	@$(MAKE) "MAKE=$(MAKE)" "CONFIGUREARGS=--disable-binary $(CONFIGUREARGS)" \
 	  "OS=source" "LIMITED_TARGETS=yes" "METATARGET=snapshot_export" \
@@ -233,34 +233,34 @@ bin_export:
 feature_list:
 	@$(MAKE) $(MAKE_FLAGS) "METATARGET=feature_list"
 
-autobuild:
+xenofarm:
 	@test -d build || mkdir build
-	-@rm -rf build/autobuild
-	@mkdir build/autobuild
-	-@$(MAKE) $(MAKE_FLAGS) autobuild_low
-	@echo Begin response assembly | tee -a build/autobuild/autobuildlog.txt
-	@date >> build/autobuild/autobuildlog.txt
-	-@cp "$(BUILDDIR)/config.info" build/autobuild/configinfo.txt
-	-@cp "$(BUILDDIR)/config.cache" build/autobuild/configcache.txt
-	-@cp "$(BUILDDIR)/testsuite" build/autobuild/testsuite.txt
-	-@cp "$(BUILDDIR)/dumpmodule.log" build/autobuild/dumplog.txt
-	-@cp export.stamp build/autobuild/exportstamp.txt
-	-@uname -s -r -m > build/autobuild/machineid.txt
-	-@uname -n >> build/autobuild/machineid.txt
-	@cd build/autobuild && tar -c *.txt > ../../autobuild_result.tar
-	@gzip -f9 autobuild_result.tar
+	-@rm -rf build/xenofarm
+	@mkdir build/xenofarm
+	-@$(MAKE) $(MAKE_FLAGS) xenofarm_low
+	@echo Begin response assembly | tee -a build/xenofarm/xenofarmlog.txt
+	@date >> build/xenofarm/xenofarmlog.txt
+	-@cp "$(BUILDDIR)/config.info" build/xenofarm/configinfo.txt
+	-@cp "$(BUILDDIR)/config.cache" build/xenofarm/configcache.txt
+	-@cp "$(BUILDDIR)/testsuite" build/xenofarm/testsuite.txt
+	-@cp "$(BUILDDIR)/dumpmodule.log" build/xenofarm/dumplog.txt
+	-@cp export.stamp build/xenofarm/exportstamp.txt
+	-@uname -s -r -m > build/xenofarm/machineid.txt
+	-@uname -n >> build/xenofarm/machineid.txt
+	@cd build/xenofarm && tar -c *.txt > ../../xenofarm_result.tar
+	@gzip -f9 xenofarm_result.tar
 
-autobuild_low:
-	@echo Begin build | tee -a build/autobuild/autobuildlog.txt
-	@date >> build/autobuild/autobuildlog.txt
-	@$(MAKE) $(MAKE_FLAGS) > build/autobuild/makelog.txt 2>&1
-	@echo Begin verify | tee -a build/autobuild/autobuildlog.txt
-	@date >> build/autobuild/autobuildlog.txt
+xenofarm_low:
+	@echo Begin build | tee -a build/xenofarm/xenofarmlog.txt
+	@date >> build/xenofarm/xenofarmlog.txt
+	@$(MAKE) $(MAKE_FLAGS) > build/xenofarm/makelog.txt 2>&1
+	@echo Begin verify | tee -a build/xenofarm/xenofarmlog.txt
+	@date >> build/xenofarm/xenofarmlog.txt
 	@$(MAKE) $(MAKE_FLAGS) METATARGET=verify TESTARGS="-a -q" > \
-	  build/autobuild/verifylog.txt 2>&1
-	@echo Begin export | tee -a build/autobuild/autobuildlog.txt
-	@date >> build/autobuild/autobuildlog.txt
-	@$(MAKE) $(MAKE_FLAGS) bin_export > build/autobuild/exportlog.txt 2>&1
+	  build/xenofarm/verifylog.txt 2>&1
+	@echo Begin export | tee -a build/xenofarm/xenofarmlog.txt
+	@date >> build/xenofarm/xenofarmlog.txt
+	@$(MAKE) $(MAKE_FLAGS) bin_export > build/xenofarm/exportlog.txt 2>&1
 
 clean:
 	-cd "$(BUILDDIR)" && test -f Makefile && $(MAKE) "MAKE=$(MAKE)" clean || { \
