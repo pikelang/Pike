@@ -4,7 +4,7 @@
 ||| See the files COPYING and DISCLAIMER for more information.
 \*/
 #include "global.h"
-RCSID("$Id: builtin_functions.c,v 1.114 1998/07/12 19:57:47 mast Exp $");
+RCSID("$Id: builtin_functions.c,v 1.115 1998/07/15 20:16:47 hubbe Exp $");
 #include "interpret.h"
 #include "svalue.h"
 #include "pike_macros.h"
@@ -701,9 +701,23 @@ void f__exit(INT32 args)
 
 void f_time(INT32 args)
 {
-  pop_n_elems(args);
   if(!args)
+  {
     GETTIMEOFDAY(&current_time);
+  }else{
+    if(sp[-args].type == T_INT && sp[-args].u.integer > 1)
+    {
+      struct timeval tmp;
+      GETTIMEOFDAY(&current_time);
+      tmp.tv_sec=sp[-args].u.integer;
+      tmp.tv_usec=0;
+      my_subtract_timeval(&tmp,&current_time);
+      pop_n_elems(args);
+      push_float( - (float)tmp.tv_sec - ((float)tmp.tv_usec)/1000000 );
+      return;
+    }
+  }
+  pop_n_elems(args);
   push_int(current_time.tv_sec);
 }
 
@@ -3014,7 +3028,7 @@ void init_builtin_efuns(void)
   add_efun("stringp", f_stringp, "function(mixed:int)",0);
   add_efun("this_object", f_this_object, "function(:object)",OPT_EXTERNAL_DEPEND);
   add_efun("throw",f_throw,"function(mixed:void)",OPT_SIDE_EFFECT);
-  add_efun("time",f_time,"function(void|int:int)",OPT_EXTERNAL_DEPEND);
+  add_efun("time",f_time,"function(void|int:int|float)",OPT_EXTERNAL_DEPEND);
   add_efun("trace",f_trace,"function(int:int)",OPT_SIDE_EFFECT);
   add_function("transpose",f_transpose,"function(array(0=mixed):array(0))", 0);
   add_efun("upper_case",f_upper_case,"function(string:string)",0);
