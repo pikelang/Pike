@@ -1,5 +1,5 @@
 /*
- * $Id: gc.h,v 1.27 2000/04/14 15:23:45 mast Exp $
+ * $Id: gc.h,v 1.28 2000/04/14 16:05:27 mast Exp $
  */
 #ifndef GC_H
 #define GC_H
@@ -98,7 +98,7 @@ void f__gc_status(INT32 args);
 #define gc_do_free(X) debug_gc_do_free(debug_malloc_pass(X))
 #else
 #define gc_is_referenced(X) (get_marker(X)->refs < *(INT32 *)(X))
-#define gc_do_free(X) ( ! (get_marker(X)->flags & GC_REFERENCED ) )
+#define gc_do_free(X) ( (get_marker(X)->flags & (GC_REFERENCED|GC_CHECKED)) == GC_CHECKED )
 #endif
 
 #endif

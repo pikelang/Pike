@@ -1,4 +1,4 @@
-test_true([["$Id: testsuite.in,v 1.293 2000/04/06 19:24:08 hubbe Exp $"]]);
+test_true([["$Id: testsuite.in,v 1.294 2000/04/14 16:05:26 mast Exp $"]]);
 
 cond([[all_constants()->_verify_internals]],
 [[
@@ -1710,6 +1710,40 @@ ifefun(gc,
     gc();
     return sizeof(q);
   ]],2)
+
+  test_eq([[
+    int dummy;
+    gc();
+    function f = lambda() {
+      object o = class{}();
+      int i;
+      return lambda() {return i;};
+    }();
+    lambda() {dummy++;}(); // Ensure refcount garbing is done.
+    int n = gc();
+    // n should be 0; o should be refcount garbed above, the frame for f
+    // should be intact for use below.
+    dummy += f();
+    return n;
+  ]], 0)
+
+  test_true([[
+    class Foo
+    {
+      object c;
+      class A {object b;}
+      class B {object a; void destroy() {c = class{}();}}
+      mixed test()
+      {
+	object a = A(), b = B();
+	a->b = b;
+	b->a = a;
+	a = b = 0;
+	gc();
+	return c;
+      }
+    }()->test();
+  ]])
 ]])
 
 cond([[ sizeof( cpp("__AUTO_BIGNUM__")/"__AUTO_BIGNUM__" ) == 1 ]],
