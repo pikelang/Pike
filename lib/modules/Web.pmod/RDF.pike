@@ -1,4 +1,4 @@
-// $Id: RDF.pike,v 1.30 2004/01/16 04:28:56 nilsson Exp $
+// $Id: RDF.pike,v 1.31 2004/01/16 04:35:36 nilsson Exp $
 
 #pike __REAL_VERSION__
 
@@ -833,7 +833,6 @@ static class XML {
 	  buf->add(" rdf:resource='", right->get_uri(), "'/>\n");
 	else {
 	  buf->add(">\n");
-	  werror("%O\n", left);
 	  ind++;
 	  add_Description(right, m_delete(subjects, right)||([]));
 	  ind--;
