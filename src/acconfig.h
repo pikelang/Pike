@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: acconfig.h,v 1.107 2002/10/11 01:39:28 nilsson Exp $
+|| $Id: acconfig.h,v 1.108 2002/11/19 12:26:20 grubba Exp $
 */
 
 #ifndef MACHINE_H
@@ -28,6 +28,9 @@
 
 /* Define this if you want run time self tests */
 #undef PIKE_DEBUG
+
+/* Define this if you want pike to interact with valgrind. */
+#undef USE_VALGRIND
 
 /* Define this if you are going to use a memory access checker (like Purify) */
 #undef __CHECKER__
