@@ -2,11 +2,11 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: mpz_glue.c,v 1.136 2003/03/29 13:49:36 mast Exp $
+|| $Id: mpz_glue.c,v 1.137 2003/03/29 17:14:22 grubba Exp $
 */
 
 #include "global.h"
-RCSID("$Id: mpz_glue.c,v 1.136 2003/03/29 13:49:36 mast Exp $");
+RCSID("$Id: mpz_glue.c,v 1.137 2003/03/29 17:14:22 grubba Exp $");
 #include "gmp_machine.h"
 #include "module.h"
 
@@ -1712,15 +1712,22 @@ PIKE_MODULE_EXIT
     mpzmod_program=0;
   }
 #ifdef AUTO_BIGNUM
-  if(bignum_program)
   {
-    free_program(bignum_program);
-    bignum_program=0;
-  }
-  mpz_clear (mpz_int_type_min);
+    extern struct svalue auto_bignum_program;
+    free_svalue(&auto_bignum_program);
+    auto_bignum_program.type=T_INT;
+    if(bignum_program)
+    {
+      free_program(bignum_program);
+      bignum_program=0;
+    }
+    mpz_clear (mpz_int_type_min);
 #ifdef INT64
-  mpz_clear (mpz_int64_min);
+    mpz_clear (mpz_int64_min);
+    push_int64 = bootstrap_push_int64;
+    int64_from_bignum = NULL;
 #endif
+  }
 #endif
 #endif
 }
