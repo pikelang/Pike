@@ -5,7 +5,7 @@
 \*/
 
 /*
- * $Id: interpret.h,v 1.100 2001/08/30 22:35:22 hubbe Exp $
+ * $Id: interpret.h,v 1.101 2001/08/31 06:57:03 hubbe Exp $
  */
 #ifndef INTERPRET_H
 #define INTERPRET_H
@@ -325,8 +325,7 @@ do{ \
 
 
 #define check_threads_etc() do { \
-  if(evaluator_callbacks.callbacks) \
-    call_callback(& evaluator_callbacks, (void *)0); \
+  call_callback(& evaluator_callbacks, (void *)0); \
 }while(0) 
 
 #ifdef PIKE_DEBUG
