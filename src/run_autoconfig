@@ -1,6 +1,6 @@
 #!/bin/sh
 #
-# $Id: run_autoconfig,v 1.23 1998/09/20 08:30:32 hubbe Exp $
+# $Id: run_autoconfig,v 1.24 1998/09/24 17:34:03 grubba Exp $
 #
 # Bootstrap script
 
@@ -11,11 +11,16 @@ if test "x$1" = "x" ; then
   if test "x$base" != "x" ; then
     cd "$base"
   fi
+
+  localdir=`pwd`
 else
   cd "$1"
-fi
 
-localdir=`pwd`
+  localdir=`echo $0 | sed 's@[^/]*$@@g'`
+  if test "x$localdir" = "x"; then
+    localdir=`pwd`
+  fi
+fi
 
 find . -type d -print|egrep -v '/(CVS)|(RCS)$'| while read dir; do
 
