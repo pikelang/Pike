@@ -1,6 +1,6 @@
-pike7.4 (7.4.11-4) unstable; urgency=low
+pike7.4 (7.4.13-1) unstable; urgency=low
 
-  * Latest update from CVS
+  * Latest upstream version.
   * Recompiled with gcc 3.2
 
  -- Marek Habersack <grendel@debian.org>  Tue,  7 Jan 2003 22:55:22 +0100
