@@ -2,6 +2,8 @@
 
 #define BEGIN 32
 
+constant Buffer = __builtin.Buffer;
+
 //! @decl string count(string haystack, string needle)
 //!
 //! This function counts the number of times the @[needle]

@@ -5,7 +5,7 @@
 \*/
 /**/
 #include "global.h"
-RCSID("$Id: builtin_functions.c,v 1.333 2001/01/19 13:53:43 mirar Exp $");
+RCSID("$Id: builtin_functions.c,v 1.334 2001/03/08 09:02:49 per Exp $");
 #include "interpret.h"
 #include "svalue.h"
 #include "pike_macros.h"
@@ -7042,6 +7042,255 @@ PMOD_EXPORT void f_function_defined(INT32 args)
 /*! @endmodule
  */
 
+
+/*! @module String
+ */
+
+#define THB ((struct buffer_str *)Pike_fp->current_object->storage)
+
+struct  buffer_str
+{
+  unsigned int len, size, initial;
+  unsigned char *data;
+  int shift;
+};
+
+#define INITIAL_BUF_LEN 4096
+
+/*! @class Buffer
+ *!    A buffer, used for building strings. It's
+ *!    conceptually similar to a string, but you can only @[add]
+ *!    strings to it, and you can only @[get] the value from it once.
+ *!
+ *!    There is a reason for those seemingly rather odd limitations,
+ *!    it makes it possible to do some optimizations that really speed
+ *!    things up.
+ *!
+ *!    You do not need to use this class unless you add very many
+ *!    strings together, or very large strings.
+ *!
+ *!    For the fastest possible operation, write your code like this:
+ *!
+ *!    @example{
+ *!    String.Buffer b = String.Buffer( );
+ *!
+ *!    function add = b->add;
+ *!
+ *!    .. call add several times in code ...
+ *!
+ *!    string result = b->get(); // also clears the buffer
+ *!    @}
+ */
+
+static void f_buf_create( INT32 args )
+/*! @decl void create(int|void initial_size)
+ *!
+ *!   Initializes a new buffer.
+ *!
+ *!   If no @[initial_size] is specified, 4096 is used. If you
+ *!   know aproximately how big the buffer will be, you can optimize
+ *!   the operation of @[add()] (slightly) by passing the size to this
+ *!   function.
+ */
+{
+  struct buffer_str *str = THB;
+  if( args && Pike_sp[-1].type == PIKE_T_INT )
+    str->initial = Pike_sp[-1].u.integer;
+  else
+    str->initial = INITIAL_BUF_LEN;
+}
+
+
+static void f_buf__sprintf( INT32 args )
+{
+  struct buffer_str *str = THB;
+  int i = sp[-args].u.integer;
+  pop_n_elems( args );
+  switch( i )
+  {
+    case 'O':
+      push_text( "Buffer(%d /* %d */)" );
+      if( str->size )
+      {
+	push_int(  (str->len-sizeof(struct pike_string))>>str->shift );
+	push_int( (str->size-sizeof(struct pike_string))>>str->shift );
+      }
+      else
+      {
+	push_int( 0 );
+	push_int( 0 );
+      }
+      f_sprintf( 3 );
+      return;
+
+    case 't':
+      push_text("Buffer");
+      return;
+
+    default:
+      push_int( 0 );
+      return;
+  }
+}
+
+/* For benchmark reasons only.. */
+static void f_buf_nullfun( INT32 args )
+{
+  pop_n_elems( args );
+  push_int( 0 );
+}
+
+static void f_buf_add( INT32 args )
+/*! @decl void add(string data)
+ *!
+ *!   Adds @[data] to the buffer
+ */
+{
+  struct buffer_str *str = THB;
+  struct pike_string *a;
+  unsigned int l;
+
+  if( args != 1 || Pike_sp[-args].type != PIKE_T_STRING )
+    Pike_error("Illegal argument\n");
+
+  a = Pike_sp[-args].u.string;
+
+  if(!(l = (unsigned)a->len) )
+    return;
+
+  
+  if( !str->size )
+  {
+    str->shift = a->size_shift;
+    str->size  = str->initial + sizeof( struct pike_string );
+    str->data  = xalloc( str->size );
+    str->len   = sizeof( struct pike_string );
+  }
+  else if( str->shift < a->size_shift )
+  {
+    static void f_buf_get( INT32 args );
+    /* This will not win the "most optimal code of the year"
+       award, but it works. */
+    f_buf_get( 0 );
+    f_add( 2 );
+    f_buf_add( 1 );
+    return;
+  }
+  
+  l<<=str->shift;
+
+  while( str->size < ((unsigned)l+str->len) )
+  {
+    str->size *= 2;
+    str->data = realloc( str->data, str->size );
+    if(!str->data )
+    {
+      int sz = str->size;
+      str->len = 0;
+      str->size = 0;
+      Pike_error( "Malloc %d failed!\n", sz );
+    }
+  }
+#ifdef DEBUG
+  if( str->shift < a->size_shift )
+    fatal("Impossible!\n");
+#endif
+  /* str->shift is always greater than or equal to a->size_shift here. */
+
+  if( a->size_shift == str->shift )
+    MEMCPY( (str->data+str->len), a->str, l );
+  else
+    if( a->size_shift )
+      convert_1_to_2((p_wchar2 *)(str->data+str->len),
+		     (p_wchar1 *)a->str, a->len);
+    else
+      if( str->shift & 1 )
+	convert_0_to_1((p_wchar1 *)(str->data+str->len),
+		       (p_wchar0 *)a->str, a->len);
+      else
+	convert_0_to_2((p_wchar2 *)(str->data+str->len),
+		       (p_wchar0 *)a->str, a->len);
+
+  str->len += l;
+  pop_stack();
+  push_int( str->len );
+}
+
+
+static void f_buf_get( INT32 args )
+/*! @decl string get()
+ *!
+ *!   Get the data from the buffer.
+ *!
+ *! @note
+ *!   This will clear the data in the buffer
+ */
+{
+  struct buffer_str *str = THB;
+  int len = str->len-sizeof(struct pike_string);
+  if( len <= 0 )
+  {    
+    push_text("");
+    return;
+  }
+
+  if( str->len < 64 )
+  {
+    char *d = str->data+sizeof(struct pike_string);
+    switch( str->shift )
+    {
+      case 0:
+	push_string(make_shared_binary_string(d,len));
+	break;
+      case 1:
+	push_string(make_shared_binary_string1((short*)d,len>>1));
+	break;
+      case 2:
+	push_string(make_shared_binary_string2((int*)d,len>>2));
+	break;
+    }
+    xfree( str->data );
+  }
+  else
+  {
+    str->data = realloc( str->data, str->len+(1<<str->shift) );
+    {
+      struct pike_string *s = (struct pike_string *)str->data;
+      s->len = len>>str->shift;
+      s->size_shift = str->shift;
+      push_string( low_end_shared_string( s ) );
+    }
+  }
+  str->data = 0;
+  str->size = 0;
+  str->len = 0;
+  str->shift = 0;
+}
+
+
+static void f_buf_init(struct object *o)
+{
+  struct buffer_str *str = THB;
+  str->data = 0;
+  str->size = 0;
+  str->len = 0;
+  str->shift = 0;
+}
+
+static void f_buf_free(struct object *o)
+{
+  struct buffer_str *str = THB;
+  if( str->data ) xfree( str->data );
+}
+
+/*! @endclass
+ */
+
+
+/*! @endmodule
+ */
+#undef THB
+
 void init_builtin_efuns(void)
 {
   struct program *pike___master_program;
@@ -7648,5 +7897,19 @@ void init_builtin_efuns(void)
 #endif
 #endif
 
+  {
+    struct program *tmp;
+    start_new_program();
+    ADD_STORAGE( struct buffer_str  );
+    ADD_FUNCTION( "add", f_buf_add, tFunc(tString,tInt), 0);
+    ADD_FUNCTION("nullfun", f_buf_nullfun, tFunc(tString,tInt),0);
+    ADD_FUNCTION( "get", f_buf_get, tFunc(tVoid,tString), 0);
+    ADD_FUNCTION( "_sprintf", f_buf__sprintf, tFunc(tInt,tString), 0);
+    ADD_FUNCTION( "create", f_buf_create, tFunc( tOr(tInt,tVoid), tVoid ), 0 );
+    set_init_callback( f_buf_init );
+    set_exit_callback( f_buf_free );
+    add_program_constant("Buffer",tmp=end_program(),0);
+    free_program(tmp);
+  }
 }
 
