@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: signal_handler.c,v 1.298 2004/06/15 08:59:34 grubba Exp $
+|| $Id: signal_handler.c,v 1.299 2004/06/21 18:56:31 mast Exp $
 */
 
 #include "global.h"
@@ -26,7 +26,7 @@
 #include "main.h"
 #include <signal.h>
 
-RCSID("$Id: signal_handler.c,v 1.298 2004/06/15 08:59:34 grubba Exp $");
+RCSID("$Id: signal_handler.c,v 1.299 2004/06/21 18:56:31 mast Exp $");
 
 #ifdef HAVE_PASSWD_H
 # include <passwd.h>
@@ -2083,9 +2083,10 @@ extern int pike_make_pipe(int *);
       while (((_l = write(control_pipe[1], buf + _i, 3 - _i)) < 0) && \
              (errno == EINTR)) \
         ; \
-      if (_l < 0) break; \
+      if (_l < 0) exit (99 - errno); \
     } \
-    while(close(control_pipe[1]) < 0 && errno==EINTR); \
+    while((_l = close(control_pipe[1])) < 0 && errno==EINTR); \
+    if (_l < 0) exit (99 + errno); \
     exit(99); \
   } while(0)
 
