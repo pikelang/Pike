@@ -1,4 +1,4 @@
-# $Id: configure.in,v 1.36 2003/03/28 17:57:02 mast Exp $
+# $Id: configure.in,v 1.37 2003/03/28 17:59:33 mast Exp $
 AC_INIT(mpz_glue.c)
 AC_CONFIG_HEADER(gmp_machine.h)
 AC_ARG_WITH(gmp,     [  --with(out)-gmp        Support bignums],[],[with_gmp=yes])
@@ -150,6 +150,13 @@ int main(int argc, char **argv)
 dnl figure out version; not necessary, but pretty
       rm config.gmpversion 2>/dev/null
       AC_TRY_RUN([
+/* Kludge for some compilers only defining __STDC__ in strict mode. */
+#if !defined(__STDC__) && defined(HAVE_ANSI_CONCAT) && defined(PIKE_MPN_PREFIX)
+#define PIKE_LOW_MPN_CONCAT(x,y)	x##y
+#define PIKE_MPN_CONCAT(x,y)	PIKE_LOW_MPN_CONCAT(x,y)
+#define __MPN(x)	PIKE_MPN_CONCAT(PIKE_MPN_PREFIX,x)
+#endif /* !__STDC__ && HAVE_ANSI_CONCAT && PIKE_MPN_PREFIX */
+
 #include <gmp.h>
 #include <stdio.h>
 
