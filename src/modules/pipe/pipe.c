@@ -669,7 +669,11 @@ static void pipe_output(INT32 args)
     if ((sp[-1].type==T_INT)
 	&& (fd=sp[-1].u.integer)>=0
 	&& (fstat(fd,&s)==0)
+#ifdef S_ISREG
 	&& S_ISREG(s.st_mode)
+#else
+	&& 0
+#endif
 	&& (THIS->fd=dup(fd))!=-1 )
     {
       push_int(THIS->fd);
