@@ -5,7 +5,7 @@
 \*/
 
 /*
- * $Id: cpp.c,v 1.25 1998/05/06 05:15:53 hubbe Exp $
+ * $Id: cpp.c,v 1.26 1998/05/07 19:03:06 hubbe Exp $
  */
 #include "global.h"
 #include "dynamic_buffer.h"
@@ -393,7 +393,8 @@ while(1)						\
       this->current_line++;				\
       continue;						\
     }							\
-    if(outp) low_my_putchar(data[(pos++)-1], &nf);	\
+    if(outp) low_my_putchar(data[pos-1], &nf);	        \
+    pos++;                                              \
 							\
   default:						\
     if(outp) low_my_putchar(data[pos-1], &nf);		\
@@ -901,9 +902,12 @@ static INT32 low_cpp(struct cpp *this,
 	initialize_buf(&nf);
 	
 	READSTRING2(nf);
-	PUSH_STRING(nf.s.str,
-		    nf.s.len,
-		    &this->buf);
+	if(OUTP())
+	{
+	  PUSH_STRING(nf.s.str,
+		      nf.s.len,
+		      &this->buf);
+	}
 	toss_buffer(&nf);
 	break;
       }
