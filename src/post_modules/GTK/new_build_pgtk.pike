@@ -493,11 +493,11 @@ class Type
 	return "int|float"+optp;
 
       case "callback":
-	return "function"+optp+",mixed"+optp;
+	return "callback"+optp;
 
       case "function":
 	if( has_value( get_modifiers(), "callback" ) )
-	  return "function"+optp+",mixed"+optp;
+	  return "callback"+optp;
 	return "function"+optp;
 
       case "void": /* needed for return types */
