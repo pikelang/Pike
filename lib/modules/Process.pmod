@@ -2,13 +2,21 @@
 
 constant create_process = __builtin.create_process;
 
-//!
+//! Slightly polished version of @[create_process].
+//! @seealso
+//!   @[create_process]
 class Process
 {
   inherit __builtin.create_process;
 
-  //!
-  void create( string|array(string) args, mapping m )
+  //! @param args
+  //!   Either a command line array, as the command_args
+  //!   argument to @[create_process], or a string that
+  //!   will be splitted into a command line array by
+  //!   calling @[split_quoted_string].
+  //! @seealso
+  //!   @[create_process], @[split_quoted_string]
+  void create( string|array(string) args, void|mapping m )
   {
     if( stringp( args ) )
       args = split_quoted_string( args );
