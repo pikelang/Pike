@@ -1,4 +1,4 @@
-$Id: README-CVS,v 1.21 2003/03/21 00:25:21 mast Exp $
+$Id: README-CVS,v 1.22 2003/09/27 14:00:08 bill Exp $
 
 
 HOW TO BUILD PIKE FROM CVS
@@ -13,6 +13,10 @@ minor version.
 Keep in mind that the cvs versions are under heavy development and
 have not been tested nearly as well as the offcial releases.  You use
 the code at YOUR OWN RISK.
+
+NOTE: If you plan on building Pike from CVS, you must have a compatible 
+version of Autoconf installed. Autoconf version 2.13 and 2.52 are known to 
+work. Versions 2.53 through at least 2.57 are known to not work.
 
 There are a few simple steps to get pike from cvs:
 
