@@ -595,12 +595,15 @@ static INLINE void recheck_scan(struct parser_html_storage *this,
 				int *scan_entity,
 				int *scan_tag)
 {
-   if (this->callback__tag.type!=T_INT) 
+   if (this->callback__tag.type!=T_INT ||
+       this->maptag->size ||
+       this->mapcont->size) 
       *scan_tag=1;
    else 
       *scan_tag=0;
 
-   if (this->callback__entity.type!=T_INT) 
+   if (this->callback__entity.type!=T_INT ||
+       this->mapentity->size) 
       *scan_entity=1;
    else 
       *scan_entity=0;
