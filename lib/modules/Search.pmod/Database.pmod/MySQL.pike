@@ -1,7 +1,7 @@
 // This file is part of Roxen Search
 // Copyright © 2000,2001 Roxen IS. All rights reserved.
 //
-// $Id: MySQL.pike,v 1.76 2004/03/02 16:57:50 stewa Exp $
+// $Id: MySQL.pike,v 1.77 2004/08/18 12:29:19 grubba Exp $
 
 inherit .Base;
 
@@ -379,11 +379,11 @@ static void sync_thread( _WhiteFish.Blobs blobs, int docs )
 #endif  
   do
   {
-    [string word, _WhiteFish.Blob b] = blobs->read();
+    [string word, string|_WhiteFish.Blob b] = blobs->read();
     if( !b )
       break;
     q++;
-    string d = b->data();
+    string d = stringp(b)?b:b->data();
     int w;
     sscanf( d, "%4c", w );
     db->query("insert into word_hit (word,first_doc_id,hits) "
