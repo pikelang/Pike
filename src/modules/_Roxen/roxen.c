@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: roxen.c,v 1.30 2002/10/14 13:03:27 grubba Exp $
+|| $Id: roxen.c,v 1.31 2002/10/14 13:41:02 grubba Exp $
 */
 
 #define NO_PIKE_SHORTHAND
@@ -494,7 +494,7 @@ void pike_module_init()
 
   start_new_program();
   ADD_STORAGE( struct header_buf  );
-  set_exit_callback( f_hp_init );
+  set_init_callback( f_hp_init );
   set_exit_callback( f_hp_exit );
   pike_add_function( "feed", f_hp_feed, "function(string:array(string|mapping))",0 );
   pike_add_function( "create", f_hp_create, "function(:void)", ID_STATIC );
