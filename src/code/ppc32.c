@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: ppc32.c,v 1.32 2003/12/09 17:44:59 grubba Exp $
+|| $Id: ppc32.c,v 1.33 2004/03/13 15:59:46 grubba Exp $
 */
 
 /*
@@ -375,8 +375,8 @@ static void ppc32_escape_catch(void)
   MFSPR(PPC_REG_PIKE_PC, PPC_SPREG_LR);
   /* addi pike_pc,pike_pc,N */
   ADDI(PPC_REG_PIKE_PC, PPC_REG_PIKE_PC, 0);
-  /* stw pike_pc,pc(pike_fp) */
-  STW(PPC_REG_PIKE_PC, PPC_REG_PIKE_FP, OFFSETOF(pike_frame, pc));
+  /* stw pike_pc,return_addr(pike_fp) */
+  STW(PPC_REG_PIKE_PC, PPC_REG_PIKE_FP, OFFSETOF(pike_frame, return_addr));
   ADD_LABEL_CALL(do_escape_catch_label);
   Pike_compiler->new_program->program[pos_+1] +=
     sizeof(PIKE_OPCODE_T) * (PIKE_PC-pos_);
