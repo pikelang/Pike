@@ -6,7 +6,7 @@
 // Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 // for more information.
 //
-// $Id: master.pike.in,v 1.285 2003/05/31 12:47:29 mast Exp $
+// $Id: master.pike.in,v 1.286 2003/06/02 19:18:56 mast Exp $
 
 #pike __REAL_VERSION__
 
@@ -1475,7 +1475,7 @@ mixed handle_import(string what, string|void current_file, object|void handler)
     return fc[path];
   }
   resolv_debug ("handle_import(%O, %O) => new dirnode\n", what, current_file);
-  return fc[path] = dirnode(path);
+  return fc[path] = dirnode(path, handler);
 }
 
 
