@@ -1,4 +1,4 @@
-# $Id: configure.in,v 1.51 1998/06/28 16:16:17 grubba Exp $
+# $Id: configure.in,v 1.52 1998/06/28 16:21:46 grubba Exp $
 AC_INIT(file.c)
 AC_CONFIG_HEADER(file_machine.h)
 
@@ -444,7 +444,8 @@ int main()
   for(e=0;e<256;e++) if(strerror(e)) if(strerror(e)[0]=='\b') exit(1);
   exit(0);
 }
-],pike_cv_func_failsafe_strerror=yes,pike_cv_func_failsafe_strerror=no)
+],pike_cv_func_failsafe_strerror=yes,pike_cv_func_failsafe_strerror=no,
+  pike_cv_func_failsafe_strerror=no)
 ])
 
 if test "$pike_cv_func_failsafe_strerror" = yes; then
@@ -593,7 +594,8 @@ int main()
 }
 
 
-],pike_cv_select_on_unix_sockets=yes,pike_cv_select_on_unix_sockets=no)
+],pike_cv_select_on_unix_sockets=yes,pike_cv_select_on_unix_sockets=no,
+  pike_cv_select_on_unix_sockets=no)
 ])
 
 AC_MSG_RESULT($pike_cv_select_on_unix_sockets)
@@ -650,6 +652,7 @@ int main()
 }],
 pike_cv_socket_buffer_max=`cat conftest.out.2`
 ,
+pike_cv_socket_buffer_max=0,
 pike_cv_socket_buffer_max=0
 )])
 
@@ -707,7 +710,8 @@ int main()
   if(tmp && strlen(tmp) <10000) exit(0);
   exit(1);
 }
-],pike_cv_func_working_getcwd=yes,pike_cv_func_working_getcwd=no)])
+],pike_cv_func_working_getcwd=yes,pike_cv_func_working_getcwd=no,
+  pike_cv_func_working_getcwd=yes)])
 
 if test "$pike_cv_func_working_getcwd" = yes; then
   AC_MSG_RESULT(yes)
