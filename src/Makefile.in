@@ -1,5 +1,5 @@
 #
-# $Id: Makefile.in,v 1.243 2001/01/27 18:19:29 grubba Exp $
+# $Id: Makefile.in,v 1.244 2001/01/30 21:06:17 hubbe Exp $
 #
 
 # This line is needed on some machines.
@@ -587,7 +587,7 @@ depend: $(DEPEND)
 	  (EXITCODE=$$?; rm cfl.$@; exit $$EXITCODE)
 	-@rm cfl.$@
 	@for d in modules post_modules; do \
-	  ( cd modules && { \
+	  ( cd $$d && { \
 	    rm -f remake; \
 	    $(MAKE) $(MAKE_FLAGS) depend || \
 	      { test -f remake && $(MAKE) $(MAKE_FLAGS) depend; }; \
