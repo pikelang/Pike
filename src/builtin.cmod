@@ -1,5 +1,5 @@
 /* -*- c -*-
- * $Id: builtin.cmod,v 1.42 2001/06/19 22:48:14 per Exp $
+ * $Id: builtin.cmod,v 1.43 2001/06/20 01:13:00 per Exp $
  */
 
 #include "global.h"
@@ -1101,8 +1101,8 @@ PIKECLASS Buffer
     REF_RETURN fp->current_object;
   }
 
-  PIKEFUN int add( string a )
-/*! @decl void add(string data)
+  PIKEFUN int add( string ... arg1 )
+/*! @decl void add(string ... data)
  *!
  *!   Adds @[data] to the buffer. Returns the size of the buffer.
  *!
@@ -1110,65 +1110,67 @@ PIKECLASS Buffer
   {
     struct Buffer_struct *str = THIS;
     size_t l;
+    int j;
+    struct pike_string *a;
 
-    if(!(l = (size_t)a->len) )
-      return;
-
-
-    if( !str->size )
+    for( j = 0; j<args; j++ )
     {
-      str->shift = a->size_shift;
-      str->size  = str->initial +
-	(sizeof( struct pike_string ) - PIKE_STRING_STR_SIZE);
-      str->data  = xalloc( str->size );
-      str->len   = (sizeof( struct pike_string ) - PIKE_STRING_STR_SIZE);
-    }
-    else if( str->shift < a->size_shift )
-    {
-      /* This will not win the "most optimal code of the year"
-	 award, but it works, and is rather fast. */
-      f_Buffer_get( 0 );
-      stack_swap();
-      f_add( 2 );
-      f_Buffer_add( 1 );
-      return;
-    }
+      a = Pike_sp[-args+j].u.string;
+      if( Pike_sp[-args+j].type != T_STRING )
+	Pike_error("Illegal argument %d, expected string\n", j );
+      if(!(l = (size_t)a->len) )
+	continue;
 
-    l<<=str->shift;
-
-    while( str->size < ((unsigned)l+str->len) )
-    {
-      str->size *= 2;
-      str->data = realloc( str->data, str->size );
-      if( !str->data )
+      if( !str->size )
       {
-	int sz = str->size;
-	str->len = 0;
-	str->size = 0;
-	Pike_error( "Malloc %d failed!\n", sz );
+	str->shift = a->size_shift;
+	str->size  = str->initial +
+	  (sizeof( struct pike_string ) - PIKE_STRING_STR_SIZE);
+	str->data  = xalloc( str->size );
+	str->len   = (sizeof( struct pike_string ) - PIKE_STRING_STR_SIZE);
       }
-    }
+      else if( str->shift < a->size_shift )
+      {
+	/* This will not win the "most optimal code of the year"
+	   award, but it works, and is rather fast. */
+	f_Buffer_get( 0 );
+	stack_swap();
+	f_add( 2 );
+	f_Buffer_add( args-j );
+	return;
+      }
 
-#ifdef PIKE_DEBUG
-    if( str->shift < a->size_shift )
-      fatal("Impossible!\n");
-#endif
+      l<<=str->shift;
 
-    if( a->size_shift == str->shift )
-      MEMCPY( (str->data+str->len), a->str, l );
-    else
-      if( a->size_shift )
-	convert_1_to_2((p_wchar2 *)(str->data+str->len),
-		       (p_wchar1 *)a->str, a->len);
+      while( str->size < ((unsigned)l+str->len) )
+      {
+	str->size *= 2;
+	str->data = realloc( str->data, str->size );
+	if( !str->data )
+	{
+	  int sz = str->size;
+	  str->len = 0;
+	  str->size = 0;
+	  Pike_error( "Malloc %d failed!\n", sz );
+	}
+      }
+
+      if( a->size_shift == str->shift )
+	MEMCPY( (str->data+str->len), a->str, l );
       else
-	if( str->shift & 1 )
-	  convert_0_to_1((p_wchar1 *)(str->data+str->len),
-			 (p_wchar0 *)a->str, a->len);
+	if( a->size_shift )
+	  convert_1_to_2((p_wchar2 *)(str->data+str->len),
+			 (p_wchar1 *)a->str, a->len);
 	else
-	  convert_0_to_2((p_wchar2 *)(str->data+str->len),
-			 (p_wchar0 *)a->str, a->len);
-    str->len += l;
-    RETURN  str->len;
+	  if( str->shift & 1 )
+	    convert_0_to_1((p_wchar1 *)(str->data+str->len),
+			   (p_wchar0 *)a->str, a->len);
+	  else
+	    convert_0_to_2((p_wchar2 *)(str->data+str->len),
+			   (p_wchar0 *)a->str, a->len);
+      str->len += l;
+    }
+    RETURN  str->len-sizeof( struct pike_string )+PIKE_STRING_STR_SIZE;
   }
 
   PIKEFUN string get_copy()
