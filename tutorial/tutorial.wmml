@@ -13344,7 +13344,7 @@ int rm(string <I>f</I>);
 Remove a file or directory, return 0 if it fails. Nonzero otherwise.
 </man_description>
 <man_see>
-mkdir
+mkdir, recursive_rm
 </man_see>
 </function>
 
