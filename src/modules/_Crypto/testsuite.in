@@ -21,6 +21,7 @@ test_true([[programp(xCrypto.pipe)]])
 test_true([[programp(xCrypto.sha)]])
 
 // BEGIN NATIONAL SECURITY
+test_true([[programp(Crypto.rijndael)]])
 test_true([[programp(Crypto.des)]])
 test_true([[programp(Crypto.idea)]])
 test_true([[programp(Crypto.cast)]])

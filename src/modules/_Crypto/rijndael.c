@@ -1,5 +1,5 @@
 /*
- * $Id: rijndael.c,v 1.1 2000/10/02 19:35:02 grubba Exp $
+ * $Id: rijndael.c,v 1.2 2000/10/02 20:06:45 grubba Exp $
  *
  * A pike module for getting access to some common cryptos.
  *
@@ -20,8 +20,7 @@
 #include "threads.h"
 #include "object.h"
 #include "stralloc.h"
-/* #include "builtin_functions.h"
- */
+#include "module_support.h"
 /* System includes */
 #include <sys/types.h>
 #include <sys/stat.h>
@@ -80,7 +79,7 @@ static void exit_pike_crypto_rijndael(struct object *o)
 static void f_query_block_size(INT32 args)
 {
   pop_n_elems(args);
-  push_int(MAX_IV_SIZE);
+  push_int(RIJNDAEL_BLOCK_SIZE);
 }
 
 /* int query_key_length(void) */
@@ -94,14 +93,16 @@ static void f_query_key_length(INT32 args)
 static void f_set_encrypt_key(INT32 args)
 {
   struct pike_string *key = NULL;
+  word8 k[MAXKC][4];
 
   get_all_args("rijndael->set_encrypt_key()", args, "%S", &key);
   if (((key->len - 8) & ~0x18) || (!key->len)) {
     error("rijndael->set_encrypt_key(): Bad key length "
 	  "(must be 16, 24 or 32).\n");
   }
+  MEMCPY(k, key->str, key->len);
   THIS->rounds = 6 + key->len/32;
-  rijndaelKeySched(key, &(THIS->keySchedule), THIS->rounds);
+  rijndaelKeySched(k, THIS->keySchedule, THIS->rounds);
   THIS->crypt_fun = rijndaelEncrypt;
 }
 
@@ -109,14 +110,16 @@ static void f_set_encrypt_key(INT32 args)
 static void f_set_decrypt_key(INT32 args)
 {
   struct pike_string *key = NULL;
+  word8 k[MAXKC][4];
 
   get_all_args("rijndael->set_encrypt_key()", args, "%S", &key);
   if (((key->len - 8) & ~0x18) || (key->len != 8)) {
     error("rijndael->set_encrypt_key(): Bad key length "
 	  "(must be 16, 24 or 32).\n");
   }
+  MEMCPY(k, key->str, key->len);
   THIS->rounds = 6 + key->len/32;
-  rijndaelKeySched(key, &(THIS->keySchedule), THIS->rounds);
+  rijndaelKeySched(k, THIS->keySchedule, THIS->rounds);
   rijndaelKeyEncToDec(THIS->keySchedule, THIS->rounds);
   THIS->crypt_fun = rijndaelDecrypt;
 }
@@ -136,11 +139,11 @@ static void f_crypt_block(INT32 args)
   if (sp[-1].type != T_STRING) {
     error("Bad argument 1 to rijndael->crypt_block()\n");
   }
-  if ((len = sp[-1].u.string->len) % MAX_IV_SIZE) {
+  if ((len = sp[-1].u.string->len) % RIJNDAEL_BLOCK_SIZE) {
     error("Bad string length in rijndael->crypt_block()\n");
   }
   s = begin_shared_string(len);
-  for(i = 0; i < len; i += MAX_IV_SIZE)
+  for(i = 0; i < len; i += RIJNDAEL_BLOCK_SIZE)
     THIS->crypt_fun((unsigned INT8 *) sp[-1].u.string->str + i,
 		    (unsigned INT8 *) s->str + i,
 		    THIS->keySchedule, THIS->rounds);

@@ -1,5 +1,5 @@
 /*
- * $Id: rijndael.h,v 1.1 2000/10/02 19:35:03 grubba Exp $
+ * $Id: rijndael.h,v 1.2 2000/10/02 20:06:46 grubba Exp $
  */
 
 /*
@@ -15,6 +15,8 @@
 
 #define MAXKC			(256/32)
 #define MAXROUNDS		14
+
+#define RIJNDAEL_BLOCK_SIZE	16
 
 #ifndef USUAL_TYPES
 #define USUAL_TYPES
