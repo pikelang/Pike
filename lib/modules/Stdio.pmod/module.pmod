@@ -1,4 +1,4 @@
-// $Id: module.pmod,v 1.65 1999/10/05 05:33:44 hubbe Exp $
+// $Id: module.pmod,v 1.66 1999/10/14 21:37:30 grubba Exp $
 
 import String;
 
@@ -752,6 +752,27 @@ int cp(string from, string to)
   return 1;
 }
 #endif
+
+static void call_cp_cb(int len,
+		       function(int, mixed ...:void) cb, mixed ... args)
+{
+  // FIXME: Check that the lengths are the same?
+  cb(0, @args);
+}
+
+void async_cp(string from, string to,
+	      function(int, mixed...:void) cb, mixed ... args)
+{
+  object from_file = File();
+  object to_file = File();
+
+  if ((!(from_file->open(from, "r"))) ||
+      (!(to_file->open(to, "wct")))) {
+    call_out(cb, 0, 0, @args);
+    return;
+  }
+  sendfile(0, from_file, 0, -1, 0, to, call_cp_cb, cb, @args);
+}
 
 /*
  * Asynchronous sending of files.
