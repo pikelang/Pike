@@ -1,7 +1,7 @@
 // SQL blob based database
 // Copyright © 2000,2001 Roxen IS.
 //
-// $Id: MySQL.pike,v 1.30 2001/06/11 13:38:11 js Exp $
+// $Id: MySQL.pike,v 1.31 2001/06/11 13:38:56 js Exp $
 
 inherit .Base;
 
@@ -185,7 +185,7 @@ void set_metadata(Standards.URI|string uri, void|string language,
 
   foreach(indices(md), string ind)
     if(ind!="body")
-      md[ind]=string_to_utf8(md[ind];
+      md[ind]=string_to_utf8(md[ind]);
 
   string s=map(Array.transpose( ({ map(indices(md),db->quote),
 				   map(values(md), db->quote) }) ),
