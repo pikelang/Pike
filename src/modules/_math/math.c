@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: math.c,v 1.80 2005/01/18 17:41:33 grubba Exp $
+|| $Id: math.c,v 1.81 2005/03/21 05:09:45 per Exp $
 */
 
 #include "global.h"
@@ -589,6 +589,45 @@ void f_round(INT32 args)
   sp[-1].u.float_number = FL1(RINT,sp[-1].u.float_number);
 }
 
+
+/*! @decl int|float|object limit(int|float|object x, int|float|object minval, int|float|object maxval)
+ *!
+ *! Limits the value given so that it's between minval and maxval.
+ *! If @[x] is an object, it must implement the @[lfun::`<] method.
+ *!
+ *! @seealso
+ *!   @[max()] and @[min()]
+ */
+void f_limit(INT32 args)
+{
+  INT32 i;
+  INT32 minpos = 0;
+
+  if(args != 3) 
+  {
+      Pike_error("limit needs 3 arguments\n");
+  }
+
+  /* -3  -2  -1 */
+  /*  a < X < b */
+  if( is_lt( Pike_sp-3,  Pike_sp-2 ) )      /* a < X */
+  { 
+      if( is_lt( Pike_sp-2,  Pike_sp-1 ) )      /* X < b */
+      {
+	  /* return X (-2) */
+	  pop_stack();
+	  stack_pop_keep_top();
+      }
+      else
+      {
+         /* X > b, return b (-1) */
+	  stack_unlink( 2 );
+      }
+  }
+  else
+      pop_n_elems(2); /* a > X, return a (-3)*/
+}
+
 /*! @decl int|float|object min(int|float|object ... args)
  *! @decl string min(string ... args)
  *! @decl int(0..0) min()
@@ -597,7 +636,7 @@ void f_round(INT32 args)
  *! must implement the @[lfun::`<] method.
  *!
  *! @seealso
- *!   @[max()]
+ *!   @[max()] and @[limit()]
  */
 void f_min(INT32 args)
 {
@@ -629,7 +668,7 @@ void f_min(INT32 args)
  *! must implement the @[lfun::`<] method.
  *!
  *! @seealso
- *!   @[min()]
+ *!   @[min()] and @[limit()]
  */
 void f_max(INT32 args)
 {
@@ -804,6 +843,11 @@ PIKE_MODULE_INIT
   ADD_EFUN("max",f_max,CMP_TYPE,0);
   ADD_EFUN("min",f_min,CMP_TYPE,0);
   
+  ADD_EFUN("limit",f_limit,
+	   tFunc(tOr3(tFlt,tInt,tObj) 
+		 tOr3(tFlt,tInt,tObj) 
+		 tOr3(tFlt,tInt,tObj),
+		 tOr3(tFlt,tInt,tObj)),0);
 /* function(float|int|object:float|int|object) */
   ADD_EFUN("abs",f_abs,tFunc(tOr3(tFlt,tInt,tObj),tOr3(tFlt,tInt,tObj)),0);
   
