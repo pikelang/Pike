@@ -1,6 +1,6 @@
 #! /usr/bin/env pike
 
-/* $Id: export.pike,v 1.58 2002/10/15 15:17:17 nilsson Exp $ */
+/* $Id: export.pike,v 1.59 2004/03/09 02:29:49 nilsson Exp $ */
 
 multiset except_modules = (<>);
 string vpath;
@@ -109,6 +109,10 @@ void bump_version()
 array(string) build_file_list(string vpath, string list_file)
 {
   array(string) ret=({ }), missing=({ });
+  if(!file_stat(list_file)) {
+    werror("Could not find %s\n", list_file);
+    exit(1);
+  }
   foreach(Stdio.read_file(list_file) / "\n", string line)
     {
       if( !sizeof(line) || line[0]=='#' )
@@ -264,6 +268,7 @@ int main(int argc, array(string) argv)
     if(Stdio.file_size(pike_base_name+"/src/modules/"+fn) == -2)
       fix_configure("modules/"+fn);
 
+  rm(vpath);
   symlink(".", vpath);
 
   files = build_file_list(vpath,export_list);
@@ -291,6 +296,27 @@ int main(int argc, array(string) argv)
       }
       first = 0;
     }
+
+  rm(vpath);
+  string build = sprintf("%s-%s-%s", uname()->sysname, uname()->release,
+			 uname()->machine);
+  build = "build/"+replace(lower_case(build), ({ " ", "/", "(", ")" }),
+			   ({ "-", "_", "_", "_" }));
+  if(file_stat(build+"/autodoc.xml")) {
+    mkdir(vpath);
+    mkdir(vpath+"/refdoc");
+    Stdio.cp(build+"/autodoc.xml", vpath+"/refdoc/autodoc.xml");
+    if(Process.create_process
+       ( ({"tar", "rvf", pike_base_name+"/"+vpath+".tar",
+	   vpath+"/refdoc/autodoc.xml" }) )->wait())
+      {
+	werror("Tar file creation failed!\n");
+	if(cvs) cvs->wait();
+	rm(vpath);
+	exit(1);
+      }
+    Stdio.recursive_rm(vpath);
+  }
 
   if(Process.create_process
      ( ({"gzip",
@@ -326,8 +352,6 @@ Mandatory arguments:
 --name=<name>
 	Name of export archive (%maj, %min, %bld, %Y, %M, %D, %h, %m, %s
 	are replaced with apropiate values).
---timestamp=<int>
-        The timestamp of the build, if other than the real one.
 --exportlist=<listfile>
 	A file which lists all the files and directories to be exported.
 --srcdir=<dir>
@@ -335,6 +359,8 @@ Mandatory arguments:
 
 Optional arguments:
 
+--timestamp=<int>
+        The timestamp of the build, if other than the real one.
 --rebuild
 	Not implemented.
 --tag	Bump the Pike build version and tag the CVS tree.
