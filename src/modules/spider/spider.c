@@ -26,6 +26,7 @@
 #include <unistd.h>
 #endif
 
+#include "fdlib.h"
 #include "stralloc.h"
 #include "global.h"
 #include "pike_macros.h"
@@ -42,7 +43,7 @@
 #include "threads.h"
 #include "operators.h"
 
-RCSID("$Id: spider.c,v 1.53 1998/02/10 15:44:57 per Exp $");
+RCSID("$Id: spider.c,v 1.54 1998/02/11 00:27:01 per Exp $");
 
 #ifdef HAVE_PWD_H
 #include <pwd.h>
@@ -1300,13 +1301,13 @@ void *do_shuffle(void *_a)
   while(!fail && a->len)
   {
     int nread, ts=0;
-    nread = read(a->from_fd, buffer, 8192);
+    nread = fd_read(a->from_fd, buffer, 8192);
     if(nread <= 0)
       break;
 
     while(nread)
     {
-      int nsent = write(a->to_fd, buffer, nread);
+      int nsent = fd_write(a->to_fd, buffer, nread);
       if(nsent < 0) 
       {
 	fail=1;
@@ -1326,6 +1327,7 @@ void *do_shuffle(void *_a)
   a->next = done;
   done = a;
   mt_unlock(&done_lock);
+  wake_up_backend();
   return 0;
 }
 
@@ -1354,11 +1356,8 @@ void finished_p(struct callback *foo, void *b, void *c)
     free(d);
   }
 
-  if(num_shuffles)
+  if(!num_shuffles)
   {
-    next_timeout = current_time;
-    next_timeout.tv_usec += 40000;
-  } else {
     remove_callback( foo );
     my_callback = 0;
   }
@@ -1379,20 +1378,13 @@ void f_shuffle(INT32 args)
   a->from->refs++; 
   a->to->refs++; 
   
-  a->cb = *q;
-  a->args = *w;
-  if(a->cb.type <= MAX_REF_TYPE)   a->cb.u.refs[0]++; 
-  if(a->args.type <= MAX_REF_TYPE) a->args.u.refs[0]++;
+  assign_svalue_no_free(&a->cb, q);
+  assign_svalue_no_free(&a->args, w);
   
   th_create_small(&a->tid, do_shuffle, (void *)a);
 
   if(!my_callback)
-  {
-/*  next_timeout = current_time; */
-/*  next_timeout.tv_usec += 40000; */
     my_callback = add_backend_callback( finished_p, 0, 0 );
-    wake_up_backend();
-  }
 
   pop_n_elems(args+2);
 }
