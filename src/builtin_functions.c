@@ -5,7 +5,7 @@
 \*/
 /**/
 #include "global.h"
-RCSID("$Id: builtin_functions.c,v 1.385 2001/06/28 13:16:33 grubba Exp $");
+RCSID("$Id: builtin_functions.c,v 1.386 2001/06/29 02:14:56 hubbe Exp $");
 #include "interpret.h"
 #include "svalue.h"
 #include "pike_macros.h"
@@ -3131,6 +3131,7 @@ node *optimize_replace(node *n)
 	    );
 
 	    UNSETJMP(tmp);
+	    pop_n_elems(Pike_sp - save_sp);
 
 	    free_type(array_zero);
 	    free_type(mapping_zero);
@@ -3139,6 +3140,7 @@ node *optimize_replace(node *n)
 	  }
 	}
 	UNSETJMP(tmp);
+	pop_n_elems(Pike_sp - save_sp);
       }
     }
   }
