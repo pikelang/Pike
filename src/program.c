@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: program.c,v 1.568 2004/09/18 20:50:53 nilsson Exp $
+|| $Id: program.c,v 1.569 2004/09/27 15:12:15 grubba Exp $
 */
 
 #include "global.h"
@@ -3073,6 +3073,8 @@ struct program *end_first_pass(int finish)
 
   exit_type_stack();
 
+  free_all_nodes();
+
   CDFPRINTF((stderr,
 	     "th(%ld) %p end_first_pass(%d): "
 	     "threads_disabled:%d, compilation_depth:%d\n",
@@ -3082,8 +3084,6 @@ struct program *end_first_pass(int finish)
   compilation_depth--;
 
   exit_threads_disable(NULL);
-
-  free_all_nodes();
 
   return prog;
 }
