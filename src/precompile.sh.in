@@ -53,10 +53,9 @@ case "$SCRIPT" in
   ;;
   *)
     if test -f ./$SCRIPT ; then
-      OLD="-DOLD=\"`/bin/pwd|sed 's@/[^/]*@../@g'`$PREDIR\""
+      :
     elif test -f "$TMP_BINDIR/$SCRIPT"; then
       SCRIPT="$TMP_BINDIR/$SCRIPT"
-      OLD="-DOLD=\"`( cd $TMP_BINDIR; /bin/pwd; )|sed 's@/[^/]*@../@g'`$PREDIR\""
     else
       echo "Script $SCRIPT neither found in the current directory nor in $TMP_BINDIR."
       exit 1
@@ -108,10 +107,10 @@ case $method in
   QQQQQ)
     LAST_PIKE=pike
     method=QQQQQQ
-    RUNPIKE="$LAST_PIKE $OLD"
+    RUNPIKE="$LAST_PIKE"
   ;;
   QQQQQQ)
-    RUNPIKE="$LAST_PIKE $OLD"
+    RUNPIKE="$LAST_PIKE"
     LAST_PIKE=pike
   ;;
   QQQQQQQ)
@@ -124,7 +123,7 @@ case $method in
         if [ -x $dir/$p ]; then
           if [ "x$LAST_PIKE" = xpike ] ; then
             LAST_PIKE=$dir/$p
-            RUNPIKE="$dir/$p $OLD"
+            RUNPIKE="$dir/$p"
             break
           fi
 
