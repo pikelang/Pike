@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: pike_netlib.h,v 1.1 2003/04/23 15:32:15 marcus Exp $
+|| $Id: pike_netlib.h,v 1.2 2003/04/23 23:34:24 marcus Exp $
 */
 
 #ifndef PIKE_NETLIB_H
@@ -35,7 +35,7 @@ typedef union {
 #define SOCKADDR_IN_ADDR(X) (SOCKADDR_FAMILY(X)==AF_INET? \
   &(X).ipv4.sin_addr : (struct in_addr *)&(X).ipv6.sin6_addr)
 #else
-#define SOCKADDR_IN_ADDR(X) (&(X).ipv4)
+#define SOCKADDR_IN_ADDR(X) (&(X).ipv4.sin_addr)
 #endif
 
 #endif /* PIKE_NETLIB_H */
