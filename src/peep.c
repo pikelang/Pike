@@ -17,7 +17,7 @@
 #include "builtin_functions.h"
 #include "constants.h"
 
-RCSID("$Id: peep.c,v 1.54 2001/07/16 19:48:59 hubbe Exp $");
+RCSID("$Id: peep.c,v 1.55 2001/07/17 06:50:35 hubbe Exp $");
 
 static void asm_opt(void);
 
@@ -135,13 +135,22 @@ void update_arg(int instr,INT32 arg)
 
 /**** Bytecode Generator *****/
 
-
+/* FIXME: Move this to pike_cpulib.h */
 #if defined(__i386__) && defined(__GNUC__)
 
 #define PUSH_INT(X) ins_int((INT32)(X), add_to_program)
 #define PUSH_ADDR(X) PUSH_INT((X))
-#define PUSHL(X) add_to_program(0x68),PUSH_INT((X)
-#define CALL_ABSOLUTE(X) add_to_program(0x9a),PUSH_ADDR((X))
+
+/* This is ugly, but since the code may be moved we cannot use
+ * relative addressing :(
+ */
+#define CALL_ABSOLUTE(X) do{			\
+  add_to_program(0xb8);	/* mov $xxx,%eax */	\
+  PUSH_INT(X);					\
+  add_to_program(0xff);	/* jsr *(%eax) */	\
+  add_to_program(0xd0);				\
+}while(0)
+
 #define RET() add_to_program(0xc3);
 #define POP(X) \
   add_to_program(0x83),  /* Addl.b 0x4, %esp */ \
@@ -167,7 +176,7 @@ void ins_f_byte(unsigned int b)
 #ifdef PIKE_USE_MACHINE_CODE
 #if defined(__i386__) && defined(__GNUC__)
   CALL_ABSOLUTE(instrs[b].address);
-  return
+  return;
 #endif
 #endif
 

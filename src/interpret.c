@@ -5,7 +5,7 @@
 \*/
 /**/
 #include "global.h"
-RCSID("$Id: interpret.c,v 1.220 2001/07/16 19:48:57 hubbe Exp $");
+RCSID("$Id: interpret.c,v 1.221 2001/07/17 06:50:35 hubbe Exp $");
 #include "interpret.h"
 #include "object.h"
 #include "program.h"
@@ -757,21 +757,34 @@ void *do_escape_catch_label;
 void *dummy_label;
 
 
-#define OPCODE0(O,N,C) void PIKE_CONCAT(opcode_,O)(void) C
-#define OPCODE1(O,N,C) void PIKE_CONCAT(opcode_,O)(INT32 arg1) C
-#define OPCODE2(O,N,C) void PIKE_CONCAT(opcode_,O)(INT32 arg1,INT32 arg2) C
+#define OPCODE0(O,N,C) \
+void PIKE_CONCAT(opcode_,O)(void) { \
+DO_IF_DEBUG(if(t_flag > 3) fprintf(stderr,"-   %s()\n",N));\
+C }
 
-#define OPCODE0_JUMP(O,N,C) void PIKE_CONCAT(opcode_,O)(void) C
-#define OPCODE1_JUMP(O,N,C) void PIKE_CONCAT(opcode_,O)(INT32 arg1) C
-#define OPCODE2_JUMP(O,N,C) void PIKE_CONCAT(opcode_,O)(INT32 arg1,INT32 arg2) C
+#define OPCODE1(O,N,C) \
+void PIKE_CONCAT(opcode_,O)(INT32 arg1) {\
+DO_IF_DEBUG(if(t_flag > 3) fprintf(stderr,"-   %s(%d)\n",N,arg1)); \
+C }
 
-#define OPCODE0_TAIL(O,N,C) void PIKE_CONCAT(opcode_,O)(void) C
-#define OPCODE1_TAIL(O,N,C) void PIKE_CONCAT(opcode_,O)(INT32 arg1) C
-#define OPCODE2_TAIL(O,N,C) void PIKE_CONCAT(opcode_,O)(INT32 arg1,INT32 arg2) C
 
-#define OPCODE0_TAILJUMP(O,N,C) void PIKE_CONCAT(opcode_,O)(void) C
-#define OPCODE1_TAILJUMP(O,N,C) void PIKE_CONCAT(opcode_,O)(INT32 arg1) C
-#define OPCODE2_TAILJUMP(O,N,C) void PIKE_CONCAT(opcode_,O)(INT32 arg1,INT32 arg2) C
+#define OPCODE2(O,N,C) \
+void PIKE_CONCAT(opcode_,O)(INT32 arg1,INT32 arg2) { \
+DO_IF_DEBUG(if(t_flag > 3) fprintf(stderr,"-   %s(%d,%d)\n",N,arg1,arg2)); \
+C }
+
+
+#define OPCODE0_JUMP(O,N,C) OPCODE0(O,N,C)
+#define OPCODE1_JUMP(O,N,C) OPCODE1(O,N,C)
+#define OPCODE2_JUMP(O,N,C) OPCODE2(O,N,C)
+
+#define OPCODE0_TAIL(O,N,C) OPCODE0(O,N,C)
+#define OPCODE1_TAIL(O,N,C) OPCODE1(O,N,C)
+#define OPCODE2_TAIL(O,N,C) OPCODE2(O,N,C)
+
+#define OPCODE0_TAILJUMP(O,N,C) OPCODE0(O,N,C)
+#define OPCODE1_TAILJUMP(O,N,C) OPCODE1(O,N,C)
+#define OPCODE2_TAILJUMP(O,N,C) OPCODE2(O,N,C)
 
 #undef HAVE_COMPUTED_GOTO
 
