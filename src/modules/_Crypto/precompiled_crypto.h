@@ -8,6 +8,8 @@
 
 /* This file should be removed when things have stabilized */
 
+#error precompiled_crypto.h is obsolete
+
 #ifndef PRECOMPILED_CRYPTO_H
 #define PRECOMPILED_CRYPTO_H
 

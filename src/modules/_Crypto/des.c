@@ -1,5 +1,5 @@
 /*
- * $Id: des.c,v 1.8 1997/05/30 02:40:14 grubba Exp $
+ * $Id: des.c,v 1.9 1997/11/16 22:25:42 nisse Exp $
  *
  * A pike module for getting access to some common cryptos.
  *
@@ -34,9 +34,6 @@
 #include <errno.h>
 
 #include <des.h>
-
-/* Module specific includes */
-#include "precompiled_crypto.h"
 
 struct pike_crypto_des {
   unsigned INT32 method[DES_EXPANDED_KEYLEN];
@@ -157,14 +154,7 @@ static void f_crypt_block(INT32 args)
  * Module linkage
  */
 
-#if 0
-void MOD_INIT2(des)(void)
-{
-  /* add_efun()s */
-}
-#endif
-
-void MOD_INIT(des)(void)
+void pike_des_init(void)
 {
   /*
    * start_new_program();
@@ -196,9 +186,9 @@ void MOD_INIT(des)(void)
   set_init_callback(init_pike_crypto_des);
   set_exit_callback(exit_pike_crypto_des);
 
-  end_class(MODULE_PREFIX "des", 0);
+  end_class("des", 0);
 }
 
-void MOD_EXIT(des)(void)
+void pike_des_exit(void)
 {
 }

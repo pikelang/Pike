@@ -1,5 +1,5 @@
 /*
- * $Id: idea.c,v 1.9 1997/03/11 03:15:00 nisse Exp $
+ * $Id: idea.c,v 1.10 1997/11/16 22:25:43 nisse Exp $
  *
  * IDEA crypto module for Pike
  *
@@ -23,9 +23,6 @@
 
 /* Backend includes */
 #include <idea.h>
-
-/* Module specific includes */
-#include "precompiled_crypto.h"
 
 #define THIS ((unsigned INT16 *)(fp->current_storage))
 #define OBTOCTX(o) ((unsigned INT16 *)(o->storage))
@@ -140,14 +137,7 @@ static void f_crypt_block(INT32 args)
  * Module linkage
  */
 
-#if 0
-void MOD_INIT2(idea)(void)
-{
-  /* add_efun()s */
-}
-#endif
-
-void MOD_INIT(idea)(void)
+void pike_idea_init(void)
 {
   /*
    * start_new_program();
@@ -179,9 +169,9 @@ void MOD_INIT(idea)(void)
   set_init_callback(init_pike_crypto_idea);
   set_exit_callback(exit_pike_crypto_idea);
 
-  end_class(MODULE_PREFIX "idea", 0);
+  end_class("idea", 0);
 }
 
-void MOD_EXIT(idea)(void)
+void pike_idea_exit(void)
 {
 }

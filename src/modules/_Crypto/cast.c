@@ -1,5 +1,5 @@
 /*
- * $Id: cast.c,v 1.1 1997/11/04 01:28:47 nisse Exp $
+ * $Id: cast.c,v 1.2 1997/11/16 22:25:39 nisse Exp $
  *
  * CAST crypto module for Pike
  *
@@ -21,9 +21,6 @@
 #include "las.h"
 
 #include <cast.h>
-
-/* Module specific includes */
-#include "precompiled_crypto.h"
 
 struct pike_crypto_cast {
   struct cast_key key;
@@ -153,14 +150,7 @@ static void f_crypt_block(INT32 args)
  * Module linkage
  */
 
-#if 0
-void MOD_INIT2(cast)(void)
-{
-  /* add_efun()s */
-}
-#endif
-
-void MOD_INIT(cast)(void)
+void pike_cast_init(void)
 {
   /*
    * start_new_program();
@@ -192,9 +182,9 @@ void MOD_INIT(cast)(void)
   set_init_callback(init_pike_crypto_cast);
   set_exit_callback(exit_pike_crypto_cast);
 
-  end_class(MODULE_PREFIX "cast", 0);
+  end_class("cast", 0);
 }
 
-void MOD_EXIT(cast)(void)
+void pike_cast_exit(void)
 {
 }

@@ -1,5 +1,5 @@
 /*
- * $Id: md5.c,v 1.6 1997/09/07 19:51:57 nisse Exp $
+ * $Id: md5.c,v 1.7 1997/11/16 22:25:44 nisse Exp $
  *
  * A pike module for getting access to some common cryptos.
  *
@@ -22,10 +22,7 @@
 #include "error.h"
 #include "module_support.h"
 
-#include "md5.h"
-
-/* Module specific includes */
-#include "precompiled_crypto.h"
+#include <md5.h>
 
 #define THIS ((struct md5_ctx *)(fp->current_storage))
 #define OBTOCTX(o) ((struct md5_ctx *)(o->storage))
@@ -86,11 +83,11 @@ static void f_digest(INT32 args)
   push_string(end_shared_string(s));
 }
 
-void MOD_EXIT(md5)(void)
+void pike_md5_exit(void)
 {
 }
 
-void MOD_INIT(md5)(void)
+void pike_md5_init(void)
 {
   start_new_program();
   add_storage(sizeof(struct md5_ctx));
@@ -99,5 +96,5 @@ void MOD_INIT(md5)(void)
   add_function("update", f_update, "function(string:object)", 0);
   add_function("digest", f_digest, "function(void:string)", 0);
   add_function("identifier", f_identifier, "function(void:string)", 0);
-  end_class(MODULE_PREFIX "md5", 0);
+  end_class("md5", 0);
 }

@@ -1,5 +1,5 @@
 /*
- * $Id: crypto.c,v 1.21 1997/11/04 01:28:48 nisse Exp $
+ * $Id: crypto.c,v 1.22 1997/11/16 22:25:41 nisse Exp $
  *
  * A pike module for getting access to some common cryptos.
  *
@@ -20,8 +20,7 @@
 #include "threads.h"
 #include "object.h"
 #include "interpret.h"
-/* #include "builtin_functions.h"
- */
+
 /* System includes */
 #include <sys/types.h>
 #include <sys/stat.h>
@@ -31,8 +30,8 @@
 #include <fcntl.h>
 #include <errno.h>
 
-/* Module specific includes */
-#include "precompiled_crypto.h"
+/* Prototypes */
+#include "crypto.h"
 
 struct pike_crypto {
   struct object *object;
@@ -215,7 +214,6 @@ static void f_des_parity(INT32 args)
   push_string(end_shared_string(s));
 }
 
-  
 /*
  * /precompiled/crypto
  */
@@ -444,29 +442,8 @@ static void f_unpad(INT32 args)
  * Module linkage
  */
 
-#if 0
-void MOD_INIT2(crypto)(void)
-{
-  /* add_efun()s */
 
-#if 0
-  MOD_INIT2(md2)();
-  MOD_INIT2(md5)();
-#endif
-#if 1
-  MOD_INIT2(idea)();
-  MOD_INIT2(des)();
-  MOD_INIT2(rc4)();
-  MOD_INIT2(invert)();
-
-  MOD_INIT2(sha)();
-  MOD_INIT2(cbc)();
-  MOD_INIT2(pipe)();
-#endif
-}
-#endif
-
-void MOD_INIT(crypto)(void)
+void pike_crypto_init(void)
 {
   /*
    * start_new_program();
@@ -503,51 +480,50 @@ void MOD_INIT(crypto)(void)
   set_init_callback(init_pike_crypto);
   set_exit_callback(exit_pike_crypto);
 
-  end_class(MODULE_PREFIX "crypto", 0);
+  end_class("crypto", 0);
 }
 
-void MOD_EXIT(crypto)(void) {}
+void pike_crypto_exit(void) {}
 
 void pike_module_init(void)
 {
   add_function("string_to_hex", f_string_to_hex, "function(string:string)", 0);
   add_function("hex_to_string", f_hex_to_string, "function(string:string)", 0);
   add_function("des_parity", f_des_parity, "function(string:string)", 0);
-#if 0
-  MOD_INIT(md2)();
-#endif
-#if 1
-  MOD_INIT(md5)();
-  MOD_INIT(crypto)();
-  MOD_INIT(idea)();
-  MOD_INIT(des)();
-  MOD_INIT(cast)();
-  MOD_INIT(rc4)();
-  MOD_INIT(invert)();
 
-  MOD_INIT(sha)();
-  MOD_INIT(cbc)();
-  MOD_INIT(pipe)();
-#endif
+  pike_md5_init();
+  pike_sha_init();
+  pike_crypto_init();
+  pike_cbc_init();
+  pike_pipe_init();
+  pike_invert_init();
+
+  /* BEGIN NATIONAL SECURITY */  
+
+  pike_idea_init();
+  pike_des_init();
+  pike_cast_init();
+  pike_rc4_init();
+
+  /* END NATIONAL SECURITY */
 }  
 
 void pike_module_exit(void)
 {
-  /* free_program()s */
-#if 0
-  MOD_EXIT(md2)();
-#endif
-#if 1
-  MOD_EXIT(md5)();
-  MOD_EXIT(crypto)();
-  MOD_EXIT(idea)();
-  MOD_EXIT(cast)();  
-  MOD_EXIT(des)();
-  MOD_EXIT(rc4)();
-  MOD_EXIT(invert)();
-  MOD_EXIT(sha)();
-  MOD_EXIT(cbc)();
-  MOD_EXIT(pipe)();
-#endif
+  pike_md5_exit();
+  pike_sha_exit();
+  pike_crypto_exit();
+  pike_cbc_exit();
+  pike_pipe_exit();
+  pike_invert_exit();
+
+  /* BEGIN NATIONAL SECURITY */
+
+  pike_idea_exit();
+  pike_des_exit();
+  pike_cast_exit();
+  pike_rc4_exit();
+
+  /* END NATIONAL SECURITY */
 }
 

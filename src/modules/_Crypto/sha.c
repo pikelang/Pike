@@ -15,10 +15,7 @@
 #include "error.h"
 #include "module_support.h"
 
-#include "sha.h"
-
-/* Module specific includes */
-#include "precompiled_crypto.h"
+#include <sha.h>
 
 #define THIS ((struct sha_ctx *)(fp->current_storage))
 #define OBTOCTX(o) ((struct sha_ctx *)(o->storage))
@@ -72,11 +69,11 @@ static void f_digest(INT32 args)
   push_string(end_shared_string(s));
 }
 
-void MOD_EXIT(sha)(void)
+void pike_sha_exit(void)
 {
 }
 
-void MOD_INIT(sha)(void)
+void pike_sha_init(void)
 {
   start_new_program();
   add_storage(sizeof(struct sha_ctx));
@@ -84,5 +81,5 @@ void MOD_INIT(sha)(void)
   add_function("create", f_create, "function(void|object:void)", 0);
   add_function("update", f_update, "function(string:object)", 0);
   add_function("digest", f_digest, "function(void:string)", 0);
-  end_class(MODULE_PREFIX "sha", 0);
+  end_class("sha", 0);
 }
