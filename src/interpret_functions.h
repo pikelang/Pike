@@ -1,5 +1,5 @@
 /*
- * $Id: interpret_functions.h,v 1.26 2000/07/12 12:25:18 grubba Exp $
+ * $Id: interpret_functions.h,v 1.27 2000/07/29 06:31:06 hubbe Exp $
  *
  * Opcode definitions for the interpreter.
  */
@@ -273,7 +273,7 @@ OPCODE2(F_LOCAL_2_GLOBAL, "global = local")
   i = ID_FROM_INT(Pike_fp->current_object->prog, tmp);
   if(!IDENTIFIER_IS_VARIABLE(i->identifier_flags))
     error("Cannot assign functions or constants.\n");
-  if(i->run_time_type == T_MIXED)
+  if(i->run_time_type == PIKE_T_MIXED)
   {
     assign_svalue((struct svalue *)GLOBAL_FROM_INT(tmp),
 		  Pike_fp->locals + arg2);
@@ -541,7 +541,7 @@ OPCODE1(F_GLOBAL_LVALUE, "& global")
   if(!IDENTIFIER_IS_VARIABLE(i->identifier_flags))
     error("Cannot re-assign functions or constants.\n");
 
-  if(i->run_time_type == T_MIXED)
+  if(i->run_time_type == PIKE_T_MIXED)
   {
     Pike_sp[0].type=T_LVALUE;
     Pike_sp[0].u.lval=(struct svalue *)GLOBAL_FROM_INT(tmp);
@@ -736,7 +736,7 @@ OPCODE1(F_ASSIGN_GLOBAL, "assign global")
   i=ID_FROM_INT(Pike_fp->current_object->prog, tmp);
   if(!IDENTIFIER_IS_VARIABLE(i->identifier_flags))
     error("Cannot assign functions or constants.\n");
-  if(i->run_time_type == T_MIXED)
+  if(i->run_time_type == PIKE_T_MIXED)
   {
     assign_svalue((struct svalue *)GLOBAL_FROM_INT(tmp), Pike_sp-1);
   }else{
@@ -758,7 +758,7 @@ OPCODE1(F_ASSIGN_GLOBAL_AND_POP, "assign global and pop")
   if(!IDENTIFIER_IS_VARIABLE(i->identifier_flags))
     error("Cannot assign functions or constants.\n");
 
-  if(i->run_time_type == T_MIXED)
+  if(i->run_time_type == PIKE_T_MIXED)
   {
     struct svalue *s=(struct svalue *)GLOBAL_FROM_INT(tmp);
     free_svalue(s);

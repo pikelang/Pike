@@ -79,20 +79,20 @@ DECLARE_ERROR(generic, EMPTY ,
 
 DECLARE_ERROR(index,
 	      ERR_INHERIT(generic),
-  ERR_VAR(struct svalue, mixed, T_MIXED, val)
-  ERR_VAR(struct svalue, mixed, T_MIXED, ind)
+  ERR_VAR(struct svalue, mixed, PIKE_T_MIXED, val)
+  ERR_VAR(struct svalue, mixed, PIKE_T_MIXED, ind)
 )
 
 DECLARE_ERROR(bad_arg,
 	      ERR_INHERIT(generic),
   ERR_VAR(INT_TYPE, int, PIKE_T_INT, which_arg)
   ERR_VAR(struct pike_string *,string,PIKE_T_STRING,expected_type)
-  ERR_VAR(struct svalue, mixed, T_MIXED, got)
+  ERR_VAR(struct svalue, mixed, PIKE_T_MIXED, got)
 )
 
 DECLARE_ERROR(math,
 	      ERR_INHERIT(generic),
-  ERR_VAR(struct svalue, mixed, T_MIXED, number)
+  ERR_VAR(struct svalue, mixed, PIKE_T_MIXED, number)
 )
 
 DECLARE_ERROR(resource,

@@ -5,7 +5,7 @@
 \*/
 
 /*
- * $Id: pike_types.h,v 1.39 2000/06/24 00:48:13 hubbe Exp $
+ * $Id: pike_types.h,v 1.40 2000/07/29 06:31:06 hubbe Exp $
  */
 #ifndef PIKE_TYPES_H
 #define PIKE_TYPES_H
@@ -219,8 +219,8 @@ struct pike_string *make_pike_type(char *t);
 #define dtOr4(A,B,C,D) dtOr(A,dtOr3(B,C,D))
 #define dtOr5(A,B,C,D,E) dtOr(A,dtOr4(B,C,D,E))
 #define dtOr6(A,B,C,D,E,F) dtOr(A,dtOr5(B,C,D,E,F))
-#define dtMix {unsafe_push_type(T_MIXED);}
-#define dtMixed {unsafe_push_type(T_MIXED);}
+#define dtMix {unsafe_push_type(PIKE_T_MIXED);}
+#define dtMixed {unsafe_push_type(PIKE_T_MIXED);}
 #define dtComplex dtStore(tComplex)
 #define dtStringIndicable dtStore(tStringIndicable)
 #define dtRef dtStore(tRef)

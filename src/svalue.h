@@ -5,7 +5,7 @@
 \*/
 
 /*
- * $Id: svalue.h,v 1.62 2000/07/28 17:16:55 hubbe Exp $
+ * $Id: svalue.h,v 1.63 2000/07/29 06:31:07 hubbe Exp $
  */
 #ifndef SVALUE_H
 #define SVALUE_H
@@ -103,7 +103,7 @@ struct svalue
 #define T_SHORT_LVALUE 248
 #define T_LVALUE 249
 #define T_ARRAY_LVALUE 250
-#define T_MIXED 251
+#define PIKE_T_MIXED 251
 #define T_NOT 253
 #define T_AND 254
 #define T_OR 255
@@ -420,6 +420,7 @@ PMOD_EXPORT INT32 pike_sizeof(struct svalue *s);
 
 #define T_TUPLE	   PIKE_T_TUPLE
 #define T_SCOPE	   PIKE_T_SCOPE
+#define T_MIXED    PIKE_T_MIXED
 
 #endif /* !NO_PIKE_SHORTHAND */
 
