@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: signal_handler.c,v 1.250 2003/03/15 16:52:58 grubba Exp $
+|| $Id: signal_handler.c,v 1.251 2003/03/15 16:59:59 grubba Exp $
 */
 
 #include "global.h"
@@ -26,7 +26,7 @@
 #include "main.h"
 #include <signal.h>
 
-RCSID("$Id: signal_handler.c,v 1.250 2003/03/15 16:52:58 grubba Exp $");
+RCSID("$Id: signal_handler.c,v 1.251 2003/03/15 16:59:59 grubba Exp $");
 
 #ifdef HAVE_PASSWD_H
 # include <passwd.h>
@@ -1402,13 +1402,10 @@ static void f_pid_status_wait(INT32 args)
 	  Pike_error("Lost track of a child (pid %d, errno from wait %d).\n",pid,err);
       }
       else {
-	do {
-	  err = 0;
-	  THREADS_ALLOW();
-	  pid = WAITPID(pid, &status, 0|WUNTRACED);
-	  if (pid < 0) err = errno;
-	  THREADS_DISALLOW();
-	} while (err == EINTR);
+	THREADS_ALLOW();
+	pid = WAITPID(pid, &status, 0|WUNTRACED);
+	if (pid < 0) err = errno;
+	THREADS_DISALLOW();
       }
 
       if(pid > 0)
@@ -1421,7 +1418,9 @@ static void f_pid_status_wait(INT32 args)
 	{
 	  switch(err)
 	  {
-	    case EINTR: break;
+	    case EINTR: 
+	      err = 0;
+	      break;
 	      
 #ifdef _REENTRANT
 	    case ECHILD:
