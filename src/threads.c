@@ -2,11 +2,11 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: threads.c,v 1.188 2002/10/11 01:39:38 nilsson Exp $
+|| $Id: threads.c,v 1.189 2002/10/28 21:48:09 mast Exp $
 */
 
 #include "global.h"
-RCSID("$Id: threads.c,v 1.188 2002/10/11 01:39:38 nilsson Exp $");
+RCSID("$Id: threads.c,v 1.189 2002/10/28 21:48:09 mast Exp $");
 
 PMOD_EXPORT int num_threads = 1;
 PMOD_EXPORT int threads_disabled = 0;
@@ -936,6 +936,7 @@ struct mutex_storage
 struct key_storage
 {
   struct mutex_storage *mut;
+  struct object *mutex_obj;
   struct object *owner;
   int initialized;
 };
@@ -1061,6 +1062,7 @@ void f_mutex_lock(INT32 args)
   }
   m->key=o;
   OB2KEY(o)->mut=m;
+  add_ref (OB2KEY(o)->mutex_obj = Pike_fp->current_object);
 
   DO_IF_DEBUG(
     if(thread_for_id(th_self()) != Pike_interpreter.thread_id) {
@@ -1127,6 +1129,7 @@ void f_mutex_trylock(INT32 args)
   if(!m->key)
   {
     OB2KEY(o)->mut=m;
+    add_ref (OB2KEY(o)->mutex_obj = Pike_fp->current_object);
     m->key=o;
     i=1;
   }
@@ -1162,7 +1165,7 @@ PMOD_EXPORT void f_mutex_locking_thread(INT32 args)
     push_int(0);
 }
 
-/*! @decl Thread.Thread current_locking_key()
+/*! @decl Thread.MutexKey current_locking_key()
  *!
  *! This mutex method returns the key object currently governing
  *! the lock on this mutex. 0 is returned if the mutex isn't locked.
@@ -1206,6 +1209,7 @@ void init_mutex_key_obj(struct object *o)
   THREADS_FPRINTF(1, (stderr, "KEY k:%08x, o:%08x\n",
 		      (unsigned int)THIS_KEY, (unsigned int)Pike_interpreter.thread_id));
   THIS_KEY->mut=0;
+  THIS_KEY->mutex_obj = NULL;
   add_ref(THIS_KEY->owner=Pike_interpreter.thread_id);
   THIS_KEY->initialized=1;
 }
@@ -1230,7 +1234,9 @@ void exit_mutex_key_obj(struct object *o)
       free_object(THIS_KEY->owner);
       THIS_KEY->owner=0;
     }
+    free_object (THIS_KEY->mutex_obj);
     THIS_KEY->mut=0;
+    THIS_KEY->mutex_obj = NULL;
     THIS_KEY->initialized=0;
     co_signal(& mut->condition);
   }
@@ -1811,8 +1817,10 @@ void th_init(void)
   /* This is needed to allow the gc to find the possible circular reference.
    * It also allows a thread to take over ownership of a key.
    */
-  map_variable("_owner", "object", 0,
-	       mutex_key_offset + OFFSETOF(key_storage, owner), T_OBJECT);
+  PIKE_MAP_VARIABLE("_owner", mutex_key_offset + OFFSETOF(key_storage, owner),
+		    tObjIs_THREAD_ID, T_OBJECT, 0);
+  PIKE_MAP_VARIABLE("_mutex", mutex_key_offset + OFFSETOF(key_storage, mutex_obj),
+		    tObjIs_THREAD_MUTEX, T_OBJECT, ID_STATIC|ID_PRIVATE);
   set_init_callback(init_mutex_key_obj);
   set_exit_callback(exit_mutex_key_obj);
   mutex_key=Pike_compiler->new_program;
