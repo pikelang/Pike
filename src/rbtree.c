@@ -2,7 +2,7 @@
  *
  * Created 2001-04-27 by Martin Stjernholm
  *
- * $Id: rbtree.c,v 1.3 2001/05/01 07:52:19 mast Exp $
+ * $Id: rbtree.c,v 1.4 2001/05/01 21:37:56 grubba Exp $
  */
 
 #include "global.h"
@@ -41,7 +41,8 @@ DECLSPEC(noreturn) static void debug_rb_indval_fatal (struct rb_node_indval *tre
 PMOD_EXPORT int rb_ind_default_cmp (struct svalue *key, union rb_node *node)
 {
   struct svalue tmp;
-  return set_svalue_cmpfun (key, &use_rb_node_ind (&(node->i), tmp));
+  use_rb_node_ind (&(node->i), tmp);
+  return set_svalue_cmpfun (key, &tmp);
 }
 
 struct svalue_cmp_data
@@ -54,7 +55,8 @@ static int svalue_cmp_eq (struct svalue_cmp_data *data, union rb_node *node)
   int cmp_res;
   struct svalue tmp;
   push_svalue (data->key);
-  push_svalue (&use_rb_node_ind (&(node->i), tmp));
+  use_rb_node_ind (&(node->i), tmp);
+  push_svalue (&tmp);
   apply_svalue (data->cmp_less, 2);
   if (IS_ZERO (sp - 1))
     cmp_res = !is_eq (data->key, &tmp);
@@ -70,7 +72,8 @@ static int svalue_cmp_ge (struct svalue_cmp_data *data, union rb_node *node)
   int cmp_res;
   struct svalue tmp;
   push_svalue (data->key);
-  push_svalue (&use_rb_node_ind (&(node->i), tmp));
+  use_rb_node_ind (&(node->i), tmp);
+  push_svalue (&tmp);
   apply_svalue (data->cmp_less, 2);
   cmp_res = IS_ZERO (sp - 1) ? 1 : -1;
   pop_stack();
@@ -82,7 +85,8 @@ static int svalue_cmp_le (struct svalue_cmp_data *data, union rb_node *node)
 {
   int cmp_res;
   struct svalue tmp;
-  push_svalue (&use_rb_node_ind (&(node->i), tmp));
+  use_rb_node_ind (&(node->i), tmp);
+  push_svalue (&tmp);
   push_svalue (data->key);
   apply_svalue (data->cmp_less, 2);
   cmp_res = IS_ZERO (sp - 1) ? -1 : 1;
@@ -125,7 +129,8 @@ PMOD_EXPORT struct rb_node_ind *rb_ind_insert (struct rb_node_ind **tree,
 
   else {
     LOW_RB_INSERT ((struct rb_node_hdr **) tree, HDR (node), { /* Compare. */
-      cmp_res = set_svalue_cmpfun (ind, &use_rb_node_ind (node, tmp));
+      use_rb_node_ind (node, tmp);
+      cmp_res = set_svalue_cmpfun (ind, &tmp);
     }, {			/* Insert. */
       node = alloc_rb_node_ind();
       assign_svalue_no_free (&node->ind, ind);
@@ -181,7 +186,8 @@ PMOD_EXPORT int rb_ind_delete (struct rb_node_ind **tree,
 			       (low_rb_move_data_fn *) move_ind_data);
   if (old) {
     struct svalue tmp;
-    free_svalue (&use_rb_node_ind (old, tmp));
+    use_rb_node_ind (old, tmp);
+    free_svalue (&tmp);
     really_free_rb_node_ind (old);
     return 1;
   }
@@ -192,7 +198,8 @@ static struct rb_node_ind *copy_ind_node (struct rb_node_ind *node)
 {
   struct rb_node_ind *new = alloc_rb_node_ind();
   struct svalue tmp;
-  assign_svalue_no_free (&new->ind, &use_rb_node_ind (node, tmp));
+  use_rb_node_ind (node, tmp);
+  assign_svalue_no_free (&new->ind, &tmp);
   DO_IF_DEBUG (new->ind.type |= RB_FLAG_MARKER);
   return new;
 }
@@ -252,7 +259,8 @@ PMOD_EXPORT struct rb_node_indval *rb_indval_insert (struct rb_node_indval **tre
 
   else {
     LOW_RB_INSERT ((struct rb_node_hdr **) tree, HDR (node), { /* Compare. */
-      cmp_res = set_svalue_cmpfun (ind, &use_rb_node_ind (node, tmp));
+      use_rb_node_ind (node, tmp);
+      cmp_res = set_svalue_cmpfun (ind, &tmp);
     }, {			/* Insert. */
       node = alloc_rb_node_indval();
       assign_svalue_no_free (&node->ind, ind);
@@ -326,15 +334,20 @@ PMOD_EXPORT struct rb_node_indval *rb_indval_add_after (struct rb_node_indval **
     } while (0)
 
     if (node) {
-      DO_CMP (ind, &use_rb_node_ind (node, tmp), cmp1);
+      use_rb_node_ind (node, tmp);
+      DO_CMP (ind, &tmp, cmp1);
       tmpnode = rb_indval_next (node);
-      if (tmpnode) DO_CMP (ind, &use_rb_node_ind (tmpnode, tmp), cmp2);
+      if (tmpnode) {
+	use_rb_node_ind (tmpnode, tmp);
+	DO_CMP (ind, &tmp, cmp2);
+      }
       else cmp2 = -1;
       if (cmp1 < 0 || cmp2 > 0)
 	fatal ("Adding at this position would break the order.\n");
     }
     else {
-      DO_CMP (ind, &use_rb_node_ind (rb_indval_first (*tree), tmp), cmp1);
+      use_rb_node_ind (rb_indval_first (*tree), tmp);
+      DO_CMP (ind, &tmp, cmp1);
       if (cmp1 > 0) fatal ("Adding at beginning would break the order.\n");
     }
 #undef DO_CMP
@@ -375,7 +388,8 @@ PMOD_EXPORT int rb_indval_delete (struct rb_node_indval **tree,
 			       (low_rb_move_data_fn *) move_indval_data);
   if (old) {
     struct svalue tmp;
-    free_svalue (&use_rb_node_ind (old, tmp));
+    use_rb_node_ind (old, tmp);
+    free_svalue (&tmp);
     free_svalue (&old->val);
     really_free_rb_node_indval (old);
     return 1;
@@ -405,7 +419,8 @@ PMOD_EXPORT struct rb_node_indval *rb_indval_delete_node (struct rb_node_indval 
 				    (low_rb_cmp_fn *) rb_ind_default_cmp, &tmp,
 				    (low_rb_move_data_fn *) move_ind_data,
 				    HDR (node));
-  free_svalue (&use_rb_node_ind (old, tmp));
+  use_rb_node_ind (old, tmp);
+  free_svalue (&tmp);
   free_svalue (&old->val);
   really_free_rb_node_indval (old);
   return old;
@@ -415,7 +430,8 @@ static struct rb_node_indval *copy_indval_node (struct rb_node_indval *node)
 {
   struct rb_node_indval *new = alloc_rb_node_indval();
   struct svalue tmp;
-  assign_svalue_no_free (&new->ind, &use_rb_node_ind (node, tmp));
+  use_rb_node_ind (node, tmp);
+  assign_svalue_no_free (&new->ind, &tmp);
   assign_svalue_no_free (&new->val, &node->val);
   DO_IF_DEBUG (new->ind.type |= RB_FLAG_MARKER);
   return new;
@@ -1402,14 +1418,16 @@ void exit_rbtree()
 static void debug_dump_ind_data (struct rb_node_ind *node)
 {
   struct svalue tmp;
-  print_svalue (stderr, &use_rb_node_ind (node, tmp));
+  use_rb_node_ind (node, tmp);
+  print_svalue (stderr, &tmp);
   fputc (' ', stderr);
 }
 
 static void debug_dump_indval_data (struct rb_node_indval *node)
 {
   struct svalue tmp;
-  print_svalue (stderr, &use_rb_node_ind (node, tmp));
+  use_rb_node_ind (node, tmp);
+  print_svalue (stderr, &tmp);
   fputs (": ", stderr);
   print_svalue (stderr, &node->val);
   fputc (' ', stderr);
