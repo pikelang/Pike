@@ -5,7 +5,7 @@
 \*/
 /**/
 #include "global.h"
-RCSID("$Id: interpret.c,v 1.186 2001/02/27 01:20:28 mast Exp $");
+RCSID("$Id: interpret.c,v 1.187 2001/03/03 00:26:23 grubba Exp $");
 #include "interpret.h"
 #include "object.h"
 #include "program.h"
@@ -1758,7 +1758,12 @@ void gdb_backtrace (
 	    break;
 
 	  case T_TYPE:
+#ifdef USE_PIKE_TYPE
+	    /* FIXME: */
+	    fputs("type-value", stderr);
+#else /* !USE_PIKE_TYPE */
 	    stupid_describe_type (arg->u.type->str, arg->u.type->len);
+#endif /* USE_PIKE_TYPE */
 	    break;
 
 	  case T_STRING: {
