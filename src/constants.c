@@ -108,4 +108,3 @@ void count_memory_in_callables(INT32 *num_, INT32 *size_)
   *num_=num_callable;
   *size_=num_callable*sizeof(struct callable);
 }
-
