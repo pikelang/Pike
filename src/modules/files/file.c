@@ -6,7 +6,7 @@
 #define READ_BUFFER 8192
 
 #include "global.h"
-RCSID("$Id: file.c,v 1.33 1997/03/27 02:28:25 grubba Exp $");
+RCSID("$Id: file.c,v 1.34 1997/04/07 22:57:16 marcus Exp $");
 #include "types.h"
 #include "interpret.h"
 #include "svalue.h"
@@ -1217,7 +1217,7 @@ static void file_open_socket(INT32 args)
       close(fd);
       error("Bad argument 1 to open_socket(), expected int\n");
     }
-    if (args > 2) {
+    if (args > 1) {
       if (sp[1-args].type != T_STRING) {
 	close(fd);
 	error("Bad argument 2 to open_socket(), expected string\n");
@@ -1225,6 +1225,7 @@ static void file_open_socket(INT32 args)
       get_inet_addr(&addr, sp[1-args].u.string->str);
     } else {
       addr.sin_addr.s_addr = htonl(INADDR_ANY);
+      addr.sin_family = AF_INET;
     }
     addr.sin_port = htons( ((u_short)sp[-args].u.integer) );
 
