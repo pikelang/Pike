@@ -318,21 +318,3 @@ mapping get_atom_options(int max_depth)
 
   return res;
 }
-  
-#if 0
-/* Parsing general list requires some variation of continuation
-   * passing style.
-   *
-   * If the entire list can be read immediately, it is returned. On
-   * errors, 0 is returned. If only part of the list can be read, a
-   * read handler is returned, and the passed callback function will
-   * be called when the list is complete, or an error is detected.
-   *
-   * Could perhaps besimplified a little by *always* using the
-   * callback function, using a call_out if the list can be read
-   * immediately. */
-
-array get_list(function(array:mixed))
-{
-}
-#endif

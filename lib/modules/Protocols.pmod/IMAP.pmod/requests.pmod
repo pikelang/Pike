@@ -3,61 +3,6 @@
  */
 
 import .types;
-
-#if 0
-class request
-{
-  string tag;
-  object line;
-  
-  void create(string t, object l)
-    {
-      tag = t;
-      line = l;
-    }
-
-  string process(object|mapping session, object server, function send)
-    {
-      send(tag, "OK");
-      return "finished";
-    }
-
-#if 0
-  string format(string tag, object|string ... args)
-    {
-      return tag + " "
-	+ Array.map(args, lambda (mixed x)
-			    {
-			      if (stringp(x))
-				return x;
-			      else
-				return x->format();
-			    })
-	* " " + "\r\n";
-    }
-
-  string untagged_response(object|string ... args)
-    {
-      return format("*", @args);
-    }
-  
-  string response_ok(object|string ... args)
-    {
-      format(tag, "OK", @args);
-    }
-
-  string response_no(object|string ... args)
-    {
-      format(tag, "NO", @args);
-    }
-
-  string response_BAD(object|string ... args)
-    {
-      format(tag, "BAD", @args);
-    }
-#endif
-}
-#endif
   
 class request
 {
@@ -84,36 +29,6 @@ class request
   
   array args;
   int argc;
-
-#if 0
-  mapping process_literal(string literal)
-    {
-      args[argc++] = literal;
-      if (argc == sizeof(args))
-	return easy_process(session, server, send, @args);
-      else
-	return ([ "action" : "expect_line",
-		  "handler" : process_line ]);
-    }
-
-  mapping process_line(object l)
-    {
-      with_line(line);
-
-      return process(session, server, io);
-    }
-
-  mapping get_literal()
-    {
-      return ([ "action" : "expect_literal",
-		"msg" :  ( (sizeof(arg_info[argc]) > 1)
-			   ? arg_info[argc][1]
-			   : "Ready" ), 
-		"length" : args[argc]->length,
-		"handler": process_literal,
-      ]);
-    }
-#endif
   
   mapping process(mapping s, object db, function io)
     {
@@ -170,68 +85,7 @@ class request
 			  arg_info[argc]), backtrace() }) );
       }
     }
-
-#if 0
-  string process(object|mapping session, object server, function send)
-    {
-      while(argc < sizeof(args))
-      {
-	switch(arg_info[argc][0])
-	{
-	case "number":
-	  if ( (args[argc++] = line->get_number()) < 0)
-	  {
-	    send(tag, "BAD", "Invalid number");
-	    return "finished";
-	  }
-	  break;
-	case "string":
-	  if (!(args[argc] = line->get_string()))
-	  {
-	    send(tag, "BAD", "Missing or invalid argument");
-	    return "finished";
-	  }
-	  if (objectp(args[argc]))
-	    return request_literal(send);
-	  argc++;
-	  break;
-	case "astring":
-	  if (!(args[argc] = line->get_astring()))
-	  {
-	    send(tag, "BAD", "Missing or invalid argument");
-	    return "finished";
-	  }
-	  if (objectp(args[argc]))
-	    return request_literal(send);
-	  argc++;
-	  break;
-	case "set": 
-	  if (!(args[argc] = line->get_set()))
-	  {
-	    send(tag, "BAD", "Invalid set");
-	    return "finished";
-	  }
-	  argc++;
-	  break;
-	case "simple_list":
-	  	  if (!(args[argc] = line->get_set()))
-	  {
-	    send(tag, "BAD", "Invalid set");
-	    return "finished";
-	  }
-	  argc++;
-	  break;
-	  
-	default:
-	  throw( ({ sprintf("IMAP.requests: Unknown argument type %O\n",
-			    arg_info[argc]), backtrace() }) );
-	}
-      }
-      return easy_process(session, server, send, @args);
-    }
-#endif
 }
-
 
 class noop
 {
