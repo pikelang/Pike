@@ -1,5 +1,5 @@
 #
-# $Id: Makefile.in,v 1.240 2001/01/23 22:06:49 mast Exp $
+# $Id: Makefile.in,v 1.241 2001/01/23 22:24:53 mast Exp $
 #
 
 # This line is needed on some machines.
@@ -307,8 +307,20 @@ hilfe: $(TMP_BINDIR)/hilfe Makefile
 .c.o:
 	@echo "Compiling $<" ;\
 	if $(CC) $(CFLAGS) -c $< -o $@ ; then : ; else \
-	  echo "Compilation command was:" >&2;\
-	  echo "$(CC) $(CFLAGS) -c $< -o $@" >&2 ;\
+	  echo "WARNING: Compiler failure! Trying without optimization!" >&2;\
+	  echo "echo $(CC) $(PREFLAGS) $(NOOPTFLAGS) -c $< -o $@" >&2 ;\
+	  NO_ULIMIT=yes; \
+	  export NO_ULIMIT; \
+	  if $(CC) $(PREFLAGS) $(NOOPTFLAGS) -c $< -o $@ ; then : ; else \
+	    err=$$?; \
+	    if test "x$(FALLBACK_CC)" = "x"; then \
+	      exit $$err; \
+	    else \
+	      echo "WARNING: Compiler failure! Trying fallback compiler!" >&2;\
+	      echo "echo $(FALLBACK_CC) $(PREFLAGS) $(NOOPTFLAGS) -c $< -o $@" >&2 ;\
+	      $(FALLBACK_CC) $(PREFLAGS) $(NOOPTFLAGS) -c $< -o $@ ;\
+	    fi; \
+	  fi; \
 	fi
 
 #
