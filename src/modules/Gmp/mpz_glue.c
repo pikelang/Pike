@@ -4,7 +4,7 @@
 ||| See the files COPYING and DISCLAIMER for more information.
 \*/
 #include "global.h"
-RCSID("$Id: mpz_glue.c,v 1.70 1999/12/15 19:42:44 hubbe Exp $");
+RCSID("$Id: mpz_glue.c,v 1.71 2000/01/10 00:41:34 hubbe Exp $");
 #include "gmp_machine.h"
 
 #if defined(HAVE_GMP2_GMP_H) && defined(HAVE_LIBGMP2)
@@ -225,6 +225,12 @@ static void mpzmod_get_int(INT32 args)
 #else
   push_int(mpz_get_si(THIS));
 #endif /* AUTO_BIGNUM */
+}
+
+static void mpzmod___hash(INT32 args)
+{
+  pop_n_elems(args);
+  push_int(mpz_get_si(THIS));
 }
 
 static void mpzmod_get_float(INT32 args)
@@ -1381,7 +1387,7 @@ void pike_module_exit(void)
 									\
   ADD_FUNCTION("`!",mpzmod_not,tFunc(tNone,tInt),0);			\
 									\
-  ADD_FUNCTION("__hash",mpzmod_get_int,tFunc(tNone,tInt),0);		\
+  ADD_FUNCTION("__hash",mpzmod___hash,tFunc(tNone,tInt),0);		\
   ADD_FUNCTION("cast",mpzmod_cast,tFunc(tStr,tMix),0);			\
 									\
   ADD_FUNCTION("_is_type", mpzmod__is_type, tFunc(tStr,tInt), 0);	\
