@@ -1,7 +1,7 @@
 // This file is part of Roxen Search
 // Copyright © 2000,2001 Roxen IS. All rights reserved.
 //
-// $Id: MySQL.pike,v 1.62 2001/08/16 22:25:35 js Exp $
+// $Id: MySQL.pike,v 1.63 2001/08/17 09:01:45 anders Exp $
 
 inherit .Base;
 
@@ -406,7 +406,7 @@ mapping(string|int:int) get_language_stats()
 
 int get_num_words()
 {
-  return (int)(db->query("select count(distinct word) as cfrom word_hit"
+  return (int)(db->query("select count(distinct word) as c from word_hit "
 			"group by word") + ({ (["c": 0]) }))[0]->c;
 }
 
