@@ -8,5 +8,8 @@ DESCRIPTION
 	This function will compile the filename to an LPC program that can
 	later be used for cloning.
 
+KEYWORDS
+	program
+
 SEE ALSO
 	clone, compile_string

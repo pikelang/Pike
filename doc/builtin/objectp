@@ -7,6 +7,9 @@ SYNTAX
 DESCRIPTION
 	Returns 1 if arg is an object, zero otherwise.
 
+KEYWORDS
+	object
+
 SEE ALSO
 	intp, programp, floatp, stringp, arrayp, regexpp,
 	mappingp, listp, functionp

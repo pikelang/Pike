@@ -9,5 +9,8 @@ DESCRIPTION
 	function is a predefined function from the driver, zero will be
 	returned.
 
+KEYWORDS
+	function
+
 SEE ALSO
 	function_name, get_function

@@ -22,5 +22,8 @@ DESCRIPTION
 
 	Number of matched arguments is returned.
 
+KEYWORDS
+	string
+
 SEE ALSO
 	explode, sprintf

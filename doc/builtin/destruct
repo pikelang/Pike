@@ -7,7 +7,11 @@ SYNTAX
 DESCRIPTION
 	Destruct marks an object as destructed, all pointers and function
 	pointers to this object will become zero. The destructed object will
-	be freed from memory as soon as possible.
+	be freed from memory as soon as possible. This will also call
+	o->destroyed.
+
+KEYWORDS
+	object
 
 SEE ALSO
 	clone

@@ -14,5 +14,8 @@ DESCRIPTION
 	strings can be particularly useful for parsing difficult syntaxes
 	which require scanning backwards.
 
+KEYWORDS
+	string, array, int
+
 SEE ALSO
 	sscanf

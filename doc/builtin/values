@@ -11,6 +11,9 @@ DESCRIPTION
 	ones is return. For mappings, objects and arrays, the returned array
 	may contain any kind of value.
 
+KEYWORDS
+	mapping
+
 SEE ALSO
 	indices
 

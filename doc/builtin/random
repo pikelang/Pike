@@ -7,5 +7,8 @@ SYNTAX
 DESCRIPTION
 	This function returns a random number in the range 0 - max-1.
 
+KEYWORDS
+	int
+
 SEE ALSO
 	random_seed

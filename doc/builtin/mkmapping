@@ -9,5 +9,8 @@ DESCRIPTION
 	Ind and val must have the same size.
 	This is the inverse operation of indices and values.
 
+KEYWORDS
+	mapping
+
 SEE ALSO
 	indices, values

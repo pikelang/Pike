@@ -20,6 +20,9 @@ EXAMPLES
 	Result: a and b and c
 	> 
 
+KEYWORDS
+	string
+
 SEE ALSO
 	explode
 	

@@ -24,5 +24,8 @@ DESCRIPTION
 NOTA BENE
 	This function replaces strstr and member_array from LPC4.
 
+KEYWORDS
+	string, array, mapping
+
 SEE ALSO
 	indices, values, zero_type

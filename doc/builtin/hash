@@ -10,3 +10,6 @@ DESCRIPTION
 	This function will return an int derived from the string s. The same
 	string will always hash to the same value. If a second argument
 	is given, the result will be >= 0 and lesser than that argument.
+
+KEYWORDS
+	string

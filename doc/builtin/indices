@@ -10,5 +10,8 @@ DESCRIPTION
 	ascending numbers. For mappings and lists, the array may contain any
 	kind of value. For objects, the result is an array of strings.
 
+KEYWORDS
+	mapping, list
+
 SEE ALSO
 	values
