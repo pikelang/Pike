@@ -1,6 +1,6 @@
 #pike __REAL_VERSION__
 
-/* $Id: sslfile.pike,v 1.51 2003/09/15 08:40:48 jonasw Exp $
+/* $Id: sslfile.pike,v 1.52 2003/10/28 21:12:21 mast Exp $
  *
  */
 
@@ -22,6 +22,38 @@ object(Stdio.File) socket;
 static object context;
 
 int _fd;
+
+#ifdef THREAD_DEBUG
+
+static Thread.Thread cur_thread;
+
+static class MyLock
+{
+  Thread.Thread old_cur_thread;
+  static void create (Thread.Thread t) {old_cur_thread = t;}
+  static void destroy() {cur_thread = old_cur_thread;}
+};
+
+#define THREAD_CHECK							\
+  MyLock lock;								\
+  {									\
+    Thread.Thread this_thr = this_thread();				\
+    Thread.Thread old_cur_thread = cur_thread;				\
+    /* Relying on interpreter lock here. */				\
+    cur_thread = this_thr;						\
+    if (old_cur_thread && old_cur_thread != cur_thread)			\
+      error ("Already called by another thread %O (this is %O):\n"	\
+	     "%s----------\n",						\
+	     old_cur_thread, cur_thread,				\
+	     describe_backtrace (old_cur_thread->backtrace()));		\
+    lock = MyLock (old_cur_thread);					\
+  }
+
+#else  // !THREAD_DEBUG
+
+#define THREAD_CHECK
+
+#endif
 
 static string read_buffer; /* Data that is received before there is any
 		     * read_callback 
@@ -46,11 +78,15 @@ int query_fd()
 
 private void ssl_write_callback(mixed id);
 
+#define CALLBACK_MODE							\
+  (read_callback || write_callback || close_callback || accept_callback)
+
 void die(int status)
 {
 #ifdef SSL3_DEBUG
   werror(sprintf("SSL.sslfile->die: is_closed = %d\n", is_closed));
 #endif
+  THREAD_CHECK;
   if (status < 0)
   {
     /* Other end closed without sending a close_notify alert */
@@ -63,8 +99,15 @@ void die(int status)
   if (socket)
   {
     mixed id;
-    catch(id = socket->query_id());
-    catch(socket->close());
+    mixed err = catch(id = socket->query_id());
+#ifdef DEBUG
+    if (err) master()->handle_error (err);
+#endif
+    //werror ("%d %O %d closing socket %O\n", id, this_thread(), __LINE__, socket);
+    err = catch(socket->close());
+#ifdef DEBUG
+    if (err) master()->handle_error (err);
+#endif
     socket = 0;
     // Avoid recursive calls if the close callback closes the socket.
     if (close_callback) {
@@ -98,10 +141,13 @@ private int queue_write()
 #endif
 #endif
 
-  if(!blocking) {
-    if (catch {
+  if(sizeof(write_buffer) && CALLBACK_MODE) {
+    if (mixed err = catch {
       socket->set_write_callback(ssl_write_callback);
     }) {
+#ifdef DEBUG
+      master()->handle_error (err);
+#endif
       return(0);
     }
   }
@@ -116,16 +162,19 @@ void close()
 #ifdef SSL3_DEBUG
   werror("SSL.sslfile->close\n");
 #endif
+  THREAD_CHECK;
 
   if (is_closed || !socket) return;
   is_closed = 1;
 
+#if 0
   if (sizeof (write_buffer) && !blocking)
     ssl_write_callback(socket->query_id());
 
   if(sizeof(write_buffer) && blocking) {
     write_blocking();
   }
+#endif
 
   send_close();
   queue_write();
@@ -147,7 +196,10 @@ void close()
       return;
     }
 
-    if (socket) socket->close();
+    if (socket) {
+      //werror ("%d %O %d closing socket %O\n", id, this_thread(), __LINE__, socket);
+      socket->close();
+    }
   }
   socket = 0;
 }
@@ -158,6 +210,7 @@ string|int read(string|int ...args) {
 #ifdef SSL3_DEBUG
   werror(sprintf("sslfile.read called!, with args: %O \n",args));
 #endif
+  THREAD_CHECK;
   
   int nbytes;
   int notall;
@@ -242,6 +295,7 @@ int write(string|array(string) s)
 #ifdef SSL3_DEBUG
   werror("SSL.sslfile->write\n");
 #endif
+  THREAD_CHECK;
 
   if (is_closed || !socket) return -1;
 
@@ -307,12 +361,16 @@ private void write_blocking() {
 
   while(strlen(write_buffer) && socket) {
     
+    //werror ("%d %O write_blocking write beg %O\n", id, this_thread(), socket);
     int written = socket->write(write_buffer);
+    //werror ("%d %O write_blocking write end %O\n", id, this_thread(), socket);
     if (written > 0) {
       write_buffer = write_buffer[written ..];
     } else {
-      if (written < 0)
+      if (written < 0) {
 	die(-1);
+	return;
+      }
     }
     res=queue_write();
   }
@@ -325,6 +383,7 @@ private void ssl_read_callback(mixed id, string s)
 #ifdef SSL3_DEBUG
   werror(sprintf("SSL.sslfile->ssl_read_callback, connected=%d, handshake_finished=%d\n", connected, handshake_finished));
 #endif
+  THREAD_CHECK;
   string|int data = got_data(s);
   if (stringp(data))
   {
@@ -364,29 +423,27 @@ private void ssl_read_callback(mixed id, string s)
 	  return;
 	}
   }
-  if (this_object()) {
+  if (socket && this_object()) {
     int res = queue_write();
     if (res)
       die(res);
   }
 }
 
-private Thread.Mutex write_mutex = Thread.Mutex();
-
 private void ssl_write_callback(mixed id)
 {
-  Thread.MutexKey mutex_key = write_mutex->lock(2);
-  if (!socket) return;
-  
 #ifdef SSL3_DEBUG
   werror(sprintf("SSL.sslfile->ssl_write_callback: handshake_finished = %d\n"
 		 "blocking = %d, write_callback = %O\n",
 		 handshake_finished, blocking, write_callback));
 #endif
+  THREAD_CHECK;
 
   if (strlen(write_buffer))
     {
+      //werror ("%d %O ssl_write_callback write beg %O\n", id, this_thread(), socket);
       int written = socket->write(write_buffer);
+      //werror ("%d %O ssl_write_callback write end %O\n", id, this_thread(), socket);
     if (written > 0)
     {
       write_buffer = write_buffer[written ..];
@@ -396,7 +453,10 @@ private void ssl_write_callback(mixed id)
 	// You don't want to know.. (Bug observed in Pike 0.6.132.)
 	if (socket->errno() != 1)
 #endif
+	{
 	  die(-1);
+	  return;
+	}
     }
     if (strlen(write_buffer))
       return;
@@ -420,8 +480,8 @@ private void ssl_write_callback(mixed id)
     werror("SSL.sslport->ssl_write_callback: Calling write_callback\n");
 #endif
     write_callback(id);
-    if (!this_object()) {
-      // We've been destructed.
+    if (!socket || !this_object()) {
+      // We've been closed or destructed.
       return;
     }
     res = queue_write();
@@ -434,6 +494,7 @@ private void ssl_write_callback(mixed id)
     socket->set_write_callback(0);
     if (is_closed)
     {
+      //werror ("%d %O %d closing socket %O\n", id, this_thread(), __LINE__, socket);
       socket->close();
       socket = 0;
       return;
@@ -448,6 +509,7 @@ private void ssl_close_callback(mixed id)
 #ifdef SSL3_DEBUG
   werror("SSL.sslport: ssl_close_callback\n");
 #endif
+  THREAD_CHECK;
   if (close_callback && socket) {
     function f = close_callback;
     close_callback = 0;
@@ -458,12 +520,29 @@ private void ssl_close_callback(mixed id)
   }
 }
 
+static void update_callbacks()
+{
+  if (CALLBACK_MODE) {
+    socket->set_read_callback (ssl_read_callback);
+    socket->set_write_callback ((write_callback || sizeof (write_buffer)) &&
+				ssl_write_callback);
+    socket->set_close_callback (ssl_close_callback);
+  }
+  else {
+    socket->set_read_callback (0);
+    socket->set_write_callback (0);
+    socket->set_close_callback (0);
+  }
+}
+
 void set_accept_callback(function(mixed:void) a)
 {
 #ifdef SSL3_DEBUG
   werror("SSL.sslport: set_accept_callback\n");
 #endif
+  THREAD_CHECK;
   accept_callback = a;
+  if (socket) update_callbacks();
 }
 
 function query_accept_callback() { return accept_callback; }
@@ -473,10 +552,13 @@ void set_read_callback(function(mixed,string:void) r)
 #ifdef SSL3_DEBUG
   werror("SSL.sslport: set_read_callback\n");
 #endif
+  THREAD_CHECK;
   read_callback = r;
+#if 0
   if (strlen(read_buffer)&& socket)
     ssl_read_callback(socket->query_id(), "");
-
+#endif
+  if (socket) update_callbacks();
 }
 
 function query_read_callback() { return read_callback; }
@@ -486,9 +568,9 @@ void set_write_callback(function(mixed:void) w)
 #ifdef SSL3_DEBUG
   werror("SSL.sslfile->set_write_callback\n");
 #endif
+  THREAD_CHECK;
   write_callback = w;
-  if (w && socket)
-    socket->set_write_callback(ssl_write_callback);
+  if (socket) update_callbacks();
 }
 
 function query_write_callback() { return write_callback; }
@@ -498,7 +580,9 @@ void set_close_callback(function(mixed:void) c)
 #ifdef SSL3_DEBUG
   werror("SSL.sslport: set_close_callback\n");
 #endif
+  THREAD_CHECK;
   close_callback = c;
+  if (socket) update_callbacks();
 }
 
 function query_close_callback() { return close_callback; }
@@ -508,6 +592,8 @@ void set_nonblocking(function ...args)
 #ifdef SSL3_DEBUG
   werror(sprintf("SSL.sslfile->set_nonblocking(%O)\n", args));
 #endif
+  THREAD_CHECK;
+
   if (is_closed || !socket) return;
 
   switch (sizeof(args))
@@ -515,21 +601,26 @@ void set_nonblocking(function ...args)
   case 0:
     break;
   case 3:
-    set_read_callback(args[0]);
-    set_write_callback(args[1]);
-    set_close_callback(args[2]);
-    if (!this_object()) {
+    read_callback = args[0];
+    write_callback = args[1];
+    close_callback = args[2];
+    if (!this_object())
       return;
-    }
     break;
   default:
     error( "SSL.sslfile->set_nonblocking: Wrong number of arguments\n" );
   }
   blocking = 0;
-  if (!socket) return;
-  socket->set_nonblocking(ssl_read_callback,ssl_write_callback,ssl_close_callback);
+  if (is_closed || !socket) return;
+  if (CALLBACK_MODE)
+    socket->set_nonblocking(ssl_read_callback,ssl_write_callback,
+			    ssl_close_callback);
+  else
+    socket->set_nonblocking();
+#if 0
   if (strlen(read_buffer))
     ssl_read_callback(socket->query_id(), "");
+#endif
 }
 
 void set_blocking()
@@ -537,6 +628,7 @@ void set_blocking()
 #ifdef SSL3_DEBUG
   werror("SSL.sslfile->set_blocking\n");
 #endif
+  THREAD_CHECK;
   blocking = 1;
 
   if( !socket )
@@ -564,6 +656,7 @@ void create(object f, object c, int|void is_client, int|void is_blocking)
 #ifdef SSL3_DEBUG
   werror("SSL.sslfile->create\n");
 #endif
+  THREAD_CHECK;
   _fd=f->_fd;
   context = c;
   read_buffer = write_buffer = "";
@@ -587,10 +680,11 @@ string _sprintf(int t) {
 
 void renegotiate()
 {
+  THREAD_CHECK;
   expect_change_cipher = certificate_state = 0;
   if (!socket) return;
   send_packet(hello_request());
-  socket->set_write_callback(ssl_write_callback);
+  if (CALLBACK_MODE) socket->set_write_callback(ssl_write_callback);
   handshake_finished = 0;
   connected = 0;
 }
