@@ -1,4 +1,4 @@
-/* $Id: rsa.pike,v 1.15 1999/03/03 13:51:33 nisse Exp $
+/* $Id: rsa.pike,v 1.16 1999/06/08 02:55:17 mast Exp $
  *
  * Follow the PKCS#1 standard for padding and encryption.
  */
@@ -227,3 +227,8 @@ string crypt_block(string s)
 }
 
 int rsa_size() { return n->size(); }
+
+int public_key_equal (object rsa)
+{
+  return n == rsa->n && e == rsa->e;
+}

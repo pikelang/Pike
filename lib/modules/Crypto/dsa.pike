@@ -260,4 +260,7 @@ object generate_key()
   return this_object();
 }
 
-
+int public_key_equal (object dsa)
+{
+  return p == dsa->p && q == dsa->q && g == dsa->g && y == dsa->y;
+}
