@@ -5,7 +5,7 @@
 \*/
 /**/
 #include "global.h"
-RCSID("$Id: program.c,v 1.162 1999/10/21 22:16:45 grubba Exp $");
+RCSID("$Id: program.c,v 1.163 1999/10/22 00:02:24 hubbe Exp $");
 #include "program.h"
 #include "object.h"
 #include "dynamic_buffer.h"
@@ -602,10 +602,6 @@ void low_start_new_program(struct program *p,
   fake_object->parent_identifier=0;
   fake_object->prog=p;
   add_ref(p);
-#ifdef DEBUG_MALLOC
-  fake_object->dead_prog=p;
-  add_ref(p);
-#endif /* DEBUG_MALLOC */
 #ifdef PIKE_SECURITY
   fake_object->prot=0;
 #endif

@@ -102,7 +102,7 @@
 */
 
 #include "global.h"
-RCSID("$Id: sprintf.c,v 1.48 1999/10/21 23:25:08 noring Exp $");
+RCSID("$Id: sprintf.c,v 1.49 1999/10/22 00:04:39 hubbe Exp $");
 #include "error.h"
 #include "array.h"
 #include "svalue.h"
@@ -474,11 +474,9 @@ static void free_sprintf_strings(struct format_stack *fs)
 {
   for(;fs->fsp>=fs->format_info_stack;fs->fsp--)
   {
-    if(fs->fsp->fi_free_string)
-      free(fs->fsp->fi_free_string);
+    if(fs->fsp->fi_free_string) free(fs->fsp->fi_free_string);
     fs->fsp->fi_free_string=0;
-    if(fs->fsp->to_free_string)
-      free_string(fs->fsp->to_free_string);
+    if(fs->fsp->to_free_string) free_string(fs->fsp->to_free_string);
     fs->fsp->to_free_string=0;
   }
 }
@@ -1288,7 +1286,7 @@ static void low_pike_sprintf(struct format_stack *fs,
 #endif
     if(fs->fsp->fi_free_string) free(fs->fsp->fi_free_string);
     fs->fsp->fi_free_string=0;
-    if(fs->fsp->to_free_string) free(fs->fsp->to_free_string);
+    if(fs->fsp->to_free_string) free_string(fs->fsp->to_free_string);
     fs->fsp->to_free_string=0;
     --fs->fsp;
   }

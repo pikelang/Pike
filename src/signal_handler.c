@@ -25,7 +25,7 @@
 #include "main.h"
 #include <signal.h>
 
-RCSID("$Id: signal_handler.c,v 1.156 1999/10/03 05:24:48 hubbe Exp $");
+RCSID("$Id: signal_handler.c,v 1.157 1999/10/22 00:02:26 hubbe Exp $");
 
 #ifdef HAVE_PASSWD_H
 # include <passwd.h>
@@ -977,8 +977,10 @@ static void report_child(int pid,
        *	/grubba 1999-04-23
        */
       map_delete(pid_mapping, &key);
+#ifdef PROC_DEBUG
     }else{
       fprintf(stderr,"report_child on unknown child: %d,%d\n",pid,status);
+#endif
     }
   }
 }
@@ -2343,17 +2345,27 @@ void f_create_process(INT32 args)
 #endif
 
     th_atfork_prepare();
+    {
+      sigset_t new_sig, old_sig;
+      sigfillset(&new_sig);
+      while(sigprocmask(SIG_BLOCK, &new_sig, &old_sig));
+
     do
     {
+
 #ifdef PROC_DEBUG
-      fprintf("Forking... (pid=%d errno=%d)\n",pid,errno);
+      fprintf(stderr,"Forking... (pid=%d errno=%d)\n",pid,errno);
 #endif
 #if defined(HAVE_FORK1) && defined(_REENTRANT)
       pid=fork1();
 #else
       pid=fork();
 #endif
+
     }while(pid==-1 && errno==EINTR);
+
+      while(sigprocmask(SIG_SETMASK, &old_sig, 0));
+    }
 
     if(pid) {
       th_atfork_parent();

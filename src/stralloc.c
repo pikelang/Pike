@@ -23,7 +23,7 @@
 #define HUGE HUGE_VAL
 #endif /*!HUGE*/
 
-RCSID("$Id: stralloc.c,v 1.66 1999/10/19 13:33:37 grubba Exp $");
+RCSID("$Id: stralloc.c,v 1.67 1999/10/22 00:02:27 hubbe Exp $");
 
 #define BEGIN_HASH_SIZE 997
 #define MAX_AVG_LINK_LENGTH 3
@@ -301,6 +301,7 @@ static struct pike_string *internal_findstring(const char *s,
       fatal("String with no references.\n");
     }
 #endif
+    debug_malloc_touch(curr);
 
     if (full_hash_value == curr->hval &&
 	len==curr->len &&
