@@ -20,7 +20,6 @@ o Robustness fixes in the backend.
 o The normal bunch of unspecified core fixes for rare problems
   discovered since the last release.
 
-
 Changes since Pike 7.4.20:
 ----------------------------------------------------------------------
 
@@ -78,6 +77,8 @@ o Bugfixes in Calendar.Fraction, which prevously lost track of the
 o Stdio.File()->grantpt() fixed to work with SysV systems.
 o New function Stdio.File()->openpt() to portably get a pty master for
   use with grantpt().
+o Raised the maximum allocation limit for the garbage collector. This
+  fixes a problem with too frequent gc runs for busy processes.
 
 Changes since Pike 7.4.10:
 ----------------------------------------------------------------------
