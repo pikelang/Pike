@@ -1,7 +1,7 @@
 #!/usr/local/bin/pike
 // -*- Pike -*-
 
-// $Id: rntecl,v 1.5 2000/08/14 21:10:29 grubba Exp $
+// $Id: rntecl,v 1.6 2000/08/17 20:17:53 grubba Exp $
 
 // RNTECL, a front-end to Intel ECL with options similar to GCC
 // Written by Fredrik Hubinette & Henrik Grubbström.
@@ -55,8 +55,10 @@ int main(int argc, string *argv)
     "-Wp64",	// Generate warnings for loss of precision.
     //"-W4",	// Maximum verbosity.
     "-W3",	// More warnings.
-    "-D__WIN32__",
-    "-D_WIN32",
+    // "-D__WIN32__",
+    // "-D_WIN32",
+    "-D__WIN64__",
+    "-D_WIN64",
     "-D__NT__",
 //    "-D__STDC__",  
     "-nologo",
