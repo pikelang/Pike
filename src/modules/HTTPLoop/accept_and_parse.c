@@ -73,10 +73,10 @@ struct program *accept_loop_program;
 #endif
 
 #define MAXLEN (1024*1024*10)
-static MUTEX_T queue_mutex STATIC_MUTEX_INIT;
+static MUTEX_T queue_mutex;
 static struct args *request, *last;
 
-static MUTEX_T arg_lock STATIC_MUTEX_INIT;
+static MUTEX_T arg_lock;
 static int next_free_arg, num_args;
 static struct args *free_arg_list[100];
 
@@ -683,6 +683,11 @@ void pike_module_init()
 #define STRING(X,Y) X=make_shared_string(Y)
 #include "static_strings.h"
 #undef STRING
+
+  mt_init(&queue_mutex);
+  mt_init(&arg_lock);
+
+  aap_init_cache();
 
 #ifdef HAVE_TIMEOUTS
   aap_init_timeouts();

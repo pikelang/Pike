@@ -33,9 +33,9 @@ struct cache *first_cache;
 
 static struct pike_string *free_queue[1024];
 static int numtofree;
-static MUTEX_T tofree_mutex STATIC_MUTEX_INIT;
+static MUTEX_T tofree_mutex;
 
-static MUTEX_T cache_entry_lock STATIC_MUTEX_INIT;
+static MUTEX_T cache_entry_lock;
 int next_free_ce, num_cache_entries;
 struct cache_entry *free_cache_entries[1024];
 
@@ -69,7 +69,7 @@ struct cache_entry *new_cache_entry( )
   return res;
 }
 
-static void really_free_from_queue() 
+static void really_free_from_queue(void) 
 /* Must have tofree lock and interpreter lock */
 {
   int i;
@@ -78,7 +78,7 @@ static void really_free_from_queue()
   numtofree=0;
 }
 
-static int ensure_interpreter_lock( )
+static int ensure_interpreter_lock(void)
 {
   struct thread_state *thi;
   int free=0;
@@ -102,7 +102,7 @@ static int ensure_interpreter_lock( )
   return 1;
 }
 
-static void free_from_queue()
+static void free_from_queue(void)
 {
   /* We have the interpreter lock here, this is a backend callback */
   mt_lock( &tofree_mutex );
@@ -288,9 +288,15 @@ struct cache_entry *aap_cache_lookup(char *s, ptrdiff_t len,
   return 0;
 }
 
-void aap_clean_cache()
+void aap_clean_cache(void)
 {
   struct cache *c = first_cache;
   if(numtofree) free_from_queue();
+}
+
+void aap_init_cache(void)
+{
+  mt_init(&tofree_mutex);
+  mt_init(&cache_entry_lock);
 }
 #endif
