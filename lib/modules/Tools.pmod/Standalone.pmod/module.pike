@@ -1,8 +1,8 @@
 // -*- Pike -*-
 
-// $Id: module.pike,v 1.15 2003/05/04 21:28:25 nilsson Exp $
+// $Id: module.pike,v 1.16 2003/06/06 15:34:50 jhs Exp $
 
-constant version = ("$Revision: 1.15 $"/" ")[1];
+constant version = ("$Revision: 1.16 $"/" ")[1];
 constant description = "Pike module installer.";
 
 // Source directory
@@ -57,7 +57,7 @@ array(string) do_split_quoted_string(string s)
 
 string fix(string path)
 {
-  if(search(path,"$src")==-1) return path;
+  if(!has_value(path, "$src")) return path;
   if(!srcdir)
   {
     string s=Stdio.read_file("Makefile");
@@ -87,12 +87,12 @@ void do_zero()
 int max_time_of_files(string ... a)
 {
   int t=0;
-  foreach(a,string file)
-    {
-      mixed s=file_stat(fix(file));
-      if(!s) return 0;
-      t=max(t,s[3]);
-    }
+  foreach(a, string file)
+  {
+    Stdio.Stat s = file_stat(fix(file));
+    if(!s) return 0;
+    t = max(t, s->mtime);
+  }
   return t;
 }
 
