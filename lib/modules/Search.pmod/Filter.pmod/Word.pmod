@@ -1,7 +1,7 @@
 // This file is part of Roxen Search
-// Copyright © 2000,2001 Roxen IS. All rights reserved.
+// Copyright © 2001 Roxen IS. All rights reserved.
 //
-// $Id: Word.pmod,v 1.1 2001/06/29 08:59:55 js Exp $
+// $Id: Word.pmod,v 1.2 2001/07/12 22:50:40 nilsson Exp $
 
 // Filter for text/plain
 

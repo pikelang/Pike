@@ -1,7 +1,7 @@
 // This file is part of Roxen Search
-// Copyright © 2000,2001 Roxen IS. All rights reserved.
+// Copyright © 2001 Roxen IS. All rights reserved.
 //
-// $Id: PDF.pmod,v 1.2 2001/07/05 12:36:48 js Exp $
+// $Id: PDF.pmod,v 1.3 2001/07/12 22:45:20 nilsson Exp $
 
 // Filter for application/pdf
 
