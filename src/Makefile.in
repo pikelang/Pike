@@ -152,27 +152,70 @@ install:
 	@echo
 	@echo Installing Pike...
 	@echo
-	@for d in "$(prefix)" "$(exec_prefix)" "$(prefix)/lib" "$(lib_prefix)" "$(prefix)/include" "$(prefix)/include/pike"; do if [ \! -d "$$d/." ]; then echo "$$d"; mkdir "$$d"; chmod 755 "$$d"; else : ; fi; done
-	@for d in `cd "$(TMP_LIBDIR)"; find . -type d -print`; do if [ \! -d "$(lib_prefix)/$$d/." ]; then echo "$(lib_prefix)/$$d"; mkdir "$(lib_prefix)/$$d"; chmod 755 "$(lib_prefix)/$$d/."; else : ; fi; done
-	@if [ -f "$(exec_prefix)/pike" ]; then \
-	  echo Renaming old "$(exec_prefix)/pike" to "$(exec_prefix)/pike.old"; \
-	  mv -f "$(exec_prefix)/pike" "$(exec_prefix)/pike.old"; \
-	else : ; fi
-	@echo "$(exec_prefix)/pike"; $(INSTALL) ./pike $(exec_prefix)
+	@echo "Creating directories..."; \
+	for d in "$(prefix)" "$(exec_prefix)" "$(prefix)/lib" \
+	          "$(lib_prefix)" "$(prefix)/include" \
+	          "$(prefix)/include/pike"; do \
+	  if [ -d "$$d/." ]; then : ; else \
+	    echo "$$d"; \
+	    mkdir "$$d" || exit 1; \
+	    chmod a+rx "$$d"; \
+	    chmod u+w "$$d"; \
+	  fi; \
+	done
+	@for d in `cd "$(TMP_LIBDIR)"; find . -type d -print`; do \
+	  if [ -d "$(lib_prefix)/$$d/." ]; then : ; else \
+	    echo "$(lib_prefix)/$$d"; \
+	    mkdir "$(lib_prefix)/$$d" || exit 1; \
+	    chmod a+rx "$(lib_prefix)/$$d/."; \
+	    chmod u+w "$(lib_prefix)/$$d/."; \
+	  fi; \
+	done
+	@echo ; echo "Installing pike..."; \
+	if cmp "$(exec_prefix)/pike" ./pike >/dev/null 2>&1 ; then \
+	  echo "This pike-binary is already installed." ; \
+	else \
+	  if [ -f "$(exec_prefix)/pike" ]; then \
+	    echo Renaming old "$(exec_prefix)/pike" to "$(exec_prefix)/pike.old"; \
+	    mv -f "$(exec_prefix)/pike" "$(exec_prefix)/pike.old"; \
+	  else \
+	    echo "$(exec_prefix)/pike"; $(INSTALL) ./pike $(exec_prefix) ; \
+	  fi ; \
+	fi
 	@if [ -f $(SRCDIR)/../bin/hilfe ]; then \
-	  echo "$(exec_prefix)/hilfe"; \
+	  echo ; echo "Installing $(exec_prefix)/hilfe..."; \
 	  if [ "$(exec_prefix)" != "/usr/local/bin" -a \
 	       "$(exec_prefix)" != "/usr/local/bin/" ]; then \
 	    if [ -f $(exec_prefix)/hilfe ]; then \
 	      mv $(exec_prefix)/hilfe $(exec_prefix)/hilfe.old; \
 	    else : ; fi && \
 	    sed -e 's!/usr/local/bin!$(exec_prefix)!' <$(SRCDIR)/../bin/hilfe \
-	      >$(exec_prefix)/hilfe && \
-	    chmod 755 $(exec_prefix)/hilfe; \
-	  else $(INSTALL) -m 755 $(SRCDIR)/../bin/hilfe $(exec_prefix); fi; \
+	      >$(exec_prefix)/hilfe || exit 1\
+	  else \
+	    $(INSTALL) $(SRCDIR)/../bin/hilfe $(exec_prefix) || exit 1; \
+	  fi; \
+	  chmod a+rx $(exec_prefix)/hilfe; \
+	  chmod u+w $(exec_prefix)/hilfe; \
 	else : ; fi
-	@for a in $(SRCDIR)/*.h *.h ; do $(INSTALL) -m 644 $$a $(prefix)/include/pike ; done
-	@for f in `cd "$(TMP_LIBDIR)"; find . -type f -print`; do echo "$(lib_prefix)/$$f"; if [ -f "$(lib_prefix)/$$f" ]; then mv -f "$(lib_prefix)/$$f" "$(lib_prefix)/$$f.old"; else : ; fi; cp "$(TMP_LIBDIR)/$$f" "$(lib_prefix)/$$f"; chmod 644 "$(lib_prefix)/$$f"; done
+	@echo ; echo "Installing header-files..."; \
+	for a in $(SRCDIR)/*.h *.h ; do \
+	  $(INSTALL) $$a $(prefix)/include/pike || exit 1; \
+	  chmod a+r $(prefix)/include/pike ; \
+	  chmod u+w $(prefix)/include/pike ; \
+	done
+	@echo ; echo "Installing modules..."; \
+	for f in `cd "$(TMP_LIBDIR)"; find . -type f -print`; do \
+	  if cmp "$(lib_prefix)/$$f" "$(TMP_LIBDIR)/$$f" >/dev/null 2>&1 ; \
+	  then : ; else \
+	    echo "$(lib_prefix)/$$f"; \
+	    if [ -f "$(lib_prefix)/$$f" ]; then \
+	      mv -f "$(lib_prefix)/$$f" "$(lib_prefix)/$$f.old"; \
+	    else : ; fi; \
+	    cp "$(TMP_LIBDIR)/$$f" "$(lib_prefix)/$$f" || exit 1; \
+	    chmod a+r "$(lib_prefix)/$$f"; \
+	    chmod u+w "$(lib_prefix)/$$f"; \
+	  fi ; \
+	done
 
 # tidy up a bit
 tidy:
