@@ -62,7 +62,7 @@ class client
     if(!port)
       port = 25;
 
-    if(!connect(server, port))
+    if(!server || !connect(server, port))
     {
       throw(({"Failed to connect to mail server.\n",backtrace()}));
     }
