@@ -23,14 +23,14 @@ typedef struct
   {
     struct
     {
-      unsigned char id:2;
+      unsigned int id:2;
       unsigned int pos:14;
     } body;
     struct
     {
-      unsigned char _pad:2;
-      unsigned char type:6;
-      unsigned char pos:8;
+      unsigned int _pad:2;
+      unsigned int type:6;
+      unsigned int pos:8;
     } field;
   } u;
 } Hit;
