@@ -1,9 +1,9 @@
-/* $Id: operator.c,v 1.31 2000/08/07 13:38:01 grubba Exp $ */
+/* $Id: operator.c,v 1.32 2000/08/09 17:04:19 grubba Exp $ */
 
 /*
 **! module Image
 **! note
-**!	$Id: operator.c,v 1.31 2000/08/07 13:38:01 grubba Exp $
+**!	$Id: operator.c,v 1.32 2000/08/09 17:04:19 grubba Exp $
 **! class Image
 */
 
@@ -40,7 +40,7 @@ extern struct program *image_program;
 
 #define absdiff(a,b) ((a)<(b)?((b)-(a)):((a)-(b)))
 
-#define testrange(x) (DOUBLE_TO_COLORTYPE(MAXIMUM(MINIMUM(((int)x),255),0)))
+#define testrange(x) (MAXIMUM(MINIMUM(DOUBLE_TO_INT(x),255),0))
 
 #define STANDARD_OPERATOR_HEADER(what)					\
    struct object *o;							\
