@@ -1,4 +1,4 @@
-AC_REVISION("$Id: configure.in,v 1.608 2002/08/20 17:57:20 grubba Exp $")
+AC_REVISION("$Id: configure.in,v 1.609 2002/08/21 10:55:40 grubba Exp $")
 AC_INIT(interpret.c)
 AC_CONFIG_HEADER(machine.h)
 
@@ -572,41 +572,79 @@ else
 fi
 
 # FIXME: Add proper tests
-case "$UNAME" in
-  OSF1\ V4.*|OSF1\ V5.*|OSF1\ V6.*)
-    AC_DEFINE(USE_RPATH)
+AC_MSG_CHECKING([for ld.so run path method])
+AC_CACHE_VAL(pike_cv_ld_so_run_path_method, [
+  case "$UNAME" in
+    OSF1\ V4.*|OSF1\ V5.*|OSF1\ V6.*)
+      pike_cv_run_path_method=rpath
     ;;
-  HPUX\ 11.*)
+    HPUX\ 11.*)
+      pike_cv_run_path_method=plus_b
+    ;;
+    IRIX\ 6.*)
+      pike_cv_run_path_method=rpath
+    ;;
+    IRIX\ 5.*)
+      pike_cv_run_path_method=rpath
+    ;;
+    SunOS\ 5.*)
+      if test "$TCC" = "yes"; then
+  	# tcc doesn't know about -R
+        pike_cv_run_path_method=wl_r
+      else
+        pike_cv_run_path_method=r
+      fi
+    ;;
+    Linux\ 2.*)
+      pike_cv_run_path_method=wl
+    ;;
+    UnixWare\ 7.*|OpenUNIX\ 8.*)
+      if test "$ac_cv_prog_gcc" = "yes"; then
+        pike_cv_run_path_method=xlinker_yp_
+      else
+        pike_cv_run_path_method=yp_
+      fi
+    ;;
+    *)
+      pike_cv_run_path_method=ld_library_path
+    ;;
+  esac
+])
+case "pike_cv_run_path_method" in
+  rpath)
+    AC_DEFINE(USE_RPATH)
+    AC_MSG_RESULT([use -rpath])
+  ;;
+  plus_b)
     AC_DEFINE(USE_PLUS_b)
-    ;;
-  IRIX\ 6.*)
-    AC_DEFINE(USE_RPATH)
-    ;;
-  IRIX\ 5.*)
-    AC_DEFINE(USE_RPATH)
-    ;;
-  SunOS\ 5.*)
-    if test "$TCC" = "yes"; then
-      # tcc doesn't know about -R
-      AC_DEFINE(USE_Wl_R)
-    else
-      AC_DEFINE(USE_R)
-    fi
-    ;;
-  Linux\ 2.*)
+    AC_MSG_RESULT([use +b])
+  ;;
+  yp_)
+    AC_DEFINE(USE_YP_)
+    AC_MSG_RESULT([use -Yp,])
+  ;;
+  xlinker_yp_)
+    AC_DEFINE(USE_XLINKER_YP_)
+    AC_MSG_RESULT([use -Xlinker -Yp, -Xlinker])
+  ;;
+  wl_r)
+    AC_DEFINE(USE_Wl_R)
+    AC_MSG_RESULT([use -Wl,-R])
+  ;;
+  r)
+    AC_DEFINE(USE_R)
+    AC_MSG_RESULT([use -R])
+  ;;
+  wl)
     AC_DEFINE(USE_Wl)
-    ;;
-  UnixWare\ 7.*|OpenUNIX\ 8.*)
-    if test "$ac_cv_prog_gcc" = "yes"; then
-      AC_DEFINE(USE_XLINKER_YP_)
-    else
-      AC_DEFINE(USE_YP_)
-    fi
-    ;;
-  *)
+    AC_MSG_RESULT([use -Wl,-rpath])
+  ;;
+  ld_library_path|*)
     AC_DEFINE(USE_LD_LIBRARY_PATH)
-    ;;
+    AC_MSG_RESULT([use LD_LIBRARY_PATH/LD_RUN_PATH])
+  ;;
 esac
+
 
 # Strip smartlink from $CC
 REALCC="`echo $CC|sed -e 's/.*smartlink //'`"
