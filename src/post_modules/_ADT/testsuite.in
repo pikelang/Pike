@@ -1,0 +1,586 @@
+
+
+****************************************************************************
+*                          ArrayAdapter                                    *
+****************************************************************************
+
+test_true(programp(_ADT.ArrayAdapter))
+test_true(programp(_ADT.ArrayAdapter))
+test_true(objectp(_ADT.ArrayAdapter(({}))))
+test_eval_error(objectp(_ADT.ArrayAdapter()))
+test_any(object o; o=_ADT.ArrayAdapter(({})); destruct(o); return 1,1)
+
+*****************************test equal**************************************
+
+test_any_equal(return _ADT.ArrayAdapter(({1,2,3,4})), 
+	       _ADT.ArrayAdapter(({1,2,3,4})))
+
+test_false(equal(_ADT.ArrayAdapter(({1,2,3,4})), _ADT.ArrayAdapter(({1,2}))))
+
+  test_any(array a=({1,2,3}); 
+	    array b=({1,2,4});
+	    array aa=({1,2,a});
+	    array ab=({1,2,b});
+	    return !equal( _ADT.ArrayAdapter(aa), _ADT.ArrayAdapter(ab)), 1)
+  
+*************************** test sizeof *************************************
+
+test_any(_ADT.ArrayAdapter a = _ADT.ArrayAdapter(({1,2,3,4,1,2,3,4}));
+	 return (sizeof(a)), 8)
+
+*************************** test indexing ***********************************
+
+test_any(_ADT.ArrayAdapter a = _ADT.ArrayAdapter(({1,2,3,4,5,6,7,8,9}));
+	 return a[3], 4) 
+
+test_any(_ADT.ArrayAdapter a = _ADT.ArrayAdapter(({1,2,3,4,5,6,7,8,9}));
+	 a[3]=99; return a[3], 99)
+
+*************************** test negative indexing **************************
+
+test_any(_ADT.ArrayAdapter a = _ADT.ArrayAdapter(({1,2,3,4,5,6,7,8,9}));
+	 return a[-3], 7)
+  
+
+test_any(_ADT.ArrayAdapter a = _ADT.ArrayAdapter(({1,2,3,4,5,6,7,8,9}));
+	 a[-3]=99; return a[-3], 99)
+
+************************* test out of index error **************************
+
+test_eval_error(_ADT.ArrayAdapter a = _ADT.ArrayAdapter(({1,2,3,4,5,6,7,8,9}));
+	 	return a[9])
+
+test_eval_error(_ADT.ArrayAdapter a = _ADT.ArrayAdapter(({1,2,3,4,5,6,7,8,9}));
+	 	return a[9]=99)
+
+************************* test assigning objects **************************
+
+test_any_equal(array aa = ({1,2,3});
+	_ADT.ArrayAdapter a = _ADT.ArrayAdapter(({1,2,3,4,5,6,7,8,9}));
+	 a[2]=aa; return a[2], ({1,2,3}))
+
+test_any_equal(_ADT.ArrayAdapter o = _ADT.ArrayAdapter(({1,2,3}));
+	_ADT.ArrayAdapter a = _ADT.ArrayAdapter(({1,2,3,4,5,6,7,8,9}));
+	 a[2]=o; return a[2], _ADT.ArrayAdapter(({1,2,3})))
+
+************************* test insert *************************************
+
+test_any_equal(_ADT.ArrayAdapter a = _ADT.ArrayAdapter(({1,2,3,4,5,6,7,8,9}));
+	  	a->_insert_element(1,99);
+	  	return values(a), ({1,99,2,3,4,5,6,7,8,9}))
+  
+
+test_any_equal(_ADT.ArrayAdapter a = _ADT.ArrayAdapter(({1,2,3,4,5,6,7,8,9}));
+	  	a->_insert_element(-1,99);
+	  	return (values(a)), ({1,2,3,4,5,6,7,8,99,9}))
+
+
+test_any_equal(_ADT.ArrayAdapter a = _ADT.ArrayAdapter(({1,2,3,4,5,6,7,8,9}));
+	       a->_insert_element(8,99);
+	       return (values(a)), ({1,2,3,4,5,6,7,8,99,9}))
+
+
+test_eval_error(_ADT.ArrayAdapter a = _ADT.ArrayAdapter(({1,2,3,4,5,6,7,8,9}));
+	  	a->_insert_element(10,99);
+	  	return 0)
+	       
+************************** test remove ************************************
+
+
+test_any_equal(_ADT.ArrayAdapter a = _ADT.ArrayAdapter(({1,2,3,4,5,6,7,8,9}));
+	       int retval = a->_remove_element(1);
+	       return ({a[1], retval, a->_sizeof()}),({3, 2, 8}))
+
+
+test_eval_error(_ADT.ArrayAdapter a = _ADT.ArrayAdapter(({1,2,3,4,5,6,7,8,9}));
+		a->_remove_element(-1);
+		return (a[8] == 9 && a->_sizeof() == 8))
+
+
+test_any_equal(_ADT.ArrayAdapter a = _ADT.ArrayAdapter(({1,2,3,4,5,6,7,8,9}));
+	       a->_remove_element(0);
+	       return (values(a)),({2,3,4,5,6,7,8,9}))
+
+
+test_eval_error(_ADT.ArrayAdapter a = _ADT.ArrayAdapter(({1,2,3,4,5,6,7,8,9}));
+	  	a->_remove_element(10);
+	  	return 0)
+
+*********************** test delete ***************************************
+
+
+test_any_equal(_ADT.ArrayAdapter a = _ADT.ArrayAdapter(({1,2,3,4,1,2,3,4}));
+	       mixed retval = a->delete_value(2);
+	       return ({values(a) , retval}),({({1,3,4,1,2,3,4}), 1}))
+
+
+test_any_equal(_ADT.ArrayAdapter a = _ADT.ArrayAdapter(({1,2,3,4,5,6,7,8,9}));
+	       mixed retval = a->delete_value(11);
+	       return ({retval, a->_sizeof()}),({-1,9}))
+
+********************** test add ********************************************
+
+
+test_true(_ADT.ArrayAdapter a = _ADT.ArrayAdapter(({1,2,3,4,1,2,3,4}));
+	  a->add(99);
+	  return (a[9] == 99 && a->_sizeof() == 10))
+
+*************************** test values ************************************
+
+test_true(equal(values(_ADT.ArrayAdapter(({1,2,3,4,1,2,3,4}))), 
+		({1,2,3,4,1,2,3,4})))
+
+
+  test_true(has_value(_ADT.ArrayAdapter(({1,2,3,4,1,2,3,4})), 1))
+
+
+  test_false(has_value(_ADT.ArrayAdapter(({1,2,3,4,1,2,3,4})),11))
+
+************************** test indices ************************************
+
+test_true(equal(indices(_ADT.ArrayAdapter(({1,2,3,4,1,2,3,4}))), 
+		({0,1,2,3,4,5,6,7})))
+
+
+test_true(has_index(_ADT.ArrayAdapter(({1,2,3,4,1,2,3,4})), 1))
+
+
+test_false(has_index(_ADT.ArrayAdapter(({1,2,3,4,1,2,3,4})), 11))
+
+****************************** test is empty *******************************
+
+
+test_true(_ADT.ArrayAdapter(({}))->is_empty())
+
+
+  test_false( _ADT.ArrayAdapter(({1,2,3,4,1,2,3,4}))->is_empty())
+
+***************************** test maxsize *********************************
+
+
+test_any(_ADT.ArrayAdapter a = _ADT.ArrayAdapter(({1,2,3,4,1,2,3,4}));
+	  return (a->max_size()), -1)
+
+*************************** test clear *************************************
+
+
+test_any(_ADT.ArrayAdapter a = _ADT.ArrayAdapter(({1,2,3,4,1,2,3,4}));
+          a->clear();
+	  return sizeof(a), 0)
+
+*************************** test search ************************************
+
+test_any(_ADT.ArrayAdapter a = _ADT.ArrayAdapter(({1,2,3,4,1,2,3,4}));
+          return a->_search(3), 2)
+
+test_any(_ADT.ArrayAdapter a = _ADT.ArrayAdapter(({1,2,3,4,1,2,3,4}));
+          return a->_search(3, 2), 2)
+
+test_any(_ADT.ArrayAdapter a = _ADT.ArrayAdapter(({1,2,3,4,1,2,3,4}));
+          return a->_search(3, 3), 6)
+
+test_any(_ADT.ArrayAdapter a = _ADT.ArrayAdapter(({1,2,3,4,1,2,3,4}));
+          return a->_search(11, 0), -1)
+
+*************************** test cast **************************************
+
+test_any_equal(_ADT.ArrayAdapter a = _ADT.ArrayAdapter(({1,2,3,4,1,2,3,4}));
+          	return a->cast("array"), ({1,2,3,4,1,2,3,4}))
+
+test_eval_error(_ADT.ArrayAdapter a = _ADT.ArrayAdapter(({1,2,3,4,1,2,3,4}));
+          	return a->cast("nisse"))
+
+**************************** test clear ************************************
+
+test_any_equal(_ADT.ArrayAdapter a = _ADT.ArrayAdapter(({1,2,3,4,1,2,3,4}));
+          	a->clear(); 
+	        return a, _ADT.ArrayAdapter(({})))
+
+************************** test +  - & *************************************
+
+test_any_equal(_ADT.ArrayAdapter a = _ADT.ArrayAdapter(({1,2,3,4}));
+	       _ADT.ArrayAdapter b = _ADT.ArrayAdapter(({1,2,3,4}));
+	       _ADT.ArrayAdapter c = _ADT.ArrayAdapter(({}));
+	       return values(a+b+c), ({1,2,3,4,1,2,3,4}))
+  
+test_any_equal(_ADT.ArrayAdapter a = _ADT.ArrayAdapter(({1,2,3,4,1,2,3,4}));
+	       _ADT.ArrayAdapter b = _ADT.ArrayAdapter(({1,3,7,8}));
+	       return values(a-b), ({2,4,2,4}))
+
+test_any_equal(array a=({1,2,3}); 
+	       array b=({1,2,3});
+	       array aa=({1,2,a,5});
+	       array ab=({1,2,b,4});
+	       _ADT.ArrayAdapter ada = _ADT.ArrayAdapter(aa);
+	       _ADT.ArrayAdapter adb = _ADT.ArrayAdapter(ab); 
+	       return values(ada & adb), ({1,2}))
+
+  test_any_equal(_ADT.ArrayAdapter a = _ADT.ArrayAdapter(({1,2,3,4,5}));
+		 _ADT.ArrayAdapter b = _ADT.ArrayAdapter(({3,4,6,2,1})); 
+		 return values(a & b), ({1,2,3,4}))	
+
+  test_any_equal(_ADT.ArrayAdapter a = _ADT.ArrayAdapter(({1,2,3,4}));
+		 _ADT.ArrayAdapter b = _ADT.ArrayAdapter(({4,3,5,6}));
+		 return values(a | b), ({1,2,4,3,5,6}))
+
+  test_any_equal(_ADT.ArrayAdapter a = _ADT.ArrayAdapter(({1,2,3,4}));
+		 _ADT.ArrayAdapter b = _ADT.ArrayAdapter(({4,5,6,3}));
+		 return values(a ^ b), ({1,2,5,6}))
+
+************************** test copy on change *****************************
+
+
+test_any_equal(array a=({1,2,3,4,5,6}); 
+	       _ADT.ArrayAdapter ad = _ADT.ArrayAdapter(a);
+	       ad[3] = 99;
+	       return a, ({1,2,3,4,5,6}))
+
+
+test_any_equal(array a=({1,2,3,4,5,6}); 
+	       _ADT.ArrayAdapter ad = _ADT.ArrayAdapter(a);
+	       ad->_insert_element(2,99);
+	       return a, ({1,2,3,4,5,6}))
+
+
+test_any_equal(array a=({1,2,3,4,5,6}); 
+	       _ADT.ArrayAdapter ad = _ADT.ArrayAdapter(a);
+	       ad->_remove_element(3);
+	       return a, ({1,2,3,4,5,6}))
+
+
+test_any_equal(array a=({1,2,3,4,5,6}); 
+	       _ADT.ArrayAdapter ad = _ADT.ArrayAdapter(a);
+	       ad->delete_value(3);
+	       return a, ({1,2,3,4,5,6}))
+
+test_any_equal(array a=({1,2,3,4,5,6}); 
+	       _ADT.ArrayAdapter ad = _ADT.ArrayAdapter(a);
+	       ad->clear();
+	       return a, ({1,2,3,4,5,6}))
+
+test_any_equal(array a=({1,2,3,4,5,6}); 
+	       _ADT.ArrayAdapter ad = _ADT.ArrayAdapter(a);
+	       ad->add(99);
+	       return a, ({1,2,3,4,5,6}))
+
+****************************************************************************
+*                      ArrayAdapterIterator                                *
+****************************************************************************
+
+
+test_true(programp(_ADT.ArrayAdapter.ArrayAdapterIterator))
+  
+  test_true(programp(_ADT.ArrayAdapter.ArrayAdapterIterator))
+
+  test_true(objectp(_ADT.ArrayAdapter(({1,2,3}))->first()))
+
+  test_true(objectp(_ADT.ArrayAdapter(({1,2,3}))->last()))
+
+  test_true(objectp(_ADT.ArrayAdapter(({1,2,3}))->_get_iterator()))
+
+  test_true(objectp(_ADT.ArrayAdapter(({1,2,3}))->_get_iterator(1)))
+
+  test_eval_error(objectp(_ADT.ArrayAdapter(({1,2,3}))->_get_iterator(4)))
+
+  test_true(objectp(_ADT.ArrayAdapter.ArrayAdapterIterator(_ADT.ArrayAdapter(({1,2,3})))))
+  
+  xtest_eval_error(objectp(_ADT.ArrayAdapter.ArrayAdapterIterator(ADT.Queue())))
+
+  test_any(object o; o=_ADT.ArrayAdapter(({}))->first(); destruct(o); return 1,1)
+  
+  test_any(_ADT.ArrayAdapter.ArrayAdapterIterator i = 
+	   _ADT.ArrayAdapter(({1,2,3}))->_get_iterator(2);
+	   return i->value(), 3)
+
+  ************************ test value and index *****************************
+
+test_any(_ADT.ArrayAdapter.ArrayAdapterIterator i = 
+	 _ADT.ArrayAdapter(({1,2,3}))->first();
+	 return (i->value()), 1)
+
+
+test_any(_ADT.ArrayAdapter.ArrayAdapterIterator i = 
+	 _ADT.ArrayAdapter(({1,2,3}))->first();
+	 return (i->[[index()]]), 0)
+
+  ************************ test tail ****************************************
+
+test_true(zero_type(_ADT.ArrayAdapter(({1,2,3}))->last()->value()))  
+
+
+  test_any(_ADT.ArrayAdapter.ArrayAdapterIterator i = 
+	   _ADT.ArrayAdapter(({1,2,3}))->last();
+	   return  zero_type(i->[[index()]]), 1)
+
+**************************** test + and += *********************************
+
+ 
+test_any(_ADT.ArrayAdapter.ArrayAdapterIterator i = 
+	 _ADT.ArrayAdapter(({1,2,3,4}))->first();
+	 i = i + 1;
+	 return (i->value()), 2)
+
+ 
+test_any(_ADT.ArrayAdapter.ArrayAdapterIterator i = 
+	 _ADT.ArrayAdapter(({1,2,3,4}))->first();
+	 i = i + 1;
+	 return (i->[[index()]]), 1)
+
+ 
+test_any(_ADT.ArrayAdapter.ArrayAdapterIterator i = 
+	 _ADT.ArrayAdapter(({1,2,3,4}))->last();
+	 i = i + (-1);
+	 return (i->value()), 4)
+
+ 
+test_any(_ADT.ArrayAdapter.ArrayAdapterIterator i = 
+	 _ADT.ArrayAdapter(({1,2,3,4}))->first();
+	 i = i + 10;
+	 return zero_type(i->value()), 1)
+
+ 
+test_any(_ADT.ArrayAdapter.ArrayAdapterIterator i = 
+	 _ADT.ArrayAdapter(({1,2,3,4}))->first();
+	 i = i + 10;
+	 return zero_type(i->[[index()]]), 1)
+
+ 
+test_any(_ADT.ArrayAdapter.ArrayAdapterIterator i = 
+	 _ADT.ArrayAdapter(({1,2,3,4}))->first();
+	 i = i + (-1);
+	 return (i->value()), 1)
+
+ 
+test_any(_ADT.ArrayAdapter.ArrayAdapterIterator i = 
+	 _ADT.ArrayAdapter(({1,2,3,4}))->first();
+	 i += 2;
+	 return i->value(), 3)
+
+ 
+test_any(_ADT.ArrayAdapter.ArrayAdapterIterator i = 
+	  _ADT.ArrayAdapter(({1,2,3,4}))->first();
+	  i += 10;
+	  return zero_type(i->[[index()]]), 1)
+
+ 
+test_any(_ADT.ArrayAdapter.ArrayAdapterIterator i = 
+	  _ADT.ArrayAdapter(({1,2,3,4}))->first();
+	  i += 10;
+	  return zero_type(i->value()), 1)
+
+ 
+test_any(_ADT.ArrayAdapter.ArrayAdapterIterator i = 
+	 _ADT.ArrayAdapter(({1,2,3,4}))->first();
+	 i += (-1);
+	 return (i->value()), 1)
+
+ 
+test_any(_ADT.ArrayAdapter.ArrayAdapterIterator i = 
+	 _ADT.ArrayAdapter(({1,2,3,4}))->last();
+	 i += (-1);
+	 return (i->value()), 4)
+
+***************************** test - and -= *******************************
+
+
+ 
+test_any(_ADT.ArrayAdapter.ArrayAdapterIterator i = 
+	 _ADT.ArrayAdapter(({1,2,3,4}))->last();
+	 i = i - 1;
+	 return (i->value()), 4)
+
+ 
+test_any(_ADT.ArrayAdapter.ArrayAdapterIterator i = 
+	 _ADT.ArrayAdapter(({1,2,3,4}))->last();
+	 i = i - 1;
+	 return (i->[[index()]]), 3)
+
+ 
+test_any(_ADT.ArrayAdapter.ArrayAdapterIterator i = 
+	 _ADT.ArrayAdapter(({1,2,3,4}))->first();
+	 i = i - (-1);
+	 return (i->value()), 2)
+
+ 
+test_any(_ADT.ArrayAdapter.ArrayAdapterIterator i = 
+	 _ADT.ArrayAdapter(({1,2,3,4}))->last();
+	 i = i - 10;
+	 return i->value(), 1)
+
+ 
+test_any(_ADT.ArrayAdapter.ArrayAdapterIterator i = 
+	 _ADT.ArrayAdapter(({1,2,3,4}))->last();
+	 i = i - 10;
+	 return i->[[index()]], 0)
+
+ 
+test_any(_ADT.ArrayAdapter.ArrayAdapterIterator i = 
+	 _ADT.ArrayAdapter(({1,2,3,4}))->last();
+	 i = i - (-1);
+	 return (zero_type(i->value())), 1)
+
+ 
+xtest_any(_ADT.ArrayAdapter.ArrayAdapterIterator i = 
+	 _ADT.ArrayAdapter(({1,2,3,4}))->last();
+	 i -= 2;
+	 return i->value(), 2)
+
+ 
+xtest_true(_ADT.ArrayAdapter.ArrayAdapterIterator i = 
+	  _ADT.ArrayAdapter(({1,2,3,4}))->last();
+	  i -= 10;
+	  return zero_type(i->[[index()]]))
+
+ 
+xtest_true(_ADT.ArrayAdapter.ArrayAdapterIterator i = 
+	  _ADT.ArrayAdapter(({1,2,3,4}))->last();
+	  i -= 10;
+	  return zero_type(i->value()))
+
+ 
+xtest_any(_ADT.ArrayAdapter.ArrayAdapterIterator i = 
+	 _ADT.ArrayAdapter(({1,2,3,4}))->last();
+	 i -= (-1);
+	 return (zero_type(i->value())), 1)
+
+ 
+xtest_any(_ADT.ArrayAdapter.ArrayAdapterIterator i = 
+	 _ADT.ArrayAdapter(({1,2,3,4}))->first();
+	 i -= (-1);
+	 return (i->value()), 2)
+
+************************ test has_next **********************************
+
+test_true(_ADT.ArrayAdapter.ArrayAdapterIterator i = 
+	  _ADT.ArrayAdapter(({1,2,3,4}))->first()->has_next())
+
+
+test_false(_ADT.ArrayAdapter.ArrayAdapterIterator i = 
+	   _ADT.ArrayAdapter(({1,2,3,4}))->last()->has_next())
+
+
+test_true(_ADT.ArrayAdapter.ArrayAdapterIterator i = 
+	  _ADT.ArrayAdapter(({1,2,3,4}))->first()->has_next(2))
+
+test_false(_ADT.ArrayAdapter.ArrayAdapterIterator i = 
+	  _ADT.ArrayAdapter(({1,2,3,4}))->first()->has_next(5))
+
+
+test_false(_ADT.ArrayAdapter.ArrayAdapterIterator i = 
+	   _ADT.ArrayAdapter(({1,2,3,4}))->first()->has_next(-1))
+
+********************** test has_previous *********************************
+
+
+test_true(_ADT.ArrayAdapter.ArrayAdapterIterator i = 
+	  _ADT.ArrayAdapter(({1,2,3,4}))->last()->has_previous())
+
+
+test_false(_ADT.ArrayAdapter.ArrayAdapterIterator i = 
+	   _ADT.ArrayAdapter(({1,2,3,4}))->first()->has_previous())
+
+
+test_true(_ADT.ArrayAdapter.ArrayAdapterIterator i = 
+	  _ADT.ArrayAdapter(({1,2,3,4}))->last()->has_previous(2))
+
+
+test_false(_ADT.ArrayAdapter.ArrayAdapterIterator i = 
+	   _ADT.ArrayAdapter(({1,2,3,4}))->last()->has_previous(5))
+
+
+test_false(_ADT.ArrayAdapter.ArrayAdapterIterator i = 
+	  _ADT.ArrayAdapter(({1,2,3,4}))->last()->has_previous(-1))
+
+******************************** test `! ***********************************
+
+test_false(!(_ADT.ArrayAdapter(({1,2,3,4}))->first()))
+
+
+test_false(!(_ADT.ArrayAdapter(({1,2,3,4}))->_get_iterator(3)))
+
+
+test_true(!(_ADT.ArrayAdapter(({1,2,3,4}))->last()))
+ 
+**************************** test _equal ***********************************
+
+test_any(_ADT.ArrayAdapter a = _ADT.ArrayAdapter(({1,2,3,4,5,6,7,8,9}));
+	 _ADT.ArrayAdapter b = a;
+	 return equal (a->first(), b->first()), 1);
+
+
+test_any(_ADT.ArrayAdapter a = _ADT.ArrayAdapter(({1,2,3,4,5,6,7,8,9}));
+	 _ADT.ArrayAdapter b = a;
+	 return equal ((a->first() +1), (b->first() + 1)), 1);
+
+
+test_any(_ADT.ArrayAdapter a = _ADT.ArrayAdapter(({1,2,3,4,5,6,7,8,9}));
+	 _ADT.ArrayAdapter b = a;
+	 return equal ((a->first() + 1), b->first()), 0);
+
+
+test_any(_ADT.ArrayAdapter a = _ADT.ArrayAdapter(({1,2,3,4,5,6,7,8,9}));
+	 _ADT.ArrayAdapter b = _ADT.ArrayAdapter(({1,2,3,4,5,6,7,8,9}));
+	 return equal (a->first(), b->first()), 0);
+
+************************** test `< and `> *********************************
+
+
+test_any(_ADT.ArrayAdapter a = _ADT.ArrayAdapter(({1,2,3,4,5,6,7,8,9}));
+	 _ADT.ArrayAdapter b = a;
+	 return (a->first() < b->first()), 0);
+
+
+test_any(_ADT.ArrayAdapter a = _ADT.ArrayAdapter(({1,2,3,4,5,6,7,8,9}));
+	 _ADT.ArrayAdapter b = a;
+	 return (a->first() > b->first()), 0);
+
+
+test_any(_ADT.ArrayAdapter a = _ADT.ArrayAdapter(({1,2,3,4,5,6,7,8,9}));
+	 _ADT.ArrayAdapter b = a;
+	 return ((a->first() + 1) > b->first()), 1);
+
+
+test_any(_ADT.ArrayAdapter a = _ADT.ArrayAdapter(({1,2,3,4,5,6,7,8,9}));
+	 _ADT.ArrayAdapter b = a;
+	 return ((a->first() + 1) < b->first()), 0);
+
+
+test_any(_ADT.ArrayAdapter a = _ADT.ArrayAdapter(({1,2,3,4,5,6,7,8,9}));
+	 _ADT.ArrayAdapter b = a;
+	 return (a->first() < (b->first() +1)), 1);
+
+
+test_any(_ADT.ArrayAdapter a = _ADT.ArrayAdapter(({1,2,3,4,5,6,7,8,9}));
+	 _ADT.ArrayAdapter b = a;
+	 return (a->first() >(b->first()+1)), 0);
+
+
+test_any(_ADT.ArrayAdapter a = _ADT.ArrayAdapter(({1,2,3,4,5,6,7,8,9}));
+	 _ADT.ArrayAdapter b = _ADT.ArrayAdapter(({99,66,44}));
+	 return ((a->first() + 1) > b->first()), 1);
+
+test_any(_ADT.ArrayAdapter a = _ADT.ArrayAdapter(({1,2,3,4,5,6,7,8,9}));
+	 _ADT.ArrayAdapter b = _ADT.ArrayAdapter(({-23, 88, a}));
+	 return (a->first() < (b->first()+1)), 1);
+
+********************** test get_collection *******************************
+
+test_any(_ADT.ArrayAdapter a = _ADT.ArrayAdapter(({1,2,3,4,5,6,7,8,9}));
+	 _ADT.ArrayAdapter.ArrayAdapterIterator i = a->first();
+	 return (i->get_collection() == a), 1); 
+
+************************* test set_value *********************************
+
+
+test_any(_ADT.ArrayAdapter a = _ADT.ArrayAdapter(({1,2,3,4,5,6,7,8,9}));
+	 a->first()->set_value(99);
+	 return a[0], 99);
+
+
+test_any(_ADT.ArrayAdapter a = _ADT.ArrayAdapter(({1,2,3,4,5,6,7,8,9}));
+	 return a->_get_iterator(4)->set_value(99), 5);
+
+
+test_any(_ADT.ArrayAdapter a = _ADT.ArrayAdapter(({1,2,3,4,5,6,7,8,9}));
+	 a->last()->set_value(99);
+	 return zero_type(a->last()->value()), 1);
