@@ -2,14 +2,14 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: auto.c.in,v 1.23 2002/10/11 01:39:58 nilsson Exp $
+|| $Id: auto.c.in,v 1.24 2002/10/14 16:48:32 per Exp $
 */
 
 #include "global.h"
 
 #include "config.h"
 
-RCSID("$Id: auto.c.in,v 1.23 2002/10/11 01:39:58 nilsson Exp $");
+RCSID("$Id: auto.c.in,v 1.24 2002/10/14 16:48:32 per Exp $");
 #include "stralloc.h"
 #include "pike_macros.h"
 #include "object.h"
@@ -175,7 +175,7 @@ static void check_img_arg(struct svalue *a, struct zimage *img,
   }
 
   if(shm_program == NULL) {
-    push_string(make_shared_string("system.Memory")); push_int(0);
+    push_string(make_shared_string("System.Memory")); push_int(0);
     SAFE_APPLY_MASTER("resolv",2);
     shm_program=program_from_svalue(sp-1);
     pop_stack();
