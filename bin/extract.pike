@@ -2,7 +2,7 @@
 // Copyright © 2000, Roxen IS.
 // By Martin Nilsson and Andreas Lange
 //
-// $Id: extract.pike,v 1.1 2000/07/09 16:14:56 nilsson Exp $
+// $Id: extract.pike,v 1.2 2000/07/10 17:47:08 lange Exp $
 //
 
 
@@ -121,8 +121,14 @@ string quotemeta(string in) {
 
 function get_decoder(string encoding) {
   // If needed, returns a function which decodes a string
+  if(!encoding || encoding=="")
+    return 0;
   switch(lower_case(encoding)) 
     {
+    case "iso-8859-1":
+      // The normal, no decode needed
+      return 0;
+      
     case "utf-8": case "utf8":
       return lambda(string s) { 
 	       return utf8_to_string(s);
@@ -134,13 +140,16 @@ function get_decoder(string encoding) {
 	       return unicode_to_string(s);
 	     };
       
-    case "iso-8859-1":
-      // Default, no decode needed
-      return 0;
-      
+    default:
+      object dec;
+      if(catch(dec = Locale.Charset.decoder( encoding ))) {
+	werror("\n* Unknown encoding %O!\n", encoding);
+	exit(1);
+      }
+      return lambda(string s) { 
+	       return dec->clear()->feed(s)->drain();
+	     };
     }
-  werror("\n* Unknown encoding %O!\n", encoding);
-  exit(1);
 }
 
 
@@ -265,14 +274,14 @@ string parse_xml_file(string filename, void|mixed wipe_pass) {
 		    array hits = RE->split(c);
 		    if(hits)
 		      c = get_first_string(sprintf("%O",hits[0]));
-		    if(decode) {
-		      mixed err = catch{ c = decode(c); };
-		      if(err) {
+		    // Replace encoded entities
+		    c = replace(c,({"&lt;","&gt;","&amp;"}),({"<",">","&"}));
+		    if(decode)
+		      if(catch( c = decode(c) )) {
 			werror("\n* Warning: Decoding from %s failed for "+
 			       "comment with id %s\n", args->encoding,id);
 			return "\b";
 		      }
-		    }
 		    if(id!="" && c!="")
 		      // Save text for use in the t_tag function
 		      c_ids[id]=c;
@@ -317,14 +326,21 @@ void write_xml_file(string out_name, string outdata) {
   write("Writing %s...",out_name);
 
   // Default nilencoding
-  function encode = lambda(string s) { return s; };
+  function encode=0;
+  object _enc;
   if(args->encoding) {
     // Set encoder function if encoding known.
     switch(lower_case(args->encoding)) 
       {
       default:
-	werror("\n* Unknown encoding %O, using default", args->encoding);
-	args->encoding=0;
+	if(catch(_enc = Locale.Charset.encoder( args->encoding ))) {
+	  werror("\n* Unknown encoding %O, using default", args->encoding);
+	  args->encoding=0;
+	  break;
+	}
+ 	encode = lambda(string s) { 
+		   return _enc->clear()->feed(s)->drain();
+		 };
 	break;
 
       case "utf-8": case "utf8":
@@ -340,8 +356,11 @@ void write_xml_file(string out_name, string outdata) {
 		 };
 	break;
       
+      case "":
+	args->encoding = 0;
+
       case "iso-8859-1":
-	// Default
+	// No encoding needed
       }
   }
 
@@ -377,10 +396,12 @@ void write_xml_file(string out_name, string outdata) {
       if(i==sizeof(id_xml_order)) {
 	// Shrinking file?
 	outdata=replace(outdata,marker,"");
-	break;
+	continue;
       }
       string id=id_xml_order[i];
-      string str=encode(ids[id_xml_order[i]]);
+      string str=ids[id];
+      if(encode) str=encode(str);    // Encode and make parser-safe
+      str = replace(str, ({"<",">","&"}), ({"&lt;","&gt;","&amp;"}));
       outdata = (outdata[0..n-1] +
 		 sprintf("<!-- [%s] %s\"%s\" -->\n<%s id=\"%s\"></%s>",
 			 id, info, str, tag, id, tag) +
@@ -393,7 +414,9 @@ void write_xml_file(string out_name, string outdata) {
   // Dump new strings
   while(i<sizeof(id_xml_order)) {
     string id=id_xml_order[i];
-    string str=encode(ids[id_xml_order[i]]);
+    string str=ids[id];
+    if(encode) str=encode(str);    // Encode and make parser-safe
+    str = replace(str, ({"<",">","&"}), ({"&lt;","&gt;","&amp;"}));
     out->write("\n<!-- [%s] %s\"%s\" -->\n<%s id=\"%s\"></%s>\n",
 	       id, info, str, tag, id, tag);
     i++;
@@ -476,7 +499,7 @@ void update_pike_sourcefiles(array filelist) {
     array hits;
     array id_pike_order=({});
     foreach(tokens, string token) {
-      RE = Regexp("^#define[ \t\n]*"+token);
+      RE = Regexp("^#[ \t]*define[ \t\n]*"+token);
       string newdata = "";
       foreach(indata/"\n", string line) {
 	if(RE->match(line))
@@ -521,6 +544,9 @@ void update_pike_sourcefiles(array filelist) {
 		exit(1);
 	      }
 	    }
+	    if(r_ids[fstr] && r_ids[fstr]!=id && id_origin[r_ids[fstr]])
+	      werror("\n* Warning: %O has id %O in%{ %s%}, id %O in %s",
+		     fstr, r_ids[fstr], id_origin[r_ids[fstr]], id, filename);
 	  }
 	  if(!has_value(id_xml_order,id))
 	    // Id not in xml-structure, add to list
@@ -653,6 +679,11 @@ void update_xml_sourcefiles(array filelist) {
 			    exit(1);
 			  }
 			}
+			if(r_ids[fstr] && r_ids[fstr]!=id && 
+			   id_origin[r_ids[fstr]])
+			  werror("\n* Warning: %O has id %O in%{ %s%}, "
+				 "id %O in %s", fstr, r_ids[fstr],
+				 id_origin[r_ids[fstr]], id, filename);
 		      }
 		      if(!has_value(id_xml_order,id))
 			// Id not in xml-structure, add to list
@@ -661,14 +692,10 @@ void update_xml_sourcefiles(array filelist) {
 		      ids[id] = fstr;                // Store id:text
 		      r_ids[fstr] = id;              // Store text:id   
 		      if(updated) {
-			// Returning this will actually make the Parser
-			// parse the tag twice - unnecessary perhaps, but
-			// good for detecting if there are errors in the 
-			// decoding/encoding --> "inconsistant use of id" 
 			string ret="<translate id=\""+id+"\"";
-			if(m->project) 
-			  ret+=" project=\""+m->project+"\"";
-			return ret+">"+c+"</translate>";
+			foreach(indices(m)-({"id"}), string param)
+			  ret+=" "+param+"=\""+m[param]+"\"";
+		        return ({ ret+">"+c+"</translate>" });
 		      }
 		      // Not updated, do not change
 		      return 0;
@@ -871,7 +898,7 @@ int main(int argc, array(string) argv) {
     xml_name = filename;
 
   if(!sizeof(files) || args->help) {
-    sscanf("$Revision: 1.1 $", "$"+"Revision: %s $", string v);
+    sscanf("$Revision: 1.2 $", "$"+"Revision: %s $", string v);
     werror("\n  Locale Extractor Utility "+v+"\n\n");
     werror("  Syntax: extract.pike [arguments] infile(s)\n\n");
     werror("  Arguments: --project=name  default: first found in infile\n");
