@@ -5,7 +5,7 @@
 \*/
 /**/
 #include "global.h"
-RCSID("$Id: las.c,v 1.222 2000/11/20 01:20:25 mast Exp $");
+RCSID("$Id: las.c,v 1.223 2000/11/25 16:45:02 grubba Exp $");
 
 #include "language.h"
 #include "interpret.h"
@@ -400,9 +400,11 @@ static void sub_node(node *n)
 {
   node *prior;
 
+#ifdef PIKE_DEBUG
   if (!node_hash.size) {
     return;
   }
+#endif /* PIKE_DEBUG */
 
   prior = node_hash.table[n->hash % node_hash.size];
 
@@ -427,11 +429,12 @@ static node *freeze_node(node *orig)
 {
   size_t hash = hash_node(orig);
   node *n;
+  int found = 0;
 
   /* free_node() wants a correct hash */
   orig->hash = hash;
 
-  if (orig->node_info & OPT_NOT_SHARED) {
+  if (orig->tree_info & OPT_NOT_SHARED) {
     /* No need to have this node in the hash-table. */
     /* add_node(orig); */
     return check_node_hash(dmalloc_touch(node *, orig));
@@ -440,11 +443,17 @@ static node *freeze_node(node *orig)
   /* Mark this node as a possible duplicate */
   orig->node_info |= OPT_DEFROSTED;
   /* Make sure we don't find ourselves */
-  sub_node(orig);
+  /* sub_node(orig); */
 
   n = node_hash.table[hash % node_hash.size];
 
   while (n) {
+    if (n == orig) {
+      found = 1;
+      if (!(n = n->next)) {
+	break;
+      }
+    }
     if ((n->hash == hash) &&
 	!MEMCMP(&(n->token), &(orig->token),
 		sizeof(node) - OFFSETOF(node_s, token))) {
@@ -460,6 +469,21 @@ static node *freeze_node(node *orig)
 	  copy_shared_string(n->type, orig->type);
 	}
       }
+      if (!found) {
+	node *scan = n;
+	while(scan->next) {
+	  if (scan->next == orig) {
+	    scan->next = orig->next;
+	    break;
+	  }
+	  scan = scan->next;
+	}
+      } else {
+	/* FIXME: sub_node() recalculates the hash index.
+	 * We might get better performance by using the one we already have.
+	 */
+	sub_node(orig);
+      }
       free_node(dmalloc_touch(node *, orig));
       n->refs++;
       return check_node_hash(dmalloc_touch(node *, n));
@@ -467,7 +491,9 @@ static node *freeze_node(node *orig)
     n = n->next;
   }
   orig->node_info &= ~OPT_DEFROSTED;
-  add_node(dmalloc_touch(node *, orig));
+  if (!found) {
+    add_node(dmalloc_touch(node *, orig));
+  }
   check_tree(orig,0);
   return check_node_hash(orig);
 }
@@ -531,6 +557,11 @@ void free_all_nodes(void)
 #endif
 	      {
 		/* Free the node and be happy */
+#ifdef SHARED_NODES
+		/* Force the hashtable to be cleared. */
+		tmp->next = NULL;
+		sub_node(tmp);
+#endif /* SHARED_NODES */
 		/* Make sure we don't free any nodes twice */
 		if(car_is_node(tmp)) _CAR(tmp)=0;
 		if(cdr_is_node(tmp)) _CDR(tmp)=0;
@@ -563,7 +594,7 @@ void free_all_nodes(void)
     cumulative_parse_error=0;
 
 #ifdef SHARED_NODES
-    MEMSET(node_hash.table, 0, sizeof(node *) * node_hash.size);
+    /* MEMSET(node_hash.table, 0, sizeof(node *) * node_hash.size); */
 #endif /* SHARED_NODES */
   }
 }
@@ -816,16 +847,6 @@ node *debug_mknode(short token, node *a, node *b)
   res->token = token;
   res->type = 0;
 
-#ifdef SHARED_NODES
-  {
-    node *res2 = freeze_node(res);
-
-    if (res2 != res) {
-      return dmalloc_touch(node *, res2);
-    }
-  }
-#endif /* SHARED_NODES */
-
   switch(token)
   {
   case F_CATCH:
@@ -978,6 +999,18 @@ node *debug_mknode(short token, node *a, node *b)
 
   res->tree_info |= res->node_info;
 
+#ifdef SHARED_NODES
+  /* No need to freeze the node if it can't be shared. */
+  if (!(res->tree_info & OPT_NOT_SHARED))
+  {
+    node *res2 = freeze_node(res);
+
+    if (res2 != res) {
+      return dmalloc_touch(node *, res2);
+    }
+  }
+#endif /* SHARED_NODES */
+
 #ifdef PIKE_DEBUG
   if(d_flag > 3)
     verify_shared_strings_tables();
@@ -1032,6 +1065,7 @@ node *debug_mknewintnode(int nr)
   node *res = mkemptynode();
   res->token = F_CONSTANT;
   res->node_info = OPT_NOT_SHARED; 
+  res->tree_info = OPT_NOT_SHARED; 
   res->u.sval.type = T_INT;
   res->u.sval.subtype = NUMBER_NUMBER;
   res->u.sval.u.integer = nr;
