@@ -108,9 +108,7 @@ export:
 	tar czvTf tutorial.files tutorial.tar.gz 
 	tar czvTf tutorial_onepage.files tutorial_onepage.tar.gz 
 
-mirar_www: Image.wmml the_image_module.html
-	ln -f `cat the_image_module.files` /home/mirar/www/image
-
 mirar_www_tutorial: mirar_tutorial
-	ln -f `cat tutorial.files` /home/mirar/www/pike_tutorial
-
+	rm /home/mirar/www/pike_tutorial/tutorial* /home/mirar/www/pike_tutorial/gfx/*
+	ln -f `cat tutorial.files | grep -v ^gfx/` /home/mirar/www/pike_tutorial
+	ln -f `cat tutorial.files | grep ^gfx/` /home/mirar/www/pike_tutorial/gfx

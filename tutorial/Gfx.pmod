@@ -54,9 +54,9 @@ string mkgif(mixed o,void|mapping options)
 
 string mkjpg(mixed o,void|mapping options)
 {
-  if(!options) options=([]);
+  if(!options) options=(["quality":100]);
    string g=Image.JPEG.encode(o,options);
-   return cached_write(g,"jpg");
+   return cached_write(g,"jpeg");
 }
 
 #define PAPER_COLOUR 255,255,255
@@ -254,7 +254,7 @@ mapping read_image(string file, float|void wanted_dpi)
 string gettext(string s)
 {
   string tmp=(s/".")[-1];
-  if(tmp=="jpeg") tmp="jpg";
+  if(tmp=="jpeg") tmp="jpeg";
   return tmp;
 }
 
@@ -466,7 +466,7 @@ array convert(mapping params,
 	switch(fmt)
 	{
 	  case "gif": ret=mkgif(o->image,o); break;
-	  case "jpg": ret=mkjpg(o->image,o); break;
+	  case "jpeg": case "jpg": ret=mkjpg(o->image,o); break;
 	  case "eps": ret=mkeps(o->image,o); break;
 	  case "png": ret=mkpng(o->image,o); break;
 	  case "pdf": ret=mkpdf(o->image,o); break;

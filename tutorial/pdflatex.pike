@@ -46,6 +46,7 @@ string convert_gfx(TAG tag)
 
     case "png":
     case "jpg":
+    case "jpeg":
 //      return "\\epsfbox{"+file+"}";
       
       return sprintf("\\pdfimageresolution=%d\n\\includegraphics{%s}",
