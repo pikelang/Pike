@@ -163,8 +163,8 @@ void print_function_defs( string f, int|void global )
     foreach(sort(indices(struct)), string w)
       if(struct[w]["inherit"] == f)
       fd->write( make_tag( "inherited", ([ "/":"/",
-                                          "href":class_file_name( f ),
-                                          "class":classname( f ) ])) );
+                                          "href":class_file_name( w ),
+                                          "class":classname( w ) ])) );
   }
   if(sizeof(indices(struct[f])) > 1)
   {
@@ -219,9 +219,9 @@ void print_function_defs( string f, int|void global )
     }
     if(struct[f]["inherit"])
     {
-      fd->write("<inherited>");
+      fd->write("<inherited-methods>");
       print_inherited_functions( struct[f]["inherit"], fd );
-      fd->write("</inherited>");
+       fd->write("</inherited-methods>");
     }
     fd->write("</methods>");
   }
@@ -229,10 +229,10 @@ void print_function_defs( string f, int|void global )
   {
     fd->write("<signals>");
     print_signals( signals[f], fd, f );
-    fd->write("<inherited>");
+    fd->write("<inherited-signals>");
     if(struct[f]["inherit"])
       print_inherited_signals( struct[f]["inherit"], fd );
-    fd->write("</inherited>");
+    fd->write("</inherited-signals>");
     fd->write("</signals>");
   }
   fd->write("</class>\n");
