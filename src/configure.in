@@ -1,4 +1,4 @@
-AC_REVISION("$Id: configure.in,v 1.200 1998/06/07 11:56:45 grubba Exp $")
+AC_REVISION("$Id: configure.in,v 1.201 1998/06/07 20:40:30 grubba Exp $")
 AC_INIT(interpret.c)
 AC_CONFIG_HEADER(machine.h)
 
@@ -304,6 +304,7 @@ if test $cflags_is_set = no; then
     # FIXME:
     # Maybe should remove the -g flag if this succeeds.
     AC_SYS_OS_COMPILER_FLAG(OSF1,-g3,g3,OPTIMIZE)
+    AC_SYS_OS_COMPILER_FLAG(OSF1,-trapuv,trapuv,WARN)
   fi
   AC_SYS_OS_COMPILER_FLAG(OSF1,-host,host,OPTIMIZE)
   AC_SYS_OS_COMPILER_FLAG(OSF1,-std1,std1,WARN)
@@ -1613,6 +1614,8 @@ if test $pike_cv_sys_idiot_sigfpe = yes ; then
     AC_MSG_CHECKING(if float conversion is still broken)
     AC_CACHE_VAL(pike_cv_sys_idiot_sigfpe_with_ieee,
 [
+ OLD_CFLAGS="$CFLAGS"
+ CFLAGS="$CFLAGS $OPTIMIZE"
  AC_TRY_RUN([
 #include <math.h>
 
@@ -1630,6 +1633,7 @@ int main(int argc, char **argv)
   exit(0);
 }
 ],pike_cv_sys_idiot_sigfpe_with_ieee=no,pike_cv_sys_idiot_sigfpe_with_ieee=yes)
+  CFLAGS="$OLD_CFLAGS"
 ])
    
   if test $pike_cv_sys_idiot_sigfpe_with_ieee = yes ; then
@@ -1644,7 +1648,10 @@ if test $TEST_IGNORE_SIGFPE = yes; then
   AC_MSG_CHECKING(if ignoring SIGFPE helps)
   AC_CACHE_VAL(pike_cv_sys_ignore_sigfpe,
 [
+ OLD_CFLAGS="$CFLAGS"
+ CFLAGS="$CFLAGS $OPTIMIZE"
 AC_TRY_RUN([
+#include <signal.h>
 #include <math.h>
 int counter=0;
 RETSIGTYPE func(void)
@@ -1668,6 +1675,7 @@ int main(int argc, char **argv)
   exit(0);
 }
 ],pike_cv_sys_ignore_sigfpe=yes,pike_cv_sys_ignore_sigfpe=no)
+  CFLAGS="$OLD_CFLAGS"
 ])
 
 if test "$pike_cv_sys_ignore_sigfpe" = yes; then
