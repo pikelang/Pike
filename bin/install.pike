@@ -2,7 +2,7 @@
 
 // Pike installer and exporter.
 //
-// $Id: install.pike,v 1.154 2004/12/06 14:54:50 grubba Exp $
+// $Id: install.pike,v 1.155 2004/12/14 18:39:37 grubba Exp $
 
 #define USE_GTK
 
@@ -1972,6 +1972,22 @@ void make_wix()
   root->extra_ids["PIKE_TARGETDIR"] = 1;
 
   root->merge_module(".", "Pike_module.msm", "Pike", "TARGETDIR");
+
+  // FIXME: Use the proper WIX method for this.
+  root->install_regkey("bin", "HKCR", ".pike", "", "pike_file",
+		       "RE__PSF");  
+  root->install_regkey("bin", "HKCR", "pike_file", "", "Pike Script file",
+		       "RE__PSF");
+  root->install_regkey("bin", "HKCR", "pike_file\\shell", "", "run",
+		       "RE__VERB");
+  root->install_regkey("bin", "HKCR", "pike_file\\shell\\run\\command", "",
+		       "\"[TARGETDIR]\\bin\\pike.exe\" \"%1\" %*",
+		       "RE__COMMAND");
+#if 0
+  // FIXME: The icon file isn't installed currently.
+  root->install_regkey("bin", "HKCR", "pike_file\\DefaultIcon", "",
+		       "[TARGETDIR]\\lib\\pike\\pike.ico", "RE__ICON");
+#endif /* 0 */
 
   string title = 
 #if 1
