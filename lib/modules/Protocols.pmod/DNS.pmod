@@ -278,9 +278,8 @@ class client {
     if(!server)
     {
       string domain;
-#if __NT__
 
-      
+#if __NT__
       domain=get_tcpip_param("Domain");
       nameservers = ({ get_tcpip_param("NameServer") });
       domains=get_tcpip_param("SearchList") / " "- ({""});
@@ -291,6 +290,10 @@ class client {
 	  break;
 
       if (!resolv_conf) {
+	/* FIXME: Is this a good idea?
+	 * Why not just try the fallback?
+	 * /grubba 1999-04-14
+	 */
 	throw(({ "Protocols.DNS.client(): No /etc/resolv.conf!\n",
 		 backtrace() }));
       }
@@ -308,12 +311,11 @@ class client {
 	{
 	case "domain":
 	  // Save domain for later.
-	  domain = rest;
+	  domain = sizeof(rest) && rest;
 	  break;
 	case "search":
 	  rest = replace(rest, "\t", " ");
-	  foreach(rest / " " - ({""}), string dom)
-	    domains += ({dom});
+	  domains += ((rest/" ") - ({""}));
 	  break;
 	      
 	case "nameserver":
@@ -327,13 +329,14 @@ class client {
 	    }
 	  }
 	  if (sizeof(rest)) {
-	    nameservers = `+(nameservers, ({ rest }));
+	    nameservers += ({ rest });
 	  }
 	  break;
 	}
       }
 #endif
       if (!sizeof(nameservers)) {
+	/* Try localhost... */
 	nameservers = ({ "127.0.0.1" });
       }
       if(domain)
