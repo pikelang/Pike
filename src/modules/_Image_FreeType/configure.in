@@ -14,7 +14,7 @@ if test "x$with_freetype" = "xyes" ; then
     OLDCPPFLAGS="$CPPFLAGS"
     OLDLIBS="$LIBS"
     CFLAGS="`$FT_CONFIG --cflags` $CPPFLAGS"
-    LIBS="$FT_CONFIG --libs` $LIBS"
+    LIBS="`$FT_CONFIG --libs` $LIBS"
     AC_MSG_CHECKING(If freetype actually works)
     AC_TRY_LINK([
 #include <freetype/freetype.h> 
