@@ -1,11 +1,12 @@
 /* nettle.cmod -*- c -*- */
 
 #include "global.h"
-RCSID("$Id: nettle.cmod,v 1.26 2003/12/15 00:00:35 nilsson Exp $");
+RCSID("$Id: nettle.cmod,v 1.27 2004/01/22 23:10:00 nilsson Exp $");
 #include "interpret.h"
 #include "svalue.h"
 /* For this_object() */
 #include "object.h"
+#include "operators.h"
 #include "module_support.h"
 
 #include "nettle_config.h"
