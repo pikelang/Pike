@@ -2,9 +2,11 @@
  * This is part of the Postgres module for Pike.
  * (C) 1997 Francesco Chemolli <kinkie@kame.usr.dsi.unimi.it>
  *
- * $Id: postgres.pike,v 1.4 1998/08/25 13:11:21 grubba Exp $
+ * $Id: postgres.pike,v 1.5 1998/10/17 02:54:58 grubba Exp $
  *
  */
+
+#if constant(Postgres.postgres)
 
 #define ERROR(X) throw (({X,backtrace()}))
 
@@ -122,3 +124,9 @@ mapping(string:array(mixed)) list_fields (string table, void|string wild) {
 	}
 	return ret;
 }
+#else /* !constant(Postgres.postgres) */
+void create()
+{
+  destruct();
+}
+#endif /* constant(Postgres.postgres) */
