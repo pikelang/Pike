@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: builtin_functions.c,v 1.578 2004/12/13 19:37:31 mast Exp $
+|| $Id: builtin_functions.c,v 1.579 2004/12/14 15:07:46 mast Exp $
 */
 
 #include "global.h"
@@ -4414,9 +4414,9 @@ static time_t my_tm_diff(const struct tm *t1, const struct tm *t2)
   /* Overflow detection. (Should possibly be done on the other fields
    * too to cope with very large invalid dates.) */
   if ((t1->tm_year > t2->tm_year) && (base < 0))
-    return 0x7fffffff;
+    return MAX_TIME_T;
   if ((t1->tm_year < t2->tm_year) && (base > 0))
-    return -0x7fffffff;
+    return MIN_TIME_T;
 
   base +=
     (t1->tm_mon - t2->tm_mon) * 2678400 +
@@ -4449,7 +4449,7 @@ static int my_time_inverse (struct tm *target_tm, time_t *result, time_fn timefn
     fprintf (stderr, "curr: y %d m %d d %d h %d m %d isdst %d\n",
 	     current_tm->tm_year, current_tm->tm_mon, current_tm->tm_mday,
 	     current_tm->tm_hour, current_tm->tm_min, current_tm->tm_isdst);
-    fprintf (stderr, "diff: %d\n", diff_ts);
+    fprintf (stderr, "diff: %ld\n", (long) diff_ts);
 #endif
 
     if (!diff_ts) {
@@ -4505,7 +4505,20 @@ static int my_time_inverse (struct tm *target_tm, time_t *result, time_fn timefn
       break;
     }
 
-    current_ts += diff_ts;
+    if (INT_TYPE_ADD_OVERFLOW (current_ts, diff_ts)) {
+      if (diff_ts > 0 && current_ts < MAX_TIME_T)
+	current_ts = MAX_TIME_T;
+      else if (diff_ts < 0 && current_ts > MIN_TIME_T)
+	current_ts = MIN_TIME_T;
+      else {
+#ifdef DEBUG_MY_TIME_INVERSE
+	fprintf (stderr, "outside time_t range\n");
+#endif
+	return 0;
+      }
+    }
+    else
+      current_ts += diff_ts;
   }
 
 #ifdef DEBUG_MY_TIME_INVERSE
@@ -4689,7 +4702,11 @@ PMOD_EXPORT void f_mktime (INT32 args)
   }
 
   pop_n_elems(args);
+#if SIZEOF_TIME_T > SIZEOF_INT_TYPE
+  push_int64 (retval);
+#else
   push_int(retval);
+#endif
 }
 #define GOT_F_MKTIME
 #endif	/* HAVE_MKTIME || HAVE_LOCALTIME */
