@@ -322,7 +322,7 @@ void *get_pgdkobject(struct object *from, struct program *type)
   if(type)
     f = get_storage( from, type );
   else
-    f = from->storage;
+    f = from->storage; /* Add a warning? */
   if(!f)
     return 0;
   return (void *)((struct object_wrapper *)f)->obj;
@@ -346,24 +346,24 @@ void *get_pgdkobject(struct object *from, struct program *type)
 
 void my_destruct( struct object *o )
 {
-  GtkObject *go = get_gtkobject(o);
-  if(!go) return;
-  ((struct object_wrapper *)o->storage)->obj = NULL;
-/*   if( !GTK_IS_WIDGET( go ) ) */
-  free_object( o );
+  struct object_wrapper *ow = get_storage( o, pgtk_object_program );
+  if( ow ) /* This should always be true. But let's add a check anyway. */
+    ow->obj = NULL;
+  if( o->refs > 1 )
+    /* There is no need at all to keep this object around, the corresponding
+     * GTK object has been destroyed. Lets destroy the Pike object as well
+     */
+    destruct( o );
+  free_object( o ); /* ref added in __init_object below. */
 }
 
 void pgtk__init_object( struct object *o )
 {
   GtkObject *go = get_gtkobject(o);
-  if(!go) return; /* Not a real GTK object */
-/* A real refcounting system.. Might work, who knows? :-) */
-/*   if( GTK_IS_WIDGET( go ) ) */
-/*     gtk_signal_connect( go, "parent_set", adjust_refs, NULL ); */
-/*   else */
+  if(!go) /* Not a real GTK object. Refhandling done elsewhere */
+    return;
   o->refs++;
-  gtk_object_set_data_full(go,"pike_object",
-			   (void*)o, (void*)my_destruct);
+  gtk_object_set_data_full(go,"pike_object",(void*)o, (void*)my_destruct);
 }
 
 void pgtk_get_mapping_arg( struct mapping *map,
@@ -718,7 +718,7 @@ int pgtk_signal_func_wrapper(GtkObject *obj,struct signal_data *d,
   for( i = 0; i<nparams; i++ )
   {
     if( params[i].type != opts->params[i] )
-      fprintf( stderr, "** Warning: Parameter type mismatch %d: %u / %u\n",
+      fprintf( stderr, "** Warning: Parameter type mismatch %d: %u / %u\n"
                "Expect things to break in spectacular ways\n\n"
                "The most likely reason is that GTK has been compiled with\n"
                "a different C-compiler. Especially with gcc that's a very\n"
@@ -875,19 +875,19 @@ int pgtk_is_int( struct svalue *s )
 double pgtk_get_float( struct svalue *s )
 {
   if( s->type == PIKE_T_FLOAT )
-    return (double)s->u.float_number;
+    return s->u.float_number;
   if( s->type == PIKE_T_INT )
     return (double)s->u.integer;
 #ifdef AUTO_BIGNUM
-#ifdef INT64
   if( is_bignum_object_in_svalue( s ) )
   {
-    /* FIXME: Do a better job here. */
-    INT64 res;
-    int64_from_bignum( &res, s->u.object );
-    return (double)res;
+    FLOAT_TYPE f;
+    push_text( "float" );
+    apply( s->u.object, "cast", 1 );
+    f = Pike_sp[-1].u.float_number;
+    pop_stack();
+    return (double)f;
   }
-#endif
 #endif
   return 0.0;
 }
