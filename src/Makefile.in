@@ -141,17 +141,17 @@ TAGS:
 	etags -t *.h *.c
 
 # verify / debug
-verify: $(TMP_LIBDIR)/testsuite.lpc
-	$(RUNULPC) $(TMP_LIBDIR)/testsuite.lpc
+verify: $(TMP_BINDIR)/testsuite
+	$(RUNULPC) $(TMP_BINDIR)/test_lpc.lpc $(TMP_BINDIR)/testsuite
 
 # verify / debug verbose
-verbose_verify: $(TMP_LIBDIR)/testsuite.lpc
-	$(RUNULPC) $(TMP_LIBDIR)/testsuite.lpc --verbose
+verbose_verify: $(TMP_BINDIR)/testsuite
+	$(RUNULPC) $(TMP_BINDIR)/test_lpc.lpc $(TMP_BINDIR)/testsuite --verbose
 
 # verify & debug VERBOSE
-gdb_verify: $(TMP_LIBDIR)/testsuite.lpc
+gdb_verify: $(TMP_BINDIR)/testsuite
 	echo >.gdbinit handle SIGUSR1 nostop noprint pass
-	echo >>.gdbinit run -m $(TMP_LIBDIR)/master.lpc $(TMP_LIBDIR)/testsuite.lpc -v -v -f
+	echo >>.gdbinit run -m $(TMP_LIBDIR)/master.lpc $(TMP_BINDIR)/test_lpc.lpc $(TMP_BINDIR)/testsuite -v -v -f
 	gdb ./ulpc
 
 # run hilfe, for interactive testing
@@ -160,7 +160,7 @@ run_hilfe:
 
 # make export archive (requires compiled uLPC)
 # Do not compile in source tree if you want to use this!
-export: $(TMP_LIBDIR)/testsuite.lpc configure
+export: $(TMP_BINDIR)/testsuite configure
 	$(RUNULPC) $(TMP_BINDIR)/export.lpc
 
 # make dependencies (requires compiled uLPC)
@@ -205,8 +205,8 @@ stamp-h: machine.h.in config.status
 modlist.h:
 	./config.status
 
-$(TMP_LIBDIR)/testsuite.lpc: $(TMP_BINDIR)/create_testsuite
-	$(TMP_BINDIR)/create_testsuite >$(TMP_LIBDIR)/testsuite.lpc
+$(TMP_BINDIR)/testsuite: $(TMP_BINDIR)/create_testsuite
+	$(TMP_BINDIR)/create_testsuite >$(TMP_BINDIR)/testsuite
 
 
 #Dependencies begin here, DO NOT REMOVE THIS LINE!!!!
