@@ -1,4 +1,4 @@
-// $Id: Stdio.pmod,v 1.36 1998/10/22 02:13:18 grubba Exp $
+// $Id: Stdio.pmod,v 1.37 1999/01/30 01:22:09 grubba Exp $
 
 #include <string.h>
 
@@ -72,6 +72,49 @@ class File
     __closed_backtrace=0;
 #endif
     return ::connect(host,port);
+  }
+
+  static private function(int, mixed ...:void) _async_cb;
+  static private array(mixed) _async_args;
+  static private void _async_connected(mixed|void ignored)
+  {
+    // Copy the args to avoid races.
+    function(int, mixed ...:void) cb = _async_cb;
+    array(mixed) args = _async_args;
+    _async_cb = 0;
+    _async_args = 0;
+    set_nonblocking(0,0,0);
+    cb(1, @args);
+  }
+  static private void _async_failed(mixed|void ignored)
+  {
+    // Copy the args to avoid races.
+    function(int, mixed ...:void) cb = _async_cb;
+    array(mixed) args = _async_args;
+    _async_cb = 0;
+    _async_args = 0;
+    set_nonblocking(0,0,0);
+    cb(0, @args);
+  }
+  // NOTE: Zaps nonblocking-state.
+  int async_connect(string host, int port,
+		    function(int, mixed ...:void) callback,
+		    mixed ... args)
+  {
+    if (!_fd && !open_socket()) {
+      // Out of sockets?
+      return 0;
+    }
+    _async_cb = callback;
+    _async_args = args;
+    set_nonblocking(0, _async_connected, _async_failed);
+    mixed err;
+    if (err = catch(connect(host, port))) {
+      // Illegal format. -- Bad hostname?
+      set_nonblocking(0,0,0);
+      throw(err);
+    }
+    return(1);	// OK so far.
   }
 
   object(File) pipe(void|int how)
