@@ -21,11 +21,13 @@ void skip_whitespace()
   sscanf(buffer, "%*[ \t]%s", buffer);
 }
 
+#if 0
 int eolp()
 {
   skip_whitespace();
   return !strlen(buffer);
 }
+#endif
 
 // Returns -1 on error. All valid numbers ar non-negative.
 int get_number()
@@ -153,13 +155,18 @@ object get_set()
 }
 
 /* Parses an object that can be a string, an atom (possibly with
- * options in brackets) or a list */
-mapping get_token(int eol)
+ * options in brackets) or a list.
+ *
+ * eol can be 0, meaning no end of line or list expected,
+ * a positive int, meaning a character (e.g. ')' or ']' that terminates the list,
+ * or -1, meaning that the list terminates at end of line.
+ */
+mapping get_token(int eol, int accept_options)
 {
   skip_whitespace();
   if (!strlen(buffer))
-    return 0;
-
+    return (eol == -1) && ([ "type" : "eol", "eol" : 1 ]);
+  
   if (eol && (buffer[0] == eol))
   {
     buffer = buffer[1..];
@@ -179,9 +186,9 @@ mapping get_token(int eol)
     return s && ([ "type" : "literal", "length" : s->length ]);
   }
   default: {
-    string atom = get_atom(1);
+    string atom = get_atom(accept_options);
 
-    if (!strlen(buffer) || (buffer[0] != '['))
+    if (!accept_options || !strlen(buffer) || (buffer[0] != '['))
       return ([ "type" : "atom", "atom" : atom ]);
 
     buffer = buffer[1..];
