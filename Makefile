@@ -1,5 +1,5 @@
 #
-# $Id: Makefile,v 1.73 2002/05/31 22:21:25 nilsson Exp $
+# $Id: Makefile,v 1.74 2002/07/08 23:45:49 nilsson Exp $
 #
 # Meta Makefile
 #
@@ -267,6 +267,8 @@ xenofarm_low:
 	@echo Begin export | tee -a build/xenofarm/xenofarmlog.txt
 	@date >> build/xenofarm/xenofarmlog.txt
 	@$(MAKE) $(MAKE_FLAGS) bin_export > build/xenofarm/exportlog.txt 2>&1
+	@echo Xenofarm OK | tee -a build/xenofarm/xenofarmlog.txt
+	@date >> build/xenofarm/xenofarmlog.txt
 
 clean:
 	-cd "$(BUILDDIR)" && test -f Makefile && $(MAKE) "MAKE=$(MAKE)" clean || { \
