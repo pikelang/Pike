@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: preprocessor.h,v 1.71 2004/09/18 16:52:36 marcus Exp $
+|| $Id: preprocessor.h,v 1.72 2004/09/18 20:16:46 per Exp $
 */
 
 /*
@@ -121,7 +121,6 @@
 
 #endif /* SHIFT == 1 */
 
-
 static struct pike_string *WC_BINARY_FINDSTRING(WCHAR *str, ptrdiff_t len)
 {
   struct pike_string *s = MAKE_BINARY_STRING(str, len);
@@ -139,17 +138,6 @@ static struct pike_string *WC_BINARY_FINDSTRING(WCHAR *str, ptrdiff_t len)
 /*
  * Generic macros
  */
-#define STRCAT(STR,LEN) do {				\
-  ptrdiff_t x_,len_=(LEN);				\
-  char *str_=(STR);					\
-  if(OUTP())						\
-    string_builder_binary_strcat(&this->buf, str_, len_);	\
-  else							\
-    for(x_=0;x_<len_;x_++)				\
-      if(str_[x_]=='\n')				\
-        string_builder_putchar(&this->buf, '\n');	\
-}while(0)
-
 #define WC_STRCAT(STR,LEN) do {				\
   ptrdiff_t x_,len_=(LEN);				\
   WCHAR *str_=(STR);					\
@@ -161,14 +149,7 @@ static struct pike_string *WC_BINARY_FINDSTRING(WCHAR *str, ptrdiff_t len)
         string_builder_putchar(&this->buf, '\n');	\
 }while(0)
 
-#if 0	/* OBSOLETE */
-#define CHECKWORD(X) \
- (!strncmp(X,data+pos,strlen(X)) && !WC_ISIDCHAR(data[pos+strlen(X)]))
-#define WGOBBLE(X) (CHECKWORD(X) ? (pos+=strlen(X)),1 : 0)
-#define GOBBLEOP(X) \
- ((!strncmp(X,data+pos,strlen(X))) ? (pos+=strlen(X)),1 : 0)
-#endif /* 0 */
-
+#define STRCAT(X,Y) _STRCAT(X,Y,flags,this)
 #define CHECKWORD2(X,LEN) \
  (!MEMCMP(X,data+pos,LEN<<SHIFT) && !WC_ISIDCHAR(data[pos+LEN]))
 #define WGOBBLE2(X) (CHECKWORD2(X,NELEM(X)) ? (pos+=NELEM(X)),1 : 0)
@@ -194,6 +175,17 @@ static ptrdiff_t calc1(struct cpp *,WCHAR *,ptrdiff_t,ptrdiff_t, int);
  */
 
 #if (SHIFT == 0)
+void _STRCAT(char *str, int len, int flags,struct cpp *this)
+{
+     ptrdiff_t x;
+     if(OUTP())
+       string_builder_binary_strcat(&this->buf, str, len);
+     else
+       for(x=0;x<len;x++)
+	 if(str[x]=='\n')
+	   string_builder_putchar(&this->buf, '\n');
+}
+
 static void PUSH_STRING_SHIFT(void *str, ptrdiff_t len, int shift,
 			      struct string_builder *buf)
 {
@@ -438,8 +430,8 @@ static ptrdiff_t calcC(struct cpp *this, WCHAR *data, ptrdiff_t len,
       /* NOTE: defined() can not be handled here, 
        *       since the argument must not be expanded.
        */
-      static WCHAR efun_[] = { 'e','f','u','n' };
-      static WCHAR constant_[] = { 'c','o','n','s','t','a','n','t' };
+      static const WCHAR efun_[] = { 'e','f','u','n' };
+      static const WCHAR constant_[] = { 'c','o','n','s','t','a','n','t' };
       const char *func_name = NULL;
       void (*cpp_func)(struct cpp *this, INT32 args) = NULL;
       int start = pos;
@@ -655,8 +647,8 @@ static ptrdiff_t calc8(struct cpp *this, WCHAR *data, ptrdiff_t len,
 
   while(1)
   {
-    static WCHAR lsh_[] = { '<', '<' };
-    static WCHAR rsh_[] = { '>', '>' };
+    static const WCHAR lsh_[] = { '<', '<' };
+    static const WCHAR rsh_[] = { '>', '>' };
 
     CALC_DUMPPOS("inside calc8");
     FINDTOK();
@@ -742,8 +734,8 @@ static ptrdiff_t calc7(struct cpp *this, WCHAR *data, ptrdiff_t len,
 
   while(1)
   {
-    static WCHAR eq_[] = { '=', '=' };
-    static WCHAR ne_[] = { '!', '=' };
+    static const WCHAR eq_[] = { '=', '=' };
+    static const WCHAR ne_[] = { '!', '=' };
 
     CALC_DUMPPOS("inside calc7");
 
@@ -830,7 +822,7 @@ static ptrdiff_t calc4(struct cpp *this, WCHAR *data, ptrdiff_t len,
 static ptrdiff_t calc3(struct cpp *this, WCHAR *data, ptrdiff_t len,
 		       ptrdiff_t pos, int flags)
 {
-  static WCHAR land_[] = { '&', '&' };
+  static const WCHAR land_[] = { '&', '&' };
 
   CALC_DUMPPOS("before calc3");
 
@@ -859,7 +851,7 @@ static ptrdiff_t calc3(struct cpp *this, WCHAR *data, ptrdiff_t len,
 static ptrdiff_t calc2(struct cpp *this, WCHAR *data, ptrdiff_t len,
 		       ptrdiff_t pos, int flags)
 {
-  static WCHAR lor_[] = { '|', '|' };
+  static const WCHAR lor_[] = { '|', '|' };
 
   CALC_DUMPPOS("before calc2");
 
@@ -1019,12 +1011,12 @@ static ptrdiff_t lower_cpp(struct cpp *this,
 
 	if(flags & CPP_DO_IF)
 	{
-	  static WCHAR defined_[] = { 'd','e','f','i','n','e','d' };
+	  static const WCHAR defined_[] = { 'd','e','f','i','n','e','d' };
 	  /* NOTE: defined() must be handled here, since it's argument
 	   *       must not be macro expanded.
 	   */
-	  static WCHAR efun_[] = { 'e','f','u','n' };
-	  static WCHAR constant_[] = { 'c','o','n','s','t','a','n','t' };
+	  static const WCHAR efun_[] = { 'e','f','u','n' };
+	  static const WCHAR constant_[] = { 'c','o','n','s','t','a','n','t' };
 
 	  if(pos-tmp == 7 && !MEMCMP(defined_, data+tmp, 7<<SHIFT))
 	  {
@@ -1372,7 +1364,7 @@ static ptrdiff_t lower_cpp(struct cpp *this,
     {
     case 'l':
       {
-	static WCHAR line_[] = { 'l', 'i', 'n', 'e' };
+	static const WCHAR line_[] = { 'l', 'i', 'n', 'e' };
 
 	if(WGOBBLE2(line_))
 	{
@@ -1456,7 +1448,7 @@ static ptrdiff_t lower_cpp(struct cpp *this,
 
       case 's':
 	{
-	  WCHAR string_[] = { 's', 't', 'r', 'i', 'n', 'g' };
+	  static const WCHAR string_[] = { 's', 't', 'r', 'i', 'n', 'g' };
 
 	  if(WGOBBLE2(string_))
 	  {
@@ -1468,10 +1460,10 @@ static ptrdiff_t lower_cpp(struct cpp *this,
 
     case 'i': /* include, if, ifdef */
       {
-	static WCHAR include_[] = { 'i', 'n', 'c', 'l', 'u', 'd', 'e' };
-	static WCHAR if_[] = { 'i', 'f' };
-	static WCHAR ifdef_[] = { 'i', 'f', 'd', 'e', 'f' };
-	static WCHAR ifndef_[] = { 'i', 'f', 'n', 'd', 'e', 'f' };
+	static const WCHAR include_[] = { 'i', 'n', 'c', 'l', 'u', 'd', 'e' };
+	static const WCHAR if_[] = { 'i', 'f' };
+	static const WCHAR ifdef_[] = { 'i', 'f', 'd', 'e', 'f' };
+	static const WCHAR ifndef_[] = { 'i', 'f', 'n', 'd', 'e', 'f' };
 
       if(WGOBBLE2(include_))
       {
@@ -1746,11 +1738,11 @@ static ptrdiff_t lower_cpp(struct cpp *this,
       }
     case 'e': /* endif, else, elif, error */
       {
-	static WCHAR endif_[] = { 'e', 'n', 'd', 'i', 'f' };
-	static WCHAR else_[] = { 'e', 'l', 's', 'e' };
-	static WCHAR elseif_[] = { 'e', 'l', 's', 'e', 'i', 'f' };
-	static WCHAR elif_[] = { 'e', 'l', 'i', 'f' };
-	static WCHAR error_[] = { 'e', 'r', 'r', 'o', 'r' };
+	static const WCHAR endif_[] = { 'e', 'n', 'd', 'i', 'f' };
+	static const WCHAR else_[] = { 'e', 'l', 's', 'e' };
+	static const WCHAR elseif_[] = { 'e', 'l', 's', 'e', 'i', 'f' };
+	static const WCHAR elif_[] = { 'e', 'l', 'i', 'f' };
+	static const WCHAR error_[] = { 'e', 'r', 'r', 'o', 'r' };
 
       if(WGOBBLE2(endif_))
       {
@@ -1840,7 +1832,7 @@ static ptrdiff_t lower_cpp(struct cpp *this,
 
     case 'd': /* define */
       {
-	static WCHAR define_[] = { 'd', 'e', 'f', 'i', 'n', 'e' };
+	static const WCHAR define_[] = { 'd', 'e', 'f', 'i', 'n', 'e' };
 
       if(WGOBBLE2(define_))
 	{
@@ -2088,8 +2080,8 @@ static ptrdiff_t lower_cpp(struct cpp *this,
       }
     case 'u': /* undefine */
       {
-	static WCHAR undef_[] = { 'u', 'n', 'd', 'e', 'f' };
-	static WCHAR undefine_[] = { 'u', 'n', 'd', 'e', 'f', 'i', 'n', 'e' };
+	static const WCHAR undef_[] = { 'u', 'n', 'd', 'e', 'f' };
+	static const WCHAR undefine_[] = { 'u', 'n', 'd', 'e', 'f', 'i', 'n', 'e' };
 
 	/* NOTE: Reuses undefine_ for undef_ */
       if(WGOBBLE2(undefine_) || WGOBBLE2(undef_))
@@ -2123,7 +2115,7 @@ static ptrdiff_t lower_cpp(struct cpp *this,
       }
     case 'c': /* charset */
       {
-	static WCHAR charset_[] = { 'c', 'h', 'a', 'r', 's', 'e', 't' };
+	static const WCHAR charset_[] = { 'c', 'h', 'a', 'r', 's', 'e', 't' };
 
       if (WGOBBLE2(charset_)) {
 	ptrdiff_t p;
@@ -2181,8 +2173,8 @@ static ptrdiff_t lower_cpp(struct cpp *this,
       }
     case 'p': /* pragma */
       {
-	static WCHAR pragma_[] = { 'p', 'r', 'a', 'g', 'm', 'a' };
-	static WCHAR pike_[] = { 'p', 'i', 'k', 'e' };
+	static const WCHAR pragma_[] = { 'p', 'r', 'a', 'g', 'm', 'a' };
+	static const WCHAR pike_[] = { 'p', 'i', 'k', 'e' };
 
 	if(WGOBBLE2(pragma_))
 	{
@@ -2228,7 +2220,7 @@ static ptrdiff_t lower_cpp(struct cpp *this,
       }
     case 'w': /* warning */
       {
-	static WCHAR warning_[] = { 'w', 'a', 'r', 'n', 'i', 'n', 'g' };
+	static const WCHAR warning_[] = { 'w', 'a', 'r', 'n', 'i', 'n', 'g' };
 
 	if(WGOBBLE2(warning_))
 	{
