@@ -11,7 +11,7 @@
 // use almost exclusively GDK function calls. /per
 
 GDK.Window root;
-float mdx, mdy; // Size of the root window. 
+float mdx, mdy; // Size of the root window.
 int windy, edx; // is it windy today? edx is the wind direction.
 
 #define I(X) Image.PNM.decode(Stdio.read_bytes("snow0" #X ".pbm"))->invert()
@@ -26,6 +26,7 @@ class Snowflake
   GDK.GC gc;
   float x, y, dx, dy, dx2;
   int ox, oy, xsize, ysize;
+
 
   void init_flake()
   {
@@ -49,7 +50,7 @@ class Snowflake
     }
     int ix = (int)x;
     int iy = (int)y;
-      
+
     if(ix != ox || iy != oy)
     {
       if(y > mdy)
@@ -67,7 +68,7 @@ class Snowflake
       init_flake();
   }
 
-  void create()
+  void create(int q)
   {
     int num = random(7);
     xsize = snow_flakes[num]->xsize();  ysize = snow_flakes[num]->ysize();
@@ -87,13 +88,13 @@ void make_some_snow()
     snow_flake_gcs[i]->set_clip_mask( b );
     snow_flake_gcs[i]->set_foreground( white );
   }
-  snow = Array.map(allocate(50),Snowflake);
+  snow = map(allocate(100),Snowflake);
 }
 
 void move_snow()
 {
   for(;;)
-  {  
+  {
     if(!windy)
     {
       if(!random(1000))
@@ -104,7 +105,7 @@ void move_snow()
     } else
       windy--;
     snow->step();
-    GTK.flush();
+    GTK.low_flush();
     sleep(0.025/SPEED);
   }
 }
