@@ -693,6 +693,7 @@ testfont binary
 /src/modules/_math/math.c foreign_ident
 /src/modules/_math/testsuite.in foreign_ident
 /src/modules/call_out/test_co.pike foreign_ident
+/src/modules/common_module_makefile.in foreign_ident
 /src/modules/configure.in foreign_ident
 /src/modules/dynamic_module_makefile.in foreign_ident
 /src/modules/files/Makefile.in foreign_ident

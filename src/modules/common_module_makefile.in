@@ -1,0 +1,169 @@
+#
+# $Id: common_module_makefile.in,v 1.1 2003/05/07 10:47:45 grubba Exp $
+#
+# Contains stuff common to both dynamic_module_makefile and
+# static_module_makefile.
+#
+# Modules should NOT use this file directly, but instead use either
+# dynamic_module_makefile or static_module_makefile as apropriate.
+#
+
+CC=@CC@
+CPP=@CPP@
+AR=@AR@
+REAL_LDFLAGS=@LDFLAGS@
+REAL_LDSHARED=@LDSHARED@
+REAL_CFLAGS=@CFLAGS@
+REAL_CPPFLAGS=@CPPFLAGS@
+
+MODULE_BASE=$(BUILD_BASE)/modules
+TMP_MODULE_BASE=$(TMP_LIBDIR)/modules
+
+
+all: dummy
+
+force:
+	@:;
+
+dummy:	Makefile $(DUMMY) linker_options modlist_headers modlist_segment $(MODULE_TARGET) module.pmod
+	$(TMP_BINDIR)/install_module module.pmod \
+	  $(TMP_MODULE_BASE)/$(MODDIR)$(MODNAME).pmod
+
+$(MODULE_ARCHIVES) ThisIsAPhonyTargetBlaBlaBla: force
+	@a=`echo $@ | sed -e 's@/[^/]*$$@@'` ; \
+	 m=`echo $@ | sed -e 's@.*/@@g'`; \
+	echo Making $(MODNAME)/$$a/$$m ; \
+	( rm $$a/remake >/dev/null 2>&1 ||: ; \
+	  cd $$a && ( $(MAKE) $(MAKE_FLAGS) $$m || \
+	              ( test -f remake ; $(MAKE) $(MAKE_FLAGS) $$m ) ) \
+	) || exit $$?
+
+.SUFFIXES: .c .o .cmod .protos
+
+.cmod.c: $(BUILD_BASE)/precompile.sh-stamp $(TMP_BINDIR)/precompile.pike
+	$(BUILD_BASE)/precompile.sh --cache precompile.pike >"$@" "$<" || { rm "$@"; exit 1; }
+
+
+# GCC dumps core on some files @ OSF1
+# This kluge should work around that...
+.c.o:
+	@echo "Compiling $<" ;\
+	rm -f $@.fail >/dev/null 2>&1; \
+	if $(CC) $(CFLAGS) -c $< -o $@ ; then : ; else \
+	  status=$$?; \
+	  if test x"@noopt_retry@" = xyes ; then \
+	    echo "WARNING: Compiler failure! Trying without optimization!" >&2;\
+	    echo "$(CC) $(PREFLAGS) $(CFLAGS) -c $< -o $@" >$@.fail ;\
+	    if NO_ULIMIT=yes $(CC) $(PREFLAGS) $(NOOPTFLAGS) -c $< -o $@ ; then : ; else \
+	      status=$$?; \
+	      echo "Compilation command was:" >&2;\
+	      echo "$(CC) $(PREFLAGS) $(NOOPTFLAGS) -c $< -o $@" >&2 ;\
+	      exit $$status; \
+	    fi; \
+	  else \
+	    echo "Compilation command was:" >&2;\
+	    echo "$(CC) $(PREFLAGS) $(CFLAGS) -c $< -o $@" >&2 ;\
+	    exit $$status; \
+	  fi; \
+	fi
+
+.c.protos: $(BUILD_BASE)/precompile.sh-stamp
+	./precompile.sh --cache fake_dynamic_load.pike >"$@" --cpp --protos \
+	  $(CPP) $(PREFLAGS) -DPMOD_EXPORT=PMOD_EXPORT \
+	    -DPMOD_PROTO=PMOD_PROTO -DPIKE_PRECOMPILER=1 "$<" || \
+	  { rm "$@"; exit 1; }
+
+
+make_variables: $(make_variables_in) config.status
+	CONFIG_FILES="make_variables:$(make_variables_in)" CONFIG_HEADERS="" ./config.status
+
+# $(CONFIG_HEADERS) should exist but they need not be more fresh than
+# config.status since it only rewrites them if they actually change.
+$(CONFIG_HEADERS) dummy_config_header: config.status
+	@if [ x"$(CONFIG_HEADERS)" != x ]; then \
+	  for hdr in $(CONFIG_HEADERS); do \
+	    if [ -f "$$hdr" ]; then :; else \
+	      echo CONFIG_HEADERS="$(CONFIG_HEADERS)" ./config.status; \
+	      CONFIG_HEADERS="$(CONFIG_HEADERS)" ./config.status; \
+	    fi; \
+	  done; \
+	fi
+
+$(SRCDIR)/configure: $(SRCDIR)/configure.in $(PIKE_SRC_DIR)/aclocal.m4
+	cd $(SRCDIR) && autoconf --localdir=$(PIKE_SRC_DIR)
+	if [ -f $(SRCDIR)/acconfig.h ]; then \
+	  cd $(SRCDIR) && autoheader; \
+	else :; fi
+
+config.status: $(SRCDIR)/configure
+	CFLAGS="$(REAL_CFLAGS)" LDFLAGS="$(REAL_LDFLAGS)" LDSHARED="$(REAL_LDSHARED)" CPPFLAGS="$(REAL_CPPFLAGS)" BUILDDIR="$(TMP_BUILDDIR)" BINDIR="$(TMP_BINDIR)" PIKE_SRC_DIR="$(PIKE_SRC_DIR)" BUILD_BASE="$(BUILD_BASE)" ./config.status --recheck
+
+module.pmod: Makefile
+	@echo "Making module.pmod" ; \
+	if [ -f $(SRCDIR)/module.pmod.in ]; then \
+	  sed -e "s/@module@/$(MODULE_PROGRAM)/" \
+	    <$(SRCDIR)/module.pmod.in >module.pmod; \
+	else \
+	  if [ -f ./module.pmod.in ]; then \
+	    sed -e "s/@module@/$(MODULE_PROGRAM)/" \
+	      <./module.pmod.in >module.pmod; \
+	  else \
+	    echo >module.pmod  '// Generated automatically by'; \
+	    echo >>module.pmod '// $$Id: common_module_makefile.in,v 1.1 2003/05/07 10:47:45 grubba Exp $$'; \
+	    echo >>module.pmod '#pike __REAL_VERSION__'; \
+	    echo >>module.pmod '#if constant($(MODULE_PROGRAM))'; \
+	    echo >>module.pmod 'inherit $(MODULE_PROGRAM);'; \
+	    echo >>module.pmod '#endif'; \
+	  fi ;\
+	fi
+
+
+clean:
+	-rm -f *.o *.fail *.obj *.a *.so module.pmod linker_options modlist_headers modlist_segment testsuite $(MODULE_CLEAN_EXTRA)
+	@for a in '' $(MODULE_SUBDIRS) ; do if test "x$$a" = "x"; then :; else echo cleaning $$a ; ( cd $$a ; $(MAKE) $(MAKE_FLAGS) clean ) ; fi ; done
+
+
+depend: $(SRC_TARGETS) $(PMOD_TARGETS) Makefile
+	-@echo Fixing dependencies for $(SRCDIR)/\*.c
+	@gcc -MM -MG $(PREFLAGS) $(SRCDIR)/*.c | $(TMP_BINDIR)/fixdepends.sh "$(SRCDIR)" "$(PIKE_SRC_DIR)" "$(BUILD_BASE)"
+	@CONFIG_FILES=Makefile CONFIG_HEADERS="" ./config.status
+	@for a in '' $(MODULE_SUBDIRS) ; do \
+	  if test "x$$a" = "x"; then :; else \
+	    echo making depend in $$a; \
+	    ( cd $$a && { \
+	      rm -f remake; \
+	      $(MAKE) $(MAKE_FLAGS) depend || \
+		if test -f remake; then $(MAKE) $(MAKE_FLAGS) depend; \
+		else exit $$?; fi; \
+	    }); \
+	  fi; \
+	done
+
+#verify / debug
+testsuite: $(SRCDIR)/testsuite.in $(REAL_TESTSUITE) $(TMP_BINDIR)/mktestsuite
+	@if test "x$(REAL_TESTSUITE)" != x ; then \
+	  cp $(SRCDIR)/$(REAL_TESTSUITE) testsuite; \
+	else \
+	  if test "$$PIKE_PATH_TRANSLATE" = ""; then \
+	    $(TMP_BINDIR)/mktestsuite $(SRCDIR)/testsuite.in >testsuite \
+	      -DSRCDIR=$(SRCDIR); \
+	  else \
+	    $(TMP_BINDIR)/mktestsuite $(SRCDIR)/testsuite.in >testsuite \
+	      -DSRCDIR="`echo $(SRCDIR)|sed -e $$PIKE_PATH_TRANSLATE`"; \
+	  fi; \
+	fi
+
+extra_tests: $(MODULE_TESTS)
+
+verify: testsuite  $(MODULE_TESTS)
+	$(RUNPIKE) $(TMP_BINDIR)/test_pike.pike testsuite
+
+verbose_verify: testsuite  $(MODULE_TESTS)
+	$(RUNPIKE) $(TMP_BINDIR)/test_pike.pike testsuite --verbose
+
+gdb_verify: testsuite
+	@echo >.gdbinit handle SIGUSR1 nostop noprint pass
+	@echo >>.gdbinit run -DNOT_INSTALLED -m $(TMP_BUILDDIR)/master.pike $(PIKEOPTS) $(TMP_BINDIR)/test_pike.pike testsuite -v -v -f
+	gdb $(TMP_BUILDDIR)/pike
+	@rm .gdbinit
+
