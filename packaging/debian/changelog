@@ -1,3 +1,21 @@
+pike7.4 (7.4.11-1) unstable; urgency=low
+
+  * Latest upstream version. Now officially released. The most important
+    changes:
+        * src/signal_handler.c: Fixed a race which could cause a fatal when
+          several threads wait on the same process on Linux.
+        * src/signal_handler.c: Made the previous fix somewhat safer
+          against a busyloop if pike is compiled totally without thread
+          support.
+          .
+          Fixed a typo that caused the linux kludge in f_pid_status_wait to
+          never be activated (how could it have ever worked to wait on a
+          process started by another thread on Linux??). Improved the kludge
+          so that it doesn't sleep for 10 seconds between every check for the
+          process kill on Linux >= 2.4.
+
+ -- Marek Habersack <grendel@debian.org>  Fri, 20 Dec 2002 03:25:29 +0100
+
 pike7.4 (7.4.7-1) unstable; urgency=low
 
   * Latest upstream version. The most important changes:
