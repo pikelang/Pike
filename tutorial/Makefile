@@ -7,7 +7,7 @@ all:
 	fi
 
 low_all: tutorial.html tutorial_onepage.html tutorial_split.html \
-	 tutorial.ps.gz tutorial.xml palmdoc tutorial.pdf manpages
+	 tutorial.ps.gz tutorial.pdf
 
 MADEFILES=Image.wmml Math.wmml Mysql.wmml Parser.wmml Calendar.wmml \
 	  Protocols.wmml Gettext.wmml
@@ -81,9 +81,13 @@ palmdoc: tutorial.xml
 # latex has to be run twice to work with labels and stuff
 # but there are no labels yet...
 tutorial.dvi: tutorial.tex
+	-rm tutorial.aux tutorial.toc
+	latex tutorial.tex
 	latex tutorial.tex
 
 tutorial.pdf: tutorial.pdftex
+	-rm tutorial.aux tutorial.toc
+	TEXPSHEADERS=fonts: TEXINPUTS=fonts: TTFONTS=fonts: TFMFONTS=fonts: pdflatex tutorial.pdftex
 	TEXPSHEADERS=fonts: TEXINPUTS=fonts: TTFONTS=fonts: TFMFONTS=fonts: pdflatex tutorial.pdftex
 
 tutorial.ps: tutorial.dvi
