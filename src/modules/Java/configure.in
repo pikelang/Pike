@@ -145,7 +145,7 @@ if test "x$with_java" = xyes -a "x$enable_binary" != xno; then
       LDFLAGS="-L$i -R$i ${LDFLAGS}"
       LINKER_OPTIONS="-L$i -R$i ${LINKER_OPTIONS}"
       JAVA_LIBPATH="${JAVA_LIBPATH}${JAVA_LIBPATH:+:}$i"
-      LIBPATH="${LIBPATH}${LIBPATH:+:}$i"
+#     LIBPATH="${LIBPATH}${LIBPATH:+:}$i"
     done
     export LIBPATH
   fi
