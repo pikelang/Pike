@@ -1,7 +1,7 @@
 // This file is part of Roxen Search
 // Copyright © 2001 Roxen IS. All rights reserved.
 //
-// $Id: DefaultParser.pike,v 1.7 2001/06/22 01:28:35 nilsson Exp $
+// $Id: DefaultParser.pike,v 1.8 2002/03/11 14:26:45 grubba Exp $
 
 static inherit Search.Grammar.AbstractParser;
 static inherit Search.Grammar.Lexer;
@@ -148,7 +148,7 @@ static ParseNode parseExpr2() {
   // field ':' expr3
   if (lookingAtFieldStart())
   {
-    //    TRACE;
+    //  TRACE;
     fieldstack = ({ peek()[1] }) + fieldstack;
     advance();
     advance();
@@ -213,9 +213,50 @@ static ParseNode parseExpr4() {
 static ParseNode parseExpr5() {
   //  TRACE;
   ParseNode text = TextNode();
+  ParseNode res = AndNode();
   text->field = fieldstack[0];
   for (;;) {
-    parseExpr6(text);
+    int prefix = 0;
+
+    if (peek()[0] == TOKEN_MINUS) {
+      advance();
+      prefix = '-';
+    }
+    else if (peek()[0] == TOKEN_PLUS) {
+      advance();
+      prefix = '+';
+    }
+
+    if (!prefix && options["implicit"] == "and")
+      prefix = '+';
+
+    while (!(< TOKEN_TEXT, TOKEN_END >) [ peek()[0] ])
+      advance();   // ... ?????????  or something smarter ?????
+
+    int with_field;
+    if (with_field = lookingAtFieldStart()) {
+      // Special case...
+      ParseNode tmp = TextNode();
+      tmp->field = peek()[1];
+      advance();
+      advance();
+
+      while (!(< TOKEN_TEXT, TOKEN_END >) [ peek()[0] ])
+	advance();   // ... ?????????  or something smarter ?????
+
+      parseExpr6(prefix, tmp);
+      if (sizeof(tmp->words)
+	  || sizeof(tmp->phrases)
+	  || sizeof(tmp->plusWords)
+	  || sizeof(tmp->plusPhrases)
+	  || sizeof(tmp->minusWords)
+	  || sizeof(tmp->minusPhrases)) {
+	res->addChild(tmp);
+      }
+    } else {
+      parseExpr6(prefix, text);
+    }
+
     if ( (< TOKEN_END,
             TOKEN_RPAREN,
             TOKEN_AND,
@@ -230,53 +271,40 @@ static ParseNode parseExpr5() {
       else
         advance();
   }
+
   if (sizeof(text->words)
       || sizeof(text->phrases)
       || sizeof(text->plusWords)
       || sizeof(text->plusPhrases)
       || sizeof(text->minusWords)
       || sizeof(text->minusPhrases))
-    return text;
+    res->addChild(text);
+  if (sizeof(res->children) > 1) return res;
+  if (sizeof(res->children) == 1) return res->children[0];
   return 0;
 }
 
-static void parseExpr6(TextNode node) {
+static void parseExpr6(int prefix, TextNode node) {
   //  TRACE;
-  int prefix = 0;
-
-  if (peek()[0] == TOKEN_MINUS) {
-    advance();
-    prefix = '-';
-  }
-  else if (peek()[0] == TOKEN_PLUS) {
-    advance();
-    prefix = '+';
-  }
-
-  if (!prefix && options["implicit"] == "and")
-    prefix = '+';
-
-  while (!(< TOKEN_TEXT, TOKEN_END >) [ peek()[0] ])
-    advance();   // ... ?????????  or something smarter ?????
 
   if (peek()[0] == TOKEN_TEXT) {
     string text = peek()[1];
     advance();
     array(string) words = Unicode.split_words_and_normalize(text);
-    if (!words || !sizeof(words))
-      return;
-    if (sizeof(words) == 1)
-      switch (prefix) {
+    if (words) {
+      if (sizeof(words) == 1)
+	switch (prefix) {
         case '+': node->plusWords += words;  break;
         case '-': node->minusWords += words; break;
         default:  node->words += words;      break;
-      }
-    else if (sizeof(words) > 1)
-      switch (prefix) {
+	}
+      else if (sizeof(words) > 1)
+	switch (prefix) {
         case '+': node->plusPhrases += ({ words });  break;
         case '-': node->minusPhrases += ({ words }); break;
         default:  node->phrases += ({ words });      break;
-      }
+	}
+    }
   }
 }
 
@@ -302,4 +330,6 @@ loop:
   }
   return n;
 }
+
+
 
