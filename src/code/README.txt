@@ -45,6 +45,10 @@ INT32 READ_INCR_BYTE(PIKE_OPCODE_T *pc);
 
 Optional macros:
 
+void INS_ENTRY(void)
+	Mark the entry point from eval_instruction().
+	Useful to add startup code.
+
 void RELOCATE_program(struct program *p, PIKE_OPCODE_T *new);
 	Relocate the copy of 'p'->program at 'new' to be able
 	to execute at the new position.
