@@ -2754,21 +2754,24 @@ TimeRange parse(string fmt,string arg,void|TimeRange context)
 //!	<pre>
 //!     <ref>parse</ref> format                  as in
 //!	"%y-%M-%D (%M) -W%W-%e (%e)"  "2000-03-20 (Mar) -W12-1 (Mon)"
-//!	"%M%/%D/%y"	              "3/20/2000" 
+//!	"%y-%M-%D"		      "2000-03-20", "00-03-20"
+//!	"%M%/%D/%y"	              "3/20/2000"
 //!	"%D%*[ /]%M%*[ /-,]%y"	      "20/3/2000" "20 mar 2000" "20/3 -00"
 //!	"%e%*[ ]%D%*[ /]%M%*[ /-,]%y" "Mon 20 Mar 2000" "Mon 20/3 2000"
-//!	"%y-%M-%D"		      "2000-03-20", "00-03-20"
-//!     "%d"                          "20000320", "000320"
 //!	"-%y%*[ /]%D%*[ /]%M"	      "-00 20/3" "-00 20 mar"
 //!	"-%y%*[ /]%M%*[ /]%D"	      "-00 3/20" "-00 march 20"
 //!	"%y%*[ /]%D%*[ /]%M"	      "00 20 mar" "2000 20/3"
 //!	"%y%*[ /]%M%*[ /]%D"	      "2000 march 20"
-//!	"%M%.%D.%y"	              "3.20.2000" 
+//!	"%D%.%M.%y"	              "20.3.2000"
 //!	"%D%*[ -/]%M"                 "20/3" "20 mar" "20-03"
 //!	"%M%*[ -/]%D"		      "3/20" "march 20"
+//!     "%M-%D-%y"                    "03-20-2000"
+//!     "%D-%M-%y"                    "20-03-2000"
+//!     "%e%*[- /]%D%*[- /]%M"        "mon 20 march"
+//!     "%e%*[- /]%M%*[- /]%D"        "mon/march/20"
 //!	"%e%*[ -/wv]%W%*[ -/]%y"      "mon w12 -00" "1 w12 2000"
 //!	"%e%*[ -/wv]%W"               "mon w12"
-//!     "%e"                          "monday" "1"
+//!     "%d"                          "20000320", "000320"
 //!     "today"                       "today"
 //!	"last %e"                     "last monday"
 //!	"next %e"                     "next monday"
@@ -2885,6 +2888,7 @@ TimeofDay dwim_time(string what,void|TimeRange cx)
    sscanf(what,"%*[ \t]%s",what);
 
    if (t=parse("%e %M %D %h:%m:%s %Y",what,cx)) return t; // ctime
+   if (t=parse("%e %M %D %h:%m:%s %z %Y",what,cx)) return t;
 
    foreach ( dwim_day_strings +
 	     ({""}),
