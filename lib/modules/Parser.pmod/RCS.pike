@@ -1,6 +1,6 @@
 #pike __REAL_VERSION__
 
-// $Id: RCS.pike,v 1.18 2002/04/15 16:28:34 agehall%shadowbyte.com Exp $
+// $Id: RCS.pike,v 1.19 2002/04/17 22:16:38 jhs Exp $
 
 //! A RCS file parser that eats a RCS *,v file and presents nice pike
 //! data structures of its contents.
@@ -239,11 +239,12 @@ string parse_admin_section(string raw)
 //! Lower-level API function for parsing only the delta sections (the
 //! second chunk of an RCS file, see manpage rcsfile(5)) of an RCS
 //! file. After running @[parse_delta_sections], the RCS object will
-//! be initialized with the value of @[description] and a populated
-//! @[revisions] mapping. The @[Revision] members of this mapping are
-//! however only populated with the members @[Revision->revision],
-//! @[Revision->time], @[Revision->author], @[Revision->state],
-//! @[Revision->branches] and @[Revision->rcs_next].
+//! be initialized with the value of @[description] and populated
+//! @[revisions] mapping and @[trunk] array. Their @[Revision] members
+//! are however only populated with the members @[Revision->revision],
+//! @[Revision->branch], @[Revision->time], @[Revision->author],
+//! @[Revision->state], @[Revision->branches], @[Revision->rcs_next],
+//! @[Revision->ancestor] and @[Revision->next].
 //! @param raw
 //!   The unprocessed RCS file, with admin section removed. (See
 //!   @[parse_admin_section].)
@@ -259,15 +260,25 @@ string parse_delta_sections(string raw)
   sscanf(raw, "%[^\0]%s", raw, broken_regexp_kludge); // truncates at "\0"
 
   array got;
+  string revision, ptr;
   revisions = ([]);
   while(got = delta->split(raw))
   {
     Revision R = Revision();
-    R->revision = got[0];
+    R->revision = revision = got[0];
+    if(String.count(revision, ".") == 1)
+      trunk += ({ R });
+    else
+    {
+      sscanf(reverse(revision), "%*d.%s", string branch);
+      R->branch = branches[reverse(branch)];
+    }
+
     string date = got[1];
     if(!(int)date) // RCS dates are "YY.*" for 1900<=year<2000 - compensate for
       date = "1900" + date[search(date, ".")..]; // Calendar.parse(%y, 0)==2000
     R->time = Calendar.ISO.parse("%y.%M.%D.%h.%m.%s %z", date + " UTC");
+
     R->author = got[2];
     R->state = got[5];
     if(got[8])
@@ -275,12 +286,31 @@ string parse_delta_sections(string raw)
     if(sizeof(got[11]))
       R->rcs_next = got[11];
     revisions[R->revision] = R;
-
     DEBUG("revision: %O\n\n", R);
     raw = got[-1];
   }
   // FIXME: If this stops working, introduce newphrase skipping here
   [description, raw] = parse_string(raw + broken_regexp_kludge, "desc");
+
+  // finally, set all next/ancestor pointers:
+  foreach(values(revisions), Revision R)
+  {
+    if(ptr = R->rcs_next)
+    {
+      if(R->branch)
+      {
+	R->next = ptr; // on a branch, the next pointer means the successor
+	revisions[ptr]->ancestor = R->revision;
+      }
+      else // this revision is a branch
+      {
+	R->ancestor = ptr; // on the trunk, the next pointer is the ancestor
+	revisions[ptr]->next = R->revision;
+      }
+    }
+    foreach(R->branches, string branch_point)
+      revisions[branch_point]->ancestor = R->revision;
+  }
   return raw;
 }
 
@@ -304,7 +334,6 @@ void parse_deltatext_sections(string raw,
 			      void|function(string:void) progress_callback,
 			      array|void callback_args)
 {
-  int is_on_trunk;
   string this_rev, lmsg, diff;
 
   while(sscanf(raw, SWS "%[0-9.]" SWS "%s", this_rev, raw) &&
@@ -315,30 +344,8 @@ void parse_deltatext_sections(string raw,
 	progress_callback(this_rev, @callback_args);
       else
 	progress_callback(this_rev);
+
     Revision this = revisions[this_rev];
-    if(is_on_trunk = sizeof(this_rev/".") == 2)
-      trunk += ({ this });
-    else
-    {
-      sscanf(reverse(this_rev), "%*d.%s", string branch);
-      this->branch = branches[reverse(branch)];
-    }
-
-    if(this->rcs_next) // are there more revisions referred?
-      if(is_on_trunk)
-      {
-	this->ancestor = this->rcs_next; // next pointers refer backwards
-	revisions[this->rcs_next]->next = this_rev;
-      }
-      else // this revision is a branch
-      {
-	revisions[this->rcs_next]->ancestor = this_rev; // ditto but forwards
-	this->next = this->rcs_next;
-      }
-
-    foreach(this->branches, string branch_point)
-      revisions[branch_point]->ancestor = this_rev;
-
     [this->log, raw] = parse_string(raw, "log");
     // FIXME: If this stops working, introduce newphrase skipping here
     [this->rcs_text, raw] = parse_string(raw, "text");
@@ -373,7 +380,7 @@ void parse_deltatext_sections(string raw,
 	row += count;
       }
 
-      if(is_on_trunk)
+      if(!this->branch)
       {
 	DEBUG("this: %s %+d-%d l%d a%O n%O\n", this_rev, added, removed,
 	      this->lines, this->ancestor, this->next);
