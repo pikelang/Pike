@@ -5,7 +5,7 @@
 \*/
 /**/
 #include "global.h"
-RCSID("$Id: iterators.cmod,v 1.7 2001/05/17 19:12:09 grubba Exp $");
+RCSID("$Id: iterators.cmod,v 1.8 2001/05/21 15:41:42 grubba Exp $");
 #include "main.h"
 #include "object.h"
 #include "mapping.h"
@@ -431,7 +431,7 @@ PIKECLASS string_split_iterator
   PIKE_CONCAT(break_scan, SHIFT):				\
     break
 
-  void find_next(struct string_split_iterator_struct *ssi)
+  static void find_next(struct string_split_iterator_struct *ssi)
     {
       int offset = ssi->offset;
       int end;
@@ -476,15 +476,17 @@ PIKECLASS string_split_iterator
 	} else {
 	  /* Attempt to fill the buffer with some more. */
 	  apply_svalue(&ssi->feed, 0);
-	  if (Pike_sp[-1].type != T_STRING) {
-	    Pike_error("Bad return value from feed callback, "
-		       "expected string.\n");
+	  if ((Pike_sp[-1].type == T_STRING) && (Pike_sp[-1].u.string->len)) {
+	    ssi->buffer = Pike_sp[-1].u.string;
+	    ssi->offset = 0;
+	    offset = 0;
+	    Pike_sp--;
+	    goto reskip_empty;
 	  }
-	  free_string(ssi->buffer);
-	  ssi->buffer = Pike_sp[-1].u.string;
-	  ssi->offset = 0;
-	  Pike_sp--;
-	  goto reskip_empty;
+	  free_svalue(&ssi->feed);
+	  ssi->feed.type = T_INT;
+	  ssi->feed.u.integer = 0;
+	  pop_stack();
 	}
       }
       ssi->index++;
@@ -676,11 +678,10 @@ PIKECLASS string_split_iterator
 	    fatal("Unsupported size shift!\n");
 	  }
 	}
-	if ((!THIS->flags) && (off == THIS->buffer->len-1)) {
-	  /* Ends with an empty segment. */
-	  res++;
-	  break;
-	}
+      }
+      if ((!THIS->flags) && (off == THIS->buffer->len)) {
+	/* Ends with an empty segment. */
+	res++;
       }
     }
     if (THIS->current) {
