@@ -25,7 +25,7 @@
 #include "security.h"
 #include "bignum.h"
 
-RCSID("$Id: opcodes.c,v 1.50 1999/10/24 14:07:12 grubba Exp $");
+RCSID("$Id: opcodes.c,v 1.51 1999/10/25 10:18:46 hubbe Exp $");
 
 void index_no_free(struct svalue *to,struct svalue *what,struct svalue *ind)
 {
@@ -43,6 +43,8 @@ void index_no_free(struct svalue *to,struct svalue *what,struct svalue *ind)
   case T_INT:
     convert_svalue_to_bignum(what);
     index_no_free(to, what, ind);
+    if(IS_UNDEFINED(to))
+      error("Indexing an integer with unknown method.\n");
     break;
 #endif /* AUTO_BIGNUM */
     
