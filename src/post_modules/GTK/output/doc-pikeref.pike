@@ -67,15 +67,46 @@ static string fix_const( string s )
 
 static string trim_xml( string what )
 {
-  string a, b, c;
+  string a, b, c, d;
   what = replace(what, "@", "@@");
   while( sscanf( what, "%s<br%*s>%s", a, b ) == 3 ) what = a+b;
   while( sscanf( what, "%s<p>%s", a, b ) == 2 )     what = a+b;
   while( sscanf( what, "%s</p>%s", a, b ) == 2 )    what = a+b;
+
   while( sscanf( what, "%s<b>%s</b>%s", a, b,c ) == 3 )
     what = a+"@b{"+b+"@}"+c;
   while( sscanf( what, "%s<i>%s</i>%s", a, b,c ) == 3 )
     what = a+"@i{"+b+"@}"+c;
+  while( sscanf( what, "%s<tt>%s</tt>%s", a, b,c ) == 3 )
+    what = a+"@tt{"+b+"@}"+c;
+  while( sscanf( what, "%s<pre>%s</pre>%s", a,b,c ) == 3 )
+    what = a+"@pre{"+b+"@}"+c;
+
+  while( sscanf( what, "%s<blockquote>%s</blockquote>%s", a,b,c ) == 3 )
+    what = a+b+c;
+  while( sscanf( what, "%s<font%*s>%s</font>%s", a,b,c ) == 4 )
+    what = a+b+c;
+  while( sscanf( what, "%s<a%s>%s</a>%s", a,b,c,d ) == 4)
+    what = a+"@xml{<url "+b+">"+c+"</url>@}"+d;
+
+  while( sscanf( what, "%s<dl>%s</dl>%s", a,b,c ) == 3 ) {
+    what = a + "@dl\n";
+    object p = Parser.XML.Tree.parse_input(b);
+    foreach(p->get_children(), object n) {
+      if(n->get_any_name()=="dt")
+        what += " @item " + (n->get_children()->render_xml()*"" - "\n") + "\n";
+      else if(n->get_any_name()=="dd")
+	what += " " + n->get_children()->render_xml()*"" + "\n";
+      else if(!sizeof(String.trim_all_whites(n->get_text())))
+	werror("Warning: Discarding HTML subtree: %O\n", n->render_xml);
+    }
+    what += " @enddl\n" + c;
+  }
+
+  what = replace(what, "&nbsp;", " ");
+
+  //  if(has_value(what,"<"))
+  //    werror("Tag?: %O\n\n", what);
   return what;
 }
 
