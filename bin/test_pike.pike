@@ -1,6 +1,6 @@
 #!/usr/local/bin/pike
 
-/* $Id: test_pike.pike,v 1.33 2000/02/02 21:44:51 hubbe Exp $ */
+/* $Id: test_pike.pike,v 1.34 2000/02/22 16:49:15 hubbe Exp $ */
 
 import Stdio;
 
@@ -73,6 +73,17 @@ array find_testsuites(string dir)
   return ret;
 }
 
+
+#if constant(thread_create)
+#define WATCHDOG
+#define WATCHDOG_PIPE
+#else
+#if constant(signal) && constant(signum)
+#define WATCHDOG
+#define WATCHDOG_SIGNAL
+#endif
+#endif	  
+
 int main(int argc, string *argv)
 {
   int e, verbose, successes, errors, t, check;
@@ -101,6 +112,7 @@ int main(int argc, string *argv)
   add_constant("RUNPIKE",Array.map(args,Process.sh_quote)*" ");
 
   foreach(Getopt.find_all_options(argv,aggregate(
+    ({"watchdog",Getopt.HAS_ARG,({"--watchdog"})}),
     ({"help",Getopt.NO_ARG,({"-h","--help"})}),
     ({"verbose",Getopt.NO_ARG,({"-v","--verbose"})}),
     ({"start",Getopt.HAS_ARG,({"-s","--start-test"})}),
@@ -119,6 +131,76 @@ int main(int argc, string *argv)
     {
       switch(opt[0])
       {
+	case "watchdog":
+#ifdef WATCHDOG
+	  int cnt=0;
+	  int pid=(int)opt[1];
+	  int last_time=time();
+#ifdef WATCHDOG_PIPE
+	  thread_create(lambda() {
+	    object o=Stdio.File("stdin");
+	    while(strlen(o->read(1) || ""))
+	      {
+//		werror("[WATCHDOG] Pong!\n");
+                last_time=time();
+              }
+//	    werror("[WATCHDOG] exiting.\n");
+	    exit(1);
+	  });
+#endif
+
+#ifdef WATCHDOG_SIGNAL
+	  werror("Setting signal (1)\n");
+	  if(signum("SIGQUIT")>=0)
+	  {
+	    werror("Setting signal (2)\n");
+	    signal(signum("SIGQUIT"),lambda() {
+//	      werror("[WATCHDOG] Pong!\n");
+	      last_time=time();
+	    });
+	  }else{
+	    exit(1);
+	  }
+#endif	  
+//	  werror("[WATCHDOG] started, watching %d.\n",pid);
+
+	  while(1)
+	  {
+	    sleep(30);
+#ifdef WATCHDOG_SIGNAL
+	    if(!kill(pid, 0)) exit(0);
+#endif
+//	    werror("[WATCHDOG] t=%d\n",time()-last_time);
+
+	    /* I hope 30 minutes per test is enough for everybody */
+	    if(time() - last_time > 60 * 30)
+	    {
+	      werror("\n[WATCHDOG] Pike testsuite timeout, sending SIGABRT.\n");
+	      kill(pid, signum("SIGABRT"));
+	      for(int q=0;q<60;q++) if(!kill(pid,0)) exit(0); else sleep(1);
+	      werror("\n"
+		     "[WATCHDOG] This is your friendly watchdog again...\n"
+		     "[WATCHDOG] testsuite failed to die from SIGABRT, sending SIGKILL\n");
+	      kill(pid, signum("SIGKILL"));
+	      for(int q=0;q<60;q++) if(!kill(pid,0)) exit(0); else sleep(1);
+	      werror("\n"
+		     "[WATCHDOG] This is your friendly watchdog AGAIN...\n"
+		     "[WATCHDOG] SIGKILL, SIGKILL, SIGKILL, DIE!\n");
+	      kill(pid, signum("SIGKILL"));
+	      kill(pid, signum("SIGKILL"));
+	      kill(pid, signum("SIGKILL"));
+	      kill(pid, signum("SIGKILL"));
+	      for(int q=0;q<60;q++) if(!kill(pid,0)) exit(0); else sleep(1);
+	      werror("\n"
+		     "[WATCHDOG] Giving up, must be a device wait.. :(\n");
+	      exit(0);
+	    }
+	  }
+#else
+	  exit(1);
+#endif
+	  break;
+	  
 	case "notty":
 	  istty_cache=-1;
 	  break;
@@ -165,6 +247,25 @@ int main(int argc, string *argv)
       }
     }
 
+#ifdef WATCHDOG
+  int watchdog_time=time();
+
+#ifdef WATCHDOG_PIPE
+  object watchdog_tmp=Stdio.File();
+  object watchdog_pipe=watchdog_tmp->pipe(Stdio.PROP_IPC);
+  object watchdog=Process.create_process(
+    backtrace()[0][3] + ({  "--watchdog="+getpid() }),
+    (["stdin":watchdog_tmp ]));
+  destruct(watchdog_tmp);
+#endif
+
+#ifdef WATCHDOG_SIGNAL
+  object watchdog=Process.create_process(
+    backtrace()[0][3] + ({  "--watchdog="+getpid() }) );
+#endif
+
+#endif
+
   argv=Getopt.get_args(argv,1)+testsuites;
   if(sizeof(argv)<1)
   {
@@ -195,35 +296,23 @@ int main(int argc, string *argv)
       
 	for(e=start;e<sizeof(tests);e++)
 	{
-	  if(istty())
+#ifdef WATCHDOG
+	  if(time() - watchdog_time > 30)
 	  {
-	    werror("%6d\r",e+1);
-	  }else{
-	    /* Use + instead of . so that sendmail and
-	     * cron will not cut us off... :(
-	     */
-	    switch( (e-start) % 50)
-	    {
-	      case 0:
-		werror("%5d: ",e);
-		break;
-		
-	      case 9:
-	      case 19:
-	      case 29:
-	      case 39:
-		werror("+ ");
-		break;
-		
-	      default:
-		werror("+");
-		break;
-		
-	      case 49:
-		werror("+\n");
-	    }
+	    watchdog_time=time();
+//	    werror("{WATCHDOG} Ping!\n");
+#ifdef WATCHDOG_PIPE
+	    watchdog_pipe->write("x",1);
+#endif
+
+#ifdef WATCHDOG_SIGNAL
+	    watchdog->kill(signum("SIGQUIT"));
+#endif
 	  }
-	    
+#endif
+
+
+	  int skip=0;
 	  string test,condition;
 	  string|int type;
 	  object o;
@@ -252,9 +341,41 @@ int main(int argc, string *argv)
 		werror("Not doing test "+(e+1)+"\n");
 	      successes++;
 	      skipped++;
-	      continue;
+	      skip=1;
 	    }
 	  }
+
+
+	  if(istty())
+	  {
+	    werror("%6d\r",e+1);
+	  }else{
+	    /* Use + instead of . so that sendmail and
+	     * cron will not cut us off... :(
+	     */
+	    switch( (e-start) % 50)
+	    {
+	      case 0:
+		werror("%5d: ",e);
+		break;
+		
+	      case 9:
+	      case 19:
+	      case 29:
+	      case 39:
+		werror(skip?"- ":"+ ");
+		break;
+		
+	      default:
+		werror(skip?"-":"+");
+		break;
+		
+	      case 49:
+		werror(skip?"-\n":"+\n");
+	    }
+	  }
+	  if(skip) continue;
+
 	
 	  sscanf(test,"%s\n%s",type,test);
 	  sscanf(type,"%*s expected result: %s",type);
@@ -494,6 +615,10 @@ int main(int argc, string *argv)
   }
       
   werror("Total tests: %d  (%d tests skipped)\n",successes+errors,skipped);
+
+#ifdef WATCHDOG_SIGNAL
+  watchdog->kill(signum("SIGKILL"));
+#endif
 
   return errors;
 }
