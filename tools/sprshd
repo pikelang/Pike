@@ -363,11 +363,13 @@ int main(int argc, array(string) argv)
   if(argc<2)
   {
     werror("Usage: sprshd <port> <hosts to accept connections from>\n");
+    sleep(10); //Make sure the terminal isn't closed at once.
     exit(1);
   }
   if(!bind((int)argv[1]))
   {
     werror("Failed to bind port.\n");
+    sleep(10);
     exit(1);
   }
 
