@@ -6,7 +6,7 @@
 
 #pike __REAL_VERSION__
 
-constant cvs_id = "$Id: module.pmod,v 1.25 2000/12/11 12:13:20 per Exp $";
+constant cvs_id = "$Id: module.pmod,v 1.26 2001/09/28 23:19:19 hubbe Exp $";
 
 #define ERR(msg) throw(({ "(Yabu) "+msg+"\n", backtrace() }))
 #define IO_ERR(msg) throw(({ sprintf("(Yabu) %s, %s (%d)\n",msg,strerror(errno()),errno()),backtrace() }))
@@ -1273,7 +1273,8 @@ class db {
     foreach(values(tables), object o)
       if(o)
 	destruct(o);
-    destruct(lock_file);
+    if(lock_file)
+      destruct(lock_file);
   }
 
   void close()
