@@ -60,3 +60,7 @@ o PIKE_PORTABLE_BYTECODE
 o Math.Matrix 
   Multiplication were bugged and gave B*A instead of A*B. Now fixed. 
 
+o Destruct reason passed to lfun::destroy.
+  lfun::destroy now receives an integer flag that tells why the object
+  is being destructed, e.g. if it was an explicit call to destroy(),
+  running out of references, or reaped by the garbage collector.
