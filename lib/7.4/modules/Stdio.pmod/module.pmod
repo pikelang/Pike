@@ -1,4 +1,4 @@
-// $Id: module.pmod,v 1.1 2004/04/05 21:45:24 mast Exp $
+// $Id: module.pmod,v 1.2 2004/04/11 16:18:13 grubba Exp $
 #pike 7.5
 
 // Emulate the old life length of the Fd instance. In newer versions
@@ -21,42 +21,42 @@ class File
 
   int open(string file, string mode, void|int bits)
   {
-    _fd=Fd();
+    _fd=Stdio.Fd();
     return ::open(file,mode,bits);
   }
 
 #if constant(files.__HAVE_OPENPT__)
   int openpt(string mode)
   {
-    _fd=Fd();
+    _fd=Stdio.Fd();
     return ::openpt(mode);
   }
 #endif
 
   int open_socket(int|string... args)
   {
-    _fd=Fd();
+    _fd=Stdio.Fd();
     return ::open_socket (@args);
   }
 
   int connect(string host, int|string port,
 	      void|string client, void|int|string client_port)
   {
-    if(!_fd) _fd=Fd();
+    if(!_fd) _fd=Stdio.Fd();
     return ::connect(host, port, client, client_port);
   }
 
 #if constant(files.__HAVE_CONNECT_UNIX__)
   int connect_unix(string path)
   {
-    if(!_fd) _fd=Fd();
+    if(!_fd) _fd=Stdio.Fd();
     return ::connect_unix( path );
   }
 #endif
 
   File pipe(void|int required_properties)
   {
-    _fd=Fd();
+    _fd=Stdio.Fd();
     if (zero_type (required_properties))
       return ::pipe();
     else
