@@ -1,7 +1,7 @@
 //
 // Struct ADT
 // By Martin Nilsson
-// $Id: Struct.pike,v 1.14 2004/08/21 16:00:43 nilsson Exp $
+// $Id: Struct.pike,v 1.15 2005/01/04 08:10:58 nilsson Exp $
 //
 
 #pike __REAL_VERSION__
@@ -30,15 +30,18 @@
 //!     f->write( (string)tag );
 //!   }
 
-static local int item_counter;
 static local array(Item) items = ({});
 static local mapping(string:Item) names = ([]);
+
+constant is_struct = 1;
+constant is_item = 1;
+int id = ADT.get_item_id();
 
 //! @decl void create(void|string|Stdio.File data)
 //! @param data
 //!   Data to be decoded and populate the struct. Can
 //!   either be a file object or a string.
-static void create(void|string|object file) {
+optional static void create(void|string|object file) {
   foreach(::_indices(2), string index) {
     mixed val = ::`[](index, 2);
     if(objectp(val) && val->is_item) names[index]=val;
@@ -83,6 +86,8 @@ static mixed `[](string id) {
   return ::`[](id, 2);
 }
 
+this_program get() { return this; }
+
 static mixed `[]=(string id, mixed value) {
   if(names[id]) names[id]->set(value);
   return id;
@@ -125,7 +130,7 @@ static mixed cast(string to) {
 
 //! Interface class for struct items.
 class Item {
-  int id = item_counter++;
+  int id = ADT.get_item_id();
   constant is_item=1;
 
   static mixed value;
@@ -162,8 +167,12 @@ class Byte {
     if(in<0 || in>255) error("Value %d out of bound (0..255).\n", in);
     value = in;
   }
-  void decode(object f) { sscanf(f->read(1), "%c", value); }
-  string encode() { return sprintf("%c", value); }
+  void decode(object f) {
+    sscanf(f->read(1), "%c", value);
+  }
+  string encode() {
+    return sprintf("%c", value);
+  }
 
   static string _sprintf(int t) {
     return t=='O' && sprintf("%O(%d/%O)", this_program, value,
@@ -186,8 +195,12 @@ class SByte {
     if(in<-128 || in>127) error("Value %d out of bound (-128..127).\n", in);
     value = in;
   }
-  void decode(object f) { sscanf(f->read(1), "%+1c", value); }
-  string encode() { return sprintf("%1c", value); }
+  void decode(object f) {
+    sscanf(f->read(1), "%+1c", value);
+  }
+  string encode() {
+    return sprintf("%1c", value);
+  }
 
   static string _sprintf(int t) {
     return t=='O' && sprintf("%O(%d/%O)", this_program, value,
@@ -382,16 +395,32 @@ class int32  { inherit SLong; }
 class uint32 { inherit Long; }
 
 //! 64 bit signed integer.
-class int64  { inherit SLong; int size = 8; }
+class int64  {
+  inherit SLong;
+  int size = 8;
+  void set(int v) {
+    value = v;
+  }
+}
 
 //! 64 bit unsigned integer.
-class uint64 { inherit Long; int size = 8; }
+class uint64 {
+  inherit Long;
+  int size = 8;
+  void set(int v) {
+    value = v;
+  }
+}
 
 static string _sprintf(int t) {
   if(t!='O') return UNDEFINED;
   string ret = sprintf("%O(\n", this_program);
-  foreach(items, Item item)
-    ret += sprintf("  %20s : %s\n", search(names,item),
-		   (sprintf("%O", item)/"->")[-1]);
+  foreach(items, Item item) {
+    string i = sprintf("    %s : %s\n", search(names,item),
+		       (sprintf("%O", item)/"->")[-1]);
+    if(item->is_struct)
+      i = (i/"\n")[..<1]*"\n    "+"\n";
+    ret += i;
+  }
   return ret + ")";
 }

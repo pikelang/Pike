@@ -1,5 +1,5 @@
 START_MARKER
-dnl $Id: testsuite.in,v 1.18 2004/12/14 23:48:13 nilsson Exp $
+dnl $Id: testsuite.in,v 1.19 2005/01/04 08:10:58 nilsson Exp $
 
 dnl - ADT.BitBuffer
 
@@ -318,9 +318,10 @@ test_any([[
     Item b = Drow(0x1234);
     Item c = Long(0x12345678);
     Item d = Gnol(0x12345678);
+    Item e = uint64();
   };
   return (string)Test();
-]], "\22""44\22\22""4VxxV4\22");
+]], "\22""44\22\22""4VxxV4\22\0\0\0\0\0\0\0\0");
 test_do([[
   class Test {
     inherit ADT.Struct;
@@ -337,7 +338,23 @@ test_eval_error( Test("a\0bbbb\0c") )
 test_eval_error( Test("a\0b\0") )
 test_eq( sizeof(Test("aa\0b\0c")), 6 )
 test_do( add_constant("Test"); )
-
+test_do([[
+  class A {
+    inherit ADT.Struct;
+    Item a = Byte();
+    Item b = Byte();
+  };
+  class B {
+    inherit ADT.Struct;
+    Item x = Word();
+    Item y = A();
+    Item z = Byte();
+  };
+  add_constant("Test", B);
+]])
+test_eq( (string)Test("XXABZ"), "XXABZ" )
+test_eq( Test("XXABZ")->y->a, 'A' )
+test_do( add_constant("Test"); )
 
 dnl - ADT.Table
 

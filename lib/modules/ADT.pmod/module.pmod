@@ -9,6 +9,10 @@ inherit _ADT;
 
 constant List = __builtin.List;
 
+// Internal stuff for ADT.Struct
+static int item_counter;
+int get_item_id() { return item_counter++; }
+
 //! String buffer with the possibility to read and write data
 //! as they would be formatted in structs.
 class struct {
