@@ -1,5 +1,5 @@
 START_MARKER
-dnl $Id: testsuite.in,v 1.19 2004/05/02 23:12:56 nilsson Exp $
+dnl $Id: testsuite.in,v 1.20 2004/05/12 23:50:14 nilsson Exp $
 
 test_eq([[ Image.PNM.decode("P1\n5 5\n0 1 1 1 1\n1 0 1 1 1\n"
   "1 1 0 1 1\n1 1 1 0 1\n1 1 1 1 0") ]],
@@ -460,11 +460,55 @@ test_do( img()->gamma(0.8) )
 test_do( img()->gamma(0.9, 0.8, 1.1) )
 
 // MISSING TEST: get_pixel
+// MISSING TEST: gradients
 
+test_do( img()->grey() )
+test_do( img()->grey(0,0,255) )
 
+test_do( img()->grey_blur(1) )
+test_do( img()->grey_blur(5) )
+
+test_do( img()->hsv_to_rgb() )
+
+test_do( img()->invert() )
+
+test_do( img(100,100)->line(50,10,10,50) )
+test_do( img(100,100)->line(50,10,10,50,255,0,0) )
+test_do( img(100,100)->line(50,10,10,50,255,0,0,50) )
+
+test_do([[
+  Image.Image i=img();
+  array(Image.Image) a=i->orient4();
+  a[1]*=215;
+  a[3]*=215;
+  i->make_ascii(@a);
+]])
+
+// MISSING TEST: match
 
 // max tests above
 // min tests above
+
+test_any([[
+  Image.Image i=img();
+  return i->mirrorx()->mirrorx() == i;
+]], 1)
+test_any([[
+  Image.Image i=img();
+  return i->mirrory()->mirrory() == i;
+]], 1)
+
+test_do( img()->grey()->modify_by_intensity(1,0,0,0,({255,0,0}),({0,255,0})) )
+
+test_do( img()->noise(({0,({255,0,0}),0.3,({0,255,0}),0.6,({0,0,255}),0.8,
+  ({255,255,0})})) )
+test_do( img()->noise(({0,({255,0,0}),0.3,({0,255,0}),0.6,({0,0,255}),0.8,
+  ({255,255,0})}), 0.2,0.0,0.0,1.0) )
+
+// MISSING TEST: orient
+
+test_do( img()->orient4() )
+
 // sum tests above
 // sumf tests above
 
@@ -589,6 +633,11 @@ test_encoding(BMP,[[
   object c=Image.Colortable(img,16);
   img=c*img;
 ]],[[,(["bpp":4,"rle":1])]])
+test_do([[
+  Image.Image img=Image.Image(50,50)->test();
+  string s = Image.BMP.encode(img);
+  return Image.BMP.decode(s, (["quality":50]));
+]])
 
 test_encoding(GIF,[[
   img = Image.Colortable(img,250)->cubicles(10,10,10,1)->
