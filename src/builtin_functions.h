@@ -5,7 +5,7 @@
 \*/
 
 /*
- * $Id: builtin_functions.h,v 1.15 2000/12/16 05:52:16 marcus Exp $
+ * $Id: builtin_functions.h,v 1.16 2001/06/08 14:26:41 mast Exp $
  */
 #ifndef BUILTIN_EFUNS_H
 #define BUILTIN_EFUNS_H
@@ -13,6 +13,12 @@
 #define TYPEP(ID,NAME,TYPE) PMOD_EXPORT void ID(INT32 args);
 
 #include "callback.h"
+
+/* Weak flags for arrays, multisets and mappings. 1 is avoided for
+ * compatibility reasons. */
+#define PIKE_WEAK_INDICES 2
+#define PIKE_WEAK_VALUES 4
+#define PIKE_WEAK_BOTH 6
 
 /* Prototypes begin here */
 PMOD_EXPORT void debug_f_aggregate(INT32 args);

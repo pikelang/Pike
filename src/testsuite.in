@@ -1,4 +1,4 @@
-test_true([["$Id: testsuite.in,v 1.386 2001/06/06 02:22:36 mast Exp $"]]);
+test_true([["$Id: testsuite.in,v 1.387 2001/06/08 14:26:42 mast Exp $"]]);
 
 cond([[all_constants()->_verify_internals]],
 [[
@@ -2359,7 +2359,21 @@ ifefun(gc,
     gc();
     return !sizeof (m);
   ]])
-    test_true([[
+  test_true([[
+    object o = class{}();
+    mapping m = ([class{}(): o, o: class{}()]);
+    set_weak_flag (m, Pike.WEAK_INDICES);
+    gc();
+    return sizeof (m);
+  ]])
+  test_true([[
+    object o = class{}();
+    mapping m = ([class{}(): o, o: class{}()]);
+    set_weak_flag (m, Pike.WEAK_VALUES);
+    gc();
+    return sizeof (m);
+  ]])
+  test_true([[
     object o = class{}();
     multiset m = (<o>);
     set_weak_flag (m, 1);
@@ -3505,6 +3519,114 @@ ifefun(gc,
              o=o2=0;
              gc();
           ]])
+
+  test_any([[
+    object o = class{}();
+    mapping m = set_weak_flag (([o: "x"]), Pike.WEAK_INDICES);
+    gc();
+    return sizeof (m);
+  ]], 1)
+  test_any([[
+    object o = class{}();
+    mapping m = set_weak_flag (([o: "x"]), Pike.WEAK_VALUES);
+    gc();
+    return sizeof (m);
+  ]], 1)
+  test_any([[
+    object o = class{}();
+    mapping m = set_weak_flag ((["x": o]), Pike.WEAK_INDICES);
+    gc();
+    return sizeof (m);
+  ]], 1)
+  test_any([[
+    object o = class{}();
+    mapping m = set_weak_flag ((["x": o]), Pike.WEAK_VALUES);
+    gc();
+    return sizeof (m);
+  ]], 1)
+  test_any([[
+    mapping m = set_weak_flag (([class{}(): "x"]), Pike.WEAK_INDICES);
+    gc();
+    return sizeof (m);
+  ]], 0)
+  test_any([[
+    mapping m = set_weak_flag (([class{}(): "x"]), Pike.WEAK_VALUES);
+    gc();
+    return sizeof (m);
+  ]], 1)
+  test_any([[
+    mapping m = set_weak_flag ((["x": class{}()]), Pike.WEAK_INDICES);
+    gc();
+    return sizeof (m);
+  ]], 1)
+  test_any([[
+    mapping m = set_weak_flag ((["x": class{}()]), Pike.WEAK_VALUES);
+    gc();
+    return sizeof (m);
+  ]], 0)
+  test_any([[
+    object o = class{}();
+    mapping m = set_weak_flag (([o: o]), Pike.WEAK_INDICES);
+    o = 0;
+    gc();
+    return sizeof (m);
+  ]], 1)
+  test_any([[
+    object o = class{}();
+    mapping m = set_weak_flag (([o: o]), Pike.WEAK_VALUES);
+    o = 0;
+    gc();
+    return sizeof (m);
+  ]], 1)
+  test_any([[
+    object o = class{}();
+    mapping m = set_weak_flag (([o: o]), Pike.WEAK);
+    o = 0;
+    gc();
+    return sizeof (m);
+  ]], 0)
+  test_any([[
+    object o = class{}();
+    mapping m = set_weak_flag (([o: "x"]), Pike.WEAK_INDICES);
+    destruct (o);
+    gc();
+    return sizeof (m);
+  ]], 0)
+  test_any([[
+    object o = class{}();
+    mapping m = set_weak_flag (([o: "x"]), Pike.WEAK_VALUES);
+    destruct (o);
+    gc();
+    return sizeof (m);
+  ]], 0)
+  test_any([[
+    object o = class{}();
+    mapping m = ([o: "x"]);
+    destruct (o);
+    gc();
+    return sizeof (m);
+  ]], 0)
+  test_any([[
+    object o = class{}();
+    mapping m = set_weak_flag ((["x": o]), Pike.WEAK_INDICES);
+    destruct (o);
+    gc();
+    return sizeof (m);
+  ]], 1)
+  test_any([[
+    object o = class{}();
+    mapping m = set_weak_flag ((["x": o]), Pike.WEAK_VALUES);
+    destruct (o);
+    gc();
+    return sizeof (m);
+  ]], 0)
+  test_any([[
+    object o = class{}();
+    mapping m = (["x": o]);
+    destruct (o);
+    gc();
+    return sizeof (m);
+  ]], 1)
 ]])
 
 cond([[ sizeof( cpp("__AUTO_BIGNUM__")/"__AUTO_BIGNUM__" ) == 1 ]],
