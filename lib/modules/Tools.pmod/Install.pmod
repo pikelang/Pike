@@ -27,6 +27,9 @@ array(string) features()
 #if constant(__builtin.__SINGLE_PRECISION_FLOAT__)
   a += ({ "single_precision_float" });
 #endif
+#if constant(get_profiling_info)
+  a += ({ "profiling" });
+#endif
 
   foreach(({ "_Crypto", "Dbm", "GL", "GLUT", "GTK", "Gdbm", "Gmp", "Gz",
 	     "_Image_FreeType", "_Image_GIF", "_Image_JPEG", "_Image_TIFF",
