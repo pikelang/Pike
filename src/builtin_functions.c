@@ -5,7 +5,7 @@
 \*/
 /**/
 #include "global.h"
-RCSID("$Id: builtin_functions.c,v 1.396 2001/07/16 23:48:22 nilsson Exp $");
+RCSID("$Id: builtin_functions.c,v 1.397 2001/07/24 01:15:24 hubbe Exp $");
 #include "interpret.h"
 #include "svalue.h"
 #include "pike_macros.h"
@@ -3429,6 +3429,7 @@ PMOD_EXPORT void f_sleep(INT32 args)
    double delay=0.0;
    double target;
    int do_microsleep;
+   int do_abort_on_signal;
 
 #ifdef HAVE_GETHRTIME
    t0=tv=gethrtime();
@@ -3465,12 +3466,18 @@ PMOD_EXPORT void f_sleep(INT32 args)
      return;
    }
 
-   do_microsleep=delay<10;
+   if(args > 1 && !IS_ZERO(Pike_sp + 1-args))
+   {
+     do_microsleep=0;
+     do_abort_on_signal=1;
+   }else{
+     do_microsleep=delay<10;
+     do_abort_on_signal=0;
+   }
 
    pop_n_elems(args);
 
-
-   if (delay>POLL_SLEEP_LIMIT)
+   if (delay>POLL_SLEEP_LIMIT || !do_microsleep)
    {
      while(1)
      {
@@ -3495,6 +3502,8 @@ PMOD_EXPORT void f_sleep(INT32 args)
 #endif
        } while(0);
        THREADS_DISALLOW();
+
+       if(do_abort_on_signal) return;
        
        FIX_LEFT();
        
