@@ -53,7 +53,7 @@ if test x$# != x0 ; then
     shift
   done
 
-  if test -f /usr/bin/uname && x`/usr/bin/uname` = xSunOS ; then
+  if test -f /usr/bin/uname -a x`/usr/bin/uname` = xSunOS ; then
     LDOPTS="$LDOPTS -R$RPATH"
   else
     LD_LIBRARY_PATH="$LDOPTS"
