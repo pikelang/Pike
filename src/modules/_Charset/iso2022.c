@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: iso2022.c,v 1.26 2002/10/21 17:06:23 marcus Exp $
+|| $Id: iso2022.c,v 1.27 2003/06/24 15:47:35 marcus Exp $
 */
 
 #ifdef HAVE_CONFIG_H
@@ -10,7 +10,7 @@
 #endif /* HAVE_CONFIG_H */
 
 #include "global.h"
-RCSID("$Id: iso2022.c,v 1.26 2002/10/21 17:06:23 marcus Exp $");
+RCSID("$Id: iso2022.c,v 1.27 2003/06/24 15:47:35 marcus Exp $");
 #include "program.h"
 #include "interpret.h"
 #include "stralloc.h"
@@ -535,7 +535,18 @@ static void eat_enc_string(struct pike_string *str, struct iso2022enc_stor *s,
 	    unsigned char map2[] = { 0x12, 0x13, 0x14, 0x20 };
 	    mode = MODE_96;
 	    index = map2[(map1[(c-0x100)>>2]>>((c&3)<<1))&3];
-	  } else {
+	  } else if((c>=0x391 && c<=0x3c9) ||
+		    (c>=0x401 && c<=0x451)) {
+	    /* Greek and Cyrillic */
+	    mode = MODE_9494;
+	    index = 0x12;
+	  } else if((c>=0x2010 && c<=0x22a5) ||
+		    c==0x2312 ||
+		    (c>=0x2500 && c<=0x266f)) {
+	    /* FIXME:  Some of these chars might need a different set */
+	    mode = MODE_9494;
+	    index = 0x12;
+          } else {
 	    Pike_error("Not implemented.\n");
 	  }
 
