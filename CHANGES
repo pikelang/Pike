@@ -69,6 +69,23 @@ o Module system.
     be a constant, thus preventing the program from being
     automatically cloned.
 
+o Unicode
+    Pike 7.6 uses the Unicode 4.0.1 tables for case info and
+    normalization.
+
+o upper_case/lower_case
+    The built in functions upper_case and lower_case now also works on
+    single characters, represented as integers.
+
+o hash
+    The string hash functions is now byte-order independent. The old
+    hash function is available as hash_7_4 or as hash when running in
+    7.4 compatibility mode or lower.
+
+o #warning
+    A new The Pike preprocessor directive #warning has been added. It
+    simply write the rest of the line to stderr.
+
 
 The Pike master:
 ----------------
@@ -472,9 +489,36 @@ C level/development changes:
 ----------------------------
 
 o The security.h include file is renamed to pike_security.h
-o cond_resolv, test_program_eq, test_program_equal, no warnings in testsuite,
-o pmod: object(programname), void may be 0, typecheck of vararg/optional,
-  inherit, PIKEVAR attributes, prototypes, program flags
+
+o The testsuite has three new, handy macros, cond_resolv,
+  test_program_eq, test_program_equal, all defined in mktestsuite. A
+  testsuite test that produces a warning, unless it is a test_warning
+  test, will now be considered an error. The test program can now run
+  testsuites in forked processes. By default every testsuite file will
+  now be run in a forked process. If a directory named extra_tests
+  exists on the top level of the Pike source directory, that directory
+  will also be recursed for testsuite.in files.
+
+o The cmod API has been extended in many details, making it easier to
+  work with. Variable declarations may now use the object(programname)
+  syntax. Void in parameters may be 0. Varargs and optional arguments
+  are now typechecked properly. It is possible to INHERIT a program
+  into a PIKECLASS. It is possible to set attributes on a PIKEVAR. A
+  program may be flagged as a prototype, which will make the function
+  bodies to be ignored. It is also possible to set program flags, such
+  as PROGRAM_DESTRUCT_IMMEDIATE. See bin/precompile.pike for
+  documentation.
+
+o The make file has a few new targets that should be self explanatory:
+  gdb_hilfe, valgrind_hilfe and valgrind_verify.
+
+o The header file module_magic.h is deprecated. Use the
+  PIKE_MODULE_INIT and PIKE_MODULE_EXIT macros in your modules
+  instead.
+
+o The backend has a new interface to handle references from backend
+  objects to callbacks in files.
+
 
 Bugs fixed:
 -----------
@@ -482,3 +526,7 @@ Bugs fixed:
 
 Uncategorized misc changes:
 ---------------------------
+
+kqueue
+OOB fixes
+epoll
