@@ -264,19 +264,65 @@ array recursive(mixed func, array data, mixed ... args)
   return ret;
 }
 
-int main(int argc, array(string) argv)
+mapping parse_attributes(array attr)
 {
-  mixed x;
-  string file=argv[1];
-  x=Stdio.read_file(file);
-  x=PC.split(x);
-  x=PC.tokenize(x);
-  x=PC.group(x);
+  attr=strip(attr);
+  
+  mapping attributes=([]);
+  foreach(attr/ ({";"}), attr)
+    {
+      switch(sizeof(attr))
+      {
+	case 0: break;
+	case 1:
+	  attributes[attr[0]->text]=1;
+	  break;
+	default:
+	  array tmp=attr[1..];
+	  if(sizeof(tmp) == 1 && arrayp(tmp[0]) && tmp[0][0]=="(")
+	    tmp=tmp[0][1..sizeof(tmp[0])-2];
+	  
+	  attributes[attr[0]->text]=merge(tmp);
+      }
+    }
+  return attributes;
+}
 
-  x=x/({"PIKEFUN"});
-  array ret=x[0];
+string file;
+
+array convert(array x)
+{
   array addfuncs=({});
 
+  array x=x/({"PIKECLASS"});
+  array ret=x[0];
+
+  for(int f=1;f<sizeof(x);f++)
+  {
+    array func=x[f];
+    int p;
+    for(p=0;p<sizeof(func);p++)
+      if(arrayp(func[p]) && func[p][0]=="{")
+	break;
+    array proto=strip(func[..p-1]);
+    array body=func[p];
+    string name=proto[p]->text;
+    mapping attributes=parse_attributes(proto[p+2..]);
+
+    [ array classcode, array classaddfuncs ]=convert(body[1..sizeof(body)-2]);
+    ret+=classcode;
+    addfuncs+=({
+      "  start_new_program();\n",
+    })+
+      addfuncs+
+	({
+	  sprintf("  end_class(%O,%d);\n",name, attributes->flags || "0"),
+	});
+      
+  }
+
+  x=ret/({"PIKEFUN"});
+  ret=x[0];
   for(int f=1;f<sizeof(x);f++)
   {
     array func=x[f];
@@ -294,28 +340,7 @@ int main(int argc, array(string) argv)
     string name=proto[p]->text;
     array args=proto[p+1];
 
-    array attr=strip(proto[p+2..]);
-
-    mapping attributes=([]);
-    foreach(attr/ ({";"}), attr)
-      {
-	switch(sizeof(attr))
-	{
-	  case 0: break;
-	  case 1:
-	    attributes[attr[0]->text]=1;
-	    break;
-	  default:
-	  array tmp=attr[1..];
-	  if(sizeof(tmp) == 1 && arrayp(tmp[0]) && tmp[0][0]=="(")
-	    tmp=tmp[0][1..sizeof(tmp[0])-2];
-
-	  attributes[attr[0]->text]=merge(tmp);
-	}
-      }
-
-//    werror("%O\n",attributes);
-
+    mapping attributes=parse_attributes(proto[p+2..]);
 
     args=args[1..sizeof(args)-2]/({","});
 
@@ -442,5 +467,19 @@ int main(int argc, array(string) argv)
   }
 
 
-  write(merge(ret));
+  return ({ ret, addfuncs });
+}
+
+int main(int argc, array(string) argv)
+{
+  mixed x;
+  file=argv[1];
+  x=Stdio.read_file(file);
+  x=PC.split(x);
+  x=PC.tokenize(x);
+  x=PC.group(x);
+
+  x=convert(x);
+
+  write(merge(x[0]));
 }
