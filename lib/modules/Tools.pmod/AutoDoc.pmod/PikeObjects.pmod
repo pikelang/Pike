@@ -326,6 +326,15 @@ class _Class_or_Module {
   void AddInherit(PikeObject p) { inherits += ({ p }); }
   void AddChild(_Class_or_Module c) { children += ({ c }); }
 
+  PikeObject findChild(string name) {
+    int a = Array.search_array(children,
+                               lambda(PikeObject o, string n) {
+                                 return o->name == n;
+                               }, name);
+    if (a < 0) return 0;
+    return children[a];
+  }
+
   void AddGroup(DocGroup d) {
     docGroups += ({ d });
   }

@@ -72,7 +72,8 @@ static private class Extractor {
   // or ({"module", Module })
   // or ({"docgroup", DocGroup })
   // or 0 if no objects to parse.
-  static array(string|Class|Module|DocGroup) parseObject() {
+  static array(string|Class|Module|DocGroup) parseObject(Class|Module|void parent)
+  {
     Parse token = tokens[0];
     if (!token)
       return 0;
@@ -82,10 +83,28 @@ static private class Extractor {
       case "class":
       case "module":
         {
+        object(Class)|object(Module) alreadyChild =
+          parent->findChild(meta->name);
         object(Class)|object(Module) c;
-        c = (meta->type == "module" ? Module() : Class());
+
+        // see if we are re-enteri ng a previously created class/module...
+        if (alreadyChild) {
+          c = alreadyChild;
+          if (meta->type != c->objtype)
+            extractorErrorAt(token->sourcePos,
+                             "'%s %s' doesnt match '%s %s'"
+                             " in previous declaration",
+                             meta->type, meta->name, c->objtype, c->name);
+          if (meta->appears || meta->belongs)
+            extractorErrorAt(token->sourcePos,
+                             "cannot specify @appears or @belongs on"
+                             " reentrance into '%s %s'", c->objtype, c->name);
+        }
+        else {
+          c = (meta->type == "module" ? Module() : Class());
+          c->name = meta->name;
+        }
         decls = ({ c });
-        c->name = meta->name;
         tokens = tokens[1..];
         parseClassBody(c);
         .DocParser.Parse p = tokens[0];
@@ -105,6 +124,10 @@ static private class Extractor {
 
         Documentation doc = Documentation();
         doc->xml = token->doc("_" + meta->type);
+        if (alreadyChild && doc->xml && doc->xml != "")
+          extractorErrorAt(p->sourcePos,
+                           "doc not allowed on reentrance into '%s %s'",
+                           c->objtype, c->name);
         c->documentation = doc;
         c->appears = meta->appears;
         c->belongs = meta->belongs;
@@ -146,14 +169,16 @@ static private class Extractor {
 
   void parseClassBody(Class|Module c) {
     for(;;) {
-      array(string|Class|Module|DocGroup) a = parseObject();
+      array(string|Class|Module|DocGroup) a = parseObject(c);
       if (!a)
         return;
       switch ([string]a[0]) {
         case "class":
         case "module":
           //werror("in parent %O: found child %O\n", c->name, a[1]->name);
-          c->AddChild([object(Class)|object(Module)]a[1]);
+          // Check if it was a @class or @module that was reentered:
+          if (search(c->children, a[1]) < 0)
+            c->AddChild([object(Class)|object(Module)]a[1]);
           break;
         case "docgroup":
           array(PikeObject) objects = ([object(DocGroup)]a[1])->objects;
