@@ -1,5 +1,5 @@
 /*
- * $Id: mysql.c,v 1.7 1997/11/02 16:04:42 grubba Exp $
+ * $Id: mysql.c,v 1.8 1997/11/03 22:02:50 grubba Exp $
  *
  * SQL database functionality for Pike
  *
@@ -73,7 +73,7 @@ typedef struct dynamic_buffer_s dynamic_buffer;
  * Globals
  */
 
-RCSID("$Id: mysql.c,v 1.7 1997/11/02 16:04:42 grubba Exp $");
+RCSID("$Id: mysql.c,v 1.8 1997/11/03 22:02:50 grubba Exp $");
 
 struct program *mysql_program = NULL;
 
@@ -270,7 +270,7 @@ static void f_select_db(INT32 args)
 {
   MYSQL *socket = PIKE_MYSQL->socket;
   char *database;
-  int tmp;
+  int tmp = -1;
 
   if (!args) {
     error("Too few arguments to mysql->select_db()\n");
@@ -321,7 +321,7 @@ static void f_big_query(INT32 args)
   MYSQL_RES *result;
   char *query;
   int qlen;
-  int tmp;
+  int tmp = -1;
 
   if (!args) {
     error("Too few arguments to mysql->big_query()\n");
@@ -398,7 +398,7 @@ static void f_create_db(INT32 args)
 {
   MYSQL *socket = PIKE_MYSQL->socket;
   char *database;
-  int tmp;
+  int tmp = -1;
 
   if (!args) {
     error("Too few arguments to mysql->create_db()\n");
@@ -445,7 +445,7 @@ static void f_drop_db(INT32 args)
 {
   MYSQL *socket = PIKE_MYSQL->socket;
   char *database;
-  int tmp;
+  int tmp = -1;
 
   if (!args) {
     error("Too few arguments to mysql->drop_db()\n");
@@ -491,7 +491,7 @@ static void f_drop_db(INT32 args)
 static void f_shutdown(INT32 args)
 {
   MYSQL *socket = PIKE_MYSQL->socket;
-  int tmp;
+  int tmp = -1;
 
   if (socket) {
     THREADS_ALLOW();
@@ -524,7 +524,7 @@ static void f_shutdown(INT32 args)
 static void f_reload(INT32 args)
 {
   MYSQL *socket = PIKE_MYSQL->socket;
-  int tmp;
+  int tmp = -1;
 
   if (socket) {
     THREADS_ALLOW();
