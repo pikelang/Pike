@@ -297,7 +297,7 @@ void debug_mark_spot(char *desc,struct piece *feed,int c)
    l=strlen(desc)+1;
    if (l<40) l=40;
    m=75-l; if (m<10) m=10;
-   fprintf(stderr,"%-*s »",l,desc);
+   fprintf(stderr,"%-*s »",DO_NOT_WARN((int)l),desc);
    i=c-m/2;
    if (i+m>=feed->s->len) i=feed->s->len-m;
    if (i<0) i=0; 
@@ -311,8 +311,8 @@ void debug_mark_spot(char *desc,struct piece *feed,int c)
 	 fprintf(stderr,"%c",ch);
    }
 
-   sprintf(buf,"(%d) %p:%d/%d    ^",i0,feed,c,feed->s->len);
-   fprintf(stderr,"»\n%*s\n",l+c-i0+3,buf);
+   sprintf(buf,"(%ld) %p:%d/%ld    ^",i0,feed,c,feed->s->len);
+   fprintf(stderr,"»\n%*s\n",DO_NOT_WARN((int)l+c-i0+3),buf);
    
 }
 #endif
@@ -1924,7 +1924,7 @@ next:
 
 static int scan_for_end_of_tag(struct parser_html_storage *this,
 			       struct piece *feed,
-			       int c,
+			       ptrdiff_t c,
 			       struct piece **destp,
 			       ptrdiff_t *d_p,
 			       int finished,
@@ -2076,7 +2076,7 @@ struct chr_buf_len2
 {
   p_wchar2 str[2];
   struct piece *p[2];
-  int c[2];
+  ptrdiff_t c[2];
 };
 
 static int quote_tag_lookup (struct parser_html_storage *this,
@@ -2217,9 +2217,9 @@ static INLINE void add_local_feed (struct parser_html_storage *this,
 static newstate handle_result(struct parser_html_storage *this,
 			      struct feed_stack *st,
 			      struct piece **head,
-			      int *c_head,
+			      ptrdiff_t *c_head,
 			      struct piece *tail,
-			      int c_tail)
+			      ptrdiff_t c_tail)
 {
    struct feed_stack *st2;
    int i;
@@ -2361,8 +2361,8 @@ static newstate entity_callback(struct parser_html_storage *this,
 				struct object *thisobj,
 				struct svalue *v,
 				struct feed_stack *st,
-				struct piece **cutstart, int *ccutstart,
-				struct piece *cutend, int ccutend)
+				struct piece **cutstart, ptrdiff_t *ccutstart,
+				struct piece *cutend, ptrdiff_t ccutend)
 {
    int args;
    ONERROR uwp;
@@ -2428,8 +2428,8 @@ static newstate tag_callback(struct parser_html_storage *this,
 			     struct object *thisobj,
 			     struct svalue *v,
 			     struct feed_stack *st,
-			     struct piece **cutstart, int *ccutstart,
-			     struct piece *cutend, int ccutend)
+			     struct piece **cutstart, ptrdiff_t *ccutstart,
+			     struct piece *cutend, ptrdiff_t ccutend)
 {
    int args;
    ONERROR uwp;
@@ -2496,11 +2496,11 @@ static newstate tag_callback(struct parser_html_storage *this,
 static newstate container_callback(struct parser_html_storage *this,
 				   struct object *thisobj,
 				   struct svalue *v,
-				   struct piece *startc, int cstartc,
-				   struct piece *endc, int cendc,
+				   struct piece *startc, ptrdiff_t cstartc,
+				   struct piece *endc, ptrdiff_t cendc,
 				   struct feed_stack *st,
-				   struct piece **cutstart, int *ccutstart,
-				   struct piece *cutend, int ccutend)
+				   struct piece **cutstart, ptrdiff_t *ccutstart,
+				   struct piece *cutend, ptrdiff_t ccutend)
 {
    int args;
    ONERROR uwp;
@@ -2568,11 +2568,11 @@ static newstate container_callback(struct parser_html_storage *this,
 static newstate quote_tag_callback(struct parser_html_storage *this,
 				   struct object *thisobj,
 				   struct svalue *v,
-				   struct piece *startc, int cstartc,
-				   struct piece *endc, int cendc,
+				   struct piece *startc, ptrdiff_t cstartc,
+				   struct piece *endc, ptrdiff_t cendc,
 				   struct feed_stack *st,
-				   struct piece **cutstart, int *ccutstart,
-				   struct piece *cutend, int ccutend)
+				   struct piece **cutstart, ptrdiff_t *ccutstart,
+				   struct piece *cutend, ptrdiff_t ccutend)
 {
    int args;
    ONERROR uwp;
