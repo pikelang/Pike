@@ -1,10 +1,9 @@
 /*
- * $Id: acconfig.h,v 1.2 2000/04/27 22:30:12 kinkie Exp $
+ * $Id: acconfig.h,v 1.3 2002/01/16 03:06:15 nilsson Exp $
  * 
  * Config-file for the Pike sybase driver module
  *
  * by Francesco Chemolli
- * (C) Roxen IS
  */
 
 #ifndef __PIKE_SYBASE_CONFIG_H

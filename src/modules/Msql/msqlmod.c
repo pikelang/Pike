@@ -1,11 +1,8 @@
 /*
- * This code is (C) Francesco Chemolli, 1997.
  * You may use, modify and redistribute it freely under the terms
  * of the GNU General Public License, version 2.
- * $Id: msqlmod.c,v 1.18 2001/12/07 23:23:55 nilsson Exp $
+ * $Id: msqlmod.c,v 1.19 2002/01/16 03:10:18 nilsson Exp $
  *
- * This version is intended for Pike/0.5 and later.
- * It won't compile under older versions of the Pike interpreter.
  */
 
 /* All this code is pretty useless if we don't have a msql library...*/
@@ -35,7 +32,7 @@
 #include "operators.h"
 #include "multiset.h"
 
-RCSID("$Id: msqlmod.c,v 1.18 2001/12/07 23:23:55 nilsson Exp $");
+RCSID("$Id: msqlmod.c,v 1.19 2002/01/16 03:10:18 nilsson Exp $");
 #include "version.h"
 
 #ifdef _REENTRANT

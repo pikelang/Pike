@@ -1,9 +1,7 @@
 /*
- * $Id: pgresult.c,v 1.16 2001/09/06 18:47:30 nilsson Exp $
+ * $Id: pgresult.c,v 1.17 2002/01/16 03:08:23 nilsson Exp $
  *
  * Postgres95 support for pike/0.5 and up
- *
- * (C) 1997 Francesco Chemolli <kinkie@kame.usr.dsi.unimi.it>
  *
  * This code is provided AS IS, and may be copied and distributed freely,
  * under the terms of the GNU General Public License, version 2.
@@ -65,7 +63,7 @@
 #include "builtin_functions.h"
 #include "module_support.h"
 
-RCSID("$Id: pgresult.c,v 1.16 2001/09/06 18:47:30 nilsson Exp $");
+RCSID("$Id: pgresult.c,v 1.17 2002/01/16 03:08:23 nilsson Exp $");
 
 #ifdef _REENTRANT
 PIKE_MUTEX_T pike_postgres_result_mutex STATIC_MUTEX_INIT;

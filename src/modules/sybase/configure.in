@@ -1,6 +1,5 @@
 dnl This file is part of the Sybase driver for the Pike programming language
 dnl by Francesco Chemolli <kinkie@roxen.com> 10/12/1999
-dnl (C) Roxen IS
 
 
 AC_INIT(sybase.c)

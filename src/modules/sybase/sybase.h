@@ -2,7 +2,6 @@
  * Sybase driver for the Pike programming language.
  *
  * By Francesco Chemolli <kinkie@roxen.com> 10/12/1999
- * (C) Roxen IS
  *
  */
 

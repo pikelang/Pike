@@ -1,6 +1,5 @@
-# $Id: Makefile.in,v 1.1 2000/03/26 20:43:08 kinkie Exp $
+# $Id: Makefile.in,v 1.2 2002/01/16 03:06:14 nilsson Exp $
 # by Francesco Chemolli <kinkie@roxen.com>
-# (C) Roxen IS
 
 @make_variables@
 SRCDIR=@srcdir@

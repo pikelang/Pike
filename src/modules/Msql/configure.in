@@ -1,5 +1,4 @@
-dnl $Id: configure.in,v 1.6 2001/02/27 18:52:24 grubba Exp $
-dnl (C) 1997 Francesco Chemolli <kinkie@kame.usr.dsi.unimi.it>
+dnl $Id: configure.in,v 1.7 2002/01/16 03:10:17 nilsson Exp $
 
 AC_INIT(msqlmod.c)
 AC_CONFIG_HEADER(msql_config.h)
@@ -9,7 +8,7 @@ AC_MODULE_INIT()
 AC_ARG_WITH(msql,    [  --with(out)-msql      mSQL Database engine support ],[]
 ,[with_msql=yes])
 
-echo "Configuring msql module, (C) 1996,1997 Francesco Chemolli <kinkie@kame.usr.dsi.unimi.it>"
+echo "Configuring msql module"
 
 dnl set up "reasonable" search paths
 pike_msql_reasonable_prefixes="$with_root/usr/local $with_root/usr $with_root/opt"

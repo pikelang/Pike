@@ -1,12 +1,11 @@
-dnl $Id: configure.in,v 1.14 2001/11/14 14:49:36 grubba Exp $
-dnl (C) 1997 Francesco Chemolli <kinkie@kame.usr.dsi.unimi.it>
+dnl $Id: configure.in,v 1.15 2002/01/16 03:08:22 nilsson Exp $
 
 AC_INIT(postgres.c)
 AC_CONFIG_HEADER(pgres_config.h)
 
 AC_MODULE_INIT()
 
-echo "Configuring Postgres module, (C) 1997 Francesco Chemolli <kinkie@kame.usr.dsi.unimi.it>"
+echo "Configuring Postgres module"
 
 AC_ARG_WITH(postgres,
 	[  --with(out)-postgres               postgres95 DB server support],

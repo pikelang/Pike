@@ -1,8 +1,6 @@
 /*
  * Postgres95 and PostgreSQL support for pike/0.5 and up
  *
- * (C) 1997 Francesco Chemolli <kinkie@kame.usr.dsi.unimi.it>
- *
  * This code is provided AS IS, and may be distributed under the terms
  * of the GNU General Public License, version 2.
  */
@@ -75,7 +73,7 @@ static void pgdebug (char * a, ...) {}
 
 struct program * postgres_program;
 
-RCSID("$Id: postgres.c,v 1.24 2001/11/14 14:49:36 grubba Exp $");
+RCSID("$Id: postgres.c,v 1.25 2002/01/16 03:08:23 nilsson Exp $");
 
 static void set_error (char * newerror)
 {

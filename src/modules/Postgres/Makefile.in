@@ -1,5 +1,4 @@
-# $Id: Makefile.in,v 1.5 1999/11/18 08:01:05 hubbe Exp $
-# (C) 1997 Francesco Chemolli <kinkie@kame.usr.dsi.unimi.it>
+# $Id: Makefile.in,v 1.6 2002/01/16 03:08:22 nilsson Exp $
 
 @make_variables@
 VPATH=@srcdir@:@srcdir@/../..:../..

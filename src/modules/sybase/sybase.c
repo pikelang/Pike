@@ -2,7 +2,6 @@
  * Sybase driver for the Pike programming language.
  *
  * By Francesco Chemolli <kinkie@roxen.com> 10/12/1999
- * (C) Roxen IS
  *
  */
 
@@ -24,7 +23,7 @@
 #include "sybase_config.h"
 #include "global.h"
 
-RCSID("$Id: sybase.c,v 1.6 2000/12/05 21:08:38 per Exp $");
+RCSID("$Id: sybase.c,v 1.7 2002/01/16 03:06:15 nilsson Exp $");
 
 #ifdef HAVE_SYBASE
 
