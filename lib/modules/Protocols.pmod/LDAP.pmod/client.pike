@@ -2,7 +2,7 @@
 
 // LDAP client protocol implementation for Pike.
 //
-// $Id: client.pike,v 1.37 2002/02/14 01:46:18 nilsson Exp $
+// $Id: client.pike,v 1.38 2002/07/12 13:35:56 hop Exp $
 //
 // Honza Petrous, hop@unibase.cz
 //
@@ -106,7 +106,7 @@ int _prof_gtim;
     private int ldap_sizelimit = 0;
     private int ldap_timelimit = 0;
     private mapping lauth = ([]);
-
+    private object last_rv = 0; // last returned value
 
 
   //! Contains the result of a LDAP search.
@@ -358,7 +358,7 @@ int _prof_gtim;
   void create(string|void url, object|void context)
   {
 
-    info = ([ "code_revision" : ("$Revision: 1.37 $"/" ")[1] ]);
+    info = ([ "code_revision" : ("$Revision: 1.38 $"/" ")[1] ]);
 
     if(!url || !sizeof(url))
       url = LDAP_DEFAULT_URL;
@@ -456,19 +456,25 @@ int _prof_gtim;
   //! @param version
   //!  Only @tt{2@} or @tt{3@} can be entered.
   //!
+  //! @returns
+  //!  Returns @tt{1@} on uccess, @tt{0@} otherwise.
+  //!
   //! @note
   //!  Only simple authentication type is implemented. So be warned
   //!  clear text passwords are sent to the directory server.
+  //!
+  //! @note
+  //!   The API change: the returning code was changed in Pike 7.3+
+  //!	to follow his logic better.
   int bind (string|void dn, string|void password, int|void version) {
 
     int id;
     mixed raw;
-    object rv;
 
     if (!version)
       version = LDAP_DEFAULT_VERSION;
     if (chk_ver())
-      return(-ldap_errno);
+      return(0);
     if (!stringp(dn))
       dn = mappingp(lauth->ext) ? lauth->ext->bindname||"" : "";
     if (!stringp(password))
@@ -483,11 +489,13 @@ int _prof_gtim;
       return(-ldap_errno);
     }
 
-   rv = result(({raw}),1);
-   if (!rv->error_number())
+   binded = 0;
+   last_rv = result(({raw}),1);
+   if (!last_rv->error_number())
      binded = 1;
-   DWRITE_HI(sprintf("client.BIND: %s\n", rv->error_string()));
-   return (seterr (rv->error_number()));
+   DWRITE_HI(sprintf("client.BIND: %s\n", last_rv->error_string()));
+   seterr (last_rv->error_number());
+   return binded;
 
   } // bind
 
@@ -532,29 +540,33 @@ int _prof_gtim;
   //!
   //! @param dn
   //!  The distinguished name of deleted entry.
+  //!
+  //! @note
+  //!   The API change: the returning code was changed in Pike 7.3+
+  //!	to follow his logic better.
   int delete (string dn) {
 
     int id;
     mixed raw;
-    object rv;
 
     if (chk_ver())
-      return(-ldap_errno);
+      return(0);
     if (chk_binded())
-      return(-ldap_errno);
+      return(0);
     if (chk_dn(dn))
-      return(-ldap_errno);
+      return(0);
     if(ldap_version == 3) {
       dn = string_to_utf8(dn);
     }
     if(intp(raw = send_op_withdn(10, dn))) {
       THROW(({error_string()+"\n",backtrace()}));
-      return(-ldap_errno);
+      return(0);
     }
 
-   rv = result(({raw}));
-   DWRITE_HI(sprintf("client.DELETE: %s\n", rv->error_string()));
-   return (seterr (rv->error_number()));
+   last_rv = result(({raw}));
+   DWRITE_HI(sprintf("client.DELETE: %s\n", last_rv->error_string()));
+   seterr (last_rv->error_number());
+   return (!last_rv->error_number());
 
   } // delete
 
@@ -584,32 +596,36 @@ int _prof_gtim;
   //!
   //! @param aval
   //!  The mapping of compared attributes and theirs values.
+  //!
+  //! @note
+  //!   The API change: the returning code was changed in Pike 7.3+
+  //!	to follow his logic better.
   int compare (string dn, array(string) aval) {
 
     int id;
     mixed raw;
-    object rv;
 
     // if (!aval || sizeof(aval)<2)
     //  error
     if (chk_ver())
-      return(-ldap_errno);
+      return(0);
     if (chk_binded())
-      return(-ldap_errno);
+      return(0);
     if (chk_dn(dn))
-      return(-ldap_errno);
+      return(0);
     if(ldap_version == 3) {
       dn = string_to_utf8(dn);
       aval = Array.map(aval, string_to_utf8);
     }
     if(intp(raw = send_compare_op(dn, aval))) {
       THROW(({error_string()+"\n",backtrace()}));
-      return(-ldap_errno);
+      return(0);
     }
 
-   rv = result(({raw}));
-   DWRITE_HI(sprintf("client.COMPARE: %s\n", rv->error_string()));
-   return (seterr (rv->error_number()));
+   last_rv = result(({raw}));
+   DWRITE_HI(sprintf("client.COMPARE: %s\n", last_rv->error_string()));
+   seterr (last_rv->error_number());
+   return (!last_rv->error_number());
 
   } // compare
 
@@ -652,18 +668,20 @@ int _prof_gtim;
   //!  The mapping of attributes and their values that make up the content
   //!  of the entry being added.
   //!    
+  //! @note
+  //!   The API change: the returning code was changed in Pike 7.3+
+  //!	to follow his logic better.
   int add (string dn, mapping(string:array(string)) attrs) {
 
     int id;
     mixed raw;
-    object rv;
 
     if (chk_ver())
-      return(-ldap_errno);
+      return(0);
     if (chk_binded())
-      return(-ldap_errno);
+      return(0);
     if (chk_dn(dn))
-      return(-ldap_errno);
+      return(0);
     if(ldap_version == 3) {
       dn = string_to_utf8(dn);
       array(string) keys = indices(attrs);
@@ -673,12 +691,13 @@ int _prof_gtim;
     }
     if(intp(raw = send_add_op(dn, attrs))) {
       THROW(({error_string()+"\n",backtrace()}));
-      return(-ldap_errno);
+      return(0);
     }
 
-    rv = result(({raw}));
-    DWRITE_HI(sprintf("client.ADD: %s\n", rv->error_string()));
-    return (seterr (rv->error_number()));
+    last_rv = result(({raw}));
+    DWRITE_HI(sprintf("client.ADD: %s\n", last_rv->error_string()));
+    seterr (last_rv->error_number());
+    return (!last_rv->error_number());
 
   } // add
 
@@ -880,26 +899,47 @@ int _prof_gtim;
   }
 
 
+  //! Search LDAP directory.
+  //!
   //! @param filter
-  //!   search filter
-  //! @param attrsonly
-  //!   flag
+  //!   Search filter used when searching directory objects.
+  //!
   //! @param attrs
-  //!   attribute(s) name
-  object|int search (string|void filter, int|void attrsonly, array(string)|void attrs) {
+  //!   The array of attribute names which will be returned by server.
+  //!   for every entry.
+  //!
+  //! @param attrsonly
+  //!   The flag causes server return only attribute name but not
+  //!   the attribute values.
+  //!
+  //! @returns
+  //!   Returns object @[LDAP.client.result] on success, @tt{0@}
+  //!	otherwise.
+  //!
+  //! @note
+  //!   For syntax of search filter see at RFC 1960
+  //!   (http://community.roxen.com/developers/idocs/rfc/rfc1960.html).
+  //!    
+  //! @note
+  //!   The API change: the returning code was changed in Pike 7.3+
+  //!	to follow his logic better.
+  //!
+  //! @seealso
+  //!  @[LDAP.client.result], @[LDAP.client.result.fetch]
+  object|int search (string|void filter, array(string)|void attrs,
+  		     int|void attrsonly) {
 
     int id,nv;
     mixed raw;
     array(string) rawarr = ({});
-    mixed rv;
 
     filter=filter||lauth->filter; // default from LDAP URI
 
     DWRITE_HI("client.SEARCH: " + (string)filter + "\n");
     if (chk_ver())
-      return(-ldap_errno);
+      return(0);
     if (chk_binded())
-      return(-ldap_errno);
+      return(0);
     if(ldap_version == 3) {
       filter = string_to_utf8(filter);
     }
@@ -910,7 +950,7 @@ int _prof_gtim;
 			ldap_sizelimit, ldap_timelimit, attrsonly, filter,
 			attrs||lauth->attributes))) {
       THROW(({error_string()+"\n",backtrace()}));
-      return(-ldap_errno);
+      return(0);
     }
 #ifdef LDAP_PROTOCOL_PROFILE
     };
@@ -929,7 +969,7 @@ int _prof_gtim;
 #endif
       if (intp(raw)) {
         THROW(({error_string()+"\n",backtrace()}));
-        return(-ldap_errno);
+        return(0);
       }
       rawarr += ({raw});
     } // while
@@ -939,18 +979,19 @@ int _prof_gtim;
 #endif
 
 #ifdef LDAP_PROTOCOL_PROFILE
-    _prof_gtim = gauge{ rv = result(rawarr); };
+    _prof_gtim = gauge{ last_rv = result(rawarr); };
     DWRITE_PROF("result: %O\n", _prof_gtim);
 #else
-    rv = result(rawarr);
+    last_rv = result(rawarr);
 #endif
-    if(objectp(rv))
-      seterr (rv->error_number());
+    if(objectp(last_rv))
+      seterr (last_rv->error_number());
     //if (rv->error_number() || !rv->num_entries())	// if error or entries=0
     //  rv = rv->error_number();
 
-    DWRITE_HI(sprintf("client.SEARCH: %s (entries: %d)\n", rv->error_string(), rv->num_entries()));
-    return(rv);
+    DWRITE_HI(sprintf("client.SEARCH: %s (entries: %d)\n",
+    			last_rv->error_string(), last_rv->num_entries()));
+    return(last_rv);
 
   } // search
 
@@ -1123,18 +1164,20 @@ int _prof_gtim;
   //!  If present, this is the Distinguished Name of the entry
   //!  which becomes the immediate superior of the existing entry.
   //!
+  //! @note
+  //!   The API change: the returning code was changed in Pike 7.3+
+  //!	to follow his logic better.
   int modifydn (string dn, string newrdn, int deleteoldrdn,
                 string|void newsuperior) {
 
     mixed raw;
-    object rv;
 
     if (chk_ver())
-      return(-ldap_errno);
+      return(0);
     if (chk_binded())
-      return(-ldap_errno);
+      return(0);
     if (chk_dn(dn))
-      return(-ldap_errno);
+      return(0);
     if(ldap_version == 3) {
       dn = string_to_utf8(dn);
       newrdn = string_to_utf8(newrdn);
@@ -1142,12 +1185,13 @@ int _prof_gtim;
     }
     if(intp(raw = send_modifydn_op(dn, newrdn, deleteoldrdn, newsuperior))) {
       THROW(({error_string()+"\n",backtrace()}));
-      return(-ldap_errno);
+      return(0);
     }
 
-    rv = result(({raw}));
-    DWRITE_HI(sprintf("client.MODIFYDN: %s\n", rv->error_string()));
-    return (seterr (rv->error_number()));
+    last_rv = result(({raw}));
+    DWRITE_HI(sprintf("client.MODIFYDN: %s\n", last_rv->error_string()));
+    seterr (last_rv->error_number());
+    return (!last_rv->error_number());
 
   }  //modifydn
 
@@ -1177,18 +1221,23 @@ int _prof_gtim;
   //!      A replace with no value will delete the entire attribute if it
   //!      exists, and is ignored if the attribute does not exist
   //!
+  //! @returns
+  //!  Returns @tt{1@} on uccess, @tt{0@} otherwise.
+  //!
+  //! @note
+  //!   The API change: the returning code was changed in Pike 7.3+
+  //!	to follow his logic better.
   int modify (string dn, mapping(string:array(mixed)) attropval) {
 
     int id;
     mixed raw;
-    object rv;
 
     if (chk_ver())
-      return(-ldap_errno);
+      return(0);
     if (chk_binded())
-      return(-ldap_errno);
+      return(0);
     if (chk_dn(dn))
-      return(-ldap_errno);
+      return(0);
     if(ldap_version == 3) {
       dn = string_to_utf8(dn);
       array(string) keys = indices(attropval);
@@ -1203,15 +1252,25 @@ int _prof_gtim;
     }
     if(intp(raw = send_modify_op(dn, attropval))) {
       THROW(({error_string()+"\n",backtrace()}));
-      return(-ldap_errno);
+      return(0);
     }
 
-    rv = result(({raw}));
-    DWRITE_HI(sprintf("client.MODIFY: %s\n", rv->error_string()));
-    return (seterr (rv->error_number()));
+    last_rv = result(({raw}));
+    DWRITE_HI(sprintf("client.MODIFY: %s\n", last_rv->error_string()));
+    seterr (last_rv->error_number());
+    return (!last_rv->error_number());
 
   } // modify
 
+  //! Gets referrals.
+  //!
+  //! @returns
+  //!   Returns mapping of referrals or @tt[0@].
+  mapping|int get_referrals() {
+    if(last_rv->referrals)
+      return last_rv->referrals;
+    return 0;
+  }
 
   //! @param  ldapuri
   //!   LDAP URL
