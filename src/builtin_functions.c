@@ -4,7 +4,7 @@
 ||| See the files COPYING and DISCLAIMER for more information.
 \*/
 #include "global.h"
-RCSID("$Id: builtin_functions.c,v 1.37 1997/05/19 23:31:00 hubbe Exp $");
+RCSID("$Id: builtin_functions.c,v 1.38 1997/08/06 18:41:55 hubbe Exp $");
 #include "interpret.h"
 #include "svalue.h"
 #include "pike_macros.h"
@@ -668,7 +668,11 @@ void f_crypt(INT32 args)
   {
     if(sp[1-args].type != T_STRING ||
        sp[1-args].u.string->len < 2)
-      error("Bad argument 2 to crypt()\n");
+    {
+      pop_n_elems(args);
+      push_int(0);
+      return;
+    }
       
     saltp=sp[1-args].u.string->str;
   } else {
