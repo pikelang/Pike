@@ -4,6 +4,11 @@ import ".";
 #endif /* __VERSION__ >= 0.6 */
 inherit Stdio.File : out;
 
+// Requires
+//  ghostscript 4.* or later
+//  teTeX 1.0.*
+//  transfig 3.2.1
+
 object html=.html();
 
 WMML global_data;

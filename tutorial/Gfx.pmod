@@ -85,6 +85,10 @@ string mkjpg(mixed o,void|mapping options)
 
 #define PAPER_COLOUR 255,255,255
 
+string low_make_eps(mixed o,void|mapping options)
+{
+}
+
 string mkeps(mixed o,void|mapping options)
 {
   if(stringp(o))
@@ -94,7 +98,7 @@ string mkeps(mixed o,void|mapping options)
   }
   if(!options) options=([]);
   if(options->alpha)
-  {
+{
 //    werror("\nFLALKAJF:LAKJF\n\n");
     object x=Image.Image( o->xsize(), o->ysize(), 255,255,255);
     x->paste_mask(o,options->alpha);
@@ -104,13 +108,23 @@ string mkeps(mixed o,void|mapping options)
   return cached_write(g,"eps");
 }
 
+string mkpdf(mixed o, void|mapping options)
+{
+  string eps=mkeps(o,options);
+  Process.create_process( ({"epstopdf",eps }))->wait();
+  array(string) tmp=eps/".";
+  tmp[-1]="pdf";
+  return tmp * ".";
+}
+
+
 string mkpng(mixed o,void|mapping options)
 {
   random_seed(0);
   if(!options) options=([]);
   if(options->alpha)
   {
-//    werror("\nFLALKAJF:LAKJF\n\n");
+    // Make sure that transparent parts are white
     object x=Image.Image( o->xsize(), o->ysize(), 255,255,255);
     x->paste_mask(o,options->alpha);
     o=x;
@@ -302,7 +316,41 @@ array convert(mapping params,
       // FIXME: check dpi???
       switch(primary_format)
       {
+	case "pdf":
+	  if(ext_to_input->eps)
+	  {
+	    werror("eps->pdf ");
+	    Process.create_process( ({"epstopdf","-o=___tmp.pdf",ext_to_input->eps}) )->wait();
+	    return convret(key, 
+			   cached_write(Stdio.read_file("___tmp.pdf"),"pdf"),
+			   0.0);
+	    break;
+	  }
+
 	case "eps":
+	  if(ext_to_input->fig)
+	  {
+	    werror("fig->eps");
+	    Process.create_process( ({"fig2dev","-L","ps","-m","0.6666666666",ext_to_input->fig,"___tmp.eps" }))->wait();
+
+
+	    if(primary_format == "eps")
+	    {
+	      werror(" ");
+	      return convret(key, 
+			     cached_write(Stdio.read_file("___tmp.eps"),"eps"),
+			     0.0);
+	    }else{
+	      werror("->pdf ");
+	      Process.create_process( ({"epstopdf","___tmp.eps" }) )->wait();
+
+	      return convret(key, 
+			     cached_write(Stdio.read_file("___tmp.pdf"),"pdf"),
+			     0.0);
+	    }
+	  }
+	  break;
+
 	  if(ext_to_input->fig)
 	  {
 	    werror("fig->eps ");
@@ -323,14 +371,14 @@ array convert(mapping params,
 			   0.0);
 	  }
 	  
-	case "eepic":
+	case "tpi":
 	  if(ext_to_input->fig)
 	  {
-	    werror("fig->eepic ");
+	    werror("fig->tpi ");
 	    Process.create_process( ({"fig2dev","-L","eepic","-m","0.66666666666",ext_to_input->fig,"___tmp.tex" }))->wait();
 	    
 	    return convret(key, 
-			   cached_write(Stdio.read_file("___tmp.tex"),"tex"),
+			   cached_write(Stdio.read_file("___tmp.tex"),"tpi"),
 			   0.0);
 	  }
       }
@@ -374,7 +422,7 @@ array convert(mapping params,
   random_seed(0);
   if(filter)
   {
-    werror("running..");
+    werror("running ");
     mixed err=catch {
       o=(["image":compile_string("import Image;\n"
 		       "mixed `()(object src) { "+filter+" ;}")()(o->image)]);
@@ -396,6 +444,7 @@ array convert(mapping params,
 	  case "jpg": ret=mkjpg(o->image,o); break;
 	  case "eps": ret=mkeps(o->image,o); break;
 	  case "png": ret=mkpng(o->image,o); break;
+	  case "pdf": ret=mkpdf(o->image,o); break;
 	}
       };
       if(err) werror(master()->describe_backtrace(err));
