@@ -6,7 +6,7 @@
 // Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 // for more information.
 //
-// $Id: master.pike.in,v 1.364 2004/10/30 11:41:47 mast Exp $
+// $Id: master.pike.in,v 1.365 2004/11/05 02:47:29 mast Exp $
 
 #pike __REAL_VERSION__
 //#pragma strict_types
@@ -2542,6 +2542,8 @@ void _main(array(string) orig_argv, array(string) env)
 	  prog = compile_string(
 	    "mixed create(int argc, array(string) argv,array(string) env){"+
 	    opts[1]+";}");
+	else if (intp (opts[1]))
+	  prog = compile_string ("mixed run() {}");
 	else {
 	  string code = opts[1];
 	  while(sscanf(code, "%sCHAR(%1s)%s", code, string c, string rest)==3)
