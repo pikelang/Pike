@@ -157,38 +157,37 @@ THREADS_ALLOW();
 #endif
 
 #define DOUBLE_LOOP(AVOID_IS_TOO_BIG, CERTI1, CERTI2,R1,G1,B1)  \
-      for(y=0; y<ys; y++) \
-	for(x=0; x<xs-nxs; x++) \
+  for(y=0; y<ys; y++) \
+    for(x=0; x<xs-nxs; x++) \
+    { \
+      int i=y*this->xsize+x;  \
+      int sum=0; \
+      int tempavr=0;\
+      if (AVOID_IS_TOO_BIG) \
+      {\
+        int k=0; \
+        imgi[k=i+(nys/2)*xs+(nxs/2)].r=0;\
+        imgi[k].g=100; imgi[k].b=0;\
+      }\
+      else\
+      {\
+	NORMCODE;\
+	tempavr=(int)(((float)tempavr)/(3*needle_size)); \
+	for(ny=0; ny<nys; ny++) \
+	  for(nx=0; nx<nxs; nx++)  \
 	  { \
-	    int i=y*this->xsize+x;  \
-	    int sum=0; \
-            int tempavr=0;\
-	    if (AVOID_IS_TOO_BIG) \
-              {\
-                int k=0; \
-                imgi[k=i+(nys/2)*xs+(nxs/2)].r=0;\
-                imgi[k].g=100; imgi[k].b=0;\
-              }\
-            else\
-	      {\
-	    NORMCODE;\
-	    tempavr=(int)(((float)tempavr)/(3*needle_size)); \
-	    for(ny=0; ny<nys; ny++) \
-	      for(nx=0; nx<nxs; nx++)  \
-		{ \
-		  int j=i+ny*xs+nx; \
-		  { \
-                  int h=0;\
-                  int n=0;\
-		  sum+= \
-                  (MAXIMUM(CERTI1 R1, CERTI1 R1) * PIXEL_VALUE_DISTANCE(r))+ \
-		  (MAXIMUM(CERTI1 G1, CERTI1 G1) * PIXEL_VALUE_DISTANCE(g))+ \
-		  (MAXIMUM(CERTI1 B1, CERTI1 B1) * PIXEL_VALUE_DISTANCE(b)); \
-		  }} \
-	    imgi[i+(nys/2)*xs+(nxs/2)].r=\
-              (int)(255.99/(1+((scale * SCALE_MODIFY(sum))))); \
-              }\
-	  }
+	    int j=i+ny*xs+nx; \
+            int h=0;\
+            int n=0;\
+	    sum+= \
+              (MAXIMUM(CERTI1 R1, CERTI1 R1) * PIXEL_VALUE_DISTANCE(r))+ \
+	      (MAXIMUM(CERTI1 G1, CERTI1 G1) * PIXEL_VALUE_DISTANCE(g))+ \
+	      (MAXIMUM(CERTI1 B1, CERTI1 B1) * PIXEL_VALUE_DISTANCE(b)); \
+	  } \
+	imgi[i+(nys/2)*xs+(nxs/2)].r=\
+          (int)(255.99/(1.0+((((float)scale) * SCALE_MODIFY((float)sum))))); \
+      }\
+   }
 
 
 #define AVOID_IS_TOO_BIG ((haystack_avoidi[i].r)>(foo)) 
