@@ -1,4 +1,4 @@
-test_true([["$Id: testsuite.in,v 1.48 1997/09/02 22:16:13 grubba Exp $"]])
+test_true([["$Id: testsuite.in,v 1.49 1997/09/02 22:17:00 grubba Exp $"]])
 test_eq(1e1,10.0)
 test_eq(1E1,10.0)
 test_eq(1e+1,10.0)
@@ -1567,7 +1567,7 @@ test_equal(lower_case("Foo1234-*~\n"),"foo1234-*~\n")
 
 // - next_object
 test_true(objectp(next_object()))
-test_any(gc();int e;object o=next_object(); for(e=0;e<2000 && o;e++) o=next_object(o); return o,0)
+test_any(int e;object o=next_object(); for(e=0;e<1000 && o;e++) o=next_object(o); return o,0)
 
 // - object_program
 test_true(programp(object_program(this_object())))
