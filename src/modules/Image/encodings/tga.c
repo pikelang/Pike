@@ -1,6 +1,6 @@
 
 /*
- * $Id: tga.c,v 1.9 2000/02/03 19:01:29 grubba Exp $
+ * $Id: tga.c,v 1.10 2000/03/09 22:13:25 per Exp $
  *
  *  Targa codec for pike. Based on the tga plugin for gimp.
  *
@@ -77,7 +77,7 @@
 #include "image.h"
 #include "colortable.h"
 
-RCSID("$Id: tga.c,v 1.9 2000/02/03 19:01:29 grubba Exp $");
+RCSID("$Id: tga.c,v 1.10 2000/03/09 22:13:25 per Exp $");
 
 #ifndef MIN
 # define MIN(X,Y) ((X)<(Y)?(X):(Y))
@@ -196,11 +196,11 @@ static struct image_alpha load_image(struct pike_string *str)
 
   if(buffer.len < 10)
     error("Not enough data in buffer to decode a TGA image\n");
-  
+
   return ReadImage (&buffer, &hdr);
 }
 
-static int std_fread (unsigned char *buf, 
+static int std_fread (unsigned char *buf,
                       int datasize, int nelems, struct buffer *fp)
 {
   int amnt = MIN((nelems*datasize),((int)fp->len));
@@ -210,7 +210,7 @@ static int std_fread (unsigned char *buf,
   return amnt / datasize;
 }
 
-static int std_fwrite (unsigned char *buf, 
+static int std_fwrite (unsigned char *buf,
                        int datasize, int nelems, struct buffer *fp)
 {
   int amnt = MIN((nelems*datasize),(int)fp->len);
@@ -299,7 +299,7 @@ static int rle_fread (guchar *buf, int datasize, int nelems, struct buffer *fp)
       /* We can copy directly into the image buffer. */
       p = buf + j;
     }
-    else 
+    else
     {
       /* Allocate the state buffer if we haven't already. */
       if (!statebuf)
@@ -345,11 +345,11 @@ static int rle_fread (guchar *buf, int datasize, int nelems, struct buffer *fp)
    it is called using the same buffer lengths!
 
    So, we get better compression than line-by-line encoders, and better
-   loading performance than whole-stream images. 
+   loading performance than whole-stream images.
 */
 
 /* RunLength Encode a bufferful of file. */
-static int rle_fwrite (guchar *buf, int datasize, int nelems, 
+static int rle_fwrite (guchar *buf, int datasize, int nelems,
                        struct buffer *fp)
 {
   /* Now runlength-encode the whole buffer. */
@@ -426,14 +426,59 @@ static int rle_fwrite (guchar *buf, int datasize, int nelems,
   return nelems;
 }
 
+static int getbit( unsigned char **p, int *o )
+{
+  int bit = (((*p)[0]) & (1<<*o));
+  (*o)++;
+  if( *o == 8 )
+  {
+    (*o) = 0;
+    (*p)++;
+  }
+  return bit ? 1 : 0;
+}
+
+static int getbits( unsigned char **pointer, int numbits, int *bittoffset,
+                    int wantedbits )
+{
+  int result = 0;
+  int scale = (1<<wantedbits)-1;
+  int scale2 = (1<<numbits)-1;
+  if(!numbits) return 0;
+  while( numbits-- ) result = (result << 1) | getbit( pointer,bittoffset );
+  return (result * scale) / scale2;
+}
+
+static void swap_every_other_byte( unsigned char *p, int nelems )
+{
+  int i;
+  for( i = 0; i<nelems; i+=2 )
+  {
+    unsigned char tmp = p[i];
+    p[i] = p[i+1];
+    p[i+1] = tmp;
+  }
+}
+
+static unsigned short extract_le_short( unsigned char **data )
+{
+  (*data)+=2;
+  return (*data)[-2] | ((*data)[-1]<<8);
+}
+
+static unsigned char c5to8bit( unsigned char v )
+{
+  return (v << 3) + (v >> 2);
+}
+
 static struct image_alpha ReadImage(struct buffer *fp, struct tga_header *hdr)
 {
-  int width, height, bpp, abpp, pbpp;
+  int width, height, bpp, abpp, pbpp, bypp;
   int i, j, k;
   int pelbytes=0, npels, pels, read_so_far=0, rle=0;
   unsigned char *cmap=NULL, *data;
   int itype=0;
-
+  int really_no_alpha = 0;
   int (*myfread)(unsigned char *, int, int, struct buffer *);
 
   /* Find out whether the image is horizontally or vertically reversed.
@@ -448,7 +493,6 @@ static struct image_alpha ReadImage(struct buffer *fp, struct tga_header *hdr)
 
   bpp = hdr->bpp;
   abpp = hdr->descriptor & TGA_DESC_ABITS;
-
   if (hdr->imageType == TGA_TYPE_COLOR ||
       hdr->imageType == TGA_TYPE_COLOR_RLE)
     pbpp = MIN (bpp / 3, 8) * 3;
@@ -466,6 +510,7 @@ static struct image_alpha ReadImage(struct buffer *fp, struct tga_header *hdr)
   {
     /* Again, assume that alpha bits were set incorrectly. */
     abpp = bpp - pbpp;
+    really_no_alpha = 1;
   }
 
   switch (hdr->imageType)
@@ -502,12 +547,6 @@ static struct image_alpha ReadImage(struct buffer *fp, struct tga_header *hdr)
    default:
      error ("TGA: unrecognized image type %d\n", hdr->imageType);
   }
-
-  if ((abpp && abpp != 8) ||
-      (itype == RGB && pbpp != 24) ||
-      ((itype == GRAY  || itype == INDEXED) && pbpp != 8))
-    /* FIXME: We haven't implemented bit-packed fields yet. */
-    error ("TGA: channel sizes other than 8 bits are unimplemented. bpp=%d;app=%d\n",pbpp,abpp);
 
   /* Check that we have a color map only when we need it. */
   if (itype == INDEXED)
@@ -554,54 +593,111 @@ static struct image_alpha ReadImage(struct buffer *fp, struct tga_header *hdr)
   }
 
 
-  /* Calculate TGA bytes per pixel. */
-  bpp = ROUNDUP_DIVIDE (pbpp + abpp, 8);
-
   /* Allocate the data. */
-  data = (guchar *) malloc (width * height * bpp);
+  data = (guchar *) malloc (ROUNDUP_DIVIDE((width * height * bpp), 8));
 
   if (rle)
     myfread = rle_fread;
   else
     myfread = std_fread;
 
-  npels = width * height;
+  npels = ROUNDUP_DIVIDE((width * height * bpp), 8);
 
  /* Suck in the data. */
-/*   do */
-/*   { */
-  pels = (*myfread) (data+(read_so_far*bpp), bpp, npels, fp);
-  read_so_far += pels;
+  pels = (*myfread)(data+read_so_far, 1, npels, fp);
   npels -= pels;
-/*   if(pels <= 0) */
-/*   { */
-/*     pels = read_so_far; */
-/*     break; */
-/*   } */
-/*   } while(npels); */
-  if(npels)
-    MEMSET( data+(read_so_far*bpp), 0, npels*bpp );
+  if(npels) MEMSET( data+read_so_far, 0, npels );
 
   /* Now convert the data to two image objects.  */
   {
     int x, y;
     struct image_alpha i;
+    unsigned char *sd = data;
+    rgb_group *id;
+    rgb_group *ad;
     push_int( width );
-    push_int( height ); 
+    push_int( height );
     i.io = clone_object( image_program, 2 );
     i.img = (struct image*)get_storage(i.io,image_program);
     push_int( width );
-    push_int( height ); 
+    push_int( height );
     push_int( 255 );
     push_int( 255 );
     push_int( 255 );
     i.ao = clone_object( image_program, 5 );
     i.alpha = (struct image*)get_storage(i.ao,image_program);
 
+
+    id = i.img->img;
+    ad = i.alpha->img;
+
+    if ((abpp && abpp != 8) ||
+        (itype == RGB && pbpp != 24) ||
+        ((itype == GRAY  || itype == INDEXED) && pbpp != 8))
     {
-      rgb_group *id = i.img->img;
-      rgb_group *ad = i.alpha->img;
-      unsigned char *sd = data;
+      int bitoffset = 0;
+      if( bpp == 16 && pbpp == 15 && itype == RGB )
+      {
+        for( y = 0; y<height; y++ )
+          for(x = 0; x<width; x++)
+          {
+            unsigned short pixel = extract_le_short(&sd);
+            id->b = c5to8bit( pixel&31 );
+            id->g = c5to8bit((pixel & 922)>>5);
+            id->r = c5to8bit((pixel & 31744)>>10);
+            id++;
+          }
+      }
+      else switch( itype )
+      {
+       case INDEXED:
+         for(y = 0; y<height; y++)
+           for(x = 0; x<width; x++)
+           {
+             int cmapind = (getbits(&sd,pbpp,&bitoffset,bpp))*pelbytes;
+             id->b = cmap[cmapind++];
+             id->g = cmap[cmapind++];
+             (id++)->r = cmap[cmapind++];
+             if(pelbytes>3)
+             {
+               ad->r = ad->g = (ad++)->b = cmap[cmapind];
+             }
+           }
+         break;
+       case GRAY:
+         for(y = 0; y<height; y++)
+           for(x = 0; x<width; x++)
+           {
+             id->r = id->g =(id++)->b=getbits(&sd,pbpp,&bitoffset,8);
+             if(abpp)
+             {
+               if( really_no_alpha )
+                 getbits(&sd,abpp,&bitoffset,abpp);
+               else
+                 ad->r = ad->g = (ad++)->b = getbits(&sd,abpp,&bitoffset,8);
+             }
+           }
+         break;
+       case RGB:
+         for(y = 0; y<height; y++)
+           for(x = 0; x<width; x++)
+           {
+             if(abpp)
+             {
+               if( !really_no_alpha )
+                 ad->r = ad->g = (ad++)->b = getbits(&sd, abpp, &bitoffset,8 );
+               else
+                 getbits(&sd, abpp, &bitoffset,8 );
+             }
+             id->b = getbits(&sd, pbpp/3, &bitoffset,8 );
+             id->g = getbits(&sd, pbpp/3, &bitoffset,8 );
+             id->r = getbits(&sd, pbpp/3, &bitoffset,8 );
+             id++;
+           }
+      }
+    }
+    else /* 8 bits / channel. Simple and fast implementation.  */
+    {
       switch( itype )
       {
        case INDEXED:
@@ -638,7 +734,9 @@ static struct image_alpha ReadImage(struct buffer *fp, struct tga_header *hdr)
              id->g = *(sd++);
              (id++)->r = *(sd++);
              if(abpp) {
-               ad->r = ad->g = (ad++)->b = *(sd++);
+               if( !really_no_alpha )
+                 ad->r = ad->g = (ad++)->b = *sd;
+               sd++;
              }
            }
       }
@@ -648,24 +746,24 @@ static struct image_alpha ReadImage(struct buffer *fp, struct tga_header *hdr)
     if(horzrev)
     {
       apply( i.io, "mirrorx", 0 );
-      free_object(i.io);          
-      i.io = sp[-1].u.object;     
-      sp--;                       
+      free_object(i.io);
+      i.io = sp[-1].u.object;
+      sp--;
       apply( i.ao, "mirrorx", 0 );
-      free_object(i.ao);          
-      i.ao = sp[-1].u.object;     
-      sp--;                       
+      free_object(i.ao);
+      i.ao = sp[-1].u.object;
+      sp--;
     }
     if(vertrev)
     {
       apply( i.io, "mirrory", 0 );
-      free_object(i.io);          
-      i.io = sp[-1].u.object;     
-      sp--;                       
+      free_object(i.io);
+      i.io = sp[-1].u.object;
+      sp--;
       apply( i.ao, "mirrory", 0 );
-      free_object(i.ao);          
-      i.ao = sp[-1].u.object;     
-      sp--;                       
+      free_object(i.ao);
+      i.ao = sp[-1].u.object;
+      sp--;
     }
     return i;
   }
@@ -689,7 +787,7 @@ static struct buffer save_tga(struct image *img, struct image *alpha,
 
   unsigned char *data;
 
-  if(alpha && 
+  if(alpha &&
      (alpha->xsize != img->xsize ||
       alpha->ysize != img->ysize ))
     error("Alpha and image objects are not equally sized.\n");
@@ -815,7 +913,7 @@ static struct buffer save_tga(struct image *img, struct image *alpha,
 /*
 **! method object _decode(string data)
 **! 	Decodes a Targa image to a mapping.
-**!       The mapping follows this format: 
+**!       The mapping follows this format:
 **!           ([ "image":img_object, "alpha":alpha_channel ])
 **!
 **! note
@@ -829,7 +927,7 @@ void image_tga__decode( INT32 args )
   i = load_image( data );
 
   pop_n_elems(args);
-  
+
   push_constant_text( "alpha" );
   push_object( i.ao );
   push_constant_text( "image" );
@@ -848,7 +946,7 @@ void image_tga__decode( INT32 args )
 
 /*
 **! method object decode(string data)
-**! 	Decodes a Targa image. 
+**! 	Decodes a Targa image.
 **!
 **! note
 **!	Throws upon error in data.
@@ -868,7 +966,7 @@ void image_tga_decode( INT32 args )
 /*
 **! method string encode(object image)
 **! method string encode(object image, mapping options)
-**! 	Encodes a Targa image. 
+**! 	Encodes a Targa image.
 **!
 **!     The <tt>options</tt> argument may be a mapping
 **!	containing zero or more encoding options:
@@ -876,7 +974,7 @@ void image_tga_decode( INT32 args )
 **!	<pre>
 **!	normal options:
 **!	    "alpha":image object
-**!		Use this image as alpha channel 
+**!		Use this image as alpha channel
 **!		(Note: Targa alpha channel is grey.
 **!		 The values are calculated by (r+2g+b)/4.)
 **!
@@ -897,12 +995,12 @@ void image_tga_encode( INT32 args )
   int rle = 1;
   if (!args)
     error("Image.TGA.encode: too few arguments\n");
-   
+
   if (sp[-args].type!=T_OBJECT ||
       !(img=(struct image*)
         get_storage(sp[-args].u.object,image_program)))
     error("Image.TGA.encode: illegal argument 1\n");
-   
+
   if (!img->img)
     error("Image.TGA.encode: no image\n");
 
@@ -910,11 +1008,11 @@ void image_tga_encode( INT32 args )
   {
     if (sp[1-args].type!=T_MAPPING)
       error("Image.TGA.encode: illegal argument 2\n");
-      
+
     push_svalue(sp+1-args);
     ref_push_string(param_alpha);
     f_index(2);
-    if (!(sp[-1].type==T_INT 
+    if (!(sp[-1].type==T_INT
           && sp[-1].subtype==NUMBER_UNDEFINED))
       if (sp[-1].type!=T_OBJECT ||
           !(alpha=(struct image*)
@@ -930,7 +1028,7 @@ void image_tga_encode( INT32 args )
       error("Image.TGA.encode option (arg 2) \"alpha\"; no image\n");
 
     push_svalue(sp+1-args);
-    ref_push_string(param_raw); 
+    ref_push_string(param_raw);
     f_index(2);
     rle = !sp[-1].u.integer;
     pop_stack();
@@ -946,11 +1044,11 @@ void image_tga_encode( INT32 args )
 static struct program *image_encoding_tga_program=NULL;
 void init_image_tga( )
 {
-   add_function( "_decode", image_tga__decode, 
+   add_function( "_decode", image_tga__decode,
                  "function(string:mapping(string:object))", 0);
-   add_function( "decode", image_tga_decode, 
+   add_function( "decode", image_tga_decode,
                  "function(string:object)", 0);
-   add_function( "encode", image_tga_encode, 
+   add_function( "encode", image_tga_encode,
                  "function(object,mapping|void:string)", 0);
 
    param_alpha=make_shared_string("alpha");
