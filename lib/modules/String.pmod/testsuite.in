@@ -1,4 +1,5 @@
-dnl $Id: testsuite.in,v 1.17 2004/04/25 19:48:03 nilsson Exp $
+START_MARKER
+dnl $Id: testsuite.in,v 1.18 2004/05/02 18:22:22 nilsson Exp $
 
 test_eq([[ String.Buffer()->add("xxx") ]], 3)
 test_any([[
@@ -174,7 +175,7 @@ test_eq(String.int2hex(-0x80000000), "-80000000")
 test_eq(String.int2hex(0x80000000-1), "7fffffff")
 test_eq(String.int2hex(-0x800000000), "-800000000")
 test_eq(String.int2hex(0x800000000-1), "7ffffffff")
-test_eq(String.int2hex(Gmp.mpz(1), "1")
+test_eq(String.int2hex(Gmp.mpz(1)), "1")
 
 test_eq(String.string2hex(""), "")
 test_eq(String.string2hex("x"), "78")
@@ -271,3 +272,4 @@ test_eq([[
 
 dnl MISSING TEST: String.HTML.simple_obox
 dnl MISSING TEST: String.HTML.Obox
+END_MARKER
