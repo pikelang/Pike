@@ -30,7 +30,7 @@ struct callback *gc_evaluator_callback=0;
 
 #include "block_alloc.h"
 
-RCSID("$Id: gc.c,v 1.135 2000/09/15 17:27:41 grubba Exp $");
+RCSID("$Id: gc.c,v 1.136 2000/09/30 16:01:39 mast Exp $");
 
 /* Run garbage collect approximately every time
  * 20 percent of all arrays, objects and programs is
@@ -94,16 +94,6 @@ RCSID("$Id: gc.c,v 1.135 2000/09/15 17:27:41 grubba Exp $");
 #else
 #define GC_VERBOSE_DO(X)
 #endif
-
-/* Kludge to avoid some loss of precision warnings. */
-#ifdef __ECL
-static inline long CAST_TO_LONG(ptrdiff_t val)
-{
-  return DO_NOT_WARN((long)val);
-}
-#else /* !__ECL */
-#define CAST_TO_LONG(val)	((long)(val))
-#endif /* __ECL */
 
 INT32 num_objects = 1;		/* Account for empty_array. */
 INT32 num_allocs =0;
@@ -425,7 +415,7 @@ void describe_location(void *real_memblock,
     if(location == (void *)&p->NAME) fprintf(stderr,"%*s  **In p->" #NAME "\n",indent,""); \
     if(ptr >= (char *)p->NAME  && ptr<(char*)(p->NAME+p->PIKE_CONCAT(num_,NAME))) \
       fprintf(stderr,"%*s  **In p->" #NAME "[%ld]\n",indent,"", \
-              CAST_TO_LONG(((char *)ptr - (char *)(p->NAME)) / sizeof(TYP)));
+              PTRDIFF_T_TO_LONG(((char *)ptr - (char *)(p->NAME)) / sizeof(TYP)));
 #include "program_areas.h"
       
       break;
@@ -514,7 +504,7 @@ static void describe_gc_frame(struct gc_frame *l)
 static void describe_marker(struct marker *m)
 {
   if (m) {
-    fprintf(stderr, "marker at %p: flags=0x%06x, refs=%d, weak=%d, "
+    fprintf(stderr, "marker at %p: flags=0x%04x, refs=%d, weak=%d, "
 	    "xrefs=%d, saved=%d, frame=%p",
 	    m, m->flags, m->refs, m->weak_refs,
 	    m->xrefs, m->saved_refs, m->frame);
@@ -550,11 +540,10 @@ void debug_gc_fatal(void *a, int flags, const char *fmt, ...)
 
 static void gdb_gc_stop_here(void *a, int weak)
 {
-  fprintf(stderr,"***One %sref found%s.\n",
+  fprintf(stderr,"***One %sref found%s. ",
 	  weak ? "weak " : "",
 	  found_where?found_where:"");
-  describe_something(found_in, found_in_type, 2, 1, DESCRIBE_NO_DMALLOC);
-  describe_location(found_in , found_in_type, gc_svalue_location,2,1,0);
+  describe_location(found_in , found_in_type, gc_svalue_location,0,1,0);
   fprintf(stderr,"----------end------------\n");
 }
 
@@ -616,12 +605,12 @@ int debug_low_gc_check(void *x, TYPE_T t, void *data)
 
 /* Avoid loss of precision warning. */
 #ifdef __ECL
-static inline long SIZE_T_TO_LONG(size_t x)
+static inline unsigned long SIZE_T_TO_ULONG(size_t x)
 {
-  return DO_NOT_WARN((long)x);
+  return DO_NOT_WARN((unsigned long)x);
 }
 #else /* !__ECL */
-#define SIZE_T_TO_LONG(x)	((long)(x))
+#define SIZE_T_TO_ULONG(x) ((unsigned long)(x))
 #endif /* __ECL */
 
 void low_describe_something(void *a,
@@ -733,8 +722,8 @@ void low_describe_something(void *a,
       if(flags & DESCRIBE_MEM)
       {
 #define FOO(NUMTYPE,TYPE,NAME) \
-      fprintf(stderr, "%*s* " #NAME " %p[%ld]\n", \
-              indent, "", p->NAME, SIZE_T_TO_LONG(p->PIKE_CONCAT(num_,NAME)));
+      fprintf(stderr, "%*s* " #NAME " %p[%lu]\n", \
+              indent, "", p->NAME, SIZE_T_TO_ULONG(p->PIKE_CONCAT(num_,NAME)));
 #include "program_areas.h"
       }
 
@@ -904,11 +893,10 @@ void debug_gc_touch(void *a)
 		   "got missed by gc_do_free().\n");
 	else if (m->flags & GC_GOT_EXTRA_REF)
 	  gc_fatal(a, 2, "A thing still got an extra ref.\n");
+	else if (m->weak_refs > m->saved_refs)
+	  gc_fatal(a, 2, "A thing got more weak references than references.\n");
 	else if (!(m->flags & GC_LIVE)) {
-	  if (m->weak_refs > 0)
-	    gc_fatal(a, 3, "A thing to garb is still around. "
-		     "It's probably one with only external weak refs.\n");
-	  else if (m->weak_refs < 0)
+	  if (m->weak_refs < 0)
 	    gc_fatal(a, 3, "A thing which had only weak references is "
 		     "still around after gc.\n");
 	  else
@@ -1225,6 +1213,7 @@ int gc_do_weak_free(void *a)
 should_free:
   gc_ext_weak_refs--;
 #ifdef PIKE_DEBUG
+  m->saved_refs--;
   m->flags |= GC_WEAK_FREED;
 #endif
 
@@ -1251,22 +1240,25 @@ int gc_mark(void *a)
     gc_fatal(a, 0, "Marked a thing without refs.\n");
   if (m->weak_refs < 0)
     gc_fatal(a, 0, "Marking thing scheduled for weak free.\n");
-  if (Pike_in_gc == GC_PASS_ZAP_WEAK && !(m->flags & GC_MARKED))
-    gc_fatal(a, 0, "gc_mark() called for thing in zap weak pass "
-	     "that wasn't marked before.\n");
 #endif
 
-  if (Pike_in_gc == GC_PASS_ZAP_WEAK)
+  if (Pike_in_gc == GC_PASS_ZAP_WEAK) {
     /* Things are visited in the zap weak pass through the mark
      * functions to free refs to internal things that only got weak
      * external references. That happens only when a thing also have
      * internal cyclic non-weak refs. */
+#ifdef PIKE_DEBUG
+    if (!(m->flags & GC_MARKED))
+      gc_fatal(a, 0, "gc_mark() called for thing in zap weak pass "
+	       "that wasn't marked before.\n");
+#endif
     if (m->flags & GC_FREE_VISITED)
       return 0;
     else {
       m->flags |= GC_FREE_VISITED;
       return 1;
     }
+  }
 
   else if (m->flags & GC_MARKED) {
 #ifdef PIKE_DEBUG
@@ -1289,6 +1281,10 @@ int gc_mark(void *a)
 void gc_cycle_enqueue(gc_cycle_check_cb *checkfn, void *data, int weak)
 {
   struct gc_frame *l = alloc_gc_frame();
+#ifdef PIKE_DEBUG
+  if (Pike_in_gc != GC_PASS_CYCLE)
+    gc_fatal(data, 0, "Use of the gc frame stack outside the cycle check pass.\n");
+#endif
 #ifdef GC_VERBOSE
   if (++num_gc_frames > max_gc_frames) max_gc_frames = num_gc_frames;
 #endif
@@ -1308,6 +1304,10 @@ void gc_cycle_enqueue(gc_cycle_check_cb *checkfn, void *data, int weak)
 static struct gc_frame *gc_cycle_enqueue_pop(void *data)
 {
   struct gc_frame *l = alloc_gc_frame();
+#ifdef PIKE_DEBUG
+  if (Pike_in_gc != GC_PASS_CYCLE)
+    gc_fatal(data, 0, "Use of the gc frame stack outside the cycle check pass.\n");
+#endif
 #ifdef GC_VERBOSE
   if (++num_gc_frames > max_gc_frames) max_gc_frames = num_gc_frames;
 #endif
@@ -1328,6 +1328,10 @@ static struct gc_frame *gc_cycle_enqueue_pop(void *data)
 
 void gc_cycle_run_queue()
 {
+#ifdef PIKE_DEBUG
+  if (Pike_in_gc != GC_PASS_CYCLE)
+    fatal("Use of the gc frame stack outside the cycle check pass.\n");
+#endif
   while (gc_rec_top) {
 #ifdef GC_STACK_DEBUG
     fprintf(stderr, "dequeue %p [%p]: ", gc_rec_top, gc_rec_top->back);
@@ -1369,6 +1373,8 @@ static void rotate_rec_list (struct gc_frame *beg, struct gc_frame *pos)
   struct gc_frame *l;
 
 #ifdef PIKE_DEBUG
+  if (Pike_in_gc != GC_PASS_CYCLE)
+    fatal("Use of the gc frame stack outside the cycle check pass.\n");
   CHECK_POP_FRAME(beg);
   CHECK_POP_FRAME(pos);
   if (beg == pos)
@@ -1546,18 +1552,6 @@ int gc_cycle_push(void *x, struct marker *m, int weak)
     gc_fatal(x, 0, "Followed strong link too late.\n");
   if (weak >= 0) gc_rec_last->frameflags |= GC_FOLLOWED_NONSTRONG;
 #endif
-
-  if (weak > 0) {
-#ifdef PIKE_DEBUG
-    if (m->weak_refs == 0)
-      gc_fatal(x, 0, "Followed weak ref to thing that should have none left.\n");
-    /* We only keep m->weak_refs accurate in debug mode for the sake
-     * of the checks in debug_gc_touch(); nothing else should trust it
-     * to be valid after the mark pass. */
-    m->weak_refs--;		/* Might already be negative. */
-#endif
-    gc_ext_weak_refs--;
-  }
 
   if (m->frame && !(m->frame->frameflags & GC_OFF_STACK)) {
     /* A cyclic reference is found. */
@@ -1973,8 +1967,8 @@ int do_gc(void)
   
   objects_freed*=multiplier;
 
-  /* Thread switches, object alloc/free and any reference changes
-   * (except by the gc itself) are disallowed now. */
+  /* Thread switches, object alloc/free and any reference changes are
+   * disallowed now. */
 
 #ifdef PIKE_DEBUG
   weak_freed = checked = marked = cycle_checked = live_ref = 0;
@@ -2018,7 +2012,8 @@ int do_gc(void)
    */
   call_callback(& gc_callbacks, (void *)0);
 
-  GC_VERBOSE_DO(fprintf(stderr, "| check: %u references checked\n", checked));
+  GC_VERBOSE_DO(fprintf(stderr, "| check: %u references checked, counted %lu weak refs\n",
+			checked, SIZE_T_TO_ULONG(gc_ext_weak_refs)));
 
   Pike_in_gc=GC_PASS_MARK;
 
@@ -2031,7 +2026,9 @@ int do_gc(void)
   gc_internal_program = first_program;
   gc_internal_object = first_object;
 
-  /* Next we mark anything with external references */
+  /* Next we mark anything with external references. Note that we can
+   * follow the same reference several times, e.g. with shared mapping
+   * data blocks. */
   gc_mark_all_arrays();
   run_queue(&gc_mark_queue);
   gc_mark_all_multisets();
@@ -2047,32 +2044,48 @@ int do_gc(void)
 #endif /* PIKE_DEBUG */
 
   GC_VERBOSE_DO(fprintf(stderr,
-			"| mark: %u markers referenced,\n"
-			"|       %u weak references freed, %d things really freed\n",
-			marked, weak_freed, objs - num_objects));
+			"| mark: %u markers referenced, %u weak references freed,\n"
+			"|       %d things really freed, got %lu tricky weak refs\n",
+			marked, weak_freed, objs - num_objects,
+			SIZE_T_TO_ULONG(gc_ext_weak_refs)));
 
-  Pike_in_gc=GC_PASS_CYCLE;
+  {
 #ifdef PIKE_DEBUG
-  obj_count = num_objects;
-  max_gc_frames = 0;
+    size_t orig_ext_weak_refs = gc_ext_weak_refs;
+    obj_count = num_objects;
+    max_gc_frames = 0;
+#endif
+    Pike_in_gc=GC_PASS_CYCLE;
+
+    /* Now find all cycles in the internal structures. Note that we can
+     * follow the same reference several times, just like in the mark
+     * pass. */
+    /* Note: The order between types here is normally not significant,
+     * but the permuting destruct order tests in the testsuite won't be
+     * really effective unless objects are handled first. :P */
+    gc_cycle_check_all_objects();
+    gc_cycle_check_all_arrays();
+    gc_cycle_check_all_multisets();
+    gc_cycle_check_all_mappings();
+    gc_cycle_check_all_programs();
+
+#ifdef PIKE_DEBUG
+    if (gc_rec_top)
+      fatal("gc_rec_top not empty at end of cycle check pass.\n");
+    if (NEXT(&rec_list) || gc_rec_last != &rec_list || gc_rec_top)
+      fatal("Recurse list not empty or inconsistent after cycle check pass.\n");
+    if (gc_ext_weak_refs != orig_ext_weak_refs)
+      fatal("gc_ext_weak_refs changed from %lu to %lu in cycle check pass.\n",
+	    SIZE_T_TO_ULONG(orig_ext_weak_refs), SIZE_T_TO_ULONG(gc_ext_weak_refs));
 #endif
 
-  /* Now find all cycles in the internal structures */
-  /* Note: The order between types here is normally not significant,
-   * but the permuting destruct order tests in the testsuite won't be
-   * really effective unless objects are handled first. :P */
-  gc_cycle_check_all_objects();
-  gc_cycle_check_all_arrays();
-  gc_cycle_check_all_multisets();
-  gc_cycle_check_all_mappings();
-  gc_cycle_check_all_programs();
-
-#ifdef PIKE_DEBUG
-  if (gc_rec_top)
-    fatal("gc_rec_top not empty at end of cycle check pass.\n");
-  if (NEXT(&rec_list) || gc_rec_last != &rec_list || gc_rec_top)
-    fatal("Recurse list not empty or inconsistent after cycle check pass.\n");
-#endif
+    GC_VERBOSE_DO(fprintf(stderr,
+			  "| cycle: %u internal things visited, %u cycle ids used,\n"
+			  "|        %u weak references freed, %d things really freed,\n"
+			  "|        space for %u gc frames used\n",
+			  cycle_checked, last_cycle, weak_freed,
+			  obj_count - num_objects, max_gc_frames));
+  }
 
 #ifdef PIKE_DEBUG
   if (gc_debug) {
@@ -2106,13 +2119,6 @@ int do_gc(void)
   }
 #endif
 
-  GC_VERBOSE_DO(fprintf(stderr,
-			"| cycle: %u internal things visited, %u cycle ids used,\n"
-			"|        %u weak references freed, %d things really freed,\n"
-			"|        space for %u gc frames used\n",
-			cycle_checked, last_cycle, weak_freed, obj_count - num_objects,
-			max_gc_frames));
-
   if (gc_ext_weak_refs) {
     size_t to_free = gc_ext_weak_refs;
 #ifdef PIKE_DEBUG
@@ -2124,19 +2130,16 @@ int do_gc(void)
      * external weak refs and nonweak cyclic refs from internal
      * things. */
     gc_zap_ext_weak_refs_in_mappings();
-    if (gc_ext_weak_refs) {
-      gc_zap_ext_weak_refs_in_arrays();
-      /* Multisets handled as arrays. */
-      if (gc_ext_weak_refs) {
-	gc_zap_ext_weak_refs_in_objects();
-	if (gc_ext_weak_refs)
-	  gc_zap_ext_weak_refs_in_programs();
-      }
-    }
+    gc_zap_ext_weak_refs_in_arrays();
+    /* Multisets handled as arrays. */
+    gc_zap_ext_weak_refs_in_objects();
+    gc_zap_ext_weak_refs_in_programs();
     GC_VERBOSE_DO(
       fprintf(stderr,
-	      "| zap weak: freed %u external weak refs, %d things really freed\n",
-	      to_free - gc_ext_weak_refs, obj_count - num_objects));
+	      "| zap weak: freed %ld external weak refs, %lu internal still around,\n"
+	      "|           %d things really freed\n",
+	      PTRDIFF_T_TO_LONG(to_free - gc_ext_weak_refs),
+	      SIZE_T_TO_ULONG(gc_ext_weak_refs), obj_count - num_objects));
   }
 
   /* Thread switches, object alloc/free and reference changes are
@@ -2228,13 +2231,10 @@ int do_gc(void)
     if (n != (unsigned) num_objects)
       fatal("Object count wrong after gc; expected %d, got %d.\n", num_objects, n);
     GC_VERBOSE_DO(fprintf(stderr, "| posttouch: %u things\n", n));
-    if(fatal_after_gc) fatal("%s", fatal_after_gc);
   }
   if (gc_extra_refs)
     fatal("Lost track of %d extra refs to things in gc.\n", gc_extra_refs);
-  if (gc_ext_weak_refs)
-    fatal("Still got %lu external weak references to internal things in gc.\n",
-	  (unsigned long)PTRDIFF_T_TO_LONG(gc_ext_weak_refs));
+  if(fatal_after_gc) fatal("%s", fatal_after_gc);
 #endif
 
   Pike_in_gc=0;

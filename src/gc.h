@@ -1,5 +1,5 @@
 /*
- * $Id: gc.h,v 1.67 2000/09/15 00:59:39 mast Exp $
+ * $Id: gc.h,v 1.68 2000/09/30 16:01:40 mast Exp $
  */
 #ifndef GC_H
 #define GC_H
@@ -93,16 +93,13 @@ struct marker
   struct gc_frame *frame;	/* Pointer into the cycle check stack. */
   void *data;
   INT32 refs;			/* Internal references. */
-  INT32 weak_refs;		/* Weak (implying internal) references.
-				 * Negative if only weak refs are left. */
+  INT32 weak_refs;		/* Weak (implying internal) references. */
 #ifdef PIKE_DEBUG
   INT32 xrefs;			/* Known external references. */
   INT32 saved_refs;		/* Object refcount during check pass. */
 #endif
   unsigned INT16 flags;
 };
-/* Note: The weak_refs variable is only kept accurate during the check
- * and mark passes when running without PIKE_DEBUG. */
 
 #define GC_MARKED		0x0001
 #define GC_NOT_REFERENCED	0x0002
@@ -121,6 +118,7 @@ struct marker
 #define GC_DO_FREE		0x1000
 #define GC_GOT_EXTRA_REF	0x2000
 #define GC_WEAK_FREED		0x4000
+#define GC_CHECKED_AS_WEAK	0x8000
 #endif
 
 #ifdef PIKE_DEBUG
@@ -195,6 +193,24 @@ void cleanup_gc(void);
 #define gc_fatal \
   fprintf(stderr, "%s:%d: GC fatal:\n", __FILE__, __LINE__), debug_gc_fatal
 
+#ifdef PIKE_DEBUG
+#define gc_checked_as_weak(X) (find_marker(X)->flags |= GC_CHECKED_AS_WEAK)
+#define gc_assert_checked_as_weak(X) do {				\
+  if (!(find_marker(X)->flags & GC_CHECKED_AS_WEAK))			\
+    fatal("A thing was checked as weak but "				\
+	  "marked or cycle checked as nonweak.\n");			\
+} while (0)
+#define gc_assert_checked_as_nonweak(X) do {				\
+  if (find_marker(X)->flags & GC_CHECKED_AS_WEAK)			\
+    fatal("A thing was checked as nonweak but "				\
+	  "marked or cycle checked as weak.\n");			\
+} while (0)
+#else
+#define gc_checked_as_weak(X) 0
+#define gc_assert_checked_as_weak(X) do {} while (0)
+#define gc_assert_checked_as_nonweak(X) do {} while (0)
+#endif
+
 #if defined (PIKE_DEBUG) && defined (DEBUG_MALLOC)
 #define DMALLOC_TOUCH_MARKER(X, EXPR) (get_marker(X), (EXPR))
 #else
@@ -209,22 +225,22 @@ void cleanup_gc(void);
   DMALLOC_TOUCH_MARKER(X, debug_low_gc_check(debug_malloc_pass(X), (T), (DATA)))
 
 #define gc_recurse_svalues(S,N)						\
-  (Pike_in_gc == GC_PASS_MARK ?						\
-   gc_mark_svalues((S), (N)) : gc_cycle_check_svalues((S), (N)))
+  (Pike_in_gc == GC_PASS_CYCLE ?					\
+   gc_cycle_check_svalues((S), (N)) : gc_mark_svalues((S), (N)))
 #define gc_recurse_short_svalue(U,T)					\
-  (Pike_in_gc == GC_PASS_MARK ?						\
-   gc_mark_short_svalue((U), (T)) : gc_cycle_check_short_svalue((U), (T)))
+  (Pike_in_gc == GC_PASS_CYCLE ?					\
+   gc_cycle_check_short_svalue((U), (T)) : gc_mark_short_svalue((U), (T)))
 #define gc_recurse_weak_svalues(S,N)					\
-  (Pike_in_gc == GC_PASS_MARK ?						\
-   gc_mark_weak_svalues((S), (N)) : gc_cycle_check_weak_svalues((S), (N)))
+  (Pike_in_gc == GC_PASS_CYCLE ?					\
+   gc_cycle_check_weak_svalues((S), (N)) : gc_mark_weak_svalues((S), (N)))
 #define gc_recurse_weak_short_svalue(U,T)				\
-  (Pike_in_gc == GC_PASS_MARK ?						\
-   gc_mark_weak_short_svalue((U), (T)) : gc_cycle_check_weak_short_svalue((U), (T)))
+  (Pike_in_gc == GC_PASS_CYCLE ?					\
+   gc_cycle_check_weak_short_svalue((U), (T)) : gc_mark_weak_short_svalue((U), (T)))
 
 #define GC_RECURSE_THING(V, T)						\
-  (DMALLOC_TOUCH_MARKER(V, Pike_in_gc == GC_PASS_MARK) ?		\
-   PIKE_CONCAT3(gc_mark_, T, _as_referenced)(V) :			\
-   PIKE_CONCAT(gc_cycle_check_, T)(V, 0))
+  (DMALLOC_TOUCH_MARKER(V, Pike_in_gc == GC_PASS_CYCLE) ?		\
+   PIKE_CONCAT(gc_cycle_check_, T)(V, 0) :				\
+   PIKE_CONCAT3(gc_mark_, T, _as_referenced)(V))
 #define gc_recurse_array(V) GC_RECURSE_THING((V), array)
 #define gc_recurse_mapping(V) GC_RECURSE_THING((V), mapping)
 #define gc_recurse_multiset(V) GC_RECURSE_THING((V), multiset)
