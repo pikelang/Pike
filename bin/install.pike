@@ -1077,16 +1077,27 @@ void dump_modules()
 
   if(!s1 || !s2 || s1[3]>=s2[3] || redump_all)
   {
-     object p=
-	Process.create_process( ({fakeroot(pike),"-m",
-				  combine_path(vars->SRCDIR,"dumpmaster.pike"),
-				  @(vars->fakeroot?({"--fakeroot="+
-                                                     vars->fakeroot}):({})),
-				  master}), options);
-     int retcode=p->wait();
-     if (retcode)
-       werror("Dumping of master.pike failed (not fatal) (0x%08x)\n",
-	      retcode);
+    int retcode;
+    mixed error = catch {
+      if(file_stat(fakeroot(pike))) {
+	object p=
+	  Process.create_process( ({fakeroot(pike),"-m",
+	    combine_path(vars->SRCDIR,"dumpmaster.pike"),
+	    @(vars->fakeroot?({"--fakeroot="+vars->fakeroot}):({})),
+	    master}), options);
+	retcode=p->wait();
+      }
+      else
+	werror("Pike binary %O could not be found.\n"
+	       "Dumping of master.pike failed (not fatal).\n",
+	       fakeroot(pike));
+    };
+    if(error)
+      werror("Dumping of master.pike failed (not fatal)\n%s\n",
+	     describe_backtrace(error));
+    if(retcode)
+      werror("Dumping of master.pike failed (not fatal) (0x%08x)\n",
+	     retcode);
   }
 
   if(sizeof(to_dump))
