@@ -4,7 +4,7 @@
 ||| See the files COPYING and DISCLAIMER for more information.
 \*/
 #include "global.h"
-RCSID("$Id: program.c,v 1.84 1998/04/18 07:21:04 hubbe Exp $");
+RCSID("$Id: program.c,v 1.85 1998/04/18 07:31:16 hubbe Exp $");
 #include "program.h"
 #include "object.h"
 #include "dynamic_buffer.h"
@@ -2479,7 +2479,6 @@ static int low_implements(struct program *a, struct program *b)
     {
       if(!match_types(ID_FROM_INT(a,i)->type, bid->type))
 	return 0;
-      fprintf(stderr,"%s\n",bid->name->str);
       num++;
     }
   }
