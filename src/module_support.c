@@ -6,7 +6,7 @@
 #include "pike_types.h"
 #include "error.h"
 
-RCSID("$Id: module_support.c,v 1.26 1999/09/06 11:13:18 hubbe Exp $");
+RCSID("$Id: module_support.c,v 1.27 1999/09/19 21:01:49 grubba Exp $");
 
 /* Checks that args_to_check arguments are OK.
  * Returns 1 if everything worked ok, zero otherwise.
@@ -268,7 +268,7 @@ int va_get_args(struct svalue *s,
 	    break;
 
 	default:
-	  return;
+	  return ret;
       }
       break;
 
