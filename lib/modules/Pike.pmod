@@ -1,8 +1,9 @@
 #pike __REAL_VERSION__
+#pragma strict_types
 
 // Pike core things that don't belong anywhere else.
 //
-// $Id: Pike.pmod,v 1.7 2003/01/13 17:19:31 mast Exp $
+// $Id: Pike.pmod,v 1.8 2003/04/27 02:20:40 nilsson Exp $
 
 constant WEAK_INDICES = __builtin.PIKE_WEAK_INDICES;
 constant WEAK_VALUES = __builtin.PIKE_WEAK_VALUES;

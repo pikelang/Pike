@@ -1,4 +1,5 @@
 #pike __REAL_VERSION__
+#pragma strict_types
 
 constant inherit_list = __builtin.inherit_list;
 constant inherits = __builtin.program_inherits;
