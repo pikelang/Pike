@@ -30,8 +30,11 @@ _$*
 *.elc
 *.ln
 core
+/245lpc.tar.gz
+/LPCsim.lpc
 /bottles.lpc
 /build
+/mudlib
 /reports
 /test
 /test.lpc
