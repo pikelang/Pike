@@ -1,4 +1,4 @@
-/* $Id: master.pike,v 1.44 1997/05/31 22:03:42 grubba Exp $
+/* $Id: master.pike,v 1.45 1997/07/19 20:29:45 hubbe Exp $
  *
  * Master-file for Pike.
  */
@@ -247,44 +247,59 @@ object cast_to_object(string oname, string current_file)
 class dirnode
 {
   string dirname;
+  mapping cache=([]);
   void create(string name) { dirname=name; }
   object|program `[](string index)
   {
+    mixed ret;
+    if(zero_type(ret=cache[index]))
+    {
+      if(ret) return ret;
+      return UNDEFINED;
+    }
+
     object m=((object)"/master");
     if(mixed o=m->findmodule(dirname+"/module"))
     {
       if(mixed tmp=o->_module_value) o=tmp;
-      if(o=o[index]) return o;
+      if(o=o[index]) return cache[index]=o;
     }
     index = dirname+"/"+index;
     if(object o=((object)"/master")->findmodule(index))
     {
       if(mixed tmp=o->_module_value) o=tmp;
-      return o;
+      return cache[index]=o;
     }
-    return (program) index;
+    return cache[index]=(program) index;
   }
 };
+
+static mapping(string:mixed) fc=([]);
 
 object findmodule(string fullname)
 {
   mixed *stat;
   object o;
+  if(!zero_type(o=fc[fullname]))
+  {
+    return o;
+  }
+
   if(mixed *stat=file_stat(fullname+".pmod"))
   {
     if(stat[1]==-2)
-      return dirnode(fullname+".pmod");
+      return fc[fullname]=dirnode(fullname+".pmod");
   }
 
   if(o=low_cast_to_object(fullname+".pmod","/."))
-    return o;
+    return fc[fullname]=o;
     
 #if constant(load_module)
   if(file_stat(fullname+".so"))
-    return low_cast_to_object(fullname,"/.");
+    return fc[fullname]=low_cast_to_object(fullname,"/.");
 #endif
 
-  return UNDEFINED;
+  return fc[fullname]=UNDEFINED;
 }
 
 varargs mixed resolv(string identifier, string current_file)
