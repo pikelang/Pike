@@ -1,5 +1,5 @@
 #include "global.h"
-RCSID("$Id: threads.c,v 1.105 1999/12/13 12:27:39 mast Exp $");
+RCSID("$Id: threads.c,v 1.106 1999/12/14 19:49:51 mast Exp $");
 
 int num_threads = 1;
 int threads_disabled = 0;
@@ -14,6 +14,7 @@ int threads_disabled = 0;
 #include "builtin_functions.h"
 #include "constants.h"
 #include "program.h"
+#include "program_id.h"
 #include "gc.h"
 #include "main.h"
 #include "module_support.h"
@@ -1154,7 +1155,7 @@ void th_init(void)
   ADD_EFUN("thread_set_concurrency",f_thread_set_concurrency,tFunc(tInt,tVoid), OPT_SIDE_EFFECT);
 #endif
 
-  start_new_program();
+  START_NEW_PROGRAM_ID(THREAD_MUTEX_KEY);
   mutex_key_offset = ADD_STORAGE(struct key_storage);
   /* This is needed to allow the gc to find the possible circular reference.
    * It also allows a process to take over ownership of a key.
@@ -1163,30 +1164,32 @@ void th_init(void)
 	       mutex_key_offset + OFFSETOF(key_storage, owner), T_OBJECT);
   set_init_callback(init_mutex_key_obj);
   set_exit_callback(exit_mutex_key_obj);
-  mutex_key=end_program();
+  mutex_key=new_program;
+  add_ref(mutex_key);
+  end_class("mutex_key", 0);
   mutex_key->flags|=PROGRAM_DESTRUCT_IMMEDIATE;
 #ifdef PIKE_DEBUG
   if(!mutex_key)
     fatal("Failed to initialize mutex_key program!\n");
 #endif
 
-  start_new_program();
+  START_NEW_PROGRAM_ID(THREAD_MUTEX);
   ADD_STORAGE(struct mutex_storage);
   /* function(int(0..2)|void:object(mutex_key)) */
-  ADD_FUNCTION_DTYPE("lock",f_mutex_lock,
-		     dtFunc(dtOr(dtIntRange(0,2),dtVoid),dtObjInher(mutex_key)),0);
+  ADD_FUNCTION("lock",f_mutex_lock,
+	       tFunc(tOr(tInt02,tVoid),tObjIs_THREAD_MUTEX_KEY),0);
   /* function(int(0..2)|void:object(mutex_key)) */
-  ADD_FUNCTION_DTYPE("trylock",f_mutex_trylock,
-		     dtFunc(dtOr(dtIntRange(0,2),dtVoid),dtObjInher(mutex_key)),0);
+  ADD_FUNCTION("trylock",f_mutex_trylock,
+	       tFunc(tOr(tInt02,tVoid),tObjIs_THREAD_MUTEX_KEY),0);
   set_init_callback(init_mutex_obj);
   set_exit_callback(exit_mutex_obj);
   end_class("mutex", 0);
 
-  start_new_program();
+  START_NEW_PROGRAM_ID(THREAD_CONDITION);
   ADD_STORAGE(COND_T);
   /* function(void|object(mutex_key):void) */
-  ADD_FUNCTION_DTYPE("wait",f_cond_wait,
-		     dtFunc(dtOr(dtVoid,dtObjInher(mutex_key)),dtVoid),0);
+  ADD_FUNCTION("wait",f_cond_wait,
+	       tFunc(tOr(tVoid,tObjIs_THREAD_MUTEX_KEY),tVoid),0);
   /* function(:void) */
   ADD_FUNCTION("signal",f_cond_signal,tFunc(tNone,tVoid),0);
   /* function(:void) */
@@ -1197,30 +1200,34 @@ void th_init(void)
   
   {
     struct program *tmp;
-    start_new_program();
+    START_NEW_PROGRAM_ID(THREAD_DISABLE_THREADS);
     set_init_callback(init_threads_disable);
     set_exit_callback(exit_threads_disable);
-    tmp = end_program();
+    tmp = new_program;
+    add_ref(tmp);
+    end_class("threads_disabled", 0);
     tmp->flags|=PROGRAM_DESTRUCT_IMMEDIATE;
     add_global_program("_disable_threads", tmp);
     free_program(tmp);
   }
 
-  start_new_program();
+  START_NEW_PROGRAM_ID(THREAD_LOCAL);
   ADD_STORAGE(struct thread_local);
   /* function(:mixed) */
   ADD_FUNCTION("get",f_thread_local_get,tFunc(tNone,tMix),0);
   /* function(mixed:mixed) */
   ADD_FUNCTION("set",f_thread_local_set,tFunc(tMix,tMix),0);
-  thread_local_prog=end_program();
+  thread_local_prog=new_program;
+  add_ref(thread_local_prog);
+  end_class("thread_local", 0);
   if(!thread_local_prog)
     fatal("Failed to initialize thread_local program!\n");
-  /* function(:object(thread_local_prog)) */
-  ADD_EFUN_DTYPE("thread_local",f_thread_local,
-		 dtFunc(dtNone,dtObjInher(thread_local_prog)),
-		 OPT_SIDE_EFFECT);
+  /* function(:object(thread_local)) */
+  ADD_EFUN("thread_local",f_thread_local,
+	   tFunc(tNone,tObjIs_THREAD_LOCAL),
+	   OPT_SIDE_EFFECT);
 
-  start_new_program();
+  START_NEW_PROGRAM_ID(THREAD_ID);
   thread_storage_offset=ADD_STORAGE(struct thread_state);
   thread_id_result_variable=simple_add_variable("result","mixed",0);
   /* function(:array) */
@@ -1233,22 +1240,24 @@ void th_init(void)
   set_gc_check_callback(thread_was_checked);
   set_init_callback(init_thread_obj);
   set_exit_callback(exit_thread_obj);
-  thread_id_prog=end_program();
+  thread_id_prog=new_program;
+  add_ref(thread_id_prog);
+  end_class("thread_id", 0);
 
-  /* function(mixed ...:object(thread_id_prog)) */
-  ADD_EFUN_DTYPE("thread_create",f_thread_create,
-		 dtFuncV(dtNone,dtMixed,dtObjInher(thread_id_prog)),
-		 OPT_SIDE_EFFECT);
+  /* function(mixed ...:object(thread_id)) */
+  ADD_EFUN("thread_create",f_thread_create,
+	   tFuncV(tNone,tMixed,tObjIs_THREAD_ID),
+	   OPT_SIDE_EFFECT);
 
-  /* function(:object(thread_id_prog)) */
-  ADD_EFUN_DTYPE("this_thread",f_this_thread,
-		 dtFunc(dtNone,dtObjInher(thread_id_prog)),
-		 OPT_EXTERNAL_DEPEND);
+  /* function(:object(thread_id)) */
+  ADD_EFUN("this_thread",f_this_thread,
+	   tFunc(tNone,tObjIs_THREAD_ID),
+	   OPT_EXTERNAL_DEPEND);
 
-  /* function(:array(object(thread_id_prog))) */
-  ADD_EFUN_DTYPE("all_threads",f_all_threads,
-		 dtFunc(dtNone,dtArr(dtObjInher(thread_id_prog))),
-		 OPT_EXTERNAL_DEPEND);
+  /* function(:array(object(thread_id))) */
+  ADD_EFUN("all_threads",f_all_threads,
+	   tFunc(tNone,tArr(tObjIs_THREAD_ID)),
+	   OPT_EXTERNAL_DEPEND);
 
   /* Some constants... */
   add_integer_constant("THREAD_NOT_STARTED", THREAD_NOT_STARTED, 0);
