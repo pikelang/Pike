@@ -1,5 +1,5 @@
 /*
- * $Id: GLU.pmod,v 1.9 2001/11/19 16:21:12 nilsson Exp $
+ * $Id: GLU.pmod,v 1.10 2002/02/13 02:59:53 nilsson Exp $
  *
  * GL Utilities module.
  */
@@ -104,8 +104,6 @@ void gluPickMatrix(float x, float y,
   glMultMatrix( m );
 }
 
-//! @fixme
-//!   Document this function.
 static void transform_point(array(float) out, array(float)m,
 			    array(float) in)
 {
