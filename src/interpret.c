@@ -5,7 +5,7 @@
 \*/
 /**/
 #include "global.h"
-RCSID("$Id: interpret.c,v 1.162 2000/08/10 08:38:20 grubba Exp $");
+RCSID("$Id: interpret.c,v 1.163 2000/08/10 19:31:03 grubba Exp $");
 #include "interpret.h"
 #include "object.h"
 #include "program.h"
@@ -546,7 +546,8 @@ void dump_backlog(void)
 	fprintf(stderr,"(%ld)", (long)backlog[e].arg);
       }
       fprintf(stderr," %ld, %ld\n",
-	      (long)backlog[e].stack, (long)backlog[e].mark_stack);
+	      DO_NOT_WARN((long)backlog[e].stack),
+	      DO_NOT_WARN((long)backlog[e].mark_stack));
     }
   }while(e!=backlogp);
 }
@@ -849,7 +850,7 @@ PMOD_EXPORT void mega_apply2(enum apply_type type, INT32 args, void *arg1, void 
 #endif
     if(!o->prog)
       PIKE_ERROR("destructed object", "Apply on destructed object.\n", Pike_sp, args);
-    fun=FIND_LFUN(o->prog,fun);
+    fun = FIND_LFUN(o->prog, fun);
     goto apply_low;
   
 
@@ -900,7 +901,8 @@ PMOD_EXPORT void mega_apply2(enum apply_type type, INT32 args, void *arg1, void 
       if(fun>=(int)p->num_identifier_references)
       {
 	fprintf(stderr, "Function index out of range. %ld >= %d\n",
-		(long)fun, (int)p->num_identifier_references);
+		DO_NOT_WARN((long)fun),
+		(int)p->num_identifier_references);
 	fprintf(stderr,"########Program is:\n");
 	describe(p);
 	fprintf(stderr,"########Object is:\n");
@@ -953,7 +955,7 @@ PMOD_EXPORT void mega_apply2(enum apply_type type, INT32 args, void *arg1, void 
       new_frame->locals = Pike_sp - args;
       new_frame->expendible = new_frame->locals;
       new_frame->args = args;
-      new_frame->fun = fun;
+      new_frame->fun = DO_NOT_WARN((unsigned INT16)fun);
       new_frame->current_storage = o->storage+new_frame->context.storage_offset;
       new_frame->pc = 0;
       new_frame->scope=scope;

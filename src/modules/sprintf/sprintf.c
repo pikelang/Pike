@@ -103,7 +103,7 @@
 */
 
 #include "global.h"
-RCSID("$Id: sprintf.c,v 1.71 2000/08/10 19:29:04 grubba Exp $");
+RCSID("$Id: sprintf.c,v 1.72 2000/08/10 19:30:00 grubba Exp $");
 #include "error.h"
 #include "array.h"
 #include "svalue.h"
@@ -153,7 +153,7 @@ struct format_info
   short flags;
   char pos_pad;
   int column_width;
-  int column_modulo;
+  ptrdiff_t column_modulo;
 };
 
 /* FIXME:
@@ -588,7 +588,7 @@ INLINE static int do_one(struct format_stack *fs,
   }
   else if(f->flags & COLUMN_MODE)
   {
-    int mod;
+    ptrdiff_t mod;
     ptrdiff_t col;
     PCHARP end;
 
