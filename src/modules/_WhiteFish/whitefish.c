@@ -3,7 +3,7 @@
 #include "global.h"
 #include "stralloc.h"
 #include "global.h"
-RCSID("$Id: whitefish.c,v 1.26 2001/05/31 00:19:26 js Exp $");
+RCSID("$Id: whitefish.c,v 1.27 2001/05/31 00:26:33 js Exp $");
 #include "pike_macros.h"
 #include "interpret.h"
 #include "program.h"
@@ -128,7 +128,7 @@ static void handle_hit( Blob **blobs,
   }
 }
 
-static struct object *low_do_query_merge( Blob **blobs,
+static struct object *low_do_query_or( Blob **blobs,
 					  int nblobs,
 					  double field_c[66],
 					  double prox_c[8],
@@ -619,7 +619,7 @@ static void f_do_query_or( INT32 args )
   for( i = 0; i<66; i++ )
     field_coefficients[i] = (double)_field->item[i].u.integer;
 
-  res = low_do_query_merge(blobs,numblobs,
+  res = low_do_query_or(blobs,numblobs,
 			   field_coefficients,
 			   proximity_coefficients,
 			   cutoff );
