@@ -199,6 +199,7 @@ static void matrix_create(INT32 args)
       }
 
 done_made:
+      ;
    }
    else
       SIMPLE_BAD_ARG_ERROR("matrix",1,"array|int");
