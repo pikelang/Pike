@@ -2,7 +2,7 @@
 
 #pragma strict_types
 
-/* $Id: mkpeep.pike,v 1.22 2001/01/31 21:42:55 mast Exp $ */
+/* $Id: mkpeep.pike,v 1.23 2001/09/24 17:02:58 grubba Exp $ */
 
 #define JUMPBACK 3
 
@@ -445,8 +445,6 @@ int main(int argc, array(string) argv)
 	"  fifo_len=0;\n"
 	"  init_bytecode();\n\n"
 	"  for(eye=0;eye<len || fifo_len;)\n  {\n"
-	"    INT32 current_line;\n"
-	"    struct pike_string *current_file;\n"
 	"\n"
 	"#ifdef PIKE_DEBUG\n"
 	"    if(a_flag>6) {\n"

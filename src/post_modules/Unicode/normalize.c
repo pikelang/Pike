@@ -1,7 +1,7 @@
 #include "global.h"
 #include "stralloc.h"
 #include "global.h"
-RCSID("$Id: normalize.c,v 1.5 2001/07/03 23:55:21 per Exp $");
+RCSID("$Id: normalize.c,v 1.6 2001/09/24 17:03:59 grubba Exp $");
 #include "pike_macros.h"
 #include "interpret.h"
 #include "program.h"
@@ -176,7 +176,6 @@ int get_compose_pair( int c1, int c2 )
 static void rec_get_decomposition( int canonical, int c, struct buffer *tmp )
 {
   const struct decomp *decomp = get_decomposition( c );
-  int i;
   
   if( decomp && !(canonical && decomp->compat) )
   {
