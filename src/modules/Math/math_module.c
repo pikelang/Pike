@@ -1,5 +1,5 @@
 /*
- * $Id: math_module.c,v 1.3 1999/10/25 19:07:04 mirar Exp $
+ * $Id: math_module.c,v 1.4 1999/11/08 22:40:16 grubba Exp $
  */
 
 #include "global.h"
@@ -30,6 +30,8 @@ void pike_module_exit(void)
    for (i=0; i<(int)(sizeof(sub)/sizeof(sub[0])); i++)
       if (sub[i].pd && sub[i].pd[0])
 	 free_program(sub[i].pd[0]);
+
+   exit_math_matrix();
 }
 
 void pike_module_init(void)

@@ -1,4 +1,4 @@
-/* $Id: math_matrix.c,v 1.11 1999/10/29 19:16:04 mirar Exp $ */
+/* $Id: math_matrix.c,v 1.12 1999/11/08 22:39:28 grubba Exp $ */
 
 #include "global.h"
 #include "config.h"
@@ -745,13 +745,13 @@ static void matrix_cross(INT32 args)
 
 /* ---------------------------------------------------------------- */
 
-void init_math_matrix()
+void init_math_matrix(void)
 {
 #define MKSTR(X) make_shared_binary_string(X,CONSTANT_STRLEN(X))
-   dmalloc_accept_leak( s_array=MKSTR("array") );
-   dmalloc_accept_leak( s_rotate=MKSTR("rotate") );
-   dmalloc_accept_leak( s__clr=MKSTR("clr") );
-   dmalloc_accept_leak( s_identity=MKSTR("identity") );
+   s_array=MKSTR("array");
+   s_rotate=MKSTR("rotate");
+   s__clr=MKSTR("clr");
+   s_identity=MKSTR("identity");
 
    ADD_STORAGE(struct matrix_storage);
    
@@ -808,4 +808,24 @@ void init_math_matrix()
 		"function(object:object)",0);
    add_function("``×",matrix_cross,
 		"function(object:object)",0);
+}
+
+void exit_math_matrix(void)
+{
+  if (s_array) {
+    free_string(s_array);
+    s_array = NULL;
+  }
+  if (s_rotate) {
+    free_string(s_rotate);
+    s_rotate = NULL;
+  }
+  if (s__clr) {
+    free_string(s__clr);
+    s__clr = NULL;
+  }
+  if (s_identity) {
+    free_string(s_identity);
+    s_identity = NULL;
+  }
 }
