@@ -16,8 +16,8 @@ int main(int argc, string *argv)
     write("Crypto ");
   };
 
-  foreach(({ "CommonLog", "Dbm", "Gdbm", "Gmp", "Gz", "Msql", "Mysql", "Odbc",
-	 "Oracle", "Postgres", "Ssleay", "WideValues", "X", "Yp" }),
+  foreach(({ "CommonLog", "Dbm", "Gdbm", "Gmp", "Gz", "MIME", "Msql", "Mysql",
+	 "Odbc", "Oracle", "Postgres", "Ssleay", "WideValues", "X", "Yp" }),
 	 string modname) {
     catch { if (sizeof(indices(master()->resolv(modname))))
       write(modname+" ");
