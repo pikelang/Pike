@@ -1,4 +1,4 @@
-# $Id: configure.in,v 1.4 2000/11/14 19:26:43 marcus Exp $
+# $Id: configure.in,v 1.5 2001/01/27 03:58:48 mast Exp $
 AC_INIT(image_xface.c)
 AC_CONFIG_HEADER(config.h)
 AC_ARG_WITH(gmp,     [  --with(out)-gmp        Support bignums],[],[with_gmp=yes])
@@ -46,7 +46,9 @@ esac
 define([AC_CHECK_GMP],
 [
   done=no
-  AC_CHECK_HEADERS($2,[
+  AC_CHECK_HEADER($2,[
+    ac_safe=`echo "$ac_hdr" | sed 'y%./+-%__p_%'`
+    eval "ac_cv_header_$ac_safe=yes"
 
     # This test is needed since the __MPN macro
     # is broken on many versions of gmp, since
