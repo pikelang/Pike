@@ -1,5 +1,5 @@
 #
-# $Id: Makefile.in,v 1.127 1999/06/10 23:16:54 hubbe Exp $
+# $Id: Makefile.in,v 1.128 2001/04/06 15:39:50 grubba Exp $
 #
 
 # This line is needed on some machines.
@@ -475,7 +475,7 @@ aclocal: $(SRCDIR)/aclocal.m4
 # and thus has to follow the rules stated in that code.
 export: new_peep_engine $(SRCDIR)/language.c $(SRCDIR)/language.h depend
 	chmod +x $(SRCDIR)/install-sh
-	$(RUNPIKE) $(TMP_BINDIR)/export.pike Oracle rsql.pike rsqld.pike _Crypto
+	$(RUNPIKE) $(TMP_BINDIR)/export.pike rsql.pike rsqld.pike SSL.pmod
 
 full_export: new_peep_engine $(SRCDIR)/language.c $(SRCDIR)/language.h depend
 	chmod +x $(SRCDIR)/install-sh
