@@ -1,5 +1,5 @@
 //
-//  $Id: Cipher.pmod,v 1.13 2004/02/29 02:56:04 nilsson Exp $
+//  $Id: Cipher.pmod,v 1.14 2004/07/06 15:42:47 grubba Exp $
 
 #pike __REAL_VERSION__
 
@@ -193,13 +193,13 @@ class DES
 
   this_program set_encrypt_key(string k)
   {
-    set_encrypt_key(Crypto.DES->fix_parity(k));
+    ::set_encrypt_key(Crypto.DES->fix_parity(k));
     return this;
   }
 
   this_program set_decrypt_key(string k)
   {
-    set_decrypt_key(Crypto.DES->fix_parity(k));
+    ::set_decrypt_key(Crypto.DES->fix_parity(k));
     return this;
   }
 }
@@ -213,13 +213,13 @@ class DES3
 
   this_program set_encrypt_key(string k)
   {
-    set_encrypt_key(Crypto.DES3->fix_parity(k));
+    ::set_encrypt_key(Crypto.DES3->fix_parity(k));
     return this;
   }
 
   this_program set_decrypt_key(string k)
   {
-    set_decrypt_key(Crypto.DES3->fix_parity(k));
+    ::set_decrypt_key(Crypto.DES3->fix_parity(k));
     return this;
   }
 }
