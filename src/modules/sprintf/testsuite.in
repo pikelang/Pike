@@ -56,6 +56,12 @@ test_eq(sprintf("test \0"),"test \0")
 test_eq(sprintf("%~*n","f",5),"fffff")
 test_eq(sprintf("%'\000'*n",5),"\000\000\000\000\000")
 
+test_true([[sprintf("%{%{%s%}\n%}",({({"hej"}),({"hop"})}))]])
+test_true([[sprintf("%{%{%s%}\n%}",({({"hej"}),({"hop"})}))]])
+test_true([[sprintf("%{%{%s%}\n%}",({({"hej"}),({"hop"})}))]])
+test_true([[sprintf("%{%{%s%}\n%}",({({"hej"}),({"hop"})}))]])
+test_true([[sprintf("%{%{%s%}\n%}",({({"hej"}),({"hop"})}))]])
+
 dnl . : and ; hasn't been tested
 dnl ^, @ and _ hasn't been tested yet
 test_eval_error(sprintf("%d"))
