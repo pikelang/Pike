@@ -1,6 +1,6 @@
 #!/bin/sh
 #
-# $Id: run_autoconfig,v 1.28 2000/07/28 20:51:49 hubbe Exp $
+# $Id: run_autoconfig,v 1.29 2000/07/28 21:22:01 hubbe Exp $
 #
 # Bootstrap script
 
@@ -32,7 +32,7 @@ else
 fi
 
 IFS=''
-( find . -follow -type d -print || find .-type d -print ) |egrep -v '/(CVS)|(RCS)$'| while read dir; do
+( find . -follow -type d -print || find .-type d -print ) |egrep -v '/(CVS)|(RCS)|(test-install)$'| while read dir; do
 
   if [ -f $dir/Makefile.am -a -f $dir/configure.in ]; then
     # aclocal needs to be run before autoconf
