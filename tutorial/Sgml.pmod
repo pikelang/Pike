@@ -15,10 +15,23 @@ class Tag
 
   string location()
   {
-    return "pos "+pos+" in file "+file;
+#if 1
+    if(file && file!="stdin")
+    {
+      Stdio.File f=Stdio.File();
+      if(f->open(file,"r"))
+      {
+	string *x=f->read(pos-1)/"\n";
+	return sprintf("line %d col %d in file %s",sizeof(x)+1,strlen(x[-1])+1,file);
+      }
+    }
+#endif
+    return "pos "+pos+" in file "+file; 
   }
 
-  void create(string t, void|mapping p, void|int po, 
+  void create(string t,
+	      void|mapping p,
+	      void|int po, 
 	      void|array(object|string) d, void|string f)
   {
     tag=t;

@@ -6,8 +6,30 @@ import Sgml;
 
 SGML low_make_concrete_wmml(SGML data);
 
+class Trace
+{
+  Trace prev;
+  Tag tag;
 
-static private int verify_any(SGML data, string in, string input, string input_name)
+  void create(Trace p, Tag t)
+  {
+    prev=p;
+    tag=t;
+  }
+
+  string dump()
+  {
+    return 
+      (tag ? "  In tag "+(tag->tag=="anchor"?tag->tag+" (name="+tag->params->name+")":tag->tag)+" near "+tag->location()+"\n" : "")+
+      (prev?prev->dump():"");
+  }
+}
+
+
+static private int verify_any(SGML data,
+			      Trace in,
+			      string input,
+			      string input_name)
 {
   int i=1;
   foreach(data,mixed x)
@@ -19,14 +41,14 @@ static private int verify_any(SGML data, string in, string input, string input_n
 	if(input[x->pos-1]!='<')
 	{
 	  werror("Location out of sync in tag "+x->tag+" near "+x->location()+"\n");
-	  werror(in);
+	  werror(in->dump());
 	}
       }
      
       if(strlen(x->tag) && x->tag[0]=='/')
       {
 	werror("Unmatched "+x->tag+" near "+x->location()+"\n");
-	werror(in);
+	werror(in->dump());
 	i=0;
 	continue;
       }
@@ -34,7 +56,7 @@ static private int verify_any(SGML data, string in, string input, string input_n
       {
       default:
 	werror("Unknown tag "+x->tag+" near "+x->location()+".\n");
-	werror(in);
+	werror(in->dump());
 	i=0;
 	break;
 
@@ -99,7 +121,7 @@ static private int verify_any(SGML data, string in, string input, string input_n
 	if(!x->data)
 	{
 	  werror("Tag "+x->tag+" not closed near "+x->location()+".\n");
-	  werror(in);
+	  werror(in->dump());
 	  i=0;
 	}
 
@@ -121,7 +143,7 @@ static private int verify_any(SGML data, string in, string input, string input_n
 	if(x->data)
 	{
 	  werror("Tag "+x->tag+" should not be closed near "+x->location()+"\n");
-	  werror(in);
+	  werror(in->dump());
 	  i=0;
 	}
       case "p":
@@ -130,7 +152,7 @@ static private int verify_any(SGML data, string in, string input, string input_n
 
       if(x->data)
 	if(!verify_any(x->data,
-		       ("  In tag "+(x->tag=="anchor"?x->tag+" (name="+x->params->name+")":x->tag)+" near "+x->location()+"\n"+in),
+		       Trace(in,x),
 		       input,
 		       input_name))
 	  i=0;
@@ -141,7 +163,7 @@ static private int verify_any(SGML data, string in, string input, string input_n
 
 int verify(SGML data, string input, string input_name)
 {
-  return verify_any(data,"", input, input_name);
+  return verify_any(data,Trace(0,0), input, input_name);
 }
 
 INDEX_DATA collect_index(SGML data, void|INDEX_DATA index,void|mapping taken)
@@ -679,7 +701,7 @@ SGML low_make_concrete_wmml(SGML data)
 			tag->pos,
 			({
 			  Tag("tt",([]),tag->pos,({name})),
-			    })),
+			    }),tag->file),
 		      ", "
 			});
 		}
