@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: math_matrix.c,v 1.35 2002/10/11 01:39:45 nilsson Exp $
+|| $Id: math_matrix.c,v 1.36 2002/10/21 17:06:16 marcus Exp $
 */
 
 #include "global.h"
@@ -26,8 +26,6 @@
 #include "pike_macros.h"
 #include "math_module.h"
 
-/* must be included last */
-#include "module_magic.h"
 #include "bignum.h"
 
 /*

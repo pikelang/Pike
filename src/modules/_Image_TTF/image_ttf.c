@@ -2,13 +2,14 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: image_ttf.c,v 1.46 2002/10/11 01:39:54 nilsson Exp $
+|| $Id: image_ttf.c,v 1.47 2002/10/21 17:06:25 marcus Exp $
 */
 
 #include "config.h"
 
 #include "global.h"
-RCSID("$Id: image_ttf.c,v 1.46 2002/10/11 01:39:54 nilsson Exp $");
+RCSID("$Id: image_ttf.c,v 1.47 2002/10/21 17:06:25 marcus Exp $");
+#include "module.h"
 
 #ifdef HAVE_LIBTTF
 #if defined(HAVE_FREETYPE_FREETYPE_H) && defined(HAVE_FREETYPE_FTXKERN_H)
@@ -52,8 +53,6 @@ static TT_Engine engine;
 
 #endif /* HAVE_LIBTTF */
 
-/* This must be included last! */
-#include "module_magic.h"
 
 #define sp Pike_sp
 
@@ -1242,7 +1241,7 @@ static void image_ttf_faceinstance_face(INT32 args)
 /*** module init & exit & stuff *****************************************/
 
 
-void pike_module_exit(void)
+PIKE_MODULE_EXIT
 {
    free_string(param_baseline);
    free_string(param_quality);
@@ -1260,7 +1259,7 @@ void pike_module_exit(void)
 #endif /* HAVE_LIBTTF */
 }
 
-void pike_module_init(void)
+PIKE_MODULE_INIT
 {
 #ifdef HAVE_LIBTTF
    unsigned char palette[5]={0,64,128,192,255};

@@ -2,13 +2,14 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: image_module.c,v 1.16 2002/10/11 01:39:42 nilsson Exp $
+|| $Id: image_module.c,v 1.17 2002/10/21 17:06:14 marcus Exp $
 */
 
 #include "global.h"
 #include "stralloc.h"
 #include "global.h"
-RCSID("$Id: image_module.c,v 1.16 2002/10/11 01:39:42 nilsson Exp $");
+RCSID("$Id: image_module.c,v 1.17 2002/10/21 17:06:14 marcus Exp $");
+#include "module.h"
 #include "pike_macros.h"
 #include "interpret.h"
 #include "program.h"
@@ -20,8 +21,6 @@ RCSID("$Id: image_module.c,v 1.16 2002/10/11 01:39:42 nilsson Exp $");
 #include "assembly.h"
 #include "image_machine.h"
 
-/* This must be included last! */
-#include "module_magic.h"
 
 #define sp Pike_sp
 #define fp Pike_fp
@@ -235,7 +234,7 @@ static void init_cpuidflags( )
 }
 #endif
 
-void pike_module_init(void)
+PIKE_MODULE_INIT
 {
    char type_of_index[]=
       tFunc(tStr,tOr3(tObj,tPrg(tObj),""))
@@ -313,7 +312,7 @@ void pike_module_init(void)
    add_program_constant("colortable",image_colortable_program,0);
 }
 
-void pike_module_exit(void) 
+PIKE_MODULE_EXIT
 {
    int i;
    for (i=0; i<(int)NELEM(initclass); i++)

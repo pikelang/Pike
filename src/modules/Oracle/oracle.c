@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: oracle.c,v 1.73 2002/10/11 01:39:47 nilsson Exp $
+|| $Id: oracle.c,v 1.74 2002/10/21 17:06:20 marcus Exp $
 */
 
 /*
@@ -39,10 +39,6 @@
 #include "pike_macros.h"
 #include "version.h"
 
-#if (PIKE_MAJOR_VERSION - 0 > 7) || (PIKE_MAJOR_VERSION - 0 == 7 && PIKE_MINOR_VERSION - 0 >= 1)
-/* must be included last */
-#include "module_magic.h"
-#endif
 
 #ifdef HAVE_ORACLE
 
@@ -58,7 +54,7 @@
 
 #include <math.h>
 
-RCSID("$Id: oracle.c,v 1.73 2002/10/11 01:39:47 nilsson Exp $");
+RCSID("$Id: oracle.c,v 1.74 2002/10/21 17:06:20 marcus Exp $");
 
 
 /* User-changable defines: */
@@ -2166,7 +2162,7 @@ static void dbnull_not(INT32 args)
   push_int(1);
 }
 
-void pike_module_init(void)
+PIKE_MODULE_INIT
 {
   long offset=0;
 #ifdef ORACLE_HOME
@@ -2298,7 +2294,7 @@ void pike_module_init(void)
 
 static void call_atexits(void);
 
-void pike_module_exit(void)
+PIKE_MODULE_EXIT
 {
 #ifdef ORACLE_DEBUG
   fprintf(stderr,"%s\n",__FUNCTION__);
@@ -2366,7 +2362,7 @@ static void call_atexits(void)
 
 #else /* HAVE_ORACLE */
 
-void pike_module_init(void)  {}
-void pike_module_exit(void)  {}
+PIKE_MODULE_INIT  {}
+PIKE_MODULE_EXIT  {}
 
 #endif

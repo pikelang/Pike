@@ -2,13 +2,13 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: xbm.c,v 1.17 2002/10/11 01:39:44 nilsson Exp $
+|| $Id: xbm.c,v 1.18 2002/10/21 17:06:15 marcus Exp $
 */
 
 #define NO_PIKE_SHORTHAND
 
 #include "global.h"
-RCSID("$Id: xbm.c,v 1.17 2002/10/11 01:39:44 nilsson Exp $");
+RCSID("$Id: xbm.c,v 1.18 2002/10/21 17:06:15 marcus Exp $");
 
 #include "image_machine.h"
 
@@ -46,8 +46,6 @@ RCSID("$Id: xbm.c,v 1.17 2002/10/11 01:39:44 nilsson Exp $");
 #include "image.h"
 #include "colortable.h"
 
-/* MUST BE INCLUDED LAST */
-#include "module_magic.h"
 
 
 extern struct program *image_colortable_program;

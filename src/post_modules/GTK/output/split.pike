@@ -184,8 +184,8 @@ array(string) output( mapping(string:Class) classes,
 
   write_file( dir+"pgtk.c",
               pre + toplevel +
-              "void pike_module_init() {\n"+make_initfun()+initfun+"}\n\n"
-              "void pike_module_exit() {\n"+exitfun+"}\n\n"
+              "PIKE_MODULE_INIT {\n"+make_initfun()+initfun+"}\n\n"
+              "PIKE_MODULE_EXIT {\n"+exitfun+"}\n\n"
               "struct program *pgtk_type_to_program(GtkWidget *widget)\n"
               "{\n"
               +type_switch+

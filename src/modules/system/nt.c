@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: nt.c,v 1.53 2002/10/11 01:39:56 nilsson Exp $
+|| $Id: nt.c,v 1.54 2002/10/21 17:06:27 marcus Exp $
 */
 
 /*
@@ -237,7 +237,7 @@ static void push_regvalue(DWORD type, char* buffer, DWORD len)
  * (On W2k/IA64 HKEY is typedefed to struct HKEY__ *).
  *
  * NOTE: Order must match the values specified with
- * ADD_GLOBAL_INTEGER_CONSTANT() in init_pike_module() below.
+ * ADD_GLOBAL_INTEGER_CONSTANT() in init_nt_system_calls() below.
  */
 static const HKEY hkeys[] = {
   HKEY_CLASSES_ROOT,

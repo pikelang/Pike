@@ -2,11 +2,11 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: gdbmmod.c,v 1.21 2002/10/11 01:39:40 nilsson Exp $
+|| $Id: gdbmmod.c,v 1.22 2002/10/21 17:06:12 marcus Exp $
 */
 
 #include "global.h"
-RCSID("$Id: gdbmmod.c,v 1.21 2002/10/11 01:39:40 nilsson Exp $");
+RCSID("$Id: gdbmmod.c,v 1.22 2002/10/21 17:06:12 marcus Exp $");
 #include "gdbm_machine.h"
 #include "threads.h"
 
@@ -18,17 +18,11 @@ RCSID("$Id: gdbmmod.c,v 1.21 2002/10/11 01:39:40 nilsson Exp $");
 #include "array.h"
 #include "object.h"
 #include "pike_macros.h"
+#include "module.h"
 
 #if defined(HAVE_GDBM_H) && defined(HAVE_LIBGDBM)
 
 #include <gdbm.h>
-
-#endif /* defined(HAVE_GDBM_H) && defined(HAVE_LIBGDBM) */
-
-/* THIS MUST BE INCLUDED LAST */
-#include "module_magic.h"
-
-#if defined(HAVE_GDBM_H) && defined(HAVE_LIBGDBM)
 
 #ifdef _REENTRANT
 static MUTEX_T gdbm_lock STATIC_MUTEX_INIT;
@@ -461,9 +455,9 @@ static void exit_gdbm_glue(struct object *o)
 
 #endif /* defined(HAVE_GDBM_H) && defined(HAVE_LIBGDBM) */
 
-void pike_module_exit(void) {}
+PIKE_MODULE_EXIT {}
 
-void pike_module_init(void)
+PIKE_MODULE_INIT
 {
 #if defined(HAVE_GDBM_H) && defined(HAVE_LIBGDBM)
   start_new_program();

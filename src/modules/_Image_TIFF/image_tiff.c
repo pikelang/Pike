@@ -2,10 +2,11 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: image_tiff.c,v 1.30 2002/10/11 01:39:53 nilsson Exp $
+|| $Id: image_tiff.c,v 1.31 2002/10/21 17:06:25 marcus Exp $
 */
 
 #include "global.h"
+#include "module.h"
 #include "config.h"
 /*
 **! module Image
@@ -14,7 +15,7 @@
 */
 
 #ifdef HAVE_LIBTIFF
-RCSID("$Id: image_tiff.c,v 1.30 2002/10/11 01:39:53 nilsson Exp $");
+RCSID("$Id: image_tiff.c,v 1.31 2002/10/21 17:06:25 marcus Exp $");
 
 #include "global.h"
 #include "machine.h"
@@ -42,8 +43,6 @@ RCSID("$Id: image_tiff.c,v 1.30 2002/10/11 01:39:53 nilsson Exp $");
 #endif
 #include <tiffio.h>
 
-/* This must be included last! */
-#include "module_magic.h"
 
 #define sp Pike_sp
 
@@ -812,14 +811,9 @@ void my_tiff_warning_handler(const char* module, const char* fmt, va_list x){}
 /* Complies with the TIFFErrorHandler API */
 void my_tiff_error_handler(const char* module, const char* fmt, va_list x){}
 
-#else
-
-/* This must be included last! */
-#include "module_magic.h"
-
 #endif /* HAVE_LIBTIFF */
 
-void pike_module_init(void)
+PIKE_MODULE_INIT
 {
 #ifdef HAVE_LIBTIFF
 #ifdef DYNAMIC_MODULE
@@ -888,7 +882,7 @@ void pike_module_init(void)
 #endif /* HAVE_LIBTIFF */
 }
 
-void pike_module_exit(void)
+PIKE_MODULE_EXIT
 {
 #ifdef HAVE_LIBTIFF
   free_string(opt_compression);

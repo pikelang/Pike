@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: mird_glue.c,v 1.19 2002/10/11 01:39:46 nilsson Exp $
+|| $Id: mird_glue.c,v 1.20 2002/10/21 17:06:16 marcus Exp $
 */
 
 #include "global.h"
@@ -24,8 +24,6 @@
 #define HAVE_MIRD
 #endif
 #endif
-
-#include "module_magic.h"
 
 #define sp Pike_sp
 #define fp Pike_fp
@@ -1419,7 +1417,7 @@ static void m_debug_check_mem(INT32 args)
 
 /**** module stuff *********************************/
 
-void pike_module_init(void)
+PIKE_MODULE_INIT
 {
 #if 0
    struct program *p;
@@ -1531,7 +1529,7 @@ void pike_module_init(void)
 #endif
 }
 
-void pike_module_exit(void)
+PIKE_MODULE_EXIT
 {
    free_program(mird_program);
    free_program(mird_transaction_program);
@@ -1540,7 +1538,7 @@ void pike_module_exit(void)
 
 #else
 
-void pike_module_init(void) {}
-void pike_module_exit(void) {}
+PIKE_MODULE_INIT {}
+PIKE_MODULE_EXIT {}
 
 #endif

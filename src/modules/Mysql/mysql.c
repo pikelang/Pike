@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: mysql.c,v 1.60 2002/10/20 22:05:07 marcus Exp $
+|| $Id: mysql.c,v 1.61 2002/10/21 17:06:20 marcus Exp $
 */
 
 /*
@@ -61,6 +61,7 @@
 #endif /* HAVE_MYSQL */
 
 /* From the Pike-dist */
+#include "module.h"
 #include "svalue.h"
 #include "object.h"
 #include "stralloc.h"
@@ -81,7 +82,6 @@
 #include <memory.h>
 #endif
 
-#include "module_magic.h"
 
 #define sp Pike_sp
 
@@ -94,7 +94,7 @@
  * Globals
  */
 
-RCSID("$Id: mysql.c,v 1.60 2002/10/20 22:05:07 marcus Exp $");
+RCSID("$Id: mysql.c,v 1.61 2002/10/21 17:06:20 marcus Exp $");
 
 /*! @module Mysql
  *!
@@ -1606,7 +1606,7 @@ static void f_binary_data(INT32 args)
  */
 
 
-void pike_module_init(void)
+PIKE_MODULE_INIT
 {
 #ifdef HAVE_MYSQL
   /*
@@ -1690,7 +1690,7 @@ void pike_module_init(void)
 #endif /* HAVE_MYSQL */
 }
 
-void pike_module_exit(void)
+PIKE_MODULE_EXIT
 {
 #ifdef HAVE_MYSQL
   exit_mysql_res();

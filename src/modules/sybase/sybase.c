@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: sybase.c,v 1.11 2002/10/11 01:39:55 nilsson Exp $
+|| $Id: sybase.c,v 1.12 2002/10/21 17:06:27 marcus Exp $
 */
 
 /*
@@ -30,7 +30,7 @@
 #include "sybase_config.h"
 #include "global.h"
 
-RCSID("$Id: sybase.c,v 1.11 2002/10/11 01:39:55 nilsson Exp $");
+RCSID("$Id: sybase.c,v 1.12 2002/10/21 17:06:27 marcus Exp $");
 
 #ifdef HAVE_SYBASE
 
@@ -49,9 +49,6 @@ RCSID("$Id: sybase.c,v 1.11 2002/10/11 01:39:55 nilsson Exp $");
 
 #include "sybase.h"
 
-
-/* This must be included last! */
-#include "module_magic.h"
 
 #define sp Pike_sp
 
@@ -1186,12 +1183,12 @@ static void f_fetch_fields(INT32 args) {
 /********/
 
 static struct program* sybase_program;
-void pike_module_exit (void) {
+PIKE_MODULE_EXIT {
   SYB_MT_EXIT(mainlock);
   if(sybase_program) free_program(sybase_program);
 }
 
-void pike_module_init (void) {
+PIKE_MODULE_INIT {
 
   sybdebug((stderr,"sybase driver release " SYBASE_DRIVER_VERSION "\n"));
 
@@ -1260,8 +1257,8 @@ void pike_module_init (void) {
 
 #else /* HAVE_SYBASE */
 /* This must be included last! */
-#include "module_magic.h"
+#include "module.h"
 
-void pike_module_init (void) {}
-void pike_module_exit (void) {}
+PIKE_MODULE_INIT {}
+PIKE_MODULE_EXIT {}
 #endif /* HAVE_SYBASE */

@@ -2,12 +2,14 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: freetype.c,v 1.9 2002/10/11 01:39:53 nilsson Exp $
+|| $Id: freetype.c,v 1.10 2002/10/21 17:06:24 marcus Exp $
 */
 
 #include "config.h"
 #include "global.h"
-RCSID("$Id: freetype.c,v 1.9 2002/10/11 01:39:53 nilsson Exp $");
+RCSID("$Id: freetype.c,v 1.10 2002/10/21 17:06:24 marcus Exp $");
+#include "module.h"
+#include "pike_error.h"
 
 #ifdef HAVE_LIBFT2
 #include <freetype/freetype.h>
@@ -19,7 +21,6 @@ RCSID("$Id: freetype.c,v 1.9 2002/10/11 01:39:53 nilsson Exp $");
 #include "threads.h"
 #include "array.h"
 #include "mapping.h"
-#include "pike_error.h"
 #include "stralloc.h"
 #include "builtin_functions.h"
 #include "module_support.h"
@@ -27,8 +28,6 @@ RCSID("$Id: freetype.c,v 1.9 2002/10/11 01:39:53 nilsson Exp $");
 #include "../Image/image.h"
 #endif /* HAVE_LIBFT2 */
 
-/* This must be included last! */
-#include "module_magic.h"
 
 #ifdef HAVE_LIBFT2
 
@@ -177,13 +176,13 @@ static void image_ft_face_create( INT32 args )
 }
 
   
-void pike_module_exit()
+PIKE_MODULE_EXIT
 {
   if( face_program )
     free_program( face_program );
 }
 
-void pike_module_init()
+PIKE_MODULE_INIT
 {
   if( !FT_Init_FreeType( &library ) )
   {
@@ -232,6 +231,6 @@ void pike_module_init()
   }
 }
 #else
-void pike_module_exit(){}
-void pike_module_init(){}
+PIKE_MODULE_EXIT{}
+PIKE_MODULE_INIT{}
 #endif

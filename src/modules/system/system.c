@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: system.c,v 1.128 2002/10/11 01:39:56 nilsson Exp $
+|| $Id: system.c,v 1.129 2002/10/21 17:06:27 marcus Exp $
 */
 
 /*
@@ -20,7 +20,7 @@
 #include "system_machine.h"
 #include "system.h"
 
-RCSID("$Id: system.c,v 1.128 2002/10/11 01:39:56 nilsson Exp $");
+RCSID("$Id: system.c,v 1.129 2002/10/21 17:06:27 marcus Exp $");
 #ifdef HAVE_WINSOCK_H
 #include <winsock.h>
 #endif
@@ -110,8 +110,6 @@ RCSID("$Id: system.c,v 1.128 2002/10/11 01:39:56 nilsson Exp $");
 
 #include "dmalloc.h"
 
-/* This must be included last! */
-#include "module_magic.h"
 
 #define sp Pike_sp
 
@@ -2484,7 +2482,7 @@ static void f_gettimeofday(INT32 args)
  * Module linkage
  */
 
-void pike_module_init(void)
+PIKE_MODULE_INIT
 {
   /*
    * From this file:
@@ -2807,7 +2805,7 @@ void pike_module_init(void)
 #include "add-errnos.h"
 }
 
-void pike_module_exit(void)
+PIKE_MODULE_EXIT
 {
 #ifdef __NT__
   {

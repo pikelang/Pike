@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: glue.c,v 1.31 2002/10/11 01:39:48 nilsson Exp $
+|| $Id: glue.c,v 1.32 2002/10/21 17:06:22 marcus Exp $
 */
 
 #include "global.h"
@@ -21,7 +21,7 @@
 #include "module_support.h"
 #include "builtin_functions.h"
 
-RCSID("$Id: glue.c,v 1.31 2002/10/11 01:39:48 nilsson Exp $");
+RCSID("$Id: glue.c,v 1.32 2002/10/21 17:06:22 marcus Exp $");
 
 #ifdef USE_SYSTEM_REGEXP
 #include <regexp.h>
@@ -41,8 +41,6 @@ struct regexp_glue
 
 #endif /* USE_SYSTEM_REGEXP */
 
-/* must be included last */
-#include "module_magic.h"
 
 #define sp Pike_sp
 
@@ -322,9 +320,9 @@ static void exit_regexp_glue(struct object *o)
 /*! @endmodule
  */
 
-void pike_module_exit(void) {}
+PIKE_MODULE_EXIT {}
 
-void pike_module_init(void)
+PIKE_MODULE_INIT
 {
   ADD_STORAGE(struct regexp_glue);
   

@@ -2,19 +2,20 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: ssleay.c,v 1.19 2002/10/11 01:39:49 nilsson Exp $
+|| $Id: ssleay.c,v 1.20 2002/10/21 17:06:23 marcus Exp $
 */
 
 #include "global.h"
 
 #include "config.h"
 
-RCSID("$Id: ssleay.c,v 1.19 2002/10/11 01:39:49 nilsson Exp $");
+RCSID("$Id: ssleay.c,v 1.20 2002/10/21 17:06:23 marcus Exp $");
 #include "interpret.h"
 #include "svalue.h"
 #include "stralloc.h"
 #include "array.h"
 #include "object.h"
+#include "module.h"
 /*  #include "pike_macros.h" */
 /*  #include "backend.h" */
 /*  #include "program.h" */
@@ -23,9 +24,6 @@ RCSID("$Id: ssleay.c,v 1.19 2002/10/11 01:39:49 nilsson Exp $");
 #ifdef HAVE_SYS_TYPE_H
 #include <sys/types.h>
 #endif
-
-/* must be included last */
-#include "module_magic.h"
 
 
 #ifdef HAVE_SSLEAY
@@ -277,7 +275,7 @@ void exit_connection(struct object *o)
 
 #endif /* HAVE_SSLEAY */
 
-void pike_module_exit(void)
+PIKE_MODULE_EXIT
 {
 #ifdef HAVE_SSLEAY
   free_program(ssleay_connection_program);
@@ -287,7 +285,7 @@ void pike_module_exit(void)
 #endif
 }
 
-void pike_module_init(void)
+PIKE_MODULE_INIT
 {
 #ifdef HAVE_SSLEAY
   ERR_load_ERR_strings();

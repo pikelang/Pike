@@ -2,14 +2,14 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: top.c,v 1.7 2002/10/11 01:39:59 nilsson Exp $
+|| $Id: top.c,v 1.8 2002/10/21 17:06:54 marcus Exp $
 */
 
 #include "global.h"
 
 #include "config.h"
 
-RCSID("$Id: top.c,v 1.7 2002/10/11 01:39:59 nilsson Exp $");
+RCSID("$Id: top.c,v 1.8 2002/10/21 17:06:54 marcus Exp $");
 #include "stralloc.h"
 #include "pike_macros.h"
 #include "object.h"
@@ -17,8 +17,7 @@ RCSID("$Id: top.c,v 1.7 2002/10/11 01:39:59 nilsson Exp $");
 #include "interpret.h"
 #include "builtin_functions.h"
 #include "pike_error.h"
-
-#include "module_magic.h"
+#include "module.h"
 
 #ifdef HAVE_LIBGLUT
 #ifdef HAVE_GL_GLUT_H
@@ -28,7 +27,7 @@ RCSID("$Id: top.c,v 1.7 2002/10/11 01:39:59 nilsson Exp $");
 #endif
 
 
-void pike_module_init( void )
+PIKE_MODULE_INIT
 {
 #ifdef HAVE_LIBGLUT
 #ifdef HAVE_GL_GLUT_H
@@ -39,6 +38,6 @@ void pike_module_init( void )
 }
 
 
-void pike_module_exit( void )
+PIKE_MODULE_EXIT
 {
 }

@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: gettext.c,v 1.12 2002/10/11 01:39:40 nilsson Exp $
+|| $Id: gettext.c,v 1.13 2002/10/21 17:06:12 marcus Exp $
 */
 
 #include "global.h"
@@ -26,12 +26,10 @@
 #include "mapping.h"
 #include "module_support.h"
 
-/* This must be included last */
-#include "module_magic.h"
 
 #define sp Pike_sp
 
-RCSID("$Id: gettext.c,v 1.12 2002/10/11 01:39:40 nilsson Exp $");
+RCSID("$Id: gettext.c,v 1.13 2002/10/21 17:06:12 marcus Exp $");
 
 /*! @module Locale
  */
@@ -473,7 +471,7 @@ void f_localeconv(INT32 args)
 /*! @endmodule
  */
 
-void pike_module_init(void)
+PIKE_MODULE_INIT
 {
 
 /* function(void:string) */
@@ -505,15 +503,15 @@ void pike_module_init(void)
   add_integer_constant("LC_TIME", LC_TIME, 0);
 }
 
-void pike_module_exit(void)
+PIKE_MODULE_EXIT
 {
 
 }
 #else
 
-#include "module_magic.h"
+#include "module.h"
 
-void pike_module_init(void) {}
-void pike_module_exit(void) {}
+PIKE_MODULE_INIT {}
+PIKE_MODULE_EXIT {}
 
 #endif

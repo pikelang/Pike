@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: html.c,v 1.155 2002/10/11 01:39:48 nilsson Exp $
+|| $Id: html.c,v 1.156 2002/10/21 17:06:21 marcus Exp $
 */
 
 #include "global.h"
@@ -27,8 +27,6 @@
 
 #include "parser.h"
 
-/* must be included last */
-#include "module_magic.h"
 
 #define sp Pike_sp
 

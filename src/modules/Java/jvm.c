@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: jvm.c,v 1.44 2002/10/11 01:39:45 nilsson Exp $
+|| $Id: jvm.c,v 1.45 2002/10/21 17:06:15 marcus Exp $
 */
 
 /*
@@ -22,7 +22,7 @@
 #endif /* HAVE_CONFIG_H */
 
 #include "global.h"
-RCSID("$Id: jvm.c,v 1.44 2002/10/11 01:39:45 nilsson Exp $");
+RCSID("$Id: jvm.c,v 1.45 2002/10/21 17:06:15 marcus Exp $");
 #include "program.h"
 #include "interpret.h"
 #include "stralloc.h"
@@ -137,8 +137,6 @@ struct att_storage {
 #ifdef _REENTRANT
 #define THIS_ATT ((struct att_storage *)(Pike_fp->current_storage))
 #endif /* _REENTRANT */
-
-#include "module_magic.h"
 
 /*
 
@@ -3266,11 +3264,9 @@ static void f_new_double_array(INT32 args)
     push_int(0);
 }
 
-#else
-#include "module_magic.h"
 #endif /* HAVE_JAVA */
 
-void pike_module_init(void)
+PIKE_MODULE_INIT
 {
 #ifdef HAVE_JAVA
   struct svalue prog;
@@ -3457,7 +3453,7 @@ void pike_module_init(void)
 #endif /* HAVE_JAVA */
 }
 
-void pike_module_exit(void)
+PIKE_MODULE_EXIT
 {
 #ifdef HAVE_JAVA
   if(jarray_program) {

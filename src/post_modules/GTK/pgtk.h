@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: pgtk.h,v 1.29 2002/10/11 01:39:59 nilsson Exp $
+|| $Id: pgtk.h,v 1.30 2002/10/21 17:07:10 marcus Exp $
 */
 
 /* Sort of unnessesary, and decreases code-size with 140Kb */
@@ -65,8 +65,6 @@
 #undef GTK_ACCEL_GROUP
 #define GTK_ACCEL_GROUP(X) ((void *)X)
 #include "../../modules/Image/image.h"
-
-#include "module_magic.h"
 
 struct object_wrapper
 {

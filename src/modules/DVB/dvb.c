@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: dvb.c,v 1.12 2002/10/11 01:39:39 nilsson Exp $
+|| $Id: dvb.c,v 1.13 2002/10/21 17:06:12 marcus Exp $
 */
 
 /*
@@ -23,7 +23,7 @@
  */
 
 #include "config.h"
-
+#include "module.h"
 
 #ifdef HAVE_DVB
 
@@ -78,12 +78,7 @@
 #include "operators.h"
 
 #include "dvb.h"
-#endif /* HAVE_DVB */
 
-/* MUST BE LAST */
-#include "module_magic.h"
-
-#ifdef HAVE_DVB
 
 /* WARNING: It is a design limit of DVB-S full cards! */
 #define MAX_PES_FD	8
@@ -1660,7 +1655,7 @@ static void exit_dvb_stream(struct object *obj) {
  * ---------------------
  */
 
-void pike_module_init() {
+PIKE_MODULE_INIT {
 
   /*
    * Internal constant names
@@ -1732,24 +1727,24 @@ void pike_module_init() {
 
   end_class("Audio", 0);
 
-} /* pike_module_init */
+} /* PIKE_MODULE_INIT */
 
-void pike_module_exit() {
+PIKE_MODULE_EXIT {
 
   if(dvb_program) {
     free_program(dvb_program);
     dvb_program = NULL;
   }
-} /* pike_module_exit */
+} /* PIKE_MODULE_EXIT */
 
 #else
 
-void pike_module_init() {
+PIKE_MODULE_INIT {
 
   /*add_integer_constant("DVB support IS MISSING", 0, 0);*/
 }
 
-void pike_module_exit() {
+PIKE_MODULE_EXIT {
 }
 
 #endif

@@ -2,12 +2,12 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: file.c,v 1.246 2002/10/11 01:39:54 nilsson Exp $
+|| $Id: file.c,v 1.247 2002/10/21 17:06:26 marcus Exp $
 */
 
 #define NO_PIKE_SHORTHAND
 #include "global.h"
-RCSID("$Id: file.c,v 1.246 2002/10/11 01:39:54 nilsson Exp $");
+RCSID("$Id: file.c,v 1.247 2002/10/21 17:06:26 marcus Exp $");
 #include "fdlib.h"
 #include "interpret.h"
 #include "svalue.h"
@@ -102,8 +102,6 @@ RCSID("$Id: file.c,v 1.246 2002/10/11 01:39:54 nilsson Exp $");
 
 #include "dmalloc.h"
 
-/* This must be included last! */
-#include "module_magic.h"
 
 #undef THIS
 #define THIS ((struct my_file *)(Pike_fp->current_storage))
@@ -3327,7 +3325,7 @@ void exit_files_efuns(void);
 void exit_sendfile(void);
 void port_exit_program(void);
 
-void pike_module_exit(void)
+PIKE_MODULE_EXIT
 {
   exit_files_efuns();
   exit_files_stat();
@@ -3416,7 +3414,7 @@ void port_setup_program(void);
 void init_sendfile(void);
 void init_udp(void);
 
-void pike_module_init(void)
+PIKE_MODULE_INIT
 {
   struct object *o;
 

@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: crypto.c,v 1.51 2002/10/11 01:39:51 nilsson Exp $
+|| $Id: crypto.c,v 1.52 2002/10/21 17:06:24 marcus Exp $
 */
 
 /*
@@ -25,6 +25,7 @@
 #include "threads.h"
 #include "object.h"
 #include "interpret.h"
+#include "module.h"
 
 /* System includes */
 #include <sys/types.h>
@@ -42,8 +43,6 @@
 /* Prototypes */
 #include "crypto.h"
 
-/* THIS MUST BE INCLUDED LAST */
-#include "module_magic.h"
 
 #define sp Pike_sp
 
@@ -633,7 +632,7 @@ void pike_crypto_init(void)
 
 void pike_crypto_exit(void) {}
 
-void pike_module_init(void)
+PIKE_MODULE_INIT
 {
   /* function(string:string) */
   ADD_FUNCTION("string_to_hex", f_string_to_hex, tFunc(tStr, tStr), 0);
@@ -667,7 +666,7 @@ void pike_module_init(void)
   /* END NATIONAL SECURITY */
 }  
 
-void pike_module_exit(void)
+PIKE_MODULE_EXIT
 {
   pike_md2_exit();
   pike_md4_exit();

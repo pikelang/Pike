@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: stardate.c,v 1.15 2002/10/11 01:39:55 nilsson Exp $
+|| $Id: stardate.c,v 1.16 2002/10/21 17:06:26 marcus Exp $
 */
 
 #include "global.h"
@@ -20,7 +20,7 @@
 #include "builtin_functions.h"
 #include "pike_error.h"
 
-RCSID("$Id: stardate.c,v 1.15 2002/10/11 01:39:55 nilsson Exp $");
+RCSID("$Id: stardate.c,v 1.16 2002/10/21 17:06:26 marcus Exp $");
 
 #ifdef HAVE_SYS_TIME_H 
 #include <sys/time.h>
@@ -28,8 +28,6 @@ RCSID("$Id: stardate.c,v 1.15 2002/10/11 01:39:55 nilsson Exp $");
 #include <time.h>
 #define	FIT(x,y) while((x)<0)(x)+=(y);while((x)>(y))(x)-=(y)
 
-/* This must be included last! */
-#include "module_magic.h"
 
 
 #define MAXPRECISION       7

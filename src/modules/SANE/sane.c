@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: sane.c,v 1.14 2002/10/11 01:39:49 nilsson Exp $
+|| $Id: sane.c,v 1.15 2002/10/21 17:06:22 marcus Exp $
 */
 
 #include "config.h"
@@ -36,12 +36,10 @@
 
 #include "../Image/image.h"
 
-/* must be included last */
-#include "module_magic.h"
 
 #define sp Pike_sp
 
-RCSID("$Id: sane.c,v 1.14 2002/10/11 01:39:49 nilsson Exp $");
+RCSID("$Id: sane.c,v 1.15 2002/10/21 17:06:22 marcus Exp $");
 
 /*! @module SANE
  *!
@@ -778,7 +776,7 @@ static void exit_scanner_struct( struct object *p )
     sane_close( THIS->h );
 }
 
-void pike_module_init()
+PIKE_MODULE_INIT
 {
   struct program *p;
   add_function( "list_scanners", f_list_scanners,
@@ -825,7 +823,7 @@ void pike_module_init()
   free_program( p );
 }
 
-void pike_module_exit()
+PIKE_MODULE_EXIT
 {
   if( sane_is_inited )
     sane_exit();
@@ -834,7 +832,7 @@ void pike_module_exit()
 }
 
 #else
-#include "module_magic.h"
-void pike_module_init() {}
-void pike_module_exit() {}
+#include "module.h"
+PIKE_MODULE_INIT {}
+PIKE_MODULE_EXIT {}
 #endif

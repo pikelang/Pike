@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: charsetmod.c,v 1.38 2002/10/11 01:39:49 nilsson Exp $
+|| $Id: charsetmod.c,v 1.39 2002/10/21 17:06:23 marcus Exp $
 */
 
 #ifdef HAVE_CONFIG_H
@@ -10,7 +10,7 @@
 #endif /* HAVE_CONFIG_H */
 
 #include "global.h"
-RCSID("$Id: charsetmod.c,v 1.38 2002/10/11 01:39:49 nilsson Exp $");
+RCSID("$Id: charsetmod.c,v 1.39 2002/10/21 17:06:23 marcus Exp $");
 #include "program.h"
 #include "interpret.h"
 #include "stralloc.h"
@@ -20,8 +20,6 @@ RCSID("$Id: charsetmod.c,v 1.38 2002/10/11 01:39:49 nilsson Exp $");
 
 #include "iso2022.h"
 
-/* MUST BE LAST INCLUDE */
-#include "module_magic.h"
 
 #define sp Pike_sp
 #define fp Pike_fp
@@ -1457,7 +1455,7 @@ static void f_feed_std16e(INT32 args)
 }
 
 
-void pike_module_init(void)
+PIKE_MODULE_INIT
 {
   int i;
   struct svalue prog;
@@ -1629,7 +1627,7 @@ void pike_module_init(void)
 			"function(string:string)|void:object)", 0);
 }
 
-void pike_module_exit(void)
+PIKE_MODULE_EXIT
 {
   extern void iso2022_exit(void);
 

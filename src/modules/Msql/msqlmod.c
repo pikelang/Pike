@@ -2,11 +2,12 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: msqlmod.c,v 1.22 2002/10/11 01:39:47 nilsson Exp $
+|| $Id: msqlmod.c,v 1.23 2002/10/21 17:06:17 marcus Exp $
 */
 
 /* All this code is pretty useless if we don't have a msql library...*/
 #include "global.h"
+#include "module.h"
 #include "msql_config.h"
 #ifdef HAVE_MSQL
 
@@ -32,7 +33,7 @@
 #include "operators.h"
 #include "multiset.h"
 
-RCSID("$Id: msqlmod.c,v 1.22 2002/10/11 01:39:47 nilsson Exp $");
+RCSID("$Id: msqlmod.c,v 1.23 2002/10/21 17:06:17 marcus Exp $");
 #include "version.h"
 
 #ifdef _REENTRANT
@@ -956,7 +957,7 @@ static void do_list_index (INT32 args)
 /*! @endmodule
  */
 
-void pike_module_init(void)
+PIKE_MODULE_INIT
 {
 	start_new_program();
 	ADD_STORAGE(struct msql_my_data);
@@ -1068,8 +1069,7 @@ void pike_module_init(void)
 }
 
 #else /*HAVE_MSQL*/
-#include "module_magic.h"
-void pike_module_init(void) {}
+PIKE_MODULE_INIT {}
 #endif /*HAVE_MSQL*/
 
-void pike_module_exit (void) { }
+PIKE_MODULE_EXIT { }

@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: wbf.c,v 1.13 2002/10/11 01:39:44 nilsson Exp $
+|| $Id: wbf.c,v 1.14 2002/10/21 17:06:15 marcus Exp $
 */
 
 #include "global.h"
@@ -12,7 +12,7 @@
 #include <ctype.h>
 
 #include "stralloc.h"
-RCSID("$Id: wbf.c,v 1.13 2002/10/11 01:39:44 nilsson Exp $");
+RCSID("$Id: wbf.c,v 1.14 2002/10/21 17:06:15 marcus Exp $");
 #include "pike_macros.h"
 #include "object.h"
 #include "mapping.h"
@@ -30,8 +30,6 @@ RCSID("$Id: wbf.c,v 1.13 2002/10/11 01:39:44 nilsson Exp $");
 #include "builtin_functions.h"
 #include "module_support.h"
 
-/* MUST BE INCLUDED LAST */
-#include "module_magic.h"
 
 #define sp Pike_sp
 

@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: invert.c,v 1.15 2002/10/11 01:39:51 nilsson Exp $
+|| $Id: invert.c,v 1.16 2002/10/21 17:06:24 marcus Exp $
 */
 
 /*
@@ -29,8 +29,6 @@
 #include "stralloc.h"
 #include "builtin_functions.h"
 
-/* THIS MUST BE INCLUDED LAST */
-#include "module_magic.h"
 
 #define sp Pike_sp
 

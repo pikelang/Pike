@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: yp.c,v 1.27 2002/10/11 01:39:49 nilsson Exp $
+|| $Id: yp.c,v 1.28 2002/10/21 17:06:23 marcus Exp $
 */
 
 #include "global.h"
@@ -35,12 +35,10 @@
 #include "builtin_functions.h"
 #include "module_support.h"
 
-/* must be included last */
-#include "module_magic.h"
 
 #define sp Pike_sp
 
-RCSID("$Id: yp.c,v 1.27 2002/10/11 01:39:49 nilsson Exp $");
+RCSID("$Id: yp.c,v 1.28 2002/10/21 17:06:23 marcus Exp $");
 
 #ifdef HAVE_YPERR_STRING
 #define YPERROR(fun,err) do{ if(err) Pike_error("yp->%s(): %s\n", (fun), \
@@ -308,7 +306,7 @@ static void exit_yp_struct( struct object *o )
 /******************** PUBLIC FUNCTIONS BELOW THIS LINE */
 
 
-void pike_module_init(void)
+PIKE_MODULE_INIT
 {
   
 /* function(void:string) */
@@ -341,14 +339,14 @@ void pike_module_init(void)
   end_class("Domain", 0);
 }
 
-void pike_module_exit(void)
+PIKE_MODULE_EXIT
 {
   
 }
 #else
 
-#include "module_magic.h"
-void pike_module_init(void) {}
-void pike_module_exit(void) {}
+#include "module.h"
+PIKE_MODULE_INIT {}
+PIKE_MODULE_EXIT {}
 
 #endif

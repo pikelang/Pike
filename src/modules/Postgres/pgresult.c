@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: pgresult.c,v 1.19 2002/10/11 01:39:48 nilsson Exp $
+|| $Id: pgresult.c,v 1.20 2002/10/21 17:06:22 marcus Exp $
 */
 
 /*
@@ -68,7 +68,7 @@
 #include "builtin_functions.h"
 #include "module_support.h"
 
-RCSID("$Id: pgresult.c,v 1.19 2002/10/11 01:39:48 nilsson Exp $");
+RCSID("$Id: pgresult.c,v 1.20 2002/10/21 17:06:22 marcus Exp $");
 
 #ifdef _REENTRANT
 PIKE_MUTEX_T pike_postgres_result_mutex STATIC_MUTEX_INIT;
@@ -81,8 +81,6 @@ PIKE_MUTEX_T pike_postgres_result_mutex STATIC_MUTEX_INIT;
 
 #include "pg_types.h"
 
-/* must be included last */
-#include "module_magic.h"
 
 
 #define THIS ((struct postgres_result_object_data *) Pike_fp->current_storage)

@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: image_jpeg.c,v 1.58 2002/10/17 09:19:16 nilsson Exp $
+|| $Id: image_jpeg.c,v 1.59 2002/10/21 17:06:25 marcus Exp $
 */
 
 #include "global.h"
@@ -47,7 +47,7 @@
 #ifdef HAVE_STDLIB_H
 #undef HAVE_STDLIB_H
 #endif
-RCSID("$Id: image_jpeg.c,v 1.58 2002/10/17 09:19:16 nilsson Exp $");
+RCSID("$Id: image_jpeg.c,v 1.59 2002/10/21 17:06:25 marcus Exp $");
 
 /* jpeglib defines EXTERN for some reason.
  * This is not good, since it confuses compilation.h.
@@ -70,9 +70,6 @@ RCSID("$Id: image_jpeg.c,v 1.58 2002/10/17 09:19:16 nilsson Exp $");
 #include "builtin_functions.h"
 #include "module_support.h"
 #include "operators.h"
-
-/* This must be included last! */
-#include "module_magic.h"
 
 #define sp Pike_sp
 
@@ -1475,7 +1472,7 @@ void image_jpeg_quant_tables(INT32 args)
 /*** module init & exit & stuff *****************************************/
 
 
-void pike_module_exit(void)
+PIKE_MODULE_EXIT
 {
    free_string(param_baseline);
    free_string(param_quality);
@@ -1498,7 +1495,7 @@ void pike_module_exit(void)
    free_string(param_transform);
 }
 
-void pike_module_init(void)
+PIKE_MODULE_INIT
 {
 #ifdef HAVE_JPEGLIB_H
 #ifdef DYNAMIC_MODULE

@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: math.c,v 1.52 2002/10/21 15:54:45 nilsson Exp $
+|| $Id: math.c,v 1.53 2002/10/21 17:06:26 marcus Exp $
 */
 
 #include "global.h"
@@ -26,12 +26,10 @@
 #include <floatingpoint.h>
 #endif
 
-/* This must be included last! */
-#include "module_magic.h"
 
 #define sp Pike_sp
 
-RCSID("$Id: math.c,v 1.52 2002/10/21 15:54:45 nilsson Exp $");
+RCSID("$Id: math.c,v 1.53 2002/10/21 17:06:26 marcus Exp $");
 
 #ifndef M_PI
 #define M_PI 3.1415926535897932384626433832795080
@@ -493,7 +491,7 @@ void f_sgn(INT32 args)
 
 #define tNUM tOr(tInt,tFlt)
 
-void pike_module_init(void)
+PIKE_MODULE_INIT
 {
 #ifdef HAVE_FPSETMASK
   fpsetmask(0);
@@ -582,4 +580,4 @@ void pike_module_init(void)
   ADD_EFUN("sgn",f_sgn,tFunc(tMix tOr(tMix,tVoid),tInt),0);
 }
 
-void pike_module_exit(void) {}
+PIKE_MODULE_EXIT {}

@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: xml.c,v 1.54 2002/10/11 01:39:55 nilsson Exp $
+|| $Id: xml.c,v 1.55 2002/10/21 17:06:26 marcus Exp $
 */
 
 #include "global.h"
@@ -26,8 +26,6 @@
 #include "block_alloc.h"
 #include "bignum.h"
 
-/* This must be included last! */
-#include "module_magic.h"
 
 #define sp Pike_sp
 

@@ -2,12 +2,13 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: image_xface.c,v 1.17 2002/10/11 01:39:54 nilsson Exp $
+|| $Id: image_xface.c,v 1.18 2002/10/21 17:06:25 marcus Exp $
 */
 
 #include "global.h"
-RCSID("$Id: image_xface.c,v 1.17 2002/10/11 01:39:54 nilsson Exp $");
+RCSID("$Id: image_xface.c,v 1.18 2002/10/21 17:06:25 marcus Exp $");
 
+#include "module.h"
 #include "config.h"
 
 
@@ -57,9 +58,6 @@ RCSID("$Id: image_xface.c,v 1.17 2002/10/11 01:39:54 nilsson Exp $");
 
 #endif /* USE_GMP || USE_GMP2 */
 
-
-/* This must be included last! */
-#include "module_magic.h"
 
 #define sp Pike_sp
 
@@ -510,11 +508,11 @@ static void image_xface_decode_header(INT32 args)
 
 /*** module init & exit & stuff *****************************************/
 
-void pike_module_exit(void)
+PIKE_MODULE_EXIT
 {
 }
 
-void pike_module_init(void)
+PIKE_MODULE_INIT
 {
 #if defined(USE_GMP) || defined(USE_GMP2)
 #ifdef DYNAMIC_MODULE

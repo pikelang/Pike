@@ -2,11 +2,11 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: xcf.c,v 1.42 2002/10/11 01:39:44 nilsson Exp $
+|| $Id: xcf.c,v 1.43 2002/10/21 17:06:15 marcus Exp $
 */
 
 #include "global.h"
-RCSID("$Id: xcf.c,v 1.42 2002/10/11 01:39:44 nilsson Exp $");
+RCSID("$Id: xcf.c,v 1.43 2002/10/21 17:06:15 marcus Exp $");
 
 #include "image_machine.h"
 
@@ -33,8 +33,6 @@ RCSID("$Id: xcf.c,v 1.42 2002/10/11 01:39:44 nilsson Exp $");
 #include "image.h"
 #include "colortable.h"
 
-/* MUST BE INCLUDED LAST */
-#include "module_magic.h"
 
 #define sp Pike_sp
 #define fp Pike_fp

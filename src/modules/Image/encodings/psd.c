@@ -2,11 +2,11 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: psd.c,v 1.34 2002/10/11 01:39:44 nilsson Exp $
+|| $Id: psd.c,v 1.35 2002/10/21 17:06:15 marcus Exp $
 */
 
 #include "global.h"
-RCSID("$Id: psd.c,v 1.34 2002/10/11 01:39:44 nilsson Exp $");
+RCSID("$Id: psd.c,v 1.35 2002/10/21 17:06:15 marcus Exp $");
 
 #include "image_machine.h"
 
@@ -37,8 +37,6 @@ RCSID("$Id: psd.c,v 1.34 2002/10/11 01:39:44 nilsson Exp $");
 #include <netinet/in.h>
 #endif
 
-/* MUST BE INCLUDED LAST */
-#include "module_magic.h"
 
 #define sp Pike_sp
 

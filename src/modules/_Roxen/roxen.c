@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: roxen.c,v 1.31 2002/10/14 13:41:02 grubba Exp $
+|| $Id: roxen.c,v 1.32 2002/10/21 17:06:25 marcus Exp $
 */
 
 #define NO_PIKE_SHORTHAND
@@ -37,8 +37,6 @@
 #include "threads.h"
 #include "operators.h"
 
-/* must be last include! */
-#include "module_magic.h"
 
 /*! @module _Roxen
  */
@@ -481,7 +479,7 @@ static void f_html_encode_string( INT32 args )
 /*! @endmodule
  */
 
-void pike_module_init()
+PIKE_MODULE_INIT
 {
   pike_add_function("make_http_headers", f_make_http_headers,
                "function(mapping(string:string|array(string)):string)", 0 );
@@ -501,6 +499,6 @@ void pike_module_init()
   end_class( "HeaderParser", 0 );
 }
 
-void pike_module_exit()
+PIKE_MODULE_EXIT
 {
 }

@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: avs.c,v 1.14 2002/10/11 01:39:43 nilsson Exp $
+|| $Id: avs.c,v 1.15 2002/10/21 17:06:14 marcus Exp $
 */
 
 #include "global.h"
@@ -15,7 +15,7 @@
 #endif
 
 #include "stralloc.h"
-RCSID("$Id: avs.c,v 1.14 2002/10/11 01:39:43 nilsson Exp $");
+RCSID("$Id: avs.c,v 1.15 2002/10/21 17:06:14 marcus Exp $");
 #include "pike_macros.h"
 #include "object.h"
 #include "constants.h"
@@ -31,8 +31,6 @@ RCSID("$Id: avs.c,v 1.14 2002/10/11 01:39:43 nilsson Exp $");
 #include "builtin_functions.h"
 #include "module_support.h"
 
-/* MUST BE INCLUDED LAST */
-#include "module_magic.h"
 
 extern struct program *image_program;
 

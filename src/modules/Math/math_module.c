@@ -2,18 +2,17 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: math_module.c,v 1.11 2002/10/11 01:39:45 nilsson Exp $
+|| $Id: math_module.c,v 1.12 2002/10/21 17:06:16 marcus Exp $
 */
 
 #include "global.h"
 #include "config.h"
 #include "program.h"
+#include "module.h"
 
 #include "math_module.h"
 #include "transforms.h"
 
-/* must be included last */
-#include "module_magic.h"
 
 /*** module init & exit & stuff *****************************************/
 
@@ -44,7 +43,7 @@ static struct math_class
    {"Transforms",init_math_transforms,&math_transforms_program},
 };
 
-void pike_module_exit(void)
+PIKE_MODULE_EXIT
 {
    int i;
    for (i=0; i<(int)(sizeof(sub)/sizeof(sub[0])); i++)
@@ -58,7 +57,7 @@ void pike_module_exit(void)
    exit_math_transforms();
 }
 
-void pike_module_init(void)
+PIKE_MODULE_INIT
 {
    int i;
    DECLARE_INF

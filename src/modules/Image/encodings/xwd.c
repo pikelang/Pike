@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: xwd.c,v 1.23 2002/10/11 01:39:45 nilsson Exp $
+|| $Id: xwd.c,v 1.24 2002/10/21 17:06:15 marcus Exp $
 */
 
 /*
@@ -28,7 +28,7 @@
 #include <ctype.h>
 
 #include "stralloc.h"
-RCSID("$Id: xwd.c,v 1.23 2002/10/11 01:39:45 nilsson Exp $");
+RCSID("$Id: xwd.c,v 1.24 2002/10/21 17:06:15 marcus Exp $");
 #include "pike_macros.h"
 #include "object.h"
 #include "constants.h"
@@ -44,8 +44,6 @@ RCSID("$Id: xwd.c,v 1.23 2002/10/11 01:39:45 nilsson Exp $");
 #include "operators.h"
 #include "encodings.h"
 
-/* MUST BE INCLUDED LAST */
-#include "module_magic.h"
 
 #define sp Pike_sp
 

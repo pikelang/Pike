@@ -2,13 +2,14 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: zlibmod.c,v 1.56 2002/10/15 12:43:07 jhs Exp $
+|| $Id: zlibmod.c,v 1.57 2002/10/21 17:06:13 marcus Exp $
 */
 
 #include "global.h"
-RCSID("$Id: zlibmod.c,v 1.56 2002/10/15 12:43:07 jhs Exp $");
+RCSID("$Id: zlibmod.c,v 1.57 2002/10/21 17:06:13 marcus Exp $");
 
 #include "zlib_machine.h"
+#include "module.h"
 
 #if !defined(HAVE_LIBZ) && !defined(HAVE_LIBGZ)
 #undef HAVE_ZLIB_H
@@ -30,12 +31,6 @@ RCSID("$Id: zlibmod.c,v 1.56 2002/10/15 12:43:07 jhs Exp $");
 
 #include <zlib.h>
 
-#endif /* HAVE_ZLIB_H */
-
-/* This must be included last! */
-#include "module_magic.h"
-
-#ifdef HAVE_ZLIB_H
 
 #define sp Pike_sp
 
@@ -839,9 +834,9 @@ static void exit_gz_file(struct object *o)
  */
 #endif
 
-void pike_module_exit(void) {}
+PIKE_MODULE_EXIT {}
 
-void pike_module_init(void)
+PIKE_MODULE_INIT
 {
 #ifdef HAVE_ZLIB_H
   start_new_program();

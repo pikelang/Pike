@@ -2,12 +2,12 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: Shuffler.cmod,v 1.16 2002/10/11 01:39:59 nilsson Exp $
+|| $Id: Shuffler.cmod,v 1.17 2002/10/21 17:06:54 marcus Exp $
 */
 
 #include "global.h"
 #include "stralloc.h"
-RCSID("$Id: Shuffler.cmod,v 1.16 2002/10/11 01:39:59 nilsson Exp $");
+RCSID("$Id: Shuffler.cmod,v 1.17 2002/10/21 17:06:54 marcus Exp $");
 #include "pike_macros.h"
 #include "interpret.h"
 #include "threads.h"
@@ -24,9 +24,6 @@ RCSID("$Id: Shuffler.cmod,v 1.16 2002/10/11 01:39:59 nilsson Exp $");
 
 #include "shuffler.h"
 #include "sources.h"
-
-/* must be included last */
-#include "module_magic.h"
 
 #if 0
 #include <stdio.h>
@@ -818,7 +815,7 @@ PIKECLASS Shuffler
 /*! @endmodule
  */
 
-void pike_module_init()
+PIKE_MODULE_INIT
 {
   INIT;
   sources_init();
@@ -831,7 +828,7 @@ void pike_module_init()
   add_integer_constant( "USER_ABORT", USER_ABORT, 0 );
 }
 
-void pike_module_exit()
+PIKE_MODULE_EXIT
 {
   EXIT;
   sources_exit();

@@ -1929,7 +1929,7 @@ int main(int argc, array(string) argv)
     // No INIT, add our own stuff..
 
     x+=({
-      "void pike_module_init(void) {\n",
+      "PIKE_MODULE_INIT {\n",
       tmp->addfuncs,
       "}\n",
     });
@@ -1941,16 +1941,16 @@ int main(int argc, array(string) argv)
     // No EXIT, add our own stuff..
 
     x+=({
-      "void pike_module_exit(void) {\n",
+      "PIKE_MODULE_EXIT {\n",
       tmp->exitfuncs,
       "}\n",
     });
 
     if (!need_init) {
-      werror("Warning: INIT without EXIT. Added pike_module_exit().\n");
+      werror("Warning: INIT without EXIT. Added PIKE_MODULE_EXIT.\n");
     }
   } else if (need_init) {
-    werror("Warning: EXIT without INIT. Added pike_module_init().\n");
+    werror("Warning: EXIT without INIT. Added PIKE_MODULE_INIT.\n");
   }
   tmp->code = x;
   x=recursive(replace,x,PC.Token("OPTIMIZE",0),tmp->optfuncs);

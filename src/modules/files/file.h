@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: file.h,v 1.23 2002/10/11 01:39:54 nilsson Exp $
+|| $Id: file.h,v 1.24 2002/10/21 17:06:26 marcus Exp $
 */
 
 #ifndef FILE_H
@@ -123,9 +123,7 @@ struct new_thread_data;
 void file_proxy(INT32 args);
 void create_proxy_pipe(struct object *o, int for_reading);
 struct file_lock_key_storage;
-void pike_module_exit(void);
 void mark_ids(struct callback *foo, void *bar, void *gazonk);
-void pike_module_init(void);
 int pike_make_pipe(int *fds);
 int fd_from_object(struct object *o);
 void f_strerror(INT32 args);

@@ -2,12 +2,12 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: SDL.cmod,v 1.6 2002/10/11 01:39:59 nilsson Exp $
+|| $Id: SDL.cmod,v 1.7 2002/10/21 17:06:54 marcus Exp $
 */
 
 #include "global.h"
 #include "stralloc.h"
-RCSID("$Id: SDL.cmod,v 1.6 2002/10/11 01:39:59 nilsson Exp $");
+RCSID("$Id: SDL.cmod,v 1.7 2002/10/21 17:06:54 marcus Exp $");
 #include "pike_macros.h"
 #include "interpret.h"
 #include "program.h"
@@ -21,9 +21,6 @@ RCSID("$Id: SDL.cmod,v 1.6 2002/10/11 01:39:59 nilsson Exp $");
 #include "array.h"
 #include "builtin_functions.h"
 #include "mapping.h"
-
-/* must be included last */
-#include "module_magic.h"
 
 #include "sdl_config.h"
 
@@ -2171,7 +2168,7 @@ PIKECLASS Event {
 }
 /* Pike initialization modules below */
 
-void pike_module_init()
+PIKE_MODULE_INIT
 {
   INIT;
   
@@ -2200,7 +2197,7 @@ void pike_module_init()
   Pike_sp--;
 }
 
-void pike_module_exit()
+PIKE_MODULE_EXIT
 {
   EXIT;
   free_svalue(&_image_program);
@@ -2213,8 +2210,8 @@ void pike_module_exit()
 
 #else /* HAVE_SDL */
 
-void pike_module_init() {
+PIKE_MODULE_INIT {
 }
-void pike_module_exit() {
+PIKE_MODULE_EXIT {
 }
 #endif /* HAVE_SDL */

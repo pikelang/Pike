@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: poly.c,v 1.16 2002/10/11 01:39:43 nilsson Exp $
+|| $Id: poly.c,v 1.17 2002/10/21 17:06:14 marcus Exp $
 */
 
 /*
@@ -23,7 +23,7 @@ another?
 
 #include "global.h"
 
-RCSID("$Id: poly.c,v 1.16 2002/10/11 01:39:43 nilsson Exp $");
+RCSID("$Id: poly.c,v 1.17 2002/10/21 17:06:14 marcus Exp $");
 
 #include "image_machine.h"
 
@@ -49,8 +49,6 @@ RCSID("$Id: poly.c,v 1.16 2002/10/11 01:39:43 nilsson Exp $");
 #include "colortable.h"
 #include "initstuff.h"
 
-/* This must be included last! */
-#include "module_magic.h"
 
 #define sp Pike_sp
 

@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: image_gif.c,v 1.13 2002/10/11 01:39:53 nilsson Exp $
+|| $Id: image_gif.c,v 1.14 2002/10/21 17:06:25 marcus Exp $
 */
 
 /*
@@ -29,6 +29,7 @@
 **! see also: Image, Image.Image, Image.Colortable
 */
 #include "global.h"
+#include "module.h"
 
 #include "config.h"
 
@@ -38,7 +39,7 @@
 #include <ctype.h>
 
 #include "stralloc.h"
-RCSID("$Id: image_gif.c,v 1.13 2002/10/11 01:39:53 nilsson Exp $");
+RCSID("$Id: image_gif.c,v 1.14 2002/10/21 17:06:25 marcus Exp $");
 #include "pike_macros.h"
 #include "object.h"
 #include "constants.h"
@@ -61,9 +62,6 @@ RCSID("$Id: image_gif.c,v 1.13 2002/10/11 01:39:53 nilsson Exp $");
 #include "gif_lzw.h"
 
 #endif /* WITH_GIF */
-
-/* MUST BE INCLUDED LAST */
-#include "module_magic.h"
 
 #ifdef WITH_GIF
 
@@ -2737,7 +2735,7 @@ static void image_gif_lzw_decode(INT32 args)
 
 struct program *image_encoding_gif_program=NULL;
 
-void pike_module_init(void)
+PIKE_MODULE_INIT
 {
 #ifdef DYNAMIC_MODULE
   /* These could be re-written to use PIKE_MODULE_IMPORT */
@@ -2826,11 +2824,11 @@ void pike_module_init(void)
 }
 
 #else /* !WITH_GIF */
-void pike_module_init(void)
+PIKE_MODULE_INIT
 {
 }
 #endif /* WITH_GIF */
 
-void pike_module_exit(void)
+PIKE_MODULE_EXIT
 {
 }

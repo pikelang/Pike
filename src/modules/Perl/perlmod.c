@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: perlmod.c,v 1.28 2002/10/11 01:39:48 nilsson Exp $
+|| $Id: perlmod.c,v 1.29 2002/10/21 17:06:22 marcus Exp $
 */
 
 #define NO_PIKE_SHORTHAND
@@ -18,8 +18,6 @@
 #include "mapping.h"
 #include "perl_machine.h"
 
-/* must be included last */
-#include "module_magic.h"
 
 #ifdef HAVE_PERL
 
@@ -802,7 +800,7 @@ static void perlmod_array_size_limit(INT32 args)
   push_int(_THIS->array_size_limit);
 }
 
-void pike_module_init(void)
+PIKE_MODULE_INIT
 {
 #ifdef PIKE_PERLDEBUG
   fprintf(stderr, "[perl: module init]\n");
@@ -886,7 +884,7 @@ void pike_module_init(void)
                        0);
 }
 
-void pike_module_exit(void)
+PIKE_MODULE_EXIT
 {
 }
 
@@ -896,6 +894,6 @@ void pike_module_exit(void)
 #error "No Perl!"
 #endif
 
-void pike_module_init(void) {}
-void pike_module_exit(void) {}
+PIKE_MODULE_INIT {}
+PIKE_MODULE_EXIT {}
 #endif

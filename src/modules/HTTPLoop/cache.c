@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: cache.c,v 1.19 2002/10/11 01:39:41 nilsson Exp $
+|| $Id: cache.c,v 1.20 2002/10/21 17:06:13 marcus Exp $
 */
 
 #include "config.h"
@@ -33,8 +33,6 @@
 #include "util.h"
 #include "backend.h"
 
-/* This must be included last! */
-#include "module_magic.h"
 
 struct cache *first_cache;
 

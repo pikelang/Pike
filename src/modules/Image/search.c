@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: search.c,v 1.25 2002/10/11 01:39:43 nilsson Exp $
+|| $Id: search.c,v 1.26 2002/10/21 17:06:14 marcus Exp $
 */
 
 /*
@@ -30,8 +30,6 @@
 
 #include <builtin_functions.h>
 
-/* This must be included last! */
-#include "module_magic.h"
 
 #define sp Pike_sp
 

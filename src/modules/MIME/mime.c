@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: mime.c,v 1.34 2002/10/11 01:39:45 nilsson Exp $
+|| $Id: mime.c,v 1.35 2002/10/21 17:06:16 marcus Exp $
 */
 
 /*
@@ -15,7 +15,8 @@
 
 #include "config.h"
 
-RCSID("$Id: mime.c,v 1.34 2002/10/11 01:39:45 nilsson Exp $");
+RCSID("$Id: mime.c,v 1.35 2002/10/21 17:06:16 marcus Exp $");
+#include "module.h"
 #include "stralloc.h"
 #include "pike_macros.h"
 #include "object.h"
@@ -30,8 +31,6 @@ RCSID("$Id: mime.c,v 1.34 2002/10/11 01:39:45 nilsson Exp $");
 #define SIGNED
 #endif
 
-/* must be included last */
-#include "module_magic.h"
 
 #define sp Pike_sp
 
@@ -77,7 +76,7 @@ unsigned char rfc822ctype[1<<CHAR_BIT];
 
 /* Initialize and start module */
 
-void pike_module_init( void )
+PIKE_MODULE_INIT
 {
   int i;
 
@@ -143,7 +142,7 @@ void pike_module_init( void )
 
 /* Restore and exit module */
 
-void pike_module_exit( void )
+PIKE_MODULE_EXIT
 {
 }
 

@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: accept_and_parse.c,v 1.29 2002/10/11 01:39:40 nilsson Exp $
+|| $Id: accept_and_parse.c,v 1.30 2002/10/21 17:06:13 marcus Exp $
 */
 
 /* Hohum. Here we go. This is try number four for a more optimized
@@ -59,8 +59,6 @@
 
 #endif /* _REENTRANT */
 
-/* This must be included last! */
-#include "module_magic.h"
 
 #ifdef _REENTRANT
 
@@ -686,7 +684,7 @@ void f_aap_add_filesystem( INT32 args )
 #define OFFSETOF(str_type, field) ((long)& (((struct str_type *)0)->field))
 #endif
 
-void pike_module_init(void)
+PIKE_MODULE_INIT
 {
 #ifdef _REENTRANT
   ptrdiff_t offset;
@@ -779,7 +777,7 @@ void pike_module_init(void)
 #endif /* _REENTRANT */
 }
 
-void pike_module_exit(void) 
+PIKE_MODULE_EXIT
 {
 #ifdef _REENTRANT
   struct log *log = aap_first_log;

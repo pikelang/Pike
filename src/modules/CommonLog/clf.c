@@ -2,12 +2,12 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: clf.c,v 1.10 2002/10/11 01:39:39 nilsson Exp $
+|| $Id: clf.c,v 1.11 2002/10/21 17:06:12 marcus Exp $
 */
 
 /* MUST BE FIRST */
 #include "global.h"
-RCSID("$Id: clf.c,v 1.10 2002/10/11 01:39:39 nilsson Exp $");
+RCSID("$Id: clf.c,v 1.11 2002/10/21 17:06:12 marcus Exp $");
 #include "fdlib.h"
 #include "stralloc.h"
 #include "pike_macros.h"
@@ -23,8 +23,6 @@ RCSID("$Id: clf.c,v 1.10 2002/10/11 01:39:39 nilsson Exp $");
 #include <stdio.h>
 #include <fcntl.h>
 
-/* MUST BE LAST */
-#include "module_magic.h"
 
 #define sp Pike_sp
 
@@ -62,7 +60,7 @@ static char char_class[1<<CHAR_BIT];
 
 /* Initialize and start module */
 
-void pike_module_init( void )
+PIKE_MODULE_INIT
 {
   int i;
 
@@ -89,7 +87,7 @@ void pike_module_init( void )
 
 /* Restore and exit module */
 
-void pike_module_exit( void )
+PIKE_MODULE_EXIT
 {
 }
 

@@ -2,16 +2,17 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: svg.c,v 1.7 2002/10/11 01:40:00 nilsson Exp $
+|| $Id: svg.c,v 1.8 2002/10/21 17:06:55 marcus Exp $
 */
 
 #include "config.h"
+#include "module.h"
 
 #ifdef HAVE_SVG
 #include "global.h"
 
 #include "stralloc.h"
-RCSID("$Id: svg.c,v 1.7 2002/10/11 01:40:00 nilsson Exp $");
+RCSID("$Id: svg.c,v 1.8 2002/10/21 17:06:55 marcus Exp $");
 #include "pike_macros.h"
 #include "object.h"
 #include "constants.h"
@@ -30,12 +31,6 @@ RCSID("$Id: svg.c,v 1.7 2002/10/11 01:40:00 nilsson Exp $");
 
 #include <librsvg/rsvg.h>
 
-#endif /* HAVE_SVG */
-
-/* This must be included last! */
-#include "module_magic.h"
-
-#ifdef HAVE_SVG
 
 /*! @module Image
  */
@@ -361,7 +356,7 @@ static void f_decode( INT32 args )
 }
 #endif
   
-void pike_module_init()
+PIKE_MODULE_INIT
 {
 #ifdef HAVE_SVG
   g_type_init(); /* Initialize the glib type system. */
@@ -379,7 +374,7 @@ void pike_module_init()
 #endif
 }
 
-void pike_module_exit()
+PIKE_MODULE_EXIT
 {
 }
 

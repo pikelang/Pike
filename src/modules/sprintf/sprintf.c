@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: sprintf.c,v 1.98 2002/10/20 22:05:08 marcus Exp $
+|| $Id: sprintf.c,v 1.99 2002/10/21 17:06:26 marcus Exp $
 */
 
 /* TODO: use ONERROR to cleanup fsp */
@@ -286,7 +286,7 @@
  *!   @[lfun::_sprintf()]
  */
 #include "global.h"
-RCSID("$Id: sprintf.c,v 1.98 2002/10/20 22:05:08 marcus Exp $");
+RCSID("$Id: sprintf.c,v 1.99 2002/10/21 17:06:26 marcus Exp $");
 #include "pike_error.h"
 #include "array.h"
 #include "svalue.h"
@@ -304,6 +304,7 @@ RCSID("$Id: sprintf.c,v 1.98 2002/10/20 22:05:08 marcus Exp $");
 #include "operators.h"
 #include "opcodes.h"
 #include "cyclic.h"
+#include "module.h"
 #include <ctype.h>
 
 #include "config.h"
@@ -316,8 +317,6 @@ RCSID("$Id: sprintf.c,v 1.98 2002/10/20 22:05:08 marcus Exp $");
 #include <fp_class.h>
 #endif
 
-/* This must be included last! */
-#include "module_magic.h"
 
 #define sp Pike_sp
 
@@ -1734,7 +1733,7 @@ static node *optimize_sprintf(node *n)
   return 0;
 }
 
-void pike_module_init(void)
+PIKE_MODULE_INIT
 {
   /* function(string|object, mixed ... : string) */
   ADD_EFUN2("sprintf", 
@@ -1745,6 +1744,6 @@ void pike_module_init(void)
 	    0);
 }
 
-void pike_module_exit(void)
+PIKE_MODULE_EXIT
 {
 }

@@ -2,12 +2,13 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: pipe.c,v 1.51 2002/10/11 01:39:48 nilsson Exp $
+|| $Id: pipe.c,v 1.52 2002/10/21 17:06:22 marcus Exp $
 */
 
 #include "global.h"
 #include "config.h"
 #include "machine.h"
+#include "module.h"
 
 #include <sys/types.h>
 #include <sys/stat.h>
@@ -37,7 +38,7 @@
 
 #include <fcntl.h>
 
-RCSID("$Id: pipe.c,v 1.51 2002/10/11 01:39:48 nilsson Exp $");
+RCSID("$Id: pipe.c,v 1.52 2002/10/21 17:06:22 marcus Exp $");
 
 #include "threads.h"
 #include "stralloc.h"
@@ -58,8 +59,6 @@ RCSID("$Id: pipe.c,v 1.51 2002/10/11 01:39:48 nilsson Exp $");
 #endif
 #endif
 
-/* must be included last */
-#include "module_magic.h"
 
 #define sp Pike_sp
 
@@ -1298,7 +1297,7 @@ void f__pipe_debug(INT32 args)
   f_aggregate(7);
 }
 
-void pike_module_init(void)
+PIKE_MODULE_INIT
 {
    start_new_program();
    ADD_STORAGE(struct pipe);
@@ -1361,7 +1360,7 @@ void pike_module_init(void)
    add_program_constant("__output",output_program, 0);
 }
 
-void pike_module_exit(void) 
+PIKE_MODULE_EXIT
 {
   if(pipe_program) free_program(pipe_program);
   pipe_program=0;

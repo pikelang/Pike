@@ -2,13 +2,13 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: unicode_module.cmod,v 1.5 2002/10/11 01:40:00 nilsson Exp $
+|| $Id: unicode_module.cmod,v 1.6 2002/10/21 17:06:55 marcus Exp $
 */
 
 #include "global.h"
 #include "stralloc.h"
 #include "global.h"
-RCSID("$Id: unicode_module.cmod,v 1.5 2002/10/11 01:40:00 nilsson Exp $");
+RCSID("$Id: unicode_module.cmod,v 1.6 2002/10/21 17:06:55 marcus Exp $");
 #include "pike_macros.h"
 #include "interpret.h"
 #include "program.h"
@@ -22,9 +22,6 @@ RCSID("$Id: unicode_module.cmod,v 1.5 2002/10/11 01:40:00 nilsson Exp $");
 #include "normalize.h"
 #include "split.h"
 #include "buffer.h"
-
-/* must be included last */
-#include "module_magic.h"
 
 /*! @module Unicode
  */
@@ -161,13 +158,13 @@ PIKEFUN int is_wordchar( int c )
 /*! @endmodule
  */
 
-void pike_module_init()
+PIKE_MODULE_INIT
 {
   INIT
   unicode_normalize_init();
 }
 
-void pike_module_exit()
+PIKE_MODULE_EXIT
 {
   EXIT
 }

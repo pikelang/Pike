@@ -2,23 +2,22 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: pdf_module.c,v 1.13 2002/10/11 01:39:47 nilsson Exp $
+|| $Id: pdf_module.c,v 1.14 2002/10/21 17:06:21 marcus Exp $
 */
 
 #include "global.h"
 #include "stralloc.h"
 #include "global.h"
-RCSID("$Id: pdf_module.c,v 1.13 2002/10/11 01:39:47 nilsson Exp $");
+RCSID("$Id: pdf_module.c,v 1.14 2002/10/21 17:06:21 marcus Exp $");
 #include "pike_macros.h"
 #include "interpret.h"
 #include "program.h"
 #include "object.h"
 #include "operators.h"
+#include "module.h"
 
 #include "pdf_machine.h"
 
-/* This must be included last! */
-#include "module_magic.h"
 
 #define sp Pike_sp
 #define fp Pike_fp
@@ -178,7 +177,7 @@ static void pdf_magic_index(INT32 args)
    pop_stack();
 }
 
-void pike_module_init(void)
+PIKE_MODULE_INIT
 {
    char type_of_index[]=
       tFunc(tStr,tOr3(tObj,tPrg(tObj),""))
@@ -249,7 +248,7 @@ void pike_module_init(void)
 		      type_of_index,CONSTANT_STRLEN(type_of_index),0,0);
 }
 
-void pike_module_exit(void) 
+PIKE_MODULE_EXIT
 {
    int i;
    for (i=0; i<(int)NELEM(initclass); i++)
