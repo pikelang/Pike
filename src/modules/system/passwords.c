@@ -1,5 +1,5 @@
 /*
- * $Id: passwords.c,v 1.18 1998/07/13 22:13:20 grubba Exp $
+ * $Id: passwords.c,v 1.19 1998/07/18 02:37:49 hubbe Exp $
  *
  * Password handling for Pike.
  *
@@ -22,7 +22,7 @@
 #include "system_machine.h"
 #include "system.h"
 
-RCSID("$Id: passwords.c,v 1.18 1998/07/13 22:13:20 grubba Exp $");
+RCSID("$Id: passwords.c,v 1.19 1998/07/18 02:37:49 hubbe Exp $");
 
 #include "module_support.h"
 #include "interpret.h"
@@ -449,9 +449,12 @@ void f_get_groups_for_user(INT32 arg)
     pw=getpwuid(uid);
     THREADS_DISALLOW_UID();
 
-    sp[-1].u.string=make_shared_string(pw->pw_name);
-    sp[-1].type=T_STRING;
-    user=sp[-1].u.string->str;
+    if(pw)
+    {
+      sp[-1].u.string=make_shared_string(pw->pw_name);
+      sp[-1].type=T_STRING;
+      user=sp[-1].u.string->str;
+    }
   }else{
     user=sp[-1].u.string->str;
 
