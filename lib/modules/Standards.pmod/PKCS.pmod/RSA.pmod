@@ -14,8 +14,9 @@ import Standards.ASN1.Encode;
 string rsa_private_key(object rsa)
 {
   return asn1_sequence(@ Array.map(
-    ({ 0, rsa->n, rsa->e, rsa->d, rsa->p, rsa->q,
-       rsa->d % (rsa->p - 1), rsa->d, (rsa->q -1),
+    ({ 0, rsa->n, rsa->e, rsa->d,
+       rsa->p, rsa->q,
+       rsa->d % (rsa->p - 1), rsa->d % (rsa->q -1),
        rsa->q->invert(rsa->p) % rsa->p
     }),
     asn1_integer))->der();
@@ -30,7 +31,7 @@ object parse_private_key(string key)
   WERROR(sprintf("rsa->parse_private_key: asn1 = %O\n", a));
   if (!a
       || (a[0] != "SEQUENCE")
-      || (sizeof(a[1]) != 10)
+      || (sizeof(a[1]) != 9)
       || (sizeof(column(a[1], 0) - ({ "INTEGER" })))
       || a[1][0][1])
     return 0;

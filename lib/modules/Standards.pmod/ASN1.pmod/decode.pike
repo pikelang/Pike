@@ -2,7 +2,7 @@
  *
  * Rudimentary support for decoding ASN.1 encoded data.
  *
- * $Id: decode.pike,v 1.1 1997/11/30 11:36:37 nisse Exp $
+ * $Id: decode.pike,v 1.2 1998/04/21 21:20:35 nisse Exp $
  */
 
 /* BER/DER decoder
@@ -17,7 +17,7 @@ inherit ADT.struct;
 
 array get_asn1()
 {
-  int|string tag = get_int(1);
+  int|string tag = get_uint(1);
   int len;
   string contents;
   mixed value;
@@ -27,9 +27,9 @@ array get_asn1()
 #endif
   if ( (tag & 0x1f) == 0x1f)
     throw( ({ "high tag numbers is not supported\n", backtrace() }) );
-  int len = get_int(1);
+  int len = get_uint(1);
   if (len & 0x80)
-    len = get_int(len & 0x7f);
+    len = get_uint(len & 0x7f);
     
 #ifdef SSL3_DEBUG
   werror(sprintf("len : %d\n", len));
