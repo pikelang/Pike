@@ -1,4 +1,4 @@
-test_true([["$Id: testsuite.in,v 1.711 2004/04/14 22:09:38 mast Exp $"]]);
+test_true([["$Id: testsuite.in,v 1.712 2004/04/16 15:44:30 nilsson Exp $"]]);
 
 // This triggered a bug only if run sufficiently early.
 test_compile_any([[#pike 7.2]])
@@ -7914,6 +7914,47 @@ return 0;
 
 test_any([[
 #if defined(FOOk)
+return 0;
+#else
+return 1;
+#endif
+]],1)
+
+// #if constant
+test_any([[
+#if constant(Foo.Bar)
+return 0;
+#else
+return 1;
+#endif
+]],1)
+
+test_any([[
+#if constant(Foo) && constant(Bar)
+return 0;
+#else
+return 1;
+#endif
+]],1)
+
+test_any([[
+#if constant(String.Buffer)
+return 1;
+#else
+return 0;
+#endif
+]],1)
+
+test_any([[
+#if constant(String.Bar)
+return 0;
+#else
+return 1;
+#endif
+]],1)
+
+test_any([[
+#if constant(String) && constant(String.Bar)
 return 0;
 #else
 return 1;
