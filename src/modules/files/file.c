@@ -1170,8 +1170,30 @@ void get_inet_addr(struct sockaddr_in *addr,char *name)
   else
   {
     struct hostent *ret;
-
 #ifdef _REENTRANT
+#ifdef HAVE_SOLARIS_GETHOSTBYNAME_R
+    struct hostent result;
+    char data[2048];
+    int h_errno;
+
+    THREADS_ALLOW();
+    ret=gethostbyname_r(name, &result, data, sizeof(data), &h_errno);
+    THREADS_DISALLOW();
+#else
+#ifdef HAVE_OSF1_GETHOSTBYNAME_R
+    struct hostent result;
+    struct hostent_data data;
+
+    THREADS_ALLOW();
+    MEMSET((char *)&data,0,sizeof(data));
+    if(gethostbyname_r(name, &result, &data) < 0)
+    {
+      ret=&result;
+    }else{
+      ret=0;
+    }
+    THREADS_DISALLOW();
+#else
     static MUTEX_T l;
 
     THREADS_ALLOW();
@@ -1181,6 +1203,8 @@ void get_inet_addr(struct sockaddr_in *addr,char *name)
     mt_unlock(&l);
 
     THREADS_DISALLOW();
+#endif
+#endif
 #else
     ret=gethostbyname(name);
 #endif
