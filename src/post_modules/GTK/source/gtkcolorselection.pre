@@ -24,12 +24,6 @@ void set_update_policy( int policy );
 //! sliders or presses the mouse and drags in the hue-saturation wheel
 //! or value bar. If you experience performance problems, you may want
 //! to set the policy to GTK.UpdateDiscontinuous or GTK.UpdateDelayed.</p>
-void set_opacity( int opacity );
-//! The color selection widget supports adjusting the opacity of a
-//! color (also known as the alpha channel). This is disabled by
-//! default. Calling this function with use_opacity set to 1 enables
-//! opacity. Likewise, use_opacity set to 0 will disable opacity.
-
 array(float) get_color()
 //!  When you need to query the current color, typically when you've
 //!  received a "color_changed" signal, you use this function. The
@@ -44,26 +38,10 @@ array(float) get_color()
   f_aggregate( 4 );
 }
 
-void set_color(array(float) color)
+void set_color(array(double) color);
 //! You can set the current color explicitly by calling this function
 //! with an array of colors (floats). The length of the array depends
 //! on whether opacity is enabled or not. Position 0 contains the red
 //! component, 1 is green, 2 is blue and opacity is at position 3 (only
 //! if opacity is enabled, see set_opacity()) All values are between
 //! 0.0 and 1.0
-{
-  gdouble vals[4];
-  int i;
-  struct array *a;
-  get_all_args( "set_color", args, "%a", &a );
-  for(i=0; i<a->size; i++)
-    if(i>3)
-      break;
-    else
-      vals[i] = a->item[i].u.float_number;
-  gtk_color_selection_set_color( GTK_COLOR_SELECTION( THIS->obj ), vals );
-
-  RETURN_THIS();
-}
-
-
