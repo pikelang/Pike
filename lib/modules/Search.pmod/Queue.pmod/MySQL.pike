@@ -192,6 +192,19 @@ int|Standards.URI get()
   return -1;
 }
 
+array(Standards.URI) get_uris(void|int stage)
+{
+  array uris = ({});
+  if (stage)
+    uris = db->query( "select * from "+table+" where stage=%d", stage );
+  else
+    uris = db->query( "select * from "+table );
+  uris = map(uris->uri, utf8_to_string);
+  uris = map(uris, Standards.URI);
+
+  return uris;
+}
+
 void put(string|array(string)|Standards.URI|array(Standards.URI) uri)
 {
   if(arrayp(uri))
