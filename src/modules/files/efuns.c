@@ -22,7 +22,7 @@
 #include "file_machine.h"
 #include "file.h"
 
-RCSID("$Id: efuns.c,v 1.52 1998/06/28 16:15:26 grubba Exp $");
+RCSID("$Id: efuns.c,v 1.53 1998/07/02 17:21:03 grubba Exp $");
 
 #ifdef HAVE_SYS_TYPES_H
 #include <sys/types.h>
@@ -33,6 +33,10 @@ RCSID("$Id: efuns.c,v 1.52 1998/06/28 16:15:26 grubba Exp $");
 #endif
 #include <signal.h>
 #include <errno.h>
+
+#ifdef HAVE_LIMITS_H
+#include <limits.h>
+#endif /* HAVE_LIMITS_H */
 
 #if HAVE_DIRENT_H
 # include <dirent.h>
