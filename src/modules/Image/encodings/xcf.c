@@ -1,5 +1,5 @@
 #include "global.h"
-RCSID("$Id: xcf.c,v 1.22 2000/10/08 21:12:45 per Exp $");
+RCSID("$Id: xcf.c,v 1.23 2000/10/08 22:39:54 per Exp $");
 
 #include "image_machine.h"
 
@@ -1380,7 +1380,7 @@ void image_xcf_f__decode_tiles( INT32 args )
     }
     x += TILE_WIDTH;
 
-    if( x >= rxs )
+    if( (int)x >= (int)rxs )
     {
       x = 0;
       y += TILE_HEIGHT;
