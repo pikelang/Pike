@@ -134,7 +134,7 @@ define([[CONDITION]],[[]])
 
 define(ifefun,[[cond([[all_constants()->\$1]],[[\$2]])]])
 
-define(nonregression,cond([[!all_constants()->regression]],[[\$1]]))
+define(nonregression,[[ifefun(regression,[[\$1]])]])
 
 define(TESTNO,0)
 
