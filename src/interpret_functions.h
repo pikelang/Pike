@@ -1,5 +1,5 @@
 /*
- * $Id: interpret_functions.h,v 1.11 2000/04/20 11:12:31 grubba Exp $
+ * $Id: interpret_functions.h,v 1.12 2000/04/20 11:49:50 grubba Exp $
  *
  * Opcode definitions for the interpreter.
  */
@@ -338,6 +338,7 @@ OPCODE1(F_ARRAY_LVALUE, "[ lvalues ]")
   /* FIXME: Shouldn't a ref be added here? */
   Pike_sp[0] = Pike_sp[-1];
   Pike_sp[-1].type = T_ARRAY_LVALUE;
+  dmalloc_touch_svalue(Pike_sp);
   Pike_sp++;
 BREAK;
 
