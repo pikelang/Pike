@@ -1,4 +1,4 @@
-/* $Id: alert.pike,v 1.3 2000/08/04 19:07:11 sigge Exp $
+/* $Id: alert.pike,v 1.4 2000/08/08 18:23:15 sigge Exp $
  *
  */
 
@@ -23,13 +23,6 @@ object create(int l, int d, string|void m, mixed|void t)
   description = d;
   message = m;
   trace = t;
-
-#ifdef SSL3_DEBUG
-  if(m)
-    werror(m);
-  if(t)
-    werror(describe_backtrace(t));
-#endif
 
   packet::create();
   packet::content_type = PACKET_alert;

@@ -1,9 +1,7 @@
-SSL TODO-list, 2000-08-04
+SSL TODO-list, 970307
 
 * ASN.1 support
-* Certificate verification
-* Client certificates
+* Client connections
 * Splitting of large handshake packets
 * Combining small application packets
 * Blocking I/O
-* TLS (SSL v3.1) support

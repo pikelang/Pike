@@ -1,16 +1,10 @@
-/* $Id: handshake.pike,v 1.19 2000/08/04 22:06:51 sigge Exp $
+/* $Id: handshake.pike,v 1.20 2000/08/08 18:23:15 sigge Exp $
  *
  */
 
 // int is_server;
 
 inherit "cipher";
-
-#ifdef SSL3_DEBUG
-#define SSL3_DEBUG_MSG werror
-#else /*! SSL3_DEBUG */
-#define SSL3_DEBUG_MSG
-#endif /* SSL3_DEBUG */
 
 object session;
 object context;
@@ -49,8 +43,8 @@ int rsa_message_was_bad;
 
 int reuse;
 
-string client_random;
-string server_random;
+string my_random;
+string other_random;
 
 constant Struct = ADT.struct;
 constant Session = SSL.session;
@@ -77,7 +71,7 @@ object server_hello_packet()
   object struct = Struct();
   /* Build server_hello message */
   struct->put_uint(3,1); struct->put_uint(0,1); /* version */
-  struct->put_fix_string(server_random);
+  struct->put_fix_string(my_random);
   struct->put_var_string(session->identity, 1);
   struct->put_uint(session->cipher_suite, 2);
   struct->put_uint(session->compression_algorithm, 1);
@@ -87,28 +81,6 @@ object server_hello_packet()
   werror(sprintf("SSL.handshake: Server hello: '%O'\n", data));
 #endif
   return handshake_packet(HANDSHAKE_server_hello, data);
-}
-
-SSL.packet client_hello()
-{
-  object struct = Struct();
-  /* Build client_hello message */
-  struct->put_uint(3,1); struct->put_uint(0,1); /* version */
-  client_random = sprintf("%4c%s", time(), context->random(28));
-  struct->put_fix_string(client_random);
-  struct->put_var_string("", 1);
-
-  array(int) cipher_suites, compression_methods;
-  cipher_suites = context->preferred_suites;
-  compression_methods = context->preferred_compressors;
-
-  int cipher_len = sizeof(cipher_suites)*2;
-  struct->put_uint(cipher_len, 2);
-  struct->put_fix_uint_array(cipher_suites, 2);
-  struct->put_var_uint_array(compression_methods, 1, 1);
-
-  string data = struct->pop_data();
-  return handshake_packet(HANDSHAKE_client_hello, data);
 }
 
 object server_key_exchange_packet()
@@ -131,8 +103,8 @@ object server_key_exchange_packet()
       /* Send a ServerKeyExchange message. */
       
 #ifdef SSL3_DEBUG
-      werror("Sending a server key exchange-message, "
-	     "with a %d-bits key.\n", temp_key->rsa_size());
+      werror(sprintf("Sending a server key exchange-message, "
+		     "with a %d-bits key.\n", temp_key->rsa_size()));
 #endif
       struct = Struct();
       struct->put_bignum(temp_key->get_n());
@@ -158,46 +130,9 @@ object server_key_exchange_packet()
     return 0;
   }
 
-  session->cipher_spec->sign(context, client_random + server_random, struct);
+  session->cipher_spec->sign(context, other_random + my_random, struct);
   return handshake_packet(HANDSHAKE_server_key_exchange,
 			  struct->pop_data());
-}
-
-object client_key_exchange_packet()
-{
-  object struct;
-  struct = Struct();
-  string data;
-
-  switch (session->ke_method)
-  {
-  case KE_rsa:
-    struct->put_uint(3,1); struct->put_uint(0,1); /* version FIXME (TLS)*/
-    string random = context->random(46);
-    struct->put_fix_string(random);
-    string premaster_secret = struct->pop_data();
-    session->master_secret = client_derive_master_secret(premaster_secret);
-
-    array res = session->new_client_states(client_random, server_random);
-    pending_read_state = res[0];
-    pending_write_state = res[1];
-
-    data = (temp_key || context->rsa)->encrypt(premaster_secret);
-    break;
-  case KE_dhe_dss:
-  case KE_dhe_rsa:
-  case KE_dh_anon:
-    werror("FIXME: Not handled yet\n");
-    send_packet(Alert(ALERT_fatal, ALERT_unexpected_message,
-		      "SSL.session->handle_handshake: unexpected message\n",
-		      backtrace()));
-    return 0;
-    break;
-  default:
-    return 0;
-  }
-
-  return handshake_packet(HANDSHAKE_client_key_exchange, data);
 }
 
 int reply_new_session(array(int) cipher_suites, array(int) compression_methods)
@@ -205,12 +140,17 @@ int reply_new_session(array(int) cipher_suites, array(int) compression_methods)
   reuse = 0;
   session = context->new_session();
   multiset(int) common_suites;
-
-  SSL3_DEBUG_MSG("ciphers: me: %O, client: %O\n",
-		 context->preferred_suites, cipher_suites);
+  
+#ifdef SSL3_DEBUG
+  werror(sprintf("ciphers: me: %O, client: %O\n",
+		   context->preferred_suites, cipher_suites)); 
+//  werror(sprintf("compr: me: %O, client: %O\n",
+//		   context->preferred_compressors, compression_methods)); 
+#endif
   common_suites = mkmultiset(cipher_suites & context->preferred_suites);
-  SSL3_DEBUG_MSG("intersection: %O\n", common_suites);
-
+#ifdef SSL3_DEBUG
+  werror(sprintf("intersection: %O\n", common_suites));
+#endif
   if (sizeof(common_suites))
   {
     int suite;
@@ -383,14 +323,13 @@ string server_derive_master_secret(string data)
    }
   }
   string res = "";
-
+  
   object sha = mac_sha();
   object md5 = mac_md5();
-  // FIXME: TLS does this differently
   foreach( ({ "A", "BB", "CCC" }), string cookie)
     res += md5->hash_raw(premaster_secret
 			 + sha->hash_raw(cookie + premaster_secret 
-					 + client_random + server_random));
+					 + other_random + my_random));
     
 #ifdef SSL3_DEBUG
   werror(sprintf("master: '%O'\n", res));
@@ -398,61 +337,16 @@ string server_derive_master_secret(string data)
   return res;
 }
 
-string client_derive_master_secret(string premaster_secret)
-{
-  string res = "";
-
-  object sha = mac_sha();
-  object md5 = mac_md5();
-  // FIXME: TLS does this differently
-  foreach( ({ "A", "BB", "CCC" }), string cookie)
-    res += md5->hash_raw(premaster_secret
-			 + sha->hash_raw(cookie + premaster_secret 
-					 + client_random + server_random));
-
-#ifdef SSL3_DEBUG
-  werror(sprintf("master: '%O'\n", res));
-#endif
-  return res;
-}
-
-#ifdef SSL3_DEBUG_HANDSHAKE_STATE
-mapping state_descriptions = lambda()
-{
-  array inds = glob("STATE_*", indices(this_object()));
-  array vals = map(inds, lambda(string ind) { return this_object()[ind]; });
-  return mkmapping(vals, inds);
-}();
-
-mapping type_descriptions = lambda()
-{
-  array inds = glob("HANDSHAKE_*", indices(SSL.constants));
-  array vals = map(inds, lambda(string ind) { return SSL.constants()[ind]; });
-  return mkmapping(vals, inds);
-}();
-
-string describe_state(int i)
-{
-  return state_descriptions[i] || (string)i;
-}
-
-string describe_type(int i)
-{
-  return type_descriptions[i] || (string)i;
-}
-#endif
-
 /* return 0 if handshake is in progress, 1 if finished, -1 if there's a
  * fatal error. */
 int handle_handshake(int type, string data, string raw)
 {
   object input = Struct(data);
 
-#ifdef SSL3_DEBUG_HANDSHAKE_STATE
-  werror("SSL.handshake: state %s, type %s\n",
-	 describe_state(handshake_state), describe_type(type));
+#ifdef SSL3_DEBUG
+  werror(sprintf("SSL.handshake: state %d, type %d\n", handshake_state, type));
 #endif
-
+  
   switch(handshake_state)
   {
   default:
@@ -467,7 +361,7 @@ int handle_handshake(int type, string data, string raw)
      temp_key = 0;
      
      handshake_messages = raw;
-     server_random = sprintf("%4c%s", time(), context->random(28));
+     my_random = sprintf("%4c%s", time(), context->random(28));
 
      switch(type)
      {
@@ -486,20 +380,11 @@ int handle_handshake(int type, string data, string raw)
              
 	if (catch{
 	  version = input->get_fix_uint_array(1, 2);
-	  client_random = input->get_fix_string(32);
+	  other_random = input->get_fix_string(32);
 	  id = input->get_var_string(1);
 	  cipher_len = input->get_uint(2);
 	  cipher_suites = input->get_fix_uint_array(2, cipher_len/2);
 	  compression_methods = input->get_var_uint_array(1, 1);
-
-	  SSL3_DEBUG_MSG("STATE_server_wait_for_hello: recieved hello\n"
-			 "version = %d.%d\n"
-			 "id=%O\n"
-			 "cipher suites: %O\n"
-			 "compression methods: %O\n",
-			 version[0], version[1],
-			 id, cipher_suites, compression_methods);
-
 	} || (version[0] != 3) || (cipher_len & 1))
 	{
 	  send_packet(Alert(ALERT_fatal, ALERT_unexpected_message));
@@ -534,7 +419,7 @@ int handle_handshake(int type, string data, string raw)
 	  }
 	  send_packet(server_hello_packet());
 
-	  array res = session->new_server_states(client_random, server_random);
+	  array res = session->new_server_states(other_random, my_random);
 	  pending_read_state = res[0];
 	  pending_write_state = res[1];
 	  send_packet(change_cipher_packet());
@@ -593,7 +478,7 @@ int handle_handshake(int type, string data, string raw)
 	  send_packet(Alert(ALERT_fatal, ALERT_unexpected_message));
 	  return -1;
 	}
-	client_random = ("\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0" + challenge)[..31];
+	other_random = ("\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0" + challenge)[..31];
 	int err = reply_new_session(cipher_suites, ({ COMPRESSION_null }) );
 	if (err)
 	  return err;
@@ -626,10 +511,6 @@ int handle_handshake(int type, string data, string raw)
        if (rsa_message_was_bad       /* Error delayed until now */
 	   || (my_digest != digest))
        {
-	 if(rsa_message_was_bad)
-	   SSL3_DEBUG_MSG("rsa_message_was_bad\n");
-	 if(my_digest != digest)
-	   SSL3_DEBUG_MSG("digests differ\n");
 	 send_packet(Alert(ALERT_fatal, ALERT_unexpected_message));
 	 return -1;
        }
@@ -675,9 +556,9 @@ int handle_handshake(int type, string data, string raw)
       {
 	return -1;
       } else {
-
+	
 	// trace(1);
-	array res = session->new_server_states(client_random, server_random);
+	array res = session->new_server_states(other_random, my_random);
 	pending_read_state = res[0];
 	pending_write_state = res[1];
 	
@@ -696,7 +577,7 @@ int handle_handshake(int type, string data, string raw)
       break;
     case HANDSHAKE_certificate:
      {
-       if (certificate_state == CERT_requested) //FIXME: huh?
+       if (certificate_state == CERT_requested)
        {
 	 send_packet(Alert(ALERT_fatal, ALERT_unexpected_message,
 			   "SSL.session->handle_handshake: unexpected message\n",
@@ -742,195 +623,14 @@ int handle_handshake(int type, string data, string raw)
     break;
 
   case STATE_client_wait_for_hello:
-    if(type != HANDSHAKE_server_hello)
-    {
-      send_packet(Alert(ALERT_fatal, ALERT_unexpected_message,
-			"SSL.session->handle_handshake: unexpected message\n",
-			backtrace()));
-      return -1;
-    }
-    else
-    {
-      handshake_messages += raw;
-      array(int) version;
-      string id;
-      int cipher_suite, compression_method;
-
-      version = input->get_fix_uint_array(1, 2);
-      server_random = input->get_fix_string(32);
-      id = input->get_var_string(1);
-      cipher_suite = input->get_uint(2);
-      compression_method = input->get_uint(1);
-
-      if(search(context->preferred_suites, cipher_suite) == -1
-	 || search(context->preferred_compressors, compression_method) == -1)
-      {
-	// The server tried to trick us to use some other cipher suite
-	// or compression method than we wanted
-	send_packet(Alert(ALERT_fatal, ALERT_handshake_failure,
-			  "SSL.session->handle_handshake: handshake failure\n",
-			  backtrace()));
-	return -1;
-      }
-
-      session->set_cipher_suite(cipher_suite);
-      session->set_compression_method(compression_method);
-
-      SSL3_DEBUG_MSG("STATE_client_wait_for_hello: recieved hello\n"
-		     "version = %d.%d\n"
-		     "id=%O\n"
-		     "cipher suite: %O\n"
-		     "compression method: %O\n",
-		     version[0], version[1],
-		     id, cipher_suite, compression_method);
-
-      handshake_state = STATE_client_wait_for_server;
-      break;
-    }
-    break;
-
+   {
+   }
   case STATE_client_wait_for_server:
-    handshake_messages += raw;
-    switch(type)
-    {
-    default:
-      send_packet(Alert(ALERT_fatal, ALERT_unexpected_message,
-			"SSL.session->handle_handshake: unexpected message\n",
-			backtrace()));
-      return -1;
-    case HANDSHAKE_certificate:
-      {
-      // FIXME: If anonymous connection, we don't need a cert.
-      SSL3_DEBUG_MSG("Handshake: Certificate message recieved\n");
-      int certs_len = input->get_uint(3);
-      array certs = ({ });
-      int i=0;
-      while(!input->is_empty())
-	certs += ({ input->get_var_string(3) });
-      session->server_certificate = certs[0];
-
-      if (catch
-      {
-	object public_key = Tools.X509.decode_certificate(
-	  session->server_certificate)->public_key;
-	if(public_key->type == "rsa")
-	{
-	  object rsa = Crypto.rsa();
-	  rsa->set_public_key(public_key->rsa->get_n(), public_key->rsa->get_e());
-	  context->rsa = rsa;
-	}
-	else
-	{
-	  werror("Other certificates than rsa not supported!\n");
-	  send_packet(Alert(ALERT_fatal, ALERT_unexpected_message,
-			    "SSL.session->handle_handshake: unexpected message\n",
-			    backtrace()));
-	  return -1;
-	}
-      })
-      {
-	werror("Failed to decode certificate!\n");
-	send_packet(Alert(ALERT_fatal, ALERT_unexpected_message,
-			  "SSL.session->handle_handshake: unexpected message\n",
-			  backtrace()));
-	return -1;
-      }
-      certificate_state = CERT_received;
-      break;
-      }
-
-    case HANDSHAKE_server_key_exchange:
-      {
-	object(Gmp.mpz) n, e, signature;
-	n = input->get_bignum();
-	e = input->get_bignum();
-	signature = input->get_bignum();
-	Struct temp_struct = Struct();
-	temp_struct->put_bignum(n);
-	temp_struct->put_bignum(e);
-	int verification_ok;
-	if( catch{ verification_ok = session->cipher_spec->verify(
-	  context, client_random + server_random, temp_struct, signature); }
-	    || !verification_ok)
-	{
-	  send_packet(Alert(ALERT_fatal, ALERT_unexpected_message,
-			    "SSL.session->handle_handshake: verification of"
-			    " ServerKeyExchange message failed\n",
-			    backtrace()));
-	  return -1;
-	}
-	object rsa = Crypto.rsa();
-	rsa->set_public_key(n, e);
-	context->rsa = rsa;
-	break;
-      }
-
-    case HANDSHAKE_certificate_request:
-      {
-      werror("Certificate request not yet implemented.\n");
-      array(int) cert_types = input->get_var_uint_array(1, 1);
-//       int num_distinguished_names = input->get_uint(2);
-//       array(string) distinguished_names =
-      send_packet(Alert(ALERT_fatal, ALERT_unexpected_message,
-			"SSL.session->handle_handshake: unexpected message\n",
-			backtrace()));
-      return -1;
-      }
-      break;
-
-    case HANDSHAKE_server_hello_done:
-      /* Send Certificate, ClientKeyExchange, CertificateVerify and
-       * ChangeCipherSpec as appropriate, and then Finished.
-       */
-      {
-
-      if (context->certificates)
-      {
-	object struct = Struct();
-    
-	int len = `+( @ Array.map(context->certificates, strlen));
-#ifdef SSL3_DEBUG
-	//    werror(sprintf("SSL.handshake: certificate_message size %d\n", len));
-#endif
-	struct->put_uint(len + 3 * sizeof(context->certificates), 3);
-	foreach(context->certificates, string cert)
-	  struct->put_var_string(cert, 3);
-	send_packet(handshake_packet(HANDSHAKE_certificate, struct->pop_data()));
-      }
-
-
-      object key_exchange = client_key_exchange_packet();
-
-      if (key_exchange)
-	send_packet(key_exchange);
-
-      // FIXME: Certificate verify
-
-      send_packet(change_cipher_packet());
-
-      send_packet(finished_packet("CLNT"));
-
-      }
-	handshake_state = STATE_client_wait_for_finish;
-	expect_change_cipher = 1;
-	break;
-    }
-    break;
-
+   {
+   }
   case STATE_client_wait_for_finish:
-    {
-    if((type) != HANDSHAKE_finished)
-    {
-      SSL3_DEBUG_MSG("Expected type HANDSHAKE_finished(%d), got %d\n",
-		     HANDSHAKE_finished, type);
-      send_packet(Alert(ALERT_fatal, ALERT_unexpected_message,
-			"SSL.session->handle_handshake: unexpected message\n",
-			backtrace()));
-      return -1;
-    }
-    else
-      return 1;			// We're done shaking hands
-    }
+   {
+   }
   }
 #ifdef SSL3_DEBUG
 //  werror(sprintf("SSL.handshake: messages = '%O'\n", handshake_messages));
@@ -943,10 +643,6 @@ void create(int is_server)
   if (is_server)
     handshake_state = STATE_server_wait_for_hello;
   else
-  {
-    handshake_state = STATE_client_wait_for_hello;
-    handshake_messages = "";
-    session = context->new_session();
-    send_packet(client_hello());
-  }
+    throw( ({ "SSL.handshake->create: client handshake not implemented\n",
+		backtrace() }) );
 }

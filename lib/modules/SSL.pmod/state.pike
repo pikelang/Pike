@@ -1,4 +1,4 @@
-/* $Id: state.pike,v 1.6 2000/08/04 19:07:11 sigge Exp $
+/* $Id: state.pike,v 1.7 2000/08/08 18:23:15 sigge Exp $
  *
  */
 
@@ -27,14 +27,14 @@ void create(object s)
  * there was an error, otherwise 0. */
 object decrypt_packet(object packet)
 {
-#ifdef SSL3_DEBUG_CRYPT
-  werror(sprintf("SSL.state->decrypt_packet: data = %O\n", packet->fragment));
+#ifdef SSL3_DEBUG
+  werror(sprintf("SSL.state->decrypt_packet: data = '%s'\n", packet->fragment));
 #endif
   
   if (crypt)
   {
     string msg;
-#ifdef SSL3_DEBUG_CRYPT
+#ifdef SSL3_DEBUG
     werror("SSL.state: Trying decrypt..\n");
 #endif
     msg = crypt->crypt(packet->fragment); 
@@ -46,13 +46,13 @@ object decrypt_packet(object packet)
     packet->fragment = msg;
   }
 
-#ifdef SSL3_DEBUG_CRYPT
-  werror(sprintf("SSL.state: Decrypted_packet %O\n", packet->fragment));
+#ifdef SSL3_DEBUG
+  werror(sprintf("SSL.state: Decrypted_packet '%s'\n", packet->fragment));
 #endif
 
   if (mac)
   {
-#ifdef SSL3_DEBUG_CRYPT
+#ifdef SSL3_DEBUG
     werror("SSL.state: Trying mac verification...\n");
 #endif
     int length = strlen(packet->fragment) - session->cipher_spec->hash_size;
@@ -66,7 +66,7 @@ object decrypt_packet(object packet)
 
   if (compress)
   {
-#ifdef SSL3_DEBUG_CRYPT
+#ifdef SSL3_DEBUG
     werror("SSL.state: Trying decompression...\n");
 #endif
     string msg;
