@@ -1,5 +1,5 @@
 /*
- * $Id: MIME.pmod,v 1.6 1997/05/05 22:33:52 marcus Exp $
+ * $Id: module.pmod.in,v 1.7 1997/05/19 09:51:15 hubbe Exp $
  *
  * RFC1521 functionality for Pike
  *
