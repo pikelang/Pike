@@ -2710,6 +2710,7 @@ TimeRange parse(string fmt,string arg,void|TimeRange context)
       }
 
       int h=0,mi=0,s=0;
+      float sub_second;
       string g=0;
       
       if (m->t)
@@ -2725,6 +2726,7 @@ TimeRange parse(string fmt,string arg,void|TimeRange context)
 	 if (!zero_type(m->h)) h=m->h,g="hour";
 	 if (!zero_type(m->m)) mi=m->m,g="minute";
 	 if (!zero_type(m->s)) s=m->s,g="second";
+	 if (!zero_type(m->f)) sub_second=(float)("0."+m->f+"0"*9)[..10];
       }
 
       if (!zero_type(m->p))
@@ -2743,11 +2745,12 @@ TimeRange parse(string fmt,string arg,void|TimeRange context)
       }
 
       if (m->z) // zone
-	 return dwim_zone(low,m->z,g,h,mi,s);
+	 low = dwim_zone(low,m->z,g,h,mi,s);
       else if (g)
-	 return dwim_tod(low,g,h,mi,s);
-      else
-	 return low;
+	 low = dwim_tod(low,g,h,mi,s);
+      if (sub_second)
+	 low = low->fraction(sub_second);
+      return low;
 
 #ifndef NOCATCH
    })
