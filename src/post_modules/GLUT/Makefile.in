@@ -1,4 +1,4 @@
-# $Id: Makefile.in,v 1.4 1999/11/21 20:29:42 grubba Exp $
+# $Id: Makefile.in,v 1.5 2000/03/29 05:09:28 hubbe Exp $
 @make_variables@
 VPATH=@srcdir@:@srcdir@/../..:../..
 OBJS=top.o @AUTO@
@@ -9,5 +9,8 @@ MODULE_CFLAGS=@CPPFLAGS@ @CFLAGS@
 
 $(SRCDIR)/auto.c : $(SRCDIR)/auto.c.in $(SRCDIR)/features.pike $(SRCDIR)/constants.pike $(SRCDIR)/gen.pike
 	$(RUNPIKE) $(SRCDIR)/gen.pike < $(SRCDIR)/auto.c.in > $(SRCDIR)/auto.c
+
+# Compatibility with stupid makes..
+auto.o: $(SRCDIR)/auto.c
 
 @dependencies@
