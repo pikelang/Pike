@@ -1,5 +1,5 @@
 //
-// $Id: PGP.pmod,v 1.6 2004/01/18 04:38:18 nilsson Exp $
+// $Id: PGP.pmod,v 1.7 2004/02/03 13:48:30 nilsson Exp $
 
 //! PGP stuff. See RFC 2440.
 
@@ -37,7 +37,7 @@ static mapping decode_public_key(string s) {
     sscanf(key[l..], "%2c%s", l, key);
     l = (l+7)>>3;
     e = Gmp.mpz(key[..l-1],256);
-    r->key = Crypto.rsa()->set_public_key(n, e);
+    r->key = Crypto.RSA()->set_public_key(n, e);
   }
     break;
   case 2:
@@ -65,6 +65,7 @@ static mapping decode_public_key(string s) {
     l = (l+7)>>3;
     y = Gmp.mpz(key[..l-1],256);
     r->key = Crypto.dsa()->set_public_key(p, q, g, y);
+    r->key->random = Crypto.Random.random_string;
   }
     break;
   case 18:
@@ -204,6 +205,15 @@ mapping(string:string|mapping) decode(string s) {
   return r;
 }
 
+string encode(int type, string data) {
+  type <<= 2;
+  if(sizeof(data)>65535)
+    return sprintf("%c%4c%s", type+2, sizeof(data), data);
+  if(sizeof(data)>255)
+    return sprintf("%c%2c%s", type+1, sizeof(data), data);
+  return sprintf("%c%c%s", type, sizeof(data), data);
+}
+
 static int(0..1) verify(Crypto.HashState hash, mapping sig, mapping key) {
 
   if(!objectp(hash) || !mappingp(sig) || !mappingp(key) || !key->key)
@@ -229,7 +239,8 @@ static int(0..1) verify(Crypto.HashState hash, mapping sig, mapping key) {
     return 0;
 }
 
-
+//! Verify @[text] against signature @[sig] with the public key
+//! @[pubkey].
 int verify_signature(string text, string sig, string pubkey)
 {
   mapping signt = decode(sig)->signature;
@@ -238,9 +249,31 @@ int verify_signature(string text, string sig, string pubkey)
     hash = Crypto.SHA();
   else
     hash = Crypto.MD5();
+  if(signt->literal_data && signt->literal_data!=text) return 0;
   hash->update(text);
   return verify(hash, signt,
 		decode(pubkey)->public_key);
+}
+
+string sha_sign(string text, mixed key) {
+  string hash=Crypto.SHA.hash(text);
+  if(key->dsa_hash) {
+    int r,s;
+    [ r, s ] = key->raw_sign( Gmp.mpz(hash,256) );
+
+    // version, l5, classification, tstamp, key_id, type,
+    // digest_algorithm, md_csum, l, dig
+    hash = sprintf( "%1c%1c%1c%4c%8s%1c%1c%2c", 3, 5, 0,
+			  time(), "12345678", 17, 2, 0);
+    string t;
+    t = r->digits(256);
+    hash += sprintf("%2c%s", (sizeof(t)<<3)-7, t);
+    t = s->digits(256);
+    hash += sprintf("%2c%s", (sizeof(t)<<3)-7, t);
+  }
+  else
+    error("Only DSA keys supported.\n");
+  return encode(  0b100010, hash );
 }
 
 
@@ -262,6 +295,8 @@ static int crc24(string data) {
 // PGP PUBLIC KEY BLOCK
 // PGP PRIVATE KEY BLOCK
 // PGP SIGNATURE
+
+//! Encode PGP data with ASCII armour.
 string encode_radix64(string data, string type,
 		      void|mapping(string:string) extra) {
   string ret = "-----BEGIN " + type + "-----\n";
@@ -278,6 +313,7 @@ string encode_radix64(string data, string type,
   return ret;
 }
 
+//! Decode ASCII armour.
 mapping(string:mixed) decode_radix64(string data) {
   mapping ret = ([]);
   string tmp;
