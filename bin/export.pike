@@ -1,6 +1,6 @@
 #! /usr/bin/env pike
 
-/* $Id: export.pike,v 1.48 2002/04/13 16:57:23 nilsson Exp $ */
+/* $Id: export.pike,v 1.49 2002/04/14 11:07:35 mikael%brandstrom.org Exp $ */
 
 multiset except_modules = (<>);
 string vpath;
@@ -293,7 +293,7 @@ int main(int argc, array(string) argv)
 constant documentation = #"
 Usage: export.pike <arguments> <except modules>
 
-Creates a pike distribution. Needs one tar and one gzip binary int the path.
+Creates a pike distribution. Needs one tar and one gzip binary in the path.
 Mandatory arguments:
 
  name       Name of export archive (%maj, %min, %bld, %Y, %M, %D, %h, %m, %s
