@@ -227,7 +227,7 @@ class pem_msg
 /* Doesn't use general rfc934 headers and boundaries */
 string simple_build_pem(string tag, string data)
 {
-  return sprintf("-----BEGIN %s-----\n\n"
+  return sprintf("-----BEGIN %s-----\n"
 		 "%s\n"
 		 "-----END %s-----\n",
 		 tag, MIME.encode_base64(data), tag);
