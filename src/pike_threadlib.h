@@ -1,5 +1,5 @@
 /*
- * $Id: pike_threadlib.h,v 1.16 2002/08/15 14:49:24 marcus Exp $
+ * $Id: pike_threadlib.h,v 1.17 2002/09/13 19:15:56 mast Exp $
  */
 #ifndef PIKE_THREADLIB_H
 #define PIKE_THREADLIB_H
@@ -135,8 +135,6 @@ void th_atfork_child(void);
 #define th_setconcurrency(X) 
 #ifdef HAVE_PTHREAD_YIELD
 #define th_yield()	pthread_yield()
-#else
-#define th_yield()
 #endif /* HAVE_PTHREAD_YIELD */
 extern pthread_attr_t pattr;
 extern pthread_attr_t small_pattr;
