@@ -29,7 +29,7 @@ struct callback *gc_evaluator_callback=0;
 
 #include "block_alloc.h"
 
-RCSID("$Id: gc.c,v 1.54 2000/04/14 15:53:07 grubba Exp $");
+RCSID("$Id: gc.c,v 1.55 2000/04/19 21:59:37 mast Exp $");
 
 /* Run garbage collect approximate every time we have
  * 20 percent of all arrays, objects and programs is
@@ -45,7 +45,7 @@ RCSID("$Id: gc.c,v 1.54 2000/04/14 15:53:07 grubba Exp $");
 INT32 num_objects =0;
 INT32 num_allocs =0;
 INT32 alloc_threshold = MIN_ALLOC_THRESHOLD;
-static int in_gc = 0;
+int Pike_in_gc = 0;
 struct pike_queue gc_mark_queue;
 time_t last_gc;
 
@@ -83,7 +83,7 @@ void dump_gc_info(void)
   fprintf(stderr,"Average frees per gc()   : %f\n",objects_freed);
   fprintf(stderr,"Second since last gc()   : %ld\n", (long)TIME(0) - (long)last_gc);
   fprintf(stderr,"Projected garbage        : %f\n", objects_freed * (double) num_allocs / (double) alloc_threshold);
-  fprintf(stderr,"in_gc                    : %d\n", in_gc);
+  fprintf(stderr,"in_gc                    : %d\n", Pike_in_gc);
 }
 
 TYPE_T attempt_to_identify(void *something)
@@ -578,7 +578,7 @@ static void exit_gc(void)
 #ifdef PIKE_DEBUG
 void locate_references(void *a)
 {
-  if(!in_gc)
+  if(!Pike_in_gc)
     init_gc();
   
   fprintf(stderr,"**Looking for references:\n");
@@ -606,7 +606,7 @@ void locate_references(void *a)
   found_where="";
   check_for=0;
   
-  if(!in_gc)
+  if(!Pike_in_gc)
     exit_gc();
 }
 #endif
@@ -713,8 +713,11 @@ void do_gc(void)
   INT32 tmp2;
   double multiplier;
 
-  if(in_gc) return;
-  in_gc=1;
+  if(Pike_in_gc) return;
+  Pike_in_gc=1;
+
+  /* Make sure there will be no callback to this while we're in the gc. */
+  destruct_objects_to_destruct();
 
   if(gc_evaluator_callback)
   {
@@ -808,7 +811,7 @@ void do_gc(void)
 #else
   if(d_flag > 3) ADD_GC_CALLBACK();
 #endif
-  in_gc=0;
+  Pike_in_gc=0;
 }
 
 
