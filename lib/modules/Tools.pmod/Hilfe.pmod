@@ -4,7 +4,7 @@
 // Incremental Pike Evaluator
 //
 
-constant cvs_version = ("$Id: Hilfe.pmod,v 1.96 2003/01/24 02:12:38 nilsson Exp $");
+constant cvs_version = ("$Id: Hilfe.pmod,v 1.97 2003/02/01 15:29:22 mast Exp $");
 constant hilfe_todo = #"List of known Hilfe bugs/room for improvements:
 
 - Hilfe can not handle sscanf statements like
@@ -1918,7 +1918,7 @@ class Evaluator {
       last_eval_time = gethrtime();
       mixed err = catch{
 	res = o->___HilfeWrapper();
-	trace(0);
+	trace_level = trace(0);
 #if constant(_debug)
 	_debug(0);
 #endif
