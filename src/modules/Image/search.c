@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: search.c,v 1.27 2004/03/05 23:04:03 nilsson Exp $
+|| $Id: search.c,v 1.28 2004/05/04 00:11:19 nilsson Exp $
 */
 
 /*
@@ -231,7 +231,7 @@ static INLINE int my_abs(int a) { return (a<0)?-a:a; }
 
 
 /*
-**! method string make_ascii(object orient1, object orient2, object orient3, object orient4, int|void xsize, int|void ysize)
+**! method string make_ascii(object orient1,object orient2,object orient3,object orient4,int|void tlevel,int|void xsize,int|void ysize)
 **!
 **!     This method creates a string that looks like 
 **!     the image. Example:
@@ -260,32 +260,21 @@ void image_make_ascii(INT32 args)
   int i, x, y,xy=0,y2=0, xmax=0,ymax=0,max;
   struct pike_string *s;
 
-  if (!THIS->img) { Pike_error("Called Image.Image object is not initialized\n");;  return; }
+  if (!THIS->img)
+    Pike_error("Called Image.Image object is not initialized\n");
 
   this=THIS;
 
   if (args<4)
-  {
-    SIMPLE_TOO_FEW_ARGS_ERROR("image->make_ascii\\n",1);
+    SIMPLE_TOO_FEW_ARGS_ERROR("Image.Image->make_ascii", 4);
+
+  for(i=0; i<4; i++) {
+    if(sp[i-args].type!=T_OBJECT)
+      SIMPLE_BAD_ARG_ERROR("Image.Image->make_ascii", i+1, "Image.Image");
+    /* FIXME: Check that object type is Image.Image */
+    /* FIXME: Check that image sizes are identical */
+    img[i]=(struct image*)sp[i-args].u.object->storage;
   }
-  
-  if (sp[-args].type!=T_OBJECT)
-    bad_arg_error("image->make_ascii\\n",sp-args,args,1,"",sp+1-1-args,
-		"Bad argument 1 to image->make_ascii\n()\n");
-  if (sp[1-args].type!=T_OBJECT)
-    bad_arg_error("image->make_ascii\\n",sp-args,args,2,"",sp+2-1-args,
-		"Bad argument 2 to image->make_ascii\n()\n");
-  if (sp[2-args].type!=T_OBJECT)
-    bad_arg_error("image->make_ascii\\n",sp-args,args,3,"",sp+3-1-args,
-		"Bad argument 3 to image->make_ascii\n()\n");
-  if (sp[3-args].type!=T_OBJECT)
-    bad_arg_error("image->make_ascii\\n",sp-args,args,4,"",sp+4-1-args,
-		"Bad argument 4 to image->make_ascii\n()\n");
-  img[0]=(struct image*)sp[-args].u.object->storage;
-  img[1]=(struct image*)sp[1-args].u.object->storage;
-  img[2]=(struct image*)sp[2-args].u.object->storage;
-  img[3]=(struct image*)sp[3-args].u.object->storage;
-  /* check if they are of the same size*/
 
   if (args>=4)
     tlevel=sp[4-args].u.integer;
@@ -293,7 +282,6 @@ void image_make_ascii(INT32 args)
     xchar_size=sp[5-args].u.integer;
   if (args>=6)
     ychar_size=sp[6-args].u.integer;
-  pop_n_elems(args);
 
   if (!tlevel) tlevel=40;
   if (!xchar_size) xchar_size=5;
@@ -407,7 +395,7 @@ void image_make_ascii(INT32 args)
   
   THREADS_DISALLOW();
 
-
+  pop_n_elems(args);
   push_string(end_shared_string(s));
   return;
 }
