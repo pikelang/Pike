@@ -4,6 +4,21 @@
 
 int main(int argc, array argv)
 {
+  if(argc == 3 && argv[1] == "dbck") {
+    string filename = argv[2];
+    object db = .module.db(filename, "r");
+    
+    werror("Database data: ");
+    foreach(indices(db), string table) {
+      object table = db[table];
+      foreach(indices(table), string row)
+	werror("%O", table[row]);
+    }
+
+    werror("\nThe database %O seems to be intact.\n", filename);
+    return 0;
+  }
+  
   .module.db("test.db", "wct")->purge();
   object db = .module.db("test.db", "wct");
   object table = db["Aces"];
@@ -18,7 +33,7 @@ int main(int argc, array argv)
     ERR("Table diff #2!");
   
   transaction["Buck"] = "Rogers";
-
+  
   if(!equal(indices(table), ({ "Blixt" })))
     ERR("Table diff #3!");
   if(!equal(sort(indices(transaction)), ({ "Blixt", "Buck" })))
@@ -31,7 +46,7 @@ int main(int argc, array argv)
     ERR("Table diff #7!");
   if(transaction["Blixt"] != "Gordon")
     ERR("Table diff #8!");
-
+  
   transaction->commit();
 
   if(table["Buck"] != "Rogers")
