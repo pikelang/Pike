@@ -1,6 +1,6 @@
 /* IMAP.requests
  *
- * $Id: requests.pmod,v 1.25 1999/02/08 18:09:53 grubba Exp $
+ * $Id: requests.pmod,v 1.26 1999/02/08 18:15:00 grubba Exp $
  */
 
 import .types;
@@ -708,7 +708,7 @@ class uid {
     }
     switch(lower_case(cmd->atom)) {
     case "fetch":
-      object local_set = server->uid_to_local(message_set);
+      object local_set = server->uid_to_local(session, message_set);
       return(fetch::easy_process(local_set, request));
       break;
     case "search":
