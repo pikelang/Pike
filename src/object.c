@@ -5,7 +5,7 @@
 \*/
 /**/
 #include "global.h"
-RCSID("$Id: object.c,v 1.113 2000/04/19 14:00:43 mast Exp $");
+RCSID("$Id: object.c,v 1.114 2000/04/19 21:25:33 mast Exp $");
 #include "object.h"
 #include "dynamic_buffer.h"
 #include "interpret.h"
@@ -551,6 +551,15 @@ void destruct(struct object *o)
 static struct object *objects_to_destruct = 0;
 static struct callback *destruct_object_evaluator_callback =0;
 
+void remove_objects_to_destruct_callback(void)
+{
+  if(destruct_object_evaluator_callback)
+  {
+    remove_callback(destruct_object_evaluator_callback);
+    destruct_object_evaluator_callback=0;
+  }
+}
+
 /* This function destructs the objects that are scheduled to be
  * destructed by really_free_object. It links the object back into the
  * list of objects first. Adds a reference, destructs it and then frees it.
@@ -559,6 +568,11 @@ void destruct_objects_to_destruct(void)
 {
   struct object *my_list=0;
   struct object *o, *next;
+
+#ifdef PIKE_DEBUG
+  if (Pike_in_gc >= 3 && Pike_in_gc <= 4)
+    fatal("Can't meddle with the object link list in gc pass %d.\n", Pike_in_gc);
+#endif
 
   while((o=objects_to_destruct))
   {
@@ -576,11 +590,7 @@ void destruct_objects_to_destruct(void)
     free_object(o);
   }
 
-  if(destruct_object_evaluator_callback)
-  {
-    remove_callback(destruct_object_evaluator_callback);
-    destruct_object_evaluator_callback=0;
-  }
+  remove_objects_to_destruct_callback();
 }
 
 
@@ -606,6 +616,8 @@ void really_free_object(struct object *o)
 
   if(o->prog)
   {
+    DOUBLELINK(objects_to_destruct,o);
+    if (Pike_in_gc) return;	/* Done last in gc(). */
     if(!destruct_object_evaluator_callback)
     {
       destruct_object_evaluator_callback=
@@ -613,8 +625,6 @@ void really_free_object(struct object *o)
 			(callback_func)destruct_objects_to_destruct,
 			0,0);
     }
-
-    DOUBLELINK(objects_to_destruct,o);
   } else {
     if(o->parent)
     {
@@ -1244,9 +1254,15 @@ void gc_free_all_unreferenced_objects(void)
 
   for(o=first_object;o;o=o->next)
   {
+#ifdef PIKE_DEBUG
+    get_marker(o)->flags |= GC_OBJ_PASS_4;
+#endif
     if(gc_do_free(o))
     {
       add_ref(o);
+#ifdef PIKE_DEBUG
+      get_marker(o)->flags |= GC_DO_FREE_OBJ;
+#endif
       call_destroy(o,0);
     }
   }
@@ -1255,6 +1271,18 @@ void gc_free_all_unreferenced_objects(void)
   {
     if(gc_do_free(o))
     {
+#ifdef PIKE_DEBUG
+      if (!(get_marker(o)->flags & GC_DO_FREE_OBJ) ||
+	  !(get_marker(o)->flags & GC_OBJ_PASS_4)) {
+	extern char *fatal_after_gc;
+	fprintf(stderr,"**Object unexpectedly marked for gc. flags: %d\n",
+		get_marker(o)->flags);
+	describe(o);
+	locate_references(o);
+	fprintf(stderr,"##### Continuing search for more bugs....\n");
+	fatal_after_gc="Object unexpectedly marked for gc.\n";
+      }
+#endif
       low_destruct(o,1);
       SET_NEXT_AND_FREE(o,free_object);
     }else{

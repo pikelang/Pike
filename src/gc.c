@@ -29,7 +29,7 @@ struct callback *gc_evaluator_callback=0;
 
 #include "block_alloc.h"
 
-RCSID("$Id: gc.c,v 1.71 2000/04/19 18:06:45 mast Exp $");
+RCSID("$Id: gc.c,v 1.72 2000/04/19 21:25:33 mast Exp $");
 
 /* Run garbage collect approximate every time we have
  * 20 percent of all arrays, objects and programs is
@@ -151,7 +151,7 @@ void describe_location(void *real_memblock,
   if(!location) return;
 /*  fprintf(stderr,"**Location of (short) svalue: %p\n",location); */
 
-  if(real_type!=-1) real_memblock=memblock;
+  if(real_type!=-1) memblock=real_memblock;
 
 #ifdef DEBUG_MALLOC
   if(memblock == 0 || type == -1)
@@ -506,7 +506,7 @@ void describe_something(void *a, int t, int indent, int depth, int flags)
   } else
 #endif /* DEBUG_MALLOC */
   if (((int)a) & 3) {
-    fprintf(stderr,"%*s**Location: %p  Type: %s  Missaligned address\n",indent,"",a,
+    fprintf(stderr,"%*s**Location: %p  Type: %s  Misaligned address\n",indent,"",a,
 	    get_name_of_type(t));
   } else {
     fprintf(stderr,"%*s**Location: %p  Type: %s  Refs: %d\n",indent,"",a,
@@ -514,12 +514,12 @@ void describe_something(void *a, int t, int indent, int depth, int flags)
 	    *(INT32 *)a);
   }
 
-  low_describe_something(a,t,indent,depth,flags);
-
 #ifdef DEBUG_MALLOC
   if(!(flags & DESCRIBE_NO_DMALLOC))
     debug_malloc_dump_references(a,indent+2,depth-1,flags);
 #endif
+
+  low_describe_something(a,t,indent,depth,flags);
 
   
   fprintf(stderr,"%*s*******************\n",indent,"");
@@ -571,7 +571,7 @@ void debug_describe_svalue(struct svalue *s)
 INT32 real_gc_check(void *a)
 {
   struct marker *m=get_marker(a);
-  
+
 #ifdef PIKE_DEBUG
   if(check_for)
   {
@@ -596,6 +596,9 @@ INT32 real_gc_check(void *a)
     }
     return 0;
   }
+
+  if (Pike_in_gc != 1)
+    fatal("gc check attempted in pass %d.\n", Pike_in_gc);
 
   if(m->saved_refs != -1)
     if(m->saved_refs != *(INT32 *)a) {
@@ -807,6 +810,11 @@ int gc_mark(void *a)
   struct marker *m;
   m=get_marker(debug_malloc_pass(a));
 
+#ifdef PIKE_DEBUG
+  if (Pike_in_gc != 2)
+    fatal("gc mark attempted in pass %d.\n", Pike_in_gc);
+#endif
+
   if(m->flags & GC_REFERENCED)
   {
     return 0;
@@ -869,6 +877,8 @@ void do_gc(void)
     remove_callback(gc_evaluator_callback);
     gc_evaluator_callback=0;
   }
+
+  remove_objects_to_destruct_callback();
 
   tmp2=num_objects;
 
