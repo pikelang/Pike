@@ -1,4 +1,4 @@
-AC_REVISION("$Id: configure.in,v 1.595 2002/08/12 20:28:24 grubba Exp $")
+AC_REVISION("$Id: configure.in,v 1.596 2002/08/13 11:31:22 grubba Exp $")
 AC_INIT(interpret.c)
 AC_CONFIG_HEADER(machine.h)
 
@@ -4873,7 +4873,9 @@ AC_CACHE_VAL(pike_cv_sys_nonblock,
   else
     OCPPFLAGS="$CPPFLAGS"
     pike_cv_sys_nonblock=UNKNOWN
-    for method in USE_FCNTL_FNDELAY USE_FCNTL_O_NDELAY USE_FCNTL_O_NONBLOCK \
+    # USE_FCNTL_O_NONBLOCK seems to be the most common, so let's start
+    # with it.
+    for method in USE_FCNTL_O_NONBLOCK USE_FCNTL_FNDELAY USE_FCNTL_O_NDELAY \
 		  USE_IOCTL_FIONBIO USE_IOCTLSOCKET_FIONBIO; do
       # Make sure we can run configure in a separate directory,
       # and set the method to try.
