@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: builtin_functions.h,v 1.26 2003/07/21 23:34:01 mast Exp $
+|| $Id: builtin_functions.h,v 1.27 2003/09/05 15:19:20 mast Exp $
 */
 
 #ifndef BUILTIN_EFUNS_H
@@ -107,8 +107,11 @@ PMOD_EXPORT void f_transpose(INT32 args);
 PMOD_EXPORT void f__reset_dmalloc(INT32 args);
 PMOD_EXPORT void f__locate_references(INT32 args);
 PMOD_EXPORT void f_map_array(INT32 args);
-PMOD_EXPORT void f_get_iterator(INT32 args);
 void init_builtin_efuns(void);
+
+/* From iterators.cmod. */
+PMOD_EXPORT void f_get_iterator(INT32 args);
+int foreach_iterate(struct object *o, int do_step);
 
 /* From builtin.cmod. */
 PMOD_EXPORT void f_column(INT32 args);

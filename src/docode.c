@@ -2,11 +2,11 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: docode.c,v 1.165 2003/08/03 00:52:42 mast Exp $
+|| $Id: docode.c,v 1.166 2003/09/05 15:19:20 mast Exp $
 */
 
 #include "global.h"
-RCSID("$Id: docode.c,v 1.165 2003/08/03 00:52:42 mast Exp $");
+RCSID("$Id: docode.c,v 1.166 2003/09/05 15:19:20 mast Exp $");
 #include "las.h"
 #include "program.h"
 #include "pike_types.h"
@@ -1254,15 +1254,18 @@ static int do_docode2(node *n, int flags)
       current_switch.jumptable=0;
       current_label->break_label=alloc_label();
       current_label->continue_label=alloc_label();
-      
-      tmp3=do_branch(-1);
+
+      /* Doubt it's necessary to use a label separate from
+       * current_label->break_label, but I'm playing safe. /mast */
+      tmp3 = alloc_label();
+      do_jump(F_FOREACH_START, DO_NOT_WARN((INT32) tmp3));
       tmp1=ins_label(-1);
       DO_CODE_BLOCK(CDR(n));
       ins_label(current_label->continue_label);
-      low_insert_label( DO_NOT_WARN((INT32)tmp3));
-      do_jump(F_NEW_FOREACH, DO_NOT_WARN((INT32)tmp1));
+      do_jump(F_FOREACH_LOOP, DO_NOT_WARN((INT32)tmp1));
       ins_label(current_label->break_label);
-      
+      low_insert_label( DO_NOT_WARN((INT32)tmp3));
+
       current_switch.jumptable = prev_switch_jumptable;
       POP_STATEMENT_LABEL;
       POP_AND_DO_CLEANUP;
@@ -1279,6 +1282,7 @@ static int do_docode2(node *n, int flags)
       node **a2=my_get_arg(&_CAR(arr),1);
       if(a1 && a2 && a2[0]->token==F_CONSTANT &&
 	 a2[0]->u.sval.type==T_INT &&
+	 /* FIXME: The following can never be true! */
 	 a2[0]->u.sval.type==0x7fffffff &&
 	a1[0]->type == int_type_string)
       {
