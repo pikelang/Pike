@@ -22,6 +22,7 @@
 #define LDAP_DEFAULT_HOST       "127.0.0.1"
 #define LDAP_DEFAULT_URL       "ldap://"+LDAP_DEFAULT_HOST+":"+LDAP_DEFAULT_PORT+"/"
 #define LDAP_DEFAULT_VERSION    3
+#define V3_REFERRALS		1
 
 #define QUOTED_COMMA		"%2c"
 

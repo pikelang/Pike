@@ -2,7 +2,7 @@
 
 // LDAP client protocol implementation for Pike.
 //
-// $Id: client.pike,v 1.24 2001/06/21 11:33:06 hop Exp $
+// $Id: client.pike,v 1.25 2001/08/15 18:10:53 hop Exp $
 //
 // Honza Petrous, hop@unibase.cz
 //
@@ -83,7 +83,8 @@ int _prof_gtim;
 // ASN.1 decode macros
 #define ASN1_DECODE_RESULTAPP(X)	(.ldap_privates.ldap_der_decode(X)->elements[1]->get_tag())
 #define ASN1_DECODE_RESULTCODE(X)	(int)(.ldap_privates.ldap_der_decode(X)->elements[1]->elements[0]->value->cast_to_int())
-#define ASN1_DECODE_RESULTSTRING(X)	(.ldap_privates.ldap_der_decode(X)->elements[1]->elements[1]->value)
+#define ASN1_DECODE_RESULTSTRING(X)	(.ldap_privates.ldap_der_decode(X)->elements[1]->elements[2]->value)
+#define ASN1_DECODE_RESULTREFS(X)	(.ldap_privates.ldap_der_decode(X)->elements[1]->elements[3]->elements)
 #define ASN1_DECODE_ENTRIES(X)		_New_decode(X)
 #define ASN1_DECODE_DN(X)		(string)((X)->elements[0]->value)
 #define ASN1_DECODE_RAWDEBUG(X)		(.ldap_privates.ldap_der_decode(X)->debug_string())
@@ -106,19 +107,22 @@ int _prof_gtim;
   {
 
     private int resultcode = LDAP_SUCCESS;
-    //private string resultstring = LDAP_SUCCESS_STR;
+    private string resultstring;
     private int entrycnt = 0;
     private int actnum = 0;
     private array(mapping(string:array(string))) entry = ({});
+    array(string) referrals;
 
     int error_number() { return(resultcode); }
 
-    string error_string() { return(ldap_errlist[resultcode]); }
+    string error_string() {
+      return((stringp(resultstring) && sizeof(resultstring)) ? 
+		resultstring : ldap_errlist[resultcode]);
+    }
 
     int num_entries() { return(entrycnt); }
 
     int count_entries() { return(entrycnt - actnum); }
-
 
     private array _get_attr_values(int ver, object x) {
 
@@ -171,12 +175,17 @@ int _prof_gtim;
       // The last element of 'rawres' is result itself
       resultcode = ASN1_DECODE_RESULTCODE(rawres[lastel]);
       DWRITE(sprintf("result.create: code=%d\n",resultcode));
-      #if 0
       resultstring = ASN1_DECODE_RESULTSTRING(rawres[lastel]);
-      DWRITE(sprintf("result.create: resstr=%s\n",resultstring));
-      #endif
+      DWRITE(sprintf("result.create: str=%s\n",resultstring));
+#ifdef V3_REFERRALS
       // referral (v3 mode)
-      // ...
+      if(resultcode == 10) {
+        referrals = ({});
+        foreach(ASN1_DECODE_RESULTREFS(rawres[lastel]), object ref1)
+	  referrals += ({ ref1->value });
+        DWRITE(sprintf("result.create: refs=%O\n",referrals));
+      }
+#endif
       DWRITE(sprintf("result.create: elements=%d\n",lastel+1));
       if (lastel) { // Have we any entry?
         entry = ASN1_DECODE_ENTRIES(rawres[..lastel-1]);
@@ -786,17 +795,7 @@ int _prof_gtim;
         THROW(({error_string()+"\n",backtrace()}));
         return(-ldap_errno);
       }
-#ifdef V3_REFERRALS
-      nv = ASN1_DECODE_RESULTAPP(raw);
-      if(nv == 4 || nv == 5)
-	rawarr += ({raw});
-      else {
-        DWRITE(sprintf("client.search: APP[%d]\n",ASN1_DECODE_RESULTAPP(raw)));
-	// in version 3 - referrals
-      }
-#else
-	rawarr += ({raw}); // search op is about 20-25% faster without referral checks!
-#endif
+      rawarr += ({raw});
     } // while
 #ifdef LDAP_PROTOCOL_PROFILE
     };
