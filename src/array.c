@@ -20,7 +20,7 @@
 #include "main.h"
 #include "security.h"
 
-RCSID("$Id: array.c,v 1.43 1999/01/21 09:14:56 hubbe Exp $");
+RCSID("$Id: array.c,v 1.44 1999/03/05 02:14:31 hubbe Exp $");
 
 struct array empty_array=
 {
@@ -311,7 +311,7 @@ struct array *resize_array(struct array *a, INT32 size)
       return a;
     }else{
       struct array *ret;
-      ret=low_allocate_array(size, (size>>3)+1);
+      ret=low_allocate_array(size, (size>>1) + 4);
       MEMCPY(ITEM(ret),ITEM(a),sizeof(struct svalue)*a->size);
       ret->type_field = a->type_field | BIT_INT;
       a->size=0;
@@ -1108,6 +1108,8 @@ static int array_merge_fun(INT32 *a, INT32 *b)
   }
 }
 
+
+
 /*
  * merge two arrays and retain their order, this is done by arranging them
  * into ordered sets, merging them as sets and then rearranging the zipper
@@ -1141,6 +1143,90 @@ struct array *merge_array_with_order(struct array *a, struct array *b,INT32 op)
 }
 
 
+#define CMP(X,Y) set_svalue_cmpfun(X,Y)
+#define TYPE struct svalue
+#define ID set_sort_svalues
+#include "fsort_template.h"
+#undef CMP
+#undef TYPE
+#undef ID
+
+
+/*
+ * merge two arrays and retain their order, this is done by arranging them
+ * into ordered sets, merging them as sets and then rearranging the zipper
+ * before zipping the sets together. 
+ */
+struct array *merge_array_without_order2(struct array *a, struct array *b,INT32 op)
+{
+  INT32 ap,bp,i;
+  struct svalue *arra,*arrb;
+  struct array *ret;
+
+#ifdef PIKE_DEBUG
+  if(d_flag > 1)
+  {
+    array_check_type_field(a);
+    array_check_type_field(b);
+  }
+#endif
+
+  if(a->refs==1 || !a->size)
+  {
+    arra=ITEM(a);
+  }else{
+    arra=(struct svalue *)xalloc(a->size*sizeof(struct svalue));
+    MEMCPY(arra,ITEM(a),a->size*sizeof(struct svalue));
+  }
+
+  if(b->refs==1 || !b->size)
+  {
+    arrb=ITEM(b);
+  }else{
+    arrb=(struct svalue *)xalloc(b->size*sizeof(struct svalue));
+    MEMCPY(arrb,ITEM(b),b->size*sizeof(struct svalue));
+  }
+
+  set_sort_svalues(arra,arra+a->size-1);
+  set_sort_svalues(arrb,arrb+b->size-1);
+
+  ret=low_allocate_array(0,32);
+  ap=bp=0;
+
+  while(ap < a->size && bp < b->size)
+  {
+    i=set_svalue_cmpfun(arra+ap,arrb+bp);
+    if(i < 0)
+      i=op >> 8;
+    else if(i > 0)
+      i=op;
+    else
+      i=op >> 4;
+    
+    if(i & PIKE_ARRAY_OP_A) ret=append_array(ret,arra+ap);
+    if(i & PIKE_ARRAY_OP_B) ret=append_array(ret,arrb+bp);
+    if(i & PIKE_ARRAY_OP_SKIP_A) ap++;
+    if(i & PIKE_ARRAY_OP_SKIP_B) bp++;
+  }
+
+  if((op >> 8) & PIKE_ARRAY_OP_A)
+    while(ap<a->size)
+      ret=append_array(ret,arra + ap++);
+
+  if(op & PIKE_ARRAY_OP_B)
+    while(bp<b->size)
+      ret=append_array(ret,arrb + bp++);
+
+  if(arra != ITEM(a)) free((char *)arra);
+  if(arrb != ITEM(b)) free((char *)arrb);
+
+  free_array(a);
+  free_array(b);
+
+  return ret;
+}
+
+
 /* merge two arrays without paying attention to the order
  * the elements has presently
  */
@@ -1148,6 +1234,7 @@ struct array *merge_array_without_order(struct array *a,
 					struct array *b,
 					INT32 op)
 {
+#if 0
   INT32 *zipper;
   struct array *tmpa,*tmpb,*ret;
 
@@ -1170,6 +1257,12 @@ struct array *merge_array_without_order(struct array *a,
   free_array(tmpb);
   free((char *)zipper);
   return ret;
+
+#else
+  add_ref(a);
+  add_ref(b);
+  return merge_array_without_order2(a,b,op);
+#endif
 }
 
 /* subtract an array from another */
