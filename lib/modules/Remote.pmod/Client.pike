@@ -12,6 +12,12 @@ object get(string name)
   return con->get_named_object(name);
 }
 
+// This indirection function also serves the purpose of keeping a ref
+// to this object in case the user doesn't.
+void client_close_callback()
+{
+  if (close_callback) close_callback();
+}
 
 void create(string host, int port, void|int nice, int ...timeout)
 {
@@ -20,6 +26,7 @@ void create(string host, int port, void|int nice, int ...timeout)
     error("Could not connect to server");
   connected = 1;
   con->closed = 0;
+  con->add_close_callback (client_close_callback);
 }
 
 void provide(string name, mixed thing)
@@ -29,10 +36,7 @@ void provide(string name, mixed thing)
 
 void set_close_callback(function f)
 {
-  if(close_callback)
-    con->remove_close_callback(close_callback);
   close_callback = f;
-  con->add_close_callback(f);
 }
 
 void close()
