@@ -5,7 +5,8 @@
 /* todo:
  *  return (void)1; will give me problems.
  *  strstr(string,string *) -> return first occurance of first string...
- *
+ *  inherit doesn't work
+ *  preprocessor stuff
  */
 
 #!define catch(X) ((X),0)
@@ -200,7 +201,7 @@ int do_parse()
 	{
 	case "quit":
 	  write("Exiting.\n");
-	  exit(1);
+	  exit(0);
 	case ".":
 	  clean_buffer();
 	  write("Input buffer flushed.\n");
@@ -330,6 +331,8 @@ mixed parse_function(string fun)
   case "list":
   case "float":
   case "mixed":
+  case "program":
+  case "function":
     /* parse function */
     if(eq_pos!=-1) break;  /* it's a variable */
     sscanf(fun,first_word+"%s",name);
@@ -397,6 +400,8 @@ mixed parse_statement(string ex)
   case "list":
   case "float":
   case "mixed":
+  case "program":
+  case "function":
     /* parse variable def. */
     sscanf(ex,first_word+"%s",b);
     b=skipwhite(b);
