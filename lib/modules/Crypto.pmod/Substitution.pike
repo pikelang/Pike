@@ -56,7 +56,8 @@ this_program set_key(mapping(string:string|array(string)) key) {
 
   if(enc_key[""]) {
     array(string) null = Array.uniq(null_chars +
-				    Array.arrayify( m_delete(enc_key, "") ));
+				    [array(string)]Array.arrayify
+				    ( m_delete(enc_key, "") ));
     if(null_fq) set_null_chars(null_fq, null);
   }
   return this;
@@ -225,7 +226,7 @@ this_program set_decrypt_key(mapping(string:string|array(string)) key) {
   return set_key(key);
 }
 
-int|string crypt(int|string x) {
+int|string crypt(string x) {
   if(mode)
     return decrypt(x);
   else
