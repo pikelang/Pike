@@ -1,4 +1,4 @@
-// $Id: module.pmod,v 1.185 2003/10/23 12:34:01 grubba Exp $
+// $Id: module.pmod,v 1.186 2003/10/24 19:07:29 mast Exp $
 #pike __REAL_VERSION__
 
 inherit files;
@@ -863,7 +863,7 @@ class File
     return ___##X;					\
   }
 
-  //! @decl void set_read_callback(function(mixed, string:void) read_callback)
+  //! @decl void set_read_callback(function(mixed, string:int) read_callback)
   //!
   //! This function sets the @tt{read_callback@} for the file. The
   //! @tt{read_callback@} is called whenever there is data to read from
@@ -871,6 +871,12 @@ class File
   //!
   //! The callback is called with the @tt{id@} of the file as
   //! first argument and some or all of its data as second.
+  //!
+  //! If the callback returns @expr{-1@}, no other call out or
+  //! callback will be called by the backend in that round. I.e. the
+  //! caller of the backend will get control back right away. For the
+  //! main backend that means it will immediately start another round
+  //! and check files and call outs anew.
   //!
   //! @note
   //!   This function does not set the file nonblocking.
@@ -885,7 +891,7 @@ class File
   //! @[set_close_callback()], @[set_read_oob_callback]
   //! @[set_write_oob_callback()], @[set_id()]
 
-  //! @decl function(mixed, string:void) query_read_callback()
+  //! @decl function(mixed, string:int) query_read_callback()
   //!
   //! This function returns the @tt{read_callback@}, which has been set with
   //! @[set_nonblocking()] or @[set_read_callback()].
@@ -916,6 +922,12 @@ class File
   //!
   //! The callback is called with the @tt{id@} of the file as argument.
   //!
+  //! If the callback returns @expr{-1@}, no other call out or
+  //! callback will be called by the backend in that round. I.e. the
+  //! caller of the backend will get control back right away. For the
+  //! main backend that means it will immediately start another round
+  //! and check files and call outs anew.
+  //!
   //! @note
   //! This function does not set the file nonblocking.
   //!
@@ -929,7 +941,7 @@ class File
   //! @[set_close_callback()], @[set_read_oob_callback]
   //! @[set_write_oob_callback()], @[set_id()]
 
-  //! @decl function(mixed:void) query_write_callback()
+  //! @decl function(mixed:int) query_write_callback()
   //!
   //! This function returns the @tt{write_callback@}, which has been set with
   //! @[set_nonblocking()] or @[set_write_callback()].
@@ -941,22 +953,22 @@ class File
   CBFUNC(write_callback)
   //! @endignore
 
-  //! @decl void set_read_oob_callback(function(mixed, string:void) read_oob_cb)
+  //! @decl void set_read_oob_callback(function(mixed, string:int) read_oob_cb)
   //!
   //! @fixme
   //!   Document this function.
 
-  //! @decl function(mixed, string:void) query_read_oob_callback()
+  //! @decl function(mixed, string:int) query_read_oob_callback()
   //!
   //! @fixme
   //!   Document this function.
 
-  //! @decl void set_write_oob_callback(function(mixed:void) write_oob_cb)
+  //! @decl void set_write_oob_callback(function(mixed:int) write_oob_cb)
   //!
   //! @fixme
   //!   Document this function.
 
-  //! @decl function(mixed:void) query_write_oob_callback()
+  //! @decl function(mixed:int) query_write_oob_callback()
   //!
   //! @fixme
   //!   Document this function.
@@ -966,13 +978,19 @@ class File
   CBFUNC(write_oob_callback)
   //! @endignore
 
-  //! @decl void set_close_callback(function(mixed:void) close_cb)
+  //! @decl void set_close_callback(function(mixed:int) close_cb)
   //!
   //! This function sets the @tt{close_callback@} for the file. The
   //! @tt{close callback@} is called when the remote end of a socket or
   //! pipe is closed.
   //!
   //! The callback is called with the @tt{id@} of the file as argument.
+  //!
+  //! If the callback returns @expr{-1@}, no other call out or
+  //! callback will be called by the backend in that round. I.e. the
+  //! caller of the backend will get control back right away. For the
+  //! main backend that means it will immediately start another round
+  //! and check files and call outs anew.
   //!
   //! @note
   //! This function does not set the file nonblocking.
@@ -1026,14 +1044,14 @@ class File
   //!
   mixed query_id() { return ___id; }
 
-  //! @decl void set_nonblocking(function(mixed, string:void) read_callback, @
-  //!                            function(mixed:void) write_callback, @
-  //!                            function(mixed:void) close_callback)
-  //! @decl void set_nonblocking(function(mixed, string:void) read_callback, @
-  //!                            function(mixed:void) write_callback, @
-  //!                            function(mixed:void) close_callback, @
-  //!                            function(mixed, string:void) read_oob_callback, @
-  //!                            function(mixed:void) write_oob_callback)
+  //! @decl void set_nonblocking(function(mixed, string:int) read_callback, @
+  //!                            function(mixed:int) write_callback, @
+  //!                            function(mixed:int) close_callback)
+  //! @decl void set_nonblocking(function(mixed, string:int) read_callback, @
+  //!                            function(mixed:int) write_callback, @
+  //!                            function(mixed:int) close_callback, @
+  //!                            function(mixed, string:int) read_oob_callback, @
+  //!                            function(mixed:int) write_oob_callback)
   //! @decl void set_nonblocking()
   //!
   //! This function sets a stream to nonblocking mode. When data arrives on
@@ -1050,6 +1068,12 @@ class File
   //!
   //! All callbacks will have the @tt{id@} of the file as first argument
   //! when called (see @[set_id()]).
+  //!
+  //! If a callback returns @expr{-1@}, no other call out or callback
+  //! will be called by the backend in that round. I.e. the caller of
+  //! the backend will get control back right away. For the main
+  //! backend that means it will immediately start another round and
+  //! check files and call outs anew.
   //!
   //! @note
   //!   If no arguments are given, the callbacks will be cleared.
