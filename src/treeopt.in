@@ -1,6 +1,6 @@
 // -*- c -*-
 //
-// $Id: treeopt.in,v 1.29 1999/11/19 17:06:36 grubba Exp $
+// $Id: treeopt.in,v 1.30 1999/11/19 21:24:01 grubba Exp $
 //
 // The tree optimizer
 //
@@ -474,7 +474,7 @@ F_ARROW(0 = F_CONSTANT[$$->u.sval.type == T_OBJECT]
 F_DO(0, -):
   $0;
 
-F_DO(0, +[node_is_false($$)]):
+F_DO(0[!($$->tree_info & (OPT_BREAK|OPT_CONTINUE))], +[node_is_false($$)]):
   $0;
 
 F_DO(-, 0 = +[node_is_true($$)]):
