@@ -1,5 +1,5 @@
 /* -*- c -*-
- * $Id: builtin.cmod,v 1.22 2001/06/21 01:23:07 per Exp $
+ * $Id: builtin.cmod,v 1.23 2001/06/25 20:06:48 grubba Exp $
  */
 
 #include "global.h"
@@ -575,4 +575,9 @@ PIKECLASS Buffer
 void init_builtin(void)
 {
 INIT
+}
+
+void exit_builtin(void)
+{
+EXIT
 }
