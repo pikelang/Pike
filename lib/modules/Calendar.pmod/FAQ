@@ -1,0 +1,213 @@
+
+Q:  I need to parse some date in a non-strict format, like
+    the one in the HTTP or mail protocol, or from a user web
+    form.
+
+A:  Calendar.dwim_day, or Calendar.dwim_time, should solve
+    your problem. 
+
+      > Calendar.dwim_day("1/2/3");
+      Result: Day(Thu 2 Jan 2003)
+      > Calendar.dwim_day("1 aug 2001");
+      Result: Day(Wed 1 Aug 2001)
+
+      > Calendar.dwim_time("1 aug 2001 23:14 EDT");
+      Result: Minute(Wed 1 Aug 2001 23:14 EDT)
+      > Calendar.dwim_time("2001 2 3 23:14:23 UTC+9");
+      Result: Second(Sat 3 Feb 2001 23:14:23 UTC+9)
+    
+    If it doesn't, and it should, report the problem to me
+    and I'll see what I can do. Note that the timezones
+    are rather unpredictable - if it doesn't get it, you
+    will get the default (local) timezone.
+
+-------------------------------------------------------------------------  
+
+Q:  How do I convert a "Second(Sat 3 Feb 2001 23:14:23 UTC+9)" object
+    to my timezone?
+
+A:  ->set_timezone(your timezone)
+
+      > Calendar.dwim_time("2001 2 3 23:14:23 PST")
+      	  ->set_timezone("Europe/Stockholm");
+      Result: Second(Sun 4 Feb 2001 8:14:23 CET)
+      
+      > Calendar.dwim_time("2001 2 3 23:14:23 PST")
+      	  ->set_timezone("locale");
+      Result: Second(Sun 4 Feb 2001 8:14:23 CET)
+
+-------------------------------------------------------------------------  
+
+Q:  How do I print my time object?
+
+A:  ->format_xxx();
+
+    You can either print it unit-sensitive,
+
+      > Calendar.dwim_time("2001 2 3 23:14:23 PST")->format_nice();
+      Result: "3 Feb 2001 23:14:23"
+      > Calendar.Week()->format_nice();                            
+      Result: "w2 2001"
+      > Calendar.now()->format_nicez();
+      Result: "10 Jan 10:51:15.489603 CET"
+
+    or in a format not depending on the unit,
+
+      > Calendar.Week()->format_ymd();            
+      Result: "2001-01-08"
+      > Calendar.Day()->format_time();
+      Result: "2001-01-10 00:00:00"
+
+    This is all the formats:
+
+    format_ext_time       "Wednesday, 10 January 2001 10:49:57"
+    format_ext_ymd        "Wednesday, 10 January 2001"
+    format_iso_time       "2001-01-10 (Jan) -W02-3 (Wed) 10:49:57 UTC+1"
+    format_iso_ymd        "2001-01-10 (Jan) -W02-3 (Wed)"
+    format_mod            "10:49"
+    format_month          "2001-01"
+    format_month_short    "200101"
+    format_mtime          "2001-01-10 10:49"
+    format_time           "2001-01-10 10:49:57"
+    format_time_short     "20010110 10:49:57"
+    format_time_xshort    "010110 10:49:57"
+    format_tod            "10:49:57"
+    format_tod_short      "104957"
+    format_todz           "10:49:57 CET"
+    format_todz_iso       "10:49:57 UTC+1"
+    format_week           "2001-w2"
+    format_week_short     "2001w2"
+    format_iso_week       "2001-W02"
+    format_iso_week_short "200102"
+    format_xtime          "2001-01-10 10:49:57.539198"
+    format_xtod           "10:49:57.539658"
+    format_ymd            "2001-01-10"
+    format_ymd_short      "20010110"
+    format_ymd_xshort     "010110"
+
+    format_ctime          "Wed Jan 10 10:49:57 2001\n"
+    format_smtp           "Wed, 10 Jan 2001 10:49:57 +0100"
+    format_http           "Wed, 10 Jan 2001 09:49:57 GMT"
+
+-------------------------------------------------------------------------  
+
+Q:  How old am I?
+
+A:  First, you need to create the time period representing your age.
+
+      > object t=Calendar.dwim_time("1638 dec 23 7:02 pm")
+      	  ->distance(Calendar.now());
+      Result: Fraction(Thu 23 Dec 1638 19:02:00.000000 LMT - 
+      		       Wed 10 Jan 2001 10:53:33.032856 CET)
+
+   Now, you can ask for instance how many years this is:
+
+      > t->how_many(Calendar.Year);
+      Result: 362
+
+   Or how many 17 seconds it is:
+
+      > t->how_many(Calendar.Second()*17);
+      Result: 672068344
+
+   A note here is to use ->distance, and not ->range, since that
+   will include the destination unit too:
+
+     > Calendar.dwim_day("00-01-02")->range(Calendar.Week(2000,2))
+        ->how_many(Calendar.Day());
+     Result: 15
+     > Calendar.dwim_day("00-01-02")->distance(Calendar.Week(2000,2))
+        ->how_many(Calendar.Day());
+     Result: 8
+
+-------------------------------------------------------------------------  
+
+Q:  In 983112378 days, what weekday will it be?
+
+A:  (this weekday + 983112378) % 7   ;) 
+
+    or take this day, add the number, and ask the object:
+
+      > (Calendar.Day()+983112378)->week_day_name();
+      Result: "Saturday"
+
+    "+int" will add this number of the unit to the unit;
+    this means that Calendar.Year()+2 will move two years
+    forward, but Calendar.now()+2 will not move at all 
+    - since now has zero size.
+
+    To add a number of another time unit, simply do that:
+
+      > Calendar.Day()+3*Calendar.Year();  
+      Result: Day(Sat 10 Jan 2004)
+      > Calendar.Day()+3*Calendar.Minute()*134;
+      Result: Minute(Wed 10 Jan 2001 6:42 CET - Thu 11 Jan 2001 6:42 CET)
+
+    The last result here is because the resulting time still will
+    be as long as the first.
+
+-------------------------------------------------------------------------  
+
+Q:  How do I find out which days are red in a specific region?
+   
+A:  Events.<region> 
+   
+    - contains the events for the region, as a SuperEvent. 
+    You can ask this object to filter out the holidays,
+   
+       Events.se->holidays();
+   
+    which will be a superevent containing only holidays.
+   
+    To use this information, you can for instance use ->scan,
+    here in an example to see what red days there are in Sweden
+    the current month:
+   
+      > Calendar.Events.se->filter_flag("h")->scan(Calendar.Month());
+      Result: ({ /* 6 elements */
+     		   Day(Sun 7 Jan 2001),
+     		   Day(Sun 14 Jan 2001),
+     		   Day(Sun 21 Jan 2001),
+     		   Day(Sun 28 Jan 2001),
+     		   Day(Sat 6 Jan 2001),
+     		   Day(Mon 1 Jan 2001)
+     	       })
+
+-------------------------------------------------------------------------  
+
+Q:  How accurate are the events information?
+
+A:  For some regions, very. For most region, not very.
+
+    The first reason is lack of information of this kind on
+    the web, especially sorted into useful rules (like "the
+    third monday after 23 dec", not "8 jan").
+
+    The second reason is lack of time and interest to do
+    research, which is a rather tedious job.
+
+    If you want to help, the check your region in the
+    events/regions file and send me <mirar@mirar.org> a patch.
+
+    Don't send me "the x region is all wrong!" mails without
+    telling me how it should look.
+
+-------------------------------------------------------------------------  
+
+Q:  The regional events and nameday files are awesome. May I use
+    them for a project separate from Pike?
+
+A:  Yes. But send me <mirar@mirar.org> updates!
+
+-------------------------------------------------------------------------  
+
+Q:  The timezone information files are awesome. May I use them for
+    a project separate from Pike?
+
+A:  The timezone files are from a special timezone project,
+      ftp://elsie.nci.nih.gov/pub/
+    and are free to use, so it's not even up to me. They are
+    not altered from the tzdata.tar.gz files.
+
+-------------------------------------------------------------------------  
+
