@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: precompiled_odbc.h,v 1.18 2002/10/11 01:39:47 nilsson Exp $
+|| $Id: precompiled_odbc.h,v 1.19 2003/05/02 12:54:37 grubba Exp $
 */
 
 /*
@@ -88,6 +88,18 @@ typedef SQLINTEGER	SQLLEN;
 typedef SQLUINTEGER	SQLULEN;
 #endif /* !HAVE_SQLLEN */
 
+#ifndef HAVE_SQLHENV
+typedef HENV	SQLHENV;
+#endif /* !HAVE_SQLENV */
+
+#ifndef HAVE_SQLHDBC
+typedef HDBC	SQLHDBC;
+#endif /* !HAVE_SQLHDBC */
+
+#ifndef HAVE_SQLHSTMT
+typedef HSTMT	SQLHSTMT;
+#endif /* !HAVE_SQLSTMT */
+
 /*
  * Structures
  */
@@ -97,7 +109,7 @@ struct field_info {
 };
 
 struct precompiled_odbc {
-  HDBC hdbc;
+  SQLHDBC hdbc;
   SQLLEN affected_rows;
   unsigned int flags;
   struct pike_string *last_error;
@@ -106,7 +118,7 @@ struct precompiled_odbc {
 struct precompiled_odbc_result {
   struct object *obj;
   struct precompiled_odbc *odbc;
-  HSTMT hstmt;
+  SQLHSTMT hstmt;
   SWORD num_fields;
   SQLLEN num_rows;
   struct array *fields;
@@ -127,7 +139,7 @@ struct precompiled_odbc_result {
  * Prototypes
  */
 void odbc_error(const char *fun, const char *msg,
-		struct precompiled_odbc *odbc, HSTMT hstmt,
+		struct precompiled_odbc *odbc, SQLHSTMT hstmt,
 		RETCODE code, void (*clean)(void));
 
 void init_odbc_res_programs(void);

@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: odbc.c,v 1.33 2002/10/21 17:06:20 marcus Exp $
+|| $Id: odbc.c,v 1.34 2003/05/02 12:54:37 grubba Exp $
 */
 
 /*
@@ -21,7 +21,7 @@
 #include "config.h"
 #endif /* HAVE_CONFIG_H */
 
-RCSID("$Id: odbc.c,v 1.33 2002/10/21 17:06:20 marcus Exp $");
+RCSID("$Id: odbc.c,v 1.34 2003/05/02 12:54:37 grubba Exp $");
 
 #include "interpret.h"
 #include "object.h"
@@ -50,7 +50,7 @@ RCSID("$Id: odbc.c,v 1.33 2002/10/21 17:06:20 marcus Exp $");
 
 struct program *odbc_program = NULL;
 
-HENV odbc_henv = SQL_NULL_HENV;
+SQLHENV odbc_henv = SQL_NULL_HENV;
 
 /*
  * Functions
@@ -61,7 +61,7 @@ HENV odbc_henv = SQL_NULL_HENV;
  */
 
 void odbc_error(const char *fun, const char *msg,
-		struct precompiled_odbc *odbc, HSTMT hstmt,
+		struct precompiled_odbc *odbc, SQLHSTMT hstmt,
 		RETCODE code, void (*clean)(void));
 
 static INLINE void odbc_check_error(const char *fun, const char *msg,
@@ -73,7 +73,7 @@ static INLINE void odbc_check_error(const char *fun, const char *msg,
 }
 
 void odbc_error(const char *fun, const char *msg,
-		struct precompiled_odbc *odbc, HSTMT hstmt,
+		struct precompiled_odbc *odbc, SQLHSTMT hstmt,
 		RETCODE code, void (*clean)(void))
 {
   RETCODE _code;
@@ -155,7 +155,7 @@ static void init_odbc_struct(struct object *o)
 
 static void exit_odbc_struct(struct object *o)
 {
-  HDBC hdbc = PIKE_ODBC->hdbc;
+  SQLHDBC hdbc = PIKE_ODBC->hdbc;
 
   if (hdbc != SQL_NULL_HDBC) {
     if (PIKE_ODBC->flags & PIKE_ODBC_CONNECTED) {

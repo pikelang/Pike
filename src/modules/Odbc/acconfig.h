@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: acconfig.h,v 1.7 2002/10/11 01:39:47 nilsson Exp $
+|| $Id: acconfig.h,v 1.8 2003/05/02 12:54:37 grubba Exp $
 */
 
 /*
@@ -33,6 +33,15 @@
 
 /* Define if you have SQLULEN */
 #undef HAVE_SQLULEN
+
+/* Define if you have SQLHENV */
+#undef HAVE_SQLHENV
+
+/* Define if you have SQLHDBC */
+#undef HAVE_SQLHDBC
+
+/* Define if you have SQLHSTMT */
+#undef HAVE_SQLHSTMT
 
 /* Define if you have ODBC */
 #undef HAVE_ODBC
