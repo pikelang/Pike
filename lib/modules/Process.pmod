@@ -173,6 +173,7 @@ int system(string s)
   return spawn(s)->wait();
 }
 
+#ifndef __NT__
 #if constant(fork)
 constant fork = predef::fork;
 #endif
@@ -294,4 +295,5 @@ class Spawn
    // int result();
    // array rusage();
 }
+#endif
 #endif
