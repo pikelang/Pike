@@ -1,8 +1,8 @@
 Pike by Fredrik Hübinette 1994-2001
 
-Permission to copy, modify, and distribute this sourcefor any legal
+Permission to copy, modify, and distribute this source for any legal
 purpose granted as long as my name is still attached to it.  More
-specifically the GPL licence applies to this software.
+specifically the GPL license applies to this software.
 
 Read src/README for details on installation.  New releases can be
 found on ftp://ftp.roxen.com/pub/pike/  Report bugs at
@@ -12,7 +12,7 @@ subscribe to it mail: pike-request@roxen.com
 
 HOW TO BUILD PIKE
 
-The toplevel makefile (in this directory, not the src directory) has
+The top-level makefile (in this directory, not the src directory) has
 all the magic you need to build pike directly from CVS.  Just type
 'make'.
 
@@ -76,8 +76,8 @@ yourself, try the Old instructions:
 
 5) If needed, edit config.h and Makefile to suit your purposes.  I've
    tried to make it so that you don't have to change config.h or
-   Makefile at all.  If you need to do what you consider 'unnessecary
-   changes' then mail me and I'll try to fit it into configure.  If
+   Makefile at all.  If you need to do what you consider 'unnecessary
+   changes' then mail us and we'll try to fit it into configure.  If
    possible, use gnu make, gcc, gnu sed and bison
 
 6) Run 'make'
@@ -85,7 +85,7 @@ yourself, try the Old instructions:
 
 7) Optionally, run 'make verify' to check that the compiled driver
    works as it should (might be a good idea).  This will take a little
-   time and use quite a lot of memory, because the testprogram is
+   time and use quite a lot of memory, because the test program is
    quite large.  If everything works out fine no extra messages are
    written.
 
@@ -113,19 +113,19 @@ IF IT DOESN'T WORK:
    than using a separate build dir.
 
  o ./configure relies heavily on sed, if you have several sed in your
-   path try another sed. (preferably gnu sed)
+   path try another sed (preferably gnu sed).
 
  o configure might have done something wrong, check machine.h and
-   report any errors back to me.
+   report any errors back to us.
 
  o Your gmp/gdbm libraries might not be working or incorrectly
-   installed, start over by running configure with the approperiate
+   installed; start over by running configure with the appropriate
    --without-xxx arguments.  Also note that threads might give
    problems with I/O and signals.  If so you need to run configure
    --without-threads.
 
- o Try a different compiler, malloc, compiler-compiler and/or make.
-   (if you have any other)
+ o Try a different compiler, malloc, compiler-compiler and/or make
+   (if you have any other).
 
 
 THREADS SUPPORT
@@ -155,8 +155,9 @@ BUGS
 If you find a bug in the interpreter, the first thing to do is to make
 sure the interpreter is compiled with PIKE_DEBUG defined.  If not,
 recompile with PIKE_DEBUG and see if you get another error.  When
-you've done this, please report the bug to hubbe@hubbe.net and include
-as much as you can muster of the following:
+you've done this, please report the bug to us at
+http://community.roxen.com/crunch/ and include as much as you can
+muster of the following:
 
   o The version of the driver. (Try pike --version or look in
     src/version.h)
@@ -165,7 +166,7 @@ as much as you can muster of the following:
     small pike-script with the bug isolated.  Please send a complete
     running example of something that makes the interpreter bug.
   o A description of what it is that bugs and when.
-  o If you know how, then also give me a backtrace and dump of vital
+  o If you know how, then also give us a backtrace and dump of vital
     variables at the point of crash.
-  o Or, if you found the error and corrected it, just send me the
+  o Or, if you found the error and corrected it, just send us the
     bugfix along with a description of what you did and why.
