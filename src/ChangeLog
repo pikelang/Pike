@@ -1,3 +1,15 @@
+Mon Nov 25 13:22:15 1996  Fredrik Hubinette  <hubbe@cytocin.hubbe.net>
+
+	* /precompiled/stack added
+	* language.yacc: Pike now allows extra semicolons on top level
+	  without giving an error
+	* language.yacc: crasing bug in string-to-program fixed.
+	* language.yacc: foreach(foo, int bar) now works
+	* las.c: constants are now constant and can be used in
+	  switches and other constant expressions.
+	* las.c, pike_types.c: better error messages instead of
+	  "bad arguments to function call"
+
 Thu Nov 21 15:35:04 1996  Fredrik Hubinette  <hubbe@cytocin.hubbe.net>
 
 	* interpret.c (init_interpreter): if opening /dev/zero fails
