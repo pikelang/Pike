@@ -1,5 +1,5 @@
 /*
- * $Id: oracle.c,v 1.68 2002/08/06 18:58:16 grubba Exp $
+ * $Id: oracle.c,v 1.69 2002/08/06 20:13:08 grubba Exp $
  *
  * Pike interface to Oracle databases.
  *
@@ -53,7 +53,7 @@
 
 #include <math.h>
 
-RCSID("$Id: oracle.c,v 1.68 2002/08/06 18:58:16 grubba Exp $");
+RCSID("$Id: oracle.c,v 1.69 2002/08/06 20:13:08 grubba Exp $");
 
 
 /* User-changable defines: */
@@ -1062,8 +1062,8 @@ static void f_fetch_fields(INT32 args)
 			dbcon->error_handle,
 			i+1,
 			info->data.lob ? 
-			& info->data.lob :
-			& info->data.u,
+			(void *)(&info->data.lob):
+			(void *)(&info->data.u),
 #ifdef STATIC_BUFFERS
 			data_size<0? STATIC_BUFFERS :data_size,
 #else
