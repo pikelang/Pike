@@ -1,0 +1,16 @@
+.pure
+config.h
+config.h.in 
+config.log
+config.status
+configure
+dependencies
+image_machine.h
+image_machine.h.in
+linker_options
+make_variables
+modlist_headers
+modlist_segment
+module_testsuite
+stamp-h
+stamp-h.in

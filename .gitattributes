@@ -327,6 +327,8 @@ testfont binary
 /src/modules/Regexp/pike_regexp.c foreign_ident
 /src/modules/Regexp/pike_regexp.h foreign_ident
 /src/modules/Regexp/testsuite.in foreign_ident
+/src/modules/SANE/Makefile.in foreign_ident
+/src/modules/SANE/configure.in foreign_ident
 /src/modules/Ssleay/Makefile.in foreign_ident
 /src/modules/Ssleay/acconfig.h foreign_ident
 /src/modules/Ssleay/configure.in foreign_ident
