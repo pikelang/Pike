@@ -5,7 +5,7 @@
 \*/
 /**/
 #include "global.h"
-RCSID("$Id: interpret.c,v 1.265 2002/09/14 02:46:26 mast Exp $");
+RCSID("$Id: interpret.c,v 1.266 2002/09/14 03:32:45 mast Exp $");
 #include "interpret.h"
 #include "object.h"
 #include "program.h"
@@ -1149,6 +1149,7 @@ int low_mega_apply(enum apply_type type, INT32 args, void *arg1, void *arg2)
 	  do_trace_call(args);
 	}
 #endif
+	check_threads_etc();
 	(*(s->u.efun->function))(args);
 
 #ifdef PIKE_DEBUG

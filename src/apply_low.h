@@ -245,6 +245,7 @@
 	int num_args;
 	int num_locals;
 	PIKE_OPCODE_T *pc;
+	fast_check_threads_etc(6);
 
 #ifdef PIKE_DEBUG
 	if (Pike_in_gc > GC_PASS_PREPARE && Pike_in_gc < GC_PASS_FREE)
@@ -294,7 +295,6 @@
 	new_frame->num_locals=num_locals;
 	new_frame->num_args=num_args;
 	new_frame->save_mark_sp=new_frame->mark_sp_base=Pike_mark_sp;
-	check_threads_etc();
 	new_frame->pc = pc
 #ifdef ENTRY_PROLOGUE_SIZE
 	  + ENTRY_PROLOGUE_SIZE
