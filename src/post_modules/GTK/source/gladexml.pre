@@ -1,5 +1,4 @@
 /* This is -*- c -*- code */
-/* Sort of unnessesary, and decreases code-size with 140Kb */
 COND_WIDGET(libglade);
 PROGRAM(GladeXML);
 
@@ -17,6 +16,7 @@ PROGRAM(GladeXML);
 #include <glade/glade.h>
 
 int glade_is_setup = 0;
+RCSID("$Id: gladexml.pre,v 1.3 1999/11/12 20:27:26 neotron Exp $");
 
 
 /* This function is used by signal_autoconnect to handle signal
@@ -323,4 +323,5 @@ RETURNS(void);
   pop_n_elems(args);
 }
 
+// <p align=right><font size=2><i>$Id: gladexml.pre,v 1.3 1999/11/12 20:27:26 neotron Exp $</i></font>
 END_COND_WIDGET(libglade);
