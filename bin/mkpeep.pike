@@ -2,7 +2,7 @@
 
 #pragma strict_types
 
-/* $Id: mkpeep.pike,v 1.12 1999/12/08 05:30:03 per Exp $ */
+/* $Id: mkpeep.pike,v 1.13 2000/01/05 13:57:39 jonasw Exp $ */
 
 #define JUMPBACK 3
 
@@ -180,7 +180,8 @@ string treat(string expr)
   tmp=expr/"$";
   for(e=1;e<sizeof(tmp);e++)
   {
-    string num, type, rest;
+    string num, rest;
+    int type;
     if(sscanf(tmp[e],"%d%c%s",num,type,rest)!=3)
     {
       werror("Syntax error (3).\n");
