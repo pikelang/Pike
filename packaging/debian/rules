@@ -6,7 +6,7 @@
 # architecture-dependant package, as well as an architecture-independent
 # package.
 #
-# $Id: rules,v 1.17 2002/08/09 16:25:21 grendel Exp $
+# $Id: rules,v 1.18 2002/08/09 17:29:02 grendel Exp $
 #
 
 # Uncomment this to turn on verbose mode. 
@@ -188,13 +188,13 @@ install: build
 	uudecode -o $(CURDIR)/debian/$(PIKE)-core/usr/share/pixmaps/$(PIKE)/pike.png $(CURDIR)/debian/pike.png.uu
 
 	# install the docs
-	install -d -m 755 -o root -g root $(CURDIR)/debian/$(PIKE)-manual/usr/share/doc/$(PIKE)-core/html/manual
-	install -d -m 755 -o root -g root $(CURDIR)/debian/$(PIKE)-reference/usr/share/doc/$(PIKE)-core/html/reference
-	cp -pr refdoc/traditional_manual/* $(CURDIR)/debian/$(PIKE)-manual/usr/share/doc/$(PIKE)-core/html/manual
-	install -m 644 -o root -g root $(CURDIR)/debian/dhelp.manual $(CURDIR)/debian/$(PIKE)-manual/usr/share/doc/$(PIKE)-core/html/manual/.dhelp
+	install -d -m 755 -o root -g root $(CURDIR)/debian/$(PIKE)-manual/usr/share/doc/$(PIKE)-doc/html/manual
+	install -d -m 755 -o root -g root $(CURDIR)/debian/$(PIKE)-reference/usr/share/doc/$(PIKE)-doc/html/reference
+	cp -pr refdoc/traditional_manual/* $(CURDIR)/debian/$(PIKE)-manual/usr/share/doc/$(PIKE)-doc/html/manual
+	install -m 644 -o root -g root $(CURDIR)/debian/dhelp.manual $(CURDIR)/debian/$(PIKE)-manual/usr/share/doc/$(PIKE)-doc/html/manual/.dhelp
 
-	cp -pr refdoc/modref/* $(CURDIR)/debian/$(PIKE)-reference/usr/share/doc/$(PIKE)-core/html/reference
-	install -m 644 -o root -g root $(CURDIR)/debian/dhelp.refdoc $(CURDIR)/debian/$(PIKE)-reference/usr/share/doc/$(PIKE)-core/html/reference/.dhelp
+	cp -pr refdoc/modref/* $(CURDIR)/debian/$(PIKE)-reference/usr/share/doc/$(PIKE)-doc/html/reference
+	install -m 644 -o root -g root $(CURDIR)/debian/dhelp.refdoc $(CURDIR)/debian/$(PIKE)-reference/usr/share/doc/$(PIKE)-doc/html/reference/.dhelp
 
 	mv $(CURDIR)/debian/$(PIKE)-core/usr/bin/pike debian/$(PIKE)-core/usr/bin/$(PIKE)
 	rm $(CURDIR)/debian/$(PIKE)-core/usr/bin/hilfe
@@ -234,11 +234,11 @@ install: build
 	done; exit 0
 
 	# /usr/share/doc/* links
-	for f in $(CURDIR)/*; do \
-	    if [ "$${f##*/}" = "patches" -o "$${f##*/}" = "$(PIKE)-core" ]; then \
-		continue ; \
-	    fi ; \
-	    ln -sf ../$(PIKE)-core/ $(CURDIR)/debian/$${f##*/}/usr/share/doc/$${f##*/} ; \
+	for f in `cat $(CURDIR)/debian/tocoredoc.txt`; do \
+	    dh_link -p$$f /usr/share/doc/$(PIKE)-core /usr/share/doc/$ff ; \
+	done
+	for f in `cat $(CURDIR)/debian/todocdoc.txt`; do \
+	    dh_link -p$$f /usr/share/doc/$(PIKE)-doc /usr/share/doc/$$f ; \
 	done
 
 	dh_movefiles --sourcedir=debian/$(PIKE)-core
@@ -249,7 +249,7 @@ binary-indep: build install
 	dh_testdir -i
 	dh_testroot -i
 #	dh_installdebconf -i
-#	dh_installdocs -i
+	dh_installdocs -i
 #	dh_installexamples -i
 #	dh_installmenu -i
 #	dh_installlogrotate -i
