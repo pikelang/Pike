@@ -30,6 +30,8 @@ LIB_DEPENDS=	jpeg.9:${PORTSDIR}/graphics/jpeg \
 
 WRKSRC=		${WRKDIR}/${DISTNAME}/src/
 
+BROKEN=		Configure script is broken.
+
 WANT_MESA=	yes
 WANT_GTK=	yes
 WANT_GNOME=	yes
