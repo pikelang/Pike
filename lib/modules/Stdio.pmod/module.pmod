@@ -1,4 +1,4 @@
-// $Id: module.pmod,v 1.211 2005/01/27 13:59:23 mast Exp $
+// $Id: module.pmod,v 1.212 2005/01/31 18:49:01 mast Exp $
 #pike __REAL_VERSION__
 
 inherit files;
@@ -747,6 +747,33 @@ class File
     return 0;
   }
 
+#ifdef STDIO_CALLBACK_TEST_MODE
+  // Test mode where we are nasty and never returns a string longer
+  // than one byte in the read callbacks and never let nonblocking
+  // writes write more than one byte. Useful to test that the callback
+  // stuff really handles packets cut at odd positions.
+
+  int write (string|array(string) s, mixed... args)
+  {
+    if (!(::mode() & PROP_IS_NONBLOCKING))
+      return ::write (s, @args);
+
+    if (arrayp (s)) s *= "";
+    if (sizeof (args)) s = sprintf (s, @args);
+    return ::write (s[..0]);
+  }
+
+  int write_oob (string|array(string) s, mixed... args)
+  {
+    if (!(::mode() & PROP_IS_NONBLOCKING))
+      return ::write_oob (s, @args);
+
+    if (arrayp (s)) s *= "";
+    if (sizeof (args)) s = sprintf (s, @args);
+    return ::write_oob (s[..0]);
+  }
+#endif
+
   this_program set_peek_file_before_read_callback(int(0..1) ignored)
   {
     // This hack is not necessary anymore - the backend now properly
@@ -771,7 +798,12 @@ class File
 	       ___id);
 #endif /* 0 */
 
-      string s=::read(8192,1);
+      string s;
+#ifdef STDIO_CALLBACK_TEST_MODE
+      s = ::read (1, 1);
+#else
+      s = ::read(8192,1);
+#endif
       if (s) {
 	if(sizeof(s))
 	{
@@ -860,7 +892,12 @@ class File
   {
     BE_WERR ("__stdio_read_oob_callback()");
 
-    string s=::read_oob(8192,1);
+    string s;
+#ifdef STDIO_CALLBACK_TEST_MODE
+    s = ::read_oob (1, 1);
+#else
+    s = ::read_oob(8192,1);
+#endif
     if(s)
     {
       if (sizeof(s)) {
