@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: program.c,v 1.578 2004/12/08 15:38:35 grubba Exp $
+|| $Id: program.c,v 1.579 2004/12/15 02:22:13 nilsson Exp $
 */
 
 #include "global.h"
@@ -3652,6 +3652,7 @@ void check_for_facet_inherit(struct program *p)
 				      p->facet_group->prog),
 		      3,
 		      "Unable to add product class");
+      pop_stack();
     }
   }
   /* The inherited class is not a facet class */
