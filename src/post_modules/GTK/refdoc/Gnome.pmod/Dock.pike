@@ -31,15 +31,16 @@
 //!  Signals:
 //! @b{layout_changed@}
 //!
+
 inherit Container;
 
-GnomeDock add_floating_item( Gnome.DockItem item, int x, int y, int orientation )
+GnomeDock add_floating_item( Gnome.DockItem item, int x, int y, int orientation );
 //! Add item to dock and make it floating at the specified (x, y)
 //! coordinates (relative to the root window of the screen).
 //!
 //!
 
-GnomeDock add_item( Gnome.DockItem item, int placement, int band_num, int position, int offset, int new_band )
+GnomeDock add_item( Gnome.DockItem item, int placement, int band_num, int position, int offset, int new_band );
 //!  Add item to dock. placement can be either Gnome.DOCK_TOP,
 //!  Gnome.DOCK_RIGHT, Gnome.DOCK_BOTTOM or Gnome.DOCK_LEFT, and
 //!  specifies what area of the dock should contain the item. If
@@ -49,19 +50,19 @@ GnomeDock add_item( Gnome.DockItem item, int placement, int band_num, int positi
 //!
 //!
 
-GnomeDock allow_floating_items( int allow )
+GnomeDock allow_floating_items( int allow );
 //!
 
-static GnomeDock create( )
+static GnomeDock create( );
 //!
 
-GTK.Widget get_client_area( )
+GTK.Widget get_client_area( );
 //!
 
-Gnome.DockItem get_item_by_name( string name )
+Gnome.DockItem get_item_by_name( string name );
 //!
 
-GnomeDock set_client_area( GTK.Widget area )
+GnomeDock set_client_area( GTK.Widget area );
 //!  Specify a widget for the dock's client area.
 //!
 //!

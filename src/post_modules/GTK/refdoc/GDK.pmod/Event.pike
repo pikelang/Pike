@@ -1,10 +1,11 @@
 //!
-static mixed _index( string ind )
+
+static mixed _index( string ind );
 //!
 
 
-mixed cast( string to )
+mixed cast( string to );
 //!
 
-GdkEvent destroy( )
+GdkEvent destroy( );
 //!

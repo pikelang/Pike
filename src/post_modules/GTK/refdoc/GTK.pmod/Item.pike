@@ -8,19 +8,20 @@
 //!
 //! @b{toggle@}
 //!
+
 inherit Bin;
 
-Item deselect( )
+Item deselect( );
 //! Emulate a 'deselect' event.
 //!
 //!
 
-Item select( )
+Item select( );
 //! Emulate a 'select' event.
 //!
 //!
 
-Item toggle( )
+Item toggle( );
 //! Emulate a 'toggle' event.
 //!
 //!

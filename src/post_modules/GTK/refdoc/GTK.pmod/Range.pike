@@ -43,54 +43,55 @@
 //! 
 //!
 //!
+
 inherit Widget;
 
-GTK.Adjustment get_adjustment( )
+GTK.Adjustment get_adjustment( );
 //!
 
-int get_button( )
+int get_button( );
 //!
 
-int get_click_child( )
+int get_click_child( );
 //!
 
-int get_digits( )
+int get_digits( );
 //!
 
-int get_in_child( )
+int get_in_child( );
 //!
 
-int get_need_timer( )
+int get_need_timer( );
 //!
 
-float get_old_lower( )
+float get_old_lower( );
 //!
 
-float get_old_page_size( )
+float get_old_page_size( );
 //!
 
-float get_old_upper( )
+float get_old_upper( );
 //!
 
-float get_old_value( )
+float get_old_value( );
 //!
 
-int get_policy( )
+int get_policy( );
 //!
 
-int get_scroll_type( )
+int get_scroll_type( );
 //!
 
-int get_timer( )
+int get_timer( );
 //!
 
-int get_x_click_point( )
+int get_x_click_point( );
 //!
 
-int get_y_click_point( )
+int get_y_click_point( );
 //!
 
-Range set_adjustment( GTK.Adjustment pos )
+Range set_adjustment( GTK.Adjustment pos );
 //! set_adjustment() does absolutely nothing if you pass it the
 //! adjustment that range is already using, regardless of whether you
 //! changed any of its fields or not. If you pass it a new Adjustment,
@@ -102,7 +103,7 @@ Range set_adjustment( GTK.Adjustment pos )
 //!
 //!
 
-Range set_update_policy( int when )
+Range set_update_policy( int when );
 //! The "update policy" of a range widget defines at what points during
 //! user interaction it will change the value field of its Adjustment
 //! and emit the "value_changed" signal on this Adjustment. The update
@@ -123,7 +124,7 @@ Range set_update_policy( int when )
 //!
 //!
 
-Range slider_update( )
+Range slider_update( );
 //! Update the slider values.
 //!
 //!

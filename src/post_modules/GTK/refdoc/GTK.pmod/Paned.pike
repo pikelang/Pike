@@ -26,71 +26,72 @@
 //! 
 //!
 //!
+
 inherit Container;
 
-Paned add1( GTK.Widget left_or_top )
+Paned add1( GTK.Widget left_or_top );
 //! Set the left or topmost item.
 //! This is equivalent to pack1(left_or_top,0,1)
 //!
 //!
 
-Paned add2( GTK.Widget right_or_bottom )
+Paned add2( GTK.Widget right_or_bottom );
 //! Set the right or bottommost item
 //! This is equivalent to pack2(left_or_top,0,1)
 //!
 //!
 
-int get_handle_size( )
+int get_handle_size( );
 //! The size of the handle, in pixels
 //!
 //!
 
-int get_handle_xpos( )
+int get_handle_xpos( );
 //! The xpos of the handle, in pixels
 //!
 //!
 
-int get_handle_ypos( )
+int get_handle_ypos( );
 //! The ypos of the handle, in pixels
 //!
 //!
 
-int get_in_drag( )
+int get_in_drag( );
 //! Return 1 if the user is dragging the handle
 //!
 //!
 
-int get_max_position( )
+int get_max_position( );
 //! The maximum handle position possible.
 //!
 //!
 
-int get_min_position( )
+int get_min_position( );
 //! The minimum handle position possible.
 //!
 //!
 
-Paned pack1( GTK.Widget widget, int resize, int shrink )
+Paned pack1( GTK.Widget widget, int resize, int shrink );
 //! Add a child to the top or left pane.
 //!
 //!
 
-Paned pack2( GTK.Widget widget, int resize, int shrink )
+Paned pack2( GTK.Widget widget, int resize, int shrink );
 //! Add a child to the bottom or right pane.
 //!
 //!
 
-Paned set_gutter_size( int gsize )
+Paned set_gutter_size( int gsize );
 //! Set the width of the gutter. (The area between the two panes).
 //!
 //!
 
-Paned set_handle_size( int hsize )
+Paned set_handle_size( int hsize );
 //! The size of the handle in pixels
 //!
 //!
 
-Paned set_position( int position )
+Paned set_position( int position );
 //! Set the position of the separator, as if set by the user. If
 //! position is negative, the remembered position is forgotten, and
 //! the division is recomputed from the the requisitions of the

@@ -20,29 +20,30 @@
 //! 
 //!
 //!
+
 inherit Container;
 
-static Socket create( )
+static Socket create( );
 //!
 
-int get_same_app( )
+int get_same_app( );
 //! return 1 if the widow contained in this socket comes from this
 //! process.
 //!
 //!
 
-int has_plug( )
+int has_plug( );
 //! Returns true if this socket is occupied
 //!
 //!
 
-int id( )
+int id( );
 //! Returns the window id, to be sent to the application providing the plug.
 //! You must realize this widget before calling this function.
 //!
 //!
 
-Socket steal( int window_id )
+Socket steal( int window_id );
 //! Reparents a pre-existing toplevel window (not nessesarily a GTK
 //! window) into a socket.
 //!

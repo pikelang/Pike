@@ -6,9 +6,10 @@
 //!
 //!
 //!
+
 inherit Frame;
 
-static AspectFrame create( string label, float xalign, float yalign, float ratio, int obey_child )
+static AspectFrame create( string label, float xalign, float yalign, float ratio, int obey_child );
 //! Create a new frame. Arguments are label, xalign, yalign, ratio, obey_child
 //! xalign is floats between 0 and 1, 0.0 is upper (or leftmost), 1.0 is
 //! lower (or rightmost). If 'obey_child' is true, the frame will use the
@@ -16,7 +17,7 @@ static AspectFrame create( string label, float xalign, float yalign, float ratio
 //!
 //!
 
-AspectFrame set( float xalign, float yalign, float ratio, int obey_child )
+AspectFrame set( float xalign, float yalign, float ratio, int obey_child );
 //! Set the aspec values. Arguments are xalign, yalign, ratio, obey_child
 //! xalign is floats between 0 and 1, 0.0 is upper (or leftmost), 1.0 is
 //! lower (or rightmost). If 'obey_child' is true, the frame will use the

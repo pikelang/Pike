@@ -14,21 +14,22 @@
 //!
 //!
 //!
+
 inherit Progress;
 
-static ProgressBar create( )
+static ProgressBar create( );
 //! Create a new progress bar.
 //! The default values are:
 //! Min 0.0, max 1.0, current 0.0
 //!
 //!
 
-int get_activity_blocks( )
+int get_activity_blocks( );
 //! The number of blocks that are set.
 //!
 //!
 
-int get_activity_dir( )
+int get_activity_dir( );
 //! The current direction of the progress meter. 1 is forward and 0 is
 //! backwards. Usefull if you for some strange reason would like to
 //! know in what direction the activity indicator is swinging right
@@ -36,61 +37,61 @@ int get_activity_dir( )
 //!
 //!
 
-int get_activity_pos( )
+int get_activity_pos( );
 //! The position of the progress meter in pixels.
 //!
 //!
 
-int get_activity_step( )
+int get_activity_step( );
 //! The step size of the activity indicator in pixels.
 //!
 //!
 
-int get_bar_style( )
+int get_bar_style( );
 //! The progress bar style. GTK_PROGRESS_CONTINUOUS or GTK_PROGRESS_DISCRETE.
 //!
 //!
 
-int get_blocks( )
+int get_blocks( );
 //! The total number of blocks.
 //!
 //!
 
-int get_orientation( )
+int get_orientation( );
 //! The current orientation. GTK_PROGRESS_LEFT_TO_RIGHT,
 //! GTK_PROGRESS_RIGHT_TO_LEFT, GTK_PROGRESS_BOTTOM_TO_TOP or
 //! GTK_PROGRESS_TOP_TO_BOTTOM.
 //!
 //!
 
-ProgressBar set_activity_blocks( int blocks )
+ProgressBar set_activity_blocks( int blocks );
 //! The number of activity blocks
 //!
 //!
 
-ProgressBar set_activity_step( int stepp )
+ProgressBar set_activity_step( int stepp );
 //! Include activity blocks (empty gaps in the progressbar, ala windows 98)
 //!
 //!
 
-ProgressBar set_bar_style( int style )
+ProgressBar set_bar_style( int style );
 //! One of GTK.ProgressContinuous or GTK.ProgressDiscrete
 //!
 //!
 
-ProgressBar set_discrete_blocks( int blocks )
+ProgressBar set_discrete_blocks( int blocks );
 //! The number of discrete blocks in the progress bar
 //!
 //!
 
-ProgressBar set_orientation( int style )
+ProgressBar set_orientation( int style );
 //! One of
 //! GTK.ProgressLeftToRight, GTK.ProgressRightToLeft,
 //! GTK.ProgressBottomToTop or GTK.ProgressTopToBottom
 //!
 //!
 
-ProgressBar update( float fraction )
+ProgressBar update( float fraction );
 //! 0.0 is the minimum value, 1.0 is the maximum value.
 //!
 //!

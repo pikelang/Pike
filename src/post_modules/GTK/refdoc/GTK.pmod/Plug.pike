@@ -7,15 +7,16 @@
 //! applications window.
 //!
 //!
+
 inherit Window;
 
-static Plug create( int socket_id )
+static Plug create( int socket_id );
 //! Create a new plug, the socket_id is the window into which this plug
 //! will be plugged.
 //!
 //!
 
-int get_same_app( )
+int get_same_app( );
 //! returns 1 if the socket the plug is connected to is in this
 //! application.
 //!

@@ -3,19 +3,20 @@
 //! 'action_area' is allocated for buttons (ok, cancel etc)
 //!
 //!
+
 inherit Window;
 
-static Dialog create( )
+static Dialog create( );
 //! Create a new dialog widget.
 //!
 //!
 
-GTK.HbuttonBox get_action_area( )
+GTK.HbuttonBox get_action_area( );
 //! The action area, this is where the buttons (ok, cancel etc) go
 //!
 //!
 
-GTK.Vbox get_vbox( )
+GTK.Vbox get_vbox( );
 //! The vertical box that should contain the contents of the dialog
 //!
 //!

@@ -1,63 +1,64 @@
 //!
+
 inherit Widget;
 
-Progress configure( float value, float min, float max )
+Progress configure( float value, float min, float max );
 //! Sets the current value, the minimum value and the maximum value.
 //! The default min and max are 0.0 and 1.0 respectively.
 //!
 //!
 
-int get_activity_mode( )
+int get_activity_mode( );
 //! The currently set activity mode.
 //!
 //!
 
-float get_current_percentage( )
+float get_current_percentage( );
 //! Returns a float between 0.0 and 1.0
 //!
 //!
 
-string get_current_text( )
+string get_current_text( );
 //! Return the current text (see set_format_string)
 //!
 //!
 
-string get_format( )
+string get_format( );
 //! The format used to convert the value to a the text
 //!
 //!
 
-float get_percentage_from_value( float value )
+float get_percentage_from_value( float value );
 //! Returns a float between 0.0 and 1.0
 //!
 //!
 
-int get_show_text( )
+int get_show_text( );
 //! 1 if the text will be shown
 //!
 //!
 
-string get_text_from_value( float value )
+string get_text_from_value( float value );
 //! Formats 'value' and returns it as a text.
 //!
 //!
 
-float get_value( )
+float get_value( );
 //! Return the current value
 //!
 //!
 
-float get_x_align( )
+float get_x_align( );
 //! The text alignment, 0.0 is leftmost, 1.0 is rightmost
 //!
 //!
 
-float get_y_align( )
+float get_y_align( );
 //! The text alignment, 0.0 is topmost, 1.0 is bottommost
 //!
 //!
 
-Progress set_activity_mode( int modep )
+Progress set_activity_mode( int modep );
 //! As well as indicating the amount of progress that has occured, the
 //! progress bar may be set to just indicate that there is some
 //! activity. This can be useful in situations where progress cannot be
@@ -69,12 +70,12 @@ Progress set_activity_mode( int modep )
 //!
 //!
 
-Progress set_adjustment( GTK.Adjustment adjustment )
+Progress set_adjustment( GTK.Adjustment adjustment );
 //! Sets the adjustment to use. See the adjustment documentation for more info
 //!
 //!
 
-Progress set_format_string( string format )
+Progress set_format_string( string format );
 //!
 //! More or less like sprintf.
 //! %[field width][character]
@@ -92,17 +93,17 @@ Progress set_format_string( string format )
 //!
 //!
 
-Progress set_percentage( float pct )
+Progress set_percentage( float pct );
 //! Sets the value (between 0.0 and 1.0). Uses the min and max values.
 //!
 //!
 
-Progress set_show_text( int textp )
+Progress set_show_text( int textp );
 //! If true, write a text in the progress bar.
 //!
 //!
 
-Progress set_text_alignment( float xalign, float yalign )
+Progress set_text_alignment( float xalign, float yalign );
 //! The location for the text in the progress bar.
 //! xalign is between 0.0 (leftmost) and 1.0 (rightmost)
 //! yalign is between 0.0 (topmost) and 1.0 (bottommost)
@@ -112,7 +113,7 @@ Progress set_text_alignment( float xalign, float yalign )
 //!
 //!
 
-Progress set_value( float value )
+Progress set_value( float value );
 //! Set the value.
 //!
 //!

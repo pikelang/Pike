@@ -24,14 +24,15 @@
 //!
 //!
 //!
+
 inherit Editable;
 
-Text backward_delete( int nchars )
+Text backward_delete( int nchars );
 //! Delete n characters backwards from the cursor position
 //!
 //!
 
-static Text create( GTK.Adjustment xadjustment, GTK.Adjustment yadjustment )
+static Text create( GTK.Adjustment xadjustment, GTK.Adjustment yadjustment );
 //!  Creates a new GTK.Text widget, initialized with the given
 //!  Gtk.Adjustments. These pointers can be used to track the viewing
 //!  position of the GTK.Text widget. Passing NULL to either or both of
@@ -40,12 +41,12 @@ static Text create( GTK.Adjustment xadjustment, GTK.Adjustment yadjustment )
 //!
 //!
 
-Text forward_delete( int nchars )
+Text forward_delete( int nchars );
 //! Delete n characters forward from the cursor position
 //!
 //!
 
-Text freeze( )
+Text freeze( );
 //! Freezes the widget which disallows redrawing of the widget until it
 //! is thawed. This is useful if a large number of changes are going to
 //! made to the text within the widget, reducing the amount of flicker
@@ -53,23 +54,23 @@ Text freeze( )
 //!
 //!
 
-int get_length( )
+int get_length( );
 //! Returns the length of the all the text contained within the widget
 //!
 //!
 
-int get_point( )
+int get_point( );
 //! Gets the current position of the cursor as the number of characters
 //! from the upper left corner of the GtkText widget.
 //!
 //!
 
-string get_text( )
+string get_text( );
 //! Get the current contents of the text object.
 //!
 //!
 
-Text insert( string text, GDK.Font font, GDK.Color bg, GDK.Color fg )
+Text insert( string text, GDK.Font font, GDK.Color bg, GDK.Color fg );
 //! syntax:
 //! object insert(string what); OR
 //! object insert(string what, GDK.Font font, GDK.Color fg, GDK.Color bg); OR
@@ -82,40 +83,40 @@ Text insert( string text, GDK.Font font, GDK.Color bg, GDK.Color fg )
 //!
 //!
 
-Text set_adjustments( GTK.Adjustment xadjustment, GTK.Adjustment yadjustment )
+Text set_adjustments( GTK.Adjustment xadjustment, GTK.Adjustment yadjustment );
 //! Change the adjustments (as supplied to the constructor) to other
 //! adjustments.
 //!
 //!
 
-Text set_editable( int editablep )
+Text set_editable( int editablep );
 //! If true, the user can change the text in the widget.
 //!
 //!
 
-Text set_line_wrap( int linewrapp )
+Text set_line_wrap( int linewrapp );
 //! If true, the widget will automatically wrap the contents.
 //!
 //!
 
-Text set_point( int point )
+Text set_point( int point );
 //! Sets the cursor at the given point. In this case a point
 //! constitutes the number of characters from the extreme upper left
 //! corner of the widget.
 //!
 //!
 
-Text set_text( string to )
+Text set_text( string to );
 //! Set the text to the specified string.
 //!
 //!
 
-Text set_word_wrap( int wordwrapp )
+Text set_word_wrap( int wordwrapp );
 //! If true, the widget will automatically wrap the contents.
 //!
 //!
 
-Text thaw( )
+Text thaw( );
 //! unfreeze the widget.
 //!
 //!

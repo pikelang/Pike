@@ -3,32 +3,33 @@
 //! NOIMG
 //!
 //!
+
 inherit GdkDrawable;
 
-GdkWindow change_property( object property, object type, int mode, string data )
-//! mode is one of @[GDK_PROP_MODE_REPLACE], @[GDK_PROP_MODE_PREPEND] and @[GDK_PROP_MODE_APPEND]
+GdkWindow change_property( object property, object type, int mode, string data );
+//! mode is one of @[GDK_PROP_MODE_PREPEND], @[GDK_PROP_MODE_REPLACE] and @[GDK_PROP_MODE_APPEND]
 //!
 //!
 
-array(object(implements 1000)) children( )
+array(object(implements 1000)) children( );
 //! Returns an array of GDK.Window objects.
 //!
 //!
 
-static GdkWindow create( GDK.Window parent, mapping|void attributes )
+static GdkWindow create( GDK.Window parent, mapping|void attributes );
 //! Not for non-experts. I promise.
 //!
 //!
 
-GdkWindow delete_property( object a )
+GdkWindow delete_property( object a );
 //!
 
-mapping get_geometry( )
+mapping get_geometry( );
 //! Returns ([ "x":xpos, "y":ypos, "width":width, "height":height, "depth":bits_per_pixel ])
 //!
 //!
 
-mapping get_property( object atom, int|void offset, int|void delete_when_done )
+mapping get_property( object atom, int|void offset, int|void delete_when_done );
 //! Returns the value (as a string) of the specified property.
 //! The arguments are:
 //! 
@@ -50,44 +51,44 @@ mapping get_property( object atom, int|void offset, int|void delete_when_done )
 //!
 //!
 
-int is_viewable( )
+int is_viewable( );
 //! Return 1 if the window is mapped.
 //!
 //!
 
-int is_visible( )
+int is_visible( );
 //! Return 1 if the window, or a part of the window, is visible right now.
 //!
 //!
 
-GdkWindow lower( )
+GdkWindow lower( );
 //! Lower this window if the window manager allows that.
 //!
 //!
 
-GdkWindow move_resize( int x, int y, int w, int h )
+GdkWindow move_resize( int x, int y, int w, int h );
 //! Move and resize the window in one call.
 //!
 //!
 
-GdkWindow raise( )
+GdkWindow raise( );
 //! Raise this window if the window manager allows that.
 //!
 //!
 
-GdkWindow set_background( GDK.Color to )
+GdkWindow set_background( GDK.Color to );
 //! Set the background color or image.
 //! The argument is either a GDK.Pixmap or a GDK.Color object.
 //!
 //!
 
-GdkWindow set_bitmap_cursor( GDK.Bitmap image, GDK.Bitmap mask, GDK.Color fg, GDK.Color bg, int xhot, int yhot )
+GdkWindow set_bitmap_cursor( GDK.Bitmap image, GDK.Bitmap mask, GDK.Color fg, GDK.Color bg, int xhot, int yhot );
 //! xhot,yhot are the locations of the x and y hotspot relative to the
 //! upper left corner of the cursor image.
 //!
 //!
 
-GdkWindow set_cursor( int new_cursor )
+GdkWindow set_cursor( int new_cursor );
 //! Change the window cursor.<table border="0" cellpadding="3" cellspacing="0">
 //! CURS(GDK.Arrow)
 //! CURS(GDK.BasedArrowDown)
@@ -169,7 +170,7 @@ GdkWindow set_cursor( int new_cursor )
 //!
 //!
 
-GdkWindow set_events( int events )
+GdkWindow set_events( int events );
 //! events is a bitwise or of one or more of the following constants:
 //! GDK.ExposureMask,
 //! GDK.PointerMotionMask,
@@ -194,7 +195,7 @@ GdkWindow set_events( int events )
 //!
 //!
 
-GdkWindow set_icon( GDK.Pixmap pixmap, GDK.Bitmap mask, GDK.Window window )
+GdkWindow set_icon( GDK.Pixmap pixmap, GDK.Bitmap mask, GDK.Window window );
 //! Set the icon to the specified image (with mask) or the specified
 //! GDK.Window.  It is up to the window manager to display the icon.
 //! Most window manager handles window and pixmap icons, but only a few
@@ -203,12 +204,12 @@ GdkWindow set_icon( GDK.Pixmap pixmap, GDK.Bitmap mask, GDK.Window window )
 //!
 //!
 
-GdkWindow set_icon_name( string name )
+GdkWindow set_icon_name( string name );
 //! Set the icon name to the specified string.
 //!
 //!
 
-GdkWindow shape_combine_mask( GDK.Bitmap mask, int xoffset, int yoffset )
+GdkWindow shape_combine_mask( GDK.Bitmap mask, int xoffset, int yoffset );
 //! Set the shape of the widget, or, rather, it's window, to that of
 //! the supplied bitmap.
 //!

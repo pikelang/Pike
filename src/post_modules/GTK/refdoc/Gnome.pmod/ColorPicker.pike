@@ -22,9 +22,10 @@
 //! 65535.
 //!
 //!
+
 inherit Button;
 
-static GnomeColorPicker create( )
+static GnomeColorPicker create( );
 //! Creates a new GNOME color picker widget. This returns a widget in
 //! the form of a small button containing a swatch representing the
 //! current selected color. When the button is clicked, a
@@ -34,42 +35,42 @@ static GnomeColorPicker create( )
 //!
 //!
 
-mapping get( )
+mapping get( );
 //! Returns a mapping ([ "d":([ "r":rvalue, "g":gvalue, "b":bvalue,
 //! "a":avalue ]), "i8":([ ... ]), "i16":([ .. ]) ]);
 //!
 //!
 
-GnomeColorPicker set_d( float r, float g, float b, float a )
+GnomeColorPicker set_d( float r, float g, float b, float a );
 //! Set color shown in the color picker widget using floating point values.
 //! The values range between 0.0 and 1.0.
 //!
 //!
 
-GnomeColorPicker set_dither( int dither )
+GnomeColorPicker set_dither( int dither );
 //! Sets whether the picker should dither the color sample or just
 //! paint a solid rectangle.
 //!
 //!
 
-GnomeColorPicker set_i16( int r, int g, int b, int a )
+GnomeColorPicker set_i16( int r, int g, int b, int a );
 //! Set color shown in the color picker widget using integer values.
 //! The values range between 0 and 65535.
 //!
 //!
 
-GnomeColorPicker set_i8( int r, int g, int b, int a )
+GnomeColorPicker set_i8( int r, int g, int b, int a );
 //! Set color shown in the color picker widget using integer values.
 //! The values range between 0 and 255.
 //!
 //!
 
-GnomeColorPicker set_title( string title )
+GnomeColorPicker set_title( string title );
 //! Sets the title for the color selection dialog
 //!
 //!
 
-GnomeColorPicker set_use_alpha( int use_alpha )
+GnomeColorPicker set_use_alpha( int use_alpha );
 //! Sets whether or not the picker should use the alpha channel.
 //!
 //!

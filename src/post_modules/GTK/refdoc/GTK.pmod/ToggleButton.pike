@@ -16,30 +16,31 @@
 //!  Signals:
 //! @b{toggled@}
 //!
+
 inherit Button;
 
-static ToggleButton create( string|void label )
+static ToggleButton create( string|void label );
 //! If you supply a string, a label will be created and inserted in the button.
 //! Otherwise, use -&gt;add(widget) to create the contents of the button.
 //!
 //!
 
-int get_active( )
+int get_active( );
 //! returns 1 if the button is pressed, 0 otherwise.
 //!
 //!
 
-ToggleButton set_active( int activep )
+ToggleButton set_active( int activep );
 //! If activep is true, the toggle button will be activated.
 //!
 //!
 
-ToggleButton set_mode( int mode )
+ToggleButton set_mode( int mode );
 //! If true, draw indicator
 //!
 //!
 
-ToggleButton toggled( )
+ToggleButton toggled( );
 //! emulate a 'toggle' of the button. This will emit a 'toggled' signal.
 //!
 //!

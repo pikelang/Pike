@@ -16,9 +16,10 @@
 //!
 //!
 //!
+
 inherit Box;
 
-static Vbox create( int uniformp, int padding )
+static Vbox create( int uniformp, int padding );
 //! Create a new horizontal box widget.
 //! If all_same_size is true, all widgets will have exactly the same size.
 //! padding is added to the top and bottom of the children.

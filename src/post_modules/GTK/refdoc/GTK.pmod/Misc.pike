@@ -23,35 +23,36 @@
 //!
 //!
 //!
+
 inherit Widget;
 
-float get_xalign( )
+float get_xalign( );
 //! The horizontal alignment, from 0 (left) to 1 (right).
 //!
 //!
 
-int get_xpad( )
+int get_xpad( );
 //! The amount of space to add on the left and right of the widget, in pixels.
 //!
 //!
 
-float get_yalign( )
+float get_yalign( );
 //! The vertical alignment, from 0 (top) to 1 (botton).
 //!
 //!
 
-int get_ypad( )
+int get_ypad( );
 //! The amount of space to add on the top and bottom of the widget, in pixels.
 //!
 //!
 
-Misc set_alignment( float xalign, float yalign )
+Misc set_alignment( float xalign, float yalign );
 //! Sets the alignment of the widget.
 //! 0.0 is left or topmost, 1.0 is right or bottommost.
 //!
 //!
 
-Misc set_padding( int xpad, int ypad )
+Misc set_padding( int xpad, int ypad );
 //! Sets the amount of space to add around the widget. xpand and ypad
 //! are specified in pixels.
 //!

@@ -16,14 +16,15 @@
 //! 
 //!
 //!
+
 inherit MenuItem;
 
-static TearoffMenuItem create( )
+static TearoffMenuItem create( );
 //! Create a new tear of menu item
 //!
 //!
 
-int get_torn_off( )
+int get_torn_off( );
 //! Return 1 if the menu the menu item is connected to is currently
 //! torn off.
 //!

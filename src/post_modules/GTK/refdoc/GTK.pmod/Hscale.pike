@@ -14,9 +14,10 @@
 //!
 //!
 //!
+
 inherit Scale;
 
-static Hscale create( GTK.Adjustment settings )
+static Hscale create( GTK.Adjustment settings );
 //! Used to create a new hscale widget.
 //! The adjustment argument can either be an existing W(Adjustment), or
 //! 0, in which case one will be created for you. 

@@ -7,25 +7,26 @@
 //! 
 //!
 //!
+
 inherit GnomeDialog;
 
-static GnomeScores create( int n_scores, array(string) names, array(float) scores, array(int) times, int clear )
+static GnomeScores create( int n_scores, array(string) names, array(float) scores, array(int) times, int clear );
 //!
 
-GnomeScores set_color( int pos, GDK.Color color )
+GnomeScores set_color( int pos, GDK.Color color );
 //!
 
-GnomeScores set_current_player( int index )
+GnomeScores set_current_player( int index );
 //!
 
-GnomeScores set_def_color( GDK.Color color )
+GnomeScores set_def_color( GDK.Color color );
 //!
 
-GnomeScores set_logo_label_title( string txt )
+GnomeScores set_logo_label_title( string txt );
 //!
 
-GnomeScores set_logo_pixmap( string logofile )
+GnomeScores set_logo_pixmap( string logofile );
 //!
 
-GnomeScores set_logo_widget( GTK.Widget widget )
+GnomeScores set_logo_widget( GTK.Widget widget );
 //!

@@ -24,9 +24,10 @@
 //!
 //!
 //!
+
 inherit Bin;
 
-static EventBox create( )
+static EventBox create( );
 //! Create a new event box widget
 //!
 //!

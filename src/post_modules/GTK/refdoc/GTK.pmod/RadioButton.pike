@@ -10,9 +10,10 @@
 //!
 //!
 //!
+
 inherit CheckButton;
 
-static RadioButton create( string|void title, GTK.RadioButton groupmember )
+static RadioButton create( string|void title, GTK.RadioButton groupmember );
 //!  Normal creation:
 //! object GTK.RadioButton(string title) - First button (with label)
 //! object GTK.RadioButton()->add(widget) - First button (with widget)
@@ -22,7 +23,7 @@ static RadioButton create( string|void title, GTK.RadioButton groupmember )
 //!
 //!
 
-RadioButton set_group( GTK.RadioButton groupmember )
+RadioButton set_group( GTK.RadioButton groupmember );
 //! the argument is another radio button to whose group this button
 //! should be added to. It is prefereable to use the second argument to
 //! the constructor instead, but if you for some reason want to move

@@ -12,19 +12,20 @@
 //!
 //!
 //!
+
 inherit Vbox;
 
-static GammaCurve create( )
+static GammaCurve create( );
 //! Create a new gamma curve
 //!
 //!
 
-GTK.Curve get_curve( )
+GTK.Curve get_curve( );
 //! The actual curve
 //!
 //!
 
-float get_gamma( )
+float get_gamma( );
 //! The current gamma value
 //!
 //!

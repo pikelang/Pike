@@ -54,19 +54,20 @@
 //! 
 //!
 //!
-int char_width( int character )
+
+int char_width( int character );
 //! Return the width, in pixels, of the specified character, if
 //! rendered with this font. The character can be between 0 and 65535,
 //! the character encoding is font specific.
 //!
 //!
 
-static GdkFont create( string|void font_name )
+static GdkFont create( string|void font_name );
 //! Create a new font object. The string is the font XLFD.
 //!
 //!
 
-GdkFont destroy( )
+GdkFont destroy( );
 //! Free the font, called automatically by pike when the object is destroyed.
 //!
 //!

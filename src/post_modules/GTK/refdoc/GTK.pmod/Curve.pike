@@ -3,27 +3,28 @@
 //!
 //!
 //!
+
 inherit DrawingArea;
 
-static Curve create( )
+static Curve create( );
 //!
 
-array(float) get_vector( int num_points )
+array(float) get_vector( int num_points );
 //!
 
-Curve reset( )
+Curve reset( );
 //!
 
-Curve set_curve_type( int type )
-//! One of @[CURVE_TYPE_SPLINE], @[CURVE_TYPE_LINEAR] and @[CURVE_TYPE_FREE];
+Curve set_curve_type( int type );
+//! One of @[CURVE_TYPE_FREE], @[CURVE_TYPE_LINEAR] and @[CURVE_TYPE_SPLINE];
 //!
 //!
 
-Curve set_gamma( float gamma )
+Curve set_gamma( float gamma );
 //!
 
-Curve set_range( float min_x, float max_x, float min_y, float max_y )
+Curve set_range( float min_x, float max_x, float min_y, float max_y );
 //!
 
-Curve set_vector( int nelems, array(float) curve )
+Curve set_vector( int nelems, array(float) curve );
 //!

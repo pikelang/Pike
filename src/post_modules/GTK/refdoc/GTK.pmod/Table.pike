@@ -11,9 +11,10 @@
 //! 
 //!
 //!
+
 inherit Container;
 
-Table attach( GTK.Widget subwidget, int left, int right, int top, int bottom, int xoptions, int yoptions, int xpad, int ypad )
+Table attach( GTK.Widget subwidget, int left, int right, int top, int bottom, int xoptions, int yoptions, int xpad, int ypad );
 //! The left and right attach arguments specify where to place the
 //! widget, and how many boxes to use. If you want a button in the
 //! lower right table entry of our 2x2 table, and want it to fill that
@@ -46,7 +47,7 @@ Table attach( GTK.Widget subwidget, int left, int right, int top, int bottom, in
 //!
 //!
 
-Table attach_defaults( GTK.Widget subwidget, int left, int right, int top, int bottom )
+Table attach_defaults( GTK.Widget subwidget, int left, int right, int top, int bottom );
 //! As there are many options associated with attach(), this
 //! convenience function provides the programmer with a means to add
 //! children to a table with identical padding and expansion options.
@@ -57,7 +58,7 @@ Table attach_defaults( GTK.Widget subwidget, int left, int right, int top, int b
 //!
 //!
 
-static Table create( int width, int height, int homogeneousp )
+static Table create( int width, int height, int homogeneousp );
 //! Used to create a new table widget. An initial size must be given by
 //! specifying how many rows and columns the table should have,
 //! although this can be changed later with resize().
@@ -69,60 +70,60 @@ static Table create( int width, int height, int homogeneousp )
 //!
 //!
 
-int get_column_spacing( )
+int get_column_spacing( );
 //! The spacing between all columns, in pixels.
 //!
 //!
 
-int get_homogeneous( )
+int get_homogeneous( );
 //! If 1, all cells have exactly the same size
 //!
 //!
 
-int get_ncols( )
+int get_ncols( );
 //! The number of columns. Between 1 and 65535.
 //!
 //!
 
-int get_nrows( )
+int get_nrows( );
 //! The number of rows. Between 1 and 65535.
 //!
 //!
 
-int get_row_spacing( )
+int get_row_spacing( );
 //! The spacing between all rows, in pixels.
 //!
 //!
 
-Table resize( int rows, int columns )
+Table resize( int rows, int columns );
 //! If you need to change a table's size after it has been created,
 //! this function allows you to do so.
 //!
 //!
 
-Table set_col_spacing( int x, int spacing )
+Table set_col_spacing( int x, int spacing );
 //! alters the amount of space between a given table column and the
 //! adjacent columns.
 //!
 //!
 
-Table set_col_spacings( int spacing )
+Table set_col_spacings( int spacing );
 //! Sets the space between every column in the table equal to spacing.
 //!
 //!
 
-Table set_homogeneous( int homogeneousp )
+Table set_homogeneous( int homogeneousp );
 //! Set the homogeneous flag.
 //!
 //!
 
-Table set_row_spacing( int y, int spacing )
+Table set_row_spacing( int y, int spacing );
 //! alters the amount of space between a given table row and the
 //! adjacent rows.
 //!
 //!
 
-Table set_row_spacings( int spacing )
+Table set_row_spacings( int spacing );
 //! Sets the space between every row in the table equal to spacing.
 //!
 //!

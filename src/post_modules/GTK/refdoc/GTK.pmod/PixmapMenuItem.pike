@@ -8,14 +8,15 @@
 //! not what you want. This widget solves the problem).
 //!
 //!
+
 inherit MenuItem;
 
-static PixmapMenuItem create( )
+static PixmapMenuItem create( );
 //! Creates a new pixmap menu item.
 //!
 //!
 
-PixmapMenuItem set_pixmap( GTK.Widget pixmap )
+PixmapMenuItem set_pixmap( GTK.Widget pixmap );
 //! Set the pixmap of the menu item.
 //!
 //!

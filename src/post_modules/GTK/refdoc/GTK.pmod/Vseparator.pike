@@ -4,9 +4,10 @@
 //!
 //!
 //!
+
 inherit Separator;
 
-static Vseparator create( )
+static Vseparator create( );
 //! Used to create a new vseparator widget.
 //!
 //!

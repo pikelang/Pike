@@ -37,25 +37,26 @@
 //! currently active page number.
 //!
 //!
+
 inherit GnomeDialog;
 
-int append_page( GTK.Widget child, GTK.Widget tab_label )
+int append_page( GTK.Widget child, GTK.Widget tab_label );
 //! Appends a new page to the Gnome.PropertyBox.
 //! widget is the widget that is being inserted, and tab_label will be
 //! used as the label for this configuration page.
 //!
 //!
 
-GnomePropertyBox changed( )
+GnomePropertyBox changed( );
 //! When a setting has changed, the code needs to invoke this routine
 //! to make the Ok/Apply buttons sensitive.
 //!
 //!
 
-static GnomePropertyBox create( )
+static GnomePropertyBox create( );
 //! Creates a new Gnome.PropertyBox widget.
 //!
 //!
 
-GnomePropertyBox set_state( int state )
+GnomePropertyBox set_state( int state );
 //!

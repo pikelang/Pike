@@ -14,36 +14,37 @@
 //!
 //!
 //!
+
 inherit Bin;
 
-static Viewport create( GTK.Adjustment xscroll, GTK.Adjustment yscroll )
+static Viewport create( GTK.Adjustment xscroll, GTK.Adjustment yscroll );
 //! Create a new viewport.  The adjustments are used to select what
 //! part of the viewport to view to the user. They are normally
 //! connected to a scrollbar or something similar.
 //!
 //!
 
-GTK.Adjustment get_hadjustment( )
+GTK.Adjustment get_hadjustment( );
 //! Return the current horizontal adjustment object
 //!
 //!
 
-GTK.Adjustment get_vadjustment( )
+GTK.Adjustment get_vadjustment( );
 //! Return the current vertical adjustment object
 //!
 //!
 
-Viewport set_hadjustment( GTK.Adjustment xscroll )
+Viewport set_hadjustment( GTK.Adjustment xscroll );
 //! Set a new horizontal adjustment object.
 //!
 //!
 
-Viewport set_shadow_type( int type )
-//! Set the shadow style. One of @[SHADOW_IN], @[SHADOW_NONE], @[SHADOW_ETCHED_IN], @[SHADOW_ETCHED_OUT] and @[SHADOW_OUT]
+Viewport set_shadow_type( int type );
+//! Set the shadow style. One of @[SHADOW_NONE], @[SHADOW_ETCHED_IN], @[SHADOW_ETCHED_OUT], @[SHADOW_OUT] and @[SHADOW_IN]
 //!
 //!
 
-Viewport set_vadjustment( GTK.Adjustment yscroll )
+Viewport set_vadjustment( GTK.Adjustment yscroll );
 //! Set a new vertical adjustment object.
 //!
 //!

@@ -32,49 +32,50 @@
 //! Called when the button is released
 //!
 //!
+
 inherit Container;
 
-Button clicked( )
+Button clicked( );
 //! Emulate a 'clicked' event (press followed by release).
 //!
 //!
 
-static Button create( string|void label_text )
+static Button create( string|void label_text );
 //! If a string is supplied, a W(Label) is created and added to the button.
 //!
 //!
 
-Button enter( )
+Button enter( );
 //! Emulate a 'enter' event.
 //!
 //!
 
-GTK.Widget get_child( )
+GTK.Widget get_child( );
 //! The (one and only) child of this container.
 //!
 //!
 
-int get_relief( )
+int get_relief( );
 //! One of @[RELIEF_NONE], @[RELIEF_HALF] and @[RELIEF_NORMAL], set with set_relief()
 //!
 //!
 
-Button leave( )
+Button leave( );
 //! Emulate a 'leave' event.
 //!
 //!
 
-Button pressed( )
+Button pressed( );
 //! Emulate a 'press' event.
 //!
 //!
 
-Button released( )
+Button released( );
 //! Emulate a 'release' event.
 //!
 //!
 
-Button set_relief( int newstyle )
+Button set_relief( int newstyle );
 //! One of @[RELIEF_NONE], @[RELIEF_HALF] and @[RELIEF_NORMAL]
 //!
 //!

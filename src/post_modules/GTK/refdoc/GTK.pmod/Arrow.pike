@@ -14,24 +14,25 @@
 //!
 //!
 //!
+
 inherit Misc;
 
-static Arrow create( int arrow_type, int shadow_type )
-//! First argument is one of @[ARROW_RIGHT], @[ARROW_LEFT], @[ARROW_DOWN] and @[ARROW_UP], second one of @[SHADOW_IN], @[SHADOW_NONE], @[SHADOW_ETCHED_IN], @[SHADOW_ETCHED_OUT] and @[SHADOW_OUT].
+static Arrow create( int arrow_type, int shadow_type );
+//! First argument is one of @[ARROW_LEFT], @[ARROW_DOWN], @[ARROW_UP] and @[ARROW_RIGHT], second one of @[SHADOW_NONE], @[SHADOW_ETCHED_IN], @[SHADOW_ETCHED_OUT], @[SHADOW_OUT] and @[SHADOW_IN].
 //!
 //!
 
-int get_arrow_type( )
-//! Return the arrow type. One of @[ARROW_RIGHT], @[ARROW_LEFT], @[ARROW_DOWN] and @[ARROW_UP].
+int get_arrow_type( );
+//! Return the arrow type. One of @[ARROW_LEFT], @[ARROW_DOWN], @[ARROW_UP] and @[ARROW_RIGHT].
 //!
 //!
 
-int get_shadow_type( )
-//! Return the arrow type. One of @[SHADOW_IN], @[SHADOW_NONE], @[SHADOW_ETCHED_IN], @[SHADOW_ETCHED_OUT] and @[SHADOW_OUT].
+int get_shadow_type( );
+//! Return the arrow type. One of @[SHADOW_NONE], @[SHADOW_ETCHED_IN], @[SHADOW_ETCHED_OUT], @[SHADOW_OUT] and @[SHADOW_IN].
 //!
 //!
 
-Arrow set( int arrow_type, int shadow_type )
-//! First argument is one of @[ARROW_RIGHT], @[ARROW_LEFT], @[ARROW_DOWN] and @[ARROW_UP], second one of @[SHADOW_IN], @[SHADOW_NONE], @[SHADOW_ETCHED_IN], @[SHADOW_ETCHED_OUT] and @[SHADOW_OUT].
+Arrow set( int arrow_type, int shadow_type );
+//! First argument is one of @[ARROW_LEFT], @[ARROW_DOWN], @[ARROW_UP] and @[ARROW_RIGHT], second one of @[SHADOW_NONE], @[SHADOW_ETCHED_IN], @[SHADOW_ETCHED_OUT], @[SHADOW_OUT] and @[SHADOW_IN].
 //!
 //!

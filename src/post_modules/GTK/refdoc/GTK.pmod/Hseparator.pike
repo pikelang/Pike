@@ -4,9 +4,10 @@
 //!
 //!
 //!
+
 inherit Separator;
 
-static Hseparator create( )
+static Hseparator create( );
 //! Used to create a new hseparator widget.
 //!
 //!

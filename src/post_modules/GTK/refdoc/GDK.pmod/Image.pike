@@ -4,7 +4,8 @@
 //! NOIMG
 //!
 //!
-static GdkImage create( int|void fast_mode, object(implements 100)|void image )
+
+static GdkImage create( int|void fast_mode, object(implements 100)|void image );
 //! Create a new GDK.Image object. The firstargument is either 0, which
 //! indicates that you want a 'slow' image. If you use '1', you
 //! indicate that you want a 'fast' image. Fast images are stored in
@@ -20,20 +21,20 @@ static GdkImage create( int|void fast_mode, object(implements 100)|void image )
 //!
 //!
 
-GdkImage destroy( )
+GdkImage destroy( );
 //! Destructor. Destroys the image. Automatically called by pike when
 //! the object is destructed.
 //!
 //!
 
-int get_pixel( int x, int y )
+int get_pixel( int x, int y );
 //! Get the pixel value of a pixel as a X-pixel value.
 //! It is usualy not very easy to convert this value to a
 //! rgb triple. See get_pnm.
 //!
 //!
 
-string get_pnm( )
+string get_pnm( );
 //! Returns the data in the image as a pnm object.
 //! Currently, this is always a P6 (true color raw) image.
 //! This could change in the future. To get a pike image object
@@ -41,7 +42,7 @@ string get_pnm( )
 //!
 //!
 
-GdkImage grab( GTK.Widget widget, int xoffset, int yoffset, int width, int height )
+GdkImage grab( GTK.Widget widget, int xoffset, int yoffset, int width, int height );
 //! Call this function to grab a portion of a widget (argument 1) to the image.
 //! Grabbing non-toplevel widgets may produce unexpected results.
 //! To get the size of a widget use -&gt;xsize() and -&gt;ysize().
@@ -51,13 +52,13 @@ GdkImage grab( GTK.Widget widget, int xoffset, int yoffset, int width, int heigh
 //!
 //!
 
-GdkImage set( object(implements 100)|int image_or_xsize, int|void ysize )
+GdkImage set( object(implements 100)|int image_or_xsize, int|void ysize );
 //! Call this to set this image to either the contents of a pike image
 //! or a blank image of a specified size.
 //!
 //!
 
-GdkImage set_pixel( int x, int y, int pixel )
+GdkImage set_pixel( int x, int y, int pixel );
 //! Set the pixel value of a pixel. Please note that the pixel argument
 //! is a X-pixel value, which is not easily gotten from a RGB color. 
 //! See get_pixel and set.

@@ -16,9 +16,10 @@
 //! NOIMG
 //!
 //!
+
 inherit Bin;
 
-static Alignment create( float xalign, float yalign, float xscale, float yscale )
+static Alignment create( float xalign, float yalign, float xscale, float yscale );
 //! <table>
 //! <tr><td>xalign :</td>
 //! <td>the horizontal alignment of the child widget, from 0 (left) to 1 (right).</td></tr>
@@ -32,12 +33,12 @@ static Alignment create( float xalign, float yalign, float xscale, float yscale 
 //!
 //!
 
-float get_xalign( )
+float get_xalign( );
 //! the horizontal alignment of the child widget, from 0 (left) to 1 (right).
 //!
 //!
 
-float get_xscale( )
+float get_xscale( );
 //! the amount that the child widget expands horizontally to fill up
 //! unused space, from 0 to 1. A value of 0 indicates that the child
 //! widget should never expand. A value of 1 indicates that the child
@@ -46,18 +47,18 @@ float get_xscale( )
 //!
 //!
 
-float get_yalign( )
+float get_yalign( );
 //! the vertical alignment of the child widget, from 0 (top) to 1 (bottom).
 //!
 //!
 
-float get_yscale( )
+float get_yscale( );
 //! the amount that the child widget expands vertically to fill up
 //! unused space, from 0 to 1. The values are similar to xscale.
 //!
 //!
 
-Alignment set( float xalign, float yalign, float xscale, float yscale )
+Alignment set( float xalign, float yalign, float xscale, float yscale );
 //! <table>
 //! <tr><td>xalign :</td>
 //! <td>the horizontal alignment of the child widget, from 0 (left) to 1 (right).</td></tr>

@@ -23,32 +23,33 @@
 //!
 //! @b{text_pushed@}
 //!
+
 inherit Hbox;
 
-static Statusbar create( )
+static Statusbar create( );
 //! Create a new statusbar widget
 //!
 //!
 
-int get_context_id( string context )
+int get_context_id( string context );
 //! Create a new context id (or get the id of an old one). The argument
 //! is any string. The return value can be used for -&gt;push() -&gt;pop()
 //! and -&gt;remove later on.
 //!
 //!
 
-Statusbar pop( int context )
+Statusbar pop( int context );
 //! Remove the topmost message.
 //!
 //!
 
-int push( int context, string data )
+int push( int context, string data );
 //! Push a message onto the statusbar. The return value is an id that
 //! can be passed to remove later on.
 //!
 //!
 
-Statusbar remove( int context, int id )
+Statusbar remove( int context, int id );
 //! Remove the specified message (the message id is the second argument).
 //!
 //!

@@ -90,27 +90,28 @@
 //! generally be useful to applications.
 //!
 //!
+
 inherit Widget;
 
-Editable copy_clipboard( )
+Editable copy_clipboard( );
 //! Causes the characters in the current selection to be copied to the
 //! clipboard.
 //!
 //!
 
-Editable cut_clipboard( )
+Editable cut_clipboard( );
 //! Causes the characters in the current selection to be copied to the
 //! clipboard and then deleted from the widget.
 //!
 //!
 
-Editable delete_selection( )
+Editable delete_selection( );
 //! Deletes the current contents of the widgets selection and disclaims
 //! the selection.
 //!
 //!
 
-Editable delete_text( int start_pos, int end_pos )
+Editable delete_text( int start_pos, int end_pos );
 //! Delete a sequence of characters. The characters that are deleted
 //! are those characters at positions from start_pos up to, but not
 //! including end_pos. If end_pos is negative, then the the characters
@@ -119,7 +120,7 @@ Editable delete_text( int start_pos, int end_pos )
 //!
 //!
 
-string get_chars( int start_pos, int end_pos )
+string get_chars( int start_pos, int end_pos );
 //! Retrieves a sequence of characters. The characters that are
 //! retrieved are those characters at positions from start_pos up to,
 //! but not including end_pos. If end_pos is negative, then the the
@@ -128,23 +129,23 @@ string get_chars( int start_pos, int end_pos )
 //!
 //!
 
-int get_position( )
+int get_position( );
 //! Returns the cursor position
 //!
 //!
 
-Editable insert_text( string text, int num_chars, int where )
+Editable insert_text( string text, int num_chars, int where );
 //! Insert 'num_chars' characters from the text at the position 'where'.
 //!
 //!
 
-Editable paste_clipboard( )
+Editable paste_clipboard( );
 //! Causes the contents of the clipboard to be pasted into the given
 //! widget at the current cursor position.
 //!
 //!
 
-Editable select_region( int start_pos, int end_pos )
+Editable select_region( int start_pos, int end_pos );
 //! Selects a region of text. The characters that are selected are
 //! those characters at positions from start_pos up to, but not
 //! including end_pos. If end_pos is negative, then the the characters
@@ -153,13 +154,13 @@ Editable select_region( int start_pos, int end_pos )
 //!
 //!
 
-Editable set_editable( int editablep )
+Editable set_editable( int editablep );
 //! Determines if the user can edit the text in the editable widget or
 //! not.
 //!
 //!
 
-Editable set_position( int pos )
+Editable set_position( int pos );
 //! Sets the cursor position.
 //!
 //!

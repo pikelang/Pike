@@ -1,11 +1,12 @@
 //! Wrapper for the opaque GnomeAppProgressKey type
 //!
 //!
-GnomeAppProgressKey destroy( )
+
+GnomeAppProgressKey destroy( );
 //!
 
-GnomeAppProgressKey done( )
+GnomeAppProgressKey done( );
 //!
 
-GnomeAppProgressKey set( float percent )
+GnomeAppProgressKey set( float percent );
 //!

@@ -16,26 +16,27 @@
 //! 
 //!
 //!
+
 inherit Vbox;
 
-GnomeLess clear( )
+GnomeLess clear( );
 //! Clears all the text
 //!
 //!
 
-static GnomeLess create( )
+static GnomeLess create( );
 //! Creates a new GnomeLess widget.
 //!
 //!
 
-GnomeLess reshow( )
+GnomeLess reshow( );
 //! Re-displays all of the text in the GnomeLess widget gl. If the font
 //! has changed since the last show/reshow of text, it will update the
 //! current text to the new font.
 //!
 //!
 
-GnomeLess set_fixed_font( int fixed )
+GnomeLess set_fixed_font( int fixed );
 //! Specifies whether or not new text should be displayed using a fixed
 //! font. Pass TRUE in fixed to use a fixed font, or FALSE to revert to
 //! the default GtkText font.
@@ -47,7 +48,7 @@ GnomeLess set_fixed_font( int fixed )
 //!
 //!
 
-GnomeLess set_font( GDK.Font font )
+GnomeLess set_font( GDK.Font font );
 //! Sets the font of the text to be displayed in the GnomeLess widget
 //! gl to font.
 //! Note: This will not affect text already being displayed. If you use
@@ -56,33 +57,33 @@ GnomeLess set_font( GDK.Font font )
 //!
 //!
 
-GnomeLess show_command( string command_line )
+GnomeLess show_command( string command_line );
 //! Runs the shell command specified in command_line, and places the
 //! output of that command in the GnomeLess widget specified by
 //! gl. Replaces any text already being displayed in the widget.
 //!
 //!
 
-GnomeLess show_file( string file )
+GnomeLess show_file( string file );
 //! Displays a file in a GnomeLess widget. Replaces any text already
 //! being displayed in the widget.
 //!
 //!
 
-GnomeLess show_filestream( object(implements 1) stream )
+GnomeLess show_filestream( object(implements 1) stream );
 //!
 
-GnomeLess show_string( string data )
+GnomeLess show_string( string data );
 //! Displays a string in the GnomeLess widget gl. Replaces any text
 //! already being displayed.
 //!
 //!
 
-int write_file( string path )
+int write_file( string path );
 //! Writes the text displayed in the GnomeLess widget gl to the file
 //! specified by path.
 //!
 //!
 
-int write_filestream( object(implements 1) fd )
+int write_filestream( object(implements 1) fd );
 //!

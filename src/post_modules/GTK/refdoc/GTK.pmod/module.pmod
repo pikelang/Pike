@@ -2561,27 +2561,28 @@ constant TRUE;
 
 
 //!
-void applet_widget_gtk_main( )
+
+void applet_widget_gtk_main( );
 //! Special corba main loop for gnome panel applets
 //!
 //!
 
-void applet_widget_gtk_main_quit( )
+void applet_widget_gtk_main_quit( );
 //! Exit from the applet_widget_gtk_main function on the next iteration.
 //!
 //!
 
-int false( )
+int false( );
 //! Always returns false.
 //!
 //!
 
-void flush( )
+void flush( );
 //! Flush GDK. Not normally needed, can be useful while doing calculations.
 //!
 //!
 
-array(string) gnome_init( string app_id, string app_version, array(string) argv, int|void corba_init_flags )
+array(string) gnome_init( string app_id, string app_version, array(string) argv, int|void corba_init_flags );
 //! Initializes the application. This sets up all of the GNOME
 //! internals and prepares them (imlib, gdk/gtk, session-management,
 //! triggers, sound, user preferences). If corba init flags are specified,
@@ -2591,25 +2592,25 @@ array(string) gnome_init( string app_id, string app_version, array(string) argv,
 //!
 //!
 
-void grab_add( GTK.Widget widget )
+void grab_add( GTK.Widget widget );
 //!
 
-void grab_remove( GTK.Widget widget )
+void grab_remove( GTK.Widget widget );
 //!
 
-array(string) gtk_init( array(string)|void argc, int|void no_pgtkrc )
+array(string) gtk_init( array(string)|void argc, int|void no_pgtkrc );
 //! Low level GTK init function (used by setup_gtk).
 //! This function is more or less equivalent to the C-GTK+ function gtk_init.
 //! setup_gtk does some extra things (such as parsing ~/.pgtkrc).
 //!
 //!
 
-void low_flush( )
+void low_flush( );
 //! Flush, but do not process events. Not normally needed.
 //!
 //!
 
-void main( )
+void main( );
 //! Start GTK in blocking mode.
 //! Doing this disables asynchronous I/O in pike.
 //! You can return -1 from main in pike to run GTK (and the rest of
@@ -2617,36 +2618,36 @@ void main( )
 //!
 //!
 
-int main_iteration_do( int block )
+int main_iteration_do( int block );
 //! Run one iteration in the mainloop. If block is true, wait for an
 //! event before returning.
 //!
 //!
 
-int main_level( )
+int main_level( );
 //! Return the current recursion depth.
 //!
 //!
 
-void main_quit( )
+void main_quit( );
 //! Exit from the gtk_main function on the next iteration.
 //!
 //!
 
-void parse_rc( string rc )
+void parse_rc( string rc );
 //! Takes a string and reads it as a gtkrc file.
 //!
 //!
 
-GDK.Window root_window( )
+GDK.Window root_window( );
 //! Returns the root window of the current display
 //!
 //!
 
-int set_new_signal_convention( int n )
+int set_new_signal_convention( int n );
 //!
 
-array(string) setup_gtk( array(string)|void argv, int|void do_not_parse_rc )
+array(string) setup_gtk( array(string)|void argv, int|void do_not_parse_rc );
 //! Initialize GTK, and all that comes with it.
 //! Also parses $HOME/.pgtkrc and $HOME/.gtkrc if they exists.
 //! The single argument, if supplied, is the argument array passed to
@@ -2658,7 +2659,7 @@ array(string) setup_gtk( array(string)|void argv, int|void do_not_parse_rc )
 //!
 //!
 
-int true( )
+int true( );
 //! Always returns true.
 //!
 //!

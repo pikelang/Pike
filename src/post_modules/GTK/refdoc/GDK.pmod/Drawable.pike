@@ -16,20 +16,21 @@
 //! 
 //!
 //!
-GdkDrawable clear( int|void x, int|void y, int|void width, int|void height )
+
+GdkDrawable clear( int|void x, int|void y, int|void width, int|void height );
 //! Either clears the rectangle defined by the arguments, of if no
 //! arguments are specified, the whole drawable.
 //!
 //!
 
-GdkDrawable copy_area( GDK.GC gc, int xdest, int ydest, GTK.Widget source, int xsource, int ysource, int width, int height )
+GdkDrawable copy_area( GDK.GC gc, int xdest, int ydest, GTK.Widget source, int xsource, int ysource, int width, int height );
 //! Copies the rectangle defined by xsource,ysource and width,height
 //! from the source drawable, and places the results at xdest,ydest in
 //! the drawable in which this function is called.
 //!
 //!
 
-GdkDrawable draw_arc( GDK.GC gc, int filledp, int x1, int y1, int x2, int y2, int angle1, int angle2 )
+GdkDrawable draw_arc( GDK.GC gc, int filledp, int x1, int y1, int x2, int y2, int angle1, int angle2 );
 //! Draws a single circular or elliptical arc.  Each arc is specified
 //! by a rectangle and two angles. The center of the circle or ellipse
 //! is the center of the rectangle, and the major and minor axes are
@@ -40,20 +41,20 @@ GdkDrawable draw_arc( GDK.GC gc, int filledp, int x1, int y1, int x2, int y2, in
 //!
 //!
 
-GdkDrawable draw_bitmap( GDK.GC gc, GDK.Bitmap bitmap, int xsrc, int ysrc, int xdest, int ydest, int width, int height )
+GdkDrawable draw_bitmap( GDK.GC gc, GDK.Bitmap bitmap, int xsrc, int ysrc, int xdest, int ydest, int width, int height );
 //! Draw a GDK(Bitmap) in this drawable.
 //! @b{NOTE:@} This drawable must be a bitmap as well. This will be
 //! fixed in GTK 1.3
 //!
 //!
 
-GdkDrawable draw_image( GDK.GC gc, GDK.Image image, int xsrc, int ysrc, int xdest, int ydest, int width, int height )
+GdkDrawable draw_image( GDK.GC gc, GDK.Image image, int xsrc, int ysrc, int xdest, int ydest, int width, int height );
 //! Draw the rectangle specified by xsrc,ysrc+width,height from the
 //! GDK(Image) at xdest,ydest in the destination drawable
 //!
 //!
 
-GdkDrawable draw_line( GDK.GC gc, int x1, int y1, int x2, int y2 )
+GdkDrawable draw_line( GDK.GC gc, int x1, int y1, int x2, int y2 );
 //! img_begin
 //! w = GTK.DrawingArea()->set_usize(100,100);
 //! delay: g = GDK.GC(w)->set_foreground( GDK.Color(255,0,0) );
@@ -62,13 +63,13 @@ GdkDrawable draw_line( GDK.GC gc, int x1, int y1, int x2, int y2 )
 //!
 //!
 
-GdkDrawable draw_pixmap( GDK.GC gc, GDK.Pixmap pixmap, int xsrc, int ysrc, int xdest, int ydest, int width, int height )
+GdkDrawable draw_pixmap( GDK.GC gc, GDK.Pixmap pixmap, int xsrc, int ysrc, int xdest, int ydest, int width, int height );
 //! Draw the rectangle specified by xsrc,ysrc+width,height from the
 //! GDK(Pixmap) at xdest,ydest in the destination drawable
 //!
 //!
 
-GdkDrawable draw_point( GDK.GC gc, int x, int y )
+GdkDrawable draw_point( GDK.GC gc, int x, int y );
 //! img_begin
 //! w = GTK.DrawingArea()->set_usize(10,10);
 //! delay: g = GDK.GC(w)->set_foreground( GDK.Color(255,0,0) );
@@ -77,7 +78,7 @@ GdkDrawable draw_point( GDK.GC gc, int x, int y )
 //!
 //!
 
-GdkDrawable draw_rectangle( GDK.GC gc, int filledp, int x1, int y1, int x2, int y2 )
+GdkDrawable draw_rectangle( GDK.GC gc, int filledp, int x1, int y1, int x2, int y2 );
 //! img_begin
 //!  w = GTK.DrawingArea()->set_usize(100,100);
 //! delay:  g = GDK.GC(w)->set_foreground( GDK.Color(255,0,0) );
@@ -94,7 +95,7 @@ GdkDrawable draw_rectangle( GDK.GC gc, int filledp, int x1, int y1, int x2, int 
 //!
 //!
 
-GdkDrawable draw_text( GDK.GC gc, GDK.Font font, int x, int y, string text, int forcewide )
+GdkDrawable draw_text( GDK.GC gc, GDK.Font font, int x, int y, string text, int forcewide );
 //! y is used as the baseline for the text.
 //! If forcewide is true, the string will be expanded to a wide string
 //! even if it is not already one. This is useful when writing text
@@ -102,7 +103,7 @@ GdkDrawable draw_text( GDK.GC gc, GDK.Font font, int x, int y, string text, int 
 //!
 //!
 
-mapping get_geometry( )
+mapping get_geometry( );
 //! Get width, height position and depth of the drawable as a mapping.
 //! 
 //! ([ "x":xpos, "y":ypos, "width":xsize, "height":ysize,
@@ -110,15 +111,15 @@ mapping get_geometry( )
 //!
 //!
 
-int xid( )
+int xid( );
 //!
 
-int xsize( )
+int xsize( );
 //! Returns the width of the drawable specified in pixels
 //!
 //!
 
-int ysize( )
+int ysize( );
 //! Returns the height of the drawable specified in pixels
 //!
 //!

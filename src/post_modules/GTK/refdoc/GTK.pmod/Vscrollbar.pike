@@ -5,9 +5,10 @@
 //!
 //!
 //!
+
 inherit Scrollbar;
 
-static Vscrollbar create( GTK.Adjustment pos )
+static Vscrollbar create( GTK.Adjustment pos );
 //! Used to create a new vscrollbar widget.
 //! The adjustment argument can either be an existing W(Adjustment), or
 //! 0, in which case one will be created for you. Specifying 0 might

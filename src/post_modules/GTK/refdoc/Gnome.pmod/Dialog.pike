@@ -10,17 +10,18 @@
 //!
 //! @b{close@}
 //!
+
 inherit Window;
 
-GnomeDialog append_button_with_pixmap( string name, string pixmap_file )
+GnomeDialog append_button_with_pixmap( string name, string pixmap_file );
 //!
 
-GnomeDialog button_connect( int button, function,mixed callback )
+GnomeDialog button_connect( int button, function,mixed callback );
 //! Simply a signal_connect to the "clicked" signal of the specified button.
 //!
 //!
 
-GnomeDialog close( )
+GnomeDialog close( );
 //! See also close_hides(). This function emits the "close" signal(
 //! which either hides or destroys the dialog (destroy by default). If
 //! you connect to the "close" signal, and your callback returns TRUE,
@@ -33,7 +34,7 @@ GnomeDialog close( )
 //!
 //!
 
-static GnomeDialog create( string title, string buttons )
+static GnomeDialog create( string title, string buttons );
 //! Creates a new Gnome.Dialog, with the given title, and any button
 //! names in the arg list. Buttons can be simple names, such as "My
 //! Button", or gnome-stock defines such as GNOME.StockButtonOK,
@@ -47,7 +48,7 @@ static GnomeDialog create( string title, string buttons )
 //!
 //!
 
-GnomeDialog editable_enters( GTK.Editable widget )
+GnomeDialog editable_enters( GTK.Editable widget );
 //! Normally if there's an editable widget (such as GtkEntry) in your
 //! dialog, pressing Enter will activate the editable rather than the
 //! default dialog button. However, in most cases, the user expects to
@@ -56,10 +57,10 @@ GnomeDialog editable_enters( GTK.Editable widget )
 //!
 //!
 
-GTK.Widget get_vbox( )
+GTK.Widget get_vbox( );
 //!
 
-int run( )
+int run( );
 //! Blocks until the user clicks a button or closes the dialog with
 //! the window manager's close decoration (or by pressing Escape).
 //! 
@@ -79,16 +80,16 @@ int run( )
 //!
 //!
 
-int run_and_close( )
+int run_and_close( );
 //! See run(). The only difference is that this function calls close()
 //! before returning if the dialog was not already closed.
 //!
 //!
 
-GnomeDialog set_accelerator( int button, int accelerator_key, int accelerator_mode )
+GnomeDialog set_accelerator( int button, int accelerator_key, int accelerator_mode );
 //!
 
-GnomeDialog set_close( int click_closes )
+GnomeDialog set_close( int click_closes );
 //! This is a convenience function so you don't have to connect
 //! callbacks to each button just to close the dialog. By default,
 //! Gnome.Dialog has this parameter set the FALSE and it will not close
@@ -98,14 +99,14 @@ GnomeDialog set_close( int click_closes )
 //!
 //!
 
-GnomeDialog set_default( int button )
+GnomeDialog set_default( int button );
 //! The default button will be activated if the user just presses
 //! return. Usually you should make the least-destructive button the
 //! default. Otherwise, the most commonly-used button.
 //!
 //!
 
-GnomeDialog set_parent( GTK.Window parent )
+GnomeDialog set_parent( GTK.Window parent );
 //! Dialogs have "parents," usually the main application window which
 //! spawned them. This function will let the window manager know about
 //! the parent-child relationship. Usually this means the dialog must
@@ -116,7 +117,7 @@ GnomeDialog set_parent( GTK.Window parent )
 //!
 //!
 
-GnomeDialog set_sensitive( int button, int sensitive )
+GnomeDialog set_sensitive( int button, int sensitive );
 //! Calls set_sensitive() on the specified button number.
 //!
 //!

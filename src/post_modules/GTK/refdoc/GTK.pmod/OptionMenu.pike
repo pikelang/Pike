@@ -9,30 +9,31 @@
 //! 
 //!
 //!
+
 inherit Button;
 
-static OptionMenu create( )
+static OptionMenu create( );
 //! Create a new option menu widget
 //!
 //!
 
-GTK.Menu get_menu( )
+GTK.Menu get_menu( );
 //! Returns the W(Menu) associated with the OptionMenu.
 //!
 //!
 
-OptionMenu remove_menu( )
+OptionMenu remove_menu( );
 //! Remove the menu.
 //!
 //!
 
-OptionMenu set_history( int index )
+OptionMenu set_history( int index );
 //! Selects the menu item specified by index making it the newly
 //! selected value for the option menu.
 //!
 //!
 
-OptionMenu set_menu( GTK.Menu menu )
+OptionMenu set_menu( GTK.Menu menu );
 //! Provides the GtkMenu that is popped up to allow the user to choose
 //! a new value. You should provide a simple menu avoiding the use of
 //! tearoff menu items, submenus, and accelerators.

@@ -8,21 +8,22 @@
 //!
 //!
 //!
+
 inherit Misc;
 
-static Image create( GDK.Image image, GDK.Bitmap mask )
+static Image create( GDK.Image image, GDK.Bitmap mask );
 //! You can skip the mask. The mask is used to mask the drawing of the image
 //! on it's background. It will not make the container transparent, though.
 //! Use shape_combine_mask on the container with the mask for that.
 //!
 //!
 
-mapping get( )
+mapping get( );
 //! Returns ([ "image":GDK.Image img, "mask":GDK.Bitmap mask ])
 //!
 //!
 
-Image set( GDK.Image image, GDK.Bitmap mask )
+Image set( GDK.Image image, GDK.Bitmap mask );
 //! Args: GDK.Image and GDK.Bitmap, respectively.
 //! You can skip the mask. The mask is used to mask the drawing of the image
 //! on it's background. It will not make the container transparent, though.

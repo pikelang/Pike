@@ -13,26 +13,27 @@
 //!
 //! @b{time_changed@}
 //!
+
 inherit Hbox;
 
-static GnomeDateEdit create( int the_time, int show_time, int use_24_format )
+static GnomeDateEdit create( int the_time, int show_time, int use_24_format );
 //! Creates a new GnomeDateEdit widget which can be used to provide an
 //! easy to use way for entering dates and times.
 //!
 //!
 
-int get_date( )
+int get_date( );
 //! Returns the configured time
 //!
 //!
 
-GnomeDateEdit set_popup_range( int low_hour, int high_hour )
+GnomeDateEdit set_popup_range( int low_hour, int high_hour );
 //! Sets the range of times that will be provide by the time popup
 //! selectors.
 //!
 //!
 
-GnomeDateEdit set_time( int the_time )
+GnomeDateEdit set_time( int the_time );
 //! Changes the displayed date and time in the GnomeDateEdit widget to
 //! be the one represented by the_time.
 //!

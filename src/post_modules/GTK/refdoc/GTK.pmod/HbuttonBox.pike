@@ -20,9 +20,10 @@
 //!
 //!
 //!
+
 inherit ButtonBox;
 
-static HbuttonBox create( )
+static HbuttonBox create( );
 //! Create a new horizontal button box
 //!
 //!

@@ -20,9 +20,10 @@
 //!
 //!
 //!
+
 inherit ButtonBox;
 
-static VbuttonBox create( )
+static VbuttonBox create( );
 //! Create a new vertical button box
 //!
 //!

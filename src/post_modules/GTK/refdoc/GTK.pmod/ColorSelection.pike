@@ -16,14 +16,15 @@
 //!
 //!
 //!
+
 inherit Vbox;
 
-static ColorSelection create( )
+static ColorSelection create( );
 //! Create a new color selection.
 //!
 //!
 
-array(float) get_color( )
+array(float) get_color( );
 //!  When you need to query the current color, typically when you've
 //!  received a "color_changed" signal, you use this function. The
 //!  return value is an array of floats, See the set_color() function
@@ -31,7 +32,7 @@ array(float) get_color( )
 //!
 //!
 
-ColorSelection set_color( array(int|float) color )
+ColorSelection set_color( array(int|float) color );
 //! You can set the current color explicitly by calling this function
 //! with an array of colors (floats). The length of the array depends
 //! on whether opacity is enabled or not. Position 0 contains the red
@@ -41,8 +42,8 @@ ColorSelection set_color( array(int|float) color )
 //!
 //!
 
-ColorSelection set_update_policy( int policy )
-//! one of @[UPDATE_CONTINUOUS], @[UPDATE_DISCONTINUOUS], @[UPDATE_DELAYED], @[UPDATE_ALWAYS] and @[UPDATE_IF_VALID].
+ColorSelection set_update_policy( int policy );
+//! one of @[UPDATE_CONTINUOUS], @[UPDATE_IF_VALID], @[UPDATE_DISCONTINUOUS], @[UPDATE_DELAYED] and @[UPDATE_ALWAYS].
 //! 
 //! The default policy is GTK.UpdateContinuous which means that the
 //! current color is updated continuously when the user drags the

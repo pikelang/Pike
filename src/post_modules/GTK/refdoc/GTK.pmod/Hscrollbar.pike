@@ -6,9 +6,10 @@
 //!
 //!
 //!
+
 inherit Scrollbar;
 
-static Hscrollbar create( GTK.Adjustment adjustment )
+static Hscrollbar create( GTK.Adjustment adjustment );
 //! Used to create a new vscale widget.
 //! The adjustment argument can either be an existing W(Adjustment), or
 //! 0, in which case one will be created for you. Specifying 0 might

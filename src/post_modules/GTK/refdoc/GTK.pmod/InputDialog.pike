@@ -34,19 +34,20 @@
 //! This signal is emitted when the user changes the mode of a device from GDK_MODE_DISABLED to a GDK_MODE_SCREEN or GDK_MODE_WINDOW.
 //!
 //!
+
 inherit Dialog;
 
-static InputDialog create( )
+static InputDialog create( );
 //! Create a new input dialog window.
 //!
 //!
 
-GTK.Button get_close_button( )
+GTK.Button get_close_button( );
 //! The 'close' button of the dialog.
 //!
 //!
 
-GTK.Button get_save_button( )
+GTK.Button get_save_button( );
 //! The 'save' button of the dialog.
 //!
 //!

@@ -1,20 +1,21 @@
 //! The data associated with a selection.
 //!
 //!
-string data( )
+
+string data( );
 //! Returns the selection in the data.
 //! The return value is always a string, but the width can vary (8, 16
 //! or 32 bits per character).
 //!
 //!
 
-int format( )
+int format( );
 //! Returns the selction format.
 //! The format is the number of bits per character.
 //!
 //!
 
-int length( )
+int length( );
 //! Return the size of the selection data, in bytes.
 //! 
 //! The size of the data in characters (as returned by data()) is not
@@ -23,23 +24,23 @@ int length( )
 //!
 //!
 
-object selection( )
+object selection( );
 //! The selection id, as a GDK(Atom).
 //!
 //!
 
-SelectionData set( string data )
+SelectionData set( string data );
 //!  Store new data into a GtkSelectionData object. Should _only_ by
 //!  called from a selection handler callback.
 //!
 //!
 
-object target( )
+object target( );
 //! The target, as a GDK(Atom).
 //!
 //!
 
-object type( )
+object type( );
 //! The selection type, as a GDK(Atom).
 //!
 //!

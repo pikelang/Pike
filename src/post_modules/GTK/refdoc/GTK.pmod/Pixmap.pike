@@ -20,14 +20,15 @@
 //! 
 //!
 //!
+
 inherit Misc;
 
-static Pixmap create( GDK.Pixmap pixmap, GDK.Bitmap mask )
+static Pixmap create( GDK.Pixmap pixmap, GDK.Bitmap mask );
 //! Create a new pixmap object, and sets the image and the mask.
 //!
 //!
 
-mapping get( )
+mapping get( );
 //! Returns ([ 
 //!            "pixmap":pixmap, 
 //!            "mask":mask,  
@@ -36,21 +37,21 @@ mapping get( )
 //!
 //!
 
-int get_build_insensitive( )
+int get_build_insensitive( );
 //!
 
-Pixmap set( GDK.Pixmap pixmap, GDK.Bitmap mask )
+Pixmap set( GDK.Pixmap pixmap, GDK.Bitmap mask );
 //! Sets the GDK.Pixmap image and the optinal GDK.Bitmap mask
 //!
 //!
 
-Pixmap set_build_insensitive( int buildp )
+Pixmap set_build_insensitive( int buildp );
 //! Set to TRUE if an extra pixmap should be automatically created to
 //! use when the pixmap is insensitive.
 //!
 //!
 
-Pixmap set_insensitive_pixmap( GDK.Pixmap insensitive_pixmap )
+Pixmap set_insensitive_pixmap( GDK.Pixmap insensitive_pixmap );
 //! Set the pixmap to use when the pixmap is insensitive.
 //!
 //!

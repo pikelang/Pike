@@ -18,9 +18,10 @@
 //! 
 //!
 //!
+
 inherit Window;
 
-ScrolledWindow add( GTK.Widget victim )
+ScrolledWindow add( GTK.Widget victim );
 //! Add a widget to this container.
 //! This is equivalent to the
 //! C-GTK function gtk_scrolled_window_add_with_viewport or
@@ -33,74 +34,74 @@ ScrolledWindow add( GTK.Widget victim )
 //!
 //!
 
-static ScrolledWindow create( GTK.Adjustment hadjustment, GTK.Adjustment vadjustments )
+static ScrolledWindow create( GTK.Adjustment hadjustment, GTK.Adjustment vadjustments );
 //! The two adjustments are most commonly set to 0.
 //!
 //!
 
-GTK.Adjustment get_hadjustment( )
+GTK.Adjustment get_hadjustment( );
 //! Return the horizontal adjustment used to scroll the window
 //!
 //!
 
-GTK.Hscrollbar get_hscrollbar( )
+GTK.Hscrollbar get_hscrollbar( );
 //! The horizontal scrollbar
 //!
 //!
 
-int get_hscrollbar_policy( )
+int get_hscrollbar_policy( );
 //! One of @[POLICY_NEVER], @[POLICY_ALWAYS] and @[POLICY_AUTOMATIC]
 //!
 //!
 
-int get_hscrollbar_visible( )
+int get_hscrollbar_visible( );
 //! 1 if the horizontal scrollbar is currently visible
 //!
 //!
 
-GTK.Adjustment get_vadjustment( )
+GTK.Adjustment get_vadjustment( );
 //! Return the vertical adjustment used to scroll the window
 //!
 //!
 
-GTK.Vscrollbar get_vscrollbar( )
+GTK.Vscrollbar get_vscrollbar( );
 //! The vertical scrollbar
 //!
 //!
 
-int get_vscrollbar_policy( )
+int get_vscrollbar_policy( );
 //! One of @[POLICY_NEVER], @[POLICY_ALWAYS] and @[POLICY_AUTOMATIC]
 //!
 //!
 
-int get_vscrollbar_visible( )
+int get_vscrollbar_visible( );
 //! 1 if the vertical scrollbar is currently visible
 //!
 //!
 
-int get_window_placement( )
+int get_window_placement( );
 //! The location of the window relative to the scrollbars.
-//! One of @[CORNER_TOP_RIGHT], @[CORNER_BOTTOM_RIGHT], @[CORNER_TOP_LEFT] and @[CORNER_BOTTOM_LEFT]
+//! One of @[CORNER_TOP_RIGHT], @[CORNER_TOP_LEFT], @[CORNER_BOTTOM_RIGHT] and @[CORNER_BOTTOM_LEFT]
 //!
 //!
 
-ScrolledWindow set_hadjustment( GTK.Adjustment hadjustment )
+ScrolledWindow set_hadjustment( GTK.Adjustment hadjustment );
 //! Set the horizontal adjustment object
 //!
 //!
 
-ScrolledWindow set_placement( int window_corner_placement )
+ScrolledWindow set_placement( int window_corner_placement );
 //! The location of the window relative to the scrollbars.
-//! One of @[CORNER_TOP_RIGHT], @[CORNER_BOTTOM_RIGHT], @[CORNER_TOP_LEFT] and @[CORNER_BOTTOM_LEFT]
+//! One of @[CORNER_TOP_RIGHT], @[CORNER_TOP_LEFT], @[CORNER_BOTTOM_RIGHT] and @[CORNER_BOTTOM_LEFT]
 //!
 //!
 
-ScrolledWindow set_policy( int xpolicy, int ypolicy )
+ScrolledWindow set_policy( int xpolicy, int ypolicy );
 //! vertical and horiz policy. Both are one of @[POLICY_NEVER], @[POLICY_ALWAYS] and @[POLICY_AUTOMATIC]
 //!
 //!
 
-ScrolledWindow set_vadjustment( GTK.Adjustment vadjustment )
+ScrolledWindow set_vadjustment( GTK.Adjustment vadjustment );
 //! Set the vertical adjustment object
 //!
 //!

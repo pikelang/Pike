@@ -23,29 +23,30 @@
 //!
 //!
 //!
+
 inherit Window;
 
-static FontSelectionDialog create( string title )
+static FontSelectionDialog create( string title );
 //! Create a new font selection dialog with the specified window title
 //!
 //!
 
-GTK.Button get_apply_button( )
+GTK.Button get_apply_button( );
 //! The apply button
 //!
 //!
 
-GTK.Button get_cancel_button( )
+GTK.Button get_cancel_button( );
 //! The cancel button
 //!
 //!
 
-GTK.FontSelection get_fontsel( )
+GTK.FontSelection get_fontsel( );
 //! The W(FontSelection) widget
 //!
 //!
 
-GTK.Button get_ok_button( )
+GTK.Button get_ok_button( );
 //! The ok button
 //!
 //!

@@ -33,9 +33,10 @@
 //! should be 22 by 22, and if it is larger it will be cropped.
 //!
 //!
+
 inherit Object;
 
-static GnomeStatusDocklet create( )
+static GnomeStatusDocklet create( );
 //! Creates a new status docklet object with the default parameters. By
 //! default the docklet object will try to contact a panel 20 times. It
 //! will try to find a panel every 15 seconds. You need to bind the
@@ -48,12 +49,12 @@ static GnomeStatusDocklet create( )
 //!
 //!
 
-GTK.Plug get_plug( )
+GTK.Plug get_plug( );
 //! the current W(plug) holding the docklet
 //!
 //!
 
-GnomeStatusDocklet run( )
+GnomeStatusDocklet run( );
 //! Search for the panel and add the plug if it finds it. This function
 //! is also called internally from the timeout. If called externally
 //! more times, a panel lookup will be forced and one try will be

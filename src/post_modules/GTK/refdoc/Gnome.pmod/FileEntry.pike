@@ -13,14 +13,15 @@
 //! you can add stuff to the file selector or to override this method.
 //!
 //!
+
 inherit Hbox;
 
-static GnomeFileEntry create( string history_id, string browse_dialog_title )
+static GnomeFileEntry create( string history_id, string browse_dialog_title );
 //! Creates a new Gnome.FileEntry widget.
 //!
 //!
 
-string get_full_path( int file_must_exist )
+string get_full_path( int file_must_exist );
 //! Gets the full absolute path of the file from the entry. If
 //! file_must_exist is false, nothing is tested and the path is
 //! returned. If file_must_exist is true, then the path is only
@@ -31,19 +32,19 @@ string get_full_path( int file_must_exist )
 //!
 //!
 
-Gnome.Entry gnome_entry( )
+Gnome.Entry gnome_entry( );
 //! Get the W(GnomeEntry) component of the widget for lower-level
 //! manipulation.
 //!
 //!
 
-GTK.Entry gtk_entry( )
+GTK.Entry gtk_entry( );
 //! Get the W(Entry) component of the widget for lower-level
 //! manipulation.
 //!
 //!
 
-GnomeFileEntry set_default_path( string path )
+GnomeFileEntry set_default_path( string path );
 //! Set the default path of browse dialog to path. The default path is
 //! only used if the entry is empty or if the current path of the entry
 //! is not an absolute path, in which case the default path is
@@ -51,19 +52,19 @@ GnomeFileEntry set_default_path( string path )
 //!
 //!
 
-GnomeFileEntry set_directory( int directory_entry )
+GnomeFileEntry set_directory( int directory_entry );
 //! Sets whether this is a directory only entry. If directory_entry is
 //! true, then get_full_path will check for the file being a directory,
 //! and the browse dialog will have the file list disabled.
 //!
 //!
 
-GnomeFileEntry set_modal( int is_modal )
+GnomeFileEntry set_modal( int is_modal );
 //! Sets the modality of the browse dialog.
 //!
 //!
 
-GnomeFileEntry set_title( string browse_dialog_title )
+GnomeFileEntry set_title( string browse_dialog_title );
 //! Set the title of the browse dialog to browse_dialog_title. The new
 //! title will go into effect the next time the browse button is
 //! pressed.

@@ -5,36 +5,37 @@
 //! images to and from the preview button.
 //!
 //!
+
 inherit Vbox;
 
-static GnomeIconEntry create( string history_id, string title )
+static GnomeIconEntry create( string history_id, string title );
 //! Creates a new icon entry widget
 //!
 //!
 
-string get_filename( )
+string get_filename( );
 //! Gets the file name of the image if it was possible to load it into
 //! the preview. That is, it will only return a filename if the image
 //! exists and it was possible to load it as an image.
 //!
 //!
 
-Gnome.Entry gnome_entry( )
+Gnome.Entry gnome_entry( );
 //! Get the W(GnomeEntry) widget that's part of the entry
 //!
 //!
 
-Gnome.FileEntry gnome_file_entry( )
+Gnome.FileEntry gnome_file_entry( );
 //! Get the W(GnomeFileEntry) widget that's part of the entry
 //!
 //!
 
-GTK.Entry gtk_entry( )
+GTK.Entry gtk_entry( );
 //! Get the W(Entry) widget that's part of the entry
 //!
 //!
 
-GnomeIconEntry set_pixmap_subdir( string subdir )
+GnomeIconEntry set_pixmap_subdir( string subdir );
 //! Sets the subdirectory below gnome's default pixmap directory to use
 //! as the default path for the file entry.
 //!

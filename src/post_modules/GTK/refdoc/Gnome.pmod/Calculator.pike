@@ -15,25 +15,26 @@
 //! This signal is emited by the widget when the result has been changed.
 //!
 //!
+
 inherit Vbox;
 
-GnomeCalculator clear( int reset )
+GnomeCalculator clear( int reset );
 //! Resets the calculator back to zero. If reset is TRUE, results
 //! stored in memory and the calculator mode are cleared also.
 //!
 //!
 
-static GnomeCalculator create( )
+static GnomeCalculator create( );
 //! Create a new calculator widget
 //!
 //!
 
-float get_result( )
+float get_result( );
 //! Value currently stored in calculator buffer.
 //!
 //!
 
-GnomeCalculator set( float result )
+GnomeCalculator set( float result );
 //! Sets the value stored in the calculator's result buffer to the
 //! given result.
 //!

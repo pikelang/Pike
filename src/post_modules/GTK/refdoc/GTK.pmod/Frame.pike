@@ -17,27 +17,28 @@
 //! 
 //!
 //!
+
 inherit Container;
 
-static Frame create( string|void label_text )
+static Frame create( string|void label_text );
 //! Create a new W(Frame) widget.
 //!
 //!
 
-Frame set_label( string|void label_text )
+Frame set_label( string|void label_text );
 //! Set the text of the label.
 //!
 //!
 
-Frame set_label_align( float xalign, float yalign )
+Frame set_label_align( float xalign, float yalign );
 //! Arguments are xalignment and yalignment.
 //! 0.0 is left or topmost, 1.0 is right or bottommost.
 //! The default value for a newly created Frame is 0.0.
 //!
 //!
 
-Frame set_shadow_type( int shadow_type )
+Frame set_shadow_type( int shadow_type );
 //! Set the shadow type for the Frame widget. The type is one of
-//! @[SHADOW_IN], @[SHADOW_NONE], @[SHADOW_ETCHED_IN], @[SHADOW_ETCHED_OUT] and @[SHADOW_OUT]
+//! @[SHADOW_NONE], @[SHADOW_ETCHED_IN], @[SHADOW_ETCHED_OUT], @[SHADOW_OUT] and @[SHADOW_IN]
 //!
 //!

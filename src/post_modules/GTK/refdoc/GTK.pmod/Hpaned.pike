@@ -12,7 +12,8 @@
 //!
 //!
 //!
+
 inherit Paned;
 
-static Hpaned create( )
+static Hpaned create( );
 //!

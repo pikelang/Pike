@@ -9,7 +9,8 @@
 //!
 //!
 //!
+
 inherit Paned;
 
-static Vpaned create( )
+static Vpaned create( );
 //!

@@ -20,41 +20,42 @@
 //! group of tooltips.
 //!
 //!
+
 inherit Data;
 
-static Tooltips create( )
+static Tooltips create( );
 //! Creates an empty group of tooltips. This function initialises a
 //! GTK.Tooltips structure. Without at least one such structure, you
 //! can not add tips to your application.
 //!
 //!
 
-Tooltips disable( )
+Tooltips disable( );
 //! Disable this tooltip collection
 //!
 //!
 
-Tooltips enable( )
+Tooltips enable( );
 //! Enable this tooltip collection
 //!
 //!
 
-Tooltips force_window( )
+Tooltips force_window( );
 //! Realize the tooltip window (as returned from get_gdkwindow())
 //!
 //!
 
-Tooltips set_colors( GDK.Color foreground, GDK.Color background )
+Tooltips set_colors( GDK.Color foreground, GDK.Color background );
 //! Changes the foreground and background colors.
 //!
 //!
 
-Tooltips set_delay( int delay )
+Tooltips set_delay( int delay );
 //! Set the delat (in seconds)
 //!
 //!
 
-Tooltips set_tip( GTK.Widget in, string to )
+Tooltips set_tip( GTK.Widget in, string to );
 //! Adds a tooltip containing the message tip_text to the specified
 //! W(Widget).
 //!

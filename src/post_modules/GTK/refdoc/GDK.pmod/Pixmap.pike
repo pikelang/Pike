@@ -7,23 +7,24 @@
 //! NOIMG
 //!
 //!
+
 inherit GdkDrawable;
 
-static GdkPixmap create( int|object image )
+static GdkPixmap create( int|object image );
 //! Create a new GDK.Pixmap object.
 //! Argument is a GDK.Image object or a Image.Image object
 //!
 //!
 
-GdkPixmap destroy( )
+GdkPixmap destroy( );
 //! Destructor. Destroys the pixmap.
 //!
 //!
 
-GdkPixmap ref( )
+GdkPixmap ref( );
 //!
 
-GdkPixmap set( GDK.Image image )
+GdkPixmap set( GDK.Image image );
 //! Argument is a GDK.Image object or an Image.image object.
 //! It is much faster to use an gdkImage object, especially one
 //! allocated in shared memory. This is only an issue if you are
@@ -32,5 +33,5 @@ GdkPixmap set( GDK.Image image )
 //!
 //!
 
-GdkPixmap unref( )
+GdkPixmap unref( );
 //!

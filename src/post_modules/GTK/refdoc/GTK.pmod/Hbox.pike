@@ -16,9 +16,10 @@
 //!
 //!
 //!
+
 inherit Box;
 
-static Hbox create( int all_same_size, int hpadding )
+static Hbox create( int all_same_size, int hpadding );
 //! Create a new horizontal box widget.
 //! If all_same_size is true, all widgets will have exactly the same size.
 //! hpadding is added to the left and right of the children.

@@ -8,19 +8,20 @@
 //! 
 //!
 //!
+
 inherit MenuShell;
 
-MenuBar append( GTK.Widget menu )
+MenuBar append( GTK.Widget menu );
 //!
 
-static MenuBar create( )
+static MenuBar create( );
 //!
 
-MenuBar insert( GTK.Widget menu, int position )
+MenuBar insert( GTK.Widget menu, int position );
 //!
 
-MenuBar prepend( GTK.Widget menu )
+MenuBar prepend( GTK.Widget menu );
 //!
 
-MenuBar set_shadow_type( int int )
+MenuBar set_shadow_type( int int );
 //!

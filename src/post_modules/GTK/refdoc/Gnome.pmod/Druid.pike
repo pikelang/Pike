@@ -40,46 +40,47 @@
 //! being emitted.
 //!
 //!
+
 inherit Container;
 
-GnomeDruid append_page( Gnome.DruidPage page )
+GnomeDruid append_page( Gnome.DruidPage page );
 //! This will append a GnomeDruidPage into the internal list of pages
 //! that the druid has.
 //!
 //!
 
-static GnomeDruid create( )
+static GnomeDruid create( );
 //! Create a new druid
 //!
 //!
 
-GnomeDruid insert_page( Gnome.DruidPage back_page, Gnome.DruidPage page )
+GnomeDruid insert_page( Gnome.DruidPage back_page, Gnome.DruidPage page );
 //! This will insert page after back_page into the list of internal
 //! pages that the druid has. If back_page is not present in the list
 //! or is 0, page will be prepended to the list.
 //!
 //!
 
-GnomeDruid prepend_page( Gnome.DruidPage page )
+GnomeDruid prepend_page( Gnome.DruidPage page );
 //! This will prepend a GnomeDruidPage into the internal list of pages
 //! that the druid has.
 //!
 //!
 
-GnomeDruid set_buttons_sensitive( int beck_sensitive, int next_sensitive, int cancel_sensitive )
+GnomeDruid set_buttons_sensitive( int beck_sensitive, int next_sensitive, int cancel_sensitive );
 //! Sets the sensitivity of the druid's control-buttons. If the
 //! variables are TRUE, then they will be clickable. This function is
 //! used primarily by the actual W(GnomeDruidPage) widgets.
 //!
 //!
 
-GnomeDruid set_page( Gnome.DruidPage page )
+GnomeDruid set_page( Gnome.DruidPage page );
 //! This will make page the currently showing page in the druid. page
 //! must already be in the druid.
 //!
 //!
 
-GnomeDruid set_show_finish( int show_finish )
+GnomeDruid set_show_finish( int show_finish );
 //!  Sets the text on the last button on the druid. If show_finish is
 //!  TRUE, then the text becomes "Finish". If show_finish is FALSE,
 //!  then the text becomes "Cancel".

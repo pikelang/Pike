@@ -24,15 +24,16 @@
 //! The value changed
 //!
 //!
+
 inherit Data;
 
-Adjustment changed( )
+Adjustment changed( );
 //! Call this when you have modified anything except the value member
 //! of the adjustment.
 //!
 //!
 
-Adjustment clamp_page( float lower, float upper )
+Adjustment clamp_page( float lower, float upper );
 //! Updates the GTK.Adjustment value to ensure that the range between
 //! lower and upper is in the current page (i.e. between value and
 //! value + page_size). If the range is larger than the page size,
@@ -41,7 +42,7 @@ Adjustment clamp_page( float lower, float upper )
 //!
 //!
 
-static Adjustment create( float|void value, float|void lower, float|void upper, float|void step_increment, float|void page_increment, float|void page_size )
+static Adjustment create( float|void value, float|void lower, float|void upper, float|void step_increment, float|void page_increment, float|void page_size );
 //! The value argument is the initial value you want to give to the
 //! adjustment, usually corresponding to the topmost or leftmost
 //! position of an adjustable widget. The lower argument specifies the
@@ -60,62 +61,62 @@ static Adjustment create( float|void value, float|void lower, float|void upper, 
 //!
 //!
 
-float get_lower( )
+float get_lower( );
 //! Get the lower limit
 //!
 //!
 
-float get_page_increment( )
+float get_page_increment( );
 //! Get the page increment (page down or through click)
 //!
 //!
 
-float get_page_size( )
+float get_page_size( );
 //! Get the page size (the actual size of a page)
 //!
 //!
 
-float get_step_increment( )
+float get_step_increment( );
 //! Get the step increment (arrow click)
 //!
 //!
 
-float get_upper( )
+float get_upper( );
 //! get the upper limit.
 //!
 //!
 
-float get_value( )
+float get_value( );
 //! Get the value component.
 //!
 //!
 
-float set_set_lower( )
+float set_set_lower( );
 //! Set the lower limit.
 //!
 //!
 
-float set_set_page_increment( )
+float set_set_page_increment( );
 //! Set the page increment (page down or through click)
 //!
 //!
 
-float set_set_page_size( )
+float set_set_page_size( );
 //! Set the page size (the actual size of a page)
 //!
 //!
 
-float set_set_step_increment( )
+float set_set_step_increment( );
 //! Set the step increment (arrow click)
 //!
 //!
 
-float set_set_upper( )
+float set_set_upper( );
 //! Set the upper limit.
 //!
 //!
 
-Adjustment set_value( float to )
+Adjustment set_value( float to );
 //! Set the value component.
 //!
 //!

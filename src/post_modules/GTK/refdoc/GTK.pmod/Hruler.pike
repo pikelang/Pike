@@ -15,9 +15,10 @@
 //!
 //!
 //!
+
 inherit Ruler;
 
-static Hruler create( )
+static Hruler create( );
 //! Used to create a new hruler widget.
 //!
 //!

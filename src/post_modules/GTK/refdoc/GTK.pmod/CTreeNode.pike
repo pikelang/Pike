@@ -2,42 +2,43 @@
 //! They are the equivalent of row numbers in a normal CList.
 //!
 //!
-object(implements 1001) child( )
+
+GTK.CTreeNode child( );
 //! Returns the first child node
 //!
 //!
 
-int get_expanded( )
+int get_expanded( );
 //! Returns the previous sibling (the next on the same level)
 //!
 //!
 
-int get_is_leaf( )
+int get_is_leaf( );
 //! Returns the previous sibling (the next on the same level)
 //!
 //!
 
-int get_level( )
+int get_level( );
 //! Returns the previous sibling (the next on the same level)
 //!
 //!
 
-GTK.CTreeNode next( )
+GTK.CTreeNode next( );
 //! Returns the next sibling (the next on the same  level)
 //!
 //!
 
-GTK.CTreeNode parent( )
+GTK.CTreeNode parent( );
 //! Returns the parent node
 //!
 //!
 
-GTK.CTreeNode prev( )
+object(implements 1001) prev( );
 //! Returns the previous sibling (the next on the same level)
 //!
 //!
 
-GTK.CTreeRow row( )
+GTK.CTreeRow row( );
 //! Returns the CTreeRow associated with this CTreeNode.
 //! @b{DEPRECATED@}, all CTreeRow functions are also available
 //! directly in this object.

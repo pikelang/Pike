@@ -15,9 +15,10 @@
 //!
 //!
 //!
+
 inherit Ruler;
 
-static Vruler create( )
+static Vruler create( );
 //! Used to create a new vruler widget.
 //!
 //!

@@ -24,77 +24,78 @@
 //!
 //! @b{zoomed@}
 //!
+
 inherit Vbox;
 
-static Databox create( )
+static Databox create( );
 //! Create a new databox widget
 //!
 //!
 
-int data_add_x( int nelems, array(float) x, int shared_Y_index, GDK.Color color, int type, int dot_size )
-//! Type is one of @[DATABOX_NOT_DISPLAYED], @[DATABOX_POINTS], @[DATABOX_BARS] and @[DATABOX_LINES]
+int data_add_x( int nelems, array(float) x, int shared_Y_index, GDK.Color color, int type, int dot_size );
+//! Type is one of @[DATABOX_LINES], @[DATABOX_POINTS], @[DATABOX_BARS] and @[DATABOX_NOT_DISPLAYED]
 //!
 //!
 
-int data_add_x_y( int nelems, array(float) x, array(float) y, GDK.Color color, int type, int dot_size )
-//! Type is one of @[DATABOX_NOT_DISPLAYED], @[DATABOX_POINTS], @[DATABOX_BARS] and @[DATABOX_LINES]
+int data_add_x_y( int nelems, array(float) x, array(float) y, GDK.Color color, int type, int dot_size );
+//! Type is one of @[DATABOX_LINES], @[DATABOX_POINTS], @[DATABOX_BARS] and @[DATABOX_NOT_DISPLAYED]
 //!
 //!
 
-int data_add_y( int nelems, array(float) y, int shared_X_index, GDK.Color color, int type, int dot_size )
-//! Type is one of @[DATABOX_NOT_DISPLAYED], @[DATABOX_POINTS], @[DATABOX_BARS] and @[DATABOX_LINES]
+int data_add_y( int nelems, array(float) y, int shared_X_index, GDK.Color color, int type, int dot_size );
+//! Type is one of @[DATABOX_LINES], @[DATABOX_POINTS], @[DATABOX_BARS] and @[DATABOX_NOT_DISPLAYED]
 //!
 //!
 
-int data_destroy( int index )
+int data_destroy( int index );
 //!
 
-int data_destroy_all( )
+int data_destroy_all( );
 //!
 
-array(mapping) data_get_extrema( )
+array(mapping) data_get_extrema( );
 //!
 
-mapping data_get_value( int x, int y )
+mapping data_get_value( int x, int y );
 //!
 
-array(mapping) data_get_visible_extrema( )
+array(mapping) data_get_visible_extrema( );
 //!
 
-Databox disable_zoom( )
+Databox disable_zoom( );
 //!
 
-Databox enable_zoom( )
+Databox enable_zoom( );
 //!
 
-Databox hide_cross( )
+Databox hide_cross( );
 //!
 
-Databox hide_rulers( )
+Databox hide_rulers( );
 //!
 
-Databox hide_scrollbars( )
+Databox hide_scrollbars( );
 //!
 
-Databox rescale( )
+Databox rescale( );
 //!
 
-Databox rescale_with_values( float minx, float miny, float maxx, float maxy )
+Databox rescale_with_values( float minx, float miny, float maxx, float maxy );
 //!
 
-int set_color( int index, GDK.Color color )
+int set_color( int index, GDK.Color color );
 //!
 
-int set_data_type( int index, int type, int dot_size )
-//! Type is one of @[DATABOX_NOT_DISPLAYED], @[DATABOX_POINTS], @[DATABOX_BARS] and @[DATABOX_LINES]
+int set_data_type( int index, int type, int dot_size );
+//! Type is one of @[DATABOX_LINES], @[DATABOX_POINTS], @[DATABOX_BARS] and @[DATABOX_NOT_DISPLAYED]
 //!
 //!
 
-Databox show_cross( )
+Databox show_cross( );
 //!
 
-Databox show_rulers( )
+Databox show_rulers( );
 //!
 
-Databox show_scrollbars( )
+Databox show_scrollbars( );
 //!

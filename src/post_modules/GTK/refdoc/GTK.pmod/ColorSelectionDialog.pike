@@ -13,29 +13,30 @@
 //! Called when the color is changed
 //!
 //!
+
 inherit Window;
 
-static ColorSelectionDialog create( string title )
+static ColorSelectionDialog create( string title );
 //! Create a new color selection dialog with the specified title.
 //!
 //!
 
-GTK.Button get_cancel_button( )
+GTK.Button get_cancel_button( );
 //! Return the cancel button widget.
 //!
 //!
 
-GTK.ColorSelection get_colorsel( )
+GTK.ColorSelection get_colorsel( );
 //! Return the color selection widget
 //!
 //!
 
-GTK.Button get_help_button( )
+GTK.Button get_help_button( );
 //! Return the help button
 //!
 //!
 
-GTK.Button get_ok_button( )
+GTK.Button get_ok_button( );
 //! Return the ok button
 //!
 //!
