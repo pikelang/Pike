@@ -1,4 +1,4 @@
-/* $Id: master.pike.in,v 1.67 1999/11/04 17:00:14 grubba Exp $
+/* $Id: master.pike.in,v 1.68 1999/11/04 18:47:18 grubba Exp $
  * 
  * Master-file for Pike.
  *
@@ -1029,6 +1029,9 @@ string trim_file_name(string s)
   if(getenv("LONG_PIKE_ERRORS")) return s;
   if(getenv("SHORT_PIKE_ERRORS")) return BASENAME(s);
   string cwd=getcwd();
+  if (sizeof(cwd) && (cwd[-1] != '/')) {
+    cwd += "/";
+  }
   if(s[..sizeof(cwd)-1]==cwd) return s[sizeof(cwd)..];
   return s;
 }
@@ -1057,7 +1060,7 @@ void compile_error(string file,int line,string err)
     if (objectp(val) && val->compile_error) {
       val->compile_error(file, line, err);
     } else {
-      inhibit_compile_errors(file,line,err);
+      inhibit_compile_errors(file, line, err);
     }
   }
 }
@@ -1079,7 +1082,7 @@ void compile_warning(string file,int line,string err)
        ))
   {
     if(want_warnings)
-      werror(sprintf("%s:%d:Warning: %s\n",trim_file_name(file),line,err));
+      werror(sprintf("%s:%d: Warning: %s\n",trim_file_name(file),line,err));
   } else if (objectp(val) && val->compile_warning) {
     val->compile_warning(file, line, err);
   }
