@@ -5,7 +5,7 @@
 \*/
 /**/
 #include "global.h"
-RCSID("$Id: object.c,v 1.86 1999/10/24 05:56:33 hubbe Exp $");
+RCSID("$Id: object.c,v 1.87 1999/10/24 13:58:48 grubba Exp $");
 #include "object.h"
 #include "dynamic_buffer.h"
 #include "interpret.h"
@@ -357,6 +357,7 @@ struct object *get_master(void)
       }
       master_program=sp[-1].u.program;
       sp--;
+      dmalloc_touch_svalue(sp);
     }else{
       error("Couldn't load master program. (%s)\n",master_file);
     }
@@ -566,6 +567,7 @@ void really_free_object(struct object *o)
     }
 
     FREE_PROT(o);
+
     free((char *)o);
     GC_FREE();
   }
@@ -691,6 +693,7 @@ void object_index_no_free(struct svalue *to,
     apply_lfun(o,lfun,1);
     *to=sp[-1];
     sp--;
+    dmalloc_touch_svalue(sp);
   } else {
     object_index_no_free2(to,o,index);
   }
@@ -975,7 +978,9 @@ int object_equal_p(struct object *a, struct object *b, struct processing *p)
     if(p->pointer_a == (void *)a && p->pointer_b == (void *)b)
       return 1;
 
-  if(a->prog && b->prog && a->prog==b->prog)
+  /* NOTE: At this point a->prog and b->prog are equal (see test 2 above). */
+  /* FIXME: The code past this point can only return 0! */
+  if(a->prog)
   {
     int e;
 
@@ -1051,6 +1056,7 @@ struct array *object_indices(struct object *o)
       error("Bad return type from o->_indices()\n");
     a=sp[-1].u.array;
     sp--;
+    dmalloc_touch_svalue(sp);
   }
   return a;
 }
@@ -1078,6 +1084,7 @@ struct array *object_values(struct object *o)
       error("Bad return type from o->_values()\n");
     a=sp[-1].u.array;
     sp--;
+    dmalloc_touch_svalue(sp);
   }
   return a;
 }
