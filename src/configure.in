@@ -1,4 +1,4 @@
-AC_REVISION("$Id: configure.in,v 1.677 2003/01/16 21:07:18 neotron Exp $")
+AC_REVISION("$Id: configure.in,v 1.678 2003/01/21 17:10:36 grubba Exp $")
 AC_INIT(interpret.c)
 AC_CONFIG_HEADER(machine.h)
 
@@ -3074,6 +3074,7 @@ LIBOBJS="${OLD_LIBOBJS}"
 AC_FUNC_MMAP
 
 AC_CHECK_FUNCS( \
+ _alldiv \
  _crypt \
  poll \
  bcopy \
