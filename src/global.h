@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: global.h,v 1.90 2003/04/30 14:17:05 grubba Exp $
+|| $Id: global.h,v 1.91 2003/05/01 15:59:19 grubba Exp $
 */
 
 #ifndef GLOBAL_H
@@ -181,113 +181,8 @@ void *alloca();
 #undef HAVE_WINDOWS_H
 #endif
 
-
-/* we here define a few types with more defined values */
-
-/* First INT64
- *
- * Select variants in portability order:
- *   long	C89/LP64
- *   long long	C99 & gcc2
- *   __int64	lc & icc
- */
-#if SIZEOF_LONG >= 8
-# define INT64 long
-# define SIZEOF_INT64 SIZEOF_LONG
-# define MAX_INT64 LONG_MAX
-# define MIN_INT64 LONG_MIN
-#elif SIZEOF_LONG_LONG - 0 >= 8
-# define INT64 long long
-# define SIZEOF_INT64 SIZEOF_LONG_LONG
-# ifdef LLONG_MAX
-#  define MAX_INT64 LLONG_MAX
-#  define MIN_INT64 LLONG_MIN
-# elif defined(LONG_LONG_MAX)
-#  define MAX_INT64 LONG_LONG_MAX
-#  define MIN_INT64 LONG_LONG_MIN
-# else
-#  define MAX_INT64 0x7fffffffffffffffLL
-#  define MIN_INT64 (-0x7fffffffffffffffLL - 1LL)
-# endif
-#elif SIZEOF___INT64 - 0 >= 8
-# define INT64 __int64
-# define SIZEOF_INT64 SIZEOF___INT64
-# define MAX_INT64 _I64_MAX
-# define MIN_INT64 _I64_MIN
-#endif
-
-#if SIZEOF_SHORT >= 4
-#define INT32 short
-#else
-#if SIZEOF_INT >= 4
-#define INT32 int
-#else
-#define INT32 long
-#endif
-#endif
-
-#define MAX_INT32 2147483647
-#define MIN_INT32 (-2147483647-1)
-
-#if defined (WITH_SHORT_INT)
-
-#define MAX_INT_TYPE	SHRT_MAX
-#define MIN_INT_TYPE	SHRT_MIN
-#define PRINTPIKEINT	"h"
-
-#elif defined (WITH_INT_INT)
-
-#define MAX_INT_TYPE	INT_MAX
-#define MIN_INT_TYPE	INT_MIN
-#define PRINTPIKEINT	""
-
-#elif defined (WITH_LONG_INT)
-
-#define MAX_INT_TYPE	LONG_MAX
-#define MIN_INT_TYPE	LONG_MIN
-#define PRINTPIKEINT	"l"
-
-#elif defined (WITH_LONG_LONG_INT)
-
-#ifdef LLONG_MAX
-#define MAX_INT_TYPE	LLONG_MAX
-#define MIN_INT_TYPE	LLONG_MIN
-#else
-#define MAX_INT_TYPE	LONG_LONG_MAX
-#define MIN_INT_TYPE	LONG_LONG_MIN
-#endif
-#define PRINTPIKEINT	"ll"
-
-#endif
-
-#if SIZEOF_INT_TYPE - 0 == 0
-#error Unsupported type chosen for native pike integers.
-#endif
-
-#if SIZEOF_INT_TYPE != 4
-#define INT_TYPE_INT32_CONVERSION
-#endif
-
-#if defined (WITH_LONG_DOUBLE_PRECISION_SVALUE)
-#define PRINTPIKEFLOAT	"L"
-#elif defined (WITH_DOUBLE_PRECISION_SVALUE)
-#define PRINTPIKEFLOAT	""
-#else
-#define PRINTPIKEFLOAT	""
-#endif
-
-#if SIZEOF_FLOAT_TYPE - 0 == 0
-#error Unsupported type chosen for pike floats.
-#endif
-
-#define INT16 short
-#define INT8 char
-
-#ifdef INT64
-#define LONGEST INT64
-#else
-#define LONGEST INT32
-#endif
+/* Get INT64, INT32, INT16, INT8, et al. */
+#include "pike_int_types.h"
 
 #define SIZE_T unsigned INT32
 
@@ -328,6 +223,61 @@ struct b8_t_s { B4_T x,y; };
 #if defined(B8_T)
 struct b16_t_s { B8_T x,y; };
 #define B16_T struct b16_t_s
+#endif
+
+/* INT_TYPE stuff */
+#ifndef MAX_INT_TYPE
+# if defined (WITH_SHORT_INT)
+
+#  define MAX_INT_TYPE	SHRT_MAX
+#  define MIN_INT_TYPE	SHRT_MIN
+#  define PRINTPIKEINT	"h"
+
+# elif defined (WITH_INT_INT)
+
+#  define MAX_INT_TYPE	INT_MAX
+#  define MIN_INT_TYPE	INT_MIN
+#  define PRINTPIKEINT	""
+
+# elif defined (WITH_LONG_INT)
+
+#  define MAX_INT_TYPE	LONG_MAX
+#  define MIN_INT_TYPE	LONG_MIN
+#  define PRINTPIKEINT	"l"
+
+# elif defined (WITH_LONG_LONG_INT)
+
+#  ifdef LLONG_MAX
+#   define MAX_INT_TYPE	LLONG_MAX
+#   define MIN_INT_TYPE	LLONG_MIN
+#  else
+#   define MAX_INT_TYPE	LONG_LONG_MAX
+#   define MIN_INT_TYPE	LONG_LONG_MIN
+#  endif
+#  define PRINTPIKEINT	"ll"
+
+# endif
+#endif
+
+#if SIZEOF_INT_TYPE - 0 == 0
+# error Unsupported type chosen for native pike integers.
+#endif
+
+#if SIZEOF_INT_TYPE != 4
+# define INT_TYPE_INT32_CONVERSION
+#endif
+
+/* FLOAT_TYPE stuff */
+#if defined (WITH_LONG_DOUBLE_PRECISION_SVALUE)
+#define PRINTPIKEFLOAT	"L"
+#elif defined (WITH_DOUBLE_PRECISION_SVALUE)
+#define PRINTPIKEFLOAT	""
+#else
+#define PRINTPIKEFLOAT	""
+#endif
+
+#if SIZEOF_FLOAT_TYPE - 0 == 0
+#error Unsupported type chosen for pike floats.
 #endif
 
 typedef unsigned char p_wchar0;
