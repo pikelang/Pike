@@ -1,5 +1,5 @@
 //
-// $Id: connection.pike,v 1.37 2004/07/05 17:01:53 grubba Exp $
+// $Id: connection.pike,v 1.38 2004/08/10 09:40:15 grubba Exp $
 
 #pike __REAL_VERSION__
 //#pragma strict_types
@@ -10,6 +10,14 @@
 //! states, packet queues. This object is responsible for receiving and
 //! sending packets, processing handshake packets, and providing a clear
 //! text packages for some application.
+
+// SSL/TLS Protocol Specification documents:
+//
+// SSL 2		http://wp.netscape.com/eng/security/SSL_2.html
+// SSL 3.0		http://wp.netscape.com/eng/ssl3/draft302.txt
+//			(aka draft-freier-ssl-version3-02.txt).
+// TLS 1.0 (SSL 3.1)	RFC 2246 "The TLS Protocol Version 1.0".
+// TLS 1.1 (SSL 3.2)	draft-ietf-tls-rfc2246-bis
 
 #if constant(SSL.Cipher.CipherAlgorithm)
 
