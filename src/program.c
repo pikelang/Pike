@@ -2,11 +2,11 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: program.c,v 1.478 2003/09/08 15:28:14 mast Exp $
+|| $Id: program.c,v 1.479 2003/09/09 08:22:05 mast Exp $
 */
 
 #include "global.h"
-RCSID("$Id: program.c,v 1.478 2003/09/08 15:28:14 mast Exp $");
+RCSID("$Id: program.c,v 1.479 2003/09/09 08:22:05 mast Exp $");
 #include "program.h"
 #include "object.h"
 #include "dynamic_buffer.h"
@@ -4709,10 +4709,10 @@ void program_index_no_free(struct svalue *to, struct program *p,
  *     1. char		The number.
  *   Else if -32768 <= n < 32768:
  *     1. char		-127 (marker).
- *     2. short		The number stored in native byte order.
+ *     2. short		The number stored in big endian order.
  *   Else:
  *     1. char		-128 (marker).
- *     2. int		The number stored in native byte order.
+ *     2. int		The number stored in big endian order.
  *
  * Whenever the filename changes, a filename entry followed by a line
  * number entry is stored. If only the line number changes, a line
