@@ -1,4 +1,4 @@
-AC_REVISION("$Id: configure.in,v 1.223 1998/07/26 10:28:41 hubbe Exp $")
+AC_REVISION("$Id: configure.in,v 1.224 1998/07/29 00:56:43 marcus Exp $")
 AC_INIT(interpret.c)
 AC_CONFIG_HEADER(machine.h)
 
@@ -53,6 +53,32 @@ pike_cv_prog_CC="$CC"
 AC_PROG_CC
 AC_ISC_POSIX
 AC_MINIX
+
+if test $ac_cv_prog_gcc = yes; then
+  AC_MSG_CHECKING(for libgcc file name)
+  AC_CACHE_VAL(pike_cv_libgcc_filename,
+  [
+    pike_cv_libgcc_filename="`${CC-cc} -print-libgcc-file-name`"
+    if test -z "$pike_cv_libgcc_filename"; then
+      pike_cv_libgcc_filename=no
+    else
+       if test -f "$pike_cv_libgcc_filename"; then
+         :
+       else
+         pike_cv_libgcc_filename=no
+       fi
+    fi
+  ])
+  AC_MSG_RESULT($pike_cv_libgcc_filename)
+  if test x"$pike_cv_libgcc_filename" = xno; then
+    LIBGCC=""
+  else
+    LIBGCC="$pike_cv_libgcc_filename"
+  fi
+else
+  LIBGCC=""
+fi
+AC_SUBST(LIBGCC)
 
 #############################################################################
 
@@ -2535,6 +2561,7 @@ echo "CPPFLAGS:      $CPPFLAGS"
 echo "CFLAGS:        $CFLAGS"
 echo "CCSHARED:      $CCSHARED"
 echo "LINKFORSHARED: $LINKFORSHARED"
+echo "LIBGCC:        $LIBGCC"
 echo "WARN:          $WARN"
 echo "OPTIMIZE:      $OPTIMIZE"
 echo "LDFLAGS:       $LDFLAGS"
