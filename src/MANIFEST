@@ -365,7 +365,7 @@ Core runtime support
     Handling of types in pike.
 
   security.c
-  security.h
+  pike_security.h
     The pike security system.
 
   signal_handler.c

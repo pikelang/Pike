@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: nt.c,v 1.62 2003/12/12 17:43:24 nilsson Exp $
+|| $Id: nt.c,v 1.63 2004/04/06 13:00:50 nilsson Exp $
 */
 
 /*
@@ -56,7 +56,7 @@
 #include "interpret.h"
 #include "operators.h"
 #include "stuff.h"
-#include "security.h"
+#include "pike_security.h"
 
 #define sp Pike_sp
 

@@ -2,12 +2,12 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: file.c,v 1.316 2004/04/06 09:44:14 grubba Exp $
+|| $Id: file.c,v 1.317 2004/04/06 13:00:49 nilsson Exp $
 */
 
 #define NO_PIKE_SHORTHAND
 #include "global.h"
-RCSID("$Id: file.c,v 1.316 2004/04/06 09:44:14 grubba Exp $");
+RCSID("$Id: file.c,v 1.317 2004/04/06 13:00:49 nilsson Exp $");
 #include "fdlib.h"
 #include "pike_netlib.h"
 #include "interpret.h"
@@ -21,7 +21,7 @@ RCSID("$Id: file.c,v 1.316 2004/04/06 09:44:14 grubba Exp $");
 #include "fd_control.h"
 #include "module_support.h"
 #include "operators.h"
-#include "security.h"
+#include "pike_security.h"
 #include "bignum.h"
 #include "builtin_functions.h"
 #include "gc.h"

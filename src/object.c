@@ -2,11 +2,11 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: object.c,v 1.254 2004/04/04 21:23:19 mast Exp $
+|| $Id: object.c,v 1.255 2004/04/06 13:00:44 nilsson Exp $
 */
 
 #include "global.h"
-RCSID("$Id: object.c,v 1.254 2004/04/04 21:23:19 mast Exp $");
+RCSID("$Id: object.c,v 1.255 2004/04/06 13:00:44 nilsson Exp $");
 #include "object.h"
 #include "dynamic_buffer.h"
 #include "interpret.h"
@@ -24,7 +24,7 @@ RCSID("$Id: object.c,v 1.254 2004/04/04 21:23:19 mast Exp $");
 #include "cpp.h"
 #include "builtin_functions.h"
 #include "cyclic.h"
-#include "security.h"
+#include "pike_security.h"
 #include "module_support.h"
 #include "fdlib.h"
 #include "mapping.h"

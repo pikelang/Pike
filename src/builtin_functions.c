@@ -2,11 +2,11 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: builtin_functions.c,v 1.535 2004/04/01 15:44:56 grubba Exp $
+|| $Id: builtin_functions.c,v 1.536 2004/04/06 13:00:40 nilsson Exp $
 */
 
 #include "global.h"
-RCSID("$Id: builtin_functions.c,v 1.535 2004/04/01 15:44:56 grubba Exp $");
+RCSID("$Id: builtin_functions.c,v 1.536 2004/04/06 13:00:40 nilsson Exp $");
 #include "interpret.h"
 #include "svalue.h"
 #include "pike_macros.h"
@@ -38,7 +38,7 @@ RCSID("$Id: builtin_functions.c,v 1.535 2004/04/01 15:44:56 grubba Exp $");
 #include "opcodes.h"
 #include "cyclic.h"
 #include "signal_handler.h"
-#include "security.h"
+#include "pike_security.h"
 #include "builtin_functions.h"
 #include "bignum.h"
 #include "peep.h"

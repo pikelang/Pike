@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: array.c,v 1.156 2004/03/16 14:09:23 mast Exp $
+|| $Id: array.c,v 1.157 2004/04/06 13:00:40 nilsson Exp $
 */
 
 #include "global.h"
@@ -20,13 +20,13 @@
 #include "pike_memory.h"
 #include "gc.h"
 #include "main.h"
-#include "security.h"
+#include "pike_security.h"
 #include "stuff.h"
 #include "bignum.h"
 #include "cyclic.h"
 #include "multiset.h"
 
-RCSID("$Id: array.c,v 1.156 2004/03/16 14:09:23 mast Exp $");
+RCSID("$Id: array.c,v 1.157 2004/04/06 13:00:40 nilsson Exp $");
 
 PMOD_EXPORT struct array empty_array=
 {

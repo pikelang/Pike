@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: system.c,v 1.168 2004/01/13 00:47:37 nilsson Exp $
+|| $Id: system.c,v 1.169 2004/04/06 13:00:52 nilsson Exp $
 */
 
 /*
@@ -20,7 +20,7 @@
 #include "system_machine.h"
 #include "system.h"
 
-RCSID("$Id: system.c,v 1.168 2004/01/13 00:47:37 nilsson Exp $");
+RCSID("$Id: system.c,v 1.169 2004/04/06 13:00:52 nilsson Exp $");
 
 #ifdef HAVE_WINDOWS_H
 #include <windows.h>
@@ -36,7 +36,7 @@ RCSID("$Id: system.c,v 1.168 2004/01/13 00:47:37 nilsson Exp $");
 #include "builtin_functions.h"
 #include "constants.h"
 #include "pike_memory.h"
-#include "security.h"
+#include "pike_security.h"
 #include "bignum.h"
 #include "pike_rusage.h"
 #include "pike_netlib.h"

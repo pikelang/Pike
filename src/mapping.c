@@ -2,11 +2,11 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: mapping.c,v 1.178 2004/03/22 19:35:44 mast Exp $
+|| $Id: mapping.c,v 1.179 2004/04/06 13:00:43 nilsson Exp $
 */
 
 #include "global.h"
-RCSID("$Id: mapping.c,v 1.178 2004/03/22 19:35:44 mast Exp $");
+RCSID("$Id: mapping.c,v 1.179 2004/04/06 13:00:43 nilsson Exp $");
 #include "main.h"
 #include "object.h"
 #include "mapping.h"
@@ -20,7 +20,7 @@ RCSID("$Id: mapping.c,v 1.178 2004/03/22 19:35:44 mast Exp $");
 #include "las.h"
 #include "gc.h"
 #include "stralloc.h"
-#include "security.h"
+#include "pike_security.h"
 #include "block_alloc.h"
 #include "opcodes.h"
 #include "stuff.h"

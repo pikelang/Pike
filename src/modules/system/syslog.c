@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: syslog.c,v 1.22 2003/09/07 00:04:29 nilsson Exp $
+|| $Id: syslog.c,v 1.23 2004/04/06 13:00:52 nilsson Exp $
 */
 
 /*
@@ -22,7 +22,7 @@
 
 #ifdef HAVE_SYSLOG
 
-RCSID("$Id: syslog.c,v 1.22 2003/09/07 00:04:29 nilsson Exp $");
+RCSID("$Id: syslog.c,v 1.23 2004/04/06 13:00:52 nilsson Exp $");
 
 #include "interpret.h"
 #include "svalue.h"
@@ -30,7 +30,7 @@ RCSID("$Id: syslog.c,v 1.22 2003/09/07 00:04:29 nilsson Exp $");
 #include "threads.h"
 #include "module_support.h"
 #include "builtin_functions.h"
-#include "security.h"
+#include "pike_security.h"
 
 #ifdef HAVE_SYSLOG_H
 #include <syslog.h>

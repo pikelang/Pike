@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: security.c,v 1.45 2003/09/08 20:05:21 mast Exp $
+|| $Id: security.c,v 1.46 2004/04/06 13:00:47 nilsson Exp $
 */
 
 #include "global.h"
@@ -45,7 +45,7 @@
 #include "mapping.h"
 #include "multiset.h"
 #include "gc.h"
-#include "security.h"
+#include "pike_security.h"
 #include "module_support.h"
 #include "constants.h"
 
