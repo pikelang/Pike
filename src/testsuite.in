@@ -1,4 +1,4 @@
-test_true([["$Id: testsuite.in,v 1.567 2002/11/25 12:09:30 grubba Exp $"]]);
+test_true([["$Id: testsuite.in,v 1.568 2002/11/26 18:44:05 nilsson Exp $"]]);
 
 // This triggered a bug only if run sufficiently early.
 test_compile_any([[#pike 7.2]])
@@ -2922,13 +2922,13 @@ test_any([[float p=2.0; p--; return p;]],1.0)
 test_any([[float p=2.0; return --p;]],1.0)
 
 test_compile_error(int foo() { LJjjjjJJJ ; })
-test_true(clone(class c { constant i=1; })->i)
-test_true(clone(class c { constant i=0; mixed `->(string s) { if(s=="i") return 1; }})->i)
-test_true(clone(class c { constant i=1; mixed `->(string s) { return 0; }})["i"])
-test_true(clone(class c { constant i=0; mixed `[](string s) { if(s=="i") return 1; }})["i"])
-test_true(clone(class c { optional constant i=0; mixed `[](string s) { if(s=="i") return 1; }})["i"])
-test_true(clone(class c { mixed `[]=(mixed a, mixed b) { if(a!=b) throw(1); }})[1]=1)
-test_true(clone(class c { mixed `->=(mixed a, mixed b) { if(a!=b) throw(1); }})->i="i")
+test_true(class c { constant i=1; }()->i)
+test_true(class c { constant i=0; mixed `->(string s) { if(s=="i") return 1; }}()->i)
+test_true(class c { constant i=1; mixed `->(string s) { return 0; }}()["i"])
+test_true(class c { constant i=0; mixed `[](string s) { if(s=="i") return 1; }}()["i"])
+test_true(class c { optional constant i=0; mixed `[](string s) { if(s=="i") return 1; }}()["i"])
+test_true(class c { mixed `[]=(mixed a, mixed b) { if(a!=b) throw(1); }}()[1]=1)
+test_true(class c { mixed `->=(mixed a, mixed b) { if(a!=b) throw(1); }}()->i="i")
 
 test_eq((["static":42])->static,42)
 
@@ -3229,12 +3229,12 @@ test_any([[object o=Regexp("foo"); return objectp(o);]],1)
 test_any([[object o=Regexp("foo"); return object_program(o);]],Regexp)
 test_any([[class Test {}; object(Test) o=Test(); return object_program(o);]],Test)
 test_define_program(test,[[constant foo = 1; int a() { return foo; }]])
-test_true(new(test)->a())
+test_true(test()->a())
 test_program(inherit test;)
 test_program(inherit test; int a() { return foo; } )
 test_define_program(test,[[class TEST { int a() { return 1; } }]])
 test_program(inherit test; inherit TEST; )
-
+test_do(add_constant("test");)
 
 test_any([[
   /* don't save parent */
@@ -3421,8 +3421,8 @@ cond([[all_constants()->thread_create]],
   test_do(Thread.Condition()->signal())
   test_do(Thread.Condition()->broadcast())
 
-  test_true(objectp(clone(Thread.Fifo)))
-  test_true(objectp(clone(Thread.Queue)))
+  test_true(objectp(Thread.Fifo()))
+  test_true(objectp(Thread.Queue()))
 
   test_any([[object o=Thread.Queue(); thread_create(lambda(object f) { for(int e=0;e<10000;e++) f->write(random(4711)); f->write(-1); },o); int tmp=0; while(o->read() != -1) tmp++; return tmp;]],10000)
   test_any([[object o=Thread.Fifo(); thread_create(lambda(object f) { for(int e=0;e<10000;e++) f->write(random(4711)); f->write(-1); },o); int tmp=0; while(o->read() != -1) tmp++; return tmp;]],10000)
@@ -4186,6 +4186,8 @@ ifefun(gc,
   }]], ({0}));
 
 ]])
+test_do(add_constant("kablutt");)
+test_do(add_constant("blatinka");)
 
 ifefun(gc,
 [[
@@ -5795,12 +5797,12 @@ cond([[all_constants()->_verify_internals]],
 ]])
 
 test_eq("\377"[0],255)
-test_do(add_constant("foo",clone(class c {int i;})))
+test_do(add_constant("foo",class c {int i;}()))
 test_eq(foo->i,0)
 test_do(foo->i=17)
 test_eq(foo->i,17)
 test_do(add_constant("foo"));
-test_do(add_constant("foo",clone(class c {array(int) i=({0});})))
+test_do(add_constant("foo",class c {array(int) i=({0});}()))
 test_eq(foo->i[0],0)
 test_do(foo->i[0]=17)
 test_eq(foo->i[0],17)
@@ -5840,11 +5842,11 @@ test_eq([[sscanf(sprintf("%Ox", _typeof(this_object))-" ",
 
 // class
 test_true(programp(class c {}))
-test_true(functionp(clone(class c { int foo() { return 1; }})->foo))
-test_true(clone(class c { int foo() { return 1; }})->foo())
-test_true(clone(class c { int i=1; })->i)
-test_false(clone(class c { int foo() { return 1; }})->bar)
-test_eq(clone(clone(class c { program foo=class c { int i=20; }; })->foo)->i,20)
+test_true(functionp(class c { int foo() { return 1; }}()->foo))
+test_true(class c { int foo() { return 1; }}()->foo())
+test_true(class c { int i=1; }()->i)
+test_false(class c { int foo() { return 1; }}()->bar)
+test_eq(class c { program foo=class c { int i=20; }; }()->foo()->i,20)
 
 // class()
 test_true(programp(class c(){}))
@@ -5912,7 +5914,8 @@ test_program(int foo() { return 17;} mixed a() { return foo() == 17; })
 test_any([[mixed a; a=2; a=a*3; return a]],6)
 test_any([[mixed a = ({1}); a=a+({2}); return equal(a,({1,2}))]],1)
 test_define_program(test,[[int foo() { return 17; }]])
-test_any(function bar=clone(test)->foo; return bar(),17)
+test_any(function bar=test()->foo; return bar(),17)
+test_do(add_constant("test"))
 
 // sscanf
 test_any([[mixed a; return sscanf("11","%d",a)]],1)
@@ -6471,21 +6474,22 @@ test_any(mixed a=([1:1]); a[0]=0; return equal(a,([1:1,0:0])),1)
 test_any(mixed a=([1:1]); a[1]=0; return equal(a,([1:0])),1)
 
 test_define_program(test,[[public int q,w,e,r; mixed t; mixed getw() { return w; } void setw(int _) { w=_; }]])
-test_eq(clone(test)->q,0)
-test_eq(clone(test)->w,0)
-test_eq(clone(test)->e,0)
-test_eq(clone(test)->r,0)
-test_eq(clone(test)->getw(),0)
-test_any(object o=clone(test); o->setw(17); return o->w,17)
-test_any(object o=clone(test); o->w=17; return o->getw(),17)
+test_eq(test()->q,0)
+test_eq(test()->w,0)
+test_eq(test()->e,0)
+test_eq(test()->r,0)
+test_eq(test()->getw(),0)
+test_any(object o=test(); o->setw(17); return o->w,17)
+test_any(object o=test(); o->w=17; return o->getw(),17)
 
-test_eq(clone(test)["q"],0)
-test_eq(clone(test)["w"],0)
-test_eq(clone(test)["e"],0)
-test_eq(clone(test)["r"],0)
-test_eq(clone(test)["getw"](),0)
-test_any(object o=clone(test); o["setw"](17); return o["w"],17)
-test_any(object o=clone(test); o["w"]=17; return o["getw"](),17)
+test_eq(test()["q"],0)
+test_eq(test()["w"],0)
+test_eq(test()["e"],0)
+test_eq(test()["r"],0)
+test_eq(test()["getw"](),0)
+test_any(object o=test(); o["setw"](17); return o["w"],17)
+test_any(object o=test(); o["w"]=17; return o["getw"](),17)
+test_do(add_constant("test");)
 
 // testing range
 test_eq("foObar"[0..0],"f")
@@ -7156,7 +7160,7 @@ test_eval_error([[
   cpp ("x y z", "-", 0, handler());
 ]]);
 
-test_any(int e; object o=clone(Stdio.File); if(!o->open("conftest.h","wct")) return -1; e=o->write("return 17;\n"); if(!o->close()) return -1; return e,11)
+test_any(int e; object o=Stdio.File(); if(!o->open("conftest.h","wct")) return -1; e=o->write("return 17;\n"); if(!o->close()) return -1; return e,11)
 
 test_compile_any([[import Stdio.Readline; mapping x=([]);]]);
 
@@ -7791,7 +7795,6 @@ test_eq(1,call_function(lambda(int a){ return a; },1))
 test_eq(1,call_function(intp,1))
 
 // - clone
-// clone is already tested a lot by this script
 test_true(objectp(clone(compile_string("int foo() { return 17; }"))))
 test_eq(clone(compile_string("int foo() { return 17; }"))->foo(),17)
 
@@ -7926,14 +7929,13 @@ test_false(crypt("h","hej"))
 test_true(stringp(ctime(0)))
 
 // - destruct
-// FIXME put tests for destruct here.
 test_do(add_constant("PROG",compile_string("int foo() { return 1; }")));
-test_any([[object o=clone(PROG); destruct(o); return o]],0);
-test_any([[object o=clone(PROG); destruct(o); return objectp(o)]],0);
-test_any([[array(object) o=({clone(PROG)}); destruct(o[0]); return o-({0}) ]],({}));
-test_any([[mapping o=(["foo":clone(PROG)]); destruct(o["foo"]); return o["foo"]; ]],0);
-dnl test_any([[object t; mapping o=([t=clone(PROG):"foo"]); destruct(t); return sizeof(o)]],0);
-test_do([[object t; array(object) o=({}); o+=({t=clone(PROG)}); destruct(t); o=({});]]);
+test_any([[object o=PROG(); destruct(o); return o]],0);
+test_any([[object o=PROG(); destruct(o); return objectp(o)]],0);
+test_any([[array(object) o=({PROG()}); destruct(o[0]); return o-({0}) ]],({}));
+test_any([[mapping o=(["foo":PROG()]); destruct(o["foo"]); return o["foo"]; ]],0);
+dnl test_any([[object t; mapping o=([t=PROG():"foo"]); destruct(t); return sizeof(o)]],0);
+test_do([[object t; array(object) o=({}); o+=({t=PROG()}); destruct(t); o=({});]]);
 test_do(add_constant("PROG"))
 
 // - Array.diff
@@ -9063,7 +9065,10 @@ test_program(inherit test; inherit test2; mixed a() { setw(20); setb(22); return
 test_program(inherit test2; inherit test; mixed a() { w=20; b=22; return getw()==20 && getb()==22; })
 test_program(inherit test2; inherit test; mixed a() { setw(20); setb(22); return w==20 && b==22; })
 
-test_eval_error(return clone(class c{int i;void foo(){ destruct(this_object());i=0;return i;}})->foo())
+test_do(add_constant("test"))
+test_do(add_constant("test2"))
+
+test_eval_error(return class c{int i;void foo(){ destruct(this_object());i=0;return i;}}()->foo())
 
 // master defined functions
 
