@@ -1,5 +1,5 @@
 #
-# $Id: Makefile.in,v 1.338 2002/11/27 11:58:28 marcus Exp $
+# $Id: Makefile.in,v 1.339 2002/12/06 17:13:51 mirar Exp $
 #
 
 # This line is needed on some machines.
@@ -525,6 +525,16 @@ verify: module_testsuites testsuite tinstall
 	  sprsh `pwd`/test-install/pike/*/bin/pike.exe -DNOT_INSTALLED $(PIKEOPTS) $(TMP_BINDIR)/test_pike.pike $$args ; \
 	fi
 
+shoot: tinstall
+	PIKE_MODULE_PATH=""; PIKE_INCLUDE_PATH=""; \
+	if test "$(TESTARGS)" = "" ; then args="-a -v" ; else \
+	  args="$(TESTARGS)" ; fi; \
+	if test -f ./test-pike ; then \
+	  ./test-pike -DNOT_INSTALLED $(PIKEOPTS) --shoot; \
+	else \
+	  sprsh `pwd`/test-install/pike/*/bin/pike.exe -DNOT_INSTALLED $(PIKEOPTS) --shoot ; \
+	fi
+
 verify_installed: module_testsuites testsuite master-stamp
 	if test "$(TESTARGS)" = "" ; then args="-a -v" ; else \
 	  args="$(TESTARGS)" ; fi; \
@@ -568,6 +578,9 @@ run_hilfe:
 
 feature_list:
 	$(RUNPIKE) $(TMP_BINDIR)/feature_list
+
+run_shoot:
+	$(RUNPIKE) $(ARGS) --shoot
 
 lib: Makefile
 	@for d in lib lib/modules lib/include; do \
