@@ -2,11 +2,11 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: builtin_functions.c,v 1.564 2004/07/14 13:57:29 grubba Exp $
+|| $Id: builtin_functions.c,v 1.565 2004/09/17 15:02:44 nilsson Exp $
 */
 
 #include "global.h"
-RCSID("$Id: builtin_functions.c,v 1.564 2004/07/14 13:57:29 grubba Exp $");
+RCSID("$Id: builtin_functions.c,v 1.565 2004/09/17 15:02:44 nilsson Exp $");
 #include "interpret.h"
 #include "svalue.h"
 #include "pike_macros.h"
@@ -3081,6 +3081,8 @@ static struct pike_string *replace_many(struct pike_string *str,
       (array_fix_type_field(to) & ~BIT_STRING) )
     Pike_error("replace: to array not array(string).\n");
 
+  if( from->size > (INT32)(ULONG_MAX/sizeof(struct tupel)) )
+    Pike_error("Array too large.\n");
   ctx.v=(struct tupel *)xalloc(sizeof(struct tupel)*from->size);
   init_string_builder(&ctx.ret,str->size_shift);
   SET_ONERROR (uwp, free_replace_many_context, &ctx);
