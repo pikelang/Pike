@@ -1,5 +1,5 @@
 /*
- * $Id: sql.pre.pike,v 1.2 1997/01/11 20:54:12 grubba Exp $
+ * $Id: sql.pre.pike,v 1.3 1997/01/12 02:34:46 grubba Exp $
  *
  * Implements the generic parts of the SQL-interface
  *
@@ -289,7 +289,7 @@ class sql {
     } else {
       res = query("show fields from \'" + table + "\'");
     }
-    res = map(res, lambda (mapping m) {
+    res = map(res, lambda (mapping m, string table) {
       foreach(indices(m), string str) {
 	/* Add the lower case variants */
 	string low_str = lower_case(str);
@@ -306,7 +306,7 @@ class sql {
 	m["table"] = table;
       }
       return(m);
-    } );
+    }, table);
     return(res);
   }
 }
