@@ -5,7 +5,7 @@
 \*/
 
 /*
- * $Id: global.h,v 1.34 1999/05/12 04:41:36 hubbe Exp $
+ * $Id: global.h,v 1.35 1999/06/19 20:00:09 hubbe Exp $
  */
 #ifndef GLOBAL_H
 #define GLOBAL_H
@@ -141,6 +141,11 @@ char *alloca ();
 #ifdef HAVE_MEMORY_H
 #include <memory.h>
 #undef HAVE_MEMORY_H
+#endif
+
+#ifdef HAVE_WINDOWS_H
+#include <windows.h>
+#undef HAVE_WINDOWS_H
 #endif
 
 
