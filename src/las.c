@@ -5,7 +5,7 @@
 \*/
 /**/
 #include "global.h"
-RCSID("$Id: las.c,v 1.166 2000/02/15 22:06:18 hubbe Exp $");
+RCSID("$Id: las.c,v 1.167 2000/03/02 01:58:08 hubbe Exp $");
 
 #include "language.h"
 #include "interpret.h"
@@ -177,6 +177,14 @@ INT32 count_args(node *n)
 
   case F_PUSH_ARRAY:
     return -1;
+
+  case F_APPLY:
+    if(CAR(n)->token == F_CONSTANT &&
+       CAR(n)->u.sval.type == T_FUNCTION &&
+       CAR(n)->u.sval.subtype == FUNCTION_BUILTIN &&
+       n->type == void_type_string)
+      return 0;
+    return 1;
 
   default:
     if(n->type == void_type_string) return 0;
