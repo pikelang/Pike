@@ -17,7 +17,7 @@ inherit .PikeObjects;
 
 class MetaData {
   string type;
-  string name; // if (type == "class" || type == "module")
+  string name; // if (type == "class", "module", "endmodule", or "endclass")
   array(PikeObject) decls = ({});
   string belongs = 0;
   string appears = 0;
@@ -30,11 +30,12 @@ constant METAKEYWORD = 1;          // @decl
 constant BRACEKEYWORD = 2;         // @i{ @}
 constant DELIMITERKEYWORD = 3;     // @param
 constant CONTAINERKEYWORD = 4;     // @mapping
-constant ENDKEYWORD = 5;
-constant ERRORKEYWORD = 6;
+constant SINGLEKEYWORD = 5;        // @deprecated
+constant ENDKEYWORD = 6;
+constant ERRORKEYWORD = 7;
 
-constant TEXTTOKEN = 7;
-constant ENDTOKEN = 8;
+constant TEXTTOKEN = 8;
+constant ENDTOKEN = 9;
 
 // The following is the "DTD" of
 mapping(string : int) keywordtype =
@@ -52,11 +53,12 @@ mapping(string : int) keywordtype =
   "tt" : BRACEKEYWORD,
   "ref" : BRACEKEYWORD,
 
+  "deprecated" : SINGLEKEYWORD,
+
   "example" : DELIMITERKEYWORD,
   "note" : DELIMITERKEYWORD,
   "param" : DELIMITERKEYWORD,
   "seealso" : DELIMITERKEYWORD,
-  "see_also" : DELIMITERKEYWORD,
 
   "mapping" : CONTAINERKEYWORD, "member" : DELIMITERKEYWORD,
   "multiset" : CONTAINERKEYWORD, "index" : DELIMITERKEYWORD,
@@ -74,7 +76,7 @@ mapping(string : array(string)) attributenames =
   "multiset" : ({ "name" }),
 ]);
 
-static constant standard = (< "note", "example", "seealso" >);
+static constant standard = (< "note", "example", "seealso", "deprecated" >);
 
 mapping(string : multiset(string)) allowedChildren =
 (["_general" : standard,
@@ -85,6 +87,9 @@ mapping(string : multiset(string)) allowedChildren =
   "dl"      : (< "item" >),
 ]);
 
+mapping(string : multiset(string)) allowGrouping =
+(["param" : (< "param" >),
+]);
 
 // argHandlers:
 //
@@ -95,12 +100,13 @@ mapping(string : multiset(string)) allowedChildren =
 //   attributes to put in the tag.
 //   If a string is returned, it is an XML fragment that gets inserted
 //   inside the tag.
-mapping(string : function(string, string :
-                          string|mapping(string : string))) argHandlers =
+mapping(string : function(string, string : string)
+        | function(string, string : mapping(string : string))) argHandlers =
 ([
   "member" : memberArgHandler,
   "elem" : elemArgHandler,
   "index" : indexArgHandler,
+  "deprecated" : deprArgHandler,
 ]);
 
 static string memberArgHandler(string keyword, string arg) {
@@ -109,11 +115,11 @@ static string memberArgHandler(string keyword, string arg) {
   //  werror("&&& %O\n", arg);
   Type t = parser->parseOrType();
   if (!t)
-    parseError("expected type, got %O", arg);
+    parseError("@member: expected type, got %O", arg);
   //  werror("%%%%%% got type == %O\n", t->xml());
   string s = parser->parseLiteral() || parser->parseIdents();
   if (!s)
-    parseError("expected indentifier or literal constant, got %O", arg);
+    parseError("@member: expected indentifier or literal constant, got %O", arg);
   parser->eat(EOF);
   return xmltag("type", t->xml())
     + xmltag("index", xmlquote(s));
@@ -124,7 +130,7 @@ static string elemArgHandler(string keyword, string arg) {
   .PikeParser parser = .PikeParser(arg);
   Type t = parser->parseOrType();
   if (!t)
-    parseError("expected type, got %O", arg);
+    parseError("@elem: expected type, got %O", arg);
   if (parser->peekToken() == "...") {
     t = VarargsType(t);
     parser->eat("...");
@@ -148,17 +154,33 @@ static string elemArgHandler(string keyword, string arg) {
     if (s2)
       return xmltag("maxindex", xmlquote(s2));
     else
-      parseError("expected identifier or literal");
+      parseError("@elem: expected identifier or literal");
 }
 
 static string indexArgHandler(string keyword, string arg) {
-  werror("indexArgHandler\n");
+  //  werror("indexArgHandler\n");
   .PikeParser parser = .PikeParser(arg);
   string s = parser->parseLiteral();
   if (!s)
-    parseError("expected identifier, got %O", arg);
+    parseError("@index: expected identifier, got %O", arg);
   parser->eat(EOF);
   return xmltag("value", xmlquote(s));
+}
+
+static string deprArgHandler(string keyword, string arg) {
+  .PikeParser parser = .PikeParser(arg);
+  if (parser->peekToken() == EOF)
+    return "";
+  string res = "";
+  for (;;) {
+    string s = parser->parseIdents();
+    if (!s)
+      parseError("@deprecated: expected list identifier, got %O", arg);
+    res += xmltag("name", s);
+    if (parser->peekToken() == EOF)
+      return res;
+    parser->eat(",");
+  }
 }
 
 static mapping(string : string) standardArgHandler(string keyword, string arg)
@@ -447,18 +469,28 @@ static class DocParserClass {
         res += opentag("text") + xmlText() + closetag("text");
         break;
       case ERRORKEYWORD:
-        werror("bosse larsson: %O\n", tokens);
+        //werror("bosse larsson: %O\n", tokens);
         parseError("unknown keyword: @" + tokens[0][0]);
     }
     for (;;) {
-      if (getTokenType(tokens[0]) != DELIMITERKEYWORD)
+      if (! (<SINGLEKEYWORD, DELIMITERKEYWORD>) [getTokenType(tokens[0])] )
         return res;
+
+      string single = 0;
+      array(string) keywords = ({});
       res += opentag("group");
-      while (getTokenType(tokens[0]) == DELIMITERKEYWORD) {
+      while ( (<SINGLEKEYWORD, DELIMITERKEYWORD>) [getTokenType(tokens[0])] ) {
         string keyword = tokens[0][0];
+        single = single || getTokenType(tokens[0]) == SINGLEKEYWORD && keyword;
         multiset(string) allow = allowedChildren[container];
         if (!allow || !allow[keyword])
           parseError("@" + keyword + " is not allowed inside @" + container);
+
+        multiset(string) allowGroup = allowGrouping[keyword] || ([]);
+        foreach (keywords, string k)
+          if (!allowGroup[k])
+            parseError("@" + keyword + " may not be grouped together with @" + k);
+        keywords += ({ keyword });
 
         string arg = tokens[0][1];
         res += "<" + keyword;
@@ -488,6 +520,8 @@ static class DocParserClass {
             ; // fall through
           }
         case CONTAINERKEYWORD:
+          if (single)
+            parseError("cannot have text after @" + single);
           res += opentag("text") + xmlText() + closetag("text");
       }
       res += closetag("group");
@@ -517,8 +551,8 @@ static class DocParserClass {
             parseError("@%s can not be combined with @%s", keyword, meta->type);
           meta->type = keyword;
           .PikeParser nameparser = .PikeParser(arg);
-          string s = nameparser->peekToken();
-          if (!isIdent(s))
+          string s = nameparser->readToken();
+          if (!isIdent(s) || nameparser->readToken() != EOF)
             parseError("expected %s name, got %O", keyword, s);
           meta->name = s;
           }
@@ -601,6 +635,13 @@ static class DocParserClass {
           if (i > 1)
             parseError("@%s must stand alone", keyword);
           meta->type = keyword;
+          .PikeParser nameparser = .PikeParser(arg);
+          string s = nameparser->peekToken();
+          if (s != EOF)
+            if (isIdent(s))
+              meta->name = s;
+            else
+              parseError("expected %s name, got %O", keyword, s);
           break;
 
         default:

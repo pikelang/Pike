@@ -112,6 +112,10 @@ static private class Extractor {
           extractorErrorAt(token->sourcePos,
                            "@%s without matching @end%s",
                            meta->type, meta->type);
+        if (endmeta->name && endmeta->name != meta->name)
+          extractorErrorAt(token->sourcePos,
+                           "'@end%s %s' does not match '@%s %s'",
+                           meta->type, endmeta->name, meta->type, meta->name);
         string endXML = p->doc("_general");
         if (endXML && endXML != "")
           extractorErrorAt(p->sourcePos,
@@ -152,6 +156,8 @@ static private class Extractor {
         return ({ "docgroup", d });
         }
         break;
+      case 0:
+        extractorErrorAt(token->sourcePos, "doc comment without destination");
       default:
         return 0;
     }
