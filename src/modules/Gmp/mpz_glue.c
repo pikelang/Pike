@@ -4,7 +4,7 @@
 ||| See the files COPYING and DISCLAIMER for more information.
 \*/
 #include "global.h"
-RCSID("$Id: mpz_glue.c,v 1.85 2001/01/30 23:37:38 hubbe Exp $");
+RCSID("$Id: mpz_glue.c,v 1.86 2001/02/02 14:53:31 grubba Exp $");
 #include "gmp_machine.h"
 
 #if defined(HAVE_GMP2_GMP_H) && defined(HAVE_LIBGMP2)
@@ -164,10 +164,17 @@ static void get_new_mpz(MP_INT *tmp, struct svalue *s)
 #ifdef AUTO_BIGNUM
        && s->u.object->prog != bignum_program
 #endif
-      )
-      Pike_error("Wrong type of object, cannot convert to mpz.\n");
-
-    mpz_set(tmp, OBTOMPZ(s->u.object));
+       ) {
+      if (s->u.object->prog) {
+	Pike_error("Wrong type of object (id:%d), cannot convert to mpz.\n",
+		   s->u.object->prog->id);
+      } else {
+	/* Destructed object. Use as zero. */
+	mpz_set_si(tmp, 0);
+      }
+    } else {
+      mpz_set(tmp, OBTOMPZ(s->u.object));
+    }
     break;
 #if 0    
   case T_STRING:
@@ -633,7 +640,7 @@ static MP_INT *debug_get_mpz(struct svalue *s, int throw_error)
   switch(s->type)
   {
   default:
-    MPZ_ERROR("Wrong type of object, cannot convert to mpz.\n");
+    MPZ_ERROR("Wrong type of value, cannot convert to mpz.\n");
     return 0;
 
   case T_INT:
@@ -642,6 +649,7 @@ static MP_INT *debug_get_mpz(struct svalue *s, int throw_error)
   case T_STRING:
   case T_ARRAY:
 #endif
+  use_as_int:
     o=clone_object(mpzmod_program,0);
     get_new_mpz(OBTOMPZ(o), s);
     free_svalue(s);
@@ -655,10 +663,17 @@ static MP_INT *debug_get_mpz(struct svalue *s, int throw_error)
        && s->u.object->prog != bignum_program
 #endif
       )
-      {
-	MPZ_ERROR("Wrong type of object, cannot convert to mpz.\n");
-	return 0;
+    {
+      if (s->u.object->prog) {
+	Pike_error("Wrong type of object (id:%d), cannot convert to mpz.\n",
+		   s->u.object->prog->id);
+      } else {
+	/* Destructed object. Use as zero. */
+	goto use_as_int;
       }
+      /* NOT_REACHED */
+      return 0;
+    }
     return (MP_INT *)s->u.object->storage;
   }
 #undef ERROR
