@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: cpp.c,v 1.155 2004/11/14 20:08:21 grubba Exp $
+|| $Id: cpp.c,v 1.156 2004/11/14 22:20:16 mast Exp $
 */
 
 #include "global.h"
@@ -1314,14 +1314,14 @@ static struct pike_string *filter_bom(struct pike_string *data)
     for(i = 0; i<len; i++) {
       if (ptr[i] == 0xfeff) {
 	if (i != j) {
-	  string_builder_append(&buf, MKPCHARP(ptr + j, 1), i - j);
+	  string_builder_binary_strcat1 (&buf, ptr + j, i - j);
 	  j = i+1;
 	}
       }
     }
     if ((j) && (i != j)) {
       /* Add the trailing string */
-      string_builder_append(&buf, MKPCHARP(ptr + j, 1), i - j);
+      string_builder_binary_strcat1 (&buf, ptr + j, i - j);
       free_string(data);
       data = finish_string_builder(&buf);
     } else {
@@ -1334,14 +1334,14 @@ static struct pike_string *filter_bom(struct pike_string *data)
     for(i = 0; i<len; i++) {
       if (ptr[i] == 0xfeff) {
 	if (i != j) {
-	  string_builder_append(&buf, MKPCHARP(ptr + j, 2), i - j);
+	  string_builder_binary_strcat2 (&buf, ptr + j, i - j);
 	  j = i+1;
 	}
       }
     }
     if ((j) && (i != j)) {
       /* Add the trailing string */
-      string_builder_append(&buf, MKPCHARP(ptr + j, 2), i - j);
+      string_builder_binary_strcat2 (&buf, ptr + j, i - j);
       free_string(data);
       data = finish_string_builder(&buf);
     } else {
