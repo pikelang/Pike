@@ -1,4 +1,4 @@
-stest_true([["$Id: testsuite.in,v 1.174 1999/06/03 06:10:02 hubbe Exp $"]])
+stest_true([["$Id: testsuite.in,v 1.175 1999/06/15 18:54:35 mirar Exp $"]])
 cond([[all_constants()->_verify_internals]],
 [[
   test_do(_verify_internals())
@@ -1234,6 +1234,8 @@ test_any([[mixed a; sscanf("\277\240\345\140\100\0\0\0","%8F",a); return a]],-0.
 test_equal([[array_sscanf("10 20 30","%d %d %d")]],[[({10,20,30})]])
 test_equal([[array_sscanf("1 2 3 4 5 6 7 8 9","%d %d %d %d %d %d %d %d %s")]],[[({1,2,3,4,5,6,7,8,"9"})]])
 test_equal([[array_sscanf("abc","%{%c%}")]],[[ ({ ({ ({'a'}), ({'b'}), ({'c'}) }) }) ]])
+
+test_true([[array_sscanf("(02323) 23455 344","%{%*[^0-9]%[0-9]%}")]])
 
 // Basics
 test_true(1)
