@@ -1,4 +1,5 @@
 /*.bat
+/*.err
 /*.lk
 /*.o
 /Makefile
@@ -26,3 +27,4 @@
 /test3.tgt
 /test4.c
 /testsuite
+/y.output
