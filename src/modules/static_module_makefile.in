@@ -1,5 +1,5 @@
 #
-# $Id: static_module_makefile.in,v 1.43 1999/03/06 06:18:33 hubbe Exp $
+# $Id: static_module_makefile.in,v 1.44 1999/03/10 02:42:48 hubbe Exp $
 #
 
 
@@ -63,7 +63,7 @@ $(SRCDIR)/configure: $(SRCDIR)/configure.in $(PIKE_SRC_DIR)/aclocal.m4
 	else :; fi
 
 config.status: $(SRCDIR)/configure
-	./config.status --recheck
+	CFLAGS="$(REAL_CFLAGS)" LDFLAGS="$(REAL_LDFLAGS)" CPPFLAGS="$(REAL_CPPFLAGS)" CONFIG_FILES=Makefile CONFIG_HEADERS="" ./config.status --recheck
 
 module.pmod: Makefile
 	if [ -f $(SRCDIR)/module.pmod.in ]; then \

@@ -1,5 +1,5 @@
 #
-# $Id: dynamic_module_makefile.in,v 1.48 1999/03/06 06:18:31 hubbe Exp $
+# $Id: dynamic_module_makefile.in,v 1.49 1999/03/10 02:42:47 hubbe Exp $
 #
 
 
@@ -54,7 +54,7 @@ $(SRCDIR)/configure: $(SRCDIR)/configure.in $(PIKE_SRC_DIR)/aclocal.m4
 	else :; fi
 
 config.status: $(SRCDIR)/configure
-	./config.status --recheck
+	CFLAGS="$(REAL_CFLAGS)" LDFLAGS="$(REAL_LDFLAGS)" CPPFLAGS="$(REAL_CPPFLAGS)" CONFIG_FILES=Makefile CONFIG_HEADERS="" ./config.status --recheck
 
 module.so: $(OBJS)  $(MODULE_ARCHIVES)
 	$(TMP_BINDIR)/smartlink "@LDSHARED@" $(LDFLAGS) -o module.@SO@ $(OBJS) $(MODULE_ARCHIVES) $(MODULE_LDFLAGS) $(LIBGCC) -lc $(LIBGCC)
