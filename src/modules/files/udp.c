@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: udp.c,v 1.58 2003/11/04 22:31:29 bill Exp $
+|| $Id: udp.c,v 1.59 2003/11/13 15:59:09 grubba Exp $
 */
 
 #define NO_PIKE_SHORTHAND
@@ -10,7 +10,7 @@
 
 #include "file_machine.h"
 
-RCSID("$Id: udp.c,v 1.58 2003/11/04 22:31:29 bill Exp $");
+RCSID("$Id: udp.c,v 1.59 2003/11/13 15:59:09 grubba Exp $");
 #include "fdlib.h"
 #include "pike_netlib.h"
 #include "interpret.h"
@@ -141,9 +141,10 @@ struct udp_storage {
   struct svalue read_callback;
 };
 
-// FIXME: This class does not keep an extra ref while the read
-// callback is registered. It'll probably segfault in
-// udp_read_callback if the object has run out of refs. /mast
+/* FIXME: This class does not keep an extra ref while the read
+ * callback is registered. It'll probably segfault in
+ * udp_read_callback if the object has run out of refs. /mast
+ */
 
 void zero_udp(struct object *ignored);
 void exit_udp(struct object *ignored);
