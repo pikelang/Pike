@@ -5,7 +5,7 @@
 \*/
 /**/
 #include "global.h"
-RCSID("$Id: backend.cmod,v 1.11 2001/03/13 04:07:11 hubbe Exp $");
+RCSID("$Id: backend.cmod,v 1.12 2001/03/22 02:20:25 hubbe Exp $");
 #include "fdlib.h"
 #include "backend.h"
 #include <errno.h>
@@ -2070,23 +2070,6 @@ void do_debug(void)
 #endif /* PIKE_DEBUG */
 
 
-void cleanup_backend(void)
-{
-  /* Used to free the poll sets here.
-   *
-   * This is now done in the exit callback for the Backend.
-   */
-
-#ifdef HAVE_BROKEN_F_SETFD
-  cleanup_close_on_exec();
-#endif /* HAVE_BROKEN_F_SETFD */
-
-  /* Used to free the fds array here.
-   *
-   * This is now done in the exit callback from the Backend.
-   */
-}
-
 
 void init_backend(void)
 {
@@ -2105,5 +2088,14 @@ void exit_backend()
   EXIT;
   default_backend=0;
   free_all_call_out_s_blocks();
+  if(fd_map)
+  {
+    free(fd_map);
+    fd_map=0;
+    fd_map_size=0;
+  }
+#ifdef HAVE_BROKEN_F_SETFD
+  cleanup_close_on_exec();
+#endif /* HAVE_BROKEN_F_SETFD */
 }
 
