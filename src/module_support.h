@@ -5,7 +5,7 @@
 \*/
 
 /*
- * $Id: module_support.h,v 1.7 2000/07/28 17:16:55 hubbe Exp $
+ * $Id: module_support.h,v 1.8 2000/12/13 21:35:05 hubbe Exp $
  */
 #ifndef MODULE_SUPPORT_H
 #include <stdarg.h>
@@ -24,6 +24,13 @@ struct expect_result {
   TYPE_T got;               /* What type did we actually receive */
 };
 
+/* This should be used in module_init */
+#define PIKE_MODULE_EXPORT(MOD, SYM) \
+  pike_module_export_symbol(#MOD "." #SYM, CONSTANT_STRLEN(#MOD "." #SYM), SYM)
+
+#define PIKE_MODULE_IMPORT(MOD, SYM) \
+  pike_module_import_symbol(#MOD "." #SYM, CONSTANT_STRLEN(#MOD "." #SYM), #MOD, CONSTANT_STRLEN(#MOD))
+
 
 /* Prototypes begin here */
 PMOD_EXPORT int check_args(int args, ...);
@@ -36,6 +43,13 @@ PMOD_EXPORT int get_args(struct svalue *s,
 	     INT32 num_args,
 	     char *fmt, ...);
 PMOD_EXPORT void get_all_args(char *fname, INT32 args, char *format,  ... );
+PMOD_EXPORT void pike_module_export_symbol(char *str,
+					   int len,
+					   void *ptr);
+PMOD_EXPORT void *pike_module_import_symbol(char *str,
+					    int len,
+					    char *module,
+					    int module_len);
 /* Prototypes end here */
 
 #endif
