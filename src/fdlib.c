@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: fdlib.c,v 1.56 2002/10/15 17:51:05 mast Exp $
+|| $Id: fdlib.c,v 1.57 2003/03/26 14:15:40 mast Exp $
 */
 
 #include "global.h"
@@ -10,7 +10,7 @@
 #include "pike_error.h"
 #include <math.h>
 
-RCSID("$Id: fdlib.c,v 1.56 2002/10/15 17:51:05 mast Exp $");
+RCSID("$Id: fdlib.c,v 1.57 2003/03/26 14:15:40 mast Exp $");
 
 #ifdef HAVE_WINSOCK_H
 
@@ -177,7 +177,7 @@ static int IsUncRoot(char *path)
   return 0 ;
 }
 
-static int low_stat (char *file, struct stat *buf)
+static int low_stat (char *file, PIKE_STAT_T *buf)
 {
   char            *path;
   int              drive;       /* A: = 1, B: = 2, ... */
@@ -305,7 +305,7 @@ static int low_stat (char *file, struct stat *buf)
   
   buf->st_mode = __dtoxmode(findbuf.dwFileAttributes, file);
   buf->st_nlink = 1;
-  buf->st_size = findbuf.nFileSizeLow;
+  buf->st_size = (findbuf.nFileSizeHigh * ((INT64) MAXDWORD + 1)) + findbuf.nFileSizeLow;
   
   buf->st_uid = buf->st_gid = buf->st_ino = 0; /* unused entries */
   buf->st_rdev = buf->st_dev = (_dev_t)(drive - 1); /* A=0, B=1, ... */
@@ -313,7 +313,7 @@ static int low_stat (char *file, struct stat *buf)
   return(0);
 }
 
-int debug_fd_stat(const char *file, struct stat *buf)
+int debug_fd_stat(const char *file, PIKE_STAT_T *buf)
 {
   ptrdiff_t l = strlen(file);
   char fname[MAX_PATH];
@@ -924,10 +924,8 @@ static long convert_filetime_to_time_t(FILETIME tmp)
   return DO_NOT_WARN((long)floor(t));
 }
 
-PMOD_EXPORT int debug_fd_fstat(FD fd, struct stat *s)
+PMOD_EXPORT int debug_fd_fstat(FD fd, PIKE_STAT_T *s)
 {
-  DWORD x;
-
   FILETIME c,a,m;
   FDDEBUG(fprintf(stderr, "fstat on %d (%ld)\n",
 		  fd, PTRDIFF_T_TO_LONG((ptrdiff_t)da_handle[fd])));
@@ -938,7 +936,7 @@ PMOD_EXPORT int debug_fd_fstat(FD fd, struct stat *s)
     return -1;
   }
 
-  MEMSET(s, 0, sizeof(struct stat));
+  MEMSET(s, 0, sizeof(PIKE_STAT_T));
   s->st_nlink=1;
 
   switch(fd_type[fd])
@@ -953,11 +951,16 @@ PMOD_EXPORT int debug_fd_fstat(FD fd, struct stat *s)
 	default:
 	case FILE_TYPE_UNKNOWN: s->st_mode=0;        break;
 	case FILE_TYPE_DISK:
-	  s->st_mode=S_IFREG; 
-	  s->st_size=GetFileSize(da_handle[fd],&x);
-	  if(x)
+	  s->st_mode=S_IFREG;
 	  {
-	    s->st_size=0x7fffffff;
+	    DWORD high, err;
+	    s->st_size=GetFileSize(da_handle[fd],&high);
+	    if (s->st_size == INVALID_FILE_SIZE &&
+		(err = GetLastError()) != NO_ERROR) {
+	      errno = err;
+	      return -1;
+	    }
+	    s->st_size += high * ((INT64) MAXDWORD + 1);
 	  }
 	  if(!GetFileTime(da_handle[fd], &c, &a, &m))
 	  {

@@ -2,11 +2,11 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: object.c,v 1.215 2003/03/13 17:01:59 grubba Exp $
+|| $Id: object.c,v 1.216 2003/03/26 14:15:41 mast Exp $
 */
 
 #include "global.h"
-RCSID("$Id: object.c,v 1.215 2003/03/13 17:01:59 grubba Exp $");
+RCSID("$Id: object.c,v 1.216 2003/03/26 14:15:41 mast Exp $");
 #include "object.h"
 #include "dynamic_buffer.h"
 #include "interpret.h"
@@ -453,7 +453,7 @@ PMOD_EXPORT struct object *get_master(void)
   {
     struct pike_string *s;
     char *tmp;
-    struct stat stat_buf;
+    PIKE_STAT_T stat_buf;
 
     if(!get_builtin_constants() ||
        !simple_mapping_string_lookup(get_builtin_constants(),

@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: font.c,v 1.78 2003/03/23 14:33:25 marcus Exp $
+|| $Id: font.c,v 1.79 2003/03/26 14:15:41 mast Exp $
 */
 
 #include "global.h"
@@ -242,7 +242,7 @@ static INLINE ptrdiff_t my_read(int from, void *t, size_t towrite)
 
 static INLINE off_t file_size(int fd)
 {
-  struct stat tmp;
+  PIKE_STAT_T tmp;
   if((!fd_fstat(fd, &tmp)) &&
      ( tmp.st_mode & S_IFMT) == S_IFREG)
      return (off_t)tmp.st_size;

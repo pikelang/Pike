@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: sendfile.c,v 1.59 2002/10/11 01:39:54 nilsson Exp $
+|| $Id: sendfile.c,v 1.60 2003/03/26 14:15:42 mast Exp $
 */
 
 /*
@@ -459,7 +459,7 @@ void low_do_sendfile(struct pike_sendfile *this)
 #if 0 /* mmap is slower than read/write on most if not all systems */
 #if defined(HAVE_MMAP) && defined(HAVE_MUNMAP)
     {
-      struct stat st;
+      PIKE_STAT_T st;
 
       if (!fd_fstat(this->from_fd, &st) &&
 	  S_ISREG(st.st_mode)) {

@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: fdlib.h,v 1.43 2002/10/11 01:39:31 nilsson Exp $
+|| $Id: fdlib.h,v 1.44 2003/03/26 14:15:41 mast Exp $
 */
 
 #ifndef FDLIB_H
@@ -59,6 +59,7 @@
 #include <winbase.h>
 
 typedef int FD;
+typedef struct stat64 PIKE_STAT_T;
 
 #define SOCKFUN1(NAME,T1) PMOD_EXPORT int PIKE_CONCAT(debug_fd_,NAME) (FD,T1);
 #define SOCKFUN2(NAME,T1,T2) PMOD_EXPORT int PIKE_CONCAT(debug_fd_,NAME) (FD,T1,T2);
@@ -107,7 +108,7 @@ PMOD_EXPORT char *debug_fd_info(int fd);
 PMOD_EXPORT int debug_fd_query_properties(int fd, int guess);
 void fd_init();
 void fd_exit();
-PMOD_EXPORT int debug_fd_stat(const char *file, struct stat *buf);
+PMOD_EXPORT int debug_fd_stat(const char *file, PIKE_STAT_T *buf);
 PMOD_EXPORT FD debug_fd_open(const char *file, int open_mode, int create_mode);
 PMOD_EXPORT FD debug_fd_socket(int domain, int type, int proto);
 PMOD_EXPORT int debug_fd_pipe(int fds[2] DMALLOC_LINE_ARGS);
@@ -130,7 +131,7 @@ PMOD_EXPORT ptrdiff_t debug_fd_read(FD fd, void *to, ptrdiff_t len);
 PMOD_EXPORT ptrdiff_t debug_fd_lseek(FD fd, ptrdiff_t pos, int where);
 PMOD_EXPORT int debug_fd_ftruncate(FD fd, ptrdiff_t len);
 PMOD_EXPORT int debug_fd_flock(FD fd, int oper);
-PMOD_EXPORT int debug_fd_fstat(FD fd, struct stat *s);
+PMOD_EXPORT int debug_fd_fstat(FD fd, PIKE_STAT_T *s);
 PMOD_EXPORT int debug_fd_select(int fds, FD_SET *a, FD_SET *b, FD_SET *c, struct timeval *t);
 PMOD_EXPORT int debug_fd_ioctl(FD fd, int cmd, void *data);
 PMOD_EXPORT FD debug_fd_dup(FD from);
@@ -280,6 +281,7 @@ PMOD_EXPORT void closedir(DIR *dir);
 
 
 typedef int FD;
+typedef struct stat PIKE_STAT_T;
 
 #define fd_info(X) ""
 #define fd_init()

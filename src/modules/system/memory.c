@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: memory.c,v 1.18 2002/10/21 17:06:27 marcus Exp $
+|| $Id: memory.c,v 1.19 2003/03/26 14:15:42 mast Exp $
 */
 
 /*! @module System
@@ -19,7 +19,7 @@
  *!	Don't blame Pike if you shoot your foot off.
  */
 #include "global.h"
-RCSID("$Id: memory.c,v 1.18 2002/10/21 17:06:27 marcus Exp $");
+RCSID("$Id: memory.c,v 1.19 2003/03/26 14:15:42 mast Exp $");
 
 #include "system_machine.h"
 
@@ -180,7 +180,7 @@ static void memory_create(INT32 args)
  */
 static INLINE off_t file_size(int fd)
 {
-  struct stat tmp;
+  PIKE_STAT_T tmp;
   if((!fd_fstat(fd, &tmp)) &&
      ( tmp.st_mode & S_IFMT) == S_IFREG)
      return (off_t)tmp.st_size;

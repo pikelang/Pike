@@ -2,12 +2,12 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: file.c,v 1.252 2002/12/09 13:15:34 grubba Exp $
+|| $Id: file.c,v 1.253 2003/03/26 14:15:42 mast Exp $
 */
 
 #define NO_PIKE_SHORTHAND
 #include "global.h"
-RCSID("$Id: file.c,v 1.252 2002/12/09 13:15:34 grubba Exp $");
+RCSID("$Id: file.c,v 1.253 2003/03/26 14:15:42 mast Exp $");
 #include "fdlib.h"
 #include "interpret.h"
 #include "svalue.h"
@@ -1887,7 +1887,7 @@ static void file_truncate(INT32 args)
 static void file_stat(INT32 args)
 {
   int fd;
-  struct stat s;
+  PIKE_STAT_T s;
   int tmp;
 
   if(FD < 0)
@@ -3278,7 +3278,7 @@ static void exit_file_locking(void)
 static void f_get_all_active_fd(INT32 args)
 {
   int i,fds,ne;
-  struct stat foo;
+  PIKE_STAT_T foo;
 
   ne = MAX_OPEN_FILEDESCRIPTORS;
 

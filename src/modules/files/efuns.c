@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: efuns.c,v 1.117 2002/11/28 18:53:07 nilsson Exp $
+|| $Id: efuns.c,v 1.118 2003/03/26 14:15:41 mast Exp $
 */
 
 #include "global.h"
@@ -26,7 +26,7 @@
 #include "file_machine.h"
 #include "file.h"
 
-RCSID("$Id: efuns.c,v 1.117 2002/11/28 18:53:07 nilsson Exp $");
+RCSID("$Id: efuns.c,v 1.118 2003/03/26 14:15:41 mast Exp $");
 
 #ifdef HAVE_SYS_TYPES_H
 #include <sys/types.h>
@@ -99,7 +99,7 @@ LINKFUNC(BOOL, movefileex, (
 
 #endif
 
-struct array *encode_stat(struct stat *s)
+struct array *encode_stat(PIKE_STAT_T *s)
 {
   struct array *a;
   a=allocate_array(7);
@@ -158,7 +158,7 @@ struct array *encode_stat(struct stat *s)
  */
 void f_file_stat(INT32 args)
 {
-  struct stat st;
+  PIKE_STAT_T st;
   int i, l;
   struct pike_string *str;
   
@@ -406,7 +406,7 @@ void f_filesystem_stat(INT32 args)
 #endif /* HAVE_STRUCT_STATFS */
 #else /* !HAVE_STATFS */
 #ifdef HAVE_USTAT
-  struct stat statbuf;
+  PIKE_STAT_T statbuf;
   struct ustat st;
 #else /* !HAVE_USTAT */
   /* Should not be reached */
@@ -568,7 +568,7 @@ void f_werror(INT32 args)
  */
 void f_rm(INT32 args)
 {
-  struct stat st;
+  PIKE_STAT_T st;
   INT32 i;
   struct pike_string *str;
 
@@ -1199,7 +1199,7 @@ void f_mv(INT32 args)
 #ifdef __NT__
   int orig_errno = errno;
   int err;
-  struct stat st;
+  PIKE_STAT_T st;
 #endif
 
   if(args<2)

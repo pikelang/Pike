@@ -2,11 +2,11 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: stat.c,v 1.25 2003/02/04 09:43:17 grubba Exp $
+|| $Id: stat.c,v 1.26 2003/03/26 14:15:42 mast Exp $
 */
 
 #include "global.h"
-RCSID("$Id: stat.c,v 1.25 2003/02/04 09:43:17 grubba Exp $");
+RCSID("$Id: stat.c,v 1.26 2003/03/26 14:15:42 mast Exp $");
 #include "fdlib.h"
 #include "interpret.h"
 #include "svalue.h"
@@ -198,7 +198,7 @@ struct program *stat_program=NULL;
 struct stat_storage
 {
    /* Note: stat_create assumes there are no refs in here. */
-   struct stat s;
+   PIKE_STAT_T s;
 };
 
 static struct mapping *stat_map=NULL;
@@ -640,7 +640,9 @@ static void stat_index_set (INT32 args)
       got_int_val = 1;
   }
 #endif
-  /* FIXME: shouldn't there be an else clause here ? */
+  /* shouldn't there be an else clause here ? */
+  /* No, the second argument is checked further below depending on
+   * what the first is. /mast */
 
   if (sp[-2].type == T_INT) {
     if (!got_int_val)
@@ -910,7 +912,7 @@ static void stat_values(INT32 args)
 
 #undef THIS_STAT
 
-void push_stat(struct stat *s)
+void push_stat(PIKE_STAT_T *s)
 {
    struct object *o;
    struct stat_storage *stor;
