@@ -112,14 +112,11 @@ void MOD_INIT(rc4)(void)
   set_init_callback(init_pike_rc4);
   set_exit_callback(exit_pike_rc4);
 
-  pike_rc4_program = end_c_program(MODULE_PREFIX "rc4");
-  pike_rc4_program->refs++;
+  end_class(MODULE_PREFIX "rc4", 0);
 }
 
 void MOD_EXIT(rc4)(void)
 {
-  /* free_program()s */
-  free_program(pike_rc4_program);
 }
 
 

@@ -57,10 +57,8 @@ static void shamod_digest(INT32 args)
   push_string(end_shared_string(s));
 }
 
-void MOD_INIT2(sha)(void) {}
 void MOD_EXIT(sha)(void)
 {
-  free_program(shamod_program);
 }
 
 void MOD_INIT(sha)(void)
@@ -70,6 +68,5 @@ void MOD_INIT(sha)(void)
   add_function("create", shamod_create, "function(void|object:void)", 0);
   add_function("update", shamod_update, "function(string:void)", 0);
   add_function("digest", shamod_digest, "function(void:string)", 0);
-  shamod_program = end_c_program(MODULE_PREFIX "sha");
-  shamod_program->refs++;
+  end_class(MODULE_PREFIX "sha", 0);
 }

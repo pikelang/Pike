@@ -1,5 +1,5 @@
 /*
- * $Id: des.c,v 1.4 1997/01/14 18:28:00 nisse Exp $
+ * $Id: des.c,v 1.5 1997/02/12 06:10:10 nisse Exp $
  *
  * A pike module for getting access to some common cryptos.
  *
@@ -107,7 +107,7 @@ static void set_key(INT32 args)
   }
   if (sp[-1].u.string->len != 8)
     error("Invalid key length to des->set_key()\n");
-  switch (DesMethod(&(THIS->method), sp[-1].u.string->str))
+  switch (DesMethod(THIS->method, sp[-1].u.string->str))
     {
     case -1:
       error("des->set_key: parity error\n");
@@ -294,7 +294,7 @@ static void f_crypt_block(INT32 args)
 {
   unsigned len;
   struct pike_string *s;
-  INT32 i;
+  unsigned INT32 i;
   
   if (args != 1) {
     error("Wrong number of arguments to des->crypt_block()\n");
@@ -334,10 +334,12 @@ static void f_dump(INT32 args)
  * Module linkage
  */
 
+#if 0
 void MOD_INIT2(des)(void)
 {
   /* add_efun()s */
 }
+#endif
 
 void MOD_INIT(des)(void)
 {
@@ -383,12 +385,9 @@ void MOD_INIT(des)(void)
   set_init_callback(init_pike_crypto_des);
   set_exit_callback(exit_pike_crypto_des);
 
-  pike_crypto_des_program = end_c_program(MODULE_PREFIX "des");
-  pike_crypto_des_program->refs++;
+  end_class(MODULE_PREFIX "des", 0);
 }
 
 void MOD_EXIT(des)(void)
 {
-  /* free_program()s */
-  free_program(pike_crypto_des_program);
 }

@@ -1,5 +1,5 @@
 /*
- * $Id: crypto.c,v 1.11 1997/02/11 17:35:16 nisse Exp $
+ * $Id: crypto.c,v 1.12 1997/02/12 06:10:04 nisse Exp $
  *
  * A pike module for getting access to some common cryptos.
  *
@@ -422,12 +422,10 @@ static void f_unpad(INT32 args)
  * Module linkage
  */
 
+#if 0
 void MOD_INIT2(crypto)(void)
 {
   /* add_efun()s */
-
-  add_efun("string_to_hex", f_string_to_hex, "function(string:string)", OPT_TRY_OPTIMIZE);
-  add_efun("hex_to_string", f_hex_to_string, "function(string:string)", OPT_TRY_OPTIMIZE);
 
 #if 0
   MOD_INIT2(md2)();
@@ -443,6 +441,7 @@ void MOD_INIT2(crypto)(void)
   MOD_INIT2(pipe)();
 #endif
 }
+#endif
 
 void MOD_INIT(crypto)(void)
 {
@@ -462,7 +461,7 @@ void MOD_INIT(crypto)(void)
    * program->refs++;
    *
    */
-
+  
   start_new_program();
   add_storage(sizeof(struct pike_crypto));
 
@@ -481,13 +480,21 @@ void MOD_INIT(crypto)(void)
   set_init_callback(init_pike_crypto);
   set_exit_callback(exit_pike_crypto);
 
-  pike_crypto_program = end_c_program(MODULE_PREFIX "crypto");
-  pike_crypto_program->refs++;
+  end_class(MODULE_PREFIX "crypto", 0);
+}
+
+void MOD_EXIT(crypto)(void) {}
+
+void pike_module_init(void)
+{
+  add_efun("string_to_hex", f_string_to_hex, "function(string:string)", OPT_TRY_OPTIMIZE);
+  add_efun("hex_to_string", f_hex_to_string, "function(string:string)", OPT_TRY_OPTIMIZE);
 #if 0
   MOD_INIT(md2)();
   MOD_INIT(md5)();
 #endif
 #if 1
+  MOD_INIT(crypto)();
   MOD_INIT(idea)();
   MOD_INIT(des)();
   MOD_INIT(invert)();
@@ -496,9 +503,9 @@ void MOD_INIT(crypto)(void)
   MOD_INIT(cbc)();
   MOD_INIT(pipe)();
 #endif
-}
+}  
 
-void MOD_EXIT(crypto)(void)
+void pike_module_exit(void)
 {
   /* free_program()s */
 #if 0
@@ -506,6 +513,7 @@ void MOD_EXIT(crypto)(void)
   MOD_EXIT(md5)();
 #endif
 #if 1
+  MOD_EXIT(crypto)();
   MOD_EXIT(idea)();
   MOD_EXIT(des)();
   MOD_EXIT(invert)();

@@ -1,5 +1,5 @@
 /*
- * $Id: cbc.c,v 1.3 1997/02/11 17:34:58 nisse Exp $
+ * $Id: cbc.c,v 1.4 1997/02/12 06:09:54 nisse Exp $
  *
  * CBC (Cipher Block Chaining Mode) crypto module for Pike.
  *
@@ -297,11 +297,6 @@ static void f_crypt_block(INT32 args)
  * Module linkage
  */
 
-void MOD_INIT2(cbc)(void)
-{
-  /* add_efun()s */
-}
-
 void MOD_INIT(cbc)(void)
 {
   /*
@@ -339,13 +334,10 @@ void MOD_INIT(cbc)(void)
   set_init_callback(init_pike_crypto_cbc);
   set_exit_callback(exit_pike_crypto_cbc);
 
-  pike_crypto_cbc_program = end_c_program(MODULE_PREFIX "cbc");
-  pike_crypto_cbc_program->refs++;
+  end_class(MODULE_PREFIX "cbc", 0);
 }
 
 void MOD_EXIT(cbc)(void)
 {
-  /* free_program()s */
-  free_program(pike_crypto_cbc_program);
 }
 

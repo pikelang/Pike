@@ -1,5 +1,5 @@
 /*
- * $Id: idea.c,v 1.7 1997/02/11 17:36:51 nisse Exp $
+ * $Id: idea.c,v 1.8 1997/02/12 06:10:15 nisse Exp $
  *
  * IDEA crypto module for Pike
  *
@@ -141,10 +141,12 @@ static void f_crypt_block(INT32 args)
  * Module linkage
  */
 
+#if 0
 void MOD_INIT2(idea)(void)
 {
   /* add_efun()s */
 }
+#endif
 
 void MOD_INIT(idea)(void)
 {
@@ -165,7 +167,6 @@ void MOD_INIT(idea)(void)
    *
    */
 
-  /* /precompiled/crypto/idea */
   start_new_program();
   add_storage(sizeof(INT16[IDEA_KEYLEN]));
 
@@ -179,12 +180,9 @@ void MOD_INIT(idea)(void)
   set_init_callback(init_pike_crypto_idea);
   set_exit_callback(exit_pike_crypto_idea);
 
-  pike_crypto_idea_program = end_c_program(MODULE_PREFIX "idea");
-  pike_crypto_idea_program->refs++;
+  end_class(MODULE_PREFIX "idea", 0);
 }
 
 void MOD_EXIT(idea)(void)
 {
-  /* free_program()s */
-  free_program(pike_crypto_idea_program);
 }

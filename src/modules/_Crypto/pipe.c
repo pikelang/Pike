@@ -1,5 +1,5 @@
 /*
- * $Id: pipe.c,v 1.3 1997/01/14 18:28:56 nisse Exp $
+ * $Id: pipe.c,v 1.4 1997/02/12 06:10:23 nisse Exp $
  *
  * PIPE crypto module for Pike.
  *
@@ -269,11 +269,6 @@ static void f_crypt_block(INT32 args)
  * Module linkage
  */
 
-void init_crypto_pipe_efuns(void)
-{
-  /* add_efun()s */
-}
-
 void MOD_INIT(pipe)(void)
 {
   /*
@@ -309,12 +304,9 @@ void MOD_INIT(pipe)(void)
   set_init_callback(init_pike_crypto_pipe);
   set_exit_callback(exit_pike_crypto_pipe);
 
-  pike_crypto_pipe_program = end_c_program(MODULE_PREFIX "pipe");
-  pike_crypto_pipe_program->refs++;
+  end_class(MODULE_PREFIX "pipe", 0);
 }
 
 void MOD_EXIT(pipe)(void)
 {
-  /* free_program()s */
-  free_program(pike_crypto_pipe_program);
 }

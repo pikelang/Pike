@@ -1,5 +1,5 @@
 /*
- * $Id: invert.c,v 1.3 1997/01/14 18:28:40 nisse Exp $
+ * $Id: invert.c,v 1.4 1997/02/12 06:10:18 nisse Exp $
  *
  * INVERT crypto module for Pike
  *
@@ -126,11 +126,6 @@ static void f_crypt_block(INT32 args)
  * Module linkage
  */
 
-void MOD_INIT2(invert)(void)
-{
-  /* add_efun()s */
-}
-
 void MOD_INIT(invert)(void)
 {
   /*
@@ -163,14 +158,11 @@ void MOD_INIT(invert)(void)
   set_init_callback(init_pike_crypto_invert);
   set_exit_callback(exit_pike_crypto_invert);
 
-  pike_crypto_invert_program = end_c_program(MODULE_PREFIX "invert");
-  pike_crypto_invert_program->refs++;
+  end_class(MODULE_PREFIX "invert", 0);
 }
 
 void MOD_EXIT(invert)(void)
 {
-  /* free_program()s */
-  free_program(pike_crypto_invert_program);
 }
 
 
