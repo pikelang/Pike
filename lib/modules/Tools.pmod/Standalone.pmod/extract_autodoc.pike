@@ -1,5 +1,5 @@
 /*
- * $Id: extract_autodoc.pike,v 1.30 2002/12/19 15:24:26 grubba Exp $
+ * $Id: extract_autodoc.pike,v 1.31 2002/12/21 17:28:30 grubba Exp $
  *
  * AutoDoc mk II extraction script.
  *
@@ -145,6 +145,11 @@ string extract(string filename, string imgdest, int(0..1) rootless,
 	  error("Unknown module parent name.\n");
 	name = root[-1];
 	root = root[..sizeof(root)-2];
+      } else if ((name == "__default") && (sizeof(root) == 1)) {
+	// Pike backward compatibility module.
+	name = root[0][..sizeof(root[0])-3];
+	root = ({});
+	type = "namespace";
       }
 
       result =
