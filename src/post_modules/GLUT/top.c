@@ -1,5 +1,5 @@
 /*
- * $Id: top.c,v 1.4 2000/12/01 08:10:40 hubbe Exp $
+ * $Id: top.c,v 1.5 2002/05/11 00:01:13 nilsson Exp $
  *
  */
 
@@ -7,7 +7,7 @@
 
 #include "config.h"
 
-RCSID("$Id: top.c,v 1.4 2000/12/01 08:10:40 hubbe Exp $");
+RCSID("$Id: top.c,v 1.5 2002/05/11 00:01:13 nilsson Exp $");
 #include "stralloc.h"
 #include "pike_macros.h"
 #include "object.h"
@@ -40,4 +40,3 @@ void pike_module_init( void )
 void pike_module_exit( void )
 {
 }
-
