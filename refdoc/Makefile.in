@@ -1,7 +1,7 @@
 #
 # Sub Makefile for extracting AutoDoc mk II to XML
 #
-# $Id: Makefile.in,v 1.16 2001/08/14 21:20:32 nilsson Exp $
+# $Id: Makefile.in,v 1.17 2001/09/09 00:30:44 nilsson Exp $
 #
 # Henrik Grubbström 2001-02-02
 #
@@ -22,29 +22,29 @@ extract: xml recurse
 
 .SUFFIXES: .c .pike .pike.in .pmod .pmod.in .xml
 
-.c.xml: $(ROOT)/../bin/autodoc.pike $(ROOT)/../bin/mkxml.pike
+.c.xml: $(ROOT)/bin/extract.pike $(ROOT)/bin/mirardoc.pike
 	@rm -f "$@.new" 2>/dev/null || /bin/true
-	@$(PIKE) $(ROOT)/../bin/autodoc.pike "$<" >"$@.new" && \
+	@$(PIKE) $(ROOT)/bin/extract.pike "$<" >"$@.new" && \
 	  mv -f "$@.new" "$@"
 
-.pike.xml: $(ROOT)/../bin/autodoc.pike $(ROOT)/../bin/mkxml.pike
+.pike.xml: $(ROOT)/bin/extract.pike $(ROOT)/bin/mirardoc.pike
 	@rm -f "$@.new" 2>/dev/null || /bin/true
-	@$(PIKE) $(ROOT)/../bin/autodoc.pike "$<" >"$@.new" && \
+	@$(PIKE) $(ROOT)/bin/extract.pike "$<" >"$@.new" && \
 	  mv -f "$@.new" "$@"
 
-.pike.in.xml: $(ROOT)/../bin/autodoc.pike $(ROOT)/../bin/mkxml.pike
+.pike.in.xml: $(ROOT)/bin/extract.pike $(ROOT)/bin/mirardoc.pike
 	@rm -f "$@.new" 2>/dev/null || /bin/true
-	@$(PIKE) $(ROOT)/../bin/autodoc.pike "$<" >"$@.new" && \
+	@$(PIKE) $(ROOT)/bin/extract.pike "$<" >"$@.new" && \
 	  mv -f "$@.new" "$@"
 
-.pmod.xml: $(ROOT)/../bin/autodoc.pike $(ROOT)/../bin/mkxml.pike
+.pmod.xml: $(ROOT)/bin/extract.pike $(ROOT)/bin/mirardoc.pike
 	@rm -f "$@.new" 2>/dev/null || /bin/true
-	@$(PIKE) $(ROOT)/../bin/autodoc.pike "$<" >"$@.new" && \
+	@$(PIKE) $(ROOT)/bin/extract.pike "$<" >"$@.new" && \
 	  mv -f "$@.new" "$@"
 
-.pmod.in.xml: $(ROOT)/../bin/autodoc.pike $(ROOT)/../bin/mkxml.pike
+.pmod.in.xml: $(ROOT)/bin/extract.pike $(ROOT)/bin/mirardoc.pike
 	@rm -f "$@.new" 2>/dev/null || /bin/true
-	@$(PIKE) $(ROOT)/../bin/autodoc.pike "$<" >"$@.new" && \
+	@$(PIKE) $(ROOT)/bin/extract.pike "$<" >"$@.new" && \
 	  mv -f "$@.new" "$@"
 
 xml:
@@ -63,8 +63,8 @@ join: recurse_join
 	    exit 1; \
 	fi
 
-sub_manual.xml: $(XMLFILES) $(ROOT)/../bin/join-autodoc.pike
-	@$(PIKE) $(ROOT)/../bin/join-autodoc.pike sub_manual.xml $(XMLFILES)
+sub_manual.xml: $(XMLFILES) $(ROOT)/bin/join.pike
+	@$(PIKE) $(ROOT)/bin/join.pike sub_manual.xml $(XMLFILES)
 
 recurse_join:
 	@for d in */.; do \
@@ -79,8 +79,8 @@ images: recurse_images
 	    exit 1; \
 	fi
 
-low_images: $(XMLFILES) $(ROOT)/../bin/autodoc_images.pike
-	@$(PIKE) $(ROOT)/../bin/autodoc_images.pike $(ROOT)/manual/images $(XMLFILES)
+low_images: $(XMLFILES) $(ROOT)/bin/images.pike
+	@$(PIKE) $(ROOT)/bin/images.pike $(ROOT)/manual/images $(XMLFILES)
 
 recurse_images:
 	@for d in */.; do \
