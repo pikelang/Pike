@@ -1,4 +1,4 @@
-test_true([["$Id: testsuite.in,v 1.644 2003/05/24 12:02:25 grubba Exp $"]]);
+test_true([["$Id: testsuite.in,v 1.645 2003/05/27 15:31:41 grubba Exp $"]]);
 
 // This triggered a bug only if run sufficiently early.
 test_compile_any([[#pike 7.2]])
@@ -9613,75 +9613,63 @@ test_any([[
   Process.TraceProcess proc =
     Process.TraceProcess(RUNPIKE_ARRAY + ({ "-e", "sleep(99999)" }));
 
-  int code = proc->wait();
-  if (code != -2) {
-    proc->kill(signum("KILL"));
-    return sprintf("Bad returncode from wait():%d (expected -2)", code);
-  }
-  int sig = proc->last_signal();
-  if (sig != signum("TRAP")) {
-    proc->kill(signum("KILL"));
-    return sprintf("Unexpected signal:%d (expected %d)", sig, signum("TRAP"));
-  }
-  proc->cont();
+  inst state;
+  int code;
+  while ((code = proc->wait()) == -2) {
+    int sig = proc->last_signal();
+    switch(sig) {
+    case signum("TRAP"):
+      if (state) {
+        // NB: OSF/1 issues two SIGTRAPS before the program starts executing.
+	werror("Unexpected SIGTRAP in state %d.\n", state);
+      }
+      state = ((state <= 1) ? 1 : state);
+      proc->cont();
 
-  sleep(5);	// Give it some time to settle down after initialization.
+      sleep(5);	// Give it some time to settle down after initialization.
 
-  // Check that we can block deadly signals.
-  proc->kill(signum("TERM"));
-  code = proc->wait();
-  if (code != -2) {
-    proc->kill(signum("KILL"));
-    return sprintf("Bad second returncode from wait():%d (expected -2)", code);
-  }
-  sig = proc->last_signal();
-  if (sig == signum("TRAP")) {
-    // OSF/1 issues two SIGTRAPS before the program starts executing.
-    werror("Got extra SIGTRAP, OSF/1?\n");
-    proc->cont();
-    code = proc->wait();
-    if (code != -2) {
+      // Check that we can block deadly signals.
+      proc->kill(signum("TERM"));
+      break;
+    case signum("TERM"):
+      if (state != 1) {
+	werror("Unexpected SIGTERM in state %d.\n", state);
+      }
+      state = ((state <= 2) ? 2 : state);
+      proc->cont();		// Ignore it...
+
+      // Check that we can make harmless signals deadly.
+      proc->kill(signum("CONT"));
+      break;
+    case signum("CONT"):
+      if (state != 2) {
+	werror("Unexpected SIGTERM in state %d.\n", state);
+      }
+      state = ((state <= 3) ? 3 : state);
+      proc->cont(signum("KILL"));	// Make it a SIGKILL
+
+      sleep(5);	// Give it some time to die and get reaped.
+
+      if (proc->kill(signum("KILL"))) {
+	return sprintf("Process didn't die of cont(%d).", signum("KILL"));
+      }
+      break;
+    default:
       proc->kill(signum("KILL"));
-      return sprintf("Bad fallback returncode from wait():%d (expected -2)",
-		     code);
+      return sprintf("Unexpected signal:%d in state %d.", sig, state);
     }
-    sig = proc->last_signal();   
-  }
-  if (sig != signum("TERM")) {
-    proc->kill(signum("KILL"));
-    return sprintf("Unexpected signal:%d (expected %d)", sig, signum("TERM"));
-  }
-  proc->cont();		// Ignore it...
-
-  // Check that we can make harmless signals deadly.
-  proc->kill(signum("CONT"));
-  code = proc->wait();
-  if (code != -2) {
-    proc->kill(signum("KILL"));
-    return sprintf("Bad third returncode from wait():%d (expected -2)", code);
-  }
-  sig = proc->last_signal();
-  if (sig != signum("CONT")) {
-    proc->kill(signum("KILL"));
-    return sprintf("Unexpected signal:%d (expected %d)", sig, signum("CONT"));
-  }
-  proc->cont(signum("KILL"));	// Make it a SIGKILL
-
-  sleep(5);	// Give it some time to die and get reaped.
-
-  if (proc->kill(signum("KILL"))) {
-    return sprintf("Process didn't die of cont(%d).", signum("KILL"));
   }
 
-  code = proc->wait();
   if (code != -1) {
     proc->kill(signum("KILL"));
-    return sprintf("Bad fourth returncode from wait():%d (expected -1)", code);
+    return sprintf("Bad termination returncode from wait():%d (expected -1)",
+		   code);
   }
   sig = proc->last_signal();
   if (sig != signum("KILL")) {
     proc->kill(signum("KILL"));
-    return sprintf("Unexpected signal:%d (expected %d)", sig, signum("KILL"));
+    return sprintf("Unexpected termination signal:%d (expected %d)",
+		   sig, signum("KILL"));
   }
   // Test ok.
   return 0; ]], 0)
