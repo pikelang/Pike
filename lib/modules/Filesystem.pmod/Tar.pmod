@@ -1,4 +1,6 @@
-// $Id: Tar.pmod,v 1.3 1999/07/24 20:18:10 sigge Exp $
+/*
+ * $Id: Tar.pmod,v 1.4 1999/07/25 16:30:18 grubba Exp $
+ */
 
 class _Tar  // filesystem
 {
