@@ -313,7 +313,7 @@ string|void parseIdents() {
   string result = "";
   if (peekToken() == "." || peekToken() == "::")
     result = readToken();
-  else if (isIdent(peekToken())) {
+  else if (isIdent(peekToken()) || isFloat(peekToken())) {
     result = readToken();
     if (peekToken() != "::" && peekToken() != ".") // might be "top.ident" ...
       return result;
