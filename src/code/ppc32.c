@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: ppc32.c,v 1.24 2002/10/16 13:56:52 marcus Exp $
+|| $Id: ppc32.c,v 1.25 2002/10/16 23:27:07 marcus Exp $
 */
 
 /*
@@ -44,6 +44,7 @@
     /* blrl */								\
     add_to_program(0x4e800021);						\
   } while(0)
+#define ADD_LABEL_CALL(X) ADD_CALL(&(X))
 #else
 #define ADD_CALL(X) do {				\
     INT32 func_=(INT32)(void*)(X);			\
@@ -60,6 +61,7 @@
       add_to_program(0x48000003|(func_&0x03fffffc));	\
     }							\
   } while(0)
+#define ADD_LABEL_CALL(X) ADD_CALL(X)
 #endif
 
 int ppc32_codegen_state = 0, ppc32_codegen_last_pc = 0;
@@ -372,7 +374,7 @@ static void ppc32_escape_catch(void)
   ADDI(PPC_REG_PIKE_PC, PPC_REG_PIKE_PC, 0);
   /* stw pike_pc,pc(pike_fp) */
   STW(PPC_REG_PIKE_PC, PPC_REG_PIKE_FP, OFFSETOF(pike_frame, pc));
-  ADD_CALL(do_escape_catch_label);
+  ADD_LABEL_CALL(do_escape_catch_label);
   Pike_compiler->new_program->program[pos_+1] +=
     sizeof(PIKE_OPCODE_T) * (PIKE_PC-pos_);
 }
