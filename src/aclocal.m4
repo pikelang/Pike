@@ -1,8 +1,12 @@
-dnl $Id: aclocal.m4,v 1.60 2003/12/06 19:21:33 nilsson Exp $
+dnl $Id: aclocal.m4,v 1.61 2004/03/23 10:40:12 grubba Exp $
 
 dnl Some compatibility with Autoconf 2.50+. Not complete.
 dnl newer autoconf call substr m4_substr
 ifdef([substr], ,m4_copy(m4_substr,substr))
+dnl newer Autoconf calls changequote m4_changequote
+ifdef([changequote], ,[m4_copy([m4_changequote],[changequote])])
+dnl Autoconf 2.53+ hides their version numbers in m4_PACKAGE_VERSION.
+ifdef([AC_ACVERSION], ,[m4_copy([m4_PACKAGE_VERSION],[AC_ACVERSION])])
 
 define([if_autoconf],
 [ifelse(ifelse(index(AC_ACVERSION,.),-1,0,[m4_eval(
@@ -295,7 +299,7 @@ define(PIKE_FEATURE_OK,[
 
 define([AC_LOW_MODULE_INIT],
 [
-# $Id: aclocal.m4,v 1.60 2003/12/06 19:21:33 nilsson Exp $
+# $Id: aclocal.m4,v 1.61 2004/03/23 10:40:12 grubba Exp $
 
 MY_AC_PROG_CC
 
