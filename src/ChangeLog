@@ -1,5 +1,6 @@
 Sat Apr 13 04:00:45 1996  Fredrik Hubinette  <hubbe@tymin.signum.se>
 
+	* simulate.lpc: replaced sort_array with a faster one
 	* operators.c: optimization fixed for operators
 	* crypt() should now work with BSD crypt() I hope
 	* lots of files: added a peephole optimizer
