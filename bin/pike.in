@@ -14,4 +14,11 @@ case "$BUILDDIR" in
   *) BUILDDIR="BASEDIR"/"$BUILDDIR";;
 esac
 
-exec "$BUILDDIR/pike" "-m$BUILDDIR/master.pike" "$@"
+if test x"$1" = x--gdb; then
+  shift
+  echo set args -m$BUILDDIR/master.pike $@ > .gdbinit
+  gdb "$BUILDDIR/pike"
+  rm .gdbinit
+else
+  exec "$BUILDDIR/pike" "-m$BUILDDIR/master.pike" "$@"
+fi
