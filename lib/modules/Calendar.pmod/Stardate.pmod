@@ -23,7 +23,7 @@ class cTick
    float t;
    float len;
 
-  //! @decl void create(mixed ...)
+  //! @decl void create(mixed ... args)
   //! @decl void create(int|float date)
   //! @decl void create()
   //!	Apart from the standard creation methods

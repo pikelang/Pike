@@ -1,6 +1,6 @@
 #pike __REAL_VERSION__
 
-// $Id: Session.pike,v 1.7 2003/03/13 07:52:20 mirar Exp $
+// $Id: Session.pike,v 1.8 2003/03/13 22:47:02 nilsson Exp $
 
 import Protocols.HTTP;
 
@@ -22,14 +22,15 @@ typedef string|Standards.URI|SessionURL URL;
 int follow_redirects=20;
 
 //! Default HTTP headers. 
-
 mapping default_headers = ([
    "user-agent":"Mozilla/5.0 (compatible; MSIE 6.0; Pike HTTP client)"
    " Pike/"+__REAL_MAJOR__+"."+__REAL_MINOR__+"."+__REAL_BUILD__,
 ]);
 
+//! Request
 class Request
 {
+
 //!	Raw connection object
    Query con;
 
@@ -47,7 +48,6 @@ class Request
 //! @bugs
 //!	Loops will currently not be detected, only the limit
 //!	works to stop loops.
-
    int follow_redirects= // from parent, will count down
       function_object(object_program(this_object()))->follow_redirects;
 
@@ -56,7 +56,6 @@ class Request
 //!	additions. If a cookie is encountered, this
 //!	function is called. Default is to call 
 //!	@[set_http_cookie] in the @[Session] object.
-
    function(string,Standards.URI:mixed) cookie_encountered=set_http_cookie;
 
 // ----------------
@@ -69,7 +68,6 @@ class Request
 //!
 //!	This method will also use cookie information from the 
 //!	parent @[Session], and may reuse connections (keep-alive).
-
    array(string|int|mapping) prepare_method(
       string method,
       URL url,
@@ -150,7 +148,6 @@ class Request
 //!	0 upon failure, this object upon success
 //! @seealso
 //!     @[prepare_method], @[do_async], @[do_thread]
-
    Request do_sync(array(string|int|mapping) args)
    {
       for (;;)
@@ -191,7 +188,6 @@ class Request
 //!     @[prepare_method], @[do_sync], @[do_async], @[wait]
 //! @note
 //!	@[do_thread] does not rerun redirections automatically
-
    Request do_thread(array(string|int|mapping) args)
    {
       if(!con) con=give_me_connection(url_requested);
@@ -204,7 +200,6 @@ class Request
 //!	0 upon failure, or the called object upon success.
 //! @seealso
 //!     @[do_thread]
-
    Request wait()
    {
       if (con->`()()) 
@@ -230,7 +225,6 @@ class Request
 //!	
 //!	Note here that an error message from the server isn't 
 //!	considered a failure, only a failed TCP connection.
-
    void set_callbacks(function(mixed...:mixed) headers,
 		      function(mixed...:mixed) data,
 		      function(mixed...:mixed) fail,
@@ -251,7 +245,6 @@ class Request
 //!	The called object.
 //! @seealso
 //!     @[set_callbacks], @[prepare_method], @[do_sync], @[do_thread]
-
    Request do_async(array(string|int|mapping) args)
    {
       if(!con)
@@ -376,7 +369,6 @@ class Request
 //! 	@[destroy] is called when an object is destructed.
 //!	But since this clears the HTTP connection from the Request object,
 //!	it can also be used to reuse a @[Request] object.
-
    void destroy()
    {
       if (con) return_connection(url_requested,con);
@@ -479,7 +471,6 @@ class Cookie
 
 //!	Parse and set a cookie received in the HTTP protocol.
 //!	The cookie will be checked against current security levels et al. 
-
 void set_http_cookie(string cookie,Standards.URI at)
 {
    object c=Cookie();
@@ -491,7 +482,6 @@ void set_http_cookie(string cookie,Standards.URI at)
 //!	The cookie will be checked against current security levels et al,
 //!	using the parameter @[who].
 //!	If @[who] is zero, no security checks will be performed.
-
 void set_cookie(Cookie cookie,Standards.URI who)
 {
 // fixme: insert security checks here
@@ -541,7 +531,6 @@ void decode_cookies(string data,void|int(0..1) no_clear)
 //!	This will also take in count expiration of cookies,
 //!	and delete expired cookies from the @[Session] unless 
 //!	@[no_delete] is true.
-
 array(string) get_cookies(Standards.URI|SessionURL for_url,
 			  void|int(0..1) no_delete)
 {
@@ -660,7 +649,6 @@ static inline string connection_lookup(Standards.URI url)
 //!	Request a @[Query] object suitable to use for the
 //!	given URL. This may be a reused object from a keep-alive
 //!	connection.
-
 Query give_me_connection(Standards.URI url)
 {
    Query q;
@@ -722,7 +710,6 @@ static inline void freed_connection(string lookup_freed)
 //!	Return a previously used Query object to the keep-alive
 //!	storage. This function will determine if the given object
 //!	is suitable to keep or not by checking status and headers.
-
 void return_connection(Standards.URI url,Query query)
 {
    connections_inuse_n--;
@@ -780,6 +767,7 @@ Request do_method_url(string method,
 //!	and returns the created and initialized @[Request] object.
 //!	0 is returned upon failure. 
 //!
+
 Request get_url(URL url,
 		void|mapping query_variables)
 {
@@ -887,31 +875,31 @@ Request async_do_method_url(string method,
 }
 
 
-//! @decl Request async_get_url(URL url,
-//! 			    void|mapping query_variables,
-//! 			    function callback_headers_ok,
-//! 			    function callback_data_ok,
-//! 			    function callback_fail,
-//! 			    mixed... callback_arguments);
-//! @decl Request async_put_url(URL url,
-//! 			    void|string file,
-//! 			    void|mapping query_variables,
-//! 			    function callback_headers_ok,
-//! 			    function callback_data_ok,
-//! 			    function callback_fail,
-//! 			    mixed... callback_arguments);
-//! @decl Request async_delete_url(URL url,
-//! 			       void|mapping query_variables,
-//! 			       function callback_headers_ok,
-//! 			       function callback_data_ok,
-//! 			       function callback_fail,
-//! 			       mixed... callback_arguments);
-//! @decl Request async_post_url(URL url,
-//! 			     mapping query_variables,
-//! 			     function callback_headers_ok,
-//! 			     function callback_data_ok,
-//! 			     function callback_fail,
-//! 			     mixed... callback_arguments);
+//! @decl Request async_get_url(URL url,@
+//! 			    void|mapping query_variables,@
+//! 			    function callback_headers_ok,@
+//! 			    function callback_data_ok,@
+//! 			    function callback_fail,@
+//! 			    mixed... callback_arguments)
+//! @decl Request async_put_url(URL url,@
+//! 			    void|string file,@
+//! 			    void|mapping query_variables,@
+//! 			    function callback_headers_ok,@
+//! 			    function callback_data_ok,@
+//! 			    function callback_fail,@
+//! 			    mixed... callback_arguments)
+//! @decl Request async_delete_url(URL url,@
+//! 			       void|mapping query_variables,@
+//! 			       function callback_headers_ok,@
+//! 			       function callback_data_ok,@
+//! 			       function callback_fail,@
+//! 			       mixed... callback_arguments)
+//! @decl Request async_post_url(URL url,@
+//! 			     mapping query_variables,@
+//! 			     function callback_headers_ok,@
+//! 			     function callback_data_ok,@
+//! 			     function callback_fail,@
+//! 			     mixed... callback_arguments)
 //!
 //! 	Sends a HTTP GET, POST, PUT or DELETE request to the server in
 //!     the URL asynchroneously, and call the corresponding callbacks
@@ -982,8 +970,8 @@ Request async_post_url(URL url,
 
 // ----------------------------------------------------------------
 //
-//! Class to store URL+referer
 
+//! Class to store URL+referer
 class SessionURL
 {
    inherit Standards.URI;

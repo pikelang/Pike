@@ -30,6 +30,7 @@ mapping(string:string) abbr2zone=
    "MESZ":"CEST",
 ]);
 
+//!
 this_program set_timezone(string|.Rule.Timezone t)
 {
    if (stringp(t)) {
@@ -45,6 +46,7 @@ this_program set_timezone(string|.Rule.Timezone t)
    return r;
 }
 
+//!
 this_program set_language(string|.Rule.Language lang)
 {
    this_program r=clone();
@@ -59,32 +61,31 @@ this_program set_language(string|.Rule.Language lang)
    return r;
 }
 
-//! method Ruleset set_abbr2zone(mapping(string:string) abbr2zone)
-//!	Sets the guess-mapping for timezones. 
-//!	Default is the mapping
+//! Sets the guess-mapping for timezones. Default is the mapping:
 //!
-//!	<pre>
-//! 	Abbreviation Interpretation
-//!	AMT          America/Manaus       [UTC-4]
-//!	AST	     America/Curacao      [UTC-4]
-//!	CDT	     America/Costa_Rica   [UTC-5]
-//!	CST	     America/El Salvador  [UTC-6]
-//!	EST	     America/Panama       [UTC-5]
-//!	GST          Asia/Dubai           [UTC+4]
-//!	IST          Asia/Jerusalem       [UTC+2]
-//!	WST          Australia/Perth      [UTC+8]
-//!	</pre>
+//! @xml{<matrix>
+//! <r><c><b>Abbreviation</b></c><c><b>Interpretation</b></c>
+//!   <c><b>UTC</b></c></r>
+//! <r><c>AMT</c><c>America/Manaus</c><c>UTC-4</c></r>
+//! <r><c>AST</c><c>America/Curacao</c><c>UTC-4</c></r>
+//! <r><c>CDT</c><c>America/Costa_Rica</c><c>UTC-5</c></r>
+//! <r><c>CST</c><c>America/El Salvador</c><c>UTC-6</c></r>
+//! <r><c>EST</c><c>America/Panama</c><c>UTC-5</c></r>
+//! <r><c>GST</c><c>Asia/Dubai</c><c>UTC+4</c></r>
+//! <r><c>IST</c><c>Asia/Jerusalem</c><c>UTC+2</c></r>
+//! <r><c>WST</c><c>Australia/Perth</c><c>UTC+8</c></r>
+//! </matrix>@}
 //!
-//! see also: YMD.parse
-
-
-this_program set_abbr2zone(mapping(string:string) m)
+//! @seealso
+//!   @[YMD.parse]
+this_program set_abbr2zone(mapping(string:string) abbr2zone)
 {
    this_program r=clone();
-   r->abbr2zone=m;
+   r->abbr2zone=abbr2zone;
    return r;
 }
 
+//!
 this_program set_rule(.Rule.Language|.Rule.Timezone rule)
 {
    this_program r=clone();
@@ -93,6 +94,7 @@ this_program set_rule(.Rule.Language|.Rule.Timezone rule)
    return r;
 }
 
+//!
 this_program clone()
 {
    this_program r=this_program();
@@ -102,6 +104,7 @@ this_program clone()
    return r;
 }
 
+//!
 int(0..1) `==(this_program other)
 {
    if (!objectp(other)) return 0;

@@ -141,8 +141,8 @@ class Day_Event
 
    int nd=1;
 
-  //! @decl int scan_jd(.Calendar realm,int jd,@
-  //!                   int(-1..-1)||int(1..1) direction)
+  //! @decl int scan_jd(.Calendar realm, int jd,@
+  //!                   int(-1..-1)|int(1..1) direction)
   //! These methods has to be defined, and is what
   //! really does some work. It should return the next or previos
   //! julian day (>@i{jd@}) when the event occurs,
@@ -562,8 +562,8 @@ class Gregorian_Fixed
    int md,mn;
    int yd;
 
-  //! @decl create(string id, string name, int(1..31) month_day,@
-  //!              int(1..12) month, int extra)
+  //! @decl void create(string id, string name, int(1..31) month_day,@
+  //!                   int(1..12) month, int extra)
    void create(string _id,string _name,
 	       int(1..31) _md,int(1..12) _mn,int ... _n)
    {
@@ -757,7 +757,7 @@ class Date_Weekday
 
 //! This class represents the event that a given gregorian 
 //! day of month appears a given weekday. For instance,
-//! @tt@{Event.Monthday_Weekday(13,5)->next(Day())@} finds the next
+//! @tt{Event.Monthday_Weekday(13,5)->next(Day())@} finds the next
 //! friday the 13th.
 class Monthday_Weekday
 {
@@ -948,7 +948,7 @@ class Easter
    }
 }
 
-// This class represents an easter relative event.
+//! This class represents an easter relative event.
 class Easter_Relative
 {
    inherit Easter;
@@ -978,7 +978,7 @@ class Easter_Relative
    }
 }
 
-// This class represents an orthodox easter relative event.
+//! This class represents an orthodox easter relative event.
 class Orthodox_Easter_Relative
 {
    inherit Easter_Relative;

@@ -1,5 +1,5 @@
 //
-//  $Id: Cipher.pmod,v 1.3 2003/03/08 22:11:25 nilsson Exp $
+//  $Id: Cipher.pmod,v 1.4 2003/03/13 22:48:40 nilsson Exp $
 
 #pike __REAL_VERSION__
 
@@ -7,6 +7,7 @@
 
 import .Constants;
 
+//! @ignore
 class CipherAlgorithm {
   this_program set_encrypt_key(string);
   this_program set_decrypt_key(string);
@@ -19,6 +20,7 @@ class CipherAlgorithm {
 class MACAlgorithm {
   string hash(object, Gmp.mpz);
 }
+//! @endignore
 
 class CipherSpec {
   program(CipherAlgorithm) bulk_cipher_algorithm;
