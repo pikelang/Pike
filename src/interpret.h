@@ -5,7 +5,7 @@
 \*/
 
 /*
- * $Id: interpret.h,v 1.59 2000/08/07 16:02:47 grubba Exp $
+ * $Id: interpret.h,v 1.60 2000/08/07 18:53:20 grubba Exp $
  */
 #ifndef INTERPRET_H
 #define INTERPRET_H
@@ -174,24 +174,6 @@ enum apply_type
    APPLY_LOW    /* arg1 is the object pointer,(int)arg2 the function */
 };
 
-#ifdef __ECL
-static inline void apply_low(struct object *o, ptrdiff_t fun, INT32 args)
-{
-  mega_apply(APPLY_LOW, args, (void*)o, (void*)fun);
-}
-
-static inline void strict_apply_svalue(struct svalue *sval, INT32 args)
-{
-  mega_apply(APPLY_SVALUE, args, (void*)sval, 0);
-}
-#else /* !__ECL */
-#define apply_low(O,FUN,ARGS) \
-  mega_apply(APPLY_LOW, (ARGS), (void*)(O),(void*)(FUN))
-
-#define strict_apply_svalue(SVAL,ARGS) \
-  mega_apply(APPLY_SVALUE, (ARGS), (void*)(SVAL),0)
-#endif /* __ECL */
-
 #define APPLY_MASTER(FUN,ARGS) \
 do{ \
   static int fun_,master_cnt=0; \
@@ -257,6 +239,27 @@ PMOD_EXPORT void slow_check_stack(void);
 void cleanup_interpret(void);
 void really_clean_up_interpret(void);
 /* Prototypes end here */
+
+/* These need to be after the prototypes,
+ * to avoid implicit declaration of mega_apply().
+ */
+#ifdef __ECL
+static inline void apply_low(struct object *o, ptrdiff_t fun, INT32 args)
+{
+  mega_apply(APPLY_LOW, args, (void*)o, (void*)fun);
+}
+
+static inline void strict_apply_svalue(struct svalue *sval, INT32 args)
+{
+  mega_apply(APPLY_SVALUE, args, (void*)sval, 0);
+}
+#else /* !__ECL */
+#define apply_low(O,FUN,ARGS) \
+  mega_apply(APPLY_LOW, (ARGS), (void*)(O),(void*)(FUN))
+
+#define strict_apply_svalue(SVAL,ARGS) \
+  mega_apply(APPLY_SVALUE, (ARGS), (void*)(SVAL),0)
+#endif /* __ECL */
 
 PMOD_EXPORT extern int d_flag; /* really in main.c */
 
