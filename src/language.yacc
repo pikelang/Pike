@@ -109,7 +109,7 @@
 /* This is the grammar definition of Pike. */
 
 #include "global.h"
-RCSID("$Id: language.yacc,v 1.191 2000/06/24 00:48:13 hubbe Exp $");
+RCSID("$Id: language.yacc,v 1.192 2000/06/26 16:53:31 grubba Exp $");
 #ifdef HAVE_MEMORY_H
 #include <memory.h>
 #endif
@@ -148,7 +148,8 @@ static node *lexical_islocal(struct pike_string *);
 static int varargs;
 static INT32  current_modifiers;
 static struct pike_string *last_identifier=0;
-
+static int inherit_depth;
+static struct program_state *inherit_state = NULL;
 
 /*
  * Kludge for Bison not using prototypes.
@@ -230,6 +231,7 @@ int yylex(YYSTYPE *yylval);
 %type <number> modifier
 %type <number> modifier_list
 %type <number> modifiers
+%type <number> inherit_specifier
 %type <number> function_type_list
 %type <number> function_type_list2
 %type <number> optional_dot_dot_dot
@@ -291,7 +293,6 @@ int yylex(YYSTYPE *yylval);
 %type <n> gauge
 %type <n> idents
 %type <n> idents2
-%type <n> inherit_specifier
 %type <n> lambda
 %type <n> local_name_list
 %type <n> local_name_list2
@@ -1781,7 +1782,7 @@ class: modifiers TOK_CLASS optional_identifier
       struct pike_string *s;
       char buffer[42];
       sprintf(buffer,"__class_%ld_%ld",(long)Pike_compiler->new_program->id,
-	      Pike_compiler->local_class_counter++);
+	      (long)Pike_compiler->local_class_counter++);
       s=make_shared_string(buffer);
       $3=mkstrnode(s);
       free_string(s);
@@ -2357,45 +2358,44 @@ idents: low_idents
 
 inherit_specifier: TOK_IDENTIFIER TOK_COLON_COLON
   {
-    /* FIXME: The following doesn't work...
-    struct program *p = find_named_inherit(Pike_compiler->new_program, $1->u.sval.u.string);
+    int e = 0;
 
-    if (!p) {
-      my_yyerror("No such inherit \"%s\".", $1->u.sval.u.string->str);
-      $$ = 0;
-    } else {
-      struct svalue s;
-      s.type = T_PROGRAM;
-      s.subtype = 0;
-      s.u.program = p;
-      $$ = mkconstantsvaluenode(&s);
+    inherit_state = Pike_compiler;
+
+    for (inherit_depth = -1; inherit_depth < compilation_depth;
+	 inherit_depth++, inherit_state = inherit_state->previous) {
+      if (e = find_inherit(inherit_state->new_program, $1->u.sval.u.string)) {
+	break;
+      }
+    }
+    if (!e) {
+      my_yyerror("No such inherit %s.", $1->u.sval.u.string->str);
     }
     free_node($1);
-    */
+    $$ = e;
   }
   | inherit_specifier TOK_IDENTIFIER TOK_COLON_COLON
   {
-    /* FIXME: This doesn't work either...
     if ($1) {
-      struct program *p = find_named_inherit($1->u.sval.u.program,
-					     $2->u.sval.u.string);
-
-      if (!p) {
-	my_yyerror("No such inherit \"%s\".", $2->u.sval.u.string->str);
-	free_node($1);
+      int e = find_inherit(inherit_state->new_program->inherits[$1].prog,
+			   $2->u.sval.u.string);
+      if (!e) {
+	if (inherit_state->new_program->inherits[$1].name) {
+	  my_yyerror("No such inherit %s::%s.",
+		     inherit_state->new_program->inherits[$1].name->str,
+		     $2->u.sval.u.string->str);
+	} else {
+	  my_yyerror("No such inherit %s.", $2->u.sval.u.string->str);
+	}
 	$$ = 0;
       } else {
-	struct svalue s;
-	s.type = T_PROGRAM;
-	s.subtype = 0;
-	s.u.program = p;
-	$$ = mkconstantsvaluenode(&s);
+	/* We know stuff about the inherit structure... */
+	$$ = e + $1;
       }
     }
-    */
-    yywarning("Multi-level ::-resolving not yet supported.");
     free_node($2);
   }
+  | inherit_specifier bad_identifier TOK_COLON_COLON { $$ = 0; }
   ;
 
 low_idents: TOK_IDENTIFIER
@@ -2450,25 +2450,50 @@ low_idents: TOK_IDENTIFIER
   }
   | inherit_specifier TOK_IDENTIFIER
   {
-    if(last_identifier) free_string(last_identifier);
-    copy_shared_string(last_identifier, $2->u.sval.u.string);
+    if ($1) {
+      int id;
 
-    $$ = reference_inherited_identifier($1->u.sval.u.string,
-					$2->u.sval.u.string);
+      if(last_identifier) free_string(last_identifier);
+      copy_shared_string(last_identifier, $2->u.sval.u.string);
 
-    if (!$$)
-    {
-      my_yyerror("Undefined identifier %s::%s.", 
-		 $1->u.sval.u.string->str,
-		 $2->u.sval.u.string->str);
+      id = low_reference_inherited_identifier(inherit_state,
+					      $1,
+					      last_identifier,
+					      SEE_STATIC);
+
+      if (id != -1) {
+	if (inherit_depth >= 0) {
+	  $$ = mkexternalnode(inherit_depth, id,
+			      ID_FROM_INT(inherit_state->new_program, id));
+	} else {
+	  $$ = mkidentifiernode(id);
+	}
+      } else if(ISCONSTSTR(last_identifier, "`->") ||
+		ISCONSTSTR(last_identifier, "`[]")) {
+	$$ = mknode(F_MAGIC_INDEX, mknewintnode($1),
+		    mknewintnode(inherit_depth+1));
+      } else if(ISCONSTSTR(last_identifier, "`->=") ||
+		ISCONSTSTR(last_identifier, "`[]=")) {
+	$$ = mknode(F_MAGIC_SET_INDEX, mknewintnode($1),
+		    mknewintnode(inherit_depth+1));
+      } else {
+	if (inherit_state->new_program->inherits[$1].name) {
+	  my_yyerror("Undefined identifier %s::%s.",
+		     inherit_state->new_program->inherits[$1].name->str,
+		     last_identifier->str);
+	} else {
+	  my_yyerror("Undefined identifier %s.", last_identifier->str);
+	}
+	$$=0;
+      }
+    } else {
       $$=0;
     }
 
-    free_node($1);
     free_node($2);
   }
-  | inherit_specifier bad_identifier
-  | inherit_specifier error
+  | inherit_specifier bad_identifier { $$=0; }
+  | inherit_specifier error { $$=0; }
   | TOK_COLON_COLON TOK_IDENTIFIER
   {
     int e,i;
