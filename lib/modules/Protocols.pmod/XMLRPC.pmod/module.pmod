@@ -341,12 +341,10 @@ class Client(string|Standards.URI url)
   {
     return lambda(mixed ... args)
 	   {
-	     object c=Protocols.HTTP.do_method("POST",
-					       url,
-					       0,
-					       ([ "Content-Type":"text/xml"]),
-					       0,
-					       encode_call( call, args ));
+	     Protocols.HTTP.Query c=Protocols.
+	       HTTP.do_method("POST", url, 0, ([ "Content-Type":"text/xml"]),
+			      0, encode_call( call, args ));
+	     if(!c) error("Could not connect to %O\n", url);
 	     return decode_response(c->data());
 	   };
   }
