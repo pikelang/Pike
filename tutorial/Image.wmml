@@ -1,3 +1,5 @@
+<chapter title="Image">
+
 <hr newpage>
 <anchor name=Image>
 <dl>
@@ -30,24 +32,24 @@ This module adds image-drawing and -manipulating
 
 <dt><encaps>NOTA BENE</encaps><dd>
 <font size=-1><pre>Image module documentation is based on these file versions:
-     $Id: Image.wmml,v 1.2 1997/11/10 13:24:12 mirar Exp $
-     $Id: Image.wmml,v 1.2 1997/11/10 13:24:12 mirar Exp $
-     $Id: Image.wmml,v 1.2 1997/11/10 13:24:12 mirar Exp $
-     $Id: Image.wmml,v 1.2 1997/11/10 13:24:12 mirar Exp $
-     $Id: Image.wmml,v 1.2 1997/11/10 13:24:12 mirar Exp $
-     $Id: Image.wmml,v 1.2 1997/11/10 13:24:12 mirar Exp $
-     $Id: Image.wmml,v 1.2 1997/11/10 13:24:12 mirar Exp $
-     $Id: Image.wmml,v 1.2 1997/11/10 13:24:12 mirar Exp $
-     $Id: Image.wmml,v 1.2 1997/11/10 13:24:12 mirar Exp $
-     $Id: Image.wmml,v 1.2 1997/11/10 13:24:12 mirar Exp $
-     $Id: Image.wmml,v 1.2 1997/11/10 13:24:12 mirar Exp $
-     $Id: Image.wmml,v 1.2 1997/11/10 13:24:12 mirar Exp $
-     $Id: Image.wmml,v 1.2 1997/11/10 13:24:12 mirar Exp $
-     $Id: Image.wmml,v 1.2 1997/11/10 13:24:12 mirar Exp $
-     $Id: Image.wmml,v 1.2 1997/11/10 13:24:12 mirar Exp $
-     $Id: Image.wmml,v 1.2 1997/11/10 13:24:12 mirar Exp $
-     $Id: Image.wmml,v 1.2 1997/11/10 13:24:12 mirar Exp $
-     $Id: Image.wmml,v 1.2 1997/11/10 13:24:12 mirar Exp $
+     $Id: Image.wmml,v 1.3 1997/11/10 13:26:00 mirar Exp $
+     $Id: Image.wmml,v 1.3 1997/11/10 13:26:00 mirar Exp $
+     $Id: Image.wmml,v 1.3 1997/11/10 13:26:00 mirar Exp $
+     $Id: Image.wmml,v 1.3 1997/11/10 13:26:00 mirar Exp $
+     $Id: Image.wmml,v 1.3 1997/11/10 13:26:00 mirar Exp $
+     $Id: Image.wmml,v 1.3 1997/11/10 13:26:00 mirar Exp $
+     $Id: Image.wmml,v 1.3 1997/11/10 13:26:00 mirar Exp $
+     $Id: Image.wmml,v 1.3 1997/11/10 13:26:00 mirar Exp $
+     $Id: Image.wmml,v 1.3 1997/11/10 13:26:00 mirar Exp $
+     $Id: Image.wmml,v 1.3 1997/11/10 13:26:00 mirar Exp $
+     $Id: Image.wmml,v 1.3 1997/11/10 13:26:00 mirar Exp $
+     $Id: Image.wmml,v 1.3 1997/11/10 13:26:00 mirar Exp $
+     $Id: Image.wmml,v 1.3 1997/11/10 13:26:00 mirar Exp $
+     $Id: Image.wmml,v 1.3 1997/11/10 13:26:00 mirar Exp $
+     $Id: Image.wmml,v 1.3 1997/11/10 13:26:00 mirar Exp $
+     $Id: Image.wmml,v 1.3 1997/11/10 13:26:00 mirar Exp $
+     $Id: Image.wmml,v 1.3 1997/11/10 13:26:00 mirar Exp $
+     $Id: Image.wmml,v 1.3 1997/11/10 13:26:00 mirar Exp $
      </pre></font>
 <p>
 
@@ -4652,3 +4654,4 @@ the encoded image as a string
 
 
 
+</chapter>
