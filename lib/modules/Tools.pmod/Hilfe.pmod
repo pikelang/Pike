@@ -4,7 +4,7 @@
 // Incremental Pike Evaluator
 //
 
-constant cvs_version = ("$Id: Hilfe.pmod,v 1.81 2002/06/13 22:09:21 nilsson Exp $");
+constant cvs_version = ("$Id: Hilfe.pmod,v 1.82 2002/06/25 15:59:05 nilsson Exp $");
 constant hilfe_todo = #"List of known Hilfe bugs/room for improvements:
 
 - Hilfe can not handle sscanf statements like
@@ -1214,19 +1214,23 @@ class Evaluator {
     // Tokenize the input
     array(string) tokens = state->push_string(s);
     array(string) words = s/" ";
+    string command = words[0];
 
     // See if first token is a command and not a defined entity.
-    if(commands[words[0]] && zero_type(constants[words[0]]) &&
-       zero_type(variables[words[0]]) && zero_type(functions[words[0]]) &&
+    if(commands[command] && zero_type(constants[command]) &&
+       zero_type(variables[command]) && zero_type(functions[command]) &&
        (sizeof(words)==1 || words[1]!=";")) {
-      commands[words[0]]->exec(this_object(), s, words, tokens);
+      commands[command]->exec(this_object(), s, words, tokens);
       return;
     }
 
     // See if the command is executed in overridden mode.
-    if(commands[words[0][1..]]) {
-      commands[words[0][1..]]->exec(this_object(), s, words, tokens);
-      return;
+    if(command[0]=='.') {
+      command = command[1..];
+      if(commands[command]) {
+	commands[command]->exec(this_object(), s, words, tokens);
+	return;
+      }
     }
 
     if(!tokens) {
