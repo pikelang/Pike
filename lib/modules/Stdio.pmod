@@ -15,6 +15,11 @@ class File
 #endif
   mixed ___id;
 
+  int errno()
+  {
+    return _fd && ::errno();
+  }
+
   int open(string file, string mode, void|int bits)
   {
     _fd=Fd();
