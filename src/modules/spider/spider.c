@@ -43,7 +43,7 @@
 #include "threads.h"
 #include "operators.h"
 
-RCSID("$Id: spider.c,v 1.101 2000/12/01 08:10:37 hubbe Exp $");
+RCSID("$Id: spider.c,v 1.102 2001/07/03 02:25:05 david%hedbor.org Exp $");
 
 #ifdef HAVE_PWD_H
 #include <pwd.h>
@@ -163,6 +163,7 @@ void f_parse_html(INT32 args)
   struct mapping *cont,*single;
   int strings;
   struct array *extra_args;
+  ONERROR serr, cerr, eerr, sserr;
 
   if (args<3||
       sp[-args].type!=T_STRING||
@@ -179,15 +180,19 @@ void f_parse_html(INT32 args)
   }
 
   add_ref(ss);
-
   add_ref(single=sp[1-args].u.mapping);
   add_ref(cont=sp[2-args].u.mapping);
+
+  SET_ONERROR(serr, do_free_mapping, single);
+  SET_ONERROR(cerr, do_free_mapping, cont);
+  SET_ONERROR(sserr, do_free_string, ss);
 
   if (args>3)
   {
     f_aggregate(args-3);
     add_ref(extra_args=sp[-1].u.array);
     pop_stack();
+    SET_ONERROR(eerr, do_free_array, extra_args);
   }
   else extra_args=NULL;
 
@@ -196,7 +201,13 @@ void f_parse_html(INT32 args)
   strings=0;
   do_html_parse(ss,cont,single,&strings,MAX_PARSE_RECURSE,extra_args);
 
-  if (extra_args) free_array(extra_args);
+  UNSET_ONERROR(serr);
+  UNSET_ONERROR(cerr);
+  UNSET_ONERROR(sserr);
+  if (extra_args) {
+    UNSET_ONERROR(eerr);
+    free_array(extra_args);
+  }
 
   free_mapping(cont);
   free_mapping(single);
@@ -213,7 +224,7 @@ void f_parse_html_lines(INT32 args)
   struct mapping *cont,*single;
   int strings;
   struct array *extra_args;
-
+  ONERROR serr, cerr, eerr, sserr;
   if (args<3||
       sp[-args].type!=T_STRING||
       sp[1-args].type!=T_MAPPING||
@@ -232,22 +243,30 @@ void f_parse_html_lines(INT32 args)
 
   add_ref(single=sp[1-args].u.mapping);
   add_ref(cont=sp[2-args].u.mapping);
-
+  
   if (args>3)
   {
     f_aggregate(args-3);
     add_ref(extra_args=sp[-1].u.array);
     pop_stack();
+    SET_ONERROR(eerr, do_free_array, extra_args);
   }
   else extra_args=NULL;
 
   pop_n_elems(3);
 /*   fprintf(stderr, "sp=%p\n", sp); */
-
+  SET_ONERROR(serr, do_free_mapping, single);
+  SET_ONERROR(cerr, do_free_mapping, cont);
+  SET_ONERROR(sserr, do_free_string, ss);
   strings=0;
   do_html_parse_lines(ss,cont,single,&strings,MAX_PARSE_RECURSE,extra_args,1);
-
-  if (extra_args) free_array(extra_args);
+  UNSET_ONERROR(serr);
+  UNSET_ONERROR(cerr);
+  UNSET_ONERROR(sserr);
+  if(extra_args) {
+    UNSET_ONERROR(eerr);
+    free_array(extra_args);
+  }
   free_mapping(cont);
   free_mapping(single);
   if(strings > 1)
@@ -542,6 +561,7 @@ void do_html_parse(struct pike_string *ss,
       }
       else if (sval1.type!=T_INT)
       {
+	ONERROR sv1, sv2;
 	/* Hopefully something callable ... */
 	assign_svalue_no_free(sp++,&sval2);
 	k = push_parsed_tag(s+j,len-j);
@@ -550,8 +570,11 @@ void do_html_parse(struct pike_string *ss,
 	  add_ref(extra_args);
 	  push_array_items(extra_args);
 	}
-
+	SET_ONERROR(sv1, do_free_svalue, &sval1);
+	SET_ONERROR(sv2, do_free_svalue, &sval2);
 	apply_svalue(&sval1,2+(extra_args?extra_args->size:0));
+	UNSET_ONERROR(sv1);
+	UNSET_ONERROR(sv2);
 	free_svalue(&sval2);
 	free_svalue(&sval1);
 
@@ -611,6 +634,7 @@ void do_html_parse(struct pike_string *ss,
       }
       else if (sval1.type != T_INT)
       {
+	ONERROR sv1, sv2;
 	assign_svalue_no_free(sp++, &sval2);
 	m = push_parsed_tag(s+j, len-j) + j;
 	k = find_endtag(sval2.u.string, s+m, len-m, &l);
@@ -624,7 +648,11 @@ void do_html_parse(struct pike_string *ss,
 	  push_array_items(extra_args);
 	}
 
+	SET_ONERROR(sv1, do_free_svalue, &sval1);
+	SET_ONERROR(sv2, do_free_svalue, &sval2);
 	apply_svalue(&sval1,3+(extra_args?extra_args->size:0));
+	UNSET_ONERROR(sv1);
+	UNSET_ONERROR(sv2);
 	free_svalue(&sval1);
 	free_svalue(&sval2);
 
