@@ -4,7 +4,7 @@
 ||| See the files COPYING and DISCLAIMER for more information.
 \*/
 #include "global.h"
-RCSID("$Id: gdbmmod.c,v 1.13 2001/01/23 13:47:31 grubba Exp $");
+RCSID("$Id: gdbmmod.c,v 1.14 2001/01/23 22:12:39 grubba Exp $");
 #include "gdbm_machine.h"
 #include "threads.h"
 
@@ -353,7 +353,7 @@ void pike_module_init(void)
   
   /* function(void|string,void|string:void) */
   ADD_FUNCTION("create", gdbmmod_create,
-	       tFunc(tOr(tVoid,tStr) tOr(tVoid,tStr), tVoid), ID_STATIC);
+	       tFunc(tOr(tVoid,tStr) tOr(tVoid,tStr), tVoid), 0 /*ID_STATIC*/);
 
   /* function(:void) */
   ADD_FUNCTION("close",gdbmmod_close,tFunc(tNone,tVoid),0);
