@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: block_alloc.h,v 1.53 2002/11/24 20:31:23 mast Exp $
+|| $Id: block_alloc.h,v 1.54 2002/11/24 22:41:55 mast Exp $
 */
 
 #undef PRE_INIT_BLOCK
@@ -16,6 +16,9 @@
 #undef COUNT_OTHER
 #undef BLOCK_ALLOC_HSIZE_SHIFT
 #undef MAX_EMPTY_BLOCKS
+#undef BLOCK_ALLOC_FILL_PAGES
+#undef PTR_HASH_ALLOC_FILL_PAGES
+#undef PTR_HASH_ALLOC_FIXED_FILL_PAGES
 
 #define PRE_INIT_BLOCK(X)
 #define INIT_BLOCK(X)
@@ -38,10 +41,30 @@
 #define BA_INLINE
 #endif
 
-/* Size of the members in the block struct below that doesn't contain
- * the payload data (i.e. that aren't x). This can be used in
- * BSIZE to make the block fit within a page. */
+#define BLOCK_ALLOC_FILL_PAGES(DATA, PAGES)				\
+  BLOCK_ALLOC(DATA,							\
+              ((PIKE_MALLOC_PAGE_SIZE * (PAGES))			\
+               - PIKE_MALLOC_OVERHEAD - BLOCK_HEADER_SIZE) /		\
+              sizeof (struct DATA))
+
+#define PTR_HASH_ALLOC_FILL_PAGES(DATA, PAGES)				\
+  PTR_HASH_ALLOC(DATA,							\
+                 ((PIKE_MALLOC_PAGE_SIZE * (PAGES))			\
+                  - PIKE_MALLOC_OVERHEAD - BLOCK_HEADER_SIZE) /		\
+                 sizeof (struct DATA))
+
+#define PTR_HASH_ALLOC_FIXED_FILL_PAGES(DATA, PAGES)			\
+  PTR_HASH_ALLOC_FIXED(DATA,						\
+                       ((PIKE_MALLOC_PAGE_SIZE * (PAGES))		\
+                        - PIKE_MALLOC_OVERHEAD - BLOCK_HEADER_SIZE) /	\
+                       sizeof (struct DATA))
+
+/* Size of the members in the block struct below that don't contain
+ * the payload data (i.e. that aren't x). This can be used in BSIZE to
+ * make the block fit within a page. */
+#ifndef BLOCK_HEADER_SIZE
 #define BLOCK_HEADER_SIZE (3 * sizeof (void *) + sizeof (INT32))
+#endif
 
 #define BLOCK_ALLOC(DATA,BSIZE)						\
 									\
@@ -325,14 +348,14 @@ static inline struct DATA *						     \
 {									     \
   struct DATA *p,**pp;							     \
   p=PIKE_CONCAT(DATA,_hash_table)[hval];                                     \
-  if(!p || p->data == ptr)                                                   \
+  if(!p || p->PTR_HASH_ALLOC_DATA == ptr)				     \
   {                                                                          \
     DO_IF_RUN_UNLOCKED(mt_unlock(&PIKE_CONCAT(DATA,_mutex)));                \
     return p;                                                                \
   }                                                                          \
   while((p=*(pp=&p->BLOCK_ALLOC_NEXT)))                                      \
   {									     \
-    if(p->data==ptr)							     \
+    if(p->PTR_HASH_ALLOC_DATA==ptr)					     \
     {									     \
       *pp=p->BLOCK_ALLOC_NEXT;						     \
       p->BLOCK_ALLOC_NEXT=PIKE_CONCAT(DATA,_hash_table)[hval];		     \
@@ -473,7 +496,7 @@ struct DATA *PIKE_CONCAT3(make_,DATA,_unlocked)(void *ptr, size_t hval)   \
   PIKE_CONCAT(num_,DATA)++;						     \
 									     \
   p=BA_UL(PIKE_CONCAT(alloc_,DATA))();					     \
-  p->data=ptr;								     \
+  p->PTR_HASH_ALLOC_DATA=ptr;						     \
   p->BLOCK_ALLOC_NEXT=PIKE_CONCAT(DATA,_hash_table)[hval];		     \
   PIKE_CONCAT(DATA,_hash_table)[hval]=p;				     \
   return p;								     \
@@ -510,7 +533,7 @@ static void PIKE_CONCAT(DATA,_rehash)()					     \
       while((p=old_hash[e]))						     \
       {									     \
 	old_hash[e]=p->BLOCK_ALLOC_NEXT;				     \
-	hval=(size_t)(p->data);					     \
+        hval=(size_t)(p->PTR_HASH_ALLOC_DATA);				     \
 	hval%=PIKE_CONCAT(DATA,_hash_table_size);			     \
 	p->BLOCK_ALLOC_NEXT=PIKE_CONCAT(DATA,_hash_table)[hval];	     \
 	PIKE_CONCAT(DATA,_hash_table)[hval]=p;				     \
@@ -540,7 +563,7 @@ struct DATA *PIKE_CONCAT3(make_,DATA,_unlocked)(void *ptr, size_t hval)   \
   }									     \
 									     \
   p=BA_UL(PIKE_CONCAT(alloc_,DATA))();					     \
-  p->data=ptr;								     \
+  p->PTR_HASH_ALLOC_DATA=ptr;						     \
   p->BLOCK_ALLOC_NEXT=PIKE_CONCAT(DATA,_hash_table)[hval];		     \
   PIKE_CONCAT(DATA,_hash_table)[hval]=p;				     \
   return p;								     \

@@ -2,12 +2,15 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: block_alloc_h.h,v 1.14 2002/10/11 01:41:28 nilsson Exp $
+|| $Id: block_alloc_h.h,v 1.15 2002/11/24 22:41:55 mast Exp $
 */
 
 #undef BLOCK_ALLOC
 #undef PTR_HASH_ALLOC
 #undef PTR_HASH_ALLOC_FIXED
+#undef BLOCK_ALLOC_FILL_PAGES
+#undef PTR_HASH_ALLOC_FILL_PAGES
+#undef PTR_HASH_ALLOC_FIXED_FILL_PAGES
 
 #define BLOCK_ALLOC(DATA,SIZE)						\
 struct DATA *PIKE_CONCAT(alloc_,DATA)(void);				\
@@ -35,9 +38,19 @@ void PIKE_CONCAT3(exit_,DATA,_hash)(void);			\
 #define PTR_HASH_ALLOC_FIXED(DATA,BSIZE)			\
 PTR_ALLOC(DATA,BSIZE);
 
+#define BLOCK_ALLOC_FILL_PAGES(DATA,PAGES) BLOCK_ALLOC(DATA, n/a)
+#define PTR_HASH_ALLOC_FILL_PAGES(DATA,PAGES) PTR_HASH_ALLOC(DATA, n/a)
+#define PTR_HASH_ALLOC_FIXED_FILL_PAGES(DATA,PAGES) PTR_HASH_ALLOC_FIXED(DATA, n/a)
+
 #define PTR_HASH_LOOP(DATA,HVAL,PTR)					\
   for ((HVAL) = PIKE_CONCAT(DATA,_hash_table_size); (HVAL)-- > 0;)	\
     for ((PTR) = PIKE_CONCAT(DATA,_hash_table)[HVAL];			\
 	 (PTR); (PTR) = (PTR)->BLOCK_ALLOC_NEXT)
 
+/* The name of a member in the BLOCK_ALLOC struct big enough to
+ * contain a void * (used for the free list). */
 #define BLOCK_ALLOC_NEXT next
+
+/* The name of a void * member in the PTR_HASH_ALLOC struct containing
+ * the key. */
+#define PTR_HASH_ALLOC_DATA data
