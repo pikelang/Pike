@@ -4,7 +4,7 @@ AC_CONFIG_HEADER(config.h)
 
 sinclude(../module_configure.in)
 
-AC_ARG_WITH(ssleay,  [  --without-ssleay       no support for the secure socket protocol],[],[with_ssleay=yes])
+AC_ARG_WITH(ssleay,  [  --with-ssleay       enable the ssleay-module],[],[with_ssleay=no])
 
 if test x$with_ssleay = xyes; then
   OLD_LDFLAGS=$LDFLAGS
