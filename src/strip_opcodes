@@ -9,23 +9,23 @@
 #  o Character ranges may not contain literal newlines.
 
 sed -e '
-  # First pass-through and convert #line directives.
+# First pass-through and convert #line directives.
   /^#line/b
   s/^# \([0-9]* "[^"]*"\).*$/#line \1/
   s/^# \([0-9]*\).*$/#line \1/
   t
 
-  # Output all complete OPCODE[0-9].* --- expressions
-  # accumulated so far.
+# Output all complete OPCODE[0-9].* --- expressions
+# accumulated so far.
 : loop
   /OPCODE[0-9]/!b keepnl
 
-  # Stupid IRIX cpp turns --- into -- -
-  # SysV sed does not support multi-character *-expressions,
-  # so we use ½ instead.
+# Stupid IRIX cpp turns --- into -- -
+# SysV sed does not support multi-character *-expressions,
+# so we use ½ instead.
   s/ -- \{0,1\}- / ½ /g
 
-  # Make sure the substitute flag is cleared.
+# Make sure the substitute flag is cleared.
   t loop
 
   h
@@ -34,47 +34,47 @@ sed -e '
   N
   b loop
 
-  # Remove the match from the hold space,
-  # and check for more.
+# Remove the match from the hold space,
+# and check for more.
 : more
   g
   s/^[^½]*OPCODE[0-9][^½]* ½\(.*\)$/\1/
   b loop
 
-  # Keep only the newlines.
+# Keep only the newlines.
 : keepnl
   s/.//g' | sed -e '
-  # Redundant or extra newline and #line removal.
+# Redundant or extra newline and #line removal.
 
-  # Remove newlines that were inserted by p.
+# Remove newlines that were inserted by p.
 : loop
   /¤$/{
     N
     s/¤\n//
     b loop
   }
-  # Add empty lines to hold, and start the next cycle.
+# Add empty lines to hold, and start the next cycle.
   /^[ 	]*$/{
-    # We are only interrested in the newline...
+# We are only interrested in the newline...
     s/.//g
     H
     x
-    # RLE encode newlines so that we can avoid overflowing hold.
+# RLE encode newlines so that we can avoid overflowing hold.
     s/\n\{16,16\}/¤/
     s/¤\{16,16\}/½/
     x
     d
   }
-  # Clear hold, and put #line directives there,
-  # and start the next cycle.
+# Clear hold, and put #line directives there,
+# and start the next cycle.
   /^#line/{
     h
     d
   }
 
-  # Print hold except for a possible initial newline.
+# Print hold except for a possible initial newline.
   x
-  # Unpack the RLE.
+# Unpack the RLE.
   s/½/¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤/g
   s/¤/\
 \
@@ -96,7 +96,7 @@ sed -e '
   s/^\n//
   p
 
-  # Clear hold.
+# Clear hold.
   s/.//g
   s/\n//g
   x'
