@@ -11,7 +11,7 @@ math.a: $(FILES)
 	-@RANLIB@ math.a
 
 clean:
-	-rm -f *.o
+	-rm -f *.o *.a
 
 depend:
 	gcc -MM $(PREFLAGS) $(SRCDIR)/*.c  >$(SRCDIR)/dependencies
