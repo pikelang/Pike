@@ -1,3 +1,15 @@
+pushdef([AC_PROG_CC],
+[
+  popdef([AC_PROG_CC])
+
+  AC_PROG_CC
+
+  case "$CC" in
+    *tcc*) TCC="yes" ;;
+    *) TCC="no" ;;
+  esac
+])
+
 define([MY_AC_PROG_CC],
 [
 define(ac_cv_prog_CC,pike_cv_prog_CC)
@@ -14,7 +26,7 @@ pushdef([AC_CONFIG_HEADER],
 
 define([AC_LOW_MODULE_INIT],
 [
-# $Id: aclocal.m4,v 1.4 1999/04/24 11:40:29 grubba Exp $
+# $Id: aclocal.m4,v 1.5 1999/04/25 18:40:52 grubba Exp $
 
 MY_AC_PROG_CC
 
