@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: efuns.c,v 1.127 2003/04/28 00:32:43 mast Exp $
+|| $Id: efuns.c,v 1.128 2003/05/02 17:16:36 grubba Exp $
 */
 
 #include "global.h"
@@ -26,7 +26,7 @@
 #include "file_machine.h"
 #include "file.h"
 
-RCSID("$Id: efuns.c,v 1.127 2003/04/28 00:32:43 mast Exp $");
+RCSID("$Id: efuns.c,v 1.128 2003/05/02 17:16:36 grubba Exp $");
 
 #ifdef HAVE_SYS_TYPES_H
 #include <sys/types.h>
@@ -772,9 +772,11 @@ void f_mkdir(INT32 args)
 	do {
 	  i = chmod(str->str, mode) != -1;
 	  if (i || errno != EINTR) break;
-	  THREADS_DISALLOW_UID();
-	  check_threads_etc();
-	  THREADS_ALLOW_UID();
+	  do {
+	    THREADS_DISALLOW_UID();
+	    check_threads_etc();
+	    THREADS_ALLOW_UID();
+	  } while (0);
 	} while (1);
       }
       if (i) {
