@@ -1,6 +1,6 @@
 #! /usr/bin/env pike
 
-/* $Id: export.pike,v 1.45 2002/04/08 17:02:43 mikael%unix.pp.se Exp $ */
+/* $Id: export.pike,v 1.46 2002/04/08 18:05:17 mikael%unix.pp.se Exp $ */
 
 multiset except_modules = (<>);
 string vpath;
@@ -114,13 +114,14 @@ int main(int argc, array(string) argv)
 {
   array(string) files;
   object cvs;
-  int notag;
+  int notag, snapshot;
 
   foreach(Getopt.find_all_options(argv, ({
-    ({ "srcdir", Getopt.HAS_ARG, "--srcdir"  }),
-    ({ "rebuild",Getopt.NO_ARG,  "--rebuild" }),
-    ({ "notag",  Getopt.NO_ARG,  "--notag"   }),
-    ({ "help",   Getopt.NO_ARG,  "--help"    }),
+    ({ "srcdir",   Getopt.HAS_ARG, "--srcdir" }),
+    ({ "rebuild",  Getopt.NO_ARG,  "--rebuild"}),
+    ({ "notag",    Getopt.NO_ARG,  "--notag"  }),
+    ({ "help",     Getopt.NO_ARG,  "--help"   }),
+    ({ "snapshot", Getopt.NO_ARG, "--snapshot"})
   }) ),array opt)
     {
       switch(opt[0])
@@ -140,6 +141,10 @@ int main(int argc, array(string) argv)
 
         case "notag":
 	  notag=1;
+	  break;
+	  
+        case "snapshot":
+	  snapshot=1;
 	  break;
 
         case "help":
@@ -178,8 +183,14 @@ int main(int argc, array(string) argv)
   }
   else if(notag) {
     mapping m = gmtime(time());
-    vpath = sprintf("%04d%02d%02d_%02d%02d%02d", 1900+m->year, m->mon+1, m->mday,
-		    m->hour, m->min, m->sec);
+    array(int) version = getversion();
+    if(snapshot)
+      vpath = sprintf("Pike-v%d.%d-snapshot-%02d%02d%02d", 
+		      version[0], version[1],
+		      1900+m->year, m->mon+1, m->mday);
+    else
+      vpath = sprintf("%04d%02d%02d_%02d%02d%02d", 1900+m->year, m->mon+1, 
+		      m->mday, m->hour, m->min, m->sec);
   }
   else {
     array(int) version = getversion();
@@ -264,7 +275,9 @@ Usage: export.pike --srcdir=<src> <except modules>
 
 Creates a pike distribution. Optional arguments:
 
- rebuild
- notag
- help
+ rebuild    not implemented
+ notag      used for small export (yyyymmdd_hhmmdd.tar.gz)
+ snapshot   modifier to notag to create filename of type 
+            Pike-vX.Y-snapshot-yyyymmdd.tar.gz
+ help       show this text
 ";

@@ -1,5 +1,5 @@
 #
-# $Id: Makefile,v 1.60 2002/03/14 02:11:44 mast Exp $
+# $Id: Makefile,v 1.61 2002/04/08 18:05:16 mikael%unix.pp.se Exp $
 #
 # Meta Makefile
 #
@@ -204,6 +204,11 @@ export:
 	@$(MAKE) "MAKE=$(MAKE)" "CONFIGUREARGS=--disable-binary $(CONFIGUREARGS)" \
 	  "OS=source" "LIMITED_TARGETS=yes" "METATARGET=export" compile
 
+snapshot_export:
+	@$(MAKE) "MAKE=$(MAKE)" "CONFIGUREARGS=--disable-binary $(CONFIGUREARGS)" \
+	  "OS=source" "LIMITED_TARGETS=yes" "METATARGET=snapshot_export" compile
+
+snapshot: snapshot_export
 
 autobuild_export:
 	@$(MAKE) "MAKE=$(MAKE)" "CONFIGUREARGS=--disable-binary $(CONFIGUREARGS)" \

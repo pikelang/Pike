@@ -1,4 +1,4 @@
-$Id: README-CVS.txt,v 1.14 2002/04/08 17:02:43 mikael%unix.pp.se Exp $
+$Id: README-CVS.txt,v 1.15 2002/04/08 18:05:16 mikael%unix.pp.se Exp $
 
 HOW TO BUILD PIKE FROM CVS
 
@@ -46,6 +46,7 @@ verify		    run the testsuite
 run_hilfe	    run hilfe without installing pike
 source		    prepare the source tree for compiliation without
 		    the need for a Pike.
+snapshot	    create a snapshot export tarball.
 export		    create a source dist and bump up the build number
 		    (if you have cvs write access). Please DO NOT
 		    check in the generated files.

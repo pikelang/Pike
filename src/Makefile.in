@@ -1,5 +1,5 @@
 #
-# $Id: Makefile.in,v 1.295 2002/04/08 01:50:14 marcus Exp $
+# $Id: Makefile.in,v 1.296 2002/04/08 18:05:17 mikael%unix.pp.se Exp $
 #
 
 # This line is needed on some machines.
@@ -575,6 +575,10 @@ small_export: source
 full_export: source
 	chmod +x $(SRCDIR)/install-sh
 	$(RUNPIKE) $(TMP_BINDIR)/export.pike --srcdir="$(SRCDIR)" 
+
+snapshot_export: source
+	chmod +x $(SRCDIR)/install-sh
+	$(RUNPIKE) $(TMP_BINDIR)/export.pike --srcdir="$(SRCDIR)" --notag --snapshot
 
 export: full_export
 
