@@ -1,5 +1,3 @@
-#if constant(GTK.parse_rc)
-
 #define FLAG_SHIFT   1
 #define FLAG_CTRL    4
 #define FLAG_ALT     8
@@ -220,5 +218,3 @@ array(object) MenuFactory( MenuDef ... definition )
   }
   return ({bar,table});
 }
-
-#endif
