@@ -54,6 +54,30 @@ test_equal(sort(({4,3,2,1})),({1,2,3,4}))
 test_equal([[lambda() {string *a=({1,2,3,4}); sort(({4,3,2,1}),a); return a; }()]],[[({4,3,2,1})]] )
 test_equal([[lambda() {string *a=({1,2,3,4}),*b=a+({}); sort(({4,3,2,1}),a,b); return b; }()]],[[({4,3,2,1})]] )
 
+cond([[all_efuns()->thread_create]],
+[[
+// thread_create
+  test_do(thread_create(lambda() { }))
+
+// /precompiled/mutex
+  test_true(clone(Mutex))
+  test_true(clone(Mutex)->lock())
+  test_true(clone(Mutex)->trylock())
+
+// /precompiled/condition
+  test_true(clone(Condition))
+  test_do(clone(Condition)->signal())
+  test_do(clone(Condition)->broadcast())
+
+// /precompiled/fifo
+test_any([[
+#include <fifo.h>
+return 0;
+]],0)
+  test_do(clone(Fifo))
+  re
+]])
+
 
 // m_delete
 test_equal(([1:1]),m_delete(a(),0))
