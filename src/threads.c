@@ -2,12 +2,12 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: threads.c,v 1.222 2003/10/06 13:01:37 mast Exp $
+|| $Id: threads.c,v 1.223 2003/10/19 13:47:42 mast Exp $
 */
 
 #ifndef CONFIGURE_TEST
 #include "global.h"
-RCSID("$Id: threads.c,v 1.222 2003/10/06 13:01:37 mast Exp $");
+RCSID("$Id: threads.c,v 1.223 2003/10/19 13:47:42 mast Exp $");
 
 PMOD_EXPORT int num_threads = 1;
 PMOD_EXPORT int threads_disabled = 0;
@@ -263,6 +263,31 @@ PMOD_EXPORT ptrdiff_t thread_storage_offset;
 PMOD_EXPORT clock_t thread_start_clock = 0;
 #endif
 
+#ifdef PIKE_DEBUG
+PMOD_EXPORT const char msg_ip_not_locked[] =
+  "Interpreter not locked.\n";
+PMOD_EXPORT const char msg_ip_not_locked_this_thr[] =
+  "Interpreter not locked by this thread.\n";
+PMOD_EXPORT const char msg_thr_swapped_over[] =
+  "Thread %08x swapped in over existing thread %08x.\n";
+PMOD_EXPORT const char msg_saved_thread_id[] =
+  "Saved thread id: ";
+PMOD_EXPORT const char msg_swap_in_cur_thr_failed[] =
+  "SWAP_IN_CURRENT_THREAD failed.\n";
+PMOD_EXPORT const char msg_thr_not_swapped_in[] =
+  "Thread is not swapped in.\n";
+PMOD_EXPORT const char msg_cur_thr_not_bound[] =
+  "Current thread is not bound to the interpreter. "
+  "Nested use of ALLOW_THREADS()?\n";
+PMOD_EXPORT const char msg_thr_states_mixed[] =
+  "Thread states mixed up between threads.\n";
+PMOD_EXPORT const char msg_thr_allow_in_gc[] =
+  "Threads allowed during garbage collection (pass %d).\n";
+PMOD_EXPORT const char msg_thr_allow_in_disabled[] =
+  "Threads allowed from a different thread "
+  "while threads are disabled.\n";
+#endif
+
 struct thread_local
 {
   INT32 id;
@@ -470,7 +495,7 @@ unsigned INT32 thread_table_hash(THREAD_T *tid)
 }
 
 #ifdef PIKE_DEBUG
-void dumpmem(char *desc, void *x, int size)
+void dumpmem(const char *desc, void *x, int size)
 {
   int e;
   unsigned char *tmp=(unsigned char *)x;
@@ -640,7 +665,9 @@ void debug_list_all_threads(void)
 
   fprintf(stderr,"--Listing all threads--\n");
   dumpmem("Current thread: ",&self, sizeof(self));
-  fprintf(stderr,"Current thread state: %p\n",Pike_interpreter.thread_state);
+  fprintf(stderr,"Current interpreter thread state: %p\n",Pike_interpreter.thread_state);
+  fprintf(stderr,"Current thread state according to thread_state_for_id(): %p\n",
+	  thread_state_for_id (self));
   fprintf(stderr,"Current thread obj: %p\n",
 	  Pike_interpreter.thread_state?
 	  Pike_interpreter.thread_state->thread_obj:NULL);

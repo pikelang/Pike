@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: pike_threadlib.h,v 1.47 2003/06/30 17:06:10 mast Exp $
+|| $Id: pike_threadlib.h,v 1.48 2003/10/19 13:47:41 mast Exp $
 */
 
 #ifndef PIKE_THREADLIB_H
@@ -497,14 +497,17 @@ extern THREAD_T debug_locking_thread;
 #define low_co_wait_interpreter(COND) \
   do {co_wait((COND), &interpreter_lock); SET_LOCKING_THREAD;} while (0)
 
+PMOD_EXPORT extern const char msg_ip_not_locked[];
+PMOD_EXPORT extern const char msg_ip_not_locked_this_thr[];
+
 #define CHECK_INTERPRETER_LOCK() do {					\
   if (th_running) {							\
     THREAD_T self;							\
     if (!mt_trylock(&interpreter_lock))					\
-      Pike_fatal("Interpreter is not locked.\n");				\
+      Pike_fatal(msg_ip_not_locked);					\
     self = th_self();							\
     if (!th_equal(debug_locking_thread, self))				\
-      Pike_fatal("Interpreter is not locked by this thread.\n");		\
+      Pike_fatal(msg_ip_not_locked_this_thr);				\
   }									\
 } while (0)
 
@@ -583,11 +586,13 @@ PMOD_EXPORT extern THREAD_T threads_disabled_thread;
       (struct thread_state *) (ptrdiff_t) -1;				\
   } while(0)
 
+PMOD_EXPORT extern const char msg_thr_swapped_over[];
+
 #define SWAP_IN_THREAD(_tmp) do {					\
     struct thread_state *_th_state = (_tmp);				\
     DO_IF_DEBUG (							\
       if (Pike_sp != (struct svalue *) (ptrdiff_t) -1)			\
-	Pike_fatal ("Thread %08x swapped in over existing thread %08x.\n", \
+	Pike_fatal (msg_thr_swapped_over,				\
 		    (unsigned int) _th_state->id,			\
 		    Pike_interpreter.thread_state ?			\
 		    (unsigned int) Pike_interpreter.thread_state->id : 0); \
@@ -606,7 +611,10 @@ PMOD_EXPORT extern THREAD_T threads_disabled_thread;
 			 __FILE__, __LINE__, (unsigned int)_tmp->id))
 
 extern void debug_list_all_threads(void);
-extern void dumpmem(char *desc, void *x, int size);
+extern void dumpmem(const char *desc, void *x, int size);
+
+PMOD_EXPORT extern const char msg_saved_thread_id[];
+PMOD_EXPORT extern const char msg_swap_in_cur_thr_failed[];
 
 #define SWAP_IN_CURRENT_THREAD()					      \
    THREADS_FPRINTF(1, (stderr, "SWAP_IN_CURRENT_THREAD() %s:%d ... t:%08x\n", \
@@ -617,9 +625,9 @@ extern void dumpmem(char *desc, void *x, int size);
      THREAD_T self=th_self();						      \
      if(MEMCMP( & _tmp->id, &self, sizeof(self)))		    	      \
      {									      \
-       dumpmem("Saved thread id: ",&self,sizeof(self));                       \
+       dumpmem(msg_saved_thread_id,&self,sizeof(self));			      \
        debug_list_all_threads();					      \
-       Pike_fatal("SWAP_IN_CURRENT_THREAD FAILED!!!\n");		      \
+       Pike_fatal(msg_swap_in_cur_thr_failed);				      \
      }									      \
    })									      \
  } while(0)
@@ -668,26 +676,26 @@ extern void dumpmem(char *desc, void *x, int size);
 #endif /* PIKE_DEBUG */
 
 #ifdef PIKE_DEBUG
+
+PMOD_EXPORT extern const char msg_thr_not_swapped_in[];
+PMOD_EXPORT extern const char msg_cur_thr_not_bound[];
+PMOD_EXPORT extern const char msg_thr_states_mixed[];
+
 #define ASSERT_THREAD_SWAPPED_IN() do {					\
     struct thread_state *_tmp=thread_state_for_id(th_self());		\
-    if(_tmp->swapped) Pike_fatal("Thread is not swapped in!\n");	\
+    if(_tmp->swapped) Pike_fatal(msg_thr_not_swapped_in);		\
     if (_tmp->debug_flags & THREAD_DEBUG_LOOSE) {			\
-      Pike_fatal("Current thread is not bound to the interpreter! "	\
-		 "Nested use of ALLOW_THREADS()?\n");			\
+      Pike_fatal(msg_cur_thr_not_bound);				\
     }									\
   }while(0)
 #define DEBUG_CHECK_THREAD() do {					\
     struct thread_state *_tmp=thread_state_for_id(th_self());		\
     if (_tmp->debug_flags & THREAD_DEBUG_LOOSE) {			\
-      Pike_fatal("Current thread is not bound to the interpreter! "	\
-		 "Nested use of ALLOW_THREADS()?");			\
+      Pike_fatal(msg_cur_thr_not_bound);				\
     }									\
     if(_tmp != Pike_interpreter.thread_state) {				\
       debug_list_all_threads();						\
-      Pike_fatal("thread_state_for_id() "				\
-		 "(or Pike_interpreter.thread_state) "			\
-		 "failed! %p != %p\n",					\
-		 _tmp, Pike_interpreter.thread_state) ;			\
+      Pike_fatal(msg_thr_states_mixed);					\
     }									\
   } while (0)
 #else
@@ -697,13 +705,18 @@ extern void dumpmem(char *desc, void *x, int size);
 
 #define THREADSTATE2OBJ(X) ((X)->thread_obj)
 
+#ifdef PIKE_DEBUG
+PMOD_EXPORT extern const char msg_thr_allow_in_gc[];
+PMOD_EXPORT extern const char msg_thr_allow_in_disabled[];
+#endif
+
 PMOD_EXPORT extern int Pike_in_gc;
 #define THREADS_ALLOW() do { \
      struct thread_state *_tmp = Pike_interpreter.thread_state; \
      DEBUG_CHECK_THREAD();					\
      DO_IF_DEBUG({ \
        if (Pike_in_gc > 50 && Pike_in_gc < 300) \
-	 Pike_fatal("Threads allowed during garbage collection.\n"); \
+	 Pike_fatal(msg_thr_allow_in_gc, Pike_in_gc);			\
      }) \
      if(num_threads > 1 && !threads_disabled) { \
        SWAP_OUT_THREAD(_tmp); \
@@ -715,8 +728,7 @@ PMOD_EXPORT extern int Pike_in_gc;
        DO_IF_DEBUG(							\
 	 THREAD_T self = th_self();					\
 	 if (threads_disabled && !th_equal(threads_disabled_thread, self)) \
-	   Pike_fatal("Threads allow blocked from a different thread "	\
-		      "when threads are disabled.\n");			\
+	   Pike_fatal(msg_thr_allow_in_disabled);			\
        );								\
      }									\
      DO_IF_DEBUG(_tmp->debug_flags |= THREAD_DEBUG_LOOSE;)		\
@@ -741,9 +753,7 @@ PMOD_EXPORT extern int Pike_in_gc;
      DEBUG_CHECK_THREAD();					    \
      DO_IF_DEBUG({ \
        if ((Pike_in_gc > 50) && (Pike_in_gc < 300)) { \
-         fprintf(stderr, __FILE__ ":" DEFINETOSTR(__LINE__) ": Fatal error:\n"); \
-	 debug_fatal("Threads allowed during garbage collection (%d).\n", \
-                     Pike_in_gc); \
+	 debug_fatal(msg_thr_allow_in_gc, Pike_in_gc); \
        } \
      }) \
      if(num_threads > 1 && !threads_disabled) { \
@@ -764,8 +774,7 @@ PMOD_EXPORT extern int Pike_in_gc;
        DO_IF_DEBUG(							\
 	 THREAD_T self = th_self();					\
 	 if (threads_disabled && !th_equal(threads_disabled_thread, self)) \
-	   Pike_fatal("Threads allow blocked from a different thread "	\
-		      "when threads are disabled.\n");			\
+	   Pike_fatal(msg_thr_allow_in_disabled);			\
        );								\
      }									\
      DO_IF_DEBUG(_tmp_uid->debug_flags |= THREAD_DEBUG_LOOSE;)		\
