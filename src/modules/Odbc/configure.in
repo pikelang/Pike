@@ -1,0 +1,127 @@
+#
+# $Id: configure.in,v 1.1 1997/03/10 19:01:51 grubba Exp $
+#
+# Configure script for the odbc-module
+#
+# Henrik Grubbström
+#
+
+AC_INIT(odbc.c)
+AC_CONFIG_HEADER(config.h)
+
+sinclude(../module_configure.in)
+
+OLD_LIBS=$LIBS
+OLD_LDFLAGS=$LDFLAGS
+OLD_CPPFLAGS=$CPPFLAGS
+ODBC_LIBS=""
+
+AC_ARG_WITH(odbc,  [  --without-odbc       no support for the ODBC databases],[],[with_odbc=yes])
+
+if test x$with_odbc = xyes; then
+
+  AC_MSG_CHECKING(Checking for ODBC library-directory)
+
+  AC_CACHE_VAL(pike_cv_odbc_lib_dir, [
+    for pike_cv_odbc_lib_dir in ${INFORMIXDIR:+$INFORMIXDIR/cli/dlls} /opt/ISLIodbc/*/lib /usr/opt/ISLIodbc/*/lib /usr/local/lib /usr/local/odbc/lib /usr/local/lib/odbc /usr/odbc/lib /usr/lib/odbc /usr/lib /lib/odbc /lib no; do
+      echo $pike_cv_odbc_lib_dir
+      if test -d $pike_cv_odbc_lib_dir/.; then
+        if ls $pike_cv_odbc_lib_dir/*odbc* >/dev/null 2>&1 ; then
+	  break
+	else
+	  :
+	fi
+      else
+        :
+      fi
+    done
+  ])
+
+  AC_MSG_RESULT($pike_cv_odbc_lib_dir)
+
+  if test x$pike_cv_odbc_lib_dir = xno; then :; else
+    echo Adding $pike_cv_odbc_lib_dir to the library search path.
+    LDFLAGS="-L$pike_cv_odbc_lib_dir ${LDFLAGS}"
+  fi
+
+  AC_MSG_CHECKING(Checking for the ODBC include-directory)
+
+  AC_CACHE_VAL(pike_cv_odbc_include_dir, [
+    for pike_cv_odbc_include_dir in ${INFORMIXDIR:+$INFORMIXDIR/cli/include} /opt/ISLIodbc/*/include /usr/local/include /usr/local/odbc/include /usr/local/include/odbc /usr/odbc/include /usr/include/odbc /usr/include /include/odbc /include no; do
+      echo $pike_cv_odbc_include_dir
+      if test -d $pike_cv_odbc_include_dir/.; then
+        if ls $pike_cv_odbc_include_dir/qeodbc.h >/dev/null 2>&1; then
+          break
+	else
+	  :
+	fi
+      else
+	:
+      fi
+    done
+  ])
+
+  AC_MSG_RESULT($pike_cv_odbc_include_dir)
+
+  if test x$pike_cv_odbc_include_dir = xno; then :; else
+    echo Adding $pike_cv_odbc_include_dir to the include search path.
+    CPPFLAGS="-I$pike_cv_odbc_include_dir ${CPPFLAGS}"
+  fi
+
+  # Header file
+
+  AC_CHECK_HEADERS(qeodbc.h sql.h sqlext.h)
+
+  # System libs which might be needed
+
+  if echo $LIBS|grep -- -lsocket >&5 2>&5; then
+    :
+  else
+    AC_CHECK_LIB(socket, socket, [
+      LIBS="-lsocket $LIBS"
+      ODBC_LIBS="-lsocket ${ODBC_LIBS}"
+    ], [])
+  fi
+  if echo $LIBS|grep -- -lnsl >&5 2>&5; then
+    :
+  else
+    AC_CHECK_LIB(nsl, gethostbyname, [
+      LIBS="-lnsl $LIBS"
+      ODBC_LIBS="-lnsl ${ODBC_LIBS}"
+    ], [])
+  fi
+  if echo $LIBS|grep -- -lm >&5 2>&5; then
+    :
+  else
+    AC_CHECK_LIB(m, floor, [
+      LIBS="-lm $LIBS"
+      ODBC_LIBS="-lm ${ODBC_LIBS}"
+    ], [])
+  fi
+
+  pike_cv_odbc=no;
+
+  AC_CHECK_LIB(odbc, SQLConnect, [
+    LIBS="-lodbc $LIBS"
+    ODBC_LIBS="-lodbc ${ODBC_LIBS}"
+    pike_cv_odbc=yes;
+  ], [])
+
+  if test x$pike_cv_odbc = xno; then
+    # Restore variables, so we don't link with unnessesary libs
+
+    LIBS=$OLD_LIBS
+    CPPFLAGS=$OLD_CPPFLAGS
+    LDFLAGS=$OLD_LDFLAGS
+    ODBC_LIBS=""
+  else
+    AC_DEFINE(HAVE_ODBC)
+
+  fi
+else
+  :
+fi
+
+AC_SUBST(ODBC_LIBS)
+
+AC_OUTPUT(Makefile,echo FOO >stamp-h )
