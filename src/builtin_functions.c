@@ -5,7 +5,7 @@
 \*/
 /**/
 #include "global.h"
-RCSID("$Id: builtin_functions.c,v 1.286 2000/07/02 15:39:17 grubba Exp $");
+RCSID("$Id: builtin_functions.c,v 1.287 2000/07/02 15:39:32 grubba Exp $");
 #include "interpret.h"
 #include "svalue.h"
 #include "pike_macros.h"
@@ -786,7 +786,7 @@ static char *combine_path(char *cwd,char *file)
   }
 #endif
 
-  SET_ONERROR(err, free_nonull, &cwdbuf);
+  SET_ONERROR(err, free_nonull, cwdbuf);
   
 #ifdef PIKE_DEBUG    
   if(!cwd)
