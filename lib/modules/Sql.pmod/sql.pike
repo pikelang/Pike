@@ -1,5 +1,5 @@
 /*
- * $Id: sql.pike,v 1.15 1997/09/02 22:24:27 grubba Exp $
+ * $Id: sql.pike,v 1.16 1998/03/02 15:32:03 grubba Exp $
  *
  * Implements the generic parts of the SQL-interface
  *
@@ -8,7 +8,7 @@
 
 //.
 //. File:	sql.pike
-//. RCSID:	$Id: sql.pike,v 1.15 1997/09/02 22:24:27 grubba Exp $
+//. RCSID:	$Id: sql.pike,v 1.16 1998/03/02 15:32:03 grubba Exp $
 //. Author:	Henrik Grubbström (grubba@infovav.se)
 //.
 //. Synopsis:	Implements the generic parts of the SQL-interface.
@@ -86,7 +86,7 @@ void create(void|string|object host, void|string db,
     // [dbtype://][user[:password]@]hostname[:port][/database]
 
     array(string) arr = host/"://";
-    if ((sizeof(arr) > 1) && (arr[0] !="")) {
+    if ((sizeof(arr) > 1) && (arr[0] != "")) {
       if (sizeof(arr[0]/".pike") > 1) {
 	program_names = ({ arr[0] });
       } else {
@@ -122,6 +122,8 @@ void create(void|string|object host, void|string db,
     host = 0;
   }
 
+  //  werror(sprintf("Sql.sql(): program_names:%O\n", program_names));
+
   foreach(program_names || get_dir(Sql->dirname), string program_name) {
     if ((sizeof(program_name / "_result") == 1) &&
 	(sizeof(program_name / ".pike") > 1) &&
@@ -132,14 +134,18 @@ void create(void|string|object host, void|string db,
       err = catch {
 	program p;
 #ifdef PIKE_SQL_DEBUG
-	err = catch {p = Sql[program_name];};
+	err = catch {
+	  p = Sql[program_name];
+	};
 #else /* !PIKE_SQL_DEBUG */
 	// Ignore compiler errors for the various sql-modules,
 	// since we might not have some.
 	// This is NOT a nice way to do it, but...
 	mixed old_inhib = master()->inhibit_compile_errors;
 	master()->inhibit_compile_errors = lambda(){};
-	err = catch {p = Sql[program_name];};
+	err = catch {
+	  p = Sql[program_name];
+	};
 	// Restore compiler errors mode to whatever it was before.
 	master()->inhibit_compile_errors = old_inhib;
 #endif /* PIKE_SQL_DEBUG */
@@ -149,9 +155,12 @@ void create(void|string|object host, void|string db,
 				      program_name, err[0]));
 #endif /* PIKE_SQL_DEBUG */
 	  if (program_names) {
+	    //  werror("Throwing compile-error.\n");
 	    throw(err);
 	  } else {
-	    throw(0);
+	    //  werror("Not throwing compile-error.\n");
+	    err = 0;
+	    break;	// NOTE: breaks the catch without giving an error.
 	  }
 	}
 
@@ -191,6 +200,7 @@ void create(void|string|object host, void|string db,
 	}
       };
       if (err && program_names) {
+	//  werror("Rethrowing error.\n");
 	throw(err);
       }
     }
