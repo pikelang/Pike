@@ -97,7 +97,11 @@ string extractXML(string filename, int|void pikeMode, string|void type,
   //  }
 
   if (styleC && has_value(contents, "/*!")) {
-    object m = .CExtractor.extract(contents, filename);
+    string namespace = ((parentModules||({})) + ({"predef::"}))[0];
+    if (has_suffix(namespace, "::")) {
+      namespace = namespace[..sizeof(namespace)-3];
+    }
+    object m = .CExtractor.extract(contents, filename, namespace);
     return m->xml();
   }
   else if(stylePike && has_value(contents, "//!")) {
@@ -531,6 +535,11 @@ static class ScopeStack {
       namespaceStack += ({ ({ namespace, scopes[name] }) });
       scopes[namespace = name] = ({ Scope(type, name+"::") });
     } else {
+      if (!sizeof(scopes[namespace]||({}))) {
+	werror("WARNING: Implicit enter of namespace %s:: for %s %s\n",
+	       namespace, type, name||"");
+	scopes[namespace] = ({ Scope("namespace", namespace+"::") });
+      }
       scopes[namespace] += ({ Scope(type, name) });
     }
   }
@@ -650,10 +659,14 @@ static void fixupRefs(ScopeStack scopes, Node node) {
   );
 }
 
-// expects a <module> or <class> node
+// expects a <autodoc>, <namespace>, <module> or <class> node
 static void resolveFun(ScopeStack scopes, Node node) {
+  if (node->get_any_name() == "namespace") {
+    // Create the namespace.
+    scopes->enter("namespace", node->get_attributes()["name"]);
+  }
   // first collect the names of all things inside the scope
-  foreach (node->get_children(), Node child)
+  foreach (node->get_children(), Node child) {
     if (child->get_node_type() == XML_ELEMENT) {
       switch (child->get_any_name()) {
         case "docgroup":
@@ -678,11 +691,14 @@ static void resolveFun(ScopeStack scopes, Node node) {
           ; // do nothing (?)
       }
     }
+  }
   foreach (node->get_children(), Node child) {
     if (child->get_node_type() == XML_ELEMENT) {
       string tag = child->get_any_name();
       switch (tag) {
         case "namespace":
+	  resolveFun(scopes, child);
+	  break;
         case "class":
         case "module":
           scopes->enter(tag, child->get_attributes()["name"]);
@@ -754,13 +770,17 @@ static void resolveFun(ScopeStack scopes, Node node) {
       }
     }
   }
+  if (node->get_any_name() == "namespace") {
+    // Leave the namespace.
+    scopes->leave();
+  }
 }
 
 // Resolves references, regarding the Node 'tree' as the root of the whole
 // hierarchy. 'tree' might be the node <root> or <module name="Pike">
 void resolveRefs(Node tree) {
   ScopeStack scopes = ScopeStack();
-  scopes->enter("autodoc", "");    // The top level scope
+  scopes->enter("namespace", "predef");    // The default scope
   resolveFun(scopes, tree);
   scopes->leave();
 }
