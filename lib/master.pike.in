@@ -1,4 +1,4 @@
-/* $Id: master.pike.in,v 1.17 1998/04/21 03:54:01 per Exp $
+/* $Id: master.pike.in,v 1.18 1998/04/23 18:35:55 marcus Exp $
  * 
  * Master-file for Pike.
  *
@@ -745,7 +745,7 @@ string stupid_describe(mixed m)
     return (string)m;
 
   case "string":
-    if(sizeof(m) < 60 && sscanf(m,"%*[-a-zAZ0-9.~`!@#$%^&*()_]%n",int i) && i==sizeof(m))
+    if(sizeof(m) < 60 && sscanf(m,"%*[^\0-\037\177-\237\\\"]%n",int i) && i==sizeof(m))
     {
       return "\""+m+"\"";
     }
