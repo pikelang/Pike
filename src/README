@@ -4,14 +4,19 @@ This is what you need to do to install Pike:
    Makefile from machine.h.in and Makefile.in.
 
   Some options for ./configure are:
-  --prefix=/foo/bar   if you want to install Pike in /foo/bar,
-                      default is /usr/local.
-  --without-gdbm      compile without gdbm support
-  --without-gmp       compile without gmp support
-  --without-readline  compile without readline support
-  --without-debug     compile without runtime debugging
-  --without-threads   compile without threads support
-  --without-zlib      compile without gzip compression libary support
+  --prefix=/foo/bar         if you want to install Pike in /foo/bar,
+                            default is /usr/local.
+  --without-gdbm            compile without gdbm support
+  --without-gmp             compile without gmp support
+  --without-readline        compile without readline support
+  --without-debug           compile without runtime debugging
+  --without-threads         compile without threads support
+  --without-zlib            compile without gzip compression libary support
+  --without-dynamic-modules compile statically, no dynamic loading used.
+	                    (makes binary larger)
+  --without-mysql           compile without mysql support
+  --with-profiling          enables profiling pike code but slows
+                            down interpreter a little
 
    You might also want to set the following environment variables:
    CFLAGS     Put extra flags for your C compiler here.
@@ -68,7 +73,7 @@ What to do when it doesn't work:
 6) Try a different compiler, malloc, compiler-compiler and/or make.
    (if you have any other)
 
-7) On Linux Slackware machines (older than slackware 3.0), Pike sometimes
+7) On old Linux Slackware machines (older than slackware 3.0), Pike sometimes
    fails to find -lm, this is because of a bug in /usr/lib/libm.sa
    (or possibly libg.a) in slackware.
    Compile with 'make EXTRALIBS="-lc -lm"' to get around this bug.
@@ -80,10 +85,10 @@ What to do when it doesn't work:
 If you find a bug in the interpreter, the first thing to do is to make sure
 the interpreter is compiled with DEBUG defined. If not recompile with DEBUG
 and see if you get another error. When you've done this, please report the
-bug to hubbe@lysator.liu.se and include as much as you can muster of the
+bug to hubbe@hubbe.net and include as much as you can muster of the
 following:
 
-  o The version of the driver. (can be found in lib/simulate.pike)
+  o The version of the driver. (Try pike --version or look in src/version.c)
   o What kind of system hardware/software you use (OS, compiler, etc.)
   o the piece of code that crashes or bugs.
     (preferably in a very small pike-script with the bug isolated)
