@@ -23,7 +23,7 @@
 #endif
 #endif
 
-struct file
+struct my_file
 {
   INT32 refs;
   int fd;

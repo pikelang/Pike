@@ -32,3 +32,5 @@
 #define HAVE_FCHROOT 1
 
 #define HAVE_SYS_MMAN_H 1
+
+#define HAVE_STRDUP 1

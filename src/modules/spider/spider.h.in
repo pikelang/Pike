@@ -31,3 +31,5 @@
 #undef HAVE_FCHROOT
 
 #undef HAVE_SYS_MMAN_H
+
+#undef HAVE_STRDUP

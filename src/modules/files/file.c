@@ -49,7 +49,7 @@
 #define FD (*(int*)(fp->current_storage))
 #define THIS (files + FD)
 
-static struct file files[MAX_OPEN_FILEDESCRIPTORS];
+static struct my_file files[MAX_OPEN_FILEDESCRIPTORS];
 static struct program *file_program;
 
 static void file_read_callback(int fd, void *data);
@@ -846,7 +846,7 @@ static void file_pipe(INT32 args)
   pop_n_elems(args);
   THIS->errno=0;
 
-  i=socketpair(AF_UNIX, SOCK_STREAM, 0, &inout[0]);
+  i=socketpair(AF_UNIX, SOCK_STREAM, 0, &inout);
   if(i<0)
   {
     THIS->errno=errno;
@@ -1062,7 +1062,7 @@ void get_inet_addr(struct sockaddr_in *addr,char *name)
   }
   else if(name[0]>='0' && name[0]<='9')
   {
-    if (inet_addr(name) == -1)
+    if ((long)inet_addr(name) == (long)-1)
       error("Malformed ip number.\n");
 
     addr->sin_addr.s_addr = inet_addr(name);
@@ -1097,7 +1097,7 @@ static void file_query_address(INT32 args)
     i=getpeername(FD,(struct sockaddr *)&addr,&len);
   }
   pop_n_elems(args);
-  if(i < 0 || len < sizeof(addr))
+  if(i < 0 || len < (int)sizeof(addr))
   {
     THIS->errno=errno;
     push_int(0);
@@ -1155,7 +1155,7 @@ void init_files_programs()
   init_fd(2, FILE_WRITE);
 
   start_new_program();
-  add_storage(sizeof(struct file));
+  add_storage(sizeof(int));
 
   add_function("open",file_open,"function(string,string:int)",0);
   add_function("close",file_close,"function(string|void:void)",0);

@@ -104,6 +104,7 @@
 #include "lpc_types.h"
 #include "add_efun.h"
 #include "interpret.h"
+#include "memory.h"
 
 #define FORMAT_INFO_STACK_SIZE 200
 #define RETURN_SHARED_STRING

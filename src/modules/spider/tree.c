@@ -30,7 +30,7 @@
 char *strdup(const char *w)
 {
   char *s;
-  s=malloc(strlen(w));
+  s=malloc(strlen(w) + 1);
   strcpy(s,w);
   return s;
 }
