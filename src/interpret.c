@@ -5,7 +5,7 @@
 \*/
 /**/
 #include "global.h"
-RCSID("$Id: interpret.c,v 1.183 2001/01/24 08:17:27 hubbe Exp $");
+RCSID("$Id: interpret.c,v 1.184 2001/03/09 02:43:58 hubbe Exp $");
 #include "interpret.h"
 #include "object.h"
 #include "program.h"
@@ -275,11 +275,11 @@ void lvalue_to_svalue_no_free(struct svalue *to,struct svalue *lval)
       to->type=T_INT;
       if(multiset_member(lval->u.multiset,lval+1))
       {
-	to->u.integer=0;
-	to->subtype=NUMBER_UNDEFINED;
+	to->u.integer=1;
+	to->subtype=NUMBER_NUMBER;
       }else{
 	to->u.integer=0;
-	to->subtype=NUMBER_NUMBER;
+	to->subtype=NUMBER_UNDEFINED;
       }
       break;
       
