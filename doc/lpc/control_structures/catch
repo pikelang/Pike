@@ -1,0 +1,18 @@
+NAME
+	catch - catch errors
+
+SYNTAX
+	catch { commands }
+	or
+	catch ( expression )
+
+DESCRIPTION
+	catch traps exceptions such as run time errors or calls to throw() and
+	returns the argument given to throw. For a run time error, this value
+	is ({ "error message", backtrace }) 
+
+KEYWORDS
+	control
+
+SEE ALSO
+	builtin/throw

@@ -1,0 +1,16 @@
+NAME
+	while - execute a statement while an expression is true
+
+SYNTAX
+	while( expression ) <statement>
+
+DESCRIPTION
+	While runns the statement until the expression is false. The
+	expression is evaluated once for every loop. If the expression is
+	false the first time the statement is never executed.
+
+KEYWORDS
+	control
+
+SEE ALSO
+	for, do-while
