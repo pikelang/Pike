@@ -5,7 +5,7 @@
 \*/
 
 /*
- * $Id: opcodes.h,v 1.10 2001/01/10 19:52:06 mast Exp $
+ * $Id: opcodes.h,v 1.11 2001/01/31 21:54:33 mast Exp $
  */
 #ifndef OPCODES_H
 #define OPCODES_H
@@ -91,9 +91,6 @@ enum Pike_opcodes
 
   F_CATCH,
   F_FOREACH,
-
-  F_CALL_FUNCTION,
-  F_CALL_FUNCTION_AND_RETURN,
 
 #include "interpret_protos.h"
 /*
