@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: port.c,v 1.62 2003/02/26 09:29:39 grubba Exp $
+|| $Id: port.c,v 1.63 2003/02/26 12:03:41 mast Exp $
 */
 
 /*
@@ -27,7 +27,7 @@
 #include <float.h>
 #include <string.h>
 
-RCSID("$Id: port.c,v 1.62 2003/02/26 09:29:39 grubba Exp $");
+RCSID("$Id: port.c,v 1.63 2003/02/26 12:03:41 mast Exp $");
 
 #ifdef sun
 time_t time PROT((time_t *));
@@ -552,8 +552,10 @@ PMOD_EXPORT double STRTOD(const char * nptr, char **endptr)
 
  underflow:
   /* Return an underflow error.  */
+#if 0
   if (endptr != NULL)
     *endptr = (char *) nptr;
+#endif
   errno = ERANGE;
   return 0.0;
   
