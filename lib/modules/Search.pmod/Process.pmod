@@ -49,6 +49,14 @@ class Indexer(Variable wa_var, void|function get_sb_workarea_view_url, Configura
   {
     Standards.URI url = Standards.URI(_url);
     Standards.URI sb_url;
+    
+    int is_internal_url = 0;
+    foreach(params->internal_urls, string internal_url)
+      if(glob(internal_url, _url)) {
+	is_internal_url = 1;
+	break;
+      }
+    
     if(url->scheme=="sitebuilder" || url->scheme=="intrawise")
     {
       if(userpass && conf)
@@ -68,8 +76,15 @@ class Indexer(Variable wa_var, void|function get_sb_workarea_view_url, Configura
       sb_url->host = hostcache[sb_url->host];
       return ({ (string)sb_url, headers });
     }
-    else
+    else {
+      if(is_internal_url) {
+	if(userpass && conf)
+	  headers["Authorization"]=sprintf("Basic %s", MIME.encode_base64(userpass));
+	headers["Request-Metadata"]="";
+	headers["Request-Invisible"]="";
+      }
       return ({ (string)url, headers });
+    }
   }
 
   // Remote (from the crawler) functions
