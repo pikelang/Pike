@@ -1,4 +1,4 @@
-// $Id: testsuite.in,v 1.18 2001/09/05 05:40:38 hubbe Exp $
+// $Id: testsuite.in,v 1.19 2002/02/12 02:00:36 marcus Exp $
 
 // mpz
 cond( [[ master()->resolv("Gmp")->mpz ]],
@@ -49,6 +49,7 @@ cond( [[ master()->resolv("Gmp")->mpz ]],
   test_false(clone(Gmp.mpz,0))
   test_true(clone(Gmp.mpz,1))
   test_eq(clone(Gmp.mpz,17)->powm(12,4711),85)
+  test_eq((string)clone(Gmp.mpz,2)->powm(270,clone(Gmp.mpz,10)->pow(39)),"428761855001222473056385648716020711424")
 ]])
 
 
