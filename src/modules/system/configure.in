@@ -1,4 +1,4 @@
-# $Id: configure.in,v 1.67 2003/12/07 22:49:12 marcus Exp $
+# $Id: configure.in,v 1.68 2005/01/24 11:39:40 grubba Exp $
 AC_INIT(system.c)
 AC_CONFIG_HEADER(system_machine.h)
 
@@ -68,9 +68,35 @@ AC_HAVE_FUNCS(syslog link symlink readlink resolvepath chown \
         getspnam_r innetgr utime sleep usleep nanosleep \
         getrlimit setrlimit  \
         setitimer getitimer mmap munmap \
-	gettimeofday settimeofday prctl inet_ntoa inet_ntop getaddrinfo)
+	gettimeofday settimeofday prctl inet_ntoa inet_ntop)
 
+if test "uname" = "aix"; then
+  libc_ver="`lslpp -ql bos.rte.libc 2>/dev/null| awk '{ print $2 }'`"
+fi
 
+case "$aix_libc_ver"; in
+  5.1.0.*)
+    # Pike's use of getaddrinfo SIGSEGVs for some users on some releases of
+    # AIX 5L 5.1.
+    #
+    # AIX 5L getaddrinfo is broken prior to
+    # AIX 5100-06 Recommended Maintenance
+    # U496907 bos.rte.libc 5.1.0.59
+    #
+    # Suspected causes:
+    # IY29763  2 submodule getaddrinfo gets wrong sin6_len
+    # IY44782  2 malloc struct sockaddr_in6 in getaddrinfo() needs to be bzero
+    # IY51966  2 THIRD PARTY IMAPD CORE DUMP WHEN CALLING GETADDRINFO
+    if test "`echo $aix_libc_ver | awk -F. '{ print $4 }'`" -ge 59; then
+      AC_HAVE_FUNCS(getaddrinfo)
+    fi
+  ;;
+  *)
+    # Some other OS.
+    AC_HAVE_FUNCS(getaddrinfo)
+  ;;
+esac
+     
 if test "x$ac_cv_func_setpgrp" = "xyes"; then
   AC_MSG_CHECKING([if setpgrp takes two arguments (BSD)])
   AC_CACHE_VAL(pike_cv_setprgp_bsd, [
