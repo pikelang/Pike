@@ -22,7 +22,7 @@
 #include "builtin_functions.h"
 #include "module_support.h"
 
-RCSID("$Id: opcodes.c,v 1.30 1998/10/09 17:56:32 hubbe Exp $");
+RCSID("$Id: opcodes.c,v 1.31 1998/10/09 23:33:39 grubba Exp $");
 
 void index_no_free(struct svalue *to,struct svalue *what,struct svalue *ind)
 {
@@ -211,21 +211,60 @@ void o_cast(struct pike_string *type, INT32 run_time_type)
 	      int i;
 	      struct array *a = sp[-1].u.array;
 	      struct pike_string *s;
+	      int shift = 0;
 
 	      for(i = a->size; i--; ) {
+		unsigned INT32 val;
 		if (a->item[i].type != T_INT) {
 		  error("cast: Item %d is not an integer.\n", i);
 		}
-		if ((a->item[i].u.integer < 0) ||
-		    (a->item[i].u.integer > 255)) {
-		  error("cast: Wide strings are not supported yet.\n"
-			"Index %d is %d, and is out of range 0 .. 255.\n",
-			i, a->item[i].u.integer);
+		val = (unsigned INT32)a->item[i].u.integer;
+		if (val > 0xff) {
+		  shift = 1;
+		  if (val > 0xffff) {
+		    shift = 2;
+		    break;
+		  }
+		  while(i--) {
+		    if (a->item[i].type != T_INT) {
+		      error("cast: Item %d is not an integer.\n", i);
+		    }
+		    val = (unsigned INT32)a->item[i].u.integer;
+		    if (val > 0xffff) {
+		      shift = 2;
+		      break;
+		    }
+		  }
+		  break;
 		}
 	      }
-	      s = begin_shared_string(a->size);
-	      for(i = a->size; i--; ) {
-		s->str[i] = a->item[i].u.integer;
+	      s = begin_wide_shared_string(a->size, shift);
+	      switch(shift) {
+	      case 0:
+		for(i = a->size; i--; ) {
+		  s->str[i] = a->item[i].u.integer;
+		}
+		break;
+	      case 1:
+		{
+		  p_wchar1 *str1 = STR1(s);
+		  for(i = a->size; i--; ) {
+		    str1[i] = a->item[i].u.integer;
+		  }
+		}
+		break;
+	      case 2:
+		{
+		  p_wchar2 *str2 = STR2(s);
+		  for(i = a->size; i--; ) {
+		    str2[i] = a->item[i].u.integer;
+		  }
+		}
+		break;
+	      default:
+		free_string(end_shared_string(s));
+		fatal("cast: Bad shift: %d.\n", shift);
+		break;
 	      }
 	      s = end_shared_string(s);
 	      pop_stack();
