@@ -133,6 +133,7 @@ mapping(string:string) strings = ([
   "__hash":"lfun_strings[LFUN___HASH]",
   "cast":"lfun_strings[LFUN_CAST]",
   "`!":"lfun_strings[LFUN_NOT]",
+  "`[..]":"lfun_strings[LFUN_RANGE",
   "`[]":"lfun_strings[LFUN_INDEX]",
   "`[]=":"lfun_strings[LFUN_ASSIGN_INDEX]",
   "`->":"lfun_strings[LFUN_ARROW]",
