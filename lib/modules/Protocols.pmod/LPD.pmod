@@ -3,7 +3,7 @@
 // This is a module for pike.
 // 3 July 1998 <hww3@riverweb.com> Bill Welliver
 //
-// $Id: LPD.pmod,v 1.7 2002/06/14 16:59:48 bill Exp $
+// $Id: LPD.pmod,v 1.8 2002/06/17 10:54:29 mast Exp $
 //
 
 #pike __REAL_VERSION__
@@ -225,9 +225,11 @@ werror("job file:\n\n" + control  + "\n\n");
   }
 
 //! Create a new LPD client connection.
-//! @param hostname contains the hostname or ipaddress of the print host.
+//! @param hostname
+//! Contains the hostname or ipaddress of the print host.
 //! if not provided, defaults to @i{localhost@}.
-//! @param portnum contains the port the print host is listening on.
+//! @param portnum
+//! Cntains the port the print host is listening on.
 //! if not provided, defaults to port @i{515@}, the RFC 1179 standard.
   void create(string|void hostname, int|void portnum)
   {
