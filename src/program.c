@@ -5,7 +5,7 @@
 \*/
 /**/
 #include "global.h"
-RCSID("$Id: program.c,v 1.331 2001/06/14 11:54:16 grubba Exp $");
+RCSID("$Id: program.c,v 1.332 2001/06/14 16:12:13 grubba Exp $");
 #include "program.h"
 #include "object.h"
 #include "dynamic_buffer.h"
@@ -3939,21 +3939,6 @@ struct program *compile(struct pike_string *prog,
   if(target && !(target->flags & PROGRAM_VIRGIN))
     Pike_error("Placeholder program is not virgin!\n");
 
-  error_handler = handler;
-  compat_handler=0;
-  
-  if(error_handler)
-  {
-    apply(error_handler,"get_default_module",0);
-    if(IS_ZERO(Pike_sp-1))
-    {
-      pop_stack();
-      ref_push_mapping(get_builtin_constants());
-    }
-  }else{
-    ref_push_mapping(get_builtin_constants());
-  }
-
   low_init_threads_disable();
   saved_threads_disabled = threads_disabled;
 
@@ -3965,6 +3950,22 @@ struct program *compile(struct pike_string *prog,
 #ifdef PIKE_DEBUG
   SET_ONERROR(tmp, fatal_on_error,"Compiler exited with longjump!\n");
 #endif
+
+  error_handler = handler;
+  compat_handler=0;
+  
+  if(error_handler)
+  {
+    add_ref(error_handler);
+    safe_apply(error_handler,"get_default_module",0);
+    if(IS_ZERO(Pike_sp-1))
+    {
+      pop_stack();
+      ref_push_mapping(get_builtin_constants());
+    }
+  }else{
+    ref_push_mapping(get_builtin_constants());
+  }
 
   Pike_compiler->num_used_modules=0;
 
@@ -4129,6 +4130,9 @@ struct program *compile(struct pike_string *prog,
   compilation_depth=save_depth;
   used_modules = used_modules_save;
   Pike_compiler->num_used_modules = num_used_modules_save ;
+  if (error_handler) {
+    free_object(error_handler);
+  }
   error_handler = saved_handler;
   if (compat_handler) {
     free_object(compat_handler);
