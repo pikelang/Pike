@@ -1,5 +1,5 @@
 /*
- * $Id: sql_result.pike,v 1.9 2001/09/06 20:11:00 nilsson Exp $
+ * $Id: sql_result.pike,v 1.10 2002/04/11 10:59:02 jhs Exp $
  *
  * Implements the generic result module of the SQL-interface
  *
@@ -16,7 +16,7 @@
 //! The actual result.
 object|array master_res;
 
-//! If the result was an array, this is the current row.
+//! This is the number of the current row. (0 <= @[index] < @[num_rows()])
 int index;
 
 //! Create a new Sql.sql_result object
@@ -29,6 +29,17 @@ void create(object|array res)
     throw_error("Bad arguments to Sql_result()\n");
   }
   index = 0;
+}
+
+string _sprintf(int type, mapping|void flags)
+{
+  switch(type)
+  {
+    case 't': return "sql_result";
+    case 'O':
+      return sprintf("sql_result(/* row %d/%d, %d fields */)",
+		     index, num_rows(), num_fields());
+  }
 }
 
 //! Returns the number of rows in the result.
@@ -83,15 +94,15 @@ void seek(int skip)
   if (skip < 0) {
     throw_error("seek(): Argument 1 not positive\n");
   }
-  if (arrayp(master_res)) {
-    index += skip;
-  } else if (functionp(master_res->seek)) {
-    master_res->seek(skip);
-  } else {
-    while (skip--) {
-      master_res->fetch_row();
-    }
+  if(objectp(master_res))
+  {
+    if(functionp(master_res->seek))
+      master_res->seek(skip);
+    else
+      while(skip--)
+	master_res->fetch_row();
   }
+  index += skip;
 }
 
 //! Fetch the next row from the result.
@@ -105,7 +116,8 @@ int|array(string|int) fetch_row()
     }
     sort(indices(master_res[index]), res = values(master_res[index]));
     index++;
-    return(res);
+    return res;
   }
-  return (master_res->fetch_row());
+  index++;
+  return master_res->fetch_row();
 }
