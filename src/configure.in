@@ -1,4 +1,4 @@
-AC_REVISION("$Id: configure.in,v 1.475 2001/02/13 15:44:18 mirar Exp $")
+AC_REVISION("$Id: configure.in,v 1.476 2001/02/13 15:51:00 mirar Exp $")
 AC_INIT(interpret.c)
 AC_CONFIG_HEADER(machine.h)
 
@@ -5123,18 +5123,18 @@ echo "$PIKE_VERSION_LONG configuration summary" >>config.info
 
 echo >>config.info
 echo "install information:" >>config.info
-echo "prefix........$prefix" >>config.info
-echo "pike binary...$prefix/bin/pike" >>config.info
-echo "pike library..$prefix/lib/${PIKE_VERSION}/" >>config.info
+echo "prefix........ $prefix" >>config.info
+echo "pike binary... $prefix/bin/pike" >>config.info
+echo "pike library.. $prefix/lib/${PIKE_VERSION}/" >>config.info
 
 echo >>config.info
 echo "build information:" >>config.info
-echo "source path...$srcdir" >>config.info
-echo "cpp...........$CPP" >>config.info
-echo "cc............$CC" >>config.info
-echo "ld............$LD" >>config.info
-echo "pike..........$PIKE" >>config.info
-echo "install.......$INSTALL" >>config.info
+echo "source path... $srcdir" >>config.info
+echo "cpp........... $CPP" >>config.info
+echo "cc............ $CC" >>config.info
+echo "ld............ $LD" >>config.info
+echo "pike.......... $PIKE" >>config.info
+echo "install....... $INSTALL" >>config.info
 
 echo >>config.info
 echo "features:" >>config.info
