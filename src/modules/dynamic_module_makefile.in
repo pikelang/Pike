@@ -1,5 +1,5 @@
 #
-# $Id: dynamic_module_makefile.in,v 1.102 2003/04/28 19:53:15 mast Exp $
+# $Id: dynamic_module_makefile.in,v 1.103 2003/05/01 16:46:17 marcus Exp $
 #
 
 
@@ -113,7 +113,7 @@ Makefile: $(MODULE_BASE)/dynamic_module_makefile $(SRCDIR)/Makefile.in $(SRCDIR)
 $(CONFIG_HEADERS) dummy_config_header: config.status
 	@if [ x"$(CONFIG_HEADERS)" != x ]; then \
 	  for hdr in $(CONFIG_HEADERS); do \
-	    if [ -e "$$hdr" ]; then :; else \
+	    if [ -f "$$hdr" ]; then :; else \
 	      echo CONFIG_HEADERS="$(CONFIG_HEADERS)" ./config.status; \
 	      CONFIG_HEADERS="$(CONFIG_HEADERS)" ./config.status; \
 	    fi; \
