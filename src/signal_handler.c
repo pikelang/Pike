@@ -25,7 +25,7 @@
 #include "main.h"
 #include <signal.h>
 
-RCSID("$Id: signal_handler.c,v 1.152 1999/08/30 19:39:25 grubba Exp $");
+RCSID("$Id: signal_handler.c,v 1.153 1999/08/30 21:49:40 hubbe Exp $");
 
 #ifdef HAVE_PASSWD_H
 # include <passwd.h>
@@ -2355,16 +2355,10 @@ void f_create_process(INT32 args)
 #endif
     }while(pid==-1 && errno==EINTR);
 
-    if(pid!=-1)
-    {
-      if(pid)
-	th_atfork_parent();
-      else
-	th_atfork_child();
-    }
-    /* FIXME: Shouldn't th_atfork_parent() be called if pid == -1?
-     * /grubba 1999-08-30
-     */
+    if(pid)
+      th_atfork_parent();
+    else
+      th_atfork_child();
 
     UNSET_ONERROR(err);
 
@@ -2730,17 +2724,12 @@ void f_fork(INT32 args)
   pid=fork();
 #endif
 /*  THREADS_DISALLOW_UID(); */
-  if(pid!=-1)
-  {
-    if(pid)
-      th_atfork_parent();
-    else
-      th_atfork_child();
-  }
-  /* FIXME: Shouldn't th_atfork_parent() be called if pid == -1?
-   * /grubba 1999-08-30
-   */
 
+  if(pid)
+    th_atfork_parent();
+  else
+    th_atfork_child();
+  
   if(pid==-1) {
     error("Fork failed\n"
 	  "errno: %d\n", errno);

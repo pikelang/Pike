@@ -1,8 +1,9 @@
 #!/usr/local/bin/pike
 
-/* $Id: export.pike,v 1.25 1999/07/02 14:22:53 grubba Exp $ */
+/* $Id: export.pike,v 1.26 1999/08/30 21:49:25 hubbe Exp $ */
 
 #include <simulate.h>
+import Stdio;
 
 multiset except_modules  =(<>);
 string vpath;
@@ -59,6 +60,7 @@ void fix_configure(string dir)
 
 string getversion()
 {
+//  werror("FNORD:%O\n",getcwd());
   string s=Stdio.read_file("pike/src/version.h");
 
   int maj, min, build;
@@ -108,7 +110,7 @@ int main(int argc, string *argv)
     exit(1);
   }
   tmp=reverse(tmp[e+1..]);
-  cd(tmp*"/");
+  cd(sizeof(tmp)<1 ? tmp*"/" : "/");
   werror("Sourcedir = "+tmp*"/"+"/pike\n");
 
   if(file_stat("pike/CVS"))
