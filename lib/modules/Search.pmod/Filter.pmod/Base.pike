@@ -20,7 +20,11 @@ class Output
   void fix_relative_links(Standards.URI base_uri)
   {
     for(int i=0; i<sizeof(links); i++)
+    {
       links[i]=Standards.URI(links[i], base_uri);
+      if(links[i]->fragment)
+	links[i]->fragment=0;
+    }
   }
 }
 

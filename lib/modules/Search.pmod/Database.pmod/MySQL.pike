@@ -1,7 +1,7 @@
 // SQL blob based database
 // Copyright © 2000,2001 Roxen IS.
 //
-// $Id: MySQL.pike,v 1.19 2001/05/26 14:59:01 per Exp $
+// $Id: MySQL.pike,v 1.20 2001/05/29 12:25:28 js Exp $
 
 // inherit Search.Database.Base;
 
@@ -211,13 +211,19 @@ int sync()
 
 string get_blob(int word_id, int num)
 {
-  if(num) return 0;
+  array a=db->query("select hits,first_doc_id from word_hit where word_id=%d "
+		    "limit %d,1",
+		    word_id, num);
 
-  array a=db->query("select hits from word_hit where word_id=%d",
-		    word_id);
+//    if(sizeof(a))
+//      werror("get_blob(%d,%d) -> %d bytes, first_doc_id: %s\n",
+//  	   word_id,num,sizeof(a[0]->hits),a[0]->first_doc_id);
+//    else
+//      werror("get_blob(%d,%d) -> EOF\n", word_id, num);
 
   if(!sizeof(a))
     return 0;
+
   return a[0]->hits;
 }
 
