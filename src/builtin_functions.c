@@ -5,7 +5,7 @@
 \*/
 /**/
 #include "global.h"
-RCSID("$Id: builtin_functions.c,v 1.260 2000/10/04 22:50:00 hubbe Exp $");
+RCSID("$Id: builtin_functions.c,v 1.261 2001/06/06 02:22:29 mast Exp $");
 #include "interpret.h"
 #include "svalue.h"
 #include "pike_macros.h"
@@ -2357,19 +2357,24 @@ void f_set_weak_flag(INT32 args)
 {
   struct svalue *s;
   INT_TYPE ret;
+  int flags;
 
   get_all_args("set_weak_flag",args,"%*%i",&s,&ret);
 
   switch(s->type)
   {
     case T_ARRAY:
-      SETFLAG(s->u.array->flags,ARRAY_WEAK_FLAG,ret);
+      flags = array_get_flags(s->u.array);
+      SETFLAG(flags,ARRAY_WEAK_FLAG,ret);
+      s->u.array = array_set_flags(s->u.array, flags);
       break;
     case T_MAPPING:
       SETFLAG(s->u.mapping->flags,MAPPING_FLAG_WEAK,ret);
       break;
     case T_MULTISET:
-      SETFLAG(s->u.multiset->ind->flags,(ARRAY_WEAK_FLAG|ARRAY_WEAK_SHRINK),ret);
+      flags = array_get_flags(s->u.multiset->ind);
+      SETFLAG(flags,(ARRAY_WEAK_FLAG|ARRAY_WEAK_SHRINK),ret);
+      s->u.multiset->ind = array_set_flags(s->u.multiset->ind, flags);
       break;
     default:
       SIMPLE_BAD_ARG_ERROR("set_weak_flag",1,"array|mapping|multiset");

@@ -23,7 +23,7 @@
 #include "stuff.h"
 #include "bignum.h"
 
-RCSID("$Id: array.c,v 1.66 2001/02/05 23:42:38 grubba Exp $");
+RCSID("$Id: array.c,v 1.67 2001/06/06 02:22:29 mast Exp $");
 
 struct array empty_array=
 {
@@ -31,12 +31,28 @@ struct array empty_array=
 #ifdef PIKE_SECURITY
   0,
 #endif
-  &empty_array,          /* Next */
-  &empty_array,          /* previous (circular) */
+  &weak_empty_array,     /* Next */
+  &weak_shrink_empty_array, /* previous (circular) */
   0,                     /* Size = 0 */
   0,                     /* malloced Size = 0 */
   0,                     /* no types */
   0,			 /* no flags */
+};
+struct array weak_empty_array=
+{
+  1,
+#ifdef PIKE_SECURITY
+  0,
+#endif
+  &weak_shrink_empty_array, &empty_array, 0, 0, 0, ARRAY_WEAK_FLAG
+};
+struct array weak_shrink_empty_array=
+{
+  1,
+#ifdef PIKE_SECURITY
+  0,
+#endif
+  &empty_array, &weak_empty_array, 0, 0, 0, ARRAY_WEAK_FLAG|ARRAY_WEAK_SHRINK
 };
 
 
@@ -113,8 +129,8 @@ static void array_free_no_free(struct array *v)
 void really_free_array(struct array *v)
 {
 #ifdef PIKE_DEBUG
-  if(v == & empty_array)
-    fatal("Tried to free the empty_array.\n");
+  if(v == & empty_array || v == &weak_empty_array || v == &weak_shrink_empty_array)
+    fatal("Tried to free some *_empty_array.\n");
 #endif
 
 #ifdef PIKE_DEBUG
@@ -131,6 +147,26 @@ void really_free_array(struct array *v)
 void do_free_array(struct array *a)
 {
   free_array(a);
+}
+
+struct array *array_set_flags(struct array *a, int flags)
+{
+  if (a->size)
+    a->flags = flags;
+  else {
+    free_array(a);
+    switch (flags) {
+      case 0:
+	add_ref(a = &empty_array); break;
+      case ARRAY_WEAK_FLAG:
+	add_ref(a = &weak_empty_array); break;
+      case ARRAY_WEAK_FLAG|ARRAY_WEAK_SHRINK:
+	add_ref(a = &weak_shrink_empty_array); break;
+      default:
+	fatal("Invalid flags %x\n", flags);
+    }
+  }
+  return a;
 }
 
 /*
@@ -1952,7 +1988,8 @@ void zap_all_arrays(void)
   {
 
 #if defined(PIKE_DEBUG) && defined(DEBUG_MALLOC)
-    if(verbose_debug_exit && a!=&empty_array)
+    if(verbose_debug_exit && a!=&empty_array &&
+       a!=&weak_empty_array && a!=&weak_shrink_empty_array)
       describe(a);
 #endif
     
@@ -1980,7 +2017,7 @@ void count_memory_in_arrays(INT32 *num_, INT32 *size_)
 {
   INT32 num=0, size=0;
   struct array *m;
-  for(m=empty_array.next;m!=&empty_array;m=m->next)
+  for(m=empty_array.next;m!=&weak_empty_array;m=m->next)
   {
     num++;
     size+=sizeof(struct array)+

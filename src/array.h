@@ -5,7 +5,7 @@
 \*/
 
 /*
- * $Id: array.h,v 1.18 1999/10/03 21:44:18 hubbe Exp $
+ * $Id: array.h,v 1.19 2001/06/06 02:22:29 mast Exp $
  */
 #ifndef ARRAY_H
 #define ARRAY_H
@@ -36,7 +36,7 @@ struct array
 #define ARRAY_LVALUE 4
 #define ARRAY_WEAK_SHRINK 8
 
-extern struct array empty_array;
+extern struct array empty_array, weak_empty_array, weak_shrink_empty_array;
 
 #if defined(DEBUG_MALLOC) && defined(PIKE_DEBUG)
 #define ITEM(X) (((struct array *)(debug_malloc_pass((X))))->item)
@@ -78,6 +78,7 @@ typedef short_cmpfun (*cmpfun_getter)(TYPE_T);
 struct array *low_allocate_array(INT32 size,INT32 extra_space);
 void really_free_array(struct array *v);
 void do_free_array(struct array *a);
+struct array *array_set_flags(struct array *a, int flags);
 void array_index_no_free(struct svalue *s,struct array *v,INT32 index);
 void array_index(struct svalue *s,struct array *v,INT32 index);
 void simple_array_index_no_free(struct svalue *s,
@@ -158,6 +159,8 @@ void count_memory_in_arrays(INT32 *num_, INT32 *size_);
 struct array *explode_array(struct array *a, struct array *b);
 struct array *implode_array(struct array *a, struct array *b);
 /* Prototypes end here */
+
+#define array_get_flags(a) ((a)->flags)
 
 
 #endif
