@@ -4,7 +4,7 @@
 ||| See the files COPYING and DISCLAIMER for more information.
 \*/
 #include "global.h"
-RCSID("$Id: zlibmod.c,v 1.24 1999/06/08 12:35:45 mirar Exp $");
+RCSID("$Id: zlibmod.c,v 1.25 1999/06/10 20:44:12 hubbe Exp $");
 
 #include "zlib_machine.h"
 
@@ -198,6 +198,7 @@ static void exit_gz_deflate(struct object *o)
 /*   mt_lock(& THIS->lock); */
   deflateEnd(&THIS->gz);
 /*   mt_unlock(& THIS->lock); */
+  mt_destroy( & THIS->lock );
 }
 
 /*******************************************************************/
@@ -331,6 +332,7 @@ static void exit_gz_inflate(struct object *o)
 /*   mt_lock(& THIS->lock); */
   inflateEnd(& THIS->gz);
 /*   mt_unlock(& THIS->lock); */
+  mt_destroy( & THIS->lock );
 }
 
 
