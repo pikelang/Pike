@@ -2,7 +2,7 @@
 
 // LDAP client protocol implementation for Pike.
 //
-// $Id: client.pike,v 1.29 2001/10/04 19:35:59 nilsson Exp $
+// $Id: client.pike,v 1.30 2001/11/02 08:59:32 hop Exp $
 //
 // Honza Petrous, hop@unibase.cz
 //
@@ -336,7 +336,9 @@ int _prof_gtim;
   //!
   //! Create object. The first optional argument can be used later
   //! for subsequence operations. The second one can specify
-  //! TLS context of connection.
+  //! TLS context of connection. The default context only allows
+  //! 128-bit encryption methods, so you may need to provide your
+  //! own context if your LDAP server supports only export encryption.
   //!
   //! @param url
   //!  LDAP server URL in form
@@ -350,7 +352,7 @@ int _prof_gtim;
   void create(string|void url, object|void context)
   {
 
-    info = ([ "code_revision" : ("$Revision: 1.29 $"/" ")[1] ]);
+    info = ([ "code_revision" : ("$Revision: 1.30 $"/" ")[1] ]);
 
     if(!url || !sizeof(url))
       url = LDAP_DEFAULT_URL;
@@ -634,12 +636,18 @@ int _prof_gtim;
   }
 
 
-  // API function (ldap_add)
-  //
-  // add(string dn, mapping(string:array(string)) attrs)
-  //
-  //	dn:		DN of compared object
-  //	ttrs:		attribute(s) and value
+  //! @decl add(dn, mapping(string:array(string)))
+  //!
+  //!  The Add Operation allows a client to request the addition
+  //!  of an entry into the directory
+  //!
+  //! @param dn
+  //!  The Distinguished Name of the entry to be added.
+  //!
+  //! @param attrs
+  //!  The mapping of attributes and their values that make up the content
+  //!  of the entry being added.
+  //!    
   int add (string dn, mapping(string:array(string)) attrs) {
 
     int id;
@@ -700,7 +708,7 @@ int _prof_gtim;
     }
     //DWRITE(sprintf("client.sub1: arr=%O\n",rvarr));
     return(rvarr);
-}
+  }
 
   /*private*/ object make_simple_filter(string filter) {
   // filter expression parser - only simple expressions!
@@ -1033,7 +1041,6 @@ int _prof_gtim;
     return(-1);
   }
 
-
   private int|string send_modify_op(string dn,
 				    mapping(string:array(mixed)) attropval) {
   // MODIFY
@@ -1072,13 +1079,100 @@ int _prof_gtim;
     return (do_op(msgval));
   }
 
+  private int|string send_modifydn_op(string dn, string newrdn,
+    int deleteoldrdn, string newsuperior) {
 
-  // API function (ldap_modify)
-  //
-  // modify(string dn, mapping(string:array(mix)) attropval)
-  //
-  //	dn:		DN of compared object
-  //	attropval:	attribute(s), operation and value(s)
+    object msgval;
+    array seq=({ Standards.ASN1.Types.asn1_octet_string(dn),
+               Standards.ASN1.Types.asn1_octet_string(newrdn),
+               Standards.ASN1.Types.asn1_boolean(deleteoldrdn)
+         });
+    if(newsuperior)
+          seq+=({Standards.ASN1.Types.asn1_octet_string(newsuperior)});
+
+    msgval = ASN1_APPLICATION_SEQUENCE(12, seq);
+
+    return (do_op(msgval));
+  }
+
+  //! @decl modifydn(string, string, int)
+  //! @decl modifydn(string, string, int, string)
+  //!
+  //!  The Modify DN Operation allows a client to change the leftmost
+  //!  (least significant) component of the name of an entry in the directory,
+  //!  or to move a subtree of entries to a new location in the directory.
+  //!
+  //! @param dn
+  //!  DN of source object
+  //!
+  //! @param newrdn
+  //!  RDN of destination
+  //!
+  //! @param deleteoldrdn
+  //!  The parameter controls whether the old RDN attribute values
+  //!  are to be retained as attributes of the entry, or deleted
+  //!  from the entry.
+  //!
+  //! @param newsuperior
+  //!  If present, this is the Distinguished Name of the entry
+  //!  which becomes the immediate superior of the existing entry.
+  //!
+  int modifydn (string dn, string newrdn, int deleteoldrdn,
+                string|void newsuperior) {
+
+    mixed raw;
+    object rv;
+
+    if (chk_ver())
+      return(-ldap_errno);
+    if (chk_binded())
+      return(-ldap_errno);
+    if (chk_dn(dn))
+      return(-ldap_errno);
+    if(ldap_version == 3) {
+      dn = string_to_utf8(dn);
+      newrdn = string_to_utf8(newrdn);
+      if(newsuperior) newsuperior = string_to_utf8(newsuperior);
+    }
+    if(intp(raw = send_modifydn_op(dn, newrdn, deleteoldrdn, newsuperior))) {
+      THROW(({error_string()+"\n",backtrace()}));
+      return(-ldap_errno);
+    }
+
+    rv = result(({raw}));
+    DWRITE_HI(sprintf("client.MODIFYDN: %s\n", rv->error_string()));
+    return (seterr (rv->error_number()));
+
+  }  //modifydn
+
+  //! @decl modify(string, mapping(string:array(mixed)))
+  //!
+  //!  The Modify Operation allows a client to request that a modification
+  //!  of an entry be performed on its behalf by a server.
+  //!
+  //! @param dn
+  //!  The distinguished name of modified entry.
+  //!
+  //! @param attropval
+  //!  The mapping of attributes with requested operation and attribute's
+  //!  values.
+  //!
+  //!   attropval=([ attribute: ({operation, value1, value2, ...}) ])
+  //!
+  //!   where operation is one of the following:
+  //!    0 (LDAP_OPERATION_ADD) -
+  //!      add values listed to the given attribute, creating the attribute
+  //!      if necessary
+  //!    1 (LDAP_OPERATION_DELETE) -
+  //!      delete values listed from the given attribute, removing the entire
+  //!      attribute if no values are listed, or if all current values
+  //!      of the attribute are listed for deletion
+  //!    2 (LDAP_OPERATION_REPLACE) -
+  //!      replace all existing values of the given attribute with the new
+  //!      values listed, creating the attribute if it did not already exist.
+  //!      A replace with no value will delete the entire attribute if it
+  //!      exists, and is ignored if the attribute does not exist
+  //!
   int modify (string dn, mapping(string:array(mixed)) attropval) {
 
     int id;
