@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: udp.c,v 1.56 2003/11/03 21:04:36 mast Exp $
+|| $Id: udp.c,v 1.57 2003/11/04 18:17:40 grubba Exp $
 */
 
 #define NO_PIKE_SHORTHAND
@@ -10,7 +10,7 @@
 
 #include "file_machine.h"
 
-RCSID("$Id: udp.c,v 1.56 2003/11/03 21:04:36 mast Exp $");
+RCSID("$Id: udp.c,v 1.57 2003/11/04 18:17:40 grubba Exp $");
 #include "fdlib.h"
 #include "pike_netlib.h"
 #include "interpret.h"
@@ -869,6 +869,9 @@ void init_udp(void)
   START_NEW_PROGRAM_ID (STDIO_UDP);
 
   ADD_STORAGE(struct udp_storage);
+
+  PIKE_MAP_VARIABLE("_read_callback", OFFSETOF(udp_storage, read_callback),
+		    tFunc(tNone, tInt_10), T_MIXED, ID_STATIC|ID_PRIVATE);
 
   ADD_FUNCTION("set_type",udp_set_type,
 	       tFunc(tInt tOr(tVoid,tInt),tObj),0);
