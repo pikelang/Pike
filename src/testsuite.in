@@ -1,4 +1,4 @@
-test_true([["$Id: testsuite.in,v 1.346 2000/11/05 22:50:07 nilsson Exp $"]]);
+test_true([["$Id: testsuite.in,v 1.347 2000/11/06 02:11:59 nilsson Exp $"]]);
 
 cond([[all_constants()->_verify_internals]],
 [[
@@ -4848,12 +4848,12 @@ test_eq(1,call_function(a))
 test_eq(1,call_function(lambda(int a){ return a; },1))
 test_eq(1,call_function(intp,1))
 
-// - capitalize
+// - String.capitalize
 test_eq(String.capitalize("fubar"),"Fubar")
 test_eq(String.capitalize("FooBar"),"FooBar")
 test_eq(String.capitalize("-"),"-")
 
-// - common_prefix
+// - String.common_prefix
 test_eq(String.common_prefix(({ "soliloquise" })), "soliloquise")
 test_eq(String.common_prefix(({ "muzzle", "muzzy" })), "muzz")
 test_eq(String.common_prefix(({ "labyrinth", "diatom" })), "")
@@ -5961,6 +5961,7 @@ test_equal(Array.transpose( ({ ({ 1,2,3}), ({4,5,6}) }) ),
 test_equal([[Array.transpose(({catch{throw(({""}));},({1,2})[1..]}))]],
 	   [[ ({ ({ "", 2 }) }) ]])
 
+test_true(!Graphics.Graph.test()->main(1,({"test"})))
 test_true(!Yabu.test()->main(1,({"test"})))
 test_do([[
   string s;
