@@ -4,7 +4,7 @@
 ||| See the files COPYING and DISCLAIMER for more information.
 \*/
 #include "global.h"
-RCSID("$Id: main.c,v 1.51 1998/04/24 00:26:59 hubbe Exp $");
+RCSID("$Id: main.c,v 1.52 1998/05/12 16:53:17 grubba Exp $");
 #include "fdlib.h"
 #include "backend.h"
 #include "module.h"
@@ -117,9 +117,6 @@ int dbm_main(int argc, char **argv)
 #endif  
   init_backend();
   master_file = 0;
-#ifdef HAVE_GETENV
-  master_file = getenv("PIKE_MASTER");
-#endif
 #if __NT__
   if(!master_file)
   {
@@ -146,6 +143,9 @@ int dbm_main(int argc, char **argv)
       RegCloseKey(k);
     }
   }
+#endif
+#ifdef HAVE_GETENV
+  master_file = getenv("PIKE_MASTER");
 #endif
 
   if(!master_file) master_file = DEFAULT_MASTER;
