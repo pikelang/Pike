@@ -1,9 +1,6 @@
 build
-img
 manual
 manual.xml
+modref
 html_manual
-manual-tree-split
-autodoc.xml
-traditional.xml
 traditional_manual
