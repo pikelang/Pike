@@ -5,7 +5,7 @@
 \*/
 
 /*
- * $Id: object.h,v 1.55 2000/10/01 08:51:54 hubbe Exp $
+ * $Id: object.h,v 1.56 2000/12/16 05:34:04 marcus Exp $
  */
 #ifndef OBJECT_H
 #define OBJECT_H
@@ -35,7 +35,7 @@ struct object
   char *storage;
 };
 
-extern struct object *first_object;
+PMOD_EXPORT extern struct object *first_object;
 extern struct object *gc_internal_object;
 extern struct object *objects_to_destruct;
 extern struct object *master_object;
@@ -55,8 +55,8 @@ extern struct program *magic_set_index_program;
 /* Prototypes begin here */
 BLOCK_ALLOC(object, 511)
 PMOD_EXPORT struct program *get_program_for_object_being_destructed(struct object * o);
-struct object *low_clone(struct program *p);
-void call_c_initializers(struct object *o);
+PMOD_EXPORT struct object *low_clone(struct program *p);
+PMOD_EXPORT void call_c_initializers(struct object *o);
 PMOD_EXPORT void do_free_object(struct object *o);
 PMOD_EXPORT struct object *debug_clone_object(struct program *p, int args);
 PMOD_EXPORT struct object *fast_clone_object(struct program *p, int args);
@@ -72,7 +72,7 @@ static void call_destroy(struct object *o, int foo);
 void low_destruct(struct object *o,int do_free);
 PMOD_EXPORT void destruct(struct object *o);
 PMOD_EXPORT void destruct_objects_to_destruct(void);
-void schedule_really_free_object(struct object *o);
+PMOD_EXPORT void schedule_really_free_object(struct object *o);
 PMOD_EXPORT void low_object_index_no_free(struct svalue *to,
 					  struct object *o,
 					  ptrdiff_t f);
@@ -98,8 +98,8 @@ PMOD_EXPORT int object_equal_p(struct object *a, struct object *b, struct proces
 void cleanup_objects(void);
 PMOD_EXPORT struct array *object_indices(struct object *o);
 PMOD_EXPORT struct array *object_values(struct object *o);
-void gc_mark_object_as_referenced(struct object *o);
-void real_gc_cycle_check_object(struct object *o, int weak);
+PMOD_EXPORT void gc_mark_object_as_referenced(struct object *o);
+PMOD_EXPORT void real_gc_cycle_check_object(struct object *o, int weak);
 unsigned gc_touch_all_objects(void);
 void gc_check_all_objects(void);
 void gc_mark_all_objects(void);

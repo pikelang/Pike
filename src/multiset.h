@@ -5,7 +5,7 @@
 \*/
 
 /*
- * $Id: multiset.h,v 1.15 2000/08/09 12:49:28 grubba Exp $
+ * $Id: multiset.h,v 1.16 2000/12/16 05:24:41 marcus Exp $
  */
 #ifndef MULTISET_H
 #define MULTISET_H
@@ -30,26 +30,26 @@ extern struct multiset *gc_internal_multiset;
 #define l_sizeof(L) ((L)->ind->size)
 
 /* Prototypes begin here */
-int multiset_member(struct multiset *l, struct svalue *ind);
-struct multiset *allocate_multiset(struct array *ind);
-void really_free_multiset(struct multiset *l);
-void do_free_multiset(struct multiset *l);
-void order_multiset(struct multiset *l);
-struct multiset *mkmultiset(struct array *ind);
-void multiset_insert(struct multiset *l,
+PMOD_EXPORT int multiset_member(struct multiset *l, struct svalue *ind);
+PMOD_EXPORT struct multiset *allocate_multiset(struct array *ind);
+PMOD_EXPORT void really_free_multiset(struct multiset *l);
+PMOD_EXPORT void do_free_multiset(struct multiset *l);
+PMOD_EXPORT void order_multiset(struct multiset *l);
+PMOD_EXPORT struct multiset *mkmultiset(struct array *ind);
+PMOD_EXPORT void multiset_insert(struct multiset *l,
 		 struct svalue *ind);
 struct array *multiset_indices(struct multiset *l);
-void multiset_delete(struct multiset *l,struct svalue *ind);
-void check_multiset_for_destruct(struct multiset *l);
-struct multiset *copy_multiset(struct multiset *tmp);
-struct multiset *merge_multisets(struct multiset *a,
+PMOD_EXPORT void multiset_delete(struct multiset *l,struct svalue *ind);
+PMOD_EXPORT void check_multiset_for_destruct(struct multiset *l);
+PMOD_EXPORT struct multiset *copy_multiset(struct multiset *tmp);
+PMOD_EXPORT struct multiset *merge_multisets(struct multiset *a,
 			  struct multiset *b,
 			  INT32 operator);
-struct multiset *add_multisets(struct svalue *argp,INT32 args);
+PMOD_EXPORT struct multiset *add_multisets(struct svalue *argp,INT32 args);
 int multiset_equal_p(struct multiset *a, struct multiset *b, struct processing *p);
 void describe_multiset(struct multiset *l,struct processing *p,int indent);
 node * make_node_from_multiset(struct multiset *l);
-void f_aggregate_multiset(INT32 args);
+PMOD_EXPORT void f_aggregate_multiset(INT32 args);
 struct multiset *copy_multiset_recursively(struct multiset *l,
 				   struct processing *p);
 void gc_mark_multiset_as_referenced(struct multiset *l);

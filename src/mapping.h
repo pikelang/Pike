@@ -5,7 +5,7 @@
 \*/
 
 /*
- * $Id: mapping.h,v 1.32 2000/12/14 07:23:04 mast Exp $
+ * $Id: mapping.h,v 1.33 2000/12/16 05:24:41 marcus Exp $
  */
 #ifndef MAPPING_H
 #define MAPPING_H
@@ -84,70 +84,70 @@ PMOD_PROTO void really_free_mapping(struct mapping *md);
 /* Prototypes begin here */
 BLOCK_ALLOC(mapping, 511)
 
-struct mapping *debug_allocate_mapping(int size);
-void really_free_mapping_data(struct mapping_data *md);
-void do_free_mapping(struct mapping *m);
+PMOD_EXPORT struct mapping *debug_allocate_mapping(int size);
+PMOD_EXPORT void really_free_mapping_data(struct mapping_data *md);
+PMOD_EXPORT void do_free_mapping(struct mapping *m);
 struct mapping_data *copy_mapping_data(struct mapping_data *md);
-void mapping_fix_type_field(struct mapping *m);
-void mapping_set_flags(struct mapping *m, int flags);
-void low_mapping_insert(struct mapping *m,
+PMOD_EXPORT void mapping_fix_type_field(struct mapping *m);
+PMOD_EXPORT void mapping_set_flags(struct mapping *m, int flags);
+PMOD_EXPORT void low_mapping_insert(struct mapping *m,
 			struct svalue *key,
 			struct svalue *val,
 			int overwrite);
-void mapping_insert(struct mapping *m,
+PMOD_EXPORT void mapping_insert(struct mapping *m,
 		    struct svalue *key,
 		    struct svalue *val);
-union anything *mapping_get_item_ptr(struct mapping *m,
+PMOD_EXPORT union anything *mapping_get_item_ptr(struct mapping *m,
 				     struct svalue *key,
 				     TYPE_T t);
-void map_delete_no_free(struct mapping *m,
+PMOD_EXPORT void map_delete_no_free(struct mapping *m,
 			struct svalue *key,
 			struct svalue *to);
-void check_mapping_for_destruct(struct mapping *m);
-struct svalue *low_mapping_lookup(struct mapping *m,
+PMOD_EXPORT void check_mapping_for_destruct(struct mapping *m);
+PMOD_EXPORT struct svalue *low_mapping_lookup(struct mapping *m,
 				  struct svalue *key);
-struct svalue *low_mapping_string_lookup(struct mapping *m,
+PMOD_EXPORT struct svalue *low_mapping_string_lookup(struct mapping *m,
 					 struct pike_string *p);
-void mapping_string_insert(struct mapping *m,
+PMOD_EXPORT void mapping_string_insert(struct mapping *m,
 			   struct pike_string *p,
 			   struct svalue *val);
-void mapping_string_insert_string(struct mapping *m,
+PMOD_EXPORT void mapping_string_insert_string(struct mapping *m,
 				  struct pike_string *p,
 				  struct pike_string *val);
-struct svalue *simple_mapping_string_lookup(struct mapping *m,
+PMOD_EXPORT struct svalue *simple_mapping_string_lookup(struct mapping *m,
 					    char *p);
-struct svalue *mapping_mapping_lookup(struct mapping *m,
+PMOD_EXPORT struct svalue *mapping_mapping_lookup(struct mapping *m,
 				      struct svalue *key1,
 				      struct svalue *key2,
 				      int create);
-struct svalue *mapping_mapping_string_lookup(struct mapping *m,
+PMOD_EXPORT struct svalue *mapping_mapping_string_lookup(struct mapping *m,
 				      struct pike_string *key1,
 				      struct pike_string *key2,
 				      int create);
-void mapping_index_no_free(struct svalue *dest,
+PMOD_EXPORT void mapping_index_no_free(struct svalue *dest,
 			   struct mapping *m,
 			   struct svalue *key);
-struct array *mapping_indices(struct mapping *m);
-struct array *mapping_values(struct mapping *m);
-struct array *mapping_to_array(struct mapping *m);
-void mapping_replace(struct mapping *m,struct svalue *from, struct svalue *to);
-struct mapping *mkmapping(struct array *ind, struct array *val);
-struct mapping *copy_mapping(struct mapping *m);
-struct mapping *copy_mapping(struct mapping *m);
-struct mapping *merge_mappings(struct mapping *a, struct mapping *b, INT32 op);
-struct mapping *merge_mapping_array_ordered(struct mapping *a, 
+PMOD_EXPORT struct array *mapping_indices(struct mapping *m);
+PMOD_EXPORT struct array *mapping_values(struct mapping *m);
+PMOD_EXPORT struct array *mapping_to_array(struct mapping *m);
+PMOD_EXPORT void mapping_replace(struct mapping *m,struct svalue *from, struct svalue *to);
+PMOD_EXPORT struct mapping *mkmapping(struct array *ind, struct array *val);
+PMOD_EXPORT struct mapping *copy_mapping(struct mapping *m);
+PMOD_EXPORT struct mapping *copy_mapping(struct mapping *m);
+PMOD_EXPORT struct mapping *merge_mappings(struct mapping *a, struct mapping *b, INT32 op);
+PMOD_EXPORT struct mapping *merge_mapping_array_ordered(struct mapping *a, 
 					    struct array *b, INT32 op);
-struct mapping *merge_mapping_array_unordered(struct mapping *a, 
+PMOD_EXPORT struct mapping *merge_mapping_array_unordered(struct mapping *a, 
 					      struct array *b, INT32 op);
-struct mapping *add_mappings(struct svalue *argp, INT32 args);
-int mapping_equal_p(struct mapping *a, struct mapping *b, struct processing *p);
+PMOD_EXPORT struct mapping *add_mappings(struct svalue *argp, INT32 args);
+PMOD_EXPORT int mapping_equal_p(struct mapping *a, struct mapping *b, struct processing *p);
 void describe_mapping(struct mapping *m,struct processing *p,int indent);
 node *make_node_from_mapping(struct mapping *m);
 void f_m_delete(INT32 args);
-void f_aggregate_mapping(INT32 args);
-struct mapping *copy_mapping_recursively(struct mapping *m,
+PMOD_EXPORT void f_aggregate_mapping(INT32 args);
+PMOD_EXPORT struct mapping *copy_mapping_recursively(struct mapping *m,
 					 struct processing *p);
-void mapping_search_no_free(struct svalue *to,
+PMOD_EXPORT void mapping_search_no_free(struct svalue *to,
 			    struct mapping *m,
 			    struct svalue *look_for,
 			    struct svalue *key );

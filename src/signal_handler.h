@@ -5,7 +5,7 @@
 \*/
 
 /*
- * $Id: signal_handler.h,v 1.10 2000/03/22 00:56:14 hubbe Exp $
+ * $Id: signal_handler.h,v 1.11 2000/12/16 05:24:41 marcus Exp $
  */
 #ifndef SIGNAL_H
 #define SIGNAL_H
@@ -15,7 +15,7 @@ typedef RETSIGTYPE (*sigfunctype) (int);
 /* Prototypes begin here */
 struct sigdesc;
 void my_signal(int sig, sigfunctype fun);
-void check_signals(struct callback *foo, void *bar, void *gazonk);
+PMOD_EXPORT void check_signals(struct callback *foo, void *bar, void *gazonk);
 void set_default_signal_handler(int signum, void (*func)(INT32));
 void process_started(pid_t pid);
 void process_done(pid_t pid, char *from);

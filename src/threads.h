@@ -1,5 +1,5 @@
 /*
- * $Id: threads.h,v 1.108 2000/12/05 21:08:23 per Exp $
+ * $Id: threads.h,v 1.109 2000/12/16 05:24:41 marcus Exp $
  */
 #ifndef THREADS_H
 #define THREADS_H
@@ -428,7 +428,7 @@ struct thread_state {
 #endif /* VERBOSE_THREADS_DEBUG */
 
 #ifdef THREAD_TRACE
-extern int t_flag;
+PMOD_EXPORT extern int t_flag;
 #define SWAP_OUT_TRACE(_tmp)	do { (_tmp)->status.t_flag = t_flag; } while(0)
 #define SWAP_IN_TRACE(_tmp)	do { t_flag = (_tmp)->status.t_flag; } while(0)
 #else /* !THREAD_TRACE */
@@ -492,7 +492,7 @@ extern int t_flag;
 
 #define THREADSTATE2OBJ(X) ((X)->state.thread_id)
 
-extern int Pike_in_gc;
+PMOD_EXPORT extern int Pike_in_gc;
 #define THREADS_ALLOW() do { \
      struct thread_state *_tmp=OBJ2THREAD(Pike_interpreter.thread_id); \
      DO_IF_DEBUG({ \

@@ -5,7 +5,7 @@
 \*/
 
 /*
- * $Id: pike_types.h,v 1.45 2000/09/07 11:33:09 grubba Exp $
+ * $Id: pike_types.h,v 1.46 2000/12/16 05:24:41 marcus Exp $
  */
 #ifndef PIKE_TYPES_H
 #define PIKE_TYPES_H
@@ -82,21 +82,21 @@ extern unsigned char type_stack[PIKE_TYPE_STACK_SIZE];
 extern unsigned char *pike_type_mark_stack[PIKE_TYPE_STACK_SIZE/4];
 
 extern int max_correct_args;
-extern struct pike_string *string_type_string;
-extern struct pike_string *int_type_string;
-extern struct pike_string *float_type_string;
-extern struct pike_string *object_type_string;
-extern struct pike_string *function_type_string;
-extern struct pike_string *program_type_string;
-extern struct pike_string *array_type_string;
-extern struct pike_string *list_type_string;
-extern struct pike_string *mapping_type_string;
-extern struct pike_string *type_type_string;
-extern struct pike_string *mixed_type_string;
-extern struct pike_string *void_type_string;
-extern struct pike_string *zero_type_string;
-extern struct pike_string *any_type_string;
-extern struct pike_string *weak_type_string;
+PMOD_EXPORT extern struct pike_string *string_type_string;
+PMOD_EXPORT extern struct pike_string *int_type_string;
+PMOD_EXPORT extern struct pike_string *float_type_string;
+PMOD_EXPORT extern struct pike_string *object_type_string;
+PMOD_EXPORT extern struct pike_string *function_type_string;
+PMOD_EXPORT extern struct pike_string *program_type_string;
+PMOD_EXPORT extern struct pike_string *array_type_string;
+PMOD_EXPORT extern struct pike_string *list_type_string;
+PMOD_EXPORT extern struct pike_string *mapping_type_string;
+PMOD_EXPORT extern struct pike_string *type_type_string;
+PMOD_EXPORT extern struct pike_string *mixed_type_string;
+PMOD_EXPORT extern struct pike_string *void_type_string;
+PMOD_EXPORT extern struct pike_string *zero_type_string;
+PMOD_EXPORT extern struct pike_string *any_type_string;
+PMOD_EXPORT extern struct pike_string *weak_type_string;
 
 #define CONSTTYPE(X) make_shared_binary_string(X,CONSTANT_STRLEN(X))
 

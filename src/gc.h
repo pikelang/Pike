@@ -1,5 +1,5 @@
 /*
- * $Id: gc.h,v 1.72 2000/12/14 07:25:16 mast Exp $
+ * $Id: gc.h,v 1.73 2000/12/16 05:24:40 marcus Exp $
  */
 #ifndef GC_H
 #define GC_H
@@ -13,7 +13,7 @@ extern struct pike_queue gc_mark_queue;
 extern INT32 num_objects;
 extern INT32 num_allocs;
 extern ptrdiff_t alloc_threshold;
-extern int Pike_in_gc;
+PMOD_EXPORT extern int Pike_in_gc;
 extern int gc_debug;
 
 extern struct callback *gc_evaluator_callback;
@@ -169,7 +169,7 @@ void describe_something(void *a, int t, int indent, int depth, int flags);
 PMOD_EXPORT void describe(void *x);
 void debug_describe_svalue(struct svalue *s);
 void debug_gc_touch(void *a);
-INT32 real_gc_check(void *a);
+PMOD_EXPORT INT32 real_gc_check(void *a);
 INT32 real_gc_check_weak(void *a);
 void locate_references(void *a);
 void gc_add_extra_ref(void *a);
@@ -180,7 +180,7 @@ void debug_really_free_gc_frame(struct gc_frame *l);
 int gc_do_weak_free(void *a);
 void gc_delayed_free(void *a);
 int gc_mark(void *a);
-void gc_cycle_enqueue(gc_cycle_check_cb *checkfn, void *data, int weak);
+PMOD_EXPORT void gc_cycle_enqueue(gc_cycle_check_cb *checkfn, void *data, int weak);
 void gc_cycle_run_queue();
 int gc_cycle_push(void *x, struct marker *m, int weak);
 void do_gc_recurse_svalues(struct svalue *s, int num);

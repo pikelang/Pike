@@ -5,16 +5,16 @@
 \*/
 
 /*
- * $Id: main.h,v 1.14 2000/11/06 17:03:32 grubba Exp $
+ * $Id: main.h,v 1.15 2000/12/16 05:24:40 marcus Exp $
  */
 #ifndef MAIN_H
 #define MAIN_H
 
 #include "callback.h"
 
-extern int d_flag, t_flag, a_flag, l_flag, c_flag, p_flag;
-extern int debug_options, runtime_options;
-extern int default_t_flag;
+PMOD_EXPORT extern int d_flag, t_flag, a_flag, l_flag, c_flag, p_flag;
+PMOD_EXPORT extern int debug_options, runtime_options;
+PMOD_EXPORT extern int default_t_flag;
 
 #ifdef TRY_USE_MMX
 extern int try_use_mmx;
@@ -29,10 +29,10 @@ extern int try_use_mmx;
 #define RUNTIME_STRICT_TYPES 2
 
 /* Prototypes begin here */
-struct callback *add_post_master_callback(callback_func call,
+PMOD_EXPORT struct callback *add_post_master_callback(callback_func call,
 					  void *arg,
 					  callback_func free_func);
-struct callback *add_exit_callback(callback_func call,
+PMOD_EXPORT struct callback *add_exit_callback(callback_func call,
 				   void *arg,
 				   callback_func free_func);
 int dbm_main(int argc, char **argv);
