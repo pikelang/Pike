@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: gc.c,v 1.193 2003/04/15 17:01:02 mast Exp $
+|| $Id: gc.c,v 1.194 2003/07/16 14:10:12 mast Exp $
 */
 
 #include "global.h"
@@ -31,7 +31,7 @@ struct callback *gc_evaluator_callback=0;
 
 #include "block_alloc.h"
 
-RCSID("$Id: gc.c,v 1.193 2003/04/15 17:01:02 mast Exp $");
+RCSID("$Id: gc.c,v 1.194 2003/07/16 14:10:12 mast Exp $");
 
 /* Run garbage collect approximately every time
  * 20 percent of all arrays, objects and programs is
@@ -2740,7 +2740,7 @@ int do_gc(void)
   /* Destruct the live objects in cycles, but first warn about any bad
    * cycles. */
   pre_kill_objs = num_objects;
-  if (last_cycle) {
+  if (last_cycle && Pike_interpreter.evaluator_stack) {
     objs -= num_objects;
     warn_bad_cycles();
     objs += num_objects;
