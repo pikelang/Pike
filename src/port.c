@@ -18,7 +18,7 @@
 #include <float.h>
 #include <string.h>
 
-RCSID("$Id: port.c,v 1.31 2000/08/29 13:40:14 mirar Exp $");
+RCSID("$Id: port.c,v 1.32 2000/08/29 16:19:42 grubba Exp $");
 
 #ifdef sun
 time_t time PROT((time_t *));
@@ -385,9 +385,6 @@ PMOD_EXPORT char *STRTOK(char *s1,char *s2)
    character after the last one used in the number is put in *ENDPTR.  */
 PMOD_EXPORT double STRTOD(char * nptr, char **endptr)
 {
-#ifdef HAVE_STRTOD
-  return strtod(nptr, endptr);
-#else /* !HAVE_STRTOD */
   register unsigned char *s;
   short int sign;
 
@@ -490,7 +487,7 @@ PMOD_EXPORT double STRTOD(char * nptr, char **endptr)
     *endptr = (char *) s;
 
   if (num == 0.0)
-    return 0.0;
+    return 0.0 * sign;
 
   /* Multiply NUM by 10 to the EXPONENT power,
      checking for overflow and underflow.  */
@@ -499,14 +496,15 @@ PMOD_EXPORT double STRTOD(char * nptr, char **endptr)
   {
     if (num < DBL_MIN * pow(10.0, (double) -exponent))
       goto underflow;
+
+    num /= pow(10.0, (double) -exponent);
   }
   else if (exponent > 0)
   {
     if (num > DBL_MAX * pow(10.0, (double) -exponent))
       goto overflow;
+    num *= pow(10.0, (double) exponent);
   }
-
-  num *= pow(10.0, (double) exponent);
 
   return num * sign;
 
@@ -527,7 +525,6 @@ PMOD_EXPORT double STRTOD(char * nptr, char **endptr)
   if (endptr != NULL)
     *endptr = (char *) nptr;
   return 0.0;
-#endif /* HAVE_STRTOD */
 }
 
 #ifndef HAVE_VSPRINTF
