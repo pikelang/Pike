@@ -111,5 +111,19 @@ test_any([[
     lambda(string type, mixed ... args) { if(type=="error") ret=1; });
   return ret;
 ]],[[1]])
+test_any([[
+  int ret;
+  object o = Parser.XML.Simple();
+  o->compat_allow_errors ("7.2");
+  o->parse("<a></a><foo/>",
+    lambda(string type, mixed ... args) { if(type=="error") ret=1; });
+  return ret;
+]],[[0]])
+test_any([[
+  int ret;
+  Parser.XML.Simple()->parse("<a></a><!-- gnurk -->",
+    lambda(string type, mixed ... args) { if(type=="error") ret=1; });
+  return ret;
+]],[[0]])
 
 
