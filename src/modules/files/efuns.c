@@ -25,7 +25,7 @@
 #include "file_machine.h"
 #include "file.h"
 
-RCSID("$Id: efuns.c,v 1.97 2001/10/02 19:18:32 hubbe Exp $");
+RCSID("$Id: efuns.c,v 1.98 2004/10/04 08:25:20 grubba Exp $");
 
 #ifdef HAVE_SYS_TYPES_H
 #include <sys/types.h>
@@ -307,9 +307,11 @@ void f_filesystem_stat( INT32 args )
 #ifdef HAVE_SYS_MOUNT_H
 #include <sys/mount.h>
 #endif /* HAVE_SYS_MOUNT_H */
+#if !defined(HAVE_STATVFS) && !defined(HAVE_STATFS)
 #ifdef HAVE_USTAT_H
 #include <ustat.h>
 #endif /* HAVE_USTAT_H */
+#endif /* !HAVE_STATVFS && !HAVE_STATFS */
 void f_filesystem_stat(INT32 args)
 {
 #ifdef HAVE_STATVFS
