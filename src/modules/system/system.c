@@ -1,5 +1,5 @@
 /*
- * $Id: system.c,v 1.80 1999/12/27 20:56:33 hubbe Exp $
+ * $Id: system.c,v 1.81 2000/01/16 04:54:24 hubbe Exp $
  *
  * System-call module for Pike
  *
@@ -15,7 +15,7 @@
 #include "system_machine.h"
 #include "system.h"
 
-RCSID("$Id: system.c,v 1.80 1999/12/27 20:56:33 hubbe Exp $");
+RCSID("$Id: system.c,v 1.81 2000/01/16 04:54:24 hubbe Exp $");
 #ifdef HAVE_WINSOCK_H
 #include <winsock.h>
 #endif
@@ -77,6 +77,10 @@ RCSID("$Id: system.c,v 1.80 1999/12/27 20:56:33 hubbe Exp $");
 #endif /* HAVE_SYS_SYSTEMINFO_H */
 #ifdef HAVE_SYS_UTSNAME_H
 #include <sys/utsname.h>
+#endif
+
+#ifdef HAVE_UTIME_H
+#include <utime.h>
 #endif
 
 #include "dmalloc.h"
@@ -389,6 +393,34 @@ void f_chown(INT32 args)
   THREADS_DISALLOW_UID();
   if (err < 0) {
     report_error("chown");
+  }
+  pop_n_elems(args);
+}
+#endif
+
+#ifdef HAVE_UTIME
+void f_utime(INT32 args)
+{
+  char *path;
+  INT32 atime, mtime;
+  int err;
+  struct utimbuf b;
+
+#ifdef PIKE_SECURITY
+  if(!CHECK_SECURITY(SECURITY_BIT_SECURITY))
+    error("utime: permission denied.\n");
+#endif
+
+  get_all_args("utime", args, "%s%i%i", &path, &atime, &mtime);
+  b.actime=atime;
+  b.modtime=mtime;
+  THREADS_ALLOW_UID();
+  do {
+    err = utime(path, &b);
+  } while((err < 0) && (errno == EINTR));
+  THREADS_DISALLOW_UID();
+  if (err < 0) {
+    report_error("utime");
   }
   pop_n_elems(args);
 }
@@ -1302,6 +1334,13 @@ void pike_module_init(void)
 /* function(string, int, int:void) */
   ADD_EFUN("chown", f_chown,tFunc(tStr tInt tInt,tVoid), OPT_SIDE_EFFECT);
 #endif
+
+#ifdef HAVE_UTIME
+  
+/* function(string, int, int:void) */
+  ADD_EFUN("utime", f_utime,tFunc(tStr tInt tInt,tVoid), OPT_SIDE_EFFECT);
+#endif
+
 #ifdef HAVE_INITGROUPS
   
 /* function(string, int:void) */
