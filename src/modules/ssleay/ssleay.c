@@ -5,7 +5,7 @@
 \*/
 
 #include "global.h"
-RCSID("$Id: ssleay.c,v 1.5 1996/12/04 04:02:14 nisse Exp $");
+RCSID("$Id: ssleay.c,v 1.6 1996/12/04 14:37:45 nisse Exp $");
 #include "types.h"
 #include "interpret.h"
 #include "svalue.h"
@@ -83,32 +83,39 @@ void ssleay_connection_set_fd(INT32 args)
 
 void ssleay_connection_accept(INT32 args)
 {
-  if (SSL_accept(CON) <= 0)
-    {
-      ERR_print_errors_fp(stderr);
-      error("ssleay_connection->accept: failed\n");
-    }
   pop_n_elems(args);
+  push_int(SSL_accept(CON));
 }
 
 void ssleay_connection_read(INT32 args)
 {
   struct pike_string *s;
   INT32 len;
-
+  INT32 count;
+  
   if ((args < 1) || (sp[-args].type != T_INT))
     error("ssleay_connection->read: wrong type\n");
   len = sp[-args].u.integer;
 
   if (len < 0)
     error("ssleay_connection->read: invalid argument\n");
+  pop_n_elems(args);
+
   s = begin_shared_string(len);
   if (len)
     {
-      s->len = SSL_read(CON, s->str, len);
+      count = SSL_read(CON, s->str, len);
+      if (count < 0)
+	{
+	  free_string(end_shared_string(s));
+	  push_int(count);
+	}
+      else
+	{
+	  s->len = count;
+	  push_string(end_shared_string(s));
+	}
     }
-  pop_n_elems(args);
-  push_string(end_shared_string(s));
 }
 
 void ssleay_connection_write(INT32 args)
@@ -120,6 +127,12 @@ void ssleay_connection_write(INT32 args)
   res = SSL_write(CON, sp[-args].u.string->str, sp[-args].u.string->len);
   pop_n_elems(args);
   push_int(res);
+}
+
+void ssleay_connection_werror(INT32 args)
+{
+  ERR_print_errors_fp(stderr);
+  pop_n_elems(args);
 }
 
 /* Methods for ssleay context objects */
@@ -248,11 +261,12 @@ void init_ssleay_programs(void)
   start_new_program();
   add_storage(sizeof(struct ssleay_connection));
 
-  add_function("create", ssleay_connection_create, "function(int:void)",0);
-  add_function("accept", ssleay_connection_accept, "function(void:void)", 0);
+  add_function("create", ssleay_connection_create, "function(object:void)",0);
+  add_function("accept", ssleay_connection_accept, "function(void:int)", 0);
   add_function("read",ssleay_connection_read,"function(int,int|void:int|string)",0);
   add_function("write",ssleay_connection_write,"function(string:int)",0);
   add_function("set_fd",ssleay_connection_set_fd,"function(int:void)",0);
+  add_function("werror", ssleay_connection_werror, "function(void:void)", 0);
   set_init_callback(init_connection);
   set_exit_callback(exit_connection);
 
