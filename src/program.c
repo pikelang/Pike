@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: program.c,v 1.576 2004/11/05 17:56:34 grubba Exp $
+|| $Id: program.c,v 1.577 2004/11/06 08:41:30 nilsson Exp $
 */
 
 #include "global.h"
@@ -3610,14 +3610,13 @@ static int find_depth(struct program_state *state,
 
 void check_for_facet_inherit(struct program *p)
 {
-  int fid;
   /* If the inherit statement comes before the facet keyword in the
    * class declaration the class will be temporarily marked as a
    * product-class, but this will be taken care of when the facet
    * keyword is found. */
   if (p && Pike_compiler->new_program->facet_group &&
       p->facet_group != Pike_compiler->new_program->facet_group)
-    yyerror("A class can not belong to two facet-groups\n");
+    yyerror("A class can not belong to two facet-groups.");
   if (p && p->facet_class == PROGRAM_IS_FACET_CLASS) {
     if (Pike_compiler->new_program->facet_class == PROGRAM_IS_FACET_CLASS) {
       if(Pike_compiler->new_program->facet_index != p->facet_index)
@@ -3625,9 +3624,11 @@ void check_for_facet_inherit(struct program *p)
     }
     /* Otherwise this is a product class */
     else {
-      int line = 0;
-      Pike_compiler->new_program->facet_class = PROGRAM_IS_PRODUCT_CLASS;
-      Pike_compiler->new_program->facet_group = p->facet_group;
+      if( !Pike_compiler->new_program->facet_group ) {
+	Pike_compiler->new_program->facet_class = PROGRAM_IS_PRODUCT_CLASS;
+	add_ref(p->facet_group);
+	Pike_compiler->new_program->facet_group = p->facet_group;
+      }
       push_int(Pike_compiler->new_program->id);
       push_int(p->facet_index);
       push_int(p->id);
@@ -3649,6 +3650,7 @@ void check_for_facet_inherit(struct program *p)
     /* A class that inherits from a product class is also a product class */
     else if(Pike_compiler->new_program->facet_class!=PROGRAM_IS_FACET_CLASS) {
       Pike_compiler->new_program->facet_class = PROGRAM_IS_PRODUCT_CLASS;
+      add_ref(p->facet_group);
       Pike_compiler->new_program->facet_group = p->facet_group;
     }
   }
@@ -5993,9 +5995,10 @@ extern void yyparse(void);
 #define do_yyparse() do {				\
   struct svalue *save_sp=Pike_sp;			\
   yyparse();  /* Parse da program */			\
-  if(save_sp != Pike_sp)				\
-    Pike_fatal("yyparse() left %"PRINTPTRDIFFT"d droppings on the stack!\n",	\
+  if(save_sp != Pike_sp) {				\
+    Pike_fatal("yyparse() left %"PRINTPTRDIFFT"d droppings on the stack!\n", \
 	  Pike_sp - save_sp);				\
+  }							\
 }while(0)
 #else
 #define do_yyparse() yyparse()
