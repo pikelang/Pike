@@ -1,5 +1,5 @@
 /*
- * $Id: threads.h,v 1.90 2000/04/25 22:35:20 mast Exp $
+ * $Id: threads.h,v 1.91 2000/04/26 14:46:21 mast Exp $
  */
 #ifndef THREADS_H
 #define THREADS_H
@@ -288,8 +288,6 @@ extern THREAD_T debug_locking_thread;
 #define mt_trylock_interpreter() (mt_trylock(&interpreter_lock))
 #define mt_unlock_interpreter() (mt_unlock(&interpreter_lock))
 #define co_wait_interpreter(COND) do {co_wait((COND), &interpreter_lock);} while (0)
-
-#define CHECK_INTERPRETER_LOCK() do {} while (0)
 
 #endif
 
@@ -676,6 +674,10 @@ void th_farm(void (*fun)(void *), void *here);
 #define exit_threads_disable(X)
 
 #endif /* PIKE_THREADS */
+
+#ifndef CHECK_INTERPRETER_LOCK
+#define CHECK_INTERPRETER_LOCK() do {} while (0)
+#endif
 
 #ifdef __NT__
 #ifndef PIKE_DEBUG
