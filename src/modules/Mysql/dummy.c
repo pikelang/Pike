@@ -13,7 +13,7 @@
 typedef long long _ll_t;
 typedef unsigned long long _ull_t;
 
-static mysql_dummy(_ull_t a, _ull_t b, _ll_t c, _ll_t d) {
+static _ll_t mysql_dummy(_ull_t a, _ull_t b, _ll_t c, _ll_t d) {
   return(a%b+(c%d)+(c/d)+(a/b));
 }
 
