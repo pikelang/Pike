@@ -1,6 +1,6 @@
 #! /usr/bin/env pike
 
-/* $Id: export.pike,v 1.57 2002/08/29 19:25:21 peter Exp $ */
+/* $Id: export.pike,v 1.58 2002/10/15 15:17:17 nilsson Exp $ */
 
 multiset except_modules = (<>);
 string vpath;
@@ -154,7 +154,7 @@ int main(int argc, array(string) argv)
   array(string) files;
   string export_list, filename;
   object cvs;
-  int tag, snapshot;
+  int tag, snapshot, t;
 
   foreach(Getopt.find_all_options(argv, ({
     ({ "srcdir",    Getopt.HAS_ARG, "--srcdir"     }),
@@ -163,7 +163,8 @@ int main(int argc, array(string) argv)
     ({ "help",      Getopt.NO_ARG,  "--help"       }),
     ({ "exportlist",Getopt.HAS_ARG, "--exportlist" }),
     ({ "filename",  Getopt.HAS_ARG, "--name"       }),
-    ({ "force",     Getopt.NO_ARG,  "--force"       })
+    ({ "force",     Getopt.NO_ARG,  "--force"      }),
+    ({ "timestamp", Getopt.HAS_ARG, "--timestamp"  }),
   }) ),array opt)
     {
       switch(opt[0])
@@ -200,6 +201,10 @@ int main(int argc, array(string) argv)
         case "help":
 	  write(documentation);
 	  return 0;
+
+        case "timestamp":
+	  t=(int)opt[1];
+	  break;
       }
     }
 
@@ -235,7 +240,7 @@ int main(int argc, array(string) argv)
     cvs = Process.create_process( ({"cvs", "tag", "-R", "-F", tag}) );
   }
 
-  int t = time();
+  t = t||time();
   mapping m = gmtime(t);
   array(int) version = getversion();
   mapping symbols=([
@@ -321,6 +326,8 @@ Mandatory arguments:
 --name=<name>
 	Name of export archive (%maj, %min, %bld, %Y, %M, %D, %h, %m, %s
 	are replaced with apropiate values).
+--timestamp=<int>
+        The timestamp of the build, if other than the real one.
 --exportlist=<listfile>
 	A file which lists all the files and directories to be exported.
 --srcdir=<dir>
