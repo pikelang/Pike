@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: html.c,v 1.169 2004/03/02 13:01:05 nilsson Exp $
+|| $Id: html.c,v 1.170 2004/03/02 14:19:55 nilsson Exp $
 */
 
 #include "global.h"
@@ -5068,6 +5068,10 @@ static void html_lazy_entity_end(INT32 args)
    push_int(o);
 }
 
+/*! @decl int nestling_entity_end(void|int value)
+ *!
+ */
+
 static void html_nestling_entity_end(INT32 args)
 {
    int o=!!(THIS->flags & FLAG_NESTLING_ENTITY_END);
@@ -5212,6 +5216,10 @@ static void html_debug_mode(INT32 args)
    push_int(o);
 }
 #endif
+
+/*! @decl int ignore_comments(void|int value)
+ *!
+ */
 
 static void html_ignore_comments(INT32 args)
 {
