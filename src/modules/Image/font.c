@@ -1,10 +1,12 @@
-/* $Id: font.c,v 1.13 1997/05/29 19:37:29 mirar Exp $ */
+/* $Id: font.c,v 1.14 1997/09/01 14:14:49 per Exp $ */
 #include <config.h>
+
+#define SPACE_CHAR 'i'
 
 /*
 **! module Image
 **! note
-**!	$Id: font.c,v 1.13 1997/05/29 19:37:29 mirar Exp $<br>
+**!	$Id: font.c,v 1.14 1997/09/01 14:14:49 per Exp $<br>
 **! class font
 **!
 **! note
@@ -224,7 +226,6 @@ static inline void write_char(struct _char *ci,
    rgb_group *nl;
    INT32 x,y;
    unsigned char *p;
-
    p=ci->pixels;
 
    for (y=height; y>0; y--)
@@ -445,8 +446,9 @@ void font_write(INT32 args)
    struct image *img;
    INT32 xsize=0,i,maxwidth,c,maxwidth2,j;
    int *width_of;
-
-   if (!THIS)
+   char *to_write;
+   struct font *this = (*(struct font **)(fp->current_storage));
+   if (!this)
       error("font->write: no font loaded\n");
 
    maxwidth2=0;
@@ -465,12 +467,14 @@ void font_write(INT32 args)
      for (i = 0; i < sp[j-args].u.string->len; i++)
      {
        c=EXTRACT_UCHAR(sp[j-args].u.string->str+i);
-       if (c < (INT32)THIS->chars)
+       if (c < (INT32)this->chars)
        {
-	 if (xsize + (signed long)THIS->charinfo[c].width > maxwidth)
-	   maxwidth = xsize + THIS->charinfo[c].width;
-	 xsize+=(signed long)((float)THIS->charinfo[c].spacing
-			      *(float)THIS->xspacing_scale);
+	 if (xsize + (signed int)this->charinfo[c].width > maxwidth)
+	   maxwidth = xsize + this->charinfo[c].width;
+	 if(c==0x20)
+	   xsize += (signed int)((float)this->charinfo[SPACE_CHAR].spacing*(float)this->xspacing_scale);
+	 else
+	   xsize += (signed int)((float)this->charinfo[c].spacing*(float)this->xspacing_scale);
        }
      }
      if (xsize>maxwidth) maxwidth=xsize;
@@ -482,9 +486,9 @@ void font_write(INT32 args)
    img = ((struct image*)o->storage);
    img->xsize = maxwidth2;
    if(args>1)
-     img->ysize = THIS->height+((double)THIS->height*(double)(args-1)*(double)THIS->yspacing_scale)+1;
+     img->ysize = this->height+((double)this->height*(double)(args-1)*(double)this->yspacing_scale)+1;
    else
-     img->ysize = THIS->height+1;
+     img->ysize = this->height+1;
    img->rgb.r=img->rgb.g=img->rgb.b=255;
    img->img=malloc(img->xsize*img->ysize*sizeof(rgb_group));
 
@@ -494,7 +498,9 @@ void font_write(INT32 args)
 
    for (j=0; j<args; j++)
    {
-     switch(THIS->justification)
+     THREADS_ALLOW();
+     to_write = sp[j-args].u.string->str;
+     switch(this->justification)
      {
       case J_LEFT: xsize = 0; break;
       case J_RIGHT: xsize = img->xsize-width_of[j]-1; break;
@@ -503,19 +509,24 @@ void font_write(INT32 args)
      if(xsize<0) xsize=0;
      for (i = 0; i < (int)sp[j-args].u.string->len; i++)
      {
-       c=EXTRACT_UCHAR(sp[j-args].u.string->str+i);
-       if ( c < (INT32)THIS->chars)
+       c=to_write[i];
+       if ( c < (INT32)this->chars)
        {
-	 write_char(THIS->charinfo+c,
-		    (img->img+xsize)+(img->xsize*(int)(j*THIS->height
-						 *THIS->yspacing_scale)),
+ 	 write_char(this->charinfo+c,
+		    (img->img+xsize)+(img->xsize*(int)(j*this->height
+						 *this->yspacing_scale)),
 		    img->xsize,
-		    THIS->height);
-	 xsize += THIS->charinfo[c].spacing*THIS->xspacing_scale;
+		    this->height);
+	 if(c==0x20)
+	   xsize += this->charinfo[SPACE_CHAR].spacing*this->xspacing_scale;
+	 else
+	   xsize += this->charinfo[c].spacing*this->xspacing_scale;
        }
      }
+     THREADS_DISALLOW();
    }
    free(width_of);
+
    pop_n_elems(args);
    push_object(o);
 }
@@ -570,7 +581,10 @@ void font_text_extents(INT32 args)
       {
 	if (xsize + (signed long)THIS->charinfo[c].width > maxwidth)
 	  maxwidth = xsize + THIS->charinfo[c].width;
-	xsize += THIS->charinfo[c].spacing*THIS->xspacing_scale;
+	 if(c==0x20)
+	   xsize += THIS->charinfo[SPACE_CHAR].spacing*THIS->xspacing_scale;
+	 else
+	   xsize += THIS->charinfo[c].spacing*THIS->xspacing_scale;
       }
     }
     
