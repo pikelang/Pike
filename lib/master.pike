@@ -1,4 +1,4 @@
-/* $Id: master.pike,v 1.45 1997/07/19 20:29:45 hubbe Exp $
+/* $Id: master.pike,v 1.46 1997/07/19 20:59:02 hubbe Exp $
  *
  * Master-file for Pike.
  */
@@ -377,38 +377,41 @@ void _main(string *argv, string *env)
   q=(getenv("PIKE_MODULE_PATH")||"")/":"-({""});
   for(i=sizeof(q)-1;i>=0;i--) add_module_path(q[i]);
 
-  tmp=resolv("Getopt");
-
-  q=tmp->find_all_options(argv,({
-    ({"version",tmp->NO_ARG,({"-v","--version"})}),
-      ({"help",tmp->NO_ARG,({"-h","--help"})}),
-	({"execute",tmp->HAS_ARG,({"-e","--execute"})}),
-	  ({"modpath",tmp->HAS_ARG,({"-M","--module-path"})}),
-	    ({"ipath",tmp->HAS_ARG,({"-I","--include-path"})}),
-	      ({"ppath",tmp->HAS_ARG,({"-P","--program-path"})}),
-		({"ignore",tmp->HAS_ARG,"-ms"}),
-		  ({"ignore",tmp->MAY_HAVE_ARG,"-Ddatpl",0,1})}),1);
-
-  /* Parse -M and -I backwards */
-  for(i=sizeof(q)-1;i>=0;i--)
+  
+  if(sizeof(argv)>1 && sizeof(argv[1]) && argv[1][0]=='-')
   {
-    switch(q[i][0])
+    tmp=resolv("Getopt");
+    
+    q=tmp->find_all_options(argv,({
+      ({"version",tmp->NO_ARG,({"-v","--version"})}),
+	({"help",tmp->NO_ARG,({"-h","--help"})}),
+	  ({"execute",tmp->HAS_ARG,({"-e","--execute"})}),
+	    ({"modpath",tmp->HAS_ARG,({"-M","--module-path"})}),
+	      ({"ipath",tmp->HAS_ARG,({"-I","--include-path"})}),
+		({"ppath",tmp->HAS_ARG,({"-P","--program-path"})}),
+		  ({"ignore",tmp->HAS_ARG,"-ms"}),
+		    ({"ignore",tmp->MAY_HAVE_ARG,"-Ddatpl",0,1})}),1);
+    
+    /* Parse -M and -I backwards */
+    for(i=sizeof(q)-1;i>=0;i--)
     {
+      switch(q[i][0])
+      {
       case "modpath":
 	add_module_path(q[i][1]);
 	break;
-
+	
       case "ipath":
 	add_include_path(q[i][1]);
 	break;
-
+	
       case "ppath":
 	add_program_path(q[i][1]);
 	break;
+      }
     }
-  }
-
-  foreach(q, mixed *opts)
+    
+    foreach(q, mixed *opts)
     {
       switch(opts[0])
       {
@@ -418,7 +421,7 @@ void _main(string *argv, string *env)
 	       "welcome to redistribute it under certain conditions; Read the files\n"
 	       "COPYING and DISCLAIMER in the Pike distribution for more details.\n");
 	exit(0);
-
+	
       case "help":
 	werror("Usage: pike [-driver options] script [script arguments]\n"
 	       "Driver options include:\n"
@@ -441,8 +444,8 @@ void _main(string *argv, string *env)
       }
     }
 
-  argv=tmp->get_args(argv,1);
-  destruct(tmp);
+    argv=tmp->get_args(argv,1);
+  }
 
   if(sizeof(argv)==1)
   {
