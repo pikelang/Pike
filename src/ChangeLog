@@ -1,3 +1,16 @@
+Tue Aug 13 12:16:06 1996  Fredrik Hubinette  <hubbe@freeone.signum.se>
+
+	* gpmmod should now work with older versions of GMP.
+
+Mon Aug 12 18:08:12 1996  Fredrik Hubinette  <hubbe@sparky.signum.se>
+
+	* array.c: some bugs in type_field fixed
+	* array.c: more debug added
+	* main.c: -s <stacksize> added
+	* svalue.c: made is_eq 'safe' (it does not change the svalue argument)
+	* svalue.c: type_field bug fixed in garbage collect
+	* file.c: a memory trashing bug fixed when opening files...
+
 Tue Aug  6 13:33:51 1996  Fredrik Hubinette  <hubbe@axel.signum.se>
 
 	* call_out.c: call outs now have unique ids, so you can remove
