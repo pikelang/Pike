@@ -133,7 +133,11 @@ constant DAV_STORAGE_FULL	= 507; // RFC 2518 10.6: Insufficient Storage
 		    method+" "+path+(query?("?"+query):"")+" HTTP/1.0",
 		    request_headers, data);
 
-  if (!con->ok) return 0;
+  if (!con->ok) {
+    if (con->errno)
+      error ("I/O error: %s\n", strerror (con->errno));
+    return 0;
+  }
   return con;
 }
 
