@@ -1,7 +1,11 @@
+//!
+//! module Calendar
+//! submodule Gregorian
+//!
 //! 	This is the standard conservative christian calendar,
 //!	used regularly in some countries - USA, for instance - and 
-//!	which derivate - @[the ISO calendar] - is used
-//!	in most of Europe.
+//!	which derivate - <ref>the ISO calendar</ref> - is used
+//!	in most of europe.
 //!
 
 #pike __REAL_VERSION__

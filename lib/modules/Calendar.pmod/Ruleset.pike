@@ -1,4 +1,6 @@
-//! This is the container class for rules.
+//! module Calendar
+//! subclass Ruleset
+//!	This is the container class for rules.
 
 
 #pike __REAL_VERSION__
@@ -34,7 +36,7 @@ class Timezone
    string _sprintf(int t) { return (t=='O')?"Timezone("+name+")":0; }
 
    int raw_utc_offset() { return offset_to_utc; }
-}
+};
 
 Timezone timezone;
 
@@ -115,10 +117,11 @@ this_program set_language(string|Language lang)
    return r;
 }
 
-//! Sets the guess-mapping for timezones. 
-//! Default is the mapping
+//! method Ruleset set_abbr2zone(mapping(string:string) abbr2zone)
+//!	Sets the guess-mapping for timezones. 
+//!	Default is the mapping
 //!
-//! @pre{
+//!	<pre>
 //! 	Abbreviation Interpretation
 //!	AMT          America/Manaus       [UTC-4]
 //!	AST	     America/Curacao      [UTC-4]
@@ -128,10 +131,11 @@ this_program set_language(string|Language lang)
 //!	GST          Asia/Dubai           [UTC+4]
 //!	IST          Asia/Jerusalem       [UTC+2]
 //!	WST          Australia/Perth      [UTC+8]
-//! @}
+//!	</pre>
 //!
-//! @seealso
-//!   @[YMD.parse()]
+//! see also: YMD.parse
+
+
 this_program set_abbr2zone(mapping(string:string) m)
 {
    this_program r=clone();

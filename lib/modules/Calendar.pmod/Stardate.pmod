@@ -1,3 +1,5 @@
+//! module Calendar
+//! submodule Stardate
 //!	This implements TNG stardates. 
 
 #pike __REAL_VERSION__
@@ -14,8 +16,6 @@ static constant TNG0UNIX=11139552000;
 string calendar_name() { return "Stardate"; }
 
 function(mixed...:cTick) Tick=cTick;
-
-//! Stardate clock tick.
 class cTick
 {
    inherit TimeRange;
@@ -25,24 +25,26 @@ class cTick
    float t;
    float len;
 
-   //! @decl void create(mixed ... args)
-   //! @decl void create(int|float date)
-   //! @decl void create()
-   //!	Apart from the standard creation methods
-   //!	(julian day, etc), you can create a stardate
-   //!	from the stardate number. The length
-   //!	of the period will then be zero.
-   //!
-   //!	You can also omit any arguments to @[create()].
-   //!
-   //! @bugs
-   //!	Since the precision is limited to the float type
-   //!	of pike you can get non-precise results:
-   //!
-   //!  @pre{
-   //!	> Calendar.Second(Calendar.Stardate.Day(Calendar.Year()));
-   //!	Result: Second(Fri 31 Dec 1999 23:59:18 CET - Sun 31 Dec 2000 23:59:18 CET)
-   //!	@}
+//! method void create(mixed ...)
+//! method void create(int|float date)
+//! method void create()
+//!	Apart from the standard creation methods
+//!	(julian day, etc), you can create a stardate
+//!	from the stardate number. The length
+//!	of the period will then be zero.
+//!
+//!	You can also omit any arguments to create now.
+//!
+//! known bugs:
+//!	Since the precision is limited to the float type
+//!	of pike you can get non-precise results:
+//!
+//!     <pre>
+//!	> Calendar.Second(Calendar.Stardate.Day(Calendar.Year()));
+//!	Result: Second(Fri 31 Dec 1999 23:59:18 CET - Sun 31 Dec 2000 23:59:18 CET)
+//!	</pre>
+
+
    void create(mixed ...args)
    {
       switch (sizeof(args))
@@ -93,25 +95,29 @@ class cTick
       len=0.0;
    }
 
-   //!	This gives back the start of the stardate period,
-   //!	as a float.
+// method float tic()
+//	This gives back the start of the stardate period,
+//	as a float.
+
    float tic()
    {
       return t;
    }
 
-   //!	This gives back the number of stardate tics
-   //!	in the period.
+//! method float tics()
+//!	This gives back the number of stardate tics
+//!	in the period.
+
    float tics()
    {
       return len;
    }
 
-   //! @decl int number_of_seconds()
-   //! @decl int number_of_days()
-   //!	These return the Gregorian/Earth/ISO number of seconds
-   //!	and number of days, for convinience and conversion to
-   //!	other calendars.
+//! method int number_of_seconds()
+//! method int number_of_days()
+//!	This gives back the Gregorian/Earth/ISO number of seconds
+//!	and number of days, for convinience and conversion to
+//!	other calendars.
 
    int number_of_seconds()
    {
@@ -264,15 +270,15 @@ class cTick
       return sprintf("%.3f",t);
    }
 
-   //! @decl string format_long()
-   //! @decl string format_short()
-   //! @decl string format_vshort()
-   //!	Format the stardate tick nicely.
-   //!	@pre{
-   //!	   long    "-322537.312"
-   //!	   short   "77463.312"  (w/o >100000-component)
-   //!	   short   "7463.312"  (w/o >10000-component)
-   //!	@}
+//! string format_long()
+//! string format_short()
+//! string format_vshort()
+//!	Format the stardate tick nicely.
+//!	<pre>
+//!	   long    "-322537.312"
+//!	   short   "77463.312"  (w/o >100000-component)
+//!	   short   "7463.312"  (w/o >10000-component)
+//!	</pre>
 
    string format_long()
    {
@@ -300,8 +306,10 @@ function(mixed...:cTick) Day=cTick;
 //  global convinience functions
 //------------------------------------------------------------------------
 
+//! method TimeofDay now()
 //!	Give the zero-length time period of the
 //!	current time.
+
 TimeofDay now()
 {
    return Tick();

@@ -1184,7 +1184,7 @@ class cPOLISH_UNICODE
 }
 
 
-// source: anonymous unix locale file
+// source: Cile Ekici (@ Roxen IS)
 
 constant cTR=cTURKISH; // Turkish
 constant cTUR=cTURKISH; // Turkish
@@ -1202,7 +1202,7 @@ class cTURKISH
       "Haziran",
       "Temmuz",
       "Agustos",
-      "Eylul",
+      "Eylül",
       "Ekim",
       "Kasim",
       "Aralik",
@@ -1212,8 +1212,44 @@ class cTURKISH
    ({
       "Pazartesi",
       "Sali",              // <S><a><l><i.>
-      "Carsamba",
+      "Çarsamba",
       "Persembe",
+      "Cuma",
+      "Cumartesi",
+      "Pazar",
+   });
+
+   void create() { SETUPSTUFF; }
+}
+
+constant cTR_UNICODE=cTURKISH_UNICODE; // Turkish
+constant cTUR_UNICODE=cTURKISH_UNICODE; // Turkish
+class cTURKISH_UNICODE
+{
+   inherit _ymd_base;
+
+   static private constant month_names=
+   ({
+      "Ocak",
+      "\015e""ubat",    // S-cedilla
+      "Mart",
+      "Nisan",
+      "May\x0131""s",   // i-no-dot
+      "Haziran",
+      "Temmuz",
+      "A\x01e5""ustos", // line over g
+      "Eylül",
+      "Ekim",
+      "Kas\x0131""m",   // i-no-dot
+      "Aral\x0131""k",  // i-no-dot
+   });
+
+   static private constant week_day_names=
+   ({
+      "Pazartesi",
+      "Sal\x0131",      // <S><a><l><i.> i without dot
+      "Çarsamba",
+      "Per\x015f""embe",// s-cedilla
       "Cuma",
       "Cumartesi",
       "Pazar",
@@ -1301,6 +1337,8 @@ class cLATVIAN
    void create() { SETUPSTUFF; }
 }
 
+constant cLV_UNICODE=cLATVIAN_UNICODE;
+constant cLAV_UNICODE=cLATVIAN_UNICODE;
 class cLATVIAN_UNICODE
 {
    inherit _ymd_base;
@@ -1982,6 +2020,10 @@ Ruleset.Language `[](string lang)
    Ruleset.Language l=_cache[lang];
    if (l) return l;
    program cl=::`[]("c"+lang);
+   
+// if unicode doesn't exist, try without
+   if (!cl && sscanf(lang,"%S_UNICODE",lang))
+       cl=::`[]("c"+lang);
 
    if (!cl) { return ([])[0]; }
 
