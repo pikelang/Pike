@@ -1,5 +1,5 @@
 /*
- * $Id: oracle.c,v 1.63 2001/10/05 14:42:29 leif Exp $
+ * $Id: oracle.c,v 1.64 2002/01/31 12:39:30 stewa Exp $
  *
  * Pike interface to Oracle databases.
  *
@@ -53,7 +53,7 @@
 
 #include <math.h>
 
-RCSID("$Id: oracle.c,v 1.63 2001/10/05 14:42:29 leif Exp $");
+RCSID("$Id: oracle.c,v 1.64 2002/01/31 12:39:30 stewa Exp $");
 
 
 /* User-changable defines: */
@@ -109,6 +109,7 @@ RCSID("$Id: oracle.c,v 1.63 2001/10/05 14:42:29 leif Exp $");
 
 #define BLOCKSIZE 2048
 
+#define IS_SUCCESS(RES) ((RES == OCI_SUCCESS) || (RES == OCI_SUCCESS_WITH_INFO))
 
 #if defined(SERIALIZE_CONNECT)
 DEFINE_MUTEX(oracle_serialization_mutex);
@@ -870,7 +871,7 @@ static void f_fetch_fields(INT32 args)
 		       (void **)&column_parameter,
 		       i+1);
 	
-	if(rc != OCI_SUCCESS) { errfunc="OciParamGet"; break; }
+	if(!IS_SUCCESS(rc)) { errfunc="OciParamGet"; break; }
 	
 	rc=OCIAttrGet((void *)column_parameter,
 		      OCI_DTYPE_PARAM,
@@ -879,7 +880,7 @@ static void f_fetch_fields(INT32 args)
 		      OCI_ATTR_DATA_TYPE,
 		      dbcon->error_handle);
 	
-	if(rc != OCI_SUCCESS) { errfunc="OCIAttrGet, OCI_ATTR_DATA_TYPE"; break;}
+	if(!IS_SUCCESS(rc)) { errfunc="OCIAttrGet, OCI_ATTR_DATA_TYPE"; break;}
 	
 	rc=OCIAttrGet((void *)column_parameter,
 		      OCI_DTYPE_PARAM,
@@ -888,7 +889,7 @@ static void f_fetch_fields(INT32 args)
 		      OCI_ATTR_DATA_SIZE,
 		      dbcon->error_handle);
 	
-	if(rc != OCI_SUCCESS) { errfunc="OCIAttrGet, OCI_ATTR_DATA_SIZE"; break;}
+	if(!IS_SUCCESS(rc)) { errfunc="OCIAttrGet, OCI_ATTR_DATA_SIZE"; break;}
 	
 	rc=OCIAttrGet((void *)column_parameter,
 		      OCI_DTYPE_PARAM,
@@ -897,7 +898,7 @@ static void f_fetch_fields(INT32 args)
 		      OCI_ATTR_SCALE,
 		      dbcon->error_handle);
 	
-	if(rc != OCI_SUCCESS) { errfunc="OCIAttrGet, OCI_ATTR_SCALE"; break;}
+	if(!IS_SUCCESS(rc)) { errfunc="OCIAttrGet, OCI_ATTR_SCALE"; break;}
 	
 	rc=OCIAttrGet((void *)column_parameter,
 		      OCI_DTYPE_PARAM,
@@ -906,14 +907,14 @@ static void f_fetch_fields(INT32 args)
 		      OCI_ATTR_NAME,
 		      dbcon->error_handle);
 
-	if(rc != OCI_SUCCESS) { errfunc="OCIAttrGet, OCI_ATTR_NAME"; break;}
+	if(!IS_SUCCESS(rc)) { errfunc="OCIAttrGet, OCI_ATTR_NAME"; break;}
 
       }while(0);
 
       THREADS_DISALLOW();
 /*      UNLOCK(dbcon->lock); */
 
-      if(rc != OCI_SUCCESS)
+      if(!IS_SUCCESS(rc))
 	ora_error_handler(dbcon->error_handle, rc, errfunc);
 
 #ifdef ORACLE_DEBUG
@@ -1051,7 +1052,7 @@ static void f_fetch_fields(INT32 args)
 	      SQLT_INT);
 #endif
 
-      if(rc != OCI_SUCCESS)
+      if(!IS_SUCCESS(rc))
 	ora_error_handler(dbcon->error_handle, rc, "OCIDefineByPos");
 
 #ifndef STATIC_BUFFERS
@@ -1059,7 +1060,7 @@ static void f_fetch_fields(INT32 args)
 			  dbcon->error_handle,
 			  info,
 			  define_callback);
-      if(rc != OCI_SUCCESS)
+      if(!IS_SUCCESS(rc))
 	ora_error_handler(dbcon->error_handle, rc, "OCIDefineDynamic");
 #endif
       debug_malloc_touch(dbcon->error_handle);
@@ -1172,7 +1173,7 @@ static void push_inout_value(struct inout *inout,
 			 OCI_NUMBER_SIGNED,
 			 &integer);
 
-      if(ret == OCI_SUCCESS)
+      if(IS_SUCCESS(ret))
       {
 	push_int64(integer);
       }else{
@@ -1193,7 +1194,7 @@ static void push_inout_value(struct inout *inout,
 			    0,
 			    &buf_size,
 			    buffer);
-	if(ret == OCI_SUCCESS)
+	if(IS_SUCCESS(ret))
 	{
 	  push_string(make_shared_binary_string(buffer,buf_size));
 	  convert_stack_top_to_bignum();
@@ -1279,7 +1280,7 @@ static void f_fetch_row(INT32 args)
     return;
   }
 
-  if(rc != OCI_SUCCESS)
+  if(!IS_SUCCESS(rc))
     ora_error_handler(dbcon->error_handle, rc, "OCIStmtFetch");
 
   check_stack(dbquery->cols);
@@ -1886,7 +1887,7 @@ static void f_big_typed_query_create(INT32 args)
   }
 #endif
 
-  if(rc)
+  if(!IS_SUCCESS(rc))
     ora_error_handler(dbcon->error_handle, rc, 0);
 
   pop_n_elems(args);
@@ -1978,7 +1979,7 @@ static void dbdate_sprintf(INT32 args)
 		   &bsize,
 		   buffer);
 		
-  if(rc != OCI_SUCCESS)
+  if(!IS_SUCCESS(rc))
     ora_error_handler(get_global_error_handle(), rc,"OCIDateToText");
 
   pop_n_elems(args);
