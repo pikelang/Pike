@@ -1,4 +1,4 @@
-/* $Id: state.pike,v 1.13 2001/08/26 14:25:56 grubba Exp $
+/* $Id: state.pike,v 1.14 2001/08/31 14:25:38 js Exp $
  *
  */
 
@@ -26,7 +26,6 @@ void create(object s)
 
 string tls_pad(string data,int blocksize  ) {
 
-  werror("Blocksize:"+blocksize+"\n");
   int plen=(blocksize-(strlen(data)+1)%blocksize)%blocksize;
   string res=data + sprintf("%c",plen)*plen+sprintf("%c",plen);
   return res;
