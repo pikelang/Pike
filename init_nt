@@ -89,6 +89,16 @@ PIKE_DEBUG=1
       export REMOTE_VARIABLES
     else
       echo "We are not Hubbe."
+      MSVC='C:\Program Files\Microsoft Visual Studio\VC98'
+      MSVS='C:\Program Files\Microsoft Visual Studio'
+      REMOTE_VARIABLES="
+path=c:\\windows\\system32;c:\\windows;c:\\windows\\system32\\wbem;$MSVS\\Common\\Tools\WinNT;$MSVS\\Common\\MSDev98\\Bin;$MSVS\\Common\\Tools;$MSVC\\bin;
+include=$MSVC\\atl\\include;$MSVC\\mfc\\include;$MSVC\\include;Y:\\home\peter\hack\xenofarm\client\win32-libs\include
+lib=$MSVC\\mfc\\lib;$MSVC\\lib;Y:\\home\peter\hack\xenofarm\client\win32-libs\lib
+PIKE_DEBUG=1
+"       
+      export NTLD_LIBRARY_PATH
+      export REMOTE_VARIABLES
     fi
   ;;
 
