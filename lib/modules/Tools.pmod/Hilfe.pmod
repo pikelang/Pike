@@ -2,7 +2,7 @@
 
 // Incremental Pike Evaluator
 //
-// $Id: Hilfe.pmod,v 1.56 2002/03/25 07:20:06 nilsson Exp $
+// $Id: Hilfe.pmod,v 1.57 2002/03/26 23:46:54 nilsson Exp $
 
 constant hilfe_todo = #"List of known Hilfe bugs/room for improvements:
 
@@ -867,7 +867,8 @@ class Evaluator {
   private int(0..1) hilfe_error(mixed err) {
     if(!err) return 1;
     mixed err2 = catch {
-      if(arrayp(err) && sizeof(err)==2 && stringp(err[0])) {
+      if( (arrayp(err) && sizeof(err)==2 && stringp(err[0])) ||
+	  (objectp(err) && err->backtrace) ) {
 	array files = map(reverse(err[1]), lambda(mixed in) {
 					  if(in) return in[0];
 					  return 0;
