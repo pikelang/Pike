@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: error.c,v 1.95 2002/11/28 02:19:15 mast Exp $
+|| $Id: error.c,v 1.96 2002/11/28 23:45:39 marcus Exp $
 */
 
 #define NO_PIKE_SHORTHAND
@@ -23,7 +23,7 @@
 #include "threads.h"
 #include "gc.h"
 
-RCSID("$Id: error.c,v 1.95 2002/11/28 02:19:15 mast Exp $");
+RCSID("$Id: error.c,v 1.96 2002/11/28 23:45:39 marcus Exp $");
 
 #undef ATTRIBUTE
 #define ATTRIBUTE(X)
@@ -526,7 +526,14 @@ static void f_error__sprintf(INT32 args)
   struct program *p = Pike_fp->current_object->prog;
   int i = find_identifier("error_type", p);
   struct identifier *id = ID_FROM_INT(p, i);
+  int mode = 0;
+  if(args>0 && Pike_sp[-args].type == PIKE_T_INT)
+    mode = Pike_sp[-args].u.integer;
   pop_n_elems(args);
+  if(mode != 'O') {
+    push_undefined();
+    return;
+  }
   push_svalue(&PROG_FROM_INT(p, i)->constants[id->func.offset].sval);
   push_constant_text("(%O)");
   if(GENERIC_ERROR_THIS->desc)

@@ -227,7 +227,14 @@ mixed _index(string ind)
 
 string _sprintf(int flag)
 {
+  int mode = 0;
+  if(args>0 && Pike_sp[-args].type == PIKE_T_INT)
+    mode = Pike_sp[-args].u.integer;
   pop_n_elems( args );
+  if(mode != 'O') {
+    push_undefined();
+    return;
+  }
   push_text( "GDK.Event(" );
   push_text( "type" ); pgdk_event__index( 1 );
   push_text( ")" );

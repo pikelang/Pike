@@ -153,9 +153,9 @@ class Function(Class parent,
                string file,
                int line)
 {
-  static string _sprintf()
+  static string _sprintf(int fmt)
   {
-    return sprintf("Function( %O, %O )",name, return_type );
+    return fmt=='O' && sprintf("Function( %O, %O )",name, return_type );
   }
 
   string pike_type( )
@@ -375,9 +375,9 @@ class Signal( string name )
            S(pike_name(),1,0,27)+", 0 );\n";
   }
 
-  static string _sprintf()
+  static string _sprintf(int fmt)
   {
-    return sprintf("Signal( %O )",name );
+    return fmt=='O' && sprintf("Signal( %O )",name );
   }
 }
 
@@ -455,9 +455,9 @@ class Member( string name, Type type, int set,
         "\n}\n\n";
   }
 
-  static string _sprintf()
+  static string _sprintf(int fmt)
   {
-    return sprintf("Member( %O /* %O */ )",name,type );
+    return fmt=='O' && sprintf("Member( %O /* %O */ )",name,type );
   }
 }
   
@@ -621,10 +621,11 @@ class Type
     }
   }
 
-  string _sprintf()
+  string _sprintf(int fmt)
   {
+    if(fmt != 'O') return UNDEFINED;
     if( subtypes )
-      return subtypes->_sprintf()*" | ";
+      return subtypes->_sprintf(fmt)*" | ";
     array q = get_modifiers();
     if( q == ({}) )
       return name;
@@ -1164,10 +1165,10 @@ class Class( string name, string file, int line )
   }
   
 
-  static string _sprintf()
+  static string _sprintf(int fmt)
   {
-    return sprintf("Class( %O /* %d funcs. */ )",name,
-                   sizeof(functions)+sizeof(members) );
+    return fmt=='O' && sprintf("Class( %O /* %d funcs. */ )",name,
+			       sizeof(functions)+sizeof(members) );
   }
 
   class Ref( string file, int line, Class c ) {  }
@@ -1229,9 +1230,9 @@ class Constant( string name, Type type, string file, int line )
     }
   }
 
-  static string _sprintf()
+  static string _sprintf(int fmt)
   {
-    return sprintf("Constant( %O /* %O */ )",name,type );
+    return fmt=='O' && sprintf("Constant( %O /* %O */ )",name,type );
   }
 }
 

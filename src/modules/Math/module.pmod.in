@@ -336,6 +336,6 @@ class Angle {
     case 't':
       return "Angle";
     }
-    error("Can not display Angle as %c.\n");
+    return UNDEFINED;
   }
 }

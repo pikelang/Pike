@@ -2,11 +2,11 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: mpq.cmod,v 1.14 2002/10/21 17:06:12 marcus Exp $
+|| $Id: mpq.cmod,v 1.15 2002/11/28 23:45:42 marcus Exp $
 */
 
 #include "global.h"
-RCSID("$Id: mpq.cmod,v 1.14 2002/10/21 17:06:12 marcus Exp $");
+RCSID("$Id: mpq.cmod,v 1.15 2002/11/28 23:45:42 marcus Exp $");
 #include "gmp_machine.h"
 
 #if defined(HAVE_GMP2_GMP_H) && defined(HAVE_LIBGMP2)
@@ -334,11 +334,13 @@ PIKECLASS mpq
       width=lookup("Gmp.Mpq->_sprintf",flags,"width",-1);
       flag_left=lookup("Gmp.Mpq->_sprintf",flags,"flag_left",0);
       pop_n_elems(args);
+      if(precision<0) precision=0;
       
       switch(c)
       {
 	default:
-	  Pike_error("Gmp.Mpq->_sprintf, bad format character.\n");
+	  push_undefined();
+	  return;
 
 	case 'O':
 	  f_mpq_get_string(0);
@@ -358,6 +360,8 @@ PIKECLASS mpq
 	  mpz_ui_pow_ui(tmp, 10, precision);
 	  mpz_mul(tmp, tmp, mpq_numref(THISMPQ));
 	  mpz_tdiv_q(tmp, tmp, mpq_denref(THISMPQ));
+	  /* one for the pot... */
+	  precision++;
 	  /* present 'tmp' and insert dot */
 	  len = mpz_sizeinbase(tmp, base) + 3;
 	  s = begin_shared_string(len);
@@ -366,7 +370,7 @@ PIKECLASS mpq
 	    mpz_get_str(s->str+1, base, tmp);
 	    /* Find NULL character */
 	    len-=4;
-	    if (len < 0) len = 0;
+	    if (len < 1) len = 1;
 	    while(s->str[len]) len++;
 	    MEMMOVE(s->str, s->str+1, len-precision);
 	  }else{
