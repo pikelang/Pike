@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: stralloc.c,v 1.158 2003/10/03 12:17:54 grubba Exp $
+|| $Id: stralloc.c,v 1.159 2003/10/13 16:23:06 mast Exp $
 */
 
 #include "global.h"
@@ -24,7 +24,7 @@
 #include <ctype.h>
 #include <math.h>
 
-RCSID("$Id: stralloc.c,v 1.158 2003/10/03 12:17:54 grubba Exp $");
+RCSID("$Id: stralloc.c,v 1.159 2003/10/13 16:23:06 mast Exp $");
 
 /* #define STRALLOC_USE_PRIMES */
 
@@ -1398,7 +1398,7 @@ PMOD_EXPORT struct pike_string *realloc_unlinked_string(struct pike_string *a,
   } else if (size > SHORT_STRING_THRESHOLD) {
     r=(struct pike_string *)realloc((char *)a,
 				    sizeof(struct pike_string)+
-				    ((size+1)<<a->size_shift)); /* FIXME !! */
+				    ((size+1)<<a->size_shift));
   }
 	
   if(!r)
