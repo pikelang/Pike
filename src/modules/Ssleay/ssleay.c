@@ -8,16 +8,16 @@
 
 #include "config.h"
 
-RCSID("$Id: ssleay.c,v 1.13 2000/12/01 08:10:24 hubbe Exp $");
+RCSID("$Id: ssleay.c,v 1.14 2000/12/18 09:58:21 mirar Exp $");
 #include "interpret.h"
 #include "svalue.h"
 #include "stralloc.h"
 #include "array.h"
 #include "object.h"
-#include "pike_macros.h"
-#include "backend.h"
-#include "program.h"
-#include "threads.h"
+/*  #include "pike_macros.h" */
+/*  #include "backend.h" */
+/*  #include "program.h" */
+/*  #include "threads.h" */
 
 #ifdef HAVE_SYS_TYPE_H
 #include <sys/types.h>
@@ -29,6 +29,7 @@ RCSID("$Id: ssleay.c,v 1.13 2000/12/01 08:10:24 hubbe Exp $");
 
 #ifdef HAVE_SSLEAY
 
+#include <stdio.h>
 #include <ssl.h>
 #include <crypto.h>
 #include <pem.h>
@@ -93,10 +94,11 @@ void ssleay_connection_set_fd(INT32 args)
 void ssleay_connection_accept(INT32 args)
 {
   int res;
+  struct ssleay_connection *con=CON;
   
   pop_n_elems(args);
   THREADS_ALLOW();
-  res = SSL_accept(CON);
+  res = SSL_accept(con);
   THREADS_DISALLOW();
   push_int(res);
 }
@@ -118,8 +120,9 @@ void ssleay_connection_read(INT32 args)
   s = begin_shared_string(len);
   if (len)
     {
+      struct ssleay_connection *con=CON;
       THREADS_ALLOW();
-      count = SSL_read(CON, s->str, len);
+      count = SSL_read(con, s->str, len);
       THREADS_DISALLOW();
       if (count < 0)
 	{
@@ -137,11 +140,16 @@ void ssleay_connection_read(INT32 args)
 void ssleay_connection_write(INT32 args)
 {
   INT32 res;
+  struct ssleay_connection *con=CON;
+  struct pike_string *s;
 
-  if ((args < 1) || (sp[-args].type != T_STRING))
+  if ((args < 1) || (sp[-args].type != T_STRING) ||
+      sp[-args].u.string->size_shift)
     Pike_error("ssleay_connection->write: wrong argument\n");
+  s=sp[-args].u.string;
+
   THREADS_ALLOW();
-  res = SSL_write(CON, sp[-args].u.string->str, sp[-args].u.string->len);
+  res = SSL_write(con, s->str, s->len);
   THREADS_DISALLOW();
   pop_n_elems(args);
   push_int(res);
