@@ -1,5 +1,5 @@
 #include "global.h"
-RCSID("$Id: threads.c,v 1.87 1999/05/08 04:46:07 hubbe Exp $");
+RCSID("$Id: threads.c,v 1.88 1999/05/12 05:27:48 hubbe Exp $");
 
 int num_threads = 1;
 int threads_disabled = 0;
@@ -23,6 +23,23 @@ COND_T threads_disabled_change;
 size_t thread_stack_size=1024 * 1204;
 
 #ifdef __NT__
+
+int low_nt_create_thread(unsigned stack_size,
+			 unsigned (TH_STDCALL *fun)(void *),
+			 void *arg,
+			 unsigned *id)
+{
+  HANDLE h=_beginthreadex(NULL, stack_size, fun, arg, 0, id);
+  if(h)
+  {
+    CloseHandle(h);
+    return 0;
+  }
+  else
+  {
+    return 1;
+  }
+}
 
 #ifdef PIKE_DEBUG
 static int IsValidHandle(HANDLE h)

@@ -1,4 +1,4 @@
-AC_REVISION("$Id: configure.in,v 1.264 1999/04/29 10:44:26 mast Exp $")
+AC_REVISION("$Id: configure.in,v 1.265 1999/05/12 05:24:42 hubbe Exp $")
 AC_INIT(interpret.c)
 AC_CONFIG_HEADER(machine.h)
 
@@ -105,6 +105,45 @@ AC_SUBST(SMARTLINK)
 export REALCC SMARTLINK
 
 #############################################################################
+# option, cache_name, variable
+AC_DEFUN(AC_SYS_COMPILER_FLAG,
+[
+  AC_MSG_CHECKING($1)
+  OLD_CFLAGS="[$]CFLAGS"
+  AC_CACHE_VAL(pike_cv_option_$2,
+  [
+    CFLAGS="[$]OLD_CFLAGS $1"
+    AC_TRY_RUN([int main(){exit(0);}],pike_cv_option_$2=yes,pike_cv_option_$2=no,pike_cv_option_$2=no)
+  ])
+  
+  CFLAGS="[$]OLD_CFLAGS"
+  
+  if test x"[$]pike_cv_option_$2" = "xyes" ; then
+    $3="[$]$3 $1"
+    AC_MSG_RESULT(yes)
+    $5
+  else
+    AC_MSG_RESULT(no)
+    $4
+  fi
+])
+
+# arch, option, cache_name, variable
+AC_DEFUN(AC_SYS_CPU_COMPILER_FLAG,
+[
+ if test "`uname -m 2>/dev/null`" = "$1" ; then
+    AC_SYS_COMPILER_FLAG($2,$3,$4)
+ fi
+])
+
+# os, option, cache_name, variable
+AC_DEFUN(AC_SYS_OS_COMPILER_FLAG,
+[
+ if test "x$pike_cv_sys_os" = "x$1" ; then
+    AC_SYS_COMPILER_FLAG($2,$3,$4)
+ fi
+])
+#############################################################################
 
 AC_AIX
 AC_MINIX
@@ -132,20 +171,21 @@ AC_MSG_RESULT($pike_cv_sys_os)
 
 LD='$(CC) $(CFLAGS)'
 
+
 case "$pike_cv_sys_os" in
   SCO*)
      case "$CFLAGS" in
        *-belf*) ;;
        *)
-	  echo "Adding -belf option."
-          CFLAGS="$CFLAGS -belf"
-       ;;
-     esac
-     case "$LDFLAGS" in
-       *-belf*) ;;
-       *)
-	  echo "Adding -belf option."
-          LDFLAGS="$LDFLAGS -belf"
+          AC_SYS_COMPILER_FLAG(-belf,sco_belf_option,CFLAGS,[],[
+           case "$LDFLAGS" in
+             *-belf*) ;;
+             *)
+	      echo "Adding -belf option to ldflags."
+              LDFLAGS="$LDFLAGS -belf"
+             ;;
+           esac
+          ])
        ;;
      esac
   ;;
@@ -236,44 +276,6 @@ fi
 #############################################################################
 
 
-# option, cache_name, variable
-AC_DEFUN(AC_SYS_COMPILER_FLAG,
-[
-  AC_MSG_CHECKING($1)
-  OLD_CFLAGS="[$]CFLAGS"
-  AC_CACHE_VAL(pike_cv_option_$2,
-  [
-    CFLAGS="[$]OLD_CFLAGS $1"
-    AC_TRY_RUN([int main(){exit(0);}],pike_cv_option_$2=yes,pike_cv_option_$2=no,pike_cv_option_$2=no)
-  ])
-  
-  CFLAGS="[$]OLD_CFLAGS"
-  
-  if test x"[$]pike_cv_option_$2" = "xyes" ; then
-    $3="[$]$3 $1"
-    AC_MSG_RESULT(yes)
-    $5
-  else
-    AC_MSG_RESULT(no)
-    $4
-  fi
-])
-
-# arch, option, cache_name, variable
-AC_DEFUN(AC_SYS_CPU_COMPILER_FLAG,
-[
- if test "`uname -m 2>/dev/null`" = "$1" ; then
-    AC_SYS_COMPILER_FLAG($2,$3,$4)
- fi
-])
-
-# os, option, cache_name, variable
-AC_DEFUN(AC_SYS_OS_COMPILER_FLAG,
-[
- if test "x$pike_cv_sys_os" = "x$1" ; then
-    AC_SYS_COMPILER_FLAG($2,$3,$4)
- fi
-])
 
 WARN=""
 OPTIMIZE=""
@@ -1066,6 +1068,26 @@ int main()
 
     if test x$pike_cv_have_pthread_condattr_default_aix = xyes ; then
       AC_DEFINE(HAVE_PTHREAD_CONDATTR_DEFAULT_AIX)
+    else
+      :
+    fi
+
+    AC_MSG_CHECKING(for __pthread_initial_thread_bos)
+    AC_CACHE_VAL(pike_cv_have_pthread_initial_thread_bos,[
+      AC_TRY_LINK([#include <pthread.h>
+        char *foo(void) { extern char *__pthread_initial_thread_bos; 
+           return __pthread_initial_thread_bos; }
+      ],[],[
+        pike_cv_have_pthread_initial_thread_bos=yes
+      ],[
+        pike_cv_have_pthread_initial_thread_bos=no
+      ])
+    ])
+
+    AC_MSG_RESULT($pike_cv_have_pthread_initial_thread_bos)
+
+    if test x$pike_cv_have_pthread_initial_thread_bos = xyes ; then
+      AC_DEFINE(HAVE_PTHREAD_INITIAL_THREAD_BOS)
     else
       :
     fi

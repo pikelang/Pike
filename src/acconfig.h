@@ -1,5 +1,5 @@
 /*
- * $Id: acconfig.h,v 1.36 1999/03/10 03:45:31 hubbe Exp $
+ * $Id: acconfig.h,v 1.37 1999/05/12 05:24:41 hubbe Exp $
  */
 #ifndef MACHINE_H
 #define MACHINE_H
@@ -196,6 +196,9 @@
 
 /* Define if you have the pthread_yield function.  */
 #undef HAVE_PTHREAD_YIELD
+
+/* Hack for stupid glibc linuxthreads */
+#undef HAVE_PTHREAD_INITIAL_THREAD_BOS
 
 /* Define if your OS has the union wait. */
 #undef HAVE_UNION_WAIT

@@ -4,7 +4,7 @@
 ||| See the files COPYING and DISCLAIMER for more information.
 \*/
 #include "global.h"
-RCSID("$Id: main.c,v 1.60 1998/11/22 11:03:01 hubbe Exp $");
+RCSID("$Id: main.c,v 1.61 1999/05/12 05:24:44 hubbe Exp $");
 #include "fdlib.h"
 #include "backend.h"
 #include "module.h"
@@ -348,9 +348,23 @@ int dbm_main(int argc, char **argv)
     {
 #ifdef RLIM_INFINITY
       if(lim.rlim_cur == RLIM_INFINITY)
-	lim.rlim_cur=1024*1024*128;
+	lim.rlim_cur=1024*1024*32;
 #endif
-      stack_top += STACK_DIRECTION * (lim.rlim_cur - 8192 * sizeof(char *));
+      stack_top += STACK_DIRECTION * lim.rlim_cur;
+
+#ifdef HAVE_PTHREAD_INITIAL_THREAD_BOS
+      {
+	extern char * __pthread_initial_thread_bos;
+	/* Linux glibc threads are limited to a 4 Mb stack
+	 * __pthread_initial_thread_bos is the actual limit
+	 */
+	
+	if(__pthread_initial_thread_bos && 
+	   (__pthread_initial_thread_bos - stack_top) *STACK_DIRECTION < 0)
+	  stack_top=__pthread_initial_thread_bos;
+      }
+#endif
+      stack_top -= STACK_DIRECTION * 8192 * sizeof(char *);
 
 #ifdef STACK_DEBUG
       fprintf(stderr, "1: C-stack: 0x%08p - 0x%08p, direction:%d\n",
