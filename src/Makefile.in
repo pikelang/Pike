@@ -193,7 +193,7 @@ install:
 	      mv $(exec_prefix)/hilfe $(exec_prefix)/hilfe.old; \
 	    else : ; fi && \
 	    ( sed -e 's!/usr/local/bin!$(exec_prefix)!' <$(TMP_BINDIR)/hilfe \
-	      >./hilfe && chmod 755 ./hilfe && $(INSTALL) ./hilfe $(exec_prefix) || exit 1\
+	      >./hilfe && chmod 755 ./hilfe && $(INSTALL) ./hilfe $(exec_prefix)) || exit 1 ; \
 	  else \
 	    $(INSTALL) $(TMP_BINDIR)/hilfe $(exec_prefix) || exit 1; \
 	  fi; \
