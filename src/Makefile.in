@@ -1,5 +1,5 @@
 #
-# $Id: Makefile.in,v 1.178 2000/02/22 16:46:25 hubbe Exp $
+# $Id: Makefile.in,v 1.179 2000/02/26 03:08:49 hubbe Exp $
 #
 
 # This line is needed on some machines.
@@ -482,6 +482,7 @@ stamp-tpike-predep: $(SRCDIR)/peep.in $(TMP_BINDIR)/mkpeep.pike peep.c $(SRCDIR)
 depend: $(SRCDIR)/language.c
 	gcc -MM -MG $(PREFLAGS) $(SRCDIR)/*.c | $(TMP_BINDIR)/fixdepends.sh $(SRCDIR)
 	( cd modules && $(MAKE) $(MAKE_FLAGS) depend )
+	( cd post_modules && $(MAKE) $(MAKE_FLAGS) depend )
 	$(SRCDIR)/configure @ac_configure_args@
 
 # Documentation...
