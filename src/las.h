@@ -62,7 +62,7 @@ int car_is_node(node *n);
 int cdr_is_node(node *n);
 INT32 count_args(node *n);
 struct node_chunk;
-void free_all_nodes();
+void free_all_nodes(void);
 void free_node(node *n);
 node *mknode(short token,node *a,node *b);
 node *mkstrnode(struct pike_string *str);
