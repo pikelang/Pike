@@ -1,3 +1,9 @@
+pike7.4 (7.4.21-5) unstable; urgency=medium
+
+  * Rebuilt with the new GDBM.
+
+ -- Marek Habersack <grendel@debian.org>  Thu,  5 Jun 2003 19:17:03 +0200
+
 pike7.4 (7.4.21-4) unstable; urgency=low
 
   * Upload to force the recompile with correct dependencies on some
