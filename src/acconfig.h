@@ -1,5 +1,5 @@
 /*
- * $Id: acconfig.h,v 1.43 1999/06/19 19:54:59 hubbe Exp $
+ * $Id: acconfig.h,v 1.44 1999/07/08 23:24:23 hubbe Exp $
  */
 #ifndef MACHINE_H
 #define MACHINE_H
@@ -53,6 +53,9 @@
 
 /* Define to 'int' if <sys/time.h> doesn't */
 #undef time_t
+
+/* Define to 'short' if <sys/types.h> doesn't */
+#undef pri_t
 
 /* Define to 'int' if <signal.h> doesn't */
 #undef sig_atomic_t
