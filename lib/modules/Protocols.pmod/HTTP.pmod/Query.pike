@@ -65,7 +65,7 @@ static void ponder_answer()
       if ((i=min(i,j))!=10000000)  break;
 
       s=con->read(8192,1);
-      if (s=="") { i=strlen(buf); break; }
+      if (!s || s=="") { i=strlen(buf); break; }
 
       i=strlen(buf)-3;
       buf+=s;
@@ -210,7 +210,7 @@ static void async_connected()
 
 static void async_failed()
 {
-   if (con) errno=con->errno; else errno=113; // EHOSTUNREACH
+   if (con) errno=con->errno(); else errno=113; // EHOSTUNREACH
    ok=0;
    if (request_fail) request_fail(this_object(),@extra_args);
    remove_call_out(async_timeout);
@@ -239,41 +239,45 @@ void async_got_host(string server,int port)
       catch { destruct(con); }; //  we may be destructed here
       return;
    }
-   if (catch
-   {
-      con=Stdio.File();
-      if (!con->open_socket())
-	 error("HTTP.Query(): can't open socket; "+strerror(con->errno)+"\n");
-   })
-   {
-      return; // got timeout already, we're destructed
+
+   con = Stdio.File();
+   if (!con->async_connect(server, port,
+			   lambda(int success)
+			   {
+			     if (status) {
+			       // Connect ok.
+#if constant(SSL.sslfile) 
+			       if(https) {
+				 //Create a context
+				 SSL.context context = SSL.context();
+				 // Allow only strong crypto
+				 context->preferred_suites = ({
+				   SSL_rsa_with_idea_cbc_sha,
+				   SSL_rsa_with_rc4_128_sha,
+				   SSL_rsa_with_rc4_128_md5,
+				   SSL_rsa_with_3des_ede_cbc_sha,
+				 });
+				 string ref;
+				 context->random =
+				   Crypto.randomness.reasonably_random()->read;
+		 
+				 ssl = SSL.sslfile(con, context, 1,0);
+				 ssl->set_nonblocking(0,async_connected,async_failed);
+				 con=ssl;
+			       }
+			       else
+#endif
+				 async_connected();
+			     } else {
+			       // Connect failed.
+			       async_failed();
+			     }
+			   })) {
+     return; // got timeout already, we're destructed
    }
-
-   con->set_nonblocking(0,async_connected,async_failed);
-
-   //   werror(server+"\n");
 
    int success;
    if (catch { success = con->connect(server,port);
-#if constant(SSL.sslfile) 
-               if(success && https) {
-		 //Gör en context
-		 SSL.context context = SSL.context();
-		 // Allow only strong crypto
-		 context->preferred_suites = ({
-		   SSL_rsa_with_idea_cbc_sha,
-		   SSL_rsa_with_rc4_128_sha,
-		   SSL_rsa_with_rc4_128_md5,
-		   SSL_rsa_with_3des_ede_cbc_sha,
-		 });
-		 string ref;
-		 context->random = Crypto.randomness.reasonably_random()->read;
-		 
-		 ssl = SSL.sslfile(con, context, 1,0);
-		 ssl->set_nonblocking(0,async_connected,async_failed);
-		 con=ssl;
-   }
-#endif
    } || !success)
    {
       if (!(errno=con->errno())) errno=22; /* EINVAL */
