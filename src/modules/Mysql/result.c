@@ -1,5 +1,5 @@
 /*
- * $Id: result.c,v 1.4 1997/03/28 18:30:57 grubba Exp $
+ * $Id: result.c,v 1.5 1997/04/20 03:55:46 grubba Exp $
  *
  * mysql query result
  *
@@ -74,7 +74,7 @@ typedef struct dynamic_buffer_s dynamic_buffer;
  * Globals
  */
 
-RCSID("$Id: result.c,v 1.4 1997/03/28 18:30:57 grubba Exp $");
+RCSID("$Id: result.c,v 1.5 1997/04/20 03:55:46 grubba Exp $");
 
 struct program *mysql_result_program = NULL;
 
@@ -96,6 +96,10 @@ static void exit_res_struct(struct object *o)
   if (PIKE_MYSQL_RES->result) {
     mysql_free_result(PIKE_MYSQL_RES->result);
     PIKE_MYSQL_RES->result = NULL;
+  }
+  if (PIKE_MYSQL_RES->connection) {
+    free_object(PIKE_MYSQL_RES->connection);
+    PIKE_MYSQL_RES->connection = NULL;
   }
 }
 
@@ -222,6 +226,8 @@ static void f_create(INT32 args)
     error("Bad argument 1 to mysql_result()\n");
   }
 
+  PIKE_MYSQL_RES->connection = sp[-args].u.object;
+  PIKE_MYSQL_RES->connection->refs++;
   PIKE_MYSQL_RES->result = mysql->last_result;
   mysql->last_result = NULL;
   
