@@ -1,9 +1,3 @@
-#if efun(__version)
-#define VERSION __version()
-#else
-#define VERSION "Pike v0.4pl2"
-#endif /* __version */
-
 string describe_backtrace(mixed *trace);
 
 string pike_library_path;
@@ -119,7 +113,6 @@ void create()
   /* make ourselves known */
   add_constant("master",lambda() { return this_object(); });
   add_constant("describe_backtrace",describe_backtrace);
-  add_constant("version",lambda() { return VERSION; });
   add_constant("mkmultiset",lambda(mixed *a) { return aggregate_multiset(@a); });
   add_constant("strlen",sizeof);
   add_constant("new",new);
@@ -212,7 +205,7 @@ void _main(string *argv, string *env)
       switch(opts[0])
       {
       case "version":
-	werror(VERSION + " Copyright (C) 1994-1997 Fredrik Hübinette\n");
+	werror(version() + " Copyright (C) 1994-1997 Fredrik Hübinette\n");
 	werror("Pike comes with ABSOLUTELY NO WARRANTY; This is free software and you are\n");
 	werror("welcome to redistribute it under certain conditions; Read the files\n");
 	werror("COPYING and DISCLAIMER in the Pike distribution for more details.\n");
