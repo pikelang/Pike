@@ -231,7 +231,7 @@ $(SRCDIR)/peep_engine.c: $(SRCDIR)/peep.in
 peep.o: $(SRCDIR)/peep_engine.c
 
 # make dependencies
-depend: language.c
+depend: $(SRCDIR)/language.c
 	gcc -MM $(PREFLAGS) $(SRCDIR)/*.c | $(TMP_BINDIR)/fixdepends.sh $(SRCDIR)
 	( cd modules ; $(MAKE) $(MAKE_FLAGS) depend )
 
@@ -256,6 +256,9 @@ $(SRCDIR)/language.h: $(SRCDIR)/language.yacc
 
 $(SRCDIR)/language.c: $(SRCDIR)/language.h
 	touch $(SRCDIR)/language.c
+
+# Internal testing target
+run_yacc: $(SRCDIR)/language.c
 
 modules/modlist.h:
 	( cd modules ; ${MAKE} $(MAKE_FLAGS) )
