@@ -5,7 +5,7 @@
 \*/
 
 /*
- * $Id: las.h,v 1.33 1999/12/29 17:54:03 grubba Exp $
+ * $Id: las.h,v 1.34 2000/04/23 02:42:01 mast Exp $
  */
 #ifndef LAS_H
 #define LAS_H
@@ -15,6 +15,7 @@
 #include "svalue.h"
 #include "dynamic_buffer.h"
 #include "program.h"
+#include "block_alloc_h.h"
 
 #define MAX_GLOBAL_VARIABLES 1000
 typedef void (*c_fun)(INT32);
