@@ -1,3 +1,9 @@
+pike7.6 (7.6.10-1) unstable; urgency=low
+
+  * Release number bumped by export.pike.
+
+ -- Marek Habersack <grendel@debian.org>  Thu, 1 Jul 2004 23:03:26 +0200
+
 pike7.6 (7.6.9-2) unstable; urgency=low
 
   * Make sure all bugs filed against Pike 7.4 will not appear here
