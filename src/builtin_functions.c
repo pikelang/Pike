@@ -4,7 +4,7 @@
 ||| See the files COPYING and DISCLAIMER for more information.
 \*/
 #include "global.h"
-RCSID("$Id: builtin_functions.c,v 1.122 1998/09/19 13:32:24 grubba Exp $");
+RCSID("$Id: builtin_functions.c,v 1.123 1998/10/09 22:24:49 grubba Exp $");
 #include "interpret.h"
 #include "svalue.h"
 #include "pike_macros.h"
@@ -595,6 +595,164 @@ void f_zero_type(INT32 args)
     sp[-1].u.integer=sp[-1].subtype;
     sp[-1].subtype=NUMBER_NUMBER;
   }
+}
+
+/*
+ * Some wide-strings related functions
+ */
+
+void f_string_to_unicode(INT32 args)
+{
+  struct pike_string *in;
+  struct pike_string *out = NULL;
+  INT32 len;
+  int i;
+
+  get_all_args("string_to_unicode", args, "%S", &in);
+
+  switch(in->size_shift) {
+  case 0:
+    /* Just 8bit characters */
+    len = in->len * 2;
+    out = begin_shared_string(len);
+    MEMSET(out->str, 0, len);	/* Clear the upper (and lower) byte */
+    for(i = in->len; i--;) {
+      out->str[i * 2] = in->str[i];
+    }
+    out = end_shared_string(out);
+    break;
+  case 1:
+    /* 16 bit characters */
+    /* FIXME: Should we check for 0xfffe & 0xffff here too? */
+    len = in->len * 2;
+    out = begin_shared_string(len);
+#if (BYTEORDER == 4321)
+    /* Big endian -- We don't need to do much...
+     *
+     * FIXME: Future optimization: Check if refcount is == 1,
+     * and perform sufficient magic to be able to convert in place.
+     */
+    MEMCPY(out->str, in->str, len);
+#else
+    /* Other endianness, may need to do byte-order conversion also. */
+    {
+      p_wchar1 *str1 = STR1(in);
+      for(i = in->len; i--;) {
+	unsigned INT32 c = str1[i];
+	out->str[i * 2] = c & 0xff;
+	out->str[i * 2 + 1] = c >> 8;
+      }
+    }
+#endif
+    out = end_shared_string(out);
+    break;
+  case 2:
+    /* 32 bit characters -- Is someone writing in Klingon? */
+    {
+      p_wchar2 *str2 = STR2(in);
+      int j = (len = in->len * 2);
+      /* Check how many extra wide characters there are. */
+      for(i = in->len; i--;) {
+	if (str2[i] > 0xfffd) {
+	  if (str2[i] < 0x10000) {
+	    /* 0xfffe: Byte-order detection illegal character.
+	     * 0xffff: Illegal character.
+	     */
+	    error("string_to_unicode(): Illegal character 0x%04x (index %d) "
+		  "is not a Unicode character.", str2[i], i);
+	  }
+	  if (str2[i] > 0x10ffff) {
+	    error("string_to_unicode(): Character 0x%08x (index %d) "
+		  "is out of range (0x00000000 - 0x0010ffff).", str2[i], i);
+	  }
+	  /* Extra wide characters take two unicode characters in space.
+	   * ie One unicode character extra.
+	   */
+	  len += 2;
+	}
+      }
+      out = begin_shared_string(len);
+      /* j is initialized above. */
+      for(i = in->len; i--;) {
+	unsigned INT32 c = str2[i];
+
+	j -= 2;
+
+	if (c > 0xffff) {
+	  /* Use surrogates */
+	  c -= 0x10000;
+	  
+	  out->str[j + 1] = c & 0xff;
+	  out->str[j] = 0xdc | ((c >> 8) & 0x03);
+	  j -= 2;
+	  c >>= 10;
+	  c |= 0xd800;
+	}
+	out->str[j + 1] = c & 0xff;
+	out->str[j] = c >> 8;
+      }
+#ifdef DEBUG
+      if (j) {
+	fatal("string_to_unicode(): Indexing error: len:%d, j:%d.\n", len, j);
+      }
+#endif /* DEBUG */
+      out = end_shared_string(out);
+    }
+    break;
+  default:
+    error("string_to_unicode(): Bad string shift: %d!\n", in->size_shift);
+    break;
+  }
+  pop_n_elems(args);
+  push_string(out);
+}
+
+void f_unicode_to_string(INT32 args)
+{
+  struct pike_string *in;
+  struct pike_string *out = NULL;
+  INT32 len;
+
+  get_all_args("unicode_to_string", args, "%S", &in);
+
+  if (in->size_shift) {
+    error("unicode_to_string(): Argument in not an 8bit string.\n");
+  }
+
+  if (in->len & 1) {
+    error("unicode_to_string(): String length is odd.\n");
+  }
+
+  /* FIXME: In the future add support for decoding of surrogates. */
+
+  len = in->len / 2;
+
+  out = begin_shared_string(in->len + 1);
+  out->size_shift = 1;
+  out->len = len;
+#if (BYTEORDER == 4321)
+  /* Big endian
+   *
+   * FIXME: Future optimization: Perform sufficient magic
+   * to do the conversion in place if the ref-count is == 1.
+   */
+  /* NOTE: We copy the zero-termination byte too */
+  MEMCPY(out->str, in->str, in->len + 1);
+#else
+  /* Little endian */
+  {
+    int i;
+    p_wchar1 *str1 = STR1(out);
+
+    str1[len] = 0;	/* Force proper zero termination */
+    for (i = len; i--;) {
+      str1[i] = in->str[i*2]<<8 + in->str[i*2 + 1];
+    }
+  }
+#endif /* BYTEORDER == 4321 */
+  out = end_shared_string(out);
+  pop_n_elems(args);
+  push_string(out);
 }
 
 void f_all_constants(INT32 args)
@@ -3091,6 +3249,10 @@ void init_builtin_efuns(void)
   add_efun("values",f_values,"function(string|multiset:array(int))|function(array(0=mixed)|mapping(mixed:0=mixed)|object|program:array(0))",0);
   add_efun("zero_type",f_zero_type,"function(mixed:int)",0);
   add_efun("array_sscanf",f_sscanf,"function(string,string:array)",0);
+
+  /* Some Wide-string stuff */
+  add_efun("string_to_unicode", f_string_to_unicode, "function(string:string)", OPT_TRY_OPTIMIZE);
+  add_efun("unicode_to_string", f_unicode_to_string, "function(string:string)", OPT_TRY_OPTIMIZE);
 
 #ifdef HAVE_LOCALTIME
   add_efun("localtime",f_localtime,"function(int:mapping(string:int))",OPT_EXTERNAL_DEPEND);
