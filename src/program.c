@@ -5,7 +5,7 @@
 \*/
 /**/
 #include "global.h"
-RCSID("$Id: program.c,v 1.297 2001/06/14 16:13:36 grubba Exp $");
+RCSID("$Id: program.c,v 1.298 2001/06/30 02:56:14 mast Exp $");
 #include "program.h"
 #include "object.h"
 #include "dynamic_buffer.h"
@@ -3404,6 +3404,9 @@ struct program *compile(struct pike_string *prog,
     p=0;
     Pike_compiler->compiler_pass=2;
     lex.pos=prog->str;
+    lex.current_line=1;
+    free_string(lex.current_file);
+    lex.current_file=make_shared_string("-");
 
     use_module(Pike_sp-1);
 
