@@ -29,7 +29,7 @@
 #include <floatingpoint.h>
 #endif
 
-RCSID("$Id: math.c,v 1.42 2002/01/16 02:56:10 nilsson Exp $");
+RCSID("$Id: math.c,v 1.43 2002/05/05 16:06:29 nilsson Exp $");
 
 #ifndef M_PI
 #define M_PI 3.1415926535897932384626433832795080
@@ -207,12 +207,15 @@ void f_sqrt(INT32 args)
 
   if(sp[-args].type==T_INT)
   {
+    /* Note: This algorithm is also implemented in src/stuff.c */
     unsigned INT32 n, b, s, y=0;
     unsigned INT16 x=0;
 
     /* FIXME: Note: Regards i as an unsigned value. */
     
+    if(sp[-args].u.integer<0) Pike_error("math: sqrt(x) with (x < 0)\n");
     n=sp[-args].u.integer;
+
     for(b=1<<(sizeof(INT32)*8-2); b; b>>=2)
     {
       x<<=1; s=b+y; y>>=1;
