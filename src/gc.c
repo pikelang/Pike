@@ -29,7 +29,7 @@ struct callback *gc_evaluator_callback=0;
 
 #include "block_alloc.h"
 
-RCSID("$Id: gc.c,v 1.85 2000/06/09 22:43:04 mast Exp $");
+RCSID("$Id: gc.c,v 1.86 2000/06/10 18:09:17 mast Exp $");
 
 /* Run garbage collect approximately every time
  * 20 percent of all arrays, objects and programs is
@@ -1055,8 +1055,9 @@ static void break_cycle (struct marker *beg, struct marker *pos)
    * where the "stack top" is.) */
 
   struct marker *p, *q;
+  int cycle = beg->cycle;
 #ifdef GC_CYCLE_DEBUG
-  fprintf(stderr, "%*sgc_cycle_push, break cycle:     %8p, [%8p] ",
+  fprintf(stderr, "%*sbreak cycle:                    %8p, [%8p] ",
 	  gc_cycle_indent, "", beg->data, gc_rec_last);
   describe_marker(beg);
 #endif
@@ -1065,30 +1066,30 @@ static void break_cycle (struct marker *beg, struct marker *pos)
     gc_fatal(beg->data, 0, "Cycle already broken at requested position.\n");
 #endif
 
-  if (beg->cycle) {
+  if (cycle) {
 #ifdef PIKE_DEBUG
-    if (pos->cycle == beg->cycle || gc_rec_last->cycle == beg->cycle)
-      gc_fatal(beg->data, 0, "Same cycle on both sides of broken link.\n");
+    if (pos->cycle == cycle || gc_rec_last->cycle == cycle)
+      gc_fatal(pos->data, 0, "Same cycle on both sides of broken link.\n");
 #endif
     for (p = &rec_list; p->link->cycle != beg->cycle; p = p->link) {}
   }
   else
     for (p = &rec_list; p->link != beg; p = p->link) {}
 
-  /* for (q = gc_rec_last; q->link; q = q->link) {} */
-  /* q->link = p->link; */
   q = p->link;
   p->link = pos;
 
   while (q != pos) {
-    q->flags &= ~(GC_CYCLE_CHECKED|GC_RECURSING|GC_WEAK_REF);
+    q->flags &= ~(GC_CYCLE_CHECKED|GC_RECURSING|GC_WEAK_REF|GC_FOLLOWED_NONSTRONG);
     q->cycle = 0;
 #ifdef GC_CYCLE_DEBUG
-    fprintf(stderr, "%*sgc_cycle_push, reset:           "
+    fprintf(stderr, "%*sreset marker:                   "
 	    "%8p,            ", gc_cycle_indent, "", q->data);
     describe_marker(q);
 #endif
 #ifdef PIKE_DEBUG
+    if (q->flags & (GC_GOT_DEAD_REF|GC_GOT_EXTRA_REF))
+      gc_fatal(q->data, 0, "Didn't expect an extra ref at reset.\n");
     p = q->link;
     q->link = (struct marker *) -1;
     q = p;
@@ -1131,6 +1132,9 @@ int gc_cycle_push(void *x, struct marker *m, int weak)
     gc_fatal(x, 0, "gc_cycle_check() called for thing not on gc_internal lists.\n");
   on_gc_internal_lists:
   }
+  if (weak < 0 && gc_rec_last->flags & GC_FOLLOWED_NONSTRONG)
+    gc_fatal(x, 0, "Followed strong link too late.\n");
+  if (weak >= 0) gc_rec_last->flags |= GC_FOLLOWED_NONSTRONG;
 #endif
 
   if (gc_rec_last->flags & GC_LIVE_RECURSE) {
@@ -1368,6 +1372,20 @@ live_recurse:
   return 1;
 }
 
+/* Add an extra ref when a dead thing is popped. It's taken away in
+ * the free pass. This is done to not refcount garb the cycles
+ * themselves recursively, which in bad cases can consume a lot of C
+ * stack. */
+#define ADD_REF_IF_DEAD(M)						\
+  if (!(M->flags & GC_LIVE)) {						\
+    DO_IF_DEBUG(							\
+      if (M->flags & GC_GOT_DEAD_REF)					\
+	gc_fatal(M->data, 0, "A thing already got an extra dead cycle ref.\n"); \
+    );									\
+    gc_add_extra_ref(M->data);						\
+    M->flags |= GC_GOT_DEAD_REF;					\
+  }
+
 static void pop_cycle_to_kill_list()
 {
   struct marker *base, *p, *q;
@@ -1385,8 +1403,11 @@ static void pop_cycle_to_kill_list()
       gc_fatal(q->data, 0, "Popping more than one cycle from rec_list.\n");
     if (!(q->flags & GC_RECURSING))
       gc_fatal(q->data, 0, "Marker being cycle popped doesn't have GC_RECURSING.\n");
+    if (q->flags & GC_GOT_DEAD_REF)
+      gc_fatal(q->data, 0, "Didn't expect a dead extra ref.\n");
 #endif
     q->flags &= ~GC_RECURSING;
+
     if (q->flags & GC_LIVE_OBJ) {
       /* This extra ref is taken away in the kill pass. */
       gc_add_extra_ref(q->data);
@@ -1398,6 +1419,7 @@ static void pop_cycle_to_kill_list()
       p = q;
     }
     else {
+      ADD_REF_IF_DEAD(q);
 #ifdef GC_CYCLE_DEBUG
       fprintf(stderr, "%*spop_cycle_to_kill_list, ignore: %8p, [%8p] ",
 	      gc_cycle_indent, "", q->data, base);
@@ -1441,17 +1463,10 @@ void gc_cycle_pop(void *a)
     return;
   }
 
-  if (!(m->flags & GC_LIVE)) {
-    /* This extra ref is taken away in the free pass. This is done to
-     * not refcount garb the cycles themselves recursively, which in bad
-     * cases can consume a lot of C stack. */
-    gc_add_extra_ref(m->data);
 #ifdef PIKE_DEBUG
-    if (m->flags & GC_GOT_DEAD_REF)
-      gc_fatal(a, 0, "A thing already got an extra dead cycle ref.\n");
+  if (m->flags & GC_GOT_DEAD_REF)
+    gc_fatal(a, 0, "Didn't expect a dead extra ref.\n");
 #endif
-    m->flags |= GC_GOT_DEAD_REF;
-  }
 
   if (m->cycle) {
     /* Part of a cycle. Leave for now so we pop the whole cycle at once. */
@@ -1472,6 +1487,7 @@ void gc_cycle_pop(void *a)
 
   else {
     struct marker *p;
+    ADD_REF_IF_DEAD(m);
     m->flags &= ~(GC_RECURSING|GC_WEAK_REF);
     if (gc_rec_last->flags & GC_RECURSING) p = gc_rec_last;
     else p = &rec_list;
@@ -1519,17 +1535,10 @@ void gc_cycle_pop_object(struct object *o)
     return;
   }
 
-  if (!(m->flags & GC_LIVE)) {
-    /* This extra ref is taken away in the free pass. This is done to
-     * not refcount garb the cycles themselves recursively, which in bad
-     * cases can consume a lot of C stack. */
-    gc_add_extra_ref(o);
 #ifdef PIKE_DEBUG
-    if (m->flags & GC_GOT_DEAD_REF)
-      gc_fatal(o, 0, "An object already got an extra dead cycle ref.\n");
+  if (m->flags & GC_GOT_DEAD_REF)
+    gc_fatal(o, 0, "Didn't expect a dead extra ref.\n");
 #endif
-    m->flags |= GC_GOT_DEAD_REF;
-  }
 
   if (m->cycle) {
     /* Part of a cycle. Leave for now so we pop the whole cycle at once. */
@@ -1569,8 +1578,11 @@ void gc_cycle_pop_object(struct object *o)
       fprintf(stderr, "%*sgc_cycle_pop_object, for kill:  %8p, [%8p] ",
 	      gc_cycle_indent, "", o, gc_rec_last);
       describe_marker(m);
+#endif
     }
     else {
+      ADD_REF_IF_DEAD(m);
+#ifdef GC_CYCLE_DEBUG
       fprintf(stderr,"%*sgc_cycle_pop_object:            %8p, [%8p] ",
 	      gc_cycle_indent, "", o, gc_rec_last);
       describe_marker(m);

@@ -1,5 +1,5 @@
 /*
- * $Id: gc.h,v 1.42 2000/06/09 22:43:04 mast Exp $
+ * $Id: gc.h,v 1.43 2000/06/10 18:09:18 mast Exp $
  */
 #ifndef GC_H
 #define GC_H
@@ -91,6 +91,7 @@ struct marker
 #define GC_DO_FREE		0x1000
 #define GC_IS_ONLY_WEAK		0x2000
 #define GC_GOT_EXTRA_REF	0x4000
+#define GC_FOLLOWED_NONSTRONG	0x8000
 
 #include "block_alloc_h.h"
 PTR_HASH_ALLOC(marker,MARKER_CHUNK_SIZE)
@@ -212,7 +213,8 @@ extern int gc_in_cycle_check;
 
 /* Use WEAK < 0 for strong links. The gc makes these assumptions about
  * those:
- * 1.  All strong links are recursed before any other links.
+ * 1.  All strong links are recursed before any other links, i.e.
+ *     strong links should be pushed last into the lifo queue.
  * 2.  There can never be a cycle consisting of only strong links.
  */
 
