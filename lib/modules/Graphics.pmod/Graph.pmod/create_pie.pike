@@ -10,7 +10,7 @@ inherit "polyline.pike";
 inherit "create_graph.pike";
 inherit "create_bars.pike";
 
-constant cvs_version = "$Id: create_pie.pike,v 1.1 1999/09/30 13:04:05 hedda Exp $";
+constant cvs_version = "$Id: create_pie.pike,v 1.2 2000/08/28 03:07:27 hedda Exp $";
 
 /*
  * name = "BG: Create pies";
@@ -70,18 +70,18 @@ mapping(string:mixed) create_pie(mapping(string:mixed) diagram_data)
 
 
   
-  object* text;
+  array(object) text;
   object notext;
   int ymaxtext;
   int xmaxtext;
 
   int imysize;
   int imxsize;
-  float *arr=allocate(802);
-  float *arr2=allocate(802);
-  float *arr3=allocate(802);
-  float *arrplus=allocate(802);
-  float *arrpp=allocate(802);
+  array(float) arr=allocate(802);
+  array(float) arr2=allocate(802);
+  array(float) arr3=allocate(802);
+  array(float) arrplus=allocate(802);
+  array(float) arrpp=allocate(802);
 
   int yc;
   int xc;
@@ -91,8 +91,8 @@ mapping(string:mixed) create_pie(mapping(string:mixed) diagram_data)
   mixed sum;
   int sum2;
 
-  int* pnumbers=allocate(sizeof(numbers));
-  int* order=indices(numbers);
+  array(int) pnumbers=allocate(sizeof(numbers));
+  array(int) order=indices(numbers);
 
   int edge_nr=0;
 
@@ -394,8 +394,8 @@ mapping(string:mixed) create_pie(mapping(string:mixed) diagram_data)
   if (!twoD)
     {
       object below;
-      int *b=({70,70,70});
-      int *a=({0,0,0});
+      array(int) b=({70,70,70});
+      array(int) a=({0,0,0});
       
       
       object tbild;
