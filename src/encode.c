@@ -627,24 +627,28 @@ static void rec_restore_value(char **v, INT32 *l)
     return;
     
   case T_STRING:
+    if(t<0) error("Format error, length of string is negative.\n");
     if(*l < t) error("Format error, string to short\n");
     push_string(make_shared_binary_string(*v, t));
     (*l)-= t; (*v)+= t;
     return;
     
   case T_ARRAY:
+    if(t<0) error("Format error, length of array is negative.\n");
     check_stack(t);
     for(i=0;i<t;i++) rec_restore_value(v,l);
     f_aggregate(t);
     return;
 
   case T_MULTISET:
+    if(t<0) error("Format error, length of multiset is negative.\n");
     check_stack(t);
     for(i=0;i<t;i++) rec_restore_value(v,l);
     f_aggregate_multiset(t);
     return;
     
   case T_MAPPING:
+    if(t<0) error("Format error, length of mapping is negative.\n");
     check_stack(t*2);
     for(i=0;i<t;i++)
     {
@@ -655,6 +659,7 @@ static void rec_restore_value(char **v, INT32 *l)
     return;
 
   case T_OBJECT:
+    if(t<0) error("Format error, length of object is negative.\n");
     if(*l < t) error("Format error, string to short\n");
     push_string(make_shared_binary_string(*v, t));
     (*l) -= t; (*v) += t;
@@ -662,6 +667,7 @@ static void rec_restore_value(char **v, INT32 *l)
     return;
     
   case T_FUNCTION:
+    if(t<0) error("Format error, length of function is negative.\n");
     if(*l < t) error("Format error, string to short\n");
     push_string(make_shared_binary_string(*v, t));
     (*l) -= t; (*v) += t;
@@ -669,6 +675,7 @@ static void rec_restore_value(char **v, INT32 *l)
     return;
      
   case T_PROGRAM:
+    if(t<0) error("Format error, length of program is negative.\n");
     if(*l < t) error("Format error, string to short\n");
     push_string(make_shared_binary_string(*v, t));
     (*l) -= t; (*v) += t;
