@@ -1190,7 +1190,6 @@ class NonValidatingDOMParser
   }
 }
 
-#if constant(Parser.XML.Validating)
 class DOMParser
 {
   inherit AbstractDOMParser;
@@ -1217,4 +1216,3 @@ class DOMParser
     xml::parse(autoconvert(data, input), cb, input);
   }
 }
-#endif
