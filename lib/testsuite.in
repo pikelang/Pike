@@ -37,3 +37,10 @@ test_any([[
   master()->set_inhibit_compile_errors(0);
   return arrayp(res)||objectp(res);
 ]], 1)
+
+// - pike -e
+test_false( Process.system(RUNPIKE + " -e \"return 0;\"") )
+test_true( Process.system(RUNPIKE + " -e \"return 1;\"") )
+test_true( Process.system(RUNPIKE + " -e \"return NOT(0);\"") )
+test_true( Process.system(RUNPIKE + " -e \"return CHAR(A)==65;\"") )
+test_eq( Process.popen(RUNPIKE + " -e \"return (string)7;\""), "7\n" )
