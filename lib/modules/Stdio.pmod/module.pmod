@@ -1,4 +1,4 @@
-// $Id: module.pmod,v 1.64 1999/10/02 06:05:45 hubbe Exp $
+// $Id: module.pmod,v 1.65 1999/10/05 05:33:44 hubbe Exp $
 
 import String;
 
@@ -1206,3 +1206,5 @@ class UDP
 	callback(i,@extra);
    }
 }
+
+constant werror=predef::werror;
