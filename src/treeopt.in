@@ -1,6 +1,6 @@
 // -*- c -*-
 //
-// $Id: treeopt.in,v 1.40 2000/04/30 13:52:54 grubba Exp $
+// $Id: treeopt.in,v 1.41 2000/09/23 12:41:51 grubba Exp $
 //
 // The tree optimizer
 //
@@ -56,6 +56,17 @@ F_PUSH_ARRAY(0 = F_CONSTANT[$$->u.sval.type == T_ARRAY], *):
     $$ = n;
   }
   ;
+
+// `+(`+(a,b),c)  =>  `+(a, b, c)
+F_APPLY(0 = F_CONSTANT
+	   [$$->u.sval.type == T_FUNCTION]
+	   [$$->u.sval.subtype == FUNCTION_BUILTIN]
+	   [$$->u.sval.u.efun->function == f_add],
+	   F_ARG_LIST(F_APPLY($0, 1), 2)):
+  F_APPLY($0, F_ARG_LIST($1, $2));
+
+// Similar rule for `*() disabled, since the type for '*() isn't
+// correct for all cases.
 
 F_POP_VALUE(-, *):
   -;
