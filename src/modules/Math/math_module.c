@@ -1,5 +1,5 @@
 /*
- * $Id: math.c,v 1.2 1999/03/31 18:36:52 mirar Exp $
+ * $Id: math_module.c,v 1.1 1999/03/31 19:27:18 mirar Exp $
  */
 
 #include "global.h"
@@ -7,7 +7,7 @@
 
 #include "program.h"
 
-#include "math.h"
+#include "math_module.h"
 
 /*** module init & exit & stuff *****************************************/
 

@@ -1,6 +1,8 @@
 #include "global.h"
 #include "config.h"
 
+#include <math.h>
+
 #include "pike_macros.h"
 #include "../../error.h"
 #include "object.h"
@@ -12,6 +14,19 @@
 #include "operators.h"
 #include "builtin_functions.h"
 #include "mapping.h"
+
+#include "math_module.h"
+
+/*
+**! module Math
+**! class Matrix
+**!
+**!	This class hold Matrix capabilites,
+**!	and support a range of matrix operations.
+**!	
+**!	It can only - for speed and simplicity - 
+**!	hold floating point numbers and are only in 2 dimensions.
+*/
 
 /* ---------------------------------------------------------------- */
 
@@ -50,6 +65,31 @@ static void exit_matrix(struct object *o)
 }
 
 /* ---------------------------------------------------------------- */
+
+/*
+**! method void create(array(array(int|float)))
+**! method void create(int n,int m)
+**! method void create(int n,int m,string type)
+**! method void create(int n,int m,float|int init)
+**!
+**!	This method initializes the matrix.
+**!	It is illegal to create and hold an empty matrix.
+**!	
+**!	The normal operation is to create the matrix object
+**!	with a double array, like
+**!	<tt>Math.Matrix( ({({1,2}),({3,4})}) )</tt>.
+**!	
+**!	Another use is to create a special type of matrix,
+**!	and this is told as third argument.
+**!
+**!	Currently there are only the "identity" type, 
+**!	which gives a matrix of zeroes except in the diagonal,
+**!	where the number one (1.0) is. This is the default,
+**!	too.
+**!
+**!	The third use is to give all indices in the 
+**!	matrix the same value, for instance zero or 42.
+*/
 
 static void matrix_create(INT32 args)
 {
@@ -169,6 +209,12 @@ done_made:
 
 /* ---------------------------------------------------------------- */
 
+/*
+**! method array(array(float)) cast(string to_what)
+**! 	This is to be able to get the matrix values.
+**!	This gives back a double array of floats.
+*/
+
 void matrix_cast(INT32 args)
 {
    if (!THIS->m)
@@ -213,6 +259,11 @@ static INLINE struct matrix_storage * _push_new_matrix(int xsize,int ysize)
 
 /* --- real math stuff --------------------------------------------- */
 
+/*
+**! method object transpose()
+**! 	Transpose of the matrix as a new object.
+*/
+
 static void matrix_transpose(INT32 args)
 {
    struct matrix_storage *mx;
@@ -236,6 +287,74 @@ static void matrix_transpose(INT32 args)
       s-=xs*ys-1;
    }
 }
+
+/*
+**! method float norm()
+**! method float norm2()
+**! 	Norm of the matrix, and the square of the norm
+**!	of the matrix. (The later method is because you
+**!	may skip a square root sometimes.)
+**!
+**!	This equals |A| or sqrt( A<sub>0</sub><sup>2</sup> +
+**!	A<sub>1</sub><sup>2</sup> + ... + A<sub>n</sub><sup>2</sup> ).
+**!
+**!	It is only usable with 1xn or nx1 matrices.
+*/
+
+static void matrix_norm(INT32 args)
+{
+   struct matrix_storage *mx;
+   FTYPE z,*s;
+   int n=THIS->xsize*THIS->ysize;
+
+   pop_n_elems(args);
+
+   if (!(THIS->xsize==1 || THIS->ysize==1))
+      math_error("Matrix->norm",sp-args,args,0,
+		 "Cannot compute norm of non 1xn or nx1 matrices");
+   
+   z=0.0;
+   s=THIS->m;
+   while (n--)
+      z+=*s**s,s++;
+
+   push_float(sqrt(z));
+}
+
+static void matrix_norm2(INT32 args)
+{
+   struct matrix_storage *mx;
+   FTYPE z,*s;
+   int n=THIS->xsize*THIS->ysize;
+
+   pop_n_elems(args);
+
+   if (!(THIS->xsize==1 || THIS->ysize==1))
+      math_error("Matrix->norm",sp-args,args,0,
+		 "Cannot compute norm of non 1xn or nx1 matrices");
+   
+   z=0.0;
+   s=THIS->m;
+   while (n--)
+      z+=*s**s,s++;
+
+   push_float(z);
+}
+
+/*
+**! method object `+(object with)
+**! method object ``+(object with)
+**! method object add(object with)
+**! 	Add this matrix to another matrix. A new matrix is returned.
+**!	The matrices must have the same size.
+**!
+**! method object `-()
+**! method object `-(object with)
+**! method object ``-(object with)
+**! method object sub(object with)
+**!	Subtracts this matrix from another. A new matrix is returned.
+**!	-<i>m</i> is equal to -1*<i>m</i>.
+*/
 
 static void matrix_add(INT32 args)
 {
@@ -314,6 +433,13 @@ static void matrix_sub(INT32 args)
 	 *(d++)=-*(s1++);
 }
 
+/*
+**! method object `*(object with)
+**! method object ``*(object with)
+**! method object mult(object with)
+**!	Matrix multiplication.
+*/
+
 static void matrix_mult(INT32 args)
 {
    struct matrix_storage *mx=NULL;
@@ -382,6 +508,7 @@ scalar_mult:
    pop_stack();
 }
 
+
 /* ---------------------------------------------------------------- */
 
 void init_math_matrix()
@@ -406,6 +533,11 @@ void init_math_matrix()
 
    add_function("transpose",matrix_transpose,
 		"function(:object)",0);
+
+   add_function("norm",matrix_norm,
+		"function(:float)",0);
+   add_function("norm2",matrix_norm2,
+		"function(:float)",0);
 
    add_function("add",matrix_add,
 		"function(object:object)",0);

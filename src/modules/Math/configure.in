@@ -1,5 +1,5 @@
-# $Id: configure.in,v 1.1 1999/03/31 13:12:36 mirar Exp $
-AC_INIT(math.c)
+# $Id: configure.in,v 1.2 1999/03/31 19:27:13 mirar Exp $
+AC_INIT(math_module.c)
 AC_CONFIG_HEADER(config.h)
 
 AC_MODULE_INIT()
