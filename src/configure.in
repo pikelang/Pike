@@ -1,4 +1,4 @@
-AC_REVISION("$Id: configure.in,v 1.43 1997/01/21 12:50:10 grubba Exp $")
+AC_REVISION("$Id: configure.in,v 1.44 1997/01/22 00:58:20 grubba Exp $")
 AC_INIT(interpret.c)
 AC_CONFIG_HEADER(machine.h)
 
@@ -343,7 +343,8 @@ AC_HEADER_TIME
 AC_HEADER_STDC
 AC_CHECK_HEADERS(sys/rusage.h time.h sys/time.h sys/types.h unistd.h stdlib.h \
 memory.h values.h string.h fcntl.h sys/filio.h sys/sockio.h crypt.h locale.h \
-sys/resource.h sys/select.h sys/mman.h setjmp.h limits.h pthread.h dlfcn.h)
+sys/resource.h sys/select.h sys/mman.h setjmp.h limits.h pthread.h dlfcn.h \
+dld.h)
 
 AC_SIZEOF_TYPE(char *)
 AC_SIZEOF_TYPE(long)
@@ -362,6 +363,7 @@ dnl AC_CHECK_LIB(PW, alloca)
 
 AC_CHECK_LIB(m, floor)
 AC_CHECK_LIB(dl, dlopen)
+AC_CHECK_LIB(dld, dld_link)
 
 
 if test "${pike_cv_sys_os}" = "Linux"; then
@@ -493,6 +495,8 @@ AC_CHECK_FUNCS(
  munmap \
  dlopen \
  dlsym \
+ dld_link \
+ dld_get_func \
 )
 
 if test $ac_cv_func_crypt$ac_cv_func__crypt = nono ; then
@@ -1155,28 +1159,34 @@ fi
 AC_MSG_CHECKING(how to set things nonblocking)
 AC_CACHE_VAL(pike_cv_sys_nonblock,
 [
-AC_TRY_RUN([
+  # Kludge needed for AmigaOS
+  if test x$pike_cv_sys_os = xAmigaOS ; then
+    pike_cv_sys_nonblock=USE_FCNTL_O_NONBLOCK
+  else
+    AC_TRY_RUN([
 #define TESTING
 #define USE_FCNTL_FNDELAY
 #include "$srcdir/fd_control.c"
-],pike_cv_sys_nonblock=USE_FCNTL_FNDELAY,
-AC_TRY_RUN([
+], pike_cv_sys_nonblock=USE_FCNTL_FNDELAY,
+    AC_TRY_RUN([
 #define TESTING
 #define USE_FCNTL_O_NDELAY
 #include "$srcdir/fd_control.c"
-],pike_cv_sys_nonblock=USE_FCNTL_O_NDELAY,
-AC_TRY_RUN([
+], pike_cv_sys_nonblock=USE_FCNTL_O_NDELAY,
+    AC_TRY_RUN([
 #define TESTING
 #define USE_FCNTL_O_NONBLOCK
 #include "$srcdir/fd_control.c"
-],pike_cv_sys_nonblock=USE_FCNTL_O_NONBLOCK,
-AC_TRY_RUN([
+], pike_cv_sys_nonblock=USE_FCNTL_O_NONBLOCK,
+    AC_TRY_RUN([
 #define TESTING
 #define USE_IOCTL_FIONBIO
 #include "$srcdir/fd_control.c"
-],pike_cv_sys_nonblock=USE_IOCTL_FIONBIO,
+], pike_cv_sys_nonblock=USE_IOCTL_FIONBIO,
 unset pike_cv_sys_nonblock
-))))])
+    ))))
+  fi
+])
 
 if test "${pike_cv_sys_nonblock}" = ""; then
   AC_MSG_RESULT(none found)
