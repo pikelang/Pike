@@ -4,7 +4,7 @@ togif
 
 Pontus Hagland, law@infovav.se
 
-$Id: togif.c,v 1.4 1997/03/18 17:30:54 mirar Exp $ 
+$Id: togif.c,v 1.5 1997/03/18 17:36:23 mirar Exp $ 
 
 */
 
@@ -626,7 +626,7 @@ static void img_gif_add(INT32 args,int fs,int lm)
    struct colortable *ct=NULL;
    dynamic_buffer buf;
    int colors,bpp;
-   int closest;
+   int closest=0;
 
 CHRONO("gif add init");
 
@@ -650,10 +650,7 @@ CHRONO("gif add init");
       closest=1;
    }
    else if (args>3 && sp[2-args].type==T_INT)
-   {
       ct=colortable_quant(THIS,max(256,min(2,sp[2-args].u.integer)));
-      closest=0;
-   }
 
    if (args>2+!!ct)
    {

@@ -1,4 +1,4 @@
-/* $Id: image.c,v 1.8 1997/03/18 17:23:12 mirar Exp $ */
+/* $Id: image.c,v 1.9 1997/03/18 17:36:19 mirar Exp $ */
 
 #include "global.h"
 
@@ -7,7 +7,7 @@
 
 #include "stralloc.h"
 #include "global.h"
-RCSID("$Id: image.c,v 1.8 1997/03/18 17:23:12 mirar Exp $");
+RCSID("$Id: image.c,v 1.9 1997/03/18 17:36:19 mirar Exp $");
 #include "types.h"
 #include "pike_macros.h"
 #include "object.h"
@@ -1716,8 +1716,6 @@ static void image_to8bit_fs(INT32 args)
       error("illegal argument to image->map_fs()\n");
 
 
-fprintf(stderr,"c\n");
-     
    res=(int*)xalloc(sizeof(int)*THIS->xsize);
    errb=(rgbl_group*)xalloc(sizeof(rgbl_group)*THIS->xsize);
       
