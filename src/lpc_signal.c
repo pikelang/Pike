@@ -296,12 +296,6 @@ static void f_signal(int args)
   if(args < 1)
     error("Too few arguments to signal()\n");
 
-  if(args == 1)
-  {
-    push_int(0);
-    args++;
-  }
-  
   if(sp[-args].type != T_INT)
   {
     error("Bad argument 1 to signal()\n");
@@ -313,9 +307,11 @@ static void f_signal(int args)
     error("Signal out of range.\n");
   }
 
-  assign_svalue(signal_callbacks + signum, sp+1-args);
-  if(IS_ZERO(sp+1-args))
+  if(args == 1)
   {
+    push_int(0);
+    args++;
+
     switch(signum)
     {
     case SIGCHLD:
@@ -329,9 +325,15 @@ static void f_signal(int args)
     default:
       func=(sigfunctype) SIG_DFL;
     }
-  }else{
-    func=receive_signal;
+  } else {
+    if(IS_ZERO(sp+1-args))
+    {
+      func=(sigfunctype) SIG_IGN;
+    }else{
+      func=receive_signal;
+    }
   }
+  assign_svalue(signal_callbacks + signum, sp+1-args);
   my_signal(signum, func);
   pop_n_elems(args);
 }
