@@ -1,5 +1,5 @@
 /*
- * $Id: nt.c,v 1.19 2000/07/03 18:32:35 grubba Exp $
+ * $Id: nt.c,v 1.20 2000/07/03 19:33:08 grubba Exp $
  *
  * NT system calls for Pike
  *
@@ -23,6 +23,7 @@
 #include "builtin_functions.h"
 #include "interpret.h"
 #include "operators.h"
+#include "stuff.h"
 
 #include <winsock.h>
 #include <windows.h>
