@@ -46,7 +46,7 @@ void ins_f_byte_with_2_args(unsigned int op,
 	the secondary argument 'arg2' at the current offset.
 
 void UPDATE_PC(void)
-	Insert code to update the runtime linenumber information.
+	Insert code to update Pike_fp->pc to the current position.
 
 INT32 READ_INCR_BYTE(PIKE_OPCODE_T *pc);
 	Return the byte stored at 'pc' by ins_byte(), and increment
