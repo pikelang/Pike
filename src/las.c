@@ -2,11 +2,11 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: las.c,v 1.325 2003/02/24 21:00:44 mast Exp $
+|| $Id: las.c,v 1.326 2003/03/07 14:06:57 grubba Exp $
 */
 
 #include "global.h"
-RCSID("$Id: las.c,v 1.325 2003/02/24 21:00:44 mast Exp $");
+RCSID("$Id: las.c,v 1.326 2003/03/07 14:06:57 grubba Exp $");
 
 #include "language.h"
 #include "interpret.h"
@@ -311,6 +311,8 @@ struct pike_type *find_return_type(node *n)
   fatal_check_c_stack(16384);
 
   if(!n) return 0;
+
+  optimize(n);
 
   if (n->token == F_RETURN) {
     if (CAR(n)) {
