@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: signal_handler.c,v 1.306 2004/09/26 15:16:34 marcus Exp $
+|| $Id: signal_handler.c,v 1.307 2004/09/30 14:01:00 mast Exp $
 */
 
 #include "global.h"
@@ -4533,6 +4533,8 @@ static void run_atexit_functions(struct callback *cb, void *arg,void *arg2)
 	pop_stack();
       }
     }
+    free_array (atexit_functions);
+    atexit_functions = 0;
   }
 }
 
