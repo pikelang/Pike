@@ -562,3 +562,13 @@ Examples:     @xml{<b>Bold</b> and @i{italic@}@}
 XML:          No representation.
 ________________________________________________________________________________
 
+Keyword:      @ignore - @endignore
+Description:  Ignores the block of code enclosed between the two keywords. Useful
+              for code that the AutoDoc parser cannot understand.
+Children:     -
+Examples:     @ignore
+                array PROXY(_indices, ::_indices());
+                array PROXY(_values, ::_values());
+              @endignore
+________________________________________________________________________________
+
