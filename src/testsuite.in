@@ -1,4 +1,4 @@
-test_true([["$Id: testsuite.in,v 1.491 2002/03/21 14:48:47 grubba Exp $"]]);
+test_true([["$Id: testsuite.in,v 1.492 2002/04/09 19:47:23 grubba Exp $"]]);
 
 cond([[all_constants()->_verify_internals]],
 [[
@@ -445,6 +445,13 @@ test_any([[
   }
   return 1;
 ]], 1);
+
+test_compile_error( [[
+  // This triggs a compiler bug on old Pike 7.3.
+  non_existant(17) {
+    return 0;
+  }
+]])
 
 test_any( [[
 // bug [2861] ------------------------------------------------------------
