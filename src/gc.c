@@ -30,7 +30,7 @@ struct callback *gc_evaluator_callback=0;
 
 #include "block_alloc.h"
 
-RCSID("$Id: gc.c,v 1.128 2000/09/03 23:09:38 mast Exp $");
+RCSID("$Id: gc.c,v 1.129 2000/09/03 23:11:29 mast Exp $");
 
 /* Run garbage collect approximately every time
  * 20 percent of all arrays, objects and programs is
@@ -1916,7 +1916,6 @@ int do_gc(void)
 #ifdef PIKE_DEBUG
   gc_debug = d_flag;
 #endif
-  gc_debug = 1;
 
   destruct_objects_to_destruct();
 
