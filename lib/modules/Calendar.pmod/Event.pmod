@@ -1002,9 +1002,9 @@ class SuperEvent
    array(Event) other_events=({});
 
 
-   static void create(array(Event) _events,
-		      void|mapping(Event:multiset(string)) _flags,
-		      void|string _id)
+/*static*/ void create(array(Event) _events,
+		       void|mapping(Event:multiset(string)) _flags,
+		       void|string _id)
    {
       if (_id) id=_id;
 
