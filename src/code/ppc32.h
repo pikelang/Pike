@@ -1,5 +1,5 @@
 /*
- * $Id: ppc32.h,v 1.6 2001/08/15 17:44:05 marcus Exp $
+ * $Id: ppc32.h,v 1.7 2001/08/16 00:28:30 marcus Exp $
  */
 
 #define PIKE_OPCODE_T	unsigned INT32
@@ -49,6 +49,8 @@
 #define PPC_REG_ARG1 3
 #define PPC_REG_ARG2 4
 
+
+#define PPC_REG_PIKE_MARK_SP 8
 #define PPC_REG_PIKE_FP 9
 #define PPC_REG_PIKE_SP 10
 
@@ -61,6 +63,8 @@ void ppc32_flush_code_generator_state(void);
 #define PPC_CODEGEN_FP_ISSET 1
 #define PPC_CODEGEN_SP_ISSET 2
 #define PPC_CODEGEN_SP_NEEDSSTORE 4
+#define PPC_CODEGEN_MARK_SP_ISSET 8
+#define PPC_CODEGEN_MARK_SP_NEEDSSTORE 16
 
 #define LOAD_FP_REG() do {				\
     if(!(ppc32_codegen_state & PPC_CODEGEN_FP_ISSET)) {	\
@@ -80,10 +84,25 @@ void ppc32_flush_code_generator_state(void);
     }							\
   } while(0)
 
+#define LOAD_MARK_SP_REG() do {						\
+    if(!(ppc32_codegen_state & PPC_CODEGEN_MARK_SP_ISSET)) {		\
+      /* lwz pike_mark_sp,mark_stack_pointer(pike_interpreter) */	\
+      LWZ(PPC_REG_PIKE_MARK_SP, PPC_REG_PIKE_INTERP,			\
+	  OFFSETOF(Pike_interpreter, mark_stack_pointer));		\
+      ppc32_codegen_state |= PPC_CODEGEN_MARK_SP_ISSET;			\
+    }									\
+  } while(0)
+
 #define INCR_SP_REG(n) do {				\
       /* addi pike_sp,pike_sp,n */			\
       ADDI(PPC_REG_PIKE_SP, PPC_REG_PIKE_SP, n);	\
       ppc32_codegen_state |= PPC_CODEGEN_SP_NEEDSSTORE;	\
+    } while(0)
+
+#define INCR_MARK_SP_REG(n) do {				\
+      /* addi pike_mark_sp,pike_mark_sp,n */			\
+      ADDI(PPC_REG_PIKE_MARK_SP, PPC_REG_PIKE_MARK_SP, n);	\
+      ppc32_codegen_state |= PPC_CODEGEN_MARK_SP_NEEDSSTORE;	\
     } while(0)
 
 #define UPDATE_PC() do {				\

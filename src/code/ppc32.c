@@ -1,5 +1,5 @@
 /*
- * $Id: ppc32.c,v 1.6 2001/08/15 17:44:04 marcus Exp $
+ * $Id: ppc32.c,v 1.7 2001/08/16 00:28:30 marcus Exp $
  *
  * Machine code generator for 32 bit PowerPC
  *
@@ -45,6 +45,11 @@ void ppc32_flush_code_generator_state()
     /* stw pike_sp,stack_pointer(pike_interpreter) */
     STW(PPC_REG_PIKE_SP, PPC_REG_PIKE_INTERP,
 	OFFSETOF(Pike_interpreter, stack_pointer));
+  }
+  if(ppc32_codegen_state & PPC_CODEGEN_MARK_SP_NEEDSSTORE) {
+    /* stw pike_mark_sp,mark_stack_pointer(pike_interpreter) */
+    STW(PPC_REG_PIKE_MARK_SP, PPC_REG_PIKE_INTERP,
+	OFFSETOF(Pike_interpreter, mark_stack_pointer));
   }
   ppc32_codegen_state = 0;
 }
@@ -122,6 +127,44 @@ void ppc32_push_local(INT32 arg)
   ppc32_push_svalue(PPC_REG_ARG1, offs);
 }
 
+void ppc32_push_int(INT32 x)
+{
+  LOAD_SP_REG();
+
+  if(sizeof(struct svalue) > 8)
+  {
+    int e;
+    SET_REG(0, 0);
+    for(e=4;e<(int)sizeof(struct svalue);e++)
+    {
+      if( e == OFFSETOF(svalue,u.integer)) continue;
+      /* stw r0,e(pike_sp) */
+      STW(0, PPC_REG_PIKE_SP, e);
+    }
+  }
+  if(sizeof(struct svalue) <= 8 || x != 0)
+    SET_REG(0, x);
+  STW(0, PPC_REG_PIKE_SP, OFFSETOF(svalue,u.integer));
+#if PIKE_BYTEORDER == 1234
+  if(x != PIKE_T_INT)
+    SET_REG(0, PIKE_T_INT);
+#else
+  if(x != (PIKE_T_INT << 16))
+    SET_REG(0, (PIKE_T_INT << 16));
+#endif
+  STW(0, PPC_REG_PIKE_SP, 0);
+  INCR_SP_REG(sizeof(struct svalue));  
+}
+
+void ppc32_mark(void)
+{
+  LOAD_SP_REG();
+  LOAD_MARK_SP_REG();
+  /* stw pike_sp, 0(pike_mark_sp) */
+  STW(PPC_REG_PIKE_SP, PPC_REG_PIKE_MARK_SP, 0);
+  INCR_MARK_SP_REG(sizeof(struct svalue *));
+}
+
 void ins_f_byte(unsigned int b)
 {
   void *addr;
@@ -155,6 +198,24 @@ void ins_f_byte(unsigned int b)
   /* This is not very pretty */
   switch(b)
   {
+   case F_MARK2 - F_OFFSET:
+     ppc32_mark();
+   case F_MARK - F_OFFSET:
+     ppc32_mark();
+     return;
+
+   case F_CONST0 - F_OFFSET:
+     ppc32_push_int(0);
+     return;
+     
+   case F_CONST1 - F_OFFSET:
+     ppc32_push_int(1);
+     return;
+     
+   case F_CONST_1 - F_OFFSET:
+     ppc32_push_int(-1);
+     return;
+     
   case F_MAKE_ITERATOR - F_OFFSET:
     {
       extern void f_Iterator(INT32);
@@ -178,8 +239,19 @@ void ins_f_byte_with_arg(unsigned int a,unsigned INT32 b)
 #ifndef PIKE_DEBUG
   switch(a)
   {
+   case F_MARK_AND_LOCAL:
+     ppc32_mark();
+
    case F_LOCAL:
      ppc32_push_local(b);
+     return;
+
+   case F_NUMBER:
+     ppc32_push_int(b);
+     return;
+
+   case F_NEG_NUMBER:
+     ppc32_push_int(-b);
      return;
   }
 #endif
