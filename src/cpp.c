@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: cpp.c,v 1.107 2002/11/23 15:11:04 mast Exp $
+|| $Id: cpp.c,v 1.108 2002/12/07 15:14:45 grubba Exp $
 */
 
 #include "global.h"
@@ -182,6 +182,118 @@ void cpp_describe_exception(struct cpp *this, struct svalue *thrown)
     pop_stack();
   }
 }
+
+/*! @class MasterObject
+ */
+
+/*! @decl inherit CompilationHandler
+ *!
+ *! The master object acts as fallback compilation handler for
+ *! @[compile()] and @[cpp()].
+ */
+
+/*! @decl CompilationHandler get_compilation_handler(int major, int minor)
+ *!
+ *!   Get compilation handler for simulation of Pike v@[major].@[minor].
+ *!
+ *!   This function is called by @[cpp()] when it encounters
+ *!   @tt{#pike@} directives.
+ *!
+ *! @param major
+ *!   Major version.
+ *!
+ *! @param minor
+ *!   Minor version.
+ *!
+ *! @returns
+ *!   Returns a compilation handler for Pike >= @[major].@[minor].
+ */
+
+/*! @decl string decode_charset(string raw, string charset)
+ *!
+ *!   Convert @[raw] from encoding @[charset] to UNICODE.
+ *!
+ *!   This function is called by @[cpp()] when it encounters
+ *!   @tt{#charset@} directives.
+ *!
+ *! @param raw
+ *!   String to convert.
+ *!
+ *! @param charset
+ *!   Name of encoding that @[raw] uses.
+ *!
+ *! @returns
+ *!   @[raw] decoded to UNICODE, or @tt{0@} (zero) if the decoding failed.
+ */
+
+/*! @endclass
+ */
+
+/*! @class CompilationHandler
+ */
+
+/*! @decl void compile_error(string msg, int line, string filename)
+ *!
+ *!   Called by @[compile()] and @[cpp()] when they encounter
+ *!   errors in the code they compile.
+ *!
+ *! @param msg
+ *!   Description of error.
+ *!
+ *! @param line
+ *!   Line where the error was detected.
+ *!
+ *! @param filename
+ *!   File where the error was detected.
+ *!
+ *! @seealso
+ *!   @[compile_warning()].
+ */
+
+/*! @decl void compile_exception(mixed exception)
+ *!
+ *!   Called by @[compile()] and @[cpp()] if they trigger
+ *!   exceptions.
+ */
+
+/*! @decl mapping(string:mixed) get_predefines()
+ *!
+ *!   Called by @[compile()] and @[cpp()] to get
+ *!   the set of global symbols.
+ *!
+ *! @returns
+ *!   Returns a mapping from symbol name to symbol value.
+ *!   Returns zero on failure.
+ *!
+ *! @seealso
+ *!   @[resolv()]
+ */
+
+/*! @decl mixed resolv(string symbol, string filename, @
+ *!                    CompilationHandler handler)
+ *!
+ *!   Called by @[compile()] and @[cpp()] to resolv
+ *!   module references.
+ *!
+ *! @returns
+ *!   Returns the resolved value, or @[UNDEFINED] on failure.
+ *!
+ *! @seealso
+ *!   @[get_predefines()]
+ */
+
+/*! @decl mixed handle_import(string path, string filename, @
+ *!                           CompilationHandler handler)
+ *!
+ *!   Called by @[compile()] and @[cpp()] to handle import
+ *!   directives specifying specific paths.
+ *!
+ *! @returns
+ *!   Returns the resolved value, or @[UNDEFINED] on failure.
+ */
+
+/*! @endclass
+ */
 
 void cpp_change_compat(struct cpp *this, int major, int minor)
 {
@@ -1151,7 +1263,7 @@ static void check_constant(struct cpp *this,
       res=0;
     }
   }else{
-    /* Handle contant(.foo) */
+    /* Handle constant(.foo) */
     push_text(".");
     ref_push_string(this->current_file);
 
