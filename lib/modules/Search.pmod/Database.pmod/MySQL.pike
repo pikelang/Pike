@@ -1,7 +1,7 @@
 // This file is part of Roxen Search
 // Copyright © 2000,2001 Roxen IS. All rights reserved.
 //
-// $Id: MySQL.pike,v 1.69 2001/09/25 22:02:38 js Exp $
+// $Id: MySQL.pike,v 1.70 2001/09/26 05:09:01 js Exp $
 
 inherit .Base;
 
@@ -25,15 +25,15 @@ void init_tables()
                          language varchar(255) default null,
                          INDEX index_language (language),
                          INDEX index_uri_id (uri_id))"
-			 );
+				       ); //FIXME: Remove index_language?
   
   db->query("create table if not exists deleted_document (doc_id int unsigned not null)");
 
   db->query(
-#"create table if not exists word_hit (word        varchar(64),
+#"create table if not exists word_hit (word        varchar(64) binary not null,
                          first_doc_id   int not null,
             	         hits           mediumblob not null,
-                         index index_word (word(8)))");
+                         index index_word (word)");
 
   db->query(
 #"create table if not exists metadata (doc_id        int not null,
