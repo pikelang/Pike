@@ -344,7 +344,8 @@ object(Tag) parse_pike_code(string x,
       if(x[e+1..e+1]=="*")
       {
 	p=e++;
-	while(x[e..e+1]!="*/") e++;
+	while(!(< "", "*/" >)[x[e..e+1]])
+	  e++;
 	e++;
 	ret+=({ Tag("ex_comment",([]), pos+e, ({ x[p..e]}) ) }); 
 	break;
