@@ -1,7 +1,7 @@
 /*
 **! module Image
 **! note
-**!	$Id: colortable.h,v 1.14 1999/04/09 14:16:09 per Exp $
+**!	$Id: colortable.h,v 1.15 1999/04/09 17:56:51 marcus Exp $
 */
 
 #ifdef PIKE_IMAGE_COLORTABLE_H
@@ -218,6 +218,36 @@ int image_colortable_index_16bit_image(struct neo_colortable *nct,
 				      unsigned short *d,
 				      int len,
 				      int rowlen);
+
+int image_colortable_index_32bit_image(struct neo_colortable *nct,
+				       rgb_group *s,
+				       unsigned INT32 *d,
+				       int len,
+				       int rowlen);
+
+void (*image_colortable_index_8bit_function(struct neo_colortable *nct))
+     (rgb_group *s,
+      unsigned char *d,
+      int n,
+      struct neo_colortable *nct,
+      struct nct_dither *dith,
+      int rowlen);
+
+void (*image_colortable_index_16bit_function(struct neo_colortable *nct))
+     (rgb_group *s,
+      unsigned short *d,
+      int n,
+      struct neo_colortable *nct,
+      struct nct_dither *dith,
+      int rowlen);
+
+void (*image_colortable_index_32bit_function(struct neo_colortable *nct))
+     (rgb_group *s,
+      unsigned INT32 *d,
+      int n,
+      struct neo_colortable *nct,
+      struct nct_dither *dith,
+      int rowlen);
 
 void image_colortable_internal_floyd_steinberg(struct neo_colortable *nct);
 
