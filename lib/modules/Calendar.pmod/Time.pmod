@@ -1163,7 +1163,7 @@ class cSuperTimeRange
    {
       if (t=='t') 
 	 return "Calendar."+calendar_name()+".TimeofDay";
-      return ::sprintf(t,m);
+      return ::_sprintf(t,m);
    }
 }
 
