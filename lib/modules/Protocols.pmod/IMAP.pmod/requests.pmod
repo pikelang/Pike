@@ -81,11 +81,11 @@ class request
       case "any":
 	/* A single atom or string or a list of atoms (with
 	 * options), lists. Used for fetch. */
-	return parser->get_any(arg_info[argc][1], 0, append_arg, );
+	return parser->get_any(arg_info[argc][1], 0, append_arg);
 
       case "varargs":
 	/* Like any, but with an implicit list at top-level */
-	return parser->get_varargs(arg_info[argc][1], 
+	return parser->get_varargs(arg_info[argc][1], 0, append_arg);
 
       default:
 	throw( ({ sprintf("IMAP.requests: Unknown argument type %O\n",
@@ -392,8 +392,279 @@ class fetch
 	&& res;
     }
 }
-
+  
 class search
 {
   inherit request;
-  constant arg_info = ({ ({ "varargs", 17 }) })
+  constant arg_info = ({ ({ "varargs", 17 }) });
+
+  mapping easy_process(array args)
+    {
+      string charset = "us-ascii";
+	
+      if (!sizeof(args))
+	return ([ "action"  : "bad", "msg", "No arguments to SEARCH" ]);
+
+      if (lower(args[0]->atom) == "charset")
+      {
+	if ( (sizeof(args) < 2)
+	     || !(charset = astring(args[1])) )
+	  return ([ "action"  : "bad", "msg", "Bad charset to SEARCH" ]);
+
+	args = args[2..];
+      }
+
+      mapping criteria = parse_criteria(args)->parse_toplevel();
+      
+      if (!criteria)
+	return ([ "action" : "bad", "Invalid search criteria" ]);
+      
+      array matches = server->search(session, charset, make_intersection(criteria));
+      
+      if (matches)
+      {
+	send("*", "SEARCH", @matches);
+    	send(tag, "OK");
+      }  
+      else
+    	send(tag, "NO");
+
+      return ([ "action" : "finished" ]);
+    }
+  
+  // Like lower_case(), but allows zeros
+  string lower(string s)
+    {
+      return s && lower_case(s);
+    }
+
+  string astring(mapping m)
+    {
+      m->atom || m->["string"];
+    }
+
+/* Parse the arguments to search */
+  class parse_criteria
+  {
+    array input;
+    int i;
+
+    void create(array a)
+      {
+	input = a;
+	i = 0;
+      }
+
+    mapping make_intersection(array criteria)
+      {
+	if (!criteria)
+	  return 0;
+      
+	switch(sizeof(criteria))
+	{
+	case 0:
+	  throw( ({ "IMAP.requests: Internal error!\n", backtrace() ]) );
+	case 1:
+	  return criteria[0];
+	default:
+	  /* FIXME: Expand internal and expressions,
+	   * and sort the expressions with cheapest properties first. */
+	  return ([ "type" : "and", "and" : criteria ]);
+	}
+      }
+
+    mapping make_union(array criteria)
+      {
+	if (!criteria)
+	  return 0;
+      
+	switch(sizeof(criteria))
+	{
+	case 0:
+	  throw( ({ "IMAP.requests: Internal error!\n", backtrace() ]) );
+	case 1:
+	  return criteria[0];
+	default:
+	  /* FIXME: Expand internal or expressions. */
+	  return ([ "type" : "and", "and" : criteria ]);
+	}
+      }
+
+    mapping make_complement(mapping criteria)
+      {
+	if (!criteria)
+	  return 0;
+      
+	return ([ "type" : "not" , "not" : c ]);
+      }
+      
+    mapping get_token()
+      {
+	if (i == sizeof(input))
+	  return 0;
+
+	return input[i++];
+      }
+  
+    string get_atom()
+      {
+	if (i == sizeof(input))
+	  return 0;
+	return input[i++]->atom;
+      }
+  
+    string get_astring()
+      {
+	if (i == sizeof(input))
+	  return 0;
+      
+	return astring(input[i++]);
+      }
+
+    int get_number()
+      {
+	if (i == sizeof(input))
+	  return 0;
+	i++;
+	return input[i]->atom ? string_to_number(input[i]->atom);
+      }
+
+    int get_set()
+      {
+	if (i == sizeof(input))
+	  return 0;
+	i++;
+	return input[i]->atom && imap_set()->init(input[i]->atom);
+      }
+	
+    mapping parse_one()
+      {
+	mapping token = get_token();
+
+	if (!token)
+	  return 0;
+      
+	switch(token->type)
+	{
+	case "list":
+	  return make_intersection(parse_criteria(token->list)->parse_all());
+	  break;
+	case "atom":
+	  string key = lower_case(token->atom);
+	  switch(key)
+	  {
+	    /* Simple criteria, with no arguments. */
+	  case "all":
+	  case "answered":
+	  case "deleted":
+	  case "flagged":
+	  case "new":
+	  case "old":
+	  case "recent":
+	  case "seen":
+	  case "unanswered":
+	  case "undeleted":
+	  case "unflagged":
+	  case "unseen":
+	  case "draft":
+	  case "undraft":
+	    i++;
+	    return ([ "type" : key, key : 1 ]);
+	    /* Criteria with a date argument */
+	  case "before":
+	  case "on":
+	  case "since":
+	  case "sentbefore":
+	  case "senton":
+	  case "sentsince": {
+	    string raw = get_astring();
+
+	    /* Format "7-May-1998" */
+	    if (!raw)
+	      return 0;
+	    array a = lower_case(raw) / "-";
+	    if (sizeof(a) != 3)
+	      return 0;
+	    /* FIXME: We should use som canonical representation of dates.
+	     * Perhaps daynumber since 1/1 1970 would be a good choice?
+	     */
+	    return ([ "type" : key, key : a ]);
+	  }
+ 	  /* Criteria taking a string as argument */
+	  case "bcc":
+	  case "body":
+	  case "cc":
+	  case "from":
+	  case "subject":
+	  case "text":
+	  case "to": {
+	    string arg = get_astring();
+	  
+	    return arg && ([ "type" : key, key : arg ]);
+	  }
+	  /* Flag based criteria */
+	  case "keyword":
+	  case "unkeyword": {
+	    string keyword = get_atom();
+
+	    return keyword && ([ "type" : key, key : input[i++]->atom ]);
+	  }
+	  /* Other */
+	  case "header": {
+	    string header = get_astring();
+	    if (!header)
+	      return 0;
+	  
+	    string value = get_astring();
+	  
+	    return value && ([ "type" : key, "header" : header, "value" : value ]);
+	  }
+	  /* Criterias taking numeric values */
+	  case "larger":
+	  case "smaller": {
+	    int value = get_number();
+	    return (i >= 0) && ([ "type" : key, key : value ]);
+	  }
+	  case "not": 
+	    return c && make_complement(parse_one(););
+
+	  case "or": {
+	    mapping c1, c2;
+
+	    return (c1 = parse_one())
+	      && (c2 = parse_one())
+	      && make_union( ({ c1, c2 }) })
+	  
+		       default: {
+	    object set = imap_set()->init(key);
+
+	    return set && ([ "type" : "set", "set" : set ]);
+	  }
+	  }
+	default:
+	  return 0;
+	}
+      }
+  
+    array parse_all()
+      {
+	array res = ({ });
+
+	while(i < sizeof(input))
+	{
+	  mapping c = parse_one();
+	  if (!c)
+	    return 0;
+	  res += ({ c });
+	}
+
+	return sizeof(res) && res;
+      }
+
+    mapping parse_toplevel()
+      {
+	array a = parse_all();
+	return a && make_intersection(a);
+      }
+  }
+}
