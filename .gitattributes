@@ -72,6 +72,7 @@ testfont binary
 /lib/modules/Sql.pmod/postgres.pike foreign_ident
 /lib/modules/Sql.pmod/sql.pike foreign_ident
 /lib/modules/Sql.pmod/sql_result.pike foreign_ident
+/lib/modules/Stdio.pmod foreign_ident
 /lib/modules/Yabu.pmod/module.pmod foreign_ident
 /lib/modules/error.pmod foreign_ident
 /man/hilfe.1 foreign_ident

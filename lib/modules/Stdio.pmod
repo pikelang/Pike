@@ -1,3 +1,5 @@
+// $Id: Stdio.pmod,v 1.29 1998/07/15 15:08:36 grubba Exp $
+
 #include <string.h>
 
 inherit files;
