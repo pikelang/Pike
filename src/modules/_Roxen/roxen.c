@@ -79,7 +79,7 @@ static void f_hp_feed( INT32 args )
     return;
   }
 
-  push_string( make_shared_binary_string( pp, TPH->pnt - pp ) ); // leftovers
+  push_string( make_shared_binary_string( pp, THP->pnt - pp ) ); // leftovers
   headers = allocate_mapping( 5 );
   in = THP->headers;
   l = pp - THP->headers;
