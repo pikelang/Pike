@@ -14,17 +14,42 @@ class Throttler
   }
 }
 
+class FakeStream
+{
+  function cb, ccb;
+
+  void create()
+  {
+    if( cb )
+      cb( 0, "some random data some more random data even more random data\n" );
+    call_out( create, 0.1 );
+  }
+  
+  void set_read_callback( function _cb )
+  {
+    cb = _cb;
+  }
+
+  void set_close_callback( function _cb )
+  {
+    ccb = _cb;
+  }
+}
+
 void shuffle_http( Shuffler.Shuffler s )
 {
   Shuffler.Shuffle sf = s->shuffle( Stdio.stderr );
 
   Stdio.File fd = Stdio.File();
-  fd->connect( "www.animenfo.com", 80 );
-  fd->write("GET /animefansub/animebydate.php HTTP/1.0\r\n"
-	    "Host: www.animenfo.com\r\n"
+  fd->connect( "www.lysator.liu.se", 80 );
+  fd->write("GET / HTTP/1.0\r\n"
+	    "Host: www.lysator.liu.se\r\n"
 	    "User-Agent: Pike\r\n"
 	    "\r\n");
+  sf->add_source( "The source of http://www.lysator.liu.se/\n");
   sf->add_source( fd );
+  sf->add_source( "A faked stream\n" );
+  sf->add_source( FakeStream() );
   sf->start();
 }
 
