@@ -1,5 +1,5 @@
 #include "global.h"
-RCSID("$Id: threads.c,v 1.116 2000/03/30 04:39:17 hubbe Exp $");
+RCSID("$Id: threads.c,v 1.117 2000/10/04 22:11:17 grubba Exp $");
 
 int num_threads = 1;
 int threads_disabled = 0;
@@ -600,6 +600,7 @@ TH_RETURN_TYPE new_thread_func(void * data)
     if(throw_severity < THROW_EXIT)
     {
       ONERROR tmp;
+      t_flag=0;
       SET_ONERROR(tmp,exit_on_error,"Error in handle_error in master object!");
       assign_svalue_no_free(sp++, & throw_value);
       APPLY_MASTER("handle_error", 1);
@@ -825,7 +826,7 @@ void f_mutex_trylock(INT32 args)
 {
   struct mutex_storage  *m;
   struct object *o;
-  int type;
+  INT_TYPE type;
   int i=0;
 
   /* No reason to release the interpreter lock here
@@ -1137,6 +1138,95 @@ void f_thread_local_set(INT32 args)
   mapping_insert(m, &key, &sp[-1]);
 }
 
+
+/* Thread farm code by Per
+ * 
+ */
+static struct farmer {
+  struct farmer *neighbour;
+  void *field;
+  void (*harvest)(void *);
+  THREAD_T me;
+  COND_T harvest_moon;
+} *farmers;
+
+static MUTEX_T rosie;
+
+static TH_RETURN_TYPE farm(void *_a)
+{
+  struct farmer *me = (struct farmer *)_a;
+  do
+  {
+/*     if(farmers == me) fatal("Ouch!\n"); */
+/*     fprintf(stderr, "farm_begin %p\n",me ); */
+    me->harvest( me->field );
+/*     fprintf(stderr, "farm_end %p\n", me); */
+
+    me->harvest = 0;
+    mt_lock( &rosie );
+    me->neighbour = farmers;
+    farmers = me;
+/*     fprintf(stderr, "farm_wait %p\n", me); */
+    while(!me->harvest) co_wait( &me->harvest_moon, &rosie );
+    mt_unlock( &rosie );
+/*     fprintf(stderr, "farm_endwait %p\n", me); */
+  } while(1);
+  /* NOT_REACHED */
+  return NULL;	/* Keep the compiler happy. */
+}
+
+int th_num_idle_farmers(void)
+{
+  int q = 0;
+  struct farmer *f = farmers;
+  while(f) { f = f->neighbour; q++; }
+  return q;
+}
+
+static int _num_farmers;
+int th_num_farmers(void)
+{
+  return _num_farmers;
+}
+
+static struct farmer *new_farmer(void (*fun)(void *), void *args)
+{
+  struct farmer *me = malloc(sizeof(struct farmer));
+
+  if (!me) {
+    /* Out of memory */
+    fatal("new_farmer(): Out of memory!\n");
+  }
+
+  dmalloc_accept_leak(me);
+
+  _num_farmers++;
+  me->neighbour = 0;
+  me->field = args;
+  me->harvest = fun;
+  co_init( &me->harvest_moon );
+  th_create_small(&me->me, farm, me);
+  return me;
+}
+
+void th_farm(void (*fun)(void *), void *here)
+{
+  if(!fun) fatal("The farmers don't known how to handle empty fields\n");
+  mt_lock( &rosie );
+  if(farmers)
+  {
+    struct farmer *f = farmers;
+    farmers = f->neighbour;
+    mt_unlock( &rosie );
+    f->field = here;
+    f->harvest = fun;
+    co_signal( &f->harvest_moon );
+    return;
+  }
+  mt_unlock( &rosie );
+  new_farmer( fun, here );
+}
+
 void low_th_init(void)
 {
 #ifdef SGI_SPROC_THREADS
@@ -1156,6 +1246,7 @@ void low_th_init(void)
   mt_lock( & interpreter_lock);
   mt_init( & thread_table_lock);
   mt_init( & interleave_lock);
+  mt_init( & rosie);
   co_init( & live_threads_change);
   co_init( & threads_disabled_change);
   thread_table_init();
@@ -1171,7 +1262,6 @@ void low_th_init(void)
   pthread_attr_setstacksize(&small_pattr, 4096*sizeof(char *));
 #endif
   pthread_attr_setdetachstate(&small_pattr, PTHREAD_CREATE_DETACHED);
-
 #endif
 }
 
@@ -1308,8 +1398,11 @@ void th_init(void)
 
 void th_cleanup(void)
 {
+  th_running = 0;
+
   if(thread_id)
   {
+    thread_table_delete(thread_id);
     destruct(thread_id);
     free_object(thread_id);
     thread_id=0;
@@ -1332,93 +1425,5 @@ void th_cleanup(void)
     free_program(thread_id_prog);
     thread_id_prog=0;
   }
-}
-
-/* Thread farm code by Per
- * 
- */
-static struct farmer {
-  struct farmer *neighbour;
-  void *field;
-  void (*harvest)(void *);
-  THREAD_T me;
-  COND_T harvest_moon;
-} *farmers;
-
-static MUTEX_T rosie;
-
-static TH_RETURN_TYPE farm(void *_a)
-{
-  struct farmer *me = (struct farmer *)_a;
-  do
-  {
-/*     if(farmers == me) fatal("Ouch!\n"); */
-/*     fprintf(stderr, "farm_begin %p\n",me ); */
-    me->harvest( me->field );
-/*     fprintf(stderr, "farm_end %p\n", me); */
-
-    me->harvest = 0;
-    mt_lock( &rosie );
-    me->neighbour = farmers;
-    farmers = me;
-/*     fprintf(stderr, "farm_wait %p\n", me); */
-    while(!me->harvest) co_wait( &me->harvest_moon, &rosie );
-    mt_unlock( &rosie );
-/*     fprintf(stderr, "farm_endwait %p\n", me); */
-  } while(1);
-  /* NOT_REACHED */
-  return NULL;	/* Keep the compiler happy. */
-}
-
-int th_num_idle_farmers(void)
-{
-  int q = 0;
-  struct farmer *f = farmers;
-  while(f) { f = f->neighbour; q++; }
-  return q;
-}
-
-static int _num_farmers;
-int th_num_farmers(void)
-{
-  return _num_farmers;
-}
-
-static struct farmer *new_farmer(void (*fun)(void *), void *args)
-{
-  struct farmer *me = malloc(sizeof(struct farmer));
-
-  if (!me) {
-    /* Out of memory */
-    fatal("new_farmer(): Out of memory!\n");
-  }
-
-  dmalloc_accept_leak(me);
-
-  _num_farmers++;
-  me->neighbour = 0;
-  me->field = args;
-  me->harvest = fun;
-  co_init( &me->harvest_moon );
-  th_create_small(&me->me, farm, me);
-  return me;
-}
-
-void th_farm(void (*fun)(void *), void *here)
-{
-  if(!fun) fatal("The farmers don't known how to handle empty fields\n");
-  mt_lock( &rosie );
-  if(farmers)
-  {
-    struct farmer *f = farmers;
-    farmers = f->neighbour;
-    mt_unlock( &rosie );
-    f->field = here;
-    f->harvest = fun;
-    co_signal( &f->harvest_moon );
-    return;
-  }
-  mt_unlock( &rosie );
-  new_farmer( fun, here );
 }
 #endif
