@@ -1,3 +1,9 @@
+Mon Dec  2 17:49:16 1996  Fredrik Hubinette  <hubbe@cytocin.hubbe.net>
+
+	* master.pike: cast_to_object now handles relative paths better
+	* install-sh: now uses autoconf install-sh
+	* callback.c: fix to handle recursive calls (hopefully)
+
 Tue Dec  3 02:53:25 1996  Henrik Grubbström  <grubba@cuckoo.infovav.se>
 
 	* modules/ssleay/configure.in: Made the tests more paranoid
