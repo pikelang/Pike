@@ -1,5 +1,5 @@
 /*
- * $Id: acconfig.h,v 1.25 1998/05/29 20:41:39 grubba Exp $
+ * $Id: acconfig.h,v 1.26 1998/06/06 03:11:48 hubbe Exp $
  */
 #ifndef MACHINE_H
 #define MACHINE_H
@@ -37,6 +37,9 @@
 
 /* Define as the return type of signal handlers (int or void).  */
 #undef RETSIGTYPE
+
+/* define this if igonoring SIGFPE helps with core dumps */
+#undef IGNORE_SIGFPE
 
 /* If using the C implementation of alloca, define if you know the
    direction of stack growth for your system; otherwise it will be

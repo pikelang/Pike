@@ -22,7 +22,7 @@
 #include "builtin_functions.h"
 #include <signal.h>
 
-RCSID("$Id: signal_handler.c,v 1.66 1998/05/19 21:10:29 hubbe Exp $");
+RCSID("$Id: signal_handler.c,v 1.67 1998/06/06 03:11:48 hubbe Exp $");
 
 #ifdef HAVE_PASSWD_H
 # include <passwd.h>
@@ -1839,6 +1839,10 @@ void init_signals(void)
 #ifdef SIGBUS
 /*  my_signal(SIGBUS, fatal_signal); */
 #endif
+#endif
+
+#ifdef IGNORE_SIGFPE
+  my_signal(SIGFPE, SIG_IGN);
 #endif
 
   for(e=0;e<MAX_SIGNALS;e++)

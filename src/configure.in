@@ -1,4 +1,4 @@
-AC_REVISION("$Id: configure.in,v 1.197 1998/06/04 13:12:17 grubba Exp $")
+AC_REVISION("$Id: configure.in,v 1.198 1998/06/06 03:11:48 hubbe Exp $")
 AC_INIT(interpret.c)
 AC_CONFIG_HEADER(machine.h)
 
@@ -209,6 +209,7 @@ AC_DEFUN(AC_SYS_COMPILER_FLAG,
   if test x"[$]pike_cv_option_$2" = "xyes" ; then
     $3="[$]$3 $1"
     AC_MSG_RESULT(yes)
+    $5
   else
     AC_MSG_RESULT(no)
     $4
@@ -1562,6 +1563,95 @@ if test "$pike_cv_method_extract_char" = by_cast; then
 else
   AC_MSG_RESULT(not by cast)
 fi
+
+#############################################################################
+
+AC_MSG_CHECKING(if float conversion can cause SIGFPE)
+AC_CACHE_VAL(pike_cv_sys_idiot_sigfpe,
+[
+ AC_TRY_RUN([
+#include <math.h>
+
+int main(int argc, char **argv)
+{
+  float x=2.0,y=-128.0;
+  x=pow(2.0,-128.0);
+  if(x==3.0) exit(1);
+  exit(0);
+}
+],pike_cv_sys_idiot_sigfpe=no,pike_cv_sys_idiot_sigfpe=yes)
+])
+
+if test $pike_cv_sys_idiot_sigfpe = yes ; then
+  AC_MSG_RESULT(yes)
+
+ IEEE_FLAG=no
+ if test "x${GCC-}" = xyes ; then
+    AC_SYS_COMPILER_FLAG(-mieee, mieee, CFLAGS,[],IEEE_FLAG=yes)
+ else
+    AC_SYS_COMPILER_FLAG(-ieee, ieee, CFLAGS,[],IEEE_FLAG=yes)
+ fi
+ TEST_IGNORE_SIGFPE=yes
+
+ if test $IEEE_FLAG = yes; then
+AC_CACHE_VAL(pike_cv_sys_idiot_sigfpe_with_ieee,
+[
+ AC_TRY_RUN([
+#include <math.h>
+int main(int argc, char **argv)
+{
+
+  float x=2.0,y=-128.0;
+  x=pow(2.0,-128.0);
+  if(x==3.0) exit(1);
+  exit(0);
+}
+],pike_cv_sys_idiot_sigfpe_with_ieee=no,pike_cv_sys_idiot_sigfpe_with_ieee=yes)
+])
+   
+if test $pike_cv_sys_idiot_sigfpe_with_ieee = yes ; then
+  AC_MSG_RESULT(yes)
+else
+  AC_MSG_RESULT(no)
+  TEST_IGNORE_SIGFPE=no
+fi
+fi # IEEE_FLAG
+
+if test $TEST_IGNORE_SIGFPE = yes; then
+  AC_MSG_CHECKING(if ignoring SIGFPE helps)
+  AC_CACHE_VAL(pike_cv_sys_ignore_sigfpe,
+[
+AC_TRY_RUN([
+#include <math.h>
+int counter=0;
+RETSIGTYPE func(void)
+{
+ if(counter++>10) exit(7);
+ signal(SIGFPE,func);
+}
+
+int main(int argc, char **argv)
+{
+  float x=2.0,y=-128.0;
+  signal(SIGFPE,func);
+  x=pow(2.0,-128.0);
+  if(x==3.0) exit(1);
+  exit(0);
+}
+],pike_cv_sys_ignore_sigfpe=yes,pike_cv_sys_ignore_sigfpe=no)
+])
+
+if test "$pike_cv_sys_ignore_sigfpe" = yes; then
+ AC_MSG_RESULT(yes)
+ AC_DEFINE(IGNORE_SIGFPE)
+else
+ AC_MSG_RESULT(no)
+fi
+fi # TEST_IGNORE_SIGFPE
+
+else
+ AC_MSG_RESULT(no)
+fi # pike_cv_sys_idiot_sigfpe
 
 #############################################################################
 
