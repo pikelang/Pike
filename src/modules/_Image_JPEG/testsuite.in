@@ -1,3 +1,0 @@
-cond([[ master()->resolv("_Image_JPEG")->encode ]],
-[[
-]])

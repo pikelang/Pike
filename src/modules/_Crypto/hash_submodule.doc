@@ -1,6 +1,0 @@
-A hash sub-module needs to implement the following Pike-functions:
-
-void update(string);		/* Add this string to the hash */
-string digest(void);		/* Get the digest, and reset the state */
-int query_digest_size(void);	/* Returns the size of the digest */
-string name(void);		/* Name of the algorithm */

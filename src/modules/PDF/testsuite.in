@@ -1,3 +1,0 @@
-cond([[ master()->resolv("PDF")->encode ]],
-[[
-]])

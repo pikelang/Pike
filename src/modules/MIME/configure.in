@@ -1,9 +1,0 @@
-# $Id: configure.in,v 1.4 1998/09/20 08:31:29 hubbe Exp $
-AC_INIT(mime.c)
-AC_CONFIG_HEADER(config.h)
-
-AC_MODULE_INIT()
-
-AC_C_CHAR_UNSIGNED
-
-AC_OUTPUT(Makefile,echo FOO >stamp-h )

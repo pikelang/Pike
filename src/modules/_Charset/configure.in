@@ -1,9 +1,0 @@
-# $Id: configure.in,v 1.2 1999/04/24 13:28:24 grubba Exp $
-AC_INIT(iso2022.c)
-AC_CONFIG_HEADER(config.h)
-
-AC_MODULE_INIT()
-
-AC_C_CHAR_UNSIGNED
-
-AC_OUTPUT(Makefile,echo FOO >stamp-h )
