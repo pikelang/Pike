@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: matrix.c,v 1.44 2003/03/21 13:23:23 jhs Exp $
+|| $Id: matrix.c,v 1.45 2003/03/22 16:44:21 grubba Exp $
 */
 
 /*
@@ -333,6 +333,7 @@ void image_scale(INT32 args)
 
    if (args==1 && sp[-args].type==T_INT)
    {
+      free_object(o);
       image_bitscale( args );
       return;
    }
@@ -344,6 +345,7 @@ void image_scale(INT32 args)
       {
          if( floor( sp[-args].u.float_number ) == sp[-args].u.float_number)
          {
+	    free_object(o);
             image_bitscale( args );
             return;
          }
