@@ -5,7 +5,7 @@
 \*/
 /**/
 #include "global.h"
-RCSID("$Id: object.c,v 1.138 2000/08/03 03:33:40 mast Exp $");
+RCSID("$Id: object.c,v 1.139 2000/08/03 04:17:56 mast Exp $");
 #include "object.h"
 #include "dynamic_buffer.h"
 #include "interpret.h"
@@ -629,8 +629,10 @@ PMOD_EXPORT void destruct_objects_to_destruct(void)
   struct object *my_list=0;
   struct object *o, *next;
 
-  if (Pike_in_gc > GC_PASS_PREPARE && Pike_in_gc < GC_PASS_DESTRUCT)
-    return;
+#ifdef PIKE_DEBUG
+  if (Pike_in_gc > GC_PASS_PREPARE && Pike_in_gc < GC_PASS_KILL)
+    fatal("Can't meddle with the object link list in gc pass %d.\n", Pike_in_gc);
+#endif
 
   while((o=objects_to_destruct))
   {
