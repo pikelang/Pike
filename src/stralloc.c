@@ -26,7 +26,7 @@
 #define HUGE HUGE_VAL
 #endif /*!HUGE*/
 
-RCSID("$Id: stralloc.c,v 1.109 2000/12/01 08:09:55 hubbe Exp $");
+RCSID("$Id: stralloc.c,v 1.110 2000/12/01 17:43:28 grubba Exp $");
 
 #define BEGIN_HASH_SIZE 997
 #define MAX_AVG_LINK_LENGTH 3
@@ -1682,6 +1682,7 @@ void cleanup_shared_string_table(void)
     }
   }
 #endif
+
   for(e=0;e<htable_size;e++)
   {
     for(s=base_table[e];s;s=next)
@@ -1698,6 +1699,12 @@ void cleanup_shared_string_table(void)
   free((char *)base_table);
   base_table=0;
   num_strings=0;
+
+#ifdef DEBUG_MALLOC
+  free_all_short_pike_string0_blocks();
+  free_all_short_pike_string1_blocks();
+  free_all_short_pike_string2_blocks();
+#endif DEBUG_MALLOC
 }
 
 void count_memory_in_strings(INT32 *num, INT32 *size)
