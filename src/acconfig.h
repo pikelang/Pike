@@ -1,5 +1,5 @@
 /*
- * $Id: acconfig.h,v 1.58 2000/06/17 13:41:08 grubba Exp $
+ * $Id: acconfig.h,v 1.59 2001/05/28 18:19:42 marcus Exp $
  */
 #ifndef MACHINE_H
 #define MACHINE_H
@@ -124,6 +124,9 @@
 
 /* So has True64, but no useful information in prstatus_t */
 #undef GETRUSAGE_THROUGH_PROCFS_PRS
+
+/* Define if you have infnan */
+#undef HAVE_INFNAN
 
 /* Define if you have fork */
 #undef HAVE_FORK

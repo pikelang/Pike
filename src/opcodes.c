@@ -5,6 +5,7 @@
 \*/
 /**/
 #include "global.h"
+#include <errno.h>
 #include <math.h>
 #include <ctype.h>
 #include "interpret.h"
@@ -26,7 +27,7 @@
 #include "bignum.h"
 #include "operators.h"
 
-RCSID("$Id: opcodes.c,v 1.78 2001/05/15 04:40:31 hubbe Exp $");
+RCSID("$Id: opcodes.c,v 1.79 2001/05/28 18:19:43 marcus Exp $");
 
 void index_no_free(struct svalue *to,struct svalue *what,struct svalue *ind)
 {
@@ -852,12 +853,21 @@ static INLINE float low_parse_IEEE_float(char *b, int sz)
   if(e>=9999)
     if(f||extra_f) {
       /* NAN */
-      
-      /* Hmm...  No idea how to generate NaN in a portable way. */
-      /* Let's turn it into a 0 for now... */
+#ifdef HAVE_INFNAN
+      return (float)infnan(EDOM);
+#else
+#ifdef HAVE_NAN
+      /* C99 provides a portable way of generating NaN */
+      return (float)nan("");
+#else
       return (float)0.0;
+#endif /* HAVE_NAN */
+#endif /* HAVE_INFNAN */
     } else {
       /* +/- Infinity */
+#ifdef HAVE_INFNAN
+      return (float)infnan(s? -ERANGE:ERANGE);
+#else
 #ifdef HUGE_VAL
       return (float)(s? -HUGE_VAL:HUGE_VAL);
 #else
@@ -865,7 +875,8 @@ static INLINE float low_parse_IEEE_float(char *b, int sz)
       e = 1024;
       f = 1;
       extra_f = 0;
-#endif
+#endif /* HUGE_VAL */
+#endif /* HAVE_INFNAN */
     }
 
   r = (double)f;
