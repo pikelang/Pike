@@ -1,4 +1,4 @@
-AC_REVISION("$Id: configure.in,v 1.399 2000/08/20 13:47:37 grubba Exp $")
+AC_REVISION("$Id: configure.in,v 1.400 2000/08/20 15:05:15 grubba Exp $")
 AC_INIT(interpret.c)
 AC_CONFIG_HEADER(machine.h)
 
@@ -2927,6 +2927,7 @@ EOF
     else
       pike_cv_float_type=not_ieee
     fi
+    rm -rf conftest*
   ])
 ])
 if test "$pike_cv_float_type" = ieee_big; then
@@ -2978,6 +2979,7 @@ EOF
     else
       pike_cv_float_type=not_ieee
     fi
+    rm -rf conftest*
   ])
 ])
 if test "$pike_cv_double_type" = ieee_big; then
