@@ -1,5 +1,5 @@
 /*
- * $Id: tree-split-autodoc.pike,v 1.10 2001/07/28 11:27:53 nilsson Exp $
+ * $Id: tree-split-autodoc.pike,v 1.11 2001/07/28 12:50:59 nilsson Exp $
  *
  */
 
@@ -55,13 +55,29 @@ class Node
     return "";
   }
 
-  string my_parse_docgroup(Parser.HTML p, mapping m, string c)
+  array(string) my_parse_docgroup(Parser.HTML p, mapping m, string c)
   {
-    if(m["homogen-name"] && m["homogen-type"]) {
+    if(m["homogen-type"]) {
       if( m["homogen-type"]=="method" ) {
-	method_children +=
-	  ({ Node( "method", m["homogen-name"], c, this_object() ) });
-	return "";
+	if( m["homogen-name"] ) {
+	  method_children +=
+	    ({ Node( "method", m["homogen-name"], c, this_object() ) });
+	  return ({ "" });
+	}
+
+	// Several different methods documented with the same blurb.
+	array names = ({});
+	Parser.HTML parser = Parser.HTML();
+	parser->case_insensitive_tag(1);
+	parser->xml_tag_syntax(0);
+	parser->add_tag("method", lambda(Parser.HTML p, mapping m) {
+				    names += ({ m->name }); } );
+	parser->finish(c);
+	foreach(Array.uniq(names) - ({ 0, "" }), string name) {
+	  method_children +=
+	    ({ Node( "method", name, c, this_object() ) });
+	}
+	return ({ "" });
       }
     }
     else
@@ -150,12 +166,11 @@ class Node
     if(vars->param)
       return "<font face='courier'>" + _reference + "</font>";
 
-    if(vars->resolved && refs[vars->resolved]) {
+    if(vars->resolved && refs[vars->resolved])
       return "<font face='courier'><a href='" +
-	"../"*(sizeof(make_filename()/"/") - 2) +
+	"../"*max(sizeof(make_filename()/"/") - 2, 0) +
 	map(vars->resolved/".", cquote)*"/" + ".html'>" + vars->resolved +
 	"</a></font>";
-    }
 
     werror("Missed reference: %O\n", _reference);
     unresolved++;
@@ -412,15 +427,14 @@ class TopNode {
     resolve_reference = my_resolve_reference;
     string contents = "<h1>Top level methods</h1><table class='sidebar'><tr>";
     foreach(method_children/( sizeof(method_children)/4.0 ),
-            array(Node) children) {
-      contents += "<td>";
-      contents += make_navbar_really_low(children, 1);
-      //      contents += parse_children(Parser.XML.Tree.parse_input(data),
-      //				 "docgroup", parse_docgroup, 1);
-      contents += "</td>";
-      //      werror("%O\n", Parser.XML.Tree.parse_input(data));
-    }
-    contents += "</tr></table>";
+            array(Node) children)
+      contents += "<td>" + make_navbar_really_low(children, 1) + "</td>";
+
+    contents += "</tr><tr><td colspan='4'>" +
+      parse_children(Parser.XML.Tree.parse_input(data),
+		     "docgroup", parse_docgroup, 1) +
+      "</td></tr></table>";
+
     return contents;
   }
 
