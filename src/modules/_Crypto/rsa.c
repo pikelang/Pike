@@ -1,5 +1,5 @@
 /*
- * $Id: rsa.c,v 1.5 2000/02/01 23:16:56 grubba Exp $
+ * $Id: rsa.c,v 1.6 2000/02/02 19:13:55 grubba Exp $
  *
  * Glue to RSA BSAFE's RSA implementation.
  *
@@ -28,7 +28,7 @@
 
 #include <bsafe.h>
 
-RCSID("$Id: rsa.c,v 1.5 2000/02/01 23:16:56 grubba Exp $");
+RCSID("$Id: rsa.c,v 1.6 2000/02/02 19:13:55 grubba Exp $");
 
 struct pike_rsa_data
 {
@@ -54,6 +54,26 @@ static B_ALGORITHM_METHOD *rsa_chooser[] =
 {
   &AM_RSA_ENCRYPT, &AM_RSA_DECRYPT, NULL
 };
+
+/*
+ * Debug code.
+ */
+
+void low_dump_string(char *name, unsigned char *buffer, int len)
+{
+  int i;
+  fprintf(stderr, "%s:\n", name);
+  for(i=0; i < len; i+=16) {
+    int j;
+    fprintf(stderr, "0x%04x: ", i);
+    for(j=0; j < 16; j++) {
+      if (i+j < len) {
+	fprintf(stderr, "\\x%02x", buffer[i+j]);
+      }
+    }
+    fprintf(stderr, "\n");
+  }
+}
 
 /*
  * RSA memory handling glue code.
@@ -411,8 +431,22 @@ static void f_decrypt(INT32 args)
 
   /* Inlined rsa_unpad(s, 2). */
 
-  if (((i = strlen(buffer)) < 9) || (len != THIS->n->len - 1) ||
-      (buffer[0] != 2)) {
+  /* Skip any initial zeros. Note that the buffer is aligned to the right. */
+  i = 0;
+  while (!buffer[i] && (i < len)) {
+    i++;
+  }
+
+  /* FIXME: Enforce i being 1? */
+  if ((buffer[i] != 2) ||
+      ((i += strlen(buffer + i)) < 9) || (len != THIS->n->len)) {
+    fprintf(stderr, "Decrypt failed: i:%d, len:%d, n->len:%d, buffer[0]:%d\n",
+	    i, len, THIS->n->len, buffer[0]);
+    low_dump_string("s", s->str, s->len);
+    low_dump_string("buffer", buffer, s->len+1);
+    low_dump_string("n", THIS->n->str, THIS->n->len);
+    low_dump_string("e", THIS->e->str, THIS->e->len);
+    low_dump_string("d", THIS->d->str, THIS->d->len);
     pop_n_elems(args);
     push_int(0);
     return;
