@@ -5,7 +5,7 @@
 \*/
 /**/
 #include "global.h"
-RCSID("$Id: object.c,v 1.74 1999/08/14 09:02:44 hubbe Exp $");
+RCSID("$Id: object.c,v 1.75 1999/08/18 00:26:39 hubbe Exp $");
 #include "object.h"
 #include "dynamic_buffer.h"
 #include "interpret.h"
@@ -364,7 +364,7 @@ struct object *get_master(void)
   return master_object;
 }
 
-struct object *master(void)
+struct object *debug_master(void)
 {
   struct object *o;
   o=get_master();

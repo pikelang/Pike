@@ -5,7 +5,7 @@
 \*/
 
 /*
- * $Id: object.h,v 1.25 1999/03/11 13:44:35 hubbe Exp $
+ * $Id: object.h,v 1.26 1999/08/18 00:26:41 hubbe Exp $
  */
 #ifndef OBJECT_H
 #define OBJECT_H
@@ -56,7 +56,7 @@ struct object *parent_clone_object(struct program *p,
 				   int parent_identifier,
 				   int args);
 struct object *get_master(void);
-struct object *master(void);
+struct object *debug_master(void);
 void destruct(struct object *o);
 void destruct_objects_to_destruct(void);
 void really_free_object(struct object *o);
@@ -101,6 +101,12 @@ void exit_object(void);
 #define clone_object(X,Y) ((struct object *)debug_malloc_touch(debug_clone_object((X),(Y))))
 #else
 #define clone_object debug_clone_object
+#endif
+
+#ifdef DEBUG
+#define master() ( get_master() ? get_master() : ( fatal("Couldn't load master object at %s:%d.\n",__LINE__,__FILE__), 0) )
+#else
+#define master() debug_master()
 #endif
 
 #endif /* OBJECT_H */
