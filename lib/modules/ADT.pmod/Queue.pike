@@ -1,7 +1,6 @@
-/* $Id: Queue.pike,v 1.5 2002/02/14 17:20:20 nilsson Exp $
- *
- * A simple FIFO queue. 
- */
+// $Id: Queue.pike,v 1.6 2002/02/26 02:18:03 nilsson Exp $
+
+//! A simple FIFO queue.
 
 #pike __REAL_VERSION__
 #define QUEUE_SIZE 100
