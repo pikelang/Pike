@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: dlopen.c,v 1.41 2002/10/25 00:08:08 marcus Exp $
+|| $Id: dlopen.c,v 1.42 2002/10/25 12:23:19 marcus Exp $
 */
 
 #include <global.h>
@@ -189,7 +189,7 @@ size_t STRNLEN(char *s, size_t maxlen)
 
 #else /* PIKE_CONCAT */
 
-RCSID("$Id: dlopen.c,v 1.41 2002/10/25 00:08:08 marcus Exp $");
+RCSID("$Id: dlopen.c,v 1.42 2002/10/25 12:23:19 marcus Exp $");
 
 #endif
 
@@ -214,6 +214,7 @@ static struct Htable *alloc_htable(size_t size)
 {
   int e;
   struct Htable *ret;
+  if(size<1) size=1;
 #ifdef DLDEBUG
   fprintf(stderr,"alloc_htable(%d)\n",size);
   FLUSH();
@@ -1087,7 +1088,7 @@ static int dl_load_coff_files(struct DLHandle *ret,
 #endif
 
   /* Create a hash table for exported symbols */
-  ret->htable=alloc_htable(num_exports?num_exports:1);
+  ret->htable=alloc_htable(num_exports);
 
   if(data->flags & RTLD_GLOBAL)
     global_dlhandle.htable = htable_add_space(global_dlhandle.htable, num_exports);
