@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: svg.c,v 1.8 2002/10/21 17:06:55 marcus Exp $
+|| $Id: svg.c,v 1.9 2004/02/06 22:10:24 nilsson Exp $
 */
 
 #include "config.h"
@@ -12,7 +12,7 @@
 #include "global.h"
 
 #include "stralloc.h"
-RCSID("$Id: svg.c,v 1.8 2002/10/21 17:06:55 marcus Exp $");
+RCSID("$Id: svg.c,v 1.9 2004/02/06 22:10:24 nilsson Exp $");
 #include "pike_macros.h"
 #include "object.h"
 #include "constants.h"
@@ -317,12 +317,13 @@ static void f_decode_layers( INT32 args )
  *!  For now there is always at most one member in the array.
  */
 {
+  low__decode( args, 0 );
+  /* stack: mapping */
   push_text( "Image.Layer" );
   APPLY_MASTER( "resolv", 1 );
-  low__decode( args, 0 );
-  apply_svalue( Pike_sp-2, 1 );
+  /* stack: mapping Image.Layer */
   stack_swap();
-  pop_stack();
+  apply_svalue( Pike_sp-2, 1 );
   f_aggregate( 1 );
 }
 
