@@ -23,7 +23,7 @@
 #include "queue.h"
 #include "bignum.h"
 
-RCSID("$Id: svalue.c,v 1.78 2000/06/29 16:44:24 grubba Exp $");
+RCSID("$Id: svalue.c,v 1.79 2000/07/02 14:54:07 grubba Exp $");
 
 struct svalue dest_ob_zero = { T_INT, 0 };
 
@@ -1110,24 +1110,26 @@ void print_svalue (FILE *out, struct svalue *s)
   free (str.str);
 }
 
-void clear_svalues(struct svalue *s, size_t num)
+/* NOTE: Must handle num being negative. */
+void clear_svalues(struct svalue *s, ptrdiff_t num)
 {
   struct svalue dum;
   dum.type=T_INT;
   dum.subtype=NUMBER_NUMBER;
   dum.u.refs=0;
   dum.u.integer=0;
-  while(num--) *(s++)=dum;
+  while(num-- > 0) *(s++)=dum;
 }
 
-void clear_svalues_undefined(struct svalue *s, size_t num)
+/* NOTE: Must handle num being negative. */
+void clear_svalues_undefined(struct svalue *s, ptrdiff_t num)
 {
   struct svalue dum;
   dum.type=T_INT;
   dum.subtype=NUMBER_UNDEFINED;
   dum.u.refs=0;
   dum.u.integer=0;
-  while(num--) *(s++)=dum;
+  while(num-- > 0) *(s++)=dum;
 }
 
 void copy_svalues_recursively_no_free(struct svalue *to,
