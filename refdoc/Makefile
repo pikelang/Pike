@@ -1,7 +1,7 @@
 #
 # Main Makefile for extracting AutoDoc mk II to XML
 #
-# $Id: Makefile,v 1.60 2003/12/03 21:48:31 bill Exp $
+# $Id: Makefile,v 1.61 2003/12/17 15:50:09 bill Exp $
 #
 # Henrik Grubbström 2001-02-02
 #
@@ -27,9 +27,9 @@ module_modref: $(BUILDDIR)/module_modref.xml structure/modref.css structure/modu
 	@$(MAKE) PIKE="$(PIKE)" BUILDDIR="$(BUILDDIR)" DESTDIR="$(DESTDIR)" low_module_modref
 
 low_module_modref:
-	rm -rf modref || /bin/true
-	@mkdir modref
-	@cp structure/modref.css modref/style.css
+	rm -rf $(DESTDIR)modref || /bin/true
+	@mkdir $(DESTDIR)modref
+	@cp structure/modref.css $(DESTDIR)modref/style.css
 	@$(PIKE) presentation/tree-split-autodoc.pike \
 	  $(BUILDDIR)/module_modref.xml structure/module_modref.html $(DESTDIR)modref predef
 	@mkdir $(DESTDIR)modref/images
