@@ -1,4 +1,4 @@
-// $Id: Readline.pike,v 1.25 1999/06/22 21:53:39 marcus Exp $
+// $Id: Readline.pike,v 1.26 1999/09/10 16:17:59 noring Exp $
 
 class OutputController
 {
@@ -1389,8 +1389,17 @@ void set_blocking()
 
 string edit(string data, string|void local_prompt)
 {
+  string old_prompt;
+  
   if(newline_func == read_newline)
     return 0;
+
+  if(local_prompt)
+  {
+    old_prompt = get_prompt();
+    set_prompt(local_prompt);
+  }
+  
   function oldnl = newline_func;
   output_controller->write(local_prompt||prompt);
   initline();
@@ -1400,6 +1409,10 @@ string edit(string data, string|void local_prompt)
   insert(data, 0);
   int res = input_controller->run_blocking();
   set_nonblocking(oldnl);
+  
+  if(local_prompt)
+    set_prompt(old_prompt);
+  
   return (res>=0 || sizeof(readtext)) && readtext;
 }
 
