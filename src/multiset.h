@@ -5,7 +5,7 @@
 \*/
 
 /*
- * $Id: multiset.h,v 1.17 2001/03/23 03:14:40 hubbe Exp $
+ * $Id: multiset.h,v 1.18 2001/04/07 07:38:24 hubbe Exp $
  */
 #ifndef MULTISET_H
 #define MULTISET_H
@@ -14,10 +14,8 @@
 
 struct multiset
 {
-  INT32 refs;
-#ifdef PIKE_SECURITY
-  struct object *prot;
-#endif
+  PIKE_MEMORY_OBJECT_MEMBERS;  /* Must be first */
+
   struct multiset *next,*prev;
   struct array *ind;
 };

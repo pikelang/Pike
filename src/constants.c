@@ -16,7 +16,7 @@
 #include "pike_error.h"
 #include "block_alloc.h"
 
-RCSID("$Id: constants.c,v 1.28 2001/03/03 00:23:45 grubba Exp $");
+RCSID("$Id: constants.c,v 1.29 2001/04/07 07:38:24 hubbe Exp $");
 
 struct mapping *builtin_constants = 0;
 
@@ -68,6 +68,7 @@ PMOD_EXPORT void add_global_program(char *name, struct program *p)
 #define EXIT_BLOCK(X) do {		\
   free_type(X->type);			\
   free_string(X->name);			\
+  EXIT_PIKE_MEMOBJ(X);                  \
 }while(0)
 BLOCK_ALLOC(callable,128)
 
@@ -80,7 +81,7 @@ PMOD_EXPORT struct callable *low_make_callable(c_fun fun,
 				   docode_fun docode)
 {
   struct callable *f=alloc_callable();
-  f->refs=1;
+  INIT_PIKE_MEMOBJ(f);
   f->function=fun;
   f->name=name;
   f->type=type;

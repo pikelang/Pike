@@ -5,7 +5,7 @@
 \*/
 /**/
 #include "global.h"
-RCSID("$Id: object.c,v 1.166 2001/03/22 02:21:15 hubbe Exp $");
+RCSID("$Id: object.c,v 1.167 2001/04/07 07:38:24 hubbe Exp $");
 #include "object.h"
 #include "dynamic_buffer.h"
 #include "interpret.h"
@@ -135,13 +135,12 @@ PMOD_EXPORT struct object *low_clone(struct program *p)
   o->parent_identifier=0;
 
   DOUBLELINK(first_object,o);
-  o->refs=1;
+  INIT_PIKE_MEMOBJ(o);
 
 #ifdef PIKE_DEBUG
   o->program_id=p->id;
 #endif
 
-  INITIALIZE_PROT(o);
   return o;
 }
 
@@ -769,7 +768,7 @@ PMOD_EXPORT void schedule_really_free_object(struct object *o)
       /* As far as the gc is concerned, the fake objects doesn't exist. */
       GC_FREE(o);
 
-    FREE_PROT(o);
+    EXIT_PIKE_MEMOBJ(o);
 
     if(o->storage)
     {

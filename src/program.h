@@ -5,7 +5,7 @@
 \*/
 
 /*
- * $Id: program.h,v 1.122 2001/03/29 02:54:10 per Exp $
+ * $Id: program.h,v 1.123 2001/04/07 07:38:25 hubbe Exp $
  */
 #ifndef PROGRAM_H
 #define PROGRAM_H
@@ -269,10 +269,8 @@ enum pike_program_event
 
 struct program
 {
-  INT32 refs;
-#ifdef PIKE_SECURITY
-  struct object *prot;
-#endif
+  PIKE_MEMORY_OBJECT_MEMBERS; /* Must be first */
+
   INT32 id;             /* used to identify program in caches */
   INT32 parent_program_id;
   /* storage_needed - storage needed in object struct

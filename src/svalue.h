@@ -5,7 +5,7 @@
 \*/
 
 /*
- * $Id: svalue.h,v 1.86 2001/03/30 02:52:26 hubbe Exp $
+ * $Id: svalue.h,v 1.87 2001/04/07 07:38:25 hubbe Exp $
  */
 #ifndef SVALUE_H
 #define SVALUE_H
@@ -52,11 +52,8 @@ struct processing
   struct processing *next;
   void *pointer_a, *pointer_b;
 };
-
-struct ref_dummy
-{
-  INT32 refs;
-};
+   
+struct ref_dummy;
 
 union anything
 {
@@ -274,9 +271,24 @@ do{ \
 #ifdef PIKE_RUN_UNLOCKED
 #define add_ref(X) pike_atomic_inc32(&(X)->refs)
 #define sub_ref(X) pike_atomic_dec_and_test32(&(X)->refs)
+
+#if 0
+#define IF_LOCAL_MUTEX(X) X
+#define USE_LOCAL_MUTEX
+#define pike_lock_data(X) mt_lock(&(X)->mutex)
+#define pike_unlock_data(X) mt_unlock(&(X)->mutex)
 #else
+#define IF_LOCAL_MUTEX(X)
+#define pike_lock_data(X) pike_lockmem((X))
+#define pike_unlock_data(X) pike_unlockmem((X))
+#endif
+
+#else
+#define IF_LOCAL_MUTEX(X)
 #define add_ref(X) (void)((X)->refs++)
 #define sub_ref(X) (--(X)->refs)
+#define pike_lock_data(X) (void)(X)
+#define pike_unlock_data(X) (void)(X)
 #endif
 
 
@@ -621,6 +633,40 @@ static inline void assign_svalue(struct svalue *to, struct svalue *from)
 #define assign_svalue assign_svalue_unlocked
 #endif /* FOO_PIKE_RUN_UNLOCKED */
 
+#ifdef PIKE_RUN_UNLOCKED
+#include "pike_threadlib.h"
+#endif
 
+/* 
+ * Note to self:
+ * It might be better to use a static array of mutexes instead
+ * and just lock mutex ptr % array_size instead.
+ * That way I wouldn't need a mutex in each memory object,
+ * but it would cost a couple of cycles in every lock/unlock
+ * operation instead.
+ */
+#define PIKE_MEMORY_OBJECT_MEMBERS \
+  INT32 refs \
+  DO_IF_SECURITY(; struct object *prot) \
+  IF_LOCAL_MUTEX(; PIKE_MUTEX_T mutex)
+
+#define INIT_PIKE_MEMOBJ(X) do {			\
+  struct ref_dummy *v_=(struct ref_dummy *)(X);		\
+  v_->refs=1;						\
+  DO_IF_SECURITY( INITIALIZE_PROT(v_) );		\
+  IF_LOCAL_MUTEX(mt_init_recursive(&(v_->mutex)));	\
+}while(0)
+
+#define EXIT_PIKE_MEMOBJ(X) do {		\
+  struct ref_dummy *v_=(struct ref_dummy *)(X);		\
+  DO_IF_SECURITY( FREE_PROT(v_) );		\
+  IF_LOCAL_MUTEX(mt_destroy(&(v_->mutex)));	\
+}while(0)
+
+
+struct ref_dummy
+{
+  PIKE_MEMORY_OBJECT_MEMBERS;
+};
 
 #endif /* !SVALUE_H */

@@ -5,7 +5,7 @@
 \*/
 
 /*
- * $Id: mapping.h,v 1.35 2001/03/23 03:14:40 hubbe Exp $
+ * $Id: mapping.h,v 1.36 2001/04/07 07:38:24 hubbe Exp $
  */
 #ifndef MAPPING_H
 #define MAPPING_H
@@ -24,7 +24,7 @@ struct keypair
 
 struct mapping_data
 {
-  INT32 refs;
+  PIKE_MEMORY_OBJECT_MEMBERS;
   INT32 valrefs; /* lock values too */
   INT32 hardlinks;
   INT32 size, hashsize;
@@ -41,10 +41,7 @@ struct mapping_data
 
 struct mapping
 {
-  INT32 refs;
-#ifdef PIKE_SECURITY
-  struct object *prot;
-#endif
+  PIKE_MEMORY_OBJECT_MEMBERS;
 #ifdef MAPPING_SIZE_DEBUG
   INT32 debug_size;
 #endif
@@ -75,7 +72,7 @@ extern struct mapping *gc_internal_mapping;
 #define free_mapping_data(M) do{ \
  struct mapping_data *md_=(M); \
  debug_malloc_touch(md_); \
- if(!--md_->refs) really_free_mapping_data(md_); \
+ if(!sub_ref(md_)) really_free_mapping_data(md_); \
  /* FIXME: What about valrefs & hardlinks? */ \
 }while(0)
 

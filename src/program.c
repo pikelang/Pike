@@ -5,7 +5,7 @@
 \*/
 /**/
 #include "global.h"
-RCSID("$Id: program.c,v 1.308 2001/04/01 15:40:21 grubba Exp $");
+RCSID("$Id: program.c,v 1.309 2001/04/07 07:38:25 hubbe Exp $");
 #include "program.h"
 #include "object.h"
 #include "dynamic_buffer.h"
@@ -1108,12 +1108,11 @@ struct program *low_allocate_program(void)
   p->alignment_needed=1;
 
   GC_ALLOC(p);
-  p->refs=1;
   p->id=++current_program_id;
+  INIT_PIKE_MEMOBJ(p);
 
   DOUBLELINK(first_program, p);
   GETTIMEOFDAY(& p->timestamp);
-  INITIALIZE_PROT(p);
   return p;
 }
 
@@ -1395,7 +1394,7 @@ PMOD_EXPORT void really_free_program(struct program *p)
 #include "program_areas.h"
   }
 
-  FREE_PROT(p);
+  EXIT_PIKE_MEMOBJ(p);
   dmfree((char *)p);
 
   GC_FREE(p);

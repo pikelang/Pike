@@ -26,8 +26,19 @@
     mt_unlock(pike_mem_mutex);  \
   }while(0)
 
+#define pike_memlock(ADDR) do{				\
+    PIKE_MUTEX_T *pike_mem_mutex=pike_memory_locks+	\
+        ((unsigned long)(ADDR))%PIKE_MEM_HASH;		\
+    mt_lock(pike_mem_mutex)				\
+}while(0)
 
+#define pike_unmemlock(ADDR) do{			\
+    PIKE_MUTEX_T *pike_mem_mutex=pike_memory_locks+	\
+        ((unsigned long)(ADDR))%PIKE_MEM_HASH;		\
+    mt_unlock(pike_mem_mutex)				\
+}while(0)
 
+#define PIKE_NEED_MEMLOCK
 
 /* Autoconf this? */
 #if defined(__i386__) && defined(__GNUC__)
@@ -76,6 +87,7 @@ pike_atomic_compare_and_swap32 (INT32 *p, INT32 oldval, INT32 newval)
 }
 
 
+/* NOT USED */
 #define PIKE_HAS_COMPARE_AND_SWAP64
 static inline int
 pike_atomic_compare_and_swap64 (INT64 *p, INT64 oldval, INT64 newval)

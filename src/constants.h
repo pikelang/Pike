@@ -5,7 +5,7 @@
 \*/
 
 /*
- * $Id: constants.h,v 1.16 2001/02/19 23:49:59 grubba Exp $
+ * $Id: constants.h,v 1.17 2001/04/07 07:38:24 hubbe Exp $
  */
 #ifndef ADD_EFUN_H
 #define ADD_EFUN_H
@@ -20,10 +20,7 @@ typedef node *(*optimize_fun)(node *n);
 
 struct callable
 {
-  INT32 refs;
-#ifdef PIKE_SECURITY
-  struct object *prot;
-#endif
+  PIKE_MEMORY_OBJECT_MEMBERS;
   c_fun function;
   struct pike_type *type;
   struct pike_string *name;
