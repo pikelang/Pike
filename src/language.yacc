@@ -185,7 +185,7 @@
 /* This is the grammar definition of Pike. */
 
 #include "global.h"
-RCSID("$Id: language.yacc,v 1.150 1999/12/17 21:09:48 hubbe Exp $");
+RCSID("$Id: language.yacc,v 1.151 1999/12/17 23:06:07 grubba Exp $");
 #ifdef HAVE_MEMORY_H
 #include <memory.h>
 #endif
@@ -2580,6 +2580,12 @@ void add_local_name(struct pike_string *str,
 #ifdef PIKE_DEBUG
     check_type_string(type);
 #endif /* PIKE_DEBUG */
+    if (pike_type_le(type, void_type_string)) {
+      yywarning("Declaring local variable with type void "
+		"(converted to type zero).");
+      free_string(type);
+      copy_shared_string(type, zero_type_string);
+    }
     compiler_frame->variable[compiler_frame->current_number_of_locals].type = type;
     compiler_frame->variable[compiler_frame->current_number_of_locals].name = str;
     compiler_frame->variable[compiler_frame->current_number_of_locals].def = def;
