@@ -4,7 +4,7 @@
 ||| See the files COPYING and DISCLAIMER for more information.
 \*/
 #include "global.h"
-RCSID("$Id: lex.c,v 1.41 1998/01/26 19:59:55 hubbe Exp $");
+RCSID("$Id: lex.c,v 1.42 1998/01/29 06:02:29 hubbe Exp $");
 #include "language.h"
 #include "array.h"
 #include "lex.h"
@@ -207,6 +207,7 @@ struct keyword instr_names[]=
 { "call lfun & return", F_CALL_LFUN_AND_RETURN, I_HASARG },
 { "call function",      F_CALL_FUNCTION, 0 },
 { "call function & return", F_CALL_FUNCTION_AND_RETURN, 0 },
+{ "+= and pop",         F_ADD_TO_AND_POP, 0 },
 };
 
 struct instr instrs[F_MAX_INSTR - F_OFFSET];

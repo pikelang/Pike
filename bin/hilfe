@@ -63,6 +63,7 @@ object eval(string f)
   }
   if(err=catch(o=clone(p)))
   {
+    trace(0);
     write(describe_backtrace(err));
     return 0;
   }
@@ -76,6 +77,7 @@ mixed do_evaluate(string a, int show_result)
   {
     if(c=catch(a=sprintf("%O",foo->___Foo4711())))
     {
+      trace(0);
       if(arrayp(c) && sizeof(c)==2 && arrayp(c[1]))
       {
 	c[1]=c[1][sizeof(backtrace())..];

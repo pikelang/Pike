@@ -161,7 +161,7 @@
 /* This is the grammar definition of Pike. */
 
 #include "global.h"
-RCSID("$Id: language.yacc,v 1.56 1998/01/27 20:02:14 hubbe Exp $");
+RCSID("$Id: language.yacc,v 1.57 1998/01/29 06:02:29 hubbe Exp $");
 #ifdef HAVE_MEMORY_H
 #include <memory.h>
 #endif
@@ -918,22 +918,18 @@ lambda: F_LAMBDA
     
     type=pop_type();
 
-    if(new_program->flags | PROGRAM_PASS_1_DONE)
-    {
-      sprintf(buf,"__lambda_%ld",
-	      (long)new_program->num_identifier_references);
-      name=make_shared_string(buf);
-      
-      f=dooptcode(name,
-		  $4,
-		  type,
-		  ID_PRIVATE);
-    }
+    sprintf(buf,"__lambda_%ld",local_class_counter++);
+    name=make_shared_string(buf);
+    
+    f=dooptcode(name,
+		$4,
+		type,
+		ID_PRIVATE);
+    $$=mkidentifiernode(f);
     free_string(name);
     free_string(type);
     comp_stackp=$<number>2;
     pop_compiler_frame();
-    $$=mkidentifiernode(f);
   }
   ;
 

@@ -4,7 +4,7 @@
 ||| See the files COPYING and DISCLAIMER for more information.
 \*/
 #include "global.h"
-RCSID("$Id: builtin_functions.c,v 1.62 1998/01/25 08:25:03 hubbe Exp $");
+RCSID("$Id: builtin_functions.c,v 1.63 1998/01/29 06:02:28 hubbe Exp $");
 #include "interpret.h"
 #include "svalue.h"
 #include "pike_macros.h"
@@ -554,6 +554,7 @@ void f_all_constants(INT32 args)
 void f_allocate(INT32 args)
 {
   INT32 size;
+  struct array *a;
 
   if(args < 1)
     error("Too few arguments to allocate.\n");
@@ -565,8 +566,15 @@ void f_allocate(INT32 args)
   size=sp[-args].u.integer;
   if(size < 0)
     error("Allocate on negative number.\n");
+  a=allocate_array(size);
+  if(args>1)
+  {
+    INT32 e;
+    for(e=0;e<a->size;e++)
+      copy_svalues_recursively_no_free(a->item+e, sp-args+1, 1, 0);
+  }
   pop_n_elems(args);
-  push_array( allocate_array(size) );
+  push_array(a);
 }
 
 void f_rusage(INT32 args)
@@ -1806,7 +1814,7 @@ void init_builtin_efuns(void)
   add_efun("aggregate_multiset",f_aggregate_multiset,"function(mixed ...:multiset)",OPT_TRY_OPTIMIZE);
   add_efun("aggregate_mapping",f_aggregate_mapping,"function(mixed ...:mapping)",OPT_TRY_OPTIMIZE);
   add_efun("all_constants",f_all_constants,"function(:mapping(string:mixed))",OPT_EXTERNAL_DEPEND);
-  add_efun("allocate", f_allocate, "function(int, string|void:mixed *)", 0);
+  add_efun("allocate", f_allocate, "function(int, mixed:mixed *)", 0);
   add_efun("arrayp",  f_arrayp,  "function(mixed:int)",0);
   add_efun("backtrace",f_backtrace,"function(:array(array(function|int|string)))",OPT_EXTERNAL_DEPEND);
 

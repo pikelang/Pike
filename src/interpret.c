@@ -4,7 +4,7 @@
 ||| See the files COPYING and DISCLAIMER for more information.
 \*/
 #include "global.h"
-RCSID("$Id: interpret.c,v 1.62 1998/01/26 19:59:53 hubbe Exp $");
+RCSID("$Id: interpret.c,v 1.63 1998/01/29 06:02:28 hubbe Exp $");
 #include "interpret.h"
 #include "object.h"
 #include "program.h"
@@ -608,6 +608,7 @@ static int eval_instruction(unsigned char *pc)
       sp->subtype=GET_ARG()+fp->context.identifier_level;
       sp->type=T_FUNCTION;
       sp++;
+      print_return_value();
       break;
 
       /* The not so basic 'push value' instructions */
