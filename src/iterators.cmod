@@ -5,7 +5,7 @@
 \*/
 /**/
 #include "global.h"
-RCSID("$Id: iterators.cmod,v 1.15 2001/12/10 02:08:15 mast Exp $");
+RCSID("$Id: iterators.cmod,v 1.16 2001/12/10 20:17:50 mast Exp $");
 #include "main.h"
 #include "object.h"
 #include "mapping.h"
@@ -257,9 +257,8 @@ PIKECLASS multiset_iterator
 {
   CVAR struct multiset *l;
   CVAR int lock_index;
+  CVAR int prestepped; /* Ugly special flag to work correctly in foreach_iterate. */
 
-#define MSNODE_BEFORE_BEG -2
-#define MSNODE_AFTER_END -1
   CVAR ptrdiff_t nodepos;
 
   PIKEFUN int value()
@@ -280,31 +279,31 @@ PIKECLASS multiset_iterator
 	push_multiset_index (THIS->l, THIS->nodepos);
     }
 
+  static struct object *li_copy (struct multiset_iterator_struct *li)
+    {
+      struct object *o = low_clone (multiset_iterator_program);
+      struct multiset_iterator_struct *copy = OBJ2_MULTISET_ITERATOR (o);
+      add_ref (copy->l = li->l);
+      if ((copy->nodepos = li->nodepos) >= 0) add_msnode_ref (copy->l);
+      if ((copy->lock_index = li->lock_index)) {
+	add_ref (copy->l->msd);
+	copy->l->msd->noval_refs++;
+      }
+      return o;
+    }
+
   static void li_step (struct multiset_iterator_struct *li, int steps)
     {
       ptrdiff_t newpos = li->nodepos;
 
-      switch (li->nodepos) {
-	case MSNODE_BEFORE_BEG:
-	  if (steps <= 0) return;
-	  newpos = multiset_first (li->l);
-	  steps--;
-	  break;
-	case MSNODE_AFTER_END:
-	  if (steps >= 0) return;
-	  newpos = multiset_last (li->l);
-	  steps++;
-	  break;
-	default:;
-      }
+      if (li->nodepos < 0) return;
 
       if (steps > 0)
 	do {
 	  newpos = multiset_next (li->l, newpos);
 	  if (newpos < 0) {
 	    sub_msnode_ref (li->l);
-	    li->nodepos = MSNODE_AFTER_END;
-	    return;
+	    break;
 	  }
 	} while (--steps);
       else if (steps < 0)
@@ -312,56 +311,44 @@ PIKECLASS multiset_iterator
 	  newpos = multiset_prev (li->l, newpos);
 	  if (newpos < 0) {
 	    sub_msnode_ref (li->l);
-	    li->nodepos = MSNODE_BEFORE_BEG;
-	    return;
+	    break;
 	  }
 	} while (++steps);
 
       li->nodepos = newpos;
     }
 
+  PIKEFUN object `+= (int steps)
+    {
+      if (!THIS->l) Pike_error ("Iterator not initialized.\n");
+      li_step (THIS, steps);
+      REF_RETURN Pike_fp->current_object;
+    }
+
   PIKEFUN object `+ (int steps)
     {
       struct object *o;
       if (!THIS->l) Pike_error ("Iterator not initialized.\n");
-      o = low_clone (multiset_iterator_program);
-      add_ref (OBJ2_MULTISET_ITERATOR (o)->l = THIS->l);
-      if ((OBJ2_MULTISET_ITERATOR (o)->nodepos = THIS->nodepos) >= 0)
-	add_msnode_ref (OBJ2_MULTISET_ITERATOR (o)->l);
+      o = li_copy (THIS);
       li_step (OBJ2_MULTISET_ITERATOR (o), steps);
       RETURN o;
     }
 
-  PIKEFUN object `+= (int steps)
-  {
-    if (!THIS->l) Pike_error ("Iterator not initialized.\n");
-    li_step (THIS, steps);
-    REF_RETURN Pike_fp->current_object;
-  }
+  PIKEFUN object `- (int steps)
+    {
+      struct object *o;
+      if (!THIS->l) Pike_error ("Iterator not initialized.\n");
+      o = li_copy (THIS);
+      li_step (OBJ2_MULTISET_ITERATOR (o), -steps);
+      RETURN o;
+    }
 
   PIKEFUN int first()
     {
       if (!THIS->l) Pike_error ("Iterator not initialized.\n");
       if (THIS->nodepos >= 0) sub_msnode_ref (THIS->l);
       THIS->nodepos = multiset_first (THIS->l);
-      if (THIS->nodepos >= 0) RETURN 1;
-      THIS->nodepos = MSNODE_AFTER_END;
-      RETURN 0;
-    }
-
-  /* Hubbe: Should this really be destructive ??
-   * I let this question stand; I'm only adapting multiset_iterator. /mast */
-  PIKEFUN object _random()
-    {
-      if (!THIS->l) Pike_error ("Iterator not initialized.\n");
-      if (THIS->nodepos >= 0) {
-	sub_msnode_ref (THIS->l);
-	THIS->nodepos = MSNODE_BEFORE_BEG;
-      }
-      if (!multiset_is_empty (THIS->l))
-	THIS->nodepos =
-	  multiset_get_nth (THIS->l, my_rand() % multiset_sizeof (THIS->l));
-      REF_RETURN Pike_fp->current_object;
+      RETURN THIS->nodepos >= 0;
     }
 
   PIKEFUN int next()
@@ -370,7 +357,6 @@ PIKECLASS multiset_iterator
       if (THIS->nodepos >= 0) {
 	THIS->nodepos = multiset_next (THIS->l, THIS->nodepos);
 	if (THIS->nodepos >= 0) RETURN 1;
-	THIS->nodepos = MSNODE_AFTER_END;
 	sub_msnode_ref (THIS->l);
       }
       RETURN 0;
@@ -380,6 +366,21 @@ PIKECLASS multiset_iterator
     {
       if (!THIS->l) Pike_error ("Iterator not initialized.\n");
       RETURN THIS->nodepos < 0 || msnode_is_deleted (THIS->l, THIS->nodepos);
+    }
+
+  /* Hubbe: Should this really be destructive ??
+   * I let this question stand; I'm only adapting multiset_iterator. /mast */
+  PIKEFUN object _random()
+    {
+      if (!THIS->l) Pike_error ("Iterator not initialized.\n");
+      if (THIS->nodepos >= 0) {
+	sub_msnode_ref (THIS->l);
+	THIS->nodepos = -1;
+      }
+      if (!multiset_is_empty (THIS->l))
+	THIS->nodepos =
+	  multiset_get_nth (THIS->l, my_rand() % multiset_sizeof (THIS->l));
+      REF_RETURN Pike_fp->current_object;
     }
 
   PIKEFUN void lock_index()
@@ -414,8 +415,9 @@ PIKECLASS multiset_iterator
     {
       if (THIS->l) Pike_error ("Multiset iterators cannot be reused.\n");
       add_ref (THIS->l = l);
-      THIS->nodepos = MSNODE_BEFORE_BEG;
       THIS->lock_index = 0;
+      THIS->nodepos = multiset_first (THIS->l);
+      THIS->prestepped = (THIS->nodepos >= 0);
     }
 
   INIT 
@@ -1605,24 +1607,19 @@ int foreach_iterate(struct object *o)
 #ifdef PIKE_NEW_MULTISETS
       struct svalue ind;
 
-      switch (i->nodepos) {
-	case MSNODE_BEFORE_BEG:
-	  i->nodepos = multiset_first (i->l);
-	  if (i->nodepos < 0) {
-	    i->nodepos = MSNODE_AFTER_END;
-	    return 0;
-	  }
-	  break;
+      if (i->nodepos < 0) return 0;
 
-	default:
-	  i->nodepos = multiset_next (i->l, i->nodepos);
-	  if (i->nodepos >= 0) break;
+      /* Step before getting the values, to behave better if the
+       * multiset is changed during the iteration. Since the iterator
+       * got to be initialized to the first element in its create(),
+       * we need an ugly special flag to get it right. */
+      if ((i->prestepped ? (i->prestepped = 0) : 1) ||
+	  msnode_is_deleted (i->l, i->nodepos)) {
+	i->nodepos = multiset_next (i->l, i->nodepos);
+	if (i->nodepos < 0) {
 	  sub_msnode_ref (i->l);
-	  i->nodepos = MSNODE_AFTER_END;
-	  /* FALL THROUGH */
-
-	case MSNODE_AFTER_END:
 	  return 0;
+	}
       }
 
       if (Pike_sp[-4].type != T_INT)
