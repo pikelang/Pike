@@ -1,4 +1,6 @@
-// $Id: RDF.pike,v 1.14 2003/08/11 20:36:44 nilsson Exp $
+// $Id: RDF.pike,v 1.15 2003/08/18 15:50:40 nilsson Exp $
+
+#pike __REAL_VERSION__
 
 //! Represents an RDF domain which can contain any number of complete
 //! statements.
@@ -631,7 +633,7 @@ static Node add_xml_children(Node p, string rdfns) {
 //! @decl Standards.RDF parse_xml(string|Parser.XML.NSTree.NSNode in)
 //! Adds the statements represented by the string or tree @[in] to the
 //! RDF domain. If @[in] is a tree the in-node should be the @tt{RDF@}
-//! node of the XML serialization. RDF documents takes it default
+//! node of the XML serialization. RDF documents take its default
 //! namespace from the URI of the document, so if the RDF document relies
 //! such ingenious mechanisms, pass the document URI in the @[base]
 //! variable.
