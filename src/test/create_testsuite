@@ -130,6 +130,20 @@ cond( [[ master()->programs["/precompiled/mpz"] ]],
 
 ]]);
 
+// ++
+test_any([[int e; e++; return e;]],1)
+test_any([[int e; ++e; return e;]],1)
+test_any([[int e; return e++;]],0)
+test_any([[int e; return ++e;]],1)
+test_any([[int e; if(e++) return 0; return e;]],1)
+
+// --
+test_any([[int e; e--; return e;]],-1)
+test_any([[int e; --e; return e;]],-1)
+test_any([[int e; return e--;]],0)
+test_any([[int e; return --e;]],-1)
+test_any([[int e; if(e--) return 0; return e;]],-1)
+
 test_compile_error_low(master()->add_precompiled_program(\"/test\",compile_string(\"int foo() { return 17; }\",\"62\")))
 
 test_any([[function f=random_seed; int t; foreach(allocate(1),t) f(t); return 1;]],1)
