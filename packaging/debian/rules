@@ -6,7 +6,7 @@
 # architecture-dependant package, as well as an architecture-independent
 # package.
 #
-# $Id: rules,v 1.39 2003/02/03 14:20:14 grendel Exp $
+# $Id: rules,v 1.40 2003/02/03 15:42:11 grendel Exp $
 #
 
 # Uncomment this to turn on verbose mode. 
@@ -31,6 +31,9 @@ ifeq ($(DEB_BUILD_ARCH),powerpc)
 DO_MACHINE_CODE=yes
 endif
 ifeq ($(DEB_BUILD_ARCH),sparc)
+DO_MACHINE_CODE=no
+endif
+ifeq ($(DEB_BUILD_ARCH),sparc64)
 DO_MACHINE_CODE=no
 endif
 

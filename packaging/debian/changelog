@@ -1,7 +1,7 @@
 pike7.4 (7.4.13-3) unstable; urgency=low
 
   * Pike is compiled without the architecture machine code optimization in
-    the pike programs on the sparc platform.
+    the pike programs on the sparc/sparc64 platforms.
 
  -- Marek Habersack <grendel@debian.org>  Mon,  3 Feb 2003 15:18:40 +0100
 
