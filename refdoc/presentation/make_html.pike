@@ -723,9 +723,15 @@ string parse_type(Node n, void|string debug) {
   switch(n->get_any_name()) {
 
   case "object":
-    if(n->count_children())
-      ret += "<font color='#005080'>" + n->value_of_node() + "</font>";
-    else
+    if(n->count_children()) {
+      if (resolve_reference) {
+	ret += "<font color='#005080'>" +
+	  resolve_reference(n->value_of_node(), n->get_attributes()) +
+	  "</font>";
+      } else {
+	ret += "<font color='#005080'>" + n->value_of_node() + "</font>";
+      }
+    } else
       ret += "<font color='#202020'>object</font>";
     break;
 
