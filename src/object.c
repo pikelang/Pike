@@ -5,7 +5,7 @@
 \*/
 /**/
 #include "global.h"
-RCSID("$Id: object.c,v 1.71 1999/05/31 17:08:53 grubba Exp $");
+RCSID("$Id: object.c,v 1.72 1999/06/19 20:01:05 hubbe Exp $");
 #include "object.h"
 #include "dynamic_buffer.h"
 #include "interpret.h"
@@ -26,6 +26,7 @@ RCSID("$Id: object.c,v 1.71 1999/05/31 17:08:53 grubba Exp $");
 #include "security.h"
 #include "module_support.h"
 #include "block_alloc.h"
+#include "fdlib.h"
 
 #ifdef HAVE_SYS_TYPES_H
 #include <sys/types.h>
@@ -225,15 +226,27 @@ static struct pike_string *low_read_file(char *file)
 {
   struct pike_string *s;
   INT32 len;
-  FILE *f=fopen(file,"r");
-  if(f)
+  FD f;
+  while((f=fd_open(file,fd_RDONLY,0666)) <0 && errno==EINTR);
+  if(f>=0)
   {
-    fseek(f,0,SEEK_END);
-    len=ftell(f);
-    fseek(f,0,SEEK_SET);
+    int tmp,pos=0;
+
+    len=fd_lseek(f,0,SEEK_END);
+    fd_lseek(f,0,SEEK_SET);
     s=begin_shared_string(len);
-    fread(s->str,1,len,f);
-    fclose(f);
+
+    while(pos<len)
+    {
+      tmp=fd_read(f,s->str+pos,len-pos);
+      if(tmp<0)
+      {
+	if(errno==EINTR) continue;
+	fatal("low_read_file(%s) failed, errno=%d\n",file,errno);
+      }
+      pos+=tmp;
+    }
+    fd_close(f);
     return end_shared_string(s);
   }
   return 0;
