@@ -701,7 +701,7 @@ void f_time(INT32 args)
 void f_crypt(INT32 args)
 {
   char salt[2];
-  char *ret;
+  char *ret, *saltp;
   char *choise =
     "cbhisjKlm4k65p7qrJfLMNQOPxwzyAaBDFgnoWXYCZ0123tvdHueEGISRTUV89./";
 
@@ -718,17 +718,17 @@ void f_crypt(INT32 args)
        sp[1-args].u.string->len < 2)
       error("Bad argument 2 to crypt()\n");
       
-    salt[0] = sp[1-args].u.string->str[0];
-    salt[1] = sp[1-args].u.string->str[1];
+    saltp=sp[1-args].u.string->str;
   } else {
     salt[0] = choise[my_rand()%strlen(choise)];
     salt[1] = choise[my_rand()%strlen(choise)];
+    saltp=salt;
   }
 #ifdef HAVE_CRYPT
-  ret = (char *)crypt(sp[-args].u.string->str, salt);
+  ret = (char *)crypt(sp[-args].u.string->str, saltp);
 #else
 #ifdef HAVE__CRYPT
-  ret = (char *)_crypt(sp[-args].u.string->str, salt);
+  ret = (char *)_crypt(sp[-args].u.string->str, saltp);
 #else
   ret = sp[-args].u.string->str;
 #endif
