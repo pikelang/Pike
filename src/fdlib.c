@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: fdlib.c,v 1.58 2003/03/30 01:27:10 mast Exp $
+|| $Id: fdlib.c,v 1.59 2003/05/06 14:23:17 grubba Exp $
 */
 
 #include "global.h"
@@ -10,7 +10,7 @@
 #include "pike_error.h"
 #include <math.h>
 
-RCSID("$Id: fdlib.c,v 1.58 2003/03/30 01:27:10 mast Exp $");
+RCSID("$Id: fdlib.c,v 1.59 2003/05/06 14:23:17 grubba Exp $");
 
 #ifdef HAVE_WINSOCK_H
 
@@ -967,15 +967,29 @@ PMOD_EXPORT int debug_fd_flock(FD fd, int oper)
 static long convert_filetime_to_time_t(FILETIME tmp)
 {
   double t;
+  /* FILETIME is in 100ns since Jan 01, 1601 00:00 UTC.
+   *
+   * Offset to Jan 01, 1970 is thus 0x019db1ded53e8000 * 100ns.
+   */
+  if (tmp.dwLowDateTime < 0xd53e8000UL) {
+    tmp.dwHighDateTime -= 0x019db1dfUL;	/* Note: Carry! */
+    tmp.dwLowDateTime += 0x2ac18000UL;	/* Note: 2-compl */
+  } else {
+    tmp.dwHighDateTime -= 0x019db1deUL;
+    tmp.dwLowDateTime -= 0xd53e8000UL;
+  }
   t=tmp.dwHighDateTime * pow(2.0,32.0) + (double)tmp.dwLowDateTime;
+
+  /* 1s == 10000000 * 100ns. */
   t/=10000000.0;
-  t-=11644473600.0;
   return DO_NOT_WARN((long)floor(t));
 }
 
 PMOD_EXPORT int debug_fd_fstat(FD fd, PIKE_STAT_T *s)
 {
   FILETIME c,a,m;
+
+  mt_lock(&fd_mutex);
   FDDEBUG(fprintf(stderr, "fstat on %d (%ld)\n",
 		  fd, PTRDIFF_T_TO_LONG((ptrdiff_t)da_handle[fd])));
   if(fd_type[fd]!=FD_FILE)
@@ -1007,17 +1021,19 @@ PMOD_EXPORT int debug_fd_fstat(FD fd, PIKE_STAT_T *s)
 	    if (s->st_size == INVALID_FILE_SIZE &&
 		(err = GetLastError()) != NO_ERROR) {
 	      errno = err;
+	      mt_unlock(&fd_mutex);
 	      return -1;
 	    }
 #ifdef INT64
 	    s->st_size += (INT64) high << 32;
 #else
-	    if (high) s->st_size = MAXDWORD
+	    if (high) s->st_size = MAXDWORD;
 #endif
 	  }
 	  if(!GetFileTime(da_handle[fd], &c, &a, &m))
 	  {
 	    errno=GetLastError();
+	    mt_unlock(&fd_mutex);
 	    return -1;
 	  }
 	  s->st_ctime=convert_filetime_to_time_t(c);
@@ -1029,6 +1045,7 @@ PMOD_EXPORT int debug_fd_fstat(FD fd, PIKE_STAT_T *s)
       }
   }
   s->st_mode |= 0666;
+  mt_unlock(&fd_mutex);
   return 0;
 }
 
@@ -1122,6 +1139,8 @@ PMOD_EXPORT FD debug_fd_dup(FD from)
 {
   FD fd;
   HANDLE x,p=GetCurrentProcess();
+
+  mt_lock(&fd_mutex);
 #ifdef DEBUG
   if(fd_type[from]>=FD_NO_MORE_FREE)
     Pike_fatal("fd_dup() on file which is not open!\n");
@@ -1129,10 +1148,10 @@ PMOD_EXPORT FD debug_fd_dup(FD from)
   if(!DuplicateHandle(p,da_handle[from],p,&x,0,0,DUPLICATE_SAME_ACCESS))
   {
     errno=GetLastError();
+    mt_unlock(&fd_mutex);
     return -1;
   }
 
-  mt_lock(&fd_mutex);
   fd=first_free_handle;
   first_free_handle=fd_type[fd];
   fd_type[fd]=fd_type[from];
@@ -1147,13 +1166,15 @@ PMOD_EXPORT FD debug_fd_dup(FD from)
 PMOD_EXPORT FD debug_fd_dup2(FD from, FD to)
 {
   HANDLE x,p=GetCurrentProcess();
+
+  mt_lock(&fd_mutex);
   if(!DuplicateHandle(p,da_handle[from],p,&x,0,0,DUPLICATE_SAME_ACCESS))
   {
     errno=GetLastError();
+    mt_unlock(&fd_mutex);
     return -1;
   }
 
-  mt_lock(&fd_mutex);
   if(fd_type[to] < FD_NO_MORE_FREE)
   {
     if(!CloseHandle(da_handle[to]))
