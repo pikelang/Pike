@@ -1,0 +1,34 @@
+START_MARKER
+cond_resolv( SQLite.SQLite, [[
+
+  test_do( add_constant("db", SQLite.SQLite("testdb")); )
+
+  test_eq( db->changes(), 0 )
+  test_eq( db->total_changes(), 0 )
+  test_do( db->interrupt() )
+  test_true( stringp(db->server_info()); )
+  test_eq( db->last_insert_rowid(), 0 )
+  test_eq( db->error(), "not an error" )
+  test_eval_error( db->select_db() )
+  test_eval_error( db->create_db() )
+  test_eval_error( db->drop_db() )
+  test_eval_error( db->list_dbs() )
+  test_equal( db->list_tables(), ({}) )
+  test_eval_error( db->list_fields("test") )
+
+  test_eq( db->big_query("CREATE TABLE test (aa INTEGER, bb FLOAT, cc TEXT, dd BLOB)")->fetch_row();, 0 )
+
+  test_equal( db->list_tables(), ({ "test" }) )
+  test_equal( db->list_fields("test"),[[
+#define P(X,Y) (["name":#X,"type":#Y])
+ ({ P(aa,INTEGER), P(bb,FLOAT), P(cc,TEXT), P(dd,BLOB) })
+]])
+
+  test_eq( db->big_query("INSERT INTO test (aa,bb,cc,dd) VALUES (7,4.5,'xyz','xyz')")->fetch_row();, 0 )
+
+  test_equal( db->big_query("SELECT * FROM test")->fetch_row();, ({"7","4.5","xyz","xyz"}) )
+
+  test_do( rm("testdb"); )
+
+]])
+END_MARKER
