@@ -1,5 +1,5 @@
 /*
- * $Id: ppc32.c,v 1.1 2001/07/26 21:04:14 marcus Exp $
+ * $Id: ppc32.c,v 1.2 2001/07/30 20:56:27 marcus Exp $
  *
  * Machine code generator for 32 bit PowerPC
  *
@@ -8,6 +8,7 @@
 
 #include "operators.h"
 
+#if 0
 #define ADD_CALL(X) do {						\
     INT32 delta_;							\
     struct program *p_ = Pike_compiler->new_program;			\
@@ -18,6 +19,37 @@
     p_->program[off_] = 0x48000001 | ((delta_<<2) & 0x03fffffc);	\
     add_to_relocations(off_);						\
   } while(0)
+#else
+
+#ifdef _AIX
+#define ADD_CALL(X) do {						\
+    INT32 delta_;							\
+    void *toc_, *func_=(X);						\
+									\
+    __asm__("\tmr %0,2" : "=r" (toc_));				\
+    delta_ = ((char *)func_) - ((char *)toc_);				\
+    if(delta_ < -32768 || delta_ > 32767)				\
+      fatal("Function pointer %p out of range for TOC @ %p!\n",		\
+	    func_, toc_);						\
+    /* lwz r0,delta(r2)	*/						\
+    add_to_program(0x80000000|(2<<16)|(delta_&0xffff));			\
+    /* mtlr r0 */							\
+    add_to_program(0x7c0803a6);						\
+    /* blrl */								\
+    add_to_program(0x4e800021);						\
+  } while(0)
+#else
+#define ADD_CALL(X) do {						\
+    INT32 func_=(INT32)(void*)(X);					\
+									\
+    if(func_ < -33554432 || func_ > 33554431)				\
+      fatal("Function pointer %p out of range absolute addressing!\n",	\
+	    func_);							\
+    /* bla func	*/							\
+    add_to_program(0x48000003|(func_&0x03fffffc));			\
+  } while(0)
+#endif
+#endif
 
 void ins_f_byte(unsigned int b)
 {
@@ -86,3 +118,17 @@ void ins_f_byte_with_2_args(unsigned int a,
   return;
 }
 
+void ppc32_flush_instruction_cache(void *addr, size_t len)
+{
+#ifndef _AIX
+  INT32 a = (INT32)addr;
+  len >>= 2;
+  while(len>0) {
+    __asm__("dcbst 0,%0" : : "r" (a));
+    __asm__("icbi 0,%0" : : "r" (a));
+    a += 4;
+    --len;
+  }
+#endif
+  __asm__("sync");
+}
