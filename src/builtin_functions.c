@@ -5,7 +5,7 @@
 \*/
 /**/
 #include "global.h"
-RCSID("$Id: builtin_functions.c,v 1.347 2001/09/07 21:20:17 hubbe Exp $");
+RCSID("$Id: builtin_functions.c,v 1.348 2001/09/25 03:15:32 hubbe Exp $");
 #include "interpret.h"
 #include "svalue.h"
 #include "pike_macros.h"
@@ -1112,7 +1112,7 @@ static int find_absolute(char *s)
   if(IS_SEP(s[0]) && IS_SEP(s[1]))
   {
     int l;
-    for(l=2;isalpha(s[l]);l++);
+    for(l=2;s[l] && !IS_SEP(s[l]);l++);
     return l;
   }
 
