@@ -6,7 +6,7 @@
 // Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 // for more information.
 //
-// $Id: master.pike.in,v 1.217 2002/09/05 15:26:15 marcus Exp $
+// $Id: master.pike.in,v 1.218 2002/09/05 15:42:19 marcus Exp $
 
 #pike __REAL_VERSION__
 
@@ -1572,11 +1572,11 @@ object backend_thread()
 void _main(array(string) orig_argv, array(string) env)
 {
   array(string) argv=copy_value(orig_argv);
-  int i,debug,trace;
+  int i,debug,trace,run_tool;
   object tmp;
   string a,b;
   array q;
-  string postparseaction=0, run_tool=0;
+  string postparseaction=0;
   mixed v;
 
   predefines = _static_modules.Builtin()->_take_over_initial_predefines();
@@ -1661,7 +1661,7 @@ void _main(array(string) orig_argv, array(string) env)
       ({"trace",tmp->MAY_HAVE_ARG,"--trace",0,1}),
       ({"ignore",tmp->MAY_HAVE_ARG,"-Dqdatplr",0,1}),
       ({"ignore",tmp->HAS_ARG,"-s"}),
-      ({"run_tool",tmp->HAS_ARG,"-x"}),
+      ({"run_tool",tmp->NO_ARG,"-x"}),
     }), 1);
     
     /* Parse -M and -I backwards */
@@ -1753,7 +1753,7 @@ void _main(array(string) orig_argv, array(string) env)
 	break;
 
       case "run_tool":
-	run_tool = q[i][1];
+	run_tool = 1;
 	break;
       }
     }
@@ -1852,10 +1852,10 @@ void _main(array(string) orig_argv, array(string) env)
 
   random_seed(time() ^ (getpid()<<8));
 
-  if(run_tool)
-    ;
-  else if(sizeof(argv)==1)
+  if(sizeof(argv)==1)
   {
+    if(run_tool)
+      _error( "Pike: -x specified without tool name.\n");
     main_resolv( ({ "Tools", "Hilfe" }) )->StdinHilfe();
     exit(0);
   }
@@ -1866,15 +1866,15 @@ void _main(array(string) orig_argv, array(string) env)
 
   if(run_tool) {
     mixed err = catch {
-      prog=main_resolv( ({ "Tools", "Standalone", run_tool }) );
+      prog=main_resolv( ({ "Tools", "Standalone", argv[0] }) );
     };
 
     if (err)
       _error( "Pike: Failed to load tool %s:\n"
-	      "%s\n", run_tool,
+	      "%s\n", argv[0],
 	      stringp(err[0])?err[0]:describe_backtrace(err) );
 
-    argv[0] = search(master()->programs, prog) || run_tool;
+    argv[0] = search(master()->programs, prog) || argv[0];
   } else {
     argv[0]=combine_path_with_cwd(argv[0]);
 
