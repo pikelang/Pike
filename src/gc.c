@@ -29,7 +29,7 @@ struct callback *gc_evaluator_callback=0;
 
 #include "block_alloc.h"
 
-RCSID("$Id: gc.c,v 1.70 2000/04/19 14:02:16 mast Exp $");
+RCSID("$Id: gc.c,v 1.71 2000/04/19 18:06:45 mast Exp $");
 
 /* Run garbage collect approximate every time we have
  * 20 percent of all arrays, objects and programs is
@@ -128,7 +128,7 @@ static char *found_where="";
 static void *found_in=0;
 static int found_in_type=0;
 void *gc_svalue_location=0;
-static char *fatal_after_gc=0;
+char *fatal_after_gc=0;
 
 #define DESCRIBE_MEM 1
 #define DESCRIBE_NO_REFS 2
@@ -566,7 +566,7 @@ void debug_describe_svalue(struct svalue *s)
   describe_something(s->u.refs,s->type,0,2,0);
 }
 
-#endif
+#endif /* PIKE_DEBUG */
 
 INT32 real_gc_check(void *a)
 {
@@ -665,7 +665,7 @@ void locate_references(void *a)
   void *orig_check_for=check_for;
   if(!Pike_in_gc)
     init_gc();
-  
+
   fprintf(stderr,"**Looking for references:\n");
   
   check_for=a;
@@ -710,7 +710,6 @@ void locate_references(void *a)
   }
 #endif
 
-  
   if(!Pike_in_gc)
     exit_gc();
 }
@@ -758,9 +757,6 @@ int debug_gc_is_referenced(void *a)
 int gc_external_mark3(void *a, void *in, char *where)
 {
   struct marker *m;
-
-  if (Pike_in_gc <= 0 || Pike_in_gc >= 4)
-    fatal("gc_external_mark3 called outside valid gc pass.\n");
 
   if(check_for)
   {
