@@ -1,0 +1,11 @@
+FreeBSD port for Pike
+---------------------
+
+Just copy the directory pike74 to /usr/ports/lang/ directory on your FreeBSD
+box.
+
+Then go to /usr/ports/lang/pike74/ and just do make.
+
+- Xavier Beaudouin <kiwi@caudium.net>
+
+$Id: README,v 1.1 2003/01/21 03:12:08 kiwi Exp $
