@@ -1,0 +1,2871 @@
+/*
+ * $Id: jvm.c,v 1.1 1999/03/02 22:07:11 marcus Exp $
+ *
+ * Pike interface to Java Virtual Machine
+ *
+ * Marcus Comstedt
+ */
+
+/*
+ * Includes
+ */
+
+
+#ifdef HAVE_CONFIG_H
+#include "config.h"
+#endif /* HAVE_CONFIG_H */
+
+#include "global.h"
+RCSID("$Id: jvm.c,v 1.1 1999/03/02 22:07:11 marcus Exp $");
+#include "program.h"
+#include "interpret.h"
+#include "stralloc.h"
+#include "object.h"
+#include "mapping.h"
+#include "builtin_functions.h"
+#include "error.h"
+#include "module_support.h"
+#include "pike_memory.h"
+#include "gc.h"
+#include "threads.h"
+#include "operators.h"
+
+#ifdef HAVE_JAVA
+
+#ifdef HAVE_JNI_H
+#include <jni.h>
+#endif /* HAVE_JNI_H */
+
+#ifdef _REENTRANT
+#if defined(HAVE_SPARC_CPU) || defined(HAVE_X86_CPU)
+#define SUPPORT_NATIVE_METHODS
+#endif /* HAVE_SPARC_CPU || HAVE_X86_CPU */
+#endif /* _REENTRANT */
+
+static struct program *jvm_program = NULL;
+static struct program *jobj_program = NULL, *jclass_program = NULL;
+static struct program *jthrowable_program = NULL, *jarray_program = NULL;
+static struct program *method_program = NULL, *static_method_program = NULL;
+static struct program *field_program = NULL, *static_field_program = NULL;
+static struct program *natives_program = NULL, *attachment_program = NULL;
+static SIZE_T jarray_stor_offs = 0;
+
+struct jvm_storage {
+  JavaVM *jvm;			/* Denotes a Java VM */
+  JNIEnv *env;			/* pointer to native method interface */
+  JavaVMInitArgs vm_args;       /* JDK 1.2 VM initialization arguments */
+  JavaVMOption vm_options[4];	/* Should be large enough to hold all opts. */
+  struct pike_string *classpath_string;
+  jclass class_object, class_class, class_string, class_throwable;
+  jclass class_runtimex, class_system;
+  jmethodID method_hash, method_tostring, method_arraycopy;
+  jmethodID method_getcomponenttype, method_isarray;
+  jmethodID method_getname, method_charat;
+#ifdef _REENTRANT
+  struct object *tl_env;
+#endif /* _REENTRANT */
+};
+
+struct jobj_storage {
+  struct object *jvm;
+  jobject jobj;
+};
+
+struct jarray_storage {
+  int ty;
+};
+
+struct method_storage {
+  struct object *class;
+  struct pike_string *name, *sig;
+  jmethodID method;
+  INT32 nargs;
+  char rettype, subtype;
+};
+
+struct field_storage {
+  struct object *class;
+  struct pike_string *name, *sig;
+  jfieldID field;
+  char type, subtype;
+};
+
+#ifdef _REENTRANT
+
+struct att_storage {
+  struct object *jvm;
+  struct svalue thr;
+  JavaVMAttachArgs args;
+  JNIEnv *env;
+  THREAD_T tid;
+};
+
+#endif /* _REENTRANT */
+
+
+#define THIS_JVM ((struct jvm_storage *)(fp->current_storage))
+#define THAT_JOBJ(o) ((struct jobj_storage *)get_storage((o),jobj_program))
+#define THIS_JOBJ ((struct jobj_storage *)(fp->current_storage))
+#define THIS_JARRAY ((struct jarray_storage *)(fp->current_storage+jarray_stor_offs))
+#define THIS_METHOD ((struct method_storage *)(fp->current_storage))
+#define THIS_FIELD ((struct field_storage *)(fp->current_storage))
+
+#define THIS_NATIVES ((struct natives_storage *)(fp->current_storage))
+#ifdef _REENTRANT
+#define THIS_ATT ((struct att_storage *)(fp->current_storage))
+#endif /* _REENTRANT */
+
+
+/*
+
+TODO(?):
+
+DefineClass
+*Reflected*
+GetObjectClass
+
+Array stuff
+
+MonitorEnter
+MonitorExit
+
+fatal x_clear x_descr f_cre f_fld_cre f_mtd_cre f_javath f_throw_new
+
+array input to make_jargs
+
+ */
+
+
+
+/* Attach foo */
+
+static JNIEnv *jvm_procure_env(struct object *jvm)
+{
+  struct jvm_storage *j =
+    (struct jvm_storage *)get_storage(jvm, jvm_program);
+  if(j) {
+
+#ifdef _REENTRANT
+    JNIEnv *env;
+
+    if(JNI_OK == (*j->jvm)->GetEnv(j->jvm, (void **)&env, JNI_VERSION_1_2))
+      return env;
+
+    if(j->tl_env != NULL && j->tl_env->prog != NULL) {
+      safe_apply(j->tl_env, "get", 0);
+      if(sp[-1].type != T_OBJECT)
+	pop_n_elems(1);
+      else {
+	env = ((struct att_storage *)((sp[-1].u.object)->storage))->env;
+	pop_n_elems(1);
+	return env;
+      }
+    }
+
+    ref_push_object(jvm);
+    push_object(clone_object(attachment_program, 1));
+    if(sp[-1].type != T_OBJECT || sp[-1].u.object == NULL) {
+      pop_n_elems(1);
+      return NULL;
+    }
+
+    env = ((struct att_storage *)((sp[-1].u.object)->storage))->env;
+
+    if(j->tl_env != NULL && j->tl_env->prog != NULL)
+      safe_apply(j->tl_env, "set", 1);
+
+    pop_n_elems(1);
+    return env;
+#else
+    return j->env;
+#endif /* _REENTRANT */
+
+  } else
+    return NULL;
+}
+
+static void jvm_vacate_env(struct object *jvm, JNIEnv *env)
+{
+}
+
+
+/* Global object references */
+
+static void push_java_class(jclass c, struct object *jvm, JNIEnv *env)
+{
+  struct object *oo;
+  struct jobj_storage *jo;
+  jobject c2;
+
+  if(!c) {
+    push_int(0);
+    return;
+  }
+  c2 = (*env)->NewGlobalRef(env, c);
+  (*env)->DeleteLocalRef(env, c);
+  push_object(oo=clone_object(jclass_program, 0));
+  jo = (struct jobj_storage *)(oo->storage);
+  jo->jvm = jvm;
+  jo->jobj = c2;
+  jvm->refs++;
+}
+
+static void push_java_throwable(jthrowable t, struct object *jvm, JNIEnv *env)
+{
+  struct object *oo;
+  struct jobj_storage *jo;
+  jobject t2;
+
+  if(!t) {
+    push_int(0);
+    return;
+  }
+  t2 = (*env)->NewGlobalRef(env, t);
+  (*env)->DeleteLocalRef(env, t);
+  push_object(oo=clone_object(jthrowable_program, 0));
+  jo = (struct jobj_storage *)(oo->storage);
+  jo->jvm = jvm;
+  jo->jobj = t2;
+  jvm->refs++;
+}
+
+static void push_java_array(jarray t, struct object *jvm, JNIEnv *env, int ty)
+{
+  struct object *oo;
+  struct jobj_storage *jo;
+  struct jarray_storage *a;
+  jobject t2;
+
+  if(!t) {
+    push_int(0);
+    return;
+  }
+  t2 = (*env)->NewGlobalRef(env, t);
+  (*env)->DeleteLocalRef(env, t);
+  push_object(oo=clone_object(jarray_program, 0));
+  jo = (struct jobj_storage *)(oo->storage);
+  jo->jvm = jvm;
+  jo->jobj = t2;
+  a = (struct jarray_storage *)(oo->storage+jarray_stor_offs);
+  a->ty = ty;
+  jvm->refs++;
+}
+
+static void push_java_anyobj(jobject o, struct object *jvm, JNIEnv *env)
+{
+  struct object *oo;
+  struct jobj_storage *jo;
+  struct jvm_storage *j =
+    (struct jvm_storage *)get_storage(jvm, jvm_program);
+  jobject o2;
+
+  if((!j)||(!o)) {
+    push_int(0);
+    return;
+  }
+  o2 = (*env)->NewGlobalRef(env, o);
+  (*env)->DeleteLocalRef(env, o);
+  if((*env)->IsInstanceOf(env, o2, j->class_class))
+    push_object(oo=clone_object(jclass_program, 0));
+  else if((*env)->IsInstanceOf(env, o2, j->class_throwable))
+    push_object(oo=clone_object(jthrowable_program, 0));
+  else {
+    jclass cc = (*env)->GetObjectClass(env, o2);
+    if((*env)->CallBooleanMethod(env, cc, j->method_isarray)) {
+      jstring ets = (jstring)(*env)->CallObjectMethod(env, cc,
+						      j->method_getname);
+      push_object(oo=clone_object(jarray_program, 0));
+      ((struct jarray_storage *)(oo->storage+jarray_stor_offs))->ty =
+	(*env)->CallCharMethod(env, ets, j->method_charat, 1);
+      (*env)->DeleteLocalRef(env, ets);
+    } else
+      push_object(oo=clone_object(jobj_program, 0));
+    (*env)->DeleteLocalRef(env, cc);
+  }
+  jo = (struct jobj_storage *)(oo->storage);
+  jo->jvm = jvm;
+  jo->jobj = o2;
+  jvm->refs++;
+}
+
+static void init_jobj_struct(struct object *o)
+{
+  struct jobj_storage *j = THIS_JOBJ;
+  j->jvm = NULL;
+  j->jobj = 0;
+}
+
+static void exit_jobj_struct(struct object *o)
+{
+  JNIEnv *env;
+  struct jobj_storage *j = THIS_JOBJ;
+  if(j->jvm) {
+    if(j->jobj && (env = jvm_procure_env(j->jvm)) != NULL) {
+      (*env)->DeleteGlobalRef(env, j->jobj);
+      jvm_vacate_env(j->jvm, env);
+    }
+    free_object(j->jvm);
+  }
+}
+
+static void jobj_gc_check(struct object *o)
+{
+  struct jobj_storage *j = THIS_JOBJ;
+
+  if(j->jvm)
+    gc_check(j->jvm);
+}
+
+static void jobj_gc_mark(struct object *o)
+{
+  struct jobj_storage *j = THIS_JOBJ;
+
+  if(j->jvm)
+    gc_mark_object_as_referenced(j->jvm);
+}
+
+static void f_jobj_cast(INT32 args)
+{
+  struct jobj_storage *jo = THIS_JOBJ;
+  struct jvm_storage *j =
+    (struct jvm_storage *)get_storage(jo->jvm, jvm_program);
+  JNIEnv *env;
+  jstring jstr;
+
+  if(args < 1)
+    error("cast() called without arguments.\n");
+  if(sp[-args].type != T_STRING)
+    error("Bad argument 1 to cast().\n");
+
+  if(!strcmp(sp[-args].u.string->str, "object")) {
+    pop_n_elems(args);
+    push_object(this_object());
+  }
+
+  if(strcmp(sp[-args].u.string->str, "string"))
+    error("cast() to other type than string.\n");
+
+  pop_n_elems(args);
+  if((env=jvm_procure_env(jo->jvm))) {
+    jsize l;
+    const jchar *wstr;
+
+    jstr = (*env)->CallObjectMethod(env, jo->jobj, j->method_tostring);
+    wstr = (*env)->GetStringChars(env, jstr, NULL);
+    l = (*env)->GetStringLength(env, jstr);
+    push_string(make_shared_binary_string1((INT16*)wstr, l));
+    (*env)->ReleaseStringChars(env, jstr, wstr);
+    jvm_vacate_env(jo->jvm, env);
+  } else
+    push_int(0);
+}
+
+static void f_jobj_eq(INT32 args)
+{
+  struct jobj_storage *jo2, *jo = THIS_JOBJ;
+  JNIEnv *env;
+  jboolean res;
+
+  if(args<1 || sp[-args].type != T_OBJECT || 
+     (jo2 = (struct jobj_storage *)get_storage(sp[-args].u.object,
+					       jobj_program))==NULL) {
+    pop_n_elems(args);
+    push_int(0);
+    return;
+  }
+
+  if((env=jvm_procure_env(jo->jvm))) {
+    res = (*env)->IsSameObject(env, jo->jobj, jo2->jobj);
+    jvm_vacate_env(jo->jvm, env);
+  } else
+    res = 0;
+
+  pop_n_elems(args);
+  push_int((res? 1:0));
+}
+
+static void f_jobj_hash(INT32 args)
+{
+  struct jobj_storage *jo = THIS_JOBJ;
+  JNIEnv *env;
+  struct jvm_storage *j =
+    (struct jvm_storage *)get_storage(jo->jvm, jvm_program);
+
+  pop_n_elems(args);
+  if((env=jvm_procure_env(jo->jvm))) {
+    push_int((*env)->CallIntMethod(env, jo->jobj, j->method_hash));
+    jvm_vacate_env(jo->jvm, env);
+  }
+  else push_int(0);
+}
+
+static void f_jobj_instance(INT32 args)
+{
+  struct jobj_storage *c, *jo = THIS_JOBJ;
+  JNIEnv *env;
+  struct jvm_storage *j =
+    (struct jvm_storage *)get_storage(jo->jvm, jvm_program);
+  struct object *cls;
+  int n=0;
+
+  get_all_args("Java.obj->is_instance_of()", args, "%o", &cls);
+
+  if((c = (struct jobj_storage *)get_storage(cls, jclass_program)) == NULL)
+    error("Bad argument 1 to is_instance_of().\n");
+
+  if((env=jvm_procure_env(jo->jvm))) {
+    if((*env)->IsInstanceOf(env, jo->jobj, c->jobj))
+      n = 1;
+    jvm_vacate_env(jo->jvm, env);
+  }
+
+  pop_n_elems(args);
+  push_int(n);
+}
+
+
+/* Methods */
+
+static void init_method_struct(struct object *o)
+{
+  struct method_storage *m=THIS_METHOD;
+
+  m->class = NULL;
+  m->name = NULL;
+  m->sig = NULL;
+}
+
+static void exit_method_struct(struct object *o)
+{
+  struct method_storage *m=THIS_METHOD;
+
+  if(m->sig != NULL)
+    free_string(m->sig);
+  if(m->name != NULL)
+    free_string(m->name);
+  if(m->class != NULL)
+    free_object(m->class);
+}
+
+static void method_gc_check(struct object *o)
+{
+  struct method_storage *m = THIS_METHOD;
+
+  if(m->class)
+    gc_check(m->class);
+}
+
+static void method_gc_mark(struct object *o)
+{
+  struct method_storage *m = THIS_METHOD;
+
+  if(m->class)
+    gc_mark_object_as_referenced(m->class);
+}
+
+static void f_method_create(INT32 args)
+{
+  struct method_storage *m=THIS_METHOD;
+  struct jobj_storage *c;
+  struct object *class;
+  struct pike_string *name, *sig;
+  JNIEnv *env;
+  char *p;
+
+  get_all_args("Java.method->create()", args, "%S%S%o", &name, &sig, &class);
+
+  if((c = (struct jobj_storage *)get_storage(class, jclass_program)) == NULL)
+    error("Bad argument 3 to create().\n");
+
+  if((env = jvm_procure_env(c->jvm))==NULL) {
+    pop_n_elems(args);
+    destruct(fp->current_object);
+    return;
+  }
+
+  m->method = (fp->current_object->prog==static_method_program?
+	       (*env)->GetStaticMethodID(env, c->jobj, name->str, sig->str):
+	       (*env)->GetMethodID(env, c->jobj, name->str, sig->str));
+
+  jvm_vacate_env(c->jvm, env);
+
+  if(m->method == 0) {
+    pop_n_elems(args);
+    destruct(fp->current_object);
+    return;
+  }
+
+  m->class = class;
+  m->name = name;
+  m->sig = sig;
+  class->refs++;
+  name->refs++;
+  sig->refs++;
+  pop_n_elems(args);
+  push_int(0);
+
+  m->nargs = 0;
+  m->rettype = 0;
+
+  p = sig->str;
+  if(*p++ != '(')
+    return;
+
+  while(*p && *p != ')') {
+    if(*p != '[')
+      m->nargs ++;
+    if(*p++ == 'L')
+      while(*p && *p++ != ';');
+  }
+  if(*p)
+    if((m->rettype = *++p)=='[')
+      m->subtype = *++p;
+}
+
+static void jargs_error(struct object *jvm, JNIEnv *env)
+{
+  jvm_vacate_env(jvm, env);
+  error("incompatible types passed to method.\n");
+}
+
+static void make_jargs(jvalue *jargs, INT32 args, char *sig,
+		       struct object *jvm, JNIEnv *env)
+{
+  INT32 i;
+  struct jobj_storage *jo;
+
+  if(args==-1)
+      args=1;
+  else
+    if(*sig=='(')
+      sig++;
+    else
+      return;
+  for(i=0; i<args; i++) {
+    struct svalue *sv = &sp[i-args];
+    switch(sv->type) {
+    case T_INT:
+      switch(*sig++) {
+      case 'L':
+	while(*sig && *sig++!=';');
+	if(sv->u.integer!=0)
+	  jargs_error(jvm, env);
+	jargs->l = 0;
+	break;
+      case '[':
+	while(*sig=='[') sig++;
+	if(*sig && *sig++=='L')
+	  while(*sig && *sig++!=';');
+	if(sv->u.integer!=0)
+	  jargs_error(jvm, env);
+	jargs->l = 0;
+	break;
+      case 'Z':
+	jargs->z = sv->u.integer!=0;
+	break;
+      case 'B':
+	jargs->b = sv->u.integer;
+	break;
+      case 'C':
+	jargs->c = sv->u.integer;
+	break;
+      case 'S':
+	jargs->s = sv->u.integer;
+	break;
+      case 'I':
+	jargs->i = sv->u.integer;
+	break;
+      case 'J':
+	jargs->j = sv->u.integer;
+	break;
+      case 'F':
+	jargs->f = sv->u.integer;
+	break;
+      case 'D':
+	jargs->d = sv->u.integer;
+	break;
+      default:
+	jargs_error(jvm, env);
+      }
+      break;
+    case T_FLOAT:
+      switch(*sig++) {
+      case 'Z':
+	jargs->z = sv->u.float_number!=0;
+	break;
+      case 'B':
+	jargs->b = sv->u.float_number;
+	break;
+      case 'C':
+	jargs->c = sv->u.float_number;
+	break;
+      case 'S':
+	jargs->s = sv->u.float_number;
+	break;
+      case 'I':
+	jargs->i = sv->u.float_number;
+	break;
+      case 'J':
+	jargs->j = sv->u.float_number;
+	break;
+      case 'F':
+	jargs->f = sv->u.float_number;
+	break;
+      case 'D':
+	jargs->d = sv->u.float_number;
+	break;
+      default:
+	jargs_error(jvm, env);
+      }
+      break;
+    case T_STRING:
+      if(*sig++!='L')
+	jargs_error(jvm, env);
+      while(*sig && *sig++!=';');
+      switch(sv->u.string->size_shift) {
+      case 0:
+	{
+	  jchar *newstr = alloca(2*sv->u.string->len);
+	  INT32 i;
+	  p_wchar0 *p = STR0(sv->u.string);
+	  for(i=sv->u.string->len; --i>=0; )
+	    newstr[i]=(jchar)(unsigned char)p[i];
+	  jargs->l = (*env)->NewString(env, newstr, sv->u.string->len);
+	}
+	break;
+      case 1:
+	jargs->l = (*env)->NewString(env, (jchar*)STR1(sv->u.string),
+				     sv->u.string->len);
+	break;
+      case 2:
+	{
+	  /* FIXME?: Does not make surrogates for plane 1-16 in group 0... */
+	  jchar *newstr = alloca(2*sv->u.string->len);
+	  INT32 i;
+	  p_wchar2 *p = STR2(sv->u.string);
+	  for(i=sv->u.string->len; --i>=0; )
+	    newstr[i]=(jchar)(p[i]>0xffff? 0xfffd : p[i]);
+	  jargs->l = (*env)->NewString(env, newstr, sv->u.string->len);
+	}
+	break;
+      }
+      break;
+    case T_OBJECT:
+      if(*sig=='[') {
+	if(!(jo=(struct jobj_storage *)get_storage(sv->u.object,jobj_program)))
+	  jargs_error(jvm, env);
+	else {
+	  while(*sig=='[') sig++;
+	  if(*sig && *sig++=='L')
+	    while(*sig && *sig++!=';');
+	  jargs->l = jo->jobj;
+	}
+      } else {
+	if(*sig++!='L' ||
+	   !(jo=(struct jobj_storage *)get_storage(sv->u.object,jobj_program)))
+	  jargs_error(jvm, env);
+	else {
+	  while(*sig && *sig++!=';');
+	  jargs->l = jo->jobj;
+	}
+      }
+      break;
+    default:
+      jargs_error(jvm, env);
+    }
+    jargs++;
+  }
+}
+
+static void free_jargs(jvalue *jargs, INT32 args, char *sig)
+{
+  if(jargs == NULL)
+    return;
+  free(jargs);
+}
+
+static void f_call_static(INT32 args)
+{
+  struct method_storage *m=THIS_METHOD;
+  jvalue *jargs = (m->nargs>0?(jvalue *)xalloc(m->nargs*sizeof(jvalue)):NULL);
+
+  JNIEnv *env;
+  struct jobj_storage *co = THAT_JOBJ(m->class);
+  jclass class = co->jobj;
+  jobject jjo; FLOAT_TYPE jjf; INT32 jji;
+
+  if(args != m->nargs)
+    error("wrong number of arguments for method.\n");
+
+  if((env = jvm_procure_env(co->jvm))==NULL) {
+    pop_n_elems(args);
+    push_int(0);
+    return;
+  }
+
+  make_jargs(jargs, args, m->sig->str, co->jvm, env);
+
+  switch(m->rettype) {
+  case 'Z':
+    jji = (*env)->CallStaticBooleanMethodA(env, class, m->method, jargs);
+    pop_n_elems(args);
+    push_int(jji);
+    break;
+  case 'B':
+    jji = (*env)->CallStaticByteMethodA(env, class, m->method, jargs);
+    pop_n_elems(args);
+    push_int(jji);
+    break;
+  case 'C':
+    jji = (*env)->CallStaticCharMethodA(env, class, m->method, jargs);
+    pop_n_elems(args);
+    push_int(jji);
+    break;
+  case 'S':
+    jji = (*env)->CallStaticShortMethodA(env, class, m->method, jargs);
+    pop_n_elems(args);
+    push_int(jji);
+    break;
+  case 'I':
+    jji = (*env)->CallStaticIntMethodA(env, class, m->method, jargs);
+    pop_n_elems(args);
+    push_int(jji);
+    break;
+  case 'J':
+    jji = (*env)->CallStaticLongMethodA(env, class, m->method, jargs);
+    pop_n_elems(args);
+    push_int(jji);
+    break;
+  case 'F':
+    jjf = (*env)->CallStaticFloatMethodA(env, class, m->method, jargs);
+    pop_n_elems(args);
+    push_float(jjf);
+    break;
+  case 'D':
+    jjf = (*env)->CallStaticDoubleMethodA(env, class, m->method, jargs);
+    pop_n_elems(args);
+    push_float(jjf);
+    break;
+  case 'L':
+  case '[':
+    jjo = (*env)->CallStaticObjectMethodA(env, class, m->method, jargs);
+    pop_n_elems(args);
+    if(m->rettype=='[')
+      push_java_array(jjo, co->jvm, env, m->subtype);
+    else
+      push_java_anyobj(jjo, co->jvm, env);
+    break;
+  case 'V':
+  default:
+    (*env)->CallStaticVoidMethodA(env, class, m->method, jargs);
+    pop_n_elems(args);
+    push_int(0);
+    break;
+  }
+
+  free_jargs(jargs, args, m->sig->str);
+
+  jvm_vacate_env(co->jvm, env);
+}
+
+static void f_call_virtual(INT32 args)
+{
+  struct method_storage *m=THIS_METHOD;
+  jvalue *jargs = (m->nargs>0?(jvalue *)xalloc(m->nargs*sizeof(jvalue)):NULL);
+
+  JNIEnv *env;
+  struct jobj_storage *co = THAT_JOBJ(m->class);
+  jclass class = co->jobj;
+  jobject jjo; FLOAT_TYPE jjf; INT32 jji;
+  struct jobj_storage *jo;
+
+  if(args != 1+m->nargs)
+    error("wrong number of arguments for method.\n");
+
+  if(sp[-args].type != T_OBJECT || 
+     (jo = (struct jobj_storage *)get_storage(sp[-args].u.object,
+					      jobj_program))==NULL)
+    error("Bad argument 1 to `().\n");
+
+  if((env = jvm_procure_env(co->jvm))==NULL) {
+    pop_n_elems(args);
+    push_int(0);
+    return;
+  }
+
+  make_jargs(jargs, args-1, m->sig->str, co->jvm, env);
+
+  switch(m->rettype) {
+  case 'Z':
+    jji = (*env)->CallBooleanMethodA(env, jo->jobj, m->method, jargs);
+    pop_n_elems(args);
+    push_int(jji);
+    break;
+  case 'B':
+    jji = (*env)->CallByteMethodA(env, jo->jobj, m->method, jargs);
+    pop_n_elems(args);
+    push_int(jji);
+    break;
+  case 'C':
+    jji = (*env)->CallCharMethodA(env, jo->jobj, m->method, jargs);
+    pop_n_elems(args);
+    push_int(jji);
+    break;
+  case 'S':
+    jji = (*env)->CallShortMethodA(env, jo->jobj, m->method, jargs);
+    pop_n_elems(args);
+    push_int(jji);
+    break;
+  case 'I':
+    jji = (*env)->CallIntMethodA(env, jo->jobj, m->method, jargs);
+    pop_n_elems(args);
+    push_int(jji);
+    break;
+  case 'J':
+    jji = (*env)->CallLongMethodA(env, jo->jobj, m->method, jargs);
+    pop_n_elems(args);
+    push_int(jji);
+    break;
+  case 'F':
+    jjf = (*env)->CallFloatMethodA(env, jo->jobj, m->method, jargs);
+    pop_n_elems(args);
+    push_float(jjf);
+    break;
+  case 'D':
+    jjf = (*env)->CallDoubleMethodA(env, jo->jobj, m->method, jargs);
+    pop_n_elems(args);
+    push_float(jjf);
+    break;
+  case 'L':
+  case '[':
+    jjo = (*env)->CallObjectMethodA(env, jo->jobj, m->method, jargs);
+    pop_n_elems(args);
+    if(m->rettype=='[')
+      push_java_array(jjo, co->jvm, env, m->subtype);
+    else
+      push_java_anyobj(jjo, co->jvm, env);
+    break;
+  case 'V':
+  default:
+    (*env)->CallVoidMethodA(env, jo->jobj, m->method, jargs);
+    pop_n_elems(args);
+    push_int(0);
+    break;
+  }
+
+  free_jargs(jargs, args, m->sig->str);
+
+  jvm_vacate_env(co->jvm, env);
+}
+
+static void f_call_nonvirtual(INT32 args)
+{
+  struct method_storage *m=THIS_METHOD;
+  jvalue *jargs = (m->nargs>0?(jvalue *)xalloc(m->nargs*sizeof(jvalue)):NULL);
+
+  JNIEnv *env;
+  struct jobj_storage *co = THAT_JOBJ(m->class);
+  jclass class = co->jobj;
+  jobject jjo; FLOAT_TYPE jjf; INT32 jji;
+  struct jobj_storage *jo;
+
+  if(args != 1+m->nargs)
+    error("wrong number of arguments for method.\n");
+
+  if(sp[-args].type != T_OBJECT || 
+     (jo = (struct jobj_storage *)get_storage(sp[-args].u.object,
+					      jobj_program))==NULL)
+    error("Bad argument 1 to call_nonvirtual.\n");
+
+  if((env = jvm_procure_env(co->jvm))==NULL) {
+    pop_n_elems(args);
+    push_int(0);
+    return;
+  }
+
+  make_jargs(jargs, args-1, m->sig->str, co->jvm, env);
+
+  switch(m->rettype) {
+  case 'Z':
+    jji = (*env)->CallNonvirtualBooleanMethodA(env, jo->jobj, class, m->method, jargs);
+    pop_n_elems(args);
+    push_int(jji);
+    break;
+  case 'B':
+    jji = (*env)->CallNonvirtualByteMethodA(env, jo->jobj, class, m->method, jargs);
+    pop_n_elems(args);
+    push_int(jji);
+    break;
+  case 'C':
+    jji = (*env)->CallNonvirtualCharMethodA(env, jo->jobj, class, m->method, jargs);
+    pop_n_elems(args);
+    push_int(jji);
+    break;
+  case 'S':
+    jji = (*env)->CallNonvirtualShortMethodA(env, jo->jobj, class, m->method, jargs);
+    pop_n_elems(args);
+    push_int(jji);
+    break;
+  case 'I':
+    jji = (*env)->CallNonvirtualIntMethodA(env, jo->jobj, class, m->method, jargs);
+    pop_n_elems(args);
+    push_int(jji);
+    break;
+  case 'J':
+    jji = (*env)->CallNonvirtualLongMethodA(env, jo->jobj, class, m->method, jargs);
+    pop_n_elems(args);
+    push_int(jji);
+    break;
+  case 'F':
+    jjf = (*env)->CallNonvirtualFloatMethodA(env, jo->jobj, class, m->method, jargs);
+    pop_n_elems(args);
+    push_float(jjf);
+    break;
+  case 'D':
+    jjf = (*env)->CallNonvirtualDoubleMethodA(env, jo->jobj, class, m->method, jargs);
+    pop_n_elems(args);
+    push_float(jjf);
+    break;
+  case 'L':
+  case '[':
+    jjo = (*env)->CallNonvirtualObjectMethodA(env, jo->jobj, class, m->method, jargs);
+    pop_n_elems(args);
+    if(m->rettype=='[')
+      push_java_array(jjo, co->jvm, env, m->subtype);
+    else
+      push_java_anyobj(jjo, co->jvm, env);
+    break;
+  case 'V':
+  default:
+    (*env)->CallNonvirtualVoidMethodA(env, jo->jobj, class, m->method, jargs);
+    pop_n_elems(args);
+    push_int(0);
+    break;
+  }
+
+  free_jargs(jargs, args, m->sig->str);
+
+  jvm_vacate_env(co->jvm, env);
+}
+
+
+/* Fields */
+
+static void init_field_struct(struct object *o)
+{
+  struct field_storage *f=THIS_FIELD;
+
+  f->class = NULL;
+  f->name = NULL;
+  f->sig = NULL;
+}
+
+static void exit_field_struct(struct object *o)
+{
+  struct field_storage *f=THIS_FIELD;
+
+  if(f->sig != NULL)
+    free_string(f->sig);
+  if(f->name != NULL)
+    free_string(f->name);
+  if(f->class != NULL)
+    free_object(f->class);
+}
+
+static void field_gc_check(struct object *o)
+{
+  struct field_storage *f = THIS_FIELD;
+
+  if(f->class)
+    gc_check(f->class);
+}
+
+static void field_gc_mark(struct object *o)
+{
+  struct field_storage *f = THIS_FIELD;
+
+  if(f->class)
+    gc_mark_object_as_referenced(f->class);
+}
+
+static void f_field_create(INT32 args)
+{
+  struct field_storage *f=THIS_FIELD;
+  struct jobj_storage *c;
+  struct object *class;
+  struct pike_string *name, *sig;
+  JNIEnv *env;
+
+  if(args==1) {
+    get_all_args("Java.field->create()", args, "%o", &class);
+    name = NULL;
+    sig = NULL;
+  } else
+    get_all_args("Java.field->create()", args, "%S%S%o", &name, &sig, &class);
+
+  if((c = (struct jobj_storage *)get_storage(class, jclass_program)) == NULL)
+    error("Bad argument 3 to create().\n");
+
+  f->field = 0;
+
+  if(name == NULL || sig == NULL) {
+    f->class = class;
+    class->refs++;
+    pop_n_elems(args);
+    f->type = 0;
+    return;
+  }
+
+  if((env = jvm_procure_env(c->jvm))) {
+
+    f->field = (fp->current_object->prog==static_field_program?
+		(*env)->GetStaticFieldID(env, c->jobj, name->str, sig->str):
+		(*env)->GetFieldID(env, c->jobj, name->str, sig->str));
+
+    jvm_vacate_env(c->jvm, env);
+  }
+
+  if(f->field == 0) {
+    pop_n_elems(args);
+    destruct(fp->current_object);
+    return;
+  }
+
+  f->class = class;
+  f->name = name;
+  f->sig = sig;
+  class->refs++;
+  name->refs++;
+  sig->refs++;
+  pop_n_elems(args);
+  push_int(0);
+
+  if((f->type = sig->str[0])=='[')
+    f->subtype = sig->str[1];
+}
+
+static void f_field_set(INT32 args)
+{
+  struct field_storage *f=THIS_FIELD;
+  JNIEnv *env;
+  struct jobj_storage *co = THAT_JOBJ(f->class);
+  struct jobj_storage *jo;
+  jvalue v;
+
+  if(args!=2)
+    error("Incorrect number of arguments to set.\n");
+
+  if(sp[-args].type != T_OBJECT || 
+     (jo = (struct jobj_storage *)get_storage(sp[-args].u.object,
+					      jobj_program))==NULL)
+    error("Bad argument 1 to set.\n");
+
+  if((env = jvm_procure_env(co->jvm))==NULL) {
+    pop_n_elems(args);
+    push_int(0);
+    return;
+  }
+
+  make_jargs(&v, -1, f->sig->str, co->jvm, env);
+  switch(f->type) {
+  case 'Z':
+    (*env)->SetBooleanField(env, jo->jobj, f->field, v.z);
+    break;
+  case 'B':
+    (*env)->SetByteField(env, jo->jobj, f->field, v.b);
+    break;
+  case 'C':
+    (*env)->SetCharField(env, jo->jobj, f->field, v.c);
+    break;
+  case 'S':
+    (*env)->SetShortField(env, jo->jobj, f->field, v.s);
+    break;
+  case 'I':
+    (*env)->SetIntField(env, jo->jobj, f->field, v.i);
+    break;
+  case 'J':
+    (*env)->SetLongField(env, jo->jobj, f->field, v.j);
+    break;
+  case 'F':
+    (*env)->SetFloatField(env, jo->jobj, f->field, v.f);
+    break;
+  case 'D':
+    (*env)->SetDoubleField(env, jo->jobj, f->field, v.d);
+    break;
+  case 'L':
+  case '[':
+    (*env)->SetObjectField(env, jo->jobj, f->field, v.l);
+    break;
+  }
+
+  jvm_vacate_env(co->jvm, env);
+
+  pop_n_elems(args);
+  push_int(0);
+}
+
+static void f_field_get(INT32 args)
+{
+  struct field_storage *f=THIS_FIELD;
+  JNIEnv *env;
+  struct jobj_storage *co = THAT_JOBJ(f->class);
+  jclass class = co->jobj;
+  jobject jjo; FLOAT_TYPE jjf; INT32 jji;
+  struct jobj_storage *jo;
+
+  if(sp[-args].type != T_OBJECT || 
+     (jo = (struct jobj_storage *)get_storage(sp[-args].u.object,
+					      jobj_program))==NULL)
+    error("Bad argument 1 to get.\n");
+
+  if((env = jvm_procure_env(co->jvm))==NULL) {
+    pop_n_elems(args);
+    push_int(0);
+    return;
+  }
+
+  switch(f->type) {
+  case 'Z':
+    jji = (*env)->GetBooleanField(env, jo->jobj, f->field);
+    pop_n_elems(args);
+    push_int(jji);
+    break;
+  case 'B':
+    jji = (*env)->GetByteField(env, jo->jobj, f->field);
+    pop_n_elems(args);
+    push_int(jji);
+    break;
+  case 'C':
+    jji = (*env)->GetCharField(env, jo->jobj, f->field);
+    pop_n_elems(args);
+    push_int(jji);
+    break;
+  case 'S':
+    jji = (*env)->GetShortField(env, jo->jobj, f->field);
+    pop_n_elems(args);
+    push_int(jji);
+    break;
+  case 'I':
+    jji = (*env)->GetIntField(env, jo->jobj, f->field);
+    pop_n_elems(args);
+    push_int(jji);
+    break;
+  case 'J':
+    jji = (*env)->GetLongField(env, jo->jobj, f->field);
+    pop_n_elems(args);
+    push_int(jji);
+    break;
+  case 'F':
+    jjf = (*env)->GetFloatField(env, jo->jobj, f->field);
+    pop_n_elems(args);
+    push_float(jjf);
+    break;
+  case 'D':
+    jjf = (*env)->GetDoubleField(env, jo->jobj, f->field);
+    pop_n_elems(args);
+    push_float(jjf);
+    break;
+  case 'L':
+  case '[':
+    jjo = (*env)->GetObjectField(env, jo->jobj, f->field);
+    pop_n_elems(args);
+    if(f->type=='[')
+      push_java_array(jjo, co->jvm, env, f->subtype);
+    else
+      push_java_anyobj(jjo, co->jvm, env);
+    break;
+  default:
+    pop_n_elems(args);
+    push_int(0);
+    break;
+  }
+
+  jvm_vacate_env(co->jvm, env);
+}
+
+static void f_static_field_set(INT32 args)
+{
+  struct field_storage *f=THIS_FIELD;
+  JNIEnv *env;
+  struct jobj_storage *co = THAT_JOBJ(f->class);
+  jclass class = co->jobj;
+  jvalue v;
+
+  if(args!=1)
+    error("Incorrect number of arguments to set.\n");
+
+  if((env = jvm_procure_env(co->jvm))==NULL) {
+    pop_n_elems(args);
+    push_int(0);
+    return;
+  }
+
+  make_jargs(&v, -1, f->sig->str, co->jvm, env);
+  switch(f->type) {
+  case 'Z':
+    (*env)->SetStaticBooleanField(env, class, f->field, v.z);
+    break;
+  case 'B':
+    (*env)->SetStaticByteField(env, class, f->field, v.b);
+    break;
+  case 'C':
+    (*env)->SetStaticCharField(env, class, f->field, v.c);
+    break;
+  case 'S':
+    (*env)->SetStaticShortField(env, class, f->field, v.s);
+    break;
+  case 'I':
+    (*env)->SetStaticIntField(env, class, f->field, v.i);
+    break;
+  case 'J':
+    (*env)->SetStaticLongField(env, class, f->field, v.j);
+    break;
+  case 'F':
+    (*env)->SetStaticFloatField(env, class, f->field, v.f);
+    break;
+  case 'D':
+    (*env)->SetStaticDoubleField(env, class, f->field, v.d);
+    break;
+  case 'L':
+  case '[':
+    (*env)->SetStaticObjectField(env, class, f->field, v.l);
+    break;
+  }
+
+  jvm_vacate_env(co->jvm, env);
+
+  pop_n_elems(args);
+  push_int(0);
+}
+
+static void f_static_field_get(INT32 args)
+{
+  struct field_storage *f=THIS_FIELD;
+  JNIEnv *env;
+  struct jobj_storage *co = THAT_JOBJ(f->class);
+  jclass class = co->jobj;
+  jobject jjo; FLOAT_TYPE jjf; INT32 jji;
+
+  if((env = jvm_procure_env(co->jvm))==NULL) {
+    pop_n_elems(args);
+    push_int(0);
+    return;
+  }
+
+  pop_n_elems(args);
+  switch(f->type) {
+  case 'Z':
+    jji = (*env)->GetStaticBooleanField(env, class, f->field);
+    push_int(jji);
+    break;
+  case 'B':
+    jji = (*env)->GetStaticByteField(env, class, f->field);
+    push_int(jji);
+    break;
+  case 'C':
+    jji = (*env)->GetStaticCharField(env, class, f->field);
+    push_int(jji);
+    break;
+  case 'S':
+    jji = (*env)->GetStaticShortField(env, class, f->field);
+    push_int(jji);
+    break;
+  case 'I':
+    jji = (*env)->GetStaticIntField(env, class, f->field);
+    push_int(jji);
+    break;
+  case 'J':
+    jji = (*env)->GetStaticLongField(env, class, f->field);
+    push_int(jji);
+    break;
+  case 'F':
+    jjf = (*env)->GetStaticFloatField(env, class, f->field);
+    push_float(jjf);
+    break;
+  case 'D':
+    jjf = (*env)->GetStaticDoubleField(env, class, f->field);
+    push_float(jjf);
+    break;
+  case 'L':
+  case '[':
+    jjo = (*env)->GetStaticObjectField(env, class, f->field);
+    if(f->type=='[')
+      push_java_array(jjo, co->jvm, env, f->subtype);
+    else
+      push_java_anyobj(jjo, co->jvm, env);
+    break;
+  default:
+    push_int(0);
+    break;
+  }
+
+  jvm_vacate_env(co->jvm, env);
+}
+
+
+/* Classes */
+
+
+#ifdef SUPPORT_NATIVE_METHODS
+
+struct native_method_context;
+
+#ifdef HAVE_SPARC_CPU
+
+struct cpu_context {
+  unsigned INT32 code[19];
+};
+
+static void *low_make_stub(struct cpu_context *ctx, void *data, int statc,
+			   void (*dispatch)())
+{
+  unsigned INT32 *p = ctx->code;
+
+  if(!statc)
+    *p++ = 0xd223a048;  /* st  %o1, [ %sp + 0x48 ] */
+  *p++ = 0xd423a04c;  /* st  %o2, [ %sp + 0x4c ] */
+  *p++ = 0xd623a050;  /* st  %o3, [ %sp + 0x50 ] */
+  *p++ = 0xd823a054;  /* st  %o4, [ %sp + 0x54 ] */
+  *p++ = 0xda23a058;  /* st  %o5, [ %sp + 0x58 ] */
+  *p++ = 0x9de3bf90;  /* save  %sp, -112, %sp    */
+
+  *p++ = 0x11000000|(((unsigned INT32)data)>>10);
+                      /* sethi  %hi(data), %o0   */
+  *p++ = 0x90122000|(((unsigned INT32)data)&0x3ff);
+                      /* or  %o0, %lo(data), %o0 */
+
+  *p++ = 0x92162000;  /* mov  %i0, %o1           */
+  if(statc) {
+    *p++ = 0x94100019;  /* mov  %i1, %o2           */
+    *p++ = 0x9607a04c;  /* add  %fp, 0x4c, %o3     */
+  } else {
+    *p++ = 0x94100000;  /* mov  %g0, %o2           */
+    *p++ = 0x9607a048;  /* add  %fp, 0x48, %o3     */
+  }
+
+  *p++ = 0x19000000|(((unsigned INT32)(void *)dispatch)>>10);
+                      /* sethi  %hi(dispatch), %o4   */
+  *p++ = 0x98132000|(((unsigned INT32)(void *)dispatch)&0x3ff);
+                      /* or  %o4, %lo(dispatch), %o4 */
+
+  *p++ = 0x9fc30000;  /* call  %o4               */
+  *p++ = 0x01000000;  /* nop                     */
+  *p++ = 0xb0100008;  /* mov %o0,%i0             */
+  *p++ = 0xb2100009;  /* mov %o1,%i1             */
+  *p++ = 0x81c7e008;  /* ret                     */
+  *p++ = 0x81e80000;  /* restore                 */
+
+  return ctx->code;
+}
+
+#else
+#ifdef HAVE_X86_CPU
+
+struct cpu_context {
+  unsigned char code[32];
+};
+
+static void *low_make_stub(struct cpu_context *ctx, void *data, int statc,
+			   void (*dispatch)())
+{
+  unsigned char *p = ctx->code;
+
+  *p++ = 0x55;               /* pushl  %ebp       */
+  *p++ = 0x8b; *p++ = 0xec;  /* movl  %esp, %ebp  */
+  *p++ = 0x8d; *p++ = 0x45;  /* lea  n(%ebp),%eax */
+  if(statc)
+    *p++ = 16;
+  else
+    *p++ = 12;
+  *p++ = 0x50;               /* pushl  %eax       */
+  if(statc) {
+    *p++ = 0xff; *p++ = 0x75; *p++ = 0x0c;  /* pushl  12(%ebp) */
+  } else {
+    *p++ = 0x6a; *p++ = 0x00;               /* pushl  $0x0     */
+  }
+  *p++ = 0xff; *p++ = 0x75; *p++ = 0x08;  /* pushl  8(%ebp)  */
+  *p++ = 0x68;               /* pushl  $data          */
+  *((unsigned INT32 *)p) = (unsigned INT32)data; p+=4;
+  *p++ = 0xb8;               /* movl  $dispatch, %eax */
+  *((unsigned INT32 *)p) = (unsigned INT32)dispatch; p+=4;
+  *p++ = 0xff; *p++ = 0xd0;  /* call  *%eax          */
+  *p++ = 0x8b; *p++ = 0xe5;  /* movl  %ebp, %esp     */
+  *p++ = 0x5d;               /* popl  %ebp           */
+  *p++ = 0xc3;               /* ret                  */
+
+  return ctx->code;
+}
+
+#else
+#error How did you get here?  It should never happen.
+#endif /* HAVE_X86_CPU */
+#endif /* HAVE_SPARC_CPU */
+
+struct natives_storage;
+
+struct native_method_context {
+  struct svalue callback;
+  struct pike_string *name, *sig;
+  struct natives_storage *nat;
+  struct cpu_context cpu;
+};
+
+struct natives_storage {
+
+  struct object *jvm, *cls;
+  int num_methods;
+  struct native_method_context *cons;
+  JNINativeMethod *jnms;
+
+};
+
+static void make_java_exception(struct object *jvm, JNIEnv *env,
+				struct svalue *v)
+{
+  union anything *a;
+  struct jvm_storage *j =
+    (struct jvm_storage *)get_storage(jvm, jvm_program);
+
+  if(!j)
+    return;
+
+  if(v->type == T_ARRAY && v->u.array->size &&
+     (a=low_array_get_item_ptr(v->u.array, 0, T_STRING))!=NULL) {
+    (*env)->ThrowNew(env, j->class_runtimex, a->string->str);
+  } else {
+    (*env)->ThrowNew(env, j->class_runtimex,
+		     "Nonstandard pike exception thrown.");
+  }
+}
+
+#define GET_NATIVE_ARG(ty) (((args)=((ty *)(args))+1),(((ty *)(args))[-1]))
+
+static void do_native_dispatch(struct native_method_context *ctx,
+			       JNIEnv *env, jclass cls, void *args,
+			       jvalue *rc)
+{
+  JMP_BUF recovery;
+  struct svalue *osp = sp;
+  int nargs = 0;
+  char *p;
+
+  if (SETJMP(recovery)) {
+    make_java_exception(ctx->nat->jvm, env, &throw_value);
+    pop_n_elems(sp-osp);
+    UNSETJMP(recovery);
+    return;
+  }
+
+  if(!cls) {
+    push_java_anyobj(GET_NATIVE_ARG(jobject), ctx->nat->jvm, env);
+    nargs++;
+  }
+
+  p = ctx->sig->str;
+
+  if(*p == '(')
+    p++;
+
+  while(*p && *p!=')') {
+    switch(*p++) {
+    case 'Z':
+    case 'B':
+    case 'C':
+    case 'S':
+    case 'I':
+    default:
+      push_int(GET_NATIVE_ARG(jint));
+      break;
+      
+    case 'J':
+      push_int(GET_NATIVE_ARG(jlong));
+      break;
+      
+    case 'F':
+      push_float(GET_NATIVE_ARG(jfloat));
+      break;
+      
+    case 'D':
+      push_float(GET_NATIVE_ARG(jdouble));
+      break;
+      
+    case 'L':
+      push_java_anyobj(GET_NATIVE_ARG(jobject), ctx->nat->jvm, env);
+      while(*p && *p++!=';') ;
+      break;
+      
+    case '[':
+      push_java_array(GET_NATIVE_ARG(jarray), ctx->nat->jvm, env, *p);
+      while(*p == '[')
+	p++;
+      if(*p++ == 'L')
+	while(*p && *p++!=';') ;
+      break;
+    }
+    nargs ++;
+  }
+
+  if(*p == ')')
+    p++;
+
+  apply_svalue(&ctx->callback, nargs);
+
+  memset(rc, 0, sizeof(*rc));
+
+  if(*p != 'V')
+    make_jargs(rc, -1, p, ctx->nat->jvm, env);
+
+  pop_n_elems(sp-osp);
+  UNSETJMP(recovery);
+}
+
+static void native_dispatch(struct native_method_context *ctx,
+			    JNIEnv *env, jclass cls, void *args,
+			    jvalue *rc)
+{
+  extern struct program *thread_id_prog;
+  struct thread_state *state;
+
+  if((state = thread_state_for_id(th_self()))!=NULL) {
+    /* This is a pike thread.  Do we have the interpreter lock? */
+    if(!state->swapped) {
+      /* Yes.  Go for it... */
+      do_native_dispatch(ctx, env, cls, args, rc);
+    } else {
+      /* Nope, let's get it... */
+      mt_lock(&interpreter_lock);
+      SWAP_IN_THREAD(state);
+
+      do_native_dispatch(ctx, env, cls, args, rc);
+
+      /* Restore */
+      SWAP_OUT_THREAD(state);
+      mt_unlock(&interpreter_lock);
+    }
+  } else {
+    /* Not a pike thread.  Create a temporary thread_id... */
+    mt_lock(&interpreter_lock);
+    init_interpreter();
+    thread_id=clone_object(thread_id_prog,0);
+    SWAP_OUT_THREAD((struct thread_state *)thread_id->storage);
+    ((struct thread_state *)thread_id->storage)->swapped=0;
+    ((struct thread_state *)thread_id->storage)->id=th_self();
+    num_threads++;
+    thread_table_insert(thread_id);
+    do_native_dispatch(ctx, env, cls, args, rc);
+    ((struct thread_state *)(thread_id->storage))->status=THREAD_EXITED;
+    co_signal(& ((struct thread_state *)(thread_id->storage))->status_change);
+    thread_table_delete(thread_id);
+    free_object(thread_id);
+    thread_id=NULL;
+    cleanup_interpret();
+    num_threads--;
+    mt_unlock(&interpreter_lock);
+  }
+}
+
+static jboolean native_dispatch_z(struct native_method_context *ctx,
+				  JNIEnv *env, jobject obj, void *args)
+{
+  jvalue v;
+  native_dispatch(ctx, env, obj, args, &v);
+  return v.z;
+}
+
+static jbyte native_dispatch_b(struct native_method_context *ctx,
+			       JNIEnv *env, jobject obj, void *args)
+{
+  jvalue v;
+  native_dispatch(ctx, env, obj, args, &v);
+  return v.b;
+}
+
+static jchar native_dispatch_c(struct native_method_context *ctx,
+			       JNIEnv *env, jobject obj, void *args)
+{
+  jvalue v;
+  native_dispatch(ctx, env, obj, args, &v);
+  return v.c;
+}
+
+static jshort native_dispatch_s(struct native_method_context *ctx,
+				JNIEnv *env, jobject obj, void *args)
+{
+  jvalue v;
+  native_dispatch(ctx, env, obj, args, &v);
+  return v.s;
+}
+
+static jint native_dispatch_i(struct native_method_context *ctx,
+			      JNIEnv *env, jobject obj, void *args)
+{
+  jvalue v;
+  native_dispatch(ctx, env, obj, args, &v);
+  return v.i;
+}
+
+static jlong native_dispatch_j(struct native_method_context *ctx,
+			       JNIEnv *env, jobject obj, void *args)
+{
+  jvalue v;
+  native_dispatch(ctx, env, obj, args, &v);
+  return v.j;
+}
+
+static jfloat native_dispatch_f(struct native_method_context *ctx,
+				JNIEnv *env, jobject obj, void *args)
+{
+  jvalue v;
+  native_dispatch(ctx, env, obj, args, &v);
+  return v.f;
+}
+
+static jdouble native_dispatch_d(struct native_method_context *ctx,
+				 JNIEnv *env, jobject obj, void *args)
+{
+  jvalue v;
+  native_dispatch(ctx, env, obj, args, &v);
+  return v.d;
+}
+
+static jobject native_dispatch_l(struct native_method_context *ctx,
+				 JNIEnv *env, jobject obj, void *args)
+{
+  jvalue v;
+  native_dispatch(ctx, env, obj, args, &v);
+  return v.l;
+}
+
+static void native_dispatch_v(struct native_method_context *ctx,
+			      JNIEnv *env, jobject obj, void *args)
+{
+  jvalue v;
+  native_dispatch(ctx, env, obj, args, &v);
+}
+
+static void make_stub(struct cpu_context *ctx, void *data, int statc, int rt)
+{
+  void *disp = native_dispatch_v;
+
+  switch(rt) {
+  case 'Z': disp = native_dispatch_z; break;
+  case 'B': disp = native_dispatch_b; break;
+  case 'C': disp = native_dispatch_c; break;
+  case 'S': disp = native_dispatch_s; break;
+  case 'I': disp = native_dispatch_i; break;
+  case 'J': disp = native_dispatch_j; break;
+  case 'F': disp = native_dispatch_f; break;
+  case 'D': disp = native_dispatch_d; break;
+  case '[':
+  case 'L': disp = native_dispatch_l; break;
+  default:
+    disp = native_dispatch_v;
+  }
+
+  low_make_stub(ctx, data, statc, disp);
+}
+
+static void build_native_entry(JNIEnv *env, jclass cls,
+			       struct native_method_context *con,
+			       JNINativeMethod *jnm,
+			       struct pike_string *name,
+			       struct pike_string *sig)
+{
+  int statc;
+  char *p = sig->str;
+
+  if((*env)->GetMethodID(env, cls, name->str, sig->str))
+    statc = 0;
+  else {
+    (*env)->ExceptionClear(env);
+    if((*env)->GetStaticMethodID(env, cls, name->str, sig->str))
+      statc = 1;
+    else {
+      (*env)->ExceptionClear(env);
+      error("trying to register nonexistant function\n");
+    }
+  }
+
+  con->name = name;
+  con->sig = sig;
+  name->refs++;
+  sig->refs++;
+  jnm->name = name->str;
+  jnm->signature = sig->str;
+  jnm->fnPtr = (void*)&con->cpu;
+  while(*p && *p++ != ')');
+  make_stub(&con->cpu, con, statc, *p);
+}
+
+static void init_natives_struct(struct object *o)
+{
+  struct natives_storage *n = THIS_NATIVES;
+
+  n->jvm = NULL;
+  n->cls = NULL;
+  n->num_methods = 0;
+  n->cons = NULL;
+  n->jnms = NULL;
+}
+
+static void exit_natives_struct(struct object *o)
+{
+  JNIEnv *env;
+  struct natives_storage *n = THIS_NATIVES;
+  
+  if(n->jvm) {
+    if(n->cls) {
+      if((env = jvm_procure_env(n->jvm)) != NULL) {
+	(*env)->UnregisterNatives(env, THAT_JOBJ(n->cls)->jobj);
+	jvm_vacate_env(n->jvm, env);
+      }
+      free_object(n->cls);
+    }
+    free_object(n->jvm);
+  }
+  if(n->jnms)
+    free(n->jnms);
+  if(n->cons) {
+    int i;
+    for(i=0; i<n->num_methods; i++) {
+      free_svalue(&n->cons[i].callback);
+      if(n->cons[i].name)
+	free_string(n->cons[i].name);
+      if(n->cons[i].sig)
+	free_string(n->cons[i].sig);
+    }
+    free(n->cons);
+  }
+}
+
+static void natives_gc_check(struct object *o)
+{
+  struct natives_storage *n = THIS_NATIVES;
+
+  if(n->jvm)
+    gc_check(n->jvm);
+  if(n->cls)
+    gc_check(n->cls);
+  if(n->cons) {
+    int i;
+    for(i=0; i<n->num_methods; i++)
+      gc_check_svalues(&n->cons[i].callback, 1);
+  }
+}
+
+static void natives_gc_mark(struct object *o)
+{
+  struct natives_storage *n = THIS_NATIVES;
+
+  if(n->jvm)
+    gc_mark_object_as_referenced(n->jvm);
+  if(n->cls)
+    gc_mark_object_as_referenced(n->cls);
+  if(n->cons) {
+    int i;
+    for(i=0; i<n->num_methods; i++)
+      gc_mark_svalues(&n->cons[i].callback, 1);
+  }
+}
+
+static void f_natives_create(INT32 args)
+{
+  struct natives_storage *n = THIS_NATIVES;
+  struct jobj_storage *c;
+  struct object *cls;
+  struct array *arr;
+  int i, rc=-1;
+  JNIEnv *env;
+
+  get_all_args("Java.natives->create()", args, "%a%o", &arr, &cls);
+
+  if((c = (struct jobj_storage *)get_storage(cls, jclass_program)) == NULL)
+    error("Bad argument 2 to create().\n");
+
+  if(n->num_methods)
+    error("create() called twice in Java.natives object.\n");
+
+  if(!arr->size) {
+    pop_n_elems(args);
+    return;
+  }
+
+  if((env = jvm_procure_env(c->jvm))) {
+
+    n->cons = (struct native_method_context *)
+      xalloc(arr->size * sizeof(struct native_method_context));
+    n->jnms = (JNINativeMethod *)
+      xalloc(arr->size * sizeof(JNINativeMethod));
+
+    for(i=0; i<arr->size; i++) {
+      struct array *nm;
+      if(ITEM(arr)[i].type != T_ARRAY || ITEM(arr)[i].u.array->size != 3)
+	error("Bad argument 1 to create().\n");
+      nm = ITEM(arr)[i].u.array;
+      if(ITEM(nm)[0].type != T_STRING || ITEM(nm)[1].type != T_STRING)
+	error("Bad argument 1 to create().\n");
+      assign_svalue_no_free(&n->cons[i].callback, &ITEM(nm)[2]);
+      n->cons[i].nat = n;
+      n->num_methods++;
+      
+      build_native_entry(env, c->jobj, &n->cons[i], &n->jnms[i],
+			 ITEM(nm)[0].u.string, ITEM(nm)[1].u.string);
+    }
+    
+    n->jvm = c->jvm;
+    n->cls = cls;
+    n->jvm->refs++;
+    n->cls->refs++;
+
+    rc = (*env)->RegisterNatives(env, c->jobj, n->jnms, n->num_methods);
+    jvm_vacate_env(c->jvm, env);
+  }
+
+  pop_n_elems(args);
+
+  if(rc<0)
+    destruct(fp->current_object);
+}
+
+#endif /* SUPPORT_NATIVE_METHODS */
+
+static void f_super_class(INT32 args)
+{
+  struct jobj_storage *jo = THIS_JOBJ;
+  JNIEnv *env;
+  
+  pop_n_elems(args);
+  if((env = jvm_procure_env(jo->jvm))) {
+    push_java_class((*env)->GetSuperclass(env, jo->jobj), jo->jvm, env);
+    jvm_vacate_env(jo->jvm, env);
+  } else
+    push_int(0);
+}
+
+static void f_is_assignable_from(INT32 args)
+{
+  struct jobj_storage *jc, *jo = THIS_JOBJ;
+  JNIEnv *env;
+  jboolean iaf;
+
+  if(args<1 || sp[-args].type != T_OBJECT ||
+     (jc = (struct jobj_storage *)get_storage(sp[-args].u.object,
+					      jclass_program))==NULL)
+    error("illegal argument 1 to is_assignable_from\n");
+
+  if((env = jvm_procure_env(jo->jvm))) {
+    iaf = (*env)->IsAssignableFrom(env, jo->jobj, jc->jobj);
+    jvm_vacate_env(jo->jvm, env);
+  } else
+    iaf = 0;
+
+  pop_n_elems(args);
+  push_int((iaf? 1:0));
+}
+
+static void f_throw_new(INT32 args)
+{
+  struct jobj_storage *jo = THIS_JOBJ;
+  struct jvm_storage *jj =
+    (struct jvm_storage *)get_storage(jo->jvm, jvm_program);
+  JNIEnv *env;
+  char *cn;
+
+  get_all_args("throw_new", args, "%s", &cn);
+
+  if((env = jvm_procure_env(jo->jvm))) {
+
+    if(!(*env)->IsAssignableFrom(env, jo->jobj, jj->class_throwable)) {
+      jvm_vacate_env(jo->jvm, env);
+      error("throw_new called in a class that doesn't inherit java.lang.Throwable!\n");
+    }
+
+    if((*env)->ThrowNew(env, jo->jobj, cn)<0) {
+      jvm_vacate_env(jo->jvm, env);
+      error("throw_new failed!\n");
+    }
+
+    jvm_vacate_env(jo->jvm, env);
+  }
+
+  pop_n_elems(args);
+  push_int(0);
+}
+
+static void f_alloc(INT32 args)
+{
+  struct jobj_storage *jo = THIS_JOBJ;
+  JNIEnv *env;
+  
+  pop_n_elems(args);
+
+  if((env = jvm_procure_env(jo->jvm))) {
+    push_java_anyobj((*env)->AllocObject(env, jo->jobj), jo->jvm, env);
+    jvm_vacate_env(jo->jvm, env);
+  } else push_int(0);
+}
+
+static void f_get_method(INT32 args)
+{
+  struct object *oo;
+
+  check_all_args("get_method", args, BIT_STRING, BIT_STRING, 0);
+
+  push_object(this_object());
+  oo=clone_object(method_program, args+1);
+  if(oo->prog!=NULL)
+    push_object(oo);
+  else {
+    free_object(oo);
+    push_int(0);
+  }
+}
+
+static void f_get_static_method(INT32 args)
+{
+  struct object *oo;
+
+  check_all_args("get_static_method", args, BIT_STRING, BIT_STRING, 0);
+
+  push_object(this_object());
+  oo=clone_object(static_method_program, args+1);
+  if(oo->prog!=NULL)
+    push_object(oo);
+  else {
+    free_object(oo);
+    push_int(0);
+  }
+}
+
+static void f_get_field(INT32 args)
+{
+  struct object *oo;
+
+  check_all_args("get_field", args, BIT_STRING, BIT_STRING, 0);
+
+  push_object(this_object());
+  oo=clone_object(field_program, args+1);
+  if(oo->prog!=NULL)
+    push_object(oo);
+  else {
+    free_object(oo);
+    push_int(0);
+  }
+}
+
+static void f_get_static_field(INT32 args)
+{
+  struct object *oo;
+
+  check_all_args("get_static_field", args, BIT_STRING, BIT_STRING, 0);
+
+  push_object(this_object());
+  oo=clone_object(static_field_program, args+1);
+  if(oo->prog!=NULL)
+    push_object(oo);
+  else {
+    free_object(oo);
+    push_int(0);
+  }
+}
+
+#ifdef SUPPORT_NATIVE_METHODS
+static void f_register_natives(INT32 args)
+{
+  struct object *oo;
+  check_all_args("register_natives", args, BIT_ARRAY, 0);
+  push_object(this_object());
+  oo=clone_object(natives_program, args+1);
+  if(oo->prog!=NULL)
+    push_object(oo);
+  else {
+    free_object(oo);
+    push_int(0);
+  } 
+}
+#endif /* SUPPORT_NATIVE_METHODS */
+
+
+/* Throwables */
+
+
+static void f_javathrow(INT32 args)
+{
+  struct jobj_storage *jo = THIS_JOBJ;
+  JNIEnv *env;
+
+  pop_n_elems(args);
+
+  if((env = jvm_procure_env(jo->jvm))) {
+    if((*env)->Throw(env, jo->jobj)<0) {
+      jvm_vacate_env(jo->jvm, env);
+      error("throw failed!\n");
+    }
+    jvm_vacate_env(jo->jvm, env);
+  }
+  push_int(0);
+}
+
+
+/* Arrays */
+
+static void f_javaarray_sizeof(INT32 args)
+{
+  struct jobj_storage *jo = THIS_JOBJ;
+  JNIEnv *env;
+
+  pop_n_elems(args);
+
+  if((env = jvm_procure_env(jo->jvm))) {
+    push_int((*env)->GetArrayLength(env, jo->jobj));  
+    jvm_vacate_env(jo->jvm, env);
+  } else
+    push_int(0);
+}
+
+static void javaarray_subarray(struct object *jvm, struct object *oo,
+			       jobject jobj, int ty, INT32 e1, INT32 e2)
+{
+  JNIEnv *env;
+  jobject jobj2;
+  jclass jocls, eltcls;
+  struct jvm_storage *j;
+
+  if((j = (struct jvm_storage *)get_storage(jvm, jvm_program))==NULL) {
+    push_int(0);
+    return;
+  }
+
+  if((env = jvm_procure_env(jvm))) {
+    jsize size = (*env)->GetArrayLength(env, jobj);
+
+    if(e1<0)
+      e1=0;
+    if(e1>size)
+      e1=size;
+    if(e2>=size)
+      e2=size-1;
+    if(e2<e1)
+      e2=0;
+    else
+      e2-=e1-1;
+
+    if(e2==size) {
+      /* Entire array selected */
+      jvm_vacate_env(jvm, env);
+      oo->refs++;
+      push_object(oo);
+      return;
+    }
+
+    switch(ty) {
+    case 'Z':
+      jobj2 = (*env)->NewBooleanArray(env, e2);
+      break;
+    case 'B':
+      jobj2 = (*env)->NewByteArray(env, e2);
+      break;
+    case 'C':
+      jobj2 = (*env)->NewCharArray(env, e2);
+      break;
+    case 'S':
+      jobj2 = (*env)->NewShortArray(env, e2);
+      break;
+    case 'I':
+      jobj2 = (*env)->NewIntArray(env, e2);
+      break;
+    case 'J':
+      jobj2 = (*env)->NewLongArray(env, e2);
+      break;
+    case 'F':
+      jobj2 = (*env)->NewFloatArray(env, e2);
+      break;
+    case 'D':
+      jobj2 = (*env)->NewDoubleArray(env, e2);
+      break;
+    case 'L':
+    case '[':
+    default:
+      jocls = (*env)->GetObjectClass(env, jobj);
+      eltcls = (jclass)(*env)->CallObjectMethod(env, jocls,
+						j->method_getcomponenttype);
+      jobj2 = (*env)->NewObjectArray(env, e2, eltcls, 0);
+      (*env)->DeleteLocalRef(env, eltcls);
+      (*env)->DeleteLocalRef(env, jocls);
+      break;
+    }
+
+    if(!jobj2) {
+      jvm_vacate_env(jvm, env);
+      push_int(0);
+      return;
+    }
+
+    if(e2)
+      (*env)->CallStaticVoidMethod(env, j->class_system, j->method_arraycopy,
+				   jobj, (jint)e1, jobj2, (jint)0, (jint)e2);
+    push_java_array(jobj2, jvm, env, ty);
+    jvm_vacate_env(jvm, env);
+  } else
+    push_int(0);
+}
+
+static void f_javaarray_getelt(INT32 args)
+{
+  struct jobj_storage *jo = THIS_JOBJ;
+  struct jarray_storage *ja = THIS_JARRAY;
+  JNIEnv *env;
+  INT32 n;
+  jvalue jjv;
+
+  if(args<1 || sp[-args].type != T_INT || (args>1 && sp[1-args].type != T_INT))
+    error("Bad args to `[].");
+
+  n = sp[-args].u.integer;
+
+  if(args>1) {
+    INT32 m = sp[1-args].u.integer;
+    pop_n_elems(args);
+    javaarray_subarray(jo->jvm, fp->current_object, jo->jobj, ja->ty, n, m);
+    return;
+  }
+
+  pop_n_elems(args);
+
+  if((env = jvm_procure_env(jo->jvm))) {
+
+    if(n<0) {
+      /* Count backwards... */
+      n += (*env)->GetArrayLength(env, jo->jobj);
+    }
+
+    switch(ja->ty) {
+    case 'Z':
+      (*env)->GetBooleanArrayRegion(env, jo->jobj, n, 1, &jjv.z);
+      push_int(jjv.z);
+      break;
+    case 'B':
+      (*env)->GetByteArrayRegion(env, jo->jobj, n, 1, &jjv.b);
+      push_int(jjv.b);
+      break;
+    case 'C':
+      (*env)->GetCharArrayRegion(env, jo->jobj, n, 1, &jjv.c);
+      push_int(jjv.c);
+      break;
+    case 'S':
+      (*env)->GetShortArrayRegion(env, jo->jobj, n, 1, &jjv.s);
+      push_int(jjv.s);
+      break;
+    case 'I':
+      (*env)->GetIntArrayRegion(env, jo->jobj, n, 1, &jjv.i);
+      push_int(jjv.i);
+      break;
+    case 'J':
+      (*env)->GetLongArrayRegion(env, jo->jobj, n, 1, &jjv.j);
+      push_int(jjv.j);
+      break;
+    case 'F':
+      (*env)->GetFloatArrayRegion(env, jo->jobj, n, 1, &jjv.f);
+      push_float(jjv.f);
+      break;
+    case 'D':
+      (*env)->GetDoubleArrayRegion(env, jo->jobj, n, 1, &jjv.d);
+      push_float(jjv.d);
+      break;
+    case 'L':
+    case '[':
+      push_java_anyobj((*env)->GetObjectArrayElement(env, jo->jobj, n),
+		       jo->jvm, env);
+      break;
+    default:
+      push_int(0);
+    }
+    jvm_vacate_env(jo->jvm, env);
+  } else
+    push_int(0);
+}
+
+static void f_javaarray_indices(INT32 args)
+{
+  struct jobj_storage *jo = THIS_JOBJ;
+  JNIEnv *env;
+  INT32 size;
+  struct array *a;
+
+  if((env = jvm_procure_env(jo->jvm))) {
+    size = (*env)->GetArrayLength(env, jo->jobj);
+    jvm_vacate_env(jo->jvm, env);
+  } else
+    size = 0;
+  a = allocate_array_no_init(size,0);
+  a->type_field=BIT_INT;
+  while(--size>=0) {
+    ITEM(a)[size].type=T_INT;
+    ITEM(a)[size].subtype=NUMBER_NUMBER;
+    ITEM(a)[size].u.integer=size;
+  }
+  pop_n_elems(args);
+  push_array(a);
+}
+
+static void f_javaarray_values(INT32 args)
+{
+  struct jobj_storage *jo = THIS_JOBJ;
+  struct jarray_storage *ja = THIS_JARRAY;
+  JNIEnv *env;
+
+  if((env = jvm_procure_env(jo->jvm))) {
+    INT32 i, size = (*env)->GetArrayLength(env, jo->jobj);
+    pop_n_elems(args);
+    if(ja->ty == 'L' || ja->ty == '[') {
+      for(i=0; i<size; i++)
+	push_java_anyobj((*env)->GetObjectArrayElement(env, jo->jobj, i),
+			 jo->jvm, env);
+      f_aggregate(size);
+    } else {
+      struct array *ar = allocate_array_no_init(size, 0);
+      if(ar == NULL)
+	push_int(0);
+      else {
+	void *a = (*env)->GetPrimitiveArrayCritical(env, jo->jobj, 0);
+	if(a == NULL) {
+	  free_array(ar);
+	  push_int(0);
+	} else {
+	  switch(ja->ty) {
+	  case 'Z':
+	    ar->type_field=BIT_INT;
+	    for(i=0; i<size; i++) {
+	      ITEM(ar)[i].type = T_INT;
+	      ITEM(ar)[i].subtype = NUMBER_NUMBER;
+	      ITEM(ar)[i].u.integer = ((jboolean*)a)[i];
+	    }
+	    break;
+	  case 'B':
+	    ar->type_field=BIT_INT;
+	    for(i=0; i<size; i++) {
+	      ITEM(ar)[i].type = T_INT;
+	      ITEM(ar)[i].subtype = NUMBER_NUMBER;
+	      ITEM(ar)[i].u.integer = ((jbyte*)a)[i];
+	    }
+	    break;
+	  case 'C':
+	    ar->type_field=BIT_INT;
+	    for(i=0; i<size; i++) {
+	      ITEM(ar)[i].type = T_INT;
+	      ITEM(ar)[i].subtype = NUMBER_NUMBER;
+	      ITEM(ar)[i].u.integer = ((jchar*)a)[i];
+	    }
+	    break;
+	  case 'S':
+	    ar->type_field=BIT_INT;
+	    for(i=0; i<size; i++) {
+	      ITEM(ar)[i].type = T_INT;
+	      ITEM(ar)[i].subtype = NUMBER_NUMBER;
+	      ITEM(ar)[i].u.integer = ((jshort*)a)[i];
+	    }
+	    break;
+	  case 'I':
+	  default:
+	    ar->type_field=BIT_INT;
+	    for(i=0; i<size; i++) {
+	      ITEM(ar)[i].type = T_INT;
+	      ITEM(ar)[i].subtype = NUMBER_NUMBER;
+	      ITEM(ar)[i].u.integer = ((jint*)a)[i];
+	    }
+	    break;
+	  case 'J':
+	    ar->type_field=BIT_INT;
+	    for(i=0; i<size; i++) {
+	      ITEM(ar)[i].type = T_INT;
+	      ITEM(ar)[i].subtype = NUMBER_NUMBER;
+	      ITEM(ar)[i].u.integer = ((jlong*)a)[i];
+	    }
+	    break;
+	  case 'F':
+	    ar->type_field=BIT_FLOAT;
+	    for(i=0; i<size; i++) {
+	      ITEM(ar)[i].type = T_FLOAT;
+	      ITEM(ar)[i].u.float_number = ((jfloat*)a)[i];
+	    }
+	    break;
+	  case 'D':
+	    ar->type_field=BIT_FLOAT;
+	    for(i=0; i<size; i++) {
+	      ITEM(ar)[i].type = T_FLOAT;
+	      ITEM(ar)[i].u.float_number = ((jdouble*)a)[i];
+	    }
+	    break;	    
+	  }
+	  (*env)->ReleasePrimitiveArrayCritical(env, jo->jobj, a, 0);
+	  push_array(ar);
+	}
+      }
+    }
+    jvm_vacate_env(jo->jvm, env);
+  } else {
+    pop_n_elems(args);
+    push_int(0);
+  }
+}
+
+
+/* Attachment */
+
+#ifdef _REENTRANT
+
+static void init_att_struct(struct object *o)
+{
+  struct att_storage *att = THIS_ATT;
+  att->jvm = NULL;
+  att->env = NULL;
+  clear_svalues(&att->thr, 1);
+}
+
+static void exit_att_struct(struct object *o)
+{
+  struct att_storage *att = THIS_ATT;
+
+  if(att->jvm) {
+    struct jvm_storage *j =
+      (struct jvm_storage *)get_storage(att->jvm, jvm_program);
+    if(att->env) {
+      THREAD_T me = th_self();
+      if(!th_equal(me, att->tid))
+	/* Hum hum.  This should (hopefully) only happen at exit time
+	   when we're destructing all objects.  In this case it should be
+	   safe just to ignore detaching, as the JVM itself will be destroyed
+	   within moments... */
+	;
+      else
+	(*j->jvm)->DetachCurrentThread(j->jvm);
+    }
+    free_object(att->jvm);
+  }
+  free_svalue(&att->thr);
+}
+
+static void att_gc_check(struct object *o)
+{
+  struct att_storage *att = THIS_ATT;
+
+  if(att->jvm)
+    gc_check(att->jvm);
+  gc_check_svalues(&att->thr, 1);
+}
+
+static void att_gc_mark(struct object *o)
+{
+  struct att_storage *att = THIS_ATT;
+
+  if(att->jvm)
+    gc_mark_object_as_referenced(att->jvm);
+  gc_mark_svalues(&att->thr, 1);
+}
+
+static void f_att_create(INT32 args)
+{
+  struct object *j;
+  struct jvm_storage *jvm;
+  struct att_storage *att = THIS_ATT;
+
+  get_all_args("Java.attachment->create()", args, "%o", &j);
+
+  if((jvm = (struct jvm_storage *)get_storage(j, jvm_program))==NULL)
+    error("Bad argument 1 to create().\n");
+
+  att->jvm = j;
+  j->refs++;
+  pop_n_elems(args);
+  f_this_thread(0);
+  assign_svalue(&att->thr, &sp[-1]);
+  pop_n_elems(1);
+  att->args.version = JNI_VERSION_1_2;
+  att->args.name = NULL;
+  att->args.group = NULL;
+
+  att->tid = th_self();
+  if((*jvm->jvm)->AttachCurrentThread(jvm->jvm,
+				      (void **)&att->env, &att->args)<0)
+    destruct(fp->current_object);
+}
+
+#endif /* _REENTRANT */
+
+
+/* JVM */
+
+
+static void f_create(INT32 args)
+{
+  struct jvm_storage *j = THIS_JVM;
+  char *classpath = NULL;
+  jclass cls;
+
+  if(j->jvm)
+    (*j->jvm)->DestroyJavaVM(j->jvm);
+
+  j->vm_args.version = 0x00010002; /* Java 1.2. */
+  j->vm_args.nOptions = 0;
+  j->vm_args.options = j->vm_options;
+  j->vm_args.ignoreUnrecognized = JNI_TRUE;
+
+  /* Set classpath */
+  if(args>0 && sp[-args].type == T_STRING) {
+    classpath = sp[-args].u.string->str;
+    sp[-args].u.string->refs++;
+    j->classpath_string = sp[-args].u.string;
+  } else {
+    if(getenv("CLASSPATH"))
+      classpath = getenv("CLASSPATH");
+#if 0
+#ifdef JAVA_HOME
+    else
+      classpath = ".:"JAVA_HOME"/classes:"JAVA_HOME"/lib/classes.zip:"
+	JAVA_HOME"/lib/rt.jar:"JAVA_HOME"/lib/i18n.jar";
+#endif /* JAVA_HOME */
+#else
+    else
+      classpath = ".";
+#endif
+    if(classpath != NULL)
+      j->classpath_string = make_shared_string(classpath);
+  }
+  if(classpath != NULL) {
+    push_text("-Djava.class.path=");
+    push_string(j->classpath_string);
+    j->classpath_string = NULL;
+    f_add(2);
+    sp[-1].u.string->refs++;
+    j->classpath_string = sp[-1].u.string;
+    pop_n_elems(1);
+    j->vm_args.options[j->vm_args.nOptions].optionString =
+      j->classpath_string->str;
+    j->vm_args.options[j->vm_args.nOptions].extraInfo = NULL;
+    j->vm_args.nOptions++;
+  }
+#ifdef JAVA_LIBPATH
+  j->vm_args.options[j->vm_args.nOptions].optionString =
+    "-Djava.library.path="JAVA_LIBPATH;
+  j->vm_args.options[j->vm_args.nOptions].extraInfo = NULL;
+  j->vm_args.nOptions++;
+#endif
+
+  /* load and initialize a Java VM, return a JNI interface 
+   * pointer in env */
+  if(JNI_CreateJavaVM(&j->jvm, (void**)&j->env, &j->vm_args))
+    error( "Failed to create virtual machine\n" );
+
+  cls = (*j->env)->FindClass(j->env, "java/lang/Object");
+  j->class_object = (*j->env)->NewGlobalRef(j->env, cls);
+  (*j->env)->DeleteLocalRef(j->env, cls);
+  cls = (*j->env)->FindClass(j->env, "java/lang/Class");
+  j->class_class = (*j->env)->NewGlobalRef(j->env, cls);
+  (*j->env)->DeleteLocalRef(j->env, cls);
+  cls = (*j->env)->FindClass(j->env, "java/lang/String");
+  j->class_string = (*j->env)->NewGlobalRef(j->env, cls);
+  (*j->env)->DeleteLocalRef(j->env, cls);
+  cls = (*j->env)->FindClass(j->env, "java/lang/Throwable");
+  j->class_throwable = (*j->env)->NewGlobalRef(j->env, cls);
+  (*j->env)->DeleteLocalRef(j->env, cls);
+  cls = (*j->env)->FindClass(j->env, "java/lang/RuntimeException");
+  j->class_runtimex = (*j->env)->NewGlobalRef(j->env, cls);
+  (*j->env)->DeleteLocalRef(j->env, cls);
+  cls = (*j->env)->FindClass(j->env, "java/lang/System");
+  j->class_system = (*j->env)->NewGlobalRef(j->env, cls);
+  (*j->env)->DeleteLocalRef(j->env, cls);
+
+  j->method_hash =
+    (*j->env)->GetMethodID(j->env, j->class_object, "hashCode", "()I");
+  j->method_tostring =
+    (*j->env)->GetMethodID(j->env, j->class_object, "toString",
+			   "()Ljava/lang/String;");
+  j->method_arraycopy =
+    (*j->env)->GetStaticMethodID(j->env, j->class_system, "arraycopy",
+				 "(Ljava/lang/Object;ILjava/lang/Object;II)V");
+  j->method_getcomponenttype =
+    (*j->env)->GetMethodID(j->env, j->class_class, "getComponentType",
+			   "()Ljava/lang/Class;");
+  j->method_isarray =
+    (*j->env)->GetMethodID(j->env, j->class_class, "isArray", "()Z");
+  j->method_getname =
+    (*j->env)->GetMethodID(j->env, j->class_class, "getName",
+			   "()Ljava/lang/String;");
+  j->method_charat =
+    (*j->env)->GetMethodID(j->env, j->class_string, "charAt", "(I)C");
+
+#ifdef _REENTRANT
+  f_thread_local(0);
+  if(sp[-1].type == T_OBJECT) {
+    j->tl_env = sp[-1].u.object;
+    j->tl_env->refs ++;
+  }
+  pop_n_elems(args+1);
+#else
+  pop_n_elems(args);
+#endif /* _REENTRANT */
+  push_int(0);
+}
+
+static void init_jvm_struct(struct object *o)
+{
+  struct jvm_storage *j = THIS_JVM;
+
+#ifdef SUPPORT_NATIVE_METHODS
+  num_threads++;
+#endif /* SUPPORT_NATIVE_METHODS */
+  j->jvm = NULL;
+  j->classpath_string = NULL;
+  j->class_object = 0;
+  j->class_class = 0;
+  j->class_string = 0;
+  j->class_throwable = 0;
+  j->class_runtimex = 0;
+  j->class_system = 0;
+#ifdef _REENTRANT
+  j->tl_env = NULL;
+#endif /* _REENTRANT */
+}
+
+static void exit_jvm_struct(struct object *o)
+{
+  struct jvm_storage *j = THIS_JVM;
+  JNIEnv *env;
+
+  if(j->jvm != NULL && (env = jvm_procure_env(fp->current_object))) {
+    if(j->class_system)
+      (*env)->DeleteGlobalRef(env, j->class_system);
+    if(j->class_runtimex)
+      (*env)->DeleteGlobalRef(env, j->class_runtimex);
+    if(j->class_throwable)
+      (*env)->DeleteGlobalRef(env, j->class_throwable);
+    if(j->class_string)
+      (*env)->DeleteGlobalRef(env, j->class_string);
+    if(j->class_class)
+      (*env)->DeleteGlobalRef(env, j->class_class);
+    if(j->class_object)
+      (*env)->DeleteGlobalRef(env, j->class_object);
+    jvm_vacate_env(fp->current_object, env);
+  }
+
+  if(j->jvm) {
+    (*j->jvm)->AttachCurrentThread(j->jvm, (void **)&env, NULL);
+    (*j->jvm)->DestroyJavaVM(j->jvm);
+    j->jvm = NULL;
+  }
+  if(j->classpath_string)
+    free_string(j->classpath_string);
+#ifdef _REENTRANT
+  if(j->tl_env != NULL)
+    free_object(j->tl_env);
+#endif /* _REENTRANT */
+#ifdef SUPPORT_NATIVE_METHODS
+  num_threads--;
+#endif /* SUPPORT_NATIVE_METHODS */
+}
+
+#ifdef _REENTRANT
+static void jvm_gc_check(struct object *o)
+{
+  struct jvm_storage *j = THIS_JVM;
+
+  if(j->tl_env)
+    gc_check(j->tl_env);
+}
+
+static void jvm_gc_mark(struct object *o)
+{
+  struct jvm_storage *j = THIS_JVM;
+
+  if(j->tl_env)
+    gc_mark_object_as_referenced(j->tl_env);
+}
+#endif /* _REENTRANT */
+
+
+static void f_get_version(INT32 args)
+{
+  JNIEnv *env;
+  pop_n_elems(args);
+  if((env = jvm_procure_env(fp->current_object))) {
+    push_int((*env)->GetVersion(env));
+    jvm_vacate_env(fp->current_object, env);
+  } else
+    push_int(0);
+}
+
+static void f_find_class(INT32 args)
+{
+  JNIEnv *env;
+  char *cn;
+  jclass c;
+
+  get_all_args("find_class", args, "%s", &cn);
+  if((env = jvm_procure_env(fp->current_object))) {
+    c = (*env)->FindClass(env, cn);
+    pop_n_elems(args);
+    push_java_class(c, fp->current_object, env);
+    jvm_vacate_env(fp->current_object, env);
+  } else {
+    pop_n_elems(args);
+    push_int(0);
+  }
+}
+
+static void f_exception_occurred(INT32 args)
+{
+  JNIEnv *env;
+
+  pop_n_elems(args);
+  if((env = jvm_procure_env(fp->current_object))) {
+    push_java_throwable((*env)->ExceptionOccurred(env),
+			fp->current_object, env);
+    jvm_vacate_env(fp->current_object, env);
+  } else
+    push_int(0);
+}
+
+static void f_exception_describe(INT32 args)
+{
+  JNIEnv *env;
+
+  pop_n_elems(args);
+  if((env = jvm_procure_env(fp->current_object))) {
+    (*env)->ExceptionDescribe(env);
+    jvm_vacate_env(fp->current_object, env);
+  }
+  push_int(0);
+}
+
+static void f_exception_clear(INT32 args)
+{
+  JNIEnv *env;
+
+  pop_n_elems(args);
+  if((env = jvm_procure_env(fp->current_object))) {
+    (*env)->ExceptionClear(env);
+    jvm_vacate_env(fp->current_object, env);
+  }
+  push_int(0);
+}
+
+static void f_javafatal(INT32 args)
+{
+  JNIEnv *env;
+  char *msg;
+
+  get_all_args("fatal", args, "%s", &msg);
+  if((env = jvm_procure_env(fp->current_object))) {
+    (*env)->FatalError(env, msg);
+    jvm_vacate_env(fp->current_object, env);
+  }
+  pop_n_elems(args);
+  push_int(0);
+}
+
+
+#endif /* HAVE_JAVA */
+
+void pike_module_init(void)
+{
+#ifdef HAVE_JAVA
+  struct svalue prog;
+  prog.type = T_PROGRAM;
+  prog.subtype = 0;
+
+  start_new_program();
+  ADD_STORAGE(struct jobj_storage);
+  add_function("cast", f_jobj_cast, "function(string:mixed)", 0);
+  add_function("`==", f_jobj_eq, "function(mixed:int)", 0);
+  add_function("__hash", f_jobj_hash, "function(:int)", 0);
+  add_function("is_instance_of", f_jobj_instance, "function(object:int)", 0);
+  set_init_callback(init_jobj_struct);
+  set_exit_callback(exit_jobj_struct);
+  set_gc_check_callback(jobj_gc_check);
+  set_gc_mark_callback(jobj_gc_mark);
+  jobj_program = end_program();
+  jobj_program->flags |= PROGRAM_DESTRUCT_IMMEDIATE;
+
+  start_new_program();
+  prog.u.program = jobj_program;
+  do_inherit(&prog, 0, NULL);
+  add_function("super_class", f_super_class, "function(:object)", 0);
+  add_function("is_assignable_from", f_is_assignable_from,
+	       "function(object:int)", 0);
+  add_function("throw_new", f_throw_new, "function(string:void)", 0);
+  add_function("alloc", f_alloc, "function(:object)", 0);
+  add_function("get_method", f_get_method, "function(string,string:object)", 0);
+  add_function("get_static_method", f_get_static_method, "function(string,string:object)", 0);
+  add_function("get_field", f_get_field, "function(string,string:object)", 0);
+  add_function("get_static_field", f_get_static_field, "function(string,string:object)", 0);
+#ifdef SUPPORT_NATIVE_METHODS
+  add_function("register_natives", f_register_natives, "function(array(array(string|function)):object)", 0);
+#endif /* SUPPORT_NATIVE_METHODS */
+  jclass_program = end_program();
+  jclass_program->flags |= PROGRAM_DESTRUCT_IMMEDIATE;
+
+  start_new_program();
+  do_inherit(&prog, 0, NULL);
+  add_function("throw", f_javathrow, "function(:void)", 0);
+  jthrowable_program = end_program();
+  jthrowable_program->flags |= PROGRAM_DESTRUCT_IMMEDIATE;
+
+  start_new_program();
+  do_inherit(&prog, 0, NULL);
+  jarray_stor_offs = ADD_STORAGE(struct jarray_storage);
+  add_function("_sizeof", f_javaarray_sizeof, "function(:int)", 0);
+  add_function("`[]", f_javaarray_getelt, "function(int:mixed)", 0);
+  add_function("_indices", f_javaarray_indices, "function(:array(int))", 0);
+  add_function("_values", f_javaarray_values, "function(:array(mixed))", 0);
+  jarray_program = end_program();
+  jarray_program->flags |= PROGRAM_DESTRUCT_IMMEDIATE;
+
+  start_new_program();
+  ADD_STORAGE(struct method_storage);
+  add_function("create", f_method_create,
+	       "function(string,string,object:void)", 0);
+  add_function("`()", f_call_static, "function(mixed...:mixed)", 0);
+  set_init_callback(init_method_struct);
+  set_exit_callback(exit_method_struct);
+  set_gc_check_callback(method_gc_check);
+  set_gc_mark_callback(method_gc_mark);
+  static_method_program = end_program();
+  static_method_program->flags |= PROGRAM_DESTRUCT_IMMEDIATE;
+
+  start_new_program();
+  ADD_STORAGE(struct method_storage);
+  add_function("create", f_method_create,
+	       "function(string,string,object:void)", 0);
+  add_function("`()", f_call_virtual, "function(object,mixed...:mixed)", 0);
+  add_function("call_nonvirtual", f_call_nonvirtual,
+	       "function(object,mixed...:mixed)", 0);
+  set_init_callback(init_method_struct);
+  set_exit_callback(exit_method_struct);
+  set_gc_check_callback(method_gc_check);
+  set_gc_mark_callback(method_gc_mark);
+  method_program = end_program();
+  method_program->flags |= PROGRAM_DESTRUCT_IMMEDIATE;
+
+  start_new_program();
+  ADD_STORAGE(struct field_storage);
+  add_function("create", f_field_create,
+	       "function(string,string,object:void)", 0);
+  add_function("set", f_field_set, "function(object,mixed:mixed)", 0);
+  add_function("get", f_field_get, "function(object:mixed)", 0);
+  set_init_callback(init_field_struct);
+  set_exit_callback(exit_field_struct);
+  set_gc_check_callback(field_gc_check);
+  set_gc_mark_callback(field_gc_mark);
+  field_program = end_program();
+  field_program->flags |= PROGRAM_DESTRUCT_IMMEDIATE;
+
+  start_new_program();
+  ADD_STORAGE(struct field_storage);
+  add_function("create", f_field_create,
+	       "function(string,string,object:void)", 0);
+  add_function("set", f_static_field_set, "function(mixed:mixed)", 0);
+  add_function("get", f_static_field_get, "function(:mixed)", 0);
+  set_init_callback(init_field_struct);
+  set_exit_callback(exit_field_struct);
+  set_gc_check_callback(field_gc_check);
+  set_gc_mark_callback(field_gc_mark);
+  static_field_program = end_program();
+  static_field_program->flags |= PROGRAM_DESTRUCT_IMMEDIATE;
+
+#ifdef SUPPORT_NATIVE_METHODS
+  start_new_program();
+  ADD_STORAGE(struct natives_storage);
+  add_function("create", f_natives_create,
+	       "function(array(array(string|function)),object:void)", 0);
+  set_init_callback(init_natives_struct);
+  set_exit_callback(exit_natives_struct);
+  set_gc_check_callback(natives_gc_check);
+  set_gc_mark_callback(natives_gc_mark);
+  natives_program = end_program();
+  natives_program->flags |= PROGRAM_DESTRUCT_IMMEDIATE;
+#endif /* SUPPORT_NATIVE_METHODS */
+
+#ifdef _REENTRANT
+  start_new_program();
+  ADD_STORAGE(struct att_storage);
+  add_function("create", f_att_create, "function(object:void)", 0);
+  set_init_callback(init_att_struct);
+  set_exit_callback(exit_att_struct);
+  set_gc_check_callback(att_gc_check);
+  set_gc_mark_callback(att_gc_mark);
+  attachment_program = end_program();
+  attachment_program->flags |= PROGRAM_DESTRUCT_IMMEDIATE;
+#endif /* _REENTRANT */
+
+  start_new_program();
+  ADD_STORAGE(struct jvm_storage);
+  add_function("create", f_create, "function(string|void:void)", 0);
+  add_function("get_version", f_get_version, "function(:int)", 0);
+  add_function("find_class", f_find_class, "function(string:object)", 0);
+  add_function("exception_occurred", f_exception_occurred,
+	       "function(:object)", 0);
+  add_function("exception_describe", f_exception_describe,
+	       "function(:void)", 0);
+  add_function("exception_clear", f_exception_clear, "function(:void)", 0);
+  add_function("fatal", f_javafatal, "function(string:void)", 0);
+  set_init_callback(init_jvm_struct);
+  set_exit_callback(exit_jvm_struct);
+#ifdef _REENTRANT
+  set_gc_check_callback(jvm_gc_check);
+  set_gc_mark_callback(jvm_gc_mark);
+#endif /* _REENTRANT */
+  add_program_constant("jvm", jvm_program = end_program(), 0);
+  jvm_program->flags |= PROGRAM_DESTRUCT_IMMEDIATE;
+#endif /* HAVE_JAVA */
+}
+
+void pike_module_exit(void)
+{
+#ifdef HAVE_JAVA
+  if(jarray_program) {
+    free_program(jarray_program);
+    jarray_program=NULL;
+  }
+  if(jthrowable_program) {
+    free_program(jthrowable_program);
+    jthrowable_program=NULL;
+  }
+  if(jclass_program) {
+    free_program(jclass_program);
+    jobj_program=NULL;
+  }
+  if(jobj_program) {
+    free_program(jobj_program);
+    jobj_program=NULL;
+  }
+  if(static_field_program) {
+    free_program(static_field_program);
+    static_field_program=NULL;
+  }
+  if(field_program) {
+    free_program(field_program);
+    field_program=NULL;
+  }
+  if(static_method_program) {
+    free_program(static_method_program);
+    static_method_program=NULL;
+  }
+  if(method_program) {
+    free_program(method_program);
+    method_program=NULL;
+  }
+  if(natives_program) {
+    free_program(natives_program);
+    natives_program=NULL;
+  }
+  if(attachment_program) {
+    free_program(attachment_program);
+    attachment_program=NULL;
+  }
+  if(jvm_program) {
+    free_program(jvm_program);
+    jvm_program=NULL;
+  }
+#endif /* HAVE_JAVA */
+}
+

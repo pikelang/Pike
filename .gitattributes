@@ -194,6 +194,10 @@ testfont binary
 /src/modules/Image/polyfill.c foreign_ident
 /src/modules/Image/togif.c foreign_ident
 /src/modules/Image/x.c foreign_ident
+/src/modules/Java/Makefile.in foreign_ident
+/src/modules/Java/acconfig.h foreign_ident
+/src/modules/Java/jvm.c foreign_ident
+/src/modules/Java/testsuite.in foreign_ident
 /src/modules/MIME/Makefile.in foreign_ident
 /src/modules/MIME/acconfig.h foreign_ident
 /src/modules/MIME/configure.in foreign_ident

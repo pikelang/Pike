@@ -1,0 +1,574 @@
+
+#if @JAVA_AVAILABLE@
+
+inherit @module@;
+
+object machine = jvm();
+
+static string make_sig(object o, mapping(string:mixed) info, object|void p)
+{
+  if(p)
+    return "("+Array.map(values(p), make_sig, info)*""+")"+make_sig(o, info);
+  else {
+    if(info->classisprimitive_method(o))
+      return info->primitives[o];
+    else if(info->classisarray_method(o))
+      return replace((string)info->classgetname_method(o), ".", "/");
+    else
+      return "L"+replace((string)info->classgetname_method(o), ".", "/")+";";
+  }
+}
+
+static void check_exception(mapping(string:mixed) info)
+{
+  object e = info->jvm->exception_occurred();
+  if(e) {
+    object sw = info->stringwriter_class->alloc();
+    info->stringwriter_init(sw);
+    object pw = info->printwriter_class->alloc();
+    info->printwriter_init(pw, sw);
+    info->throwable_printstacktrace(e, pw);
+    info->printwriter_flush(pw);
+    info->jvm->exception_clear();
+    array bt = backtrace();
+    throw(({(string)sw, bt[..sizeof(bt)-3]}));
+  }
+}
+
+static mixed wrap_result(mixed x, mapping(string:mixed) info)
+{
+  check_exception(info);
+  if(objectp(x)) {
+    if(x->_values) {
+      return jarray(x, info);
+    } else {
+      object cls = info->getclass_method(x);
+      return jobject(info->classes[cls] || jclass(cls, info), x, info);
+    }
+  } else
+    return x;
+}
+
+static array unwrap_args(array a)
+{
+  return Array.map(a, lambda(mixed x) {
+			return (objectp(x)? x->_obj||x:x);
+		      });
+}
+
+static class jmethod {
+
+  static object obj;
+  static mapping(string:mixed) info;
+  static mapping(string:object) protos;
+
+  static int is_applicable(string sig, array(mixed) args)
+  {
+    int sp=0, ap=0, na=sizeof(args);
+    if(sig[sp++]!='(')
+      return 0;
+    while(ap<na) {
+      switch(sig[sp++]) {
+      case 'B':
+      case 'C':
+      case 'I':
+      case 'J':
+      case 'S':
+      case 'Z':
+	if(!intp(args[ap]))
+	  return 0;
+	break;
+      case 'D':
+      case 'F':
+	if((!intp(args[ap])) && (!floatp(args[ap])))
+	  return 0;
+	break;
+      case '[':
+	if((!arrayp(args[ap])) && (!objectp(args[ap])))
+	  return 0;
+	while(sig[sp]=='[')
+	  sp++;
+	if(sig[sp++]=='L')
+	  while(sig[sp++]!=';')
+	    ;
+	break;
+      case 'L':
+	if((!objectp(args[ap])) && (!stringp(args[ap])))
+	  return 0;
+	while(sig[sp++]!=';')
+	  ;
+	break;
+      default:
+	return 0;
+	break;
+      }
+      ap++;
+    }
+    return sig[sp]==')';
+  }
+
+  static object select_proto(array(mixed) args)
+  {
+    array(string) applicable =
+      Array.filter(indices(protos), is_applicable, args);
+
+    if(sizeof(applicable)==1)
+      return protos[applicable[0]];
+
+    if(!sizeof(applicable))
+      throw(({"No method signatures are applicable.  Resolution incomplete.\n",
+	      backtrace()}));
+
+    throw(({"Multiple method signatures apply.  Resolution incomplete.\n",
+	    backtrace()}));
+  }
+
+  mixed `()(mixed ... args)
+  {
+    object mm;
+    if(sizeof(protos)==1)
+      mm = values(protos)[0];
+    else
+      mm = select_proto(args);
+    if(obj)
+      return wrap_result(mm(obj, @unwrap_args(args)), info);
+    else
+      return wrap_result(mm(@unwrap_args(args)), info);
+  }
+
+  void create(mapping(string:mixed) i, object o, mapping(string:object) p)
+  {
+    info = i;
+    obj = o;
+    protos = p;
+  }
+
+  void add_proto(string p, object o)
+  {
+    protos[p] = o;
+  }
+
+  object for_object(object o)
+  {
+    return jmethod(info, o, protos);
+  }
+
+  object for_proto(string p)
+  {
+    return protos[p];
+  }
+
+};
+
+static class jobject {
+
+  static object obj;
+  static object cls;
+  mapping(string:mixed) info;
+
+  static mixed _wrap_result(mixed x)
+  {
+    return cls->_wrap_result(x);
+  }
+
+  mixed cast(mixed ... args)
+  {
+    return obj->cast(@unwrap_args(args));
+  }
+
+  mixed `[](string n)
+  {
+    object f = cls->_fields[n];
+    if(f)
+      return _wrap_result(f->get(obj));
+    object m = cls->_methods[n];
+    if(m)
+      return m->for_object(obj);
+    return ([])[0];
+  }
+
+  array(string) _indices()
+  {
+    return indices(cls->_fields)|indices(cls->_methods);
+  }
+
+  array(mixed) _values()
+  {
+    return rows(this_object(), _indices());
+  }
+
+  static object method(string n, string sig)
+  {
+    object m = cls->_methods[n];
+    if(m) {
+      object m2 = m->for_proto(sig);
+      if(m2)
+	return jmethod(info, obj, ([sig:m2]));
+    }
+    return ([])[0];
+  }
+
+  mixed `->(string n)
+  {
+    if(sizeof(n) && n[0]=='_')
+      switch(n) {
+      case "_method":
+	return method;
+      case "_obj":
+	return obj;
+      default:
+	return `[](n);
+      } else
+	return `[](n);
+  }
+
+  void create(object c, object o, mapping(string:mixed) i)
+  {
+    obj = o;
+    cls = c;
+    info = i;
+  }
+
+};
+
+static class jarray {
+
+  static object obj;
+  mapping(string:mixed) info;
+
+  mixed cast(mixed ... args)
+  {
+    return obj->cast(@unwrap_args(args));
+  }
+
+  mixed `[](int ... n)
+  {
+    return wrap_result(obj->`[](@n), info);
+  }
+
+  array(mixed) _indices()
+  {
+    return indices(obj);
+  }
+
+  array(mixed) _values()
+  {
+    return Array.map(values(obj), wrap_result, info);
+  }
+
+  int _sizeof()
+  {
+    return sizeof(obj);
+  }
+
+  mixed `->(string n)
+  {
+    if(n == "length")
+      return sizeof(obj);
+    else if(n == "_obj")
+      return obj;
+    else
+      return ([])[0];
+  }
+
+  void create(object o, mapping(string:mixed) i)
+  {
+    obj = o;
+    info = i;
+  }
+
+};
+
+static class jconstructor {
+
+  static object cls, con;
+  static mapping(string:mixed) info;
+  
+  object `()(mixed ... args)
+  {
+    object o = cls->_alloc();
+    if(!o)
+      return 0;
+    con(o, @unwrap_args(args));
+    return jobject(cls, o, info);
+  }
+
+  void create(object c, object o, mapping(string:mixed) i)
+  {
+    cls = c;
+    con = o;
+    info = i;
+  }
+
+}
+
+static class jclass {
+
+  static object obj;
+  static mapping(string:object) fields = ([]);
+  static mapping(string:object) static_fields = ([]);
+  static mapping(string:object) methods = ([]);
+  static mapping(string:object) static_methods = ([]);
+  static object constructor;
+  static mapping(string:mixed) info;
+
+  static mixed _wrap_result(mixed x)
+  {
+    return wrap_result(x, info);
+  }
+
+  void create(object o, mapping(string:mixed) i)
+  {
+    obj = o;
+    info = i;
+    info->classes[o] = this_object();
+    foreach(values(i->getfields_method(o)), object f)
+      if((i->fieldgetmodifiers_method(f)) & i->modifier_static) {
+	string name = (string)i->fieldgetname_method(f);
+	static_fields[name] =
+	  o->get_static_field(name, make_sig(i->fieldgettype_method(f), i));
+      } else {
+	string name = (string)i->fieldgetname_method(f);
+	fields[name] =
+	  o->get_field(name, make_sig(i->fieldgettype_method(f), i));
+      }
+    foreach(values(i->getmethods_method(o)), object m)
+      if((i->methodgetmodifiers_method(m)) & i->modifier_static) {
+	string name = (string)i->methodgetname_method(m);
+	string sig = make_sig(i->methodgetreturntype_method(m), i,
+			      i->methodgetparametertypes_method(m));
+	object oo = o->get_static_method(name, sig);
+	if(static_methods[name])
+	  static_methods[name]->add_proto(sig, oo);
+	else
+	  static_methods[name] = jmethod(info, 0, ([sig:oo]));
+      } else {
+	string name = (string)i->methodgetname_method(m);
+	string sig = make_sig(i->methodgetreturntype_method(m), i,
+			      i->methodgetparametertypes_method(m));
+	object oo = o->get_method(name, sig);
+	if(methods[name])
+	  methods[name]->add_proto(sig, oo);
+	else
+	  methods[name] = jmethod(info, 0, ([sig:oo]));
+      }
+    foreach(values(i->getconstructors_method(o)), object c) {
+      string sig = make_sig(i->voidtype, i,
+			    i->constructorgetparametertypes_method(c));
+      object oo = o->get_method("<init>", sig);
+      if(constructor)
+	constructor->add_proto(sig, oo);
+      else
+	constructor = jmethod(info, 0, ([sig:oo]));
+    }
+  }
+
+  mixed `[](string n)
+  {
+    object f = static_fields[n];
+    if(f)
+      return _wrap_result(f->get());
+    return static_methods[n];
+  }
+
+  array(string) _indices()
+  {
+    return indices(static_fields)|indices(static_methods);
+  }
+
+  array(mixed) _values()
+  {
+    return rows(this_object(), _indices());
+  }
+
+  static object method(string n, string sig)
+  {
+    object m = static_methods[n];
+    if(m) {
+      object m2 = m->for_proto(sig);
+      if(m2)
+	return jmethod(info, 0, ([sig:m2]));
+    }
+    return 0;
+  }
+
+  static object make_constructor(string sig)
+  {
+    if(sizeof(sig) && sig[-1]!='V')
+      sig += "V";
+    if(constructor) {
+      object c = constructor->for_proto(sig);
+      if(c)
+	return jconstructor(this_object(), c, info);
+    }
+    return 0;
+  }
+
+  mixed `->(string n)
+  {
+    if(sizeof(n) && n[0]=='_')
+      switch(n) {
+      case "_fields":
+	return fields;
+      case "_static_fields":
+	return static_fields;
+      case "_methods":
+	return methods;
+      case "_static_methods":
+	return static_methods;
+      case "_wrap_result":
+	return _wrap_result;
+      case "_method":
+	return method;
+      case "_constructor":
+	return make_constructor;
+      case "_alloc":
+	return obj->alloc;
+      case "_register_natives":
+	return obj->register_natives;
+      default:
+	return `[](n);
+      } else
+	return `[](n);
+  }
+
+  object `()(mixed ... args)
+  {
+    object o = obj->alloc();
+    if(!o)
+      return 0;
+    if(constructor)
+      constructor->for_object(o)(@unwrap_args(args));
+    return jobject(this_object(), o, info);
+  }
+
+};
+
+static class package {
+
+  static mapping(string:mixed) info;
+  static mapping(string:object) subpackages;
+  static string name;
+  static object pkg;
+
+  object `[](string n)
+  {
+    object p = subpackages[n];
+    if(p)
+      return p;
+    if(zero_type(p)) {
+      p = info->jvm->find_class(name==""?n:replace(name, ".", "/")+"/"+n);
+      if(info->jvm->exception_occurred())
+	check_exception(info);
+        /* info->jvm->exception_clear(); */
+      if(p)
+	p = info->classes[p] || jclass(p, info);
+      return p;
+    }
+    p = object_program(this_object())((name==""?n:name+"."+n), info);
+    if(p)
+      subpackages[n] = p;
+    return p;
+  }
+
+  void create(string n, mapping(string:mixed) i)
+  {
+    name = n;
+    info = i;
+    if(!i->getpackage_method) {
+      object cls = i->jvm->find_class("java/lang/Package");
+      i->getpackage_method =
+	cls->get_static_method("getPackage",
+			       "(Ljava/lang/String;)Ljava/lang/Package;");
+      object gap =
+	cls->get_static_method("getPackages",
+			       "()[Ljava/lang/Package;");
+      i->packages =
+	Array.map(gap(), lambda(object o, object nm) {
+			   return (string)nm(o);
+			 }, cls->get_method("getName","()Ljava/lang/String;"));
+
+      cls = i->jvm->find_class("java/lang/Object");
+      i->getclass_method = cls->get_method("getClass",
+					   "()Ljava/lang/Class;");
+
+      cls = i->jvm->find_class("java/lang/Class");
+      i->getfields_method = cls->get_method("getFields",
+					    "()[Ljava/lang/reflect/Field;");
+      i->getmethods_method = cls->get_method("getMethods",
+					     "()[Ljava/lang/reflect/Method;");
+      i->getconstructors_method =
+	cls->get_method("getConstructors",
+			"()[Ljava/lang/reflect/Constructor;");
+
+      i->classisprimitive_method = cls->get_method("isPrimitive", "()Z");
+      i->classisarray_method = cls->get_method("isArray", "()Z");
+      i->classgetname_method = cls->get_method("getName",
+					       "()Ljava/lang/String;");
+
+      cls = i->jvm->find_class("java/lang/reflect/Field");
+      i->fieldgetname_method = cls->get_method("getName",
+					       "()Ljava/lang/String;"); 
+      i->fieldgettype_method = cls->get_method("getType",
+					       "()Ljava/lang/Class;"); 
+      i->fieldgetmodifiers_method = cls->get_method("getModifiers", "()I");
+
+      cls = i->jvm->find_class("java/lang/reflect/Method");
+      i->methodgetname_method = cls->get_method("getName",
+						"()Ljava/lang/String;"); 
+      i->methodgetreturntype_method = cls->get_method("getReturnType",
+						      "()Ljava/lang/Class;"); 
+      i->methodgetparametertypes_method =
+	cls->get_method("getParameterTypes", "()[Ljava/lang/Class;"); 
+      i->methodgetmodifiers_method = cls->get_method("getModifiers", "()I");
+
+      cls = i->jvm->find_class("java/lang/reflect/Constructor");
+      i->constructorgetparametertypes_method =
+	cls->get_method("getParameterTypes", "()[Ljava/lang/Class;");
+
+      cls = i->jvm->find_class("java/lang/reflect/Modifier");
+      object fld = cls->get_static_field("STATIC", "I");
+      i->modifier_static = fld->get();
+
+      i->primitives =
+	mkmapping(Array.map(({"Byte", "Character", "Double", "Float",
+			      "Integer", "Long", "Short", "Boolean", "Void"}),
+			    lambda(string n, function(string:object) fc) {
+			      return fc("java/lang/"+n)->
+				get_static_field("TYPE", "Ljava/lang/Class;")->
+				get();
+			    }, i->jvm->find_class),
+		  ({"B", "C", "D", "F", "I", "J", "S", "Z", "V"}));
+
+      i->classes = ([]);
+
+      i->voidtype = search(i->primitives, "V");
+
+      cls = i->stringwriter_class = i->jvm->find_class("java/io/StringWriter");
+      i->stringwriter_init = cls->get_method("<init>", "()V");
+
+      cls = i->printwriter_class = i->jvm->find_class("java/io/PrintWriter");
+      i->printwriter_init = cls->get_method("<init>", "(Ljava/io/Writer;)V");
+      i->printwriter_flush = cls->get_method("flush", "()V");
+
+      cls = i->jvm->find_class("java/lang/Throwable");
+      i->throwable_printstacktrace =
+	cls->get_method("printStackTrace", "(Ljava/io/PrintWriter;)V");
+
+    }
+    pkg = i->getpackage_method(name);
+    array(string) subs = Array.map(i->packages, lambda(string p, string n){
+						  string sn;
+						  if(sscanf(p,n+"%[^.]",sn)==1)
+						    return sn;
+						  else
+						    return 0;
+						}, (name==""?n:n+"."))-({0});
+    subpackages = mkmapping(subs, allocate(sizeof(subs)));
+  }
+
+};
+
+object pkg = package("", (["jvm":machine]));
+
+#endif

@@ -1,0 +1,18 @@
+#
+# $Id: Makefile.in,v 1.1 1999/03/02 22:07:10 marcus Exp $
+#
+
+SRCDIR=@srcdir@
+VPATH=@srcdir@:@srcdir@/../..:../..
+MODULE_CPPFLAGS=@DEFS@ @CPPFLAGS@
+OBJS=jvm.o
+MODULE_LDFLAGS=@LDFLAGS@ @JAVA_LIBS@
+
+DUMMY=module.pmod.in
+
+@dynamic_module_makefile@
+
+module.pmod.in: $(SRCDIR)/module.pmod.in.in config.status
+	CONFIG_FILES=module.pmod.in CONFIG_HEADERS="" ./config.status
+
+@dependencies@
