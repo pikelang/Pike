@@ -3,7 +3,7 @@ Section: interpreters
 Priority: optional
 Maintainer: Marek Habersack <grendel@debian.org>
 Standards-Version: 3.5.8
-Build-Depends: debhelper (>> 3.0.0), libgdbmg1-dev, libgmp3-dev, libz-dev, libjpeg-dev, libttf-dev, libmysqlclient-dev, libreadline-dev, perl5, bison, debhelper, glutg3-dev, libgnome-dev, xlibmesa-dev | libgl-dev, libgnorba-dev, libxpm4-dev, libpanel-applet-dev, libglib1.2-dev, libglade0-dev, libxml2-dev, libgtkxmhtml-dev, libfreetype6-dev, libdockapp-dev, autoconf, automake, libiodbc2-dev, libsane-dev, postgresql-dev, librsvg2-dev, libsdl-mixer1.2-dev, libsdl1.2-dev, libperl-dev, sharutils, libpng2-dev, gtkglarea5-dev, orbit, libtiff3g-dev, libungif4-dev, gdk-imlib1-dev
+Build-Depends: debhelper (>> 3.0.0), libgdbmg1-dev, libgmp3-dev, libz-dev, libjpeg-dev, libttf-dev, libmysqlclient-dev, libreadline-dev, perl5, bison, debhelper, glutg3-dev, libgnome-dev, xlibmesa-dev | libgl-dev, libgnorba-dev, libxpm4-dev, libpanel-applet-dev, libglib1.2-dev, libglade0-dev, libxml2-dev, libgtkxmhtml-dev, libfreetype6-dev, libdockapp-dev, autoconf, automake, libiodbc2-dev, libsane-dev, postgresql-dev, librsvg2-dev, libsdl-mixer1.2-dev, libsdl1.2-dev, libperl-dev, sharutils, libpng2-dev, gtkglarea5-dev, orbit, libtiff3g-dev, libungif4-dev, gdk-imlib1-dev, bc
 Build-Conflicts: libutahglx-dev
 
 Package: pike7.4-core
