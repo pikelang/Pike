@@ -1,3 +1,25 @@
+Sat Feb 10 21:43:42 1996  Fredrik Hubinette  <hubbe@sparky.signum.se>
+
+	* 
+	* create_testsuite: added tests for sscanfs %d %o and %x
+	* opcodes.c: changed sscanf to use strtol
+	* machine.h.in: changed USE_FCNTL_NONBLOCK to what it should be:
+	  USE_FCNTL_O_NONBLOCK
+	* simulate.lpc: fixed an add_efun for exec
+	* Updated a LOT of docfiles.
+
+Mon Nov 20 16:52:32 1995  Fredrik Hubinette  <hubbe@sparky.signum.se>
+
+	* builtin_efuns.c (replace_many): Fixed an array bound read.
+	* compilation.h: No more macros with empty arguments.
+	* configure.in: changed the mystic 'oneshot signals' message
+	* interpret.c: print_treturn_type -> print_return_value
+	* language.y: inline now implies no_mask
+	* machine.h.in: moved HAVE_GETWD & HAVE_GETCWD to files module
+	* opcodes.c: changed strtod to STRTOD
+	* sprintf.c: fixed some typos, optimized and a bugfix in truncating
+	* create_testsuite: added test for get_dir()
+
 Wed Nov 15 10:56:45 1995  Fredrik Hubinette  <hubbe@sparky.signum.se>
 
         * version 1.6E-12 released
