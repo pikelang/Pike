@@ -1,5 +1,5 @@
 /* -*- c -*-
- * $Id: builtin.cmod,v 1.82 2002/04/08 00:41:16 nilsson Exp $
+ * $Id: builtin.cmod,v 1.83 2002/04/08 01:17:05 mast Exp $
  */
 
 #include "global.h"
@@ -876,7 +876,7 @@ PIKECLASS backtrace_frame
   PIKEVAR mixed fun;
   PIKEVAR array args;
   CVAR struct program *prog;	/* FIXME: Ought to be a private pikevar... */
-  CVAR unsigned char *pc;
+  CVAR PIKE_OPCODE_T *pc;
   CVAR struct pike_string *filename;
   CVAR INT_TYPE lineno;
 
@@ -885,7 +885,7 @@ PIKECLASS backtrace_frame
     THIS->fun.type = T_INT;
     THIS->fun.u.integer = 0;
     THIS->prog = NULL;
-    THIS->pc = 0;
+    THIS->pc = NULL;
     THIS->lineno = 0;
     THIS->args = NULL;
     THIS->filename = NULL;
@@ -1183,13 +1183,7 @@ void low_backtrace(struct Pike_interpreter *i)
 
     if ((bf->prog = f->context.prog)) {
       add_ref(bf->prog);
-      bf->pc = f->pc + ( (f->flags & PIKE_FRAME_RETURN_INTERNAL) ?
-#ifndef USE_MACHINE_CODE
-			 -1 : 0
-#else
-			 -1 : (long)(f->context.prog->program)
-#endif
-	);
+      bf->pc = f->pc + ( (f->flags & PIKE_FRAME_RETURN_INTERNAL) ? -1 : 0);
 
     }
 
