@@ -5,8 +5,7 @@ Calendar.wmml
 Image.wmml
 Mysql.wmml
 Parser.wmml
-ProtocolsHTTP.wmml
-ProtocolsLysKOM.wmml
+Protocols*.wmml
 ___tmp.*
 __tmp.ppm
 error.pdf
