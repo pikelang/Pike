@@ -6,7 +6,7 @@
 // Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 // for more information.
 //
-// $Id: master.pike.in,v 1.317 2003/12/18 23:00:35 marcus Exp $
+// $Id: master.pike.in,v 1.318 2003/12/18 23:23:39 marcus Exp $
 
 #pike __REAL_VERSION__
 
@@ -358,9 +358,9 @@ string getcwd()
 }
 #endif // GETCWD_CACHE
 
-string combine_path_with_cwd(string path)
+string combine_path_with_cwd(string ... paths)
 {
-  return combine_path(IS_ABSOLUTE_PATH(path)?"":getcwd(),path);
+  return combine_path(IS_ABSOLUTE_PATH(paths[0])?"":getcwd(),@paths);
 }
 
 #ifdef FILE_STAT_CACHE
@@ -884,16 +884,14 @@ program low_cast_to_program(string pname,
 {
   string ext;
   string nname;
-  array(string) tmp=EXPLODE_PATH(pname);
 
   // werror("low_cast_to_program(%O, %O, %O, %O)\n",
   // pname, current_file, handler, mkobj);
 
-  if(sscanf(reverse(tmp[-1]),"%s.%s",ext, nname))
+  if(sscanf(reverse(BASENAME(pname)),"%s.%s",ext, nname))
   {
     ext="."+reverse(ext);
-    tmp[-1]=reverse(nname);
-    pname=tmp*"/";
+    pname=pname[..sizeof(pname)-sizeof(ext)-1];
   }
   else {
     ext="";
@@ -1645,16 +1643,13 @@ class joinnode
 joinnode handle_import(string path, string|void current_file,
 			object|void current_handler)
 {
-  array(string) tmp;
 #ifdef __amigaos__
   if(path == ".")
     path = "";
 #endif
   if(current_file)
   {
-    tmp=EXPLODE_PATH(current_file);
-    tmp[-1] = path;
-    path=combine_path_with_cwd( tmp*"/");
+    path = combine_path_with_cwd(dirname(current_file), path);
   } else {
     path = combine_path_with_cwd(path);
   }
@@ -1747,13 +1742,10 @@ program|object findmodule(string fullname, object|void handler)
 #if 0
 mixed handle_import(string what, string|void current_file, object|void handler)
 {
-  array(string) tmp;
   string path;
   if(current_file)
   {
-    tmp=EXPLODE_PATH(current_file);
-    tmp[-1]=what;
-    path=combine_path_with_cwd( tmp*"/");
+    path = combine_path_with_cwd(dirname(current_file), what);
   } else {
     path = combine_path_with_cwd(what);
   }
@@ -2085,9 +2077,7 @@ class CompatResolver
   {
     if(local_include)
     {
-      array(string) tmp=EXPLODE_PATH(current_file);
-      tmp[-1]=f;
-      return combine_path_with_cwd(tmp*"/");
+      return combine_path_with_cwd(dirname(current_file), f);
     }
     else
     {
@@ -3201,7 +3191,7 @@ string describe_program(program|function p)
   }
 
   if(s=Builtin()->program_defined(p))
-    return EXPLODE_PATH(s)[-1];
+    return BASENAME(s);
 
   return 0;
 }
@@ -3216,7 +3206,7 @@ string describe_function (function f)
   if(string s = programs_reverse_lookup (f))
   {
     if(has_suffix(s, ".pmod"))
-      name = EXPLODE_PATH(s[..sizeof(s)-6])[-1];
+      name = BASENAME(s[..sizeof(s)-6]);
     else
       name = trim_file_name(s);
   }
