@@ -1,4 +1,4 @@
-// $Id: module.pmod,v 1.49 1999/04/30 07:01:19 hubbe Exp $
+// $Id: module.pmod,v 1.50 1999/05/01 21:18:10 grubba Exp $
 
 import String;
 
@@ -712,6 +712,10 @@ static class nb_sendfile
 
   static void reader_done()
   {
+#ifdef SENDFILE_DEBUG
+    werror("Stdio.sendfile(): Reader done.\n");
+#endif /* SENDFILE_DEBUG */
+
     from->set_nonblocking(0,0,0);
     from = 0;
     if (trailers) {
@@ -738,14 +742,26 @@ static class nb_sendfile
 
   static void close_cb(mixed ignored)
   {
+#ifdef SENDFILE_DEBUG
+    werror("Stdio.sendfile(): Input EOF.\n");
+#endif /* SENDFILE_DEBUG */
+
     reader_done();
   }
 
   static void do_read()
   {
+#ifdef SENDFILE_DEBUG
+    werror("Stdio.sendfile(): Blocking read.\n");
+#endif /* SENDFILE_DEBUG */
+
     string more_data = from->read(65536, 1);
     if (more_data == "") {
       // EOF.
+#ifdef SENDFILE_DEBUG
+      werror("Stdio.sendfile(): Blocking read got EOF.\n");
+#endif /* SENDFILE_DEBUG */
+
       from = 0;
       if (trailers) {
 	to_write += (trailers - ({ "" }));
@@ -758,6 +774,9 @@ static class nb_sendfile
 
   static void read_cb(mixed ignored, string data)
   {
+#ifdef SENDFILE_DEBUG
+    werror("Stdio.sendfile(): Read callback.\n");
+#endif /* SENDFILE_DEBUG */
     if (len > 0) {
       if (sizeof(data) < len) {
 	len -= sizeof(data);
@@ -794,6 +813,9 @@ static class nb_sendfile
 
   static void start_reader()
   {
+#ifdef SENDFILE_DEBUG
+    werror("Stdio.sendfile(): Starting the reader.\n");
+#endif /* SENDFILE_DEBUG */
     if (!reader_awake) {
       reader_awake = 1;
       from->set_nonblocking(read_cb, 0, close_cb);
@@ -804,6 +826,10 @@ static class nb_sendfile
 
   static void writer_done()
   {
+#ifdef SENDFILE_DEBUG
+    werror("Stdio.sendfile(): Writer done.\n");
+#endif /* SENDFILE_DEBUG */
+
     // Disable any reader.
     if (from) {
       from->set_nonblocking(0,0,0);
@@ -830,6 +856,10 @@ static class nb_sendfile
 
   static int do_write()
   {
+#ifdef SENDFILE_DEBUG
+    werror("Stdio.sendfile(): Blocking writer.\n");
+#endif /* SENDFILE_DEBUG */
+
     int bytes = to->write(to_write);
 
     if (bytes > 0) {
@@ -853,6 +883,9 @@ static class nb_sendfile
       // Not reached, but...
       return 1;
     } else {
+#ifdef SENDFILE_DEBUG
+      werror("Stdio.sendfile(): Blocking writer got EOF.\n");
+#endif /* SENDFILE_DEBUG */
       // Premature end of file!
       return 0;
     }
@@ -860,6 +893,9 @@ static class nb_sendfile
 
   static void write_cb(mixed ignored)
   {
+#ifdef SENDFILE_DEBUG
+    werror("Stdio.sendfile(): Write callback.\n");
+#endif /* SENDFILE_DEBUG */
     if (do_write()) {
       if (from) {
 	if (sizeof(to_write) < READER_RESTART) {
@@ -890,6 +926,10 @@ static class nb_sendfile
 
   static void start_writer()
   {
+#ifdef SENDFILE_DEBUG
+    werror("Stdio.sendfile(): Starting the writer.\n");
+#endif /* SENDFILE_DEBUG */
+
     if (!writer_awake) {
       writer_awake = 1;
       to->set_nonblocking(0, write_cb, 0);
@@ -899,12 +939,19 @@ static class nb_sendfile
   /* Blocking */
   static void do_blocking()
   {
+#ifdef SENDFILE_DEBUG
+    werror("Stdio.sendfile(): Blocking I/O.\n");
+#endif /* SENDFILE_DEBUG */
+
     if (from && (sizeof(to_write) < READER_RESTART)) {
       do_read();
     }
     if (sizeof(to_write) && do_write()) {
       call_out(do_blocking, 0);
     } else {
+#ifdef SENDFILE_DEBUG
+      werror("Stdio.sendfile(): Blocking I/O done.\n");
+#endif /* SENDFILE_DEBUG */
       // Done.
       from = 0;
       to = 0;
@@ -938,6 +985,9 @@ static class nb_sendfile
 
     if (!f && (!hd || !sizeof(hd - ({ "" })))) {
       // NOOP!
+#ifdef SENDFILE_DEBUG
+      werror("Stdio.sendfile(): NOOP!\n");
+#endif /* SENDFILE_DEBUG */
       call_out(cb, 0, 0, @args);
       return;
     }
@@ -954,6 +1004,9 @@ static class nb_sendfile
 		   (to->mode && !(to->mode() & PROP_NONBLOCK)));
 
     if (blocking_to && to->set_blocking) {
+#ifdef SENDFILE_DEBUG
+      werror("Stdio.sendfile(): Blocking to.\n");
+#endif /* SENDFILE_DEBUG */
       to->set_blocking();
     }
 
@@ -965,10 +1018,16 @@ static class nb_sendfile
 	from->seek(off);
       }
       if (blocking_from) {
+#ifdef SENDFILE_DEBUG
+	werror("Stdio.sendfile(): Blocking from.\n");
+#endif /* SENDFILE_DEBUG */
 	if (from->set_blocking) {
 	  from->set_blocking();
 	}
       } else {
+#ifdef SENDFILE_DEBUG
+	werror("Stdio.sendfile(): Starting reader.\n");
+#endif /* SENDFILE_DEBUG */
 	start_reader();
       }
     }
@@ -979,10 +1038,28 @@ static class nb_sendfile
 
 	// Could have a direct call to do_blocking here,
 	// but then the callback would be called from the wrong context.
+#ifdef SENDFILE_DEBUG
+	werror("Stdio.sendfile(): Using fully blocking I/O.\n");
+#endif /* SENDFILE_DEBUG */
 	call_out(do_blocking, 0);
       }
     } else {
+      if (blocking_from) {
+#ifdef SENDFILE_DEBUG
+	werror("Stdio.sendfile(): Reading some data.\n");
+#endif /* SENDFILE_DEBUG */
+	do_read();
+	if (!sizeof(to_write)) {
+#ifdef SENDFILE_DEBUG
+	  werror("Stdio.sendfile(): NOOP!\n");
+#endif /* SENDFILE_DEBUG */
+	  call_out(cb, 0, 0, @args);
+	}
+      }
       if (sizeof(to_write)) {
+#ifdef SENDFILE_DEBUG
+	werror("Stdio.sendfile(): Starting the writer.\n");
+#endif /* SENDFILE_DEBUG */
 	start_writer();
       }
     }
