@@ -1,5 +1,5 @@
 /* -*- c -*-
- * $Id: nt.cmod,v 1.9 2004/03/19 14:06:55 grubba Exp $
+ * $Id: nt.cmod,v 1.10 2004/05/10 17:50:11 agehall Exp $
  */
 
 #ifdef __NT__
@@ -151,7 +151,9 @@ void nt_init()
   SIMPCONST(PROV_RSA_SIG);
   SIMPCONST(PROV_DSS);
   SIMPCONST(PROV_FORTEZZA);
+#ifdef PROV_MS_EXCHANGE
   SIMPCONST(PROV_MS_EXCHANGE);
+#endif
   SIMPCONST(PROV_SSL);
 
   SIMPCONST(CRYPT_VERIFYCONTEXT);
