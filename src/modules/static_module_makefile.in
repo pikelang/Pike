@@ -1,5 +1,5 @@
 #
-# $Id: static_module_makefile.in,v 1.64 2001/06/21 22:48:00 hubbe Exp $
+# $Id: static_module_makefile.in,v 1.65 2001/07/06 17:35:44 grubba Exp $
 #
 
 
@@ -50,10 +50,12 @@ dummy:	linker_options modlist_headers modlist_segment module.pmod module.a
 # FIXME: Make this a configure option
 .c.o:
 	@echo "Compiling $<" ;\
+	rm -f $@.fail >/dev/null 2>&1; \
 	if $(CC) $(CFLAGS) -c $< -o $@ ; then : ;\
 	else \
 	  echo "WARNING: Compiler failure! Trying without optimization!" >&2;\
-	  echo "echo $(CC) $(NOOPT_CFLAGS) -c $< -o $@" >&2;\
+	  echo "$(CC) $(NOOPT_CFLAGS) -c $< -o $@" >&2;\
+	  echo "$(CC) $(CFLAGS) -c $< -o $@" >$@.fail ;\
 	  NO_ULIMIT=yes $(CC) $(NOOPT_CFLAGS) -c $< -o $@ ;\
 	fi
 
@@ -116,7 +118,7 @@ module.a: $(OBJS)
 $(OBJS) : $(MODULE_BASE)/dynamic_module_makefile
 
 clean:
-	-rm -f *.o *.obj *.a *.so module.so module.pmod linker_options modlist_headers modlist_segment module_testsuite $(MODULE_CLEAN_EXTRA)
+	-rm -f *.o *.fail *.obj *.a *.so module.so module.pmod linker_options modlist_headers modlist_segment module_testsuite $(MODULE_CLEAN_EXTRA)
 	for a in '' $(MODULE_SUBDIRS) ; do if test "x$$a" = "x"; then :; else echo cleaning $$a ; ( cd $$a ; $(MAKE) $(MAKE_FLAGS) clean ) ; fi ; done
 
 depend:
