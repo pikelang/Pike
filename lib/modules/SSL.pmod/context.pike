@@ -1,4 +1,4 @@
-/* $Id: context.pike,v 1.5 1998/06/23 13:46:39 grubba Exp $
+/* $Id: context.pike,v 1.6 1998/08/26 07:09:12 nisse Exp $
  *
  * Keeps track of global data for an SSL server,
  * such as preferred encryption algorithms and session cache.
@@ -9,6 +9,11 @@ inherit "constants";
 int auth_level;
 
 object rsa;  /* Servers private key */
+
+/* These temporary keys, of non-zero, are used for the
+ * ServerKeyExchange message */
+object long_rsa;
+object short_rsa;
 
 function(int:string) random; /* Random number generator */
 
