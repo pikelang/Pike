@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: object.c,v 1.260 2004/12/19 16:42:15 grubba Exp $
+|| $Id: object.c,v 1.261 2004/12/30 13:44:52 grubba Exp $
 */
 
 #include "global.h"
@@ -496,7 +496,6 @@ static void get_master_cleanup (void *dummy)
 
 PMOD_EXPORT struct object *get_master(void)
 {
-  extern char *master_file;
   static int inside=0;
 
   if(master_object && master_object->prog)
