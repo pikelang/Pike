@@ -30,7 +30,7 @@ struct callback *gc_evaluator_callback=0;
 
 #include "block_alloc.h"
 
-RCSID("$Id: gc.c,v 1.136 2000/09/30 16:01:39 mast Exp $");
+RCSID("$Id: gc.c,v 1.137 2000/09/30 16:50:29 mast Exp $");
 
 /* Run garbage collect approximately every time
  * 20 percent of all arrays, objects and programs is
@@ -663,7 +663,12 @@ void low_describe_something(void *a,
       }
       if (p) {
 	fprintf(stderr,"%*s**Attempting to describe program object was instantiated from:\n",indent,"");
-	low_describe_something(p, T_PROGRAM, indent, depth, flags);
+#ifdef DEBUG_MALLOC
+	if ((int) p == 0x55555555)
+	  fprintf(stderr, "%*%s**Zapped program pointer\n", indent, "");
+	else
+#endif
+	  low_describe_something(p, T_PROGRAM, indent, depth, flags);
       }
 
       if( ((struct object *)a)->parent)
