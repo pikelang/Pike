@@ -9,13 +9,13 @@ PORTNAME=	pike73cvs
 PORTVERSION=	7.4.10
 PORTREVISION=	1
 CATEGORIES=	lang
-MASTER_SITES=	ftp://pike.ida.liu.se/pub/pike/all/${DISTNAME}/ \
+MASTER_SITES=	ftp://pike.ida.liu.se/pub/pike/all/${PORTVERSION}/ \
 		ftp://ftp.oav.net/pkg_freebsd/distfiles/ \
 		http://ftp.oav.net/pkg_freebsd/distfiles/ \
 		ftp://ftp.oav.net/pike/7.4/export/ \
 		http://ftp.oav.net/pike/7.4/export/ \
 		http://grendel.firewall.com/caudium-pkg/ 
-DISTNAME=	pike-${PORTVERSION}
+DISTNAME=	Pike-v${PORTVERSION}
 
 MAINTAINER=	kiwi@caudium.net
 
@@ -26,11 +26,7 @@ BUILD_DEPENDS+=	nasm:${PORTSDIR}/devel/nasm/
 
 LIB_DEPENDS=	jpeg.9:${PORTSDIR}/graphics/jpeg \
 		tiff.4:${PORTSDIR}/graphics/tiff \
-		gdbm.2:${PORTSDIR}/databases/gdbm \
-		mird.1:${PORTSDIR}/databases/mird
-.if ${OSVERSION} >= 500000
-LIB_DEPENDS+=	gmp.6:${PORTSDIR}/math/libgmp4 \
-.endif
+		gdbm.2:${PORTSDIR}/databases/gdbm
 
 WRKSRC=		${WRKDIR}/${DISTNAME}/src/
 
@@ -67,6 +63,10 @@ CONFIGURE_ARGS+= --without-debug \
 		 --prefix=${PREFIX}
 
 .include <bsd.port.pre.mk>
+
+.if ${OSVERSION} >= 500000
+LIB_DEPENDS+=	gmp.6:${PORTSDIR}/math/libgmp4
+.endif
 
 .if exists(${LOCALBASE}/lib/libttf.so.4)
 WITH_TTF=	yes
