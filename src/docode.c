@@ -5,7 +5,7 @@
 \*/
 /**/
 #include "global.h"
-RCSID("$Id: docode.c,v 1.82 2000/09/11 18:42:25 grubba Exp $");
+RCSID("$Id: docode.c,v 1.83 2000/09/26 22:19:02 hubbe Exp $");
 #include "las.h"
 #include "program.h"
 #include "pike_types.h"
@@ -1028,7 +1028,7 @@ static int do_docode2(node *n, INT16 flags)
       if(!is_const(lower))
 	yyerror("Case label isn't constant.");
 
-      if (lower && lower->type) {
+      if (lower && lower->type && !TEST_COMPAT(0,6)) {
 	if (!pike_types_le(lower->type, current_switch_type)) {
 	  if (!match_types(lower->type, current_switch_type)) {
 	    yytype_error("Type mismatch in case.",

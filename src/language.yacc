@@ -110,7 +110,7 @@
 /* This is the grammar definition of Pike. */
 
 #include "global.h"
-RCSID("$Id: language.yacc,v 1.213 2000/09/26 00:17:45 hubbe Exp $");
+RCSID("$Id: language.yacc,v 1.214 2000/09/26 22:19:03 hubbe Exp $");
 #ifdef HAVE_MEMORY_H
 #include <memory.h>
 #endif
@@ -2365,7 +2365,8 @@ expected_colon: ':'
 
 return: TOK_RETURN
   {
-    if(!match_types(Pike_compiler->compiler_frame->current_return_type,
+    if(!TEST_COMPAT(0,6) &&
+       !match_types(Pike_compiler->compiler_frame->current_return_type,
 		    void_type_string))
     {
       yyerror("Must return a value for a non-void function.");

@@ -1,6 +1,6 @@
 /* -*- Pike -*-
  *	
- * $Id: master.pike.in,v 1.132 2000/09/26 18:58:56 hubbe Exp $
+ * $Id: master.pike.in,v 1.133 2000/09/26 22:19:00 hubbe Exp $
  * 
  * Master-file for Pike.
  *
@@ -948,9 +948,10 @@ class CompatResolver
   mixed resolv_base(string identifier, string|void current_file)
     {
       array(mixed) tmp = ({});
+      string dir=current_file ? dirname(current_file) : "/";
       foreach(pike_module_path, string path)
 	{
-	  string file=combine_path(path,identifier);
+	  string file=combine_path(dir ,path,identifier);
 	  if(mixed ret=findmodule(file)) {
 	    if ((objectp(ret)) &&
 		(ret->is_resolv_dirnode || ret->is_resolv_joinnode)) {
@@ -993,7 +994,7 @@ class CompatResolver
       if( !zero_type (ret = resolv_cache[id]) )
 	return ret == ZERO_TYPE ? UNDEFINED : resolv_cache[id];
       array(string) tmp=identifier/".";
-      ret=resolv_base(tmp[0]);
+      ret=resolv_base(tmp[0],current_file);
       foreach(tmp[1..],string index) ret=ret[index];
       resolv_cache[id] = zero_type (ret) ? ZERO_TYPE : ret;
       return ret;
@@ -1966,7 +1967,7 @@ class Version
       minor=min;
     }
 
-#define CMP(X)  (major - (X)->major) || (minor - (X)->minor)
+#define CMP(X)  ((major - (X)->major) || (minor - (X)->minor))
   
   int `<(Version v) { return CMP(v) < 0; }
   int `>(Version v) { return CMP(v) > 0; }
@@ -2049,28 +2050,28 @@ CompatResolver get_compilation_handler(int major, int minor)
 #endif
 
   ret=CompatResolver(v);
-  if( v < Version(0,6))
-    ret->pike_module_path+=({"."});
+  /* Add default paths */
+  ret->pike_module_path=pike_module_path;
+  ret->pike_include_path=pike_include_path;
 
-  foreach(available, Version v)
+  foreach(reverse(available), Version tmp)
     {
       string base;
 #if "¤lib_prefix¤"[0]!='¤'
-      base=combine_path("¤lib_prefix¤",sprintf("%s",v));
+      base=combine_path("¤lib_prefix¤",sprintf("%s",tmp));
       ret->add_module_path(combine_path(base,"modules"));
       ret->add_include_path(combine_path(base,"include"));
 #endif
 
 #if "¤share_prefix¤"[0]!='¤'
-      base=combine_path("¤share_prefix¤",sprintf("%s",v));
+      base=combine_path("¤share_prefix¤",sprintf("%s",tmp));
       ret->add_module_path(combine_path(base,"modules"));
       ret->add_include_path(combine_path(base,"include"));
 #endif
     }
 
-  /* Add default paths */
-  map(pike_module_path,ret->add_module_path);
-  map(pike_include_path,ret->add_include_path);
+  if( v <= Version(0,6))
+    ret->pike_module_path+=({"."});
 
   compat_handler_cache[v] = ret;
 

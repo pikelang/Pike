@@ -5,7 +5,7 @@
 \*/
 /**/
 #include "global.h"
-RCSID("$Id: las.c,v 1.215 2000/09/22 12:57:11 grubba Exp $");
+RCSID("$Id: las.c,v 1.216 2000/09/26 22:19:03 hubbe Exp $");
 
 #include "language.h"
 #include "interpret.h"
@@ -3087,6 +3087,12 @@ void fix_type_field(node *n)
 
       if(max_args < args)
       {
+	if(TEST_COMPAT(0,6))
+	{
+	  free_string(s);
+	  copy_shared_string(n->type, mixed_type_string);
+	  break;
+	}
 	my_yyerror("Too many arguments to %s.",name);
       }
       else if(max_correct_args == args)
@@ -3199,7 +3205,7 @@ void fix_type_field(node *n)
     break;
 
   case F_CASE:
-    if (CDR(n) && CAR(n)) {
+    if (CDR(n) && CAR(n) && !TEST_COMPAT(0,6)) {
       /* case 1 .. 2: */
       if (!match_types(CAR(n)->type, CDR(n)->type)) {
 	if (!match_types(CAR(n)->type, int_type_string) ||
