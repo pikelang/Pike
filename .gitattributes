@@ -74,6 +74,7 @@ testfont binary
 /lib/modules/ADT.pmod/History.pike foreign_ident
 /lib/modules/ADT.pmod/Queue.pike foreign_ident
 /lib/modules/ADT.pmod/Relation.pmod/Binary.pike foreign_ident
+/lib/modules/ADT.pmod/Set.pike foreign_ident
 /lib/modules/ADT.pmod/Stack.pike foreign_ident
 /lib/modules/ADT.pmod/Struct.pike foreign_ident
 /lib/modules/ADT.pmod/Table.pmod foreign_ident
