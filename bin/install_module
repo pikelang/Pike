@@ -2,6 +2,18 @@
 
 # install_module <from> <to>
 
+if [ "$1" = "--help" ] ; then
+cat <<EOF
+  Installs a module (.pmod file or directory, or a .so file)
+  in a destination directory. Called by "make install".
+
+  Usage:
+
+    install_module source destination_directory
+EOF
+exit 0
+fi
+
 
 FROM="$1"
 TO="$2"
