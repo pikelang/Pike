@@ -1,5 +1,5 @@
 #
-# $Id: Makefile.in,v 1.220 2000/12/01 03:19:00 hubbe Exp $
+# $Id: Makefile.in,v 1.221 2000/12/01 16:50:28 grubba Exp $
 #
 
 # This line is needed on some machines.
@@ -154,6 +154,7 @@ MODULE_REQUIREMENTS= \
   modules/static_module_makefile \
   modules/dynamic_module_makefile \
   $(SRCDIR)/language.h \
+  interpret_protos.h \
   lib \
   master.pike @EXTRA_MODULE_REQUIREMENTS@
 
