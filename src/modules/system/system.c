@@ -1,5 +1,5 @@
 /*
- * $Id: system.c,v 1.70 1999/05/02 08:13:05 hubbe Exp $
+ * $Id: system.c,v 1.71 1999/06/01 21:44:49 grubba Exp $
  *
  * System-call module for Pike
  *
@@ -15,7 +15,7 @@
 #include "system_machine.h"
 #include "system.h"
 
-RCSID("$Id: system.c,v 1.70 1999/05/02 08:13:05 hubbe Exp $");
+RCSID("$Id: system.c,v 1.71 1999/06/01 21:44:49 grubba Exp $");
 #ifdef HAVE_WINSOCK_H
 #include <winsock.h>
 #endif
@@ -507,6 +507,38 @@ void f_getgroups(INT32 args)
   f_aggregate(numgrps);
 }
 #endif /* HAVE_GETGROUPS */
+
+#ifdef HAVE_INNETGR
+/* int innetgr(string netgroup, string|void machine,
+ *             string|void user, string|void domain) */
+void f_innetgr(INT32 args)
+{
+  char *strs[4] = { NULL, NULL, NULL, NULL };
+  int i;
+  int res;
+
+  check_all_args("innetgr", args, BIT_STRING, BIT_STRING|BIT_INT|BIT_VOID,
+		 BIT_STRING|BIT_INT|BIT_VOID, BIT_STRING|BIT_INT|BIT_VOID, 0);
+
+  for(i = 0; i < args; i++) {
+    if (sp[i-args].type == T_STRING) {
+      if (sp[i-args].u.string->size_shift) {
+	SIMPLE_BAD_ARG_ERROR("innetgr", i+1, "string (8bit)");
+      }
+      strs[i] = sp[i-args].u.string->str;
+    } else if (sp[i-args].u.integer) {
+      SIMPLE_BAD_ARG_ERROR("innetgr", i+1, "string|void");
+    }
+  }
+
+  THREADS_ALLOW();
+  res = innetgr(strs[0], strs[1], strs[2], strs[3]);
+  THREADS_DISALLOW();
+
+  pop_n_elems(args);
+  push_int(res);
+}
+#endif /* HAVE_INNETGR */
 
 #ifdef HAVE_SETUID 
 void f_setuid(INT32 args)
@@ -1081,6 +1113,12 @@ void pike_module_init(void)
 /* function(:array(int)) */
   ADD_EFUN("getgroups", f_getgroups,tFunc(,tArr(tInt)), OPT_EXTERNAL_DEPEND);
 #endif /* HAVE_GETGROUPS */
+#ifdef HAVE_INNETGR
+/* function(string, string|void, string|void, string|void:int) */
+  ADD_EFUN("innetgr", f_innetgr,
+	   tFunc(tStr tOr(tStr,tVoid) tOr(tStr,tVoid) tOr(tStr,tVoid), tInt),
+	   OPT_EXTERNAL_DEPEND);
+#endif /* HAVE_INNETGR */
 #ifdef HAVE_SETUID
   
 /* function(int:void) */
