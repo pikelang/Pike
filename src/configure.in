@@ -1,4 +1,4 @@
-AC_REVISION("$Id: configure.in,v 1.638 2002/11/04 12:09:12 grubba Exp $")
+AC_REVISION("$Id: configure.in,v 1.639 2002/11/18 15:07:23 grubba Exp $")
 AC_INIT(interpret.c)
 AC_CONFIG_HEADER(machine.h)
 
@@ -87,7 +87,7 @@ rm ./config.cache ; CONFIG_SITE=x ./configure ; make])
 done
 
 AC_ARG_ENABLE(binary, MY_DESCR([--disable-binary],
-   [don't configure for binary build, only do tests for precompilation stuff]),
+   [do not configure for binary build, only do tests for precompilation stuff]),
 	      [], [enable_binary=yes])
 
 if test "x$enable_binary" = "xno"; then
@@ -112,7 +112,7 @@ else
 fi
 
 AC_ARG_ENABLE(noopt-retry, MY_DESCR([--disable-noopty-retry],
-    [don't retry compilation without optimizations if it fails]),
+    [do not retry compilation without optimizations if it fails]),
 	      [], [noopt_retry=yes])
 
 # Do the below even when --disable-binary is used, since we need a
@@ -148,7 +148,7 @@ AC_DEFUN(AC_SYS_COMPILER_FLAG,
       int foo;
       int main(int argc, char **argv)
       {
-        /* The following code triggs gcc's generation of aline opcodes,
+        /* The following code triggs gcc:s generation of aline opcodes,
 	 * which some versions of as does not support.
 	 */
 	if (argc > 0) argc = 0;
@@ -253,9 +253,9 @@ if test "x$GCC" = "xno" -a "x$TCC" = "xno"; then
   AC_SYS_COMPILER_FLAG(-q64, q64, CFLAGS)
 
   if test "x$ac_cv_prog_cc_cross" = "xyes"; then
-    # The AIX 5L/cc beta can't generate working binaries without a
+    # The AIX 5L/cc beta can not generate working binaries without a
     # data-segment...
-    AC_MSG_CHECKING([if we're really using a cross-compiler])
+    AC_MSG_CHECKING([if we are really using a cross-compiler])
 
     AC_CACHE_VAL(pike_cv_datasegment_required, [
       ac_cv_prog_cc_cross=no;
@@ -442,7 +442,7 @@ AC_CACHE_VAL(pike_cv_C_supports_large_auto, [
       int i, sum = 0;
 
       for (i = 0; i < foo; i++) {
-        /* Make sure the compiler doesn't optimize away the array. */
+        /* Make sure the compiler does not optimize away the array. */
 	large_array[i] = sum;
 	sum += foo;
       }
@@ -474,7 +474,7 @@ else
   	int i, sum = 0;
   
   	for (i = 0; i < foo; i++) {
-  	  /* Make sure the compiler doesn't optimize away the array. */
+  	  /* Make sure the compiler does not optimize away the array. */
   	  large_array[i] = sum;
   	  sum += foo;
   	}
@@ -1205,6 +1205,20 @@ AC_ARG_WITH(mysql, MY_DESCR([--without-mysql],
 AC_ARG_WITH(gif-rle, MY_DESCR([--with-gif-rle],
 			      [use kind-of-rle packing instead of lzw]))
 AC_ARG_WITH(rsaref, MY_DESCR([--with-rsaref=path],[Support for RSAREF]))
+AC_ARG_WITH(valgrind, MY_DESCR([--with-valgrind=path],
+	    [Support for running with valgrind], [
+  if test "x$with_valgrind" = "xyes"; then
+    AC_PATH_PROG(with_valgrind, valgrind, no)
+    if test "x$with_valgrind" = "xno"; then
+      AC_MSG_WARN(valgrind not found, disabled.)
+    else
+      if test "x$with_machine_code" = "xno"; then :; else
+        AC_MSG_WARN(valgrind in use. Disabling machine-code.)
+	with_machine_code=no
+      fi
+    fi
+  else :; fi
+], [with_valgrind=no])
 AC_ARG_WITH(checker, MY_DESCR([--with-checker],
 			      [add extra memory checking overhead (Purify)]))
 MY_AC_ARG_WITH(profiling, MY_DESCR([--with-profiling],
@@ -1271,7 +1285,7 @@ AC_ARG_WITH(computed-goto,
 	    [], [with_computed_goto=no])
 AC_ARG_WITH(machine-code,
 	MY_DESCR([--without-machine-code],
-		 [don't try to use of machine code on supported architectures.]),
+		 [do not try to use of machine code on supported architectures.]),
 	[], [
 	  # Currently only supported with gcc.
 	  #
@@ -1326,6 +1340,15 @@ else :; fi
 if test "x$with_poll" = "xyes"; then
   AC_DEFINE(HAVE_AND_USE_POLL)
 else :; fi
+
+if test "x$with_valgrind" = "xno"; then
+  VALGRIND=""
+else
+  # FIXME: Ugly hardcoding...
+  VALGRIND="LD_PRELOAD=/lib/libpthread.so.0:/lib/libm.so.6:/lib/libc.so.6 $with_valgrind"
+fi
+export VALGRIND
+AC_SUBST(VALGRIND)
 
 if test "x$with_checker" = "xyes"; then
   AC_DEFINE(__CHECKER__)
@@ -3020,7 +3043,7 @@ AC_CACHE_VAL(pike_cv_accept_size_t, [
 #include <winsock.h>
 #endif
 
-/* Here's the actual test: */
+/* Here is the actual test: */
 int accept(int, struct sockaddr *, $t *);
     ], [
       /* EMPTY */
@@ -3052,7 +3075,7 @@ int accept(int, struct sockaddr *, $t *);
 #include <winsock.h>
 #endif
 
-/* Here's the actual test: */
+/* Here is the actual test: */
 SOCKET accept(SOCKET, struct sockaddr *, $t *);
       ], [
         /* EMPTY */
@@ -3089,7 +3112,7 @@ SOCKET accept(SOCKET, struct sockaddr *, $t *);
 #include <winsock.h>
 #endif
 
-/* Here's the actual test: */
+/* Here is the actual test: */
 int accept(int, struct sockaddr *, Psocklen_t);
     ], [
       /* EMPTY */
@@ -3227,7 +3250,7 @@ if test "x$ac_cv_func_strtol" = "xyes"; then
 #include <stdlib.h>
 int main(int argc, char **argv)
 {
-  /* On some OS's strtol() rounds this to 0x7fffffff. */
+  /* On some OS:s strtol() rounds this to 0x7fffffff. */
   return(strtol("0xffffffff", NULL, 0) != 0xffffffff);
 }
     ], pike_cv_func_strtol_works=yes,
@@ -3725,7 +3748,7 @@ AC_CACHE_VAL(pike_cv_cpu_reg_prefix,
 #if defined(__ppc__) || defined(__powerpc__) || defined(_POWER)
 	__asm__ __volatile__(" li "REGPREFIX"11,1");
 #else
-	; /* Don't need to find out */
+	; /* Do not need to find out */
 #endif
     ],[break])
   done
@@ -5635,7 +5658,7 @@ if test -z "$LDSHARED" ; then
         LDSHARED="$CC -G -KPIC -Wl,-Bexport"
       fi
     ;;
-    Windows_NT*)
+    Windows_NT*|NT*)
        LDSHARED="pntld"
     ;;
     *) LDSHARED="ld";;
