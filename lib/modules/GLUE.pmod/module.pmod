@@ -1,8 +1,8 @@
 //
-// $Id: module.pmod,v 1.5 2004/04/14 20:20:02 nilsson Exp $
+// $Id: module.pmod,v 1.6 2004/04/16 15:43:14 nilsson Exp $
 
 #pike __REAL_VERSION__
-#if constant(GL)
+#if constant(GL) && constant(GL.glOrtho)
 
 //! GL Universal Environment
 

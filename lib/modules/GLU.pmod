@@ -1,5 +1,5 @@
 /*
- * $Id: GLU.pmod,v 1.13 2004/04/14 19:28:32 nilsson Exp $
+ * $Id: GLU.pmod,v 1.14 2004/04/16 15:43:01 nilsson Exp $
  *
  * GL Utilities module.
  */
@@ -13,7 +13,7 @@
 //! the GLU library (Mesa was used last time), tweak it so that
 //! it compiles as Pike code and then check it in into the CVS.
 
-#if constant(GL)
+#if constant(GL) && constant(GL.glOrtho)
 import GL;
 
 #ifndef M_PI
