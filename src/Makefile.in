@@ -1,5 +1,5 @@
 #
-# $Id: Makefile.in,v 1.235 2001/01/21 19:59:44 grubba Exp $
+# $Id: Makefile.in,v 1.236 2001/01/22 21:49:13 mast Exp $
 #
 
 # This line is needed on some machines.
@@ -753,6 +753,7 @@ stamp-h: $(SRCDIR)/stamp-h.in $(SRCDIR)/machine.h.in config.status
 	done;)
 	CONFIG_FILES="" CONFIG_HEADERS=machine.h ./config.status || \
 	  (EXITCODE=$$?; rm cfl.$@; exit $$EXITCODE)
+	touch stamp-h
 	-@rm cfl.$@
 
 testsuite: $(SRCDIR)/testsuite.in
