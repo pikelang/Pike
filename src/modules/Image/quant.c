@@ -1,5 +1,5 @@
 #include <config.h>
-/* $Id: quant.c,v 1.2 1997/02/25 18:56:06 grubba Exp $ */
+/* $Id: quant.c,v 1.3 1997/03/05 14:50:48 grubba Exp $ */
 
 /*
 
@@ -10,7 +10,9 @@ David Kågedal, kg@infovav.se
 
 */
 
+#ifdef HAVE_UNISTD_H
 #include <unistd.h>
+#endif /* HAVE_UNISTD_H */
 #include <stdio.h>
 
 #ifdef HAVE_STDLIB_H
