@@ -2,7 +2,7 @@
 
 // Incremental Pike Evaluator
 //
-// $Id: Hilfe.pmod,v 1.51 2002/03/23 03:17:38 nilsson Exp $
+// $Id: Hilfe.pmod,v 1.52 2002/03/23 03:33:53 nilsson Exp $
 
 constant hilfe_todo = #"List of known Hilfe bugs/room for improvements:
 
@@ -17,7 +17,8 @@ constant hilfe_todo = #"List of known Hilfe bugs/room for improvements:
 - Some preprocessor stuff works. Some doesn't. They should be
   reviewed and fixed where possible.
 - Filter exit/quit from history. Could be done by adding a 'pop'
-  method to Readline.History and call it from StdinHilfes' destroy.
+  method to Readline.History and calling it from StdinHilfe's
+  destroy.
 - Add some better multiline edit support.
 - Tab completion of variable and module names.
 ";
@@ -127,7 +128,7 @@ private class CommandSet {
     int(0..1) arg_check(string arg) {
       if(line!=arg) return 0;
       if(sizeof(words)<3) {
-	write("Not enough number of arguments to set %s\n", line);
+	write("Insufficient number of arguments to set %s.\n", line);
 	line = "";
 	return 0;
       }
@@ -239,9 +240,10 @@ private class CommandHelp {
 
     write("\n");
     e->print_version();
-    write( #"Hilfe is a tool to evaluate Pike interactively and incrementally.
-Any Pike function, expression or variable declaration can be
-entered at the command line. There are also a few extra commands:
+    write( #"Hilfe is a tool to evaluate Pike code interactively and
+incrementally. Any Pike function, expression or variable declaration
+can be entered at the command line. There are also a few extra
+commands:
 
 ");
 
@@ -473,7 +475,7 @@ private class Expression {
     return sizeof(positions);
   }
 
-  // We do not test for out of boundery indexing here...
+  // We do not test for out of boundary indexing here...
   // Returns a token or a token range without whitespaces.
   string `[](int f, void|int t) {
     if(!t)
@@ -488,7 +490,7 @@ private class Expression {
     return tokens[positions[f]] = v;
   }
 
-  // See if there is any forbidden modifiers used in the expression,
+  // See if there are any forbidden modifiers used in the expression,
   // e.g. "private int x;" is not valid inside Hilfe.
   string check_modifiers() {
     foreach(sort(values(positions)), int pos)
@@ -523,7 +525,7 @@ private class Expression {
 
 //! In every Hilfe object (@[Evaluator]) there is a ParserState object
 //! that manages the current state of the parser. Essentially tokens are
-//! entered in one end and complete expressions is outputted in the other.
+//! entered in one end and complete expressions are outputted in the other.
 //! The parser object is accessible as ___Hilfe->state from Hilfe expressions.
 private class ParserState {
   private ADT.Stack pstack = ADT.Stack();
@@ -558,7 +560,7 @@ private class ParserState {
 	 token=="(<" || token=="({" || token=="([")
 	pstack->push(token);
 
-      // Do we end any king of parenthesis level?
+      // Do we end any kind of parenthesis level?
       if(token==")" || token=="}" || token=="]" ||
 	 token==">)" || token=="})" || token=="])" ) {
 	if(!pstack->ptr)
@@ -614,7 +616,7 @@ private class ParserState {
     caught_error = 0;
   }
 
-  //! Sends the input @[line] to @[Parser.Pike] for tokanization,
+  //! Sends the input @[line] to @[Parser.Pike] for tokenization,
   //! but keeps a state between each call to handle multiline
   //! /**/ comments and multiline #"" strings.
   array(string) push_string(string line) {
@@ -635,7 +637,7 @@ private class ParserState {
     return sizeof(ready);
   }
 
-  //! Are we in the middle of an expression. Used e.g. for chaning the
+  //! Are we in the middle of an expression. Used e.g. for changing the
   //! Hilfe prompt when entering multiline expressions.
   int(0..1) finishedp() {
     if(pstack->ptr) return 0;
@@ -778,8 +780,8 @@ class Evaluator {
 	  " running Hilfe v3.2 (Incremental Pike Frontend)\n");
   }
 
-  //! Cleras the current state, history and removes all locally
-  //! defied variables, constants, functions and programs. Removes
+  //! Clears the current state, history and removes all locally
+  //! defined variables, constants, functions and programs. Removes
   //! all imports and inherits. It does not reset the command mapping
   //! nor reevaluate the .hilferc file.
   void reset_evaluator() {
@@ -808,13 +810,13 @@ class Evaluator {
     add_buffer(s);
   }
 
-  //! Add buffer tokanizes the input string and determines if the
+  //! Add buffer tokenizes the input string and determines if the
   //! new line is a Hilfe command. If not, it updates the current
   //! state with the new tokens and sends any and all complete
   //! expressions to evaluation in @[parse_expression].
   void add_buffer(string s)
   {
-    // Tokanize the input
+    // Tokenize the input
     array tokens = state->push_string(s);
     array words = s/" ";
 
@@ -992,7 +994,7 @@ class Evaluator {
 	else
 	  symbols[expr[p]] = 0;
 
-	// FIXME: commaseperated list of variables.
+	// FIXME: comma-seperated list of variables.
       }
 
       // Handle scopes
@@ -1127,7 +1129,7 @@ class Evaluator {
 	    else if(expr[pos]==")" || expr[pos]=="}") plevel--;
 	    pos++;
 	    if(pos==sizeof(expr))
-	      return "Hilfe Error: Bug in variable handling. Please report this!\n";
+	      return "Hilfe Error: Bug in variable handling or error in variable assignment.\n";
 	  }
 	  add_hilfe_variable(type, [string]expr[from..pos-1], expr[from]);
 	  pos++;
@@ -1243,7 +1245,7 @@ class Evaluator {
   };
 
   //! Creates a wrapper and compiles the pike code @[f] in it.
-  //! If a new variable is compiled to be tested, it's name
+  //! If a new variable is compiled to be tested, its name
   //! should be given in @[new_var] so that magically defined
   //! entities can be undefined and a warning printed.
   object hilfe_compile(string f, void|string new_var)
@@ -1314,7 +1316,7 @@ class Evaluator {
     return 0;
   }
 
-  //! Compiles the Pike code @[a] and evaluate it by
+  //! Compiles the Pike code @[a] and evaluates it by
   //! calling ___HilfeWrapper in the generated object.
   //! If @[show_result] is set the result will be displayed
   //! and the result buffer updated with its value.
@@ -1389,7 +1391,7 @@ class Evaluator {
 
 
 //
-// Different wrappers the give the Hilfe a user interface
+// Different wrappers that give the Hilfe a user interface
 //
 
 //! This is a wrapper containing a user interface to the Hilfe @[Evaluator]
@@ -1636,12 +1638,12 @@ sprintf  The result formatting will be decided by the succeeding
 ";
 
 constant documentation_help_me_more =
-#"Some commands has extended help available. This can be displayed by
+#"Some commands have extended help available. This can be displayed by
 typing help followed by the name of the command, e.g. \"help dump\".
 Commands clobbered by e.g. variable declarations can be reached by
 prefixing a dot to the command, e.g. \".exit\".
 
-A history of the last returned results are kept and can be accessed
+A history of the last returned results is kept and can be accessed
 from your hilfe expressions with the variable __. You can either
 \"address\" your results with absolute addresses, e.g. __[2] to get
 the second result ever, or with relative addresses, e.g. __[-1] to
@@ -1656,9 +1658,9 @@ your history will be saved in .hilfe_history in the directory set
 in environment variable $HOME or $USERPROFILE. Next time hilfe is
 started the history is imported.
 
-You can put a .hilferc file at the directory set in your
+You can put a .hilferc file in the directory set in your
 environment variable $HOME or $USERPROFILE. The contents of this
-file will be evaulated in hilfe during each startup.
+file will be evaluated in hilfe during each startup.
 
 Note that there are a few symbols that you can not define, since
 they are used by Hilfe. They are:
@@ -1674,7 +1676,7 @@ Type \"help hilfe todo\" to get a list of known Hilfe bugs/lackings.
 constant documentation_dump =
 #"dump
       Shows the currently defined constants, variables, functions
-      and programs. It also lists all active inherits ans imports.
+      and programs. It also lists all active inherits and imports.
 
 dump history
       Shows all items in the history queue.
@@ -1685,7 +1687,7 @@ dump state
 
 dump wrapper
       Show the latest Hilfe wrapper that the last expression was
-      evaulated in. Useful when debugging Hilfe (i.e. investigating
+      evaluated in. Useful when debugging Hilfe (i.e. investigating
       why valid Pike expressions doesn't compile).
 ";
 
