@@ -1,9 +1,9 @@
 NAME
-	/precompiled/mysql - Interface to the Mysql database (ALPHA)
+	/precompiled/sql/mysql - Interface to the Mysql database (ALPHA)
 
 DESCRIPTION
-	/precompiled/mysql is a pre-compiled Pike program. It enables
-	access to the Mysql database from within Pike. /precompiled/mysql
+	/precompiled/sql/mysql is a pre-compiled Pike program. It enables
+	access to the Mysql database from within Pike. /precompiled/sql/mysql
 	is a part of the mysql module.
 
 	Mysql is available from	http://www.tcx.se/ .
@@ -103,10 +103,10 @@ SYNTAX
 
 DESCRIPTION
 	This function sends an SQL query to the Mysql-server. The result
-	of the query is returned as a /precompiled/mysql_result object.
+	of the query is returned as a /precompiled/sql/mysql_result object.
 
 SEE ALSO
-	/precompiled/mysql_result
+	/precompiled/sql/mysql_result
 
 
 ============================================================================
@@ -267,7 +267,7 @@ DESCRIPTION
 
 SEE ALSO
 	mysql->list_tables, mysql->list_fields, mysql->list_processes,
-	/precompiled/mysql_result
+	/precompiled/sql/mysql_result
 
 
 ============================================================================
@@ -288,7 +288,7 @@ DESCRIPTION
 
 SEE ALSO
 	mysql->list_dbs, mysql->list_fields, mysql->list_processes,
-	/precompiled/mysql_result
+	/precompiled/sql/mysql_result
 
 
 ============================================================================
@@ -311,7 +311,7 @@ NOTA BENE
 
 SEE ALSO
 	mysql->list_dbs, mysql->list_tables, mysql->list_processes,
-	/precompiled/mysql_result
+	/precompiled/sql/mysql_result
 
 
 ============================================================================
@@ -329,6 +329,6 @@ DESCRIPTION
 
 SEE ALSO
 	mysql->list_dbs, mysql->list_tables, mysql->list_fields,
-	/precompiled/mysql_result
+	/precompiled/sql/mysql_result
 
 

@@ -1,5 +1,5 @@
 /*
- * $Id: result.c,v 1.4 1997/01/01 15:48:46 grubba Exp $
+ * $Id: result.c,v 1.5 1997/01/05 22:10:45 grubba Exp $
  *
  * mysql query result
  *
@@ -346,7 +346,7 @@ void init_mysql_res_programs(void)
   set_init_callback(init_res_struct);
   set_exit_callback(exit_res_struct);
 
-  mysql_result_program = end_c_program("/precompiled/mysql_result");
+  mysql_result_program = end_c_program("/precompiled/sql/mysql_result");
   mysql_result_program->refs++;
 }
 
