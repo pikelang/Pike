@@ -1,7 +1,7 @@
 #include "fdlib.h"
 #include <math.h>
 
-#ifdef HAVE_WINSOCK_H
+#ifdef HAVE_WINSOCK2_H
 
 #define FD_SOCKET -4
 #define FD_CONSOLE -3
@@ -125,7 +125,7 @@ FD fd_socket(int domain, int type, int proto)
     errno=EMFILE;
     return -1;
   }
-  s=socket(domain, type, proto);
+  s=WSASocket(domain, type, proto, 0, 0, 0);
   if(s==INVALID_SOCKET)
   {
     errno=WSAGetLastError();
@@ -156,7 +156,7 @@ FD fd_accept(FD fd, struct sockaddr *addr, int *addrlen)
     errno=ENOTSUPP;
     return -1;
   }
-  s=accept((SOCKET)da_handle[fd], addr, addrlen);
+  s=WSAAccept((SOCKET)da_handle[fd], addr, addrlen, NULL, 0);
   if(s==INVALID_SOCKET)
   {
     errno=WSAGetLastError();
@@ -456,7 +456,7 @@ FD fd_dup2(FD from, FD to)
   return to;
 }
 
-#endif /* HAVE_WINSOCK_H */
+#endif /* HAVE_WINSOCK2_H */
 
 #if 0
 

@@ -7,7 +7,7 @@ sinclude(../module_configure.in)
 
 AC_FUNC_MMAP
 
-AC_CHECK_HEADERS(sys/fcntl.h fcntl.h stdlib.h netinet/in.h winsock.h)
+AC_CHECK_HEADERS(sys/fcntl.h fcntl.h stdlib.h netinet/in.h winsock2.h)
 
 AC_SUBST(RANLIB)
 

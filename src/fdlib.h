@@ -19,14 +19,14 @@
 #include <sys/stat.h>
 #endif
 
-#ifdef HAVE_WINSOCK_H
+#ifdef HAVE_WINSOCK2_H
 
 
 #ifndef FD_SETSIZE
 #define FD_SETSIZE MAX_OPEN_FILEDESCRIPTORS
 #endif
 
-#include <winsock.h>
+#include <winsock2.h>
 #include <winbase.h>
 
 typedef int FD;

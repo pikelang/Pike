@@ -1,0 +1,73 @@
+#!/bin/sh
+
+. $NTTOOLS
+
+M=no
+N=no
+S=no
+
+for a in "$*"
+do
+  case "$a" in
+    --version)
+      echo "Fake NT uname version 1.0 by Fredrik Hubinette"
+      exit 0
+    ;;
+
+    --help)
+      echo "Usage: uname [-a] [-m] [-n] [-r] [-s] [-v]"
+      exit 0
+    ;;
+
+    --all)  M=yes ; N=yes ; S=yes ;;
+    --machine) M=yes ;;
+    --nodename) N=yes ;;
+    --sysname) S=yes ;;
+
+    --*)
+      echo "Unknown option $a"
+      exit 1
+    ;;
+
+    -*)
+      case "$a" in
+        *m*) M=yes ;;
+      esac
+
+      case "$a" in
+        *n*) N=yes ;;
+      esac
+
+      case "$a" in
+        *s*) S=yes ;;
+      esac
+
+      case "$a" in
+        *a*) M=yes ; N=yes ; S=yes ;;
+      esac
+    ;;
+      
+  esac
+done
+
+if [ $M$N$S = nonono ]; then
+  S=yes
+fi
+
+OUTPUT=
+
+if [ $S = yes ]; then
+  OUTPUT="$OUTPUT `getntenv OS`"
+fi
+
+if [ $N = yes ]; then
+  OUTPUT="$OUTPUT $NTHOST"
+fi
+
+if [ $M = yes ]; then
+  OUTPUT="$OUTPUT `getntenv PROCESSOR_ARCHITECTURE`"
+fi
+
+echo $OUTPUT
+
+exit 0

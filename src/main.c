@@ -4,7 +4,7 @@
 ||| See the files COPYING and DISCLAIMER for more information.
 \*/
 #include "global.h"
-RCSID("$Id: main.c,v 1.30 1998/01/08 17:20:07 hubbe Exp $");
+RCSID("$Id: main.c,v 1.31 1998/01/10 21:19:09 hubbe Exp $");
 #include "fdlib.h"
 #include "backend.h"
 #include "module.h"
@@ -24,10 +24,6 @@ RCSID("$Id: main.c,v 1.30 1998/01/08 17:20:07 hubbe Exp $");
 #include "gc.h"
 #include "mapping.h"
 #include "cpp.h"
-
-#ifdef HAVE_WINSOCK_H
-#include "winsock.h"
-#endif
 
 #include <errno.h>
 
@@ -75,16 +71,6 @@ void main(int argc, char **argv)
   ARGV=argv;
 
   fd_init();
-
-#ifdef HAVE_WINSOCK_H
-  {
-    WSADATA wsadata;
-    if(WSAStartup(MAKEWORD(2,0), &wsadata) != 0)
-    {
-      fatal("No winsock available.\n");
-    }
-  }
-#endif
 
 #ifdef HAVE_SETLOCALE
 #ifdef LC_NUMERIC

@@ -1,11 +1,11 @@
 #include <config.h>
 
-/* $Id: colortable.c,v 1.30 1998/01/08 16:57:04 mirar Exp $ */
+/* $Id: colortable.c,v 1.31 1998/01/10 21:20:04 hubbe Exp $ */
 
 /*
 **! module Image
 **! note
-**!	$Id: colortable.c,v 1.30 1998/01/08 16:57:04 mirar Exp $
+**!	$Id: colortable.c,v 1.31 1998/01/10 21:20:04 hubbe Exp $
 **! class colortable
 **!
 **!	This object keeps colortable information,
@@ -21,7 +21,7 @@
 #undef COLORTABLE_REDUCE_DEBUG
 
 #include "global.h"
-RCSID("$Id: colortable.c,v 1.30 1998/01/08 16:57:04 mirar Exp $");
+RCSID("$Id: colortable.c,v 1.31 1998/01/10 21:20:04 hubbe Exp $");
 
 #include <sys/types.h>
 #include <sys/stat.h>
@@ -3094,7 +3094,7 @@ void image_colortable_index_16bit(INT32 args)
    ps=begin_shared_string(src->xsize*src->ysize);
 
    if (!image_colortable_index_16bit_image(THIS,src->img,
-					  (unsigned char *)ps->str,
+					  (unsigned short *)ps->str,
 					  src->xsize*src->ysize,src->xsize))
    {
       free_string(end_shared_string(ps));

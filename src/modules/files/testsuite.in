@@ -35,7 +35,7 @@ test_any(string s; object o=clone(Stdio.File); if(!o->open("conftest","r")) retu
 test_any(object o=clone(Stdio.File); return o->open("conftest","r") && o->read(4711) && o->tell() == 4711 && o->close(),1)
 
 // - file->stat
-test_equal([[Stdio.File("conftest","r")->stat()]],[[file_stat("conftest")]])
+test_equal([[Stdio.File("conftest","r")->stat()[..1]]],[[file_stat("conftest")[..1]]])
 
 // - file->errno
 test_do(clone(Stdio.File,"stdin")->errno())
@@ -71,7 +71,7 @@ test_any([[object o=clone(Stdio.File),o2=clone(Stdio.File); o->open("conftest","
 // - file->dup2
 test_any([[object o=clone(Stdio.File),o2=clone(Stdio.File); o2->pipe(); o->open("conftest","r"); o->dup2(o2); return o2->read(100)]] ,sprintf("%'+-*'100s",""))
 
-test_eq(Process.popen("echo foo"),"foo\n")
+dnl test_eq(Process.popen("echo foo"),"foo\n")
 
 // - socket->bind
 // - socket->set_id

@@ -468,14 +468,17 @@ static HANDLE get_inheritable_handle(struct mapping *optional, char *name)
       apply(tmp->u.object,"query_fd",0);
       if(sp[-1].type == T_INT)
       {
-	DuplicateHandle(GetCurrentProcess(),
-			(HANDLE)da_handle[sp[-1].u.integer],
-			GetCurrentProcess(),
-			&ret,
-			NULL,
-			1,
-			0);
+	if(!DuplicateHandle(GetCurrentProcess(),
+			    (HANDLE)da_handle[sp[-1].u.integer],
+			    GetCurrentProcess(),
+			    &ret,
+			    NULL,
+			    1,
+			    DUPLICATE_SAME_ACCESS))
+	  /* This could cause handle-leaks */
+	  error("Failed to duplicate handle %d.\n",GetLastError());
       }
+      pop_stack();
     }
   }
   return ret;
@@ -556,10 +559,10 @@ void f_create_process(INT32 args)
       if(t1!=INVALID_HANDLE_VALUE) info.hStdInput=t1;
 
       t2=get_inheritable_handle(optional, "stdout");
-      if(t1!=INVALID_HANDLE_VALUE) info.hStdOutput=t2;
+      if(t2!=INVALID_HANDLE_VALUE) info.hStdOutput=t2;
 
-      t3=get_inheritable_handle(optional, "stdout");
-      if(t1!=INVALID_HANDLE_VALUE) info.hStdError=t3;
+      t3=get_inheritable_handle(optional, "stderr");
+      if(t3!=INVALID_HANDLE_VALUE) info.hStdError=t3;
 
       /* FIX: env, cleanup */
     }
@@ -580,9 +583,12 @@ void f_create_process(INT32 args)
     if(dir) free((char *)dir);
     if(command_line) free((char *)command_line);
     if(filename) free((char *)filename);
+
+#if 1
     if(t1!=INVALID_HANDLE_VALUE) CloseHandle(t1);
     if(t2!=INVALID_HANDLE_VALUE) CloseHandle(t2);
     if(t3!=INVALID_HANDLE_VALUE) CloseHandle(t3);
+#endif
     
     if(ret)
     {

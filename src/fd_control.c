@@ -27,8 +27,8 @@
 #include <sys/socket.h>
 #endif
 
-#ifdef HAVE_WINSOCK_H
-#include <winsock.h>
+#ifdef HAVE_WINSOCK2_H
+#include <winsock2.h>
 #endif
 
 #ifdef HAVE_FCNTL_H
@@ -108,7 +108,7 @@ int set_close_on_exec(int fd, int which)
 #ifdef TESTING
 
 
-#if defined(HAVE_WINSOCK_H) && defined(USE_IOCTLSOCKET_FIONBIO)
+#if defined(HAVE_WINSOCK2_H) && defined(USE_IOCTLSOCKET_FIONBIO)
 int main()
 {
   exit(0);

@@ -12,15 +12,46 @@ OUTPUT=a.out
 OPERATION=linking
 INCLUDE_PATH=
 LDOPTS="OPTION STACK=8m"
+LIBRARIES=""
+
+DEBUG=no
+OPTIMIZE=no
+
+check_linker_error() {
+  ERROR=ok
+  sed -e 's/\\/\\\\/g' | while read line
+  do
+    echo "$line" >&2
+    case "x$line" in
+      *\ W1008:*)
+        ERROR=failed
+      ;;
+    esac
+  done
+
+  echo $ERROR
+  exit 0
+}
 
 while test "$#" != 0; do
   case $1 in
     -shared) ;;
     -E)  OPERATION=preprocessing ;;
     -c)  OPERATION=compiling  ;;
-    -g*) CFLAGS="$CFLAGS -d2 " ; LDOPTS="$LDOPTS DEBUG WATCOM ALL" ;;
-    -O)  CFLAGS="$CFLAGS -ox" ;;
-    -O2) CFLAGS="$CFLAGS -otexan" ;;
+    -g*)
+       CFLAGS="$CFLAGS -d2 "
+       LDOPTS="$LDOPTS DEBUG WATCOM ALL"
+       DEBUG=yes
+     ;;
+#    -O*) ;;
+    -O)
+      CFLAGS="$CFLAGS -ox"
+      OPTIMIZE=yes
+    ;;
+    -O2)
+      CFLAGS="$CFLAGS -otexan"
+      OPTIMIZE=yes
+    ;;
     *.c) SOURCES="$SOURCES $1" ;;
     *.o | *.a) OBJECTS="$OBJECTS $1" ;;
      -o) OUTPUT="$2" ; shift ;;
@@ -51,8 +82,10 @@ while test "$#" != 0; do
       CFLAGS="$CFLAGS `echo $1 | sed -e 's/^-I/-d/g'`"
     ;;
 
-# Options to parse:
-# -l
+    -l*)
+      tmp=`echo $1 | sed -e 's/^-l//'`
+      LIBRARIES="$LIBRARIES LIBRARY $tmp"
+    ;;
 
     *)
       echo "Unrecognized option $1"
@@ -61,6 +94,13 @@ while test "$#" != 0; do
   esac
   shift
 done
+
+if [ x$DEBUG$OPTIMIZE = xyesyes ]; then
+  echo Debug and optimization not supported at the same time
+  exit 1
+else
+  :
+fi
 
 rm $OUTPUT 2>/dev/null 1>/dev/null || :
 
@@ -110,13 +150,16 @@ case $OPERATION in
     for a in `fixpath $SOURCES`
     do
       BASE=`echo $a | sed -e 's/\.c//'`
-      do_cmd wcc386 -i$IPATH $CFLAGS -fr$ERRORFILE -fo=$BASE.obj $a
+      do_cmd wcc386 -i$IPATH $CFLAGS -fo=$BASE.obj $a
       OBJECTS="$OBJECTS $BASE.obj"
     done
 
     LDFILE=TMP$$.lk
-    echo "name $OUTPUT.exe $LDOPTS FIL `fixpath $OBJECTS | sed -e 's/ /,/g'`" >$LDFILE
-    do_cmd wlink @$LDFILE
+    echo "name $OUTPUT.exe $LDOPTS FIL `fixpath $OBJECTS | sed -e 's/ /,/g'` $LIBRARIES" >$LDFILE
+    OK=`do_cmd wlink @$LDFILE | check_linker_error`
+    if [ x$OK != xok ]; then
+      exit 1
+    fi
     TARGET=$OUTPUT.exe
     if [ $CLEANUP = yes ]; then
        if [ "x$LDFILE" != x ]; then

@@ -8,6 +8,3 @@ NTTOOLS=`pwd`/tools/lib
 
 export NTHOST NTDRIVE NTCC CC PATH NTTOOLS
 
-if [ "$#" != 0 ]; then
-  exec $@
-fi

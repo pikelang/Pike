@@ -6,7 +6,7 @@
 #define READ_BUFFER 8192
 
 #include "global.h"
-RCSID("$Id: file.c,v 1.65 1998/01/08 17:21:16 hubbe Exp $");
+RCSID("$Id: file.c,v 1.66 1998/01/10 21:21:11 hubbe Exp $");
 #include "fdlib.h"
 #include "interpret.h"
 #include "svalue.h"
@@ -43,8 +43,8 @@ RCSID("$Id: file.c,v 1.65 1998/01/08 17:21:16 hubbe Exp $");
 #  include <sys/socket.h>
 #endif
 
-#ifdef HAVE_WINSOCK_H
-#  include <winsock.h>
+#ifdef HAVE_WINSOCK2_H
+#  include <winsock2.h>
 #ifndef EWOULDBLOCK
 #define EWOULDBLOCK WSAEWOULDBLOCK
 #endif

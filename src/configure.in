@@ -1,4 +1,4 @@
-AC_REVISION("$Id: configure.in,v 1.147 1998/01/08 17:20:05 hubbe Exp $")
+AC_REVISION("$Id: configure.in,v 1.148 1998/01/10 21:19:08 hubbe Exp $")
 AC_INIT(interpret.c)
 AC_CONFIG_HEADER(machine.h)
 
@@ -339,6 +339,8 @@ fi
 
 #############################################################################
 
+if test x$pike_cv_sys_os != xWindows_NT ; then
+
 echo Searching for include-file directories...
 if test $cppflags_is_set = no -a x${C_INCLUDE_PATH-} = x ; then
   for d in /usr/local /sw/local /usr/gnu /opt/gnu /sw/gnu /sw /usr/freeware
@@ -383,6 +385,10 @@ do
   fi
 done
 export EXTRA_PATH
+
+else
+  :   # We are running NT
+fi
 
 #############################################################################
 
@@ -619,7 +625,7 @@ AC_HEADER_STDC
 AC_CHECK_HEADERS(sys/rusage.h time.h sys/time.h sys/types.h unistd.h stdlib.h \
 memory.h values.h string.h strings.h fcntl.h sys/filio.h sys/sockio.h crypt.h \
 locale.h sys/resource.h sys/select.h sys/mman.h setjmp.h limits.h pthread.h \
-thread.h dlfcn.h dld.h sys/times.h sched.h sys/procfs.h sys/param.h winsock.h \
+thread.h dlfcn.h dld.h sys/times.h sched.h sys/procfs.h sys/param.h winsock2.h \
 sys/ioct.h sys/socket.h malloc.h netinet/in.h sys/wait.h winbase.h)
 
 AC_CHECK_SIZEOF(char *,4)
@@ -640,6 +646,11 @@ dnl AC_CHECK_LIB(PW, alloca)
 AC_CHECK_LIB(m, floor)
 
 AC_CHECK_LIB(socket, socket)
+
+if test x$pike_cv_sys_os = xWindows_NT ; then
+  LIBS="-lkernel32 -lws2_32  $LIBS"
+fi
+
 AC_CHECK_LIB(nsl, gethostbyname)
 
 AC_CHECK_LIB(dl, dlopen)
@@ -1089,10 +1100,10 @@ define(MY_CHECK_HEADERS,
 
 MY_CHECK_HEADERS(strchr,string.h unistd.h stdlib.h)
 MY_CHECK_HEADERS(malloc,memory.h unistd.h stdlib.h)
-MY_CHECK_HEADERS(getpeername,sys/socket.h sys/socketvar.h sys/socketio.h winsock.h)
+MY_CHECK_HEADERS(getpeername,sys/socket.h sys/socketvar.h sys/socketio.h winsock2.h)
 MY_CHECK_HEADERS(popen,stdio.h unistd.h)
 MY_CHECK_HEADERS(getenv,unistd.h stdlib.h)
-MY_CHECK_HEADERS(gethostname,unistd.h netdb.h winsock.h)
+MY_CHECK_HEADERS(gethostname,unistd.h netdb.h winsock2.h)
 
 AC_ALLOCA
 
