@@ -205,7 +205,7 @@ INDEX_DATA collect_index(SGML data, void|INDEX_DATA index,void|mapping taken)
     if(objectp(data))
     {
       if(data->tag == "anchor"
-#if 0 // Let's try to add these to the 
+#if 1 // Let's try to add these to the 
 	  && !data->params->type
 #endif
 	)
