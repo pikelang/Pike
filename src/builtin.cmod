@@ -1,5 +1,5 @@
 /* -*- c -*-
- * $Id: builtin.cmod,v 1.44 2001/06/20 13:01:57 grubba Exp $
+ * $Id: builtin.cmod,v 1.45 2001/06/21 01:23:54 per Exp $
  */
 
 #include "global.h"
@@ -977,20 +977,19 @@ PIKECLASS Buffer
  *!    @}
  */
 {
-  CVAR size_t len, size, initial;
-  CVAR unsigned char *data;
-  CVAR int shift;
-
+  CVAR struct string_builder str;
+  CVAR int initial;
+  
   void f_Buffer_get_copy( INT32 args );
   void f_Buffer_get( INT32 args );
   void f_Buffer_add( INT32 args );
 
 
   PIKEFUN void create( int|void size )
-    /*! @decl void create(int|void initial_size)
+    /*! @decl void create()
     *!
     *!   Initializes a new buffer.
-    *!
+    *!   
     *!   If no @[initial_size] is specified, 4096 is used. If you
     *!   know approximately how big the buffer will be, you can optimize
     *!   the operation of @[add()] (slightly) by passing the size to this
@@ -1002,14 +1001,10 @@ PIKECLASS Buffer
       str->initial = MAXIMUM( size->u.integer, 512 );
     else
     {
-      str->initial = INITIAL_BUF_LEN;
+      str->initial = 256;
       push_int(0);
     }
   }
-
-
-/* The size of the 'str' member of the pike_string struct. */
-#define PIKE_STRING_STR_SIZE 4
 
   PIKEFUN string _sprintf( int flag, mapping flags )
   {
@@ -1020,12 +1015,10 @@ PIKECLASS Buffer
 	  struct pike_string *res;
 	  struct Buffer_struct *str = THIS;
 	  push_text( "Buffer(%d /* %d */)" );
-	  if( str->size )
+	  if( str->str.s )
 	  {
-	    push_int(((str->len-sizeof(struct pike_string)+
-		       PIKE_STRING_STR_SIZE)>>str->shift) );
-	    push_int(((str->size-sizeof(struct pike_string)+
-		       PIKE_STRING_STR_SIZE)>>str->shift) );
+	    push_int(str->str.s->len);
+	    push_int(str->str.malloced);
 	  }
 	  else
 	  {
@@ -1092,14 +1085,18 @@ PIKECLASS Buffer
     struct Buffer_struct *str = THIS, *str2;
     struct object *res = clone_object( Buffer_program, 0 );
 
-    str2 = OBJ2_BUFFER( res );
+    if( str->str.s )
+    {
+      str2 = OBJ2_BUFFER( res );
 
-    if( str2->data )
-      xfree( str2->data );
-
-    *str2 = *str;
-    str2->data = xalloc( str2->size );
-    MEMCPY( str2->data, str->data, str->size );
+      if( str2->str.s ) free_string_builder( &str2->str );
+      *str2 = *str;
+      init_string_builder_alloc( &str2->str,
+				 str->str.malloced,
+				 str->str.s->size_shift );
+      MEMCPY( (void *)str2->str.s, (void *)str->str.s,
+	      str->str.malloced+sizeof(struct pike_string));
+    }
     apply( res, "add", 1 );
     RETURN res;
   }
@@ -1118,68 +1115,17 @@ PIKECLASS Buffer
  */
   {
     struct Buffer_struct *str = THIS;
-    size_t l;
     int j;
     struct pike_string *a;
 
     for( j = 0; j<args; j++ )
     {
       a = Pike_sp[-args+j].u.string;
-      if( Pike_sp[-args+j].type != T_STRING )
-	Pike_error("Illegal argument %d, expected string\n", j );
-      if(!(l = (size_t)a->len) )
-	continue;
-
-      if( !str->size )
-      {
-	str->shift = a->size_shift;
-	str->size  = str->initial +
-	  (sizeof( struct pike_string ) - PIKE_STRING_STR_SIZE);
-	str->data  = xalloc( str->size );
-	str->len   = (sizeof( struct pike_string ) - PIKE_STRING_STR_SIZE);
-      }
-      else if( str->shift < a->size_shift )
-      {
-	/* This will not win the "most optimal code of the year"
-	   award, but it works, and is rather fast. */
-	f_Buffer_get( 0 );
-	stack_swap();
-	f_add( 2 );
-	f_Buffer_add( args-j );
-	return;
-      }
-
-      l<<=str->shift;
-
-      while( str->size < ((unsigned)l+str->len) )
-      {
-	str->size *= 2;
-	str->data = realloc( str->data, str->size );
-	if( !str->data )
-	{
-	  int sz = str->size;
-	  str->len = 0;
-	  str->size = 0;
-	  Pike_error( "Malloc %d failed!\n", sz );
-	}
-      }
-
-      if( a->size_shift == str->shift )
-	MEMCPY( (str->data+str->len), a->str, l );
-      else
-	if( a->size_shift )
-	  convert_1_to_2((p_wchar2 *)(str->data+str->len),
-			 (p_wchar1 *)a->str, a->len);
-	else
-	  if( str->shift & 1 )
-	    convert_0_to_1((p_wchar1 *)(str->data+str->len),
-			   (p_wchar0 *)a->str, a->len);
-	  else
-	    convert_0_to_2((p_wchar2 *)(str->data+str->len),
-			   (p_wchar0 *)a->str, a->len);
-      str->len += l;
+      if( !str->str.s )
+	init_string_builder_alloc( &str->str, str->initial, a->size_shift );
+      string_builder_shared_strcat( &str->str, a );
     }
-    RETURN  str->len-sizeof( struct pike_string )+PIKE_STRING_STR_SIZE;
+    RETURN  str->str.s->len;
   }
 
   PIKEFUN string get_copy()
@@ -1189,27 +1135,29 @@ PIKECLASS Buffer
     *!   but does not clear the buffer.
     */
   {
-    struct Buffer_struct *str = THIS;
-    ptrdiff_t len = str->len-(sizeof(struct pike_string)-PIKE_STRING_STR_SIZE);
-    char *d = str->data+(sizeof(struct pike_string)-PIKE_STRING_STR_SIZE);
-    if( len <= 0 )
-    {    
-      push_text("");
-      return;
-    }
-
-    switch( str->shift )
+    struct pike_string *str = THIS->str.s;
+    if( str )
     {
-      case 0:
-	RETURN make_shared_binary_string(d,len);
-	break;
-      case 1:
-	RETURN make_shared_binary_string1((short*)d,len>>1);
-	break;
-      case 2:
-	RETURN make_shared_binary_string2((int*)d,len>>2);
-	break;
+      ptrdiff_t len = str->len;
+      if( len > 0 )
+      {
+	char *d = (char *)str->str;
+	switch( str->size_shift )
+	{
+	  case 0:
+	    RETURN make_shared_binary_string(d,len);
+	    break;
+	  case 1:
+	    RETURN make_shared_binary_string1((short*)d,len>>1);
+	    break;
+	  case 2:
+	    RETURN make_shared_binary_string2((int*)d,len>>2);
+	    break;
+	}
+      }
     }
+    push_text("");
+    return;
   }
 
   PIKEFUN string get( )
@@ -1221,65 +1169,30 @@ PIKECLASS Buffer
     *!   This will clear the data in the buffer
     */
   {
-    struct pike_string *res;
     struct Buffer_struct *str = THIS;
-    ptrdiff_t len = str->len-(sizeof(struct pike_string)-PIKE_STRING_STR_SIZE);
-    if( len <= 0 )
-    {    
-      push_text("");
-      return;
-    }
-
-    if( str->len < 64 )
+    if( str->str.s )
     {
-      char *d = str->data+(sizeof(struct pike_string)-PIKE_STRING_STR_SIZE);
-      switch( str->shift )
-      {
-	case 0:
-	  res=make_shared_binary_string(d,len);
-	  break;
-	case 1:
-	  res=make_shared_binary_string1((short*)d,len>>1);
-	  break;
-	case 2:
-	  res=make_shared_binary_string2((int*)d,len>>2);
-	  break;
-	default:
-	  fatal("Unknown size_sift %d\n", str->shift);
-      }
-      xfree( str->data );
+      struct pike_string *s = finish_string_builder( &str->str );
+      str->str.malloced = 0;
+      str->str.s = 0;
+      RETURN s;
     }
-    else
-    {
-      str->data = realloc( str->data, str->len+(1<<str->shift) );
-      {
-	res = (struct pike_string *)str->data;
-	res->len = len>>str->shift;
-	res->size_shift = str->shift;
-	res=low_end_shared_string( res );
-      }
-    }
-    str->data = 0;
-    str->size = 0;
-    str->len = 0;
-    str->shift = 0;
-    RETURN res;
+    pop_n_elems(args);
+    push_text("");
+    return;
   }
 
   INIT
     {
       struct Buffer_struct *str = THIS;
-      str->data = 0;
-      str->size = 0;
-      str->len = 0;
-      str->shift = 0;
+      MEMSET( str, 0, sizeof( *str ) );
     }
 
   EXIT
     {
       struct Buffer_struct *str = THIS;
-      if( str->data )
-	xfree( str->data );
+      if( str->str.s )
+	free_string_builder( &str->str );
     }
 }
 
