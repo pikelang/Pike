@@ -1,4 +1,4 @@
-AC_REVISION("$Id: configure.in,v 1.832 2004/08/23 14:49:43 grubba Exp $")
+AC_REVISION("$Id: configure.in,v 1.833 2004/09/12 22:50:56 marcus Exp $")
 AC_INIT(interpret.c)
 AC_CONFIG_HEADER(machine.h)
 
@@ -1039,7 +1039,7 @@ This may cause the dynamic module support to fail.])
     cat > conftest.c <<EOF    
 char *foo[[]] = { "bar" };
 EOF
-    pike_compile='${CC-cc} -S $CFLAGS $CPPFLAGS conftest.c 1>&AC_FD_CC'
+    pike_compile='${CC-cc} -S $CPPFLAGS conftest.c 1>&AC_FD_CC'
     pike_cv_gcc_uaword=no
     if { (eval echo configure: \"$pike_compile\") >&AC_FD_CC; (eval $pike_compile) 2>&AC_FD_CC; }; then
       if grep ".uaword" conftest.s 2>&AC_FD_CC >/dev/null; then
