@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: bignum.c,v 1.36 2003/03/28 15:53:12 mast Exp $
+|| $Id: bignum.c,v 1.37 2003/03/29 17:12:17 grubba Exp $
 */
 
 #include "global.h"
@@ -123,7 +123,7 @@ PMOD_EXPORT void convert_svalue_to_bignum(struct svalue *s)
 }
 
 #ifdef INT64
-static void bootstrap_push_int64 (INT64 i)
+PMOD_EXPORT void bootstrap_push_int64 (INT64 i)
 {
   if(i == DO_NOT_WARN((INT_TYPE)i))
   {
