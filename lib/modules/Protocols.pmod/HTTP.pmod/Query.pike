@@ -468,6 +468,7 @@ object sync_request(string server, int port, string query,
 
   if(con && con->_fd &&
      con->query_address() == server + " " + port &&
+     headers && headers->connection &&
      lower_case( headers->connection ) != "close")
   {
 #ifdef HTTP_QUERY_DEBUG
@@ -562,11 +563,11 @@ string data()
 #endif
    int len=(int)headers["content-length"];
    int l;
-   if (zero_type(len))
+   if(zero_type( len ))
       l=0x7fffffff;
    else
       l=len-strlen(buf)+datapos;
-   if (l>0 && con)
+   if(l>0 && con)
    {
      if(headers->server == "WebSTAR")
      { // Some servers reporting this name exhibit some really hideous behaviour:
@@ -577,6 +578,8 @@ string data()
      else
        buf += con->read(l);
    }
+   if(zero_type( len ))
+     len = sizeof( data ) - datapos - 1;
 #ifdef HTTP_QUERY_NOISE
    werror("buf[datapos..]     : %O\n", buf[datapos
 				       ..min(sizeof(buf), datapos+19)]);
