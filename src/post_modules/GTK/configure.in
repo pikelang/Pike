@@ -516,10 +516,10 @@ if test "x$WITH_GTK" = x1 ; then
    # Debian systems). Can't use AC_CHECK_HEADERS here since it doesn't
    # use $CFLAGS.
    define(REALLY_CHECK_HEADER, [
-     AC_CACHE_CHECK([for $1], [pgtk_cv_header_]translit($1,./-,___), [
+     AC_CACHE_CHECK([for $1], [pgtk_cv_header_]translit([$1],[./-],[___]), [
        AC_TRY_COMPILE([#include <$1>],,
-		      [[pgtk_cv_header_]translit($1,./-,___)=yes],
-		      [[pgtk_cv_header_]translit($1,./-,___)=no])
+		      [[pgtk_cv_header_]]]translit([$1],[./-],[___])[[[=yes]],
+		      [[pgtk_cv_header_]]]translit([$1],[./-],[___])[[[=no]])
      ])
    ])
    REALLY_CHECK_HEADER(gnome.h)
