@@ -1,4 +1,4 @@
-test_true([["$Id: testsuite.in,v 1.683 2003/10/04 18:21:51 grubba Exp $"]]);
+test_true([["$Id: testsuite.in,v 1.684 2003/10/05 13:25:34 grubba Exp $"]]);
 
 // This triggered a bug only if run sufficiently early.
 test_compile_any([[#pike 7.2]])
@@ -9810,7 +9810,12 @@ void test_dir(string dir, int|void base_size, object|void handler)
   if (!Stdio.is_dir (dir)) return;
   // werror("Testing directory %O...\n", dir);
   if(!base_size) base_size=sizeof(dir);
-  foreach(get_dir(dir), string s)
+  array(string) files = get_dir(dir);
+  // Ensure that .so files are loaded before .pike and .pmod files.
+  // Otherwise their loading errors will be hidden.
+  sort(reverse(files[*]), files);
+  files = reverse(files);
+  foreach(files, string s)
   {
     switch(s)
     {
@@ -9844,6 +9849,10 @@ void test_dir(string dir, int|void base_size, object|void handler)
         }
 #endif
 	if (has_suffix(file, ".so")) {
+	  if (!master()->programs[file]) {
+	    // Clear any negative cache entry.
+	    m_delete(master()->programs, file);
+	  }
 #if constant(load_module)
 	  // Load .so files by hand to make sure
 	  // loading errors aren't hidden.
