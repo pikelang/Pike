@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: builtin.cmod,v 1.145 2003/12/08 11:13:12 nilsson Exp $
+|| $Id: builtin.cmod,v 1.146 2004/02/10 22:26:45 mast Exp $
 */
 
 #include "global.h"
@@ -1240,7 +1240,7 @@ PIKECLASS backtrace_frame
 
   static void fill_in_file_and_line()
   {
-    struct pike_string *file;
+    struct pike_string *file = NULL;
     assert (THIS->lineno == -1);
 
     if (THIS->pc && THIS->prog) {
@@ -1253,8 +1253,10 @@ PIKECLASS backtrace_frame
     else if (THIS->prog)
       file = low_get_program_line (THIS->prog, &THIS->lineno);
 
-    if (!THIS->filename) THIS->filename = file;
-    else free_string (file);
+    if (file) {
+      if (!THIS->filename) THIS->filename = file;
+      else free_string (file);
+    }
 
     if (THIS->prog) {
       free_program(THIS->prog);
