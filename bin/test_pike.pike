@@ -1,6 +1,6 @@
 #!/usr/local/bin/pike
 
-/* $Id: test_pike.pike,v 1.72 2002/10/01 21:28:44 nilsson Exp $ */
+/* $Id: test_pike.pike,v 1.73 2002/10/09 02:07:42 nilsson Exp $ */
 
 import Stdio;
 
@@ -54,7 +54,7 @@ void bzot(string test)
   array lines = test/"\n";
   foreach(lines; int r; string line) {
     line = sprintf("%O",line);
-    werror("%3d: %s\n", r, line[1..sizeof(line)-2]);
+    werror("%3d: %s\n", r+1, line[1..sizeof(line)-2]);
   }
   werror("\n");
   return;
@@ -258,6 +258,8 @@ int main(int argc, array(string) argv)
   array(string) testsuites=({});
   args=args[..sizeof(args)-1-argc];
   add_constant("RUNPIKE", map(args, Process.sh_quote)*" ");
+  mapping test_mapping = ([]);
+  add_constant("_TEST", lambda(){ return test_mapping; });
 
   foreach(Getopt.find_all_options(argv,aggregate(
     ({"no-watchdog",Getopt.NO_ARG,({"--no-watchdog"})}),
@@ -377,6 +379,7 @@ int main(int argc, array(string) argv)
   while(loop--)
   {
     successes=errors=0;
+    mapping diffmem = _memory_usage();
   testloop:
     foreach(testsuites, string testsuite)
     {
