@@ -1,6 +1,6 @@
 #!/usr/local/bin/pike
 
-/* $Id: test_co.pike,v 1.3 1997/10/23 03:15:42 hubbe Exp $ */
+/* $Id: test_co.pike,v 1.4 1998/05/22 00:49:17 hubbe Exp $ */
 
 void verify();
 
@@ -101,7 +101,7 @@ int main()
 
   verify();
 
-  mixed *tmp=allocate(100);
+  mixed *tmp=allocate(10000);
   for(int e=0;e<sizeof(tmp);e++) tmp[e]=co(f0,50.0);
 
   verify();
@@ -119,7 +119,7 @@ int main()
 
   verify();
 
-  mixed *tmp=allocate(100);
+  mixed *tmp=allocate(10000);
   for(int e=0;e<sizeof(tmp);e++) tmp[e]=co(f0,-50.0);
 
   verify();
