@@ -7,7 +7,8 @@
 
 import ".";
 
-int procfs=-1;
+static int procfs=-1;
+static Gmp.mpz dummy; // load the Gmp module
 
 // internal to find a pike binary
 
