@@ -1,4 +1,4 @@
-# $Id: configure.in,v 1.1 2004/10/14 18:46:21 nilsson Exp $
+# $Id: configure.in,v 1.2 2004/11/20 14:01:55 nilsson Exp $
 AC_INIT(sqlite.cmod)
 
 AC_ARG_WITH(sqlite,[ --with(out)-sqlite    Support SQLite],[],[with_sqlite=yes])
@@ -15,6 +15,11 @@ if test x$with_sqlite = xyes ; then
   AC_CHECK_LIB(sqlite3,sqlite3_open)
   AC_CHECK_HEADERS(unistd.h)
   AC_CHECK_FUNCS(usleep)
+
+  if test "$ac_cv_lib_sqlite3_sqlite3_open:$ac_cv_header_sqlite3_h" = "yes:yes" ; then
+    PIKE_FEATURE_OK(SQLite)
+  fi
+
 fi
 
 AC_OUTPUT(Makefile,echo FOO >stamp-h )
