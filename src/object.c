@@ -4,7 +4,7 @@
 ||| See the files COPYING and DISCLAIMER for more information.
 \*/
 #include "global.h"
-RCSID("$Id: object.c,v 1.12 1997/01/27 01:22:56 hubbe Exp $");
+RCSID("$Id: object.c,v 1.13 1997/02/07 01:33:03 hubbe Exp $");
 #include "object.h"
 #include "dynamic_buffer.h"
 #include "interpret.h"
@@ -33,7 +33,7 @@ void setup_fake_object()
   fake_object.refs=0xffffff;
 }
 
-static struct object *low_clone(struct program *p)
+struct object *low_clone(struct program *p)
 {
   int e;
   struct object *o;
@@ -103,14 +103,18 @@ static struct object *low_clone(struct program *p)
   return o;
 }
 
-struct object *clone(struct program *p, int args)
+static void init_object(struct object *o, int args)
 {
-  struct object *o=low_clone(p);
-
   apply_lfun(o,LFUN___INIT,0);
   pop_stack();
   apply_lfun(o,LFUN_CREATE,args);
   pop_stack();
+}
+
+struct object *clone(struct program *p, int args)
+{
+  struct object *o=low_clone(p);
+  init_object(o,args);
   return o;
 }
 
