@@ -1,0 +1,24 @@
+pike-object-documentation:
+
+/*
+//! module <module_name>
+//! class <class_name>
+//!  
+//! method <return_type> <pike_function>(<args-declaration>)     - multiple
+//! <description>
+//! returns <returns>
+//!
+//! arg <type> <name>     - multiple for a method
+//! <description>         /
+//!
+//! example
+//! <example>
+//! end example
+//!
+//! note
+//! <note>
+//! 
+//! see also: <references separated by comma and whitespace>
+*/
+
+¹ multiple
