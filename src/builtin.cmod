@@ -1,5 +1,5 @@
 /* -*- c -*-
- * $Id: builtin.cmod,v 1.81 2002/04/07 11:15:39 nilsson Exp $
+ * $Id: builtin.cmod,v 1.82 2002/04/08 00:41:16 nilsson Exp $
  */
 
 #include "global.h"
@@ -1435,12 +1435,6 @@ PIKECLASS Buffer
     }
     apply( res, "add", 1 );
     RETURN res;
-  }
-
-  PIKEFUN object `+=( string what )
-  {
-    f_Buffer_add( 1 );
-    REF_RETURN fp->current_object;
   }
 
   /*! @decl int add(string ... data)
