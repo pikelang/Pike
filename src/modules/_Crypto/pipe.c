@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: pipe.c,v 1.26 2003/04/07 17:20:45 nilsson Exp $
+|| $Id: pipe.c,v 1.27 2003/08/03 20:06:50 nilsson Exp $
 */
 
 /*
@@ -142,6 +142,10 @@ static void f_create(INT32 args)
     int j;
     int sub_size;
     int factor = 1;
+
+    /* E.g. arcfour has no query_block_size, since it's not a block cipher */
+    if( find_identifier("query_block_size", THIS->objects[i]->prog)==-1 )
+      continue;
 
     safe_apply(THIS->objects[i], "query_block_size", 0);
     if (sp[-1].type != T_INT) {
