@@ -1,5 +1,7 @@
 Thu Mar 26 00:25:29 1998  Henrik Grubbström  <grubba@idonex.se>
 
+	* threads.c (init_threads_disable): Fixed some bugs.
+	* threads.h (THREADS_{DIS,}ALLOW_UID): Added macros.
 	* backend.c (backend): Improved support for poll(2).
 	Also added support for nonblocking out-of-band data if poll(2)
 	is used.
