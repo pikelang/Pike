@@ -205,6 +205,18 @@ string html_unquote(string s)
   return replace(s,({"&amp;","&lt;","&gt;"}),({"&","<",">"}));
 }
 
+string mkdocument(string s,string title)
+{
+  return ("<html>"+
+	  "<title>"+
+	  html_quote(title)+
+	  "</title>"+
+	  "<body bgcolor=\"#A0E0C0\">"+
+	  s+
+	  "</body>"+
+	  "</html>");
+}
+
 string convert_page(string path, string fname)
 {
   string output, short;
@@ -332,8 +344,7 @@ string convert_page(string path, string fname)
 	  "\n</a>\n";
       }
     }
-    output="<html><title>uLPC: "+name+"</title>"+
-      implode(parts,"<hr noshade size=1>\n");
+    output=mkdocument(implode(parts,"<hr noshade size=1>\n"),"uLPC: "+name);
   }
   return output;
 }
@@ -408,9 +419,9 @@ string mkindex()
 
   ret="";
 
-  ret+="<H1>"+version()+"</h1>\n";
+  ret+="<H1>"+version()+" index</h1>\n";
   
-  ret+="<H1>Keyword lists</H1>\n<dl>\n";
+  ret+="<H2><b>Keyword lists</b></H2>\n<dl>\n";
   foreach(sort_array(m_indices(keywords)),b)
   {
     ret+="<a name="+b+">";
@@ -460,7 +471,7 @@ string mkindex()
   }
   
   ret+="</ul>\n";
-  return ret;
+  return mkdocument(ret,"uLPC documentation index");
 }
 
 int main(int argc, string *argv)
