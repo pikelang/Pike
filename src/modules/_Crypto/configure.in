@@ -1,4 +1,4 @@
-# $Id: configure.in,v 1.9 2000/02/03 12:22:19 grubba Exp $
+# $Id: configure.in,v 1.10 2000/02/21 22:22:53 per Exp $
 AC_INIT(crypto.c)
 AC_CONFIG_HEADER(config.h)
 
@@ -6,13 +6,17 @@ AC_SET_MAKE
 
 AC_MODULE_INIT()
 
-AC_MSG_CHECKING(for RSA libraries)
-AC_CACHE_VAL(pike_cv_rsa_dir,
-[
+AC_ARG_WITH(rsaref,     [  --with-rsaref[=path]      Support for RSAREF],[],[])
+
+if /bin/test x$with_rsaref = x ; then
+  :
+else
+  AC_MSG_CHECKING(for RSA libraries)
   pike_cv_rsa_dir="no"
-  for d in `echo ${with_rsa_path} | sed 's/:/ /g'` \
+  for d in `echo ${with_rsaref} | sed 's/:/ /g'` \
     `echo $prefix | sed "s@^NONE@$ac_default_prefix@g"` \
     /usr/local /sw/local /sw $srcdir `pwd`; do
+    echo "[" $d "]"
     if test -d "$d/."; then
       if test -d "$d/rsa/."; then
         d="$d/rsa"
@@ -29,9 +33,10 @@ AC_CACHE_VAL(pike_cv_rsa_dir,
       else :; fi
     else :; fi
   done
-])
+
 if test "$pike_cv_rsa_dir" = "no"; then
   AC_MSG_RESULT(no)
+  exit 1
 else
   AC_MSG_RESULT(yes - $pike_cv_rsa_dir)
 
@@ -40,9 +45,8 @@ else
 
   AC_CHECK_LIB(cryptoci, b_rsa_public_key_type)
 fi
+fi
 
 AC_CONFIG_SUBDIRS(lib)
 
 AC_OUTPUT(Makefile,echo FOO >stamp-h )
-
-
