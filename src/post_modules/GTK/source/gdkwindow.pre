@@ -503,3 +503,23 @@ void set_background(GDK.Color|GDK.Pixmap to)
   RETURN_THIS();
 }
 
+require x11;
+
+/* Low-level X11 related functions */
+
+void grab_input_focus( )
+//! Forcibly grab the input focus.
+//!
+//! Useful for override-redirect windows in games. Note that the only
+//! way to get rid of the focus is to close the window, be careful.
+{
+  GdkWindowPrivate *pr = (GdkWindowPrivate*) THIS->obj;
+
+  XSetInputFocus(pr->xdisplay, pr->xwindow, RevertToParent, CurrentTime);
+  XGrabPointer(pr->xdisplay, pr->xwindow, 1, 0, GrabModeAsync, GrabModeAsync,
+	       pr->xwindow, None, CurrentTime);
+  RETURN_THIS();
+}
+
+
+endrequire;
