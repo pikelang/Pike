@@ -1,7 +1,7 @@
 #pike __REAL_VERSION__
 
 /*
- * $Id: Tree.pmod,v 1.9 2001/05/06 18:27:19 grubba Exp $
+ * $Id: Tree.pmod,v 1.10 2001/07/17 11:34:58 nilsson Exp $
  *
  */
 
@@ -48,8 +48,7 @@ string attribute_quote(string data) {
 void throw_error(mixed ...args)
 {
   //  Put message in debug log and throw exception
-  array rep_args = args;
-  rep_args[0] = "Parser.XML.Tree: " + rep_args[0];
+  args[0] = "Parser.XML.Tree: " + args[0];
   if (sizeof(args) == 1)
 	throw(args[0]);
   else
