@@ -2,7 +2,7 @@
  *
  * Rudimentary support for decoding ASN.1 encoded data.
  *
- * $Id: asn1.pmod,v 1.1 1997/04/17 14:26:24 nisse Exp $
+ * $Id: asn1.pmod,v 1.2 1997/08/26 05:48:13 nisse Exp $
  */
 
 /* BER decoder
@@ -39,6 +39,7 @@ class ber_decode {
 #ifdef SSL3_DEBUG
     werror(sprintf("contents: %O\n", contents));
 #endif
+    value = contents; /* Default is no conversion */
     if (tag & 0x20)
     {
       object seq = object_program(this_object())(contents);
@@ -75,6 +76,8 @@ class ber_decode {
     case 5: /* Null */
       if (strlen(contents))
 	throw( ({ "SSL.asn1: Invalid NULL value.\n", backtrace() }) );
+      tag = "NULL";
+      value = 0;
       break;
     case 6: /* Object id */
     {
