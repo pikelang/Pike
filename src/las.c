@@ -5,7 +5,7 @@
 \*/
 /**/
 #include "global.h"
-RCSID("$Id: las.c,v 1.226 2000/12/01 08:09:49 hubbe Exp $");
+RCSID("$Id: las.c,v 1.227 2000/12/01 20:19:25 grubba Exp $");
 
 #include "language.h"
 #include "interpret.h"
@@ -348,7 +348,7 @@ struct pike_string *find_return_type(node *n)
 }
 
 
-#define NODES 256
+#define NODES 128 /* 256 */
 
 #undef BLOCK_ALLOC_NEXT
 #define BLOCK_ALLOC_NEXT u.node.a
@@ -364,8 +364,8 @@ struct node_hash_table node_hash;
 
 static size_t hash_node(node *n)
 {
-  return hashmem((unsigned char *)&(n->token),
-		 sizeof(node) - OFFSETOF(node_s, token), sizeof(node));
+  DO_HASHMEM((unsigned char *)&(n->token),
+	     sizeof(node) - OFFSETOF(node_s, token), sizeof(node));
 }
 
 static void add_node(node *n)
@@ -556,12 +556,12 @@ void free_all_nodes(void)
 	      /* else */
 #endif
 	      {
-		/* Free the node and be happy */
 #ifdef SHARED_NODES
-		/* Force the hashtable to be cleared. */
+		/* Force the hashtable entry to be cleared. */
 		tmp->next = NULL;
 		sub_node(tmp);
 #endif /* SHARED_NODES */
+		/* Free the node and be happy */
 		/* Make sure we don't free any nodes twice */
 		if(car_is_node(tmp)) _CAR(tmp)=0;
 		if(cdr_is_node(tmp)) _CDR(tmp)=0;
