@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: interpret_functions.h,v 1.156 2003/09/05 15:19:20 mast Exp $
+|| $Id: interpret_functions.h,v 1.157 2003/09/23 17:36:36 grubba Exp $
 */
 
 /*
@@ -969,7 +969,7 @@ OPCODE2(F_APPLY_ASSIGN_LOCAL_AND_POP, "apply, assign local and pop", I_UPDATE_SP
   Pike_sp--;
 });
 
-OPCODE2(F_APPLY_ASSIGN_LOCAL, "apply, assign local", I_UPDATE_SP|I_UPDATE_M_SP, {
+OPCODE2(F_APPLY_ASSIGN_LOCAL, "apply, assign local", I_UPDATE_ALL, {
   apply_svalue(&((Pike_fp->context.prog->constants + arg1)->sval),
 	       DO_NOT_WARN((INT32)(Pike_sp - *--Pike_mark_sp)));
   assign_svalue(Pike_fp->locals+arg2, Pike_sp-1);
@@ -1241,7 +1241,7 @@ OPCODE0_BRANCH(F_EQ_AND, "==&&", I_UPDATE_SP, {
 /* This instruction can't currently be a branch, since
  * it has more than two continuation paths.
  */
-OPCODE0_PTRJUMP(F_CATCH, "catch", I_UPDATE_FP, {
+OPCODE0_PTRJUMP(F_CATCH, "catch", I_UPDATE_ALL, {
   PIKE_OPCODE_T *next_addr;
   JUMP_SET_TO_PC_AT_NEXT (next_addr);
   check_c_stack(8192);
@@ -1271,7 +1271,7 @@ OPCODE0_RETURN(F_EXIT_CATCH, "exit catch", I_PC_AT_NEXT|I_UPDATE_SP, {
   INTER_ESCAPE_CATCH;
 });
 
-OPCODE1_JUMP(F_SWITCH, "switch", I_UPDATE_SP, {
+OPCODE1_JUMP(F_SWITCH, "switch", I_UPDATE_ALL, {
   INT32 tmp;
   PIKE_OPCODE_T *addr;
   JUMP_SET_TO_PC_AT_NEXT (addr);
@@ -1286,7 +1286,7 @@ OPCODE1_JUMP(F_SWITCH, "switch", I_UPDATE_SP, {
   DO_JUMP_TO(addr + *(INT32*)addr);
 });
 
-OPCODE1_JUMP(F_SWITCH_ON_INDEX, "switch on index", I_UPDATE_SP, {
+OPCODE1_JUMP(F_SWITCH_ON_INDEX, "switch on index", I_UPDATE_ALL, {
   INT32 tmp;
   struct svalue s;
   PIKE_OPCODE_T *addr;
@@ -1808,6 +1808,7 @@ OPCODE0(F_COPY_VALUE, "copy_value", 0, {
   copy_svalues_recursively_no_free(&tmp,Pike_sp-1,1,0);
   free_svalue(Pike_sp-1);
   Pike_sp[-1]=tmp;
+  print_return_value();
 });
 
 OPCODE0(F_INDIRECT, "indirect", I_UPDATE_SP, {
@@ -1844,7 +1845,7 @@ OPCODE1_ALIAS(F_SSCANF, "sscanf", I_UPDATE_SP, o_sscanf);
 
 #define MKAPPLY(OP,OPCODE,NAME,TYPE,  ARG2, ARG3)			   \
   PIKE_CONCAT(OP,_JUMP)(PIKE_CONCAT(F_,OPCODE),NAME,			\
-			I_PC_AT_NEXT|I_UPDATE_FP|I_UPDATE_SP|I_UPDATE_M_SP, { \
+			I_PC_AT_NEXT|I_UPDATE_ALL, { \
 JUMP_SET_TO_PC_AT_NEXT (Pike_fp->pc);					\
 if(low_mega_apply(TYPE,DO_NOT_WARN((INT32)(Pike_sp - *--Pike_mark_sp)),    \
 		  ARG2, ARG3))						   \
@@ -1858,7 +1859,7 @@ else {									\
 });									   \
 									   \
   PIKE_CONCAT(OP,_JUMP)(PIKE_CONCAT3(F_,OPCODE,_AND_POP),NAME " & pop", \
-			I_PC_AT_NEXT|I_UPDATE_FP|I_UPDATE_SP|I_UPDATE_M_SP, { \
+			I_PC_AT_NEXT|I_UPDATE_ALL, { \
   JUMP_SET_TO_PC_AT_NEXT (Pike_fp->pc);					\
   if(low_mega_apply(TYPE, DO_NOT_WARN((INT32)(Pike_sp - *--Pike_mark_sp)), \
 		    ARG2, ARG3))					   \
@@ -1873,7 +1874,7 @@ else {									\
 									   \
 PIKE_CONCAT(OP,_RETURN)(PIKE_CONCAT3(F_,OPCODE,_AND_RETURN),		   \
 			NAME " & return",				\
-			I_UPDATE_FP|I_UPDATE_SP|I_UPDATE_M_SP, {	\
+			I_UPDATE_ALL, {	\
   if(low_mega_apply(TYPE,DO_NOT_WARN((INT32)(Pike_sp - *--Pike_mark_sp)),  \
 		    ARG2,ARG3))						   \
   {									   \
@@ -1892,7 +1893,7 @@ PIKE_CONCAT(OP,_RETURN)(PIKE_CONCAT3(F_,OPCODE,_AND_RETURN),		   \
 MKAPPLY(OP,OPCODE,NAME,TYPE,  ARG2, ARG3)			           \
 									   \
 PIKE_CONCAT(OP,_JUMP)(PIKE_CONCAT(F_MARK_,OPCODE),"mark, " NAME, \
-		      I_PC_AT_NEXT|I_UPDATE_SP|I_UPDATE_FP, {		\
+		      I_PC_AT_NEXT|I_UPDATE_ALL, {		\
   JUMP_SET_TO_PC_AT_NEXT (Pike_fp->pc);					\
   if(low_mega_apply(TYPE, 0,						   \
 		    ARG2, ARG3))					   \
@@ -1907,7 +1908,7 @@ PIKE_CONCAT(OP,_JUMP)(PIKE_CONCAT(F_MARK_,OPCODE),"mark, " NAME, \
 									   \
 PIKE_CONCAT(OP,_JUMP)(PIKE_CONCAT3(F_MARK_,OPCODE,_AND_POP),		\
 		      "mark, " NAME " & pop",				\
-		      I_PC_AT_NEXT|I_UPDATE_SP|I_UPDATE_FP, {		\
+		      I_PC_AT_NEXT|I_UPDATE_ALL, {		\
   JUMP_SET_TO_PC_AT_NEXT (Pike_fp->pc);					\
   if(low_mega_apply(TYPE, 0,						   \
 		    ARG2, ARG3))					   \
@@ -1922,7 +1923,7 @@ PIKE_CONCAT(OP,_JUMP)(PIKE_CONCAT3(F_MARK_,OPCODE,_AND_POP),		\
 									   \
 PIKE_CONCAT(OP,_RETURN)(PIKE_CONCAT3(F_MARK_,OPCODE,_AND_RETURN),	   \
 			"mark, " NAME " & return",			\
-			I_UPDATE_SP|I_UPDATE_FP, {			\
+			I_UPDATE_ALL, {			\
   if(low_mega_apply(TYPE, 0,						   \
 		    ARG2,ARG3))						   \
   {									   \
@@ -1945,7 +1946,7 @@ MKAPPLY2(OPCODE1,APPLY,"apply",APPLY_SVALUE_STRICT,
 
 MKAPPLY(OPCODE0,CALL_FUNCTION,"call function",APPLY_STACK, 0,0);
 
-OPCODE1_JUMP(F_CALL_OTHER,"call other", I_PC_AT_NEXT|I_UPDATE_FP|I_UPDATE_SP|I_UPDATE_M_SP, {
+OPCODE1_JUMP(F_CALL_OTHER,"call other", I_PC_AT_NEXT|I_UPDATE_ALL, {
   INT32 args=DO_NOT_WARN((INT32)(Pike_sp - *--Pike_mark_sp));
   struct svalue *s=Pike_sp-args;
   JUMP_SET_TO_PC_AT_NEXT (Pike_fp->pc);
@@ -1999,7 +2000,7 @@ OPCODE1_JUMP(F_CALL_OTHER,"call other", I_PC_AT_NEXT|I_UPDATE_FP|I_UPDATE_SP|I_U
   }
 });
 
-OPCODE1_JUMP(F_CALL_OTHER_AND_POP,"call other & pop", I_PC_AT_NEXT|I_UPDATE_FP|I_UPDATE_SP|I_UPDATE_M_SP, {
+OPCODE1_JUMP(F_CALL_OTHER_AND_POP,"call other & pop", I_PC_AT_NEXT|I_UPDATE_ALL, {
   INT32 args=DO_NOT_WARN((INT32)(Pike_sp - *--Pike_mark_sp));
   struct svalue *s=Pike_sp-args;
   JUMP_SET_TO_PC_AT_NEXT (Pike_fp->pc);
@@ -2056,7 +2057,7 @@ OPCODE1_JUMP(F_CALL_OTHER_AND_POP,"call other & pop", I_PC_AT_NEXT|I_UPDATE_FP|I
   }
 });
 
-OPCODE1_JUMP(F_CALL_OTHER_AND_RETURN,"call other & return", I_UPDATE_FP|I_UPDATE_SP|I_UPDATE_M_SP, {
+OPCODE1_JUMP(F_CALL_OTHER_AND_RETURN,"call other & return", I_UPDATE_ALL, {
   INT32 args=DO_NOT_WARN((INT32)(Pike_sp - *--Pike_mark_sp));
   struct svalue *s=Pike_sp-args;
   if(s->type == T_OBJECT)
@@ -2150,22 +2151,22 @@ OPCODE1_JUMP(F_CALL_OTHER_AND_RETURN,"call other & return", I_UPDATE_FP|I_UPDATE
 (*(Pike_fp->context.prog->constants[arg1].sval.u.efun->function))(ARGS)
 #endif
 
-OPCODE1(F_CALL_BUILTIN, "call builtin", I_UPDATE_SP|I_UPDATE_M_SP, {
+OPCODE1(F_CALL_BUILTIN, "call builtin", I_UPDATE_ALL, {
   DO_CALL_BUILTIN(DO_NOT_WARN((INT32)(Pike_sp - *--Pike_mark_sp)));
 });
 
-OPCODE1(F_CALL_BUILTIN_AND_POP,"call builtin & pop", I_UPDATE_SP|I_UPDATE_M_SP, {
+OPCODE1(F_CALL_BUILTIN_AND_POP,"call builtin & pop", I_UPDATE_ALL, {
   DO_CALL_BUILTIN(DO_NOT_WARN((INT32)(Pike_sp - *--Pike_mark_sp)));
   pop_stack();
 });
 
-OPCODE1_RETURN(F_CALL_BUILTIN_AND_RETURN,"call builtin & return", I_UPDATE_FP|I_UPDATE_SP|I_UPDATE_M_SP, {
+OPCODE1_RETURN(F_CALL_BUILTIN_AND_RETURN,"call builtin & return", I_UPDATE_ALL, {
   DO_CALL_BUILTIN(DO_NOT_WARN((INT32)(Pike_sp - *--Pike_mark_sp)));
   DO_DUMB_RETURN;
 });
 
 
-OPCODE1(F_MARK_CALL_BUILTIN, "mark, call builtin", I_UPDATE_SP, {
+OPCODE1(F_MARK_CALL_BUILTIN, "mark, call builtin", I_UPDATE_ALL, {
   DO_CALL_BUILTIN(0);
 });
 
@@ -2174,17 +2175,17 @@ OPCODE1(F_MARK_CALL_BUILTIN_AND_POP, "mark, call builtin & pop", 0, {
   pop_stack();
 });
 
-OPCODE1_RETURN(F_MARK_CALL_BUILTIN_AND_RETURN, "mark, call builtin & return", I_UPDATE_FP|I_UPDATE_SP, {
+OPCODE1_RETURN(F_MARK_CALL_BUILTIN_AND_RETURN, "mark, call builtin & return", I_UPDATE_ALL, {
   DO_CALL_BUILTIN(0);
   DO_DUMB_RETURN;
 });
 
 
-OPCODE1(F_CALL_BUILTIN1, "call builtin 1", 0, {
+OPCODE1(F_CALL_BUILTIN1, "call builtin 1", I_UPDATE_ALL, {
   DO_CALL_BUILTIN(1);
 });
 
-OPCODE1(F_CALL_BUILTIN1_AND_POP, "call builtin1 & pop", I_UPDATE_SP, {
+OPCODE1(F_CALL_BUILTIN1_AND_POP, "call builtin1 & pop", I_UPDATE_ALL, {
   DO_CALL_BUILTIN(1);
   pop_stack();
 });
@@ -2253,7 +2254,7 @@ OPCODE1(F_CALL_BUILTIN1_AND_POP, "call builtin1 & pop", I_UPDATE_SP, {
 }while(0)
 
 /* Assume that the number of arguments is correct */
-OPCODE1_PTRJUMP(F_COND_RECUR, "recur if not overloaded", I_PC_AT_NEXT|I_UPDATE_FP|I_UPDATE_SP|I_UPDATE_M_SP, {
+OPCODE1_PTRJUMP(F_COND_RECUR, "recur if not overloaded", I_PC_AT_NEXT|I_UPDATE_ALL, {
   struct program *p = Pike_fp->current_object->prog;
   PIKE_OPCODE_T *addr;
   JUMP_SET_TO_PC_AT_NEXT (addr);
@@ -2304,20 +2305,20 @@ OPCODE1_PTRJUMP(F_COND_RECUR, "recur if not overloaded", I_PC_AT_NEXT|I_UPDATE_F
 
   /* Assume that the number of arguments is correct */
 
-  OPCODE0_TAILPTRJUMP(F_RECUR, "recur", I_UPDATE_FP|I_UPDATE_SP|I_UPDATE_M_SP, {
+  OPCODE0_TAILPTRJUMP(F_RECUR, "recur", I_UPDATE_ALL, {
     DO_RECUR(0);
   });
 });
 
 /* Ugly code duplication */
-OPCODE0_PTRJUMP(F_RECUR_AND_POP, "recur & pop", I_UPDATE_FP|I_UPDATE_SP|I_UPDATE_M_SP, {
+OPCODE0_PTRJUMP(F_RECUR_AND_POP, "recur & pop", I_UPDATE_ALL, {
   DO_RECUR(PIKE_FRAME_RETURN_POP);
 });
 
 
 /* Assume that the number of arguments is correct */
 /* FIXME: adjust Pike_mark_sp */
-OPCODE0_PTRJUMP(F_TAIL_RECUR, "tail recursion", I_UPDATE_FP|I_UPDATE_SP|I_UPDATE_M_SP, {
+OPCODE0_PTRJUMP(F_TAIL_RECUR, "tail recursion", I_UPDATE_ALL, {
   INT32 num_locals;
   PIKE_OPCODE_T *addr;
   INT32 args;
