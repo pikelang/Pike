@@ -303,6 +303,11 @@ class Inherit {
   }
 }
 
+class Import {
+  inherit PikeObject;
+  static void create() { ::create("import"); }
+}
+
 class _Class_or_Module {
   inherit PikeObject;
 

@@ -513,21 +513,18 @@ PikeObject|array(PikeObject) parseDecl(mapping|void args) {
   SourcePosition position = currentPosition;
   array(string) modifiers = parseModifiers();
   string s = peekToken(WITH_NL);
-  for (;;) {
-    while (s == "\n") {
-      readToken(WITH_NL);
-      s = peekToken(WITH_NL);
-    }
-    if (s == "import") {  // skip all import:s
-      skipUntil(";");
-      eat(";");
-      s = peekToken(WITH_NL);
-    }
-    else
-      break;
+  while (s == "\n") {
+    readToken(WITH_NL);
+    s = peekToken(WITH_NL);
   }
 
-  if (s == "class") {
+  if (s == "import") {
+    Import i = Import();
+    i->position = position;
+    skipUntil(";");
+    return i;
+  }
+  else if (s == "class") {
     Class c = Class();
     c->position = position;
     c->modifiers = modifiers;
