@@ -1,6 +1,6 @@
 #! /usr/bin/env pike
 
-/* $Id: export.pike,v 1.44 2002/04/07 15:19:02 nilsson Exp $ */
+/* $Id: export.pike,v 1.45 2002/04/08 17:02:43 mikael%unix.pp.se Exp $ */
 
 multiset except_modules = (<>);
 string vpath;
@@ -196,7 +196,7 @@ int main(int argc, array(string) argv)
 
   files=`+( ({ vpath+"/README.txt", vpath+"/ANNOUNCE",
 	       vpath+"/COPYING", vpath+"/COPYRIGHT",
-	       vpath+"/Makefile" }),
+	       vpath+"/Makefile", vpath+"/README-CVS.txt" }),
 	   get_files(vpath+"/src"),
 	   get_files(vpath+"/lib"),
 	   get_files(vpath+"/bin"),

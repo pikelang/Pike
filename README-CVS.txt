@@ -1,14 +1,41 @@
-$Id: README-CVS.txt,v 1.13 2002/04/06 20:49:08 mikael%unix.pp.se Exp $
+$Id: README-CVS.txt,v 1.14 2002/04/08 17:02:43 mikael%unix.pp.se Exp $
 
 HOW TO BUILD PIKE FROM CVS
 
-The top-level makefile (in this directory, not the src directory) has
-all the magic you need to build pike directly from CVS.  Just type
-'make'.
+If you like to live at the bleeding edge you can download pike from CVS
+whith all the latest additions from the developers. There are two
+major branches in the archive, the latest stable branch and latest
+development branch. Stable versions have an even minor version number,
+ie. 7.0.x, 7.2.x, 7.4.x wheras the development branches have an odd
+minor version. 
 
-Building Pike from cvs, in addition to the requirements for a normal
+Keep in mind that the cvs versions are under heavy development and
+have not been tested nearly as well as the offcial releases. You use
+the code at YOUR OWN RISK.
+
+There are a few simple steps to get pike from cvs:
+1. Get a recent version of cvs.
+2. Login to the cvs-server:
+
+	 cvs -d :pserver:anon@cvs.roxen.com:/cvs login
+
+   just  hit enter on the password prompt
+3. Check out the source:
+
+	 cvs -z3 -d :pserver:anon@cvs.roxen.com:/cvs co Pike/7.3
+
+   subistute 7.3 for whatever version you want to get.
+
+Building Pike from cvs, in addition to the requirements of a normal
 build, requires a working Pike. You will also need automake, gnu m4
 and bison.
+
+The top-level makefile (in this directory, not the src directory) has
+all the magic you need to build pike directly from CVS.  Just type
+'make'. It is preferable to build from the toplevel since it avoids
+contaminating the source tree with object files and other generated
+files.
+
 
 Other interesting make targets are:
 
