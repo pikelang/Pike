@@ -1,9 +1,5 @@
-#!/usr/local/bin/pike
-
-string basename(string s)
-{
-  return (s/"/")[-1];
-}
+#! /usr/bin/env pike
+// -*- pike -*- $Id: parse_install_log,v 1.4 2002/07/09 00:31:41 nilsson Exp $
 
 mapping install_from=([]);
 mapping fake_dirs=([]);
@@ -14,15 +10,15 @@ void install(string from, string to)
   install_from[combine_path(".",to)]=combine_path(".",from);
 }
 
-int main(int argc, string *argv)
+int main(int argc, array(string) argv)
 {
   string srcdir=argv[1];
   string prefix=argv[2];
-  string *lines=Stdio.stdin->read(0x7fffffff)/"\n";
+  array(string) lines=Stdio.stdin->read(0x7fffffff)/"\n";
 
   foreach(lines, string line)
     {
-      string *args=line/" ";
+      array(string) args=line/" ";
       args[0]=basename(args[0]);
       
       Getopt.find_all_options(args,
