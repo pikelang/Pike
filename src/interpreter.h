@@ -354,6 +354,8 @@ static int eval_instruction(PIKE_OPCODE_T *pc)
   strap = &&normal_strap;
   {
     static void *table[] = {
+      NULL_LABEL(F_OFFSET),
+
       NULL_LABEL(F_PREFIX_256),
       NULL_LABEL(F_PREFIX_512),
       NULL_LABEL(F_PREFIX_768),
@@ -385,10 +387,10 @@ static int eval_instruction(PIKE_OPCODE_T *pc)
     };
 
 #ifdef PIKE_DEBUG
-    if (sizeof(table) != (F_MAX_OPCODE-(F_OFFSET+1))*sizeof(void *))
+    if (sizeof(table) != (F_MAX_OPCODE-F_OFFSET)*sizeof(void *))
       fatal("opcode_to_label out of sync: 0x%08lx != 0x%08lx\n",
 	    DO_NOT_WARN((long)sizeof(table)),
-	    DO_NOT_WARN((long)((F_MAX_OPCODE-(F_OFFSET+1))*sizeof(void *))));
+	    DO_NOT_WARN((long)((F_MAX_OPCODE-F_OFFSET)*sizeof(void *))));
 #endif /* PIKE_DEBUG */
     fcode_to_opcode = table;
     return 0;

@@ -17,7 +17,7 @@
 #include "builtin_functions.h"
 #include "constants.h"
 
-RCSID("$Id: peep.c,v 1.51 2001/07/08 21:02:41 grubba Exp $");
+RCSID("$Id: peep.c,v 1.52 2001/07/09 12:50:18 grubba Exp $");
 
 static void asm_opt(void);
 
@@ -148,7 +148,7 @@ void ins_f_byte(unsigned int b)
     Pike_error("Instruction too big %d\n",b);
 #endif
 #ifdef HAVE_COMPUTED_GOTO
-  add_to_program(fcode_to_opcode[b-1]);
+  add_to_program(fcode_to_opcode[b]);
 #else /* !HAVE_COMPUTED_GOTO */
   add_to_program((unsigned char)b);
 #endif /* HAVE_COMPUTED_GOTO */
