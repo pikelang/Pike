@@ -2,7 +2,7 @@
 
 // Incremental Pike Evaluator
 //
-// $Id: Hilfe.pmod,v 1.38 2002/03/08 03:07:03 mast Exp $
+// $Id: Hilfe.pmod,v 1.39 2002/03/08 19:47:45 nilsson Exp $
 
 constant hilfe_todo = #"List of known Hilfe bugs/room for improvements:
 
@@ -436,7 +436,7 @@ new inherits
 //
 
 private constant whitespace = (< ' ', '\n' ,'\r', '\t' >);
-private constant termblock = (< "catch", "do", "gauge", "lambda" >);
+private constant termblock = (< "catch", "do", "gauge", "lambda", "class stop" >);
 private constant modifier = (< "extern", "final", "inline", "local", "nomask",
 			       "optional", "private", "protected", "public",
 			       "static", "variant" >);
@@ -482,6 +482,12 @@ private class Expression {
   string code() {
     return tokens*"";
   }
+
+  string _sprintf(int t) {
+    if(t=='O') return sprintf("Expression(%O)", tokens);
+    if(t=='t') return sprintf("object(Expression)");
+    error("Can't display Expression as %c\n", t);
+  }
 }
 
 //! In every Hilfe object (@[Evaluator]) there is a ParserState object
@@ -507,8 +513,14 @@ private class ParserState {
       // If we start a block at the uppermost level, what kind of block is it?
       if(token=="{" && !pstack->ptr && !block)
 	block = last;
-      if( (token=="lambda" || token=="class") && !pstack->ptr)
+      if(token=="lambda" && !pstack->ptr)
 	block = token;
+      if(token=="class" && !pstack->ptr) {
+	if(sizeof(pipeline))
+	  block = "class stop"; // Kludge to get "object foo=class{}();" past the kludge below.
+	else
+	  block = token; // Kludge to get "class A {}" to work without semicolon.
+      }
 
       // Do we begin any kind of parenthesis level?
       if(token=="(" || token=="{" || token=="[" ||
@@ -1015,7 +1027,7 @@ class Evaluator {
 	    if(expr[pos]==")" || expr[pos]=="}") plevel--;
 	    pos++;
 	    if(pos==sizeof(expr))
-	      return "Hilfe Error: Bug in variable handeling. Please report this!\n";
+	      return "Hilfe Error: Bug in variable handling. Please report this!\n";
 	  }
 	  add_hilfe_variable(type, [string]expr[from..pos-1], expr[from]);
 	  pos++;
